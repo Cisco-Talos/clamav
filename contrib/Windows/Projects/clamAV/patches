@@ -1,816 +1,521 @@
-*** /home/njh/src/clamav-devel/./libclamav/blob.c	2006-12-22 08:13:46.000000000 +0000
---- ./libclamav/blob.c	2006-12-22 08:11:40.000000000 +0000
+*** /home/njh/src/clamav-devel/./libclamav/readdb.c	2007-02-11 16:28:20.000000000 +0000
+--- ./libclamav/readdb.c	2007-02-11 16:29:00.000000000 +0000
 ***************
-*** 16,22 ****
+*** 16,21 ****
+--- 16,24 ----
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $";
++ #ifdef	_MSC_VER
++ #include <winsock.h>	/* for Sleep() */
++ #endif
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
---- 16,22 ----
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
-   */
-! static	char	const	rcsid[] = "$Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $";
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
-*** /home/njh/src/clamav-devel/./libclamav/message.c	2006-12-27 16:21:42.000000000 +0000
---- ./libclamav/message.c	2006-12-13 13:20:52.000000000 +0000
 ***************
-*** 677,685 ****
-  messageSetEncoding(message *m, const char *enctype)
-  {
-  	const struct encoding_map *e;
-! 	int i;
-  	char *type;
-- 
-  	assert(m != NULL);
-  	assert(enctype != NULL);
+*** 1315,1321 ****
+--- 1318,1328 ----
   
---- 677,684 ----
-  messageSetEncoding(message *m, const char *enctype)
-  {
-  	const struct encoding_map *e;
-! 	int i = 0;
-  	char *type;
-  	assert(m != NULL);
-  	assert(enctype != NULL);
-  
+      cli_dbgmsg("cli_loaddbdir: Acquiring dbdir lock\n");
+      while((lock = cli_readlockdb(dirname, 0)) == CL_ELOCKDB) {
++ #ifdef C_WINDOWS
++ 	Sleep(5);
++ #else
+  	sleep(5);
++ #endif
+  	if(try++ > 24) {
+  	    cli_errmsg("cl_load(): Unable to lock database directory: %s\n", dirname);
+  	    return CL_ELOCKDB;
+*** /home/njh/src/clamav-devel/./libclamav/blob.c	2007-02-10 21:13:23.000000000 +0000
+--- ./libclamav/blob.c	2007-02-10 14:22:00.000000000 +0000
 ***************
-*** 2534,2542 ****
-  	unsigned int score = 0;
-  	size_t common, total;
-  	size_t len1, len2;
-  	char *rs1 = NULL, *rs2 = NULL;
-  	char *s1, *s2;
-- 	char ls1[MAX_PATTERN_SIZ], ls2[MAX_PATTERN_SIZ];
-  
-  	if(strcasecmp(str1, str2) == 0)
-  		return 100;
---- 2533,2541 ----
-  	unsigned int score = 0;
-  	size_t common, total;
-  	size_t len1, len2;
-+ 	char ls1[MAX_PATTERN_SIZ], ls2[MAX_PATTERN_SIZ];
-  	char *rs1 = NULL, *rs2 = NULL;
-  	char *s1, *s2;
-  
-  	if(strcasecmp(str1, str2) == 0)
-  		return 100;
-***************
-*** 2596,2602 ****
-  static unsigned int
-  compare(char *ls1, char **rs1, char *ls2, char **rs2)
-  {
-! 	unsigned int common, maxchars = 0;
-  	bool some_similarity = FALSE;
-  	char *s1, *s2;
-  	char *maxs1 = NULL, *maxs2 = NULL, *maxe1 = NULL, *maxe2 = NULL;
---- 2595,2601 ----
-  static unsigned int
-  compare(char *ls1, char **rs1, char *ls2, char **rs2)
-  {
-! 	unsigned int common, diff, maxchars = 0;
-  	bool some_similarity = FALSE;
-  	char *s1, *s2;
-  	char *maxs1 = NULL, *maxs2 = NULL, *maxe1 = NULL, *maxe2 = NULL;
-***************
-*** 2628,2634 ****
-  					while(tolower(*s1) == tolower(*s2));
-  
-  					if(common > maxchars) {
-! 						unsigned int diff = common - maxchars;
-  						maxchars = common;
-  						maxs1 = cs1;
-  						maxs2 = cs2;
---- 2627,2633 ----
-  					while(tolower(*s1) == tolower(*s2));
-  
-  					if(common > maxchars) {
-! 						diff = common - maxchars;
-  						maxchars = common;
-  						maxs1 = cs1;
-  						maxs2 = cs2;
-*** /home/njh/src/clamav-devel/./libclamav/mbox.c	2006-12-27 23:20:11.000000000 +0000
---- ./libclamav/mbox.c	2006-12-27 15:52:30.000000000 +0000
-***************
-*** 16,22 ****
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
-   */
-! static	char	const	rcsid[] = "$Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $";
-  
-  #ifdef	_MSC_VER
-  #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
---- 16,22 ----
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
-   */
-! static	char	const	rcsid[] = "$Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $";
-  
-  #ifdef	_MSC_VER
-  #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
-***************
-*** 110,122 ****
-  #endif
-  #endif
-  
-- typedef	enum {
-- 	FAIL,
-- 	OK,
-- 	OK_ATTACHMENTS_NOT_SAVED,
-- 	VIRUS
-- } mbox_status;
-- 
-  #ifndef isblank
-  #define isblank(c)	(((c) == ' ') || ((c) == '\t'))
-  #endif
---- 110,115 ----
-***************
-*** 278,284 ****
-  static	message	*parseEmailFile(FILE *fin, const table_t *rfc821Table, const char *firstLine, const char *dir);
-  static	message	*parseEmailHeaders(message *m, const table_t *rfc821Table);
-  static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
-! static	mbox_status	parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int recursion_level);
-  static	int	boundaryStart(const char *line, const char *boundary);
-  static	int	endOfMessage(const char *line, const char *boundary);
-  static	int	initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
---- 271,277 ----
-  static	message	*parseEmailFile(FILE *fin, const table_t *rfc821Table, const char *firstLine, const char *dir);
-  static	message	*parseEmailHeaders(message *m, const table_t *rfc821Table);
-  static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
-! static	int	parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int recursion_level);
-  static	int	boundaryStart(const char *line, const char *boundary);
-  static	int	endOfMessage(const char *line, const char *boundary);
-  static	int	initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
-***************
-*** 296,311 ****
-  static	bool	isBounceStart(const char *line);
-  static	bool	exportBinhexMessage(const char *dir, message *m);
-  static	int	exportBounceMessage(text *start, const mbox_ctx *ctx);
-! static	message	*do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, mbox_ctx *mctx, message *messageIn, text **tptr, unsigned int recursion_level);
-  static	int	count_quotes(const char *buf);
-  static	bool	next_is_folded_header(const text *t);
-  
-! static	void	checkURLs(message *m, mbox_ctx *mctx, mbox_status *rc, int is_html);
-  
-  #ifdef CL_EXPERIMENTAL
-! static	void	do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs);
-! static	blob	*getHrefs(message *m, tag_arguments_t *hrefs);
-! static	void	hrefs_done(blob *b, tag_arguments_t *hrefs);
-  #endif
-  
-  #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
---- 289,304 ----
-  static	bool	isBounceStart(const char *line);
-  static	bool	exportBinhexMessage(const char *dir, message *m);
-  static	int	exportBounceMessage(text *start, const mbox_ctx *ctx);
-! static	message	*do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx *mctx, message *messageIn, text **tptr, unsigned int recursion_level);
-  static	int	count_quotes(const char *buf);
-  static	bool	next_is_folded_header(const text *t);
-  
-! static	void	checkURLs(message *m, mbox_ctx *mctx,int *rc, int is_html);
-  
-  #ifdef CL_EXPERIMENTAL
-! static	void	do_checkURLs(message *m, const char *dir,tag_arguments_t* hrefs);
-! static	blob*	getHrefs(message* m,tag_arguments_t* hrefs);
-! static	void	hrefs_done(blob *b,tag_arguments_t* hrefs);
-  #endif
-  
-  #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
-***************
-*** 1413,1424 ****
-  				messageSetCTX(body, ctx);
-  				messageDestroy(m);
-  				if(messageGetBody(body)) {
-! 					mbox_status rc = parseEmailBody(body, NULL, &mctx, 0);
-! 					if(rc == FAIL) {
-  						messageReset(body);
-  						m = body;
-  						continue;
-! 					} else if(rc == VIRUS) {
-  						cli_dbgmsg("Message number %d is infected\n",
-  							messagenumber);
-  						retcode = CL_VIRUS;
---- 1406,1417 ----
-  				messageSetCTX(body, ctx);
-  				messageDestroy(m);
-  				if(messageGetBody(body)) {
-! 					int rc = parseEmailBody(body, NULL, &mctx, 0);
-! 					if(rc == 0) {
-  						messageReset(body);
-  						m = body;
-  						continue;
-! 					} else if(rc == 3) {
-  						cli_dbgmsg("Message number %d is infected\n",
-  							messagenumber);
-  						retcode = CL_VIRUS;
-***************
-*** 1495,1504 ****
-  		if((retcode == CL_SUCCESS) && messageGetBody(body)) {
-  			messageSetCTX(body, ctx);
-  			switch(parseEmailBody(body, NULL, &mctx, 0)) {
-! 				case FAIL:
-  					retcode = CL_EFORMAT;
-  					break;
-! 				case VIRUS:
-  					retcode = CL_VIRUS;
-  					break;
-  			}
---- 1488,1497 ----
-  		if((retcode == CL_SUCCESS) && messageGetBody(body)) {
-  			messageSetCTX(body, ctx);
-  			switch(parseEmailBody(body, NULL, &mctx, 0)) {
-! 				case 0:
-  					retcode = CL_EFORMAT;
-  					break;
-! 				case 3:
-  					retcode = CL_VIRUS;
-  					break;
-  			}
-***************
-*** 2028,2038 ****
-   * any headers. First time of calling it'll be
-   * the whole message. Later it'll be parts of a multipart message
-   * textIn is the plain text message being built up so far
-   */
-! static mbox_status
-  parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int recursion_level)
-  {
-! 	mbox_status rc;
-  	text *aText = textIn;
-  	message *mainMessage = messageIn;
-  	fileblob *fb;
---- 2021,2037 ----
-   * any headers. First time of calling it'll be
-   * the whole message. Later it'll be parts of a multipart message
-   * textIn is the plain text message being built up so far
-+  *
-+  * Returns:
-+  *	0 for fail
-+  *	1 for success, attachments saved
-+  *	2 for success, attachments not saved
-+  *	3 for virus found
-   */
-! static int	/* success or fail */
-  parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int recursion_level)
-  {
-! 	int rc = 1;
-  	text *aText = textIn;
-  	message *mainMessage = messageIn;
-  	fileblob *fb;
-***************
-*** 2047,2053 ****
-  		if(recursion_level >= mctx->ctx->limits->maxmailrec) {
-  			cli_warnmsg("parseEmailBody: hit maximum recursion level (%u)\n",
-  				mctx->ctx->limits->maxmailrec);
-! 			return OK_ATTACHMENTS_NOT_SAVED;
-  		}
-  
-  	/* Anything left to be parsed? */
---- 2046,2052 ----
-  		if(recursion_level >= mctx->ctx->limits->maxmailrec) {
-  			cli_warnmsg("parseEmailBody: hit maximum recursion level (%u)\n",
-  				mctx->ctx->limits->maxmailrec);
-! 			return 2;
-  		}
-  
-  	/* Anything left to be parsed? */
-***************
-*** 2064,2070 ****
-  
-  		cli_dbgmsg("Parsing mail file\n");
-  
-- 		rc = OK;
-  		mimeType = messageGetMimeType(mainMessage);
-  		mimeSubtype = messageGetMimeSubtype(mainMessage);
-  
---- 2063,2068 ----
-***************
-*** 2124,2130 ****
-  				 * There might be html sent without subtype
-  				 * html too, so scan them for phishing
-  				 */
-! 				if(rc == VIRUS)
-  					infected = TRUE;
-  			}
-  #endif
---- 2122,2128 ----
-  				 * There might be html sent without subtype
-  				 * html too, so scan them for phishing
-  				 */
-! 				if(rc == 3)
-  					infected = TRUE;
-  			}
-  #endif
-***************
-*** 2176,2182 ****
-  					if(binhexBegin(mainMessage) == t_line) {
-  						if(exportBinhexMessage(mctx->dir, mainMessage)) {
-  							/* virus found */
-! 							rc = VIRUS;
-  							infected = TRUE;
-  							break;
-  						}
---- 2174,2180 ----
-  					if(binhexBegin(mainMessage) == t_line) {
-  						if(exportBinhexMessage(mctx->dir, mainMessage)) {
-  							/* virus found */
-! 							rc = 3;
-  							infected = TRUE;
-  							break;
-  						}
-***************
-*** 2500,2506 ****
-  							&rc, mctx, messageIn,
-  							&aText, recursion_level + 1);
-  						--multiparts;
-! 						if(rc == VIRUS)
-  							infected = TRUE;
-  						break;
-  					default:
---- 2498,2504 ----
-  							&rc, mctx, messageIn,
-  							&aText, recursion_level + 1);
-  						--multiparts;
-! 						if(rc == 3)
-  							infected = TRUE;
-  						break;
-  					default:
-***************
-*** 2552,2561 ****
-  				/*
-  				 * FIXME: we could return 2 here when we have
-  				 * saved stuff earlier
-- 				 *
-- 				 * Nothing to do
-  				 */
-! 				return (rc == VIRUS) ? VIRUS : OK_ATTACHMENTS_NOT_SAVED;
-  			}
-  
-  			cli_dbgmsg("Find out the multipart type (%s)\n", mimeSubtype);
---- 2550,2557 ----
-  				/*
-  				 * FIXME: we could return 2 here when we have
-  				 * saved stuff earlier
-  				 */
-! 				return (rc == 3) ? 3 : 2;	/* Nothing to do */
-  			}
-  
-  			cli_dbgmsg("Find out the multipart type (%s)\n", mimeSubtype);
-***************
-*** 2597,2603 ****
-  					cli_dbgmsg("No HTML code found to be scanned\n");
-  				else {
-  					rc = parseEmailBody(aMessage, aText, mctx, recursion_level + 1);
-! 					if(rc == OK) {
-  						assert(aMessage == messages[htmltextPart]);
-  						messageDestroy(aMessage);
-  						messages[htmltextPart] = NULL;
---- 2593,2599 ----
-  					cli_dbgmsg("No HTML code found to be scanned\n");
-  				else {
-  					rc = parseEmailBody(aMessage, aText, mctx, recursion_level + 1);
-! 					if(rc == 1) {
-  						assert(aMessage == messages[htmltextPart]);
-  						messageDestroy(aMessage);
-  						messages[htmltextPart] = NULL;
-***************
-*** 2678,2684 ****
-  					mainMessage = do_multipart(mainMessage,
-  						messages, i, &rc, mctx,
-  						messageIn, &aText, recursion_level + 1);
-! 					if(rc == VIRUS) {
-  						infected = TRUE;
-  						break;
-  					}
---- 2674,2680 ----
-  					mainMessage = do_multipart(mainMessage,
-  						messages, i, &rc, mctx,
-  						messageIn, &aText, recursion_level + 1);
-! 					if(rc == 3) {
-  						infected = TRUE;
-  						break;
-  					}
-***************
-*** 2703,2715 ****
-  				rc = parseEmailBody(messages[htmltextPart], aText, mctx, recursion_level + 1);
-  				break;
-  			case ENCRYPTED:
-! 				rc = FAIL;	/* Not yet handled */
-  				protocol = (char *)messageFindArgument(mainMessage, "protocol");
-  				if(protocol) {
-  					if(strcasecmp(protocol, "application/pgp-encrypted") == 0) {
-  						/* RFC2015 */
-  						cli_warnmsg("PGP encoded attachment not scanned\n");
-! 						rc = OK_ATTACHMENTS_NOT_SAVED;
-  					} else
-  						cli_warnmsg("Unknown encryption protocol '%s' - if you believe this file contains a virus, submit it to www.clamav.net\n", protocol);
-  					free(protocol);
---- 2699,2711 ----
-  				rc = parseEmailBody(messages[htmltextPart], aText, mctx, recursion_level + 1);
-  				break;
-  			case ENCRYPTED:
-! 				rc = 0;
-  				protocol = (char *)messageFindArgument(mainMessage, "protocol");
-  				if(protocol) {
-  					if(strcasecmp(protocol, "application/pgp-encrypted") == 0) {
-  						/* RFC2015 */
-  						cli_warnmsg("PGP encoded attachment not scanned\n");
-! 						rc = 2;
-  					} else
-  						cli_warnmsg("Unknown encryption protocol '%s' - if you believe this file contains a virus, submit it to www.clamav.net\n", protocol);
-  					free(protocol);
-***************
-*** 2759,2765 ****
-  					cli_warnmsg("MIME type 'message' cannot be decoded\n");
-  					break;
-  			}
-! 			rc = FAIL;
-  			if((strcasecmp(mimeSubtype, "rfc822") == 0) ||
-  			   (strcasecmp(mimeSubtype, "delivery-status") == 0)) {
-  				message *m = parseEmailHeaders(mainMessage, mctx->rfc821Table);
---- 2755,2761 ----
-  					cli_warnmsg("MIME type 'message' cannot be decoded\n");
-  					break;
-  			}
-! 			rc = 0;
-  			if((strcasecmp(mimeSubtype, "rfc822") == 0) ||
-  			   (strcasecmp(mimeSubtype, "delivery-status") == 0)) {
-  				message *m = parseEmailHeaders(mainMessage, mctx->rfc821Table);
-***************
-*** 2781,2795 ****
-  				break;
-  			} else if(strcasecmp(mimeSubtype, "disposition-notification") == 0) {
-  				/* RFC 2298 - handle like a normal email */
-! 				rc = OK;
-  				break;
-  			} else if(strcasecmp(mimeSubtype, "partial") == 0) {
-  #ifdef	PARTIAL_DIR
-  				/* RFC1341 message split over many emails */
-  				if(rfc1341(mainMessage, mctx->dir) >= 0)
-! 					rc = OK;
-  #else
-  				cli_warnmsg("Partial message received from MUA/MTA - message cannot be scanned\n");
-  #endif
-  			} else if(strcasecmp(mimeSubtype, "external-body") == 0)
-  				/* TODO */
---- 2777,2792 ----
-  				break;
-  			} else if(strcasecmp(mimeSubtype, "disposition-notification") == 0) {
-  				/* RFC 2298 - handle like a normal email */
-! 				rc = 1;
-  				break;
-  			} else if(strcasecmp(mimeSubtype, "partial") == 0) {
-  #ifdef	PARTIAL_DIR
-  				/* RFC1341 message split over many emails */
-  				if(rfc1341(mainMessage, mctx->dir) >= 0)
-! 					rc = 1;
-  #else
-  				cli_warnmsg("Partial message received from MUA/MTA - message cannot be scanned\n");
-+ 				rc = 0;
-  #endif
-  			} else if(strcasecmp(mimeSubtype, "external-body") == 0)
-  				/* TODO */
-***************
-*** 2970,2976 ****
-  	 * No attachments - scan the text portions, often files
-  	 * are hidden in HTML code
-  	 */
-! 	if(mainMessage && (rc != VIRUS)) {
-  		text *t_line;
-  
-  		/*
---- 2967,2973 ----
-  	 * No attachments - scan the text portions, often files
-  	 * are hidden in HTML code
-  	 */
-! 	if(mainMessage && (rc != 3)) {
-  		text *t_line;
-  
-  		/*
-***************
-*** 2979,2985 ****
-  		if((encodingLine(mainMessage) != NULL) &&
-  		   ((t_line = bounceBegin(mainMessage)) != NULL)) {
-  			if(exportBounceMessage(t_line, mctx))
-! 				rc = OK;
+*** 272,278 ****
+  			free(b->data);
+  			b->data = NULL;
+  			cli_dbgmsg("blobClose: recovered all %lu bytes\n",
+! 				(unsigned long)b->size);
+  			b->size = 0;
   		} else {
-  			bool saveIt;
-  
---- 2976,2982 ----
-  		if((encodingLine(mainMessage) != NULL) &&
-  		   ((t_line = bounceBegin(mainMessage)) != NULL)) {
-  			if(exportBounceMessage(t_line, mctx))
-! 				rc = 1;
+  			unsigned char *ptr = cli_realloc(b->data, b->len);
+--- 272,278 ----
+  			free(b->data);
+  			b->data = NULL;
+  			cli_dbgmsg("blobClose: recovered all %lu bytes\n",
+! 				b->size);
+  			b->size = 0;
   		} else {
-  			bool saveIt;
-  
+  			unsigned char *ptr = cli_realloc(b->data, b->len);
 ***************
-*** 3027,3043 ****
-  					mainMessage = NULL;
-  				} else
-  					messageReset(mainMessage);
-! 				rc = OK;
-  			}
+*** 281,288 ****
+  				return;
+  
+  			cli_dbgmsg("blobClose: recovered %lu bytes from %lu\n",
+! 				(unsigned long)(b->size - b->len),
+! 				(unsigned long)b->size);
+  			b->size = b->len;
+  			b->data = ptr;
   		}
-  	} else
-! 		rc = OK_ATTACHMENTS_NOT_SAVED;	/* nothing saved */
+--- 281,287 ----
+  				return;
   
-  	if(mainMessage && (mainMessage != messageIn))
-  		messageDestroy(mainMessage);
-  
-! 	if((rc != FAIL) && infected)
-! 		rc = VIRUS;
-  
-  	cli_dbgmsg("parseEmailBody() returning %d\n", rc);
-  
---- 3024,3040 ----
-  					mainMessage = NULL;
-  				} else
-  					messageReset(mainMessage);
-! 				rc = 1;
-  			}
+  			cli_dbgmsg("blobClose: recovered %lu bytes from %lu\n",
+! 				b->size - b->len, b->size);
+  			b->size = b->len;
+  			b->data = ptr;
   		}
-  	} else
-! 		rc = 2;	/* nothing saved */
-  
-  	if(mainMessage && (mainMessage != messageIn))
-  		messageDestroy(mainMessage);
-  
-! 	if((rc != 0) && infected)
-! 		rc = 3;
-  
-  	cli_dbgmsg("parseEmailBody() returning %d\n", rc);
-  
 ***************
-*** 3105,3120 ****
-  	 * viruses in both types of mails
-  	 */
-  	if((strstr(ptr, boundary) != NULL) || (strstr(line, boundary) != NULL))
-! 		rc = OK;
-  	else if(*ptr++ != '-')
-! 		rc = FAIL;
-  	else
-  		rc = (strcasecmp(ptr, boundary) == 0);
-  
-  	if(out)
-  		free(out);
-  
-! 	if(rc == OK)
-  		cli_dbgmsg("boundaryStart: found %s in %s\n", boundary, line);
-  
-  	return rc;
---- 3102,3117 ----
-  	 * viruses in both types of mails
-  	 */
-  	if((strstr(ptr, boundary) != NULL) || (strstr(line, boundary) != NULL))
-! 		rc = 1;
-  	else if(*ptr++ != '-')
-! 		rc = 0;
-  	else
-  		rc = (strcasecmp(ptr, boundary) == 0);
-  
-  	if(out)
-  		free(out);
-  
-! 	if(rc == 1)
-  		cli_dbgmsg("boundaryStart: found %s in %s\n", boundary, line);
-  
-  	return rc;
-***************
-*** 3907,3913 ****
-  }
-  
-  static void
-! checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
-  {
-  	tag_arguments_t hrefs;
-  	blob *b;
---- 3904,3910 ----
-  }
-  
-  static void
-! checkURLs(message *mainMessage, mbox_ctx *mctx, int *rc, int is_html)
-  {
-  	tag_arguments_t hrefs;
-  	blob *b;
-***************
-*** 3933,3943 ****
-  		if(hrefs.scanContents /*mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS*/) {
-  			if(phishingScan(mainMessage, mctx->dir, mctx->ctx, &hrefs) == CL_VIRUS) {
-  				mainMessage->isInfected = TRUE;
-! 				*rc = VIRUS;
-  				cli_dbgmsg("PH:Phishing found\n");
-  			}
-  		}
-! 		if(is_html && (mctx->ctx->options&CL_SCAN_MAILURL) && (*rc != VIRUS))
-  			do_checkURLs(mainMessage, mctx->dir, &hrefs);
+*** 391,398 ****
+  			cli_errmsg("fileblobDestroy: %s not saved: refer to http://www.clamav.net/bugs.html#pagestart\n", fb->b.name);
+  			free(fb->b.name);
+  		} else
+! 			cli_errmsg("fileblobDestroy: file not saved (%lu bytes): report to http://bugs.clamav.net\n",
+! 				(unsigned long)fb->b.len);
   	}
-  	hrefs_done(b,&hrefs);
---- 3930,3940 ----
-  		if(hrefs.scanContents /*mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS*/) {
-  			if(phishingScan(mainMessage, mctx->dir, mctx->ctx, &hrefs) == CL_VIRUS) {
-  				mainMessage->isInfected = TRUE;
-! 				*rc = 3;
-  				cli_dbgmsg("PH:Phishing found\n");
-  			}
-  		}
-! 		if(is_html && (mctx->ctx->options&CL_SCAN_MAILURL) && (*rc != 3))
-  			do_checkURLs(mainMessage, mctx->dir, &hrefs);
+  #ifdef	CL_DEBUG
+  	fb->b.magic = INVALIDCLASS;
+--- 390,396 ----
+  			cli_errmsg("fileblobDestroy: %s not saved: refer to http://www.clamav.net/bugs.html#pagestart\n", fb->b.name);
+  			free(fb->b.name);
+  		} else
+! 			cli_errmsg("fileblobDestroy: file not saved (%lu bytes): report to http://bugs.clamav.net\n", fb->b.len);
   	}
-  	hrefs_done(b,&hrefs);
+  #ifdef	CL_DEBUG
+  	fb->b.magic = INVALIDCLASS;
 ***************
-*** 4040,4046 ****
+*** 470,477 ****
   
-  #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
-  static void
-! checkURLs(message *m, mbox_ctx *mctx, mbox_status *rc, int is_html)
-  {
-  	blob *b = messageToBlob(m, 0);
-  	size_t len;
---- 4037,4043 ----
+  	if(fd < 0) {
+  		cli_errmsg("Can't create temporary file %s: %s\n", fullname, strerror(errno));
+! 		cli_dbgmsg("%lu %lu\n", (unsigned long)sizeof(fullname),
+! 			(unsigned long)strlen(fullname));
+  		return;
+  	}
   
-  #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
-  static void
-! checkURLs(message *m, mbox_ctx *mctx, int *rc, int is_html)
-  {
-  	blob *b = messageToBlob(m, 0);
-  	size_t len;
+--- 468,474 ----
+  
+  	if(fd < 0) {
+  		cli_errmsg("Can't create temporary file %s: %s\n", fullname, strerror(errno));
+! 		cli_dbgmsg("%d %d\n", sizeof(fullname), strlen(fullname));
+  		return;
+  	}
+  
 ***************
-*** 5111,5118 ****
-  	 * won't be scanned
-  	 */
-  	for(t = start; t; t = t->t_next) {
-- 		const char *txt = lineGetData(t->t_line);
-  		char cmd[RFC2821LENGTH + 1];
+*** 481,488 ****
   
-  		if(txt == NULL)
+  	if(fb->fp == NULL) {
+  		cli_errmsg("Can't create file %s: %s\n", fullname, strerror(errno));
+! 		cli_dbgmsg("%lu %lu\n", (unsigned long)sizeof(fullname),
+! 			(unsigned long)strlen(fullname));
+  		close(fd);
+  
+  		return;
+--- 478,484 ----
+  
+  	if(fb->fp == NULL) {
+  		cli_errmsg("Can't create file %s: %s\n", fullname, strerror(errno));
+! 		cli_dbgmsg("%d %d\n", sizeof(fullname), strlen(fullname));
+  		close(fd);
+  
+  		return;
+***************
+*** 532,539 ****
+  #endif
+  
+  		if(fwrite(data, len, 1, fb->fp) != 1) {
+! 			cli_errmsg("fileblobAddData: Can't write %lu bytes to temporary file %s: %s\n",
+! 				(unsigned long)len, fb->b.name, strerror(errno));
+  			return -1;
+  		}
+  		fb->isNotEmpty = 1;
+--- 528,534 ----
+  #endif
+  
+  		if(fwrite(data, len, 1, fb->fp) != 1) {
+! 			cli_errmsg("fileblobAddData: Can't write %u bytes to temporary file %s: %s\n", len, fb->b.name, strerror(errno));
+  			return -1;
+  		}
+  		fb->isNotEmpty = 1;
+*** /home/njh/src/clamav-devel/./libclamav/message.c	2007-02-10 21:02:53.000000000 +0000
+--- ./libclamav/message.c	2007-02-10 14:22:00.000000000 +0000
+***************
+*** 510,529 ****
   			continue;
---- 5108,5115 ----
-  	 * won't be scanned
-  	 */
-  	for(t = start; t; t = t->t_next) {
-  		char cmd[RFC2821LENGTH + 1];
-+ 		const char *txt = lineGetData(t->t_line);
   
-  		if(txt == NULL)
+  		if(*cptr == '"') {
+! 			char *ptr, *kcopy;
+  
+  			/*
+  			 * The field is in quotes, so look for the
+  			 * closing quotes
+  			 */
+! 			kcopy = cli_strdup(key);
+  
+! 			if(kcopy == NULL)
+  				return;
+  
+! 			ptr = strchr(kcopy, '=');
+  			if(ptr == NULL)
+! 				ptr = strchr(kcopy, ':');
+  			*ptr = '\0';
+  
+  			string = strchr(++cptr, '"');
+--- 510,529 ----
   			continue;
+  
+  		if(*cptr == '"') {
+! 			char *ptr;
+  
+  			/*
+  			 * The field is in quotes, so look for the
+  			 * closing quotes
+  			 */
+! 			key = cli_strdup(key);
+  
+! 			if(key == NULL)
+  				return;
+  
+! 			ptr = strchr(key, '=');
+  			if(ptr == NULL)
+! 				ptr = strchr(key, ':');
+  			*ptr = '\0';
+  
+  			string = strchr(++cptr, '"');
 ***************
-*** 5159,5165 ****
-   * Handle the ith element of a number of multiparts, e.g. multipart/alternative
-   */
-  static message *
-! do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, mbox_ctx *mctx, message *messageIn, text **tptr, unsigned int recursion_level)
-  {
-  	bool addToText = FALSE;
-  	const char *dtype;
---- 5156,5162 ----
-   * Handle the ith element of a number of multiparts, e.g. multipart/alternative
-   */
-  static message *
-! do_multipart(message *mainMessage, message **messages, int i, int *rc, mbox_ctx *mctx, message *messageIn, text **tptr, unsigned int recursion_level)
-  {
-  	bool addToText = FALSE;
-  	const char *dtype;
-*** /home/njh/src/clamav-devel/./libclamav/filetypes.h	2006-12-09 08:37:12.000000000 +0000
---- ./libclamav/filetypes.h	2006-11-03 20:02:28.000000000 +0000
-***************
-*** 54,62 ****
-      CL_TYPE_UUENCODED,
-      CL_TYPE_PST,	/* Microsoft Outlook binary email folder (.pst file) */
-      CL_TYPE_HTML_UTF16,
-! #ifdef CL_EXPERIMENTAL
-!     CL_TYPE_RTF,
-! #endif
-      /* bigger numbers have higher priority (in o-t-f detection) */
-      CL_TYPE_HTML, /* on the fly */
-      CL_TYPE_MAIL,  /* magic + on the fly */
---- 54,60 ----
-      CL_TYPE_UUENCODED,
-      CL_TYPE_PST,	/* Microsoft Outlook binary email folder (.pst file) */
-      CL_TYPE_HTML_UTF16,
-! 
-      /* bigger numbers have higher priority (in o-t-f detection) */
-      CL_TYPE_HTML, /* on the fly */
-      CL_TYPE_MAIL,  /* magic + on the fly */
-*** /home/njh/src/clamav-devel/./libclamav/scanners.c	2006-12-23 13:14:55.000000000 +0000
---- ./libclamav/scanners.c	2006-12-20 08:29:52.000000000 +0000
-***************
-*** 1246,1252 ****
-  	return CL_ETMPDIR;
-      }
+*** 534,541 ****
+  			} else
+  				string++;
   
-!     if((ret = cli_untar(dir, desc, posix, ctx->limits)))
-  	cli_dbgmsg("Tar: %s\n", cl_strerror(ret));
-      else
-  	ret = cli_scandir(dir, ctx);
---- 1246,1252 ----
-  	return CL_ETMPDIR;
-      }
-  
-!     if((ret = cli_untar(dir, desc, posix)))
-  	cli_dbgmsg("Tar: %s\n", cl_strerror(ret));
-      else
-  	ret = cli_scandir(dir, ctx);
-*** /home/njh/src/clamav-devel/./libclamav/untar.c	2006-12-22 18:29:13.000000000 +0000
---- ./libclamav/untar.c	2006-11-24 22:28:32.000000000 +0000
-***************
-*** 20,26 ****
-   * Author: Charles G. Waldman (cgw@pgt.com),  Aug 4 1998
-   * There are many tar files that this code cannot decode.
-   */
-! static	char	const	rcsid[] = "$Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $";
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
---- 20,26 ----
-   * Author: Charles G. Waldman (cgw@pgt.com),  Aug 4 1998
-   * There are many tar files that this code cannot decode.
-   */
-! static	char	const	rcsid[] = "$Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $";
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
-***************
-*** 61,71 ****
-  }
-  
-  int
-! cli_untar(const char *dir, int desc, unsigned int posix, const struct cl_limits *limits)
-  {
-  	int size = 0;
-  	int in_block = 0;
-- 	unsigned int files = 0;
-  	char fullname[NAME_MAX + 1];
-  	FILE *outfile = NULL;
-  
---- 61,70 ----
-  }
-  
-  int
-! cli_untar(const char *dir, int desc, unsigned int posix)
-  {
-  	int size = 0;
-  	int in_block = 0;
-  	char fullname[NAME_MAX + 1];
-  	FILE *outfile = NULL;
-  
-***************
-*** 104,114 ****
-  			if(block[0] == '\0')	/* We're done */
-  				break;
-  
-- 			if(limits && limits->maxfiles && (files >= limits->maxfiles)) {
-- 				cli_dbgmsg("cli_untar: number of files exceeded %u\n", limits->maxfiles);
-- 				return CL_CLEAN;
-- 			}
-- 
-  			/* Notice assumption that BLOCKSIZE > 262 */
-  			if(posix) {
-  				strncpy(magic, block+257, 5);
---- 103,108 ----
-***************
-*** 128,134 ****
-  				case '0':	/* plain file */
-  				case '\0':	/* plain file */
-  				case '7':	/* contiguous file */
-- 					files++;
-  					directory = 0;
-  					break;
-  				case '1':	/* Link to already archived file */
---- 122,127 ----
-***************
-*** 180,194 ****
-  				return CL_EFORMAT;
-  			}
-  			cli_dbgmsg("cli_untar: size = %d\n", size);
-- 			if(limits && limits->maxfilesize && ((unsigned int)size > limits->maxfilesize)) {
-- 				cli_dbgmsg("cli_untar: size exceeded %d bytes\n", size);
-- 				skipEntry++;
-- 			}
-  
-  			if(skipEntry) {
-  				const int nskip = (size % BLOCKSIZE || !size) ? size + BLOCKSIZE - (size % BLOCKSIZE) : size;
-! 
-! 				cli_dbgmsg("cli_untar: skipping entry\n");
-  				lseek(desc, nskip, SEEK_CUR);
+! 			if(!usefulArg(kcopy)) {
+! 				free(kcopy);
   				continue;
   			}
---- 173,182 ----
-  				return CL_EFORMAT;
-  			}
-  			cli_dbgmsg("cli_untar: size = %d\n", size);
   
-  			if(skipEntry) {
-  				const int nskip = (size % BLOCKSIZE || !size) ? size + BLOCKSIZE - (size % BLOCKSIZE) : size;
-! 				cli_dbgmsg("cli_untar: GNU extension, skipping entry\n");
-  				lseek(desc, nskip, SEEK_CUR);
+--- 534,541 ----
+  			} else
+  				string++;
+  
+! 			if(!usefulArg(key)) {
+! 				free((char *)key);
   				continue;
   			}
+  
+***************
+*** 557,574 ****
+  				cli_dbgmsg("Can't parse header \"%s\" - if you believe this file contains a virus, submit it to www.clamav.net\n", s);
+  				if(data)
+  					free(data);
+! 				free(kcopy);
+  				return;
+  			}
+  
+  			*ptr = '\0';
+  
+! 			field = cli_realloc(kcopy, strlen(kcopy) + strlen(data) + 2);
+  			if(field) {
+  				strcat(field, "=");
+  				strcat(field, data);
+  			} else
+! 				free(kcopy);
+  			free(data);
+  		} else {
+  			size_t len;
+--- 557,574 ----
+  				cli_dbgmsg("Can't parse header \"%s\" - if you believe this file contains a virus, submit it to www.clamav.net\n", s);
+  				if(data)
+  					free(data);
+! 				free((char *)key);
+  				return;
+  			}
+  
+  			*ptr = '\0';
+  
+! 			field = cli_realloc((char *)key, strlen(key) + strlen(data) + 2);
+  			if(field) {
+  				strcat(field, "=");
+  				strcat(field, data);
+  			} else
+! 				free((char *)key);
+  			free(data);
+  		} else {
+  			size_t len;
+***************
+*** 614,620 ****
+   * Find a MIME variable from the header and return a COPY to the value of that
+   * variable. The caller must free the copy
+   */
+! char *
+  messageFindArgument(const message *m, const char *variable)
+  {
+  	int i;
+--- 614,620 ----
+   * Find a MIME variable from the header and return a COPY to the value of that
+   * variable. The caller must free the copy
+   */
+! const char *
+  messageFindArgument(const message *m, const char *variable)
+  {
+  	int i;
+***************
+*** 632,639 ****
+  		if((ptr == NULL) || (*ptr == '\0'))
+  			continue;
+  #ifdef	CL_DEBUG
+! 		cli_dbgmsg("messageFindArgument: compare %lu bytes of %s with %s\n",
+! 			(unsigned long)len, variable, ptr);
+  #endif
+  		if(strncasecmp(ptr, variable, len) == 0) {
+  			ptr = &ptr[len];
+--- 632,639 ----
+  		if((ptr == NULL) || (*ptr == '\0'))
+  			continue;
+  #ifdef	CL_DEBUG
+! 		cli_dbgmsg("messageFindArgument: compare %d bytes of %s with %s\n",
+! 			len, variable, ptr);
+  #endif
+  		if(strncasecmp(ptr, variable, len) == 0) {
+  			ptr = &ptr[len];
+***************
+*** 1222,1228 ****
+  						blobAddData(u, &c, 1);
+  					} else {
+  #ifdef	CL_DEBUG
+! 						cli_dbgmsg("uncompress HQX7 at 0x%06lu: %d repetitive bytes\n", l, count);
+  #endif
+  						blobGrow(u, count);
+  						while(--count > 0)
+--- 1222,1228 ----
+  						blobAddData(u, &c, 1);
+  					} else {
+  #ifdef	CL_DEBUG
+! 						cli_dbgmsg("uncompress HQX7 at 0x%06x: %d repetitive bytes\n", l, count);
+  #endif
+  						blobGrow(u, count);
+  						while(--count > 0)
+***************
+*** 1385,1399 ****
+  		 * Find the filename to decode
+  		 */
+  		if(((enctype == YENCODE) && yEncBegin(m)) || ((i == 0) && yEncBegin(m))) {
+- 			const char *f;
+- 
+  			/*
+  			 * TODO: handle multipart yEnc encoded files
+  			 */
+  			t_line = yEncBegin(m);
+! 			f = lineGetData(t_line->t_line);
+  
+! 			if((filename = strstr(f, " name=")) != NULL) {
+  				filename = cli_strdup(&filename[6]);
+  				if(filename) {
+  					cli_chomp(filename);
+--- 1385,1397 ----
+  		 * Find the filename to decode
+  		 */
+  		if(((enctype == YENCODE) && yEncBegin(m)) || ((i == 0) && yEncBegin(m))) {
+  			/*
+  			 * TODO: handle multipart yEnc encoded files
+  			 */
+  			t_line = yEncBegin(m);
+! 			filename = (char *)lineGetData(t_line->t_line);
+  
+! 			if((filename = strstr(filename, " name=")) != NULL) {
+  				filename = cli_strdup(&filename[6]);
+  				if(filename) {
+  					cli_chomp(filename);
+***************
+*** 1530,1537 ****
+  			}
+  		} while((t_line = t_line->t_next) != NULL);
+  
+! 		cli_dbgmsg("Exported %lu bytes using enctype %d\n",
+! 			(unsigned long)size, enctype);
+  
+  		/* Verify we have nothing left to flush out */
+  		if(m->base64chars) {
+--- 1528,1534 ----
+  			}
+  		} while((t_line = t_line->t_next) != NULL);
+  
+! 		cli_dbgmsg("Exported %u bytes using enctype %d\n", size, enctype);
+  
+  		/* Verify we have nothing left to flush out */
+  		if(m->base64chars) {
+***************
+*** 2390,2396 ****
+  		}
+  	}
+  
+! 	cli_dbgmsg("messageDedup reclaimed %lu bytes\n", (unsigned long)saved);
+  	m->dedupedThisFar = t1;
+  }
+  
+--- 2387,2393 ----
+  		}
+  	}
+  
+! 	cli_dbgmsg("messageDedup reclaimed %u bytes\n", saved);
+  	m->dedupedThisFar = t1;
+  }
+  
+*** /home/njh/src/clamav-devel/./libclamav/mbox.c	2007-02-10 20:54:29.000000000 +0000
+--- ./libclamav/mbox.c	2007-02-10 18:00:58.000000000 +0000
+***************
+*** 2059,2066 ****
+  	if(mainMessage && (messageGetBody(mainMessage) != NULL)) {
+  		mime_type mimeType;
+  		int subtype, inhead, htmltextPart, inMimeHead, i;
+! 		const char *mimeSubtype;
+! 		char *protocol, *boundary;
+  		const text *t_line;
+  		/*bool isAlternative;*/
+  		message *aMessage;
+--- 2059,2066 ----
+  	if(mainMessage && (messageGetBody(mainMessage) != NULL)) {
+  		mime_type mimeType;
+  		int subtype, inhead, htmltextPart, inMimeHead, i;
+! 		const char *mimeSubtype, *boundary;
+! 		char *protocol;
+  		const text *t_line;
+  		/*bool isAlternative;*/
+  		message *aMessage;
+***************
+*** 2928,2934 ****
+  				break;
+  			cli_dbgmsg("Save non mime part bounce message\n");
+  			fileblobSetFilename(fb, mctx->dir, "bounce");
+! 			fileblobAddData(fb, (const unsigned char *)"Received: by clamd (bounce)\n", 28);
+  			fileblobSetCTX(fb, mctx->ctx);
+  
+  			inheader = TRUE;
+--- 2928,2934 ----
+  				break;
+  			cli_dbgmsg("Save non mime part bounce message\n");
+  			fileblobSetFilename(fb, mctx->dir, "bounce");
+! 			fileblobAddData(fb, (unsigned char *)"Received: by clamd (bounce)\n", 28);
+  			fileblobSetCTX(fb, mctx->ctx);
+  
+  			inheader = TRUE;
+***************
+*** 2943,2951 ****
+  					}
+  				} else {
+  					s = lineGetData(l);
+! 					fileblobAddData(fb, (const unsigned char *)s, strlen(s));
+  				}
+! 				fileblobAddData(fb, (const unsigned char *)"\n", 1);
+  				lookahead = t->t_next;
+  				if(lookahead == NULL)
+  					break;
+--- 2943,2951 ----
+  					}
+  				} else {
+  					s = lineGetData(l);
+! 					fileblobAddData(fb, (unsigned char *)s, strlen(s));
+  				}
+! 				fileblobAddData(fb, (unsigned char *)"\n", 1);
+  				lookahead = t->t_next;
+  				if(lookahead == NULL)
+  					break;
+***************
+*** 3059,3066 ****
+  static int
+  boundaryStart(const char *line, const char *boundary)
+  {
+! 	const char *ptr;
+! 	char *out;
+  	int rc;
+  	char buf[RFC2821LENGTH + 1];
+  
+--- 3059,3065 ----
+  static int
+  boundaryStart(const char *line, const char *boundary)
+  {
+! 	char *ptr, *out;
+  	int rc;
+  	char buf[RFC2821LENGTH + 1];
+  
+***************
+*** 3081,3090 ****
+  		out = NULL;
+  		ptr = rfc822comments(line, buf);
+  	} else
+! 		ptr = out = rfc822comments(line, NULL);
+  
+  	if(ptr == NULL)
+! 		ptr = line;
+  
+  	if(*ptr++ != '-') {
+  		if(out)
+--- 3080,3089 ----
+  		out = NULL;
+  		ptr = rfc822comments(line, buf);
+  	} else
+! 		out = ptr = rfc822comments(line, NULL);
+  
+  	if(ptr == NULL)
+! 		ptr = (char *)line;
+  
+  	if(*ptr++ != '-') {
+  		if(out)
+***************
+*** 3644,3651 ****
+  		}
+  		b = messageToBlob(m, 1);
+  		len = blobGetDataSize(b);
+! 		cli_dbgmsg("Decoded as '%*.*s'\n", (int)len, (int)len,
+! 			blobGetData(b));
+  		memcpy(pout, blobGetData(b), len);
+  		blobDestroy(b);
+  		messageDestroy(m);
+--- 3643,3649 ----
+  		}
+  		b = messageToBlob(m, 1);
+  		len = blobGetDataSize(b);
+! 		cli_dbgmsg("Decoded as '%*.*s'\n", len, len, blobGetData(b));
+  		memcpy(pout, blobGetData(b), len);
+  		blobDestroy(b);
+  		messageDestroy(m);
+*** /home/njh/src/clamav-devel/./libclamav/message.h	2007-02-10 17:13:33.000000000 +0000
+--- ./libclamav/message.h	2006-10-19 19:54:14.000000000 +0100
+***************
+*** 57,63 ****
+  const	char	*messageGetDispositionType(const message *m);
+  void	messageAddArgument(message *m, const char *arg);
+  void	messageAddArguments(message *m, const char *arg);
+! char	*messageFindArgument(const message *m, const char *variable);
+  void	messageSetEncoding(message *m, const char *enctype);
+  encoding_type	messageGetEncoding(const message *m);
+  int	messageAddLine(message *m, line_t *line);
+--- 57,63 ----
+  const	char	*messageGetDispositionType(const message *m);
+  void	messageAddArgument(message *m, const char *arg);
+  void	messageAddArguments(message *m, const char *arg);
+! const	char	*messageFindArgument(const message *m, const char *variable);
+  void	messageSetEncoding(message *m, const char *enctype);
+  encoding_type	messageGetEncoding(const message *m);
+  int	messageAddLine(message *m, line_t *line);
+*** /home/njh/src/clamav-devel/./libclamav/untar.c	2007-02-10 21:05:37.000000000 +0000
+--- ./libclamav/untar.c	2007-02-10 14:22:00.000000000 +0000
+***************
+*** 223,232 ****
+  
+  			if(fd < 0) {
+  				cli_errmsg("Can't create temporary file %s: %s\n", fullname, strerror(errno));
+! 				cli_dbgmsg("%lu %lu %lu\n",
+! 					(unsigned long)suffixLen,
+! 					(unsigned long)sizeof(fullname),
+! 					(unsigned long)strlen(fullname));
+  				return CL_ETMPFILE;
+  			}
+  
+--- 223,229 ----
+  
+  			if(fd < 0) {
+  				cli_errmsg("Can't create temporary file %s: %s\n", fullname, strerror(errno));
+! 				cli_dbgmsg("%u %d %d\n", suffixLen, sizeof(fullname), strlen(fullname));
+  				return CL_ETMPFILE;
+  			}
+  
 *** /home/njh/src/clamav-devel/./libclamav/untar.h	2006-12-22 18:29:13.000000000 +0000
 --- ./libclamav/untar.h	2006-11-24 22:28:32.000000000 +0000
 ***************
@@ -818,8 +523,8 @@
    *
    * Change History:
    * $Log: patches,v $
-   * Revision 1.15  2006/12/28 09:31:53  njh
-   * Latest bug fixes for portability problems
+   * Revision 1.16  2007/02/12 15:41:19  njh
+   * Latest diffs from the W32 fork
    *
 -  * Revision 1.5  2006/12/22 18:29:13  njh
 -  * Recommit fix for bug 153
@@ -839,6 +544,233 @@
    *
    */
 ! int cli_untar(const char *dir, int desc, unsigned int posix);
+*** /home/njh/src/clamav-devel/./libclamav/pst.c	2007-01-30 10:31:14.000000000 +0000
+--- ./libclamav/pst.c	2007-01-05 14:45:18.000000000 +0000
+***************
+*** 429,435 ****
+  pst_item* _pst_getItem(pst_file *pf, pst_desc_ll *d_ptr);
+  static	void	*_pst_parse_item (pst_file *pf, pst_desc_ll *d_ptr);
+  static	pst_num_array	*_pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll *i2_head);
+! static	int32_t _pst_process(pst_num_array *list, pst_item *item);
+  int32_t _pst_free_list(pst_num_array *list);
+  void _pst_freeItem(pst_item *item);
+  int32_t _pst_free_id2(pst_index2_ll * head);
+--- 429,435 ----
+  pst_item* _pst_getItem(pst_file *pf, pst_desc_ll *d_ptr);
+  static	void	*_pst_parse_item (pst_file *pf, pst_desc_ll *d_ptr);
+  static	pst_num_array	*_pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll *i2_head);
+! int32_t _pst_process(pst_num_array *list, pst_item *item);
+  int32_t _pst_free_list(pst_num_array *list);
+  void _pst_freeItem(pst_item *item);
+  int32_t _pst_free_id2(pst_index2_ll * head);
+***************
+*** 814,820 ****
+  pst_attach_to_file_base64(pst_file *pf, pst_item_attach *attach, FILE *fp)
+  {
+  	pst_index_ll *ptr;
+! 	int32_t size = 0;
+  	char *c;
+  
+  	if (attach->id_val != -1) {
+--- 814,820 ----
+  pst_attach_to_file_base64(pst_file *pf, pst_item_attach *attach, FILE *fp)
+  {
+  	pst_index_ll *ptr;
+! 	int32_t size;
+  	char *c;
+  
+  	if (attach->id_val != -1) {
+***************
+*** 899,908 ****
+    // for PST files this will load up ID2 0x61 and check it's "list" attribute.
+    pst_desc_ll *p;
+    pst_num_array *na;
+!   pst_index2_ll *list2 = NULL;
+    unsigned char * buffer=NULL, *headerbuffer=NULL;
+    pst_x_attrib xattrib;
+!   int32_t bptr = 0, bsize = 0, hsize, tint, err=0, x;
+    pst_x_attrib_ll *ptr, *p_head=NULL, *p_sh=NULL, *p_sh2=NULL;
+  
+    if ((p = _pst_getDptr(pf, 0x61)) == NULL) {
+--- 899,908 ----
+    // for PST files this will load up ID2 0x61 and check it's "list" attribute.
+    pst_desc_ll *p;
+    pst_num_array *na;
+!   pst_index2_ll *list2;
+    unsigned char * buffer=NULL, *headerbuffer=NULL;
+    pst_x_attrib xattrib;
+!   int32_t bptr = 0, bsize, hsize, tint, err=0, x;
+    pst_x_attrib_ll *ptr, *p_head=NULL, *p_sh=NULL, *p_sh2=NULL;
+  
+    if ((p = _pst_getDptr(pf, 0x61)) == NULL) {
+***************
+*** 1963,1971 ****
+  	    cli_dbgmsg("not able to read the ID2 data. Setting to be read later. %#x\n",
+  		  table_rec.value);
+  	    na_ptr->items[x]->size = 0;
+- 	    na_ptr->items[x]->type = table_rec.value;
+- 	    free(na_ptr->items[x]->data);
+  	    na_ptr->items[x]->data = NULL;
+  	  }
+  	  cli_dbgmsg("Read %i bytes to a buffer at %p\n",
+  		na_ptr->items[x]->size, na_ptr->items[x]->data);
+--- 1963,1970 ----
+  	    cli_dbgmsg("not able to read the ID2 data. Setting to be read later. %#x\n",
+  		  table_rec.value);
+  	    na_ptr->items[x]->size = 0;
+  	    na_ptr->items[x]->data = NULL;
++ 	    na_ptr->items[x]->type = table_rec.value;
+  	  }
+  	  cli_dbgmsg("Read %i bytes to a buffer at %p\n",
+  		na_ptr->items[x]->size, na_ptr->items[x]->data);
+***************
+*** 2037,2043 ****
+  	  na_ptr->items[x]->type = table_rec.ref_type;
+        } else {
+  	cli_warnmsg("ERROR Unknown ref_type %#x\n", table_rec.ref_type);
+- 	if(buf) free(buf);
+  	if(na_head)
+  	_pst_free_list(na_head);
+  	return NULL;
+--- 2036,2041 ----
+***************
+*** 2090,2099 ****
+    }\
+  }
+  
+! static int32_t
+! _pst_process(pst_num_array *list , pst_item *item)
+! {
+!   int32_t x, t;
+    int32_t next = 0;
+    pst_item_attach *attach;
+    pst_item_extra_field *ef;
+--- 2088,2095 ----
+    }\
+  }
+  
+! int32_t _pst_process(pst_num_array *list , pst_item *item) {
+!   int32_t x;
+    int32_t next = 0;
+    pst_item_attach *attach;
+    pst_item_extra_field *ef;
+***************
+*** 2589,2597 ****
+  	cli_dbgmsg("Attachment Size - ");
+  	NULL_CHECK(attach);
+  	MOVE_NEXT(attach);
+! 	t = (*(int32_t *)list->items[x]->data);
+! 	LE32_CPU(t);
+! 	attach->size = t;
+  	cli_dbgmsg("%i\n", attach->size);
+  	//INC_CHECK_X();
+  	break;
+--- 2585,2591 ----
+  	cli_dbgmsg("Attachment Size - ");
+  	NULL_CHECK(attach);
+  	MOVE_NEXT(attach);
+! 	memcpy(&(attach->size), list->items[x]->data, sizeof(attach->size));
+  	cli_dbgmsg("%i\n", attach->size);
+  	//INC_CHECK_X();
+  	break;
+***************
+*** 3756,3765 ****
+    pst_num_array *l;
+    while (list != NULL) {
+      while (x < list->count_item) {
+!       if (list->items[x] != NULL) {
+! 	if (list->items[x]->data != NULL) {
+  	free (list->items[x]->data);
+! 	}
+  	free (list->items[x]);
+        }
+        x++;
+--- 3750,3759 ----
+    pst_num_array *l;
+    while (list != NULL) {
+      while (x < list->count_item) {
+!       if (list->items[x]->data != NULL) {
+  	free (list->items[x]->data);
+!       }
+!       if (list->items[x] != NULL) {
+  	free (list->items[x]);
+        }
+        x++;
+***************
+*** 5386,5392 ****
+  	  if ((temp = item->email->outlook_sender) == NULL)
+  	    temp = (char *)"";
+  	  fprintf(f->output, "From: \"%s\" <%s>\n", item->email->outlook_sender_name, temp);
+! 	  if ((item->email->subject != NULL) && (item->email->subject->subj != NULL)) {
+  	    fprintf(f->output, "Subject: %s\n", item->email->subject->subj);
+  	  } /*else
+  	    fprintf(f->output, "Subject: \n");*/
+--- 5380,5386 ----
+  	  if ((temp = item->email->outlook_sender) == NULL)
+  	    temp = (char *)"";
+  	  fprintf(f->output, "From: \"%s\" <%s>\n", item->email->outlook_sender_name, temp);
+! 	  if (item->email->subject != NULL) {
+  	    fprintf(f->output, "Subject: %s\n", item->email->subject->subj);
+  	  } /*else
+  	    fprintf(f->output, "Subject: \n");*/
+*** /home/njh/src/clamav-devel/./libclamav/line.c	2007-02-10 17:15:14.000000000 +0000
+--- ./libclamav/line.c	2006-10-19 19:54:12.000000000 +0100
+***************
+*** 110,118 ****
+  {
+  	return line ? line->l_str : NULL;
+  }
+- 
+  #else
+- 
+  line_t *
+  lineCreate(const char *data)
+  {
+--- 110,116 ----
+*** /home/njh/src/clamav-devel/./libclamav/text.c	2007-02-10 21:14:39.000000000 +0000
+--- ./libclamav/text.c	2006-10-19 19:54:14.000000000 +0100
+***************
+*** 349,357 ****
+  	if(line) {
+  		const char *l = lineGetData(line);
+  
+! 		blobAddData(b, (const unsigned char *)l, strlen(l));
+  	}
+! 	blobAddData(b, (const unsigned char *)"\n", 1);
+  }
+  
+  static void
+--- 349,357 ----
+  	if(line) {
+  		const char *l = lineGetData(line);
+  
+! 		blobAddData(b, (unsigned char *)l, strlen(l));
+  	}
+! 	blobAddData(b, (unsigned char *)"\n", 1);
+  }
+  
+  static void
+***************
+*** 362,370 ****
+  	if(line) {
+  		const char *l = lineGetData(line);
+  
+! 		fileblobAddData(fb, (const unsigned char *)l, strlen(l));
+  	}
+! 	fileblobAddData(fb, (const unsigned char *)"\n", 1);
+  }
+  
+  static void *
+--- 362,370 ----
+  	if(line) {
+  		const char *l = lineGetData(line);
+  
+! 		fileblobAddData(fb, (unsigned char *)l, strlen(l));
+  	}
+! 	fileblobAddData(fb, (unsigned char *)"\n", 1);
+  }
+  
+  static void *
 *** /home/njh/src/clamav-devel/./libclamav/js/alloc.c	2006-10-28 12:33:45.000000000 +0100
 --- ./libclamav/js/alloc.c	2006-10-21 14:58:34.000000000 +0100
 ***************
@@ -854,7 +786,7 @@
 - 
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   #include "js/jsint.h"
@@ -864,7 +796,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   #include "js/jsint.h"
@@ -882,7 +814,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   /*
@@ -890,7 +822,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   /*
@@ -923,7 +855,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
 - #if HAVE_CONFIG_H
@@ -939,7 +871,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   #include "jsint.h"
@@ -959,7 +891,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -973,7 +905,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   #include "jsint.h"
@@ -992,7 +924,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   /*
@@ -1000,7 +932,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   /*
@@ -1032,7 +964,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -1046,7 +978,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   #include "jsint.h"
@@ -1065,7 +997,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -1079,7 +1011,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   #include "jsint.h"
@@ -1098,7 +1030,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   /*
@@ -1106,7 +1038,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   /*
@@ -1138,7 +1070,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -1152,7 +1084,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   #include "jsint.h"
@@ -1171,7 +1103,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -1185,7 +1117,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   #include "jsint.h"
@@ -1204,7 +1136,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   /*
@@ -1222,7 +1154,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   /*
@@ -1245,7 +1177,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -1259,7 +1191,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   #include "jsint.h"
@@ -1278,7 +1210,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -1292,7 +1224,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   #include "jsint.h"
@@ -1311,7 +1243,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   /* TODO: global method: String (obj) => string */
@@ -1327,7 +1259,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   /* TODO: global method: String (obj) => string */
@@ -1348,7 +1280,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   /*
@@ -1356,7 +1288,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   /*
@@ -1408,7 +1340,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -1422,7 +1354,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   #include "jsint.h"
@@ -1441,7 +1373,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -1455,7 +1387,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   #include "jsint.h"
@@ -1474,7 +1406,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -1488,7 +1420,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   #include "js/js.h"
@@ -1507,7 +1439,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -1521,7 +1453,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   #include "jsint.h"
@@ -1540,7 +1472,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -1554,7 +1486,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   #include "jsint.h"
@@ -1573,7 +1505,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -1587,7 +1519,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   #include "jsint.h"
@@ -1606,7 +1538,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -1620,7 +1552,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   #include "jsint.h"
@@ -1639,7 +1571,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -1653,7 +1585,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   #include "jsint.h"
@@ -1672,7 +1604,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -1686,7 +1618,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   #include "jsint.h"
@@ -1705,7 +1637,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -1719,7 +1651,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
   #include "js/js.h"
@@ -1738,7 +1670,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
 - #if HAVE_CONFIG_H
 - #include "clamav-config.h"
@@ -1755,7 +1687,7 @@
   
   /*
    * $Source: /tmp/cvsroot-15-2-2007/clamav-devel/contrib/Windows/Projects/clamAV/patches,v $
-!  * $Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $
+!  * $Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $
    */
   
 ! #include "js/jsint.h"
@@ -1796,7 +1728,7 @@
 -  *			</script>"); f();
 -  *	</script>
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
@@ -1805,111 +1737,156 @@
    * TODO:	Check the NGS code for vulnerabilities, leaks etc.
    * TODO:	Check the NGS code is thread safe
    */
-! static	char	const	rcsid[] = "$Id: patches,v 1.15 2006/12/28 09:31:53 njh Exp $";
+! static	char	const	rcsid[] = "$Id: patches,v 1.16 2007/02/12 15:41:19 njh Exp $";
   
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
-*** /home/njh/src/clamav-devel/./libclamav/cab.c	2006-12-27 15:51:09.000000000 +0000
---- ./libclamav/cab.c	2006-12-20 08:29:52.000000000 +0000
+*** /home/njh/src/clamav-devel/./libclamav/lockdb.c	2007-02-11 16:26:35.000000000 +0000
+--- ./libclamav/lockdb.c	2007-02-11 16:26:52.000000000 +0000
 ***************
-*** 173,179 ****
+*** 64,69 ****
+--- 64,73 ----
+  #define pthread_mutex_unlock(arg)
+  #endif
   
-  int cab_open(int fd, off_t offset, struct cab_archive *cab)
++ #ifdef	C_WINDOWS
++ #define	DONT_LOCK_DBDIRS
++ #endif
++ 
+  struct dblock {
+  	struct dblock *lock_link;
+  	char lock_file[NAME_MAX];
+*** /home/njh/src/clamav-devel/./libclamav/pdf.c	2007-02-10 21:25:35.000000000 +0000
+--- ./libclamav/pdf.c	2007-02-10 14:22:00.000000000 +0000
+***************
+*** 50,56 ****
+  #include "mbox.h"
+  #include "pdf.h"
+  
+! static	int	flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx);
+  static	int	ascii85decode(const char *buf, off_t len, unsigned char *output);
+  static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
+  static	const	char	*pdf_nextobject(const char *ptr, size_t len);
+--- 50,56 ----
+  #include "mbox.h"
+  #include "pdf.h"
+  
+! static	int	flatedecode(const unsigned char *buf, off_t len, int fout, const cli_ctx *ctx);
+  static	int	ascii85decode(const char *buf, off_t len, unsigned char *output);
+  static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
+  static	const	char	*pdf_nextobject(const char *ptr, size_t len);
+***************
+*** 89,95 ****
+  	if(buf == MAP_FAILED)
+  		return CL_EMEM;
+  
+! 	cli_dbgmsg("cli_pdf: scanning %lu bytes\n", (unsigned long)size);
+  
+  	/* Lines are terminated by \r, \n or both */
+  
+--- 89,95 ----
+  	if(buf == MAP_FAILED)
+  		return CL_EMEM;
+  
+! 	cli_dbgmsg("cli_pdf: scanning %lu bytes\n", size);
+  
+  	/* Lines are terminated by \r, \n or both */
+  
+***************
+*** 355,361 ****
+  					if(zstat != Z_OK)
+  						rc = CL_EZIP;
+  				} else
+! 					cli_writen(fout, (const char *)streamstart, streamlen);
+  			}
+  			free(tmpbuf);
+  		} else if(is_flatedecode) {
+--- 355,361 ----
+  					if(zstat != Z_OK)
+  						rc = CL_EZIP;
+  				} else
+! 					cli_writen(fout, (char *)streamstart, streamlen);
+  			}
+  			free(tmpbuf);
+  		} else if(is_flatedecode) {
+***************
+*** 364,372 ****
+  			if(zstat != Z_OK)
+  				rc = CL_EZIP;
+  		} else {
+! 			cli_dbgmsg("cli_pdf: writing %lu bytes from the stream\n",
+! 				(unsigned long)streamlen);
+! 			cli_writen(fout, (const char *)streamstart, streamlen);
+  		}
+  
+  		close(fout);
+--- 364,372 ----
+  			if(zstat != Z_OK)
+  				rc = CL_EZIP;
+  		} else {
+! 			cli_dbgmsg("cli_pdf: writing %u bytes from the stream\n",
+! 				streamlen);
+! 			cli_writen(fout, (char *)streamstart, streamlen);
+  		}
+  
+  		close(fout);
+***************
+*** 390,396 ****
+  
+  /* flate inflation - returns zlib status, e.g. Z_OK */
+  static int
+! flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
   {
-! 	unsigned int i, bscore = 0, badname = 0;
-  	struct cab_file *file, *lfile = NULL;
-  	struct cab_folder *folder, *lfolder = NULL;
-  	struct cab_hdr hdr;
---- 173,179 ----
+  	int zstat;
+  	off_t nbytes;
+--- 390,396 ----
   
-  int cab_open(int fd, off_t offset, struct cab_archive *cab)
+  /* flate inflation - returns zlib status, e.g. Z_OK */
+  static int
+! flatedecode(const unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
   {
-! 	unsigned int i, bscore = 0;
-  	struct cab_file *file, *lfile = NULL;
-  	struct cab_folder *folder, *lfolder = NULL;
-  	struct cab_hdr hdr;
+  	int zstat;
+  	off_t nbytes;
 ***************
-*** 272,278 ****
-  	if(ret)
-  	    return ret;
-  	if(cab_chkname(pt))
-! 	    badname = 1;
-  	else
-  	    cli_dbgmsg("CAB: Preceeding cabinet name: %s\n", pt);
-  	free(pt);
---- 272,278 ----
-  	if(ret)
-  	    return ret;
-  	if(cab_chkname(pt))
-! 	    bscore++;
-  	else
-  	    cli_dbgmsg("CAB: Preceeding cabinet name: %s\n", pt);
-  	free(pt);
+*** 402,408 ****
+  	stream.zalloc = (alloc_func)Z_NULL;
+  	stream.zfree = (free_func)Z_NULL;
+  	stream.opaque = (void *)NULL;
+! 	stream.next_in = (Bytef *)buf;
+  	stream.avail_in = len;
+  	stream.next_out = output;
+  	stream.avail_out = sizeof(output);
+--- 402,408 ----
+  	stream.zalloc = (alloc_func)Z_NULL;
+  	stream.zfree = (free_func)Z_NULL;
+  	stream.opaque = (void *)NULL;
+! 	stream.next_in = (unsigned char *)buf;
+  	stream.avail_in = len;
+  	stream.next_out = output;
+  	stream.avail_out = sizeof(output);
 ***************
-*** 281,287 ****
-  	if(ret)
-  	    return ret;
-  	if(cab_chkname(pt))
-! 	    badname = 1;
-  	else
-  	    cli_dbgmsg("CAB: Preceeding cabinet info: %s\n", pt);
-  	free(pt);
---- 281,287 ----
-  	if(ret)
-  	    return ret;
-  	if(cab_chkname(pt))
-! 	    bscore++;
-  	else
-  	    cli_dbgmsg("CAB: Preceeding cabinet info: %s\n", pt);
-  	free(pt);
+*** 540,547 ****
+  			len = 0;
+  			break;
+  		} else if(!isspace(byte)) {
+! 			cli_warnmsg("ascii85Decode: invalid character 0x%x, len %lu\n",
+! 				byte & 0xFF, (unsigned long)len);
+  			return -1;
+  		}
+  	}
+--- 540,546 ----
+  			len = 0;
+  			break;
+  		} else if(!isspace(byte)) {
+! 			cli_warnmsg("ascii85Decode: invalid character 0x%x, len %lu\n", byte & 0xFF, len);
+  			return -1;
+  		}
+  	}
+*** /home/njh/src/clamav-devel/./clamscan/manager.c	2007-02-11 16:20:26.000000000 +0000
+--- ./clamscan/manager.c	2007-02-11 16:20:48.000000000 +0000
 ***************
-*** 293,299 ****
-  	if(ret)
-  	    return ret;
-  	if(cab_chkname(pt))
-! 	    badname = 1;
-  	else
-  	    cli_dbgmsg("CAB: Next cabinet name: %s\n", pt);
-  	free(pt);
---- 293,299 ----
-  	if(ret)
-  	    return ret;
-  	if(cab_chkname(pt))
-! 	    bscore++;
-  	else
-  	    cli_dbgmsg("CAB: Next cabinet name: %s\n", pt);
-  	free(pt);
-***************
-*** 302,313 ****
-  	if(ret)
-  	    return ret;
-  	if(cab_chkname(pt))
-! 	    badname = 1;
-  	else
-  	    cli_dbgmsg("CAB: Next cabinet info: %s\n", pt);
-  	free(pt);
-      }
--     bscore += badname;
-  
-      if(bscore >= 4) {
-  	cli_dbgmsg("CAB: bscore == %u, most likely a fake cabinet\n", bscore);
---- 302,312 ----
-  	if(ret)
-  	    return ret;
-  	if(cab_chkname(pt))
-! 	    bscore++;
-  	else
-  	    cli_dbgmsg("CAB: Next cabinet info: %s\n", pt);
-  	free(pt);
-      }
-  
-      if(bscore >= 4) {
-  	cli_dbgmsg("CAB: bscore == %u, most likely a fake cabinet\n", bscore);
-*** /home/njh/src/clamav-devel/./clamscan/manager.c	2006-12-20 11:35:26.000000000 +0000
---- ./clamscan/manager.c	2006-12-20 12:14:46.000000000 +0000
-***************
-*** 30,40 ****
---- 30,48 ----
+*** 29,39 ****
+--- 29,47 ----
   #include <ctype.h>
   #include <sys/stat.h>
   #include <sys/types.h>
@@ -1928,10 +1905,10 @@
 + #endif
   #include <sys/types.h>
   #include <signal.h>
-  #include <clamav.h>
+  #include <errno.h>
 ***************
 *** 57,62 ****
---- 65,75 ----
+--- 65,76 ----
   dev_t procdev;
   #endif
   
@@ -1940,32 +1917,159 @@
 + 
 + #define	P_tmpdir	"C:\\WINDOWS\\TEMP"
 + #endif
-  
-  int scanmanager(const struct optstruct *opt)
++ 
+  static int scandirs(const char *dirname, struct cl_engine *engine, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options)
   {
+      return treewalk(dirname, engine, user, opt, limits, options, 1);
 ***************
-*** 69,77 ****
-  	struct stat sb;
-  	char *fullpath = NULL, cwd[1024];
+*** 132,138 ****
   
-- 
+  
   /* njh@bandsman.co.uk: BeOS */
 ! #if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_BEOS)
       if(!geteuid()) {
-  	if((user = getpwnam(UNPUSER)) == NULL) {
-  	    logg("!Can't get information about user "UNPUSER"\n");
---- 82,89 ----
-  	struct stat sb;
-  	char *fullpath = NULL, cwd[1024];
+  	if((user = getpwnam(CLAMAVUSER)) == NULL) {
+  	    logg("!Can't get information about user "CLAMAVUSER"\n");
+--- 146,152 ----
+  
   
   /* njh@bandsman.co.uk: BeOS */
 ! #if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_BEOS) && !defined(C_WINDOWS)
       if(!geteuid()) {
-  	if((user = getpwnam(UNPUSER)) == NULL) {
-  	    logg("!Can't get information about user "UNPUSER"\n");
+  	if((user = getpwnam(CLAMAVUSER)) == NULL) {
+  	    logg("!Can't get information about user "CLAMAVUSER"\n");
 ***************
-*** 370,381 ****
---- 382,395 ----
+*** 280,286 ****
+--- 294,304 ----
+  	options |= CL_SCAN_MAIL;
+  
+  	if(opt_check(opt, "mail-follow-urls"))
++ #ifdef WITH_CURL
+  	    options |= CL_SCAN_MAILURL;
++ #else
++ 	    logg("^Support for URLs downloading with libcurl not compiled in\n");
++ #endif
+      }
+  
+      if(opt_check(opt, "no-algorithmic"))
+***************
+*** 383,388 ****
+--- 401,416 ----
+   * -3 -> external signal
+   * 0 -> OK
+   */
++ 
++ #ifdef	C_WINDOWS
++ static int
++ clamav_unpack(const char *prog, char **args, const char *tmpdir, const struct passwd *user, const struct optstruct *opt)
++ {
++ 	/* TODO: use spamvp(P_WAIT, prog, args); */
++ 	cli_errmsg("clamav_unpack is not supported under Windows yet\n");
++ 	return -1;
++ }
++ #else
+  static int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struct passwd *user, const struct optstruct *opt)
+  {
+  	pid_t pid;
+***************
+*** 490,495 ****
+--- 518,524 ----
+  
+      return 0;
+  }
++ #endif
+  
+  static void move_infected(const char *filename, const struct optstruct *opt)
+  {
+***************
+*** 605,611 ****
+  
+      logg("*Scanning %s\n", filename);
+  
+!     if((fd = open(filename, O_RDONLY)) == -1) {
+  	logg("^Can't open file %s\n", filename);
+  	return 54;
+      }
+--- 634,640 ----
+  
+      logg("*Scanning %s\n", filename);
+  
+!     if((fd = open(filename, O_RDONLY|O_BINARY)) == -1) {
+  	logg("^Can't open file %s\n", filename);
+  	return 54;
+      }
+***************
+*** 647,653 ****
+      tmpdir = getenv("TMPDIR");
+  
+      if(tmpdir == NULL)
+! #ifdef P_tmpdir
+  	tmpdir = P_tmpdir;
+  #else
+  	tmpdir = "/tmp";
+--- 676,682 ----
+      tmpdir = getenv("TMPDIR");
+  
+      if(tmpdir == NULL)
+! #ifdef	P_tmpdir
+  	tmpdir = P_tmpdir;
+  #else
+  	tmpdir = "/tmp";
+***************
+*** 666,672 ****
+  	exit(63); /* critical */
+      }
+  
+! #ifndef C_OS2
+      if(user)
+  	chown(gendir, user->pw_uid, user->pw_gid);
+  #endif
+--- 695,702 ----
+  	exit(63); /* critical */
+      }
+  
+! #if	(!defined(C_OS2)) && (!defined(C_WINDOWS))
+! 	/* FIXME: do the correct native windows way */
+      if(user)
+  	chown(gendir, user->pw_uid, user->pw_gid);
+  #endif
+***************
+*** 845,851 ****
+      tmpdir = getenv("TMPDIR");
+  
+      if(tmpdir == NULL)
+! #ifdef P_tmpdir
+  	tmpdir = P_tmpdir;
+  #else
+  	tmpdir = "/tmp";
+--- 875,881 ----
+      tmpdir = getenv("TMPDIR");
+  
+      if(tmpdir == NULL)
+! #ifdef	P_tmpdir
+  	tmpdir = P_tmpdir;
+  #else
+  	tmpdir = "/tmp";
+***************
+*** 881,887 ****
+  
+      fixperms(gendir);
+  
+! #ifndef C_OS2
+      if(user) {
+  	chown(gendir, user->pw_uid, user->pw_gid);
+  	chown(tmpfile, user->pw_uid, user->pw_gid);
+--- 911,917 ----
+  
+      fixperms(gendir);
+  
+! #if	(!defined(C_OS2)) && (!defined(C_WINDOWS))
+      if(user) {
+  	chown(gendir, user->pw_uid, user->pw_gid);
+  	chown(tmpfile, user->pw_uid, user->pw_gid);
+***************
+*** 965,976 ****
+--- 995,1008 ----
   	return 0;
       }
   
@@ -1978,207 +2082,10 @@
   	}
 + #endif
   
-      claminfo.files++;
+      info.files++;
   
-***************
-*** 486,492 ****
-      tmpdir = getenv("TMPDIR");
-  
-      if(tmpdir == NULL)
-! #ifdef P_tmpdir
-  	tmpdir = P_tmpdir;
-  #else
-  	tmpdir = "/tmp";
---- 500,506 ----
-      tmpdir = getenv("TMPDIR");
-  
-      if(tmpdir == NULL)
-! #ifdef	P_tmpdir
-  	tmpdir = P_tmpdir;
-  #else
-  	tmpdir = "/tmp";
-***************
-*** 505,511 ****
-  	exit(63); /* critical */
-      }
-  
-! #ifndef C_OS2
-      if(user)
-  	chown(gendir, user->pw_uid, user->pw_gid);
-  #endif
---- 519,526 ----
-  	exit(63); /* critical */
-      }
-  
-! #if	(!defined(C_OS2)) && (!defined(C_WINDOWS))
-! 	/* FIXME: do the correct native windows way */
-      if(user)
-  	chown(gendir, user->pw_uid, user->pw_gid);
-  #endif
-***************
-*** 684,690 ****
-      tmpdir = getenv("TMPDIR");
-  
-      if(tmpdir == NULL)
-! #ifdef P_tmpdir
-  	tmpdir = P_tmpdir;
-  #else
-  	tmpdir = "/tmp";
---- 699,705 ----
-      tmpdir = getenv("TMPDIR");
-  
-      if(tmpdir == NULL)
-! #ifdef	P_tmpdir
-  	tmpdir = P_tmpdir;
-  #else
-  	tmpdir = "/tmp";
-***************
-*** 720,726 ****
-  
-      fixperms(gendir);
-  
-! #ifndef C_OS2
-      if(user) {
-  	chown(gendir, user->pw_uid, user->pw_gid);
-  	chown(tmpfile, user->pw_uid, user->pw_gid);
---- 735,741 ----
-  
-      fixperms(gendir);
-  
-! #if	(!defined(C_OS2)) && (!defined(C_WINDOWS))
-      if(user) {
-  	chown(gendir, user->pw_uid, user->pw_gid);
-  	chown(tmpfile, user->pw_uid, user->pw_gid);
-***************
-*** 763,769 ****
-  
-      logg("*Scanning %s\n", filename);
-  
-!     if((fd = open(filename, O_RDONLY)) == -1) {
-  	logg("^Can't open file %s\n", filename);
-  	return 54;
-      }
---- 778,784 ----
-  
-      logg("*Scanning %s\n", filename);
-  
-!     if((fd = open(filename, O_RDONLY|O_BINARY)) == -1) {
-  	logg("^Can't open file %s\n", filename);
-  	return 54;
-      }
-***************
-*** 798,804 ****
-      tmpdir = getenv("TMPDIR");
-  
-      if(tmpdir == NULL)
-! #ifdef P_tmpdir
-  	tmpdir = P_tmpdir;
-  #else
-  	tmpdir = "/tmp";
---- 813,819 ----
-      tmpdir = getenv("TMPDIR");
-  
-      if(tmpdir == NULL)
-! #ifdef	P_tmpdir
-  	tmpdir = P_tmpdir;
-  #else
-  	tmpdir = "/tmp";
-***************
-*** 816,821 ****
---- 831,843 ----
-  	return 63;
-      }
-  
-+ #ifdef	C_WINDOWS
-+ 	if(setmode(fileno(stdin), O_BINARY) < 0) {
-+ 		logg("^Can't set binary mode on stdin\n");
-+ 		return 63;
-+ 	}
-+ #endif
-+ 
-      while((ret = fread(buff, 1, FILEBUFF, stdin)))
-  	fwrite(buff, 1, ret, fs);
-  
-***************
-*** 850,855 ****
---- 872,885 ----
-   * 0 -> OK
-   */
-  
-+ #ifdef	C_WINDOWS
-+ int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struct passwd *user, const struct optstruct *opt)
-+ {
-+ 	/* TODO: use spamvp(P_WAIT, prog, args); */
-+ 	cli_errmsg("clamav_unpack is not supported under Windows yet\n");
-+ 	return -1;
-+ }
-+ #else
-  int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struct passwd *user, const struct optstruct *opt)
-  {
-  	pid_t pid;
-***************
-*** 880,886 ****
-  	case -1:
-  	    return -1;
-  	case 0:
-! #ifndef C_CYGWIN
-  	    if(!geteuid() && user) {
-  
-  #ifdef HAVE_SETGROUPS
---- 910,916 ----
-  	case -1:
-  	    return -1;
-  	case 0:
-! #if	(!defined(C_CYGWIN)) && (!defined(C_WINDOWS))
-  	    if(!geteuid() && user) {
-  
-  #ifdef HAVE_SETGROUPS
-***************
-*** 956,961 ****
---- 986,992 ----
-  
-      return 0;
-  }
-+ #endif
-  
-  void move_infected(const char *filename, const struct optstruct *opt)
-  {
-***************
-*** 963,969 ****
-  	struct stat fstat, mfstat;
-  	int n, len, movefilename_size;
-  	int moveflag = opt_check(opt, "move");
-! 	struct utimbuf ubuf;
-  
-  
-      if((moveflag && !(movedir = opt_arg(opt, "move"))) ||
---- 994,1000 ----
-  	struct stat fstat, mfstat;
-  	int n, len, movefilename_size;
-  	int moveflag = opt_check(opt, "move");
-! 	struct _utimbuf ubuf;
-  
-  
-      if((moveflag && !(movedir = opt_arg(opt, "move"))) ||
-***************
-*** 1042,1048 ****
-  	}
-  
-  	chmod(movefilename, fstat.st_mode);
-! #ifndef C_OS2
-  	chown(movefilename, fstat.st_uid, fstat.st_gid);
-  #endif
-  
---- 1073,1079 ----
-  	}
-  
-  	chmod(movefilename, fstat.st_mode);
-! #if	(!defined(C_OS2)) && (!defined(C_WINDOWS))
-  	chown(movefilename, fstat.st_uid, fstat.st_gid);
-  #endif
-  
-*** /home/njh/src/clamav-devel/./clamscan/clamscan.c	2006-12-12 18:43:58.000000000 +0000
---- ./clamscan/clamscan.c	2006-12-12 18:43:32.000000000 +0000
+*** /home/njh/src/clamav-devel/./clamscan/clamscan.c	2007-01-31 04:46:12.000000000 +0000
+--- ./clamscan/clamscan.c	2007-02-09 19:45:48.000000000 +0000
 ***************
 *** 24,32 ****
 --- 24,39 ----
@@ -2195,12 +2102,12 @@
 + #endif
   #include <time.h>
 + #include <ctype.h>
-  
-  #include "clamscan_opt.h"
-  #include "others.h"
+  #ifdef C_LINUX
+  #include <sys/resource.h>
+  #endif
 ***************
-*** 45,50 ****
---- 52,61 ----
+*** 43,48 ****
+--- 50,59 ----
   
   void help(void);
   
@@ -2208,12 +2115,12 @@
 + #include <crtdbg.h>
 + #endif
 + 
-  struct s_info claminfo;
+  struct s_info info;
   short recursion = 0, printinfected = 0, bell = 0;
   
 ***************
-*** 53,61 ****
---- 64,81 ----
+*** 51,59 ****
+--- 62,79 ----
   	int ds, dms, ret;
   	double mb;
   	struct timeval t1, t2;
@@ -2233,10 +2140,10 @@
   
       opt = opt_parse(argc, argv, clamscan_shortopt, clamscan_longopt, NULL);
 ***************
-*** 182,192 ****
---- 202,229 ----
+*** 180,190 ****
+--- 200,227 ----
   
-      memset(&claminfo, 0, sizeof(struct s_info));
+      memset(&info, 0, sizeof(struct s_info));
   
 + #ifdef	C_WINDOWS
 + 	_set_fmode(_O_BINARY);
@@ -2264,8 +2171,8 @@
   	dms = t2.tv_usec - t1.tv_usec;
   	ds -= (dms < 0) ? (1):(0);
 ***************
-*** 212,217 ****
---- 249,262 ----
+*** 210,215 ****
+--- 247,260 ----
       }
   
       opt_free(opt);
@@ -2280,8 +2187,8 @@
       return ret;
   }
   
-*** /home/njh/src/clamav-devel/./clamscan/treewalk.c	2006-10-29 14:49:55.000000000 +0000
---- ./clamscan/treewalk.c	2006-10-29 14:49:40.000000000 +0000
+*** /home/njh/src/clamav-devel/./clamscan/treewalk.c	2007-01-31 04:46:12.000000000 +0000
+--- ./clamscan/treewalk.c	2007-01-31 09:37:40.000000000 +0000
 ***************
 *** 24,35 ****
 --- 24,43 ----
@@ -2304,9 +2211,9 @@
 + #endif
   #include <errno.h>
   
-  #include "shared.h"
+  #include "global.h"
 ***************
-*** 97,103 ****
+*** 99,105 ****
   
       if((dd = opendir(dirname)) != NULL) {
   	while((dent = readdir(dd))) {
@@ -2314,7 +2221,7 @@
   	    if(dent->d_ino)
   #endif
   	    {
---- 105,111 ----
+--- 107,113 ----
   
       if((dd = opendir(dirname)) != NULL) {
   	while((dent = readdir(dd))) {
@@ -2323,8 +2230,8 @@
   #endif
   	    {
 ***************
-*** 136,141 ****
---- 144,156 ----
+*** 138,143 ****
+--- 146,158 ----
   
   }
   
@@ -2339,17 +2246,17 @@
   {
   #ifndef C_CYGWIN
 ***************
-*** 184,189 ****
---- 199,205 ----
+*** 185,190 ****
+--- 200,206 ----
+  		return -2;
       }
-  
   }
 + #endif
   
   int fixperms(const char *dirname)
   {
 ***************
-*** 195,201 ****
+*** 196,202 ****
   
       if((dd = opendir(dirname)) != NULL) {
   	while((dent = readdir(dd))) {
@@ -2357,7 +2264,7 @@
   	    if(dent->d_ino)
   #endif
   	    {
---- 211,217 ----
+--- 212,218 ----
   
       if((dd = opendir(dirname)) != NULL) {
   	while((dent = readdir(dd))) {
@@ -2366,7 +2273,7 @@
   #endif
   	    {
 ***************
-*** 241,247 ****
+*** 242,248 ****
   
       if((dd = opendir(dirname)) != NULL) {
   	while((dent = readdir(dd))) {
@@ -2374,7 +2281,7 @@
   	    if(dent->d_ino)
   #endif
   	    {
---- 257,263 ----
+--- 258,264 ----
   
       if((dd = opendir(dirname)) != NULL) {
   	while((dent = readdir(dd))) {
@@ -2382,20 +2289,8 @@
   	    if(dent->d_ino)
   #endif
   	    {
-*** /home/njh/src/clamav-devel/./clamscan/clamscan_opt.h	2006-12-27 23:14:40.000000000 +0000
---- ./clamscan/clamscan_opt.h	2006-10-29 17:00:22.000000000 +0000
-***************
-*** 62,68 ****
-      {"max-ratio", 1, 0, 0},
-      {"max-recursion", 1, 0, 0},
-      {"max-dir-recursion", 1, 0, 0},
--     {"max-mail-recursion", 1, 0, 0},
-  #ifdef HAVE_NCORE
-      {"ncore", 0, 0, 0},
-  #endif
---- 62,67 ----
-*** /home/njh/src/clamav-devel/./clamscan/treewalk.h	2006-06-08 21:00:50.000000000 +0100
---- ./clamscan/treewalk.h	2006-07-26 15:36:44.000000000 +0100
+*** /home/njh/src/clamav-devel/./clamscan/treewalk.h	2007-01-31 04:46:12.000000000 +0000
+--- ./clamscan/treewalk.h	2007-01-31 09:37:34.000000000 +0000
 ***************
 *** 20,26 ****
 --- 20,29 ----
@@ -2406,13 +2301,76 @@
   #include <pwd.h>
 + #endif
 + 
-  #include <clamav.h>
+  #include "libclamav/clamav.h"
+  #include "shared/options.h"
   
-  #include "options.h"
-*** /home/njh/src/clamav-devel/./clamscan/others.c	2006-04-09 20:59:26.000000000 +0100
+*** /home/njh/src/clamav-devel/./clamscan/manager.h	2007-01-31 04:46:12.000000000 +0000
+--- ./clamscan/manager.h	2007-01-31 09:37:40.000000000 +0000
+***************
+*** 20,32 ****
+  #ifndef __MANAGER_H
+  #define __MANAGER_H
+  
+- #include <pwd.h>
+- 
+  #include "libclamav/clamav.h"
+! #include "shared/options.h"
+  
+  int scanmanager(const struct optstruct *opt);
+  
+! int scanfile(const char *filename, struct cl_engine *engine, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, unsigned int options);
+  
+  #endif
+--- 20,52 ----
+  #ifndef __MANAGER_H
+  #define __MANAGER_H
+  
+  #include "libclamav/clamav.h"
+! #ifndef	C_WINDOWS
+! #include <pwd.h>
+! #endif
+! #include "options.h"
+  
+  int scanmanager(const struct optstruct *opt);
+  
+! int scanfile(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options);
+! 
+! int scancompressed(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options);
+! 
+! int scandenied(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options);
+! 
+! int scandirs(const char *dirname, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options);
+! 
+! int checkfile(const char *filename, const struct cl_node *root, const struct cl_limits *limits, int options, short printclean);
+! 
+! int checkstdin(const struct cl_node *root, const struct cl_limits *limits, int options);
+! 
+! int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struct passwd *user, const struct optstruct *opt);
+! 
+! void move_infected(const char *filename, const struct optstruct *opt);
+! 
+! #ifdef	_DEBUG
+! /* breaks mspack/qtmd.c :-( */
+! #define	free(p)	_free_dbg(p, _NORMAL_BLOCK)
+! #endif
+  
+  #endif
+*** /home/njh/src/clamav-devel/./clamscan/others.c	2007-01-31 04:46:12.000000000 +0000
 --- ./clamscan/others.c	2006-07-26 16:03:16.000000000 +0100
 ***************
-*** 29,41 ****
+*** 16,21 ****
+--- 16,24 ----
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   *
++  *  Sat May 18 15:20:26 CEST 2002: included detectCpu() from Magnus Ekdahl
++  *  Sat Jun 29 12:19:26 CEST 2002: fixed non386 detectCpu (Magnus Ekdahl)
++  *
+   */
+  
+  #if HAVE_CONFIG_H
+***************
+*** 26,38 ****
 --- 29,47 ----
   #include <stdlib.h>
   #include <string.h>
@@ -2434,7 +2392,24 @@
   #include <fcntl.h>
   #include <signal.h>
 ***************
-*** 73,78 ****
+*** 42,48 ****
+  #include <regex.h>
+  #endif
+  
+! #include "shared/output.h"
+  #include "others.h"
+  
+  int fileinfo(const char *filename, short i)
+--- 51,57 ----
+  #include <regex.h>
+  #endif
+  
+! #include "output.h"
+  #include "others.h"
+  
+  int fileinfo(const char *filename, short i)
+***************
+*** 70,75 ****
 --- 79,92 ----
       }
   }
@@ -2451,7 +2426,7 @@
   {
   	struct passwd *user;
 ***************
-*** 117,122 ****
+*** 114,119 ****
 --- 131,137 ----
   
       return ret;
@@ -2459,198 +2434,6 @@
 + #endif
   
   int match_regex(const char *filename, const char *pattern)
-  {
-*** /home/njh/src/clamav-devel/./clamscan/manager.h	2006-05-15 19:30:18.000000000 +0100
---- ./clamscan/manager.h	2006-10-10 11:12:40.000000000 +0100
-***************
-*** 21,27 ****
---- 21,29 ----
-  #define __MANAGER_H
-  
-  #include <clamav.h>
-+ #ifndef	C_WINDOWS
-  #include <pwd.h>
-+ #endif
-  #include "options.h"
-  
-  int scanmanager(const struct optstruct *opt);
-***************
-*** 42,45 ****
---- 44,52 ----
-  
-  void move_infected(const char *filename, const struct optstruct *opt);
-  
-+ #ifdef	_DEBUG
-+ /* breaks mspack/qtmd.c :-( */
-+ #define	free(p)	_free_dbg(p, _NORMAL_BLOCK)
-+ #endif
-+ 
-  #endif
-*** /home/njh/src/clamav-devel/./shared/cdiff.c	2006-10-29 16:49:30.000000000 +0000
---- ./shared/cdiff.c	2006-10-29 16:50:40.000000000 +0000
-***************
-*** 27,33 ****
---- 27,35 ----
-  #include <ctype.h>
-  #include <sys/types.h>
-  #include <sys/stat.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  
-  #include "shared/memory.h"
-  #include "shared/misc.h"
-***************
-*** 363,369 ****
-  
-      if(del || xchg) {
-  
-! 	if(!(fh = fopen(ctx->open_db, "r"))) {
-  	    logg("!cdiff_cmd_close: Can't open file %s for reading\n", ctx->open_db);
-  	    return -1;
-  	}
---- 365,371 ----
-  
-      if(del || xchg) {
-  
-! 	if(!(fh = fopen(ctx->open_db, "rb"))) {
-  	    logg("!cdiff_cmd_close: Can't open file %s for reading\n", ctx->open_db);
-  	    return -1;
-  	}
-***************
-*** 374,380 ****
-  	    return -1;
-  	}
-  
-! 	if(!(tmpfh = fopen(tmp, "w"))) {
-  	    logg("!cdiff_cmd_close: Can't open file %s for writing\n", tmp);
-  	    fclose(fh);
-  	    free(tmp);
---- 376,382 ----
-  	    return -1;
-  	}
-  
-! 	if(!(tmpfh = fopen(tmp, "wb"))) {
-  	    logg("!cdiff_cmd_close: Can't open file %s for writing\n", tmp);
-  	    fclose(fh);
-  	    free(tmp);
-***************
-*** 459,465 ****
-  
-      if(add) {
-  
-! 	if(!(fh = fopen(ctx->open_db, "a"))) {
-  	    logg("!cdiff_cmd_close: Can't open file %s for appending\n", ctx->open_db);
-  	    return -1;
-  	}
---- 461,467 ----
-  
-      if(add) {
-  
-! 	if(!(fh = fopen(ctx->open_db, "ab"))) {
-  	    logg("!cdiff_cmd_close: Can't open file %s for appending\n", ctx->open_db);
-  	    return -1;
-  	}
-***************
-*** 530,536 ****
-  	return -1;
-      }
-  
-!     if(!(src = fopen(srcdb, "r"))) {
-  	logg("!cdiff_cmd_move: Can't open %s for reading\n", srcdb);
-  	free(start_str);
-  	free(end_str);
---- 532,538 ----
-  	return -1;
-      }
-  
-!     if(!(src = fopen(srcdb, "rb"))) {
-  	logg("!cdiff_cmd_move: Can't open %s for reading\n", srcdb);
-  	free(start_str);
-  	free(end_str);
-***************
-*** 547,553 ****
-  	return -1;
-      }
-  
-!     if(!(dst = fopen(dstdb, "a"))) {
-  	logg("!cdiff_cmd_move: Can't open %s for appending\n", dstdb);
-  	free(start_str);
-  	free(end_str);
---- 549,555 ----
-  	return -1;
-      }
-  
-!     if(!(dst = fopen(dstdb, "ab"))) {
-  	logg("!cdiff_cmd_move: Can't open %s for appending\n", dstdb);
-  	free(start_str);
-  	free(end_str);
-***************
-*** 568,574 ****
-  	return -1;
-      }
-  
-!     if(!(tmp = fopen(tmpdb, "w"))) {
-  	logg("!cdiff_cmd_move: Can't open file %s for writing\n", tmpdb);
-  	free(start_str);
-  	free(end_str);
---- 570,576 ----
-  	return -1;
-      }
-  
-!     if(!(tmp = fopen(tmpdb, "wb"))) {
-  	logg("!cdiff_cmd_move: Can't open file %s for writing\n", tmpdb);
-  	free(start_str);
-  	free(end_str);
-***************
-*** 910,916 ****
-  
-      } else { /* .script */
-  
-! 	if(!(fh = fdopen(desc, "r"))) {
-  	    logg("!cdiff_apply: fdopen() failed for descriptor %d\n", desc);
-  	    close(desc);
-  	    return -1;
---- 912,918 ----
-  
-      } else { /* .script */
-  
-! 	if(!(fh = fdopen(desc, "rb"))) {
-  	    logg("!cdiff_apply: fdopen() failed for descriptor %d\n", desc);
-  	    close(desc);
-  	    return -1;
-*** /home/njh/src/clamav-devel/./shared/misc.c	2006-10-29 20:48:42.000000000 +0000
---- ./shared/misc.c	2006-10-29 20:48:10.000000000 +0000
-***************
-*** 37,52 ****
-  #include <ctype.h>
-  #include <errno.h>
-  
-! #include "shared/cfgparser.h"
-! #include "shared/memory.h"
-! #include "shared/output.h"
-  
-! #include "libclamav/clamav.h"
-! #include "libclamav/cvd.h"
-! 
-! #ifndef	O_BINARY
-! #define	O_BINARY	0
-! #endif
-  
-  char *freshdbdir(void)
-  {
---- 37,48 ----
-  #include <ctype.h>
-  #include <errno.h>
-  
-! #include "clamav.h"
-! #include "cfgparser.h"
-! #include "memory.h"
-! #include "output.h"
-  
-! #include "../libclamav/cvd.h"
-  
-  char *freshdbdir(void)
   {
 *** /home/njh/src/clamav-devel/./shared/getopt.c	2004-03-29 01:00:58.000000000 +0100
 --- ./shared/getopt.c	2006-07-26 16:49:38.000000000 +0100
@@ -2783,59 +2566,45 @@
 + #endif
 + 
   #endif
-*** /home/njh/src/clamav-devel/./shared/memory.c	2006-04-09 20:59:28.000000000 +0100
---- ./shared/memory.c	2006-10-10 22:08:26.000000000 +0100
+*** /home/njh/src/clamav-devel/./shared/memory.c	2007-02-11 11:43:29.000000000 +0000
+--- ./shared/memory.c	2007-02-11 15:02:08.000000000 +0000
 ***************
-*** 19,31 ****
---- 19,41 ----
+*** 19,25 ****
+--- 19,27 ----
   
   #include <stdio.h>
   #include <stdlib.h>
 + #ifdef	HAVE_UNISTD_H
   #include <unistd.h>
 + #endif
-+ 
-+ #if	defined(_MSC_VER) && defined(_DEBUG)
-+ #include <crtdbg.h>
-+ #endif
+  #include "memory.h"
   
   void *mmalloc(size_t size)
-  {
-  	void *alloc;
-  
-+ #if defined(_MSC_VER) && defined(_DEBUG)
-+     alloc = _malloc_dbg(size, _NORMAL_BLOCK, __FILE__, __LINE__);
-+ #else
-      alloc = malloc(size);
-+ #endif
-  
-      if(!alloc) {
-  	fprintf(stderr, "CRITICAL: Can't allocate memory (%ld bytes).\n", (long int) size);
+*** /home/njh/src/clamav-devel/./shared/cdiff.c	2007-02-11 11:43:29.000000000 +0000
+--- ./shared/cdiff.c	2007-02-11 15:06:46.000000000 +0000
 ***************
-*** 38,44 ****
---- 48,58 ----
-  {
-  	void *alloc;
-  
-+ #if defined(_MSC_VER) && defined(_DEBUG)
-+     alloc = _calloc_dbg(nmemb, size, _NORMAL_BLOCK, __FILE__, __LINE__);
-+ #else
-      alloc = calloc(nmemb, size);
+*** 27,33 ****
+--- 27,35 ----
+  #include <ctype.h>
+  #include <sys/types.h>
+  #include <sys/stat.h>
++ #ifdef	HAVE_UNISTD_H
+  #include <unistd.h>
 + #endif
   
-      if(!alloc) {
-  	fprintf(stderr, "CRITICAL: Can't allocate memory (%ld bytes).\n", (long int) nmemb * size);
-*** /home/njh/src/clamav-devel/./freshclam/manager.c	2006-12-09 08:42:20.000000000 +0000
---- ./freshclam/manager.c	2006-12-09 08:42:02.000000000 +0000
+  #include "shared/memory.h"
+  #include "shared/misc.h"
+*** /home/njh/src/clamav-devel/./freshclam/manager.c	2007-02-12 13:30:50.000000000 +0000
+--- ./freshclam/manager.c	2007-02-12 13:32:08.000000000 +0000
 ***************
 *** 20,25 ****
 --- 20,29 ----
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
-+ #ifdef        _MSC_VER
-+ #include <windows.h>
-+ #include <winsock.h>
++  
++ #ifdef	_MSC_VER
++ #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
 + #endif
   
   #if HAVE_CONFIG_H
@@ -2864,20 +2633,19 @@
   #include <fcntl.h>
   #include <sys/stat.h>
 ***************
-*** 63,68 ****
---- 73,82 ----
+*** 64,69 ****
+--- 74,82 ----
   #define	O_BINARY	0
   #endif
   
 + #ifndef	C_WINDOWS
 + #define	closesocket(s)	close(s)
 + #endif
-+ 
   
-  static int wwwconnect(const char *server, const char *proxy, int pport, char *ip, const char *localip, int ctimeout)
+  static int wwwconnect(const char *server, const char *proxy, int pport, char *ip, const char *localip, int ctimeout, struct mirdat *mdat)
   {
 ***************
-*** 143,149 ****
+*** 144,150 ****
 --- 157,165 ----
   		else
   			port = 8080;
@@ -2889,41 +2657,24 @@
   		port = 8080;
   #endif
 ***************
-*** 178,184 ****
-  		break;
-  	}
-          logg("^Can't get information about %s: %s\n", hostpt, herr);
-! 	close(socketfd);
-  	return -1;
+*** 156,162 ****
       }
   
---- 194,200 ----
-  		break;
-  	}
-          logg("^Can't get information about %s: %s\n", hostpt, herr);
-! 	closesocket(socketfd);
-  	return -1;
+      if((host = gethostbyname(hostpt)) == NULL) {
+! 	const char *herr;
+  	switch(h_errno) {
+  	    case HOST_NOT_FOUND:
+  		herr = "Host not found";
+--- 171,177 ----
       }
   
+      if((host = gethostbyname(hostpt)) == NULL) {
+! 	char *herr;
+  	switch(h_errno) {
+  	    case HOST_NOT_FOUND:
+  		herr = "Host not found";
 ***************
-*** 208,214 ****
-  	}
-      }
-  
-!     close(socketfd);
-      return -2;
-  }
-  
---- 224,230 ----
-  	}
-      }
-  
-!     closesocket(socketfd);
-      return -2;
-  }
-  
-***************
-*** 366,374 ****
+*** 376,384 ****
       if(!ip[0])
   	strcpy(ip, ipaddr);
   
@@ -2933,7 +2684,7 @@
   	return NULL;
       }
   
---- 382,390 ----
+--- 391,399 ----
       if(!ip[0])
   	strcpy(ip, ipaddr);
   
@@ -2944,7 +2695,7 @@
       }
   
 ***************
-*** 384,390 ****
+*** 394,400 ****
   	if(cnt <= 0)
   	    break;
       }
@@ -2952,7 +2703,7 @@
   
       if(bread == -1) {
   	logg("!remote_cvdhead: Error while reading CVD header from %s\n", hostname);
---- 400,406 ----
+--- 409,415 ----
   	if(cnt <= 0)
   	    break;
       }
@@ -2961,7 +2712,7 @@
       if(bread == -1) {
   	logg("!remote_cvdhead: Error while reading CVD header from %s\n", hostname);
 ***************
-*** 506,512 ****
+*** 525,531 ****
       if(!ip[0])
   	strcpy(ip, ipaddr);
   
@@ -2969,7 +2720,7 @@
   	logg("!getfile: Can't write to socket\n");
   	return 52;
       }
---- 522,528 ----
+--- 540,546 ----
       if(!ip[0])
   	strcpy(ip, ipaddr);
   
@@ -2978,24 +2729,41 @@
   	return 52;
       }
 ***************
-*** 544,550 ****
-      /* check whether the resource actually existed or not */
+*** 565,571 ****
       if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
-  	logg("!getfile: %s not found on remote server\n", srcfile);
+  	logg("!getfile: %s not found on remote server (IP: %s)\n", srcfile, ipaddr);
+  	/* mirman_update(mdat->currip, mdat, 1); */
 ! 	close(sd);
   	return 58;
       }
   
---- 560,566 ----
-      /* check whether the resource actually existed or not */
+--- 580,586 ----
       if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
-  	logg("!getfile: %s not found on remote server\n", srcfile);
+  	logg("!getfile: %s not found on remote server (IP: %s)\n", srcfile, ipaddr);
+  	/* mirman_update(mdat->currip, mdat, 1); */
 ! 	closesocket(sd);
   	return 58;
       }
   
 ***************
 *** 573,579 ****
+         !strstr(buffer, "HTTP/1.1 206") && !strstr(buffer, "HTTP/1.0 206")) {
+  	logg("!getfile: Unknown response from remote server (IP: %s)\n", ipaddr);
+  	mirman_update(mdat->currip, mdat, 1);
+! 	close(sd);
+  	return 58;
+      }
+  
+--- 588,594 ----
+         !strstr(buffer, "HTTP/1.1 206") && !strstr(buffer, "HTTP/1.0 206")) {
+  	logg("!getfile: Unknown response from remote server (IP: %s)\n", ipaddr);
+  	mirman_update(mdat->currip, mdat, 1);
+! 	closesocket(sd);
+  	return 58;
+      }
+  
+***************
+*** 596,602 ****
   	getcwd(currdir, sizeof(currdir));
   	logg("!getfile: Can't create new file %s in %s\n", destfile, currdir);
   	logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
@@ -3003,7 +2771,7 @@
   	return 57;
       }
   
---- 589,595 ----
+--- 611,617 ----
   	getcwd(currdir, sizeof(currdir));
   	logg("!getfile: Can't create new file %s in %s\n", destfile, currdir);
   	logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
@@ -3012,7 +2780,7 @@
       }
   
 ***************
-*** 586,592 ****
+*** 609,615 ****
   	    logg("getfile: Can't write %d bytes to %s\n", bread, destfile);
   	    unlink(destfile);
   	    close(fd);
@@ -3020,7 +2788,7 @@
   	    return 57; /* FIXME */
   	}
   
---- 602,608 ----
+--- 624,630 ----
   	    logg("getfile: Can't write %d bytes to %s\n", bread, destfile);
   	    unlink(destfile);
   	    close(fd);
@@ -3029,7 +2797,7 @@
   	}
   
 ***************
-*** 603,609 ****
+*** 626,632 ****
               fflush(stdout);
           }
       }
@@ -3037,7 +2805,7 @@
       close(fd);
   
       if(totalsize > 0)
---- 619,625 ----
+--- 641,647 ----
               fflush(stdout);
           }
       }
@@ -3045,70 +2813,8 @@
       close(fd);
   
       if(totalsize > 0)
-***************
-*** 730,736 ****
-          return ret;
-      }
-  
-!     if((fd = open(tempname, O_RDONLY)) == -1) {
-  	logg("!getpatch: Can't open %s for reading\n", tempname);
-          unlink(tempname);
-          free(tempname);
---- 746,752 ----
-          return ret;
-      }
-  
-!     if((fd = open(tempname, O_RDONLY|O_BINARY)) == -1) {
-  	logg("!getpatch: Can't open %s for reading\n", tempname);
-          unlink(tempname);
-          free(tempname);
-***************
-*** 936,945 ****
-  	ret = 0;
-  
-  	for(i = currver + 1; i <= newver; i++) {
-- 	    /*
-- 	     * !!! FIXME !!!: Redesign this code to make more than one attempt
-- 	     *		      to download a single cdiff.
-- 	     */
-  	    ret = getpatch(dbname, i, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout);
-  	    if(ret) {
-  		logg("^Removing incremental directory %s\n", dbinc);
---- 952,957 ----
-***************
-*** 986,994 ****
-  	char ipaddr[16], *dnsreply = NULL, *pt, *localip = NULL, *newver = NULL;
-  	const char *arg = NULL;
-  	struct cfgstruct *cpt;
-- #ifdef HAVE_RESOLV_H
-  	const char *dnsdbinfo;
-- #endif
-  
-      time(&currtime);
-      logg("ClamAV update process started at %s", ctime(&currtime));
---- 998,1004 ----
-***************
-*** 998,1004 ****
-      logg("See the FAQ at http://www.clamav.net/faq.html for an explanation.\n");
-  #endif
-  
-- #ifdef HAVE_RESOLV_H
-      dnsdbinfo = cfgopt(copt, "DNSDatabaseInfo")->strarg;
-  
-      if(opt_check(opt, "no-dns")) {
---- 1008,1013 ----
-***************
-*** 1061,1067 ****
-  	    logg("^Invalid DNS reply. Falling back to HTTP mode.\n");
-  	}
-      }
-- #endif /* HAVE_RESOLV_H */
-  
-      if(opt_check(opt, "local-address")) {
-          localip = opt_arg(opt, "local-address");
---- 1070,1075 ----
-*** /home/njh/src/clamav-devel/./freshclam/execute.c	2006-08-31 08:38:17.000000000 +0100
---- ./freshclam/execute.c	2006-10-07 00:03:52.000000000 +0100
+*** /home/njh/src/clamav-devel/./freshclam/execute.c	2007-02-11 16:30:34.000000000 +0000
+--- ./freshclam/execute.c	2007-02-11 16:25:36.000000000 +0000
 ***************
 *** 1,5 ****
   /*
@@ -3138,10 +2844,10 @@
 + #endif
   
   #include "shared/output.h"
-  
+  #include "execute.h"
 ***************
-*** 35,40 ****
---- 40,55 ----
+*** 36,41 ****
+--- 41,56 ----
   
   void execute( const char *type, const char *text )
   {
@@ -3159,15 +2865,15 @@
   
   	if ( active_children<MAX_CHILDREN )
 ***************
-*** 55,58 ****
---- 70,74 ----
+*** 56,59 ****
+--- 71,75 ----
   	{
   		logg("^%s: already %d processes active.\n", type, active_children);
   	}
 + #endif
   }
-*** /home/njh/src/clamav-devel/./freshclam/nonblock.c	2006-09-15 13:11:55.000000000 +0100
---- ./freshclam/nonblock.c	2006-09-15 14:11:28.000000000 +0100
+*** /home/njh/src/clamav-devel/./freshclam/nonblock.c	2007-01-31 04:43:08.000000000 +0000
+--- ./freshclam/nonblock.c	2007-02-10 16:40:54.000000000 +0000
 ***************
 *** 15,20 ****
 --- 15,23 ----
@@ -3220,8 +2926,8 @@
 ***************
 *** 40,45 ****
 --- 49,64 ----
-  
   #include "shared/output.h"
+  #include "libclamav/clamav.h"
   
 + #if	(!defined(EALREADY)) && (defined(WSAEALREADY))
 + #define EALREADY	WSAEALREADY
@@ -3284,8 +2990,8 @@
   
   /*
   	wait_connect(): wrapper for connect(), with explicit 'secs' timeout
-*** /home/njh/src/clamav-devel/./freshclam/notify.c	2006-08-31 08:53:35.000000000 +0100
---- ./freshclam/notify.c	2006-08-31 10:26:34.000000000 +0100
+*** /home/njh/src/clamav-devel/./freshclam/notify.c	2007-02-11 16:25:00.000000000 +0000
+--- ./freshclam/notify.c	2007-02-11 16:24:48.000000000 +0000
 ***************
 *** 16,21 ****
 --- 16,26 ----
@@ -3301,8 +3007,8 @@
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
 ***************
-*** 24,45 ****
---- 29,60 ----
+*** 24,46 ****
+--- 29,61 ----
   #ifdef BUILD_CLAMD
   
   #include <stdio.h>
@@ -3321,6 +3027,7 @@
   
   #include "shared/cfgparser.h"
   #include "shared/output.h"
+  #include "notify.h"
   
 + #ifndef	C_WINDOWS
 + #define	closesocket(s)	close(s)
@@ -3336,8 +3043,8 @@
   	struct hostent *he;
   	struct cfgstruct *copt, *cpt;
 ***************
-*** 52,57 ****
---- 67,73 ----
+*** 53,58 ****
+--- 68,74 ----
   	return 1;
       }
   
@@ -3346,7 +3053,7 @@
   	socktype = "UNIX";
   	server.sun_family = AF_UNIX;
 ***************
-*** 64,76 ****
+*** 65,77 ****
   	}
   
   	if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
@@ -3360,7 +3067,7 @@
   
   	socktype = "TCP";
   #ifdef PF_INET
---- 80,94 ----
+--- 81,95 ----
   	}
   
   	if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
@@ -3377,7 +3084,7 @@
   	socktype = "TCP";
   #ifdef PF_INET
 ***************
-*** 98,104 ****
+*** 99,105 ****
   
   
   	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
@@ -3385,7 +3092,7 @@
   	    logg("^Clamd was NOT notified: Can't connect to clamd on %s:%d\n",
   		    inet_ntoa(server2.sin_addr), ntohs(server2.sin_port));
   	    perror("connect()");
---- 116,122 ----
+--- 117,123 ----
   
   
   	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
@@ -3394,7 +3101,7 @@
   		    inet_ntoa(server2.sin_addr), ntohs(server2.sin_port));
   	    perror("connect()");
 ***************
-*** 110,132 ****
+*** 111,133 ****
   	return 1;
       }
   
@@ -3418,7 +3125,7 @@
       logg("Clamd successfully notified about the update.\n");
       return 0;
   }
---- 128,150 ----
+--- 129,151 ----
   	return 1;
       }
   
@@ -3442,8 +3149,67 @@
       logg("Clamd successfully notified about the update.\n");
       return 0;
   }
-*** /home/njh/src/clamav-devel/./clamd/localserver.c	2006-12-22 09:09:48.000000000 +0000
---- ./clamd/localserver.c	2006-12-22 18:35:14.000000000 +0000
+*** /home/njh/src/clamav-devel/./clamd/server-th.c	2007-02-12 15:39:21.000000000 +0000
+--- ./clamd/server-th.c	2007-02-12 15:39:54.000000000 +0000
+***************
+*** 303,308 ****
+--- 303,309 ----
+      logg("*Listening daemon: PID: %d\n", getpid());
+      max_threads = cfgopt(copt, "MaxThreads")->numarg;
+  
++ 
+      if(cfgopt(copt, "ScanArchive")->enabled) {
+  
+  	/* set up limits */
+***************
+*** 516,522 ****
+      time(&start_time);
+  
+      for(;;) {				
+! 	struct stat st_buf;
+      	int socketd = socketds[0];
+      	if(nsockets > 1) {
+      	    int pollret = poll_fds(socketds, nsockets, -1);
+--- 517,525 ----
+      time(&start_time);
+  
+      for(;;) {				
+! #if	!defined(C_WINDOWS) && !defined(C_BEOS)
+! 		struct stat st_buf;
+! #endif
+      	int socketd = socketds[0];
+      	if(nsockets > 1) {
+      	    int pollret = poll_fds(socketds, nsockets, -1);
+***************
+*** 525,531 ****
+      	    } else {
+      		socketd = socketds[0]; /* on a poll error use the first socket */
+      	    }
+!     	}    
+  	if(fstat(socketd, &st_buf) == -1) {
+  	    logg("!fstat(): socket descriptor gone\n");
+  	    memmove(socketds, socketds + 1, sizeof(socketds[0]) * nsockets);
+--- 528,535 ----
+      	    } else {
+      		socketd = socketds[0]; /* on a poll error use the first socket */
+      	    }
+!     	} 
+! #if	!defined(C_WINDOWS) && !defined(C_BEOS)
+  	if(fstat(socketd, &st_buf) == -1) {
+  	    logg("!fstat(): socket descriptor gone\n");
+  	    memmove(socketds, socketds + 1, sizeof(socketds[0]) * nsockets);
+***************
+*** 535,540 ****
+--- 539,545 ----
+  		break;
+  	    }
+  	}
++ #endif
+  	new_sd = accept(socketd, NULL, NULL);
+  	if((new_sd == -1) && (errno != EINTR)) {
+  	    if(progexit) {
+*** /home/njh/src/clamav-devel/./clamd/localserver.c	2007-02-11 16:14:40.000000000 +0000
+--- ./clamd/localserver.c	2007-02-11 16:15:10.000000000 +0000
 ***************
 *** 24,32 ****
 --- 24,36 ----
@@ -3460,8 +3226,8 @@
   #include <errno.h>
   #ifdef HAVE_UNISTD_H
   #include <unistd.h>
-*** /home/njh/src/clamav-devel/./clamdscan/clamdscan.c	2006-10-29 17:09:34.000000000 +0000
---- ./clamdscan/clamdscan.c	2006-10-29 14:50:54.000000000 +0000
+*** /home/njh/src/clamav-devel/./clamdscan/clamdscan.c	2007-02-11 16:10:59.000000000 +0000
+--- ./clamdscan/clamdscan.c	2007-02-11 16:11:26.000000000 +0000
 ***************
 *** 16,21 ****
 --- 16,26 ----
@@ -3496,22 +3262,22 @@
   #include <signal.h>
   
 ***************
-*** 49,62 ****
+*** 48,61 ****
   {
   	int ds, dms, ret, infected;
   	struct timeval t1, t2;
   	struct timezone tz;
   	time_t starttime;
   	struct optstruct *opt;
-  	char *clamdscan_accepted[] = { "help", "version", "verbose", "quiet",
+  	const char *clamdscan_accepted[] = { "help", "version", "verbose", "quiet",
   				  "stdout", "log", "move", "copy", "remove",
   				  "config-file", "no-summary",
-  				  "disable-summary", NULL };
+  				  "disable-summary", "multiscan", NULL };
 ! 
   
       opt = opt_parse(argc, argv, clamscan_shortopt, clamscan_longopt, clamdscan_accepted);
       if(!opt) {
---- 62,83 ----
+--- 61,82 ----
   {
   	int ds, dms, ret, infected;
   	struct timeval t1, t2;
@@ -3520,10 +3286,10 @@
 + #endif
   	time_t starttime;
   	struct optstruct *opt;
-  	char *clamdscan_accepted[] = { "help", "version", "verbose", "quiet",
+  	const char *clamdscan_accepted[] = { "help", "version", "verbose", "quiet",
   				  "stdout", "log", "move", "copy", "remove",
   				  "config-file", "no-summary",
-  				  "disable-summary", NULL };
+  				  "disable-summary", "multiscan", NULL };
 ! 				  
 ! #ifdef	C_WINDOWS
 ! 	if(!pthread_win32_process_attach_np()) {
@@ -3535,7 +3301,7 @@
       opt = opt_parse(argc, argv, clamscan_shortopt, clamscan_longopt, clamdscan_accepted);
       if(!opt) {
 ***************
-*** 105,117 ****
+*** 104,116 ****
       time(&starttime);
       /* ctime() does \n, but I need it once more */
   
@@ -3549,7 +3315,7 @@
   	ds = t2.tv_sec - t1.tv_sec;
   	dms = t2.tv_usec - t1.tv_usec;
   	ds -= (dms < 0) ? (1):(0);
---- 126,146 ----
+--- 125,145 ----
       time(&starttime);
       /* ctime() does \n, but I need it once more */
   
@@ -3572,8 +3338,8 @@
   	dms = t2.tv_usec - t1.tv_usec;
   	ds -= (dms < 0) ? (1):(0);
 ***************
-*** 128,133 ****
---- 157,171 ----
+*** 127,132 ****
+--- 156,170 ----
       }
   
       opt_free(opt);
@@ -3589,8 +3355,8 @@
       exit(ret);
   }
   
-*** /home/njh/src/clamav-devel/./clamdscan/client.c	2006-10-29 17:08:37.000000000 +0000
---- ./clamdscan/client.c	2006-10-29 17:48:46.000000000 +0000
+*** /home/njh/src/clamav-devel/./clamdscan/client.c	2007-02-11 16:10:59.000000000 +0000
+--- ./clamdscan/client.c	2007-02-11 16:11:16.000000000 +0000
 ***************
 *** 16,37 ****
 --- 16,44 ----
@@ -3905,7 +3671,7 @@
   	    logg("^Can't connect to clamd.\n");
   	    freecfg(copt);
 ***************
-*** 433,439 ****
+*** 430,436 ****
   	else
   	    errors++;
   
@@ -3913,7 +3679,7 @@
   
   #if defined(ENABLE_FD_PASSING) && defined(HAVE_SENDMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN)
       } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
---- 525,531 ----
+--- 522,528 ----
   	else
   	    errors++;
   
@@ -3922,7 +3688,7 @@
   #if defined(ENABLE_FD_PASSING) && defined(HAVE_SENDMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN)
       } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
 ***************
-*** 494,500 ****
+*** 488,494 ****
   			else
   			    errors++;
   
@@ -3930,7 +3696,7 @@
   			break;
   
   		    default:
---- 586,592 ----
+--- 580,586 ----
   			else
   			    errors++;
   
@@ -3939,7 +3705,7 @@
   
   		    default:
 ***************
-*** 516,526 ****
+*** 510,520 ****
   	struct stat fstat, mfstat;
   	int n, len, movefilename_size;
   	int moveflag = opt_check(opt, "move");
@@ -3951,7 +3717,7 @@
           /* Should never reach here */
           logg("^opt_arg() returned NULL\n");
           notmoved++;
---- 608,620 ----
+--- 602,614 ----
   	struct stat fstat, mfstat;
   	int n, len, movefilename_size;
   	int moveflag = opt_check(opt, "move");
@@ -3966,7 +3732,7 @@
           logg("^opt_arg() returned NULL\n");
           notmoved++;
 ***************
-*** 591,597 ****
+*** 585,591 ****
          }
       }
   
@@ -3974,7 +3740,7 @@
   	if(filecopy(filename, movefilename) == -1) {
   	    logg("^cannot %s '%s' to '%s': %s\n", (moveflag) ? "move" : "copy", filename, movefilename, strerror(errno));
   	    notmoved++;
---- 685,691 ----
+--- 679,685 ----
          }
       }
   
@@ -3983,8 +3749,8 @@
   	    logg("^cannot %s '%s' to '%s': %s\n", (moveflag) ? "move" : "copy", filename, movefilename, strerror(errno));
   	    notmoved++;
 ***************
-*** 602,610 ****
---- 696,706 ----
+*** 596,604 ****
+--- 690,700 ----
   	chmod(movefilename, fstat.st_mode);
   	chown(movefilename, fstat.st_uid, fstat.st_gid);
   
@@ -3997,7 +3763,7 @@
   	if(moveflag && unlink(filename)) {
   	    logg("^cannot unlink '%s': %s\n", filename, strerror(errno));
 ***************
-*** 614,620 ****
+*** 608,614 ****
   	}
       }
   
@@ -4005,7 +3771,7 @@
   
       free(movefilename);
   }
---- 710,716 ----
+--- 704,710 ----
   	}
       }
   
@@ -4013,8 +3779,8 @@
   
       free(movefilename);
   }
-*** /home/njh/src/clamav-devel/./clamconf/clamconf.c	2006-09-15 13:38:59.000000000 +0100
---- ./clamconf/clamconf.c	2006-09-15 14:38:42.000000000 +0100
+*** /home/njh/src/clamav-devel/./clamconf/clamconf.c	2007-02-11 16:13:08.000000000 +0000
+--- ./clamconf/clamconf.c	2007-02-11 16:12:52.000000000 +0000
 ***************
 *** 26,32 ****
 --- 26,34 ----
@@ -4027,11 +3793,474 @@
   
   #include "cfgparser.h"
   #define _GNU_SOURCE
-*** /home/njh/src/clamav-devel/./sigtool/sigtool.c	2006-12-22 08:28:52.000000000 +0000
+*** /home/njh/src/clamav-devel/./sigtool/sigtool.c	2007-02-10 00:08:29.000000000 +0000
 --- ./sigtool/sigtool.c	2006-11-05 10:16:14.000000000 +0000
 ***************
-*** 1667,1672 ****
---- 1667,1673 ----
+*** 36,41 ****
+--- 36,42 ----
+  #include <sys/un.h>
+  #include <netinet/in.h>
+  #include <arpa/inet.h>
++ #include <clamav.h>
+  #include <sys/wait.h>
+  #include <dirent.h>
+  
+***************
+*** 52,58 ****
+  #include "shared/misc.h"
+  #include "shared/cdiff.h"
+  
+- #include "libclamav/clamav.h"
+  #include "libclamav/cvd.h"
+  #include "libclamav/others.h"
+  #include "libclamav/str.h"
+--- 53,58 ----
+***************
+*** 147,153 ****
+  {
+  	const char *fname;
+  	char *newname, buff[512], *decoded;
+! 	int fd1, fd2, bytes;
+  
+  
+      fname = opt_arg(opt, "utf16-decode");
+--- 147,153 ----
+  {
+  	const char *fname;
+  	char *newname, buff[512], *decoded;
+! 	int ret = CL_CLEAN, fd1, fd2, bytes;
+  
+  
+      fname = opt_arg(opt, "utf16-decode");
+***************
+*** 218,259 ****
+  #endif
+  
+  
+-     if((pt = getenv("SIGNDPASS"))) {
+- 	strncpy(pass, pt, sizeof(pass));
+-     } else {
+- 	fflush(stdin);
+- 	mprintf("Password: ");
+- 
+- #ifdef HAVE_TERMIOS_H
+- 	if(tcgetattr(0, &old)) {
+- 	    mprintf("!getdsig: tcgetattr() failed\n");
+- 	    return NULL;
+- 	}
+- 	new = old;
+- 	new.c_lflag &= ~ECHO;
+- 	if(tcsetattr(0, TCSAFLUSH, &new)) {
+- 	    mprintf("!getdsig: tcsetattr() failed\n");
+- 	    return NULL;
+- 	}
+- #endif
+- 
+- 	if(fgets(pass, sizeof(pass), stdin)) {
+- 	    cli_chomp(pass);
+- 	} else {
+- 	    mprintf("!getdsig: Can't get password\n");
+- 	    return NULL;
+- 	}
+- 
+- #ifdef HAVE_TERMIOS_H
+- 	if(tcsetattr(0, TCSAFLUSH, &old)) {
+- 	    mprintf("!getdsig: tcsetattr() failed\n", host);
+- 	    memset(pass, 0, strlen(pass));
+- 	    return NULL;
+- 	}
+- #endif
+- 	mprintf("\n");
+-     }
+- 
+  #ifdef PF_INET
+      if((sockd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
+  #else
+--- 218,223 ----
+***************
+*** 261,267 ****
+  #endif
+  	perror("socket()");
+  	mprintf("!getdsig: Can't create socket\n");
+- 	memset(pass, 0, strlen(pass));
+  	return NULL;
+      }
+  
+--- 225,230 ----
+***************
+*** 273,283 ****
+          close(sockd);
+  	perror("connect()");
+  	mprintf("!getdsig: Can't connect to ClamAV Signing Service at %s\n", host);
+- 	memset(pass, 0, strlen(pass));
+  	return NULL;
+      }
+      memset(cmd, 0, sizeof(cmd));
+  
+      if(mode == 1)
+  	snprintf(cmd, sizeof(cmd) - datalen, "ClamSignPSS:%s:%s:", user, pass);
+      else
+--- 236,281 ----
+          close(sockd);
+  	perror("connect()");
+  	mprintf("!getdsig: Can't connect to ClamAV Signing Service at %s\n", host);
+  	return NULL;
+      }
++ 
+      memset(cmd, 0, sizeof(cmd));
+  
++     fflush(stdin);
++     mprintf("Password: ");
++ 
++ #ifdef HAVE_TERMIOS_H
++     if(tcgetattr(0, &old)) {
++ 	mprintf("!getdsig: tcgetattr() failed\n", host);
++ 	close(sockd);
++ 	return NULL;
++     }
++     new = old;
++     new.c_lflag &= ~ECHO;
++     if(tcsetattr(0, TCSAFLUSH, &new)) {
++ 	mprintf("!getdsig: tcsetattr() failed\n", host);
++ 	close(sockd);
++ 	return NULL;
++     }
++ #endif
++ 
++     if(fgets(pass, sizeof(pass), stdin)) {
++ 	cli_chomp(pass);
++     } else {
++ 	mprintf("!getdsig: Can't get password\n");
++ 	close(sockd);
++ 	return NULL;
++     }
++ 
++ #ifdef HAVE_TERMIOS_H
++     if(tcsetattr(0, TCSAFLUSH, &old)) {
++ 	mprintf("!getdsig: tcsetattr() failed\n", host);
++ 	close(sockd);
++ 	return NULL;
++     }
++ #endif
++     mprintf("\n");
++ 
+      if(mode == 1)
+  	snprintf(cmd, sizeof(cmd) - datalen, "ClamSignPSS:%s:%s:", user, pass);
+      else
+***************
+*** 300,322 ****
+      memset(pass, 0, strlen(pass));
+      memset(buff, 0, sizeof(buff));
+  
+!     if((bread = cli_readn(sockd, buff, sizeof(buff))) > 0) {
+  	if(!strstr(buff, "Signature:")) {
+  	    mprintf("!getdsig: Error generating digital signature\n");
+  	    mprintf("!getdsig: Answer from remote server: %s\n", buff);
+  	    close(sockd);
+  	    return NULL;
+  	} else {
+! 	    mprintf("Signature received (length = %u)\n", strlen(buff) - 10);
+  	}
+-     } else {
+- 	mprintf("!getdsig: Communication error with remote server\n");
+- 	close(sockd);
+- 	return NULL;
+      }
+  
+      close(sockd);
+- 
+      pt = buff;
+      pt += 10;
+      return strdup(pt);
+--- 298,315 ----
+      memset(pass, 0, strlen(pass));
+      memset(buff, 0, sizeof(buff));
+  
+!     if((bread = read(sockd, buff, sizeof(buff))) > 0) {
+  	if(!strstr(buff, "Signature:")) {
+  	    mprintf("!getdsig: Error generating digital signature\n");
+  	    mprintf("!getdsig: Answer from remote server: %s\n", buff);
+  	    close(sockd);
+  	    return NULL;
+  	} else {
+! 	   /* mprintf("Signature received (length = %d)\n", strlen(buff) - 10); */
+  	}
+      }
+  
+      close(sockd);
+      pt = buff;
+      pt += 10;
+      return strdup(pt);
+***************
+*** 328,334 ****
+  	int i;
+  	struct stat sb;
+  	char file[32], *md5;
+! 	char *extlist[] = { "db", "fp", "hdb", "mdb", "ndb", "pdb", "rmd", "zmd", "sdb", "cfg", NULL };
+  
+  
+      snprintf(file, sizeof(file), "%s.info", db);
+--- 321,327 ----
+  	int i;
+  	struct stat sb;
+  	char file[32], *md5;
+! 	char *extlist[] = { "db", "fp", "hdb", "mdb", "ndb", "pdb", "rmd", "zmd", "sdb", NULL };
+  
+  
+      snprintf(file, sizeof(file), "%s.info", db);
+***************
+*** 494,504 ****
+  {
+  	int ret, inc = 1, dn;
+  	size_t bytes;
+! 	unsigned int sigs = 0, oldsigs = 0, lines = 0, version, real_header, fl;
+  	struct stat foo;
+  	char buffer[FILEBUFF], *tarfile, *gzfile, header[513], smbuff[32],
+  	     builder[32], *pt, *dbname, olddb[512], patch[32], broken[32];
+!         struct cl_engine *engine = NULL;
+  	FILE *tar, *cvd;
+  	gzFile *gz;
+  	time_t timet;
+--- 487,497 ----
+  {
+  	int ret, inc = 1, dn;
+  	size_t bytes;
+! 	unsigned int sigs = 0, oldsigs = 0, lines = 0, version, real_header;
+  	struct stat foo;
+  	char buffer[FILEBUFF], *tarfile, *gzfile, header[513], smbuff[32],
+  	     builder[32], *pt, *dbname, olddb[512], patch[32], broken[32];
+!         struct cl_node *root = NULL;
+  	FILE *tar, *cvd;
+  	gzFile *gz;
+  	time_t timet;
+***************
+*** 529,539 ****
+  	return -1;
+      }
+  
+!     if((ret = cl_load(".", &engine, &sigs, CL_DB_STDOPT))) {
+  	mprintf("!build: Can't load database: %s\n", cl_strerror(ret));
+  	return -1;
+      } else {
+! 	cl_free(engine);
+      }
+  
+      if(!sigs) {
+--- 522,532 ----
+  	return -1;
+      }
+  
+!     if((ret = cl_loaddbdir(".", &root, &sigs))) {
+  	mprintf("!build: Can't load database: %s\n", cl_strerror(ret));
+  	return -1;
+      } else {
+! 	cl_free(root);
+      }
+  
+      if(!sigs) {
+***************
+*** 549,557 ****
+  		countlines("main.fp") + countlines("daily.fp");
+  
+  	if(lines != sigs) {
+! 	    mprintf("^build: Signatures in database: %d, loaded by libclamav: %d\n", lines, sigs);
+! 	    mprintf("^build: Please check the current directory and remove unnecessary databases\n");
+! 	    mprintf("^build: or install the latest ClamAV version.\n");
+  	}
+      }
+  
+--- 542,551 ----
+  		countlines("main.fp") + countlines("daily.fp");
+  
+  	if(lines != sigs) {
+! 	    mprintf("!build: Signatures in database: %d, loaded by libclamav: %d\n", lines, sigs);
+! 	    mprintf("!build: Please check the current directory and remove unnecessary databases\n");
+! 	    mprintf("!build: or install the latest ClamAV version.\n");
+! 	    return -1;
+  	}
+      }
+  
+***************
+*** 562,591 ****
+      else
+  	dbname = "daily";
+  
+! 
+!     if(opt->filename) {
+! 	if(cli_strbcasestr(opt->filename, ".cvd")) {
+! 	    strncpy(olddb, opt->filename, sizeof(olddb));
+! 	    inc = 0;
+! 	} else if(cli_strbcasestr(opt->filename, ".inc")) {
+! 	    snprintf(olddb, sizeof(olddb), "%s/%s.info", opt->filename, dbname);
+! 	} else {
+! 	    mprintf("!build: The optional argument points to neither CVD nor incremental directory\n");
+! 	    return -1;
+! 	}
+! 
+!     } else {
+! 	pt = freshdbdir();
+! 	snprintf(olddb, sizeof(olddb), "%s/%s.inc/%s.info", pt, dbname, dbname);
+! 	if(stat(olddb, &foo) == -1) {
+! 	    inc = 0;
+! 	    snprintf(olddb, sizeof(olddb), "%s/%s.cvd", pt, dbname);
+! 	}
+! 	free(pt);
+      }
+  
+      if(!(oldcvd = cl_cvdhead(olddb))) {
+! 	mprintf("^build: CAN'T READ CVD HEADER OF CURRENT DATABASE %s\n", olddb);
+  	sleep(3);
+      }
+  
+--- 556,572 ----
+      else
+  	dbname = "daily";
+  
+!     pt = freshdbdir();
+!     snprintf(olddb, sizeof(olddb), "%s/%s.inc/%s.info", pt, dbname, dbname);
+!     if(stat(olddb, &foo) == -1) {
+! 	inc = 0;
+! 	snprintf(olddb, sizeof(olddb), "%s/%s.cvd", pt, dbname);
+      }
+  
++     free(pt);
++ 
+      if(!(oldcvd = cl_cvdhead(olddb))) {
+! 	mprintf("^build: CAN'T READ CVD HEADER OF CURRENT DATABASE %s\n", buffer);
+  	sleep(3);
+      }
+  
+***************
+*** 621,634 ****
+      strcat(header, smbuff);
+  
+      /* functionality level */
+!     if(!strcmp(dbname, "main")) {
+! 	fflush(stdin);
+! 	mprintf("Functionality level: ");
+! 	scanf("%u", &fl);
+!     } else {
+! 	fl = cl_retflevel();
+!     }
+!     sprintf(smbuff, "%u:", fl);
+      strcat(header, smbuff);
+  
+      real_header = strlen(header);
+--- 602,608 ----
+      strcat(header, smbuff);
+  
+      /* functionality level */
+!     sprintf(smbuff, "%d:", cl_retflevel());
+      strcat(header, smbuff);
+  
+      real_header = strlen(header);
+***************
+*** 636,653 ****
+      /* add fake MD5 and dsig (for writeinfo) */
+      strcat(header, "X:X:");
+  
+!     if((pt = getenv("SIGNDUSER"))) {
+! 	strncpy(builder, pt, sizeof(builder));
+      } else {
+! 	/* ask for builder name */
+! 	fflush(stdin);
+! 	mprintf("Builder name: ");
+! 	if(fgets(builder, sizeof(builder), stdin)) {
+! 	    cli_chomp(builder);
+! 	} else {
+! 	    mprintf("!build: Can't get builder name\n");
+! 	    return -1;
+! 	}
+      }
+  
+      /* add builder */
+--- 610,623 ----
+      /* add fake MD5 and dsig (for writeinfo) */
+      strcat(header, "X:X:");
+  
+!     /* ask for builder name */
+!     fflush(stdin);
+!     mprintf("Builder name: ");
+!     if(fgets(builder, sizeof(builder), stdin)) {
+! 	cli_chomp(builder);
+      } else {
+! 	mprintf("!build: Can't get builder name\n");
+! 	return -1;
+      }
+  
+      /* add builder */
+***************
+*** 683,689 ****
+  				 "daily.fp", "main.mdb", "daily.mdb",
+  				 "daily.info", "main.info", "main.wdb",
+  				 "daily.wdb", "main.pdb", "daily.pdb",
+- 				 "main.cfg", "daily.cfg",
+  				 NULL };
+  		args[2] = tarfile;
+  		if(!opt_check(opt, "debug")) {
+--- 653,658 ----
+***************
+*** 842,862 ****
+      mprintf("Created %s\n", pt);
+  
+      /* generate patch */
+!     if(opt->filename) {
+! 	strncpy(olddb, opt->filename, sizeof(olddb));
+      } else {
+! 	if(inc) {
+! 	    pt = freshdbdir();
+! 	    snprintf(olddb, sizeof(olddb), "%s/%s.inc", pt, dbname);
+! 	    free(pt);
+! 	} else {
+! 	    pt = freshdbdir();
+! 	    snprintf(olddb, sizeof(olddb), "%s/%s.cvd", pt, dbname);
+! 	    free(pt);
+! 	}
+!     }
+  
+-     if(!inc) {
+  	pt = cli_gentemp(NULL);
+  	if(mkdir(pt, 0700)) {
+  	    mprintf("!build: Can't create temporary directory %s\n", pt);
+--- 811,825 ----
+      mprintf("Created %s\n", pt);
+  
+      /* generate patch */
+!     if(inc) {
+! 	pt = freshdbdir();
+! 	snprintf(olddb, sizeof(olddb), "%s/%s.inc", pt, dbname);
+! 	free(pt);
+      } else {
+! 	pt = freshdbdir();
+! 	snprintf(olddb, sizeof(olddb), "%s/%s.cvd", pt, dbname);
+! 	free(pt);
+  
+  	pt = cli_gentemp(NULL);
+  	if(mkdir(pt, 0700)) {
+  	    mprintf("!build: Can't create temporary directory %s\n", pt);
+***************
+*** 1697,1709 ****
+      mprintf("    --html-normalise=FILE                  create normalised parts of HTML file\n");
+      mprintf("    --utf16-decode=FILE                    decode UTF16 encoded files\n");
+      mprintf("    --info=FILE            -i FILE         print database information\n");
+!     mprintf("    --build=NAME [cvd/inc] -b NAME         build a CVD file\n");
+      mprintf("    --server=ADDR                          ClamAV Signing Service address\n");
+      mprintf("    --unpack=FILE          -u FILE         Unpack a CVD file\n");
+      mprintf("    --unpack-current=SHORTNAME             Unpack local CVD/INCDIR in cwd\n");
+      mprintf("    --list-sigs[=FILE]     -l[FILE]        List signature names\n");
+      mprintf("    --vba=FILE                             Extract VBA/Word6 macro code\n");
+      mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
+      mprintf("    --diff=OLD NEW         -d OLD NEW      Create diff for OLD and NEW CVDs\n");
+      mprintf("    --run-cdiff=FILE       -r FILE         Execute update script FILE in cwd\n");
+      mprintf("    --verify-cdiff=DIFF CVD/INCDIR         Verify DIFF against CVD\n");
+--- 1660,1673 ----
+      mprintf("    --html-normalise=FILE                  create normalised parts of HTML file\n");
+      mprintf("    --utf16-decode=FILE                    decode UTF16 encoded files\n");
+      mprintf("    --info=FILE            -i FILE         print database information\n");
+!     mprintf("    --build=NAME           -b NAME         build a CVD file\n");
+      mprintf("    --server=ADDR                          ClamAV Signing Service address\n");
+      mprintf("    --unpack=FILE          -u FILE         Unpack a CVD file\n");
+      mprintf("    --unpack-current=SHORTNAME             Unpack local CVD/INCDIR in cwd\n");
       mprintf("    --list-sigs[=FILE]     -l[FILE]        List signature names\n");
       mprintf("    --vba=FILE                             Extract VBA/Word6 macro code\n");
       mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
@@ -4039,3 +4268,56 @@
       mprintf("    --diff=OLD NEW         -d OLD NEW      Create diff for OLD and NEW CVDs\n");
       mprintf("    --run-cdiff=FILE       -r FILE         Execute update script FILE in cwd\n");
       mprintf("    --verify-cdiff=DIFF CVD/INCDIR         Verify DIFF against CVD\n");
+*** /home/njh/src/clamav-devel/./sigtool/vba.c	2007-02-11 14:41:15.000000000 +0000
+--- ./sigtool/vba.c	2006-11-05 10:16:14.000000000 +0000
+***************
+*** 25,48 ****
+  #include <sys/stat.h>
+  #include <fcntl.h>
+  #include <dirent.h>
+  #include <ctype.h>
+  
+! #include "libclamav/clamav.h"
+! #include "libclamav/vba_extract.h"
+! #include "libclamav/others.h"
+! #include "libclamav/cltypes.h"
+! #include "libclamav/ole2_extract.h"
+  
+  typedef struct mac_token_tag
+  {
+      unsigned char token;
+!     const unsigned char *str;
+  } mac_token_t;
+  
+  typedef struct mac_token2_tag
+  {
+      uint16_t token;
+!     const unsigned char *str;
+  
+  } mac_token2_t;
+  
+--- 25,48 ----
+  #include <sys/stat.h>
+  #include <fcntl.h>
+  #include <dirent.h>
++ #include <clamav.h>
+  #include <ctype.h>
+  
+! #include "../libclamav/vba_extract.h"
+! #include "../libclamav/others.h"
+! #include "../libclamav/cltypes.h"
+! #include "../libclamav/ole2_extract.h"
+  
+  typedef struct mac_token_tag
+  {
+      unsigned char token;
+!     unsigned char *str;
+  } mac_token_t;
+  
+  typedef struct mac_token2_tag
+  {
+      uint16_t token;
+!     unsigned char *str;
+  
+  } mac_token2_t;
+  
