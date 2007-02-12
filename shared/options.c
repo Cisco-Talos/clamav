@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2001 - 2006 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2001 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -61,7 +61,11 @@ static int register_option(struct optstruct *opt, const char *optlong, char opts
 		found = 1;
 
 	if(!found) {
-	    mprintf("WARNING: Ignoring option --%s\n", optlong);
+	    if(optshort)
+		mprintf("WARNING: Ignoring option --%s (-%c)\n", longname, optshort);
+	    else
+		mprintf("WARNING: Ignoring option --%s\n", longname);
+
 	    return 0;
 	}
     }
@@ -158,7 +162,7 @@ struct optstruct *opt_parse(int argc, char * const *argv, const char *getopt_sho
 		    else
 			longname = NULL;
 
-		    if(register_option(opt, options_long[opt_index].name, ret, options_long, accepted_long) == -1) {
+		    if(register_option(opt, longname, ret, options_long, accepted_long) == -1) {
 			opt_free(opt);
 			return NULL;
 		    }
