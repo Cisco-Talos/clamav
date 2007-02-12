@@ -303,8 +303,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     logg("*Listening daemon: PID: %d\n", getpid());
     max_threads = cfgopt(copt, "MaxThreads")->numarg;
 
-
-    if(cfgopt(copt, "ScanArchive")->enabled || cfgopt(copt, "ClamukoScanArchive")->enabled) {
+    if(cfgopt(copt, "ScanArchive")->enabled) {
 
 	/* set up limits */
 	memset(&limits, 0, sizeof(struct cl_limits));

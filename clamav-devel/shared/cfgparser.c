@@ -100,7 +100,6 @@ struct cfgoption cfg_options[] = {
     {"ClamukoIncludePath", OPT_QUOTESTR, 0, NULL, 0, OPT_CLAMD},
     {"ClamukoExcludePath", OPT_QUOTESTR, 0, NULL, 0, OPT_CLAMD},
     {"ClamukoMaxFileSize", OPT_COMPSIZE, 5242880, NULL, 0, OPT_CLAMD},
-    {"ClamukoScanArchive", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"DatabaseOwner", OPT_QUOTESTR, -1, CLAMAVUSER, 0, OPT_FRESHCLAM},
     {"Checks", OPT_NUM, 12, NULL, 0, OPT_FRESHCLAM},
     {"UpdateLogFile", OPT_QUOTESTR, -1, NULL, 0, OPT_FRESHCLAM},
