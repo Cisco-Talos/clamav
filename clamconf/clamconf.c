@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2006 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,40 +32,37 @@
 #define _GNU_SOURCE
 #include "getopt.h"
 
-static void printopt(const struct cfgoption *opt, const struct cfgstruct *cpt)
+static void printopt(const struct cfgoption *opt, const struct cfgstruct *cpt, int nondef)
 {
-    if(!cpt->enabled) {
-	printf("%s not set\n", opt->name);
+
+    if(!cpt->enabled && opt->numarg == -1) {
+	if(!nondef || (opt->numarg != cpt->numarg))
+	    printf("%s not set\n", opt->name);
 	return;
     }
-
-    /*
-    printf("opt: %s, %d, %d, %s, %d, %d\n", opt->name, opt->argtype, opt->numarg, opt->strarg, opt->multiple, opt->owner);
-    printf("cpt: %s, %s, %d, %d, %d\n", cpt->optname, cpt->strarg, cpt->numarg, cpt->enabled, cpt->multiple);
-    */
 
     switch(opt->argtype) {
 	case OPT_STR:
 	case OPT_FULLSTR:
 	case OPT_QUOTESTR:
-	    printf("%s = \"%s\"\n", opt->name, cpt->strarg);
+	    if(!nondef || !opt->strarg || strcmp(opt->strarg, cpt->strarg))
+		printf("%s = \"%s\"\n", opt->name, cpt->strarg);
 	    break;
 	case OPT_NUM:
 	case OPT_COMPSIZE:
-	    printf("%s = %d\n", opt->name, cpt->numarg);
+	    if(!nondef || (opt->numarg != cpt->numarg))
+		printf("%s = %u\n", opt->name, cpt->numarg);
 	    break;
 	case OPT_BOOL:
-	    if(cpt->enabled)
-		printf("%s = yes\n", opt->name);
-	    else
-		printf("%s = no\n", opt->name);
+	    if(!nondef || (opt->numarg != cpt->numarg))
+		printf("%s = %s\n", opt->name, cpt->enabled ? "yes" : "no");
 	    break;
 	default:
 	    printf("%s: UNKNOWN ARGUMENT TYPE\n", opt->name);
     }
 }
 
-static void printcfg(const char *cfgfile)
+static void printcfg(const char *cfgfile, int nondef)
 {
 	const struct cfgoption *opt;
 	const struct cfgstruct *cpt;
@@ -107,7 +104,7 @@ static void printcfg(const char *cfgfile)
 		break;
 	    if((opt->owner & OPT_CLAMD) && (opt->owner & OPT_FRESHCLAM)) {
 		cpt = cfgopt(cfg, opt->name);
-		printopt(opt, cpt);
+		printopt(opt, cpt, nondef);
 	    }
 	}
 
@@ -118,7 +115,7 @@ static void printcfg(const char *cfgfile)
 		break;
 	    if((opt->owner & OPT_CLAMD) && !(opt->owner & OPT_FRESHCLAM)) {
 		cpt = cfgopt(cfg, opt->name);
-		printopt(opt, cpt);
+		printopt(opt, cpt, nondef);
 	    }
 	}
 
@@ -129,7 +126,7 @@ static void printcfg(const char *cfgfile)
 		break;
 	    if((opt->owner & OPT_FRESHCLAM) && !(opt->owner & OPT_CLAMD)) {
 		cpt = cfgopt(cfg, opt->name);
-		printopt(opt, cpt);
+		printopt(opt, cpt, nondef);
 	    }
 	}
 
@@ -145,7 +142,7 @@ static void printcfg(const char *cfgfile)
 		    break;
 		if(opt->owner & OPT_CLAMD) {
 		    cpt = cfgopt(cfg, opt->name);
-		    printopt(opt, cpt);
+		    printopt(opt, cpt, nondef);
 		}
 	    }
 	} else {
@@ -158,7 +155,7 @@ static void printcfg(const char *cfgfile)
 		    break;
 		if(opt->owner & OPT_FRESHCLAM) {
 		    cpt = cfgopt(cfg, opt->name);
-		    printopt(opt, cpt);
+		    printopt(opt, cpt, nondef);
 		}
 	    }
 	}
@@ -175,6 +172,7 @@ static void help(void)
 
     printf("    --help                 -h              show help\n");
     printf("    --config-dir DIR       -c DIR          search for config files in DIR\n");
+    printf("    --non-default          -n              only print non-default settings\n");
     printf("\n");
 }
 
@@ -182,11 +180,12 @@ int main(int argc, char **argv)
 {
 	char path[1024];
 	struct stat sb;
-	int ret, opt_index;
-	const char *getopt_parameters = "hc:";
+	int ret, opt_index, nondef = 0;
+	const char *getopt_parameters = "hc:n";
 	static struct option long_options[] = {
 	    {"help", 0, 0, 'h'},
 	    {"config-dir", 1, 0, 'c'},
+	    {"non-default", 0, 0, 'n'},
 	    {0, 0, 0, 0}
     	};
 	char *confdir = strdup(CONFDIR);
@@ -207,14 +206,16 @@ int main(int argc, char **argv)
 	    case 'c':
 		free(confdir);
 		confdir = strdup(optarg);
-		printf("LONG: %s, %c, idx: %d\n", long_options[opt_index].name, ret, opt_index);
 		break;
 
 	    case 'h':
 		help();
 		free(confdir);
-		printf("LONG: %s, %c, idx: %d\n", long_options[opt_index].name, ret, opt_index);
 		exit(0);
+
+	    case 'n':
+		nondef = 1;
+		break;
 
     	    default:
 		printf("ERROR: Unknown option passed\n");
@@ -225,14 +226,14 @@ int main(int argc, char **argv)
 
     snprintf(path, sizeof(path), "%s/clamd.conf", confdir);
     if(stat(path, &sb) != -1) {
-	printcfg(path);
+	printcfg(path, nondef);
 	found = 1;
 	printf("\n");
     }
 
     snprintf(path, sizeof(path), "%s/freshclam.conf", confdir);
     if(stat(path, &sb) != -1) {
-	printcfg(path);
+	printcfg(path, nondef);
 	found = 1;
     }
 
