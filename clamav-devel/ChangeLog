@@ -1,3 +1,7 @@
+Mon Feb 12 13:12:12 CET 2007 (tk)
+---------------------------------
+  * freshclam/manager.c: don't stick to a broken mirror when downloading cvd
+
 Mon Feb 12 11:44:21 CET 2007 (tk)
 ---------------------------------
   * libclamav/md5.c: revert problematic cleanup changes and rename functions

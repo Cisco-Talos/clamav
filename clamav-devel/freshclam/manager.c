@@ -960,8 +960,10 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 
     if(nodb) {
 	ret = getcvd(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, nodb, newver, ctimeout, rtimeout, mdat);
-	if(ret)
+	if(ret) {
+	    memset(ip, 0, 16);
 	    return ret;
+	}
 
     } else {
 	ret = 0;
