@@ -1,14 +1,13 @@
-.\" Manual page created by Tomasz Kojm, 14/15 IV 2002
-.TH "clamscan" "1" "November 14, 2005" "Tomasz Kojm" "Clam AntiVirus"
+.TH "clamscan" "1" "February 12, 2007" "ClamAV 0.90" "Clam AntiVirus"
 .SH "NAME"
 .LP 
-clamscan \- scan files and directories against viruses
+clamscan \- scan files and directories for viruses
 .SH "SYNOPSIS"
 .LP 
 clamscan [options] [file/directory/\-]
 .SH "DESCRIPTION"
 .LP 
-clamscan is a command line anti\-virus scanner. It's a part of the Clam AntiVirus package.
+clamscan is a command line anti\-virus scanner.
 .SH "OPTIONS"
 .LP 
 
@@ -23,7 +22,7 @@ Print version number and exit.
 Be verbose.
 .TP 
 \fB\-\-debug\fR
-Enable debug messages (from libclamav).
+Display debug messages from libclamav.
 .TP 
 \fB\-\-quiet\fR
 Be quiet (only print error messages).
@@ -67,11 +66,14 @@ Remove infected files. \fBBe careful.\fR
 \fB\-\-move=DIRECTORY\fR
 Move infected files into DIRECTORY. Directory must be writable for the 'clamav' user or unprivileged user running clamscan.
 .TP 
+\fB\-\-copy=DIRECTORY\fR
+Copy infected files into DIRECTORY. Directory must be writable for the 'clamav' user or unprivileged user running clamscan.
+.TP 
 \fB\-\-no\-mail\fR
 Disable scanning of mail files.
 .TP 
-\fB\-\-no\-phishing\fR
-Disable detection of phishing messages.
+\fB\-\-no\-phishing\-sigs\fR
+Disable signature-based phishing detection.
 .TP 
 \fB\-\-no\-phishing\-scan\-urls\fR
 Disable url-based phishing detection. (Only available in experimental builds)
@@ -85,7 +87,7 @@ Always block SSL mismatches in URLs (might lead to false positives!). (Only avai
 \fB\-\-phishing\-cloak\fR
 Always block cloaked URLs (might lead to some false positives). (Only available in experimental builds)
 .TP
-\fB\-\-no\-algo\fR
+\fB\-\-no\-algorithmic\fR
 In some cases (eg. complex malware, exploits in graphic files, and others), ClamAV uses special algorithms to provide accurate detection. This option disables the algorithmic detection.
 .TP 
 \fB\-\-no\-pe\fR
@@ -95,7 +97,7 @@ PE stands for Portable Executable \- it's an executable file format used in all 
 Executable and Linking Format is a standard format for UN*X executables. This option \fBdisables\fR ELF support.
 .TP 
 \fB\-\-no\-ole2\fR
-Disable support for Microsoft Office document files.
+Disable support for Microsoft Office documents and .msi files.
 .TP 
 \fB\-\-no\-html\fR
 Disable support for HTML detection and normalisation.
@@ -119,7 +121,7 @@ If an email contains URLs ClamAV can download and scan them. \fBWARNING: This op
 Extract first #n files from each archive. This option protects your system against DoS attacks (default: 500)
 .TP 
 \fB\-\-max\-space=#n\fR
-Extract first #n kilobytes from each archive. You may give the number in megabytes in format xM or xm, where x is a number. This option protects your system against DoS attacks (default: 10 MB)
+Extract first #n kilobytes from each archive. You may pass the value in megabytes in format xM or xm, where x is a number. This option protects your system against DoS attacks (default: 10 MB)
 .TP 
 \fB\-\-max\-recursion=#n\fR
 Set archive recursion level limit. This option protects your system against DoS attacks (default: 8).
@@ -134,10 +136,10 @@ Recursion level limit for the internal mail scanner.
 Maximum depth directories are scanned at (default: 15).
 .TP 
 \fB\-\-unzip[=FULLPATH]\fR
-In most cases you don't need this option \- the built\-in unarchiver will do extract Zip archives. This option however may be used as a backup for internal unpacker \- see the full documentation for more information. When enabled without an argument, unzip program will be searched in $PATH. If unzip cannot be found in $PATH, you must force it with =pathname. Remember about '=' between the option and an argument.
+In most cases you don't need this option \- the built\-in unarchiver will extract Zip archives. Howvere, this option may be used as a backup for internal unpacker \- see the full documentation for more information. When enabled without an argument, unzip program will be searched in $PATH. If unzip cannot be found in $PATH, you must force it with =pathname. Remember about '=' between the option and the argument.
 .TP 
 \fB\-\-unrar[=FULLPATH]\fR
-Scan .rar files.
+Scan .rar files. In most cases the unpacker built into libclamav is enough.
 .TP 
 \fB\-\-arj[=FULLPATH]\fR
 Scan .arj files.
@@ -149,24 +151,24 @@ Scan .zoo files.
 Scan .lzh files.
 .TP 
 \fB\-\-jar[=FULLPATH]\fR
-clamscan uses unzip for .jar files, so optionally eventually you will need to pass a full path to unzip.
+clamscan uses unzip for .jar files, so in some cases you may need to pass a full path to unzip. In most cases the unpacker built into libclamav is enough.
 .TP 
 \fB\-\-deb[=FULLPATH]\fR
 This option supports debian binary packages. Implies \-\-tgz, but doesn't conflict with \-\-tgz=FULLPATH. It requires ar utility.
 .TP 
 \fB\-\-tar[=FULLPATH]\fR
-This option supports non\-compressed archives.
+This option supports non\-compressed tar archives. In most cases the unpacker built into libclamav is enough.
 .TP 
 \fB\-\-tgz[=FULLPATH]\fR
-This option supports tar.gz and .tgz files. You need GNU tar, on non\-Linux system you probably have it installed as gtar. If it's in $PATH, please use \-\-tgz=gtar in other case please pass a full path.
+This option supports tar.gz and .tgz files. You need GNU tar, on non\-Linux system you probably have it installed as gtar. If it's in $PATH, please use \-\-tgz=gtar in other case please pass a full path. In most cases the unpacker built into libclamav is enough.
 .SH "EXAMPLES"
 .LP 
 .TP 
-(0) Scan selected file:
+(0) Scan a single file:
 
 \fBclamscan file\fR
 .TP 
-(1) Scan current working directory:
+(1) Scan a current working directory:
 
 \fBclamscan\fR
 .TP 
@@ -174,20 +176,20 @@ This option supports tar.gz and .tgz files. You need GNU tar, on non\-Linux syst
 
 \fBclamscan \-r /home\fR
 .TP 
-(3) Load database from selected file and limit disk usage to 50 Mb:
+(3) Load database from a file and limit disk usage to 50 MB:
 
 \fBclamscan \-d /tmp/newclamdb \-\-max\-space=50m \-r /tmp\fR
 .TP 
-(4) Scan data stream:
+(4) Scan a data stream:
 
 \fBcat testfile | clamscan \-\fR
 .TP 
-(5) Scan mail spool directory:
+(5) Scan a mail spool directory:
 
 \fBclamscan \-r /var/spool/mail\fR
 .SH "RETURN CODES"
 .LP 
-Note: some return codes may only appear in a one file mode (clamscan is started with file argument). Those are marked with \fB(ofm)\fR.
+Note: some return codes may only appear in a single file mode (when clamscan is started with a single argument). Those are marked with \fB(ofm)\fR.
 
 0 : No virus found.
 .TP 
@@ -223,7 +225,7 @@ Note: some return codes may only appear in a one file mode (clamscan is started 
 .TP 
 64: Can't write to temporary directory (please specify another one).
 .TP 
-70: Can't allocate and clear memory (calloc).
+70: Can't allocate memory (calloc).
 .TP 
 71: Can't allocate memory (malloc).
 .SH "CREDITS"

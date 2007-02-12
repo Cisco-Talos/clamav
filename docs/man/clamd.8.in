@@ -1,5 +1,4 @@
-.\" Manual page created by Tomasz Kojm, 20020929
-.TH "Clam Daemon" "8" "November 11, 2003" "Tomasz Kojm" "Clam AntiVirus"
+.TH "Clam Daemon" "8" "February 12, 2007" "ClamAV 0.90" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 clamd \- an anti\-virus daemon
@@ -8,23 +7,22 @@ clamd \- an anti\-virus daemon
 clamd [options]
 .SH "DESCRIPTION"
 .LP 
-The daemon listens for incoming connections on Unix or TCP socket and scans files or directories on demand. It's a part of the Clam AntiVirus package. It reads its configuration information from a clamd.conf file. It provides on\-access scanning feature (clamuko) under Linux.
+The daemon listens for incoming connections on Unix and/or TCP socket and scans files or directories on demand. It reads the configuration from @CFGDIR@/clamd.conf
 .SH "COMMANDS"
 .LP 
 clamd recognizes the following commands:
 
-Note: It's recommended to prefix clamd commands with the letter \fBn\fR (eg. nSCAN) to indicate that the command will be delimited by a newline character and that clamd should continue reading command data until a newline is read. The newline delimiter assures that the complete command and its entire argument will be processed as a single command.
 .TP 
 \fBPING\fR
 Check the server's state. It should reply with "PONG".
 .TP 
 \fBVERSION\fR
-Print a version information.
+Print program and database versions.
 .TP 
 \fBRELOAD\fR
 Reload the virus databases.
 .TP 
-\fBQUIT\fR
+\fBSHUTDOWN\fR
 Perform a clean exit.
 .TP 
 \fBSCAN file/directory\fR
@@ -34,13 +32,16 @@ Scan a file or a directory (recursively) with archive support enabled (if not di
 Scan a file or directory (recursively) with archive support disabled. A full path is required.
 .TP 
 \fBCONTSCAN file/directory\fR
-Scan a file or directory (recursively) with archive support enabled and continue scanning even when virus is found. A full path is required.
+Scan file or directory (recursively) with archive support enabled and don't stop the scanning when a virus is found.
 .TP 
 \fBMULTISCAN file/directory\fR
-Scan directories with multiple threads.
+Scan file in a standard way or scan directory (recursively) using multiple threads (to make the scanning faster on SMP machines).
 .TP 
 \fBSTREAM\fR
-Scan stream \- on this command clamd will return "PORT number" and you can connect to that port and send a data to scan.
+Scan stream \- on this command clamd will return "PORT number" you should connect to and send data to scan.
+.TP 
+\fBSESSION, END\fR
+Start/end a clamd session which will allow you to run multiple commands per TCP session. It's recommended to prefix clamd commands with the letter \fBn\fR (eg. nSCAN) to indicate that the command will be delimited by a newline character and that clamd should continue reading command data until a newline is read. The newline delimiter assures that the complete command and its entire argument will be processed as a single command.
 .SH "OPTIONS"
 .LP 
 
@@ -63,4 +64,4 @@ Please check the full documentation for credits.
 Tomasz Kojm <tkojm@clamav.net>
 .SH "SEE ALSO"
 .LP 
-clamdscan(1), clamscan(1), freshclam(1), sigtool(1), clamd.conf(5), clamav\-milter(8)
+clamd.conf(5), clamdscan(1), clamscan(1), freshclam(1), sigtool(1), clamav\-milter(8)
