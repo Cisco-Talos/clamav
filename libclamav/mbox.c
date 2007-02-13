@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.377 2007/02/13 10:02:05 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.378 2007/02/13 13:04:40 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -2046,12 +2046,15 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 		/*
 		 * This is approximate
 		 */
-		if(BLOCKMAX &&
-		  (recursion_level > ctx->limits->maxmailrec)) {
-			cli_warnmsg("parseEmailBody: hit maximum recursion level (%u)\n",
-				recursion_level);
-			*ctx->virname = "MIME.RecursionLimit";
-			return VIRUS;
+		if(recursion_level > ctx->limits->maxmailrec) {
+
+			cli_warnmsg("parseEmailBody: hit maximum recursion level (%u)\n", recursion_level);
+			if(BLOCKMAX) {
+				if(ctx->virname)
+					*ctx->virname = "MIME.RecursionLimit";
+				return VIRUS;
+			} else
+				return OK_ATTACHMENTS_NOT_SAVED;
 		}
 	}
 
@@ -2187,7 +2190,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 							break;
 						}
 					} else if(t_line->t_next &&
-					          (encodingLine(mainMessage) == t_line->t_next)) {
+						 (encodingLine(mainMessage) == t_line->t_next)) {
 						/*
 						 * We look for the next line
 						 * since later on we'll skip

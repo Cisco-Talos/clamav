@@ -1,3 +1,7 @@
+Tue Feb 13 13:05:30 GMT 2007 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Rework maximum recursion level code (patch by TK)
+
 Tue Feb 13 11:59:32 CET 2007 (tk)
 ---------------------------------
   * libclamav/cab.c: properly handle errors from mspack
