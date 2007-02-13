@@ -154,7 +154,7 @@ static int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32
   cli_writeint32(pehdr+0x3c, valign);
 
   if (!(newbuf = (char *) cli_calloc(foffset, sizeof(char)))) {
-    cli_dbgmsg("UPX: malloc failed - giving up rebuild\n", upd);
+    cli_dbgmsg("UPX: malloc failed - giving up rebuild\n");
     return 0;
   }
   
