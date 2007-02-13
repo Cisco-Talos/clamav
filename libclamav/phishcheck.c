@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.24  2007/02/13 19:09:11  njh
+ *  Fix warning
+ *
  *  Revision 1.23  2007/02/13 19:04:07  njh
  *  Fix compilation errors on BeOS
  *
@@ -655,7 +658,8 @@ static void get_domain(const struct phishcheck* pchk,struct string* dest,struct 
 		const char* countrycode=tld+1;
 		tld = rfind(host->data,'.',tld-host->data-1);
 		if(!tld) {
-			cli_dbgmsg("PH:Weird, a name with only 2 levels (%s)\n",host);
+			cli_dbgmsg("PH:Weird, a name with only 2 levels (%s)\n",
+				host->data);
 			string_assign(dest,host);
 			return;
 		}
