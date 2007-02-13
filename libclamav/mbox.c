@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.378 2007/02/13 13:04:40 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.379 2007/02/13 19:04:07 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -101,7 +101,11 @@ static	void	print_trace(int use_syslog);
 #endif
 
 #ifdef	HAVE_STDBOOL_H
+#ifdef	C_BEOS
+#include "SupportDefs.h"
+#else
 #include <stdbool.h>
+#endif
 #else
 #ifdef	FALSE
 typedef	unsigned	char	bool;
@@ -167,8 +171,10 @@ typedef	enum {
 #include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#ifndef	C_BEOS
 #include <net/if.h>
 #include <arpa/inet.h>
+#endif
 #endif
 
 #ifndef	C_WINDOWS
@@ -4338,6 +4344,7 @@ getURL(struct arg *arg)
 	}
 	cli_dbgmsg("Saving %s to %s\n", url, fout);
 
+#ifndef	C_BEOS
 	if(tcp == 0) {
 		const struct protoent *proto = getprotobyname("tcp");
 
@@ -4351,6 +4358,7 @@ getURL(struct arg *arg)
 		endprotoent();
 #endif
 	}
+#endif
 	if(default_port == 0) {
 		const struct servent *servent = getservbyname("http", "tcp");
 

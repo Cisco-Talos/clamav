@@ -1,3 +1,7 @@
+Tue Feb 13 19:04:35 GMT 2007 (njh)
+----------------------------------
+  * libclamav/mbox.c,phishcheck.c:	Fix compilation errors on BeOS
+
 Tue Feb 13 14:42:15 CET 2007 (tk)
 ---------------------------------
   * 0.90 (released with JS and PST code removed)
