@@ -19,6 +19,9 @@
  *  MA 02110-1301, USA.
  *
  *  $Log: phishcheck.c,v $
+ *  Revision 1.23  2007/02/13 19:04:07  njh
+ *  Fix compilation errors on BeOS
+ *
  *  Revision 1.22  2007/02/12 20:34:31  tkojm
  *  fix hexurl regex (bb#288)
  *
@@ -181,8 +184,6 @@ case CL_PHISH_HOST_NOT_LISTED:
 #ifdef	HAVE_REGEX_H
 #include <regex.h>
 #endif
-
-#include <pthread.h>
 
 #include "others.h"
 #include "defaults.h"
