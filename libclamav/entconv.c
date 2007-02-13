@@ -25,10 +25,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <regex.h>
 #include <string.h>
 #include <ctype.h>
-#include <sys/types.h>
 #include <dirent.h>
 #include <errno.h>
 
@@ -43,6 +41,7 @@
 #include "hashtab.h"
 #include "entconv.h"
 #include "entitylist.h"
+#include "cltypes.h"
 
 #ifdef HAVE_ICONV_H
 #include <iconv.h>
