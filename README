@@ -145,7 +145,7 @@ We are happy to announce new interesting software with support for ClamAV:
   + mod_streamav - a ClamAV based antivirus filter for Apache 2
   + pyClamd - a python interface to Clamd
 
-More information at http://www2.clamav.net/download/third-party-tools/
+More information at http://www.clamav.net/download/third-party-tools/
 
 --
 The ClamAV team (http://www.clamav.net/team)
