@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.379 2007/02/13 19:04:07 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.380 2007/02/13 19:47:37 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -4366,7 +4366,7 @@ getURL(struct arg *arg)
 			default_port = (in_port_t)ntohs(servent->s_port);
 		else
 			default_port = 80;
-#ifndef	C_WINDOWS
+#if	!defined(C_WINDOWS) && !defined(C_BEOS)
 		endservent();
 #endif
 	}
@@ -4609,6 +4609,11 @@ my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t l
 		return ret;
 #elif	defined(HAVE_GETHOSTBYNAME_R_5)
 	/* e.g. BSD, Solaris, Cygwin */
+	/*
+	 * Configure doesn't work on BeOS. We need -lnet to link, but configure
+	 * doesn't add it, so you need to do something like
+	 *	LIBS=-lnet ./configure --enable-cache --disable-clamav
+	 */
 	int ret = -1;
 
 	if((hostname == NULL) || (hp == NULL))
