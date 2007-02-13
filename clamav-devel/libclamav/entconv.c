@@ -528,12 +528,14 @@ void process_encoding_set(struct entity_conv* conv,const unsigned char* encoding
 		return;
 
 	tmp_encoding = normalize_encoding(encoding);/* FIXME: better obey priorities*/
+	if(prio == META) {
 	old_size = encoding_bytes(conv->encoding,&tmp);
 	new_size = encoding_bytes(tmp_encoding,&tmp);
 	if(old_size != new_size)  {
 		cli_dbgmsg("process_encoding_set: refusing to override encoding - new encoding size differs: %s(%ld) != %s(%ld)\n",conv->encoding,old_size,tmp_encoding,new_size);
 		free(tmp_encoding);
 		return;
+	}
 	}
 	free(conv->encoding);
 	conv->encoding = tmp_encoding;
@@ -952,10 +954,11 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 			}
 			else {
 				char buff[10];
-				const int len = strlen(buff);
+				int len;
 
 				snprintf(buff,9,"&#%d;",u16);
 				buff[9] = '\0';
+				len = strlen(buff);
 				if((norm_end - norm) <= len)
 					/* prevent buffer overflow */
 					break;
