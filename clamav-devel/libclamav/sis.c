@@ -329,7 +329,7 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 	}
 
 	if(close(desc) == -1) {
-	    cli_errmsg("SIS: sis_extract_simple: Can't close descriptor %d\n", filelen, fname);
+	    cli_errmsg("SIS: sis_extract_simple: Can't close descriptor %d\n", desc);
 	    free(subdir);
 	    free(fname);
 	    if(compressed)

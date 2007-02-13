@@ -824,7 +824,7 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 	snprintf(filename, 1024, "%s/clamav-unchm.bin", dirname);
 	tmpfd = open(filename, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
 	if (!tmpfd) {
-		cli_dbgmsg("open failed\n", filename);
+		cli_dbgmsg("open failed for %s\n", filename);
 		return FALSE;
 	}
 

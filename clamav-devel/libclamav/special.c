@@ -139,7 +139,7 @@ static int jpeg_check_photoshop_8bim(int fd)
 
 	retval = cli_check_jpeg_exploit(fd);
 	if (retval == 1) {
-		cli_dbgmsg("Exploit found in thumbnail\n", retval);
+		cli_dbgmsg("Exploit found in thumbnail\n");
 	}
 	lseek(fd, offset+size, SEEK_SET);
 
