@@ -714,7 +714,7 @@ static int chdir_inc(const char *dbname)
 	}
 
 	if(cvd_unpack(dbfile, path) == -1) {
-	    logg("!chdir_inc: Can't unpack %s into %s\n", path);
+	    logg("!chdir_inc: Can't unpack %s into %s\n", dbfile, path);
 	    rmdirs(path);
 	    return -1;
 	}

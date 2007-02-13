@@ -85,7 +85,7 @@ int mirman_read(const char *file, struct mirdat *mdat, uint8_t active)
     close(fd);
 
     if(bread) {
-	logg("^Removing broken %s file.\n");
+	logg("^Removing broken %s file.\n", file);
 	unlink(file);
 	mirman_free(mdat);
 	return -1;
