@@ -623,6 +623,11 @@ int cab_extract(struct cab_file *file, const char *name)
 	case 0x0001: /* MSZIP */
 	    cli_dbgmsg("CAB: Compression method: MSZIP\n");
 	    file->state->stream = (struct mszip_stream *) mszip_init(file->fd, file->ofd, 4096, 1, file, &cab_read);
+	    if(!file->state->stream) {
+		free(file->state);
+		close(file->ofd);
+		return CL_EMSCAB;
+	    }
 	    if(file->offset) {
 		((struct mszip_stream *) file->state->stream)->wflag = 0;
 		mszip_decompress(file->state->stream, file->offset);
@@ -635,6 +640,11 @@ int cab_extract(struct cab_file *file, const char *name)
 	case 0x0002: /* QUANTUM */
 	    cli_dbgmsg("CAB: Compression method: QUANTUM\n");
 	    file->state->stream = (struct qtm_stream *) qtm_init(file->fd, file->ofd, (int) (file->folder->cmethod >> 8) & 0x1f, 4096, file, &cab_read);
+	    if(!file->state->stream) {
+		free(file->state);
+		close(file->ofd);
+		return CL_EMSCAB;
+	    }
 	    if(file->offset) {
 		((struct qtm_stream *) file->state->stream)->wflag = 0;
 		qtm_decompress(file->state->stream, file->offset);
@@ -647,6 +657,11 @@ int cab_extract(struct cab_file *file, const char *name)
 	case 0x0003: /* LZX */
 	    cli_dbgmsg("CAB: Compression method: LZX\n");
 	    file->state->stream = (struct lzx_stream *) lzx_init(file->fd, file->ofd, (int) (file->folder->cmethod >> 8) & 0x1f, 0, 4096, 0, file, &cab_read);
+	    if(!file->state->stream) {
+		free(file->state);
+		close(file->ofd);
+		return CL_EMSCAB;
+	    }
 	    if(file->offset) {
 		((struct lzx_stream *) file->state->stream)->wflag = 0;
 		lzx_decompress(file->state->stream, file->offset);
