@@ -222,7 +222,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
       /* Showtime!!! */
       cli_dbgmsg("Petite: Sections dump:\n");
       for (t = 0; t < j ; t++)
-	cli_dbgmsg("Petite: .SECT%d RVA:%x VSize:%x ROffset: %x, RSize:% x\n", t, usects[t].rva, usects[t].vsz, usects[t].raw, usects[t].rsz);
+	cli_dbgmsg("Petite: .SECT%d RVA:%x VSize:%x ROffset: %x, RSize:%x\n", t, usects[t].rva, usects[t].vsz, usects[t].raw, usects[t].rsz);
       if (! cli_rebuildpe(buf, usects, j, Imagebase, enc_ep, ResRva, ResSize, desc)) {
 	cli_dbgmsg("Petite: Rebuilding failed\n");
 	free(usects);

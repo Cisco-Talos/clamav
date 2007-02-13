@@ -110,7 +110,7 @@ int unfsg_133(char *source, char *dest, int ssize, int dsize, struct cli_exe_sec
     else 
       sections[i].vsz = lastsz;
 
-    cli_dbgmsg("FSG: .SECT%d RVA:%x VSize:%x ROffset: %x, RSize:% x\n", i, sections[i].rva, sections[i].vsz, sections[i].raw, sections[i].rsz);
+    cli_dbgmsg("FSG: .SECT%d RVA:%x VSize:%x ROffset: %x, RSize:%x\n", i, sections[i].rva, sections[i].vsz, sections[i].raw, sections[i].rsz);
   }
 
   if (!cli_rebuildpe(dest, sections, sectcount+1, base, ep, 0, 0, file)) {
