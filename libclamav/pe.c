@@ -1003,7 +1003,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
   
       
       char *sue=buff+0x74;
-      uint32_t key;
+      uint32_t key = 0;
       
       if(lseek(desc, ep-4, SEEK_SET) == -1) {
 	cli_dbgmsg("SUE: lseek() failed\n");
