@@ -1,3 +1,7 @@
+Wed Feb 14 13:15:25 CET 2007 (tk)
+---------------------------------
+  * libclamav/entconv.c: fix incorrect use of isspace() in experimental code
+
 Tue Feb 13 22:34:40 CET 2007 (tk)
 ---------------------------------
   * libclamav: fix some debug messages
