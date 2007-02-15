@@ -201,7 +201,8 @@ static int load_actions(table_t* t)
 {
 	size_t i;
 	for(i=0; i<rtf_action_mapping_cnt; i++)
-		tableInsert(t, rtf_action_mapping[i].controlword, rtf_action_mapping[i].action);
+		if(tableInsert(t, rtf_action_mapping[i].controlword, rtf_action_mapping[i].action) == -1)
+			return -1;
 	return 0;
 }
 
@@ -217,6 +218,8 @@ static int rtf_object_begin(struct rtf_state* state,cli_ctx* ctx,const char* tmp
 	data->internal_state = WAIT_MAGIC;
 	data->tmpdir = tmpdir;
 	data->ctx    = ctx;
+	data->name   = NULL;
+	data->desc_name = NULL;
 
 	state->cb_data = data;
 	return 0;
@@ -227,8 +230,8 @@ static int decode_and_scan(struct rtf_object_data* data, cli_ctx* ctx)
 {
 	int ofd, ret=0;
 
-	cli_dbgmsg("Scanning embedded object:%s\n",data->name);
-	if(data->bread == 1) {
+	cli_dbgmsg("RTF:Scanning embedded object:%s\n",data->name);
+	if(data->bread == 1 && data->fd > 0) {
 		cli_dbgmsg("Decoding ole object\n");
 		lseek(data->fd,0,SEEK_SET);
 		ofd = cli_decode_ole_object(data->fd,data->tmpdir);
@@ -237,10 +240,11 @@ static int decode_and_scan(struct rtf_object_data* data, cli_ctx* ctx)
 			close(ofd);
 		}
 	}
-	else
+	else if(data->fd > 0)
 		ret = cli_magic_scandesc(data->fd,ctx);
+	if(data->fd > 0)
 	close(data->fd);
-	data->fd = 0;
+	data->fd = -1;
 	if(data->name) {
 		if(!cli_leavetemps_flag)
 			unlink(data->name);
@@ -295,9 +299,10 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
 	while(out_data && out_cnt) {
 		switch(data->internal_state) {
 			case WAIT_MAGIC: {
+						 cli_dbgmsg("RTF: waiting for magic\n");
 						 for(i=0; i<out_cnt && data->bread < rtf_data_magic_len; i++, data->bread++)
 							 if(rtf_data_magic[data->bread] != out_data[i]) {
-								 cli_dbgmsg("Warning: rtf objdata magic number not matched, expected:%d, got: %d, at pos:%d\n",rtf_data_magic[i],out_data[i],data->bread);
+								 cli_dbgmsg("Warning: rtf objdata magic number not matched, expected:%d, got: %d, at pos:%lu\n",rtf_data_magic[i],out_data[i],data->bread);
 							 }
 						 out_cnt  -= i;
 						 if(data->bread == rtf_data_magic_len) {
@@ -317,7 +322,7 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
 							    out_data += i;
 							    data->bread=0;
 							    if(data->desc_len > 64) {
-								    cli_dbgmsg("Description length too big (%d), showing only 64 bytes of it\n",data->desc_len);
+								    cli_dbgmsg("Description length too big (%lu), showing only 64 bytes of it\n",data->desc_len);
 								    data->desc_name = cli_malloc(65);
 							    }
 							    else
@@ -326,21 +331,29 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
 								    return CL_EMEM;
 							    }
 							    data->internal_state = WAIT_DESC;
+							    cli_dbgmsg("RTF: description length:%lu\n",data->desc_len);
 						    }
 						    break;
 					    }
 			case WAIT_DESC:{
+					       cli_dbgmsg("RTF: in WAIT_DESC\n");
 					       for(i=0;i<out_cnt && data->bread < data->desc_len && data->bread < 64;i++, data->bread++)
 						       data->desc_name[data->bread] = out_data[i];
-					       /*FIXME: sanity check here, to avoid segfault */
-					       if(i+data->desc_len-data->bread > out_cnt) {
-						       cli_dbgmsg("Can't interpret length in wait_desc\n");
-						       return 0;/* bail out */
+					       out_cnt -= i;
+					       out_data += i;
+					       if(data->bread < data->desc_len && data->bread < 64) {
+						       cli_dbgmsg("RTF: waiting for more data(1)\n");
+						       return 0;/* wait for more data */
 					       }
-					       out_cnt  -= i + data->desc_len - data->bread;
-					       if(data->bread <= data->desc_len) {
-						       out_data += i + data->desc_len - data->bread;
 						       data->desc_name[data->bread] = '\0';
+					       if(data->desc_len - data->bread > out_cnt) {
+						       data->desc_len -= out_cnt;
+						       cli_dbgmsg("RTF: waiting for more data(2)\n");
+						       return 0;/* wait for more data */
+					       }
+					       out_cnt  -= data->desc_len - data->bread;
+					       if(data->bread >= data->desc_len) {
+						       out_data += data->desc_len - data->bread;
 						       data->bread = 0;
 						       cli_dbgmsg("Preparing to dump rtf embedded object, description:%s\n",data->desc_name);
 						       free(data->desc_name);
@@ -361,12 +374,14 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
 					       if(data->bread == 8) {
 						       out_data += 8;
 						       data->bread = 0;
+						       cli_dbgmsg("RTF: next state: wait_data_size\n");
 						       data->internal_state = WAIT_DATA_SIZE;
 					       }
 					       break;
 				       }
 
 			case WAIT_DATA_SIZE: {
+						     cli_dbgmsg("RTF: in WAIT_DATA_SIZE\n");
 						    if(data->bread == 0)
 							    data->desc_len = 0;
 						    for(i=0; i<out_cnt && data->bread < 4; i++,data->bread++)
@@ -377,9 +392,10 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
 							    data->bread=0;
 							    cli_dbgmsg("Dumping rtf embedded object of size:%ld\n",data->desc_len);
 					    		    data->name = cli_gentempdesc(data->tmpdir, &data->fd);
-							    if(!data->name)
+							    if(!data->name || data->fd < 0)
 								    return CL_ETMPFILE;
 							    data->internal_state = DUMP_DATA;
+	    						    cli_dbgmsg("RTF: next state: DUMP_DATA\n");
 						    }
 						    break;
 					     }
@@ -431,7 +447,7 @@ static int rtf_object_end(struct rtf_state* state,cli_ctx* ctx)
 	int rc = 0;
 	if(!data)
 		return 0;
-	if(data->fd) { 
+	if(data->fd > 0) { 
 		rc = decode_and_scan(data, ctx);
 	}
 	if(data->name)
@@ -531,6 +547,7 @@ int cli_scanrtf(int desc, cli_ctx *ctx)
 		if(!cli_leavetemps_flag)
 			cli_rmdirs(tempname);
 		free(tempname);
+		tableDestroy(actiontable);
 		return ret;
 	}
 

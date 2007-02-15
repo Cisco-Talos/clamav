@@ -1,3 +1,7 @@
+Thu Feb 15 16:34:48 CET 2007 (tk)
+---------------------------------
+  * libclamav/rtf.c: add more sanity checks (Edwin)
+
 Thu Feb 15 16:18:53 CET 2007 (tk)
 ---------------------------------
   * freshclam/manager.c: fix warning message (bb#292)
