@@ -16,7 +16,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.380 2007/02/13 19:47:37 njh Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
 
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
@@ -118,7 +118,8 @@ typedef	enum {
 	FAIL,
 	OK,
 	OK_ATTACHMENTS_NOT_SAVED,
-	VIRUS
+	VIRUS,
+	MAXREC
 } mbox_status;
 
 #ifndef isblank
@@ -288,7 +289,7 @@ static	message	*parseEmailHeaders(message *m, const table_t *rfc821Table);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
 static	mbox_status	parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int recursion_level);
 static	int	boundaryStart(const char *line, const char *boundary);
-static	int	endOfMessage(const char *line, const char *boundary);
+static	int	boundaryEnd(const char *line, const char *boundary);
 static	int	initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
 static	int	getTextPart(message *const messages[], size_t size);
 static	size_t	strip(char *buf, int len);
@@ -1459,6 +1460,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 					if(messageAddStr(m, buffer) < 0)
 						break;
 			} else
+				/* at this point, the \n has been removed */
 				if(messageAddStr(m, buffer) < 0)
 					break;
 		} while(fgets(buffer, sizeof(buffer) - 1, fd) != NULL);
@@ -1504,7 +1506,19 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 			messageSetCTX(body, ctx);
 			switch(parseEmailBody(body, NULL, &mctx, 0)) {
 				case FAIL:
+					/*
+					 * beware: cli_magic_scandesc(),
+					 * changes this into CL_CLEAN, so only
+					 * use it to inform the higher levels
+					 * that we couldn't decode it because
+					 * it isn't an mbox, not to signal
+					 * decoding errors on what *is* a valid
+					 * mbox
+					 */
 					retcode = CL_EFORMAT;
+					break;
+				case MAXREC:
+					retcode = CL_EMAXREC;
 					break;
 				case VIRUS:
 					retcode = CL_VIRUS;
@@ -2060,7 +2074,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 					*ctx->virname = "MIME.RecursionLimit";
 				return VIRUS;
 			} else
-				return OK_ATTACHMENTS_NOT_SAVED;
+				return MAXREC;
 		}
 	}
 
@@ -2259,6 +2273,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 			for(multiparts = 0; t_line && !infected; multiparts++) {
 				int lines = 0;
 				message **m;
+				mbox_status old_rc;
 
 				m = cli_realloc(messages, ((multiparts + 1) * sizeof(message *)));
 				if(m == NULL)
@@ -2474,7 +2489,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
 						parseEmailHeader(aMessage, fullline, mctx->rfc821Table);
 						free(fullline);
-					} else if(endOfMessage(line, boundary)) {
+					} else if(boundaryEnd(line, boundary)) {
 						/*
 						 * Some viruses put information
 						 * *after* the end of message,
@@ -2495,8 +2510,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 					}
 				} while((t_line = t_line->t_next) != NULL);
 
-				cli_dbgmsg("Part %d has %d lines\n",
-					multiparts, lines);
+				cli_dbgmsg("Part %d has %d lines, rc = %d\n",
+					multiparts, lines, rc);
 
 				/*
 				 * Only save in the array of messages if some
@@ -2512,10 +2527,13 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 					case APPLEDOUBLE:
 					case KNOWBOT:
 					case -1:
+						old_rc = rc;
 						mainMessage = do_multipart(mainMessage,
 							messages, multiparts,
 							&rc, mctx, messageIn,
 							&aText, recursion_level);
+						if((rc == OK_ATTACHMENTS_NOT_SAVED) && (old_rc == OK))
+							rc = OK;
 						--multiparts;
 						if(rc == VIRUS)
 							infected = TRUE;
@@ -2567,12 +2585,13 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				}
 
 				/*
-				 * FIXME: we could return 2 here when we have
-				 * saved stuff earlier
-				 *
 				 * Nothing to do
 				 */
-				return (rc == VIRUS) ? VIRUS : OK_ATTACHMENTS_NOT_SAVED;
+				switch(rc) {
+					case VIRUS: return VIRUS;
+					case MAXREC: return MAXREC;
+					default: return OK_ATTACHMENTS_NOT_SAVED;
+				}
 			}
 
 			cli_dbgmsg("Find out the multipart type (%s)\n", mimeSubtype);
@@ -2616,7 +2635,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 					rc = parseEmailBody(aMessage, aText, mctx, recursion_level + 1);
 					if(rc == OK) {
 						assert(aMessage == messages[htmltextPart]);
-						messageDestroy(aMessage);
+						if(aMessage)
+							messageDestroy(aMessage);
 						messages[htmltextPart] = NULL;
 					}
 				}
@@ -2699,6 +2719,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 						infected = TRUE;
 						break;
 					}
+					if(rc == MAXREC)
+						break;
 				}
 
 				/* rc = parseEmailBody(NULL, NULL, mctx, recursion_level + 1); */
@@ -3047,7 +3069,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				rc = OK;
 			}
 		}
-	} else
+	} /*else
 		rc = OK_ATTACHMENTS_NOT_SAVED;	/* nothing saved */
 
 	if(mainMessage && (mainMessage != messageIn))
@@ -3119,20 +3141,42 @@ boundaryStart(const char *line, const char *boundary)
 	 *
 	 * Look with and without RFC822 comments stripped, I've seen some
 	 * samples where () are taken as comments in boundaries and some where
-	 * they're not. Irrespective of whatever RFC2822 says we need to find
-	 * viruses in both types of mails
+	 * they're not. Irrespective of whatever RFC2822 says, we need to find
+	 * viruses in both types of mails.
 	 */
-	if((strstr(ptr, boundary) != NULL) || (strstr(line, boundary) != NULL))
-		rc = OK;
-	else if(*ptr++ != '-')
-		rc = FAIL;
+	if((strstr(&ptr[1], boundary) != NULL) || (strstr(line, boundary) != NULL)) {
+		const char *k = ptr;
+
+		/*
+		 * We need to ensure that we don't match --11=-=-=11 when
+		 * looking for --1=-=-=1 in well behaved headers, that's a
+		 * false positive problem mentioned above
+		 */
+		rc = 0;
+		do
+			if(strcmp(++k, boundary) == 0) {
+				rc = 1;
+				break;
+			}
+		while(*k == '-');
+		if(rc == 0) {
+			k = &line[1];
+			do
+				if(strcmp(++k, boundary) == 0) {
+					rc = 1;
+					break;
+				}
+			while(*k == '-');
+		}
+	} else if(*ptr++ != '-')
+		rc = 0;
 	else
 		rc = (strcasecmp(ptr, boundary) == 0);
 
 	if(out)
 		free(out);
 
-	if(rc == OK)
+	if(rc == 1)
 		cli_dbgmsg("boundaryStart: found %s in %s\n", boundary, line);
 
 	return rc;
@@ -3144,13 +3188,15 @@ boundaryStart(const char *line, const char *boundary)
  * The message ends with with --boundary--
  */
 static int
-endOfMessage(const char *line, const char *boundary)
+boundaryEnd(const char *line, const char *boundary)
 {
 	size_t len;
 
 	if(line == NULL)
 		return 0;
-	/*cli_dbgmsg("endOfMessage: line = '%s' boundary = '%s'\n", line, boundary);*/
+
+	/*cli_dbgmsg("boundaryEnd: line = '%s' boundary = '%s'\n", line, boundary);*/
+
 	if(*line++ != '-')
 		return 0;
 	if(*line++ != '-')
@@ -3167,7 +3213,11 @@ endOfMessage(const char *line, const char *boundary)
 	line = &line[len];
 	if(*line++ != '-')
 		return 0;
-	return *line == '-';
+	if(*line == '-') {
+		cli_dbgmsg("boundaryEnd: found %s in %s\n", boundary, line);
+		return 1;
+	}
+	return 0;
 }
 
 /*
@@ -5203,6 +5253,9 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 	if(aMessage == NULL)
 		return mainMessage;
 
+	if(*rc != OK)
+		return mainMessage;
+
 	cli_dbgmsg("Mixed message part %d is of type %d\n",
 		i, messageGetMimeType(aMessage));
 
@@ -5357,7 +5410,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 			if(body) {
 				messageSetCTX(body, mctx->ctx);
 				*rc = parseEmailBody(body, NULL, mctx, recursion_level + 1);
-				if(messageContainsVirus(body))
+				if((*rc == OK) && messageContainsVirus(body))
 					*rc = VIRUS;
 				messageDestroy(body);
 			}
@@ -5376,7 +5429,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 				 * whole multipart section
 				 */
 				*rc = parseEmailBody(aMessage, *tptr, mctx, recursion_level + 1);
-				cli_dbgmsg("Finished recursion\n");
+				cli_dbgmsg("Finished recursion, rc = %d\n", *rc);
 				assert(aMessage == messages[i]);
 				messageDestroy(messages[i]);
 				messages[i] = NULL;

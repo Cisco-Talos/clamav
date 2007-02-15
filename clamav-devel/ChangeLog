@@ -1,3 +1,11 @@
+Thu Feb 15 12:27:22 GMT 2007 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Fixed bugs in the handling of boundary lines
+  			Improved handling of the warning messages associated
+				with recursion limits
+			Fixed handling of OK_ATTACHMENTS_NOT_SAVED in some
+				larger files
+  			
 Wed Feb 14 13:15:25 CET 2007 (tk)
 ---------------------------------
   * libclamav/entconv.c: fix incorrect use of isspace() in experimental code
