@@ -18,6 +18,7 @@ fi
 
 case "$1" in
 	start)
+		sleep 1	;# allow time for clamd to start
 		/usr/local/sbin/clamav-milter $CLAMAV_MILTER_FLAGS
 		;;
 	stop)
