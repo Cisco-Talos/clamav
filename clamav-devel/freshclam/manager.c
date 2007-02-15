@@ -1106,7 +1106,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 		    if(vwarning && !strstr(cl_retver(), "devel") && !strstr(cl_retver(), "rc")) {
 			if(strcmp(cl_retver(), newver)) {
 			    logg("^Your ClamAV installation is OUTDATED!\n");
-			    logg("^Local version: %s Recommended version: %s\n", cl_retver(), pt);
+			    logg("^Local version: %s Recommended version: %s\n", cl_retver(), newver);
 			    logg("DON'T PANIC! Read http://www.clamav.net/support/faq\n");
 			    outdated = 1;
 			}
