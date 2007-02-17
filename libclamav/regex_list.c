@@ -1217,6 +1217,7 @@ static inline void tree_node_insert_nonbin(struct tree_node* node, struct tree_n
 				node->listend = 0;
 				node->next = new;
 				new->listend=1;
+				return;
 			}
 		node->u.children = cli_realloc(node->u.children,sizeof(node->u.children[0])*(2));
 		if(node->u.children) {

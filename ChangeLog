@@ -1,3 +1,7 @@
+Sat Feb 17 01:31:45 CET 2007 (acab)
+-----------------------------------
+  * libclamav/regex_list.c: Close #303 - patch from Edvin
+
 Thu Feb 15 16:34:48 CET 2007 (tk)
 ---------------------------------
   * libclamav/rtf.c: add more sanity checks (Edwin)
