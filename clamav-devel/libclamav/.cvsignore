@@ -1,5 +1,0 @@
-*.lo
-.deps
-.libs
-Makefile
-libclamav.la
