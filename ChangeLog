@@ -1,3 +1,6 @@
+Sat Feb 17 11:20:17 CET 2007 (edwin)
+  * libclamav/rtf.c: Fix possible memory leak, and add more sanity checks.
+
 Sat Feb 17 02:34:17 CET 2007 (acab)
 -----------------------------------
   * libclamav/rtf.c: Don't spin on on cli_readn (bb#312) - patch from Edvin

@@ -190,7 +190,7 @@ static int pop_state(struct stack* stack,struct rtf_state* state)
 	}
 	if(!stack->stack_cnt) {
 		if(!stack->warned) {
-		cli_dbgmsg("Warning: attempt to pop from empty stack!\n");
+			cli_dbgmsg("Warning: attempt to pop from empty stack!\n");
 			stack->warned = 1;
 		}
 		*state = base_state;/* lets assume we give it a base state */
@@ -482,15 +482,17 @@ static void rtf_action(struct rtf_state* state,long action)
 
 static void cleanup_stack(struct stack* stack,struct rtf_state* state,cli_ctx* ctx)
 {
-	while(stack && stack->stack_cnt && state->default_elements) {
+	while(stack && stack->stack_cnt /* && state->default_elements*/) {
 		pop_state(stack,state);
-		if(state->cb_begin)
+		if(state->cb_data && state->cb_end)
 			state->cb_end(state,ctx);
 	}
 }
 
 
 #define SCAN_CLEANUP \
+	if(state.cb_data && state.cb_end)\
+		state.cb_end(&state,ctx);\
 	tableDestroy(actiontable);\
 	cleanup_stack(&stack,&state,ctx);\
 	free(buff);\
@@ -573,7 +575,7 @@ int cli_scanrtf(int desc, cli_ctx *ctx)
 							}
 							break;
 						case '}':
-							if(state.cb_data)
+							if(state.cb_data && state.cb_end)
 								if(( ret = state.cb_end(&state, ctx) )) {
 									SCAN_CLEANUP;
 									return ret;
@@ -673,8 +675,14 @@ int cli_scanrtf(int desc, cli_ctx *ctx)
 
 						state.controlword[state.controlword_cnt] = '\0';
 						action = tableFind(actiontable, state.controlword);
-						if(action != -1)
+						if(action != -1) {
+							if(state.cb_data && state.cb_end) {/* premature end of previous block */
+								state.cb_end(&state,ctx);
+								state.cb_end = NULL;
+								state.cb_data = NULL;
+							}
 							rtf_action(&state,action);
+						}
 						state.parse_state = PARSE_MAIN;
 						break;
 					}
