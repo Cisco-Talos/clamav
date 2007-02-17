@@ -1,4 +1,7 @@
 Sat Feb 17 11:20:17 CET 2007 (edwin)
+  * libclamav/entconv.c: Don't normalize buffer shorter than 2 bytes.
+
+Sat Feb 17 11:20:17 CET 2007 (edwin)
   * libclamav/rtf.c: Fix possible memory leak, and add more sanity checks.
 
 Sat Feb 17 02:34:17 CET 2007 (acab)

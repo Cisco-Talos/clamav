@@ -807,7 +807,7 @@ static iconv_t iconv_open_cached(const unsigned char* fromcode)
 /* tmp_m_area and conv->out_area are of size maxlen */
 unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in, m_area_t* in_m_area, const size_t maxlen)
 {
-	if(!conv || !conv->out_area.buffer || !conv->tmp_area.buffer)
+	if(!conv || !conv->out_area.buffer || !conv->tmp_area.buffer || maxlen<2 )
 		return NULL;
 	else {
 		/* stream_in|in_m_area ->(read_raw) conv->tmp_area -> (iconv) conv->out_area -> (normalize) conv->norm_area -> (cli_readline) return value*/
