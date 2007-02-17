@@ -1,3 +1,7 @@
+Sat Feb 17 02:34:17 CET 2007 (acab)
+-----------------------------------
+  * libclamav/rtf.c: Don't spin on on cli_readn (bb#312) - patch from Edvin
+
 Sat Feb 17 01:31:45 CET 2007 (acab)
 -----------------------------------
   * libclamav/regex_list.c: Close #303 - patch from Edvin

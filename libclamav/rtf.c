@@ -73,6 +73,7 @@ struct stack {
 	size_t elements;
 	size_t stack_cnt;
 	size_t stack_size;
+	int    warned;
 };
 
 static const struct rtf_action_mapping {
@@ -188,7 +189,10 @@ static int pop_state(struct stack* stack,struct rtf_state* state)
 		return 0;/* this is a default 'state'*/
 	}
 	if(!stack->stack_cnt) {
+		if(!stack->warned) {
 		cli_dbgmsg("Warning: attempt to pop from empty stack!\n");
+			stack->warned = 1;
+		}
 		*state = base_state;/* lets assume we give it a base state */
 		return 0;
 	}
@@ -504,7 +508,7 @@ int cli_scanrtf(int desc, cli_ctx *ctx)
 	int ret = CL_CLEAN;
 	struct rtf_state state;
 	struct stack stack;
-	size_t bread;
+	ssize_t bread;
 	table_t* actiontable;
 	uint8_t main_symbols[256];
 
@@ -518,6 +522,7 @@ int cli_scanrtf(int desc, cli_ctx *ctx)
 	stack.stack_cnt = 0;
 	stack.stack_size = 16;
 	stack.elements = 0;
+	stack.warned = 0;
 	stack.states = cli_malloc(stack.stack_size*sizeof(*stack.states));
 
 	if(!stack.states)
@@ -553,7 +558,7 @@ int cli_scanrtf(int desc, cli_ctx *ctx)
 
 	init_rtf_state(&state);
 
-	while(( bread = cli_readn(desc, buff, BUFF_SIZE) )) {
+	while(( bread = cli_readn(desc, buff, BUFF_SIZE) ) > 0) {
 		ptr = buff;
 		ptr_end = buff + bread;
 		while(ptr < ptr_end) {
