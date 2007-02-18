@@ -22,9 +22,8 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.208 2005/05/28 11:37:27 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.86"
+#define	CM_VERSION	"0.87"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1083,10 +1082,12 @@ main(int argc, char **argv)
 			fprintf(stderr, _("%s: --max-children must be given if --external is not given\n"), argv[0]);
 			return EX_CONFIG;
 		}
+#if     0
 		if(child_timeout) {
 			fprintf(stderr, _("%s: --timeout must not be given if --external is not given\n"), argv[0]);
 			return EX_CONFIG;
 		}
+#endif
 		if(loadDatabase() != 0)
 			return EX_CONFIG;
 		numServers = 1;
@@ -2220,8 +2221,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 				return SMFIS_TEMPFAIL;
 			}
 			/*
-			 * Wait for an amount of time for a child to go (default
-			 * wait for ever)
+			 * Wait for an amount of time for a child to go
 			 *
 			 * Use pthread_cond_timedwait rather than
 			 * pthread_cond_wait since the sendmail which calls
@@ -2231,20 +2231,20 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			 * Patch from Damian Menscher <menscher@uiuc.edu> to
 			 * ensure it wakes up when a child goes away
 			 */
-			if(child_timeout) {
-				struct timeval now;
-				struct timezone tz;
-
-				gettimeofday(&now, &tz);
-				timeout.tv_sec = now.tv_sec + child_timeout;
-				timeout.tv_nsec = 0;
-			}
-
 			do
-				if(child_timeout == 0)
-					rc = pthread_cond_wait(&n_children_cond, &n_children_mutex);
-				else
+				if(child_timeout == 0) {
+					pthread_cond_wait(&n_children_cond, &n_children_mutex);
+					rc = 0;
+				} else {
+					struct timeval now;
+					struct timezone tz;
+
+					gettimeofday(&now, &tz);
+					timeout.tv_sec = now.tv_sec + child_timeout;
+					timeout.tv_nsec = 0;
+
 					rc = pthread_cond_timedwait(&n_children_cond, &n_children_mutex, &timeout);
+				}
 			while((n_children >= max_children) && (rc != ETIMEDOUT));
 		}
 		n_children++;
@@ -3441,9 +3441,15 @@ clamd_recv(int sock, char *buf, size_t len)
 	struct timeval tv;
 
 	assert(sock >= 0);
+	int ret;
 
-	if(readTimeout == 0)
-		return recv(sock, buf, len, 0);
+	if(readTimeout == 0) {
+		do
+			ret = recv(sock, buf, len, 0);
+		while((ret < 0) && (errno == EINTR));
+
+		return ret;
+	}
 
 	FD_ZERO(&rfds);
 	FD_SET(sock, &rfds);
@@ -3451,16 +3457,27 @@ clamd_recv(int sock, char *buf, size_t len)
 	tv.tv_sec = readTimeout;
 	tv.tv_usec = 0;
 
-	switch(select(sock + 1, &rfds, NULL, NULL, &tv)) {
-		case -1:
-			perror("select");
-			return -1;
-		case 0:
-			if(use_syslog)
-				syslog(LOG_ERR, _("No data received from clamd in %d seconds\n"), readTimeout);
-			return 0;
+	for(;;) {
+		switch(select(sock + 1, &rfds, NULL, NULL, &tv)) {
+			case -1:
+				if(errno == EINTR)
+					/* FIXME: work out time left */
+					continue;
+				perror("select");
+				return -1;
+			case 0:
+				if(use_syslog)
+					syslog(LOG_ERR, _("No data received from clamd in %d seconds\n"), readTimeout);
+				return 0;
+		}
+		break;
 	}
-	return recv(sock, buf, len, 0);
+
+	do
+		ret = recv(sock, buf, len, 0);
+	while((ret < 0) && (errno == EINTR));
+
+	return ret;
 }
 
 /*
@@ -3990,7 +4007,7 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 			syslog(LOG_ERR, _("Out of memory"));
 		return -1;
 	}
-	if(fread(buf, sizeof(char), statb.st_size, fin) != statb.st_size) {
+	if(fread(buf, sizeof(char), statb.st_size, fin) != (size_t)statb.st_size) {
 		perror(filename);
 		if(use_syslog)
 			syslog(LOG_ERR, _("Error reading e-mail template file %s"),
@@ -4880,7 +4897,7 @@ loadDatabase(void)
 		char mess[128];
 
 		cl_free(oldroot);
-		sprintf(mess, "Database correctly reloaded (%d signatures)\n", signatures);
+		sprintf(mess, "Database correctly reloaded (%u signatures)\n", signatures);
 		logger(mess);
 		cli_dbgmsg("Database updated\n");
 	} else

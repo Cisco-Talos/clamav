@@ -45,7 +45,7 @@ extern short cli_debug_flag;
 
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
-pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 int cli_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_node *root, unsigned short ftype)
@@ -105,7 +105,7 @@ static long int cli_caloff(const char *offstr, int fd)
 
     if(isdigit(offstr[0])) {
 	return atoi(offstr);
-    } if(!strncmp(offstr, "EP+", 3)) {
+    } if(!strncmp(offstr, "EP+", 3) || !strncmp(offstr, "EP-", 3)) {
 	if((n = lseek(fd, 0, SEEK_CUR)) == -1) {
 	    cli_dbgmsg("Invalid descriptor\n");
 	    return -1;
@@ -117,7 +117,12 @@ static long int cli_caloff(const char *offstr, int fd)
 	}
 	free(peinfo.section);
 	lseek(fd, n, SEEK_SET);
-	return peinfo.ep + atoi(offstr + 3);
+
+	if(offstr[2] == '+')
+	    return peinfo.ep + atoi(offstr + 3);
+	else
+	    return peinfo.ep - atoi(offstr + 3);
+
     } else if(offstr[0] == 'S') {
 	if((n = lseek(fd, 0, SEEK_CUR)) == -1) {
 	    cli_dbgmsg("Invalid descriptor\n");
@@ -209,7 +214,7 @@ int cli_validatesig(unsigned short target, unsigned short ftype, const char *off
 
     if(target) {
 	if(target >= TARGET_TABLE_SIZE) {
-	    cli_errmsg("Bad target in signature (%s)\n", virname);
+	    cli_dbgmsg("Unknown target in signature (%s)\n", virname);
 	    return 0;
 	} else {
 	    if(targettab[target] != ftype) {

@@ -59,6 +59,9 @@ Execute COMMAND if error occured. Remeber, that virus database freshness is the 
 .TP 
 \fB\-\-on\-update\-execute=COMMAND\fR
 Execute COMMAND after succesful update.
+.TP 
+\fB\-\-on\-outdated\-execute=COMMAND\fR
+Execute COMMAND when freshclam reports outdated version. In the command string %v will be replaced by the new version number.
 .SH "EXAMPLES"
 .LP 
 .TP 

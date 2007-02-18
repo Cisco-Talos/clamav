@@ -1,9 +1,10 @@
-0.86.2
-------
+0.87
+----
 
-Changes in this release include fixes for three possible integer overflows
-in libclamav, improved scanning of Cabinet and FSG compressed files, better
-database handling in clamav-milter, and others.
+This version fixes vulnerabilities in handling of UPX and FSG compressed
+executables. Support for PE files, Zip and Cabinet archives has been improved
+and other small bugfixes have been made. The new option "--on-outdated-execute"
+allows freshclam to run a command when system reports a new engine version.
 
 --
 The ClamAV team (http://www.clamav.net/team.html)

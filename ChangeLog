@@ -1,3 +1,26 @@
+Fri Sep 16 00:55:29 CEST 2005
+-----------------------------
+  V 0.87
+  * Changes backported from CVS:
+    - libclamav/upx.c: fix possible buffer overflow (acab)
+    - libclamav/fsg.c: fix possible infinite loop (acab)
+    - libclamav/others: increase f-level (tk)
+    - libclamav/mspack/mszipd.c: zipd_read_input: fake one more byte if input
+      stream gets overrun (tk)
+    - libclamav/matcher.c: handle EP-n offset specification (tk)
+      Requested by Arnaud Jacques
+    - libclamav: improve scanning of zip files (tk)
+      Patch by Daniel Fahlgren <fahlgren*ardendo.se>
+    - clamav-milter: improve signal handling (njh)
+    - clamav-milter: --timeout wasn't always being honoured (njh)
+    - libclamav/others.c: cli_rmdirs: ENOTEMPTY is EBADF on AIX (tk)
+      Thanks to Tayfun Asker <tasker*metu.edu.tr>
+    - libclamav/vba_extract.c: fix zero allocation warning (trog)
+    - freshclam: new option --on-outdated-execute (OnOutdatedExecute) (tk)
+      Requested by Per Jessen
+    - configure.in: --disable-cr was not working properly (tk)
+      Reported by Stephane Leclerc <sleclerc*aliastec.net>
+
 Sun Jul 24 23:57:42 CEST 2005
 -----------------------------
   V 0.86.2

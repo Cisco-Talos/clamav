@@ -117,7 +117,7 @@ int pefromupx (char *src, char *dst, int *dsize, uint32_t ep, uint32_t upx0, uin
   }
   
   sections = pehdr+0xf8;
-  if ( ! (sectcnt = pehdr[6]+256*pehdr[7])) {
+  if ( ! (sectcnt = (unsigned char)pehdr[6]+256*(unsigned char)pehdr[7])) {
     cli_dbgmsg("UPX: No sections? - giving up rebuild\n");
     return 0;
   }

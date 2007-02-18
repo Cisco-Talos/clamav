@@ -69,14 +69,14 @@
     \vspace{3cm}
     \begin{flushright}
 	\rule[-1ex]{8cm}{3pt}\\
-	\huge Clam AntiVirus 0.86.2\\
+	\huge Clam AntiVirus 0.87\\
 	\huge \emph{User Manual}\\
     \end{flushright}
 
     \newpage
     \pagestyle{fancy}
     \tableofcontents
-    \vspace{11.5cm}
+    \vspace{9.5cm}
 
     \noindent
     \begin{boxedminipage}[b]{\textwidth}
@@ -1258,7 +1258,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     without major dependencies.
 
     \subsubsection{clapf}
-    \textbf{Homepage:} \url{http://thorium.ath.cx/clapf/}\\
+    \textbf{Homepage:} \url{http://dev.acts.hu/clapf/}\\
     \textbf{Supports:} libclamav\\[4pt]
     Clapf is a clamav based virus scanning and anti-spam content filter for
     Postfix.
@@ -1787,6 +1787,11 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 
     \subsection{\emph{Library + ClamAV}}
 
+    \subsubsection{ClamAV-Sharp}
+    \textbf{Homepage:} \url{http://clamav-sharp.pcode.nl/}\\
+    \textbf{Supports:} libclamav\\[4pt]
+    Mono binding for ClamAV.
+
     \subsubsection{ClamAVPlugin}
     \textbf{Homepage:} \url{http://wiki.apache.org/spamassassin/ClamAVPlugin}\\
     \textbf{Supports:} libclamav via File::Scan::ClamAV\\[4pt]
@@ -1927,9 +1932,6 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\hline
 	Mirror & IP & Location & Administrator\\ \hline\hline
 
-	\url{clamav.man.olsztyn.pl} & 213.184.16.3 & Olsztyn, & Robert d`Aystetten\\
-				    &		   & Poland   & \email{<dart*man.olsztyn.pl>}\\ \hline
-
 	\url{avmirror1.prod.rxgsys.com} & 64.74.124.90 & USA & Graham Wooden\\
 					&	       &     & \email{<graham*rxgsys.com>}\\ \hline
 
@@ -1965,7 +1967,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 				     &		      &	    & \email{<scott*perlcode.org>}\\ \hline
 	\url{clamav-sj.viaverio.com} & 128.121.60.235 & USA & Scott Wiersdorf\\
 				     &		      &	    & \email{<scott*perlcode.org>}\\ \hline
-	\url{clamavdb.heanet.ie} & 193.1.219.100 & Ireland & Colm MacCarthaigh\\
+	\url{clamavdb.heanet.ie} & 193.1.193.64 & Ireland & Colm MacCarthaigh\\
 				 &		 &	   & \email{<mirrors*heanet.ie>}\\ \hline
 	\url{clamav.crysys.hu} & 152.66.249.132 & Hungary & Bencsath Boldizsar\\
 			       &		&	  & \email{<boldi*mail2004.crysys.hit.bme.hu>}\\ \hline
@@ -2064,8 +2066,6 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 					 &		 &	 & \email{<henrich*samba.gr.jp>}\\ \hline
 	\url{clamavdb.planetmirror.com} & 203.16.234.78 & Australia & Jason Andrade\\
 					&		&	    & \email{<support*planetmirror.com>}\\ \hline
-	\url{clamavdb.raimei.co.jp} & 219.106.255.66 & Japan & Araki Musashi\\
-				    &		     &	     & \email{<araki*raimei.co.jp>}\\ \hline
 	\url{clamav.pathlink.com} & 129.250.169.81 & USA & Kachun Lee\\
 				  &		   &	 & \email{<kachun*pathlink.com>}\\ \hline
 	\url{clamav.mirror.camelnetwork.com} & 213.230.200.242 & UK & Chris Burton\\
@@ -2184,6 +2184,18 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 				   &		   &	 & \email{<tim*westlinks.com>}\\ \hline
 	\url{clamav.liquidweb.com} & 209.59.139.38 & USA & Steven Collins\\
 				   &		   &	 & \email{<scollins*liquidweb.com>}\\ \hline
+	\url{clamav.xs4all.nl} & 194.109.6.74 & Netherlands & Eric Veldhuyzen\\
+			       &	      &		    & \email{<ericv*xs4all.net>}\\ \hline
+        \url{clamav.pinna.cx} & 69.57.154.46 & Texas, & Nicola Pinna\\
+			      &		     & USA    &	\email{<pinna*pinna.cx>}\\ \hline
+	\url{switch.clamav.net} & 130.59.10.35 & Switzerland & Thomas Lenggenhager\\
+				&	       &	     & \email{<lenggenhager*switch.ch>}\\ \hline
+	\url{clamav.public-internet.co.uk} & 195.85.245.20 & London, & Tom Beard\\
+					   &		   & United Kingdom & \email{<tom.beard*public-internet.co.uk>}\\ \hline
+	\url{clamav.mainloop.se} & 192.71.58.30 & Sweden & Thomas Althoff\\
+				 &		&	 & \email{<thomas*mainloop.se>}\\ \hline
+	\url{clamav.dc.hu} & 195.228.75.149 & Hungary & Bencsath Boldizsar\\
+			   &		    &	      & \email{<boldi*mail2004.crysys.hit.bme.hu>}\\ \hline
     \end{tabular}}
     \end{center}
 
@@ -2330,6 +2342,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Chris van Meerendonk \email{<cvm*castel.nl>}
 	\item Andrey J. Melnikoff \email{<temnota*kmv.ru>}
 	\item Damian Menscher \email{<menscher*uiuc.edu>}
+	\item Jasper Metselaar \email{<jasper*formmailer.net>}
 	\item Arkadiusz Miskiewicz \email{<misiek*pld-linux.org>}
 	\item Ted Mittelstaedt \email{<tedm*toybox.placo.com>}
 	\item Mark Mielke \email{<mark*mark.mielke.cc>}
@@ -2441,6 +2454,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Anonymous donor from Colorado, US
 	\item Atlas College (\url{http://www.atlascollege.nl/})
 	\item AWD Online (\url{http://www.awdonline.com/})
+	\item BackupAssist Backup Software (\url{http://www.backupassist.com/})
 	\item Bear and Bear Consulting, Inc. (\url{http://www.bear-consulting.com/})
 	\item Aaron Begley
 	\item Craig H. Block
@@ -2453,6 +2467,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Joe Cooper
 	\item CustomLogic LLC (\url{http://www.customlogic.com/})
 	\item Ron DeFulio
+	\item Digirati (\url{http://oss.digirati.com.br/})
 	\item Steve Donegan (\url{http://www.donegan.org/})
 	\item Dynamic Network Services, Inc (\url{http://www.dyndns.org/})
 	\item EAS Enterprises LLC
@@ -2502,6 +2517,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Bozidar Mladenovic
 	\item Paul Morgan
 	\item Tomas Morkus
+	\item The Names Database (\url{http://static.namesdatabase.com})
 	\item Michael Nolan (\url{http://www.michaelnolan.co.uk/})
 	\item Jorgen Norgaard
 	\item Oneworkspace.com (\url{http://www.oneworkspace.com/})
@@ -2523,6 +2539,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Software Workshop Inc (\url{http://www.softwareworkshop.com/})
 	\item Solutions In A Box (\url{http://www.siab.com.au/})
 	\item Stephane Rault
+	\item Olivier Silber
 	\item Fernando Augusto Medeiros Silva (\url{http://www.linuxplace.com.br/})
 	\item StarBand (\url{http://www.starband.com/})
 	\item Stroke of Color, Inc.
@@ -2538,9 +2555,11 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Web.arbyte - Online-Marketing (\url{http://www.webarbyte.de/})
 	\item Webzone Srl (\url{http://www.webzone.it/})
 	\item Markus Welsch (\url{http://www.linux-corner.net/})
+	\item Julia White (\url{http://www.convert-tools.com/})
 	\item Nicklaus Wicker
 	\item David Williams (\url{http://kayakero.net/})
 	\item Glenn R Williams
+	\item Kelly Williams
     \end{itemize}
 
     \subsection{Graphics}
@@ -2595,7 +2614,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	Role: inactive
 
 	\item Tomasz Papszun \email{<tomek*clamav.net>}, Poland\\
-	Role: temporarily inactive
+	Role: virus database maintainer
 
 	\item Sven Strickroth \email{<sven*clamav.net>}, Germany\\
 	Role: virus database maintainer

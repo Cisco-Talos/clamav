@@ -72,7 +72,7 @@ pthread_mutex_t cli_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define	O_BINARY	0
 #endif
 
-#define CL_FLEVEL 5 /* don't touch it */
+#define CL_FLEVEL 6 /* don't touch it */
 
 #define MAX_ALLOCATION 134217728
 
@@ -454,7 +454,7 @@ int cli_rmdirs(const char *dirname)
     if((dd = opendir(dirname)) != NULL) {
 	while(stat(dirname, &maind) != -1) {
 	    if(!rmdir(dirname)) break;
-	    if(errno != ENOTEMPTY && errno != EEXIST) {
+	    if(errno != ENOTEMPTY && errno != EEXIST && errno != EBADF) {
 		cli_errmsg("Can't remove temporary directory %s: %s\n", dirname, strerror(errno));
 		closedir(dd);
 		return 0;

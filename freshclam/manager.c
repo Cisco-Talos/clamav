@@ -55,10 +55,9 @@
 int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname)
 {
 	time_t currtime;
-	int ret, updated = 0, signo = 0, ttl = -1;
-	char ipaddr[16], *dnsreply = NULL, *pt;
+	int ret, updated = 0, outdated = 0, signo = 0, ttl = -1;
+	char ipaddr[16], *dnsreply = NULL, *pt, *localip = NULL, *newver = NULL;
 	struct cfgstruct *cpt;
-	char *localip = NULL;
 	const char *arg = NULL;
 #ifdef HAVE_RESOLV_H
 	const char *dnsdbinfo;
@@ -116,21 +115,21 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 		    free(pt);
 		}
 
-		if((pt = cli_strtok(dnsreply, 0, ":"))) {
+		if((newver = cli_strtok(dnsreply, 0, ":"))) {
 
 		    mprintf("*Software version from DNS: %s\n", pt);
 
 		    if(vwarning && !strstr(cl_retver(), "devel") && !strstr(cl_retver(), "rc")) {
-			if(strcmp(cl_retver(), pt)) {
+			if(strcmp(cl_retver(), newver)) {
 			    mprintf("WARNING: Your ClamAV installation is OUTDATED!\n");
 			    mprintf("WARNING: Local version: %s Recommended version: %s\n", cl_retver(), pt);
 			    mprintf("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
 			    logg("WARNING: Your ClamAV installation is OUTDATED!\n");
 			    logg("WARNING: Local version: %s Recommended version: %s\n", cl_retver(), pt);
 			    logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
+			    outdated = 1;
 			}
 		    }
-		    free(pt);
 		}
 
 	    } else {
@@ -156,9 +155,12 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 
     memset(ipaddr, 0, sizeof(ipaddr));
 
-    if((ret = downloaddb(DB1NAME, "main.cvd", hostname, ipaddr, &signo, copt, dnsreply, localip)) > 50) {
+    if((ret = downloaddb(DB1NAME, "main.cvd", hostname, ipaddr, &signo, copt, dnsreply, localip, outdated)) > 50) {
 	if(dnsreply)
 	    free(dnsreply);
+
+        if(newver)
+	    free(newver);
 
 	return ret;
 
@@ -166,9 +168,12 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	updated = 1;
 
     /* if ipaddr[0] != 0 it will use it to connect to the web host */
-    if((ret = downloaddb(DB2NAME, "daily.cvd", hostname, ipaddr, &signo, copt, dnsreply, localip)) > 50) {
+    if((ret = downloaddb(DB2NAME, "daily.cvd", hostname, ipaddr, &signo, copt, dnsreply, localip, outdated)) > 50) {
 	if(dnsreply)
 	    free(dnsreply);
+
+        if(newver)
+	    free(newver);
 
 	return ret;
 
@@ -214,14 +219,45 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
             else
 		system(arg);
 	}
+    }
 
-	return 0;
+    if(outdated) {
+	if(optl(opt, "on-outdated-execute"))
+	    arg = getargl(opt, "on-outdated-execute");
+	else if((cpt = cfgopt(copt, "OnOutdatedExecute")))
+	    arg = cpt->strarg;
 
-    } else
-	return 1;
+	if(arg) {
+		char *cmd = strdup(arg);
+
+	    if((pt = strstr(cmd, "%v")) && newver && isdigit(*newver)) {
+		    char *buffer = (char *) mcalloc(strlen(cmd) + strlen(newver) + 10, sizeof(char));
+		*pt = 0; pt += 2;
+		strcpy(buffer, cmd);
+		strcat(buffer, newver);
+		strcat(buffer, pt);
+		free(cmd);
+		cmd = strdup(buffer);
+		free(buffer);
+	    }
+
+	    if(optc(opt, 'd'))
+		execute("OnOutdatedExecute", cmd);
+	    else
+		system(cmd);
+
+	    free(cmd);
+	}
+    }
+
+    if(newver)
+	free(newver);
+
+    return updated ? 0 : 1;
+
 }
 
-int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, const char *dnsreply, char *localip)
+int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, const char *dnsreply, char *localip, int outdated)
 {
 	struct cl_cvd *current, *remote;
 	struct cfgstruct *cpt;
