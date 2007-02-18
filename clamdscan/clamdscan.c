@@ -141,6 +141,7 @@ void help(void)
     mprintf("    --remove                           Remove infected files. Be careful!\n");
     mprintf("    --move=DIRECTORY                   Move infected files into DIRECTORY\n");
     mprintf("    --config-file=FILE                 Read configuration from FILE.\n");
+    mprintf("    --infected            -i           Only print infected files\n");
     mprintf("    --no-summary                       Disable summary at end of scanning\n");
     mprintf("\n");
 

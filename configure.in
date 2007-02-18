@@ -18,7 +18,7 @@ dnl   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 AC_INIT(clamscan/clamscan.c)
 AC_CREATE_TARGET_H(target.h)
-AM_INIT_AUTOMAKE(clamav, "0.88.2")
+AM_INIT_AUTOMAKE(clamav, "0.88.3")
 AM_CONFIG_HEADER(clamav-config.h)
 
 LC_CURRENT=1

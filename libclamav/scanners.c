@@ -408,7 +408,7 @@ static int cli_scanzip(int desc, const char **virname, unsigned long int *scanne
 	    if(mdata->size >= 0 && mdata->size != zdirent.st_size)
 		continue;
 
-	    if(mdata->method >= 0 && mdata->method != (unsigned int) zdirent.d_compr)
+	    if(mdata->method >= 0 && mdata->method != zdirent.d_compr)
 		continue;
 
 	    if(mdata->fileno && mdata->fileno != files)
@@ -866,7 +866,7 @@ static int cli_scandir(const char *dirname, const char **virname, unsigned long 
 #else
 	while((dent = readdir(dd))) {
 #endif
-#ifndef C_INTERIX
+#if ((!defined(C_CYGWIN)) && (!defined(C_INTERIX)))
 	    if(dent->d_ino)
 #endif
 	    {
@@ -981,8 +981,11 @@ static int cli_vba_scandir(const char *dirname, const char **virname, unsigned l
 			break;
 		}
 		free(fullname);
-		cli_dbgmsg("VBADir: Decompress WM project '%s' macro:%d key:%d\n", vba_project->name[i], i, vba_project->key[i]);
-		data = (unsigned char *) wm_decrypt_macro(fd, vba_project->offset[i], vba_project->length[i], vba_project->key[i]);
+		cli_dbgmsg("VBADir: Decompress WM project '%s' macro:%d key:%d length:%d\n", vba_project->name[i], i, vba_project->key[i], vba_project->length[i]);
+		if(vba_project->length[i])
+		    data = (unsigned char *) wm_decrypt_macro(fd, vba_project->offset[i], vba_project->length[i], vba_project->key[i]);
+		else
+		    data = NULL;
 		close(fd);
 		
 		if(!data) {
@@ -1019,7 +1022,7 @@ static int cli_vba_scandir(const char *dirname, const char **virname, unsigned l
 #else
 	while((dent = readdir(dd))) {
 #endif
-#ifndef C_INTERIX
+#if ((!defined(C_CYGWIN)) && (!defined(C_INTERIX)))
 	    if(dent->d_ino)
 #endif
 	    {

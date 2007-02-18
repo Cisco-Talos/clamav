@@ -2,6 +2,15 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.88.3
+------
+
+This version fixes handling of large binhex files and multiple alternatives in
+virus signatures.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
 
 0.88.2
 ------

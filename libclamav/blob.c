@@ -296,14 +296,17 @@ blobcmp(const blob *b1, const blob *b2)
 	return memcmp(blobGetData(b1), blobGetData(b2), s1);
 }
 
-void
+/*
+ * Return clamav return code
+ */
+int
 blobGrow(blob *b, size_t len)
 {
 	assert(b != NULL);
 	assert(b->magic == BLOBCLASS);
 
 	if(len == 0)
-		return;
+		return 0;
 
 	if(b->isClosed) {
 		/*
@@ -328,6 +331,8 @@ blobGrow(blob *b, size_t len)
 			b->data = ptr;
 		}
 	}
+
+	return (b->data) ? 0 : CL_EMEM;
 }
 
 fileblob *

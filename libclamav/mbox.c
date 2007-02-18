@@ -3637,8 +3637,10 @@ rfc1341(message *m, const char *dir)
 					extern short cli_leavetemps_flag;
 					struct stat statb;
 
+#ifndef  C_CYGWIN
 					if(dent->d_ino == 0)
 						continue;
+#endif
 
 					snprintf(fullname, sizeof(fullname) - 1,
 						"%s/%s", pdir, dent->d_name);

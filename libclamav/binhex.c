@@ -93,7 +93,6 @@ static	char	const	rcsid[] = "$Id: binhex.c,v 1.14 2005/03/10 08:51:30 nigelhorne
 #include "text.h"
 #include "binhex.h"
 #include "others.h"
-
 int
 cli_binhex(const char *dir, int desc)
 {
@@ -128,12 +127,12 @@ cli_binhex(const char *dir, int desc)
 
 	cli_dbgmsg("mmap'ed binhex file\n");
 
-	bytesleft = (int)size;
+	bytesleft = (long)size;
 	line = NULL;
 
 	while(bytesleft > 0) {
 		int length = 0;
-		char *ptr;
+		char *ptr, *newline;
 
 		/*printf("%d: ", bytesleft);*/
 
@@ -144,7 +143,11 @@ cli_binhex(const char *dir, int desc)
 
 		/*printf("%d: ", length);*/
 
-		line = cli_realloc(line, (size_t)(length + 1));
+		newline = cli_realloc(line, (size_t)(length + 1));
+		if(newline == NULL)
+			break;
+
+		line = newline;
 
 		memcpy(line, buf, length);
 		line[length] = '\0';
@@ -171,6 +174,8 @@ cli_binhex(const char *dir, int desc)
 		cli_errmsg("No binhex line found\n");
 		return CL_EFORMAT;
 	}
+	
+	/* similar to binhexMessage */
 	messageSetEncoding(m, "x-binhex");
 
 	fb = messageToFileblob(m, dir);
@@ -183,6 +188,6 @@ cli_binhex(const char *dir, int desc)
 
 	if(fb)
 		return CL_CLEAN;	/* a lie - but it gets things going */
-	return CL_EOPEN;
+	return CL_EIO;
 #endif
 }

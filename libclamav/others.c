@@ -465,7 +465,7 @@ int cli_rmdirs(const char *dirname)
 #else
 	    while((dent = readdir(dd))) {
 #endif
-#ifndef C_INTERIX
+#if ((!defined(C_CYGWIN)) && (!defined(C_INTERIX)))
 		if(dent->d_ino)
 #endif
 		{

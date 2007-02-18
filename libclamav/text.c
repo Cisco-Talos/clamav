@@ -222,6 +222,7 @@ blob *
 textToBlob(const text *t, blob *b)
 {
 	size_t s;
+	blob *bin;
 
 	if(t == NULL)
 		return NULL;
@@ -233,6 +234,11 @@ textToBlob(const text *t, blob *b)
 	if(s == 0)
 		return b;
 
+	/*
+	 * copy b. If b is NULL and an error occurs we know we need to free
+	 * before returning
+	 */
+	bin = b;
 	if(b == NULL) {
 		b = blobCreate();
 
@@ -240,7 +246,11 @@ textToBlob(const text *t, blob *b)
 			return NULL;
 	}
 
-	blobGrow(b, s);
+	if(blobGrow(b, s) != 0) {
+		if(bin == NULL)
+			blobDestroy(b);
+		return NULL;
+	}
 
 	(void)textIterate(t, addToBlob, b);
 

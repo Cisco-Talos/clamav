@@ -742,7 +742,7 @@ static int cli_loadhdb(FILE *fd, struct cl_node **root, unsigned int *signo, uns
 static int cli_loadmd(FILE *fd, struct cl_node **root, unsigned int *signo, int type)
 {
 	char buffer[FILEBUFF], *pt;
-	int line = 0, comments = 0, ret = 0;
+	int line = 0, comments = 0, ret = 0, crc32;
 	struct cli_meta_node *new;
 
 
@@ -835,11 +835,12 @@ static int cli_loadmd(FILE *fd, struct cl_node **root, unsigned int *signo, int 
 	    if(!strcmp(pt, "*")) {
 		new->crc32 = 0;
 	    } else {
-		new->crc32 = cli_hex2num(pt);
-		if(new->crc32 == -1) {
+		crc32 = cli_hex2num(pt);
+		if(crc32 == -1) {
 		    ret = CL_EMALFDB;
 		    break;
 		}
+		new->crc32 = (unsigned int) crc32;
 	    }
 	    free(pt);
 	}
@@ -995,7 +996,7 @@ int cl_loaddbdir(const char *dirname, struct cl_node **root, unsigned int *signo
 #else
     while((dent = readdir(dd))) {
 #endif
-#ifndef C_INTERIX
+#if ((!defined(C_CYGWIN)) && (!defined(C_INTERIX)))
 	if(dent->d_ino)
 #endif
 	{
@@ -1076,7 +1077,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 #else
     while((dent = readdir(dd))) {
 #endif
-#ifndef C_INTERIX
+#if ((!defined(C_CYGWIN)) && (!defined(C_INTERIX)))
 	if(dent->d_ino)
 #endif
 	{
@@ -1148,7 +1149,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 #else
     while((dent = readdir(dd))) {
 #endif
-#ifndef C_INTERIX
+#if ((!defined(C_CYGWIN)) && (!defined(C_INTERIX)))
 	if(dent->d_ino)
 #endif
 	{

@@ -1040,6 +1040,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		/* 70-7f */	0x3d,0x3e,0x3f,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
 		};
 
+		cli_dbgmsg("messageExport: decode binhex\n");
 		/*
 		 * Decode BinHex4. First create a temporary blob which contains
 		 * the encoded message. Then decode that blob to the target
