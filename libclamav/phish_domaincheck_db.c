@@ -18,37 +18,6 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  *
- *  $Log: phish_domaincheck_db.c,v $
- *  Revision 1.5  2006/10/10 23:51:49  tkojm
- *  apply patches for the anti-phish code from Edwin
- *
- *  Revision 1.4  2006/10/07 13:55:01  tkojm
- *  fix handlers
- *
- *  Revision 1.3  2006/10/07 11:00:46  tkojm
- *  make the experimental anti-phishing code more thread safe
- *
- *  Revision 1.2  2006/09/26 18:55:36  njh
- *  Fixed portability issues
- *
- *  Revision 1.1  2006/09/13 19:40:27  njh
- *  First draft
- *
- *  Revision 1.1  2006/09/12 19:38:39  acab
- *  Phishing module merge - libclamav
- *
- *  Revision 1.3  2006/08/20 21:18:11  edwin
- *  Added the script used to generate iana_tld.sh
- *  Added checks for phish_domaincheck_db
- *  Added phishing module design document from wiki (as discussed with aCaB).
- *  Updated .wdb/.pdb format documentation (in regex_list.c)
- *  Fixed some memory leaks in regex_list.c
- *  IOW: cleanups before the deadline.
- *  I consider my module to be ready for evaluation now.
- *
- *  Revision 1.2  2006/08/09 16:26:44  edwin
- *  Forgot to add these files
- *
  */
 
 #if HAVE_CONFIG_H

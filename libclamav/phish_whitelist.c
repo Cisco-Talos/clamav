@@ -18,43 +18,6 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  *
- *  $Log: phish_whitelist.c,v $
- *  Revision 1.7  2007/01/13 19:39:21  tkojm
- *  phishing fixes (bb#157)
- *
- *  Revision 1.6  2006/10/10 23:51:49  tkojm
- *  apply patches for the anti-phish code from Edwin
- *
- *  Revision 1.5  2006/10/07 13:55:01  tkojm
- *  fix handlers
- *
- *  Revision 1.4  2006/10/07 11:00:46  tkojm
- *  make the experimental anti-phishing code more thread safe
- *
- *  Revision 1.3  2006/09/26 18:55:36  njh
- *  Fixed portability issues
- *
- *  Revision 1.2  2006/09/17 14:50:58  njh
- *  Sync with latest CVS
- *
- *  Revision 1.2  2006/09/14 07:05:06  njh
- *  Fix 'multiple main' definitions
- *
- *  Revision 1.1  2006/09/12 19:38:39  acab
- *  Phishing module merge - libclamav
- *
- *  Revision 1.16  2006/08/06 20:27:07  edwin
- *  New option to enable phish scan for all domains (disabled by default).
- *  You will now have to run clamscan --phish-scan-alldomains to have any phishes detected.
- *  Updated phishcheck control flow to better incorporate the domainlist.
- *  Updated manpage with new options.
- *
- *  TODO:there is a still-reachable leak in regex_list.c
- *
- *  Revision 1.15  2006/07/31 20:12:30  edwin
- *  Preliminary support for domain databases (domains to check by phishmodule)
- *  Better memory allocation failure handling in regex_list
- *
  */
 
 #if HAVE_CONFIG_H

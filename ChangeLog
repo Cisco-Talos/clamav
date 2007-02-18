@@ -1,3 +1,6 @@
+Sun Feb 18 16:42:45 CET 2007 (edwin)
+------------------------------------
+  * libclamav/phish_*.c, regex_list.c: Remove obsolete $Log$ keyword.		
 Sun Feb 18 15:32:45 CET 2007 (tk)
 ---------------------------------
   * libclamav/filetypes.c: add more tags to HTML rule set (bb#218)
