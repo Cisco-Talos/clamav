@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>OpenAntiVirus samba-vscan</TITLE>
-<META NAME="description" CONTENT="OpenAntiVirus samba-vscan">
+<TITLE>Dazuko</TITLE>
+<META NAME="description" CONTENT="Dazuko">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,54 +19,61 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node104.html">
 <LINK REL="previous" HREF="node102.html">
-<LINK REL="up" HREF="node100.html">
+<LINK REL="up" HREF="node102.html">
 <LINK REL="next" HREF="node104.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1912"
+<A NAME="tex2html1922"
   HREF="node104.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html1908"
-  HREF="node100.html">
+<A NAME="tex2html1918"
+  HREF="node102.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html1904"
+<A NAME="tex2html1912"
   HREF="node102.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html1910"
+<A NAME="tex2html1920"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1913"
-  HREF="node104.html">Mail User Agent +</A>
-<B> Up:</B> <A NAME="tex2html1909"
-  HREF="node100.html">Filesystem + ClamAV</A>
-<B> Previous:</B> <A NAME="tex2html1905"
-  HREF="node102.html">Famuko</A>
- &nbsp <B>  <A NAME="tex2html1911"
+<B> Next:</B> <A NAME="tex2html1923"
+  HREF="node104.html">Famuko</A>
+<B> Up:</B> <A NAME="tex2html1919"
+  HREF="node102.html">Filesystem + ClamAV</A>
+<B> Previous:</B> <A NAME="tex2html1913"
+  HREF="node102.html">Filesystem + ClamAV</A>
+ &nbsp <B>  <A NAME="tex2html1921"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00094300000000000000"></A><A NAME="samba-vscan"></A>
-<BR>
-OpenAntiVirus samba-vscan
+<H3><A NAME="SECTION00094100000000000000">
+Dazuko</A>
 </H3>
     <B>Homepage:</B> <TT><A NAME="tex2html102"
-  HREF="http://www.openantivirus.org/projects.php#samba-vscan">http://www.openantivirus.org/projects.php#samba-vscan</A></TT>
-<BR>    <B>Supports:</B> clamd
+  HREF="http://www.dazuko.org/">http://www.dazuko.org/</A></TT>
+<BR>    <B>Supports:</B> clamuko
 <BR>
-samba-vscan provides on-access scanning of Samba shares. It supports
-    Samba 2.2.x/3.0 with working virtual file system (VFS) support. 
+This project provides a kernel module, which provides 3d-party applications
+    an interface for file access control. It was originally developed by H+BEDV
+    Datentechnik GmbH to be used for on-access virus scanning. Other uses
+    include a file-access monitor/logger or external security implementations.
+    It operates by intercepting file-access calls and passing the file
+    information to a 3rd-party application. The 3rd-party application then has
+    the opportunity to tell the kernel module to allow or deny the file-access.
+    The 3rd-party application also receives information about the file, type
+    of access, process id, and user id.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2005-04-20
+2005-04-29
 </ADDRESS>
 </BODY>
 </HTML>

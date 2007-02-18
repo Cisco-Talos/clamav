@@ -187,6 +187,9 @@ static uint64_t chm_endian_convert_64(uint64_t v)
 int chm_read_data(int fd, unsigned char *dest, off_t offset, off_t len,
 			unsigned char *m_area, off_t m_length)
 {
+	if ((offset < 0) || (len < 0) || ((offset+len) < 0)) {
+		return FALSE;
+	}
 	if (m_area != NULL) {
 		if ((offset+len) > m_length) {
 			return FALSE;

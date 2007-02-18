@@ -24,5 +24,6 @@
 char *freshdbdir(void);
 void print_version(void);
 int filecopy(const char *src, const char *dest);
+int isnumb(const char *str);
 
 #endif

@@ -1,10 +1,15 @@
-0.84rc2
--------
+0.84
+----
 
 This version improves detection of JPEG (MS04-028) based exploits, introduces
 support for TNEF files and new detection mechanisms. Various bugfixes
 (including problems with scanning of digest mail files) and improvements
 have been made.
+
+
+** We encourage users to help testing the development versions, now with **
+** rewritten RAR code and support for 3.0 archives!			 **
+**		    http://www.clamav.net/snapshot/			 **
 
 
 -) libclamav:
@@ -40,10 +45,11 @@ have been made.
     + hMailServer - open source e-mail server for Microsoft Window
     + pop3.proxy - proxy server for the POP3 protocol
     + HTTP Anti Virus Proxy
+    + SmarterMail Filter - ClamAV based plugin for SmarterMail Mail Server
+    + smf-clamd - small & fast virus filter for Sendmail
     + Squidclam - replacement for SquidClamAV-Redirector.py written in C
     + QtClamAVclient - remote clamd client based on the Qt Toolkit
     + qpsmtp - flexible smtpd daemon written in Perl
-
 
 News:
 

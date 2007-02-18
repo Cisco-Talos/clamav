@@ -116,6 +116,7 @@ static int cli_ac_addsig(struct cl_node *root, const char *virname, const char *
 	    new->altn = (unsigned short int *) realloc(new->altn, new->alt * sizeof(unsigned short int));
 	    new->altn[new->alt - 1] = 0;
 	    new->altc = (char **) realloc(new->altc, new->alt * sizeof(char *));
+	    new->altc[new->alt - 1] = NULL;
 
 	    for(i = 0; i < strlen(pt); i++)
 		if(pt[i] == '|')
@@ -164,7 +165,8 @@ static int cli_ac_addsig(struct cl_node *root, const char *virname, const char *
 	    if(new->alt) {
 		free(new->altn);
 		for(i = 0; i < new->alt; i++)
-		    free(new->altc[i]);
+		    if(new->altc[i])
+			free(new->altc[i]);
 		free(new->altc);
 	    }
 	    free(new);

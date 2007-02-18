@@ -1,3 +1,19 @@
+Fri Apr 29 14:18:18 CEST 2005
+-----------------------------
+  V 0.84
+  * Fixes backported from CVS:
+    - shared/misc.c: improve isnumb() (thanks to NJH) and move it to misc.c (tk)
+    - freshclam/manager.c: allow warning control via txt record (tk)
+    - shared/misc.c: (Mac OS X only) execute ditto with execl to eliminate
+                      potential security problem with --move on OS X - server
+		      versions (reported by Tim Morgan <tim*sentinelchicken.org>
+		      and Kevin Amorin <kamorin*ccs.neu.edu>) (tk)
+    - libclamav/chmunpack.c: Add extra sanity check (trog)
+    - libclamav/upx.c: add sanity check to pefromupx() (patch by NJH) (tk)
+    - libclamav/readdb.c: improve parsing of broken signatures (bug reported
+      by Arnaud Jacques <arnaud*clamav.net>) (tk)
+    - libclamav/scanners.c: improve error detection in zip code (tk)
+
 Wed Apr 20 02:09:55 CEST 2005
 -----------------------------
   V 0.84rc2

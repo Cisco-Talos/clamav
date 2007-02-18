@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Viralator</TITLE>
-<META NAME="description" CONTENT="Viralator">
+<TITLE>SquidClamAV Redirector</TITLE>
+<META NAME="description" CONTENT="SquidClamAV Redirector">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,53 +19,58 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node100.html">
 <LINK REL="previous" HREF="node98.html">
-<LINK REL="up" HREF="node90.html">
+<LINK REL="up" HREF="node92.html">
 <LINK REL="next" HREF="node100.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1863"
+<A NAME="tex2html1873"
   HREF="node100.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html1859"
-  HREF="node90.html">
+<A NAME="tex2html1869"
+  HREF="node92.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html1855"
+<A NAME="tex2html1863"
   HREF="node98.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html1861"
+<A NAME="tex2html1871"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1864"
-  HREF="node100.html">Filesystem + ClamAV</A>
-<B> Up:</B> <A NAME="tex2html1860"
-  HREF="node90.html">Web/FTP Proxy + ClamAV</A>
-<B> Previous:</B> <A NAME="tex2html1856"
-  HREF="node98.html">Squidclam</A>
- &nbsp <B>  <A NAME="tex2html1862"
+<B> Next:</B> <A NAME="tex2html1874"
+  HREF="node100.html">Squidclam</A>
+<B> Up:</B> <A NAME="tex2html1870"
+  HREF="node92.html">Web/FTP Proxy + ClamAV</A>
+<B> Previous:</B> <A NAME="tex2html1864"
+  HREF="node98.html">SafeSquid</A>
+ &nbsp <B>  <A NAME="tex2html1872"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00093900000000000000">
-Viralator</A>
+<H3><A NAME="SECTION00093700000000000000">
+SquidClamAV Redirector</A>
 </H3>
     <B>Homepage:</B> <TT><A NAME="tex2html99"
-  HREF="http://viralator.sourceforge.net/">http://viralator.sourceforge.net/</A></TT>
-<BR>    <B>Supports:</B> clamscan
+  HREF="http://www.jackal-net.at/tiki-read_article.php?articleId=1">http://www.jackal-net.at/tiki-read_article.php?articleId=1</A></TT>
+<BR>    <B>Supports:</B> libclamav
 <BR>
-Viralator is a perl script that virus scans http downloads on a linux
-    server after passing through the squid proxy server.
+SquidClamAV Redirector is a Squid helper script which adds virus scanning
+    for defined filename extensions. It has been tested with Python, pyclamav,
+    ClamAV, and Squid. SCAVR handles the request as given from Squid, downloads
+    the URL, and scans it for known viruses. It rewrites the URL from Squid to
+    a blocked URL or an information page with information about the scanning
+    results.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2005-04-20
+2005-04-29
 </ADDRESS>
 </BODY>
 </HTML>

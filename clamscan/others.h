@@ -21,7 +21,6 @@
 
 int fileinfo(const char *filename, short i);
 int checkaccess(const char *path, const char *username, int mode);
-int isnumb(const char *str);
 int match_regex(const char *filename, const char *pattern);
 
 #endif

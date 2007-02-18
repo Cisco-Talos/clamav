@@ -117,17 +117,6 @@ int checkaccess(const char *path, const char *username, int mode)
     return ret;
 }
 
-int isnumb(const char *str)
-{
-	int i;
-
-    for(i = 0; i < strlen(str); i++)
-	if(!isdigit(str[i]))
-	    return 0;
-
-    return 1;
-}
-
 int match_regex(const char *filename, const char *pattern)
 {
 #ifdef HAVE_REGEX_H

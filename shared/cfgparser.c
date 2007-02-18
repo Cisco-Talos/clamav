@@ -30,17 +30,7 @@
 #include "defaults.h"
 #include "str.h"
 #include "memory.h"
-
-static int isnumb(const char *str)
-{
-	int i;
-
-    for(i = 0; i < strlen(str); i++)
-	if(!isdigit(str[i]))
-	    return 0;
-
-    return 1;
-}
+#include "misc.h"
 
 struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 {

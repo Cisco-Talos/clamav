@@ -46,6 +46,7 @@
 #include "notify.h"
 #include "memory.h"
 #include "output.h"
+#include "misc.h"
 #include "../libclamav/others.h"
 #include "../libclamav/str.h" /* cli_strtok */
 #include "dns.h"
@@ -105,19 +106,32 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 		dnsreply = NULL;
 	    }
 
-	    if(dnsreply && (pt = cli_strtok(dnsreply, 0, ":"))) {
-		mprintf("*Software version from DNS: %s\n", pt);
-		if(!strstr(cl_retver(), "devel") && !strstr(cl_retver(), "rc")) {
-		    if(strcmp(cl_retver(), pt)) {
-			mprintf("WARNING: Your ClamAV installation is OUTDATED!\n");
-			mprintf("WARNING: Local version: %s Recommended version: %s\n", cl_retver(), pt);
-			mprintf("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
-			logg("WARNING: Your ClamAV installation is OUTDATED!\n");
-			logg("WARNING: Local version: %s Recommended version: %s\n", cl_retver(), pt);
-			logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
-		    }
+	    if(dnsreply) {
+		    int vwarning = 1;
+
+		if((pt = cli_strtok(dnsreply, 4, ":"))) {
+		    if(*pt == '0')
+			vwarning = 0;
+
+		    free(pt);
 		}
-		free(pt);
+
+		if((pt = cli_strtok(dnsreply, 0, ":"))) {
+
+		    mprintf("*Software version from DNS: %s\n", pt);
+
+		    if(vwarning && !strstr(cl_retver(), "devel") && !strstr(cl_retver(), "rc")) {
+			if(strcmp(cl_retver(), pt)) {
+			    mprintf("WARNING: Your ClamAV installation is OUTDATED!\n");
+			    mprintf("WARNING: Local version: %s Recommended version: %s\n", cl_retver(), pt);
+			    mprintf("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
+			    logg("WARNING: Your ClamAV installation is OUTDATED!\n");
+			    logg("WARNING: Local version: %s Recommended version: %s\n", cl_retver(), pt);
+			    logg("DON'T PANIC! Read http://www.clamav.net/faq.html\n");
+			}
+		    }
+		    free(pt);
+		}
 
 	    } else {
 		if(dnsreply) {
@@ -205,17 +219,6 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 
     } else
 	return 1;
-}
-
-static int isnumb(const char *str)
-{
-	int i;
-
-    for(i = 0; i < strlen(str); i++)
-	if(!isdigit(str[i]))
-	    return 0;
-
-    return 1;
 }
 
 int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, const char *dnsreply, char *localip)
