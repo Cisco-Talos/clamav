@@ -557,7 +557,7 @@ static int cli_loadndb(FILE *fd, struct cl_node **root, unsigned int *signo, uns
 	    }
 
 	    if(atoi(pt) > cl_retflevel()) {
-		cli_warnmsg("Signature for %s requires new ClamAV version. Please update!\n", virname);
+		cli_dbgmsg("Signature for %s not loaded (required f-level: %u)\n", virname, cl_retflevel());
 		sigs--;
 		free(virname);
 		free(pt);

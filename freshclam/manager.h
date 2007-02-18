@@ -26,11 +26,11 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 
 int downloaddb(const char *localname, const char *remotename, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, const char *dnsreply, char *localip, int outdated);
 
-int wwwconnect(const char *server, const char *proxy, int pport, char *remoteip, char *localip);
+int wwwconnect(const char *server, const char *proxy, int pport, char *remoteip, char *localip, int timeout);
 
-struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostname, const char *proxy, const char *user, const char *pass, int *ims);
+struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostname, const char *proxy, const char *user, const char *pass, int *ims, int rtimeout);
 
-int get_database(const char *dbfile, int socketfd, const char *file, const char *hostname, const char *proxy, const char *user, const char *pass);
+int get_database(const char *dbfile, int socketfd, const char *file, const char *hostname, const char *proxy, const char *user, const char *pass, int rtimeout);
 
 unsigned int fmt_base64(char* dest,const char* src,unsigned int len);
 

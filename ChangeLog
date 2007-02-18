@@ -1,3 +1,14 @@
+Sun Nov  5 17:08:22 CET 2006
+-----------------------------
+  * Bugfixes:
+    - freshclam: apply timeout patch from Everton da Silva Marques
+      <everton*lab.ipaccess.diveo.net.br> (new options: ConnectTimeout and
+      ReceiveTimeout)
+    - clamd: change stack size at the right place (closes bug#103)
+      Patch from Jonathan Chen <jon+clamav*spock.org>
+    - libclamav/petite.c: sanity check the number of rebuilt sections (speeds
+      up handling of malformed files)
+
 Sun Oct 15 20:10:31 CEST 2006
 -----------------------------
   * Bugfixes:

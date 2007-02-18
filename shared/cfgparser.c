@@ -115,6 +115,8 @@ struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 	    {"OnErrorExecute", OPT_FULLSTR}, /* freshclam */
 	    {"OnOutdatedExecute", OPT_FULLSTR}, /* freshclam */
 	    {"LocalIPAddress", OPT_STR}, /* freshclam */
+	    {"ConnectTimeout", OPT_NUM}, /* freshclam */
+	    {"ReceiveTimeout", OPT_NUM}, /* freshclam */
 	    {0, 0},
 	};
 

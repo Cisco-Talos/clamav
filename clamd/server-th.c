@@ -230,7 +230,6 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	struct sigaction sigact;
 	mode_t old_umask;
 	struct cl_limits limits;
-	pthread_attr_t thattr;
 	sigset_t sigset;
 	client_conn_t *client_conn;
 	struct cfgstruct *cpt;
@@ -417,9 +416,6 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	logg("Self checking every %d seconds.\n", selfchk);
     }
 
-    pthread_attr_init(&thattr);
-    pthread_attr_setdetachstate(&thattr, PTHREAD_CREATE_DETACHED);
-
     if(cfgopt(copt, "ClamukoScanOnLine") || cfgopt(copt, "ClamukoScanOnAccess"))
 #ifdef CLAMUKO
     {
@@ -466,18 +462,6 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	sigaddset(&sigact.sa_mask, SIGHUP);
 	sigaction(SIGSEGV, &sigact, NULL);
     }
-
-#if defined(C_BIGSTACK) || defined(C_BSD)
-    /*
-     * njh@bandsman.co.uk:
-     * libclamav/scanners.c uses a *huge* buffer
-     * (128K not BUFSIZ from stdio.h).
-     * We need to allow for that.
-     */
-    pthread_attr_getstacksize(&thattr, &stacksize);
-    cli_dbgmsg("set stacksize to %u\n", stacksize + SCANBUFF + 64 * 1024);
-    pthread_attr_setstacksize(&thattr, stacksize + SCANBUFF + 64 * 1024);
-#endif
 
     pthread_mutex_init(&exit_mutex, NULL);
     pthread_mutex_init(&reload_mutex, NULL);

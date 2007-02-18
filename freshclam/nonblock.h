@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 Tomasz Kojm <zolw@konarski.edu.pl>
+ *  Copyright 2006 Everton da Silva Marques <everton.marques@gmail.com>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,29 +16,24 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef DATADIR
-# define DATADIR "/usr/local/share/clamav"
+#ifndef __NONBLOCK_H
+#define __NONBLOCK_H
+
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
 #endif
 
-#define VIRUSDBDIR DATADIR
+#include <sys/types.h>
+#include <sys/socket.h>
 
-/* default names */
+/*
+	wait_connect(): wrapper for connect(), with explicit 'secs' timeout
+*/
+int wait_connect(int sock, const struct sockaddr *addr, socklen_t addrlen, int secs);
 
-#ifdef CLAMAVUSER
-#define UNPUSER CLAMAVUSER
-#else
-#define UNPUSER "clamav"
-#endif
+/*
+        wait_recv(): wrapper for recv(), with explicit 'secs' timeout
+*/
+ssize_t wait_recv(int sock, void *buf, size_t len, int flags, int secs);
 
-#ifdef CLAMAVGROUP
-#define UNPGROUP CLAMAVGROUP
-#else
-#define UNPGROUP "clamav"
-#endif
-
-#define CL_DEFAULT_CHECKS 12
-#define CL_DEFAULT_MAXATTEMPTS 3
-#define CL_MAX_CHILDREN 5
-#define CL_DEFAULT_CONNECTTIMEOUT 30
-#define CL_DEFAULT_RECVTIMEOUT 30
-
+#endif /* NONBLOCK_H */
