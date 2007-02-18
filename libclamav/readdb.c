@@ -501,7 +501,7 @@ static int cli_loaddb(FILE *fd, struct cl_node **root, unsigned int *signo)
     return 0;
 }
 
-static int cli_loadndb(FILE *fd, struct cl_node **root, unsigned int *signo)
+static int cli_loadndb(FILE *fd, struct cl_node **root, unsigned int *signo, unsigned short sdb)
 {
 	char buffer[FILEBUFF], *sig, *virname, *offset, *pt;
 	int line = 0, sigs = 0, ret = 0;
@@ -548,7 +548,7 @@ static int cli_loadndb(FILE *fd, struct cl_node **root, unsigned int *signo)
 	    break;
 	}
 
-	if((pt = cli_strtok(buffer, 4, ":"))) {
+	if((pt = cli_strtok(buffer, 4, ":"))) { /* min version */
 	    if(!isdigit(*pt)) {
 		free(virname);
 		free(pt);
@@ -565,6 +565,25 @@ static int cli_loadndb(FILE *fd, struct cl_node **root, unsigned int *signo)
 	    }
 
 	    free(pt);
+
+	    if((pt = cli_strtok(buffer, 5, ":"))) { /* max version */
+		if(!isdigit(*pt)) {
+		    free(virname);
+		    free(pt);
+		    ret = CL_EMALFDB;
+		    break;
+		}
+
+		if(atoi(pt) < cl_retflevel()) {
+		    sigs--;
+		    free(virname);
+		    free(pt);
+		    continue;
+		}
+
+		free(pt);
+	    }
+
 	}
 
 	if(!(pt = cli_strtok(buffer, 1, ":")) || !isdigit(*pt)) {
@@ -620,6 +639,11 @@ static int cli_loadndb(FILE *fd, struct cl_node **root, unsigned int *signo)
 
     if(signo)
 	*signo += sigs;
+
+    if(sdb && sigs && !(*root)->sdb) {
+	(*root)->sdb = 1;
+	cli_dbgmsg("*** Self protection mechanism activated.\n");
+    }
 
     return 0;
 }
@@ -920,7 +944,10 @@ int cl_loaddb(const char *filename, struct cl_node **root, unsigned int *signo)
 	ret = cli_loadhdb(fd, root, signo, 1);
 
     } else if(cli_strbcasestr(filename, ".ndb")) {
-	ret = cli_loadndb(fd, root, signo);
+	ret = cli_loadndb(fd, root, signo, 0);
+
+    } else if(cli_strbcasestr(filename, ".sdb")) {
+	ret = cli_loadndb(fd, root, signo, 1);
 
     } else if(cli_strbcasestr(filename, ".zmd")) {
 	ret = cli_loadmd(fd, root, signo, 1);
@@ -979,6 +1006,7 @@ int cl_loaddbdir(const char *dirname, struct cl_node **root, unsigned int *signo
 	     cli_strbcasestr(dent->d_name, ".hdb")  ||
 	     cli_strbcasestr(dent->d_name, ".fp")   ||
 	     cli_strbcasestr(dent->d_name, ".ndb")  ||
+	     cli_strbcasestr(dent->d_name, ".sdb")  ||
 	     cli_strbcasestr(dent->d_name, ".zmd")  ||
 	     cli_strbcasestr(dent->d_name, ".rmd")  ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
@@ -1059,6 +1087,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".hdb")  || 
 	    cli_strbcasestr(dent->d_name, ".fp")  || 
 	    cli_strbcasestr(dent->d_name, ".ndb")  || 
+	    cli_strbcasestr(dent->d_name, ".sdb")  || 
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 
 	    cli_strbcasestr(dent->d_name, ".rmd")  || 
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
@@ -1130,6 +1159,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".hdb")  || 
 	    cli_strbcasestr(dent->d_name, ".fp")  || 
 	    cli_strbcasestr(dent->d_name, ".ndb")  || 
+	    cli_strbcasestr(dent->d_name, ".sdb")  || 
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 
 	    cli_strbcasestr(dent->d_name, ".rmd")  || 
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {

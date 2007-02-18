@@ -1806,6 +1806,19 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							if(!isspace(data[0]))
 								break;
 
+							if(data[1] == '\0') {
+								/*
+								 * Broken message: the
+								 * blank line at the end
+								 * of the headers isn't blank -
+								 * it contains a space
+								 */
+								cli_dbgmsg("Multipart %d: headers not terminated by blank line\n",
+									multiparts);
+								inhead = FALSE;
+								break;
+							}
+
 							ptr = cli_realloc(fullline,
 								strlen(fullline) + strlen(data) + 1);
 
@@ -3465,7 +3478,7 @@ rfc1341(message *m, const char *dir)
 						return -1;
 					}
 					nblanks = 0;
-					while(fgets(buffer, sizeof(buffer), fin) != NULL)
+					while(fgets(buffer, sizeof(buffer) - 1, fin) != NULL)
 						/*
 						 * Ensure that trailing newlines
 						 * aren't copied

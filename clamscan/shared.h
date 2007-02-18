@@ -20,14 +20,14 @@
 #define __SHARED_H
 
 struct s_info {
-    int signs; /* number of signatures loaded */
-    int dirs; /* number of scanned directories */
-    int files; /* number of scanned files */
-    int ifiles; /* number of infected files */
-    int notremoved; /* number of not removed files (if --remove) */
-    int notmoved; /* number of not moved files (if --move) */
-    int errors; /*  ... of errors */
-    long int blocks; /* number of read 16kb blocks */
+    unsigned int sigs; /* number of signatures loaded */
+    unsigned int dirs; /* number of scanned directories */
+    unsigned int files; /* number of scanned files */
+    unsigned int ifiles; /* number of infected files */
+    unsigned int notremoved; /* number of not removed files (if --remove) */
+    unsigned int notmoved; /* number of not moved files (if --move) */
+    unsigned int errors; /*  ... of errors */
+    unsigned long int blocks; /* number of read 16kb blocks */
 };
 
 extern struct s_info claminfo;

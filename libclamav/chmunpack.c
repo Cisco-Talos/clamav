@@ -493,7 +493,7 @@ static int read_chunk_entries(unsigned char *chunk, uint32_t chunk_len,
 				free(file_e);
 				return FALSE;
 			}
-			strncpy(file_e->name, current, name_len);
+			strncpy((char *) file_e->name, (char *) current, name_len);
 			file_e->name[name_len] = '\0';
 		}
 		current += name_len;
@@ -685,7 +685,7 @@ static lzx_control_t *read_sys_control(int fd, itsf_header_t *itsf_hdr, file_lis
 	lzx_control->window_size = chm_endian_convert_32(lzx_control->window_size);
 	lzx_control->cache_size = chm_endian_convert_32(lzx_control->cache_size);
 	
-	if (strncmp("LZXC", lzx_control->signature, 4) != 0) {
+	if (strncmp((char *) "LZXC", (char *) lzx_control->signature, 4) != 0) {
 		cli_dbgmsg("bad sys_control signature");
 		goto abort;
 	}
@@ -864,8 +864,8 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 	}
 	mf_in.name = strdup("input");
 	
-	snprintf(filename, 1024, "%s/clamav-unchm.bin", dirname);
-	mf_out.desc = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
+	snprintf((char *) filename, 1024, "%s/clamav-unchm.bin", dirname);
+	mf_out.desc = open((char *) filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
 	if (!mf_out.desc) {
 		cli_dbgmsg("open failed\n", filename);
 		free(mf_in.name);
@@ -884,11 +884,11 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 	
 	entry = sys_file_l->next;
 	while (entry) {
-		if (strcmp(entry->name, CHM_SYS_CONTROL_NAME) == 0) {
+		if (strcmp((char *) entry->name, CHM_SYS_CONTROL_NAME) == 0) {
 			lzx_control = read_sys_control(fd, itsf_hdr, entry, m_area, m_length);
-		} else if (strcmp(entry->name, CHM_SYS_CONTENT_NAME) == 0) {
+		} else if (strcmp((char *) entry->name, CHM_SYS_CONTENT_NAME) == 0) {
 			lzx_content = read_sys_content(fd, itsf_hdr, entry);
-		} else if (strcmp(entry->name, CHM_SYS_RESETTABLE_NAME) == 0) {
+		} else if (strcmp((char *) entry->name, CHM_SYS_RESETTABLE_NAME) == 0) {
 			lzx_reset_table = read_sys_reset_table(fd, itsf_hdr, entry, m_area, m_length);
 		}
 		entry = entry->next;
@@ -954,14 +954,14 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 	mf_out.fh = NULL;
 	
 	/* Reopen the file for reading */
-	mf_out.desc = open(filename, O_RDONLY);
+	mf_out.desc = open((char *) filename, O_RDONLY);
 	if (mf_out.desc < 0) {
 		cli_dbgmsg("re-open output failed\n");
 		goto abort;
 	}
 	
 	/* Delete the file */
-	unlink(filename);
+	unlink((char *) filename);
 	
 	count=0;
 	while(entry) {
@@ -975,8 +975,8 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 			continue;
 		}
 		
-		snprintf(filename, 1024, "%s/%d-%llu.chm", dirname, count, entry->offset);
-		ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
+		snprintf((char *) filename, 1024, "%s/%d-%llu.chm", dirname, count, entry->offset);
+		ofd = open((char *) filename, O_WRONLY|O_CREAT|O_TRUNC, S_IRWXU);
 		if (ofd < 0) {
 			entry = entry->next;
 			continue;

@@ -68,7 +68,8 @@ void clamd(struct optstruct *opt)
 	time_t currtime;
 	struct cl_node *root = NULL;
 	const char *dbdir, *cfgfile;
-	int ret, virnum = 0, tcpsock;
+	int ret, tcpsock;
+	unsigned int virnum = 0;
 #ifdef C_LINUX
 	struct stat sb;
 #endif
@@ -167,6 +168,11 @@ void clamd(struct optstruct *opt)
 #endif
 
     logg("clamd daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
+
+    if(strcmp(VERSION, cl_retver())) {
+	logg("WARNING: Version mismatch (clamd: "VERSION", libclamav: %s)\n", cl_retver());
+	logg("See the FAQ at http://www.clamav.net/faq.html\n");
+    }
 
     if(logg_size)
 	logg("Log file size limited to %d bytes.\n", logg_size);

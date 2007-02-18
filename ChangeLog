@@ -1,3 +1,27 @@
+Mon Jan  9 18:26:21 CET 2006
+----------------------------
+  V 0.88
+  * Changes:
+    - libclamav: add support for signature based self-protection mode (tk)
+    - libclamav/upx.c: fix possible heap overflow (acab)
+      Reported by 3Com's Zero Day Initiative
+    - libclamav/upx.c,fsg.c,petite.c: improve code security (acab)
+    - clamd, clamscan: try to detect library version mismatch (tk)
+    - libclamav/mbox.c: Multipart headers: handle end of header lines that are
+      not empty (njh)
+    - libclamav/zziplib/zzip-zip.c: fix pointer misalignment problem on sparc64
+      Thanks to Clint Adams <schizo*debian.org>
+    - clamd/others.h: fix compilation error on systems with INCOMPLETE_CMSG (tk)
+      Reported by Fukuda Manabu <fukuda*cri-mw.co.jp>
+    - libclamav/pe.c: respect CL_SCAN_BLOCKMAX (tk)
+    - libclamav/zziplib: improve handling of incorrectly created/handcrafted
+      zip archives. Test file provided by Christoph Cordes (tk)
+    - libclamav/zziplib: improve handling of multi-part/broken zip archives (tk)
+      Test files provided by Tomasz Papszun
+    - clamscan/treewalk.c: --exclude-dir was taking bad arguments when used
+      multiple times (tk)
+
+
 Thu Nov  3 21:42:46 CET 2005
 ----------------------------
   V 0.87.1
@@ -5,7 +29,7 @@ Thu Nov  3 21:42:46 CET 2005
     - libclamav/petite.c: fix boundary checks (acab)
     - libclamav/mbox.c:	scan attachments that have no filename (njh)
     - libclamav/fsg.c: fix buffer size calculation in unfsg_133
-      Reported by Zero Day Initiative (ZDI-CAN-004)
+      Reported by 3Com's Zero Day Initiative (ZDI-05-002)
     - libclamav/tnef.c: fix possible infinite loop
       Reported by iDEFENSE (IDEF1169).
     - libclamav/mspack/cabd.c: fix possible infinite loop in cabd_find (tk)

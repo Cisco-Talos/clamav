@@ -15,6 +15,8 @@
 #include "clamav-config.h"
 #endif
 
+#include "target.h"
+
 #include <zzip.h>                                  /* archive handling */
 #include <zzip-file.h>
 #include <zzipformat.h>
@@ -259,7 +261,7 @@ __zzip_find_disk_trailer(int fd, zzip_off_t filesize,
                 { return(ZZIP_DIR_SEEK); }
             if (io->read(fd, buf, (zzip_size_t)maplen) < (zzip_ssize_t)maplen)
                 { return(ZZIP_DIR_READ); }
-            mapped = buf; /* success */
+            mapped = (unsigned char *) buf; /* success */
 	    /*
 	    HINT5("offs=$%lx len=%li filesize=%li pagesize=%i", 
 		(long)offset, (long)maplen, (long)filesize, ZZIP_BUFSIZ);
@@ -387,8 +389,13 @@ __zzip_parse_root_directory(int fd,
                 return ZZIP_DIR_SEEK;
 	    }
             if (io->read(fd, &dirent, sizeof(dirent)) < __sizeof(dirent)) {
-		free(hdr0);
-                return ZZIP_DIR_READ;
+		if(entries != u_entries) {
+		    entries = 0;
+		    break;
+		} else {
+		    free(hdr0);
+		    return ZZIP_DIR_READ;
+		}
 	    }
             d = &dirent;
         }
@@ -424,6 +431,20 @@ __zzip_parse_root_directory(int fd,
                 return ZZIP_DIR_READ;
         }
         hdr->d_compr = (uint8_t)ZZIP_GET16(d->z_compr);
+
+	/* If d_compr is incorrect scanning will result in CL_EZIP (Zip
+	 * module failure)
+	 */
+	if(!hdr->d_compr && hdr->d_csize != hdr->d_usize) {
+	    cli_dbgmsg("Zziplib: File claims to be stored but csize != usize\n");
+	    cli_dbgmsg("Zziplib: Switching to the inflate method\n");
+	    hdr->d_compr = 8;
+	} else if(hdr->d_compr && hdr->d_csize == hdr->d_usize) {
+	    cli_dbgmsg("Zziplib: File claims to be deflated but csize == usize\n");
+	    cli_dbgmsg("Zziplib: Switching to the stored method\n");
+	    hdr->d_compr = 0;
+	}
+
 	hdr->d_flags = u_flags;
 
         /* bull: hdr->d_compr is uint8_t
@@ -621,7 +642,11 @@ __zzip_dir_parse (ZZIP_DIR* dir)
 {
     zzip_error_t rv;
     zzip_off_t filesize;
+#if (defined(TARGET_CPU_SPARC64) || defined(TARGET_CPU_SPARC)) && defined(HAVE_ATTRIB_ALIGNED)
+    struct zzip_disk_trailer trailer __attribute__((aligned));
+#else
     struct zzip_disk_trailer trailer;
+#endif
     /* if (! dir || dir->fd < 0) 
      *     { rv = EINVAL; goto error; } 
      */

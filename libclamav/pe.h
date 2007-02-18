@@ -76,7 +76,7 @@ struct pe_image_optional_hdr {
 };
 
 struct pe_image_section_hdr {
-    uint8_t Name[8];			    /* may not end with NULL */
+    char Name[8];			    /* may not end with NULL */
     /*
     union {
 	uint32_t PhysicalAddress;
@@ -100,7 +100,7 @@ struct cli_pe_info {
     struct SECTION *section;
 };
 
-int cli_scanpe(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec);
+int cli_scanpe(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec);
 
 int cli_peheader(int desc, struct cli_pe_info *peinfo);
 

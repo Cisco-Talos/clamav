@@ -200,7 +200,8 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 int scan(const char *filename, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, const struct cfgstruct *copt, int odesc, short contscan)
 {
 	struct stat sb;
-	int ret = 0, reclev = 0;
+	int ret = 0;
+	unsigned int reclev = 0;
 	const char *virname;
 
 

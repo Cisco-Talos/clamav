@@ -29,8 +29,9 @@
 
 int main(int argc, char **argv)
 {
-	int fd, ret, no = 0;
-	unsigned long int size = 0;
+	int fd, ret;
+	unsigned int sigs = 0;
+	unsigned long int blocks = 0;
 	long double mb;
 	const char *virname;
 	struct cl_node *root = NULL;
@@ -49,13 +50,13 @@ int main(int argc, char **argv)
 
     /* load all available databases from default directory */
 
-    if((ret = cl_loaddbdir(cl_retdbdir(), &root, &no))) {
+    if((ret = cl_loaddbdir(cl_retdbdir(), &root, &sigs))) {
 	printf("cl_loaddbdir: %s\n", cl_perror(ret));
 	close(fd);
 	exit(2);
     }
 
-    printf("Loaded %d signatures.\n", no);
+    printf("Loaded %d signatures.\n", sigs);
 
     /* build engine */
     if((ret = cl_build(root))) {
@@ -74,7 +75,7 @@ int main(int argc, char **argv)
     limits.archivememlim = 0; /* disable memory limit for bzip2 scanner */
 
     /* scan descriptor */
-    if((ret = cl_scandesc(fd, &virname, &size, root, &limits, CL_SCAN_STDOPT)) == CL_VIRUS)
+    if((ret = cl_scandesc(fd, &virname, &blocks, root, &limits, CL_SCAN_STDOPT)) == CL_VIRUS)
 	printf("Virus detected: %s\n", virname);
     else {
 	printf("No virus detected.\n");
@@ -83,7 +84,7 @@ int main(int argc, char **argv)
     }
     close(fd);
 
-    mb = size * (CL_COUNT_PRECISION / 1024) / 1024.0;
+    mb = blocks * (CL_COUNT_PRECISION / 1024) / 1024.0;
     printf("Data scanned: %2.2Lf Mb\n", mb);
 
     cl_free(root);

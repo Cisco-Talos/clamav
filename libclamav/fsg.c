@@ -48,22 +48,8 @@
 #include "rebuildpe.h"
 #include "others.h"
 
-#if WORDS_BIGENDIAN == 0
-#define EC16(v)	(v)
-#define EC32(v) (v)
-#else
-static inline uint16_t EC16(uint16_t v)
-{
-    return ((v >> 8) + (v << 8));
-}
 
-static inline uint32_t EC32(uint32_t v)
-{
-    return ((v >> 24) | ((v & 0x00FF0000) >> 8) | ((v & 0x0000FF00) << 8) | (v << 24));
-}
-#endif
-
-static int doubledl(char **scur, uint8_t *mydlptr, char *buffer, int buffersize)
+static int doubledl(char **scur, uint8_t *mydlptr, char *buffer, uint32_t buffersize)
 {
   unsigned char mydl = *mydlptr;
   unsigned char olddl = mydl;
@@ -118,8 +104,6 @@ static int unfsg(char *source, char *dest, int ssize, int dsize, char **endsrc, 
 	      return -1;
 	    *cdst++=0x00;
 	    continue;
-	  } else {
-	    /* repne movsb - FIXME dont remove for now */
 	  }
 	} else {
 	  /* 18f */
@@ -186,7 +170,7 @@ static int unfsg(char *source, char *dest, int ssize, int dsize, char **endsrc, 
 	}
 	lostbit = 0;
       }
-      if ((backsize >= dest + dsize - cdst) || (backbytes > cdst - dest))
+      if (!CLI_ISCONTAINED(dest, dsize, cdst, backsize) || !CLI_ISCONTAINED(dest, dsize, cdst-backbytes, backsize))
 	return -1;
       while(backsize--) {
 	*cdst=*(cdst-backbytes);
@@ -207,11 +191,26 @@ static int unfsg(char *source, char *dest, int ssize, int dsize, char **endsrc, 
   return 0;
 }
 
-int unfsg_200(char *source, char *dest, int ssize, int dsize) {
-  char *fake;
-
-  return unfsg(source, dest, ssize, dsize, &fake, &fake);
+int unfsg_200(char *source, char *dest, int ssize, int dsize, uint32_t rva, uint32_t base, uint32_t ep, int file) {
+  char *fake, *tsrc;
+  struct SECTION section; // Yup, just one ;)
+  
+  if ( unfsg(source, dest, ssize, dsize, &fake, &fake) ) return -1;
+  
+  section.raw=0;
+  section.rsz = dsize;
+  section.vsz = dsize;
+  section.rva = rva;
+  if ( (tsrc = rebuildpe(dest, &section, 1, base, ep, 0, 0)) ) {
+    write(file, tsrc, 0x148+0x80+0x28+dsize);
+    free(tsrc);
+  } else {
+    cli_dbgmsg("FSG: Rebuilding failed\n");
+    return 0;
+  }
+  return 1;
 }
+
 
 int unfsg_133(char *source, char *dest, int ssize, int dsize, struct SECTION *sections, int sectcount, uint32_t base, uint32_t ep, int file) {
   char *tsrc=source, *tdst=dest;
@@ -266,7 +265,6 @@ int unfsg_133(char *source, char *dest, int ssize, int dsize, struct SECTION *se
     write(file, tsrc, 0x148+0x80+0x28*(sectcount+1)+offs);
     free(tsrc);
   } else {
-    free(tsrc);
     cli_dbgmsg("FSG: Rebuilding failed\n");
     return 0;
   }

@@ -131,6 +131,7 @@ struct cli_meta_node {
 struct cl_node {
     unsigned int refcount;
     unsigned int maxpatlen; /* maximal length of pattern in db */
+    unsigned short sdb;
 
     /* Extended Boyer-Moore */
     int *bm_shift;

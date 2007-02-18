@@ -89,13 +89,13 @@ int scanmanager(const struct optstruct *opt)
 	stat(getargc(opt, 'd'), &sb);
 	switch(sb.st_mode & S_IFMT) {
 	    case S_IFREG:
-		if((ret = cl_loaddb(getargc(opt, 'd'), &trie, &claminfo.signs))) {
+		if((ret = cl_loaddb(getargc(opt, 'd'), &trie, &claminfo.sigs))) {
 		    mprintf("@%s\n", cl_strerror(ret));
 		    return 50;
 		}
 		break;
             case S_IFDIR:
-		if((ret = cl_loaddbdir(getargc(opt, 'd'), &trie, &claminfo.signs))) {
+		if((ret = cl_loaddbdir(getargc(opt, 'd'), &trie, &claminfo.sigs))) {
 		    mprintf("@%s\n", cl_strerror(ret));
 		    return 50;
 		}
@@ -108,7 +108,7 @@ int scanmanager(const struct optstruct *opt)
     } else {
 	    char *dbdir = freshdbdir();
 
-	if((ret = cl_loaddbdir(dbdir, &trie, &claminfo.signs))) {
+	if((ret = cl_loaddbdir(dbdir, &trie, &claminfo.sigs))) {
 	    mprintf("@%s\n", cl_strerror(ret));
 	    free(dbdir);
 	    return 50;

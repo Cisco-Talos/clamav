@@ -119,7 +119,7 @@ static void cli_unlock_mutex(void *mtx)
 }
 #endif
 
-static int cli_scanrar(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanrar(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	FILE *tmp = NULL;
 	int fd, ret = CL_CLEAN;
@@ -332,7 +332,7 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 }
 
 #ifdef HAVE_ZLIB_H
-static int cli_scanzip(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanzip(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	ZZIP_DIR *zdir;
 	ZZIP_DIRENT zdirent;
@@ -562,7 +562,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
     return ret;
 }
 
-static int cli_scangzip(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scangzip(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	int fd, bytes, ret = CL_CLEAN;
 	unsigned long int size = 0;
@@ -648,7 +648,7 @@ static int cli_scangzip(int desc, const char **virname, long int *scanned, const
 #define BZ2_bzRead bzRead
 #endif
 
-static int cli_scanbzip(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanbzip(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	int fd, bytes, ret = CL_CLEAN, bzerror = 0;
 	short memlim = 0;
@@ -739,7 +739,7 @@ static int cli_scanbzip(int desc, const char **virname, long int *scanned, const
 }
 #endif
 
-static int cli_scanszdd(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanszdd(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	int fd, ret = CL_CLEAN;
 	FILE *tmp = NULL, *in;
@@ -784,7 +784,7 @@ static int cli_scanszdd(int desc, const char **virname, long int *scanned, const
     return ret;
 }
 
-static int cli_scanmscab(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanmscab(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	struct mscab_decompressor *cabd = NULL;
 	struct mscabd_cabinet *base, *cab;
@@ -843,7 +843,7 @@ static int cli_scanmscab(int desc, const char **virname, long int *scanned, cons
     return ret;
 }
 
-static int cli_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scandir(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	DIR *dd;
 	struct dirent *dent;
@@ -904,7 +904,7 @@ static int cli_scandir(const char *dirname, const char **virname, long int *scan
     return 0;
 }
 
-static int cli_vba_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_vba_scandir(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	int ret = CL_CLEAN, i, fd, data_len;
 	vba_project_t *vba_project;
@@ -945,7 +945,7 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 		if(scanned)
 		    *scanned += data_len / CL_COUNT_PRECISION;
 
-		if(cli_scanbuff(data, data_len, virname, root, CL_TYPE_MSOLE2) == CL_VIRUS) {
+		if(cli_scanbuff((char *) data, data_len, virname, root, CL_TYPE_MSOLE2) == CL_VIRUS) {
 		    free(data);
 		    ret = CL_VIRUS;
 		    break;
@@ -989,7 +989,7 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 		} else {
 			if(scanned)
 			    *scanned += vba_project->length[i] / CL_COUNT_PRECISION;
-			if(cli_scanbuff(data, vba_project->length[i], virname, root, CL_TYPE_MSOLE2) == CL_VIRUS) {
+			if(cli_scanbuff((char *) data, vba_project->length[i], virname, root, CL_TYPE_MSOLE2) == CL_VIRUS) {
 				free(data);
 				ret = CL_VIRUS;
 				break;
@@ -1049,7 +1049,7 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
     return ret;
 }
 
-static int cli_scanhtml(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanhtml(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	char *tempname, fullname[1024];
 	int ret=CL_CLEAN, fd;
@@ -1123,7 +1123,7 @@ static int cli_scanhtml(int desc, const char **virname, long int *scanned, const
     return ret;
 }
 
-static int cli_scanole2(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanole2(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	char *dir;
 	int ret = CL_CLEAN;
@@ -1159,7 +1159,7 @@ static int cli_scanole2(int desc, const char **virname, long int *scanned, const
     return ret;
 }
 
-static int cli_scantar(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec, unsigned int posix)
+static int cli_scantar(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec, unsigned int posix)
 {
 	char *dir;
 	int ret = CL_CLEAN;
@@ -1187,7 +1187,7 @@ static int cli_scantar(int desc, const char **virname, long int *scanned, const 
     return ret;
 }
 
-static int cli_scanbinhex(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanbinhex(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	char *dir;
 	int ret = CL_CLEAN;
@@ -1216,7 +1216,7 @@ static int cli_scanbinhex(int desc, const char **virname, long int *scanned, con
     return ret;
 }
 
-static int cli_scanmschm(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanmschm(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	char *tempname;
 	int ret = CL_CLEAN;
@@ -1241,7 +1241,7 @@ static int cli_scanmschm(int desc, const char **virname, long int *scanned, cons
     return ret;
 }
 
-static int cli_scanscrenc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanscrenc(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	char *tempname;
 	int ret = CL_CLEAN;
@@ -1289,7 +1289,7 @@ static int cli_scanjpeg(int desc, const char **virname)
     return ret;
 }
 
-static int cli_scantnef(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scantnef(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	int ret;
 	char *dir = cli_gentemp(NULL);
@@ -1313,7 +1313,7 @@ static int cli_scantnef(int desc, const char **virname, long int *scanned, const
     return ret;
 }
 
-static int cli_scanmail(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanmail(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	char *dir;
 	int ret;
@@ -1348,7 +1348,50 @@ static int cli_scanmail(int desc, const char **virname, long int *scanned, const
     return ret;
 }
 
-int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+static int cli_scanraw(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec, cli_file_t type)
+{
+	int typerec = 0, ret = CL_CLEAN;
+
+
+    if(type == CL_TYPE_UNKNOWN_TEXT)
+	typerec = 1;
+
+    if(lseek(desc, 0, SEEK_SET) < 0) {
+	cli_errmsg("cli_scanraw: lseek() failed\n");
+	return CL_EIO;
+    }
+
+    if((ret = cli_scandesc(desc, virname, scanned, root, typerec, type)) == CL_VIRUS) {
+	cli_dbgmsg("%s found in descriptor %d.\n", *virname, desc);
+	return CL_VIRUS;
+
+    } else if(ret < 0) {
+	return ret;
+
+    } else if(ret >= CL_TYPENO) {
+	lseek(desc, 0, SEEK_SET);
+
+	ret == CL_TYPE_MAIL ? mrec++ : arec++;
+	switch(ret) {
+	    case CL_TYPE_HTML:
+		if(SCAN_HTML)
+		    if(cli_scanhtml(desc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS)
+			return CL_VIRUS;
+		    break;
+
+	    case CL_TYPE_MAIL:
+		if(SCAN_MAIL)
+		    if(cli_scanmail(desc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS)
+			return CL_VIRUS;
+		break;
+	}
+	ret == CL_TYPE_MAIL ? mrec-- : arec--;
+    }
+
+    return ret;
+}
+
+int cli_magic_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	int ret = CL_CLEAN, nret;
 	int bread = 0;
@@ -1398,6 +1441,12 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
     lseek(desc, 0, SEEK_SET);
     type = cli_filetype2(desc);
     lseek(desc, 0, SEEK_SET);
+
+    if(type != CL_TYPE_DATA && root->sdb) {
+	if((ret = cli_scanraw(desc, virname, scanned, root, limits, options, arec, mrec, type) == CL_VIRUS))
+	    return CL_VIRUS;
+	lseek(desc, 0, SEEK_SET);
+    }
 
     type == CL_TYPE_MAIL ? mrec++ : arec++;
 
@@ -1499,39 +1548,9 @@ int cli_magic_scandesc(int desc, const char **virname, long int *scanned, const 
 
     type == CL_TYPE_MAIL ? mrec-- : arec--;
 
-    if(type != CL_TYPE_DATA && ret != CL_VIRUS) { /* scan the raw file */
-	    int typerec;
-
-	type == CL_TYPE_UNKNOWN_TEXT ? (typerec = 1) : (typerec = 0);
-	if(lseek(desc, 0, SEEK_SET) < 0)
-	    cli_errmsg("lseek() failed, trying to continue anyway...\n");
-
-	if((nret = cli_scandesc(desc, virname, scanned, root, typerec, type)) == CL_VIRUS) {
-	    cli_dbgmsg("%s found in descriptor %d.\n", *virname, desc);
+    if(type != CL_TYPE_DATA && ret != CL_VIRUS && !root->sdb) {
+	if((ret = cli_scanraw(desc, virname, scanned, root, limits, options, arec, mrec, type) == CL_VIRUS))
 	    return CL_VIRUS;
-
-	} else if(nret < 0) {
-	    return nret;
-
-	} else if(nret >= CL_TYPENO) {
-	    lseek(desc, 0, SEEK_SET);
-
-	    nret == CL_TYPE_MAIL ? mrec++ : arec++;
-	    switch(nret) {
-		case CL_TYPE_HTML:
-		    if(SCAN_HTML)
-			if(cli_scanhtml(desc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS)
-			    return CL_VIRUS;
-		    break;
-
-		case CL_TYPE_MAIL:
-		    if(SCAN_MAIL)
-			if(cli_scanmail(desc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS)
-			    return CL_VIRUS;
-		    break;
-	    }
-	    nret == CL_TYPE_MAIL ? mrec-- : arec--;
-	}
     }
 
     arec++;

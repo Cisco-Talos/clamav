@@ -178,7 +178,8 @@ static void vba56_test_middle(int fd)
 static int vba_read_project_strings(int fd, int is_mac)
 {
 	uint16_t length;
-	unsigned char *buff, *name;
+	unsigned char *buff;
+	char *name;
 	uint32_t offset;
 
 	for (;;) {
@@ -203,7 +204,7 @@ static int vba_read_project_strings(int fd, int is_mac)
 			free(buff);
 			break;
 		}
-		name = get_unicode_name(buff, length, is_mac);
+		name = get_unicode_name((char *) buff, length, is_mac);
 		if (name) {
 			cli_dbgmsg("name: %s\n", name);
 		} else {
@@ -499,7 +500,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 			free(buff);
 			goto out_error;
 		}
-		vba_project->name[i] = get_unicode_name(buff, length, is_mac);
+		vba_project->name[i] = get_unicode_name((char *) buff, length, is_mac);
 		if (!vba_project->name[i]) {
 			offset = lseek(fd, 0, SEEK_CUR);
 			vba_project->name[i] = (char *) cli_malloc(18);
@@ -931,7 +932,7 @@ typedef struct macro_info_tag {
 
 typedef struct macro_extname_tag {
 	uint8_t length;
-	unsigned char *extname;
+	char *extname;
 	uint16_t numref;
 } macro_extname_t;
 
@@ -948,7 +949,7 @@ typedef struct macro_intnames_tag {
 typedef struct macro_intname_tag {
 	uint16_t id;
 	uint8_t length;
-	unsigned char *intname;
+	char *intname;
 } macro_intname_t;
 
 typedef struct menu_entry_tag {
@@ -1098,6 +1099,7 @@ static macro_info_t *wm_read_macro_info(int fd)
 	}
 	if (cli_readn(fd, &macro_info->count, 2) != 2) {
 		cli_dbgmsg("read macro_info failed\n");
+		free(macro_info);
 		return NULL;
 	}
 	macro_info->count = vba_endian_convert_16(macro_info->count, FALSE);
@@ -1248,7 +1250,7 @@ static macro_extnames_t *wm_read_macro_extnames(int fd)
 	off_t offset_end;	
 	macro_extnames_t *macro_extnames;
 	macro_extname_t *macro_extname;
-	unsigned char *name_tmp;
+	char *name_tmp;
 	
 	macro_extnames = (macro_extnames_t *) cli_malloc(sizeof(macro_extnames_t));
 	if (!macro_extnames) {

@@ -55,7 +55,8 @@
 int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname)
 {
 	time_t currtime;
-	int ret, updated = 0, outdated = 0, signo = 0, ttl = -1;
+	int ret, updated = 0, outdated = 0, signo = 0;
+	unsigned int ttl = 0;
 	char ipaddr[16], *dnsreply = NULL, *pt, *localip = NULL, *newver = NULL;
 	struct cfgstruct *cpt;
 	const char *arg = NULL;

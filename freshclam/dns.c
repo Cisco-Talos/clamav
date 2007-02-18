@@ -40,7 +40,8 @@
 
 char *txtquery(const char *domain, unsigned int *ttl)
 {
-	unsigned char answer[PACKETSZ], host[128], *pt, *txt;
+	unsigned char answer[PACKETSZ], *pt;
+	char host[128], *txt;
 	int len, exp, cttl, size, txtlen, type;
 
 
@@ -101,7 +102,7 @@ char *txtquery(const char *domain, unsigned int *ttl)
 	return NULL;
 
     pt++;
-    strncpy(txt, pt, txtlen);
+    strncpy(txt, (char *) pt, txtlen);
     txt[txtlen] = 0;
 
     return txt;

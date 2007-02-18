@@ -195,7 +195,7 @@ static void print_ole2_property(property_t *property)
                 cli_dbgmsg("[err name len: %d]\n", property->name_size);
                 return;
         }
-	print_property_name(property->name, property->name_size);
+	print_property_name((char *) property->name, property->name_size);
 	switch (property->type) {
 	case 2:
 		cli_dbgmsg(" [file] ");
@@ -463,7 +463,7 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 {
 	property_t prop_block[4];
 	int32_t index, current_block, i;
-	unsigned char *dirname;
+	char *dirname;
 	current_block = hdr->prop_start;
 	
 	if ((prop_index < 0) || (rec_level > 100) || (*file_count > 100000)) {
@@ -594,7 +594,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 		return FALSE;
 	}
 
-	if (! (name = get_property_name(prop->name, prop->name_size))) {
+	if (! (name = get_property_name((char *)prop->name, prop->name_size))) {
 		/* File without a name - create a name for it */
 		off_t i;
                                                                                                                             
@@ -809,7 +809,7 @@ int cli_ole2_extract(int fd, const char *dirname, const struct cl_limits *limits
 		return CL_EOLE2;
 	}
 
-	if (strncmp(hdr.magic, magic_id, 8) != 0) {
+	if (strncmp((char *) hdr.magic, (char *) magic_id, 8) != 0) {
 		cli_dbgmsg("OLE2 magic failed!\n");
 #ifdef HAVE_MMAP
 		if (hdr.m_area != NULL) {

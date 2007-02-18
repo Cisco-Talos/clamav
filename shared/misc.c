@@ -101,6 +101,11 @@ void print_version(void)
     }
 
     free(path);
+
+    if(strcmp(VERSION, cl_retver())) {
+	printf("WARNING: Version mismatch. See http://www.clamav.net/faq.html\n");
+	printf("Tool version: "VERSION", Engine version: %s\n", cl_retver());
+    }
 }
 
 int filecopy(const char *src, const char *dest)

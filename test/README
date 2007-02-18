@@ -7,3 +7,5 @@ are supported). Currently only clamscan is able to scan the clam-error.rar
 file (clamd only depends on libclamav's decompressors). Please use the --unrar
 option and it will automatically switch to the external unrar utility after
 libclamav's error.
+
+UPDATE: RAR 3.0 support is available in the development version of ClamAV.

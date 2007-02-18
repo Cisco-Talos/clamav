@@ -177,7 +177,7 @@ static long int cli_caloff(const char *offstr, int fd)
 int cli_checkfp(int fd, const struct cl_node *root)
 {
 	struct cli_md5_node *md5_node;
-	char *digest;
+	unsigned char *digest;
 
 
     if(root->md5_hlist) {
@@ -242,7 +242,7 @@ int cli_validatesig(unsigned short target, unsigned short ftype, const char *off
     return 1;
 }
 
-int cli_scandesc(int desc, const char **virname, long int *scanned, const struct cl_node *root, short otfrec, unsigned short ftype)
+int cli_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, short otfrec, unsigned short ftype)
 {
  	char *buffer, *buff, *endbl, *pt;
 	int bytes, buffsize, length, ret, *partcnt, type = CL_CLEAN;
@@ -289,7 +289,7 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 
     pt = buff;
     length = SCANBUFF;
-    while((bytes = read(desc, buff, SCANBUFF)) > 0) {
+    while((bytes = cli_readn(desc, buff, SCANBUFF)) > 0) {
 
 	if(scanned)
 	    *scanned += bytes / CL_COUNT_PRECISION;

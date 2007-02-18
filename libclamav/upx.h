@@ -21,8 +21,8 @@
 
 #include "cltypes.h"
 
-int upx_inflate2b(char *, int, char *, int *, uint32_t, uint32_t, uint32_t);
-int upx_inflate2d(char *, int, char *, int *, uint32_t, uint32_t, uint32_t);
-int upx_inflate2e(char *, int, char *, int *, uint32_t, uint32_t, uint32_t);
+int upx_inflate2b(char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t);
+int upx_inflate2d(char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t);
+int upx_inflate2e(char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t);
 
 #endif

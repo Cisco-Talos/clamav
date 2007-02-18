@@ -202,12 +202,12 @@ static unsigned char *cli_readline(FILE *stream, m_area_t *m_area, unsigned int 
 			free(line);
 			return NULL;
 		}
-		if (fgets(line, max_len, stream) == NULL) {
+		if (fgets((char *) line, max_len, stream) == NULL) {
 			free(line);
 			return NULL;
 		}
 
-		line_len=strlen(line);
+		line_len=strlen((char *) line);
 		if (line_len == 0) {
 			free(line);
 			return NULL;
@@ -252,7 +252,7 @@ static void html_output_c(file_buff_t *fbuff1, file_buff_t *fbuff2, unsigned cha
 	}
 }
 
-static void html_output_str(file_buff_t *fbuff, unsigned char *str, int len)
+static void html_output_str(file_buff_t *fbuff, char *str, int len)
 {
 	if (fbuff) {
 		if ((fbuff->length + len) >= HTML_FILE_BUFF_LEN) {
@@ -273,8 +273,8 @@ static char *html_tag_arg_value(tag_arguments_t *tags, char *tag)
 	int i;
 	
 	for (i=0; i < tags->count; i++) {
-		if (strcmp(tags->tag[i], tag) == 0) {
-			return tags->value[i];
+		if (strcmp((char *) tags->tag[i], (char *) tag) == 0) {
+			return (char *) tags->value[i];
 		}
 	}
 	return NULL;
@@ -285,16 +285,16 @@ static void html_tag_arg_set(tag_arguments_t *tags, char *tag, char *value)
 	int i;
 	
 	for (i=0; i < tags->count; i++) {
-		if (strcmp(tags->tag[i], tag) == 0) {
+		if (strcmp((char *) tags->tag[i], (char *) tag) == 0) {
 			free(tags->value[i]);
-			tags->value[i] = strdup(value);
+			tags->value[i] = (unsigned char *) strdup(value);
 			return;
 		}
 	}
 	return;
 }
 static void html_tag_arg_add(tag_arguments_t *tags,
-		unsigned char *tag, unsigned char *value)
+		char *tag, char *value)
 {
 	int len, i;
 	tags->count++;
@@ -308,16 +308,16 @@ static void html_tag_arg_add(tag_arguments_t *tags,
 	if (!tags->value) {
 		goto abort;
 	}
-	tags->tag[tags->count-1] = strdup(tag);
+	tags->tag[tags->count-1] = (unsigned char *) strdup((char *) tag);
 	if (value) {
 		if (*value == '"') {
-			tags->value[tags->count-1] = strdup(value+1);
+			tags->value[tags->count-1] = (unsigned char *) strdup((char *) value+1);
 			len = strlen(value+1);
 			if (len > 0) {
 				tags->value[tags->count-1][len-1] = '\0';
 			}
 		} else {
-			tags->value[tags->count-1] = strdup(value);
+			tags->value[tags->count-1] = (unsigned char *) strdup((char *) value);
 		}
 	} else {
 		tags->value[tags->count-1] = NULL;
@@ -354,10 +354,10 @@ static void html_output_tag(file_buff_t *fbuff, char *tag, tag_arguments_t *tags
 	html_output_str(fbuff, tag, strlen(tag));
 	for (i=0; i < tags->count; i++) {
 		html_output_c(fbuff, NULL, ' ');
-		html_output_str(fbuff, tags->tag[i], strlen(tags->tag[i]));
+		html_output_str(fbuff, (char *) tags->tag[i], strlen((char *) tags->tag[i]));
 		if (tags->value[i]) {
 			html_output_str(fbuff, "=\"", 2);
-			len = strlen(tags->value[i]);
+			len = strlen((char *) tags->value[i]);
 			for (j=0 ; j<len ; j++) {
 				html_output_c(fbuff, NULL, tolower(tags->value[i][j]));
 			}
@@ -395,7 +395,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	html_state state=HTML_NORM, next_state=HTML_BAD_STATE;
 	char filename[1024], tag[HTML_STR_LENGTH+1], tag_arg[HTML_STR_LENGTH+1];
 	char tag_val[HTML_STR_LENGTH+1], *tmp_file;
-	unsigned char *line, *ptr, *arg_value;
+	unsigned char *line, *ptr;
+	char *arg_value;
 	tag_arguments_t tag_args;
 	quoted_state quoted;
 	unsigned long length;
@@ -895,7 +896,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				break;
 			case HTML_JSDECODE:
 				/* Check for start marker */
-				if (strncmp(ptr, "#@~^", 4) == 0) {
+				if (strncmp((char *) ptr, "#@~^", 4) == 0) {
 					ptr += 4;
 					state = HTML_JSDECODE_LENGTH;
 					next_state = HTML_BAD_STATE;
@@ -906,7 +907,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				}
 				break;
 			case HTML_JSDECODE_LENGTH:
-				if (strlen(ptr) < 8) {
+				if (strlen((char *) ptr) < 8) {
 					state = HTML_NORM;
 					next_state = HTML_BAD_STATE;
 					break;
@@ -1244,8 +1245,8 @@ int html_screnc_decode(int fd, const char *dirname)
 		return FALSE;
 	}
 	
-	snprintf(filename, 1024, "%s/screnc.html", dirname);
-	file_buff.fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
+	snprintf((char *) filename, 1024, "%s/screnc.html", dirname);
+	file_buff.fd = open((char *) filename, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
 	file_buff.length = 0;
 	
 	if (!file_buff.fd) {
@@ -1255,7 +1256,7 @@ int html_screnc_decode(int fd, const char *dirname)
 	}
 	
 	while ((line = cli_readline(stream_in, NULL, 8192)) != NULL) {
-		ptr = strstr(line, "#@~^");
+		ptr = (unsigned char *) strstr((char *) line, "#@~^");
 		if (ptr) {
 			break;
 		}

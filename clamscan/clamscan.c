@@ -89,6 +89,11 @@ int clamscan(struct optstruct *opt)
     	help();
     }
 
+    if(strcmp(VERSION, cl_retver())) {
+	mprintf("WARNING: Version mismatch (clamscan: "VERSION", libclamav: %s)\n", cl_retver());
+	mprintf("See the FAQ at http://www.clamav.net/faq.html\n");
+    }
+
     /* check other options */
 
     if(optc(opt, 'r'))
@@ -166,8 +171,8 @@ int clamscan(struct optstruct *opt)
 	dms += (dms < 0) ? (1000000):(0);
 	mprintf("\n----------- SCAN SUMMARY -----------\n");
 	    logg("\n-- summary --\n");
-	mprintf("Known viruses: %d\n", claminfo.signs);
-	    logg("Known viruses: %d\n", claminfo.signs);
+	mprintf("Known viruses: %d\n", claminfo.sigs);
+	    logg("Known viruses: %d\n", claminfo.sigs);
 	mprintf("Engine version: %s\n", cl_retver());
 	    logg("Engine version: %s\n", cl_retver());
 	mprintf("Scanned directories: %d\n", claminfo.dirs);

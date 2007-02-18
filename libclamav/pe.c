@@ -48,6 +48,7 @@
 #define IMAGE_OPTIONAL_SIGNATURE    0x010b
 
 #define DETECT_BROKEN		    (options & CL_SCAN_BLOCKBROKEN)
+#define BLOCKMAX                    (options & CL_SCAN_BLOCKMAX)
 
 #define UPX_NRV2B "\x11\xdb\x11\xc9\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9\x11\xc9\x75\x20\x41\x01\xdb"
 #define UPX_NRV2D "\x83\xf0\xff\x74\x78\xd1\xf8\x89\xc5\xeb\x0b\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9"
@@ -146,7 +147,7 @@ static int cli_ddump(int desc, int offset, int size, const char *file)
 }
 */
 
-int cli_scanpe(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
+int cli_scanpe(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
 	uint16_t e_magic; /* DOS signature ("MZ") */
 	uint16_t nsections;
@@ -160,7 +161,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	char sname[9], buff[4096], *tempfile;
 	unsigned int i, found, upx_success = 0, min = 0, max = 0, err, broken = 0;
 	unsigned int ssize = 0, dsize = 0, dll = 0;
-	int (*upxfn)(char *, int , char *, int *, uint32_t, uint32_t, uint32_t) = NULL;
+	int (*upxfn)(char *, uint32_t , char *, uint32_t *, uint32_t, uint32_t, uint32_t) = NULL;
 	char *src = NULL, *dest = NULL;
 	int ndesc, ret;
 
@@ -332,12 +333,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
     cli_dbgmsg("SizeOfOptionalHeader: %d\n", EC16(file_hdr.SizeOfOptionalHeader));
 
     if(EC16(file_hdr.SizeOfOptionalHeader) != sizeof(struct pe_image_optional_hdr)) {
-	cli_warnmsg("Broken PE header detected.\n");
-	if(DETECT_BROKEN) {
-	    if(virname)
-		*virname = "Broken.Executable";
-	    return CL_VIRUS;
-	}
+	/* Support for PE32+ binaries available in CVS */
 	return CL_CLEAN;
     }
 
@@ -597,7 +593,12 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		if(limits && limits->maxfilesize && (ssize > limits->maxfilesize || dsize > limits->maxfilesize)) {
 		    cli_dbgmsg("FSG: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize , limits->maxfilesize);
 		    free(section_hdr);
-		    return CL_CLEAN;
+		    if(BLOCKMAX) {
+			*virname = "PE.FSG.ExceededFileSize";
+		         return CL_VIRUS;
+		    } else {
+		         return CL_CLEAN;
+		    }
 		}
 
 		if(ssize <= 0x19 || dsize <= ssize) {
@@ -665,8 +666,8 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    break;
 		}
 
-		/* FIXME: unused atm, needed for pe rebuilding */
-		cli_dbgmsg("FSG: found old EP @%x\n", cli_readint32(newebx + 12 - EC32(section_hdr[i + 1].VirtualAddress) + src) - EC32(optional_hdr.ImageBase));
+		newedx=cli_readint32(newebx + 12 - EC32(section_hdr[i + 1].VirtualAddress) + src) - EC32(optional_hdr.ImageBase);
+		cli_dbgmsg("FSG: found old EP @%x\n",newedx);
 
 		if((dest = (char *) cli_calloc(dsize, sizeof(char))) == NULL) {
 		    free(section_hdr);
@@ -674,16 +675,58 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		    return CL_EMEM;
 		}
 
-		if(unfsg_200(newesi - EC32(section_hdr[i + 1].VirtualAddress) + src, dest, ssize + EC32(section_hdr[i + 1].VirtualAddress) - newesi, dsize) == -1) {
-		    cli_dbgmsg("FSG: Unpacking failed\n");
-		    free(src);
-		    free(dest);
-		    break;
+		tempfile = cli_gentemp(NULL);
+		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+		  cli_dbgmsg("FSG: Can't create file %s\n", tempfile);
+		  free(tempfile);
+		  free(section_hdr);
+		  free(src);
+		  free(dest);
+		  return CL_EIO;
+                }
+
+		switch (unfsg_200(newesi - EC32(section_hdr[i + 1].VirtualAddress) + src, dest, ssize + EC32(section_hdr[i + 1].VirtualAddress) - newesi, dsize, newedi, EC32(optional_hdr.ImageBase), newedx, ndesc)) {
+		case 1: /* Everything OK */
+		  cli_dbgmsg("FSG: Unpacked and rebuilt executable saved in %s\n", tempfile);
+		  free(src);
+		  free(dest);
+		  fsync(ndesc);
+		  lseek(ndesc, 0, SEEK_SET);
+
+		  cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
+		  if(cli_magic_scandesc(ndesc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS) {
+		    free(section_hdr);
+		    close(ndesc);
+		    if(!cli_leavetemps_flag)
+		      unlink(tempfile);
+		    free(tempfile);
+		    return CL_VIRUS;
+		  }
+		  close(ndesc);
+		  if(!cli_leavetemps_flag)
+		    unlink(tempfile);
+		  free(tempfile);
+		  free(section_hdr);
+		  return CL_CLEAN;
+
+		case 0: /* We've got an unpacked buffer, no exe though */
+		  cli_dbgmsg("FSG: Successfully decompressed\n");
+		  close(ndesc);
+		  free(tempfile);
+		  found = 0;
+		  upx_success = 1;
+		  break; /* Go and scan the buffer! */
+
+		default: /* Everything gone wrong */
+		  cli_dbgmsg("FSG: Unpacking failed\n");
+		  close(ndesc);
+		  free(tempfile);
+		  free(src);
+		  free(dest);
+		  break;
 		}
 
-		found = 0;
-		upx_success = 1;
-		cli_dbgmsg("FSG: Successfully decompressed\n");
+		break; /* were done with 2 */
 	    }
 	}
 
@@ -704,7 +747,12 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		if(limits && limits->maxfilesize && (ssize > limits->maxfilesize || dsize > limits->maxfilesize)) {
 		    cli_dbgmsg("FSG: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize, limits->maxfilesize);
 		    free(section_hdr);
-		    return CL_CLEAN;
+		    if(BLOCKMAX) {
+			*virname = "PE.FSG.ExceededFileSize";
+		         return CL_VIRUS;
+		    } else {
+		         return CL_CLEAN;
+		    }
 		}
 
 		if(ssize <= 0x19 || dsize <= ssize) {
@@ -724,7 +772,12 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		if(limits && limits->maxfilesize && (unsigned int) gp > limits->maxfilesize) {
 		    cli_dbgmsg("FSG: Buffer size exceeded (size: %d, max: %lu)\n", gp, limits->maxfilesize);
 		    free(section_hdr);
-		    return CL_CLEAN;
+		    if(BLOCKMAX) {
+			*virname = "PE.FSG.ExceededFileSize";
+		         return CL_VIRUS;
+		    } else {
+		         return CL_CLEAN;
+		    }
 		}
 
 		if((support = (char *) cli_malloc(gp)) == NULL) {
@@ -914,7 +967,12 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		if(limits && limits->maxfilesize && (ssize > limits->maxfilesize || dsize > limits->maxfilesize)) {
 		    cli_dbgmsg("FSG: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize, limits->maxfilesize);
 		    free(section_hdr);
-		    return CL_CLEAN;
+		    if(BLOCKMAX) {
+			*virname = "PE.FSG.ExceededFileSize";
+		         return CL_VIRUS;
+		    } else {
+		         return CL_CLEAN;
+		    }
 		}
 
 		if(ssize <= 0x19 || dsize <= ssize) {
@@ -934,7 +992,12 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 		if(limits && limits->maxfilesize && (unsigned int) gp > limits->maxfilesize) {
 		    cli_dbgmsg("FSG: Buffer size exceeded (size: %d, max: %lu)\n", gp, limits->maxfilesize);
 		    free(section_hdr);
-		    return CL_CLEAN;
+		    if(BLOCKMAX) {
+			*virname = "PE.FSG.ExceededFileSize";
+		         return CL_VIRUS;
+		    } else {
+		         return CL_CLEAN;
+		    }
 		}
 
 		if((support = (char *) cli_malloc(gp)) == NULL) {
@@ -1055,7 +1118,7 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 			free(sections);
 			found = 0;
 			upx_success = 1;
-			break; /* Go and scan the buffer! */
+			break; /* Go and scan the decompressed data */
 
 		    default: /* Everything gone wrong */
 			cli_dbgmsg("FSG: Unpacking failed\n");
@@ -1094,7 +1157,12 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    if(limits && limits->maxfilesize && (ssize > limits->maxfilesize || dsize > limits->maxfilesize)) {
 		cli_dbgmsg("UPX: Sizes exceeded (ssize: %d, dsize: %d, max: %lu)\n", ssize, dsize , limits->maxfilesize);
 		free(section_hdr);
-		return CL_CLEAN;
+		if(BLOCKMAX) {
+		    *virname = "PE.UPX.ExceededFileSize";
+		    return CL_VIRUS;
+		} else {
+		    return CL_CLEAN;
+		}
 	    }
 
 	    if(ssize <= 0x19 || dsize <= ssize) { /* FIXME: What are reasonable values? */
@@ -1283,7 +1351,12 @@ int cli_scanpe(int desc, const char **virname, long int *scanned, const struct c
 	    if(limits && limits->maxfilesize && dsize > limits->maxfilesize) {
 		cli_dbgmsg("Petite: Size exceeded (dsize: %d, max: %lu)\n", dsize, limits->maxfilesize);
 		free(section_hdr);
-		return CL_CLEAN;
+		if(BLOCKMAX) {
+		    *virname = "PE.Petite.ExceededFileSize";
+		    return CL_VIRUS;
+		} else {
+		    return CL_CLEAN;
+		}
 	    }
 
 	    if((dest = (char *) cli_calloc(dsize, sizeof(char))) == NULL) {
@@ -1422,7 +1495,6 @@ int cli_peheader(int desc, struct cli_pe_info *peinfo)
     }
 
     if(EC16(file_hdr.SizeOfOptionalHeader) != sizeof(struct pe_image_optional_hdr)) {
-	cli_warnmsg("Broken PE header detected.\n");
 	return -1;
     }
 
