@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: text.h,v $
+ * Revision 1.4  2004/07/20 14:35:29  nigelhorne
+ * Some MYDOOM.I were getting through
+ *
  * Revision 1.3  2004/06/22 04:08:02  nigelhorne
  * Optimise empty lines
  *
@@ -32,5 +35,5 @@ void	textDestroy(text *t_head);
 text	*textClean(text *t_head);
 text	*textCopy(const text *t_head);
 text	*textAdd(text *t_head, const text *t);
-text	*textAddMessage(text *aText, const message *aMessage);
+text	*textAddMessage(text *aText, message *aMessage);
 blob	*textToBlob(const text *t, blob *b);

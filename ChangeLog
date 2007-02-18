@@ -1,3 +1,25 @@
+Thu Jul 22 21:31:41 CEST 2004
+-----------------------------
+  V 0.75, backported changes:
+
+  * clamav-milter: Use gethostbyname_r when available
+  * clamav-milter: Add mutex around gethostbyname
+  * clamav-milter: Add sanity check to clamfi_connect()
+  * libclamav/message.c: Code tidy - remove overlapping strcpy
+  * libclamav: Some MyDoom.I were getting through
+  * clamav-milter: Added --dont-wait and --advisory options
+  * libclamav/mbox.c: Better handling of Gibe.3 boundary exploit improves
+		      the speed of scanning other emails
+  * clamdscan: fix bug (introduced in -20040622) in stream scanning in TCP
+               mode. Patch by Piotr Gackiewicz <gacek*intertele.pl>.
+  * libclamav/mbox.c: Some TR.Happy99.SKA were getting through
+  * libclamav/mbox.c: Fix compilation error on old Solaris
+  * libclamav/ole2_extract.c: check against recursion limits
+
+Wed Jun 30 00:00:13 CEST 2004 (tk)
+----------------------------------
+  V 0.74 (Based on CVS, with PowerPoint-VBA, MSCAB, PE and UPX code excluded)
+
 Tue Jun 29 23:24:44 CEST 2004 (tk)
 ----------------------------------
   * doc: update

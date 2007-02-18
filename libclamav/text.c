@@ -16,6 +16,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * $Log: text.c,v $
+ * Revision 1.8  2004/07/20 14:35:29  nigelhorne
+ * Some MYDOOM.I were getting through
+ *
  * Revision 1.7  2004/06/22 04:08:02  nigelhorne
  * Optimise empty lines
  *
@@ -30,7 +33,7 @@
  *
  */
 
-static	char	const	rcsid[] = "$Id: text.c,v 1.7 2004/06/22 04:08:02 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: text.c,v 1.8 2004/07/20 14:35:29 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -207,7 +210,7 @@ textAdd(text *t_head, const text *t)
  * Add a message's content to the end of the current object
  */
 text *
-textAddMessage(text *aText, const message *aMessage)
+textAddMessage(text *aText, message *aMessage)
 {
 	assert(aMessage != NULL);
 

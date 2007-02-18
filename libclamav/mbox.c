@@ -17,6 +17,21 @@
  *
  * Change History:
  * $Log: mbox.c,v $
+ * Revision 1.88  2004/07/20 14:35:29  nigelhorne
+ * Some MYDOOM.I were getting through
+ *
+ * Revision 1.87  2004/07/19 17:54:40  kojm
+ * Use new patter matching algorithm. Cleanup.
+ *
+ * Revision 1.86  2004/07/06 09:32:45  nigelhorne
+ * Better handling of Gibe.3 boundary exploit
+ *
+ * Revision 1.85  2004/06/30 19:48:58  nigelhorne
+ * Some TR.Happy99.SKA were getting through
+ *
+ * Revision 1.84  2004/06/30 14:30:40  nigelhorne
+ * Fix compilation error on Solaris
+ *
  * Revision 1.83  2004/06/28 11:44:45  nigelhorne
  * Remove empty parts
  *
@@ -237,7 +252,7 @@
  * Compilable under SCO; removed duplicate code with message.c
  *
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.83 2004/06/28 11:44:45 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.88 2004/07/20 14:35:29 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -285,12 +300,12 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.83 2004/06/28 11:44:45 nigelhorne E
 #if __GLIBC__ == 2 && __GLIBC_MINOR__ >= 1
 #define HAVE_BACKTRACE
 #endif
+#endif
 
 #ifdef HAVE_BACKTRACE
 #include <execinfo.h>
 #include <signal.h>
 #include <syslog.h>
-#endif
 
 static	void	sigsegv(int sig);
 static	void	print_trace(int use_syslog);
@@ -445,7 +460,7 @@ cl_mbox(const char *dir, int desc)
 	m = messageCreate();
 	if(m == NULL) {
 		fclose(fd);
-		return 0;
+		return -1;
 	}
 
 #ifdef	CL_THREAD_SAFE
@@ -469,7 +484,7 @@ cl_mbox(const char *dir, int desc)
 	pthread_mutex_unlock(&tables_mutex);
 #endif
 
-#ifdef	CL_DEBUG
+#ifdef HAVE_BACKTRACE
 	segv = signal(SIGSEGV, sigsegv);
 #endif
 
@@ -556,7 +571,7 @@ cl_mbox(const char *dir, int desc)
 
 	cli_dbgmsg("cli_mbox returning %d\n", retcode);
 
-#ifdef	CL_DEBUG
+#ifdef HAVE_BACKTRACE
 	signal(SIGSEGV, segv);
 #endif
 
@@ -650,7 +665,8 @@ parseEmailHeaders(message *m, const table_t *rfc821Table, bool destroy)
 				free(buffer);
 		} else {
 			/*cli_dbgmsg("Add line to body '%s'\n", buffer);*/
-			messageAddLine(ret, buffer, 0);
+			if(messageAddLine(ret, buffer, 0) < 0)
+				break;
 		}
 	}
 
@@ -775,6 +791,15 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 			break;
 		case TEXT:
 			if(tableFind(subtypeTable, mimeSubtype) == PLAIN)
+				/*
+				 * Consider what to do if this fails
+				 * (i.e. aText == NULL):
+				 * We mustn't just return since that could
+				 * cause a virus to be missed that we
+				 * could be capable of scanning. Ignoring
+				 * the error is probably the safest, we may be
+				 * able to scan anyway and we lose nothing
+				 */
 				aText = textCopy(messageGetBody(mainMessage));
 			break;
 		case MULTIPART:
@@ -846,6 +871,10 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 				messages = cli_realloc(messages, ((multiparts + 1) * sizeof(message *)));
 
 				aMessage = messages[multiparts] = messageCreate();
+				if(aMessage == NULL) {
+					multiparts--;
+					continue;
+				}
 
 				cli_dbgmsg("Now read in part %d\n", multiparts);
 
@@ -860,8 +889,17 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 
 				if(t_line == NULL) {
 					cli_dbgmsg("Empty part\n");
-					messageDestroy(aMessage);
-					--multiparts;
+					/*
+					 * Remove this part unless there's
+					 * a uuencoded portion somewhere in
+					 * the complete message that we may
+					 * throw away by mistake if the MIME
+					 * encoding information is incorrect
+					 */
+					if(uuencodeBegin(mainMessage) == NULL) {
+						messageDestroy(aMessage);
+						--multiparts;
+					}
 					continue;
 				}
 
@@ -1714,22 +1752,32 @@ parseEmailBody(message *messageIn, blob **blobsIn, int nBlobs, text *textIn, con
 static int
 boundaryStart(const char *line, const char *boundary)
 {
+	cli_dbgmsg("boundaryStart: line = '%s' boundary = '%s'\n", line, boundary);
+	if(line == NULL)
+		return 0;	/* empty line */
+
+	if(*line++ != '-')
+		return 0;
+
 	/*
-	 * Gibe.B3 is broken it has:
+	 * Gibe.B3 is broken, it has:
 	 *	boundary="---- =_NextPart_000_01C31177.9DC7C000"
 	 * but it's boundaries look like
 	 *	------ =_NextPart_000_01C31177.9DC7C000
-	 * notice the extra '-'
+	 * notice the one too few '-'.
+	 * Presumably this is a deliberate exploitation of a bug in some mail
+	 * clients.
+	 *
+	 * The trouble is that this creates a lot of false positives for
+	 * boundary conditions, if we're too lax about matches. We do our level
+	 * best to avoid these false positives. For example if we have
+	 * boundary="1" we want to ensure that we don't break out of every line
+	 * that has -1 in it instead of starting --1. This needs some more work.
 	 */
-	/*cli_dbgmsg("boundaryStart: line = '%s' boundary = '%s'\n", line, boundary);*/
-	if(line == NULL)
-		return 0;	/* empty line */
 	if(strstr(line, boundary) != NULL) {
-		cli_dbgmsg("found %s in %s\n", boundary, line);
+		cli_dbgmsg("boundaryStart: found %s in %s\n", boundary, line);
 		return 1;
 	}
-	if(*line++ != '-')
-		return 0;
 	if(*line++ != '-')
 		return 0;
 	return strcasecmp(line, boundary) == 0;
@@ -1745,6 +1793,7 @@ endOfMessage(const char *line, const char *boundary)
 {
 	size_t len;
 
+	cli_dbgmsg("endOfMessage: line = '%s' boundary = '%s'\n", line, boundary);
 	if(line == NULL)
 		return 0;
 	if(*line++ != '-')

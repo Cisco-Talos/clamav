@@ -17,6 +17,15 @@
  *
  * Change History:
  * $Log: message.c,v $
+ * Revision 1.66  2004/07/20 15:17:44  nigelhorne
+ * Remove overlapping strcpy
+ *
+ * Revision 1.65  2004/07/20 14:35:29  nigelhorne
+ * Some MYDOOM.I were getting through
+ *
+ * Revision 1.64  2004/07/02 23:00:57  kojm
+ * new method of file type detection; HTML normalisation
+ *
  * Revision 1.63  2004/06/26 13:16:25  nigelhorne
  * Added newline to end of warning message
  *
@@ -186,7 +195,7 @@
  * uuencodebegin() no longer static
  *
  */
-static	char	const	rcsid[] = "$Id: message.c,v 1.63 2004/06/26 13:16:25 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: message.c,v 1.66 2004/07/20 15:17:44 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -235,8 +244,9 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.63 2004/06/26 13:16:25 nigelhorn
 
 typedef enum { FALSE = 0, TRUE = 1 } bool;
 
-static	unsigned char	*decodeLine(const message *m, const char *line, unsigned char *buf, size_t buflen);
-static unsigned char *decode(const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast);
+static	unsigned char	*decodeLine(message *m, const char *line, unsigned char *buf, size_t buflen);
+static unsigned char *decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast);
+static	void	squeeze(char *s);
 static	unsigned	char	hex(char c);
 static	unsigned	char	base64(char c);
 static	unsigned	char	uudecode(char c);
@@ -317,6 +327,8 @@ messageReset(message *m)
 
 	if(m->body_first)
 		textDestroy(m->body_first);
+
+	assert(m->base64chars == 0);
 
 	memset(m, '\0', sizeof(message));
 	m->mimeType = NOMIME;
@@ -944,7 +956,7 @@ messageToBlob(message *m)
 		unsigned char *uptr, *data;
 		char *ptr;
 		int bytenumber;
-		blob *tmp = blobCreate();
+		blob *tmp;
 
 		/*
 		 * Table look up by Thomas Lamy <Thomas.Lamy@in-online.net>
@@ -961,6 +973,13 @@ messageToBlob(message *m)
 		/* 60-6f */	0x30,0x31,0x32,0x33,0x34,0x35,0x36,0xff,0x37,0x38,0x39,0x3a,0x3b,0x3c,0xff,0xff,
 		/* 70-7f */	0x3d,0x3e,0x3f,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
 		};
+
+		tmp = blobCreate();
+
+		if(tmp == NULL) {
+			blobDestroy(b);
+			return NULL;
+		}
 
 		/*
 		 * Decode BinHex4. First create a temporary blob which contains
@@ -1074,6 +1093,11 @@ messageToBlob(message *m)
 		if(memchr(data, 0x90, newlen)) {
 			blob *u = blobCreate();	/* uncompressed data */
 
+			if(u == NULL) {
+				blobDestroy(b);
+				blobDestroy(tmp);
+				return NULL;
+			}
 			/*
 			 * Includes compression
 			 */
@@ -1259,13 +1283,24 @@ messageToBlob(message *m)
 		 * the last byte and should be used as evidence
 		 * of the end of the data. Some mail clients
 		 * annoyingly then put plain text after the '='
-		 * bytes. Sigh
+		 * byte and viruses exploit this bug. Sigh
 		 */
 		/*if(messageGetEncoding(m) == BASE64)
 			if(strchr(line, '='))
 				break;*/
 
 	} while((t_line = t_line->t_next) != NULL);
+
+	/* Verify we have nothing left to flush out */
+	if(m->base64chars) {
+		unsigned char data[4];
+		unsigned char *ptr;
+
+		ptr = decode(m, NULL, data, base64, FALSE);
+		if(ptr)
+			blobAddData(b, data, (size_t)(ptr - data));
+		m->base64chars = 0;
+	}
 
 	return b;
 }
@@ -1275,7 +1310,7 @@ messageToBlob(message *m)
  * The caller must free the returned text
  */
 text *
-messageToText(const message *m)
+messageToText(message *m)
 {
 	text *first = NULL, *last = NULL;
 	const text *t_line;
@@ -1298,7 +1333,8 @@ messageToText(const message *m)
 			   ((last->t_text = strdup(t_line->t_text)) == NULL)) {
 				if(last)
 					free(last);
-				textDestroy(first);
+				if(first)
+					textDestroy(first);
 				return NULL;
 			}
 		}
@@ -1322,7 +1358,14 @@ messageToText(const message *m)
 			unsigned char *uptr;
 			const char *line = t_line->t_text;
 
-			if(messageGetEncoding(m) == UUENCODE)
+			if(messageGetEncoding(m) == BASE64) {
+				/*
+				 * ignore blanks - breaks RFC which is
+				 * probably the point!
+				 */
+				if(line == NULL)
+					continue;
+			} else if(messageGetEncoding(m) == UUENCODE)
 				if(strcasecmp(line, "end") == 0)
 					break;
 
@@ -1478,7 +1521,7 @@ encodingLine(const message *m)
  * len is sizeof(ptr)
  */
 static unsigned char *
-decodeLine(const message *m, const char *line, unsigned char *buf, size_t buflen)
+decodeLine(message *m, const char *line, unsigned char *buf, size_t buflen)
 {
 	size_t len;
 	bool softbreak;
@@ -1510,7 +1553,7 @@ decodeLine(const message *m, const char *line, unsigned char *buf, size_t buflen
 				*buf++ = '\n';
 				break;
 			}
-			
+
 			softbreak = FALSE;
 			while(*line) {
 				if(*line == '=') {
@@ -1559,11 +1602,17 @@ decodeLine(const message *m, const char *line, unsigned char *buf, size_t buflen
 			p2 = strchr(copy, '=');
 			if(p2)
 				*p2 = '\0';
+			squeeze(copy);
+
 			/*
 			 * Klez doesn't always put "=" on the last line
 			 */
-			buf = decode(copy, buf, base64, (p2 == NULL) && ((strlen(copy) & 3) == 0));
-			/*buf = decode(copy, buf, base64, FALSE);*/
+			buf = decode(m, copy, buf, base64, (p2 == NULL) && ((strlen(copy) & 3) == 0));
+			if(p2)
+				/* flush the read ahead bytes */
+				buf = decode(m, NULL, buf, base64, FALSE);
+
+			/*buf = decode(m, copy, buf, base64, FALSE);*/
 
 			free(copy);
 			break;
@@ -1589,7 +1638,7 @@ decodeLine(const message *m, const char *line, unsigned char *buf, size_t buflen
 				 */
 				cli_warnmsg("uudecode: buffer overflow stopped, attempting to ignore but decoding may fail\n");
 			else
-				buf = decode(line, buf, uudecode, (len & 3) == 0);
+				buf = decode(m, line, buf, uudecode, (len & 3) == 0);
 			break;
 	}
 
@@ -1598,10 +1647,185 @@ decodeLine(const message *m, const char *line, unsigned char *buf, size_t buflen
 }
 
 /*
- * Returns one byte after the end of the decoded data in "out"
+ * Remove the spaces from the middle of a string. Spaces shouldn't appear
+ * mid string in base64 files, but some broken mail clients ignore such
+ * errors rather than discarding the mail, and virus writers exploit this bug
  */
+static void
+squeeze(char *s)
+{
+	while((s = strchr(s, ' ')) != NULL) {
+		/*strcpy(s, &s[1]);*/	/* overlapping strcpy */
+
+		char *p1;
+
+		for(p1 = s; p1[0] != '\0'; p1++)
+			p1[0] = p1[1];
+	}
+}
+
+/*
+ * Returns one byte after the end of the decoded data in "out"
+ *
+ * Update m->base64chars with the last few bytes of data that we haven't
+ * decoded. After the last line is found, decode will be called with in = NULL
+ * to flush these out
+ */
+#if	1
 static unsigned char *
-decode(const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast)
+decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast)
+{
+	unsigned char b1, b2, b3, b4;
+	unsigned char cb1, cb2, cb3;	/* carried over from last line */
+
+	/*cli_dbgmsg("decode %s (len %d ifFast %d base64chars %d)\n", in,
+		in ? strlen(in) : 0,
+		isFast, m->base64chars);*/
+
+	cb1 = cb2 = cb3 = '\0';
+
+	switch(m->base64chars) {
+		case 3:
+			cb3 = m->base64_3;
+			/* FALLTHROUGH */
+		case 2:
+			cb2 = m->base64_2;
+			/* FALLTHROUGH */
+		case 1:
+			cb1 = m->base64_1;
+			isFast = FALSE;
+			break;
+		default:
+			assert(m->base64chars <= 3);
+	}
+
+	if(isFast)
+		/* Fast decoding if not last line */
+		while(*in) {
+			b1 = (*decoder)(*in++);
+			b2 = (*decoder)(*in++);
+			b3 = (*decoder)(*in++);
+			/*
+			 * Put this line here to help on some compilers which
+			 * can make use of some architecure's ability to
+			 * multiprocess when different variables can be
+			 * updated at the same time - here b3 is used in
+			 * one line, b1/b2 in the next and b4 in the next after
+			 * that, b3 and b4 rely on in but b1/b2 don't
+			 */
+			*out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
+			b4 = (*decoder)(*in++);
+			*out++ = (b2 << 4) | ((b3 >> 2) & 0xF);
+			*out++ = (b3 << 6) | (b4 & 0x3F);
+		}
+	else {
+		if(in == NULL) {	/* flush */
+			int nbytes = m->base64chars;
+
+			if(nbytes == 0)
+				return out;
+
+			m->base64chars--;
+			b1 = cb1;
+
+			if(m->base64chars) {
+				m->base64chars--;
+				b2 = cb2;
+
+				if(m->base64chars) {
+					m->base64chars--;
+					b3 = cb3;
+					assert(m->base64chars == 0);
+				}
+			}
+
+			switch(nbytes) {
+				case 3:
+					b4 = '\0';
+					/* fall through */
+				case 4:
+					*out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
+					*out++ = (b2 << 4) | ((b3 >> 2) & 0xF);
+					*out++ = (b3 << 6) | (b4 & 0x3F);
+					break;
+				case 2:
+					*out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
+					*out++ = b2 << 4;
+					break;
+				case 1:
+					*out++ = b1 << 2;
+					break;
+				default:
+					assert(0);
+			}
+
+		} else while(*in) {
+		/* Slower decoding for last line */
+			int nbytes;
+
+			if(m->base64chars) {
+				m->base64chars--;
+				b1 = cb1;
+			} else
+				b1 = (*decoder)(*in++);
+
+			if(*in == '\0') {
+				b2 = '\0';
+				nbytes = 1;
+			} else {
+				if(m->base64chars) {
+					m->base64chars--;
+					b2 = cb2;
+				} else
+					b2 = (*decoder)(*in++);
+
+				if(*in == '\0') {
+					b3 = '\0';
+					nbytes = 2;
+				} else {
+					if(m->base64chars) {
+						m->base64chars--;
+						b3 = cb3;
+					} else
+						b3 = (*decoder)(*in++);
+
+					if(*in == '\0') {
+						b4 = '\0';
+						nbytes = 3;
+					} else {
+						b4 = (*decoder)(*in++);
+						nbytes = 4;
+					}
+				}
+			}
+
+			switch(nbytes) {
+				case 3:
+					m->base64_3 = b3;
+				case 2:
+					m->base64_2 = b2;
+				case 1:
+					m->base64_1 = b1;
+					break;
+				case 4:
+					*out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
+					*out++ = (b2 << 4) | ((b3 >> 2) & 0xF);
+					*out++ = (b3 << 6) | (b4 & 0x3F);
+					break;
+				default:
+					assert(0);
+			}
+			if(nbytes != 4) {
+				m->base64chars = nbytes;
+				break;
+			}
+		}
+	}
+	return out;
+}
+#else
+static unsigned char *
+decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast)
 {
 	unsigned char b1, b2, b3, b4;
 
@@ -1676,6 +1900,7 @@ decode(const char *in, unsigned char *out, unsigned char (*decoder)(char), bool 
 		}
 	return out;
 }
+#endif
 
 static unsigned char
 hex(char c)

@@ -64,6 +64,17 @@ INSTALLATION
 
 Install into /usr/local/sbin/clamav-milter.
 
+Ensure that your sendmail supports milters by running
+	/usr/lib/sendmail -d0 < /dev/null | fgrep MILTER
+or
+	/usr/sbin/sendmail -d0 < /dev/null | fgrep MILTER
+
+You should see something like:
+	MATCHGECOS MILTER MIME7TO8 MIME8TO7 NAMED_BIND NETINET NETINET6
+It doesn't matter exactly what you see, as long as the word MILTER is printed.
+
+If you see no output you MUST upgrade your sendmail.
+
 See http://www.nmt.edu/~wcolburn/sendmail-8.12.5/libmilter/docs/sample.html
 
 Installations for RedHat Linux and it's derivatives such as YellowDog:
@@ -85,6 +96,9 @@ Installations for RedHat Linux and it's derivatives such as YellowDog:
 	mkdir /var/run/clamav
 	chown clamav /var/run/clamav	(if you use User clamav in clamav.conf)
 	chmod 700 /var/run/clamav
+
+	Where /var/run/spamass.sock is the location of the spamass-milt
+	socket file (on some systems it is in /var/run/sendmail/spamass.sock).
 
 You may find INPUT_MAIL_FILTERS is not needed on your machine, however it
 is recommended by the Sendmail documentation and I recommend going along
@@ -417,6 +431,14 @@ Changes
 			already exists
 0.74	29/6/04	Up-issued
 0.74a	29/6/04	Allow the child timeout to be configurable
+0.74b	8/7/04	Validate the arguments to inet_ntop
+0.74c	14/7/04	Added --dont-wait
+		Added --advisory
+0.74d	18/7/04	Added sanity check in clamfi_connect
+0.74e	21/7/04	Fixed thread unsafe code causing problems with multi-CPU
+		machines running Solaris
+0.74f	22/7/04	Use gethostbyname_r() if available
+0.75	22/7/04	Up-issue
 
 BUG REPORTS
 
