@@ -30,15 +30,11 @@
 #include <fcntl.h>
 #include <dirent.h>
 
-#include <mspack.h>
-
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
 pthread_mutex_t cli_scanrar_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 int cli_scanrar_inuse = 0;
-
-extern short cli_leavetemps_flag;
 
 #include "clamav.h"
 #include "others.h"
@@ -75,10 +71,6 @@ struct cli_magic_s {
 #define MAGIC_BUFFER_SIZE 26
 static const struct cli_magic_s cli_magic[] = {
 
-    /* Executables */
-
-/*  {0,  "MZ",				2,  "DOS/W32 executable", CL_DOSEXE},*/
-
     /* Archives */
 
     {0,  "Rar!",			4,  "RAR",		  CL_RARFILE},
@@ -86,7 +78,6 @@ static const struct cli_magic_s cli_magic[] = {
     {0,  "\037\213",			2,  "GZip",		  CL_GZFILE},
     {0,  "BZh",				3,  "BZip",		  CL_BZFILE},
     {0,  "SZDD",			4,  "compress.exe'd",	  CL_MSCFILE},
-    {0,  "MSCF",			4,  "MS CAB",		  CL_MSCABFILE},
 
     /* Mail */
 
@@ -714,61 +705,6 @@ static int cli_scanmscomp(int desc, const char **virname, long int *scanned, con
     return ret;
 }
 
-static int cli_scanmscab(int desc, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
-{
-	struct mscab_decompressor *cabd = NULL;
-	struct mscabd_cabinet *base, *cab;
-	struct mscabd_file *file;
-	const char *tmpdir;
-	char *tempname;
-	int ret = CL_CLEAN;
-
-
-    cli_dbgmsg("in cli_scanmscab()\n");
-
-    if((cabd = mspack_create_cab_decompressor(NULL)) == NULL) {
-	cli_dbgmsg("Can't create libmspack CAB decompressor\n");
-	return CL_EMSCAB;
-    }
-
-    if((base = cabd->dsearch(cabd, desc)) == NULL) {
-	cli_dbgmsg("I/O error or no valid cabinets found\n");
-	mspack_destroy_cab_decompressor(cabd);
-	return CL_EMSCAB;
-    }
-
-    if((tmpdir = getenv("TMPDIR")) == NULL)
-#ifdef P_tmpdir
-	tmpdir = P_tmpdir;
-#else
-	tmpdir = "/tmp";
-#endif
-
-    for(cab = base; cab; cab = cab->next) {
-	for(file = cab->files; file; file = file->next) {
-	    tempname = cl_gentemp(tmpdir);
-	    cli_dbgmsg("Extracting data to %s\n", tempname);
-	    if(cabd->extract(cabd, file, tempname)) {
-		cli_dbgmsg("libmscab error code: %d\n", cabd->last_error(cabd));
-	    } else {
-		ret = cli_scanfile(tempname, virname, scanned, root, limits, options, reclev);
-	    }
-	    if(!cli_leavetemps_flag)
-		unlink(tempname);
-	    free(tempname);
-	    if(ret == CL_VIRUS)
-		break;
-	}
-	if(ret == CL_VIRUS)
-	    break;
-    }
-
-    cabd->close(cabd, base);
-    mspack_destroy_cab_decompressor(cabd);
-
-    return ret;
-}
-
 static int cli_scandir(const char *dirname, const char **virname, long int *scanned, const struct cl_node *root, const struct cl_limits *limits, int options, int *reclev)
 {
 	DIR *dd;
@@ -862,12 +798,6 @@ static int cli_vba_scandir(const char *dirname, const char **virname, long int *
 	free(vba_project->dir);
 	free(vba_project->offset);
 	free(vba_project);
-    } else if ((fullname = ppt_vba_read(dirname))) {
-    	if(cli_scandir(fullname, virname, scanned, root, limits, options, reclev) == CL_VIRUS) {
-	    ret = CL_VIRUS;
-	}
-	cli_rmdirs(fullname);
-    	free(fullname);
     } else if ((vba_project = (vba_project_t *) wm_dir_read(dirname))) {
     	for (i = 0; i < vba_project->count; i++) {
 		fullname = (char *) cli_malloc(strlen(vba_project->dir) + strlen(vba_project->name[i]) + 2);
@@ -1058,10 +988,6 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
     type = cli_filetype(magic, bread);
 
     switch(type) {
-	case CL_DOSEXE:
-	    /* temporarily the return code is ignored */
-	    cli_scanpe(desc, virname, scanned, root, limits, options, reclev);
-	    break;
 
 	case CL_RARFILE:
 	    if(!DISABLE_RAR && SCAN_ARCHIVE && !cli_scanrar_inuse)
@@ -1088,11 +1014,6 @@ static int cli_magic_scandesc(int desc, const char **virname, long int *scanned,
 	case CL_MSCFILE:
 	    if(SCAN_ARCHIVE)
 		ret = cli_scanmscomp(desc, virname, scanned, root, limits, options, reclev);
-	    break;
-
-	case CL_MSCABFILE:
-	    if(SCAN_ARCHIVE)
-		ret = cli_scanmscab(desc, virname, scanned, root, limits, options, reclev);
 	    break;
 
 	case CL_MAILFILE:
