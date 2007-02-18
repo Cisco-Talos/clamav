@@ -245,7 +245,8 @@ int cli_validatesig(unsigned short target, unsigned short ftype, const char *off
 int cli_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, short otfrec, unsigned short ftype)
 {
  	char *buffer, *buff, *endbl, *pt;
-	int bytes, buffsize, length, ret, *partcnt, type = CL_CLEAN;
+	int bytes, ret, *partcnt, type = CL_CLEAN;
+	unsigned int buffersize, length, shift = 0;
 	unsigned long int *partoff, offset = 0;
 	MD5_CTX ctx;
 	unsigned char digest[16];
@@ -258,9 +259,9 @@ int cli_scandesc(int desc, const char **virname, unsigned long int *scanned, con
     }
 
     /* prepare the buffer */
-    buffsize = root->maxpatlen + SCANBUFF;
-    if(!(buffer = (char *) cli_calloc(buffsize, sizeof(char)))) {
-	cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%d)\n", buffsize);
+    buffersize = root->maxpatlen + SCANBUFF;
+    if(!(buffer = (char *) cli_calloc(buffersize, sizeof(char)))) {
+	cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%d)\n", buffersize);
 	return CL_EMEM;
     }
 
@@ -288,14 +289,15 @@ int cli_scandesc(int desc, const char **virname, unsigned long int *scanned, con
 						*/
 
     pt = buff;
-    length = SCANBUFF;
-    while((bytes = cli_readn(desc, buff, SCANBUFF)) > 0) {
+    while((bytes = cli_readn(desc, buff + shift, SCANBUFF - shift)) > 0) {
 
 	if(scanned)
 	    *scanned += bytes / CL_COUNT_PRECISION;
 
-	if(bytes < SCANBUFF)
-	    length -= SCANBUFF - bytes;
+	length = shift + bytes;
+	if(pt == buffer)
+	    length += root->maxpatlen;
+
 
 	if(cli_bm_scanbuff(pt, length, virname, root, offset, ftype, desc) == CL_VIRUS ||
 	   (ret = cli_ac_scanbuff(pt, length, virname, root, partcnt, otfrec, offset, partoff, ftype, desc)) == CL_VIRUS) {
@@ -314,20 +316,22 @@ int cli_scandesc(int desc, const char **virname, unsigned long int *scanned, con
 		type = ret;
 	}
 
-	if(bytes == SCANBUFF) {
-	    memmove(buffer, endbl, root->maxpatlen);
-
-	    if(pt == buffer) {
-		offset += SCANBUFF;
-	    } else {
-		offset += SCANBUFF - root->maxpatlen;
-		pt = buffer;
-		length = buffsize;
-	    }
-	}
-
 	if(root->md5_hlist)
-	    MD5_Update(&ctx, buff, bytes);
+	    MD5_Update(&ctx, buff + shift, bytes);
+
+	if(bytes + shift == SCANBUFF) {
+	    memmove(buffer, endbl, root->maxpatlen);
+	    offset += SCANBUFF;
+
+	    if(pt == buff) {
+		pt = buffer;
+		offset -= root->maxpatlen;
+	    }
+
+	    shift = 0;
+	} else {
+	    shift += bytes;
+	}
     }
 
     free(buffer);

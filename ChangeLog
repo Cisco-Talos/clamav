@@ -1,3 +1,30 @@
+Tue Apr  4 12:04:07 CEST 2006
+-----------------------------
+  V 0.88.1
+  * Bugfixes:
+    - libclamav/matcher.c: properly handle partial reads in cli_scandesc()
+    - libclamav/mbox.c: sync with CVS, fixes detection of Worm.Bagle.CT
+    - freshclam: fix support for LocalIPAddress
+      Patch by Anton Yuzhaninov <citrin*citrin.ru>
+    - docs/man: multiple manpage typo fixes
+      Patch by A. Costa <agcosta*gis.net>)
+    - shared/output.c: properly handle return value of vsnprintf
+      Thanks to Anton Yuzhaninov <citrin*rambler-co.ru>
+    - libclamav/htmlnorm.c: fix typo spotted by Gianluigi Tiesi
+      <sherpya*netfarm.it>
+    - sigtool/sigtool.c: fix possible crash in build(), thanks to Sven
+    - clamd/session.c: remove static timeout (5s) for SESSION
+      Pointed out by Joseph Benden <joe*thrallingpenguin.com>
+    - libclamav/pe.c: fix possible integer overflow reported by Damian Put
+      Note: only exploitable if file size limit (ArchiveMaxFileSize) disabled
+    - libclamav/scanners.c: properly report archive unpacking errors
+      Problem spotted by David F. Skoll <dfs*roaringpenguin.com>
+    - libclamav/others.c: fix possible crash in cli_bitset_test()
+      Reported by David Luyer <david_luyer*pacific.net.au>
+    - libclamav/zziplib: fix possible crash on FreeBSD
+      Reported by Robert Rebbun <robert*desertsurf.com>
+    - clamav-milter: fall back if sendfile() fails
+
 Mon Jan  9 18:26:21 CET 2006
 ----------------------------
   V 0.88

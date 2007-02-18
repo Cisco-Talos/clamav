@@ -148,8 +148,8 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
     }
 #endif /* HAVE_RESOLV_H */
 
-    if(optl(opt, "localip")) {
-        localip = getargl(opt, "localip");
+    if(optl(opt, "local-address")) {
+        localip = getargl(opt, "local-address");
     } else if((cpt = cfgopt(copt, "LocalIPAddress"))) {
 	localip = cpt->strarg;
     }
@@ -497,6 +497,17 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip, char 
 
     name.sin_family = AF_INET;
 
+#ifdef PF_INET
+    socketfd = socket(PF_INET, SOCK_STREAM, 0);
+#else
+    socketfd = socket(AF_INET, SOCK_STREAM, 0);
+#endif
+
+    if(socketfd < 0) {
+	mprintf("@Can't create new socket\n");
+	return -1;
+    }
+
     if (localip) {
 	if ((he = gethostbyname(localip)) == NULL) {
 	    char *herr;
@@ -585,6 +596,7 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip, char 
 		break;
 	}
         mprintf("@Can't get information about %s: %s\n", hostpt, herr);
+	close(socketfd);
 	return -1;
     }
 
@@ -602,21 +614,15 @@ int wwwconnect(const char *server, const char *proxy, int pport, char *ip, char 
 	name.sin_addr = *((struct in_addr *) host->h_addr_list[i]);
 	name.sin_port = htons(port);
 
-#ifdef PF_INET
-	socketfd = socket(PF_INET, SOCK_STREAM, 0);
-#else
-	socketfd = socket(AF_INET, SOCK_STREAM, 0);
-#endif
-
 	if(connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in)) == -1) {
 	    mprintf("Can't connect to port %d of host %s (IP: %s)\n", port, hostpt, ipaddr);
-	    close(socketfd);
 	    continue;
+	} else {
+	    return socketfd;
 	}
-
-	return socketfd;
     }
 
+    close(socketfd);
     return -2;
 }
 

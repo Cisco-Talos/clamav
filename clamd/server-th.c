@@ -105,7 +105,6 @@ void scanner_thread(void *arg)
 
 	    case COMMAND_SESSION:
 		session = TRUE;
-		timeout = 5;
 		break;
 
 	    case COMMAND_END:

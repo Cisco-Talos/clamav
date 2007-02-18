@@ -208,7 +208,7 @@ zzip_file_open(ZZIP_DIR * dir, zzip_char_t* name, int o_mode, int d_off)
                 /* memset(zfp, 0, sizeof *fp); cleared in zzip_file_close() */
             }else
             {
-                if (! (fp = (ZZIP_FILE *)calloc(1, sizeof(*fp))))
+                if (! (fp = (ZZIP_FILE *)cli_calloc(1, sizeof(*fp))))
                     { err =  ZZIP_OUTOFMEM; goto error; }
             }
 
@@ -220,7 +220,7 @@ zzip_file_open(ZZIP_DIR * dir, zzip_char_t* name, int o_mode, int d_off)
               { fp->buf32k = dir->cache.buf32k; dir->cache.buf32k = NULL; }
             else
             {
-                if (! (fp->buf32k = (char *)malloc(ZZIP_32K)))
+                if (! (fp->buf32k = (char *)cli_malloc(ZZIP_32K)))
                     { err = ZZIP_OUTOFMEM; goto error; }
             }
 
@@ -710,7 +710,7 @@ zzip_open_shared_io (ZZIP_FILE* stream,
 	int fd = os->open(filename, o_flags); /* io->open */
         if (fd != -1)
         {
-            ZZIP_FILE* fp = calloc (1, sizeof(ZZIP_FILE));
+            ZZIP_FILE* fp = cli_calloc (1, sizeof(ZZIP_FILE));
             if (!fp) { os->close(fd); return 0; } /* io->close */
 
             fp->fd = fd; 
@@ -973,7 +973,7 @@ zzip_seek(ZZIP_FILE * fp, zzip_off_t offset, int whence)
     { /* method == 8, inflate */
         char *buf;
         /*FIXME: use a static buffer! */
-        buf = (char *)malloc(ZZIP_32K);
+        buf = (char *)cli_malloc(ZZIP_32K);
         if (! buf) return -1;
         
         while (read_size > 0)  

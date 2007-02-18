@@ -52,9 +52,9 @@
 pthread_mutex_t logg_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
-FILE *logg_fd = NULL;
+FILE *logg_fs = NULL;
 
-short int logg_verbose = 0, logg_lock = 0, logg_time = 0;
+short int logg_verbose = 0, logg_lock = 1, logg_time = 0;
 int logg_size = 0;
 const char *logg_file = NULL;
 #if defined(USE_SYSLOG) && !defined(C_AIX)
@@ -71,10 +71,16 @@ int mdprintf(int desc, const char *str, ...)
 	int bytes;
 
     va_start(args, str);
-    bytes = vsnprintf(buff, 512, str, args);
+    bytes = vsnprintf(buff, sizeof(buff), str, args);
     va_end(args);
-    write(desc, buff, bytes);
-    return bytes;
+
+    if(bytes == -1)
+	return bytes;
+
+    if(bytes >= sizeof(buff))
+	bytes = sizeof(buff) - 1;
+
+    return send(desc, buff, bytes, 0);
 }
 
 void logg_close(void) {
@@ -82,9 +88,9 @@ void logg_close(void) {
 #ifdef CL_THREAD_SAFE
     pthread_mutex_lock(&logg_mutex);
 #endif
-    if (logg_fd) {
-	fclose(logg_fd);
-	logg_fd = NULL;
+    if (logg_fs) {
+	fclose(logg_fs);
+	logg_fs = NULL;
     }
 #ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&logg_mutex);
@@ -115,9 +121,9 @@ int logg(const char *str, ...)
 #ifdef CL_THREAD_SAFE
 	pthread_mutex_lock(&logg_mutex);
 #endif
-	if(!logg_fd) {
+	if(!logg_fs) {
 	    old_umask = umask(0037);
-	    if((logg_fd = fopen(logg_file, "a")) == NULL) {
+	    if((logg_fs = fopen(logg_file, "a")) == NULL) {
 		umask(old_umask);
 #ifdef CL_THREAD_SAFE
 		pthread_mutex_unlock(&logg_mutex);
@@ -129,7 +135,7 @@ int logg(const char *str, ...)
 	    if(logg_lock) {
 		memset(&fl, 0, sizeof(fl));
 		fl.l_type = F_WRLCK;
-		if(fcntl(fileno(logg_fd), F_SETLK, &fl) == -1) {
+		if(fcntl(fileno(logg_fs), F_SETLK, &fl) == -1) {
 #ifdef CL_THREAD_SAFE
 		    pthread_mutex_unlock(&logg_mutex);
 #endif
@@ -146,7 +152,7 @@ int logg(const char *str, ...)
 	    pt = ctime(&currtime);
 	    timestr = mcalloc(strlen(pt), sizeof(char));
 	    strncpy(timestr, pt, strlen(pt) - 1);
-	    fprintf(logg_fd, "%s -> ", timestr);
+	    fprintf(logg_fs, "%s -> ", timestr);
 	    free(timestr);
 	}
 
@@ -154,10 +160,10 @@ int logg(const char *str, ...)
 	    if(stat(logg_file, &sb) != -1) {
 		if(sb.st_size > logg_size) {
 		    logg_file = NULL;
-		    fprintf(logg_fd, "Log size = %d, maximal = %d\n", (int) sb.st_size, logg_size);
-		    fprintf(logg_fd, "LOGGING DISABLED (Maximal log file size exceeded).\n");
-		    fclose(logg_fd);
-		    logg_fd = NULL;
+		    fprintf(logg_fs, "Log size = %d, maximal = %d\n", (int) sb.st_size, logg_size);
+		    fprintf(logg_fs, "LOGGING DISABLED (Maximal log file size exceeded).\n");
+		    fclose(logg_fs);
+		    logg_fs = NULL;
 #ifdef CL_THREAD_SAFE
 		    pthread_mutex_unlock(&logg_mutex);
 #endif
@@ -168,18 +174,18 @@ int logg(const char *str, ...)
 
 
 	if(*str == '!') {
-	    fprintf(logg_fd, "ERROR: ");
-	    vfprintf(logg_fd, str + 1, args);
+	    fprintf(logg_fs, "ERROR: ");
+	    vfprintf(logg_fs, str + 1, args);
 	} else if(*str == '^') {
-	    fprintf(logg_fd, "WARNING: ");
-	    vfprintf(logg_fd, str + 1, args);
+	    fprintf(logg_fs, "WARNING: ");
+	    vfprintf(logg_fs, str + 1, args);
 	} else if(*str == '*') {
 	    if(logg_verbose)
-		vfprintf(logg_fd, str + 1, args);
-	} else vfprintf(logg_fd, str, args);
+		vfprintf(logg_fs, str + 1, args);
+	} else vfprintf(logg_fs, str, args);
 
 
-	fflush(logg_fd);
+	fflush(logg_fs);
 
 #ifdef CL_THREAD_SAFE
 	pthread_mutex_unlock(&logg_mutex);
@@ -188,28 +194,18 @@ int logg(const char *str, ...)
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
     if(logg_syslog) {
-
-	/* due to a problem with superfluous control characters (which
-	 * vsnprintf() handles correctly) in (v)syslog we have to remove
-	 * them in a final string
-	 *
-	 * FIXME: substitute %% instead of _
-	 */
 	vsnprintf(vbuff, 1024, str, argscpy);
 	vbuff[1024] = 0;
 
-	while((pt = strchr(vbuff, '%')))
-	    *pt = '_';
-
 	if(vbuff[0] == '!') {
-	    syslog(LOG_ERR, vbuff + 1);
+	    syslog(LOG_ERR, "%s", vbuff + 1);
 	} else if(vbuff[0] == '^') {
-	    syslog(LOG_WARNING, vbuff + 1);
+	    syslog(LOG_WARNING, "%s", vbuff + 1);
 	} else if(vbuff[0] == '*') {
 	    if(logg_verbose) {
-		syslog(LOG_DEBUG, vbuff + 1);
+		syslog(LOG_DEBUG, "%s", vbuff + 1);
 	    }
-	} else syslog(LOG_INFO, vbuff);
+	} else syslog(LOG_INFO, "%s", vbuff);
 
     }
 #endif

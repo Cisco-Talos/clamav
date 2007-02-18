@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 Nigel Horne <njh@bandsman.co.uk>
+ *  Copyright (C) 2002-2006 Nigel Horne <njh@bandsman.co.uk>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.238+fixes 2005/04/19 09:20:55 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.279 2006/02/06 02:36:39 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -39,10 +39,7 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.238+fixes 2005/04/19 09:20:55 nigel
 #include <strings.h>
 #include <ctype.h>
 #include <time.h>
-#include <unistd.h>
 #include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <sys/param.h>
 #include <clamav.h>
 #include <dirent.h>
@@ -66,6 +63,7 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.238+fixes 2005/04/19 09:20:55 nigel
 #include "defaults.h"
 #include "str.h"
 #include "filetypes.h"
+#include "uuencode.h"
 
 #ifdef	CL_DEBUG
 #if __GLIBC__ == 2 && __GLIBC_MINOR__ >= 1
@@ -98,6 +96,10 @@ static	void	print_trace(int use_syslog);
 
 typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 
+#ifndef isblank
+#define isblank(c)	(((c) == ' ') || ((c) == '\t'))
+#endif
+
 #define	SAVE_TO_DISC	/* multipart/message are saved in a temporary file */
 
 /*
@@ -121,7 +123,7 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 #ifdef	WITH_CURL
 #define	FOLLOWURLS	5	/*
 				 * Maximum number of URLs scanned in a message
-				 * part. Helps to find Dialier.gen-45. If
+				 * part. Helps to find Dialer.gen-45. If
 				 * not defined, don't check any URLs
 				 */
 #endif
@@ -138,14 +140,11 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 #include <curl/curl.h>
 
 /*
- * Needs curl >= 7.11 (I've heard that 7.9 can cause crashes and 7.10 is
+ * Needs curl >= 7.11 (I've heard that 7.9 can cause crashes and I have seen
+ *	7.10 segfault, later versions can be flakey as well)
  * untested)
  */
-#if	(LIBCURL_VERSION_MAJOR < 7)
-#undef	WITH_CURL	/* also undef FOLLOWURLS? */
-#endif
-
-#if	(LIBCURL_VERSION_MAJOR == 7) && (LIBCURL_VERSION_MINOR < 10)
+#if     (LIBCURL_VERSION_NUM < 0x070B00)
 #undef	WITH_CURL	/* also undef FOLLOWURLS? */
 #endif
 
@@ -187,11 +186,7 @@ static	char	*rfc822comments(const char *in, char *out);
 static	int	rfc1341(message *m, const char *dir);
 #endif
 static	bool	usefulHeader(int commandNumber, const char *cmd);
-static        int     uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin);
 static	char	*getline_from_mbox(char *buffer, size_t len, FILE *fin);
-#ifdef	NEW_WORLD
-static	const	char	*cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns);
-#endif
 
 static	void	checkURLs(message *m, const char *dir);
 #ifdef	WITH_CURL
@@ -208,7 +203,7 @@ static	void	*getURL(struct arg *arg);
 #endif
 
 /* Maximum line length according to RFC821 */
-#define	LINE_LENGTH	1000
+#define	RFC2821LENGTH	1000
 
 /* Hashcodes for our hash tables */
 #define	CONTENT_TYPE			1
@@ -299,20 +294,47 @@ static	pthread_mutex_t	tables_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef	NEW_WORLD
 
+#undef	PARTIAL_DIR
+
 #if HAVE_MMAP
 #if HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #else /* HAVE_SYS_MMAN_H */
 #undef HAVE_MMAP
 #endif
+#else	/*HAVE_MMAP*/
+#undef	NEW_WORLD
+#endif
 #endif
 
+#ifdef	NEW_WORLD
+/*
+ * Files larger than this are scanned with the old method, should be
+ *	StreamMaxLength, I guess
+ * If NW_MAX_FILE_SIZE is not defined, all files go through the
+ *	new method. This definition is for machines very tight on RAM, or
+ *	with large StreamMaxLength values
+ */
+#define	MAX_ALLOCATION	134217728	/* see libclamav/others.c */
+#define	NW_MAX_FILE_SIZE	MAX_ALLOCATION
+
 struct scanlist {
-	char *start;
-	size_t size;
-	encoding_type decoder;	/* only BASE64 and QUOTEDPRINTABLE for now */
-	struct scanlist *next;
+	const	char	*start;
+	size_t	size;
+	encoding_type	decoder;	/* only BASE64 and QUOTEDPRINTABLE for now */
+	struct	scanlist *next;
 };
+
+static struct map {
+	const	char	*offset;	/* sorted */
+	const	char	*word;
+	struct	map	*next;
+} *map, *tail;
+
+static	void	create_map(const char *begin, const char *end);
+static	void	add_to_map(const char *offset, const char *word);
+static	const	char	*find_in_map(const char *offset, const char *word);
+static	void	free_map(void);
 
 /*
  * This could be the future. Instead of parsing and decoding it just decodes.
@@ -331,16 +353,21 @@ struct scanlist {
  * because the scan can proceed to the end of the file rather than the end
  * of the attachment which can mean than later emails are scanned many times
  *
- * TODO: Also all those pmemstr()s are slow, so we need to reduce the number
- *	and size of data scanned each time, and we fall through to
- *	cli_parse_mbox() too often
+ * FIXME: quoted printable doesn't know when to stop, so size related virus
+ *	matching breaks
+ *
+ * TODO: Fall through to cli_parse_mbox() too often
+ *
+ * TODO: Add support for systems without mmap()
+ *
+ * TODO: partial_dir fall through
  */
 int
 cli_mbox(const char *dir, int desc, unsigned int options)
 {
-	char *start, *ptr, *line, *p, *q;
-	const char *last;
-	size_t size, s;
+	char *start, *ptr, *line;
+	const char *last, *p, *q;
+	size_t size;
 	struct stat statb;
 	message *m;
 	fileblob *fb;
@@ -360,10 +387,15 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 	if(size == 0)
 		return CL_CLEAN;
 
-	if(size > 10*1024*1024)
-		return cli_parse_mbox(dir, desc, options);	/* should be StreamMaxLength, I guess */
+#ifdef	NW_MAX_FILE_SIZE
+	if(size > NW_MAX_FILE_SIZE)
+		return cli_parse_mbox(dir, desc, options);
+#endif
 
-	cli_warnmsg("NEW_WORLD is new code - use at your own risk.\n");
+	/*cli_warnmsg("NEW_WORLD is new code - use at your own risk.\n");*/
+#ifdef	PARTIAL_DIR
+	cli_warnmsg("PARTIAL_DIR doesn't work in the NEW_WORLD yet\n");
+#endif
 
 	start = mmap(NULL, size, PROT_READ, MAP_PRIVATE, desc, 0);
 	if(start == MAP_FAILED)
@@ -371,26 +403,27 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 	cli_dbgmsg("mmap'ed mbox\n");
 
-	/* last points to the last *valid* address in the array */
-	last = &start[size - 1];
-
 	ptr = cli_malloc(size);
 	if(ptr) {
-		wasAlloced = 1;
 		memcpy(ptr, start, size);
 		munmap(start, size);
 		start = ptr;
-		last = &start[size - 1];
+		wasAlloced = 1;
 	} else
 		wasAlloced = 0;
 
-	/*
-	 * Would be nice to have a case insensitive cli_memstr()
-	 */
+	/* last points to the last *valid* address in the array */
+	last = &start[size - 1];
+
+	create_map(start, last);
+
 	scanelem = scanlist = NULL;
 	q = start;
-	s = size;
-	while((p = (char *)cli_pmemstr(q, s, "base64", 6)) != NULL) {
+	/*
+	 * FIXME: mismatch of const char * and char * here and in later calls
+	 *	to find_in_map()
+	 */
+	while((p = find_in_map(q, "base64")) != NULL) {
 		cli_dbgmsg("Found base64\n");
 		if(scanelem) {
 			scanelem->next = cli_malloc(sizeof(struct scanlist));
@@ -399,25 +432,22 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			scanlist = scanelem = cli_malloc(sizeof(struct scanlist));
 		scanelem->next = NULL;
 		scanelem->decoder = BASE64;
-		s -= (p - q) + 6;
 		q = scanelem->start = &p[6];
-		if(((p = (char *)cli_pmemstr(q, s, "\nFrom ", 6)) != NULL) ||
-		   ((p = (char *)cli_pmemstr(q, s, "base64", 6)) != NULL) ||
-		   ((p = (char *)cli_pmemstr(q, s, "quoted-printable", 16)) != NULL)) {
+		if(((p = find_in_map(q, "\nFrom ")) != NULL) ||
+		   ((p = find_in_map(q, "base64")) != NULL) ||
+		   ((p = find_in_map(q, "quoted-printable")) != NULL)) {
 			scanelem->size = (size_t)(p - q);
 			q = p;
-			s -= scanelem->size;
 		} else {
 			scanelem->size = (size_t)(last - scanelem->start) + 1;
 			break;
 		}
-		cli_dbgmsg("base64: last %u q %u s %u\n", (unsigned int)last, (unsigned int)q, s);
+		cli_dbgmsg("base64: last %u q %u\n", (unsigned int)last, (unsigned int)q);
 		assert(scanelem->size <= size);
-		assert(&q[s - 1] <= last);
 	}
+
 	q = start;
-	s = size;
-	while((p = (char *)cli_pmemstr(q, s, "quoted-printable", 16)) != NULL) {
+	while((p = find_in_map(q, "quoted-printable")) != NULL) {
 		if(p != q)
 			switch(p[-1]) {
 				case ' ':
@@ -425,14 +455,17 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				case '=':	/* wrong but allow it */
 					break;
 				default:
-					s -= (p - q) + 16;
 					q = &p[16];
 					cli_dbgmsg("Ignore quoted-printable false positive\n");
-					cli_dbgmsg("s = %u\n", s);
 					continue;	/* false positive */
 			}
 
 		cli_dbgmsg("Found quoted-printable\n");
+#ifdef	notdef
+		/*
+		 * The problem with quoted printable is recognising when to stop
+		 * parsing
+		 */
 		if(scanelem) {
 			scanelem->next = cli_malloc(sizeof(struct scanlist));
 			scanelem = scanelem->next;
@@ -440,39 +473,54 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			scanlist = scanelem = cli_malloc(sizeof(struct scanlist));
 		scanelem->next = NULL;
 		scanelem->decoder = QUOTEDPRINTABLE;
-		s -= (p - q) + 16;
 		q = scanelem->start = &p[16];
-		cli_dbgmsg("qp: last %u q %u s %u\n", (unsigned int)last, (unsigned int)q, s);
-		if(((p = (char *)cli_pmemstr(q, s, "\nFrom ", 6)) != NULL) ||
-		   ((p = (char *)cli_pmemstr(q, s, "quoted-printable", 16)) != NULL) ||
-		   ((p = (char *)cli_pmemstr(q, s, "base64", 6)) != NULL)) {
+		cli_dbgmsg("qp: last %u q %u\n", (unsigned int)last, (unsigned int)q);
+		if(((p = find_in_map(q, "\nFrom ")) != NULL) ||
+		   ((p = find_in_map(q, "quoted-printable")) != NULL) ||
+		   ((p = find_in_map(q, "base64")) != NULL)) {
 			scanelem->size = (size_t)(p - q);
 			q = p;
-			s -= scanelem->size;
 			cli_dbgmsg("qp: scanelem->size = %u\n", scanelem->size);
 		} else {
 			scanelem->size = (size_t)(last - scanelem->start) + 1;
 			break;
 		}
 		assert(scanelem->size <= size);
-		assert(&q[s - 1] <= last);
+#else
+		if(wasAlloced)
+			free(start);
+		else
+			munmap(start, size);
+
+		free_map();
+		return cli_parse_mbox(dir, desc, options);
+#endif
 	}
 
 	if(scanlist == NULL) {
 		const struct tableinit *tableinit;
 		bool anyHeadersFound = FALSE;
 		bool hasuuencode = FALSE;
+		cli_file_t type;
 
 		/* FIXME: message: There could of course be no decoder needed... */
 		for(tableinit = rfc821headers; tableinit->key; tableinit++)
-			if(cli_pmemstr(start, size, tableinit->key, strlen(tableinit->key))) {
+			if(find_in_map(start, tableinit->key)) {
 				anyHeadersFound = TRUE;
 				break;
 			}
 
-		if((!anyHeadersFound) && cli_pmemstr(start, size, "\nbegin ", 7))
+		if((!anyHeadersFound) && find_in_map(start, "\nbegin "))
 			/* uuencoded part */
 			hasuuencode = TRUE;
+
+		free_map();
+
+		type = cli_filetype(start, size);
+
+		if((type == CL_TYPE_UNKNOWN_TEXT) &&
+		   (strncmp(start, "Microsoft Mail Internet Headers", 31) == 0))
+			type = CL_TYPE_MAIL;
 
 		if(wasAlloced)
 			free(start);
@@ -481,21 +529,47 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 		if(anyHeadersFound || hasuuencode) {
 			/* TODO: reduce the number of falls through here */
-			cli_warnmsg("cli_mbox: uuencode or unknown encoder\n");
-			return cli_parse_mbox(dir, desc, options);
+			if(hasuuencode)
+				cli_dbgmsg("New world - fall back to old uudecoder, type %d\n", type);
+			else
+				cli_dbgmsg("cli_mbox: unknown encoder, type %d\n", type);
+			if(type == CL_TYPE_MAIL)
+				return cli_parse_mbox(dir, desc, options);
+			cli_dbgmsg("Unknown filetype %d, return CLEAN\n", type);
+			return CL_CLEAN;
 		}
 
-		cli_warnmsg("cli_mbox: I believe it's plain text which must be clean\n");
+		/* The message could be a plain text phish */
+		if((type == CL_TYPE_MAIL) && (!(options&CL_DB_NOPHISHING)))
+			return cli_parse_mbox(dir, desc, options);
+		cli_dbgmsg("cli_mbox: I believe it's plain text which must be clean\n");
 		return CL_CLEAN;
 	}
+	free_map();
+
+#if	0
+	if(wasAlloced) {
+		const char *max = NULL;
+
+		for(scanelem = scanlist; scanelem; scanelem = scanelem->next) {
+			const char *end = &scanelem->start[scanelem->size];
+
+			if(end > max)
+				max = end;
+		}
+
+		if(max < last)
+			printf("could free %d bytes\n", (int)(last - max));
+	}
+#endif
 
 	for(scanelem = scanlist; scanelem; scanelem = scanelem->next) {
 		if(scanelem->decoder == BASE64) {
-			char *b64start = scanelem->start;
-			long b64size = scanelem->size;
+			const char *b64start = scanelem->start;
+			size_t b64size = scanelem->size;
 
 			cli_dbgmsg("b64size = %lu\n", b64size);
-			while(*b64start != '\n') {
+			while((*b64start != '\n') && (*b64start != '\r')) {
 				b64start++;
 				b64size--;
 			}
@@ -506,14 +580,33 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				if(*b64start == ';') {
 					b64start++;
 					b64size--;
-				} else if(*b64start == '\n') {
-					b64start++;
-					b64size--;
-					if((*b64start == '\n') || (*b64start == '\r')) {
-						b64start++;
-						b64size--;
-						break;
-					}
+				} else if((memcmp(b64start, "\n\n", 2) == 0) ||
+					  (memcmp(b64start, "\r\r", 2) == 0)) {
+					b64start += 2;
+					b64size -= 2;
+					break;
+				} else if(memcmp(b64start, "\r\n\r\n", 4) == 0) {
+					b64start += 4;
+					b64size -= 4;
+					break;
+				} else if(memcmp(b64start, "\n \n", 3) == 0) {
+					/*
+					 * Some viruses are broken and have
+					 * one space character at the end of
+					 * the headers
+					 */
+					b64start += 3;
+					b64size -= 3;
+					break;
+				} else if(memcmp(b64start, "\r\n \r\n", 5) == 0) {
+					/*
+					 * Some viruses are broken and have
+					 * one space character at the end of
+					 * the headers
+					 */
+					b64start += 5;
+					b64size -= 5;
+					break;
 				}
 				b64start++;
 				b64size--;
@@ -527,17 +620,27 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				}
 
 			if(b64size > 0L) {
+				int lastline;
 				cli_dbgmsg("cli_mbox: decoding %ld base64 bytes\n", b64size);
 
 				line = NULL;
 
 				m = messageCreate();
-				if(m == NULL)
+				if(m == NULL) {
+					if(wasAlloced)
+						free(start);
+					else
+						munmap(start, size);
+
 					return CL_EMEM;
+				}
 				messageSetEncoding(m, "base64");
+
+				lastline = 0;
 
 				do {
 					int length = 0;
+					char *newline, *equal;
 
 					/*printf("%ld: ", b64size); fflush(stdout);*/
 
@@ -548,23 +651,33 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 					/*printf("%d: ", length); fflush(stdout);*/
 
-					line = cli_realloc(line, length + 1);
+					newline = cli_realloc(line, length + 1);
+					if(newline == NULL)
+						break;
+					line = newline;
 
 					memcpy(line, b64start, length);
 					line[length] = '\0';
 
+					equal = strchr(line, '=');
+					if(equal) {
+						lastline++;
+						*equal = '\0';
+					}
 					/*puts(line);*/
 
 					if(messageAddStr(m, line) < 0)
 						break;
 
 					if((b64size > 0) && (*ptr == '\r')) {
-						ptr++;
+						b64start = ++ptr;
 						--b64size;
 					}
-					b64start = ++ptr;
-					--b64size;
-					if(strchr(line, '='))
+					if((b64size > 0) && (*ptr == '\n')) {
+						b64start = ++ptr;
+						--b64size;
+					}
+					if(lastline)
 						break;
 				} while(b64size > 0L);
 
@@ -578,8 +691,8 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 					ret = -1;
 			}
 		} else if(scanelem->decoder == QUOTEDPRINTABLE) {
-			char *quotedstart = scanelem->start;
-			long quotedsize = scanelem->size;
+			const char *quotedstart = scanelem->start;
+			size_t quotedsize = scanelem->size;
 
 			cli_dbgmsg("quotedsize = %lu\n", quotedsize);
 			while(*quotedstart != '\n') {
@@ -593,7 +706,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				if(*quotedstart == ';') {
 					quotedstart++;
 					quotedsize--;
-				} else if(*quotedstart == '\n') {
+				} else if((*quotedstart == '\n') || (*quotedstart == '\r')) {
 					quotedstart++;
 					quotedsize--;
 					if((*quotedstart == '\n') || (*quotedstart == '\r')) {
@@ -615,14 +728,21 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				cli_dbgmsg("cli_mbox: decoding %ld quoted-printable bytes\n", quotedsize);
 
 				m = messageCreate();
-				if(m == NULL)
+				if(m == NULL) {
+					if(wasAlloced)
+						free(start);
+					else
+						munmap(start, size);
+
 					return CL_EMEM;
+				}
 				messageSetEncoding(m, "quoted-printable");
 
 				line = NULL;
 
 				do {
 					int length = 0;
+					char *newline;
 
 					/*printf("%ld: ", quotedsize); fflush(stdout);*/
 
@@ -633,7 +753,10 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 					/*printf("%d: ", length); fflush(stdout);*/
 
-					line = cli_realloc(line, length + 1);
+					newline = cli_realloc(line, length + 1);
+					if(newline == NULL)
+						break;
+					line = newline;
 
 					memcpy(line, quotedstart, length);
 					line[length] = '\0';
@@ -644,11 +767,13 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 						break;
 
 					if((quotedsize > 0) && (*ptr == '\r')) {
-						ptr++;
+						quotedstart = ++ptr;
 						--quotedsize;
 					}
-					quotedstart = ++ptr;
-					--quotedsize;
+					if((quotedsize > 0) && (*ptr == '\n')) {
+						quotedstart = ++ptr;
+						--quotedsize;
+					}
 				} while(quotedsize > 0L);
 
 				free(line);
@@ -682,11 +807,86 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 	if(ret == 0)
 		return CL_CLEAN;	/* a lie - but it gets things going */
 
+	cli_dbgmsg("New world - don't know what to do - fall back to old world\n");
 	/* Fall back for now */
 	lseek(desc, 0L, SEEK_SET);
 	return cli_parse_mbox(dir, desc, options);
 }
-#else
+
+static void
+create_map(const char *begin, const char *end)
+{
+	const struct wordlist {
+		const char *word;
+		int len;
+	} wordlist[] = {
+		{	"base64",		6	},
+		{	"quoted-printable",	16	},
+		{	"\nbegin ",		7	},
+		{	"\nFrom ",		7	},
+		{	NULL,			0	}
+	};
+
+	if(map) {
+		cli_warnmsg("create_map called without free_map\n");
+		free_map();
+	}
+	while(begin < end) {
+		const struct wordlist *word;
+
+		for(word = wordlist; word->word; word++) {
+			if((end - begin) < word->len)
+				continue;
+			if(strncasecmp(begin, word->word, word->len) == 0) {
+				add_to_map(begin, word->word);
+				break;
+			}
+		}
+		begin++;
+	}
+}
+
+/* To sort map, assume 'offset' is presented in sorted order */
+static void
+add_to_map(const char *offset, const char *word)
+{
+	if(map) {
+		tail->next = cli_malloc(sizeof(struct map));	/* FIXME: verify */
+		tail = tail->next;
+	} else
+		map = tail = cli_malloc(sizeof(struct map));	/* FIXME: verify */
+
+	tail->offset = offset;
+	tail->word = word;
+	tail->next = NULL;
+}
+
+static const char *
+find_in_map(const char *offset, const char *word)
+{
+	const struct map *item;
+
+	for(item = map; item; item = item->next)
+		if(item->offset >= offset)
+			if(strcasecmp(word, item->word) == 0)
+				return item->offset;
+
+	return NULL;
+}
+
+static void
+free_map(void)
+{
+	while(map) {
+		struct map *next = map->next;
+
+		free(map);
+		map = next;
+	}
+	map = NULL;
+}
+
+#else	/*!NEW_WORLD*/
 int
 cli_mbox(const char *dir, int desc, unsigned int options)
 {
@@ -711,6 +911,8 @@ cli_mbox(const char *dir, int desc, unsigned int options)
  * TODO: ensure parseEmailHeaders is always called before parseEmailBody
  * TODO: create parseEmail which calls parseEmailHeaders then parseEmailBody
  * TODO: Look into TNEF. Is there anything that needs to be done here?
+ * TODO: Handle unepected NUL bytes in header lines which stop strcmp()s:
+ *	e.g. \0Content-Type: application/binary;
  */
 static int
 cli_parse_mbox(const char *dir, int desc, unsigned int options)
@@ -718,7 +920,7 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 	int retcode, i;
 	message *body;
 	FILE *fd;
-	char buffer[LINE_LENGTH + 1];
+	char buffer[RFC2821LENGTH + 1];
 #ifdef HAVE_BACKTRACE
 	void (*segv)(int);
 #endif
@@ -728,7 +930,11 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 	int tmpfd;
 #endif
 
+#ifdef	NEW_WORLD
+	cli_dbgmsg("fall back to old world\n");
+#else
 	cli_dbgmsg("in mbox()\n");
+#endif
 
 	i = dup(desc);
 	if((fd = fdopen(i, "rb")) == NULL) {
@@ -806,7 +1012,7 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 	 * message is stopped, and giving a better indication of which message
 	 * within the mailbox is infected
 	 */
-	if(strncmp(buffer, "From ", 5) == 0) {
+	if((strncmp(buffer, "From ", 5) == 0) && isalnum(buffer[5])) {
 		/*
 		 * Have been asked to check a UNIX style mbox file, which
 		 * may contain more than one e-mail message to decode
@@ -845,7 +1051,7 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 
 		do {
 			cli_chomp(buffer);
-			if(lastLineWasEmpty && (strncmp(buffer, "From ", 5) == 0)) {
+			if(lastLineWasEmpty && (strncmp(buffer, "From ", 5) == 0) && isalnum(buffer[5])) {
 				cli_dbgmsg("Deal with email number %d\n", messagenumber++);
 				/*
 				 * End of a message in the mail box
@@ -882,9 +1088,9 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 				 * Fast track visa to uudecode.
 				 * TODO: binhex, yenc
 				 */
-				if(uufasttrack(m, buffer, dir, fd) < 0)
+				if(uudecodeFile(m, buffer, dir, fd) < 0)
 					if(messageAddStr(m, buffer) < 0)
-					    break;
+						break;
 			} else
 				if(messageAddStr(m, buffer) < 0)
 					break;
@@ -970,7 +1176,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 	int commandNumber = -1;
 	char *fullline = NULL, *boundary = NULL;
 	size_t fulllinelength = 0;
-	char buffer[LINE_LENGTH+1];
+	char buffer[RFC2821LENGTH + 1];
 
 	cli_dbgmsg("parseEmailFile\n");
 
@@ -1005,7 +1211,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 			boundary = NULL;
 		}
 		if(inHeader) {
-			cli_dbgmsg("parseEmailFile: check '%s' contMarker %d fullline 0x%p\n",
+			cli_dbgmsg("parseEmailFile: check '%s' contMarker %d fullline %p\n",
 				buffer ? buffer : "", (int)contMarker, fullline);
 			if(line && isspace(line[0])) {
 				char copy[sizeof(buffer)];
@@ -1060,12 +1266,12 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 				int lookahead;
 
 				if(fullline == NULL) {
-					char cmd[LINE_LENGTH + 1], out[LINE_LENGTH + 1];
+					char cmd[RFC2821LENGTH + 1], out[RFC2821LENGTH + 1];
 
 					/*
 					 * Continuation of line we're ignoring?
 					 */
-					if((line[0] == '\t') || (line[0] == ' ') || contMarker) {
+					if(isblank(line[0])) {
 						contMarker = continuationMarker(line);
 						continue;
 					}
@@ -1098,7 +1304,10 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 					fulllinelength = strlen(line) + 1;
 				} else if(line != NULL) {
 					fulllinelength += strlen(line);
-					fullline = cli_realloc(fullline, fulllinelength);
+					ptr = cli_realloc(fullline, fulllinelength);
+					if(ptr == NULL)
+						continue;
+					fullline = ptr;
 					strcat(fullline, line);
 				}
 
@@ -1123,7 +1332,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 					 *
 					 * Add all the arguments on the line
 					 */
-					if((lookahead == '\t') || (lookahead == ' '))
+					if(isblank(lookahead))
 						continue;
 				}
 
@@ -1154,7 +1363,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 			 * Fast track visa to uudecode.
 			 * TODO: binhex, yenc
 			 */
-			if(uufasttrack(ret, line, dir, fin) < 0)
+			if(uudecodeFile(ret, line, dir, fin) < 0)
 				if(messageAddStr(ret, line) < 0)
 					break;
 		} else
@@ -1246,12 +1455,12 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 				int quotes;
 
 				if(fullline == NULL) {
-					char cmd[LINE_LENGTH + 1];
+					char cmd[RFC2821LENGTH + 1];
 
 					/*
 					 * Continuation of line we're ignoring?
 					 */
-					if((buffer[0] == '\t') || (buffer[0] == ' '))
+					if(isblank(buffer[0]))
 						continue;
 
 					/*
@@ -1284,7 +1493,10 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 					fulllinelength = strlen(buffer) + 1;
 				} else if(buffer) {
 					fulllinelength += strlen(buffer);
-					fullline = cli_realloc(fullline, fulllinelength);
+					ptr = cli_realloc(fullline, fulllinelength);
+					if(ptr == NULL)
+						continue;
+					fullline = ptr;
 					strcat(fullline, buffer);
 				}
 
@@ -1298,11 +1510,8 @@ parseEmailHeaders(const message *m, const table_t *rfc821)
 					 *
 					 * Add all the arguments on the line
 					 */
-					switch(lineGetData(t->t_next->t_line)[0]) {
-						case ' ':
-						case '\t':
-							continue;
-					}
+					if(isblank(lineGetData(t->t_next->t_line)[0]))
+						continue;
 
 				quotes = 0;
 				for(qptr = fullline; *qptr; qptr++)
@@ -1541,19 +1750,11 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					if(boundaryStart(lineGetData(t_line->t_line), boundary))
 						break;
 					/*
-					 * Found a uuencoded/binhex file before
+					 * Found a binhex file before
 					 *	the first multipart
 					 * TODO: check yEnc
 					 */
-					if(uuencodeBegin(mainMessage) == t_line) {
-						if(messageGetEncoding(mainMessage) == NOENCODING) {
-							messageSetEncoding(mainMessage, "x-uuencode");
-							fb = messageToFileblob(mainMessage, dir);
-
-							if(fb)
-								fileblobDestroy(fb);
-						}
-					} else if(binhexBegin(mainMessage) == t_line) {
+					if(binhexBegin(mainMessage) == t_line) {
 						if(messageGetEncoding(mainMessage) == NOENCODING) {
 							messageSetEncoding(mainMessage, "x-binhex");
 							fb = messageToFileblob(mainMessage, dir);
@@ -1588,7 +1789,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				mimeType = NOMIME;
 				/*
 				 * The break means that we will still
-				 * check if the file contains a uuencoded file
+				 * check if the file contains a yEnc/binhex file
 				 */
 				break;
 			}
@@ -1639,12 +1840,12 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					cli_dbgmsg("Empty part\n");
 					/*
 					 * Remove this part unless there's
-					 * a uuencoded portion somewhere in
+					 * a binhex portion somewhere in
 					 * the complete message that we may
 					 * throw away by mistake if the MIME
 					 * encoding information is incorrect
 					 */
-					if(uuencodeBegin(mainMessage) == NULL) {
+					if(binhexBegin(mainMessage) == NULL) {
 						messageDestroy(aMessage);
 						--multiparts;
 					}
@@ -1654,8 +1855,8 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				do {
 					const char *line = lineGetData(t_line->t_line);
 
-					/*cli_dbgmsg("inMimeHead %d inhead %d boundary '%s' line '%s' next '%s'\n",
-						inMimeHead, inhead, boundary, line,
+					/*cli_dbgmsg("multipart %d: inMimeHead %d inhead %d boundary '%s' line '%s' next '%s'\n",
+						multiparts, inMimeHead, inhead, boundary, line,
 						t_line->t_next && t_line->t_next->t_line ? lineGetData(t_line->t_next->t_line) : "(null)");*/
 
 					if(inMimeHead) {	/* continuation line */
@@ -1778,7 +1979,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 
 						inMimeHead = FALSE;
 
-						assert(strlen(line) <= LINE_LENGTH);
+						assert(strlen(line) <= RFC2821LENGTH);
 
 						fullline = rfc822comments(line, NULL);
 						if(fullline == NULL)
@@ -2045,9 +2246,9 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					case NOMIME:
 						cli_dbgmsg("No mime headers found in multipart part %d\n", i);
 						if(mainMessage) {
-							if(uuencodeBegin(aMessage)) {
-								cli_dbgmsg("Found uuencoded message in multipart/mixed mainMessage\n");
-								messageSetEncoding(mainMessage, "x-uuencode");
+							if(binhexBegin(aMessage)) {
+								cli_dbgmsg("Found binhex message in multipart/mixed mainMessage\n");
+								messageSetEncoding(mainMessage, "x-bunhex");
 								fb = messageToFileblob(mainMessage, dir);
 
 								if(fb)
@@ -2057,16 +2258,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 								messageDestroy(mainMessage);
 							mainMessage = NULL;
 						} else if(aMessage) {
-							if(uuencodeBegin(aMessage)) {
-								cli_dbgmsg("Found uuencoded message in multipart/mixed non mime part\n");
-								messageSetEncoding(aMessage, "x-uuencode");
-								fb = messageToFileblob(aMessage, dir);
-
-								if(fb)
-									fileblobDestroy(fb);
-								assert(aMessage == messages[i]);
-								messageReset(messages[i]);
-							} else if(binhexBegin(aMessage)) {
+							if(binhexBegin(aMessage)) {
 								cli_dbgmsg("Found binhex message in multipart/mixed non mime part\n");
 								messageSetEncoding(aMessage, "x-binhex");
 								fb = messageToFileblob(aMessage, dir);
@@ -2082,8 +2274,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							/*
 							 * No plain text version
 							 */
-							messageAddStr(aMessage, "No plain text alternative");
-						assert(messageGetBody(aMessage) != NULL);
+							cli_dbgmsg("No plain text alternative");
 						break;
 					case TEXT:
 						dtype = messageGetDispositionType(aMessage);
@@ -2097,10 +2288,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							mainMessage = NULL;
 							cptr = messageGetMimeSubtype(aMessage);
 							cli_dbgmsg("Mime subtype \"%s\"\n", cptr);
-							if(uuencodeBegin(aMessage)) {
-								cli_dbgmsg("Found uuencoded message in multipart/mixed text portion\n");
-								messageSetEncoding(aMessage, "x-uuencode");
-							} else if((tableFind(subtypeTable, cptr) == PLAIN) &&
+							if((tableFind(subtypeTable, cptr) == PLAIN) &&
 								  (messageGetEncoding(aMessage) == NOENCODING)) {
 								char *filename;
 								/*
@@ -2265,7 +2453,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						cli_warnmsg("PGP encoded attachment not scanned\n");
 						rc = 2;
 					} else
-						cli_warnmsg("Unknown encryption protocol '%s' - if you believe this file contains a virus, report it to bugs@clamav.net\n");
+						cli_warnmsg("Unknown encryption protocol '%s' - if you believe this file contains a virus, submit it to www.clamav.net\n", protocol);
 					free(protocol);
 				} else
 					cli_dbgmsg("Encryption method missing protocol name\n");
@@ -2347,7 +2535,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				/* TODO */
 				cli_warnmsg("Attempt to send Content-type message/external-body trapped");
 			else
-				cli_warnmsg("Unsupported message format `%s' - if you believe this file contains a virus, report it to bugs@clamav.net\n", mimeSubtype);
+				cli_warnmsg("Unsupported message format `%s' - if you believe this file contains a virus, submit it to www.clamav.net\n", mimeSubtype);
 
 
 			if(mainMessage && (mainMessage != messageIn))
@@ -2534,21 +2722,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 		 */
 		const text *t_line;
 
-		if((t_line = uuencodeBegin(mainMessage)) != NULL) {
-			cli_dbgmsg("Found uuencoded file\n");
-
-			/*
-			 * Main part contains uuencoded section
-			 */
-			messageSetEncoding(mainMessage, "x-uuencode");
-
-			if((fb = messageToFileblob(mainMessage, dir)) != NULL) {
-				if((cptr = fileblobGetFilename(fb)) != NULL)
-					cli_dbgmsg("Saving uuencoded message %s\n", cptr);
-				fileblobDestroy(fb);
-			}
-			rc = 1;
-		} else if((encodingLine(mainMessage) != NULL) &&
+		if((encodingLine(mainMessage) != NULL) &&
 			  ((t_line = bounceBegin(mainMessage)) != NULL)) {
 			const text *t, *start;
 			/*
@@ -2571,7 +2745,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 			 * won't be scanned
 			 */
 			for(t = start = t_line; t; t = t->t_next) {
-				char cmd[LINE_LENGTH + 1];
+				char cmd[RFC2821LENGTH + 1];
 				const char *txt = lineGetData(t->t_line);
 
 				if(txt == NULL)
@@ -2612,8 +2786,6 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				cli_dbgmsg("Not found a bounce message\n");
 		} else {
 			bool saveIt;
-
-			cli_dbgmsg("Not found uuencoded file\n");
 
 			if(messageGetMimeType(mainMessage) == MESSAGE)
 				/*
@@ -2692,7 +2864,7 @@ boundaryStart(const char *line, const char *boundary)
 {
 	char *ptr, *out;
 	int rc;
-	char buf[LINE_LENGTH + 1];
+	char buf[RFC2821LENGTH + 1];
 
 	if(line == NULL)
 		return 0;	/* empty line */
@@ -3268,7 +3440,7 @@ rfc2047(const char *in)
 		encoding = tolower(encoding);
 
 		if((encoding != 'q') && (encoding != 'b')) {
-			cli_warnmsg("Unsupported RFC2047 encoding type '%c' - if you believe this file contains a virus that was missed, report it to bugs@clamav.net\n", encoding);
+			cli_warnmsg("Unsupported RFC2047 encoding type '%c' - if you believe this file contains a virus, submit it to www.clamav.net\n", encoding);
 			free(out);
 			out = NULL;
 			break;
@@ -3390,9 +3562,11 @@ rfc1341(message *m, const char *dir)
 		oldfilename = (char *)messageFindArgument(m, "name");
 
 	arg = cli_malloc(10 + strlen(id) + strlen(number));
-	sprintf(arg, "filename=%s%s", id, number);
-	messageAddArgument(m, arg);
-	free(arg);
+	if(arg) {
+		sprintf(arg, "filename=%s%s", id, number);
+		messageAddArgument(m, arg);
+		free(arg);
+	}
 
 	if(oldfilename) {
 		cli_warnmsg("Must reset to %s\n", oldfilename);
@@ -3422,6 +3596,7 @@ rfc1341(message *m, const char *dir)
 		if((n == t) && ((dd = opendir(pdir)) != NULL)) {
 			FILE *fout;
 			char outname[NAME_MAX + 1];
+			time_t now;
 
 			snprintf(outname, sizeof(outname) - 1, "%s/%s", dir, id);
 
@@ -3436,6 +3611,7 @@ rfc1341(message *m, const char *dir)
 				return -1;
 			}
 
+			time(&now);
 			for(n = 1; n <= t; n++) {
 				char filename[NAME_MAX + 1];
 				const struct dirent *dent;
@@ -3456,20 +3632,31 @@ rfc1341(message *m, const char *dir)
 				while((dent = readdir(dd))) {
 #endif
 					FILE *fin;
-					char buffer[BUFSIZ];
+					char buffer[BUFSIZ], fullname[NAME_MAX + 1];
 					int nblanks;
 					extern short cli_leavetemps_flag;
+					struct stat statb;
 
 					if(dent->d_ino == 0)
 						continue;
 
-					if(strncmp(filename, dent->d_name, strlen(filename)) != 0)
-						continue;
+					snprintf(fullname, sizeof(fullname) - 1,
+						"%s/%s", pdir, dent->d_name);
 
-					sprintf(filename, "%s/%s", pdir, dent->d_name);
-					fin = fopen(filename, "rb");
+					if(strncmp(filename, dent->d_name, strlen(filename)) != 0) {
+						if(!cli_leavetemps_flag)
+							continue;
+						if(stat(fullname, &statb) < 0)
+							continue;
+						if(now - statb.st_mtime > (time_t)(7 * 24 * 3600))
+							if(unlink(fullname) >= 0)
+								cli_warnmsg("removed old RFC1341 file %s\n", fullname);
+						continue;
+					}
+
+					fin = fopen(fullname, "rb");
 					if(fin == NULL) {
-						cli_errmsg("Can't open '%s' for reading", filename);
+						cli_errmsg("Can't open '%s' for reading", fullname);
 						fclose(fout);
 						unlink(outname);
 						free(id);
@@ -3496,7 +3683,7 @@ rfc1341(message *m, const char *dir)
 
 					/* don't unlink if leave temps */
 					if(!cli_leavetemps_flag)
-						unlink(filename);
+						unlink(fullname);
 					break;
 				}
 				rewinddir(dd);
@@ -3568,6 +3755,11 @@ checkURLs(message *m, const char *dir)
 	for(i = 0; i < hrefs.count; i++) {
 		const char *url = (const char *)hrefs.value[i];
 
+		/*
+		 * TODO: If it's an image source, it'd be nice to note beacons
+		 *	where width="0" height="0", which needs support from
+		 *	the HTML normalise code
+		 */
 		if(strncasecmp("http://", url, 7) == 0) {
 			char *ptr;
 #ifdef	WITH_CURL
@@ -3588,10 +3780,21 @@ checkURLs(message *m, const char *dir)
 				cli_dbgmsg("URL %s already downloaded\n", url);
 				continue;
 			}
+			/*
+			 * What about foreign character spoofing?
+			 * It would be useful be able to check if url
+			 *	is the same as the text displayed, e.g.
+			 *	<a href="http://dodgy.biz">www.paypal.com</a>
+			 *	but that needs support from HTML normalise
+			 */
+			if(strchr(url, '%') && strchr(url, '@'))
+				cli_warnmsg("Possible URL spoofing attempt noticed, but not yet handled (%s)\n", url);
+
 			if(n == FOLLOWURLS) {
-				cli_warnmsg("Not all URLs will be scanned\n");
+				cli_warnmsg("URL %s will not be scanned\n", url);
 				break;
 			}
+
 			(void)tableInsert(t, url, 1);
 			cli_dbgmsg("Downloading URL %s to be scanned\n", url);
 			strncpy(name, url, sizeof(name) - 1);
@@ -3619,17 +3822,11 @@ checkURLs(message *m, const char *dir)
 			 */
 			len = sizeof(cmd) - 26 - strlen(dir) - strlen(name);
 #ifdef	CL_DEBUG
-			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 %.*s >%s/%s", len, url, dir, name);
+			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 \"%.*s\" >%s/%s", len, url, dir, name);
 #else
-			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 %.*s >%s/%s 2>/dev/null", len, url, dir, name);
+			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 \"%.*s\" >%s/%s 2>/dev/null", len, url, dir, name);
 #endif
 			cmd[sizeof(cmd) - 1] = '\0';
-
-#ifndef	WITH_CURL
-			for(ptr = cmd; *ptr; ptr++)
-				if(strchr(";&", *ptr))
-					*ptr = '_';
-#endif
 
 			cli_dbgmsg("%s\n", cmd);
 #ifdef	CL_THREAD_SAFE
@@ -3666,6 +3863,16 @@ checkURLs(message *m, const char *dir)
 	html_tag_arg_free(&hrefs);
 }
 
+/*
+ * Includes some Win32 patches by Gianluigi Tiesi <sherpya@netfarm.it>
+ *
+ * FIXME: Often WMF exploits work by sending people an email directing them
+ *	to a page which displays a picture containing the exploit. This is not
+ *	currently found, since only the HTML on the referred page is downloaded.
+ *	It would be useful to scan the HTML for references to pictures and
+ *	download them for scanning. But that will hit performance so there is
+ *	an issue here.
+ */
 #ifdef	WITH_CURL
 static void *
 #ifdef	CL_THREAD_SAFE
@@ -3687,17 +3894,20 @@ getURL(struct arg *arg)
 	const char *filename = arg->filename;
 	char fout[NAME_MAX + 1];
 #ifdef	CURLOPT_ERRORBUFFER
-	char errorbuffer[128];
+	char errorbuffer[CURL_ERROR_SIZE];
+#elif	(LIBCURL_VERSION_NUM >= 0x070C00)
+	CURLcode res = CURLE_OK;
 #endif
 
 #ifdef	CL_THREAD_SAFE
 	pthread_mutex_lock(&init_mutex);
 #endif
 	if(!initialised) {
-		if(curl_global_init(CURL_GLOBAL_NOTHING) != 0) {
+		if(curl_global_init(CURL_GLOBAL_ALL) != 0) {
 #ifdef	CL_THREAD_SAFE
 			pthread_mutex_unlock(&init_mutex);
 #endif
+			cli_errmsg("curl_global_init failed");
 			return NULL;
 		}
 		initialised = 1;
@@ -3708,17 +3918,22 @@ getURL(struct arg *arg)
 
 	/* easy isn't the word I'd use... */
 	curl = curl_easy_init();
-	if(curl == NULL)
+	if(curl == NULL) {
+		cli_errmsg("curl_easy_init failed");
 		return NULL;
+	}
 
 	(void)curl_easy_setopt(curl, CURLOPT_USERAGENT, "www.clamav.net");
 
-	if(curl_easy_setopt(curl, CURLOPT_URL, url) != 0)
+	if(curl_easy_setopt(curl, CURLOPT_URL, url) != 0) {
+		cli_errmsg("%s: curl_easy_setopt failed", url);
+		curl_easy_cleanup(curl);
 		return NULL;
+	}
 
 	snprintf(fout, NAME_MAX, "%s/%s", dir, filename);
 
-	fp = fopen(fout, "w");
+	fp = fopen(fout, "wb");
 
 	if(fp == NULL) {
 		cli_errmsg("Can't open '%s' for writing", fout);
@@ -3765,10 +3980,6 @@ getURL(struct arg *arg)
 	 */
 	curl_easy_setopt(curl, CURLOPT_USERPWD, "username:password");
 
-#ifdef	CURLOPT_ERRORBUFFER
-	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errorbuffer);
-#endif
-
 	/*
 	 * FIXME: valgrind reports "pthread_mutex_unlock: mutex is not locked"
 	 * from gethostbyaddr_r within this. It may be a bug in libcurl
@@ -3777,24 +3988,31 @@ getURL(struct arg *arg)
 	 * Conditional jump or move depends on uninitialised value(s) and
 	 * quit. But the program seems to work OK without valgrind...
 	 * Perhaps Curl_resolv() isn't thread safe?
+	 *
+	 * I have seen segfaults in version 7.12.3. Version 7.14 seems OK.
 	 */
 	/*
 	 * On some C libraries (notably with FC3, glibc-2.3.3-74) you get a
-	 * memory leak * here in getaddrinfo(), see
+	 * memory leak here in getaddrinfo(), see
 	 *	https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=139559
 	 */
-
-	if(curl_easy_perform(curl) != CURLE_OK) {
 #ifdef	CURLOPT_ERRORBUFFER
+	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errorbuffer);
+
+	if(curl_easy_perform(curl) != CURLE_OK)
 		cli_warnmsg("URL %s failed to download: %s\n", url, errorbuffer);
+#elif	(LIBCURL_VERSION_NUM >= 0x070C00)
+	if((res = curl_easy_perform(curl)) != CURLE_OK)
+		cli_warnmsg("URL %s failed to download: %s\n", url,
+			curl_easy_strerror(res));
 #else
+	if(curl_easy_perform(curl) != CURLE_OK)
 		cli_warnmsg("URL %s failed to download\n", url);
 #endif
-	}
 
 	fclose(fp);
-	curl_slist_free_all(headers);
 	curl_easy_cleanup(curl);
+	curl_slist_free_all(headers);
 
 	return NULL;
 }
@@ -3866,52 +4084,6 @@ usefulHeader(int commandNumber, const char *cmd)
 }
 
 /*
- * Save the uuencoded part of the file as it is read in since there's no need
- * to include it in the parse tree. Saves memory and parse time.
- * Return < 0 for failure
- */
-static int
-uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin)
-{
-	fileblob *fb = fileblobCreate();
-	char buffer[LINE_LENGTH + 1];
-	char *filename = cli_strtok(firstline, 2, " ");
-
-	if(filename == NULL)
-		return -1;
-
-	fileblobSetFilename(fb, dir, filename);
-	cli_dbgmsg("Fast track uudecode %s\n", filename);
-	free(filename);
-
-	while(fgets(buffer, sizeof(buffer) - 1, fin) != NULL) {
-		unsigned char data[1024];
-		const unsigned char *uptr;
-		size_t len;
-
-		cli_chomp(buffer);
-		if(strcasecmp(buffer, "end") == 0)
-			break;
-		if(buffer[0] == '\0')
-			break;
-
-		uptr = decodeLine(m, UUENCODE, buffer, data, sizeof(data));
-		if(uptr == NULL)
-			break;
-
-		len = (size_t)(uptr - data);
-		if((len > 62) || (len == 0))
-			break;
-
-		if(fileblobAddData(fb, data, len) < 0)
-			break;
-	}
-
-	fileblobDestroy(fb);
-	return 1;
-}
-
-/*
  * Like fgets but cope with end of line by "\n", "\r\n", "\n\r", "\r"
  */
 static char *
@@ -3943,7 +4115,7 @@ getline_from_mbox(char *buffer, size_t len, FILE *fin)
 					ungetc(c, fin);
 				break;
 			default:
-				*buffer++ = c;
+				*buffer++ = (char)c;
 				continue;
 			case EOF:
 				break;
@@ -3955,56 +4127,17 @@ getline_from_mbox(char *buffer, size_t len, FILE *fin)
 				break;
 		}
 		break;
-	} while(--len > 0);
+	} while(--len > 1);
 
 	if(len == 0) {
-		/* probably, the email breaks RFC821 */
-		cli_dbgmsg("getline_from_mbox: buffer overflow stopped\n");
+		/* the email probably breaks RFC821 */
+		cli_warnmsg("getline_from_mbox: buffer overflow stopped - line lost\n");
 		return NULL;
 	}
+	if(len == 1)
+		/* over flows will have appear on separate lines */
+		cli_dbgmsg("getline_from_mbox: buffer overflow stopped - line recovered\n");
 	*buffer = '\0';
 
 	return ret;
 }
-
-#ifdef	NEW_WORLD
-/*
- * like cli_memstr - but returns the location of the match
- * FIXME: need a case insensitive version
- */
-static const char *
-cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns)
-{
-	const char *pt, *hay;
-	size_t n;
-
-	if(haystack == needle)
-		return haystack;
-
-	if(hs < ns)
-		return NULL;
-
-	if(memcmp(haystack, needle, ns) == 0)
-		return haystack;
-
-	pt = hay = haystack;
-	n = hs;
-
-	while((pt = memchr(hay, needle[0], n)) != NULL) {
-		n -= (int) pt - (int) hay;
-		if(n < ns)
-			break;
-
-		if(memcmp(pt, needle, ns) == 0)
-			return pt;
-
-		if(hay == pt) {
-			n--;
-			hay++;
-		} else
-			hay = pt;
-	}
-
-	return NULL;
-}
-#endif

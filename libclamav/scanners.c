@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -1350,7 +1350,7 @@ static int cli_scanmail(int desc, const char **virname, unsigned long int *scann
 
 static int cli_scanraw(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec, cli_file_t type)
 {
-	int typerec = 0, ret = CL_CLEAN;
+	int typerec = 0, ret = CL_CLEAN, nret = CL_CLEAN;
 
 
     if(type == CL_TYPE_UNKNOWN_TEXT)
@@ -1375,17 +1375,18 @@ static int cli_scanraw(int desc, const char **virname, unsigned long int *scanne
 	switch(ret) {
 	    case CL_TYPE_HTML:
 		if(SCAN_HTML)
-		    if(cli_scanhtml(desc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS)
+		    if((nret = cli_scanhtml(desc, virname, scanned, root, limits, options, arec, mrec)) == CL_VIRUS)
 			return CL_VIRUS;
 		    break;
 
 	    case CL_TYPE_MAIL:
 		if(SCAN_MAIL)
-		    if(cli_scanmail(desc, virname, scanned, root, limits, options, arec, mrec) == CL_VIRUS)
+		    if((nret = cli_scanmail(desc, virname, scanned, root, limits, options, arec, mrec)) == CL_VIRUS)
 			return CL_VIRUS;
 		break;
 	}
 	ret == CL_TYPE_MAIL ? mrec-- : arec--;
+	ret = nret;
     }
 
     return ret;
@@ -1549,7 +1550,7 @@ int cli_magic_scandesc(int desc, const char **virname, unsigned long int *scanne
     type == CL_TYPE_MAIL ? mrec-- : arec--;
 
     if(type != CL_TYPE_DATA && ret != CL_VIRUS && !root->sdb) {
-	if((ret = cli_scanraw(desc, virname, scanned, root, limits, options, arec, mrec, type) == CL_VIRUS))
+	if(cli_scanraw(desc, virname, scanned, root, limits, options, arec, mrec, type) == CL_VIRUS)
 	    return CL_VIRUS;
     }
 

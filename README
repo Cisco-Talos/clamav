@@ -2,6 +2,16 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.88.1
+------
+
+This version fixes a number of minor bugs and provides code updates
+to improve virus detection.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
+
 0.88
 ----
 

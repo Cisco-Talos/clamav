@@ -74,8 +74,6 @@ pthread_mutex_t cli_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define CL_FLEVEL 7 /* don't touch it */
 
-#define MAX_ALLOCATION 134217728
-
 short cli_debug_flag = 0, cli_leavetemps_flag = 0;
 
 static unsigned char oldmd5buff[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
@@ -306,15 +304,15 @@ void *cli_malloc(size_t size)
 	void *alloc;
 
 
-    if(!size || size > MAX_ALLOCATION) {
-	cli_errmsg("Attempt to allocate %d bytes. Please report to bugs@clamav.net\n", size);
+    if(!size || size > CLI_MAX_ALLOCATION) {
+	cli_errmsg("Attempt to allocate %u bytes. Please report to bugs@clamav.net\n", size);
 	return NULL;
     }
 
     alloc = malloc(size);
 
     if(!alloc) {
-	cli_errmsg("cli_malloc(): Can't allocate memory (%d bytes).\n", size);
+	cli_errmsg("cli_malloc(): Can't allocate memory (%u bytes).\n", size);
 	perror("malloc_problem");
 	/* _exit(1); */
 	return NULL;
@@ -326,15 +324,15 @@ void *cli_calloc(size_t nmemb, size_t size)
 	void *alloc;
 
 
-    if(!size || size > MAX_ALLOCATION) {
-	cli_errmsg("Attempt to allocate %d bytes. Please report to bugs@clamav.net\n", size);
+    if(!size || size > CLI_MAX_ALLOCATION) {
+	cli_errmsg("Attempt to allocate %u bytes. Please report to bugs@clamav.net\n", size);
 	return NULL;
     }
 
     alloc = calloc(nmemb, size);
 
     if(!alloc) {
-	cli_errmsg("cli_calloc(): Can't allocate memory (%d bytes).\n", nmemb * size);
+	cli_errmsg("cli_calloc(): Can't allocate memory (%u bytes).\n", nmemb * size);
 	perror("calloc_problem");
 	/* _exit(1); */
 	return NULL;
@@ -346,15 +344,15 @@ void *cli_realloc(void *ptr, size_t size)
 	void *alloc;
 
 
-    if(!size || size > MAX_ALLOCATION) {
-	cli_errmsg("Attempt to allocate %d bytes. Please report to bugs@clamav.net\n", size);
+    if(!size || size > CLI_MAX_ALLOCATION) {
+	cli_errmsg("Attempt to allocate %u bytes. Please report to bugs@clamav.net\n", size);
 	return NULL;
     }
 
     alloc = realloc(ptr, size);
 
     if(!alloc) {
-	cli_errmsg("cli_realloc(): Can't re-allocate memory to %d byte.\n", size);
+	cli_errmsg("cli_realloc(): Can't re-allocate memory to %u byte.\n", size);
 	perror("realloc_problem");
 	return NULL;
     } else return alloc;
@@ -700,6 +698,10 @@ int cli_bitset_test(bitset_t *bs, unsigned long bit_offset)
 	
 	char_offset = bit_offset / BITS_PER_CHAR;
 	bit_offset = bit_offset % BITS_PER_CHAR;
-	
+
+	if (char_offset >= bs->length) {
+		return FALSE;
+	}
+
 	return (bs->bitset[char_offset] & ((unsigned char)1 << bit_offset));
 }

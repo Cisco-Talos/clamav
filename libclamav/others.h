@@ -27,6 +27,12 @@
     (bb_size > 0 && sb_size > 0 && sb_size <= bb_size	\
      && sb >= bb && sb + sb_size <= bb + bb_size && sb + sb_size > bb)
 
+#define CLI_ISCONTAINED2(bb, bb_size, sb, sb_size)	\
+    (bb_size > 0 && sb_size >= 0 && sb_size <= bb_size	\
+     && sb >= bb && sb + sb_size <= bb + bb_size && sb + sb_size >= bb)
+
+#define CLI_MAX_ALLOCATION 134217728
+
 typedef struct bitset_tag {
     unsigned char *bitset;
     unsigned long length;

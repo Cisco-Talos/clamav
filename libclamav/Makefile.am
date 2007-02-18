@@ -124,6 +124,8 @@ libclamav_la_SOURCES = \
 	is_tar.c \
 	is_tar.h \
 	tnef.c \
-	tnef.h
+	tnef.h \
+	uuencode.c \
+	uuencode.h
 
 lib_LTLIBRARIES = libclamav.la

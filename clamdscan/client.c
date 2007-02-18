@@ -192,7 +192,11 @@ int dsstream(int sockd, const struct optstruct *opt)
 	int wsockd, loopw = 60, bread, port, infected = 0;
 	struct sockaddr_in server;
 	struct sockaddr_in peer;
+#ifdef HAVE_SOCKLEN_T
 	socklen_t peer_size;
+#else
+	int peer_size;
+#endif
 	char buff[4096], *pt;
 
 

@@ -34,14 +34,14 @@
 
 struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 {
-	char buff[LINE_LENGTH], *name, *arg;
+	char buff[LINE_LENGTH], *name, *arg, *c;
 	FILE *fs;
 	int line = 0, i, found, ctype, calc;
 	struct cfgstruct *copt = NULL;
 	struct cfgoption *pt;
 
 	struct cfgoption cfg_options[] = {
-	    {"LogFile", OPT_STR},
+	    {"LogFile", OPT_FULLSTR},
 	    {"LogFileUnlock", OPT_NOARG},
 	    {"LogFileMaxSize", OPT_COMPSIZE},
 	    {"LogTime", OPT_NOARG},
@@ -49,8 +49,8 @@ struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 	    {"LogVerbose", OPT_NOARG}, /* clamd + freshclam */
 	    {"LogSyslog", OPT_NOARG},
 	    {"LogFacility", OPT_STR},
-	    {"PidFile", OPT_STR},
-	    {"TemporaryDirectory", OPT_STR},
+	    {"PidFile", OPT_FULLSTR},
+	    {"TemporaryDirectory", OPT_FULLSTR},
 	    {"DisableDefaultScanOptions", OPT_NOARG},
 	    {"ScanPE", OPT_NOARG},
 	    {"DetectBrokenExecutables", OPT_NOARG},
@@ -67,11 +67,11 @@ struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 	    {"ArchiveLimitMemoryUsage", OPT_NOARG},
 	    {"ArchiveBlockEncrypted", OPT_NOARG},
 	    {"ArchiveBlockMax", OPT_NOARG},
-	    {"DataDirectory", OPT_STR}, /* obsolete */
-	    {"DatabaseDirectory", OPT_STR}, /* clamd + freshclam */
+	    {"DataDirectory", OPT_FULLSTR}, /* obsolete */
+	    {"DatabaseDirectory", OPT_FULLSTR}, /* clamd + freshclam */
 	    {"TCPAddr", OPT_STR},
 	    {"TCPSocket", OPT_NUM},
-	    {"LocalSocket", OPT_STR},
+	    {"LocalSocket", OPT_FULLSTR},
 	    {"MaxConnectionQueueLength", OPT_NUM},
 	    {"StreamMaxLength", OPT_COMPSIZE},
 	    {"StreamMinPort", OPT_NUM},
@@ -102,7 +102,7 @@ struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 	    {"ClamukoScanArchive", OPT_NOARG},
 	    {"DatabaseOwner", OPT_STR}, /* freshclam */
 	    {"Checks", OPT_NUM}, /* freshclam */
-	    {"UpdateLogFile", OPT_STR}, /* freshclam */
+	    {"UpdateLogFile", OPT_FULLSTR}, /* freshclam */
 	    {"DNSDatabaseInfo", OPT_STR}, /* freshclam */
 	    {"DatabaseMirror", OPT_STR}, /* freshclam */
 	    {"MaxAttempts", OPT_NUM}, /* freshclam */
@@ -166,6 +166,8 @@ struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 				free(arg);
 				arg = strstr(buff, " ");
 				arg = strdup(++arg);
+				if((c = strpbrk(arg, "\n\r")))
+				    *c = '\0';
 				copt = regcfg(copt, name, arg, 0);
 				break;
 			    case OPT_NUM:
