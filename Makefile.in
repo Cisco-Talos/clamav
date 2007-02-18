@@ -63,7 +63,7 @@ DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(top_srcdir)/docs/man/clamd.conf.5.in \
 	$(top_srcdir)/docs/man/freshclam.1.in \
 	$(top_srcdir)/docs/man/freshclam.conf.5.in AUTHORS COPYING \
-	ChangeLog INSTALL NEWS TODO config.guess config.sub depcomp \
+	ChangeLog INSTALL NEWS config.guess config.sub depcomp \
 	install-sh ltmain.sh missing mkinstalldirs
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
