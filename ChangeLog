@@ -1,3 +1,26 @@
+Thu Jul 29 14:17:42 CEST 2004
+-----------------------------
+  V 0.75.1, backported changes:
+
+  * freshclam/clamd:	    fix crash on PPC when LogFile was enabled together
+			    with LogSyslog
+  * configure:		    improve gethostbyname_r check; cleanups
+  * clamav-milter:	    Use GETHOSTBYNAME_R_6
+			    Better load balancing if max_children = 0
+  * clamdscan:		    fix stdin scanning in local mode (patch by Stephen
+			    Gran <steve*lobefin.net>)
+  * clamav-milter:	    %v in the template file handling is now replaced
+			    only with the virus name, no "stream:" appears
+  * libclamav/mbox.c:	    Fix crash when debugging on SPARC
+  * libclamav/message.c:    Fix occasional crash when scanning
+			    multipart within multipart e-mails
+  * clamav-milter:	    Fixed warning message when building on FreeBSD4.9
+			    Closed (small) memory leak
+			    Fix crash when the 1st remote service goes down
+			    Only use gethostbyname_r on LINUX for now
+			    Improved load balancing a bit
+
+
 Thu Jul 22 21:31:41 CEST 2004
 -----------------------------
   V 0.75, backported changes:

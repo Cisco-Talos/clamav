@@ -84,8 +84,14 @@
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #undef HAVE_FSEEKO
 
-/* Define to 1 if you have the `gethostbyname_r' function. */
-#undef HAVE_GETHOSTBYNAME_R
+/* gethostbyname_r takes 3 arguments */
+#undef HAVE_GETHOSTBYNAME_R_3
+
+/* gethostbyname_r takes 5 arguments */
+#undef HAVE_GETHOSTBYNAME_R_5
+
+/* gethostbyname_r takes 6 arguments */
+#undef HAVE_GETHOSTBYNAME_R_6
 
 /* Define to 1 if you have the `getpagesize' function. */
 #undef HAVE_GETPAGESIZE
@@ -104,6 +110,9 @@
 
 /* in_port_t is defined */
 #undef HAVE_IN_PORT_T
+
+/* Define to 1 if you have the <libmilter/mfapi.h> header file. */
+#undef HAVE_LIBMILTER_MFAPI_H
 
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H
