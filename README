@@ -2,6 +2,15 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.85
+----
+
+Bugfixes in this release include correct signature offset calculation in large
+files, proper handling of encrypted zip archives, and others.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
 0.84
 ----
 

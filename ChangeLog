@@ -1,3 +1,24 @@
+Wed May 11 17:48:27 CEST 2005
+-----------------------------
+  V 0.85
+  * Fixes backported from CVS:
+    - freshclam/manager.c: fix socket descriptor leak in --no-dns mode (patch
+      by GertJan Spoelman <cav*gjs.cc>) (tk)
+    - clamscan, freshclam: return with 62 (instead of 1) when logger can't be
+      initialized (tk)
+    - libclamav/matcher-ac.c, libclamav/matcher-bm.c: fix detection problem
+      with *.ndb OLE2 signatures (problem reported by Trog) (tk)
+    - fix signature offset calculation in large files (problem reported by
+      Christoph) (tk)
+    - clamav-milter: print segfault diagnostic, even if print_trace is not
+      available (njh)
+    - sigtool/sigtool.c: fix support for *.fp databases (tk)
+    - clamav-milter: Better handling of log file errors. Always send 451 when
+      loading a new database when --external is not set (njh)
+    - libclamav/tnef.c: If a parse fails and debugging is on, the file being
+      scanned is dumped to a temporary file (njh)
+    - libclamav/scanners.c: do not report I/O error with encrypted zips (tk)
+
 Fri Apr 29 14:18:18 CEST 2005
 -----------------------------
   V 0.84

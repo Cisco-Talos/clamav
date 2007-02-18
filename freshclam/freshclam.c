@@ -212,13 +212,13 @@ int freshclam(struct optstruct *opt)
 	logg_file = getargc(opt, 'l');
 	if(logg("--------------------------------------\n")) {
 	    mprintf("!Problem with internal logger.\n");
-	    exit(1);
+	    exit(62);
 	}
     } else if((cpt = cfgopt(copt, "UpdateLogFile"))) {
 	logg_file = cpt->strarg; 
 	if(logg("--------------------------------------\n")) {
 	    mprintf("!Problem with internal logger.\n");
-	    exit(1);
+	    exit(62);
 	}
     } else
 	logg_file = NULL;
@@ -230,7 +230,7 @@ int freshclam(struct optstruct *opt)
 	if((cpt = cfgopt(copt, "LogFacility"))) {
 	    if((fac = logg_facility(cpt->strarg)) == -1) {
 		mprintf("!LogFacility: %s: No such facility.\n", cpt->strarg);
-		exit(1);
+		exit(62);
 	    }
 	}
 

@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.192 2005/04/18 10:53:34 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.199 2005/05/11 12:26:44 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.84e"
+#define	CM_VERSION	"0.85"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -367,11 +367,11 @@ static	int	debug_level = 0;
 
 static	pthread_mutex_t	n_children_mutex = PTHREAD_MUTEX_INITIALIZER;
 static	pthread_cond_t	n_children_cond = PTHREAD_COND_INITIALIZER;
-static	unsigned	int	n_children = 0;
+static	volatile	unsigned	int	n_children = 0;
 static	unsigned	int	max_children = 0;
 static	pthread_mutex_t	accept_mutex = PTHREAD_MUTEX_INITIALIZER;
 static	pthread_cond_t	accept_cond = PTHREAD_COND_INITIALIZER;
-static	int	accept_inputs;
+static	volatile	int	accept_inputs;
 static	int	child_timeout = 0;	/* number of seconds to wait for
 					 * a child to die. Set to 0 to
 					 * wait forever
@@ -441,10 +441,11 @@ static	const	char	*pidfile;
 #endif
 #endif
 
+static	void	sigsegv(int sig);
+
 #ifdef HAVE_BACKTRACE
 #include <execinfo.h>
 
-static	void	sigsegv(int sig);
 static	void	print_trace(void);
 
 #define	BACKTRACE_SIZE	200
@@ -1029,8 +1030,13 @@ main(int argc, char **argv)
 	if(cfgopt(copt, "LogSyslog")) {
 		int fac = LOG_LOCAL6;
 
-		if(cfgopt(copt, "LogVerbose"))
+		if(cfgopt(copt, "LogVerbose")) {
 			logVerbose = 1;
+#if	0
+			/* Only supported by Sendmail >= V8.13 */
+			smfi_setdbg(6);
+#endif
+		}
 		use_syslog = 1;
 
 		if((cpt = cfgopt(copt, "LogFacility")) != NULL)
@@ -1329,7 +1335,6 @@ main(int argc, char **argv)
 
 #ifndef	CL_DEBUG
 		close(1);
-		close(2);
 
 		if((cpt = cfgopt(copt, "LogFile"))) {
 			logFile = cpt->strarg;
@@ -1342,12 +1347,20 @@ main(int argc, char **argv)
 				fprintf(stderr, "%s: LogFile requires full path\n", argv[0]);
 				return EX_CONFIG;
 			}
-		} else
+			if(open(logFile, O_WRONLY|O_APPEND) < 0) {
+				perror(logFile);
+				return EX_CANTCREAT;
+			}
+		} else {
 			logFile = "/dev/console";
+			if(open(logFile, O_WRONLY) < 0) {
+				perror(logFile);
+				return EX_OSFILE;
+			}
+		}
 
-		if((open(logFile, O_WRONLY|O_APPEND) == 1) ||
-		   (open("/dev/null", O_WRONLY) == 1))
-			dup(1);
+		close(2);
+		dup(1);
 		if(cfgopt(copt, "LogTime"))
 			logTime++;
 #endif	/*!CL_DEBUG*/
@@ -1428,7 +1441,7 @@ main(int argc, char **argv)
 
 #ifdef	SESSION
 	/* FIXME: add localSocket support to watchdog */
-	if(localSocket == NULL)
+	if((localSocket == NULL) || external)
 #endif
 		pthread_create(&tid, NULL, watchdog, NULL);
 
@@ -1439,8 +1452,25 @@ main(int argc, char **argv)
 
 	if(pidfile) {
 		/* save the PID */
+		char *p, *q;
 		FILE *fd;
 		const mode_t old_umask = umask(0006);
+
+		if(pidfile[0] != '/') {
+			if(use_syslog)
+				syslog(LOG_ERR, _("pidfile: '%s' must be a full pathname"),
+					pidfile);
+			cli_errmsg(_("pidfile '%s' must be a full pathname\n"), pidfile);
+
+			return EX_CONFIG;
+		}
+		p = strdup(pidfile);
+		q = strrchr(p, '/');
+		*q = '\0';
+
+		if(chdir(p) < 0)	/* safety */
+			perror(p);
+		free(p);
 
 		if((fd = fopen(pidfile, "w")) == NULL) {
 			if(use_syslog)
@@ -1448,17 +1478,23 @@ main(int argc, char **argv)
 					pidfile);
 			cli_errmsg(_("Can't save PID in file %s\n"), pidfile);
 			return EX_CONFIG;
-		} else {
-#ifdef	C_LINUX
-			/* Ensure that all threads are kill()ed */
-			fprintf(fd, "-%d\n", (int)getpgrp());
-#else
-			fprintf(fd, "%d\n", (int)getpid());
-#endif
-			fclose(fd);
 		}
+#ifdef	C_LINUX
+		/* Ensure that all threads are kill()ed */
+		fprintf(fd, "-%d\n", (int)getpgrp());
+#else
+		fprintf(fd, "%d\n", (int)getpid());
+#endif
+		fclose(fd);
 		umask(old_umask);
-	}
+	} else if(tmpdir)
+		chdir(tmpdir);	/* safety */
+	else
+#ifdef	P_tmpdir
+		chdir(P_tmpdir);
+#else
+		chdir("/tmp");
+#endif
 
 	if(cfgopt(copt, "FixStaleSocket")) {
 		/*
@@ -1490,14 +1526,14 @@ main(int argc, char **argv)
 	}
 
 #if	0
-	/* Only supported by later libmilter */
+	/* Only supported by Sendmail >= V8.13 */
 	if(smfi_opensocket(1) == MI_FAILURE) {
 		cli_errmsg("can't open/create %s\n", port);
 		return EX_CONFIG;
 	}
 #endif
 
-	signal(SIGPIPE, SIG_IGN);
+	signal(SIGPIPE, SIG_IGN);	/* libmilter probably does this as well */
 
 #ifdef	SESSION
 	pthread_mutex_lock(&version_mutex);
@@ -1515,9 +1551,7 @@ main(int argc, char **argv)
 	pthread_mutex_unlock(&version_mutex);
 #endif
 
-#ifdef HAVE_BACKTRACE
 	(void)signal(SIGSEGV, sigsegv);
-#endif
 
 	return smfi_main();
 }
@@ -1917,7 +1951,14 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	accepting = accept_inputs;
 	pthread_mutex_unlock(&accept_mutex);
 	if(!accepting) {
+#if	1
 		cli_warnmsg("Not accepting inputs at the moment\n");
+		/*
+		 * We must refuse here even if dont_wait isn't set, since
+		 * it could take some time, and sendmail could time us out
+		 * and refuse to have anything more to do with us until
+		 * the program is restarted
+		 */
 		if(dont_wait)
 			return SMFIS_TEMPFAIL;
 		pthread_mutex_lock(&accept_mutex);
@@ -1925,6 +1966,8 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 			pthread_cond_wait(&accept_cond, &accept_mutex);
 		pthread_mutex_unlock(&accept_mutex);
 		cli_warnmsg("Accepting inputs again\n");
+#endif
+		/*return SMFIS_TEMPFAIL;*/
 	}
 
 	if(ctx == NULL) {
@@ -2425,6 +2468,9 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 	cli_dbgmsg(_("clamfi_envbody: %u bytes\n"), len);
 #endif
 
+	if(len == 0)	/* unlikely */
+		return SMFIS_CONTINUE;
+
 	nbytes = clamfi_send(privdata, len, (char *)bodyp);
 	if(streamMaxLength > 0L) {
 		if(privdata->numBytes > streamMaxLength) {
@@ -2618,8 +2664,8 @@ clamfi_eom(SMFICTX *ctx)
 #endif
 			/*
 			 * TODO: if more than one host has been specified, try
-			 * another one - setting cl_error to SMFIS_TEMPFAIL helps
-			 * by forcing a retry
+			 * another one - setting cl_error to SMFIS_TEMPFAIL
+			 * helps by forcing a retry
 			 */
 			clamfi_cleanup(ctx);
 			syslog(LOG_NOTICE, _("clamfi_eom: read nothing from clamd on %s"), hostname);
@@ -2962,10 +3008,7 @@ clamfi_eom(SMFICTX *ctx)
 					syslog(LOG_ERR, _("Can't set quarantine user %s"), quarantine);
 				else
 					cli_warnmsg(_("Can't set quarantine user %s\n"), quarantine);
-				if(privdata->discard)
-					rc = SMFIS_DISCARD;
-				else
-					rc = SMFIS_REJECT;
+				rc = (privdata->discard) ? SMFIS_DISCARD : SMFIS_REJECT;
 			} else {
 				if(use_syslog)
 					syslog(LOG_DEBUG, "Redirected virus to %s", quarantine);
@@ -4366,13 +4409,15 @@ watchdog(void *a)
 			} else if(dbstatus == 0)
 				cli_dbgmsg("Database has not changed\n");
 			else if(dbstatus == 1) {
-				cli_warnmsg("Not reloading database until idle\n");
+				cli_warnmsg("Not reloading database until idle - waiting for %d children\n", n_children);
 				pthread_mutex_lock(&accept_mutex);
 				accept_inputs = 0;
 				pthread_mutex_unlock(&accept_mutex);
 
-				while(n_children > 0)
+				while(n_children > 0) {
 					pthread_cond_wait(&n_children_cond, &n_children_mutex);
+					cli_warnmsg("Waiting for %d children until databae reload\n", n_children);
+				}
 
 				cl_statfree(&dbstat);
 				if(use_syslog)
@@ -4555,12 +4600,15 @@ watchdog(void *a)
 		} else if(dbstatus == 0)
 			cli_dbgmsg("Database has not changed\n");
 		else if(dbstatus == 1) {
-			cli_warnmsg("Not reloading database until idle\n");
+			cli_warnmsg("Not reloading database until idle - waiting for %d children\n", n_children);
 			pthread_mutex_lock(&accept_mutex);
 			accept_inputs = 0;
 			pthread_mutex_unlock(&accept_mutex);
-			while(n_children > 0)
+
+			while(n_children > 0) {
 				pthread_cond_wait(&n_children_cond, &n_children_mutex);
+				cli_warnmsg("Waiting for %d children until databae reload\n", n_children);
+			}
 			cl_statfree(&dbstat);
 			if(use_syslog)
 				syslog(LOG_WARNING, _("Loading new database"));
@@ -4571,7 +4619,8 @@ watchdog(void *a)
 			}
 			pthread_mutex_lock(&accept_mutex);
 			accept_inputs = 1;
-			pthread_cond_broadcast(&accept_cond);
+			if(pthread_cond_broadcast(&accept_cond) < 0)
+				perror("pthread_cond_broadcast");
 			pthread_mutex_unlock(&accept_mutex);
 		} else {
 			smfi_stop();
@@ -4861,19 +4910,23 @@ loadDatabase(void)
 	return cl_statinidir(dbdir, &dbstat);
 }
 
-#ifdef HAVE_BACKTRACE
 static void
 sigsegv(int sig)
 {
 	signal(SIGSEGV, SIG_DFL);
+
+#ifdef HAVE_BACKTRACE
 	print_trace();
+#endif
+
 	if(use_syslog)
 		syslog(LOG_ERR, "Segmentation fault :-( Bye..");
-	cli_dbgmsg("Segmentation fault :-( Bye..\n");
+	cli_errmsg("Segmentation fault :-( Bye..\n");
 
 	smfi_stop();
 }
 
+#ifdef HAVE_BACKTRACE
 static void
 print_trace(void)
 {
@@ -5038,7 +5091,7 @@ logger(const char *mess)
 #else
 		ctime_r(&currtime, buf);
 #endif
-		fprintf(fout, "%.*s -> %s\n", strlen(buf) - 1, buf, mess);
+		fprintf(fout, "%.*s -> %s\n", (int)strlen(buf) - 1, buf, mess);
 #else	/*!HAVE_CTIME_R*/
 		/* TODO */
 		fprintf(fout, "%s\n", mess);

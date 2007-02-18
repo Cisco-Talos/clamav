@@ -173,7 +173,7 @@ static int cli_scanrar(int desc, const char **virname, long int *scanned, const 
 	    if(mdata->size >= 0 && (unsigned int) mdata->size != rarlist->item.UnpSize)
 		continue;
 
-	    if(mdata->method && mdata->method != rarlist->item.Method)
+	    if(mdata->method >= 0 && mdata->method != rarlist->item.Method)
 		continue;
 
 	    if(mdata->fileno && mdata->fileno != files)
@@ -407,7 +407,7 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 	    if(mdata->size >= 0 && mdata->size != zdirent.st_size)
 		continue;
 
-	    if(mdata->method && mdata->method != (unsigned int) zdirent.d_compr)
+	    if(mdata->method >= 0 && mdata->method != (unsigned int) zdirent.d_compr)
 		continue;
 
 	    if(mdata->fileno && mdata->fileno != files)
@@ -520,9 +520,9 @@ static int cli_scanzip(int desc, const char **virname, long int *scanned, const 
 
 	zzip_file_close(zfp);
 
-	if(size != zdirent.st_size) {
+	if(!encrypted && size != zdirent.st_size) {
 	    cli_dbgmsg("Zip: Incorrectly decompressed (%d != %d)\n", size, zdirent.st_size);
-	    ret = CL_EIO;
+	    ret = CL_EZIP;
 	    break;
 	}
 

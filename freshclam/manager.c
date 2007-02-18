@@ -313,6 +313,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	    mprintf("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
 	    logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
 	    *signo += current->sigs;
+	    close(hostfd);
 	    cl_cvdfree(current);
 	    return 1;
 	}
@@ -345,6 +346,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	}
 
 	*signo += current->sigs;
+	close(hostfd);
 	cl_cvdfree(current);
 	return 1;
     }

@@ -311,11 +311,15 @@ int cli_scandesc(int desc, const char **virname, long int *scanned, const struct
 
 	if(bytes == SCANBUFF) {
 	    memmove(buffer, endbl, root->maxpatlen);
-	    offset += bytes - root->maxpatlen;
-	}
 
-        pt = buffer;
-        length = buffsize;
+	    if(pt == buffer) {
+		offset += SCANBUFF;
+	    } else {
+		offset += SCANBUFF - root->maxpatlen;
+		pt = buffer;
+		length = buffsize;
+	    }
+	}
 
 	if(root->md5_hlist)
 	    MD5_Update(&ctx, buff, bytes);

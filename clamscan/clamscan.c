@@ -112,7 +112,7 @@ int clamscan(struct optstruct *opt)
 	logg_file = getargc(opt, 'l');
 	if(logg("--------------------------------------\n")) {
 	    mprintf("!Problem with internal logger.\n");
-	    return 1;
+	    return 62;
 	}
     } else 
 	logg_file = NULL;
@@ -122,19 +122,19 @@ int clamscan(struct optstruct *opt)
 	if(!strchr(getargl(opt, "max-space"), 'M') && !strchr(getargl(opt, "max-space"), 'm'))
 	    if(!isnumb(getargl(opt, "max-space"))) {
 		mprintf("!--max-space requires natural number.\n");
-		exit(40);
+		return 40;
 	    }
 
     if(optl(opt, "max-files"))
 	if(!isnumb(getargl(opt, "max-files"))) {
 	    mprintf("!--max-files requires natural number.\n");
-	    exit(40);
+	    return 40;
 	}
 
     if(optl(opt, "max-recursion"))
 	if(!isnumb(getargl(opt, "max-recursion"))) {
 	    mprintf("!--max-recursion requires natural number.\n");
-	    exit(40);
+	    return 40;
 	}
 
 
