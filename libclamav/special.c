@@ -159,6 +159,7 @@ static int jpeg_check_photoshop(int fd)
 {
 	int retval;
 	unsigned char buffer[14];
+	off_t old, new;
 
 	if (cli_readn(fd, buffer, 14) != 14) {
 		return 0;
@@ -170,7 +171,11 @@ static int jpeg_check_photoshop(int fd)
 
 	cli_dbgmsg("Found Photoshop segment\n");
 	do {
+		old = lseek(fd, 0, SEEK_CUR);
 		retval = jpeg_check_photoshop_8bim(fd);
+		new = lseek(fd, 0, SEEK_CUR);
+		if(new <= old)
+			break;
 	} while (retval == 0);
 
 	if (retval == -1) {

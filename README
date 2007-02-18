@@ -2,6 +2,16 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.88.5
+------
+
+This version fixes a crash in the CHM unpacker and a heap overflow in the
+function rebuilding PE files after unpacking.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
+
 0.88.4
 ------
 

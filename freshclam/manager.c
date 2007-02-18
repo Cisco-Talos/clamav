@@ -439,7 +439,7 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
     }
 
     if(current->version < dbver) {
-	mprintf("@Mirrors are not fully synchronized. Please try again later.\n");
+	logg("^Mirror %s is not synchronized.\n", ip);
     	cl_cvdfree(current);
 	unlink(tempname);
 	free(tempname);
@@ -802,14 +802,18 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
     sprintf(cmd, "GET %s/%s HTTP/1.1\r\n"
 	     "Host: %s\r\n%s"
 	     "User-Agent: "PACKAGE"/"VERSION"\r\n"
+#ifdef FRESHCLAM_NO_CACHE
 	     "Cache-Control: no-cache\r\n"
+#endif
 	     "Connection: close\r\n"
 	     "\r\n", (remotename != NULL)?remotename:"", dbfile, hostname, (authorization != NULL)?authorization:"");
 #else
     snprintf(cmd, sizeof(cmd), "GET %s/%s HTTP/1.1\r\n"
 	     "Host: %s\r\n%s"
 	     "User-Agent: "PACKAGE"/"VERSION"\r\n"
+#ifdef FRESHCLAM_NO_CACHE
 	     "Cache-Control: no-cache\r\n"
+#endif
 	     "Connection: close\r\n"
 	     "\r\n", (remotename != NULL)?remotename:"", dbfile, hostname, (authorization != NULL)?authorization:"");
 #endif

@@ -1,8 +1,8 @@
-0.88.3
+0.88.5
 ------
 
-This version fixes handling of large binhex files and multiple alternatives in
-virus signatures.
+This version fixes a crash in the CHM unpacker and a heap overflow in the
+function rebuilding PE files after unpacking.
 
 --
 The ClamAV team (http://www.clamav.net/team.html)
