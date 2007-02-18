@@ -1,3 +1,23 @@
+Thu Nov  3 21:42:46 CET 2005
+----------------------------
+  V 0.87.1
+  * Bugfixes:
+    - libclamav/petite.c: fix boundary checks (acab)
+    - libclamav/mbox.c:	scan attachments that have no filename (njh)
+    - libclamav/fsg.c: fix buffer size calculation in unfsg_133
+      Reported by Zero Day Initiative (ZDI-CAN-004)
+    - libclamav/tnef.c: fix possible infinite loop
+      Reported by iDEFENSE (IDEF1169).
+    - libclamav/mspack/cabd.c: fix possible infinite loop in cabd_find (tk)
+      Reported by iDEFENSE (IDEF1180).
+    - clamd/others.c: fix compilation error on Cobalt Qube 1 (tk)
+    - clamd: properly handle ReadTimeout in SESSION (tk)
+      Bug reported by Kamil Kaczkowski <kamil*kamil.eisp.pl>
+    - libclamav/others.c,h: Add generic bitset implementation (trog)
+    - libclamav/ole2_extract.c: Make sure the property tree doesn't loop (trog)
+      Fixes CAN-2005-3239. Installations with default settings were not affected
+      by this bug.
+
 Fri Sep 16 00:55:29 CEST 2005
 -----------------------------
   V 0.87

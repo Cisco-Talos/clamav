@@ -3099,6 +3099,17 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 				}
 				free(p);
 			}
+			if((p = (char *)messageFindArgument(m, "filename")) == NULL)
+				/*
+				 * Handle this type of header, without
+				 * a filename (e.g. some Worm.Torvil.D)
+				 *	Content-ID: <nRfkHdrKsAxRU>
+				 * Content-Transfer-Encoding: base64
+				 * Content-Disposition: attachment
+				 */
+				messageAddArgument(m, "filename=unknown");
+			else
+				free(p);
 	}
 	if(copy)
 		free(copy);

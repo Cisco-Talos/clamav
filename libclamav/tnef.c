@@ -203,7 +203,7 @@ static int
 tnef_message(FILE *fp, uint16_t type, uint16_t tag, int32_t length)
 {
 	uint16_t i16;
-	off_t offset;
+	/* off_t offset; */
 #if	CL_DEBUG
 	uint32_t i32;
 	char *string;
@@ -211,7 +211,7 @@ tnef_message(FILE *fp, uint16_t type, uint16_t tag, int32_t length)
 
 	cli_dbgmsg("message tag 0x%x, type 0x%x, length %d\n", tag, type, length);
 
-	offset = ftell(fp);
+	/* offset = ftell(fp); */
 
 	/*
 	 * a lot of this stuff should be only discovered in debug mode...
@@ -261,11 +261,12 @@ tnef_message(FILE *fp, uint16_t type, uint16_t tag, int32_t length)
 
 	/*cli_dbgmsg("%lu %lu\n", (long)(offset + length), ftell(fp));*/
 
-	fseek(fp, offset + length, SEEK_SET);
+	/* fseek(fp, offset + length, SEEK_SET); */
 
 	/* Checksum - TODO, verify */
-	if(fread(&i16, sizeof(uint16_t), 1, fp) != 1)
+	/* if(fread(&i16, sizeof(uint16_t), 1, fp) != 1)
 		return -1;
+	 */
 
 	return 0;
 }
@@ -275,12 +276,12 @@ tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, int32_t length, const cha
 {
 	uint32_t todo;
 	uint16_t i16;
-	off_t offset;
+/*	off_t offset; */
 	char *string;
 
 	cli_dbgmsg("attachment tag 0x%x, type 0x%x, length %d\n", tag, type, length);
 
-	offset = ftell(fp);
+	/* offset = ftell(fp); */
 
 	switch(tag) {
 		case attATTACHTITLE:
@@ -336,11 +337,12 @@ tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, int32_t length, const cha
 
 	/*cli_dbgmsg("%lu %lu\n", (long)(offset + length), ftell(fp));*/
 
-	fseek(fp, (long)(offset + length), SEEK_SET);	/* shouldn't be needed */
+	/* fseek(fp, (long)(offset + length), SEEK_SET); */	/* shouldn't be needed */
 
 	/* Checksum - TODO, verify */
-	if(fread(&i16, sizeof(uint16_t), 1, fp) != 1)
+	/* if(fread(&i16, sizeof(uint16_t), 1, fp) != 1)
 		return -1;
+	 */
 
 	return 0;
 }

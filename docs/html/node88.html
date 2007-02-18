@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>zmscanner</TITLE>
-<META NAME="description" CONTENT="zmscanner">
+<TITLE>smtp-gated</TITLE>
+<META NAME="description" CONTENT="smtp-gated">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,6 +19,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node89.html">
 <LINK REL="previous" HREF="node87.html">
 <LINK REL="up" HREF="node48.html">
 <LINK REL="next" HREF="node89.html">
@@ -26,47 +27,49 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1756"
+<A NAME="tex2html1785"
   HREF="node89.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html1752"
+<A NAME="tex2html1781"
   HREF="node48.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html1748"
+<A NAME="tex2html1775"
   HREF="node87.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html1754"
+<A NAME="tex2html1783"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1757"
-  HREF="node89.html">MTA + POP3 Proxy</A>
-<B> Up:</B> <A NAME="tex2html1753"
+<B> Next:</B> <A NAME="tex2html1786"
+  HREF="node89.html">smtp-vilter</A>
+<B> Up:</B> <A NAME="tex2html1782"
   HREF="node48.html">MTA + ClamAV</A>
-<B> Previous:</B> <A NAME="tex2html1749"
-  HREF="node87.html">Zabit</A>
- &nbsp <B>  <A NAME="tex2html1755"
+<B> Previous:</B> <A NAME="tex2html1776"
+  HREF="node87.html">smtpfilter</A>
+ &nbsp <B>  <A NAME="tex2html1784"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
 <H3><A NAME="SECTION000914000000000000000">
-zmscanner</A>
+smtp-gated</A>
 </H3>
     <B>Homepage:</B> <TT><A NAME="tex2html90"
-  HREF="http://www.average.org/zmscanner/">http://www.average.org/zmscanner/</A></TT>
-<BR>    <B>Supports:</B> libclamav
+  HREF="http://smtp-proxy.klolik.org/">http://smtp-proxy.klolik.org/</A></TT>
+<BR>    <B>Supports:</B> clamd
 <BR>
-Zmscanner is an extensible modular content filter for Zmailer and Sendmail.
-    It is designed to be fast and efficient and thus suitable for high traffic
-    mail systems.
+smtp-gated is a transparent SMTP proxy supporting: NAT on Linux (netfilter),
+    NAT on FreeBSD (ipfw and others getsockopt-compatible), or dedicated mode
+    (separate/external machine). DATA traffic is spooled in write-thru mode
+    and then scanned for viruses or spam. The program is transparent for TLS
+    connections.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2005-09-16
+2005-11-03
 </ADDRESS>
 </BODY>
 </HTML>

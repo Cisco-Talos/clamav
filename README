@@ -2,6 +2,15 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.87.1
+------
+
+This release includes major bugfixes for problems with handling TNEF
+attachments, cabinet files and FSG compressed executables.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
 0.87
 ----
 

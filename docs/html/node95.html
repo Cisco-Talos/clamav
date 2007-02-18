@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Frox</TITLE>
-<META NAME="description" CONTENT="Frox">
+<TITLE>pop3.proxy</TITLE>
+<META NAME="description" CONTENT="pop3.proxy">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,57 +19,59 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node96.html">
 <LINK REL="previous" HREF="node94.html">
-<LINK REL="up" HREF="node93.html">
+<LINK REL="up" HREF="node92.html">
 <LINK REL="next" HREF="node96.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1850"
+<A NAME="tex2html1868"
   HREF="node96.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html1846"
-  HREF="node93.html">
+<A NAME="tex2html1864"
+  HREF="node92.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html1840"
+<A NAME="tex2html1860"
   HREF="node94.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html1848"
+<A NAME="tex2html1866"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1851"
-  HREF="node96.html">HTTP Anti Virus Proxy</A>
-<B> Up:</B> <A NAME="tex2html1847"
-  HREF="node93.html">Web/FTP Proxy + ClamAV</A>
-<B> Previous:</B> <A NAME="tex2html1841"
-  HREF="node94.html">DansGuardian Anti-Virus Patch</A>
- &nbsp <B>  <A NAME="tex2html1849"
+<B> Next:</B> <A NAME="tex2html1869"
+  HREF="node96.html">Web/FTP Proxy + ClamAV</A>
+<B> Up:</B> <A NAME="tex2html1865"
+  HREF="node92.html">MTA + POP3 Proxy</A>
+<B> Previous:</B> <A NAME="tex2html1861"
+  HREF="node94.html">POP3 Virus Scanner Daemon</A>
+ &nbsp <B>  <A NAME="tex2html1867"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00093200000000000000">
-Frox</A>
+<H3><A NAME="SECTION00092300000000000000">
+pop3.proxy</A>
 </H3>
-    <B>Homepage:</B> <TT><A NAME="tex2html95"
-  HREF="http://www.hollo.org/frox/">http://www.hollo.org/frox/</A></TT>
-<BR>    <B>Supports:</B> clamscan
+    <B>Homepage:</B> <TT><A NAME="tex2html96"
+  HREF="http://quietsche-entchen.de/cgi-bin/wiki.cgi/proxies/Pop3Proxy">http://quietsche-entchen.de/cgi-bin/wiki.cgi/proxies/Pop3Proxy</A></TT>
+<BR>    <B>Supports:</B> clamd
 <BR>
-Frox is a transparent FTP proxy which is released under the GPL. It
-    optionally supports caching (either through an external http cache
-    (eg. squid), or by maintaining a cache locally), and/or running a virus
-    scanner on downloaded files. It is written with security in mind, and in
-    the default setup it runs as a non root user in a chroot jail.
+pop3.proxy is a proxy server for the POP3 protocol. Usually it's used on
+     a firewall between a client and a POP3 server taking care that both sides
+     talk POP3 protocol as described in RFC 1939. There are some additional
+     features beside normal proxying. pop3.proxy can grant or deny access
+     based on an external access control program which receives some POP3
+     session information. pop3.proxy can also feed e-mails into a local
+     ClamAV daemon checking the e-mails for viruses before passing them to
+     the client. 
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2005-09-16
+2005-11-03
 </ADDRESS>
 </BODY>
 </HTML>

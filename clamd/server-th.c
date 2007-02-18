@@ -85,7 +85,7 @@ void scanner_thread(void *arg)
 
     do {
     	ret = command(conn->sd, conn->root, conn->limits, conn->options, conn->copt, timeout);
-	if (ret == -1) {
+	if (ret < 0) {
 		break;
 	}
 

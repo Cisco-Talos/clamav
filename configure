@@ -2073,7 +2073,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=clamav
- VERSION="0.87"
+ VERSION="0.87.1"
 
 
 cat >>confdefs.h <<_ACEOF

@@ -3439,9 +3439,9 @@ clamd_recv(int sock, char *buf, size_t len)
 {
 	fd_set rfds;
 	struct timeval tv;
+	int ret;
 
 	assert(sock >= 0);
-	int ret;
 
 	if(readTimeout == 0) {
 		do

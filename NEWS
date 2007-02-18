@@ -1,10 +1,8 @@
-0.87
-----
+0.87.1
+------
 
-This version fixes vulnerabilities in handling of UPX and FSG compressed
-executables. Support for PE files, Zip and Cabinet archives has been improved
-and other small bugfixes have been made. The new option "--on-outdated-execute"
-allows freshclam to run a command when system reports a new engine version.
+This release includes major bugfixes for problems with handling TNEF
+attachments, cabinet files and FSG compressed executables.
 
 --
 The ClamAV team (http://www.clamav.net/team.html)
