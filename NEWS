@@ -1,8 +1,9 @@
-0.85
-----
+0.85.1
+------
 
-Bugfixes in this release include correct signature offset calculation in large
-files, proper handling of encrypted zip archives, and others.
+A problem where an email with more than one content-disposition type line,
+one or more of which was empty, could crash libclamav has been fixed. Other
+minor bugfixes have been made.
 
 --
 The ClamAV team (http://www.clamav.net/team.html)

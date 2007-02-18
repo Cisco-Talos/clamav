@@ -22,7 +22,7 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.199 2005/05/11 12:26:44 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.200 2005/05/12 07:31:09 nigelhorne Exp $";
 
 #define	CM_VERSION	"0.85"
 
@@ -106,6 +106,7 @@ int	deny_severity = LOG_NOTICE;
 #ifndef	CL_DEBUG
 static	const	char	*logFile;
 static	int	logTime;
+static	char	console[] = "/dev/console";
 #endif
 
 #if defined(CL_DEBUG) && defined(C_LINUX)
@@ -511,6 +512,9 @@ main(int argc, char **argv)
 	const struct cfgstruct *cpt;
 	char version[VERSION_LENGTH + 1];
 	pthread_t tid;
+#ifndef	CL_DEBUG
+	int consolefd;
+#endif
 	struct smfiDesc smfilter = {
 		"ClamAv", /* filter name */
 		SMFI_VERSION,	/* version code -- leave untouched */
@@ -884,6 +888,11 @@ main(int argc, char **argv)
 	/*
 	 * Drop privileges
 	 */
+#ifndef	CL_DEBUG
+	/* Save the fd for later, open while we can */
+	consolefd = open(console, O_WRONLY);
+#endif
+
 	if(getuid() == 0) {
 		if(iface) {
 #ifdef	SO_BINDTODEVICE
@@ -1352,15 +1361,18 @@ main(int argc, char **argv)
 				return EX_CANTCREAT;
 			}
 		} else {
-			logFile = "/dev/console";
-			if(open(logFile, O_WRONLY) < 0) {
-				perror(logFile);
+			logFile = console;
+			if(consolefd < 0) {
+				perror(console);
 				return EX_OSFILE;
 			}
+			dup(consolefd);
 		}
-
 		close(2);
 		dup(1);
+		if(consolefd >= 0)
+			close(consolefd);
+
 		if(cfgopt(copt, "LogTime"))
 			logTime++;
 #endif	/*!CL_DEBUG*/

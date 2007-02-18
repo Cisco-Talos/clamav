@@ -2072,7 +2072,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=clamav
- VERSION="0.85"
+ VERSION="0.85.1"
 
 
 cat >>confdefs.h <<_ACEOF
@@ -2206,7 +2206,7 @@ am__tar='${AMTAR} chof - "$$tardir"'; am__untar='${AMTAR} xf -'
 
 
 LC_CURRENT=1
-LC_REVISION=11
+LC_REVISION=12
 LC_AGE=0
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 

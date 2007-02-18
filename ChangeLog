@@ -1,3 +1,18 @@
+Mon May 16 23:22:55 CEST 2005
+-----------------------------
+  V 0.85.1
+  * Fixes backported from CVS:
+    - freshclam/manager.c: Removed superfluous close(hostfd), thanks to Pavel V.
+      Rochnyack <rpv*fsf.tsu.ru> (tk)
+    - libclamav/message.c: Fixed a problem where an email with more than one
+      content-disposition type line, one or more of which was empty, could
+      crash libclamav. Reported by Daniel Theodoro <dtheodoro at ig.com.br>
+      (njh)
+    - libclamav/special.c: Fix reading PString type in Photoshop thumbnails.
+      (trog)
+    - clamav-milter: Open /dev/console (if LogFile not set) before dropping
+      priv so that error messages aren't lost reported by David Crow. (njh)
+
 Wed May 11 17:48:27 CEST 2005
 -----------------------------
   V 0.85

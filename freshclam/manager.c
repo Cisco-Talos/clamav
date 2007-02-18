@@ -346,7 +346,6 @@ int downloaddb(const char *localname, const char *remotename, const char *hostna
 	}
 
 	*signo += current->sigs;
-	close(hostfd);
 	cl_cvdfree(current);
 	return 1;
     }

@@ -2,6 +2,16 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.85.1
+------
+
+A problem where an email with more than one content-disposition type line,
+one or more of which was empty, could crash libclamav has been fixed. Other
+minor bugfixes have been made.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
 0.85
 ----
 

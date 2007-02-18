@@ -359,11 +359,13 @@ messageSetDispositionType(message *m, const char *disptype)
 	 */
 	while(*disptype && isspace((int)*disptype))
 		disptype++;
+
 	if(*disptype) {
 		m->mimeDispositionType = strdup(disptype);
 		if(m->mimeDispositionType)
 			strstrip(m->mimeDispositionType);
-	}
+	} else
+		m->mimeDispositionType = NULL;
 }
 
 const char *
