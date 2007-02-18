@@ -587,6 +587,7 @@ static int cli_scangzip(int desc, const char **virname, long int *scanned, const
 
     if(!(buff = (char *) cli_malloc(FILEBUFF))) {
 	cli_dbgmsg("GZip: Unable to malloc %d bytes.\n", FILEBUFF);
+	fclose(tmp);
 	gzclose(gd);
 	return CL_EMEM;
     }
@@ -759,6 +760,8 @@ static int cli_scanszdd(int desc, const char **virname, long int *scanned, const
 
     if(cli_msexpand(in, tmp) == -1) {
 	cli_dbgmsg("SZDD: msexpand failed.\n");
+	fclose(in);
+	fclose(tmp);
 	return CL_EMSCOMP;
     }
 

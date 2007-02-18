@@ -1,3 +1,32 @@
+Mon Jun 13 23:21:00 CEST 2005
+-----------------------------
+  V 0.86rc1
+  * Fixes backported from CVS:
+    - libclamav/cvd.c: fix potential directory traversal in cvd unpacker (a low
+      risk problem since all databases are digitally signed). Pointed out by
+      Florian Weimer <fw*deneb.enyo.de> (tk)
+    - libclamav/zziplib/zzip-file.c: add method id for AES encrypted archives
+      (thanks to David Majorel <dm*lagoon.nc>) (tk)
+    - clamscan/manager.c: better message on zip/rar unpacking error (tk)
+    - libclamav/mbox.c: Fix mishandling of fast track uuencoded files (njh)
+    - clamav-milter: Better error message if the white-list file can't be
+      opened (njh)
+    - clamav-milter: When loading a new database when not in external mode,
+      keep scanning with the old one rather than hold up incoming mails while
+      waiting for clamav-milter to become idle then reloading the database (njh)
+    - libclamav/others.c: print warnings and errors in single call to write
+      (thanks to Denis Vlasenko <vda*ilport.com.ua>) (tk)
+    - clamscan/others.c: enable REG_EXTENDED in match_regex (tk)
+    - libclamav/scanners.c: fix file descriptor leaks if cli_msexpand() returns
+      an error in cli_scanszdd, patch by Mark Pizzolato (tk)
+    - libclamav/scanners.c: fix file descriptor leak in error path (out of mem)
+      in cli_scangzip(), patch by Mark Pizzolato (tk)
+    - clamd/scanner.c: fix error path for a read timeout which logged messages
+      indicating that both a timeout and a poll error occurred (patch by Mark
+      Pizzolato <clamav-devel*subscriptions.pizzolato.net>) (tk)
+    - libclamav:  Extract TNEF files even when the filename isn't known,
+      problem reported by John Miller (contact*glideslopesoftware.co.uk) (njh)
+
 Mon May 16 23:22:55 CEST 2005
 -----------------------------
   V 0.85.1

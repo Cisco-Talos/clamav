@@ -33,7 +33,7 @@ int scandenied(const char *filename, struct cl_node *root, const struct passwd *
 
 int scandirs(const char *dirname, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options);
 
-int checkfile(const char *filename, const struct cl_node *root, const struct cl_limits *limits, int compr);
+int checkfile(const char *filename, const struct cl_node *root, const struct cl_limits *limits, int options, short printclean);
 
 int checkstdin(const struct cl_node *root, const struct cl_limits *limits, int options);
 

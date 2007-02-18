@@ -437,6 +437,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	    logg("!ScanStream: Can't write to temporary file.\n");
 	    if(tmp)
 		fclose(tmp);
+	    close(tmpd);
 	    return -1;
 	}
 
@@ -454,9 +455,11 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_node *root
 	case 0: /* timeout */
 	    mdprintf(odesc, "read timeout ERROR\n");
 	    logg("!ScanStream: read timeout.\n");
+	    break;
 	case -1:
 	    mdprintf(odesc, "read poll ERROR\n");
 	    logg("!ScanStream: read poll failed.\n");
+	    break;
     }
 
     lseek(tmpd, 0, SEEK_SET);

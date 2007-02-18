@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.238 2005/04/19 09:20:55 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.238+fixes 2005/04/19 09:20:55 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -187,7 +187,7 @@ static	char	*rfc822comments(const char *in, char *out);
 static	int	rfc1341(message *m, const char *dir);
 #endif
 static	bool	usefulHeader(int commandNumber, const char *cmd);
-static	void	uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin);
+static        int     uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin);
 static	char	*getline(char *buffer, size_t len, FILE *fin);
 #ifdef	NEW_WORLD
 static	const	char	*cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns);
@@ -877,13 +877,15 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 			} else
 				lastLineWasEmpty = (bool)(buffer[0] == '\0');
 
-			if(isuuencodebegin(buffer))
+			if(isuuencodebegin(buffer)) {
 				/*
 				 * Fast track visa to uudecode.
 				 * TODO: binhex, yenc
 				 */
-				uufasttrack(m, buffer, dir, fd);
-			else
+				if(uufasttrack(m, buffer, dir, fd) < 0)
+					if(messageAddStr(m, buffer) < 0)
+					    break;
+			} else
 				if(messageAddStr(m, buffer) < 0)
 					break;
 		} while(fgets(buffer, sizeof(buffer) - 1, fd) != NULL);
@@ -1147,13 +1149,15 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 				free(fullline);
 				fullline = NULL;
 			}
-		} else if(line && isuuencodebegin(line))
+		} else if(line && isuuencodebegin(line)) {
 			/*
 			 * Fast track visa to uudecode.
 			 * TODO: binhex, yenc
 			 */
-			uufasttrack(ret, line, dir, fin);
-		else
+			if(uufasttrack(ret, line, dir, fin) < 0)
+				if(messageAddStr(ret, line) < 0)
+					break;
+		} else
 			if(messageAddStr(ret, line) < 0)
 				break;
 	} while(getline(buffer, sizeof(buffer) - 1, fin) != NULL);
@@ -3840,13 +3844,17 @@ usefulHeader(int commandNumber, const char *cmd)
 /*
  * Save the uuencoded part of the file as it is read in since there's no need
  * to include it in the parse tree. Saves memory and parse time.
+ * Return < 0 for failure
  */
-static void
+static int
 uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin)
 {
 	fileblob *fb = fileblobCreate();
 	char buffer[LINE_LENGTH + 1];
 	char *filename = cli_strtok(firstline, 2, " ");
+
+	if(filename == NULL)
+		return -1;
 
 	fileblobSetFilename(fb, dir, filename);
 	cli_dbgmsg("Fast track uudecode %s\n", filename);
@@ -3876,6 +3884,7 @@ uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin)
 	}
 
 	fileblobDestroy(fb);
+	return 1;
 }
 
 /*

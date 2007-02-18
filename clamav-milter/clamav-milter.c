@@ -22,9 +22,9 @@
  *
  * For installation instructions see the file INSTALL that came with this file
  */
-static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.200 2005/05/12 07:31:09 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.208 2005/05/28 11:37:27 nigelhorne Exp $";
 
-#define	CM_VERSION	"0.85"
+#define	CM_VERSION	"0.86rc1"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -105,7 +105,6 @@ int	deny_severity = LOG_NOTICE;
 
 #ifndef	CL_DEBUG
 static	const	char	*logFile;
-static	int	logTime;
 static	char	console[] = "/dev/console";
 #endif
 
@@ -149,7 +148,6 @@ typedef	unsigned int	in_addr_t;
  *	to get messages on the system console, see syslog.conf(5), also you
  *	can use wall(1) in the VirusEvent entry in clamd.conf
  * TODO: build with libclamav.so rather than libclamav.a
- * TODO: Warn if TCPAddr doesn't allow connection from us
  * TODO: Decide action (bounce, discard, reject etc.) based on the virus
  *	found. Those with faked addresses, such as SCO.A want discarding,
  *	others could be bounced properly.
@@ -158,6 +156,8 @@ typedef	unsigned int	in_addr_t;
  * TODO: Files can be scanned with "SCAN" not "STREAM" if clamd is on the same
  *	machine when talking via INET domain socket.
  * TODO: Load balancing, allow local machine to talk via UNIX domain socket.
+ * TODO: allow each line in the whitelist file to specify a quarantine email
+ *	address
  */
 
 struct header_node_t {
@@ -281,9 +281,11 @@ static	char	clamav_version[VERSION_LENGTH + 1];
 static	int	fflag = 0;	/* force a scan, whatever */
 static	int	oflag = 0;	/* scan messages from our machine? */
 static	int	lflag = 0;	/* scan messages from our site? */
+static	const	char	*progname;	/* our name - usually clamav-milter */
 
 /* Variables for --external */
 static	int	external = 0;	/* scan messages ourself or use clamd? */
+static	pthread_mutex_t	root_mutex = PTHREAD_MUTEX_INITIALIZER;
 static	struct	cl_node	*root = NULL;
 static	struct	cl_limits	limits;
 static	struct	cl_stat	dbstat;
@@ -370,9 +372,6 @@ static	pthread_mutex_t	n_children_mutex = PTHREAD_MUTEX_INITIALIZER;
 static	pthread_cond_t	n_children_cond = PTHREAD_COND_INITIALIZER;
 static	volatile	unsigned	int	n_children = 0;
 static	unsigned	int	max_children = 0;
-static	pthread_mutex_t	accept_mutex = PTHREAD_MUTEX_INITIALIZER;
-static	pthread_cond_t	accept_cond = PTHREAD_COND_INITIALIZER;
-static	volatile	int	accept_inputs;
 static	int	child_timeout = 0;	/* number of seconds to wait for
 					 * a child to die. Set to 0 to
 					 * wait forever
@@ -456,6 +455,9 @@ static	void	print_trace(void);
 static	int	verifyIncomingSocketName(const char *sockName);
 static	int	isWhitelisted(const char *emailaddress);
 static	void	logger(const char *mess);
+
+short	logg_time, logg_lock, logok;
+int	logg_size;
 
 static void
 help(void)
@@ -550,10 +552,16 @@ main(int argc, char **argv)
 		"ClamAV version %s, clamav-milter version %s",
 		VERSION, CM_VERSION);
 
+	progname = strrchr(argv[0], '/');
+	if(progname)
+		progname++;
+	else
+		progname = "clamav-milter";
+
 #ifdef	C_LINUX
 	setlocale(LC_ALL, "");
-	bindtextdomain("clamav-milter", DATADIR"/clamav-milter/locale");
-	textdomain("clamav-milter");
+	bindtextdomain(progname, DATADIR"/clamav-milter/locale");
+	textdomain(progname);
 #endif
 
 	for(;;) {
@@ -945,7 +953,7 @@ main(int argc, char **argv)
 				cli_dbgmsg(_("Running as user %s (UID %d, GID %d)\n"),
 					cpt->strarg, user->pw_uid, user->pw_gid);
 		} else
-			fprintf(stderr, _("%s: running as root is not recommended (check \"User\" in clamd.conf)\n"), argv[0]);
+			fprintf(stderr, _("%s: running as root is not recommended (check \"User\" in %s)\n"), argv[0], cfgfile);
 	} else if(iface) {
 		fprintf(stderr, _("%s: Only root can set an interface for --broadcast\n"), argv[0]);
 		return EX_USAGE;
@@ -1009,6 +1017,11 @@ main(int argc, char **argv)
 		return EX_CONFIG;
 	}
 
+	if(whitelistFile && (access(whitelistFile, R_OK) < 0)) {  
+	    perror(templatefile);	
+	    return EX_CONFIG;	
+	}
+
 	/*
 	 * patch from "Richard G. Roberto" <rgr@dedlegend.com>
 	 * If the --max-children flag isn't set, see if MaxThreads
@@ -1041,8 +1054,7 @@ main(int argc, char **argv)
 
 		if(cfgopt(copt, "LogVerbose")) {
 			logVerbose = 1;
-#if	0
-			/* Only supported by Sendmail >= V8.13 */
+#if	((SENDMAIL_VERSION_A > 8) || ((SENDMAIL_VERSION_A == 8) && (SENDMAIL_VERSION_B >= 13)))
 			smfi_setdbg(6);
 #endif
 		}
@@ -1054,7 +1066,7 @@ main(int argc, char **argv)
 					argv[0], cpt->strarg);
 				return EX_CONFIG;
 			}
-		openlog("clamav-milter", LOG_CONS|LOG_PID, fac);
+		openlog(progname, LOG_CONS|LOG_PID, fac);
 	} else {
 		if(qflag)
 			fprintf(stderr, _("%s: (-q && !LogSyslog): warning - all interception message methods are off\n"),
@@ -1230,6 +1242,11 @@ main(int argc, char **argv)
 			else {
 				cli_warnmsg(_("Can't talk to clamd server %s on port %d\n"),
 					hostname, tcpSocket);
+				if(serverIPs[i] == (int)inet_addr("127.0.0.1")) {
+					if(cfgopt(copt, "TCPAddr") != NULL)
+						cli_warnmsg(_("Check the value for TCPAddr in %s\n"), cfgfile);
+				} else
+					cli_warnmsg(_("Check the value for TCPAddr in clamd.conf on %s\n"), hostname);
 			}
 #endif
 
@@ -1357,8 +1374,18 @@ main(int argc, char **argv)
 				return EX_CONFIG;
 			}
 			if(open(logFile, O_WRONLY|O_APPEND) < 0) {
-				perror(logFile);
-				return EX_CANTCREAT;
+				if(errno == ENOENT) {
+					/*
+					 * There is low risk race condition here
+					 */
+					if(open(logFile, O_WRONLY|O_CREAT, 0644) < 0) {
+						perror(logFile);
+						return EX_CANTCREAT;
+					}
+				} else {
+					perror(logFile);
+					return EX_CANTCREAT;
+				}
 			}
 		} else {
 			logFile = console;
@@ -1373,9 +1400,19 @@ main(int argc, char **argv)
 		if(consolefd >= 0)
 			close(consolefd);
 
-		if(cfgopt(copt, "LogTime"))
-			logTime++;
 #endif	/*!CL_DEBUG*/
+
+		if(cfgopt(copt, "LogTime"))
+			logg_time = 1;
+		if(cfgopt(copt, "LogFileUnlock"))
+			logg_lock = 0;
+		if(cfgopt(copt, "LogClean"))
+			logok = 1;
+		if((cpt = cfgopt(copt, "LogFileMaxSize")))
+			logg_size = cpt->numarg;
+		else
+			logg_size = CL_DEFAULT_LOGSIZE;
+
 
 #ifdef HAVE_SETPGRP
 #ifdef SETPGRP_VOID
@@ -1449,7 +1486,6 @@ main(int argc, char **argv)
 				limits.archivememlim = 0;
 		}
 	}
-	accept_inputs = 1;
 
 #ifdef	SESSION
 	/* FIXME: add localSocket support to watchdog */
@@ -1537,10 +1573,9 @@ main(int argc, char **argv)
 		return EX_UNAVAILABLE;
 	}
 
-#if	0
-	/* Only supported by Sendmail >= V8.13 */
+#if	((SENDMAIL_VERSION_A > 8) || ((SENDMAIL_VERSION_A == 8) && (SENDMAIL_VERSION_B >= 13)))
 	if(smfi_opensocket(1) == MI_FAILURE) {
-		cli_errmsg("can't open/create %s\n", port);
+		cli_errmsg("Can't open/create %s\n", port);
 		return EX_CONFIG;
 	}
 #endif
@@ -1954,33 +1989,9 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	char ip[INET_ADDRSTRLEN];	/* IPv4 only */
 #endif
 	const char *remoteIP;
-	int accepting;
 
 	if(quitting)
 		return cl_error;
-
-	pthread_mutex_lock(&accept_mutex);
-	accepting = accept_inputs;
-	pthread_mutex_unlock(&accept_mutex);
-	if(!accepting) {
-#if	1
-		cli_warnmsg("Not accepting inputs at the moment\n");
-		/*
-		 * We must refuse here even if dont_wait isn't set, since
-		 * it could take some time, and sendmail could time us out
-		 * and refuse to have anything more to do with us until
-		 * the program is restarted
-		 */
-		if(dont_wait)
-			return SMFIS_TEMPFAIL;
-		pthread_mutex_lock(&accept_mutex);
-		while(!accept_inputs)
-			pthread_cond_wait(&accept_cond, &accept_mutex);
-		pthread_mutex_unlock(&accept_mutex);
-		cli_warnmsg("Accepting inputs again\n");
-#endif
-		/*return SMFIS_TEMPFAIL;*/
-	}
 
 	if(ctx == NULL) {
 		if(use_syslog)
@@ -2087,7 +2098,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		 * hosts_access(3)
 		 */
 		pthread_mutex_lock(&wrap_mutex);
-		if(!hosts_ctl("clamav-milter", hostent.h_name, ip, STRING_UNKNOWN)) {
+		if(!hosts_ctl(progname, hostent.h_name, ip, STRING_UNKNOWN)) {
 			pthread_mutex_unlock(&wrap_mutex);
 			if(use_syslog)
 				syslog(LOG_WARNING, _("Access Denied for %s[%s]"), hostent.h_name, ip);
@@ -2567,12 +2578,21 @@ clamfi_eom(SMFICTX *ctx)
 	if(!external) {
 		const char *virname;
 		unsigned long int scanned = 0L;
+		struct cl_node *scanning_root;
 
 		/*
 		 * TODO: consider using cl_scandesc and not using a temporary
 		 *	file from the mail being read in
 		 */
-		switch(cl_scanfile(privdata->filename, &virname, &scanned, root, &limits, options)) {
+		pthread_mutex_lock(&root_mutex);
+		scanning_root = cl_dup(root);
+		pthread_mutex_unlock(&root_mutex);
+		if(scanning_root == NULL) {
+			cli_errmsg("scanning_root == NULL\n");
+			clamfi_cleanup(ctx);
+			return cl_error;
+		}
+		switch(cl_scanfile(privdata->filename, &virname, &scanned, scanning_root, &limits, options)) {
 			case CL_CLEAN:
 				strcpy(mess, "OK");
 				break;
@@ -2585,6 +2605,7 @@ clamfi_eom(SMFICTX *ctx)
 				logger(mess);
 				break;
 		}
+		cl_free(scanning_root);
 
 #ifdef	SESSION
 		session = NULL;
@@ -2986,7 +3007,9 @@ clamfi_eom(SMFICTX *ctx)
 				}
 
 				cli_dbgmsg("Waiting for %s to finish\n", cmd);
-				pclose(sendmail);
+				if(pclose(sendmail) != 0)
+					if(use_syslog)
+						syslog(LOG_ERR, "%s: Failed to notify clamAV interception - see dead.letter", sendmailId);
 			} else if(use_syslog)
 				syslog(LOG_WARNING, _("Can't execute '%s' to send virus notice"), cmd);
 		}
@@ -3275,7 +3298,7 @@ clamfi_free(struct privdata *privdata)
 		 */
 		if(n_children > 0)
 			if(--n_children == 0) {
-				cli_dbgmsg("clamav-milter is idle\n");
+				cli_dbgmsg("%s is idle\n", progname);
 				if(pthread_cond_broadcast(&watchdog_cond) < 0)
 					perror("pthread_cond_broadcast");
 			}
@@ -4387,69 +4410,29 @@ watchdog(void *a)
 		pthread_mutex_unlock(&watchdog_mutex);
 
 		if(!external) {
-			int dbstatus = cl_statchkdir(&dbstat);
-
 			/*
-			 * Re-load the database if the server's not busy.
-			 * TODO: If a reload is needed go into a mode when
-			 *	new scans aren't accepted, to force the number
-			 *	of children to 0 so that we can reload,
-			 *	otherwise a reload may not occur on overloaded
-			 *	servers
+			 * Re-load the database if needed
 			 */
-			pthread_mutex_lock(&n_children_mutex);
-			if((n_children == 0) && (dbstatus == 1)) {
-				pthread_mutex_lock(&accept_mutex);
-				accept_inputs = 0;
-				pthread_mutex_unlock(&accept_mutex);
-				cli_dbgmsg("Database has changed\n");
-				cl_statfree(&dbstat);
-				/* check for race condition */
-				while(n_children > 0)
-					pthread_cond_wait(&n_children_cond, &n_children_mutex);
-				if(use_syslog)
-					syslog(LOG_WARNING, _("Loading new database"));
-				if(loadDatabase() != 0) {
-					pthread_mutex_unlock(&n_children_mutex);
+			switch(cl_statchkdir(&dbstat)) {
+				case 1:
+					cli_dbgmsg("Database has changed\n");
+					cl_statfree(&dbstat);
+					if(use_syslog)
+						syslog(LOG_WARNING, _("Loading new database"));
+					if(loadDatabase() != 0) {
+						smfi_stop();
+						cli_errmsg("Failed to load updated database\n");
+						return NULL;
+					}
+					break;
+				case 0:
+					cli_dbgmsg("Database has not changed\n");
+					break;
+				default:
 					smfi_stop();
+					cli_errmsg("Database error - %s is stopping\n", progname);
 					return NULL;
-				}
-				pthread_mutex_lock(&accept_mutex);
-				accept_inputs = 1;
-				pthread_cond_broadcast(&accept_cond);
-				pthread_mutex_unlock(&accept_mutex);
-			} else if(dbstatus == 0)
-				cli_dbgmsg("Database has not changed\n");
-			else if(dbstatus == 1) {
-				cli_warnmsg("Not reloading database until idle - waiting for %d children\n", n_children);
-				pthread_mutex_lock(&accept_mutex);
-				accept_inputs = 0;
-				pthread_mutex_unlock(&accept_mutex);
-
-				while(n_children > 0) {
-					pthread_cond_wait(&n_children_cond, &n_children_mutex);
-					cli_warnmsg("Waiting for %d children until databae reload\n", n_children);
-				}
-
-				cl_statfree(&dbstat);
-				if(use_syslog)
-					syslog(LOG_WARNING, _("Loading new database"));
-				if(loadDatabase() != 0) {
-					pthread_mutex_unlock(&n_children_mutex);
-					smfi_stop();
-					return NULL;
-				}
-				pthread_mutex_lock(&accept_mutex);
-				accept_inputs = 1;
-				pthread_cond_broadcast(&accept_cond);
-				pthread_mutex_unlock(&accept_mutex);
-			} else {
-				smfi_stop();
-				cli_errmsg("Database error - clamav-milter is stopping\n");
-				pthread_mutex_unlock(&n_children_mutex);
-				return NULL;
 			}
-			pthread_mutex_unlock(&n_children_mutex);
 			continue;
 		}
 		i = 0;
@@ -4556,7 +4539,6 @@ watchdog(void *a)
 	while(!quitting) {
 		struct timespec ts;
 		struct timeval tp;
-		int dbstatus;
 
 		gettimeofday(&tp, NULL);
 
@@ -4580,67 +4562,29 @@ watchdog(void *a)
 		pthread_mutex_unlock(&watchdog_mutex);
 
 		/*
-		 * Re-load the database if the server's not busy.
-		 * TODO: If a reload is needed go into a mode when
-		 *	new scans aren't accepted, to force the number
-		 *	of children to 0 so that we can reload,
-		 *	otherwise a reload may not occur on overloaded
-		 *	servers
+		 * Re-load the database.
 		 */
-		dbstatus = cl_statchkdir(&dbstat);
-		pthread_mutex_lock(&n_children_mutex);
-		if((n_children == 0) && (dbstatus == 1)) {
-			pthread_mutex_lock(&accept_mutex);
-			accept_inputs = 0;
-			pthread_mutex_unlock(&accept_mutex);
-			cli_dbgmsg("Database has changed\n");
-			cl_statfree(&dbstat);
-			/* check for race condition */
-			while(n_children > 0)
-				pthread_cond_wait(&n_children_cond, &n_children_mutex);
-			if(use_syslog)
-				syslog(LOG_WARNING, _("Loading new database"));
-			if(loadDatabase() != 0) {
-				pthread_mutex_unlock(&n_children_mutex);
+		switch(cl_statchkdir(&dbstat)) {
+			case 1:
+				cli_dbgmsg("Database has changed\n");
+				cl_statfree(&dbstat);
+				if(use_syslog)
+					syslog(LOG_WARNING, _("Loading new database"));
+				if(loadDatabase() != 0) {
+					smfi_stop();
+					cli_errmsg("Failed to load updated database\n");
+					return NULL;
+				}
+				break;
+			case 0:
+				cli_dbgmsg("Database has not changed\n");
+				break;
+			default:
 				smfi_stop();
+				cli_errmsg("Database error - %s is stopping\n", progname);
 				return NULL;
-			}
-			pthread_mutex_lock(&accept_mutex);
-			accept_inputs = 1;
-			pthread_cond_broadcast(&accept_cond);
-			pthread_mutex_unlock(&accept_mutex);
-		} else if(dbstatus == 0)
-			cli_dbgmsg("Database has not changed\n");
-		else if(dbstatus == 1) {
-			cli_warnmsg("Not reloading database until idle - waiting for %d children\n", n_children);
-			pthread_mutex_lock(&accept_mutex);
-			accept_inputs = 0;
-			pthread_mutex_unlock(&accept_mutex);
-
-			while(n_children > 0) {
-				pthread_cond_wait(&n_children_cond, &n_children_mutex);
-				cli_warnmsg("Waiting for %d children until databae reload\n", n_children);
-			}
-			cl_statfree(&dbstat);
-			if(use_syslog)
-				syslog(LOG_WARNING, _("Loading new database"));
-			if(loadDatabase() != 0) {
-				pthread_mutex_unlock(&n_children_mutex);
-				smfi_stop();
-				return NULL;
-			}
-			pthread_mutex_lock(&accept_mutex);
-			accept_inputs = 1;
-			if(pthread_cond_broadcast(&accept_cond) < 0)
-				perror("pthread_cond_broadcast");
-			pthread_mutex_unlock(&accept_mutex);
-		} else {
-			smfi_stop();
-			cli_errmsg("Database error - clamav-milter is stopping\n");
-			pthread_mutex_unlock(&n_children_mutex);
-			return NULL;
 		}
-		pthread_mutex_unlock(&n_children_mutex);
+		continue;
 	}
 	cli_dbgmsg("watchdog quits\n");
 	return NULL;
@@ -4736,10 +4680,6 @@ quit(void)
 
 	quitting++;
 
-	pthread_mutex_lock(&accept_mutex);
-	accept_inputs = 0;
-	pthread_mutex_unlock(&accept_mutex);
-
 #ifdef	SESSION
 	pthread_mutex_lock(&version_mutex);
 #endif
@@ -4750,10 +4690,12 @@ quit(void)
 #endif
 
 	if(!external) {
+		pthread_mutex_lock(&root_mutex);
 		if(root) {
 			cl_free(root);
 			root = NULL;
 		}
+		pthread_mutex_unlock(&root_mutex);
 	} else {
 #ifdef	SESSION
 		int i = 0;
@@ -4819,8 +4761,7 @@ broadcast(const char *mess)
 }
 
 /*
- * Load a new database into the internal scanner - it is up to the caller to
- * ensure that no threads are currently scanning
+ * Load a new database into the internal scanner
  */
 static int
 loadDatabase(void)
@@ -4832,11 +4773,16 @@ loadDatabase(void)
 	char *daily, *ptr;
 	struct cl_cvd *d;
 	const struct cfgstruct *cpt;
+	struct cl_node *newroot, *oldroot;
 	static const char *dbdir;
 
 	assert(!external);
 
 	if(dbdir == NULL) {
+		/*
+		 * First time through, find out in which directory the signature
+		 * databases are
+		 */
 		if((cpt = cfgopt(copt, "DatabaseDirectory")) || (cpt = cfgopt(copt, "DataDirectory")))
 			dbdir = cpt->strarg;
 		else
@@ -4886,30 +4832,30 @@ loadDatabase(void)
 	if((ptr = strchr(clamav_version, '\n')) != NULL)
 		*ptr = '\0';
 
-	if(root) {
-		cl_free(root);
-		root = NULL;
-	}
 	signatures = 0;
-	ret = cl_loaddbdir(dbdir, &root, &signatures);
+	newroot = NULL;
+	ret = cl_loaddbdir(dbdir, &newroot, &signatures);
 	if(ret != 0) {
 		cli_errmsg("%s\n", cl_strerror(ret));
 		return -1;
 	}
-	if(root == NULL) {
+	if(newroot == NULL) {
 		cli_errmsg("Can't initialize the virus database.\n");
 		return -1;
 	}
 
-	ret = cl_build(root);
+	ret = cl_build(newroot);
 	if(ret != 0) {
 		cli_errmsg("Database initialization error: %s\n", cl_strerror(ret));
+		cl_free(newroot);
 		return -1;
 	}
-	cli_dbgmsg("Database updated\n");
-	if(use_syslog) {
-		syslog(LOG_INFO, _("ClamAV: Protecting against %u viruses"), signatures);
+	pthread_mutex_lock(&root_mutex);
+	oldroot = root;
+	root = newroot;
+	pthread_mutex_unlock(&root_mutex);
 
+	if(use_syslog) {
 #ifdef	SESSION
 		pthread_mutex_lock(&version_mutex);
 #endif
@@ -4917,7 +4863,13 @@ loadDatabase(void)
 #ifdef	SESSION
 		pthread_mutex_unlock(&version_mutex);
 #endif
+		syslog(LOG_INFO, _("ClamAV: Protecting against %u viruses"), signatures);
 	}
+	if(oldroot) {
+		cli_dbgmsg("Database updated\n");
+		cl_free(oldroot);
+	} else
+		cli_dbgmsg("Database loaded\n");
 
 	return cl_statinidir(dbdir, &dbstat);
 }
@@ -4932,7 +4884,7 @@ sigsegv(int sig)
 #endif
 
 	if(use_syslog)
-		syslog(LOG_ERR, "Segmentation fault :-( Bye..");
+		syslog(LOG_CRIT, "Segmentation fault :-( Bye..");
 	cli_errmsg("Segmentation fault :-( Bye..\n");
 
 	smfi_stop();
@@ -5042,6 +4994,14 @@ isWhitelisted(const char *emailaddress)
 {
 	static table_t *whitelist;
 
+
+	cli_dbgmsg("isWhitelisted %s\n", emailaddress);   
+        /*	
+	 * Don't scan messages to the quarantine email address 
+	 */
+        if(quarantine && (strcasecmp(quarantine, emailaddress) == 0))
+		return 1;
+
 	if((whitelist == NULL) && whitelistFile) {
 		FILE *fin;
 		char buf[BUFSIZ + 1];
@@ -5050,6 +5010,9 @@ isWhitelisted(const char *emailaddress)
 
 		if(fin == NULL) {
 			perror(whitelistFile);
+			if(use_syslog)  
+			    syslog(LOG_ERR, _("Can't open white-list file %s"),
+				    whitelistFile);
 			return 0;
 		}
 		whitelist = tableCreate();
@@ -5088,12 +5051,17 @@ logger(const char *mess)
 #ifdef	CL_DEBUG
 	puts(mess);
 #else
-	FILE *fout = fopen(logFile, "a");
+	FILE *fout;
+	
+	if(cfgopt(copt, "Foreground"))
+		fout = stderr;
+	else
+		fout = fopen(logFile, "a");
 
 	if(fout == NULL)
 		return;
 
-	if(logTime) {
+	if(logg_time) {
 #ifdef HAVE_CTIME_R
 		time_t currtime = time((time_t)0);
 		char buf[27];
@@ -5110,6 +5078,7 @@ logger(const char *mess)
 #endif
 	} else
 		fprintf(fout, "%s\n", mess);
-	fclose(fout);
+	if(fout != stderr)
+		fclose(fout);
 #endif
 }

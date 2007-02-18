@@ -1,9 +1,10 @@
-0.85.1
-------
+0.86rc1
+-------
 
-A problem where an email with more than one content-disposition type line,
-one or more of which was empty, could crash libclamav has been fixed. Other
-minor bugfixes have been made.
+This release candidate introduces a number of bugfixes and cleanups.
+Possible descriptor leaks in archive unpackers and mishandling of fast track
+uuencoded files have been fixed in libclamav. Database reloading in
+clamav-milter has been improved.
 
 --
 The ClamAV team (http://www.clamav.net/team.html)
