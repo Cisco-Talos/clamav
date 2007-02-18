@@ -187,6 +187,8 @@ static const struct cli_smagic_s cli_smagic[] = {
     {"3c4f424a454354", "HTML data", CL_TYPE_HTML},      /* <OBJECT */
     {"3c696672616d65", "HTML data", CL_TYPE_HTML},      /* <iframe */
     {"3c494652414d45", "HTML data", CL_TYPE_HTML},      /* <IFRAME */
+    {"3c7461626c65",   "HTML data", CL_TYPE_HTML},	/* <table */
+    {"3c5441424c45",   "HTML data", CL_TYPE_HTML},	/* <TABLE */
 
     {"526172211a0700", "RAR-SFX", CL_TYPE_RARSFX},
     {"504b0304", "ZIP-SFX", CL_TYPE_ZIPSFX},
