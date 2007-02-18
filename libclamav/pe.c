@@ -534,14 +534,14 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr64.NumberOfRvaAndSizes));
     }
 
-    if (DETECT_BROKEN && (!(pe_plus?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment)) || (pe_plus?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment))%0x1000)) {
+    if (DETECT_BROKEN && (pe_plus?EC16(optional_hdr64.Subsystem):EC16(optional_hdr32.Subsystem))!= 1 && (!(pe_plus?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment)) || (pe_plus?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment))%0x1000)) {
         cli_dbgmsg("Bad virtual alignemnt\n");
         if(ctx->virname)
 	    *ctx->virname = "Broken.Executable";
 	return CL_VIRUS;
     }
 
-    if (DETECT_BROKEN && (!(pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment)) || (pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment))%0x200)) {
+    if (DETECT_BROKEN && (pe_plus?EC16(optional_hdr64.Subsystem):EC16(optional_hdr32.Subsystem))!= 1 && (!(pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment)) || (pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment))%0x200)) {
         cli_dbgmsg("Bad file alignemnt\n");
 	if(ctx->virname)
 	    *ctx->virname = "Broken.Executable";
@@ -553,7 +553,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    cli_dbgmsg("Subsystem: Unknown\n");
 	    break;
 	case 1:
-	    cli_dbgmsg("Subsystem: Native (a driver ?)\n");
+	    cli_dbgmsg("Subsystem: Native (svc)\n");
 	    break;
 	case 2:
 	    cli_dbgmsg("Subsystem: Win32 GUI\n");
@@ -643,6 +643,10 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	exe_sections[i].raw = PEALIGN(EC32(section_hdr[i].PointerToRawData), falign);
 	exe_sections[i].rsz = PESALIGN(EC32(section_hdr[i].SizeOfRawData), falign);
 	exe_sections[i].ursz = EC32(section_hdr[i].SizeOfRawData);
+
+	if (!exe_sections[i].vsz && exe_sections[i].rsz)
+	    exe_sections[i].vsz=PESALIGN(EC32(section_hdr[i].SizeOfRawData), valign);
+
 	if (exe_sections[i].rsz && fsize>exe_sections[i].raw && !CLI_ISCONTAINED(0, (uint32_t) fsize, exe_sections[i].raw, exe_sections[i].rsz))
 	    exe_sections[i].rsz = fsize - exe_sections[i].raw;
 	
@@ -726,7 +730,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
 
 	if(!i) {
-	    if (DETECT_BROKEN && EC32(section_hdr[i].VirtualAddress)!=valign) { /* Bad first section RVA */
+	    if (DETECT_BROKEN && (pe_plus?EC16(optional_hdr64.Subsystem):EC16(optional_hdr32.Subsystem))!= 1 && EC32(section_hdr[i].VirtualAddress)!=valign) { /* Bad first section RVA */
 	        cli_dbgmsg("First section is in the wrong place\n");
 	        if(ctx->virname)
 		    *ctx->virname = "Broken.Executable";

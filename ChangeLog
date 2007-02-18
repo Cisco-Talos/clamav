@@ -1,3 +1,7 @@
+Sun Feb 18 21:26:26 CET 2007 (acab)
+-----------------------------------
+  * libclamav/pe.c: improved broken detection - closes bb#305
+
 Sun Feb 18 21:23:12 CET 2007 (tk)
 ---------------------------------
   * libclamav/lockdb.c: win32 fix (bb#255)
