@@ -31,7 +31,6 @@ typedef enum {
     CL_RARFILE,
     CL_MSCFILE,
     CL_OLE2FILE,
-    CL_MSCABFILE
 } cli_file_t;
 
 cli_file_t cli_filetype(const char *buf, size_t buflen);
