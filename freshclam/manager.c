@@ -825,7 +825,7 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
     while (1) {
       /* recv one byte at a time, until we reach \r\n\r\n */
 
-      if((i >= sizeof(buffer)) || recv(socketfd, buffer + i, 1, 0) == -1) {
+      if((i >= sizeof(buffer) - 1) || recv(socketfd, buffer + i, 1, 0) == -1) {
         mprintf("@Error while reading database from %s\n", hostname);
         close(fd);
         unlink(file);
@@ -844,7 +844,7 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
 
     /* check whether the resource actually existed or not */
 
-    if ((strstr(buffer, "HTTP/1.1 404")) != NULL) { 
+    if ((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
       mprintf("@%s not found on remote server\n", dbfile);
       close(fd);
       unlink(file);
@@ -853,7 +853,7 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
 
     /* receive body and write it to disk */
 
-    while((bread = read(socketfd, buffer, FILEBUFF))) {
+    while((bread = read(socketfd, buffer, FILEBUFF)) > 0) {
 	write(fd, buffer, bread);
 	mprintf("Downloading %s [%c]\r", dbfile, rotation[rot]);
 	fflush(stdout);

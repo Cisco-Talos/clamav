@@ -158,7 +158,12 @@ int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32_t upx0
     cli_writeint32(sections+8, vsize);
     cli_writeint32(sections+20, foffset);
     foffset+=rsize;
-    
+
+    if (foffset > *dsize) {
+      cli_dbgmsg("UPX: wrong raw size - giving up rebuild\n");
+      return 0;
+    }
+
     sections+=0x28;
   }
 

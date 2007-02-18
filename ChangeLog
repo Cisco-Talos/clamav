@@ -1,3 +1,14 @@
+Mon Aug  7 20:49:48 CEST 2006
+-----------------------------
+  * Changes:
+    - libclamav/upx.c: fix possible heap overflow
+      See http://www.clamav.net/security/0.88.4.html for details.
+    - libclamav/tnef.c: handle trailing newline at the end of winmail.dat,
+      bug reported by Menno Smits <menno*netboxblue.com>
+    - freshclam/manager.c: fix possible infinite loop when read() fails
+      in get_database(), spotted by Everton da Silva Marques
+      <everton*lab.ipaccess.diveo.net.br>
+
 Sat Jul  1 13:37:18 CEST 2006
 -----------------------------
   V 0.88.3

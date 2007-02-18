@@ -2,6 +2,16 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.88.4
+------
+
+This release fixes a possible heap overflow in the UPX code.
+
+See security information at: http://www.clamav.net/security/0.88.4.html
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
 0.88.3
 ------
 
