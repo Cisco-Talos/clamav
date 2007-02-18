@@ -1,6 +1,11 @@
+Sun Feb 18 21:23:12 CET 2007 (tk)
+---------------------------------
+  * libclamav/lockdb.c: win32 fix (bb#255)
+
 Sun Feb 18 16:42:45 CET 2007 (edwin)
 ------------------------------------
   * libclamav/phish_*.c, regex_list.c: Remove obsolete $Log$ keyword.		
+
 Sun Feb 18 15:32:45 CET 2007 (tk)
 ---------------------------------
   * libclamav/filetypes.c: add more tags to HTML rule set (bb#218)
