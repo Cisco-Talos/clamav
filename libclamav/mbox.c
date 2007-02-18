@@ -167,11 +167,11 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 
 /*#define	NEW_WORLD*/
 
-static	int	cli_parse_mbox(const char *dir, int desc, unsigned int options);
+static	int	cli_parse_mbox(const char *dir, int desc, unsigned int options, unsigned int maxreclevel);
 static	message	*parseEmailFile(FILE *fin, const table_t *rfc821Table, const char *firstLine, const char *dir);
 static	message	*parseEmailHeaders(const message *m, const table_t *rfc821Table);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
-static	int	parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, unsigned int options);
+static  int	parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, unsigned int options, unsigned int maxreclevel, unsigned int reclevel);
 static	int	boundaryStart(const char *line, const char *boundary);
 static	int	endOfMessage(const char *line, const char *boundary);
 static	int	initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
@@ -363,7 +363,7 @@ static	void	free_map(void);
  * TODO: partial_dir fall through
  */
 int
-cli_mbox(const char *dir, int desc, unsigned int options)
+cli_mbox(const char *dir, int desc, unsigned int options, unsigned int maxreclevel)
 {
 	char *start, *ptr, *line;
 	const char *last, *p, *q;
@@ -389,7 +389,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 #ifdef	NW_MAX_FILE_SIZE
 	if(size > NW_MAX_FILE_SIZE)
-		return cli_parse_mbox(dir, desc, options);
+		return cli_parse_mbox(dir, desc, options, maxreclevel);
 #endif
 
 	/*cli_warnmsg("NEW_WORLD is new code - use at your own risk.\n");*/
@@ -493,7 +493,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			munmap(start, size);
 
 		free_map();
-		return cli_parse_mbox(dir, desc, options);
+		return cli_parse_mbox(dir, desc, options, maxreclevel);
 #endif
 	}
 
@@ -534,14 +534,14 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			else
 				cli_dbgmsg("cli_mbox: unknown encoder, type %d\n", type);
 			if(type == CL_TYPE_MAIL)
-				return cli_parse_mbox(dir, desc, options);
+				return cli_parse_mbox(dir, desc, options, maxreclevel);
 			cli_dbgmsg("Unknown filetype %d, return CLEAN\n", type);
 			return CL_CLEAN;
 		}
 
 		/* The message could be a plain text phish */
 		if((type == CL_TYPE_MAIL) && (!(options&CL_DB_NOPHISHING)))
-			return cli_parse_mbox(dir, desc, options);
+			return cli_parse_mbox(dir, desc, options, maxreclevel);
 		cli_dbgmsg("cli_mbox: I believe it's plain text which must be clean\n");
 		return CL_CLEAN;
 	}
@@ -810,7 +810,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 	cli_dbgmsg("New world - don't know what to do - fall back to old world\n");
 	/* Fall back for now */
 	lseek(desc, 0L, SEEK_SET);
-	return cli_parse_mbox(dir, desc, options);
+	return cli_parse_mbox(dir, desc, options, maxreclevel);
 }
 
 static void
@@ -888,13 +888,13 @@ free_map(void)
 
 #else	/*!NEW_WORLD*/
 int
-cli_mbox(const char *dir, int desc, unsigned int options)
+cli_mbox(const char *dir, int desc, unsigned int options, unsigned int maxreclevel)
 {
 	if(dir == NULL) {
 		cli_warnmsg("cli_mbox called with NULL dir\n");
 		return CL_ENULLARG;
 	}
-	return cli_parse_mbox(dir, desc, options);
+	return cli_parse_mbox(dir, desc, options, maxreclevel);
 }
 #endif
 
@@ -915,7 +915,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
  *	e.g. \0Content-Type: application/binary;
  */
 static int
-cli_parse_mbox(const char *dir, int desc, unsigned int options)
+cli_parse_mbox(const char *dir, int desc, unsigned int options, unsigned int maxreclevel)
 {
 	int retcode, i;
 	message *body;
@@ -1063,7 +1063,7 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 				}
 				messageDestroy(m);
 				if(messageGetBody(body))
-					if(!parseEmailBody(body, NULL, dir, rfc821, subtype, options)) {
+					if(!parseEmailBody(body, NULL, dir, rfc821, subtype, options, maxreclevel, 0)) {
 						messageReset(body);
 						m = body;
 						continue;
@@ -1138,7 +1138,7 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 		 * Write out the last entry in the mailbox
 		 */
 		if(messageGetBody(body))
-			if(!parseEmailBody(body, NULL, dir, rfc821, subtype, options))
+			if(!parseEmailBody(body, NULL, dir, rfc821, subtype, options, maxreclevel, 0))
 				retcode = CL_EFORMAT;
 
 		/*
@@ -1646,7 +1646,7 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
  *	2 for success, attachments not saved
  */
 static int	/* success or fail */
-parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, unsigned int options)
+parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t *rfc821Table, const table_t *subtypeTable, unsigned int options, unsigned int maxreclevel, unsigned int reclevel)
 {
 	message **messages;	/* parts of a multipart message */
 	int inMimeHead, i, rc = 1, htmltextPart, multiparts = 0;
@@ -1656,6 +1656,13 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 	fileblob *fb;
 
 	cli_dbgmsg("in parseEmailBody\n");
+
+        if(maxreclevel)
+		if(reclevel >= maxreclevel) {
+			cli_warnmsg("parseEmailBody: hit maximum recursion level (%u)\n", maxreclevel);
+		        return 2;
+		}
+
 
 	aText = textIn;
 	messages = NULL;
@@ -2144,7 +2151,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				if(htmltextPart == -1)
 					cli_dbgmsg("No HTML code found to be scanned");
 				else {
-					rc = parseEmailBody(aMessage, aText, dir, rfc821Table, subtypeTable, options);
+					rc = parseEmailBody(aMessage, aText, dir, rfc821Table, subtypeTable, options, maxreclevel, reclevel + 1);
 					if(rc == 1) {
 						assert(aMessage == messages[htmltextPart]);
 						messageDestroy(aMessage);
@@ -2377,7 +2384,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 						messageDestroy(messages[i]);
 						messages[i] = NULL;
 						if(body) {
-							rc = parseEmailBody(body, NULL, dir, rfc821Table, subtypeTable, options);
+							rc = parseEmailBody(body, NULL, dir, rfc821Table, subtypeTable, options, maxreclevel, reclevel + 1);
 							messageDestroy(body);
 						}
 #endif
@@ -2394,13 +2401,13 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							 * The headers were parsed when reading in the
 							 * whole multipart section
 							 */
-							rc = parseEmailBody(aMessage, aText, dir, rfc821Table, subtypeTable, options);
+							rc = parseEmailBody(aMessage, aText, dir, rfc821Table, subtypeTable, options, maxreclevel, reclevel + 1);
 							cli_dbgmsg("Finished recursion\n");
 							assert(aMessage == messages[i]);
 							messageDestroy(messages[i]);
 							messages[i] = NULL;
 						} else {
-							rc = parseEmailBody(NULL, NULL, dir, rfc821Table, subtypeTable, options);
+							rc = parseEmailBody(NULL, NULL, dir, rfc821Table, subtypeTable, options, maxreclevel, reclevel + 1);
 							if(mainMessage && (mainMessage != messageIn))
 								messageDestroy(mainMessage);
 							mainMessage = NULL;
@@ -2442,7 +2449,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 				if(htmltextPart == -1)
 					htmltextPart = 0;
 
-				rc = parseEmailBody(messages[htmltextPart], aText, dir, rfc821Table, subtypeTable, options);
+				rc = parseEmailBody(messages[htmltextPart], aText, dir, rfc821Table, subtypeTable, options, maxreclevel, reclevel + 1);
 				break;
 			case ENCRYPTED:
 				rc = 0;
@@ -2513,7 +2520,7 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 					} else
 						messageReset(mainMessage);
 					if(messageGetBody(m))
-						rc = parseEmailBody(m, NULL, dir, rfc821Table, subtypeTable, options);
+						rc = parseEmailBody(m, NULL, dir, rfc821Table, subtypeTable, options, maxreclevel, reclevel + 1);
 
 					messageDestroy(m);
 				}

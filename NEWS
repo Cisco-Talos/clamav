@@ -1,11 +1,7 @@
-0.88.6
+0.88.7
 ------
 
-Changes in this release include better handling of network problems in
-freshclam and other minor bugfixes.
-
-The ClamAV developers encourage all users to give a try to the latest
-beta version of 0.90!
+This version improves scanning of mail and tar files.
 
 --
 The ClamAV team (http://www.clamav.net/team.html)

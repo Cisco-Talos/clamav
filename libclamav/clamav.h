@@ -153,11 +153,12 @@ struct cl_node {
 };
 
 struct cl_limits {
-    unsigned int maxreclevel; /* maximal recursion level */
-    unsigned int maxfiles; /* maximal number of files to be
+    unsigned int maxreclevel; /* maximum archive recursion level */
+    unsigned int maxmailrec; /* maximum mail recursion level */
+    unsigned int maxfiles; /* maximum number of files to be
 			    * scanned within an archive
 			    */
-    unsigned int maxratio; /* maximal compression ratio */
+    unsigned int maxratio; /* maximum compression ratio */
     unsigned short archivememlim; /* limit memory usage for bzip2 (0/1) */
     unsigned long int maxfilesize; /* files in an archive larger than
 				    * this limit will not be scanned

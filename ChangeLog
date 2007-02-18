@@ -1,3 +1,12 @@
+Mon Dec 11 02:47:03 CET 2006
+----------------------------
+  * Bugfixes:
+    - libclamav/message.c: handle consecutive errors in base64 decoding
+    - libclamav/mbox.c: honour recursion limit when scanning email messages
+    - clamscan: new option --mail-max-recursion
+    - clamd/clamav-milter: new option MailMaxRecursion
+    - libclamav/untar.c: honour archive limits
+
 Sun Nov  5 17:08:22 CET 2006
 -----------------------------
   * Bugfixes:

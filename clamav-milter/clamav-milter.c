@@ -1460,6 +1460,11 @@ main(int argc, char **argv)
 
 		memset(&limits, '\0', sizeof(struct cl_limits));
 
+		if((cpt = cfgopt(copt, "MailMaxRecursion")) != NULL)
+			limits.maxmailrec = cpt->numarg;
+		else
+			limits.maxmailrec = 64;
+
 		if(cfgopt(copt, "ScanArchive")) {
 			options |= CL_SCAN_ARCHIVE;
 			if((cpt = cfgopt(copt, "ArchiveMaxFileSize")) != NULL)

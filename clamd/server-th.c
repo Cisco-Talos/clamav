@@ -386,6 +386,12 @@ int acceptloop_th(int socketd, struct cl_node *root, const struct cfgstruct *cop
 	    options |= CL_SCAN_MAILURL;
 	}
 
+	if((cpt = cfgopt(copt, "MailMaxRecursion")))
+	    limits.maxmailrec = cpt->numarg;
+	else
+	    limits.maxmailrec = 64;
+
+	logg("Mail: Recursion level limit set to %u.\n", limits.maxmailrec);
     } else {
 	logg("Mail files support disabled.\n");
     }

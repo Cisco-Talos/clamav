@@ -142,6 +142,12 @@ int clamscan(struct optstruct *opt)
 	    return 40;
 	}
 
+    if(optl(opt, "max-mail-recursion"))
+	if(!isnumb(getargl(opt, "max-mail-recursion"))) {
+	    mprintf("!--max-mail-recursion requires natural number.\n");
+	    return 40;
+	}
+
     if(optl(opt, "max-dir-recursion"))
 	if(!isnumb(getargl(opt, "max-dir-recursion"))) {
 	    logg("!--max-dir-recursion requires natural number.\n");
@@ -262,6 +268,7 @@ void help(void)
     mprintf("    --max-files=#n                       Only extract first #n files from\n");
     mprintf("                                         archives\n");
     mprintf("    --max-recursion=#n                   Maximum archive recursion level\n");
+    mprintf("    --max-mail-recursion=#n              Maximum mail recursion level\n");
     mprintf("    --max-ratio=#n                       Maximum compression ratio limit\n");
     mprintf("    --max-dir-recursion=#n               Maximum directory recursion level\n");
     mprintf("    --unzip[=FULLPATH]                   Enable support for .zip files\n");

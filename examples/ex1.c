@@ -69,9 +69,10 @@ int main(int argc, char **argv)
     /* set up archive limits */
     memset(&limits, 0, sizeof(struct cl_limits));
     limits.maxfiles = 1000; /* max files */
-    limits.maxfilesize = 10 * 1048576; /* maximal archived file size == 10 Mb */
-    limits.maxreclevel = 5; /* maximal recursion level */
-    limits.maxratio = 200; /* maximal compression ratio */
+    limits.maxfilesize = 10 * 1048576; /* maximum archived file size == 10 Mb */
+    limits.maxreclevel = 5; /* maximum recursion level */
+    limits.maxmailrec = 64; /* maximum mail recursion level */
+    limits.maxratio = 200; /* maximum compression ratio */
     limits.archivememlim = 0; /* disable memory limit for bzip2 scanner */
 
     /* scan descriptor */

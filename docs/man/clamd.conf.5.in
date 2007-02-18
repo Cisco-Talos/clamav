@@ -224,6 +224,11 @@ If an email contains URLs ClamAV can download and scan them. \fBWARNING: This op
 .br 
 Default: disabled
 .TP 
+\fBMailMaxRecursion\fR
+Mail scanner recursion level limit.
+.br 
+Default: 32
+.TP 
 \fBScanArchive\fR
 Enable archive scanning.
 .br 

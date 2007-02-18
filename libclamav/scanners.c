@@ -50,7 +50,7 @@ int cli_scanrar_inuse = 0;
 
 extern short cli_leavetemps_flag;
 
-extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME */
+extern int cli_mbox(const char *dir, int desc, unsigned int options, unsigned int maxreclevel); /* FIXME */
 
 #include "clamav.h"
 #include "others.h"
@@ -1179,7 +1179,7 @@ static int cli_scantar(int desc, const char **virname, unsigned long int *scanne
 	return CL_ETMPDIR;
     }
 
-    if((ret = cli_untar(dir, desc, posix)))
+    if((ret = cli_untar(dir, desc, posix, limits)))
 	cli_dbgmsg("Tar: %s\n", cl_strerror(ret));
     else
 	ret = cli_scandir(dir, virname, scanned, root, limits, options, arec, mrec);
@@ -1336,7 +1336,7 @@ static int cli_scanmail(int desc, const char **virname, unsigned long int *scann
     /*
      * Extract the attachments into the temporary directory
      */
-    if((ret = cli_mbox(dir, desc, options))) {
+    if((ret = cli_mbox(dir, desc, options, limits ? limits->maxmailrec : 0))) {
 	if(!cli_leavetemps_flag)
 	    cli_rmdirs(dir);
 	free(dir);

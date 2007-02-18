@@ -2027,6 +2027,7 @@ sanitiseBase64(char *s)
 
 			for(p1 = s; p1[0] != '\0'; p1++)
 				p1[0] = p1[1];
+			--s;
 		}
 #else
 	for(; *s; s++) {
