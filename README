@@ -2,6 +2,14 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.86.1
+------
+
+A possible crash in the libmspack's Quantum decompressor has been fixed.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
 0.86
 ----
 

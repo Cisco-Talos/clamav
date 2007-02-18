@@ -1,9 +1,7 @@
-0.86
-----
+0.86.1
+------
 
-This release introduces a number of bugfixes and cleanups. Possible descriptor
-leaks in archive unpackers and mishandling of fast track uuencoded files have
-been fixed in libclamav. Database reloading in clamav-milter has been improved.
+A possible crash in the libmspack's Quantum decompressor has been fixed.
 
 --
 The ClamAV team (http://www.clamav.net/team.html)

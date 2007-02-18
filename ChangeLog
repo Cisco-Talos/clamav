@@ -1,3 +1,11 @@
+Thu Jun 23 23:13:41 CEST 2005
+-----------------------------
+  V 0.86.1
+  * Fixes backported from CVS:
+    - libclamav/mspack/qtmd.c: fix possible crash (tk)
+      Reported by Andrew Toller <atoller*connectfree.co.uk>
+      and Stefan Kanthak <stefan.kanthak*fujitsu-siemens.com>
+
 Sun Jun 19 21:37:07 CEST 2005
 -----------------------------
   V 0.86
