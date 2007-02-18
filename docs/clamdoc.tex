@@ -69,7 +69,7 @@
     \vspace{3cm}
     \begin{flushright}
 	\rule[-1ex]{8cm}{3pt}\\
-	\huge Clam AntiVirus 0.83\\
+	\huge Clam AntiVirus 0.84rc1\\
 	\huge \emph{User Manual}\\
     \end{flushright}
 
@@ -498,9 +498,9 @@ define(`confINPUT_MAIL_FILTERS', `clmilter')
     /var/log (owned by \emph{clamav} or another user \verb+freshclam+ will be
     running as (\verb+--user+):
     \begin{verbatim}
-	# touch /var/log/clam-update.log
-	# chmod 600 /var/log/clam-update.log
-	# chown clamav /var/log/clam-update.log
+	# touch /var/log/freshclam.log
+	# chmod 600 /var/log/freshclam.log
+	# chown clamav /var/log/freshclam.log
     \end{verbatim}
     Now you \emph{should} edit the configuration file (\verb+freshclam.conf+ or
     \verb+clamd.conf+ if they're merged) and configure the
@@ -664,7 +664,7 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	/tmp/clamav-77e7bfdbb2d3872b/test1.exe: Worm.Mydoom.U FOUND
 	/tmp/clamav-77e7bfdbb2d3872b/test2.exe: Trojan.Taskkill.A FOUND
 	/tmp/clamav-77e7bfdbb2d3872b/test3.exe: Worm.Nyxem.D FOUND
-	/tmp/malware.zip: Infected Archive FOUND
+	/tmp/malware.zip: Infected.Archive FOUND
     \end{verbatim}
 
     \subsubsection{clamd}
@@ -737,7 +737,7 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	Extracting  clam.exe                                        OK 
 	All OK
 	/tmp/44694f5b2665d2f4/clam.exe: ClamAV-Test-File FOUND
-	/home/zolw/test/clam-error.rar: Infected Archive FOUND
+	/home/zolw/test/clam-error.rar: Infected.Archive FOUND
     \end{verbatim}
 
     \subsubsection{Mail files}
@@ -1282,9 +1282,19 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     \textbf{Supports:} libclamav\\[4pt]
     gadoyanvirus is a (yet another) virus stopper for qmail. It replaces the
     original qmail-queue program. It scans incoming messages using the ClamAV
-    anti-virus library. Suspected message will be quarantined and (optionally)
+    anti-virus library. Suspect message will be quarantined and (optionally)
     a notification message will be sent to the recipients. By default,
     gadoyanvirus needs QMAILQUEUE patched qmail installation. 
+
+    \subsubsection{hMailServer}
+    \textbf{Homepage:} \url{http://www.hmailserver.com/}\\
+    \textbf{Supports:} ClamAV\\[4pt]
+    hMailServer is a free, open source e-mail server for Microsoft Windows.
+    It supports all the common mail protocols and comes with a easy to use COM
+    library that can be used for integration with external software. It also
+    has supports for virtual domains, distribution lists, ClamAV, aliases,
+    distributed domains and much more. E-mail data is stored in a database
+    server, MySQL or MS SQL, depending on your choice.
 
     \subsubsection{IVS Milter}
     \textbf{Homepage:} \url{http://ivs-milter.lbsd.net/}\\
@@ -1384,6 +1394,13 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     \textbf{Supports:} clamscan\\[4pt]
     Please increase the softlimit value if you are going to use it with
     clamscan.
+
+    \subsubsection{qpsmtp}
+    \textbf{Homepage:} \url{http://smtpd.develooper.com/}\\
+    \textbf{Supports:} clamscan\\[4pt]
+    qpsmtpd is a flexible smtpd daemon written in Perl. Apart from the core
+    SMTP features, all functionality is implemented in small "extension plugins"
+    using the easy to use object oriented plugin API.
 
     \subsubsection{qscanq}
     \textbf{Homepage:} \url{http://budney.homeunix.net:8080/users/budney/software/qscanq/index.html}\\
@@ -1486,6 +1503,17 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     especially when used in conjunction with a firewall and other Internet
     Proxy servers.
 
+    \subsubsection{pop3.proxy}
+    \textbf{Homepage:} \url{http://quietsche-entchen.de/cgi-bin/wiki.cgi/proxies/Pop3Proxy}\\
+    \textbf{Supports:} clamd\\[4pt]
+     pop3.proxy is a proxy server for the POP3 protocol. Usually it's used on
+     a firewall between a client and a POP3 server taking care that both sides
+     talk POP3 protocol as described in RFC 1939. There are some additional
+     features beside normal proxying. pop3.proxy can grant or deny access
+     based on an external access control program which receives some POP3
+     session information. pop3.proxy can also feed e-mails into a local
+     ClamAV daemon checking the e-mails for viruses before passing them to
+     the client. 
 
     \subsection{\emph{Web/FTP Proxy + ClamAV}}
 
@@ -1504,6 +1532,18 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     (eg. squid), or by maintaining a cache locally), and/or running a virus
     scanner on downloaded files. It is written with security in mind, and in
     the default setup it runs as a non root user in a chroot jail.
+
+    \subsubsection{HTTP Anti Virus Proxy}
+    \textbf{Homepage:} \url{http://www.server-side.de/}\\
+    \textbf{Supports:} libclamav\\[4pt]
+    HAVP is a proxy with an antivirus filter. It does not cache or filter
+    content. At the moment the complete traffic is scanned. A reason for that
+    is the chance of malicious code in nearly every filetypes e.g. HTML
+    (JavaScript) or JPEG files.
+
+    \subsubsection{Frox}
+    \textbf{Homepage:} \url{http://www.hollo.org/frox/}\\
+    \textbf{Supports:} clamscan\\[4pt]
 
     \subsubsection{mod\_clamav}
     \textbf{Homepage:} \url{http://software.othello.ch/mod_clamav/}\\
@@ -1535,6 +1575,12 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     the URL, and scans it for known viruses. It rewrites the URL from Squid to
     a blocked URL or an information page with information about the scanning
     results.
+
+    \subsubsection{Squidclam}
+    \textbf{Homepage:} \url{http://squidclam.sourceforge.net/}\\
+    \textbf{Supports:} libclamav\\[4pt]
+    Squidclam is a replacement for SquidClamAV-Redirector.py written in C
+    using libclamav and libcurl.
 
     \subsubsection{Viralator}
     \textbf{Homepage:} \url{http://viralator.sourceforge.net/}\\
@@ -1704,6 +1750,13 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     'on access' scanning, manual scanning, quarantine management, downloading
     updates, mail scanning (KMail/Evolution), automated installation (ClamAV
     and Dazuko pre-packaged).
+
+    \subsubsection{QtClamAVclient}
+    \textbf{Homepage:} \url{http://www.xystumnet.com/qtclamavclient.html}\\
+    \textbf{Supports:} clamd\\[4pt]
+    A small client for ClamAV that uses the STREAM socket connection to a
+    clamd server machine where the daemon is listening to locally scan files.
+    It is based on the Qt Toolkit from Trolltech.
 
     \subsubsection{wbmclamav}
     \textbf{Homepage:} \url{http://wbmclamav.labs.libre-entreprise.org/}\\
@@ -1902,9 +1955,6 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 
 	\url{clamav.rockriver.net} & 209.94.36.5 & Illinois, USA & Thomas D. Harker\\
 				   &		 &		 & \email{<tom*rockriver.net>}\\ \hline
-	\url{clamav.xmundo.net} & 200.68.106.40 & Argentina & Cristian Daniel Merz\\
-				&		&	    & \email{<mirrors*xmundo.net>}\\ \hline
-
 	\url{clamav.infotex.com} & 66.139.73.146 & Texas, USA & Matthew Jonkman\\
 				 &		 &	      & \email{<matt*infotex.com>}\\ \hline
 	\url{clamav.mirror.transip.nl} & 80.69.67.3 & The Netherlands & Walter Hop\\
@@ -1949,8 +1999,8 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 			      &		     & California, USA	       & \email{<myrond*xyxx.com>}\\ \hline
 	\url{clamav.walkertek.com} & 38.136.139.7 & USA & Stephen Walker\\
 				   &		  &	& \email{<swalker*walkertek.com>}\\ \hline
-	\url{clamav.mirror.cygnal.ca} & 24.244.193.21 & Burlington,	& Rafal Rzeczkowski\\
-				      & 24.244.193.22 & Ontario, Canada & \email{<mirrors*cygnal.ca>}\\ \hline
+	\url{clamav.mirror.rafal.ca} & 24.215.0.24 & Burlington, & Rafal Rzeczkowski\\
+				      &		   & Ontario, Canada & \email{<webmaster*mirror.rafal.ca>}\\ \hline
 	\url{clamav.securityminded.net} & 209.8.40.140 & Ashburn, USA & Thomas Petersen\\
 					&	       &	      & \email{<tomp*securityminded.net>}\\ \hline
 	\url{clamav.island.net.au} & 203.28.142.36 & Sydney    & Hugh Blandford\\
@@ -2070,12 +2120,20 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 				  &		 &	  & \email{<hcchang*cs.pu.edu.tw>}\\ \hline
 	\url{clamav.skynet.cz} & 193.165.254.12 & Czech Republic & Jaroslav Jurasek\\
 			       &		&		 & \email{<jaroslav.jurasek*skynet.cz>}\\ \hline
-	\url{clamav.virus.opteqint.net} & 209.25.178.86 & USA & Dave Blakey\\
-					&		&     & \email{<dave*opteqint.net>}\\ \hline
 	\url{clamav.ubak.gov.tr} & 212.174.131.5 & Turkey & Ali Erdinc Koroglu\\
 				 &		 &	  & \email{<erdinc*erdinc.info>}\\ \hline
 	\url{clamav.ecualinux.com} & 66.111.57.40 & Ecuador & E. Perez Estevez\\
 				   &		  &	    & \email{<info*ecualinux.com>}\\ \hline
+	\url{clamav.oc1.mirrors.redwire.net} & 64.186.250.53 & USA & Japheth Cleaver\\
+	\url{clamav.sd2.mirrors.redwire.net} & 64.186.240.118 &	   & \email{<mirror*redwire.net>}\\ \hline
+	\url{clamav.edpnet.net} & 212.71.0.71 & Belgium & Daan Kerkhofs\\
+				&	      &		& \url{<d.kerkhofs*edpnet.net>}\\ \hline
+	\url{clamav.edgescape.com} & 67.19.5.178 & USA & Timothy Folks\\
+				   &		 &     & \url{<timothy.folks*edgescape.com>}\\ \hline
+	\url{clamav.hanbiro.com} & 211.234.111.17 & Korea & Kwon Taek Sool\\
+				 &		  &	  & \email{<master*hanbiro.com>}\\ \hline
+	\url{clamav.kyit.edu.tw} & 210.60.80.8 & Taiwan & Rui-Xiang Guo\\
+				 &	       &	& \email{<rxg*cc.kyit.edu.tw>}\\ \hline
     \end{tabular}}
     \end{center}
 
@@ -2116,6 +2174,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Christoph Cordes \email{<ib*precompiled.de>}
 	\item Ole Craig \email{<olc*cs.umass.edu>}
 	\item Eugene Crosser \email{<crosser*rol.ru>}
+	\item Calin A. Culianu \email{<calin*ajvar.org>}
 	\item Damien Curtain \email{<damien*pagefault.org>}
 	\item Krisztian Czako \email{<slapic*linux.co.hu>}
 	\item Diego d'Ambra \email{<da*softcom.dk>}
@@ -2149,6 +2208,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Scott Gifford \email{<sgifford*suspectclass.com>}
 	\item Wieslaw Glod \email{<wkg*x2.pl>}
 	\item Stephen Gran \email{<steve*lobefin.net>}
+	\item Koryn Grant \email{<koryn*endace.com>}
 	\item Matthew A. Grant \email{<grantma*anathoth.gen.nz>}
 	\item Christophe Grenier \email{<grenier*cgsecurity.org>}
 	\item Marek Gutkowski \email{<hobbit*core.segfault.pl>}
@@ -2169,6 +2229,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Michal Jaegermann \email{<michal*harddata.com>}
 	\item Jay \email{<sysop-clamav*coronastreet.net>}
 	\item Stephane Jeannenot \email{<stephane.jeannenot*wanadoo.fr>}
+	\item Per Jessen \email{<per*computer.org>}
 	\item Dave Jones \email{<dave*kalkbay.co.za>}
 	\item Jesper Juhl \email{<juhl*dif.dk>}
 	\item Alex Kah \email{<alex*narfonix.com>}
@@ -2182,6 +2243,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Petr Kristof \email{<Kristof.P*fce.vutbr.cz>}
 	\item Henk Kuipers \email{<henk*opensourcesolutions.nl>}
 	\item Nigel Kukard \email{<nkukard*lbsd.net>}
+	\item Eugene Kurmanin \email{<smfs*users.sourceforge.net>}
 	\item Dr Andrzej Kurpiel \email{<akurpiel*mat.uni.torun.pl>}
 	\item Mark Kushinsky \email{<mark*mdspc.com>}
 	\item Mike Lambert \email{<lambert*jeol.com>}
@@ -2233,6 +2295,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Joe Oaks \email{<joe.oaks*hp.com>}
 	\item Washington Odhiambo \email{<wash*wananchi.com>}
 	\item Masaki Ogawa \email{<proc*mac.com>}
+	\item John Ogness \email{<jogness*antivir.de>}
 	\item Phil Oleson \email{<oz*nixil.net>}
 	\item Jan Ondrej \email{<ondrejj*salstar.sk>}
 	\item Martijn van Oosterhout \email{<kleptog*svana.org>}
@@ -2241,10 +2304,11 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Eric Parsonage \email{<eric*eparsonage.com>}
 	\item Oliver Paukstadt \email{<pstadt*stud.fh-heilbronn.de>}
 	\item Christian Pelissier \email{<Christian.Pelissier*onera.fr>}
-	\item Rudolph Pereira \email{<r.pereira*isu.usyd.edu.au>}
+	\item Rudolph Pereira \email{<rudolph*usyd.edu.au>}
 	\item Ed Phillips \email{<ed*UDel.Edu>}
 	\item Andreas Piesk \email{<Andreas.Piesk*heise.de>}
 	\item Mark Pizzolato \email{<clamav-devel*subscriptions.pizzolato.net>}
+	\item Dean Plant \email{<dean.plant*roke.co.uk>}
 	\item Alex Pleiner \email{<pleiner*zeitform.de>}
 	\item Ant La Porte \email{<ant*dvere.net>}
 	\item Jef Poskanzer \email{<jef*acme.com>}
@@ -2268,6 +2332,8 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Sergey \email{<a\_s\_y*sama.ru>}
 	\item Tuomas Silen \email{<tuomas.silen*nodeta.fi>}
 	\item Al Smith \email{<ajs+clamav*aeschi.ch.eu.org>}
+	\item Sergey Smitienko \email{<hunter*comsys.com.ua>}
+	\item Solar Designer \email{<solar*openwall.com>}
 	\item Kevin Spicer \email{<kevin*kevinspicer.co.uk>}
 	\item Ole Stanstrup \email{<ole*stanstrup.dk>}
 	\item Adam Stein \email{<adam*scan.mc.xerox.com>}
@@ -2288,6 +2354,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Daniel Mario Vega \email{<dv5a*dc.uba.ar>}
 	\item Laurent Wacrenier \email{<lwa*teaser.fr>}
 	\item Charlie Watts \email{<cewatts*brainstorminternet.net>}
+	\item Paul Welsh \email{<paul*welshfamily.com>}
 	\item Nicklaus Wicker \email{<n.wicker*cnk-networks.de>}
 	\item David Woakes \email{<david*mitredata.co.uk>}
 	\item Troy Wollenslegel \email{<troy*intranet.org>}
@@ -2314,6 +2381,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Aaron Begley
 	\item Craig H. Block
 	\item Norman E. Brake, Jr.
+	\item Canadian Web Hosting (\url{http://www.canadianwebhosting.com/})
 	\item cedarcreeksoftware.com (\url{http://www.cedarcreeksoftware.com/})
 	\item Thanos Chatziathanassiou
 	\item Cheahch from Singapore
@@ -2321,6 +2389,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Joe Cooper
 	\item Steve Donegan (\url{http://www.donegan.org/})
 	\item Dynamic Network Services, Inc (\url{http://www.dyndns.org/})
+	\item EAS Enterprises LLC
 	\item Electric Embers (\url{http://electricembers.net})
 	\item Epublica
 	\item Bernhard Erdmann
@@ -2372,6 +2441,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Dan Pelleg
 	\item Thodoris Pitikaris
 	\item Paul Rantin
+	\item Thomas J. Raef (\url{http://www.ebasedsecurity.com})
 	\item Luke Reeves (\url{http://www.neuro-tech.net/})
 	\item RHX (\url{http://www.rhx.it/})
 	\item Stefano Rizzetto
@@ -2385,6 +2455,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Stephane Rault
 	\item Fernando Augusto Medeiros Silva (\url{http://www.linuxplace.com.br/})
 	\item StarBand (\url{http://www.starband.com/})
+	\item Stroke of Color, Inc.
 	\item Synchro Sistemas de Informacao (\url{http://synchro.com.br/})
 	\item Sahil Tandon
 	\item Brad Tarver
@@ -2393,10 +2464,12 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Up Time Technology (\url{http://www.uptimetech.com/})
 	\item Ulfi
 	\item Jeremy Vanderburg (\url{http://www.jeremytech.com/})
+	\item Web.arbyte - Online-Marketing (\url{http://www.webarbyte.de/})
 	\item Webzone Srl (\url{http://www.webzone.it/})
 	\item Markus Welsch (\url{http://www.linux-corner.net/})
 	\item Nicklaus Wicker
 	\item David Williams (\url{http://kayakero.net/})
+	\item Glenn R Williams
     \end{itemize}
 
     \subsection{Graphics}
@@ -2435,6 +2508,9 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Nigel Horne \email{<njh*clamav.net>}, United Kingdom\\
 	Role: coder
 
+	\item Arnaud Jacques \email{<arnaud*clamav.net>}, France\\
+	Role: virus database maintainer
+
 	\item Tomasz Kojm \email{<tkojm*clamav.net>}, Poland\\
 	Role: project leader, coder, virus database maintainer
 
@@ -2445,9 +2521,12 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	Role: virus submission management
 
 	\item Denis De Messemacker \email{<ddm*clamav.net>}, Belgium\\
-	Role: virus database maintainer
+	Role: inactive
 
 	\item Tomasz Papszun \email{<tomek*clamav.net>}, Poland\\
+	Role: virus database maintainer
+
+	\item Sven Strickroth \email{<sven*clamav.net>}, Germany\\
 	Role: virus database maintainer
 
 	\item Trog \email{<trog*clamav.net>}, United Kingdom\\

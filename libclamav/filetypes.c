@@ -173,6 +173,26 @@ static const struct cli_smagic_s cli_smagic[] = {
     {NULL,  NULL,   CL_TYPE_UNKNOWN_DATA}
 };
 
+static char internat[256] = {
+    /* TODO: Remember to buy a beer to Joerg Wunsch <joerg@FreeBSD.ORG> */
+    0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0,  /* 0x0X */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,  /* 0x1X */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0x2X */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0x3X */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0x4X */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0x5X */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0x6X */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,  /* 0x7X */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0x8X */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0x9X */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0xaX */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0xbX */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0xcX */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0xdX */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,  /* 0xeX */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1   /* 0xfX */
+};
+
 cli_file_t cli_filetype(const char *buf, size_t buflen)
 {
 	int i, ascii = 1, len;
@@ -189,7 +209,7 @@ cli_file_t cli_filetype(const char *buf, size_t buflen)
 
     buflen < 25 ? (len = buflen) : (len = 25);
     for(i = 0; i < len; i++)
-	if(!iscntrl(buf[i]) && !isprint(buf[i])) { /* FIXME: handle international chars */
+	if(!iscntrl(buf[i]) && !isprint(buf[i]) && !internat[buf[i] & 0xff]) {
 	    ascii = 0;
 	    break;
 	}
@@ -213,11 +233,11 @@ cli_file_t cli_filetype2(int desc)
 
     if(ret == CL_TYPE_UNKNOWN_DATA || ret == CL_TYPE_UNKNOWN_TEXT) {
 
-	if(!(bigbuff = (unsigned char *) cli_calloc(16384 + 1, sizeof(unsigned char))))
+	if(!(bigbuff = (unsigned char *) cli_calloc(37638 + 1, sizeof(unsigned char))))
 	    return ret;
 
 	lseek(desc, 0, SEEK_SET);
-	if((bread = read(desc, bigbuff, 16384)) > 0) {
+	if((bread = read(desc, bigbuff, 37638)) > 0) {
 
 	    bigbuff[bread] = 0;
 
@@ -230,6 +250,17 @@ cli_file_t cli_filetype2(int desc)
 		    ret = CL_TYPE_POSIX_TAR;
 		    cli_dbgmsg("Recognized POSIX tar file\n");
 		    break;
+	    }
+	}
+
+	if(ret == CL_TYPE_UNKNOWN_DATA || ret == CL_TYPE_UNKNOWN_TEXT) {
+
+	    if(!memcmp(bigbuff + 32769, "CD001" , 5) || !memcmp(bigbuff + 37633, "CD001" , 5)) {
+		cli_dbgmsg("Recognized ISO 9660 CD-ROM data\n");
+		ret = CL_TYPE_DATA;
+	    } else if(!memcmp(bigbuff + 32776, "CDROM" , 5)) {
+		cli_dbgmsg("Recognized High Sierra CD-ROM data\n");
+		ret = CL_TYPE_DATA;
 	    }
 	}
 

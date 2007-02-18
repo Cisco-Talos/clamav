@@ -1,0 +1,14 @@
+#!/bin/sh
+
+CLAMAV_MILTER_FLAGS="-o --max-children=2 local:/var/run/clamav/clmilter.sock"
+
+case "$1" in
+        start)
+                /usr/local/sbin/clamav-milter $CLAMAV_MILTER_FLAGS
+                ;;
+        stop)
+                kill `ps -ef | awk '$NF ~ /clamav-milter/ { print $2 }'` > /dev/null 2>&1
+                ;;
+        *)
+                echo "usage: $0 {start|stop}"
+esac

@@ -48,21 +48,29 @@ Database maintainers:
 
 aCaB <acab*clamav.net>
 
-Christoph Cordes <cc*clamav.net>
-gpg key   : http://www.clamav.net/gpg/ccordes.gpg
+Christoph Cordes <ccordes*clamav.net>
+gpg key: http://www.clamav.net/gpg/ccordes.gpg
 GPG fingerprint = 4C6F F6A5 6034 04B1 1006  A7E1 1F1B 78CE C6DA 0F00
 
 Diego D'Ambra <diego*clamav.net>
-Jason Englander <jason*clamav.net>
+
+Arnaud Jacques <arnaud*clamav.net>
+gpg key: http://www.clamav.net/gpg/arnaud.gpg
+GPG fingerprint = FA30 DAA4 FF52 5C17 8790  E718 9B1C 7189 3B16 A457
+
 Tomasz Kojm <tkojm*clamav.net>
 
 Denis De Messemacker <ddm*clamav.net>
-gpg key   : http://www.clamav.net/gpg/ddm.gpg
+gpg key: http://www.clamav.net/gpg/ddm.gpg
 GPG fingerprint = E697 81BD A912 3F5A 737E  C254 B3B1 F81A 0278 7880
 
 Tomasz Papszun <tomek*clamav.net>
-gpg key	  : http://www.clamav.net/gpg/tomek.gpg
+gpg key: http://www.clamav.net/gpg/tomek.gpg
 GPG fingerprint = F115 0CA4 775D 9898 6F32  0F98 C0C2 2079 C1CA 59EE
+
+Sven Strickroth <sven*clamav.net>
+gpg key: http://www.clamav.net/gpg/sven.gpg
+GPG fingerprint = 70AA EA5A AE06 AB3A 05B6  418D 1646 67A4 F5A9 D4C4
 
 Trog <trog*clamav.net> (macro viruses)
 

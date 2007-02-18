@@ -1,3 +1,68 @@
+Wed Apr 20 02:09:55 CEST 2005
+-----------------------------
+  V 0.84rc2
+  * Fixes backported from CVS:
+    - libclamav/pe.c: Added more machine types (thanks to Christoph) (tk)
+    - libclamav/pe.c: Fixed a typo in FSG detection (reported by Didi Rieder
+		      <adrieder*sbox.tugraz.at>) (acab)
+    - libclamav/mbox.c: Some Sober.N were getting through, thanks to
+			Christoph for pointing this out (njh)
+    - clamav-milter: Fixed a multi-threading problem relating to updating
+                     the database when in internal mode;
+		     Use HAVE_CTIME_R_[23] (njh)
+    - freshclam/manager.c: Pass proper argument to OnErrorExecute (patch by
+                           Alexandre Biancalana <ale*seudns.net>) (tk)
+
+Thu Apr  7 20:00:23 CEST 2005 (tk)
+----------------------------------
+  V 0.84rc1
+
+Thu Apr  7 19:41:09 CEST 2005 (tk)
+----------------------------------
+  * docs: update
+
+Thu Apr  7 17:38:53 BST 2005 (njh)
+----------------------------------
+  * clamav-milter:	Added installation notes about Solaris 10
+			Internal mode: print virus and error information on
+				stdout. This goes to LogFile when not in debug
+				mode.
+			Included patch by Andy Feldt <feldt at nhn.ou.edu> for
+				AIX 5.2. I do not have access to such a machine
+				so any feedback would be helpful
+
+Thu Apr  7 00:46:14 CEST 2005 (tk)
+----------------------------------
+  * libclamav/scanners.c: support ArchiveBlockMax in scan(g|b)zip()
+			  (reported by Rudolph Pereira <rudolph*usyd.edu.au>)
+
+Wed Apr  6 23:58:29 CEST 2005 (tk)
+----------------------------------
+  * clamd/scanner.c: fix possible crash when MaxStreamLength < FILEBUFF
+		     (patch by "Andrey J. Melnikoff (TEMHOTA)" <temnota*kmv.ru>)
+
+Wed Apr  6 16:11:50 CEST 2005 (tk)
+----------------------------------
+  * libclamav/readdb.c: initialise refcount in cli_loadmd()
+
+Tue Apr  5 14:27:32 BST 2005 (trog)
+-----------------------------------
+  * libclamav/vba_extract.c: fix possible crash
+
+Sat Apr  2 22:19:12 BST 2005 (njh)
+----------------------------------
+  * libclamav/tnef.c:	Handle attachments where the data are before the title
+				(bug report and samples thanks to Stefan
+				Kaltenbrunner <stefan at kaltenbrunner.cc>
+
+Tue Mar 29 02:50:30 CEST 2005 (tk)
+----------------------------------
+  * libclamav/filetypes.c: try to detect international text data
+
+Tue Mar 29 02:02:05 CEST 2005 (tk)
+----------------------------------
+  * libclamav/filetypes.c: detect and ignore ISO 9660/High Sierra CD-ROM data
+
 Mon Mar 28 12:05:17 BST 2005 (njh)
 ----------------------------------
  * libclamav:	Added fast track visa technology to files that are not mboxs

@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: blob.c,v 1.39 2005/03/20 09:09:25 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: blob.c,v 1.40 2005/04/04 13:52:46 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -129,7 +129,7 @@ blobGetFilename(const blob *b)
 	return b->name;
 }
 
-void
+int
 blobAddData(blob *b, const unsigned char *data, size_t len)
 {
 #ifdef	HAVE_GETPAGESIZE
@@ -142,7 +142,7 @@ blobAddData(blob *b, const unsigned char *data, size_t len)
 	assert(data != NULL);
 
 	if(len == 0)
-		return;
+		return 0;
 
 	if(b->isClosed) {
 		/*
@@ -183,7 +183,7 @@ blobAddData(blob *b, const unsigned char *data, size_t len)
 		unsigned char *p = cli_realloc(b->data, b->size + growth);
 
 		if(p == NULL)
-			return;
+			return -1;
 
 		b->size += growth;
 		b->data = p;
@@ -199,7 +199,7 @@ blobAddData(blob *b, const unsigned char *data, size_t len)
 		unsigned char *p = cli_realloc(b->data, b->size + (len * 4));
 
 		if(p == NULL)
-			return;
+			return -1;
 
 		b->size += len * 4;
 		b->data = p;
@@ -210,6 +210,7 @@ blobAddData(blob *b, const unsigned char *data, size_t len)
 		memcpy(&b->data[b->len], data, len);
 		b->len += len;
 	}
+	return 0;
 }
 
 unsigned char *
@@ -432,7 +433,7 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 	}
 	if(fb->b.data) {
 		if(fwrite(fb->b.data, fb->b.len, 1, fb->fp) != 1)
-			cli_errmsg("fileblobSetFilename: Can't write to temporary file %s: %s\n", fb->b.name, strerror(errno));
+			cli_errmsg("fileblobSetFilename: Can't write to temporary file %s: %s\n", fullname, strerror(errno));
 		else
 			fb->isNotEmpty = 1;
 		free(fb->b.data);
@@ -441,21 +442,23 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 	}
 }
 
-void
+int
 fileblobAddData(fileblob *fb, const unsigned char *data, size_t len)
 {
 	if(len == 0)
-		return;
+		return 0;
 
 	assert(data != NULL);
 
 	if(fb->fp) {
-		if(fwrite(data, len, 1, fb->fp) != 1)
+		if(fwrite(data, len, 1, fb->fp) != 1) {
 			cli_errmsg("fileblobAddData: Can't write %u bytes to temporary file %s: %s\n", len, fb->b.name, strerror(errno));
-		else
-			fb->isNotEmpty = 1;
-	} else
-		blobAddData(&(fb->b), data, len);
+			return -1;
+		}
+		fb->isNotEmpty = 1;
+		return 0;
+	}
+	return blobAddData(&(fb->b), data, len);
 }
 
 const char *

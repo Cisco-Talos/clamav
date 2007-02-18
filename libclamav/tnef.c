@@ -24,7 +24,7 @@
 #include "clamav-config.h"
 #endif
 
-static	char	const	rcsid[] = "$Id: tnef.c,v 1.12 2005/03/26 18:32:51 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: tnef.c,v 1.14 2005/04/04 13:29:02 nigelhorne Exp $";
 
 #include <stdio.h>
 
@@ -119,6 +119,11 @@ cli_tnef(const char *dir, int desc)
 		switch(i8) {
 			case LVL_MESSAGE:
 				/*cli_dbgmsg("TNEF - found message\n");*/
+				if(fb != NULL) {
+					fileblobDestroy(fb);
+					fb = NULL;
+				}
+				fb = fileblobCreate();
 				if(tnef_message(fp) != 0) {
 					cli_errmsg("Error reading TNEF message\n");
 					ret = CL_EFORMAT;
@@ -206,8 +211,10 @@ tnef_message(FILE *fp)
 			break;
 		case attMSGCLASS:
 			string = cli_malloc(length + 1);
-			if(fread(string, 1, length, fp) != length)
+			if(fread(string, 1, length, fp) != length) {
+				free(string);
 				return -1;
+			}
 			string[length] = '\0';
 			cli_dbgmsg("TNEF class %s\n", string);
 			free(string);
@@ -254,25 +261,26 @@ tnef_attachment(FILE *fp, const char *dir, fileblob **fbref)
 
 	switch(tag) {
 		case attATTACHTITLE:
-			if(*fbref != NULL)
-				fileblobDestroy(*fbref);
-			*fbref = fileblobCreate();
-
-			if(*fbref == NULL)
-				return -1;
 			string = cli_malloc(length + 1);
-
-			if(fread(string, 1, length, fp) != length)
+			if(fread(string, 1, length, fp) != length) {
+				free(string);
 				return -1;
+			}
 			string[length] = '\0';
 			cli_dbgmsg("TNEF filename %s\n", string);
+			if(*fbref == NULL) {
+				*fbref = fileblobCreate();
+				if(*fbref == NULL) {
+					free(string);
+					return -1;
+				}
+			}
 			fileblobSetFilename(*fbref, dir, string);
 			free(string);
 			break;
 		case attATTACHDATA:
 			if(*fbref == NULL) {
 				*fbref = fileblobCreate();
-
 				if(*fbref == NULL)
 					return -1;
 			}

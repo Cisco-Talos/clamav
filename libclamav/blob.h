@@ -40,7 +40,7 @@ void	blobDestroy(blob *b);
 void	blobArrayDestroy(blob *b[], int n);
 void	blobSetFilename(blob *b, const char *dir, const char *filename);
 const	char	*blobGetFilename(const blob *b);
-void	blobAddData(blob *b, const unsigned char *data, size_t len);
+int	blobAddData(blob *b, const unsigned char *data, size_t len);
 unsigned char *blobGetData(const blob *b);
 unsigned	long	blobGetDataSize(const blob *b);
 void	blobClose(blob *b);
@@ -60,7 +60,7 @@ fileblob	*fileblobCreate(void);
 void	fileblobDestroy(fileblob *fb);
 void	fileblobSetFilename(fileblob *fb, const char *dir, const char *filename);
 const	char	*fileblobGetFilename(const fileblob *fb);
-void	fileblobAddData(fileblob *fb, const unsigned char *data, size_t len);
+int	fileblobAddData(fileblob *fb, const unsigned char *data, size_t len);
 void	sanitiseName(char *name);
 
 /* Maximum filenames under various systems */

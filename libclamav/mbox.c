@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-static	char	const	rcsid[] = "$Id: mbox.c,v 1.233 2005/03/28 11:03:14 nigelhorne Exp $";
+static	char	const	rcsid[] = "$Id: mbox.c,v 1.238 2005/04/19 09:20:55 nigelhorne Exp $";
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -188,6 +188,7 @@ static	int	rfc1341(message *m, const char *dir);
 #endif
 static	bool	usefulHeader(int commandNumber, const char *cmd);
 static	void	uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin);
+static	char	*getline(char *buffer, size_t len, FILE *fin);
 #ifdef	NEW_WORLD
 static	const	char	*cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns);
 #endif
@@ -329,6 +330,10 @@ struct scanlist {
  * FIXME: Some mailbox scans are slower with this method. I suspect that it's
  * because the scan can proceed to the end of the file rather than the end
  * of the attachment which can mean than later emails are scanned many times
+ *
+ * TODO: Also all those pmemstr()s are slow, so we need to reduce the number
+ *	and size of data scanned each time, and we fall through to
+ *	cli_parse_mbox() too often
  */
 int
 cli_mbox(const char *dir, int desc, unsigned int options)
@@ -402,8 +407,10 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			scanelem->size = (size_t)(p - q);
 			q = p;
 			s -= scanelem->size;
-		} else
-			s = scanelem->size = (size_t)(last - scanelem->start) + 1;
+		} else {
+			scanelem->size = (size_t)(last - scanelem->start) + 1;
+			break;
+		}
 		cli_dbgmsg("base64: last %u q %u s %u\n", (unsigned int)last, (unsigned int)q, s);
 		assert(scanelem->size <= size);
 		assert(&q[s - 1] <= last);
@@ -411,6 +418,20 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 	q = start;
 	s = size;
 	while((p = (char *)cli_pmemstr(q, s, "quoted-printable", 16)) != NULL) {
+		if(p != q)
+			switch(p[-1]) {
+				case ' ':
+				case ':':
+				case '=':	/* wrong but allow it */
+					break;
+				default:
+					s -= (p - q) + 16;
+					q = &p[16];
+					cli_dbgmsg("Ignore quoted-printable false positive\n");
+					cli_dbgmsg("s = %u\n", s);
+					continue;	/* false positive */
+			}
+
 		cli_dbgmsg("Found quoted-printable\n");
 		if(scanelem) {
 			scanelem->next = cli_malloc(sizeof(struct scanlist));
@@ -428,8 +449,11 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			scanelem->size = (size_t)(p - q);
 			q = p;
 			s -= scanelem->size;
-		} else
-			s = scanelem->size = (size_t)(last - scanelem->start) + 1;
+			cli_dbgmsg("qp: scanelem->size = %u\n", scanelem->size);
+		} else {
+			scanelem->size = (size_t)(last - scanelem->start) + 1;
+			break;
+		}
 		assert(scanelem->size <= size);
 		assert(&q[s - 1] <= last);
 	}
@@ -437,6 +461,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 	if(scanlist == NULL) {
 		const struct tableinit *tableinit;
 		bool anyHeadersFound = FALSE;
+		bool hasuuencode = FALSE;
 
 		/* FIXME: message: There could of course be no decoder needed... */
 		for(tableinit = rfc821headers; tableinit->key; tableinit++)
@@ -445,15 +470,21 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 				break;
 			}
 
+		if((!anyHeadersFound) && cli_pmemstr(start, size, "\nbegin ", 7))
+			/* uuencoded part */
+			hasuuencode = TRUE;
+
 		if(wasAlloced)
 			free(start);
 		else
 			munmap(start, size);
 
-		if(anyHeadersFound) {
-			cli_warnmsg("cli_mbox: unknown encoder\n");
+		if(anyHeadersFound || hasuuencode) {
+			/* TODO: reduce the number of falls through here */
+			cli_warnmsg("cli_mbox: uuencode or unknown encoder\n");
 			return cli_parse_mbox(dir, desc, options);
 		}
+
 		cli_warnmsg("cli_mbox: I believe it's plain text which must be clean\n");
 		return CL_CLEAN;
 	}
@@ -489,7 +520,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 			}
 
 			if(b64size > 0L)
-				while(!isalnum(*b64start)) {
+				while((!isalnum(*b64start)) && (*b64start != '/')) {
 					if(b64size-- == 0L)
 						break;
 					b64start++;
@@ -505,7 +536,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 					return CL_EMEM;
 				messageSetEncoding(m, "base64");
 
-				while(b64size > 0L) {
+				do {
 					int length = 0;
 
 					/*printf("%ld: ", b64size); fflush(stdout);*/
@@ -535,7 +566,8 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 					--b64size;
 					if(strchr(line, '='))
 						break;
-				}
+				} while(b64size > 0L);
+
 				free(line);
 				fb = messageToFileblob(m, dir);
 				messageDestroy(m);
@@ -589,7 +621,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 
 				line = NULL;
 
-				while(quotedsize > 0L) {
+				do {
 					int length = 0;
 
 					/*printf("%ld: ", quotedsize); fflush(stdout);*/
@@ -617,7 +649,8 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 					}
 					quotedstart = ++ptr;
 					--quotedsize;
-				}
+				} while(quotedsize > 0L);
+
 				free(line);
 				fb = messageToFileblob(m, dir);
 				messageDestroy(m);
@@ -650,6 +683,7 @@ cli_mbox(const char *dir, int desc, unsigned int options)
 		return CL_CLEAN;	/* a lie - but it gets things going */
 
 	/* Fall back for now */
+	lseek(desc, 0L, SEEK_SET);
 	return cli_parse_mbox(dir, desc, options);
 }
 #else
@@ -763,8 +797,14 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 #endif
 
 	/*
-	 * is it a UNIX style mbox with more than one
+	 * Is it a UNIX style mbox with more than one
 	 * mail message, or just a single mail message?
+	 *
+	 * TODO: It would be better if we called cli_scandir here rather than
+	 * in cli_scanmail. Then we could improve the way mailboxes with more
+	 * than one message is handled, e.g. stopping parsing when an infected
+	 * message is stopped, and giving a better indication of which message
+	 * within the mailbox is infected
 	 */
 	if(strncmp(buffer, "From ", 5) == 0) {
 		/*
@@ -869,7 +909,7 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 		 * Ignore any blank lines at the top of the message
 		 */
 		while(strchr("\r\n", buffer[0]) &&
-		     (fgets(buffer, sizeof(buffer) - 1, fd) != NULL))
+		     (getline(buffer, sizeof(buffer) - 1, fd) != NULL))
 			;
 
 		buffer[sizeof(buffer) - 1] = '\0';
@@ -938,18 +978,14 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 
 	strcpy(buffer, firstLine);
 	do {
-		const char *start;
+		char *line;
 
 		(void)cli_chomp(buffer);
-		/*
-		 * Ignore leading CR, e.g. if newlines are LFCR instead
-		 * or CRLF
-		 */
-		for(start = buffer; *start == '\r'; start++)
-			;
 
-		if(start[0] == '\0')
-			start = NULL;
+		line = buffer;
+
+		if(line[0] == '\0')
+			line = NULL;
 
 		/*
 		 * Don't blank lines which are only spaces from headers,
@@ -969,7 +1005,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 		if(inHeader) {
 			cli_dbgmsg("parseEmailFile: check '%s' contMarker %d fullline 0x%p\n",
 				buffer ? buffer : "", (int)contMarker, fullline);
-			if(start && isspace(start[0])) {
+			if(line && isspace(line[0])) {
 				char copy[sizeof(buffer)];
 
 				strcpy(copy, buffer);
@@ -1002,7 +1038,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 				}
 			}
 			lastWasBlank = FALSE;
-			if((start == NULL) && (fullline == NULL)) {	/* empty line */
+			if((line == NULL) && (fullline == NULL)) {	/* empty line */
 				if(!contMarker) {
 					/*
 					 * A blank line signifies the end of
@@ -1027,17 +1063,17 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 					/*
 					 * Continuation of line we're ignoring?
 					 */
-					if((start[0] == '\t') || (start[0] == ' ') || contMarker) {
-						contMarker = continuationMarker(start);
+					if((line[0] == '\t') || (line[0] == ' ') || contMarker) {
+						contMarker = continuationMarker(line);
 						continue;
 					}
 
 					/*
 					 * Is this a header we're interested in?
 					 */
-					if((strchr(start, ':') == NULL) ||
-					   (cli_strtokbuf(start, 0, ":", cmd) == NULL)) {
-						if(strncmp(start, "From ", 5) == 0)
+					if((strchr(line, ':') == NULL) ||
+					   (cli_strtokbuf(line, 0, ":", cmd) == NULL)) {
+						if(strncmp(line, "From ", 5) == 0)
 							anyHeadersFound = TRUE;
 						continue;
 					}
@@ -1056,16 +1092,16 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 								anyHeadersFound = usefulHeader(commandNumber, cmd);
 							continue;
 					}
-					fullline = strdup(start);
-					fulllinelength = strlen(start) + 1;
-				} else if(start != NULL) {
-					fulllinelength += strlen(start);
+					fullline = strdup(line);
+					fulllinelength = strlen(line) + 1;
+				} else if(line != NULL) {
+					fulllinelength += strlen(line);
 					fullline = cli_realloc(fullline, fulllinelength);
-					strcat(fullline, start);
+					strcat(fullline, line);
 				}
 
-				if(start) {
-					contMarker = continuationMarker(start);
+				if(line) {
+					contMarker = continuationMarker(line);
 
 					if(contMarker)
 						continue;
@@ -1089,7 +1125,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 						continue;
 				}
 
-				if(start) {
+				if(line) {
 					int quotes = 0;
 					for(qptr = fullline; *qptr; qptr++)
 						if(*qptr == '\"')
@@ -1111,16 +1147,16 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 				free(fullline);
 				fullline = NULL;
 			}
-		} else if(start && isuuencodebegin(start))
+		} else if(line && isuuencodebegin(line))
 			/*
 			 * Fast track visa to uudecode.
 			 * TODO: binhex, yenc
 			 */
-			uufasttrack(ret, start, dir, fin);
+			uufasttrack(ret, line, dir, fin);
 		else
-			if(messageAddStr(ret, start) < 0)
+			if(messageAddStr(ret, line) < 0)
 				break;
-	} while(fgets(buffer, sizeof(buffer) - 1, fin) != NULL);
+	} while(getline(buffer, sizeof(buffer) - 1, fin) != NULL);
 
 	if(fullline) {
 		if(*fullline) switch(commandNumber) {
@@ -1382,6 +1418,7 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 
 /*
  * This is a recursive routine.
+ * FIXME: We are not passed &mrec so we can't check against MAX_MAIL_RECURSION
  *
  * This function parses the body of mainMessage and saves its attachments in dir
  *
@@ -1984,6 +2021,9 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 
 					switch(messageGetMimeType(aMessage)) {
 					case APPLICATION:
+					case AUDIO:
+					case IMAGE:
+					case VIDEO:
 						break;
 					case NOMIME:
 						cli_dbgmsg("No mime headers found in multipart part %d\n", i);
@@ -2161,10 +2201,6 @@ parseEmailBody(message *messageIn, text *textIn, const char *dir, const table_t 
 							mainMessage = NULL;
 						}
 						continue;
-					case AUDIO:
-					case IMAGE:
-					case VIDEO:
-						break;
 					default:
 						cli_warnmsg("Only text and application attachments are supported, type = %d\n",
 							messageGetMimeType(aMessage));
@@ -3622,6 +3658,9 @@ getURL(struct arg *arg)
 	const char *dir = arg->dir;
 	const char *filename = arg->filename;
 	char fout[NAME_MAX + 1];
+#ifdef	CURLOPT_ERRORBUFFER
+	char errorbuffer[128];
+#endif
 
 #ifdef	CL_THREAD_SAFE
 	pthread_mutex_lock(&init_mutex);
@@ -3698,6 +3737,10 @@ getURL(struct arg *arg)
 	 */
 	curl_easy_setopt(curl, CURLOPT_USERPWD, "username:password");
 
+#ifdef	CURLOPT_ERRORBUFFER
+	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errorbuffer);
+#endif
+
 	/*
 	 * FIXME: valgrind reports "pthread_mutex_unlock: mutex is not locked"
 	 * from gethostbyaddr_r within this. It may be a bug in libcurl
@@ -3713,8 +3756,13 @@ getURL(struct arg *arg)
 	 *	https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=139559
 	 */
 
-	if(curl_easy_perform(curl) != CURLE_OK)
+	if(curl_easy_perform(curl) != CURLE_OK) {
+#ifdef	CURLOPT_ERRORBUFFER
+		cli_warnmsg("URL %s failed to download: %s\n", url, errorbuffer);
+#else
 		cli_warnmsg("URL %s failed to download\n", url);
+#endif
+	}
 
 	fclose(fp);
 	curl_slist_free_all(headers);
@@ -3790,7 +3838,8 @@ usefulHeader(int commandNumber, const char *cmd)
 }
 
 /*
- * Save the uuencoded part of the file as it is read in
+ * Save the uuencoded part of the file as it is read in since there's no need
+ * to include it in the parse tree. Saves memory and parse time.
  */
 static void
 uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin)
@@ -3800,7 +3849,7 @@ uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin)
 	char *filename = cli_strtok(firstline, 2, " ");
 
 	fileblobSetFilename(fb, dir, filename);
-	cli_dbgmsg("Fast track uuencode %s\n", filename);
+	cli_dbgmsg("Fast track uudecode %s\n", filename);
 	free(filename);
 
 	while(fgets(buffer, sizeof(buffer) - 1, fin) != NULL) {
@@ -3822,10 +3871,67 @@ uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin)
 		if((len > 62) || (len == 0))
 			break;
 
-		fileblobAddData(fb, data, len);
+		if(fileblobAddData(fb, data, len) < 0)
+			break;
 	}
 
 	fileblobDestroy(fb);
+}
+
+/*
+ * Like fgets but cope with end of line by "\n", "\r\n", "\n\r", "\r"
+ */
+static char *
+getline(char *buffer, size_t len, FILE *fin)
+{
+	char *ret;
+
+	if(feof(fin))
+		return NULL;
+
+	if((len == 0) || (buffer == NULL)) {
+		cli_errmsg("Invalid call to getline(). Report to bugs@clamav.net\n");
+		return NULL;
+	}
+
+	ret = buffer;
+
+	do {
+		int c = getc(fin);
+
+		if(ferror(fin))
+			return NULL;
+
+		switch(c) {
+			case '\n':
+				*buffer++ = '\n';
+				c = getc(fin);
+				if((c != '\r') && !feof(fin))
+					ungetc(c, fin);
+				break;
+			default:
+				*buffer++ = c;
+				continue;
+			case EOF:
+				break;
+			case '\r':
+				*buffer++ = '\n';
+				c = getc(fin);
+				if((c != '\n') && !feof(fin))
+					ungetc(c, fin);
+				break;
+		}
+		break;
+	} while(--len > 0);
+
+	if(len == 0) {
+		/* probably, the email breaks RFC821 */
+		cli_dbgmsg("getline: buffer overflow stopped\n");
+		return NULL;
+	}
+	*buffer = '\0';
+
+	return ret;
 }
 
 #ifdef	NEW_WORLD
