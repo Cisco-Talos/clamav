@@ -480,6 +480,7 @@ zip_file *zip_file_open(zip_dir *dir, const char *name, int d_off)
 	    switch (hdr->d_compr) {
 		case ZIP_METHOD_STORED:
 		case ZIP_METHOD_DEFLATED:
+		case ZIP_METHOD_DEFLATED64:
 		    break;
 
 		case ZIP_METHOD_SHRUNK:
@@ -489,7 +490,6 @@ zip_file *zip_file_open(zip_dir *dir, const char *name, int d_off)
 		case ZIP_METHOD_REDUCEDx4:
 		case ZIP_METHOD_IMPLODED:
 		case ZIP_METHOD_TOKENIZED:
-		case ZIP_METHOD_DEFLATED64:
 		case ZIP_METHOD_IMPLODED_DCL:
 		case ZIP_METHOD_BZIP2:
 		case ZIP_METHOD_AES:
@@ -613,6 +613,7 @@ ssize_t zip_file_read(zip_file *fp, char *buf, size_t len)
 	    return bread;
 
 	case ZIP_METHOD_DEFLATED:
+	case ZIP_METHOD_DEFLATED64:
 	    fp->d_stream.avail_out = l;
 	    fp->d_stream.next_out = (unsigned char *) buf;
 	    do {
@@ -641,7 +642,12 @@ ssize_t zip_file_read(zip_file *fp, char *buf, size_t len)
 		    if(ret == Z_OK) {
 			fp->restlen -= (fp->d_stream.total_out - startlen);
 		    } else {
-			dir->errcode = CL_EZIP;
+			if(fp->method == ZIP_METHOD_DEFLATED64) {
+			    cli_dbgmsg("Unzip: zip_file_read: Not supported compression method (%u)\n", fp->method);
+			    dir->errcode = CL_ESUPPORT;
+			} else {
+			    dir->errcode = CL_EZIP;
+			}
 			return -1;
 		    }
 		}

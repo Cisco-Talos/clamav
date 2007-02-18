@@ -1,7 +1,13 @@
+Sun Feb 18 15:03:37 CET 2007 (tk)
+---------------------------------
+  * libclamav/unzip.c: handle some deflate64 compressed files
+
 Sat Feb 17 11:20:17 CET 2007 (edwin)
+------------------------------------
   * libclamav/entconv.c: Don't normalize buffer shorter than 2 bytes.
 
 Sat Feb 17 11:20:17 CET 2007 (edwin)
+------------------------------------
   * libclamav/rtf.c: Fix possible memory leak, and add more sanity checks.
 
 Sat Feb 17 02:34:17 CET 2007 (acab)
