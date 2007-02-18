@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Famuko</TITLE>
-<META NAME="description" CONTENT="Famuko">
+<TITLE>Dazuko</TITLE>
+<META NAME="description" CONTENT="Dazuko">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -21,51 +21,59 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node105.html">
 <LINK REL="previous" HREF="node103.html">
-<LINK REL="up" HREF="node102.html">
+<LINK REL="up" HREF="node103.html">
 <LINK REL="next" HREF="node105.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1933"
+<A NAME="tex2html1946"
   HREF="node105.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html1929"
-  HREF="node102.html">
+<A NAME="tex2html1942"
+  HREF="node103.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html1923"
+<A NAME="tex2html1936"
   HREF="node103.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html1931"
+<A NAME="tex2html1944"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1934"
-  HREF="node105.html">OpenAntiVirus samba-vscan</A>
-<B> Up:</B> <A NAME="tex2html1930"
-  HREF="node102.html">Filesystem + ClamAV</A>
-<B> Previous:</B> <A NAME="tex2html1924"
-  HREF="node103.html">Dazuko</A>
- &nbsp <B>  <A NAME="tex2html1932"
+<B> Next:</B> <A NAME="tex2html1947"
+  HREF="node105.html">Famuko</A>
+<B> Up:</B> <A NAME="tex2html1943"
+  HREF="node103.html">Filesystem + ClamAV</A>
+<B> Previous:</B> <A NAME="tex2html1937"
+  HREF="node103.html">Filesystem + ClamAV</A>
+ &nbsp <B>  <A NAME="tex2html1945"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00094200000000000000">
-Famuko</A>
+<H3><A NAME="SECTION00094100000000000000">
+Dazuko</A>
 </H3>
     <B>Homepage:</B> <TT><A NAME="tex2html103"
-  HREF="http://www.campana.vi.it/ottavio/Progetti/Famuko/">http://www.campana.vi.it/ottavio/Progetti/Famuko/</A></TT>
-<BR>    <B>Supports:</B> libclamav
+  HREF="http://www.dazuko.org/">http://www.dazuko.org/</A></TT>
+<BR>    <B>Supports:</B> clamuko
 <BR>
-Famuko is an on-access scanner based on libfam and working in a userspace.
+This project provides a kernel module, which provides 3d-party applications
+    an interface for file access control. It was originally developed by H+BEDV
+    Datentechnik GmbH to be used for on-access virus scanning. Other uses
+    include a file-access monitor/logger or external security implementations.
+    It operates by intercepting file-access calls and passing the file
+    information to a 3rd-party application. The 3rd-party application then has
+    the opportunity to tell the kernel module to allow or deny the file-access.
+    The 3rd-party application also receives information about the file, type
+    of access, process id, and user id.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2005-05-11
+2005-06-19
 </ADDRESS>
 </BODY>
 </HTML>

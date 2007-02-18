@@ -18,11 +18,11 @@ dnl   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 AC_INIT(clamscan/clamscan.c)
 AC_CREATE_TARGET_H(target.h)
-AM_INIT_AUTOMAKE(clamav, "0.86rc1")
+AM_INIT_AUTOMAKE(clamav, "0.86")
 AM_CONFIG_HEADER(clamav-config.h)
 
 LC_CURRENT=1
-LC_REVISION=13
+LC_REVISION=14
 LC_AGE=0
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 AC_SUBST(LIBCLAMAV_VERSION)
@@ -172,14 +172,16 @@ if test "$have_milter" = "yes"; then
   AC_DEFINE_UNQUOTED(SENDMAIL_BIN, "$sendmailprog", [location of Sendmail binary])
 
   sendmailver=`$sendmailprog -d0 < /dev/null | head -1 | awk '{print $2}'`
-  sendmailver_a=`echo $sendmailver | awk -F. '{printf $1}'`
-  sendmailver_b=`echo $sendmailver | awk -F. '{printf $2}'`
-  sendmailver_c=`echo $sendmailver | awk -F. '{printf $3}'`
 
-  AC_DEFINE_UNQUOTED(SENDMAIL_VERSION_A, $sendmailver_a, [major version of Sendmail])
-  AC_DEFINE_UNQUOTED(SENDMAIL_VERSION_B, $sendmailver_b, [minor version of Sendmail])
-  AC_DEFINE_UNQUOTED(SENDMAIL_VERSION_C, $sendmailver_c, [subversion of Sendmail])
+  if test -n "$sendmailver"; then
+    sendmailver_a=`echo $sendmailver | awk -F. '{printf $1}'`
+    sendmailver_b=`echo $sendmailver | awk -F. '{printf $2}'`
+    sendmailver_c=`echo $sendmailver | awk -F. '{printf $3}'`
 
+    AC_DEFINE_UNQUOTED(SENDMAIL_VERSION_A, $sendmailver_a, [major version of Sendmail])
+    AC_DEFINE_UNQUOTED(SENDMAIL_VERSION_B, $sendmailver_b, [minor version of Sendmail])
+    AC_DEFINE_UNQUOTED(SENDMAIL_VERSION_C, $sendmailver_c, [subversion of Sendmail])
+  fi
 fi
 
 AC_ARG_ENABLE(dsig,

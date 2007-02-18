@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Web/FTP Proxy + ClamAV</TITLE>
-<META NAME="description" CONTENT="Web/FTP Proxy + ClamAV">
+<TITLE>pop3.proxy</TITLE>
+<META NAME="description" CONTENT="pop3.proxy">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,73 +19,59 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node102.html">
-<LINK REL="previous" HREF="node88.html">
-<LINK REL="up" HREF="node47.html">
+<LINK REL="previous" HREF="node91.html">
+<LINK REL="up" HREF="node89.html">
 <LINK REL="next" HREF="node93.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html1779"
+<A NAME="tex2html1792"
   HREF="node93.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html1775"
-  HREF="node47.html">
+<A NAME="tex2html1788"
+  HREF="node89.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html1769"
+<A NAME="tex2html1784"
   HREF="node91.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html1777"
+<A NAME="tex2html1790"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html1780"
-  HREF="node93.html">DansGuardian Anti-Virus Patch</A>
-<B> Up:</B> <A NAME="tex2html1776"
-  HREF="node47.html">Third party software</A>
-<B> Previous:</B> <A NAME="tex2html1770"
-  HREF="node91.html">pop3.proxy</A>
- &nbsp <B>  <A NAME="tex2html1778"
+<B> Next:</B> <A NAME="tex2html1793"
+  HREF="node93.html">Web/FTP Proxy + ClamAV</A>
+<B> Up:</B> <A NAME="tex2html1789"
+  HREF="node89.html">MTA + POP3 Proxy</A>
+<B> Previous:</B> <A NAME="tex2html1785"
+  HREF="node91.html">POP3 Virus Scanner Daemon</A>
+ &nbsp <B>  <A NAME="tex2html1791"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00093000000000000000">
-<I>Web/FTP Proxy + ClamAV</I></A>
-</H2>
+<H3><A NAME="SECTION00092300000000000000">
+pop3.proxy</A>
+</H3>
+    <B>Homepage:</B> <TT><A NAME="tex2html93"
+  HREF="http://quietsche-entchen.de/cgi-bin/wiki.cgi/proxies/Pop3Proxy">http://quietsche-entchen.de/cgi-bin/wiki.cgi/proxies/Pop3Proxy</A></TT>
+<BR>    <B>Supports:</B> clamd
+<BR>
+pop3.proxy is a proxy server for the POP3 protocol. Usually it's used on
+     a firewall between a client and a POP3 server taking care that both sides
+     talk POP3 protocol as described in RFC 1939. There are some additional
+     features beside normal proxying. pop3.proxy can grant or deny access
+     based on an external access control program which receives some POP3
+     session information. pop3.proxy can also feed e-mails into a local
+     ClamAV daemon checking the e-mails for viruses before passing them to
+     the client. 
 
 <P>
 <BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
-
-<UL>
-<LI><A NAME="tex2html1781"
-  HREF="node93.html">DansGuardian Anti-Virus Patch</A>
-<LI><A NAME="tex2html1782"
-  HREF="node94.html">Frox</A>
-<LI><A NAME="tex2html1783"
-  HREF="node95.html">HTTP Anti Virus Proxy</A>
-<LI><A NAME="tex2html1784"
-  HREF="node96.html">Frox</A>
-<LI><A NAME="tex2html1785"
-  HREF="node97.html">mod_clamav</A>
-<LI><A NAME="tex2html1786"
-  HREF="node98.html">SafeSquid</A>
-<LI><A NAME="tex2html1787"
-  HREF="node99.html">SquidClamAV Redirector</A>
-<LI><A NAME="tex2html1788"
-  HREF="node100.html">Squidclam</A>
-<LI><A NAME="tex2html1789"
-  HREF="node101.html">Viralator</A>
-</UL>
-<!--End of Table of Child-Links-->
-<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2005-05-11
+2005-06-19
 </ADDRESS>
 </BODY>
 </HTML>

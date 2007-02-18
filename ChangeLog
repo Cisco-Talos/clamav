@@ -1,7 +1,8 @@
-Mon Jun 13 23:21:00 CEST 2005
+Sun Jun 19 21:37:07 CEST 2005
 -----------------------------
-  V 0.86rc1
+  V 0.86
   * Fixes backported from CVS:
+    - libclamav/mspack/cabd.c: fix possible infinite loop (tk)
     - libclamav/cvd.c: fix potential directory traversal in cvd unpacker (a low
       risk problem since all databases are digitally signed). Pointed out by
       Florian Weimer <fw*deneb.enyo.de> (tk)

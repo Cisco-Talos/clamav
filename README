@@ -2,13 +2,12 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
-0.86rc1
--------
+0.86
+----
 
-This release candidate introduces a number of bugfixes and cleanups.
-Possible descriptor leaks in archive unpackers and mishandling of fast track
-uuencoded files have been fixed in libclamav. Database reloading in
-clamav-milter has been improved.
+This release introduces a number of bugfixes and cleanups. Possible descriptor
+leaks in archive unpackers and mishandling of fast track uuencoded files have
+been fixed in libclamav. Database reloading in clamav-milter has been improved.
 
 --
 The ClamAV team (http://www.clamav.net/team.html)
