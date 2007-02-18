@@ -1021,7 +1021,7 @@ Optional Features:
   --disable-bzip2	  disable bzip2 support
   --disable-dns           disable support for database verification through
                           DNS
-  --disable-clamuko	  disable clamuko support (Linux and FreeBSD only)
+  --disable-clamuko	  disable clamuko support (Linux, DragonFly and FreeBSD only)
   --enable-milter	  build clamav-milter
   --disable-dsig	  disable support for digital signatures
   --disable-pthreads      disable POSIX threads support
@@ -1042,7 +1042,7 @@ Optional Packages:
   --with-zlib=DIR	  path to directory containing zlib library (default=
 			  /usr/local or /usr if not found in /usr/local)
   --with-sendmail=PATH    specify location of Sendmail binary (default=auto find)
-  --with-libcurl	  support URLs downloading with libcurl (default=auto)
+  --with-libcurl	  support URLs downloading with libcurl (default=no)
   --with-user=uid	  name of the clamav user (default=clamav)
   --with-group=gid	  name of the clamav group (default=clamav)
   --with-dbdir=path	  path to virus database directory
@@ -2073,7 +2073,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=clamav
- VERSION="0.86.1"
+ VERSION="0.86.2"
 
 
 cat >>confdefs.h <<_ACEOF
@@ -2207,7 +2207,7 @@ am__tar='${AMTAR} chof - "$$tardir"'; am__untar='${AMTAR} xf -'
 
 
 LC_CURRENT=1
-LC_REVISION=15
+LC_REVISION=16
 LC_AGE=0
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 
@@ -11381,7 +11381,7 @@ echo "$as_me: error: --with-libcurl does not take an argument" >&2;}
    { (exit 1); exit 1; }; } ;;
   esac
 else
-   lcurl=auto
+   lcurl=no
 fi;
 
 if test "$lcurl" != "no"
@@ -11400,7 +11400,11 @@ echo $ECHO_N "checking for curl >= $check... $ECHO_C" >&6
 
 	if test x$fail != x1; then
 	    curl_libs=`curl-config --libs`
-	    LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $curl_libs"
+	    # openssl libs are required to link libcurl
+	    openssl_libs="`pkg-config --libs openssl`"
+	    curl_flags=`curl-config --cflags`
+	    LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $curl_libs $openssl_libs"
+	    CPPFLAGS="$CPPFLAGS -I$ZLIB_HOME/include $curl_flags"
 	    my_cv_curl_vers="$ver"
 	    echo "$as_me:$LINENO: result: $my_cv_curl_vers" >&5
 echo "${ECHO_T}$my_cv_curl_vers" >&6
@@ -11792,6 +11796,37 @@ freebsd*)
 	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread -lc_r"
 	CLAMD_LIBS="$CLAMD_LIBS -pthread -lc_r"
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread -lc_r"
+	TH_SAFE="-thread-safe"
+
+cat >>confdefs.h <<\_ACEOF
+#define CL_THREAD_SAFE 1
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define _REENTRANT 1
+_ACEOF
+
+	if test "$want_clamuko" = "yes"; then
+
+cat >>confdefs.h <<\_ACEOF
+#define CLAMUKO 1
+_ACEOF
+
+	fi
+    fi
+
+cat >>confdefs.h <<\_ACEOF
+#define C_BSD 1
+_ACEOF
+
+    use_gethostbyname_r="no"
+    ;;
+dragonfly*)
+    if test "$have_pthreads" = "yes"; then
+	LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -pthread"
+	CLAMD_LIBS="$CLAMD_LIBS -pthread"
+	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread"
 	TH_SAFE="-thread-safe"
 
 cat >>confdefs.h <<\_ACEOF

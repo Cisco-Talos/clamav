@@ -137,6 +137,17 @@ int clamscan(struct optstruct *opt)
 	    return 40;
 	}
 
+    if(optl(opt, "max-dir-recursion"))
+	if(!isnumb(getargl(opt, "max-dir-recursion"))) {
+	    logg("!--max-dir-recursion requires natural number.\n");
+	    return 40;
+	}
+
+    if(optl(opt, "max-ratio"))
+	if(!isnumb(getargl(opt, "max-ratio"))) {
+	    logg("!--max-ratio requires natural number.\n");
+	    return 40;
+	}
 
     time(&starttime);
     /* ctime() does \n, but I need it once more */
@@ -237,8 +248,9 @@ void help(void)
     mprintf("    --detect-broken                      Try to detect broken executable files\n");
     mprintf("    --block-encrypted                    Block encrypted archives\n");
     mprintf("    --block-max                          Block archives that exceed limits\n");
+#ifdef WITH_CURL
     mprintf("    --mail-follow-urls                   Download and scan URLs\n");
-
+#endif
     mprintf("\n");
     mprintf("    --max-space=#n                       Only extract first #n kilobytes from\n");
     mprintf("                                         archived files\n");

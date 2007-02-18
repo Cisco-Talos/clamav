@@ -1,7 +1,9 @@
-0.86.1
+0.86.2
 ------
 
-A possible crash in the libmspack's Quantum decompressor has been fixed.
+Changes in this release include fixes for three possible integer overflows
+in libclamav, improved scanning of Cabinet and FSG compressed files, better
+database handling in clamav-milter, and others.
 
 --
 The ClamAV team (http://www.clamav.net/team.html)

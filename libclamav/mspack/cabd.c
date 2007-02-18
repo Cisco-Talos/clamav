@@ -1264,7 +1264,7 @@ static int cabd_sys_read(struct mspack_file *file, void *buffer, int bytes) {
       /* check if we're out of input blocks, advance block counter */
       if (this->d->block++ >= this->d->folder->base.num_blocks) {
 	this->error = MSPACK_ERR_DATAFORMAT;
-	return -1;
+	break;
       }
 
       /* read a block */

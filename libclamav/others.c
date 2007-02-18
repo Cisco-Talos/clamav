@@ -306,7 +306,7 @@ void *cli_malloc(size_t size)
 	void *alloc;
 
 
-    if(size > MAX_ALLOCATION) {
+    if(!size || size > MAX_ALLOCATION) {
 	cli_errmsg("Attempt to allocate %d bytes. Please report to bugs@clamav.net\n", size);
 	return NULL;
     }
@@ -326,7 +326,7 @@ void *cli_calloc(size_t nmemb, size_t size)
 	void *alloc;
 
 
-    if(size > MAX_ALLOCATION) {
+    if(!size || size > MAX_ALLOCATION) {
 	cli_errmsg("Attempt to allocate %d bytes. Please report to bugs@clamav.net\n", size);
 	return NULL;
     }
@@ -345,6 +345,11 @@ void *cli_realloc(void *ptr, size_t size)
 {
 	void *alloc;
 
+
+    if(!size || size > MAX_ALLOCATION) {
+	cli_errmsg("Attempt to allocate %d bytes. Please report to bugs@clamav.net\n", size);
+	return NULL;
+    }
 
     alloc = realloc(ptr, size);
 
@@ -449,6 +454,11 @@ int cli_rmdirs(const char *dirname)
     if((dd = opendir(dirname)) != NULL) {
 	while(stat(dirname, &maind) != -1) {
 	    if(!rmdir(dirname)) break;
+	    if(errno != ENOTEMPTY && errno != EEXIST) {
+		cli_errmsg("Can't remove temporary directory %s: %s\n", dirname, strerror(errno));
+		closedir(dd);
+		return 0;
+	    }
 
 #ifdef HAVE_READDIR_R_3
 	    while(!readdir_r(dd, &result.d, &dent) && dent) {

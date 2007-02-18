@@ -1,3 +1,41 @@
+Sun Jul 24 23:57:42 CEST 2005
+-----------------------------
+  V 0.86.2
+  * Fixes backported from CVS:
+    - configure.in: disable support for URLs downloading with libcurl
+      (--with-libcurl) by default (tk)
+    - libclamav/others.c: cli_rmdirs: fix possible infinite loop (tk)
+      Patch by Mark Pizzolato <clamav-devel*subscriptions.pizzolato.net>
+    - libclamav/mspack: Some cab archives were not properly decompressed (tk)
+      Problem reported by Diego d'Ambra <diego*clamav.net>
+    - libclamav/pe.c: cli_peheader: Sync entry point calculation with
+      cli_scanpe (tk)
+      Problem reported by Christoph Cordes <ccordes*clamav.net>
+    - configure.in: fix compilation error when curl is installed in
+      a non-standard location (tk)
+      Reported by Serge van den Boom <svdb*stack.nl>
+    - configure.in: Add support for DragonFly (tk)
+      Thanks to Joerg Sonnenberger <joerg*britannica.bec.de>
+    - clamscan/clamscan.c: Verify arguments passed to --max-dir-recursion and
+      --max-ratio (tk)
+      Problem reported by Jo Mills <Jonathan.Mills*frequentis.com>
+    - libclamav/fsg.c: Fix possible integer overflow (acab)
+      Reported by Alex Wheeler.
+    - libclamav/mbox.c: Fix name clash with glibc library (njh)
+      Reported by Brian Bruns <bruns at 2mbit.com>
+    - libclamav/others.c: Check for 0 byte allocations in cli_(m|c|re)alloc (tk)
+    - libclamav/chmunpack.c: Fix possible malloc overflow (trog)
+      Reported by Alex Wheeler.
+    - libclamav/tnef.c: Fix possible crash if the length field is 0 or negative
+      in headers (njh)
+      Reported by Alex Wheeler (alexbling at gmail.com)
+    - clamav-milter: Honour LogClean. Only syslog once when storing email in
+      quarantine (reported by Panagiotis Christias, christias at gmail.com).
+      Log database reloads to the LogFile (njh)
+    - clamav-milter: Changed the default child_timeout to 5 minutes. Keep a
+      copy of the trie root in privdata. Removed trylock/unlock code in
+      clamfi_abort (njh)
+
 Thu Jun 23 23:13:41 CEST 2005
 -----------------------------
   V 0.86.1

@@ -188,7 +188,7 @@ static	int	rfc1341(message *m, const char *dir);
 #endif
 static	bool	usefulHeader(int commandNumber, const char *cmd);
 static        int     uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin);
-static	char	*getline(char *buffer, size_t len, FILE *fin);
+static	char	*getline_from_mbox(char *buffer, size_t len, FILE *fin);
 #ifdef	NEW_WORLD
 static	const	char	*cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns);
 #endif
@@ -911,7 +911,7 @@ cli_parse_mbox(const char *dir, int desc, unsigned int options)
 		 * Ignore any blank lines at the top of the message
 		 */
 		while(strchr("\r\n", buffer[0]) &&
-		     (getline(buffer, sizeof(buffer) - 1, fd) != NULL))
+		     (getline_from_mbox(buffer, sizeof(buffer) - 1, fd) != NULL))
 			;
 
 		buffer[sizeof(buffer) - 1] = '\0';
@@ -1160,7 +1160,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 		} else
 			if(messageAddStr(ret, line) < 0)
 				break;
-	} while(getline(buffer, sizeof(buffer) - 1, fin) != NULL);
+	} while(getline_from_mbox(buffer, sizeof(buffer) - 1, fin) != NULL);
 
 	if(fullline) {
 		if(*fullline) switch(commandNumber) {
@@ -3891,7 +3891,7 @@ uufasttrack(message *m, const char *firstline, const char *dir, FILE *fin)
  * Like fgets but cope with end of line by "\n", "\r\n", "\n\r", "\r"
  */
 static char *
-getline(char *buffer, size_t len, FILE *fin)
+getline_from_mbox(char *buffer, size_t len, FILE *fin)
 {
 	char *ret;
 
@@ -3899,7 +3899,7 @@ getline(char *buffer, size_t len, FILE *fin)
 		return NULL;
 
 	if((len == 0) || (buffer == NULL)) {
-		cli_errmsg("Invalid call to getline(). Report to bugs@clamav.net\n");
+		cli_errmsg("Invalid call to getline_from_mbox(). Report to bugs@clamav.net\n");
 		return NULL;
 	}
 
@@ -3935,7 +3935,7 @@ getline(char *buffer, size_t len, FILE *fin)
 
 	if(len == 0) {
 		/* probably, the email breaks RFC821 */
-		cli_dbgmsg("getline: buffer overflow stopped\n");
+		cli_dbgmsg("getline_from_mbox: buffer overflow stopped\n");
 		return NULL;
 	}
 	*buffer = '\0';

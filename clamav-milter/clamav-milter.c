@@ -196,7 +196,7 @@ static const struct cidr_net {
 };
 
 /*
- * Each thread has one of these
+ * Each libmilter thread has one of these
  */
 struct	privdata {
 	char	*from;	/* Who sent the message */
@@ -226,6 +226,7 @@ struct	privdata {
 				 */
 	int	statusCount;	/* number of X-Virus-Status headers */
 	int	serverNumber;	/* Index into serverIPs */
+	struct  cl_node *root; /* database of viruses used to scan this one */
 };
 
 #ifdef	SESSION
@@ -372,7 +373,7 @@ static	pthread_mutex_t	n_children_mutex = PTHREAD_MUTEX_INITIALIZER;
 static	pthread_cond_t	n_children_cond = PTHREAD_COND_INITIALIZER;
 static	volatile	unsigned	int	n_children = 0;
 static	unsigned	int	max_children = 0;
-static	int	child_timeout = 0;	/* number of seconds to wait for
+static	int	child_timeout = 300;	/* number of seconds to wait for
 					 * a child to die. Set to 0 to
 					 * wait forever
 					 */
@@ -2578,22 +2579,25 @@ clamfi_eom(SMFICTX *ctx)
 	if(!external) {
 		const char *virname;
 		unsigned long int scanned = 0L;
-		struct cl_node *scanning_root;
 
 		/*
 		 * TODO: consider using cl_scandesc and not using a temporary
 		 *	file from the mail being read in
 		 */
 		pthread_mutex_lock(&root_mutex);
-		scanning_root = cl_dup(root);
+		privdata->root = cl_dup(root);
 		pthread_mutex_unlock(&root_mutex);
-		if(scanning_root == NULL) {
-			cli_errmsg("scanning_root == NULL\n");
+		if(privdata->root == NULL) {
+			cli_errmsg("privdata->root == NULL\n");
 			clamfi_cleanup(ctx);
 			return cl_error;
 		}
-		switch(cl_scanfile(privdata->filename, &virname, &scanned, scanning_root, &limits, options)) {
+		switch(cl_scanfile(privdata->filename, &virname, &scanned, privdata->root, &limits, options)) {
 			case CL_CLEAN:
+				if(logClean) {
+					snprintf(mess, sizeof(mess), "%s: OK", privdata->filename);
+					logger(mess);
+				}
 				strcpy(mess, "OK");
 				break;
 			case CL_VIRUS:
@@ -2605,7 +2609,8 @@ clamfi_eom(SMFICTX *ctx)
 				logger(mess);
 				break;
 		}
-		cl_free(scanning_root);
+		cl_free(privdata->root);
+		privdata->root = NULL;
 
 #ifdef	SESSION
 		session = NULL;
@@ -2896,9 +2901,6 @@ clamfi_eom(SMFICTX *ctx)
 			free(err);
 		}
 
-		if(quarantine_dir != NULL)
-			qfile(privdata, sendmailId, virusname);
-
 		if(!qflag) {
 			char cmd[128];
 			FILE *sendmail;
@@ -3015,8 +3017,8 @@ clamfi_eom(SMFICTX *ctx)
 		}
 
 		if(quarantine_dir) {
-			if(use_syslog)
-				syslog(LOG_NOTICE, _("Quarantined infected mail as %s"), privdata->filename);
+			qfile(privdata, sendmailId, virusname);
+
 			/*
 			 * Cleanup filename here otherwise clamfi_free() will
 			 * delete the file that we wish to keep because it
@@ -3116,15 +3118,6 @@ clamfi_abort(SMFICTX *ctx)
 #endif
 
 	cli_dbgmsg("clamfi_abort\n");
-	/*
-	 * Unlock incase we're called during a cond_timedwait in envfrom
-	 *
-	 * TODO: There *must* be a tidier a safer way of doing this!
-	 */
-	if((max_children > 0) && (n_children >= max_children)) {
-		(void)pthread_mutex_trylock(&n_children_mutex);
-		(void)pthread_mutex_unlock(&n_children_mutex);
-	}
 
 	clamfi_cleanup(ctx);
 
@@ -3277,7 +3270,15 @@ clamfi_free(struct privdata *privdata)
 				privdata->cmdSocket = -1;
 			}
 #endif
-		}
+		} else if(privdata->root)
+			/*
+			 * Since only one of clamfi_abort() and clamfi_eom()
+			 * can ever be called, and the only cl_dup is in
+			 * clamfi_eom() which calls cl_free soon after, this
+			 * should be overkill, since this can "never happen"
+			 */
+			cl_free(privdata->root);
+
 		if(privdata->headers)
 			header_list_free(privdata->headers);
 
@@ -3497,7 +3498,7 @@ updateSigFile(void)
 
 	signature = cli_realloc(signature, statb.st_size);
 	if(signature)
-		read(fd, signature, statb.st_size);
+		cli_readn(fd, signature, statb.st_size);
 	close(fd);
 
 	return statb.st_size;
@@ -3989,7 +3990,14 @@ sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *vir
 			syslog(LOG_ERR, _("Out of memory"));
 		return -1;
 	}
-	fread(buf, sizeof(char), statb.st_size, fin);
+	if(fread(buf, sizeof(char), statb.st_size, fin) != statb.st_size) {
+		perror(filename);
+		if(use_syslog)
+			syslog(LOG_ERR, _("Error reading e-mail template file %s"),
+				filename);
+		fclose(fin);
+		return -1;
+	}
 	fclose(fin);
 	buf[statb.st_size] = '\0';
 
@@ -4134,7 +4142,7 @@ qfile(struct privdata *privdata, const char *sendmailId, const char *virusname)
 	privdata->filename = newname;
 
 	if(use_syslog)
-		syslog(LOG_INFO, _("File quarantined as %s"), newname);
+		syslog(LOG_INFO, _("Email quarantined as %s"), newname);
 
 	return 0;
 }
@@ -4563,7 +4571,11 @@ watchdog(void *a)
 
 		/*
 		 * Re-load the database.
-		 */
+ 		 * TODO: sanity check that if n_children == 0, that
+ 		 * root->refcount == 0. Unfortunatly root->refcount isn't
+ 		 * thread-safe, since it's governed by a mutex that we can't
+ 		 * see, and there's no access to it via an approved method
+ 		 */
 		switch(cl_statchkdir(&dbstat)) {
 			case 1:
 				cli_dbgmsg("Database has changed\n");
@@ -4584,7 +4596,6 @@ watchdog(void *a)
 				cli_errmsg("Database error - %s is stopping\n", progname);
 				return NULL;
 		}
-		continue;
 	}
 	cli_dbgmsg("watchdog quits\n");
 	return NULL;
@@ -4866,8 +4877,12 @@ loadDatabase(void)
 		syslog(LOG_INFO, _("ClamAV: Protecting against %u viruses"), signatures);
 	}
 	if(oldroot) {
-		cli_dbgmsg("Database updated\n");
+		char mess[128];
+
 		cl_free(oldroot);
+		sprintf(mess, "Database correctly reloaded (%d signatures)\n", signatures);
+		logger(mess);
+		cli_dbgmsg("Database updated\n");
 	} else
 		cli_dbgmsg("Database loaded\n");
 
@@ -4983,7 +4998,7 @@ verifyIncomingSocketName(const char *sockName)
 }
 
 /*
- * If the given email address is whitelisted don't scan their emails
+ * If the given email address is whitelisted don't scan emails to them
  *
  * TODO: Allow regular expressions in the emails
  * TODO: Syntax check the contents of the files

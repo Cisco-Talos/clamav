@@ -69,7 +69,7 @@
     \vspace{3cm}
     \begin{flushright}
 	\rule[-1ex]{8cm}{3pt}\\
-	\huge Clam AntiVirus 0.86.1\\
+	\huge Clam AntiVirus 0.86.2\\
 	\huge \emph{User Manual}\\
     \end{flushright}
 
@@ -449,18 +449,18 @@
     to connect it with Sendmail add the following lines to
     \verb+/etc/mail/sendmail.mc+:
     \begin{verbatim}
-INPUT_MAIL_FILTER(`clmilter',`S=local:/var/run/clmilter.sock,
+INPUT_MAIL_FILTER(`clmilter',`S=local:/var/run/clamav/clmilter.sock,
 F=, T=S:4m;R:4m')dnl
 define(`confINPUT_MAIL_FILTERS', `clmilter')
     \end{verbatim}
     If you're running it in \verb+--external+ mode, check entry in
     \verb+clamd.conf+ of the form:
     \begin{verbatim}
-	LocalSocket /var/run/clamd.sock
+	LocalSocket /var/run/clamav/clamd.sock
     \end{verbatim}
     Start clamav-milter
     \begin{verbatim}
-	/usr/local/sbin/clamav-milter -lo /var/run/clmilter.sock
+	/usr/local/sbin/clamav-milter -lo /var/run/clamav/clmilter.sock
     \end{verbatim}
     and restart sendmail.
 
@@ -1413,9 +1413,9 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     \subsubsection{qSheff}
     \textbf{Homepage:} \url{http://www.enderunix.org/qsheff}\\
     \textbf{Supports:} clamdscan, clamd\\[4pt]
-    The tool allows running anti-virus and content filtering software
-    simultaneously. Supports ClamAV for virus checking and Zabit for
-    content filtering.
+    The tool allows running anti-virus, body/subject/attachment filtering, user 
+    defined white/black lists, and alternative qmail logging. Supports ClamAV
+    for virus checking.
 
     \subsubsection{RevolSys SMTP kit for Postfix}
     \textbf{Homepage:} \url{http://smtp.revolsys.org/}\\
@@ -1474,7 +1474,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     antivirus scanning using ClamAV.
 
     \subsubsection{smf-clamd}
-    \textbf{Homepage:} \url{}\\
+    \textbf{Homepage:} \url{http://smfs.sourceforge.net/smf-clamd.html}\\
     \textbf{Supports:} clamd\\[4pt]
     SmartSendmailFilter-clamd is a lightweight filter for Sendmail. It's
     a small (less than 550 lines of C code), fast and very stable filter
@@ -2007,8 +2007,8 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\url{clamav.dbplc.com} & 217.154.108.81 & United Kingdom & Simon Pither\\
 			       &		&		 & \email{<simon*digitalbrain.com>}\\ \hline
 
-	\url{clamav.unet.brandeis.edu} & 129.64.99.170 & USA & Rich Graves\\
-				       &	       &     & \email{<rcgraves*brandeis.edu>}\\ \hline
+	\url{clamav.unet.brandeis.edu} & 129.64.99.170 & USA & Elliot Kendall\\
+				       &	       &     & \email{<ekendall*brandeis.edu>}\\ \hline
 
 	\url{clamav.im1.net} & 65.77.42.207 & Florida, US & Dmitri Pavlenkov\\
 			     &		    &		  & \email{<dmitri*im1.com>}\\ \hline
@@ -2182,6 +2182,8 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 			      &		      &		 & \email{<japc*co.sapo.pt>}\\ \hline
 	\url{clamav.westlinks.com} & 67.43.173.205 & USA & Tim Treaster\\
 				   &		   &	 & \email{<tim*westlinks.com>}\\ \hline
+	\url{clamav.liquidweb.com} & 209.59.139.38 & USA & Steven Collins\\
+				   &		   &	 & \email{<scollins*liquidweb.com>}\\ \hline
     \end{tabular}}
     \end{center}
 
@@ -2449,6 +2451,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Cheahch from Singapore
 	\item Conexim Australia - business web hosting (\url{http://www.conexim.com.au})
 	\item Joe Cooper
+	\item CustomLogic LLC (\url{http://www.customlogic.com/})
 	\item Ron DeFulio
 	\item Steve Donegan (\url{http://www.donegan.org/})
 	\item Dynamic Network Services, Inc (\url{http://www.dyndns.org/})
@@ -2500,6 +2503,7 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
 	\item Paul Morgan
 	\item Tomas Morkus
 	\item Michael Nolan (\url{http://www.michaelnolan.co.uk/})
+	\item Jorgen Norgaard
 	\item Oneworkspace.com (\url{http://www.oneworkspace.com/})
 	\item Origin Solutions (\url{http://www.originsolutions.com.au/})
 	\item outermedia GmbH (\url{http://www.outermedia.de/})

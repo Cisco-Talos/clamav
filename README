@@ -2,6 +2,16 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.86.2
+------
+
+Changes in this release include fixes for three possible integer overflows
+in libclamav, improved scanning of Cabinet and FSG compressed files, better
+database handling in clamav-milter, and others.
+
+--
+The ClamAV team (http://www.clamav.net/team.html)
+
 0.86.1
 ------
 

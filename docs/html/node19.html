@@ -27,26 +27,26 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html755"
+<A NAME="tex2html757"
   HREF="node20.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html751"
+<A NAME="tex2html753"
   HREF="node16.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html745"
+<A NAME="tex2html747"
   HREF="node18.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html753"
+<A NAME="tex2html755"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html756"
+<B> Next:</B> <A NAME="tex2html758"
   HREF="node20.html">Testing</A>
-<B> Up:</B> <A NAME="tex2html752"
+<B> Up:</B> <A NAME="tex2html754"
   HREF="node16.html">Configuration</A>
-<B> Previous:</B> <A NAME="tex2html746"
+<B> Previous:</B> <A NAME="tex2html748"
   HREF="node18.html">On-access scanning</A>
- &nbsp <B>  <A NAME="tex2html754"
+ &nbsp <B>  <A NAME="tex2html756"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
@@ -62,18 +62,18 @@ clamav-milter</A>
     to connect it with Sendmail add the following lines to
     <code>/etc/mail/sendmail.mc</code>:
     <PRE>
-INPUT_MAIL_FILTER(`clmilter',`S=local:/var/run/clmilter.sock,
+INPUT_MAIL_FILTER(`clmilter',`S=local:/var/run/clamav/clmilter.sock,
 F=, T=S:4m;R:4m')dnl
 define(`confINPUT_MAIL_FILTERS', `clmilter')
 </PRE>
     If you're running it in <code>--external</code> mode, check entry in
     <code>clamd.conf</code> of the form:
     <PRE>
-	LocalSocket /var/run/clamd.sock
+	LocalSocket /var/run/clamav/clamd.sock
 </PRE>
     Start clamav-milter
     <PRE>
-	/usr/local/sbin/clamav-milter -lo /var/run/clmilter.sock
+	/usr/local/sbin/clamav-milter -lo /var/run/clamav/clmilter.sock
 </PRE>
     and restart sendmail.
 
@@ -81,7 +81,7 @@ define(`confINPUT_MAIL_FILTERS', `clmilter')
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2005-06-23
+2005-07-25
 </ADDRESS>
 </BODY>
 </HTML>
