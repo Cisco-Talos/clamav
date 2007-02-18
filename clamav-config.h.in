@@ -54,6 +54,9 @@
 /* os is irix */
 #undef C_IRIX
 
+/* target is kfreebsd-gnu */
+#undef C_KFREEBSD_GNU
+
 /* target is linux */
 #undef C_LINUX
 

@@ -1,3 +1,23 @@
+Sat Apr 29 21:30:47 CEST 2006
+-----------------------------
+  V 0.88.2
+  Bugfixes:
+    - freshclam/manager.c: fix possible buffer overflow
+      Reported by Ulf Harnhammar <metaur*telia.com> and Peter <remllov_*gmx.de>
+      See http://www.clamav.net/security/0.88.2.html for details.
+
+    - libclamav/zziplib/zzip-zip.c: add missing #include "others.h"
+      Patch by Alex Deiter <tiamat*komi.mts.ru>
+    - fix other implicit function declarations
+      Thanks to Paul Fisher <pnfisher*berkeley.edu>, Ludwig Nussel
+      <ludwig.nussel*suse.de> and Stephen Gran <steve*lobefin.net>
+    - shared/cfgparser.c: don't use CL_FULLSTR for file directives
+      Requested by Tomasz Papszun and others
+    - libclamav/mbox.c:	fix compilation error on CYGWIN
+    - clamav-milter: Ensure that the quarantine location reported in
+      notifications is correct.
+      Patch by Simon Munton <simon at nidoran.m5data.com>
+
 Tue Apr  4 12:04:07 CEST 2006
 -----------------------------
   V 0.88.1

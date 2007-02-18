@@ -2851,6 +2851,9 @@ clamfi_eom(SMFICTX *ctx)
 			smfi_addheader(ctx, "X-Virus-Status", buf);
 		}
 
+		if(quarantine_dir)
+			qfile(privdata, sendmailId, virusname);
+
 		if(use_syslog) {
 			/*
 			 * Setup err as a list of recipients
@@ -3017,8 +3020,6 @@ clamfi_eom(SMFICTX *ctx)
 		}
 
 		if(quarantine_dir) {
-			qfile(privdata, sendmailId, virusname);
-
 			/*
 			 * Cleanup filename here otherwise clamfi_free() will
 			 * delete the file that we wish to keep because it

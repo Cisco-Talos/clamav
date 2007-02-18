@@ -50,6 +50,7 @@
 #include "../libclamav/others.h"
 #include "../libclamav/str.h" /* cli_strtok */
 #include "dns.h"
+#include "execute.h"
 
 
 int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname)
@@ -723,9 +724,9 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
 	*ims = 1;
     }
 
-    ch = buffer;
-    i = 0;
-    while (1) {
+    i = 3;
+    ch = buffer + i;
+    while(i < sizeof(buffer)) {
       if (*ch == '\n' && *(ch - 1) == '\r' && *(ch - 2) == '\n' && *(ch - 3) == '\r') {
 	ch++;
 	i++;
@@ -733,7 +734,12 @@ struct cl_cvd *remote_cvdhead(const char *file, int socketfd, const char *hostna
       }
       ch++;
       i++;
-    }  
+    }
+
+    if(sizeof(buffer) - i < 512) {
+	mprintf("@Malformed CVD header detected.\n");
+	return NULL;
+    }
 
     memset(head, 0, sizeof(head));
 
@@ -819,7 +825,7 @@ int get_database(const char *dbfile, int socketfd, const char *file, const char 
     while (1) {
       /* recv one byte at a time, until we reach \r\n\r\n */
 
-      if(recv(socketfd, buffer + i, 1, 0) == -1) {
+      if((i >= sizeof(buffer)) || recv(socketfd, buffer + i, 1, 0) == -1) {
         mprintf("@Error while reading database from %s\n", hostname);
         close(fd);
         unlink(file);

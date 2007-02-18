@@ -30,6 +30,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "others.h"
+
 /*
 #include "__mmap.h"
 #include "__debug.h"

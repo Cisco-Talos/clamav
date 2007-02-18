@@ -1,8 +1,16 @@
-0.88.1
+0.88.2
 ------
 
-This version fixes a number of minor bugs and provides code updates
-to improve virus detection.
+This release improves virus detection, fixes zip handling on 64-bit
+architectures and possible security problem in freshclam.
+
+Following the 0.88.1 release some portals and security related websites
+published incorrect information on security problems of 0.88. To avoid
+such incidents in the future, every new ClamAV package will be released
+together with detailed information about security bugs it fixes. Details
+for this version can be found here:
+
+    http://www.clamav.net/security/0.88.2.html
 
 --
 The ClamAV team (http://www.clamav.net/team.html)

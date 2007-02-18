@@ -405,7 +405,7 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 		(int)(sizeof(fullname) - 9 - strlen(dir)), filename);
 #endif
 
-#if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN) || defined(C_QNX6)
+#if    defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN) || defined(C_QNX6) || defined(C_KFREEBSD_GNU)
 	cli_dbgmsg("fileblobSetFilename: mkstemp(%s)\n", fullname);
 	fd = mkstemp(fullname);
 #else

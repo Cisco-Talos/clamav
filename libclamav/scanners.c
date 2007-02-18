@@ -69,6 +69,7 @@ extern int cli_mbox(const char *dir, int desc, unsigned int options); /* FIXME *
 #include "untar.h"
 #include "special.h"
 #include "binhex.h"
+#include "tnef.h"
 
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>
@@ -378,7 +379,7 @@ static int cli_scanzip(int desc, const char **virname, unsigned long int *scanne
 	 * Bit 6: Strong encryption was used
 	 * Bit 13: Encrypted central directory
 	 */
-	encrypted = (zdirent.d_flags & 0x2041 != 0);
+	encrypted = ((zdirent.d_flags & 0x2041) != 0);
 
 	cli_dbgmsg("Zip: %s, crc32: 0x%x, offset: %d, encrypted: %d, compressed: %u, normal: %u, method: %d, ratio: %d (max: %d)\n", zdirent.d_name, zdirent.d_crc32, zdirent.d_off, encrypted, zdirent.d_csize, zdirent.st_size, zdirent.d_compr, zdirent.d_csize ? (zdirent.st_size / zdirent.d_csize) : 0, limits ? limits->maxratio : 0);
 
@@ -1394,8 +1395,7 @@ static int cli_scanraw(int desc, const char **virname, unsigned long int *scanne
 
 int cli_magic_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_node *root, const struct cl_limits *limits, unsigned int options, unsigned int arec, unsigned int mrec)
 {
-	int ret = CL_CLEAN, nret;
-	int bread = 0;
+	int ret = CL_CLEAN;
 	cli_file_t type;
 	struct stat sb;
 

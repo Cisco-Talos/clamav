@@ -3049,7 +3049,7 @@ strip(char *buf, int len)
 		return i;
 	ptr = &buf[--len];
 
-#if	defined(UNIX) || defined(C_LINUX) || defined(C_DARWIN)	/* watch - it may be in shared text area */
+#if    defined(UNIX) || defined(C_LINUX) || defined(C_DARWIN) || defined(C_KFREEBSD_GNU) /* watch - it may be in shared text area */
 	do
 		if(*ptr)
 			*ptr = '\0';
@@ -3518,7 +3518,7 @@ rfc1341(message *m, const char *dir)
 	if(id == NULL)
 		return -1;
 
-#ifdef  CYGWIN
+#ifdef  C_CYGWIN
 	if((tmpdir = getenv("TEMP")) == (char *)NULL)
 		if((tmpdir = getenv("TMP")) == (char *)NULL)
 			if((tmpdir = getenv("TMPDIR")) == (char *)NULL)

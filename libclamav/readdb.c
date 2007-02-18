@@ -932,7 +932,7 @@ int cl_loaddb(const char *filename, struct cl_node **root, unsigned int *signo)
     } else if(cli_strbcasestr(filename, ".cvd")) {
 	    int warn = 0;
 
-	if(!strcmp(filename, "daily.cvd"))
+	if(strstr(filename, "daily.cvd"))
 	    warn = 1;
 
 	ret = cli_cvdload(fd, root, signo, warn);

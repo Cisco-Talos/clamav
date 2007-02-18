@@ -41,7 +41,7 @@ struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 	struct cfgoption *pt;
 
 	struct cfgoption cfg_options[] = {
-	    {"LogFile", OPT_FULLSTR},
+	    {"LogFile", OPT_STR},
 	    {"LogFileUnlock", OPT_NOARG},
 	    {"LogFileMaxSize", OPT_COMPSIZE},
 	    {"LogTime", OPT_NOARG},
@@ -49,8 +49,8 @@ struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 	    {"LogVerbose", OPT_NOARG}, /* clamd + freshclam */
 	    {"LogSyslog", OPT_NOARG},
 	    {"LogFacility", OPT_STR},
-	    {"PidFile", OPT_FULLSTR},
-	    {"TemporaryDirectory", OPT_FULLSTR},
+	    {"PidFile", OPT_STR},
+	    {"TemporaryDirectory", OPT_STR},
 	    {"DisableDefaultScanOptions", OPT_NOARG},
 	    {"ScanPE", OPT_NOARG},
 	    {"DetectBrokenExecutables", OPT_NOARG},
@@ -67,11 +67,11 @@ struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 	    {"ArchiveLimitMemoryUsage", OPT_NOARG},
 	    {"ArchiveBlockEncrypted", OPT_NOARG},
 	    {"ArchiveBlockMax", OPT_NOARG},
-	    {"DataDirectory", OPT_FULLSTR}, /* obsolete */
-	    {"DatabaseDirectory", OPT_FULLSTR}, /* clamd + freshclam */
+	    {"DataDirectory", OPT_STR}, /* obsolete */
+	    {"DatabaseDirectory", OPT_STR}, /* clamd + freshclam */
 	    {"TCPAddr", OPT_STR},
 	    {"TCPSocket", OPT_NUM},
-	    {"LocalSocket", OPT_FULLSTR},
+	    {"LocalSocket", OPT_STR},
 	    {"MaxConnectionQueueLength", OPT_NUM},
 	    {"StreamMaxLength", OPT_COMPSIZE},
 	    {"StreamMinPort", OPT_NUM},
@@ -102,7 +102,7 @@ struct cfgstruct *parsecfg(const char *cfgfile, int messages)
 	    {"ClamukoScanArchive", OPT_NOARG},
 	    {"DatabaseOwner", OPT_STR}, /* freshclam */
 	    {"Checks", OPT_NUM}, /* freshclam */
-	    {"UpdateLogFile", OPT_FULLSTR}, /* freshclam */
+	    {"UpdateLogFile", OPT_STR}, /* freshclam */
 	    {"DNSDatabaseInfo", OPT_STR}, /* freshclam */
 	    {"DatabaseMirror", OPT_STR}, /* freshclam */
 	    {"MaxAttempts", OPT_NUM}, /* freshclam */

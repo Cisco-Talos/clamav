@@ -81,20 +81,27 @@ int dsresult(int sockd, const struct optstruct *opt)
 	    logg("%s", buff);
 	    mprintf("%s", buff);
 	    if(optl(opt, "move")) {
-		pt = strrchr(buff, ':');
-		*pt = 0;
-		move_infected(buff, opt);
+		/* filename: Virus FOUND */
+		if((pt = strrchr(buff, ':'))) {
+		    *pt = 0;
+		    move_infected(buff, opt);
+		} else {
+		    mprintf("@Broken data format. File not moved.\n");
+		}
 
 	    } else if(optl(opt, "remove")) {
-		pt = strrchr(buff, ':');
-		*pt = 0;
-		if(unlink(buff)) {
-		    mprintf("%s: Can't remove.\n", buff);
-		    logg("%s: Can't remove.\n", buff);
-		    notremoved++;
+		if(!(pt = strrchr(buff, ':'))) {
+		    mprintf("@Broken data format. File not removed.\n");
 		} else {
-		    mprintf("%s: Removed.\n", buff);
-		    logg("%s: Removed.\n", buff);
+		    *pt = 0;
+		    if(unlink(buff)) {
+			mprintf("%s: Can't remove.\n", buff);
+			logg("%s: Can't remove.\n", buff);
+			notremoved++;
+		    } else {
+			mprintf("%s: Removed.\n", buff);
+			logg("%s: Removed.\n", buff);
+		    }
 		}
 	    }
 	}

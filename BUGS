@@ -5,4 +5,4 @@ and enable Foreground option in clamd.conf.
 Known bugs:
 -----------
 
--) unrarlib doesn't work on 64-bit systems
+-) unrarlib doesn't work on 64-bit systems (FIXED IN CVS!)
