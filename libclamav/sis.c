@@ -146,6 +146,8 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 		    cli_warnmsg("SIS: sis_extract_simple: Unknown value in file details (0x%x)\n", cli_readint32(mfile + offset + 4));
 	    }
 	    switch(val & 0xff00) {
+		case 0x0000:
+		    break;
 		case 0x0100:
 		    cli_dbgmsg("SIS:    * Ends when installation finished\n");
 		    break;
