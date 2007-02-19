@@ -102,7 +102,7 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 	char *sname = NULL, *dname = NULL, *subdir, *fname, *buff;
 	int desc, i;
 	uint8_t get_dname = 1;
-	uint32_t namelen, nameoff, filelen, fileoff;
+	uint32_t namelen, nameoff, filelen, fileoff, val;
 	struct stat sb;
 	uLong osize = 0;
 	uLongf csize = 0;
@@ -131,16 +131,21 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 	case 0x03:
 	    cli_dbgmsg("SIS: File type: Run file\n");
 	    typedir = "run";
-	    switch(cli_readint32(mfile + offset + 4)) {
-		case 0x0000:
+	    val = cli_readint32(mfile + offset + 4);
+	    switch(val & 0xff) {
+		case 0x00:
 		    cli_dbgmsg("SIS:    * During installation only\n");
 		    break;
-		case 0x0001:
+		case 0x01:
 		    cli_dbgmsg("SIS:    * During removal only\n");
 		    break;
-		case 0x0002:
+		case 0x02:
 		    cli_dbgmsg("SIS:    * During installation and removal\n");
 		    break;
+		default:
+		    cli_warnmsg("SIS: sis_extract_simple: Unknown value in file details (0x%x)\n", cli_readint32(mfile + offset + 4));
+	    }
+	    switch(val & 0xff00) {
 		case 0x0100:
 		    cli_dbgmsg("SIS:    * Ends when installation finished\n");
 		    break;
@@ -148,7 +153,7 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 		    cli_dbgmsg("SIS:    * Waits until closed before continuing\n");
 		    break;
 		default:
-		    cli_warnmsg("SIS: sis_extract_simple: Unknown value in file details\n");
+		    cli_warnmsg("SIS: sis_extract_simple: Unknown value in file details (0x%x)\n", cli_readint32(mfile + offset + 4));
 	    }
 	    break;
 	case 0x04:
@@ -470,10 +475,10 @@ int cli_scansis(int desc, cli_ctx *ctx)
     if(opts & 0x0002)
 	cli_dbgmsg("SIS:    * File is distributable\n");
     if(opts & 0x0008) {
-	cli_dbgmsg("SIS:    * Packed files are not compressed\n");
+	cli_dbgmsg("SIS:    * Archived files are not compressed\n");
 	compressed = 0;
     } else {
-	cli_dbgmsg("SIS:    * Packed files are compressed\n");
+	cli_dbgmsg("SIS:    * Archived files are compressed\n");
 	compressed = 1;
     }
     if(opts & 0x0010)
