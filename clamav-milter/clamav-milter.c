@@ -608,6 +608,11 @@ main(int argc, char **argv)
 #ifndef	CL_DEBUG
 	int consolefd;
 #endif
+	/*
+	 * The SMFI_VERSION checks are for Sendmail 8.14, which I don't have
+	 * yet, so I can't verify them
+	 * Patch from Andy Fiddaman <clam@fiddaman.net>
+	 */
 	struct smfiDesc smfilter = {
 		"ClamAv", /* filter name */
 		SMFI_VERSION,	/* version code -- leave untouched */
@@ -626,6 +631,15 @@ main(int argc, char **argv)
 		clamfi_eom,	/* end of message callback */
 		clamfi_abort,	/* message aborted callback */
 		clamfi_close,	/* connection cleanup callback */
+#if	SMFI_VERSION > 2
+		NULL,		/* Unrecognised command */
+#endif
+#if	SMFI_VERSION > 3
+		NULL,		/* DATA command callback */
+#endif
+#if	SMFI_VERSION >= 0x01000000
+		NULL,		/* Negotiation callback */
+#endif
 	};
 
 #if defined(CL_DEBUG) && defined(C_LINUX)

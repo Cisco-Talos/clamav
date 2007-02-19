@@ -71,7 +71,7 @@ doesn't include libmilter so you can't develop milter applications on it.
 Go to sendmail.org, download the latest sendmail, cd to libmilter and
 "make install" there.
 
-Needs -lresolv on Solaris
+Needs -lresolv on Solaris, for res_close().
 
 If, when building clamav-milter, you see the error
 	"undefined reference to smfi_opensocket",

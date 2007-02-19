@@ -38,6 +38,11 @@ Sat Feb 17 01:31:45 CET 2007 (acab)
 -----------------------------------
   * libclamav/regex_list.c: Close #303 - patch from Edvin
 
+Fri Feb 16 12:29:51 GMT 2007 (njh)
+----------------------------------
+  * libclamav/clamav-milter.c:	Added support for sendmail 8.14, bug 267,
+			patch from Andy Fiddaman <clam fiddaman.net>
+
 Thu Feb 15 16:34:48 CET 2007 (tk)
 ---------------------------------
   * libclamav/rtf.c: add more sanity checks (Edwin)
@@ -49,11 +54,11 @@ Thu Feb 15 16:18:53 CET 2007 (tk)
 Thu Feb 15 12:27:22 GMT 2007 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Fixed bugs in the handling of boundary lines
-  			Improved handling of the warning messages associated
+			Improved handling of the warning messages associated
 				with recursion limits
 			Fixed handling of OK_ATTACHMENTS_NOT_SAVED in some
 				larger files
-  			
+
 Wed Feb 14 13:15:25 CET 2007 (tk)
 ---------------------------------
   * libclamav/entconv.c: fix incorrect use of isspace() in experimental code
