@@ -1,3 +1,7 @@
+Tue Feb 20 21:11:29 CET 2007 (tk)
+---------------------------------
+  * configure: fix compilation errors on FreeBSD (bb#306)
+
 Tue Feb 20 20:51:57 CET 2007 (tk)
 ---------------------------------
   * configure: add support for osf/tru64
