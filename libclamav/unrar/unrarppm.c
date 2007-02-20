@@ -113,6 +113,10 @@ static int sub_allocator_start_sub_allocator(sub_allocator_t *sub_alloc, int sa_
 	}
 	sub_allocator_stop_sub_allocator(sub_alloc);
 	alloc_size = t/FIXED_UNIT_SIZE*UNIT_SIZE+UNIT_SIZE;
+#if defined(__sparc) || defined(sparc) || defined(__sparcv9)
+	/* Allow for aligned access requirements */
+	alloc_size += UNIT_SIZE;
+#endif
 	if ((sub_alloc->heap_start = (uint8_t *) cli_malloc(alloc_size)) == NULL) {
 		cli_dbgmsg("sub_alloc start failed\n");
 		return FALSE;
@@ -134,6 +138,12 @@ static void sub_allocator_init_sub_allocator(sub_allocator_t *sub_alloc)
 	real_size2 = size2/FIXED_UNIT_SIZE*UNIT_SIZE;
 	size1 = sub_alloc->sub_allocator_size - size2;
 	real_size1 = size1/FIXED_UNIT_SIZE*UNIT_SIZE+size1%FIXED_UNIT_SIZE;
+#if defined(__sparc) || defined(sparc) || defined(__sparcv9)
+	/* Allow for aligned access requirements */
+	if (size1%FIXED_UNIT_SIZE != 0) {
+		real_size1 += UNIT_SIZE - size1%FIXED_UNIT_SIZE;
+	}
+#endif
 	sub_alloc->hi_unit = sub_alloc->heap_start + sub_alloc->sub_allocator_size;
 	sub_alloc->lo_unit = sub_alloc->units_start = sub_alloc->heap_start + real_size1;
 	sub_alloc->fake_units_start = sub_alloc->heap_start + size1;
