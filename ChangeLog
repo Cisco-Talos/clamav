@@ -1,3 +1,7 @@
+Tue Feb 20 16:43:27 CET 2007 (tk)
+---------------------------------
+  * libclamav/others.c: increase f-level to activate RTF extractor
+
 Tue Feb 20 15:59:12 CET 2007 (tk)
 ---------------------------------
   * clamd, clamconf: merge win32 patches from NJH
