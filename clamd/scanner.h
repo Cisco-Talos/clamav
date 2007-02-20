@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -20,17 +20,17 @@
 #ifndef __SCANNER_H
 #define __SCANNER_H
 
+#define TYPE_SCAN	0
+#define TYPE_CONTSCAN	1
+#define TYPE_MULTISCAN	2
+
 #include "libclamav/clamav.h"
 #include "shared/cfgparser.h"
 
-int dirscan(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int odesc, unsigned int *reclev, short contscan);
-
-int scan(const char *filename, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int odesc, short contscan);
+int scan(const char *filename, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int odesc, unsigned int type);
 
 int scanfd(const int fd, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int odesc);
 
 int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt);
-
-int checksymlink(const char *path);
 
 #endif

@@ -1,3 +1,7 @@
+Tue Feb 20 20:19:04 CET 2007 (tk)
+---------------------------------
+  * clamd: merge multiscan() with dirscan() (also closes bb#302)
+
 Tue Feb 20 16:43:27 CET 2007 (tk)
 ---------------------------------
   * libclamav/others.c: increase f-level to activate RTF extractor

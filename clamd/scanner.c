@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -63,16 +63,28 @@
 #include "scanner.h"
 #include "shared.h"
 #include "network.h"
+#include "thrmgr.h"
 
 #ifdef C_LINUX
 dev_t procdev; /* /proc device */
 #endif
 
+extern int progexit;
+
 #ifndef	C_WINDOWS
 #define	closesocket(s)	close(s)
 #endif
 
-int checksymlink(const char *path)
+struct multi_tag {
+    int sd;
+    unsigned int options;
+    const struct cfgstruct *copt;
+    char *fname;
+    const struct cl_engine *engine;
+    const struct cl_limits *limits;
+};
+
+static int checksymlink(const char *path)
 {
 	struct stat statbuf;
 
@@ -88,8 +100,7 @@ int checksymlink(const char *path)
     return 0;
 }
 
-/* :set nowrap, if you don't like this style ;)) */
-int dirscan(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int odesc, unsigned int *reclev, short contscan)
+static int dirscan(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int odesc, unsigned int *reclev, unsigned int type, threadpool_t *multi_pool)
 {
 	DIR *dd;
 	struct dirent *dent;
@@ -103,6 +114,7 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 	char *fname;
 	int ret = 0, scanret = 0;
 	unsigned int maxdirrec = 0;
+	struct multi_tag *scandata;
 
 
     maxdirrec = cfgopt(copt, "MaxDirectoryRecursion")->numarg;
@@ -127,6 +139,12 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 		closedir(dd);
 		return 1;
 	    }
+
+            if(progexit) {
+		closedir(dd);
+		return 1;
+	    }
+
 #if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS)) && (!defined(C_CYGWIN))
 	    if(dent->d_ino)
 #endif
@@ -134,55 +152,98 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
 		    fname = (char *) mcalloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
+                    if(!fname) {
+			logg("!Can't allocate memory for fname\n");
+			closedir(dd);
+			return -2;
+		    }
 		    sprintf(fname, "%s/%s", dirname, dent->d_name);
 
 		    /* stat the file */
 		    if(lstat(fname, &statbuf) != -1) {
 			if((S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 1) && cfgopt(copt, "FollowDirectorySymlinks")->enabled)) {
-			    if(dirscan(fname, virname, scanned, engine, limits, options, copt, odesc, reclev, contscan) == 1) {
+			    if(dirscan(fname, virname, scanned, engine, limits, options, copt, odesc, reclev, type, multi_pool) == 1) {
 				free(fname);
 				closedir(dd);
 				return 1;
 			    }
+			    free(fname);
 			} else {
 			    if(S_ISREG(statbuf.st_mode) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 2) && cfgopt(copt, "FollowFileSymlinks")->enabled)) {
 
 #ifdef C_LINUX
 				if(procdev && (statbuf.st_dev == procdev))
-				    scanret = CL_CLEAN;
+				    free(fname);
 				else
 #endif
-				    scanret = cl_scanfile(fname, virname, scanned, engine, limits, options);
+				{
+				    if(type == TYPE_MULTISCAN) {
 
-				if(scanret == CL_VIRUS) {
+					scandata = (struct multi_tag *) mmalloc(sizeof(struct multi_tag));
+					if(!scandata) {
+					    logg("!Can't allocate memory for scandata\n");
+					    free(fname);
+					    closedir(dd);
+					    return -2;
+					}
+					scandata->sd = odesc;
+					scandata->options = options;
+					scandata->copt = copt;
+					scandata->fname = fname;
+					scandata->engine = engine;
+					scandata->limits = limits;
+					if(!thrmgr_dispatch(multi_pool, scandata)) {
+					    logg("!thread dispatch failed for multi_pool (file %s)\n", fname);
+					    mdprintf(odesc, "ERROR: Can't scan file %s\n", fname);
+					    free(fname);
+					    free(scandata);
+					    closedir(dd);
+					    return 1;
+					}
 
-				    mdprintf(odesc, "%s: %s FOUND\n", fname, *virname);
-				    logg("%s: %s FOUND\n", fname, *virname);
-				    virusaction(fname, *virname, copt);
-				    if(!contscan) {
-					closedir(dd);
+					while(!multi_pool->thr_idle) /* non-critical */
+#ifdef C_WINDOWS
+					    Sleep(1);
+#else
+					    usleep(200);
+#endif
+
+				    } else { /* CONTSCAN, SCAN */
+
+					scanret = cl_scanfile(fname, virname, scanned, engine, limits, options);
+
+					if(scanret == CL_VIRUS) {
+
+					    mdprintf(odesc, "%s: %s FOUND\n", fname, *virname);
+					    logg("%s: %s FOUND\n", fname, *virname);
+					    virusaction(fname, *virname, copt);
+					    if(type == TYPE_SCAN) {
+						closedir(dd);
+						free(fname);
+						return 1;
+					    } else /* CONTSCAN */
+						ret = 2;
+
+					} else if(scanret != CL_CLEAN) {
+					    mdprintf(odesc, "%s: %s ERROR\n", fname, cl_strerror(scanret));
+					    logg("%s: %s ERROR\n", fname, cl_strerror(scanret));
+					    if(scanret == CL_EMEM) {
+						closedir(dd);
+						free(fname);
+						return -2;
+					    }
+
+					} else if(logok) {
+					    logg("%s: OK\n", fname);
+					}
 					free(fname);
-					return 1;
-				    } else
-					ret = 2;
-
-				} else if(scanret != CL_CLEAN) {
-				    mdprintf(odesc, "%s: %s ERROR\n", fname, cl_strerror(scanret));
-				    logg("%s: %s ERROR\n", fname, cl_strerror(scanret));
-				    if(scanret == CL_EMEM) {
-					closedir(dd);
-				        free(fname);
-				        return -2;
 				    }
-
-				} else if(logok) {
-				    logg("%s: OK\n", fname);
 				}
 			    }
 			}
+		    } else {
+			free(fname);
 		    }
-
-		    free(fname);
 		}
 	    }
 	}
@@ -193,15 +254,49 @@ int dirscan(const char *dirname, const char **virname, unsigned long int *scanne
 
     (*reclev)--;
     return ret;
-
 }
 
-int scan(const char *filename, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int odesc, short contscan)
+static void multiscanfile(void *arg)
+{
+	struct multi_tag *tag = (struct multi_tag *) arg;
+	const char *virname;
+#ifndef	C_WINDOWS
+        sigset_t sigset;
+#endif
+	int ret;
+
+
+#ifndef	C_WINDOWS
+    /* ignore all signals */
+    sigfillset(&sigset);
+    pthread_sigmask(SIG_SETMASK, &sigset, NULL);
+#endif
+
+    ret = cl_scanfile(tag->fname, &virname, NULL, tag->engine, tag->limits, tag->options);
+
+    if(ret == CL_VIRUS) {
+	mdprintf(tag->sd, "%s: %s FOUND\n", tag->fname, virname);
+	logg("%s: %s FOUND\n", tag->fname, virname);
+	virusaction(tag->fname, virname, tag->copt);
+    } else if(ret != CL_CLEAN) {
+	mdprintf(tag->sd, "%s: %s ERROR\n", tag->fname, cl_strerror(ret));
+	logg("%s: %s ERROR\n", tag->fname, cl_strerror(ret));
+    } else if(logok) {
+	logg("%s: OK\n", tag->fname);
+    }
+
+    free(tag->fname);
+    free(tag);
+    return;
+}
+
+int scan(const char *filename, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int odesc, unsigned int type)
 {
 	struct stat sb;
 	int ret = 0;
 	unsigned int reclev = 0;
 	const char *virname;
+	threadpool_t *multi_pool = NULL;
 
 
     /* stat file */
@@ -249,7 +344,22 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_engin
 	    }
 	    break;
 	case S_IFDIR:
-	    ret = dirscan(filename, &virname, scanned, engine, limits, options, copt, odesc, &reclev, contscan);
+	    if(type == TYPE_MULTISCAN) {
+		    int idletimeout = cfgopt(copt, "IdleTimeout")->numarg;
+		    int max_threads = cfgopt(copt, "MaxThreads")->numarg;
+
+		if((multi_pool = thrmgr_new(max_threads, idletimeout, multiscanfile)) == NULL) {
+		    logg("!thrmgr_new failed for multi_pool\n");
+		    mdprintf(odesc, "thrmgr_new failed for multi_pool ERROR\n");
+		    return -1;
+		}
+	    }
+
+	    ret = dirscan(filename, &virname, scanned, engine, limits, options, copt, odesc, &reclev, type, multi_pool);
+
+	    if(multi_pool)
+		thrmgr_destroy(multi_pool);
+
 	    break;
 	default:
 	    mdprintf(odesc, "%s: Not supported file type. ERROR\n", filename);

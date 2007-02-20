@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -54,179 +54,9 @@
 #include "others.h"
 #include "scanner.h"
 #include "server.h"
-#include "clamuko.h"
 #include "session.h"
-#include "thrmgr.h"
-#include "shared.h"
 
 static pthread_mutex_t ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
-extern int progexit;
-
-struct multi_tag {
-    int sd;
-    unsigned int options;
-    const struct cfgstruct *copt;
-    char *fname;
-    const struct cl_engine *engine;
-    const struct cl_limits *limits;
-};
-
-static void multiscanfile(void *arg)
-{
-	struct multi_tag *tag = (struct multi_tag *) arg;
-	const char *virname;
-#ifndef	C_WINDOWS
-        sigset_t sigset;
-#endif
-	int ret;
-
-
-#ifndef	C_WINDOWS
-    /* ignore all signals */
-    sigfillset(&sigset);
-    pthread_sigmask(SIG_SETMASK, &sigset, NULL);
-#endif
-
-    ret = cl_scanfile(tag->fname, &virname, NULL, tag->engine, tag->limits, tag->options);
-
-    if(ret == CL_VIRUS) {
-	mdprintf(tag->sd, "%s: %s FOUND\n", tag->fname, virname);
-	logg("%s: %s FOUND\n", tag->fname, virname);
-	virusaction(tag->fname, virname, tag->copt);
-    } else if(ret != CL_CLEAN) {
-	mdprintf(tag->sd, "%s: %s ERROR\n", tag->fname, cl_strerror(ret));
-	logg("%s: %s ERROR\n", tag->fname, cl_strerror(ret));
-    } else if(logok) {
-	logg("%s: OK\n", tag->fname);
-    }
-
-    free(tag->fname);
-    free(tag);
-    return;
-}
-
-static int multiscan(const char *dirname, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int odesc, unsigned int *reclev, threadpool_t *multi_pool)
-{
-	DIR *dd;
-	struct dirent *dent;
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-	union {
-	    struct dirent d;
-	    char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
-	} result;
-#endif
-	struct stat statbuf;
-	char *fname;
-	int scanret = 0;
-	unsigned int maxdirrec = 0;
-	struct multi_tag *scandata;
-
-
-    maxdirrec = cfgopt(copt, "MaxDirectoryRecursion")->numarg;
-    if(maxdirrec) {
-	if(*reclev > maxdirrec) {
-	    logg("*multiscan: Directory recursion limit exceeded at %s\n", dirname);
-	    return 0;
-	}
-	(*reclev)++;
-    }
-
-    if((dd = opendir(dirname)) != NULL) {
-#ifdef HAVE_READDIR_R_3
-	while(!readdir_r(dd, &result.d, &dent) && dent) {
-#elif defined(HAVE_READDIR_R_2)
-	while((dent = (struct dirent *) readdir_r(dd, &result.d))) {
-#else
-	while((dent = readdir(dd))) {
-#endif
-	    if (!is_fd_connected(odesc)) {
-		logg("multiscan: Client disconnected\n");
-		closedir(dd);
-		return -1;
-	    }
-
-	    if(progexit) {
-		closedir(dd);
-		return -1;
-	    }
-
-#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS)) && (!defined(C_CYGWIN))
-	    if(dent->d_ino)
-#endif
-	    {
-		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
-		    /* build the full name */
-		    fname = (char *) mcalloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
-		    if(!fname) {
-			logg("!multiscan: Can't allocate memory for fname\n");
-			closedir(dd);
-			return -1;
-		    }
-		    sprintf(fname, "%s/%s", dirname, dent->d_name);
-
-		    /* stat the file */
-		    if(lstat(fname, &statbuf) != -1) {
-			if((S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 1) && cfgopt(copt, "FollowDirectorySymlinks")->enabled)) {
-			    if(multiscan(fname, engine, limits, options, copt, odesc, reclev, multi_pool) == -1) {
-				free(fname);
-				closedir(dd);
-				return -1;
-			    }
-			    free(fname);
-			} else {
-			    if(S_ISREG(statbuf.st_mode) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 2) && cfgopt(copt, "FollowFileSymlinks")->enabled)) {
-
-#ifdef C_LINUX
-				if(procdev && (statbuf.st_dev == procdev))
-				    scanret = CL_CLEAN;
-				else
-#endif
-				{
-				    scandata = (struct multi_tag *) mmalloc(sizeof(struct multi_tag));
-				    if(!scandata) {
-					logg("!multiscan: Can't allocate memory for scandata\n");
-					free(fname);
-					closedir(dd);
-					return -1;
-				    }
-				    scandata->sd = odesc;
-				    scandata->options = options;
-				    scandata->copt = copt;
-				    scandata->fname = fname;
-				    scandata->engine = engine;
-				    scandata->limits = limits;
-				    if(!thrmgr_dispatch(multi_pool, scandata)) {
-					logg("!multiscan: thread dispatch failed for multi_pool (file %s)\n", fname);
-					mdprintf(odesc, "ERROR: Can't scan file %s\n", fname);
-					free(fname);
-					free(scandata);
-					closedir(dd);
-					return -1;
-				    }
-
-				    while(!multi_pool->thr_idle) /* non-critical */
-#ifdef C_WINDOWS
-					Sleep(1);
-#else
-					usleep(200);
-#endif
-				}
-			    }
-			}
-		    } else {
-			free(fname);
-		    }
-		}
-	    }
-	}
-	closedir(dd);
-    } else {
-	return -2;
-    }
-
-    (*reclev)--;
-    return 0;
-}
 
 int command(int desc, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int timeout)
 {
@@ -249,13 +79,13 @@ int command(int desc, const struct cl_engine *engine, const struct cl_limits *li
     cli_chomp(buff);
 
     if(!strncmp(buff, CMD1, strlen(CMD1))) { /* SCAN */
-	if(scan(buff + strlen(CMD1) + 1, NULL, engine, limits, options, copt, desc, 0) == -2)
+	if(scan(buff + strlen(CMD1) + 1, NULL, engine, limits, options, copt, desc, TYPE_SCAN) == -2)
 	    if(cfgopt(copt, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD2, strlen(CMD2))) { /* RAWSCAN */
 	opt = options & ~CL_SCAN_ARCHIVE;
-	if(scan(buff + strlen(CMD2) + 1, NULL, engine, NULL, opt, copt, desc, 0) == -2)
+	if(scan(buff + strlen(CMD2) + 1, NULL, engine, NULL, opt, copt, desc, TYPE_SCAN) == -2)
 	    if(cfgopt(copt, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
@@ -270,7 +100,7 @@ int command(int desc, const struct cl_engine *engine, const struct cl_limits *li
 	mdprintf(desc, "PONG\n");
 
     } else if(!strncmp(buff, CMD6, strlen(CMD6))) { /* CONTSCAN */
-	if(scan(buff + strlen(CMD6) + 1, NULL, engine, limits, options, copt, desc, 1) == -2)
+	if(scan(buff + strlen(CMD6) + 1, NULL, engine, limits, options, copt, desc, TYPE_CONTSCAN) == -2)
 	    if(cfgopt(copt, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
@@ -324,49 +154,9 @@ int command(int desc, const struct cl_engine *engine, const struct cl_limits *li
 	close(fd); /* FIXME: should we close it here? */
 
     } else if(!strncmp(buff, CMD13, strlen(CMD13))) { /* MULTISCAN */
-	    threadpool_t *multi_pool;
-	    int idletimeout = cfgopt(copt, "IdleTimeout")->numarg;
-	    int max_threads = cfgopt(copt, "MaxThreads")->numarg;
-	    int ret;
-	    unsigned int reclev = 0;
-	    const char *path = buff + strlen(CMD13) + 1;
-	    const char *virname;
-	    struct stat sb;
-
-	if(stat(path, &sb) == -1) {
-	    mdprintf(desc, "Can't stat file %s\n", path);
-	    return -1;
-	}
-
-	if(S_ISDIR(sb.st_mode)) {
-	    if((multi_pool = thrmgr_new(max_threads, idletimeout, multiscanfile)) == NULL) {
-		logg("!thrmgr_new failed for multi_pool\n");
-		mdprintf(desc, "ERROR: thrmgr_new failed for multi_pool\n");
-		return -1;
-	    }
-
-	    ret = multiscan(path, engine, limits, options, copt, desc, &reclev, multi_pool);
-	    thrmgr_destroy(multi_pool);
-
-	    if(ret < 0)
-		return -1;
-
-	} else {
-	    ret = cl_scanfile(path, &virname, NULL, engine, limits, options);
-
-	    if(ret == CL_VIRUS) {
-		mdprintf(desc, "%s: %s FOUND\n", path, virname);
-		logg("%s: %s FOUND\n", path, virname);
-		virusaction(path, virname, copt);
-	    } else if(ret != CL_CLEAN) {
-		mdprintf(desc, "%s: %s ERROR\n", path, cl_strerror(ret));
-		logg("%s: %s ERROR\n", path, cl_strerror(ret));
-	    } else {
-		mdprintf(desc, "%s: OK\n", path); 
-		if(logok)
-		    logg("%s: OK\n", path);
-	    }
-	}
+	if(scan(buff + strlen(CMD13) + 1, NULL, engine, limits, options, copt, desc, TYPE_MULTISCAN) == -2)
+	    if(cfgopt(copt, "ExitOnOOM")->enabled)
+		return COMMAND_SHUTDOWN;
 
     } else {
 	mdprintf(desc, "UNKNOWN COMMAND\n");
