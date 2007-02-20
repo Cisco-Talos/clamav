@@ -1,3 +1,7 @@
+Tue Feb 20 15:59:12 CET 2007 (tk)
+---------------------------------
+  * clamd, clamconf: merge win32 patches from NJH
+
 Tue Feb 20 11:53:47 GMT 2007 (trog)
 -----------------------------------
   * libclamav/unrar: allow for sparc aligned access requirements (bb#304)

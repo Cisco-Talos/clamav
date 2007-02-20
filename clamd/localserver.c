@@ -24,9 +24,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
+#ifndef	C_WINDOWS
 #include <sys/socket.h>
+#endif
 #include <sys/stat.h>
+#ifndef	C_WINDOWS
 #include <sys/un.h>
+#endif
 #include <errno.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -42,7 +46,7 @@
 #include "output.h"
 #include "localserver.h"
 
-#ifdef        C_WINDOWS
+#ifdef C_WINDOWS
 int localserver(const struct cfgstruct *copt)
 {
     logg("!Localserver is not supported on this platform");

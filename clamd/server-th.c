@@ -516,7 +516,9 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     time(&start_time);
 
     for(;;) {				
-	struct stat st_buf;
+#if !defined(C_WINDOWS) && !defined(C_BEOS)
+	    struct stat st_buf;
+#endif
     	int socketd = socketds[0];
     	if(nsockets > 1) {
     	    int pollret = poll_fds(socketds, nsockets, -1);
@@ -525,7 +527,8 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     	    } else {
     		socketd = socketds[0]; /* on a poll error use the first socket */
     	    }
-    	}    
+    	}
+#if !defined(C_WINDOWS) && !defined(C_BEOS)
 	if(fstat(socketd, &st_buf) == -1) {
 	    logg("!fstat(): socket descriptor gone\n");
 	    memmove(socketds, socketds + 1, sizeof(socketds[0]) * nsockets);
@@ -535,6 +538,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 		break;
 	    }
 	}
+#endif
 	new_sd = accept(socketd, NULL, NULL);
 	if((new_sd == -1) && (errno != EINTR)) {
 	    if(progexit) {
