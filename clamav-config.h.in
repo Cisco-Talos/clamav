@@ -66,6 +66,9 @@
 /* os is OS/2 */
 #undef C_OS2
 
+/* os is osf/tru64 */
+#undef C_OSF
+
 /* os is QNX 6.x.x */
 #undef C_QNX6
 
@@ -74,12 +77,6 @@
 
 /* Path to virus database directory. */
 #undef DATADIR
-
-/* Name of the main database */
-#undef DB1NAME
-
-/* Name of the daily database */
-#undef DB2NAME
 
 /* "default FD_SETSIZE value" */
 #undef DEFAULT_FD_SETSIZE
@@ -362,6 +359,9 @@
 
 /* Define to 1 to make fseeko visible on some hosts (e.g. glibc 2.2). */
 #undef _LARGEFILE_SOURCE
+
+/* POSIX compatibility */
+#undef _POSIX_PII_SOCKET
 
 /* thread safe */
 #undef _REENTRANT
