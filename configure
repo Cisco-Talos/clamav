@@ -23315,6 +23315,32 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
     ;;
+*-*-osf*)
+    if test "$have_pthreads" = "yes"; then
+	THREAD_LIBS="-pthread"
+	TH_SAFE="-thread-safe"
+
+cat >>confdefs.h <<\_ACEOF
+#define CL_THREAD_SAFE 1
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define _REENTRANT 1
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define _POSIX_PII_SOCKET 1
+_ACEOF
+
+    fi
+
+cat >>confdefs.h <<\_ACEOF
+#define C_OSF 1
+_ACEOF
+
+    ;;
 nto-qnx*)
      if test "$have_pthreads" = "yes"; then
 

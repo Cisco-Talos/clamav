@@ -1,3 +1,7 @@
+Tue Feb 20 20:51:57 CET 2007 (tk)
+---------------------------------
+  * configure: add support for osf/tru64
+
 Tue Feb 20 20:19:04 CET 2007 (tk)
 ---------------------------------
   * clamd: merge multiscan() with dirscan() (also closes bb#302)

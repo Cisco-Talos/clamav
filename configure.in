@@ -550,6 +550,16 @@ aix*)
     fi
     AC_DEFINE(C_AIX,1,[os is aix])
     ;;
+*-*-osf*)
+    if test "$have_pthreads" = "yes"; then
+	THREAD_LIBS="-pthread"
+	TH_SAFE="-thread-safe"
+	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
+	AC_DEFINE(_REENTRANT,1,[thread safe])
+	AC_DEFINE(_POSIX_PII_SOCKET,1,[POSIX compatibility])
+    fi
+    AC_DEFINE(C_OSF,1,[os is osf/tru64])
+    ;;
 nto-qnx*)
      if test "$have_pthreads" = "yes"; then
        AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
