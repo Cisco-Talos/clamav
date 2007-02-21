@@ -429,7 +429,7 @@ int32_t _pst_build_desc_ptr (pst_file *pf, int32_t offset, int32_t depth, int32_
 pst_item* _pst_getItem(pst_file *pf, pst_desc_ll *d_ptr);
 static	void	*_pst_parse_item (pst_file *pf, pst_desc_ll *d_ptr);
 static	pst_num_array	*_pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll *i2_head);
-int32_t _pst_process(pst_num_array *list, pst_item *item);
+static	int32_t _pst_process(pst_num_array *list, pst_item *item);
 int32_t _pst_free_list(pst_num_array *list);
 void _pst_freeItem(pst_item *item);
 int32_t _pst_free_id2(pst_index2_ll * head);
@@ -814,7 +814,7 @@ static int32_t
 pst_attach_to_file_base64(pst_file *pf, pst_item_attach *attach, FILE *fp)
 {
 	pst_index_ll *ptr;
-	int32_t size;
+	int32_t size = 0;
 	char *c;
 
 	if (attach->id_val != -1) {
@@ -899,10 +899,10 @@ pst_load_extended_attributes(pst_file *pf)
   // for PST files this will load up ID2 0x61 and check it's "list" attribute.
   pst_desc_ll *p;
   pst_num_array *na;
-  pst_index2_ll *list2;
+  pst_index2_ll *list2 = NULL;
   unsigned char * buffer=NULL, *headerbuffer=NULL;
   pst_x_attrib xattrib;
-  int32_t bptr = 0, bsize, hsize, tint, err=0, x;
+  int32_t bptr = 0, bsize = 0, hsize, tint, err=0, x;
   pst_x_attrib_ll *ptr, *p_head=NULL, *p_sh=NULL, *p_sh2=NULL;
 
   if ((p = _pst_getDptr(pf, 0x61)) == NULL) {
@@ -1963,8 +1963,9 @@ _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll *i2_head)
 	    cli_dbgmsg("not able to read the ID2 data. Setting to be read later. %#x\n",
 		  table_rec.value);
 	    na_ptr->items[x]->size = 0;
-	    na_ptr->items[x]->data = NULL;
 	    na_ptr->items[x]->type = table_rec.value;
+	    free(na_ptr->items[x]->data);
+	    na_ptr->items[x]->data = NULL;
 	  }
 	  cli_dbgmsg("Read %i bytes to a buffer at %p\n",
 		na_ptr->items[x]->size, na_ptr->items[x]->data);
@@ -2036,6 +2037,7 @@ _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll *i2_head)
 	  na_ptr->items[x]->type = table_rec.ref_type;
       } else {
 	cli_warnmsg("ERROR Unknown ref_type %#x\n", table_rec.ref_type);
+	if(buf) free(buf);
 	if(na_head)
 	_pst_free_list(na_head);
 	return NULL;
@@ -2088,8 +2090,10 @@ _pst_parse_block(pst_file *pf, u_int32_t block_id, pst_index2_ll *i2_head)
   }\
 }
 
-int32_t _pst_process(pst_num_array *list , pst_item *item) {
-  int32_t x;
+static int32_t
+_pst_process(pst_num_array *list , pst_item *item)
+{
+  int32_t x, t;
   int32_t next = 0;
   pst_item_attach *attach;
   pst_item_extra_field *ef;
@@ -2585,7 +2589,9 @@ int32_t _pst_process(pst_num_array *list , pst_item *item) {
 	cli_dbgmsg("Attachment Size - ");
 	NULL_CHECK(attach);
 	MOVE_NEXT(attach);
-	memcpy(&(attach->size), list->items[x]->data, sizeof(attach->size));
+	t = (*(int32_t *)list->items[x]->data);
+	LE32_CPU(t);
+	attach->size = t;
 	cli_dbgmsg("%i\n", attach->size);
 	//INC_CHECK_X();
 	break;
@@ -2879,7 +2885,8 @@ int32_t _pst_process(pst_num_array *list , pst_item *item) {
 	MOVE_NEXT(attach);
 	memcpy(&(attach->position), list->items[x]->data, sizeof(attach->position));
 	LE32_CPU(attach->position);
-	cli_dbgmsg("%i [%#x]\n", attach->position);
+	/*cli_dbgmsg("%i [%#x]\n", attach->position);*/
+	cli_dbgmsg("[%#x]\n", attach->position);
 	//INC_CHECK_X();
 	break;
       case 0x3707: // PR_ATTACH_LONG_FILENAME Attachment filename (long?)
@@ -3750,10 +3757,10 @@ int32_t _pst_free_list(pst_num_array *list) {
   pst_num_array *l;
   while (list != NULL) {
     while (x < list->count_item) {
-      if (list->items[x]->data != NULL) {
-	free (list->items[x]->data);
-      }
       if (list->items[x] != NULL) {
+	if (list->items[x]->data != NULL) {
+	free (list->items[x]->data);
+	}
 	free (list->items[x]);
       }
       x++;
@@ -5380,7 +5387,7 @@ pst_decode(const char *dir, int desc)
 	  if ((temp = item->email->outlook_sender) == NULL)
 	    temp = (char *)"";
 	  fprintf(f->output, "From: \"%s\" <%s>\n", item->email->outlook_sender_name, temp);
-	  if (item->email->subject != NULL) {
+	  if ((item->email->subject != NULL) && (item->email->subject->subj != NULL)) {
 	    fprintf(f->output, "Subject: %s\n", item->email->subject->subj);
 	  } /*else
 	    fprintf(f->output, "Subject: \n");*/
