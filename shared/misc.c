@@ -49,6 +49,12 @@
 #define	O_BINARY	0
 #endif
 
+#ifdef CL_EXPERIMENTAL
+#define VERSION_EXP	VERSION"-exp"
+#else
+#define VERSION_EXP	VERSION
+#endif
+
 char *freshdbdir(void)
 {
 	struct cl_cvd *d1, *d2;
@@ -119,10 +125,11 @@ void print_version(void)
 
     if((daily = cl_cvdhead(path))) {
 	    time_t t = (time_t) daily->stime;
-	printf("ClamAV "VERSION"/%d/%s", daily->version, ctime(&t));
+
+	printf("ClamAV "VERSION_EXP"/%d/%s", daily->version, ctime(&t));
 	cl_cvdfree(daily);
     } else {
-	printf("ClamAV "VERSION"\n");
+	printf("ClamAV "VERSION_EXP"\n");
     }
 
     free(path);
