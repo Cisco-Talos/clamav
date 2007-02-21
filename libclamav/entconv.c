@@ -769,6 +769,7 @@ static iconv_t iconv_open_cached(const unsigned char* fromcode)
 	size_t idx;
 	const size_t fromcode_len = strlen((const char*)fromcode);
 	struct element * e;
+	iconv_t  iconv_struct;
 
 	init_iconv_pool_ifneeded();
 	cache = cache_get_tls_instance();/* gets TLS iconv pool */
@@ -786,6 +787,8 @@ static iconv_t iconv_open_cached(const unsigned char* fromcode)
 		return cache->tab[e->data];
 	}
 	cli_dbgmsg("iconv not found in cache, for encoding:%s\n",fromcode);
+	iconv_struct = iconv_open("UTF-16BE",(const char*)fromcode);
+	if(iconv_struct != (iconv_t)-1) {
 	idx = cache->last++;
 	if(idx >= cache->len) {
 		cache->len += 16;
@@ -798,9 +801,11 @@ static iconv_t iconv_open_cached(const unsigned char* fromcode)
 	}
 
 	hashtab_insert(&cache->hashtab, fromcode, fromcode_len, idx);
-	cache->tab[idx] = iconv_open("UTF-16BE",(const char*)fromcode);
+		cache->tab[idx] = iconv_struct;
 	cli_dbgmsg("iconv_open(),for:%s -> %p\n",fromcode,(void*)cache->tab[idx]);
 	return cache->tab[idx];
+}
+	return (iconv_t)-1;
 }
 
 

@@ -1,3 +1,7 @@
+Wed Feb 21 17:26:00 CET 2007 (edwin)
+------------------------------------
+  * libclamav/entconv.c: don't cache iconv_open() failures. (bb #329)
+
 Tue Feb 20 21:11:29 CET 2007 (tk)
 ---------------------------------
   * configure: fix compilation errors on FreeBSD (bb#306)
