@@ -503,7 +503,7 @@ int cli_initengine(struct cl_engine **engine, unsigned int options)
 
 
     if(!*engine) {
-	cli_dbgmsg("Initializing the engine structure\n");
+	cli_dbgmsg("Initializing the engine ("VERSION")\n");
 
 	*engine = (struct cl_engine *) cli_calloc(1, sizeof(struct cl_engine));
 	if(!*engine) {
