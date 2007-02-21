@@ -1,3 +1,7 @@
+Wed Feb 21 20:40:49 GMT 2007 (njh)
+----------------------------------
+  * libclamav/message.c:	Better warning message, bug 311
+
 Wed Feb 21 20:07:00 GMT 2007 (njh)
 ----------------------------------
   * libclamav/pst.c:	Include upstream patches

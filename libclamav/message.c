@@ -1184,7 +1184,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			 */
 			free(uptr);
 		} else {
-			cli_warnmsg("HQX8 messages not yet supported - if you believe this file contains a virus, submit it to www.clamav.net\n");
+			cli_warnmsg("HQX8 messages not yet supported, extraction may fail - if you believe this file contains a virus, submit it to www.clamav.net\n");
 			newlen = len;
 		}
 
