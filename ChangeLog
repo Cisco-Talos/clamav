@@ -1,3 +1,9 @@
+Wed Feb 21 19:10:42 GMT 2007 (njh)
+----------------------------------
+  * clamav-milter/clamav-milter.c:	Use logg() functions instead of
+			syslog. Needed for code tidy, and also possibly fixes
+			bug 332.
+
 Wed Feb 21 17:26:00 CET 2007 (edwin)
 ------------------------------------
   * libclamav/entconv.c: don't cache iconv_open() failures. (bb #329)
@@ -40,7 +46,7 @@ Sun Feb 18 21:23:12 CET 2007 (tk)
 
 Sun Feb 18 16:42:45 CET 2007 (edwin)
 ------------------------------------
-  * libclamav/phish_*.c, regex_list.c: Remove obsolete $Log$ keyword.		
+  * libclamav/phish_*.c, regex_list.c: Remove obsolete $Log$ keyword.
 
 Sun Feb 18 15:32:45 CET 2007 (tk)
 ---------------------------------
