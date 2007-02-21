@@ -2060,7 +2060,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
 	cli_dbgmsg("in parseEmailBody\n");
 
-	if(mctx->ctx->limits->maxmailrec) {
+	if(mctx->ctx->limits && mctx->ctx->limits->maxmailrec) {
 		const cli_ctx *ctx = mctx->ctx;	/* needed for BLOCKMAX :-( */
 
 		/*
