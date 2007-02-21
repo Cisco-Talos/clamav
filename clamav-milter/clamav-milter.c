@@ -3597,9 +3597,10 @@ clamfi_eom(SMFICTX *ctx)
 			smfi_addheader(ctx, "X-Virus-Status", _("Clean"));
 
 		/* Include the sendmail queue ID in the log */
-		logg(_("%s: clean message from %s"),
-			sendmailId,
-			(privdata->from) ? privdata->from : _("an unknown sender"));
+		if(logClean)
+			logg(_("%s: clean message from %s\n"),
+				sendmailId,
+				(privdata->from) ? privdata->from : _("an unknown sender"));
 
 		if(privdata->body) {
 			/*
