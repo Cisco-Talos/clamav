@@ -343,7 +343,7 @@ int main(int argc, char **argv)
 	return 1;
     }
 
-    logg("#Loaded %d signatures.\n", sigs);
+    logg("Loaded %d signatures.\n", sigs);
     if((ret = cl_build(engine)) != 0) {
 	logg("!Database initialization error: %s\n", cl_strerror(ret));;
 	logg_close();
