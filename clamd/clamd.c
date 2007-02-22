@@ -261,13 +261,6 @@ int main(int argc, char **argv)
     }
 #endif
 
-    logg("#clamd daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
-
-    if(logg_size)
-	logg("#Log file size limited to %d bytes.\n", logg_size);
-    else
-	logg("#Log file size limit disabled.\n");
-
 #ifdef C_LINUX
     procdev = 0;
     if(stat("/proc", &sb) != -1 && !sb.st_size)
@@ -304,9 +297,16 @@ int main(int argc, char **argv)
     } else
         foreground = 1;
 
+    logg("clamd daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
+
+    if(logg_size)
+	logg("Log file size limited to %d bytes.\n", logg_size);
+    else
+	logg("Log file size limit disabled.\n");
+
     /* load the database(s) */
     dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
-    logg("#Reading databases from %s\n", dbdir);
+    logg("Reading databases from %s\n", dbdir);
 
     if(cfgopt(copt, "PhishingSignatures")->enabled)
 	dboptions |= CL_DB_PHISHING;

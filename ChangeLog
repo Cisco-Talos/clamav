@@ -1,3 +1,7 @@
+Thu Feb 22 18:12:53 CET 2007 (tk)
+---------------------------------
+  * clamd/clamd.c: print some more information in Foreground mode (bb#317)
+
 Thu Feb 22 17:16:54 CET 2007 (tk)
 ---------------------------------
   * shared/misc.c: drop rmdirs() and use cli_rmdirs() instead
