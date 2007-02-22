@@ -1,3 +1,7 @@
+Thu Feb 22 17:16:54 CET 2007 (tk)
+---------------------------------
+  * shared/misc.c: drop rmdirs() and use cli_rmdirs() instead
+
 Thu Feb 22 16:51:33 CET 2007 (tk)
 ---------------------------------
   * libclamav: new scan setting CL_SCAN_PDF

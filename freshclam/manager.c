@@ -715,7 +715,7 @@ static int chdir_inc(const char *dbname)
 
 	if(cvd_unpack(dbfile, path) == -1) {
 	    logg("!chdir_inc: Can't unpack %s into %s\n", dbfile, path);
-	    rmdirs(path);
+	    cli_rmdirs(path);
 	    return -1;
 	}
     }
@@ -822,7 +822,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	inc = 0;
 	if(stat(dbinc, &sb) != -1) {
 	    logg("^Removing corrupted incremental directory %s\n", dbinc);
-	    if(rmdirs(dbinc)) {
+	    if(cli_rmdirs(dbinc)) {
 		logg("!Can't remove incremental directory\n");
 		return 53;
 	    }
@@ -998,14 +998,14 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	    if(ret) {
 		if(bacinc) {
 		    logg("*Restoring incremental directory %s from backup\n", dbinc);
-		    rmdirs(dbinc);
+		    cli_rmdirs(dbinc);
 		    rename(bacinc, dbinc);
 		    free(bacinc);
 		}
 		return ret;
 	    } else {
 		logg("*Removing incremental directory %s\n", dbinc);
-		rmdirs(dbinc);
+		cli_rmdirs(dbinc);
 	    }
 
 	} else {
@@ -1014,7 +1014,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 
 	if(bacinc) {
 	    logg("*Removing backup directory %s\n", bacinc);
-	    rmdirs(bacinc);
+	    cli_rmdirs(bacinc);
 	    free(bacinc);
 	}
     }
@@ -1026,7 +1026,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
     }
 
     if(nodb && inc)
-	rmdirs(dbinc);
+	cli_rmdirs(dbinc);
 
     logg("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", inc ? dbinc : dbfile, current->version, current->sigs, current->fl, current->builder);
 

@@ -174,7 +174,7 @@ int clamav_rmdirs(const char *dir)
 		}
 	    }
 #endif
-	    rmdirs(dir);
+	    cli_rmdirs(dir);
 	    exit(0);
 	    break;
 	default:

@@ -186,66 +186,6 @@ int filecopy(const char *src, const char *dest)
 
 }
 
-int rmdirs(const char *dirname)
-{
-	DIR *dd;
-	struct dirent *dent;
-	struct stat maind, statbuf;
-	char *fname;
-
-
-    if((dd = opendir(dirname)) != NULL) {
-	while(stat(dirname, &maind) != -1) {
-	    if(!rmdir(dirname)) break;
-	    if(errno != ENOTEMPTY && errno != EEXIST && errno != EBADF) {
-		closedir(dd);
-		return 0;
-	    }
-
-	    while((dent = readdir(dd))) {
-#if   (!defined(C_CYGWIN)) && (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
-		if(dent->d_ino)
-#endif
-		{
-		    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
-			fname = mcalloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
-#ifdef	C_WINDOWS
-			sprintf(fname, "%s\\%s", dirname, dent->d_name);
-#else
-			sprintf(fname, "%s/%s", dirname, dent->d_name);
-#endif
-
-			/* stat the file */
-			if(lstat(fname, &statbuf) != -1) {
-			    if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
-				if(rmdir(fname) == -1) { /* can't be deleted */
-				    if(errno == EACCES) {
-					closedir(dd);
-					free(fname);
-					return 1;
-				    }
-				    rmdirs(fname);
-				}
-			    } else
-				unlink(fname);
-			}
-
-			free(fname);
-		    }
-		}
-	    }
-
-	    rewinddir(dd);
-	}
-
-    } else { 
-	return 1;
-    }
-
-    closedir(dd);
-    return 0;
-}
-
 int dircopy(const char *src, const char *dest)
 {
 	DIR *dd;
@@ -279,7 +219,7 @@ int dircopy(const char *src, const char *dest)
 
 	    if(filecopy(spath, dpath) == -1) {
 		/* mprintf("!dircopy: Can't copy %s to %s\n", spath, dpath); */
-		rmdirs(dest);
+		cli_rmdirs(dest);
 		closedir(dd);
 		return -1;
 	    }
