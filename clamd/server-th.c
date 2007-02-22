@@ -251,7 +251,7 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
 
 int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigned int dboptions, const struct cfgstruct *copt)
 {
-	int new_sd, max_threads, i, ret = 0;
+	int max_threads, i, ret = 0;
 	unsigned int options = 0;
 	threadpool_t *thr_pool;
 #ifndef	C_WINDOWS
@@ -520,16 +520,18 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	    struct stat st_buf;
 #endif
     	int socketd = socketds[0];
+	int new_sd = 0;
+
     	if(nsockets > 1) {
-    	    int pollret = poll_fds(socketds, nsockets, -1);
+	    int pollret = poll_fds(socketds, nsockets, -1, 1);
     	    if(pollret > 0) {
     		socketd = socketds[pollret - 1];
     	    } else {
-    		socketd = socketds[0]; /* on a poll error use the first socket */
+		new_sd = -1;
     	    }
     	}
 #if !defined(C_WINDOWS) && !defined(C_BEOS)
-	if(fstat(socketd, &st_buf) == -1) {
+	if(new_sd != -1 && fstat(socketd, &st_buf) == -1) {
 	    logg("!fstat(): socket descriptor gone\n");
 	    memmove(socketds, socketds + 1, sizeof(socketds[0]) * nsockets);
 	    nsockets--;
@@ -539,7 +541,8 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	    }
 	}
 #endif
-	new_sd = accept(socketd, NULL, NULL);
+	if (new_sd != -1)
+	    new_sd = accept(socketd, NULL, NULL);
 	if((new_sd == -1) && (errno != EINTR)) {
 	    if(progexit) {
 	    	break;

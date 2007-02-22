@@ -151,7 +151,7 @@ void virusaction(const char *filename, const char *virname, const struct cfgstru
 }
 #endif /* C_WINDOWS */
 
-int poll_fds(int *fds, int nfds, int timeout_sec)
+int poll_fds(int *fds, int nfds, int timeout_sec, int check_signals)
 {
 	int retval;
 	int i;
@@ -179,7 +179,7 @@ int poll_fds(int *fds, int nfds, int timeout_sec)
     while (1) {
     	retval = poll(poll_data, nfds, timeout_sec);
 	if (retval == -1) {
-   	    if (errno == EINTR) {
+	    if (errno == EINTR && !check_signals) {
 		continue;
 	    }
 	    if (nfds>1)
@@ -245,9 +245,9 @@ int poll_fds(int *fds, int nfds, int timeout_sec)
     return -1;
 }
 
-int poll_fd(int fd, int timeout_sec)
+int poll_fd(int fd, int timeout_sec, int check_signals)
 {
-    return poll_fds(&fd, 1, timeout_sec);
+    return poll_fds(&fd, 1, timeout_sec, check_signals);
 }
 
 int is_fd_connected(int fd)
@@ -373,7 +373,7 @@ int readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeou
     time(&starttime);
     while(1) {
 	time(&timenow);
-	switch(poll_fd(sockfd, (timeout_sec && ((timeout_sec-(timenow-starttime)) > 0)) ? timeout_sec-(timenow-starttime) : 0)) {
+	switch(poll_fd(sockfd, (timeout_sec && ((timeout_sec-(timenow-starttime)) > 0)) ? timeout_sec-(timenow-starttime) : 0, 0)) {
 	    case 0: /* timeout */
 		return -2;
 	    case -1:
@@ -457,7 +457,7 @@ int readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeou
 	}
 	while(1) {
 	    time(&timenow);
-	    switch(poll_fd(sockfd, ((timeout_sec-(timenow-starttime)) > 0) ? timeout_sec-(timenow-starttime) : 0)) {
+	    switch(poll_fd(sockfd, ((timeout_sec-(timenow-starttime)) > 0) ? timeout_sec-(timenow-starttime) : 0, 0)) {
 		case 0: /* timeout */
 		    return -2;
 		case -1:

@@ -484,7 +484,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	}
     }
 
-    switch(retval = poll_fd(sockfd, timeout)) {
+    switch(retval = poll_fd(sockfd, timeout, 0)) {
 	case 0: /* timeout */
 	    mdprintf(odesc, "Accept timeout. ERROR\n");
 	    logg("!ScanStream %d: accept timeout.\n", port);
@@ -519,7 +519,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 
     btread = sizeof(buff);
 
-    while((retval = poll_fd(acceptd, timeout)) == 1) {
+    while((retval = poll_fd(acceptd, timeout, 0)) == 1) {
 	bread = recv(acceptd, buff, btread, 0);
 	if(bread <= 0)
 	    break;
