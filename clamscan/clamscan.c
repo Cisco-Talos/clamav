@@ -269,6 +269,7 @@ void help(void)
     mprintf("    --no-pe                              Disable PE analysis\n");
     mprintf("    --no-elf                             Disable ELF support\n");
     mprintf("    --no-ole2                            Disable OLE2 support\n");
+    mprintf("    --no-pdf                             Disable PDF support\n");
     mprintf("    --no-html                            Disable HTML support\n");
     mprintf("    --no-archive                         Disable libclamav archive support\n");
     mprintf("    --detect-broken                      Try to detect broken executable files\n");

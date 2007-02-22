@@ -71,6 +71,7 @@ static struct option clamscan_longopt[] = {
     {"no-pe", 0, 0, 0},
     {"no-elf", 0, 0, 0},
     {"no-ole2", 0, 0, 0},
+    {"no-pdf", 0, 0, 0},
     {"no-html", 0, 0, 0},
     {"no-mail", 0, 0, 0},
     {"mail-follow-urls", 0, 0, 0},

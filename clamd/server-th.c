@@ -412,6 +412,13 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	logg("OLE2 support disabled.\n");
     }
 
+    if(cfgopt(copt, "ScanPDF")->enabled) {
+	logg("PDF support enabled.\n");
+	options |= CL_SCAN_PDF;
+    } else {
+	logg("PDF support disabled.\n");
+    }
+
     if(cfgopt(copt, "ScanHTML")->enabled) {
 	logg("HTML support enabled.\n");
 	options |= CL_SCAN_HTML;

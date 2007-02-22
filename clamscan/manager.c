@@ -269,6 +269,11 @@ int scanmanager(const struct optstruct *opt)
     else
 	options |= CL_SCAN_OLE2;
 
+    if(opt_check(opt, "no-pdf"))
+	options &= ~CL_SCAN_PDF;
+    else
+	options |= CL_SCAN_PDF;
+
     if(opt_check(opt, "no-html"))
 	options &= ~CL_SCAN_HTML;
     else

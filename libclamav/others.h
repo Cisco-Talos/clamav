@@ -73,6 +73,7 @@ typedef struct {
 #define SCAN_ARCHIVE	    (ctx->options & CL_SCAN_ARCHIVE)
 #define SCAN_MAIL	    (ctx->options & CL_SCAN_MAIL)
 #define SCAN_OLE2	    (ctx->options & CL_SCAN_OLE2)
+#define SCAN_PDF	    (ctx->options & CL_SCAN_PDF)
 #define SCAN_HTML	    (ctx->options & CL_SCAN_HTML)
 #define SCAN_PE		    (ctx->options & CL_SCAN_PE)
 #define SCAN_ELF	    (ctx->options & CL_SCAN_ELF)

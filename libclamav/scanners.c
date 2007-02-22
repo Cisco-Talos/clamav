@@ -1958,7 +1958,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
 
 	case CL_TYPE_PDF:
-	    if(SCAN_ARCHIVE && (DCONF_DOC & DOC_CONF_PDF))    /* you may wish to change this line */
+	    if(SCAN_PDF && (DCONF_DOC & DOC_CONF_PDF))
 		ret = cli_scanpdf(desc, ctx);
 	    break;
 

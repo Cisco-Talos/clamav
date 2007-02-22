@@ -61,6 +61,7 @@ struct cfgoption cfg_options[] = {
     {"AlgorithmicDetection", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"ScanHTML", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"ScanOLE2", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
+    {"ScanPDF", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"ScanArchive", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"ArchiveMaxFileSize", OPT_COMPSIZE, 10485760, NULL, 0, OPT_CLAMD},
     {"ArchiveMaxRecursion", OPT_NUM, 8, NULL, 0, OPT_CLAMD},

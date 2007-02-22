@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -94,6 +94,7 @@ extern "C"
 #define CL_SCAN_PHISHING_BLOCKSSL   0x800 /* ssl mismatches, not ssl by itself*/
 #define CL_SCAN_PHISHING_BLOCKCLOAK 0x1000
 #define CL_SCAN_ELF		    0x2000
+#define CL_SCAN_PDF		    0x4000
 
 /* recommended scan settings */
 #define CL_SCAN_STDOPT		(CL_SCAN_ARCHIVE | CL_SCAN_MAIL | CL_SCAN_OLE2 | CL_SCAN_HTML | CL_SCAN_PE | CL_SCAN_ALGORITHMIC | CL_SCAN_ELF) 
