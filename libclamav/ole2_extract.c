@@ -49,9 +49,6 @@
 #include "others.h"
 #include "ole2_extract.h"
 
-#include "mbox.h"
-#include "blob.h" /* sanitiseName() */
-
 #define ole2_endian_convert_16(v) le16_to_host(v)
 #define ole2_endian_convert_32(v) le32_to_host(v)
 
@@ -603,7 +600,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 		snprintf(name, 11, "%.10ld", i + (long int) prop);
 	} else {
 		/* Sanitize the file name */
-		sanitiseName(name);
+		cli_sanitise_filename(name);
 	}
 
 	newname = (char *) cli_malloc(strlen(name) + strlen(dir) + 2);

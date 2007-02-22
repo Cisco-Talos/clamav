@@ -3820,7 +3820,7 @@ rfc1341(message *m, const char *dir)
 			char outname[NAME_MAX + 1];
 			time_t now;
 
-			sanitiseName(id);
+			cli_sanitise_filename(id);
 
 			snprintf(outname, sizeof(outname) - 1, "%s/%s", dir, id);
 

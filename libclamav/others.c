@@ -923,3 +923,31 @@ int cli_bitset_test(bitset_t *bs, unsigned long bit_offset)
 	}
 	return (bs->bitset[char_offset] & ((unsigned char)1 << bit_offset));
 }
+
+
+/*
+ * Code from NJH
+ * Different operating systems allow different characters in their filenames
+ * FIXME: What does QNX want? There is no #ifdef C_QNX, but if there were
+ *      it may be best to treat it like MSDOS
+ */
+void
+cli_sanitise_filename(char *name)
+{
+	if(name == NULL)
+		return;
+
+	while(*name) {
+#ifdef  C_DARWIN
+		*name &= '\177';
+#endif
+		/* Also check for tab - "Heinz Martin" <Martin@hemag.ch> */
+#if     defined(MSDOS) || defined(C_CYGWIN) || defined(C_WINDOWS) || defined(C_OS2)
+		if(strchr("%/*?<>|\\\"+=,;:\t ~", *name))
+#else
+		if(*name == '/')
+#endif
+			*name = '_';
+		name++;
+	}
+}

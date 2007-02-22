@@ -67,8 +67,6 @@ typedef	uint32_t	u_int32_t;
 
 #include "pst.h"
 
-#include "mbox.h"
-
 #define	DWORD	unsigned int
 
 #define DEBUG_VERSION 1
@@ -2116,7 +2114,7 @@ _pst_process(pst_num_array *list , pst_item *item)
       case PST_ATTRIB_HEADER: // CUSTOM attribute for saying the Extra Headers
 	cli_dbgmsg("Extra Field - ");
 	ef = (pst_item_extra_field*) cli_calloc(1, sizeof(pst_item_extra_field));
-	ef->field_name = strdup(list->items[x]->extra);
+	ef->field_name = cli_strdup(list->items[x]->extra);
 	LIST_COPY(ef->value, (char*));
 	ef->next = item->extra_fields;
 	item->extra_fields = ef;
@@ -4662,7 +4660,7 @@ check_filename(char *fname)
     *t = '_'; //replace them with an underscore
   }
 #endif
-	sanitiseName(fname);
+	cli_sanitise_filename(fname);
 	return fname;
 }
 
@@ -4990,7 +4988,7 @@ pst_decode(const char *dir, int desc)
 	 * exist
 	 */
 	if (item->file_as == NULL) {
-		item->file_as = strdup("clamav-pst");
+		item->file_as = cli_strdup("clamav-pst");
 		if(item->file_as == NULL) {
 			pst_close(&pstfile);
 			return CL_EMEM;
@@ -5013,7 +5011,7 @@ pst_decode(const char *dir, int desc)
 	}
 	sprintf(f->name, OUTPUT_TEMPLATE, item->file_as);
 
-	f->dname = strdup(item->file_as);
+	f->dname = cli_strdup(item->file_as);
 
     // if overwrite is set to 1 we keep the existing name and don't modify anything
     // we don't want to go changing the file name of the SEPERATE items
@@ -5101,7 +5099,7 @@ pst_decode(const char *dir, int desc)
 	  f->name = (char*) cli_malloc(strlen(item->file_as)+strlen(OUTPUT_TEMPLATE+1));
 	  sprintf(f->name, OUTPUT_TEMPLATE, item->file_as);
 
-	f->dname = strdup(item->file_as);
+	f->dname = cli_strdup(item->file_as);
 
 	  temp = (char*) cli_malloc (strlen(f->name)+10); //enough room for 10 digits
 	  strcpy(temp, f->name);
@@ -5456,8 +5454,8 @@ pst_decode(const char *dir, int desc)
 	  item->current_attach->next = item->attach;
 	  item->attach = item->current_attach;
 	  item->current_attach->data = (char *)lzfu_decompress((const unsigned char *)item->email->rtf_compressed, &nbytes);
-	  item->current_attach->filename2 = strdup(RTF_ATTACH_NAME);
-	  item->current_attach->mimetype = strdup(RTF_ATTACH_TYPE);
+	  item->current_attach->filename2 = cli_strdup(RTF_ATTACH_NAME);
+	  item->current_attach->mimetype = cli_strdup(RTF_ATTACH_TYPE);
 	  /*memcpy(&(item->current_attach->size), item->email->rtf_compressed+sizeof(int32_t), sizeof(int32_t));
 	  LE32_CPU(item->current_attach->size);*/
 	  item->current_attach->size = nbytes;

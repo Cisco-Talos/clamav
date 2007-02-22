@@ -94,7 +94,7 @@ tableInsert(table_t *table, const char *key, int value)
 			for(tableItem = table->tableHead; tableItem; tableItem = tableItem->next)
 				if(tableItem->key == NULL) {
 					/* This item has been deleted */
-					tableItem->key = strdup(key);
+					tableItem->key = cli_strdup(key);
 					tableItem->value = value;
 					return value;
 				}
@@ -110,7 +110,7 @@ tableInsert(table_t *table, const char *key, int value)
 		return -1;
 
 	table->tableLast->next = NULL;
-	table->tableLast->key = strdup(key);
+	table->tableLast->key = cli_strdup(key);
 	table->tableLast->value = value;
 
 	return value;

@@ -41,8 +41,6 @@ static	char	const	rcsid[] = "$Id: untar.c,v 1.35 2007/02/12 20:46:09 njh Exp $";
 #include "clamav.h"
 #include "others.h"
 #include "untar.h"
-#include "mbox.h"
-#include "blob.h"
 
 #define BLOCKSIZE 512
 
@@ -200,7 +198,7 @@ cli_untar(const char *dir, int desc, unsigned int posix, const struct cl_limits 
 			 * see also fileblobSetFilename()
 			 * TODO: check if the suffix needs to be put back
 			 */
-			sanitiseName(name);
+			cli_sanitise_filename(name);
 			suffix = strrchr(name, '.');
 			if(suffix == NULL)
 				suffix = "";
