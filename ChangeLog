@@ -1,3 +1,7 @@
+Thu Feb 22 18:40:20 GMT 2007 (njh)
+----------------------------------
+  * libclamav/tnef.c:	Remove warning messages
+
 Thu Feb 22 19:03:50 CET 2007 (tk)
 ---------------------------------
   * freshclam: merge win32 patches from NJH
