@@ -1,3 +1,7 @@
+Thu Feb 22 14:57:10 GMT 2007 (njh)
+----------------------------------
+  * clamav-milter/clamav-milter.c:	Fix typo
+
 Thu Feb 22 13:28:00 CET 2007 (tk)
 ---------------------------------
   * shared/misc.c: daemonize: don't re-utilize descriptor 0

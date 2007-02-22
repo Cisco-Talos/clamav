@@ -1266,11 +1266,10 @@ main(int argc, char **argv)
 		if(cfgopt(copt, "LogVerbose")->enabled) {
 			logg_verbose = 1;
 #ifdef	CL_DEBUG
-			if(debug_level >= 15) {
 #if	((SENDMAIL_VERSION_A > 8) || ((SENDMAIL_VERSION_A == 8) && (SENDMAIL_VERSION_B >= 13)))
+			if(debug_level >= 15)
 				smfi_setdbg(6);
 #endif
-			}
 #endif
 		}
 #if defined(USE_SYSLOG) && !defined(C_AIX)
@@ -1888,7 +1887,7 @@ main(int argc, char **argv)
 
 			i = 0;
 			while((w = cli_strtok(wont_blacklist, i++, ",")) != NULL) {
-				logg(_("^Won't blacklist %s\n"), w);
+				logg(_("Won't blacklist %s\n"), w);
 				(void)tableInsert(blacklist, w, 0);
 				free(w);
 			}
@@ -3147,7 +3146,7 @@ clamfi_eom(SMFICTX *ctx)
 			 */
 			clamfi_cleanup(ctx);
 
-			logg(LOG_NOTICE, _("clamfi_eom: read nothing from clamd on %s"), hostname);
+			logg(_("clamfi_eom: read nothing from clamd on %s"), hostname);
 
 #ifdef	SESSION
 			pthread_mutex_lock(&sstatus_mutex);
@@ -5684,7 +5683,7 @@ mx(void)
 #else
 		if(addr != (in_addr_t)-1) {
 #endif
-			logg(_("^Won't blacklist %s\n"), buf);
+			logg(_("Won't blacklist %s\n"), buf);
 			(void)tableInsert(blacklist, buf, 0);
 		} else
 			resolve(buf);
@@ -5750,7 +5749,7 @@ resolve(const char *host)
 		p += 4;
 		ip = inet_ntoa(addr);
 		if(ip) {
-			logg(_("^Won't blacklist %s\n"), ip);
+			logg(_("Won't blacklist %s\n"), ip);
 			(void)tableInsert(blacklist, ip, 0);
 		}
 	}
