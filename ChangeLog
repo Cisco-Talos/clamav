@@ -1,3 +1,7 @@
+Thu Feb 22 13:28:00 CET 2007 (tk)
+---------------------------------
+  * shared/misc.c: daemonize: don't re-utilize descriptor 0
+
 Thu Feb 22 10:31:23 CET 2007 (acab)
 -----------------------------------
   * clamd: handle signals while polling the sockets in the main loop (bb#320)

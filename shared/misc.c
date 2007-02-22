@@ -334,7 +334,7 @@ void daemonize(void)
 	    close(i);
 
     } else {
-	close(0);
+	dup2(i, 0);
 	dup2(i, 1);
 	dup2(i, 2);
     }
