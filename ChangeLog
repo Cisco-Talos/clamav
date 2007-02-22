@@ -1,3 +1,7 @@
+Thu Feb 22 15:43:33 CET 2007 (acab)
+-----------------------------------
+  * clamd: handle signals while polling in select mode
+
 Thu Feb 22 14:57:10 GMT 2007 (njh)
 ----------------------------------
   * clamav-milter/clamav-milter.c:	Fix typo

@@ -225,7 +225,7 @@ int poll_fds(int *fds, int nfds, int timeout_sec, int check_signals)
 	retval = select(maxfd+1, &rfds, NULL, NULL,
 			(timeout_sec>0 ? &tv : NULL));
 	if (retval == -1) {
-	    if (errno == EINTR) {
+	    if (errno == EINTR && !check_signals) {
 		continue;
 	    }
 	    return -1;
