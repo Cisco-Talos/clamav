@@ -129,7 +129,8 @@ cli_tnef(const char *dir, int desc)
 		if(length == 0)
 			continue;
 		if(length < 0) {
-			cli_warnmsg("Corrupt TNEF header detected - length %d\n", length);
+			cli_warnmsg("Corrupt TNEF header detected - length %d\n",
+				(int)length);
 			ret = CL_EFORMAT;
 			break;
 		}
@@ -221,7 +222,8 @@ tnef_message(FILE *fp, uint16_t type, uint16_t tag, int32_t length, off_t fsize)
 	char *string;
 #endif
 
-	cli_dbgmsg("message tag 0x%x, type 0x%x, length %d\n", tag, type, length);
+	cli_dbgmsg("message tag 0x%x, type 0x%x, length %d\n", tag, type,
+		(int)length);
 
 	offset = ftell(fp);
 
@@ -295,7 +297,8 @@ tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, int32_t length, const cha
 	off_t offset;
 	char *string;
 
-	cli_dbgmsg("attachment tag 0x%x, type 0x%x, length %d\n", tag, type, length);
+	cli_dbgmsg("attachment tag 0x%x, type 0x%x, length %d\n", tag, type,
+		(int)length);
 
 	offset = ftell(fp);
 
@@ -347,7 +350,8 @@ tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, int32_t length, const cha
 			}
 			break;
 		default:
-			cli_dbgmsg("TNEF - unsupported attachment tag 0x%x type 0x%d length %d\n", tag, type, length);
+			cli_dbgmsg("TNEF - unsupported attachment tag 0x%x type 0x%d length %d\n",
+				tag, type, (int)length);
 			break;
 	}
 
@@ -399,7 +403,8 @@ tnef_header(FILE *fp, uint8_t *part, uint16_t *type, uint16_t *tag, int32_t *len
 		return -1;
 	*length = (int32_t)host32(i32);
 
-	cli_dbgmsg("message tag 0x%x, type 0x%x, length %d\n", *tag, *type, *length);
+	cli_dbgmsg("message tag 0x%x, type 0x%x, length %d\n",
+		*tag, *type, (int)*length);
 
 	return 1;
 }
