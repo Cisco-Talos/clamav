@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-210207"
+#define	CM_VERSION	"devel-220207"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1555,7 +1555,7 @@ main(int argc, char **argv)
 			clamav_versions = (char **)cli_malloc(sizeof(char *));
 			if(clamav_versions == NULL)
 				return EX_TEMPFAIL;
-			clamav_version = strdup(version);
+			clamav_version = cli_strdup(version);
 		}
 	} else {
 		unsigned int session;
@@ -1573,7 +1573,7 @@ main(int argc, char **argv)
 			return EX_TEMPFAIL;
 
 		for(session = 0; session < max_children; session++) {
-			clamav_versions[session] = strdup(version);
+			clamav_versions[session] = cli_strdup(version);
 			if(clamav_versions[session] == NULL)
 				return EX_TEMPFAIL;
 		}
@@ -1804,7 +1804,7 @@ main(int argc, char **argv)
 
 			return EX_CONFIG;
 		}
-		p = strdup(pidfile);
+		p = cli_strdup(pidfile);
 		q = strrchr(p, '/');
 		*q = '\0';
 
@@ -1874,8 +1874,8 @@ main(int argc, char **argv)
 #ifdef	SESSION
 	pthread_mutex_lock(&version_mutex);
 #endif
-	logg(_("Starting %s"), clamav_version);
-	logg(_("*Debugging is on"));
+	logg(_("Starting %s\n"), clamav_version);
+	logg(_("*Debugging is on\n"));
 
 	if(blacklist_time) {
 		mx();
@@ -2687,7 +2687,7 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 	 */
 	privdata->rejectCode = "550";
 
-	privdata->from = strdup(mailaddr);
+	privdata->from = cli_strdup(mailaddr);
 
 	if(hflag)
 		privdata->headers = header_list_new();
@@ -2727,7 +2727,7 @@ clamfi_envrcpt(SMFICTX *ctx, char **argv)
 	if(to == NULL)
 		to = argv[0];
 
-	privdata->to[privdata->numTo] = strdup(to);
+	privdata->to[privdata->numTo] = cli_strdup(to);
 	privdata->to[++privdata->numTo] = NULL;
 
 	return SMFIS_CONTINUE;
@@ -2759,7 +2759,7 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 		(strstr(headerv, "localhost") != 0)) {
 		if(privdata->received)
 			free(privdata->received);
-		privdata->received = strdup(headerv);
+		privdata->received = cli_strdup(headerv);
 	}
 
 	if((strcasecmp(headerf, "Message-ID") == 0) &&
@@ -2769,14 +2769,14 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 		if(privdata->subject)
 			free(privdata->subject);
 		if(headerv)
-			privdata->subject = strdup(headerv);
+			privdata->subject = cli_strdup(headerv);
 	} else if(strcasecmp(headerf, "X-Virus-Status") == 0)
 		privdata->statusCount++;
 	else if(strcasecmp(headerf, "Sender") == 0) {
 		if(privdata->sender)
 			free(privdata->sender);
 		if(headerv)
-			privdata->sender = strdup(headerv);
+			privdata->sender = cli_strdup(headerv);
 	}
 
 	if(!useful_header(headerf)) {
@@ -2958,7 +2958,7 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 
 			if(sendmailId == NULL)
 				sendmailId = "Unknown";
-			logg(_("%s: Message more than StreamMaxLength (%ld) bytes - not scanned"),
+			logg(_("%s: Message more than StreamMaxLength (%ld) bytes - not scanned\n"),
 				sendmailId, streamMaxLength);
 			if(!nflag)
 				smfi_addheader(ctx, "X-Virus-Status", _("Not Scanned - StreamMaxLength exceeded"));
@@ -2966,7 +2966,7 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 			return SMFIS_ACCEPT;	/* clamfi_close will be called */
 		}
 	}
-	if((size_t)nbytes < len) {
+	if(nbytes < (int)len) {
 		clamfi_cleanup(ctx);	/* not needed, but just to be safe */
 		return cl_error;
 	}
@@ -3861,11 +3861,11 @@ clamfi_send(struct privdata *privdata, size_t len, const char *format, ...)
 
 				perror(privdata->filename);
 				strerror_r(errno, buf, sizeof(buf));
-				logg(_("!write failure (%u bytes) to %s: %s"),
+				logg(_("!write failure (%u bytes) to %s: %s\n"),
 					len, privdata->filename, buf);
 #else
 				perror(privdata->filename);
-				logg(_("!write failure (%u bytes) to %s: %s"),
+				logg(_("!write failure (%u bytes) to %s: %s\n"),
 					len, privdata->filename,
 					strerror(errno));
 #endif
@@ -4952,11 +4952,11 @@ watchdog(void *a)
 								*ptr = '\0';
 							pthread_mutex_lock(&version_mutex);
 							if(clamav_versions[i] == NULL)
-								clamav_versions[i] = strdup(buf);
+								clamav_versions[i] = cli_strdup(buf);
 							else if(strcmp(buf, clamav_versions[i]) != 0) {
 								logg("New version received for server %d: '%s'\n", i, buf);
 								free(clamav_versions[i]);
-								clamav_versions[i] = strdup(buf);
+								clamav_versions[i] = cli_strdup(buf);
 							}
 							pthread_mutex_unlock(&version_mutex);
 						} else {
@@ -5605,7 +5605,7 @@ isBlacklisted(const char *ip_address)
 static void
 mx(void)
 {
-	const u_char *p, *end;
+	u_char *p, *end;
 	char name[MAXHOSTNAMELEN + 1];
 	char buf[BUFSIZ];
 	union {
@@ -5700,7 +5700,7 @@ mx(void)
 static void
 resolve(const char *host)
 {
-	const u_char *p, *end;
+	u_char *p, *end;
 	char buf[BUFSIZ];
 	union {
 		HEADER h;
@@ -5816,9 +5816,9 @@ black_hole(const struct privdata *privdata)
 		/* All recipients map to /dev/null */
 		to = privdata->to;
 		if(*to)
-			logg("discarded, since all recipients (e.g. \"%s\") are /dev/null", *to);
+			logg("Discarded, since all recipients (e.g. \"%s\") are /dev/null\n", *to);
 		else
-			logg("discarded, since all recipients are /dev/null");
+			logg("Discarded, since all recipients are /dev/null\n");
 		return SMFIS_DISCARD;
 	}
 	return SMFIS_CONTINUE;
