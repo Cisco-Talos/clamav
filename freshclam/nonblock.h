@@ -24,7 +24,9 @@
 #endif
 
 #include <sys/types.h>
+#ifndef	C_WINDOWS
 #include <sys/socket.h>
+#endif
 
 /*
 	wait_connect(): wrapper for connect(), with explicit 'secs' timeout

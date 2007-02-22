@@ -20,6 +20,10 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
+ 
+#ifdef	_MSC_VER
+#include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
+#endif
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -27,14 +31,20 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <string.h>
 #include <ctype.h>
+#ifndef	C_WINDOWS
 #include <netinet/in.h>
 #include <netdb.h>
+#endif
 #include <sys/types.h>
+#ifndef	C_WINDOWS
 #include <sys/socket.h>
 #include <sys/time.h>
+#endif
 #include <time.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -64,6 +74,9 @@
 #define	O_BINARY	0
 #endif
 
+#ifndef	C_WINDOWS
+#define	closesocket(s)	close(s)
+#endif
 
 static int wwwconnect(const char *server, const char *proxy, int pport, char *ip, const char *localip, int ctimeout, struct mirdat *mdat)
 {
@@ -144,7 +157,9 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 		else
 			port = 8080;
 
+#ifndef	C_WINDOWS
 		endservent();
+#endif
 #else
 		port = 8080;
 #endif
@@ -156,7 +171,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
     }
 
     if((host = gethostbyname(hostpt)) == NULL) {
-	const char *herr;
+	char *herr;
 	switch(h_errno) {
 	    case HOST_NOT_FOUND:
 		herr = "Host not found";
@@ -376,9 +391,9 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
     if(!ip[0])
 	strcpy(ip, ipaddr);
 
-    if(write(sd, cmd, strlen(cmd)) < 0) {
+    if(send(sd, cmd, strlen(cmd), 0) < 0) {
 	logg("!remote_cvdhead: write failed\n");
-	close(sd);
+	closesocket(sd);
 	return NULL;
     }
 
@@ -394,7 +409,7 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 	if(cnt <= 0)
 	    break;
     }
-    close(sd);
+    closesocket(sd);
 
     if(bread == -1) {
 	logg("!remote_cvdhead: Error while reading CVD header from %s\n", hostname);
@@ -525,7 +540,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     if(!ip[0])
 	strcpy(ip, ipaddr);
 
-    if(write(sd, cmd, strlen(cmd)) < 0) {
+    if(send(sd, cmd, strlen(cmd), 0) < 0) {
 	logg("!getfile: Can't write to socket\n");
 	return 52;
     }
@@ -565,7 +580,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
 	logg("!getfile: %s not found on remote server (IP: %s)\n", srcfile, ipaddr);
 	/* mirman_update(mdat->currip, mdat, 1); */
-	close(sd);
+	closesocket(sd);
 	return 58;
     }
 
@@ -573,7 +588,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
        !strstr(buffer, "HTTP/1.1 206") && !strstr(buffer, "HTTP/1.0 206")) {
 	logg("!getfile: Unknown response from remote server (IP: %s)\n", ipaddr);
 	mirman_update(mdat->currip, mdat, 1);
-	close(sd);
+	closesocket(sd);
 	return 58;
     }
 
@@ -596,7 +611,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	getcwd(currdir, sizeof(currdir));
 	logg("!getfile: Can't create new file %s in %s\n", destfile, currdir);
 	logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
-	close(sd);
+	closesocket(sd);
 	return 57;
     }
 
@@ -609,7 +624,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	    logg("getfile: Can't write %d bytes to %s\n", bread, destfile);
 	    unlink(destfile);
 	    close(fd);
-	    close(sd);
+	    closesocket(sd);
 	    return 57; /* FIXME */
 	}
 
@@ -626,7 +641,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
             fflush(stdout);
         }
     }
-    close(sd);
+    closesocket(sd);
     close(fd);
 
     if(totalsize > 0)

@@ -16,6 +16,11 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
+#ifdef        _MSC_VER
+#include <windows.h>
+#include <winsock.h>
+#endif
+
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -24,23 +29,33 @@
 #ifdef BUILD_CLAMD
 
 #include <stdio.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <sys/types.h>
+#ifndef	C_WINDOWS
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#endif
 #include <string.h>
 
 #include "shared/cfgparser.h"
 #include "shared/output.h"
 #include "notify.h"
 
+#ifndef	C_WINDOWS
+#define	closesocket(s)	close(s)
+#endif
+
 int notify(const char *cfgfile)
 {
 	char buff[20];
+#ifndef	C_WINDOWS
 	struct sockaddr_un server;
+#endif
         struct sockaddr_in server2;
 	struct hostent *he;
 	struct cfgstruct *copt, *cpt;
@@ -53,6 +68,7 @@ int notify(const char *cfgfile)
 	return 1;
     }
 
+#ifndef	C_WINDOWS
     if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
 	socktype = "UNIX";
 	server.sun_family = AF_UNIX;
@@ -65,13 +81,15 @@ int notify(const char *cfgfile)
 	}
 
 	if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
-	    close(sockd);
+	    closesocket(sockd);
 	    logg("^Clamd was NOT notified: Can't connect to clamd through %s\n", cpt->strarg);
 	    perror("connect()");
 	    return 1;
 	}
 
-    } else if((cpt = cfgopt(copt, "TCPSocket"))->enabled) {
+    } else
+#endif
+    if((cpt = cfgopt(copt, "TCPSocket"))->enabled) {
 
 	socktype = "TCP";
 #ifdef PF_INET
@@ -99,7 +117,7 @@ int notify(const char *cfgfile)
 
 
 	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
-	    close(sockd);
+	    closesocket(sockd);
 	    logg("^Clamd was NOT notified: Can't connect to clamd on %s:%d\n",
 		    inet_ntoa(server2.sin_addr), ntohs(server2.sin_port));
 	    perror("connect()");
@@ -111,23 +129,23 @@ int notify(const char *cfgfile)
 	return 1;
     }
 
-    if(write(sockd, "RELOAD", 6) < 0) {
+    if(send(sockd, "RELOAD", 6, 0) < 0) {
 	logg("^Clamd was NOT notified: Could not write to %s socket\n", socktype);
 	perror("write()");
-	close(sockd);
+	closesocket(sockd);
 	return 1;
     }
 
     /* TODO: Handle timeout */
     memset(buff, 0, sizeof(buff));
-    if((bread = read(sockd, buff, sizeof(buff))) > 0)
+    if((bread = recv(sockd, buff, sizeof(buff), 0)) > 0)
 	if(!strstr(buff, "RELOADING")) {
 	    logg("^Clamd was NOT notified: Unknown answer from clamd: '%s'\n", buff);
-	    close(sockd);
+	    closesocket(sockd);
 	    return 1;
 	}
 
-    close(sockd);
+    closesocket(sockd);
     logg("Clamd successfully notified about the update.\n");
     return 0;
 }

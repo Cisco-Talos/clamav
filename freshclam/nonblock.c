@@ -15,6 +15,9 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+#ifdef	_MSC_VER
+#include <winsock.h>
+#endif
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -24,14 +27,20 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <string.h>
 #include <ctype.h>
+#ifndef	C_WINDOWS
 #include <netinet/in.h>
 #include <netdb.h>
+#endif
 #include <sys/types.h>
-#include <sys/socket.h>
+/*#include <sys/socket.h>	/* in nonblock.h */
+#ifndef	C_WINDOWS
 #include <sys/time.h>
+#endif
 #include <time.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -39,6 +48,16 @@
 
 #include "shared/output.h"
 #include "libclamav/clamav.h"
+
+#if	(!defined(EALREADY)) && (defined(WSAEALREADY))
+#define EALREADY	WSAEALREADY
+#endif
+#if	(!defined(EINPROGRESS)) && (defined(WSAEINPROGRESS))
+#define EINPROGRESS	WSAEINPROGRESS
+#endif
+#if	(!defined(EISCONN)) && (defined(WSAEISCONN))
+#define EISCONN	WSAEISCONN
+#endif
 
 #ifdef SO_ERROR
 
@@ -229,6 +248,7 @@ static ssize_t nonblock_recv(int sock, void *buf, size_t len, int flags, int sec
 
 static long nonblock_fcntl(int sock)
 {
+#ifdef	F_GETFL
 	long fcntl_flags; /* Save fcntl() flags */
 
 	fcntl_flags = fcntl(sock, F_GETFL, 0);
@@ -242,16 +262,21 @@ static long nonblock_fcntl(int sock)
 	}
 
 	return fcntl_flags;
+#else
+	return 0;
+#endif
 }
 
 static void restore_fcntl(int sock, long fcntl_flags)
 {
+#ifdef	F_SETFL
 	if (fcntl_flags != -1) {
 		if (fcntl(sock, F_SETFL, fcntl_flags)) {
 			logg("restore_fcntl: restoring: fcntl(%d, F_SETFL): errno=%d: %s\n",
 			     sock, errno, strerror(errno));
 		}
 	}
+#endif
 }
 
 /*

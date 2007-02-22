@@ -1,3 +1,7 @@
+Thu Feb 22 19:03:50 CET 2007 (tk)
+---------------------------------
+  * freshclam: merge win32 patches from NJH
+
 Thu Feb 22 18:12:53 CET 2007 (tk)
 ---------------------------------
   * clamd/clamd.c: print some more information in Foreground mode (bb#317)

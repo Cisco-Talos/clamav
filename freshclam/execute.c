@@ -1,5 +1,5 @@
 /*
- *  By Per Jessen <per@computer.org>
+ *  By Per Jessen <per@computer.org> with changes by the ClamAV team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,9 +23,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <string.h>
 #include <errno.h>
+#ifdef	C_WINDOWS
+#include <process.h>
+#endif
 
 #include "shared/output.h"
 #include "execute.h"
@@ -36,6 +41,16 @@ int active_children;
 
 void execute( const char *type, const char *text )
 {
+#ifdef        C_WINDOWS
+	if(active_children < MAX_CHILDREN) {
+		if(spawnlp(P_DETACH, text, text, NULL) == -1) {
+			logg("^%s: couldn't execute \"%s\".\n", type, text);
+			return;
+		}
+		active_children++;	/* FIXME: this is never reduced */
+	} else
+		logg("^%s: already %d processes active.\n", type, active_children);
+#else
 	pid_t pid;
 
 	if ( active_children<MAX_CHILDREN )
@@ -56,4 +71,5 @@ void execute( const char *type, const char *text )
 	{
 		logg("^%s: already %d processes active.\n", type, active_children);
 	}
+#endif
 }
