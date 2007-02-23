@@ -44,6 +44,7 @@ static	char	const	rcsid[] = "$Id: pst.c,v 1.43 2007/01/05 14:45:08 njh Exp $";
 
 #include "clamav.h"
 #include "others.h"
+#include "pst.h"
 
 #ifdef	CL_EXPERIMENTAL
 
@@ -64,8 +65,6 @@ static	char	const	rcsid[] = "$Id: pst.c,v 1.43 2007/01/05 14:45:08 njh Exp $";
 typedef	uint16_t	u_int16_t;	/* should be in cltypes.h */
 typedef	uint32_t	u_int32_t;
 #endif
-
-#include "pst.h"
 
 #define	DWORD	unsigned int
 
@@ -4794,7 +4793,7 @@ write_email_body(FILE *f, const char *body)
 			/* write just a line */
 			ret = fwrite(body, 1, (size_t)(n - body), f);
 			if(ret != (size_t)(n - body)) {
-				cli_errmsg("write_email_body: only wrote %u of $u bytes\n",
+				cli_errmsg("write_email_body: only wrote %u of %u bytes\n",
 					ret, n - body);
 				return ret;
 			}
