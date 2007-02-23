@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-220207"
+#define	CM_VERSION	"devel-230207"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -124,17 +124,17 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 nj
 
 #endif
 
+#ifdef	USE_SYSLOG
+#include <syslog.h>
+#endif
+
 #ifdef	WITH_TCPWRAP
 #if	HAVE_TCPD_H
 #include <tcpd.h>
 #endif
 
-#ifdef	USE_SYSLOG
-#include <syslog.h>
 int	allow_severity = LOG_DEBUG;
 int	deny_severity = LOG_NOTICE;
-#endif
-
 #endif
 
 #ifndef	CL_DEBUG
@@ -1261,7 +1261,9 @@ main(int argc, char **argv)
 	}
 
 	if(((cpt = cfgopt(copt, "LogSyslog")) != NULL) && cpt->enabled) {
+#if defined(USE_SYSLOG) && !defined(C_AIX)
 		int fac = LOG_LOCAL6;
+#endif
 
 		if(cfgopt(copt, "LogVerbose")->enabled) {
 			logg_verbose = 1;
@@ -1274,7 +1276,6 @@ main(int argc, char **argv)
 		}
 #if defined(USE_SYSLOG) && !defined(C_AIX)
 		logg_syslog = 1;
-#endif
 
 		if(((cpt = cfgopt(copt, "LogFacility")) != NULL) && cpt->enabled)
 			if((fac = logg_facility(cpt->strarg)) == -1) {
@@ -1283,6 +1284,7 @@ main(int argc, char **argv)
 				return EX_CONFIG;
 			}
 		openlog(progname, LOG_CONS|LOG_PID, fac);
+#endif
 	} else {
 		if(qflag)
 			fprintf(stderr, _("%s: (-q && !LogSyslog): warning - all interception message methods are off\n"),
@@ -1536,9 +1538,7 @@ main(int argc, char **argv)
 			cli_errmsg(_("Check your entry for TCPSocket in %s\n"),
 				cfgfile);
 			logg(_("!Can't find any clamd server"));
-#ifdef USE_SYSLOG
-			closelog();
-#endif
+			logg_close();
 			return EX_CONFIG;
 		}
 #endif

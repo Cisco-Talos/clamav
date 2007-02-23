@@ -1,3 +1,8 @@
+Fri Feb 23 19:22:43 GMT 2007 (njh)
+----------------------------------
+  * clamav-milter/clamav-milter.c:	Fix compilation error on Solaris
+			(bug 347)
+
 Fri Feb 23 18:19:43 CET 2007 (tk)
 ---------------------------------
   * clamd/scanner.c: fix compilation error on Solaris (bb#341)
@@ -32,7 +37,7 @@ Thu Feb 22 16:51:33 CET 2007 (tk)
 Thu Feb 22 15:32:33 GMT 2007 (njh)
 ----------------------------------
   * libclamav:	s/sanitiseFilename/cli_sanitise_filename/, patch from trog
-  		Changed some strdup to cli_strdup
+		Changed some strdup to cli_strdup
 
 Thu Feb 22 15:43:33 CET 2007 (acab)
 -----------------------------------
