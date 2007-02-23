@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004 Nigel Horne <njh@bandsman.co.uk>
+ *  Copyright (C) 2000-2007 Nigel Horne <njh@bandsman.co.uk>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -123,9 +123,12 @@ cli_untar(const char *dir, int desc, unsigned int posix, const struct cl_limits 
 			 * Extra types from djgardner@users.sourceforge.net
 			 */
 			switch(type) {
+				default:
+					cli_warnmsg("cli_untar: unknown type flag %c\n", type);
 				case '0':	/* plain file */
 				case '\0':	/* plain file */
 				case '7':	/* contiguous file */
+				case 'M':	/* continuation of a file from another volume; might as well scan it. */
 					files++;
 					directory = 0;
 					break;
@@ -144,23 +147,16 @@ cli_untar(const char *dir, int desc, unsigned int posix, const struct cl_limits 
 					 * Discard the blocks with the extended filename,
 					 * the last header will contain parts of it anyway
 					 */
+				case 'N': 	/* Old GNU format way of storing long filenames. */
+				case 'A':	/* Solaris ACL */
+				case 'E':	/* Solaris Extended attribute s*/
+				case 'I':	/* Inode only */
+				case 'g':	/* Global extended header */
+				case 'x': 	/* Extended attributes */
+				case 'X':	/* Extended attributes (POSIX) */
 					directory = 0;
 					skipEntry = 1;
 					break;
-				default:
-					/*cli_errmsg("cli_untar: unknown type flag %c\n", type);
-					return CL_EFORMAT;*/
-					/*
-					 * It isn't really a tar file
-					 */
-					cli_dbgmsg("cli_untar: unknown type flag %c\n", type);
-					/*
-					 * We don't know that it's clean at all,
-					 * it would be better to have a
-					 * CL_CONTINUE return value since it
-					 * may be a different format
-					 */
-					return CL_CLEAN;
 			}
 
 			if(directory) {
