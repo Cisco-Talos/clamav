@@ -1,3 +1,7 @@
+Fri Feb 23 18:19:43 CET 2007 (tk)
+---------------------------------
+  * clamd/scanner.c: fix compilation error on Solaris (bb#341)
+
 Fri Feb 23 15:37:40 GMT 2007 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Handle wide characters on Windows

@@ -39,7 +39,6 @@
 #endif
 #include <pthread.h>
 #include <time.h>
-#include <signal.h>
 #include <errno.h>
 #include <stddef.h>
 
