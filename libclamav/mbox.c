@@ -1594,7 +1594,11 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 		if(inHeader) {
 			cli_dbgmsg("parseEmailFile: check '%s' fullline %p\n",
 				buffer ? buffer : "", fullline);
-			if(line && isspace(line[0])) {
+			/*
+			 * Ensure wide characters are handled where
+			 * sizeof(char) > 1
+			 */
+			if(line && isspace(line[0] & 0xFF)) {
 				char copy[sizeof(buffer)];
 
 				strcpy(copy, buffer);
