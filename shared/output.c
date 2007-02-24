@@ -21,10 +21,6 @@
 #include "clamav-config.h"
 #endif
 
-#ifdef CL_NOTHREADS
-#undef CL_THREAD_SAFE
-#endif
-
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -47,6 +43,10 @@
 
 #include "output.h"
 #include "memory.h"
+
+#ifdef CL_NOTHREADS
+#undef CL_THREAD_SAFE
+#endif
 
 #ifdef CL_THREAD_SAFE
 #include <pthread.h>
