@@ -21479,6 +21479,8 @@ echo "$as_me: WARNING: ****** stability problems to the ClamAV developers!" >&2;
 
     if test "$ZLIB_HOME" != "/usr"; then
 	CPPFLAGS="$CPPFLAGS -I$ZLIB_HOME/include"
+	save_LDFLAGS="$LDFLAGS"
+	LDFLAGS="$LIBS -L$ZLIB_HOME/lib"
 	{ echo "$as_me:$LINENO: checking for inflateEnd in -lz" >&5
 echo $ECHO_N "checking for inflateEnd in -lz... $ECHO_C" >&6; }
 if test "${ac_cv_lib_z_inflateEnd+set}" = set; then
@@ -21552,6 +21554,7 @@ echo "$as_me: error: Please install zlib and zlib-devel packages" >&2;}
    { (exit 1); exit 1; }; }
 fi
 
+	LDFLAGS="$save_LDFLAGS"
     else
 	{ echo "$as_me:$LINENO: checking for inflateEnd in -lz" >&5
 echo $ECHO_N "checking for inflateEnd in -lz... $ECHO_C" >&6; }
@@ -23293,6 +23296,7 @@ cat >>confdefs.h <<\_ACEOF
 #define C_HPUX 1
 _ACEOF
 
+    use_gethostbyname_r="no"
     ;;
 aix*)
     if test "$have_pthreads" = "yes"; then
@@ -25550,11 +25554,83 @@ fi
 
 	{ echo "$as_me:$LINENO: result: $have_pragma_pack" >&5
 echo "${ECHO_T}$have_pragma_pack" >&6; }
+	if test "$have_pragma_pack" = yes; then
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_PRAGMA_PACK 1
 _ACEOF
 
+	else
+		{ echo "$as_me:$LINENO: checking for structure packing via hppa/hp-ux pragma" >&5
+echo $ECHO_N "checking for structure packing via hppa/hp-ux pragma... $ECHO_C" >&6; }
+		if test "${have_pragma_pack_hpux+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+
+			if test "$cross_compiling" = yes; then
+  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&5
+echo "$as_me: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&2;}
+   { (exit 1); exit 1; }; }
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+			/* hppa/hp-ux wants pragma outside of function */
+#pragma pack 1 /* has to be in column 1 ! */
+			struct { char c; long l; } s;
+			    int main(int argc, char **argv) {
+			return sizeof(s)==sizeof(s.c)+sizeof(s.l) ? 0:1; }
+_ACEOF
+rm -f conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  have_pragma_pack_hpux=yes
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+have_pragma_pack_hpux=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+
+
+
+fi
+
+		{ echo "$as_me:$LINENO: result: $have_pragma_pack_hpux" >&5
+echo "${ECHO_T}$have_pragma_pack_hpux" >&6; }
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_PRAGMA_PACK_HPPA 1
+_ACEOF
+
+	fi
 fi
 
 { echo "$as_me:$LINENO: checking for type aligning via __attribute__((aligned))" >&5
@@ -25610,7 +25686,7 @@ fi
 { echo "$as_me:$LINENO: result: $have_attrib_aligned" >&5
 echo "${ECHO_T}$have_attrib_aligned" >&6; }
 
-if test "$have_attrib_packed" = no -a "$have_pragma_pack" = no ; then
+if test "$have_attrib_packed" = no -a "$have_pragma_pack" = no -a "$have_pragma_pack_hpux" = no; then
 	{ { echo "$as_me:$LINENO: error: Need to know how to pack structures with this compiler" >&5
 echo "$as_me: error: Need to know how to pack structures with this compiler" >&2;}
    { (exit 1); exit 1; }; }

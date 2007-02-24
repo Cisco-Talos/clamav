@@ -124,7 +124,10 @@ else
 
     if test "$ZLIB_HOME" != "/usr"; then
 	CPPFLAGS="$CPPFLAGS -I$ZLIB_HOME/include"
+	save_LDFLAGS="$LDFLAGS"
+	LDFLAGS="$LIBS -L$ZLIB_HOME/lib"
 	AC_CHECK_LIB(z, inflateEnd, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -L$ZLIB_HOME/lib -lz"; AC_DEFINE(HAVE_ZLIB_H,1,zlib installed)], AC_MSG_ERROR(Please install zlib and zlib-devel packages))
+	LDFLAGS="$save_LDFLAGS"
     else
 	AC_CHECK_LIB(z, inflateEnd, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lz"; AC_DEFINE(HAVE_ZLIB_H,1,zlib installed)], AC_MSG_ERROR(Please install zlib and zlib-devel packages))
     fi
@@ -540,6 +543,7 @@ hpux*)
 	AC_DEFINE(_REENTRANT,1,[thread safe])
     fi
     AC_DEFINE(C_HPUX,1,[os is hpux])
+    use_gethostbyname_r="no"
     ;;
 aix*)
     if test "$have_pthreads" = "yes"; then
@@ -997,7 +1001,23 @@ if test "$have_attrib_packed" = no; then
 			[have_pragma_pack=no])
 		])
 	AC_MSG_RESULT($have_pragma_pack)
-	AC_DEFINE(HAVE_PRAGMA_PACK, 1, "pragma pack")
+	if test "$have_pragma_pack" = yes; then
+		AC_DEFINE(HAVE_PRAGMA_PACK, 1, "pragma pack")
+	else
+		AC_MSG_CHECKING(for structure packing via hppa/hp-ux pragma)
+		AC_CACHE_VAL(have_pragma_pack_hpux,[
+			AC_TRY_RUN([
+			/* hppa/hp-ux wants pragma outside of function */
+#pragma pack 1 /* has to be in column 1 ! */
+			struct { char c; long l; } s;
+			    int main(int argc, char **argv) {
+			return sizeof(s)==sizeof(s.c)+sizeof(s.l) ? 0:1; } ],
+			[have_pragma_pack_hpux=yes],
+			[have_pragma_pack_hpux=no])
+		])
+		AC_MSG_RESULT($have_pragma_pack_hpux)
+		AC_DEFINE(HAVE_PRAGMA_PACK_HPPA, 1, "pragma pack hppa/hp-ux style")
+	fi
 fi
 
 dnl check for __attribute__((aligned))
@@ -1010,7 +1030,7 @@ AC_CACHE_VAL(have_attrib_aligned,[
 	])
 AC_MSG_RESULT($have_attrib_aligned)
 
-if test "$have_attrib_packed" = no -a "$have_pragma_pack" = no ; then
+if test "$have_attrib_packed" = no -a "$have_pragma_pack" = no -a "$have_pragma_pack_hpux" = no; then
 	AC_MSG_ERROR(Need to know how to pack structures with this compiler)
 fi
 

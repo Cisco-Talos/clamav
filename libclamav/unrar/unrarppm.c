@@ -982,8 +982,8 @@ int ppm_decode_char(ppm_data_t *ppm_data, int fd, unpack_data_t *unpack_data)
 		return -1;
 	}
 	if (ppm_data->min_context->num_stats != 1) {
-		if (ppm_data->min_context->con_ut.u.stats <= ppm_data->sub_alloc.ptext ||
-			ppm_data->min_context->con_ut.u.stats > ppm_data->sub_alloc.heap_end) {
+		if ((uint8_t *) ppm_data->min_context->con_ut.u.stats <= ppm_data->sub_alloc.ptext ||
+			(uint8_t *) ppm_data->min_context->con_ut.u.stats > ppm_data->sub_alloc.heap_end) {
 			return -1;
 		}
 		if (!ppm_decode_symbol1(ppm_data, ppm_data->min_context)) {

@@ -118,6 +118,10 @@ typedef struct mark_header_tag
 #pragma pack(1)
 #endif
 
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1
+#endif
+
 typedef struct main_header_tag
 {
 	uint16_t head_crc __attribute__ ((packed));
@@ -344,6 +348,10 @@ int decode_number(unpack_data_t *unpack_data, struct Decode *decode);
 
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack()
+#endif
+
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack
 #endif
 
 #endif

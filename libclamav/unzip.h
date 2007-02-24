@@ -42,6 +42,10 @@
 #pragma pack(1)
 #endif
 
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1
+#endif
+
 /******** Zip format structures *********/
 
 /* Local file header */
@@ -209,6 +213,10 @@ int zip_dir_close(zip_dir *dir);
 
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack()
+#endif
+
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack
 #endif
 
 #endif /* __UNZIP_H */

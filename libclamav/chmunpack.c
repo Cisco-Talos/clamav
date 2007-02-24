@@ -32,7 +32,7 @@
 #endif
 #include <string.h>
 
-#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK)
+#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
 #if HAVE_MMAP
 #if HAVE_SYS_MMAN_H
 #include <sys/mman.h>
@@ -55,6 +55,10 @@
 
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
+#endif
+
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1
 #endif
 
 #ifndef	O_BINARY
@@ -151,6 +155,10 @@ typedef struct lzx_content_tag {
 #pragma pack()
 #endif
 
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack
+#endif
+
 #define chm_endian_convert_16(x) le16_to_host(x) 
 #define chm_endian_convert_32(x) le32_to_host(x) 
 #define chm_endian_convert_64(x) le64_to_host(x)
@@ -237,7 +245,7 @@ static void itsf_print_header(itsf_header_t *itsf_hdr)
 
 static int itsf_read_header(int fd, itsf_header_t *itsf_hdr, unsigned char *m_area, off_t m_length)
 {
-#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK)
+#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
 	if (!chm_read_data(fd, (unsigned char *) itsf_hdr, 0, CHM_ITSF_MIN_LEN,
 				m_area,	m_length)) {
 		return FALSE;
@@ -326,7 +334,7 @@ static void itsp_print_header(itsp_header_t *itsp_hdr)
 static int itsp_read_header(int fd, itsp_header_t *itsp_hdr, off_t offset,
 				unsigned char *m_area, off_t m_length)
 {
-#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK)
+#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
 	if (!chm_read_data(fd, (unsigned char *) itsp_hdr, offset, CHM_ITSP_LEN,
 				m_area,	m_length)) {
 		return FALSE;
@@ -529,7 +537,7 @@ static int read_chunk(int fd, off_t offset, uint32_t chunk_len,
 		return FALSE;
 	}
 	
-#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK)
+#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
 	/* 8 bytes reads the signature and the free_space */
 	if (!chm_read_data(fd, chunk_hdr->signature, offset, 8,
 				m_area,	m_length)) {
@@ -559,7 +567,7 @@ static int read_chunk(int fd, off_t offset, uint32_t chunk_len,
 	chunk_hdr->free_space = chm_endian_convert_32(chunk_hdr->free_space);
 	
 	if (memcmp(chunk_hdr->signature, "PMGL", 4) == 0) {
-#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK)
+#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
 		if (!chm_read_data(fd, (unsigned char *) &chunk_hdr->unknown, offset+8, 12,
 					m_area,	m_length)) {
 			goto abort;
@@ -628,7 +636,7 @@ static lzx_control_t *read_sys_control(int fd, itsf_header_t *itsf_hdr, file_lis
 	if (!lzx_control) {
 		return NULL;
 	}
-#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK)
+#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
 	if (!chm_read_data(fd, (unsigned char *) lzx_control, offset, CHM_CONTROL_LEN,
 				m_area,	m_length)) {
 		goto abort;
@@ -750,7 +758,7 @@ static lzx_reset_table_t *read_sys_reset_table(int fd, itsf_header_t *itsf_hdr, 
 	/* Save the entry offset for later use */
 	lzx_reset_table->rt_offset = offset-4;
 
-#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK)
+#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
 	if (!chm_read_data(fd, (unsigned char *) lzx_reset_table, offset, CHM_RESET_TABLE_LEN,
 				m_area,	m_length)) {
 		goto abort;

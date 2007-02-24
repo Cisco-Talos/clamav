@@ -60,6 +60,10 @@
 #pragma pack(1)
 #endif
 
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1
+#endif
+
 #ifndef	O_BINARY
 #define	O_BINARY	0
 #endif
@@ -121,6 +125,10 @@ typedef struct property_tag
 
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack()
+#endif
+
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack
 #endif
 
 static unsigned char magic_id[] = { 0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1};
@@ -670,7 +678,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 	return TRUE;
 }
 
-#if !defined(HAVE_ATTRIB_PACKED) && !defined(HAVE_PRAGMA_PACK)
+#if !defined(HAVE_ATTRIB_PACKED) && !defined(HAVE_PRAGMA_PACK) && !defined(HAVE_PRAGMA_PACK_HPPA)
 static int ole2_read_header(int fd, ole2_header_t *hdr)
 {
 	int i;
@@ -764,7 +772,7 @@ int cli_ole2_extract(int fd, const char *dirname, const struct cl_limits *limits
 #endif
 
 	if (hdr.m_area == NULL) {
-#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK)
+#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
 		if (cli_readn(fd, &hdr, hdr_size) != hdr_size) {
 			return 0;
 		}

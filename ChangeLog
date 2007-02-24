@@ -1,3 +1,8 @@
+Sat Feb 24 02:32:57 CET 2007 (tk)
+---------------------------------
+  * configure, libclamav: add support for HP-UX 11.11 with native
+			  compiler (bb#180), thanks to Edwin
+
 Fri Feb 23 21:42:08 CET 2007 (tk)
 ---------------------------------
   * configure: use -pthread also for FreeBSD 6.x
