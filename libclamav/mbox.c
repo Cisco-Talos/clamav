@@ -2637,10 +2637,9 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 					cli_dbgmsg("No HTML code found to be scanned\n");
 				else {
 					rc = parseEmailBody(aMessage, aText, mctx, recursion_level + 1);
-					if(rc == OK) {
+					if((rc == OK) && aMessage) {
 						assert(aMessage == messages[htmltextPart]);
-						if(aMessage)
-							messageDestroy(aMessage);
+						messageDestroy(aMessage);
 						messages[htmltextPart] = NULL;
 					}
 				}
