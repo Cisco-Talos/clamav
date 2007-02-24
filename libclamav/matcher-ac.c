@@ -198,7 +198,7 @@ static void cli_freepatt(struct cli_ac_patt *list)
 	else
 	    free(handler->pattern);
 	free(handler->virname);
-	if(handler->offset && (!handler->sigid || handler->partno == 1))
+	if(handler->offset)
 	    free(handler->offset);
 	if(handler->alt) {
 	    free(handler->altn);

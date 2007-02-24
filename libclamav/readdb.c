@@ -1699,6 +1699,17 @@ void cl_free(struct cl_engine *engine)
 	free(engine->md5_hlist);
     }
 
+    md5pt = engine->md5_sect;
+    while(md5pt) {
+	md5h = md5pt;
+	md5pt = md5pt->next;
+	free(md5h->md5);
+	free(md5h->virname);
+	if(md5h->viralias)
+	    free(md5h->viralias);
+	free(md5h);
+    }
+
     metapt = engine->zip_mlist;
     while(metapt) {
 	metah = metapt;
