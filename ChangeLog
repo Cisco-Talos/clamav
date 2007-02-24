@@ -1,3 +1,7 @@
+Sat Feb 24 19:40:01 CET 2007 (tk)
+---------------------------------
+  * clamscan, clamdscan, clamconf: compile with CL_NOTHREADS defined
+
 Sat Feb 24 17:47:54 CET 2007 (tk)
 ---------------------------------
   * libclamav: fix memory leaks in db handling code

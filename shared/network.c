@@ -41,6 +41,10 @@
 #include <netdb.h>
 #endif
 
+#ifdef CL_NOTHREADS
+#undef CL_THREAD_SAFE
+#endif
+
 #ifdef  CL_THREAD_SAFE
 #include <pthread.h>
 #endif

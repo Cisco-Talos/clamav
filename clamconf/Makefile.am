@@ -29,5 +29,6 @@ clamconf_SOURCES = \
     $(top_srcdir)/shared/getopt.h \
     clamconf.c
 
+DEFS = @DEFS@ -DCL_NOTHREADS
 INCLUDES = -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 LIBS = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@
