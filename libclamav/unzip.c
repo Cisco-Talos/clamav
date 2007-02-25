@@ -408,8 +408,7 @@ int zip_file_close(zip_file *fp)
 	return CL_ENULLARG;
     }
 
-    if(fp->method)
-        inflateEnd(&fp->d_stream);
+    inflateEnd(&fp->d_stream);
 
     dir = fp->dir;
     if(fp->buf32k) {
