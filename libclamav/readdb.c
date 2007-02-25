@@ -17,6 +17,10 @@
  *  MA 02110-1301, USA.
  */
 
+#ifdef _MSC_VER
+#include <winsock.h> /* for Sleep() */
+#endif
+
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -28,7 +32,7 @@
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifndef	C_WINDOWS
+#ifndef C_WINDOWS
 #include <dirent.h>
 #endif
 #include <sys/types.h>
@@ -1319,7 +1323,11 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigne
 
     cli_dbgmsg("cli_loaddbdir: Acquiring dbdir lock\n");
     while((lock = cli_readlockdb(dirname, 0)) == CL_ELOCKDB) {
+#ifdef C_WINDOWS
+	Sleep(5);
+#else
 	sleep(5);
+#endif
 	if(try++ > 24) {
 	    cli_errmsg("cl_load(): Unable to lock database directory: %s\n", dirname);
 	    return CL_ELOCKDB;

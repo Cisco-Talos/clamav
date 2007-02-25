@@ -64,6 +64,10 @@ pthread_mutex_t lock_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define pthread_mutex_unlock(arg)
 #endif
 
+#ifdef C_WINDOWS /* FIXME */
+#define DONT_LOCK_DBDIRS
+#endif
+
 struct dblock {
 	struct dblock *lock_link;
 	char lock_file[NAME_MAX];
