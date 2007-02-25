@@ -21,13 +21,6 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #include "clamav-config.h"
 #endif
 
-#include "clamav.h"
-#include "others.h"
-
-#if HAVE_SYS_MMAN_H
-#include <sys/mman.h>
-#endif
-
 #if HAVE_MMAP
 #include <stdio.h>
 #include <sys/types.h>
@@ -36,8 +29,14 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #include <string.h>
 #include <fcntl.h>
 #include <stdlib.h>
-#include <limits.h>
 #include <errno.h>
+#ifdef	HAVE_LIMITS_H
+#include <limits.h>
+#endif
+
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
 
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>
@@ -47,6 +46,8 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #include <io.h>
 #endif
 
+#include "clamav.h"
+#include "others.h"
 #include "mbox.h"
 #include "pdf.h"
 
@@ -397,7 +398,7 @@ flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 	z_stream stream;
 	unsigned char output[BUFSIZ];
 
-	cli_dbgmsg("cli_pdf: flatedecode %lu bytes\n", len);
+	cli_dbgmsg("cli_pdf: flatedecode %lu bytes\n", (unsigned long)len);
 
 	stream.zalloc = (alloc_func)Z_NULL;
 	stream.zfree = (free_func)Z_NULL;
@@ -426,7 +427,8 @@ flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 					if(ctx->limits &&
 					   ctx->limits->maxfilesize &&
 					   (nbytes > (off_t) ctx->limits->maxfilesize)) {
-						cli_dbgmsg("cli_pdf: flatedecode size exceeded (%lu)\n", nbytes);
+						cli_dbgmsg("cli_pdf: flatedecode size exceeded (%lu)\n",
+							(unsigned long)nbytes);
 						inflateEnd(&stream);
 						*ctx->virname = "PDF.ExceededFileSize";
 						return Z_DATA_ERROR;
@@ -440,10 +442,11 @@ flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 			default:
 				if(stream.msg)
 					cli_warnmsg("pdf: after writing %lu bytes, got error \"%s\" inflating PDF attachment\n",
-						nbytes, stream.msg);
+						(unsigned long)nbytes,
+						stream.msg);
 				else
 					cli_warnmsg("pdf: after writing %lu bytes, got error %d inflating PDF attachment\n",
-						nbytes, zstat);
+						(unsigned long)nbytes, zstat);
 				inflateEnd(&stream);
 				return zstat;
 		}
@@ -489,7 +492,7 @@ ascii85decode(const char *buf, off_t len, unsigned char *output)
 
 	ptr = buf;
 
-	cli_dbgmsg("cli_pdf: ascii85decode %lu bytes\n", len);
+	cli_dbgmsg("cli_pdf: ascii85decode %lu bytes\n", (unsigned long)len);
 
 	while(len > 0) {
 		int byte = (len--) ? (int)*ptr++ : EOF;
