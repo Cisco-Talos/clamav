@@ -968,7 +968,7 @@ pst_load_extended_attributes(pst_file *pf)
 	memcpy(wt, &(headerbuffer[xattrib.extended+sizeof(tint)]), tint);
 	ptr->data = _pst_wide_to_single(wt, tint);
 	free(wt);
-	cli_dbgmsg("(converted from UTF-16): %s\n", ptr->data);
+	cli_dbgmsg("(converted from UTF-16): %s\n", (const char *)ptr->data);
       } else {
 	cli_dbgmsg("Cannot read outside of buffer [%i !< %i]\n", xattrib.extended, hsize);
       }
