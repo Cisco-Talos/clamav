@@ -1715,33 +1715,25 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 	return CL_EIO;
     }
 
-    if((ret = cli_scandesc(desc, ctx, ftrec, type, 0, &ftoffset)) == CL_VIRUS) {
-	cli_dbgmsg("%s found in descriptor %d.\n", *ctx->virname, desc);
-	return CL_VIRUS;
+    ret = cli_scandesc(desc, ctx, ftrec, type, 0, &ftoffset);
 
-    } else if(ret < 0) {
-	return ret;
-
-    } else if(ret >= CL_TYPENO) {
+    if(ret >= CL_TYPENO) {
 	lseek(desc, 0, SEEK_SET);
 
-	if((nret = cli_scandesc(desc, ctx, 0, ret, 1, NULL)) == CL_VIRUS) {
+	nret = cli_scandesc(desc, ctx, 0, ret, 1, NULL);
+	if(nret == CL_VIRUS)
 	    cli_dbgmsg("%s found in descriptor %d when scanning file type %u\n", *ctx->virname, desc, ret);
-	    return CL_VIRUS;
-	}
 
 	ret == CL_TYPE_MAIL ? ctx->mrec++ : ctx->arec++;
-	switch(ret) {
+	if(nret != CL_VIRUS) switch(ret) {
 	    case CL_TYPE_HTML:
 		if(SCAN_HTML && type == CL_TYPE_UNKNOWN_TEXT && (DCONF_DOC & DOC_CONF_HTML))
-		    if((nret = cli_scanhtml(desc, ctx)) == CL_VIRUS)
-			return CL_VIRUS;
+		    nret = cli_scanhtml(desc, ctx);
 		break;
 
 	    case CL_TYPE_MAIL:
 		if(SCAN_MAIL && type == CL_TYPE_UNKNOWN_TEXT && (DCONF_MAIL & MAIL_CONF_MBOX))
-		    if((nret = cli_scanmail(desc, ctx)) == CL_VIRUS)
-			return CL_VIRUS;
+		    nret = cli_scanmail(desc, ctx);
 		break;
 
 	    case CL_TYPE_RARSFX:
@@ -1769,15 +1761,6 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 			    fpt = fpt->next;
 			}
 		    }
-
-		    while(ftoffset) {
-			fpt = ftoffset;
-			ftoffset = ftoffset->next;
-			free(fpt);
-		    }
-
-		    if(nret == CL_VIRUS)
-			return nret;
 		}
 		break;
 
@@ -1787,6 +1770,15 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 	ret == CL_TYPE_MAIL ? ctx->mrec-- : ctx->arec--;
 	ret = nret;
     }
+
+    while(ftoffset) {
+	fpt = ftoffset;
+	ftoffset = ftoffset->next;
+	free(fpt);
+    }
+
+    if(ret == CL_VIRUS)
+	cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, desc);
 
     return ret;
 }

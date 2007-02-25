@@ -1,3 +1,7 @@
+Sun Feb 25 20:50:54 CET 2007 (tk)
+---------------------------------
+  * libclamav/scanners.c: fix small memory leak (bb#359)
+
 Sun Feb 25 17:00:31 CET 2007 (acab)
 -----------------------------------
   * libclamav/pe.c: fix leaks on upack return (bb#351)
