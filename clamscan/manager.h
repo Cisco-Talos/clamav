@@ -20,7 +20,13 @@
 #ifndef __MANAGER_H
 #define __MANAGER_H
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#ifdef HAVE_PWD_H
 #include <pwd.h>
+#endif
 
 #include "libclamav/clamav.h"
 #include "shared/options.h"

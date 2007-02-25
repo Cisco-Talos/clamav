@@ -24,12 +24,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifndef C_WINDOWS
 #include <sys/wait.h>
+#endif
+#ifdef HAVE_PWD_H
+#include <pwd.h>
+#endif
+#ifdef HAVE_GRP_H
 #include <grp.h>
+#endif
+#ifndef C_WINDOWS
 #include <dirent.h>
+#endif
 #include <errno.h>
 
 #include "global.h"
@@ -99,7 +110,7 @@ int treewalk(const char *dirname, struct cl_engine *engine, const struct passwd 
 
     if((dd = opendir(dirname)) != NULL) {
 	while((dent = readdir(dd))) {
-#ifndef C_INTERIX
+#if !defined(C_INTERIX) && !defined(C_WINDOWS) && !defined(C_CYGWIN)
 	    if(dent->d_ino)
 #endif
 	    {
@@ -138,6 +149,12 @@ int treewalk(const char *dirname, struct cl_engine *engine, const struct passwd 
 
 }
 
+#ifdef C_WINDOWS
+int clamav_rmdirs(const char *dir)
+{
+    return cli_rmdirs(dir);
+}
+#else
 int clamav_rmdirs(const char *dir)
 {
 #ifndef C_CYGWIN
@@ -185,6 +202,7 @@ int clamav_rmdirs(const char *dir)
 		return -2;
     }
 }
+#endif
 
 int fixperms(const char *dirname)
 {
@@ -196,7 +214,7 @@ int fixperms(const char *dirname)
 
     if((dd = opendir(dirname)) != NULL) {
 	while((dent = readdir(dd))) {
-#ifndef C_INTERIX
+#if !defined(C_INTERIX) && !defined(C_WINDOWS) && !defined(C_CYGWIN)
 	    if(dent->d_ino)
 #endif
 	    {
@@ -242,7 +260,7 @@ int du(const char *dirname, struct s_du *n)
 
     if((dd = opendir(dirname)) != NULL) {
 	while((dent = readdir(dd))) {
-#ifndef C_INTERIX
+#if !defined(C_INTERIX) && !defined(C_WINDOWS) && !defined(C_CYGWIN)
 	    if(dent->d_ino)
 #endif
 	    {

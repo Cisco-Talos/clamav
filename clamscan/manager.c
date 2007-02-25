@@ -29,11 +29,22 @@
 #include <ctype.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifdef C_WINDOWS
+#include <sys/utime.h>
+#else
 #include <sys/wait.h>
 #include <utime.h>
+#endif
+#ifdef HAVE_GRP_H
 #include <grp.h>
+#endif
+#ifdef HAVE_PWD_H
+#include <pwd.h>
+#endif
 #include <fcntl.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <sys/types.h>
 #include <signal.h>
 #include <errno.h>
@@ -55,6 +66,15 @@
 
 #ifdef C_LINUX
 dev_t procdev;
+#endif
+
+#ifdef C_WINDOWS
+#undef P_tmpdir
+#define P_tmpdir    "C:\\WINDOWS\\TEMP"
+#endif
+
+#ifndef	O_BINARY
+#define	O_BINARY    0
 #endif
 
 static int scandirs(const char *dirname, struct cl_engine *engine, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options)
@@ -132,7 +152,7 @@ int scanmanager(const struct optstruct *opt)
 
 
 /* njh@bandsman.co.uk: BeOS */
-#if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_BEOS)
+#if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_BEOS) && !defined(C_WINDOWS)
     if(!geteuid()) {
 	if((user = getpwnam(CLAMAVUSER)) == NULL) {
 	    logg("!Can't get information about user "CLAMAVUSER"\n");
@@ -388,6 +408,15 @@ int scanmanager(const struct optstruct *opt)
  * -3 -> external signal
  * 0 -> OK
  */
+
+#ifdef C_WINDOWS
+static int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struct passwd *user, const struct optstruct *opt)
+{
+    /* TODO: use spamvp(P_WAIT, prog, args); */
+    cli_errmsg("clamav_unpack is not supported under Windows yet\n");
+    return -1;
+}
+#else
 static int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struct passwd *user, const struct optstruct *opt)
 {
 	pid_t pid;
@@ -495,6 +524,7 @@ static int clamav_unpack(const char *prog, char **args, const char *tmpdir, cons
 
     return 0;
 }
+#endif
 
 static void move_infected(const char *filename, const struct optstruct *opt)
 {
@@ -610,7 +640,7 @@ static int checkfile(const char *filename, const struct cl_engine *engine, const
 
     logg("*Scanning %s\n", filename);
 
-    if((fd = open(filename, O_RDONLY)) == -1) {
+    if((fd = open(filename, O_RDONLY|O_BINARY)) == -1) {
 	logg("^Can't open file %s\n", filename);
 	return 54;
     }
@@ -671,7 +701,8 @@ static int scancompressed(const char *filename, struct cl_engine *engine, const 
 	exit(63); /* critical */
     }
 
-#ifndef C_OS2
+#if !defined(C_OS2) && !defined(C_WINDOWS)
+    /* FIXME: do the correct native windows way */
     if(user)
 	chown(gendir, user->pw_uid, user->pw_gid);
 #endif
@@ -886,7 +917,7 @@ static int scandenied(const char *filename, struct cl_engine *engine, const stru
 
     fixperms(gendir);
 
-#ifndef C_OS2
+#if !defined(C_OS2) && !defined(C_WINDOWS)
     if(user) {
 	chown(gendir, user->pw_uid, user->pw_gid);
 	chown(tmpfile, user->pw_uid, user->pw_gid);
@@ -970,12 +1001,14 @@ int scanfile(const char *filename, struct cl_engine *engine, const struct passwd
 	return 0;
     }
 
+#ifndef C_WINDOWS
     if(geteuid())
 	if(checkaccess(filename, NULL, R_OK) != 1) {
 	    if(!printinfected)
 		logg("%s: Access denied\n", filename);
 	    return 0;
 	}
+#endif
 
     info.files++;
 

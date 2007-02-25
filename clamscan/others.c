@@ -26,13 +26,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <errno.h>
+#ifdef HAVE_PWD_H
 #include <pwd.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef C_WINDOWS
 #include <sys/wait.h>
 #include <sys/time.h>
+#endif
 #include <time.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -70,6 +76,13 @@ int fileinfo(const char *filename, short i)
     }
 }
 
+#ifdef C_WINDOWS
+/* FIXME: Handle users correctly */
+int checkaccess(const char *path, const char *username, int mode)
+{
+    return _access(path, mode);
+}
+#else
 int checkaccess(const char *path, const char *username, int mode)
 {
 	struct passwd *user;
@@ -114,6 +127,7 @@ int checkaccess(const char *path, const char *username, int mode)
 
     return ret;
 }
+#endif
 
 int match_regex(const char *filename, const char *pattern)
 {

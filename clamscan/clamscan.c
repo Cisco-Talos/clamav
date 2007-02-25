@@ -24,8 +24,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef	HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifdef	C_WINDOWS
+#include <fcntl.h>
+#else
 #include <sys/time.h>
+#endif
 #include <time.h>
 #ifdef C_LINUX
 #include <sys/resource.h>
@@ -43,6 +49,10 @@
 
 void help(void);
 
+#if defined(C_WINDOWS) && defined(CL_DEBUG)
+#include <crtdbg.h>
+#endif
+
 struct s_info info;
 short recursion = 0, printinfected = 0, bell = 0;
 
@@ -51,10 +61,18 @@ int main(int argc, char **argv)
 	int ds, dms, ret;
 	double mb;
 	struct timeval t1, t2;
+#ifndef C_WINDOWS
 	struct timezone tz;
+#endif
 	struct optstruct *opt;
 	const char *pt;
 
+#if defined(C_WINDOWS) && defined(CL_THREAD_SAFE)
+    if(!pthread_win32_process_attach_np()) {
+	mprintf("!Can't start the win32 pthreads layer\n");
+	return 72;
+    }
+#endif
 
     opt = opt_parse(argc, argv, clamscan_shortopt, clamscan_longopt, NULL);
     if(!opt) {
@@ -180,11 +198,27 @@ int main(int argc, char **argv)
 
     memset(&info, 0, sizeof(struct s_info));
 
+#ifdef C_WINDOWS
+    _set_fmode(_O_BINARY);
+#ifdef CL_DEBUG
+    {
+	_CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_FILE);
+	_CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDERR);
+    }
+#endif	
+    gettimeofday(&t1, NULL);
+#else
     gettimeofday(&t1, &tz);
+#endif
+
     ret = scanmanager(opt);
 
     if(!opt_check(opt, "disable-summary") && !opt_check(opt, "no-summary")) {
+#ifdef C_WINDOWS
+	gettimeofday(&t2, NULL);
+#else
 	gettimeofday(&t2, &tz);
+#endif
 	ds = t2.tv_sec - t1.tv_sec;
 	dms = t2.tv_usec - t1.tv_usec;
 	ds -= (dms < 0) ? (1):(0);
@@ -210,6 +244,14 @@ int main(int argc, char **argv)
     }
 
     opt_free(opt);
+
+#if defined(C_WINDOWS) && defined(CL_THREAD_SAFE)
+    if(!pthread_win32_process_detach_np()) {
+	logg("!Can't stop the win32 pthreads layer\n");
+	return 72;
+    }
+#endif
+
     return ret;
 }
 
