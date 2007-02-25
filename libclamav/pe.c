@@ -1332,6 +1332,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		{
 		    cli_dbgmsg("Upack: Sizes exceeded (a: %u, b: %u, c: %ux, max: %lu)\n", a, b, c, ctx->limits->maxfilesize);
 		    free(section_hdr);
+		    free(exe_sections);
 		    if(BLOCKMAX) {
 			*ctx->virname = "PE.Upack.ExceededFileSize";
 			return CL_VIRUS;
@@ -1348,6 +1349,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 			
 		if((dest = (char *) cli_calloc(dsize, sizeof(char))) == NULL) {
 		    free(section_hdr);
+		    free(exe_sections);
 		    return CL_EMEM;
 		}
 		src = NULL;
@@ -1359,6 +1361,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 							*/
 		    cli_dbgmsg("Upack: Can't read raw data of section 0\n");
 		    free(section_hdr);
+		    free(exe_sections);
 		    free(dest);
 		    return CL_EIO;
 		}
@@ -1371,17 +1374,23 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		if(read(desc, dest+EC32(section_hdr[1].VirtualAddress) - off, EC32(section_hdr[1].SizeOfRawData)) != EC32(section_hdr[1].SizeOfRawData)) {
 		    cli_dbgmsg("Upack: Can't read raw data of section 1\n");
 		    free(section_hdr);
+		    free(exe_sections);
 		    free(dest);
 		    return CL_EIO;
 		}
 
-		if(!(tempfile = cli_gentemp(NULL)))
+		if(!(tempfile = cli_gentemp(NULL))) {
+		    free(section_hdr);
+		    free(exe_sections);
+		    free(dest);
 		    return CL_EMEM;
+		}
 
 		if((file = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
 		    cli_dbgmsg("Upack: Can't create file %s\n", tempfile);
 		    free(tempfile);
 		    free(section_hdr);
+		    free(exe_sections);
 		    free(dest);
 		    return CL_EIO;
 		}
@@ -1397,6 +1406,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 				cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
 				if(cli_magic_scandesc(file, ctx) == CL_VIRUS) {
 					free(section_hdr);
+					free(exe_sections);
 					close(file);
 					if(!cli_leavetemps_flag)
 						unlink(tempfile);
@@ -1409,6 +1419,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 					unlink(tempfile);
 				free(tempfile);
 				free(section_hdr);
+				free(exe_sections);
 				return CL_CLEAN;
 
 			default: /* Everything gone wrong */
