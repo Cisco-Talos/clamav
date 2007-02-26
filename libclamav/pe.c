@@ -2570,7 +2570,6 @@ skip_upack_and_go_to_next_unpacker:
 	free(exe_sections);
 	return CL_EMEM;
       }
-      memset(dest, 0, dsize);
 
       lseek(desc, 0, SEEK_SET);
       if((size_t) cli_readn(desc, dest, headsize) != headsize) {

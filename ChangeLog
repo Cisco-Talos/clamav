@@ -1,3 +1,7 @@
+Mon Feb 26 20:16:14 CET 2007 (acab)
+-----------------------------------
+  * libclamav/pe.c: minor cleanup (bb#247)
+
 Sun Feb 25 20:50:54 CET 2007 (tk)
 ---------------------------------
   * libclamav/scanners.c: fix small memory leak (bb#359)
