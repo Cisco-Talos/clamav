@@ -1,3 +1,8 @@
+Wed Feb 28 21:55:22 CET 2007 (tk)
+---------------------------------
+  * libclamav/unrar/unrar.c: fix leak in cli_unrar_extract_next_prepare (bb#352)
+			     Patch from Edwin
+
 Wed Feb 28 21:48:59 CET 2007 (tk)
 ---------------------------------
   * libclamav/unrar/unrar.c: fix rarvm memory leak (bb#350), patch from Edwin
