@@ -21,8 +21,13 @@
 #ifndef __NETWORK_H
 #define __NETWORK_H
 
+#ifdef	HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+
+#ifndef	C_WINDOWS
 #include <netdb.h>
+#endif
 
 int r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
 

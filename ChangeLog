@@ -1,3 +1,7 @@
+Wed Feb 28 02:17:39 CET 2007 (tk)
+---------------------------------
+  * shared: merge win32 patches from NJH
+
 Wed Feb 28 01:48:27 CET 2007 (tk)
 ---------------------------------
   * drop shared/memory.[ch]

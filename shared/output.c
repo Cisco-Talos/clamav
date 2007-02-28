@@ -16,6 +16,11 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
+#ifdef _MSC_VER
+#include <windows.h>
+#include <winsock.h>
+#endif
+
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -26,13 +31,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <fcntl.h>
 #include <time.h>
 #include <sys/stat.h>
 #include <errno.h>
+#ifndef C_WINDOWS
 #include <sys/time.h>
 #include <sys/socket.h>
+#endif
 #if HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -121,7 +130,9 @@ void logg_close(void) {
 int logg(const char *str, ...)
 {
 	va_list args, argscpy, argsout;
+#ifdef F_WRLCK
 	struct flock fl;
+#endif
 	char *pt, *timestr, vbuff[1025];
 	time_t currtime;
 	struct stat sb;
@@ -139,7 +150,7 @@ int logg(const char *str, ...)
     if(logg_file) {
 	if(!logg_fd) {
 	    old_umask = umask(0037);
-	    if((logg_fd = fopen(logg_file, "a")) == NULL) {
+	    if((logg_fd = fopen(logg_file, "at")) == NULL) {
 		umask(old_umask);
 #ifdef CL_THREAD_SAFE
 		pthread_mutex_unlock(&logg_mutex);
@@ -148,6 +159,7 @@ int logg(const char *str, ...)
 		return -1;
 	    } else umask(old_umask);
 
+#ifdef F_WRLCK
 	    if(logg_lock) {
 		memset(&fl, 0, sizeof(fl));
 		fl.l_type = F_WRLCK;
@@ -158,6 +170,7 @@ int logg(const char *str, ...)
 		    return -1;
 		}
 	    }
+#endif
 	}
 
 	if(logg_size) {
