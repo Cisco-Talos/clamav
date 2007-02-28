@@ -190,6 +190,9 @@ uint32_t rar_crc(uint32_t start_crc, void *addr, uint32_t size)
 
 int rarvm_init(rarvm_data_t *rarvm_data)
 {
+	if(rarvm_data->mem) {
+		free(rarvm_data->mem);/* prevent leaks */
+	}
 	rarvm_data->mem = (uint8_t *) cli_malloc(RARVM_MEMSIZE+4);
 	init_crc();
 	if (!rarvm_data->mem) {

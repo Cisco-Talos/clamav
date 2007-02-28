@@ -1,3 +1,7 @@
+Wed Feb 28 21:48:59 CET 2007 (tk)
+---------------------------------
+  * libclamav/unrar/unrar.c: fix rarvm memory leak (bb#350), patch from Edwin
+
 Wed Feb 28 16:22:08 CET 2007 (tk)
 ---------------------------------
   * libclamav/filetypes.c: comment out dead code (see bb#373), spotted by
