@@ -231,13 +231,16 @@ cli_file_t cli_filetype(const unsigned char *buf, size_t buflen)
 	}
     }
 
+/* improve or drop this code
+ * https://wwws.clamav.net/bugzilla/show_bug.cgi?id=373
+ *
     buflen < 25 ? (len = buflen) : (len = 25);
     for(i = 0; i < len; i++)
 	if(!iscntrl(buf[i]) && !isprint(buf[i]) && !internat[buf[i] & 0xff]) {
 	    text = 0;
 	    break;
 	}
-
+*/
     return text ? CL_TYPE_UNKNOWN_TEXT : CL_TYPE_UNKNOWN_DATA;
 }
 

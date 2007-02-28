@@ -1,3 +1,8 @@
+Wed Feb 28 16:22:08 CET 2007 (tk)
+---------------------------------
+  * libclamav/filetypes.c: comment out dead code (see bb#373), spotted by
+			   "alex" <alex77*vip.sina.com>
+
 Wed Feb 28 02:17:39 CET 2007 (tk)
 ---------------------------------
   * shared: merge win32 patches from NJH
