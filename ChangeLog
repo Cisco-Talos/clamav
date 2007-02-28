@@ -1,3 +1,7 @@
+Tue Feb 27 23:25:46 CET 2007 (acab)
+-----------------------------------
+  * libclamav/petite.c: invalid read in valgrind (bb#369)
+
 Mon Feb 26 20:16:14 CET 2007 (acab)
 -----------------------------------
   * libclamav/pe.c: minor cleanup (bb#247)
