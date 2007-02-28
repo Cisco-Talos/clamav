@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2006 Tomasz Kojm <tkojm@clamav.net>
+#  Copyright (C) 2006 - 2007 Tomasz Kojm <tkojm@clamav.net>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -21,8 +21,6 @@ bin_PROGRAMS = clamconf
 clamconf_SOURCES = \
     $(top_srcdir)/shared/cfgparser.c \
     $(top_srcdir)/shared/cfgparser.h \
-    $(top_srcdir)/shared/memory.c \
-    $(top_srcdir)/shared/memory.h \
     $(top_srcdir)/shared/misc.c \
     $(top_srcdir)/shared/misc.h \
     $(top_srcdir)/shared/getopt.c \

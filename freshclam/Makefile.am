@@ -26,8 +26,6 @@ freshclam_SOURCES = \
     $(top_srcdir)/shared/cfgparser.h \
     $(top_srcdir)/shared/getopt.c \
     $(top_srcdir)/shared/getopt.h \
-    $(top_srcdir)/shared/memory.c \
-    $(top_srcdir)/shared/memory.h \
     $(top_srcdir)/shared/misc.c \
     $(top_srcdir)/shared/misc.h \
     $(top_srcdir)/shared/options.c \

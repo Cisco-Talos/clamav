@@ -62,7 +62,6 @@
 #include "shared/cfgparser.h"
 #include "shared/output.h"
 #include "shared/misc.h"
-#include "shared/memory.h"
 #include "shared/cdiff.h"
 
 #include "libclamav/clamav.h"
@@ -284,14 +283,14 @@ static char *proxyauth(const char *user, const char *pass)
 	char *buf, *userpass, *auth;
 
 
-    userpass = mmalloc(strlen(user) + strlen(pass) + 2);
+    userpass = malloc(strlen(user) + strlen(pass) + 2);
     if(!userpass) {
 	logg("!proxyauth: Can't allocate memory for 'userpass'\n");
 	return NULL;
     }
     sprintf(userpass, "%s:%s", user, pass);
 
-    buf = mmalloc((strlen(pass) + strlen(user)) * 2 + 4);
+    buf = malloc((strlen(pass) + strlen(user)) * 2 + 4);
     if(!buf) {
 	logg("!proxyauth: Can't allocate memory for 'buf'\n");
 	free(userpass);
@@ -301,7 +300,7 @@ static char *proxyauth(const char *user, const char *pass)
     len = fmt_base64(buf, userpass, strlen(userpass));
     free(userpass);
     buf[len] = '\0';
-    auth = mmalloc(strlen(buf) + 30);
+    auth = malloc(strlen(buf) + 30);
     if(!auth) {
 	logg("!proxyauth: Can't allocate memory for 'authorization'\n");
 	return NULL;
@@ -326,7 +325,7 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 
 
     if(proxy) {
-        remotename = mmalloc(strlen(hostname) + 8);
+        remotename = malloc(strlen(hostname) + 8);
 	if(!remotename) {
 	    logg("!remote_cvdhead: Can't allocate memory for 'remotename'\n");
 	    return NULL;
@@ -491,7 +490,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 
 
     if(proxy) {
-        remotename = mmalloc(strlen(hostname) + 8);
+        remotename = malloc(strlen(hostname) + 8);
 	if(!remotename) {
 	    logg("!getfile: Can't allocate memory for 'remotename'\n");
 	    return 75; /* FIXME */
@@ -1229,7 +1228,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 		char *cmd = strdup(arg);
 
 	    if((pt = strstr(cmd, "%v")) && newver && isdigit(*newver)) {
-		    char *buffer = (char *) mcalloc(strlen(cmd) + strlen(newver) + 10, sizeof(char));
+		    char *buffer = (char *) malloc(strlen(cmd) + strlen(newver) + 10);
 
 		if(!buffer) {
 		    logg("!downloadmanager: Can't allocate memory for buffer\n");

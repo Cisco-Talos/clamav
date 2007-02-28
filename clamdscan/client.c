@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -42,7 +42,6 @@
 #include "defaults.h"
 #include "options.h"
 #include "cfgparser.h"
-#include "memory.h"
 #include "output.h"
 #include "misc.h"
 #include "str.h"
@@ -125,7 +124,7 @@ static int dsfile(int sockd, const char *scantype, const char *filename, const s
 	char *scancmd;
 
 
-    scancmd = mcalloc(strlen(filename) + 20, sizeof(char));
+    scancmd = malloc(strlen(filename) + 20);
     sprintf(scancmd, "%s %s", scantype, filename);
 
     if(write(sockd, scancmd, strlen(scancmd)) <= 0) {
@@ -295,7 +294,7 @@ static char *abpath(const char *filename)
 	perror(filename);
 	return NULL;
     } else {
-	fullpath = mcalloc(200 + strlen(filename) + 10, sizeof(char));
+	fullpath = malloc(200 + strlen(filename) + 10);
 #ifdef C_CYGWIN
 	sprintf(fullpath, "%s", filename);
 #else
@@ -539,7 +538,7 @@ void move_infected(const char *filename, const struct optstruct *opt)
 
     movefilename_size = sizeof(char) * (strlen(movedir) + strlen(tmp) + sizeof(numext) + 2);
 
-    if(!(movefilename = mmalloc(movefilename_size))) {
+    if(!(movefilename = malloc(movefilename_size))) {
         logg("^Memory allocation error\n");
 	exit(2);
     }

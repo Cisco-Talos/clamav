@@ -26,7 +26,6 @@
 #include <time.h>
 #include <errno.h>
 
-#include "shared/memory.h"
 #include "shared/output.h"
 
 #include "thrmgr.h"
@@ -39,7 +38,7 @@ static work_queue_t *work_queue_new(void)
 {
 	work_queue_t *work_q;
 	
-	work_q = (work_queue_t *) mmalloc(sizeof(work_queue_t));
+	work_q = (work_queue_t *) malloc(sizeof(work_queue_t));
 	if (!work_q) {
 		return NULL;
 	}
@@ -56,7 +55,7 @@ static int work_queue_add(work_queue_t *work_q, void *data)
 	if (!work_q) {
 		return FALSE;
 	}
-	work_item = (work_item_t *) mmalloc(sizeof(work_item_t));
+	work_item = (work_item_t *) malloc(sizeof(work_item_t));
 	if (!work_item) {
 		return FALSE;
 	}
@@ -142,7 +141,7 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void
 		return NULL;
 	}
 	
-	threadpool = (threadpool_t *) mmalloc(sizeof(threadpool_t));
+	threadpool = (threadpool_t *) malloc(sizeof(threadpool_t));
 	if (!threadpool) {
 		return NULL;
 	}

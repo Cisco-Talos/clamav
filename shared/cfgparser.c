@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,7 +27,6 @@
 #include <ctype.h>
 
 #include "shared/cfgparser.h"
-#include "shared/memory.h"
 #include "shared/misc.h"
 
 #include "libclamav/str.h"
@@ -286,7 +285,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 				}
 				ctype = tolower(arg[strlen(arg) - 1]);
 				if(ctype == 'm' || ctype == 'k') {
-				    char *cpy = (char *) mcalloc(strlen(arg), sizeof(char));
+				    char *cpy = (char *) malloc(strlen(arg));
 				    strncpy(cpy, arg, strlen(arg) - 1);
 				    if(!isnumb(cpy)) {
 					if(verbose)
@@ -441,7 +440,7 @@ static int regcfg(struct cfgstruct **copt, const char *optname, char *strarg, in
 	struct cfgstruct *newnode, *pt;
 
 
-    newnode = (struct cfgstruct *) mmalloc(sizeof(struct cfgstruct));
+    newnode = (struct cfgstruct *) malloc(sizeof(struct cfgstruct));
 
     if(!newnode)
 	return -1;

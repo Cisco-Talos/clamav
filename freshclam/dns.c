@@ -35,7 +35,6 @@
 #include <resolv.h>
 #include <sys/types.h>
 
-#include "shared/memory.h"
 #include "shared/output.h"
 
 #include "dns.h"
@@ -118,7 +117,7 @@ char *txtquery(const char *domain, unsigned int *ttl)
 	return NULL;
     }
 
-    if(!(txt = mmalloc(txtlen + 1)))
+    if(!(txt = malloc(txtlen + 1)))
 	return NULL;
 
     pt++;
@@ -140,7 +139,6 @@ char *txtquery(const char *domain, unsigned int *ttl)
 #include <string.h>
 #include <windows.h>
 #include <windns.h>
-#include "shared/memory.h"
 #include "shared/output.h"
 
 char *txtquery(const char *domain, unsigned int *ttl)
@@ -155,7 +153,7 @@ char *txtquery(const char *domain, unsigned int *ttl)
 	return NULL;
 
     if((pDnsRecord->Data.TXT.dwStringCount > 0) && pDnsRecord->Data.TXT.pStringArray[0]) {
-	txt = mmalloc(strlen(pDnsRecord->Data.TXT.pStringArray[0]) + 1);
+	txt = malloc(strlen(pDnsRecord->Data.TXT.pStringArray[0]) + 1);
 	if(txt)
 	    strcpy(txt, pDnsRecord->Data.TXT.pStringArray[0]);
 	*ttl = pDnsRecord->dwTtl;

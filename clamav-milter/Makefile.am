@@ -29,8 +29,6 @@ clamav_milter_SOURCES = \
     $(top_srcdir)/shared/output.h \
     $(top_srcdir)/shared/getopt.c \
     $(top_srcdir)/shared/getopt.h \
-    $(top_srcdir)/shared/memory.c \
-    $(top_srcdir)/shared/memory.h \
     $(top_srcdir)/shared/misc.c \
     $(top_srcdir)/shared/misc.h \
     $(top_srcdir)/shared/network.c \

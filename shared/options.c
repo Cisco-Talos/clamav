@@ -29,7 +29,6 @@
 #include "getopt.h"
 
 #include "options.h"
-#include "memory.h"
 #include "output.h"
 
 
@@ -70,18 +69,18 @@ static int register_option(struct optstruct *opt, const char *optlong, char opts
 	}
     }
 
-    newnode = (struct optnode *) mmalloc(sizeof(struct optnode));
+    newnode = (struct optnode *) malloc(sizeof(struct optnode));
     if(!newnode) {
-	mprintf("!register_long_option: mmalloc failed\n");
+	mprintf("!register_long_option: malloc failed\n");
 	return -1;
     }
 
     newnode->optshort = optshort;
 
     if(optarg) {
-	newnode->optarg = (char *) mcalloc(strlen(optarg) + 1, sizeof(char));
+	newnode->optarg = (char *) malloc(strlen(optarg) + 1);
 	if(!newnode->optarg) {
-	    mprintf("!register_long_option: mcalloc failed\n");
+	    mprintf("!register_long_option: malloc failed\n");
 	    free(newnode);
 	    return -1;
 	}
@@ -89,9 +88,9 @@ static int register_option(struct optstruct *opt, const char *optlong, char opts
     } else
 	newnode->optarg = NULL;
 
-    newnode->optlong = (char *) mcalloc(strlen(longname) + 1, sizeof(char));
+    newnode->optlong = (char *) malloc(strlen(longname) + 1);
     if(!newnode->optlong) {
-	mprintf("ERROR: register_long_option: mcalloc failed\n");
+	mprintf("ERROR: register_long_option: malloc failed\n");
 	free(newnode->optarg);
 	free(newnode);
 	return -1;
@@ -134,9 +133,9 @@ struct optstruct *opt_parse(int argc, char * const *argv, const char *getopt_sho
 	const char *longname;
 
 
-    opt = (struct optstruct *) mcalloc(1, sizeof(struct optstruct));
+    opt = (struct optstruct *) calloc(1, sizeof(struct optstruct));
     if(!opt) {
-	mprintf("!opt_parse: mcalloc failed\n");
+	mprintf("!opt_parse: calloc failed\n");
 	return NULL;
     }
 
@@ -183,9 +182,9 @@ struct optstruct *opt_parse(int argc, char * const *argv, const char *getopt_sho
 	    len += strlen(argv[i]);
 
 	len += argc - optind - 1;
-	opt->filename = (char *) mcalloc(len + 64, sizeof(char));
+	opt->filename = (char *) calloc(len + 64, sizeof(char));
 	if(!opt->filename) {
-	    mprintf("!opt_parse: mcalloc failed\n");
+	    mprintf("!opt_parse: calloc failed\n");
 	    opt_free(opt);
 	    return NULL;
 	}

@@ -46,7 +46,6 @@
 #include "libclamav/str.h"
 
 #include "shared/cfgparser.h"
-#include "shared/memory.h"
 #include "shared/output.h"
 #include "shared/misc.h"
 
@@ -110,7 +109,7 @@ int command(int desc, const struct cl_engine *engine, const struct cl_limits *li
 	    struct stat foo;
 
 
-	if(!(path = mmalloc(strlen(dbdir) + 30))) {
+	if(!(path = malloc(strlen(dbdir) + 30))) {
 	    mdprintf(desc, "Memory allocation error - SHUTDOWN forced\n");
 	    return COMMAND_SHUTDOWN;
 	}

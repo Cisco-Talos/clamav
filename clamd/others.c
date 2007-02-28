@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -77,7 +77,6 @@
 #endif /* HAVE_POLL_H */
 #endif /* HAVE_POLL */
 
-#include "shared/memory.h"
 #include "shared/cfgparser.h"
 #include "shared/output.h"
 
@@ -115,7 +114,7 @@ void virusaction(const char *filename, const char *virname, const struct cfgstru
 	cmd = strdup(cpt->strarg);
 
 	if((pt = strstr(cmd, "%v"))) {
-	    buffer = (char *) mcalloc(strlen(cmd) + strlen(virname) + 10, sizeof(char));
+	    buffer = (char *) malloc(strlen(cmd) + strlen(virname) + 10);
 	    *pt = 0; pt += 2;
 	    strcpy(buffer, cmd);
 	    strcat(buffer, virname);
@@ -124,20 +123,19 @@ void virusaction(const char *filename, const char *virname, const struct cfgstru
 	    cmd = strdup(buffer);
 	    free(buffer);
 	}
-	
+
 	/* Allocate env vars.. to be portable env vars should not be freed */
-	buffer = (char *) mcalloc(strlen(ENV_FILE) + strlen(filename) + 2, sizeof(char));
+	buffer = (char *) malloc(strlen(ENV_FILE) + strlen(filename) + 2);
 	sprintf(buffer, "%s=%s", ENV_FILE, filename);
 	putenv(buffer);
 
-	buffer = (char *) mcalloc(strlen(ENV_VIRUS) + strlen(virname) + 2, sizeof(char));
+	buffer = (char *) malloc(strlen(ENV_VIRUS) + strlen(virname) + 2);
 	sprintf(buffer, "%s=%s", ENV_VIRUS, virname);
 	putenv(buffer);
-	
-    
+
 	/* WARNING: this is uninterruptable ! */
 	exit(system(cmd));
-	
+
 	/* The below is not reached but is here for completeness to remind
 	   maintainers that this buffer is still allocated.. */
 	free(cmd);
@@ -160,7 +158,7 @@ int poll_fds(int *fds, int nfds, int timeout_sec, int check_signals)
 	struct pollfd *poll_data = poll_1;
 
     if (nfds>1) {
-	poll_data = mmalloc(nfds*sizeof(*poll_data));
+	poll_data = malloc(nfds*sizeof(*poll_data));
 	if(!poll_data) {
 	    logg("!poll_fds: Can't allocate memory for poll_data\n");
 	    return -1;

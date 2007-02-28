@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -49,7 +49,6 @@
 #include "treewalk.h"
 
 #include "shared/options.h"
-#include "shared/memory.h"
 #include "shared/output.h"
 #include "shared/misc.h"
 
@@ -116,7 +115,7 @@ int treewalk(const char *dirname, struct cl_engine *engine, const struct passwd 
 	    {
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
-		    fname = mcalloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
+		    fname = malloc(strlen(dirname) + strlen(dent->d_name) + 2);
 		    sprintf(fname, "%s/%s", dirname, dent->d_name);
 
 		    /* stat the file */
@@ -220,7 +219,7 @@ int fixperms(const char *dirname)
 	    {
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build full name */
-		    fname = mcalloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
+		    fname = malloc(strlen(dirname) + strlen(dent->d_name) + 2);
 		    sprintf(fname, "%s/%s", dirname, dent->d_name);
 
 		    /* stat the file */
@@ -268,7 +267,7 @@ int du(const char *dirname, struct s_du *n)
 		    n->files++;
 
 		    /* build the full name */
-		    fname = mcalloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
+		    fname = malloc(strlen(dirname) + strlen(dent->d_name) + 2);
 		    sprintf(fname, "%s/%s", dirname, dent->d_name);
 
 		    /* stat the file */

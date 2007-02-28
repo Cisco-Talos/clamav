@@ -42,7 +42,6 @@
 
 #include "libclamav/clamav.h"
 
-#include "shared/memory.h"
 #include "shared/output.h"
 
 #include "server.h"
@@ -210,7 +209,7 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
     logg("Reading databases from %s\n", dbdir);
 
     if(dbstat == NULL) {
-	dbstat = (struct cl_stat *) mmalloc(sizeof(struct cl_stat));
+	dbstat = (struct cl_stat *) malloc(sizeof(struct cl_stat));
 	if(!dbstat) {
 	    logg("!Can't allocate memory for dbstat\n");
 	    *ret = 1;
@@ -467,7 +466,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	pthread_attr_init(&clamuko_attr);
 	pthread_attr_setdetachstate(&clamuko_attr, PTHREAD_CREATE_JOINABLE);
 
-	tharg = (struct thrarg *) mmalloc(sizeof(struct thrarg));
+	tharg = (struct thrarg *) malloc(sizeof(struct thrarg));
 	tharg->copt = copt;
 	tharg->engine = engine;
 	tharg->limits = &limits;
@@ -573,7 +572,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	}
 
 	if (!progexit && new_sd >= 0) {
-		client_conn = (client_conn_t *) mmalloc(sizeof(struct client_conn_tag));
+		client_conn = (client_conn_t *) malloc(sizeof(struct client_conn_tag));
 		client_conn->sd = new_sd;
 		client_conn->options = options;
 		client_conn->copt = copt;

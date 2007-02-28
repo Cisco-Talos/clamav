@@ -56,7 +56,6 @@
 #include "libclamav/others.h"
 
 #include "shared/cfgparser.h"
-#include "shared/memory.h"
 #include "shared/output.h"
 #include "shared/misc.h"
 
@@ -152,7 +151,7 @@ static int dirscan(const char *dirname, const char **virname, unsigned long int 
 	    {
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
-		    fname = (char *) mcalloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
+		    fname = (char *) malloc(strlen(dirname) + strlen(dent->d_name) + 2);
                     if(!fname) {
 			logg("!Can't allocate memory for fname\n");
 			closedir(dd);
@@ -180,7 +179,7 @@ static int dirscan(const char *dirname, const char **virname, unsigned long int 
 				{
 				    if(type == TYPE_MULTISCAN) {
 
-					scandata = (struct multi_tag *) mmalloc(sizeof(struct multi_tag));
+					scandata = (struct multi_tag *) malloc(sizeof(struct multi_tag));
 					if(!scandata) {
 					    logg("!Can't allocate memory for scandata\n");
 					    free(fname);

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2004 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -38,7 +38,6 @@
 #include <errno.h>
 
 #include "shared/cfgparser.h"
-#include "shared/memory.h"
 #include "shared/output.h"
 
 #include "libclamav/clamav.h"
@@ -69,7 +68,7 @@ char *freshdbdir(void)
     if((copt = getcfg(CONFDIR"/clamd.conf", 0))) {
 	if((cpt = cfgopt(copt, "DatabaseDirectory"))->enabled || (cpt = cfgopt(copt, "DataDirectory"))->enabled) {
 	    if(strcmp(dbdir, cpt->strarg)) {
-		    char *daily = (char *) mmalloc(strlen(cpt->strarg) + strlen(dbdir) + 30);
+		    char *daily = (char *) malloc(strlen(cpt->strarg) + strlen(dbdir) + 30);
 		sprintf(daily, "%s/daily.cvd", cpt->strarg);
 		if(stat(daily, &foo) == -1)
 		    sprintf(daily, "%s/daily.inc/daily.info", cpt->strarg);
@@ -113,7 +112,7 @@ void print_version(void)
 
 
     dbdir = freshdbdir();
-    if(!(path = mmalloc(strlen(dbdir) + 30))) {
+    if(!(path = malloc(strlen(dbdir) + 30))) {
 	free(dbdir);
 	return;
     }

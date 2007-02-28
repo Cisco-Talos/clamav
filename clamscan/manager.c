@@ -55,7 +55,6 @@
 #include "global.h"
 
 #include "shared/options.h"
-#include "shared/memory.h"
 #include "shared/output.h"
 #include "shared/misc.h"
 
@@ -229,7 +228,7 @@ int scanmanager(const struct optstruct *opt)
 	char *cpy, *ptr;
 	ptr = opt_arg(opt, "max-space");
 	if(tolower(ptr[strlen(ptr) - 1]) == 'm') {
-	    cpy = mcalloc(strlen(ptr), sizeof(char));
+	    cpy = malloc(strlen(ptr));
 	    strncpy(cpy, ptr, strlen(ptr) - 1);
 	    limits.maxfilesize = atoi(cpy) * 1024 * 1024;
 	    free(cpy);
@@ -356,7 +355,7 @@ int scanmanager(const struct optstruct *opt)
 			logg("!Can't get absolute pathname of current working directory\n");
 			return 57;
 		    } else {
-			fullpath = mcalloc(512, sizeof(char));
+			fullpath = malloc(512);
 #ifdef NO_SNPRINTF
 			sprintf(fullpath, "%s/%s", cwd, thefilename);
 #else
@@ -434,7 +433,7 @@ static int clamav_unpack(const char *prog, char **args, const char *tmpdir, cons
 	    char *cpy, *ptr;
 	ptr = opt_arg(opt, "max-space");
 	if(tolower(ptr[strlen(ptr) - 1]) == 'm') { /* megabytes */
-	    cpy = mcalloc(strlen(ptr), sizeof(char));
+	    cpy = malloc(strlen(ptr));
 	    strncpy(cpy, ptr, strlen(ptr) - 1);
 	    maxspace = atoi(cpy) * 1024;
 	    free(cpy);
@@ -554,8 +553,8 @@ static void move_infected(const char *filename, const struct optstruct *opt)
 
     movefilename_size = sizeof(char) * (strlen(movedir) + strlen(tmp) + sizeof(numext) + 2);
 
-    if(!(movefilename = mmalloc(movefilename_size))) {
-        logg("!mmalloc() failed\n");
+    if(!(movefilename = malloc(movefilename_size))) {
+        logg("!malloc() failed\n");
 	exit(71);
     }
 
@@ -900,7 +899,7 @@ static int scandenied(const char *filename, struct cl_engine *engine, const stru
 	exit(63); /* critical */
     }
 
-    tmpfile = (char *) mcalloc(strlen(gendir) + strlen(filename) + 10, sizeof(char));
+    tmpfile = (char *) malloc(strlen(gendir) + strlen(filename) + 10);
     pt = strrchr(filename, '/');
     if(!pt)
 	pt = (char *) filename;

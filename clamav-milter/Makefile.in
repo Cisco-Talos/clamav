@@ -73,15 +73,13 @@ PROGRAMS = $(sbin_PROGRAMS)
 am__clamav_milter_SOURCES_DIST = $(top_srcdir)/shared/cfgparser.c \
 	$(top_srcdir)/shared/cfgparser.h $(top_srcdir)/shared/output.c \
 	$(top_srcdir)/shared/output.h $(top_srcdir)/shared/getopt.c \
-	$(top_srcdir)/shared/getopt.h $(top_srcdir)/shared/memory.c \
-	$(top_srcdir)/shared/memory.h $(top_srcdir)/shared/misc.c \
+	$(top_srcdir)/shared/getopt.h $(top_srcdir)/shared/misc.c \
 	$(top_srcdir)/shared/misc.h $(top_srcdir)/shared/network.c \
 	$(top_srcdir)/shared/network.h clamav-milter.c
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@am_clamav_milter_OBJECTS =  \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	cfgparser.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	output.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	getopt.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	memory.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	misc.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	network.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	clamav-milter.$(OBJEXT)
@@ -238,8 +236,6 @@ target_vendor = @target_vendor@
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/output.h \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/getopt.c \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/getopt.h \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/memory.c \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/memory.h \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/misc.c \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/misc.h \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/network.c \
@@ -323,7 +319,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cfgparser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamav-milter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/memory.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/network.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/output.Po@am__quote@
@@ -390,20 +385,6 @@ getopt.obj: $(top_srcdir)/shared/getopt.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/getopt.c' object='getopt.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o getopt.obj `if test -f '$(top_srcdir)/shared/getopt.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/getopt.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/getopt.c'; fi`
-
-memory.o: $(top_srcdir)/shared/memory.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT memory.o -MD -MP -MF "$(DEPDIR)/memory.Tpo" -c -o memory.o `test -f '$(top_srcdir)/shared/memory.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/memory.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/memory.Tpo" "$(DEPDIR)/memory.Po"; else rm -f "$(DEPDIR)/memory.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/memory.c' object='memory.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o memory.o `test -f '$(top_srcdir)/shared/memory.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/memory.c
-
-memory.obj: $(top_srcdir)/shared/memory.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT memory.obj -MD -MP -MF "$(DEPDIR)/memory.Tpo" -c -o memory.obj `if test -f '$(top_srcdir)/shared/memory.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/memory.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/memory.c'; fi`; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/memory.Tpo" "$(DEPDIR)/memory.Po"; else rm -f "$(DEPDIR)/memory.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/memory.c' object='memory.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o memory.obj `if test -f '$(top_srcdir)/shared/memory.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/memory.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/memory.c'; fi`
 
 misc.o: $(top_srcdir)/shared/misc.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT misc.o -MD -MP -MF "$(DEPDIR)/misc.Tpo" -c -o misc.o `test -f '$(top_srcdir)/shared/misc.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/misc.c; \

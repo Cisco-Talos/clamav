@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 #
-#  Copyright (C) 2006 Tomasz Kojm <tkojm@clamav.net>
+#  Copyright (C) 2006 - 2007 Tomasz Kojm <tkojm@clamav.net>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -69,8 +69,8 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_clamconf_OBJECTS = cfgparser.$(OBJEXT) memory.$(OBJEXT) \
-	misc.$(OBJEXT) getopt.$(OBJEXT) clamconf.$(OBJEXT)
+am_clamconf_OBJECTS = cfgparser.$(OBJEXT) misc.$(OBJEXT) \
+	getopt.$(OBJEXT) clamconf.$(OBJEXT)
 clamconf_OBJECTS = $(am_clamconf_OBJECTS)
 clamconf_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
@@ -217,8 +217,6 @@ target_vendor = @target_vendor@
 clamconf_SOURCES = \
     $(top_srcdir)/shared/cfgparser.c \
     $(top_srcdir)/shared/cfgparser.h \
-    $(top_srcdir)/shared/memory.c \
-    $(top_srcdir)/shared/memory.h \
     $(top_srcdir)/shared/misc.c \
     $(top_srcdir)/shared/misc.h \
     $(top_srcdir)/shared/getopt.c \
@@ -300,7 +298,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cfgparser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamconf.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/memory.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@
 
 .c.o:
@@ -337,20 +334,6 @@ cfgparser.obj: $(top_srcdir)/shared/cfgparser.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/cfgparser.c' object='cfgparser.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cfgparser.obj `if test -f '$(top_srcdir)/shared/cfgparser.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/cfgparser.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/cfgparser.c'; fi`
-
-memory.o: $(top_srcdir)/shared/memory.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT memory.o -MD -MP -MF "$(DEPDIR)/memory.Tpo" -c -o memory.o `test -f '$(top_srcdir)/shared/memory.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/memory.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/memory.Tpo" "$(DEPDIR)/memory.Po"; else rm -f "$(DEPDIR)/memory.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/memory.c' object='memory.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o memory.o `test -f '$(top_srcdir)/shared/memory.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/memory.c
-
-memory.obj: $(top_srcdir)/shared/memory.c
-@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT memory.obj -MD -MP -MF "$(DEPDIR)/memory.Tpo" -c -o memory.obj `if test -f '$(top_srcdir)/shared/memory.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/memory.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/memory.c'; fi`; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/memory.Tpo" "$(DEPDIR)/memory.Po"; else rm -f "$(DEPDIR)/memory.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/memory.c' object='memory.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o memory.obj `if test -f '$(top_srcdir)/shared/memory.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/memory.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/memory.c'; fi`
 
 misc.o: $(top_srcdir)/shared/misc.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT misc.o -MD -MP -MF "$(DEPDIR)/misc.Tpo" -c -o misc.o `test -f '$(top_srcdir)/shared/misc.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/misc.c; \

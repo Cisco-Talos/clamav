@@ -54,7 +54,6 @@
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
 
-#include "shared/memory.h"
 #include "shared/output.h"
 #include "shared/options.h"
 #include "shared/cfgparser.h"

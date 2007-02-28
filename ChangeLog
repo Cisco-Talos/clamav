@@ -1,3 +1,7 @@
+Wed Feb 28 01:48:27 CET 2007 (tk)
+---------------------------------
+  * drop shared/memory.[ch]
+
 Wed Feb 28 01:14:19 CET 2007 (tk)
 ---------------------------------
   * libclamav: minor cleanup (bb#247)

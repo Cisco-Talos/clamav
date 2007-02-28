@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+#  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -23,8 +23,6 @@ sigtool_SOURCES = \
     $(top_srcdir)/shared/output.h \
     $(top_srcdir)/shared/getopt.c \
     $(top_srcdir)/shared/getopt.h \
-    $(top_srcdir)/shared/memory.c \
-    $(top_srcdir)/shared/memory.h \
     $(top_srcdir)/shared/cfgparser.c \
     $(top_srcdir)/shared/cfgparser.h \
     $(top_srcdir)/shared/misc.c \

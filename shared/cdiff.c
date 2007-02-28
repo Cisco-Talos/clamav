@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2006 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -29,7 +29,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "shared/memory.h"
 #include "shared/misc.h"
 #include "shared/output.h"
 #include "shared/cdiff.h"
@@ -154,7 +153,7 @@ static char *cdiff_token(const char *line, unsigned int token, unsigned int last
     if(i == j)
 	return NULL;
 
-    buffer = mmalloc(j - i + 1);
+    buffer = malloc(j - i + 1);
     if(!buffer)
 	return NULL;
 
@@ -204,7 +203,7 @@ static int cdiff_cmd_add(const char *cmdstr, struct cdiff_ctx *ctx)
 	return -1;
     }
 
-    new = mcalloc(1, sizeof(struct cdiff_node));
+    new = (struct cdiff_node *) calloc(1, sizeof(struct cdiff_node));
     if(!new) {
 	logg("!cdiff_cmd_add: Can't allocate memory for cdiff_node\n");
 	free(sig);
@@ -241,7 +240,7 @@ static int cdiff_cmd_del(const char *cmdstr, struct cdiff_ctx *ctx)
 	return -1;
     }
 
-    new = mcalloc(1, sizeof(struct cdiff_node));
+    new = (struct cdiff_node *) calloc(1, sizeof(struct cdiff_node));
     if(!new) {
 	logg("!cdiff_cmd_del: Can't allocate memory for cdiff_node\n");
 	free(arg);
@@ -304,7 +303,7 @@ static int cdiff_cmd_xchg(const char *cmdstr, struct cdiff_ctx *ctx)
 	return -1;
     }
 
-    new = mcalloc(1, sizeof(struct cdiff_node));
+    new = (struct cdiff_node *) calloc(1, sizeof(struct cdiff_node));
     if(!new) {
 	logg("!cdiff_cmd_xchg: Can't allocate memory for cdiff_node\n");
 	free(arg);

@@ -42,7 +42,6 @@
 #endif
 
 #include "output.h"
-#include "memory.h"
 
 #ifdef CL_NOTHREADS
 #undef CL_THREAD_SAFE
@@ -180,7 +179,7 @@ int logg(const char *str, ...)
 	    if(logg_time && ((*str != '*') || logg_verbose)) {
 		time(&currtime);
 		pt = ctime(&currtime);
-		timestr = mcalloc(strlen(pt), sizeof(char));
+		timestr = malloc(strlen(pt));
 		strncpy(timestr, pt, strlen(pt) - 1);
 		fprintf(logg_fd, "%s -> ", timestr);
 		free(timestr);

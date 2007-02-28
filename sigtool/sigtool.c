@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -46,7 +46,6 @@
 #include "vba.h"
 
 #include "shared/options.h"
-#include "shared/memory.h"
 #include "shared/output.h"
 #include "shared/cfgparser.h"
 #include "shared/misc.h"
@@ -935,7 +934,7 @@ static int unpack(struct optstruct *opt)
 
     if(opt_check(opt, "unpack-current")) {
 	dbdir = freshdbdir();
-	name = mcalloc(strlen(dbdir) + strlen(opt_arg(opt, "unpack-current")) + 32, sizeof(char));
+	name = malloc(strlen(dbdir) + strlen(opt_arg(opt, "unpack-current")) + 32);
 	sprintf(name, "%s/%s.inc", dbdir, opt_arg(opt, "unpack-current"));
 	if(stat(name, &sb) != -1) {
 
@@ -1033,8 +1032,7 @@ static int listdir(const char *dirname)
 	     cli_strbcasestr(dent->d_name, ".inc") ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
 
-		dbfile = (char *) mcalloc(strlen(dent->d_name) + strlen(dirname) + 2, sizeof(char));
-
+		dbfile = (char *) malloc(strlen(dent->d_name) + strlen(dirname) + 2);
 		if(!dbfile) {
 		    mprintf("!listdir: Can't allocate memory for dbfile\n");
 		    closedir(dd);
@@ -1078,7 +1076,7 @@ static int listdb(const char *filename)
 	return -1;
     }
 
-    if(!(buffer = (char *) mcalloc(FILEBUFF, 1))) {
+    if(!(buffer = (char *) malloc(FILEBUFF))) {
 	mprintf("!listdb: Can't allocate memory for buffer\n");
 	fclose(fd);
 	return -1;
