@@ -960,7 +960,7 @@ int cli_scandir(const char *dirname, cli_ctx *ctx)
 	    {
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
-		    fname = cli_calloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
+		    fname = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
 		    if(!fname) {
 			closedir(dd);
 			return CL_EMEM;
@@ -1148,7 +1148,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
 	    {
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
-		    fname = cli_calloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
+		    fname = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
 		    if(!fname) {
 			ret = CL_EMEM;
 			break;

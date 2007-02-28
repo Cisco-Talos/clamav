@@ -607,7 +607,7 @@ cli_rmdirs(const char *name)
 	if(strcmp(dent->d_name, "..") == 0)
 	    continue;
 
-	fname = cli_calloc(strlen(name) + strlen(dent->d_name) + 2, sizeof(char));
+	fname = cli_malloc(strlen(name) + strlen(dent->d_name) + 2, sizeof(char));
 	if(fname == NULL) {
 	    closedir(dd);
 	    return -1;
@@ -667,7 +667,7 @@ int cli_rmdirs(const char *dirname)
 #endif
 		{
 		    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
-			fname = cli_calloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
+			fname = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2, sizeof(char));
 			if(!fname) {
 			    closedir(dd);
 			    return -1;
