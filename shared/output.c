@@ -287,20 +287,20 @@ void mprintf(const char *str, ...)
     vsnprintf(buff, sizeof(buff), str, args);
     va_end(args);
 
-    if(buff[0] == '!') {
+    if(*str == '!') {
        if(!mprintf_stdout)
            fd = stderr;
 	fprintf(fd, "ERROR: %s", &buff[1]);
-    } else if(buff[0] == '@') {
+    } else if(*str == '@') {
        if(!mprintf_stdout)
            fd = stderr;
 	fprintf(fd, "ERROR: %s", &buff[1]);
     } else if(!mprintf_quiet) {
-	if(buff[0] == '^') {
+	if(*str == '^') {
            if(!mprintf_stdout)
                fd = stderr;
 	    fprintf(fd, "WARNING: %s", &buff[1]);
-	} else if(buff[0] == '*') {
+	} else if(*str == '*') {
 	    if(mprintf_verbose)
 		fprintf(fd, "%s", &buff[1]);
 	} else fprintf(fd, "%s", buff);
