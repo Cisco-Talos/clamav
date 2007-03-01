@@ -1,3 +1,7 @@
+Thu Mar  1 22:12:22 CET 2007 (tk)
+---------------------------------
+  * clamd/server-th.c: make more attempts when cl_load returns CL_ELOCKDB
+
 Thu Mar  1 18:50:01 GMT 2007 (njh)
 ----------------------------------
   * libclamav/blob.h:	NAME_MAX is now in others.h
