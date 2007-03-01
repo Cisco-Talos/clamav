@@ -20,6 +20,10 @@
 #ifndef __OTHERS_H_LC
 #define __OTHERS_H_LC
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "cltypes.h"
@@ -45,6 +49,10 @@
      && sb >= bb && sb + sb_size <= bb + bb_size && sb + sb_size >= bb)
 
 #define CLI_MAX_ALLOCATION 184549376
+
+#ifdef	HAVE_SYS_PARAM_H
+#include <sys/param.h>	/* for NAME_MAX */
+#endif
 
 /* Maximum filenames under various systems - njh */
 #ifndef	NAME_MAX	/* e.g. Linux */
