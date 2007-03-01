@@ -1,3 +1,10 @@
+Thu Mar  1 09:10:04 GMT 2007 (njh)
+----------------------------------
+  * libclamav/pdf.c:	Try with both real and calculated Length fields, since
+				the Length object can't always be trusted
+			Improved backing out of unhandled formats (e.g.
+				Predictor for images and embedded fonts)
+
 Thu Mar  1 02:36:40 CET 2007 (tk)
 ---------------------------------
   * libclamav/unrar/unrar.c: improve handling of multi-volume archives: do not
@@ -50,7 +57,7 @@ Sun Feb 25 20:50:54 CET 2007 (tk)
 Sun Feb 25 17:00:31 CET 2007 (acab)
 -----------------------------------
   * libclamav/pe.c: fix leaks on upack return (bb#351)
-  
+
 Sun Feb 25 14:40:10 CET 2007 (tk)
 ---------------------------------
   * libclamav/unzip.c: fix memory leak when extracting stored files

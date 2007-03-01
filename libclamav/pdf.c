@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005 Nigel Horne <njh@bandsman.co.uk>
+ *  Copyright (C) 2005-2007 Nigel Horne <njh@bandsman.co.uk>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -14,6 +14,9 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * TODO: Embedded fonts
+ * TODO: Predictor image handling
  */
 static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 
@@ -51,6 +54,11 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #include "mbox.h"
 #include "pdf.h"
 
+#ifdef	CL_DEBUG
+/*#define	SAVE_TMP	/* Save the file being worked on in tmp */
+#endif
+
+static	int	try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fout, const cli_ctx *ctx);
 static	int	flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx);
 static	int	ascii85decode(const char *buf, off_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
@@ -72,6 +80,8 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	/*size_t xreflength;*/
 	int rc = CL_CLEAN;
 	struct table *md5table;
+	int printed_predictor_message;
+	int printed_embedded_font_message;
 
 	cli_dbgmsg("in cli_pdf(%s)\n", dir);
 
@@ -162,6 +172,8 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		return CL_EFORMAT;
 	}
 
+	printed_predictor_message = printed_embedded_font_message = 0;
+
 	md5table = tableCreate();
 	/*
 	 * not true, since edits may put data after the trailer
@@ -179,7 +191,8 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		/*int object_number, generation_number;*/
 		const char *objstart, *objend, *streamstart, *streamend;
 		char *md5digest;
-		size_t length, objlen, streamlen;
+		size_t length, objlen, real_streamlen, calculated_streamlen;
+		int is_embedded_font, predictor;
 		char fullname[NAME_MAX + 1];
 
 		if(q == xrefstart)
@@ -231,7 +244,10 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		if(streamstart == NULL)
 			continue;
 
-		length = is_ascii85decode = is_flatedecode = 0;
+		is_embedded_font = length = is_ascii85decode =
+			is_flatedecode = 0;
+		predictor = 1;
+
 		/*
 		 * TODO: handle F and FFilter?
 		 */
@@ -242,6 +258,14 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 				if(strncmp(++q, "Length ", 7) == 0) {
 					q += 7;
 					length = atoi(q);
+					while(isdigit(*q))
+						q++;
+					q--;
+				} else if(strncmp(q, "Length2 ", 8) == 0)
+					is_embedded_font = 1;
+				else if(strncmp(q, "Predictor ", 10) == 0) {
+					q += 10;
+					predictor = atoi(q);
 					while(isdigit(*q))
 						q++;
 					q--;
@@ -256,6 +280,31 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 			q = pdf_nextobject(q, (size_t)(streamstart - q));
 			if(q == NULL)
 				break;
+		}
+
+		if(is_embedded_font) {
+			/*
+			 * Need some documentation, the only I can find a
+			 * reference to is not free, if some kind sole wishes
+			 * to donate a copy, please contact me!
+			 * (http://safari.adobepress.com/0321304748)
+			 */
+			if(!printed_embedded_font_message) {
+				cli_dbgmsg("Embedded fonts not yet supported\n");
+				printed_embedded_font_message = 1;
+			}
+			continue;
+		}
+		if(predictor > 1) {
+			/*
+			 * Needs some thought
+			 */
+			if(!printed_predictor_message) {
+				cli_dbgmsg("Predictor %d not honoured for embedded image\n",
+					predictor);
+				printed_predictor_message = 1;
+			}
+			continue;
 		}
 
 		/* objend points to the end of the object (start of "endobj") */
@@ -274,16 +323,6 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 				break;
 			}
 		}
-		/*while(strchr("\r\n", *--streamend))
-			;*/
-
-		streamlen = (int)(streamend - streamstart) + 1;
-
-		if(streamlen == 0) {
-			cli_dbgmsg("Empty stream\n");
-			continue;
-		}
-
 		snprintf(fullname, sizeof(fullname), "%s/pdfXXXXXX", dir);
 #if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN)
 		fout = mkstemp(fullname);
@@ -312,8 +351,26 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 			break;
 		}
 
-		cli_dbgmsg("length %d, streamlen %d isFlate %d isASCII85 %d\n",
-			length, streamlen, is_flatedecode, is_ascii85decode);
+		/*
+		 * Calculate the length ourself, the Length parameter is often
+		 * wrong
+		 */
+		while(strchr("\r\n", *--streamend))
+			;
+
+		if(streamend <= streamstart) {
+			cli_dbgmsg("Empty stream\n");
+			continue;
+		}
+		calculated_streamlen = (int)(streamend - streamstart) + 1;
+		real_streamlen = length;
+
+		if(calculated_streamlen != real_streamlen)
+			cli_dbgmsg("cli_pdf: Incorrect Length field in file attempting to recover\n");
+
+		cli_dbgmsg("length %d, calculated_streamlen %d isFlate %d isASCII85 %d\n",
+			length, calculated_streamlen,
+			is_flatedecode, is_ascii85decode);
 
 #if	0
 		/* FIXME: this isn't right... */
@@ -323,7 +380,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 #endif
 
 		if(is_ascii85decode) {
-			unsigned char *tmpbuf = cli_malloc(streamlen * 5);
+			unsigned char *tmpbuf = cli_malloc(calculated_streamlen * 5);
 			int ret;
 
 			if(tmpbuf == NULL) {
@@ -333,7 +390,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 				continue;
 			}
 
-			ret = ascii85decode(streamstart, streamlen, tmpbuf);
+			ret = ascii85decode(streamstart, calculated_streamlen, tmpbuf);
 
 			if(ret == -1) {
 				free(tmpbuf);
@@ -343,31 +400,32 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 				continue;
 			}
 			if(ret) {
-				streamlen = (size_t)ret;
+				real_streamlen = (size_t)ret;
 				/* free unused trailing bytes */
-				tmpbuf = cli_realloc(tmpbuf, streamlen);
+				tmpbuf = cli_realloc(tmpbuf,
+					calculated_streamlen);
 				/*
 				 * Note that it will probably be both
 				 * ascii85encoded and flateencoded
 				 */
 				if(is_flatedecode) {
-					const int zstat = flatedecode((unsigned char *)tmpbuf, streamlen, fout, ctx);
+					const int zstat = try_flatedecode((unsigned char *)tmpbuf, real_streamlen, real_streamlen, fout, ctx);
 
 					if(zstat != Z_OK)
 						rc = CL_EZIP;
 				} else
-					cli_writen(fout, (const char *)streamstart, streamlen);
+					cli_writen(fout, (const char *)streamstart, real_streamlen);
 			}
 			free(tmpbuf);
 		} else if(is_flatedecode) {
-			const int zstat = flatedecode((unsigned char *)streamstart, streamlen, fout, ctx);
+			const int zstat = try_flatedecode((unsigned char *)streamstart, real_streamlen, calculated_streamlen, fout, ctx);
 
 			if(zstat != Z_OK)
 				rc = CL_EZIP;
 		} else {
 			cli_dbgmsg("cli_pdf: writing %lu bytes from the stream\n",
-				(unsigned long)streamlen);
-			cli_writen(fout, (const char *)streamstart, streamlen);
+				(unsigned long)real_streamlen);
+			cli_writen(fout, (const char *)streamstart, real_streamlen);
 		}
 
 		close(fout);
@@ -391,15 +449,56 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 
 /* flate inflation - returns zlib status, e.g. Z_OK */
 static int
+try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fout, const cli_ctx *ctx)
+{
+	int ret = flatedecode(buf, real_len, fout, ctx);
+
+	if(ret == Z_OK)
+		return Z_OK;
+
+	if(real_len == calculated_len)
+		return ret;
+
+	return flatedecode(buf, calculated_len, fout, ctx);
+}
+
+static int
 flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 {
 	int zstat;
 	off_t nbytes;
 	z_stream stream;
 	unsigned char output[BUFSIZ];
+#ifdef	SAVE_TMP
+	char tmpfilename[16];
+	int tmpfd;
+#endif
 
 	cli_dbgmsg("cli_pdf: flatedecode %lu bytes\n", (unsigned long)len);
 
+#ifdef	SAVE_TMP
+	/*
+	 * Copy the embedded area for debugging, so that if it falls over
+	 * we have a copy of the offending data. This is debugging code
+	 * that you shouldn't of course install in a live environment. I am
+	 * not interested in hearing about security issues with this section
+	 * of the parser.
+	 */
+	strcpy(tmpfilename, "/tmp/pdfXXXXXX");
+	tmpfd = mkstemp(tmpfilename);
+	if(tmpfd < 0) {
+		perror(tmpfilename);
+		cli_errmsg("Can't make debugging file\n");
+	} else {
+		FILE *tmpfp = fdopen(tmpfd, "w");
+
+		if(tmpfp) {
+			fwrite(buf, sizeof(char), len, tmpfp);
+			fclose(tmpfp);
+		} else
+			cli_errmsg("cli_pdf: can't fdopen debugging file\n");
+	}
+#endif
 	stream.zalloc = (alloc_func)Z_NULL;
 	stream.zfree = (free_func)Z_NULL;
 	stream.opaque = (void *)NULL;
@@ -441,11 +540,11 @@ flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 				break;
 			default:
 				if(stream.msg)
-					cli_warnmsg("pdf: after writing %lu bytes, got error \"%s\" inflating PDF attachment\n",
+					cli_dbgmsg("pdf: after writing %lu bytes, got error \"%s\" inflating PDF attachment\n",
 						(unsigned long)nbytes,
 						stream.msg);
 				else
-					cli_warnmsg("pdf: after writing %lu bytes, got error %d inflating PDF attachment\n",
+					cli_dbgmsg("pdf: after writing %lu bytes, got error %d inflating PDF attachment\n",
 						(unsigned long)nbytes, zstat);
 				inflateEnd(&stream);
 				return zstat;
@@ -454,7 +553,8 @@ flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 	}
 
 	if(stream.avail_out != sizeof(output))
-		(void)cli_writen(fout, output, sizeof(output) - stream.avail_out);
+		if(cli_writen(fout, output, sizeof(output) - stream.avail_out) < 0)
+			return Z_STREAM_ERROR;
 
 	cli_dbgmsg("cli_pdf: flatedecode in=%lu out=%lu ratio %ld (max %d)\n",
 		stream.total_in, stream.total_out,
@@ -471,6 +571,9 @@ flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 		return Z_DATA_ERROR;
 	}
 
+#ifdef	SAVE_TMP
+	unlink(tmpfilename);
+#endif
 	return inflateEnd(&stream);
 }
 
@@ -598,10 +701,13 @@ pdf_nextobject(const char *ptr, size_t len)
 			case '[':	/* Start of an array object */
 			case '\v':
 			case '\f':
+			case '<':	/* Start of a dictionary object */
 				inobject = 0;
 				ptr++;
 				len--;
 				break;
+			case '/':	/* Start of a name object */
+				return ptr;
 			default:
 				if(!inobject)
 					/* TODO: parse and return object type */
