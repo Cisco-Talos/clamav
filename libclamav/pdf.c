@@ -285,7 +285,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		if(is_embedded_font) {
 			/*
 			 * Need some documentation, the only I can find a
-			 * reference to is not free, if some kind sole wishes
+			 * reference to is not free, if some kind soul wishes
 			 * to donate a copy, please contact me!
 			 * (http://safari.adobepress.com/0321304748)
 			 */
