@@ -1,3 +1,9 @@
+Thu Mar  1 02:36:40 CET 2007 (tk)
+---------------------------------
+  * libclamav/unrar/unrar.c: improve handling of multi-volume archives: do not
+			     report CL_ESUPPORT, instead scan all complete
+			     files and do full metadata scan
+
 Wed Feb 28 23:40:04 CET 2007 (tk)
 ---------------------------------
   * libclamav/others.h: update NAME_MAX block and add workaround for HP-UX

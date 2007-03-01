@@ -1459,18 +1459,6 @@ int cli_unrar_open(int fd, const char *dirname, rar_state_t* state)
 		return CL_EMEM;
 	}
 
-	if ((main_hdr->flags & MHD_VOLUME) != 0) {
-		/* Part of a RAR VOLUME - Skip it */
-		cli_dbgmsg("RAR MUTIPART VOLUME - Skippng.\n");
-		free(main_hdr);
-		ppm_destructor(&unpack_data->ppm_data);
-		init_filters(unpack_data);
-		unpack_free_data(unpack_data);
-		free(unpack_data);
-		free(state->comment_dir);
-		return CL_ESUPPORT;
-        }
-
 	if (main_hdr->head_size < SIZEOF_NEWMHD) {
 		free(main_hdr);
 		ppm_destructor(&unpack_data->ppm_data);
@@ -1618,6 +1606,10 @@ int cli_unrar_extract_next(rar_state_t* state,const char* dirname)
 	if (state->file_header->flags & LHD_PASSWORD) {
 		cli_dbgmsg("PASSWORDed file: %s\n", state->file_header->filename);
 		state->metadata_tail->encrypted = TRUE;
+
+	} else if(state->file_header->flags & (LHD_SPLIT_BEFORE | LHD_SPLIT_AFTER)) {
+	        cli_dbgmsg("Skipping split file\n");
+
 	} else /*if (file_header->unpack_size)*/ {
 		snprintf(state->filename, 1024, "%s/%lu.ura", dirname, state->file_count);
 		ofd = open(state->filename, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, 0600);
