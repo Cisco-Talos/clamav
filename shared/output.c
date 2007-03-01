@@ -192,7 +192,7 @@ int logg(const char *str, ...)
 	    if(logg_time && ((*str != '*') || logg_verbose)) {
 		time(&currtime);
 		pt = ctime(&currtime);
-		timestr = malloc(strlen(pt));
+		timestr = calloc(strlen(pt), 1);
 		strncpy(timestr, pt, strlen(pt) - 1);
 		fprintf(logg_fd, "%s -> ", timestr);
 		free(timestr);

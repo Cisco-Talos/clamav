@@ -285,7 +285,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 				}
 				ctype = tolower(arg[strlen(arg) - 1]);
 				if(ctype == 'm' || ctype == 'k') {
-				    char *cpy = (char *) malloc(strlen(arg));
+				    char *cpy = (char *) calloc(strlen(arg), 1);
 				    strncpy(cpy, arg, strlen(arg) - 1);
 				    if(!isnumb(cpy)) {
 					if(verbose)

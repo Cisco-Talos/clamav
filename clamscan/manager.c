@@ -228,7 +228,7 @@ int scanmanager(const struct optstruct *opt)
 	char *cpy, *ptr;
 	ptr = opt_arg(opt, "max-space");
 	if(tolower(ptr[strlen(ptr) - 1]) == 'm') {
-	    cpy = malloc(strlen(ptr));
+	    cpy = calloc(strlen(ptr), 1);
 	    strncpy(cpy, ptr, strlen(ptr) - 1);
 	    limits.maxfilesize = atoi(cpy) * 1024 * 1024;
 	    free(cpy);
@@ -433,7 +433,7 @@ static int clamav_unpack(const char *prog, char **args, const char *tmpdir, cons
 	    char *cpy, *ptr;
 	ptr = opt_arg(opt, "max-space");
 	if(tolower(ptr[strlen(ptr) - 1]) == 'm') { /* megabytes */
-	    cpy = malloc(strlen(ptr));
+	    cpy = calloc(strlen(ptr), 1);
 	    strncpy(cpy, ptr, strlen(ptr) - 1);
 	    maxspace = atoi(cpy) * 1024;
 	    free(cpy);
