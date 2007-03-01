@@ -1501,6 +1501,7 @@ int cli_unrar_open(int fd, const char *dirname, rar_state_t* state)
 					unpack_data->dest_unp_size = comment_header->unpack_size;
 					unpack_data->pack_size = comment_header->head_size - SIZEOF_COMMHEAD;
                         		retval = rar_unpack(fd, comment_header->unpack_ver, FALSE, unpack_data);
+					unpack_free_data(unpack_data);
 				}
 				close(ofd);
 			}

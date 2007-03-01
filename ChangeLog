@@ -1,3 +1,7 @@
+Thu Mar  1 11:24:40 GMT 2007 (trog)
+-----------------------------------
+  * libclamav/unrar/unrar.c, unrarvm.c: better fix for bb#350
+
 Thu Mar  1 11:43:07 CET 2007 (tk)
 ---------------------------------
   * libclamav/unrar/unrar.c: skip all files inside multi-volume solid archives

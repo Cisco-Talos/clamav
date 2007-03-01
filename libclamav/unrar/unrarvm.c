@@ -139,7 +139,7 @@ void rarvm_set_value(int byte_mode, unsigned int *addr, unsigned int value)
 
 uint32_t crc_tab[256];
 
-static void init_crc()
+static void rar_crc_init()
 {
 	int i, j;
 	unsigned int c;
@@ -190,11 +190,8 @@ uint32_t rar_crc(uint32_t start_crc, void *addr, uint32_t size)
 
 int rarvm_init(rarvm_data_t *rarvm_data)
 {
-	if(rarvm_data->mem) {
-		free(rarvm_data->mem);/* prevent leaks */
-	}
 	rarvm_data->mem = (uint8_t *) cli_malloc(RARVM_MEMSIZE+4);
-	init_crc();
+	rar_crc_init();
 	if (!rarvm_data->mem) {
 		return FALSE;
 	}
