@@ -194,7 +194,7 @@ int dircopy(const char *src, const char *dest)
 
 
     if(stat(dest, &sb) == -1) {
-	if(mkdir(dest, 0700)) {
+	if(mkdir(dest, 0755)) {
 	    /* mprintf("!dircopy: Can't create temporary directory %s\n", dest); */
 	    return -1;
 	}
