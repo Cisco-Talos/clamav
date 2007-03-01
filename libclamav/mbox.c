@@ -92,6 +92,8 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
 
 static	void	sigsegv(int sig);
 static	void	print_trace(int use_syslog);
+
+/*#define	SAVE_TMP	/* Save the file being worked on in tmp */
 #endif
 
 #if	defined(NO_STRTOK_R) || !defined(CL_THREAD_SAFE)
@@ -1244,7 +1246,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 	void (*segv)(int);
 #endif
 	static table_t *rfc821, *subtype;
-#ifdef	CL_DEBUG
+#ifdef	SAVE_TMP
 	char tmpfilename[16];
 	int tmpfd;
 #endif
@@ -1289,7 +1291,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 		return CL_EOPEN;
 	}
 	rewind(fd);	/* bug 240 */
-#ifdef	CL_DEBUG
+#ifdef	SAVE_TMP
 	/*
 	 * Copy the incoming mail for debugging, so that if it falls over
 	 * we have a copy of the offending email. This is debugging code
@@ -1317,7 +1319,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 	if(fgets(buffer, sizeof(buffer) - 1, fd) == NULL) {
 		/* empty message */
 		fclose(fd);
-#ifdef	CL_DEBUG
+#ifdef	SAVE_TMP
 		unlink(tmpfilename);
 #endif
 		return CL_CLEAN;
@@ -1335,7 +1337,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 			pthread_mutex_unlock(&tables_mutex);
 #endif
 			fclose(fd);
-#ifdef	CL_DEBUG
+#ifdef	SAVE_TMP
 			unlink(tmpfilename);
 #endif
 			return CL_EMEM;
@@ -1396,7 +1398,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 #ifdef HAVE_BACKTRACE
 			signal(SIGSEGV, segv);
 #endif
-#ifdef	CL_DEBUG
+#ifdef	SAVE_TMP
 			unlink(tmpfilename);
 #endif
 			return CL_EMEM;
@@ -1538,7 +1540,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 	signal(SIGSEGV, segv);
 #endif
 
-#ifdef	CL_DEBUG
+#ifdef	SAVE_TMP
 	unlink(tmpfilename);
 #endif
 	return retcode;
@@ -3121,7 +3123,7 @@ boundaryStart(const char *line, const char *boundary)
 	if(ptr == NULL)
 		ptr = line;
 
-	if(*ptr++ != '-') {
+	if((*ptr++ != '-') || (*ptr == '\0')) {
 		if(out)
 			free(out);
 		return 0;
