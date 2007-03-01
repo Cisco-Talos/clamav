@@ -759,6 +759,11 @@ cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns)
 	return NULL;
 }
 #else	/*!HAVE_MMAP*/
+
+#include "clamav.h"
+#include "others.h"
+#include "pdf.h"
+
 int
 cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 {
