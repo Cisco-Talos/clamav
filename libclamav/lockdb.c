@@ -193,6 +193,7 @@ static int cli_lockdb(const char *dbdirpath, int wait, int writelock)
 #ifndef C_WINDOWS
 	struct flock fl;
 	mode_t old_mask;
+	unsigned int existing = 0;
 #else
 	DWORD LastError;
 	SECURITY_ATTRIBUTES saAttr;
@@ -227,11 +228,13 @@ static int cli_lockdb(const char *dbdirpath, int wait, int writelock)
 	old_mask = umask(0);
 	if(-1 == (lock->lock_fd = open(lock->lock_file, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU|S_IRWXG|S_IROTH))) {
 	    if((writelock) ||
-	       (-1 == (lock->lock_fd = open(lock->lock_file, O_RDWR, 0)))) {
+	       (-1 == (lock->lock_fd = open(lock->lock_file, O_RDONLY)))) {
 		cli_dbgmsg("Can't %s Lock file for Database Directory: %s\n", (writelock ? "create" : "open"), dbdirpath);
 		umask(old_mask);
 		pthread_mutex_unlock(&lock_mutex);
 		return CL_EIO; /* or CL_EACCESS */
+	    } else {
+		existing = 1;
 	    }
 	}
 	umask(old_mask);
@@ -268,7 +271,9 @@ static int cli_lockdb(const char *dbdirpath, int wait, int writelock)
 	if(errno != EACCES && errno != EAGAIN) {
 	    close(lock->lock_fd);
 	    lock->lock_fd=-1;
-	    unlink(lock->lock_file);
+	    if(!existing)
+		unlink(lock->lock_file);
+	    cli_errmsg("Can't acquire %s lock: %s\n", writelock ? "write" : "read", strerror(errno));
 	    return CL_EIO;
 	}
 #endif
