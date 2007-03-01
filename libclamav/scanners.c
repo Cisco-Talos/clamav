@@ -101,19 +101,6 @@ extern short cli_leavetemps_flag;
 #include <stddef.h>
 #endif
 
-/* Maximum filenames under various systems - njh */
-#ifndef	NAME_MAX	/* e.g. Linux */
-# ifdef	MAXNAMELEN	/* e.g. Solaris */
-#   define	NAME_MAX	MAXNAMELEN
-# else
-#   ifdef	FILENAME_MAX	/* e.g. SCO */
-#     define	NAME_MAX	FILENAME_MAX
-#   else
-#     define	NAME_MAX	256
-#   endif
-# endif
-#endif
-
 #define MAX_MAIL_RECURSION  15
 
 static int cli_scanfile(const char *filename, cli_ctx *ctx);

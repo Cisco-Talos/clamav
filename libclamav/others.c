@@ -72,19 +72,6 @@ static pthread_mutex_t cli_gentempname_mutex = PTHREAD_MUTEX_INITIALIZER;
 #include "md5.h"
 #include "cltypes.h"
 
-/* Maximum filenames under various systems - njh */
-#ifndef	NAME_MAX	/* e.g. Linux */
-# ifdef	MAXNAMELEN	/* e.g. Solaris */
-#   define	NAME_MAX	MAXNAMELEN
-# else
-#   ifdef	FILENAME_MAX	/* e.g. SCO */
-#     define	NAME_MAX	FILENAME_MAX
-#   else
-#     define	NAME_MAX	256
-#   endif
-# endif
-#endif
-
 #ifndef	O_BINARY
 #define	O_BINARY	0
 #endif
