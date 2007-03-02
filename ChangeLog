@@ -1,3 +1,7 @@
+Fri Mar  2 02:02:31 CET 2007 (tk)
+---------------------------------
+  * 0.90.1 (released with JS and PST code removed)
+
 Fri Mar  2 01:44:10 CET 2007 (tk)
 ---------------------------------
   * shared/output.c: revert patch for bb#360 (didn't work properly when
