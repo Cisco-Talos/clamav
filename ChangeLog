@@ -1,3 +1,8 @@
+Fri Mar  2 01:44:10 CET 2007 (tk)
+---------------------------------
+  * shared/output.c: revert patch for bb#360 (didn't work properly when
+		     mprintf() was called from logg())
+
 Thu Mar  1 22:12:22 CET 2007 (tk)
 ---------------------------------
   * clamd/server-th.c: make more attempts when cl_load returns CL_ELOCKDB
