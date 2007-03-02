@@ -1,10 +1,8 @@
-0.90
-----
+0.90.1
+------
 
-The ClamAV team is proud to announce the long awaited ClamAV 0.90.
-This version introduces lots of new interesting features and marks
-a big step forward in the development of our antivirus engine.
-Please see README and ChangeLog for details.
+This release includes various bugfixes and code enhancements. Please
+see ChangeLog for complete list of changes.
 
 --
 The ClamAV team (http://www.clamav.net/team)
