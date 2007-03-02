@@ -4,5 +4,7 @@
 This release includes various bugfixes and code enhancements. Please
 see ChangeLog for complete list of changes.
 
+** Important note **: please run 'ldconfig' after installing this version.
+
 --
 The ClamAV team (http://www.clamav.net/team)
