@@ -4374,8 +4374,6 @@ getURL(struct arg *arg)
 #else
 	unsigned int ip;
 #endif
-	char buf[BUFSIZ];
-	char site[BUFSIZ];
 	in_port_t port;
 	static in_port_t default_port;
 	static int tcp;
@@ -4383,6 +4381,7 @@ getURL(struct arg *arg)
 	char *ptr;
 	int flags, via_proxy;
 	const char *proxy;
+	char buf[BUFSIZ + 1], site[BUFSIZ];
 
 	if(strlen(url) > (sizeof(site) - 1)) {
 		cli_dbgmsg("Ignoring long URL \"%s\"\n", url);
@@ -4570,7 +4569,7 @@ getURL(struct arg *arg)
 			closesocket(sd);
 			return NULL;
 		}
-		n = recv(sd, buf, BUFSIZ, 0);
+		n = recv(sd, buf, sizeof(buf) - 1, 0);
 
 		if(n < 0) {
 			fclose(fp);
@@ -4871,13 +4870,13 @@ getURL(struct arg *arg)
 	const char *dir = arg->dir;
 	CURL *curl = arg->curl;
 	const char *filename = arg->filename;
-	char fout[NAME_MAX + 1];
 	void (*oldsegv)(int);
 #ifdef	CURLOPT_ERRORBUFFER
 	char errorbuffer[CURL_ERROR_SIZE + 1];
 #elif	(LIBCURL_VERSION_NUM >= 0x070C00)
 	CURLcode res = CURLE_OK;
 #endif
+	char fout[NAME_MAX + 1];
 
 	(void)curl_easy_setopt(curl, CURLOPT_USERAGENT, "www.clamav.net");
 
