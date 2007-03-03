@@ -979,7 +979,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						if(charset) {							
 							while(*charset && *charset != '=')
 								charset++;
-							charset++;/* skip = */
+							if(*charset)
+								charset++;/* skip = */
 							len = strcspn((const char*)charset," \"'");
 							charset[len] = '\0';
 							if(len)
