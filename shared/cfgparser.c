@@ -417,19 +417,13 @@ void freecfg(struct cfgstruct *copt)
     return;
 }
 
-struct cfgstruct *cfgopt(const struct cfgstruct *copt, const char *optname)
+struct cfgstruct *cfgopt(struct cfgstruct *copt, const char *optname)
 {
-	struct cfgstruct *handler;
+    while(copt) {
+	if(copt->optname && !strcmp(copt->optname, optname))
+	    return copt;
 
-    handler = (struct cfgstruct *) copt;
-
-    while(1) {
-	if(handler) {
-	    if(handler->optname)
-		if(!strcmp(handler->optname, optname))
-		    return handler;
-	} else break;
-	handler = handler->next;
+	copt = copt->next;
     }
 
     return NULL;

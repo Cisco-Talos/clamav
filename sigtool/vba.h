@@ -20,7 +20,6 @@
 #ifndef __VBA_H
 #define __VBA_H
 
-extern int hex_output;
 int sigtool_vba_scandir(const char *dirname, int hex_output);
 
 #endif

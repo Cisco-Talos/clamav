@@ -101,9 +101,9 @@ static int md5sig(struct optstruct *opt, unsigned int mdb)
 		if((sb.st_mode & S_IFMT) == S_IFREG) {
 		    if((md5 = cli_md5file(filename))) {
 			if(mdb)
-			    mprintf("%d:%s:%s\n", sb.st_size, md5, filename);
+			    mprintf("%u:%s:%s\n", (unsigned int) sb.st_size, md5, filename);
 			else
-			    mprintf("%s:%d:%s\n", md5, sb.st_size, filename);
+			    mprintf("%s:%u:%s\n", md5, (unsigned int) sb.st_size, filename);
 			free(md5);
 		    } else {
 			mprintf("!md5sig: Can't generate MD5 checksum for %s\n", filename);
@@ -248,7 +248,7 @@ static char *getdsig(const char *host, const char *user, const char *data, unsig
 
 #ifdef HAVE_TERMIOS_H
 	if(tcsetattr(0, TCSAFLUSH, &old)) {
-	    mprintf("!getdsig: tcsetattr() failed\n", host);
+	    mprintf("!getdsig: tcsetattr() failed\n");
 	    memset(pass, 0, strlen(pass));
 	    return NULL;
 	}
@@ -330,7 +330,7 @@ static int writeinfo(const char *db, const char *header)
 	int i;
 	struct stat sb;
 	char file[32], *md5;
-	char *extlist[] = { "db", "fp", "hdb", "mdb", "ndb", "pdb", "rmd", "zmd", "sdb", "cfg", NULL };
+	const char *const extlist[] = { "db", "fp", "hdb", "mdb", "ndb", "pdb", "rmd", "zmd", "sdb", "cfg", NULL };
 
 
     snprintf(file, sizeof(file), "%s.info", db);
@@ -499,7 +499,8 @@ static int build(struct optstruct *opt)
 	unsigned int sigs = 0, oldsigs = 0, lines = 0, version, real_header, fl;
 	struct stat foo;
 	char buffer[FILEBUFF], *tarfile, *gzfile, header[513], smbuff[32],
-	     builder[32], *pt, *dbname, olddb[512], patch[32], broken[32];
+	     builder[32], *pt, olddb[512], patch[32], broken[32];
+	const char *dbname;
         struct cl_engine *engine = NULL;
 	FILE *tar, *cvd;
 	gzFile *gz;
@@ -677,7 +678,7 @@ static int build(struct optstruct *opt)
 	    return -1;
 	case 0:
 	    {
-		char *args[] = { "tar", "-cvf", NULL, "COPYING", "main.db",
+		const char *args[] = { "tar", "-cvf", NULL, "COPYING", "main.db",
 				 "daily.db", "main.hdb", "daily.hdb",
 				 "main.ndb", "daily.ndb", "main.sdb",
 				 "daily.sdb", "main.zmd", "daily.zmd",
@@ -1680,7 +1681,7 @@ static int makediff(struct optstruct *opt)
     return 0;
 }
 
-void help(void)
+static void help(void)
 {
     mprintf("\n");
     mprintf("             Clam AntiVirus: Signature Tool (sigtool)  "VERSION"\n");

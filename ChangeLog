@@ -1,3 +1,7 @@
+Mon Mar  5 21:06:37 CET 2007 (tk)
+---------------------------------
+  * sigtool: fix gcc -W* warnings
+
 Mon Mar  5 19:35:32 GMT 2007 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Include the clamAV version in the HTTP request (based

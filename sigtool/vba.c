@@ -36,13 +36,13 @@
 typedef struct mac_token_tag
 {
     unsigned char token;
-    const unsigned char *str;
+    const char *str;
 } mac_token_t;
 
 typedef struct mac_token2_tag
 {
     uint16_t token;
-    const unsigned char *str;
+    const char *str;
 
 } mac_token2_t;
 
@@ -789,8 +789,8 @@ static void print_hex_buff (unsigned char *start, unsigned char *end, int hex_ou
 
 static void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 {
-    int i, j;
-    uint8_t s_length;
+    uint32_t i;
+    uint8_t s_length, j;
     uint16_t w_length, int_val;
     unsigned char *tmp_buff, *tmp_name, *line_start;
 
@@ -801,7 +801,7 @@ static void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	case 0x65:
 	    s_length = (uint8_t) buff[i + 1];
 	    tmp_buff = (unsigned char *) malloc (s_length + 1);
-	    strncpy (tmp_buff, buff + i + 2, s_length);
+	    strncpy ((char *) tmp_buff, (char *) (buff + i + 2), s_length);
 	    tmp_buff[s_length] = '\0';
 	    print_hex_buff (line_start, buff + i + 2 + s_length, hex_output);
 	    printf ("\n%s", tmp_buff);
@@ -812,7 +812,7 @@ static void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	case 0x69:
 	    s_length = (uint8_t) buff[i + 1];
 	    tmp_buff = (unsigned char *) malloc (s_length + 1);
-	    strncpy (tmp_buff, buff + i + 2, s_length);
+	    strncpy ((char *) tmp_buff, (char *) (buff + i + 2), s_length);
 	    tmp_buff[s_length] = '\0';
 	    printf (" %s", tmp_buff);
 	    free (tmp_buff);
@@ -821,7 +821,7 @@ static void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	case 0x6a:
 	    s_length = (uint8_t) buff[i + 1];
 	    tmp_buff = (unsigned char *) malloc (s_length + 1);
-	    strncpy (tmp_buff, buff + i + 2, s_length);
+	    strncpy ((char *) tmp_buff, (char *) (buff + i + 2), s_length);
 	    tmp_buff[s_length] = '\0';
 	    printf (" \"%s\"", tmp_buff);
 	    free (tmp_buff);
@@ -830,7 +830,7 @@ static void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	case 0x6b:
 	    s_length = (uint8_t) buff[i + 1];
 	    tmp_buff = (unsigned char *) malloc (s_length + 1);
-	    strncpy (tmp_buff, buff + i + 2, s_length);
+	    strncpy ((char *) tmp_buff, (char *) (buff + i + 2), s_length);
 	    tmp_buff[s_length] = '\0';
 	    printf (" '%s", tmp_buff);
 	    free (tmp_buff);
@@ -839,7 +839,7 @@ static void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	case 0x6d:
 	    s_length = (uint8_t) buff[i + 1];
 	    tmp_buff = (unsigned char *) malloc (s_length + 1);
-	    strncpy (tmp_buff, buff + i + 2, s_length);
+	    strncpy ((char *) tmp_buff, (char *) (buff + i + 2), s_length);
 	    tmp_buff[s_length] = '\0';
 	    printf (" %s", tmp_buff);
 	    free (tmp_buff);
@@ -848,7 +848,7 @@ static void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	case 0x70:
 	    s_length = (uint8_t) buff[i + 1];
 	    tmp_buff = (unsigned char *) malloc (s_length + 1);
-	    strncpy (tmp_buff, buff + i + 2, s_length);
+	    strncpy ((char *) tmp_buff, (char *) (buff + i + 2), s_length);
 	    tmp_buff[s_length] = '\0';
 	    printf ("REM%s", tmp_buff);
 	    free (tmp_buff);
@@ -857,7 +857,7 @@ static void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	case 0x76:
 	    s_length = (uint8_t) buff[i + 1];
 	    tmp_buff = (unsigned char *) malloc (s_length + 1);
-	    strncpy (tmp_buff, buff + i + 2, s_length);
+	    strncpy ((char *) tmp_buff, (char *) (buff + i + 2), s_length);
 	    tmp_buff[s_length] = '\0';
 	    printf (" .%s", tmp_buff);
 	    free (tmp_buff);
@@ -866,7 +866,7 @@ static void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	case 0x77:
 	    s_length = (uint8_t) buff[i + 1];
 	    tmp_buff = (unsigned char *) malloc (s_length + 1);
-	    strncpy (tmp_buff, buff + i + 2, s_length);
+	    strncpy ((char *) tmp_buff, (char *) (buff + i + 2), s_length);
 	    tmp_buff[s_length] = '\0';
 	    printf ("%s", tmp_buff);
 	    free (tmp_buff);
@@ -876,7 +876,7 @@ static void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	    w_length = (uint16_t) (buff[i + 2] << 8) + buff[i + 1];
 	    tmp_buff = (unsigned char *) malloc ((w_length * 2) + 1);
 	    memcpy (tmp_buff, buff + i + 3, w_length * 2);
-	    tmp_name = get_unicode_name (tmp_buff, w_length * 2);
+	    tmp_name = (unsigned char *) get_unicode_name ((char *) tmp_buff, w_length * 2);
 	    free (tmp_buff);
 	    printf ("\"%s\"", tmp_name);
 	    free (tmp_name);
@@ -887,7 +887,7 @@ static void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 	    s_length = (uint8_t) buff[i + 1];
 	    tmp_buff = (unsigned char *) malloc ((s_length * 2) + 1);
 	    memcpy (tmp_buff, buff + i + 2, s_length * 2);
-	    tmp_name = get_unicode_name (tmp_buff, s_length * 2);
+	    tmp_name = (unsigned char *) get_unicode_name ((char *) tmp_buff, s_length * 2);
 	    free (tmp_buff);
 	    printf ("'%s", tmp_name);
 	    free (tmp_name);
@@ -1060,7 +1060,7 @@ int sigtool_vba_scandir (const char *dirname, int hex_output)
 	    if (!data) {
 		cli_dbgmsg ("WARNING: VBA project '%s' decompressed to NULL\n", vba_project->name[i]);
 	    } else {
-		data = (char *) realloc (data, data_len + 1);
+		data = (unsigned char *) realloc (data, data_len + 1);
 		data[data_len] = '\0';
 		printf ("%s", data);
 		free (data);
