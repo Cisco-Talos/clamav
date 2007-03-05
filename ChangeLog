@@ -1,3 +1,7 @@
+Mon Mar  5 17:09:00 GMT 2007 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Fix debug message (bug 378)
+
 Mon Mar  5 16:53:27 CET 2007 (acab)
 -----------------------------------
   * libclamav/upx.c: Make gcc -W stfu - minor cosmetic changes
