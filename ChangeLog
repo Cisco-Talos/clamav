@@ -1,3 +1,8 @@
+Mon Mar  5 08:57:00 GMT 2007 (njh)
+---------------------------------
+  * libclamav/mbox.c:	Fix another part of bug 255 (please only report one
+  				bug per bugzilla bug :-( )
+
 Fri Mar  2 23:05:00 CET 2007 (edwin)
 ----------------------------------
   * libclamav/htmlnorm.c: Better handling for empty charset in meta tag.

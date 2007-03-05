@@ -4347,6 +4347,10 @@ static	int	my_r_gethostbyname(const char *hostname, struct hostent *hp, char *bu
 #define NONBLOCK_SELECT_MAX_FAILURES	3
 #define NONBLOCK_MAX_BOGUS_LOOPS	10
 
+/*
+ * Simple implementation of a subset of RFC1945 (HTTP/1.0)
+ * TODO: HTTP/1.1 (RFC2068)
+ */
 static void *
 #ifdef	CL_THREAD_SAFE
 getURL(void *a)
@@ -4361,7 +4365,6 @@ getURL(struct arg *arg)
 	const char *url = arg->url;
 	const char *dir = arg->dir;
 	const char *filename = arg->filename;
-	char fout[NAME_MAX + 1];
 #ifdef	C_WINDOWS
 	SOCKET sd;
 #else
@@ -4381,7 +4384,7 @@ getURL(struct arg *arg)
 	char *ptr;
 	int flags, via_proxy;
 	const char *proxy;
-	char buf[BUFSIZ + 1], site[BUFSIZ];
+	char buf[BUFSIZ + 1], site[BUFSIZ], fout[NAME_MAX + 1];
 
 	if(strlen(url) > (sizeof(site) - 1)) {
 		cli_dbgmsg("Ignoring long URL \"%s\"\n", url);
@@ -4526,10 +4529,10 @@ getURL(struct arg *arg)
 	 */
 	if(via_proxy)
 		snprintf(buf, sizeof(buf) - 1,
-			"GET %s HTTP/1.0\nUser-Agent: www.clamav.net\n\n", url);
+			"GET %s HTTP/1.0\nUser-Agent: www.clamav.net\r\n\r\n", url);
 	else
 		snprintf(buf, sizeof(buf) - 1,
-			"GET /%s HTTP/1.0\nUser-Agent: www.clamav.net\n\n", url);
+			"GET /%s HTTP/1.0\nUser-Agent: www.clamav.net\r\n\r\n", url);
 
 	/*cli_dbgmsg("%s", buf);*/
 
@@ -4623,8 +4626,10 @@ getURL(struct arg *arg)
 			/*
 			 * Don't write the HTTP header
 			 */
-			ptr = strstr(buf, "\n\n");
-			if(ptr != NULL) {
+			if((ptr = strstr(buf, "\r\n\r\n")) != NULL) {
+				ptr += 4;
+				n -= (int)(ptr - buf);
+			} else if((ptr = strstr(buf, "\n\n")) != NULL) {
 				ptr += 2;
 				n -= (int)(ptr - buf);
 			} else
