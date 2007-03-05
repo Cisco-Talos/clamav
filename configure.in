@@ -49,6 +49,14 @@ AC_COMPILE_CHECK_SIZEOF(int)
 AC_COMPILE_CHECK_SIZEOF(long)
 AC_COMPILE_CHECK_SIZEOF(long long)
 
+AC_ARG_ENABLE(experimental,
+[  --enable-experimental	enable experimental code],
+enable_experimental=$enableval, enable_experimental="no")
+
+if test "$enable_experimental" = "yes"; then
+  AC_DEFINE(CL_EXPERIMENTAL,1,[enable experimental code])
+fi
+
 AC_CHECK_LIB(socket, bind, [LIBS="$LIBS -lsocket"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsocket"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsocket"; CLAMD_LIBS="$CLAMD_LIBS -lsocket"])
 AC_CHECK_LIB(nsl, gethostent, [LIBS="$LIBS -lnsl"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lnsl"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lnsl"; CLAMD_LIBS="$CLAMD_LIBS -lnsl"])
 
@@ -226,7 +234,7 @@ AC_ARG_WITH(libcurl,
 [ lcurl=auto ])
 
 dnl Based on http://curl.signal42.com/libcurl/using/autoconf.html
-if test "$lcurl" != "no"
+if test "$lcurl" != "no" -a "$enable_experimental" != "yes"
 then
     my_cv_curl_vers=NONE
     dnl check is the plain-text version of the required version
@@ -314,14 +322,6 @@ enable_dnsfix=$enableval, enable_dnsfix="no")
 
 if test "$enable_dnsfix" = "yes"; then
   AC_DEFINE(FRESHCLAM_DNS_FIX,1,[enable workaround for broken DNS servers])
-fi
-
-AC_ARG_ENABLE(experimental,
-[  --enable-experimental	enable experimental code],
-enable_experimental=$enableval, enable_experimental="no")
-
-if test "$enable_experimental" = "yes"; then
-  AC_DEFINE(CL_EXPERIMENTAL,1,[enable experimental code])
 fi
 
 AC_ARG_ENABLE(bigstack,
