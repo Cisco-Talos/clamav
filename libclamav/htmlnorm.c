@@ -1131,6 +1131,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 #ifdef CL_EXPERIMENTAL
 					state = HTML_ENTITY_REF_DECODE;
 #else
+					if(next_state == HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
+						tag_val[tag_val_length++] = '&';
+					}
 					html_output_c(file_buff_o1, file_buff_o2, '&');
 
 					state = next_state;
@@ -1149,7 +1152,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						for(i=0; i < strlen(normalized); i++) {
 							const char c = tolower(normalized[i]);
 							html_output_c(file_buff_o1, file_buff_o2, c);
-							if (tag_val_length < HTML_STR_LENGTH) {
+							if (next_state == HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
 								tag_val[tag_val_length++] = c;
 							}
 						}
@@ -1157,12 +1160,18 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					}
 					else {
 						html_output_c(file_buff_o1, file_buff_o2, '&');
+						if (next_state == HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
+								tag_val[tag_val_length++] = '&';
+						}						
 						for(i=0; i < entity_val_length; i++) {
 							const char c = tolower(entity_val[i]);
 							html_output_c(file_buff_o1, file_buff_o2, c);
-							if (tag_val_length < HTML_STR_LENGTH) {
+							if (next_state == HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
 								tag_val[tag_val_length++] = c;
 							}
+						}
+						if (next_state == HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
+							tag_val[tag_val_length++] = ';';
 						}
 						html_output_c(file_buff_o1, file_buff_o2, ';');
 					}
@@ -1177,11 +1186,14 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				else {
 						/* entity too long, or not valid, dump it */
 						size_t i;
+						if (next_state==HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
+								tag_val[tag_val_length++] = '&';
+						}
 						html_output_c(file_buff_o1, file_buff_o2, '&');
 						for(i=0; i < entity_val_length; i++) {
 							const char c = tolower(entity_val[i]);
 							html_output_c(file_buff_o1, file_buff_o2, c);
-							if (tag_val_length < HTML_STR_LENGTH) {
+							if (next_state==HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
 								tag_val[tag_val_length++] = c;
 							}
 						}
@@ -1198,8 +1210,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					ptr++;
 				} else if (*ptr == ';') {
 #ifdef CL_EXPERIMENTAL
-					if (tag_val_length < HTML_STR_LENGTH) {
-					tag_val[tag_val_length++] = value; /* store encoded values too */
+					if (next_state==HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
+						tag_val[tag_val_length++] = value; /* store encoded values too */
 					}
 
 					if((value < 0x80 && value >= 0x20) || (value >= 0 && value <= 0xff && isspace(value)))
