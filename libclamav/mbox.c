@@ -4529,10 +4529,12 @@ getURL(struct arg *arg)
 	 */
 	if(via_proxy)
 		snprintf(buf, sizeof(buf) - 1,
-			"GET %s HTTP/1.0\r\nUser-Agent: www.clamav.net\r\n\r\n", url);
+			"GET %s HTTP/1.0\r\nUser-Agent: ClamAV %s\r\n\r\n",
+				url, VERSION);
 	else
 		snprintf(buf, sizeof(buf) - 1,
-			"GET /%s HTTP/1.0\r\nUser-Agent: www.clamav.net\r\n\r\n", url);
+			"GET /%s HTTP/1.0\r\nUser-Agent: ClamAV %s\r\n\r\n",
+				url, VERSION);
 
 	/*cli_dbgmsg("%s", buf);*/
 
