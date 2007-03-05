@@ -1,3 +1,7 @@
+Mon Mar  5 19:10:11 CET 2007 (tk)
+---------------------------------
+  * configure: add GNU/Hurd support (bb#363)
+
 Fri Mar  2 19:36:00 CEST 2007 (edwin)
 -------------------------------------
    * libclamav/htmlnorm.c: ampersands were missed in URLs. (bb #377)

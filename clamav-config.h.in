@@ -48,6 +48,9 @@
 /* os is darwin */
 #undef C_DARWIN
 
+/* target is gnu-hurd */
+#undef C_GNU_HURD
+
 /* os is hpux */
 #undef C_HPUX
 

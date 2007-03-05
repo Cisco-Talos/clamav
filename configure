@@ -23413,6 +23413,27 @@ _ACEOF
 
     fi
     ;;
+gnu*)
+
+cat >>confdefs.h <<\_ACEOF
+#define C_GNU_HURD 1
+_ACEOF
+
+    if test "$have_pthreads" = "yes"; then
+       THREAD_LIBS="-lpthread"
+       TH_SAFE="-thread-safe"
+
+cat >>confdefs.h <<\_ACEOF
+#define CL_THREAD_SAFE 1
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define _REENTRANT 1
+_ACEOF
+
+    fi
+    ;;
 *)
     ;;
 esac

@@ -594,6 +594,15 @@ interix*)
 	AC_DEFINE(_REENTRANT,1,[thread safe])
     fi
     ;;
+gnu*)
+    AC_DEFINE(C_GNU_HURD,1,[target is gnu-hurd])
+    if test "$have_pthreads" = "yes"; then
+       THREAD_LIBS="-lpthread"
+       TH_SAFE="-thread-safe"
+       AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
+       AC_DEFINE(_REENTRANT,1,[thread safe])
+    fi
+    ;;
 *)
     ;;
 esac
