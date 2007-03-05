@@ -74,7 +74,7 @@
 static int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32_t upx0, uint32_t upx1, uint32_t magic)
 {
   char *imports, *sections, *pehdr, *newbuf;
-  int sectcnt, upd=1;
+  unsigned int sectcnt, upd=1;
   uint32_t realstuffsz, valign;
   uint32_t foffset=0xd0+0xf8;
 
@@ -132,8 +132,8 @@ static int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32
   }
   
   for (upd = 0; upd <sectcnt ; upd++) {
-    uint32_t vsize=PESALIGN(cli_readint32(sections+8), valign);
-    uint32_t urva=PEALIGN(cli_readint32(sections+12), valign);
+    uint32_t vsize=PESALIGN((uint32_t)cli_readint32(sections+8), valign);
+    uint32_t urva=PEALIGN((uint32_t)cli_readint32(sections+12), valign);
     
     /* Within bounds ? */
     if (!CLI_ISCONTAINED(upx0, realstuffsz, urva, vsize)) {
@@ -185,9 +185,9 @@ static int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32
 
 /* [doubleebx] */
 
-static int doubleebx(char *src, int32_t *myebx, int *scur, int ssize)
+static int doubleebx(char *src, uint32_t *myebx, uint32_t *scur, uint32_t ssize)
 {
-  int32_t oldebx = *myebx;
+  uint32_t oldebx = *myebx;
 
   *myebx*=2;
   if ( !(oldebx & 0x7fffffff)) {
@@ -197,19 +197,20 @@ static int doubleebx(char *src, int32_t *myebx, int *scur, int ssize)
     *myebx = oldebx*2+1;
     *scur+=4;
   }
-  return (oldebx>>31)&1;
+  return (oldebx>>31);
 }
 
 /* [inflate] */
 
 int upx_inflate2b(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep)
 {
-  int32_t backbytes, unp_offset = -1, myebx = 0;
-  int scur=0, dcur=0, i, backsize, oob;
-
+  int32_t backbytes, unp_offset = -1;
+  uint32_t backsize, myebx = 0, scur=0, dcur=0, i;
+  int oob;
+  
   while (1) {
     while ((oob = doubleebx(src, &myebx, &scur, ssize)) == 1) {
-      if (scur<0 || scur>=ssize || dcur<0 || dcur>=*dsize)
+      if (scur>=ssize || dcur>=*dsize)
 	return -1;
       dst[dcur++] = src[scur++];
     }
@@ -229,12 +230,11 @@ int upx_inflate2b(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
         break;
     }
 
-    backsize = 0;
     backbytes-=3;
   
     if ( backbytes >= 0 ) {
 
-      if (scur<0 || scur>=ssize)
+      if (scur>=ssize)
 	return -1;
       backbytes<<=8;
       backbytes+=(unsigned char)(src[scur++]);
@@ -245,9 +245,8 @@ int upx_inflate2b(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
       unp_offset = backbytes;
     }
 
-    if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1)
+    if ( (backsize = (uint32_t)doubleebx(src, &myebx, &scur, ssize)) == 0xffffffff)
       return -1;
-    backsize = oob;
     if ( (oob = doubleebx(src, &myebx, &scur, ssize)) == -1)
       return -1;
     backsize = backsize*2 + oob;
@@ -268,11 +267,10 @@ int upx_inflate2b(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
 
     backsize++;
 
-    for (i = 0; i < backsize; i++) {
-      if (dcur+i<0 || dcur+i>=*dsize || dcur+unp_offset+i<0 || dcur+unp_offset+i>=*dsize)
-	return -1;
+    if (!CLI_ISCONTAINED(dst, *dsize, dst+dcur+unp_offset, backsize) || !CLI_ISCONTAINED(dst, *dsize, dst+dcur, backsize) || unp_offset >=0)
+      return -1;
+    for (i = 0; i < backsize; i++)
       dst[dcur + i] = dst[dcur + unp_offset + i];
-    }
     dcur+=backsize;
   }
 
@@ -288,12 +286,13 @@ int upx_inflate2b(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
 
 int upx_inflate2d(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep)
 {
-  int32_t backbytes, unp_offset = -1, myebx = 0;
-  int scur=0, dcur=0, i, backsize, oob;
+  int32_t backbytes, unp_offset = -1;
+  uint32_t backsize, myebx = 0, scur=0, dcur=0, i;
+  int oob;
 
   while (1) {
     while ( (oob = doubleebx(src, &myebx, &scur, ssize)) == 1) {
-      if (scur<0 || scur>=ssize || dcur<0 || dcur>=*dsize)
+      if (scur>=ssize || dcur>=*dsize)
 	return -1;
       dst[dcur++] = src[scur++];
     }
@@ -322,7 +321,7 @@ int upx_inflate2d(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
   
     if ( backbytes >= 0 ) {
 
-      if (scur<0 || scur>=ssize)
+      if (scur>=ssize)
 	return -1;
       backbytes<<=8;
       backbytes+=(unsigned char)(src[scur++]);
@@ -333,9 +332,8 @@ int upx_inflate2d(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
       backsize = backbytes & 1;
       backbytes>>=1;
       unp_offset = backbytes;
-    }
-    else {
-      if ( (backsize = doubleebx(src, &myebx, &scur, ssize)) == -1 )
+    } else {
+      if ( (backsize = (uint32_t)doubleebx(src, &myebx, &scur, ssize)) == 0xffffffff )
         return -1;
     }
  
@@ -358,11 +356,10 @@ int upx_inflate2d(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
       backsize++;
 
     backsize++;
-    for (i = 0; i < backsize; i++) {
-      if (dcur+i<0 || dcur+i>=*dsize || dcur+unp_offset+i<0 || dcur+unp_offset+i>=*dsize)
-	return -1;
+    if (!CLI_ISCONTAINED(dst, *dsize, dst+dcur+unp_offset, backsize) || !CLI_ISCONTAINED(dst, *dsize, dst+dcur, backsize) || unp_offset >=0 )
+      return -1;
+    for (i = 0; i < backsize; i++)
       dst[dcur + i] = dst[dcur + unp_offset + i];
-    }
     dcur+=backsize;
   }
 
@@ -378,14 +375,15 @@ int upx_inflate2d(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
 
 int upx_inflate2e(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep)
 {
-  int32_t backbytes, unp_offset = -1, myebx = 0;
-  int scur=0, dcur=0, i, backsize, oob;
+  int32_t backbytes, unp_offset = -1;
+  uint32_t backsize, myebx = 0, scur=0, dcur=0, i;
+  int oob;
 
   for(;;) {
     while ( (oob = doubleebx(src, &myebx, &scur, ssize)) ) {
       if (oob == -1)
         return -1;
-      if (scur<0 || scur>=ssize || dcur<0 || dcur>=*dsize)
+      if (scur>=ssize || dcur>=*dsize)
 	return -1;
       dst[dcur++] = src[scur++];
     }
@@ -406,12 +404,11 @@ int upx_inflate2e(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
       backbytes=backbytes*2+oob;
     }
 
-    backsize = 0;
     backbytes-=3;
   
     if ( backbytes >= 0 ) {
 
-      if (scur<0 || scur>=ssize)
+      if (scur>=ssize)
 	return -1;
       backbytes<<=8;
       backbytes+=(unsigned char)(src[scur++]);
@@ -422,17 +419,15 @@ int upx_inflate2e(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
       backsize = backbytes & 1; /* Using backsize to carry on the shifted out bit (UPX uses CF) */
       backbytes>>=1;
       unp_offset = backbytes;
-    }
-    else {
-      if ( (backsize = doubleebx(src, &myebx, &scur, ssize)) == -1 )
+    } else {
+      if ( (backsize = (uint32_t)doubleebx(src, &myebx, &scur, ssize)) == 0xffffffff )
         return -1;
     } /* Using backsize to carry on the doubleebx result (UPX uses CF) */
 
     if (backsize) { /* i.e. IF ( last sar shifted out 1 bit || last doubleebx()==1 ) */
-      if ( (backsize = doubleebx(src, &myebx, &scur, ssize)) == -1 )
+      if ( (backsize = (uint32_t)doubleebx(src, &myebx, &scur, ssize)) == 0xffffffff )
         return -1;
-    }
-    else {
+    } else {
       backsize = 1;
       if ((oob = doubleebx(src, &myebx, &scur, ssize)) == -1)
         return -1;
@@ -440,28 +435,27 @@ int upx_inflate2e(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
 	if ((oob = doubleebx(src, &myebx, &scur, ssize)) == -1)
 	  return -1;
 	  backsize = 2 + oob;
+	} else {
+	  do {
+	    if ((oob = doubleebx(src, &myebx, &scur, ssize)) == -1)
+	      return -1;
+	    backsize = backsize * 2 + oob;
+	  } while ((oob = doubleebx(src, &myebx, &scur, ssize)) == 0);
+	  if (oob == -1)
+	    return -1;
+	  backsize+=2;
 	}
-      else {
-	do {
-          if ((oob = doubleebx(src, &myebx, &scur, ssize)) == -1)
-          return -1;
-	  backsize = backsize * 2 + oob;
-	} while ((oob = doubleebx(src, &myebx, &scur, ssize)) == 0);
-	if (oob == -1)
-          return -1;
-	backsize+=2;
-      }
     }
  
     if ( (uint32_t)unp_offset < 0xfffffb00 ) 
       backsize++;
 
     backsize+=2;
-    for (i = 0; i < backsize; i++) {
-      if (dcur+i<0 || dcur+i>=*dsize || dcur+unp_offset+i<0 || dcur+unp_offset+i>=*dsize)
-	return -1;
+
+    if (!CLI_ISCONTAINED(dst, *dsize, dst+dcur+unp_offset, backsize) || !CLI_ISCONTAINED(dst, *dsize, dst+dcur, backsize) || unp_offset >=0 )
+      return -1;
+    for (i = 0; i < backsize; i++)
       dst[dcur + i] = dst[dcur + unp_offset + i];
-    }
     dcur+=backsize;
   }
 
