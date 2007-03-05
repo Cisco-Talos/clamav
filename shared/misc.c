@@ -42,6 +42,7 @@
 
 #include "libclamav/clamav.h"
 #include "libclamav/cvd.h"
+#include "libclamav/others.h" /* for cli_rmdirs() */
 #include "shared/misc.h"
 
 #ifndef	O_BINARY
