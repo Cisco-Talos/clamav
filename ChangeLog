@@ -1,3 +1,7 @@
+Tue Mar  6 15:36:47 CET 2007 (tk)
+---------------------------------
+  * clamd: fix gcc -W* warnings
+
 Tue Mar  6 01:01:32 CET 2007 (tk)
 ---------------------------------
   * libclamav: fix some gcc -W* warnings

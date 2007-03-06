@@ -417,7 +417,19 @@ void freecfg(struct cfgstruct *copt)
     return;
 }
 
-struct cfgstruct *cfgopt(struct cfgstruct *copt, const char *optname)
+const struct cfgstruct *cfgopt(const struct cfgstruct *copt, const char *optname)
+{
+    while(copt) {
+	if(copt->optname && !strcmp(copt->optname, optname))
+	    return copt;
+
+	copt = copt->next;
+    }
+
+    return NULL;
+}
+
+static struct cfgstruct *cfgopt_i(struct cfgstruct *copt, const char *optname)
 {
     while(copt) {
 	if(copt->optname && !strcmp(copt->optname, optname))
@@ -456,7 +468,7 @@ static int regcfg(struct cfgstruct **copt, const char *optname, char *strarg, in
     if(numarg != -1 && numarg != 0)
 	newnode->enabled = 1;
 
-    if((pt = cfgopt(*copt, optname))) {
+    if((pt = cfgopt_i(*copt, optname))) {
 	if(pt->multiple) {
 
 	    if(pt->enabled) {

@@ -409,15 +409,16 @@ int scanfd(const int fd, unsigned long int *scanned, const struct cl_engine *eng
 
 int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt)
 {
-	int ret, portscan = 1000, sockfd, port = 0, acceptd;
-	int tmpd, bread, retval, timeout, btread, min_port, max_port;
-	long int size = 0, maxsize = 0;
+	int ret, sockfd, acceptd;
+	int tmpd, bread, retval, timeout, btread;
+	unsigned int port = 0, portscan = 1000, min_port, max_port;
+	unsigned long int size = 0, maxsize = 0;
 	short bound = 0, rnd_port_first = 1;
 	const char *virname;
 	char buff[FILEBUFF];
 	struct sockaddr_in server;
 	struct hostent he;
-	struct cfgstruct *cpt;
+	const struct cfgstruct *cpt;
 	char *tmpname;
 
 
@@ -477,7 +478,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	return -1;
     } else {
 	listen(sockfd, 1);
-	if(mdprintf(odesc, "PORT %d\n", port) <= 0) {
+	if(mdprintf(odesc, "PORT %u\n", port) <= 0) {
 	    logg("!ScanStream: error transmitting port.\n");
 	    close(sockfd);
 	    return -1;
@@ -487,12 +488,12 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     switch(retval = poll_fd(sockfd, timeout, 0)) {
 	case 0: /* timeout */
 	    mdprintf(odesc, "Accept timeout. ERROR\n");
-	    logg("!ScanStream %d: accept timeout.\n", port);
+	    logg("!ScanStream %u: accept timeout.\n", port);
 	    close(sockfd);
 	    return -1;
 	case -1:
 	    mdprintf(odesc, "Accept poll. ERROR\n");
-	    logg("!ScanStream %d: accept poll failed.\n", port);
+	    logg("!ScanStream %u: accept poll failed.\n", port);
 	    close(sockfd);
 	    return -1;
     }
@@ -500,18 +501,18 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     if((acceptd = accept(sockfd, NULL, NULL)) == -1) {
 	close(sockfd);
 	mdprintf(odesc, "accept() ERROR\n");
-	logg("!ScanStream %d: accept() failed.\n", port);
+	logg("!ScanStream %u: accept() failed.\n", port);
 	return -1;
     }
 
-    logg("*Accepted connection on port %d, fd %d\n", port, acceptd);
+    logg("*Accepted connection on port %u, fd %d\n", port, acceptd);
 
     if ((tmpname = cli_gentempdesc(NULL, &tmpd)) == NULL) {
 	shutdown(sockfd, 2);
 	close(sockfd);
 	close(acceptd);
 	mdprintf(odesc, "tempfile() failed. ERROR\n");
-	logg("!ScanStream %d: Can't create temporary file.\n", port);
+	logg("!ScanStream %u: Can't create temporary file.\n", port);
 	return -1;
     }
 
@@ -530,7 +531,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	    closesocket(sockfd);
 	    closesocket(acceptd);
 	    mdprintf(odesc, "Temporary file -> write ERROR\n");
-	    logg("!ScanStream %d: Can't write to temporary file.\n", port);
+	    logg("!ScanStream %u: Can't write to temporary file.\n", port);
 	    close(tmpd);
 	    if(!cfgopt(copt, "LeaveTemporaryFiles")->enabled)
 		unlink(tmpname);
@@ -542,7 +543,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	    btread = (maxsize - size); /* only read up to max */
 
 	    if(btread <= 0) {
-		logg("^ScanStream %d: Size limit reached (max: %d)\n", port, maxsize);
+		logg("^ScanStream %u: Size limit reached (max: %lu)\n", port, maxsize);
 	    	break; /* Scan what we have */
 	    }
 	}
@@ -551,11 +552,11 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     switch(retval) {
 	case 0: /* timeout */
 	    mdprintf(odesc, "read timeout ERROR\n");
-	    logg("!ScanStream %d: read timeout.\n", port);
+	    logg("!ScanStream %u: read timeout.\n", port);
 	    break;
 	case -1:
 	    mdprintf(odesc, "read poll ERROR\n");
-	    logg("!ScanStream %d: read poll failed.\n", port);
+	    logg("!ScanStream %u: read poll failed.\n", port);
 	    break;
     }
 
@@ -575,17 +576,17 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 
     if(ret == CL_VIRUS) {
 	mdprintf(odesc, "stream: %s FOUND\n", virname);
-	logg("stream %d: %s FOUND\n", port, virname);
+	logg("stream %u: %s FOUND\n", port, virname);
 	virusaction("stream", virname, copt);
     } else if(ret != CL_CLEAN) {
     	if(retval == 1) {
 	    mdprintf(odesc, "stream: %s ERROR\n", cl_strerror(ret));
-	    logg("stream %d: %s ERROR\n", port, cl_strerror(ret));
+	    logg("stream %u: %s ERROR\n", port, cl_strerror(ret));
 	}
     } else {
 	mdprintf(odesc, "stream: OK\n");
         if(logok)
-	    logg("stream %d: OK\n", port); 
+	    logg("stream %u: OK\n", port); 
     }
 
     return ret;

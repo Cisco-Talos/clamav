@@ -58,7 +58,8 @@
 char *freshdbdir(void)
 {
 	struct cl_cvd *d1, *d2;
-	struct cfgstruct *copt = NULL, *cpt;
+	struct cfgstruct *copt;
+	const struct cfgstruct *cpt;
 	struct stat foo;
 	const char *dbdir;
 	char *retdir;

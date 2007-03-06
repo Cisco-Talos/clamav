@@ -56,7 +56,7 @@ int tcpserver(const struct cfgstruct *copt)
 {
 	struct sockaddr_in server;
 	int sockfd, backlog;
-	struct cfgstruct *taddr;
+	const struct cfgstruct *taddr;
 	struct hostent he;
 	char *estr, buf[1024];
 	int true = 1;

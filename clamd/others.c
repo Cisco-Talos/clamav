@@ -98,7 +98,7 @@ void virusaction(const char *filename, const char *virname, const struct cfgstru
 void virusaction(const char *filename, const char *virname, const struct cfgstruct *copt)
 {
 	pid_t pid;
-	struct cfgstruct *cpt;
+	const struct cfgstruct *cpt;
 
     if(!(cpt = cfgopt(copt, "VirusEvent"))->enabled)
 	return;

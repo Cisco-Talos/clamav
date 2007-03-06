@@ -249,7 +249,7 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
 	*ret = 1;
 	return NULL;
     }
-    logg("Database correctly reloaded (%d signatures)\n", sigs);
+    logg("Database correctly reloaded (%u signatures)\n", sigs);
 
     return engine;
 }
@@ -268,7 +268,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	sigset_t sigset;
 #endif
 	client_conn_t *client_conn;
-	struct cfgstruct *cpt;
+	const struct cfgstruct *cpt;
 #ifdef HAVE_STRERROR_R
 	char buff[BUFFSIZE + 1];
 #endif
@@ -299,13 +299,13 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	if((fd = fopen(cpt->strarg, "w")) == NULL) {
 	    logg("!Can't save PID in file %s\n", cpt->strarg);
 	} else {
-	    fprintf(fd, "%d", (int) mainpid);
+	    fprintf(fd, "%u", (unsigned int) mainpid);
 	    fclose(fd);
 	}
 	umask(old_umask);
     }
 
-    logg("*Listening daemon: PID: %d\n", getpid());
+    logg("*Listening daemon: PID: %u\n", (unsigned int) mainpid);
     max_threads = cfgopt(copt, "MaxThreads")->numarg;
 
     if(cfgopt(copt, "ScanArchive")->enabled) {
@@ -314,25 +314,25 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	memset(&limits, 0, sizeof(struct cl_limits));
 
 	if((limits.maxfilesize = cfgopt(copt, "ArchiveMaxFileSize")->numarg)) {
-	    logg("Archive: Archived file size limit set to %d bytes.\n", limits.maxfilesize);
+	    logg("Archive: Archived file size limit set to %lu bytes.\n", limits.maxfilesize);
 	} else {
 	    logg("^Archive: File size limit protection disabled.\n");
 	}
 
 	if((limits.maxreclevel = cfgopt(copt, "ArchiveMaxRecursion")->numarg)) {
-	    logg("Archive: Recursion level limit set to %d.\n", limits.maxreclevel);
+	    logg("Archive: Recursion level limit set to %u.\n", limits.maxreclevel);
 	} else {
 	    logg("^Archive: Recursion level limit protection disabled.\n");
 	}
 
 	if((limits.maxfiles = cfgopt(copt, "ArchiveMaxFiles")->numarg)) {
-	    logg("Archive: Files limit set to %d.\n", limits.maxfiles);
+	    logg("Archive: Files limit set to %u.\n", limits.maxfiles);
 	} else {
 	    logg("^Archive: Files limit protection disabled.\n");
 	}
 
 	if((limits.maxratio = cfgopt(copt, "ArchiveMaxCompressionRatio")->numarg)) {
-	    logg("Archive: Compression ratio limit set to %d.\n", limits.maxratio);
+	    logg("Archive: Compression ratio limit set to %u.\n", limits.maxratio);
 	} else {
 	    logg("^Archive: Compression ratio limit disabled.\n");
 	}
@@ -463,7 +463,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     if(!selfchk) {
 	logg("Self checking disabled.\n");
     } else {
-	logg("Self checking every %d seconds.\n", selfchk);
+	logg("Self checking every %u seconds.\n", selfchk);
     }
 
     if(cfgopt(copt, "ClamukoScanOnAccess")->enabled)

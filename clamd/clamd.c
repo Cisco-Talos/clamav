@@ -84,7 +84,8 @@ static void help(void)
 
 int main(int argc, char **argv)
 {
-	struct cfgstruct *copt, *cpt;
+	struct cfgstruct *copt;
+	const struct cfgstruct *cpt;
         struct passwd *user;
 	time_t currtime;
 	struct cl_engine *engine = NULL;

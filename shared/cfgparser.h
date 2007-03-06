@@ -54,7 +54,7 @@ struct cfgstruct {
 extern struct cfgoption cfg_options[];
 
 struct cfgstruct *getcfg(const char *cfgfile, int verbose);
-struct cfgstruct *cfgopt(struct cfgstruct *copt, const char *optname);
+const struct cfgstruct *cfgopt(const struct cfgstruct *copt, const char *optname);
 void freecfg(struct cfgstruct *copt);
 
 #endif
