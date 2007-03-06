@@ -1251,16 +1251,31 @@ static int cli_loaddbdir_l(const char *dirname, struct cl_engine **engine, unsig
 	    char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
 	} result;
 #endif
+	struct stat sb;
 	char *dbfile;
 	int ret = CL_ESUPPORT;
 
+
+    cli_dbgmsg("Loading databases from %s\n", dirname);
+
+    /* check for and load daily.cfg */
+    dbfile = (char *) cli_malloc(strlen(dirname) + 11);
+    if(!dbfile)
+	return CL_EMEM;
+    sprintf(dbfile, "%s/daily.cfg", dirname);
+    if(stat(dbfile, &sb) != -1) {
+	if((ret = cli_load(dbfile, engine, signo, options))) {
+	    free(dbfile);
+	    return ret;
+	}
+	cli_dconf_print((*engine)->dconf);
+    }
+    free(dbfile);
 
     if((dd = opendir(dirname)) == NULL) {
         cli_errmsg("cli_loaddbdir(): Can't open directory %s\n", dirname);
         return CL_EOPEN;
     }
-
-    cli_dbgmsg("Loading databases from %s\n", dirname);
 
 #ifdef HAVE_READDIR_R_3
     while(!readdir_r(dd, &result.d, &dent) && dent) {
@@ -1284,7 +1299,6 @@ static int cli_loaddbdir_l(const char *dirname, struct cl_engine **engine, unsig
 	     cli_strbcasestr(dent->d_name, ".sdb")  ||
 	     cli_strbcasestr(dent->d_name, ".zmd")  ||
 	     cli_strbcasestr(dent->d_name, ".rmd")  ||
-	     cli_strbcasestr(dent->d_name, ".cfg")  ||
 #ifdef CL_EXPERIMENTAL
 	     cli_strbcasestr(dent->d_name, ".pdb")  ||
 	     cli_strbcasestr(dent->d_name, ".wdb")  ||
@@ -1293,7 +1307,7 @@ static int cli_loaddbdir_l(const char *dirname, struct cl_engine **engine, unsig
 	     cli_strbcasestr(dent->d_name, ".inc")  ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
 
-		dbfile = (char *) cli_calloc(strlen(dent->d_name) + strlen(dirname) + 2, sizeof(char));
+		dbfile = (char *) cli_malloc(strlen(dent->d_name) + strlen(dirname) + 2);
 
 		if(!dbfile) {
 		    cli_dbgmsg("cli_loaddbdir(): dbfile == NULL\n");
@@ -1379,9 +1393,6 @@ int cl_load(const char *path, struct cl_engine **engine, unsigned int *signo, un
 	    cli_errmsg("cl_load(%s): Not supported database file type\n", path);
 	    return CL_EOPEN;
     }
-
-    if(ret == CL_SUCCESS)
-	cli_dconf_print((*engine)->dconf);
 
     return ret;
 }
@@ -1474,7 +1485,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 		}
 #endif
 
-                fname = cli_calloc(strlen(dirname) + strlen(dent->d_name) + 32, sizeof(char));
+                fname = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 32);
 		if(!fname) {
 		    cl_statfree(dbstat);
 		    closedir(dd);
@@ -1490,7 +1501,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 		    sprintf(fname, "%s/%s", dirname, dent->d_name);
 		}
 #if defined(C_INTERIX) || defined(C_OS2)
-		dbstat->statdname[dbstat->entries - 1] = (char *) cli_calloc(strlen(dent->d_name) + 1, sizeof(char));
+		dbstat->statdname[dbstat->entries - 1] = (char *) cli_malloc(strlen(dent->d_name) + 1);
 		if(!dbstat->statdname[dbstat->entries - 1]) {
 		    cl_statfree(dbstat);
 		    closedir(dd);
@@ -1567,7 +1578,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".inc")   ||
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
-                fname = cli_calloc(strlen(dbstat->dir) + strlen(dent->d_name) + 32, sizeof(char));
+                fname = cli_malloc(strlen(dbstat->dir) + strlen(dent->d_name) + 32);
 		if(!fname) {
 		    closedir(dd);
 		    return CL_EMEM;
