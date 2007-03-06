@@ -1,393 +1,19 @@
-*** /home/njh/src/clamav-devel/trunk/./libclamav/readdb.c	2007-02-24 17:49:49.000000000 +0000
---- ./libclamav/readdb.c	2007-02-24 17:50:15.000000000 +0000
-***************
-*** 16,21 ****
---- 16,24 ----
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
-   */
-+ #ifdef	_MSC_VER
-+ #include <winsock.h>	/* for Sleep() */
-+ #endif
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
-***************
-*** 1319,1325 ****
---- 1322,1332 ----
-  
-      cli_dbgmsg("cli_loaddbdir: Acquiring dbdir lock\n");
-      while((lock = cli_readlockdb(dirname, 0)) == CL_ELOCKDB) {
-+ #ifdef C_WINDOWS
-+ 	Sleep(5);
-+ #else
-  	sleep(5);
-+ #endif
-  	if(try++ > 24) {
-  	    cli_errmsg("cl_load(): Unable to lock database directory: %s\n", dirname);
-  	    return CL_ELOCKDB;
-*** /home/njh/src/clamav-devel/trunk/./libclamav/lockdb.c	2007-02-19 19:26:27.000000000 +0000
---- ./libclamav/lockdb.c	2007-02-19 19:41:00.000000000 +0000
-***************
-*** 64,69 ****
---- 64,73 ----
-  #define pthread_mutex_unlock(arg)
-  #endif
-  
-+ #ifdef	C_WINDOWS
-+ #define	DONT_LOCK_DBDIRS
-+ #endif
-+ 
-  struct dblock {
-  	struct dblock *lock_link;
-  	char lock_file[NAME_MAX];
-*** /home/njh/src/clamav-devel/trunk/./clamscan/manager.c	2007-02-22 16:36:06.000000000 +0000
---- ./clamscan/manager.c	2007-02-22 16:37:40.000000000 +0000
-***************
-*** 29,39 ****
---- 29,47 ----
-  #include <ctype.h>
-  #include <sys/stat.h>
-  #include <sys/types.h>
-+ #ifdef	C_WINDOWS
-+ #include <sys/utime.h>
-+ #else
-  #include <sys/wait.h>
-  #include <utime.h>
-+ #endif
-+ #ifdef	HAVE_INITGROUPS
-  #include <grp.h>
-+ #endif
-  #include <fcntl.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  #include <sys/types.h>
-  #include <signal.h>
-  #include <errno.h>
-***************
-*** 57,62 ****
---- 65,76 ----
-  dev_t procdev;
-  #endif
-  
-+ #ifdef	C_WINDOWS
-+ #undef	P_tmpdir
-+ 
-+ #define	P_tmpdir	"C:\\WINDOWS\\TEMP"
-+ #endif
-+ 
-  static int scandirs(const char *dirname, struct cl_engine *engine, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options)
-  {
-      return treewalk(dirname, engine, user, opt, limits, options, 1);
-***************
-*** 132,138 ****
-  
-  
-  /* njh@bandsman.co.uk: BeOS */
-! #if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_BEOS)
-      if(!geteuid()) {
-  	if((user = getpwnam(CLAMAVUSER)) == NULL) {
-  	    logg("!Can't get information about user "CLAMAVUSER"\n");
---- 146,152 ----
-  
-  
-  /* njh@bandsman.co.uk: BeOS */
-! #if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_BEOS) && !defined(C_WINDOWS)
-      if(!geteuid()) {
-  	if((user = getpwnam(CLAMAVUSER)) == NULL) {
-  	    logg("!Can't get information about user "CLAMAVUSER"\n");
-***************
-*** 285,291 ****
---- 299,309 ----
-  	options |= CL_SCAN_MAIL;
-  
-  	if(opt_check(opt, "mail-follow-urls"))
-+ #ifdef WITH_CURL
-  	    options |= CL_SCAN_MAILURL;
-+ #else
-+ 	    logg("^Support for URLs downloading with libcurl not compiled in\n");
-+ #endif
-      }
-  
-      if(opt_check(opt, "no-algorithmic"))
-***************
-*** 388,393 ****
---- 406,421 ----
-   * -3 -> external signal
-   * 0 -> OK
-   */
-+ 
-+ #ifdef	C_WINDOWS
-+ static int
-+ clamav_unpack(const char *prog, char **args, const char *tmpdir, const struct passwd *user, const struct optstruct *opt)
-+ {
-+ 	/* TODO: use spamvp(P_WAIT, prog, args); */
-+ 	cli_errmsg("clamav_unpack is not supported under Windows yet\n");
-+ 	return -1;
-+ }
-+ #else
-  static int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struct passwd *user, const struct optstruct *opt)
-  {
-  	pid_t pid;
-***************
-*** 495,500 ****
---- 523,529 ----
-  
-      return 0;
-  }
-+ #endif
-  
-  static void move_infected(const char *filename, const struct optstruct *opt)
-  {
-***************
-*** 610,616 ****
-  
-      logg("*Scanning %s\n", filename);
-  
-!     if((fd = open(filename, O_RDONLY)) == -1) {
-  	logg("^Can't open file %s\n", filename);
-  	return 54;
-      }
---- 639,645 ----
-  
-      logg("*Scanning %s\n", filename);
-  
-!     if((fd = open(filename, O_RDONLY|O_BINARY)) == -1) {
-  	logg("^Can't open file %s\n", filename);
-  	return 54;
-      }
-***************
-*** 652,658 ****
-      tmpdir = getenv("TMPDIR");
-  
-      if(tmpdir == NULL)
-! #ifdef P_tmpdir
-  	tmpdir = P_tmpdir;
-  #else
-  	tmpdir = "/tmp";
---- 681,687 ----
-      tmpdir = getenv("TMPDIR");
-  
-      if(tmpdir == NULL)
-! #ifdef	P_tmpdir
-  	tmpdir = P_tmpdir;
-  #else
-  	tmpdir = "/tmp";
-***************
-*** 671,677 ****
-  	exit(63); /* critical */
-      }
-  
-! #ifndef C_OS2
-      if(user)
-  	chown(gendir, user->pw_uid, user->pw_gid);
-  #endif
---- 700,707 ----
-  	exit(63); /* critical */
-      }
-  
-! #if	(!defined(C_OS2)) && (!defined(C_WINDOWS))
-! 	/* FIXME: do the correct native windows way */
-      if(user)
-  	chown(gendir, user->pw_uid, user->pw_gid);
-  #endif
-***************
-*** 850,856 ****
-      tmpdir = getenv("TMPDIR");
-  
-      if(tmpdir == NULL)
-! #ifdef P_tmpdir
-  	tmpdir = P_tmpdir;
-  #else
-  	tmpdir = "/tmp";
---- 880,886 ----
-      tmpdir = getenv("TMPDIR");
-  
-      if(tmpdir == NULL)
-! #ifdef	P_tmpdir
-  	tmpdir = P_tmpdir;
-  #else
-  	tmpdir = "/tmp";
-***************
-*** 886,892 ****
-  
-      fixperms(gendir);
-  
-! #ifndef C_OS2
-      if(user) {
-  	chown(gendir, user->pw_uid, user->pw_gid);
-  	chown(tmpfile, user->pw_uid, user->pw_gid);
---- 916,922 ----
-  
-      fixperms(gendir);
-  
-! #if	(!defined(C_OS2)) && (!defined(C_WINDOWS))
-      if(user) {
-  	chown(gendir, user->pw_uid, user->pw_gid);
-  	chown(tmpfile, user->pw_uid, user->pw_gid);
-***************
-*** 970,981 ****
---- 1000,1013 ----
-  	return 0;
-      }
-  
-+ #ifndef	C_WINDOWS
-      if(geteuid())
-  	if(checkaccess(filename, NULL, R_OK) != 1) {
-  	    if(!printinfected)
-  		logg("%s: Access denied\n", filename);
-  	    return 0;
-  	}
-+ #endif
-  
-      info.files++;
-  
-*** /home/njh/src/clamav-devel/trunk/./clamscan/clamscan.c	2007-02-22 16:36:06.000000000 +0000
---- ./clamscan/clamscan.c	2007-02-22 16:37:12.000000000 +0000
-***************
-*** 24,32 ****
---- 24,39 ----
-  #include <stdio.h>
-  #include <stdlib.h>
-  #include <string.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-+ #ifdef	C_WINDOWS
-+ #include <fcntl.h>
-+ #else
-  #include <sys/time.h>
-+ #endif
-  #include <time.h>
-+ #include <ctype.h>
-  #ifdef C_LINUX
-  #include <sys/resource.h>
-  #endif
-***************
-*** 43,48 ****
---- 50,59 ----
-  
-  void help(void);
-  
-+ #if	defined(C_WINDOWS) && defined(_DEBUG)
-+ #include <crtdbg.h>
-+ #endif
-+ 
-  struct s_info info;
-  short recursion = 0, printinfected = 0, bell = 0;
-  
-***************
-*** 51,59 ****
---- 62,79 ----
-  	int ds, dms, ret;
-  	double mb;
-  	struct timeval t1, t2;
-+ #ifndef	C_WINDOWS
-  	struct timezone tz;
-+ #endif
-  	struct optstruct *opt;
-  	const char *pt;
-+ 	
-+ #if	defined(C_WINDOWS) && defined(CL_THREAD_SAFE)
-+ 	if(!pthread_win32_process_attach_np()) {
-+ 		mprintf("!Can't start the win32 pthreads layer\n");
-+ 		return 1;
-+ 	}
-+ #endif
-  
-  
-      opt = opt_parse(argc, argv, clamscan_shortopt, clamscan_longopt, NULL);
-***************
-*** 180,190 ****
---- 200,227 ----
-  
-      memset(&info, 0, sizeof(struct s_info));
-  
-+ #ifdef	C_WINDOWS
-+ 	_set_fmode(_O_BINARY);
-+ #ifdef	_DEBUG
-+ 	{
-+ 		_CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_FILE);
-+ 		_CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDERR);
-+ 	}
-+ #endif	
-+ 
-+ 	gettimeofday(&t1, NULL);
-+ #else
-      gettimeofday(&t1, &tz);
-+ #endif
-+ 
-      ret = scanmanager(opt);
-  
-      if(!opt_check(opt, "disable-summary") && !opt_check(opt, "no-summary")) {
-+ #ifdef	C_WINDOWS
-+ 	gettimeofday(&t2, NULL);
-+ #else
-  	gettimeofday(&t2, &tz);
-+ #endif
-  	ds = t2.tv_sec - t1.tv_sec;
-  	dms = t2.tv_usec - t1.tv_usec;
-  	ds -= (dms < 0) ? (1):(0);
-***************
-*** 210,215 ****
---- 247,260 ----
-      }
-  
-      opt_free(opt);
-+     
-+ #if	defined(C_WINDOWS) && defined(CL_THREAD_SAFE)
-+ 	if(!pthread_win32_process_detach_np()) {
-+ 		mprintf("!Can't stop the win32 pthreads layer\n");
-+ 		return 1;
-+ 	}
-+ #endif
-+ 
-      return ret;
-  }
-  
-***************
-*** 220,226 ****
-  
-      mprintf("\n");
-      mprintf("                       Clam AntiVirus Scanner "VERSION"\n");
-!     mprintf("      (C) 2002 - 2007 ClamAV Team - http://www.clamav.net/team\n\n");
-  
-      mprintf("    --help                -h             Print this help screen\n");
-      mprintf("    --version             -V             Print version number\n");
---- 265,271 ----
-  
-      mprintf("\n");
-      mprintf("                       Clam AntiVirus Scanner "VERSION"\n");
-!     mprintf("    (C) 2002 - 2007 ClamAV Team - http://www.clamav.net/team\n\n");
-  
-      mprintf("    --help                -h             Print this help screen\n");
-      mprintf("    --version             -V             Print version number\n");
-*** /home/njh/src/clamav-devel/trunk/./clamscan/treewalk.h	2007-02-19 19:26:14.000000000 +0000
---- ./clamscan/treewalk.h	2007-01-31 09:37:34.000000000 +0000
-***************
-*** 20,26 ****
---- 20,29 ----
-  #ifndef __TREEWALK_H
-  #define __TREEWALK_H
-  
-+ #ifndef	C_WINDOWS
-  #include <pwd.h>
-+ #endif
-+ 
-  #include "libclamav/clamav.h"
-  #include "shared/options.h"
-  
-*** /home/njh/src/clamav-devel/trunk/./clamscan/manager.h	2007-02-19 19:26:14.000000000 +0000
+*** /home/njh/src/clamav-devel/trunk/./clamscan/manager.h	2007-02-28 15:05:17.000000000 +0000
 --- ./clamscan/manager.h	2007-01-31 09:37:40.000000000 +0000
 ***************
-*** 20,32 ****
+*** 20,38 ****
   #ifndef __MANAGER_H
   #define __MANAGER_H
   
-- #include <pwd.h>
-- 
-  #include "libclamav/clamav.h"
+! #if HAVE_CONFIG_H
+! #include "clamav-config.h"
+! #endif
+! 
+! #ifdef HAVE_PWD_H
+  #include <pwd.h>
+  #endif
+! 
+! #include "libclamav/clamav.h"
 ! #include "shared/options.h"
   
   int scanmanager(const struct optstruct *opt);
@@ -399,10 +25,10 @@
   #ifndef __MANAGER_H
   #define __MANAGER_H
   
-  #include "libclamav/clamav.h"
+! #include "libclamav/clamav.h"
 ! #ifndef	C_WINDOWS
-! #include <pwd.h>
-! #endif
+  #include <pwd.h>
+  #endif
 ! #include "options.h"
   
   int scanmanager(const struct optstruct *opt);
@@ -429,771 +55,305 @@
 ! #endif
   
   #endif
-*** /home/njh/src/clamav-devel/trunk/./clamscan/others.c	2007-02-19 19:26:14.000000000 +0000
---- ./clamscan/others.c	2006-07-26 16:03:16.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./shared/misc.c	2007-03-05 19:16:44.000000000 +0000
+--- ./shared/misc.c	2007-03-05 19:17:22.000000000 +0000
 ***************
-*** 16,21 ****
---- 16,24 ----
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
-   *
-+  *  Sat May 18 15:20:26 CEST 2002: included detectCpu() from Magnus Ekdahl
-+  *  Sat Jun 29 12:19:26 CEST 2002: fixed non386 detectCpu (Magnus Ekdahl)
-+  *
-   */
-  
-  #if HAVE_CONFIG_H
-***************
-*** 26,38 ****
---- 29,47 ----
-  #include <stdlib.h>
-  #include <string.h>
-  #include <ctype.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  #include <errno.h>
-+ #ifndef	C_WINDOWS
-  #include <pwd.h>
-+ #endif
-  #include <sys/types.h>
-  #include <sys/stat.h>
-+ #ifndef	C_WINDOWS
-  #include <sys/wait.h>
-  #include <sys/time.h>
-+ #endif
-  #include <time.h>
-  #include <fcntl.h>
-  #include <signal.h>
-***************
-*** 42,48 ****
-  #include <regex.h>
-  #endif
-  
-! #include "shared/output.h"
-  #include "others.h"
-  
-  int fileinfo(const char *filename, short i)
---- 51,57 ----
-  #include <regex.h>
-  #endif
-  
-! #include "output.h"
-  #include "others.h"
-  
-  int fileinfo(const char *filename, short i)
-***************
-*** 70,75 ****
---- 79,92 ----
+*** 233,239 ****
+  int isnumb(const char *str)
+  {
+      while(*str) {
+! 	if(!isdigit(*str))
+  	    return 0;
+  	str++;
       }
-  }
-  
-+ #ifdef	C_WINDOWS
-+ /* FIXME: Handle users correctly */
-+ int
-+ checkaccess(const char *path, const char *username, int mode)
-+ {
-+ 	return _access(path, mode);
-+ }
-+ #else
-  int checkaccess(const char *path, const char *username, int mode)
+--- 233,239 ----
+  int isnumb(const char *str)
   {
-  	struct passwd *user;
-***************
-*** 114,119 ****
---- 131,137 ----
-  
-      return ret;
-  }
-+ #endif
-  
-  int match_regex(const char *filename, const char *pattern)
-  {
-*** /home/njh/src/clamav-devel/trunk/./clamscan/treewalk.c	2007-02-22 16:36:06.000000000 +0000
---- ./clamscan/treewalk.c	2007-02-22 17:11:52.000000000 +0000
-***************
-*** 24,35 ****
---- 24,43 ----
-  #include <stdio.h>
-  #include <stdlib.h>
-  #include <string.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  #include <sys/stat.h>
-  #include <sys/types.h>
-+ #ifndef	C_WINDOWS
-  #include <sys/wait.h>
-+ #endif
-+ #ifdef	HAVE_INITGROUPS
-  #include <grp.h>
-+ #endif
-+ #ifndef	C_WINDOWS
-  #include <dirent.h>
-+ #endif
-  #include <errno.h>
-  
-  #include "global.h"
-***************
-*** 99,105 ****
-  
-      if((dd = opendir(dirname)) != NULL) {
-  	while((dent = readdir(dd))) {
-! #ifndef C_INTERIX
-  	    if(dent->d_ino)
-  #endif
-  	    {
---- 107,113 ----
-  
-      if((dd = opendir(dirname)) != NULL) {
-  	while((dent = readdir(dd))) {
-! #if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS)) && (!defined(C_CYGWIN))
-  	    if(dent->d_ino)
-  #endif
-  	    {
-***************
-*** 138,143 ****
---- 146,158 ----
-  
-  }
-  
-+ #ifdef	C_WINDOWS
-+ int
-+ clamav_rmdirs(const char *dir)
-+ {
-+ 	return cli_rmdirs(dir);
-+ }
-+ #else
-  int clamav_rmdirs(const char *dir)
-  {
-  #ifndef C_CYGWIN
-***************
-*** 185,190 ****
---- 200,206 ----
-  		return -2;
+      while(*str) {
+! 	if(!isdigit(*str & 0xFF))
+  	    return 0;
+  	str++;
       }
-  }
-+ #endif
-  
-  int fixperms(const char *dirname)
-  {
+*** /home/njh/src/clamav-devel/trunk/./freshclam/manager.c	2007-02-28 15:06:52.000000000 +0000
+--- ./freshclam/manager.c	2007-03-05 22:58:52.000000000 +0000
 ***************
-*** 196,202 ****
-  
-      if((dd = opendir(dirname)) != NULL) {
-  	while((dent = readdir(dd))) {
-! #ifndef C_INTERIX
-  	    if(dent->d_ino)
-  #endif
-  	    {
---- 212,218 ----
-  
-      if((dd = opendir(dirname)) != NULL) {
-  	while((dent = readdir(dd))) {
-! #if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS)) && (!defined(C_CYGWIN))
-  	    if(dent->d_ino)
-  #endif
-  	    {
-***************
-*** 242,248 ****
-  
-      if((dd = opendir(dirname)) != NULL) {
-  	while((dent = readdir(dd))) {
-! #ifndef C_INTERIX
-  	    if(dent->d_ino)
-  #endif
-  	    {
---- 258,264 ----
-  
-      if((dd = opendir(dirname)) != NULL) {
-  	while((dent = readdir(dd))) {
-! #if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS)) && (!defined(C_CYGWIN))
-  	    if(dent->d_ino)
-  #endif
-  	    {
-*** /home/njh/src/clamav-devel/trunk/./shared/getopt.c	2007-02-19 19:26:21.000000000 +0000
---- ./shared/getopt.c	2006-07-26 16:49:38.000000000 +0100
-***************
-*** 41,47 ****
---- 41,49 ----
-  
-  #include <stdio.h>
-  
-+ #ifndef	C_WINDOWS
-  int strncmp(const char *s1, const char *s2, size_t n);
-+ #endif
-  
-  /* Comment out all this code if we are using the GNU C Library, and are not
-     actually compiling the library itself.  This code is part of the GNU C
-*** /home/njh/src/clamav-devel/trunk/./shared/network.h	2007-02-19 19:26:21.000000000 +0000
---- ./shared/network.h	2006-07-31 15:59:30.000000000 +0100
-***************
-*** 21,28 ****
---- 21,33 ----
-  #ifndef __NETWORK_H
-  #define __NETWORK_H
-  
-+ #ifdef	HAVE_SYS_TYPES_H
-  #include <sys/types.h>
-+ #endif
-+ 
-+ #ifndef	C_WINDOWS
-  #include <netdb.h>
-+ #endif
-  
-  int r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
-  
-*** /home/njh/src/clamav-devel/trunk/./shared/output.c	2007-02-19 19:26:21.000000000 +0000
---- ./shared/output.c	2006-08-31 10:23:58.000000000 +0100
-***************
-*** 16,21 ****
---- 16,26 ----
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
-   */
-+ #ifdef        _MSC_VER
-+ #include <windows.h>
-+ #include <winsock.h>
-+ #endif
-+ 
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
-***************
-*** 30,42 ****
---- 35,51 ----
-  #include <stdlib.h>
-  #include <string.h>
-  #include <ctype.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  #include <fcntl.h>
-  #include <time.h>
-  #include <sys/stat.h>
-  #include <errno.h>
-+ #ifndef	C_WINDOWS
-  #include <sys/time.h>
-  #include <sys/socket.h>
-+ #endif
-  #if HAVE_SYS_TYPES_H
-  #include <sys/types.h>
-  #endif
-***************
-*** 122,128 ****
---- 131,139 ----
-  int logg(const char *str, ...)
-  {
-  	va_list args, argscpy, argsout;
-+ #ifdef	F_WRLCK
-  	struct flock fl;
-+ #endif
-  	char *pt, *timestr, vbuff[1025];
-  	time_t currtime;
-  	struct stat sb;
-***************
-*** 140,146 ****
-      if(logg_file) {
-  	if(!logg_fd) {
-  	    old_umask = umask(0037);
-! 	    if((logg_fd = fopen(logg_file, "a")) == NULL) {
-  		umask(old_umask);
-  #ifdef CL_THREAD_SAFE
-  		pthread_mutex_unlock(&logg_mutex);
---- 151,157 ----
-      if(logg_file) {
-  	if(!logg_fd) {
-  	    old_umask = umask(0037);
-! 	    if((logg_fd = fopen(logg_file, "at")) == NULL) {
-  		umask(old_umask);
-  #ifdef CL_THREAD_SAFE
-  		pthread_mutex_unlock(&logg_mutex);
-***************
-*** 149,154 ****
---- 160,166 ----
-  		return -1;
-  	    } else umask(old_umask);
-  
-+ #ifdef	F_WRLCK
-  	    if(logg_lock) {
-  		memset(&fl, 0, sizeof(fl));
-  		fl.l_type = F_WRLCK;
-***************
-*** 159,164 ****
---- 171,177 ----
-  		    return -1;
-  		}
-  	    }
-+ #endif
+*** 193,199 ****
+  		break;
   	}
+          logg("!Can't get information about %s: %s\n", hostpt, herr);
+! 	close(socketfd);
+  	return -1;
+      }
   
-  	if(logg_size) {
-*** /home/njh/src/clamav-devel/trunk/./shared/memory.h	2007-02-19 19:26:21.000000000 +0000
---- ./shared/memory.h	2006-10-10 11:16:24.000000000 +0100
+--- 193,199 ----
+  		break;
+  	}
+          logg("!Can't get information about %s: %s\n", hostpt, herr);
+! 	closesocket(socketfd);
+  	return -1;
+      }
+  
+*** /home/njh/src/clamav-devel/trunk/./freshclam/freshclam.c	2007-02-19 19:26:21.000000000 +0000
+--- ./freshclam/freshclam.c	2007-02-24 21:45:28.000000000 +0000
 ***************
-*** 25,28 ****
---- 25,33 ----
-  void *mmalloc(size_t size);
-  void *mcalloc(size_t nmemb, size_t size);
+*** 247,252 ****
+--- 247,258 ----
+  	    {0, 0, 0, 0}
+      	};
   
-+ #ifdef	_DEBUG
-+ #include <crtdbg.h>
-+ #define	free(p)	_free_dbg(p, _NORMAL_BLOCK)
++ #ifdef	C_WINDOWS
++ 	if(!pthread_win32_process_attach_np()) {
++ 		mprintf("!Can't start the win32 pthreads layer\n");
++ 		return 1;
++ 	}
 + #endif
-+ 
+  
+      opt = opt_parse(argc, argv, short_options, long_options, NULL);
+      if(!opt) {
+***************
+*** 281,293 ****
+  	return 56;
+      }
+  
+- #ifdef C_WINDOWS
+-     if(!pthread_win32_process_attach_np()) {
+- 	mprintf("!Can't start the win32 pthreads layer\n");
+- 	return 63;
+-     }
+- #endif
+- 
+      if(opt_check(opt, "http-proxy") || opt_check(opt, "proxy-user"))
+  	logg("WARNING: Proxy settings are now only configurable in the config file.\n");
+  
+--- 287,292 ----
+***************
+*** 570,581 ****
+      opt_free(opt);
+  
+  #ifdef C_WINDOWS
+!     WSACleanup();
+! 
+!     if(!pthread_win32_process_detach_np()) {
+! 	mprintf("!Can't stop the win32 pthreads layer\n");
+! 	return 63;
+!     }
   #endif
-*** /home/njh/src/clamav-devel/trunk/./shared/memory.c	2007-02-19 19:26:21.000000000 +0000
---- ./shared/memory.c	2007-02-11 15:02:08.000000000 +0000
-***************
-*** 19,25 ****
---- 19,27 ----
   
-  #include <stdio.h>
-  #include <stdlib.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  #include "memory.h"
+      return(ret);
+--- 569,580 ----
+      opt_free(opt);
   
-  void *mmalloc(size_t size)
-*** /home/njh/src/clamav-devel/trunk/./shared/cdiff.c	2007-02-19 19:26:21.000000000 +0000
---- ./shared/cdiff.c	2007-02-11 15:06:46.000000000 +0000
-***************
-*** 27,33 ****
---- 27,35 ----
-  #include <ctype.h>
-  #include <sys/types.h>
-  #include <sys/stat.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  
-  #include "shared/memory.h"
-  #include "shared/misc.h"
-*** /home/njh/src/clamav-devel/trunk/./clamdscan/client.c	2007-02-19 19:26:14.000000000 +0000
---- ./clamdscan/client.c	2007-02-11 16:11:16.000000000 +0000
-***************
-*** 16,37 ****
---- 16,44 ----
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
-   */
-+ #ifdef	_MSC_VER
-+ #include <winsock.h>
-+ #endif
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
+  #ifdef C_WINDOWS
+! 	WSACleanup();
+!     
+! 	if(!pthread_win32_process_detach_np()) {
+! 		mprintf("!Can't stop the win32 pthreads layer\n");
+! 		return 1;
+! 	}
   #endif
   
-  #include <stdio.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  #include <string.h>
-  #include <sys/types.h>
-  #include <sys/stat.h>
+      return(ret);
+*** /home/njh/src/clamav-devel/trunk/./clamd/scanner.c	2007-02-28 15:06:52.000000000 +0000
+--- ./clamd/scanner.c	2007-03-05 22:31:44.000000000 +0000
+***************
+*** 473,485 ****
+      if(!bound && !portscan) {
+  	logg("!ScanStream: Can't find any free port.\n");
+  	mdprintf(odesc, "Can't find any free port. ERROR\n");
+! 	close(sockfd);
+  	return -1;
+      } else {
+  	listen(sockfd, 1);
+  	if(mdprintf(odesc, "PORT %d\n", port) <= 0) {
+  	    logg("!ScanStream: error transmitting port.\n");
+! 	    close(sockfd);
+  	    return -1;
+  	}
+      }
+--- 473,485 ----
+      if(!bound && !portscan) {
+  	logg("!ScanStream: Can't find any free port.\n");
+  	mdprintf(odesc, "Can't find any free port. ERROR\n");
+! 	closesocket(sockfd);
+  	return -1;
+      } else {
+  	listen(sockfd, 1);
+  	if(mdprintf(odesc, "PORT %d\n", port) <= 0) {
+  	    logg("!ScanStream: error transmitting port.\n");
+! 	    closesocket(sockfd);
+  	    return -1;
+  	}
+      }
+***************
+*** 488,504 ****
+  	case 0: /* timeout */
+  	    mdprintf(odesc, "Accept timeout. ERROR\n");
+  	    logg("!ScanStream %d: accept timeout.\n", port);
+! 	    close(sockfd);
+  	    return -1;
+  	case -1:
+  	    mdprintf(odesc, "Accept poll. ERROR\n");
+  	    logg("!ScanStream %d: accept poll failed.\n", port);
+! 	    close(sockfd);
+  	    return -1;
+      }
+  
+      if((acceptd = accept(sockfd, NULL, NULL)) == -1) {
+! 	close(sockfd);
+  	mdprintf(odesc, "accept() ERROR\n");
+  	logg("!ScanStream %d: accept() failed.\n", port);
+  	return -1;
+--- 488,504 ----
+  	case 0: /* timeout */
+  	    mdprintf(odesc, "Accept timeout. ERROR\n");
+  	    logg("!ScanStream %d: accept timeout.\n", port);
+! 	    closesocket(sockfd);
+  	    return -1;
+  	case -1:
+  	    mdprintf(odesc, "Accept poll. ERROR\n");
+  	    logg("!ScanStream %d: accept poll failed.\n", port);
+! 	    closesocket(sockfd);
+  	    return -1;
+      }
+  
+      if((acceptd = accept(sockfd, NULL, NULL)) == -1) {
+! 	closesocket(sockfd);
+  	mdprintf(odesc, "accept() ERROR\n");
+  	logg("!ScanStream %d: accept() failed.\n", port);
+  	return -1;
+***************
+*** 508,514 ****
+  
+      if ((tmpname = cli_gentempdesc(NULL, &tmpd)) == NULL) {
+  	shutdown(sockfd, 2);
+! 	close(sockfd);
+  	close(acceptd);
+  	mdprintf(odesc, "tempfile() failed. ERROR\n");
+  	logg("!ScanStream %d: Can't create temporary file.\n", port);
+--- 508,514 ----
+  
+      if ((tmpname = cli_gentempdesc(NULL, &tmpd)) == NULL) {
+  	shutdown(sockfd, 2);
+! 	closesocket(sockfd);
+  	close(acceptd);
+  	mdprintf(odesc, "tempfile() failed. ERROR\n");
+  	logg("!ScanStream %d: Can't create temporary file.\n", port);
+*** /home/njh/src/clamav-devel/trunk/./clamd/clamd.c	2007-02-28 15:06:52.000000000 +0000
+--- ./clamd/clamd.c	2007-03-06 10:13:28.000000000 +0000
+***************
+*** 65,70 ****
+--- 65,73 ----
+  #include "others.h"
+  #include "shared.h"
+  
 + #ifndef	C_WINDOWS
-  #include <sys/socket.h>
-  #include <sys/un.h>
-  #include <netinet/in.h>
-  #include <arpa/inet.h>
-  #include <netdb.h>
-  #include <utime.h>
++ #define	closesocket(s)	close(s)
 + #endif
-  #include <errno.h>
   
-  #ifdef HAVE_SYS_UIO_H
+  short debug_mode = 0, logok = 0;
+  short foreground = 0;
 ***************
-*** 54,65 ****
---- 61,140 ----
-  # define SOCKET_INET	AF_INET
-  #endif
+*** 376,382 ****
+  	    logg_close();
+  	    freecfg(copt);
+  	    if(tcpsock)
+! 		close(lsockets[0]);
+  	    return 1;
+  	}
+  	nlsockets++;
+--- 379,385 ----
+  	    logg_close();
+  	    freecfg(copt);
+  	    if(tcpsock)
+! 		closesocket(lsockets[0]);
+  	    return 1;
+  	}
+  	nlsockets++;
+*** /home/njh/src/clamav-devel/trunk/./clamd/server-th.c	2007-03-01 22:06:06.000000000 +0000
+--- ./clamd/server-th.c	2007-03-05 22:34:44.000000000 +0000
+***************
+*** 588,594 ****
+  		client_conn->socketds = socketds;
+  		client_conn->nsockets = nsockets;
+  		if (!thrmgr_dispatch(thr_pool, client_conn)) {
+! 		    close(client_conn->sd);
+  		    free(client_conn);
+  		    logg("!thread dispatch failed\n");
+  		}
+--- 588,594 ----
+  		client_conn->socketds = socketds;
+  		client_conn->nsockets = nsockets;
+  		if (!thrmgr_dispatch(thr_pool, client_conn)) {
+! 		    closesocket(client_conn->sd);
+  		    free(client_conn);
+  		    logg("!thread dispatch failed\n");
+  		}
+***************
+*** 597,603 ****
+  	pthread_mutex_lock(&exit_mutex);
+  	if(progexit) {
+  	    if (new_sd >= 0) {
+! 		close(new_sd);
+  	    }
+  	    pthread_mutex_unlock(&exit_mutex);
+  	    break;
+--- 597,603 ----
+  	pthread_mutex_lock(&exit_mutex);
+  	if(progexit) {
+  	    if (new_sd >= 0) {
+! 		closesocket(new_sd);
+  	    }
+  	    pthread_mutex_unlock(&exit_mutex);
+  	    break;
+*** /home/njh/src/clamav-devel/trunk/./clamd/tcpserver.c	2007-02-19 19:26:21.000000000 +0000
+--- ./clamd/tcpserver.c	2007-03-05 22:34:16.000000000 +0000
+***************
+*** 52,57 ****
+--- 52,61 ----
+  #include "server.h"
+  #include "tcpserver.h"
   
 + #ifndef	C_WINDOWS
 + #define	closesocket(s)	close(s)
 + #endif
 + 
-  /* #define ENABLE_FD_PASSING	    FIXME: Doesn't work yet */
-  
-  void move_infected(const char *filename, const struct optstruct *opt);
-  int notremoved = 0, notmoved = 0;
-  static int ncore = 0;
-  
-+ #ifdef	C_WINDOWS
-+ static  int     get_a_line(int sockd, char *buf, size_t len);
-+ 
-+ static int
-+ dsresult(int sockd, const struct optstruct *opt)
-+ {
-+ 	char buff[BUFSIZ], *pt;
-+ 	int infected = 0, waserror = 0;
-+ 
-+ 	while(get_a_line(sockd, buff, sizeof(buff))) {
-+ 		if(strstr(buff, "FOUND\n")) {
-+ 			infected++;
-+ 			logg("%s", buff);
-+ 			if(opt_check(opt, "move") || opt_check(opt, "copy")) {
-+ 				/* filename: Virus FOUND */
-+ 				if((pt = strrchr(buff, ':'))) {
-+ 					*pt = 0;
-+ 					move_infected(buff, opt);
-+ 				} else
-+ 					mprintf("@Broken data format. File not %s.\n", opt_check(opt, "move") ? "moved" : "copied");
-+ 			} else if(opt_check(opt, "remove")) {
-+ 				if(!(pt = strrchr(buff, ':')))
-+ 					mprintf("@Broken data format. File not removed.\n");
-+ 				else {
-+ 					*pt = 0;
-+ 					if(unlink(buff)) {
-+ 						mprintf("%s: Can't remove.\n", buff);
-+ 						logg("%s: Can't remove.\n", buff);
-+ 						notremoved++;
-+ 					} else {
-+ 						mprintf("%s: Removed.\n", buff);
-+ 						logg("%s: Removed.\n", buff);
-+ 					}
-+ 				}
-+ 			}
-+ 		}
-+ 
-+ 		if(strstr(buff, "ERROR\n")) {
-+ 			logg("%s", buff);
-+ 			waserror = 1;
-+ 		}
-+ 	}
-+ 
-+ 	return infected ? infected : (waserror ? -1 : 0);
-+ }
-+ 
-+ static int
-+ get_a_line(int sockd, char *buf, size_t len)
-+ {
-+ 	char *ptr;
-+ 
-+ 	for(ptr = buf; ptr < &buf[len]; ptr++) {
-+ 		/* FIXME: very inefficient to call recv so many times */
-+ 		if(recv(sockd, ptr, sizeof(char), 0) <= 0)
-+ 			return 0;
-+ 		if(*ptr == '\n') {
-+ 			*++ptr = '\0';
-+ 			return 1;
-+ 		}
-+ 	}
-+ 	return 1;
-+ }
-+ 
-+ #else
-  static int dsresult(int sockd, const struct optstruct *opt)
+  int tcpserver(const struct cfgstruct *copt)
   {
-  	int infected = 0, waserror = 0;
+  	struct sockaddr_in server;
 ***************
-*** 67,76 ****
-  	FILE *fd;
-  
-  
-! #ifndef C_OS2
-      if((fd = fdopen(dup(sockd), "r")) == NULL) {
-! #else /* FIXME: accoriding to YD OS/2 does not support dup() for sockets */
-!     if((fd = fdopen(sockd, "r")) == NULL) {
-  #endif
-  	logg("^Can't open descriptor for reading.\n");
+*** 88,94 ****
+      if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1) {
+  	estr = strerror(errno);
+  	logg("!bind() error: %s\n", estr);
+! 	close(sockfd);
   	return -1;
---- 142,151 ----
-  	FILE *fd;
-  
-  
-! #ifndef (C_OS2)
-      if((fd = fdopen(dup(sockd), "r")) == NULL) {
-! #else /* FIXME: according to YD OS/2 does not support dup() for sockets */
-!     if((fd = fdopen(sockd, "rb")) == NULL) {
-  #endif
-  	logg("^Can't open descriptor for reading.\n");
+      } else {
+  	if(taddr->enabled)
+--- 92,98 ----
+      if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1) {
+  	estr = strerror(errno);
+  	logg("!bind() error: %s\n", estr);
+! 	closesocket(sockfd);
   	return -1;
+      } else {
+  	if(taddr->enabled)
 ***************
-*** 80,92 ****
-  	if(strstr(buff, "FOUND\n")) {
-  	    infected++;
-  	    logg("%s", buff);
-! 	    if(opt_check(opt, "move") || opt_check(opt, "copy")) {
-  		/* filename: Virus FOUND */
-  		if((pt = strrchr(buff, ':'))) {
-  		    *pt = 0;
-  		    move_infected(buff, opt);
-  		} else {
-! 		    mprintf("@Broken data format. File not %s.\n", opt_check(opt, "move") ? "moved" : "copied");
-  		}
-  
-  	    } else if(opt_check(opt, "remove")) {
---- 155,167 ----
-  	if(strstr(buff, "FOUND\n")) {
-  	    infected++;
-  	    logg("%s", buff);
-! 	    if(opt_check(opt, "move")) {
-  		/* filename: Virus FOUND */
-  		if((pt = strrchr(buff, ':'))) {
-  		    *pt = 0;
-  		    move_infected(buff, opt);
-  		} else {
-! 		    mprintf("@Broken data format. File not moved.\n");
-  		}
-  
-  	    } else if(opt_check(opt, "remove")) {
-***************
-*** 118,123 ****
---- 193,199 ----
-  
-      return infected ? infected : (waserror ? -1 : 0);
-  }
-+ #endif	/* C_WINDOWS */
-  
-  static int dsfile(int sockd, const char *scantype, const char *filename, const struct optstruct *opt)
-  {
-***************
-*** 128,134 ****
-      scancmd = mcalloc(strlen(filename) + 20, sizeof(char));
-      sprintf(scancmd, "%s %s", scantype, filename);
-  
-!     if(write(sockd, scancmd, strlen(scancmd)) <= 0) {
-  	logg("^Can't write to the socket.\n");
-  	free(scancmd);
-  	return -1;
---- 204,210 ----
-      scancmd = mcalloc(strlen(filename) + 20, sizeof(char));
-      sprintf(scancmd, "%s %s", scantype, filename);
-  
-!     if(send(sockd, scancmd, strlen(scancmd), 0) <= 0) {
-  	logg("^Can't write to the socket.\n");
-  	free(scancmd);
-  	return -1;
-***************
-*** 202,208 ****
-  	char buff[4096], *pt;
-  
-  
-!     if(write(sockd, "STREAM", 6) <= 0) {
-  	logg("^Can't write to the socket.\n");
-  	return 2;
-      }
---- 278,284 ----
-  	char buff[4096], *pt;
-  
-  
-!     if(send(sockd, "STREAM", 6, 0) <= 0) {
-  	logg("^Can't write to the socket.\n");
-  	return 2;
-      }
-***************
-*** 312,318 ****
---- 388,396 ----
-  
-  static int dconnect(const struct optstruct *opt)
-  {
-+ #ifndef	C_WINDOWS
-  	struct sockaddr_un server;
-+ #endif
-  	struct sockaddr_in server2;
-  	struct hostent *he;
-  	struct cfgstruct *copt, *cpt;
-***************
-*** 328,341 ****
+*** 103,109 ****
+      if(listen(sockfd, backlog) == -1) {
+  	estr = strerror(errno);
+  	logg("!listen() error: %s\n", estr);
+! 	close(sockfd);
   	return -1;
       }
   
-      memset((char *) &server, 0, sizeof(server));
-      memset((char *) &server2, 0, sizeof(server2));
-  
-      /* Set default address to connect to */
-      server2.sin_addr.s_addr = inet_addr("127.0.0.1");    
-  
--     if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
-  
-  	server.sun_family = AF_UNIX;
-  	strncpy(server.sun_path, cpt->strarg, sizeof(server.sun_path));
-  
---- 406,424 ----
+--- 107,113 ----
+      if(listen(sockfd, backlog) == -1) {
+  	estr = strerror(errno);
+  	logg("!listen() error: %s\n", estr);
+! 	closesocket(sockfd);
   	return -1;
       }
   
-+ #ifndef	C_WINDOWS
-      memset((char *) &server, 0, sizeof(server));
-+ #endif
-      memset((char *) &server2, 0, sizeof(server2));
-  
-      /* Set default address to connect to */
-      server2.sin_addr.s_addr = inet_addr("127.0.0.1");    
-  
-  
-+     if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
-+ #ifdef	C_WINDOWS
-+ 	logg("^LocalSocket is not supported under Windows");
-+ #else
-  	server.sun_family = AF_UNIX;
-  	strncpy(server.sun_path, cpt->strarg, sizeof(server.sun_path));
-  
-***************
-*** 353,360 ****
---- 436,452 ----
-  	    freecfg(copt);
-  	    return -1;
-  	}
-+ #endif
-  
-      } else if((cpt = cfgopt(copt, "TCPSocket"))->enabled) {
-+ #ifdef  C_WINDOWS
-+                 WSADATA wsaData;
-+ 
-+                 if(WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR) {
-+                         logg("!Error at WSAStartup(): %d\n", WSAGetLastError());
-+                         return -1;
-+                 }
-+ #endif
-  
-  	if((sockd = socket(SOCKET_INET, SOCK_STREAM, 0)) < 0) {
-  	    perror("socket()");
-***************
-*** 368,374 ****
-  
-  	if((cpt = cfgopt(copt, "TCPAddr"))->enabled) {
-  	    if ((he = gethostbyname(cpt->strarg)) == 0) {
-! 		close(sockd);
-  		perror("gethostbyname()");
-  		logg("^Can't lookup clamd hostname.\n");
-  		freecfg(copt);
---- 460,466 ----
-  
-  	if((cpt = cfgopt(copt, "TCPAddr"))->enabled) {
-  	    if ((he = gethostbyname(cpt->strarg)) == 0) {
-! 		closesocket(sockd);
-  		perror("gethostbyname()");
-  		logg("^Can't lookup clamd hostname.\n");
-  		freecfg(copt);
-***************
-*** 378,384 ****
-  	}
-  
-  	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
-! 	    close(sockd);
-  	    perror("connect()");
-  	    logg("^Can't connect to clamd.\n");
-  	    freecfg(copt);
---- 470,476 ----
-  	}
-  
-  	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
-! 	    closesocket(sockd);
-  	    perror("connect()");
-  	    logg("^Can't connect to clamd.\n");
-  	    freecfg(copt);
-***************
-*** 430,436 ****
-  	else
-  	    errors++;
-  
-! 	close(sockd);
-  
-  #if defined(ENABLE_FD_PASSING) && defined(HAVE_SENDMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN)
-      } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
---- 522,528 ----
-  	else
-  	    errors++;
-  
-! 	closesocket(sockd);
-  
-  #if defined(ENABLE_FD_PASSING) && defined(HAVE_SENDMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN)
-      } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
-***************
-*** 488,494 ****
-  			else
-  			    errors++;
-  
-! 			close(sockd);
-  			break;
-  
-  		    default:
---- 580,586 ----
-  			else
-  			    errors++;
-  
-! 			closesocket(sockd);
-  			break;
-  
-  		    default:
-***************
-*** 510,520 ****
-  	struct stat fstat, mfstat;
-  	int n, len, movefilename_size;
-  	int moveflag = opt_check(opt, "move");
-  	struct utimbuf ubuf;
-  
-  
-      if((moveflag && !(movedir = opt_arg(opt, "move"))) ||
-!         (!moveflag && !(movedir = opt_arg(opt, "copy")))) {
-          /* Should never reach here */
-          logg("^opt_arg() returned NULL\n");
-          notmoved++;
---- 602,614 ----
-  	struct stat fstat, mfstat;
-  	int n, len, movefilename_size;
-  	int moveflag = opt_check(opt, "move");
-+ #ifndef	C_WINDOWS
-  	struct utimbuf ubuf;
-+ #endif
-  
-  
-      if((moveflag && !(movedir = opt_arg(opt, "move"))) ||
-!        (!moveflag && !(movedir = opt_arg(opt, "copy")))) {
-          /* Should never reach here */
-          logg("^opt_arg() returned NULL\n");
-          notmoved++;
-***************
-*** 585,591 ****
-         }
-      }
-  
-!     if(!moveflag || rename(filename, movefilename) == -1) {
-  	if(filecopy(filename, movefilename) == -1) {
-  	    logg("^cannot %s '%s' to '%s': %s\n", (moveflag) ? "move" : "copy", filename, movefilename, strerror(errno));
-  	    notmoved++;
---- 679,685 ----
-         }
-      }
-  
-!     if(rename(filename, movefilename) == -1) {
-  	if(filecopy(filename, movefilename) == -1) {
-  	    logg("^cannot %s '%s' to '%s': %s\n", (moveflag) ? "move" : "copy", filename, movefilename, strerror(errno));
-  	    notmoved++;
-***************
-*** 596,604 ****
---- 690,700 ----
-  	chmod(movefilename, fstat.st_mode);
-  	chown(movefilename, fstat.st_uid, fstat.st_gid);
-  
-+ #ifndef	C_WINDOWS
-  	ubuf.actime = fstat.st_atime;
-  	ubuf.modtime = fstat.st_mtime;
-  	utime(movefilename, &ubuf);
-+ #endif
-  
-  	if(moveflag && unlink(filename)) {
-  	    logg("^cannot unlink '%s': %s\n", filename, strerror(errno));
-***************
-*** 608,614 ****
-  	}
-      }
-  
-!     logg("%s: %s to '%s'\n", (moveflag)?"moved":"copied", filename, movefilename);
-  
-      free(movefilename);
-  }
---- 704,710 ----
-  	}
-      }
-  
-!     logg("%s: %s to '%s'\n", (moveflag) ? "moved" : "copied", filename, movefilename);
-  
-      free(movefilename);
-  }
 *** /home/njh/src/clamav-devel/trunk/./clamdscan/clamdscan.c	2007-02-19 19:26:14.000000000 +0000
 --- ./clamdscan/clamdscan.c	2007-02-24 10:46:48.000000000 +0000
 ***************
@@ -1337,992 +497,444 @@
       exit(ret);
   }
   
-*** /home/njh/src/clamav-devel/trunk/./sigtool/sigtool.c	2007-02-22 16:38:49.000000000 +0000
---- ./sigtool/sigtool.c	2006-11-05 10:16:14.000000000 +0000
+*** /home/njh/src/clamav-devel/trunk/./clamdscan/client.c	2007-02-28 15:06:52.000000000 +0000
+--- ./clamdscan/client.c	2007-02-28 17:46:52.000000000 +0000
 ***************
-*** 36,41 ****
---- 36,42 ----
+*** 16,37 ****
+--- 16,44 ----
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
++ #ifdef	_MSC_VER
++ #include <winsock.h>
++ #endif
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+  #endif
+  
+  #include <stdio.h>
++ #ifdef	HAVE_UNISTD_H
+  #include <unistd.h>
++ #endif
+  #include <string.h>
+  #include <sys/types.h>
+  #include <sys/stat.h>
++ #ifndef	C_WINDOWS
+  #include <sys/socket.h>
   #include <sys/un.h>
   #include <netinet/in.h>
   #include <arpa/inet.h>
-+ #include <clamav.h>
-  #include <sys/wait.h>
-  #include <dirent.h>
+  #include <netdb.h>
+  #include <utime.h>
++ #endif
+  #include <errno.h>
   
+  #ifdef HAVE_SYS_UIO_H
 ***************
-*** 52,58 ****
-  #include "shared/misc.h"
-  #include "shared/cdiff.h"
-  
-- #include "libclamav/clamav.h"
-  #include "libclamav/cvd.h"
-  #include "libclamav/others.h"
-  #include "libclamav/str.h"
---- 53,58 ----
-***************
-*** 84,90 ****
-      return 0;
-  }
-  
-! static int md5sig(struct optstruct *opt, unsigned int mdb)
-  {
-  	char *md5, *filename;
-  	int i;
---- 84,90 ----
-      return 0;
-  }
-  
-! static int md5sig(struct optstruct *opt)
-  {
-  	char *md5, *filename;
-  	int i;
-***************
-*** 101,110 ****
-  	    } else {
-  		if((sb.st_mode & S_IFMT) == S_IFREG) {
-  		    if((md5 = cli_md5file(filename))) {
-! 			if(mdb)
-! 			    mprintf("%d:%s:%s\n", sb.st_size, md5, filename);
-! 			else
-! 			    mprintf("%s:%d:%s\n", md5, sb.st_size, filename);
-  			free(md5);
-  		    } else {
-  			mprintf("!md5sig: Can't generate MD5 checksum for %s\n", filename);
---- 101,107 ----
-  	    } else {
-  		if((sb.st_mode & S_IFMT) == S_IFREG) {
-  		    if((md5 = cli_md5file(filename))) {
-! 			mprintf("%s:%d:%s\n", md5, sb.st_size, filename);
-  			free(md5);
-  		    } else {
-  			mprintf("!md5sig: Can't generate MD5 checksum for %s\n", filename);
-***************
-*** 150,156 ****
-  {
-  	const char *fname;
-  	char *newname, buff[512], *decoded;
-! 	int fd1, fd2, bytes;
-  
-  
-      fname = opt_arg(opt, "utf16-decode");
---- 147,153 ----
-  {
-  	const char *fname;
-  	char *newname, buff[512], *decoded;
-! 	int ret = CL_CLEAN, fd1, fd2, bytes;
-  
-  
-      fname = opt_arg(opt, "utf16-decode");
-***************
-*** 221,262 ****
+*** 53,64 ****
+--- 60,139 ----
+  # define SOCKET_INET	AF_INET
   #endif
   
++ #ifndef	C_WINDOWS
++ #define	closesocket(s)	close(s)
++ #endif
++ 
+  /* #define ENABLE_FD_PASSING	    FIXME: Doesn't work yet */
   
--     if((pt = getenv("SIGNDPASS"))) {
-- 	strncpy(pass, pt, sizeof(pass));
--     } else {
-- 	fflush(stdin);
-- 	mprintf("Password: ");
-- 
-- #ifdef HAVE_TERMIOS_H
-- 	if(tcgetattr(0, &old)) {
-- 	    mprintf("!getdsig: tcgetattr() failed\n");
-- 	    return NULL;
-- 	}
-- 	new = old;
-- 	new.c_lflag &= ~ECHO;
-- 	if(tcsetattr(0, TCSAFLUSH, &new)) {
-- 	    mprintf("!getdsig: tcsetattr() failed\n");
-- 	    return NULL;
-- 	}
-- #endif
-- 
-- 	if(fgets(pass, sizeof(pass), stdin)) {
-- 	    cli_chomp(pass);
-- 	} else {
-- 	    mprintf("!getdsig: Can't get password\n");
-- 	    return NULL;
-- 	}
-- 
-- #ifdef HAVE_TERMIOS_H
-- 	if(tcsetattr(0, TCSAFLUSH, &old)) {
-- 	    mprintf("!getdsig: tcsetattr() failed\n", host);
-- 	    memset(pass, 0, strlen(pass));
-- 	    return NULL;
-- 	}
-- #endif
-- 	mprintf("\n");
--     }
-- 
-  #ifdef PF_INET
-      if((sockd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
+  void move_infected(const char *filename, const struct optstruct *opt);
+  int notremoved = 0, notmoved = 0;
+  static int ncore = 0;
+  
++ #ifdef	C_WINDOWS
++ static  int     get_a_line(int sockd, char *buf, size_t len);
++ 
++ static int
++ dsresult(int sockd, const struct optstruct *opt)
++ {
++ 	char buff[BUFSIZ], *pt;
++ 	int infected = 0, waserror = 0;
++ 
++ 	while(get_a_line(sockd, buff, sizeof(buff))) {
++ 		if(strstr(buff, "FOUND\n")) {
++ 			infected++;
++ 			logg("%s", buff);
++ 			if(opt_check(opt, "move") || opt_check(opt, "copy")) {
++ 				/* filename: Virus FOUND */
++ 				if((pt = strrchr(buff, ':'))) {
++ 					*pt = 0;
++ 					move_infected(buff, opt);
++ 				} else
++ 					mprintf("@Broken data format. File not %s.\n", opt_check(opt, "move") ? "moved" : "copied");
++ 			} else if(opt_check(opt, "remove")) {
++ 				if(!(pt = strrchr(buff, ':')))
++ 					mprintf("@Broken data format. File not removed.\n");
++ 				else {
++ 					*pt = 0;
++ 					if(unlink(buff)) {
++ 						mprintf("%s: Can't remove.\n", buff);
++ 						logg("%s: Can't remove.\n", buff);
++ 						notremoved++;
++ 					} else {
++ 						mprintf("%s: Removed.\n", buff);
++ 						logg("%s: Removed.\n", buff);
++ 					}
++ 				}
++ 			}
++ 		}
++ 
++ 		if(strstr(buff, "ERROR\n")) {
++ 			logg("%s", buff);
++ 			waserror = 1;
++ 		}
++ 	}
++ 
++ 	return infected ? infected : (waserror ? -1 : 0);
++ }
++ 
++ static int
++ get_a_line(int sockd, char *buf, size_t len)
++ {
++ 	char *ptr;
++ 
++ 	for(ptr = buf; ptr < &buf[len]; ptr++) {
++ 		/* FIXME: very inefficient to call recv so many times */
++ 		if(recv(sockd, ptr, sizeof(char), 0) <= 0)
++ 			return 0;
++ 		if(*ptr == '\n') {
++ 			*++ptr = '\0';
++ 			return 1;
++ 		}
++ 	}
++ 	return 1;
++ }
++ 
++ #else
+  static int dsresult(int sockd, const struct optstruct *opt)
+  {
+  	int infected = 0, waserror = 0;
+***************
+*** 69,75 ****
+  #ifndef C_OS2
+      if((fd = fdopen(dup(sockd), "r")) == NULL) {
+  #else /* FIXME: accoriding to YD OS/2 does not support dup() for sockets */
+!     if((fd = fdopen(sockd, "r")) == NULL) {
+  #endif
+  	logg("^Can't open descriptor for reading.\n");
+  	return -1;
+--- 144,150 ----
+  #ifndef C_OS2
+      if((fd = fdopen(dup(sockd), "r")) == NULL) {
+  #else /* FIXME: accoriding to YD OS/2 does not support dup() for sockets */
+!     if((fd = fdopen(sockd, "rb")) == NULL) {
+  #endif
+  	logg("^Can't open descriptor for reading.\n");
+  	return -1;
+***************
+*** 117,122 ****
+--- 192,198 ----
+  
+      return infected ? infected : (waserror ? -1 : 0);
+  }
++ #endif	/* C_WINDOWS */
+  
+  static int dsfile(int sockd, const char *scantype, const char *filename, const struct optstruct *opt)
+  {
+***************
+*** 127,133 ****
+      scancmd = malloc(strlen(filename) + 20);
+      sprintf(scancmd, "%s %s", scantype, filename);
+  
+!     if(write(sockd, scancmd, strlen(scancmd)) <= 0) {
+  	logg("^Can't write to the socket.\n");
+  	free(scancmd);
+  	return -1;
+--- 203,209 ----
+      scancmd = malloc(strlen(filename) + 20);
+      sprintf(scancmd, "%s %s", scantype, filename);
+  
+!     if(send(sockd, scancmd, strlen(scancmd), 0) <= 0) {
+  	logg("^Can't write to the socket.\n");
+  	free(scancmd);
+  	return -1;
+***************
+*** 201,207 ****
+  	char buff[4096], *pt;
+  
+  
+!     if(write(sockd, "STREAM", 6) <= 0) {
+  	logg("^Can't write to the socket.\n");
+  	return 2;
+      }
+--- 277,283 ----
+  	char buff[4096], *pt;
+  
+  
+!     if(send(sockd, "STREAM", 6, 0) <= 0) {
+  	logg("^Can't write to the socket.\n");
+  	return 2;
+      }
+***************
+*** 253,259 ****
+      }
+  
+      if(connect(wsockd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) < 0) {
+! 	close(wsockd);
+  	perror("connect()");
+  	logg("^Can't connect to clamd [port: %d].\n", port);
+  	return -1;
+--- 329,335 ----
+      }
+  
+      if(connect(wsockd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) < 0) {
+! 	closesocket(wsockd);
+  	perror("connect()");
+  	logg("^Can't connect to clamd [port: %d].\n", port);
+  	return -1;
+***************
+*** 262,272 ****
+      while((bread = read(0, buff, sizeof(buff))) > 0) {
+  	if(write(wsockd, buff, bread) <= 0) {
+  	    logg("^Can't write to the socket.\n");
+! 	    close(wsockd);
+  	    return -1;
+  	}
+      }
+!     close(wsockd);
+  
+      memset(buff, 0, sizeof(buff));
+      while((bread = read(sockd, buff, sizeof(buff))) > 0) {
+--- 338,348 ----
+      while((bread = read(0, buff, sizeof(buff))) > 0) {
+  	if(write(wsockd, buff, bread) <= 0) {
+  	    logg("^Can't write to the socket.\n");
+! 	    closesocket(wsockd);
+  	    return -1;
+  	}
+      }
+!     closesocket(wsockd);
+  
+      memset(buff, 0, sizeof(buff));
+      while((bread = read(sockd, buff, sizeof(buff))) > 0) {
+***************
+*** 311,317 ****
+--- 387,395 ----
+  
+  static int dconnect(const struct optstruct *opt)
+  {
++ #ifndef	C_WINDOWS
+  	struct sockaddr_un server;
++ #endif
+  	struct sockaddr_in server2;
+  	struct hostent *he;
+  	struct cfgstruct *copt, *cpt;
+***************
+*** 327,339 ****
+--- 405,423 ----
+  	return -1;
+      }
+  
++ #ifndef	C_WINDOWS
+      memset((char *) &server, 0, sizeof(server));
++ #endif
+      memset((char *) &server2, 0, sizeof(server2));
+  
+      /* Set default address to connect to */
+      server2.sin_addr.s_addr = inet_addr("127.0.0.1");    
+  
+      if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
++ #ifdef	C_WINDOWS
++ 	logg("^LocalSocket is not supported under Windows");
++ #else
++     if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
+  
+  	server.sun_family = AF_UNIX;
+  	strncpy(server.sun_path, cpt->strarg, sizeof(server.sun_path));
+***************
+*** 346,360 ****
+  	}
+  
+  	if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
+! 	    close(sockd);
+  	    perror("connect()");
+  	    logg("^Can't connect to clamd.\n");
+  	    freecfg(copt);
+  	    return -1;
+  	}
+! 
+!     } else if((cpt = cfgopt(copt, "TCPSocket"))->enabled) {
+! 
+  	if((sockd = socket(SOCKET_INET, SOCK_STREAM, 0)) < 0) {
+  	    perror("socket()");
+  	    logg("^Can't create the socket.\n");
+--- 430,453 ----
+  	}
+  
+  	if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
+! 	    closesocket(sockd);
+  	    perror("connect()");
+  	    logg("^Can't connect to clamd.\n");
+  	    freecfg(copt);
+  	    return -1;
+  	}
+! #endif
+!   
+!       } else if((cpt = cfgopt(copt, "TCPSocket"))->enabled) {
+! #ifdef  C_WINDOWS
+!                 WSADATA wsaData;
+! 
+!                 if(WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR) {
+!                         logg("!Error at WSAStartup(): %d\n", WSAGetLastError());
+!                         return -1;
+!                 }
+! #endif
+!   
+  	if((sockd = socket(SOCKET_INET, SOCK_STREAM, 0)) < 0) {
+  	    perror("socket()");
+  	    logg("^Can't create the socket.\n");
+***************
+*** 367,373 ****
+  
+  	if((cpt = cfgopt(copt, "TCPAddr"))->enabled) {
+  	    if ((he = gethostbyname(cpt->strarg)) == 0) {
+! 		close(sockd);
+  		perror("gethostbyname()");
+  		logg("^Can't lookup clamd hostname.\n");
+  		freecfg(copt);
+--- 460,466 ----
+  
+  	if((cpt = cfgopt(copt, "TCPAddr"))->enabled) {
+  	    if ((he = gethostbyname(cpt->strarg)) == 0) {
+! 		closesocket(sockd);
+  		perror("gethostbyname()");
+  		logg("^Can't lookup clamd hostname.\n");
+  		freecfg(copt);
+***************
+*** 377,383 ****
+  	}
+  
+  	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
+! 	    close(sockd);
+  	    perror("connect()");
+  	    logg("^Can't connect to clamd.\n");
+  	    freecfg(copt);
+--- 470,476 ----
+  	}
+  
+  	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
+! 	    closesocket(sockd);
+  	    perror("connect()");
+  	    logg("^Can't connect to clamd.\n");
+  	    freecfg(copt);
+***************
+*** 429,435 ****
+  	else
+  	    errors++;
+  
+! 	close(sockd);
+  
+  #if defined(ENABLE_FD_PASSING) && defined(HAVE_SENDMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN)
+      } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
+--- 522,528 ----
+  	else
+  	    errors++;
+  
+! 	closesocket(sockd);
+  
+  #if defined(ENABLE_FD_PASSING) && defined(HAVE_SENDMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN)
+      } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
+***************
+*** 441,447 ****
+  	else
+  	    errors++;
+  
+! 	close(sockd);
   #else
---- 218,223 ----
+      } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
+  	if((sockd = dconnect(opt)) < 0)
+--- 534,540 ----
+  	else
+  	    errors++;
+  
+! 	closesocket(sockd);
+  #else
+      } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
+  	if((sockd = dconnect(opt)) < 0)
 ***************
-*** 264,270 ****
+*** 452,458 ****
+  	else
+  	    errors++;
+  
+! 	close(sockd);
   #endif
-  	perror("socket()");
-  	mprintf("!getdsig: Can't create socket\n");
-- 	memset(pass, 0, strlen(pass));
-  	return NULL;
-      }
   
---- 225,230 ----
-***************
-*** 276,286 ****
-          close(sockd);
-  	perror("connect()");
-  	mprintf("!getdsig: Can't connect to ClamAV Signing Service at %s\n", host);
-- 	memset(pass, 0, strlen(pass));
-  	return NULL;
-      }
-      memset(cmd, 0, sizeof(cmd));
-  
-      if(mode == 1)
-  	snprintf(cmd, sizeof(cmd) - datalen, "ClamSignPSS:%s:%s:", user, pass);
-      else
---- 236,281 ----
-          close(sockd);
-  	perror("connect()");
-  	mprintf("!getdsig: Can't connect to ClamAV Signing Service at %s\n", host);
-  	return NULL;
-      }
-+ 
-      memset(cmd, 0, sizeof(cmd));
-  
-+     fflush(stdin);
-+     mprintf("Password: ");
-+ 
-+ #ifdef HAVE_TERMIOS_H
-+     if(tcgetattr(0, &old)) {
-+ 	mprintf("!getdsig: tcgetattr() failed\n", host);
-+ 	close(sockd);
-+ 	return NULL;
-+     }
-+     new = old;
-+     new.c_lflag &= ~ECHO;
-+     if(tcsetattr(0, TCSAFLUSH, &new)) {
-+ 	mprintf("!getdsig: tcsetattr() failed\n", host);
-+ 	close(sockd);
-+ 	return NULL;
-+     }
-+ #endif
-+ 
-+     if(fgets(pass, sizeof(pass), stdin)) {
-+ 	cli_chomp(pass);
-+     } else {
-+ 	mprintf("!getdsig: Can't get password\n");
-+ 	close(sockd);
-+ 	return NULL;
-+     }
-+ 
-+ #ifdef HAVE_TERMIOS_H
-+     if(tcsetattr(0, TCSAFLUSH, &old)) {
-+ 	mprintf("!getdsig: tcsetattr() failed\n", host);
-+ 	close(sockd);
-+ 	return NULL;
-+     }
-+ #endif
-+     mprintf("\n");
-+ 
-      if(mode == 1)
-  	snprintf(cmd, sizeof(cmd) - datalen, "ClamSignPSS:%s:%s:", user, pass);
-      else
-***************
-*** 303,325 ****
-      memset(pass, 0, strlen(pass));
-      memset(buff, 0, sizeof(buff));
-  
-!     if((bread = cli_readn(sockd, buff, sizeof(buff))) > 0) {
-  	if(!strstr(buff, "Signature:")) {
-  	    mprintf("!getdsig: Error generating digital signature\n");
-  	    mprintf("!getdsig: Answer from remote server: %s\n", buff);
-  	    close(sockd);
-  	    return NULL;
-  	} else {
-! 	    mprintf("Signature received (length = %u)\n", strlen(buff) - 10);
-  	}
--     } else {
-- 	mprintf("!getdsig: Communication error with remote server\n");
-- 	close(sockd);
-- 	return NULL;
-      }
-  
-      close(sockd);
-- 
-      pt = buff;
-      pt += 10;
-      return strdup(pt);
---- 298,315 ----
-      memset(pass, 0, strlen(pass));
-      memset(buff, 0, sizeof(buff));
-  
-!     if((bread = read(sockd, buff, sizeof(buff))) > 0) {
-  	if(!strstr(buff, "Signature:")) {
-  	    mprintf("!getdsig: Error generating digital signature\n");
-  	    mprintf("!getdsig: Answer from remote server: %s\n", buff);
-  	    close(sockd);
-  	    return NULL;
-  	} else {
-! 	   /* mprintf("Signature received (length = %d)\n", strlen(buff) - 10); */
-  	}
-      }
-  
-      close(sockd);
-      pt = buff;
-      pt += 10;
-      return strdup(pt);
-***************
-*** 331,337 ****
-  	int i;
-  	struct stat sb;
-  	char file[32], *md5;
-! 	char *extlist[] = { "db", "fp", "hdb", "mdb", "ndb", "pdb", "rmd", "zmd", "sdb", "cfg", NULL };
-  
-  
-      snprintf(file, sizeof(file), "%s.info", db);
---- 321,327 ----
-  	int i;
-  	struct stat sb;
-  	char file[32], *md5;
-! 	char *extlist[] = { "db", "fp", "hdb", "mdb", "ndb", "pdb", "rmd", "zmd", "sdb", NULL };
-  
-  
-      snprintf(file, sizeof(file), "%s.info", db);
-***************
-*** 497,507 ****
-  {
-  	int ret, inc = 1, dn;
-  	size_t bytes;
-! 	unsigned int sigs = 0, oldsigs = 0, lines = 0, version, real_header, fl;
-  	struct stat foo;
-  	char buffer[FILEBUFF], *tarfile, *gzfile, header[513], smbuff[32],
-  	     builder[32], *pt, *dbname, olddb[512], patch[32], broken[32];
-!         struct cl_engine *engine = NULL;
-  	FILE *tar, *cvd;
-  	gzFile *gz;
-  	time_t timet;
---- 487,497 ----
-  {
-  	int ret, inc = 1, dn;
-  	size_t bytes;
-! 	unsigned int sigs = 0, oldsigs = 0, lines = 0, version, real_header;
-  	struct stat foo;
-  	char buffer[FILEBUFF], *tarfile, *gzfile, header[513], smbuff[32],
-  	     builder[32], *pt, *dbname, olddb[512], patch[32], broken[32];
-!         struct cl_node *root = NULL;
-  	FILE *tar, *cvd;
-  	gzFile *gz;
-  	time_t timet;
-***************
-*** 532,542 ****
-  	return -1;
-      }
-  
-!     if((ret = cl_load(".", &engine, &sigs, CL_DB_STDOPT))) {
-  	mprintf("!build: Can't load database: %s\n", cl_strerror(ret));
-  	return -1;
       } else {
-! 	cl_free(engine);
-      }
+--- 545,551 ----
+  	else
+  	    errors++;
   
-      if(!sigs) {
---- 522,532 ----
-  	return -1;
-      }
+! 	closesocket(sockd);
+  #endif
   
-!     if((ret = cl_loaddbdir(".", &root, &sigs))) {
-  	mprintf("!build: Can't load database: %s\n", cl_strerror(ret));
-  	return -1;
       } else {
-! 	cl_free(root);
-      }
-  
-      if(!sigs) {
 ***************
-*** 552,560 ****
-  		countlines("main.fp") + countlines("daily.fp");
+*** 487,493 ****
+  			else
+  			    errors++;
   
-  	if(lines != sigs) {
-! 	    mprintf("^build: Signatures in database: %d, loaded by libclamav: %d\n", lines, sigs);
-! 	    mprintf("^build: Please check the current directory and remove unnecessary databases\n");
-! 	    mprintf("^build: or install the latest ClamAV version.\n");
-  	}
-      }
+! 			close(sockd);
+  			break;
   
---- 542,551 ----
-  		countlines("main.fp") + countlines("daily.fp");
+  		    default:
+--- 580,586 ----
+  			else
+  			    errors++;
   
-  	if(lines != sigs) {
-! 	    mprintf("!build: Signatures in database: %d, loaded by libclamav: %d\n", lines, sigs);
-! 	    mprintf("!build: Please check the current directory and remove unnecessary databases\n");
-! 	    mprintf("!build: or install the latest ClamAV version.\n");
-! 	    return -1;
-  	}
-      }
+! 			closesocket(sockd);
+  			break;
   
+  		    default:
 ***************
-*** 565,594 ****
-      else
-  	dbname = "daily";
-  
+*** 509,516 ****
+  	struct stat fstat, mfstat;
+  	int n, len, movefilename_size;
+  	int moveflag = opt_check(opt, "move");
+  	struct utimbuf ubuf;
 ! 
-!     if(opt->filename) {
-! 	if(cli_strbcasestr(opt->filename, ".cvd")) {
-! 	    strncpy(olddb, opt->filename, sizeof(olddb));
-! 	    inc = 0;
-! 	} else if(cli_strbcasestr(opt->filename, ".inc")) {
-! 	    snprintf(olddb, sizeof(olddb), "%s/%s.info", opt->filename, dbname);
-! 	} else {
-! 	    mprintf("!build: The optional argument points to neither CVD nor incremental directory\n");
-! 	    return -1;
-! 	}
-! 
-!     } else {
-! 	pt = freshdbdir();
-! 	snprintf(olddb, sizeof(olddb), "%s/%s.inc/%s.info", pt, dbname, dbname);
-! 	if(stat(olddb, &foo) == -1) {
-! 	    inc = 0;
-! 	    snprintf(olddb, sizeof(olddb), "%s/%s.cvd", pt, dbname);
-! 	}
-! 	free(pt);
-      }
   
-      if(!(oldcvd = cl_cvdhead(olddb))) {
-! 	mprintf("^build: CAN'T READ CVD HEADER OF CURRENT DATABASE %s\n", olddb);
-  	sleep(3);
-      }
+      if((moveflag && !(movedir = opt_arg(opt, "move"))) ||
+          (!moveflag && !(movedir = opt_arg(opt, "copy")))) {
+--- 602,610 ----
+  	struct stat fstat, mfstat;
+  	int n, len, movefilename_size;
+  	int moveflag = opt_check(opt, "move");
++ #ifndef	C_WINDOWS
+  	struct utimbuf ubuf;
+! #endif
   
---- 556,572 ----
-      else
-  	dbname = "daily";
-  
-!     pt = freshdbdir();
-!     snprintf(olddb, sizeof(olddb), "%s/%s.inc/%s.info", pt, dbname, dbname);
-!     if(stat(olddb, &foo) == -1) {
-! 	inc = 0;
-! 	snprintf(olddb, sizeof(olddb), "%s/%s.cvd", pt, dbname);
-      }
-  
-+     free(pt);
-+ 
-      if(!(oldcvd = cl_cvdhead(olddb))) {
-! 	mprintf("^build: CAN'T READ CVD HEADER OF CURRENT DATABASE %s\n", buffer);
-  	sleep(3);
-      }
-  
+      if((moveflag && !(movedir = opt_arg(opt, "move"))) ||
+          (!moveflag && !(movedir = opt_arg(opt, "copy")))) {
 ***************
-*** 624,637 ****
-      strcat(header, smbuff);
-  
-      /* functionality level */
-!     if(!strcmp(dbname, "main")) {
-! 	fflush(stdin);
-! 	mprintf("Functionality level: ");
-! 	scanf("%u", &fl);
-!     } else {
-! 	fl = cl_retflevel();
-!     }
-!     sprintf(smbuff, "%u:", fl);
-      strcat(header, smbuff);
-  
-      real_header = strlen(header);
---- 602,608 ----
-      strcat(header, smbuff);
-  
-      /* functionality level */
-!     sprintf(smbuff, "%d:", cl_retflevel());
-      strcat(header, smbuff);
-  
-      real_header = strlen(header);
-***************
-*** 639,656 ****
-      /* add fake MD5 and dsig (for writeinfo) */
-      strcat(header, "X:X:");
-  
-!     if((pt = getenv("SIGNDUSER"))) {
-! 	strncpy(builder, pt, sizeof(builder));
-      } else {
-! 	/* ask for builder name */
-! 	fflush(stdin);
-! 	mprintf("Builder name: ");
-! 	if(fgets(builder, sizeof(builder), stdin)) {
-! 	    cli_chomp(builder);
-! 	} else {
-! 	    mprintf("!build: Can't get builder name\n");
-! 	    return -1;
-! 	}
-      }
-  
-      /* add builder */
---- 610,623 ----
-      /* add fake MD5 and dsig (for writeinfo) */
-      strcat(header, "X:X:");
-  
-!     /* ask for builder name */
-!     fflush(stdin);
-!     mprintf("Builder name: ");
-!     if(fgets(builder, sizeof(builder), stdin)) {
-! 	cli_chomp(builder);
-      } else {
-! 	mprintf("!build: Can't get builder name\n");
-! 	return -1;
-      }
-  
-      /* add builder */
-***************
-*** 686,692 ****
-  				 "daily.fp", "main.mdb", "daily.mdb",
-  				 "daily.info", "main.info", "main.wdb",
-  				 "daily.wdb", "main.pdb", "daily.pdb",
-- 				 "main.cfg", "daily.cfg",
-  				 NULL };
-  		args[2] = tarfile;
-  		if(!opt_check(opt, "debug")) {
---- 653,658 ----
-***************
-*** 845,865 ****
-      mprintf("Created %s\n", pt);
-  
-      /* generate patch */
-!     if(opt->filename) {
-! 	strncpy(olddb, opt->filename, sizeof(olddb));
-      } else {
-! 	if(inc) {
-! 	    pt = freshdbdir();
-! 	    snprintf(olddb, sizeof(olddb), "%s/%s.inc", pt, dbname);
-! 	    free(pt);
-! 	} else {
-! 	    pt = freshdbdir();
-! 	    snprintf(olddb, sizeof(olddb), "%s/%s.cvd", pt, dbname);
-! 	    free(pt);
-! 	}
-!     }
-  
--     if(!inc) {
-  	pt = cli_gentemp(NULL);
-  	if(mkdir(pt, 0700)) {
-  	    mprintf("!build: Can't create temporary directory %s\n", pt);
---- 811,825 ----
-      mprintf("Created %s\n", pt);
-  
-      /* generate patch */
-!     if(inc) {
-! 	pt = freshdbdir();
-! 	snprintf(olddb, sizeof(olddb), "%s/%s.inc", pt, dbname);
-! 	free(pt);
-      } else {
-! 	pt = freshdbdir();
-! 	snprintf(olddb, sizeof(olddb), "%s/%s.cvd", pt, dbname);
-! 	free(pt);
-  
-  	pt = cli_gentemp(NULL);
-  	if(mkdir(pt, 0700)) {
-  	    mprintf("!build: Can't create temporary directory %s\n", pt);
-***************
-*** 867,873 ****
-  	}
-  	if(cvd_unpack(olddb, pt) == -1) {
-  	    mprintf("!build: Can't unpack CVD file %s\n", olddb);
-! 	    cli_rmdirs(pt);
-  	    free(pt);
-  	    return -1;
-  	}
---- 827,833 ----
-  	}
-  	if(cvd_unpack(olddb, pt) == -1) {
-  	    mprintf("!build: Can't unpack CVD file %s\n", olddb);
-! 	    rmdirs(pt);
-  	    free(pt);
-  	    return -1;
-  	}
-***************
-*** 879,893 ****
-  	mprintf("!build: Can't create temporary directory %s\n", pt);
-  	free(pt);
-  	if(!inc)
-! 	    cli_rmdirs(olddb);
-  	return -1;
-      }
-      if(cvd_unpack(opt_arg(opt, "build"), pt) == -1) {
-  	mprintf("!build: Can't unpack CVD file %s\n", opt_arg(opt, "build"));
-! 	cli_rmdirs(pt);
-  	free(pt);
-  	if(!inc)
-! 	    cli_rmdirs(olddb);
-  	return -1;
-      }
-  
---- 839,853 ----
-  	mprintf("!build: Can't create temporary directory %s\n", pt);
-  	free(pt);
-  	if(!inc)
-! 	    rmdirs(olddb);
-  	return -1;
-      }
-      if(cvd_unpack(opt_arg(opt, "build"), pt) == -1) {
-  	mprintf("!build: Can't unpack CVD file %s\n", opt_arg(opt, "build"));
-! 	rmdirs(pt);
-  	free(pt);
-  	if(!inc)
-! 	    rmdirs(olddb);
-  	return -1;
-      }
-  
-***************
-*** 898,916 ****
-  
-      ret = diffdirs(olddb, pt, patch);
-  
-!     cli_rmdirs(pt);
-      free(pt);
-  
-      if(ret == -1) {
-  	if(!inc)
-! 	    cli_rmdirs(olddb);
-  	return -1;
-      }
-  
-      ret = verifydiff(patch, NULL, olddb);
-  
-      if(!inc)
-! 	cli_rmdirs(olddb);
-  
-      if(ret == -1) {
-  	snprintf(broken, sizeof(broken), "%s.broken", patch);
---- 858,876 ----
-  
-      ret = diffdirs(olddb, pt, patch);
-  
-!     rmdirs(pt);
-      free(pt);
-  
-      if(ret == -1) {
-  	if(!inc)
-! 	    rmdirs(olddb);
-  	return -1;
-      }
-  
-      ret = verifydiff(patch, NULL, olddb);
-  
-      if(!inc)
-! 	rmdirs(olddb);
-  
-      if(ret == -1) {
-  	snprintf(broken, sizeof(broken), "%s.broken", patch);
-***************
-*** 1113,1119 ****
-  
-  	if(cvd_unpack(filename, dir) == -1) {
-  	    mprintf("!listdb: Can't unpack CVD file %s\n", filename);
-! 	    cli_rmdirs(dir);
-  	    free(dir);
-  	    return -1;
-  	}
---- 1073,1079 ----
-  
-  	if(cvd_unpack(filename, dir) == -1) {
-  	    mprintf("!listdb: Can't unpack CVD file %s\n", filename);
-! 	    rmdirs(dir);
-  	    free(dir);
-  	    return -1;
-  	}
-***************
-*** 1121,1132 ****
-  	/* list extracted directory */
-  	if(listdir(dir) == -1) {
-  	    mprintf("!listdb: Can't list directory %s\n", filename);
-! 	    cli_rmdirs(dir);
-  	    free(dir);
-  	    return -1;
-  	}
-  
-! 	cli_rmdirs(dir);
-  	free(dir);
-  
-  	return 0;
---- 1081,1092 ----
-  	/* list extracted directory */
-  	if(listdir(dir) == -1) {
-  	    mprintf("!listdb: Can't list directory %s\n", filename);
-! 	    rmdirs(dir);
-  	    free(dir);
-  	    return -1;
-  	}
-  
-! 	rmdirs(dir);
-  	free(dir);
-  
-  	return 0;
-***************
-*** 1255,1261 ****
-  
-      close(fd);
-      sigtool_vba_scandir(dir, hex_output);
-!     cli_rmdirs(dir);
-      free(dir);
-      return 0;
-  }
---- 1215,1221 ----
-  
-      close(fd);
-      sigtool_vba_scandir(dir, hex_output);
-!     rmdirs(dir);
-      free(dir);
-      return 0;
-  }
-***************
-*** 1423,1436 ****
-      if(cvd) {
-  	if(cvd_unpack(cvd, tempdir) == -1) {
-  	    mprintf("!verifydiff: Can't unpack CVD file %s\n", cvd);
-! 	    cli_rmdirs(tempdir);
-  	    free(tempdir);
-  	    return -1;
-  	}
-      } else {
-  	if(dircopy(incdir, tempdir) == -1) {
-  	    mprintf("!verifydiff: Can't copy dir %s to %s\n", incdir, tempdir);
-! 	    cli_rmdirs(tempdir);
-  	    free(tempdir);
-  	    return -1;
-  	}
---- 1383,1396 ----
-      if(cvd) {
-  	if(cvd_unpack(cvd, tempdir) == -1) {
-  	    mprintf("!verifydiff: Can't unpack CVD file %s\n", cvd);
-! 	    rmdirs(tempdir);
-  	    free(tempdir);
-  	    return -1;
-  	}
-      } else {
-  	if(dircopy(incdir, tempdir) == -1) {
-  	    mprintf("!verifydiff: Can't copy dir %s to %s\n", incdir, tempdir);
-! 	    rmdirs(tempdir);
-  	    free(tempdir);
-  	    return -1;
-  	}
-***************
-*** 1438,1444 ****
-  
-      if((fd = open(diff, O_RDONLY)) == -1) {
-  	mprintf("!verifydiff: Can't open diff file %s\n", diff);
-! 	cli_rmdirs(tempdir);
-  	free(tempdir);
-  	return -1;
-      }
---- 1398,1404 ----
-  
-      if((fd = open(diff, O_RDONLY)) == -1) {
-  	mprintf("!verifydiff: Can't open diff file %s\n", diff);
-! 	rmdirs(tempdir);
-  	free(tempdir);
-  	return -1;
-      }
-***************
-*** 1447,1453 ****
-  
-      if(chdir(tempdir) == -1) {
-  	mprintf("!verifydiff: Can't chdir to %s\n", tempdir);
-! 	cli_rmdirs(tempdir);
-  	free(tempdir);
-  	close(fd);
-  	return -1;
---- 1407,1413 ----
-  
-      if(chdir(tempdir) == -1) {
-  	mprintf("!verifydiff: Can't chdir to %s\n", tempdir);
-! 	rmdirs(tempdir);
-  	free(tempdir);
-  	close(fd);
-  	return -1;
-***************
-*** 1456,1462 ****
-      if(cdiff_apply(fd, mode) == -1) {
-  	mprintf("!verifydiff: Can't apply %s\n", diff);
-  	chdir(cwd);
-! 	cli_rmdirs(tempdir);
-  	free(tempdir);
-  	close(fd);
-  	return -1;
---- 1416,1422 ----
-      if(cdiff_apply(fd, mode) == -1) {
-  	mprintf("!verifydiff: Can't apply %s\n", diff);
-  	chdir(cwd);
-! 	rmdirs(tempdir);
-  	free(tempdir);
-  	close(fd);
-  	return -1;
-***************
-*** 1473,1479 ****
-      if(!(fh = fopen(info, "r"))) {
-  	mprintf("!verifydiff: Can't open %s\n", info);
-  	chdir(cwd);
-! 	cli_rmdirs(tempdir);
-  	free(tempdir);
-  	return -1;
-      }
---- 1433,1439 ----
-      if(!(fh = fopen(info, "r"))) {
-  	mprintf("!verifydiff: Can't open %s\n", info);
-  	chdir(cwd);
-! 	rmdirs(tempdir);
-  	free(tempdir);
-  	return -1;
-      }
-***************
-*** 1483,1489 ****
-      if(strncmp(buff, "ClamAV-VDB", 10)) {
-  	mprintf("!verifydiff: Incorrect info file %s\n", info);
-  	chdir(cwd);
-! 	cli_rmdirs(tempdir);
-  	free(tempdir);
-  	return -1;
-      }
---- 1443,1449 ----
-      if(strncmp(buff, "ClamAV-VDB", 10)) {
-  	mprintf("!verifydiff: Incorrect info file %s\n", info);
-  	chdir(cwd);
-! 	rmdirs(tempdir);
-  	free(tempdir);
-  	return -1;
-      }
-***************
-*** 1510,1516 ****
-  
-      fclose(fh);
-      chdir(cwd);
-!     cli_rmdirs(tempdir);
-      free(tempdir);
-  
-      if(!ret) {
---- 1470,1476 ----
-  
-      fclose(fh);
-      chdir(cwd);
-!     rmdirs(tempdir);
-      free(tempdir);
-  
-      if(!ret) {
-***************
-*** 1623,1629 ****
-  
-      if(cvd_unpack(opt_arg(opt, "diff"), odir) == -1) {
-  	mprintf("!makediff: Can't unpack CVD file %s\n", opt_arg(opt, "diff"));
-! 	cli_rmdirs(odir);
-  	free(odir);
-  	return -1;
-      }
---- 1583,1589 ----
-  
-      if(cvd_unpack(opt_arg(opt, "diff"), odir) == -1) {
-  	mprintf("!makediff: Can't unpack CVD file %s\n", opt_arg(opt, "diff"));
-! 	rmdirs(odir);
-  	free(odir);
-  	return -1;
-      }
-***************
-*** 1631,1637 ****
-      ndir = cli_gentemp(NULL);
-      if(!ndir) {
-  	mprintf("!makediff: Can't generate temporary name for ndir\n");
-! 	cli_rmdirs(odir);
-  	free(odir);
-  	return -1;
-      }
---- 1591,1597 ----
-      ndir = cli_gentemp(NULL);
-      if(!ndir) {
-  	mprintf("!makediff: Can't generate temporary name for ndir\n");
-! 	rmdirs(odir);
-  	free(odir);
-  	return -1;
-      }
-***************
-*** 1639,1653 ****
-      if(mkdir(ndir, 0700) == -1) {
-  	mprintf("!makediff: Can't create directory %s\n", ndir);
-  	free(ndir);
-! 	cli_rmdirs(odir);
-  	free(odir);
-  	return -1;
-      }
-  
-      if(cvd_unpack(opt->filename, ndir) == -1) {
-  	mprintf("!makediff: Can't unpack CVD file %s\n", opt->filename);
-! 	cli_rmdirs(odir);
-! 	cli_rmdirs(ndir);
-  	free(odir);
-  	free(ndir);
-  	return -1;
---- 1599,1613 ----
-      if(mkdir(ndir, 0700) == -1) {
-  	mprintf("!makediff: Can't create directory %s\n", ndir);
-  	free(ndir);
-! 	rmdirs(odir);
-  	free(odir);
-  	return -1;
-      }
-  
-      if(cvd_unpack(opt->filename, ndir) == -1) {
-  	mprintf("!makediff: Can't unpack CVD file %s\n", opt->filename);
-! 	rmdirs(odir);
-! 	rmdirs(ndir);
-  	free(odir);
-  	free(ndir);
-  	return -1;
-***************
-*** 1660,1667 ****
-  
-      ret = diffdirs(odir, ndir, name);
-  
-!     cli_rmdirs(odir);
-!     cli_rmdirs(ndir);
-      free(odir);
-      free(ndir);
-  
---- 1620,1627 ----
-  
-      ret = diffdirs(odir, ndir, name);
-  
-!     rmdirs(odir);
-!     rmdirs(ndir);
-      free(odir);
-      free(ndir);
-  
-***************
-*** 1686,1692 ****
-  {
-      mprintf("\n");
-      mprintf("             Clam AntiVirus: Signature Tool (sigtool)  "VERSION"\n");
-!     mprintf("    (C) 2002 - 2007 ClamAV Team - http://www.clamav.net/team\n\n");
-  
-      mprintf("    --help                 -h              show help\n");
-      mprintf("    --version              -V              print version number and exit\n");
---- 1646,1652 ----
-  {
-      mprintf("\n");
-      mprintf("             Clam AntiVirus: Signature Tool (sigtool)  "VERSION"\n");
-!     mprintf("    (C) 2002 - 2006 ClamAV Team - http://www.clamav.net/team.html\n\n");
-  
-      mprintf("    --help                 -h              show help\n");
-      mprintf("    --version              -V              print version number and exit\n");
-***************
-*** 1697,1713 ****
-      mprintf("                                           string and print it on stdout\n");
-      mprintf("    --md5 [FILES]                          generate MD5 checksum from stdin\n");
-      mprintf("                                           or MD5 sigs for FILES\n");
--     mprintf("    --mdb [FILES]                          generate .mdb sigs\n");
-      mprintf("    --html-normalise=FILE                  create normalised parts of HTML file\n");
-      mprintf("    --utf16-decode=FILE                    decode UTF16 encoded files\n");
-      mprintf("    --info=FILE            -i FILE         print database information\n");
-!     mprintf("    --build=NAME [cvd/inc] -b NAME         build a CVD file\n");
-      mprintf("    --server=ADDR                          ClamAV Signing Service address\n");
-      mprintf("    --unpack=FILE          -u FILE         Unpack a CVD file\n");
-      mprintf("    --unpack-current=SHORTNAME             Unpack local CVD/INCDIR in cwd\n");
-      mprintf("    --list-sigs[=FILE]     -l[FILE]        List signature names\n");
-      mprintf("    --vba=FILE                             Extract VBA/Word6 macro code\n");
-      mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
-      mprintf("    --diff=OLD NEW         -d OLD NEW      Create diff for OLD and NEW CVDs\n");
-      mprintf("    --run-cdiff=FILE       -r FILE         Execute update script FILE in cwd\n");
-      mprintf("    --verify-cdiff=DIFF CVD/INCDIR         Verify DIFF against CVD\n");
---- 1657,1673 ----
-      mprintf("                                           string and print it on stdout\n");
-      mprintf("    --md5 [FILES]                          generate MD5 checksum from stdin\n");
-      mprintf("                                           or MD5 sigs for FILES\n");
-      mprintf("    --html-normalise=FILE                  create normalised parts of HTML file\n");
-      mprintf("    --utf16-decode=FILE                    decode UTF16 encoded files\n");
-      mprintf("    --info=FILE            -i FILE         print database information\n");
-!     mprintf("    --build=NAME           -b NAME         build a CVD file\n");
-      mprintf("    --server=ADDR                          ClamAV Signing Service address\n");
-      mprintf("    --unpack=FILE          -u FILE         Unpack a CVD file\n");
-      mprintf("    --unpack-current=SHORTNAME             Unpack local CVD/INCDIR in cwd\n");
-      mprintf("    --list-sigs[=FILE]     -l[FILE]        List signature names\n");
-      mprintf("    --vba=FILE                             Extract VBA/Word6 macro code\n");
-      mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
-+     mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
-      mprintf("    --diff=OLD NEW         -d OLD NEW      Create diff for OLD and NEW CVDs\n");
-      mprintf("    --run-cdiff=FILE       -r FILE         Execute update script FILE in cwd\n");
-      mprintf("    --verify-cdiff=DIFF CVD/INCDIR         Verify DIFF against CVD\n");
-***************
-*** 1732,1738 ****
-  	    {"tempdir", 1, 0, 0},
-  	    {"hex-dump", 0, 0, 0},
-  	    {"md5", 0, 0, 0},
-- 	    {"mdb", 0, 0, 0},
-  	    {"html-normalise", 1, 0, 0},
-  	    {"utf16-decode", 1, 0, 0},
-  	    {"build", 1, 0, 'b'},
---- 1692,1697 ----
-***************
-*** 1779,1787 ****
-      if(opt_check(opt, "hex-dump"))
-  	ret = hexdump();
-      else if(opt_check(opt, "md5"))
-! 	ret = md5sig(opt, 0);
-!     else if(opt_check(opt, "mdb"))
-! 	ret = md5sig(opt, 1);
-      else if(opt_check(opt, "html-normalise"))
-  	ret = htmlnorm(opt);
-      else if(opt_check(opt, "utf16-decode"))
---- 1738,1744 ----
-      if(opt_check(opt, "hex-dump"))
-  	ret = hexdump();
-      else if(opt_check(opt, "md5"))
-! 	ret = md5sig(opt);
-      else if(opt_check(opt, "html-normalise"))
-  	ret = htmlnorm(opt);
-      else if(opt_check(opt, "utf16-decode"))
-*** /home/njh/src/clamav-devel/trunk/./sigtool/vba.c	2007-02-19 19:26:13.000000000 +0000
---- ./sigtool/vba.c	2006-11-05 10:16:14.000000000 +0000
-***************
-*** 25,48 ****
-  #include <sys/stat.h>
-  #include <fcntl.h>
-  #include <dirent.h>
-  #include <ctype.h>
-  
-! #include "libclamav/clamav.h"
-! #include "libclamav/vba_extract.h"
-! #include "libclamav/others.h"
-! #include "libclamav/cltypes.h"
-! #include "libclamav/ole2_extract.h"
-  
-  typedef struct mac_token_tag
-  {
-      unsigned char token;
-!     const unsigned char *str;
-  } mac_token_t;
-  
-  typedef struct mac_token2_tag
-  {
-      uint16_t token;
-!     const unsigned char *str;
-  
-  } mac_token2_t;
-  
---- 25,48 ----
-  #include <sys/stat.h>
-  #include <fcntl.h>
-  #include <dirent.h>
-+ #include <clamav.h>
-  #include <ctype.h>
-  
-! #include "../libclamav/vba_extract.h"
-! #include "../libclamav/others.h"
-! #include "../libclamav/cltypes.h"
-! #include "../libclamav/ole2_extract.h"
-  
-  typedef struct mac_token_tag
-  {
-      unsigned char token;
-!     unsigned char *str;
-  } mac_token_t;
-  
-  typedef struct mac_token2_tag
-  {
-      uint16_t token;
-!     unsigned char *str;
-  
-  } mac_token2_t;
-  
+*** 595,603 ****
+  	chmod(movefilename, fstat.st_mode);
+  	chown(movefilename, fstat.st_uid, fstat.st_gid);
+  
+! 	ubuf.actime = fstat.st_atime;
+! 	ubuf.modtime = fstat.st_mtime;
+! 	utime(movefilename, &ubuf);
+  
+  	if(moveflag && unlink(filename)) {
+  	    logg("^cannot unlink '%s': %s\n", filename, strerror(errno));
+--- 689,699 ----
+  	chmod(movefilename, fstat.st_mode);
+  	chown(movefilename, fstat.st_uid, fstat.st_gid);
+  
+! #ifndef	C_WINDOWS
+!   	ubuf.actime = fstat.st_atime;
+!   	ubuf.modtime = fstat.st_mtime;
+!   	utime(movefilename, &ubuf);
+! #endif
+  
+  	if(moveflag && unlink(filename)) {
+  	    logg("^cannot unlink '%s': %s\n", filename, strerror(errno));
