@@ -271,11 +271,11 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 		continue;
 	    }
 
-	    cli_dbgmsg("SIS: Compressed size: %d\n", csize);
-	    cli_dbgmsg("SIS: Original size: %d\n", osize);
+	    cli_dbgmsg("SIS: Compressed size: %u\n", (unsigned int) csize);
+	    cli_dbgmsg("SIS: Original size: %u\n", (unsigned int) osize);
 
 	    if(ctx->limits && ctx->limits->maxfilesize && osize > ctx->limits->maxfilesize) {
-		cli_dbgmsg("SIS: Size exceeded (%d, max: %ld)\n", osize, ctx->limits->maxfilesize);
+		cli_dbgmsg("SIS: Size exceeded (%u, max: %lu)\n", (unsigned int) osize, ctx->limits->maxfilesize);
 		if(BLOCKMAX) {
 		    *ctx->virname = "SIS.ExceededFileSize";
 		    free(subdir);
@@ -304,7 +304,7 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 	    }
 
 	    if(osize != (uLongf) filelen) {
-		cli_dbgmsg("SIS: WARNING: Real original size: %u\n", osize);
+		cli_dbgmsg("SIS: WARNING: Real original size: %u\n", (unsigned int) osize);
 		filelen = (uint32_t) osize;
 	    }
 
@@ -372,7 +372,7 @@ int cli_scansis(int desc, cli_ctx *ctx)
 	return CL_EIO;
     }
 
-    if(sb.st_size < sizeof(struct sis_file_hdr)) {
+    if(sb.st_size < (off_t) sizeof(struct sis_file_hdr)) {
 	cli_dbgmsg("SIS: Broken or not a SIS file (too small)\n");
 	return CL_CLEAN;
     }
@@ -426,7 +426,7 @@ int cli_scansis(int desc, cli_ctx *ctx)
 
     if(nlangs && nlangs < 100) {
 
-	if(EC32(file_hdr.plangs) >= length || EC32(file_hdr.plangs) + nlangs * 2 >= sb.st_size) {
+	if(EC32(file_hdr.plangs) >= length || EC32(file_hdr.plangs) + nlangs * 2 >= (uint32_t) sb.st_size) {
 	    cli_errmsg("SIS: Broken file structure (language records)\n");
 	    munmap(mfile, length);
 	    return CL_EFORMAT;

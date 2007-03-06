@@ -1,3 +1,7 @@
+Tue Mar  6 01:01:32 CET 2007 (tk)
+---------------------------------
+  * libclamav: fix some gcc -W* warnings
+
 Mon Mar  5 21:06:37 CET 2007 (tk)
 ---------------------------------
   * sigtool: fix gcc -W* warnings

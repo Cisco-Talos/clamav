@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -77,13 +77,18 @@ static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
 #include "matcher-ncore.h"
 #endif
 
+/* Prototypes for old public functions just to shut up some gcc warnings;
+ * to be removed in 1.0
+ */
+int cl_loaddb(const char *filename, struct cl_engine **engine, unsigned int *signo);
+int cl_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo);
 
 /* TODO: clean up the code */
 
 static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, int sigid, int parts, int partno, unsigned short type, unsigned int mindist, unsigned int maxdist, const char *offset, unsigned short target)
 {
 	struct cli_ac_patt *new;
-	char *pt, *hex;
+	char *pt, *hex = NULL;
 	int virlen, ret, error = 0;
 	unsigned int i, j, wprefix = 0;
 
@@ -203,11 +208,9 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
 	    free(new);
 	    return CL_EMALFDB;
 	}
+    }
 
-    } else
-	hex = (char *) hexsig;
-
-    if((new->pattern = cli_hex2si(hex)) == NULL) {
+    if((new->pattern = cli_hex2si(new->alt ? hex : hexsig)) == NULL) {
 	FREE_ALT;
 	if(new->offset)
 	    free(new->offset);
@@ -215,7 +218,7 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
 	return CL_EMALFDB;
     }
 
-    new->length = strlen(hex) / 2;
+    new->length = strlen(new->alt ? hex : hexsig) / 2;
 
     for(i = 0; i < AC_DEFAULT_DEPTH; i++) {
 	if(new->pattern[i] == CLI_IGN || new->pattern[i] == CLI_ALT) {

@@ -401,7 +401,7 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 
 	cli_dbgmsg("CAB: File record %u\n", i);
 	cli_dbgmsg("CAB: File name: %s\n", file->name);
-	cli_dbgmsg("CAB: File offset: %u\n", file->offset);
+	cli_dbgmsg("CAB: File offset: %u\n", (unsigned int) file->offset);
 	cli_dbgmsg("CAB: File folder index: %u\n", fidx);
 	cli_dbgmsg("CAB: File attribs: 0x%x\n", file->attribs);
 	if(file->attribs & 0x01)
@@ -595,7 +595,7 @@ int cab_extract(struct cab_file *file, const char *name)
     }
 
     if(lseek(file->fd, file->folder->offset, SEEK_SET) == -1) {
-	cli_errmsg("cab_extract: Can't lseek to %u\n", file->folder->offset);
+	cli_errmsg("cab_extract: Can't lseek to %u\n", (unsigned int) file->folder->offset);
 	return CL_EIO;
     }
 

@@ -79,7 +79,7 @@ static const unsigned char mszip_bitlen_order[19] = {
 };
 
 /* ANDing with mszip_bit_mask[n] masks the lower n bits */
-static const unsigned short mszip_bit_mask[17] = {
+static const unsigned short mszip_bit_mask_tab[17] = {
  0x0000, 0x0001, 0x0003, 0x0007, 0x000f, 0x001f, 0x003f, 0x007f, 0x00ff,
  0x01ff, 0x03ff, 0x07ff, 0x0fff, 0x1fff, 0x3fff, 0x7fff, 0xffff
 };
@@ -110,7 +110,7 @@ static const unsigned short mszip_bit_mask[17] = {
 } while (0)
 
 #define MSZIP_PEEK_BITS(nbits)   (bit_buffer & ((1<<(nbits))-1))
-#define MSZIP_PEEK_BITS_T(nbits) (bit_buffer & mszip_bit_mask[(nbits)])
+#define MSZIP_PEEK_BITS_T(nbits) (bit_buffer & mszip_bit_mask_tab[(nbits)])
 
 #define MSZIP_REMOVE_BITS(nbits) ((bit_buffer >>= (nbits)), (bits_left -= (nbits)))
 

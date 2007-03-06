@@ -60,13 +60,13 @@ int cli_check_mydoom_log(int desc, const char **virname)
 
 	/* Decode the key */
 	record[0] = ~ntohl(record[0]);
-	cli_dbgmsg("Mydoom: key: %lu\n", record[0]);
+	cli_dbgmsg("Mydoom: key: %d\n", record[0]);
 	check = 0;
 	for (i=1 ; i<8; i++) {
 	    record[i] = ntohl(record[i]) ^ record[0];
 	    check += record[i];
 	}
-	cli_dbgmsg("Mydoom: check: %lu\n", ~check);
+	cli_dbgmsg("Mydoom: check: %d\n", ~check);
 	if ((~check) != record[0]) {
 	    return CL_CLEAN;
 	}

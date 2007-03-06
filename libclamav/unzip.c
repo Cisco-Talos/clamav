@@ -110,7 +110,7 @@ static int __zip_find_disk_trailer(int fd, off_t filesize, struct zip_disk_trail
 	}
 
         if(cli_readn(fd, buf, (size_t) bufsize) < (ssize_t) bufsize) {
-	    cli_errmsg("Unzip: __zip_find_disk_trailer: Can't read %d bytes\n", bufsize);
+	    cli_errmsg("Unzip: __zip_find_disk_trailer: Can't read %u bytes\n", (unsigned int) bufsize);
 	    free(buf);
 	    return CL_EIO;
 	}
@@ -141,7 +141,7 @@ static int __zip_find_disk_trailer(int fd, off_t filesize, struct zip_disk_trail
 			}
 
 			if(cli_readn(fd, &dirent, sizeof(dirent)) < __sizeof(dirent)) {
-			    cli_errmsg("Unzip: __zip_find_disk_trailer: Can't read %d bytes\n", bufsize);
+			    cli_errmsg("Unzip: __zip_find_disk_trailer: Can't read %u bytes\n", (unsigned int) bufsize);
 			    free(buf);
 			    return CL_EIO;
 			}

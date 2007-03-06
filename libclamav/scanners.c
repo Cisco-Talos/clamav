@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -118,10 +118,10 @@ static int cli_unrar_scanmetadata(int desc, rar_metadata_t *metadata, cli_ctx *c
 	    *sfx_check = metadata->crc;
     }
 
-    cli_dbgmsg("RAR: %s, crc32: 0x%x, encrypted: %d, compressed: %u, normal: %u, method: %d, ratio: %d (max: %d)\n",
-	metadata->filename, metadata->crc, metadata->encrypted, metadata->pack_size,
-	metadata->unpack_size, metadata->method,
-	metadata->pack_size ? ((unsigned int) metadata->unpack_size / (unsigned int) metadata->pack_size) : 0, ctx->limits ? ctx->limits->maxratio : 0);
+    cli_dbgmsg("RAR: %s, crc32: 0x%x, encrypted: %u, compressed: %u, normal: %u, method: %u, ratio: %u (max: %u)\n",
+	metadata->filename, metadata->crc, metadata->encrypted, (unsigned int) metadata->pack_size,
+	(unsigned int) metadata->unpack_size, metadata->method,
+	metadata->pack_size ? (unsigned int) (metadata->unpack_size / metadata->pack_size) : 0, ctx->limits ? ctx->limits->maxratio : 0);
 
     /* Scan metadata */
     mdata = ctx->engine->rar_mlist;
@@ -187,7 +187,7 @@ static int cli_unrar_checklimits(const cli_ctx *ctx, const rar_metadata_t *metad
     if(ctx->limits) {
 	if(ctx->limits->maxratio && metadata->unpack_size && metadata->pack_size) {
 	    if(metadata->unpack_size / metadata->pack_size >= ctx->limits->maxratio) {
-		cli_dbgmsg("RAR: Max ratio reached (normal: %Lu, compressed: %Lu, max: %u)\n", metadata->unpack_size, metadata->pack_size, ctx->limits->maxratio);
+		cli_dbgmsg("RAR: Max ratio reached (%u, max: %u)\n", (unsigned int) (metadata->unpack_size / metadata->pack_size), ctx->limits->maxratio);
 		if(BLOCKMAX) {
 		    *ctx->virname = "Oversized.RAR";
 		    return CL_VIRUS;
@@ -197,7 +197,7 @@ static int cli_unrar_checklimits(const cli_ctx *ctx, const rar_metadata_t *metad
 	}
 
 	if(ctx->limits->maxfilesize && (metadata->unpack_size > ctx->limits->maxfilesize)) {
-	    cli_dbgmsg("RAR: %s: Size exceeded (%Lu, max: %lu)\n", metadata->filename, metadata->unpack_size, ctx->limits->maxfilesize);
+	    cli_dbgmsg("RAR: %s: Size exceeded (%lu, max: %lu)\n", metadata->filename, (unsigned long int) metadata->unpack_size, ctx->limits->maxfilesize);
 	    if(BLOCKMAX) {
 		*ctx->virname = "RAR.ExceededFileSize";
 		return CL_VIRUS;
@@ -367,7 +367,7 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	 */
 	encrypted = ((zdirent.d_flags & 0x2041) != 0);
 
-	cli_dbgmsg("Zip: %s, crc32: 0x%x, offset: %d, encrypted: %d, compressed: %u, normal: %u, method: %d, ratio: %d (max: %d)\n", zdirent.d_name, zdirent.d_crc32, zdirent.d_off, encrypted, zdirent.d_csize, zdirent.st_size, zdirent.d_compr, zdirent.d_csize ? (zdirent.st_size / zdirent.d_csize) : 0, ctx->limits ? ctx->limits->maxratio : 0);
+	cli_dbgmsg("Zip: %s, crc32: 0x%x, offset: %u, encrypted: %u, compressed: %u, normal: %u, method: %u, ratio: %u (max: %u)\n", zdirent.d_name, zdirent.d_crc32, zdirent.d_off, encrypted, zdirent.d_csize, zdirent.st_size, zdirent.d_compr, zdirent.d_csize ? (zdirent.st_size / zdirent.d_csize) : 0, ctx->limits ? ctx->limits->maxratio : 0);
 
 	if(!zdirent.st_size) {
 	    if(zdirent.d_crc32) {
@@ -456,7 +456,7 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 
 	if(ctx->limits) {
 	    if(ctx->limits->maxfilesize && ((unsigned int) zdirent.st_size > ctx->limits->maxfilesize)) {
-		cli_dbgmsg("Zip: %s: Size exceeded (%d, max: %ld)\n", zdirent.d_name, zdirent.st_size, ctx->limits->maxfilesize);
+		cli_dbgmsg("Zip: %s: Size exceeded (%u, max: %lu)\n", zdirent.d_name, zdirent.st_size, ctx->limits->maxfilesize);
 		/* ret = CL_EMAXSIZE; */
 		if(BLOCKMAX) {
 		    *ctx->virname = "Zip.ExceededFileSize";
@@ -467,7 +467,7 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    }
 
 	    if(ctx->limits->maxfiles && (files > ctx->limits->maxfiles)) {
-		cli_dbgmsg("Zip: Files limit reached (max: %d)\n", ctx->limits->maxfiles);
+		cli_dbgmsg("Zip: Files limit reached (max: %u)\n", ctx->limits->maxfiles);
 		if(BLOCKMAX) {
 		    *ctx->virname = "Zip.ExceededFilesLimit";
 		    ret = CL_VIRUS;
@@ -516,7 +516,7 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 
 	    if(!encrypted) {
 		if(size != zdirent.st_size) {
-		    cli_dbgmsg("Zip: Incorrectly decompressed (%d != %d)\n", size, zdirent.st_size);
+		    cli_dbgmsg("Zip: Incorrectly decompressed (%lu != %lu)\n", size, (unsigned long int) zdirent.st_size);
 		    if(zfp->bf[0] == -1) {
 			ret = CL_EZIP;
 			break;
@@ -613,7 +613,7 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
     fd = fileno(tmp);
 
     if(!(buff = (char *) cli_malloc(FILEBUFF))) {
-	cli_dbgmsg("GZip: Unable to malloc %d bytes.\n", FILEBUFF);
+	cli_dbgmsg("GZip: Unable to malloc %u bytes.\n", FILEBUFF);
 	gzclose(gd);
 	fclose(tmp);
 	if(!cli_leavetemps_flag)
@@ -882,7 +882,7 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
 	files++;
 
 	if(ctx->limits && ctx->limits->maxfilesize && (file->length > ctx->limits->maxfilesize)) {
-	    cli_dbgmsg("CAB: %s: Size exceeded (%u, max: %u)\n", file->name, file->length, ctx->limits->maxfilesize);
+	    cli_dbgmsg("CAB: %s: Size exceeded (%u, max: %lu)\n", file->name, file->length, ctx->limits->maxfilesize);
 	    if(BLOCKMAX) {
 		*ctx->virname = "CAB.ExceededFileSize";
 		cab_free(&cab);
@@ -1651,7 +1651,7 @@ static int cli_scanmail(int desc, cli_ctx *ctx)
 	int ret;
 
 
-    cli_dbgmsg("Starting cli_scanmail(), mrec == %d, arec == %d\n", ctx->mrec, ctx->arec);
+    cli_dbgmsg("Starting cli_scanmail(), mrec == %u, arec == %u\n", ctx->mrec, ctx->arec);
 
     /* generate the temporary directory */
     dir = cli_gentemp(NULL);
@@ -1732,15 +1732,15 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 			fpt = ftoffset;
 			while(fpt) {
 			    if(fpt->type == CL_TYPE_RARSFX && (DCONF_ARCH & ARCH_CONF_RAR)) {
-				cli_dbgmsg("RAR-SFX signature found at %d\n", fpt->offset);
+				cli_dbgmsg("RAR-SFX signature found at %u\n", (unsigned int) fpt->offset);
 				if((nret = cli_scanrar(desc, ctx, fpt->offset, &lastrar)) == CL_VIRUS)
 				    break;
 			    } else if(fpt->type == CL_TYPE_ZIPSFX && (DCONF_ARCH & ARCH_CONF_ZIP)) {
-				cli_dbgmsg("ZIP-SFX signature found at %d\n", fpt->offset);
+				cli_dbgmsg("ZIP-SFX signature found at %u\n", (unsigned int) fpt->offset);
 				if((nret = cli_scanzip(desc, ctx, fpt->offset, &lastzip)) == CL_VIRUS)
 				    break;
 			    } else if(fpt->type == CL_TYPE_CABSFX && (DCONF_ARCH & ARCH_CONF_CAB)) {
-				cli_dbgmsg("CAB-SFX signature found at %d\n", fpt->offset);
+				cli_dbgmsg("CAB-SFX signature found at %u\n", (unsigned int) fpt->offset);
 				if((nret = cli_scanmscab(desc, ctx, fpt->offset)) == CL_VIRUS)
 				    break;
 			    }
@@ -1783,7 +1783,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     }
 
     if(sb.st_size <= 5) {
-	cli_dbgmsg("Small data (%d bytes)\n", sb.st_size);
+	cli_dbgmsg("Small data (%u bytes)\n", (unsigned int) sb.st_size);
 	return CL_CLEAN;
     }
 
@@ -1801,7 +1801,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
     if(SCAN_ARCHIVE && ctx->limits && ctx->limits->maxreclevel)
 	if(ctx->arec > ctx->limits->maxreclevel) {
-	    cli_dbgmsg("Archive recursion limit exceeded (arec == %d).\n", ctx->arec);
+	    cli_dbgmsg("Archive recursion limit exceeded (arec == %u).\n", ctx->arec);
 	    if(BLOCKMAX) {
 		*ctx->virname = "Archive.ExceededRecursionLimit";
 		return CL_VIRUS;
@@ -1811,7 +1811,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
     if(SCAN_MAIL)
 	if(ctx->mrec > MAX_MAIL_RECURSION) {
-	    cli_dbgmsg("Mail recursion level exceeded (mrec == %d).\n", ctx->mrec);
+	    cli_dbgmsg("Mail recursion level exceeded (mrec == %u).\n", ctx->mrec);
 	    /* return CL_EMAXREC; */
 	    return CL_CLEAN;
 	}
