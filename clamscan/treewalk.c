@@ -53,6 +53,7 @@
 #include "shared/misc.h"
 
 #include "libclamav/clamav.h"
+#include "libclamav/others.h"
 
 int treewalk(const char *dirname, struct cl_engine *engine, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, unsigned int options, unsigned int depth)
 {

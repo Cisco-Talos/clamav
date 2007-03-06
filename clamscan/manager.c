@@ -409,14 +409,14 @@ int scanmanager(const struct optstruct *opt)
  */
 
 #ifdef C_WINDOWS
-static int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struct passwd *user, const struct optstruct *opt)
+static int clamav_unpack(const char *prog, const char **args, const char *tmpdir, const struct passwd *user, const struct optstruct *opt)
 {
     /* TODO: use spamvp(P_WAIT, prog, args); */
     cli_errmsg("clamav_unpack is not supported under Windows yet\n");
     return -1;
 }
 #else
-static int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struct passwd *user, const struct optstruct *opt)
+static int clamav_unpack(const char *prog, const char **args, const char *tmpdir, const struct passwd *user, const struct optstruct *opt)
 {
 	pid_t pid;
 	int status, wret, fdevnull;
@@ -496,7 +496,7 @@ static int clamav_unpack(const char *prog, char **args, const char *tmpdir, cons
 
 		    if(!du(tmpdir, &n))
 			if((maxfiles && n.files > maxfiles) || (maxspace && n.space > maxspace)) {
-			    logg("*n.files: %d, n.space: %d\n", n.files, n.space);
+			    logg("*n.files: %u, n.space: %lu\n", n.files, n.space);
 			    kill(pid, 9); /* stop it immediately */
 			}
 		}
@@ -527,8 +527,9 @@ static int clamav_unpack(const char *prog, char **args, const char *tmpdir, cons
 
 static void move_infected(const char *filename, const struct optstruct *opt)
 {
-	char *movedir, *movefilename, *tmp, numext[4 + 1];
-	struct stat fstat, mfstat;
+	char *movedir, *movefilename, numext[4 + 1];
+	const char *tmp;
+	struct stat ofstat, mfstat;
 	int n, len, movefilename_size;
 	int moveflag = opt_check(opt, "move");
 	struct utimbuf ubuf;
@@ -537,7 +538,7 @@ static void move_infected(const char *filename, const struct optstruct *opt)
     if((moveflag && !(movedir = opt_arg(opt, "move"))) ||
 	(!moveflag && !(movedir = opt_arg(opt, "copy")))) {
         /* Should never reach here */
-        logg("!opt_arg() returned NULL\n", filename);
+        logg("!opt_arg() returned NULL\n");
         info.notmoved++;
         return;
     }
@@ -549,7 +550,7 @@ static void move_infected(const char *filename, const struct optstruct *opt)
     }
 
     if(!(tmp = strrchr(filename, '/')))
-	tmp = (const char *) filename;
+	tmp = filename;
 
     movefilename_size = sizeof(char) * (strlen(movedir) + strlen(tmp) + sizeof(numext) + 2);
 
@@ -574,10 +575,10 @@ static void move_infected(const char *filename, const struct optstruct *opt)
         return;
     }
 
-    stat(filename, &fstat);
+    stat(filename, &ofstat);
 
     if(!stat(movefilename, &mfstat)) {
-        if(fstat.st_ino == mfstat.st_ino) { /* It's the same file*/
+        if(ofstat.st_ino == mfstat.st_ino) { /* It's the same file*/
             logg("File excluded '%s'\n", filename);
             info.notmoved++;
             free(movefilename);
@@ -609,13 +610,13 @@ static void move_infected(const char *filename, const struct optstruct *opt)
 	    return;
 	}
 
-	chmod(movefilename, fstat.st_mode);
+	chmod(movefilename, ofstat.st_mode);
 #ifndef C_OS2
-	chown(movefilename, fstat.st_uid, fstat.st_gid);
+	chown(movefilename, ofstat.st_uid, ofstat.st_gid);
 #endif
 
-	ubuf.actime = fstat.st_atime;
-	ubuf.modtime = fstat.st_mtime;
+	ubuf.actime = ofstat.st_atime;
+	ubuf.modtime = ofstat.st_mtime;
 	utime(movefilename, &ubuf);
 
 	if(moveflag && unlink(filename)) {
@@ -665,7 +666,8 @@ static int checkfile(const char *filename, const struct cl_engine *engine, const
 static int scancompressed(const char *filename, struct cl_engine *engine, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options)
 {
 	int ret = 0;
-	char *tmpdir, *gendir, *userprg;
+	char *gendir, *userprg;
+	const char *tmpdir;
 	struct stat statbuf;
 
 
@@ -708,11 +710,11 @@ static int scancompressed(const char *filename, struct cl_engine *engine, const 
 
     /* unpack file  - as unprivileged user */
     if(cli_strbcasestr(filename, ".zip")) {
-	char *args[] = { "unzip", "-P", "clam", "-o", NULL, NULL };
+	const char *args[] = { "unzip", "-P", "clam", "-o", NULL, NULL };
 	/* Sun's SUNWspro C compiler doesn't allow direct initialisation
 	 * with a variable
 	 */
-	args[4] = (char *) filename;
+	args[4] = filename;
 
 	if((userprg = opt_arg(opt, "unzip")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
@@ -720,64 +722,64 @@ static int scancompressed(const char *filename, struct cl_engine *engine, const 
 	    ret = clamav_unpack("unzip", args, gendir, user, opt);
 
     } else if(cli_strbcasestr(filename, ".rar")) { 
-	char *args[] = { "unrar", "x", "-p-", "-y", NULL, NULL };
-	args[4] = (char *) filename;
+	const char *args[] = { "unrar", "x", "-p-", "-y", NULL, NULL };
+	args[4] = filename;
 	if((userprg = opt_arg(opt, "unrar")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("unrar", args, gendir, user, opt);
 
     } else if(cli_strbcasestr(filename, ".arj")) { 
-        char *args[] = { "arj", "x","-y", NULL, NULL };
-	args[3] = (char *) filename;
+        const char *args[] = { "arj", "x","-y", NULL, NULL };
+	args[3] = filename;
         if((userprg = opt_arg(opt, "arj")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("arj", args, gendir, user, opt);
 
     } else if(cli_strbcasestr(filename, ".zoo")) { 
-	char *args[] = { "unzoo", "-x","-j","./", NULL, NULL };
-	args[4] = (char *) filename;
+	const char *args[] = { "unzoo", "-x","-j","./", NULL, NULL };
+	args[4] = filename;
 	if((userprg = opt_arg(opt, "unzoo")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("unzoo", args, gendir, user, opt);
 
     } else if(cli_strbcasestr(filename, ".jar")) { 
-	char *args[] = { "unzip", "-P", "clam", "-o", NULL, NULL };
-	args[4] = (char *) filename;
+	const char *args[] = { "unzip", "-P", "clam", "-o", NULL, NULL };
+	args[4] = filename;
 	if((userprg = opt_arg(opt, "jar")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("unzip", args, gendir, user, opt);
 
     } else if(cli_strbcasestr(filename, ".lzh")) { 
-	char *args[] = { "lha", "xf", NULL, NULL };
-	args[2] = (char *) filename;
+	const char *args[] = { "lha", "xf", NULL, NULL };
+	args[2] = filename;
 	if((userprg = opt_arg(opt, "lha")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("lha", args, gendir, user, opt);
 
     } else if(cli_strbcasestr(filename, ".tar")) { 
-	char *args[] = { "tar", "-xpvf", NULL, NULL };
-	args[2] = (char *) filename;
+	const char *args[] = { "tar", "-xpvf", NULL, NULL };
+	args[2] = filename;
 	if((userprg = opt_arg(opt, "tar")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("tar", args, gendir, user, opt);
 
     } else if(cli_strbcasestr(filename, ".deb")) { 
-	char *args[] = { "ar", "x", NULL, NULL };
-	args[2] = (char *) filename;
+	const char *args[] = { "ar", "x", NULL, NULL };
+	args[2] = filename;
 	if((userprg = opt_arg(opt, "deb")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
 	    ret = clamav_unpack("ar", args, gendir, user, opt);
 
     } else if((cli_strbcasestr(filename, ".tar.gz") || cli_strbcasestr(filename, ".tgz"))) {
-	char *args[] = { "tar", "-zxpvf", NULL, NULL };
-	args[2] = (char *) filename;
+	const char *args[] = { "tar", "-zxpvf", NULL, NULL };
+	args[2] = filename;
 	if((userprg = opt_arg(opt, "tgz")))
 	    ret = clamav_unpack(userprg, args, gendir, user, opt);
 	else
@@ -865,7 +867,8 @@ static int scancompressed(const char *filename, struct cl_engine *engine, const 
 
 static int scandenied(const char *filename, struct cl_engine *engine, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options)
 {
-	char *tmpdir, *gendir, *tmpfile, *pt;
+	char *gendir, *tmp_file;
+	const char *tmpdir, *pt;
 	struct stat statbuf;
 	int ret;
 
@@ -899,16 +902,16 @@ static int scandenied(const char *filename, struct cl_engine *engine, const stru
 	exit(63); /* critical */
     }
 
-    tmpfile = (char *) malloc(strlen(gendir) + strlen(filename) + 10);
+    tmp_file = (char *) malloc(strlen(gendir) + strlen(filename) + 10);
     pt = strrchr(filename, '/');
     if(!pt)
-	pt = (char *) filename;
+	pt = filename;
     else
 	pt += 1;
 
-    sprintf(tmpfile, "%s/%s", gendir, pt);
+    sprintf(tmp_file, "%s/%s", gendir, pt);
 
-    if(filecopy(filename, tmpfile) == -1) {
+    if(filecopy(filename, tmp_file) == -1) {
 	logg("!I/O error\n");
 	perror("copyfile()");
 	exit(58);
@@ -919,7 +922,7 @@ static int scandenied(const char *filename, struct cl_engine *engine, const stru
 #if !defined(C_OS2) && !defined(C_WINDOWS)
     if(user) {
 	chown(gendir, user->pw_uid, user->pw_gid);
-	chown(tmpfile, user->pw_uid, user->pw_gid);
+	chown(tmp_file, user->pw_uid, user->pw_gid);
     }
 #endif
 
@@ -941,7 +944,7 @@ static int scandenied(const char *filename, struct cl_engine *engine, const stru
     clamav_rmdirs(gendir);
 
     free(gendir);
-    free(tmpfile);
+    free(tmp_file);
 
     return ret;
 }
