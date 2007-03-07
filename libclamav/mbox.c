@@ -4370,7 +4370,6 @@ getURL(struct arg *arg)
 #else
 	int sd;
 #endif
-	int n;
 	struct sockaddr_in server;
 #ifdef	HAVE_IN_ADDR_T
 	in_addr_t ip;
@@ -4555,6 +4554,7 @@ getURL(struct arg *arg)
 	for(;;) {
 		fd_set set;
 		struct timeval tv;
+		int n;
 
 		FD_ZERO(&set);
 		FD_SET(sd, &set);
@@ -4641,7 +4641,7 @@ getURL(struct arg *arg)
 		} else
 			ptr = buf;
 
-		if(fwrite(ptr, n, 1, fp) != 1) {
+		if(n && (fwrite(ptr, n, 1, fp) != 1)) {
 			cli_warnmsg("Error writing %d bytes to %s\n",
 				n, fout);
 			break;
