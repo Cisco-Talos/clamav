@@ -90,7 +90,7 @@
 #define STDC_HEADERS 1
 
 /* Version number of package */
-#define VERSION "20061205"
+#define VERSION "20070308"
 
 /* Enable GNU extensions on systems that have them.  */
 #ifndef _GNU_SOURCE

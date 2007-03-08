@@ -33,7 +33,8 @@ POST_UNINSTALL = :
 build_triplet = x86_64-unknown-linux-gnu
 host_triplet = x86_64-unknown-linux-gnu
 noinst_PROGRAMS = fixdb$(EXEEXT) postprocessdb$(EXEEXT) \
-	generate_entitylist$(EXEEXT)
+	generate_entitylist$(EXEEXT) \
+	generate_encoding_aliases$(EXEEXT)
 subdir = .
 DIST_COMMON = README $(am__configure_deps) \
 	$(srcdir)/../../config.guess $(srcdir)/../../config.sub \
@@ -55,6 +56,12 @@ PROGRAMS = $(noinst_PROGRAMS)
 am_fixdb_OBJECTS = fixdb.$(OBJEXT)
 fixdb_OBJECTS = $(am_fixdb_OBJECTS)
 fixdb_DEPENDENCIES = $(clam_builddir)/libclamav/libclamav.la
+am_generate_encoding_aliases_OBJECTS =  \
+	generate_encoding_aliases.$(OBJEXT)
+generate_encoding_aliases_OBJECTS =  \
+	$(am_generate_encoding_aliases_OBJECTS)
+generate_encoding_aliases_DEPENDENCIES =  \
+	$(clam_builddir)/libclamav/libclamav.la
 am_generate_entitylist_OBJECTS = generate_entitylist.$(OBJEXT)
 generate_entitylist_OBJECTS = $(am_generate_entitylist_OBJECTS)
 generate_entitylist_DEPENDENCIES =  \
@@ -74,10 +81,10 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(fixdb_SOURCES) $(generate_entitylist_SOURCES) \
-	$(postprocessdb_SOURCES)
-DIST_SOURCES = $(fixdb_SOURCES) $(generate_entitylist_SOURCES) \
-	$(postprocessdb_SOURCES)
+SOURCES = $(fixdb_SOURCES) $(generate_encoding_aliases_SOURCES) \
+	$(generate_entitylist_SOURCES) $(postprocessdb_SOURCES)
+DIST_SOURCES = $(fixdb_SOURCES) $(generate_encoding_aliases_SOURCES) \
+	$(generate_entitylist_SOURCES) $(postprocessdb_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-dvi-recursive install-exec-recursive \
@@ -101,16 +108,16 @@ DIST_ARCHIVES = $(distdir).tar.gz
 GZIP_ENV = --best
 distuninstallcheck_listfiles = find . -type f -print
 distcleancheck_listfiles = find . -type f -print
-ACLOCAL = ${SHELL} /home/edwin/clam/clamav-devel/missing --run aclocal-1.10
-AMTAR = ${SHELL} /home/edwin/clam/clamav-devel/missing --run tar
+ACLOCAL = ${SHELL} /home/edwin/clam/svn2/trunk/missing --run aclocal-1.10
+AMTAR = ${SHELL} /home/edwin/clam/svn2/trunk/missing --run tar
 AR = ar
-AUTOCONF = ${SHELL} /home/edwin/clam/clamav-devel/missing --run autoconf
-AUTOHEADER = ${SHELL} /home/edwin/clam/clamav-devel/missing --run autoheader
-AUTOMAKE = ${SHELL} /home/edwin/clam/clamav-devel/missing --run automake-1.10
+AUTOCONF = ${SHELL} /home/edwin/clam/svn2/trunk/missing --run autoconf
+AUTOHEADER = ${SHELL} /home/edwin/clam/svn2/trunk/missing --run autoheader
+AUTOMAKE = ${SHELL} /home/edwin/clam/svn2/trunk/missing --run automake-1.10
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -D_FORTIFY_SOURCE=2 -fstack-protector -g3 -march=k8 -pedantic -W -Wall -Wbad-function-cast -Wcast-align -Wcast-qual -Wdisabled-optimization -Wendif-labels -Wfloat-equal -Wformat=2 -Wformat-nonliteral -Winline -Wmissing-declarations -Wmissing-prototypes -Wnested-externs -Wno-unused-parameter -Wpointer-arith -Wshadow -Wstack-protector -Wstrict-prototypes -Wswitch -Wundef -Wwrite-strings 
+CFLAGS = -mfpmath=sse -msse -msse2 -m3dnow -mmmx -D_FORTIFY_SOURCE=2 -fstack-protector -march=k8 -pedantic -g3 -Wextra -Wall -Wbad-function-cast -Wcast-align -Wcast-qual -Wdisabled-optimization -Wendif-labels -Wfloat-equal -Wformat=2 -Wformat-nonliteral -Winline -Wmissing-declarations -Wmissing-prototypes -Wnested-externs -Wno-unused-parameter -Wpointer-arith -Wshadow -Wstack-protector -Wstrict-prototypes -Wswitch -Wundef -Wwrite-strings
 CPP = gcc -E
 CPPFLAGS = 
 CXX = g++
@@ -140,7 +147,7 @@ LIBS =
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
 LN_S = ln -s
 LTLIBOBJS = 
-MAKEINFO = ${SHELL} /home/edwin/clam/clamav-devel/missing --run makeinfo
+MAKEINFO = ${SHELL} /home/edwin/clam/svn2/trunk/missing --run makeinfo
 MKDIR_P = /bin/mkdir -p
 OBJEXT = o
 PACKAGE = fixdb
@@ -154,11 +161,11 @@ RANLIB = ranlib
 SET_MAKE = 
 SHELL = /bin/sh
 STRIP = strip
-VERSION = 20061119
-abs_builddir = /home/edwin/clam/clamav-devel/contrib/entitynorm
-abs_srcdir = /home/edwin/clam/clamav-devel/contrib/entitynorm
-abs_top_builddir = /home/edwin/clam/clamav-devel/contrib/entitynorm
-abs_top_srcdir = /home/edwin/clam/clamav-devel/contrib/entitynorm
+VERSION = 20070308
+abs_builddir = /home/edwin/clam/svn2/trunk/contrib/entitynorm
+abs_srcdir = /home/edwin/clam/svn2/trunk/contrib/entitynorm
+abs_top_builddir = /home/edwin/clam/svn2/trunk/contrib/entitynorm
+abs_top_srcdir = /home/edwin/clam/svn2/trunk/contrib/entitynorm
 ac_ct_CC = gcc
 ac_ct_CXX = g++
 ac_ct_F77 = 
@@ -187,7 +194,7 @@ host_vendor = unknown
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = $(SHELL) /home/edwin/clam/clamav-devel/install-sh
+install_sh = $(SHELL) /home/edwin/clam/svn2/trunk/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -218,6 +225,9 @@ postprocessdb_LDADD = $(clam_builddir)/libclamav/libclamav.la
 generate_entitylist_SOURCES = generate_entitylist.c
 generate_entitylist_INCLUDES = 
 generate_entitylist_LDADD = $(clam_builddir)/libclamav/libclamav.la
+generate_encoding_aliases_SOURCES = generate_encoding_aliases.c
+generate_encoding_aliases_INCLUDES = 
+generate_encoding_aliases_LDADD = $(clam_builddir)/libclamav/libclamav.la
 INCLUDES = -I$(top_srcdir) -I$(clam_builddir) -I$(clam_builddir)/shared -I$(clam_builddir)/libclamav
 all: test-config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
@@ -284,6 +294,9 @@ clean-noinstPROGRAMS:
 fixdb$(EXEEXT): $(fixdb_OBJECTS) $(fixdb_DEPENDENCIES) 
 	@rm -f fixdb$(EXEEXT)
 	$(LINK) $(fixdb_OBJECTS) $(fixdb_LDADD) $(LIBS)
+generate_encoding_aliases$(EXEEXT): $(generate_encoding_aliases_OBJECTS) $(generate_encoding_aliases_DEPENDENCIES) 
+	@rm -f generate_encoding_aliases$(EXEEXT)
+	$(LINK) $(generate_encoding_aliases_OBJECTS) $(generate_encoding_aliases_LDADD) $(LIBS)
 generate_entitylist$(EXEEXT): $(generate_entitylist_OBJECTS) $(generate_entitylist_DEPENDENCIES) 
 	@rm -f generate_entitylist$(EXEEXT)
 	$(LINK) $(generate_entitylist_OBJECTS) $(generate_entitylist_LDADD) $(LIBS)
@@ -298,6 +311,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 include ./$(DEPDIR)/fixdb.Po
+include ./$(DEPDIR)/generate_encoding_aliases.Po
 include ./$(DEPDIR)/generate_entitylist.Po
 include ./$(DEPDIR)/postprocess.Po
 

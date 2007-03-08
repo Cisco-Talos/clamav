@@ -22,7 +22,7 @@
 #include <others.h>
 #include <htmlnorm.h>
 #include <hashtab.h>
-#include <entitiesConverter.h>
+#include <entconv.h>
 #include <string.h>
 
 static const struct {

@@ -1,3 +1,12 @@
+Thu Mar  8 20:34:36 EET 2007 (edwin)
+---------------------------------
+  * contrib/entitynorm/: fix entity list generator to support more entities,
+  including &amp; (bb #391)
+  * libclamav/entitylist.h: new entitylist generated using
+  contrib/entitynorm/generate_entitylist (bb #391)
+  * libclamav/hashtab.c: fix bug in growing hash tables (must use hash on new
+  table) 
+
 Thu Mar  8 12:22:36 CET 2007 (tk)
 ---------------------------------
   * libclamav/readdb.c: call cli_dconf_print() from cl_build()
@@ -45,7 +54,7 @@ Mon Mar  5 19:10:11 CET 2007 (tk)
 ---------------------------------
   * configure: add GNU/Hurd support (bb#363)
 
-Fri Mar  2 19:36:00 CEST 2007 (edwin)
+Fri Mar  2 19:36:00 EET 2007 (edwin)
 -------------------------------------
    * libclamav/htmlnorm.c: ampersands were missed in URLs. (bb #377)
 

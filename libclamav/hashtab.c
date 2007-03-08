@@ -249,9 +249,10 @@ static int hashtab_grow(struct hashtable *s)
 		if(s->htable[i].key && s->htable[i].key != DELETED_KEY) {
 			struct element* element;
 			size_t tries = 0;
+			
 
 			PROFILE_CALC_HASH(s);
-			idx = hash(s->htable[i].key, strlen((const char*)s->htable[i].key), s->capacity);
+			idx = hash(s->htable[i].key, strlen((const char*)s->htable[i].key), new_capacity);
 			element = &htable[idx];
 
 			while(element->key && tries <= new_capacity) {
@@ -309,12 +310,12 @@ int hashtab_insert(struct hashtable *s,const unsigned char* key,const size_t len
 				thekey = cli_malloc(len+1);
 				if(!thekey)
 					return CL_EMEM;
-				strncpy((char*)thekey,(const char*)key,len);
+				strncpy((char*)thekey,(const char*)key,len+1);
 				element->key = thekey;
 				element->data = data;
 				s->used++;		
 				if(s->used > s->maxfill) {
-					cli_dbgmsg("hashtab.c:Growing hashtable %x, because it has exceeded maxfill, old size:%ld\n",s->capacity);
+					cli_dbgmsg("hashtab.c:Growing hashtable %p, because it has exceeded maxfill, old size:%ld\n",s,s->capacity);
 					hashtab_grow(s);
 				}
 				return 0;
