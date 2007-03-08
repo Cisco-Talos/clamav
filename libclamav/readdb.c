@@ -1268,7 +1268,6 @@ static int cli_loaddbdir_l(const char *dirname, struct cl_engine **engine, unsig
 	    free(dbfile);
 	    return ret;
 	}
-	cli_dconf_print((*engine)->dconf);
     }
     free(dbfile);
 
@@ -1776,6 +1775,8 @@ int cl_build(struct cl_engine *engine)
 	if((root = engine->root[i]))
 	    cli_ac_buildtrie(root);
     /* FIXME: check return values of cli_ac_buildtree */
+
+    cli_dconf_print(engine->dconf);
 
     return CL_SUCCESS;
 }
