@@ -1,3 +1,7 @@
+Fri Mar  9 21:02:31 CET 2007 (tk)
+---------------------------------
+  * libclamav/lockdb.c: fix fd leak on EACCES/EAGAIN (bb#400)
+
 Fri Mar  9 13:34:52 CET 2007 (tk)
 ---------------------------------
   * libclamav: improve backward compatibility (bb#393)

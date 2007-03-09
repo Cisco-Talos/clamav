@@ -268,9 +268,9 @@ static int cli_lockdb(const char *dbdirpath, int wait, int writelock)
     fl.l_type = (writelock ? F_WRLCK : F_RDLCK);
     if(fcntl(lock->lock_fd, ((wait) ? F_SETLKW : F_SETLK), &fl) == -1) {
 #ifndef C_WINDOWS
+	close(lock->lock_fd);
+	lock->lock_fd = -1;
 	if(errno != EACCES && errno != EAGAIN) {
-	    close(lock->lock_fd);
-	    lock->lock_fd=-1;
 	    if(!existing)
 		unlink(lock->lock_file);
 	    cli_errmsg("Can't acquire %s lock: %s\n", writelock ? "write" : "read", strerror(errno));
