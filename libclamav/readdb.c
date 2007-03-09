@@ -1238,7 +1238,7 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
 }
 
 int cl_loaddb(const char *filename, struct cl_engine **engine, unsigned int *signo) {
-    return cli_load(filename, engine, signo, 0);
+    return cli_load(filename, engine, signo, CL_DB_STDOPT);
 }
 
 static int cli_loaddbdir_l(const char *dirname, struct cl_engine **engine, unsigned int *signo, unsigned int options)
@@ -1358,7 +1358,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigne
 }
 
 int cl_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo) {
-    return cli_loaddbdir(dirname, engine, signo, 0);
+    return cli_loaddbdir(dirname, engine, signo, CL_DB_STDOPT);
 }
 
 int cl_load(const char *path, struct cl_engine **engine, unsigned int *signo, unsigned int options)

@@ -1,3 +1,7 @@
+Fri Mar  9 13:34:52 CET 2007 (tk)
+---------------------------------
+  * libclamav: improve backward compatibility (bb#393)
+
 Fri Mar  9 02:34:11 CET 2007 (tk)
 ---------------------------------
   * libclamav/matcher.c: add support for floating offsets, requested by

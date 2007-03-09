@@ -106,6 +106,7 @@ extern "C"
 #define CL_OLE2		CL_SCAN_OLE2
 #define CL_ENCRYPTED    CL_SCAN_BLOCKENCRYPTED
 #define cl_node		cl_engine
+#define cl_perror	cl_strerror
 
 /* internal structures */
 struct cli_bm_patt {
