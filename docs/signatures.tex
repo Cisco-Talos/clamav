@@ -150,7 +150,16 @@ MalwareName:TargetType:Offset:HexSignature[:MinEngineFunctionalityLevel:[Max]]
 	\item \verb#SL+n# = start of last section plus \verb+n+ bytes
 	\item \verb#SL-n# = start of last section minus \verb+n+ bytes
     \end{itemize}
-    All signatures in the extended format must be placed in \verb+*.ndb+ files.
+    All the above offsets except \verb+*+ can be turned into
+    \textbf{floating offsets} and represented as \verb+Offset,MaxShift+ where
+    \verb+MaxShift+ is an unsigned integer. A floating offset will match every
+    offset between \verb+Offset+ and \verb#Offset+MaxShift#, eg. \verb+10,5+
+    will match all offsets from 10 to 15 and \verb#EP+n,y# will match all
+    offsets from \verb#EP+n# to \verb#EP+n+y#. Versions of ClamAV older than
+    0.91 will silently ignore the \verb+MaxShift+ extension and only use
+    \verb+Offset+.\\
+
+    All signatures in the extended format must be placed inside \verb+*.ndb+ files.
 
     \subsection{Signatures based on archive metadata}
     In order to detect some malware which spreads inside of Zip or RAR archives

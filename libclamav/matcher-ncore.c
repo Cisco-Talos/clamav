@@ -371,7 +371,7 @@ int cli_ncore_scandesc(int desc, cli_ctx *ctx, unsigned short ftype, int *cont, 
     for(i = 0; i < count; i++) {
     	const char *matchname = NULL, *offsetstring = NULL, *optionalsigdata = NULL;
     	unsigned long long startoffset = 0;
-    	unsigned int targettype = 0;
+    	unsigned int targettype = 0, maxshift = 0;
         char *pt;
 
         /* Get the description of the match */
@@ -423,7 +423,7 @@ int cli_ncore_scandesc(int desc, cli_ctx *ctx, unsigned short ftype, int *cont, 
     	    return CL_ENCIO;
         }
         if(offsetstring && strcmp(offsetstring, "*")) {
-	    off_t off = cli_caloff(offsetstring, &info, desc, ftype, &hret);
+	    off_t off = cli_caloff(offsetstring, &info, desc, ftype, &hret, &maxshift);
 
     	    if(hret == -1) {
                 cli_dbgmsg("cli_ncore_scandesc: HW Result[%u]: %s: Bad offset in signature\n", i, matchname);
@@ -432,8 +432,13 @@ int cli_ncore_scandesc(int desc, cli_ctx *ctx, unsigned short ftype, int *cont, 
 		    free(info.exeinfo.section);
                 return CL_EMALFDB;
             }
-    	    if(startoffset != (unsigned long long) off) {
-                cli_dbgmsg("cli_ncore_scandesc: HW Result[%u]: %s: Virus offset: " "%Lu, expected: %Lu\n", i, matchname, startoffset, off);
+	    if(maxshift) {
+		if((startoffset < (unsigned long long) off) || (startoffset > (unsigned long long) off + maxshift)) {
+		    cli_dbgmsg("cli_ncore_scandesc: HW Result[%u]: %s: Virus offset: %Lu, expected: [%Lu..%Lu]\n", i, matchname, startoffset, off, off + maxshift);
+		    continue;
+		}
+	    } else if(startoffset != (unsigned long long) off) {
+                cli_dbgmsg("cli_ncore_scandesc: HW Result[%u]: %s: Virus offset: %Lu, expected: %Lu\n", i, matchname, startoffset, off);
                 continue;
             }
         }

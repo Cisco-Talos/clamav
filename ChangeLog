@@ -1,3 +1,9 @@
+Fri Mar  9 02:34:11 CET 2007 (tk)
+---------------------------------
+  * libclamav/matcher.c: add support for floating offsets, requested by
+			 Christoph
+  * docs: update signatures.pdf
+
 Thu Mar  8 22:45:39 CET 2007 (tk)
 ---------------------------------
   * libclamav/matcher-ac.c: fix incorrect calculation of maxshift in some cases

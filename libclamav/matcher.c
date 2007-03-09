@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -121,10 +121,11 @@ struct cli_md5_node *cli_vermd5(const unsigned char *md5, const struct cl_engine
     return NULL;
 }
 
-off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, cli_file_t ftype, int *ret)
+off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, cli_file_t ftype, int *ret, unsigned int *maxshift)
 {
 	int (*einfo)(int, struct cli_exe_info *) = NULL;
 	unsigned int n, val;
+	const char *pt;
 	off_t pos, offset;
 
 
@@ -161,6 +162,9 @@ off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, cli_f
 	    }
 	}
     }
+
+    if((pt = strchr(offstr, ',')))
+	*maxshift = atoi(++pt);
 
     if(isdigit(offstr[0])) {
 	return atoi(offstr);
@@ -256,17 +260,23 @@ int cli_validatesig(cli_file_t ftype, const char *offstr, off_t fileoff, struct 
 {
 	off_t offset;
 	int ret;
+	unsigned int maxshift = 0;
 
 
     if(offstr && desc != -1) {
-	offset = cli_caloff(offstr, info, desc, ftype, &ret);
+	offset = cli_caloff(offstr, info, desc, ftype, &ret, &maxshift);
 
 	if(ret == -1) {
 	    cli_dbgmsg("cli_validatesig: Can't calculate offset for signature %s\n", virname);
 	    return 0;
 	}
 
-	if(fileoff != offset) {
+	if(maxshift) {
+	    if((fileoff < offset) || (fileoff > offset + maxshift)) {
+		cli_dbgmsg("Signature offset: %lu, expected: [%lu..%lu] (%s)\n", fileoff, offset, offset + maxshift, virname);
+		return 0;
+	    }
+	} else if(fileoff != offset) {
 	    cli_dbgmsg("Signature offset: %lu, expected: %lu (%s)\n", fileoff, offset, virname);
 	    return 0;
 	}
