@@ -234,7 +234,7 @@ int dircopy(const char *src, const char *dest)
 int isnumb(const char *str)
 {
     while(*str) {
-	if(!isdigit(*str))
+	if(!isdigit(*str & 0xff))
 	    return 0;
 	str++;
     }
