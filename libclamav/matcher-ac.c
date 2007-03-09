@@ -480,7 +480,10 @@ int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char
 			    }
 
 			    if(found) {
-				mdata->maxshift[pt->sigid - 1] = mdata->partoff[pt->sigid - 1][j] + pt->maxdist - curroff;
+				if(pt->maxdist)
+				    mdata->maxshift[pt->sigid - 1] = mdata->partoff[pt->sigid - 1][j] + pt->maxdist - curroff;
+				else
+				    mdata->maxshift[pt->sigid - 1] = -1;
 
 				mdata->partoff[pt->sigid - 1][0] = curroff + pt->length;
 				mdata->offcnt[pt->sigid - 1] = 1;

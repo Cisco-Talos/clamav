@@ -1,3 +1,8 @@
+Thu Mar  8 22:45:39 CET 2007 (tk)
+---------------------------------
+  * libclamav/matcher-ac.c: fix incorrect calculation of maxshift in some cases
+			    (bb#390)
+
 Thu Mar  8 20:34:36 EET 2007 (edwin)
 ---------------------------------
   * contrib/entitynorm/: fix entity list generator to support more entities,
