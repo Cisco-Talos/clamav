@@ -1,3 +1,7 @@
+Fri Mar  9 20:45:08 GMT 2007 (njh)
+----------------------------------
+  * libclamav/pdf.c:	Bug 396
+
 Fri Mar  9 21:02:31 CET 2007 (tk)
 ---------------------------------
   * libclamav/lockdb.c: fix fd leak on EACCES/EAGAIN (bb#400)

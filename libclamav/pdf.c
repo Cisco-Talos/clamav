@@ -55,7 +55,7 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #include "pdf.h"
 
 #ifdef	CL_DEBUG
-/*#define	SAVE_TMP	/* Save the file being worked on in tmp */
+#define	SAVE_TMP	/* Save the file being worked on in tmp */
 #endif
 
 static	int	try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fout, const cli_ctx *ctx);
@@ -355,8 +355,10 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		 * Calculate the length ourself, the Length parameter is often
 		 * wrong
 		 */
-		while(strchr("\r\n", *--streamend))
-			;
+		if(*--streamend != '\n')
+			streamend++;
+		else if(*--streamend != '\r')
+			streamend++;
 
 		if(streamend <= streamstart) {
 			cli_dbgmsg("Empty stream\n");
@@ -495,6 +497,8 @@ flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 		if(tmpfp) {
 			fwrite(buf, sizeof(char), len, tmpfp);
 			fclose(tmpfp);
+			cli_dbgmsg("cli_pdf: flatedecode: debugging file is %s\n",
+				tmpfilename);
 		} else
 			cli_errmsg("cli_pdf: can't fdopen debugging file\n");
 	}
