@@ -55,7 +55,7 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #include "pdf.h"
 
 #ifdef	CL_DEBUG
-#define	SAVE_TMP	/* Save the file being worked on in tmp */
+/*#define	SAVE_TMP	/* Save the file being worked on in tmp */
 #endif
 
 static	int	try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fout, const cli_ctx *ctx);
@@ -187,7 +187,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	while((p < xrefstart) &&
 	      ((q = pdf_nextobject(p, bytesleft)) != NULL) &&
 	      (rc == CL_CLEAN)) {
-		int is_ascii85decode, is_flatedecode, fout, len;
+		int is_ascii85decode, is_flatedecode, fout, len, has_cr;
 		/*int object_number, generation_number;*/
 		const char *objstart, *objend, *streamstart, *streamend;
 		char *md5digest;
@@ -260,6 +260,36 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 					length = atoi(q);
 					while(isdigit(*q))
 						q++;
+					/*
+					 * Note: incremental updates are not
+					 *	supported
+					 */
+					if((bytesleft > 11) && strncmp(q, " 0 R", 4) == 0) {
+						const char *r;
+						char b[13];
+
+						q += 4;
+						cli_dbgmsg("Length is in indirect obj %d\n",
+							length);
+						snprintf(b, sizeof(b),
+							"%d 0 obj", length);
+						length = strlen(b);
+						r = cli_pmemstr(buf, size, b,
+							length);
+						if(r) {
+							r += length - 1;
+							r = pdf_nextobject(r, bytesleft - (r - q));
+							if(r) {
+								length = atoi(r);
+								while(isdigit(*r))
+									r++;
+								cli_dbgmsg("length in '%s' %d\n",
+									b, length);
+							}
+						} else
+							cli_warnmsg("Couldn't find '%s'\n",
+								b);
+					}
 					q--;
 				} else if(strncmp(q, "Length2 ", 8) == 0)
 					is_embedded_font = 1;
@@ -316,12 +346,14 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		len -= (int)(q - streamstart);
 		streamstart = q;
 		streamend = cli_pmemstr(streamstart, len, "endstream\n", 10);
+		has_cr = 0;
 		if(streamend == NULL) {
 			streamend = cli_pmemstr(streamstart, len, "endstream\r", 10);
 			if(streamend == NULL) {
 				cli_dbgmsg("No endstream\n");
 				break;
 			}
+			has_cr = 1;
 		}
 		snprintf(fullname, sizeof(fullname), "%s/pdfXXXXXX", dir);
 #if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN)
@@ -357,14 +389,14 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		 */
 		if(*--streamend != '\n')
 			streamend++;
-		else if(*--streamend != '\r')
+		else if(has_cr && (*--streamend != '\r'))
 			streamend++;
 
 		if(streamend <= streamstart) {
 			cli_dbgmsg("Empty stream\n");
 			continue;
 		}
-		calculated_streamlen = (int)(streamend - streamstart) + 1;
+		calculated_streamlen = (int)(streamend - streamstart);
 		real_streamlen = length;
 
 		if(calculated_streamlen != real_streamlen)
@@ -461,7 +493,14 @@ try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fo
 	if(real_len == calculated_len)
 		return ret;
 
-	return flatedecode(buf, calculated_len, fout, ctx);
+	ret = flatedecode(buf, calculated_len, fout, ctx);
+	if(ret == Z_OK)
+		return Z_OK;
+
+	/* i.e. the PDF file is broken :-( */
+	cli_warnmsg("cli_pdf: Bad uncompressed block length in flate stream\n");
+
+	return ret;
 }
 
 static int
