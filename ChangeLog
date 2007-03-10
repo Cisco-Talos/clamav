@@ -1,3 +1,8 @@
+Fri Mar  9 23:24:24 GMT 2007 (njh)
+----------------------------------
+  * libclamav/pdf.c:	Fix fd leak on empty objects
+			Scan in user memory
+
 Fri Mar  9 22:39:36 GMT 2007 (njh)
 ----------------------------------
   * libclamav/pdf.c:	When flatedecoder fails point out that the encoder

@@ -71,10 +71,9 @@ static	const	char	*cli_pmemstr(const char *haystack, size_t hs, const char *need
 int
 cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 {
-	struct stat statb;
 	off_t size;	/* total number of bytes in the file */
 	long bytesleft, trailerlength;
-	char *buf;	/* start of memory mapped area */
+	char *buf, *alloced;	/* start of memory mapped area */
 	const char *p, *q, *trailerstart;
 	const char *xrefstart;	/* cross reference table */
 	/*size_t xreflength;*/
@@ -82,6 +81,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	struct table *md5table;
 	int printed_predictor_message;
 	int printed_embedded_font_message;
+	struct stat statb;
 
 	cli_dbgmsg("in cli_pdf(%s)\n", dir);
 
@@ -100,20 +100,37 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	if(buf == MAP_FAILED)
 		return CL_EMEM;
 
+	alloced = cli_malloc(size);
+	if(alloced) {
+		/*
+		 * FIXME: now I have this, there's no need for the lack of
+		 *	support on systems without mmap, e.g. cygwin
+		 */
+		memcpy(alloced, buf, size);
+		munmap(buf, size);
+		p = alloced;
+	}
+
 	cli_dbgmsg("cli_pdf: scanning %lu bytes\n", (unsigned long)size);
 
 	/* Lines are terminated by \r, \n or both */
 
 	/* File Header */
 	if(memcmp(p, "%PDF-1.", 7) != 0) {
-		munmap(buf, size);
+		if(alloced)
+			free(alloced);
+		else
+			munmap(buf, size);
 		return CL_EFORMAT;
 	}
 
 #if	0
 	q = pdf_nextlinestart(&p[6], size - 6);
 	if(q == NULL) {
-		munmap(buf, size);
+		if(alloced)
+			free(alloced);
+		else
+			munmap(buf, size);
 		return CL_EFORMAT;
 	}
 	bytesleft = size - (long)(q - p);
@@ -129,7 +146,10 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 			break;
 
 	if(q == p) {
-		munmap(buf, size);
+		if(alloced)
+			free(alloced);
+		else
+			munmap(buf, size);
 		return CL_EFORMAT;
 	}
 
@@ -145,7 +165,10 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		/*
 		 * This tends to mean that the file is, in effect, read-only
 		 */
-		munmap(buf, size);
+		if(alloced)
+			free(alloced);
+		else
+			munmap(buf, size);
 		cli_warnmsg("Encrypted PDF files not yet supported\n");
 		return CL_EFORMAT;
 	}
@@ -168,7 +191,10 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 				break;
 
 	if(xrefstart == p) {
-		munmap(buf, size);
+		if(alloced)
+			free(alloced);
+		else
+			munmap(buf, size);
 		return CL_EFORMAT;
 	}
 
@@ -185,8 +211,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	 * The body section consists of a sequence of indirect objects
 	 */
 	while((p < xrefstart) &&
-	      ((q = pdf_nextobject(p, bytesleft)) != NULL) &&
-	      (rc == CL_CLEAN)) {
+	      ((q = pdf_nextobject(p, bytesleft)) != NULL)) {
 		int is_ascii85decode, is_flatedecode, fout, len, has_cr;
 		/*int object_number, generation_number;*/
 		const char *objstart, *objend, *streamstart, *streamend;
@@ -274,8 +299,8 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 						snprintf(b, sizeof(b),
 							"%d 0 obj", length);
 						length = strlen(b);
-						r = cli_pmemstr(buf, size, b,
-							length);
+						r = cli_pmemstr(alloced ? alloced : buf,
+							size, b, length);
 						if(r) {
 							r += length - 1;
 							r = pdf_nextobject(r, bytesleft - (r - q));
@@ -393,6 +418,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 			streamend++;
 
 		if(streamend <= streamstart) {
+			close(fout);
 			cli_dbgmsg("Empty stream\n");
 			continue;
 		}
@@ -473,7 +499,10 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		cli_dbgmsg("cli_pdf: extracted to %s\n", fullname);
 	}
 
-	munmap(buf, size);
+	if(alloced)
+		free(alloced);
+	else
+		munmap(buf, size);
 
 	tableDestroy(md5table);
 
@@ -498,7 +527,7 @@ try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fo
 		return Z_OK;
 
 	/* i.e. the PDF file is broken :-( */
-	cli_warnmsg("cli_pdf: Bad uncompressed block length in flate stream\n");
+	cli_warnmsg("cli_pdf: Bad compressed block length in flate stream\n");
 
 	return ret;
 }
