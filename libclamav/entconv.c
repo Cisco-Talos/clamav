@@ -101,7 +101,7 @@ unsigned char* entity_norm(const struct entity_conv* conv,const unsigned char* e
 int init_entity_converter(struct entity_conv* conv,const unsigned char* encoding,size_t buffer_size)
 {
 	if(buffer_size < MIN_BUFFER_SIZE) {
-		cli_warnmsg("Entity converter: Supplied buffer size:%ld, smaller than minimum required: %ld\n",buffer_size,MIN_BUFFER_SIZE);
+		cli_warnmsg("Entity converter: Supplied buffer size:%lu, smaller than minimum required: %d\n",(unsigned long)buffer_size,MIN_BUFFER_SIZE);
 		return CL_ENULLARG;
 	}
 	if(conv) {
@@ -519,7 +519,7 @@ void process_encoding_set(struct entity_conv* conv,const unsigned char* encoding
 	enum encodings tmp;
 	size_t new_size,old_size;
 
-	cli_dbgmsg("Setting encoding for %x  to %s, priority: %d\n",conv, encoding, prio);
+	cli_dbgmsg("Setting encoding for %p  to %s, priority: %d\n",(void*)conv, encoding, prio);
 	if(encoding == OTHER)
 		return;
 	if(conv->priority == CONTENT_TYPE)
@@ -532,14 +532,15 @@ void process_encoding_set(struct entity_conv* conv,const unsigned char* encoding
 	old_size = encoding_bytes(conv->encoding,&tmp);
 	new_size = encoding_bytes(tmp_encoding,&tmp);
 	if(old_size != new_size)  {
-		cli_dbgmsg("process_encoding_set: refusing to override encoding - new encoding size differs: %s(%ld) != %s(%ld)\n",conv->encoding,old_size,tmp_encoding,new_size);
+		/* on x86 gcc wants %u for size_t, on x86_64 it wants %lu for size_t. So just cast to unsigned long to make warnings go away. */
+		cli_dbgmsg("process_encoding_set: refusing to override encoding - new encoding size differs: %s(%lu) != %s(%lu)\n",conv->encoding,(unsigned long)old_size,tmp_encoding,(unsigned long)new_size);
 		free(tmp_encoding);
 		return;
 	}
 	}
 	free(conv->encoding);
 	conv->encoding = tmp_encoding;
-	cli_dbgmsg("New encoding for %x:%s\n",conv,conv->encoding);
+	cli_dbgmsg("New encoding for %p:%s\n",(void*)conv,conv->encoding);
 	/* reset stream */
 }
 
@@ -570,7 +571,7 @@ int entity_norm_done(struct entity_conv* conv)
 	return encoding_norm_done(conv);
 }
 
-static size_t read_raw(FILE *stream, m_area_t *m_area, unsigned int max_len, unsigned char* outbuff)
+static size_t read_raw(FILE *stream, m_area_t *m_area, int max_len, unsigned char* outbuff)
 {
 
 	/* Try and use the memory buffer first */
@@ -655,14 +656,14 @@ static void iconv_cache_init(struct iconv_cache* cache)
 /*	cache->tab = NULL;
 	cache->len = 0;
 	cache->used = 0; - already done by memset*/
-	cli_dbgmsg("Initializing iconv pool:%p\n",cache);
+	cli_dbgmsg("Initializing iconv pool:%p\n",(void*)cache);
 	hashtab_init(&cache->hashtab, 32);
 }
 
 static void iconv_cache_destroy(struct iconv_cache* cache)
 {
 	size_t i;
-	cli_dbgmsg("Destroying iconv pool:%p\n",cache);
+	cli_dbgmsg("Destroying iconv pool:%p\n",(void*)cache);
 	for(i=0;i < cache->last;i++) {
 		cli_dbgmsg("closing iconv:%p\n",cache->tab[i]);
 		iconv_close(cache->tab[i]);
@@ -898,7 +899,7 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 #endif
 
 		if(rc==(size_t)-1 && errno != E2BIG) {
-				cli_dbgmsg("iconv error:%s, silently resuming (%ld,%ld,%ld,%ld)\n",strerror(errno),out-conv->out_area.buffer,tmpbuff-conv->tmp_area.buffer,inleft,outleft);
+				cli_dbgmsg("iconv error:%s, silently resuming (%ld,%ld,%lu,%lu)\n",strerror(errno),(long)(out-conv->out_area.buffer),(long)(tmpbuff-conv->tmp_area.buffer),(unsigned long)inleft,(unsigned long)outleft);
 				/* output raw byte, and resume at next byte */
 				*out++ = 0;
 				*out++ = *tmpbuff++;

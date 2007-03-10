@@ -459,7 +459,7 @@ static int functionality_level_check(char* line)
 			max = atoi(ptmax);
 
 		if(min > cl_retflevel()) {
-			cli_dbgmsg("regex list line %s not loaded (required f-level: %d)\n",line,min);
+			cli_dbgmsg("regex list line %s not loaded (required f-level: %u)\n",line,min);
 			return CL_EMALFDB; 
 		}
 

@@ -1,3 +1,7 @@
+Fri Mar  10 16:10:00 EET 2007 (edwin)
+----------------------------------
+  * libclamav/regex_list.c, entconv.c: fix gcc -W* warnings
+
 Fri Mar  9 23:24:24 GMT 2007 (njh)
 ----------------------------------
   * libclamav/pdf.c:	Fix fd leak on empty objects
