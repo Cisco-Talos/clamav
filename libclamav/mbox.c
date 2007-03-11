@@ -138,6 +138,8 @@ typedef	enum {
 				 * Trojan.WinREG.Zapchast which are often
 				 * dispatched by emails which point to it. If
 				 * not defined, don't check any URLs
+				 * It is also used to indicate the number of
+				 * 301/302 redirects we wish to follow
 				 */
 
 #ifdef	FOLLOWURLS
@@ -249,6 +251,7 @@ struct arg {
 	char *url;
 	const char *dir;
 	char *filename;
+	int	depth;
 };
 #ifdef	CL_THREAD_SAFE
 static	void	*getURL(void *a);
@@ -3997,11 +4000,13 @@ do_checkURLs(const char *dir, tag_arguments_t *hrefs)
 			args[n].dir = dir;
 			args[n].url = cli_strdup(url);
 			args[n].filename = cli_strdup(name);
+			args[n].depth = 0;
 			pthread_create(&tid[n], NULL, getURL, &args[n]);
 #else
 			arg.url = cli_strdup(url);
 			arg.dir = dir;
 			arg.filename = name;
+			arg.depth = 0;
 			getURL(&arg);
 			free(arg.url);
 #endif
@@ -4337,9 +4342,15 @@ getURL(struct arg *arg)
 					if(location) {
 						char *end;
 
+						unlink(fout);
+						if(arg->depth >= FOLLOWURLS) {
+							cli_warnmsg("URL %s will not be followed to %s (FOLLOWURLS limit %d was reached)\n",
+								arg->url, location, FOLLOWURLS);
+							break;
+						}
+
 						fclose(fp);
 						closesocket(sd);
-						unlink(fout);
 
 						location += 11;
 						free(arg->url);
@@ -4348,6 +4359,7 @@ getURL(struct arg *arg)
 							end++;
 						*end = '\0';
 						arg->url = cli_strdup(location);
+						arg->depth++;
 						cli_dbgmsg("Redirecting to %s\n", arg->url);
 						return getURL(arg);
 					}

@@ -112,7 +112,7 @@ static	const	struct	encoding_map {
 	{	NULL,			NOENCODING	}
 };
 
-static	struct	mime_map {
+static	const	struct	mime_map {
 	const	char	*string;
 	mime_type	type;
 } mime_map[] = {
