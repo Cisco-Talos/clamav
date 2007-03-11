@@ -1,7 +1,7 @@
 /*
  *  Match a string against a list of patterns/regexes.
  *
- *  Copyright (C) 2006 Török Edvin <edwintorok@gmail.com>
+ *  Copyright (C) 2006-2007 Török Edvin <edwin@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -38,33 +38,22 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <string.h>
-#ifdef	HAVE_STRINGS_H
-#include <strings.h>
-#endif
 #include <ctype.h>
 
 #include <limits.h>
 #include <sys/types.h>
 
 #ifdef	HAVE_REGEX_H
-/*#define USE_PCRE*/
 #include <regex.h>
 #endif
 
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-#include <stddef.h>
-#endif
 
 #include "clamav.h"
 #include "others.h"
-#include "defaults.h"
-#include "str.h"
-#include "filetypes.h"
-#include "mbox.h"
 #include "regex_list.h"
 #include "matcher-ac.h"
+#include "str.h"
 
 
 /*Tree*/
@@ -317,7 +306,7 @@ static void stack_reset(struct node_stack* stack)
 }
 
 /* Push @node on @stack, growing it if necessarry */
-static inline int stack_push(struct node_stack* stack,struct tree_node* node)
+static int stack_push(struct node_stack* stack,struct tree_node* node)
 {
 	massert(stack);
 	massert(stack->data);
@@ -333,7 +322,7 @@ static inline int stack_push(struct node_stack* stack,struct tree_node* node)
 }
 
 /* Pops node from @stack, doesn't realloc */
-static inline struct tree_node* stack_pop(struct node_stack* stack)
+static struct tree_node* stack_pop(struct node_stack* stack)
 {
 	massert(stack);
 	massert(stack->data);
@@ -348,12 +337,6 @@ static inline struct tree_node* stack_pop(struct node_stack* stack)
 int init_regex_list(struct regex_matcher* matcher)
 {
 	int rc;
-	/*
-	if(!engine_ok) {
-		cli_dbgmsg("Matcher engine not initialized\n");
-		return CL_ENULLARG;
-	}
-	*/
 
 	massert(matcher);
 	matcher->list_inited = 0;
@@ -417,7 +400,7 @@ static int add_regex_list_element(struct cli_matcher* root,const char* pattern,c
        for(i=0;i<len;i++)
 	       new->pattern[i]=pattern[i];/*new->pattern is short int* */
 
-       new->virname = strdup(info);
+       new->virname = cli_strdup(info);
        if((ret = cli_ac_addpatt(root,new))) {
 	       free(new->virname);
                free(new->pattern);
@@ -459,7 +442,7 @@ static int functionality_level_check(char* line)
 			max = atoi(ptmax);
 
 		if(min > cl_retflevel()) {
-			cli_dbgmsg("regex list line %s not loaded (required f-level: %u)\n",line,min);
+			cli_dbgmsg("regex list line %s not loaded (required f-level: %u)\n",line,(unsigned int)min);
 			return CL_EMALFDB; 
 		}
 
@@ -561,7 +544,7 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
  				if(!matcher->root_hosts) {
  					matcher->root_hosts = old_hosts;/* according to manpage this must still be valid*/
  					return CL_EMEM;
-		} 
+				} 
  				memset(&matcher->root_hosts[matcher->root_hosts_cnt-1], 0, sizeof(struct cli_matcher));
  				matcher->root_hosts[matcher->root_hosts_cnt-1].ac_root = cli_calloc(1, sizeof(struct cli_ac_node));
  				if(!matcher->root_hosts[matcher->root_hosts_cnt-1].ac_root) {
@@ -597,119 +580,11 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 	return CL_SUCCESS;
 }
 
-/*
-static void tree_node_merge_nonbin(struct tree_node* into,const struct tree_node* node)
-{
-	massert(into);
-	massert(node);
-
-	if(node->alternatives){
-		if(node->u.children[0]->next == node) {
-			*no non-bin alternatives here*
-		}
-		else {
-			struct tree_node* p;
-			for(p = node->u.children[0]->next; p->next != node; p = p->next)
-				tree_node_insert_nonbin(into,p);
-		}
-	}
-	else
-		tree_node_insert_nonbin(into,node->u.children[0]);
-}
-*
-static void tree_node_merge_bin(struct tree_node* into,const struct tree_node* node)
-{
-	if(node->u.children && node->alternatives) {
-		if(!into->alternatives) {
-			* into has no bin part, just copy+link the node there*
-			int i;
-			struct tree_node* next = into->u.children[0];
-			into->u.children = node->u.children;
-			into->alternatives = node->alternatives;
-			for(i=0;i < into->alternatives;i++) {
-				if(into->u.children[i]->next == node) {
-					into->u.children[i]->next = next;
-					into->u.children[i]->listend = 0;
-				}
-				else {
-					struct tree_node* p;
-					for(p = into->u.children[0]->next; p->next != node; p = p->next);
-					p->listend = 0;
-					p->next = next;
-				}
-			}
-		}
-		const size_t new_size = tree_node_get_array_size(into) + tree_node_get_array_size(node);
-		struct tree_node** new_children = cli_malloc(sizeof(
-	}
-	* else: no bin part to merge *
-}
-*/
 
 static struct tree_node ** tree_node_get_children(const struct tree_node* node)
 {
 	return node->op==OP_CUSTOMCLASS ? (node->u.children[1] ? node->u.children+1 : NULL) :node->u.children;
 }
-/* don't do this, it wastes too much memory, and has no benefit
-static void regex_list_dobuild(struct tree_node* called_from,struct tree_node* node)
-{
-	struct tree_node **children;
-	massert(node);
-
-	children = tree_node_get_children(node);
-	if(node->op!=OP_ROOT)
-		massert(called_from);
-	if(node->op==OP_TMP_PARCLOSE) {
-		const size_t array_size = (node->alternatives +(called_from->op==OP_CUSTOMCLASS ? 1:0))*sizeof(*called_from->u.children);
-		if(node->c)
-			return;* already processed this common node*
-		else
-			node->c = 1;
-		* copy children to called_from from this node
-		 * called_from should have 0 alternatives, and a link to this node via ->u.children[0]
-		 * *
-		massert(called_from->alternatives == 0);
-		massert(called_from->u.children);
-		massert(called_from->u.children[0] == node);
-		called_from->u.children = cli_realloc(called_from->u.children,array_size);
-		called_from->u.children = node->u.children;
-		called_from->alternatives = node->alternatives;
-		if(called_from->alternatives) {
-			* fix parent pointers *
-			int i;TODO: do a deep copy of children here
-			struct tree_node **from_children = tree_node_get_children(called_from);
-                        massert(from_children);
-			for(i=0;i < called_from->alternatives;i++) {
-				struct tree_node* p;
-				for(p=from_children[i];p->next != node; p = p->next);
-				p->next = called_from;
-			}
-		}
-	}
-
-	if(node->op==OP_LEAF) 
-	return;
-	else if (node->alternatives) {
-		int i;
-		struct tree_node* p;
-		massert(children);
-		p = children[0]->op==OP_LEAF ? NULL : children[0]->next;
-		for(i=0;i<node->alternatives;i++)
-			regex_list_dobuild(node,children[i]);
-		if(p && p!=node)
-			regex_list_dobuild(node,p);
-	} else {
-		if(children) 
-			if (children[0])
-				regex_list_dobuild(node,children[0]);
-	}
-	if(node->next && !node->listend)
-		regex_list_dobuild(node,node->next);
-	if(node->op==OP_TMP_PARCLOSE)
-		node->c=0;
-	*free(node);*
-}
-*/
 
 /* Build the matcher list */
 static int build_regex_list(struct regex_matcher* matcher)
@@ -802,7 +677,6 @@ static const unsigned char* getNextToken(const unsigned char* pat,struct token_t
 		case '{':
 		case '}':
 			token->type=TOKEN_REGEX;
-/*			massert(0 && "find_regex_start should have forbidden us from finding regex special chars");*/
 			break;
 		case '[':
 			{
@@ -1003,7 +877,7 @@ static struct tree_node* tree_root_alloc(void)
 	return root;
 }
 
-static inline struct tree_node* tree_node_char_binsearch(const struct tree_node* node,const char csearch,int* left)
+static struct tree_node* tree_node_char_binsearch(const struct tree_node* node,const char csearch,int* left)
 {
 	int right;
 	struct tree_node **children;
@@ -1028,7 +902,7 @@ static inline struct tree_node* tree_node_char_binsearch(const struct tree_node*
 	return NULL;
 }
 
-static inline struct tree_node* tree_get_next(struct tree_node* node)
+static struct tree_node* tree_get_next(struct tree_node* node)
 {
 	struct tree_node** children;
 	massert(node);
@@ -1042,14 +916,14 @@ static inline struct tree_node* tree_get_next(struct tree_node* node)
 		return children[0]->next;
 }
 
-static inline size_t tree_node_get_array_size(const struct tree_node* node)
+static size_t tree_node_get_array_size(const struct tree_node* node)
 {
 	massert(node);
 	/* if op is CUSTOMCLASS, then first pointer is pointer to bitmap, so array size is +1 */
 	return (node->alternatives + (node->op==OP_CUSTOMCLASS ? 1 : 0)) * sizeof(node->u.children[0]);
 }
 
-static inline struct tree_node* tree_node_char_insert(struct tree_node* node,const char c,int left)
+static struct tree_node* tree_node_char_insert(struct tree_node* node,const char c,int left)
 {
 	struct tree_node* new, *alt = tree_get_next(node);
 	struct tree_node **children;
@@ -1073,7 +947,7 @@ static inline struct tree_node* tree_node_char_insert(struct tree_node* node,con
 	return new;
 }
 
-static inline void tree_node_insert_nonbin(struct tree_node* node, struct tree_node* new)
+static void tree_node_insert_nonbin(struct tree_node* node, struct tree_node* new)
 {
 	struct tree_node **children;
 	massert(node);
@@ -1118,7 +992,7 @@ static inline void tree_node_insert_nonbin(struct tree_node* node, struct tree_n
 	}
 }
 
-static inline unsigned char char_getclass(const unsigned char* bitmap)
+static unsigned char char_getclass(const unsigned char* bitmap)
 {
 	size_t i;
 	massert(bitmap);
@@ -1259,7 +1133,7 @@ static int add_pattern(struct regex_matcher* matcher,const unsigned char* pat,co
 						 struct leaf_info* leaf=cli_malloc(sizeof(*leaf));
 						 if(!leaf)
 							 return CL_EMEM;
-						 leaf->info=strdup(info);
+						 leaf->info = cli_strdup(info);
 						 if(token.type==TOKEN_REGEX) {
 							 int rc;
 							 struct tree_node* new;
@@ -1441,7 +1315,7 @@ static int match_node(struct tree_node* node,const unsigned char* c,size_t len,c
 }
 
 /* push node on stack, only if it isn't there already */
-static inline void stack_push_once(struct node_stack* stack,struct tree_node* node)
+static void stack_push_once(struct node_stack* stack,struct tree_node* node)
 {
 	size_t i;
 	massert(stack);

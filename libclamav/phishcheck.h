@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006 Török Edvin <edwintorok@gmail.com>
+ *  Copyright (C) 2006-2007 Török Edvin <edwin@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -87,36 +87,6 @@ void phishing_done(struct cl_engine* engine);
 /* end of non-thread-safe functions */
 
 
-static inline int isPhishing(enum phish_status rc)
-{
-	switch(rc) {
-		case CL_PHISH_CLEAN:
-		case CL_PHISH_CLEANUP_OK:
-		case CL_PHISH_WHITELISTED:
-		case CL_PHISH_HOST_WHITELISTED:
-		case CL_PHISH_HOST_OK:
-		case CL_PHISH_DOMAIN_OK:
-		case CL_PHISH_REDIR_OK:
-		case CL_PHISH_HOST_REDIR_OK:
-		case CL_PHISH_DOMAIN_REDIR_OK:
-		case CL_PHISH_HOST_REVERSE_OK:
-		case CL_PHISH_DOMAIN_REVERSE_OK:
-		case CL_PHISH_MAILTO_OK:
-		case CL_PHISH_TEXTURL:
-		case CL_PHISH_HOST_NOT_LISTED:
-		case CL_PHISH_CLEAN_CID:
-			return 0;
-		case CL_PHISH_HEX_URL:
-		case CL_PHISH_CLOAKED_NULL:
-		case CL_PHISH_SSL_SPOOF:
-		case CL_PHISH_CLOAKED_UIU:
-		case CL_PHISH_NUMERIC_IP:
-		case CL_PHISH_NOMATCH:
-			return 1;
-		default:
-			return 1;
-	}
-}
 #endif
 
 #endif

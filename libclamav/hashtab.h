@@ -28,8 +28,6 @@
 typedef long element_data;
 
 /* define this for debugging/profiling purposes only, NOT in production/release code */
-/*#define PROFILE_HASHTABLE*/
-
 #ifdef PROFILE_HASHTABLE
 
 

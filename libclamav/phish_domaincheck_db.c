@@ -1,7 +1,7 @@
 /*
  *  Phishing module: domain list implementation.
  *
- *  Copyright (C) 2006 Török Edvin <edwintorok@gmail.com>
+ *  Copyright (C) 2006-2007 Török Edvin <edwin@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -37,48 +37,26 @@
 #endif
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
 #include <string.h>
-#ifdef	HAVE_STRINGS_H
-#include <strings.h>
-#endif
 #include <ctype.h>
 
-#include <limits.h>
 #include "clamav.h"
-#include <sys/types.h>
-
-#ifdef	HAVE_REGEX_H
-/*#define USE_PCRE*/
-#include <regex.h>
-#endif
-
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-#include <stddef.h>
-#endif
-
 #include "others.h"
-#include "defaults.h"
-#include "str.h"
-#include "filetypes.h"
-#include "mbox.h"
 #include "phish_domaincheck_db.h"
 #include "regex_list.h"
-#include "matcher-ac.h"
 
 int domainlist_match(const struct cl_engine* engine,const char* real_url,const char* display_url,int hostOnly,unsigned short* flags)
 {
 	const char* info;
 	int rc = engine->domainlist_matcher ? regex_list_match(engine->domainlist_matcher,real_url,display_url,hostOnly,&info,0) : 0;
-	if(rc && info && info[0]) {/*match successfull, and has custom flags*/
+	if(rc && info && info[0]) {/*match successful, and has custom flags*/
 		if(strlen(info)==3 && isxdigit(info[0]) && isxdigit(info[1]) && isxdigit(info[2])) {
 			unsigned short notwantedflags=0;
 			sscanf(info,"%hx",&notwantedflags);
 		        *flags &= ~notwantedflags;/* filter unwanted phishcheck flags */	
 		}
 		else {
-			cli_warnmsg("Phishcheck:Unknown flag format in domainlist, 3 hex digits expected");
+			cli_warnmsg("Phishcheck:Unknown flag format in domain-list, 3 hex digits expected");
 		}
 	}
 	return rc;

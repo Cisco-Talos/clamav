@@ -1,7 +1,7 @@
 /*
  *  HTML Entity & Encoding normalization.
  *
- *  Copyright (C) 2006 Török Edvin <edwin@clamav.net>
+ *  Copyright (C) 2006-2007 Török Edvin <edwin@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@
 #include "clamav.h"
 #include "others.h"
 #include "hashtab.h"
+
 
 static const size_t prime_list[] =
 {
@@ -80,13 +81,13 @@ static inline void PROFILE_FIND_ELEMENT(struct hashtable *s)
 static inline void PROFILE_FIND_NOTFOUND(struct hashtable *s, size_t tries)
 {
 	s->PROFILE_STRUCT.not_found++;
-	s->PROFILE_STRUCT.not_found_tries += tries+1;
+	s->PROFILE_STRUCT.not_found_tries += tries;
 }
 
 static inline void PROFILE_FIND_FOUND(struct hashtable *s, size_t tries)
 {
 	s->PROFILE_STRUCT.found++;
-	s->PROFILE_STRUCT.found_tries += tries+1;
+	s->PROFILE_STRUCT.found_tries += tries;
 }
 
 static inline void PROFILE_HASH_EXHAUSTED(struct hashtable *s)
@@ -102,7 +103,7 @@ static inline void PROFILE_GROW_START(struct hashtable *s)
 static inline void PROFILE_GROW_FOUND(struct hashtable *s, size_t tries)
 {
 	s->PROFILE_STRUCT.grow_found++;
-	s->PROFILE_STRUCT.grow_found_tries += tries+1;
+	s->PROFILE_STRUCT.grow_found_tries += tries;
 }
 
 static inline void PROFILE_GROW_DONE(struct hashtable *s)
@@ -112,19 +113,19 @@ static inline void PROFILE_GROW_DONE(struct hashtable *s)
 static inline void PROFILE_DELETED_REUSE(struct hashtable *s, size_t tries)
 {
 	s->PROFILE_STRUCT.deleted_reuse++;
-	s->PROFILE_STRUCT.deleted_tries += tries+1;
+	s->PROFILE_STRUCT.deleted_tries += tries;
 }
 
 static inline void PROFILE_INSERT(struct hashtable *s, size_t tries)
 {
 	s->PROFILE_STRUCT.inserts++;
-	s->PROFILE_STRUCT.insert_tries += tries+1;
+	s->PROFILE_STRUCT.insert_tries += tries;
 }
 
 static inline void PROFILE_DATA_UPDATE(struct hashtable *s, size_t tries)
 {
 	s->PROFILE_STRUCT.update++;
-	s->PROFILE_STRUCT.update_tries += tries+1;
+	s->PROFILE_STRUCT.update_tries += tries;
 }
 
 static inline void PROFILE_HASH_DELETE(struct hashtable *s)
@@ -140,7 +141,7 @@ static inline void PROFILE_HASH_CLEAR(struct hashtable *s)
 static inline void PROFILE_REPORT(const struct hashtable *s)
 {
 	size_t lookups, queries, insert_tries, inserts;
-	cli_dbgmsg("--------Hashtable usage report for %x--------------\n",s);
+	cli_dbgmsg("--------Hashtable usage report for %p--------------\n",(const void*)s);
 	cli_dbgmsg("hash function calculations:%ld\n",s->PROFILE_STRUCT.calc_hash);
 	cli_dbgmsg("successfull finds/total searches: %ld/%ld; lookups: %ld\n", s->PROFILE_STRUCT.found, s->PROFILE_STRUCT.find_req, s->PROFILE_STRUCT.found_tries);
 	cli_dbgmsg("unsuccessfull finds/total searches: %ld/%ld; lookups: %ld\n", s->PROFILE_STRUCT.not_found, s->PROFILE_STRUCT.find_req , s->PROFILE_STRUCT.not_found_tries);
@@ -195,7 +196,7 @@ int hashtab_init(struct hashtable *s,size_t capacity)
 	return 0;
 }
 
-static inline size_t hash(const unsigned char* k,const size_t len,const size_t SIZE)
+static size_t hash(const unsigned char* k,const size_t len,const size_t SIZE)
 {
 	size_t Hash = 0;	
 	size_t i;
@@ -208,7 +209,7 @@ static inline size_t hash(const unsigned char* k,const size_t len,const size_t S
 struct element* hashtab_find(const struct hashtable *s,const unsigned char* key,const size_t len)
 {
 	struct element* element;
-	size_t tries = 0; 
+	size_t tries = 1; 
 	size_t idx;
 
 	if(!s)
@@ -248,8 +249,7 @@ static int hashtab_grow(struct hashtable *s)
 	for(i=0; i < s->capacity;i++) {
 		if(s->htable[i].key && s->htable[i].key != DELETED_KEY) {
 			struct element* element;
-			size_t tries = 0;
-			
+			size_t tries = 1;				
 
 			PROFILE_CALC_HASH(s);
 			idx = hash(s->htable[i].key, strlen((const char*)s->htable[i].key), new_capacity);
@@ -276,7 +276,7 @@ static int hashtab_grow(struct hashtable *s)
 	s->used = used;
 	s->capacity = new_capacity;
 	s->maxfill = new_capacity*8/10;
-	cli_dbgmsg("Table %x size after grow:%ld\n",s,s->capacity);
+	cli_dbgmsg("Table %p size after grow:%ld\n",(void*)s,s->capacity);
 	PROFILE_GROW_DONE(s);
 	return CL_SUCCESS;
 }
@@ -286,7 +286,7 @@ int hashtab_insert(struct hashtable *s,const unsigned char* key,const size_t len
 {
 	struct element* element;
 	struct element* deleted_element = NULL;
-	size_t tries = 0; 
+	size_t tries = 1; 
 	size_t idx;
 	if(!s)
 		return CL_ENULLARG; 
@@ -315,7 +315,7 @@ int hashtab_insert(struct hashtable *s,const unsigned char* key,const size_t len
 				element->data = data;
 				s->used++;		
 				if(s->used > s->maxfill) {
-					cli_dbgmsg("hashtab.c:Growing hashtable %p, because it has exceeded maxfill, old size:%ld\n",s,s->capacity);
+					cli_dbgmsg("hashtab.c:Growing hashtable %p, because it has exceeded maxfill, old size:%ld\n",(void*)s,s->capacity);
 					hashtab_grow(s);
 				}
 				return 0;
@@ -335,7 +335,7 @@ int hashtab_insert(struct hashtable *s,const unsigned char* key,const size_t len
 		} while (tries <= s->capacity);
 		/* no free place found*/
 		PROFILE_HASH_EXHAUSTED(s);
-		cli_dbgmsg("hashtab.c: Growing hashtable %x, because its full, old size:%ld.\n",s,s->capacity);
+		cli_dbgmsg("hashtab.c: Growing hashtable %p, because its full, old size:%ld.\n",(void*)s,s->capacity);
 	} while( hashtab_grow(s) >= 0 );
 	cli_warnmsg("hashtab.c: Unable to grow hashtable\n");
 	return CL_EMEM;
@@ -400,8 +400,6 @@ int hashtab_generate_c(const struct hashtable *s,const char* name)
 	PROFILE_REPORT(s);
 	return 0;
 }
-
-
 
 int hashtab_load(FILE* in, struct hashtable *s)
 {

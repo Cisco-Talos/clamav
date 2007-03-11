@@ -1,7 +1,7 @@
 /*
  *  Phishing module: whitelist implementation.
  *
- *  Copyright (C) 2006 Török Edvin <edwintorok@gmail.com>
+ *  Copyright (C) 2006-2007 Török Edvin <edwin@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,6 +24,8 @@
 
 #ifndef _PHISH_WHITELIST_H
 #define _PHISH_WHITELIST_H
+
+#include "clamav.h"
 
 int init_whitelist(struct cl_engine* engine);
 void whitelist_done(struct cl_engine* engine);

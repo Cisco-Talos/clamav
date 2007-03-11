@@ -1,7 +1,7 @@
 /*
  *  Match a string against a list of patterns/regexes.
  *
- *  Copyright (C) 2006 Török Edvin <edwintorok@gmail.com>
+ *  Copyright (C) 2006 Török Edvin <edwin@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,8 +24,6 @@
 
 #ifndef _REGEX_LIST_H
 #define _REGEX_LIST_H
-
-
 
 #ifdef NDEBUG
 #define massert(x) (void)(0)
@@ -61,7 +59,6 @@ void regex_list_cleanup(struct regex_matcher* matcher);
 void regex_list_done(struct regex_matcher* matcher);
 int is_regex_ok(struct regex_matcher* matcher);
 
-void setup_matcher_engine(void);/* global, non thread-safe */
 #endif
 
 #endif

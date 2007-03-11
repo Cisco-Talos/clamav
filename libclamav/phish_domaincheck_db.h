@@ -1,7 +1,7 @@
 /*
  *  Phishing module: domain list implementation.
  *
- *  Copyright (C) 2006 Török Edvin <edwintorok@gmail.com>
+ *  Copyright (C) 2006-2007 Török Edvin <edwin@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 
 #ifndef _PHISH_DOMAINCHECK_DB_H
 #define _PHISH_DOMAINCHECK_DB_H
+#include "clamav.h"
 
 int init_domainlist(struct cl_engine* engine);
 void domainlist_done(struct cl_engine* engine);

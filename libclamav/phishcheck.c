@@ -1,7 +1,7 @@
 /*
  *  Detect phishing, based on URL spoofing detection.
  *
- *  Copyright (C) 2006 Török Edvin <edwintorok@gmail.com>
+ *  Copyright (C) 2006-2007 Török Edvin <edwin@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -37,50 +37,26 @@
 #endif
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
 #include <string.h>
-#ifdef	HAVE_STRINGS_H
-#include <strings.h>
-#endif
 #include <ctype.h>
-#include <limits.h>
+
 #include "clamav.h"
-#ifndef	C_WINDOWS
-#include <netdb.h>
-#include <netinet/in.h>
-#endif
-
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-#include <stddef.h>
-#endif
-
-#include <sys/types.h>
-#ifndef	C_WINDOWS
-#include <sys/socket.h>
-#endif
-#ifdef	HAVE_REGEX_H
-#include <regex.h>
-#endif
-
 #include "others.h"
-#include "defaults.h"
-#include "str.h"
-#include "filetypes.h"
 #include "mbox.h"
+#include "message.h"
 #include "htmlnorm.h"
 #include "phishcheck.h"
-#include "phish_whitelist.h"
 #include "phish_domaincheck_db.h"
-#include "regex_list.h"
+#include "phish_whitelist.h"
 #include "iana_tld.h"
+
 
 #define DOMAIN_REAL 1
 #define DOMAIN_DISPLAY 0
 
 #define PHISHY_USERNAME_IN_URL 1
 #define PHISHY_NUMERIC_IP      2
-#define REAL_IS_MAILTO		 4
+#define REAL_IS_MAILTO	       4
 /* this is just a flag, so that the displayed url will be parsed as mailto too, for example
  * <a href='mailto:somebody@yahoo.com'>to:somebody@yahoo.com</a>*/
 #define DOMAIN_LISTED		 8
@@ -90,6 +66,8 @@
 /*
 * Phishing design documentation,
 (initially written at http://wiki.clamav.net/index.php/phishing_design as discussed with aCaB)
+
+TODO:update this doc
 
 *Warning*: if flag *--phish-scan-alldomains* (or equivalent clamd/clamav-milter config option) isn't given, then phishing scanning is done only for domains listed in daily.pdb.
 If your daily.pdb is empty, then by default NO PHISHING is DONE, UNLESS you give the *--phish-scan-alldomains*
@@ -172,8 +150,6 @@ static char empty_string[]="";
 #define DWORD_CLOAK "[0-9]{8,}"
 
 static const char cloaked_host_regex[] = "^(("CLOAK_REGEX_HEXURL")|("OCTAL_CLOAK")|("DWORD_CLOAK"))$";
-
-
 static const char tld_regex[] = "^"iana_tld"$";
 static const char cctld_regex[] = "^"iana_cctld"$";
 static const char dotnet[] = ".net";
@@ -184,6 +160,9 @@ static const char gt[]="&gt;";
 static const char cid[] = "cid:";
 static const char src_text[] = "src";
 static const char href_text[] = "href";
+static const char mailto[] = "mailto:";
+static const char https[]="https://";
+
 static const size_t href_text_len = sizeof(href_text);
 static const size_t src_text_len = sizeof(src_text);
 static const size_t cid_len = sizeof(cid)-1;
@@ -192,8 +171,9 @@ static const size_t adonet_len = sizeof(adonet)-1;
 static const size_t aspnet_len = sizeof(aspnet)-1;
 static const size_t lt_len = sizeof(lt)-1;
 static const size_t gt_len = sizeof(gt)-1;
+static const size_t mailto_len = sizeof(mailto)-1;
+static const size_t https_len  = sizeof(https)-1;
 
-/*static const char* url_regex="^ *([[:alnum:]%_-]+:(//)?)?([[:alnum:]%_-]@)*[[:alnum:]%_-]+\\.([[:alnum:]%_-]+\\.)*[[:alnum:]_%-]+(/[[:alnum:];:@$=?&/.,%_-]+) *$";*/
 /* for urls, including mailto: urls, and (broken) http:www... style urls*/
 /* refer to: http://www.w3.org/Addressing/URL/5_URI_BNF.html
  * Modifications: don't allow empty domains/subdomains, such as www..com <- that is no url
@@ -272,10 +252,10 @@ static const short int hextable[256] = {
 };
 
 /* Prototypes*/
-static	inline	void string_init_c(struct string* dest,char* data);
-static	void	string_assign_null(struct string* dest);
-static	char	*rfind(char *start, char c, size_t len);
-static inline char hex2int(const unsigned char* src);
+static void string_init_c(struct string* dest,char* data);
+static void string_assign_null(struct string* dest);
+static char *rfind(char *start, char c, size_t len);
+static char hex2int(const unsigned char* src);
 static int isTLD(const struct phishcheck* pchk,const char* str,int len);
 static enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check* urls);
 static const char* phishing_ret_toString(enum phish_status rc);
@@ -311,7 +291,7 @@ static void string_free(struct string* str)
 	}
 }
 
-/* always use the string_assign when assigning to a string, this makes sure the old one's refcount is decremented*/
+/* always use the string_assign when assigning to a string, this makes sure the old one's reference count is incremented*/
 static void string_assign(struct string* dest,struct string* src)
 {
 	string_free(dest);
@@ -325,7 +305,7 @@ static void string_assign(struct string* dest,struct string* src)
 /* it doesn't free old string, use only for initialization
  * Doesn't allow NULL pointers, they are replaced by pointer to empty string
  * */
-static inline void string_init_c(struct string* dest,char* data)
+static void string_init_c(struct string* dest,char* data)
 {
 	dest->refcount = 1;
 	dest->data = data ? data : empty_string;
@@ -348,7 +328,7 @@ static int string_assign_dup(struct string* dest,const char* start,const char* e
 	return CL_SUCCESS;
 }
 
-static inline void string_assign_null(struct string* dest)
+static void string_assign_null(struct string* dest)
 {
 	string_free(dest);
 	dest->data=empty_string;
@@ -375,35 +355,31 @@ static void free_if_needed(struct url_check* url)
 static int build_regex(regex_t* preg,const char* regex,int nosub)
 {
 	int rc;
-	cli_dbgmsg("Compiling regex:%s\n",regex);
+	cli_dbgmsg("Phishcheck: Compiling regex:%s\n",regex);
 	rc = regcomp(preg,regex,REG_EXTENDED|REG_ICASE|(nosub ? REG_NOSUB :0));
 	if(rc) {
 	
 #ifdef	C_WINDOWS
-		cli_errmsg("Error in compiling regex, disabling phishing checks\n");
+		cli_errmsg("Phishcheck: Error in compiling regex, disabling phishing checks\n");
 #else
 		size_t buflen =	regerror(rc,preg,NULL,0);
 		char *errbuf = cli_malloc(buflen);
 		
 		if(errbuf) {
 			regerror(rc,preg,errbuf,buflen);
-			cli_errmsg("Error in compiling regex:%s\nDisabling phishing checks\n",errbuf);
+			cli_errmsg("Phishcheck: Error in compiling regex:%s\nDisabling phishing checks\n",errbuf);
 			free(errbuf);
 		} else
-			cli_errmsg("Error in compiling regex, disabling phishing checks. Additionaly an Out-of-memory error was encountered while generating a detailed error message\n");
+			cli_errmsg("Phishcheck: Error in compiling regex, disabling phishing checks. Additionally an Out-of-memory error was encountered while generating a detailed error message\n");
 #endif
 		return 1;
 	}
 	return CL_SUCCESS;
 }
 
-/*static regex_t* host_preg = NULL;
-static const char* host_regex="cid:.+|mailto:(.+)|([[:alpha:]]+://)?(([^:/?]+@)+([^:/?]+)([:/?].+)?|([^@:/?]+)([:/?].+)?)"; <- this is slower than the function below
-*/
 /* allocates memory */
 static int get_host(const struct phishcheck* s,struct string* dest,const char* URL,int isReal,int* phishy)
 {
-	const char mailto[] = "mailto:";
 	int rc,ismailto = 0;
 	const char* start;
 	const char* end=NULL;
@@ -413,8 +389,8 @@ static int get_host(const struct phishcheck* s,struct string* dest,const char* U
 	}
 	start = strstr(URL,"://");
 	if(!start) {
-		if(!strncmp(URL,mailto,sizeof(mailto)-1)) {
-			start = URL + sizeof(mailto)-1;
+		if(!strncmp(URL,mailto,mailto_len)) {
+			start = URL + mailto_len;
 			ismailto = 1;
 		}
 		else if (!isReal && *phishy&REAL_IS_MAILTO) {
@@ -426,14 +402,9 @@ static int get_host(const struct phishcheck* s,struct string* dest,const char* U
 			ismailto = 1;
 		}
 		else {
-/*			if(!strncmp(URL,"cid:",4)) {handled in phishcheck
-				string_assign_null(dest);
-				return;* cid: image, nothing to verify
-			}
-*/
 			start=URL;/*URL without protocol*/
 			if(isReal)
-				cli_dbgmsg("PH:Real URL without protocol:%s\n",URL);
+				cli_dbgmsg("Phishcheck: Real URL without protocol:%s\n",URL);
 			else ismailto=2;/*no-protocol, might be mailto, @ is no problem*/
 		}
 	}
@@ -441,37 +412,32 @@ static int get_host(const struct phishcheck* s,struct string* dest,const char* U
 		start += 3;	/* :// */
 
 	if(!ismailto || !isReal) {
-		const char *realhost;
+		const char *realhost,*tld;
 
 		do {
 			end  = start + strcspn(start,":/?");
 			realhost = strchr(start,'@');
 
-			if(realhost == NULL)
+			if(realhost == NULL || (start!=end && realhost>end)) {
+				/*don't check beyond end of hostname*/ 
 				break;
-
-			if(start!=end && realhost>end)
-				/*don't check beyond end of hostname*/
-				realhost = NULL;
-
-			if(realhost) {
-				const char* tld = strrchr(realhost,'.');
-				rc = tld ? isTLD(s,tld,tld-realhost-1) : 0;
-				if(rc < 0)
-					return rc;
-				if(rc)
-					*phishy |= PHISHY_USERNAME_IN_URL;/* if the url contains a username that is there just to fool people,
-					like http://www.ebay.com@somevilplace.someevildomain.com/ */
-				start=realhost+1;/*skip the username*/
 			}
+
+			tld = strrchr(realhost,'.');
+			rc = tld ? isTLD(s,tld,tld-realhost-1) : 0;
+			if(rc < 0)
+				return rc;
+			if(rc)
+				*phishy |= PHISHY_USERNAME_IN_URL;/* if the url contains a username that is there just to fool people,
+			     					     like http://www.ebay.com@somevilplace.someevildomain.com/ */
+			start = realhost+1;/*skip the username*/
 		} while(realhost);/*skip over multiple @ characters, text following last @ character is the real host*/
 	}
-	else
-	if (ismailto && isReal)
+	else if (ismailto && isReal)
 		*phishy |= REAL_IS_MAILTO;
 
 	if(!end) {
-		end  = start+strcspn(start,":/?");/*especially important for mailto:somebody@yahoo.com?subject=...*/
+		end  = start + strcspn(start,":/?");/*especially important for mailto:somebody@yahoo.com?subject=...*/
 		if(!end)
 			end  = start + strlen(start);
 	}
@@ -525,15 +491,15 @@ static void get_domain(const struct phishcheck* pchk,struct string* dest,struct 
 	char* domain;
 	char* tld = strrchr(host->data,'.');
 	if(!tld) {
-		cli_dbgmsg("PH:What? A host without a tld? (%s)\n",host->data);
+		cli_dbgmsg("Phishcheck: Encountered a host without a tld? (%s)\n",host->data);
 		string_assign(dest,host);
 		return;
 	}
 	if(isCountryCode(pchk,tld+1)) {
-		const char* countrycode=tld+1;
+		const char* countrycode = tld+1;
 		tld = rfind(host->data,'.',tld-host->data-1);
 		if(!tld) {
-			cli_dbgmsg("PH:Weird, a name with only 2 levels (%s)\n",
+			cli_dbgmsg("Phishcheck: Weird, a name with only 2 levels (%s)\n",
 				host->data);
 			string_assign(dest,host);
 			return;
@@ -552,43 +518,6 @@ static void get_domain(const struct phishcheck* pchk,struct string* dest,struct 
 	string_assign_ref(dest,host,domain+1);
 }
 
-
-/*
-int ip_reverse(struct url_check* urls,int isReal)
-{
-	const char* host = isReal ? urls->realLink.data : urls->displayLink.data;
-	struct hostent *he = gethostbyname (host);
-	if (he)
-	{
-		char *addr = 0;
-		switch (he->h_addrtype)
-		{
-			case AF_INET:
-			  addr = inet_ntoa (*(struct in_addr *) he->h_addr);
-			  break;
-		}
-		if (addr && strcmp (he->h_name, addr) == 0)
-		{
-			char *h_addr_copy = strdup (he->h_addr);
-			if (h_addr_copy == NULL)
-			    he = NULL;
-			else
-			{
-			      he = gethostbyaddr (h_addr_copy, he->h_length, he->h_addrtype);
-			      free (h_addr_copy);
-			}
-		}
-	     if (he)
-		string_assign_dup(isReal ? &urls->realLink : &urls->displayLink,he->h_name,he->h_name+strlen(he->h_name));
-    }
-    return 0;
-}
-* frees its argument, and allocates memory*
-void reverse_lookup(struct url_check* url,int isReal)
-{
-	ip_reverse(url,isReal);
-}
-*/
 static int isNumeric(const char* host)
 {
 	int len = strlen(host);
@@ -606,8 +535,7 @@ static int isNumeric(const char* host)
 
 static int isSSL(const char* URL)
 {
-	const char https[]="https://";
-	return URL ? !strncmp(https,URL,sizeof(https)-1) : 0;
+	return URL ? !strncmp(https,URL,https_len) : 0;
 }
 
 /* deletes @what from the string @begin.
@@ -697,15 +625,15 @@ str_strip(char **begin, const char **end, const char *what, size_t what_len)
 }
 
 
-/* replace every occurence of @c in @str with @r*/
-static inline void str_replace(char* str,const char* end,char c,char r)
+/* replace every occurrence of @c in @str with @r*/
+static void str_replace(char* str,const char* end,char c,char r)
 {
 	for(;str<end;str++) {
 		if(*str==c)
 			*str=r;
 	}
 }
-static inline void str_make_lowercase(char* str,size_t len)
+static void str_make_lowercase(char* str,size_t len)
 {
 	for(;len;str++,len--) {
 		*str = tolower(*str);
@@ -713,7 +641,7 @@ static inline void str_make_lowercase(char* str,size_t len)
 }
 
 #define fix32(x) ((x)<32 ? 32 : (x))
-static inline void clear_msb(char* begin)
+static void clear_msb(char* begin)
 {
 	for(;*begin;begin++)
 		*begin = fix32((*begin)&0x7f);
@@ -736,7 +664,7 @@ static inline void clear_msb(char* begin)
  *	otherwise strip space
  *
  */
-static inline void
+static void
 str_fixup_spaces(char **begin, const char **end)
 {
 	char *space = strchr(*begin, ' ');
@@ -855,17 +783,12 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 				urls.always_check_flags |= CHECK_CLOAKING;
 			}
 			string_init_c(&urls.realLink,(char*)hrefs->value[i]);
-/*			if(!hrefs->contents[i]->isClosed) {
-				blobAddData(hrefs->contents[i],empty_string,1);
-				blobClose(hrefs->contents[i]);
-			}*/
 			string_init_c(&urls.displayLink,(char*)blobGetData(hrefs->contents[i]));
 
 			if (urls.displayLink.data[blobGetDataSize(hrefs->contents[i])-1]) {
 				cli_warnmsg("urls.displayLink.data[...]");
 				return CL_CLEAN;
 			}
-/*			massert(strlen(urls.displayLink.data) < blobGetDataSize(hrefs->contents[i]));*/
 			urls.realLink.refcount=-1;
 			urls.displayLink.refcount=-1;/*don't free these, caller will free*/
 			if(strcmp((char*)hrefs->tag[i],"href")) {
@@ -879,7 +802,7 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 			if(pchk->is_disabled)
 				return CL_CLEAN;
 			free_if_needed(&urls);
-			cli_dbgmsg("Phishing scan result:%s\n",phishing_ret_toString(rc));
+			cli_dbgmsg("Phishcheck: Phishing scan result:%s\n",phishing_ret_toString(rc));
 			switch(rc)/*TODO: support flags from ctx->options,*/
 				{
 					case CL_PHISH_CLEAN:
@@ -923,8 +846,8 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 		}
 		else
 			if(strcmp((char*)hrefs->tag[i],"href"))
-					cli_dbgmsg("PH:href with no contents?\n");
-	return CL_CLEAN;/*texturlfound?CL_VIRUS:0;*/
+					cli_dbgmsg("Phishcheck: href with no contents?\n");
+	return CL_CLEAN;
 }
 
 static char* str_compose(const char* a,const char* b,const char* c)
@@ -943,7 +866,7 @@ static char* str_compose(const char* a,const char* b,const char* c)
 	return concated;
 }
 
-static inline char hex2int(const unsigned char* src)
+static char hex2int(const unsigned char* src)
 {
 	return (src[0] == '0' && src[1] == '0') ? 
 		0x1 :/* don't convert %00 to \0, use 0x1
@@ -1088,7 +1011,7 @@ static int url_get_host(const struct phishcheck* pchk, struct url_check* url,str
 		return CL_PHISH_TEXTURL;
 	}
 	if(url->flags&CHECK_CLOAKING && !regexec(&pchk->preg_hexurl,host->data,0,NULL,0)) {
-		/* use a regex here, so that we don't accidentally block 0xacab.net style hosts */
+		/* uses a regex here, so that we don't accidentally block 0xacab.net style hosts */
 		string_free(host);
 		return CL_PHISH_HEX_URL;
 	}
@@ -1096,8 +1019,6 @@ static int url_get_host(const struct phishcheck* pchk, struct url_check* url,str
 		return CL_PHISH_CLEAN;/* link without domain, such as: href="/isapi.dll?... */
 	if(isNumeric(host->data)) {
 		*phishy |= PHISHY_NUMERIC_IP;
-/*		if(url->flags&DO_REVERSE_LOOKUP)
-			reverse_lookup(host_url,isReal);*/
 	}
 	return CL_PHISH_NODECISION;
 }
@@ -1125,7 +1046,6 @@ static int isEncoded(const char* url)
 	size_t cnt=0;
 	do{
 		cnt++;
-		/*last=start;*/
 		start=strstr(start,"&#");
 		if(start)
 			start=strstr(start,";");
@@ -1138,7 +1058,36 @@ static int whitelist_check(const struct cl_engine* engine,struct url_check* urls
 	return whitelist_match(engine,urls->realLink.data,urls->displayLink.data,hostOnly);
 }
 
-
+static int isPhishing(enum phish_status rc)
+{
+	switch(rc) {
+		case CL_PHISH_CLEAN:
+		case CL_PHISH_CLEANUP_OK:
+		case CL_PHISH_WHITELISTED:
+		case CL_PHISH_HOST_WHITELISTED:
+		case CL_PHISH_HOST_OK:
+		case CL_PHISH_DOMAIN_OK:
+		case CL_PHISH_REDIR_OK:
+		case CL_PHISH_HOST_REDIR_OK:
+		case CL_PHISH_DOMAIN_REDIR_OK:
+		case CL_PHISH_HOST_REVERSE_OK:
+		case CL_PHISH_DOMAIN_REVERSE_OK:
+		case CL_PHISH_MAILTO_OK:
+		case CL_PHISH_TEXTURL:
+		case CL_PHISH_HOST_NOT_LISTED:
+		case CL_PHISH_CLEAN_CID:
+			return 0;
+		case CL_PHISH_HEX_URL:
+		case CL_PHISH_CLOAKED_NULL:
+		case CL_PHISH_SSL_SPOOF:
+		case CL_PHISH_CLOAKED_UIU:
+		case CL_PHISH_NUMERIC_IP:
+		case CL_PHISH_NOMATCH:
+			return 1;
+		default:
+			return 1;
+	}
+}
 /* urls can't contain null pointer, caller must ensure this */
 static enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check* urls)
 {
@@ -1150,7 +1099,7 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 	if(!urls->realLink.data)
 		return CL_PHISH_CLEAN;
 
-	cli_dbgmsg("PH:Checking url %s->%s\n", urls->realLink.data,
+	cli_dbgmsg("Phishcheck:Checking url %s->%s\n", urls->realLink.data,
 		urls->displayLink.data);
 
 	if(!strcmp(urls->realLink.data,urls->displayLink.data))
@@ -1206,7 +1155,7 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 
 	if(urls->flags&CHECK_CLOAKING) {
 		/*Checks if URL is cloaked.
-		Should we check if it containts another http://, https://?
+		Should we check if it contains another http://, https://?
 		No because we might get false positives from redirect services.*/
 		if(strchr(urls->realLink.data,0x1)) {
 			free_if_needed(&host_url);
@@ -1281,59 +1230,9 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 			free_if_needed(&domain_url);
 		}
 
-		/*if(urls->flags&CHECK_REDIR) {
-			//see where the realLink redirects, and compare that with the displayed Link
-			const uchar* redirectedURL  = getRedirectedURL(urls->realLink);
-			if(urls->needsfree)
-				free(urls->realLink);
-			urls->realLink = redirectedURL;
-
-			if(!strcmp(urls->realLink,urls->displayLink))
-				return CL_PHISH_REDIR_OK;
-
-			if(urls->flags&HOST_SUFFICIENT) {
-				if(rc = url_get_host(urls,&host_url,DOMAIN_REAL))
-				if(!strcmp(host_url.realLink,host_url.displayLink)) {
-					free_if_needed(&host_url);
-					return CL_PHISH_HOST_REDIR_OK;
-				}
-				if(urls->flags&DOMAIN_SUFFICIENT) {
-					struct url_check domain_url;
-					url_get_domain(&host_url,&domain_url);
-					if(!strcmp(domain_url.realLink,domain_url.displayLink)) {
-						free_if_needed(&host_url);
-						free_if_needed(&domain_url);
-						return CL_PHISH_DOMAIN_REDIR_OK;
-					}
-				}
-			}//HOST_SUFFICIENT&CHECK_REDIR
-		}
-		free_if_needed(&host_url);*/
-	/*	if(urls->flags&CHECK_DOMAIN_REVERSE) {
-			//do a DNS lookup of the domain, and see what IP it corresponds to
-			//then do a reverse lookup on the IP, and see what domain you get
-			//There are some corporate signatures that mix different domains belonging to same company
-			struct url_check domain_url;
-			url_check_init(&domain_url);
-			if(!dns_to_ip_and_reverse(&host_url,DOMAIN_DISPLAY)) {
-				if(!strcmp(host_url.realLink.data,host_url.displayLink.data)) {
-					free_if_needed(&host_url);
-					return CL_PHISH_HOST_REVERSE_OK;
-				}
-				if(urls->flags&DOMAIN_SUFFICIENT) {
-					url_get_domain(&host_url,&domain_url);
-					if(!strcmp(domain_url.realLink.data,domain_url.displayLink.data)) {
-						free_if_needed(&host_url);
-						free_if_needed(&domain_url);
-						return CL_PHISH_DOMAIN_REVERSE_OK;
-					}
-					free_if_needed(&domain_url);
-				}
-			}
-		}*/
 		free_if_needed(&host_url);
 	}/*HOST_SUFFICIENT*/
-	/*we failed to find a reason why the 2 URLs are different, this is definetely phishing*/
+	/*we failed to find a reason why the 2 URLs are different, this is definitely phishing*/
 	if(urls->flags&DOMAINLIST_REQUIRED && !(phishy&DOMAIN_LISTED))
 		return CL_PHISH_HOST_NOT_LISTED;
 	return phishy_map(phishy,CL_PHISH_NOMATCH);

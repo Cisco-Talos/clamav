@@ -1,7 +1,7 @@
 /*
  *  Phishing module: whitelist implementation.
  *
- *  Copyright (C) 2006 Török Edvin <edwintorok@gmail.com>
+ *  Copyright (C) 2006-2007 Török Edvin <edwin@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -36,41 +36,20 @@
 #endif
 #endif
 
+
 #include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
 #include <string.h>
-#ifdef	HAVE_STRINGS_H
-#include <strings.h>
-#endif
 #include <ctype.h>
 
-#include <limits.h>
 #include "clamav.h"
-#include <sys/types.h>
-
-#ifdef	HAVE_REGEX_H
-/*#define USE_PCRE*/
-#include <regex.h>
-#endif
-
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-#include <stddef.h>
-#endif
-
 #include "others.h"
-#include "defaults.h"
-#include "str.h"
-#include "filetypes.h"
-#include "mbox.h"
 #include "phish_whitelist.h"
 #include "regex_list.h"
-#include "matcher-ac.h"
 
 int whitelist_match(const struct cl_engine* engine,const char* real_url,const char* display_url,int hostOnly)
 {
 	const char* info;/*unused*/
-	cli_dbgmsg("Phishing: looking up in whitelist:%s:%s; hostonly:%d\n",real_url,display_url,hostOnly);
+	cli_dbgmsg("Phishing: looking up in whitelist:%s:%s; host-only:%d\n",real_url,display_url,hostOnly);
 	return	engine->whitelist_matcher ? regex_list_match(engine->whitelist_matcher,real_url,display_url,hostOnly,&info,1) : 0;
 }
 
