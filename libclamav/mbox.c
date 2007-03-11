@@ -130,27 +130,8 @@ typedef	enum {
 
 #define	SAVE_TO_DISC	/* multipart/message are saved in a temporary file */
 
-#ifndef CL_EXPERIMENTAL
-/*
- * Code does exist to run FOLLOWURLS on systems without libcurl, however that
- * is not recommended so it is not compiled by default
- *
- * On Solaris, when using the GNU C compiler, the clamAV build system uses the
- * Sun supplied ld instead of the GNU ld causing an error. Therefore you cannot
- * use WITH_CURL on Solaris with gcc, you must configure with
- * "--without-libcurl". I don't know if it works with Sun's own compiler
- *
- * Fails to link on Solaris 10 with this error:
- *      Undefined			first referenced
- *  symbol				in file
- *  __floatdidf				/opt/sfw/lib/libcurl.s
- */
-#if	defined(C_SOLARIS) && defined(__GNUC__)
 #undef	WITH_CURL
-#endif
-#endif
 
-#if	defined(WITH_CURL) || defined(CL_EXPERIMENTAL)
 #define	FOLLOWURLS	5	/*
 				 * Maximum number of URLs scanned in a message
 				 * part. Helps to prevent Dialer.gen-45 and
@@ -158,7 +139,6 @@ typedef	enum {
 				 * dispatched by emails which point to it. If
 				 * not defined, don't check any URLs
 				 */
-#endif
 
 #ifdef	FOLLOWURLS
 #include "htmlnorm.h"
@@ -167,8 +147,6 @@ typedef	enum {
 #ifdef CL_EXPERIMENTAL
 #include "phishcheck.h"
 #endif
-
-#ifdef	FOLLOWURLS
 
 #ifndef	C_WINDOWS
 #include <netdb.h>
@@ -183,8 +161,6 @@ typedef	enum {
 #ifndef	C_WINDOWS
 #define	closesocket(s)	close(s)
 #endif
-
-#ifdef	CL_EXPERIMENTAL	/* dropping curl support */
 
 #include <fcntl.h>
 #ifndef	C_WINDOWS
@@ -208,55 +184,6 @@ typedef	unsigned	int	in_addr_t;
 #if	(!defined(EISCONN)) && (defined(WSAEISCONN))
 #define EISCONN	WSAEISCONN
 #endif
-
-#else
-
-#ifdef	WITH_CURL	/* Set in configure */
-/*
- * To build with WITH_CURL:
- * LDFLAGS=`curl-config --libs` ./configure ...
- */
-#include <curl/curl.h>
-
-/*
- * Needs curl >= 7.11 (I've heard that 7.9 can cause crashes and I have seen
- *	7.10 segfault, later versions can be flakey as well)
- * untested)
- *
- * Even 7.15 crashes, valgrind shows this:
- *	==2835== Warning: client switching stacks?  SP change: 0xBEB0FD2C --> 0xD0678F0
-*	==2835==          to suppress, use: --max-stackframe=1314225092 or greater
-
- *	==2835== Invalid write of size 4
- *	==2835==    at 0x40F67BD: Curl_resolv (in /usr/lib/libcurl.so.3.0.0)
- *	==2835==  Address 0xD0678F4 is on thread 1's stack
- *	==2835== Can't extend stack to 0xD067390 during signal delivery for thread 1:
- *	==2835==   no stack segment
- *	==2835==
- *	==2835== Process terminating with default action of signal 11 (SIGSEGV)
- *	==2835==  Access not within mapped region at address 0xD067390
- *	==2835==    at 0x40F67BD: Curl_resolv (in /usr/lib/libcurl.so.3.0.0)
- *
- * This bug has been reported upstream, however they claim that the bug
- *	does not exist :-(. I have received reports that 7.15.5 suffers from the
- *	same problem in Curl_resolv
- *
- * TODO: Drop curl and do it ourselves
- */
-#if	(LIBCURL_VERSION_NUM < 0x070B00)
-#undef	WITH_CURL	/* also undef FOLLOWURLS? */
-#endif
-
-#else
-#error	"FOLLOWURLS without CURL is no longer supported"
-
-#endif	/*WITH_CURL*/
-
-#endif	/* CL_EXPERIMENTAL */
-
-#else	/*!FOLLOWURLS*/
-#undef	WITH_CURL
-#endif	/*FOLLOWURLS*/
 
 /*
  * Define this to handle messages covered by section 7.3.2 of RFC1341.
@@ -312,22 +239,14 @@ static	int	count_quotes(const char *buf);
 static	bool	next_is_folded_header(const text *t);
 static	bool	newline_in_header(const char *line);
 
-static	void	checkURLs(message *m, mbox_ctx *mctx, mbox_status *rc, int is_html);
-
-#ifdef CL_EXPERIMENTAL
-static	void	do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs);
 static	blob	*getHrefs(message *m, tag_arguments_t *hrefs);
 static	void	hrefs_done(blob *b, tag_arguments_t *hrefs);
-#endif
+static	void	checkURLs(message *m, mbox_ctx *mctx, mbox_status *rc, int is_html);
+static	void	do_checkURLs(const char *dir, tag_arguments_t *hrefs);
 
 #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
 struct arg {
-#ifdef	CL_EXPERIMENTAL
 	char *url;
-#else
-	CURL *curl;
-	const char *url;
-#endif
 	const char *dir;
 	char *filename;
 };
@@ -1250,38 +1169,11 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 	char tmpfilename[16];
 	int tmpfd;
 #endif
-#if	defined(FOLLOWURLS) && (!defined(CL_EXPERIMENTAL))
-	static int initialised = 0;
-#ifdef	CL_THREAD_SAFE
-	static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
-#endif
 
 #ifdef	NEW_WORLD
 	cli_dbgmsg("fall back to old world\n");
 #else
 	cli_dbgmsg("in mbox()\n");
-#endif
-
-#if	defined(FOLLOWURLS) && (!defined(CL_EXPERIMENTAL))
-	if(ctx->options&CL_SCAN_MAILURL) {
-#ifdef	CL_THREAD_SAFE
-		pthread_mutex_lock(&init_mutex);
-#endif
-		if(!initialised) {
-			if(curl_global_init(CURL_GLOBAL_ALL) != 0) {
-#ifdef	CL_THREAD_SAFE
-				pthread_mutex_unlock(&init_mutex);
-#endif
-				cli_warnmsg("curl_global_init failed, disabling mail-follow-urls");
-				ctx->options &= ~CL_SCAN_MAILURL;
-			}
-			initialised = 1;
-		}
-#ifdef	CL_THREAD_SAFE
-		pthread_mutex_unlock(&init_mutex);
-#endif
-	}
 #endif
 
 	i = dup(desc);
@@ -3930,7 +3822,6 @@ rfc1341(message *m, const char *dir)
 }
 #endif
 
-#ifdef CL_EXPERIMENTAL
 static void
 hrefs_done(blob *b, tag_arguments_t *hrefs)
 {
@@ -3982,11 +3873,16 @@ getHrefs(message *m, tag_arguments_t *hrefs)
 	return b;
 }
 
+#ifdef CL_EXPERIMENTAL
+/*
+ * Experimental: validate URLs for phishes
+ * followurls: see if URLs point to malware
+ */
 static void
 checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
 {
-	tag_arguments_t hrefs;
 	blob *b;
+	tag_arguments_t hrefs;
 
 	/* aCaB: stripped GA related stuff */
 	hrefs.scanContents = mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS;
@@ -4014,14 +3910,36 @@ checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
 			}
 		}
 		if(is_html && (mctx->ctx->options&CL_SCAN_MAILURL) && (*rc != VIRUS))
-			do_checkURLs(mainMessage, mctx->dir, &hrefs);
+			do_checkURLs(mctx->dir, &hrefs);
 	}
 	hrefs_done(b,&hrefs);
 }
 
+#else	/*!CL_EXPERIMENTAL*/
+
+static void
+checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
+{
+	blob *b;
+	tag_arguments_t hrefs;
+
+	if(!is_html || (!(mctx->ctx->options&CL_SCAN_MAILURL)) || (*rc == VIRUS))
+		return;
+
+	hrefs.count = 0;
+	hrefs.tag = hrefs.value = NULL;
+	hrefs.contents = NULL;
+
+	b = getHrefs(mainMessage, &hrefs);
+	if(b)
+		do_checkURLs(mctx->dir, &hrefs);
+	hrefs_done(b, &hrefs);
+}
+#endif	/*CL_EXPERIMENTAL*/
+
 #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
 static void
-do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs)
+do_checkURLs(const char *dir, tag_arguments_t *hrefs)
 {
 	table_t *t;
 	int i, n;
@@ -4057,16 +3975,13 @@ do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs)
 			}
 			/*
 			 * What about foreign character spoofing?
-			 * It would be useful be able to check if url
-			 *	is the same as the text displayed, e.g.
-			 *	<a href="http://dodgy.biz">www.paypal.com</a>
-			 *	but that needs support from HTML normalise
 			 */
 			if(strchr(url, '%') && strchr(url, '@'))
 				cli_warnmsg("Possible URL spoofing attempt noticed, but not yet handled (%s)\n", url);
 
 			if(n == FOLLOWURLS) {
-				cli_warnmsg("URL %s will not be scanned\n", url);
+				cli_warnmsg("URL %s will not be scanned (FOLLOWURLS limit %d was reached)\n",
+					url, FOLLOWURLS);
 				break;
 			}
 
@@ -4105,200 +4020,15 @@ do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs)
 	}
 #endif
 }
-#else
-static void
-do_checkURLs(message *m, const char *dir, tag_arguments_t *hrefs)
-{
-}
-#endif
 
-#else	/*!CL_EXPERIMENTAL*/
-
-#if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
-static void
-checkURLs(message *m, mbox_ctx *mctx, mbox_status *rc, int is_html)
-{
-	blob *b = messageToBlob(m, 0);
-	size_t len;
-	table_t *t;
-	int i, n;
-#if	defined(WITH_CURL) && defined(CL_THREAD_SAFE)
-	pthread_t tid[FOLLOWURLS];
-	struct arg args[FOLLOWURLS];
-#endif
-	tag_arguments_t hrefs;
-
-	if(b == NULL)
-		return;
-
-	len = blobGetDataSize(b);
-
-	if(len == 0) {
-		blobDestroy(b);
-		return;
-	}
-
-	/* TODO: make this size customisable */
-	if(len > 100*1024) {
-		cli_warnmsg("Viruses pointed to by URL not scanned in large message\n");
-		blobDestroy(b);
-		return;
-	}
-
-	t = tableCreate();
-	if(t == NULL) {
-		blobDestroy(b);
-		return;
-	}
-
-	hrefs.count = 0;
-	hrefs.tag = hrefs.value = NULL;
-
-	cli_dbgmsg("checkURLs: calling html_normalise_mem\n");
-	if(!html_normalise_mem(blobGetData(b), len, NULL, &hrefs)) {
-		blobDestroy(b);
-		tableDestroy(t);
-		return;
-	}
-	cli_dbgmsg("checkURLs: html_normalise_mem returned\n");
-
-	/* TODO: Do we need to call remove_html_comments? */
-
-	n = 0;
-
-	for(i = 0; i < hrefs.count; i++) {
-		const char *url = (const char *)hrefs.value[i];
-
-		/*
-		 * TODO: If it's an image source, it'd be nice to note beacons
-		 *	where width="0" height="0", which needs support from
-		 *	the HTML normalise code
-		 */
-		if(strncasecmp("http://", url, 7) == 0) {
-			char *ptr;
-#ifdef	WITH_CURL
-#ifndef	CL_THREAD_SAFE
-			struct arg arg;
-#endif
-
-#else	/*!WITH_CURL*/
-#ifdef	CL_THREAD_SAFE
-			static pthread_mutex_t system_mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
-			struct stat statb;
-			char cmd[512];
-#endif	/*WITH_CURL*/
-			char name[NAME_MAX + 1];
-
-			if(tableFind(t, url) == 1) {
-				cli_dbgmsg("URL %s already downloaded\n", url);
-				continue;
-			}
-			/*
-			 * What about foreign character spoofing?
-			 * It would be useful be able to check if url
-			 *	is the same as the text displayed, e.g.
-			 *	<a href="http://dodgy.biz">www.paypal.com</a>
-			 *	but that needs support from HTML normalise
-			 */
-			if(strchr(url, '%') && strchr(url, '@'))
-				cli_warnmsg("Possible URL spoofing attempt noticed, but not yet handled (%s)\n", url);
-
-			if(n == FOLLOWURLS) {
-				cli_warnmsg("URL %s will not be scanned\n", url);
-				break;
-			}
-
-			(void)tableInsert(t, url, 1);
-			cli_dbgmsg("Downloading URL %s to be scanned\n", url);
-			strncpy(name, url, sizeof(name) - 1);
-			name[sizeof(name) - 1] = '\0';
-			for(ptr = name; *ptr; ptr++)
-				if(*ptr == '/')
-					*ptr = '_';
-
-#ifdef	WITH_CURL
-#ifdef	CL_THREAD_SAFE
-			args[n].curl = curl_easy_init();
-			if(args[n].curl == NULL) {
-				cli_errmsg("curl_easy_init failed\n");
-				continue;
-			}
-			args[n].dir = mctx->dir;
-			args[n].url = url;
-			args[n].filename = cli_strdup(name);
-			pthread_create(&tid[n], NULL, getURL, &args[n]);
-#else
-			/* easy isn't the word I'd use... */
-			arg.curl = curl_easy_init();
-			if(arg.curl == NULL) {
-				cli_errmsg("curl_easy_init failed\n");
-				continue;
-			}
-			arg.url = url;
-			arg.dir = mctx->dir;
-			arg.filename = name;
-			getURL(&arg);
-			curl_easy_cleanup(arg.curl);
-#endif
-
-#else	/*!WITH_CURL*/
-			cli_warnmsg("The use of mail-follow-urls without CURL being installed is deprecated\n");
-			/*
-			 * TODO: maximum size and timeouts
-			 */
-			len = sizeof(cmd) - 26 - strlen(mctx->dir) - strlen(name);
-#ifdef	CL_DEBUG
-			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 \"%.*s\" >%s/%s", len, url, mctx->dir, name);
-#else
-			snprintf(cmd, sizeof(cmd) - 1, "GET -t10 \"%.*s\" >%s/%s 2>/dev/null", len, url, mctx->dir, name);
-#endif
-			cmd[sizeof(cmd) - 1] = '\0';
-
-			cli_dbgmsg("%s\n", cmd);
-#ifdef	CL_THREAD_SAFE
-			pthread_mutex_lock(&system_mutex);
-#endif
-			system(cmd);
-#ifdef	CL_THREAD_SAFE
-			pthread_mutex_unlock(&system_mutex);
-#endif
-			snprintf(cmd, sizeof(cmd), "%s/%s", mctx->dir, name);
-			if(stat(cmd, &statb) >= 0)
-				if(statb.st_size == 0) {
-					cli_warnmsg("URL %s failed to download\n", url);
-					/*
-					 * Don't bother scanning an empty file
-					 */
-					(void)unlink(cmd);
-				}
-#endif
-			++n;
-		}
-	}
-	blobDestroy(b);
-	tableDestroy(t);
-
-#if	defined(WITH_CURL) && defined(CL_THREAD_SAFE)
-	assert(n <= FOLLOWURLS);
-	cli_dbgmsg("checkURLs: waiting for %d thread(s) to finish\n", n);
-	while(--n >= 0) {
-		pthread_join(tid[n], NULL);
-		free(args[n].filename);
-		curl_easy_cleanup(args[n].curl);
-	}
-#endif
-	html_tag_arg_free(&hrefs);
-}
-
-#else
+#else	/*!FOLLOWURLS*/
 
 static void
-checkURLs(message *m, mbox_ctx *mctx, mbox_status* rc, int is_html)
+do_checkURLs(const char *dir, tag_arguments_t *hrefs)
 {
 }
+
 #endif
-#endif /* CL_EXPERIMENTAL */
 
 #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
 /*
@@ -4311,8 +4041,6 @@ checkURLs(message *m, mbox_ctx *mctx, mbox_status* rc, int is_html)
  *	download them for scanning. But that will hit performance so there is
  *	an issue here.
  */
-
-#if	defined(CL_EXPERIMENTAL) || (!defined(WITH_CURL))
 
 /*
  * Removing the reliance on libcurl
@@ -4763,7 +4491,7 @@ nonblock_connect(int sock, const struct sockaddr *addr, socklen_t addrlen, int s
 	/* Launch (possibly) non-blocking connect() request */
 	if(connect(sock, addr, addrlen)) {
 		int e = errno;
-		cli_dbgmsg("DEBUG nonblock_connect: connect(): fd=%d errno=%d: %s\n",
+		cli_dbgmsg("nonblock_connect: connect(): fd=%d errno=%d: %s\n",
 			sock, e, strerror(e));
 		switch (e) {
 			case EALREADY:
@@ -4811,7 +4539,7 @@ nonblock_connect(int sock, const struct sockaddr *addr, socklen_t addrlen, int s
 			break; /* failed */
 		}
 
-		cli_dbgmsg("DEBUG nonblock_connect: select = %d\n", n);
+		cli_dbgmsg("nonblock_connect: select = %d\n", n);
 
 		if(n)
 			return connect_error(sock);
@@ -4846,148 +4574,6 @@ connect_error(int sock)
 	return 0;
 #endif
 }
-
-#else
-
-static	int	curl_has_segfaulted;
-/*
- * Inspite of numerious bug reports, curl is still buggy :-(
- *	For a fuller explanation, read the long comment at the top, including
- *	the valgrind evidence
- */
-static void
-curlsegv(int sig)
-{
-	curl_has_segfaulted = 1;
-}
-
-static void *
-#ifdef	CL_THREAD_SAFE
-getURL(void *a)
-#else
-getURL(struct arg *arg)
-#endif
-{
-	FILE *fp;
-	struct curl_slist *headers;
-#ifdef	CL_THREAD_SAFE
-	struct arg *arg = (struct arg *)a;
-#endif
-	const char *url = arg->url;
-	const char *dir = arg->dir;
-	CURL *curl = arg->curl;
-	const char *filename = arg->filename;
-	void (*oldsegv)(int);
-#ifdef	CURLOPT_ERRORBUFFER
-	char errorbuffer[CURL_ERROR_SIZE + 1];
-#elif	(LIBCURL_VERSION_NUM >= 0x070C00)
-	CURLcode res = CURLE_OK;
-#endif
-	char fout[NAME_MAX + 1];
-
-	(void)curl_easy_setopt(curl, CURLOPT_USERAGENT, "www.clamav.net");
-
-	if(curl_easy_setopt(curl, CURLOPT_URL, url) != 0) {
-		cli_errmsg("%s: curl_easy_setopt failed\n", url);
-		return NULL;
-	}
-
-	snprintf(fout, sizeof(fout) - 1, "%s/%s", dir, filename);
-
-	cli_dbgmsg("Saving %s to %s\n", url, fout);
-	fp = fopen(fout, "wb");
-
-	if(fp == NULL) {
-		cli_errmsg("Can't open '%s' for writing", fout);
-		return NULL;
-	}
-#ifdef	CURLOPT_WRITEDATA
-	if(curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp) != 0) {
-		fclose(fp);
-		return NULL;
-	}
-#else
-	if(curl_easy_setopt(curl, CURLOPT_FILE, fp) != 0) {
-		fclose(fp);
-		return NULL;
-	}
-#endif
-
-	/*
-	 * If an item is in squid's cache get it from there (TCP_HIT/200)
-	 * by default curl doesn't (TCP_CLIENT_REFRESH_MISS/200)
-	 */
-	headers = curl_slist_append(NULL, "Pragma:");
-	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-
-	/* These should be customisable */
-	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30);
-	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10);
-#ifdef	CURLOPT_MAXFILESIZE
-	curl_easy_setopt(curl, CURLOPT_MAXFILESIZE, 50*1024);
-#endif
-
-#ifdef  CL_THREAD_SAFE
-#ifdef	CURLOPT_DNS_USE_GLOBAL_CACHE
-	/* Apparently this is depracated */
-	/*curl_easy_setopt(curl, CURLOPT_DNS_USE_GLOBAL_CACHE, 0);*/
-#endif
-#endif
-
-#ifdef  CL_THREAD_SAFE
-#ifdef	CURLOPT_NOSIGNAL
-	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
-#endif
-#endif
-
-	/*
-	 * Prevent password: prompting with older versions
-	 * FIXME: a better username?
-	 */
-	curl_easy_setopt(curl, CURLOPT_USERPWD, "username:password");
-
-	/*
-	 * FIXME: valgrind reports "pthread_mutex_unlock: mutex is not locked"
-	 * from gethostbyaddr_r within this. It may be a bug in libcurl
-	 * rather than this code, but I need to check, see Curl_resolv()
-	 * If pushed really hard it will sometimes say
-	 * Conditional jump or move depends on uninitialised value(s) and
-	 * quit. But the program seems to work OK without valgrind...
-	 * Perhaps Curl_resolv() isn't thread safe?
-	 *
-	 * I have seen segfaults in version 7.12.3. Version 7.14 seems OK.
-	 */
-	/*
-	 * On some C libraries (notably with FC3, glibc-2.3.3-74) you get a
-	 * memory leak here in getaddrinfo(), see
-	 *	https://bugzilla.redhat.com/bugzilla/show_bug.cgi?id=139559
-	 */
-	curl_has_segfaulted = 0;
-	oldsegv = signal(SIGSEGV, curlsegv);
-#ifdef	CURLOPT_ERRORBUFFER
-	curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errorbuffer);
-
-	if(curl_easy_perform(curl) != CURLE_OK)
-		cli_warnmsg("URL %s failed to download: %s\n", url, errorbuffer);
-#elif	(LIBCURL_VERSION_NUM >= 0x070C00)
-	if((res = curl_easy_perform(curl)) != CURLE_OK)
-		cli_warnmsg("URL %s failed to download: %s\n", url,
-			curl_easy_strerror(res));
-#else
-	if(curl_easy_perform(curl) != CURLE_OK)
-		cli_warnmsg("URL %s failed to download\n", url);
-#endif
-
-	fclose(fp);
-	curl_slist_free_all(headers);
-
-	if(curl_has_segfaulted)
-		cli_warnmsg("Libcurl has segfaulted on '%s'\n", url);
-
-	signal(SIGSEGV, oldsegv);
-	return NULL;
-}
-#endif
 
 #endif
 
