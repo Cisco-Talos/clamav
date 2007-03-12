@@ -29,8 +29,6 @@
 
 int cli_unfsg(char *, char *, int, int, char **, char **);
 
-#ifdef CL_EXPERIMENTAL
 int unmew(char *, char *, int, int, char **, char **);
-#endif
 
 #endif
