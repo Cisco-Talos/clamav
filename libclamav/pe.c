@@ -2819,7 +2819,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	return -1;
     }
 
-    fsize = sb.st_size;
+    fsize = sb.st_size - peinfo->offset;
 
     if(cli_readn(desc, &e_magic, sizeof(e_magic)) != sizeof(e_magic)) {
 	cli_dbgmsg("Can't read DOS signature\n");
@@ -2845,7 +2845,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	return -1;
     }
 
-    if(lseek(desc, e_lfanew, SEEK_SET) < 0) {
+    if(lseek(desc, peinfo->offset + e_lfanew, SEEK_SET) < 0) {
 	/* probably not a PE file */
 	cli_dbgmsg("Can't lseek to e_lfanew\n");
 	return -1;

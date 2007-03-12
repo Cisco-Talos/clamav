@@ -20,6 +20,8 @@
 #ifndef __MATCHER_AC_H
 #define __MATCHER_AC_H
 
+#include <sys/types.h>
+
 #include "clamav.h"
 #include "matcher.h"
 #include "filetypes.h"
@@ -30,6 +32,7 @@
 
 struct cli_ac_data {
     unsigned int partsigs;
+    off_t *inioff;
     unsigned int *partcnt;
     unsigned int **partoff;
     uint8_t *offcnt;

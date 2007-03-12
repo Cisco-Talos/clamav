@@ -314,10 +314,18 @@ int cli_ac_initdata(struct cli_ac_data *data, unsigned int partsigs, unsigned in
     if(!partsigs)
 	return CL_SUCCESS;
 
+    data->inioff = (off_t *) cli_malloc(partsigs * sizeof(off_t));
+    if(!data->inioff) {
+	cli_errmsg("cli_ac_init(): unable to cli_malloc(%u)\n", partsigs * sizeof(off_t));
+	return CL_EMEM;
+    }
+    memset(data->inioff, -1, partsigs * sizeof(off_t));
+
     data->partcnt = (unsigned int *) cli_calloc(partsigs, sizeof(unsigned int));
 
     if(!data->partcnt) {
 	cli_errmsg("cli_ac_init(): unable to cli_calloc(%u, %u)\n", partsigs, sizeof(unsigned int));
+	free(data->inioff);
 	return CL_EMEM;
     }
 
@@ -325,6 +333,7 @@ int cli_ac_initdata(struct cli_ac_data *data, unsigned int partsigs, unsigned in
 
     if(!data->offcnt) {
 	cli_errmsg("cli_ac_init(): unable to cli_calloc(%u, %u)\n", partsigs, sizeof(uint8_t));
+	free(data->inioff);
 	free(data->partcnt);
 	return CL_EMEM;
     }
@@ -333,6 +342,7 @@ int cli_ac_initdata(struct cli_ac_data *data, unsigned int partsigs, unsigned in
 
     if(!data->offidx) {
 	cli_errmsg("cli_ac_init(): unable to cli_calloc(%u, %u)\n", partsigs, sizeof(uint8_t));
+	free(data->inioff);
 	free(data->partcnt);
 	free(data->offcnt);
 	return CL_EMEM;
@@ -342,6 +352,7 @@ int cli_ac_initdata(struct cli_ac_data *data, unsigned int partsigs, unsigned in
 
     if(!data->maxshift) {
 	cli_errmsg("cli_ac_init(): unable to cli_malloc(%u)\n", partsigs * sizeof(int));
+	free(data->inioff);
 	free(data->partcnt);
 	free(data->offcnt);
 	free(data->offidx);
@@ -354,6 +365,7 @@ int cli_ac_initdata(struct cli_ac_data *data, unsigned int partsigs, unsigned in
 
     if(!data->partoff) {
 	cli_errmsg("cli_ac_init(): unable to cli_calloc(%u, %u)\n", partsigs, sizeof(unsigned int));
+	free(data->inioff);
 	free(data->partcnt);
 	free(data->offcnt);
 	free(data->offidx);
@@ -374,6 +386,7 @@ int cli_ac_initdata(struct cli_ac_data *data, unsigned int partsigs, unsigned in
 		free(data->partoff[j]);
 
 	    free(data->partoff);
+	    free(data->inioff);
 	    free(data->partcnt);
 	    free(data->offcnt);
 	    free(data->offidx);
@@ -392,6 +405,7 @@ void cli_ac_freedata(struct cli_ac_data *data)
 
 
     if(data && data->partsigs) {
+	free(data->inioff);
 	free(data->partcnt);
 	free(data->offcnt);
 	free(data->offidx);
@@ -446,6 +460,9 @@ int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char
 
 		    if(pt->sigid) { /* it's a partial signature */
 
+			if(pt->partno == 1)
+			    mdata->inioff[pt->sigid - 1] = curroff;
+
 			if(mdata->partcnt[pt->sigid - 1] + 1 == pt->partno) {
 			    offnum = mdata->offcnt[pt->sigid - 1];
 			    if(offnum < AC_DEFAULT_TRACKLEN) {
@@ -491,10 +508,10 @@ int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char
 				if(++mdata->partcnt[pt->sigid - 1] + 1 == pt->parts) {
 				    if(pt->type) {
 					if(otfrec) {
-					    if(pt->type > type || pt->type >= CL_TYPE_SFX) {
-						cli_dbgmsg("Matched signature for file type %s\n", pt->virname);
+					    if(pt->type > type || pt->type >= CL_TYPE_SFX || pt->type == CL_TYPE_MSEXE) {
+						cli_dbgmsg("Matched signature for file type %s at %u\n", pt->virname, (unsigned int) mdata->inioff[pt->sigid - 1]);
 						type = pt->type;
-						if(ftoffset && (!*ftoffset || (*ftoffset)->cnt < SFX_MAX_TESTS) && ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) {
+						if(ftoffset && (!*ftoffset || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ) && ((ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP) && type == CL_TYPE_MSEXE)))  {
 						    if(!(tnode = cli_calloc(1, sizeof(struct cli_matched_type)))) {
 							cli_errmsg("cli_ac_scanbuff(): Can't allocate memory for new type node\n");
 							if(info.exeinfo.section)
@@ -503,7 +520,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char
 						    }
 
 						    tnode->type = type;
-						    tnode->offset = -1; /* we don't remember the offset of the first part */
+						    tnode->offset = mdata->inioff[pt->sigid - 1];
 
 						    if(*ftoffset)
 							tnode->cnt = (*ftoffset)->cnt + 1;
@@ -530,10 +547,10 @@ int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char
 		    } else { /* old type signature */
 			if(pt->type) {
 			    if(otfrec) {
-				if(pt->type > type || pt->type >= CL_TYPE_SFX) {
+				if(pt->type > type || pt->type >= CL_TYPE_SFX || pt->type == CL_TYPE_MSEXE) {
 				    cli_dbgmsg("Matched signature for file type %s at %u\n", pt->virname, curroff);
 				    type = pt->type;
-				    if(ftoffset && (!*ftoffset ||(*ftoffset)->cnt < SFX_MAX_TESTS) && ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) {
+				    if(ftoffset && (!*ftoffset || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ) && ((ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP) && type == CL_TYPE_MSEXE)))  {
 					if(!(tnode = cli_calloc(1, sizeof(struct cli_matched_type)))) {
 					    cli_errmsg("cli_ac_scanbuff(): Can't allocate memory for new type node\n");
 					    if(info.exeinfo.section)

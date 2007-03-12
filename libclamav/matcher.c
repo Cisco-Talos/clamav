@@ -272,7 +272,7 @@ int cli_validatesig(cli_file_t ftype, const char *offstr, off_t fileoff, struct 
 	}
 
 	if(maxshift) {
-	    if((fileoff < offset) || (fileoff > offset + maxshift)) {
+	    if((fileoff < offset) || (fileoff > offset + (off_t) maxshift)) {
 		cli_dbgmsg("Signature offset: %lu, expected: [%lu..%lu] (%s)\n", fileoff, offset, offset + maxshift, virname);
 		return 0;
 	    }

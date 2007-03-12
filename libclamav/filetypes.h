@@ -25,7 +25,7 @@
 
 #define MAGIC_BUFFER_SIZE 256
 #define CL_TYPENO 500
-#define SFX_MAX_TESTS 10
+#define MAX_EMBEDDED_OBJ 10
 
 typedef enum {
     CL_TYPE_UNKNOWN_TEXT = CL_TYPENO,

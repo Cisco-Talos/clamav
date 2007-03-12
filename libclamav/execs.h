@@ -21,6 +21,7 @@
 #define __EXECS_H
 
 #include "cltypes.h"
+#include <sys/types.h>
 
 struct cli_exe_section {
     uint32_t rva;
@@ -34,6 +35,7 @@ struct cli_exe_section {
 struct cli_exe_info {
     uint32_t ep;
     uint16_t nsections;
+    off_t offset;
     struct cli_exe_section *section;
 };
 

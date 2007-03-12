@@ -1680,17 +1680,84 @@ static int cli_scanmail(int desc, cli_ctx *ctx)
     return ret;
 }
 
+static int cli_scanembpe(int desc, cli_ctx *ctx)
+{
+	int fd, bytes, ret = CL_CLEAN;
+	unsigned long int size = 0;
+	char buff[512];
+	char *tmpname;
+
+
+    tmpname = cli_gentemp(NULL);
+    if(!tmpname)
+	return CL_EMEM;
+
+    if((fd = open(tmpname, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
+	cli_errmsg("cli_scanembpe: Can't create file %s\n", tmpname);
+	free(tmpname);
+	return CL_EIO;
+    }
+
+    while((bytes = read(desc, buff, sizeof(buff))) > 0) {
+	size += bytes;
+
+	if(ctx->limits && ctx->limits->maxfilesize && (size + sizeof(buff) > ctx->limits->maxfilesize)) {
+	    cli_dbgmsg("cli_scanembpe: Size exceeded (stopped at %lu, max: %lu)\n", size, ctx->limits->maxfilesize);
+	    /* BLOCKMAX should be ignored here */
+	    break;
+	}
+
+	if(cli_writen(fd, buff, bytes) != bytes) {
+	    cli_dbgmsg("cli_scanembpe: Can't write to temporary file\n");
+	    close(fd);
+	    if(!cli_leavetemps_flag)
+		unlink(tmpname);
+	    free(tmpname);	
+	    return CL_EIO;
+	}
+    }
+
+    if(fsync(fd) == -1) {
+	cli_dbgmsg("cli_scanembpe: Can't synchronise descriptor %d\n", fd);
+	close(fd);
+	if(!cli_leavetemps_flag)
+	    unlink(tmpname);
+	free(tmpname);	
+	return CL_EFSYNC;
+    }
+
+    lseek(fd, 0, SEEK_SET);
+    if((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS) {
+	cli_dbgmsg("cli_scanembpe: Infected with %s\n", *ctx->virname);
+	close(fd);
+	if(!cli_leavetemps_flag)
+	    unlink(tmpname);
+	free(tmpname);	
+	return CL_VIRUS;
+    }
+
+    close(fd);
+    if(!cli_leavetemps_flag)
+	unlink(tmpname);
+    free(tmpname);
+
+    /* intentionally ignore possible errors from cli_magic_scandesc */
+    return CL_CLEAN;
+}
+
 static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 {
 	int ret = CL_CLEAN, nret = CL_CLEAN;
 	unsigned short ftrec;
 	struct cli_matched_type *ftoffset = NULL, *fpt;
 	uint32_t lastzip, lastrar;
+	struct cli_exe_info peinfo;
 
 
     switch(type) {
 	case CL_TYPE_UNKNOWN_TEXT:
 	case CL_TYPE_MSEXE:
+	case CL_TYPE_ZIP:
 	    ftrec = 1;
 	    break;
 	default:
@@ -1705,13 +1772,17 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
     ret = cli_scandesc(desc, ctx, ftrec, type, 0, &ftoffset);
 
     if(ret >= CL_TYPENO) {
-	lseek(desc, 0, SEEK_SET);
 
-	nret = cli_scandesc(desc, ctx, 0, ret, 1, NULL);
-	if(nret == CL_VIRUS)
-	    cli_dbgmsg("%s found in descriptor %d when scanning file type %u\n", *ctx->virname, desc, ret);
+	if(ret < CL_TYPE_SFX && ret != CL_TYPE_MSEXE) {
+	    lseek(desc, 0, SEEK_SET);
+
+	    nret = cli_scandesc(desc, ctx, 0, ret, 1, NULL);
+	    if(nret == CL_VIRUS)
+		cli_dbgmsg("%s found in descriptor %d when scanning file type %u\n", *ctx->virname, desc, ret);
+	}
 
 	ret == CL_TYPE_MAIL ? ctx->mrec++ : ctx->arec++;
+
 	if(nret != CL_VIRUS) switch(ret) {
 	    case CL_TYPE_HTML:
 		if(SCAN_HTML && type == CL_TYPE_UNKNOWN_TEXT && (DCONF_DOC & DOC_CONF_HTML))
@@ -1747,6 +1818,30 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 
 			    fpt = fpt->next;
 			}
+		    }
+		}
+		break;
+
+	    case CL_TYPE_MSEXE:
+		if(SCAN_PE && ctx->dconf->pe) {
+		    fpt = ftoffset;
+		    while(fpt) {
+			if(fpt->type == CL_TYPE_MSEXE && fpt->offset) {
+			    cli_dbgmsg("PE signature found at %u\n", (unsigned int) fpt->offset);
+			    memset(&peinfo, 0, sizeof(struct cli_exe_info));
+			    peinfo.offset = fpt->offset;
+			    lseek(desc, fpt->offset, SEEK_SET);
+			    if(cli_peheader(desc, &peinfo) == 0) {
+				cli_dbgmsg("*** Detected embedded PE file ***\n");
+				if(peinfo.section)
+				    free(peinfo.section);
+
+				lseek(desc, fpt->offset, SEEK_SET);
+				if((nret = cli_scanembpe(desc, ctx)) == CL_VIRUS)
+				    break;
+			    }
+			}
+			fpt = fpt->next;
 		    }
 		}
 		break;
