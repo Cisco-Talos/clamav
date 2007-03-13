@@ -1837,8 +1837,11 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 				    free(peinfo.section);
 
 				lseek(desc, fpt->offset, SEEK_SET);
-				if((nret = cli_scanembpe(desc, ctx)) == CL_VIRUS)
-				    break;
+				nret = cli_scanembpe(desc, ctx);
+				break; /* we can stop here, other embedded
+					* executables will be found recursively
+					* through the above call
+					*/
 			    }
 			}
 			fpt = fpt->next;
