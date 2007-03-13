@@ -235,7 +235,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	uint16_t nsections;
 	uint32_t e_lfanew; /* address of new exe header */
 	uint32_t ep, vep; /* entry point (raw, virtual) */
-	uint8_t polipos = 0;
+	uint8_t polipos = 0, magistr;
 	time_t timestamp;
 	struct pe_image_file_hdr file_hdr;
 	union {
@@ -786,6 +786,18 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	return CL_CLEAN;
     }
 
+    magistr = (SCAN_ALGO && (DCONF & PE_CONF_MAGISTR) && !dll && (nsections>1) && (EC32(section_hdr[nsections - 1].Characteristics) & 0x80000000));
+
+    /*
+        - ENDPASS for section based heuristics -
+
+	past this line section names and
+	characteristics	are not availble
+    */
+    free(section_hdr);
+
+
+
     /* Attempt to detect some popular polymorphic viruses */
 
     /* W32.Parite.B */
@@ -799,7 +811,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		pt += 15;
 		if(((dw1 = cli_readint32(pt)) ^ (dw2 = cli_readint32(pt + 4))) == 0x505a4f && ((dw1 = cli_readint32(pt + 8)) ^ (dw2 = cli_readint32(pt + 12))) == 0xffffb && ((dw1 = cli_readint32(pt + 16)) ^ (dw2 = cli_readint32(pt + 20))) == 0xb8) {
 		    *ctx->virname = "W32.Parite.B";
-		    free(section_hdr);
 		    free(exe_sections);
 		    return CL_VIRUS;
 		}
@@ -862,7 +873,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    break;
 		}
 		*ctx->virname = "Win32.Kriz";
-		free(section_hdr);
 		free(exe_sections);
 		return CL_VIRUS;
 	    }
@@ -870,7 +880,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     }
 
     /* W32.Magistr.A/B */
-    if(SCAN_ALGO && (DCONF & PE_CONF_MAGISTR) && !dll && (EC32(section_hdr[nsections - 1].Characteristics) & 0x80000000)) {
+    if(magistr) {
 	    uint32_t rsize, vsize, dam = 0;
 
 	vsize = exe_sections[nsections - 1].uvsz;
@@ -887,7 +897,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    if(cli_readn(desc, buff, 4096) == 4096) {
 		if(cli_memstr(buff, 4091, "\xe8\x2c\x61\x00\x00", 5)) {
 		    *ctx->virname = dam ? "W32.Magistr.A.dam" : "W32.Magistr.A";
-		    free(section_hdr);
 		    free(exe_sections);
 		    return CL_VIRUS;
 		} 
@@ -900,7 +909,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    if(cli_readn(desc, buff, 4096) == 4096) {
 		if(cli_memstr(buff, 4091, "\xe8\x04\x72\x00\x00", 5)) {
 		    *ctx->virname = dam ? "W32.Magistr.B.dam" : "W32.Magistr.B";
-		    free(section_hdr);
 		    free(exe_sections);
 		    return CL_VIRUS;
 		} 
@@ -938,7 +946,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		if(!err && (raddr >= exe_sections[polipos].raw && raddr < exe_sections[polipos].raw + exe_sections[polipos].rsz) && (!offlist || (raddr != offlist->offset))) {
 		    offnode = (struct offset_list *) cli_malloc(sizeof(struct offset_list));
 		    if(!offnode) {
-			free(section_hdr);
 			free(exe_sections);
 			while(offlist) {
 			    offnode = offlist;
@@ -995,7 +1002,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
 
 	if(ret == CL_VIRUS) {
-	    free(section_hdr);
 	    free(exe_sections);
 	    return CL_VIRUS;
 	}
@@ -1011,7 +1017,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
       
       if(lseek(desc, ep-4, SEEK_SET) == -1) {
 	cli_dbgmsg("SUE: lseek() failed\n");
-	free(section_hdr);
 	free(exe_sections);
 	return CL_EIO;
       }
@@ -1030,7 +1035,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    (sue=sudecrypt(desc, fsize, exe_sections, nsections-1, sue, key, cli_readint32(buff), e_lfanew))) {
 	  if(!(tempfile = cli_gentemp(NULL))) {
 	    free(sue);
-	    free(section_hdr);
 	    free(exe_sections);
 	    return CL_EMEM;
 	  }
@@ -1039,7 +1043,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    cli_dbgmsg("sue: Can't create file %s\n", tempfile);
 	    free(tempfile);
 	    free(sue);
-	    free(section_hdr);
 	    free(exe_sections);
 	    return CL_EIO;
 	  }
@@ -1049,7 +1052,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    close(ndesc);
 	    free(tempfile);
 	    free(sue);
-	    free(section_hdr);
 	    free(exe_sections);
 	    return CL_EIO;
 	  }
@@ -1063,7 +1065,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	  lseek(ndesc, 0, SEEK_SET);
 
 	  if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) {
-	    free(section_hdr);
 	    free(exe_sections);
 	    close(ndesc);
 	    if(!cli_leavetemps_flag)
@@ -1086,7 +1087,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     found = 0;
     if(DCONF & (PE_CONF_UPX | PE_CONF_FSG | PE_CONF_MEW)) {
 	for(i = 0; i < (unsigned int) nsections - 1; i++) {
-	    if(!section_hdr[i].SizeOfRawData && section_hdr[i].VirtualSize && section_hdr[i + 1].SizeOfRawData && section_hdr[i + 1].VirtualSize) {
+	    if(!exe_sections[i].rsz && exe_sections[i].vsz && exe_sections[i + 1].rsz && exe_sections[i + 1].vsz) {
 		found = 1;
 		cli_dbgmsg("UPX/FSG/MEW: empty section found - assuming compression\n");
 		break;
@@ -1100,7 +1101,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	/* Check EP for MEW */
 	if(lseek(desc, ep, SEEK_SET) == -1) {
 	    cli_dbgmsg("MEW: lseek() failed\n");
-	    free(section_hdr);
 	    free(exe_sections);
 	    return CL_EIO;
 	}
@@ -1108,7 +1108,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
         if((bytes = read(desc, buff, 25)) != 25 && bytes < 16) {
 	    cli_dbgmsg("MEW: Can't read at least 16 bytes at 0x%x (%d) %d\n", ep, ep, bytes);
 	    cli_dbgmsg("MEW: Broken or not compressed file\n");
-            free(section_hdr);
 	    free(exe_sections);
 	    return CL_CLEAN;
 	}
@@ -1124,7 +1123,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 		if(lseek(desc, fileoffset, SEEK_SET) == -1) {
 		    cli_dbgmsg("MEW: lseek() failed\n");
-		    free(section_hdr);
 		    free(exe_sections);
 		    return CL_EIO;
 		}
@@ -1149,7 +1147,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 		if(lseek(desc, exe_sections[i + 1].raw, SEEK_SET) == -1) {
 		    cli_dbgmsg("MEW: lseek() failed\n"); /* ACAB: lseek won't fail here but checking doesn't hurt even */
-		    free(section_hdr);
 		    free(exe_sections);
 		    return CL_EIO;
 		}
@@ -1159,7 +1156,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		cli_dbgmsg("MEW: ssize %08x dsize %08x offdiff: %08x\n", ssize, dsize, offdiff);
 		if(ctx->limits && ctx->limits->maxfilesize && (ssize + dsize > ctx->limits->maxfilesize || exe_sections[i + 1].rsz > ctx->limits->maxfilesize)) {
 		    cli_dbgmsg("MEW: Sizes exceeded (ssize: %u, dsize: %u, max: %lu)\n", ssize, dsize , ctx->limits->maxfilesize);
-		    free(section_hdr);
 		    free(exe_sections);
 		    if(BLOCKMAX) {
 			*ctx->virname = "PE.MEW.ExceededFileSize";
@@ -1171,7 +1167,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 		/* allocate needed buffer */
 		if (!(src = cli_calloc (ssize + dsize, sizeof(char)))) {
-		    free(section_hdr);
 		    free(exe_sections);
 		    return CL_EMEM;
 		}
@@ -1185,7 +1180,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 		if((bytes = read(desc, src + dsize, exe_sections[i + 1].rsz)) != exe_sections[i + 1].rsz) {
 		    cli_dbgmsg("MEW: Can't read %d bytes [readed: %d]\n", exe_sections[i + 1].rsz, bytes);
-		    free(section_hdr);
 		    free(exe_sections);
 		    free(src);
 		    return CL_EIO;
@@ -1205,7 +1199,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    uselzma = 0;
 
 		if(!(tempfile = cli_gentemp(NULL))) {
-		    free(section_hdr);
 		    free(exe_sections);
 		    free(src);
 		    return CL_EMEM;
@@ -1213,7 +1206,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
 		    cli_dbgmsg("MEW: Can't create file %s\n", tempfile);
 		    free(tempfile);
-		    free(section_hdr);
 		    free(exe_sections);
 		    free(src);
 		    return CL_EIO;
@@ -1228,7 +1220,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 			cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
 			if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) {
-			    free(section_hdr);
 			    free(exe_sections);
 			    close(ndesc);
 			    if(!cli_leavetemps_flag)
@@ -1240,7 +1231,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 			if(!cli_leavetemps_flag)
 			    unlink(tempfile);
 			free(tempfile);
-			free(section_hdr);
 			free(exe_sections);
 			return CL_CLEAN;
 		    default: /* Everything gone wrong */
@@ -1254,12 +1244,11 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    }
 	} while (0);
     }
-
+HERE!!!
     if(found || upack) {
 	/* Check EP for UPX vs. FSG vs. Upack */
 	if(lseek(desc, ep, SEEK_SET) == -1) {
 	    cli_dbgmsg("UPX/FSG: lseek() failed\n");
-	    free(section_hdr);
 	    free(exe_sections);
 	    return CL_EIO;
 	}
@@ -1267,7 +1256,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
         if(cli_readn(desc, buff, 168) != 168) {
 	    cli_dbgmsg("UPX/FSG: Can't read 168 bytes at 0x%x (%d)\n", ep, ep);
 	    cli_dbgmsg("UPX/FSG: Broken or not UPX/FSG compressed file\n");
-            free(section_hdr);
 	    free(exe_sections);
 	    return CL_CLEAN;
 	}
@@ -1292,21 +1280,30 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	 * 
 	 */
 	/* upack 0.39-3s + sample 0151477*/
- 	if((upack && buff[0] == '\xbe' && cli_readint32(buff + 1) - EC32(optional_hdr32.ImageBase) > min && /* mov esi */
-				buff[5] == '\xad' && buff[6] == '\x50' && /* lodsd; push eax */
-				EC16(file_hdr.NumberOfSections) == 3) || /* 3 sections */
-			/* based on 0297729 sample from aCaB */
-			(upack && buff[0] == '\xbe' && cli_readint32(buff + 1) - EC32(optional_hdr32.ImageBase) > min && /* mov esi */
-			 buff[5] == '\xff' && buff[6] == '\x36' && /* push [esi] */
-			 EC16(file_hdr.NumberOfSections) == 3) ||
-			/* upack 0.39-2s */
-			(!upack && buff[0] == '\x60' && buff[1] == '\xe8' && cli_readint32(buff+2) == 0x9 && /* pusha; call+9 */
-			 EC16(file_hdr.NumberOfSections) == 2) || /* 2 sections */
-			/* upack 1.1/1.2, based on 2 samples */
-			(!upack && buff[0] == '\xbe' && cli_readint32(buff+1) - EC32(optional_hdr32.ImageBase) < min &&  /* mov esi */
-			 cli_readint32(buff + 1) - EC32(optional_hdr32.ImageBase) > 0 && 
-			 buff[5] == '\xad' && buff[6] == '\x8b' && buff[7] == '\xf8' && /* loads;  mov edi, eax */
-			 EC16(file_hdr.NumberOfSections) == 2)) { /* 2 sections */
+ 	if(((upack && nsections == 3) && /* 3 sections */
+	    (
+	     buff[0] == '\xbe' && cli_readint32(buff + 1) - EC32(optional_hdr32.ImageBase) > min && /* mov esi */
+	     buff[5] == '\xad' && buff[6] == '\x50' /* lodsd; push eax */
+	     )
+	    || 
+	    /* based on 0297729 sample from aCaB */
+	    (buff[0] == '\xbe' && cli_readint32(buff + 1) - EC32(optional_hdr32.ImageBase) > min && /* mov esi */
+	     buff[5] == '\xff' && buff[6] == '\x36' /* push [esi] */
+	     )
+	    ) 
+	   ||
+	   ((!upack && nsections == 2) && /* 2 sections */
+	    ( /* upack 0.39-2s */
+	     buff[0] == '\x60' && buff[1] == '\xe8' && cli_readint32(buff+2) == 0x9 /* pusha; call+9 */
+	     )
+	    ||
+	    ( /* upack 1.1/1.2, based on 2 samples */
+	     buff[0] == '\xbe' && cli_readint32(buff+1) - EC32(optional_hdr32.ImageBase) < min &&  /* mov esi */
+	     cli_readint32(buff + 1) - EC32(optional_hdr32.ImageBase) > 0 &&
+	     buff[5] == '\xad' && buff[6] == '\x8b' && buff[7] == '\xf8' /* loads;  mov edi, eax */
+	     )
+	    )
+	   ){ 
 		uint32_t vma, off;
 		int a,b,c, file;
 
@@ -2934,20 +2931,6 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	peinfo->section[i].rsz = PESALIGN(EC32(section_hdr[i].SizeOfRawData), falign);
 	if (peinfo->section[i].rsz && !CLI_ISCONTAINED(0, (uint32_t) fsize, peinfo->section[i].raw, peinfo->section[i].rsz))
 	    peinfo->section[i].rsz = (fsize - peinfo->section[i].raw)*(fsize>peinfo->section[i].raw);
-
-	/* cli_rawaddr now handles the whole process space
-	 * TO BE REMOVED
-	if(!i) {
-	    min = peinfo->section[i].rva;
-	    max = peinfo->section[i].rva + peinfo->section[i].rsz;
-	} else {
-	    if(EC32(section_hdr[i].VirtualAddress) < min)
-		min = EC32(section_hdr[i].VirtualAddress);
-
-	    if(EC32(section_hdr[i].VirtualAddress) + EC32(section_hdr[i].SizeOfRawData) > max)
-		max = EC32(section_hdr[i].VirtualAddress) + EC32(section_hdr[i].SizeOfRawData);
-	}
-	*/
     }
 
     if(pe_plus)
@@ -2956,15 +2939,11 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	peinfo->ep = EC32(optional_hdr32.AddressOfEntryPoint);
 
     if(!(peinfo->ep = cli_rawaddr(peinfo->ep, peinfo->section, peinfo->nsections, &err, fsize)) && err) {
-#ifdef ACAB_REGRESSION
-	peinfo->ep = 0x7fffffff;
-#else
 	cli_dbgmsg("Broken PE file\n");
 	free(section_hdr);
 	free(peinfo->section);
 	peinfo->section = NULL;
 	return -1;
-#endif /* ACAB_REGRESSION */
     }
 
     free(section_hdr);
