@@ -2367,19 +2367,18 @@ skip_upack_and_go_to_next_unpacker:
 	free(tempfile);
 	
     }
-HERE!!!
+
 
     /* yC 1.3 */
 
     if((DCONF & PE_CONF_YC) && nsections > 1 &&
-       EC32(optional_hdr32.AddressOfEntryPoint) == EC32(section_hdr[nsections - 1].VirtualAddress) + 0x60 &&
+       EC32(optional_hdr32.AddressOfEntryPoint) == exe_sections[nsections - 1].rva + 0x60 &&
        memcmp(buff, "\x55\x8B\xEC\x53\x56\x57\x60\xE8\x00\x00\x00\x00\x5D\x81\xED\x6C\x28\x40\x00\xB9\x5D\x34\x40\x00\x81\xE9\xC6\x28\x40\x00\x8B\xD5\x81\xC2\xC6\x28\x40\x00\x8D\x3A\x8B\xF7\x33\xC0\xEB\x04\x90\xEB\x01\xC2\xAC", 51) == 0)  {
 
 	    char *spinned;
 
-	if ( fsize >= EC32(section_hdr[nsections - 1].PointerToRawData) + 0xC6 + 0xb97 ) { /* size check on yC sect */
+	if ( fsize >= exe_sections[nsections - 1].raw + 0xC6 + 0xb97 ) { /* size check on yC sect */
 	  if((spinned = (char *) cli_malloc(fsize)) == NULL) {
-	    free(section_hdr);
 	    free(exe_sections);
 	    return CL_EMEM;
 	  }
@@ -2388,14 +2387,12 @@ HERE!!!
 	  if((size_t) cli_readn(desc, spinned, fsize) != fsize) {
 	    cli_dbgmsg("yC: Can't read %d bytes\n", fsize);
 	    free(spinned);
-	    free(section_hdr);
 	    free(exe_sections);
 	    return CL_EIO;
 	  }
 
 	  if(!(tempfile = cli_gentemp(NULL))) {
 	    free(spinned);
-	    free(section_hdr);
 	    free(exe_sections);
 	    return CL_EMEM;
 	  }
@@ -2404,19 +2401,17 @@ HERE!!!
 	    cli_dbgmsg("yC: Can't create file %s\n", tempfile);
 	    free(tempfile);
 	    free(spinned);
-	    free(section_hdr);
 	    free(exe_sections);
 	    return CL_EIO;
 	  }
 
-	  if(!yc_decrypt(spinned, fsize, section_hdr, nsections-1, e_lfanew, ndesc)) {
+	  if(!yc_decrypt(spinned, fsize, exe_sections, nsections-1, e_lfanew, ndesc)) {
 	    free(spinned);
 	    cli_dbgmsg("yC: Unpacked and rebuilt executable saved in %s\n", tempfile);
 	    fsync(ndesc);
 	    lseek(ndesc, 0, SEEK_SET);
 	    
 	    if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) {
-	      free(section_hdr);
 	      free(exe_sections);
 	      close(ndesc);
 	      if(!cli_leavetemps_flag) {
@@ -2463,7 +2458,6 @@ HERE!!!
 
       if(ctx->limits && ctx->limits->maxfilesize && dsize > ctx->limits->maxfilesize) {
 	cli_dbgmsg("WWPack: Size exceeded (dsize: %u, max: %lu)\n", dsize, ctx->limits->maxfilesize);
-	free(section_hdr);
 	free(exe_sections);
 	if(BLOCKMAX) {
 	  *ctx->virname = "PE.WWPack.ExceededFileSize";
@@ -2475,7 +2469,6 @@ HERE!!!
 
       if((dest = (char *) cli_calloc(dsize, sizeof(char))) == NULL) {
 	cli_dbgmsg("WWPack: Can't allocate %d bytes\n", dsize);
-	free(section_hdr);
 	free(exe_sections);
 	return CL_EMEM;
       }
@@ -2484,7 +2477,6 @@ HERE!!!
       if((size_t) cli_readn(desc, dest, headsize) != headsize) {
 	cli_dbgmsg("WWPack: Can't read %d bytes from headers\n", headsize);
 	free(dest);
-	free(section_hdr);
 	free(exe_sections);
 	return CL_EIO;
       }
@@ -2495,7 +2487,6 @@ HERE!!!
 	  
 	  if(err || lseek(desc, offset, SEEK_SET) == -1 || (unsigned int) cli_readn(desc, dest + headsize + exe_sections[i].rva - min, exe_sections[i].rsz) != exe_sections[i].rsz) {
 	    free(dest);
-	    free(section_hdr);
 	    free(exe_sections);
 	    return CL_EIO;
 	  }
@@ -2505,7 +2496,6 @@ HERE!!!
       if((wwp = (char *) cli_calloc(exe_sections[nsections - 1].rsz, sizeof(char))) == NULL) {
 	cli_dbgmsg("WWPack: Can't allocate %d bytes\n", exe_sections[nsections - 1].rsz);
 	free(dest);
-	free(section_hdr);
 	free(exe_sections);
 	return CL_EMEM;
       }
@@ -2515,7 +2505,6 @@ HERE!!!
 	cli_dbgmsg("WWPack: Can't read %d bytes from wwpack sect\n", exe_sections[nsections - 1].rsz);
 	free(dest);
 	free(wwp);
-	free(section_hdr);
 	free(exe_sections);
 	return CL_EIO;
       }
@@ -2526,7 +2515,6 @@ HERE!!!
 
 	if(!(tempfile = cli_gentemp(NULL))) {
 	  free(dest);
-	  free(section_hdr);
 	  free(exe_sections);
 	  return CL_EMEM;
 	}
@@ -2535,7 +2523,6 @@ HERE!!!
 	  cli_dbgmsg("WWPack: Can't create file %s\n", tempfile);
 	  free(tempfile);
 	  free(dest);
-	  free(section_hdr);
 	  free(exe_sections);
 	  return CL_EIO;
 	}
@@ -2545,7 +2532,6 @@ HERE!!!
 	  close(ndesc);
 	  free(tempfile);
 	  free(dest);
-	  free(section_hdr);
 	  free(exe_sections);
 	  return CL_EIO;
 	}
@@ -2560,7 +2546,6 @@ HERE!!!
 	lseek(ndesc, 0, SEEK_SET);
 
 	if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) {
-	  free(section_hdr);
 	  free(exe_sections);
 	  close(ndesc);
 	  if(!cli_leavetemps_flag)

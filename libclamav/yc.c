@@ -36,7 +36,6 @@
 #include "others.h"
 #include "yc.h"
 
-#define EC32(x) le32_to_host(x) /* Convert little endian to host */
 #define EC16(x) le16_to_host(x) /* Convert little endian to host */
 
 /* ========================================================================== */
@@ -165,9 +164,9 @@ static int yc_poly_emulator(char* decryptor_offset, char* code, unsigned int ecx
 /* ========================================================================== */
 /* Main routine which calls all others */
 
-int yc_decrypt(char *fbuf, unsigned int filesize, struct pe_image_section_hdr *sections, unsigned int sectcount, uint32_t peoffset, int desc)
+int yc_decrypt(char *fbuf, unsigned int filesize, struct cli_exe_section *sections, unsigned int sectcount, uint32_t peoffset, int desc)
 {
-  uint32_t ycsect = EC32(sections[sectcount].PointerToRawData);
+  uint32_t ycsect = sections[sectcount].raw;
   unsigned int i;
   struct pe_image_file_hdr *pe = (struct pe_image_file_hdr*) (fbuf + peoffset);
 
@@ -183,7 +182,7 @@ int yc_decrypt(char *fbuf, unsigned int filesize, struct pe_image_section_hdr *s
   cli_dbgmsg("yC: decrypting decryptor on sect %d\n", sectcount); 
   if (yc_poly_emulator(fbuf + ycsect + 0x93, fbuf + ycsect + 0xc6 ,0xB97))
     return 1;
-  filesize-=EC32(sections[sectcount].SizeOfRawData);
+  filesize-=sections[sectcount].ursz;
 
   /* 
 
@@ -200,7 +199,9 @@ int yc_decrypt(char *fbuf, unsigned int filesize, struct pe_image_section_hdr *s
   for(i=0;i<sectcount;i++)
     {
       uint32_t name = (uint32_t) cli_readint32((char *)sections[i].Name);
-      if ( name == 0x63727372 || /* rsrc */
+      if ( !sections[i].raw ||
+	   !sections[i].rsz ||
+	   name == 0x63727372 || /* rsrc */
 	   name == 0x7273722E || /* .rsr */
 	   name == 0x6F6C6572 || /* relo */
 	   name == 0x6C65722E || /* .rel */
@@ -208,11 +209,10 @@ int yc_decrypt(char *fbuf, unsigned int filesize, struct pe_image_section_hdr *s
 	   name == 0x6164722E || /* .rda */
 	   name == 0x6164692E || /* .ida */
 	   name == 0x736C742E || /* .tls */
-	   ((name&0xffff) == 0x4379) || /* yC */
-	   EC32(sections[i].PointerToRawData) == 0 ||
-	   EC32(sections[i].SizeOfRawData) == 0 ) continue;
+	   (name&0xffff) == 0x4379  /* yC */
+	) continue;
       cli_dbgmsg("yC: decrypting sect%d\n",i); 
-      if (yc_poly_emulator(fbuf + ycsect + 0x457, fbuf + EC32(sections[i].PointerToRawData), EC32(sections[i].SizeOfRawData)))
+      if (yc_poly_emulator(fbuf + ycsect + 0x457, fbuf + sections[i].raw, sections[i].ursz))
 	return 1;
     }
 
@@ -227,7 +227,7 @@ int yc_decrypt(char *fbuf, unsigned int filesize, struct pe_image_section_hdr *s
   cli_writeint32((char *)pe + sizeof(struct pe_image_file_hdr) + 16, cli_readint32(fbuf + ycsect + 0xa0f));
 
   /* Fix SizeOfImage */
-  cli_writeint32((char *)pe + sizeof(struct pe_image_file_hdr) + 0x38, cli_readint32((char *)pe + sizeof(struct pe_image_file_hdr) + 0x38) - EC32(sections[sectcount].VirtualSize));
+  cli_writeint32((char *)pe + sizeof(struct pe_image_file_hdr) + 0x38, cli_readint32((char *)pe + sizeof(struct pe_image_file_hdr) + 0x38) - sections[sectcount].vsz);
 
   if (cli_writen(desc, fbuf, filesize)==-1) {
     cli_dbgmsg("yC: Cannot write unpacked file\n");
