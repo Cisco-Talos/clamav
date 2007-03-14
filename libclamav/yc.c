@@ -218,7 +218,7 @@ int yc_decrypt(char *fbuf, unsigned int filesize, struct cli_exe_section *sectio
     }
 
   /* Remove yC section */
-  pe->NumberOfSections=EC16(pe->NumberOfSections)-1;
+  pe->NumberOfSections=EC16(sectcount);
 
   /* Remove IMPORT_DIRECTORY information */
   memset((char *)pe + sizeof(struct pe_image_file_hdr) + 0x68, 0, 8);
