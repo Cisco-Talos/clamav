@@ -2221,10 +2221,10 @@ skip_upack_and_go_to_next_unpacker:
 	    }
 
 	    for(i = 0 ; i < nsections; i++) {
-		if(exe_sections[i].uraw) {
+		if(exe_sections[i].raw) {
 		  uint32_t offset = exe_sections[i].raw;
 
-		  if(lseek(desc, offset, SEEK_SET) == -1 || (unsigned int) cli_readn(desc, dest + exe_sections[i].rva - min, exe_sections[i].ursz) != exe_sections[i].uraw) {
+		  if(lseek(desc, offset, SEEK_SET) == -1 || (unsigned int) cli_readn(desc, dest + exe_sections[i].rva - min, exe_sections[i].ursz) != exe_sections[i].ursz) {
 			free(exe_sections);
 			free(dest);
 			return CL_EIO;
@@ -2247,7 +2247,7 @@ skip_upack_and_go_to_next_unpacker:
 	    }
 
 	    /* aCaB: Fixed to allow petite v2.1 unpacking (last section is a ghost) */
-	    if (!petite_inflate2x_1to9(dest, min, max - min, section_hdr,
+	    if (!petite_inflate2x_1to9(dest, min, max - min, exe_sections,
 		    nsections - (found == 1 ? 1 : 0), EC32(optional_hdr32.ImageBase),
 		    vep, ndesc, found, EC32(optional_hdr32.DataDirectory[2].VirtualAddress),
 		    EC32(optional_hdr32.DataDirectory[2].Size))) {
@@ -2588,7 +2588,6 @@ HERE!!!
       unsigned int nowinldr;
       char nbuff[24];
       char *src=buff, *dest;
-      FILE *asd;
 
       if (*buff=='\xe9') { /* bitched headers */
 	eprva = cli_readint32(buff+1)+vep+5;
@@ -2619,7 +2618,6 @@ HERE!!!
 
       if(ctx->limits && ctx->limits->maxfilesize && (ssize > ctx->limits->maxfilesize || dsize > ctx->limits->maxfilesize)) {
 	cli_dbgmsg("NsPack: Size exceeded\n");
-	free(section_hdr);
 	free(exe_sections);
 	if(BLOCKMAX) {
 	  *ctx->virname = "PE.NsPack.ExceededFileSize";
@@ -2651,7 +2649,6 @@ HERE!!!
       if(!(tempfile = cli_gentemp(NULL))) {
 	free(src);
 	free(dest);
-	free(section_hdr);
 	free(exe_sections);
 	return CL_EMEM;
       }
@@ -2661,7 +2658,6 @@ HERE!!!
 	free(tempfile);
 	free(src);
 	free(dest);
-	free(section_hdr);
 	free(exe_sections);
 	return CL_EIO;
       }
@@ -2677,7 +2673,6 @@ HERE!!!
 	lseek(ndesc, 0, SEEK_SET);
 
 	if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) {
-	  free(section_hdr);
 	  free(exe_sections);
 	  close(ndesc);
 	  if(!cli_leavetemps_flag) unlink(tempfile);
@@ -2697,7 +2692,6 @@ HERE!!!
 
     /* to be continued ... */
 
-    free(section_hdr);
     free(exe_sections);
     return CL_CLEAN;
 }
