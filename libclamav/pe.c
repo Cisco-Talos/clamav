@@ -84,12 +84,12 @@ struct offset_list {
     struct offset_list *next;
 };
 
-static uint32_t cli_rawaddr(uint32_t rva, struct cli_exe_section *shp, uint16_t nos, unsigned int *err,	size_t fsize)
+static uint32_t cli_rawaddr(uint32_t rva, struct cli_exe_section *shp, uint16_t nos, unsigned int *err,	size_t fsize, uint32_t hdr_size)
 {
 	int i, found = 0;
 	uint32_t ret;
 
-    if (rva<0x1000) { /* Out of section EP - mapped to imagebase+rva */
+    if (rva<hdr_size) { /* Out of section EP - mapped to imagebase+rva */
         if (rva >= fsize) {
 	    *err=1;
 	    return 0;
@@ -252,9 +252,9 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	unsigned int ssize = 0, dsize = 0, dll = 0, pe_plus = 0;
 	int (*upxfn)(char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t) = NULL;
 	char *src = NULL, *dest = NULL;
-	int ndesc, ret = CL_CLEAN, upack = 0;
+	int ndesc, ret = CL_CLEAN, upack = 0, native=0;
 	size_t fsize;
-	uint32_t valign, falign;
+	uint32_t valign, falign, hdr_size;
 	struct cli_exe_section *exe_sections;
 
 
@@ -500,7 +500,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	cli_dbgmsg("MajorSubsystemVersion: %d\n", EC16(optional_hdr32.MajorSubsystemVersion));
 	cli_dbgmsg("MinorSubsystemVersion: %d\n", EC16(optional_hdr32.MinorSubsystemVersion));
 	cli_dbgmsg("SizeOfImage: 0x%x\n", EC32(optional_hdr32.SizeOfImage));
-	cli_dbgmsg("SizeOfHeaders: 0x%x\n", EC32(optional_hdr32.SizeOfHeaders));
+	cli_dbgmsg("SizeOfHeaders: 0x%x\n", (hdr_size = EC32(optional_hdr32.SizeOfHeaders)));
 	cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr32.NumberOfRvaAndSizes));
 
     } else { /* PE+ */
@@ -530,23 +530,10 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	cli_dbgmsg("MajorSubsystemVersion: %d\n", EC16(optional_hdr64.MajorSubsystemVersion));
 	cli_dbgmsg("MinorSubsystemVersion: %d\n", EC16(optional_hdr64.MinorSubsystemVersion));
 	cli_dbgmsg("SizeOfImage: 0x%x\n", EC32(optional_hdr64.SizeOfImage));
-	cli_dbgmsg("SizeOfHeaders: 0x%x\n", EC32(optional_hdr64.SizeOfHeaders));
+	cli_dbgmsg("SizeOfHeaders: 0x%x\n", (hdr_size = EC32(optional_hdr32.SizeOfHeaders)));
 	cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr64.NumberOfRvaAndSizes));
     }
 
-    if (DETECT_BROKEN && (pe_plus?EC16(optional_hdr64.Subsystem):EC16(optional_hdr32.Subsystem))!= 1 && (!(pe_plus?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment)) || (pe_plus?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment))%0x1000)) {
-        cli_dbgmsg("Bad virtual alignemnt\n");
-        if(ctx->virname)
-	    *ctx->virname = "Broken.Executable";
-	return CL_VIRUS;
-    }
-
-    if (DETECT_BROKEN && (pe_plus?EC16(optional_hdr64.Subsystem):EC16(optional_hdr32.Subsystem))!= 1 && (!(pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment)) || (pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment))%0x200)) {
-        cli_dbgmsg("Bad file alignemnt\n");
-	if(ctx->virname)
-	    *ctx->virname = "Broken.Executable";
-	return CL_VIRUS;
-    }
 
     switch(pe_plus ? EC16(optional_hdr64.Subsystem) : EC16(optional_hdr32.Subsystem)) {
 	case 0:
@@ -554,6 +541,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    break;
 	case 1:
 	    cli_dbgmsg("Subsystem: Native (svc)\n");
+	    native = 1;
 	    break;
 	case 2:
 	    cli_dbgmsg("Subsystem: Win32 GUI\n");
@@ -587,6 +575,20 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     }
 
     cli_dbgmsg("------------------------------------\n");
+
+    if (DETECT_BROKEN && !native && (!(pe_plus?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment)) || (pe_plus?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment))%0x1000)) {
+        cli_dbgmsg("Bad virtual alignemnt\n");
+        if(ctx->virname)
+	    *ctx->virname = "Broken.Executable";
+	return CL_VIRUS;
+    }
+
+    if (DETECT_BROKEN && !native && (!(pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment)) || (pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment))%0x200)) {
+        cli_dbgmsg("Bad file alignemnt\n");
+	if(ctx->virname)
+	    *ctx->virname = "Broken.Executable";
+	return CL_VIRUS;
+    }
 
     if(fstat(desc, &sb) == -1) {
 	cli_dbgmsg("fstat failed\n");
@@ -633,6 +635,8 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    falign = 0x200;
 	}
     }
+
+    hdr_size = PESALIGN(hdr_size, native ? falign : 0x200); /* blah gotta ask MS... */
 
     for(i = 0; i < nsections; i++) {
 	strncpy(sname, (char *) section_hdr[i].Name, 8);
@@ -733,7 +737,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
 
 	if(!i) {
-	    if (DETECT_BROKEN && (pe_plus?EC16(optional_hdr64.Subsystem):EC16(optional_hdr32.Subsystem))!= 1 && exe_sections[i].urva!=valign) { /* Bad first section RVA */
+	    if (DETECT_BROKEN && exe_sections[i].urva!=hdr_size) { /* Bad first section RVA */
 	        cli_dbgmsg("First section is in the wrong place\n");
 	        if(ctx->virname)
 		    *ctx->virname = "Broken.Executable";
@@ -771,7 +775,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
     free(section_hdr);
 
-    if(!(ep = cli_rawaddr(vep, exe_sections, nsections, &err, fsize)) && err) {
+    if(!(ep = cli_rawaddr(vep, exe_sections, nsections, &err, fsize, hdr_size)) && err) {
 	cli_dbgmsg("EntryPoint out of file\n");
 	free(exe_sections);
 	if(DETECT_BROKEN) {
@@ -783,6 +787,14 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     }
 
     cli_dbgmsg("EntryPoint offset: 0x%x (%d)\n", ep, ep);
+
+
+
+    /* -----------------------
+        BREAK HERE IF WE GOT 
+        CALLED AS cli_peheader
+       ----------------------- */
+
 
     if(pe_plus) { /* Do not continue for PE32+ files */
 	free(exe_sections);
@@ -933,7 +945,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		}
 		val = cli_readint32(jpt + 1);
 		val += 5 + exe_sections[0].rva + total + shift;
-		raddr = cli_rawaddr(val, exe_sections, nsections, &err, fsize);
+		raddr = cli_rawaddr(val, exe_sections, nsections, &err, fsize, hdr_size);
 
 		if(!err && (raddr >= exe_sections[polipos].raw && raddr < exe_sections[polipos].raw + exe_sections[polipos].rsz) && (!offlist || (raddr != offlist->offset))) {
 		    offnode = (struct offset_list *) cli_malloc(sizeof(struct offset_list));
@@ -1605,7 +1617,7 @@ skip_upack_and_go_to_next_unpacker:
 		    return CL_CLEAN;
 		}
 
-		if(!(gp = cli_rawaddr(cli_readint32(buff + 1) - EC32(optional_hdr32.ImageBase), NULL, 0 , &err, fsize)) && err ) {
+		if(!(gp = cli_rawaddr(cli_readint32(buff + 1) - EC32(optional_hdr32.ImageBase), NULL, 0 , &err, fsize, hdr_size)) && err ) {
 		    cli_dbgmsg("FSG: Support data out of padding area\n");
 		    break;
 		}
@@ -1794,7 +1806,7 @@ skip_upack_and_go_to_next_unpacker:
 	    while(found) {
 		    int sectcnt = 0;
 		    uint32_t t;
-		    uint32_t gp = cli_rawaddr(cli_readint32(buff+1) - EC32(optional_hdr32.ImageBase), NULL, 0 , &err, fsize);
+		    uint32_t gp = cli_rawaddr(cli_readint32(buff+1) - EC32(optional_hdr32.ImageBase), NULL, 0 , &err, fsize, hdr_size);
 		    char *support;
 		    uint32_t newesi = cli_readint32(buff+11) - EC32(optional_hdr32.ImageBase);
 		    uint32_t newedi = cli_readint32(buff+6) - EC32(optional_hdr32.ImageBase);
@@ -2576,7 +2588,7 @@ skip_upack_and_go_to_next_unpacker:
 
       if (*buff=='\xe9') { /* bitched headers */
 	eprva = cli_readint32(buff+1)+vep+5;
-	if (!(rep = cli_rawaddr(eprva, exe_sections, nsections, &err, fsize)) && err) break;
+	if (!(rep = cli_rawaddr(eprva, exe_sections, nsections, &err, fsize, hdr_size)) && err) break;
 	if (lseek(desc, rep, SEEK_SET)==-1) break;
 	if (cli_readn(desc, nbuff, 24)!=24) break;
 	src = nbuff;
@@ -2625,7 +2637,7 @@ skip_upack_and_go_to_next_unpacker:
       cli_readn(desc, src, ssize);
 
       eprva+=0x27a;
-      if (!(rep = cli_rawaddr(eprva, exe_sections, nsections, &err, fsize)) && err) break;
+      if (!(rep = cli_rawaddr(eprva, exe_sections, nsections, &err, fsize, hdr_size)) && err) break;
       if (lseek(desc, rep, SEEK_SET)==-1) break;
       if (cli_readn(desc, nbuff, 5)!=5) break;
       eprva=eprva+5+cli_readint32(nbuff+1);
@@ -2829,7 +2841,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
     else
 	peinfo->ep = EC32(optional_hdr32.AddressOfEntryPoint);
 
-    if(!(peinfo->ep = cli_rawaddr(peinfo->ep, peinfo->section, peinfo->nsections, &err, fsize)) && err) {
+    if(!(peinfo->ep = cli_rawaddr(peinfo->ep, peinfo->section, peinfo->nsections, &err, fsize, 0x1000)) && err) { /* HARDCODED for now - to be wiped anyway */
 	cli_dbgmsg("Broken PE file\n");
 	free(section_hdr);
 	free(peinfo->section);
