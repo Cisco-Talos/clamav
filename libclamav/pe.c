@@ -1329,7 +1329,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    }
 		}
 		/* these are unsigned so if vaddr - off < 0, it should be ok */
-		if (exe_sections[1].rva - off > dsize || exe_sections[1].rva - off > dsize - exe_sections[1].ursz || (upack && exe_sections[2].rva - exe_sections[0].rva > dsize || exe_sections[2].rva - exe_sections[0].rva > dsize - ssize) || ssize > dsize)
+		if (exe_sections[1].rva - off > dsize || exe_sections[1].rva - off > dsize - exe_sections[1].ursz || (upack && (exe_sections[2].rva - exe_sections[0].rva > dsize || exe_sections[2].rva - exe_sections[0].rva > dsize - ssize)) || ssize > dsize)
 		{
 		    cli_dbgmsg("Upack: probably malformed pe-header, skipping to next unpacker\n");
 		    goto skip_upack_and_go_to_next_unpacker;
@@ -1354,7 +1354,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 		lseek(desc, exe_sections[1].uraw, SEEK_SET);
 
-		if(read(desc, dest + exe_sections[1].rva - off, exe_sections[1].uraw) != exe_sections[1].uraw) {
+		if(read(desc, dest + exe_sections[1].rva - off, exe_sections[1].ursz) != exe_sections[1].ursz) {
 		    cli_dbgmsg("Upack: Can't read raw data of section 1\n");
 		    free(exe_sections);
 		    free(dest);
