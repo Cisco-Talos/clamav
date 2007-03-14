@@ -169,6 +169,7 @@ int yc_decrypt(char *fbuf, unsigned int filesize, struct cli_exe_section *sectio
   uint32_t ycsect = sections[sectcount].raw;
   unsigned int i;
   struct pe_image_file_hdr *pe = (struct pe_image_file_hdr*) (fbuf + peoffset);
+  char *sname = (char *)pe + EC16(pe->SizeOfOptionalHeader) + 0x18;
 
   /* 
 
@@ -198,7 +199,7 @@ int yc_decrypt(char *fbuf, unsigned int filesize, struct cli_exe_section *sectio
   /* Loop through all sections and decrypt them... */
   for(i=0;i<sectcount;i++)
     {
-      uint32_t name = (uint32_t) cli_readint32((char *)sections[i].Name);
+      uint32_t name = (uint32_t) cli_readint32(sname+i*0x28);
       if ( !sections[i].raw ||
 	   !sections[i].rsz ||
 	   name == 0x63727372 || /* rsrc */
