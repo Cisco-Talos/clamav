@@ -26,10 +26,14 @@
 struct cli_exe_section {
     uint32_t rva;
     uint32_t vsz;
-    uint32_t uvsz; /* unaligned vsz */
     uint32_t raw;
     uint32_t rsz;
-    uint32_t ursz;
+    uint32_t chr;
+    uint32_t urva; /* PE - unaligned VirtualAddress */
+    uint32_t uvsz; /* PE - unaligned VirtualSize */
+    uint32_t uraw; /* PE - unaligned PointerToRawData */
+    uint32_t ursz; /* PE - unaligned SizeOfRawData */
+
 };
 
 struct cli_exe_info {

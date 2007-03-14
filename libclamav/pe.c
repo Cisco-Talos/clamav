@@ -235,7 +235,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	uint16_t nsections;
 	uint32_t e_lfanew; /* address of new exe header */
 	uint32_t ep, vep; /* entry point (raw, virtual) */
-	uint8_t polipos = 0, magistr;
+	uint8_t polipos = 0;
 	time_t timestamp;
 	struct pe_image_file_hdr file_hdr;
 	union {
@@ -639,13 +639,16 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	sname[8] = 0;
 	exe_sections[i].rva = PEALIGN(EC32(section_hdr[i].VirtualAddress), valign);
 	exe_sections[i].vsz = PESALIGN(EC32(section_hdr[i].VirtualSize), valign);
-	exe_sections[i].uvsz = EC32(section_hdr[i].VirtualSize);
 	exe_sections[i].raw = PEALIGN(EC32(section_hdr[i].PointerToRawData), falign);
 	exe_sections[i].rsz = PESALIGN(EC32(section_hdr[i].SizeOfRawData), falign);
+	exe_sections[i].chr = EC32(section_hdr[i].Characteristics);
+	exe_sections[i].urva = EC32(section_hdr[i].VirtualAddress); /* Just in case */
+	exe_sections[i].uvsz = EC32(section_hdr[i].VirtualSize);
+	exe_sections[i].uraw = EC32(section_hdr[i].PointerToRawData);
 	exe_sections[i].ursz = EC32(section_hdr[i].SizeOfRawData);
 
 	if (!exe_sections[i].vsz && exe_sections[i].rsz)
-	    exe_sections[i].vsz=PESALIGN(EC32(section_hdr[i].SizeOfRawData), valign);
+	    exe_sections[i].vsz=PESALIGN(exe_sections[i].ursz, valign);
 
 	if (exe_sections[i].rsz && fsize>exe_sections[i].raw && !CLI_ISCONTAINED(0, (uint32_t) fsize, exe_sections[i].raw, exe_sections[i].rsz))
 	    exe_sections[i].rsz = fsize - exe_sections[i].raw;
@@ -653,12 +656,12 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	cli_dbgmsg("Section %d\n", i);
 	cli_dbgmsg("Section name: %s\n", sname);
 	cli_dbgmsg("Section data (from headers - in memory)\n");
-	cli_dbgmsg("VirtualSize: 0x%x 0x%x\n", EC32(section_hdr[i].VirtualSize), exe_sections[i].vsz);
-	cli_dbgmsg("VirtualAddress: 0x%x 0x%x\n", EC32(section_hdr[i].VirtualAddress), exe_sections[i].rva);
-	cli_dbgmsg("SizeOfRawData: 0x%x 0x%x\n", EC32(section_hdr[i].SizeOfRawData), exe_sections[i].rsz);
-	cli_dbgmsg("PointerToRawData: 0x%x 0x%x\n", EC32(section_hdr[i].PointerToRawData), exe_sections[i].raw);
+	cli_dbgmsg("VirtualSize: 0x%x 0x%x\n", exe_sections[i].uvsz, exe_sections[i].vsz);
+	cli_dbgmsg("VirtualAddress: 0x%x 0x%x\n", exe_sections[i].urva, exe_sections[i].rva);
+	cli_dbgmsg("SizeOfRawData: 0x%x 0x%x\n", exe_sections[i].ursz, exe_sections[i].rsz);
+	cli_dbgmsg("PointerToRawData: 0x%x 0x%x\n", exe_sections[i].uraw, exe_sections[i].raw);
 
-	if(EC32(section_hdr[i].Characteristics) & 0x20) {
+	if(exe_sections[i].chr & 0x20) {
 	    cli_dbgmsg("Section contains executable code\n");
 
 	    if(exe_sections[i].vsz < exe_sections[i].rsz) {
@@ -671,15 +674,15 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    }
 	}
 
-	if(EC32(section_hdr[i].Characteristics) & 0x20000000)
+	if(exe_sections[i].chr & 0x20000000)
 	    cli_dbgmsg("Section's memory is executable\n");
 
-	if(EC32(section_hdr[i].Characteristics) & 0x80000000)
+	if(exe_sections[i].chr & 0x80000000)
 	    cli_dbgmsg("Section's memory is writeable\n");
 
 	cli_dbgmsg("------------------------------------\n");
 
-	if (DETECT_BROKEN && EC32(section_hdr[i].VirtualAddress)%valign) { /* Bad virtual alignment */
+	if (DETECT_BROKEN && (exe_sections[i].urva % valign)) { /* Bad virtual alignment */
 	    cli_dbgmsg("VirtualAddress is misaligned\n");
 	    if(ctx->virname)
 	        *ctx->virname = "Broken.Executable";
@@ -730,7 +733,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
 
 	if(!i) {
-	    if (DETECT_BROKEN && (pe_plus?EC16(optional_hdr64.Subsystem):EC16(optional_hdr32.Subsystem))!= 1 && EC32(section_hdr[i].VirtualAddress)!=valign) { /* Bad first section RVA */
+	    if (DETECT_BROKEN && (pe_plus?EC16(optional_hdr64.Subsystem):EC16(optional_hdr32.Subsystem))!= 1 && exe_sections[i].urva!=valign) { /* Bad first section RVA */
 	        cli_dbgmsg("First section is in the wrong place\n");
 	        if(ctx->virname)
 		    *ctx->virname = "Broken.Executable";
@@ -741,7 +744,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    min = exe_sections[i].rva;
 	    max = exe_sections[i].rva + exe_sections[i].rsz;
 	} else {
-	    if (DETECT_BROKEN && EC32(section_hdr[i].VirtualAddress)-EC32(section_hdr[i-1].VirtualAddress)!= exe_sections[i-1].vsz) { /* No holes, no overlapping, no virtual disorder */
+	    if (DETECT_BROKEN && exe_sections[i].urva - exe_sections[i-1].urva != exe_sections[i-1].vsz) { /* No holes, no overlapping, no virtual disorder */
 	        cli_dbgmsg("Virtually misplaced section (wrong order, overlapping, non contiguous)\n");
 	        if(ctx->virname)
 		    *ctx->virname = "Broken.Executable";
@@ -758,7 +761,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 	if(SCAN_ALGO && (DCONF & PE_CONF_POLIPOS) && !strlen(sname)) {
 	    if(exe_sections[i].vsz > 40000 && exe_sections[i].vsz < 70000) {
-		if(EC32(section_hdr[i].Characteristics) == 0xe0000060) {
+		if(exe_sections[i].chr == 0xe0000060) {
 		    polipos = i;
 		}
 	    }
@@ -766,9 +769,10 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
     }
 
+    free(section_hdr);
+
     if(!(ep = cli_rawaddr(vep, exe_sections, nsections, &err, fsize)) && err) {
 	cli_dbgmsg("EntryPoint out of file\n");
-	free(section_hdr);
 	free(exe_sections);
 	if(DETECT_BROKEN) {
 	    if(ctx->virname)
@@ -781,21 +785,9 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     cli_dbgmsg("EntryPoint offset: 0x%x (%d)\n", ep, ep);
 
     if(pe_plus) { /* Do not continue for PE32+ files */
-	free(section_hdr);
 	free(exe_sections);
 	return CL_CLEAN;
     }
-
-    magistr = (SCAN_ALGO && (DCONF & PE_CONF_MAGISTR) && !dll && (nsections>1) && (EC32(section_hdr[nsections - 1].Characteristics) & 0x80000000));
-
-    /*
-        - ENDPASS for section based heuristics -
-
-	past this line section names and
-	characteristics	are not availble
-    */
-    free(section_hdr);
-
 
 
     /* Attempt to detect some popular polymorphic viruses */
@@ -880,7 +872,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     }
 
     /* W32.Magistr.A/B */
-    if(magistr) {
+    if(SCAN_ALGO && (DCONF & PE_CONF_MAGISTR) && !dll && (nsections>1) && (exe_sections[nsections - 1].chr & 0x80000000)) {
 	    uint32_t rsize, vsize, dam = 0;
 
 	vsize = exe_sections[nsections - 1].uvsz;
@@ -1244,7 +1236,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    }
 	} while (0);
     }
-HERE!!!
+
     if(found || upack) {
 	/* Check EP for UPX vs. FSG vs. Upack */
 	if(lseek(desc, ep, SEEK_SET) == -1) {
@@ -1305,30 +1297,29 @@ HERE!!!
 	    )
 	   ){ 
 		uint32_t vma, off;
-		int a,b,c, file;
+		int a,b,c;
 
 		cli_dbgmsg("Upack characteristics found.\n");
-		a = EC32(section_hdr[0].VirtualSize);
-		b = EC32(section_hdr[1].VirtualSize);
+		a = exe_sections[0].vsz;
+		b = exe_sections[1].vsz;
 		if (upack) {
-			cli_dbgmsg("upack var set\n");
-			c = EC32(section_hdr[2].VirtualSize);
-			ssize = EC32(section_hdr[0].SizeOfRawData) + EC32(section_hdr[0].PointerToRawData);
-			off = EC32(section_hdr[0].VirtualAddress);
-			vma = EC32(optional_hdr32.ImageBase) + EC32(section_hdr[0].VirtualAddress);
+			cli_dbgmsg("Upack: var set\n");
+			c = exe_sections[2].vsz;
+			ssize = exe_sections[0].ursz + exe_sections[0].uraw;
+			off = exe_sections[0].rva;
+			vma = EC32(optional_hdr32.ImageBase) + exe_sections[0].rva;
 		} else {
-			cli_dbgmsg("upack var NOT set\n");
-			c = EC32(section_hdr[1].VirtualAddress);
-			ssize = EC32(section_hdr[1].PointerToRawData);
+			cli_dbgmsg("Upack: var NOT set\n");
+			c = exe_sections[1].rva;
+			ssize = exe_sections[1].uraw;
 			off = 0;
-			vma = EC32(section_hdr[1].VirtualAddress) - EC32(section_hdr[1].PointerToRawData);
+			vma = exe_sections[1].rva - exe_sections[1].uraw;
 		}
 
 		dsize = a+b+c;
-		if (ctx->limits && ctx->limits->maxfilesize && (dsize > ctx->limits->maxfilesize || ssize > ctx->limits->maxfilesize || EC32(section_hdr[1].SizeOfRawData) > ctx->limits->maxfilesize))
+		if (ctx->limits && ctx->limits->maxfilesize && (dsize > ctx->limits->maxfilesize || ssize > ctx->limits->maxfilesize || exe_sections[1].ursz > ctx->limits->maxfilesize))
 		{
 		    cli_dbgmsg("Upack: Sizes exceeded (a: %u, b: %u, c: %ux, max: %lu)\n", a, b, c, ctx->limits->maxfilesize);
-		    free(section_hdr);
 		    free(exe_sections);
 		    if(BLOCKMAX) {
 			*ctx->virname = "PE.Upack.ExceededFileSize";
@@ -1338,90 +1329,80 @@ HERE!!!
 		    }
 		}
 		/* these are unsigned so if vaddr - off < 0, it should be ok */
-		if (EC32(section_hdr[1].VirtualAddress) - off > dsize || EC32(section_hdr[1].VirtualAddress) - off > dsize - EC32(section_hdr[1].SizeOfRawData) || (upack && (EC32(section_hdr[2].VirtualAddress) - EC32(section_hdr[0].VirtualAddress) > dsize || EC32(section_hdr[2].VirtualAddress) - EC32(section_hdr[0].VirtualAddress) > dsize - ssize)) || ssize > dsize)
+		if (exe_sections[1].rva - off > dsize || exe_sections[1].rva - off > dsize - exe_sections[1].ursz || (upack && exe_sections[2].rva - exe_sections[0].rva > dsize || exe_sections[2].rva - exe_sections[0].rva > dsize - ssize) || ssize > dsize)
 		{
 		    cli_dbgmsg("Upack: probably malformed pe-header, skipping to next unpacker\n");
-		    goto skip_upack_and_go_to_next_unpacker; /* I didn't want to add additional do while + break, can it be this way ? */
+		    goto skip_upack_and_go_to_next_unpacker;
 		}
 			
 		if((dest = (char *) cli_calloc(dsize, sizeof(char))) == NULL) {
-		    free(section_hdr);
 		    free(exe_sections);
 		    return CL_EMEM;
 		}
 		src = NULL;
-		cli_dbgmsg("Upack: min: %08x %08x max: %08x\n", dest, a+b+c, dest+a+b+c);
 	
 		lseek(desc, 0, SEEK_SET);
-		if(read(desc, dest, ssize) != ssize) { /* 2vGiM: i think this can be overflowed - should you check for ssize < dsize ?
-		                                        * yup, I think you're right, added above
-							*/
+		if(read(desc, dest, ssize) != ssize) {
 		    cli_dbgmsg("Upack: Can't read raw data of section 0\n");
-		    free(section_hdr);
 		    free(exe_sections);
 		    free(dest);
 		    return CL_EIO;
 		}
 
 		if (upack)
-			memmove(dest + EC32(section_hdr[2].VirtualAddress) - EC32(section_hdr[0].VirtualAddress), dest, ssize);
+		    memmove(dest + exe_sections[2].rva - exe_sections[0].rva, dest, ssize);
 
-		lseek(desc, EC32(section_hdr[1].PointerToRawData), SEEK_SET);
+		lseek(desc, exe_sections[1].uraw, SEEK_SET);
 
-		if(read(desc, dest+EC32(section_hdr[1].VirtualAddress) - off, EC32(section_hdr[1].SizeOfRawData)) != EC32(section_hdr[1].SizeOfRawData)) {
+		if(read(desc, dest + exe_sections[1].rva - off, exe_sections[1].uraw) != exe_sections[1].uraw) {
 		    cli_dbgmsg("Upack: Can't read raw data of section 1\n");
-		    free(section_hdr);
 		    free(exe_sections);
 		    free(dest);
 		    return CL_EIO;
 		}
 
 		if(!(tempfile = cli_gentemp(NULL))) {
-		    free(section_hdr);
 		    free(exe_sections);
 		    free(dest);
 		    return CL_EMEM;
 		}
 
-		if((file = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
+		if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC, S_IRWXU)) < 0) {
 		    cli_dbgmsg("Upack: Can't create file %s\n", tempfile);
 		    free(tempfile);
-		    free(section_hdr);
 		    free(exe_sections);
 		    free(dest);
 		    return CL_EIO;
 		}
 
-		switch (unupack(upack, dest, dsize, buff, vma, ep, EC32(optional_hdr32.ImageBase), EC32(section_hdr[0].VirtualAddress), file))
+		switch (unupack(upack, dest, dsize, buff, vma, ep, EC32(optional_hdr32.ImageBase), exe_sections[0].rva, ndesc))
 		{
 			case 1: /* Everything OK */
 				cli_dbgmsg("Upack: Unpacked and rebuilt executable saved in %s\n", tempfile);
 				free(dest);
-				fsync(file);
-				lseek(file, 0, SEEK_SET);
+				fsync(ndesc);
+				lseek(ndesc, 0, SEEK_SET);
 
 				cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
-				if(cli_magic_scandesc(file, ctx) == CL_VIRUS) {
-					free(section_hdr);
+				if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) {
 					free(exe_sections);
-					close(file);
+					close(ndesc);
 					if(!cli_leavetemps_flag)
 						unlink(tempfile);
 					free(tempfile);
 					return CL_VIRUS;
 				}
 
-				close(file);
+				close(ndesc);
 				if(!cli_leavetemps_flag)
 					unlink(tempfile);
 				free(tempfile);
-				free(section_hdr);
 				free(exe_sections);
 				return CL_CLEAN;
 
 			default: /* Everything gone wrong */
 				cli_dbgmsg("Upack: Unpacking failed\n");
-				close(file);
+				close(ndesc);
 				unlink(tempfile); /* It's empty anyway */
 				free(tempfile);
 				free(dest);
@@ -1429,7 +1410,7 @@ HERE!!!
 		}
 	}
 skip_upack_and_go_to_next_unpacker:
-
+HERE!!!
 	if((DCONF & PE_CONF_FSG) && buff[0] == '\x87' && buff[1] == '\x25') {
 
 	    /* FSG v2.0 support - thanks to aCaB ! */
