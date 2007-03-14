@@ -946,7 +946,7 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 					cli_dbgmsg("Skipping null character in html stream\n");
 			}
 			}
-			else if((u16 < 0x80 && u16 >= 0x20) || (u16 <= 0xff && isspace(u16))) {
+			else if(u16 < 0x80) {
 				if(norm >= norm_end)
 					break;
 				if((unsigned char)u16 ==0)

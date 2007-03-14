@@ -1,3 +1,8 @@
+Mon Mar 14 19:29:00 EET 2007 (edwin)
+---------------------------------
+  * libclamav/htmlnorm.c,entconv.c: leave <0x20 characters untouched in
+  cl_experimental (don't normalize them to &xx;)
+
 Mon Mar 12 20:31:07 CET 2007 (tk)
 ---------------------------------
   * libclamav: extract and scan PE files embedded into other executables or
