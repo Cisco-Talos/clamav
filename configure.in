@@ -440,7 +440,7 @@ solaris*)
     fi
     AC_DEFINE(C_SOLARIS,1,[os is solaris])
     ;;
-freebsd*)
+freebsd[45]*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-pthread -lc_r"
 	TH_SAFE="-thread-safe"
@@ -450,7 +450,20 @@ freebsd*)
 	    AC_DEFINE(CLAMUKO,1,[enable clamuko])
 	fi
     fi
-    AC_DEFINE(C_BSD,1,[os is freebsd])
+    AC_DEFINE(C_BSD,1,[os is freebsd 4 or 5])
+    use_gethostbyname_r="no"
+    ;;
+freebsd6*)
+    if test "$have_pthreads" = "yes"; then
+	THREAD_LIBS="-lthr"
+	TH_SAFE="-thread-safe"
+	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
+	AC_DEFINE(_REENTRANT,1,[thread safe])
+	if test "$want_clamuko" = "yes"; then
+	    AC_DEFINE(CLAMUKO,1,[enable clamuko])
+	fi
+    fi
+    AC_DEFINE(C_BSD,1,[os is freebsd 6])
     use_gethostbyname_r="no"
     ;;
 dragonfly*)

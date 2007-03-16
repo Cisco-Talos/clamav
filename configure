@@ -23085,9 +23085,38 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
     ;;
-freebsd*)
+freebsd45*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-pthread -lc_r"
+	TH_SAFE="-thread-safe"
+
+cat >>confdefs.h <<\_ACEOF
+#define CL_THREAD_SAFE 1
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define _REENTRANT 1
+_ACEOF
+
+	if test "$want_clamuko" = "yes"; then
+
+cat >>confdefs.h <<\_ACEOF
+#define CLAMUKO 1
+_ACEOF
+
+	fi
+    fi
+
+cat >>confdefs.h <<\_ACEOF
+#define C_BSD 1
+_ACEOF
+
+    use_gethostbyname_r="no"
+    ;;
+freebsd6*)
+    if test "$have_pthreads" = "yes"; then
+	THREAD_LIBS="-lthr"
 	TH_SAFE="-thread-safe"
 
 cat >>confdefs.h <<\_ACEOF
