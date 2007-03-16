@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-230207"
+#define	CM_VERSION	"devel-230316"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -137,8 +137,7 @@ int	allow_severity = LOG_DEBUG;
 int	deny_severity = LOG_NOTICE;
 #endif
 
-#ifndef	CL_DEBUG
-static	const	char	*logFile;
+#ifdef	CL_DEBUG
 static	char	console[] = "/dev/console";
 #endif
 
@@ -403,7 +402,7 @@ static	int	readTimeout = DEFAULT_TIMEOUT; /*
 				 * respond, see ReadTimeout in clamd.conf
 				 */
 static	long	streamMaxLength = -1;	/* StreamMaxLength from clamd.conf */
-static	int	logClean = 0;	/*
+static	int	logok = 0;	/*
 				 * Add clean items to the log file
 				 */
 static	char	*signature = N_("-- \nScanned by ClamAv - http://www.clamav.net\n");
@@ -604,7 +603,7 @@ main(int argc, char **argv)
 	const struct cfgstruct *cpt;
 	char version[VERSION_LENGTH + 1];
 	pthread_t tid;
-#ifndef	CL_DEBUG
+#ifdef	CL_DEBUG
 	int consolefd;
 #endif
 
@@ -1088,7 +1087,7 @@ main(int argc, char **argv)
 	/*
 	 * Drop privileges
 	 */
-#ifndef	CL_DEBUG
+#ifdef	CL_DEBUG
 	/* Save the fd for later, open while we can */
 	consolefd = open(console, O_WRONLY);
 #endif
@@ -1398,7 +1397,7 @@ main(int argc, char **argv)
 		}
 		if(send(sessions[0].sock, "SESSION\n", 7, 0) < 7) {
 			perror("send");
-			logg(_("!Can't create a clamd session"));
+			fputs(_("!Can't create a clamd session"), stderr);
 			return EX_UNAVAILABLE;
 		}
 		sessions[0].status = CMDSOCKET_FREE;
@@ -1439,7 +1438,7 @@ main(int argc, char **argv)
 			free(hostname);
 		}
 
-		logg("*numServers: %d\n", numServers);
+		cli_dbgmsg("numServers: %d\n", numServers);
 
 		serverIPs = (in_addr_t *)cli_malloc(numServers * sizeof(in_addr_t));
 		activeServers = 0;
@@ -1537,8 +1536,7 @@ main(int argc, char **argv)
 		if(activeServers == 0) {
 			cli_errmsg(_("Check your entry for TCPSocket in %s\n"),
 				cfgfile);
-			logg(_("!Can't find any clamd server"));
-			logg_close();
+			fputs(_("!Can't find any clamd server"), stderr);
 			return EX_CONFIG;
 		}
 #endif
@@ -1638,6 +1636,7 @@ main(int argc, char **argv)
 	if(cfgopt(copt, "Foreground")->enabled)
 		logg_foreground = 1;
 	else {
+		logg_foreground = 0;
 #ifdef	CL_DEBUG
 		printf(_("When debugging it is recommended that you use Foreground mode in %s\n"), cfgfile);
 		puts(_("\tso that you can see all of the messages"));
@@ -1655,48 +1654,73 @@ main(int argc, char **argv)
 		close(0);
 		open("/dev/null", O_RDONLY);
 
-#ifndef	CL_DEBUG
 		close(1);
 
-		if((cpt = cfgopt(copt, "LogFile")) && cpt->enabled) {
-			logFile = cpt->strarg;
+		/* initialize logger */
+		logg_lock = cfgopt(copt, "LogFileUnlock")->enabled;
+		logg_time = cfgopt(copt, "LogTime")->enabled;
+		logok = cfgopt(copt, "LogClean")->enabled;
+		logg_size = cfgopt(copt, "LogFileMaxSize")->numarg;
+		logg_verbose = mprintf_verbose = cfgopt(copt, "LogVerbose")->enabled;
 
-#if	defined(MSDOS) || defined(C_CYGWIN) || defined(WIN32)
-			if((strlen(logFile) < 2) || ((logFile[0] != '/') && (logFile[0] != '\\') && (logFile[1] != ':'))) {
-#else
-			if((strlen(logFile) < 2) || (logFile[0] != '/')) {
-#endif
-				fprintf(stderr, "%s: LogFile requires full path\n", argv[0]);
-				return EX_CONFIG;
+		if(cfgopt(copt, "Debug")->enabled) /* enable debug messages in libclamav */
+		cl_debug();
+
+		if((cpt = cfgopt(copt, "LogFile"))->enabled) {
+			time_t currtime;
+
+			logg_file = cpt->strarg;
+			if((strlen(logg_file) < 2) ||
+			   ((logg_file[0] != '/') && (logg_file[0] != '\\') && (logg_file[1] != ':'))) {
+				fprintf(stderr, "ERROR: LogFile requires full path.\n");
+				logg_close();
+				freecfg(copt);
+				return 1;
 			}
-			if(open(logFile, O_WRONLY|O_APPEND) < 0) {
-				if(errno == ENOENT) {
-					/*
-					 * There is low risk race condition here
-					 */
-					if(open(logFile, O_WRONLY|O_CREAT, 0644) < 0) {
-						perror(logFile);
-						return EX_CANTCREAT;
-					}
-				} else {
-					perror(logFile);
-					return EX_CANTCREAT;
-				}
+			time(&currtime);
+			if(logg("#ClamAV-milter started at %s", ctime(&currtime))) {
+				fprintf(stderr, "ERROR: Problem with internal logger. Please check the permissions on the %s file.\n", logg_file);
+				logg_close();
+				freecfg(copt);
+				return 1;
 			}
 		} else {
-			logFile = console;
+#ifdef	CL_DEBUG
+			logg_file = console;
 			if(consolefd < 0) {
 				perror(console);
 				return EX_OSFILE;
 			}
 			dup(consolefd);
+#else
+			logg_file = NULL;
+#endif
 		}
+
+#if defined(USE_SYSLOG) && !defined(C_AIX)
+		if(cfgopt(copt, "LogSyslog")->enabled) {
+			int fac = LOG_LOCAL6;
+
+			cpt = cfgopt(copt, "LogFacility");
+			if((fac = logg_facility(cpt->strarg)) == -1) {
+				logg("!LogFacility: %s: No such facility.\n", cpt->strarg);
+				logg_close();
+				freecfg(copt);
+				return 1;
+			}
+
+			openlog("clamav-milter", LOG_PID, fac);
+			logg_syslog = 1;
+		}
+#endif
+
 		close(2);
 		dup(1);
+
+#ifdef	CL_DEBUG
 		if(consolefd >= 0)
 			close(consolefd);
-
-#endif	/*!CL_DEBUG*/
+#endif
 
 #ifdef HAVE_SETPGRP
 #ifdef SETPGRP_VOID
@@ -1710,12 +1734,6 @@ main(int argc, char **argv)
 #endif
 #endif
 	}
-
-	logg_lock = cfgopt(copt, "LogFileUnlock")->enabled;
-	logg_time = cfgopt(copt, "LogTime")->enabled;
-	logClean = cfgopt(copt, "LogClean")->enabled;
-	logg_size = cfgopt(copt, "LogFileMaxSize")->numarg;
-	logg_verbose = mprintf_verbose = cfgopt(copt, "LogVerbose")->enabled;
 
 	if(cfgopt(copt, "Debug")->enabled)
 		/*
@@ -3039,7 +3057,7 @@ clamfi_eom(SMFICTX *ctx)
 		}
 		switch(cl_scanfile(privdata->filename, &virname, NULL, privdata->root, &limits, options)) {
 			case CL_CLEAN:
-				if(logClean)
+				if(logok)
 					logg("#%s: OK", privdata->filename);
 				strcpy(mess, "OK");
 				break;
@@ -3596,7 +3614,7 @@ clamfi_eom(SMFICTX *ctx)
 			smfi_addheader(ctx, "X-Virus-Status", _("Clean"));
 
 		/* Include the sendmail queue ID in the log */
-		if(logClean)
+		if(logok)
 			logg(_("%s: clean message from %s\n"),
 				sendmailId,
 				(privdata->from) ? privdata->from : _("an unknown sender"));
@@ -4432,7 +4450,7 @@ checkClamd(void)
 	pid = atoi(buf);
 	if((kill(pid, 0) < 0) && (errno == ESRCH)) {
 		perror("clamd");
-		logg(_("!Clamd (pid %d) seems to have died"), pid);
+		logg(_("!Clamd (pid %d) seems to have died"), (int)pid);
 	}
 }
 
@@ -5321,14 +5339,14 @@ loadDatabase(void)
 #ifdef	SESSION
 	pthread_mutex_lock(&version_mutex);
 #endif
-	logg( _("Loaded %s"), clamav_version);
+	logg( _("Loaded %s\n"), clamav_version);
 #ifdef	SESSION
 	pthread_mutex_unlock(&version_mutex);
 #endif
-	logg(_("ClamAV: Protecting against %u viruses"), signatures);
+	logg(_("ClamAV: Protecting against %u viruses\n"), signatures);
 	if(oldroot) {
 		cl_free(oldroot);
-		logg("#Database correctly reloaded (%u viruses)", signatures);
+		logg("#Database correctly reloaded (%u viruses)\n", signatures);
 	} else
 		cli_dbgmsg("Database loaded\n");
 

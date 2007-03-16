@@ -1,3 +1,8 @@
+Fri Mar 16 15:47:08 GMT 2007 (njh)
+----------------------------------
+  * clamav-milter:	Better start up of the logg() inferface, now similar
+				to that used in clamd
+
 Mon Mar 14 19:29:00 EET 2007 (edwin)
 ---------------------------------
   * libclamav/htmlnorm.c,entconv.c: leave <0x20 characters untouched in
@@ -20,7 +25,7 @@ Sun Mar 11 17:53:54 GMT 2007 (njh)
 Sun Mar 11 11:21:00 EET 2007 (edwin)
 ----------------------------------
   * libclamav/hashtab.[ch],phish_*,regex_list.[ch]: #include cleanup, Code
-  cleanup, remove commented-out code, fix some gcc -W* warnings 
+  cleanup, remove commented-out code, fix some gcc -W* warnings
 
 Sun Mar 11 00:02:12 GMT 2007 (njh)
 ----------------------------------
