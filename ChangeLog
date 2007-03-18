@@ -1,3 +1,7 @@
+Sun Mar 18 23:33:00 EET 2007 (edwin)
+---------------------------------
+  * libclamav/regex_list.[ch]: add signature type Y (host-only, regex, .wdb)
+
 Fri Mar 16 21:56:21 CET 2007 (tk)
 ---------------------------------
   * configure.in: use -lthr instead of -pthread on FreeBSD 6.x

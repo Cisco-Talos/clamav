@@ -191,7 +191,7 @@ static const unsigned short int char_class[256] = {
 static const size_t std_class_cnt =  sizeof(std_class)/sizeof(std_class[0]);
 
 /* Prototypes */
-static int add_pattern(struct regex_matcher* matcher,const unsigned char* pat,const char* info);
+static int add_pattern(struct regex_matcher* matcher,const unsigned char* pat,const char* info,int hostOnly);
 static int match_node(struct tree_node* node,const unsigned char* c,size_t len,const char** info);
 static void destroy_tree(struct regex_matcher* matcher);
 static struct tree_node* tree_root_alloc(void);
@@ -271,8 +271,8 @@ int regex_list_match(struct regex_matcher* matcher,const char* real_url,const ch
 		} else
 			rc = 0;
     
-		if(!rc && !hostOnly) 
-			rc = match_node(matcher->root_regex,(unsigned char*)buffer,buffer_len,info) == MATCH_SUCCESS ? CL_VIRUS : CL_SUCCESS;
+		if(!rc) 
+			rc = match_node(hostOnly ? matcher->root_regex_hostonly : matcher->root_regex,(unsigned char*)buffer,buffer_len,info) == MATCH_SUCCESS ? CL_VIRUS : CL_SUCCESS;
 		free(buffer);
 		if(!rc)
 			cli_dbgmsg("not in regex list\n");
@@ -349,11 +349,19 @@ int init_regex_list(struct regex_matcher* matcher)
 		return CL_EMEM;
 	}
 
+	matcher->root_regex_hostonly = tree_root_alloc();
+	if(!matcher->root_regex_hostonly) {
+		free(matcher->root_regex);
+		return CL_EMEM;
+	}
+
 	if(( rc = stack_init(&matcher->node_stack) )) {
+		free(matcher->root_regex_hostonly);
 		free(matcher->root_regex);
 		return rc;
 	}
 	if(( rc = stack_init(&matcher->node_stack_alt) )) {
+		free(matcher->root_regex_hostonly);
 		free(matcher->root_regex);
 		stack_destroy(&matcher->node_stack);
 		return rc;
@@ -489,10 +497,17 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 	 * Multiple lines of form, (empty lines are skipped):
  	 * Flags RealURL DisplayedURL
 	 * Where:
-	 * Flags: R - regex, H - host-only, followed by (optional) 3-digit hexnumber representing 
+	 * Flags: 
+	 *
+	 * .pdb files:
+	 * R - regex, H - host-only, followed by (optional) 3-digit hexnumber representing 
 	 * flags that should be filtered.
 	 * [i.e. phishcheck urls.flags that we don't want to be done for this particular host]
-	 * Note:Flag filtering only makes sense in .pdb files.
+	 * 
+	 * .wdb files:
+	 * X - full URL regex 
+	 * Y - host-only regex
+	 * M - host simple pattern
 	 *
 	 * If a line in the file doesn't conform to this format, loading fails
 	 * 
@@ -531,8 +546,8 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 			}
 		}
 
-		if((buffer[0] == 'R' && !is_whitelist) || (buffer[0] == 'X' && is_whitelist)) {/*regex*/
-			if(( rc = add_pattern(matcher,(const unsigned char*)pattern,flags) ))
+		if((buffer[0] == 'R' && !is_whitelist) || ((buffer[0] == 'X' || buffer[0] == 'Y') && is_whitelist)) {/*regex*/
+			if(( rc = add_pattern(matcher,(const unsigned char*)pattern,flags, buffer[0] == 'Y') ))
 				return rc==CL_EMEM ? CL_EMEM : CL_EMALFDB;
 		}
 		else if( ( buffer[0] == 'H' && !is_whitelist) || (buffer[0] == 'M' && is_whitelist)) {/*matches displayed host*/
@@ -1030,7 +1045,7 @@ int is_regex_ok(struct regex_matcher* matcher)
 }
 
 /* returns 0 on success, regexec error code otherwise */						
-static int add_pattern(struct regex_matcher* matcher,const unsigned char* pat,const char* info)
+static int add_pattern(struct regex_matcher* matcher,const unsigned char* pat,const char* info, int hostonly)
 {
 	int bol=1;
 	const unsigned char* pat_end = find_regex_start(pat);
@@ -1039,7 +1054,7 @@ static int add_pattern(struct regex_matcher* matcher,const unsigned char* pat,co
 	
 	massert(matcher);
 
-	node = matcher->root_regex;
+	node = hostonly ? matcher->root_regex_hostonly : matcher->root_regex;
 
 	stack_reset(&matcher->node_stack);
 	stack_reset(&matcher->node_stack_alt);
@@ -1387,6 +1402,7 @@ static void destroy_tree(struct regex_matcher* matcher)
 
 	stack_reset(&matcher->node_stack);
 	destroy_tree_internal(matcher,matcher->root_regex);
+	destroy_tree_internal(matcher,matcher->root_regex_hostonly);
 	while (matcher->node_stack.cnt) {
 		struct tree_node* node = stack_pop(&matcher->node_stack);
 		if(node)
