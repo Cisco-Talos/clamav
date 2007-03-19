@@ -788,14 +788,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
     cli_dbgmsg("EntryPoint offset: 0x%x (%d)\n", ep, ep);
 
-
-
-    /* -----------------------
-        BREAK HERE IF WE GOT 
-        CALLED AS cli_peheader
-       ----------------------- */
-
-
     if(pe_plus) { /* Do not continue for PE32+ files */
 	free(exe_sections);
 	return CL_CLEAN;
@@ -2709,7 +2701,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	struct stat sb;
 	int i;
 	unsigned int err, pe_plus = 0;
-	uint32_t valign, falign;
+	uint32_t valign, falign, hdr_size;
 	size_t fsize;
 
     cli_dbgmsg("in cli_peheader\n");
@@ -2762,7 +2754,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	return -1;
     }
 
-    peinfo->nsections = EC16(file_hdr.NumberOfSections);
+    if ( (peinfo->nsections = EC16(file_hdr.NumberOfSections)) < 1 || peinfo->nsections > 96 ) return -1;
 
     if (EC16(file_hdr.SizeOfOptionalHeader) < sizeof(struct pe_image_optional_hdr32)) {
         cli_dbgmsg("SizeOfOptionalHeader too small\n");
@@ -2774,32 +2766,29 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	return -1;
     }
 
-    if(EC32(optional_hdr64.Magic)==PE32P_SIGNATURE) {
+    if(EC32(optional_hdr64.Magic)==PE32P_SIGNATURE) { /* PE+ */
         if(EC16(file_hdr.SizeOfOptionalHeader)!=sizeof(struct pe_image_optional_hdr64)) {
 	    cli_dbgmsg("Incorrect SizeOfOptionalHeader for PE32+\n");
 	    return -1;
 	}
-	pe_plus = 1;
-    }
-
-    if(!pe_plus) { /* PE */
-	cli_dbgmsg("File format: PE\n");
-	if (EC16(file_hdr.SizeOfOptionalHeader)!=sizeof(struct pe_image_optional_hdr32)) {
-	    /* Seek to the end of the long header */
-	    lseek(desc, (EC16(file_hdr.SizeOfOptionalHeader)-sizeof(struct pe_image_optional_hdr32)), SEEK_CUR);
-	}
-
-    } else { /* PE+ */
         if(cli_readn(desc, &optional_hdr32 + 1, sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32)) {
 	    cli_dbgmsg("Can't read optional file header\n");
 	    return -1;
 	}
-
-	cli_dbgmsg("File format: PE32+\n");
+	hdr_size = EC32(optional_hdr64.SizeOfHeaders);
+	pe_plus=1;
+    } else { /* PE */
+	if (EC16(file_hdr.SizeOfOptionalHeader)!=sizeof(struct pe_image_optional_hdr32)) {
+	    /* Seek to the end of the long header */
+	    lseek(desc, (EC16(file_hdr.SizeOfOptionalHeader)-sizeof(struct pe_image_optional_hdr32)), SEEK_CUR);
+	}
+	hdr_size = EC32(optional_hdr32.SizeOfHeaders);
     }
 
     valign = (pe_plus)?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment);
     falign = (pe_plus)?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment);
+
+    hdr_size = PESALIGN(hdr_size, ((pe_plus ? EC16(optional_hdr64.Subsystem) : EC16(optional_hdr32.Subsystem))==1) ? falign : 0x200);
 
     peinfo->section = (struct cli_exe_section *) cli_calloc(peinfo->nsections, sizeof(struct cli_exe_section));
 
@@ -2817,23 +2806,35 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	return -1;
     }
 
-    for(i = 0; i < peinfo->nsections; i++) {
+    if(cli_readn(desc, section_hdr, peinfo->nsections * sizeof(struct pe_image_section_hdr)) != peinfo->nsections * sizeof(struct pe_image_section_hdr)) {
+        cli_dbgmsg("Can't read section header\n");
+	cli_dbgmsg("Possibly broken PE file\n");
+	free(section_hdr);
+	free(peinfo->section);
+	peinfo->section = NULL;
+	return -1;
+    }
 
-	if(cli_readn(desc, &section_hdr[i], sizeof(struct pe_image_section_hdr)) != sizeof(struct pe_image_section_hdr)) {
-	    cli_dbgmsg("Can't read section header\n");
-	    cli_dbgmsg("Possibly broken PE file\n");
-	    free(section_hdr);
-	    free(peinfo->section);
-	    peinfo->section = NULL;
-	    return -1;
+    for(i = 0; falign!=0x200 && i<peinfo->nsections; i++) {
+	/* file alignment fallback mode - blah */
+	if (falign && section_hdr[i].SizeOfRawData && EC32(section_hdr[i].PointerToRawData)%falign && !(EC32(section_hdr[i].PointerToRawData)%0x200)) {
+	    cli_dbgmsg("Found misaligned section, using 0x200\n");
+	    falign = 0x200;
 	}
+    }
 
-	peinfo->section[i].rva = PEALIGN(EC32(section_hdr[i].VirtualAddress), valign);
+    for(i = 0; i < peinfo->nsections; i++) {
+        peinfo->section[i].rva = PEALIGN(EC32(section_hdr[i].VirtualAddress), valign);
 	peinfo->section[i].vsz = PESALIGN(EC32(section_hdr[i].VirtualSize), valign);
 	peinfo->section[i].raw = PEALIGN(EC32(section_hdr[i].PointerToRawData), falign);
 	peinfo->section[i].rsz = PESALIGN(EC32(section_hdr[i].SizeOfRawData), falign);
+
+	if (!peinfo->section[i].vsz && peinfo->section[i].rsz)
+	    peinfo->section[i].vsz=PESALIGN(EC32(section_hdr[i].SizeOfRawData), valign);
+
 	if (peinfo->section[i].rsz && !CLI_ISCONTAINED(0, (uint32_t) fsize, peinfo->section[i].raw, peinfo->section[i].rsz))
 	    peinfo->section[i].rsz = (fsize - peinfo->section[i].raw)*(fsize>peinfo->section[i].raw);
+
     }
 
     if(pe_plus)
@@ -2841,7 +2842,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
     else
 	peinfo->ep = EC32(optional_hdr32.AddressOfEntryPoint);
 
-    if(!(peinfo->ep = cli_rawaddr(peinfo->ep, peinfo->section, peinfo->nsections, &err, fsize, 0x1000)) && err) { /* HARDCODED for now - to be wiped anyway */
+    if(!(peinfo->ep = cli_rawaddr(peinfo->ep, peinfo->section, peinfo->nsections, &err, fsize, hdr_size)) && err) {
 	cli_dbgmsg("Broken PE file\n");
 	free(section_hdr);
 	free(peinfo->section);
