@@ -636,7 +636,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
     }
 
-    hdr_size = PESALIGN(hdr_size, native ? falign : 0x200); /* blah gotta ask MS... */
+    hdr_size = PESALIGN(hdr_size, valign); /* Aligned headers virtual size */
 
     for(i = 0; i < nsections; i++) {
 	strncpy(sname, (char *) section_hdr[i].Name, 8);
@@ -2254,7 +2254,7 @@ skip_upack_and_go_to_next_unpacker:
 	    if (!petite_inflate2x_1to9(dest, min, max - min, exe_sections,
 		    nsections - (found == 1 ? 1 : 0), EC32(optional_hdr32.ImageBase),
 		    vep, ndesc, found, EC32(optional_hdr32.DataDirectory[2].VirtualAddress),
-		    EC32(optional_hdr32.DataDirectory[2].Size))) {
+		    EC32(optional_hdr32.DataDirectory[2].Size), min)) {
 	        cli_dbgmsg("Petite: Unpacked and rebuilt executable saved in %s\n", tempfile);
 		cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
 		free(dest);
@@ -2788,7 +2788,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
     valign = (pe_plus)?EC32(optional_hdr64.SectionAlignment):EC32(optional_hdr32.SectionAlignment);
     falign = (pe_plus)?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment);
 
-    hdr_size = PESALIGN(hdr_size, ((pe_plus ? EC16(optional_hdr64.Subsystem) : EC16(optional_hdr32.Subsystem))==1) ? falign : 0x200);
+    hdr_size = PESALIGN(hdr_size, valign);
 
     peinfo->section = (struct cli_exe_section *) cli_calloc(peinfo->nsections, sizeof(struct cli_exe_section));
 
