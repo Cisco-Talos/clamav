@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 {
 	struct cfgstruct *copt;
 	const struct cfgstruct *cpt;
-        struct passwd *user;
+        struct passwd *user = NULL;
 	time_t currtime;
 	struct cl_engine *engine = NULL;
 	const char *dbdir, *cfgfile;
@@ -165,8 +165,6 @@ int main(int argc, char **argv)
     if(geteuid() == 0 && (cpt = cfgopt(copt, "User"))->enabled) {
 	if((user = getpwnam(cpt->strarg)) == NULL) {
 	    fprintf(stderr, "ERROR: Can't get information about user %s.\n", cpt->strarg);
-	    logg("!Can't get information about user %s.\n", cpt->strarg);
-	    logg_close();
 	    freecfg(copt);
 	    return 1;
 	}
@@ -175,20 +173,16 @@ int main(int argc, char **argv)
 #ifdef HAVE_INITGROUPS
 	    if(initgroups(cpt->strarg, user->pw_gid)) {
 		fprintf(stderr, "ERROR: initgroups() failed.\n");
-		logg("!initgroups() failed.\n");
-		logg_close();
 		freecfg(copt);
 		return 1;
 	    }
 #else
-	    logg("AllowSupplementaryGroups: initgroups() not supported.\n");
+	    mprintf("AllowSupplementaryGroups: initgroups() not supported.\n");
 #endif
 	} else {
 #ifdef HAVE_SETGROUPS
 	    if(setgroups(1, &user->pw_gid)) {
 		fprintf(stderr, "ERROR: setgroups() failed.\n");
-		logg("!setgroups() failed.\n");
-		logg_close();
 		freecfg(copt);
 		return 1;
 	    }
@@ -197,22 +191,15 @@ int main(int argc, char **argv)
 
 	if(setgid(user->pw_gid)) {
 	    fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int) user->pw_gid);
-	    logg("!setgid(%d) failed.\n", (int) user->pw_gid);
-	    logg_close();
 	    freecfg(copt);
 	    return 1;
 	}
-
 
 	if(setuid(user->pw_uid)) {
 	    fprintf(stderr, "ERROR: setuid(%d) failed.\n", (int) user->pw_uid);
-	    logg("!setuid(%d) failed.\n", (int) user->pw_uid);
-	    logg_close();
 	    freecfg(copt);
 	    return 1;
 	}
-
-	logg("Running as user %s (UID %d, GID %d)\n", user->pw_name, user->pw_uid, user->pw_gid);
     }
 #endif
 
@@ -298,6 +285,9 @@ int main(int argc, char **argv)
         foreground = 1;
 
     logg("clamd daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
+
+    if(user)
+	logg("Running as user %s (UID %u, GID %u)\n", user->pw_name, user->pw_uid, user->pw_gid);
 
     if(logg_size)
 	logg("Log file size limited to %d bytes.\n", logg_size);
