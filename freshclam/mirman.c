@@ -180,6 +180,8 @@ void mirman_list(const struct mirdat *mdat)
 {
 	unsigned int i;
 	unsigned char *ip;
+	time_t tm;
+
 
     for(i = 0; i < mdat->num; i++) {
 	printf("Mirror #%u\n", i + 1);
@@ -187,7 +189,8 @@ void mirman_list(const struct mirdat *mdat)
 	printf("IP: %u.%u.%u.%u\n", ip[0], ip[1], ip[2], ip[3]);
 	printf("Successes: %u\n", mdat->mirtab[i].succ);
 	printf("Failures: %u\n", mdat->mirtab[i].fail);
-	printf("Last access: %s", ctime((const time_t *)&mdat->mirtab[i].atime));
+	tm = mdat->mirtab[i].atime;
+	printf("Last access: %s", ctime((const time_t *)&tm));
 	printf("Ignore: %s\n", mdat->mirtab[i].ignore ? "Yes" : "No");
 	if(i != mdat->num - 1)
 	    printf("-------------------------------------\n");
