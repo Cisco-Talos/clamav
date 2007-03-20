@@ -1,3 +1,7 @@
+Tue Mar 20 16:21:39 CET 2007 (tk)
+---------------------------------
+  * freshclam/manager.c: fix error handling in --no-dns mode (bb#418)
+
 Tue Mar 20 15:16:33 CET 2007 (tk)
 ---------------------------------
   * freshclam/manager.c: close and re-open client socket for each connect

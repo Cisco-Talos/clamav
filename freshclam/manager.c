@@ -332,7 +332,7 @@ static char *proxyauth(const char *user, const char *pass)
     return auth;
 }
 
-static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, unsigned int *ims, int ctimeout, int rtimeout, struct mirdat *mdat)
+static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int *ims, int ctimeout, int rtimeout, struct mirdat *mdat)
 {
 	char cmd[512], head[513], buffer[FILEBUFF], ipaddr[16], *ch, *tmp;
 	int bread, cnt, sd;
@@ -839,8 +839,8 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 {
 	struct cl_cvd *current, *remote;
 	struct cfgstruct *cpt;
-	unsigned int nodb = 0, currver = 0, newver = 0, port = 0, ims = 0, i, j;
-	int ret;
+	unsigned int nodb = 0, currver = 0, newver = 0, port = 0, i, j;
+	int ret, ims = -1;
 	char *pt, dbfile[32], dbinc[32], *bacinc = NULL;
 	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL;
 	unsigned int flevel = cl_retflevel(), inc;
