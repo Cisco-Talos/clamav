@@ -1,6 +1,11 @@
+Tue Mar 20 15:16:33 CET 2007 (tk)
+---------------------------------
+  * freshclam/manager.c: close and re-open client socket for each connect
+			 attempt (bb#413), patch from Andy Fiddaman
+
 Tue Mar 20 14:17:35 CET 2007 (tk)
 ---------------------------------
-  * freshclam/mirman.c: fix --list-mirrors on Solaris/64, thanks to
+  * freshclam/mirman.c: fix --list-mirrors on Solaris/64 (bb#414), thanks to
 			Andy Fiddaman
 
 Mon Mar 19 23:31:38 CET 2007 (tk)

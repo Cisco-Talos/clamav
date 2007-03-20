@@ -77,20 +77,9 @@
 #define	closesocket(s)	close(s)
 #endif
 
-static int wwwconnect(const char *server, const char *proxy, int pport, char *ip, const char *localip, int ctimeout, struct mirdat *mdat)
+static int getclientsock(const char *localip)
 {
-	int socketfd = -1, port, i, ret;
-	struct sockaddr_in name;
-	struct hostent *host;
-	char ipaddr[16];
-	unsigned char *ia;
-	const char *hostpt;
-	struct hostent *he = NULL;
-
-    if(ip)
-	strcpy(ip, "???");
-
-    name.sin_family = AF_INET;
+	int socketfd = -1;
 
 #ifdef PF_INET
     socketfd = socket(PF_INET, SOCK_STREAM, 0);
@@ -104,6 +93,8 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
     }
 
     if(localip) {
+	struct hostent *he;
+
 	if((he = gethostbyname(localip)) == NULL) {
 	    const char *herr;
 	    switch(h_errno) {
@@ -131,6 +122,9 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	    logg("^Using standard local ip address and port for fetching.\n");
 	} else {
 	    struct sockaddr_in client;
+	    unsigned char *ia;
+	    char ipaddr[16];
+
 	    memset ((char *) &client, 0, sizeof(struct sockaddr_in));
 	    client.sin_family = AF_INET;
 	    client.sin_addr = *(struct in_addr *) he->h_addr_list[0];
@@ -144,6 +138,28 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	    }
 	}
     }
+
+    return socketfd;
+}
+
+static int wwwconnect(const char *server, const char *proxy, int pport, char *ip, const char *localip, int ctimeout, struct mirdat *mdat)
+{
+	int socketfd = -1, port, i, ret;
+	struct sockaddr_in name;
+	struct hostent *host;
+	char ipaddr[16];
+	unsigned char *ia;
+	const char *hostpt;
+
+    if(ip)
+	strcpy(ip, "???");
+
+    socketfd = getclientsock(localip);
+    if(socketfd < 0)
+	return -1;
+
+    name.sin_family = AF_INET;
+
     if(proxy) {
 	hostpt = proxy;
 
@@ -225,6 +241,10 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	if(connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in)) == -1) {
 #endif
 	    logg("Can't connect to port %d of host %s (IP: %s)\n", port, hostpt, ipaddr);
+	    close(socketfd);
+	    if((socketfd = getclientsock(localip)) == -1)
+		return -1;
+
 	    continue;
 	} else {
 	    mdat->currip = ((struct in_addr *) ia)->s_addr;
