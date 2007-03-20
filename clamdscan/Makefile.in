@@ -239,7 +239,7 @@ target_vendor = @target_vendor@
 @BUILD_CLAMD_TRUE@    client.h \
 @BUILD_CLAMD_TRUE@    defaults.h
 
-INCLUDES = -I$(top_srcdir)/clamscan -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/clamscan -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 all: all-am
 
 .SUFFIXES:

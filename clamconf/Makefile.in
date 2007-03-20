@@ -223,7 +223,7 @@ clamconf_SOURCES = \
     $(top_srcdir)/shared/getopt.h \
     clamconf.c
 
-INCLUDES = -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 all: all-am
 
 .SUFFIXES:

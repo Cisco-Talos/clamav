@@ -1,3 +1,7 @@
+Tue Mar 20 22:34:59 CET 2007 (tk)
+---------------------------------
+  * clamconf, clamdscan: add -I$(top_srcdir) to Makefile.am (bb#404)
+
 Tue Mar 20 20:05:33 CET 2007 (tk)
 ---------------------------------
   * freshclam: cleanup some code and fix gcc -W* warnings
