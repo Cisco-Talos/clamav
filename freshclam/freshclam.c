@@ -55,8 +55,6 @@
 #include "shared/output.h"
 #include "shared/misc.h"
 
-#include "libclamav/lockdb.h"
-
 #include "execute.h"
 #include "manager.h"
 #include "mirman.h"
@@ -163,17 +161,8 @@ static int download(const struct cfgstruct *copt, const struct optstruct *opt, c
 	logg("^You must specify at least one database mirror.\n");
 	return 56;
     } else {
-	while(cli_writelockdb(datadir, 0) == CL_ELOCKDB) {
-            logg("*Waiting to lock database directory: %s\n", datadir);
-	    sleep(5);
-	    if(++try > 12) {
-		logg("!Can't lock database directory: %s\n", datadir);
-		return 61; 
-	    }
-	}
-	try = 0;
 	while(cpt) {
-	    ret = downloadmanager(copt, opt, cpt->strarg);
+	    ret = downloadmanager(copt, opt, cpt->strarg, datadir);
 	    alarm(0);
 
 	    if(ret == 52 || ret == 54 || ret == 58 || ret == 59) {
@@ -192,11 +181,9 @@ static int download(const struct cfgstruct *copt, const struct optstruct *opt, c
 		}
 
 	    } else {
-		cli_unlockdb(datadir);
 		return ret;
 	    }
 	}
-	cli_unlockdb(datadir);
     }
 
     return ret;

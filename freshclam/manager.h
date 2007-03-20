@@ -23,6 +23,6 @@
 #include "shared/cfgparser.h"
 #include "shared/options.h"
 
-int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname);
+int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname, const char *dbdir);
 
 #endif

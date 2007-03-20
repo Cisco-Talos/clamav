@@ -68,6 +68,7 @@
 #include "libclamav/others.h"
 #include "libclamav/str.h"
 #include "libclamav/cvd.h"
+#include "libclamav/lockdb.h"
 
 #ifndef	O_BINARY
 #define	O_BINARY	0
@@ -1075,11 +1076,11 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
     return 0;
 }
 
-int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname)
+int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname, const char *dbdir)
 {
 	time_t currtime;
 	int ret, updated = 0, outdated = 0, signo = 0;
-	unsigned int ttl;
+	unsigned int ttl, try = 0;
 	char ipaddr[16], *dnsreply = NULL, *pt, *localip = NULL, *newver = NULL;
 	const char *arg = NULL;
 	struct cfgstruct *cpt;
@@ -1167,6 +1168,19 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	localip = cpt->strarg;
     }
 
+    while(cli_writelockdb(dbdir, 0) == CL_ELOCKDB) {
+	logg("*Waiting to lock database directory: %s\n", dbdir);
+	sleep(5);
+	if(++try > 12) {
+	    logg("!Can't lock database directory: %s\n", dbdir);
+	    if(dnsreply)
+		free(dnsreply);
+	    if(newver)
+		free(newver);
+	    return 61; 
+	}
+    }
+
     if(cfgopt(copt, "HTTPProxyServer")->enabled)
 	mirman_read("mirrors.dat", &mdat, 0);
     else
@@ -1182,6 +1196,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	    free(newver);
 
 	mirman_write("mirrors.dat", &mdat);
+	cli_unlockdb(dbdir);
 	return ret;
 
     } else if(ret == 0)
@@ -1196,6 +1211,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	    free(newver);
 
 	mirman_write("mirrors.dat", &mdat);
+	cli_unlockdb(dbdir);
 	return ret;
 
     } else if(ret == 0)
@@ -1205,6 +1221,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	free(dnsreply);
 
     mirman_write("mirrors.dat", &mdat);
+    cli_unlockdb(dbdir);
 
     if(updated) {
 	if(cfgopt(copt, "HTTPProxyServer")->enabled) {
@@ -1255,7 +1272,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 		    free(cmd);
 		    if(newver)
 			free(newver);
-		    return 0;
+		    return 75;
 		}
 
 		*pt = 0; pt += 2;

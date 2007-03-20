@@ -1,3 +1,7 @@
+Tue Mar 20 18:42:00 CET 2007 (tk)
+---------------------------------
+  * freshclam: release dbdir write-lock before notifying clamd (bb#401)
+
 Tue Mar 20 16:21:39 CET 2007 (tk)
 ---------------------------------
   * freshclam/manager.c: fix error handling in --no-dns mode (bb#418)
