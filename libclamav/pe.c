@@ -2254,7 +2254,7 @@ skip_upack_and_go_to_next_unpacker:
 	    if (!petite_inflate2x_1to9(dest, min, max - min, exe_sections,
 		    nsections - (found == 1 ? 1 : 0), EC32(optional_hdr32.ImageBase),
 		    vep, ndesc, found, EC32(optional_hdr32.DataDirectory[2].VirtualAddress),
-		    EC32(optional_hdr32.DataDirectory[2].Size), min)) {
+		    EC32(optional_hdr32.DataDirectory[2].Size))) {
 	        cli_dbgmsg("Petite: Unpacked and rebuilt executable saved in %s\n", tempfile);
 		cli_dbgmsg("***** Scanning rebuilt PE file *****\n");
 		free(dest);
@@ -2818,7 +2818,6 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
     for(i = 0; falign!=0x200 && i<peinfo->nsections; i++) {
 	/* file alignment fallback mode - blah */
 	if (falign && section_hdr[i].SizeOfRawData && EC32(section_hdr[i].PointerToRawData)%falign && !(EC32(section_hdr[i].PointerToRawData)%0x200)) {
-	    cli_dbgmsg("Found misaligned section, using 0x200\n");
 	    falign = 0x200;
 	}
     }
@@ -2834,7 +2833,6 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 
 	if (peinfo->section[i].rsz && !CLI_ISCONTAINED(0, (uint32_t) fsize, peinfo->section[i].raw, peinfo->section[i].rsz))
 	    peinfo->section[i].rsz = (fsize - peinfo->section[i].raw)*(fsize>peinfo->section[i].raw);
-
     }
 
     if(pe_plus)

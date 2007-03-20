@@ -75,7 +75,7 @@ static int doubledl(char **scur, uint8_t *mydlptr, char *buffer, uint32_t buffer
   return (olddl>>7)&1;
 }
 
-int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli_exe_section *sections, unsigned int sectcount, uint32_t Imagebase, uint32_t pep, int desc, int version, uint32_t ResRva, uint32_t ResSize, uint32_t firstrva)
+int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli_exe_section *sections, unsigned int sectcount, uint32_t Imagebase, uint32_t pep, int desc, int version, uint32_t ResRva, uint32_t ResSize)
 {
   char *adjbuf = buf - minrva;
   char *packed = NULL;
@@ -149,19 +149,6 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
 	  usects[t].vsz = usects[t+1].rva - usects[t].rva;
       }
       
-      if (firstrva!=usects[0].rva) {
-	struct cli_exe_section *nusects;
-	cli_dbgmsg("Petite: making room for ghosts.\n");
-	if ((nusects=cli_calloc(j+1, sizeof(struct cli_exe_section)))) {
-	  memcpy(&nusects[1], usects, sizeof(struct cli_exe_section)*j);
-	  nusects[0].rva=firstrva;
-	  nusects[0].vsz=nusects[1].rva-firstrva;
-	  free(usects);
-	  usects = nusects;
-	  j++;
-	}
-      }
-     
       /*
        * Our encryption is pathetic and out software is lame but
        * we need to claim it's unbreakable.
