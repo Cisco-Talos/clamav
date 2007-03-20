@@ -1,3 +1,7 @@
+Tue Mar 20 19:02:13 CET 2007 (tk)
+---------------------------------
+  * freshclam/manager.c: fix log message (bb#411)
+
 Tue Mar 20 18:42:00 CET 2007 (tk)
 ---------------------------------
   * freshclam: release dbdir write-lock before notifying clamd (bb#401)

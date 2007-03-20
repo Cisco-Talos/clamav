@@ -648,10 +648,13 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	    return 57; /* FIXME */
 	}
 
+        if(totalsize > 0) {
+	    totaldownloaded += bread;
+            percentage = (int) (100 * (float) totaldownloaded / totalsize);
+	}
+
         if(!mprintf_quiet) {
             if(totalsize > 0) {
-                totaldownloaded += bread;
-                percentage = (int) (100 * (float) totaldownloaded / totalsize);
                 mprintf("Downloading %s [%3i%%]\r", srcfile, percentage);
             } else {
                 mprintf("Downloading %s [%c]\r", srcfile, rotation[rot]);
