@@ -187,7 +187,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
     }
 
     if((host = gethostbyname(hostpt)) == NULL) {
-	char *herr;
+	const char *herr;
 	switch(h_errno) {
 	    case HOST_NOT_FOUND:
 		herr = "Host not found";
@@ -259,10 +259,10 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 
 static int Rfc2822DateTime(char *buf, time_t mtime)
 {
-	struct tm *time;
+	struct tm *gmt;
 
-    time = gmtime(&mtime);
-    return strftime(buf, 36, "%a, %d %b %Y %X GMT", time);
+    gmt = gmtime(&mtime);
+    return strftime(buf, 36, "%a, %d %b %Y %X GMT", gmt);
 }
 
 static unsigned int fmt_base64(char *dest, const char *src, unsigned int len)
@@ -668,7 +668,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     close(fd);
 
     if(totalsize > 0)
-        logg("Downloading %s [%i%]\n", srcfile, percentage);
+        logg("Downloading %s [%i%%]\n", srcfile, percentage);
     else
         logg("Downloading %s [*]\n", srcfile);
 
@@ -842,12 +842,12 @@ static struct cl_cvd *currentdb(const char *dbname, unsigned int *inc)
 static int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, const char *dnsreply, char *localip, int outdated, struct mirdat *mdat)
 {
 	struct cl_cvd *current, *remote;
-	struct cfgstruct *cpt;
+	const struct cfgstruct *cpt;
 	unsigned int nodb = 0, currver = 0, newver = 0, port = 0, i, j;
 	int ret, ims = -1;
 	char *pt, dbfile[32], dbinc[32], *bacinc = NULL;
 	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL;
-	unsigned int flevel = cl_retflevel(), inc;
+	unsigned int flevel = cl_retflevel(), inc, maxattempts;
 	struct stat sb;
 	int ctimeout, rtimeout;
 
@@ -1015,8 +1015,9 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	    }
 	}
 
+	maxattempts = cfgopt(copt, "MaxAttempts")->numarg;
 	for(i = currver + 1; i <= newver; i++) {
-	    for(j = 0; j < cfgopt(copt, "MaxAttempts")->numarg; j++) {
+	    for(j = 0; j < maxattempts; j++) {
 		ret = getpatch(dbname, i, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat);
 		if(ret == 52 || ret == 58) {
 		    memset(ip, 0, 16);
@@ -1086,7 +1087,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	unsigned int ttl, try = 0;
 	char ipaddr[16], *dnsreply = NULL, *pt, *localip = NULL, *newver = NULL;
 	const char *arg = NULL;
-	struct cfgstruct *cpt;
+	const struct cfgstruct *cpt;
 	struct mirdat mdat;
 #ifdef HAVE_RESOLV_H
 	const char *dnsdbinfo;

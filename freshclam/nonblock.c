@@ -37,8 +37,8 @@
 #include <netdb.h>
 #endif
 #include <sys/types.h>
-/*#include <sys/socket.h>	/* in nonblock.h */
 #ifndef	C_WINDOWS
+#include <sys/socket.h>
 #include <sys/time.h>
 #endif
 #include <time.h>
@@ -87,7 +87,7 @@
 static int connect_error(int sock)
 {
 	int optval;
-	int optlen;
+	socklen_t optlen;
 
 	optlen = sizeof(optval);
 	getsockopt(sock, SOL_SOCKET, SO_ERROR, &optval, &optlen);

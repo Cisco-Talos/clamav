@@ -45,7 +45,8 @@
 
 char *txtquery(const char *domain, unsigned int *ttl)
 {
-	unsigned char answer[PACKETSZ], host[128], *pt, *txt;
+	unsigned char answer[PACKETSZ], host[128], *pt;
+	char *txt;
 	int len, exp, cttl, size, txtlen, type, qtype;
 
 
@@ -117,11 +118,11 @@ char *txtquery(const char *domain, unsigned int *ttl)
 	return NULL;
     }
 
-    if(!(txt = malloc(txtlen + 1)))
+    if(!(txt = (char *) malloc(txtlen + 1)))
 	return NULL;
 
     pt++;
-    strncpy(txt, pt, txtlen);
+    memcpy(txt, pt, txtlen);
     txt[txtlen] = 0;
     *ttl = cttl;
 

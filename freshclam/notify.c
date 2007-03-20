@@ -58,9 +58,10 @@ int notify(const char *cfgfile)
 #endif
         struct sockaddr_in server2;
 	struct hostent *he;
-	struct cfgstruct *copt, *cpt;
+	struct cfgstruct *copt;
+	const struct cfgstruct *cpt;
 	int sockd, bread;
-	char *socktype;
+	const char *socktype;
 
 
     if((copt = getcfg(cfgfile, 1)) == NULL) {
@@ -77,6 +78,7 @@ int notify(const char *cfgfile)
 	if((sockd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 	    logg("^Clamd was NOT notified: Can't create socket endpoint for %s\n", cpt->strarg);
 	    perror("socket()");
+	    freecfg(copt);
 	    return 1;
 	}
 
@@ -84,6 +86,7 @@ int notify(const char *cfgfile)
 	    closesocket(sockd);
 	    logg("^Clamd was NOT notified: Can't connect to clamd through %s\n", cpt->strarg);
 	    perror("connect()");
+	    freecfg(copt);
 	    return 1;
 	}
 
@@ -99,6 +102,7 @@ int notify(const char *cfgfile)
 #endif
 	    logg("^Clamd was NOT notified: Can't create TCP socket\n");
 	    perror("socket()");
+	    freecfg(copt);
 	    return 1;
 	}
 
@@ -109,6 +113,7 @@ int notify(const char *cfgfile)
 	    if ((he = gethostbyname(cpt->strarg)) == 0) {
 		perror("gethostbyname()");
 		logg("^Clamd was NOT notified: Can't resolve hostname '%s'\n", cpt->strarg);
+		freecfg(copt);
 		return 1;
 	    }
 	    server2.sin_addr = *(struct in_addr *) he->h_addr_list[0];
@@ -121,11 +126,13 @@ int notify(const char *cfgfile)
 	    logg("^Clamd was NOT notified: Can't connect to clamd on %s:%d\n",
 		    inet_ntoa(server2.sin_addr), ntohs(server2.sin_port));
 	    perror("connect()");
+	    freecfg(copt);
 	    return 1;
 	}
 
     } else {
 	logg("^Clamd was NOT notified: No socket specified in %s\n", cfgfile);
+	freecfg(copt);
 	return 1;
     }
 
@@ -133,6 +140,7 @@ int notify(const char *cfgfile)
 	logg("^Clamd was NOT notified: Could not write to %s socket\n", socktype);
 	perror("write()");
 	closesocket(sockd);
+	freecfg(copt);
 	return 1;
     }
 
@@ -142,11 +150,13 @@ int notify(const char *cfgfile)
 	if(!strstr(buff, "RELOADING")) {
 	    logg("^Clamd was NOT notified: Unknown answer from clamd: '%s'\n", buff);
 	    closesocket(sockd);
+	    freecfg(copt);
 	    return 1;
 	}
 
     closesocket(sockd);
     logg("Clamd successfully notified about the update.\n");
+    freecfg(copt);
     return 0;
 }
 

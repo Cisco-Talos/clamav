@@ -1,3 +1,7 @@
+Tue Mar 20 20:05:33 CET 2007 (tk)
+---------------------------------
+  * freshclam: cleanup some code and fix gcc -W* warnings
+
 Tue Mar 20 19:02:13 CET 2007 (tk)
 ---------------------------------
   * freshclam/manager.c: fix log message (bb#411)

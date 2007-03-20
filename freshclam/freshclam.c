@@ -151,7 +151,7 @@ static void help(void)
 static int download(const struct cfgstruct *copt, const struct optstruct *opt, const char *datadir)
 {
 	int ret = 0, try = 0, maxattempts = 0;
-	struct cfgstruct *cpt;
+	const struct cfgstruct *cpt;
 
 
     maxattempts = cfgopt(copt, "MaxAttempts")->numarg;
@@ -194,7 +194,8 @@ int main(int argc, char **argv)
 	int ret = 52;
 	const char *newdir, *cfgfile;
 	char *pidfile = NULL;
-	struct cfgstruct *copt, *cpt;
+	struct cfgstruct *copt;
+	const struct cfgstruct *cpt;
 #ifndef	C_WINDOWS
 	struct sigaction sigact;
 	struct sigaction oldact;
@@ -271,6 +272,8 @@ int main(int argc, char **argv)
 #ifdef C_WINDOWS
     if(!pthread_win32_process_attach_np()) {
 	mprintf("!Can't start the win32 pthreads layer\n");
+	opt_free(opt);
+	freecfg(copt);
 	return 63;
     }
 #endif
@@ -282,6 +285,7 @@ int main(int argc, char **argv)
 	if(stat(cfgfile, &statbuf) == -1) {
 	    logg("^Can't stat %s (critical error)\n", cfgfile);
 	    opt_free(opt);
+	    freecfg(copt);
 	    return 56;
 	}
 
@@ -289,6 +293,7 @@ int main(int argc, char **argv)
 	if(statbuf.st_mode & (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH)) {
 	    logg("^Insecure permissions (for HTTPProxyPassword): %s must have no more than 0700 permissions.\n", cfgfile);
 	    opt_free(opt);
+	    freecfg(copt);
 	    return 56;
 	}
 #endif
@@ -305,6 +310,7 @@ int main(int argc, char **argv)
 	if((user = getpwnam(unpuser)) == NULL) {
 	    logg("^Can't get information about user %s.\n", unpuser);
 	    opt_free(opt);
+	    freecfg(copt);
 	    return 60;
 	}
 
@@ -313,6 +319,7 @@ int main(int argc, char **argv)
 	    if(initgroups(unpuser, user->pw_gid)) {
 		logg("^initgroups() failed.\n");
 		opt_free(opt);
+		freecfg(copt);
 		return 61;
 	    }
 #endif
@@ -321,6 +328,7 @@ int main(int argc, char **argv)
 	    if(setgroups(1, &user->pw_gid)) {
 		logg("^setgroups() failed.\n");
 		opt_free(opt);
+		freecfg(copt);
 		return 61;
 	    }
 #endif
@@ -329,12 +337,14 @@ int main(int argc, char **argv)
 	if(setgid(user->pw_gid)) {
 	    logg("^setgid(%d) failed.\n", (int) user->pw_gid);
 	    opt_free(opt);
+	    freecfg(copt);
 	    return 61;
 	}
 
 	if(setuid(user->pw_uid)) {
 	    logg("^setuid(%d) failed.\n", (int) user->pw_uid);
 	    opt_free(opt);
+	    freecfg(copt);
 	    return 61;
 	}
     }
@@ -364,6 +374,7 @@ int main(int argc, char **argv)
 	if(logg("#--------------------------------------\n")) {
 	    mprintf("!Problem with internal logger (--log=%s).\n", logg_file);
 	    opt_free(opt);
+	    freecfg(copt);
 	    return 62;
 	}
     } else if((cpt = cfgopt(copt, "UpdateLogFile"))->enabled) {
@@ -371,6 +382,7 @@ int main(int argc, char **argv)
 	if(logg("#--------------------------------------\n")) {
 	    mprintf("!Problem with internal logger (UpdateLogFile = %s).\n", logg_file);
 	    opt_free(opt);
+	    freecfg(copt);
 	    return 62;
 	}
     } else
@@ -384,6 +396,7 @@ int main(int argc, char **argv)
 	    if((fac = logg_facility(cpt->strarg)) == -1) {
 		mprintf("!LogFacility: %s: No such facility.\n", cpt->strarg);
 		opt_free(opt);
+		freecfg(copt);
 		return 62;
 	    }
 	}
@@ -402,6 +415,7 @@ int main(int argc, char **argv)
     if(chdir(newdir)) {
 	logg("Can't change dir to %s\n", newdir);
 	opt_free(opt);
+	freecfg(copt);
 	return 50;
     } else
 	logg("*Current working dir is %s\n", newdir);
@@ -410,10 +424,14 @@ int main(int argc, char **argv)
     if(opt_check(opt, "list-mirrors")) {
 	if(mirman_read("mirrors.dat", &mdat, 1) == -1) {
 	    printf("Can't read mirrors.dat\n");
+	    opt_free(opt);
+	    freecfg(copt);
 	    return 55;
 	}
 	mirman_list(&mdat);
 	mirman_free(&mdat);
+	opt_free(opt);
+	freecfg(copt);
 	return 0;
     }
 
@@ -423,6 +441,8 @@ int main(int argc, char **argv)
 
 	if(WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR) {
 	    logg("!Error at WSAStartup(): %d\n", WSAGetLastError());
+	    opt_free(opt);
+	    freecfg(copt);
 	    return 1;
 	}
     }
@@ -445,6 +465,7 @@ int main(int argc, char **argv)
 	if(checks <= 0) {
 	    logg("^Number of checks must be a positive integer.\n");
 	    opt_free(opt);
+	    freecfg(copt);
 	    return 41;
 	}
 
@@ -452,6 +473,7 @@ int main(int argc, char **argv)
 	    if(checks > 50) {
 		logg("^Number of checks must be between 1 and 50.\n");
 		opt_free(opt);
+		freecfg(copt);
 		return 41;
 	    }
 	}
@@ -555,6 +577,7 @@ int main(int argc, char **argv)
     }
 
     opt_free(opt);
+    freecfg(copt);
 
 #ifdef C_WINDOWS
     WSACleanup();
