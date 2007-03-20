@@ -330,7 +330,7 @@ static int writeinfo(const char *db, const char *header)
 	int i;
 	struct stat sb;
 	char file[32], *md5;
-	const char *const extlist[] = { "db", "fp", "hdb", "mdb", "ndb", "pdb", "rmd", "zmd", "sdb", "cfg", NULL };
+	const char *const extlist[] = { "db", "fp", "hdb", "mdb", "ndb", "pdb", "wdb", "rmd", "zmd", "sdb", "cfg", NULL };
 
 
     snprintf(file, sizeof(file), "%s.info", db);

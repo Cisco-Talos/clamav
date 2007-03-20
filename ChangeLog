@@ -1,3 +1,7 @@
+Mon Mar 19 23:31:38 CET 2007 (tk)
+---------------------------------
+  * sigtool/sigtool.c: write info on daily.wdb
+
 Mon Mar 19 19:44:07 CET 2007 (tk)
 ---------------------------------
   * clamd/clamd.c: minor cleanup
