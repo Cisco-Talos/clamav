@@ -25906,7 +25906,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-ac_config_files="$ac_config_files libclamav/Makefile clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile Makefile clamav-config libclamav.pc docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/freshclam.1 docs/man/freshclam.conf.5"
+ac_config_files="$ac_config_files libclamav/Makefile clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile Makefile clamav-config libclamav.pc docs/man/clamav-milter.8 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -26528,10 +26528,15 @@ do
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "clamav-config") CONFIG_FILES="$CONFIG_FILES clamav-config" ;;
     "libclamav.pc") CONFIG_FILES="$CONFIG_FILES libclamav.pc" ;;
+    "docs/man/clamav-milter.8") CONFIG_FILES="$CONFIG_FILES docs/man/clamav-milter.8" ;;
+    "docs/man/clamconf.1") CONFIG_FILES="$CONFIG_FILES docs/man/clamconf.1" ;;
     "docs/man/clamd.8") CONFIG_FILES="$CONFIG_FILES docs/man/clamd.8" ;;
     "docs/man/clamd.conf.5") CONFIG_FILES="$CONFIG_FILES docs/man/clamd.conf.5" ;;
+    "docs/man/clamdscan.1") CONFIG_FILES="$CONFIG_FILES docs/man/clamdscan.1" ;;
+    "docs/man/clamscan.1") CONFIG_FILES="$CONFIG_FILES docs/man/clamscan.1" ;;
     "docs/man/freshclam.1") CONFIG_FILES="$CONFIG_FILES docs/man/freshclam.1" ;;
     "docs/man/freshclam.conf.5") CONFIG_FILES="$CONFIG_FILES docs/man/freshclam.conf.5" ;;
+    "docs/man/sigtool.1") CONFIG_FILES="$CONFIG_FILES docs/man/sigtool.1" ;;
 
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}

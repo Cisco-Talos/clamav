@@ -1,4 +1,4 @@
-.TH "clamd.conf" "5" "February 12, 2007" "ClamAV 0.90" "Clam AntiVirus"
+.TH "clamd.conf" "5" "February 12, 2007" "ClamAV @VERSION@" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 \fBclamd.conf\fR \- Configuration file for Clam AntiVirus Daemon

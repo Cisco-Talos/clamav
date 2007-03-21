@@ -1,4 +1,4 @@
-.TH "Clamd client" "1" "February 12, 2007" "ClamAV 0.90" "Clam AntiVirus"
+.TH "Clamd client" "1" "February 12, 2007" "ClamAV @VERSION@" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 clamdscan \- scan files and directories for viruses using Clam AntiVirus Daemon

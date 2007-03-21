@@ -1,4 +1,4 @@
-.TH "freshclam" "1" "February 12, 2007" "ClamAV 0.90" "Clam AntiVirus"
+.TH "freshclam" "1" "February 12, 2007" "ClamAV @VERSION@" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 freshclam \- update virus databases
@@ -31,10 +31,10 @@ Write all messages to stdout.
 Write download report to FILE.
 .TP 
 \fB\-\-datadir=DIRECTORY\fR
-Install new database in DIRECTORY. The directory must be writable for the 'clamav' user or unprivileged user running freshclam.
+Install new database in DIRECTORY. The directory must be writable for the '@CLAMAVUSER@' user or unprivileged user running freshclam.
 .TP 
 \fB\-u USER, \-\-user USER\fR
-Run as USER. By default (when started by root) freshclam drops privileges and operates as the 'clamav' user.
+Run as USER. By default (when started by root) freshclam drops privileges and operates as the '@CLAMAVUSER@' user.
 .TP 
 \fB\-d, \-\-daemon\fR
 Run in a daemon mode. This option requires \-\-checks.
@@ -105,7 +105,7 @@ Pring mirror details from mirrors.dat (cache file for the mirror manager).
 .TP 
 59: Mirrors are not fully synchronized (try again later).
 .TP 
-60: Can't get information about clamav user from /etc/passwd.
+60: Can't get information about '@CLAMAVUSER@' user from /etc/passwd.
 .TP 
 61: Can't drop privileges.
 .TP 

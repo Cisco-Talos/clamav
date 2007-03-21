@@ -1115,8 +1115,13 @@ etc/Makefile
 Makefile
 clamav-config
 libclamav.pc
+docs/man/clamav-milter.8
+docs/man/clamconf.1
 docs/man/clamd.8
 docs/man/clamd.conf.5
+docs/man/clamdscan.1
+docs/man/clamscan.1
 docs/man/freshclam.1
 docs/man/freshclam.conf.5
+docs/man/sigtool.1
 ])

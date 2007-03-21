@@ -59,12 +59,18 @@ target_triplet = @target@
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/clamav-config.h.in \
 	$(srcdir)/clamav-config.in $(srcdir)/libclamav.pc.in \
-	$(top_srcdir)/configure $(top_srcdir)/docs/man/clamd.8.in \
+	$(top_srcdir)/configure \
+	$(top_srcdir)/docs/man/clamav-milter.8.in \
+	$(top_srcdir)/docs/man/clamconf.1.in \
+	$(top_srcdir)/docs/man/clamd.8.in \
 	$(top_srcdir)/docs/man/clamd.conf.5.in \
+	$(top_srcdir)/docs/man/clamdscan.1.in \
+	$(top_srcdir)/docs/man/clamscan.1.in \
 	$(top_srcdir)/docs/man/freshclam.1.in \
-	$(top_srcdir)/docs/man/freshclam.conf.5.in AUTHORS COPYING \
-	ChangeLog INSTALL NEWS config.guess config.sub depcomp \
-	install-sh ltmain.sh missing mkinstalldirs
+	$(top_srcdir)/docs/man/freshclam.conf.5.in \
+	$(top_srcdir)/docs/man/sigtool.1.in AUTHORS COPYING ChangeLog \
+	INSTALL NEWS config.guess config.sub depcomp install-sh \
+	ltmain.sh missing mkinstalldirs
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/acinclude.m4 \
@@ -75,9 +81,11 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno configure.status.lineno
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = clamav-config.h
-CONFIG_CLEAN_FILES = clamav-config libclamav.pc docs/man/clamd.8 \
-	docs/man/clamd.conf.5 docs/man/freshclam.1 \
-	docs/man/freshclam.conf.5
+CONFIG_CLEAN_FILES = clamav-config libclamav.pc \
+	docs/man/clamav-milter.8 docs/man/clamconf.1 docs/man/clamd.8 \
+	docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 \
+	docs/man/freshclam.1 docs/man/freshclam.conf.5 \
+	docs/man/sigtool.1
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pkgconfigdir)"
 binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 SCRIPTS = $(bin_SCRIPTS)
@@ -299,13 +307,23 @@ clamav-config: $(top_builddir)/config.status $(srcdir)/clamav-config.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 libclamav.pc: $(top_builddir)/config.status $(srcdir)/libclamav.pc.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
+docs/man/clamav-milter.8: $(top_builddir)/config.status $(top_srcdir)/docs/man/clamav-milter.8.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+docs/man/clamconf.1: $(top_builddir)/config.status $(top_srcdir)/docs/man/clamconf.1.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
 docs/man/clamd.8: $(top_builddir)/config.status $(top_srcdir)/docs/man/clamd.8.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 docs/man/clamd.conf.5: $(top_builddir)/config.status $(top_srcdir)/docs/man/clamd.conf.5.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
+docs/man/clamdscan.1: $(top_builddir)/config.status $(top_srcdir)/docs/man/clamdscan.1.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+docs/man/clamscan.1: $(top_builddir)/config.status $(top_srcdir)/docs/man/clamscan.1.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
 docs/man/freshclam.1: $(top_builddir)/config.status $(top_srcdir)/docs/man/freshclam.1.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 docs/man/freshclam.conf.5: $(top_builddir)/config.status $(top_srcdir)/docs/man/freshclam.conf.5.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+docs/man/sigtool.1: $(top_builddir)/config.status $(top_srcdir)/docs/man/sigtool.1.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 install-binSCRIPTS: $(bin_SCRIPTS)
 	@$(NORMAL_INSTALL)

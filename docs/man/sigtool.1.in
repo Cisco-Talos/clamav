@@ -1,4 +1,4 @@
-.TH "sigtool" "1" "February 12, 2007" "ClamAV 0.90" "Clam AntiVirus"
+.TH "sigtool" "1" "February 12, 2007" "ClamAV @VERSION@" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 sigtool \- signature and database management tool

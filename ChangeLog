@@ -1,3 +1,8 @@
+Wed Mar 21 01:15:51 CET 2007 (tk)
+---------------------------------
+  * docs/man: use actual version and user names in man pages (bb#408),
+	      thanks to Fabio Pedretti <pedretti*eco.unibs.it>
+
 Wed Mar 21 00:31:29 CET 2007 (tk)
 ---------------------------------
   * shared/misc.c: minor fixes to deamonize() (bb#319), thanks to Reinhard Max

@@ -1,4 +1,4 @@
-.TH "clamscan" "1" "February 12, 2007" "ClamAV 0.90" "Clam AntiVirus"
+.TH "clamscan" "1" "February 12, 2007" "ClamAV @VERSION@" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 clamscan \- scan files and directories for viruses
@@ -37,7 +37,7 @@ Load virus database from FILE or load all virus database files from DIR.
 Save scan report to FILE.
 .TP 
 \fB\-\-tempdir=DIRECTORY\fR
-Create temporary files in DIRECTORY. Directory must be writable for the 'clamav' user or unprivileged user running clamscan.
+Create temporary files in DIRECTORY. Directory must be writable for the '@CLAMAVUSER@' user or unprivileged user running clamscan.
 .TP 
 \fB\-\-leave\-temps\fR
 Do not remove temporary files.
@@ -64,10 +64,10 @@ Only print infected files.
 Remove infected files. \fBBe careful.\fR
 .TP 
 \fB\-\-move=DIRECTORY\fR
-Move infected files into DIRECTORY. Directory must be writable for the 'clamav' user or unprivileged user running clamscan.
+Move infected files into DIRECTORY. Directory must be writable for the '@CLAMAVUSER@' user or unprivileged user running clamscan.
 .TP 
 \fB\-\-copy=DIRECTORY\fR
-Copy infected files into DIRECTORY. Directory must be writable for the 'clamav' user or unprivileged user running clamscan.
+Copy infected files into DIRECTORY. Directory must be writable for the '@CLAMAVUSER@' user or unprivileged user running clamscan.
 .TP 
 \fB\-\-no\-mail\fR
 Disable scanning of mail files.
@@ -218,7 +218,7 @@ Note: some return codes may only appear in a single file mode (when clamscan is 
 .TP 
 59: Can't get information about current user from /etc/passwd.
 .TP 
-60: Can't get information about user 'clamav' (default name) from /etc/passwd.
+60: Can't get information about user '@CLAMAVUSER@' from /etc/passwd.
 .TP 
 61: Can't fork.
 .TP 
