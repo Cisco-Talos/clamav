@@ -5,7 +5,7 @@ Wed Mar 21 01:15:51 CET 2007 (tk)
 
 Wed Mar 21 00:31:29 CET 2007 (tk)
 ---------------------------------
-  * shared/misc.c: minor fixes to deamonize() (bb#319), thanks to Reinhard Max
+  * shared/misc.c: minor fixes to daemonize() (bb#319), thanks to Reinhard Max
 
 Tue Mar 20 22:34:59 CET 2007 (tk)
 ---------------------------------
