@@ -1,3 +1,7 @@
+Wed Mar 21 00:31:29 CET 2007 (tk)
+---------------------------------
+  * shared/misc.c: minor fixes to deamonize() (bb#319), thanks to Reinhard Max
+
 Tue Mar 20 22:34:59 CET 2007 (tk)
 ---------------------------------
   * clamconf, clamdscan: add -I$(top_srcdir) to Makefile.am (bb#404)

@@ -270,7 +270,7 @@ void daemonize(void)
 	int i;
 
 
-    if((i = open("/dev/null", O_WRONLY)) == -1) {
+    if((i = open("/dev/null", O_RDWR)) == -1) {
 	for(i = 0; i <= 2; i++)
 	    close(i);
 
@@ -278,6 +278,8 @@ void daemonize(void)
 	dup2(i, 0);
 	dup2(i, 1);
 	dup2(i, 2);
+	if(i > 2)
+	    close(i);
     }
 
     if(fork())
