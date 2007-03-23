@@ -1748,7 +1748,7 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
 static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 {
 	int ret = CL_CLEAN, nret = CL_CLEAN;
-	unsigned short ftrec;
+	unsigned short ftrec, break_loop = 0;
 	struct cli_matched_type *ftoffset = NULL, *fpt;
 	uint32_t lastzip, lastrar;
 	struct cli_exe_info peinfo;
@@ -1773,12 +1773,71 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 
     if(ret >= CL_TYPENO) {
 
-	if(ret < CL_TYPE_SFX && ret != CL_TYPE_MSEXE) {
+	if(type == CL_TYPE_UNKNOWN_TEXT) {
 	    lseek(desc, 0, SEEK_SET);
 
 	    nret = cli_scandesc(desc, ctx, 0, ret, 1, NULL);
 	    if(nret == CL_VIRUS)
 		cli_dbgmsg("%s found in descriptor %d when scanning file type %u\n", *ctx->virname, desc, ret);
+	}
+
+	if(nret != CL_VIRUS && (type == CL_TYPE_MSEXE || type == CL_TYPE_ZIP)) {
+	    lastzip = lastrar = 0xdeadbeef;
+	    fpt = ftoffset;
+	    while(fpt) {
+		switch(fpt->type) {
+		    case CL_TYPE_RARSFX:
+			if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_RAR)) {
+			    cli_dbgmsg("RAR-SFX signature found at %u\n", (unsigned int) fpt->offset);
+			    nret = cli_scanrar(desc, ctx, fpt->offset, &lastrar);
+			}
+			break;
+
+		    case CL_TYPE_ZIPSFX:
+			if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_ZIP)) {
+			    cli_dbgmsg("ZIP-SFX signature found at %u\n", (unsigned int) fpt->offset);
+			    nret = cli_scanzip(desc, ctx, fpt->offset, &lastzip);
+			}
+			break;
+
+		    case CL_TYPE_CABSFX:
+			if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_CAB)) {
+			    cli_dbgmsg("CAB-SFX signature found at %u\n", (unsigned int) fpt->offset);
+			    nret = cli_scanmscab(desc, ctx, fpt->offset);
+			}
+			break;
+
+		    case CL_TYPE_MSEXE:
+			if(SCAN_PE && ctx->dconf->pe && fpt->offset) {
+			    cli_dbgmsg("PE signature found at %u\n", (unsigned int) fpt->offset);
+			    memset(&peinfo, 0, sizeof(struct cli_exe_info));
+			    peinfo.offset = fpt->offset;
+			    lseek(desc, fpt->offset, SEEK_SET);
+			    if(cli_peheader(desc, &peinfo) == 0) {
+				cli_dbgmsg("*** Detected embedded PE file ***\n");
+				if(peinfo.section)
+				    free(peinfo.section);
+
+				lseek(desc, fpt->offset, SEEK_SET);
+				nret = cli_scanembpe(desc, ctx);
+				break_loop = 1; /* we can stop here and other
+						 * embedded executables will
+						 * be found recursively
+						 * through the above call
+						 */
+			    }
+			}
+			break;
+
+		    default:
+			cli_warnmsg("cli_scanraw: Type %u not handled in fpt loop\n", fpt->type);
+		}
+
+		if(nret == CL_VIRUS || break_loop)
+		    break;
+
+		fpt = fpt->next;
+	    }
 	}
 
 	ret == CL_TYPE_MAIL ? ctx->mrec++ : ctx->arec++;
@@ -1792,61 +1851,6 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 	    case CL_TYPE_MAIL:
 		if(SCAN_MAIL && type == CL_TYPE_UNKNOWN_TEXT && (DCONF_MAIL & MAIL_CONF_MBOX))
 		    nret = cli_scanmail(desc, ctx);
-		break;
-
-	    case CL_TYPE_RARSFX:
-	    case CL_TYPE_ZIPSFX:
-	    case CL_TYPE_CABSFX:
-		if(type == CL_TYPE_MSEXE) {
-		    if(SCAN_ARCHIVE) {
-			lastzip = lastrar = 0xdeadbeef;
-			fpt = ftoffset;
-			while(fpt) {
-			    if(fpt->type == CL_TYPE_RARSFX && (DCONF_ARCH & ARCH_CONF_RAR)) {
-				cli_dbgmsg("RAR-SFX signature found at %u\n", (unsigned int) fpt->offset);
-				if((nret = cli_scanrar(desc, ctx, fpt->offset, &lastrar)) == CL_VIRUS)
-				    break;
-			    } else if(fpt->type == CL_TYPE_ZIPSFX && (DCONF_ARCH & ARCH_CONF_ZIP)) {
-				cli_dbgmsg("ZIP-SFX signature found at %u\n", (unsigned int) fpt->offset);
-				if((nret = cli_scanzip(desc, ctx, fpt->offset, &lastzip)) == CL_VIRUS)
-				    break;
-			    } else if(fpt->type == CL_TYPE_CABSFX && (DCONF_ARCH & ARCH_CONF_CAB)) {
-				cli_dbgmsg("CAB-SFX signature found at %u\n", (unsigned int) fpt->offset);
-				if((nret = cli_scanmscab(desc, ctx, fpt->offset)) == CL_VIRUS)
-				    break;
-			    }
-
-			    fpt = fpt->next;
-			}
-		    }
-		}
-		break;
-
-	    case CL_TYPE_MSEXE:
-		if(SCAN_PE && ctx->dconf->pe) {
-		    fpt = ftoffset;
-		    while(fpt) {
-			if(fpt->type == CL_TYPE_MSEXE && fpt->offset) {
-			    cli_dbgmsg("PE signature found at %u\n", (unsigned int) fpt->offset);
-			    memset(&peinfo, 0, sizeof(struct cli_exe_info));
-			    peinfo.offset = fpt->offset;
-			    lseek(desc, fpt->offset, SEEK_SET);
-			    if(cli_peheader(desc, &peinfo) == 0) {
-				cli_dbgmsg("*** Detected embedded PE file ***\n");
-				if(peinfo.section)
-				    free(peinfo.section);
-
-				lseek(desc, fpt->offset, SEEK_SET);
-				nret = cli_scanembpe(desc, ctx);
-				break; /* we can stop here, other embedded
-					* executables will be found recursively
-					* through the above call
-					*/
-			    }
-			}
-			fpt = fpt->next;
-		    }
-		}
 		break;
 
 	    default:

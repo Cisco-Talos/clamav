@@ -1,3 +1,7 @@
+Fri Mar 23 14:19:42 CET 2007 (tk)
+---------------------------------
+  * libclamav: better handling of embedded stuff
+
 Wed Mar 21 01:15:51 CET 2007 (tk)
 ---------------------------------
   * docs/man: use actual version and user names in man pages (bb#408),
