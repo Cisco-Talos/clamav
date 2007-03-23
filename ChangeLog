@@ -1,3 +1,8 @@
+Fri Mar 23 21:35:24 CET 2007 (tk)
+---------------------------------
+  * shared/cfgparser.c: multiple Clamuko*Path were not being handled properly
+                        (bb#420)
+
 Fri Mar 23 14:19:42 CET 2007 (tk)
 ---------------------------------
   * libclamav: better handling of embedded stuff
