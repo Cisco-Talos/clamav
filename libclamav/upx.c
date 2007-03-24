@@ -26,7 +26,7 @@
 ** 04/06/2k4 - Now we handle 2B, 2D and 2E :D
 ** 28/08/2k4 - PE rebuild for nested packers
 ** 12/12/2k4 - Improved PE rebuild code and added some debug info on failure
-** 23/03/2k4 - New approach for rebuilding:
+** 23/03/2k7 - New approach for rebuilding:
                o Get imports via magic
                o Get imports via leascan
                o if (!pe) pe=scan4pe();
@@ -35,7 +35,6 @@
 
 /*
   TODO:
-  - scan4pe()
   - forgepe()
   - pass dll flag from pe.c
   - grab statistical magic data from teh zoo
@@ -83,11 +82,41 @@
 \x63\x6C\x61\x6D\x61\x76\x2E\x6E\x65\x74\x0D\x0A\x24\x00\x00\x00\
 "
 
+static char *checkpe(char *dst, uint32_t dsize, char *pehdr, uint32_t *valign, unsigned int *sectcnt) {
+  char *sections;
+  if (!CLI_ISCONTAINED(dst, dsize,  pehdr, 0xf8)) {
+    cli_dbgmsg("UPX: sections out of bounds\n");
+    return NULL;
+  } 
+
+  if (cli_readint32(pehdr) != 0x4550 ) {
+    cli_dbgmsg("UPX: No magic for PE\n");
+    return NULL;
+  }
+  
+  if (!(*valign=cli_readint32(pehdr+0x38))) {
+    cli_dbgmsg("UPX: Cant align to a NULL bound\n");
+    return NULL;
+  }
+  
+  sections = pehdr+0xf8;
+  if (!(*sectcnt = (unsigned char)pehdr[6] + (unsigned char)pehdr[7]*256)) {
+    cli_dbgmsg("UPX: No sections?\n");
+    return NULL;
+  }
+  
+  if (!CLI_ISCONTAINED(dst, dsize, sections, *sectcnt*0x28)) {
+    cli_dbgmsg("UPX: Not enough space for all sects\n");
+    return NULL;
+  }
+  return sections;
+}
+
 /* PE from UPX */
 
-static int pefromupx (char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t ep, uint32_t upx0, uint32_t upx1, uint32_t *magic)
+static int pefromupx (char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t ep, uint32_t upx0, uint32_t upx1, uint32_t *magic, uint32_t dend)
 {
-  char *imports, *sections, *pehdr, *newbuf;
+  char *imports, *sections, *pehdr=NULL, *newbuf;
   unsigned int sectcnt=0, upd=1;
   uint32_t realstuffsz, valign=0;
   uint32_t foffset=0xd0+0xf8;
@@ -121,59 +150,44 @@ static int pefromupx (char *src, uint32_t ssize, char *dst, uint32_t *dsize, uin
     realstuffsz = imports-dst;
     
     if (realstuffsz >= *dsize ) {
-      cli_dbgmsg("UPX: wrong realstuff size - giving up rebuild\n");
-      return 0;
-    }
-    
-    pehdr = imports;
-    while (CLI_ISCONTAINED(dst, *dsize,  pehdr, 8) && cli_readint32(pehdr)) {
-      pehdr+=8;
-      while(CLI_ISCONTAINED(dst, *dsize,  pehdr, 2) && *pehdr) {
-	pehdr++;
-	while (CLI_ISCONTAINED(dst, *dsize,  pehdr, 2) && *pehdr)
+      cli_dbgmsg("UPX: wrong realstuff size\n");
+      /* fallback and eventually craft */
+    } else {
+      pehdr = imports;
+      while (CLI_ISCONTAINED(dst, *dsize,  pehdr, 8) && cli_readint32(pehdr)) {
+	pehdr+=8;
+	while(CLI_ISCONTAINED(dst, *dsize,  pehdr, 2) && *pehdr) {
 	  pehdr++;
+	  while (CLI_ISCONTAINED(dst, *dsize,  pehdr, 2) && *pehdr)
+	    pehdr++;
+	  pehdr++;
+	}
 	pehdr++;
       }
-      pehdr++;
+      
+      pehdr+=4;
+      if (!(sections=checkpe(dst, *dsize, pehdr, &valign, &sectcnt))) pehdr=NULL;
     }
-
-    pehdr+=4;
-  } else { /* TODO: this one should be a separate if (!pe) */
-    cli_dbgmsg("UPX: no luck - brutally scanning for PE (TODO)\n");
-    /* TODO */
-    return 0;
   }
 
-  /* TODO: forgepe() */
-
-  /* TODO: Kick the checks outta here and write a checkpe() */
-  if (!CLI_ISCONTAINED(dst, *dsize,  pehdr, 0xf8)) {
-    cli_dbgmsg("UPX: sections out of bounds - giving up rebuild\n");
-    return 0;
-  } 
-
-  if (cli_readint32(pehdr) != 0x4550 ) {
-    cli_dbgmsg("UPX: No magic for PE - giving up rebuild\n");
-    return 0;
+  if (!pehdr && dend>0xf8+0x28) {
+    cli_dbgmsg("UPX: no luck - scanning for PE\n");
+    pehdr = &dst[dend-0xf8-0x28];
+    while (pehdr>=dst) {
+      if ((sections=checkpe(dst, *dsize, pehdr, &valign, &sectcnt)))
+	break;
+      pehdr--;
+    }
+    if (pehdr==dst) pehdr=NULL;
   }
-  
-  if (!(valign=cli_readint32(pehdr+0x38))) {
-    cli_dbgmsg("UPX: Cant align to a NULL bound - giving up rebuild\n");
-    return 0;
-  }
-  
-  sections = pehdr+0xf8;
-  if ( ! (sectcnt = (unsigned char)pehdr[6]+256*(unsigned char)pehdr[7])) {
-    cli_dbgmsg("UPX: No sections? - giving up rebuild\n");
+
+  if (!pehdr) {
+    cli_dbgmsg("UPX: no luck - brutally crafing a reasonable PE (TODO)\n");
+    /*TODO: forgepe() or escape via cli_rebuildpe() ?*/
     return 0;
   }
   
   foffset = PESALIGN(foffset+0x28*sectcnt, valign);
-  
-  if (!CLI_ISCONTAINED(dst, *dsize, sections, 0x28*sectcnt)) {
-    cli_dbgmsg("UPX: Not enough space for all sects - giving up rebuild\n");
-    return 0;
-  }
   
   for (upd = 0; upd <sectcnt ; upd++) {
     uint32_t vsize=PESALIGN((uint32_t)cli_readint32(sections+8), valign);
@@ -249,7 +263,7 @@ static int doubleebx(char *src, uint32_t *myebx, uint32_t *scur, uint32_t ssize)
 int upx_inflate2b(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep)
 {
   int32_t backbytes, unp_offset = -1;
-  uint32_t backsize, myebx = 0, scur=0, dcur=0, i, magic[]={0x108,0x110,0};
+  uint32_t backsize, myebx = 0, scur=0, dcur=0, i, magic[]={/*0, TODO: removeme */0x108,0x110,0};
   int oob;
   
   while (1) {
@@ -318,7 +332,7 @@ int upx_inflate2b(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
     dcur+=backsize;
   }
 
-  return pefromupx (src, ssize, dst, dsize, ep, upx0, upx1, magic);
+  return pefromupx (src, ssize, dst, dsize, ep, upx0, upx1, magic, dcur);
 }
 
 int upx_inflate2d(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep)
@@ -400,7 +414,7 @@ int upx_inflate2d(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
     dcur+=backsize;
   }
 
-  return pefromupx (src, ssize, dst, dsize, ep, upx0, upx1, magic);
+  return pefromupx (src, ssize, dst, dsize, ep, upx0, upx1, magic, dcur);
 }
 
 int upx_inflate2e(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep)
@@ -489,5 +503,5 @@ int upx_inflate2e(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
     dcur+=backsize;
   }
 
-  return pefromupx (src, ssize, dst, dsize, ep, upx0, upx1, magic);
+  return pefromupx (src, ssize, dst, dsize, ep, upx0, upx1, magic, dcur);
 }
