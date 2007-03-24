@@ -26,6 +26,19 @@
 ** 04/06/2k4 - Now we handle 2B, 2D and 2E :D
 ** 28/08/2k4 - PE rebuild for nested packers
 ** 12/12/2k4 - Improved PE rebuild code and added some debug info on failure
+** 23/03/2k4 - New approach for rebuilding:
+               o Get imports via magic
+               o Get imports via leascan
+               o if (!pe) pe=scan4pe();
+	       o if (!pe) forgepe();
+*/
+
+/*
+  TODO:
+  - scan4pe()
+  - forgepe()
+  - pass dll flag from pe.c
+  - grab statistical magic data from teh zoo
 */
 
 /*
@@ -49,6 +62,7 @@
 #include "cltypes.h"
 #include "others.h"
 #include "upx.h"
+#include "str.h"
 
 #define PEALIGN(o,a) (((a))?(((o)/(a))*(a)):(o))
 #define PESALIGN(o,a) (((a))?(((o)/(a)+((o)%(a)!=0))*(a)):(o))
@@ -71,44 +85,74 @@
 
 /* PE from UPX */
 
-static int pefromupx (char *src, char *dst, uint32_t *dsize, uint32_t ep, uint32_t upx0, uint32_t upx1, uint32_t magic)
+static int pefromupx (char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t ep, uint32_t upx0, uint32_t upx1, uint32_t *magic)
 {
   char *imports, *sections, *pehdr, *newbuf;
-  unsigned int sectcnt, upd=1;
-  uint32_t realstuffsz, valign;
+  unsigned int sectcnt=0, upd=1;
+  uint32_t realstuffsz, valign=0;
   uint32_t foffset=0xd0+0xf8;
 
   if((dst == NULL) || (src == NULL))
     return 0;
 
-  imports = dst + cli_readint32(src + ep - upx1 + magic);
-
-  realstuffsz = imports-dst;
-  
-  if (realstuffsz >= *dsize ) {
-    cli_dbgmsg("UPX: wrong realstuff size - giving up rebuild\n");
-    return 0;
+  while ((valign=magic[sectcnt++])) {
+    if ( ep - upx1 + valign <= ssize-5  &&    /* Wondering how we got so far?! */
+	 src[ep - upx1 + valign - 2] == '\x8d' && /* lea edi, ...                  */
+	 src[ep - upx1 + valign - 1] == '\xbe' )  /* ... [esi + offset]          */
+      break;
   }
-  
-  pehdr = imports;
-  while (CLI_ISCONTAINED(dst, *dsize,  pehdr, 8) && cli_readint32(pehdr)) {
-    pehdr+=8;
-    while(CLI_ISCONTAINED(dst, *dsize,  pehdr, 2) && *pehdr) {
-      pehdr++;
-      while (CLI_ISCONTAINED(dst, *dsize,  pehdr, 2) && *pehdr)
+
+  if (!valign && ep - upx1 + 0x80 < ssize-8) {
+    char *pt = &src[ep - upx1 + 0x80];
+    cli_dbgmsg("UPX: bad magic - scanning for imports\n");
+    
+    while ((pt=(char *)cli_memstr(pt, ssize - (pt-src) - 8, "\x8d\xbe", 2))) {
+      if (pt[6] == '\x8b' && pt[7] == '\x07') { /* lea edi, [esi+imports] / mov eax, [edi] */
+	valign=pt-src+2-ep+upx1;
+	break;
+      }
+      pt++;
+    }
+  }
+
+  if (valign && CLI_ISCONTAINED(src, ssize, src + ep - upx1 + valign, 4)) {
+    imports = dst + cli_readint32(src + ep - upx1 + valign);
+    
+    realstuffsz = imports-dst;
+    
+    if (realstuffsz >= *dsize ) {
+      cli_dbgmsg("UPX: wrong realstuff size - giving up rebuild\n");
+      return 0;
+    }
+    
+    pehdr = imports;
+    while (CLI_ISCONTAINED(dst, *dsize,  pehdr, 8) && cli_readint32(pehdr)) {
+      pehdr+=8;
+      while(CLI_ISCONTAINED(dst, *dsize,  pehdr, 2) && *pehdr) {
 	pehdr++;
+	while (CLI_ISCONTAINED(dst, *dsize,  pehdr, 2) && *pehdr)
+	  pehdr++;
+	pehdr++;
+      }
       pehdr++;
     }
-    pehdr++;
+
+    pehdr+=4;
+  } else { /* TODO: this one should be a separate if (!pe) */
+    cli_dbgmsg("UPX: no luck - brutally scanning for PE (TODO)\n");
+    /* TODO */
+    return 0;
   }
 
-  pehdr+=4;
+  /* TODO: forgepe() */
+
+  /* TODO: Kick the checks outta here and write a checkpe() */
   if (!CLI_ISCONTAINED(dst, *dsize,  pehdr, 0xf8)) {
     cli_dbgmsg("UPX: sections out of bounds - giving up rebuild\n");
     return 0;
-  }
-  
-  if ( cli_readint32(pehdr) != 0x4550 ) {
+  } 
+
+  if (cli_readint32(pehdr) != 0x4550 ) {
     cli_dbgmsg("UPX: No magic for PE - giving up rebuild\n");
     return 0;
   }
@@ -205,7 +249,7 @@ static int doubleebx(char *src, uint32_t *myebx, uint32_t *scur, uint32_t ssize)
 int upx_inflate2b(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep)
 {
   int32_t backbytes, unp_offset = -1;
-  uint32_t backsize, myebx = 0, scur=0, dcur=0, i;
+  uint32_t backsize, myebx = 0, scur=0, dcur=0, i, magic[]={0x108,0x110,0};
   int oob;
   
   while (1) {
@@ -274,20 +318,13 @@ int upx_inflate2b(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
     dcur+=backsize;
   }
 
-
-  if ( ep - upx1 + 0x108 <= ssize-5  &&    /* Wondering how we got so far?! */
-       src[ep - upx1 + 0x106] == '\x8d' && /* lea edi, ...                  */
-       src[ep - upx1 + 0x107] == '\xbe' )  /* ... [esi + offset]          */
-    return pefromupx (src, dst, dsize, ep, upx0, upx1, 0x108);
-
-  cli_dbgmsg("UPX: bad magic for 2b\n");
-  return 0;
+  return pefromupx (src, ssize, dst, dsize, ep, upx0, upx1, magic);
 }
 
 int upx_inflate2d(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep)
 {
   int32_t backbytes, unp_offset = -1;
-  uint32_t backsize, myebx = 0, scur=0, dcur=0, i;
+  uint32_t backsize, myebx = 0, scur=0, dcur=0, i, magic[]={0x11c,0x124,0};
   int oob;
 
   while (1) {
@@ -363,20 +400,13 @@ int upx_inflate2d(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
     dcur+=backsize;
   }
 
-  if ( ep - upx1 + 0x124 <= ssize-5 ) {   /* Wondering how we got so far?! */
-    if ( src[ep - upx1 + 0x11a] == '\x8d' && src[ep - upx1 + 0x11b] == '\xbe' )
-      return pefromupx (src, dst, dsize, ep, upx0, upx1, 0x11c);
-    if ( src[ep - upx1 + 0x122] == '\x8d' && src[ep - upx1 + 0x123] == '\xbe' )
-      return pefromupx (src, dst, dsize, ep, upx0, upx1, 0x124);
-  }
-  cli_dbgmsg("UPX: bad magic for 2d\n");
-  return 0;
+  return pefromupx (src, ssize, dst, dsize, ep, upx0, upx1, magic);
 }
 
 int upx_inflate2e(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep)
 {
   int32_t backbytes, unp_offset = -1;
-  uint32_t backsize, myebx = 0, scur=0, dcur=0, i;
+  uint32_t backsize, myebx = 0, scur=0, dcur=0, i, magic[]={0x128,0x130,0};
   int oob;
 
   for(;;) {
@@ -459,12 +489,5 @@ int upx_inflate2e(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
     dcur+=backsize;
   }
 
-  if ( ep - upx1 + 0x130 <= ssize-5 ) {   /* Wondering how we got so far?! */
-    if ( src[ep - upx1 + 0x126] == '\x8d' && src[ep - upx1 + 0x127] == '\xbe' )
-      return pefromupx (src, dst, dsize, ep, upx0, upx1, 0x128);
-    if ( src[ep - upx1 + 0x12e] == '\x8d' && src[ep - upx1 + 0x12f] == '\xbe' )
-      return pefromupx (src, dst, dsize, ep, upx0, upx1, 0x130);
-  }
-  cli_dbgmsg("UPX: bad magic for 2e\n");
-  return 0;
+  return pefromupx (src, ssize, dst, dsize, ep, upx0, upx1, magic);
 }

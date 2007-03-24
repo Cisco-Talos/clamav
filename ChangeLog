@@ -1,3 +1,9 @@
+Sat Mar 24 13:49:59 CET 2007 (acab)
+-----------------------------------
+  * libclamav/upx.c: improve upx rebuilder - more to come
+		     many thanks to Andrey J. Melnikoff (TEMHOTA) <temnota * kmv.ru>
+		     for the suggestions and the preliminary patch
+
 Sat Mar 24 01:51:30 CET 2007 (acab)
 -----------------------------------
   * libclamav: - merge the first set of pe cleanup changes
