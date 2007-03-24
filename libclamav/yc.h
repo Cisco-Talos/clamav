@@ -24,6 +24,6 @@
 #include "execs.h"
 #include "cltypes.h"
 
-int yc_decrypt(char *, unsigned int, struct pe_image_section_hdr *, unsigned int, uint32_t, int);
+int yc_decrypt(char *, unsigned int, struct cli_exe_section *, unsigned int, uint32_t, int);
 
 #endif

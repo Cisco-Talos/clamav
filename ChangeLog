@@ -1,4 +1,9 @@
-Fri Mar 23 21:35:24 CET 2007 (tk)
+Sat Mar 24 01:51:30 CET 2007 (acab)
+-----------------------------------
+  * libclamav: - merge the first set of pe cleanup changes
+	       - fix bb#397
+
+  Fri Mar 23 21:35:24 CET 2007 (tk)
 ---------------------------------
   * shared/cfgparser.c: multiple Clamuko*Path were not being handled properly
                         (bb#420)

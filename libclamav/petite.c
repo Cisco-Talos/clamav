@@ -52,13 +52,11 @@
 #include <string.h>
 
 #include "cltypes.h"
-#include "pe.h"
 #include "rebuildpe.h"
 #include "execs.h"
 #include "others.h"
 #include "petite.h"
 
-#define EC32(x) le32_to_host(x) /* Convert little endian to host */
 
 static int doubledl(char **scur, uint8_t *mydlptr, char *buffer, uint32_t buffersize)
 {
@@ -77,7 +75,7 @@ static int doubledl(char **scur, uint8_t *mydlptr, char *buffer, uint32_t buffer
   return (olddl>>7)&1;
 }
 
-int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_image_section_hdr *sections, unsigned int sectcount, uint32_t Imagebase, uint32_t pep, int desc, int version, uint32_t ResRva, uint32_t ResSize)
+int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli_exe_section *sections, unsigned int sectcount, uint32_t Imagebase, uint32_t pep, int desc, int version, uint32_t ResRva, uint32_t ResSize)
 {
   char *adjbuf = buf - minrva;
   char *packed = NULL;
@@ -98,9 +96,9 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
    */
 
   if ( version == 2 )
-    packed = adjbuf + EC32(sections[sectcount-1].VirtualAddress) + 0x1b8;
+    packed = adjbuf + sections[sectcount-1].rva + 0x1b8;
   if ( version == 1 ) {
-    packed = adjbuf + EC32(sections[sectcount-1].VirtualAddress) + 0x178;
+    packed = adjbuf + sections[sectcount-1].rva + 0x178;
     grown=0x323;    /* My name is Harry potter */
     skew=0x34;
   }
@@ -150,7 +148,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
 	if ( usects[t].vsz != usects[t+1].rva - usects[t].rva )
 	  usects[t].vsz = usects[t+1].rva - usects[t].rva;
       }
-     
+      
       /*
        * Our encryption is pathetic and out software is lame but
        * we need to claim it's unbreakable.
@@ -193,7 +191,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
 	      } else {
 		api = 0xbff01337; /* KERNEL32!leet */
 	      }
-	      if (EC32(sections[sectcount-1].VirtualAddress)+Imagebase < api )
+	      if (sections[sectcount-1].rva+Imagebase < api )
 		enc_ep--;
 	      if ( api < virtaddr )
 		enc_ep--;
@@ -316,10 +314,10 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct pe_
       if (!check4resources) {
 	unsigned int q;
 	for ( q = 0 ; q < sectcount ; q++ ) {
-	  if ( thisrva <= EC32(sections[q].VirtualAddress) || thisrva >= EC32(sections[q].VirtualAddress) + EC32(sections[q].VirtualSize))
+	  if ( thisrva <= sections[q].rva || thisrva >= sections[q].rva + sections[q].vsz)
 	    continue;
-	  usects[j].rva = EC32(sections[q].VirtualAddress);
-	  usects[j].rsz = thisrva - EC32(sections[q].VirtualAddress) + size;
+	  usects[j].rva = sections[q].rva;
+	  usects[j].rsz = thisrva - sections[q].rva + size;
 	  break;
 	}
       }
