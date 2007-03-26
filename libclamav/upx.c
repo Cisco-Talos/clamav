@@ -34,12 +34,6 @@
 */
 
 /*
-  TODO:
-  - pass dll flag from pe.c ?
-  - grab statistical magic data from teh zoo
-*/
-
-/*
 ** This code unpacks a dumped UPX1 section to a file.
 ** It was written reversing the loader found on some Win32 UPX compressed trojans; while porting
 ** it to C i've kinda followed the asm flow so it will probably be a bit hard to read.
@@ -296,7 +290,7 @@ static int doubleebx(char *src, uint32_t *myebx, uint32_t *scur, uint32_t ssize)
 int upx_inflate2b(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep)
 {
   int32_t backbytes, unp_offset = -1;
-  uint32_t backsize, myebx = 0, scur=0, dcur=0, i, magic[]={0x108,0x110,0};
+  uint32_t backsize, myebx = 0, scur=0, dcur=0, i, magic[]={0x108,0x110,0xd5,0};
   int oob;
   
   while (1) {
