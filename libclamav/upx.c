@@ -35,8 +35,7 @@
 
 /*
   TODO:
-  - forgepe()
-  - pass dll flag from pe.c
+  - pass dll flag from pe.c ?
   - grab statistical magic data from teh zoo
 */
 
@@ -80,6 +79,26 @@
 \x20\x47\x50\x4C\x20\x76\x69\x72\x75\x73\x20\x73\x63\x61\x6E\x6E\
 \x65\x72\x20\x2D\x20\x68\x74\x74\x70\x3A\x2F\x2F\x77\x77\x77\x2E\
 \x63\x6C\x61\x6D\x61\x76\x2E\x6E\x65\x74\x0D\x0A\x24\x00\x00\x00\
+"
+#define FAKEPE "\
+\x50\x45\x00\x00\x4C\x01\x01\x00\x43\x4C\x41\x4D\x00\x00\x00\x00\
+\x00\x00\x00\x00\xE0\x00\x83\x8F\x0B\x01\x00\x00\x00\x10\x00\x00\
+\x00\x10\x00\x00\x00\x00\x00\x00\x00\x10\x00\x00\x00\x10\x00\x00\
+\x00\x10\x00\x00\x00\x00\x40\x00\x00\x10\x00\x00\x00\x02\x00\x00\
+\x01\x00\x00\x00\x00\x00\x00\x00\x03\x00\x0A\x00\x00\x00\x00\x00\
+\xFF\xFF\xFF\xFF\x00\x02\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00\
+\x00\x00\x10\x00\x00\x10\x00\x00\x00\x00\x10\x00\x00\x10\x00\x00\
+\x00\x00\x00\x00\x10\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\
+\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\
+\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\
+\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\
+\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\
+\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\
+\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\
+\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\
+\x00\x00\x00\x00\x00\x00\x00\x00\x2e\x63\x6c\x61\x6d\x30\x31\x00\
+\xFF\xFF\xFF\xFF\x00\x10\x00\x00\xFF\xFF\xFF\xFF\x00\x02\x00\x00\
+\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\xff\xff\
 "
 
 static char *checkpe(char *dst, uint32_t dsize, char *pehdr, uint32_t *valign, unsigned int *sectcnt) {
@@ -173,7 +192,7 @@ static int pefromupx (char *src, uint32_t ssize, char *dst, uint32_t *dsize, uin
   if (!pehdr && dend>0xf8+0x28) {
     cli_dbgmsg("UPX: no luck - scanning for PE\n");
     pehdr = &dst[dend-0xf8-0x28];
-    while (pehdr>=dst) {
+    while (pehdr>dst) {
       if ((sections=checkpe(dst, *dsize, pehdr, &valign, &sectcnt)))
 	break;
       pehdr--;
@@ -182,9 +201,23 @@ static int pefromupx (char *src, uint32_t ssize, char *dst, uint32_t *dsize, uin
   }
 
   if (!pehdr) {
-    cli_dbgmsg("UPX: no luck - brutally crafing a reasonable PE (TODO)\n");
-    /*TODO: forgepe() or escape via cli_rebuildpe() ?*/
-    return 0;
+    uint32_t rebsz = PESALIGN(dend, 0x1000);
+    cli_dbgmsg("UPX: no luck - brutally crafing a reasonable PE\n");
+    if (!(newbuf = (char *)cli_calloc(rebsz+0x200, sizeof(char)))) {
+      cli_dbgmsg("UPX: malloc failed - giving up rebuild\n");
+      return 0;
+    }
+    memcpy(newbuf, HEADERS, 0xd0);
+    memcpy(newbuf+0xd0, FAKEPE, 0x120);
+    memcpy(newbuf+0x200, dst, dend);
+    memcpy(dst, newbuf, dend+0x200);
+    free(newbuf);
+    cli_writeint32(dst+0xd0+0x50, rebsz+0x1000);
+    cli_writeint32(dst+0xd0+0x100, rebsz);
+    cli_writeint32(dst+0xd0+0x108, rebsz);
+    *dsize=rebsz+0x200;
+    cli_dbgmsg("UPX: PE structure added to uncompressed data\n");
+    return 1;
   }
   
   foffset = PESALIGN(foffset+0x28*sectcnt, valign);
@@ -263,7 +296,7 @@ static int doubleebx(char *src, uint32_t *myebx, uint32_t *scur, uint32_t ssize)
 int upx_inflate2b(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep)
 {
   int32_t backbytes, unp_offset = -1;
-  uint32_t backsize, myebx = 0, scur=0, dcur=0, i, magic[]={/*0, TODO: removeme */0x108,0x110,0};
+  uint32_t backsize, myebx = 0, scur=0, dcur=0, i, magic[]={0x108,0x110,0};
   int oob;
   
   while (1) {
