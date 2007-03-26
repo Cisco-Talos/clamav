@@ -1,3 +1,7 @@
+Mon Mar 26 13:05:01 CEST 2007 (tk)
+----------------------------------
+  * libclamav: optimize loading of .ndb files (bb#339), patch from Edwin
+
 Sat Mar 24 15:01:50 CET 2007 (acab)
 -----------------------------------
   * libclamav/upx.c: improve upx rebuilder - more to come

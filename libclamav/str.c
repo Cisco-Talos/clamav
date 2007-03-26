@@ -1,6 +1,7 @@
 /*
  *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *  cli_strrcpy(): Copyright (C) 2002 Nigel Horne <njh@bandsman.co.uk>
+ *  cli_strtokenize(): Copyright (C) 2007 Edwin Torok <edwin@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,6 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <sys/types.h>
 
 #include "clamav.h"
 #include "others.h"
@@ -369,4 +371,23 @@ char *cli_strrcpy(char *dest, const char *source) /* by NJH */
     while((*dest++ = *source++));
 
     return --dest;
+}
+
+void cli_strtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens)
+{
+	size_t tokens_found;
+
+
+    for(tokens_found = 0; tokens_found < token_count; ) {
+	tokens[tokens_found++] = buffer;
+	buffer = strchr(buffer, delim);
+	if(buffer) {
+	    *buffer++ = '\0';
+	} else {
+	    while(tokens_found < token_count)
+		tokens[tokens_found++] = NULL;
+
+	    return;
+	}
+    }
 }

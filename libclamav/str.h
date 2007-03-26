@@ -20,6 +20,8 @@
 #ifndef __STR_H
 #define __STR_H
 
+#include <sys/types.h>
+
 int cli_strbcasestr(const char *haystack, const char *needle);
 int cli_chomp(char *string);
 char *cli_strtok(const char *line, int field, const char *delim);
@@ -31,4 +33,5 @@ char *cli_utf16toascii(const char *str, unsigned int length);
 char *cli_strtokbuf(const char *input, int fieldno, const char *delim, char *output);
 const char *cli_memstr(const char *haystack, int hs, const char *needle, int ns);
 char *cli_strrcpy(char *dest, const char *source);
+void cli_strtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens);
 #endif

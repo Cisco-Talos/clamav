@@ -704,9 +704,12 @@ static int cli_loadpdb(FILE *fd, struct cl_engine **engine, unsigned int options
 }
 #endif
 
+#define NDB_TOKENS 6
 static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo, unsigned short sdb, unsigned int options)
 {
-	char buffer[FILEBUFF], *sig, *virname, *offset, *pt;
+	const char *tokens[NDB_TOKENS];
+	char buffer[FILEBUFF];
+	const char *sig, *virname, *offset, *pt;
 	struct cli_matcher *root;
 	int line = 0, sigs = 0, ret = 0;
 	unsigned short target;
@@ -736,15 +739,15 @@ static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	sigs++;
 	cli_chomp(buffer);
 
-	if(!(virname = cli_strtok(buffer, 0, ":"))) {
+	cli_strtokenize(buffer, ':', NDB_TOKENS, tokens);
+
+	if(!(virname = tokens[0])) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
 
-	if((pt = cli_strtok(buffer, 4, ":"))) { /* min version */
+	if((pt = tokens[4])) { /* min version */
 	    if(!isdigit(*pt)) {
-		free(virname);
-		free(pt);
 		ret = CL_EMALFDB;
 		break;
 	    }
@@ -752,79 +755,56 @@ static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	    if((unsigned int) atoi(pt) > cl_retflevel()) {
 		cli_dbgmsg("Signature for %s not loaded (required f-level: %d)\n", virname, atoi(pt));
 		sigs--;
-		free(virname);
-		free(pt);
 		continue;
 	    }
 
-	    free(pt);
 
-	    if((pt = cli_strtok(buffer, 5, ":"))) { /* max version */
+	    if((pt = tokens[5])) { /* max version */
 		if(!isdigit(*pt)) {
-		    free(virname);
-		    free(pt);
 		    ret = CL_EMALFDB;
 		    break;
 		}
 
 		if((unsigned int) atoi(pt) < cl_retflevel()) {
 		    sigs--;
-		    free(virname);
-		    free(pt);
 		    continue;
 		}
 
-		free(pt);
 	    }
 	}
 
-	if(!(pt = cli_strtok(buffer, 1, ":")) || !isdigit(*pt)) {
-	    free(virname);
-	    if(pt)
-		free(pt);
+	if(!(pt = tokens[1]) || !isdigit(*pt)) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
 	target = (unsigned short) atoi(pt);
-	free(pt);
 
 	if(target >= CL_TARGET_TABLE_SIZE) {
 	    cli_dbgmsg("Not supported target type in signature for %s\n", virname);
 	    sigs--;
-	    free(virname);
 	    continue;
 	}
 
 	root = (*engine)->root[target];
 
-	if(!(offset = cli_strtok(buffer, 2, ":"))) {
-	    free(virname);
+	if(!(offset = tokens[2])) {
 	    ret = CL_EMALFDB;
 	    break;
 	} else if(!strcmp(offset, "*")) {
-	    free(offset);
 	    offset = NULL;
 	}
 
-	if(!(sig = cli_strtok(buffer, 3, ":"))) {
-	    free(virname);
-	    free(offset);
+	if(!(sig = tokens[3])) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
 
 	if((ret = cli_parse_add(root, virname, sig, 0, offset, target))) {
 	    cli_errmsg("Problem parsing signature at line %d\n", line);
-	    free(virname);
-	    free(offset);
-	    free(sig);
 	    ret = CL_EMALFDB;
 	    break;
 	}
 
-	free(virname);
-	free(offset);
-	free(sig);
     }
 
     if(!line) {
