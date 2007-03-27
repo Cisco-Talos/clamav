@@ -1,3 +1,10 @@
+Tue Mar 27 22:05:28 BST 2007 (njh)
+----------------------------------
+  * clamav-milter.c:	Added IPv6 support, based on a patch by
+  				Jacek Zapala <jacek@it.pl>, which also adds
+				more --ignore addresses.
+			Also bug 423
+
 Tue Mar 27 14:51:11 CEST 2007 (tk)
 ----------------------------------
   * etc/clamd.conf: LocalSocket now points to /tmp/clamd.sock by default
