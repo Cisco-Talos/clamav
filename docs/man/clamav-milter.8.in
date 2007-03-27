@@ -124,10 +124,10 @@ ISP that may not have AV software.
 Also scan messages sent from LAN. You probably want this especially if
 your LAN is populated by machines running Windows or DOS.
 .IP
-Machines with IP addresses within the ranges 192.168.0.0/16, 10.0.0.0/24,
-172.16.0.0/20 and 169.254.0.0/16 are defined as 'local'. Messages from
+Machines with IP addresses within the ranges 192.168.0.0/16, 10.0.0.0/8,
+172.16.0.0/12 and 169.254.0.0/16 are defined as 'local'. Messages from
 other machines are always scanned.
-An extra IP address may be added with the \-\-ignore option.
+Up to 8 extra ranges may be added with the \-\-ignore option.
 .TP
 \fB-M, \-\-freshclam-monitor\fR
 When not running in external mode, this option tells clamav\-milter how
@@ -232,9 +232,10 @@ Usually clamav\-milter waits until a child dies or the timeout value has been
 exceeded, which ever comes first, however with dont-wait enabled, clamav\-milter
 will inform the remote SMTP client to retry later.
 .TP
-\fB\-\-ignore ipAddr\fR
-\fIipAddr\fR is taken to be an extra IPv4 address which is treated as being on
-the LAN for the purposes of the \-\-local argument.
+\fB\-\-ignore net, \-I net\fR
+\fInet\fR is taken to be an extra IPv4 or IPv6 network in prefix/length notation 
+(for example 192.0.2.0/24 or 2001:db8::/32) which is treated as being on the LAN for
+the purposes of the \-\-local argument. Up to eight nets can be specified.
 .TP
 \fB\-\-template\-file=file \-t file\fR
 File points to a file whose contents is sent as the warning message whenever a
