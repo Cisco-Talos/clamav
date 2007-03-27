@@ -181,8 +181,6 @@ char *cli_md5stream(FILE *fs, unsigned char *digcpy);
 char *cli_md5file(const char *filename);
 int cli_readn(int fd, void *buff, unsigned int count);
 int cli_writen(int fd, const void *buff, unsigned int count);
-int32_t cli_readint32(const char *buff);
-void cli_writeint32(char *offset, uint32_t value);
 char *cli_gentemp(const char *dir);
 char *cli_gentempdir(const char *dir);
 char *cli_gentempdesc(const char *dir, int *fd);
@@ -194,4 +192,28 @@ void cli_bitset_free(bitset_t *bs);
 int cli_bitset_set(bitset_t *bs, unsigned long bit_offset);
 int cli_bitset_test(bitset_t *bs, unsigned long bit_offset);
 void	cli_sanitise_filename(char *name);
+
+#if WORDS_BIGENDIAN == 0
+#define cli_readint32(buff) (*(const int32_t *)(buff))
+#define cli_writeint32(offset, value) (*(uint32_t *)(offset)=(uint32_t)(value))
+#else
+static inline int32_t cli_readint32(const char *buff)
+{
+	int32_t ret;
+    ret = buff[0] & 0xff;
+    ret |= (buff[1] & 0xff) << 8;
+    ret |= (buff[2] & 0xff) << 16;
+    ret |= (buff[3] & 0xff) << 24;
+    return ret;
+}
+
+static inline void cli_writeint32(char *offset, uint32_t value)
+{
+    offset[0] = value & 0xff;
+    offset[1] = (value & 0xff00) >> 8;
+    offset[2] = (value & 0xff0000) >> 16;
+    offset[3] = (value & 0xff000000) >> 24;
+}
+#endif /* WORDS_BIGENDIAN == 0 */
+
 #endif

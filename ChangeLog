@@ -1,3 +1,9 @@
+Tue Mar 27 09:03:42 CEST 2007 (tk)
+----------------------------------
+  * libclamav/others.[ch]: on little endian use macro versions of
+			   cli_(read|write)int32 (bb#427), thanks to Andrey J.
+			   Melnikoff and Stephen Gran
+
 Tue Mar 27 03:49:13 CEST 2007 (acab)
 ------------------------------------
   * libclamav/pe.c: typo
