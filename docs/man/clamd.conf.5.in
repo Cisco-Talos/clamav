@@ -32,12 +32,12 @@ Enable logging to selected file.
 Default: no
 .TP 
 \fBLogFileUnlock BOOL\fR
-Disable a system lock that protects against running clamd with a same configuration file multiple times.
+Disable a system lock that protects against running clamd with the same configuration file multiple times.
 .br 
 Default: no
 .TP 
 \fBLogFileMaxSize SIZE\fR
-Limit the size of a log file. The logger will be automatically disabled  if the file is greater than SIZE. Value of 0 disables the limit.
+Limit the size of the log file. The logger will be automatically disabled if the file is greater than SIZE. Value of 0 disables the limit.
 .br 
 Default: 1M
 .TP 

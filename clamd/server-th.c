@@ -626,7 +626,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	    pthread_mutex_unlock(&reload_mutex);
 	    engine = reload_db(engine, dboptions, copt, FALSE, &ret);
 	    if(ret) {
-		logg("Terminating because of a fatal error.");
+		logg("Terminating because of a fatal error.\n");
 		if(new_sd >= 0)
 		    close(new_sd);
 		break;
