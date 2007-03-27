@@ -517,7 +517,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
 
 	vep = EC32(optional_hdr64.AddressOfEntryPoint);
-	hdr_size = EC32(optional_hdr32.SizeOfHeaders);
+	hdr_size = EC32(optional_hdr64.SizeOfHeaders);
 	cli_dbgmsg("File format: PE32+\n");
 
 	cli_dbgmsg("MajorLinkerVersion: %d\n", optional_hdr64.MajorLinkerVersion);

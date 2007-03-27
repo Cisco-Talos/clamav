@@ -1,3 +1,7 @@
+Tue Mar 27 03:49:13 CEST 2007 (acab)
+------------------------------------
+  * libclamav/pe.c: typo
+
 Tue Mar 27 03:39:37 CEST 2007 (acab)
 ------------------------------------
   * libclamav/pe.c: Move assignments out of cli_dbgmsg (bb#426)
