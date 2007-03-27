@@ -583,7 +583,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	binary = FALSE;
 
 	if(dconf_entconv)
-		ptr = line = encoding_norm_readline(&conv, 8192);
+		ptr = line = encoding_norm_readline(&conv, stream_in, m_area, 8192);
 	else   
 		ptr = line = cli_readline(stream_in, m_area, 8192);
 
@@ -1481,7 +1481,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 		ptrend = NULL;
 		free(line);
 		if(dconf_entconv)
-			ptr = line = encoding_norm_readline(&conv, 8192);
+			ptr = line = encoding_norm_readline(&conv, stream_in, m_area, 8192);
 		else
 			ptr = line = cli_readline(stream_in, m_area, 8192);
 	}
