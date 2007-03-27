@@ -1,3 +1,7 @@
+Tue Mar 27 14:51:11 CEST 2007 (tk)
+----------------------------------
+  * etc/clamd.conf: LocalSocket now points to /tmp/clamd.sock by default
+
 Tue Mar 27 09:03:42 CEST 2007 (tk)
 ----------------------------------
   * libclamav/others.[ch]: on little endian use macro versions of
