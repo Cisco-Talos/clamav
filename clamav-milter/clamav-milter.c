@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-230316"
+#define	CM_VERSION	"devel-270323"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -160,12 +160,20 @@ typedef	unsigned short	in_port_t;
 typedef	unsigned int	in_addr_t;
 #endif
 
+#ifndef	INET6_ADDRSTRLEN
+#ifdef	AF_INET6
+#define	INET6_ADDRSTRLEN	40
+#else
+#define	INET6_ADDRSTRLEN	16
+#endif
+#endif
+
 #define	VERSION_LENGTH	128
 #define	DEFAULT_TIMEOUT	120
 
 /*#define	SESSION*/
-		/* Keep one command connection open to clamd, otherwise a new
-		 * command connection is created for each new email
+		/* Keep one command connexion open to clamd, otherwise a new
+		 * command connexion is created for each new email
 		 *
 		 * FIXME: When SESSIONS are open, freshclam can hang when
 		 *	notfying clamd of an update. This is most likely to be a
@@ -186,7 +194,6 @@ typedef	unsigned int	in_addr_t;
  *	others could be bounced properly.
  * TODO: Encrypt mails sent to clamd to stop sniffers. Sending by UNIX domain
  *	sockets is better
- * TODO: Test with IPv6
  * TODO: Load balancing, allow local machine to talk via UNIX domain socket.
  * TODO: allow each To: line in the whitelist file to specify a quarantine email
  *	address
@@ -208,12 +215,12 @@ typedef struct header_list_struct *header_list_t;
 /*
  * Local addresses are those not scanned if --local is not set
  * 127.0.0.0 is not in this table since that's goverend by --outgoing
- * Andy Fiddaman <clam@fiddaman.net> added 69.254.0.0/16
+ * Andy Fiddaman <clam@fiddaman.net> added 169.254.0.0/16
  *	(Microsoft default DHCP)
- * TODO: compare this with RFC1918
+ * TODO: compare this with RFC1918/RFC3330
  */
 #define PACKADDR(a, b, c, d) (((uint32_t)(a) << 24) | ((b) << 16) | ((c) << 8) | (d))
-#define MAKEMASK(bits)	((uint32_t)(0xffffffff << (bits)))
+#define MAKEMASK(bits)	((uint32_t)(0xffffffff << (32 - bits)))
 
 static struct cidr_net {	/* don't make this const because of -I flag */
 	uint32_t	base;
@@ -221,12 +228,27 @@ static struct cidr_net {	/* don't make this const because of -I flag */
 } localNets[] = {
 	/*{ PACKADDR(127,   0,   0,   0), MAKEMASK(24) },	/*   127.0.0.0/24 */
 	{ PACKADDR(192, 168,   0,   0), MAKEMASK(16) },	/* 192.168.0.0/16 */
-	{ PACKADDR( 10,   0,   0,   0), MAKEMASK(24) },	/*    10.0.0.0/24 */
-	{ PACKADDR(172,  16,   0,   0), MAKEMASK(20) },	/*  172.16.0.0/20 */
+	{ PACKADDR( 10,   0,   0,   0), MAKEMASK(8) },	/*    10.0.0.0/8 */
+	{ PACKADDR(172,  16,   0,   0), MAKEMASK(12) },	/*  172.16.0.0/12 */
 	{ PACKADDR(169, 254,   0,   0), MAKEMASK(16) },	/* 169.254.0.0/16 */
-	{ 0, 0 },	/* space to put one more via -I addr */
+	{ 0, 0 },	/* space to put eight more via -I addr */
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
+	{ 0, 0 },
 	{ 0, 0 }
 };
+#define IFLAG_MAX 8
+
+typedef struct cidr_net6 {
+	struct in6_addr	base;
+	int preflen;
+} cidr_net6;
+static	cidr_net6	localNets6[IFLAG_MAX];
+static	int	localNets6_cnt;
 
 /*
  * Each libmilter thread has one of these
@@ -236,7 +258,7 @@ struct	privdata {
 	char	*subject;	/* Original subject */
 	char	*sender;	/* Secretary - often used in mailing lists */
 	char	**to;	/* Who is the message going to */
-	char	ip[INET_ADDRSTRLEN];	/* IP address of the other end */
+	char	ip[INET6_ADDRSTRLEN];	/* IP address of the other end */
 	int	numTo;	/* Number of people the message is going to */
 #ifndef	SESSION
 	int	cmdSocket;	/*
@@ -303,7 +325,9 @@ static	int	qfile(struct privdata *privdata, const char *sendmailId, const char *
 static	int	move(const char *oldfile, const char *newfile);
 static	void	setsubject(SMFICTX *ctx, const char *virusname);
 /*static	int	clamfi_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);*/
+static	int	add_local_ip(char *address);
 static	int	isLocalAddr(in_addr_t addr);
+static	int	isLocal(const char *addr);
 static	void	clamdIsDown(void);
 static	void	*watchdog(void *a);
 static	int	check_and_reload_database(void);
@@ -311,8 +335,8 @@ static	void	timeoutBlacklist(char *ip_address, int time_of_blacklist);
 static	void	quit(void);
 static	void	broadcast(const char *mess);
 static	int	loadDatabase(void);
-static	int	increment_connections(void);
-static	void	decrement_connections(void);
+static	int	increment_connexions(void);
+static	void	decrement_connexions(void);
 
 #ifdef	SESSION
 static	pthread_mutex_t	version_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -474,9 +498,6 @@ static	pthread_cond_t	watchdog_cond = PTHREAD_COND_INITIALIZER;
 #ifndef	SHUT_WR
 #define	SHUT_WR		1
 #endif
-#ifndef	INET_ADDRSTRLEN
-#define	INET_ADDRSTRLEN	16
-#endif
 
 static	const	char	*postmaster = "postmaster";
 static	const	char	*from = "MAILER-DAEMON";
@@ -616,7 +637,7 @@ main(int argc, char **argv)
 		"ClamAv", /* filter name */
 		SMFI_VERSION,	/* version code -- leave untouched */
 		SMFIF_ADDHDRS|SMFIF_CHGHDRS,	/* flags - we add and deleted headers */
-		clamfi_connect, /* connection callback */
+		clamfi_connect, /* connexion callback */
 #ifdef	CL_DEBUG
 		clamfi_helo,	/* HELO filter callback */
 #else
@@ -629,7 +650,7 @@ main(int argc, char **argv)
 		clamfi_body,	/* body filter callback */
 		clamfi_eom,	/* end of message callback */
 		clamfi_abort,	/* message aborted callback */
-		clamfi_close,	/* connection cleanup callback */
+		clamfi_close,	/* connexion cleanup callback */
 #if	SMFI_VERSION > 2
 		NULL,		/* Unrecognised command */
 #endif
@@ -671,8 +692,6 @@ main(int argc, char **argv)
 
 	for(;;) {
 		int opt_index = 0;
-		struct cidr_net *net;
-		struct in_addr ignoreIP;
 #ifdef	BOUNCE
 #ifdef	CL_DEBUG
 		const char *args = "a:AbB:c:dDefF:I:k:K:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:x:0:1:2";
@@ -880,23 +899,18 @@ main(int argc, char **argv)
 				/*
 				 * Based on patch by jpd@louisiana.edu
 				 */
-				if(Iflag) {
+				if(Iflag == IFLAG_MAX) {
 					fprintf(stderr,
-						_("%s: %s, -I may only be given once"),
+						_("%s: %s, -I may only be given %d times\n"),
+							argv[0], optarg, IFLAG_MAX);
+					return EX_USAGE;
+				}
+				if(!add_local_ip(optarg)) {
+					fprintf(stderr,
+						_("%s: Cannot convert -I%s to IPaddr\n"),
 							argv[0], optarg);
 					return EX_USAGE;
 				}
-				if(!inet_aton(optarg, &ignoreIP)) {
-					fprintf(stderr,
-						_("%s: Cannot convert -I%s to IPaddr"),
-							argv[0], optarg);
-					return EX_USAGE;
-				}
-				for(net = (struct cidr_net *)localNets; net->base; net++)
-					;
-				/* TODO: allow netmasks */
-				net->base = ntohl(ignoreIP.s_addr);
-				net->mask = ntohl(0xffffffffU);
 				Iflag++;
 				break;
 			case 'l':	/* scan mail from the lan */
@@ -1033,7 +1047,7 @@ main(int argc, char **argv)
 			 * TODO: this is probably not needed if the remote
 			 * machine is localhost, need to check though
 			 */
-			fprintf(stderr, _("%s: when using inet: connection to sendmail you must enable --local\n"), argv[0]);
+			fprintf(stderr, _("%s: when using inet: connexion to sendmail you must enable --local\n"), argv[0]);
 			return EX_USAGE;
 		}
 
@@ -1346,9 +1360,9 @@ main(int argc, char **argv)
 			sockname = &port[6];
 
 		if(sockname && (strcmp(sockname, cpt->strarg) == 0)) {
-			fprintf(stderr, _("The connection from sendmail to %s (%s) must not\n"),
+			fprintf(stderr, _("The connexion from sendmail to %s (%s) must not\n"),
 				argv[0], sockname);
-			fprintf(stderr, _("be the same as the connection to clamd (%s) in %s\n"),
+			fprintf(stderr, _("be the same as the connexion to clamd (%s) in %s\n"),
 				cpt->strarg, cfgfile);
 			return EX_CONFIG;
 		}
@@ -1403,7 +1417,7 @@ main(int argc, char **argv)
 		sessions[0].status = CMDSOCKET_FREE;
 #endif
 		/*
-		 * FIXME: Allow connection to remote servers by TCP/IP whilst
+		 * FIXME: Allow connexion to remote servers by TCP/IP whilst
 		 * connecting to the localserver via a UNIX domain socket
 		 */
 		numServers = 1;
@@ -1445,7 +1459,7 @@ main(int argc, char **argv)
 
 #ifdef	SESSION
 		/*
-		 * We need to know how many connections to establish to clamd
+		 * We need to know how many connexion to establish to clamd
 		 */
 		if(max_children == 0) {
 			fprintf(stderr, _("%s: --max-children must be given in sessions mode\n"), argv[0]);
@@ -1558,7 +1572,7 @@ main(int argc, char **argv)
 		unsigned int session;
 
 		/*
-		 * We need to know how many connections to establish to clamd
+		 * We need to know how many connexion to establish to clamd
 		 */
 		if(max_children == 0) {
 			fprintf(stderr, _("%s: --max-children must be given in sessions mode\n"), argv[0]);
@@ -2303,7 +2317,7 @@ findServer(void)
 	free(servers);
 
 	if(maxsock == -1) {
-		logg(_("^Couldn't establish a connection to any clamd server\n"));
+		logg(_("^Couldn't establish a connexion to any clamd server\n"));
 		retval = 0;
 	} else {
 		struct timeval tv;
@@ -2390,13 +2404,13 @@ try_server(void *var)
 #endif
 
 /*
- * Sendmail wants to establish a connection to us
+ * Sendmail wants to establish a connexion to us
  */
 static sfsistat
 clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 {
 #if	defined(HAVE_INET_NTOP) || defined(WITH_TCPWRAP)
-	char ip[INET_ADDRSTRLEN];	/* IPv4 only */
+	char ip[INET6_ADDRSTRLEN];
 #endif
 	int t;
 	const char *remoteIP;
@@ -2414,12 +2428,18 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		return cl_error;
 	}
 	if(smfi_getpriv(ctx) != NULL) {
-		/* More than one connection command, "can't happen" */
+		/* More than one connexion command, "can't happen" */
 		cli_warnmsg("clamfi_connect: called more than once\n");
 		clamfi_cleanup(ctx);
 		return cl_error;
 	}
+#ifdef AF_INET6
+	if((hostaddr == NULL) ||
+	   ((hostaddr->sa_family == AF_INET) && (&(((struct sockaddr_in *)(hostaddr))->sin_addr) == NULL)) ||
+	   ((hostaddr->sa_family == AF_INET6) && (&(((struct sockaddr_in6 *)(hostaddr))->sin6_addr) == NULL)))
+#else
 	if((hostaddr == NULL) || (&(((struct sockaddr_in *)(hostaddr))->sin_addr) == NULL))
+#endif
 		/*
 		 * According to the sendmail API hostaddr is NULL if
 		 * "the type is not supported in the current version". What
@@ -2430,7 +2450,22 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		remoteIP = "127.0.0.1";
 	else {
 #ifdef HAVE_INET_NTOP
-		remoteIP = (char *)inet_ntop(AF_INET, &((struct sockaddr_in *)(hostaddr))->sin_addr, ip, sizeof(ip));
+		switch (hostaddr->sa_family) {
+			case AF_INET:
+				remoteIP = (char *)inet_ntop(AF_INET, &((struct sockaddr_in *)(hostaddr))->sin_addr, ip, sizeof(ip));
+				break;
+#ifdef AF_INET6
+			case AF_INET6:
+				remoteIP = (char *)inet_ntop(AF_INET6, &((struct sockaddr_in6 *)(hostaddr))->sin6_addr, ip, sizeof(ip));
+				break;
+#endif
+			default:
+				logg(_("clamfi_connect: Unexpected sa_family %d\n"),
+					hostaddr->sa_family);
+				return cl_error;
+				break;
+		}
+
 #else
 		remoteIP = inet_ntoa(((struct sockaddr_in *)(hostaddr))->sin_addr);
 #endif
@@ -2444,9 +2479,9 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 #ifdef	CL_DEBUG
 	if(debug_level >= 4) {
 		if(hostname[0] == '[')
-			logg(_("clamfi_connect: connection from %s"), remoteIP);
+			logg(_("clamfi_connect: connexion from %s"), remoteIP);
 		else
-			logg(_("clamfi_connect: connection from %s [%s]"), hostname, remoteIP);
+			logg(_("clamfi_connect: connexion from %s [%s]"), hostname, remoteIP);
 	}
 #endif
 
@@ -2461,9 +2496,10 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		static pthread_mutex_t wrap_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 		/*
-		 * Using TCP/IP for the sendmail->clamav-milter connection
+		 * Using TCP/IP for the sendmail->clamav-milter connexion
 		 */
-		if((hostmail = smfi_getsymval(ctx, "{if_name}")) == NULL) {
+		if(((hostmail = smfi_getsymval(ctx, "{if_name}")) == NULL) &&
+		   ((hostmail = smfi_getsymval(ctx, "j")) == NULL)) {
 			logg(_("Can't get sendmail hostname"));
 			return cl_error;
 		}
@@ -2527,7 +2563,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 			return SMFIS_ACCEPT;
 		}
 
-	if((!lflag) && isLocalAddr(inet_addr(remoteIP))) {
+	if((!lflag) && isLocal(remoteIP)) {
 #ifdef	CL_DEBUG
 		logg(_("*clamfi_connect: not scanning local messages\n"));
 #endif
@@ -2535,9 +2571,9 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 	}
 
 #if	defined(HAVE_INET_NTOP) || defined(WITH_TCPWRAP)
-	if(detect_forged_local_address && !isLocalAddr(inet_addr(ip))) {
+	if(detect_forged_local_address && !isLocal(ip)) {
 #else
-	if(detect_forged_local_address && !isLocalAddr(inet_addr(remoteIP))) {
+	if(detect_forged_local_address && !isLocal(remoteIP)) {
 #endif
 		char me[MAXHOSTNAMELEN + 1];
 
@@ -2656,15 +2692,15 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			free(privdata);
 			return cl_error;
 		}
-		if(!increment_connections()) {
+		if(!increment_connexions()) {
 			smfi_setreply(ctx, "451", "4.3.2", _("AV system temporarily overloaded - please try later"));
 			free(privdata);
 			smfi_setpriv(ctx, NULL);
 			return SMFIS_TEMPFAIL;
 		}
 	} else {
-		/* More than one message on this connection */
-		char ip[INET_ADDRSTRLEN];
+		/* More than one message on this connexion */
+		char ip[INET6_ADDRSTRLEN];
 
 		strcpy(ip, privdata->ip);
 		if(isBlacklisted(ip)) {
@@ -2803,7 +2839,7 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 
 	if(privdata->dataSocket == -1)
 		/*
-		 * First header - make connection with clamd
+		 * First header - make connexion with clamd
 		 */
 		if(!connect2clamd(privdata)) {
 			clamfi_cleanup(ctx);
@@ -2837,7 +2873,7 @@ clamfi_eoh(SMFICTX *ctx)
 
 	if(privdata->dataSocket == -1)
 		/*
-		 * No headers - make connection with clamd
+		 * No headers - make connexion with clamd
 		 */
 		if(!connect2clamd(privdata)) {
 			clamfi_cleanup(ctx);
@@ -3058,16 +3094,16 @@ clamfi_eom(SMFICTX *ctx)
 		switch(cl_scanfile(privdata->filename, &virname, NULL, privdata->root, &limits, options)) {
 			case CL_CLEAN:
 				if(logok)
-					logg("#%s: OK", privdata->filename);
+					logg("#%s: OK\n", privdata->filename);
 				strcpy(mess, "OK");
 				break;
 			case CL_VIRUS:
 				snprintf(mess, sizeof(mess), "%s: %s FOUND", privdata->filename, virname);
-				logg("#%s", mess);
+				logg("#%s\n", mess);
 				break;
 			default:
 				snprintf(mess, sizeof(mess), "%s: %s ERROR", privdata->filename, cl_strerror(rc));
-				logg("!%s", mess);
+				logg("!%s\n", mess);
 				break;
 		}
 		cl_free(privdata->root);
@@ -3652,7 +3688,7 @@ clamfi_abort(SMFICTX *ctx)
 	logg("*clamfi_abort\n");
 
 	clamfi_cleanup(ctx);
-	decrement_connections();
+	decrement_connexions();
 
 	logg("*clamfi_abort returns\n");
 
@@ -3665,7 +3701,7 @@ clamfi_close(SMFICTX *ctx)
 	logg("*clamfi_close\n");
 
 	clamfi_cleanup(ctx);
-	decrement_connections();
+	decrement_connexions();
 
 	return SMFIS_CONTINUE;
 }
@@ -4046,7 +4082,7 @@ header_list_free(header_list_t list)
 	struct header_node_t *iter;
 
 	iter = list->first;
-	while (iter) {
+	while(iter) {
 		struct header_node_t *iter2 = iter->next;
 		free(iter->header);
 		free(iter);
@@ -4100,7 +4136,7 @@ header_list_print(const header_list_t list, FILE *fp)
 }
 
 /*
- * Establish a connection to clamd
+ * Establish a connexion to clamd
  *	Returns success (1) or failure (0)
  */
 static int
@@ -4810,6 +4846,111 @@ clamfi_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t
 #endif
 
 /*
+ * Handle the -I flag
+ */
+static int
+add_local_ip(char *address)
+{
+	char *opt, *pref;
+	int preflen;
+	int retval;
+	struct in_addr ignoreIP;
+	struct in6_addr ignoreIP6;
+
+	opt = cli_strdup(address);
+	if(opt == NULL)
+		return 0;
+
+	pref = strchr(opt, '/'); /* search for "/prefix" */
+	if(pref)
+		*pref = '\0';
+#ifdef HAVE_INET_NTOP
+	/* IPv4 address ? */
+	if(inet_pton(AF_INET, opt, &ignoreIP) > 0) {
+#else
+	if(inet_aton(address, &ignoreIP)) {
+#endif
+		struct cidr_net *net;
+
+		for(net = (struct cidr_net *)localNets; net->base; net++)
+			;
+		if(pref && *(pref+1))
+			preflen = atoi (pref+1);
+		else
+			preflen = 32;
+
+		net->base = ntohl(ignoreIP.s_addr);
+		net->mask = MAKEMASK (preflen);
+
+		retval = 1;
+	}
+
+#ifdef HAVE_INET_NTOP
+#ifdef AF_INET6
+	else if(inet_pton(AF_INET6, opt, &ignoreIP6) > 0) {
+		/* IPv6 address ? */
+		localNets6[localNets6_cnt].base = ignoreIP6;
+
+		if(pref && *(pref+1))
+			preflen = atoi (pref+1);
+		else
+			preflen = 128;
+		localNets6[localNets6_cnt].preflen = preflen;
+		localNets6_cnt++;
+
+		retval = 1;
+	}
+#endif
+#endif
+	free (opt);
+	return retval;
+}
+
+/*
+ * Determine if an IPv6 email address is "local". The address is the
+ *	human readable version. Calls isLocalAddr if the given address is
+ *	IPv4
+ */
+static int
+isLocal(const char *addr)
+{
+	struct in_addr ip;
+	struct in6_addr ip6;
+
+#ifdef HAVE_INET_NTOP
+	if(inet_pton(AF_INET, addr, &ip) > 0)
+		return isLocalAddr (ip.s_addr);
+#ifdef AF_INET6
+	else if(inet_pton (AF_INET6, addr, &ip6) > 0) {
+		int i;
+		const cidr_net6 *pnet6 = localNets6;
+
+		for (i = 0; i < localNets6_cnt; i++) {
+			int match = 1;
+			int j;
+
+			for(j = 0; match && j < pnet6->preflen >> 3; j++)
+				if(pnet6->base.s6_addr[j] != ip6.s6_addr[j])
+					match = 0;
+			if(match && j < 16) {
+				u_int8_t mask = 0xff << (8 - (pnet6->preflen & 7));
+
+				if((pnet6->base.s6_addr[j] & mask) != (ip6.s6_addr[j] & mask))
+					match = 0;
+			}
+			if(match)
+				return 1;	/* isLocal */
+			pnet6++;
+		 }
+	}
+	return 0;
+#endif /* AF_INET6 */
+#else
+	return isLocalAddr(inet_addr(addr));
+#endif
+}
+
+/*
  * David Champion <dgc@uchicago.edu>
  *
  * Check whether addr is on network by applying netmasks.
@@ -4824,7 +4965,7 @@ isLocalAddr(in_addr_t addr)
 	const struct cidr_net *net;
 
 	for(net = localNets; net->base; net++)
-		if(htonl(net->base & net->mask) == (addr & htonl(net->mask)))
+		if((net->base & net->mask) == (ntohl(addr) & net->mask))
 			return 1;
 
 	return 0;	/* is non-local */
@@ -5576,7 +5717,7 @@ isBlacklisted(const char *ip_address)
 
 	cli_dbgmsg("isBlacklisted %s\n", ip_address);
 
-	if(isLocalAddr(inet_addr(ip_address)))
+	if(isLocal(ip_address))
 		return 0;
 
 	pthread_mutex_lock(&blacklist_mutex);
@@ -5862,7 +6003,7 @@ useful_header(const char *cmd)
 }
 
 static int
-increment_connections(void)
+increment_connexions(void)
 {
 	if(max_children > 0) {
 		int rc = 0;
@@ -5931,11 +6072,11 @@ increment_connections(void)
 }
 
 static void
-decrement_connections(void)
+decrement_connexions(void)
 {
 	if(max_children > 0) {
 		pthread_mutex_lock(&n_children_mutex);
-		cli_dbgmsg("decrement_connections: n_children = %d\n", n_children);
+		cli_dbgmsg("decrement_connexions: n_children = %d\n", n_children);
 		/*
 		 * Deliberately errs on the side of broadcasting too many times
 		 */
