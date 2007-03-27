@@ -139,7 +139,7 @@ static int htmlnorm(struct optstruct *opt)
 	return -1;
     }
 
-    html_normalise_fd(fd, ".", NULL);
+    html_normalise_fd(fd, ".", NULL, NULL);
     close(fd);
 
     return 0;
