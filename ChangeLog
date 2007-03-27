@@ -1,3 +1,7 @@
+Tue Mar 27 03:39:37 CEST 2007 (acab)
+------------------------------------
+  * libclamav/pe.c: Move assignments out of cli_dbgmsg (bb#426)
+
 Mon Mar 26 20:08:06 CEST 2007 (acab)
 ------------------------------------
   * libclamav/upx.c: final tweaks

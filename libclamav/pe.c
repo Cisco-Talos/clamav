@@ -486,6 +486,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    upack = (EC16(file_hdr.SizeOfOptionalHeader)==0x148);
 
 	vep = EC32(optional_hdr32.AddressOfEntryPoint);
+	hdr_size = EC32(optional_hdr32.SizeOfHeaders);
 	cli_dbgmsg("File format: PE\n");
 
 	cli_dbgmsg("MajorLinkerVersion: %d\n", optional_hdr32.MajorLinkerVersion);
@@ -500,7 +501,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	cli_dbgmsg("MajorSubsystemVersion: %d\n", EC16(optional_hdr32.MajorSubsystemVersion));
 	cli_dbgmsg("MinorSubsystemVersion: %d\n", EC16(optional_hdr32.MinorSubsystemVersion));
 	cli_dbgmsg("SizeOfImage: 0x%x\n", EC32(optional_hdr32.SizeOfImage));
-	cli_dbgmsg("SizeOfHeaders: 0x%x\n", (hdr_size = EC32(optional_hdr32.SizeOfHeaders)));
+	cli_dbgmsg("SizeOfHeaders: 0x%x\n", hdr_size);
 	cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr32.NumberOfRvaAndSizes));
 
     } else { /* PE+ */
@@ -516,6 +517,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
 
 	vep = EC32(optional_hdr64.AddressOfEntryPoint);
+	hdr_size = EC32(optional_hdr32.SizeOfHeaders);
 	cli_dbgmsg("File format: PE32+\n");
 
 	cli_dbgmsg("MajorLinkerVersion: %d\n", optional_hdr64.MajorLinkerVersion);
@@ -530,7 +532,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	cli_dbgmsg("MajorSubsystemVersion: %d\n", EC16(optional_hdr64.MajorSubsystemVersion));
 	cli_dbgmsg("MinorSubsystemVersion: %d\n", EC16(optional_hdr64.MinorSubsystemVersion));
 	cli_dbgmsg("SizeOfImage: 0x%x\n", EC32(optional_hdr64.SizeOfImage));
-	cli_dbgmsg("SizeOfHeaders: 0x%x\n", (hdr_size = EC32(optional_hdr32.SizeOfHeaders)));
+	cli_dbgmsg("SizeOfHeaders: 0x%x\n", hdr_size);
 	cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr64.NumberOfRvaAndSizes));
     }
 
