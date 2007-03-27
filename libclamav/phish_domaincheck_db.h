@@ -20,7 +20,6 @@
  *
  */
 
-#ifdef CL_EXPERIMENTAL
 
 #ifndef _PHISH_DOMAINCHECK_DB_H
 #define _PHISH_DOMAINCHECK_DB_H
@@ -34,4 +33,3 @@ int domainlist_match(const struct cl_engine* engine,const char* real_url,const c
 
 #endif
 
-#endif

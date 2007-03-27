@@ -24,7 +24,6 @@
 #include "clamav-config.h"
 #endif
 
-#ifdef CL_EXPERIMENTAL
 
 #ifndef CL_DEBUG
 #define NDEBUG
@@ -86,4 +85,3 @@ void whitelist_done(struct cl_engine* engine)
 	}
 }
 
-#endif

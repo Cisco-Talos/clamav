@@ -17,7 +17,6 @@
  *  MA 02110-1301, USA.
  */
 
-#ifdef CL_EXPERIMENTAL
 
 #ifndef _PHISH_CHECK_H
 #define _PHISH_CHECK_H
@@ -89,4 +88,3 @@ void phishing_done(struct cl_engine* engine);
 
 #endif
 
-#endif

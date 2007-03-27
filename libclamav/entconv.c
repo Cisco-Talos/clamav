@@ -21,7 +21,6 @@
  */
 #include "clamav-config.h"
 
-#ifdef CL_EXPERIMENTAL
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -984,4 +983,3 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 	}
 }
 
-#endif

@@ -20,7 +20,6 @@
  *
  */
 #include <clamav-config.h>
-#ifdef  CL_EXPERIMENTAL
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -413,4 +412,3 @@ int hashtab_load(FILE* in, struct hashtable *s)
 	return CL_SUCCESS;
 }
 
-#endif
