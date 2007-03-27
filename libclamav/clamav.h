@@ -76,7 +76,7 @@ extern "C"
 #define CL_DB_PHISHING_URLS 0x8
 
 /* recommended db settings */
-#define CL_DB_STDOPT	    CL_DB_PHISHING
+#define CL_DB_STDOPT	    (CL_DB_PHISHING | CL_DB_PHISHING_URLS)
 
 /* scan options */
 #define CL_SCAN_RAW		    0x0

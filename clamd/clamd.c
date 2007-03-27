@@ -303,12 +303,10 @@ int main(int argc, char **argv)
     else
 	logg("Not loading phishing signatures.\n");
 
-#ifdef CL_EXPERIMENTAL
     if(cfgopt(copt,"PhishingScanURLs")->enabled)
 	dboptions |= CL_DB_PHISHING_URLS;
     else
 	logg("Disabling URL based phishing detection.\n");
-#endif
 
     if(cfgopt(copt, "NodalCoreAcceleration")->enabled) {
 #ifdef HAVE_NCORE

@@ -169,10 +169,9 @@ int scanmanager(const struct optstruct *opt)
     if(opt_check(opt, "ncore"))
 	dboptions |= CL_DB_NCORE;
 
-    if(!opt_check(opt, "no-phishing-sigs"))
-	dboptions |= CL_DB_PHISHING;
+    if(opt_check(opt, "no-phishing-sigs"))
+	dboptions &= ~CL_DB_PHISHING;
 
-#ifdef CL_EXPERIMENTAL
     if(!opt_check(opt,"no-phishing-scan-urls"))
 	dboptions |= CL_DB_PHISHING_URLS;
     if(!opt_check(opt,"no-phishing-restrictedscan")) {
@@ -185,7 +184,6 @@ int scanmanager(const struct optstruct *opt)
     if(opt_check(opt,"phishing-cloak")) {
 	options |= CL_SCAN_PHISHING_BLOCKCLOAK;
     }
-#endif
 
     if(opt_check(opt, "dev-ac-only")) {
 	dboptions |= CL_DB_ACONLY;
