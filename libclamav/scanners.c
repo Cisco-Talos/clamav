@@ -1193,7 +1193,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
         return CL_ETMPDIR;
     }
 
-    html_normalise_fd(desc, tempname, NULL);
+    html_normalise_fd(desc, tempname, NULL, ctx->dconf);
     snprintf(fullname, 1024, "%s/comment.html", tempname);
     fd = open(fullname, O_RDONLY|O_BINARY);
     if (fd >= 0) {
