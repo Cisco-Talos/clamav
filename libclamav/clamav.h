@@ -109,32 +109,6 @@ extern "C"
 #define cl_perror	cl_strerror
 
 /* internal structures */
-struct cli_bm_patt {
-    unsigned char *pattern;
-    char *virname, *offset;
-    const char *viralias;
-    unsigned int length;
-    unsigned short target;
-    struct cli_bm_patt *next;
-};
-
-struct cli_ac_patt {
-    short int *pattern, *prefix;
-    unsigned int length, mindist, maxdist, prefix_length;
-    char *virname, *offset;
-    const char *viralias;
-    unsigned short int sigid, parts, partno, alt, *altn, alt_pattern;
-    unsigned short type, target;
-    unsigned char **altc;
-    struct cli_ac_patt *next;
-};
-
-struct cli_ac_node {
-    unsigned char islast;
-    struct cli_ac_patt *list;
-    struct cli_ac_node *trans[256], *fail;
-};
-
 struct cli_md5_node {
     char *virname, *viralias;
     unsigned char *md5;
@@ -150,20 +124,6 @@ struct cli_meta_node {
     struct cli_meta_node *next;
 };
 
-struct cli_matcher {
-    unsigned int maxpatlen; /* maximal length of pattern in db */
-    unsigned short ac_only;
-
-    /* Extended Boyer-Moore */
-    int *bm_shift;
-    struct cli_bm_patt **bm_suffix;
-
-    /* Extended Aho-Corasick */
-    unsigned int ac_depth;
-    struct cli_ac_node *ac_root, **ac_nodetable;
-    unsigned int ac_partsigs, ac_nodes;
-};
-
 struct cl_engine {
     unsigned int refcount; /* reference counter */
     unsigned short ncore;
@@ -171,7 +131,7 @@ struct cl_engine {
     unsigned int dboptions;
 
     /* Roots table */
-    struct cli_matcher **root;
+    void **root;
 
     /* MD5 */
     struct cli_md5_node **md5_hlist;

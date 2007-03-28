@@ -22,10 +22,12 @@
 
 #include <sys/types.h>
 
+#include "cltypes.h"
+
 int cli_strbcasestr(const char *haystack, const char *needle);
 int cli_chomp(char *string);
 char *cli_strtok(const char *line, int field, const char *delim);
-short int *cli_hex2si(const char *hex);
+uint16_t *cli_hex2ui(const char *hex);
 char *cli_hex2str(const char *hex);
 int cli_hex2num(const char *hex);
 char *cli_str2hex(const char *string, unsigned int len);

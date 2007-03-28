@@ -49,9 +49,9 @@
 #endif
 #include "matcher-ac.h"
 #include "matcher-bm.h"
+#include "matcher.h"
 #include "others.h"
 #include "str.h"
-#include "defaults.h"
 #include "dconf.h"
 #include "lockdb.h"
 #include "readdb.h"
@@ -100,6 +100,9 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
 	free(new->altc);		\
 	free(hex);			\
     }
+
+    if(strlen(hexsig) / 2 < AC_DEFAULT_DEPTH)
+	return CL_EPATSHORT;
 
     if((new = (struct cli_ac_patt *) cli_calloc(1, sizeof(struct cli_ac_patt))) == NULL)
 	return CL_EMEM;
@@ -210,7 +213,7 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
 	}
     }
 
-    if((new->pattern = cli_hex2si(new->alt ? hex : hexsig)) == NULL) {
+    if((new->pattern = cli_hex2ui(new->alt ? hex : hexsig)) == NULL) {
 	FREE_ALT;
 	if(new->offset)
 	    free(new->offset);
@@ -221,17 +224,17 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
     new->length = strlen(new->alt ? hex : hexsig) / 2;
 
     for(i = 0; i < AC_DEFAULT_DEPTH; i++) {
-	if(new->pattern[i] == CLI_IGN || new->pattern[i] == CLI_ALT) {
+	if(new->pattern[i] & CLI_MATCH_WILDCARD) {
 	    wprefix = 1;
 	    break;
 	}
     }
 
     if(wprefix) {
-	for(; i < new->length - AC_DEFAULT_DEPTH + 1; i++) {
+	for(; i < (uint16_t) (new->length - AC_DEFAULT_DEPTH + 1); i++) {
 	    wprefix = 0;
 	    for(j = i; j < i + AC_DEFAULT_DEPTH; j++) {
-		if(new->pattern[j] == CLI_IGN || new->pattern[j] == CLI_ALT) {
+		if(new->pattern[j] & CLI_MATCH_WILDCARD) {
 		    wprefix = 1;
 		    break;
 		}
@@ -255,7 +258,7 @@ static int cli_ac_addsig(struct cli_matcher *root, const char *virname, const ch
 	new->length -= i;
 
 	for(i = 0; i < new->prefix_length; i++)
-	    if(new->prefix[i] == CLI_ALT)
+	    if((new->prefix[i] & CLI_MATCH_WILDCARD) == CLI_MATCH_ALTERNATIVE)
 		new->alt_pattern++;
     }
 
@@ -524,7 +527,7 @@ int cli_initengine(struct cl_engine **engine, unsigned int options)
 
 	(*engine)->refcount = 1;
 
-	(*engine)->root = (struct cli_matcher **) cli_calloc(CL_TARGET_TABLE_SIZE, sizeof(struct cli_matcher *));
+	(*engine)->root = cli_calloc(CL_TARGET_TABLE_SIZE, sizeof(struct cli_matcher *));
 	if(!(*engine)->root) {
 	    /* no need to free previously allocated memory here */
 	    cli_errmsg("Can't allocate memory for roots!\n");
@@ -1674,9 +1677,9 @@ void cl_free(struct cl_engine *engine)
     if(engine->root) {
 	for(i = 0; i < CL_TARGET_TABLE_SIZE; i++) {
 	    if((root = engine->root[i])) {
-		cli_ac_free(root);
-		if(!engine->root[i]->ac_only)
+		if(!root->ac_only)
 		    cli_bm_free(root);
+		cli_ac_free(root);
 		free(root);
 	    }
 	}

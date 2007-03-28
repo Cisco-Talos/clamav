@@ -1748,7 +1748,7 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
 static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 {
 	int ret = CL_CLEAN, nret = CL_CLEAN;
-	unsigned short ftrec, break_loop = 0;
+	uint8_t ftrec, break_loop = 0;
 	struct cli_matched_type *ftoffset = NULL, *fpt;
 	uint32_t lastzip, lastrar;
 	struct cli_exe_info peinfo;

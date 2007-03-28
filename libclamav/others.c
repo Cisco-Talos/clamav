@@ -81,7 +81,7 @@ static pthread_mutex_t cli_gentempname_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define       P_tmpdir        "C:\\WINDOWS\\TEMP"
 #endif
 
-#define CL_FLEVEL 14 /* don't touch it */
+#define CL_FLEVEL 15 /* don't touch it */
 
 short cli_debug_flag = 0, cli_leavetemps_flag = 0;
 
@@ -286,7 +286,7 @@ char *cli_md5file(const char *filename)
     return md5str;
 }
 
-static char *cli_md5buff(const char *buffer, unsigned int len, unsigned char *dig)
+static char *cli_md5buff(const unsigned char *buffer, unsigned int len, unsigned char *dig)
 {
 	unsigned char digest[16];
 	char *md5str, *pt;
@@ -295,7 +295,7 @@ static char *cli_md5buff(const char *buffer, unsigned int len, unsigned char *di
 
 
     cli_md5_init(&ctx);
-    cli_md5_update(&ctx, (const unsigned char *) buffer, len);
+    cli_md5_update(&ctx, buffer, len);
     cli_md5_final(digest, &ctx);
 
     if(dig)
@@ -465,7 +465,7 @@ static char *cli_gentempname(const char *dir)
     for(i = 16; i < 48; i++)
 	salt[i] = cli_rndnum(256);
 
-    tmp = cli_md5buff((char *) salt, 48, name_salt);
+    tmp = cli_md5buff(salt, 48, name_salt);
 
 #ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&cli_gentempname_mutex);

@@ -50,7 +50,6 @@
 #include <sys/stat.h>
 #include <errno.h>
 
-#include "defaults.h"
 #include "manager.h"
 #include "notify.h"
 #include "dns.h"

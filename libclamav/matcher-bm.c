@@ -17,6 +17,12 @@
  *  MA 02110-1301, USA.
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#include <stdio.h>
+
 #include "clamav.h"
 #include "memory.h"
 #include "others.h"
@@ -129,7 +135,7 @@ void cli_bm_free(struct cli_matcher *root)
     }
 }
 
-int cli_bm_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cli_matcher *root, unsigned long int offset, cli_file_t ftype, int fd)
+int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, uint32_t offset, cli_file_t ftype, int fd)
 {
 	unsigned int i, j, shift, off, found = 0;
 	int idxtest;

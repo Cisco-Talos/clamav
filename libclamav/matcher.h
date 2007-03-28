@@ -29,6 +29,29 @@
 #include "cltypes.h"
 #include "md5.h"
 
+#include "matcher-ac.h"
+#include "matcher-bm.h"
+
+#define CLI_MATCH_WILDCARD	0xff00
+#define CLI_MATCH_IGNORE	0x0100
+#define CLI_MATCH_ALTERNATIVE	0x0200
+#define CLI_MATCH_NIBBLE_HIGH	0x0300
+#define CLI_MATCH_NIBBLE_LOW	0x0400
+
+struct cli_matcher {
+    uint16_t maxpatlen;
+    uint8_t ac_only;
+
+    /* Extended Boyer-Moore */
+    int32_t *bm_shift;
+    struct cli_bm_patt **bm_suffix;
+
+    /* Extended Aho-Corasick */
+    uint8_t ac_depth;
+    struct cli_ac_node *ac_root, **ac_nodetable;
+    uint32_t ac_partsigs, ac_nodes;
+};
+
 #define CL_TARGET_TABLE_SIZE 7
 
 struct cli_target_info {
@@ -37,9 +60,9 @@ struct cli_target_info {
     int8_t status; /* 0 == not initialised, 1 == initialised OK, -1 == error */
 };
 
-int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, cli_file_t ftype, unsigned short ftonly, struct cli_matched_type **ftoffset);
+int cli_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cl_engine *engine, cli_file_t ftype);
 
-int cli_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cl_engine *engine, cli_file_t ftype);
+int cli_scandesc(int desc, cli_ctx *ctx, uint8_t otfrec, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset);
 
 int cli_validatesig(cli_file_t ftype, const char *offstr, off_t fileoff, struct cli_target_info *info, int desc, const char *virname);
 

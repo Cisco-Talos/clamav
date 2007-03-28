@@ -47,7 +47,6 @@ libclamav_la_SOURCES = \
 	dsig.h \
         str.c \
 	str.h \
-	defaults.h \
 	scanners.c \
 	scanners.h \
 	filetypes.c \

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,8 +22,6 @@
 
 #include <sys/types.h>
 
-#include "clamav.h"
-#include "matcher.h"
 #include "filetypes.h"
 #include "cltypes.h"
 
@@ -31,21 +29,41 @@
 #define AC_DEFAULT_TRACKLEN 8
 
 struct cli_ac_data {
-    unsigned int partsigs;
+    uint32_t partsigs;
     off_t *inioff;
-    unsigned int *partcnt;
-    unsigned int **partoff;
+    uint16_t *partcnt;
+    uint32_t **partoff;
     uint8_t *offcnt;
     uint8_t *offidx;
-    int *maxshift;
+    int32_t *maxshift;
 };
 
+struct cli_ac_patt {
+    uint16_t *pattern, *prefix, length, prefix_length;
+    uint32_t mindist, maxdist;
+    char *virname, *offset;
+    const char *viralias;
+    uint32_t sigid;
+    uint16_t parts, partno, alt, *altn, alt_pattern;
+    uint8_t target;
+    uint16_t type;
+    unsigned char **altc;
+    struct cli_ac_patt *next;
+};
+
+struct cli_ac_node {
+    uint8_t islast;
+    struct cli_ac_patt *list;
+    struct cli_ac_node *trans[256], *fail;
+};
+
+#include "matcher.h"
+
 int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern);
-int cli_ac_initdata(struct cli_ac_data *data, unsigned int partsigs, unsigned int histlen);
+int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint8_t tracklen);
 void cli_ac_freedata(struct cli_ac_data *data);
-int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cli_matcher *root, struct cli_ac_data *mdata, unsigned short otfrec, unsigned long int offset, cli_file_t ftype, int fd, struct cli_matched_type **ftoffset);
+int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, struct cli_ac_data *mdata, uint8_t otfrec, uint32_t offset, cli_file_t ftype, int fd, struct cli_matched_type **ftoffset);
 int cli_ac_buildtrie(struct cli_matcher *root);
 void cli_ac_free(struct cli_matcher *root);
-void cli_ac_setdepth(unsigned int depth);
 
 #endif

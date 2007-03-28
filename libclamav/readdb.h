@@ -21,6 +21,7 @@
 #define __READDB_H
 
 #include "clamav.h"
+#include "matcher.h"
 
 int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, unsigned short type, const char *offset, unsigned short target);
 

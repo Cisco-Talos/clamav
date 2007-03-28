@@ -4,7 +4,7 @@
  *  http://www-sr.informatik.uni-tuebingen.de/~buehler/AC/AC.html
  *  Thanks to Kurt Huwig for pointing me to this page.
  *
- *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -37,7 +37,6 @@
 #include "others.h"
 #include "matcher.h"
 #include "matcher-ac.h"
-#include "defaults.h"
 #include "filetypes.h"
 #include "cltypes.h"
 
@@ -46,12 +45,12 @@ struct nodelist {
     struct nodelist *next;
 };
 
-unsigned short ac_depth = AC_DEFAULT_DEPTH;
+static uint8_t ac_depth = AC_DEFAULT_DEPTH;
 
 int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 {
 	struct cli_ac_node *pos, *next;
-	int i;
+	uint8_t i;
 
     if(pattern->length < ac_depth)
 	return CL_EPATSHORT;
@@ -59,7 +58,7 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
     pos = root->ac_root;
 
     for(i = 0; i < ac_depth; i++) {
-	next = pos->trans[((unsigned char) pattern->pattern[i]) & 0xff]; 
+	next = pos->trans[(unsigned char) (pattern->pattern[i] & 0xff)]; 
 
 	if(!next) {
 	    next = (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));
@@ -248,7 +247,7 @@ inline static int cli_findpos(const unsigned char *buffer, unsigned int depth, u
 	if(bufferpos == postfixend)
 	    return 0;
 
-	if(pattern->pattern[i] == CLI_ALT) {
+	if((pattern->pattern[i] & CLI_MATCH_WILDCARD) == CLI_MATCH_ALTERNATIVE) {
 	    found = 0;
 	    for(j = 0; j < pattern->altn[alt]; j++) {
 		if(pattern->altc[alt][j] == buffer[bufferpos]) {
@@ -261,7 +260,15 @@ inline static int cli_findpos(const unsigned char *buffer, unsigned int depth, u
 		return 0;
 	    alt++;
 
-	} else if(pattern->pattern[i] != CLI_IGN && (unsigned char) pattern->pattern[i] != buffer[bufferpos])
+	} else if((pattern->pattern[i] & CLI_MATCH_WILDCARD) == CLI_MATCH_NIBBLE_HIGH) {
+	    if((unsigned char) (pattern->pattern[i] & 0x00f0) != (buffer[bufferpos] & 0xf0))
+		return 0;
+
+	} else if((pattern->pattern[i] & CLI_MATCH_WILDCARD) == CLI_MATCH_NIBBLE_LOW) {
+	    if((unsigned char) (pattern->pattern[i] & 0x000f) != (buffer[bufferpos] & 0x0f))
+		return 0;
+
+	} else if((pattern->pattern[i] & CLI_MATCH_WILDCARD) != CLI_MATCH_IGNORE && (unsigned char) pattern->pattern[i] != buffer[bufferpos])
 	    return 0;
 
 	bufferpos++;
@@ -276,7 +283,7 @@ inline static int cli_findpos(const unsigned char *buffer, unsigned int depth, u
 
 	for(i = 0; i < pattern->prefix_length; i++) {
 
-	    if(pattern->prefix[i] == CLI_ALT) {
+	    if((pattern->prefix[i] & CLI_MATCH_WILDCARD) == CLI_MATCH_ALTERNATIVE) {
 		found = 0;
 		for(j = 0; j < pattern->altn[alt]; j++) {
 		    if(pattern->altc[alt][j] == buffer[bufferpos]) {
@@ -289,7 +296,15 @@ inline static int cli_findpos(const unsigned char *buffer, unsigned int depth, u
 		    return 0;
 		alt++;
 
-	    } else if(pattern->prefix[i] != CLI_IGN && (unsigned char) pattern->prefix[i] != buffer[bufferpos])
+	    } else if((pattern->prefix[i] & CLI_MATCH_WILDCARD) == CLI_MATCH_NIBBLE_HIGH) {
+		if((unsigned char) (pattern->prefix[i] & 0x00f0) != (buffer[bufferpos] & 0xf0))
+		    return 0;
+
+	    } else if((pattern->prefix[i] & CLI_MATCH_WILDCARD) == CLI_MATCH_NIBBLE_LOW) {
+		if((unsigned char) (pattern->prefix[i] & 0x000f) != (buffer[bufferpos] & 0x0f))
+		    return 0;
+
+	    } else if(!(pattern->prefix[i] & CLI_MATCH_IGNORE) && (unsigned char) pattern->prefix[i] != buffer[bufferpos])
 		return 0;
 
 	    bufferpos++;
@@ -299,7 +314,7 @@ inline static int cli_findpos(const unsigned char *buffer, unsigned int depth, u
     return 1;
 }
 
-int cli_ac_initdata(struct cli_ac_data *data, unsigned int partsigs, unsigned int tracklen)
+int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint8_t tracklen)
 {
 	unsigned int i, j;
 
@@ -321,7 +336,7 @@ int cli_ac_initdata(struct cli_ac_data *data, unsigned int partsigs, unsigned in
     }
     memset(data->inioff, -1, partsigs * sizeof(off_t));
 
-    data->partcnt = (unsigned int *) cli_calloc(partsigs, sizeof(unsigned int));
+    data->partcnt = (uint16_t *) cli_calloc(partsigs, sizeof(uint16_t));
 
     if(!data->partcnt) {
 	cli_errmsg("cli_ac_init(): unable to cli_calloc(%u, %u)\n", partsigs, sizeof(unsigned int));
@@ -348,7 +363,7 @@ int cli_ac_initdata(struct cli_ac_data *data, unsigned int partsigs, unsigned in
 	return CL_EMEM;
     }
 
-    data->maxshift = (int *) cli_malloc(partsigs * sizeof(int));
+    data->maxshift = (int32_t *) cli_malloc(partsigs * sizeof(int32_t));
 
     if(!data->maxshift) {
 	cli_errmsg("cli_ac_init(): unable to cli_malloc(%u)\n", partsigs * sizeof(int));
@@ -359,9 +374,9 @@ int cli_ac_initdata(struct cli_ac_data *data, unsigned int partsigs, unsigned in
 	return CL_EMEM;
     }
 
-    memset(data->maxshift, -1, partsigs * sizeof(int));
+    memset(data->maxshift, -1, partsigs * sizeof(int32_t));
 
-    data->partoff = (unsigned int **) cli_calloc(partsigs, sizeof(unsigned int *));
+    data->partoff = (uint32_t **) cli_calloc(partsigs, sizeof(uint32_t *));
 
     if(!data->partoff) {
 	cli_errmsg("cli_ac_init(): unable to cli_calloc(%u, %u)\n", partsigs, sizeof(unsigned int));
@@ -379,7 +394,7 @@ int cli_ac_initdata(struct cli_ac_data *data, unsigned int partsigs, unsigned in
      */
 
     for(i = 0; i < partsigs; i++) {
-	data->partoff[i] = (unsigned int *) cli_calloc(tracklen, sizeof(unsigned int));
+	data->partoff[i] = (uint32_t *) cli_calloc(tracklen, sizeof(uint32_t));
 
 	if(!data->partoff[i]) {
 	    for(j = 0; j < i; j++)
@@ -418,12 +433,12 @@ void cli_ac_freedata(struct cli_ac_data *data)
     }
 }
 
-int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cli_matcher *root, struct cli_ac_data *mdata, unsigned short otfrec, unsigned long int offset, cli_file_t ftype, int fd, struct cli_matched_type **ftoffset)
+int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, struct cli_ac_data *mdata, uint8_t otfrec, uint32_t offset, cli_file_t ftype, int fd, struct cli_matched_type **ftoffset)
 {
 	struct cli_ac_node *current;
 	struct cli_ac_patt *pt;
 	int type = CL_CLEAN, j;
-        unsigned int i, position, curroff;
+        uint32_t i, position, curroff;
 	uint8_t offnum, found;
 	struct cli_matched_type *tnode, *tnode_last = NULL;
 	struct cli_target_info info;
@@ -613,9 +628,4 @@ int cli_ac_scanbuff(const unsigned char *buffer, unsigned int length, const char
 	free(info.exeinfo.section);
 
     return otfrec ? type : CL_CLEAN;
-}
-
-void cli_ac_setdepth(unsigned int depth)
-{
-    ac_depth = depth;
 }

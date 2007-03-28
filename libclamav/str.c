@@ -33,7 +33,8 @@
 
 #include "clamav.h"
 #include "others.h"
-#include "defaults.h"
+#include "matcher.h"
+#include "cltypes.h"
 
 static int cli_hex2int(int c)
 {
@@ -53,30 +54,53 @@ static int cli_hex2int(int c)
     return -1;
 }
 
-short int *cli_hex2si(const char *hex)
+uint16_t *cli_hex2ui(const char *hex)
 {
-	short int *str, *ptr, val, c;
-	int i, len;
+	uint16_t *str, *ptr, val;
+	unsigned int i, len;
+	int c;
 
 
     len = strlen(hex);
 
     if(len % 2 != 0) {
-	cli_errmsg("cli_hex2si(): Malformed hexstring: %s (length: %d)\n", hex, len);
+	cli_errmsg("cli_hex2si(): Malformed hexstring: %s (length: %u)\n", hex, len);
 	return NULL;
     }
 
-    str = cli_calloc((len / 2) + 1, sizeof(short int));
+    str = cli_calloc((len / 2) + 1, sizeof(uint16_t));
     if(!str)
 	return NULL;
 
     ptr = str;
 
     for(i = 0; i < len; i += 2) {
-	if(hex[i] == '?') {
-	    val = CLI_IGN;
+	val = 0;
+
+	if(hex[i] == '?' && hex[i + 1] == '?') {
+	    val |= CLI_MATCH_IGNORE;
+
+	} else if(hex[i + 1] == '?') {
+	    if((c = cli_hex2int(hex[i])) >= 0) {
+		val = c << 4;
+	    } else {
+		free(str);
+		return NULL;
+	    }
+	    val |= CLI_MATCH_NIBBLE_HIGH;
+
+	} else if(hex[i] == '?') {
+	    if((c = cli_hex2int(hex[i + 1])) >= 0) {
+		val = c;
+	    } else {
+		free(str);
+		return NULL;
+	    }
+	    val |= CLI_MATCH_NIBBLE_LOW;
+
 	} else if(hex[i] == '@') {
-	    val = CLI_ALT;
+	    val |= CLI_MATCH_ALTERNATIVE;
+
 	} else {
 	    if((c = cli_hex2int(hex[i])) >= 0) {
 		val = c;
@@ -91,6 +115,7 @@ short int *cli_hex2si(const char *hex)
 		return NULL;
 	    }
 	}
+
 	*ptr++ = val;
     }
 

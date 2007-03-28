@@ -70,7 +70,6 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
 #endif
 
 #include "others.h"
-#include "defaults.h"
 #include "str.h"
 #include "filetypes.h"
 #include "mbox.h"

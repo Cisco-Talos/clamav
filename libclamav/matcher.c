@@ -41,6 +41,7 @@
 #include "execs.h"
 #include "special.h"
 #include "str.h"
+#include "cltypes.h"
 
 #ifdef HAVE_NCORE
 #include "matcher-ncore.h"
@@ -50,9 +51,10 @@ static cli_file_t targettab[CL_TARGET_TABLE_SIZE] = { 0, CL_TYPE_MSEXE, CL_TYPE_
 
 extern short cli_debug_flag;
 
-int cli_scanbuff(const unsigned char *buffer, unsigned int length, const char **virname, const struct cl_engine *engine, cli_file_t ftype)
+int cli_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cl_engine *engine, cli_file_t ftype)
 {
-	int ret = CL_CLEAN, i;
+	int ret = CL_CLEAN;
+	unsigned int i;
 	struct cli_ac_data mdata;
 	struct cli_matcher *groot, *troot = NULL;
 
@@ -285,12 +287,11 @@ int cli_validatesig(cli_file_t ftype, const char *offstr, off_t fileoff, struct 
     return 1;
 }
 
-int cli_scandesc(int desc, cli_ctx *ctx, unsigned short otfrec, cli_file_t ftype, unsigned short ftonly, struct cli_matched_type **ftoffset)
+int cli_scandesc(int desc, cli_ctx *ctx, uint8_t otfrec, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset)
 {
  	unsigned char *buffer, *buff, *endbl, *upt;
 	int ret = CL_CLEAN, type = CL_CLEAN, i, bytes;
-	unsigned int buffersize, length, maxpatlen, shift = 0;
-	unsigned long int offset = 0;
+	uint32_t buffersize, length, maxpatlen, shift = 0, offset = 0;
 	struct cli_ac_data gdata, tdata;
 	cli_md5_ctx md5ctx;
 	unsigned char digest[16];

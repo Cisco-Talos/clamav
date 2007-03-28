@@ -382,13 +382,6 @@ int cli_addtypesigs(struct cl_engine *engine)
 	    return CL_EMEM;
 	}
 
-	if(engine->ncore) {
-	    /*
-	    cli_dbgmsg("cli_addtypesigs: AC depth 10 (ncore mode)\n");
-	    cli_ac_setdepth(10);
-	    */
-	}
-
 	root->ac_root =  (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));
 	if(!root->ac_root) {
 	    cli_errmsg("cli_addtypesigs: Can't initialise AC pattern matcher\n");

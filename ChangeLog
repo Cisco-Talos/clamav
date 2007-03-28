@@ -1,3 +1,7 @@
+Wed Mar 28 21:45:12 CEST 2007 (tk)
+----------------------------------
+  * libclamav: make some cleanups and add support for nibble matching
+
 Tue Mar 27 22:05:28 BST 2007 (njh)
 ----------------------------------
   * clamav-milter.c:	Added IPv6 support, based on a patch by
