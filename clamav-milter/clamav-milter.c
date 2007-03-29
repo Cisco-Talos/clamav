@@ -3913,12 +3913,12 @@ clamfi_send(struct privdata *privdata, size_t len, const char *format, ...)
 
 				perror(privdata->filename);
 				strerror_r(errno, buf, sizeof(buf));
-				logg(_("!write failure (%u bytes) to %s: %s\n"),
-					len, privdata->filename, buf);
+				logg(_("!write failure (%lu bytes) to %s: %s\n"),
+					(unsigned long)len, privdata->filename, buf);
 #else
 				perror(privdata->filename);
-				logg(_("!write failure (%u bytes) to %s: %s\n"),
-					len, privdata->filename,
+				logg(_("!write failure (%lu bytes) to %s: %s\n"),
+					(unsigned long)len, privdata->filename,
 					strerror(errno));
 #endif
 			} else {
@@ -3929,12 +3929,12 @@ clamfi_send(struct privdata *privdata, size_t len, const char *format, ...)
 				{
 					char buf[32];
 					strerror_r(errno, buf, sizeof(buf));
-					logg(_("!write failure (%u bytes) to clamd: %s\n"),
-						len, buf);
+					logg(_("!write failure (%lu bytes) to clamd: %s\n"),
+						(unsigned long)len, buf);
 				}
 #else
-				logg(_("!write failure (%u bytes) to clamd: %s\n"),
-					len, strerror(errno));
+				logg(_("!write failure (%lu bytes) to clamd: %s\n"),
+					(unsigned long)len, strerror(errno));
 #endif
 				checkClamd();
 			}
@@ -4901,6 +4901,9 @@ add_local_ip(char *address)
 	}
 #endif
 #endif
+	else
+		retval = 0;
+
 	free (opt);
 	return retval;
 }
