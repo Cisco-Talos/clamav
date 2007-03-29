@@ -1,3 +1,7 @@
+Thu Mar 29 12:41:17 CEST 2007 (tk)
+----------------------------------
+  * clamscan: fix compilation error
+
 Thu Mar 29 11:05:56 BST 2007 (njh)
 ----------------------------------
   * clamav-milter.c:	Incorrectly formatted local IPs were being ignored
