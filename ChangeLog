@@ -1,3 +1,7 @@
+Thu Mar 29 00:13:14 CEST 2007 (tk)
+----------------------------------
+  * docs/signatures.pdf: update
+
 Wed Mar 28 21:45:12 CEST 2007 (tk)
 ----------------------------------
   * libclamav: make some cleanups and add support for nibble matching

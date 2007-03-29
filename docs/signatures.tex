@@ -94,6 +94,13 @@ How do I look in hex?
     \begin{itemize}
 	\item \verb+??+\\
 	Match any byte.
+	\item \verb+a?+\\
+	Match high nibble (high four bits). \textbf{IMPORTANT NOTE:} Nibble
+	matching is only available in libclamav with the functionality level
+	15 therefore please only use it with .ndb signatures, each followed
+	by ":15" (MinEngineFunctionalityLevel, see \ref{ndb}).
+	\item \verb+a?+\\
+	Match low nibble (low four bits).
 	\item \verb+*+\\
 	Match any number of bytes.
 	\item \verb+{n}+\\
@@ -114,7 +121,7 @@ MalwareName=HexSignature
     ClamAV will analyse a whole content of a file trying to match it. All
     signatures of this type must be placed in \verb+*.db+ files.
 
-    \subsubsection{Extended signature format}
+    \subsubsection{Extended signature format}\label{ndb}
     Extended signature format allows on including additional information about
     target file type, virus offset and required engine version.
     The format is:
