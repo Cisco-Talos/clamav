@@ -39,7 +39,6 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 nj
 #include "clamav-config.h"
 #endif
 
-#include "defaults.h"
 #include "cfgparser.h"
 #include "target.h"
 #include "str.h"
