@@ -519,8 +519,13 @@ try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fo
 	if(ret == Z_OK)
 		return Z_OK;
 
-	if(real_len == calculated_len)
+	if(real_len == calculated_len) {
+		/*
+		 * Nothing more we can do to inflate
+		 */
+		cli_warnmsg("Bad compression in flate stream\n");
 		return ret;
+	}
 
 	ret = flatedecode(buf, calculated_len, fout, ctx);
 	if(ret == Z_OK)

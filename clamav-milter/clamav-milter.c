@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-270323"
+#define	CM_VERSION	"devel-070330"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2954,7 +2954,7 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 	struct privdata *privdata = (struct privdata *)smfi_getpriv(ctx);
 	int nbytes;
 
-	logg(_("*clamfi_envbody: %u bytes"), len);
+	logg(_("*clamfi_envbody: %lu bytes"), (unsigned long)len);
 
 	if(len == 0)	/* unlikely */
 		return SMFIS_CONTINUE;
@@ -5247,7 +5247,7 @@ check_and_reload_database(void)
 	if(external)
 		return 0;
 
-	switch(cl_statchkdir(&dbstat)) {
+	switch(rc = cl_statchkdir(&dbstat)) {
 		case 1:
 			logg("^Database has changed, loading updated database\n");
 			cl_statfree(&dbstat);
@@ -5261,7 +5261,8 @@ check_and_reload_database(void)
 			logg("*Database has not changed\n");
 			break;
 		default:
-			logg("Database error - %s is stopping\n", progname);
+			logg("Database error %d - %s is stopping\n",
+				rc, progname);
 			return 1;
 	}
 	return 0;	/* all OK */
