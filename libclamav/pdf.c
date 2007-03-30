@@ -55,7 +55,7 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #include "pdf.h"
 
 #ifdef	CL_DEBUG
-/*#define	SAVE_TMP	/* Save the file being worked on in tmp */
+#define	SAVE_TMP	/* Save the file being worked on in tmp */
 #endif
 
 static	int	try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fout, const cli_ctx *ctx);
@@ -371,7 +371,6 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		len -= (int)(q - streamstart);
 		streamstart = q;
 		streamend = cli_pmemstr(streamstart, len, "endstream\n", 10);
-		has_cr = 0;
 		if(streamend == NULL) {
 			streamend = cli_pmemstr(streamstart, len, "endstream\r", 10);
 			if(streamend == NULL) {
@@ -379,7 +378,8 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 				break;
 			}
 			has_cr = 1;
-		}
+		} else
+			has_cr = 0;
 		snprintf(fullname, sizeof(fullname), "%s/pdfXXXXXX", dir);
 #if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN)
 		fout = mkstemp(fullname);
@@ -592,7 +592,7 @@ flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 
 	nbytes = 0;
 
-	for(;;) {
+	while(stream.avail_in) {
 		zstat = inflate(&stream, Z_NO_FLUSH);	/* zlib */
 		switch(zstat) {
 			case Z_OK:

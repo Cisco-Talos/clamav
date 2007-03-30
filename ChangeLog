@@ -1,3 +1,11 @@
+Fri Mar 30 21:17:54 BST 2007 (njh)
+----------------------------------
+  * libclamav/pdf.c:	Bug 396
+
+Fri Mar 30 10:30:11 BST 2007 (njh)
+----------------------------------
+  * libclamav/pdf.c, clamav-milter:	Better diagnostics
+
 Thu Mar 29 12:41:17 CEST 2007 (tk)
 ----------------------------------
   * clamscan: fix compilation error
