@@ -134,7 +134,7 @@ Timeout in seconds when connecting to database server.
 .br 
 Default: 10
 .TP
-\fBReceiveTimeout NUMER\fR
+\fBReceiveTimeout NUMBER\fR
 Timeout in seconds when reading from database server.
 .br 
 Default: 30
