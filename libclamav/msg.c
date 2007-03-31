@@ -16,3 +16,13 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
+#include "clamav.h"
+#include "others.h"
+#include "msg.h"
+
+int
+cli_msg(const char *dir, int desc, const cli_ctx *ctx)
+{
+	cli_warnmsg("MSG files not yet supported\n");
+	return CL_EFORMAT;
+}

@@ -16,3 +16,10 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
+
+#ifndef __MSG_H
+#define __MSG_H
+
+int cli_msg(const char *dir, int desc, const cli_ctx *ctx);
+
+#endif
