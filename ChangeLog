@@ -1,3 +1,7 @@
+Sat Mar 31 21:30:43 CEST 2007 (tk)
+----------------------------------
+  * update some copyrights and stick to GPL v2
+
 Fri Mar 30 21:17:54 BST 2007 (njh)
 ----------------------------------
   * libclamav/pdf.c:	Bug 396

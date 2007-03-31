@@ -1,5 +1,6 @@
 /*
- *  Copyright (C) 2005 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2006 Sensory Networks, Inc.
+ *	      Written by Tomasz Kojm
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by

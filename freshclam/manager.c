@@ -4,6 +4,7 @@
  *  Proxy support by Nigel Horne <njh@bandsman.co.uk>
  *  Proxy authorization support by Gernot Tenchio <g.tenchio@telco-tech.de>
  *		     (uses fmt_base64() from libowfat (http://www.fefe.de))
+ *  CDIFF code (C) 2006 Sensory Networks, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
