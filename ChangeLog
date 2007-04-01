@@ -1,3 +1,7 @@
+Sun Apr  1 11:12:20 CEST 2007 (tk)
+----------------------------------
+  * libclamav/others.c: remove cli_sanitise_filename()
+
 Sat Mar 31 21:30:43 CEST 2007 (tk)
 ----------------------------------
   * update some copyrights and stick to GPL v2

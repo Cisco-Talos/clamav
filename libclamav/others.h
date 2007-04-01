@@ -190,7 +190,6 @@ bitset_t *cli_bitset_init(void);
 void cli_bitset_free(bitset_t *bs);
 int cli_bitset_set(bitset_t *bs, unsigned long bit_offset);
 int cli_bitset_test(bitset_t *bs, unsigned long bit_offset);
-void	cli_sanitise_filename(char *name);
 
 #if WORDS_BIGENDIAN == 0
 #define cli_readint32(buff) (*(const int32_t *)(buff))
