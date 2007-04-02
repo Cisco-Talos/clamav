@@ -135,7 +135,7 @@ blobSetFilename(blob *b, const char *dir, const char *filename)
 	b->name = cli_strdup(filename);
 
 	if(b->name)
-		cli_sanitise_filename(b->name);
+		sanitiseName(b->name);
 }
 
 const char *
@@ -558,4 +558,27 @@ int
 fileblobContainsVirus(const fileblob *fb)
 {
 	return fb->isInfected ? TRUE : FALSE;
+}
+
+/*
+ * Different operating systems allow different characters in their filenames
+ * FIXME: What does QNX want? There is no #ifdef C_QNX, but if there were
+ * it may be best to treat it like MSDOS
+ */
+void
+sanitiseName(char *name)
+{
+	while(*name) {
+#ifdef	C_DARWIN
+		*name &= '\177';
+#endif
+	    /* Also check for tab - "Heinz Martin" <Martin@hemag.ch> */
+#if	defined(MSDOS) || defined(C_CYGWIN) || defined(C_WINDOWS) || defined(C_OS2)
+		if(strchr("%/*?<>|\\\"+=,;:\t ~", *name))
+#else
+		if(*name == '/')
+#endif
+			*name = '_';
+		name++;
+	}
 }

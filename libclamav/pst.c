@@ -4659,7 +4659,7 @@ check_filename(char *fname)
     *t = '_'; //replace them with an underscore
   }
 #endif
-	cli_sanitise_filename(fname);
+	sanitiseName(fname);
 	return fname;
 }
 

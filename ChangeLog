@@ -1,3 +1,7 @@
+Mon Apr  2 18:47:30 CEST 2007 (tk)
+----------------------------------
+  * libclamav: revert patch from bb#245
+
 Sun Apr  1 11:12:20 CEST 2007 (tk)
 ----------------------------------
   * libclamav/others.c: remove cli_sanitise_filename()

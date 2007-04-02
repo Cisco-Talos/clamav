@@ -65,5 +65,6 @@ const	char	*fileblobGetFilename(const fileblob *fb);
 void	fileblobSetCTX(fileblob *fb, cli_ctx *ctx);
 int	fileblobAddData(fileblob *fb, const unsigned char *data, size_t len);
 int	fileblobContainsVirus(const fileblob *fb);
+void	sanitiseName(char *name);
 
 #endif /*_BLOB_H*/
