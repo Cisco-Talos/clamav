@@ -1204,7 +1204,7 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 		return CL_PHISH_HOST_WHITELISTED;
 	}
 
-	if(!isURL(pchk, urls->displayLink.data) &&
+	if((!isURL(pchk, urls->displayLink.data) || !isURL(pchk, urls->realLink.data) )&&
 			( (phishy&PHISHY_NUMERIC_IP && !isNumericURL(pchk, urls->displayLink.data)) ||
 			  !(phishy&PHISHY_NUMERIC_IP))) {
 		free_if_needed(&host_url);
