@@ -1,3 +1,7 @@
+Thu Apr  5 20:46:38 CEST 2007 (acab)
+------------------------------------
+  * libclamav: update file headers
+
 Thu Apr  5 21:15:30 EET 2007 (edwin)
 ----------------------------------
   * libclamav/phishcheck.c : check if real URL is really an URL.
