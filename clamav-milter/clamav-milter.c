@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-070330"
+#define	CM_VERSION	"devel-070406"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1843,7 +1843,7 @@ main(int argc, char **argv)
 		free(p);
 
 		if((fd = fopen(pidfile, "w")) == NULL) {
-			logg(_("!Can't save PID in file %s"), pidfile);
+			logg(_("!Can't save PID in file %s\n"), pidfile);
 			return EX_CONFIG;
 		}
 #ifdef	C_LINUX
@@ -4934,8 +4934,8 @@ isLocal(const char *addr)
 			for(j = 0; match && j < pnet6->preflen >> 3; j++)
 				if(pnet6->base.s6_addr[j] != ip6.s6_addr[j])
 					match = 0;
-			if(match && j < 16) {
-				u_int8_t mask = 0xff << (8 - (pnet6->preflen & 7));
+			if(match && (j < 16)) {
+				uint8_t mask = 0xff << (8 - (pnet6->preflen & 7));
 
 				if((pnet6->base.s6_addr[j] & mask) != (ip6.s6_addr[j] & mask))
 					match = 0;
@@ -5287,7 +5287,7 @@ quit(void)
 #ifdef	SESSION
 	pthread_mutex_lock(&version_mutex);
 #endif
-	logg(_("Stopping %s"), clamav_version);
+	logg(_("Stopping %s\n"), clamav_version);
 #ifdef	SESSION
 	pthread_mutex_unlock(&version_mutex);
 #endif
