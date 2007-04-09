@@ -373,7 +373,12 @@ need to update the manual page and possibly the usage message as well.
 
 6. CHROOT JAIL
 
-The instructions will differ for you, but these will give you an idea
+The instructions will differ for you, but these will give you an idea.
+You will have to do a lot of fiddling if you want notifications to work,
+since clamav-milter calls sendmail to handle the notifications and sendmail
+will run of out the same jail. I've not disabled the notifications, but I
+may in the future - for the moment handling notifications in the jail is an
+excercise for the reader.
 
 	mkdir /var/run/clamav-root
 	chown clamav:clamav /var/run/clamav-root
@@ -394,6 +399,14 @@ The instructions will differ for you, but these will give you an idea
 	mkdir usr/local
 	mkdir usr/local/share
 	ln -s ../../../../../../usr/local/share/clamav .
+	mkdir usr/lib
+	cd usr/lib
+	ln -s ../../../../../usr/lib/sendmail .
+	cd ../..
+	mkdir dev
+	cd dev
+	mknod null c 1 3
+	chown clamav:clamav null
 
 In sendmail.mc:
 INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav-root/var/run/clamav/clamav.sock, F=T, T=S:4m;R:4m;C:30s;E:10m')dnl

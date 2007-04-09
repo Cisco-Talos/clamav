@@ -1,6 +1,10 @@
+Mon Apr  9 04:43:54 BST 2007 (njh)
+----------------------------------
+  * clamav-milter:	EXPERIMENTAL:	Added not about notifications from
+  				the jail
 Mon Apr  9 04:26:56 BST 2007 (njh)
 ----------------------------------
-  * clamav-milter:	EXPERIMENAL: added --chroot
+  * clamav-milter:	EXPERIMENTAL: added --chroot
 
 Fri Apr  6 18:02:02 BST 2007 (njh)
 ----------------------------------

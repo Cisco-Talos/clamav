@@ -51,6 +51,10 @@ Print the version number and exit.
 .TP
 \fB-C DIR, \-\-chroot=DIR\fR
 Run in chroot jail DIR.
+.IP
+You will have to do a lot of fiddling if you want notifications to work,
+since clamav-milter calls \fBsendmail(8)\fR to handle the notifications and
+sendmail will run of out the same jail.
 .TP
 \fB\-c FILE, \-\-config\-file=FILE\fR
 By default clamav\-milter uses a default configuration file, this option allows you to specify another one.

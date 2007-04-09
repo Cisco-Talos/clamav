@@ -3594,7 +3594,7 @@ clamfi_eom(SMFICTX *ctx)
 
 				cli_dbgmsg("Waiting for %s to finish\n", cmd);
 				if(pclose(sendmail) != 0)
-					logg(_("%s: Failed to notify clamAV interception - see dead.letter"), sendmailId);
+					logg(_("%s: Failed to notify clamAV interception - see dead.letter\n"), sendmailId);
 			} else
 				logg(_("^Can't execute '%s' to send virus notice"), cmd);
 		}
@@ -6013,7 +6013,8 @@ black_hole(const struct privdata *privdata)
 					}
 				}
 			}
-			pclose(sendmail);
+			if(pclose(sendmail) != 0)
+				must_scan = 1;
 		} else {
 			logg(_("^Can't execute '%s' to expand '%s'"),
 				cmd, *to);
