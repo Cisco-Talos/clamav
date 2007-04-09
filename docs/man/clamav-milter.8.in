@@ -49,6 +49,9 @@ to check if any of their machines are infected.
 \fB\-V, \-\-version\fR
 Print the version number and exit.
 .TP
+\fB-C DIR, \-\-chroot=DIR\fR
+Run in chroot jail DIR.
+.TP
 \fB\-c FILE, \-\-config\-file=FILE\fR
 By default clamav\-milter uses a default configuration file, this option allows you to specify another one.
 .TP

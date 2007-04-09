@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-070406"
+#define	CM_VERSION	"devel-070409"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -480,6 +480,10 @@ static	long	*serverIPs;	/* IPv4 only */
 #endif
 static	int	numServers;	/* number of elements in serverIPs array */
 
+#ifdef	CL_EXPERIMENTAL
+static	char	*rootdir;	/* for chroot */
+#endif
+
 #ifdef	SESSION
 static	struct	session {
 	int	sock;	/* fd */
@@ -572,6 +576,9 @@ help(void)
 	puts(_("\t--bounce\t\t-b\tSend a failure message to the sender."));
 #endif
 	puts(_("\t--broadcast\t\t-B [IFACE]\tBroadcast to a network manager when a virus is found."));
+#ifdef	CL_EXPERIMENTAL
+	puts(_("\t--chroot=DIR\t\t-C DIR\tChroot to dir when starting."));
+#endif
 	puts(_("\t--config-file=FILE\t-c FILE\tRead configuration from FILE."));
 	puts(_("\t--debug\t\t\t-D\tPrint debug messages."));
 	puts(_("\t--detect-forged-local-address\t-L\tReject mails that claim to be from us."));
@@ -693,15 +700,15 @@ main(int argc, char **argv)
 		int opt_index = 0;
 #ifdef	BOUNCE
 #ifdef	CL_DEBUG
-		const char *args = "a:AbB:c:dDefF:I:k:K:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:x:0:1:2";
+		const char *args = "a:AbB:c:C:dDefF:I:k:K:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:x:0:1:2";
 #else
-		const char *args = "a:AbB:c:dDefF:I:k:K:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:0:1:2";
+		const char *args = "a:AbB:c:C:dDefF:I:k:K:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:0:1:2";
 #endif
 #else	/*!BOUNCE*/
 #ifdef	CL_DEBUG
-		const char *args = "a:AB:c:dDefF:I:k:K:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:x:0:1:2";
+		const char *args = "a:AB:c:C:dDefF:I:k:K:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:x:0:1:2";
 #else
-		const char *args = "a:AB:c:dDefF:I:k:K:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:0:1:2";
+		const char *args = "a:AB:c:C:dDefF:I:k:K:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:0:1:2";
 #endif
 #endif	/*BOUNCE*/
 
@@ -722,6 +729,9 @@ main(int argc, char **argv)
 			},
 			{
 				"config-file", 1, NULL, 'c'
+			},
+			{
+				"chroot", 1, NULL, 'C'
 			},
 			{
 				"detect-forged-local-address", 0, NULL, 'L'
@@ -867,6 +877,11 @@ main(int argc, char **argv)
 			case 'c':	/* where is clamd.conf? */
 				cfgfile = optarg;
 				break;
+#ifdef	CL_EXPERIMENTAL
+			case 'C':	/* chroot */
+				rootdir = optarg;
+				break;
+#endif
 			case 'd':	/* don't scan on error */
 				cl_error = SMFIS_ACCEPT;
 				break;
@@ -1030,10 +1045,14 @@ main(int argc, char **argv)
 	}
 	port = argv[optind];
 
-	if(verifyIncomingSocketName(port) < 0) {
-		fprintf(stderr, _("%s: socket-addr (%s) doesn't agree with sendmail.cf\n"), argv[0], port);
-		return EX_CONFIG;
-	}
+#ifdef	CL_EXPERIMENTAL
+	if(rootdir == NULL)	/* FIXME: Handle CHROOT */
+#endif
+		if(verifyIncomingSocketName(port) < 0) {
+			fprintf(stderr, _("%s: socket-addr (%s) doesn't agree with sendmail.cf\n"), argv[0], port);
+			return EX_CONFIG;
+		}
+
 	if(strncasecmp(port, "inet:", 5) == 0)
 		if(!lflag) {
 			/*
@@ -1822,6 +1841,25 @@ main(int argc, char **argv)
 
 	broadcast(_("Starting clamav-milter"));
 
+#ifdef	CL_EXPERIMENTAL
+	if(rootdir) {
+		if(getuid() == 0) {
+			if(chdir(rootdir) < 0) {
+				perror(rootdir);
+				return EX_CONFIG;
+			}
+			if(chroot(rootdir) < 0) {
+				perror(rootdir);
+				return EX_CONFIG;
+			}
+			logg("Chrooted to %s\n", rootdir);
+		} else {
+			logg("!chroot option needs root\n");
+			return EX_CONFIG;
+		}
+	}
+#endif
+
 	if(pidfile) {
 		/* save the PID */
 		char *p, *q;
@@ -1838,8 +1876,12 @@ main(int argc, char **argv)
 		q = strrchr(p, '/');
 		*q = '\0';
 
-		if(chdir(p) < 0)	/* safety */
-			perror(p);
+#ifdef	CL_EXPERIMENTAL
+		if(rootdir == NULL)
+#endif
+			if(chdir(p) < 0)	/* safety */
+				perror(p);
+
 		free(p);
 
 		if((fd = fopen(pidfile, "w")) == NULL) {
@@ -1854,13 +1896,19 @@ main(int argc, char **argv)
 #endif
 		fclose(fd);
 		umask(old_umask);
-	} else if(tmpdir)
-		chdir(tmpdir);	/* safety */
-	else
+	} else if(tmpdir) {
+#ifdef	CL_EXPERIMENTAL
+		if(rootdir == NULL)
+#endif
+			chdir(tmpdir);	/* safety */
+	} else
+#ifdef	CL_EXPERIMENTAL
+		if(rootdir == NULL)
+#endif
 #ifdef	P_tmpdir
-		chdir(P_tmpdir);
+			chdir(P_tmpdir);
 #else
-		chdir("/tmp");
+			chdir("/tmp");
 #endif
 
 	if(cfgopt(copt, "FixStaleSocket")->enabled) {
@@ -1894,6 +1942,7 @@ main(int argc, char **argv)
 
 #if	((SENDMAIL_VERSION_A > 8) || ((SENDMAIL_VERSION_A == 8) && (SENDMAIL_VERSION_B >= 13)))
 	if(smfi_opensocket(1) == MI_FAILURE) {
+		perror(port);
 		cli_errmsg("Can't open/create %s\n", port);
 		return EX_CONFIG;
 	}

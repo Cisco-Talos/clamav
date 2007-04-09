@@ -371,7 +371,43 @@ Function names appear at the start of lines (I use ctags).
 Document your changes. If you add, remove, or change functionality you will
 need to update the manual page and possibly the usage message as well.
 
-6. TODO
+6. CHROOT JAIL
+
+The instructions will differ for you, but these will give you an idea
+
+	mkdir /var/run/clamav-root
+	chown clamav:clamav /var/run/clamav-root
+	chmod 750 /var/run/clamav-root
+	cd /var/run/clamav-root
+	mkdir var
+	mkdir var/tmp
+	ln -s var/tmp .
+	mkdir var/log
+	cd var/log
+	ln -s ../../../../../var/log/clamav .
+	cd ..
+	mkdir run
+	mkdir run/clamav
+	chown clamav:clamav run/clamav
+	cd ..
+	mkdir usr
+	mkdir usr/local
+	mkdir usr/local/share
+	ln -s ../../../../../../usr/local/share/clamav .
+
+In sendmail.mc:
+INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav-root/var/run/clamav/clamav.sock, F=T, T=S:4m;R:4m;C:30s;E:10m')dnl
+
+When starting clamav-milter use options such as (notice that the localation
+of clamav.sock is different in sendmail.mc than the location clamav-milter
+expects to see it)
+	--chroot=/var/run/clamav-root --max-children=3 -P --pidfile=/var/run/clamav/clamav-milter.pid --blacklist=60 --black-hole-mode local:/var/run/clamav/clamav.sock
+
+You may need to modify your shutdown script to look for clamav-milter.pid
+in /var/run/clamav-root/var/run/clamav/clamav-milter.pid
+
+7. TODO
 
 There are several ideas marked as TODO in the source code. If anyone has
-any other suggestions please feel free to contact me.
+any other suggestions please feel free to contact me. To avoid disappointment
+always contact me before undertaking any work.
