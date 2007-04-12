@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-070409"
+#define	CM_VERSION	"devel-070412"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1568,7 +1568,7 @@ main(int argc, char **argv)
 		if(activeServers == 0) {
 			cli_errmsg(_("Check your entry for TCPSocket in %s\n"),
 				cfgfile);
-			fputs(_("!Can't find any clamd server"), stderr);
+			logg(_("!Can't find any clamd server\n"));
 			return EX_CONFIG;
 		}
 #endif
@@ -3010,7 +3010,8 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 
 	/*
 	 * TODO:
-	 *	If not in external mode, call cli_scanbuff here
+	 *	If not in external mode, call cli_scanbuff here, at least for
+	 * the first block
 	 */
 	/*
 	 * Lines starting with From are changed to >From, to

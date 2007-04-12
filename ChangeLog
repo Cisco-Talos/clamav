@@ -1,7 +1,11 @@
+Thu Apr 12 08:46:09 BST 2007 (njh)
+----------------------------------
+  * clamav-milter:	Fixed error message if no server can be found
+
 Mon Apr  9 04:43:54 BST 2007 (njh)
 ----------------------------------
   * clamav-milter:	EXPERIMENTAL:	Added not about notifications from
-  				the jail
+				the jail
 Mon Apr  9 04:26:56 BST 2007 (njh)
 ----------------------------------
   * clamav-milter:	EXPERIMENTAL: added --chroot
