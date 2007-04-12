@@ -145,7 +145,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		if(memcmp(q, "%%EOF", 5) == 0)
 			break;
 
-	if(q == p) {
+	if(q <= p) {
 		if(alloced)
 			free(alloced);
 		else
