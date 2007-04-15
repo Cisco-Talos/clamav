@@ -550,10 +550,16 @@ static int cab_unstore(struct cab_file *file, int bytes, uint8_t wflag)
 	unsigned char buff[4096];
 
 
+    if(bytes < 0) {
+	cli_warnmsg("cab_unstore: bytes < 0\n");
+	return CL_EFORMAT;
+    }
+
     todo = bytes;
+
     while(1) {
 
-	if(todo <= (int) sizeof(buff)) {
+	if((unsigned int) todo <= sizeof(buff)) {
 	    if(cab_read(file, buff, todo) == -1) {
 		cli_dbgmsg("cab_unstore: cab_read failed for descriptor %d\n", file->fd);
 		return CL_EIO;
@@ -614,7 +620,7 @@ int cab_extract(struct cab_file *file, const char *name)
 
     switch(file->folder->cmethod & 0x000f) {
 	case 0x0000: /* STORE */
-	    if(file->offset)
+	    if(file->offset > 0)
 		cab_unstore(file, file->offset, 0);
 
 	    ret = cab_unstore(file, file->length, 1);
@@ -628,7 +634,7 @@ int cab_extract(struct cab_file *file, const char *name)
 		close(file->ofd);
 		return CL_EMSCAB;
 	    }
-	    if(file->offset) {
+	    if(file->offset > 0) {
 		((struct mszip_stream *) file->state->stream)->wflag = 0;
 		mszip_decompress(file->state->stream, file->offset);
 		((struct mszip_stream *) file->state->stream)->wflag = 1;
@@ -645,7 +651,7 @@ int cab_extract(struct cab_file *file, const char *name)
 		close(file->ofd);
 		return CL_EMSCAB;
 	    }
-	    if(file->offset) {
+	    if(file->offset > 0) {
 		((struct qtm_stream *) file->state->stream)->wflag = 0;
 		qtm_decompress(file->state->stream, file->offset);
 		((struct qtm_stream *) file->state->stream)->wflag = 1;
@@ -662,7 +668,7 @@ int cab_extract(struct cab_file *file, const char *name)
 		close(file->ofd);
 		return CL_EMSCAB;
 	    }
-	    if(file->offset) {
+	    if(file->offset > 0) {
 		((struct lzx_stream *) file->state->stream)->wflag = 0;
 		lzx_decompress(file->state->stream, file->offset);
 		((struct lzx_stream *) file->state->stream)->wflag = 1;

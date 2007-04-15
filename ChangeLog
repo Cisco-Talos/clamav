@@ -1,3 +1,8 @@
+Sun Apr 15 21:14:06 CEST 2007 (tk)
+----------------------------------
+  * libclamav/cab.c: fix buffer overflow, reported through iDefense
+		     Vulnerability Contributor Program (CVE-2007-1997)
+
 Thu Apr 12 13:27:11 BST 2007 (njh)
 ----------------------------------
   * libclamav/pdf.c:	Improved handling of very small files
