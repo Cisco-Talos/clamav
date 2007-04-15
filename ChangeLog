@@ -1,3 +1,7 @@
+Sun Apr 15 21:16:08 CEST 2007 (tk)
+----------------------------------
+  * libclamav/chmunpack.c: fix fd leak in chm_decompress_stream (CVE-2007-1745)
+
 Sun Apr 15 21:14:06 CEST 2007 (tk)
 ----------------------------------
   * libclamav/cab.c: fix buffer overflow, reported through iDefense
