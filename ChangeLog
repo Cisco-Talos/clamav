@@ -1,3 +1,7 @@
+Mon Apr 16 11:58:30 BST 2007 (njh)
+----------------------------------
+  * libclamav/pdf.c:	Bug 459
+
 Sun Apr 15 21:16:08 CEST 2007 (tk)
 ----------------------------------
   * libclamav/chmunpack.c: fix fd leak in chm_decompress_stream (CVE-2007-1745)

@@ -291,16 +291,21 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 					 */
 					if((bytesleft > 11) && strncmp(q, " 0 R", 4) == 0) {
 						const char *r;
-						char b[13];
+						char b[14];
 
 						q += 4;
 						cli_dbgmsg("Length is in indirect obj %d\n",
 							length);
 						snprintf(b, sizeof(b),
-							"%d 0 obj", length);
+							"\n%d 0 obj", length);
 						length = strlen(b);
 						r = cli_pmemstr(alloced ? alloced : buf,
 							size, b, length);
+						if(r == NULL) {
+							b[0] = '\r';
+							r = cli_pmemstr(alloced ? alloced : buf,
+								size, b, length);
+						}
 						if(r) {
 							r += length - 1;
 							r = pdf_nextobject(r, bytesleft - (r - q));
@@ -309,11 +314,12 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 								while(isdigit(*r))
 									r++;
 								cli_dbgmsg("length in '%s' %d\n",
-									b, length);
+									&b[1],
+									length);
 							}
 						} else
 							cli_warnmsg("Couldn't find '%s'\n",
-								b);
+								&b[1]);
 					}
 					q--;
 				} else if(strncmp(q, "Length2 ", 8) == 0)
@@ -550,6 +556,11 @@ flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 #endif
 
 	cli_dbgmsg("cli_pdf: flatedecode %lu bytes\n", (unsigned long)len);
+
+	if(len == 0) {
+		cli_warnmsg("cli_pdf: flatedecode len == 0\n");
+		return Z_OK;
+	}
 
 #ifdef	SAVE_TMP
 	/*
