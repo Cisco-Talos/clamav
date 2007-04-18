@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-070412"
+#define	CM_VERSION	"devel-070418"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -169,6 +169,7 @@ typedef	unsigned int	in_addr_t;
 
 #define	VERSION_LENGTH	128
 #define	DEFAULT_TIMEOUT	120
+#define	NTRIES	30	/* How long to wait for the local clamd to start */
 
 /*#define	SESSION*/
 		/* Keep one command connexion open to clamd, otherwise a new
@@ -197,6 +198,7 @@ typedef	unsigned int	in_addr_t;
  * TODO: allow each To: line in the whitelist file to specify a quarantine email
  *	address
  * TODO: optionally use zlib to compress data sent to remote hosts
+ * TODO: Finish IPv6 support (serverIPs array is IPv4 only)
  */
 
 struct header_node_t {
@@ -318,7 +320,7 @@ static	void	header_list_add(header_list_t list, const char *headerf, const char 
 static	void	header_list_print(header_list_t list, FILE *fp);
 static	int	connect2clamd(struct privdata *privdata);
 static	int	sendToFrom(struct privdata *privdata);
-static	void	checkClamd(void);
+static	int	checkClamd(int log_result);
 static	int	sendtemplate(SMFICTX *ctx, const char *filename, FILE *sendmail, const char *virusname);
 static	int	qfile(struct privdata *privdata, const char *sendmailId, const char *virusname);
 static	int	move(const char *oldfile, const char *newfile);
@@ -474,9 +476,9 @@ static	char	*port = NULL;	/* sendmail->milter comms */
 
 static	const	char	*serverHostNames = "127.0.0.1";
 #if	HAVE_IN_ADDR_T
-static	in_addr_t	*serverIPs;	/* IPv4 only */
+static	in_addr_t	*serverIPs;	/* IPv4 only, in network byte order */
 #else
-static	long	*serverIPs;	/* IPv4 only */
+static	long	*serverIPs;	/* IPv4 only, in network byte order */
 #endif
 static	int	numServers;	/* number of elements in serverIPs array */
 
@@ -1404,7 +1406,7 @@ main(int argc, char **argv)
 
 		serverIPs = (in_addr_t *)cli_malloc(sizeof(in_addr_t));
 #ifdef	INADDR_LOOPBACK
-		serverIPs[0] = INADDR_LOOPBACK;
+		serverIPs[0] = htonl(INADDR_LOOPBACK);
 #else
 		serverIPs[0] = inet_addr("127.0.0.1");
 #endif
@@ -1521,26 +1523,45 @@ main(int argc, char **argv)
 				memcpy((char *)&serverIPs[i], h->h_addr, sizeof(serverIPs[i]));
 			}
 
+#if	defined(NTRIES) && ((NTRIES > 1))
 #ifndef	SESSION
+#ifdef	INADDR_LOOPBACK
+			if(serverIPs[i] == htonl(INADDR_LOOPBACK)) {
+#else
 #if	HAVE_IN_ADDR_T
 			if(serverIPs[i] == (in_addr_t)inet_addr("127.0.0.1")) {
 #else
 			if(serverIPs[i] == (long)inet_addr("127.0.0.1")) {
 #endif
+#endif
+				int tries;
+
 				/*
 				 * Fudge to allow clamd to come up on
 				 * our local machine
 				 */
-				sync();
-				sleep(2);
+				for(tries = 0; tries < NTRIES - 1; tries++) {
+					if(pingServer(i))
+						break;
+					if(!checkClamd(1))
+						break;
+					logg(_("Waiting for clamd to come up\n"));
+					/*
+					 * something to do as the system starts
+					 */
+					sync();
+					sleep(1);
+				}
+				/* Will try one more time */
 			}
+#endif	/* NTRIES > 1 */
 
 			if(pingServer(i))
 				activeServers++;
 			else {
 				cli_warnmsg(_("Can't talk to clamd server %s on port %d\n"),
 					hostname, tcpSocket);
-				if(serverIPs[i] == INADDR_LOOPBACK) {
+				if(serverIPs[i] == htonl(INADDR_LOOPBACK)) {
 					if(cfgopt(copt, "TCPAddr")->enabled)
 						cli_warnmsg(_("Check the value for TCPAddr in %s\n"), cfgfile);
 				} else
@@ -1560,7 +1581,7 @@ main(int argc, char **argv)
 			if(createSession(i) < 0)
 				return EX_UNAVAILABLE;
 		if(activeServers == 0) {
-			cli_warnmsg(_("Can't find any active clamd servers\n"));
+			logg(_("!Can't find any clamd server\n"));
 			cli_warnmsg(_("Check your entry for TCPSocket in %s\n"),
 				cfgfile);
 		}
@@ -2079,7 +2100,7 @@ pingServer(int serverNumber)
 			perror(localSocket);
 			return 0;
 		}
-		checkClamd();
+		checkClamd(1);
 		if(connect(sock, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
 			perror(localSocket);
 			close(sock);
@@ -2108,6 +2129,7 @@ pingServer(int serverNumber)
 		if(connect(sock, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
 			int is_connected = 0;
 
+#if	(!defined(NTRIES)) || ((NTRIES <= 1))
 			if(errno == ECONNREFUSED) {
 				/*
 				 * During startup there is a race condition:
@@ -2125,13 +2147,15 @@ pingServer(int serverNumber)
 				if(connect(sock, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) >= 0)
 					is_connected = 1;
 			}
+#endif
 			if(!is_connected) {
 				char *hostname = cli_strtok(serverHostNames,
 					serverNumber, ":");
 
 				perror(hostname ? hostname : "connect");
 				close(sock);
-				free(hostname);
+				if(hostname)
+					free(hostname);
 				return 0;
 			}
 		}
@@ -2421,13 +2445,10 @@ try_server(void *var)
 
 	logg("*try_server: sock %d\n", sock);
 
-	if(connect(sock, server, sizeof(struct sockaddr)) < 0) {
-		perror("connect");
+	if((connect(sock, server, sizeof(struct sockaddr)) < 0) ||
+	   (send(sock, "PING\n", 5, 0) < 5))
 		s->rc = 0;
-	} else if(send(sock, "PING\n", 5, 0) < 5) {
-		perror("send");
-		s->rc = 0;
-	} else
+	else
 		s->rc = 1;
 
 	if(s->rc == 0) {
@@ -2440,6 +2461,7 @@ try_server(void *var)
 #else
 		char *hostname = cli_strtok(serverHostNames, server_index, ":");
 #endif
+		perror(hostname);
 		logg(_("^Check clamd server %s - it may be down\n"), hostname);
 #ifndef	MAXHOSTNAMELEN
 		free(hostname);
@@ -3986,7 +4008,7 @@ clamfi_send(struct privdata *privdata, size_t len, const char *format, ...)
 				logg(_("!write failure (%lu bytes) to clamd: %s\n"),
 					(unsigned long)len, strerror(errno));
 #endif
-				checkClamd();
+				checkClamd(1);
 			}
 
 			return -1;
@@ -4505,26 +4527,52 @@ sendToFrom(struct privdata *privdata)
 }
 
 /*
- * If possible, check if clamd has died, and report if it has
+ * If possible, check if clamd has died, and, if requested, report if it has
+ * Returns true if OK or unknown, otherwise false
  */
-static void
-checkClamd(void)
+static int
+checkClamd(int log_result)
 {
 	pid_t pid;
 	int fd, nbytes;
 	char buf[9];
 
-	if(!localSocket)
-		return;	/* communicating via TCP */
+	if(!localSocket) {
+		/* communicating via TCP, is one of the servers localhost? */
+		int i, onlocal;
+
+		onlocal = 0;
+		for(i = 0; i < numServers; i++)
+#ifdef	INADDR_LOOPBACK
+			if(serverIPs[0] == htonl(INADDR_LOOPBACK)) {
+#else
+			if(serverIPs[0] == inet_addr("127.0.0.1")) {
+#endif
+				onlocal = 1;
+				break;
+			}
+
+		if(!onlocal) {
+			/* No local clamd, use pingServer() to tell */
+			for(i = 0; i < numServers; i++)
+				if(pingServer(i))
+					return 1;
+			if(log_result)
+				logg(_("!Can't find any clamd server\n"));
+			return 0;
+		}
+	}
 
 	if(pidFile == NULL)
-		return;	/* PidFile directive missing from clamd.conf */
+		return 1;	/* PidFile directive missing from clamd.conf */
 
 	fd = open(pidFile, O_RDONLY);
 	if(fd < 0) {
-		perror(pidFile);
-		logg(_("!Can't open %s"), pidFile);
-		return;
+		if(log_result) {
+			perror(pidFile);
+			logg(_("!Can't open %s\n"), pidFile);
+		}
+		return 1;	/* unknown */
 	}
 	nbytes = read(fd, buf, sizeof(buf) - 1);
 	if(nbytes < 0)
@@ -4534,9 +4582,13 @@ checkClamd(void)
 	close(fd);
 	pid = atoi(buf);
 	if((kill(pid, 0) < 0) && (errno == ESRCH)) {
-		perror("clamd");
-		logg(_("!Clamd (pid %d) seems to have died"), (int)pid);
+		if(log_result) {
+			perror("clamd");
+			logg(_("!Clamd (pid %d) seems to have died\n"), (int)pid);
+		}
+		return 0;	/* down */
 	}
+	return 1;	/* up */
 }
 
 /*
