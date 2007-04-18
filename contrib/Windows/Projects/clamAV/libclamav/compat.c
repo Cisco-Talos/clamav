@@ -31,7 +31,6 @@
 
 #include "clamav.h"
 #include "others.h"
-#include "defaults.h"
 
 #ifndef	CL_DEBUG
 #define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -68,7 +67,7 @@ opendir(const char *dirname)
 		free(ret);
 		return NULL;
 	}
-	ret->dir_name = strdup(dirname);
+	ret->dir_name = cli_strdup(dirname);
 
 	if(ret->dir_name == NULL) {
 		free(ret->find_file_data);
@@ -206,13 +205,13 @@ basename(const char *file_name)
 	if(file_name == NULL)
 		return NULL;
 
-	base = strrchr (file_name, '\\');
+	base = strrchr(file_name, '\\');
 
 	if(base)
 		return base + 1;
 
-	if(isalpha (file_name[0]) && file_name[1] == ':')
-		return (const char *) file_name + 2;
+	if(isalpha(file_name[0] & 0xFF) && (file_name[1] == ':'))
+		return (const char *)(file_name + 2);
 
 	return file_name;
 }
@@ -361,7 +360,8 @@ munmap(caddr_t addr, size_t length)
 	return 0;
 }
 
-int chown(const char *filename, short uid, short gid)
+int
+chown(const char *filename, short uid, short gid)
 {
 	return 0;
 }

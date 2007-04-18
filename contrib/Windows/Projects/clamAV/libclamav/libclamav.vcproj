@@ -42,7 +42,7 @@
 				UseUnicodeResponseFiles="false"
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\js&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\pthread&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\mspack&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\unrar&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav&quot;"
-				PreprocessorDefinitions="HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;PTW32_STATIC_LIB;_DEBUG"
+				PreprocessorDefinitions="_USE_32BIT_TIME_T;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;PTW32_STATIC_LIB;_DEBUG"
 				StringPooling="true"
 				MinimalRebuild="true"
 				ExceptionHandling="0"
@@ -113,7 +113,7 @@
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="false"
 				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\js&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\pthread&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\mspack&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\unrar&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav&quot;"
-				PreprocessorDefinitions="HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;PTW32_STATIC_LIB"
+				PreprocessorDefinitions="_USE_32BIT_TIME_T;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;PTW32_STATIC_LIB"
 				StringPooling="true"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
@@ -182,6 +182,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\cab.c"
+				>
+			</File>
+			<File
 				RelativePath=".\chmunpack.c"
 				>
 			</File>
@@ -208,6 +212,10 @@
 						WarningLevel="4"
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath=".\dconf.c"
+				>
 			</File>
 			<File
 				RelativePath=".\dsig.c"
@@ -242,6 +250,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\lockdb.c"
+				>
+			</File>
+			<File
 				RelativePath=".\matcher-ac.c"
 				>
 			</File>
@@ -266,7 +278,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\mew.c"
+				>
+			</File>
+			<File
 				RelativePath=".\msexpand.c"
+				>
+			</File>
+			<File
+				RelativePath=".\mspack.c"
 				>
 			</File>
 			<File
@@ -326,6 +346,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\rtf.c"
+				>
+			</File>
+			<File
 				RelativePath=".\scanners.c"
 				>
 			</File>
@@ -374,11 +398,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\unsp.c"
+				>
+			</File>
+			<File
 				RelativePath=".\untar.c"
 				>
 			</File>
 			<File
 				RelativePath=".\unzip.c"
+				>
+			</File>
+			<File
+				RelativePath=".\upack.c"
 				>
 			</File>
 			<File
@@ -430,26 +462,6 @@
 				</File>
 				<File
 					RelativePath=".\unrar\unrarvm.c"
-					>
-				</File>
-			</Filter>
-			<Filter
-				Name="mspack"
-				>
-				<File
-					RelativePath=".\mspack\cabd.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mspack\lzxd.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mspack\mszipd.c"
-					>
-				</File>
-				<File
-					RelativePath=".\mspack\qtmd.c"
 					>
 				</File>
 			</Filter>
@@ -532,6 +544,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\cab.h"
+				>
+			</File>
+			<File
 				RelativePath=".\chmunpack.h"
 				>
 			</File>
@@ -556,7 +572,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\defaults.h"
+				RelativePath=".\dconf.h"
 				>
 			</File>
 			<File
@@ -604,6 +620,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\lockdb.h"
+				>
+			</File>
+			<File
 				RelativePath=".\matcher-ac.h"
 				>
 			</File>
@@ -628,7 +648,15 @@
 				>
 			</File>
 			<File
+				RelativePath=".\mew.h"
+				>
+			</File>
+			<File
 				RelativePath=".\msexpand.h"
+				>
+			</File>
+			<File
+				RelativePath=".\mspack.h"
 				>
 			</File>
 			<File
@@ -688,6 +716,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\rtf.h"
+				>
+			</File>
+			<File
 				RelativePath=".\scanners.h"
 				>
 			</File>
@@ -740,11 +772,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\unsp.h"
+				>
+			</File>
+			<File
 				RelativePath=".\untar.h"
 				>
 			</File>
 			<File
 				RelativePath=".\unzip.h"
+				>
+			</File>
+			<File
+				RelativePath=".\upack.h"
 				>
 			</File>
 			<File
@@ -775,34 +815,6 @@
 				RelativePath=".\zlib.h"
 				>
 			</File>
-			<Filter
-				Name="mspack"
-				>
-				<File
-					RelativePath=".\mspack\cab.h"
-					>
-				</File>
-				<File
-					RelativePath=".\mspack\lzx.h"
-					>
-				</File>
-				<File
-					RelativePath=".\mspack\mspack.h"
-					>
-				</File>
-				<File
-					RelativePath=".\mspack\mszip.h"
-					>
-				</File>
-				<File
-					RelativePath=".\mspack\qtm.h"
-					>
-				</File>
-				<File
-					RelativePath=".\mspack\system.h"
-					>
-				</File>
-			</Filter>
 			<Filter
 				Name="unrar"
 				>

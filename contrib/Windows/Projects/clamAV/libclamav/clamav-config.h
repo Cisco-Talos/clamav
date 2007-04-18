@@ -23,7 +23,7 @@
 /* #undef CL_DEBUG */
 
 /* enable experimental code */
-/* #undef CL_EXPERIMENTAL */
+/*#undef CL_EXPERIMENTAL*/
 
 /* thread safe */
 #define CL_THREAD_SAFE 1
@@ -221,7 +221,7 @@
 #define HAVE_SNPRINTF 1
 
 /* Define to 1 if you have the <stdint.h> header file. */
-/* #define HAVE_STDINT_H 1 */
+/*#define HAVE_STDINT_H 1/*
 
 /* Define to 1 if you have the <stdlib.h> header file. */
 #define HAVE_STDLIB_H 1
@@ -347,11 +347,11 @@
 /* #define USE_SYSLOG 1 */
 
 /* Version number of package */
-#define VERSION "devel-20061027"
+#define VERSION "devel-20070416"
 
 /* use libcurl in mbox code */
 #ifdef	CL_EXPERIMENTAL
-#define WITH_CURL 1	/* A lie, since we're dropping curl, but it works */
+/*#define WITH_CURL 1	/* A lie, since we're dropping curl, but it works */
 #else
 /* #undef WITH_CURL */
 #endif

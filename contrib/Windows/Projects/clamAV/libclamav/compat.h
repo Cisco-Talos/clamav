@@ -28,6 +28,10 @@
 
 #pragma warning(disable: 4996)	/* turn off warnings about depracated code */
 
+#ifndef	_USE_32BIT_TIME_T
+#define	_USE_32BIT_TIME_T
+#endif
+
 /*#include	"snprintf.h"*/
 
 #define	inline	/* it's too different in MSVC to bother */
@@ -50,6 +54,9 @@ int	munmap(caddr_t addr, size_t length);
 
 #define	strcasecmp(s1, s2)	_stricmp(s1, s2)
 #define	strncasecmp(s1, s2, n)	_strnicmp(s1, s2, n)
+
+#define	chdir(d)	_chdir(d)
+#define	umask(n)	_umask(n)
 
 #ifndef	S_IRWXU
 #define	S_IRWXU	(_S_IREAD|_S_IWRITE|_S_IEXEC)
@@ -109,8 +116,9 @@ int	gettimeofday(struct timeval* tp, void* tz);
 #define	pause();
 
 #ifdef	_DEBUG
+#include	<crtdbg.h>
 /* breaks mspack/qtmd.c :-( */
-/*#define	free(p)	_free_dbg(p, _NORMAL_BLOCK)*/
+/* #define	free(p)	{ _free_dbg(p, _NORMAL_BLOCK); } */
 #define	_CRTDBG_MAP_ALLOC 
 #endif
 
