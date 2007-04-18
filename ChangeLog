@@ -1,3 +1,8 @@
+Wed Apr 18 10:22:13 BST 2007 (njh)
+----------------------------------
+  * clamav-milter:	Fix problem where it wasn't waiting if multiple servers
+				are given
+
 Wed Apr 18 04:49:50 BST 2007 (njh)
 ----------------------------------
   * clamav-milter:	Wait longer for clamd to start on the localhost

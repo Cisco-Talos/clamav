@@ -1542,8 +1542,8 @@ main(int argc, char **argv)
 				 */
 				for(tries = 0; tries < NTRIES - 1; tries++) {
 					if(pingServer(i))
-						break;
-					if(!checkClamd(1))
+						logg("ping OK\n");
+					if(checkClamd(1))	/* will try all servers */
 						break;
 					logg(_("Waiting for clamd to come up\n"));
 					/*
@@ -4555,7 +4555,7 @@ checkClamd(int log_result)
 		if(!onlocal) {
 			/* No local clamd, use pingServer() to tell */
 			for(i = 0; i < numServers; i++)
-				if(pingServer(i))
+				if(serverIPs[i] && pingServer(i))
 					return 1;
 			if(log_result)
 				logg(_("!Can't find any clamd server\n"));
