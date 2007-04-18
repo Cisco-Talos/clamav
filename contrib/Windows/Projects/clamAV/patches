@@ -1,7 +1,27 @@
-*** /home/njh/src/clamav-devel/trunk/./clamscan/manager.h	2007-02-28 15:05:17.000000000 +0000
---- ./clamscan/manager.h	2007-01-31 09:37:40.000000000 +0000
+*** /home/njh/src/clamav-devel/trunk/./clamscan/manager.h	2007-03-31 23:10:05.000000000 +0100
+--- ./clamscan/manager.h	2007-01-31 08:37:40.000000000 +0000
 ***************
-*** 20,38 ****
+*** 2,9 ****
+   *  Copyright (C) 2002, 2003 Tomasz Kojm <tkojm@clamav.net>
+   *
+   *  This program is free software; you can redistribute it and/or modify
+!  *  it under the terms of the GNU General Public License version 2 as
+!  *  published by the Free Software Foundation.
+   *
+   *  This program is distributed in the hope that it will be useful,
+   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--- 2,10 ----
+   *  Copyright (C) 2002, 2003 Tomasz Kojm <tkojm@clamav.net>
+   *
+   *  This program is free software; you can redistribute it and/or modify
+!  *  it under the terms of the GNU General Public License as published by
+!  *  the Free Software Foundation; either version 2 of the License, or
+!  *  (at your option) any later version.
+   *
+   *  This program is distributed in the hope that it will be useful,
+   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+***************
+*** 19,37 ****
   #ifndef __MANAGER_H
   #define __MANAGER_H
   
@@ -55,29 +75,20 @@
 ! #endif
   
   #endif
-*** /home/njh/src/clamav-devel/trunk/./shared/misc.c	2007-03-05 19:16:44.000000000 +0000
---- ./shared/misc.c	2007-03-05 19:17:22.000000000 +0000
+*** /home/njh/src/clamav-devel/trunk/./freshclam/manager.c	2007-03-31 23:10:05.000000000 +0100
+--- ./freshclam/manager.c	2007-03-28 22:00:58.000000000 +0100
 ***************
-*** 233,239 ****
-  int isnumb(const char *str)
-  {
-      while(*str) {
-! 	if(!isdigit(*str))
-  	    return 0;
-  	str++;
-      }
---- 233,239 ----
-  int isnumb(const char *str)
-  {
-      while(*str) {
-! 	if(!isdigit(*str & 0xFF))
-  	    return 0;
-  	str++;
-      }
-*** /home/njh/src/clamav-devel/trunk/./freshclam/manager.c	2007-02-28 15:06:52.000000000 +0000
---- ./freshclam/manager.c	2007-03-05 22:58:52.000000000 +0000
+*** 4,10 ****
+   *  Proxy support by Nigel Horne <njh@bandsman.co.uk>
+   *  Proxy authorization support by Gernot Tenchio <g.tenchio@telco-tech.de>
+   *		     (uses fmt_base64() from libowfat (http://www.fefe.de))
+-  *  CDIFF code (C) 2006 Sensory Networks, Inc.
+   *
+   *  This program is free software; you can redistribute it and/or modify
+   *  it under the terms of the GNU General Public License as published by
+--- 4,9 ----
 ***************
-*** 193,199 ****
+*** 210,216 ****
   		break;
   	}
           logg("!Can't get information about %s: %s\n", hostpt, herr);
@@ -85,7 +96,7 @@
   	return -1;
       }
   
---- 193,199 ----
+--- 209,215 ----
   		break;
   	}
           logg("!Can't get information about %s: %s\n", hostpt, herr);
@@ -93,70 +104,68 @@
   	return -1;
       }
   
-*** /home/njh/src/clamav-devel/trunk/./freshclam/freshclam.c	2007-02-19 19:26:21.000000000 +0000
---- ./freshclam/freshclam.c	2007-02-24 21:45:28.000000000 +0000
 ***************
-*** 247,252 ****
---- 247,258 ----
-  	    {0, 0, 0, 0}
-      	};
+*** 242,248 ****
+  	if(connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in)) == -1) {
+  #endif
+  	    logg("Can't connect to port %d of host %s (IP: %s)\n", port, hostpt, ipaddr);
+! 	    close(socketfd);
+  	    if((socketfd = getclientsock(localip)) == -1)
+  		return -1;
   
-+ #ifdef	C_WINDOWS
-+ 	if(!pthread_win32_process_attach_np()) {
-+ 		mprintf("!Can't start the win32 pthreads layer\n");
-+ 		return 1;
-+ 	}
-+ #endif
+--- 241,247 ----
+  	if(connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in)) == -1) {
+  #endif
+  	    logg("Can't connect to port %d of host %s (IP: %s)\n", port, hostpt, ipaddr);
+! 	    closesocket(socketfd);
+  	    if((socketfd = getclientsock(localip)) == -1)
+  		return -1;
   
-      opt = opt_parse(argc, argv, short_options, long_options, NULL);
-      if(!opt) {
 ***************
-*** 281,293 ****
-  	return 56;
+*** 253,259 ****
+  	}
       }
   
-- #ifdef C_WINDOWS
--     if(!pthread_win32_process_attach_np()) {
-- 	mprintf("!Can't start the win32 pthreads layer\n");
-- 	return 63;
--     }
-- #endif
-- 
-      if(opt_check(opt, "http-proxy") || opt_check(opt, "proxy-user"))
-  	logg("WARNING: Proxy settings are now only configurable in the config file.\n");
+!     close(socketfd);
+      return -2;
+  }
   
---- 287,292 ----
+--- 252,258 ----
+  	}
+      }
+  
+!     closesocket(socketfd);
+      return -2;
+  }
+  
+*** /home/njh/src/clamav-devel/trunk/./clamd/scanner.c	2007-03-31 23:10:05.000000000 +0100
+--- ./clamd/scanner.c	2007-03-06 17:12:12.000000000 +0000
 ***************
-*** 570,581 ****
-      opt_free(opt);
-  
-  #ifdef C_WINDOWS
-!     WSACleanup();
-! 
-!     if(!pthread_win32_process_detach_np()) {
-! 	mprintf("!Can't stop the win32 pthreads layer\n");
-! 	return 63;
-!     }
-  #endif
-  
-      return(ret);
---- 569,580 ----
-      opt_free(opt);
-  
-  #ifdef C_WINDOWS
-! 	WSACleanup();
-!     
-! 	if(!pthread_win32_process_detach_np()) {
-! 		mprintf("!Can't stop the win32 pthreads layer\n");
-! 		return 1;
-! 	}
-  #endif
-  
-      return(ret);
-*** /home/njh/src/clamav-devel/trunk/./clamd/scanner.c	2007-02-28 15:06:52.000000000 +0000
---- ./clamd/scanner.c	2007-03-05 22:31:44.000000000 +0000
+*** 1,11 ****
+  /*
+   *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
+-  *  MULTISCAN code (C) 2006 Sensory Networks, Inc.
+-  *  Written by Tomasz Kojm
+   *
+   *  This program is free software; you can redistribute it and/or modify
+!  *  it under the terms of the GNU General Public License version 2 as
+!  *  published by the Free Software Foundation.
+   *
+   *  This program is distributed in the hope that it will be useful,
+   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--- 1,10 ----
+  /*
+   *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
+   *
+   *  This program is free software; you can redistribute it and/or modify
+!  *  it under the terms of the GNU General Public License as published by
+!  *  the Free Software Foundation; either version 2 of the License, or
+!  *  (at your option) any later version.
+   *
+   *  This program is distributed in the hope that it will be useful,
+   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
 ***************
-*** 473,485 ****
+*** 475,487 ****
       if(!bound && !portscan) {
   	logg("!ScanStream: Can't find any free port.\n");
   	mdprintf(odesc, "Can't find any free port. ERROR\n");
@@ -164,13 +173,13 @@
   	return -1;
       } else {
   	listen(sockfd, 1);
-  	if(mdprintf(odesc, "PORT %d\n", port) <= 0) {
+  	if(mdprintf(odesc, "PORT %u\n", port) <= 0) {
   	    logg("!ScanStream: error transmitting port.\n");
 ! 	    close(sockfd);
   	    return -1;
   	}
       }
---- 473,485 ----
+--- 474,486 ----
       if(!bound && !portscan) {
   	logg("!ScanStream: Can't find any free port.\n");
   	mdprintf(odesc, "Can't find any free port. ERROR\n");
@@ -178,22 +187,22 @@
   	return -1;
       } else {
   	listen(sockfd, 1);
-  	if(mdprintf(odesc, "PORT %d\n", port) <= 0) {
+  	if(mdprintf(odesc, "PORT %u\n", port) <= 0) {
   	    logg("!ScanStream: error transmitting port.\n");
 ! 	    closesocket(sockfd);
   	    return -1;
   	}
       }
 ***************
-*** 488,504 ****
+*** 490,506 ****
   	case 0: /* timeout */
   	    mdprintf(odesc, "Accept timeout. ERROR\n");
-  	    logg("!ScanStream %d: accept timeout.\n", port);
+  	    logg("!ScanStream %u: accept timeout.\n", port);
 ! 	    close(sockfd);
   	    return -1;
   	case -1:
   	    mdprintf(odesc, "Accept poll. ERROR\n");
-  	    logg("!ScanStream %d: accept poll failed.\n", port);
+  	    logg("!ScanStream %u: accept poll failed.\n", port);
 ! 	    close(sockfd);
   	    return -1;
       }
@@ -201,17 +210,17 @@
       if((acceptd = accept(sockfd, NULL, NULL)) == -1) {
 ! 	close(sockfd);
   	mdprintf(odesc, "accept() ERROR\n");
-  	logg("!ScanStream %d: accept() failed.\n", port);
+  	logg("!ScanStream %u: accept() failed.\n", port);
   	return -1;
---- 488,504 ----
+--- 489,505 ----
   	case 0: /* timeout */
   	    mdprintf(odesc, "Accept timeout. ERROR\n");
-  	    logg("!ScanStream %d: accept timeout.\n", port);
+  	    logg("!ScanStream %u: accept timeout.\n", port);
 ! 	    closesocket(sockfd);
   	    return -1;
   	case -1:
   	    mdprintf(odesc, "Accept poll. ERROR\n");
-  	    logg("!ScanStream %d: accept poll failed.\n", port);
+  	    logg("!ScanStream %u: accept poll failed.\n", port);
 ! 	    closesocket(sockfd);
   	    return -1;
       }
@@ -219,30 +228,69 @@
       if((acceptd = accept(sockfd, NULL, NULL)) == -1) {
 ! 	closesocket(sockfd);
   	mdprintf(odesc, "accept() ERROR\n");
-  	logg("!ScanStream %d: accept() failed.\n", port);
+  	logg("!ScanStream %u: accept() failed.\n", port);
   	return -1;
 ***************
-*** 508,514 ****
+*** 510,516 ****
   
       if ((tmpname = cli_gentempdesc(NULL, &tmpd)) == NULL) {
   	shutdown(sockfd, 2);
 ! 	close(sockfd);
   	close(acceptd);
   	mdprintf(odesc, "tempfile() failed. ERROR\n");
-  	logg("!ScanStream %d: Can't create temporary file.\n", port);
---- 508,514 ----
+  	logg("!ScanStream %u: Can't create temporary file.\n", port);
+--- 509,515 ----
   
       if ((tmpname = cli_gentempdesc(NULL, &tmpd)) == NULL) {
   	shutdown(sockfd, 2);
 ! 	closesocket(sockfd);
   	close(acceptd);
   	mdprintf(odesc, "tempfile() failed. ERROR\n");
-  	logg("!ScanStream %d: Can't create temporary file.\n", port);
-*** /home/njh/src/clamav-devel/trunk/./clamd/clamd.c	2007-02-28 15:06:52.000000000 +0000
---- ./clamd/clamd.c	2007-03-06 10:13:28.000000000 +0000
+  	logg("!ScanStream %u: Can't create temporary file.\n", port);
+*** /home/njh/src/clamav-devel/trunk/./clamd/clamd.c	2007-03-31 23:10:05.000000000 +0100
+--- ./clamd/clamd.c	2007-03-21 09:00:00.000000000 +0000
 ***************
-*** 65,70 ****
---- 65,73 ----
+*** 2,9 ****
+   *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+   *
+   *  This program is free software; you can redistribute it and/or modify
+!  *  it under the terms of the GNU General Public License version 2 as
+!  *  published by the Free Software Foundation.
+   *
+   *  This program is distributed in the hope that it will be useful,
+   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--- 2,10 ----
+   *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+   *
+   *  This program is free software; you can redistribute it and/or modify
+!  *  it under the terms of the GNU General Public License as published by
+!  *  the Free Software Foundation; either version 2 of the License, or
+!  *  (at your option) any later version.
+   *
+   *  This program is distributed in the hope that it will be useful,
+   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+***************
+*** 35,41 ****
+  #include <sys/stat.h>
+  #include <fcntl.h>
+  #include <time.h>
+! #ifndef	C_WINDOWS
+  #include <pwd.h>
+  #include <grp.h>
+  #endif
+--- 36,44 ----
+  #include <sys/stat.h>
+  #include <fcntl.h>
+  #include <time.h>
+! #ifdef	C_WINDOWS
+! #include <direct.h>	/* for chdir */
+! #else
+  #include <pwd.h>
+  #include <grp.h>
+  #endif
+***************
+*** 64,69 ****
+--- 67,75 ----
   #include "others.h"
   #include "shared.h"
   
@@ -253,7 +301,32 @@
   short debug_mode = 0, logok = 0;
   short foreground = 0;
 ***************
-*** 376,382 ****
+*** 85,91 ****
+--- 91,99 ----
+  {
+  	struct cfgstruct *copt;
+  	const struct cfgstruct *cpt;
++ #ifndef	C_WINDOWS
+          struct passwd *user = NULL;
++ #endif
+  	time_t currtime;
+  	struct cl_engine *engine = NULL;
+  	const char *dbdir, *cfgfile;
+***************
+*** 285,292 ****
+--- 293,302 ----
+  
+      logg("clamd daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
+  
++ #ifndef	C_WINDOWS
+      if(user)
+  	logg("Running as user %s (UID %u, GID %u)\n", user->pw_name, user->pw_uid, user->pw_gid);
++ #endif
+  
+      if(logg_size)
+  	logg("Log file size limited to %d bytes.\n", logg_size);
+***************
+*** 366,372 ****
   	    logg_close();
   	    freecfg(copt);
   	    if(tcpsock)
@@ -261,7 +334,7 @@
   	    return 1;
   	}
   	nlsockets++;
---- 379,385 ----
+--- 376,382 ----
   	    logg_close();
   	    freecfg(copt);
   	    if(tcpsock)
@@ -269,8 +342,8 @@
   	    return 1;
   	}
   	nlsockets++;
-*** /home/njh/src/clamav-devel/trunk/./clamd/server-th.c	2007-03-01 22:06:06.000000000 +0000
---- ./clamd/server-th.c	2007-03-05 22:34:44.000000000 +0000
+*** /home/njh/src/clamav-devel/trunk/./clamd/server-th.c	2007-03-27 09:06:14.000000000 +0100
+--- ./clamd/server-th.c	2007-03-27 09:06:34.000000000 +0100
 ***************
 *** 588,594 ****
   		client_conn->socketds = socketds;
@@ -289,7 +362,8 @@
   		    logg("!thread dispatch failed\n");
   		}
 ***************
-*** 597,603 ****
+*** 596,604 ****
+  
   	pthread_mutex_lock(&exit_mutex);
   	if(progexit) {
   	    if (new_sd >= 0) {
@@ -297,18 +371,88 @@
   	    }
   	    pthread_mutex_unlock(&exit_mutex);
   	    break;
---- 597,603 ----
+  	}
+--- 596,608 ----
+  
   	pthread_mutex_lock(&exit_mutex);
   	if(progexit) {
++ #ifdef	C_WINDOWS
++ 		closesocket(new_sd);
++ #else
   	    if (new_sd >= 0) {
 ! 		closesocket(new_sd);
   	    }
++ #endif
   	    pthread_mutex_unlock(&exit_mutex);
   	    break;
-*** /home/njh/src/clamav-devel/trunk/./clamd/tcpserver.c	2007-02-19 19:26:21.000000000 +0000
---- ./clamd/tcpserver.c	2007-03-05 22:34:16.000000000 +0000
+  	}
 ***************
-*** 52,57 ****
+*** 627,634 ****
+  	    engine = reload_db(engine, dboptions, copt, FALSE, &ret);
+  	    if(ret) {
+  		logg("Terminating because of a fatal error.\n");
+  		if(new_sd >= 0)
+! 		    close(new_sd);
+  		break;
+  	    }
+  	    pthread_mutex_lock(&reload_mutex);
+--- 631,640 ----
+  	    engine = reload_db(engine, dboptions, copt, FALSE, &ret);
+  	    if(ret) {
+  		logg("Terminating because of a fatal error.\n");
++ #ifndef	C_WINDOWS
+  		if(new_sd >= 0)
+! #endif
+! 		    closesocket(new_sd);
+  		break;
+  	    }
+  	    pthread_mutex_lock(&reload_mutex);
+*** /home/njh/src/clamav-devel/trunk/./clamd/clamuko.c	2007-03-31 23:10:05.000000000 +0100
+--- ./clamd/clamuko.c	2007-02-11 15:13:50.000000000 +0000
+***************
+*** 2,9 ****
+   *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+   *
+   *  This program is free software; you can redistribute it and/or modify
+!  *  it under the terms of the GNU General Public License version 2 as
+!  *  published by the Free Software Foundation.
+   *
+   *  This program is distributed in the hope that it will be useful,
+   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--- 2,10 ----
+   *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+   *
+   *  This program is free software; you can redistribute it and/or modify
+!  *  it under the terms of the GNU General Public License as published by
+!  *  the Free Software Foundation; either version 2 of the License, or
+!  *  (at your option) any later version.
+   *
+   *  This program is distributed in the hope that it will be useful,
+   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+*** /home/njh/src/clamav-devel/trunk/./clamd/tcpserver.c	2007-03-31 23:10:05.000000000 +0100
+--- ./clamd/tcpserver.c	2007-03-06 17:15:34.000000000 +0000
+***************
+*** 2,9 ****
+   *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+   *
+   *  This program is free software; you can redistribute it and/or modify
+!  *  it under the terms of the GNU General Public License version 2 as
+!  *  published by the Free Software Foundation.
+   *
+   *  This program is distributed in the hope that it will be useful,
+   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--- 2,10 ----
+   *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
+   *
+   *  This program is free software; you can redistribute it and/or modify
+!  *  it under the terms of the GNU General Public License as published by
+!  *  the Free Software Foundation; either version 2 of the License, or
+!  *  (at your option) any later version.
+   *
+   *  This program is distributed in the hope that it will be useful,
+   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+***************
+*** 51,56 ****
 --- 52,61 ----
   #include "server.h"
   #include "tcpserver.h"
@@ -321,7 +465,7 @@
   {
   	struct sockaddr_in server;
 ***************
-*** 88,94 ****
+*** 87,93 ****
       if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1) {
   	estr = strerror(errno);
   	logg("!bind() error: %s\n", estr);
@@ -338,7 +482,7 @@
       } else {
   	if(taddr->enabled)
 ***************
-*** 103,109 ****
+*** 102,108 ****
       if(listen(sockfd, backlog) == -1) {
   	estr = strerror(errno);
   	logg("!listen() error: %s\n", estr);
@@ -354,10 +498,30 @@
   	return -1;
       }
   
-*** /home/njh/src/clamav-devel/trunk/./clamdscan/clamdscan.c	2007-02-19 19:26:14.000000000 +0000
---- ./clamdscan/clamdscan.c	2007-02-24 10:46:48.000000000 +0000
+*** /home/njh/src/clamav-devel/trunk/./clamdscan/clamdscan.c	2007-03-31 23:10:05.000000000 +0100
+--- ./clamdscan/clamdscan.c	2007-02-24 09:46:48.000000000 +0000
 ***************
-*** 16,31 ****
+*** 2,9 ****
+   *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
+   *
+   *  This program is free software; you can redistribute it and/or modify
+!  *  it under the terms of the GNU General Public License version 2 as
+!  *  published by the Free Software Foundation.
+   *
+   *  This program is distributed in the hope that it will be useful,
+   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--- 2,10 ----
+   *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
+   *
+   *  This program is free software; you can redistribute it and/or modify
+!  *  it under the terms of the GNU General Public License as published by
+!  *  the Free Software Foundation; either version 2 of the License, or
+!  *  (at your option) any later version.
+   *
+   *  This program is distributed in the hope that it will be useful,
+   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+***************
+*** 15,30 ****
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
@@ -404,7 +568,7 @@
   #include <signal.h>
   
 ***************
-*** 48,61 ****
+*** 47,60 ****
   {
   	int ds, dms, ret, infected;
   	struct timeval t1, t2;
@@ -443,7 +607,7 @@
       opt = opt_parse(argc, argv, clamscan_shortopt, clamscan_longopt, clamdscan_accepted);
       if(!opt) {
 ***************
-*** 104,116 ****
+*** 103,115 ****
       time(&starttime);
       /* ctime() does \n, but I need it once more */
   
@@ -480,7 +644,7 @@
   	dms = t2.tv_usec - t1.tv_usec;
   	ds -= (dms < 0) ? (1):(0);
 ***************
-*** 127,132 ****
+*** 126,131 ****
 --- 155,169 ----
       }
   
@@ -497,10 +661,30 @@
       exit(ret);
   }
   
-*** /home/njh/src/clamav-devel/trunk/./clamdscan/client.c	2007-02-28 15:06:52.000000000 +0000
---- ./clamdscan/client.c	2007-02-28 17:46:52.000000000 +0000
+*** /home/njh/src/clamav-devel/trunk/./clamdscan/client.c	2007-03-31 23:10:05.000000000 +0100
+--- ./clamdscan/client.c	2007-02-28 16:46:52.000000000 +0000
 ***************
-*** 16,37 ****
+*** 2,9 ****
+   *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
+   *
+   *  This program is free software; you can redistribute it and/or modify
+!  *  it under the terms of the GNU General Public License version 2 as
+!  *  published by the Free Software Foundation.
+   *
+   *  This program is distributed in the hope that it will be useful,
+   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--- 2,10 ----
+   *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
+   *
+   *  This program is free software; you can redistribute it and/or modify
+!  *  it under the terms of the GNU General Public License as published by
+!  *  the Free Software Foundation; either version 2 of the License, or
+!  *  (at your option) any later version.
+   *
+   *  This program is distributed in the hope that it will be useful,
+   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+***************
+*** 15,36 ****
 --- 16,44 ----
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
@@ -532,7 +716,7 @@
   
   #ifdef HAVE_SYS_UIO_H
 ***************
-*** 53,64 ****
+*** 52,63 ****
 --- 60,139 ----
   # define SOCKET_INET	AF_INET
   #endif
@@ -615,7 +799,7 @@
   {
   	int infected = 0, waserror = 0;
 ***************
-*** 69,75 ****
+*** 68,74 ****
   #ifndef C_OS2
       if((fd = fdopen(dup(sockd), "r")) == NULL) {
   #else /* FIXME: accoriding to YD OS/2 does not support dup() for sockets */
@@ -632,7 +816,7 @@
   	logg("^Can't open descriptor for reading.\n");
   	return -1;
 ***************
-*** 117,122 ****
+*** 116,121 ****
 --- 192,198 ----
   
       return infected ? infected : (waserror ? -1 : 0);
@@ -642,7 +826,7 @@
   static int dsfile(int sockd, const char *scantype, const char *filename, const struct optstruct *opt)
   {
 ***************
-*** 127,133 ****
+*** 126,132 ****
       scancmd = malloc(strlen(filename) + 20);
       sprintf(scancmd, "%s %s", scantype, filename);
   
@@ -659,7 +843,7 @@
   	free(scancmd);
   	return -1;
 ***************
-*** 201,207 ****
+*** 200,206 ****
   	char buff[4096], *pt;
   
   
@@ -676,7 +860,7 @@
   	return 2;
       }
 ***************
-*** 253,259 ****
+*** 252,258 ****
       }
   
       if(connect(wsockd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) < 0) {
@@ -693,7 +877,7 @@
   	logg("^Can't connect to clamd [port: %d].\n", port);
   	return -1;
 ***************
-*** 262,272 ****
+*** 261,271 ****
       while((bread = read(0, buff, sizeof(buff))) > 0) {
   	if(write(wsockd, buff, bread) <= 0) {
   	    logg("^Can't write to the socket.\n");
@@ -718,7 +902,7 @@
       memset(buff, 0, sizeof(buff));
       while((bread = read(sockd, buff, sizeof(buff))) > 0) {
 ***************
-*** 311,317 ****
+*** 310,316 ****
 --- 387,395 ----
   
   static int dconnect(const struct optstruct *opt)
@@ -730,7 +914,7 @@
   	struct hostent *he;
   	struct cfgstruct *copt, *cpt;
 ***************
-*** 327,339 ****
+*** 326,338 ****
 --- 405,423 ----
   	return -1;
       }
@@ -752,7 +936,7 @@
   	server.sun_family = AF_UNIX;
   	strncpy(server.sun_path, cpt->strarg, sizeof(server.sun_path));
 ***************
-*** 346,360 ****
+*** 345,359 ****
   	}
   
   	if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
@@ -794,7 +978,7 @@
   	    perror("socket()");
   	    logg("^Can't create the socket.\n");
 ***************
-*** 367,373 ****
+*** 366,372 ****
   
   	if((cpt = cfgopt(copt, "TCPAddr"))->enabled) {
   	    if ((he = gethostbyname(cpt->strarg)) == 0) {
@@ -811,7 +995,7 @@
   		logg("^Can't lookup clamd hostname.\n");
   		freecfg(copt);
 ***************
-*** 377,383 ****
+*** 376,382 ****
   	}
   
   	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
@@ -828,7 +1012,7 @@
   	    logg("^Can't connect to clamd.\n");
   	    freecfg(copt);
 ***************
-*** 429,435 ****
+*** 428,434 ****
   	else
   	    errors++;
   
@@ -845,7 +1029,7 @@
   #if defined(ENABLE_FD_PASSING) && defined(HAVE_SENDMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN)
       } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
 ***************
-*** 441,447 ****
+*** 440,446 ****
   	else
   	    errors++;
   
@@ -862,7 +1046,7 @@
       } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
   	if((sockd = dconnect(opt)) < 0)
 ***************
-*** 452,458 ****
+*** 451,457 ****
   	else
   	    errors++;
   
@@ -879,7 +1063,7 @@
   
       } else {
 ***************
-*** 487,493 ****
+*** 486,492 ****
   			else
   			    errors++;
   
@@ -896,7 +1080,7 @@
   
   		    default:
 ***************
-*** 509,516 ****
+*** 508,515 ****
   	struct stat fstat, mfstat;
   	int n, len, movefilename_size;
   	int moveflag = opt_check(opt, "move");
@@ -916,7 +1100,7 @@
       if((moveflag && !(movedir = opt_arg(opt, "move"))) ||
           (!moveflag && !(movedir = opt_arg(opt, "copy")))) {
 ***************
-*** 595,603 ****
+*** 594,602 ****
   	chmod(movefilename, fstat.st_mode);
   	chown(movefilename, fstat.st_uid, fstat.st_gid);
   
