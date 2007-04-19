@@ -572,7 +572,7 @@ help(void)
 	puts("\tCopyright (C) 2007 Nigel Horne <njh@clamav.net>\n");
 
 	puts(_("\t--advisory\t\t-A\tFlag viruses rather than deleting them."));
-	puts(_("\t--blacklist=time\t-k\tTime (in seconds) to blacklist an IP."));
+	puts(_("\t--blacklist-time\t-k\tTime (in seconds) to blacklist an IP."));
 	puts(_("\t--black-hole-mode\t\tDon't scan messages aliased to /dev/null."));
 #ifdef	BOUNCE
 	puts(_("\t--bounce\t\t-b\tSend a failure message to the sender."));
@@ -769,7 +769,7 @@ main(int argc, char **argv)
 				"pidfile", 1, NULL, 'i'
 			},
 			{
-				"blacklist", 1, NULL, 'k'
+				"blacklist-time", 1, NULL, 'k'
 			},
 			{
 				"local", 0, NULL, 'l'
