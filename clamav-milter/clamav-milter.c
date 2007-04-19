@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-070418"
+#define	CM_VERSION	"devel-070419"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1542,7 +1542,7 @@ main(int argc, char **argv)
 				 */
 				for(tries = 0; tries < NTRIES - 1; tries++) {
 					if(pingServer(i))
-						logg("ping OK\n");
+						break;
 					if(checkClamd(1))	/* will try all servers */
 						break;
 					logg(_("Waiting for clamd to come up\n"));
