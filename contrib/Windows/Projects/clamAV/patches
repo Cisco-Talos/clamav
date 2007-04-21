@@ -1,92 +1,19 @@
 *** /home/njh/src/clamav-devel/trunk/./clamscan/manager.h	2007-03-31 23:10:05.000000000 +0100
---- ./clamscan/manager.h	2007-01-31 08:37:40.000000000 +0000
+--- ./clamscan/manager.h	2007-04-21 08:44:22.000000000 +0100
 ***************
-*** 2,9 ****
-   *  Copyright (C) 2002, 2003 Tomasz Kojm <tkojm@clamav.net>
-   *
-   *  This program is free software; you can redistribute it and/or modify
-!  *  it under the terms of the GNU General Public License version 2 as
-!  *  published by the Free Software Foundation.
-   *
-   *  This program is distributed in the hope that it will be useful,
-   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
---- 2,10 ----
-   *  Copyright (C) 2002, 2003 Tomasz Kojm <tkojm@clamav.net>
-   *
-   *  This program is free software; you can redistribute it and/or modify
-!  *  it under the terms of the GNU General Public License as published by
-!  *  the Free Software Foundation; either version 2 of the License, or
-!  *  (at your option) any later version.
-   *
-   *  This program is distributed in the hope that it will be useful,
-   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-***************
-*** 19,37 ****
-  #ifndef __MANAGER_H
-  #define __MANAGER_H
+*** 34,37 ****
+--- 34,42 ----
   
-! #if HAVE_CONFIG_H
-! #include "clamav-config.h"
-! #endif
-! 
-! #ifdef HAVE_PWD_H
-  #include <pwd.h>
-  #endif
-! 
-! #include "libclamav/clamav.h"
-! #include "shared/options.h"
+  int scanfile(const char *filename, struct cl_engine *engine, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, unsigned int options);
   
-  int scanmanager(const struct optstruct *opt);
-  
-! int scanfile(const char *filename, struct cl_engine *engine, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, unsigned int options);
-  
-  #endif
---- 20,52 ----
-  #ifndef __MANAGER_H
-  #define __MANAGER_H
-  
-! #include "libclamav/clamav.h"
-! #ifndef	C_WINDOWS
-  #include <pwd.h>
-  #endif
-! #include "options.h"
-  
-  int scanmanager(const struct optstruct *opt);
-  
-! int scanfile(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options);
-! 
-! int scancompressed(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options);
-! 
-! int scandenied(const char *filename, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options);
-! 
-! int scandirs(const char *dirname, struct cl_node *root, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, int options);
-! 
-! int checkfile(const char *filename, const struct cl_node *root, const struct cl_limits *limits, int options, short printclean);
-! 
-! int checkstdin(const struct cl_node *root, const struct cl_limits *limits, int options);
-! 
-! int clamav_unpack(const char *prog, char **args, const char *tmpdir, const struct passwd *user, const struct optstruct *opt);
-! 
-! void move_infected(const char *filename, const struct optstruct *opt);
-! 
-! #ifdef	_DEBUG
-! /* breaks mspack/qtmd.c :-( */
-! #define	free(p)	_free_dbg(p, _NORMAL_BLOCK)
-! #endif
-  
++ #ifdef	_DEBUG
++ /* breaks mspack/qtmd.c :-( */
++ #define	free(p)	_free_dbg(p, _NORMAL_BLOCK)
++ #endif
++ 
   #endif
 *** /home/njh/src/clamav-devel/trunk/./freshclam/manager.c	2007-03-31 23:10:05.000000000 +0100
---- ./freshclam/manager.c	2007-03-28 22:00:58.000000000 +0100
-***************
-*** 4,10 ****
-   *  Proxy support by Nigel Horne <njh@bandsman.co.uk>
-   *  Proxy authorization support by Gernot Tenchio <g.tenchio@telco-tech.de>
-   *		     (uses fmt_base64() from libowfat (http://www.fefe.de))
--  *  CDIFF code (C) 2006 Sensory Networks, Inc.
-   *
-   *  This program is free software; you can redistribute it and/or modify
-   *  it under the terms of the GNU General Public License as published by
---- 4,9 ----
+--- ./freshclam/manager.c	2007-04-21 08:45:22.000000000 +0100
 ***************
 *** 210,216 ****
   		break;
@@ -96,7 +23,7 @@
   	return -1;
       }
   
---- 209,215 ----
+--- 210,216 ----
   		break;
   	}
           logg("!Can't get information about %s: %s\n", hostpt, herr);
@@ -113,7 +40,7 @@
   	    if((socketfd = getclientsock(localip)) == -1)
   		return -1;
   
---- 241,247 ----
+--- 242,248 ----
   	if(connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in)) == -1) {
   #endif
   	    logg("Can't connect to port %d of host %s (IP: %s)\n", port, hostpt, ipaddr);
@@ -130,7 +57,7 @@
       return -2;
   }
   
---- 252,258 ----
+--- 253,259 ----
   	}
       }
   
@@ -139,31 +66,7 @@
   }
   
 *** /home/njh/src/clamav-devel/trunk/./clamd/scanner.c	2007-03-31 23:10:05.000000000 +0100
---- ./clamd/scanner.c	2007-03-06 17:12:12.000000000 +0000
-***************
-*** 1,11 ****
-  /*
-   *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
--  *  MULTISCAN code (C) 2006 Sensory Networks, Inc.
--  *  Written by Tomasz Kojm
-   *
-   *  This program is free software; you can redistribute it and/or modify
-!  *  it under the terms of the GNU General Public License version 2 as
-!  *  published by the Free Software Foundation.
-   *
-   *  This program is distributed in the hope that it will be useful,
-   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
---- 1,10 ----
-  /*
-   *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
-   *
-   *  This program is free software; you can redistribute it and/or modify
-!  *  it under the terms of the GNU General Public License as published by
-!  *  the Free Software Foundation; either version 2 of the License, or
-!  *  (at your option) any later version.
-   *
-   *  This program is distributed in the hope that it will be useful,
-   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--- ./clamd/scanner.c	2007-04-21 08:46:12.000000000 +0100
 ***************
 *** 475,487 ****
       if(!bound && !portscan) {
@@ -179,7 +82,7 @@
   	    return -1;
   	}
       }
---- 474,486 ----
+--- 475,487 ----
       if(!bound && !portscan) {
   	logg("!ScanStream: Can't find any free port.\n");
   	mdprintf(odesc, "Can't find any free port. ERROR\n");
@@ -212,7 +115,7 @@
   	mdprintf(odesc, "accept() ERROR\n");
   	logg("!ScanStream %u: accept() failed.\n", port);
   	return -1;
---- 489,505 ----
+--- 490,506 ----
   	case 0: /* timeout */
   	    mdprintf(odesc, "Accept timeout. ERROR\n");
   	    logg("!ScanStream %u: accept timeout.\n", port);
@@ -239,7 +142,7 @@
   	close(acceptd);
   	mdprintf(odesc, "tempfile() failed. ERROR\n");
   	logg("!ScanStream %u: Can't create temporary file.\n", port);
---- 509,515 ----
+--- 510,516 ----
   
       if ((tmpname = cli_gentempdesc(NULL, &tmpd)) == NULL) {
   	shutdown(sockfd, 2);
@@ -248,27 +151,7 @@
   	mdprintf(odesc, "tempfile() failed. ERROR\n");
   	logg("!ScanStream %u: Can't create temporary file.\n", port);
 *** /home/njh/src/clamav-devel/trunk/./clamd/clamd.c	2007-03-31 23:10:05.000000000 +0100
---- ./clamd/clamd.c	2007-03-21 09:00:00.000000000 +0000
-***************
-*** 2,9 ****
-   *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
-   *
-   *  This program is free software; you can redistribute it and/or modify
-!  *  it under the terms of the GNU General Public License version 2 as
-!  *  published by the Free Software Foundation.
-   *
-   *  This program is distributed in the hope that it will be useful,
-   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
---- 2,10 ----
-   *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
-   *
-   *  This program is free software; you can redistribute it and/or modify
-!  *  it under the terms of the GNU General Public License as published by
-!  *  the Free Software Foundation; either version 2 of the License, or
-!  *  (at your option) any later version.
-   *
-   *  This program is distributed in the hope that it will be useful,
-   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--- ./clamd/clamd.c	2007-04-21 08:46:50.000000000 +0100
 ***************
 *** 35,41 ****
   #include <sys/stat.h>
@@ -278,7 +161,7 @@
   #include <pwd.h>
   #include <grp.h>
   #endif
---- 36,44 ----
+--- 35,43 ----
   #include <sys/stat.h>
   #include <fcntl.h>
   #include <time.h>
@@ -290,7 +173,7 @@
   #endif
 ***************
 *** 64,69 ****
---- 67,75 ----
+--- 66,74 ----
   #include "others.h"
   #include "shared.h"
   
@@ -302,7 +185,7 @@
   short foreground = 0;
 ***************
 *** 85,91 ****
---- 91,99 ----
+--- 90,98 ----
   {
   	struct cfgstruct *copt;
   	const struct cfgstruct *cpt;
@@ -314,7 +197,7 @@
   	const char *dbdir, *cfgfile;
 ***************
 *** 285,292 ****
---- 293,302 ----
+--- 292,301 ----
   
       logg("clamd daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
   
@@ -334,7 +217,7 @@
   	    return 1;
   	}
   	nlsockets++;
---- 376,382 ----
+--- 375,381 ----
   	    logg_close();
   	    freecfg(copt);
   	    if(tcpsock)
@@ -407,53 +290,11 @@
   		break;
   	    }
   	    pthread_mutex_lock(&reload_mutex);
-*** /home/njh/src/clamav-devel/trunk/./clamd/clamuko.c	2007-03-31 23:10:05.000000000 +0100
---- ./clamd/clamuko.c	2007-02-11 15:13:50.000000000 +0000
-***************
-*** 2,9 ****
-   *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
-   *
-   *  This program is free software; you can redistribute it and/or modify
-!  *  it under the terms of the GNU General Public License version 2 as
-!  *  published by the Free Software Foundation.
-   *
-   *  This program is distributed in the hope that it will be useful,
-   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
---- 2,10 ----
-   *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
-   *
-   *  This program is free software; you can redistribute it and/or modify
-!  *  it under the terms of the GNU General Public License as published by
-!  *  the Free Software Foundation; either version 2 of the License, or
-!  *  (at your option) any later version.
-   *
-   *  This program is distributed in the hope that it will be useful,
-   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
 *** /home/njh/src/clamav-devel/trunk/./clamd/tcpserver.c	2007-03-31 23:10:05.000000000 +0100
---- ./clamd/tcpserver.c	2007-03-06 17:15:34.000000000 +0000
-***************
-*** 2,9 ****
-   *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
-   *
-   *  This program is free software; you can redistribute it and/or modify
-!  *  it under the terms of the GNU General Public License version 2 as
-!  *  published by the Free Software Foundation.
-   *
-   *  This program is distributed in the hope that it will be useful,
-   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
---- 2,10 ----
-   *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
-   *
-   *  This program is free software; you can redistribute it and/or modify
-!  *  it under the terms of the GNU General Public License as published by
-!  *  the Free Software Foundation; either version 2 of the License, or
-!  *  (at your option) any later version.
-   *
-   *  This program is distributed in the hope that it will be useful,
-   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+--- ./clamd/tcpserver.c	2007-04-21 08:49:08.000000000 +0100
 ***************
 *** 51,56 ****
---- 52,61 ----
+--- 51,60 ----
   #include "server.h"
   #include "tcpserver.h"
   
@@ -473,7 +314,7 @@
   	return -1;
       } else {
   	if(taddr->enabled)
---- 92,98 ----
+--- 91,97 ----
       if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1) {
   	estr = strerror(errno);
   	logg("!bind() error: %s\n", estr);
@@ -490,7 +331,7 @@
   	return -1;
       }
   
---- 107,113 ----
+--- 106,112 ----
       if(listen(sockfd, backlog) == -1) {
   	estr = strerror(errno);
   	logg("!listen() error: %s\n", estr);
