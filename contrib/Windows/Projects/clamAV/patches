@@ -339,201 +339,18 @@
   	return -1;
       }
   
-*** /home/njh/src/clamav-devel/trunk/./clamdscan/clamdscan.c	2007-03-31 23:10:05.000000000 +0100
---- ./clamdscan/clamdscan.c	2007-02-24 09:46:48.000000000 +0000
-***************
-*** 2,9 ****
-   *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
-   *
-   *  This program is free software; you can redistribute it and/or modify
-!  *  it under the terms of the GNU General Public License version 2 as
-!  *  published by the Free Software Foundation.
-   *
-   *  This program is distributed in the hope that it will be useful,
-   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
---- 2,10 ----
-   *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
-   *
-   *  This program is free software; you can redistribute it and/or modify
-!  *  it under the terms of the GNU General Public License as published by
-!  *  the Free Software Foundation; either version 2 of the License, or
-!  *  (at your option) any later version.
-   *
-   *  This program is distributed in the hope that it will be useful,
-   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-***************
-*** 15,30 ****
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
-   */
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
-  #endif
-- 
-  #include <stdio.h>
-  #include <string.h>
-  #include <stdlib.h>
-  #include <unistd.h>
-  #include <sys/time.h>
-  #include <time.h>
-  #include <signal.h>
-  
---- 16,43 ----
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-   *  MA 02110-1301, USA.
-   */
-+  
-+ #ifdef	_MSC_VER
-+ #include <windows.h>
-+ #include <winsock.h>
-+ #endif
-  
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
-  #endif
-  #include <stdio.h>
-  #include <string.h>
-  #include <stdlib.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-+ #ifdef	C_WINDOWS
-+ #ifdef	CL_THREAD_SAFE
-+ #include <pthread.h>
-+ #endif
-+ #else
-  #include <sys/time.h>
-+ #endif
-  #include <time.h>
-  #include <signal.h>
-  
-***************
-*** 47,60 ****
-  {
-  	int ds, dms, ret, infected;
-  	struct timeval t1, t2;
-  	struct timezone tz;
-  	time_t starttime;
-  	struct optstruct *opt;
-  	const char *clamdscan_accepted[] = { "help", "version", "verbose", "quiet",
-  				  "stdout", "log", "move", "copy", "remove",
-  				  "config-file", "no-summary",
-  				  "disable-summary", "multiscan", NULL };
-! 
-  
-      opt = opt_parse(argc, argv, clamscan_shortopt, clamscan_longopt, clamdscan_accepted);
-      if(!opt) {
---- 60,81 ----
-  {
-  	int ds, dms, ret, infected;
-  	struct timeval t1, t2;
-+ #ifndef	C_WINDOWS
-  	struct timezone tz;
-+ #endif
-  	time_t starttime;
-  	struct optstruct *opt;
-  	const char *clamdscan_accepted[] = { "help", "version", "verbose", "quiet",
-  				  "stdout", "log", "move", "copy", "remove",
-  				  "config-file", "no-summary",
-  				  "disable-summary", "multiscan", NULL };
-! 				  
-! #ifdef	C_WINDOWS
-! 	if(!pthread_win32_process_attach_np()) {
-! 		mprintf("!Can't start the win32 pthreads layer\n");
-! 		return 1;
-! 	}
-! #endif
-  
-      opt = opt_parse(argc, argv, clamscan_shortopt, clamscan_longopt, clamdscan_accepted);
-      if(!opt) {
-***************
-*** 103,115 ****
-      time(&starttime);
-      /* ctime() does \n, but I need it once more */
-  
-!     gettimeofday(&t1, &tz);
-  
-      ret = client(opt, &infected);
-  
-      /* TODO: Implement STATUS in clamd */
-      if(!opt_check(opt, "disable-summary") && !opt_check(opt, "no-summary")) {
-  	gettimeofday(&t2, &tz);
-  	ds = t2.tv_sec - t1.tv_sec;
-  	dms = t2.tv_usec - t1.tv_usec;
-  	ds -= (dms < 0) ? (1):(0);
---- 124,144 ----
-      time(&starttime);
-      /* ctime() does \n, but I need it once more */
-  
-! #ifdef	C_WINDOWS
-! 	gettimeofday(&t1, NULL);
-! #else
-! 	gettimeofday(&t1, &tz);
-! #endif
-  
-      ret = client(opt, &infected);
-  
-      /* TODO: Implement STATUS in clamd */
-      if(!opt_check(opt, "disable-summary") && !opt_check(opt, "no-summary")) {
-+ #ifdef	C_WINDOWS
-+ 	gettimeofday(&t2, NULL);
-+ #else
-  	gettimeofday(&t2, &tz);
-+ #endif
-  	ds = t2.tv_sec - t1.tv_sec;
-  	dms = t2.tv_usec - t1.tv_usec;
-  	ds -= (dms < 0) ? (1):(0);
-***************
-*** 126,131 ****
---- 155,169 ----
-      }
-  
-      opt_free(opt);
-+ 
-+ #ifdef	C_WINDOWS
-+ 	WSACleanup();
-+ 	if(!pthread_win32_process_detach_np()) {
-+ 		mprintf("!Can't stop the win32 pthreads layer\n");
-+ 		return 1;
-+ 	}
-+ #endif
-+ 
-      exit(ret);
-  }
-  
 *** /home/njh/src/clamav-devel/trunk/./clamdscan/client.c	2007-03-31 23:10:05.000000000 +0100
---- ./clamdscan/client.c	2007-02-28 16:46:52.000000000 +0000
+--- ./clamdscan/client.c	2007-04-21 14:00:57.000000000 +0100
 ***************
-*** 2,9 ****
-   *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
-   *
-   *  This program is free software; you can redistribute it and/or modify
-!  *  it under the terms of the GNU General Public License version 2 as
-!  *  published by the Free Software Foundation.
-   *
-   *  This program is distributed in the hope that it will be useful,
-   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
---- 2,10 ----
-   *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
-   *
-   *  This program is free software; you can redistribute it and/or modify
-!  *  it under the terms of the GNU General Public License as published by
-!  *  the Free Software Foundation; either version 2 of the License, or
-!  *  (at your option) any later version.
-   *
-   *  This program is distributed in the hope that it will be useful,
-   *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-***************
-*** 15,36 ****
+*** 16,36 ****
 --- 16,44 ----
-   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    *  MA 02110-1301, USA.
    */
+  
 + #ifdef	_MSC_VER
 + #include <winsock.h>
 + #endif
-  
++ 
   #if HAVE_CONFIG_H
   #include "clamav-config.h"
   #endif
@@ -963,3 +780,135 @@
   
   	if(moveflag && unlink(filename)) {
   	    logg("^cannot unlink '%s': %s\n", filename, strerror(errno));
+*** /home/njh/src/clamav-devel/trunk/./clamdscan/clamdscan.c	2007-03-31 23:10:05.000000000 +0100
+--- ./clamdscan/clamdscan.c	2007-04-21 13:59:56.000000000 +0100
+***************
+*** 15,30 ****
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+  #endif
+- 
+  #include <stdio.h>
+  #include <string.h>
+  #include <stdlib.h>
+  #include <unistd.h>
+  #include <sys/time.h>
+  #include <time.h>
+  #include <signal.h>
+  
+--- 15,42 ----
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
++  
++ #ifdef	_MSC_VER
++ #include <windows.h>
++ #include <winsock.h>
++ #endif
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+  #endif
+  #include <stdio.h>
+  #include <string.h>
+  #include <stdlib.h>
++ #ifdef	HAVE_UNISTD_H
+  #include <unistd.h>
++ #endif
++ #ifdef	C_WINDOWS
++ #ifdef	CL_THREAD_SAFE
++ #include <pthread.h>
++ #endif
++ #else
+  #include <sys/time.h>
++ #endif
+  #include <time.h>
+  #include <signal.h>
+  
+***************
+*** 47,53 ****
+--- 59,67 ----
+  {
+  	int ds, dms, ret, infected;
+  	struct timeval t1, t2;
++ #ifndef	C_WINDOWS
+  	struct timezone tz;
++ #endif
+  	time_t starttime;
+  	struct optstruct *opt;
+  	const char *clamdscan_accepted[] = { "help", "version", "verbose", "quiet",
+***************
+*** 56,61 ****
+--- 70,82 ----
+  				  "disable-summary", "multiscan", NULL };
+  
+  
++ #ifdef	C_WINDOWS
++ 	if(!pthread_win32_process_attach_np()) {
++ 		mprintf("!Can't start the win32 pthreads layer\n");
++ 		return 1;
++ 	}
++ #endif
++ 
+      opt = opt_parse(argc, argv, clamscan_shortopt, clamscan_longopt, clamdscan_accepted);
+      if(!opt) {
+  	mprintf("!Can't parse the command line\n");
+***************
+*** 103,115 ****
+      time(&starttime);
+      /* ctime() does \n, but I need it once more */
+  
+!     gettimeofday(&t1, &tz);
+  
+      ret = client(opt, &infected);
+  
+      /* TODO: Implement STATUS in clamd */
+      if(!opt_check(opt, "disable-summary") && !opt_check(opt, "no-summary")) {
+  	gettimeofday(&t2, &tz);
+  	ds = t2.tv_sec - t1.tv_sec;
+  	dms = t2.tv_usec - t1.tv_usec;
+  	ds -= (dms < 0) ? (1):(0);
+--- 124,144 ----
+      time(&starttime);
+      /* ctime() does \n, but I need it once more */
+  
+! #ifdef	C_WINDOWS
+! 	gettimeofday(&t1, NULL);
+! #else
+! 	gettimeofday(&t1, &tz);
+! #endif
+  
+      ret = client(opt, &infected);
+  
+      /* TODO: Implement STATUS in clamd */
+      if(!opt_check(opt, "disable-summary") && !opt_check(opt, "no-summary")) {
++ #ifdef	C_WINDOWS
++ 	gettimeofday(&t2, NULL);
++ #else
+  	gettimeofday(&t2, &tz);
++ #endif
+  	ds = t2.tv_sec - t1.tv_sec;
+  	dms = t2.tv_usec - t1.tv_usec;
+  	ds -= (dms < 0) ? (1):(0);
+***************
+*** 126,131 ****
+--- 155,169 ----
+      }
+  
+      opt_free(opt);
++ 
++ #ifdef	C_WINDOWS
++ 	WSACleanup();
++ 	if(!pthread_win32_process_detach_np()) {
++ 		mprintf("!Can't stop the win32 pthreads layer\n");
++ 		return 1;
++ 	}
++ #endif
++ 
+      exit(ret);
+  }
+  
