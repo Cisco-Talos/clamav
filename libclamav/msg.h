@@ -20,6 +20,9 @@
 #ifndef __MSG_H
 #define __MSG_H
 
+#include "others.h"
+#include "ole2_extract.h"
+
 int cli_msg(const char *dir, int desc, const cli_ctx *ctx);
 
 #endif

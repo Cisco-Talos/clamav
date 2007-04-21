@@ -17,12 +17,13 @@
  *  MA 02110-1301, USA.
  */
 #include "clamav.h"
-#include "others.h"
 #include "msg.h"
 
 int
 cli_msg(const char *dir, int desc, const cli_ctx *ctx)
 {
-	cli_warnmsg("MSG files not yet supported\n");
-	return CL_EFORMAT;
+	/*cli_warnmsg("MSG files not yet supported\n");
+	return CL_EFORMAT;*/
+	cli_dbgmsg("cli_msg: treat as OLE2 document for now\n");
+	return cli_ole2_extract(desc, dir, ctx->limits);
 }
