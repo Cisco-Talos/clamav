@@ -38,7 +38,6 @@ blob	*blobCreate(void);
 void	blobDestroy(blob *b);
 void	blobArrayDestroy(blob *b[], int n);
 void	blobSetFilename(blob *b, const char *dir, const char *filename);
-const	char	*blobGetFilename(const blob *b);
 int	blobAddData(blob *b, const unsigned char *data, size_t len);
 unsigned char *blobGetData(const blob *b);
 size_t	blobGetDataSize(const blob *b);

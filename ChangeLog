@@ -1,3 +1,7 @@
+Sat Apr 21 23:08:10 BST 2007 (njh)
+----------------------------------
+  * libclamav/blob.[ch]:	blobGetFilename is now static()
+
 Thu Apr 19 09:28:14 BST 2007 (njh)
 ----------------------------------
   * clamav-milter:	Bug 468, reversed - the doc is right it's the code

@@ -69,6 +69,8 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.64 2007/02/12 22:25:14 njh Exp $";
 				 * large sized files
 				 */
 
+static	const	char	*blobGetFilename(const blob *b);
+
 blob *
 blobCreate(void)
 {
@@ -138,7 +140,7 @@ blobSetFilename(blob *b, const char *dir, const char *filename)
 		sanitiseName(b->name);
 }
 
-const char *
+static const char *
 blobGetFilename(const blob *b)
 {
 	assert(b != NULL);
