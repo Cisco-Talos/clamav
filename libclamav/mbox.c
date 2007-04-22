@@ -3219,7 +3219,7 @@ strip(char *buf, int len)
 		if(*ptr)	/* C8.0 puts into a text area */
 #endif
 			*ptr = '\0';
-	while((--len >= 0) && ((*--ptr == '\0') || (isspace((int)*ptr))));
+	while((--len >= 0) && ((*--ptr == '\0') || isspace((int)(*ptr & 0xFF))));
 #endif
 	return((size_t)(len + 1));
 }
