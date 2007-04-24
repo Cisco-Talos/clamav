@@ -2434,6 +2434,10 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 							&aText, recursion_level);
 						if((rc == OK_ATTACHMENTS_NOT_SAVED) && (old_rc == OK))
 							rc = OK;
+						if(messages[multiparts]) {
+							messageDestroy(messages[multiparts]);
+							messages[multiparts] = NULL;
+						}
 						--multiparts;
 						if(rc == VIRUS)
 							infected = TRUE;
@@ -2796,6 +2800,14 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 			if(!isBounceStart(lineGetData(l)))
 				continue;
 
+			lookahead = t->t_next;
+			if(lookahead) {
+				if(isBounceStart(lineGetData(lookahead->t_line)))
+					/* don't save worthless header lines */
+					continue;
+			} else	/* don't save a single liner */
+				break;
+
 			/*
 			 * We've found what looks like the start of a bounce
 			 * message. Only bother saving if it really is a bounce
@@ -2803,7 +2815,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 			 * messages that have lots of bounces within bounces in
 			 * them
 			 */
-			for(lookahead = t->t_next; lookahead; lookahead = lookahead->t_next) {
+			for(; lookahead; lookahead = lookahead->t_next) {
 				l = lookahead->t_line;
 
 				if(l == NULL)
