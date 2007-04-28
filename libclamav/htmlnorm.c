@@ -648,7 +648,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 			case HTML_NORM:
 				if (*ptr == '<') {
 #ifdef CL_EXPERIMENTAL
-					ptrend=ptr-1; /* for use by scanContents */
+					ptrend=ptr; /* for use by scanContents */
 #endif
 					html_output_c(file_buff_o1, file_buff_o2, '<');
 					if (in_script) {
@@ -1513,7 +1513,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 #ifdef CL_EXPERIMENTAL
 		if(hrefs && hrefs->scanContents && in_ahref && href_contents_begin)
 			/* end of line, append contents now, resume on next line */
-			html_tag_contents_append(hrefs,in_ahref,href_contents_begin,ptr-1);
+			html_tag_contents_append(hrefs,in_ahref,href_contents_begin,ptr);
 		ptrend = NULL;
 #endif
 		free(line);

@@ -275,7 +275,9 @@ int regex_list_match(struct regex_matcher* matcher,const char* real_url,const ch
 			rc = match_node(hostOnly ? matcher->root_regex_hostonly : matcher->root_regex,(unsigned char*)buffer,buffer_len,info) == MATCH_SUCCESS ? CL_VIRUS : CL_SUCCESS;
 		free(buffer);
 		if(!rc)
-			cli_dbgmsg("not in regex list\n");
+			cli_dbgmsg("Lookup result: not in regex list\n");
+		else
+			cli_dbgmsg("Lookup result: in regex list\n");
 		return rc;
 	}
 }
@@ -551,6 +553,7 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 				return rc==CL_EMEM ? CL_EMEM : CL_EMALFDB;
 		}
 		else if( ( buffer[0] == 'H' && !is_whitelist) || (buffer[0] == 'M' && is_whitelist)) {/*matches displayed host*/
+			struct cli_matcher* root;
  			if(matcher->list_built) {
  				struct cli_matcher* old_hosts = matcher->root_hosts;
  				matcher->root_hosts_cnt++;
@@ -560,16 +563,22 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
  					matcher->root_hosts = old_hosts;/* according to manpage this must still be valid*/
  					return CL_EMEM;
 				} 
- 				memset(&matcher->root_hosts[matcher->root_hosts_cnt-1], 0, sizeof(struct cli_matcher));
- 				matcher->root_hosts[matcher->root_hosts_cnt-1].ac_root = cli_calloc(1, sizeof(struct cli_ac_node));
- 				if(!matcher->root_hosts[matcher->root_hosts_cnt-1].ac_root) {
- 					matcher->root_hosts_cnt--;
- 					return CL_EMEM;
- 				}
- 				cli_dbgmsg("Increased number of root_hosts in regex_list.c\n");
+
+				root = &matcher->root_hosts[matcher->root_hosts_cnt-1];
+ 				memset(root, 0, sizeof(struct cli_matcher));
+
+				cli_dbgmsg("regex_list: Initialising AC pattern matcher\n");
+				if((rc = cli_ac_init(root, AC_DEFAULT_MIN_DEPTH, AC_DEFAULT_MAX_DEPTH))) {
+					/* no need to free previously allocated memory here */
+					cli_errmsg("regex_list: Can't initialise AC pattern matcher\n");
+					return rc;
+				}
  				matcher->list_built = 0;
  			}
- 			if(( rc = add_regex_list_element(&matcher->root_hosts[matcher->root_hosts_cnt-1],pattern,flags) ))
+			else {
+				root = &matcher->root_hosts[matcher->root_hosts_cnt-1];
+			}
+ 			if(( rc = add_regex_list_element(root,pattern,flags) ))
 				return rc==CL_EMEM ? CL_EMEM : CL_EMALFDB;
 		}
 		else {
@@ -627,7 +636,7 @@ void regex_list_done(struct regex_matcher* matcher)
 	if(matcher->list_loaded) {
 		if(matcher->root_hosts) {
 			size_t i;
-			for(i=0;i<matcher->root_hosts_cnt;i++)
+			for(i=0;i<matcher->root_hosts_cnt;i++) 
 				cli_ac_free(&matcher->root_hosts[i]);
 			free(matcher->root_hosts);
 			matcher->root_hosts=NULL;
