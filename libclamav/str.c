@@ -97,7 +97,7 @@ uint16_t *cli_hex2ui(const char *hex)
 	    }
 	    val |= CLI_MATCH_NIBBLE_LOW;
 
-	} else if(hex[i] == '@') {
+	} else if(hex[i] == '(') {
 	    val |= CLI_MATCH_ALTERNATIVE;
 
 	} else {

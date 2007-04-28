@@ -24,24 +24,20 @@
 #include "filetypes.h"
 #include "cltypes.h"
 
-#define AC_DEFAULT_DEPTH 2
+#define AC_DEFAULT_MIN_DEPTH 2
+#define AC_DEFAULT_MAX_DEPTH 3
 #define AC_DEFAULT_TRACKLEN 8
 
 struct cli_ac_data {
     uint32_t partsigs;
-    off_t *inioff;
-    uint16_t *partcnt;
-    uint32_t **partoff;
-    uint8_t *offcnt;
-    uint8_t *offidx;
-    int32_t *maxshift;
+    int32_t ***offmatrix;
 };
 
 struct cli_ac_patt {
     uint16_t *pattern, *prefix, length, prefix_length;
+    uint8_t depth;
     uint32_t mindist, maxdist;
     char *virname, *offset;
-    const char *viralias;
     uint32_t sigid;
     uint16_t parts, partno, alt, *altn, alt_pattern;
     uint8_t target;
@@ -51,9 +47,9 @@ struct cli_ac_patt {
 };
 
 struct cli_ac_node {
-    uint8_t islast;
+    uint8_t leaf, final;
     struct cli_ac_patt *list;
-    struct cli_ac_node *trans[256], *fail;
+    struct cli_ac_node **trans, *fail;
 };
 
 #include "matcher.h"
@@ -63,6 +59,9 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint8_t trackle
 void cli_ac_freedata(struct cli_ac_data *data);
 int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, struct cli_ac_data *mdata, uint8_t otfrec, uint32_t offset, cli_file_t ftype, int fd, struct cli_matched_type **ftoffset);
 int cli_ac_buildtrie(struct cli_matcher *root);
+int cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth);
 void cli_ac_free(struct cli_matcher *root);
+int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, uint8_t target);
+
 
 #endif

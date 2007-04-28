@@ -46,9 +46,10 @@ struct cli_matcher {
     struct cli_bm_patt **bm_suffix;
 
     /* Extended Aho-Corasick */
-    uint8_t ac_depth;
+    uint8_t ac_mindepth, ac_maxdepth;
     struct cli_ac_node *ac_root, **ac_nodetable;
-    uint32_t ac_partsigs, ac_nodes;
+    struct cli_ac_patt **ac_pattable;
+    uint32_t ac_partsigs, ac_nodes, ac_patterns;
 };
 
 #define CL_TARGET_TABLE_SIZE 7

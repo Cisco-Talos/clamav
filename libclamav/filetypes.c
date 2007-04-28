@@ -381,13 +381,12 @@ int cli_addtypesigs(struct cl_engine *engine)
 	    return CL_EMEM;
 	}
 
-	root->ac_root =  (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));
-	if(!root->ac_root) {
-	    cli_errmsg("cli_addtypesigs: Can't initialise AC pattern matcher\n");
+	if((ret = cli_ac_init(root, AC_DEFAULT_MIN_DEPTH, AC_DEFAULT_MAX_DEPTH))) {
 	    /* No need to free previously allocated memory here - all engine
 	     * elements will be properly freed by cl_free()
 	     */
-	    return CL_EMEM;
+	    cli_errmsg("cli_addtypesigs: Can't initialise AC pattern matcher\n");
+	    return ret;
 	}
     } else {
 	root = engine->root[0];
