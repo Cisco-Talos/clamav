@@ -51,6 +51,8 @@
 #include "md5.h"
 #include "mew.h"
 #include "upack.h"
+#include "matcher.h"
+#include "matcher-bm.h"
 
 #ifndef	O_BINARY
 #define	O_BINARY	0
@@ -243,7 +245,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    struct pe_image_optional_hdr32 opt32;
 	} pe_opt;
 	struct pe_image_section_hdr *section_hdr;
-	struct cli_md5_node *md5_sect;
 	struct stat sb;
 	char sname[9], buff[4096], *tempfile;
 	unsigned char *ubuff;
@@ -254,8 +255,9 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	char *src = NULL, *dest = NULL;
 	int ndesc, ret = CL_CLEAN, upack = 0, native=0;
 	size_t fsize;
-	uint32_t valign, falign, hdr_size;
+	uint32_t valign, falign, hdr_size, j;
 	struct cli_exe_section *exe_sections;
+	struct cli_matcher *md5_sect;
 
 
     if(cli_readn(desc, &e_magic, sizeof(e_magic)) != sizeof(e_magic)) {
@@ -710,29 +712,27 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		}
 		return CL_CLEAN; /* no ninjas to see here! move along! */
 	    }
-	    
+
 	    /* check MD5 section sigs */
-	    if(DCONF & PE_CONF_MD5SECT)
-		md5_sect = ctx->engine->md5_sect;
-	    else
-		md5_sect = NULL;
+	    md5_sect = ctx->engine->md5_sect;
+	    if((DCONF & PE_CONF_MD5SECT) && md5_sect) {
+		found = 0;
+		for(j = 0; j < md5_sect->soff_len && md5_sect->soff[j] <= exe_sections[i].rsz; j++) {
+		    if(md5_sect->soff[j] == exe_sections[i].rsz) {
+			found = 1;
+			break;
+		    }
+		}
 
-	    while(md5_sect && md5_sect->size < exe_sections[i].rsz)
-	        md5_sect = md5_sect->next;
-
-	    if(md5_sect && md5_sect->size == exe_sections[i].rsz) {
-	        if(!cli_md5sect(desc, exe_sections[i].raw, exe_sections[i].rsz, md5_dig)) {
-		    cli_errmsg("PE: Can't calculate MD5 for section %d\n", i);
-		} else {
-		    while(md5_sect && md5_sect->size == exe_sections[i].rsz) {
-		        if(!memcmp(md5_dig, md5_sect->md5, 16)) {
-			    if(ctx->virname)
-			        *ctx->virname = md5_sect->virname;
+		if(found) {
+		    if(!cli_md5sect(desc, exe_sections[i].raw, exe_sections[i].rsz, md5_dig)) {
+			cli_errmsg("PE: Can't calculate MD5 for section %u\n", i);
+		    } else {
+			if(cli_bm_scanbuff(md5_dig, 16, ctx->virname, ctx->engine->md5_sect, 0, 0, -1) == CL_VIRUS) {
 			    free(section_hdr);
 			    free(exe_sections);
 			    return CL_VIRUS;
 			}
-			md5_sect = md5_sect->next;
 		    }
 		}
 	    }

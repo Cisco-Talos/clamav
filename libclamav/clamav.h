@@ -109,7 +109,7 @@ extern "C"
 
 /* internal structures */
 struct cli_md5_node {
-    char *virname, *viralias;
+    char *virname;
     unsigned char *md5;
     unsigned int size;
     unsigned short fp;
@@ -135,8 +135,8 @@ struct cl_engine {
     /* MD5 */
     struct cli_md5_node **md5_hlist;
 
-    /* MD5 list for PE sections */
-    struct cli_md5_node *md5_sect;
+    /* B-M matcher for MD5 sigs for PE sections */
+    void *md5_sect;
 
     /* Zip metadata */
     struct cli_meta_node *zip_mlist;

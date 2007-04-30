@@ -329,26 +329,26 @@ static int cli_initroots(struct cl_engine *engine, unsigned int options)
 	    cli_dbgmsg("Initializing engine->root[%d]\n", i);
 	    root = engine->root[i] = (struct cli_matcher *) cli_calloc(1, sizeof(struct cli_matcher));
 	    if(!root) {
-		cli_errmsg("Can't initialise AC pattern matcher\n");
+		cli_errmsg("cli_initroots: Can't allocate memory for cli_matcher\n");
 		return CL_EMEM;
 	    }
 
 	    if(options & CL_DB_ACONLY) {
-		cli_dbgmsg("Only using AC pattern matcher.\n");
+		cli_dbgmsg("cli_initroots: Only using AC pattern matcher.\n");
 		root->ac_only = 1;
 	    }
 
 	    cli_dbgmsg("Initialising AC pattern matcher of root[%d]\n", i);
 	    if((ret = cli_ac_init(root, AC_DEFAULT_MIN_DEPTH, AC_DEFAULT_MAX_DEPTH))) {
 		/* no need to free previously allocated memory here */
-		cli_errmsg("Can't initialise AC pattern matcher\n");
+		cli_errmsg("cli_initroots: Can't initialise AC pattern matcher\n");
 		return ret;
 	    }
 
 	    if(!root->ac_only) {
-		cli_dbgmsg("Initializing BM tables of root[%d]\n", i);
+		cli_dbgmsg("cli_initroots: Initializing BM tables of root[%d]\n", i);
 		if((ret = cli_bm_init(root))) {
-		    cli_errmsg("Can't initialise BM pattern matcher\n");
+		    cli_errmsg("cli_initroots: Can't initialise BM pattern matcher\n");
 		    return ret;
 		}
 	    }
@@ -600,12 +600,20 @@ static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
     return CL_SUCCESS;
 }
 
+static int scomp(const void *a, const void *b)
+{
+    return *(const uint32_t *)a - *(const uint32_t *)b;
+}
+
 static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo, unsigned short mode, unsigned int options)
 {
 	char buffer[FILEBUFF], *pt;
-	int line = 0, ret = 0;
-	unsigned int md5f = 0, sizef = 1;
-	struct cli_md5_node *new, *mpt, *last;
+	int ret = CL_SUCCESS;
+	uint8_t md5f = 0, sizef = 1, found;
+	uint32_t line = 0, i;
+	struct cli_md5_node *new;
+	struct cli_bm_patt *bm_new;
+	struct cli_matcher *md5_sect = NULL;
 
 
     if((ret = cli_initengine(engine, options))) {
@@ -638,7 +646,7 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	}
 
 	if(!(new->md5 = (unsigned char *) cli_hex2str(pt))) {
-	    cli_errmsg("Malformed MD5 string at line %d\n", line);
+	    cli_errmsg("cli_loadhdb: Malformed MD5 string at line %u\n", line);
 	    free(pt);
 	    free(new);
 	    ret = CL_EMALFDB;
@@ -662,32 +670,81 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	    break;
 	}
 
-	new->viralias = cli_strtok(buffer, 3, ":"); /* aliases are optional */
-
 	if(mode == 2) { /* section MD5 */
 	    if(!(*engine)->md5_sect) {
-		(*engine)->md5_sect = new;
-	    } else {
-		if(new->size <= (*engine)->md5_sect->size) {
-		    new->next = (*engine)->md5_sect;
-		    (*engine)->md5_sect = new;
-		} else {
-		    mpt = (*engine)->md5_sect;
-		    while(mpt) {
-			last = mpt;
-			if(!mpt->next || new->size <= mpt->next->size)
-			    break;
-			mpt = mpt->next;
-		    }
-		    new->next = last->next;
-		    last->next = new;
+		(*engine)->md5_sect = (struct cli_matcher *) cli_calloc(sizeof(struct cli_matcher), 1);
+		if(!(*engine)->md5_sect) {
+		    free(new->virname);
+		    free(new->md5);
+		    free(new);
+		    ret = CL_EMEM;
+		    break;
+		}
+		if((ret = cli_bm_init((*engine)->md5_sect))) {
+		    cli_errmsg("cli_loadhdb: Can't initialise BM pattern matcher\n");
+		    free(new->virname);
+		    free(new->md5);
+		    free(new);
+		    break;
 		}
 	    }
+	    md5_sect = (*engine)->md5_sect;
+
+	    bm_new = (struct cli_bm_patt *) cli_calloc(1, sizeof(struct cli_bm_patt));
+	    if(!bm_new) {
+		cli_errmsg("cli_loadhdb: Can't allocate memory for bm_new\n");
+		free(new->virname);
+		free(new->md5);
+		free(new);
+		ret = CL_EMEM;
+		break;
+	    }
+
+	    bm_new->pattern = new->md5;
+	    bm_new->length = 16;
+	    bm_new->virname = new->virname;
+
+	    found = 0;
+	    for(i = 0; i < md5_sect->soff_len; i++) {
+		if(md5_sect->soff[i] == new->size) {
+		    found = 1;
+		    break;
+		}
+	    }
+
+	    if(!found) {
+		md5_sect->soff_len++;
+		md5_sect->soff = (uint32_t *) cli_realloc(md5_sect->soff, md5_sect->soff_len * sizeof(uint32_t));
+		if(!md5_sect->soff) {
+		    cli_errmsg("cli_loadhdb: Can't realloc md5_sect->soff\n");
+		    free(bm_new->pattern);
+		    free(bm_new->virname);
+		    free(bm_new);
+		    free(new);
+		    ret = CL_EMEM;
+		    break;
+		}
+		md5_sect->soff[md5_sect->soff_len - 1] = new->size;
+	    }
+
+	    free(new);
+
+	    if((ret = cli_bm_addpatt(md5_sect, bm_new))) {
+		cli_errmsg("cli_loadhdb: Error adding BM pattern\n");
+		free(bm_new->pattern);
+		free(bm_new->virname);
+		free(bm_new);
+		break;
+	    }
+
 	} else {
 	    if(!(*engine)->md5_hlist) {
-		cli_dbgmsg("Initializing md5 list structure\n");
+		cli_dbgmsg("cli_loadhdb: Initializing MD5 list structure\n");
 		(*engine)->md5_hlist = (struct cli_md5_node **) cli_calloc(256, sizeof(struct cli_md5_node *));
 		if(!(*engine)->md5_hlist) {
+		    free(new->virname);
+		    free(new->md5);
+		    free(new);
 		    ret = CL_EMEM;
 		    break;
 		}
@@ -699,19 +756,22 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
     }
 
     if(!line) {
-	cli_errmsg("Empty database file\n");
+	cli_errmsg("cli_loadhdb: Empty database file\n");
 	cl_free(*engine);
 	return CL_EMALFDB;
     }
 
     if(ret) {
-	cli_errmsg("Problem parsing database at line %d\n", line);
+	cli_errmsg("cli_loadhdb: Problem parsing database at line %u\n", line);
 	cl_free(*engine);
 	return ret;
     }
 
     if(signo)
 	*signo += line;
+
+    if(md5_sect)
+	qsort(md5_sect->soff, md5_sect->soff_len, sizeof(uint32_t), scomp);
 
     return CL_SUCCESS;
 }
@@ -1450,7 +1510,6 @@ void cl_free(struct cl_engine *engine)
 		free(root);
 	    }
 	}
-
 	free(engine->root);
     }
 
@@ -1462,23 +1521,16 @@ void cl_free(struct cl_engine *engine)
 		md5pt = md5pt->next;
 		free(md5h->md5);
 		free(md5h->virname);
-		if(md5h->viralias)
-		    free(md5h->viralias);
 		free(md5h);
 	    }
 	}
 	free(engine->md5_hlist);
     }
 
-    md5pt = engine->md5_sect;
-    while(md5pt) {
-	md5h = md5pt;
-	md5pt = md5pt->next;
-	free(md5h->md5);
-	free(md5h->virname);
-	if(md5h->viralias)
-	    free(md5h->viralias);
-	free(md5h);
+    if((root = engine->md5_sect)) {
+	cli_bm_free(root);
+	free(root->soff);
+	free(root);
     }
 
     metapt = engine->zip_mlist;

@@ -27,7 +27,6 @@ struct cli_bm_patt {
     unsigned char *pattern;
     uint32_t length;
     char *virname, *offset;
-    const char *viralias;
     uint8_t target;
     struct cli_bm_patt *next;
 };

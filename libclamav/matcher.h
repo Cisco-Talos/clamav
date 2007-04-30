@@ -44,6 +44,7 @@ struct cli_matcher {
     /* Extended Boyer-Moore */
     int32_t *bm_shift;
     struct cli_bm_patt **bm_suffix;
+    uint32_t *soff, soff_len; /* for PE section sigs */
 
     /* Extended Aho-Corasick */
     uint8_t ac_mindepth, ac_maxdepth;

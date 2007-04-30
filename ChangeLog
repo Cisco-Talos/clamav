@@ -1,3 +1,7 @@
+Mon Apr 30 15:24:28 CEST 2007 (tk)
+----------------------------------
+  * libclamav: use BM matcher to handle .mdb sigs
+
 Sat Apr 28 22:26:00 EEST 2007 (edwin)
 ----------------------------------
   * libclamav/regex_list.c: update code to use new AC matcher
