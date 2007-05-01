@@ -39,6 +39,12 @@ struct dconf_module {
     uint8_t	state;	    /* default state (on/off) */
 };
 
+#ifdef CL_EXPERIMENTAL
+#define DCONF_ENABLE_EXPERIMENTAL 1
+#else
+#define DCONF_ENABLE_EXPERIMENTAL 0
+#endif
+
 static struct dconf_module modules[] = {
 
     { "PE",	    "PARITE",	    PE_CONF_PARITE,	    1 },
@@ -88,6 +94,9 @@ static struct dconf_module modules[] = {
     { "OTHER",	    "JPEG",	    OTHER_CONF_JPEG,	    1 },
     { "OTHER",	    "CRYPTFF",	    OTHER_CONF_CRYPTFF,	    1 },
 
+    { "PHISHING",   "ENGINE",       PHISHING_CONF_ENGINE,   1 },
+    { "PHISHING",   "ENTCONV",      PHISHING_CONF_ENTCONV,  DCONF_ENABLE_EXPERIMENTAL }, /* exp */
+
     { NULL,	    NULL,	    0,			    0 }
 };
 
@@ -125,6 +134,9 @@ struct cli_dconf *cli_dconf_init(void)
 	} else if(!strcmp(modules[i].mname, "OTHER")) {
 	    if(modules[i].state)
 		dconf->other |= modules[i].bflag;
+	} else if(!strcmp(modules[i].mname, "PHISHING")) {
+	    if(modules[i].state)
+		dconf->phishing |= modules[i].bflag;
 	}
     }
 
@@ -133,7 +145,7 @@ struct cli_dconf *cli_dconf_init(void)
 
 void cli_dconf_print(struct cli_dconf *dconf)
 {
-	uint8_t pe = 0, elf = 0, arch = 0, doc = 0, mail = 0, other = 0;
+	uint8_t pe = 0, elf = 0, arch = 0, doc = 0, mail = 0, other = 0, phishing=0;
 	unsigned int i;
 
 
@@ -194,6 +206,15 @@ void cli_dconf_print(struct cli_dconf *dconf)
 	    }
 	    if(dconf->other)
 		cli_dbgmsg("   * Submodule %10s:\t%s\n", modules[i].sname, (dconf->other & modules[i].bflag) ? "On" : "** Off **");
+	    else
+		continue;
+	} else if(!strcmp(modules[i].mname, "PHISHING")) {
+	    if(!phishing) {
+		cli_dbgmsg("Module PHISHING %s\n", dconf->phishing ? "On" : "Off");
+		phishing = 1;
+	    }
+	    if(dconf->phishing)
+		cli_dbgmsg("   * Submodule %10s:\t%s\n", modules[i].sname, (dconf->phishing & modules[i].bflag) ? "On" : "** Off **");
 	    else
 		continue;
 	}
@@ -304,6 +325,15 @@ int cli_dconf_load(FILE *fd, struct cl_engine **engine, unsigned int options)
 	if(!strncmp(buffer, "OTHER:", 6) && chkflevel(buffer, 2)) {
 	    if(sscanf(buffer + 6, "0x%x", &val) == 1) {
 		dconf->other = val;
+	    } else {
+		ret = CL_EMALFDB;
+		break;
+	    }
+	}
+
+	if(!strncmp(buffer, "PHISHING:", 9) && chkflevel(buffer, 2)) {
+	    if(sscanf(buffer + 9, "0x%x", &val) == 1) {
+		dconf->phishing = val;
 	    } else {
 		ret = CL_EMALFDB;
 		break;

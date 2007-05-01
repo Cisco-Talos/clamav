@@ -37,10 +37,8 @@
 #include "matcher-ac.h"
 #include "str.h"
 
-#ifdef CL_EXPERIMENTAL
 #include "htmlnorm.h"
 #include "entconv.h"
-#endif
 
 struct cli_magic_s {
     size_t offset;
@@ -287,8 +285,7 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 	    }
 	    cli_ac_freedata(&mdata);
 
-#ifdef CL_EXPERIMENTAL
-	    if(ret != CL_TYPE_HTML_UTF16) {
+	    if((((struct cli_dconf*) engine->dconf)->phishing & PHISHING_CONF_ENTCONV) && ret != CL_TYPE_HTML_UTF16) {
 		    struct entity_conv conv;
 		    const size_t conv_size = 2*bread < 256 ? 256 : 2*bread;
 
@@ -324,7 +321,6 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 		    cli_warnmsg("cli_filetype2: Error initializing entity converter\n");
 		}
 	    }
-#endif /* CL_EXPERIMENTAL */
 	}
     }
 

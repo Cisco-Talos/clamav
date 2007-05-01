@@ -31,6 +31,7 @@ struct cli_dconf {
     uint32_t doc;
     uint32_t mail;
     uint32_t other;
+    uint32_t phishing;
 };
 
 /* PE flags */
@@ -80,6 +81,9 @@ struct cli_dconf {
 #define OTHER_CONF_JPEG	    0x8
 #define OTHER_CONF_CRYPTFF  0x10
 
+/* Phishing flags */
+#define PHISHING_CONF_ENGINE   0x1
+#define PHISHING_CONF_ENTCONV  0x2
 
 struct cli_dconf *cli_dconf_init(void);
 void cli_dconf_print(struct cli_dconf *dconf);

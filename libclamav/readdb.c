@@ -55,12 +55,10 @@
 #include "lockdb.h"
 #include "readdb.h"
 
-#ifdef CL_EXPERIMENTAL
 #include "phishcheck.h"
 #include "phish_whitelist.h"
 #include "phish_domaincheck_db.h"
 #include "regex_list.h"
-#endif
 
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #include <limits.h>
@@ -275,9 +273,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
 int cli_initengine(struct cl_engine **engine, unsigned int options)
 {
-#ifdef CL_EXPERIMENTAL
 	int ret;
-#endif
 
 
     if(!*engine) {
@@ -309,11 +305,9 @@ int cli_initengine(struct cl_engine **engine, unsigned int options)
 	}
     }
 
-#ifdef CL_EXPERIMENTAL
-    if(options & CL_DB_PHISHING_URLS)
+    if((options & CL_DB_PHISHING_URLS) && (((struct cli_dconf*) (*engine)->dconf)->phishing & PHISHING_CONF_ENGINE))
 	if((ret = phishing_init(*engine)))
 	    return ret;
-#endif
 
     return CL_SUCCESS;
 }
@@ -418,7 +412,6 @@ static int cli_loaddb(FILE *fd, struct cl_engine **engine, unsigned int *signo, 
     return CL_SUCCESS;
 }
 
-#ifdef CL_EXPERIMENTAL
 static int cli_loadwdb(FILE *fd, struct cl_engine **engine, unsigned int options)
 {
 	int ret = 0;
@@ -428,6 +421,9 @@ static int cli_loadwdb(FILE *fd, struct cl_engine **engine, unsigned int options
 	cl_free(*engine);
 	return ret;
     }
+
+    if(!(((struct cli_dconf *) (*engine)->dconf)->phishing & PHISHING_CONF_ENGINE))
+	return CL_SUCCESS;
 
     if(!(*engine)->whitelist_matcher) {
 	if((ret = init_whitelist(*engine))) {
@@ -456,6 +452,9 @@ static int cli_loadpdb(FILE *fd, struct cl_engine **engine, unsigned int options
 	return ret;
     }
 
+    if(!(((struct cli_dconf *) (*engine)->dconf)->phishing & PHISHING_CONF_ENGINE))
+	return CL_SUCCESS;
+
     if(!(*engine)->domainlist_matcher) {
 	if((ret = init_domainlist(*engine))) {
 	    phishing_done(*engine);
@@ -472,7 +471,6 @@ static int cli_loadpdb(FILE *fd, struct cl_engine **engine, unsigned int options
 
     return CL_SUCCESS;
 }
-#endif
 
 #define NDB_TOKENS 6
 static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo, unsigned short sdb, unsigned int options)
@@ -1017,7 +1015,6 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
 	else
 #endif
 	    skipped = 1;
-#ifdef CL_EXPERIMENTAL
     } else if(cli_strbcasestr(filename, ".wdb")) {
 	if(options & CL_DB_PHISHING_URLS)
 	    ret = cli_loadwdb(fd, engine, options);
@@ -1028,7 +1025,6 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
 	    ret = cli_loadpdb(fd, engine, options);
 	else
 	    skipped = 1;
-#endif
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
 	ret = cli_loaddb(fd, engine, signo, options);
@@ -1108,10 +1104,8 @@ static int cli_loaddbdir_l(const char *dirname, struct cl_engine **engine, unsig
 	     cli_strbcasestr(dent->d_name, ".sdb")  ||
 	     cli_strbcasestr(dent->d_name, ".zmd")  ||
 	     cli_strbcasestr(dent->d_name, ".rmd")  ||
-#ifdef CL_EXPERIMENTAL
 	     cli_strbcasestr(dent->d_name, ".pdb")  ||
 	     cli_strbcasestr(dent->d_name, ".wdb")  ||
-#endif
 	     cli_strbcasestr(dent->d_name, ".ncdb") ||
 	     cli_strbcasestr(dent->d_name, ".inc")  ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
@@ -1265,10 +1259,8 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 
 	    cli_strbcasestr(dent->d_name, ".rmd")  || 
 	    cli_strbcasestr(dent->d_name, ".cfg")  ||
-#ifdef CL_EXPERIMENTAL
 	    cli_strbcasestr(dent->d_name, ".pdb")  ||
 	    cli_strbcasestr(dent->d_name, ".wdb")  ||
-#endif
 	    cli_strbcasestr(dent->d_name, ".ncdb")  ||
 	    cli_strbcasestr(dent->d_name, ".inc")   ||
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
@@ -1379,10 +1371,8 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 
 	    cli_strbcasestr(dent->d_name, ".rmd")  || 
 	    cli_strbcasestr(dent->d_name, ".cfg")  ||
-#ifdef CL_EXPERIMENTAL
 	    cli_strbcasestr(dent->d_name, ".pdb")  ||
 	    cli_strbcasestr(dent->d_name, ".wdb")  ||
-#endif
 	    cli_strbcasestr(dent->d_name, ".ncdb")  ||
 	    cli_strbcasestr(dent->d_name, ".inc")   ||
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
@@ -1553,9 +1543,8 @@ void cl_free(struct cl_engine *engine)
 	free(metah);
     }
 
-#ifdef CL_EXPERIMENTAL
-    phishing_done(engine);
-#endif
+    if(((struct cli_dconf *) engine->dconf)->phishing & PHISHING_CONF_ENGINE)
+	phishing_done(engine);
 
     if(engine->dconf)
 	free(engine->dconf);

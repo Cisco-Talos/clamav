@@ -431,7 +431,6 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	logg("HTML support disabled.\n");
     }
 
-#ifdef CL_EXPERIMENTAL
     if(cfgopt(copt,"PhishingScanURLs")->enabled) {
 
 	if(cfgopt(copt,"PhishingRestrictedScan")->enabled) {
@@ -457,7 +456,6 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	    logg("Phishing: Always checking for ssl mismatches\n");
 	}
     }
-#endif /* CL_EXPERIMENTAL */
 
     selfchk = cfgopt(copt, "SelfCheck")->numarg;
     if(!selfchk) {
