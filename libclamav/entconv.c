@@ -26,7 +26,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <dirent.h>
 #include <errno.h>
 
 
