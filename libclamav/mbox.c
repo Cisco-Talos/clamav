@@ -132,8 +132,6 @@ typedef	enum {
 
 #define	SAVE_TO_DISC	/* multipart/message are saved in a temporary file */
 
-#undef	WITH_CURL
-
 #define	FOLLOWURLS	5	/*
 				 * Maximum number of URLs scanned in a message
 				 * part. Helps to prevent Dialer.gen-45 and
@@ -1953,7 +1951,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 	message *mainMessage = messageIn;
 	fileblob *fb;
 	bool infected = FALSE;
-	const int doPhishingScan = mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS && (DCONF_PHISHING & PHISHING_CONF_ENGINE); 
+	const int doPhishingScan = mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS && (DCONF_PHISHING & PHISHING_CONF_ENGINE);
 
 	cli_dbgmsg("in parseEmailBody\n");
 
@@ -4918,7 +4916,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 					}
 				} else {
 					const int is_html = (tableFind(mctx->subtypeTable, cptr) == HTML);
-					if((mctx->ctx->options&CL_SCAN_MAILURL) && is_html)						
+					if((mctx->ctx->options&CL_SCAN_MAILURL) && is_html)
 						checkURLs(aMessage, mctx, rc, 1);
 					else if(doPhishingScan)
 						checkURLs(aMessage, mctx, rc, is_html);
