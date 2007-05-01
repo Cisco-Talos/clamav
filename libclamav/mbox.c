@@ -73,6 +73,9 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
 #include "str.h"
 #include "filetypes.h"
 #include "mbox.h"
+#include "dconf.h"
+
+#define DCONF_PHISHING mctx->ctx->dconf->phishing
 
 #ifdef	CL_DEBUG
 
@@ -141,13 +144,9 @@ typedef	enum {
 				 * 301/302 redirects we wish to follow
 				 */
 
-#ifdef	FOLLOWURLS
 #include "htmlnorm.h"
-#endif
 
-#ifdef CL_EXPERIMENTAL
 #include "phishcheck.h"
-#endif
 
 #ifndef	C_WINDOWS
 #include <netdb.h>
@@ -1954,9 +1953,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 	message *mainMessage = messageIn;
 	fileblob *fb;
 	bool infected = FALSE;
-#ifdef CL_EXPERIMENTAL
-	const int doPhishingScan = mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS; /* || (mctx->ctx->options&CL_SCAN_PHISHING_GA_TRAIN) || (mctx->ctx->options&CL_SCAN_PHISHING_GA);  kept here for the GA MERGE */
-#endif
+	const int doPhishingScan = mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS && (DCONF_PHISHING & PHISHING_CONF_ENGINE); 
 
 	cli_dbgmsg("in parseEmailBody\n");
 
@@ -2025,30 +2022,21 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 		case NOMIME:
 			cli_dbgmsg("Not a mime encoded message\n");
 			aText = textAddMessage(aText, mainMessage);
-#ifdef CL_EXPERIMENTAL
 			if(!doPhishingScan)
 				break;
 			/*
 			 * Fall through: some phishing mails claim they are
 			 * text/plain, when they are in fact html
 			 */
-#else
-			break;
-#endif
 		case TEXT:
 			/* text/plain has been preprocessed as no encoding */
-#ifdef CL_EXPERIMENTAL
-			if((subtype == HTML) || doPhishingScan) {
-#else
-			if((mctx->ctx->options&CL_SCAN_MAILURL) && (subtype == HTML))
-#endif
+			if(((mctx->ctx->options&CL_SCAN_MAILURL) && (subtype == HTML)) || doPhishingScan) {
 				/*
 				 * It would be better to save and scan the
 				 * file and only checkURLs if it's found to be
 				 * clean
 				 */
 				checkURLs(mainMessage, mctx, &rc, (subtype == HTML));
-#ifdef CL_EXPERIMENTAL
 				/*
 				 * There might be html sent without subtype
 				 * html too, so scan them for phishing
@@ -2056,7 +2044,6 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				if(rc == VIRUS)
 					infected = TRUE;
 			}
-#endif
 			break;
 		case MULTIPART:
 			cli_dbgmsg("Content-type 'multipart' handler\n");
@@ -3877,7 +3864,7 @@ getHrefs(message *m, tag_arguments_t *hrefs)
 	hrefs->contents = NULL;
 
 	cli_dbgmsg("getHrefs: calling html_normalise_mem\n");
-	if(!html_normalise_mem(blobGetData(b), (off_t)len, NULL, hrefs)) {
+	if(!html_normalise_mem(blobGetData(b), (off_t)len, NULL, hrefs,m->ctx->dconf)) {
 		blobDestroy(b);
 		return NULL;
 	}
@@ -3887,7 +3874,6 @@ getHrefs(message *m, tag_arguments_t *hrefs)
 	return b;
 }
 
-#ifdef CL_EXPERIMENTAL
 /*
  * Experimental: validate URLs for phishes
  * followurls: see if URLs point to malware
@@ -3898,8 +3884,7 @@ checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
 	blob *b;
 	tag_arguments_t hrefs;
 
-	/* aCaB: stripped GA related stuff */
-	hrefs.scanContents = mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS;
+	hrefs.scanContents = mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS && (DCONF_PHISHING & PHISHING_CONF_ENGINE);
 
 #if    (!defined(FOLLOWURLS)) || (FOLLOWURLS <= 0)
 	if(!hrefs.scanContents)
@@ -3916,7 +3901,7 @@ checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
 
 	b = getHrefs(mainMessage, &hrefs);
 	if(b) {
-		if(hrefs.scanContents /*mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS*/) {
+		if(hrefs.scanContents) {
 			if(phishingScan(mainMessage, mctx->dir, mctx->ctx, &hrefs) == CL_VIRUS) {
 				mainMessage->isInfected = TRUE;
 				*rc = VIRUS;
@@ -3929,27 +3914,6 @@ checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
 	hrefs_done(b,&hrefs);
 }
 
-#else	/*!CL_EXPERIMENTAL*/
-
-static void
-checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
-{
-	blob *b;
-	tag_arguments_t hrefs;
-
-	if(!is_html || (!(mctx->ctx->options&CL_SCAN_MAILURL)) || (*rc == VIRUS))
-		return;
-
-	hrefs.count = 0;
-	hrefs.tag = hrefs.value = NULL;
-	hrefs.contents = NULL;
-
-	b = getHrefs(mainMessage, &hrefs);
-	if(b)
-		do_checkURLs(mctx->dir, &hrefs);
-	hrefs_done(b, &hrefs);
-}
-#endif	/*CL_EXPERIMENTAL*/
 
 #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
 static void
@@ -4870,6 +4834,8 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 #endif
 	message *aMessage = messages[i];
 
+	const int doPhishingScan = mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS && (DCONF_PHISHING&PHISHING_CONF_ENGINE);
+
 	if(aMessage == NULL)
 		return mainMessage;
 
@@ -4952,12 +4918,10 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 					}
 				} else {
 					const int is_html = (tableFind(mctx->subtypeTable, cptr) == HTML);
-					if((mctx->ctx->options&CL_SCAN_MAILURL) && is_html)
+					if((mctx->ctx->options&CL_SCAN_MAILURL) && is_html)						
 						checkURLs(aMessage, mctx, rc, 1);
-#ifdef	CL_EXPERIMENTAL
-					else if(mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS)
+					else if(doPhishingScan)
 						checkURLs(aMessage, mctx, rc, is_html);
-#endif
 					messageAddArgument(aMessage,
 						"filename=mixedtextportion");
 				}

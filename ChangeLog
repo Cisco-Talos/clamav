@@ -1,6 +1,10 @@
+Tue May  1 18:13:09 BST 2007 (njh)
+----------------------------------
+  *	libclamav/mbox.c:	more phish enabling code
+
 Tue May  1 19:00:00 EEST 2007 (edwin)
 ----------------------------------
-  * apply next set of patches for enabling phishing code    
+  * apply next set of patches for enabling phishing code
 
 Tue May  1 17:20:53 CEST 2007 (tk)
 ----------------------------------
