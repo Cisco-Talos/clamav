@@ -360,9 +360,6 @@
 /* Version number of package */
 #undef VERSION
 
-/* use libcurl in mbox code */
-#undef WITH_CURL
-
 /* tcpwrappers support */
 #undef WITH_TCPWRAP
 

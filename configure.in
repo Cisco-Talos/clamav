@@ -224,51 +224,6 @@ then
     AC_CHECK_LIB(gmp, __gmpz_init, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; AC_DEFINE(HAVE_GMP,1,have gmp installed)], [AC_CHECK_LIB(gmp, mpz_init, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; AC_DEFINE(HAVE_GMP,1,have gmp installed)], AC_MSG_WARN([****** GNU MP 2 or newer NOT FOUND - digital signature support will be disabled !]); want_dsig="no")])
 fi
 
-dnl libcurl
-AC_ARG_WITH(libcurl,
-[  --with-libcurl	  support URLs downloading with libcurl (default=auto)],
-[ case "$withval" in
-  yes|no) lcurl="$withval" ;;
-  *)      AC_MSG_ERROR([--with-libcurl does not take an argument]) ;;
-  esac],
-[ lcurl=auto ])
-
-dnl Based on http://curl.signal42.com/libcurl/using/autoconf.html
-if test "$lcurl" != "no" -a "$enable_experimental" != "yes"
-then
-    my_cv_curl_vers=NONE
-    dnl check is the plain-text version of the required version
-    check="7.10.0"
-    dnl check_hex must be UPPERCASE if any hex letters are present
-    check_hex="070A00"
-
-    AC_MSG_CHECKING([for curl >= $check])
-
-    if eval curl-config --version 2>/dev/null >/dev/null; then
-	ver=`curl-config --version | sed -e "s/libcurl //g"`
-	hex_ver=`curl-config --vernum | tr 'a-f' 'A-F'`
-	fail=`echo "ibase=16; if($hex_ver<$check_hex) 1" | bc`
-
-	if test x$fail != x1; then
-	    curl_libs=`curl-config --libs`
-	    # openssl libs are required to link libcurl
-	    openssl_libs="`pkg-config --libs openssl`"
-	    curl_flags=`curl-config --cflags`
-	    LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $curl_libs $openssl_libs"
-	    CPPFLAGS="$CPPFLAGS -I$ZLIB_HOME/include $curl_flags"
-	    my_cv_curl_vers="$ver"
-	    AC_MSG_RESULT([$my_cv_curl_vers])
-	    AC_DEFINE(WITH_CURL,1,use libcurl in mbox code)
-	else
-	    AC_MSG_RESULT(FAILED)
-	    AC_MSG_WARN([$ver is too old. Need version $check or higher.])
-	fi
-    else
-	AC_MSG_RESULT(FAILED)
-	AC_MSG_WARN([curl-config was not found])
-    fi
-fi
-
 AC_ARG_ENABLE(pthreads,
 [  --disable-pthreads      disable POSIX threads support],
 have_pthreads=$enableval,)

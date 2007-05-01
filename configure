@@ -1527,7 +1527,6 @@ Optional Packages:
   --with-zlib=DIR	  path to directory containing zlib library (default=
 			  /usr/local or /usr if not found in /usr/local)
   --with-sendmail=PATH    specify location of Sendmail binary (default=auto find)
-  --with-libcurl	  support URLs downloading with libcurl (default=auto)
   --with-user=uid	  name of the clamav user (default=clamav)
   --with-group=gid	  name of the clamav group (default=clamav)
   --with-dbdir=path	  path to virus database directory
@@ -4713,7 +4712,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 4716 "configure"' > conftest.$ac_ext
+  echo '#line 4715 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7440,11 +7439,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7443: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7442: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7447: \$? = $ac_status" >&5
+   echo "$as_me:7446: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7708,11 +7707,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7711: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7710: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7715: \$? = $ac_status" >&5
+   echo "$as_me:7714: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7812,11 +7811,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7815: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7814: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7819: \$? = $ac_status" >&5
+   echo "$as_me:7818: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10109,7 +10108,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10112 "configure"
+#line 10111 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10209,7 +10208,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10212 "configure"
+#line 10211 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12545,11 +12544,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:12548: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:12547: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:12552: \$? = $ac_status" >&5
+   echo "$as_me:12551: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -12649,11 +12648,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:12652: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:12651: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:12656: \$? = $ac_status" >&5
+   echo "$as_me:12655: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -14210,11 +14209,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14213: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14212: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14217: \$? = $ac_status" >&5
+   echo "$as_me:14216: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14314,11 +14313,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14317: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14316: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14321: \$? = $ac_status" >&5
+   echo "$as_me:14320: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -16501,11 +16500,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16504: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16503: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:16508: \$? = $ac_status" >&5
+   echo "$as_me:16507: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -16769,11 +16768,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16772: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16771: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:16776: \$? = $ac_status" >&5
+   echo "$as_me:16775: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -16873,11 +16872,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16876: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16875: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:16880: \$? = $ac_status" >&5
+   echo "$as_me:16879: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -22616,63 +22615,6 @@ fi
 
 fi
 
-fi
-
-
-# Check whether --with-libcurl was given.
-if test "${with_libcurl+set}" = set; then
-  withval=$with_libcurl;  case "$withval" in
-  yes|no) lcurl="$withval" ;;
-  *)      { { echo "$as_me:$LINENO: error: --with-libcurl does not take an argument" >&5
-echo "$as_me: error: --with-libcurl does not take an argument" >&2;}
-   { (exit 1); exit 1; }; } ;;
-  esac
-else
-   lcurl=auto
-fi
-
-
-if test "$lcurl" != "no" -a "$enable_experimental" != "yes"
-then
-    my_cv_curl_vers=NONE
-        check="7.10.0"
-        check_hex="070A00"
-
-    { echo "$as_me:$LINENO: checking for curl >= $check" >&5
-echo $ECHO_N "checking for curl >= $check... $ECHO_C" >&6; }
-
-    if eval curl-config --version 2>/dev/null >/dev/null; then
-	ver=`curl-config --version | sed -e "s/libcurl //g"`
-	hex_ver=`curl-config --vernum | tr 'a-f' 'A-F'`
-	fail=`echo "ibase=16; if($hex_ver<$check_hex) 1" | bc`
-
-	if test x$fail != x1; then
-	    curl_libs=`curl-config --libs`
-	    # openssl libs are required to link libcurl
-	    openssl_libs="`pkg-config --libs openssl`"
-	    curl_flags=`curl-config --cflags`
-	    LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $curl_libs $openssl_libs"
-	    CPPFLAGS="$CPPFLAGS -I$ZLIB_HOME/include $curl_flags"
-	    my_cv_curl_vers="$ver"
-	    { echo "$as_me:$LINENO: result: $my_cv_curl_vers" >&5
-echo "${ECHO_T}$my_cv_curl_vers" >&6; }
-
-cat >>confdefs.h <<\_ACEOF
-#define WITH_CURL 1
-_ACEOF
-
-	else
-	    { echo "$as_me:$LINENO: result: FAILED" >&5
-echo "${ECHO_T}FAILED" >&6; }
-	    { echo "$as_me:$LINENO: WARNING: $ver is too old. Need version $check or higher." >&5
-echo "$as_me: WARNING: $ver is too old. Need version $check or higher." >&2;}
-	fi
-    else
-	{ echo "$as_me:$LINENO: result: FAILED" >&5
-echo "${ECHO_T}FAILED" >&6; }
-	{ echo "$as_me:$LINENO: WARNING: curl-config was not found" >&5
-echo "$as_me: WARNING: curl-config was not found" >&2;}
-    fi
 fi
 
 # Check whether --enable-pthreads was given.
