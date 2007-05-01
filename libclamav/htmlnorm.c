@@ -455,7 +455,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 {
 	int fd_tmp, tag_length, tag_arg_length, binary;
 	int retval=FALSE, escape, value = 0, hex, tag_val_length=0, table_pos, in_script=FALSE;
-	FILE *stream_in;
+	FILE *stream_in = NULL;
 	html_state state=HTML_NORM, next_state=HTML_BAD_STATE;
 	char filename[1024], tag[HTML_STR_LENGTH+1], tag_arg[HTML_STR_LENGTH+1];
 	char tag_val[HTML_STR_LENGTH+1], *tmp_file;
