@@ -49,10 +49,12 @@
 #include "others.h"
 #include "htmlnorm.h"
 
-#ifdef CL_EXPERIMENTAL
-#include "mbox.h"
+typedef enum {
+        INVALIDCLASS, BLOBCLASS
+} object_type;
+#include "blob.h"
+
 #include "entconv.h"
-#endif
 
 #define HTML_STR_LENGTH 1024
 #define MAX_TAG_CONTENTS_LENGTH HTML_STR_LENGTH
@@ -62,9 +64,7 @@ typedef enum {
     HTML_NORM,
     HTML_COMMENT,
     HTML_CHAR_REF,
-#ifdef CL_EXPERIMENTAL
     HTML_ENTITY_REF_DECODE,
-#endif
     HTML_SKIP_WS,
     HTML_TRIM_WS,
     HTML_TAG,
@@ -313,7 +313,6 @@ static void html_tag_arg_add(tag_arguments_t *tags,
 	if (!tags->value) {
 		goto abort;
 	}
-#ifdef CL_EXPERIMENTAL
 	if(tags->scanContents) {
 		tags->contents= (blob **) cli_realloc(tags->contents,
 				tags->count*sizeof(*tags->contents));
@@ -322,7 +321,6 @@ static void html_tag_arg_add(tag_arguments_t *tags,
 		}
 		tags->contents[tags->count-1]=NULL;
 	}
-#endif
 	tags->tag[tags->count-1] = cli_strdup(tag);
 	if (value) {
 		if (*value == '"') {
@@ -349,12 +347,10 @@ abort:
 		if (tags->value) {
 			free(tags->value[i]);
 		}
-#ifdef CL_EXPERIMENTAL
 		if(tags->contents) {
 			if(tags->contents[i])
 				blobDestroy(tags->contents[i]);
 		}
-#endif
 	}
 	if (tags->tag) {
 		free(tags->tag);
@@ -362,11 +358,9 @@ abort:
 	if (tags->value) {
 		free(tags->value);
 	}
-#ifdef CL_EXPERIMENTAL
 	if (tags->contents)
 		free(tags->contents);
 	tags->contents=NULL;
-#endif
 	tags->tag = tags->value = NULL;
 	tags->count = 0;	
 	return;
@@ -402,11 +396,9 @@ void html_tag_arg_free(tag_arguments_t *tags)
 		if (tags->value[i]) {
 			free(tags->value[i]);
 		}
-#ifdef CL_EXPERIMENTAL
 		if(tags->contents)
 			if (tags->contents[i])
 				blobDestroy(tags->contents[i]);
-#endif
 	}
 	if (tags->tag) {
 		free(tags->tag);
@@ -414,16 +406,13 @@ void html_tag_arg_free(tag_arguments_t *tags)
 	if (tags->value) {
 		free(tags->value);
 	}
-#ifdef CL_EXPERIMENTAL
 	if(tags->contents)
 		free(tags->contents);
 	tags->contents = NULL;
-#endif
 	tags->tag = tags->value = NULL;
 	tags->count = 0;
 }
 
-#ifdef CL_EXPERIMENTAL
 /**
  * this is used for img, and iframe tags. If they are inside an <a href> tag, then set the contents of the image|iframe to the real URL.
  */
@@ -460,9 +449,9 @@ static inline void html_tag_contents_length_check(tag_arguments_t *tags,int* idx
 		*idx=0;/*in_ahref=0;*/
 	}
 }
-#endif
 
-static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag_arguments_t *hrefs)
+
+static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag_arguments_t *hrefs,const struct cli_dconf* dconf)
 {
 	int fd_tmp, tag_length, tag_arg_length, binary;
 	int retval=FALSE, escape, value = 0, hex, tag_val_length=0, table_pos, in_script=FALSE;
@@ -476,21 +465,20 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	unsigned long length;
 	file_buff_t *file_buff_o1, *file_buff_o2, *file_buff_script;
 	file_buff_t *file_tmp_o1;
-#ifdef CL_EXPERIMENTAL
 	int in_ahref=0;/* index of <a> tag, whose contents we are parsing. Indexing starts from 1, 0 means outside of <a>*/
 	unsigned char* href_contents_begin=NULL;/*beginning of the next portion of <a> contents*/
 	unsigned char* ptrend=NULL;/*end of <a> contents*/
 	unsigned char* in_form_action = NULL;/* the action URL of the current <form> tag, if any*/
+
 	struct entity_conv conv;
 	int rc;
 	unsigned char entity_val[HTML_STR_LENGTH+1];
 	size_t entity_val_length = 0;
+	const int dconf_entconv = dconf && dconf->phishing&PHISHING_CONF_ENTCONV;
+	/* dconf for phishing engine sets scanContents, so no need for a flag here */
+
 
 	tag_args.scanContents=0;/* do we need to store the contents of <a></a>?*/
-	if(( rc = init_entity_converter(&conv, UNKNOWN, 16384) ))
-		return rc;
-#endif
-
 	if (!m_area) {
 		if (fd < 0) {
 			cli_dbgmsg("Invalid HTML fd\n");
@@ -508,12 +496,17 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 		}
 	}
 
+	if(dconf_entconv && (rc = init_entity_converter(&conv, UNKNOWN, 16384) )) {
+		if (!m_area) {
+			fclose(stream_in);
+		}
+		return rc;
+	}
+
 	tag_args.count = 0;
 	tag_args.tag = NULL;
 	tag_args.value = NULL;
-#ifdef CL_EXPERIMENTAL
 	tag_args.contents = NULL;
-#endif
 	
 	if (dirname) {
 		snprintf(filename, 1024, "%s/rfc2397", dirname);
@@ -589,17 +582,14 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	
 	binary = FALSE;
 
-#ifdef CL_EXPERIMENTAL
-	ptr = line = encoding_norm_readline(&conv, stream_in, m_area, 8192);
-#else
-	ptr = line = cli_readline(stream_in, m_area, 8192);
-#endif
+	if(dconf_entconv)
+		ptr = line = encoding_norm_readline(&conv, stream_in, m_area, 8192);
+	else   
+		ptr = line = cli_readline(stream_in, m_area, 8192);
 
 	while (line) {
-#ifdef CL_EXPERIMENTAL
 		if(href_contents_begin)
 			href_contents_begin=ptr;/*start of a new line, last line already appended to contents see below*/
-#endif
 		while (*ptr && isspace(*ptr)) {
 			ptr++;
 		}
@@ -647,21 +637,17 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				break;
 			case HTML_NORM:
 				if (*ptr == '<') {
-#ifdef CL_EXPERIMENTAL
 					ptrend=ptr; /* for use by scanContents */
-#endif
 					html_output_c(file_buff_o1, file_buff_o2, '<');
 					if (in_script) {
 						html_output_c(file_buff_script, NULL, '<');
 					}
-#ifdef CL_EXPERIMENTAL
 					if(hrefs && hrefs->scanContents && in_ahref && href_contents_begin) {
 						/*append this text portion to the contents of <a>*/
 						html_tag_contents_append(hrefs,in_ahref,href_contents_begin,ptr);
 						html_tag_contents_length_check(hrefs,&in_ahref);
 						href_contents_begin=NULL;/*We just encountered another tag inside <a>, so skip it*/
 					}
-#endif
 					ptr++;
 					state = HTML_SKIP_WS;
 					tag_length=0;
@@ -931,7 +917,6 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						in_script=FALSE;
 						html_output_c(file_buff_script, NULL, '\n');
 					}
-#ifdef CL_EXPERIMENTAL
 					if (hrefs && hrefs->scanContents && in_ahref) {
 						if(strcmp(tag,"/a") == 0) {
 							html_tag_contents_done(hrefs,in_ahref);
@@ -941,11 +926,10 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						href_contents_begin=ptr;
 					}
 					if (strcmp(tag, "/form") == 0)  {
-					if (in_form_action)
-						free(in_form_action);
+						if (in_form_action)
+							free(in_form_action);
 						in_form_action = NULL;
 					}
-#endif
 				} else if (strcmp(tag, "script") == 0) {
 					arg_value = html_tag_arg_value(&tag_args, "language");
 					if (arg_value && (strcasecmp(arg_value, "jscript.encode") == 0)) {
@@ -960,8 +944,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						in_script = TRUE;
 					}
 					html_output_tag(file_buff_script, tag, &tag_args);
-#ifdef CL_EXPERIMENTAL					
-				} else if (strcmp(tag, "meta") == 0) {
+				} else if (dconf_entconv && strcmp(tag, "meta") == 0) {
 					const unsigned char* http_equiv = html_tag_arg_value(&tag_args, "http-equiv");
 					const unsigned char* http_content = html_tag_arg_value(&tag_args, "content");
 					if(http_equiv && http_content && strcasecmp(http_equiv,"content-type") == 0) {
@@ -983,22 +966,18 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 								charset++;/* skip = */
 							len = strcspn((const char*)charset," \"'");
 							charset[len] = '\0';
-							if(len)
+							if(len) {
 								process_encoding_set(&conv, charset, META);
+							}
 						}
 						free(http_content2);
 					}
-
-#endif
 				} else if (hrefs) {
-#ifdef CL_EXPERIMENTAL
 					if(in_ahref && !href_contents_begin)
 						href_contents_begin=ptr;
-#endif
 					if (strcmp(tag, "a") == 0) {
 						arg_value = html_tag_arg_value(&tag_args, "href");
 						if (arg_value && strlen(arg_value) > 0) {
-#ifdef CL_EXPERIMENTAL
 							if (hrefs->scanContents) {
 								unsigned char* arg_value_title = html_tag_arg_value(&tag_args,"title");
 								/*beginning of an <a> tag*/
@@ -1028,17 +1007,13 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 									html_tag_contents_done(hrefs,hrefs->count);
 								}
 							}
-#endif
 							html_tag_arg_add(hrefs, "href", arg_value);
-#ifdef CL_EXPERIMENTAL
 							if (hrefs->scanContents) {
 								in_ahref=hrefs->count; /* index of this tag (counted from 1) */
 								href_contents_begin=ptr;/* contents begin after <a ..> ends */
 								hrefs->contents[hrefs->count-1]=blobCreate();
 							}
-#endif
 						}
-#ifdef CL_EXPERIMENTAL
 					} else if (strcmp(tag,"form") == 0 && hrefs->scanContents) {
 						const unsigned char* arg_action_value = html_tag_arg_value(&tag_args,"action");
 						if (arg_action_value) {
@@ -1046,12 +1021,10 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 								free(in_form_action);							
 							in_form_action = cli_strdup(arg_action_value);
 						}
-#endif
 					} else if (strcmp(tag, "img") == 0) {
 						arg_value = html_tag_arg_value(&tag_args, "src");
 						if (arg_value && strlen(arg_value) > 0) {
 							html_tag_arg_add(hrefs, "src", arg_value);
-#ifdef CL_EXPERIMENTAL
 							if(hrefs->scanContents && in_ahref)
 								/* "contents" of an img tag, is the URL of its parent <a> tag */
 								html_tag_set_inahref(hrefs,hrefs->count,in_ahref);
@@ -1063,12 +1036,10 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 										in_form_action + strlen(in_form_action));
 								html_tag_contents_done(hrefs,hrefs->count);
 							}
-#endif
 						}
 						arg_value = html_tag_arg_value(&tag_args, "dynsrc");
 						if (arg_value && strlen(arg_value) > 0) {
 							html_tag_arg_add(hrefs, "dynsrc", arg_value);
-#ifdef CL_EXPERIMENTAL
 							if(hrefs->scanContents && in_ahref)
 								/* see above */
 								html_tag_set_inahref(hrefs,hrefs->count,in_ahref);
@@ -1080,13 +1051,11 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 										in_form_action + strlen(in_form_action));
 								html_tag_contents_done(hrefs,hrefs->count);
 							}
-#endif
 						}
 					} else if (strcmp(tag, "iframe") == 0) {
 						arg_value = html_tag_arg_value(&tag_args, "src");
 						if (arg_value && strlen(arg_value) > 0) {
 							html_tag_arg_add(hrefs, "iframe", arg_value);
-#ifdef CL_EXPERIMENTAL
 							if(hrefs->scanContents && in_ahref)
 								/* see above */
 								html_tag_set_inahref(hrefs,hrefs->count,in_ahref);
@@ -1114,7 +1083,6 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 									in_form_action + strlen(in_form_action));
 								html_tag_contents_done(hrefs,hrefs->count);
 							}
-#endif
 						}						
 					}
 					/* TODO:imagemaps can have urls too */
@@ -1128,20 +1096,19 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					state = HTML_CHAR_REF_DECODE;
 					ptr++;
 				} else {
-#ifdef CL_EXPERIMENTAL
-					state = HTML_ENTITY_REF_DECODE;
-#else
-					if(next_state == HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
-						tag_val[tag_val_length++] = '&';
-					}
-					html_output_c(file_buff_o1, file_buff_o2, '&');
+					if(dconf_entconv)
+						state = HTML_ENTITY_REF_DECODE;
+					else {
+						if(next_state == HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
+							tag_val[tag_val_length++] = '&';
+						}
+						html_output_c(file_buff_o1, file_buff_o2, '&');
 
-					state = next_state;
-					next_state = HTML_BAD_STATE;
-#endif					
+						state = next_state;
+						next_state = HTML_BAD_STATE;
+					}
 				}
 				break;
-#ifdef CL_EXPERIMENTAL	
 			case HTML_ENTITY_REF_DECODE:
 				if(*ptr == ';') {
 					size_t i;
@@ -1203,29 +1170,27 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						entity_val_length = 0;
 				}
 				break;
-#endif
 			case HTML_CHAR_REF_DECODE:
 				if ((value==0) && ((*ptr == 'x') || (*ptr == 'X'))) {
 					hex=TRUE;
 					ptr++;
 				} else if (*ptr == ';') {
-#ifdef CL_EXPERIMENTAL
-					if (next_state==HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
-						tag_val[tag_val_length++] = value; /* store encoded values too */
-					}
+					if(dconf_entconv) {
+						if (next_state==HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
+							tag_val[tag_val_length++] = value; /* store encoded values too */
+						}
 
-					if(value < 0x80)
-						html_output_c(file_buff_o1, file_buff_o2, tolower(value));
-					else {
-						unsigned char buff[10];
-						snprintf((char*)buff,9,"&#%d;",value);
-						buff[9] = '\0';
-						html_output_str(file_buff_o1, buff, strlen(buff));
-						html_output_str(file_buff_o2, buff, strlen(buff));
-					}
-#else
-					html_output_c(file_buff_o1, file_buff_o2, value);
-#endif
+						if(value < 0x80)
+							html_output_c(file_buff_o1, file_buff_o2, tolower(value));
+						else {
+							unsigned char buff[10];
+							snprintf((char*)buff,9,"&#%d;",value);
+							buff[9] = '\0';
+							html_output_str(file_buff_o1, buff, strlen(buff));
+							html_output_str(file_buff_o2, buff, strlen(buff));
+						}
+					} else
+							html_output_c(file_buff_o1, file_buff_o2, tolower(value));
 					state = next_state;
 					next_state = HTML_BAD_STATE;
 					ptr++;
@@ -1510,22 +1475,19 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				break;	
 			}
 		}
-#ifdef CL_EXPERIMENTAL
 		if(hrefs && hrefs->scanContents && in_ahref && href_contents_begin)
 			/* end of line, append contents now, resume on next line */
 			html_tag_contents_append(hrefs,in_ahref,href_contents_begin,ptr);
 		ptrend = NULL;
-#endif
 		free(line);
-#ifdef CL_EXPERIMENTAL
-		ptr = line = encoding_norm_readline(&conv, stream_in, m_area, 8192);
-#else
-		ptr = line = cli_readline(stream_in, m_area, 8192);
-#endif /* not CL_EXPERIMENTAL */
+ 		if(dconf_entconv)
+ 			ptr = line = encoding_norm_readline(&conv, stream_in, m_area, 8192);
+ 		else
+ 			ptr = line = cli_readline(stream_in, m_area, 8192);
 	}
 	
-#ifdef CL_EXPERIMENTAL
-	{/* handle "unfinished" entitites */
+ 	if(dconf_entconv) {
+ 		/* handle "unfinished" entitites */
 		size_t i;
 		unsigned char* normalized;
 		entity_val[entity_val_length] = '\0';
@@ -1543,16 +1505,15 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 			}
 		}
 	}
-#endif
 	retval = TRUE;
 abort:
-#ifdef CL_EXPERIMENTAL
 	if (in_form_action)
 		free(in_form_action);
 	if (in_ahref) /* tag not closed, force closing */
 		html_tag_contents_done(hrefs,in_ahref);
-	entity_norm_done(&conv);
-#endif
+
+	if(dconf_entconv)
+		entity_norm_done(&conv);
 	html_tag_arg_free(&tag_args);
 	if (!m_area) {
 		fclose(stream_in);
@@ -1575,7 +1536,7 @@ abort:
 	return retval;
 }
 
-int html_normalise_mem(unsigned char *in_buff, off_t in_size, const char *dirname, tag_arguments_t *hrefs)
+int html_normalise_mem(unsigned char *in_buff, off_t in_size, const char *dirname, tag_arguments_t *hrefs,const struct cli_dconf* dconf)
 {
 	m_area_t m_area;
 	
@@ -1583,10 +1544,10 @@ int html_normalise_mem(unsigned char *in_buff, off_t in_size, const char *dirnam
 	m_area.length = in_size;
 	m_area.offset = 0;
 	
-	return cli_html_normalise(-1, &m_area, dirname, hrefs);
+	return cli_html_normalise(-1, &m_area, dirname, hrefs, dconf);
 }
 
-int html_normalise_fd(int fd, const char *dirname, tag_arguments_t *hrefs)
+int html_normalise_fd(int fd, const char *dirname, tag_arguments_t *hrefs,const struct cli_dconf* dconf)
 {
 #if HAVE_MMAP
 	int retval=FALSE;
@@ -1599,19 +1560,19 @@ int html_normalise_fd(int fd, const char *dirname, tag_arguments_t *hrefs)
 		m_area.offset = 0;
 		if (m_area.buffer == MAP_FAILED) {
 			cli_dbgmsg("mmap HTML failed\n");
-			retval = cli_html_normalise(fd, NULL, dirname, hrefs);
+			retval = cli_html_normalise(fd, NULL, dirname, hrefs, dconf);
 		} else {
 			cli_dbgmsg("mmap'ed file\n");
-			retval = cli_html_normalise(-1, &m_area, dirname, hrefs);
+			retval = cli_html_normalise(-1, &m_area, dirname, hrefs, dconf);
 			munmap(m_area.buffer, m_area.length);
 		}
 	} else {
 		cli_dbgmsg("fstat HTML failed\n");
-		retval = cli_html_normalise(fd, NULL, dirname, hrefs);
+		retval = cli_html_normalise(fd, NULL, dirname, hrefs, dconf);
 	}
 	return retval;
 #else
-	return cli_html_normalise(fd, NULL, dirname, hrefs);
+	return cli_html_normalise(fd, NULL, dirname, hrefs, dconf);
 #endif
 }
 

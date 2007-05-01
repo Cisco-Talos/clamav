@@ -20,7 +20,6 @@
  *
  */
 
-#ifdef CL_EXPERIMENTAL
 
 #ifndef _REGEX_LIST_H
 #define _REGEX_LIST_H
@@ -62,4 +61,3 @@ int is_regex_ok(struct regex_matcher* matcher);
 
 #endif
 
-#endif

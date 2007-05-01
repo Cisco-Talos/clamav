@@ -20,7 +20,6 @@
  *
  */
 
-#ifdef CL_EXPERIMENTAL
 
 #ifndef _PHISH_WHITELIST_H
 #define _PHISH_WHITELIST_H
@@ -35,4 +34,3 @@ int whitelist_match(const struct cl_engine* engine, const char* real_url,const c
 
 #endif
 
-#endif

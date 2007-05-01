@@ -24,8 +24,6 @@
 #include "clamav-config.h"
 #endif
 
-#ifdef CL_EXPERIMENTAL
-
 #ifndef CL_DEBUG
 #define NDEBUG
 #endif
@@ -746,18 +744,13 @@ cleanupURL(struct string *URL, int isReal)
 }
 
 
-/* ---- runtime disable ------*/
-void phish_disable(struct cl_engine* engine, const char* reason)
-{
-	cli_warnmsg("Disabling phishing checks, reason:%s\n",reason);
-	phishing_done(engine);/* sets is_disabled, and frees allocated mem for phishcheck */
-}
 /* -------end runtime disable---------*/
 
 int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 {
 	int i;
 	struct phishcheck* pchk = (struct phishcheck*) ctx->engine->phishcheck;
+	/* check for status of whitelist fatal error, etc. */
 	if(!pchk || pchk->is_disabled)
 		return CL_CLEAN;
 
@@ -1285,4 +1278,3 @@ static const char* phishing_ret_toString(enum phish_status rc)
 	}
 }
 
-#endif
