@@ -35,6 +35,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <string.h>
+#include <signal.h>
 
 #define	PORT	3310
 #define	LEN	128
@@ -53,7 +54,8 @@ static struct machine {
 } machines[] = {
 	{	"eric",		0,	-1	},
 	/*{	"motorola",	0,	-1	},*/
-	{	"ultra60",	0,	-1	},
+	/*{	"ultra60",	0,	-1	},*/
+	{	"mac",		0,	-1	},
 	{	"localhost",	0,	-1	},
 	{	NULL,		0,	-1	}
 };
@@ -90,6 +92,9 @@ main(int argc, char **argv)
 		if(m->sock < 0)
 			fprintf(stderr, "%s is down\n", m->name);
 	}
+
+	signal(SIGPIPE, SIG_IGN);
+
 	while(*++argv)
 		dir(*argv);
 
@@ -174,7 +179,7 @@ dir(const char *dirname)
 			pthread_create(&tids[nthreads], NULL, scan, &args[nthreads]);
 			nthreads++;
 		}
-		printf("Scanning %s\n", name);
+		/*printf("Scanning %s\n", name);*/
 		founddiffs = 0;
 		while(--nthreads >= 0)
 			/* TODO: timeout */
@@ -199,8 +204,8 @@ dir(const char *dirname)
 			}
 		}
 
-		if(!founddiffs)
-			printf("%s passed\n", name);
+		/*if(!founddiffs)
+			printf("%s passed\n", name);*/
 	}
 	closedir(d);
 }
@@ -308,8 +313,6 @@ scan(void *v)
 		return NULL;
 	}
 
-	shutdown(sock, SHUT_RD);
-
 	nbytes = recv(m->sock, buf, sizeof(buf), 0);
 	if(nbytes <= 0) {
 		perror(m->name);
@@ -339,12 +342,22 @@ scan(void *v)
 		fclose(fin);
 		return NULL;
 	}
-	while((buflen = fread(buf, 1, sizeof(buf), fin)) > 0)
-		if(send(sock, buf, buflen, 0) != (ssize_t)buflen) {
-			/* Proably hit scanstream len */
-			perror(m->name);
+
+	shutdown(sock, SHUT_RD);
+
+	while((buflen = fread(buf, 1, sizeof(buf), fin)) > 0) {
+		ssize_t sent = send(sock, buf, buflen, 0);
+
+		if(sent != (ssize_t)buflen) {
+			/* Probably hit scanstream len */
+			if(sent < 0)
+				perror(m->name);
+			else
+				fprintf(stderr, "%s: only sent %d bytes of %d to %s\n",
+					args->filename, sent, buflen, m->name);
 			break;
 		}
+	}
 
 	close(sock);
 	fclose(fin);
@@ -355,7 +368,7 @@ scan(void *v)
 		perror(m->name);
 		return NULL;
 	}
-	args->ret[nbytes - 1] = '\0';	/* remove the trailing \n */
+	args->ret[(nbytes) ? (nbytes - 1) : 0] = '\0';	/* remove the trailing \n */
 
 	return NULL;
 }
