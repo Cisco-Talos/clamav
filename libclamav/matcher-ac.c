@@ -334,6 +334,9 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
 	uint8_t found;
 
 
+    if(offset + pattern->length > length)
+	return 0;
+
     if(pattern->prefix)
 	if(pattern->prefix_length > offset)
 	    return 0;
