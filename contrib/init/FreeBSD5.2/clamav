@@ -45,5 +45,4 @@ rcvar="`set_rcvar`"
 command="/usr/local/sbin/clamav-milter"
 
 load_rc_config $name
-sleep 1	;# allow time for clamd to start
 run_rc_command "$1"
