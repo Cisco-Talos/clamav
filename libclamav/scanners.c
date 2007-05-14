@@ -184,17 +184,6 @@ static int cli_unrar_scanmetadata(int desc, rar_metadata_t *metadata, cli_ctx *c
 static int cli_unrar_checklimits(const cli_ctx *ctx, const rar_metadata_t *metadata, unsigned int files)
 {
     if(ctx->limits) {
-	if(ctx->limits->maxratio && metadata->unpack_size && metadata->pack_size) {
-	    if(metadata->unpack_size / metadata->pack_size >= ctx->limits->maxratio) {
-		cli_dbgmsg("RAR: Max ratio reached (%u, max: %u)\n", (unsigned int) (metadata->unpack_size / metadata->pack_size), ctx->limits->maxratio);
-		if(BLOCKMAX) {
-		    *ctx->virname = "Oversized.RAR";
-		    return CL_VIRUS;
-		}
-		return CL_EMAXSIZE;
-	    }
-	}
-
 	if(ctx->limits->maxfilesize && (metadata->unpack_size > ctx->limits->maxfilesize)) {
 	    cli_dbgmsg("RAR: %s: Size exceeded (%lu, max: %lu)\n", metadata->filename, (unsigned long int) metadata->unpack_size, ctx->limits->maxfilesize);
 	    if(BLOCKMAX) {
@@ -202,6 +191,21 @@ static int cli_unrar_checklimits(const cli_ctx *ctx, const rar_metadata_t *metad
 		return CL_VIRUS;
 	    }
 	    return CL_EMAXSIZE;
+	}
+
+	if(ctx->limits->maxratio && metadata->unpack_size && metadata->pack_size) {
+	    if(metadata->unpack_size / metadata->pack_size >= ctx->limits->maxratio) {
+		cli_dbgmsg("RAR: Max ratio reached (%u, max: %u)\n", (unsigned int) (metadata->unpack_size / metadata->pack_size), ctx->limits->maxratio);
+		if(ctx->limits->maxfilesize && (metadata->unpack_size <= ctx->limits->maxfilesize)) {
+		    cli_dbgmsg("RAR: Ignoring ratio limit (file size doesn't hit limits)\n");
+		} else {
+		    if(BLOCKMAX) {
+			*ctx->virname = "Oversized.RAR";
+			return CL_VIRUS;
+		    }
+		    return CL_EMAXSIZE;
+		}
+	    }
 	}
 
 	if(ctx->limits->maxfiles && (files > ctx->limits->maxfiles)) {
@@ -435,9 +439,13 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	}
 
 	if(ctx->limits && ctx->limits->maxratio > 0 && ((unsigned) zdirent.st_size / (unsigned) zdirent.d_csize) >= ctx->limits->maxratio) {
-	    *ctx->virname = "Oversized.Zip";
-	    ret = CL_VIRUS;
-	    break;
+	    if(ctx->limits->maxfilesize && ((unsigned int) zdirent.st_size <= ctx->limits->maxfilesize)) {
+		cli_dbgmsg("Zip: Ignoring ratio limit (file size doesn't hit limits)\n");
+	    } else {
+		*ctx->virname = "Oversized.Zip";
+		ret = CL_VIRUS;
+		break;
+	    }
         }
 
 	if(DETECT_ENCRYPTED && encrypted) {

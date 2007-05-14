@@ -1,3 +1,8 @@
+Mon May 14 17:43:27 CEST 2007 (tk)
+----------------------------------
+  * libclamav/scanners.c: if possible, only use ratio limit for files which
+			  don't exceed file size limit (requested by Christoph)
+
 Wed May  2 12:29:28 CEST 2007 (tk)
 ----------------------------------
   * libclamav/others.c: fix cli_malloc() call in C_WINDOWS (bb#477)
