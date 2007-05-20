@@ -190,6 +190,7 @@ static const struct cli_smagic_s cli_smagic[] = {
     {"526172211a0700", "RAR-SFX", CL_TYPE_RARSFX},
     {"504b0304", "ZIP-SFX", CL_TYPE_ZIPSFX},
     {"4d534346", "CAB-SFX", CL_TYPE_CABSFX},
+    {"efbeadde4e756c6c736f6674496e7374", "NSIS", CL_TYPE_NULSFT},
 
     {"4d5a{180-300}50450000", "PE", CL_TYPE_MSEXE},
 

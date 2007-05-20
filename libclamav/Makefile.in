@@ -85,8 +85,9 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher-ncore.lo \
 	petite.lo wwunpack.lo suecrypt.lo unsp.lo packlibs.lo fsg.lo \
 	mew.lo upack.lo line.lo untar.lo unzip.lo special.lo binhex.lo \
 	is_tar.lo tnef.lo unrar15.lo unrarvm.lo unrar.lo \
-	unrarfilter.lo unrarppm.lo unrar20.lo unrarcmd.lo pdf.lo \
-	spin.lo yc.lo elf.lo sis.lo uuencode.lo pst.lo phishcheck.lo \
+	unrarfilter.lo unrarppm.lo unrar20.lo unrarcmd.lo \
+	LZMADecode.lo bzlib.lo infblock.lo nulsft.lo pdf.lo spin.lo \
+	yc.lo elf.lo sis.lo uuencode.lo pst.lo phishcheck.lo \
 	phish_domaincheck_db.lo phish_whitelist.lo regex_list.lo \
 	sha256.lo mspack.lo cab.lo entconv.lo hashtab.lo dconf.lo \
 	lockdb.lo
@@ -234,7 +235,7 @@ target_alias = @target_alias@
 target_cpu = @target_cpu@
 target_os = @target_os@
 target_vendor = @target_vendor@
-INCLUDES = -I$(top_srcdir) -I@srcdir@/unrar
+INCLUDES = -I$(top_srcdir) -I@srcdir@/unrar -I@srcdir@/nsis
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@ @THREAD_LIBS@
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 include_HEADERS = clamav.h
@@ -339,6 +340,17 @@ libclamav_la_SOURCES = \
 	unrar/unrarcmd.c \
 	unrar/unrarfilter.h \
 	unrar/unrarppm.h \
+	nsis/LZMADecode.c \
+	nsis/LZMADecode.h \
+	nsis/bzlib.c \
+	nsis/bzlib_private.h \
+	nsis/infblock.c \
+	nsis/nsis_bzlib.h \
+	nsis/nsis_zconf.h \
+	nsis/nsis_zlib.h \
+	nsis/nsis_zutil.h \
+	nsis/nulsft.c \
+	nsis/nulsft.h \
 	pdf.c \
 	pdf.h \
 	spin.c \
@@ -450,8 +462,10 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/LZMADecode.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/binhex.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/blob.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bzlib.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cab.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chmunpack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cvd.Plo@am__quote@
@@ -463,6 +477,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fsg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hashtab.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/htmlnorm.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/infblock.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/is_tar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/line.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lockdb.Plo@am__quote@
@@ -476,6 +491,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mew.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msexpand.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mspack.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nulsft.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ole2_extract.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/others.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/packlibs.Plo@am__quote@
@@ -587,6 +603,34 @@ unrarcmd.lo: unrar/unrarcmd.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unrar/unrarcmd.c' object='unrarcmd.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrarcmd.lo `test -f 'unrar/unrarcmd.c' || echo '$(srcdir)/'`unrar/unrarcmd.c
+
+LZMADecode.lo: nsis/LZMADecode.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT LZMADecode.lo -MD -MP -MF "$(DEPDIR)/LZMADecode.Tpo" -c -o LZMADecode.lo `test -f 'nsis/LZMADecode.c' || echo '$(srcdir)/'`nsis/LZMADecode.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/LZMADecode.Tpo" "$(DEPDIR)/LZMADecode.Plo"; else rm -f "$(DEPDIR)/LZMADecode.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='nsis/LZMADecode.c' object='LZMADecode.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o LZMADecode.lo `test -f 'nsis/LZMADecode.c' || echo '$(srcdir)/'`nsis/LZMADecode.c
+
+bzlib.lo: nsis/bzlib.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT bzlib.lo -MD -MP -MF "$(DEPDIR)/bzlib.Tpo" -c -o bzlib.lo `test -f 'nsis/bzlib.c' || echo '$(srcdir)/'`nsis/bzlib.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/bzlib.Tpo" "$(DEPDIR)/bzlib.Plo"; else rm -f "$(DEPDIR)/bzlib.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='nsis/bzlib.c' object='bzlib.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o bzlib.lo `test -f 'nsis/bzlib.c' || echo '$(srcdir)/'`nsis/bzlib.c
+
+infblock.lo: nsis/infblock.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT infblock.lo -MD -MP -MF "$(DEPDIR)/infblock.Tpo" -c -o infblock.lo `test -f 'nsis/infblock.c' || echo '$(srcdir)/'`nsis/infblock.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/infblock.Tpo" "$(DEPDIR)/infblock.Plo"; else rm -f "$(DEPDIR)/infblock.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='nsis/infblock.c' object='infblock.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o infblock.lo `test -f 'nsis/infblock.c' || echo '$(srcdir)/'`nsis/infblock.c
+
+nulsft.lo: nsis/nulsft.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT nulsft.lo -MD -MP -MF "$(DEPDIR)/nulsft.Tpo" -c -o nulsft.lo `test -f 'nsis/nulsft.c' || echo '$(srcdir)/'`nsis/nulsft.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/nulsft.Tpo" "$(DEPDIR)/nulsft.Plo"; else rm -f "$(DEPDIR)/nulsft.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='nsis/nulsft.c' object='nulsft.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o nulsft.lo `test -f 'nsis/nulsft.c' || echo '$(srcdir)/'`nsis/nulsft.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

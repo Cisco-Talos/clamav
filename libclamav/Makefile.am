@@ -17,7 +17,7 @@
 #  MA 02110-1301, USA.
 
 
-INCLUDES = -I$(top_srcdir) -I@srcdir@/unrar
+INCLUDES = -I$(top_srcdir) -I@srcdir@/unrar -I@srcdir@/nsis
 
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@ @THREAD_LIBS@
 
@@ -126,6 +126,17 @@ libclamav_la_SOURCES = \
 	unrar/unrarcmd.c \
 	unrar/unrarfilter.h \
 	unrar/unrarppm.h \
+	nsis/LZMADecode.c \
+	nsis/LZMADecode.h \
+	nsis/bzlib.c \
+	nsis/bzlib_private.h \
+	nsis/infblock.c \
+	nsis/nsis_bzlib.h \
+	nsis/nsis_zconf.h \
+	nsis/nsis_zlib.h \
+	nsis/nsis_zutil.h \
+	nsis/nulsft.c \
+	nsis/nulsft.h \
 	pdf.c \
 	pdf.h \
 	spin.c \

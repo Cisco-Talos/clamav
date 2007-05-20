@@ -85,6 +85,7 @@ extern short cli_leavetemps_flag;
 #include "mspack.h"
 #include "cab.h"
 #include "rtf.h"
+#include "nulsft.h"
 
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>
@@ -806,6 +807,71 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
     return ret;
 }
 #endif
+
+static int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
+        int ret;
+	struct nsis_st nsist;
+
+    cli_dbgmsg("in scannulsft()\n");
+    if(ctx->limits && ctx->limits->maxreclevel && ctx->arec >= ctx->limits->maxreclevel) {
+        cli_dbgmsg("Archive recursion limit exceeded (arec == %u).\n", ctx->arec+1);
+	return CL_EMAXREC;
+    }
+
+    memset(&nsist, 0, sizeof(struct nsis_st));
+
+    nsist.ifd = desc;
+    nsist.off = offset;
+    nsist.dir = cli_gentemp(NULL);
+    if(mkdir(nsist.dir, 0700)) {
+	cli_dbgmsg("NSIS: Can't create temporary directory %s\n", nsist.dir);
+	free(nsist.dir);
+	return CL_ETMPDIR;
+    }
+
+    ctx->arec++;
+
+    do {
+        ret = cli_nsis_unpack(&nsist, ctx);
+	if(ret != CL_SUCCESS) {
+	    if(ret == CL_EMAXSIZE) {
+	        if(BLOCKMAX) {
+		    *ctx->virname = "NSIS.ExceededFileSize";
+		    ret=CL_VIRUS;
+		} else {
+		    ret = nsist.solid ? CL_BREAK : CL_SUCCESS;
+		}
+	    }
+
+	    if(ret == CL_ESUPPORT) /* bzip2 code not compiled in, continue */
+		ret = CL_SUCCESS;
+
+	} else {
+	    cli_dbgmsg("NSIS: Successully extracted file #%u\n", nsist.fno);
+	    lseek(nsist.ofd, 0, SEEK_SET);
+	    if(nsist.fno == 1)
+	        ret=cli_scandesc(nsist.ofd, ctx, 0, 0, 0, NULL);
+	    else
+	        ret=cli_magic_scandesc(nsist.ofd, ctx);
+	    close(nsist.ofd);
+	    if(!cli_leavetemps_flag)
+	        unlink(nsist.ofn);
+	}
+    } while(ret == CL_SUCCESS);
+
+    if(ret == CL_BREAK)
+	ret = CL_CLEAN;
+
+    cli_nsis_free(&nsist);
+
+    if(!cli_leavetemps_flag)
+        cli_rmdirs(nsist.dir);
+
+    free(nsist.dir);
+
+    ctx->arec--;    
+    return ret;
+}
 
 static int cli_scanszdd(int desc, cli_ctx *ctx)
 {
@@ -1814,6 +1880,13 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 			}
 			break;
 
+		    case CL_TYPE_NULSFT:
+		        if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && fpt->offset > 4 /* FIXMENSIS && (DCONF_ARCH & ARCH_CONF_NSIS) */) {
+			    cli_dbgmsg("NSIS signature found at %u\n", (unsigned int) fpt->offset-4);
+			    nret = cli_scannulsft(desc, ctx, fpt->offset - 4);
+			}
+			break;
+
 		    case CL_TYPE_MSEXE:
 			if(SCAN_PE && ctx->dconf->pe && fpt->offset) {
 			    cli_dbgmsg("PE signature found at %u\n", (unsigned int) fpt->offset);
@@ -1958,6 +2031,11 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_BZ))
 		ret = cli_scanbzip(desc, ctx);
 #endif
+	    break;
+
+        case CL_TYPE_NULSFT:
+	    if(SCAN_ARCHIVE)
+		ret = cli_scannulsft(desc, ctx, 0);
 	    break;
 
 	case CL_TYPE_MSSZDD:
