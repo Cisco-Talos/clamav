@@ -25,8 +25,8 @@
 
 */
 
-#ifndef _ZLIB_H
-#define _ZLIB_H
+#ifndef _NSIS_ZLIB_H
+#define _NSIS_ZLIB_H
 
 #include "nsis_zconf.h"
 #include "nsis_zutil.h"

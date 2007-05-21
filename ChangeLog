@@ -1,7 +1,13 @@
+Mon May 21 20:48:00 EEST 2007 (edwin)
+----------------------------------
+  * libclamav/nsis/nsis_zlib.h: use _NSIS_ZLIB_H instead of _ZLIB_H
+
 Mon May 21 12:58:51 CEST 2007 (acab)
+----------------------------------
   * libclamav/nsis: more NSIS typos (reported by Gianluigi Tiesi)
 
 Mon May 21 12:51:17 CEST 2007 (acab)
+----------------------------------
   * libclamav/nsis: NSIS related typos (thx njh)
 
 Mon May 21 11:33:07 CEST 2007 (tk)
