@@ -85,7 +85,7 @@ extern short cli_leavetemps_flag;
 #include "mspack.h"
 #include "cab.h"
 #include "rtf.h"
-#include "nulsft.h"
+#include "nsis/nulsft.h"
 
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>
