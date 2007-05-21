@@ -304,7 +304,7 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 	return CL_EMEM;
       }
       if (cli_readn(n->ifd, n->freeme, n->asz) != (ssize_t) n->asz) {
-	cli_dbgmsg("NSIS: cannot read %u bytes"__AT__"\n", size);
+	cli_dbgmsg("NSIS: cannot read %u bytes"__AT__"\n", n->asz);
 	close(n->ofd);
 	return CL_EIO;
       }
