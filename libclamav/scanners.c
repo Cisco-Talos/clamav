@@ -1877,7 +1877,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 			break;
 
 		    case CL_TYPE_NULSFT:
-		        if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && fpt->offset > 4 /* FIXMENSIS && (DCONF_ARCH & ARCH_CONF_NSIS) */) {
+		        if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_NSIS) && fpt->offset > 4) {
 			    cli_dbgmsg("NSIS signature found at %u\n", (unsigned int) fpt->offset-4);
 			    nret = cli_scannulsft(desc, ctx, fpt->offset - 4);
 			}

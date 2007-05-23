@@ -1,3 +1,7 @@
+Wed May 23 15:30:32 CEST 2007 (tk)
+----------------------------------
+  * libclamav: DCONF support for NSIS
+
 Wed May 23 15:14:44 CEST 2007 (tk)
 ----------------------------------
   * libclamav/nsis: make the code independent of external bzlib

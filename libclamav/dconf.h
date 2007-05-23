@@ -63,6 +63,7 @@ struct cli_dconf {
 #define ARCH_CONF_TAR	    0x100
 #define ARCH_CONF_BINHEX    0x200
 #define ARCH_CONF_SIS	    0x400
+#define ARCH_CONF_NSIS	    0x800
 
 /* Document flags */
 #define DOC_CONF_HTML	    0x1
