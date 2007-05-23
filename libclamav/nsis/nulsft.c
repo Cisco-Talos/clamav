@@ -32,9 +32,7 @@
 #include "nulsft.h"
 #include "others.h"
 #include "cltypes.h"
-#ifdef HAVE_BZLIB_H
 #include "nsis_bzlib.h"
-#endif
 #include "LZMADecode.h"
 #include "nsis_zlib.h"
 
@@ -59,15 +57,10 @@ enum {
 static int nsis_init(struct nsis_st *n) {
   switch(n->comp) {
   case COMP_BZIP2:
-#ifdef HAVE_BZLIB_H
     if (nsis_BZ2_bzDecompressInit(&n->bz, 0, 0)!=BZ_OK)
       return CL_EBZIP;
     n->freecomp=1;
     break;
-#else
-    cli_warnmsg("NSIS: Bzip2 support not compiled in\n");
-    return CL_ESUPPORT;
-#endif
   case COMP_LZMA:
     lzmaInit(&n->lz);
     n->freecomp=1;
@@ -85,9 +78,7 @@ static void nsis_shutdown(struct nsis_st *n) {
 
   switch(n->comp) {
   case COMP_BZIP2:
-#ifdef HAVE_BZLIB_H
     nsis_BZ2_bzDecompressEnd(&n->bz);
-#endif
     break;
   case COMP_LZMA:
     lzmaShutdown(&n->lz);
@@ -102,7 +93,6 @@ static int nsis_decomp(struct nsis_st *n) {
   int ret = CL_EFORMAT;
   switch(n->comp) {
   case COMP_BZIP2:
-#ifdef HAVE_BZLIB_H
     n->bz.avail_in = n->nsis.avail_in;
     n->bz.next_in = n->nsis.next_in;
     n->bz.avail_out = n->nsis.avail_out;
@@ -118,7 +108,6 @@ static int nsis_decomp(struct nsis_st *n) {
     n->nsis.next_in = n->bz.next_in;
     n->nsis.avail_out = n->bz.avail_out;
     n->nsis.next_out = n->bz.next_out;
-#endif /* HAVE_BZLIB_H */
     break;
   case COMP_LZMA:
     n->lz.avail_in = n->nsis.avail_in;

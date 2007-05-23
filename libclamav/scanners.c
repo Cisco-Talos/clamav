@@ -842,10 +842,6 @@ static int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
 		    ret = nsist.solid ? CL_BREAK : CL_SUCCESS;
 		}
 	    }
-
-	    if(ret == CL_ESUPPORT) /* bzip2 code not compiled in, continue */
-		ret = CL_SUCCESS;
-
 	} else {
 	    cli_dbgmsg("NSIS: Successully extracted file #%u\n", nsist.fno);
 	    lseek(nsist.ofd, 0, SEEK_SET);

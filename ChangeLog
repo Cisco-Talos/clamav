@@ -1,3 +1,7 @@
+Wed May 23 15:14:44 CEST 2007 (tk)
+----------------------------------
+  * libclamav/nsis: make the code independent of external bzlib
+
 Mon May 21 20:48:00 EEST 2007 (edwin)
 ----------------------------------
   * libclamav/nsis/nsis_zlib.h: use _NSIS_ZLIB_H instead of _ZLIB_H

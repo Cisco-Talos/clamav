@@ -30,8 +30,6 @@
 #include "clamav-config.h"
 #endif
 
-#ifdef HAVE_BZLIB_H
-
 #include "bzlib_private.h"
 #include "others.h"
 
@@ -169,6 +167,20 @@ void makeMaps_d ( DState* s )
    lval = gPerm[zvec - gBase[zn]];                \
 }
 
+/*---------------------------------------------------*/
+
+inline static Int32 indexIntoF ( Int32 indx, Int32 *cftab )
+{
+   Int32 nb, na, mid;
+   nb = 0;
+   na = 256;
+   do {
+      mid = (nb + na) >> 1;
+      if (indx >= cftab[mid]) nb = mid; else na = mid;
+   }
+   while (na - nb != 1);
+   return nb;
+}
 
 /*---------------------------------------------------*/
 /* Return  True iff data corruption is discovered.
@@ -430,7 +442,39 @@ Bool unRLE_obuf_to_output_SMALL ( DState* s )
 
    }
 }
+/*---------------------------------------------------*/
 
+static void CreateDecodeTables ( Int32 *limit,
+                                Int32 *base,
+                                Int32 *perm,
+                                UChar *length,
+                                Int32 minLen,
+                                Int32 maxLen,
+                                Int32 alphaSize )
+{
+   Int32 pp, i, j, vec;
+
+   pp = 0;
+   for (i = minLen; i <= maxLen; i++)
+      for (j = 0; j < alphaSize; j++)
+         if (length[j] == i) { perm[pp] = j; pp++; };
+
+   for (i = 0; i < BZ_MAX_CODE_LEN; i++) base[i] = 0;
+   for (i = 0; i < alphaSize; i++) base[length[i]+1]++;
+
+   for (i = 1; i < BZ_MAX_CODE_LEN; i++) base[i] += base[i-1];
+
+   for (i = 0; i < BZ_MAX_CODE_LEN; i++) limit[i] = 0;
+   vec = 0;
+
+   for (i = minLen; i <= maxLen; i++) {
+      vec += (base[i+1] - base[i]);
+      limit[i] = vec-1;
+      vec <<= 1;
+   }
+   for (i = minLen + 1; i <= maxLen; i++)
+      base[i] = ((limit[i-1] + 1) << 1) - base[i];
+}
 
 /*---------------------------------------------------*/
 static Int32 BZ2_decompress ( DState* s )
@@ -676,7 +720,7 @@ static Int32 BZ2_decompress ( DState* s )
             if (s->len[t][i] > maxLen) maxLen = s->len[t][i];
             if (s->len[t][i] < minLen) minLen = s->len[t][i];
          }
-         BZ2_hbCreateDecodeTables ( 
+         CreateDecodeTables ( 
             &(s->limit[t][0]), 
             &(s->base[t][0]), 
             &(s->perm[t][0]), 
@@ -1106,5 +1150,3 @@ int BZ_API(nsis_BZ2_bzDecompressEnd)  ( nsis_bzstream *strm )
 /*-------------------------------------------------------------*/
 /*--- end                                           bzlib.c ---*/
 /*-------------------------------------------------------------*/
-
-#endif /* HAVE_BZLIB_H */

@@ -20,6 +20,10 @@
 #ifndef _BZLIB_PRIVATE_H
 #define _BZLIB_PRIVATE_H
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <stdlib.h>
 
 #ifndef BZ_NO_STDIO
@@ -262,26 +266,6 @@ typedef
    EState;
 
 
-
-/*-- externs for compression. --*/
-/* aCaB
-extern void 
-BZ2_blockSort ( EState* );
-
-extern void 
-BZ2_compressBlock ( EState*, Bool );
-
-extern void 
-BZ2_bsInitWrite ( EState* );
-
-extern void 
-BZ2_hbAssignCodes ( Int32*, UChar*, Int32, Int32, Int32 );
-
-extern void 
-BZ2_hbMakeCodeLengths ( UChar*, Int32*, Int32, Int32 );
-*/
-
-
 /*-- states for decompression. --*/
 
 #define BZ_X_IDLE        1
@@ -465,18 +449,8 @@ typedef
    (((UInt32)s->ll16[i]) | (GET_LL4(i) << 16))
 
 #define BZ_GET_SMALL(cccc)                            \
-      cccc = BZ2_indexIntoF ( s->tPos, s->cftab );    \
+      cccc = indexIntoF ( s->tPos, s->cftab );    \
       s->tPos = GET_LL(s->tPos);
-
-
-/*-- externs for decompression. --*/
-
-extern Int32 BZ2_indexIntoF ( Int32, Int32* );
-
-/* extern Int32  */
-/* BZ2_decompress ( DState* ); */
-
-extern void BZ2_hbCreateDecodeTables ( Int32*, Int32*, Int32*, UChar*, Int32,  Int32, Int32 );
 
 #endif
 
