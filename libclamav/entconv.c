@@ -791,7 +791,7 @@ static iconv_t iconv_open_cached(const unsigned char* fromcode)
 	idx = cache->last++;
 	if(idx >= cache->len) {
 		cache->len += 16;
-		cache->tab = cli_realloc(cache->tab, cache->len*sizeof(cache->tab[0]));
+		cache->tab = cli_realloc2(cache->tab, cache->len*sizeof(cache->tab[0]));
 		if(!cache->tab) {
 			cli_dbgmsg("!Out of mem in iconv-pool\n");
 			errno = ENOMEM;

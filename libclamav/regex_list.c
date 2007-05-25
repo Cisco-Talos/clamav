@@ -314,7 +314,7 @@ static int stack_push(struct node_stack* stack,struct tree_node* node)
 
 	if(stack->cnt == stack->capacity) {
 		stack->capacity += NODE_STACK_GROW;
-		stack->data = cli_realloc(stack->data,stack->capacity*sizeof(*stack->data));
+		stack->data = cli_realloc2(stack->data,stack->capacity*sizeof(*stack->data));
 		if(!stack->data)
 			return CL_EMEM;
 	}
@@ -557,7 +557,7 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
  				struct cli_matcher* old_hosts = matcher->root_hosts;
  				matcher->root_hosts_cnt++;
  
- 				matcher->root_hosts = cli_realloc(matcher->root_hosts, matcher->root_hosts_cnt * sizeof(*matcher->root_hosts));
+ 				matcher->root_hosts = cli_realloc2(matcher->root_hosts, matcher->root_hosts_cnt * sizeof(*matcher->root_hosts));
  				if(!matcher->root_hosts) {
  					matcher->root_hosts = old_hosts;/* according to manpage this must still be valid*/
  					return CL_EMEM;
@@ -855,7 +855,7 @@ static const unsigned char* find_regex_start(const unsigned char* pat)
 					altpositions[altpositions_cnt++] = last;
 					if(altpositions_cnt == altpositions_capacity) {
 						altpositions_capacity += ALT_STACK_GROW;
-						altpositions = cli_realloc(altpositions,altpositions_capacity*sizeof(*altpositions));
+						altpositions = cli_realloc2(altpositions,altpositions_capacity*sizeof(*altpositions));
 						if(!altpositions)
 							return NULL;
 					}
@@ -951,7 +951,7 @@ static struct tree_node* tree_node_char_insert(struct tree_node* node,const char
 	struct tree_node* new, *alt = tree_get_next(node);
 	struct tree_node **children;
 	node->alternatives++;
-	node->u.children = cli_realloc(node->u.children,tree_node_get_array_size(node));
+	node->u.children = cli_realloc2(node->u.children,tree_node_get_array_size(node));
 	if(!node->u.children)
 		return NULL;
 
@@ -1008,7 +1008,7 @@ static void tree_node_insert_nonbin(struct tree_node* node, struct tree_node* ne
 				new->listend=1;
 				return;
 			}
-		node->u.children = cli_realloc(node->u.children,sizeof(node->u.children[0])*(2));
+		node->u.children = cli_realloc2(node->u.children,sizeof(node->u.children[0])*(2));
 		if(node->u.children) {
 			node->u.children[idx] = new;
 		}

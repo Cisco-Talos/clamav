@@ -303,18 +303,18 @@ static void html_tag_arg_add(tag_arguments_t *tags,
 {
 	int len, i;
 	tags->count++;
-	tags->tag = (unsigned char **) cli_realloc(tags->tag,
+	tags->tag = (unsigned char **) cli_realloc2(tags->tag,
 				tags->count * sizeof(char *));
 	if (!tags->tag) {
 		goto abort;
 	}
-	tags->value = (unsigned char **) cli_realloc(tags->value,
+	tags->value = (unsigned char **) cli_realloc2(tags->value,
 				tags->count * sizeof(char *));
 	if (!tags->value) {
 		goto abort;
 	}
 	if(tags->scanContents) {
-		tags->contents= (blob **) cli_realloc(tags->contents,
+		tags->contents= (blob **) cli_realloc2(tags->contents,
 				tags->count*sizeof(*tags->contents));
 		if(!tags->contents) {
 			goto abort;

@@ -1358,7 +1358,7 @@ static macro_extnames_t *wm_read_macro_extnames(int fd)
 	while (lseek(fd, 0, SEEK_CUR) < offset_end) {
 		macro_extnames->count++;
 		macro_extnames->macro_extname = (macro_extname_t *)
-			cli_realloc(macro_extnames->macro_extname,
+			cli_realloc2(macro_extnames->macro_extname,
 				sizeof(macro_extname_t) * macro_extnames->count);
 		if (macro_extnames->macro_extname == NULL) {
 			cli_dbgmsg("read macro_extnames failed\n");

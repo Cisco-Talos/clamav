@@ -922,9 +922,9 @@ int rarvm_execute(rarvm_data_t *rarvm_data, struct rarvm_prepared_program *prg)
 		(unsigned int *)&rarvm_data->mem[VM_GLOBALMEMADDR+0x30]),VM_GLOBALMEMSIZE);
 	if (data_size != 0) {
 		prg->global_size += data_size+VM_FIXEDGLOBALSIZE;
-		prg->global_data = cli_realloc(prg->global_data, prg->global_size);
+		prg->global_data = cli_realloc2(prg->global_data, prg->global_size);
 		if(!prg->global_data) {
-		    cli_dbgmsg("unrar: rarvm_execute: cli_realloc failed for prg->global_data\n");
+		    cli_dbgmsg("unrar: rarvm_execute: cli_realloc2 failed for prg->global_data\n");
 		    return FALSE;
 		}
 		memcpy(prg->global_data, &rarvm_data->mem[VM_GLOBALMEMADDR],
@@ -1079,9 +1079,9 @@ int rarvm_prepare(rarvm_data_t *rarvm_data, rarvm_input_t *rarvm_input, unsigned
 			}
 			for (i=0 ; rarvm_input->in_addr < code_size && i < data_size ; i++) {
 				prg->static_size++;
-				prg->static_data = cli_realloc(prg->static_data, prg->static_size);
+				prg->static_data = cli_realloc2(prg->static_data, prg->static_size);
 				if(!prg->static_data) {
-				    cli_dbgmsg("unrar: rarvm_prepare: cli_realloc failed for prg->static_data\n");
+				    cli_dbgmsg("unrar: rarvm_prepare: cli_realloc2 failed for prg->static_data\n");
 				    return FALSE;
 				}
 				prg->static_data[i] = rarvm_getbits(rarvm_input) >> 8;

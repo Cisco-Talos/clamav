@@ -869,7 +869,7 @@ static bitset_t *bitset_realloc(bitset_t *bs, unsigned long min_size)
 	unsigned long new_length;
 	
 	new_length = nearest_power(min_size);
-	bs->bitset = (unsigned char *) cli_realloc(bs->bitset, new_length);
+	bs->bitset = (unsigned char *) cli_realloc2(bs->bitset, new_length);
 	if (!bs->bitset) {
 		return NULL;
 	}

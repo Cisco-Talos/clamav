@@ -161,7 +161,7 @@ static int push_state(struct stack* stack,struct rtf_state* state)
 	if(stack->stack_cnt >= stack->stack_size) {
 		/* grow stack */
 		stack->stack_size += 128;
-		stack->states = cli_realloc(stack->states, stack->stack_size*sizeof(*stack->states));
+		stack->states = cli_realloc2(stack->states, stack->stack_size*sizeof(*stack->states));
 		if(!stack->states)
 			return CL_EMEM;
 	}

@@ -1,3 +1,8 @@
+Sat May 26 00:31:10 CEST 2007 (tk)
+----------------------------------
+  * libclamav: fix some possible error path leaks by changing cli_realloc()
+	       to cli_realloc2()
+
 Fri May 25 21:39:53 CEST 2007 (tk)
 ----------------------------------
   * libclamav/others.[ch]: add cli_realloc2()

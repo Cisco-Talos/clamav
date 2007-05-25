@@ -712,7 +712,7 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 
 	    if(!found) {
 		md5_sect->soff_len++;
-		md5_sect->soff = (uint32_t *) cli_realloc(md5_sect->soff, md5_sect->soff_len * sizeof(uint32_t));
+		md5_sect->soff = (uint32_t *) cli_realloc2(md5_sect->soff, md5_sect->soff_len * sizeof(uint32_t));
 		if(!md5_sect->soff) {
 		    cli_errmsg("cli_loadhdb: Can't realloc md5_sect->soff\n");
 		    free(bm_new->pattern);
@@ -1266,19 +1266,15 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
 		dbstat->entries++;
-		dbstat->stattab = (struct stat *) cli_realloc(dbstat->stattab, dbstat->entries * sizeof(struct stat));
+		dbstat->stattab = (struct stat *) cli_realloc2(dbstat->stattab, dbstat->entries * sizeof(struct stat));
 		if(!dbstat->stattab) {
-		    /* FIXME: Minor error path memleak here. Change the
-		     * behaviour of cli_realloc() to free old block on error
-		     * (and review all calls to cli_realloc()).
-		     */
 		    cl_statfree(dbstat);
 		    closedir(dd);
 		    return CL_EMEM;
 		}
 
 #if defined(C_INTERIX) || defined(C_OS2)
-		dbstat->statdname = (char **) cli_realloc(dbstat->statdname, dbstat->entries * sizeof(char *));
+		dbstat->statdname = (char **) cli_realloc2(dbstat->statdname, dbstat->entries * sizeof(char *));
 		if(!dbstat->statdname) {
 		    cl_statfree(dbstat);
 		    closedir(dd);

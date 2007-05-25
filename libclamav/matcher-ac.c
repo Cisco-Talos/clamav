@@ -85,7 +85,7 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 	    }
 
 	    root->ac_nodes++;
-	    root->ac_nodetable = (struct cli_ac_node **) cli_realloc(root->ac_nodetable, root->ac_nodes * sizeof(struct cli_ac_node *));
+	    root->ac_nodetable = (struct cli_ac_node **) cli_realloc2(root->ac_nodetable, root->ac_nodes * sizeof(struct cli_ac_node *));
 	    if(!root->ac_nodetable) {
 		cli_errmsg("cli_ac_addpatt: Can't realloc ac_nodetable\n");
 		if(next->trans)
@@ -103,7 +103,7 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
     }
 
     root->ac_patterns++;
-    root->ac_pattable = (struct cli_ac_patt **) cli_realloc(root->ac_pattable, root->ac_patterns * sizeof(struct cli_ac_patt *));
+    root->ac_pattable = (struct cli_ac_patt **) cli_realloc2(root->ac_pattable, root->ac_patterns * sizeof(struct cli_ac_patt *));
     if(!root->ac_pattable) {
 	cli_errmsg("cli_ac_addpatt: Can't realloc ac_pattable\n");
 	return CL_EMEM;
@@ -670,9 +670,9 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	    *start++ = 0;
 
 	    new->alt++;
-	    new->altn = (uint16_t *) cli_realloc(new->altn, new->alt * sizeof(uint16_t));
+	    new->altn = (uint16_t *) cli_realloc2(new->altn, new->alt * sizeof(uint16_t));
 	    new->altn[new->alt - 1] = 0;
-	    new->altc = (unsigned char **) cli_realloc(new->altc, new->alt * sizeof(char *));
+	    new->altc = (unsigned char **) cli_realloc2(new->altc, new->alt * sizeof(char *));
 	    new->altc[new->alt - 1] = NULL;
 
 	    for(i = 0; i < strlen(pt); i++)

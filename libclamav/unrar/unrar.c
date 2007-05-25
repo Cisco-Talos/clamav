@@ -873,10 +873,10 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 			return FALSE;
 		}	
 		unpack_data->old_filter_lengths_size++;
-		unpack_data->old_filter_lengths = (int *) cli_realloc(unpack_data->old_filter_lengths,
+		unpack_data->old_filter_lengths = (int *) cli_realloc2(unpack_data->old_filter_lengths,
 				sizeof(int) * unpack_data->old_filter_lengths_size);
 		if(!unpack_data->old_filter_lengths) {
-		    cli_dbgmsg("unrar: add_vm_code: cli_realloc failed for unpack_data->old_filter_lengths\n");
+		    cli_dbgmsg("unrar: add_vm_code: cli_realloc2 failed for unpack_data->old_filter_lengths\n");
 		    return FALSE;
 		}
 		unpack_data->old_filter_lengths[unpack_data->old_filter_lengths_size-1] = 0;
@@ -1006,10 +1006,10 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 		cur_size = stack_filter->prg.global_size;
 		if (cur_size < data_size+VM_FIXEDGLOBALSIZE) {
 			stack_filter->prg.global_size += data_size+VM_FIXEDGLOBALSIZE-cur_size;
-			stack_filter->prg.global_data = cli_realloc(stack_filter->prg.global_data,
+			stack_filter->prg.global_data = cli_realloc2(stack_filter->prg.global_data,
 				stack_filter->prg.global_size);
 			if(!stack_filter->prg.global_data) {
-			    cli_dbgmsg("unrar: add_vm_code: cli_realloc failed for stack_filter->prg.global_data\n");
+			    cli_dbgmsg("unrar: add_vm_code: cli_realloc2 failed for stack_filter->prg.global_data\n");
 			    return FALSE;
 			}
 		}
