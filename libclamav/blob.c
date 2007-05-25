@@ -242,7 +242,7 @@ blobGetData(const blob *b)
 
 	if(b->len == 0)
 		return NULL;
-	return(b->data);
+	return b->data;
 }
 
 size_t
@@ -251,7 +251,7 @@ blobGetDataSize(const blob *b)
 	assert(b != NULL);
 	assert(b->magic == BLOBCLASS);
 
-	return(b->len);
+	return b->len;
 }
 
 void
@@ -574,9 +574,15 @@ sanitiseName(char *name)
 #ifdef	C_DARWIN
 		*name &= '\177';
 #endif
-	    /* Also check for tab - "Heinz Martin" <Martin@hemag.ch> */
-#if	defined(MSDOS) || defined(C_CYGWIN) || defined(C_WINDOWS) || defined(C_OS2)
+		/* Also check for tab - "Heinz Martin" <Martin@hemag.ch> */
+#if	defined(MSDOS) || defined(C_OS2)
+		/*
+		 * Don't take it from this that ClamAV supports DOS, it doesn't
+		 * I don't know if spaces are legal in OS/2.
+		 */
 		if(strchr("%/*?<>|\\\"+=,;:\t ~", *name))
+#elif	defined(C_CYGWIN) || defined(C_WINDOWS)
+		if(strchr("%/*?<>|\\\"+=,;:\t~", *name))
 #else
 		if(*name == '/')
 #endif
