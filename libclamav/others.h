@@ -173,6 +173,7 @@ void cli_dbgmsg(const char *str, ...);
 void *cli_malloc(size_t nmemb);
 void *cli_calloc(size_t nmemb, size_t size);
 void *cli_realloc(void *ptr, size_t size);
+void *cli_realloc2(void *ptr, size_t size);
 char *cli_strdup(const char *s);
 int cli_rmdirs(const char *dirname);
 unsigned char *cli_md5digest(int desc);

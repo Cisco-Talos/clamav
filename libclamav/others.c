@@ -379,6 +379,27 @@ void *cli_realloc(void *ptr, size_t size)
     } else return alloc;
 }
 
+void *cli_realloc2(void *ptr, size_t size)
+{
+	void *alloc;
+
+
+    if(!size || size > CLI_MAX_ALLOCATION) {
+	cli_errmsg("cli_realloc2(): Attempt to allocate %u bytes. Please report to http://bugs.clamav.net\n", size);
+	return NULL;
+    }
+
+    alloc = realloc(ptr, size);
+
+    if(!alloc) {
+	cli_errmsg("cli_realloc2(): Can't re-allocate memory to %u bytes.\n", size);
+	perror("realloc_problem");
+	if(ptr)
+	    free(ptr);
+	return NULL;
+    } else return alloc;
+}
+
 char *cli_strdup(const char *s)
 {
         char *alloc;
