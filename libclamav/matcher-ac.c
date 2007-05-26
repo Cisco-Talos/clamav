@@ -38,7 +38,7 @@
 
 int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 {
-	struct cli_ac_node *pt, *next;
+	struct cli_ac_node *pt, *next, **newtable;
 	uint8_t i;
 	uint16_t len = MIN(root->ac_maxdepth, pattern->length);
 
@@ -85,15 +85,17 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 	    }
 
 	    root->ac_nodes++;
-	    root->ac_nodetable = (struct cli_ac_node **) cli_realloc2(root->ac_nodetable, root->ac_nodes * sizeof(struct cli_ac_node *));
-	    if(!root->ac_nodetable) {
+	    newtable = (struct cli_ac_node **) cli_realloc(root->ac_nodetable, root->ac_nodes * sizeof(struct cli_ac_node *));
+	    if(!newtable) {
+		root->ac_nodes--;
 		cli_errmsg("cli_ac_addpatt: Can't realloc ac_nodetable\n");
 		if(next->trans)
 		    free(next->trans);
 		free(next);
 		return CL_EMEM;
 	    }
-	    root->ac_nodetable[root->ac_nodes - 1] = next;
+	    newtable[root->ac_nodes - 1] = next;
+	    root->ac_nodetable = newtable;
 
 	    pt->trans[(unsigned char) (pattern->pattern[i] & 0xff)] = next;
 	    pt->leaf = 0;
