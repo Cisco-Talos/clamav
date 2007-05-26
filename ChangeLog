@@ -1,3 +1,7 @@
+Sat May 26 12:45:00 EEST 2007 (edwin)
+----------------------------------
+  * libclamav/regex_list.c: cli_realloc() for matcher->root_hosts
+  
 Sat May 26 00:31:10 CEST 2007 (tk)
 ----------------------------------
   * libclamav: fix some possible error path leaks by changing cli_realloc()

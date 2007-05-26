@@ -557,7 +557,7 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
  				struct cli_matcher* old_hosts = matcher->root_hosts;
  				matcher->root_hosts_cnt++;
  
- 				matcher->root_hosts = cli_realloc2(matcher->root_hosts, matcher->root_hosts_cnt * sizeof(*matcher->root_hosts));
+ 				matcher->root_hosts = cli_realloc(matcher->root_hosts, matcher->root_hosts_cnt * sizeof(*matcher->root_hosts));
  				if(!matcher->root_hosts) {
  					matcher->root_hosts = old_hosts;/* according to manpage this must still be valid*/
  					return CL_EMEM;
