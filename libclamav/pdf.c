@@ -78,7 +78,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	const char *xrefstart;	/* cross reference table */
 	/*size_t xreflength;*/
 	int rc = CL_CLEAN;
-	struct table *md5table;
+	table_t *md5table;
 	int printed_predictor_message;
 	int printed_embedded_font_message;
 	struct stat statb;
@@ -88,7 +88,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	if(fstat(desc, &statb) < 0)
 		return CL_EOPEN;
 
-	size = (size_t)statb.st_size;
+	size = statb.st_size;
 
 	if(size == 0)
 		return CL_CLEAN;
@@ -216,7 +216,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		/*int object_number, generation_number;*/
 		const char *objstart, *objend, *streamstart, *streamend;
 		char *md5digest;
-		size_t length, objlen, real_streamlen, calculated_streamlen;
+		unsigned long length, objlen, real_streamlen, calculated_streamlen;
 		int is_embedded_font, predictor;
 		char fullname[NAME_MAX + 1];
 
@@ -262,7 +262,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		}
 		bytesleft -= (objend - p) + 6;
 		p = &objend[6];
-		objlen = (size_t)(objend - objstart);
+		objlen = (unsigned long)(objend - objstart);
 
 		/* Is this object a stream? */
 		streamstart = cli_pmemstr(objstart, objlen, "stream", 6);
@@ -294,11 +294,11 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 						char b[14];
 
 						q += 4;
-						cli_dbgmsg("Length is in indirect obj %d\n",
+						cli_dbgmsg("Length is in indirect obj %ld\n",
 							length);
 						snprintf(b, sizeof(b),
-							"\n%d 0 obj", length);
-						length = strlen(b);
+							"\n%ld 0 obj", length);
+						length = (unsigned long)strlen(b);
 						r = cli_pmemstr(alloced ? alloced : buf,
 							size, b, length);
 						if(r == NULL) {
@@ -313,7 +313,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 								length = atoi(r);
 								while(isdigit(*r))
 									r++;
-								cli_dbgmsg("length in '%s' %d\n",
+								cli_dbgmsg("length in '%s' %ld\n",
 									&b[1],
 									length);
 							}
@@ -434,7 +434,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		if(calculated_streamlen != real_streamlen)
 			cli_dbgmsg("cli_pdf: Incorrect Length field in file attempting to recover\n");
 
-		cli_dbgmsg("length %d, calculated_streamlen %d isFlate %d isASCII85 %d\n",
+		cli_dbgmsg("length %ld, calculated_streamlen %ld isFlate %d isASCII85 %d\n",
 			length, calculated_streamlen,
 			is_flatedecode, is_ascii85decode);
 
@@ -466,10 +466,20 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 				continue;
 			}
 			if(ret) {
-				real_streamlen = (size_t)ret;
+				char *t;
+
+				real_streamlen = ret;
 				/* free unused trailing bytes */
-				tmpbuf = cli_realloc(tmpbuf,
+				t = cli_realloc(tmpbuf,
 					calculated_streamlen);
+				if(t == NULL) {
+					free(tmpbuf);
+					close(fout);
+					unlink(fullname);
+					rc = CL_EMEM;
+					continue;
+				}
+				tmpbuf = t;
 				/*
 				 * Note that it will probably be both
 				 * ascii85encoded and flateencoded

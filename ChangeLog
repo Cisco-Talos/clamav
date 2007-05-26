@@ -1,3 +1,7 @@
+Sat May 26 11:34:19 BST 2007 (njh)
+----------------------------------
+  * libclamav/pdf.c:	Fix OOM, pointed out by TK
+
 Sat May 26 12:45:00 EEST 2007 (edwin)
 ----------------------------------
   * libclamav/regex_list.c: cli_realloc() for matcher->root_hosts
