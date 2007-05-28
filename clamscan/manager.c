@@ -140,7 +140,7 @@ static int scanstdin(const struct cl_engine *engine, const struct cl_limits *lim
 int scanmanager(const struct optstruct *opt)
 {
 	mode_t fmode;
-	int ret = 0, compression = 0, fmodeint, i, x;
+	int ret = 0, extunpacker = 0, fmodeint, i, x;
 	unsigned int options = 0, dboptions = 0;
 	struct cl_engine *engine = NULL;
 	struct cl_limits limits;
@@ -149,21 +149,20 @@ int scanmanager(const struct optstruct *opt)
 	char *fullpath = NULL, cwd[1024];
 
 
+    if(opt_check(opt, "unzip") || opt_check(opt, "unrar") || opt_check(opt, "arj") ||
+       opt_check(opt, "unzoo") || opt_check(opt, "jar") || opt_check(opt, "lha") ||
+       opt_check(opt, "tar") || opt_check(opt, "tgz") || opt_check(opt, "deb"))
+	    extunpacker = 1;
+
 /* njh@bandsman.co.uk: BeOS */
 #if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_BEOS) && !defined(C_WINDOWS)
-    if(!geteuid()) {
+    if(extunpacker && !geteuid()) {
 	if((user = getpwnam(CLAMAVUSER)) == NULL) {
-	    logg("!Can't get information about user "CLAMAVUSER"\n");
+	    logg("!Can't get information about user "CLAMAVUSER" (required to run external unpackers)\n");
 	    exit(60); /* this is critical problem, so we just exit here */
 	}
     }
 #endif
-
-    if(opt_check(opt, "unzip") || opt_check(opt, "unrar") || opt_check(opt, "arj") ||
-       opt_check(opt, "unzoo") || opt_check(opt, "jar") || opt_check(opt, "lha") ||
-       opt_check(opt, "tar") || opt_check(opt, "tgz") || opt_check(opt, "deb"))
-	    compression = 1;
-
 
     if(opt_check(opt, "ncore"))
 	dboptions |= CL_DB_NCORE;
@@ -342,7 +341,7 @@ int scanmanager(const struct optstruct *opt)
 
 		fmode = (mode_t) fmodeint;
 
-		if(compression && (thefilename[0] != '/' && thefilename[0] != '\\' && thefilename[1] != ':')) {
+		if(extunpacker && (thefilename[0] != '/' && thefilename[0] != '\\' && thefilename[1] != ':')) {
 		    /* we need to complete the path */
 		    if(!getcwd(cwd, sizeof(cwd))) {
 			logg("!Can't get absolute pathname of current working directory\n");
@@ -373,7 +372,7 @@ int scanmanager(const struct optstruct *opt)
 			ret = 52;
 		}
 
-		if(compression && (thefilename[0] != '/' && thefilename[0] != '\\' && thefilename[1] != ':')) {
+		if(extunpacker && (thefilename[0] != '/' && thefilename[0] != '\\' && thefilename[1] != ':')) {
 		    free(fullpath);
 		    fullpath = NULL;
 		}
