@@ -1,6 +1,6 @@
 Mon May 28 16:47:23 CEST 2007 (tk)
 ----------------------------------
-  * clamd/server-th.c: fix incorrect handling of SIGSEGV (bb#514)
+  * clamd/server-th.c: fix incorrect handling of SIGSEGV (bb#504)
 
 Mon May 28 14:11:44 CEST 2007 (tk)
 ----------------------------------
