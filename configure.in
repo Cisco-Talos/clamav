@@ -412,7 +412,7 @@ freebsd[[45]]*)
     AC_DEFINE(C_BSD,1,[os is freebsd 4 or 5])
     use_gethostbyname_r="no"
     ;;
-freebsd6*)
+freebsd*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lthr"
 	TH_SAFE="-thread-safe"
