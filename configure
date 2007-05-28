@@ -22240,7 +22240,11 @@ _ACEOF
 cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
+
+#include <sys/types.h>
 #include <netinet/in.h>
+#include <arpa/nameser.h>
+
 
 #include <resolv.h>
 _ACEOF
@@ -23027,7 +23031,7 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
     ;;
-freebsd45*)
+freebsd[45]*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-pthread -lc_r"
 	TH_SAFE="-thread-safe"

@@ -1,3 +1,7 @@
+Mon May 28 17:52:26 CEST 2007 (tk)
+----------------------------------
+  * configure: fix compilation issues under FreeBSD 4.x and 5.x (bb#455)
+
 Mon May 28 16:47:23 CEST 2007 (tk)
 ----------------------------------
   * clamd/server-th.c: fix incorrect handling of SIGSEGV (bb#504)
