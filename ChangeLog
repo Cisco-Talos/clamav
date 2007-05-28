@@ -1,3 +1,7 @@
+Mon May 28 13:39:55 CEST 2007 (tk)
+----------------------------------
+  * libclamav: revert r3054, to be replaced with session based limits
+
 Sat May 26 14:05:44 CEST 2007 (tk)
 ----------------------------------
   * libclamav/matcher-ac.c: fix segfault on OOM (bb#515)
