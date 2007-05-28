@@ -506,11 +506,6 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     sigaction(SIGHUP, &sigact, NULL);
     sigaction(SIGPIPE, &sigact, NULL);
     sigaction(SIGUSR2, &sigact, NULL);
-
-    if(!debug_mode) {
-	sigaddset(&sigact.sa_mask, SIGHUP);
-	sigaction(SIGSEGV, &sigact, NULL);
-    }
 #endif
 
     pthread_mutex_init(&exit_mutex, NULL);
