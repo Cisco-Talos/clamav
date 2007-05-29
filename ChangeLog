@@ -1,3 +1,7 @@
+Tue May 29 17:07:08 CEST 2007 (tk)
+----------------------------------
+  * docs: various fixes, thanks to Fabio Pedretti <pedretti*eco.unibs.it>
+
 Tue May 29 14:22:32 CEST 2007 (tk)
 ----------------------------------
   * libclamav/scanners.c: move cli_scannulsft() to nsis/nulsft.c (bb#523)

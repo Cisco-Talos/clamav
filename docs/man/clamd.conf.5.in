@@ -246,22 +246,22 @@ With this option enabled ClamAV will try to detect phishing attempts by using si
 Default: yes
 .TP
 \fBPhishingScanURLs BOOL\fR
-Scan URLs in mails for phishing attempts (available in experimental builds only).
+Scan URLs found in mails for phishing attempts.
 .br
 Default: yes
 .TP
 \fBPhishingRestrictedScan BOOL\fR
-Use phishing detection only for domains listed in the .pdb database. It is not recommended to have this option turned off, because scanning of all domains may lead to many false positives! (available in experimental builds only)
+Use phishing detection only for domains listed in the .pdb database. It is not recommended to have this option turned off, because scanning of all domains may lead to many false positives!
 .br
-Default: no
+Default: yes
 .TP
 \fBPhishingAlwaysBlockSSLMismatch BOOL\fR
-Always block SSL mismatches in URLs, even if the URL isn't in the database. This can lead to false positives. (available in experimental builds only)
+Always block SSL mismatches in URLs, even if the URL isn't in the database. This can lead to false positives.
 .br
 Default: no
 .TP
 \fBPhishingAlwaysBlockCloak BOOL\fR
-Always block cloaked URLs, even if URL isn't in database. There is a remote possibility, that this will lead to false positives. (available in experimental builds only)
+Always block cloaked URLs, even if URL isn't in database. This can lead to false positives.
 .br
 Default: no
 .TP

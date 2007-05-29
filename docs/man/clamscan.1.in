@@ -76,16 +76,16 @@ Disable scanning of mail files.
 Disable signature-based phishing detection.
 .TP 
 \fB\-\-no\-phishing\-scan\-urls\fR
-Disable url-based phishing detection. (Only available in experimental builds)
+Disable url-based phishing detection.
 .TP
 \fB\-\-no\-phishing\-restrictedscan\fR
-Enable phishing detection for all domains (might lead to false positives!).(Only available in experimental builds)
+Enable phishing detection for all domains (might lead to false positives!).
 .TP
 \fB\-\-phishing\-ssl\fR
-Always block SSL mismatches in URLs (might lead to false positives!). (Only available in experimental builds) 
+Always block SSL mismatches in URLs (might lead to false positives!).
 .TP
 \fB\-\-phishing\-cloak\fR
-Always block cloaked URLs (might lead to some false positives). (Only available in experimental builds)
+Always block cloaked URLs (might lead to some false positives).
 .TP
 \fB\-\-no\-algorithmic\fR
 In some cases (eg. complex malware, exploits in graphic files, and others), ClamAV uses special algorithms to provide accurate detection. This option disables the algorithmic detection.
