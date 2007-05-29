@@ -1,3 +1,7 @@
+Tue May 29 21:28:40 CEST 2007 (tk)
+----------------------------------
+  * libclamav/unsp.c: fix end of buffer calculation (bb#464, patch from aCaB)
+
 Tue May 29 21:21:09 CEST 2007 (tk)
 ----------------------------------
   * libclamav/others.c: use strict permissions (0600) for temporary files

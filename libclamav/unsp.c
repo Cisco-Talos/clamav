@@ -151,7 +151,11 @@ uint32_t unspack(char *start_of_stuff, char *dest, cli_ctx *ctx, uint32_t rva, u
   
   dsize = cli_readint32(start_of_stuff+9);
   ssize = cli_readint32(start_of_stuff+5);
-  
+  if (ssize <= 13) {
+  	free(table);
+  	return 1
+  }
+
   tre = very_real_unpack(table,tablesz,tre,allocsz,firstbyte,src,ssize,dst,dsize);
   free(table);
   if (tre) return 1;
@@ -194,7 +198,7 @@ uint32_t very_real_unpack(uint16_t *table, uint32_t tablesz, uint32_t tre, uint3
   read_struct.oldval = 0;
   read_struct.src_curr = src;
   read_struct.bitmap = 0xffffffff;
-  read_struct.src_end = src + ssize;
+  read_struct.src_end = src + ssize - 13;
   read_struct.table = (char *)table;
   read_struct.tablesz = tablesz;
 
