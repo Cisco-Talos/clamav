@@ -200,12 +200,13 @@ static const size_t https_len  = sizeof(https)-1;
 #define URI_xpalpha_nodot URI_xalpha_nodot"|\\+"
 #define URI_xpalphas "("URI_xpalpha")+"
 #define URI_xpalphas_nodot "("URI_xpalpha_nodot")+"
+#define optional_URI_xpalphas "("URI_xpalpha"|=)*"
 
 #define URI_scheme URI_ialpha
 #define URI_tld iana_tld
 #define URI_path1 URI_xpalphas_nodot"\\.("URI_xpalphas_nodot"\\.)*"
 #define URI_path2 URI_tld
-#define URI_path3 "(/("URI_xpalphas"/?)*)?"
+#define URI_path3 "(/"optional_URI_xpalphas")*"
 
 #define URI_search "("URI_xalphas"\\+)*"
 #define URI_fragmentid URI_xalphas

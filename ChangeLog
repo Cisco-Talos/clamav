@@ -1,3 +1,7 @@
+Tue May 29 17:07:08 CEST 2007 (edwin)
+----------------------------------
+  * libclamav/phishcheck.c: bb #497
+
 Tue May 29 17:07:08 CEST 2007 (tk)
 ----------------------------------
   * docs: various fixes, thanks to Fabio Pedretti <pedretti*eco.unibs.it>
