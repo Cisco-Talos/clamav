@@ -551,16 +551,22 @@ char *cli_gentempdesc(const char *dir, int *fd)
 char *cli_gentempstream(const char *dir, FILE **fs)
 {
 	char *name;
+	mode_t omask;
+
 
     name = cli_gentempname(dir);
+    if(!name)
+	return NULL;
 
-    if(name && ((*fs = fopen(name, "wb+")) == NULL)) {
+    omask = umask(077);
+    if((*fs = fopen(name, "wb+")) == NULL) {
 	cli_dbgmsg("cli_gentempstream(): can't create temp file: %s\n", name);
         free(name);
         name = NULL;
     }
+    umask(omask);
 
-    return(name);
+    return name;
 }
 
 #ifdef	C_WINDOWS

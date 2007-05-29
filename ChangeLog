@@ -1,3 +1,9 @@
+Tue May 29 21:21:09 CEST 2007 (tk)
+----------------------------------
+  * libclamav/others.c: use strict permissions (0600) for temporary files
+			created in cli_gentempstream() (bb#517)
+			Reported by Christoph Probst
+
 Tue May 29 17:42:12 CEST 2007 (tk)
 ----------------------------------
   * libclamav/ole2_extract.c: detect block list loop (bb#466), patch from Trog
