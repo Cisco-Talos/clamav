@@ -1639,15 +1639,12 @@ int cli_unrar_extract_next(rar_state_t* state,const char* dirname)
 						((state->main_hdr->flags&MHD_SOLID)!=0), state->unpack_data);
 			} else {
 				if ((state->file_count == 1) && (state->file_header->flags & LHD_SOLID)) {
-					cli_warnmsg("RAR: First file can't be SOLID.\n");
-					
-					free(state->file_header->filename);
-					free(state->file_header);
-					return CL_ERAR;
-				} else {
-					retval = rar_unpack(state->fd, state->file_header->unpack_ver,
-							state->file_header->flags & LHD_SOLID,	state->unpack_data);
+					cli_warnmsg("RAR: Bad header. First file can't be SOLID.\n");
+					cli_warnmsg("RAR: Clearing flag and continuing.\n");
+					state->file_header->flags -= LHD_SOLID;
 				}
+				retval = rar_unpack(state->fd, state->file_header->unpack_ver,
+							state->file_header->flags & LHD_SOLID,	state->unpack_data);
 			}
 			cli_dbgmsg("Expected File CRC: 0x%x\n", state->file_header->file_crc);
 			cli_dbgmsg("Computed File CRC: 0x%x\n", state->unpack_data->unp_crc^0xffffffff);

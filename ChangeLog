@@ -1,3 +1,8 @@
+Tue May 29 21:47:23 CEST 2007 (tk)
+----------------------------------
+  * libclamav/unrar/unrar.c: improve handling of corrupted/handcrafed headers
+			     (bb#511, patch from Trog)
+
 Tue May 29 21:28:40 CEST 2007 (tk)
 ----------------------------------
   * libclamav/unsp.c: fix end of buffer calculation (bb#464, patch from aCaB)
