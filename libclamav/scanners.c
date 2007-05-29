@@ -85,7 +85,6 @@ extern short cli_leavetemps_flag;
 #include "mspack.h"
 #include "cab.h"
 #include "rtf.h"
-#include "nsis/nulsft.h"
 
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>
@@ -103,6 +102,7 @@ extern short cli_leavetemps_flag;
 
 #define MAX_MAIL_RECURSION  15
 
+int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset); /* FIXME */
 static int cli_scanfile(const char *filename, cli_ctx *ctx);
 
 static int cli_unrar_scanmetadata(int desc, rar_metadata_t *metadata, cli_ctx *ctx, unsigned int files, uint32_t* sfx_check)
@@ -799,67 +799,6 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
     return ret;
 }
 #endif
-
-static int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
-        int ret;
-	struct nsis_st nsist;
-
-    cli_dbgmsg("in scannulsft()\n");
-    if(ctx->limits && ctx->limits->maxreclevel && ctx->arec >= ctx->limits->maxreclevel) {
-        cli_dbgmsg("Archive recursion limit exceeded (arec == %u).\n", ctx->arec+1);
-	return CL_EMAXREC;
-    }
-
-    memset(&nsist, 0, sizeof(struct nsis_st));
-
-    nsist.ifd = desc;
-    nsist.off = offset;
-    nsist.dir = cli_gentemp(NULL);
-    if(mkdir(nsist.dir, 0700)) {
-	cli_dbgmsg("NSIS: Can't create temporary directory %s\n", nsist.dir);
-	free(nsist.dir);
-	return CL_ETMPDIR;
-    }
-
-    ctx->arec++;
-
-    do {
-        ret = cli_nsis_unpack(&nsist, ctx);
-	if(ret != CL_SUCCESS) {
-	    if(ret == CL_EMAXSIZE) {
-	        if(BLOCKMAX) {
-		    *ctx->virname = "NSIS.ExceededFileSize";
-		    ret=CL_VIRUS;
-		} else {
-		    ret = nsist.solid ? CL_BREAK : CL_SUCCESS;
-		}
-	    }
-	} else {
-	    cli_dbgmsg("NSIS: Successully extracted file #%u\n", nsist.fno);
-	    lseek(nsist.ofd, 0, SEEK_SET);
-	    if(nsist.fno == 1)
-	        ret=cli_scandesc(nsist.ofd, ctx, 0, 0, 0, NULL);
-	    else
-	        ret=cli_magic_scandesc(nsist.ofd, ctx);
-	    close(nsist.ofd);
-	    if(!cli_leavetemps_flag)
-	        unlink(nsist.ofn);
-	}
-    } while(ret == CL_SUCCESS);
-
-    if(ret == CL_BREAK)
-	ret = CL_CLEAN;
-
-    cli_nsis_free(&nsist);
-
-    if(!cli_leavetemps_flag)
-        cli_rmdirs(nsist.dir);
-
-    free(nsist.dir);
-
-    ctx->arec--;    
-    return ret;
-}
 
 static int cli_scanszdd(int desc, cli_ctx *ctx)
 {
