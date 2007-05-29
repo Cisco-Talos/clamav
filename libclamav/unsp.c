@@ -153,7 +153,7 @@ uint32_t unspack(char *start_of_stuff, char *dest, cli_ctx *ctx, uint32_t rva, u
   ssize = cli_readint32(start_of_stuff+5);
   if (ssize <= 13) {
   	free(table);
-  	return 1
+  	return 1;
   }
 
   tre = very_real_unpack(table,tablesz,tre,allocsz,firstbyte,src,ssize,dst,dsize);
