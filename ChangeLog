@@ -1,3 +1,7 @@
+Tue May 29 17:42:12 CEST 2007 (tk)
+----------------------------------
+  * libclamav/ole2_extract.c: detect block list loop (bb#466), patch from Trog
+
 Tue May 29 17:07:08 CEST 2007 (edwin)
 ----------------------------------
   * libclamav/phishcheck.c: bb #497

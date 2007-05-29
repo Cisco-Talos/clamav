@@ -1,7 +1,7 @@
 /*
  *  Extract component parts of OLE2 files (e.g. MS Office Documents)
  *
- *  Copyright (C) 2004 trog@uncon.org
+ *  Copyright (C) 2004-2007 trog@uncon.org
  *
  *  This code is based on the OpenOffice and libgsf sources.
  *                  
@@ -588,6 +588,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 	unsigned char *buff;
 	int32_t current_block, ofd, len, offset;
 	char *name, *newname;
+	bitset_t *blk_bitset;
 
 	if (prop->type != 2) {
 		/* Not a file */
@@ -638,14 +639,36 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 		close(ofd);
 		return FALSE;
 	}
-
+	
+	blk_bitset = cli_bitset_init();
+	if (!blk_bitset) {
+		cli_errmsg("ERROR [handler_writefile]: init bitset failed\n");
+		close(ofd);
+		return FALSE;
+	}
 	while((current_block >= 0) && (len > 0)) {
+		/* Check we aren't in a loop */
+		if (cli_bitset_test(blk_bitset, (unsigned long) current_block)) {
+			/* Loop in block list */
+			cli_dbgmsg("OLE2: Block list loop detected\n");
+			close(ofd);
+			free(buff);
+			cli_bitset_free(blk_bitset);
+			return FALSE;
+		}
+		if (!cli_bitset_set(blk_bitset, (unsigned long) current_block)) {
+			close(ofd);
+			free(buff);
+			cli_bitset_free(blk_bitset);
+			return FALSE;
+		}			
 		if (prop->size < (int64_t)hdr->sbat_cutoff) {
 			/* Small block file */
 			if (!ole2_get_sbat_data_block(fd, hdr, buff, current_block)) {
 				cli_dbgmsg("ole2_get_sbat_data_block failed\n");
 				close(ofd);
 				free(buff);
+				cli_bitset_free(blk_bitset);
 				return FALSE;
 			}
 			/* buff now contains the block with 8 small blocks in it */
@@ -653,6 +676,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 			if (cli_writen(ofd, &buff[offset], MIN(len,64)) != MIN(len,64)) {
 				close(ofd);
 				free(buff);
+				cli_bitset_free(blk_bitset);
 				return FALSE;
 			}
 
@@ -663,12 +687,14 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 			if (!ole2_read_block(fd, hdr, buff, current_block)) {
 				close(ofd);
 				free(buff);
+				cli_bitset_free(blk_bitset);
 				return FALSE;
 			}
 			if (cli_writen(ofd, buff, MIN(len,(1 << hdr->log2_big_block_size))) !=
 							MIN(len,(1 << hdr->log2_big_block_size))) {
 				close(ofd);
 				free(buff);
+				cli_bitset_free(blk_bitset);
 				return FALSE;
 			}
 
@@ -678,6 +704,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 	}
 	close(ofd);
 	free(buff);
+	cli_bitset_free(blk_bitset);
 	return TRUE;
 }
 
