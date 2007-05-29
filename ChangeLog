@@ -1,3 +1,7 @@
+Tue May 29 09:17:41 BST 2007 (trog)
+-----------------------------------
+  * libclamav/unrar/unrar.c: Bug #521, #368
+
 Mon May 28 18:16:25 CEST 2007 (tk)
 ----------------------------------
   * configure: handle FreeBSD 7.x

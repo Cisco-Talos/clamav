@@ -942,8 +942,8 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 	}
 	if (new_filter) {
 		vm_codesize = rarvm_read_data(&rarvm_input);
-		if (vm_codesize >= 0x1000 || vm_codesize == 0) {
-			cli_dbgmsg("ERROR: vm_codesize=0x%x\n", vm_codesize);
+		if (vm_codesize >= 0x1000 || vm_codesize == 0 || (vm_codesize > rarvm_input.buf_size)) {
+			cli_dbgmsg("ERROR: vm_codesize=0x%x buf_size=0x%x\n", vm_codesize, rarvm_input.buf_size);
 			return FALSE;
 		}
 		vm_code = (unsigned char *) cli_malloc(vm_codesize);
@@ -1015,6 +1015,10 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 		}
 		global_data = &stack_filter->prg.global_data[VM_FIXEDGLOBALSIZE];
 		for (i=0 ; i< data_size ; i++) {
+			if ((rarvm_input.in_addr+2) > rarvm_input.buf_size) {
+				cli_dbgmsg("Buffer truncated\n");
+				return FALSE;
+			}
 			global_data[i] = rarvm_getbits(&rarvm_input) >> 8;
 			rar_dbgmsg("global_data[%d] = %d\n", i, global_data[i]);
 			rarvm_addbits(&rarvm_input, 8);
