@@ -1,6 +1,10 @@
+Wed May 30 13:27:09 CEST 2007 (tk)
+----------------------------------
+  * fresclam/manager.c: add sanity check for %v (bb#463)
+
 Tue May 29 21:47:23 CEST 2007 (tk)
 ----------------------------------
-  * libclamav/unrar/unrar.c: improve handling of corrupted/handcrafed headers
+  * libclamav/unrar/unrar.c: improve handling of corrupted/handcrafted headers
 			     (bb#511, patch from Trog)
 
 Tue May 29 21:28:40 CEST 2007 (tk)

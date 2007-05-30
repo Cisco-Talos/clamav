@@ -1268,7 +1268,19 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	if(arg) {
 		char *cmd = strdup(arg);
 
-	    if((pt = strstr(cmd, "%v")) && newver && isdigit(*newver)) {
+	    if((pt = newver)) {
+		while(*pt) {
+		    if(!strchr("0123456789.", *pt)) {
+			logg("!downloadmanager: OnOutdatedExecute: Incorrect version number string\n");
+			free(newver);
+			newver = NULL;
+			break;
+		    }
+		    pt++;
+		}
+	    }
+
+	    if(newver && (pt = strstr(cmd, "%v"))) {
 		    char *buffer = (char *) malloc(strlen(cmd) + strlen(newver) + 10);
 
 		if(!buffer) {
@@ -1288,11 +1300,12 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 		free(buffer);
 	    }
 
-	    if(opt_check(opt, "daemon"))
-		execute("OnOutdatedExecute", cmd);
-	    else
-		system(cmd);
-
+	    if(newver) {
+		if(opt_check(opt, "daemon"))
+		    execute("OnOutdatedExecute", cmd);
+		else
+		    system(cmd);
+	    }
 	    free(cmd);
 	}
     }
