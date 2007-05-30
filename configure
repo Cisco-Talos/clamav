@@ -2749,7 +2749,7 @@ ac_config_headers="$ac_config_headers clamav-config.h"
 
 
 LC_CURRENT=2
-LC_REVISION=1
+LC_REVISION=4
 LC_AGE=0
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 
@@ -23060,7 +23060,7 @@ _ACEOF
 
     use_gethostbyname_r="no"
     ;;
-freebsd6*)
+freebsd*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lthr"
 	TH_SAFE="-thread-safe"
