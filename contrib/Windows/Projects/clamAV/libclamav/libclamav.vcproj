@@ -19,7 +19,7 @@
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
+			ConfigurationType="2"
 			CharacterSet="0"
 			>
 			<Tool
@@ -41,7 +41,7 @@
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="false"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\js&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\pthread&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\mspack&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\unrar&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav&quot;"
+				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\mspack&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\unrar&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\nsis&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\js&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\pthread&quot;"
 				PreprocessorDefinitions="_USE_32BIT_TIME_T;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;PTW32_STATIC_LIB;_DEBUG"
 				StringPooling="true"
 				MinimalRebuild="true"
@@ -67,11 +67,16 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
-				UseUnicodeResponseFiles="false"
+				Name="VCLinkerTool"
+				AdditionalDependencies="ws2_32.lib"
+				ModuleDefinitionFile="$(InputDir)/libclamav.def"
+				SubSystem="2"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -83,6 +88,12 @@
 				Name="VCFxCopTool"
 			/>
 			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
@@ -90,7 +101,7 @@
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
+			ConfigurationType="2"
 			CharacterSet="0"
 			WholeProgramOptimization="1"
 			>
@@ -112,7 +123,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="false"
-				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\js&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\pthread&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\mspack&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\unrar&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav&quot;"
+				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\mspack&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\unrar&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\nsis&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\js&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\pthread&quot;"
 				PreprocessorDefinitions="_USE_32BIT_TIME_T;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;PTW32_STATIC_LIB"
 				StringPooling="true"
 				ExceptionHandling="0"
@@ -137,11 +148,16 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
-				UseUnicodeResponseFiles="false"
+				Name="VCLinkerTool"
+				AdditionalDependencies="ws2_32.lib"
+				ModuleDefinitionFile="$(InputDir)/libclamav.def"
+				SubSystem="2"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -151,6 +167,94 @@
 			/>
 			<Tool
 				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release no .net|Win32"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="2"
+			CharacterSet="0"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				UseUnicodeResponseFiles="false"
+				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\mspack&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\unrar&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\nsis&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\js&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\pthread&quot;"
+				PreprocessorDefinitions="_USE_32BIT_TIME_T;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;PTW32_STATIC_LIB"
+				StringPooling="true"
+				ExceptionHandling="0"
+				RuntimeLibrary="0"
+				StructMemberAlignment="0"
+				DefaultCharIsUnsigned="false"
+				TreatWChar_tAsBuiltInType="false"
+				UsePrecompiledHeader="0"
+				WarningLevel="4"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="0"
+				CallingConvention="0"
+				CompileAs="1"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="ws2_32.lib"
+				GenerateManifest="false"
+				ModuleDefinitionFile="$(InputDir)/libclamav.def"
+				SubSystem="2"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -212,9 +316,21 @@
 						WarningLevel="4"
 					/>
 				</FileConfiguration>
+				<FileConfiguration
+					Name="Release no .net|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						WarningLevel="4"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\dconf.c"
+				>
+			</File>
+			<File
+				RelativePath=".\dllmain.c"
 				>
 			</File>
 			<File
@@ -226,11 +342,19 @@
 				>
 			</File>
 			<File
+				RelativePath=".\entconv.c"
+				>
+			</File>
+			<File
 				RelativePath=".\filetypes.c"
 				>
 			</File>
 			<File
 				RelativePath=".\fsg.c"
+				>
+			</File>
+			<File
+				RelativePath=".\hashtab.c"
 				>
 			</File>
 			<File
@@ -529,6 +653,26 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="nsis"
+				>
+				<File
+					RelativePath=".\nsis\bzlib.c"
+					>
+				</File>
+				<File
+					RelativePath=".\nsis\infblock.c"
+					>
+				</File>
+				<File
+					RelativePath=".\nsis\LZMADecode.c"
+					>
+				</File>
+				<File
+					RelativePath=".\nsis\nulsft.c"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -584,6 +728,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\entconv.h"
+				>
+			</File>
+			<File
 				RelativePath=".\execs.h"
 				>
 			</File>
@@ -593,6 +741,10 @@
 			</File>
 			<File
 				RelativePath=".\fsg.h"
+				>
+			</File>
+			<File
+				RelativePath=".\hashtab.h"
 				>
 			</File>
 			<File
@@ -713,6 +865,10 @@
 			</File>
 			<File
 				RelativePath=".\regex_list.h"
+				>
+			</File>
+			<File
+				RelativePath=".\resource.h"
 				>
 			</File>
 			<File
@@ -923,6 +1079,38 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="nsis"
+				>
+				<File
+					RelativePath=".\nsis\bzlib_private.h"
+					>
+				</File>
+				<File
+					RelativePath=".\nsis\LZMADecode.h"
+					>
+				</File>
+				<File
+					RelativePath=".\nsis\nsis_bzlib.h"
+					>
+				</File>
+				<File
+					RelativePath=".\nsis\nsis_zconf.h"
+					>
+				</File>
+				<File
+					RelativePath=".\nsis\nsis_zlib.h"
+					>
+				</File>
+				<File
+					RelativePath=".\nsis\nsis_zutil.h"
+					>
+				</File>
+				<File
+					RelativePath=".\nsis\nulsft.h"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Resource Files"
@@ -930,7 +1118,7 @@
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
 			<File
-				RelativePath=".\clamAV.ico"
+				RelativePath=".\libclamav.def"
 				>
 			</File>
 		</Filter>

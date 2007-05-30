@@ -116,10 +116,15 @@ int	gettimeofday(struct timeval* tp, void* tz);
 #define	pause();
 
 #ifdef	_DEBUG
-#include	<crtdbg.h>
+
+/* http://msdn2.microsoft.com/en-us/library/e5ewb1h3(VS.80).asp */
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+
 /* breaks mspack/qtmd.c :-( */
 /* #define	free(p)	{ _free_dbg(p, _NORMAL_BLOCK); } */
-#define	_CRTDBG_MAP_ALLOC 
+
 #endif
 
 #endif	/* C_WINDOWS */

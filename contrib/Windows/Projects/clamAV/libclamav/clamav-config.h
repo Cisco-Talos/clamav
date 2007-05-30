@@ -347,14 +347,7 @@
 /* #define USE_SYSLOG 1 */
 
 /* Version number of package */
-#define VERSION "devel-20070416"
-
-/* use libcurl in mbox code */
-#ifdef	CL_EXPERIMENTAL
-/*#define WITH_CURL 1	/* A lie, since we're dropping curl, but it works */
-#else
-/* #undef WITH_CURL */
-#endif
+#define VERSION "devel-20070527"
 
 /* tcpwrappers support */
 /* #undef WITH_TCPWRAP */
