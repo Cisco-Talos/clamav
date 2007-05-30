@@ -1,3 +1,47 @@
+*** /home/njh/src/clamav-devel/trunk/./clamscan/clamscan.c	2007-05-01 16:32:06.000000000 +0100
+--- ./clamscan/clamscan.c	2007-05-01 16:33:30.000000000 +0100
+***************
+*** 244,255 ****
+  
+      opt_free(opt);
+  
+! #if defined(C_WINDOWS) && defined(CL_THREAD_SAFE)
+      if(!pthread_win32_process_detach_np()) {
+  	logg("!Can't stop the win32 pthreads layer\n");
+  	return 72;
+      }
+  #endif
+  
+      return ret;
+  }
+--- 244,260 ----
+  
+      opt_free(opt);
+  
+! #ifdef	C_WINDOWS)
+! #ifdef	CL_THREAD_SAFE
+      if(!pthread_win32_process_detach_np()) {
+  	logg("!Can't stop the win32 pthreads layer\n");
+  	return 72;
+      }
+  #endif
++ #ifdef	_DEBUG
++     _CrtDumpMemoryLeaks();
++ #endif
++ #endif
+  
+      return ret;
+  }
+***************
+*** 315,320 ****
+--- 320,326 ----
+      mprintf("    --block-encrypted                    Block encrypted archives\n");
+      mprintf("    --block-max                          Block archives that exceed limits\n");
+      mprintf("    --mail-follow-urls                   Download and scan URLs\n");
++ 
+      mprintf("\n");
+      mprintf("    --max-space=#n                       Only extract first #n kilobytes from\n");
+      mprintf("                                         archived files\n");
 *** /home/njh/src/clamav-devel/trunk/./clamscan/manager.h	2007-03-31 23:10:05.000000000 +0100
 --- ./clamscan/manager.h	2007-04-21 08:44:22.000000000 +0100
 ***************
@@ -150,8 +194,8 @@
   	close(acceptd);
   	mdprintf(odesc, "tempfile() failed. ERROR\n");
   	logg("!ScanStream %u: Can't create temporary file.\n", port);
-*** /home/njh/src/clamav-devel/trunk/./clamd/clamd.c	2007-03-31 23:10:05.000000000 +0100
---- ./clamd/clamd.c	2007-04-21 08:46:50.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./clamd/clamd.c	2007-05-01 16:32:06.000000000 +0100
+--- ./clamd/clamd.c	2007-05-01 16:35:28.000000000 +0100
 ***************
 *** 35,41 ****
   #include <sys/stat.h>
@@ -208,27 +252,10 @@
   
       if(logg_size)
   	logg("Log file size limited to %d bytes.\n", logg_size);
+*** /home/njh/src/clamav-devel/trunk/./clamd/server-th.c	2007-05-28 18:22:20.000000000 +0100
+--- ./clamd/server-th.c	2007-05-01 16:34:28.000000000 +0100
 ***************
-*** 366,372 ****
-  	    logg_close();
-  	    freecfg(copt);
-  	    if(tcpsock)
-! 		close(lsockets[0]);
-  	    return 1;
-  	}
-  	nlsockets++;
---- 375,381 ----
-  	    logg_close();
-  	    freecfg(copt);
-  	    if(tcpsock)
-! 		closesocket(lsockets[0]);
-  	    return 1;
-  	}
-  	nlsockets++;
-*** /home/njh/src/clamav-devel/trunk/./clamd/server-th.c	2007-03-27 09:06:14.000000000 +0100
---- ./clamd/server-th.c	2007-03-27 09:06:34.000000000 +0100
-***************
-*** 588,594 ****
+*** 586,592 ****
   		client_conn->socketds = socketds;
   		client_conn->nsockets = nsockets;
   		if (!thrmgr_dispatch(thr_pool, client_conn)) {
@@ -236,7 +263,7 @@
   		    free(client_conn);
   		    logg("!thread dispatch failed\n");
   		}
---- 588,594 ----
+--- 586,592 ----
   		client_conn->socketds = socketds;
   		client_conn->nsockets = nsockets;
   		if (!thrmgr_dispatch(thr_pool, client_conn)) {
@@ -245,7 +272,7 @@
   		    logg("!thread dispatch failed\n");
   		}
 ***************
-*** 596,604 ****
+*** 594,602 ****
   
   	pthread_mutex_lock(&exit_mutex);
   	if(progexit) {
@@ -255,7 +282,7 @@
   	    pthread_mutex_unlock(&exit_mutex);
   	    break;
   	}
---- 596,608 ----
+--- 594,606 ----
   
   	pthread_mutex_lock(&exit_mutex);
   	if(progexit) {
@@ -270,7 +297,7 @@
   	    break;
   	}
 ***************
-*** 627,634 ****
+*** 625,632 ****
   	    engine = reload_db(engine, dboptions, copt, FALSE, &ret);
   	    if(ret) {
   		logg("Terminating because of a fatal error.\n");
@@ -279,7 +306,7 @@
   		break;
   	    }
   	    pthread_mutex_lock(&reload_mutex);
---- 631,640 ----
+--- 629,638 ----
   	    engine = reload_db(engine, dboptions, copt, FALSE, &ret);
   	    if(ret) {
   		logg("Terminating because of a fatal error.\n");
@@ -340,7 +367,7 @@
       }
   
 *** /home/njh/src/clamav-devel/trunk/./clamdscan/client.c	2007-03-31 23:10:05.000000000 +0100
---- ./clamdscan/client.c	2007-04-21 14:00:57.000000000 +0100
+--- ./clamdscan/client.c	2007-04-21 14:00:56.000000000 +0100
 ***************
 *** 16,36 ****
 --- 16,44 ----
