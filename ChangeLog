@@ -1,3 +1,7 @@
+Wed May 30 15:07:58 CEST 2007 (tk)
+----------------------------------
+  * libclamav/scanners.c: fix warning on AES encrypted zip archives (bb#430)
+
 Wed May 30 13:27:09 CEST 2007 (tk)
 ----------------------------------
   * fresclam/manager.c: add sanity check for %v (bb#463)

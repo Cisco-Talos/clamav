@@ -441,17 +441,19 @@ static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    break;
         }
 
-	if(DETECT_ENCRYPTED && encrypted) {
-	    cli_dbgmsg("Zip: Encrypted files found in archive.\n");
-	    lseek(desc, 0, SEEK_SET);
-	    ret = cli_scandesc(desc, ctx, 0, 0, 0, NULL);
-	    if(ret < 0) {
+	if(encrypted) {
+	    if(DETECT_ENCRYPTED) {
+		cli_dbgmsg("Zip: Encrypted files found in archive.\n");
+		lseek(desc, 0, SEEK_SET);
+		ret = cli_scandesc(desc, ctx, 0, 0, 0, NULL);
+		if(ret < 0) {
+		    break;
+		} else if(ret != CL_VIRUS) {
+		    *ctx->virname = "Encrypted.Zip";
+		    ret = CL_VIRUS;
+		}
 		break;
-	    } else if(ret != CL_VIRUS) {
-		*ctx->virname = "Encrypted.Zip";
-		ret = CL_VIRUS;
-	    }
-	    break;
+	    } else continue;
 	}
 
 	if(ctx->limits) {
