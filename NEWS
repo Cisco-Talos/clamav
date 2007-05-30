@@ -1,10 +1,22 @@
-0.90.1
-------
+0.91rc1
+-------
 
-This release includes various bugfixes and code enhancements. Please
-see ChangeLog for complete list of changes.
+ClamAV 0.91rc1 is the first release to enable the anti-phishing technology
+in default builds. This technology combines heuristics with special
+signatures and provides effective protection against phishing threats.
+Other important changes and add-ons in this version include:
 
-** Important note **: please run 'ldconfig' after installing this version.
+    - unpacker for NSIS (Nullsoft Scriptable Install System) self-extracting
+      archives
+    - new implementation of the Aho-Corasick pattern matcher providing
+      better detection for wildcard enabled signatures
+    - support for nibble matching and floating offsets
+    - improved handling of .mdb files (fixes long startup times)
+    - extraction of PE files embedded into other executables
+    - better handling of PE & UPX
+    - removed dependency on libcurl (improves stability)
+    - IPv6 support in clamav-milter
+    - many other improvements and bugfixes
 
 --
 The ClamAV team (http://www.clamav.net/team)
