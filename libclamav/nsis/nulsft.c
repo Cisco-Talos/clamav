@@ -35,6 +35,8 @@
 #include "nsis_bzlib.h"
 #include "LZMADecode.h"
 #include "nsis_zlib.h"
+#include "matcher.h"
+#include "scanners.h"
 
 extern short cli_leavetemps_flag;
 
@@ -512,3 +514,4 @@ int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
     ctx->arec--;    
     return ret;
 }
+
