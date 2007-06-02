@@ -1,3 +1,8 @@
+Thu May 31 17:43:10 CEST 2007 (edwin)
+------------------------------------
+  * libclamav/regex_list.c: handle chaining of multiple OP_DOT in same node.
+  (bug #529)
+
 Thu May 31 17:59:10 CEST 2007 (acab)
 ------------------------------------
   * libclamav/nsis/nulsft.c: added missing includes
