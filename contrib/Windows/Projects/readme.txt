@@ -15,6 +15,6 @@ TODO:	Support GMP
 	On access scanning
 	Investigation of .NET dependencies
 	Scan when a screensaver kicks in
-	zlib and pthreads should be DLL, not bunlded into libclamav.dll
+	zlib and pthreads should be DLL, not bundled into libclamav.dll
 
 -Nigel Horne
