@@ -1,3 +1,7 @@
+Sat Jun 09 23:16:00 EEST 2007 (edwin)
+------------------------------------
+  * libclamav/regex_list.c: draft of new regex_list.c
+
 Sat Jun 09 18:37:00 EEST 2007 (edwin)
 ------------------------------------
   * libclamav/regex_list.c: first draft of new implementation for regex_list.c 

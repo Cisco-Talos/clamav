@@ -1527,11 +1527,14 @@ void dump_tree(struct tree_node* root)
  *
  * "go to parent" below actually means, return from recursive call.
  *
+ * fail_action: we need to return to closest failure point (recursive call point),
+ *  and switch current node to node pointed by fail_action
+ *
  * Node types:
  * 	OP_ROOT: contains information that applies to the entire trie.
  * 		it can only appear as root node, and not as child node.
  * 		On child fail: match has failed
- * 		This is a recursive call point
+ * 		This is NOT a recursive call point
  * 	OP_CHAR_BINARY_SEARCH: chooses a sub-trie, based on current character; 
  * 			using binary-search
  * 			On fail: go to node indicated by fail_action, or if 
@@ -1548,6 +1551,8 @@ void dump_tree(struct tree_node* root)
  *		On fail: fail_action, or parent if NULL
  *		On child fail: reduce match repeat count, try again on child, if
  *			repeat count<min_range, execute fail of current node
+ *		Also has a bitmap on what characters are accepted beyond it,
+ *		as an optimizations for the case, when a maximum match isn't possible
  *		Not recomended to use this when min_range=max_range=1
  *		This is a recursive call point
  *	OP_DOT_REPEAT: like OP_CHAR_REPEAT but accept any character
@@ -1577,6 +1582,7 @@ void dump_tree(struct tree_node* root)
  *
  */ 
 
+#include <string.h>
 #include "cltypes.h"
 #include "others.h"
 
@@ -1624,7 +1630,8 @@ struct trie_node_binary_search
 	struct trie_node node;
 	uint8_t children_count;/* number of children to search among -1! 255 = 256 children*/	
 	struct trie_node* fail_action;
-	struct trie_node** children;
+	unsigned char* char_choices;/* children_count elements */
+	struct trie_node** children;/*children_count elements */
 };
 
 struct trie_node_alternatives
@@ -1642,6 +1649,9 @@ struct trie_node_char_repeat
 	struct trie_node node;
 	unsigned char character;
 	uint8_t range_min, range_max;/* according to POSIX we need not support more than 255 repetitions*/
+	struct char_bitmap* bitmap_accept_after;/* bitmap of characters accepted after this, 
+						   to optimize repeat < max_range case; if its NULL
+						   there is no optimization*/
 	struct trie_node* child;
 	struct trie_node* fail_action;
 };
@@ -1650,6 +1660,9 @@ struct trie_node_dot_repeat
 {
 	struct trie_node node;
 	uint8_t range_min, range_max;/* according to POSIX we need not support more than 255 repetitions*/
+	struct char_bitmap* bitmap_accept_after;/* bitmap of characters accepted after this, 
+						   to optimize repeat < max_range case; if its NULL
+						   there is no optimization*/
 	struct trie_node* child;
 	struct trie_node* fail_action;
 };
@@ -1674,22 +1687,65 @@ struct trie_node_strcmp
 	uint8_t string_length;/* for longer strings a sequence of node_strcmp should be used */
 	unsigned char* string;
 	struct trie_node* child;
-	struct trie_node** fail_actions;/* this has string_length elements */
+	struct trie_node** fail_actions;/* this has string_length elements, or NULL if no fail_actions are computed */
 };
 
 struct trie_node_char_class_repeat
 {
 	struct trie_node node;
 	struct char_bitmap* bitmap;
+	struct char_bitmap* bitmap_accept_after;
 	uint8_t range_min, range_max;
 	struct trie_node* child;
 	struct trie_node* fail_action;
 };
 
-
-static int match_node(const struct trie_node* node)
+static inline int bitmap_accepts(const struct char_bitmap* bitmap, const char c)
 {
-	while(node->type != OP_MATCH_OK) {	
+	/* TODO: check if c is accepted by bitmap */
+	return 0;
+}
+
+#define MATCH_FAILED 0
+#define MATCH_OK     1
+
+#define FAIL_ACTION( fail_node ) (*fail_action = (fail_node), MATCH_FAILED)
+
+
+#ifndef MIN
+#define MIN(a,b) ((a)<(b) ? (a) : (b))
+#endif
+
+static int match_node(const struct trie_node* node, const unsigned char* text, const unsigned char* text_end, const struct trie_node** fail_action);
+
+static int match_repeat(const unsigned char* text, const unsigned char* text_end, const size_t range_min, const size_t repeat_start, 
+		const struct char_bitmap* bitmap_accept_after, const struct trie_node* child, const struct trie_node** fail_action,
+		const struct trie_node* this_fail_action)
+{
+	size_t i;
+	for(i = repeat_start;i > range_min;i--) {
+		if(!bitmap_accept_after || bitmap_accepts( bitmap_accept_after, text[i-1])) {
+			int rc = match_node(child, &text[i], text_end, fail_action);
+			/* ignore fail_action for now, we have the bitmap_accepts_after optimization */
+			if(rc) {
+				return MATCH_OK;
+			}
+		}						
+	}
+	if(!range_min) {
+		/* this match is optional, try child only */
+		int rc = match_node(child, text, text_end, fail_action);
+		if(rc) {
+			return MATCH_OK;
+		}
+	}
+	return FAIL_ACTION(this_fail_action);
+}
+
+/* text_end points to \0 in text */
+static int match_node(const struct trie_node* node, const unsigned char* text, const unsigned char* text_end, const struct trie_node** fail_action)
+{
+	while(node && text < text_end) {	
 		switch(node->type) {
 			case OP_ROOT:
 				{	
@@ -1698,56 +1754,151 @@ static int match_node(const struct trie_node* node)
 					break;
 				}
 			case OP_CHAR_BINARY_SEARCH:
-				{
+				{					
 					const struct trie_node_binary_search* bin_node = container_of_const(node, const struct trie_node_binary_search, node);
-					/* TODO: binary search */
+					const unsigned char csearch = *text;
+					size_t mid, left = 0, right = bin_node->children_count-1;					
+					while(left<=right) {
+						mid = left+(right-left)/2;
+						if(bin_node->char_choices[mid] == csearch)
+							break;
+						else if(bin_node->char_choices[mid] < csearch)
+							left = mid+1;
+						else
+							right = mid-1;
+					}
+					if(left <= right) {
+						/* match successful */
+						node = bin_node->children[mid];
+						++text;
+					}
+					else {
+						return FAIL_ACTION( bin_node->fail_action );
+					}
 					break;
 				}
 			case OP_ALTERNATIVES:
 				{
 					const struct trie_node_alternatives* alt_node = container_of_const(node, const struct trie_node_alternatives, node);
-					/* TODO: op_alt */
+					size_t i;
+					*fail_action = NULL;
+					for(i=0;i < alt_node->alternatives_count;i++) {
+						int rc = match_node(alt_node->children[i], text, text_end, fail_action);
+						if(rc) {							
+							return MATCH_OK;
+						}
+						/* supporting fail_actions is tricky,
+						 *  if we just go to the node specified, what happens if the match fails, and no
+						 *  further fail_action is specified? We should know where to continue the search.
+						 * For now fail_action isn't supported for OP_ALTERNATIVES*/						
+					}
 					break;
 				}
 			case OP_CHAR_REPEAT:
 				{
 					const struct trie_node_char_repeat* char_rep_node = container_of_const(node, const struct trie_node_char_repeat, node);
-					break;
+					const size_t max_len = MIN( text_end - text, char_rep_node->range_max-1);
+					/* todo: what about the 8 bit limitation of range_max, and what about inf (+,*)? */
+					const char caccept = char_rep_node->character;
+					size_t rep;
+
+					if(max_len < char_rep_node->range_min)
+						return FAIL_ACTION(char_rep_node->fail_action);
+
+					for(rep=0;rep < max_len;rep++) {
+						if(text[rep] != caccept) {
+							break;
+						}
+					}
+
+					return match_repeat(text, text_end, char_rep_node->range_min, rep,
+							char_rep_node->bitmap_accept_after, char_rep_node->child, fail_action,
+							char_rep_node->fail_action);
 				}
 			case OP_DOT_REPEAT:
 				{
 					const struct trie_node_dot_repeat* dot_rep_node = container_of_const(node, const struct trie_node_dot_repeat, node);
-					break;
+					const size_t max_len = MIN( text_end - text, dot_rep_node->range_max-1);
+					/* todo: what about the 8 bit limitation of range_max, and what about inf (+,*)? */
+
+					if(max_len < dot_rep_node->range_min)
+						return FAIL_ACTION(dot_rep_node->fail_action);
+
+					return match_repeat(text, text_end, dot_rep_node->range_min, max_len,
+							dot_rep_node->bitmap_accept_after, dot_rep_node->child, fail_action,
+							dot_rep_node->fail_action);
 				}
 			case OP_CHAR_CLASS_REPEAT:
 				{
 					const struct trie_node_char_class_repeat* class_rep_node = container_of_const(node, const struct trie_node_char_class_repeat, node);
+					const size_t max_len = MIN( text_end - text, class_rep_node->range_max-1);
+					/* todo: what about the 8 bit limitation of range_max, and what about inf (+,*)? */
+					size_t rep;
+
+					if(max_len < class_rep_node->range_min)
+						return FAIL_ACTION(class_rep_node->fail_action);
+
+					for(rep=0;rep < max_len;rep++) {
+						if(!bitmap_accepts( class_rep_node->bitmap, text[rep])) {
+							break;
+						}
+					}
+
+					return match_repeat(text, text_end, class_rep_node->range_min, rep,
+							class_rep_node->bitmap_accept_after, class_rep_node->child, fail_action,
+							class_rep_node->fail_action);
 					break;
 				}
 			case OP_STRCMP:
 				{
 					const struct trie_node_strcmp* strcmp_node = container_of_const(node, const struct trie_node_strcmp, node);
+					size_t i;
+					if(strcmp_node->fail_actions) {
+						const size_t max_len = MIN(strcmp_node->string_length, text_end-text);
+						/* we don't use strncmp, because we need the exact match-fail point */
+						for(i=0;i < max_len;i++) {
+							if(text[i] != strcmp_node->string[i]) {
+								return FAIL_ACTION( strcmp_node->fail_actions[i] );
+							}
+						}
+						if(max_len < strcmp_node->string_length) {
+							/* failed, because text was shorter */
+							return FAIL_ACTION( strcmp_node->fail_actions[max_len] );
+						}
+					}
+					else {
+						/* no fail_actions computed, some shortcuts possible on compare */
+						if((text_end - text < strcmp_node->string_length) ||
+								strncmp((const char*)text, (const char*)strcmp_node->string, strcmp_node->string_length)) {
+
+							return FAIL_ACTION( NULL );
+						}
+					}
+					/* match successful */
+					node = strcmp_node->child;
+					text += strcmp_node->string_length;
 					break;
 				}
 			case OP_GROUP_START:
 				{
 					const struct trie_node_group_start* group_start_node = container_of_const(node, const struct trie_node_group_start, node);
+					/* TODO: implement */
 					break;
 				}
 			case OP_GROUP_END:
-				{
+				{					
 					const struct trie_node_group_end* group_end_node = container_of_const(node, const struct trie_node_group_end, node);
+					/* TODO: implement */
 					break;
 				}
-			default:
+			case OP_MATCH_OK:
 				{
-					cli_warnmsg("Unimplemented node type:%d", node->type);
-					return 0;
-					break;
+					return MATCH_OK;
 				}
 		}
 	}
-	return 1;/* match */
+	/* if fail_action was NULL, or text ended*/
+	return MATCH_FAILED;
 }
 
 #endif
