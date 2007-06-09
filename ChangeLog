@@ -1,4 +1,8 @@
-Thu May 31 17:43:10 CEST 2007 (edwin)
+Sat Jun 09 18:37:00 EEST 2007 (edwin)
+------------------------------------
+  * libclamav/regex_list.c: first draft of new implementation for regex_list.c 
+
+Thu May 31 17:43:10 EEST 2007 (edwin)
 ------------------------------------
   * libclamav/regex_list.c: handle chaining of multiple OP_DOT in same node.
   (bug #529)

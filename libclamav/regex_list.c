@@ -24,7 +24,6 @@
 #include "clamav-config.h"
 #endif
 
-
 #ifndef CL_DEBUG
 #define NDEBUG
 #endif
@@ -34,6 +33,17 @@
 #define _REENTRANT
 #endif
 #endif
+
+
+/* TODO: when implementation of new version is complete, enable it in CL_EXPERIMENTAL */
+#ifdef CL_EXPERIMENTAL
+//#define USE_NEW_VERSION
+#endif
+
+#ifndef USE_NEW_VERSION
+/*this is the old version of regex_list.c
+ *reason for redesign: there is only one node type that has to handle all the cases: binary search among children, alternatives list, match.
+ * This design is very error-prone.*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1491,5 +1501,254 @@ void dump_tree(struct tree_node* root)
 	dump_node(root);
 	printf("}\n");
 }
+#endif
+
+
+#else
+/*------------------------New version of regex_list.c------------------------*/
+
+/* Regex_list.c: 
+ * A scalable, trie-based implementation for matching against 
+ * a list of regular expressions.
+ *
+ * A trivial way to implement matching against a list of regular expressions 
+ * would have been to construct a single regular expression, by concatenating 
+ * the list with the alternate (|) operator.
+ * BUT a usual DFA implementation of regular expression matching (eg.: GNU libc)
+ * leads to "state explosion" when there are many (5000+) alternate (|) operators.
+ * This is the reason for using a trie-based implementation.
+ *
+ *
+ * Design considerations:
+ *
+ * Recursive call points: there are situations when match has to be retried on a different sub-trie, or with a different repeat count.
+ * Alternate operators, and repeat/range operators (+,*,{}) are recursiv call points. When a failure is encountered during a match,
+ * the function simply returns from the recursive call, and ends up at a failure point (recursive call point).
+ *
+ * "go to parent" below actually means, return from recursive call.
+ *
+ * Node types:
+ * 	OP_ROOT: contains information that applies to the entire trie.
+ * 		it can only appear as root node, and not as child node.
+ * 		On child fail: match has failed
+ * 		This is a recursive call point
+ * 	OP_CHAR_BINARY_SEARCH: chooses a sub-trie, based on current character; 
+ * 			using binary-search
+ * 			On fail: go to node indicated by fail_action, or if 
+ * 				fail_action is NULL, to parent
+ * 			On child fail: execute fail of current node
+ * 	OP_ALTERNATIVES: try matching each sub-trie, if all fails execute fail
+ * 		action of current node. This is a recursive call point
+ * 	OP_CHAR_REPEAT: repeat specified character a number of times in range:
+ *		[min_range, max_range]; 
+ *			min_range: 0 for * operator
+ *				   1 for + operator
+ *			max_range: remaining length of current string for *,+ operator
+ *			OR: min_range, max_range as specified by the {min,max} operator
+ *		On fail: fail_action, or parent if NULL
+ *		On child fail: reduce match repeat count, try again on child, if
+ *			repeat count<min_range, execute fail of current node
+ *		Not recomended to use this when min_range=max_range=1
+ *		This is a recursive call point
+ *	OP_DOT_REPEAT: like OP_CHAR_REPEAT but accept any character
+ *		Not recomended to use this when min_range=max_range=1
+ *		This is a recursive call point
+ *	OP_GROUP_START: start of a group "(", also specifies group flags:
+ *		repeat: is_repeat, min_range, max_range
+ *		This is a recursive call point if is_repeat
+ *	OP_GROUP_END: end of group ")"
+ *      OP_STRCMP: compare with specified string,
+ *      	   it has an array of fail actions, one for each character
+ *      	   default fail action: go to parent
+ *      	   This was introduced from memory- and speed-efficiency
+ *      	   considerations. 
+ *      OP_CHAR_CLASS_REPEAT: match character with character class
+ *      	min_range, max_range
+ *      	For a single character class min_range=max_range=1
+ *	OP_MATCH_OK: match has succeeded
+ *
+ * TODO: maybe we'll need a more efficient way to choose between character classes.
+ *       OP_DOT_REPEAT/OP_CHAR_REPEAT needs a more efficient specification of its failure function, instead of using
+ *       backtracking approach.
+ *
+ * The failure function/action is just for optimization, the match algorithms works even without it.
+ * TODO:In this first draft fail action will always be NULL, in a later version I'll implement fail actions too.
+ *
+ *
+ */ 
+
+#include "cltypes.h"
+#include "others.h"
+
+/* offsetof is not ANSI C */
+#ifndef offsetof
+#   define offsetof(type,memb) ((size_t)&((type*)0)->memb)
+#endif
+
+#define container_of(ptr, type, member) ( (type *) ((char *)ptr - offsetof(type, member)) )
+#define container_of_const(ptr, type, member) ( (type *) ((const char *)ptr - offsetof(type, member)) )
+
+enum trie_node_type {
+	OP_ROOT,
+	OP_CHAR_BINARY_SEARCH,
+	OP_ALTERNATIVES,
+	OP_CHAR_REPEAT,
+	OP_DOT_REPEAT,
+	OP_CHAR_CLASS_REPEAT,
+	OP_STRCMP,
+	OP_GROUP_START,
+	OP_GROUP_END,
+	OP_MATCH_OK
+};
+
+
+/* the comon definition of a trie node */
+struct trie_node
+{
+	enum trie_node_type type;
+};
+
+struct trie_node_match {
+	struct trie_node node;
+	/* additional match info */
+};
+
+struct trie_node_root
+{
+	struct trie_node node;
+	struct trie_node* child;
+};
+
+struct trie_node_binary_search
+{
+	struct trie_node node;
+	uint8_t children_count;/* number of children to search among -1! 255 = 256 children*/	
+	struct trie_node* fail_action;
+	struct trie_node** children;
+};
+
+struct trie_node_alternatives
+{
+	struct trie_node node;
+	uint32_t alternatives_count;
+	/* need to support node with lots of alternatives, 
+	 * for a worst-case scenario where each line ends up as a sub-trie of OP_ALTERNATIVES*/
+	struct trie_node* fail_action;
+	struct trie_node** children;
+};
+
+struct trie_node_char_repeat
+{
+	struct trie_node node;
+	unsigned char character;
+	uint8_t range_min, range_max;/* according to POSIX we need not support more than 255 repetitions*/
+	struct trie_node* child;
+	struct trie_node* fail_action;
+};
+
+struct trie_node_dot_repeat
+{
+	struct trie_node node;
+	uint8_t range_min, range_max;/* according to POSIX we need not support more than 255 repetitions*/
+	struct trie_node* child;
+	struct trie_node* fail_action;
+};
+
+struct trie_node_group_start
+{
+	struct trie_node node;
+	uint8_t range_min, range_max;/* if range_min==range_max==1, then this is NOT a repeat, thus not a recursive call point*/
+	struct trie_node* child;
+	struct trie_node* fail_action;	
+};
+
+struct trie_node_group_end
+{
+	struct trie_node node;
+	struct trie_node* child;
+};
+
+struct trie_node_strcmp
+{
+	struct trie_node node;
+	uint8_t string_length;/* for longer strings a sequence of node_strcmp should be used */
+	unsigned char* string;
+	struct trie_node* child;
+	struct trie_node** fail_actions;/* this has string_length elements */
+};
+
+struct trie_node_char_class_repeat
+{
+	struct trie_node node;
+	struct char_bitmap* bitmap;
+	uint8_t range_min, range_max;
+	struct trie_node* child;
+	struct trie_node* fail_action;
+};
+
+
+static int match_node(const struct trie_node* node)
+{
+	while(node->type != OP_MATCH_OK) {	
+		switch(node->type) {
+			case OP_ROOT:
+				{	
+					const struct trie_node_root* root_node = container_of_const(node, const struct trie_node_root, node);
+					node = root_node->child;
+					break;
+				}
+			case OP_CHAR_BINARY_SEARCH:
+				{
+					const struct trie_node_binary_search* bin_node = container_of_const(node, const struct trie_node_binary_search, node);
+					/* TODO: binary search */
+					break;
+				}
+			case OP_ALTERNATIVES:
+				{
+					const struct trie_node_alternatives* alt_node = container_of_const(node, const struct trie_node_alternatives, node);
+					/* TODO: op_alt */
+					break;
+				}
+			case OP_CHAR_REPEAT:
+				{
+					const struct trie_node_char_repeat* char_rep_node = container_of_const(node, const struct trie_node_char_repeat, node);
+					break;
+				}
+			case OP_DOT_REPEAT:
+				{
+					const struct trie_node_dot_repeat* dot_rep_node = container_of_const(node, const struct trie_node_dot_repeat, node);
+					break;
+				}
+			case OP_CHAR_CLASS_REPEAT:
+				{
+					const struct trie_node_char_class_repeat* class_rep_node = container_of_const(node, const struct trie_node_char_class_repeat, node);
+					break;
+				}
+			case OP_STRCMP:
+				{
+					const struct trie_node_strcmp* strcmp_node = container_of_const(node, const struct trie_node_strcmp, node);
+					break;
+				}
+			case OP_GROUP_START:
+				{
+					const struct trie_node_group_start* group_start_node = container_of_const(node, const struct trie_node_group_start, node);
+					break;
+				}
+			case OP_GROUP_END:
+				{
+					const struct trie_node_group_end* group_end_node = container_of_const(node, const struct trie_node_group_end, node);
+					break;
+				}
+			default:
+				{
+					cli_warnmsg("Unimplemented node type:%d", node->type);
+					return 0;
+					break;
+				}
+		}
+	}
+	return 1;/* match */
+}
+
 #endif
 
