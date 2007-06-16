@@ -62,8 +62,6 @@ unsigned char* entity_norm(const struct entity_conv* conv,const unsigned char* e
 			return (unsigned char*)cli_strdup("&lt;");
 		else if(val == '>')/* see above */
 			return (unsigned char*)cli_strdup("&gt;");
-		else if(val == '&')/* see above */
-			return (unsigned char*)cli_strdup("&amp;");
 		else if(val<127) {
 			unsigned char *e_out = cli_malloc(2);
 

@@ -1175,10 +1175,10 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					hex=TRUE;
 					ptr++;
 				} else if (*ptr == ';') {
-					if(dconf_entconv) {
-						if (next_state==HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
+					if (next_state==HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
 							tag_val[tag_val_length++] = value; /* store encoded values too */
-						}
+					}
+					if(dconf_entconv) {
 
 						if(value < 0x80)
 							html_output_c(file_buff_o1, file_buff_o2, tolower(value));
