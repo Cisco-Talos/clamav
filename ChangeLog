@@ -1,3 +1,8 @@
+Sat Jun 16 19:11:00 EEST 2007 (edwin)
+------------------------------------
+  * libclamav/regex_list.c: match M:/H: signatures only at end of string (bb
+  #534), fix possible memory leak
+
 Sat Jun 09 23:16:00 EEST 2007 (edwin)
 ------------------------------------
   * libclamav/regex_list.c: draft of new regex_list.c

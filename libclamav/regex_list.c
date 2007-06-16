@@ -274,7 +274,10 @@ int regex_list_match(struct regex_matcher* matcher,const char* real_url,const ch
 			rc = 0;
 
 			for(i = 0; i < matcher->root_hosts_cnt; i++) {
-				if(( rc = cli_ac_scanbuff((unsigned char*)buffer,buffer_len,info, &matcher->root_hosts[i] ,&mdata,0,0,0,-1,NULL) ))
+				/* needs to match terminating \0 too */
+				rc = cli_ac_scanbuff((unsigned char*)buffer,buffer_len+1,info, &matcher->root_hosts[i] ,&mdata,0,0,0,-1,NULL);
+				cli_ac_freedata(&mdata);
+				if(rc)
 					break;
 			}
 		} else
@@ -398,7 +401,9 @@ static int add_regex_list_element(struct cli_matcher* root,const char* pattern,c
        massert(root);
        massert(pattern);
 
-       len = strlen(pattern);
+       len = strlen(pattern)+1;
+       /* need to match \0 too, so we are sure
+	* matches only happen at end of string */
        new->type = 0;
        new->sigid = 0;
        new->parts = 0;
