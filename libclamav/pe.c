@@ -42,6 +42,7 @@
 #include "spin.h"
 #include "upx.h"
 #include "yc.h"
+#include "aspack.h"
 #include "wwunpack.h"
 #include "suecrypt.h"
 #include "unsp.h"
@@ -2458,7 +2459,7 @@ skip_upack_and_go_to_next_unpacker:
       char *dest, *wwp;
 
       for(i = 0 ; i < (unsigned int)nsections-1; i++)
-	if (!err && exe_sections[i].raw<headsize) headsize=exe_sections[i].raw;
+	if (exe_sections[i].raw<headsize) headsize=exe_sections[i].raw;
       
       dsize = max-min+headsize-exe_sections[nsections - 1].rsz;
 
@@ -2491,7 +2492,7 @@ skip_upack_and_go_to_next_unpacker:
 	if(exe_sections[i].rsz) {
 	  uint32_t offset = exe_sections[i].raw;
 	  
-	  if(err || lseek(desc, offset, SEEK_SET) == -1 || (unsigned int) cli_readn(desc, dest + headsize + exe_sections[i].rva - min, exe_sections[i].rsz) != exe_sections[i].rsz) {
+	  if(lseek(desc, offset, SEEK_SET) == -1 || (unsigned int) cli_readn(desc, dest + headsize + exe_sections[i].rva - min, exe_sections[i].rsz) != exe_sections[i].rsz) {
 	    free(dest);
 	    free(exe_sections);
 	    return CL_EIO;
@@ -2570,6 +2571,82 @@ skip_upack_and_go_to_next_unpacker:
 	cli_dbgmsg("WWPpack: Decompression failed\n");
       }
     }
+
+    /* ASPACK support */
+#ifdef CL_EXPERIMENTAL
+    while(ep+58+0x70e < fsize && !memcmp(buff,"\x60\xe8\x03\x00\x00\x00\xe9\xeb",8)) {
+        char nbuff[6];
+
+        if(lseek(desc, ep+0x3b9, SEEK_SET) == -1) break;
+        if(cli_readn(desc, nbuff, 6)!=6) break;
+        if(memcmp(nbuff, "\x68\x00\x00\x00\x00\xc3",6)) break;
+	ssize = 0;
+	for(i=0 ; i< nsections ; i++)
+	  if(ssize<exe_sections[i].rva+exe_sections[i].vsz)
+	    ssize=exe_sections[i].rva+exe_sections[i].vsz;
+	if(!ssize) break;
+        if(ctx->limits && ctx->limits->maxfilesize && ssize > ctx->limits->maxfilesize) {
+            cli_dbgmsg("Pe.Aspack: Size exceeded\n");
+            free(exe_sections);
+            if(BLOCKMAX) {
+                *ctx->virname = "Pe.Aspack.ExceededFileSize";
+                return CL_VIRUS;
+            } else {
+              return CL_CLEAN;
+            }
+        }
+        if(!(src=(char *)cli_calloc(ssize, sizeof(char)))) {
+	    free(exe_sections);
+	    return CL_EMEM;
+	}
+        for(i = 0 ; i < (unsigned int)nsections; i++) {
+	    if(!exe_sections[i].rsz) continue;
+	    if(lseek(desc, exe_sections[i].raw, SEEK_SET) == -1) break;
+            if(!CLI_ISCONTAINED(src, ssize, src+exe_sections[i].rva, exe_sections[i].rsz)) break;
+            if(cli_readn(desc, src+exe_sections[i].rva, exe_sections[i].rsz)!=exe_sections[i].rsz) break;
+        }
+        if(i!=nsections) {
+            cli_dbgmsg("Aspack: Probably hacked/damaged Aspack file.\n");
+            free(src);
+            break;
+        }
+	if(!(tempfile = cli_gentemp(NULL))) {
+	  free(exe_sections);
+	  free(src);
+	  return CL_EMEM;
+	}
+	if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
+	  cli_dbgmsg("Aspack: Can't create file %s\n", tempfile);
+	  free(tempfile);
+	  free(exe_sections);
+	  free(src);
+	  return CL_EIO;
+	}
+	if (unaspack212((uint8_t *)src, ssize, exe_sections, nsections, vep-1, EC32(optional_hdr32.ImageBase), ndesc)) {
+	  free(src);
+	  cli_dbgmsg("Aspack: Dumped to %s\n", tempfile);
+	  fsync(ndesc);
+	  lseek(ndesc, 0, SEEK_SET);
+	  if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) {
+	      free(exe_sections);
+	      close(ndesc);
+	      if(!cli_leavetemps_flag)
+		  unlink(tempfile);
+	      free(tempfile);
+	      return CL_VIRUS;
+	  }
+	} else {
+	  free(src);
+	}
+
+	close(ndesc);
+	if(!cli_leavetemps_flag)
+	  unlink(tempfile);
+	free(tempfile);
+
+	break;
+    }
+#endif /* CL_EXPERIMENTAL */
 
     /* NsPack */
 

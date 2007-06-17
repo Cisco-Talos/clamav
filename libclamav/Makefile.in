@@ -82,10 +82,10 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher-ncore.lo \
 	scanners.lo filetypes.lo rtf.lo blob.lo mbox.lo message.lo \
 	snprintf.lo table.lo text.lo ole2_extract.lo vba_extract.lo \
 	msexpand.lo pe.lo upx.lo htmlnorm.lo chmunpack.lo rebuildpe.lo \
-	petite.lo wwunpack.lo suecrypt.lo unsp.lo packlibs.lo fsg.lo \
-	mew.lo upack.lo line.lo untar.lo unzip.lo special.lo binhex.lo \
-	is_tar.lo tnef.lo unrar15.lo unrarvm.lo unrar.lo \
-	unrarfilter.lo unrarppm.lo unrar20.lo unrarcmd.lo \
+	petite.lo wwunpack.lo suecrypt.lo unsp.lo aspack.lo \
+	packlibs.lo fsg.lo mew.lo upack.lo line.lo untar.lo unzip.lo \
+	special.lo binhex.lo is_tar.lo tnef.lo unrar15.lo unrarvm.lo \
+	unrar.lo unrarfilter.lo unrarppm.lo unrar20.lo unrarcmd.lo \
 	LZMADecode.lo bzlib.lo infblock.lo nulsft.lo pdf.lo spin.lo \
 	yc.lo elf.lo sis.lo uuencode.lo pst.lo phishcheck.lo \
 	phish_domaincheck_db.lo phish_whitelist.lo regex_list.lo \
@@ -304,6 +304,8 @@ libclamav_la_SOURCES = \
 	suecrypt.h \
 	unsp.c \
 	unsp.h \
+	aspack.c \
+	aspack.h \
 	packlibs.c \
 	packlibs.h \
 	fsg.c \
@@ -463,6 +465,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/LZMADecode.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/aspack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/binhex.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/blob.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bzlib.Plo@am__quote@

@@ -90,6 +90,8 @@ libclamav_la_SOURCES = \
 	suecrypt.h \
 	unsp.c \
 	unsp.h \
+	aspack.c \
+	aspack.h \
 	packlibs.c \
 	packlibs.h \
 	fsg.c \

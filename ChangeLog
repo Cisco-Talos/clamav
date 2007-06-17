@@ -1,3 +1,8 @@
+Sun Jun 17 22:23:35 CEST 2007 (acab)
+------------------------------------
+  * libclamav/pe.c: minor typo in wwpack32
+  * libclamav: add support for aspack 2.12 (experimental) - thanks PN Luck
+
 Sat Jun 16 19:41:00 EEST 2007 (edwin)
 ------------------------------------
   * libclamav/htmlnorm.c, entconv.c: handle &#x26; in URLs, even with
