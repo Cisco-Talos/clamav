@@ -36,6 +36,9 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #ifdef	HAVE_LIMITS_H
 #include <limits.h>
 #endif
+#ifdef	HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
@@ -466,11 +469,11 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 				continue;
 			}
 			if(ret) {
-				char *t;
+				unsigned char *t;
 
 				real_streamlen = ret;
 				/* free unused trailing bytes */
-				t = cli_realloc(tmpbuf,
+				t = (unsigned char *)cli_realloc(tmpbuf,
 					calculated_streamlen);
 				if(t == NULL) {
 					free(tmpbuf);

@@ -1,3 +1,7 @@
+Mon Jun 18 19:30:15 BST 2007 (njh)
+----------------------------------
+  * libclamav/pdf.c:	Remove compilation warnings on some Linux
+
 Sun Jun 17 22:23:35 CEST 2007 (acab)
 ------------------------------------
   * libclamav/pe.c: minor typo in wwpack32
@@ -20,7 +24,7 @@ Sat Jun 09 23:16:00 EEST 2007 (edwin)
 
 Sat Jun 09 18:37:00 EEST 2007 (edwin)
 ------------------------------------
-  * libclamav/regex_list.c: first draft of new implementation for regex_list.c 
+  * libclamav/regex_list.c: first draft of new implementation for regex_list.c
 
 Thu May 31 17:43:10 EEST 2007 (edwin)
 ------------------------------------
@@ -110,7 +114,7 @@ Sat May 26 11:34:19 BST 2007 (njh)
 Sat May 26 12:45:00 EEST 2007 (edwin)
 ----------------------------------
   * libclamav/regex_list.c: cli_realloc() for matcher->root_hosts
-  
+
 Sat May 26 00:31:10 CEST 2007 (tk)
 ----------------------------------
   * libclamav: fix some possible error path leaks by changing cli_realloc()
