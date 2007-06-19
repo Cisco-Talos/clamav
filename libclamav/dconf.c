@@ -55,16 +55,17 @@ static struct dconf_module modules[] = {
     { "PE",	    "UPX",	    PE_CONF_UPX,	    1 },
     { "PE",	    "FSG",	    PE_CONF_FSG,	    1 },
 
-    { "PE",	    "SUE",	    PE_CONF_SUE,	    1 }, /* exp */
+    { "PE",	    "SUE",	    PE_CONF_SUE,	    1 },
 
     { "PE",	    "PETITE",	    PE_CONF_PETITE,	    1 },
     { "PE",	    "PESPIN",	    PE_CONF_PESPIN,	    1 },
     { "PE",	    "YC",	    PE_CONF_YC,		    1 },
     { "PE",	    "WWPACK",	    PE_CONF_WWPACK,	    1 },
 
-    { "PE",	    "NSPACK",	    PE_CONF_NSPACK,	    1 }, /* exp */
-    { "PE",	    "MEW",	    PE_CONF_MEW,	    1 }, /* exp */
-    { "PE",	    "UPACK",	    PE_CONF_UPACK,	    1 }, /* exp */
+    { "PE",	    "NSPACK",	    PE_CONF_NSPACK,	    1 },
+    { "PE",	    "MEW",	    PE_CONF_MEW,	    1 },
+    { "PE",	    "UPACK",	    PE_CONF_UPACK,	    1 },
+    { "PE",	    "ASPACK",	    PE_CONF_ASPACK,	    1 },
 
     { "ELF",	    NULL,	    0x1,		    1 },
 

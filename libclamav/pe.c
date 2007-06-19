@@ -2573,8 +2573,7 @@ skip_upack_and_go_to_next_unpacker:
     }
 
     /* ASPACK support */
-#ifdef CL_EXPERIMENTAL
-    while(ep+58+0x70e < fsize && !memcmp(buff,"\x60\xe8\x03\x00\x00\x00\xe9\xeb",8)) {
+    while((DCONF & PE_CONF_ASPACK) && ep+58+0x70e < fsize && !memcmp(buff,"\x60\xe8\x03\x00\x00\x00\xe9\xeb",8)) {
         char nbuff[6];
 
         if(lseek(desc, ep+0x3b9, SEEK_SET) == -1) break;
@@ -2646,7 +2645,6 @@ skip_upack_and_go_to_next_unpacker:
 
 	break;
     }
-#endif /* CL_EXPERIMENTAL */
 
     /* NsPack */
 

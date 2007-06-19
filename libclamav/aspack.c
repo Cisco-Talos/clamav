@@ -23,6 +23,7 @@
 #include "execs.h"
 #include "others.h"
 #include "rebuildpe.h"
+#include "aspack.h"
 
 
 struct DICT_HELPER {
@@ -325,7 +326,7 @@ int unaspack212(uint8_t *image, unsigned int size, struct cli_exe_section *secti
   struct ASPK stream;
   uint32_t i=0, j=0;
   uint8_t *blocks = image+ep+0x57c, *wrkbuf;
-  uint32_t block_rva, block_size;
+  uint32_t block_rva = 0, block_size;
   struct cli_exe_section *outsects;
 
   if (!(wrkbuf = cli_calloc(0x1800, sizeof(uint8_t)))) {

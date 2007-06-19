@@ -1,3 +1,7 @@
+Tue Jun 19 16:41:40 CEST 2007 (tk)
+----------------------------------
+  * libclamav: DCONF support for ASPACK
+
 Mon Jun 18 19:30:15 BST 2007 (njh)
 ----------------------------------
   * libclamav/pdf.c:	Remove compilation warnings on some Linux
