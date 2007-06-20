@@ -1,3 +1,7 @@
+Wed Jun 20 18:23:08 CEST 2007 (acab)
+------------------------------------
+  * libclamav/aspack.c: fixes
+
 Wed Jun 20 17:56:00 EEST 2007 (edwin)
 ------------------------------------
   * libclamav/phishcheck.c,scanners.c: let .*db signatures take precedence

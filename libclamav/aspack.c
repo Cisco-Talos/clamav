@@ -326,7 +326,7 @@ int unaspack212(uint8_t *image, unsigned int size, struct cli_exe_section *secti
   struct ASPK stream;
   uint32_t i=0, j=0;
   uint8_t *blocks = image+ep+0x57c, *wrkbuf;
-  uint32_t block_rva = 0, block_size;
+  uint32_t block_rva = 1, block_size;
   struct cli_exe_section *outsects;
 
   if (!(wrkbuf = cli_calloc(0x1800, sizeof(uint8_t)))) {
@@ -352,11 +352,11 @@ int unaspack212(uint8_t *image, unsigned int size, struct cli_exe_section *secti
 
   i=0;
   while (CLI_ISCONTAINED(image, size, blocks, 8) && (block_rva = cli_readint32(blocks)) && (block_size = cli_readint32(blocks+4)) && CLI_ISCONTAINED(image, size, image+block_rva, block_size)) {
-    wrkbuf = (uint8_t *)cli_malloc(block_size);
+    wrkbuf = (uint8_t *)cli_calloc(block_size+0x10e, sizeof(uint8_t));
     if (!wrkbuf) break;
 
     stream.input = wrkbuf;
-    stream.iend = &wrkbuf[block_size];
+    stream.iend = &wrkbuf[block_size+0x10e];
 
     memcpy(wrkbuf, image + block_rva, block_size);
 
@@ -405,7 +405,7 @@ int unaspack212(uint8_t *image, unsigned int size, struct cli_exe_section *secti
     outsects[i].raw=outsects[i].rva;
     outsects[i].rsz=outsects[i].vsz;
   }
-  if (!cli_rebuildpe((char *)image, outsects, sectcount, base, cli_readint32(image + ep + 0x279), 0, 0, f)) {
+  if (!cli_rebuildpe((char *)image, outsects, sectcount, base, cli_readint32(image + ep + 0x39b), 0, 0, f)) {
     cli_dbgmsg("Aspack: rebuild failed\n");
     cli_writen(f, image, size);
   } else {
