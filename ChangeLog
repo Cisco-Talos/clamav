@@ -1,3 +1,8 @@
+Wed Jun 20 17:56:00 EEST 2007 (edwin)
+------------------------------------
+  * libclamav/phishcheck.c,scanners.c: let .*db signatures take precedence
+  over Phishing.Email.* signatures (patch approved by TK)
+
 Tue Jun 19 16:41:40 CEST 2007 (tk)
 ----------------------------------
   * libclamav: DCONF support for ASPACK

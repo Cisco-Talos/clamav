@@ -746,6 +746,12 @@ cleanupURL(struct string *URL, int isReal)
 
 
 /* -------end runtime disable---------*/
+static int found_possibly_unwanted(cli_ctx* ctx)
+{
+	ctx->found_possibly_unwanted = 1;
+	cli_dbgmsg("Phishcheck: found Possibly Unwanted: %s\n",*ctx->virname);
+	return CL_CLEAN;
+}
 
 int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 {
@@ -818,24 +824,24 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 /*						break;*/
 					case CL_PHISH_HEX_URL:
 						*ctx->virname="Phishing.Email.HexURL";
-						return CL_VIRUS;
+						return found_possibly_unwanted(ctx);
 /*						break;*/
 					case CL_PHISH_NUMERIC_IP:
 						*ctx->virname="Phishing.Email.Cloaked.NumericIP";
-						return CL_VIRUS;
+						return found_possibly_unwanted(ctx);
 					case CL_PHISH_CLOAKED_NULL:
 						*ctx->virname="Phishing.Email.Cloaked.Null";/*http://www.real.com%01%00@www.evil.com*/
-						return CL_VIRUS;
+						return found_possibly_unwanted(ctx);
 					case CL_PHISH_SSL_SPOOF:
 						*ctx->virname="Phishing.Email.SSL-Spoof";
-						return CL_VIRUS;
+						return found_possibly_unwanted(ctx);
 					case CL_PHISH_CLOAKED_UIU:
 						*ctx->virname="Phishing.Email.Cloaked.Username";/*http://www.ebay.com@www.evil.com*/
-						return CL_VIRUS;
+						return found_possibly_unwanted(ctx);
 					case CL_PHISH_NOMATCH:
 					default:
 						*ctx->virname="Phishing.Email";
-						return CL_VIRUS;
+						return found_possibly_unwanted(ctx);
 				}
 		}
 		else

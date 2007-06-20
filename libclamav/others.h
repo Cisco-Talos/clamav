@@ -81,6 +81,7 @@ typedef struct {
     unsigned int options;
     unsigned int arec;
     unsigned int mrec;
+    unsigned int found_possibly_unwanted;
     struct cli_dconf *dconf;
 } cli_ctx;
 

@@ -2122,6 +2122,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options)
 {
     cli_ctx ctx;
+    int rc;
 
     memset(&ctx, '\0', sizeof(cli_ctx));
     ctx.engine = engine;
@@ -2129,9 +2130,13 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     ctx.limits = limits;
     ctx.scanned = scanned;
     ctx.options = options;
+    ctx.found_possibly_unwanted = 0;
     ctx.dconf = (struct cli_dconf *) engine->dconf;
 
-    return cli_magic_scandesc(desc, &ctx);
+    rc = cli_magic_scandesc(desc, &ctx);
+    if(rc == CL_CLEAN && ctx.found_possibly_unwanted)
+    	rc = CL_VIRUS;
+    return rc;
 }
 
 static int cli_scanfile(const char *filename, cli_ctx *ctx)
