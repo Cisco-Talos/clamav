@@ -1,3 +1,7 @@
+Sun Jun 24 14:38:49 CEST 2007 (tk)
+----------------------------------
+  * libclamav/unrar/unrar.c: fix typo (bb#527)
+
 Wed Jun 20 18:23:08 CEST 2007 (acab)
 ------------------------------------
   * libclamav/aspack.c: fixes

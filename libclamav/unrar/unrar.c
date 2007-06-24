@@ -1615,7 +1615,7 @@ int cli_unrar_extract_next(rar_state_t* state,const char* dirname)
 	} else if(state->file_header->flags & (LHD_SPLIT_BEFORE | LHD_SPLIT_AFTER)) {
 	        cli_dbgmsg("Skipping split file\n");
 
-	} else if((state->main_hdr->flags & MHD_VOLUME) && (state->main_hdr->flags && MHD_SOLID)) {
+	} else if((state->main_hdr->flags & MHD_VOLUME) && (state->main_hdr->flags & MHD_SOLID)) {
 	        cli_dbgmsg("Skipping file inside multi-volume solid archive\n");
 
 	} else /*if (file_header->unpack_size)*/ {
