@@ -94,33 +94,20 @@
 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff\xff\xff\
 "
 
-static char *checkpe(char *dst, uint32_t dsize, char *pehdr, uint32_t *valign, unsigned int *sectcnt) {
+static char *checkpe(char *dst, uint32_t dsize, char *pehdr, uint32_t *valign, unsigned int *sectcnt)
+{
   char *sections;
-  if (!CLI_ISCONTAINED(dst, dsize,  pehdr, 0xf8)) {
-    cli_dbgmsg("UPX: sections out of bounds\n");
-    return NULL;
-  } 
+  if (!CLI_ISCONTAINED(dst, dsize,  pehdr, 0xf8)) return NULL;
 
-  if (cli_readint32(pehdr) != 0x4550 ) {
-    cli_dbgmsg("UPX: No magic for PE\n");
-    return NULL;
-  }
+  if (cli_readint32(pehdr) != 0x4550 ) return NULL;
   
-  if (!(*valign=cli_readint32(pehdr+0x38))) {
-    cli_dbgmsg("UPX: Cant align to a NULL bound\n");
-    return NULL;
-  }
+  if (!(*valign=cli_readint32(pehdr+0x38))) return NULL;
   
   sections = pehdr+0xf8;
-  if (!(*sectcnt = (unsigned char)pehdr[6] + (unsigned char)pehdr[7]*256)) {
-    cli_dbgmsg("UPX: No sections?\n");
-    return NULL;
-  }
+  if (!(*sectcnt = (unsigned char)pehdr[6] + (unsigned char)pehdr[7]*256)) return NULL;
   
-  if (!CLI_ISCONTAINED(dst, dsize, sections, *sectcnt*0x28)) {
-    cli_dbgmsg("UPX: Not enough space for all sects\n");
-    return NULL;
-  }
+  if (!CLI_ISCONTAINED(dst, dsize, sections, *sectcnt*0x28)) return NULL;
+
   return sections;
 }
 
@@ -130,7 +117,7 @@ static int pefromupx (char *src, uint32_t ssize, char *dst, uint32_t *dsize, uin
 {
   char *imports, *sections, *pehdr=NULL, *newbuf;
   unsigned int sectcnt=0, upd=1;
-  uint32_t realstuffsz, valign=0;
+  uint32_t realstuffsz=0, valign=0;
   uint32_t foffset=0xd0+0xf8;
 
   if((dst == NULL) || (src == NULL))
@@ -190,7 +177,7 @@ static int pefromupx (char *src, uint32_t ssize, char *dst, uint32_t *dsize, uin
 	break;
       pehdr--;
     }
-    if (pehdr==dst) pehdr=NULL;
+    if (!(realstuffsz = pehdr-dst)) pehdr=NULL;
   }
 
   if (!pehdr) {

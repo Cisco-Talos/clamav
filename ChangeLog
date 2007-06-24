@@ -1,3 +1,8 @@
+Sun Jun 24 15:09:10 CEST 2007 (tk)
+----------------------------------
+  * libclamav/upx.c: properly initialize realstuffsz (patch from aCaB, stable
+		     not affected)
+
 Sun Jun 24 14:38:49 CEST 2007 (tk)
 ----------------------------------
   * libclamav/unrar/unrar.c: fix typo (bb#527)
