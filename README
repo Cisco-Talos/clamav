@@ -2,16 +2,17 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
-0.91rc1
+0.91rc2
 -------
 
-ClamAV 0.91rc1 is the first release to enable the anti-phishing technology
+ClamAV 0.91 is the first release to enable the anti-phishing technology
 in default builds. This technology combines heuristics with special
 signatures and provides effective protection against phishing threats.
 Other important changes and add-ons in this version include:
 
     - unpacker for NSIS (Nullsoft Scriptable Install System) self-extracting
       archives
+    - unpacker for ASPack 2.12
     - new implementation of the Aho-Corasick pattern matcher providing
       better detection for wildcard enabled signatures
     - support for nibble matching and floating offsets
