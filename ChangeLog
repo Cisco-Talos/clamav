@@ -1,3 +1,7 @@
+Sun Jun 24 16:57:34 CEST 2007 (tk)
+----------------------------------
+  * 0.91rc2 (released with JS and PST code removed)
+
 Sun Jun 24 16:18:52 CEST 2007 (tk)
 ----------------------------------
   * libclamav/others.c: bump f-level
