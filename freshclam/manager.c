@@ -792,7 +792,7 @@ static int getpatch(const char *dbname, int version, const char *hostname, char 
         return ret;
     }
 
-    if((fd = open(tempname, O_RDONLY)) == -1) {
+    if((fd = open(tempname, O_RDONLY|O_BINARY)) == -1) {
 	logg("!getpatch: Can't open %s for reading\n", tempname);
         unlink(tempname);
         free(tempname);

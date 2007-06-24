@@ -1,3 +1,7 @@
+Sun Jun 24 16:11:49 CEST 2007 (tk)
+----------------------------------
+  * freshclam/manager.c: fix scripted updates under win32 (bb#526)
+
 Sun Jun 24 15:09:10 CEST 2007 (tk)
 ----------------------------------
   * libclamav/upx.c: properly initialize realstuffsz (patch from aCaB, stable
