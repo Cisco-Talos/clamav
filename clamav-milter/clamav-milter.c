@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-070419"
+#define	CM_VERSION	"devel-070625"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -289,6 +289,7 @@ static	int		createSession(unsigned int s);
 #else
 static	int		pingServer(int serverNumber);
 static	void		*try_server(void *var);
+static	int		active_servers(void);
 struct	try_server_struct {
 	int	sock;
 	int	rc;
@@ -481,6 +482,10 @@ static	in_addr_t	*serverIPs;	/* IPv4 only, in network byte order */
 static	long	*serverIPs;	/* IPv4 only, in network byte order */
 #endif
 static	int	numServers;	/* number of elements in serverIPs array */
+#ifndef	SESSION
+#define	RETRY_SECS	300	/* How often to retry a server that's down */
+static	time_t	*last_failed_pings;	/* For servers that are down */
+#endif
 
 #ifdef	CL_EXPERIMENTAL
 static	char	*rootdir;	/* for chroot */
@@ -492,7 +497,6 @@ static	struct	session {
 	enum	{ CMDSOCKET_FREE, CMDSOCKET_INUSE, CMDSOCKET_DOWN }	status;
 } *sessions;	/* max_children elements in the array */
 static	pthread_mutex_t sstatus_mutex = PTHREAD_MUTEX_INITIALIZER;
-
 #endif	/*SESSION*/
 
 static	pthread_cond_t	watchdog_cond = PTHREAD_COND_INITIALIZER;
@@ -572,7 +576,7 @@ help(void)
 	puts("\tCopyright (C) 2007 Nigel Horne <njh@clamav.net>\n");
 
 	puts(_("\t--advisory\t\t-A\tFlag viruses rather than deleting them."));
-	puts(_("\t--blacklist-time\t-k\tTime (in seconds) to blacklist an IP."));
+	puts(_("\t--blacklist-time=SECS\t-k\tTime (in seconds) to blacklist an IP."));
 	puts(_("\t--black-hole-mode\t\tDon't scan messages aliased to /dev/null."));
 #ifdef	BOUNCE
 	puts(_("\t--bounce\t\t-b\tSend a failure message to the sender."));
@@ -629,6 +633,9 @@ main(int argc, char **argv)
 	int i, Bflag = 0, server = 0;
 	char *cfgfile = NULL;
 	const char *wont_blacklist = NULL;
+#ifdef	C_LINUX
+	const char *lang;
+#endif
 	const struct cfgstruct *cpt;
 	char version[VERSION_LENGTH + 1];
 	pthread_t tid;
@@ -644,7 +651,7 @@ main(int argc, char **argv)
 	struct smfiDesc smfilter = {
 		"ClamAv", /* filter name */
 		SMFI_VERSION,	/* version code -- leave untouched */
-		SMFIF_ADDHDRS|SMFIF_CHGHDRS,	/* flags - we add and deleted headers */
+		SMFIF_ADDHDRS|SMFIF_CHGHDRS,	/* flags - we add and delete headers */
 		clamfi_connect, /* connexion callback */
 #ifdef	CL_DEBUG
 		clamfi_helo,	/* HELO filter callback */
@@ -696,6 +703,13 @@ main(int argc, char **argv)
 	setlocale(LC_ALL, "");
 	bindtextdomain(progname, DATADIR"/clamav-milter/locale");
 	textdomain(progname);
+	lang = getenv("LANG");
+
+	if(lang && (strstr(lang, "UTF-8") != NULL)) {
+		fprintf(stderr, "*** Your LANG environment variable is set to '%s\n", lang);
+		fprintf(stderr, "This is known to cause problems for some %s installations.\n", argv[0]);
+		fputs("If you get failures with temporary fils, please try again with LANG unset.\n", stderr);
+	}
 #endif
 
 	for(;;) {
@@ -1429,7 +1443,7 @@ main(int argc, char **argv)
 			perror(localSocket);
 			return EX_UNAVAILABLE;
 		}
-		if(send(sessions[0].sock, "SESSION\n", 7, 0) < 7) {
+		if(send(sessions[0].sock, "SESSION\n", 8, 0) < 8) {
 			perror("send");
 			fputs(_("!Can't create a clamd session"), stderr);
 			return EX_UNAVAILABLE;
@@ -1592,6 +1606,7 @@ main(int argc, char **argv)
 			logg(_("!Can't find any clamd server\n"));
 			return EX_CONFIG;
 		}
+		last_failed_pings = (time_t *)cli_calloc(numServers, sizeof(time_t));
 #endif
 	} else {
 		fprintf(stderr, _("%s: You must select server type (local/TCP) in %s\n"),
@@ -1948,6 +1963,10 @@ main(int argc, char **argv)
 			if(unlink(&port[6]) < 0)
 				if(errno != ENOENT)
 					perror(&port[6]);
+		} else if(port[0] == '/') {
+			if(unlink(port) < 0)
+				if(errno != ENOENT)
+					perror(port);
 		}
 	}
 
@@ -2015,10 +2034,10 @@ static int
 createSession(unsigned int s)
 {
 	int ret = 0, fd;
-	struct sockaddr_in server;
 	const int serverNumber = s % numServers;
 	struct session *session = &sessions[s];
 	const struct protoent *proto;
+	struct sockaddr_in server;
 
 	cli_dbgmsg("createSession session %d, server %d\n", s, serverNumber);
 	assert(s < max_children);
@@ -2040,7 +2059,7 @@ createSession(unsigned int s)
 	} else if(connect(fd, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
 		perror("connect");
 		ret = 1;
-	} else if(send(fd, "SESSION\n", 7, 0) < 7) {
+	} else if(send(fd, "SESSION\n", 8, 0) < 8) {
 		perror("send");
 		ret = 1;
 	}
@@ -2287,15 +2306,18 @@ findServer(void)
 {
 	struct sockaddr_in *servers, *server;
 	int maxsock, i, j;
-	fd_set rfds;
 	int retval;
 	pthread_t *tids;
 	struct try_server_struct *socks;
+	fd_set rfds;
 
 	assert(tcpSocket != 0);
 	assert(numServers > 0);
 
 	if(numServers == 1)
+		return 0;
+
+	if(active_servers() <= 1)
 		return 0;
 
 	servers = (struct sockaddr_in *)cli_calloc(numServers, sizeof(struct sockaddr_in));
@@ -2432,6 +2454,30 @@ findServer(void)
 }
 
 /*
+ * How many servers are up at the moment? If a server is marked as down,
+ *	don't keep on flooding it with requests to see if it's now back up
+ */
+static int
+active_servers(void)
+{
+	int server, count;
+	time_t now = (time_t)0;
+
+	for(count = server = 0; server < numServers; server++)
+		if(last_failed_pings[server] == (time_t)0)
+			count++;
+		else {
+			if(now == (time_t)0)
+				time(&now);
+			if(now - last_failed_pings[server] >= RETRY_SECS)
+				/* Try this server again next time */
+				last_failed_pings[server] = (time_t)0;
+		}
+
+	return count;
+}
+
+/*
  * Connecting to remote servers can take some time, so let's connect to
  *	them in parallel. This routine is started as a thread
  */
@@ -2442,6 +2488,11 @@ try_server(void *var)
 	int sock = s->sock;
 	struct sockaddr *server = (struct sockaddr *)s->server;
 	int server_index = s->server_index;
+
+	if(last_failed_pings[server_index]) {
+		s->rc = 0;
+		return var;
+	}
 
 	logg("*try_server: sock %d\n", sock);
 
@@ -2467,6 +2518,7 @@ try_server(void *var)
 		free(hostname);
 #endif
 		broadcast(_("Check clamd server - it may be down\n"));
+		time(&last_failed_pings[server_index]);
 	}
 
 	return var;
@@ -2520,7 +2572,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		remoteIP = "127.0.0.1";
 	else {
 #ifdef HAVE_INET_NTOP
-		switch (hostaddr->sa_family) {
+		switch(hostaddr->sa_family) {
 			case AF_INET:
 				remoteIP = (char *)inet_ntop(AF_INET, &((struct sockaddr_in *)(hostaddr))->sin_addr, ip, sizeof(ip));
 				break;
@@ -4272,8 +4324,8 @@ connect2clamd(struct privdata *privdata)
 		cli_dbgmsg("Saving message to %s to scan later\n", privdata->filename);
 	} else {	/* communicate to clamd */
 		int freeServer, nbytes;
+		in_port_t p;
 		struct sockaddr_in reply;
-		unsigned short p;
 		char buf[64];
 
 #ifdef	SESSION
