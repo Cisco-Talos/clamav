@@ -706,9 +706,9 @@ main(int argc, char **argv)
 	lang = getenv("LANG");
 
 	if(lang && (strstr(lang, "UTF-8") != NULL)) {
-		fprintf(stderr, "*** Your LANG environment variable is set to '%s\n", lang);
+		fprintf(stderr, "Your LANG environment variable is set to '%s\n", lang);
 		fprintf(stderr, "This is known to cause problems for some %s installations.\n", argv[0]);
-		fputs("If you get failures with temporary fils, please try again with LANG unset.\n", stderr);
+		fputs("If you get failures with temporary files, please try again with LANG unset.\n", stderr);
 	}
 #endif
 
