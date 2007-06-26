@@ -48,7 +48,7 @@ int domainlist_match(const struct cl_engine* engine,const char* real_url,const c
 {
 	const char* info;
 	int rc = engine->domainlist_matcher ? regex_list_match(engine->domainlist_matcher,real_url,display_url,hostOnly,&info,0) : 0;
-	if(rc && info && info[0]) {/*match successful, and has custom flags*/
+	if(rc && info && info[0] && info[0] != ':') {/*match successful, and has custom flags*/
 		if(strlen(info)==3 && isxdigit(info[0]) && isxdigit(info[1]) && isxdigit(info[2])) {
 			unsigned short notwantedflags=0;
 			sscanf(info,"%hx",&notwantedflags);

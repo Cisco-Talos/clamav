@@ -277,8 +277,20 @@ int regex_list_match(struct regex_matcher* matcher,const char* real_url,const ch
 				/* needs to match terminating \0 too */
 				rc = cli_ac_scanbuff((unsigned char*)buffer,buffer_len+1,info, &matcher->root_hosts[i] ,&mdata,0,0,0,-1,NULL);
 				cli_ac_freedata(&mdata);
-				if(rc)
-					break;
+				if(rc) {
+					const char* matched = strchr(*info,':');	
+					const size_t match_len = matched ? strlen(matched+1) : 0;
+					if(match_len == buffer_len || /* full match */
+					        (match_len < buffer_len &&
+						buffer[buffer_len-match_len-1]=='.') 
+						/* subdomain matched*/) {
+
+						cli_dbgmsg("Got a match:%s with %s\n",buffer,*info);
+						break;
+					}
+					cli_dbgmsg("Ignoring false match:%s with %s\n",buffer,*info);
+					rc=0;
+				}
 			}
 		} else
 			rc = 0;
@@ -424,6 +436,7 @@ static int add_regex_list_element(struct cli_matcher* root,const char* pattern,c
        for(i=0;i<len;i++)
 	       new->pattern[i]=pattern[i];/*new->pattern is short int* */
 
+	
        new->virname = cli_strdup(info);
        if((ret = cli_ac_addpatt(root,new))) {
 	       free(new->virname);
@@ -545,7 +558,7 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 			fatal_error(matcher);
 			return CL_EMALFDB;
 		}
-		pattern[0]='\0';
+		/*pattern[0]='\0';*/
 		flags = buffer+1;
 		pattern++;
 
