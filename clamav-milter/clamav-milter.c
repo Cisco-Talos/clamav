@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-070625"
+#define	CM_VERSION	"devel-070626"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -484,7 +484,7 @@ static	long	*serverIPs;	/* IPv4 only, in network byte order */
 static	int	numServers;	/* number of elements in serverIPs array */
 #ifndef	SESSION
 #define	RETRY_SECS	300	/* How often to retry a server that's down */
-static	time_t	*last_failed_pings;	/* For servers that are down */
+static	time_t	*last_failed_pings;	/* For servers that are down. NB: not mutexed */
 #endif
 
 #ifdef	CL_EXPERIMENTAL
@@ -2497,9 +2497,10 @@ try_server(void *var)
 	logg("*try_server: sock %d\n", sock);
 
 	if((connect(sock, server, sizeof(struct sockaddr)) < 0) ||
-	   (send(sock, "PING\n", 5, 0) < 5))
+	   (send(sock, "PING\n", 5, 0) < 5)) {
+		time(&last_failed_pings[server_index]);
 		s->rc = 0;
-	else
+	} else
 		s->rc = 1;
 
 	if(s->rc == 0) {
@@ -2518,7 +2519,6 @@ try_server(void *var)
 		free(hostname);
 #endif
 		broadcast(_("Check clamd server - it may be down\n"));
-		time(&last_failed_pings[server_index]);
 	}
 
 	return var;
@@ -2585,7 +2585,6 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 				logg(_("clamfi_connect: Unexpected sa_family %d\n"),
 					hostaddr->sa_family);
 				return cl_error;
-				break;
 		}
 
 #else

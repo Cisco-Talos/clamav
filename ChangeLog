@@ -1,3 +1,8 @@
+Tue Jun 26 07:51:36 BST 2007 (njh)
+----------------------------------
+  * clamav-milter:	Improve yesterday's fix to ensure that servers are marked
+				as down quicker
+
 Mon Jun 25 11:00:32 BST 2007 (njh)
 ----------------------------------
   * clamav-milter:	Don't PING servers that are down so often
