@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-070626"
+#define	CM_VERSION	"devel-070627"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -289,7 +289,7 @@ static	int		createSession(unsigned int s);
 #else
 static	int		pingServer(int serverNumber);
 static	void		*try_server(void *var);
-static	int		active_servers(void);
+static	int		active_servers(int *active);
 struct	try_server_struct {
 	int	sock;
 	int	rc;
@@ -2305,7 +2305,7 @@ static int
 findServer(void)
 {
 	struct sockaddr_in *servers, *server;
-	int maxsock, i, j;
+	int maxsock, i, j, active;
 	int retval;
 	pthread_t *tids;
 	struct try_server_struct *socks;
@@ -2317,8 +2317,8 @@ findServer(void)
 	if(numServers == 1)
 		return 0;
 
-	if(active_servers() <= 1)
-		return 0;
+	if(active_servers(&active) <= 1)
+		return active;
 
 	servers = (struct sockaddr_in *)cli_calloc(numServers, sizeof(struct sockaddr_in));
 	if(servers == NULL)
@@ -2456,17 +2456,19 @@ findServer(void)
 /*
  * How many servers are up at the moment? If a server is marked as down,
  *	don't keep on flooding it with requests to see if it's now back up
+ * If only one server is active, let the caller know
  */
 static int
-active_servers(void)
+active_servers(int *active)
 {
 	int server, count;
 	time_t now = (time_t)0;
 
 	for(count = server = 0; server < numServers; server++)
-		if(last_failed_pings[server] == (time_t)0)
+		if(last_failed_pings[server] == (time_t)0) {
+			*active = server;
 			count++;
-		else {
+		} else {
 			if(now == (time_t)0)
 				time(&now);
 			if(now - last_failed_pings[server] >= RETRY_SECS)
@@ -2474,6 +2476,8 @@ active_servers(void)
 				last_failed_pings[server] = (time_t)0;
 		}
 
+	if(count != 1)
+		*active = 0;
 	return count;
 }
 
@@ -4383,9 +4387,17 @@ connect2clamd(struct privdata *privdata)
 				return 0;
 			}
 			if(connect(privdata->cmdSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
-				perror("connect");
+				char *hostname = cli_strtok(serverHostNames, freeServer, ":");
+
+				perror(hostname ? hostname : "connect");
+				close(privdata->cmdSocket);
+				privdata->cmdSocket = -1;
+				if(hostname)
+					free(hostname);
+				time(&last_failed_pings[freeServer]);
 				return 0;
 			}
+			last_failed_pings[freeServer] = (time_t)0;
 #endif
 			privdata->serverNumber = freeServer;
 		}

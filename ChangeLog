@@ -1,3 +1,8 @@
+Wed Jun 27 09:11:29 BST 2007 (njh)
+---------------------------------
+  * clamav-milter:	If there's only one clamd server up, ensure that it
+				is used even if it's not the first listed
+
 Tue Jun 26 10:19:00 CEST 2007 (edwin)
 ----------------------------------
   * libclamav/regex_list.c:	fix false substring matches, related to bug
