@@ -3939,7 +3939,6 @@ do_checkURLs(const char *dir, tag_arguments_t *hrefs)
 		 *	the HTML normalise code
 		 */
 		if(strncasecmp("http://", url, 7) == 0) {
-			char *ptr;
 #ifndef	CL_THREAD_SAFE
 			struct arg arg;
 #endif
@@ -3965,9 +3964,7 @@ do_checkURLs(const char *dir, tag_arguments_t *hrefs)
 			cli_dbgmsg("Downloading URL %s to be scanned\n", url);
 			strncpy(name, url, sizeof(name) - 1);
 			name[sizeof(name) - 1] = '\0';
-			for(ptr = name; *ptr; ptr++)
-				if(*ptr == '/')
-					*ptr = '_';
+			sanitiseName(name);	/* bug #538 */
 
 #ifdef	CL_THREAD_SAFE
 			args[n].dir = dir;
@@ -4101,7 +4098,7 @@ getURL(struct arg *arg)
 	fp = fopen(fout, "wb");
 
 	if(fp == NULL) {
-		cli_errmsg("Can't open '%s' for writing", fout);
+		cli_errmsg("Can't open '%s' for writing\n", fout);
 		return NULL;
 	}
 	cli_dbgmsg("Saving %s to %s\n", url, fout);

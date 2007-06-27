@@ -1,3 +1,7 @@
+Wed Jun 27 13:59:33 BST 2007 (njh)
+----------------------------------
+  libclamav/mbox.c:	Bug #538
+
 Wed Jun 27 09:11:29 BST 2007 (njh)
 ---------------------------------
   * clamav-milter:	If there's only one clamd server up, ensure that it
