@@ -76,10 +76,10 @@ Disable scanning of mail files.
 Disable signature-based phishing detection.
 .TP 
 \fB\-\-no\-phishing\-scan\-urls\fR
-Disable url-based phishing detection.
+Disable url-based heuristic phishing detection. This disables Phishing.Heuristics.Email.*
 .TP
 \fB\-\-no\-phishing\-restrictedscan\fR
-Enable phishing detection for all domains (might lead to false positives!).
+Enable url-based heuristic phishing detection for all domains (might lead to false positives!).
 .TP
 \fB\-\-phishing\-ssl\fR
 Always block SSL mismatches in URLs (might lead to false positives!).

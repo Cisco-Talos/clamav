@@ -246,7 +246,7 @@ With this option enabled ClamAV will try to detect phishing attempts by using si
 Default: yes
 .TP
 \fBPhishingScanURLs BOOL\fR
-Scan URLs found in mails for phishing attempts.
+Scan URLs found in mails for phishing attempts using heuristics. This will classify "Possibly Unwanted" phishing emails as Phishing.Heuristics.Email.*
 .br
 Default: yes
 .TP
