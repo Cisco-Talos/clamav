@@ -1,7 +1,11 @@
+Sat Jun 30 19:18:58 BST 2007 (njh)
+----------------------------------
+  * clamav-milter:	Linux: Only complain about LANG being set when in internal mode
+
 Sat Jun 30 13:55:00 CEST 2007 (edwin)
 ----------------------------------
   * libclamav/phish*,[ch], rtf.[ch], entconv.[ch],
-    regex_list.[ch], hashtab.[ch], encoding_aliases.h: stick to GPLv2 
+    regex_list.[ch], hashtab.[ch], encoding_aliases.h: stick to GPLv2
 
 Thu Jun 28 14:36:00 CEST 2007 (edwin)
 ----------------------------------

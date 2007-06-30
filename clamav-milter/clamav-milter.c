@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-070627"
+#define	CM_VERSION	"devel-070630"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -633,9 +633,6 @@ main(int argc, char **argv)
 	int i, Bflag = 0, server = 0;
 	char *cfgfile = NULL;
 	const char *wont_blacklist = NULL;
-#ifdef	C_LINUX
-	const char *lang;
-#endif
 	const struct cfgstruct *cpt;
 	char version[VERSION_LENGTH + 1];
 	pthread_t tid;
@@ -703,13 +700,6 @@ main(int argc, char **argv)
 	setlocale(LC_ALL, "");
 	bindtextdomain(progname, DATADIR"/clamav-milter/locale");
 	textdomain(progname);
-	lang = getenv("LANG");
-
-	if(lang && (strstr(lang, "UTF-8") != NULL)) {
-		fprintf(stderr, "Your LANG environment variable is set to '%s\n", lang);
-		fprintf(stderr, "This is known to cause problems for some %s installations.\n", argv[0]);
-		fputs("If you get failures with temporary files, please try again with LANG unset.\n", stderr);
-	}
 #endif
 
 	for(;;) {
@@ -1345,6 +1335,10 @@ main(int argc, char **argv)
 	 * we're doing the scanning internally
 	 */
 	if(!external) {
+#ifdef	C_LINUX
+		const char *lang;
+#endif
+
 		if(max_children == 0) {
 			fprintf(stderr, _("%s: --max-children must be given if --external is not given\n"), argv[0]);
 			return EX_CONFIG;
@@ -1353,6 +1347,15 @@ main(int argc, char **argv)
 			fprintf(stderr, _("%s: --freshclam_monitor must be at least one second\n"), argv[0]);
 			return EX_CONFIG;
 		}
+#if	C_LINUX
+		lang = getenv("LANG");
+
+		if(lang && (strstr(lang, "UTF-8") != NULL)) {
+			fprintf(stderr, "Your LANG environment variable is set to '%s\n", lang);
+			fprintf(stderr, "This is known to cause problems for some %s installations.\n", argv[0]);
+			fputs("If you get failures with temporary files, please try again with LANG unset.\n", stderr);
+		}
+#endif
 #if	0
 		if(child_timeout) {
 			fprintf(stderr, _("%s: --timeout must not be given if --external is not given\n"), argv[0]);
