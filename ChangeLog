@@ -1,4 +1,9 @@
-Wed Jun 28 14:36:00 CEST 2007 (edwin)
+Sat Jun 30 13:55:00 CEST 2007 (edwin)
+----------------------------------
+  * libclamav/phish*,[ch], rtf.[ch], entconv.[ch],
+    regex_list.[ch], hashtab.[ch], encoding_aliases.h: stick to GPLv2 
+
+Thu Jun 28 14:36:00 CEST 2007 (edwin)
 ----------------------------------
   * libclamav/phishcheck.c, docs/man: Rename Phishing.Email.* to
   Phishing.Heuristics.Email.*. Update documentation. The URL-based heuristic
