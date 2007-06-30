@@ -9,7 +9,7 @@
 			Name="Debug|Win32"
 			>
 			<DebugSettings
-				Command="$(OutDir)\clamscan.exe"
+				Command="$(OutDir)\clamd.exe"
 				WorkingDirectory=""
 				CommandArguments="--temp=d: --debug"
 				Attach="false"
@@ -37,7 +37,7 @@
 			Name="Release|Win32"
 			>
 			<DebugSettings
-				Command="C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\release\clamscan.exe"
+				Command="$(OutDir)\clamd.exe"
 				WorkingDirectory=""
 				CommandArguments="--temp=d: --debug"
 				Attach="false"
@@ -65,9 +65,9 @@
 			Name="Release no .net|Win32"
 			>
 			<DebugSettings
-				Command=""
+				Command="$(OutDir)\clamd.exe"
 				WorkingDirectory=""
-				CommandArguments=""
+				CommandArguments="--temp=d: --debug"
 				Attach="false"
 				DebuggerType="3"
 				Remote="1"
@@ -78,7 +78,7 @@
 				SQLDebugging=""
 				Environment=""
 				EnvironmentMerge="true"
-				DebuggerFlavor=""
+				DebuggerFlavor="0"
 				MPIRunCommand=""
 				MPIRunArguments=""
 				MPIRunWorkingDirectory=""
