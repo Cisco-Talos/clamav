@@ -9,7 +9,7 @@
 			Name="Debug|Win32"
 			>
 			<DebugSettings
-				Command="C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\debug\clamscan.exe"
+				Command="$(OutDir)\clamscan.exe"
 				WorkingDirectory=""
 				CommandArguments="--temp=d: --debug"
 				Attach="false"

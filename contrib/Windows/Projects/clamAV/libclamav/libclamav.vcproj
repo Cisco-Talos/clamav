@@ -41,7 +41,7 @@
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="false"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\mspack&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\unrar&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\nsis&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\js&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\pthread&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)mspack&quot;;&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)\unrar&quot;;&quot;$(ProjectDir)nsis&quot;;&quot;$(ProjectDir)js&quot;;&quot;$(ProjectDir)pthread&quot;"
 				PreprocessorDefinitions="_USE_32BIT_TIME_T;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;PTW32_STATIC_LIB;_DEBUG"
 				StringPooling="true"
 				MinimalRebuild="true"
@@ -123,7 +123,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="false"
-				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\mspack&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\unrar&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\nsis&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\js&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\pthread&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)mspack&quot;;&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)\unrar&quot;;&quot;$(ProjectDir)nsis&quot;;&quot;$(ProjectDir)js&quot;;&quot;$(ProjectDir)pthread&quot;"
 				PreprocessorDefinitions="_USE_32BIT_TIME_T;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;PTW32_STATIC_LIB"
 				StringPooling="true"
 				ExceptionHandling="0"
@@ -204,7 +204,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="false"
-				AdditionalIncludeDirectories="&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\mspack&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\unrar&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\nsis&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\js&quot;;&quot;C:\Documents and Settings\Nigel Horne\My Documents\Visual Studio 2005\Projects\clamAV\libclamav\pthread&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)mspack&quot;;&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)\unrar&quot;;&quot;$(ProjectDir)nsis&quot;;&quot;$(ProjectDir)js&quot;;&quot;$(ProjectDir)pthread&quot;"
 				PreprocessorDefinitions="_USE_32BIT_TIME_T;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;PTW32_STATIC_LIB"
 				StringPooling="true"
 				ExceptionHandling="0"
@@ -269,6 +269,10 @@
 			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
+			<File
+				RelativePath=".\aspack.c"
+				>
+			</File>
 			<File
 				RelativePath=".\binhex.c"
 				>
@@ -679,6 +683,10 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath=".\aspack.h"
+				>
+			</File>
 			<File
 				RelativePath=".\binhex.h"
 				>
