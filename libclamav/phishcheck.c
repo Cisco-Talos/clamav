@@ -207,7 +207,7 @@ static const size_t https_len  = sizeof(https)-1;
 #define URI_path2 URI_tld
 #define URI_path3 "(/"optional_URI_xpalphas")*"
 
-#define URI_search "("URI_xalphas"\\+)*"
+#define URI_search "("URI_xalphas")*"
 #define URI_fragmentid URI_xalphas
 
 #define URI_IP_digits "["URI_digit"]{1,3}"

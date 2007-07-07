@@ -1,3 +1,7 @@
+Sat Jul 07 10:52:00 CEST 2007 (edwin)
+----------------------------------
+  * libclamav/phishcheck.c: fix typo in regex
+
 Sat Jun 30 19:18:58 BST 2007 (njh)
 ----------------------------------
   * clamav-milter:	Linux: Only complain about LANG being set when in internal mode
