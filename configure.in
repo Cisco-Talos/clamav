@@ -1059,6 +1059,18 @@ DEFAULT_FD_SETSIZE=256)
 AC_MSG_RESULT($DEFAULT_FD_SETSIZE)
 AC_DEFINE_UNQUOTED(DEFAULT_FD_SETSIZE, $DEFAULT_FD_SETSIZE, "default FD_SETSIZE value")
 
+dnl Check signed right shift implementation
+AC_MSG_CHECKING(if signed right shift is sign extended)
+AC_TRY_RUN([int main(void){int a=-1;int b=a>>1;return(a!=b);}],
+    [have_signed_rightshift_extended=yes],
+    [have_signed_rightshift_extended=no],
+    [have_signed_rightshift_extended=no])
+if test $have_signed_rightshift_extended = yes; then
+    AC_DEFINE(HAVE_SAR, 1, Define signed right shift implementation)
+fi
+AC_MSG_RESULT($have_signed_rightshift_extended);
+
+
 AC_OUTPUT([
 libclamav/Makefile
 clamscan/Makefile

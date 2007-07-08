@@ -216,6 +216,9 @@
 /* have resolv.h */
 #undef HAVE_RESOLV_H
 
+/* Define signed right shift implementation */
+#undef HAVE_SAR
+
 /* Define to 1 if you have the `sendmsg' function. */
 #undef HAVE_SENDMSG
 

@@ -132,6 +132,14 @@ typedef struct {
 #define ROL(a,b) a = ( a << (b % (sizeof(a)<<3) ))  |  (a >> (  (sizeof(a)<<3)  -  (b % (sizeof(a)<<3 )) ) )
 #define ROR(a,b) a = ( a >> (b % (sizeof(a)<<3) ))  |  (a << (  (sizeof(a)<<3)  -  (b % (sizeof(a)<<3 )) ) )
 
+/* Implementation independent sign-extended signed right shift */
+#ifdef HAVE_SAR
+#define SRS(n,s) ((n)>>(s))
+#else
+#define SRS(n,s) (((n)>>(s)) ^ (1<<(sizeof(n)*8-1-s)) - (1<<(sizeof(n)*8-1-s)))
+#endif
+#define SAR(n,s) n = SRS(n,s)
+
 #ifndef	FALSE
 #define FALSE (0)
 #endif

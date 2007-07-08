@@ -543,7 +543,7 @@ int unupack399(char *bs, uint32_t bl, uint32_t init_eax, char *init_ebx, uint32_
 						return -1;
 					/* cdq, loc_edx = (loc_eax&0x80000000)?0xffffffff:0; */
 					loc_ecx = temp_ebp;
-					temp_ebp = (int32_t)loc_eax >> 31; /* thx, desp */
+					temp_ebp = SRS((int32_t)loc_eax, 31); /* thx, desp */
 					/* loc_483a00 */
 					do {
 						temp_ebp += temp_ebp;

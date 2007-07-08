@@ -400,7 +400,7 @@ int getbit_from_table(uint16_t *intable, struct UNSP *read_struct) {
     read_struct->bitmap = nval;
     nval = *intable;
     sval = 0x800 - nval;
-    sval = ((int32_t)sval)>>5; /* signed */
+    sval = SRS((int32_t)sval,5); /* signed */
     sval += nval;
     *intable=sval;
     if (read_struct->bitmap<0x1000000) { /* unsigned */
