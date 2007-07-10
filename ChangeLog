@@ -1,3 +1,7 @@
+Tue Jul 10 23:48:54 CEST 2007 (tk)
+----------------------------------
+  * libclamav/others.c: bump f-level
+
 Tue Jul 10 23:41:57 CEST 2007 (tk)
 ----------------------------------
   * sigtool/sigtool.c: fix problems with main.cvd building
