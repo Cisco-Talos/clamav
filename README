@@ -2,8 +2,8 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
-0.91rc2
--------
+0.91
+----
 
 ClamAV 0.91 is the first release to enable the anti-phishing technology
 in default builds. This technology combines heuristics with special
@@ -20,6 +20,7 @@ Other important changes and add-ons in this version include:
     - extraction of PE files embedded into other executables
     - better handling of PE & UPX
     - removed dependency on libcurl (improves stability)
+    - libclamav.dll available under Windows
     - IPv6 support in clamav-milter
     - many other improvements and bugfixes
 
