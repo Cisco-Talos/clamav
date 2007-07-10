@@ -271,8 +271,13 @@ static int mszip_make_decode_table(unsigned int nsyms, unsigned int nbits,
         cli_dbgmsg("zip_inflate: out of bits in huffman decode\n");	\
         return INF_ERR_HUFFSYM;                                         \
       }                                                                 \
+      sym = (sym << 1) | ((bit_buffer >> i) & 1);			\
+      if(sym >= MSZIP_##tbl##_TABLESIZE) {				\
+	cli_dbgmsg("zip_inflate: index out of table\n");		\
+        return INF_ERR_HUFFSYM;                                         \
+      }									\
       /* double node index and add 0 (left branch) or 1 (right) */	\
-      sym = zip->tbl##_table[(sym << 1) | ((bit_buffer >> i) & 1)];	\
+      sym = zip->tbl##_table[sym];					\
       /* while we are still in node indicies, not decoded symbols */    \
     } while (sym >= MSZIP_##tbl##_MAXSYMBOLS);                          \
   }                                                                     \
@@ -798,7 +803,11 @@ static int lzx_read_input(struct lzx_stream *lzx) {
       /* double node index and add 0 (left branch) or 1 (right) */      \
       sym <<= 1; sym |= (bit_buffer & i) ? 1 : 0;                       \
       /* hop to next node index / decoded symbol */                     \
-      sym = lzx->tbl##_table[sym];                                      \
+      if(sym >= (1 << LZX_##tbl##_TABLEBITS) + (LZX_##tbl##_MAXSYMBOLS * 2)) { \
+	cli_dbgmsg("lzx: index out of table\n");			\
+	return lzx->error = CL_EFORMAT;					\
+      }									\
+      sym = lzx->tbl##_table[sym];                                    \
       /* while we are still in node indicies, not decoded symbols */    \
     } while (sym >= LZX_##tbl##_MAXSYMBOLS);                            \
   }                                                                     \

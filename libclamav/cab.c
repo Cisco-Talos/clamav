@@ -636,8 +636,19 @@ int cab_extract(struct cab_file *file, const char *name)
 	    }
 	    if(file->offset > 0) {
 		((struct mszip_stream *) file->state->stream)->wflag = 0;
-		mszip_decompress(file->state->stream, file->offset);
+		ret = mszip_decompress(file->state->stream, file->offset);
 		((struct mszip_stream *) file->state->stream)->wflag = 1;
+		if(ret < 0) {
+		    mszip_free(file->state->stream);
+		    memset(file->state, 0, sizeof(struct cab_state));
+		    file->state->stream = (struct mszip_stream *) mszip_init(file->fd, file->ofd, 4096, 1, file, &cab_read);
+		    if(!file->state->stream) {
+			free(file->state);
+			close(file->ofd);
+			return CL_EMSCAB;
+		    }
+                    lseek(file->fd, file->folder->offset, SEEK_SET);
+		}
 	    }
 	    ret = mszip_decompress(file->state->stream, file->length);
 	    mszip_free(file->state->stream);
@@ -670,8 +681,19 @@ int cab_extract(struct cab_file *file, const char *name)
 	    }
 	    if(file->offset > 0) {
 		((struct lzx_stream *) file->state->stream)->wflag = 0;
-		lzx_decompress(file->state->stream, file->offset);
+		ret = lzx_decompress(file->state->stream, file->offset);
 		((struct lzx_stream *) file->state->stream)->wflag = 1;
+		if(ret < 0) {
+		    lzx_free(file->state->stream);
+		    memset(file->state, 0, sizeof(struct cab_state));
+		    file->state->stream = (struct lzx_stream *) lzx_init(file->fd, file->ofd, (int) (file->folder->cmethod >> 8) & 0x1f, 0, 4096, 0, file, &cab_read);
+		    if(!file->state->stream) {
+			free(file->state);
+			close(file->ofd);
+			return CL_EMSCAB;
+		    }
+                    lseek(file->fd, file->folder->offset, SEEK_SET);
+		}
 	    }
 	    ret = lzx_decompress(file->state->stream, file->length);
 	    lzx_free(file->state->stream);

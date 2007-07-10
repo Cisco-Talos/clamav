@@ -1,3 +1,7 @@
+Tue Jul 10 23:06:14 CEST 2007 (tk)
+----------------------------------
+  * libclamav: improve handling of SFX CAB archives
+
 Tue Jul 10 22:36:35 CEST 2007 (tk)
 ----------------------------------
   * libclamav/ole2_extract.c: faster handling of corrupted files (bb#561)
