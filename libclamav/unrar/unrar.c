@@ -1650,7 +1650,7 @@ int cli_unrar_extract_next(rar_state_t* state,const char* dirname)
 			cli_dbgmsg("Computed File CRC: 0x%x\n", state->unpack_data->unp_crc^0xffffffff);
 			if (state->unpack_data->unp_crc != 0xffffffff) {
 				if (state->file_header->file_crc != (state->unpack_data->unp_crc^0xffffffff)) {
-					cli_warnmsg("RAR CRC error. Please report the bug at http://bugs.clamav.net/\n");
+					cli_warnmsg("RAR CRC error. If the file is not corrupted, please report at http://bugs.clamav.net/\n");
 				}
 			}
 			if (!retval) {

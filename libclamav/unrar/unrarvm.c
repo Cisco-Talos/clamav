@@ -347,18 +347,18 @@ static void execute_standard_filter(rarvm_data_t *rarvm_data, rarvm_standard_fil
 	unsigned int file_offset, cur_pos, predicted;
 	int32_t offset, addr;
 	const int file_size=0x1000000;
-	
+
 	switch(filter_type) {
 	case VMSF_E8:
 	case VMSF_E8E9:
 		data=rarvm_data->mem;
 		data_size = rarvm_data->R[4];
 		file_offset = rarvm_data->R[6];
-		
-		if (data_size >= VM_GLOBALMEMADDR) {
+
+		if ((data_size >= VM_GLOBALMEMADDR) || (data_size < 4)) {
 			break;
 		}
-		
+
 		cmp_byte2 = filter_type==VMSF_E8E9 ? 0xe9:0xe8;
 		for (cur_pos = 0 ; cur_pos < data_size-4 ; ) {
 			cur_byte = *(data++);
