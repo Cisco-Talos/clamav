@@ -472,7 +472,7 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 
 	current_block = hdr->prop_start;
 
-	if ((prop_index < 0) || (rec_level > 100) || (*file_count > 100000)) {
+	if ((prop_index < 0) || (prop_index > hdr->max_block_no) || (rec_level > 100) || (*file_count > 100000)) {
 		return;
 	}
 
