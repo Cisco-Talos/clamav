@@ -873,12 +873,14 @@ void cli_bitset_free(bitset_t *bs)
 static bitset_t *bitset_realloc(bitset_t *bs, unsigned long min_size)
 {
 	unsigned long new_length;
+	unsigned char *new_bitset;
 	
 	new_length = nearest_power(min_size);
-	bs->bitset = (unsigned char *) cli_realloc2(bs->bitset, new_length);
-	if (!bs->bitset) {
+	new_bitset = (unsigned char *) cli_realloc(bs->bitset, new_length);
+	if (!new_bitset) {
 		return NULL;
 	}
+	bs->bitset = new_bitset;
 	memset(bs->bitset+bs->length, 0, new_length-bs->length);
 	bs->length = new_length;
 	return bs;

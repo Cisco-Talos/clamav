@@ -1,3 +1,8 @@
+Tue Jul 10 22:23:24 CEST 2007 (tk)
+----------------------------------
+  * libclamav/others.c: bitset_realloc(): fix invalid state on realloc() failure (bb#560)
+			Thanks to Victor Stinner
+
 Tue Jul 10 22:11:11 CEST 2007 (tk)
 ----------------------------------
   * libclamav/ole2_extract.c: better processing of data blocks (bb#559)
