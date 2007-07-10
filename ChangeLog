@@ -1,3 +1,8 @@
+Tue Jul 10 22:11:11 CEST 2007 (tk)
+----------------------------------
+  * libclamav/ole2_extract.c: better processing of data blocks (bb#559)
+			      Reported by Victor Stinner, patch from Trog
+
 Tue Jul 10 22:02:15 CEST 2007 (tk)
 ----------------------------------
   * libclamav/unrar/unrarvm.c: fix possible crash with corrupted archives (bb#555)

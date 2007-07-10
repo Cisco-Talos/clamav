@@ -102,6 +102,7 @@ typedef struct ole2_header_tag
 	unsigned char *m_area;
 	off_t m_length;
 	bitset_t *bitset;
+	uint32_t max_block_no;
 } ole2_header_t;
 
 typedef struct property_tag
@@ -647,6 +648,13 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 		return FALSE;
 	}
 	while((current_block >= 0) && (len > 0)) {
+		if (current_block > hdr->max_block_no) {
+                        cli_dbgmsg("OLE2: Max block number for file size exceeded: %d\n", current_block);
+                        close(ofd);
+                        free(buff);
+                        cli_bitset_free(blk_bitset);
+                        return FALSE;
+                }
 		/* Check we aren't in a loop */
 		if (cli_bitset_test(blk_bitset, (unsigned long) current_block)) {
 			/* Loop in block list */
@@ -781,15 +789,16 @@ int cli_ole2_extract(int fd, const char *dirname, const struct cl_limits *limits
 	
 	/* size of header - size of other values in struct */
 	hdr_size = sizeof(struct ole2_header_tag) - sizeof(int32_t) -
-			sizeof(unsigned char *) - sizeof(off_t) - sizeof(bitset_t *);
+			sizeof(unsigned char *) - sizeof(off_t) - sizeof(bitset_t *) -
+			sizeof(uint32_t);
 
 	hdr.m_area = NULL;
 
-#ifdef HAVE_MMAP
 	if (fstat(fd, &statbuf) == 0) {
 		if (statbuf.st_size < hdr_size) {
 			return 0;
 		}
+#ifdef HAVE_MMAP
 		hdr.m_length = statbuf.st_size;
 		hdr.m_area = (unsigned char *) mmap(NULL, hdr.m_length, PROT_READ, MAP_PRIVATE, fd, 0);
 		if (hdr.m_area == MAP_FAILED) {
@@ -798,8 +807,8 @@ int cli_ole2_extract(int fd, const char *dirname, const struct cl_limits *limits
 			cli_dbgmsg("mmap'ed file\n");
 			memcpy(&hdr, hdr.m_area, hdr_size);
 		}
-	}
 #endif
+	}
 
 	if (hdr.m_area == NULL) {
 #if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
@@ -827,6 +836,8 @@ int cli_ole2_extract(int fd, const char *dirname, const struct cl_limits *limits
 	hdr.xbat_count = ole2_endian_convert_32(hdr.xbat_count);
 
 	hdr.sbat_root_start = -1;
+	/* 8 SBAT blocks per file block */
+	hdr.max_block_no = ((statbuf.st_size / hdr.log2_big_block_size) + 1) * 8;
 
 	hdr.bitset = cli_bitset_init();
 	if (!hdr.bitset) {
@@ -858,6 +869,7 @@ int cli_ole2_extract(int fd, const char *dirname, const struct cl_limits *limits
 	}
 	
 	print_ole2_header(&hdr);
+	cli_dbgmsg("Max block number: %lu\n", hdr.max_block_no);
 
 	/* NOTE: Select only ONE of the following two methods */
 	
