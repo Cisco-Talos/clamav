@@ -1,3 +1,7 @@
+Tue Jul 10 23:41:57 CEST 2007 (tk)
+----------------------------------
+  * sigtool/sigtool.c: fix problems with main.cvd building
+
 Tue Jul 10 23:06:14 CEST 2007 (tk)
 ----------------------------------
   * libclamav: improve handling of SFX CAB archives

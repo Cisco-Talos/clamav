@@ -628,7 +628,17 @@ static int build(struct optstruct *opt)
     if(!strcmp(dbname, "main")) {
 	fflush(stdin);
 	mprintf("Functionality level: ");
-	scanf("%u", &fl);
+	if(fgets(smbuff, sizeof(smbuff), stdin)) {
+	    cli_chomp(smbuff);
+	} else {
+	    mprintf("!build: Can't get functionality level\n");
+	    return -1;
+	}
+	fl = atoi(smbuff);
+	if(!fl || fl > 99) {
+	    mprintf("!build: Incorrect functionality level\n");
+	    return -1;
+	}
     } else {
 	fl = cl_retflevel();
     }
@@ -1465,7 +1475,7 @@ static int verifydiff(const char *diff, const char *cvd, const char *incdir)
 
     cvd ? (cpt = cvd) : (cpt = incdir);
 
-    if(strstr(cpt, "main.cvd"))
+    if(strstr(cpt, "main"))
 	strcpy(info, "main.info");
     else
 	strcpy(info, "daily.info");
