@@ -24,7 +24,7 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #include "clamav-config.h"
 #endif
 
-#if HAVE_MMAP
+#ifdef	HAVE_MMAP
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>

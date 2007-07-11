@@ -1,3 +1,7 @@
+Wed Jul 11 10:20:53 BST 2007 (njh)
+----------------------------------
+  * libclamav:	Fix warnings on HP-UX
+
 Wed Jul 11 10:12:36 BST 2007 (trog)
 -----------------------------------
   * libclamav: add ARJ and SFX-ARJ support

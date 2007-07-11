@@ -4494,7 +4494,7 @@ nonblock_connect(int sock, const struct sockaddr *addr, socklen_t addrlen, int s
 	for (;;) {
 		fd_set fds;
 		struct timeval now;
-		struct timeval wait;
+		struct timeval waittime;
 		int n;
 
 		/* Force timeout if we ran out of time */
@@ -4505,14 +4505,14 @@ nonblock_connect(int sock, const struct sockaddr *addr, socklen_t addrlen, int s
 			break; /* failed */
 		}
 
-		/* Calculate into 'wait' how long to wait */
-		timersub(&timeout, &now, &wait); /* wait = timeout - now */
+		/* Calculate into 'waittime' how long to wait */
+		timersub(&timeout, &now, &waittime); /* wait = timeout - now */
 
 		/* Init fds with 'sock' as the only fd */
 		FD_ZERO(&fds);
 		FD_SET(sock, &fds);
 
-		n = select(numfd, 0, &fds, 0, &wait);
+		n = select(numfd, 0, &fds, 0, &waittime);
 		if (n < 0) {
 			cli_warnmsg("nonblock_connect: select() failure %d: errno=%d: %s\n",
 				select_failures, errno, strerror(errno));
