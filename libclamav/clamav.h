@@ -62,6 +62,7 @@ extern "C"
 #define CL_EFORMAT	-124 /* bad format or broken file */
 #define CL_ESUPPORT	-125 /* not supported data format */
 #define CL_ELOCKDB	-126 /* can't lock DB directory */
+#define CL_EARJ         -127 /* ARJ handler error */
 
 /* NodalCore */
 #define CL_ENCINIT	-200 /* NodalCore initialization failed */

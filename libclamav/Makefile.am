@@ -128,6 +128,8 @@ libclamav_la_SOURCES = \
 	unrar/unrarcmd.c \
 	unrar/unrarfilter.h \
 	unrar/unrarppm.h \
+	unarj.c \
+	unarj.h \
 	nsis/LZMADecode.c \
 	nsis/LZMADecode.h \
 	nsis/bzlib.c \

@@ -211,6 +211,8 @@ const char *cl_strerror(int clerror)
 	    return "NodalCore accelerator Input/Output error";
 	case CL_ELOCKDB:
 	    return "Unable to lock database directory";
+	case CL_EARJ:
+	    return "ARJ module failure";
 	default:
 	    return "Unknown error code";
     }

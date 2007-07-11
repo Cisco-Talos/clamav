@@ -1,3 +1,7 @@
+Wed Jul 11 10:12:36 BST 2007 (trog)
+-----------------------------------
+  * libclamav: add ARJ and SFX-ARJ support
+
 Wed Jul 11 00:56:02 CEST 2007 (tk)
 ----------------------------------
   * 0.91 (released with JS and PST code removed)

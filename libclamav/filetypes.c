@@ -68,6 +68,7 @@ static const struct cli_magic_s cli_magic[] = {
     {0,	    "PK00PK\003\004",		8,  "ZIP",		CL_TYPE_ZIP},
     {0,	    "\037\213",			2,  "GZip",		CL_TYPE_GZ},
     {0,	    "BZh",			3,  "BZip",		CL_TYPE_BZ},
+    {0,	    "\x60\xea",			2,  "ARJ",		CL_TYPE_ARJ},
     {0,	    "SZDD",			4,  "compress.exe'd",	CL_TYPE_MSSZDD},
     {0,	    "MSCF",			4,  "MS CAB",		CL_TYPE_MSCAB},
     {0,	    "ITSF",			4,  "MS CHM",           CL_TYPE_MSCHM},
@@ -190,6 +191,9 @@ static const struct cli_smagic_s cli_smagic[] = {
     {"526172211a0700", "RAR-SFX", CL_TYPE_RARSFX},
     {"504b0304", "ZIP-SFX", CL_TYPE_ZIPSFX},
     {"4d534346", "CAB-SFX", CL_TYPE_CABSFX},
+    {"60ea{7}0002", "ARJ-SFX", CL_TYPE_ARJSFX},
+    {"60ea{7}0102", "ARJ-SFX", CL_TYPE_ARJSFX},
+    {"60ea{7}0202", "ARJ-SFX", CL_TYPE_ARJSFX},
     {"efbeadde4e756c6c736f6674496e7374", "NSIS", CL_TYPE_NULSFT},
 
     {"4d5a{180-300}50450000", "PE", CL_TYPE_MSEXE},

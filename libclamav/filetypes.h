@@ -38,6 +38,7 @@ typedef enum {
     CL_TYPE_ZIP,
     CL_TYPE_BZ,
     CL_TYPE_RAR,
+    CL_TYPE_ARJ,
     CL_TYPE_MSSZDD,
     CL_TYPE_MSOLE2,
     CL_TYPE_MSCAB,
@@ -62,8 +63,8 @@ typedef enum {
     CL_TYPE_ZIPSFX, /* on the fly */
     CL_TYPE_RARSFX, /* on the fly */
     CL_TYPE_CABSFX,
+    CL_TYPE_ARJSFX,
     CL_TYPE_NULSFT /* on the fly */
-
 } cli_file_t;
 
 struct cli_matched_type {

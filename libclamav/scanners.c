@@ -85,6 +85,7 @@ extern short cli_leavetemps_flag;
 #include "mspack.h"
 #include "cab.h"
 #include "rtf.h"
+#include "unarj.h"
 
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>
@@ -311,6 +312,116 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
     return ret;
 }
 
+static int cli_unarj_checklimits(const cli_ctx *ctx, const arj_metadata_t *metadata, unsigned int files)
+{
+    if (ctx->limits) {
+	if (ctx->limits->maxfilesize && (metadata->orig_size > ctx->limits->maxfilesize)) {
+	    cli_dbgmsg("ARJ: %s: Size exceeded (%lu, max: %lu)\n", metadata->filename ? metadata->filename : "(none)",
+	    		(unsigned long int) metadata->orig_size, ctx->limits->maxfilesize);
+	    if (BLOCKMAX) {
+		*ctx->virname = "ARJ.ExceededFileSize";
+		return CL_VIRUS;
+	    }
+	    return CL_EMAXSIZE;
+	}
+	
+	if (ctx->limits->maxratio && metadata->orig_size && metadata->comp_size) {
+	    if (metadata->orig_size / metadata->comp_size >= ctx->limits->maxratio) {
+		cli_dbgmsg("ARJ: Max ratio reached (%u, max: %u)\n", (unsigned int) (metadata->orig_size / metadata->comp_size), ctx->limits->maxratio);
+		if (ctx->limits->maxfilesize && (metadata->orig_size <= ctx->limits->maxfilesize)) {
+		    cli_dbgmsg("ARJ: Ignoring ratio limit (file size doesn't hit limits)\n");
+		} else {
+		    if(BLOCKMAX) {
+		    	*ctx->virname = "Oversized.ARJ";
+			return CL_VIRUS;
+		    }
+		}
+	    }
+	}
+	
+	if(ctx->limits->maxfiles && (files > ctx->limits->maxfiles)) {
+	    cli_dbgmsg("ARJ: Files limit reached (max: %u)\n", ctx->limits->maxfiles);
+	    if (BLOCKMAX) {
+	    	*ctx->virname = "ARJ.ExceededFilesLimit";
+		return CL_VIRUS;
+	    }
+	    return CL_EMAXFILES;
+	}
+    }
+    
+    return CL_SUCCESS;
+}
+
+static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
+{
+	int ret = CL_CLEAN, rc;
+	arj_metadata_t metadata;
+	char *dir;
+	unsigned int file_count = 1;
+
+    cli_dbgmsg("in cli_scanarj()\n");
+
+     /* generate the temporary directory */
+    dir = cli_gentemp(NULL);
+    if(mkdir(dir, 0700)) {
+	cli_dbgmsg("RAR: Can't create temporary directory %s\n", dir);
+	free(dir);
+	return CL_ETMPDIR;
+    }
+
+    if(sfx_offset)
+	lseek(desc, sfx_offset, SEEK_SET);
+
+    ret = cli_unarj_open(desc, dir);
+    if (ret != CL_SUCCESS) {
+	if(!cli_leavetemps_flag)
+	    cli_rmdirs(dir);
+	free(dir);
+	cli_dbgmsg("ARJ: Error: %s\n", cl_strerror(ret));
+	return ret;
+    }
+    
+   metadata.filename = NULL;
+
+   do {
+	ret = cli_unarj_prepare_file(desc, dir, &metadata);
+	if (ret != CL_SUCCESS) {
+	   break;
+	}
+	ret = cli_unarj_checklimits(ctx, &metadata, file_count);
+	if (ret == CL_VIRUS) {
+		break;
+	}
+	ret = cli_unarj_extract_file(desc, dir, &metadata);
+	if (metadata.ofd >= 0) {
+	    lseek(metadata.ofd, 0, SEEK_SET);
+	    rc = cli_magic_scandesc(metadata.ofd, ctx);
+	    close(metadata.ofd);
+	    if (rc == CL_VIRUS) {
+		cli_dbgmsg("ARJ: infected with %s\n",*ctx->virname);
+		ret = CL_VIRUS;
+		break;
+	    }
+	}
+	if (metadata.filename) {
+		free(metadata.filename);
+		metadata.filename = NULL;
+	}
+
+    } while(ret == CL_SUCCESS);
+    
+    if(!cli_leavetemps_flag)
+	cli_rmdirs(dir);
+
+    free(dir);
+    if (metadata.filename) {
+	free(metadata.filename);
+    }
+
+    cli_dbgmsg("ARJ: Exit code: %d\n", ret);
+
+    return ret;
+}
 #ifdef HAVE_ZLIB_H
 static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 {
@@ -1808,6 +1919,12 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 			    nret = cli_scanmscab(desc, ctx, fpt->offset);
 			}
 			break;
+		    case CL_TYPE_ARJSFX:
+			if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_ARJ)) {
+			    cli_dbgmsg("ARJ-SFX signature found at %u\n", (unsigned int) fpt->offset);
+			    nret = cli_scanarj(desc, ctx, fpt->offset, &lastrar);
+			}
+			break;
 
 		    case CL_TYPE_NULSFT:
 		        if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_NSIS) && fpt->offset > 4) {
@@ -1960,6 +2077,10 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_BZ))
 		ret = cli_scanbzip(desc, ctx);
 #endif
+	    break;
+	case CL_TYPE_ARJ:
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ARJ))
+		ret = cli_scanarj(desc, ctx, 0, NULL);
 	    break;
 
         case CL_TYPE_NULSFT:
