@@ -129,16 +129,16 @@ typedef struct {
 #endif
 
 /* used by: spin, yc (C) aCaB */
-#define ROL(a,b) a = ( a << (b % (sizeof(a)<<3) ))  |  (a >> (  (sizeof(a)<<3)  -  (b % (sizeof(a)<<3 )) ) )
-#define ROR(a,b) a = ( a >> (b % (sizeof(a)<<3) ))  |  (a << (  (sizeof(a)<<3)  -  (b % (sizeof(a)<<3 )) ) )
+#define CLI_ROL(a,b) a = ( a << (b % (sizeof(a)<<3) ))  |  (a >> (  (sizeof(a)<<3)  -  (b % (sizeof(a)<<3 )) ) )
+#define CLI_ROR(a,b) a = ( a >> (b % (sizeof(a)<<3) ))  |  (a << (  (sizeof(a)<<3)  -  (b % (sizeof(a)<<3 )) ) )
 
 /* Implementation independent sign-extended signed right shift */
 #ifdef HAVE_SAR
-#define SRS(n,s) ((n)>>(s))
+#define CLI_SRS(n,s) ((n)>>(s))
 #else
-#define SRS(n,s) (((n)>>(s)) ^ (1<<(sizeof(n)*8-1-s)) - (1<<(sizeof(n)*8-1-s)))
+#define CLI_SRS(n,s) (((n)>>(s)) ^ (1<<(sizeof(n)*8-1-s)) - (1<<(sizeof(n)*8-1-s)))
 #endif
-#define SAR(n,s) n = SRS(n,s)
+#define CLI_SAR(n,s) n = CLI_SRS(n,s)
 
 #ifndef	FALSE
 #define FALSE (0)

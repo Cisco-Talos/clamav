@@ -120,12 +120,12 @@ static int yc_poly_emulator(char* decryptor_offset, char* code, unsigned int ecx
 	      if(decryptor_offset[j]=='\xC0') /* ROL AL,num */
 		{
 		  j++;
-		  ROL(al,decryptor_offset[j]);
+		  CLI_ROL(al,decryptor_offset[j]);
 		}
 	      else			/* ROR AL,num */
 		{
 		  j++;
-		  ROR(al,decryptor_offset[j]);
+		  CLI_ROR(al,decryptor_offset[j]);
 		}
 	      break;
 
@@ -134,12 +134,12 @@ static int yc_poly_emulator(char* decryptor_offset, char* code, unsigned int ecx
 	      if(decryptor_offset[j]=='\xC8') /* ROR AL,CL */
 		{
 		  j++;
-		  ROR(al,cl);
+		  CLI_ROR(al,cl);
 		}
 	      else			/* ROL AL,CL */
 		{
 		  j++;
-		  ROL(al,cl);
+		  CLI_ROL(al,cl);
 		}
 	      break;
 

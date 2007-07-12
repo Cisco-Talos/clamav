@@ -1,3 +1,8 @@
+Thu Jul 12 01:41:56 CEST 2007 (acab)
+------------------------------------
+  * libclamav: rename x86 macroes due to collisions on HPUX
+  		reported by njh
+
 Wed Jul 11 10:20:53 BST 2007 (njh)
 ----------------------------------
   * libclamav:	Fix warnings on HP-UX

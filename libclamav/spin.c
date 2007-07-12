@@ -112,8 +112,8 @@ static char exec86(uint8_t aelle, uint8_t cielle, char *curremu, int *retval) {
       case 0xc0: /* ror/rol al, ?? */
 	support = curremu[len];
         len++;
-        if ( support == 0xc0 ) ROL(aelle, curremu[len]);
-        else ROR(aelle, curremu[len]);
+        if ( support == 0xc0 ) CLI_ROL(aelle, curremu[len]);
+        else CLI_ROR(aelle, curremu[len]);
         len++;
         break;
 
@@ -144,7 +144,7 @@ static uint32_t summit (char *src, int size)
       eax ^= ebx>>8 & 0xff;
       eax += 0x7801a108;
       eax ^= ebx;
-      ROR(eax, ebx&0xff);
+      CLI_ROR(eax, ebx&0xff);
       swap = eax;
       eax = ebx;
       ebx = swap;

@@ -375,7 +375,7 @@ int unaspack212(uint8_t *image, unsigned int size, struct cli_exe_section *secti
 	  wrkbuf = &image[block_rva+i+1];
 	  if (*wrkbuf == image[ep+0x148]) {
 	    uint32_t target = cli_readint32(wrkbuf) & 0xffffff00;
-	    ROL(target, 0x18);
+	    CLI_ROL(target, 0x18);
 	    cli_writeint32(wrkbuf, target - i);
 	    i+=4;
 	  }

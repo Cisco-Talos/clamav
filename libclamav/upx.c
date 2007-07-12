@@ -394,7 +394,7 @@ int upx_inflate2d(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
       if (!backbytes)
 	break;
       backsize = backbytes & 1;
-      SAR(backbytes,1);
+      CLI_SAR(backbytes,1);
       unp_offset = backbytes;
     } else {
       if ( (backsize = (uint32_t)doubleebx(src, &myebx, &scur, ssize)) == 0xffffffff )
@@ -474,7 +474,7 @@ int upx_inflate2e(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
       if (!backbytes)
 	break;
       backsize = backbytes & 1; /* Using backsize to carry on the shifted out bit (UPX uses CF) */
-      SAR(backbytes,1);
+      CLI_SAR(backbytes,1);
       unp_offset = backbytes;
     } else {
       if ( (backsize = (uint32_t)doubleebx(src, &myebx, &scur, ssize)) == 0xffffffff )
