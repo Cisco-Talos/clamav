@@ -760,7 +760,8 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 	if(!pchk || pchk->is_disabled)
 		return CL_CLEAN;
 
-	*ctx->virname=NULL;
+	if(!ctx->found_possibly_unwanted)
+		*ctx->virname=NULL;
 	for(i=0;i<hrefs->count;i++)
 		if(hrefs->contents[i]) {
 			struct url_check urls;

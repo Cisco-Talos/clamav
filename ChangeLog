@@ -1,3 +1,7 @@
+Thu Jul 12 23:17:00 CEST 2007 (edwin)
+-----------------------------------
+  * libclamav/phishcheck.c: fix (null) FOUND
+
 Thu Jul 12 11:41:15 BST 2007 (trog)
 -----------------------------------
   * libclamav/unarj.c: fix include
