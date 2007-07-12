@@ -32,7 +32,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <dirent.h>
-#include <stdint.h>
 #include <clamav.h>
 #include <ctype.h>
 
