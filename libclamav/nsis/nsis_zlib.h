@@ -61,7 +61,7 @@ typedef enum {        /* waiting for "i:"=input, "o:"=output, "x:"=nothing */
       CODES,    /* processing fixed or dynamic block */
       DRY,      /* output remaining window bytes */
       DONE,     /* finished last block, done */
-      BAD       /* got a data error--stuck here */
+      NZ_BAD       /* got a data error--stuck here */
 } inflate_mode;
 
 /* inflate codes private state */

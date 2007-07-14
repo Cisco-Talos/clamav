@@ -1,3 +1,7 @@
+Sat Jul 14 14:17:01 CEST 2007 (acab)
+------------------------------------
+  * libclamav/nsis: fix macro collision on AIX - bb#570
+
 Thu Jul 12 23:17:00 CEST 2007 (edwin)
 -----------------------------------
   * libclamav/phishcheck.c: fix (null) FOUND

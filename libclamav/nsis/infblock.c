@@ -455,7 +455,7 @@ int ZEXPORT nsis_inflate(nsis_z_streamp z)
       s->sub.trees.table = t = (uInt)b & 0x3fff;
       if ((t & 0x1f) > 29 || ((t >> 5) & 0x1f) > 29)
       {
-        s->mode = BAD;
+        s->mode = NZ_BAD;
         LEAVE(Z_DATA_ERROR);
       }
       /* t = 258 + (t & 0x1f) + ((t >> 5) & 0x1f); */
@@ -481,7 +481,7 @@ int ZEXPORT nsis_inflate(nsis_z_streamp z)
 		       &s->sub.trees.tb, &s->sub.trees.bb, s->hufts, &hn);
         if (t != Z_OK || !s->sub.trees.bb)
         {
-          s->mode = BAD;
+          s->mode = NZ_BAD;
           break;
         }
       }
@@ -527,7 +527,7 @@ int ZEXPORT nsis_inflate(nsis_z_streamp z)
           if (i + j > 258 + (t & 0x1f) + ((t >> 5) & 0x1f) ||
               (d == 16 && i < 1))
           {
-            s->mode = BAD;
+            s->mode = NZ_BAD;
             LEAVE(Z_DATA_ERROR);
           }
           d = d == 16 ? s->sub.trees.t_blens[i - 1] : 0;
@@ -559,7 +559,7 @@ int ZEXPORT nsis_inflate(nsis_z_streamp z)
         }
         if (t != Z_OK || (bd == 0 && nl > 257))
         {
-          s->mode = BAD;
+          s->mode = NZ_BAD;
           LEAVE(Z_DATA_ERROR);
         }
         Tracev((stderr, "inflate:       trees ok\n"));
@@ -701,7 +701,7 @@ int ZEXPORT nsis_inflate(nsis_z_streamp z)
     */
     default: /* we'll call Z_STREAM_ERROR if BAD anyway */
     bad:
-      s->mode = BAD;
+      s->mode = NZ_BAD;
       LEAVE(Z_STREAM_ERROR)
   }
 }
