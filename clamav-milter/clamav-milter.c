@@ -6099,7 +6099,7 @@ resolve(const char *host, table_t *t)
 		struct in_addr addr;
 
 		if((len = dn_expand(q.u, end, p, buf, sizeof(buf) - 1)) < 0)
-			 return t;
+			return t;
 		p += len;
 		GETSHORT(type, p);
 		p += INT16SZ;
@@ -6128,10 +6128,10 @@ resolve(const char *host, table_t *t)
 #ifdef	CL_EXPERIMENTAL
 /*
  * Validate SPF records to help to stop Phish false positives
- * Currently only handles ip4 fields in the DNS record
- * Having said that, we don't need a full SPF parser, only something to stop
- *	Phish FPs
- * TODO: a: include: mx: hostnames
+ * Currently only handles ip4, a and mx fields in the DNS record
+ * Having said that, this is NOT a replacement for spf-milter, it is NOT
+ *	an SPF system, we ONLY use SPF records to reduce phish false positives
+ * TODO: include: hostnames
  * TODO: IPv6
  */
 static void
