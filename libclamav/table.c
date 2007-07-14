@@ -199,7 +199,7 @@ tableRemove(table_t *table, const char *key)
 }
 
 void
-tableIterate(table_t *table, void(*callback)(char *key, int value))
+tableIterate(table_t *table, void(*callback)(char *key, int value, void *arg), void *arg)
 {
 	tableEntry *tableItem;
 
@@ -208,5 +208,5 @@ tableIterate(table_t *table, void(*callback)(char *key, int value))
 
 	for(tableItem = table->tableHead; tableItem; tableItem = tableItem->next)
 		if(tableItem->key)	/* check node has not been deleted */
-			(*callback)(tableItem->key, tableItem->value);
+			(*callback)(tableItem->key, tableItem->value, arg);
 }

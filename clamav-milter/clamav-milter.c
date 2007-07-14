@@ -336,12 +336,13 @@ static	int	isLocal(const char *addr);
 static	void	clamdIsDown(void);
 static	void	*watchdog(void *a);
 static	int	check_and_reload_database(void);
-static	void	timeoutBlacklist(char *ip_address, int time_of_blacklist);
+static	void	timeoutBlacklist(char *ip_address, int time_of_blacklist, void *v);
 static	void	quit(void);
 static	void	broadcast(const char *mess);
 static	int	loadDatabase(void);
 static	int	increment_connexions(void);
 static	void	decrement_connexions(void);
+static	void	dump_blacklist(char *key, int value, void *v);
 
 #ifdef	SESSION
 static	pthread_mutex_t	version_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -562,11 +563,12 @@ static	void	print_trace(void);
 static	int	verifyIncomingSocketName(const char *sockName);
 static	int	isWhitelisted(const char *emailaddress, int to);
 static	int	isBlacklisted(const char *ip_address);
-static	void	mx(void);
+static	table_t	*mx(const char *host, table_t *t);
 #ifdef	HAVE_RESOLV_H
-static	void	resolve(const char *host);
+static	table_t	*resolve(const char *host, table_t *t);
 #ifdef	CL_EXPERIMENTAL
 static	void	spf(struct privdata *privdata);
+static	void	spf_ip(char *ip, int zero, void *v);
 #endif
 #endif
 static	sfsistat	black_hole(const struct privdata *privdata);
@@ -2006,7 +2008,14 @@ main(int argc, char **argv)
 	logg(_("*Debugging is on\n"));
 
 	if(blacklist_time) {
-		mx();
+		char name[MAXHOSTNAMELEN + 1];
+
+		if(gethostname(name, sizeof(name)) < 0) {
+			perror("gethostname");
+			return EX_UNAVAILABLE;
+		}
+
+		blacklist = mx(name, NULL);
 		if(blacklist)
 			/* We must never blacklist ourself */
 			tableInsert(blacklist, "127.0.0.1", 0);
@@ -2016,11 +2025,11 @@ main(int argc, char **argv)
 
 			i = 0;
 			while((w = cli_strtok(wont_blacklist, i++, ",")) != NULL) {
-				logg(_("Won't blacklist %s\n"), w);
 				(void)tableInsert(blacklist, w, 0);
 				free(w);
 			}
 		}
+		tableIterate(blacklist, dump_blacklist, NULL);
 	}
 
 	cli_dbgmsg("Started: %s\n", clamav_version);
@@ -5361,7 +5370,7 @@ watchdog(void *a)
 		/* Garbage collect IP addresses no longer blacklisted */
 		if(blacklist) {
 			pthread_mutex_lock(&blacklist_mutex);
-			tableIterate(blacklist, timeoutBlacklist);
+			tableIterate(blacklist, timeoutBlacklist, NULL);
 			pthread_mutex_unlock(&blacklist_mutex);
 		}
 	}
@@ -5424,7 +5433,7 @@ watchdog(void *a)
 		/* Garbage collect IP addresses no longer blacklisted */
 		if(blacklist) {
 			pthread_mutex_lock(&blacklist_mutex);
-			tableIterate(blacklist, timeoutBlacklist);
+			tableIterate(blacklist, timeoutBlacklist, NULL);
 			pthread_mutex_unlock(&blacklist_mutex);
 		}
 	}
@@ -5467,7 +5476,7 @@ check_and_reload_database(void)
 }
 
 static void
-timeoutBlacklist(char *ip_address, int time_of_blacklist)
+timeoutBlacklist(char *ip_address, int time_of_blacklist, void *v)
 {
 	if(time_of_blacklist == 0)	/* Must not blacklist this IP address */
 		return;
@@ -5961,8 +5970,8 @@ isBlacklisted(const char *ip_address)
  * This is only ever called once, which is wrong, but the overheard of calling
  * this from the watchdog isn't worth it
  */
-static void
-mx(void)
+static table_t *
+mx(const char *host, table_t *t)
 {
 	u_char *p, *end;
 	const HEADER *hp;
@@ -5971,37 +5980,31 @@ mx(void)
 		HEADER h;
 		u_char u[PACKETSZ];
 	} q;
-	char name[MAXHOSTNAMELEN + 1];
 	char buf[BUFSIZ];
 
-	if(gethostname(name, sizeof(name)) < 0) {
-		perror("gethostname");
-		return;
-	}
+	if(t == NULL) {
+		t = tableCreate();
 
-	if(blacklist == NULL) {
-		blacklist = tableCreate();
-
-		if(blacklist == NULL)
-			return;
+		if(t == NULL)
+			return NULL;
 	}
 
 	was_initialised = _res.options & RES_INIT;
 
 	if((!was_initialised) && res_init() < 0)
-		return;
+		return t;
 
-	len = res_query(name, C_IN, T_MX, (u_char *)&q, sizeof(q));
+	len = res_query(host, C_IN, T_MX, (u_char *)&q, sizeof(q));
 	if(len < 0) {
 		if(!was_initialised)
 			res_close();
-		return;	/* Host has no MX records */
+		return t;	/* Host has no MX records */
 	}
 
 	if((unsigned int)len > sizeof(q)) {
 		if(!was_initialised)
 			res_close();
-		return;
+		return t;
 	}
 
 	hp = &(q.h);
@@ -6012,7 +6015,7 @@ mx(void)
 		if((len = dn_skipname(p, end)) < 0) {
 			if(!was_initialised)
 				res_close();
-			return;
+			return t;
 		}
 
 	i = ntohs(hp->ancount);
@@ -6043,21 +6046,22 @@ mx(void)
 #else
 		if(addr != (in_addr_t)-1) {
 #endif
-			logg(_("Won't blacklist %s\n"), buf);
-			(void)tableInsert(blacklist, buf, 0);
+			(void)tableInsert(t, buf, 0);
 		} else
-			resolve(buf);
+			t = resolve(buf, t);
 	}
 	if(!was_initialised)
 		res_close();
+
+	return t;
 }
 
 /*
  * If the MX record points to a name, we need to resolve that name. This routine
  * does that
  */
-static void
-resolve(const char *host)
+static table_t *
+resolve(const char *host, table_t *t)
 {
 	u_char *p, *end;
 	const HEADER *hp;
@@ -6069,14 +6073,14 @@ resolve(const char *host)
 	char buf[BUFSIZ];
 
 	if((host == NULL) || (*host == '\0'))
-		return;
+		return t;
 
 	len = res_query(host, C_IN, T_A, (u_char *)&q, sizeof(q));
 	if(len < 0)
-		return;	/* Host has no A records */
+		return t;	/* Host has no A records */
 
 	if((unsigned int)len > sizeof(q))
-		return;
+		return t;
 
 	hp = &(q.h);
 	p = q.u + HFIXEDSZ;
@@ -6084,18 +6088,18 @@ resolve(const char *host)
 
 	for(i = ntohs(hp->qdcount); i--; p += len + QFIXEDSZ)
 		if((len = dn_skipname(p, end)) < 0)
-			return;
+			return t;
 
 	i = ntohs(hp->ancount);
 
 	while((--i >= 0) && (p < end)) {
 		u_short type;
 		u_long ttl;
-		struct in_addr addr;
 		const char *ip;
+		struct in_addr addr;
 
 		if((len = dn_expand(q.u, end, p, buf, sizeof(buf) - 1)) < 0)
-			 return;
+			 return t;
 		p += len;
 		GETSHORT(type, p);
 		p += INT16SZ;
@@ -6109,10 +6113,16 @@ resolve(const char *host)
 		p += 4;	/* Should check len == 4 */
 		ip = inet_ntoa(addr);
 		if(ip) {
-			logg(_("Won't blacklist %s\n"), ip);
-			(void)tableInsert(blacklist, ip, 0);
+			if(t == NULL) {
+				t = tableCreate();
+
+				if(t == NULL)
+					return NULL;
+			}
+			(void)tableInsert(t, ip, 0);
 		}
 	}
+	return t;
 }
 
 #ifdef	CL_EXPERIMENTAL
@@ -6127,7 +6137,7 @@ resolve(const char *host)
 static void
 spf(struct privdata *privdata)
 {
-	char *mailaddr, *ptr;
+	char *host, *ptr;
 	u_char *p, *end;
 	const HEADER *hp;
 	int len, i;
@@ -6152,27 +6162,27 @@ spf(struct privdata *privdata)
 
 	if(privdata->from == NULL)
 		return;
-	if((mailaddr = strchr(privdata->from, '@')) == NULL)
+	if((host = strchr(privdata->from, '@')) == NULL)
 		return;
 
-	mailaddr = cli_strdup(++mailaddr);
+	host = cli_strdup(++host);
 
-	if(mailaddr == NULL)
+	if(host == NULL)
 		return;
 
-	ptr = strchr(mailaddr, '>');
+	ptr = strchr(host, '>');
 
 	if(ptr)
 		*ptr = '\0';
 
-	len = res_query(mailaddr, C_IN, T_TXT, (u_char *)&q, sizeof(q));
+	len = res_query(host, C_IN, T_TXT, (u_char *)&q, sizeof(q));
 	if(len < 0) {
-		free(mailaddr);
+		free(host);
 		return;	/* Host has no TXT records */
 	}
 
 	if((unsigned int)len > sizeof(q)) {
-		free(mailaddr);
+		free(host);
 		return;
 	}
 
@@ -6182,7 +6192,7 @@ spf(struct privdata *privdata)
 
 	for(i = ntohs(hp->qdcount); i--; p += len + QFIXEDSZ)
 		if((len = dn_skipname(p, end)) < 0) {
-			free(mailaddr);
+			free(host);
 			return;
 		}
 
@@ -6194,7 +6204,7 @@ spf(struct privdata *privdata)
 		char txt[BUFSIZ];
 
 		if((len = dn_expand(q.u, end, p, buf, sizeof(buf) - 1)) < 0) {
-			free(mailaddr);
+			free(host);
 			return;
 		}
 		p += len;
@@ -6214,9 +6224,9 @@ spf(struct privdata *privdata)
 			struct in_addr remote_ip;	/* IP connecting to us */
 
 			logg("%s(%s): SPF record %s\n",
-				mailaddr, privdata->ip, txt);
+				host, privdata->ip, txt);
 			/*
-			 * This is were the beef of the check will go. This
+			 * This is where the beef of the check will go. This
 			 * trivial check is of little real benefit, but it
 			 * won't create false positives.
 			 */
@@ -6267,18 +6277,45 @@ spf(struct privdata *privdata)
 #endif
 					mask = MAKEMASK(preflen);
 					if((ntohl(remote_ip.s_addr) & mask) == (ntohl(spf_range.s_addr) & mask)) {
-						free(record);
 						logg("SPF ip4 pass\n");
 						privdata->spf_ok = 1;
-						break;
+					}
+				} else if(strcmp(record, "mx") == 0) {
+					table_t *t = mx(host, NULL);
+
+					if(t) {
+						tableIterate(t, spf_ip,
+							(void *)privdata);
+						tableDestroy(t);
+					}
+				} else if(strcmp(record, "a") == 0) {
+					table_t *t = resolve(host, NULL);
+
+					if(t) {
+						tableIterate(t, spf_ip,
+							(void *)privdata);
+						tableDestroy(t);
 					}
 				}
 				free(record);
+				if(privdata->spf_ok)
+					break;
 			}
 		}
 		p += len;
 	}
-	free(mailaddr);
+	free(host);
+}
+
+static void
+spf_ip(char *ip, int zero, void *v)
+{
+	struct privdata *privdata = (struct privdata *)v;
+
+	if(strcmp(ip, privdata->ip) == 0) {
+		logg("SPF mx/a pass %s\n", ip);
+		privdata->spf_ok = 1;
+	}
 }
 
 #endif	/*CL_EXPERIMENTAL*/
@@ -6465,4 +6502,10 @@ decrement_connexions(void)
 		cli_dbgmsg("<n_children = %d\n", n_children);
 		pthread_mutex_unlock(&n_children_mutex);
 	}
+}
+
+static void
+dump_blacklist(char *key, int value, void *v)
+{
+	logg(_("Won't blacklist %s\n"), key);
 }

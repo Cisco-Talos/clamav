@@ -40,4 +40,4 @@ int	tableInsert(table_t *table, const char *key, int value);
 int	tableUpdate(table_t *table, const char *key, int new_value);
 int	tableFind(const table_t *table, const char *key);
 void	tableRemove(table_t *table, const char *key);
-void	tableIterate(table_t *table, void(*callback)(char *key, int value));
+void	tableIterate(table_t *table, void(*callback)(char *key, int value, void *arg), void *arg);
