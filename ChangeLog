@@ -1,3 +1,10 @@
+Sat Jul 14 22:07:16 BST 2007 (njh)
+----------------------------------
+  * clamav-milter:	Experimental mode: basic SPF parser to reduce
+  				phish false-positives
+			Possible fix for 487
+			Some small tidies
+
 Sat Jul 14 14:17:01 CEST 2007 (acab)
 ------------------------------------
   * libclamav/nsis: fix macro collision on AIX - bb#570

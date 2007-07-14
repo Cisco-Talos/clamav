@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-070630"
+#define	CM_VERSION	"devel-140707"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -275,10 +275,13 @@ struct	privdata {
 	long	numBytes;	/* Number of bytes sent so far */
 	char	*received;	/* keep track of received from */
 	const	char	*rejectCode;	/* 550 or 554? */
-	int	discard;	/*
+	unsigned	int	discard:1;	/*
 				 * looks like the remote end is playing ping
 				 * pong with us
 				 */
+#ifdef	CL_EXPERIMENTAL
+	unsigned	int	spf_ok:1;
+#endif
 	int	statusCount;	/* number of X-Virus-Status headers */
 	int	serverNumber;	/* Index into serverIPs */
 	struct	cl_node	*root;	/* database of viruses used to scan this one */
@@ -511,7 +514,7 @@ static	pthread_cond_t	watchdog_cond = PTHREAD_COND_INITIALIZER;
 static	const	char	*postmaster = "postmaster";
 static	const	char	*from = "MAILER-DAEMON";
 static	int	quitting;
-static	const	char	*report;
+static	const	char	*report;	/* Report Phishing to this address */
 
 static	const	char	*whitelistFile;	/*
 					 * file containing destination email
@@ -562,6 +565,9 @@ static	int	isBlacklisted(const char *ip_address);
 static	void	mx(void);
 #ifdef	HAVE_RESOLV_H
 static	void	resolve(const char *host);
+#ifdef	CL_EXPERIMENTAL
+static	void	spf(struct privdata *privdata);
+#endif
 #endif
 static	sfsistat	black_hole(const struct privdata *privdata);
 static	int	useful_header(const char *cmd);
@@ -1347,11 +1353,11 @@ main(int argc, char **argv)
 			fprintf(stderr, _("%s: --freshclam_monitor must be at least one second\n"), argv[0]);
 			return EX_CONFIG;
 		}
-#if	C_LINUX
+#ifdef	C_LINUX
 		lang = getenv("LANG");
 
 		if(lang && (strstr(lang, "UTF-8") != NULL)) {
-			fprintf(stderr, "Your LANG environment variable is set to '%s\n", lang);
+			fprintf(stderr, "Your LANG environment variable is set to '%s'\n", lang);
 			fprintf(stderr, "This is known to cause problems for some %s installations.\n", argv[0]);
 			fputs("If you get failures with temporary files, please try again with LANG unset.\n", stderr);
 		}
@@ -2832,6 +2838,8 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 		strcpy(ip, privdata->ip);
 		if(isBlacklisted(ip)) {
+			char mess[80 + INET6_ADDRSTRLEN];
+
 			logg("Rejected email from blacklisted IP %s\n", ip);
 
 			/*
@@ -2839,7 +2847,8 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 			 *	sending	a try again code
 			 * TODO: state *which* virus
 			 */
-			smfi_setreply(ctx, "550", "5.7.1", _("Your IP is blacklisted because your machine is infected with a virus"));
+			sprintf(mess, "Your IP (%s) is blacklisted because your machine is infected with a virus", ip);
+			smfi_setreply(ctx, "550", "5.7.1", mess);
 			broadcast(_("Blacklisted IP detected"));
 
 			/*
@@ -2872,6 +2881,14 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 
 	if(hflag)
 		privdata->headers = header_list_new();
+
+#ifdef	CL_EXPERIMENTAL
+	/*
+	 * FIXME: This should only be done when a phish is found. It's done
+	 *	on every email for now to test the SPF code
+	 */
+	spf(privdata);
+#endif	/*CL_EXPERIMENTAL*/
 
 	return SMFIS_CONTINUE;
 }
@@ -3182,6 +3199,20 @@ clamfi_eom(SMFICTX *ctx)
 
 	logg("*clamfi_eom\n");
 
+#ifdef	CL_DEBUG
+	assert(privdata != NULL);
+#ifndef	SESSION
+	assert((privdata->cmdSocket >= 0) || (privdata->filename != NULL));
+	assert(!((privdata->cmdSocket >= 0) && (privdata->filename != NULL)));
+#endif
+#endif
+
+	if(external) {
+		shutdown(privdata->dataSocket, SHUT_WR);	/* bug 487 */
+		close(privdata->dataSocket);
+		privdata->dataSocket = -1;
+	}
+
 	if(!nflag) {
 		/*
 		 * remove any existing claims that it's virus free so that
@@ -3193,20 +3224,6 @@ clamfi_eom(SMFICTX *ctx)
 		for(i = privdata->statusCount; i > 0; --i)
 			if(smfi_chgheader(ctx, "X-Virus-Status", i, NULL) == MI_FAILURE)
 				logg(_("^Failed to delete X-Virus-Status header %d"), i);
-	}
-
-#ifdef	CL_DEBUG
-	assert(privdata != NULL);
-#ifndef	SESSION
-	assert((privdata->cmdSocket >= 0) || (privdata->filename != NULL));
-	assert(!((privdata->cmdSocket >= 0) && (privdata->filename != NULL)));
-#endif
-	assert(privdata->dataSocket >= 0);
-#endif
-
-	if(external) {
-		close(privdata->dataSocket);
-		privdata->dataSocket = -1;
 	}
 
 	if(!external) {
@@ -3430,6 +3447,16 @@ clamfi_eom(SMFICTX *ctx)
 	 * TODO: it would be useful to add a header if mbox.c/FOLLOWURLS was
 	 * exceeded
 	 */
+#ifdef	CL_EXPERIMENTAL
+	/*
+	 * FIXME: SPF lookup should only be done when a phish is found, see
+	 *	above
+	 */
+	if(privdata->spf_ok && (strstr(mess, "FOUND") != NULL) && (strstr(mess, "Phishing") != NULL)) {
+		logg(_("%s: Ignoring phish false positive\n"), sendmailId);
+		strcpy(mess, "OK");
+	}
+#endif
 	if(strstr(mess, "ERROR") != NULL) {
 		if(strstr(mess, "Size limit reached") != NULL) {
 			/*
@@ -3682,6 +3709,9 @@ clamfi_eom(SMFICTX *ctx)
 
 		if(report && (quarantine == NULL) && (!advisory) &&
 		   (strstr(virusname, "Phishing") != NULL)) {
+			/*
+			 * Report phishing to an agency
+			 */
 			for(to = privdata->to; *to; to++) {
 				smfi_delrcpt(ctx, *to);
 				smfi_addheader(ctx, "X-Original-To", *to);
@@ -3699,14 +3729,14 @@ clamfi_eom(SMFICTX *ctx)
 						logg(_("#Reported phishing to %s"), report);
 					else
 						logg(_("^Couldn't report to %s\n"), report);
+					if((!rejectmail) || privdata->discard)
+						rc = SMFIS_DISCARD;
+					else
+						rc = SMFIS_REJECT;
 				} else {
 					logg(_("^Can't set anti-phish header\n"));
 					rc = (privdata->discard) ? SMFIS_DISCARD : SMFIS_REJECT;
 				}
-				if((!rejectmail) || privdata->discard)
-					rc = SMFIS_DISCARD;
-				else
-					rc = SMFIS_REJECT;
 			} else {
 				setsubject(ctx, "Phishing attempt trapped by ClamAV and redirected");
 
@@ -5042,12 +5072,12 @@ add_local_ip(char *address)
 		for(net = (struct cidr_net *)localNets; net->base; net++)
 			;
 		if(pref && *(pref+1))
-			preflen = atoi (pref+1);
+			preflen = atoi(pref+1);
 		else
 			preflen = 32;
 
 		net->base = ntohl(ignoreIP.s_addr);
-		net->mask = MAKEMASK (preflen);
+		net->mask = MAKEMASK(preflen);
 
 		retval = 1;
 	}
@@ -5072,7 +5102,7 @@ add_local_ip(char *address)
 	else
 		retval = 0;
 
-	free (opt);
+	free(opt);
 	return retval;
 }
 
@@ -5935,14 +5965,14 @@ static void
 mx(void)
 {
 	u_char *p, *end;
-	char name[MAXHOSTNAMELEN + 1];
-	char buf[BUFSIZ];
+	const HEADER *hp;
+	int len, i, was_initialised;
 	union {
 		HEADER h;
 		u_char u[PACKETSZ];
 	} q;
-	const HEADER *hp;
-	int len, i, was_initialised;
+	char name[MAXHOSTNAMELEN + 1];
+	char buf[BUFSIZ];
 
 	if(gethostname(name, sizeof(name)) < 0) {
 		perror("gethostname");
@@ -6030,13 +6060,13 @@ static void
 resolve(const char *host)
 {
 	u_char *p, *end;
-	char buf[BUFSIZ];
+	const HEADER *hp;
+	int len, i;
 	union {
 		HEADER h;
 		u_char u[PACKETSZ];
 	} q;
-	const HEADER *hp;
-	int len, i;
+	char buf[BUFSIZ];
 
 	if((host == NULL) || (*host == '\0'))
 		return;
@@ -6076,7 +6106,7 @@ resolve(const char *host)
 			continue;
 		}
 		memcpy(&addr, p, sizeof(struct in_addr));
-		p += 4;
+		p += 4;	/* Should check len == 4 */
 		ip = inet_ntoa(addr);
 		if(ip) {
 			logg(_("Won't blacklist %s\n"), ip);
@@ -6084,6 +6114,175 @@ resolve(const char *host)
 		}
 	}
 }
+
+#ifdef	CL_EXPERIMENTAL
+/*
+ * Validate SPF records to help to stop Phish false positives
+ * Currently only handles ip4 fields in the DNS record
+ * Having said that, we don't need a full SPF parser, only something to stop
+ *	Phish FPs
+ * TODO: a: include: mx: hostnames
+ * TODO: IPv6
+ */
+static void
+spf(struct privdata *privdata)
+{
+	char *mailaddr, *ptr;
+	u_char *p, *end;
+	const HEADER *hp;
+	int len, i;
+	union {
+		HEADER h;
+		u_char u[PACKETSZ];
+	} q;
+	char buf[BUFSIZ];
+
+	if(privdata->ip[0] == '\0')
+		return;
+	if(strcmp(privdata->ip, "127.0.0.1") == 0) {
+		/* Loopback always pass SPF */
+		privdata->spf_ok = 1;
+		return;
+	}
+	if(isLocal(privdata->ip)) {
+		/* Local addresses always pass SPF */
+		privdata->spf_ok = 1;
+		return;
+	}
+
+	if(privdata->from == NULL)
+		return;
+	if((mailaddr = strchr(privdata->from, '@')) == NULL)
+		return;
+
+	mailaddr = cli_strdup(++mailaddr);
+
+	if(mailaddr == NULL)
+		return;
+
+	ptr = strchr(mailaddr, '>');
+
+	if(ptr)
+		*ptr = '\0';
+
+	len = res_query(mailaddr, C_IN, T_TXT, (u_char *)&q, sizeof(q));
+	if(len < 0) {
+		free(mailaddr);
+		return;	/* Host has no TXT records */
+	}
+
+	if((unsigned int)len > sizeof(q)) {
+		free(mailaddr);
+		return;
+	}
+
+	hp = &(q.h);
+	p = q.u + HFIXEDSZ;
+	end = q.u + len;
+
+	for(i = ntohs(hp->qdcount); i--; p += len + QFIXEDSZ)
+		if((len = dn_skipname(p, end)) < 0) {
+			free(mailaddr);
+			return;
+		}
+
+	i = ntohs(hp->ancount);
+
+	while((--i >= 0) && (p < end) && !privdata->spf_ok) {
+		u_short type;
+		u_long ttl;
+		char txt[BUFSIZ];
+
+		if((len = dn_expand(q.u, end, p, buf, sizeof(buf) - 1)) < 0) {
+			free(mailaddr);
+			return;
+		}
+		p += len;
+		GETSHORT(type, p);
+		p += INT16SZ;
+		GETLONG(ttl, p);	/* unused */
+		GETSHORT(len, p);
+		if(type != T_TXT) {
+			p += len;
+			continue;
+		}
+		strncpy(txt, &p[1], sizeof(txt) - 1);
+		txt[len - 1] = '\0';
+		if((strncmp(txt, "v=spf1 ", 7) == 0) || (strncmp(txt, "spf2.0/pra ", 11) == 0)) {
+			int j;
+			char *record;
+			struct in_addr remote_ip;	/* IP connecting to us */
+
+			logg("%s(%s): SPF record %s\n",
+				mailaddr, privdata->ip, txt);
+			/*
+			 * This is were the beef of the check will go. This
+			 * trivial check is of little real benefit, but it
+			 * won't create false positives.
+			 */
+			if(strstr(txt, privdata->ip) != NULL) {
+				logg("SPF simple pass\n");
+				privdata->spf_ok = 1;
+				break;
+			}
+
+#ifdef HAVE_INET_NTOP
+			/* IPv4 address ? */
+			if(inet_pton(AF_INET, privdata->ip, &remote_ip) <= 0) {
+				p += len;
+				continue;
+			}
+#else
+			if(inet_aton(privdata->ip, &remote_ip) == 0) {
+				p += len;
+				continue;
+			}
+#endif
+
+			j = 1;	/* strtok 0 would give the v= part */
+			while((record = cli_strtok(txt, j++, " ")) != NULL) {
+				if(strncmp(record, "ip4:", 4) == 0) {
+					int preflen;
+					char *ip, *pref;
+					uint32_t mask;
+					struct in_addr spf_range;	/* acceptable range of IPs */
+
+					ip = &record[4];
+
+					pref = strchr(ip, '/');
+					preflen = 32;
+					if(pref) {
+						*pref++ = '\0';
+						if(*pref)
+							preflen = atoi(pref);
+					}
+
+#ifdef HAVE_INET_NTOP
+					/* IPv4 address ? */
+					if(inet_pton(AF_INET, ip, &spf_range) <= 0)
+						continue;
+#else
+					if(inet_aton(ip, &spf_range) == 0)
+						continue;
+#endif
+					mask = MAKEMASK(preflen);
+					if((ntohl(remote_ip.s_addr) & mask) == (ntohl(spf_range.s_addr) & mask)) {
+						free(record);
+						logg("SPF ip4 pass\n");
+						privdata->spf_ok = 1;
+						break;
+					}
+				}
+				free(record);
+			}
+		}
+		p += len;
+	}
+	free(mailaddr);
+}
+
+#endif	/*CL_EXPERIMENTAL*/
+
 #else	/*!HAVE_RESOLV_H */
 static void
 mx(void)
