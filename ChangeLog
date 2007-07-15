@@ -1,3 +1,7 @@
+Sun Jul 15 13:27:46 BST 2007 (njh)
+----------------------------------
+  * clamav-milter:	Experimental mode: Reduce the number of SPF DNS queries
+
 Sun Jul 15 10:26:49 BST 2007 (njh)
 ----------------------------------
   * clamav-milter:	Experimental mode: Handle A: MX: INCLUDE: in SPF

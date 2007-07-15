@@ -567,7 +567,7 @@ static	table_t	*mx(const char *host, table_t *t);
 #ifdef	HAVE_RESOLV_H
 static	table_t	*resolve(const char *host, table_t *t);
 #ifdef	CL_EXPERIMENTAL
-static	void	spf(struct privdata *privdata);
+static	int	spf(struct privdata *privdata);
 static	void	spf_ip(char *ip, int zero, void *v);
 #endif
 #endif
@@ -2891,14 +2891,6 @@ clamfi_envfrom(SMFICTX *ctx, char **argv)
 	if(hflag)
 		privdata->headers = header_list_new();
 
-#ifdef	CL_EXPERIMENTAL
-	/*
-	 * FIXME: This should only be done when a phish is found. It's done
-	 *	on every email for now to test the SPF code
-	 */
-	spf(privdata);
-#endif	/*CL_EXPERIMENTAL*/
-
 	return SMFIS_CONTINUE;
 }
 
@@ -3457,14 +3449,11 @@ clamfi_eom(SMFICTX *ctx)
 	 * exceeded
 	 */
 #ifdef	CL_EXPERIMENTAL
-	/*
-	 * FIXME: SPF lookup should only be done when a phish is found, see
-	 *	above
-	 */
-	if(privdata->spf_ok && (strstr(mess, "FOUND") != NULL) && (strstr(mess, "Phishing") != NULL)) {
-		logg(_("%s: Ignoring phish false positive\n"), sendmailId);
-		strcpy(mess, "OK");
-	}
+	if((strstr(mess, "FOUND") != NULL) && (strstr(mess, "Phishing") != NULL))
+		if(spf(privdata)) {
+			logg(_("%s: Ignoring phish false positive\n"), sendmailId);
+			strcpy(mess, "OK");
+		}
 #endif
 	if(strstr(mess, "ERROR") != NULL) {
 		if(strstr(mess, "Size limit reached") != NULL) {
@@ -6134,8 +6123,11 @@ resolve(const char *host, table_t *t)
  * TODO: ptr
  * TODO: IPv6?
  * TODO: cache queries
+ *
+ * Return 1 if SPF says this email is from a legitimate source
+ *	0 for fail or unknown
  */
-static void
+static int
 spf(struct privdata *privdata)
 {
 	char *host, *ptr;
@@ -6149,27 +6141,27 @@ spf(struct privdata *privdata)
 	char buf[BUFSIZ];
 
 	if(privdata->ip[0] == '\0')
-		return;
+		return 0;
 	if(strcmp(privdata->ip, "127.0.0.1") == 0) {
 		/* Loopback always pass SPF */
 		privdata->spf_ok = 1;
-		return;
+		return 1;
 	}
 	if(isLocal(privdata->ip)) {
 		/* Local addresses always pass SPF */
 		privdata->spf_ok = 1;
-		return;
+		return 1;
 	}
 
 	if(privdata->from == NULL)
-		return;
+		return 0;
 	if((host = strchr(privdata->from, '@')) == NULL)
-		return;
+		return 0;
 
 	host = cli_strdup(++host);
 
 	if(host == NULL)
-		return;
+		return 0;
 
 	ptr = strchr(host, '>');
 
@@ -6179,12 +6171,12 @@ spf(struct privdata *privdata)
 	len = res_query(host, C_IN, T_TXT, (u_char *)&q, sizeof(q));
 	if(len < 0) {
 		free(host);
-		return;	/* Host has no TXT records */
+		return 0;	/* Host has no TXT records */
 	}
 
 	if((unsigned int)len > sizeof(q)) {
 		free(host);
-		return;
+		return 0;
 	}
 
 	hp = &(q.h);
@@ -6194,7 +6186,7 @@ spf(struct privdata *privdata)
 	for(i = ntohs(hp->qdcount); i--; p += len + QFIXEDSZ)
 		if((len = dn_skipname(p, end)) < 0) {
 			free(host);
-			return;
+			return 0;
 		}
 
 	i = ntohs(hp->ancount);
@@ -6206,7 +6198,7 @@ spf(struct privdata *privdata)
 
 		if((len = dn_expand(q.u, end, p, buf, sizeof(buf) - 1)) < 0) {
 			free(host);
-			return;
+			return 0;
 		}
 		p += len;
 		GETSHORT(type, p);
@@ -6224,7 +6216,7 @@ spf(struct privdata *privdata)
 			char *record;
 			struct in_addr remote_ip;	/* IP connecting to us */
 
-			logg("%s(%s): SPF record %s\n",
+			logg("#%s(%s): SPF record %s\n",
 				host, privdata->ip, txt);
 #ifdef HAVE_INET_NTOP
 			/* IPv4 address ? */
@@ -6267,7 +6259,7 @@ spf(struct privdata *privdata)
 #endif
 					mask = MAKEMASK(preflen);
 					if((ntohl(remote_ip.s_addr) & mask) == (ntohl(spf_range.s_addr) & mask)) {
-						logg("SPF ip4 pass\n");
+						logg("#SPF ip4 pass\n");
 						privdata->spf_ok = 1;
 					}
 				} else if(strcmp(record, "mx") == 0) {
@@ -6335,6 +6327,8 @@ spf(struct privdata *privdata)
 		p += len;
 	}
 	free(host);
+
+	return privdata->spf_ok;
 }
 
 static void
@@ -6343,7 +6337,7 @@ spf_ip(char *ip, int zero, void *v)
 	struct privdata *privdata = (struct privdata *)v;
 
 	if(strcmp(ip, privdata->ip) == 0) {
-		logg("SPF mx/a pass %s\n", ip);
+		logg("#SPF mx/a pass %s\n", ip);
 		privdata->spf_ok = 1;
 	}
 }
