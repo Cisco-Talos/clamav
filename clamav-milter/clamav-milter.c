@@ -6309,10 +6309,10 @@ spf(struct privdata *privdata, table_t *prevhosts)
 						const char *real_from = privdata->from;
 						privdata->from = cli_malloc(strlen(inchost) + 3);
 						sprintf(privdata->from, "n@%s", inchost);
+						tableInsert(prevhosts, host, 0);
 						spf(privdata, prevhosts);
 						free(privdata->from);
 						privdata->from = real_from;
-						tableInsert(prevhosts, inchost, 0);
 					}
 				}
 				free(record);
