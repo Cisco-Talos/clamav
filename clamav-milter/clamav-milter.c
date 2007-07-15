@@ -6131,8 +6131,9 @@ resolve(const char *host, table_t *t)
  * Currently only handles ip4, a and mx fields in the DNS record
  * Having said that, this is NOT a replacement for spf-milter, it is NOT
  *	an SPF system, we ONLY use SPF records to reduce phish false positives
- * TODO: ptr include hostnames
+ * TODO: ptr
  * TODO: IPv6?
+ * TODO: cache queries
  */
 static void
 spf(struct privdata *privdata)
@@ -6225,11 +6226,6 @@ spf(struct privdata *privdata)
 
 			logg("%s(%s): SPF record %s\n",
 				host, privdata->ip, txt);
-			/*
-			 * This is where the beef of the check will go. This
-			 * trivial check is of little real benefit, but it
-			 * won't create false positives.
-			 */
 #ifdef HAVE_INET_NTOP
 			/* IPv4 address ? */
 			if(inet_pton(AF_INET, privdata->ip, &remote_ip) <= 0) {
@@ -6289,6 +6285,46 @@ spf(struct privdata *privdata)
 						tableIterate(t, spf_ip,
 							(void *)privdata);
 						tableDestroy(t);
+					}
+				} else if(strncmp(record, "a:", 2) == 0) {
+					const char *ahost = &record[2];
+
+					if(*ahost && (strcmp(ahost, host) != 0)) {
+						table_t *t = resolve(ahost, NULL);
+
+						if(t) {
+							tableIterate(t, spf_ip,
+								(void *)privdata);
+							tableDestroy(t);
+						}
+					}
+				} else if(strncmp(record, "mx:", 3) == 0) {
+					const char *mxhost = &record[3];
+
+					if(*mxhost && (strcmp(mxhost, host) != 0)) {
+						table_t *t = mx(mxhost, NULL);
+
+						if(t) {
+							tableIterate(t, spf_ip,
+								(void *)privdata);
+							tableDestroy(t);
+						}
+					}
+				} else if(strncmp(record, "include:", 8) == 0) {
+					const char *inchost = &record[8];
+
+					if(*inchost && (strcmp(inchost, host) != 0)) {
+						/*
+						 * FIXME: loops: a.com includes
+						 *	b.com which includes
+						 *	a.com
+						 */
+						const char *real_from = privdata->from;
+						privdata->from = cli_malloc(strlen(inchost) + 3);
+						sprintf(privdata->from, "n@%s", inchost);
+						spf(privdata);
+						free(privdata->from);
+						privdata->from = real_from;
 					}
 				}
 				free(record);
