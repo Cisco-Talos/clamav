@@ -198,7 +198,7 @@ typedef	unsigned int	in_addr_t;
  * TODO: allow each To: line in the whitelist file to specify a quarantine email
  *	address
  * TODO: optionally use zlib to compress data sent to remote hosts
- * TODO: Finish IPv6 support (serverIPs array is IPv4 only)
+ * TODO: Finish IPv6 support (serverIPs array and SPF are IPv4 only)
  */
 
 struct header_node_t {
@@ -279,7 +279,7 @@ struct	privdata {
 				 * looks like the remote end is playing ping
 				 * pong with us
 				 */
-#ifdef	CL_EXPERIMENTAL
+#if	defined(HAVE_RESOLV_H) && defined(CL_EXPERIMENTAL)
 	unsigned	int	spf_ok:1;
 #endif
 	int	statusCount;	/* number of X-Virus-Status headers */
@@ -490,10 +490,7 @@ static	int	numServers;	/* number of elements in serverIPs array */
 #define	RETRY_SECS	300	/* How often to retry a server that's down */
 static	time_t	*last_failed_pings;	/* For servers that are down. NB: not mutexed */
 #endif
-
-#ifdef	CL_EXPERIMENTAL
 static	char	*rootdir;	/* for chroot */
-#endif
 
 #ifdef	SESSION
 static	struct	session {
@@ -567,7 +564,7 @@ static	table_t	*mx(const char *host, table_t *t);
 #ifdef	HAVE_RESOLV_H
 static	table_t	*resolve(const char *host, table_t *t);
 #ifdef	CL_EXPERIMENTAL
-static	int	spf(struct privdata *privdata);
+static	int	spf(struct privdata *privdata, table_t *prevhosts);
 static	void	spf_ip(char *ip, int zero, void *v);
 #endif
 #endif
@@ -590,9 +587,7 @@ help(void)
 	puts(_("\t--bounce\t\t-b\tSend a failure message to the sender."));
 #endif
 	puts(_("\t--broadcast\t\t-B [IFACE]\tBroadcast to a network manager when a virus is found."));
-#ifdef	CL_EXPERIMENTAL
 	puts(_("\t--chroot=DIR\t\t-C DIR\tChroot to dir when starting."));
-#endif
 	puts(_("\t--config-file=FILE\t-c FILE\tRead configuration from FILE."));
 	puts(_("\t--debug\t\t\t-D\tPrint debug messages."));
 	puts(_("\t--detect-forged-local-address\t-L\tReject mails that claim to be from us."));
@@ -891,11 +886,9 @@ main(int argc, char **argv)
 			case 'c':	/* where is clamd.conf? */
 				cfgfile = optarg;
 				break;
-#ifdef	CL_EXPERIMENTAL
 			case 'C':	/* chroot */
 				rootdir = optarg;
 				break;
-#endif
 			case 'd':	/* don't scan on error */
 				cl_error = SMFIS_ACCEPT;
 				break;
@@ -1059,9 +1052,7 @@ main(int argc, char **argv)
 	}
 	port = argv[optind];
 
-#ifdef	CL_EXPERIMENTAL
 	if(rootdir == NULL)	/* FIXME: Handle CHROOT */
-#endif
 		if(verifyIncomingSocketName(port) < 0) {
 			fprintf(stderr, _("%s: socket-addr (%s) doesn't agree with sendmail.cf\n"), argv[0], port);
 			return EX_CONFIG;
@@ -1888,7 +1879,6 @@ main(int argc, char **argv)
 
 	broadcast(_("Starting clamav-milter"));
 
-#ifdef	CL_EXPERIMENTAL
 	if(rootdir) {
 		if(getuid() == 0) {
 			if(chdir(rootdir) < 0) {
@@ -1905,7 +1895,6 @@ main(int argc, char **argv)
 			return EX_CONFIG;
 		}
 	}
-#endif
 
 	if(pidfile) {
 		/* save the PID */
@@ -1923,9 +1912,7 @@ main(int argc, char **argv)
 		q = strrchr(p, '/');
 		*q = '\0';
 
-#ifdef	CL_EXPERIMENTAL
 		if(rootdir == NULL)
-#endif
 			if(chdir(p) < 0)	/* safety */
 				perror(p);
 
@@ -1944,14 +1931,10 @@ main(int argc, char **argv)
 		fclose(fd);
 		umask(old_umask);
 	} else if(tmpdir) {
-#ifdef	CL_EXPERIMENTAL
 		if(rootdir == NULL)
-#endif
 			chdir(tmpdir);	/* safety */
 	} else
-#ifdef	CL_EXPERIMENTAL
 		if(rootdir == NULL)
-#endif
 #ifdef	P_tmpdir
 			chdir(P_tmpdir);
 #else
@@ -3448,12 +3431,16 @@ clamfi_eom(SMFICTX *ctx)
 	 * TODO: it would be useful to add a header if mbox.c/FOLLOWURLS was
 	 * exceeded
 	 */
-#ifdef	CL_EXPERIMENTAL
-	if((strstr(mess, "FOUND") != NULL) && (strstr(mess, "Phishing") != NULL))
-		if(spf(privdata)) {
+#if	defined(HAVE_RESOLV_H) && defined(CL_EXPERIMENTAL)
+	if((strstr(mess, "FOUND") != NULL) && (strstr(mess, "Phishing") != NULL)) {
+		table_t *prevhosts = tableCreate();
+
+		if(spf(privdata, NULL)) {
 			logg(_("%s: Ignoring phish false positive\n"), sendmailId);
 			strcpy(mess, "OK");
 		}
+		tableDestroy(prevhosts);
+	}
 #endif
 	if(strstr(mess, "ERROR") != NULL) {
 		if(strstr(mess, "Size limit reached") != NULL) {
@@ -6117,18 +6104,23 @@ resolve(const char *host, table_t *t)
 #ifdef	CL_EXPERIMENTAL
 /*
  * Validate SPF records to help to stop Phish false positives
+ * http://www.openspf.org/SPF_Record_Syntax
+ *
  * Currently only handles ip4, a and mx fields in the DNS record
  * Having said that, this is NOT a replacement for spf-milter, it is NOT
  *	an SPF system, we ONLY use SPF records to reduce phish false positives
  * TODO: ptr
  * TODO: IPv6?
- * TODO: cache queries
+ * TODO: cache queries?
  *
+ * INPUT: prevhosts, a list of hosts already searched: stops include loops
+ *	e.g. mercado.com includes medrcadosw.com which includes mercado.com,
+ *	causing a loop
  * Return 1 if SPF says this email is from a legitimate source
  *	0 for fail or unknown
  */
 static int
-spf(struct privdata *privdata)
+spf(struct privdata *privdata, table_t *prevhosts)
 {
 	char *host, *ptr;
 	u_char *p, *end;
@@ -6140,6 +6132,8 @@ spf(struct privdata *privdata)
 	} q;
 	char buf[BUFSIZ];
 
+	if(privdata->spf_ok)
+		return 1;
 	if(privdata->ip[0] == '\0')
 		return 0;
 	if(strcmp(privdata->ip, "127.0.0.1") == 0) {
@@ -6305,18 +6299,20 @@ spf(struct privdata *privdata)
 				} else if(strncmp(record, "include:", 8) == 0) {
 					const char *inchost = &record[8];
 
-					if(*inchost && (strcmp(inchost, host) != 0)) {
-						/*
-						 * FIXME: loops: a.com includes
-						 *	b.com which includes
-						 *	a.com
-						 */
+					/*
+					 * Ensure we haven't already looked at
+					 *	the host that's to be included
+					 */
+					if(*inchost &&
+					   (strcmp(inchost, host) != 0) &&
+					   (tableFind(prevhosts, inchost) == -1)) {
 						const char *real_from = privdata->from;
 						privdata->from = cli_malloc(strlen(inchost) + 3);
 						sprintf(privdata->from, "n@%s", inchost);
-						spf(privdata);
+						spf(privdata, prevhosts);
 						free(privdata->from);
 						privdata->from = real_from;
+						tableInsert(prevhosts, inchost, 0);
 					}
 				}
 				free(record);

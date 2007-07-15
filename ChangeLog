@@ -1,3 +1,9 @@
+Sun Jul 15 22:12:45 BST 2007 (njh)
+----------------------------------
+  * clamav-milter:	Chroot handling no longer marked as experimental
+			Experimental mode: handle loops in INCLUDE: SPF
+				statements
+
 Sun Jul 15 13:27:46 BST 2007 (njh)
 ----------------------------------
   * clamav-milter:	Experimental mode: Reduce the number of SPF DNS queries
