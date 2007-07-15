@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-140707"
+#define	CM_VERSION	"devel-150707"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -6131,8 +6131,8 @@ resolve(const char *host, table_t *t)
  * Currently only handles ip4, a and mx fields in the DNS record
  * Having said that, this is NOT a replacement for spf-milter, it is NOT
  *	an SPF system, we ONLY use SPF records to reduce phish false positives
- * TODO: include: hostnames
- * TODO: IPv6
+ * TODO: ptr include hostnames
+ * TODO: IPv6?
  */
 static void
 spf(struct privdata *privdata)
@@ -6230,12 +6230,6 @@ spf(struct privdata *privdata)
 			 * trivial check is of little real benefit, but it
 			 * won't create false positives.
 			 */
-			if(strstr(txt, privdata->ip) != NULL) {
-				logg("SPF simple pass\n");
-				privdata->spf_ok = 1;
-				break;
-			}
-
 #ifdef HAVE_INET_NTOP
 			/* IPv4 address ? */
 			if(inet_pton(AF_INET, privdata->ip, &remote_ip) <= 0) {
