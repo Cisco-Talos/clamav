@@ -1,3 +1,8 @@
+Mon Jul 16 17:04:50 CEST 2007 (tk)
+----------------------------------
+  * libclamav/scanner.c: don't search for embedded PEs in zip files larger
+			 than 1 MB (bb#573)
+
 Mon Jul 16 10:08:26 BST 2007 (njh)
 ----------------------------------
   * clamav-milter:	Fix memory leak when load balancing

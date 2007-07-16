@@ -1858,16 +1858,16 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
     return CL_CLEAN;
 }
 
-static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
+static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg)
 {
 	int ret = CL_CLEAN, nret = CL_CLEAN;
-	uint8_t ftrec, break_loop = 0;
+	uint8_t ftrec = 0, break_loop = 0;
 	struct cli_matched_type *ftoffset = NULL, *fpt;
 	uint32_t lastzip, lastrar;
 	struct cli_exe_info peinfo;
 
 
-    switch(type) {
+    if(typercg) switch(type) {
 	case CL_TYPE_UNKNOWN_TEXT:
 	case CL_TYPE_MSEXE:
 	case CL_TYPE_ZIP:
@@ -1907,7 +1907,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type)
 			break;
 
 		    case CL_TYPE_ZIPSFX:
-			if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_ZIP)) {
+			if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_ZIP) && fpt->offset) {
 			    cli_dbgmsg("ZIP-SFX signature found at %u\n", (unsigned int) fpt->offset);
 			    nret = cli_scanzip(desc, ctx, fpt->offset, &lastzip);
 			}
@@ -2003,6 +2003,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	int ret = CL_CLEAN;
 	cli_file_t type;
 	struct stat sb;
+	uint8_t typercg = 1;
 
 
     if(fstat(desc, &sb) == -1) {
@@ -2049,7 +2050,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     lseek(desc, 0, SEEK_SET);
 
     if(type != CL_TYPE_DATA && ctx->engine->sdb) {
-	if((ret = cli_scanraw(desc, ctx, type)) == CL_VIRUS)
+	if((ret = cli_scanraw(desc, ctx, type, 0)) == CL_VIRUS)
 	    return CL_VIRUS;
 	lseek(desc, 0, SEEK_SET);
     }
@@ -2211,8 +2212,15 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
     type == CL_TYPE_MAIL ? ctx->mrec-- : ctx->arec--;
 
+    if(type == CL_TYPE_ZIP && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP)) {
+	if(sb.st_size > 1048576) {
+	    cli_dbgmsg("cli_magic_scandesc: Not checking for embedded PEs (zip file > 1 MB)\n");
+	    typercg = 0;
+	}
+    }
+
     if(type != CL_TYPE_DATA && ret != CL_VIRUS && !ctx->engine->sdb) {
-	if(cli_scanraw(desc, ctx, type) == CL_VIRUS)
+	if(cli_scanraw(desc, ctx, type, typercg) == CL_VIRUS)
 	    return CL_VIRUS;
     }
 
