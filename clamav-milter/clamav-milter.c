@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-150707"
+#define	CM_VERSION	"devel-160707"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -3435,7 +3435,7 @@ clamfi_eom(SMFICTX *ctx)
 	if((strstr(mess, "FOUND") != NULL) && (strstr(mess, "Phishing") != NULL)) {
 		table_t *prevhosts = tableCreate();
 
-		if(spf(privdata, NULL)) {
+		if(spf(privdata, prevhosts)) {
 			logg(_("%s: Ignoring phish false positive\n"), sendmailId);
 			strcpy(mess, "OK");
 		}
