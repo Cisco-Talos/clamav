@@ -2345,10 +2345,10 @@ findServer(void)
 		 */
 		j = cli_rndnum(numServers);
 
-	tids = cli_malloc(numServers * sizeof(pthread_t));
-
 	for(i = 0; i < numServers; i++)
 		socks[i].sock = -1;
+
+	tids = cli_malloc(numServers * sizeof(pthread_t));
 
 	for(i = 0, server = servers; i < numServers; i++, server++) {
 		int sock;
@@ -2371,6 +2371,7 @@ findServer(void)
 			} while(--i >= 0);
 			free(socks);
 			free(servers);
+			free(tids);
 			return 0;	/* Use the first server on failure */
 		}
 
@@ -2386,6 +2387,7 @@ findServer(void)
 			} while(--i >= 0);
 			free(socks);
 			free(servers);
+			free(tids);
 			return 0;	/* Use the first server on failure */
 		}
 	}
@@ -2410,6 +2412,7 @@ findServer(void)
 	}
 
 	free(servers);
+	free(tids);
 
 	if(maxsock == -1) {
 		logg(_("^Couldn't establish a connexion to any clamd server\n"));
@@ -3436,7 +3439,8 @@ clamfi_eom(SMFICTX *ctx)
 		table_t *prevhosts = tableCreate();
 
 		if(spf(privdata, prevhosts)) {
-			logg(_("%s: Ignoring phish false positive\n"), sendmailId);
+			logg(_("%s: ignoring phish false positive from %s received from %s\n"),
+				sendmailId, privdata->from, privdata->ip);
 			strcpy(mess, "OK");
 		}
 		tableDestroy(prevhosts);
