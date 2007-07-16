@@ -243,7 +243,7 @@ target_vendor = @target_vendor@
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    clamav-milter.c
 
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@man_MANS = $(top_srcdir)/docs/man/clamav-milter.8
-INCLUDES = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_srcdir)/shared
+INCLUDES = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_srcdir)/shared -I$(top_srcdir)
 EXTRA_DIST = clamav-milter.c INSTALL
 all: all-am
 
