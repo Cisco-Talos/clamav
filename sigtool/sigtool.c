@@ -60,7 +60,7 @@
 #include "libclamav/htmlnorm.h"
 #include "libclamav/sha256.h"
 
-#define MAX_DEL_LOOKAHEAD   50
+#define MAX_DEL_LOOKAHEAD   200
 
 static int hexdump(void)
 {

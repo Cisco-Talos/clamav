@@ -1,3 +1,7 @@
+Mon Jul 16 21:33:48 CEST 2007 (tk)
+----------------------------------
+  * sigtool/sigtool.c: increase MAX_DEL_LOOKAHEAD, requested by Sven
+
 Mon Jul 16 17:04:50 CEST 2007 (tk)
 ----------------------------------
   * libclamav/scanner.c: don't search for embedded PEs in zip files larger
