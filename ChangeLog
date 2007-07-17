@@ -1,3 +1,7 @@
+Tue Jul 17 11:09:50 CEST 2007 (tk)
+----------------------------------
+  * libclamav/others.c: bump f-level
+
 Tue Jul 17 11:08:37 CEST 2007 (tk)
 ----------------------------------
   * libclamav/unrar/unrarvm.c: fix another occurrence of bb#555, thanks to
