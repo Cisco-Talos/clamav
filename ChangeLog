@@ -1,3 +1,8 @@
+Tue Jul 17 11:08:37 CEST 2007 (tk)
+----------------------------------
+  * libclamav/unrar/unrarvm.c: fix another occurrence of bb#555, thanks to
+			       Ludwig Nussel <ludwig.nussel*suse.de>
+
 Mon Jul 16 21:33:48 CEST 2007 (tk)
 ----------------------------------
   * sigtool/sigtool.c: increase MAX_DEL_LOOKAHEAD, requested by Sven

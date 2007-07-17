@@ -385,7 +385,7 @@ static void execute_standard_filter(rarvm_data_t *rarvm_data, rarvm_standard_fil
 		data_size = rarvm_data->R[4];
 		file_offset = rarvm_data->R[6];
 		
-		if (data_size >= VM_GLOBALMEMADDR) {
+		if ((data_size >= VM_GLOBALMEMADDR) || (data_size < 21)) {
 			break;
 		}
 		
