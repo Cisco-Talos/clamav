@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-160707"
+#define	CM_VERSION	"devel-190707"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -165,6 +165,10 @@ typedef	unsigned int	in_addr_t;
 #else
 #define	INET6_ADDRSTRLEN	16
 #endif
+#endif
+
+#ifndef	EX_CONFIG	/* HP-UX */
+#define	EX_CONFIG	78
 #endif
 
 #define	VERSION_LENGTH	128
@@ -5118,11 +5122,11 @@ isLocal(const char *addr)
 			int match = 1;
 			int j;
 
-			for(j = 0; match && j < pnet6->preflen >> 3; j++)
+			for(j = 0; match && j < (pnet6->preflen >> 3); j++)
 				if(pnet6->base.s6_addr[j] != ip6.s6_addr[j])
 					match = 0;
 			if(match && (j < 16)) {
-				uint8_t mask = 0xff << (8 - (pnet6->preflen & 7));
+				uint8_t mask = (uint8_t)(0xff << (8 - (pnet6->preflen & 7)) & 0xFF);
 
 				if((pnet6->base.s6_addr[j] & mask) != (ip6.s6_addr[j] & mask))
 					match = 0;
@@ -6207,7 +6211,7 @@ spf(struct privdata *privdata, table_t *prevhosts)
 			p += len;
 			continue;
 		}
-		strncpy(txt, &p[1], sizeof(txt) - 1);
+		strncpy(txt, (const char *)&p[1], sizeof(txt) - 1);
 		txt[len - 1] = '\0';
 		if((strncmp(txt, "v=spf1 ", 7) == 0) || (strncmp(txt, "spf2.0/pra ", 11) == 0)) {
 			int j;
@@ -6310,7 +6314,7 @@ spf(struct privdata *privdata, table_t *prevhosts)
 					if(*inchost &&
 					   (strcmp(inchost, host) != 0) &&
 					   (tableFind(prevhosts, inchost) == -1)) {
-						const char *real_from = privdata->from;
+						char *real_from = privdata->from;
 						privdata->from = cli_malloc(strlen(inchost) + 3);
 						sprintf(privdata->from, "n@%s", inchost);
 						tableInsert(prevhosts, host, 0);
