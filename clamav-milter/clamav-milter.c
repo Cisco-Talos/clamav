@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-190707"
+#define	CM_VERSION	"devel-030807"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1974,7 +1974,7 @@ main(int argc, char **argv)
 	}
 
 	if(smfi_register(smfilter) == MI_FAILURE) {
-		cli_errmsg("smfi_register failure\n");
+		cli_errmsg("smfi_register failure, ensure that you have linked against the correct version of sendmail\n");
 		return EX_UNAVAILABLE;
 	}
 
@@ -1993,6 +1993,13 @@ main(int argc, char **argv)
 #endif
 	logg(_("Starting %s\n"), clamav_version);
 	logg(_("*Debugging is on\n"));
+
+	if(!(_res.options&RES_INIT))
+		if(res_init() < 0) {
+			fprintf(stderr, "%s: Can't initialise the resolver\n",
+				argv[0]);
+			return EX_UNAVAILABLE;
+		}
 
 	if(blacklist_time) {
 		char name[MAXHOSTNAMELEN + 1];
@@ -5959,7 +5966,7 @@ mx(const char *host, table_t *t)
 {
 	u_char *p, *end;
 	const HEADER *hp;
-	int len, i, was_initialised;
+	int len, i;
 	union {
 		HEADER h;
 		u_char u[PACKETSZ];
@@ -5973,34 +5980,20 @@ mx(const char *host, table_t *t)
 			return NULL;
 	}
 
-	was_initialised = _res.options & RES_INIT;
-
-	if((!was_initialised) && res_init() < 0)
-		return t;
-
 	len = res_query(host, C_IN, T_MX, (u_char *)&q, sizeof(q));
-	if(len < 0) {
-		if(!was_initialised)
-			res_close();
+	if(len < 0)
 		return t;	/* Host has no MX records */
-	}
 
-	if((unsigned int)len > sizeof(q)) {
-		if(!was_initialised)
-			res_close();
+	if((unsigned int)len > sizeof(q))
 		return t;
-	}
 
 	hp = &(q.h);
 	p = q.u + HFIXEDSZ;
 	end = q.u + len;
 
 	for(i = ntohs(hp->qdcount); i--; p += len + QFIXEDSZ)
-		if((len = dn_skipname(p, end)) < 0) {
-			if(!was_initialised)
-				res_close();
+		if((len = dn_skipname(p, end)) < 0)
 			return t;
-		}
 
 	i = ntohs(hp->ancount);
 
@@ -6034,9 +6027,6 @@ mx(const char *host, table_t *t)
 		} else
 			t = resolve(buf, t);
 	}
-	if(!was_initialised)
-		res_close();
-
 	return t;
 }
 
@@ -6126,6 +6116,8 @@ resolve(const char *host, table_t *t)
  *	causing a loop
  * Return 1 if SPF says this email is from a legitimate source
  *	0 for fail or unknown
+ *
+ * TODO: check res_query is thread safe
  */
 static int
 spf(struct privdata *privdata, table_t *prevhosts)

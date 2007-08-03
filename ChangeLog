@@ -1,6 +1,10 @@
+Fri Aug  3 09:21:12 BST 2007 (njh)
+----------------------------------
+  * clamav-milter/clamav-milter.c:	Better use of res_init()
+
 Thu Jul 19 12:13:33 BST 2007 (njh)
 ----------------------------------
-  * clamav-milter/clamav-milter.c:	HP-UX doesn't have EX_CONFIG, repoted
+  * clamav-milter/clamav-milter.c:	HP-UX doesn't have EX_CONFIG, reported
 				by clam * ministry.se
 
 Tue Jul 17 11:41:31 BST 2007 (trog)
