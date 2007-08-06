@@ -517,12 +517,11 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 			}
 
 			if(pt->partno == 1 || (found && (pt->partno != pt->parts))) {
-			    offmatrix[pt->partno - 1][0] %= (AC_DEFAULT_TRACKLEN + 1);
-			    if(!offmatrix[pt->partno - 1][0])
-				offmatrix[pt->partno - 1][0]++;
+			    offmatrix[pt->partno - 1][0] %= AC_DEFAULT_TRACKLEN;
+			    offmatrix[pt->partno - 1][0]++;
 
-			    offmatrix[pt->partno - 1][offmatrix[pt->partno - 1][0]] = realoff + pt->length;
-			    if(pt->partno) /* save realoff for the first part */
+			    offmatrix[pt->partno - 1][offmatrix[pt->partno - 1][0]] = realoff + pt->length + pt->prefix_length;
+			    if(pt->partno == 1) /* save realoff for the first part */
 				offmatrix[pt->parts - 1][offmatrix[pt->partno - 1][0]] = realoff;
 			} else if(found && pt->partno == pt->parts) {
 			    if(pt->type) {
