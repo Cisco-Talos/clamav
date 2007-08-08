@@ -141,12 +141,11 @@ For the Whitelist(.wdb)/Domainlist(.pdb) format see regex_list.c (search for Fla
 /* Constant strings and tables */ 
 static char empty_string[]="";
 
-#define ANY_CLOAK "(((0[xX])?[a-fA-F0-9])+\\.?)+"
-#define CLOAK_REGEX_HEXURL "("ANY_CLOAK")?0[xX][a-fA-F0-9]+\\.?"ANY_CLOAK
-#define OCTAL_CLOAK "("ANY_CLOAK")?000[0-9]+\\.?"ANY_CLOAK
-#define DWORD_CLOAK "[0-9]{8,}"
 
-static const char cloaked_host_regex[] = "^(("CLOAK_REGEX_HEXURL")|("OCTAL_CLOAK")|("DWORD_CLOAK"))$";
+#define ANY_CLOAK "(0[xX][0-9a-fA-F]+|[0-9]+)"
+#define CLOAKED_URL "^"ANY_CLOAK"(\\."ANY_CLOAK"){0,3}$"
+
+static const char cloaked_host_regex[] = CLOAKED_URL;
 static const char tld_regex[] = "^"iana_tld"$";
 static const char cctld_regex[] = "^"iana_cctld"$";
 static const char dotnet[] = ".net";
