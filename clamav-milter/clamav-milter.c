@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-030807"
+#define	CM_VERSION	"devel-090807"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -283,7 +283,7 @@ struct	privdata {
 				 * looks like the remote end is playing ping
 				 * pong with us
 				 */
-#if	defined(HAVE_RESOLV_H) && defined(CL_EXPERIMENTAL)
+#ifdef	HAVE_RESOLV_H
 	unsigned	int	spf_ok:1;
 #endif
 	int	statusCount;	/* number of X-Virus-Status headers */
@@ -567,10 +567,8 @@ static	int	isBlacklisted(const char *ip_address);
 static	table_t	*mx(const char *host, table_t *t);
 #ifdef	HAVE_RESOLV_H
 static	table_t	*resolve(const char *host, table_t *t);
-#ifdef	CL_EXPERIMENTAL
 static	int	spf(struct privdata *privdata, table_t *prevhosts);
 static	void	spf_ip(char *ip, int zero, void *v);
-#endif
 #endif
 static	sfsistat	black_hole(const struct privdata *privdata);
 static	int	useful_header(const char *cmd);
@@ -1190,7 +1188,8 @@ main(int argc, char **argv)
 				perror(cpt->strarg);
 			else
 				cli_dbgmsg(_("Running as user %s (UID %d, GID %d)\n"),
-					cpt->strarg, user->pw_uid, user->pw_gid);
+					cpt->strarg, (int)user->pw_uid,
+					(int)user->pw_gid);
 		} else if(!black_hole_mode)
 			fprintf(stderr, _("%s: running as root is not recommended (check \"User\" in %s)\n"), argv[0], cfgfile);
 
@@ -3445,7 +3444,7 @@ clamfi_eom(SMFICTX *ctx)
 	 * TODO: it would be useful to add a header if mbox.c/FOLLOWURLS was
 	 * exceeded
 	 */
-#if	defined(HAVE_RESOLV_H) && defined(CL_EXPERIMENTAL)
+#ifdef	HAVE_RESOLV_H
 	if((strstr(mess, "FOUND") != NULL) && (strstr(mess, "Phishing") != NULL)) {
 		table_t *prevhosts = tableCreate();
 
@@ -6099,7 +6098,6 @@ resolve(const char *host, table_t *t)
 	return t;
 }
 
-#ifdef	CL_EXPERIMENTAL
 /*
  * Validate SPF records to help to stop Phish false positives
  * http://www.openspf.org/SPF_Record_Syntax
@@ -6337,8 +6335,6 @@ spf_ip(char *ip, int zero, void *v)
 		privdata->spf_ok = 1;
 	}
 }
-
-#endif	/*CL_EXPERIMENTAL*/
 
 #else	/*!HAVE_RESOLV_H */
 static void

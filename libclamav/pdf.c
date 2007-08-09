@@ -624,8 +624,16 @@ flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 
 					nbytes += cli_writen(fout, output, sizeof(output));
 
+					/*
+					 * BLOCKMAX is on if ArchiveBlockMax
+					 *	is set in clamd.conf
+					 *
+					 * Bug 608 Michael Brennen
+					 *	<michael@fishnet.us>
+					 */
 					if(ctx->limits &&
 					   ctx->limits->maxfilesize &&
+					   BLOCKMAX &&
 					   (nbytes > (off_t) ctx->limits->maxfilesize)) {
 						cli_dbgmsg("cli_pdf: flatedecode size exceeded (%lu)\n",
 							(unsigned long)nbytes);

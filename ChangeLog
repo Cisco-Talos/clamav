@@ -1,3 +1,8 @@
+Thu Aug  9 11:26:02 BST 2007 (njh)
+----------------------------------
+  * libclamav/pdf.c:	Bug 608
+  * clamav-milter:	SPF checking no longer experimental
+
 Wed Aug  8 19:26:30 CEST 2007 (edwin)
 ----------------------------------
   * libclamav/phishcheck.c: workaround Solaris problem with regexec() [bb
