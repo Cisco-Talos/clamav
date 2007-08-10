@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-090807"
+#define	CM_VERSION	"devel-100807"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2904,7 +2904,7 @@ static sfsistat
 clamfi_envrcpt(SMFICTX *ctx, char **argv)
 {
 	struct privdata *privdata = (struct privdata *)smfi_getpriv(ctx);
-	const char *to;
+	const char *to, *ptr;
 
 	logg("*clamfi_envrcpt: %s\n", argv[0]);
 
@@ -2921,6 +2921,14 @@ clamfi_envrcpt(SMFICTX *ctx, char **argv)
 	to = smfi_getsymval(ctx, "{rcpt_addr}");
 	if(to == NULL)
 		to = argv[0];
+
+	for(ptr = to; *ptr; ptr++)
+		if(strchr("|;", *ptr) != NULL) {
+			smfi_setreply(ctx, "554", "5.7.1", _("Suspicious recipient address blocked"));
+			logg("^Suspicious recipient address blocked: '%s'", to);
+			clamfi_cleanup(ctx);
+			return SMFIS_REJECT;
+		}
 
 	privdata->to[privdata->numTo] = cli_strdup(to);
 	privdata->to[++privdata->numTo] = NULL;
