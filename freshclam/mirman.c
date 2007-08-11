@@ -103,7 +103,7 @@ int mirman_check(uint32_t ip, struct mirdat *mdat)
 	return 0;
 
     for(i = 0; i < mdat->num; i++) {
-	if(mdat->mirtab[i].ip == ip) {
+	if(mdat->mirtab[i].atime && mdat->mirtab[i].ip == ip) {
 
 	    if(mdat->dbflevel && (mdat->dbflevel > flevel) && (mdat->dbflevel - flevel > 3))
 		if(time(NULL) - mdat->mirtab[i].atime < 4 * 3600)
@@ -139,7 +139,7 @@ int mirman_update(uint32_t ip, struct mirdat *mdat, uint8_t broken)
     }
 
     if(found) {
-	mdat->mirtab[i].atime = (uint32_t) time(NULL);
+	mdat->mirtab[i].atime = 0; /* will be updated in mirman_write() */
 	if(broken)
 	    mdat->mirtab[i].fail++;
 	else
@@ -161,7 +161,7 @@ int mirman_update(uint32_t ip, struct mirdat *mdat, uint8_t broken)
 	    return -1;
 	}
 	mdat->mirtab[mdat->num].ip = ip;
-	mdat->mirtab[mdat->num].atime = (uint32_t) time(NULL);
+	mdat->mirtab[mdat->num].atime = 0;
 	mdat->mirtab[mdat->num].succ = 0;
 	mdat->mirtab[mdat->num].fail = 0;
 	mdat->mirtab[mdat->num].ignore = 0;
@@ -200,6 +200,7 @@ void mirman_list(const struct mirdat *mdat)
 int mirman_write(const char *file, struct mirdat *mdat)
 {
 	int fd;
+	unsigned int i;
 
 
     if(!mdat->num)
@@ -210,6 +211,10 @@ int mirman_write(const char *file, struct mirdat *mdat)
 	mirman_free(mdat);
 	return -1;
     }
+
+    for(i = 0; i < mdat->num; i++)
+	if(!mdat->mirtab[i].atime)
+	    mdat->mirtab[i].atime = (uint32_t) time(NULL);
 
     if(write(fd, mdat->mirtab, mdat->num * sizeof(struct mirdat_ip)) == -1) {
 	logg("!Can't write to %s\n", file);

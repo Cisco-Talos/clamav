@@ -1,3 +1,10 @@
+Sat Aug 11 15:15:55 CEST 2007 (tk)
+----------------------------------
+  * freshclam/mirman.c: properly handle mirror access times (bb#606, only
+			outdated installations - three versions behind the
+			latest one were affected by this problem)
+			Reported by David F. Skoll <dfs*roaringpenguin.com>
+
 Fri Aug 10 11:15:25 BST 2007 (njh)
 ----------------------------------
   * clamav-milter:	Bug 614
