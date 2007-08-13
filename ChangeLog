@@ -1,3 +1,7 @@
+Mon Aug 13 22:27:13 BST 2007 (njh)
+----------------------------------
+  * clamav-milter:	Tidy up bug fix 614
+
 Mon Aug 13 19:09:43 CEST 2007 (tk)
 ----------------------------------
   * libclamav, sigtool: add support for PUA databases (.hdu, .mdu, .ndu),

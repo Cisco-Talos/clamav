@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-100807"
+#define	CM_VERSION	"devel-130807"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2926,7 +2926,7 @@ clamfi_envrcpt(SMFICTX *ctx, char **argv)
 		if(strchr("|;", *ptr) != NULL) {
 			smfi_setreply(ctx, "554", "5.7.1", _("Suspicious recipient address blocked"));
 			logg("^Suspicious recipient address blocked: '%s'", to);
-			clamfi_cleanup(ctx);
+			privdata->to[privdata->numTo] = NULL;
 			return SMFIS_REJECT;
 		}
 
