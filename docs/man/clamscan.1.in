@@ -69,6 +69,9 @@ Move infected files into DIRECTORY. Directory must be writable for the '@CLAMAVU
 \fB\-\-copy=DIRECTORY\fR
 Copy infected files into DIRECTORY. Directory must be writable for the '@CLAMAVUSER@' user or unprivileged user running clamscan.
 .TP 
+\fB\-\-detect\-pua\fR
+Detect Possibly Unwanted Applications.
+.TP 
 \fB\-\-no\-mail\fR
 Disable scanning of mail files.
 .TP 

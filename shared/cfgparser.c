@@ -55,6 +55,7 @@ struct cfgoption cfg_options[] = {
     {"PhishingAlwaysBlockSSLMismatch", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"PhishingRestrictedScan", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     /* end of FP prone options */
+    {"DetectPUA", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"AlgorithmicDetection", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"ScanHTML", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"ScanOLE2", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},

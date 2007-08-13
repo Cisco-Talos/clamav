@@ -62,6 +62,7 @@ static struct option clamscan_longopt[] = {
 #ifdef HAVE_NCORE
     {"ncore", 0, 0, 0},
 #endif
+    {"detect-pua", 0, 0, 0},
     {"disable-archive", 0, 0, 0},
     {"no-archive", 0, 0, 0},
     {"detect-broken", 0, 0, 0},

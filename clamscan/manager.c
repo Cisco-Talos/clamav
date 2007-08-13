@@ -186,6 +186,9 @@ int scanmanager(const struct optstruct *opt)
     if(opt_check(opt, "dev-ac-only"))
 	dboptions |= CL_DB_ACONLY;
 
+    if(opt_check(opt, "detect-pua"))
+	dboptions |= CL_DB_PUA;
+
     if(opt_check(opt, "database")) {
 	if((ret = cl_load(opt_arg(opt, "database"), &engine, &info.sigs, dboptions))) {
 	    logg("!%s\n", cl_strerror(ret));

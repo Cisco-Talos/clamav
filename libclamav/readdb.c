@@ -980,14 +980,32 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
     } else if(cli_strbcasestr(filename, ".hdb")) {
 	ret = cli_loadhdb(fd, engine, signo, 0, options);
 
+    } else if(cli_strbcasestr(filename, ".hdu")) {
+	if(options & CL_DB_PUA)
+	    ret = cli_loadhdb(fd, engine, signo, 0, options);
+	else
+	    skipped = 1;
+
     } else if(cli_strbcasestr(filename, ".fp")) {
 	ret = cli_loadhdb(fd, engine, signo, 1, options);
 
     } else if(cli_strbcasestr(filename, ".mdb")) {
 	ret = cli_loadhdb(fd, engine, signo, 2, options);
 
+    } else if(cli_strbcasestr(filename, ".mdu")) {
+	if(options & CL_DB_PUA)
+	    ret = cli_loadhdb(fd, engine, signo, 2, options);
+	else
+	    skipped = 1;
+
     } else if(cli_strbcasestr(filename, ".ndb")) {
 	if(options & CL_DB_NCORE)
+	    skipped = 1;
+	else
+	    ret = cli_loadndb(fd, engine, signo, 0, options);
+
+    } else if(cli_strbcasestr(filename, ".ndu")) {
+	if(!(options & CL_DB_PUA) || (options & CL_DB_NCORE))
 	    skipped = 1;
 	else
 	    ret = cli_loadndb(fd, engine, signo, 0, options);
@@ -1098,9 +1116,12 @@ static int cli_loaddbdir_l(const char *dirname, struct cl_engine **engine, unsig
 	     cli_strbcasestr(dent->d_name, ".db2")  ||
 	     cli_strbcasestr(dent->d_name, ".db3")  ||
 	     cli_strbcasestr(dent->d_name, ".hdb")  ||
+	     cli_strbcasestr(dent->d_name, ".hdu")  ||
 	     cli_strbcasestr(dent->d_name, ".fp")   ||
 	     cli_strbcasestr(dent->d_name, ".mdb")  ||
+	     cli_strbcasestr(dent->d_name, ".mdu")  ||
 	     cli_strbcasestr(dent->d_name, ".ndb")  ||
+	     cli_strbcasestr(dent->d_name, ".ndu")  ||
 	     cli_strbcasestr(dent->d_name, ".sdb")  ||
 	     cli_strbcasestr(dent->d_name, ".zmd")  ||
 	     cli_strbcasestr(dent->d_name, ".rmd")  ||
@@ -1252,9 +1273,12 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".db2")  || 
 	    cli_strbcasestr(dent->d_name, ".db3")  || 
 	    cli_strbcasestr(dent->d_name, ".hdb")  || 
+	    cli_strbcasestr(dent->d_name, ".hdu")  || 
 	    cli_strbcasestr(dent->d_name, ".fp")   || 
 	    cli_strbcasestr(dent->d_name, ".mdb")  ||
+	    cli_strbcasestr(dent->d_name, ".mdu")  ||
 	    cli_strbcasestr(dent->d_name, ".ndb")  || 
+	    cli_strbcasestr(dent->d_name, ".ndu")  || 
 	    cli_strbcasestr(dent->d_name, ".sdb")  || 
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 
 	    cli_strbcasestr(dent->d_name, ".rmd")  || 
@@ -1360,9 +1384,12 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".db2")  || 
 	    cli_strbcasestr(dent->d_name, ".db3")  || 
 	    cli_strbcasestr(dent->d_name, ".hdb")  || 
+	    cli_strbcasestr(dent->d_name, ".hdu")  || 
 	    cli_strbcasestr(dent->d_name, ".fp")   || 
 	    cli_strbcasestr(dent->d_name, ".mdb")  ||
+	    cli_strbcasestr(dent->d_name, ".mdu")  ||
 	    cli_strbcasestr(dent->d_name, ".ndb")  || 
+	    cli_strbcasestr(dent->d_name, ".ndu")  || 
 	    cli_strbcasestr(dent->d_name, ".sdb")  || 
 	    cli_strbcasestr(dent->d_name, ".zmd")  || 
 	    cli_strbcasestr(dent->d_name, ".rmd")  || 

@@ -331,7 +331,7 @@ static int writeinfo(const char *db, const char *header)
 	int i;
 	struct stat sb;
 	char file[32], *md5;
-	const char *const extlist[] = { "db", "fp", "hdb", "mdb", "ndb", "pdb", "wdb", "rmd", "zmd", "sdb", "cfg", NULL };
+	const char *const extlist[] = { "db", "fp", "hdb", "hdu", "mdb", "mdu", "ndb", "ndu", "pdb", "wdb", "rmd", "zmd", "sdb", "cfg", NULL };
 
 
     snprintf(file, sizeof(file), "%s.info", db);
@@ -522,8 +522,11 @@ static int build(struct optstruct *opt)
 
     if(stat("main.db", &foo) == -1 && stat("daily.db", &foo) == -1 &&
        stat("main.hdb", &foo) == -1 && stat("daily.hdb", &foo) == -1 &&
+       stat("main.hdu", &foo) == -1 && stat("daily.hdu", &foo) == -1 &&
        stat("main.mdb", &foo) == -1 && stat("daily.mdb", &foo) == -1 &&
+       stat("main.mdu", &foo) == -1 && stat("daily.mdu", &foo) == -1 &&
        stat("main.ndb", &foo) == -1 && stat("daily.ndb", &foo) == -1 &&
+       stat("main.ndu", &foo) == -1 && stat("daily.ndu", &foo) == -1 &&
        stat("main.pdb", &foo) == -1 && stat("daily.pdb", &foo) == -1 &&
        stat("main.sdb", &foo) == -1 && stat("daily.sdb", &foo) == -1 &&
        stat("main.zmd", &foo) == -1 && stat("daily.zmd", &foo) == -1 &&
@@ -545,8 +548,11 @@ static int build(struct optstruct *opt)
     } else {
 	lines = countlines("main.db") + countlines("daily.db") +
 		countlines("main.hdb") + countlines("daily.hdb") +
+		countlines("main.hdu") + countlines("daily.hdu") +
 		countlines("main.mdb") + countlines("daily.mdb") +
+		countlines("main.mdu") + countlines("daily.mdu") +
 		countlines("main.ndb") + countlines("daily.ndb") +
+		countlines("main.ndu") + countlines("daily.ndu") +
 		countlines("main.sdb") + countlines("daily.sdb") +
 		countlines("main.zmd") + countlines("daily.zmd") +
 		countlines("main.rmd") + countlines("daily.rmd") +
@@ -691,10 +697,12 @@ static int build(struct optstruct *opt)
 	    {
 		const char *args[] = { "tar", "-cvf", NULL, "COPYING", "main.db",
 				 "daily.db", "main.hdb", "daily.hdb",
-				 "main.ndb", "daily.ndb", "main.sdb",
-				 "daily.sdb", "main.zmd", "daily.zmd",
-				 "main.rmd", "daily.rmd", "main.fp",
-				 "daily.fp", "main.mdb", "daily.mdb",
+				 "main.hdu", "daily.hdu", "main.ndb",
+				 "daily.ndb", "main.ndu", "daily.ndu",
+				 "main.sdb", "daily.sdb", "main.zmd",
+				 "daily.zmd", "main.rmd", "daily.rmd",
+				 "main.fp", "daily.fp", "main.mdb",
+				 "daily.mdb", "main.mdu", "daily.mdu",
 				 "daily.info", "main.info", "main.wdb",
 				 "daily.wdb", "main.pdb", "daily.pdb",
 				 "main.cfg", "daily.cfg",
@@ -1036,8 +1044,11 @@ static int listdir(const char *dirname)
 	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") &&
 	    (cli_strbcasestr(dent->d_name, ".db")  ||
 	     cli_strbcasestr(dent->d_name, ".hdb") ||
+	     cli_strbcasestr(dent->d_name, ".hdu") ||
 	     cli_strbcasestr(dent->d_name, ".mdb") ||
+	     cli_strbcasestr(dent->d_name, ".mdu") ||
 	     cli_strbcasestr(dent->d_name, ".ndb") ||
+	     cli_strbcasestr(dent->d_name, ".ndu") ||
 	     cli_strbcasestr(dent->d_name, ".sdb") ||
 	     cli_strbcasestr(dent->d_name, ".zmd") ||
 	     cli_strbcasestr(dent->d_name, ".rmd") ||
@@ -1163,7 +1174,7 @@ static int listdb(const char *filename)
 	    mprintf("%s\n", start);
 	}
 
-    } else if(cli_strbcasestr(filename, ".hdb") || cli_strbcasestr(filename, ".mdb")) { /* hash database */
+    } else if(cli_strbcasestr(filename, ".hdb") || cli_strbcasestr(filename, ".hdu") || cli_strbcasestr(filename, ".mdb") || cli_strbcasestr(filename, ".mdu")) { /* hash database */
 
 	while(fgets(buffer, FILEBUFF, fd)) {
 	    line++;
@@ -1184,7 +1195,7 @@ static int listdb(const char *filename)
 	    free(start);
 	}
 
-    } else if(cli_strbcasestr(filename, ".ndb") || cli_strbcasestr(filename, ".sdb") || cli_strbcasestr(filename, ".zmd") || cli_strbcasestr(filename, ".rmd")) {
+    } else if(cli_strbcasestr(filename, ".ndb") || cli_strbcasestr(filename, ".ndu") || cli_strbcasestr(filename, ".sdb") || cli_strbcasestr(filename, ".zmd") || cli_strbcasestr(filename, ".rmd")) {
 
 	while(fgets(buffer, FILEBUFF, fd)) {
 	    line++;

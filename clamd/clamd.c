@@ -297,6 +297,11 @@ int main(int argc, char **argv)
     dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
     logg("Reading databases from %s\n", dbdir);
 
+    if(cfgopt(copt, "DetectPUA")->enabled)
+	dboptions |= CL_DB_PUA;
+    else
+	logg("Not loading PUA signatures.\n");
+
     if(cfgopt(copt, "PhishingSignatures")->enabled)
 	dboptions |= CL_DB_PHISHING;
     else
