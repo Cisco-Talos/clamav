@@ -1,3 +1,8 @@
+Tue Aug 14 23:23:00 EEST 2007 (edwin)
+----------------------------------
+  * libclamav/phishcheck.c, regex_list.c, phish_whitelist.c: make debug output
+  look better (patch from Sven)
+
 Tue Aug 14 23:11:00 EEST 2007 (edwin)
 ----------------------------------
   * libclamav/phishcheck.c: Don't report phishing on broken urls containing >

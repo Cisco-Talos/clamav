@@ -352,7 +352,7 @@ static void free_if_needed(struct url_check* url)
 static int build_regex(regex_t* preg,const char* regex,int nosub)
 {
 	int rc;
-	cli_dbgmsg("Phishcheck: Compiling regex:%s\n",regex);
+	cli_dbgmsg("Phishcheck: Compiling regex: %s\n",regex);
 	rc = regcomp(preg,regex,REG_EXTENDED|REG_ICASE|(nosub ? REG_NOSUB :0));
 	if(rc) {
 	
@@ -401,7 +401,7 @@ static int get_host(const struct phishcheck* s,struct string* dest,const char* U
 		else {
 			start=URL;/*URL without protocol*/
 			if(isReal)
-				cli_dbgmsg("Phishcheck: Real URL without protocol:%s\n",URL);
+				cli_dbgmsg("Phishcheck: Real URL without protocol: %s\n",URL);
 			else ismailto=2;/*no-protocol, might be mailto, @ is no problem*/
 		}
 	}
@@ -805,7 +805,7 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 			if(pchk->is_disabled)
 				return CL_CLEAN;
 			free_if_needed(&urls);
-			cli_dbgmsg("Phishcheck: Phishing scan result:%s\n",phishing_ret_toString(rc));
+			cli_dbgmsg("Phishcheck: Phishing scan result: %s\n",phishing_ret_toString(rc));
 			switch(rc)/*TODO: support flags from ctx->options,*/
 				{
 					case CL_PHISH_CLEAN:

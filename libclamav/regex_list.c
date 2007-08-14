@@ -284,10 +284,10 @@ int regex_list_match(struct regex_matcher* matcher,const char* real_url,const ch
 						buffer[buffer_len-match_len-1]=='.') 
 						/* subdomain matched*/) {
 
-						cli_dbgmsg("Got a match:%s with %s\n",buffer,*info);
+						cli_dbgmsg("Got a match: %s with %s\n",buffer,*info);
 						break;
 					}
-					cli_dbgmsg("Ignoring false match:%s with %s\n",buffer,*info);
+					cli_dbgmsg("Ignoring false match: %s with %s\n",buffer,*info);
 					rc=0;
 				}
 			}
