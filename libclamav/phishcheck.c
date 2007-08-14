@@ -625,7 +625,7 @@ str_strip(char **begin, const char **end, const char *what, size_t what_len)
 /* replace every occurrence of @c in @str with @r*/
 static void str_replace(char* str,const char* end,char c,char r)
 {
-	for(;str<end;str++) {
+	for(;str<=end;str++) {
 		if(*str==c)
 			*str=r;
 	}
@@ -722,6 +722,10 @@ cleanupURL(struct string *URL, int isReal)
 		int rc;
 
 		str_replace(begin,end,'\\','/');
+		/* some broken MUAs put > in the href, and then
+		 * we get a false positive, so remove them */
+		str_replace(begin,end,'<','/');
+		str_replace(begin,end,'>','/');
 		str_strip(&begin,&end,"\"",1);
 		str_strip(&begin,&end,lt,lt_len);
 		str_strip(&begin,&end,gt,gt_len);

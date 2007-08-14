@@ -1,3 +1,8 @@
+Tue Aug 14 23:11:00 EEST 2007 (edwin)
+----------------------------------
+  * libclamav/phishcheck.c: Don't report phishing on broken urls containing >
+  in the hostname. (bb #619)
+
 Mon Aug 13 22:27:13 BST 2007 (njh)
 ----------------------------------
   * clamav-milter:	Tidy up bug fix 614
