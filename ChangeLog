@@ -1,3 +1,7 @@
+Sat Aug 18 13:25:52 BST 2007 (njh)
+----------------------------------
+  * libclamav/pdf.c:	Bug 618, --block-max not always honoured
+
 Tue Aug 14 23:23:00 EEST 2007 (edwin)
 ----------------------------------
   * libclamav/phishcheck.c, regex_list.c, phish_whitelist.c: make debug output

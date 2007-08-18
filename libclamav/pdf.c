@@ -213,7 +213,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	/*
 	 * The body section consists of a sequence of indirect objects
 	 */
-	while((p < xrefstart) &&
+	while((p < xrefstart) && (rc == CL_CLEAN) &&
 	      ((q = pdf_nextobject(p, bytesleft)) != NULL)) {
 		int is_ascii85decode, is_flatedecode, fout, len, has_cr;
 		/*int object_number, generation_number;*/
@@ -421,7 +421,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		 * Calculate the length ourself, the Length parameter is often
 		 * wrong
 		 */
-		if(*--streamend != '\n')
+		if((*--streamend != '\n') && (*streamend != '\r'))
 			streamend++;
 		else if(has_cr && (*--streamend != '\r'))
 			streamend++;
