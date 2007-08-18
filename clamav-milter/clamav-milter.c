@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-130807"
+#define	CM_VERSION	"devel-180807"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1176,12 +1176,6 @@ main(int argc, char **argv)
 #endif
 			}
 
-			if(black_hole_mode && (user->pw_uid != 0)) {
-				fprintf(stderr, _("%s: You cannot use black hole mode unless you are root\n"),
-					argv[0]);
-				return EX_CONFIG;
-			}
-
 			setgid(user->pw_gid);
 
 			if(setuid(user->pw_uid) < 0)
@@ -1190,9 +1184,52 @@ main(int argc, char **argv)
 				cli_dbgmsg(_("Running as user %s (UID %d, GID %d)\n"),
 					cpt->strarg, (int)user->pw_uid,
 					(int)user->pw_gid);
-		} else if(!black_hole_mode)
-			fprintf(stderr, _("%s: running as root is not recommended (check \"User\" in %s)\n"), argv[0], cfgfile);
 
+			if(black_hole_mode && (user->pw_uid != 0)) {
+				int are_trusted;
+				FILE *sendmail;
+				char cmd[128];
+
+				/*
+				 * Determine if we're a "trusted user"
+				 */
+				snprintf(cmd, sizeof(cmd) - 1, "%s -bv root</dev/null 2>&1",
+					SENDMAIL_BIN);
+
+				sendmail = popen(cmd, "r");
+
+				if(sendmail == NULL) {
+					perror(SENDMAIL_BIN);
+					are_trusted = 0;
+				} else {
+					char buf[BUFSIZ];
+
+					while(fgets(buf, sizeof(buf), sendmail) != NULL)
+						;
+					switch(WEXITSTATUS(pclose(sendmail))) {
+						case EX_NOUSER:
+							/*
+							 * No root? But at least
+							 * we're trusted enough
+							 * to find out!
+							 */
+							are_trusted = 1;
+							break;
+						default:
+							are_trusted = 0;
+							break;
+						case EX_OK:
+							are_trusted = 1;
+					}
+				}
+				if(!are_trusted) {
+					fprintf(stderr, _("%s: You cannot use black hole mode unless you are a TrustedUser\n"),
+						argv[0]);
+					return EX_CONFIG;
+				}
+			}
+		} else
+			logg(_("^%s: running as root is not recommended (check \"User\" in %s)\n"), argv[0], cfgfile);
 	} else if(iface) {
 		fprintf(stderr, _("%s: Only root can set an interface for --broadcast\n"), argv[0]);
 		return EX_USAGE;
@@ -2927,6 +2964,9 @@ clamfi_envrcpt(SMFICTX *ctx, char **argv)
 			smfi_setreply(ctx, "554", "5.7.1", _("Suspicious recipient address blocked"));
 			logg("^Suspicious recipient address blocked: '%s'", to);
 			privdata->to[privdata->numTo] = NULL;
+			/*
+			 * REJECT rejects this recipient, not the entire email
+			 */
 			return SMFIS_REJECT;
 		}
 
@@ -6365,10 +6405,10 @@ black_hole(const struct privdata *privdata)
 	must_scan = (*to) ? 0 : 1;
 
 	for(; *to; to++) {
-		char cmd[128];
 		FILE *sendmail;
+		char cmd[128];
 
-		snprintf(cmd, sizeof(cmd) - 1, "%s -bv \"%s\" < /dev/null 2>&1",
+		snprintf(cmd, sizeof(cmd) - 1, "%s -bv \"%s\"</dev/null 2>&1",
 			SENDMAIL_BIN, *to);
 
 		cli_dbgmsg("Calling %s\n", cmd);

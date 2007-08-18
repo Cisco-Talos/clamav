@@ -298,12 +298,16 @@ Since \fIsendmail\fR calls its milters before it looks in its alias and virtuser
 tables, clamav-milter can spend time looking for malware that's going to be
 thrown away even if the message is clean.
 .IP
-Enable this to not scan these messages (in practice clamav\-milter will discard
+Enabling this stops these messages from being scanned
+(in practice clamav\-milter will discard
 these messages so the message doesn't go further down the milter call chain).
 .IP
-Sadly, these days sendmail \-bv only works as root,
-so this option is not compatible with the User directive in clamd.conf,
-which some may view as a security risk.
+To enable this mode clamav-milter must have certain sendmail rights:
+it needs to run as a TrustedUser as defined by \fIsendmail\fR
+(see http://www.sendmail.org/m4/tweaking_config.html)
+by the use of the User directive in clamd.conf,
+the clamav user must be able read the mail queue (often /var/spool/mqueue),
+and AllowSupplementaryGroups must be enabled in clamd.conf.
 Only enable this if your site has many addresses aliased to /dev/null.
 .SH "BUGS"
 There is no support for IPv6.
@@ -315,4 +319,4 @@ clamav\-milter \-o local:/var/run/clamav/clmilter.sock
 Nigel Horne <njh@bandsman.co.uk>
 .SH "SEE ALSO"
 .LP
-sendmail(1), clamd(8), clamscan(1), freshclam(1), sigtool(1), clamd.conf(5), hosts_access(5)
+clamd(8), clamscan(1), freshclam(1), sigtool(1), clamd.conf(5), hosts_access(5), sendmail(8)
