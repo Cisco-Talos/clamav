@@ -25,6 +25,8 @@ fi
 
 start() {
 	echo -n $"Starting $prog: "
+	# Don't allow files larger than 10M to be created, to limit DoS
+	ulimit -f 10000
         LANG= daemon $progdir/$prog
 	RETVAL=$?
 	echo

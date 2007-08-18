@@ -29,6 +29,8 @@ RETVAL=0
 
 start() {
         echo -n "Starting clamav-milter: "
+	# Don't allow files larger than 10M to be created, to limit DoS
+	ulimit -f 10000
         LANG= daemon clamav-milter ${CLAMAV_FLAGS}
         RETVAL=$?
         echo
