@@ -33,6 +33,10 @@
 
 . /etc/rc.subr
 
+# Don't allow files larger than 20M to be created, to limit DoS
+# Needs to be large enough to extract the signature files
+ulimit -f 20000
+
 name="clamd"
 command="/usr/local/sbin/${name}"
 
