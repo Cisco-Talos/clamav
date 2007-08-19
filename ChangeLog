@@ -1,3 +1,7 @@
+Sun Aug 19 10:35:38 BST 2007 (njh)
+----------------------------------
+ * clamav-milter:	Fix compilation error on NetBSD2.0
+
 Sat Aug 18 16:12:51 BST 2007 (njh)
 ----------------------------------
  * clamav-milter:	Black-hole-mode no longer needs to be run as root

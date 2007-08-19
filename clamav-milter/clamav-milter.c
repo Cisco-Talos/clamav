@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-180807"
+#define	CM_VERSION	"devel-190807"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1202,11 +1202,19 @@ main(int argc, char **argv)
 					perror(SENDMAIL_BIN);
 					are_trusted = 0;
 				} else {
+					int status;
 					char buf[BUFSIZ];
 
 					while(fgets(buf, sizeof(buf), sendmail) != NULL)
 						;
-					switch(WEXITSTATUS(pclose(sendmail))) {
+					/*
+					 * Can't do
+					 * switch(WEXITSTATUS(pclose(sendmail)))
+					 * because that fails to compile on
+					 * NetBSD2.0
+					 */
+					status = pclose(sendmail);
+					switch(WEXITSTATUS(status)) {
 						case EX_NOUSER:
 							/*
 							 * No root? But at least
