@@ -223,7 +223,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	    if(ret == 1)
 		logg("Ignoring mirror %s (due to previous errors)\n", ipaddr);
 	    else
-		logg("Ignoring mirror %s (too often connections with outdated version)\n", ipaddr);
+		logg("Ignoring mirror %s (has connected too many times with an outdated version)\n", ipaddr);
 	    continue;
 	}
 
@@ -960,7 +960,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	if(!outdated && flevel < current->fl) {
 	    /* display warning even for already installed database */
 	    logg("^Current functionality level = %d, recommended = %d\n", flevel, current->fl);
-	    logg("Please check if ClamAV tools are linked against proper version of libclamav\n");
+	    logg("Please check if ClamAV tools are linked against the proper version of libclamav\n");
 	    logg("DON'T PANIC! Read http://www.clamav.net/support/faq\n");
 	}
 
