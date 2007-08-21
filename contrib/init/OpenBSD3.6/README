@@ -1,0 +1,9 @@
+Edit /etc/rc.local adding the following before the "echo '.'" line, you
+should also call freshclam.
+
+if [ -x /usr/local/sbin/clamd ]; then
+	echo -n ' clamd'
+	# Don't allow files larger than 20M to be created, to limit DoS
+	# Needs to be large enough to extract the signature files
+	(ulimit -f 20000 && /usr/local/sbin/clamd)
+fi
