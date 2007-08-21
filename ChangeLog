@@ -1,3 +1,7 @@
+Tue Aug 21 21:43:56 CEST 2007 (tk)
+----------------------------------
+  * libclamav/others.c: bump f-level
+
 Tue Aug 21 21:42:14 CEST 2007 (tk)
 ----------------------------------
   * libclamav/rtf.c: fix possible NULL dereference (bb#611)
