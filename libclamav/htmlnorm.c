@@ -1190,7 +1190,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 							html_output_str(file_buff_o2, buff, strlen(buff));
 						}
 					} else
-							html_output_c(file_buff_o1, file_buff_o2, tolower(value));
+							html_output_c(file_buff_o1, file_buff_o2, tolower(value&0xff));
 					state = next_state;
 					next_state = HTML_BAD_STATE;
 					ptr++;

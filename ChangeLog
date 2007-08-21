@@ -1,3 +1,7 @@
+Tue Aug 21 21:32:30 CEST 2007 (tk)
+----------------------------------
+  * libclamav/htmlnorm.c: fix possible NULL dereference (bb#582)
+
 Mon Aug 20 23:31:16 CEST 2007 (tk)
 ----------------------------------
   * libclamav/filetypes.c: some embedded PEs were not being detected
