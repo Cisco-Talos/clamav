@@ -1,3 +1,8 @@
+Tue Aug 21 21:35:10 CEST 2007 (tk)
+----------------------------------
+  * libclamav/htmlnorm.c: fix possible NULL dereference (bb#582),
+			  thanks to Stefanos Stamatis
+
 Tue Aug 21 21:32:30 CEST 2007 (tk)
 ----------------------------------
   * libclamav/htmlnorm.c: fix possible NULL dereference (bb#582)

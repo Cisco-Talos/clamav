@@ -1360,33 +1360,37 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				}
 				break;
 			case HTML_RFC2397_INIT:
-				file_tmp_o1 = (file_buff_t *) cli_malloc(sizeof(file_buff_t));
-				if (!file_tmp_o1) {
-					goto abort;
-				}
-				snprintf(filename, 1024, "%s/rfc2397", dirname);
-				tmp_file = cli_gentemp(filename);
-				cli_dbgmsg("RFC2397 data file: %s\n", tmp_file);
-				file_tmp_o1->fd = open(tmp_file, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
-				free(tmp_file);
-				if (!file_tmp_o1->fd) {
-					cli_dbgmsg("open failed: %s\n", filename);
-					free(file_tmp_o1);
-					goto abort;
-				}
-				file_tmp_o1->length = 0;
+				if (dirname) {
+					file_tmp_o1 = (file_buff_t *) cli_malloc(sizeof(file_buff_t));
+					if (!file_tmp_o1) {
+						goto abort;
+					}
+					snprintf(filename, 1024, "%s/rfc2397", dirname);
+					tmp_file = cli_gentemp(filename);
+					cli_dbgmsg("RFC2397 data file: %s\n", tmp_file);
+					file_tmp_o1->fd = open(tmp_file, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
+					free(tmp_file);
+					if (!file_tmp_o1->fd) {
+						cli_dbgmsg("open failed: %s\n", filename);
+						free(file_tmp_o1);
+						goto abort;
+					}
+					file_tmp_o1->length = 0;
 				
-				html_output_str(file_tmp_o1, "From html-normalise\n", 20);
-				html_output_str(file_tmp_o1, "Content-type: ", 14);
-				if ((tag_val_length == 0) && (*tag_val == ';')) {
+					html_output_str(file_tmp_o1, "From html-normalise\n", 20);
+					html_output_str(file_tmp_o1, "Content-type: ", 14);
+					if ((tag_val_length == 0) && (*tag_val == ';')) {
 						html_output_str(file_tmp_o1, "text/plain\n", 11);
+					}
+					html_output_str(file_tmp_o1, tag_val, tag_val_length);
+					html_output_c(file_tmp_o1, NULL, '\n');
+					if (strstr(tag_val, ";base64") != NULL) {
+						html_output_str(file_tmp_o1, "Content-transfer-encoding: base64\n", 34);
+					}
+					html_output_c(file_tmp_o1, NULL, '\n');
+				} else {
+					file_tmp_o1 = NULL;
 				}
-				html_output_str(file_tmp_o1, tag_val, tag_val_length);
-				html_output_c(file_tmp_o1, NULL, '\n');
-				if (strstr(tag_val, ";base64") != NULL) {
-					html_output_str(file_tmp_o1, "Content-transfer-encoding: base64\n", 34);
-				}
-				html_output_c(file_tmp_o1, NULL, '\n');
 				state = HTML_RFC2397_DATA;
 				binary = TRUE;
 				break;
@@ -1436,9 +1440,11 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				}
 				break;
 			case HTML_RFC2397_FINISH:
-				html_output_flush(file_tmp_o1);
-				close(file_tmp_o1->fd);
-				free(file_tmp_o1);
+				if(file_tmp_o1) {
+					html_output_flush(file_tmp_o1);
+					close(file_tmp_o1->fd);
+					free(file_tmp_o1);
+				}
 				state = HTML_SKIP_WS;
 				escape = FALSE;
 				quoted = NOT_QUOTED;
