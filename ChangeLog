@@ -1,3 +1,7 @@
+Tue Aug 21 21:42:14 CEST 2007 (tk)
+----------------------------------
+  * libclamav/rtf.c: fix possible NULL dereference (bb#611)
+
 Tue Aug 21 21:39:06 CEST 2007 (tk)
 ----------------------------------
   * libclamav/ole2_extract.c: properly initialise hdr.max_block_no (bb#603)

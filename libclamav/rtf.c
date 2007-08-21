@@ -606,7 +606,9 @@ int cli_scanrtf(int desc, cli_ctx *ctx)
 											 return ret;
 										}
 									if(( ret = state.cb_process(&state, ptr, use) )) {
-										state.cb_end(&state,ctx);
+										if(state.cb_end) {
+											state.cb_end(&state,ctx);
+										}
 										SCAN_CLEANUP;
 										return ret;
 									}
@@ -677,6 +679,7 @@ int cli_scanrtf(int desc, cli_ctx *ctx)
 						if(action != -1) {
 							if(state.cb_data && state.cb_end) {/* premature end of previous block */
 								state.cb_end(&state,ctx);
+								state.cb_begin = NULL;
 								state.cb_end = NULL;
 								state.cb_data = NULL;
 							}
