@@ -301,6 +301,7 @@ thrown away even if the message is clean.
 Enabling this stops these messages from being scanned
 (in practice clamav\-milter will discard
 these messages so the message doesn't go further down the milter call chain).
+Only enable this if your site has many addresses aliased to /dev/null.
 .IP
 To enable this mode clamav-milter must have certain sendmail rights:
 it needs to run as a TrustedUser as defined by \fIsendmail\fR
@@ -308,7 +309,10 @@ it needs to run as a TrustedUser as defined by \fIsendmail\fR
 by the use of the User directive in clamd.conf,
 the clamav user must be able read the mail queue (often /var/spool/mqueue),
 and AllowSupplementaryGroups must be enabled in clamd.conf.
-Only enable this if your site has many addresses aliased to /dev/null.
+Some operating systems set \fI/var/spool/mqueue\fR to be mode 700 forcing you to
+run clamav-milter as root for black-hole-mode.
+This is always unadvisable, it is better to have \fI/var/spool/mqueue\fR as
+mode 750.
 .SH "BUGS"
 There is no support for IPv6.
 .SH "EXAMPLES"

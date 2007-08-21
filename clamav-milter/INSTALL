@@ -271,8 +271,7 @@ need to restart sendmail after rebuilding sendmail.cf and starting clamd and
 clamav-milter.
 
 As with all software it is wise to ensure that clamav-milter has the least
-privileges it needs to run. So don't run it as root and don't store the sockets
-in a directory that can be written by everyone. For example ensure that /var/run
+privileges it needs to run. So don't run it as root and don't store the sockets in a directory that can be written by everyone. For example ensure that /var/run
 is owned and writeable only by root and add entries for 'User' and
 'FixStaleSocket' in clamd.conf.
 
@@ -294,6 +293,9 @@ If, under heavy strain on Linux, you see the message
 appearing in a log file, you will need to increase the number of threads on
 your system (/proc/sys/kernel/threads-max), or decrease the value of
 --max-children.
+
+Clamav-milter performs DNS look ups, if you wish to tweak its timeouts
+see resolv.conf(5).
 
 2.7 Postfix
 
@@ -378,7 +380,8 @@ You will have to do a lot of fiddling if you want notifications to work,
 since clamav-milter calls sendmail to handle the notifications and sendmail
 will run of out the same jail. I've not disabled the notifications, but I
 may in the future - for the moment handling notifications in the jail is an
-excercise for the reader.
+excercise for the reader. I've put in a symbolic link to sendmail, but I
+suspect it should be a real copy.
 
 	mkdir /var/run/clamav-root
 	chown clamav:clamav /var/run/clamav-root

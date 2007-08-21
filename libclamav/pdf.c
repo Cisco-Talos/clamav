@@ -209,6 +209,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	xreflength = (size_t)(trailerstart - xrefstart);
 	bytesleft -= xreflength;
 	 */
+	*ctx->virname = NULL;
 
 	/*
 	 * The body section consists of a sequence of indirect objects
@@ -490,8 +491,15 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 				if(is_flatedecode) {
 					const int zstat = try_flatedecode((unsigned char *)tmpbuf, real_streamlen, real_streamlen, fout, ctx);
 
-					if(zstat != Z_OK)
-						rc = CL_EZIP;
+					switch(zstat) {
+						case Z_DATA_ERROR:
+							rc = *ctx->virname ? CL_VIRUS : CL_EZIP;
+							break;
+						case Z_OK:
+							break;
+						default:
+							rc = CL_EZIP;
+					}
 				} else
 					cli_writen(fout, (const char *)streamstart, real_streamlen);
 			}
@@ -499,8 +507,15 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		} else if(is_flatedecode) {
 			const int zstat = try_flatedecode((unsigned char *)streamstart, real_streamlen, calculated_streamlen, fout, ctx);
 
-			if(zstat != Z_OK)
-				rc = CL_EZIP;
+			switch(zstat) {
+				case Z_DATA_ERROR:
+					rc = *ctx->virname ? CL_VIRUS : CL_EZIP;
+					break;
+				case Z_OK:
+					break;
+				default:
+					rc = CL_EZIP;
+			}
 		} else {
 			cli_dbgmsg("cli_pdf: writing %lu bytes from the stream\n",
 				(unsigned long)real_streamlen);
@@ -624,21 +639,14 @@ flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 
 					nbytes += cli_writen(fout, output, sizeof(output));
 
-					/*
-					 * BLOCKMAX is on if ArchiveBlockMax
-					 *	is set in clamd.conf
-					 *
-					 * Bug 608 Michael Brennen
-					 *	<michael@fishnet.us>
-					 */
 					if(ctx->limits &&
 					   ctx->limits->maxfilesize &&
-					   BLOCKMAX &&
 					   (nbytes > (off_t) ctx->limits->maxfilesize)) {
 						cli_dbgmsg("cli_pdf: flatedecode size exceeded (%lu)\n",
 							(unsigned long)nbytes);
 						inflateEnd(&stream);
-						*ctx->virname = "PDF.ExceededFileSize";
+						if(BLOCKMAX)
+							*ctx->virname = "PDF.ExceededFileSize";
 						return Z_DATA_ERROR;
 					}
 					stream.next_out = output;
@@ -672,11 +680,11 @@ flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 
 	if(ctx->limits &&
 	   ctx->limits->maxratio &&
-	   BLOCKMAX &&
 	   ((stream.total_out / stream.total_in) > ctx->limits->maxratio)) {
 		cli_dbgmsg("cli_pdf: flatedecode Max ratio reached\n");
 		inflateEnd(&stream);
-		*ctx->virname = "Oversized.PDF";
+		if(BLOCKMAX)
+			*ctx->virname = "Oversized.PDF";
 		return Z_DATA_ERROR;
 	}
 

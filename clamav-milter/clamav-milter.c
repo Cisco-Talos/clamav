@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-190807"
+#define	CM_VERSION	"devel-20080820"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1185,6 +1185,12 @@ main(int argc, char **argv)
 					cpt->strarg, (int)user->pw_uid,
 					(int)user->pw_gid);
 
+			/*
+			 * Note, some O/Ss (e.g. OpenBSD/Fedora Linux) FORCE
+			 * you to run as root in black-hole-mode because
+			 * /var/spool/mqueue is mode 700 owned by root!
+			 * Flames to them, not to me, please.
+			 */
 			if(black_hole_mode && (user->pw_uid != 0)) {
 				int are_trusted;
 				FILE *sendmail;
@@ -1231,8 +1237,8 @@ main(int argc, char **argv)
 					}
 				}
 				if(!are_trusted) {
-					fprintf(stderr, _("%s: You cannot use black hole mode unless you are a TrustedUser\n"),
-						argv[0]);
+					fprintf(stderr, _("%s: You cannot use black hole mode unless %s is a TrustedUser\n"),
+						argv[0], cpt->strarg);
 					return EX_CONFIG;
 				}
 			}
@@ -6413,39 +6419,87 @@ black_hole(const struct privdata *privdata)
 	must_scan = (*to) ? 0 : 1;
 
 	for(; *to; to++) {
+		pid_t pid, w;
+		int pv[2], status;
 		FILE *sendmail;
-		char cmd[128];
+		char buf[BUFSIZ];
 
-		snprintf(cmd, sizeof(cmd) - 1, "%s -bv \"%s\"</dev/null 2>&1",
-			SENDMAIL_BIN, *to);
+		cli_dbgmsg("Calling \"%s -bv %s\"\n", SENDMAIL_BIN, *to);
 
-		cli_dbgmsg("Calling %s\n", cmd);
-		sendmail = popen(cmd, "r");
+		if(pipe(pv) < 0) {
+			perror("pipe");
+			logg(_("!Can't create pipe\n"));
+			must_scan = 1;
+			break;
+		}
+		pid = fork();
+		if(pid == 0) {
+			close(1);
+			close(pv[0]);
+			dup2(pv[1], 1);
+			close(pv[1]);
 
-		if(sendmail) {
-			char buf[BUFSIZ];
+			/*
+			 * Avoid calling popen() since *to isn't trusted
+			 */
+			execl(SENDMAIL_BIN, "sendmail", "-bv", *to, NULL);
+			perror(SENDMAIL_BIN);
+			logg("Can't execl %s\n", SENDMAIL_BIN);
+			_exit(errno ? errno : 1);
+		}
+		if(pid == -1) {
+			perror("fork");
+			logg(_("!Can't fork\n"));
+			close(pv[0]);
+			close(pv[1]);
+			must_scan = 1;
+			break;
+		}
+		close(pv[1]);
+		sendmail = fdopen(pv[0], "r");
 
-			while(fgets(buf, sizeof(buf), sendmail) != NULL) {
-				if(cli_chomp(buf) == 0)
-					continue;
+		if(sendmail == NULL) {
+			logg("fdopen failed\n");
+			close(pv[0]);
+			must_scan = 1;
+			break;
+		}
 
-				cli_dbgmsg("sendmail output: %s\n", buf);
+		while(fgets(buf, sizeof(buf), sendmail) != NULL) {
+			if(cli_chomp(buf) == 0)
+				continue;
 
-				if(strstr(buf, "... deliverable: mailer ")) {
-					const char *p = strstr(buf, ", user ");
+			cli_dbgmsg("sendmail output: %s\n", buf);
 
-					if(strcmp(&p[7], "/dev/null") != 0) {
-						must_scan = 1;
-						break;
-					}
+			if(strstr(buf, "... deliverable: mailer ")) {
+				const char *p = strstr(buf, ", user ");
+
+				if(strcmp(&p[7], "/dev/null") != 0) {
+					must_scan = 1;
+					break;
 				}
 			}
-			if(pclose(sendmail) != 0)
+		}
+		fclose(sendmail);
+
+		status = -1;
+		do
+			w = wait(&status);
+		while((w != pid) && (w != -1));
+
+		if(w == -1)
+			status = -1;
+		else
+			status = WEXITSTATUS(status);
+
+		switch(status) {
+			case EX_NOUSER:
+			case EX_OK:
+				break;
+			default:
+				logg(_("^Can't execute '%s' to expand '%s' (error %d)\n"),
+					SENDMAIL_BIN, *to, WEXITSTATUS(status));
 				must_scan = 1;
-		} else {
-			logg(_("^Can't execute '%s' to expand '%s'"),
-				cmd, *to);
-			must_scan = 1;
 		}
 		if(must_scan)
 			break;
