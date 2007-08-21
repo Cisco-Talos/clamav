@@ -485,7 +485,7 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 		cli_dbgmsg("OLE2: Recursion limit reached (max: %d)\n", limits->maxreclevel);
 		return;
 	}
-	
+
 	index = prop_index / 4;
 	for (i=0 ; i < index ; i++) {
 		current_block = ole2_get_next_block_number(fd, hdr, current_block);
@@ -836,8 +836,6 @@ int cli_ole2_extract(int fd, const char *dirname, const struct cl_limits *limits
 	hdr.xbat_count = ole2_endian_convert_32(hdr.xbat_count);
 
 	hdr.sbat_root_start = -1;
-	/* 8 SBAT blocks per file block */
-	hdr.max_block_no = ((statbuf.st_size / hdr.log2_big_block_size) + 1) * 8;
 
 	hdr.bitset = cli_bitset_init();
 	if (!hdr.bitset) {
@@ -867,6 +865,9 @@ int cli_ole2_extract(int fd, const char *dirname, const struct cl_limits *limits
 		cli_errmsg("WARNING: not scanned; untested sbat cutoff - please report\n");
 		goto abort;
 	}
+
+	/* 8 SBAT blocks per file block */
+	hdr.max_block_no = ((statbuf.st_size / hdr.log2_big_block_size) + 1) * 8;
 	
 	print_ole2_header(&hdr);
 	cli_dbgmsg("Max block number: %lu\n", hdr.max_block_no);
