@@ -1,5 +1,5 @@
-*** /home/njh/src/clamav-devel/trunk/./clamscan/clamscan.c	2007-05-01 16:32:06.000000000 +0100
---- ./clamscan/clamscan.c	2007-05-01 16:33:30.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./clamscan/clamscan.c	2007-08-13 22:24:06.000000000 +0100
+--- ./clamscan/clamscan.c	2007-08-13 22:25:16.000000000 +0100
 ***************
 *** 244,255 ****
   
@@ -33,8 +33,8 @@
       return ret;
   }
 ***************
-*** 315,320 ****
---- 320,326 ----
+*** 316,321 ****
+--- 321,327 ----
       mprintf("    --block-encrypted                    Block encrypted archives\n");
       mprintf("    --block-max                          Block archives that exceed limits\n");
       mprintf("    --mail-follow-urls                   Download and scan URLs\n");
@@ -42,7 +42,7 @@
       mprintf("\n");
       mprintf("    --max-space=#n                       Only extract first #n kilobytes from\n");
       mprintf("                                         archived files\n");
-*** /home/njh/src/clamav-devel/trunk/./clamscan/manager.h	2007-03-31 23:10:05.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./clamscan/manager.h	2007-06-14 11:04:12.000000000 +0100
 --- ./clamscan/manager.h	2007-04-21 08:44:22.000000000 +0100
 ***************
 *** 34,37 ****
@@ -56,8 +56,8 @@
 + #endif
 + 
   #endif
-*** /home/njh/src/clamav-devel/trunk/./freshclam/manager.c	2007-03-31 23:10:05.000000000 +0100
---- ./freshclam/manager.c	2007-04-21 08:45:22.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./freshclam/manager.c	2007-08-20 19:24:20.000000000 +0100
+--- ./freshclam/manager.c	2007-08-20 19:25:06.000000000 +0100
 ***************
 *** 210,216 ****
   		break;
@@ -109,7 +109,7 @@
       return -2;
   }
   
-*** /home/njh/src/clamav-devel/trunk/./clamd/scanner.c	2007-03-31 23:10:05.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./clamd/scanner.c	2007-06-14 11:03:53.000000000 +0100
 --- ./clamd/scanner.c	2007-04-21 08:46:12.000000000 +0100
 ***************
 *** 475,487 ****
@@ -194,8 +194,8 @@
   	close(acceptd);
   	mdprintf(odesc, "tempfile() failed. ERROR\n");
   	logg("!ScanStream %u: Can't create temporary file.\n", port);
-*** /home/njh/src/clamav-devel/trunk/./clamd/clamd.c	2007-05-01 16:32:06.000000000 +0100
---- ./clamd/clamd.c	2007-05-01 16:35:28.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./clamd/clamd.c	2007-08-13 22:24:06.000000000 +0100
+--- ./clamd/clamd.c	2007-08-13 22:26:16.000000000 +0100
 ***************
 *** 35,41 ****
   #include <sys/stat.h>
@@ -252,7 +252,7 @@
   
       if(logg_size)
   	logg("Log file size limited to %d bytes.\n", logg_size);
-*** /home/njh/src/clamav-devel/trunk/./clamd/server-th.c	2007-05-28 18:22:20.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./clamd/server-th.c	2007-06-14 11:03:51.000000000 +0100
 --- ./clamd/server-th.c	2007-05-01 16:34:28.000000000 +0100
 ***************
 *** 586,592 ****
@@ -317,7 +317,7 @@
   		break;
   	    }
   	    pthread_mutex_lock(&reload_mutex);
-*** /home/njh/src/clamav-devel/trunk/./clamd/tcpserver.c	2007-03-31 23:10:05.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./clamd/tcpserver.c	2007-06-14 11:03:52.000000000 +0100
 --- ./clamd/tcpserver.c	2007-04-21 08:49:08.000000000 +0100
 ***************
 *** 51,56 ****
@@ -366,7 +366,7 @@
   	return -1;
       }
   
-*** /home/njh/src/clamav-devel/trunk/./clamdscan/client.c	2007-03-31 23:10:05.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./clamdscan/client.c	2007-06-14 11:04:10.000000000 +0100
 --- ./clamdscan/client.c	2007-04-21 14:00:56.000000000 +0100
 ***************
 *** 16,36 ****
@@ -807,7 +807,7 @@
   
   	if(moveflag && unlink(filename)) {
   	    logg("^cannot unlink '%s': %s\n", filename, strerror(errno));
-*** /home/njh/src/clamav-devel/trunk/./clamdscan/clamdscan.c	2007-03-31 23:10:05.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./clamdscan/clamdscan.c	2007-06-14 11:04:11.000000000 +0100
 --- ./clamdscan/clamdscan.c	2007-04-21 13:59:56.000000000 +0100
 ***************
 *** 15,30 ****
