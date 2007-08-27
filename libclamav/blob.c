@@ -216,7 +216,7 @@ blobAddData(blob *b, const unsigned char *data, size_t len)
 
 		b->size = len * 4;
 		b->data = cli_malloc(b->size);
-	} else if(b->size < b->len + len) {
+	} else if(b->size < b->len + (off_t)len) {
 		unsigned char *p = cli_realloc(b->data, b->size + (len * 4));
 
 		if(p == NULL)
@@ -379,10 +379,13 @@ fileblobDestroy(fileblob *fb)
 
 	if(fb->b.name && fb->fp) {
 		fclose(fb->fp);
-		cli_dbgmsg("fileblobDestroy: %s\n", fb->b.name);
-		if(!fb->isNotEmpty) {
-			cli_dbgmsg("fileblobDestroy: not saving empty file\n");
-			unlink(fb->b.name);
+		if(fb->fullname) {
+			cli_dbgmsg("fileblobDestroy: %s\n", fb->fullname);
+			if(!fb->isNotEmpty) {
+				cli_dbgmsg("fileblobDestroy: not saving empty file\n");
+				if(unlink(fb->fullname) < 0)
+					cli_warnmsg("fileblobDestroy: Can't delete empty files %s\n", fb->fullname);
+			}
 		}
 		free(fb->b.name);
 
@@ -396,6 +399,8 @@ fileblobDestroy(fileblob *fb)
 			cli_errmsg("fileblobDestroy: file not saved (%lu bytes): report to http://bugs.clamav.net\n",
 				(unsigned long)fb->b.len);
 	}
+	if(fb->fullname)
+		free(fb->fullname);
 #ifdef	CL_DEBUG
 	fb->b.magic = INVALIDCLASS;
 #endif
@@ -461,6 +466,8 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 		if(name == NULL)
 			return;
 		fd = open(name, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
+		if(fd >= 0)
+			strncpy(fullname, name, sizeof(fullname) - 1);
 		free(name);
 	} else
 		fd = open(fullname, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
@@ -494,7 +501,15 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 			free(fb->b.data);
 			fb->b.data = NULL;
 			fb->b.len = fb->b.size = 0;
+			fb->isNotEmpty = 1;
 		}
+
+	/*
+	 * If this strdup fails, then if the file is empty it won't be removed
+	 * until later. Since this is only a trivial issue, there is no need
+	 * to error if it fails to allocate
+	 */
+	fb->fullname = cli_strdup(fullname);
 }
 
 int

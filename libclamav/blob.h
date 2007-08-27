@@ -46,11 +46,15 @@ int	blobcmp(const blob *b1, const blob *b2);
 int	blobGrow(blob *b, size_t len);
 
 /*
- * Like a blob, but associated with a file
+ * Like a blob, but associated with a file stored in the temporary directory
  */
 typedef	struct fileblob {
 	FILE	*fp;
-	blob	b;
+	blob	b;	/*
+			 * b.name is the name of the attachment as stored in the
+			 * email, not the full path name of the temporary file
+			 */
+	char	*fullname;	/* full pathname of the file */
 	unsigned	int	isNotEmpty : 1;
 	unsigned	int	isInfected : 1;
 	unsigned	long	bytes_scanned;

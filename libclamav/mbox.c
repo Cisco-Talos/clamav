@@ -4084,7 +4084,8 @@ getURL(struct arg *arg)
 	static int tcp;
 	int doingsite, firstpacket;
 	char *ptr;
-	int flags, via_proxy;
+	long flags;
+	int via_proxy;
 	const char *proxy;
 	char buf[BUFSIZ + 1], site[BUFSIZ], fout[NAME_MAX + 1];
 
@@ -4140,7 +4141,8 @@ getURL(struct arg *arg)
 
 	if(via_proxy) {
 		if(strncasecmp(proxy, "http://", 7) != 0) {
-			cli_warnmsg("Unsupported proxy protocol\n");
+			cli_warnmsg("Unsupported proxy protocol (proxy = %s)\n",
+				proxy);
 			fclose(fp);
 			return NULL;
 		}
@@ -4224,8 +4226,8 @@ getURL(struct arg *arg)
 		fclose(fp);
 		return NULL;
 	}
-
 	restore_fcntl(sd, flags);
+
 	/*
 	 * TODO: consider HTTP/1.1
 	 */
@@ -4428,19 +4430,18 @@ static long
 nonblock_fcntl(int sock)
 {
 #ifdef	F_GETFL
-	long fcntl_flags;	/* Save fcntl() flags */
+	int fcntl_flags = fcntl(sock, F_GETFL, 0);	/* Save fcntl() flags */
 
-	fcntl_flags = fcntl(sock, F_GETFL, 0);
 	if(fcntl_flags < 0)
 		cli_warnmsg("nonblock_fcntl: saving: fcntl(%d, F_GETFL): errno=%d: %s\n",
 			sock, errno, strerror(errno));
-	else if(fcntl(sock, F_SETFL, fcntl_flags | O_NONBLOCK))
+	else if(fcntl(sock, F_SETFL, (long)fcntl_flags | O_NONBLOCK) < 0)
 		cli_warnmsg("nonblock_fcntl: fcntl(%d, F_SETFL, O_NONBLOCK): errno=%d: %s\n",
 			sock, errno, strerror(errno));
 
-	return fcntl_flags;
+	return (long)fcntl_flags;
 #else
-	return 0L;
+	return -1L;
 #endif
 }
 
@@ -4448,7 +4449,7 @@ static void
 restore_fcntl(int sock, long fcntl_flags)
 {
 #ifdef	F_SETFL
-	if(fcntl_flags != -1)
+	if(fcntl_flags != -1L)
 		if(fcntl(sock, F_SETFL, fcntl_flags)) {
 			cli_warnmsg("restore_fcntl: restoring: fcntl(%d, F_SETFL): errno=%d: %s\n",
 				sock, errno, strerror(errno));
@@ -4459,20 +4460,15 @@ restore_fcntl(int sock, long fcntl_flags)
 static int
 nonblock_connect(int sock, const struct sockaddr *addr, socklen_t addrlen, int secs)
 {
-	/* Max. of unexpected select() failures */
-	int select_failures = NONBLOCK_SELECT_MAX_FAILURES;
-	/* Max. of useless loops */
-	int bogus_loops = NONBLOCK_MAX_BOGUS_LOOPS;
+	int select_failures;	/* Max. of unexpected select() failures */
+	int bogus_loops;	/* Max. of useless loops */
 	struct timeval timeout;	/* When we should time out */
 	int numfd;		/* Highest fdset fd plus 1 */
-
-	/* Calculate into 'timeout' when we should time out */
-	gettimeofday(&timeout, 0);
-	timeout.tv_sec += secs;
 
 	/* Launch (possibly) non-blocking connect() request */
 	if(connect(sock, addr, addrlen)) {
 		int e = errno;
+
 		cli_dbgmsg("nonblock_connect: connect(): fd=%d errno=%d: %s\n",
 			sock, e, strerror(e));
 		switch (e) {
@@ -4489,7 +4485,13 @@ nonblock_connect(int sock, const struct sockaddr *addr, socklen_t addrlen, int s
 	} else
 		return connect_error(sock);
 
+	/* Calculate into 'timeout' when we should time out */
+	gettimeofday(&timeout, 0);
+	timeout.tv_sec += secs;
+
 	numfd = sock + 1; /* Highest fdset fd plus 1 */
+	select_failures = NONBLOCK_SELECT_MAX_FAILURES;
+	bogus_loops = NONBLOCK_MAX_BOGUS_LOOPS;
 
 	for (;;) {
 		fd_set fds;
@@ -4513,7 +4515,7 @@ nonblock_connect(int sock, const struct sockaddr *addr, socklen_t addrlen, int s
 		FD_SET(sock, &fds);
 
 		n = select(numfd, 0, &fds, 0, &waittime);
-		if (n < 0) {
+		if(n < 0) {
 			cli_warnmsg("nonblock_connect: select() failure %d: errno=%d: %s\n",
 				select_failures, errno, strerror(errno));
 			if (--select_failures >= 0)
@@ -4527,7 +4529,7 @@ nonblock_connect(int sock, const struct sockaddr *addr, socklen_t addrlen, int s
 			return connect_error(sock);
 
 		/* Select returned, but there is no work to do... */
-		if (--bogus_loops < 0) {
+		if(--bogus_loops < 0) {
 			cli_warnmsg("nonblock_connect: giving up due to excessive bogus loops\n");
 			break; /* failed */
 		}
