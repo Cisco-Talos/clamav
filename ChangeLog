@@ -1,3 +1,12 @@
+Tue Aug 28 16:08:13 BST 2007 (njh)
+----------------------------------
+  * libclamav/mbox.c:	MailFollowURLS: improved debugging
+
+Mon Aug 27 23:10:26 BST 2007 (njh)
+----------------------------------
+  * libclamav/blob.[ch]:	Bug 637
+  * libclamav/mbox.c:		Minor code tidy
+
 Tue Aug 21 21:43:56 CEST 2007 (tk)
 ----------------------------------
   * libclamav/others.c: bump f-level

@@ -249,11 +249,21 @@ struct arg {
 	char *filename;
 	int	depth;
 };
+#define	URL_TIMEOUT	5	/* Allow 5 seconds to connect */
 #ifdef	CL_THREAD_SAFE
 static	void	*getURL(void *a);
 #else
 static	void	*getURL(struct arg *arg);
 #endif
+static	long	nonblock_fcntl(int sock);
+static	void	restore_fcntl(int sock, long fcntl_flags);
+static	int	nonblock_connect(const char *url, int sock, const struct sockaddr *addr, socklen_t addrlen, int secs);
+static	int	connect_error(const char *url, int sock);
+static	int	my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
+
+#define NONBLOCK_SELECT_MAX_FAILURES	3
+#define NONBLOCK_MAX_BOGUS_LOOPS	10
+
 #endif
 
 /* Maximum line length according to RFC821 */
@@ -3554,7 +3564,7 @@ rfc2047(const char *in)
 		if(*in == '\0')
 			break;
 		encoding = *++in;
-		encoding = tolower(encoding);
+		encoding = (char)tolower(encoding);
 
 		if((encoding != 'q') && (encoding != 'b')) {
 			cli_warnmsg("Unsupported RFC2047 encoding type '%c' - if you believe this file contains a virus, submit it to www.clamav.net\n", encoding);
@@ -4022,34 +4032,6 @@ do_checkURLs(const char *dir, tag_arguments_t *hrefs)
  * Includes some of the freshclam hacks by Everton da Silva Marques
  * everton.marques@gmail.com>
  */
-#ifndef timercmp
-# define timercmp(a, b, cmp)	  \
-  (((a)->tv_sec == (b)->tv_sec) ?	\
-   ((a)->tv_usec cmp (b)->tv_usec) :  \
-   ((a)->tv_sec cmp (b)->tv_sec))
-#endif /* timercmp */
-
-#ifndef timersub
-# define timersub(a, b, result)	 \
-  do {				\
-	(result)->tv_sec = (a)->tv_sec - (b)->tv_sec;	\
-	(result)->tv_usec = (a)->tv_usec - (b)->tv_usec;  \
-	if ((result)->tv_usec < 0) {			\
-		--(result)->tv_sec;			 \
-		(result)->tv_usec += 1000000;		 \
-	}						 \
-  } while (0)
-#endif /* timersub */
-
-static	long	nonblock_fcntl(int sock);
-static	void	restore_fcntl(int sock, long fcntl_flags);
-static	int	nonblock_connect(int sock, const struct sockaddr *addr, socklen_t addrlen, int secs);
-static	int	connect_error(int sock);
-static	int	my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
-
-#define NONBLOCK_SELECT_MAX_FAILURES	3
-#define NONBLOCK_MAX_BOGUS_LOOPS	10
-
 /*
  * Simple implementation of a subset of RFC1945 (HTTP/1.0)
  * TODO: HTTP/1.1 (RFC2068)
@@ -4221,7 +4203,7 @@ getURL(struct arg *arg)
 		return NULL;
 	}
 	flags = nonblock_fcntl(sd);
-	if(nonblock_connect(sd, (struct sockaddr *)&server, sizeof(struct sockaddr_in), 5) < 0) {
+	if(nonblock_connect(url, sd, (struct sockaddr *)&server, sizeof(struct sockaddr_in), URL_TIMEOUT) < 0) {
 		closesocket(sd);
 		fclose(fp);
 		return NULL;
@@ -4458,57 +4440,60 @@ restore_fcntl(int sock, long fcntl_flags)
 }
 
 static int
-nonblock_connect(int sock, const struct sockaddr *addr, socklen_t addrlen, int secs)
+nonblock_connect(const char *url, int sock, const struct sockaddr *addr, socklen_t addrlen, int secs)
 {
 	int select_failures;	/* Max. of unexpected select() failures */
 	int bogus_loops;	/* Max. of useless loops */
 	struct timeval timeout;	/* When we should time out */
 	int numfd;		/* Highest fdset fd plus 1 */
 
-	/* Launch (possibly) non-blocking connect() request */
-	if(connect(sock, addr, addrlen)) {
-		int e = errno;
+	/* Calculate into 'timeout' when we should time out */
+	gettimeofday(&timeout, 0);
 
-		cli_dbgmsg("nonblock_connect: connect(): fd=%d errno=%d: %s\n",
-			sock, e, strerror(e));
-		switch (e) {
+	if(connect(sock, addr, addrlen))
+		switch(errno) {
 			case EALREADY:
 			case EINPROGRESS:
+				cli_dbgmsg("%s: connect: %s\n", url, strerror(errno));
 				break; /* wait for connection */
 			case EISCONN:
 				return 0; /* connected */
 			default:
-				cli_warnmsg("nonblock_connect: connect(): fd=%d errno=%d: %s\n",
-					sock, e, strerror(e));
+				cli_warnmsg("%s: connect: %s\n", url, strerror(errno));
 				return -1; /* failed */
 		}
-	} else
-		return connect_error(sock);
-
-	/* Calculate into 'timeout' when we should time out */
-	gettimeofday(&timeout, 0);
-	timeout.tv_sec += secs;
+	else
+		return connect_error(url, sock);
 
 	numfd = sock + 1; /* Highest fdset fd plus 1 */
 	select_failures = NONBLOCK_SELECT_MAX_FAILURES;
 	bogus_loops = NONBLOCK_MAX_BOGUS_LOOPS;
+	timeout.tv_sec += secs;
 
 	for (;;) {
+		int n, t;
 		fd_set fds;
-		struct timeval now;
-		struct timeval waittime;
-		int n;
+		struct timeval now, waittime;
 
 		/* Force timeout if we ran out of time */
 		gettimeofday(&now, 0);
-		if (timercmp(&now, &timeout, >)) {
-			cli_warnmsg("connect timing out (%d secs)\n",
-				secs);
-			break; /* failed */
+		t = (now.tv_sec == timeout.tv_sec) ?
+			(now.tv_usec > timeout.tv_usec) :
+			(now.tv_sec > timeout.tv_sec);
+
+		if(t) {
+			cli_warnmsg("%s: connect timeout (%d secs)\n",
+				url, secs);
+			break;
 		}
 
-		/* Calculate into 'waittime' how long to wait */
-		timersub(&timeout, &now, &waittime); /* wait = timeout - now */
+		/* Calculate how long to wait */
+		waittime.tv_sec = timeout.tv_sec - now.tv_sec;
+		waittime.tv_usec = timeout.tv_usec - now.tv_usec;
+		if(waittime.tv_usec < 0) {
+			waittime.tv_sec--;
+			waittime.tv_usec += 1000000;
+		}
 
 		/* Init fds with 'sock' as the only fd */
 		FD_ZERO(&fds);
@@ -4516,21 +4501,22 @@ nonblock_connect(int sock, const struct sockaddr *addr, socklen_t addrlen, int s
 
 		n = select(numfd, 0, &fds, 0, &waittime);
 		if(n < 0) {
-			cli_warnmsg("nonblock_connect: select() failure %d: errno=%d: %s\n",
-				select_failures, errno, strerror(errno));
-			if (--select_failures >= 0)
+			cli_warnmsg("%s: select attempt %d %s\n",
+				url, select_failures, strerror(errno));
+			if(--select_failures >= 0)
 				continue; /* keep waiting */
 			break; /* failed */
 		}
 
-		cli_dbgmsg("nonblock_connect: select = %d\n", n);
+		cli_dbgmsg("%s: select = %d\n", url, n);
 
 		if(n)
-			return connect_error(sock);
+			return connect_error(url, sock);
 
-		/* Select returned, but there is no work to do... */
+		/* timeout */
 		if(--bogus_loops < 0) {
-			cli_warnmsg("nonblock_connect: giving up due to excessive bogus loops\n");
+			cli_warnmsg("%s: giving up due to excessive bogus loops\n",
+				url);
 			break; /* failed */
 		}
 
@@ -4540,23 +4526,21 @@ nonblock_connect(int sock, const struct sockaddr *addr, socklen_t addrlen, int s
 }
 
 static int
-connect_error(int sock)
+connect_error(const char *url, int sock)
 {
 #ifdef	SO_ERROR
 	int optval;
-	socklen_t optlen;
+	socklen_t optlen = sizeof(optval);
 
-	optlen = sizeof(optval);
 	getsockopt(sock, SOL_SOCKET, SO_ERROR, &optval, &optlen);
 
-	if(optval)
-		cli_warnmsg("connect_error: getsockopt(SO_ERROR): fd=%d error=%d: %s\n",
-			sock, optval, strerror(optval));
-
-	return optval ? -1 : 0;
-#else
-	return 0;
+	if(optval) {
+		cli_warnmsg("%s: %s\n", url, strerror(optval));
+		return -1;
+	}
 #endif
+
+	return 0;
 }
 
 #endif
