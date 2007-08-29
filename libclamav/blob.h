@@ -62,12 +62,15 @@ typedef	struct fileblob {
 } fileblob;
 
 fileblob	*fileblobCreate(void);
+int	fileblobScanAndDestroy(fileblob *fb);
+void	fileblobDestructiveDestroy(fileblob *fb);
 void	fileblobDestroy(fileblob *fb);
 void	fileblobSetFilename(fileblob *fb, const char *dir, const char *filename);
 const	char	*fileblobGetFilename(const fileblob *fb);
 void	fileblobSetCTX(fileblob *fb, cli_ctx *ctx);
 int	fileblobAddData(fileblob *fb, const unsigned char *data, size_t len);
-int	fileblobContainsVirus(const fileblob *fb);
+int	fileblobScan(const fileblob *fb);
+int	fileblobInfected(const fileblob *fb);
 void	sanitiseName(char *name);
 
 #endif /*_BLOB_H*/

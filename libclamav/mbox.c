@@ -257,7 +257,7 @@ static	void	*getURL(struct arg *arg);
 #endif
 static	long	nonblock_fcntl(int sock);
 static	void	restore_fcntl(int sock, long fcntl_flags);
-static	int	nonblock_connect(const char *url, int sock, const struct sockaddr *addr, socklen_t addrlen, int secs);
+static	int	nonblock_connect(const char *url, int sock, const struct sockaddr *addr);
 static	int	connect_error(const char *url, int sock);
 static	int	my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
 
@@ -2475,7 +2475,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
 			cli_dbgmsg("The message has %d parts\n", multiparts);
 
-			if(((multiparts == 0) || infected) && (aText == NULL)) {
+			if(infected || ((multiparts == 0) && (aText == NULL))) {
 				if(messages) {
 					for(i = 0; i < multiparts; i++)
 						if(messages[i])
@@ -2536,6 +2536,10 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 						assert(aMessage == messages[htmltextPart]);
 						messageDestroy(aMessage);
 						messages[htmltextPart] = NULL;
+					}
+					else if(rc == VIRUS) {
+						infected = TRUE;
+						break;
 					}
 				}
 
@@ -2751,7 +2755,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
 				if(fb) {
 					cli_dbgmsg("Saving main message as attachment\n");
-					fileblobDestroy(fb);
+					if(fileblobScanAndDestroy(fb) == CL_VIRUS)
+						rc = VIRUS;
 					if(mainMessage != messageIn) {
 						messageDestroy(mainMessage);
 						mainMessage = NULL;
@@ -2783,7 +2788,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 		/* Look for a bounce in the text (non mime encoded) portion */
 		const text *t;
 
-		for(t = aText; t; t = t->t_next) {
+		for(t = aText; t && (rc != VIRUS); t = t->t_next) {
 			const line_t *l = t->t_line;
 			const text *lookahead, *topofbounce;
 			const char *s;
@@ -2896,9 +2901,11 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 						break;
 					}
 				}
-			} while(!fileblobContainsVirus(fb));
+			} while(!fileblobInfected(fb));
 
-			fileblobDestroy(fb);
+			if(fileblobScanAndDestroy(fb) == CL_VIRUS)
+				rc = VIRUS;
+
 			if(topofbounce)
 				t = topofbounce;
 			/*
@@ -4197,13 +4204,13 @@ getURL(struct arg *arg)
 
 		memcpy((char *)&ip, h.h_addr, sizeof(ip));
 	}
-	server.sin_addr.s_addr = ip;
 	if((sd = socket(AF_INET, SOCK_STREAM, tcp)) < 0) {
 		fclose(fp);
 		return NULL;
 	}
+	server.sin_addr.s_addr = ip;
 	flags = nonblock_fcntl(sd);
-	if(nonblock_connect(url, sd, (struct sockaddr *)&server, sizeof(struct sockaddr_in), URL_TIMEOUT) < 0) {
+	if(nonblock_connect(url, sd, (struct sockaddr *)&server) < 0) {
 		closesocket(sd);
 		fclose(fp);
 		return NULL;
@@ -4440,7 +4447,7 @@ restore_fcntl(int sock, long fcntl_flags)
 }
 
 static int
-nonblock_connect(const char *url, int sock, const struct sockaddr *addr, socklen_t addrlen, int secs)
+nonblock_connect(const char *url, int sock, const struct sockaddr *addr)
 {
 	int select_failures;	/* Max. of unexpected select() failures */
 	int bogus_loops;	/* Max. of useless loops */
@@ -4450,7 +4457,7 @@ nonblock_connect(const char *url, int sock, const struct sockaddr *addr, socklen
 	/* Calculate into 'timeout' when we should time out */
 	gettimeofday(&timeout, 0);
 
-	if(connect(sock, addr, addrlen))
+	if(connect(sock, addr, sizeof(struct sockaddr_in)) != 0)
 		switch(errno) {
 			case EALREADY:
 			case EINPROGRESS:
@@ -4468,7 +4475,7 @@ nonblock_connect(const char *url, int sock, const struct sockaddr *addr, socklen
 	numfd = sock + 1; /* Highest fdset fd plus 1 */
 	select_failures = NONBLOCK_SELECT_MAX_FAILURES;
 	bogus_loops = NONBLOCK_MAX_BOGUS_LOOPS;
-	timeout.tv_sec += secs;
+	timeout.tv_sec += URL_TIMEOUT;
 
 	for (;;) {
 		int n, t;
@@ -4483,7 +4490,7 @@ nonblock_connect(const char *url, int sock, const struct sockaddr *addr, socklen
 
 		if(t) {
 			cli_warnmsg("%s: connect timeout (%d secs)\n",
-				url, secs);
+				url, URL_TIMEOUT);
 			break;
 		}
 
@@ -4716,12 +4723,11 @@ exportBinhexMessage(const char *dir, message *m)
 	fb = messageToFileblob(m, dir, 0);
 
 	if(fb) {
-		if(fileblobContainsVirus(fb))
-			infected = TRUE;
-
 		cli_dbgmsg("Binhex file decoded to %s\n",
 			fileblobGetFilename(fb));
-		fileblobDestroy(fb);
+
+		if(fileblobScanAndDestroy(fb) == CL_VIRUS)
+			infected = TRUE;
 	} else
 		cli_errmsg("Couldn't decode binhex file to %s\n", dir);
 
@@ -5011,20 +5017,20 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 			return mainMessage;
 	}
 
-	if(addToText) {
-		cli_dbgmsg("Adding to non mime-part\n");
-		*tptr = textAdd(*tptr, messageGetBody(aMessage));
-	} else {
-		fileblob *fb = messageToFileblob(aMessage, mctx->dir, 1);
+	if(*rc != VIRUS) {
+		if(addToText) {
+			cli_dbgmsg("Adding to non mime-part\n");
+			*tptr = textAdd(*tptr, messageGetBody(aMessage));
+		} else {
+			fileblob *fb = messageToFileblob(aMessage, mctx->dir, 1);
 
-		if(fb) {
-			if(fileblobContainsVirus(fb))
-				*rc = VIRUS;
-			fileblobDestroy(fb);
+			if(fb)
+				if(fileblobScanAndDestroy(fb) == CL_VIRUS)
+					*rc = VIRUS;
 		}
+		if(messageContainsVirus(aMessage))
+			*rc = VIRUS;
 	}
-	if(messageContainsVirus(aMessage))
-		*rc = VIRUS;
 	messageDestroy(aMessage);
 	messages[i] = NULL;
 
