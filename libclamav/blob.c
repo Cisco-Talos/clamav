@@ -70,6 +70,7 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.64 2007/02/12 22:25:14 njh Exp $";
 				 * large sized files
 				 */
 
+extern	short	cli_leavetemps_flag;
 static	const	char	*blobGetFilename(const blob *b);
 
 blob *
@@ -379,6 +380,12 @@ fileblobCreate(void)
 int
 fileblobScanAndDestroy(fileblob *fb)
 {
+	if(cli_leavetemps_flag) {
+		/* Can't remove the file, the caller must scan */
+		fileblobDestroy(fb);
+		return CL_CLEAN;
+	}
+		
 	switch(fileblobScan(fb)) {
 		case CL_VIRUS:
 			fileblobDestructiveDestroy(fb);
@@ -650,7 +657,7 @@ fileblobScan(const fileblob *fb)
 	}
 	/* cli_scanfile is static :-( */
 	/*if(cli_scanfile(fb->fullname, fb->ctx) == CL_VIRUS) {
-		printf("%s is infected\n", fb->fullname);
+		cli_dbgmsg("%s is infected\n", fb->fullname);
 		return CL_VIRUS;
 	}*/
 
@@ -662,8 +669,6 @@ fileblobScan(const fileblob *fb)
 	}
 	cli_dbgmsg("%s is clean\n", fb->fullname);
 	return CL_BREAK;
-
-	/*return cli_scanfile(fb->fullname, fb->ctx);*/
 }
 
 /*

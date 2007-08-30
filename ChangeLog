@@ -1,3 +1,7 @@
+Thu Aug 30 09:05:45 BST 2007 (njh)
+----------------------------------
+  * libclamav/blob.c:	Yesterday's new code broke --leave-temps
+
 Wed Aug 29 18:27:55 BST 2007 (njh)
 ----------------------------------
   * libclamav:	mbox optimisation to reduce the lifetime of temporary files
