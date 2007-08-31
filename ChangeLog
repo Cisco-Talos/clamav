@@ -1,3 +1,7 @@
+Fri Aug 31 09:02:23 BST 2007 (njh)
+----------------------------------
+  * clamav-milter:	Bug 642
+
 Thu Aug 30 09:05:45 BST 2007 (njh)
 ----------------------------------
   * libclamav/blob.c:	Yesterday's new code broke --leave-temps

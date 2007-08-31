@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-20080820"
+#define	CM_VERSION	"devel-20080831"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -248,12 +248,14 @@ static struct cidr_net {	/* don't make this const because of -I flag */
 };
 #define IFLAG_MAX 8
 
+#ifdef	AF_INET6
 typedef struct cidr_net6 {
 	struct in6_addr	base;
 	int preflen;
 } cidr_net6;
 static	cidr_net6	localNets6[IFLAG_MAX];
 static	int	localNets6_cnt;
+#endif
 
 /*
  * Each libmilter thread has one of these
@@ -1323,11 +1325,10 @@ main(int argc, char **argv)
 	}
 
 	/*
-	 * patch from "Richard G. Roberto" <rgr@dedlegend.com>
 	 * If the --max-children flag isn't set, see if MaxThreads
-	 * is set in the config file
+	 * is set in the config file. Based on an idea by "Richard G. Roberto"
+	 * <rgr@dedlegend.com>
 	 */
-	if(max_children == 0)
 	if((max_children == 0) && ((cpt = cfgopt(copt, "MaxThreads")) != NULL))
 		max_children = cfgopt(copt, "MaxThreads")->numarg;
 
@@ -5113,7 +5114,9 @@ add_local_ip(char *address)
 	int preflen;
 	int retval;
 	struct in_addr ignoreIP;
+#ifdef	AF_INET6
 	struct in6_addr ignoreIP6;
+#endif
 
 	opt = cli_strdup(address);
 	if(opt == NULL)
@@ -5176,7 +5179,9 @@ static int
 isLocal(const char *addr)
 {
 	struct in_addr ip;
+#ifdef	AF_INET6
 	struct in6_addr ip6;
+#endif
 
 #ifdef HAVE_INET_NTOP
 	if(inet_pton(AF_INET, addr, &ip) > 0)
