@@ -70,7 +70,6 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.64 2007/02/12 22:25:14 njh Exp $";
 				 * large sized files
 				 */
 
-extern	short	cli_leavetemps_flag;
 static	const	char	*blobGetFilename(const blob *b);
 
 blob *
