@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 def strlen(a,b):
 	if len(a)<len(b):
 		return -1;

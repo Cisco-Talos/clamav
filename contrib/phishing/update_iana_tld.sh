@@ -1,3 +1,4 @@
+#!/bin/sh
 #
 #  Phishing detection automated testing & tools.
 #  Copyright (C) 2006 Torok Edvin <edwintorok@gmail.com>
@@ -17,7 +18,6 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 #
-#!/bin/sh
 IANA_TLD="http://data.iana.org/TLD/tlds-alpha-by-domain.txt"
 TMP=`tempfile`
 OUTFILE=iana_tld.h

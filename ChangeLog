@@ -1,3 +1,8 @@
+Fri Aug 31 21:08:22 CEST 2007 (tk)
+----------------------------------
+  * contrib: fix bb#644 (Contrib files have wrong shebang line)
+	     Thanks to Steve Gran <steve*lobefin.net>
+
 Fri Aug 31 21:02:46 CEST 2007 (tk)
 ----------------------------------
   * libclamav: various cleanups; fix bb#577 (move cli_* out of clamav.h)
