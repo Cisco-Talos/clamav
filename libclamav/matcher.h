@@ -53,6 +53,21 @@ struct cli_matcher {
     uint32_t ac_partsigs, ac_nodes, ac_patterns;
 };
 
+struct cli_md5_node {
+    char *virname;
+    unsigned char *md5;
+    unsigned int size;
+    unsigned short fp;
+    struct cli_md5_node *next;
+};
+
+struct cli_meta_node {
+    int csize, size, method;
+    unsigned int crc32, fileno, encrypted, maxdepth;
+    char *filename, *virname;
+    struct cli_meta_node *next;
+};
+
 #define CL_TARGET_TABLE_SIZE 7
 
 struct cli_target_info {

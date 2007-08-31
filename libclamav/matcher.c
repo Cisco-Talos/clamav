@@ -48,8 +48,6 @@
 
 static cli_file_t targettab[CL_TARGET_TABLE_SIZE] = { 0, CL_TYPE_MSEXE, CL_TYPE_MSOLE2, CL_TYPE_HTML, CL_TYPE_MAIL, CL_TYPE_GRAPHICS, CL_TYPE_ELF };
 
-extern short cli_debug_flag;
-
 int cli_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cl_engine *engine, cli_file_t ftype)
 {
 	int ret = CL_CLEAN;

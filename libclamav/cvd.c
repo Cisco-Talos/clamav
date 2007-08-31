@@ -45,23 +45,29 @@
 
 int cli_untgz(int fd, const char *destdir)
 {
-	char *fullname, osize[13], name[101], type;
+	char *path, osize[13], name[101], type;
 	char block[TAR_BLOCKSIZE];
-	int nbytes, nread, nwritten, in_block = 0;
-	unsigned int size;
+	int nbytes, nread, nwritten, in_block = 0, fdd;
+	unsigned int size, pathlen = strlen(destdir) + 100 + 5;
 	FILE *outfile = NULL;
 	gzFile *infile;
 
+
     cli_dbgmsg("in cli_untgz()\n");
 
-    if((infile = gzdopen(fd, "rb")) == NULL) {
-	cli_errmsg("Can't gzdopen() descriptor %d, errno = %d\n", fd, errno);
+    if((fdd = dup(fd)) == -1) {
+	cli_errmsg("cli_untgz: Can't duplicate descriptor %d\n", fd);
 	return -1;
     }
 
-    fullname = (char *) cli_calloc(sizeof(char), strlen(destdir) + 100 + 5);
-    if(!fullname) {
-	cli_errmsg("cli_untgz: Can't allocate memory for fullname\n");
+    if((infile = gzdopen(fdd, "rb")) == NULL) {
+	cli_errmsg("cli_untgz: Can't gzdopen() descriptor %d, errno = %d\n", fdd, errno);
+	return -1;
+    }
+
+    path = (char *) cli_calloc(sizeof(char), pathlen);
+    if(!path) {
+	cli_errmsg("cli_untgz: Can't allocate memory for path\n");
 	return -1;
     }
 
@@ -69,12 +75,12 @@ int cli_untgz(int fd, const char *destdir)
 
 	nread = gzread(infile, block, TAR_BLOCKSIZE);
 
-	if(!in_block && nread == 0)
+	if(!in_block && !nread)
 	    break;
 
 	if(nread != TAR_BLOCKSIZE) {
-	    cli_errmsg("Incomplete block read.\n");
-	    free(fullname);
+	    cli_errmsg("cli_untgz: Incomplete block read\n");
+	    free(path);
 	    gzclose(infile);
 	    return -1;
 	}
@@ -87,16 +93,14 @@ int cli_untgz(int fd, const char *destdir)
 	    name[100] = '\0';
 
 	    if(strchr(name, '/')) {
-		cli_errmsg("Slash separators are not allowed in CVD.\n");
-		free(fullname);
+		cli_errmsg("cli_untgz: Slash separators are not allowed in CVD\n");
+		free(path);
 	        gzclose(infile);
 		return -1;
 	    }
 
-	    strcpy(fullname, destdir);
-	    strcat(fullname, "/");
-	    strcat(fullname, name);
-	    cli_dbgmsg("Unpacking %s\n",fullname);
+	    snprintf(path, pathlen, "%s/%s", destdir, name);
+	    cli_dbgmsg("cli_untgz: Unpacking %s\n", path);
 	    type = block[156];
 
 	    switch(type) {
@@ -104,32 +108,31 @@ int cli_untgz(int fd, const char *destdir)
 		case '\0':
 		    break;
 		case '5':
-		    cli_errmsg("Directories in CVD are not supported.\n");
-		    free(fullname);
+		    cli_errmsg("cli_untgz: Directories are not supported in CVD\n");
+		    free(path);
 	            gzclose(infile);
 		    return -1;
 		default:
-		    cli_errmsg("Unknown type flag %c.\n",type);
-		    free(fullname);
+		    cli_errmsg("cli_untgz: Unknown type flag '%c'\n", type);
+		    free(path);
 	            gzclose(infile);
 		    return -1;
 	    }
-
 	    in_block = 1;
 
 	    if(outfile) {
 		if(fclose(outfile)) {
-		    cli_errmsg("Cannot close file %s.\n", fullname);
-		    free(fullname);
+		    cli_errmsg("cli_untgz: Cannot close file %s\n", path);
+		    free(path);
 	            gzclose(infile);
 		    return -1;
 		}
 		outfile = NULL;
 	    }
 
-	    if(!(outfile = fopen(fullname, "wb"))) {
-		cli_errmsg("Cannot create file %s.\n", fullname);
-		free(fullname);
+	    if(!(outfile = fopen(path, "wb"))) {
+		cli_errmsg("cli_untgz: Cannot create file %s\n", path);
+		free(path);
 	        gzclose(infile);
 		return -1;
 	    }
@@ -138,8 +141,8 @@ int cli_untgz(int fd, const char *destdir)
 	    osize[12] = '\0';
 
 	    if((sscanf(osize, "%o", &size)) == 0) {
-		cli_errmsg("Invalid size in header.\n");
-		free(fullname);
+		cli_errmsg("cli_untgz: Invalid size in header\n");
+		free(path);
 	        gzclose(infile);
 		fclose(outfile);
 		return -1;
@@ -150,8 +153,8 @@ int cli_untgz(int fd, const char *destdir)
 	    nwritten = fwrite(block, 1, nbytes, outfile);
 
 	    if(nwritten != nbytes) {
-		cli_errmsg("Wrote %d instead of %d (%s).\n", nwritten, nbytes, fullname);
-		free(fullname);
+		cli_errmsg("cli_untgz: Wrote %d instead of %d (%s)\n", nwritten, nbytes, path);
+		free(path);
 	        gzclose(infile);
 		return -1;
 	    }
@@ -166,34 +169,34 @@ int cli_untgz(int fd, const char *destdir)
 	fclose(outfile);
 
     gzclose(infile);
-    free(fullname);
+    free(path);
     return 0;
 }
 
 struct cl_cvd *cl_cvdparse(const char *head)
 {
-	char *pt;
 	struct cl_cvd *cvd;
+	char *pt;
+
 
     if(strncmp(head, "ClamAV-VDB:", 11)) {
-	cli_dbgmsg("Not a CVD head.\n");
+	cli_errmsg("cli_cvdparse: Not a CVD file\n");
 	return NULL;
     }
 
-    cvd = (struct cl_cvd *) cli_calloc(1, sizeof(struct cl_cvd));
-    if(!cvd) {
+    if(!(cvd = (struct cl_cvd *) cli_malloc(sizeof(struct cl_cvd)))) {
 	cli_errmsg("cl_cvdparse: Can't allocate memory for cvd\n");
 	return NULL;
     }
 
     if(!(cvd->time = cli_strtok(head, 1, ":"))) {
-	cli_errmsg("CVD -> Can't extract time from header.\n");
+	cli_errmsg("cli_cvdparse: Can't parse the creation time\n");
 	free(cvd);
 	return NULL;
     }
 
     if(!(pt = cli_strtok(head, 2, ":"))) {
-	cli_errmsg("CVD -> Can't extract version from header.\n");
+	cli_errmsg("cli_cvdparse: Can't parse the version number\n");
 	free(cvd->time);
 	free(cvd);
 	return NULL;
@@ -202,7 +205,7 @@ struct cl_cvd *cl_cvdparse(const char *head)
     free(pt);
 
     if(!(pt = cli_strtok(head, 3, ":"))) {
-	cli_errmsg("CVD -> Can't extract signature number from header.\n");
+	cli_errmsg("cli_cvdparse: Can't parse the number of signatures\n");
 	free(cvd->time);
 	free(cvd);
 	return NULL;
@@ -211,7 +214,7 @@ struct cl_cvd *cl_cvdparse(const char *head)
     free(pt);
 
     if(!(pt = cli_strtok(head, 4, ":"))) {
-	cli_errmsg("CVD -> Can't extract functionality level from header.\n");
+	cli_errmsg("cli_cvdparse: Can't parse the functionality level\n");
 	free(cvd->time);
 	free(cvd);
 	return NULL;
@@ -220,14 +223,14 @@ struct cl_cvd *cl_cvdparse(const char *head)
     free(pt);
 
     if(!(cvd->md5 = cli_strtok(head, 5, ":"))) {
-	cli_errmsg("CVD -> Can't extract MD5 checksum from header.\n");
+	cli_errmsg("cli_cvdparse: Can't parse the MD5 checksum\n");
 	free(cvd->time);
 	free(cvd);
 	return NULL;
     }
 
     if(!(cvd->dsig = cli_strtok(head, 6, ":"))) {
-	cli_errmsg("CVD -> Can't extract digital signature from header.\n");
+	cli_errmsg("cli_cvdparse: Can't parse the digital signature\n");
 	free(cvd->time);
 	free(cvd->md5);
 	free(cvd);
@@ -235,7 +238,7 @@ struct cl_cvd *cl_cvdparse(const char *head)
     }
 
     if(!(cvd->builder = cli_strtok(head, 7, ":"))) {
-	cli_errmsg("CVD -> Can't extract builder name from header.\n");
+	cli_errmsg("cli_cvdparse: Can't parse the builder name\n");
 	free(cvd->time);
 	free(cvd->md5);
 	free(cvd->dsig);
@@ -246,9 +249,10 @@ struct cl_cvd *cl_cvdparse(const char *head)
     if((pt = cli_strtok(head, 8, ":"))) {
 	cvd->stime = atoi(pt);
 	free(pt);
-    } else
-	cli_dbgmsg("CVD -> No creation time in seconds (old file format)\n");
-
+    } else {
+	cli_dbgmsg("cli_cvdparse: No creation time in seconds (old file format)\n");
+	cvd->stime = 0;
+    }
 
     return cvd;
 }
@@ -262,12 +266,12 @@ struct cl_cvd *cl_cvdhead(const char *file)
 
 
     if((fs = fopen(file, "rb")) == NULL) {
-	cli_dbgmsg("Can't open CVD file %s\n", file);
+	cli_errmsg("cl_cvdhead: Can't open file %s\n", file);
 	return NULL;
     }
 
     if(!(bread = fread(head, 1, 512, fs))) {
-	cli_errmsg("Can't read CVD header of %s\n", file);
+	cli_errmsg("cl_cvdhead: Can't read CVD header in %s\n", file);
 	fclose(fs);
 	return NULL;
     }
@@ -298,9 +302,10 @@ static int cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt)
 	char *md5, head[513];
 	int i;
 
+
     fseek(fs, 0, SEEK_SET);
     if(fread(head, 1, 512, fs) != 512) {
-	cli_dbgmsg("Can't read CVD head from stream\n");
+	cli_errmsg("cli_cvdverify: Can't read CVD header\n");
 	return CL_ECVD;
     }
 
@@ -317,7 +322,7 @@ static int cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt)
     cli_dbgmsg("MD5(.tar.gz) = %s\n", md5);
 
     if(strncmp(md5, cvd->md5, 32)) {
-	cli_dbgmsg("MD5 verification error.\n");
+	cli_dbgmsg("cli_cvdverify: MD5 verification error\n");
 	free(md5);
 	cl_cvdfree(cvd);
 	return CL_EMD5;
@@ -325,7 +330,7 @@ static int cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt)
 
 #ifdef HAVE_GMP
     if(cli_versig(md5, cvd->dsig)) {
-	cli_dbgmsg("Digital signature verification error.\n");
+	cli_dbgmsg("cli_cvdverify: Digital signature verification error\n");
 	free(md5);
 	cl_cvdfree(cvd);
 	return CL_EDSIG;
@@ -342,8 +347,9 @@ int cl_cvdverify(const char *file)
 	FILE *fs;
 	int ret;
 
+
     if((fs = fopen(file, "rb")) == NULL) {
-	cli_errmsg("Can't open CVD file %s\n", file);
+	cli_errmsg("cl_cvdverify: Can't open file %s\n", file);
 	return CL_EOPEN;
     }
 
@@ -357,7 +363,7 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short 
 {
         char *dir;
 	struct cl_cvd cvd;
-	int ret, fd;
+	int ret;
 	time_t s_time;
 
 
@@ -372,8 +378,8 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short 
 	time(&s_time);
 	if((int) s_time - cvd.stime > 604800) {
 	    cli_warnmsg("**************************************************\n");
-	    cli_warnmsg("***  The virus database is older than 7 days.  ***\n");
-	    cli_warnmsg("***        Please update it IMMEDIATELY!       ***\n");
+	    cli_warnmsg("***  The virus database is older than 7 days!  ***\n");
+	    cli_warnmsg("***   Please update it as soon as possible.    ***\n");
 	    cli_warnmsg("**************************************************\n");
 	}
     }
@@ -385,14 +391,8 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short 
 	cli_warnmsg("***********************************************************\n");
     }
 
-    if((fd = dup(fileno(fs))) == -1) {
-	cli_errmsg("cli_cvdload(): Can't duplicate descriptor %d\n", fileno(fs));
-	return CL_EIO;
-    }
-
-    if(lseek(fd, 512, SEEK_SET) == -1) {
-	cli_errmsg("cli_cvdload(): Can't lseek descriptor %d\n", fd);
-	close(fd);
+    if(fseek(fs, 512, SEEK_SET) == -1) {
+	cli_errmsg("cli_cvdload(): fseek(fs, 512, SEEK_SET) failed\n");
 	return CL_EIO;
     }
 
@@ -400,12 +400,10 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short 
     if(mkdir(dir, 0700)) {
 	cli_errmsg("cli_cvdload(): Can't create temporary directory %s\n", dir);
 	free(dir);
-	close(fd);
 	return CL_ETMPDIR;
     }
 
-    if(cli_untgz(fd, dir)) {
-	close(fd);
+    if(cli_untgz(fileno(fs), dir)) {
 	cli_errmsg("cli_cvdload(): Can't unpack CVD file.\n");
 	free(dir);
 	return CL_ECVDEXTR;

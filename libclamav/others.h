@@ -30,6 +30,8 @@
 #include "clamav.h"
 #include "dconf.h"
 
+extern uint8_t cli_debug_flag, cli_leavetemps_flag;
+
 /*
  * CLI_ISCONTAINED(buf1, size1, buf2, size2) checks if buf2 is contained
  * within buf1.
@@ -191,9 +193,7 @@ char *cli_md5file(const char *filename);
 int cli_readn(int fd, void *buff, unsigned int count);
 int cli_writen(int fd, const void *buff, unsigned int count);
 char *cli_gentemp(const char *dir);
-char *cli_gentempdir(const char *dir);
-char *cli_gentempdesc(const char *dir, int *fd);
-char *cli_gentempstream(const char *dir, FILE **fs);
+int cli_gentempfd(const char *dir, char **name, int *fd);
 unsigned int cli_rndnum(unsigned int max);
 int cli_filecopy(const char *src, const char *dest);
 bitset_t *cli_bitset_init(void);

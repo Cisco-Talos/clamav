@@ -100,7 +100,6 @@ cli_scanjs(const char *dir, int desc)
 	int created_output, done_header, rc;
 	FILE *fout;
 	char script_filename[NAME_MAX + 1];
-	extern short cli_leavetemps_flag;
 
 	cli_dbgmsg("in cli_scanjs(%s)\n", dir);
 

@@ -58,7 +58,7 @@
 
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
-static pthread_mutex_t cli_gentempname_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t cli_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
@@ -82,55 +82,38 @@ static pthread_mutex_t cli_gentempname_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define CL_FLEVEL 21 /* don't touch it */
 
-short cli_debug_flag = 0, cli_leavetemps_flag = 0;
+uint8_t cli_debug_flag = 0, cli_leavetemps_flag = 0;
 
 static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
 
 
+#define MSGCODE(x)					    \
+	va_list args;					    \
+	int len = sizeof(x) - 1;			    \
+	char buff[BUFSIZ];				    \
+    strncpy(buff, x, len);				    \
+    va_start(args, str);				    \
+    vsnprintf(buff + len, sizeof(buff) - len, str, args);   \
+    buff[sizeof(buff) - 1] = '\0';			    \
+    fputs(buff, stderr);				    \
+    va_end(args)
+
+
 void cli_warnmsg(const char *str, ...)
 {
-	va_list args;
-	int sz = sizeof("LibClamAV Warning: ") - 1;
-	char buff[256];
-
-    strncpy(buff, "LibClamAV Warning: ", sz);
-    va_start(args, str);
-    vsnprintf(buff + sz, sizeof(buff) - sz, str, args);
-    buff[sizeof(buff) - 1] = '\0';
-    fputs(buff, stderr);
-    va_end(args);
+    MSGCODE("LibClamAV Warning: ");
 }
 
 void cli_errmsg(const char *str, ...)
 {
-	va_list args;
-	int sz = sizeof("LibClamAV Error: ") - 1;
-	char buff[256];
-
-    strncpy(buff, "LibClamAV Error: ", sz);
-    va_start(args, str);
-    vsnprintf(buff + sz, sizeof(buff) - sz, str, args);
-    buff[sizeof(buff) - 1] = '\0';
-    fputs(buff, stderr);
-    va_end(args);
+    MSGCODE("LibClamAV Error: ");
 }
 
 void cli_dbgmsg(const char *str, ...)
 {
-
     if(cli_debug_flag) {
-	    va_list args;
-	    int sz = sizeof("LibClamAV debug: ") - 1;
-	    char buff[BUFSIZ];
-
-	memcpy(buff, "LibClamAV debug: ", sz);
-	va_start(args, str);
-	vsnprintf(buff + sz, sizeof(buff) - sz, str, args);
-	buff[sizeof(buff) - 1] = '\0';
-	fputs(buff, stderr);
-	va_end(args);
-    } else
-	return;
+	MSGCODE("LibClamAV debug: ");
+    }
 }
 
 void cl_debug(void)
@@ -333,7 +316,6 @@ void *cli_malloc(size_t size)
     if(!alloc) {
 	cli_errmsg("cli_malloc(): Can't allocate memory (%u bytes).\n", size);
 	perror("malloc_problem");
-	/* _exit(1); */
 	return NULL;
     } else return alloc;
 }
@@ -357,7 +339,6 @@ void *cli_calloc(size_t nmemb, size_t size)
     if(!alloc) {
 	cli_errmsg("cli_calloc(): Can't allocate memory (%u bytes).\n", nmemb * size);
 	perror("calloc_problem");
-	/* _exit(1); */
 	return NULL;
     } else return alloc;
 }
@@ -455,7 +436,7 @@ void cl_settempdir(const char *dir, short leavetemps)
     cli_leavetemps_flag = leavetemps;
 }
 
-static char *cli_gentempname(const char *dir)
+char *cli_gentemp(const char *dir)
 {
 	char *name, *tmp;
         const char *mdir;
@@ -474,12 +455,12 @@ static char *cli_gentempname(const char *dir)
 
     name = (char *) cli_calloc(strlen(mdir) + 1 + 32 + 1 + 7, sizeof(char));
     if(!name) {
-	cli_dbgmsg("cli_gentempname('%s'): out of memory\n", mdir);
+	cli_dbgmsg("cli_gentemp('%s'): out of memory\n", mdir);
 	return NULL;
     }
 
 #ifdef CL_THREAD_SAFE
-    pthread_mutex_lock(&cli_gentempname_mutex);
+    pthread_mutex_lock(&cli_gentemp_mutex);
 #endif
 
     memcpy(salt, name_salt, 16);
@@ -490,12 +471,12 @@ static char *cli_gentempname(const char *dir)
     tmp = cli_md5buff(salt, 48, name_salt);
 
 #ifdef CL_THREAD_SAFE
-    pthread_mutex_unlock(&cli_gentempname_mutex);
+    pthread_mutex_unlock(&cli_gentemp_mutex);
 #endif
 
     if(!tmp) {
 	free(name);
-	cli_dbgmsg("cli_gentempname('%s'): out of memory\n", mdir);
+	cli_dbgmsg("cli_gentemp('%s'): out of memory\n", mdir);
 	return NULL;
     }
 
@@ -510,65 +491,21 @@ static char *cli_gentempname(const char *dir)
     return(name);
 }
 
-char *cli_gentemp(const char *dir)
+int cli_gentempfd(const char *dir, char **name, int *fd)
 {
-	char *name;
 
-    name = cli_gentempname(dir);
+    *name = cli_gentemp(dir);
+    if(!*name)
+	return CL_EMEM;
 
-    return(name);
-}
-
-
-char *cli_gentempdir(const char *dir)
-{
-	char *name;
-
-    name = cli_gentempname(dir);
-
-    if(name && mkdir(name, 0700)) {
-	cli_dbgmsg("cli_gentempdir(): can't create temp directory: %s\n", name);
-        free(name);
-        name = NULL;
+    *fd = open(*name, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
+    if(*fd == -1) {
+	cli_errmsg("cli_gentempfd: Can't create temporary file %s: %s\n", *name, strerror(errno));
+	free(*name);
+	return CL_EIO;
     }
 
-    return(name);
-}
-
-char *cli_gentempdesc(const char *dir, int *fd)
-{
-	char *name;
-
-    name = cli_gentempname(dir);
-
-    if(name && ((*fd = open(name, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0)) {
-	cli_dbgmsg("cli_gentempdesc(): can't create temp file: %s\n", name);
-        free(name);
-        name = NULL;
-    }
-
-    return(name);
-}
-
-char *cli_gentempstream(const char *dir, FILE **fs)
-{
-	char *name;
-	mode_t omask;
-
-
-    name = cli_gentempname(dir);
-    if(!name)
-	return NULL;
-
-    omask = umask(077);
-    if((*fs = fopen(name, "wb+")) == NULL) {
-	cli_dbgmsg("cli_gentempstream(): can't create temp file: %s\n", name);
-        free(name);
-        name = NULL;
-    }
-    umask(omask);
-
-    return name;
+    return CL_SUCCESS;
 }
 
 #ifdef	C_WINDOWS
@@ -591,13 +528,13 @@ cli_rmdirs(const char *name)
 
 
     if(stat(name, &statb) < 0) {
-	cli_warnmsg("Can't locate %s: %s\n", name, strerror(errno));
+	cli_warnmsg("cli_rmdirs: Can't locate %s: %s\n", name, strerror(errno));
 	return -1;
     }
 
     if(!S_ISDIR(statb.st_mode)) {
 	if(unlink(name) < 0) {
-	    cli_warnmsg("Can't remove %s: %s\n", name, strerror(errno));
+	    cli_warnmsg("cli_rmdirs: Can't remove %s: %s\n", name, strerror(errno));
 	    return -1;
 	}
 	return 0;
@@ -615,23 +552,23 @@ cli_rmdirs(const char *name)
 #else
     while((dent = readdir(dd)) != NULL) {
 #endif
-	    char *fname;
+	    char *path;
 
 	if(strcmp(dent->d_name, ".") == 0)
 	    continue;
 	if(strcmp(dent->d_name, "..") == 0)
 	    continue;
 
-	fname = cli_malloc(strlen(name) + strlen(dent->d_name) + 2);
+	path = cli_malloc(strlen(name) + strlen(dent->d_name) + 2);
 
-	if(fname == NULL) {
+	if(path == NULL) {
 	    closedir(dd);
 	    return -1;
 	}
 
-	sprintf(fname, "%s\\%s", name, dent->d_name);
-	rc = cli_rmdirs(fname);
-	free(fname);
+	sprintf(path, "%s\\%s", name, dent->d_name);
+	rc = cli_rmdirs(path);
+	free(path);
 	if(rc != 0)
 	    break;
     }
@@ -639,7 +576,7 @@ cli_rmdirs(const char *name)
     closedir(dd);
 
     if(rmdir(name) < 0) {
-	cli_errmsg("Can't remove temporary directory %s: %s\n", name, strerror(errno));
+	cli_errmsg("cli_rmdirs: Can't remove temporary directory %s: %s\n", name, strerror(errno));
 	return -1;
     }
 
@@ -657,8 +594,7 @@ int cli_rmdirs(const char *dirname)
 	} result;
 #endif
 	struct stat maind, statbuf;
-	char *fname;
-	int ret;
+	char *path;
 
 
     chmod(dirname, 0700);
@@ -666,7 +602,7 @@ int cli_rmdirs(const char *dirname)
 	while(stat(dirname, &maind) != -1) {
 	    if(!rmdir(dirname)) break;
 	    if(errno != ENOTEMPTY && errno != EEXIST && errno != EBADF) {
-		cli_errmsg("Can't remove temporary directory %s: %s\n", dirname, strerror(errno));
+		cli_errmsg("cli_rmdirs: Can't remove temporary directory %s: %s\n", dirname, strerror(errno));
 		closedir(dd);
 		return -1;
 	    }
@@ -683,50 +619,47 @@ int cli_rmdirs(const char *dirname)
 #endif
 		{
 		    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
-			fname = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
-			if(!fname) {
+			path = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
+			if(!path) {
 			    closedir(dd);
 			    return -1;
 			}
 
 #ifdef	C_WINDOWS
-			sprintf(fname, "%s\\%s", dirname, dent->d_name);
+			sprintf(path, "%s\\%s", dirname, dent->d_name);
 #else
-			sprintf(fname, "%s/%s", dirname, dent->d_name);
+			sprintf(path, "%s/%s", dirname, dent->d_name);
 #endif
 
 			/* stat the file */
-			if(lstat(fname, &statbuf) != -1) {
+			if(lstat(path, &statbuf) != -1) {
 			    if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
-				if(rmdir(fname) == -1) { /* can't be deleted */
+				if(rmdir(path) == -1) { /* can't be deleted */
 				    if(errno == EACCES) {
-					cli_errmsg("Can't remove some temporary directories due to access problem.\n");
+					cli_errmsg("cli_rmdirs: Can't remove some temporary directories due to access problem.\n");
 					closedir(dd);
-					free(fname);
+					free(path);
 					return -1;
 				    }
-				    ret = cli_rmdirs(fname);
-				    if(ret) {
-					cli_warnmsg("Can't remove directory %s\n", fname);
-					free(fname);
+				    if(cli_rmdirs(path)) {
+					cli_warnmsg("cli_rmdirs: Can't remove nested directory %s\n", path);
+					free(path);
 					closedir(dd);
 					return -1;
 				    }
 				}
 			    } else
-				if(unlink(fname) < 0) {
-				    cli_warnmsg("Couldn't remove %s: %s\n", fname, strerror(errno));
-				    free(fname);
+				if(unlink(path) < 0) {
+				    cli_warnmsg("cli_rmdirs: Couldn't remove %s: %s\n", path, strerror(errno));
+				    free(path);
 				    closedir(dd);
 				    return -1;
 				}
 			}
-
-			free(fname);
+			free(path);
 		    }
 		}
 	    }
-
 	    rewinddir(dd);
 	}
 

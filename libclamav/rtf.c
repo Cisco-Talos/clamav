@@ -124,8 +124,6 @@ static const short int hextable[256] = {
        0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0
 };
 
-extern int short cli_leavetemps_flag;
-
 static void init_rtf_state(struct rtf_state* state)
 {
 	*state = base_state;
@@ -267,6 +265,7 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
 	const unsigned char* out_data;
 	size_t out_cnt = 0;
 	size_t i;
+	int ret;
 
 	if(!data || !len)
 		return 0;
@@ -394,9 +393,8 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
 							    out_data += i;
 							    data->bread=0;
 							    cli_dbgmsg("Dumping rtf embedded object of size:%ld\n",data->desc_len);
-					    		    data->name = cli_gentempdesc(data->tmpdir, &data->fd);
-							    if(!data->name || data->fd < 0)
-								    return CL_ETMPFILE;
+							    if((ret = cli_gentempfd(data->tmpdir, &data->name, &data->fd)))
+								    return ret;
 							    data->internal_state = DUMP_DATA;
 	    						    cli_dbgmsg("RTF: next state: DUMP_DATA\n");
 						    }

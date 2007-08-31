@@ -738,7 +738,7 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	} else {
 	    if(!(*engine)->md5_hlist) {
 		cli_dbgmsg("cli_loadhdb: Initializing MD5 list structure\n");
-		(*engine)->md5_hlist = (struct cli_md5_node **) cli_calloc(256, sizeof(struct cli_md5_node *));
+		(*engine)->md5_hlist = cli_calloc(256, sizeof(struct cli_md5_node *));
 		if(!(*engine)->md5_hlist) {
 		    free(new->virname);
 		    free(new->md5);

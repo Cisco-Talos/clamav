@@ -3772,7 +3772,6 @@ rfc1341(message *m, const char *dir)
 					char buffer[BUFSIZ], fullname[NAME_MAX + 1];
 					int nblanks;
 					struct stat statb;
-					extern short cli_leavetemps_flag;
 
 #ifndef  C_CYGWIN
 					if(dent->d_ino == 0)

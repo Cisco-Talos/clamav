@@ -109,22 +109,6 @@ extern "C"
 #define cl_node		cl_engine
 #define cl_perror	cl_strerror
 
-/* internal structures */
-struct cli_md5_node {
-    char *virname;
-    unsigned char *md5;
-    unsigned int size;
-    unsigned short fp;
-    struct cli_md5_node *next;
-};
-
-struct cli_meta_node {
-    int csize, size, method;
-    unsigned int crc32, fileno, encrypted, maxdepth;
-    char *filename, *virname;
-    struct cli_meta_node *next;
-};
-
 struct cl_engine {
     unsigned int refcount; /* reference counter */
     unsigned short ncore;
@@ -135,16 +119,16 @@ struct cl_engine {
     void **root;
 
     /* MD5 */
-    struct cli_md5_node **md5_hlist;
+    void **md5_hlist;
 
     /* B-M matcher for MD5 sigs for PE sections */
     void *md5_sect;
 
     /* Zip metadata */
-    struct cli_meta_node *zip_mlist;
+    void *zip_mlist;
 
     /* RAR metadata */
-    struct cli_meta_node *rar_mlist;
+    void *rar_mlist;
 
     /* NodalCore database handle */
     void *ncdb;

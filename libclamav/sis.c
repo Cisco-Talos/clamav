@@ -51,8 +51,6 @@
 #define EC32(x) le32_to_host(x) /* Convert little endian to host */
 #define EC16(x) le16_to_host(x) /* Convert little endian to host */
 
-extern short cli_leavetemps_flag;
-
 static const char *langcodes[] = {
     "",   "EN", "FR", "GE", "SP", "IT", "SW", "DA", "NO", "FI", "AM",
     "SF", "SG", "PO", "TU", "IC", "RU", "HU", "DU", "BL", "AU", "BG",
@@ -541,17 +539,17 @@ int cli_scansis(int desc, cli_ctx *ctx)
     cli_dbgmsg("SIS: Number of files: %d\n", nfiles);
     cli_dbgmsg("SIS: Offset of files records: %d\n", EC32(file_hdr.pfiles));
 
-    if(!(dir = cli_gentempdir(NULL))) {
-	cli_errmsg("SIS: Can't generate temporary directory\n");
-	munmap(mfile, length);
-	return CL_ETMPDIR;
-    }
-
     if((frecord = EC32(file_hdr.pfiles)) >= length) {
 	cli_errmsg("SIS: Broken file structure (frecord)\n");
 	munmap(mfile, length);
-	free(dir);
 	return CL_EFORMAT;
+    }
+
+    dir = cli_gentemp(NULL);
+    if(!dir || mkdir(dir, 0700) == -1) {
+	cli_errmsg("SIS: Can't create temporary directory %s\n", dir ? dir : "");
+	munmap(mfile, length);
+	return CL_ETMPDIR;
     }
 
     for(i = 0; i < nfiles; i++) {

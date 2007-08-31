@@ -60,7 +60,6 @@ static	int	tnef_header(FILE *fp, uint8_t *part, uint16_t *type, uint16_t *tag, i
 #define host16(v)	le16_to_host(v)
 #define host32(v)	le32_to_host(v)
 
-extern	short	cli_debug_flag;
 
 int
 cli_tnef(const char *dir, int desc)

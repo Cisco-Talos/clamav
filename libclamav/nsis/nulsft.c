@@ -38,8 +38,6 @@
 #include "matcher.h"
 #include "scanners.h"
 
-extern short cli_leavetemps_flag;
-
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif

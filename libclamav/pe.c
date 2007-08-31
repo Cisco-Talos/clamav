@@ -80,7 +80,6 @@
 #define PEALIGN(o,a) (((a))?(((o)/(a))*(a)):(o))
 #define PESALIGN(o,a) (((a))?(((o)/(a)+((o)%(a)!=0))*(a)):(o))
 
-extern short cli_leavetemps_flag;
 
 struct offset_list {
     uint32_t offset;
