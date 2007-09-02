@@ -1,3 +1,7 @@
+Sun Sep  2 13:28:01 CEST 2007 (tk)
+----------------------------------
+  * clamd: fix compilation error
+
 Fri Aug 31 21:08:22 CEST 2007 (tk)
 ----------------------------------
   * contrib: fix bb#644 (Contrib files have wrong shebang line)

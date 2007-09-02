@@ -508,11 +508,11 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 
     logg("*Accepted connection on port %u, fd %d\n", port, acceptd);
 
-    if ((tmpname = cli_gentempdesc(NULL, &tmpd)) == NULL) {
+    if(cli_gentempfd(NULL, &tmpname, &tmpd)) {
 	shutdown(sockfd, 2);
 	close(sockfd);
 	close(acceptd);
-	mdprintf(odesc, "tempfile() failed. ERROR\n");
+	mdprintf(odesc, "cli_gentempfd() failed. ERROR\n");
 	logg("!ScanStream %u: Can't create temporary file.\n", port);
 	return -1;
     }
