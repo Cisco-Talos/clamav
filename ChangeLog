@@ -1,3 +1,7 @@
+Sun Sep  2 12:41:46 BST 2007 (njh)
+----------------------------------
+  * clamav-milter:	Fix compilation error from fix to bug 577
+
 Sun Sep  2 13:28:01 CEST 2007 (tk)
 ----------------------------------
   * clamd: fix compilation error

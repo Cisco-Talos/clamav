@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-20080831"
+#define	CM_VERSION	"devel-20080902"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -5544,8 +5544,6 @@ timeoutBlacklist(char *ip_address, int time_of_blacklist, void *v)
 static void
 quit(void)
 {
-	extern short cli_leavetemps_flag;
-
 	quitting++;
 
 #ifdef	SESSION
