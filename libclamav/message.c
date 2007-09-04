@@ -673,6 +673,17 @@ messageFindArgument(const message *m, const char *variable)
 	return NULL;
 }
 
+char *
+messageGetFilename(const message *m)
+{
+	char *filename = (char *)messageFindArgument(m, "filename");
+
+	if(filename)
+		return filename;
+
+	return (char *)messageFindArgument(m, "name"); 
+}
+
 void
 messageSetEncoding(message *m, const char *enctype)
 {
@@ -1338,6 +1349,19 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		 */
 		cli_dbgmsg("messageExport: Entering fast copy mode\n");
 
+#if	0
+		filename = messageGetFilename(m);
+
+		if(filename == NULL) {
+			cli_dbgmsg("Unencoded attachment sent with no filename\n");
+			messageAddArgument(m, "name=attachment");
+		} else if((strcmp(filename, "textportion") != 0) && (strcmp(filename, "mixedtextportion") != 0))
+			/*
+			 * Some virus attachments don't say how they've
+			 * been encoded. We assume base64
+			 */
+			messageSetEncoding(m, "base64");
+#else
 		filename = (char *)messageFindArgument(m, "filename");
 		if(filename == NULL) {
 			filename = (char *)messageFindArgument(m, "name");
@@ -1352,6 +1376,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 				 */
 				messageSetEncoding(m, "base64");
 		}
+#endif
 
 		(*setFilename)(ret, dir, (filename && *filename) ? filename : "attachment");
 
@@ -1420,24 +1445,21 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 				cli_dbgmsg("messageExport: treat uuencode as text/plain\n");
 				enctype = m->encodingTypes[i] = NOENCODING;
 			}
-			filename = (char *)messageFindArgument(m, "filename");
-			if(filename == NULL) {
-				filename = (char *)messageFindArgument(m, "name");
+			filename = messageGetFilename(m);
 
-				if(filename == NULL) {
-					cli_dbgmsg("Attachment sent with no filename\n");
-					messageAddArgument(m, "name=attachment");
-				} else if(enctype == NOENCODING)
-					/*
-					 * Some virus attachments don't say how
-					 * they've been encoded. We assume
-					 * base64.
-					 *
-					 * FIXME: don't do this if it's a fall
-					 * through from uuencode
-					 */
-					messageSetEncoding(m, "base64");
-			}
+			if(filename == NULL) {
+				cli_dbgmsg("Attachment sent with no filename\n");
+				messageAddArgument(m, "name=attachment");
+			} else if(enctype == NOENCODING)
+				/*
+				 * Some virus attachments don't say how
+				 * they've been encoded. We assume
+				 * base64.
+				 *
+				 * FIXME: don't do this if it's a fall
+				 * through from uuencode
+				 */
+				messageSetEncoding(m, "base64");
 
 			(*setFilename)(ret, dir, (filename && *filename) ? filename : "attachment");
 

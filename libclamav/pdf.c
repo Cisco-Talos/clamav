@@ -209,7 +209,6 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	xreflength = (size_t)(trailerstart - xrefstart);
 	bytesleft -= xreflength;
 	 */
-	*ctx->virname = NULL;
 
 	/*
 	 * The body section consists of a sequence of indirect objects

@@ -2977,8 +2977,16 @@ clamfi_envrcpt(SMFICTX *ctx, char **argv)
 	for(ptr = to; *ptr; ptr++)
 		if(strchr("|;", *ptr) != NULL) {
 			smfi_setreply(ctx, "554", "5.7.1", _("Suspicious recipient address blocked"));
-			logg("^Suspicious recipient address blocked: '%s'", to);
+			logg("^Suspicious recipient address blocked: '%s'\n", to);
 			privdata->to[privdata->numTo] = NULL;
+			if(blacklist_time && privdata->ip[0]) {
+				logg(_("Will blacklist %s for %d seconds because of cracking attempt\n"),
+					privdata->ip, blacklist_time);
+				pthread_mutex_lock(&blacklist_mutex);
+				(void)tableUpdate(blacklist, privdata->ip,
+					(int)time((time_t *)0));
+				pthread_mutex_unlock(&blacklist_mutex);
+			}
 			/*
 			 * REJECT rejects this recipient, not the entire email
 			 */

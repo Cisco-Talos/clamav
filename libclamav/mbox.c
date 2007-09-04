@@ -3676,22 +3676,28 @@ rfc1341(message *m, const char *dir)
 
 	snprintf(pdir, sizeof(pdir) - 1, "%s/clamav-partial", tmpdir);
 
-	if((mkdir(pdir, 0700) < 0) && (errno != EEXIST)) {
-		free(id);
+	if((mkdir(pdir, S_IRWXU) < 0) && (errno != EEXIST)) {
 		cli_errmsg("Can't create the directory '%s'\n", pdir);
+		free(id);
 		return -1;
 	} else if(errno == EEXIST) {
 		struct stat statb;
 
 		if(stat(pdir, &statb) < 0) {
-			free(id);
-			cli_errmsg("partial directory %s: %s\n", pdir,
+			cli_errmsg("Partial directory %s: %s\n", pdir,
 				strerror(errno));
+			free(id);
 			return -1;
 		}
-		if(statb.st_mode & 077)
+		if(statb.st_mode&(S_IRWXG|S_IRWXO))
 			cli_warnmsg("Insecure partial directory %s (mode 0%o)\n",
-				pdir, (int)(statb.st_mode & 0777));
+				pdir,
+#ifdef	ACCESSPERMS
+				(int)(statb.st_mode&ACCESSPERMS)
+#else
+				(int)(statb.st_mode & 0777)
+#endif
+			);
 	}
 
 	number = (char *)messageFindArgument(m, "number");
@@ -3700,9 +3706,7 @@ rfc1341(message *m, const char *dir)
 		return -1;
 	}
 
-	oldfilename = (char *)messageFindArgument(m, "filename");
-	if(oldfilename == NULL)
-		oldfilename = (char *)messageFindArgument(m, "name");
+	oldfilename = messageGetFilename(m);
 
 	arg = cli_malloc(10 + strlen(id) + strlen(number));
 	if(arg) {
@@ -4885,7 +4889,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 				cli_dbgmsg("Mime subtype \"%s\"\n", cptr);
 				if((tableFind(mctx->subtypeTable, cptr) == PLAIN) &&
 					  (messageGetEncoding(aMessage) == NOENCODING)) {
-					char *filename;
+					char *filename = messageGetFilename(aMessage);
 					/*
 					 * Strictly speaking
 					 * a text/plain part is
@@ -4894,9 +4898,6 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 					 * we can decode and
 					 * scan it
 					 */
-					filename = (char *)messageFindArgument(aMessage, "filename");
-					if(filename == NULL)
-						filename = (char *)messageFindArgument(aMessage, "name");
 
 					if(filename == NULL) {
 						cli_dbgmsg("Adding part to main message\n");
