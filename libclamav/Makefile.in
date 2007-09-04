@@ -82,12 +82,12 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher-ncore.lo \
 	scanners.lo filetypes.lo rtf.lo blob.lo mbox.lo message.lo \
 	snprintf.lo table.lo text.lo ole2_extract.lo vba_extract.lo \
 	msexpand.lo pe.lo upx.lo htmlnorm.lo chmunpack.lo rebuildpe.lo \
-	petite.lo wwunpack.lo suecrypt.lo unsp.lo aspack.lo \
-	packlibs.lo fsg.lo mew.lo upack.lo line.lo untar.lo unzip.lo \
-	special.lo binhex.lo is_tar.lo tnef.lo unrar15.lo unrarvm.lo \
-	unrar.lo unrarfilter.lo unrarppm.lo unrar20.lo unrarcmd.lo \
-	unarj.lo LZMADecode.lo bzlib.lo infblock.lo nulsft.lo pdf.lo \
-	spin.lo yc.lo elf.lo sis.lo uuencode.lo pst.lo phishcheck.lo \
+	petite.lo wwunpack.lo unsp.lo aspack.lo packlibs.lo fsg.lo \
+	mew.lo upack.lo line.lo untar.lo unzip.lo special.lo binhex.lo \
+	is_tar.lo tnef.lo unrar15.lo unrarvm.lo unrar.lo \
+	unrarfilter.lo unrarppm.lo unrar20.lo unrarcmd.lo unarj.lo \
+	LZMADecode.lo bzlib.lo infblock.lo nulsft.lo pdf.lo spin.lo \
+	yc.lo elf.lo sis.lo uuencode.lo pst.lo phishcheck.lo \
 	phish_domaincheck_db.lo phish_whitelist.lo regex_list.lo \
 	sha256.lo mspack.lo cab.lo entconv.lo hashtab.lo dconf.lo \
 	lockdb.lo
@@ -149,6 +149,7 @@ F77 = @F77@
 FFLAGS = @FFLAGS@
 FRESHCLAM_LIBS = @FRESHCLAM_LIBS@
 GETENT = @GETENT@
+GREP = @GREP@
 HAVE_MILTER_FALSE = @HAVE_MILTER_FALSE@
 HAVE_MILTER_TRUE = @HAVE_MILTER_TRUE@
 INSTALL_DATA = @INSTALL_DATA@
@@ -182,12 +183,9 @@ STRIP = @STRIP@
 THREAD_LIBS = @THREAD_LIBS@
 TH_SAFE = @TH_SAFE@
 VERSION = @VERSION@
-ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
 ac_ct_F77 = @ac_ct_F77@
-ac_ct_RANLIB = @ac_ct_RANLIB@
-ac_ct_STRIP = @ac_ct_STRIP@
 am__fastdepCC_FALSE = @am__fastdepCC_FALSE@
 am__fastdepCC_TRUE = @am__fastdepCC_TRUE@
 am__fastdepCXX_FALSE = @am__fastdepCXX_FALSE@
@@ -204,23 +202,30 @@ build_cpu = @build_cpu@
 build_os = @build_os@
 build_vendor = @build_vendor@
 datadir = @datadir@
+datarootdir = @datarootdir@
+docdir = @docdir@
+dvidir = @dvidir@
 exec_prefix = @exec_prefix@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
 host_os = @host_os@
 host_vendor = @host_vendor@
+htmldir = @htmldir@
 includedir = @includedir@
 infodir = @infodir@
 install_sh = @install_sh@
 libdir = @libdir@
 libexecdir = @libexecdir@
+localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
 oldincludedir = @oldincludedir@
+pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
+psdir = @psdir@
 sbindir = @sbindir@
 sendmailprog = @sendmailprog@
 sharedstatedir = @sharedstatedir@
@@ -295,8 +300,6 @@ libclamav_la_SOURCES = \
 	petite.h \
 	wwunpack.c \
 	wwunpack.h \
-	suecrypt.c \
-	suecrypt.h \
 	unsp.c \
 	unsp.h \
 	aspack.c \
@@ -513,7 +516,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/special.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/str.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/suecrypt.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/table.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/text.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tnef.Plo@am__quote@

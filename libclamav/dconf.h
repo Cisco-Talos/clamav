@@ -42,7 +42,7 @@ struct cli_dconf {
 #define PE_CONF_MD5SECT	    0x10
 #define PE_CONF_UPX	    0x20
 #define PE_CONF_FSG	    0x40
-#define PE_CONF_SUE	    0x80
+/*#define PE_CONF_REUSEME	    0x80 */
 #define PE_CONF_PETITE	    0x100
 #define PE_CONF_PESPIN	    0x200
 #define PE_CONF_YC	    0x400

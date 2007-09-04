@@ -86,8 +86,6 @@ libclamav_la_SOURCES = \
 	petite.h \
 	wwunpack.c \
 	wwunpack.h \
-	suecrypt.c \
-	suecrypt.h \
 	unsp.c \
 	unsp.h \
 	aspack.c \
