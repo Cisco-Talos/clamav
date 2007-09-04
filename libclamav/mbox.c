@@ -156,8 +156,9 @@ typedef	enum {
 #endif
 #endif
 
-#ifndef	C_WINDOWS
+#if	(!defined(C_WINDOWS)) && !defined(C_BEOS)
 #define	closesocket(s)	close(s)
+#define	SOCKET	int
 #endif
 
 #include <fcntl.h>
@@ -221,7 +222,7 @@ static	int	initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
 static	int	getTextPart(message *const messages[], size_t size);
 static	size_t	strip(char *buf, int len);
 static	int	parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg);
-static	void	saveTextPart(message *m, const char *dir, int destroy_text);
+static	int	saveTextPart(message *m, const char *dir, int destroy_text);
 static	char	*rfc2047(const char *in);
 static	char	*rfc822comments(const char *in, char *out);
 #ifdef	PARTIAL_DIR
@@ -255,14 +256,14 @@ static	void	*getURL(void *a);
 #else
 static	void	*getURL(struct arg *arg);
 #endif
-static	long	nonblock_fcntl(int sock);
-static	void	restore_fcntl(int sock, long fcntl_flags);
-static	int	nonblock_connect(const char *url, int sock, const struct sockaddr *addr);
-static	int	connect_error(const char *url, int sock);
+static	long	nonblock_fcntl(SOCKET sock);
+static	void	restore_fcntl(SOCKET sock, long fcntl_flags);
+static	int	nonblock_connect(const char *url, SOCKET sock, const struct sockaddr *addr);
+static	int	connect_error(const char *url, SOCKET sock);
 static	int	my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
 
 #define NONBLOCK_SELECT_MAX_FAILURES	3
-#define NONBLOCK_MAX_BOGUS_LOOPS	10
+#define NONBLOCK_MAX_ATTEMPTS	10
 
 #endif
 
@@ -1313,7 +1314,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 			cli_chomp(buffer);
 			/*if(lastLineWasEmpty && (strncmp(buffer, "From ", 5) == 0) && isalnum(buffer[5])) {*/
 			if(lastLineWasEmpty && (strncmp(buffer, "From ", 5) == 0)) {
-				cli_dbgmsg("Deal with email number %d\n", messagenumber++);
+				cli_dbgmsg("Deal with message number %d\n", messagenumber++);
 				/*
 				 * End of a message in the mail box
 				 */
@@ -2908,11 +2909,6 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
 			if(topofbounce)
 				t = topofbounce;
-			/*
-			 * Don't do this - it slows bugs.txt
-			 */
-			/*if(mainMessage)
-				mainMessage->bounce = NULL;*/
 		}
 		textDestroy(aText);
 		aText = NULL;
@@ -2929,10 +2925,9 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 		 * Look for uu-encoded main file
 		 */
 		if((encodingLine(mainMessage) != NULL) &&
-		   ((t_line = bounceBegin(mainMessage)) != NULL)) {
-			if(exportBounceMessage(t_line, mctx))
-				rc = OK;
-		} else {
+		   ((t_line = bounceBegin(mainMessage)) != NULL))
+			rc = (exportBounceMessage(t_line, mctx) == CL_VIRUS) ? VIRUS : OK;
+		else {
 			bool saveIt;
 
 			if(messageGetMimeType(mainMessage) == MESSAGE)
@@ -2959,8 +2954,9 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 						(const unsigned char *)"Received: by clamd (bounce)\n",
 						28);
 
-					/*fileblobSetCTX(fb, ctx);*/
-					fileblobDestroy(textToFileblob(t_line, fb, 1));
+					fileblobSetCTX(fb, mctx->ctx);
+					if(fileblobScanAndDestroy(textToFileblob(t_line, fb, 1)) == CL_VIRUS)
+						rc = VIRUS;
 				}
 				saveIt = FALSE;
 			} else
@@ -2972,14 +2968,16 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				saveIt = TRUE;
 
 			if(saveIt) {
-				cli_dbgmsg("Saving text part to scan\n");
-				saveTextPart(mainMessage, mctx->dir, 1);
+				cli_dbgmsg("Saving text part to scan, rc = %d\n",
+					rc);
+				if(saveTextPart(mainMessage, mctx->dir, 1) == CL_VIRUS)
+					rc = VIRUS;
+
 				if(mainMessage != messageIn) {
 					messageDestroy(mainMessage);
 					mainMessage = NULL;
 				} else
 					messageReset(mainMessage);
-				rc = OK;
 			}
 		}
 	} /*else
@@ -3439,7 +3437,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 /*
  * Save the text portion of the message
  */
-static void
+static int
 saveTextPart(message *m, const char *dir, int destroy_text)
 {
 	fileblob *fb;
@@ -3451,8 +3449,9 @@ saveTextPart(message *m, const char *dir, int destroy_text)
 		 */
 		cli_dbgmsg("Saving main message\n");
 
-		fileblobDestroy(fb);
+		return fileblobScanAndDestroy(fb);
 	}
+	return CL_ETMPFILE;
 }
 
 /*
@@ -3672,13 +3671,16 @@ rfc1341(message *m, const char *dir)
 	snprintf(pdir, sizeof(pdir) - 1, "%s/clamav-partial", tmpdir);
 
 	if((mkdir(pdir, 0700) < 0) && (errno != EEXIST)) {
+		free(id);
 		cli_errmsg("Can't create the directory '%s'\n", pdir);
 		return -1;
-	} else {
+	} else if(errno == EEXIST) {
 		struct stat statb;
 
 		if(stat(pdir, &statb) < 0) {
-			cli_errmsg("Can't stat the directory '%s'\n", pdir);
+			free(id);
+			cli_errmsg("partial directory %s: %s\n", pdir,
+				strerror(errno));
 			return -1;
 		}
 		if(statb.st_mode & 077)
@@ -3889,7 +3891,7 @@ getHrefs(message *m, tag_arguments_t *hrefs)
 }
 
 /*
- * Experimental: validate URLs for phishes
+ * validate URLs for phishes
  * followurls: see if URLs point to malware
  */
 static void
@@ -3897,6 +3899,9 @@ checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
 {
 	blob *b;
 	tag_arguments_t hrefs;
+
+	if(*rc == VIRUS)
+		return;
 
 	hrefs.scanContents = mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS && (DCONF_PHISHING & PHISHING_CONF_ENGINE);
 
@@ -3927,7 +3932,6 @@ checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
 	}
 	hrefs_done(b,&hrefs);
 }
-
 
 #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
 static void
@@ -4034,11 +4038,6 @@ do_checkURLs(const char *dir, tag_arguments_t *hrefs)
  */
 
 /*
- * Removing the reliance on libcurl
- * Includes some of the freshclam hacks by Everton da Silva Marques
- * everton.marques@gmail.com>
- */
-/*
  * Simple implementation of a subset of RFC1945 (HTTP/1.0)
  * TODO: HTTP/1.1 (RFC2068)
  */
@@ -4056,11 +4055,7 @@ getURL(struct arg *arg)
 	const char *url = arg->url;
 	const char *dir = arg->dir;
 	const char *filename = arg->filename;
-#ifdef	C_WINDOWS
 	SOCKET sd;
-#else
-	int sd;
-#endif
 	struct sockaddr_in server;
 #ifdef	HAVE_IN_ADDR_T
 	in_addr_t ip;
@@ -4255,7 +4250,7 @@ getURL(struct arg *arg)
 		tv.tv_sec = 30;	/* FIXME: make this customisable */
 		tv.tv_usec = 0;
 
-		if(select(sd + 1, &set, NULL, NULL, &tv) < 0) {
+		if(select((int)sd + 1, &set, NULL, NULL, &tv) < 0) {
 			if(errno == EINTR)
 				continue;
 			closesocket(sd);
@@ -4414,18 +4409,24 @@ my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t l
 	return 0;
 }
 
+/*
+ * Non-blocking connect, based on an idea by Everton da Silva Marques
+ *	 <everton.marques@gmail.com>
+ */
+
+/*
+ * Returns the fcntl flags on the given socket
+ */
 static long
-nonblock_fcntl(int sock)
+nonblock_fcntl(SOCKET sock)
 {
 #ifdef	F_GETFL
-	int fcntl_flags = fcntl(sock, F_GETFL, 0);	/* Save fcntl() flags */
+	int fcntl_flags = fcntl(sock, F_GETFL, 0);
 
-	if(fcntl_flags < 0)
-		cli_warnmsg("nonblock_fcntl: saving: fcntl(%d, F_GETFL): errno=%d: %s\n",
-			sock, errno, strerror(errno));
+	if(fcntl_flags == -1)
+		cli_warnmsg("getfl: %s\n", strerror(errno));
 	else if(fcntl(sock, F_SETFL, (long)fcntl_flags | O_NONBLOCK) < 0)
-		cli_warnmsg("nonblock_fcntl: fcntl(%d, F_SETFL, O_NONBLOCK): errno=%d: %s\n",
-			sock, errno, strerror(errno));
+		cli_warnmsg("setfl: %s\n", strerror(errno));
 
 	return (long)fcntl_flags;
 #else
@@ -4433,28 +4434,28 @@ nonblock_fcntl(int sock)
 #endif
 }
 
+/*
+ * Restores the fcntl flags on the given socket
+ */
 static void
-restore_fcntl(int sock, long fcntl_flags)
+restore_fcntl(SOCKET sock, long fcntl_flags)
 {
 #ifdef	F_SETFL
 	if(fcntl_flags != -1L)
-		if(fcntl(sock, F_SETFL, fcntl_flags)) {
-			cli_warnmsg("restore_fcntl: restoring: fcntl(%d, F_SETFL): errno=%d: %s\n",
-				sock, errno, strerror(errno));
-		}
+		if(fcntl(sock, F_SETFL, fcntl_flags))
+			cli_warnmsg("setfl: %s\n", strerror(errno));
 #endif
 }
 
 static int
-nonblock_connect(const char *url, int sock, const struct sockaddr *addr)
+nonblock_connect(const char *url, SOCKET sock, const struct sockaddr *addr)
 {
 	int select_failures;	/* Max. of unexpected select() failures */
-	int bogus_loops;	/* Max. of useless loops */
+	int attempts;
 	struct timeval timeout;	/* When we should time out */
 	int numfd;		/* Highest fdset fd plus 1 */
 
-	/* Calculate into 'timeout' when we should time out */
-	gettimeofday(&timeout, 0);
+	gettimeofday(&timeout, 0);	/* store when we started to connect */
 
 	if(connect(sock, addr, sizeof(struct sockaddr_in)) != 0)
 		switch(errno) {
@@ -4471,9 +4472,9 @@ nonblock_connect(const char *url, int sock, const struct sockaddr *addr)
 	else
 		return connect_error(url, sock);
 
-	numfd = sock + 1; /* Highest fdset fd plus 1 */
+	numfd = (int)sock + 1;
 	select_failures = NONBLOCK_SELECT_MAX_FAILURES;
-	bogus_loops = NONBLOCK_MAX_BOGUS_LOOPS;
+	attempts = 1;
 	timeout.tv_sec += URL_TIMEOUT;
 
 	for (;;) {
@@ -4510,7 +4511,7 @@ nonblock_connect(const char *url, int sock, const struct sockaddr *addr)
 			cli_warnmsg("%s: select attempt %d %s\n",
 				url, select_failures, strerror(errno));
 			if(--select_failures >= 0)
-				continue; /* keep waiting */
+				continue; /* not timed-out, try again */
 			break; /* failed */
 		}
 
@@ -4520,19 +4521,17 @@ nonblock_connect(const char *url, int sock, const struct sockaddr *addr)
 			return connect_error(url, sock);
 
 		/* timeout */
-		if(--bogus_loops < 0) {
-			cli_warnmsg("%s: giving up due to excessive bogus loops\n",
-				url);
-			break; /* failed */
+		if(attempts++ == NONBLOCK_MAX_ATTEMPTS) {
+			cli_warnmsg("timeout connecting to %s\n", url);
+			break;
 		}
-
-	} /* for loop: keep waiting */
+	}
 
 	return -1; /* failed */
 }
 
 static int
-connect_error(const char *url, int sock)
+connect_error(const char *url, SOCKET sock)
 {
 #ifdef	SO_ERROR
 	int optval;
@@ -4734,12 +4733,12 @@ exportBinhexMessage(const char *dir, message *m)
 }
 
 /*
- * Locate any bounce message and extract it. Return 1 if anything found
+ * Locate any bounce message and extract it. Return cl_status
  */
 static int
 exportBounceMessage(text *start, const mbox_ctx *mctx)
 {
-	int rc = 0;
+	int rc = CL_CLEAN;
 	text *t;
 	fileblob *fb;
 
@@ -4795,12 +4794,12 @@ exportBounceMessage(text *start, const mbox_ctx *mctx)
 	if(t && ((fb = fileblobCreate()) != NULL)) {
 		cli_dbgmsg("Found a bounce message\n");
 		fileblobSetFilename(fb, mctx->dir, "bounce");
-		/*fileblobSetCTX(fb, mctx->ctx);*/
-		if(textToFileblob(start, fb, 1) == NULL)
+		fileblobSetCTX(fb, mctx->ctx);
+		if(textToFileblob(start, fb, 1) == NULL) {
 			cli_dbgmsg("Nothing new to save in the bounce message\n");
-		else
-			rc = 1;
-		fileblobDestroy(fb);
+			fileblobDestroy(fb);
+		} else
+			rc = fileblobScanAndDestroy(fb);
 	} else
 		cli_dbgmsg("Not found a bounce message\n");
 
@@ -4819,7 +4818,6 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 	message *body;
 #endif
 	message *aMessage = messages[i];
-
 	const int doPhishingScan = mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS && (DCONF_PHISHING&PHISHING_CONF_ENGINE);
 
 	if(aMessage == NULL)
@@ -4955,7 +4953,8 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 			 * Save this embedded message
 			 * to a temporary file
 			 */
-			saveTextPart(aMessage, mctx->dir, 1);
+			if(saveTextPart(aMessage, mctx->dir, 1) == CL_VIRUS)
+				*rc = VIRUS;
 			assert(aMessage == messages[i]);
 			messageDestroy(messages[i]);
 			messages[i] = NULL;

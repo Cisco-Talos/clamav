@@ -1,7 +1,11 @@
+Tue Sep  4 09:52:10 BST 2007 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Partial dir: plug leak on error and code tidy
+
 Tue Sep  4 01:31:23 CEST 2007 (acab)
 ------------------------------------
   * libclamav:pe.c  General "tidy" and some algo hacks. Old and inefficient
-  			sue cryptor replaced with a signature.
+			sue cryptor replaced with a signature.
 
 Sun Sep  2 12:41:46 BST 2007 (njh)
 ----------------------------------
