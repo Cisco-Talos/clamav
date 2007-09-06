@@ -446,7 +446,8 @@ fileblobDestroy(fileblob *fb)
 	} else if(fb->b.data) {
 		free(fb->b.data);
 		if(fb->b.name) {
-			cli_errmsg("fileblobDestroy: %s not saved: report to http://bugs.clamav.net\n", fb->b.name);
+			cli_errmsg("fileblobDestroy: %s not saved: report to http://bugs.clamav.net\n",
+				(fb->fullname) ? fb->fullname : fb->b.name);
 			free(fb->b.name);
 		} else
 			cli_errmsg("fileblobDestroy: file not saved (%lu bytes): report to http://bugs.clamav.net\n",
@@ -633,21 +634,30 @@ fileblobSetCTX(fileblob *fb, cli_ctx *ctx)
 int
 fileblobScan(const fileblob *fb)
 {
+#ifndef	C_WINDOWS
 	int rc, fd;
+#endif
 
 	if(fb->isInfected)
 		return CL_VIRUS;
 	if(fb->fullname == NULL) {
 		/* shouldn't happen, scan called before fileblobSetFilename */
 		cli_warnmsg("fileblobScan, fullname == NULL\n");
-		return CL_CLEAN;	/* there is no CL_UNKNOWN */
+		return CL_ENULLARG;	/* there is no CL_UNKNOWN */
 	}
 	if(fb->ctx == NULL) {
 		/* fileblobSetCTX hasn't been called */
 		cli_dbgmsg("fileblobScan, ctx == NULL\n");
 		return CL_CLEAN;	/* there is no CL_UNKNOWN */
 	}
-
+#ifndef	C_WINDOWS
+	/*
+	 * FIXME: On Windows, cli_readn gives "bad file descriptor" when called
+	 * by cli_check_mydoom_log from a call do cli_magic_scandesc here which
+	 * implies that the file descriptor is getting closed somewhere, but I
+	 * can't see where.
+	 * One possible fix would be to duplicate cli_scanfile here.
+	 */
 	fflush(fb->fp);
 	fd = dup(fileno(fb->fp));
 	if(fd == -1) {
@@ -662,11 +672,13 @@ fileblobScan(const fileblob *fb)
 
 	rc = cli_magic_scandesc(fd, fb->ctx);
 	close(fd);
+
 	if(rc == CL_VIRUS) {
 		cli_dbgmsg("%s is infected\n", fb->fullname);
 		return CL_VIRUS;
 	}
 	cli_dbgmsg("%s is clean\n", fb->fullname);
+#endif	/*C_WINDOWS*/
 	return CL_BREAK;
 }
 

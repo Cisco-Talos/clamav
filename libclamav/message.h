@@ -20,6 +20,7 @@
 #ifndef	_MESSAGE_H
 #define	_MESSAGE_H
 
+/* The contents could change, ONLY access in message.c */
 typedef struct message {
 	mime_type	mimeType;
 	encoding_type	*encodingTypes;

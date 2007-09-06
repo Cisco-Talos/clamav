@@ -75,7 +75,7 @@ int
 cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 {
 	off_t size;	/* total number of bytes in the file */
-	long bytesleft, trailerlength;
+	off_t bytesleft, trailerlength;
 	char *buf, *alloced;	/* start of memory mapped area */
 	const char *p, *q, *trailerstart;
 	const char *xrefstart;	/* cross reference table */
@@ -229,7 +229,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 			break;
 
 		/*object_number = atoi(q);*/
-		bytesleft -= (q - p);
+		bytesleft -= (off_t)(q - p);
 		p = q;
 
 		if(memcmp(q, "endobj", 6) == 0)
@@ -246,7 +246,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 			break;
 		}
 		/*generation_number = atoi(q);*/
-		bytesleft -= (q - p);
+		bytesleft -= (off_t)(q - p);
 		p = q;
 
 		q = pdf_nextobject(p, bytesleft);
@@ -256,14 +256,14 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 			break;
 		}
 
-		bytesleft -= (q - p) + 3;
+		bytesleft -= (off_t)((q - p) + 3);
 		objstart = p = &q[3];
 		objend = cli_pmemstr(p, bytesleft, "endobj", 6);
 		if(objend == NULL) {
 			cli_dbgmsg("No matching endobj\n");
 			break;
 		}
-		bytesleft -= (objend - p) + 6;
+		bytesleft -= (off_t)((objend - p) + 6);
 		p = &objend[6];
 		objlen = (unsigned long)(objend - objstart);
 
@@ -672,9 +672,13 @@ flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 		if(cli_writen(fout, output, sizeof(output) - stream.avail_out) < 0)
 			return Z_STREAM_ERROR;
 
-	cli_dbgmsg("cli_pdf: flatedecode in=%lu out=%lu ratio %ld (max %d)\n",
-		stream.total_in, stream.total_out,
-		stream.total_out / stream.total_in,
+	/*
+	 * On BSD systems total_in and total_out are "long long", so these
+	 * numbers could (in theory) get truncated in the debug statement
+	 */
+	cli_dbgmsg("cli_pdf: flatedecode in=%lu out=%lu ratio %lu (max %u)\n",
+		(unsigned long)stream.total_in, (unsigned long)stream.total_out,
+		(unsigned long)(stream.total_out / stream.total_in),
 		ctx->limits ? ctx->limits->maxratio : 0);
 
 	if(ctx->limits &&

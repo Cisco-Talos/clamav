@@ -297,7 +297,8 @@ messageSetMimeType(message *mess, const char *type)
 				}
 				if(highestSimil >= 50) {
 					cli_dbgmsg("Unknown MIME type \"%s\" - guessing as %s (%u%% certainty)\n",
-						type, closest, highestSimil);
+						type, closest,
+						(int)highestSimil);
 					mess->mimeType = (mime_type)t;
 				} else {
 					cli_dbgmsg("Unknown MIME type: `%s', set to Application - if you believe this file contains a virus, submit it to www.clamav.net\n", type);
@@ -1405,7 +1406,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			(*destroy)(ret);
 			ret = newret;
 		}
-		cli_dbgmsg("messageExport: enctype %d is %d\n", i, enctype);
+		cli_dbgmsg("messageExport: enctype %d is %d\n", i, (int)enctype);
 		/*
 		 * Find the filename to decode
 		 */
@@ -1553,7 +1554,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		} while((t_line = t_line->t_next) != NULL);
 
 		cli_dbgmsg("Exported %lu bytes using enctype %d\n",
-			(unsigned long)size, enctype);
+			(unsigned long)size, (int)enctype);
 
 		/* Verify we have nothing left to flush out */
 		if(m->base64chars) {
@@ -1572,7 +1573,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 unsigned char *
 base64Flush(message *m, unsigned char *buf)
 {
-	cli_dbgmsg("%u trailing bytes to export\n", m->base64chars);
+	cli_dbgmsg("%d trailing bytes to export\n", m->base64chars);
 
 	if(m->base64chars) {
 		unsigned char *ret = decode(m, NULL, buf, base64, FALSE);
@@ -1684,7 +1685,7 @@ messageToText(message *m)
 		const encoding_type enctype = m->encodingTypes[i];
 
 		cli_dbgmsg("messageToText: export transfer method %d = %d\n",
-			i, enctype);
+			i, (int)enctype);
 
 		switch(enctype) {
 			case NOENCODING:

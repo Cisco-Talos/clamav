@@ -3291,7 +3291,7 @@ clamfi_eom(SMFICTX *ctx)
 
 		for(i = privdata->statusCount; i > 0; --i)
 			if(smfi_chgheader(ctx, "X-Virus-Status", i, NULL) == MI_FAILURE)
-				logg(_("^Failed to delete X-Virus-Status header %d"), i);
+				logg(_("^Failed to delete X-Virus-Status header %d\n"), i);
 	}
 
 	if(!external) {
@@ -3346,7 +3346,7 @@ clamfi_eom(SMFICTX *ctx)
 		if(send(session->sock, cmdbuf, nbytes, 0) < nbytes) {
 			perror("send");
 			clamfi_cleanup(ctx);
-			logg(_("failed to send SCAN %s command to clamd"), privdata->filename);
+			logg(_("failed to send SCAN %s command to clamd\n"), privdata->filename);
 			return cl_error;
 		}
 #else
@@ -3367,7 +3367,7 @@ clamfi_eom(SMFICTX *ctx)
 		if(send(privdata->cmdSocket, cmdbuf, nbytes, 0) < nbytes) {
 			perror("send");
 			clamfi_cleanup(ctx);
-			logg(_("failed to send SCAN command to clamd"));
+			logg(_("failed to send SCAN command to clamd\n"));
 			return cl_error;
 		}
 
@@ -3414,7 +3414,7 @@ clamfi_eom(SMFICTX *ctx)
 			 */
 			clamfi_cleanup(ctx);
 
-			logg(_("clamfi_eom: read nothing from clamd on %s"), hostname);
+			logg(_("clamfi_eom: read nothing from clamd on %s\n"), hostname);
 
 #ifdef	SESSION
 			pthread_mutex_lock(&sstatus_mutex);

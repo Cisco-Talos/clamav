@@ -2031,7 +2031,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 			mimeType = NOMIME;
 			messageSetMimeSubtype(mainMessage, "");
 		} else
-			cli_dbgmsg("mimeType = %d\n", mimeType);
+			cli_dbgmsg("mimeType = %d\n", (int)mimeType);
 
 		switch(mimeType) {
 		case NOMIME:
@@ -2413,7 +2413,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				} while((t_line = t_line->t_next) != NULL);
 
 				cli_dbgmsg("Part %d has %d lines, rc = %d\n",
-					multiparts, lines, rc);
+					multiparts, lines, (int)rc);
 
 				/*
 				 * Only save in the array of messages if some
@@ -2975,7 +2975,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
 			if(saveIt) {
 				cli_dbgmsg("Saving text part to scan, rc = %d\n",
-					rc);
+					(int)rc);
 				if(saveTextPart(mainMessage, mctx->dir, 1) == CL_VIRUS)
 					rc = VIRUS;
 
@@ -2995,7 +2995,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 	if((rc != FAIL) && infected)
 		rc = VIRUS;
 
-	cli_dbgmsg("parseEmailBody() returning %d\n", rc);
+	cli_dbgmsg("parseEmailBody() returning %d\n", (int)rc);
 
 	return rc;
 }
@@ -3623,7 +3623,7 @@ rfc2047(const char *in)
 		b = messageToBlob(m, 1);
 		len = blobGetDataSize(b);
 		cli_dbgmsg("Decoded as '%*.*s'\n", (int)len, (int)len,
-			blobGetData(b));
+			(const char *)blobGetData(b));
 		memcpy(pout, blobGetData(b), len);
 		blobDestroy(b);
 		messageDestroy(m);
@@ -3932,6 +3932,11 @@ checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
 	if(b) {
 		if(hrefs.scanContents) {
 			if(phishingScan(mainMessage, mctx->dir, mctx->ctx, &hrefs) == CL_VIRUS) {
+				/*
+				 * FIXME: message objects' contents are
+				 *	encapsulated so we should not access
+				 *	the members directly
+				 */
 				mainMessage->isInfected = TRUE;
 				*rc = VIRUS;
 				cli_dbgmsg("PH:Phishing found\n");
@@ -4703,7 +4708,7 @@ isBounceStart(const char *line)
 		do
 			if(*line == ' ')
 				numSpaces++;
-			else if(isdigit(*line))
+			else if(isdigit((*line) & 0xFF))
 				numDigits++;
 		while(*++line != '\0');
 
@@ -5005,7 +5010,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 				 * whole multipart section
 				 */
 				*rc = parseEmailBody(aMessage, *tptr, mctx, recursion_level + 1);
-				cli_dbgmsg("Finished recursion, rc = %d\n", *rc);
+				cli_dbgmsg("Finished recursion, rc = %d\n", (int)*rc);
 				assert(aMessage == messages[i]);
 				messageDestroy(messages[i]);
 				messages[i] = NULL;
