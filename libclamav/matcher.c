@@ -42,10 +42,6 @@
 #include "str.h"
 #include "cltypes.h"
 
-#ifdef HAVE_NCORE
-#include "matcher-ncore.h"
-#endif
-
 static cli_file_t targettab[CL_TARGET_TABLE_SIZE] = { 0, CL_TYPE_MSEXE, CL_TYPE_MSOLE2, CL_TYPE_HTML, CL_TYPE_MAIL, CL_TYPE_GRAPHICS, CL_TYPE_ELF };
 
 int cli_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cl_engine *engine, cli_file_t ftype)
@@ -60,11 +56,6 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, const char **virn
 	cli_errmsg("cli_scanbuff: engine == NULL\n");
 	return CL_ENULLARG;
     }
-
-#ifdef HAVE_NCORE
-    if(engine->ncore)
-	return cli_ncore_scanbuff(buffer, length, virname, engine, ftype, targettab);
-#endif
 
     groot = engine->root[0]; /* generic signatures */
 
@@ -300,16 +291,6 @@ int cli_scandesc(int desc, cli_ctx *ctx, uint8_t otfrec, cli_file_t ftype, uint8
 	cli_errmsg("cli_scandesc: engine == NULL\n");
 	return CL_ENULLARG;
     }
-
-#ifdef HAVE_NCORE
-    if(ctx->engine->ncore) {
-	    int cont;
-
-	ret = cli_ncore_scandesc(desc, ctx, ftype, &cont, targettab, &md5ctx);
-	if(!cont)
-	    return ret;
-    }
-#endif
 
     if(!ftonly)
 	groot = ctx->engine->root[0]; /* generic signatures */

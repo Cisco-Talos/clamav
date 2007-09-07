@@ -64,13 +64,7 @@ extern "C"
 #define CL_ELOCKDB	-126 /* can't lock DB directory */
 #define CL_EARJ         -127 /* ARJ handler error */
 
-/* NodalCore */
-#define CL_ENCINIT	-200 /* NodalCore initialization failed */
-#define	CL_ENCLOAD	-201 /* error loading NodalCore database */
-#define CL_ENCIO	-202 /* general NodalCore I/O error */
-
 /* db options */
-#define CL_DB_NCORE	    0x1
 #define CL_DB_PHISHING	    0x2
 #define CL_DB_ACONLY	    0x4 /* WARNING: only for developers */
 #define CL_DB_PHISHING_URLS 0x8
@@ -111,7 +105,6 @@ extern "C"
 
 struct cl_engine {
     unsigned int refcount; /* reference counter */
-    unsigned short ncore;
     unsigned short sdb;
     unsigned int dboptions;
 
@@ -129,9 +122,6 @@ struct cl_engine {
 
     /* RAR metadata */
     void *rar_mlist;
-
-    /* NodalCore database handle */
-    void *ncdb;
 
     /* Phishing .pdb and .wdb databases*/
     void *whitelist_matcher;

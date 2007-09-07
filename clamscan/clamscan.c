@@ -224,10 +224,7 @@ int main(int argc, char **argv)
 	dms += (dms < 0) ? (1000000):(0);
 	logg("\n----------- SCAN SUMMARY -----------\n");
 	logg("Known viruses: %u\n", info.sigs);
-	if(opt_check(opt, "ncore"))
-	    logg("Engine version: %s [ncore]\n", cl_retver());
-	else
-	    logg("Engine version: %s\n", cl_retver());
+	logg("Engine version: %s\n", cl_retver());
 	logg("Scanned directories: %u\n", info.dirs);
 	logg("Scanned files: %u\n", info.files);
 	logg("Infected files: %u\n", info.ifiles);
@@ -293,9 +290,6 @@ void help(void)
     mprintf("    --exclude-dir=PATT                   Don't scan directories containing PATT\n");
     mprintf("    --include=PATT                       Only scan file names containing PATT\n");
     mprintf("    --include-dir=PATT                   Only scan directories containing PATT\n");
-#endif
-#ifdef HAVE_NCORE
-    mprintf("\n    --ncore                            Use hardware acceleration\n");
 #endif
     mprintf("\n");
     mprintf("    --detect-pua                         Detect Possibly Unwanted Applications\n");

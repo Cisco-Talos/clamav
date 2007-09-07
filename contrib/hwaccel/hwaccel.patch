@@ -1,0 +1,1073 @@
+diff -Nura clamav-devel/clamd/clamd.c clamav-devel.hwaccel/clamd/clamd.c
+--- clamav-devel/clamd/clamd.c	2007-09-07 14:04:34.000000000 +0200
++++ clamav-devel.hwaccel/clamd/clamd.c	2007-08-13 18:44:10.000000000 +0200
+@@ -312,6 +312,15 @@
+     else
+ 	logg("Disabling URL based phishing detection.\n");
+ 
++    if(cfgopt(copt, "NodalCoreAcceleration")->enabled) {
++#ifdef HAVE_NCORE
++	dboptions |= CL_DB_NCORE;
++	logg("Enabling support for hardware acceleration.\n");
++#else
++	logg("^Support for hardware acceleration not compiled in.\n");
++#endif
++    }
++
+     if((ret = cl_load(dbdir, &engine, &sigs, dboptions))) {
+ 	logg("!%s\n", cl_strerror(ret));
+ 	logg_close();
+diff -Nura clamav-devel/clamd/server-th.c clamav-devel.hwaccel/clamd/server-th.c
+--- clamav-devel/clamd/server-th.c	2007-09-07 14:04:16.000000000 +0200
++++ clamav-devel.hwaccel/clamd/server-th.c	2007-05-28 17:26:59.000000000 +0200
+@@ -610,6 +610,11 @@
+ 	}
+ 
+ 	pthread_mutex_lock(&reload_mutex);
++	if(reload && cfgopt(copt, "NodalCoreAcceleration")->enabled) {
++	    logg("^RELOAD is not available in hardware accelerated mode (yet).\n");
++	    logg("^Please restart the daemon manually.\n");
++	    reload = 0;
++	}
+ 	if(reload) {
+ 	    pthread_mutex_unlock(&reload_mutex);
+ 	    engine = reload_db(engine, dboptions, copt, FALSE, &ret);
+diff -Nura clamav-devel/clamdscan/client.c clamav-devel.hwaccel/clamdscan/client.c
+--- clamav-devel/clamdscan/client.c	2007-09-07 14:05:26.000000000 +0200
++++ clamav-devel.hwaccel/clamdscan/client.c	2007-03-31 20:59:16.000000000 +0200
+@@ -56,6 +56,7 @@
+ 
+ void move_infected(const char *filename, const struct optstruct *opt);
+ int notremoved = 0, notmoved = 0;
++static int ncore = 0;
+ 
+ static int dsresult(int sockd, const struct optstruct *opt)
+ {
+@@ -388,6 +389,11 @@
+ 	return -1;
+     }
+ 
++#ifdef HAVE_NCORE
++    if(cfgopt(copt, "NodalCoreAcceleration")->enabled)
++	ncore = 1;
++#endif
++
+     freecfg(copt);
+ 
+     return sockd;
+@@ -403,7 +409,7 @@
+ 
+     *infected = 0;
+ 
+-    if(opt_check(opt, "multiscan"))
++    if(ncore || opt_check(opt, "multiscan"))
+ 	scantype = "MULTISCAN";
+ 
+     /* parse argument list */
+diff -Nura clamav-devel/clamscan/clamscan.c clamav-devel.hwaccel/clamscan/clamscan.c
+--- clamav-devel/clamscan/clamscan.c	2007-09-07 14:06:16.000000000 +0200
++++ clamav-devel.hwaccel/clamscan/clamscan.c	2007-08-13 18:23:19.000000000 +0200
+@@ -224,7 +224,10 @@
+ 	dms += (dms < 0) ? (1000000):(0);
+ 	logg("\n----------- SCAN SUMMARY -----------\n");
+ 	logg("Known viruses: %u\n", info.sigs);
+-	logg("Engine version: %s\n", cl_retver());
++	if(opt_check(opt, "ncore"))
++	    logg("Engine version: %s [ncore]\n", cl_retver());
++	else
++	    logg("Engine version: %s\n", cl_retver());
+ 	logg("Scanned directories: %u\n", info.dirs);
+ 	logg("Scanned files: %u\n", info.files);
+ 	logg("Infected files: %u\n", info.ifiles);
+@@ -291,6 +294,9 @@
+     mprintf("    --include=PATT                       Only scan file names containing PATT\n");
+     mprintf("    --include-dir=PATT                   Only scan directories containing PATT\n");
+ #endif
++#ifdef HAVE_NCORE
++    mprintf("\n    --ncore                            Use hardware acceleration\n");
++#endif
+     mprintf("\n");
+     mprintf("    --detect-pua                         Detect Possibly Unwanted Applications\n");
+     mprintf("    --no-mail                            Disable mail file support\n");
+diff -Nura clamav-devel/clamscan/clamscan_opt.h clamav-devel.hwaccel/clamscan/clamscan_opt.h
+--- clamav-devel/clamscan/clamscan_opt.h	2007-09-07 14:06:51.000000000 +0200
++++ clamav-devel.hwaccel/clamscan/clamscan_opt.h	2007-08-13 18:20:41.000000000 +0200
+@@ -59,6 +59,9 @@
+     {"max-recursion", 1, 0, 0},
+     {"max-dir-recursion", 1, 0, 0},
+     {"max-mail-recursion", 1, 0, 0},
++#ifdef HAVE_NCORE
++    {"ncore", 0, 0, 0},
++#endif
+     {"detect-pua", 0, 0, 0},
+     {"disable-archive", 0, 0, 0},
+     {"no-archive", 0, 0, 0},
+diff -Nura clamav-devel/clamscan/manager.c clamav-devel.hwaccel/clamscan/manager.c
+--- clamav-devel/clamscan/manager.c	2007-09-07 14:06:38.000000000 +0200
++++ clamav-devel.hwaccel/clamscan/manager.c	2007-08-13 18:18:26.000000000 +0200
+@@ -164,6 +164,9 @@
+     }
+ #endif
+ 
++    if(opt_check(opt, "ncore"))
++	dboptions |= CL_DB_NCORE;
++
+     if(!opt_check(opt, "no-phishing-sigs"))
+ 	dboptions |= CL_DB_PHISHING;
+ 
+diff -Nura clamav-devel/configure.in clamav-devel.hwaccel/configure.in
+--- clamav-devel/configure.in	2007-09-07 14:14:41.000000000 +0200
++++ clamav-devel.hwaccel/configure.in	2007-07-11 00:20:10.000000000 +0200
+@@ -151,6 +151,23 @@
+     AC_CHECK_HEADER(bzlib.h,[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lbz2"; AC_DEFINE(HAVE_BZLIB_H,1,have bzip2)], AC_MSG_WARN([****** bzip2 support disabled]))
+ fi
+ 
++AC_ARG_ENABLE(ncore,
++[  --disable-ncore	  disable support for NodalCore acceleration (default=auto)],
++want_ncore=$enableval, want_ncore="auto")
++
++if test "$want_ncore" = "auto"
++then
++    AC_CHECK_LIB(sn_sigscan, sn_sigscan_initdb, have_sigscan=yes,)
++    if test "$have_sigscan" = "yes"; then
++	want_ncore="yes"
++    fi
++fi
++
++if test "$want_ncore" = "yes"
++then
++    AC_CHECK_HEADER(dlfcn.h,[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -ldl" ; AC_DEFINE(HAVE_NCORE,1,Support for NodalCore acceleration)], AC_MSG_WARN([****** NodalCore support disabled (no support for dlopen)]))
++fi
++
+ AC_ARG_ENABLE(dns,
+     AC_HELP_STRING([--disable-dns], [disable support for database verification through DNS]),
+     [want_dns=$enableval], [want_dns=yes]
+diff -Nura clamav-devel/docs/clamdoc.tex clamav-devel.hwaccel/docs/clamdoc.tex
+--- clamav-devel/docs/clamdoc.tex	2007-09-07 14:07:40.000000000 +0200
++++ clamav-devel.hwaccel/docs/clamdoc.tex	2007-07-11 00:05:45.000000000 +0200
+@@ -659,6 +659,19 @@
+ 	\item CryptFF
+     \end{itemize}
+ 
++    \subsection{Hardware acceleration}
++    ClamAV 0.90 comes with support for Sensory Networks' NodalCore
++    acceleration technology. Thanks to specialized Security Processing Unit
++    built into NodalCore C-Series accelerators it is possible to achieve more
++    performance than is possible by just adding general purpose CPUs.
++    Additionally, Sensory Networks' CorePAKT technology ensures that compiled
++    signature databases occupy a memory footprint smaller than any other
++    competing technology on the market - in many cases by up to 90\%. The
++    ability to store multiple databases in compressed format whilst still
++    achieving high throughputs makes NodalCore ideal for applications
++    demanding high performance on large signature databases such as ClamAV.\\
++    For more information please visit \url{http://www.clamav.net/nodalcore/}
++
+     \subsection{API}
+ 
+     \subsubsection{Header file}
+@@ -687,6 +700,8 @@
+     \begin{itemize}
+ 	\item \textbf{CL\_DB\_STDOPT}\\
+ 	This is an alias for a recommended set of scan options.
++	\item \textbf{CL\_DB\_NCORE}\\
++	Initialize NodalCore and load the hardware database (if applicable).
+ 	\item \textbf{CL\_DB\_PHISHING}\\
+ 	Load phishing signatures.
+ 	\item \textbf{CL\_DB\_PHISHING\_URLS}\\
+diff -Nura clamav-devel/docs/man/clamd.conf.5.in clamav-devel.hwaccel/docs/man/clamd.conf.5.in
+--- clamav-devel/docs/man/clamd.conf.5.in	2007-09-07 15:04:51.000000000 +0200
++++ clamav-devel.hwaccel/docs/man/clamd.conf.5.in	2007-08-13 18:40:08.000000000 +0200
+@@ -310,6 +310,11 @@
+ .br 
+ Default: no
+ .TP 
++\fBNodalCoreAcceleration BOOL\fR
++Enable support for Sensory Networks' NodalCore hardware accelerator.
++.br
++Default: no
++.TP 
+ \fBClamukoScanOnAccess BOOL\fR
+ Enable Clamuko. Dazuko (/dev/dazuko) must be configured and running.
+ .br 
+diff -Nura clamav-devel/etc/clamd.conf clamav-devel.hwaccel/etc/clamd.conf
+--- clamav-devel/etc/clamd.conf	2007-09-07 14:07:56.000000000 +0200
++++ clamav-devel.hwaccel/etc/clamd.conf	2007-08-20 19:03:08.000000000 +0200
+@@ -314,6 +314,10 @@
+ # Default: no
+ #ArchiveBlockMax no
+ 
++# Enable support for Sensory Networks' NodalCore hardware accelerator.
++# Default: no
++#NodalCoreAcceleration yes
++
+ 
+ ##
+ ## Clamuko settings
+diff -Nura clamav-devel/libclamav/Makefile.am clamav-devel.hwaccel/libclamav/Makefile.am
+--- clamav-devel/libclamav/Makefile.am	2007-09-07 14:16:27.000000000 +0200
++++ clamav-devel.hwaccel/libclamav/Makefile.am	2007-09-05 15:37:12.000000000 +0200
+@@ -31,6 +31,8 @@
+         matcher-ac.h \
+         matcher-bm.c \
+         matcher-bm.h \
++	matcher-ncore.c \
++	matcher-ncore.h \
+         matcher.c \
+         matcher.h \
+         md5.c \
+diff -Nura clamav-devel/libclamav/clamav.h clamav-devel.hwaccel/libclamav/clamav.h
+--- clamav-devel/libclamav/clamav.h	2007-09-07 14:38:43.000000000 +0200
++++ clamav-devel.hwaccel/libclamav/clamav.h	2007-08-28 22:36:01.000000000 +0200
+@@ -64,7 +64,13 @@
+ #define CL_ELOCKDB	-126 /* can't lock DB directory */
+ #define CL_EARJ         -127 /* ARJ handler error */
+ 
++/* NodalCore */
++#define CL_ENCINIT	-200 /* NodalCore initialization failed */
++#define	CL_ENCLOAD	-201 /* error loading NodalCore database */
++#define CL_ENCIO	-202 /* general NodalCore I/O error */
++
+ /* db options */
++#define CL_DB_NCORE	    0x1
+ #define CL_DB_PHISHING	    0x2
+ #define CL_DB_ACONLY	    0x4 /* WARNING: only for developers */
+ #define CL_DB_PHISHING_URLS 0x8
+@@ -105,6 +111,7 @@
+ 
+ struct cl_engine {
+     unsigned int refcount; /* reference counter */
++    unsigned short ncore;
+     unsigned short sdb;
+     unsigned int dboptions;
+ 
+@@ -123,6 +130,9 @@
+     /* RAR metadata */
+     void *rar_mlist;
+ 
++    /* NodalCore database handle */
++    void *ncdb;
++
+     /* Phishing .pdb and .wdb databases*/
+     void *whitelist_matcher;
+     void *domainlist_matcher;
+diff -Nura clamav-devel/libclamav/matcher-ncore.c clamav-devel.hwaccel/libclamav/matcher-ncore.c
+--- clamav-devel/libclamav/matcher-ncore.c	1970-01-01 01:00:00.000000000 +0100
++++ clamav-devel.hwaccel/libclamav/matcher-ncore.c	2007-03-31 21:17:45.000000000 +0200
+@@ -0,0 +1,606 @@
++/*
++ *  Copyright (C) 2006 Sensory Networks, Inc.
++ *	      Written by Tomasz Kojm, dlopen() support by Peter Duthie
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
++ *  MA 02110-1301, USA.
++ */
++
++#if HAVE_CONFIG_H
++#include "clamav-config.h"
++#endif
++
++#ifdef HAVE_NCORE
++
++#include <stdio.h>
++#include <stdlib.h>
++#ifdef	HAVE_UNISTD_H
++#include <unistd.h>
++#endif
++#include <string.h>
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <fcntl.h>
++#include <ctype.h>
++#ifdef HAVE_NCORE
++#include <dlfcn.h>
++#endif
++
++#include "clamav.h"
++#include "matcher.h"
++#include "cltypes.h"
++#include "md5.h"
++#include "readdb.h"
++#include "str.h"
++#include "matcher-ncore.h"
++
++#define HWBUFFSIZE 32768
++
++/* Globals */
++static void *g_ncore_dllhandle = 0;
++static const char *g_ncore_dllpath = "/usr/lib/libsn_sigscan.so";
++
++/* Function pointer types */
++typedef int (*sn_sigscan_initdb_t)(void **);
++typedef int (*sn_sigscan_loaddb_t)(void *dbhandle, const char *filename,
++        int devicenum, unsigned int *count);
++typedef int (*sn_sigscan_load2dbs_t)(void *dbhandle, const char *baseFilename,
++        const char *incrFilename, int devicenum, unsigned int *count);
++typedef int (*sn_sigscan_closedb_t)(void *dbhandle);
++typedef int (*sn_sigscan_createstream_t)(void *dbhandle,
++        const uint32_t *dbMaskData, unsigned int dbMaskWords,
++        void **streamhandle);
++typedef int (*sn_sigscan_writestream_t)(void *streamhandle, const char *buffer,
++        unsigned int len);
++typedef int (*sn_sigscan_closestream_t)(void *streamhandle,
++        void **resulthandle);
++typedef int (*sn_sigscan_resultcount_t)(void *resulthandle);
++typedef int (*sn_sigscan_resultget_name_t)(void *resulthandle,
++        unsigned int index, const char **matchname);
++typedef int (*sn_sigscan_resultget_startoffset_t)(void *resulthandle,
++        unsigned int index, unsigned long long *startoffset);
++typedef int (*sn_sigscan_resultget_endoffset_t)(void *resulthandle,
++        unsigned int index, unsigned long long *endoffset);
++typedef int (*sn_sigscan_resultget_targettype_t)(void *resulthandle,
++        unsigned int index, int *targettype);
++typedef int (*sn_sigscan_resultget_offsetstring_t)(void *resulthandle,
++        unsigned int index, const char **offsetstring);
++typedef int (*sn_sigscan_resultget_extradata_t)(void *resulthandle,
++        unsigned int index, const char **optionalsigdata);
++typedef int (*sn_sigscan_resultfree_t)(void *resulthandle);
++typedef void (*sn_sigscan_error_function_t)(const char *msg);
++typedef int (*sn_sigscan_seterrorlogger_t)(sn_sigscan_error_function_t errfn);
++
++/* Function pointer values */
++sn_sigscan_initdb_t sn_sigscan_initdb_f = 0;
++sn_sigscan_loaddb_t sn_sigscan_loaddb_f = 0;
++sn_sigscan_load2dbs_t sn_sigscan_load2dbs_f = 0;
++sn_sigscan_closedb_t sn_sigscan_closedb_f = 0;
++sn_sigscan_createstream_t sn_sigscan_createstream_f = 0;
++sn_sigscan_writestream_t sn_sigscan_writestream_f = 0;
++sn_sigscan_closestream_t sn_sigscan_closestream_f = 0;
++sn_sigscan_resultcount_t sn_sigscan_resultcount_f = 0;
++sn_sigscan_resultget_name_t sn_sigscan_resultget_name_f = 0;
++sn_sigscan_resultget_startoffset_t sn_sigscan_resultget_startoffset_f = 0;
++sn_sigscan_resultget_endoffset_t sn_sigscan_resultget_endoffset_f = 0;
++sn_sigscan_resultget_targettype_t sn_sigscan_resultget_targettype_f = 0;
++sn_sigscan_resultget_offsetstring_t sn_sigscan_resultget_offsetstring_f = 0;
++sn_sigscan_resultget_extradata_t sn_sigscan_resultget_extradata_f = 0;
++sn_sigscan_resultfree_t sn_sigscan_resultfree_f = 0;
++sn_sigscan_seterrorlogger_t sn_sigscan_seterrorlogger_f = 0;
++
++static int cli_ncore_dlinit()
++{
++    if(access(g_ncore_dllpath, R_OK) == -1) {
++	cli_dbgmsg("cli_ncore_dlinit: Can't access %s\n", g_ncore_dllpath);
++	return CL_ENCINIT;
++    }
++
++    g_ncore_dllhandle = dlopen(g_ncore_dllpath, RTLD_NOW | RTLD_LOCAL);
++    if(!g_ncore_dllhandle) {
++	cli_dbgmsg("cli_ncore_dlinit: dlopen() failed for %s\n", g_ncore_dllpath);
++	return CL_ENCINIT;
++    }
++
++    /* get the symbols */
++    sn_sigscan_initdb_f = (sn_sigscan_initdb_t)dlsym(g_ncore_dllhandle, "sn_sigscan_initdb");
++    sn_sigscan_loaddb_f = (sn_sigscan_loaddb_t)dlsym(g_ncore_dllhandle, "sn_sigscan_loaddb");
++    sn_sigscan_load2dbs_f = (sn_sigscan_load2dbs_t)dlsym(g_ncore_dllhandle, "sn_sigscan_load2dbs");
++    sn_sigscan_closedb_f = (sn_sigscan_closedb_t)dlsym(g_ncore_dllhandle, "sn_sigscan_closedb");
++    sn_sigscan_createstream_f = (sn_sigscan_createstream_t)dlsym(g_ncore_dllhandle, "sn_sigscan_createstream");
++    sn_sigscan_writestream_f = (sn_sigscan_writestream_t)dlsym(g_ncore_dllhandle, "sn_sigscan_writestream");
++    sn_sigscan_closestream_f = (sn_sigscan_closestream_t)dlsym(g_ncore_dllhandle, "sn_sigscan_closestream");
++    sn_sigscan_resultcount_f = (sn_sigscan_resultcount_t)dlsym(g_ncore_dllhandle, "sn_sigscan_resultcount");
++    sn_sigscan_resultget_name_f = (sn_sigscan_resultget_name_t)dlsym(g_ncore_dllhandle, "sn_sigscan_resultget_name");
++    sn_sigscan_resultget_startoffset_f = (sn_sigscan_resultget_startoffset_t)dlsym(g_ncore_dllhandle, "sn_sigscan_resultget_startoffset");
++    sn_sigscan_resultget_endoffset_f = (sn_sigscan_resultget_endoffset_t)dlsym(g_ncore_dllhandle, "sn_sigscan_resultget_endoffset");
++    sn_sigscan_resultget_targettype_f = (sn_sigscan_resultget_targettype_t)dlsym(g_ncore_dllhandle, "sn_sigscan_resultget_targettype");
++    sn_sigscan_resultget_offsetstring_f = (sn_sigscan_resultget_offsetstring_t)dlsym(g_ncore_dllhandle, "sn_sigscan_resultget_offsetstring");
++    sn_sigscan_resultget_extradata_f = (sn_sigscan_resultget_extradata_t)dlsym(g_ncore_dllhandle, "sn_sigscan_resultget_extradata");
++    sn_sigscan_resultfree_f = (sn_sigscan_resultfree_t)dlsym(g_ncore_dllhandle, "sn_sigscan_resultfree");
++    sn_sigscan_seterrorlogger_f = (sn_sigscan_seterrorlogger_t)dlsym(g_ncore_dllhandle, "sn_sigscan_seterrorlogger");
++
++    /* Check that we got all the symbols */
++    if(sn_sigscan_initdb_f && sn_sigscan_loaddb_f && sn_sigscan_load2dbs_f &&
++            sn_sigscan_closedb_f && sn_sigscan_createstream_f &&
++            sn_sigscan_writestream_f && sn_sigscan_closestream_f &&
++            sn_sigscan_resultcount_f && sn_sigscan_resultget_name_f &&
++            sn_sigscan_resultget_startoffset_f &&
++            sn_sigscan_resultget_endoffset_f &&
++            sn_sigscan_resultget_targettype_f &&
++            sn_sigscan_resultget_offsetstring_f &&
++            sn_sigscan_resultget_extradata_f && sn_sigscan_resultfree_f &&
++            sn_sigscan_seterrorlogger_f)
++    {
++        return CL_SUCCESS;
++    }
++
++    dlclose(g_ncore_dllhandle);
++    g_ncore_dllhandle = 0;
++    return CL_ENCINIT;
++}
++
++int cli_ncore_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_engine *engine, unsigned short ftype, unsigned int *targettab)
++{
++	void *streamhandle;
++	void *resulthandle;
++	static const uint32_t datamask[2] = { 0xffffffff, 0xffffffff };
++	int count, hret, i;
++	char *pt;
++	int ret = CL_CLEAN;
++
++
++    /* TODO: Setup proper data bitmask (need specs) */
++    /* Create the hardware scanning stream */
++    hret = (*sn_sigscan_createstream_f)(engine->ncdb, datamask, 2, &streamhandle);
++    if(hret) {
++        cli_errmsg("cli_ncore_scanbuff: can't create new hardware stream: %d\n", hret);
++        return CL_ENCIO;
++    }
++
++    /* Write data to the hardware scanning stream */
++    hret = (*sn_sigscan_writestream_f)(streamhandle, buffer, length);
++    if(hret) {
++        cli_errmsg("cli_ncore_scanbuff: can't write %u bytes to hardware stream: %d\n", length, hret);
++        (*sn_sigscan_closestream_f)(streamhandle, &resulthandle);
++        (*sn_sigscan_resultfree_f)(resulthandle);
++        return CL_ENCIO;
++    }
++
++    /* Close the hardware scanning stream and collect the result */
++    hret = (*sn_sigscan_closestream_f)(streamhandle, &resulthandle);
++    if(hret) {
++        cli_errmsg("cli_ncore_scanbuff: can't close hardware stream: %d\n", hret);
++        return CL_ENCIO;
++    }
++
++    /* Iterate through the results */
++    count = (*sn_sigscan_resultcount_f)(resulthandle);
++    for(i = 0; i < count; i++) {
++        const char *matchname = NULL, *offsetstring = NULL, *optionalsigdata = NULL;
++        unsigned int targettype = 0;
++
++        /* Acquire the name of the result */
++        hret = (*sn_sigscan_resultget_name_f)(resulthandle, i, &matchname);
++        if(hret) {
++            cli_errmsg("cli_ncore_scanbuff: sn_sigscan_resultget_name failed for result %u: %d\n", i, hret);
++            (*sn_sigscan_resultfree_f)(resulthandle);
++            return CL_ENCIO;
++        }
++        if(!matchname) {
++            cli_errmsg("cli_ncore_scanbuff: HW Result[%u]: Signature without name\n", i);
++            (*sn_sigscan_resultfree_f)(resulthandle);
++            return CL_EMALFDB;
++        }
++
++        /* Acquire the result file type and check that it is correct */
++        hret = (*sn_sigscan_resultget_targettype_f)(resulthandle, i, &targettype);
++        if(hret) {
++            cli_errmsg("cli_ncore_scanbuff: sn_sigscan_resultget_targettype failed for result %u, signature %s: %d\n", i, matchname, hret);
++            (*sn_sigscan_resultfree_f)(resulthandle);
++            return CL_ENCIO;
++        }
++
++        if(targettype && targettab[targettype] != ftype) {
++            cli_dbgmsg("cli_ncore_scanbuff: HW Result[%u]: %s: Target type: %u, expected: %u\n", i, matchname, targettab[targettype], ftype);
++            continue;
++        }
++
++        hret = (*sn_sigscan_resultget_offsetstring_f)(resulthandle, i, &offsetstring);
++        if(hret) {
++            cli_errmsg("cli_ncore_scanbuff: sn_sigscan_resultget_offsetstring failed for result %u, signature %s: %d\n", i, matchname, hret);
++            (*sn_sigscan_resultfree_f)(resulthandle);
++            return CL_ENCIO;
++        }
++        if(offsetstring) {
++            cli_dbgmsg("cli_ncore_scanbuff: HW Result[%u]: %s: Offset based signature not supported in buffer mode\n", i, matchname);
++            continue;
++        }
++
++        hret = (*sn_sigscan_resultget_extradata_f)(resulthandle, i, &optionalsigdata);
++        if(hret) {
++            cli_errmsg("cli_ncore_scanbuff: sn_sigscan_resultget_extradata failed for result %u, signature %s: %d\n", i, matchname, hret);
++            (*sn_sigscan_resultfree_f)(resulthandle);
++            return CL_ENCIO;
++        }
++        if(optionalsigdata && strlen(optionalsigdata)) {
++            pt = cli_strtok(optionalsigdata, 1, ":");
++            if(pt) {
++                if(!isdigit(*pt)) {
++                    free(pt);
++                    cli_errmsg("cli_ncore_scanbuff: HW Result[%u]: %s: Incorrect optional signature data: %s\n", i, matchname, optionalsigdata);
++                    (*sn_sigscan_resultfree_f)(resulthandle);
++                    return CL_EMALFDB;
++                }
++
++                if((unsigned int) atoi(pt) < cl_retflevel()) {
++                    cli_dbgmsg("cli_ncore_scanbuff: HW Result[%u]: %s: Signature max flevel: %d, current: %d\n", i, matchname, atoi(pt), cl_retflevel());
++                    free(pt);
++                    continue;
++                }
++
++                free(pt);
++                pt = cli_strtok(optionalsigdata, 0, ":");
++                if(pt) {
++                    if(!isdigit(*pt)) {
++                        free(pt);
++                        cli_errmsg("cli_ncore_scanbuff: HW Result[%u]: %s: Incorrect optional signature data: %s\n", i, matchname, optionalsigdata);
++                        (*sn_sigscan_resultfree_f)(resulthandle);
++                        return CL_EMALFDB;
++                    }
++
++                    if((unsigned int) atoi(pt) > cl_retflevel()) {
++                        cli_dbgmsg("cli_ncore_scanbuff: HW Result[%u]: %s: Signature required flevel: %u, current: %u\n", i, matchname, atoi(pt), cl_retflevel());
++                        free(pt);
++                        continue;
++                    }
++                    free(pt);
++                }
++
++            } else {
++                if(!isdigit(*optionalsigdata)) {
++                    cli_errmsg("cli_ncore_scanbuff: HW Result[%u]: %s: Incorrect optional signature data: %s\n", i, matchname, optionalsigdata);
++                    (*sn_sigscan_resultfree_f)(resulthandle);
++                    return CL_EMALFDB;
++                }
++
++                if((unsigned int) atoi(optionalsigdata) > cl_retflevel()) {
++                    cli_dbgmsg("cli_ncore_scandesc: HW Result[%u]: %s: Signature required flevel: %u, current: %u\n", i, matchname, atoi(optionalsigdata), cl_retflevel());
++                    continue;
++                }
++            }
++        }
++
++        /* Store the name of the match */
++        *virname = matchname;
++        ret = CL_VIRUS;
++        break;
++    }
++
++    /* Clean up the result structure */
++    hret = (*sn_sigscan_resultfree_f)(resulthandle);
++    if(hret) {
++        cli_errmsg("cli_ncore_scanbuff: can't free results: %d\n", ret);
++        return CL_ENCIO;
++    }
++
++    return ret;
++}
++
++int cli_ncore_scandesc(int desc, cli_ctx *ctx, unsigned short ftype, int *cont, unsigned int *targettab, cli_md5_ctx *md5ctx)
++{
++	void *streamhandle;
++	void *resulthandle;
++	uint32_t datamask[2] = { 0xffffffff, 0xffffffff };
++	struct cli_target_info info;
++	int i, count, hret, bytes, ret = CL_CLEAN;
++	off_t origoff;
++	*cont = 0;
++	char *buffer;
++
++
++    /* TODO: Setup proper data bitmask (need specs) */
++    /* Create the hardware scanning stream */
++    hret = (*sn_sigscan_createstream_f)(ctx->engine->ncdb, datamask, 2, &streamhandle);
++    if(hret) {
++        cli_errmsg("cli_ncore_scandesc: can't create new hardware stream: %d\n", hret);
++        return CL_ENCIO;
++    }
++
++    /* Obtain the initial offset */
++    origoff = lseek(desc, 0, SEEK_CUR);
++    if(origoff == -1) {
++        cli_errmsg("cli_ncore_scandesc: lseek() failed for descriptor %d\n", desc);
++	(*sn_sigscan_closestream_f)(streamhandle, &resulthandle);
++        (*sn_sigscan_resultfree_f)(resulthandle);
++        return CL_EIO;
++    }
++
++    buffer = (char *) cli_calloc(HWBUFFSIZE, sizeof(char));
++    if(!buffer) {
++        cli_dbgmsg("cli_ncore_scandesc: unable to cli_calloc(%u)\n", HWBUFFSIZE);
++	(*sn_sigscan_closestream_f)(streamhandle, &resulthandle);
++        (*sn_sigscan_resultfree_f)(resulthandle);
++        return CL_EMEM;
++    }
++
++    /* Initialize the MD5 hasher */
++    if(ctx->engine->md5_hlist)
++        MD5_Init(md5ctx);
++
++    /* Read and scan the data */
++    while ((bytes = cli_readn(desc, buffer, HWBUFFSIZE)) > 0) {
++        hret = (*sn_sigscan_writestream_f)(streamhandle, buffer, bytes);
++        if(hret) {
++            cli_errmsg("cli_ncore_scandesc: can't write to hardware stream: %d\n", hret);
++            ret = CL_ENCIO;
++            break;
++        } else {
++            if(ctx->scanned)
++                *ctx->scanned += bytes / CL_COUNT_PRECISION;
++ 
++    	    if(ctx->engine->md5_hlist)
++                MD5_Update(md5ctx, buffer, bytes);
++        }
++    }
++
++    free(buffer);
++
++    /* Close the stream and get the result */
++    hret = (*sn_sigscan_closestream_f)(streamhandle, &resulthandle);
++    if(hret) {
++        cli_errmsg("cli_ncore_scandesc: can't close hardware stream: %d\n", hret);
++        return CL_ENCIO;
++    }
++
++    memset(&info, 0, sizeof(info));
++
++    /* Iterate over the list of results */
++    count = (*sn_sigscan_resultcount_f)(resulthandle);
++    for(i = 0; i < count; i++) {
++    	const char *matchname = NULL, *offsetstring = NULL, *optionalsigdata = NULL;
++    	unsigned long long startoffset = 0;
++    	unsigned int targettype = 0, maxshift = 0;
++        char *pt;
++
++        /* Get the description of the match */
++        hret = (*sn_sigscan_resultget_name_f)(resulthandle, i, &matchname);
++        if(hret) {
++            cli_errmsg("cli_ncore_scandesc: sn_sigscan_resultget_name failed for result %u: %d\n", i, hret);
++            (*sn_sigscan_resultfree_f)(resulthandle);
++	    if(info.exeinfo.section)
++		free(info.exeinfo.section);
++            return CL_ENCIO;
++        }
++
++        if(!matchname) {
++            cli_errmsg("cli_ncore_scandesc: HW Result[%u]: Signature without name\n", i);
++            (*sn_sigscan_resultfree_f)(resulthandle);
++	    if(info.exeinfo.section)
++		free(info.exeinfo.section);
++            return CL_EMALFDB;
++        }
++
++        hret = (*sn_sigscan_resultget_targettype_f)(resulthandle, i, &targettype);
++        if(hret) {
++    	    cli_errmsg("cli_ncore_scandesc: sn_sigscan_resultget_targettype failed for result %d, signature %s: %d\n", i, matchname, hret);
++    	    (*sn_sigscan_resultfree_f)(resulthandle);
++	    if(info.exeinfo.section)
++		free(info.exeinfo.section);
++    	    return CL_ENCIO;
++        }
++        if(targettype && targettab[targettype] != ftype) {
++    	    cli_dbgmsg("cli_ncore_scandesc: HW Result[%u]: %s: Target type: %u, expected: %d\n", i, matchname, targettab[targettype], ftype);
++            continue;
++        }
++
++        hret = (*sn_sigscan_resultget_offsetstring_f)(resulthandle, i, &offsetstring);
++        if(hret) {
++            cli_errmsg("cli_ncore_scandesc: sn_sigscan_resultget_offsetstring failed for result %u, signature %s: %d\n", i, matchname, hret);
++            (*sn_sigscan_resultfree_f)(resulthandle);
++	    if(info.exeinfo.section)
++		free(info.exeinfo.section);
++            return CL_ENCIO;
++        }
++
++        hret = (*sn_sigscan_resultget_startoffset_f)(resulthandle, i, &startoffset);
++        if(hret) {
++    	    cli_errmsg("cli_ncore_scandesc: sn_sigscan_resultget_startoffset failed for result %u, signature %s: %d\n", i, matchname, hret);
++    	    (*sn_sigscan_resultfree_f)(resulthandle);
++	    if(info.exeinfo.section)
++		free(info.exeinfo.section);
++    	    return CL_ENCIO;
++        }
++        if(offsetstring && strcmp(offsetstring, "*")) {
++	    off_t off = cli_caloff(offsetstring, &info, desc, ftype, &hret, &maxshift);
++
++    	    if(hret == -1) {
++                cli_dbgmsg("cli_ncore_scandesc: HW Result[%u]: %s: Bad offset in signature\n", i, matchname);
++                (*sn_sigscan_resultfree_f)(resulthandle);
++		if(info.exeinfo.section)
++		    free(info.exeinfo.section);
++                return CL_EMALFDB;
++            }
++	    if(maxshift) {
++		if((startoffset < (unsigned long long) off) || (startoffset > (unsigned long long) off + maxshift)) {
++		    cli_dbgmsg("cli_ncore_scandesc: HW Result[%u]: %s: Virus offset: %Lu, expected: [%Lu..%Lu]\n", i, matchname, startoffset, off, off + maxshift);
++		    continue;
++		}
++	    } else if(startoffset != (unsigned long long) off) {
++                cli_dbgmsg("cli_ncore_scandesc: HW Result[%u]: %s: Virus offset: %Lu, expected: %Lu\n", i, matchname, startoffset, off);
++                continue;
++            }
++        }
++
++        hret = (*sn_sigscan_resultget_extradata_f)(resulthandle, i, &optionalsigdata);
++        if(hret) {
++            cli_errmsg("cli_ncore_scandesc: sn_sigscan_resultget_extradata failed for result %d, signature %s: %d\n", i, matchname, hret);
++            (*sn_sigscan_resultfree_f)(resulthandle);
++	    if(info.exeinfo.section)
++		free(info.exeinfo.section);
++            return CL_ENCIO;
++        }
++
++        if(optionalsigdata && strlen(optionalsigdata)) {
++    	    pt = cli_strtok(optionalsigdata, 1, ":");
++    	    if(pt) {
++    	        if(!isdigit(*pt)) {
++    		    free(pt);
++                    cli_errmsg("cli_ncore_scandesc: HW Result[%u]: %s: Incorrect optional signature data: %s\n", i, matchname, optionalsigdata);
++		    (*sn_sigscan_resultfree_f)(resulthandle);
++		    if(info.exeinfo.section)
++			free(info.exeinfo.section);
++                    return CL_EMALFDB;
++                }
++
++                if((unsigned int) atoi(pt) < cl_retflevel()) {
++                    cli_dbgmsg("cli_ncore_scandesc: HW Result[%u]: %s: Signature max flevel: %d, current: %d\n", i, matchname, atoi(pt), cl_retflevel());
++                    free(pt);
++                    continue;
++                }
++
++                free(pt);
++
++    	        pt = cli_strtok(optionalsigdata, 0, ":");
++    	        if(pt) {
++                    if(!isdigit(*pt)) {
++                        free(pt);
++                        cli_errmsg("cli_ncore_scandesc: HW Result[%u]: %s: Incorrect optional signature data: %s\n", i, matchname, optionalsigdata);
++			(*sn_sigscan_resultfree_f)(resulthandle);
++			if(info.exeinfo.section)
++			    free(info.exeinfo.section);
++                        return CL_EMALFDB;
++                    }
++
++                    if((unsigned int) atoi(pt) > cl_retflevel()) {
++                        cli_dbgmsg("cli_ncore_scandesc: HW Result[%u]: %s: Signature required flevel: %d, current: %d\n", i, matchname, atoi(pt), cl_retflevel());
++                        free(pt);
++                        continue;
++                    }
++                    free(pt);
++                }
++            } else {
++                if(!isdigit(*optionalsigdata)) {
++                    cli_errmsg("cli_ncore_scandesc: HW Result[%u]: %s: Incorrect optional signature data: %s\n", i, matchname, optionalsigdata);
++                    (*sn_sigscan_resultfree_f)(resulthandle);
++		    if(info.exeinfo.section)
++			free(info.exeinfo.section);
++                    return CL_EMALFDB;
++                }
++
++                if((unsigned int) atoi(optionalsigdata) > cl_retflevel()) {
++                    cli_dbgmsg("cli_ncore_scandesc: HW Result[%u]: %s: Signature required flevel: %d, current: %d\n", i, matchname, atoi(optionalsigdata), cl_retflevel());
++                    continue;
++                }
++            }
++        }
++
++        *ctx->virname = matchname;
++        ret = CL_VIRUS;
++        break;
++    }
++
++    if(info.exeinfo.section)
++	free(info.exeinfo.section);
++
++    hret = (*sn_sigscan_resultfree_f)(resulthandle);
++    if(hret) {
++        cli_errmsg("cli_ncore_scandesc: can't free results: %d\n", ret);
++        return CL_ENCIO;
++    }
++
++    if(ctx->engine->md5_hlist) {
++        unsigned char digest[16];
++        struct cli_md5_node *md5_node;
++        MD5_Final(digest, md5ctx);
++
++        md5_node = cli_vermd5(digest, ctx->engine);
++        if(md5_node) {
++            struct stat sb;
++            if(fstat(desc, &sb) == -1)
++                return CL_EIO;
++
++    	    if((unsigned int) sb.st_size != md5_node->size) {
++                cli_warnmsg("Detected false positive MD5 match. Please report.\n");
++            } else {
++                if(md5_node->fp) {
++                    cli_dbgmsg("Eliminated false positive match (fp sig: %s)\n", md5_node->virname);
++                    ret = CL_CLEAN;
++                } else {
++                    if(ctx->virname)
++                        *ctx->virname = md5_node->virname;
++
++                    ret = CL_VIRUS;
++                }
++            }
++        }
++    }
++
++    if(ret == CL_VIRUS || (ftype != CL_TYPE_UNKNOWN_TEXT && ftype != CL_TYPE_UNKNOWN_DATA))
++        return ret;
++
++    if(lseek(desc, origoff, SEEK_SET) == -1) {
++        cli_errmsg("cli_ncore_scandesc: lseek() failed for descriptor %d\n", desc);
++        return CL_EIO;
++    }
++
++    *cont = 1;
++    return ret;
++}
++
++int cli_ncore_load(const char *filename, struct cl_engine **engine, unsigned int *signo, unsigned int options)
++{
++	int ret = 0;
++	unsigned int newsigs = 0;
++
++
++    if((ret = cli_initengine(engine, options))) {
++	cl_free(*engine);
++	return ret;
++    }
++
++    if((ret = cli_ncore_dlinit())) {
++	cl_free(*engine);
++	return ret;
++    }
++
++    ret = (*sn_sigscan_initdb_f)(&(*engine)->ncdb);
++    if(ret) {
++        cli_errmsg("cli_ncore_load: error initializing the matcher: %d\n", ret);
++        cl_free(*engine);
++        return CL_ENCINIT;
++    }
++
++    (*engine)->ncore = 1;
++
++    ret = (*sn_sigscan_loaddb_f)((*engine)->ncdb, filename, 0, &newsigs);
++    if(ret) {
++        cli_errmsg("cli_ncore_load: can't load hardware database: %d\n", ret);
++        cl_free(*engine);
++        return CL_ENCLOAD;
++    }
++
++    *signo += newsigs;
++    return CL_SUCCESS;
++}
++
++void cli_ncore_unload(struct cl_engine *engine)
++{
++	int ret;
++
++    ret = (*sn_sigscan_closedb_f)(engine->ncdb);
++    if(ret)
++        cli_errmsg("cl_free: can't close hardware database: %d\n", ret);
++}
++#endif
+diff -Nura clamav-devel/libclamav/matcher-ncore.h clamav-devel.hwaccel/libclamav/matcher-ncore.h
+--- clamav-devel/libclamav/matcher-ncore.h	1970-01-01 01:00:00.000000000 +0100
++++ clamav-devel.hwaccel/libclamav/matcher-ncore.h	2007-03-31 21:18:08.000000000 +0200
+@@ -0,0 +1,34 @@
++/*
++ *  Copyright (C) 2006 Sensory Networks, Inc.
++ *	      Written by Tomasz Kojm, dlopen() support by Peter Duthie
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
++ *  MA 02110-1301, USA.
++ */
++
++#ifndef __MATCHER_NCORE_H
++#define __MATCHER_NCORE_H
++
++#include "clamav.h"
++#include "md5.h"
++
++int cli_ncore_scanbuff(const char *buffer, unsigned int length, const char **virname, const struct cl_engine *engine, unsigned short ftype, unsigned int *targettab);
++
++int cli_ncore_scandesc(int desc, cli_ctx *ctx, unsigned short ftype, int *cont, unsigned int *targettab, cli_md5_ctx *md5ctx);
++
++int cli_ncore_load(const char *filename, struct cl_engine **engine, unsigned int *signo, unsigned int options);
++
++void cli_ncore_unload(struct cl_engine *engine);
++
++#endif
+diff -Nura clamav-devel/libclamav/matcher.c clamav-devel.hwaccel/libclamav/matcher.c
+--- clamav-devel/libclamav/matcher.c	2007-09-07 14:09:42.000000000 +0200
++++ clamav-devel.hwaccel/libclamav/matcher.c	2007-08-31 20:36:14.000000000 +0200
+@@ -42,6 +42,10 @@
+ #include "str.h"
+ #include "cltypes.h"
+ 
++#ifdef HAVE_NCORE
++#include "matcher-ncore.h"
++#endif
++
+ static cli_file_t targettab[CL_TARGET_TABLE_SIZE] = { 0, CL_TYPE_MSEXE, CL_TYPE_MSOLE2, CL_TYPE_HTML, CL_TYPE_MAIL, CL_TYPE_GRAPHICS, CL_TYPE_ELF };
+ 
+ int cli_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cl_engine *engine, cli_file_t ftype)
+@@ -57,6 +61,11 @@
+ 	return CL_ENULLARG;
+     }
+ 
++#ifdef HAVE_NCORE
++    if(engine->ncore)
++	return cli_ncore_scanbuff(buffer, length, virname, engine, ftype, targettab);
++#endif
++
+     groot = engine->root[0]; /* generic signatures */
+ 
+     if(ftype) {
+@@ -292,6 +301,16 @@
+ 	return CL_ENULLARG;
+     }
+ 
++#ifdef HAVE_NCORE
++    if(ctx->engine->ncore) {
++	    int cont;
++
++	ret = cli_ncore_scandesc(desc, ctx, ftype, &cont, targettab, &md5ctx);
++	if(!cont)
++	    return ret;
++    }
++#endif
++
+     if(!ftonly)
+ 	groot = ctx->engine->root[0]; /* generic signatures */
+ 
+diff -Nura clamav-devel/libclamav/others.c clamav-devel.hwaccel/libclamav/others.c
+--- clamav-devel/libclamav/others.c	2007-09-07 14:13:47.000000000 +0200
++++ clamav-devel.hwaccel/libclamav/others.c	2007-08-31 20:33:10.000000000 +0200
+@@ -186,6 +186,12 @@
+ 	    return "Bad format or broken data";
+ 	case CL_ESUPPORT:
+ 	    return "Not supported data format";
++	case CL_ENCINIT:
++	    return "NodalCore initialization failure";
++	case CL_ENCLOAD:
++	    return "Error loading NodalCore database";
++	case CL_ENCIO:
++	    return "NodalCore accelerator Input/Output error";
+ 	case CL_ELOCKDB:
+ 	    return "Unable to lock database directory";
+ 	case CL_EARJ:
+diff -Nura clamav-devel/libclamav/readdb.c clamav-devel.hwaccel/libclamav/readdb.c
+--- clamav-devel/libclamav/readdb.c	2007-09-07 14:12:44.000000000 +0200
++++ clamav-devel.hwaccel/libclamav/readdb.c	2007-08-28 23:03:27.000000000 +0200
+@@ -70,6 +70,10 @@
+ static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
+ #endif
+ 
++#ifdef HAVE_NCORE
++#include "matcher-ncore.h"
++#endif
++
+ /* Prototypes for old public functions just to shut up some gcc warnings;
+  * to be removed in 1.0
+  */
+@@ -960,7 +964,10 @@
+     }
+ 
+     if(cli_strbcasestr(filename, ".db")) {
+-	ret = cli_loaddb(fd, engine, signo, options);
++	if(options & CL_DB_NCORE)
++	    skipped = 1;
++	else
++	    ret = cli_loaddb(fd, engine, signo, options);
+ 
+     } else if(cli_strbcasestr(filename, ".cvd")) {
+ 	    int warn = 0;
+@@ -992,16 +999,23 @@
+ 	    skipped = 1;
+ 
+     } else if(cli_strbcasestr(filename, ".ndb")) {
+-	ret = cli_loadndb(fd, engine, signo, 0, options);
++	if(options & CL_DB_NCORE)
++	    skipped = 1;
++	else
++	    ret = cli_loadndb(fd, engine, signo, 0, options);
+ 
+     } else if(cli_strbcasestr(filename, ".ndu")) {
+-	if(!(options & CL_DB_PUA))
++	if(!(options & CL_DB_PUA) || (options & CL_DB_NCORE))
+ 	    skipped = 1;
+ 	else
+ 	    ret = cli_loadndb(fd, engine, signo, 0, options);
+ 
+     } else if(cli_strbcasestr(filename, ".sdb")) {
+-	ret = cli_loadndb(fd, engine, signo, 1, options);
++	/* FIXME: Add support in ncore mode */
++	if(options & CL_DB_NCORE)
++	    skipped = 1;
++	else
++	    ret = cli_loadndb(fd, engine, signo, 1, options);
+ 
+     } else if(cli_strbcasestr(filename, ".zmd")) {
+ 	ret = cli_loadmd(fd, engine, signo, 1, options);
+@@ -1012,6 +1026,13 @@
+     } else if(cli_strbcasestr(filename, ".cfg")) {
+ 	ret = cli_dconf_load(fd, engine, options);
+ 
++    } else if(cli_strbcasestr(filename, ".ncdb")) {
++#ifdef HAVE_NCORE
++	if(options & CL_DB_NCORE)
++	    ret = cli_ncore_load(filename, engine, signo, options);
++	else
++#endif
++	    skipped = 1;
+     } else if(cli_strbcasestr(filename, ".wdb")) {
+ 	if(options & CL_DB_PHISHING_URLS)
+ 	    ret = cli_loadwdb(fd, engine, options);
+@@ -1106,6 +1127,7 @@
+ 	     cli_strbcasestr(dent->d_name, ".rmd")  ||
+ 	     cli_strbcasestr(dent->d_name, ".pdb")  ||
+ 	     cli_strbcasestr(dent->d_name, ".wdb")  ||
++	     cli_strbcasestr(dent->d_name, ".ncdb") ||
+ 	     cli_strbcasestr(dent->d_name, ".inc")  ||
+ 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
+ 
+@@ -1263,6 +1285,7 @@
+ 	    cli_strbcasestr(dent->d_name, ".cfg")  ||
+ 	    cli_strbcasestr(dent->d_name, ".pdb")  ||
+ 	    cli_strbcasestr(dent->d_name, ".wdb")  ||
++	    cli_strbcasestr(dent->d_name, ".ncdb")  ||
+ 	    cli_strbcasestr(dent->d_name, ".inc")   ||
+ 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
+ 
+@@ -1373,6 +1396,7 @@
+ 	    cli_strbcasestr(dent->d_name, ".cfg")  ||
+ 	    cli_strbcasestr(dent->d_name, ".pdb")  ||
+ 	    cli_strbcasestr(dent->d_name, ".wdb")  ||
++	    cli_strbcasestr(dent->d_name, ".ncdb")  ||
+ 	    cli_strbcasestr(dent->d_name, ".inc")   ||
+ 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
+ 
+@@ -1485,6 +1509,11 @@
+     pthread_mutex_unlock(&cli_ref_mutex);
+ #endif
+ 
++#ifdef HAVE_NCORE
++    if(engine->ncore)
++	cli_ncore_unload(engine);
++#endif
++
+     if(engine->root) {
+ 	for(i = 0; i < CL_TARGET_TABLE_SIZE; i++) {
+ 	    if((root = engine->root[i])) {
+diff -Nura clamav-devel/shared/cfgparser.c clamav-devel.hwaccel/shared/cfgparser.c
+--- clamav-devel/shared/cfgparser.c	2007-09-07 14:57:04.000000000 +0200
++++ clamav-devel.hwaccel/shared/cfgparser.c	2007-08-13 18:45:55.000000000 +0200
+@@ -91,6 +91,7 @@
+     {"AllowSupplementaryGroups", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
+     {"SelfCheck", OPT_NUM, 1800, NULL, 0, OPT_CLAMD},
+     {"VirusEvent", OPT_FULLSTR, -1, NULL, 0, OPT_CLAMD},
++    {"NodalCoreAcceleration", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+     {"ClamukoScanOnAccess", OPT_BOOL, -1, NULL, 0, OPT_CLAMD},
+     {"ClamukoScanOnOpen", OPT_BOOL, -1, NULL, 0, OPT_CLAMD},
+     {"ClamukoScanOnClose", OPT_BOOL, -1, NULL, 0, OPT_CLAMD},

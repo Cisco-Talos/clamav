@@ -31,8 +31,6 @@ libclamav_la_SOURCES = \
         matcher-ac.h \
         matcher-bm.c \
         matcher-bm.h \
-	matcher-ncore.c \
-	matcher-ncore.h \
         matcher.c \
         matcher.h \
         md5.c \

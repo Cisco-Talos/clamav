@@ -77,13 +77,13 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libclamav_la_DEPENDENCIES =
-am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher-ncore.lo \
-	matcher.lo md5.lo others.lo readdb.lo cvd.lo dsig.lo str.lo \
-	scanners.lo filetypes.lo rtf.lo blob.lo mbox.lo message.lo \
-	snprintf.lo table.lo text.lo ole2_extract.lo vba_extract.lo \
-	msexpand.lo pe.lo upx.lo htmlnorm.lo chmunpack.lo rebuildpe.lo \
-	petite.lo wwunpack.lo unsp.lo aspack.lo packlibs.lo fsg.lo \
-	mew.lo upack.lo line.lo untar.lo unzip.lo special.lo binhex.lo \
+am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
+	md5.lo others.lo readdb.lo cvd.lo dsig.lo str.lo scanners.lo \
+	filetypes.lo rtf.lo blob.lo mbox.lo message.lo snprintf.lo \
+	table.lo text.lo ole2_extract.lo vba_extract.lo msexpand.lo \
+	pe.lo upx.lo htmlnorm.lo chmunpack.lo rebuildpe.lo petite.lo \
+	wwunpack.lo unsp.lo aspack.lo packlibs.lo fsg.lo mew.lo \
+	upack.lo line.lo untar.lo unzip.lo special.lo binhex.lo \
 	is_tar.lo tnef.lo unrar15.lo unrarvm.lo unrar.lo \
 	unrarfilter.lo unrarppm.lo unrar20.lo unrarcmd.lo unarj.lo \
 	LZMADecode.lo bzlib.lo infblock.lo nulsft.lo pdf.lo spin.lo \
@@ -177,6 +177,7 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 RANLIB = @RANLIB@
+SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
@@ -245,8 +246,6 @@ libclamav_la_SOURCES = \
         matcher-ac.h \
         matcher-bm.c \
         matcher-bm.h \
-	matcher-ncore.c \
-	matcher-ncore.h \
         matcher.c \
         matcher.h \
         md5.c \
@@ -486,7 +485,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lockdb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/matcher-ac.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/matcher-bm.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/matcher-ncore.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/matcher.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mbox.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/md5.Plo@am__quote@

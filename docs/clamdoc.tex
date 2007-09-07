@@ -659,19 +659,6 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	\item CryptFF
     \end{itemize}
 
-    \subsection{Hardware acceleration}
-    ClamAV 0.90 comes with support for Sensory Networks' NodalCore
-    acceleration technology. Thanks to specialized Security Processing Unit
-    built into NodalCore C-Series accelerators it is possible to achieve more
-    performance than is possible by just adding general purpose CPUs.
-    Additionally, Sensory Networks' CorePAKT technology ensures that compiled
-    signature databases occupy a memory footprint smaller than any other
-    competing technology on the market - in many cases by up to 90\%. The
-    ability to store multiple databases in compressed format whilst still
-    achieving high throughputs makes NodalCore ideal for applications
-    demanding high performance on large signature databases such as ClamAV.\\
-    For more information please visit \url{http://www.clamav.net/nodalcore/}
-
     \subsection{API}
 
     \subsubsection{Header file}
@@ -700,8 +687,6 @@ N * * * *	/usr/local/bin/freshclam --quiet
     \begin{itemize}
 	\item \textbf{CL\_DB\_STDOPT}\\
 	This is an alias for a recommended set of scan options.
-	\item \textbf{CL\_DB\_NCORE}\\
-	Initialize NodalCore and load the hardware database (if applicable).
 	\item \textbf{CL\_DB\_PHISHING}\\
 	Load phishing signatures.
 	\item \textbf{CL\_DB\_PHISHING\_URLS}\\

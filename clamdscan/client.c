@@ -56,7 +56,6 @@
 
 void move_infected(const char *filename, const struct optstruct *opt);
 int notremoved = 0, notmoved = 0;
-static int ncore = 0;
 
 static int dsresult(int sockd, const struct optstruct *opt)
 {
@@ -389,11 +388,6 @@ static int dconnect(const struct optstruct *opt)
 	return -1;
     }
 
-#ifdef HAVE_NCORE
-    if(cfgopt(copt, "NodalCoreAcceleration")->enabled)
-	ncore = 1;
-#endif
-
     freecfg(copt);
 
     return sockd;
@@ -409,7 +403,7 @@ int client(const struct optstruct *opt, int *infected)
 
     *infected = 0;
 
-    if(ncore || opt_check(opt, "multiscan"))
+    if(opt_check(opt, "multiscan"))
 	scantype = "MULTISCAN";
 
     /* parse argument list */

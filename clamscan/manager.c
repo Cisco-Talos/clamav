@@ -164,9 +164,6 @@ int scanmanager(const struct optstruct *opt)
     }
 #endif
 
-    if(opt_check(opt, "ncore"))
-	dboptions |= CL_DB_NCORE;
-
     if(!opt_check(opt, "no-phishing-sigs"))
 	dboptions |= CL_DB_PHISHING;
 

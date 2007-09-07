@@ -1,3 +1,8 @@
+Fri Sep  7 15:28:54 CEST 2007 (tk)
+----------------------------------
+  * libclamav, clamd, clamscan: move hardware acceleration code to
+				contrib/hwaccel/hwaccel.patch
+
 Thu Sep  6 17:18:01 BST 2007 (njh)
 ----------------------------------
   * libclamav/pdf.c:	Ensure consistency with other archivers when attempted

@@ -312,15 +312,6 @@ int main(int argc, char **argv)
     else
 	logg("Disabling URL based phishing detection.\n");
 
-    if(cfgopt(copt, "NodalCoreAcceleration")->enabled) {
-#ifdef HAVE_NCORE
-	dboptions |= CL_DB_NCORE;
-	logg("Enabling support for hardware acceleration.\n");
-#else
-	logg("^Support for hardware acceleration not compiled in.\n");
-#endif
-    }
-
     if((ret = cl_load(dbdir, &engine, &sigs, dboptions))) {
 	logg("!%s\n", cl_strerror(ret));
 	logg_close();

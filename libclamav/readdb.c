@@ -70,10 +70,6 @@
 static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
-#ifdef HAVE_NCORE
-#include "matcher-ncore.h"
-#endif
-
 /* Prototypes for old public functions just to shut up some gcc warnings;
  * to be removed in 1.0
  */
@@ -964,10 +960,7 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
     }
 
     if(cli_strbcasestr(filename, ".db")) {
-	if(options & CL_DB_NCORE)
-	    skipped = 1;
-	else
-	    ret = cli_loaddb(fd, engine, signo, options);
+	ret = cli_loaddb(fd, engine, signo, options);
 
     } else if(cli_strbcasestr(filename, ".cvd")) {
 	    int warn = 0;
@@ -999,23 +992,16 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
 	    skipped = 1;
 
     } else if(cli_strbcasestr(filename, ".ndb")) {
-	if(options & CL_DB_NCORE)
-	    skipped = 1;
-	else
-	    ret = cli_loadndb(fd, engine, signo, 0, options);
+	ret = cli_loadndb(fd, engine, signo, 0, options);
 
     } else if(cli_strbcasestr(filename, ".ndu")) {
-	if(!(options & CL_DB_PUA) || (options & CL_DB_NCORE))
+	if(!(options & CL_DB_PUA))
 	    skipped = 1;
 	else
 	    ret = cli_loadndb(fd, engine, signo, 0, options);
 
     } else if(cli_strbcasestr(filename, ".sdb")) {
-	/* FIXME: Add support in ncore mode */
-	if(options & CL_DB_NCORE)
-	    skipped = 1;
-	else
-	    ret = cli_loadndb(fd, engine, signo, 1, options);
+	ret = cli_loadndb(fd, engine, signo, 1, options);
 
     } else if(cli_strbcasestr(filename, ".zmd")) {
 	ret = cli_loadmd(fd, engine, signo, 1, options);
@@ -1026,13 +1012,6 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
     } else if(cli_strbcasestr(filename, ".cfg")) {
 	ret = cli_dconf_load(fd, engine, options);
 
-    } else if(cli_strbcasestr(filename, ".ncdb")) {
-#ifdef HAVE_NCORE
-	if(options & CL_DB_NCORE)
-	    ret = cli_ncore_load(filename, engine, signo, options);
-	else
-#endif
-	    skipped = 1;
     } else if(cli_strbcasestr(filename, ".wdb")) {
 	if(options & CL_DB_PHISHING_URLS)
 	    ret = cli_loadwdb(fd, engine, options);
@@ -1127,7 +1106,6 @@ static int cli_loaddbdir_l(const char *dirname, struct cl_engine **engine, unsig
 	     cli_strbcasestr(dent->d_name, ".rmd")  ||
 	     cli_strbcasestr(dent->d_name, ".pdb")  ||
 	     cli_strbcasestr(dent->d_name, ".wdb")  ||
-	     cli_strbcasestr(dent->d_name, ".ncdb") ||
 	     cli_strbcasestr(dent->d_name, ".inc")  ||
 	     cli_strbcasestr(dent->d_name, ".cvd"))) {
 
@@ -1285,7 +1263,6 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".cfg")  ||
 	    cli_strbcasestr(dent->d_name, ".pdb")  ||
 	    cli_strbcasestr(dent->d_name, ".wdb")  ||
-	    cli_strbcasestr(dent->d_name, ".ncdb")  ||
 	    cli_strbcasestr(dent->d_name, ".inc")   ||
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
@@ -1396,7 +1373,6 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	    cli_strbcasestr(dent->d_name, ".cfg")  ||
 	    cli_strbcasestr(dent->d_name, ".pdb")  ||
 	    cli_strbcasestr(dent->d_name, ".wdb")  ||
-	    cli_strbcasestr(dent->d_name, ".ncdb")  ||
 	    cli_strbcasestr(dent->d_name, ".inc")   ||
 	    cli_strbcasestr(dent->d_name, ".cvd"))) {
 
@@ -1507,11 +1483,6 @@ void cl_free(struct cl_engine *engine)
 
 #ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&cli_ref_mutex);
-#endif
-
-#ifdef HAVE_NCORE
-    if(engine->ncore)
-	cli_ncore_unload(engine);
 #endif
 
     if(engine->root) {

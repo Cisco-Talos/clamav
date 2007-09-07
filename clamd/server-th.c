@@ -610,11 +610,6 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	}
 
 	pthread_mutex_lock(&reload_mutex);
-	if(reload && cfgopt(copt, "NodalCoreAcceleration")->enabled) {
-	    logg("^RELOAD is not available in hardware accelerated mode (yet).\n");
-	    logg("^Please restart the daemon manually.\n");
-	    reload = 0;
-	}
 	if(reload) {
 	    pthread_mutex_unlock(&reload_mutex);
 	    engine = reload_db(engine, dboptions, copt, FALSE, &ret);

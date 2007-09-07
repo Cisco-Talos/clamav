@@ -186,12 +186,6 @@ const char *cl_strerror(int clerror)
 	    return "Bad format or broken data";
 	case CL_ESUPPORT:
 	    return "Not supported data format";
-	case CL_ENCINIT:
-	    return "NodalCore initialization failure";
-	case CL_ENCLOAD:
-	    return "Error loading NodalCore database";
-	case CL_ENCIO:
-	    return "NodalCore accelerator Input/Output error";
 	case CL_ELOCKDB:
 	    return "Unable to lock database directory";
 	case CL_EARJ:
