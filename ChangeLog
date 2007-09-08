@@ -1,3 +1,7 @@
+Sat Sep  8 14:08:54 CEST 2007 (acab)
+------------------------------------
+  * libclamav/pe.c: wrap in paretheses - bb#656, part 1/2
+
 Fri Sep  7 15:28:54 CEST 2007 (tk)
 ----------------------------------
   * libclamav, clamd, clamscan: move hardware acceleration code to

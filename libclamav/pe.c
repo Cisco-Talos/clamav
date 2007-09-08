@@ -864,7 +864,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
         const char *pt = cli_memstr(epbuff, 4040, "\x47\x65\x74\x50\x72\x6f\x63\x41\x64\x64\x72\x65\x73\x73\x00", 15);
 	if(pt) {
 	    pt += 15;
-	    if( (uint32_t)cli_readint32(pt) ^ (uint32_t)cli_readint32(pt + 4) == 0x505a4f && (uint32_t)cli_readint32(pt + 8) ^ (uint32_t)cli_readint32(pt + 12) == 0xffffb && (uint32_t)cli_readint32(pt + 16) ^ (uint32_t)cli_readint32(pt + 20) == 0xb8) {
+	    if((((uint32_t)cli_readint32(pt) ^ (uint32_t)cli_readint32(pt + 4)) == 0x505a4f) && (((uint32_t)cli_readint32(pt + 8) ^ (uint32_t)cli_readint32(pt + 12)) == 0xffffb) && (((uint32_t)cli_readint32(pt + 16) ^ (uint32_t)cli_readint32(pt + 20)) == 0xb8)) {
 	        *ctx->virname = "W32.Parite.B";
 		free(exe_sections);
 		return CL_VIRUS;
