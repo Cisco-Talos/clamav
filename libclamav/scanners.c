@@ -85,6 +85,7 @@
 #include "cab.h"
 #include "rtf.h"
 #include "unarj.h"
+#include "nulsft.h"
 
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>
@@ -103,7 +104,6 @@
 #define MAX_MAIL_RECURSION  15
 
 
-int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset); /* FIXME */
 static int cli_scanfile(const char *filename, cli_ctx *ctx);
 
 static int cli_unrar_scanmetadata(int desc, rar_metadata_t *metadata, cli_ctx *ctx, unsigned int files, uint32_t* sfx_check)

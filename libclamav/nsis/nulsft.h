@@ -19,37 +19,6 @@
 #ifndef __NSIS_H
 #define __NSIS_H
 
-#include "cltypes.h"
-#include "nsis_bzlib.h"
-#include "LZMADecode.h"
-#include "nsis_zlib.h"
 #include "others.h"
-
-struct nsis_st {
-  int ifd;
-  int ofd;
-  off_t off;
-  char *dir;
-  uint32_t asz;
-  uint32_t hsz;
-  uint32_t fno;
-  struct {
-    uint32_t avail_in;
-    unsigned char *next_in;
-    uint32_t avail_out;
-    unsigned char *next_out;
-  } nsis;
-  nsis_bzstream bz;
-  lzma_stream lz;
-  nsis_z_stream z;
-  unsigned char *freeme;
-  uint8_t comp;
-  uint8_t solid;
-  uint8_t freecomp;
-  uint8_t eof;
-  char ofn[1024];
-};
-
-int cli_nsis_unpack(struct nsis_st *, cli_ctx *);
-void cli_nsis_free(struct nsis_st *);
+int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset);
 #endif

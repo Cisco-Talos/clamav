@@ -1,3 +1,6 @@
+Sun Sep  9 13:42:26 CEST 2007 (acab)
+  * libclamav/nsis: tidy
+
 Sat Sep  8 14:08:54 CEST 2007 (acab)
 ------------------------------------
   * libclamav/pe.c: wrap in paretheses - bb#656, part 1/2
