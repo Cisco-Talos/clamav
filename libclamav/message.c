@@ -1100,8 +1100,6 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 			/*
 			 * FIXME: We've probably run out of memory during the
 			 * text to blob.
-			 * TODO: if m->numberOfEncTypes == 1 we could delete
-			 * the text object as we decode it
 			 */
 			cli_warnmsg("Couldn't start binhex parser\n");
 			(*destroy)(ret);
@@ -2246,25 +2244,23 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
 		}
 
 		switch(nbytes) {
+			case 4:
+				*out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
+				*out++ = (b2 << 4) | ((b3 >> 2) & 0xF);
+				*out++ = (b3 << 6) | (b4 & 0x3F);
+				continue;
 			case 3:
 				m->base64_3 = b3;
 			case 2:
 				m->base64_2 = b2;
 			case 1:
 				m->base64_1 = b1;
-				break;
-			case 4:
-				*out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
-				*out++ = (b2 << 4) | ((b3 >> 2) & 0xF);
-				*out++ = (b3 << 6) | (b4 & 0x3F);
+				m->base64chars = nbytes;
 				break;
 			default:
 				assert(0);
 		}
-		if(nbytes != 4) {
-			m->base64chars = nbytes;
-			break;
-		}
+		break;	/* nbytes != 4 => EOL */
 	}
 	return out;
 }

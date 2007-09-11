@@ -116,6 +116,7 @@ static	char	const	rcsid[] = "$Id: text.c,v 1.25 2007/02/12 20:46:09 njh Exp $";
 #include "mbox.h"
 
 static	text	*textCopy(const text *t_head);
+static	text	*textAdd(text *t_head, const text *t);
 static	void	addToFileblob(const line_t *line, void *arg);
 static	void	getLength(const line_t *line, void *arg);
 static	void	addToBlob(const line_t *line, void *arg);
@@ -180,14 +181,19 @@ textCopy(const text *t_head)
 }
 
 /* Add a copy of a text to the end of the current object */
-text *
+static text *
 textAdd(text *t_head, const text *t)
 {
 	text *ret;
 	int count;
 
-	if(t_head == NULL)
+	if(t_head == NULL) {
+		if(t == NULL) {
+			cli_errmsg("textAdd fails sanity check\n");
+			return NULL;
+		}
 		return textCopy(t);
+	}
 
 	if(t == NULL)
 		return t_head;
@@ -234,13 +240,66 @@ textAddMessage(text *aText, message *aMessage)
 	else {
 		text *anotherText = messageToText(aMessage);
 
-		if(aText) {
-			aText = textAdd(aText, anotherText);
-			textDestroy(anotherText);
-			return aText;
-		}
+		if(aText)
+			return textMove(aText, anotherText);
 		return anotherText;
 	}
+}
+
+/*
+ * Put the contents of the given text at the end of the current object.
+ * The given text emptied; it can be used again if needed, though be warned that
+ * it will have an empty line at the start.
+ */
+text *
+textMove(text *t_head, text *t)
+{
+	text *ret;
+
+	if(t_head == NULL) {
+		if(t == NULL) {
+			cli_errmsg("textMove fails sanity check\n");
+			return NULL;
+		}
+		t_head = (text *)cli_malloc(sizeof(text));
+		if(t_head == NULL)
+			return NULL;
+		t_head->t_line = t->t_line;
+		t_head->t_next = t->t_next;
+		t->t_line = NULL;
+		t->t_next = NULL;
+		return t_head;
+	}
+
+	if(t == NULL)
+		return t_head;
+
+	ret = t_head;
+
+	while(t_head->t_next)
+		t_head = t_head->t_next;
+
+	/*
+	 * Move the first line manually so that the caller is left clean but
+	 * empty, the rest is moved by a simple pointer reassignment
+	 */
+	t_head->t_next = (text *)cli_malloc(sizeof(text));
+	if(t_head->t_next == NULL)
+		return NULL;
+	t_head = t_head->t_next;
+
+	assert(t_head != NULL);
+
+	if(t->t_line) {
+		t_head->t_line = t->t_line;
+		t->t_line = NULL;
+	} else
+		t_head->t_line = NULL;
+
+	t_head->t_next = t->t_next;
+	t->t_next = NULL;
+
+	return ret;
 }
 
 /*
@@ -365,7 +424,8 @@ addToFileblob(const line_t *line, void *arg)
 	if(line) {
 		const char *l = lineGetData(line);
 
-		fileblobAddData(fb, (const unsigned char *)l, strlen(l));
+		if(l)
+			fileblobAddData(fb, (const unsigned char *)l, strlen(l));
 	}
 	fileblobAddData(fb, (const unsigned char *)"\n", 1);
 }
@@ -373,6 +433,11 @@ addToFileblob(const line_t *line, void *arg)
 static void *
 textIterate(text *t_text, void (*cb)(const line_t *item, void *arg), void *arg, int destroy)
 {
+	/*
+	 * Have two loops rather than one, so that we're not checking the
+	 * value of "destroy" lots and lots of times
+	 */
+#if	0
 	while(t_text) {
 		(*cb)(t_text->t_line, arg);
 
@@ -383,5 +448,24 @@ textIterate(text *t_text, void (*cb)(const line_t *item, void *arg), void *arg, 
 
 		t_text = t_text->t_next;
 	}
+#else
+	if(destroy)
+		while(t_text) {
+			(*cb)(t_text->t_line, arg);
+
+			if(t_text->t_line) {
+				lineUnlink(t_text->t_line);
+				t_text->t_line = NULL;
+			}
+
+			t_text = t_text->t_next;
+		}
+	else
+		while(t_text) {
+			(*cb)(t_text->t_line, arg);
+
+			t_text = t_text->t_next;
+		}
+#endif
 	return arg;
 }

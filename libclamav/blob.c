@@ -653,9 +653,9 @@ fileblobScan(const fileblob *fb)
 #ifndef	C_WINDOWS
 	/*
 	 * FIXME: On Windows, cli_readn gives "bad file descriptor" when called
-	 * by cli_check_mydoom_log from a call do cli_magic_scandesc here which
-	 * implies that the file descriptor is getting closed somewhere, but I
-	 * can't see where.
+	 * by cli_check_mydoom_log from the call to cli_magic_scandesc here
+	 * which implies that the file descriptor is getting closed somewhere,
+	 * but I can't see where.
 	 * One possible fix would be to duplicate cli_scanfile here.
 	 */
 	fflush(fb->fp);

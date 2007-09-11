@@ -3255,10 +3255,13 @@ strstrip(char *s)
 	return(strip(s, (int)strlen(s) + 1));
 }
 
+/*
+ * Returns 0 for OK, -1 for error
+ */
 static int
 parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg)
 {
-	char *copy, *p;
+	char *copy, *p, *buf;
 	const char *ptr;
 	int commandNumber;
 
@@ -3277,6 +3280,8 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 		ptr = copy;
 	else
 		ptr = arg;
+
+	buf = NULL;
 
 	switch(commandNumber) {
 		case CONTENT_TYPE:
@@ -3309,6 +3314,12 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 				int i;
 				char *mimeArgs;	/* RHS of the ; */
 
+				buf = cli_malloc(strlen(ptr) + 1);
+				if(buf == NULL) {
+					if(copy)
+						free(copy);
+					return -1;
+				}
 				/*
 				 * Some clients are broken and
 				 * put white space after the ;
@@ -3332,12 +3343,11 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 
 					if(ptr[0] != '/') {
 						char *s;
-						char *mimeType;	/* LHS of the ; */
 #ifdef CL_THREAD_SAFE
 						char *strptr = NULL;
 #endif
 
-						s = mimeType = cli_strtok(ptr, 0, ";");
+						s = cli_strtokbuf(ptr, 0, ";", buf);
 						/*
 						 * Handle
 						 * Content-Type: foo/bar multipart/mixed
@@ -3371,12 +3381,10 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 									len = strstrip(s);
 								}
 								if(len) {
-									if(strchr(s, ' ')) {
-										char *t = cli_strtok(s, 0, " ");
-
-										messageSetMimeSubtype(m, t);
-										free(t);
-									} else
+									if(strchr(s, ' '))
+										messageSetMimeSubtype(m,
+											cli_strtokbuf(s, 0, " ", buf));
+									else
 										messageSetMimeSubtype(m, s);
 								}
 							}
@@ -3388,8 +3396,6 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 							if(*s == '\0')
 								break;
 						}
-						if(mimeType)
-							free(mimeType);
 					}
 				}
 
@@ -3400,11 +3406,10 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 				 * we find the boundary argument set it
 				 */
 				i = 1;
-				while((mimeArgs = cli_strtok(ptr, i++, ";")) != NULL) {
+				while((mimeArgs = cli_strtokbuf(ptr, i++, ";", buf)) != NULL) {
 					cli_dbgmsg("mimeArgs = '%s'\n", mimeArgs);
 
 					messageAddArguments(m, mimeArgs);
-					free(mimeArgs);
 				}
 			}
 			break;
@@ -3412,15 +3417,18 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 			messageSetEncoding(m, ptr);
 			break;
 		case CONTENT_DISPOSITION:
-			p = cli_strtok(ptr, 0, ";");
+			buf = cli_malloc(strlen(ptr) + 1);
+			if(buf == NULL) {
+				if(copy)
+					free(copy);
+				return -1;
+			}
+			p = cli_strtokbuf(ptr, 0, ";", buf);
 			if(p) {
 				if(*p) {
 					messageSetDispositionType(m, p);
-					free(p);
-					p = cli_strtok(ptr, 1, ";");
-					messageAddArgument(m, p);
+					messageAddArgument(m, cli_strtokbuf(ptr, 1, ";", buf));
 				}
-				free(p);
 			}
 			if((p = (char *)messageFindArgument(m, "filename")) == NULL)
 				/*
@@ -3436,6 +3444,8 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 	}
 	if(copy)
 		free(copy);
+	if(buf)
+		free(buf);
 
 	return 0;
 }
@@ -5030,7 +5040,8 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 	if(*rc != VIRUS) {
 		if(addToText) {
 			cli_dbgmsg("Adding to non mime-part\n");
-			*tptr = textAdd(*tptr, messageGetBody(aMessage));
+			if(messageGetBody(aMessage))
+				*tptr = textMove(*tptr, messageGetBody(aMessage));
 		} else {
 			fileblob *fb = messageToFileblob(aMessage, mctx->dir, 1);
 
