@@ -69,53 +69,6 @@ static	char	const	rcsid[] = "$Id: line.c,v 1.11 2007/02/12 20:46:08 njh Exp $";
 #include "line.h"
 #include "others.h"
 
-#ifdef	OLD
-line_t *
-lineCreate(const char *data)
-{
-	line_t *ret = (line_t *)cli_malloc(sizeof(struct line));
-
-	if(ret == NULL)
-		return NULL;
-
-	ret->l_str = strdup(data);
-	if(ret->l_str == NULL) {
-		free(ret);
-		return NULL;
-	}
-	ret->l_refs = 1;
-
-	return ret;
-}
-
-line_t *
-lineLink(line_t *line)
-{
-	line->l_refs++;
-	return line;
-}
-
-line_t *
-lineUnlink(line_t *line)
-{
-	/*printf("%d:\n\t'%s'\n", line->l_refs, line->l_str);*/
-
-	if(--line->l_refs == 0) {
-		free(line->l_str);
-		free(line);
-		return NULL;
-	}
-	return line;
-}
-
-const char *
-lineGetData(const line_t *line)
-{
-	return line ? line->l_str : NULL;
-}
-
-#else
-
 line_t *
 lineCreate(const char *data)
 {
@@ -163,10 +116,3 @@ lineGetData(const line_t *line)
 {
 	return line ? &line[1] : NULL;
 }
-
-unsigned char
-lineGetRefCount(const line_t *line)
-{
-	return (unsigned char)line[0];
-}
-#endif

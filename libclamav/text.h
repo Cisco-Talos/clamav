@@ -49,7 +49,6 @@ typedef struct text {
 #include "message.h"
 
 void	textDestroy(text *t_head);
-text	*textClean(text *t_head);
 text	*textAddMessage(text *aText, message *aMessage);
 text	*textMove(text *t_head, text *t);
 blob	*textToBlob(text *t, blob *b, int destroy);

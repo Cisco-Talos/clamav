@@ -37,21 +37,13 @@
 #ifndef __LINE_H
 #define __LINE_H
 
-#ifdef	OLD
-/* easier to read, but slower */
-
-typedef struct line {
-	char	*l_str;	/* the line's contents */
-	unsigned int	l_refs;	/* the number of references to the data */
-} line_t;
-#else
 typedef	char	line_t;	/* first byte is the ref count */
-#endif
 
 line_t	*lineCreate(const char *data);
 line_t	*lineLink(line_t *line);
 line_t	*lineUnlink(line_t *line);
 const	char	*lineGetData(const line_t *line);
-unsigned	char	lineGetRefCount(const line_t *line);
+
+#define	lineGetRefCount(line)	((unsigned char)line[0])
 
 #endif

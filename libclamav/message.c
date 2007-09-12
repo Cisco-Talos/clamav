@@ -682,7 +682,7 @@ messageGetFilename(const message *m)
 	if(filename)
 		return filename;
 
-	return (char *)messageFindArgument(m, "name"); 
+	return (char *)messageFindArgument(m, "name");
 }
 
 void
@@ -964,6 +964,83 @@ messageAddStrAtTop(message *m, const char *data)
 }
 
 /*
+ * Put the contents of the given text at the end of the current object.
+ * Can be used either to move a text object into a message, or to move a
+ * message's text into another message only moving from a given offset.
+ * The given text emptied; it can be used again if needed, though be warned that
+ * it will have an empty line at the start.
+ * Returns 0 for failure, 1 for success
+ */
+int
+messageMoveText(message *m, text *t, message *old_message)
+{
+	int rc;
+
+	if(m->body_first == NULL) {
+		if(old_message) {
+			text *u;
+			/*
+			 * t is within old_message which is about to be
+			 * destroyed
+			 */
+			assert(old_message->body_first != NULL);
+
+			m->body_first = t;
+			for(u = old_message->body_first; u != t;) {
+				text *next;
+
+				if(u->t_line)
+					lineUnlink(u->t_line);
+				next = u->t_next;
+
+				free(u);
+				u = next;
+
+				if(u == NULL) {
+					cli_errmsg("messageMoveText sanity check: t not within old_message\n");
+					return -1;
+				}
+			}
+			assert(m->body_last->t_next == NULL);
+
+			m->body_last = old_message->body_last;
+			old_message->body_first = old_message->body_last = NULL;
+
+			/* Do any pointers need to be reset? */
+			if((old_message->bounce == NULL) &&
+			   (old_message->encoding == NULL) &&
+			   (old_message->binhex == NULL) &&
+			   (old_message->yenc == NULL))
+				return 0;
+
+			m->body_last = m->body_first;
+			rc = 0;
+		} else {
+			m->body_last = m->body_first = textMove(NULL, t);
+			if(m->body_first == NULL)
+				rc = -1;
+			else
+				rc = 0;
+		}
+	} else {
+		m->body_last = textMove(m->body_last, t);
+		if(m->body_last == NULL) {
+			rc = -1;
+			m->body_last = m->body_first;
+		} else
+			rc = 0;
+	}
+
+	while(m->body_last->t_next) {
+		m->body_last = m->body_last->t_next;
+		if(m->body_last->t_line)
+			messageIsEncoding(m);
+	}
+
+	return rc;
+}
+
+/*
  * See if the last line marks the start of a non MIME inclusion that
  * will need to be scanned
  */
@@ -973,11 +1050,6 @@ messageIsEncoding(message *m)
 	static const char encoding[] = "Content-Transfer-Encoding";
 	static const char binhex[] = "(This file must be converted with BinHex 4.0)";
 	const char *line = lineGetData(m->body_last->t_line);
-
-	/* not enough matches to warrant this test */
-	/*if(lineGetRefCount(m->body_last->t_line) > 1) {
-		return;
-	}*/
 
 	if((m->encoding == NULL) &&
 	   (strncasecmp(line, encoding, sizeof(encoding) - 1) == 0) &&
@@ -1012,18 +1084,6 @@ messageGetBody(message *m)
 {
 	assert(m != NULL);
 	return m->body_first;
-}
-
-/*
- * Clean up the message by removing trailing spaces and blank lines
- */
-void
-messageClean(message *m)
-{
-	text *newEnd = textClean(m->body_first);
-
-	if(newEnd)
-		m->body_last = newEnd;
 }
 
 /*

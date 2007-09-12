@@ -1705,8 +1705,6 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 		return NULL;
 	}
 
-	messageClean(ret);
-
 	cli_dbgmsg("parseEmailFile: return\n");
 
 	return ret;
@@ -1715,12 +1713,8 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 /*
  * The given message contains a raw e-mail.
  *
- * Returns the message's body with the correct arguments set
- *
- * The downside of this approach is that for a short time we have two copies
- * of the message in memory, the upside is that it makes for easier parsing
- * of encapsulated messages, and in the long run uses less memory in those
- * scenarios
+ * Returns the message's body with the correct arguments set, empties the
+ * given message's contents (note that it isn't destroyed)
  *
  * TODO: remove the duplication with parseEmailFile
  */
@@ -1729,7 +1723,7 @@ parseEmailHeaders(message *m, const table_t *rfc821)
 {
 	bool inHeader = TRUE;
 	bool bodyIsEmpty = TRUE;
-	const text *t;
+	text *t;
 	message *ret;
 	bool anyHeadersFound = FALSE;
 	int commandNumber = -1;
@@ -1814,12 +1808,14 @@ parseEmailHeaders(message *m, const table_t *rfc821)
 					fullline = ptr;
 					strcat(fullline, line);
 				}
-
 				assert(fullline != NULL);
 
 				if(next_is_folded_header(t))
 					/* Add arguments to this line */
 					continue;
+
+				lineUnlink(t->t_line);
+				t->t_line = NULL;
 
 				if(count_quotes(fullline) & 1)
 					continue;
@@ -1853,9 +1849,9 @@ parseEmailHeaders(message *m, const table_t *rfc821)
 			}
 			/*if(t->t_line && isuuencodebegin(t->t_line))
 				puts("FIXME: add fast visa here");*/
-			/*cli_dbgmsg("Add line to body '%s'\n", line);*/
-			if(messageAddLine(ret, t->t_line) < 0)
-				break;
+			cli_dbgmsg("parseEmailHeaders: inished with headers, moving body\n");
+			messageMoveText(ret, t, m);
+			break;
 		}
 	}
 
@@ -1877,8 +1873,6 @@ parseEmailHeaders(message *m, const table_t *rfc821)
 		cli_dbgmsg("parseEmailHeaders: no headers found, assuming it isn't an email\n");
 		return NULL;
 	}
-
-	messageClean(ret);
 
 	cli_dbgmsg("parseEmailHeaders: return\n");
 
@@ -2444,8 +2438,6 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 						if(rc == VIRUS)
 							infected = TRUE;
 						break;
-					default:
-						messageClean(aMessage);
 				}
 			}
 
@@ -2543,8 +2535,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 						assert(aMessage == messages[htmltextPart]);
 						messageDestroy(aMessage);
 						messages[htmltextPart] = NULL;
-					}
-					else if(rc == VIRUS) {
+					} else if(rc == VIRUS) {
 						infected = TRUE;
 						break;
 					}
@@ -3312,7 +3303,6 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 				cli_dbgmsg("Invalid content-type '%s' received, no subtype specified, assuming text/plain; charset=us-ascii\n", ptr);
 			else {
 				int i;
-				char *mimeArgs;	/* RHS of the ; */
 
 				buf = cli_malloc(strlen(ptr) + 1);
 				if(buf == NULL) {
@@ -3406,10 +3396,10 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 				 * we find the boundary argument set it
 				 */
 				i = 1;
-				while((mimeArgs = cli_strtokbuf(ptr, i++, ";", buf)) != NULL) {
-					cli_dbgmsg("mimeArgs = '%s'\n", mimeArgs);
+				while(cli_strtokbuf(ptr, i++, ";", buf) != NULL) {
+					cli_dbgmsg("mimeArgs = '%s'\n", buf);
 
-					messageAddArguments(m, mimeArgs);
+					messageAddArguments(m, buf);
 				}
 			}
 			break;

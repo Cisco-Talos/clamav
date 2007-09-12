@@ -134,18 +134,6 @@ textDestroy(text *t_head)
 	}
 }
 
-/*
- * Remove trailing spaces from the lines and trailing blank lines
- * This could be used to remove trailing blank lines, empty lines etc.,
- *	but it probably isn't worth the time taken given that it won't reclaim
- *	much memory
- */
-text *
-textClean(text *t_head)
-{
-	return t_head;
-}
-
 /* Clone the current object */
 static text *
 textCopy(const text *t_head)
@@ -424,8 +412,7 @@ addToFileblob(const line_t *line, void *arg)
 	if(line) {
 		const char *l = lineGetData(line);
 
-		if(l)
-			fileblobAddData(fb, (const unsigned char *)l, strlen(l));
+		fileblobAddData(fb, (const unsigned char *)l, strlen(l));
 	}
 	fileblobAddData(fb, (const unsigned char *)"\n", 1);
 }
