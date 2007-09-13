@@ -39,6 +39,7 @@
 int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 {
 	struct cli_ac_node *pt, *next, **newtable;
+	struct cli_ac_patt *ph;
 	uint8_t i;
 	uint16_t len = MIN(root->ac_maxdepth, pattern->length);
 
@@ -114,6 +115,19 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 
     pt->final = 1;
     pattern->depth = i;
+
+    ph = pt->list;
+    while(ph) {
+	if((ph->length == pattern->length) && (ph->prefix_length == pattern->prefix_length)) {
+	    if(!memcmp(ph->pattern, pattern->pattern, ph->length * sizeof(uint16_t)) && !memcmp(ph->prefix, pattern->prefix, ph->prefix_length * sizeof(uint16_t))) {
+		pattern->next_same = ph->next_same;
+		ph->next_same = pattern;
+		return CL_SUCCESS;
+	    }
+	}
+	ph = ph->next;
+    }
+
     pattern->next = pt->list;
     pt->list = pattern;
 
@@ -336,12 +350,8 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
 	uint8_t found;
 
 
-    if(offset + pattern->length > length)
+    if((offset + pattern->length > length) || (pattern->prefix_length > offset))
 	return 0;
-
-    if(pattern->prefix)
-	if(pattern->prefix_length > offset)
-	    return 0;
 
     bp = offset + pattern->depth;
 
@@ -433,7 +443,7 @@ inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, of
 int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, struct cli_ac_data *mdata, uint8_t otfrec, uint32_t offset, cli_file_t ftype, int fd, struct cli_matched_type **ftoffset)
 {
 	struct cli_ac_node *current;
-	struct cli_ac_patt *pt;
+	struct cli_ac_patt *patt, *pt;
         uint32_t i, bp, realoff;
 	uint16_t j;
 	int32_t **offmatrix;
@@ -461,130 +471,138 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	current = current->trans[buffer[i]];
 
 	if(current->final) {
-	    pt = current->list;
-	    while(pt) {
-		bp = i + 1 - pt->depth;
-		if(ac_findmatch(buffer, bp, length, pt)) {
-		    realoff = offset + bp - pt->prefix_length;
+	    patt = current->list;
+	    while(patt) {
+		bp = i + 1 - patt->depth;
+		if(ac_findmatch(buffer, bp, length, patt)) {
+		    pt = patt;
+		    while(pt) {
+			realoff = offset + bp - pt->prefix_length;
 
-		    if((pt->offset || pt->target) && (!pt->sigid || pt->partno == 1)) {
-			if((fd == -1 && !ftype) || !cli_validatesig(ftype, pt->offset, realoff, &info, fd, pt->virname)) {
-			    pt = pt->next;
-			    continue;
+			if((pt->offset || pt->target) && (!pt->sigid || pt->partno == 1)) {
+			    if((fd == -1 && !ftype) || !cli_validatesig(ftype, pt->offset, realoff, &info, fd, pt->virname)) {
+				pt = pt->next_same;
+				continue;
+			    }
 			}
-		    }
 
-		    if(pt->sigid) { /* it's a partial signature */
+			if(pt->sigid) { /* it's a partial signature */
 
-			if(!mdata->offmatrix[pt->sigid - 1]) {
-			    mdata->offmatrix[pt->sigid - 1] = cli_malloc(pt->parts * sizeof(int32_t *));
+			    if(pt->partno != 1 && (!mdata->offmatrix[pt->sigid - 1] || !mdata->offmatrix[pt->sigid - 1][pt->partno - 2][0])) {
+				pt = pt->next_same;
+				continue;
+			    }
+
 			    if(!mdata->offmatrix[pt->sigid - 1]) {
-				cli_errmsg("cli_ac_scanbuff: Can't allocate memory for mdata->offmatrix[%u]\n", pt->sigid - 1);
-				return CL_EMEM;
+				mdata->offmatrix[pt->sigid - 1] = cli_malloc(pt->parts * sizeof(int32_t *));
+				if(!mdata->offmatrix[pt->sigid - 1]) {
+				    cli_errmsg("cli_ac_scanbuff: Can't allocate memory for mdata->offmatrix[%u]\n", pt->sigid - 1);
+				    return CL_EMEM;
+				}
+
+				mdata->offmatrix[pt->sigid - 1][0] = cli_malloc(pt->parts * (AC_DEFAULT_TRACKLEN + 1) * sizeof(int32_t));
+				if(!mdata->offmatrix[pt->sigid - 1][0]) {
+				    cli_errmsg("cli_ac_scanbuff: Can't allocate memory for mdata->offmatrix[%u][0]\n", pt->sigid - 1);
+				    free(mdata->offmatrix[pt->sigid - 1]);
+				    mdata->offmatrix[pt->sigid - 1] = NULL;
+				    return CL_EMEM;
+				}
+				memset(mdata->offmatrix[pt->sigid - 1][0], -1, pt->parts * (AC_DEFAULT_TRACKLEN + 1) * sizeof(int32_t));
+				mdata->offmatrix[pt->sigid - 1][0][0] = 0;
+				for(j = 1; j < pt->parts; j++) {
+				    mdata->offmatrix[pt->sigid - 1][j] = mdata->offmatrix[pt->sigid - 1][0] + j * (AC_DEFAULT_TRACKLEN + 1);
+				    mdata->offmatrix[pt->sigid - 1][j][0] = 0;
+				}
+			    }
+			    offmatrix = mdata->offmatrix[pt->sigid - 1];
+
+			    if(pt->partno != 1) {
+				found = 0;
+				for(j = 1; j <= AC_DEFAULT_TRACKLEN && offmatrix[pt->partno - 2][j] != -1; j++) {
+				    found = 1;
+				    if(pt->maxdist)
+					if(realoff - offmatrix[pt->partno - 2][j] > pt->maxdist)
+					    found = 0;
+
+				    if(found && pt->mindist)
+					if(realoff - offmatrix[pt->partno - 2][j] < pt->mindist)
+					    found = 0;
+
+				    if(found)
+					break;
+				}
 			    }
 
-			    mdata->offmatrix[pt->sigid - 1][0] = cli_malloc(pt->parts * (AC_DEFAULT_TRACKLEN + 1) * sizeof(int32_t));
-			    if(!mdata->offmatrix[pt->sigid - 1][0]) {
-				cli_errmsg("cli_ac_scanbuff: Can't allocate memory for mdata->offmatrix[%u][0]\n", pt->sigid - 1);
-				free(mdata->offmatrix[pt->sigid - 1]);
-				mdata->offmatrix[pt->sigid - 1] = NULL;
-				return CL_EMEM;
+			    if(pt->partno == 1 || (found && (pt->partno != pt->parts))) {
+				offmatrix[pt->partno - 1][0] %= AC_DEFAULT_TRACKLEN;
+				offmatrix[pt->partno - 1][0]++;
+
+				offmatrix[pt->partno - 1][offmatrix[pt->partno - 1][0]] = realoff + pt->length + pt->prefix_length;
+				if(pt->partno == 1) /* save realoff for the first part */
+				    offmatrix[pt->parts - 1][offmatrix[pt->partno - 1][0]] = realoff;
+			    } else if(found && pt->partno == pt->parts) {
+				if(pt->type) {
+				    if(otfrec) {
+					if(pt->type > type || pt->type >= CL_TYPE_SFX || pt->type == CL_TYPE_MSEXE) {
+					    cli_dbgmsg("Matched signature for file type %s\n", pt->virname);
+					    type = pt->type;
+					    if(ftoffset && (!*ftoffset || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ) && ((ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP) && type == CL_TYPE_MSEXE)))  {
+						/* FIXME: we don't know which offset of the first part is the correct one */
+						for(j = 1; j <= AC_DEFAULT_TRACKLEN && offmatrix[0][j] != -1; j++) {
+						    if(ac_addtype(ftoffset, type, offmatrix[pt->parts - 1][j])) {
+							if(info.exeinfo.section)
+							    free(info.exeinfo.section);
+							return CL_EMEM;
+						    }
+						}
+					    }
+
+					    memset(offmatrix[0], -1, pt->parts * (AC_DEFAULT_TRACKLEN + 1) * sizeof(int32_t));
+					    for(j = 0; j < pt->parts; j++)
+						offmatrix[j][0] = 0;
+					}
+				    }
+
+				} else { /* !pt->type */
+				    if(virname)
+					*virname = pt->virname;
+
+				    if(info.exeinfo.section)
+					free(info.exeinfo.section);
+
+				    return CL_VIRUS;
+				}
 			    }
-			    memset(mdata->offmatrix[pt->sigid - 1][0], -1, pt->parts * (AC_DEFAULT_TRACKLEN + 1) * sizeof(int32_t));
-			    mdata->offmatrix[pt->sigid - 1][0][0] = 0;
-			    for(j = 1; j < pt->parts; j++) {
-				mdata->offmatrix[pt->sigid - 1][j] = mdata->offmatrix[pt->sigid - 1][0] + j * (AC_DEFAULT_TRACKLEN + 1);
-				 mdata->offmatrix[pt->sigid - 1][j][0] = 0;
-			    }
-			}
-			offmatrix = mdata->offmatrix[pt->sigid - 1];
 
-			if(pt->partno != 1) {
-			    found = 0;
-			    for(j = 1; j <= AC_DEFAULT_TRACKLEN && offmatrix[pt->partno - 2][j] != -1; j++) {
-				found = 1;
-				if(pt->maxdist)
-				    if(realoff - offmatrix[pt->partno - 2][j] > pt->maxdist)
-					found = 0;
-
-				if(found && pt->mindist)
-				    if(realoff - offmatrix[pt->partno - 2][j] < pt->mindist)
-					found = 0;
-
-				if(found)
-				    break;
-			    }
-			}
-
-			if(pt->partno == 1 || (found && (pt->partno != pt->parts))) {
-			    offmatrix[pt->partno - 1][0] %= AC_DEFAULT_TRACKLEN;
-			    offmatrix[pt->partno - 1][0]++;
-
-			    offmatrix[pt->partno - 1][offmatrix[pt->partno - 1][0]] = realoff + pt->length + pt->prefix_length;
-			    if(pt->partno == 1) /* save realoff for the first part */
-				offmatrix[pt->parts - 1][offmatrix[pt->partno - 1][0]] = realoff;
-			} else if(found && pt->partno == pt->parts) {
+			} else { /* old type signature */
 			    if(pt->type) {
 				if(otfrec) {
 				    if(pt->type > type || pt->type >= CL_TYPE_SFX || pt->type == CL_TYPE_MSEXE) {
-					cli_dbgmsg("Matched signature for file type %s\n", pt->virname);
+					cli_dbgmsg("Matched signature for file type %s at %u\n", pt->virname, realoff);
 					type = pt->type;
 					if(ftoffset && (!*ftoffset || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ) && ((ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP) && type == CL_TYPE_MSEXE)))  {
-					    /* FIXME: we don't know which offset of the first part is the correct one */
-					    for(j = 1; j <= AC_DEFAULT_TRACKLEN && offmatrix[0][j] != -1; j++) {
-						if(ac_addtype(ftoffset, type, offmatrix[pt->parts - 1][j])) {
-						    if(info.exeinfo.section)
-							free(info.exeinfo.section);
-						    return CL_EMEM;
-						}
+
+					    if(ac_addtype(ftoffset, type, realoff)) {
+						if(info.exeinfo.section)
+						    free(info.exeinfo.section);
+						return CL_EMEM;
 					    }
 					}
-
-					memset(offmatrix[0], -1, pt->parts * (AC_DEFAULT_TRACKLEN + 1) * sizeof(int32_t));
-					for(j = 0; j < pt->parts; j++)
-					    offmatrix[j][0] = 0;
 				    }
 				}
-
-			    } else { /* !pt->type */
+			    } else {
 				if(virname)
 				    *virname = pt->virname;
 
 				if(info.exeinfo.section)
 				    free(info.exeinfo.section);
-
 				return CL_VIRUS;
 			    }
 			}
-
-		    } else { /* old type signature */
-			if(pt->type) {
-			    if(otfrec) {
-				if(pt->type > type || pt->type >= CL_TYPE_SFX || pt->type == CL_TYPE_MSEXE) {
-				    cli_dbgmsg("Matched signature for file type %s at %u\n", pt->virname, realoff);
-				    type = pt->type;
-				    if(ftoffset && (!*ftoffset || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ) && ((ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP) && type == CL_TYPE_MSEXE)))  {
-
-					if(ac_addtype(ftoffset, type, realoff)) {
-					    if(info.exeinfo.section)
-						free(info.exeinfo.section);
-					    return CL_EMEM;
-					}
-				    }
-				}
-			    }
-			} else {
-			    if(virname)
-				*virname = pt->virname;
-
-			    if(info.exeinfo.section)
-				free(info.exeinfo.section);
-			    return CL_VIRUS;
-			}
+			pt = pt->next_same;
 		    }
 		}
-
-		pt = pt->next;
+		patt = patt->next;
 	    }
 	}
     }
@@ -751,15 +769,15 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 		if(new->pattern[j] & CLI_MATCH_WILDCARD) {
 		    break;
 		} else {
-		    if(j - i + 1 > plen) {
+		    if(j - i + 1 >= plen) {
 			plen = j - i + 1;
 			ppos = i;
 		    }
 		}
-		if(plen >= root->ac_maxdepth)
+		if(plen >= root->ac_maxdepth && (new->pattern[ppos] || new->pattern[ppos + 1]))
 		    break;
 	    }
-	    if(plen >= root->ac_maxdepth)
+	    if(plen >= root->ac_maxdepth && (new->pattern[ppos] || new->pattern[ppos + 1]))
 		break;
 	}
 

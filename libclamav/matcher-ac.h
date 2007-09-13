@@ -43,7 +43,7 @@ struct cli_ac_patt {
     uint8_t target;
     uint16_t type;
     unsigned char **altc;
-    struct cli_ac_patt *next;
+    struct cli_ac_patt *next, *next_same;
 };
 
 struct cli_ac_node {
