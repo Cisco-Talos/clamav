@@ -1,3 +1,6 @@
+Thu Sep 13 14:01:08 CEST 2007 (acab)
+  * libclamav/pe.c: One more typo fixed
+
 Thu Sep 13 12:37:26 CEST 2007 (acab)
 ------------------------------------
   * libclamav: Shut up a few warnings and fix some typoes

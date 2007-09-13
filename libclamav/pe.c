@@ -1177,7 +1177,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	 */
 	/* upack 0.39-3s + sample 0151477*/
  	while(((upack && nsections == 3) && /* 3 sections */
-	    (
+	    ((
 	     epbuff[0] == '\xbe' && cli_readint32(epbuff + 1) - EC32(optional_hdr32.ImageBase) > min && /* mov esi */
 	     epbuff[5] == '\xad' && epbuff[6] == '\x50' /* lodsd; push eax */
 	     )
@@ -1186,10 +1186,10 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    (epbuff[0] == '\xbe' && cli_readint32(epbuff + 1) - EC32(optional_hdr32.ImageBase) > min && /* mov esi */
 	     epbuff[5] == '\xff' && epbuff[6] == '\x36' /* push [esi] */
 	     )
-	    ) 
+	   )) 
 	   ||
 	   ((!upack && nsections == 2) && /* 2 sections */
-	    ( /* upack 0.39-2s */
+	    (( /* upack 0.39-2s */
 	     epbuff[0] == '\x60' && epbuff[1] == '\xe8' && cli_readint32(epbuff+2) == 0x9 /* pusha; call+9 */
 	     )
 	    ||
@@ -1198,7 +1198,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	     cli_readint32(epbuff + 1) - EC32(optional_hdr32.ImageBase) > 0 &&
 	     epbuff[5] == '\xad' && epbuff[6] == '\x8b' && epbuff[7] == '\xf8' /* loads;  mov edi, eax */
 	     )
-	    )
+	   ))
 	   ) { 
 	    uint32_t vma, off;
 	    int a,b,c;
