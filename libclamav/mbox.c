@@ -2904,6 +2904,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 					s = lineGetData(l);
 					if(isBounceStart(s)) {
 						cli_dbgmsg("Found the start of another bounce candidate (%s)\n", s);
+						lookahead_definately_is_bounce = TRUE;
 						break;
 					}
 				}
@@ -3428,7 +3429,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 					messageAddArgument(m, cli_strtokbuf(ptr, 1, ";", buf));
 				}
 			}
-			if((p = (char *)messageFindArgument(m, "filename")) == NULL)
+			if(!messageHasFilename(m))
 				/*
 				 * Handle this type of header, without
 				 * a filename (e.g. some Worm.Torvil.D)
@@ -3437,8 +3438,6 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 				 * Content-Disposition: attachment
 				 */
 				messageAddArgument(m, "filename=unknown");
-			else
-				free(p);
 	}
 	if(copy)
 		free(copy);
@@ -4698,6 +4697,8 @@ getline_from_mbox(char *buffer, size_t len, FILE *fin)
 static bool
 isBounceStart(const char *line)
 {
+	size_t len;
+
 	if(line == NULL)
 		return FALSE;
 	if(*line == '\0')
@@ -4707,8 +4708,12 @@ isBounceStart(const char *line)
 	if((strncmp(line, ">From ", 6) == 0) && !isalnum(line[6]))
 		return FALSE;*/
 
-	if((strncmp(line, "From ", 5) == 0) ||
-	   (strncmp(line, ">From ", 6) == 0)) {
+	len = strlen(line);
+	if((len < 6) || (len >= 72))
+		return FALSE;
+
+	if((memcmp(line, "From ", 5) == 0) ||
+	   (memcmp(line, ">From ", 6) == 0)) {
 		int numSpaces = 0, numDigits = 0;
 
 		do
@@ -4723,7 +4728,7 @@ isBounceStart(const char *line)
 		if(numDigits < 11)
 			return FALSE;
 	}
-	return cli_filetype((const unsigned char *)line, strlen(line)) == CL_TYPE_MAIL;
+	return cli_filetype((const unsigned char *)line, len) == CL_TYPE_MAIL;
 }
 
 /*
@@ -4899,25 +4904,17 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 				cptr = messageGetMimeSubtype(aMessage);
 				cli_dbgmsg("Mime subtype \"%s\"\n", cptr);
 				if((tableFind(mctx->subtypeTable, cptr) == PLAIN) &&
-					  (messageGetEncoding(aMessage) == NOENCODING)) {
-					char *filename = messageGetFilename(aMessage);
+				   (messageGetEncoding(aMessage) == NOENCODING)) {
 					/*
-					 * Strictly speaking
-					 * a text/plain part is
-					 * not an attachment. We
-					 * pretend it is so that
-					 * we can decode and
-					 * scan it
+					 * Strictly speaking, a text/plain part
+					 * is not an attachment. We pretend it
+					 * is so that we can decode and scan it
 					 */
-
-					if(filename == NULL) {
+					if(!messageHasFilename(aMessage)) {
 						cli_dbgmsg("Adding part to main message\n");
 						addToText = TRUE;
-					} else {
-						cli_dbgmsg("Treating %s as attachment\n",
-							filename);
-						free(filename);
-					}
+					} else
+						cli_dbgmsg("Treating inline as attachment\n");
 				} else {
 					const int is_html = (tableFind(mctx->subtypeTable, cptr) == HTML);
 					if((mctx->ctx->options&CL_SCAN_MAILURL) && is_html)

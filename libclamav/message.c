@@ -70,6 +70,7 @@ typedef enum	{ FALSE = 0, TRUE = 1 } bool;
 #endif
 #endif
 
+static	int	messageHasArgument(const message *m, const char *variable);
 static	void	messageIsEncoding(message *m);
 static unsigned char *decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(char), bool isFast);
 static	void	sanitiseBase64(char *s);
@@ -434,7 +435,7 @@ messageAddArgument(message *m, const char *arg)
 	 * mime. By pretending defaulting to an application rather than
 	 * to nomime we can ensure they're saved and scanned
 	 */
-	if((strncasecmp(arg, "filename=", 9) == 0) || (strncasecmp(arg, "name=", 5) == 0))
+	if(arg && ((strncasecmp(arg, "filename=", 9) == 0) || (strncasecmp(arg, "name=", 5) == 0)))
 		if(messageGetMimeType(m) == NOMIME) {
 			cli_dbgmsg("Force mime encoding to application\n");
 			messageSetMimeType(m, "application");
@@ -683,6 +684,48 @@ messageGetFilename(const message *m)
 		return filename;
 
 	return (char *)messageFindArgument(m, "name");
+}
+
+/* Returns true or false */
+static int
+messageHasArgument(const message *m, const char *variable)
+{
+	int i;
+	size_t len;
+
+	assert(m != NULL);
+	assert(variable != NULL);
+
+	len = strlen(variable);
+
+	for(i = 0; i < m->numberOfArguments; i++) {
+		const char *ptr;
+
+		ptr = messageGetArgument(m, i);
+		if((ptr == NULL) || (*ptr == '\0'))
+			continue;
+#ifdef	CL_DEBUG
+		cli_dbgmsg("messageArgumentExists: compare %lu bytes of %s with %s\n",
+			(unsigned long)len, variable, ptr);
+#endif
+		if(strncasecmp(ptr, variable, len) == 0) {
+			ptr = &ptr[len];
+			while(isspace(*ptr))
+				ptr++;
+			if(*ptr != '=') {
+				cli_warnmsg("messageArgumentExists: no '=' sign found in MIME header '%s' (%s)\n", variable, messageGetArgument(m, i));
+				return 0;
+			}
+			return 1;
+		}
+	}
+	return 0;
+}
+
+int
+messageHasFilename(const message *m)
+{
+	return messageHasArgument(m, "filename") || messageHasArgument(m, "file");
 }
 
 void

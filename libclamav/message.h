@@ -60,6 +60,7 @@ void	messageAddArgument(message *m, const char *arg);
 void	messageAddArguments(message *m, const char *arg);
 char	*messageFindArgument(const message *m, const char *variable);
 char	*messageGetFilename(const message *m);
+int	messageHasFilename(const message *m);
 void	messageSetEncoding(message *m, const char *enctype);
 encoding_type	messageGetEncoding(const message *m);
 int	messageAddLine(message *m, line_t *line);
