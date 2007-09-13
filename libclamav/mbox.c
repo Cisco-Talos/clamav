@@ -2785,6 +2785,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 	if(aText && (textIn == NULL)) {
 		/* Look for a bounce in the text (non mime encoded) portion */
 		const text *t;
+		/* isBounceStart() is expensive, reduce the number of calls */
+		bool lookahead_definately_is_bounce = FALSE;
 
 		for(t = aText; t && (rc != VIRUS); t = t->t_next) {
 			const line_t *l = t->t_line;
@@ -2792,17 +2794,23 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 			const char *s;
 			bool inheader;
 
-			if(l == NULL)
+			if(l == NULL) {
+				/* assert(lookahead_definately_is_bounce == FALSE) */
 				continue;
+			}
 
-			if(!isBounceStart(lineGetData(l)))
+			if(lookahead_definately_is_bounce)
+				lookahead_definately_is_bounce = FALSE;
+			else if(!isBounceStart(lineGetData(l)))
 				continue;
 
 			lookahead = t->t_next;
 			if(lookahead) {
-				if(isBounceStart(lineGetData(lookahead->t_line)))
+				if(isBounceStart(lineGetData(lookahead->t_line))) {
+					lookahead_definately_is_bounce = TRUE;
 					/* don't save worthless header lines */
 					continue;
+				}
 			} else	/* don't save a single liner */
 				break;
 
@@ -4698,8 +4706,6 @@ isBounceStart(const char *line)
 		return FALSE;
 	if((strncmp(line, ">From ", 6) == 0) && !isalnum(line[6]))
 		return FALSE;*/
-	if(cli_filetype((const unsigned char *)line, strlen(line)) != CL_TYPE_MAIL)
-		return FALSE;
 
 	if((strncmp(line, "From ", 5) == 0) ||
 	   (strncmp(line, ">From ", 6) == 0)) {
@@ -4717,7 +4723,7 @@ isBounceStart(const char *line)
 		if(numDigits < 11)
 			return FALSE;
 	}
-	return TRUE;
+	return cli_filetype((const unsigned char *)line, strlen(line)) == CL_TYPE_MAIL;
 }
 
 /*
