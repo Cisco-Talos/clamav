@@ -320,7 +320,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	struct stat sb;
 	char sname[9], buff[4096], epbuff[4096], *tempfile;
 	uint32_t epsize;
-	unsigned char *ubuff;
 	ssize_t bytes;
 	unsigned int i, found, upx_success = 0, min = 0, max = 0, err;
 	unsigned int ssize = 0, dsize = 0, dll = 0, pe_plus = 0;
@@ -873,11 +872,11 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     }
 
     /* Kriz */
-    if(SCAN_ALGO && (DCONF & PE_CONF_KRIZ) && epsize >= 200 && CLI_ISCONTAINED(exe_sections[nsections - 1].raw, exe_sections[nsections - 1].rsz, ep, 0x0fd2) && epbuff[1]=='\x9c' || epbuff[2]=='\x60') {
+    if(SCAN_ALGO && (DCONF & PE_CONF_KRIZ) && epsize >= 200 && CLI_ISCONTAINED(exe_sections[nsections - 1].raw, exe_sections[nsections - 1].rsz, ep, 0x0fd2) && epbuff[1]=='\x9c' && epbuff[2]=='\x60') {
 	enum {KZSTRASH,KZSCDELTA,KZSPDELTA,KZSGETSIZE,KZSXORPRFX,KZSXOR,KZSDDELTA,KZSLOOP,KZSTOP};
 	uint8_t kzs[] = {KZSTRASH,KZSCDELTA,KZSPDELTA,KZSGETSIZE,KZSTRASH,KZSXORPRFX,KZSXOR,KZSTRASH,KZSDDELTA,KZSTRASH,KZSLOOP,KZSTOP};
 	uint8_t *kzstate = kzs;
-	uint8_t *kzcode = epbuff + 3;
+	uint8_t *kzcode = (uint8_t *)epbuff + 3;
 	uint8_t kzdptr=0xff, kzdsize=0xff;
 	int kzlen = 197, kzinitlen=0xffff, kzxorlen=-1;
 	cli_dbgmsg("in kriz\n");
@@ -1124,7 +1123,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    }
 
 	    if((bytes = read(desc, src + dsize, exe_sections[i + 1].rsz)) != exe_sections[i + 1].rsz) {
-	        cli_dbgmsg("MEW: Can't read %d bytes [readed: %d]\n", exe_sections[i + 1].rsz, bytes);
+	        cli_dbgmsg("MEW: Can't read %d bytes [read: %d]\n", exe_sections[i + 1].rsz, bytes);
 		free(exe_sections);
 		free(src);
 		return CL_EIO;
@@ -1361,7 +1360,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 	int sectcnt = 0;
 	char *support;
-	uint32_t newesi, newedi, newebx, oldep, gp, t;
+	uint32_t newesi, newedi, oldep, gp, t;
 	struct cli_exe_section *sections;
 
 	ssize = exe_sections[i + 1].rsz;

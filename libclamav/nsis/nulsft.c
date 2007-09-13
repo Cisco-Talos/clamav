@@ -36,6 +36,7 @@
 #include "nsis_zlib.h"
 #include "matcher.h"
 #include "scanners.h"
+#include "nulsft.h" /* SHUT UP GCC -Wextra */
 
 #ifndef O_BINARY
 #define O_BINARY 0
@@ -468,11 +469,11 @@ static int nsis_headers(struct nsis_st *n, cli_ctx *ctx) {
 
 
 
-int cli_nsis_unpack(struct nsis_st *n, cli_ctx *ctx) {
+static int cli_nsis_unpack(struct nsis_st *n, cli_ctx *ctx) {
   return (n->fno) ? nsis_unpack_next(n, ctx) : nsis_headers(n, ctx);
 }
 
-void cli_nsis_free(struct nsis_st *n) {
+static void cli_nsis_free(struct nsis_st *n) {
   nsis_shutdown(n);
   if (n->solid && n->freeme) free(n->freeme);
 }
