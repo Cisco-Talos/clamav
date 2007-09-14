@@ -1044,7 +1044,7 @@ messageMoveText(message *m, text *t, message *old_message)
 					return -1;
 				}
 			}
-			assert(m->body_last->t_next == NULL);
+			assert(old_message->body_last->t_next == NULL);
 
 			m->body_last = old_message->body_last;
 			old_message->body_first = old_message->body_last = NULL;
