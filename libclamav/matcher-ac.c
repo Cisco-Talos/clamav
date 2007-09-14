@@ -619,7 +619,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	struct cli_ac_patt *new;
 	char *pt, *hex = NULL;
 	uint16_t i, j, ppos = 0, pend;
-	uint8_t wprefix = 0, error = 0, namelen, plen = 0;
+	uint8_t wprefix = 0, zprefix = 1, error = 0, namelen, plen = 0;
 	int ret;
 
 #define FREE_ALT			\
@@ -760,9 +760,11 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	    wprefix = 1;
 	    break;
 	}
+	if(zprefix && new->pattern[i])
+	    zprefix = 0;
     }
 
-    if(wprefix) {
+    if(wprefix || zprefix) {
 	pend = new->length - root->ac_mindepth + 1;
 	for(i = 0; i < pend; i++) {
 	    for(j = i; j < i + root->ac_maxdepth && j < new->length; j++) {
