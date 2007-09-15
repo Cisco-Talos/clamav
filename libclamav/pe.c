@@ -1982,7 +1982,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	uint32_t start_of_stuff, ssize, dsize, rep = ep;
 	unsigned int nowinldr;
 	char nbuff[24];
-	char *src=buff, *dest;
+	char *src=epbuff, *dest;
 
 	if (*epbuff=='\xe9') { /* bitched headers */
 	    eprva = cli_readint32(epbuff+1)+vep+5;

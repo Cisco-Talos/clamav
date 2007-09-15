@@ -1,3 +1,7 @@
+Sat Sep 15 17:39:06 CEST 2007 (acab)
+------------------------------------
+  * libclamav/pe.c: fix nasty typo - thanks edwin!
+
 Sat Sep 15 09:13:14 BST 2007 (njh)
 ----------------------------------
   * libclamav:			More cleanups
