@@ -15,6 +15,8 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
+ *
+ * TODO: Optimise messageExport, decodeLine, messageIsEncoding
  */
 static	char	const	rcsid[] = "$Id: message.c,v 1.195 2007/02/12 20:46:09 njh Exp $";
 
@@ -1511,7 +1513,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		/*
 		 * Find the filename to decode
 		 */
-		if(((enctype == YENCODE) && yEncBegin(m)) || ((i == 0) && yEncBegin(m))) {
+		if(((enctype == YENCODE) || (i == 0)) && yEncBegin(m)) {
 			const char *f;
 
 			/*
@@ -1540,9 +1542,10 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		} else {
 			if(enctype == UUENCODE) {
 				/*
-				 * The body will have been stripped out by the fast track visa
-				 * system. Treat as plain/text, which means we'll still scan
-				 * for funnies outside of the uuencoded portion.
+				 * The body will have been stripped out by the
+				 * fast track visa system. Treat as plain/text,
+				 * which means we'll still scan for funnies
+				 * outside of the uuencoded portion.
 				 */
 				cli_dbgmsg("messageExport: treat uuencode as text/plain\n");
 				enctype = m->encodingTypes[i] = NOENCODING;

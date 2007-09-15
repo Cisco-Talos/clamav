@@ -1,3 +1,7 @@
+Sat Sep 15 09:13:14 BST 2007 (njh)
+----------------------------------
+  * libclamav:			More cleanups
+
 Fri Sep 14 20:16:20 CEST 2007 (tk)
 ----------------------------------
   * libclamav/matcher-ac.c: minor optimisation

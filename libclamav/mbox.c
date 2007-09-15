@@ -2512,9 +2512,10 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
 				htmltextPart = getTextPart(messages, multiparts);
 
-				if(htmltextPart >= 0)
-					aText = textAddMessage(aText, messages[htmltextPart]);
-				else
+				if(htmltextPart >= 0) {
+					if(messageGetBody(messages[htmltextPart]))
+						aText = textAddMessage(aText, messages[htmltextPart]);
+				} else
 					/*
 					 * There isn't an HTML bit. If there's a
 					 * multipart bit, it'll may be in there
@@ -3187,14 +3188,13 @@ getTextPart(message *const messages[], size_t size)
 	size_t i;
 	int textpart = -1;
 
-	for(i = 0; i < size; i++) {
-		assert(messages[i] != NULL);
-		if(messageGetMimeType(messages[i]) == TEXT) {
+	for(i = 0; i < size; i++)
+		if(messages[i] && (messageGetMimeType(messages[i]) == TEXT)) {
 			if(strcasecmp(messageGetMimeSubtype(messages[i]), "html") == 0)
 				return (int)i;
 			textpart = (int)i;
 		}
-	}
+
 	return textpart;
 }
 
