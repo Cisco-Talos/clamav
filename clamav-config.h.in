@@ -207,9 +207,6 @@
 /* Define to 1 if you have the `recvmsg' function. */
 #undef HAVE_RECVMSG
 
-/* Define to 1 if you have the <regex.h> header file. */
-#undef HAVE_REGEX_H
-
 /* have resolv.h */
 #undef HAVE_RESOLV_H
 

@@ -1,3 +1,10 @@
+Mon Sep 17 21:06:59 EEST 2007(edwin)
+------------------------------------
+ * libclamav/regex/: add regcomp(), regexec() impl. from OpenBSD's libc.
+ 	This code is licensed under the 3-clause BSD.
+	This will be used instead of system provided regexec()/regcomp() to
+	have consistent behaviour across platforms.
+
 Mon Sep 17 17:12:27 BST 2007 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Bugs 665/667

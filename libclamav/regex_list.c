@@ -52,9 +52,7 @@
 #include <limits.h>
 #include <sys/types.h>
 
-#ifdef	HAVE_REGEX_H
-#include <regex.h>
-#endif
+#include "regex/regex.h"
 
 
 #include "clamav.h"
@@ -357,7 +355,6 @@ static struct tree_node* stack_pop(struct node_stack* stack)
 }
 
 /* Initialization & loading */
-
 /* Initializes @matcher, allocating necesarry substructures */
 int init_regex_list(struct regex_matcher* matcher)
 {
@@ -1194,7 +1191,7 @@ static int add_pattern(struct regex_matcher* matcher,const unsigned char* pat,co
 							 preg=cli_malloc(sizeof(*preg));
 							 if(!preg)
 								 return CL_EMEM;
-							 rc = regcomp(preg,(const char*)token.u.start,REG_EXTENDED|(bol?0:REG_NOTBOL));
+							 rc = cli_regcomp(preg,(const char*)token.u.start,REG_EXTENDED|(bol?0:REG_NOTBOL));
 							 leaf->preg=preg;
 							 if(rc)
 								 return rc;
@@ -1275,7 +1272,7 @@ static int match_node(struct tree_node* node,const unsigned char* c,size_t len,c
 				const struct leaf_info* leaf = node->u.leaf;
 				/*isleaf = 1;*/
 				if(leaf->preg) {
-					rc = !regexec(leaf->preg,(const char*)c,0,NULL,0);
+					rc = !cli_regexec(leaf->preg,(const char*)c,0,NULL,0);
 				}
 				else  {
 					massert(*c==node->c && "We know this has to match[2]");
@@ -1394,7 +1391,7 @@ static void destroy_tree_internal(struct regex_matcher* matcher,struct tree_node
 		stack_push_once(&matcher->node_stack,(struct tree_node*)node->u.leaf);/* cast to make compiler happy, and to not make another stack implementation for storing void* */
 		stack_push_once(&matcher->node_stack,node);
 		if(leaf->preg) {
-			regfree(leaf->preg);
+			cli_regfree(leaf->preg);
 			free(leaf->preg);
 			leaf->preg=NULL;
 		}

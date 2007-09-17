@@ -110,6 +110,11 @@ libclamav_la_SOURCES = \
 	is_tar.h \
 	tnef.c \
 	tnef.h \
+	regex/strlcpy.c \
+	regex/regcomp.c \
+	regex/regerror.c \
+	regex/regexec.c \
+	regex/regfree.c \
 	unrar/unrar15.c \
 	unrar/unrar20.h \
 	unrar/unrarcmd.h \

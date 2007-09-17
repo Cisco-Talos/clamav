@@ -58,7 +58,7 @@ host_triplet = @host@
 target_triplet = @target@
 subdir = libclamav
 DIST_COMMON = $(include_HEADERS) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in
+	$(srcdir)/Makefile.in COPYING
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/acinclude.m4 \
 	$(top_srcdir)/configure.in
@@ -84,10 +84,11 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	pe.lo upx.lo htmlnorm.lo chmunpack.lo rebuildpe.lo petite.lo \
 	wwunpack.lo unsp.lo aspack.lo packlibs.lo fsg.lo mew.lo \
 	upack.lo line.lo untar.lo unzip.lo special.lo binhex.lo \
-	is_tar.lo tnef.lo unrar15.lo unrarvm.lo unrar.lo \
-	unrarfilter.lo unrarppm.lo unrar20.lo unrarcmd.lo unarj.lo \
-	LZMADecode.lo bzlib.lo infblock.lo nulsft.lo pdf.lo spin.lo \
-	yc.lo elf.lo sis.lo uuencode.lo pst.lo phishcheck.lo \
+	is_tar.lo tnef.lo strlcpy.lo regcomp.lo regerror.lo regexec.lo \
+	regfree.lo unrar15.lo unrarvm.lo unrar.lo unrarfilter.lo \
+	unrarppm.lo unrar20.lo unrarcmd.lo unarj.lo LZMADecode.lo \
+	bzlib.lo infblock.lo nulsft.lo pdf.lo spin.lo yc.lo elf.lo \
+	sis.lo uuencode.lo pst.lo phishcheck.lo \
 	phish_domaincheck_db.lo phish_whitelist.lo regex_list.lo \
 	sha256.lo mspack.lo cab.lo entconv.lo hashtab.lo dconf.lo \
 	lockdb.lo
@@ -325,6 +326,11 @@ libclamav_la_SOURCES = \
 	is_tar.h \
 	tnef.c \
 	tnef.h \
+	regex/strlcpy.c \
+	regex/regcomp.c \
+	regex/regerror.c \
+	regex/regexec.c \
+	regex/regfree.c \
 	unrar/unrar15.c \
 	unrar/unrar20.h \
 	unrar/unrarcmd.h \
@@ -505,7 +511,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pst.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/readdb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rebuildpe.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regcomp.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regerror.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regex_list.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regexec.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regfree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rtf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scanners.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sha256.Plo@am__quote@
@@ -514,6 +524,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/special.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/str.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strlcpy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/table.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/text.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tnef.Plo@am__quote@
@@ -555,6 +566,41 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
+
+strlcpy.lo: regex/strlcpy.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT strlcpy.lo -MD -MP -MF "$(DEPDIR)/strlcpy.Tpo" -c -o strlcpy.lo `test -f 'regex/strlcpy.c' || echo '$(srcdir)/'`regex/strlcpy.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/strlcpy.Tpo" "$(DEPDIR)/strlcpy.Plo"; else rm -f "$(DEPDIR)/strlcpy.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='regex/strlcpy.c' object='strlcpy.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o strlcpy.lo `test -f 'regex/strlcpy.c' || echo '$(srcdir)/'`regex/strlcpy.c
+
+regcomp.lo: regex/regcomp.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT regcomp.lo -MD -MP -MF "$(DEPDIR)/regcomp.Tpo" -c -o regcomp.lo `test -f 'regex/regcomp.c' || echo '$(srcdir)/'`regex/regcomp.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/regcomp.Tpo" "$(DEPDIR)/regcomp.Plo"; else rm -f "$(DEPDIR)/regcomp.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='regex/regcomp.c' object='regcomp.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o regcomp.lo `test -f 'regex/regcomp.c' || echo '$(srcdir)/'`regex/regcomp.c
+
+regerror.lo: regex/regerror.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT regerror.lo -MD -MP -MF "$(DEPDIR)/regerror.Tpo" -c -o regerror.lo `test -f 'regex/regerror.c' || echo '$(srcdir)/'`regex/regerror.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/regerror.Tpo" "$(DEPDIR)/regerror.Plo"; else rm -f "$(DEPDIR)/regerror.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='regex/regerror.c' object='regerror.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o regerror.lo `test -f 'regex/regerror.c' || echo '$(srcdir)/'`regex/regerror.c
+
+regexec.lo: regex/regexec.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT regexec.lo -MD -MP -MF "$(DEPDIR)/regexec.Tpo" -c -o regexec.lo `test -f 'regex/regexec.c' || echo '$(srcdir)/'`regex/regexec.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/regexec.Tpo" "$(DEPDIR)/regexec.Plo"; else rm -f "$(DEPDIR)/regexec.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='regex/regexec.c' object='regexec.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o regexec.lo `test -f 'regex/regexec.c' || echo '$(srcdir)/'`regex/regexec.c
+
+regfree.lo: regex/regfree.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT regfree.lo -MD -MP -MF "$(DEPDIR)/regfree.Tpo" -c -o regfree.lo `test -f 'regex/regfree.c' || echo '$(srcdir)/'`regex/regfree.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/regfree.Tpo" "$(DEPDIR)/regfree.Plo"; else rm -f "$(DEPDIR)/regfree.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='regex/regfree.c' object='regfree.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o regfree.lo `test -f 'regex/regfree.c' || echo '$(srcdir)/'`regex/regfree.c
 
 unrar15.lo: unrar/unrar15.c
 @am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrar15.lo -MD -MP -MF "$(DEPDIR)/unrar15.Tpo" -c -o unrar15.lo `test -f 'unrar/unrar15.c' || echo '$(srcdir)/'`unrar/unrar15.c; \

@@ -353,17 +353,17 @@ static int build_regex(regex_t* preg,const char* regex,int nosub)
 {
 	int rc;
 	cli_dbgmsg("Phishcheck: Compiling regex: %s\n",regex);
-	rc = regcomp(preg,regex,REG_EXTENDED|REG_ICASE|(nosub ? REG_NOSUB :0));
+	rc = cli_regcomp(preg,regex,REG_EXTENDED|REG_ICASE|(nosub ? REG_NOSUB :0));
 	if(rc) {
 	
 #ifdef	C_WINDOWS
 		cli_errmsg("Phishcheck: Error in compiling regex, disabling phishing checks\n");
 #else
-		size_t buflen =	regerror(rc,preg,NULL,0);
+		size_t buflen =	cli_regerror(rc,preg,NULL,0);
 		char *errbuf = cli_malloc(buflen);
 		
 		if(errbuf) {
-			regerror(rc,preg,errbuf,buflen);
+			cli_regerror(rc,preg,errbuf,buflen);
 			cli_errmsg("Phishcheck: Error in compiling regex:%s\nDisabling phishing checks\n",errbuf);
 			free(errbuf);
 		} else
@@ -446,7 +446,7 @@ static int get_host(const struct phishcheck* s,struct string* dest,const char* U
 
 static int isCountryCode(const struct phishcheck* s,const char* str)
 {
-	return str ? !regexec(&s->preg_cctld,str,0,NULL,0) : 0;
+	return str ? !cli_regexec(&s->preg_cctld,str,0,NULL,0) : 0;
 }
 
 static int isTLD(const struct phishcheck* pchk,const char* str,int len)
@@ -461,7 +461,7 @@ static int isTLD(const struct phishcheck* pchk,const char* str,int len)
 			return CL_EMEM;
 		strncpy(s,str,len);
 		s[len]='\0';
-		rc = !regexec(&pchk->preg_tld,s,0,NULL,0);
+		rc = !cli_regexec(&pchk->preg_tld,s,0,NULL,0);
 		free(s);
 		return rc ? 1 : 0;
 	}
@@ -880,7 +880,7 @@ static char hex2int(const unsigned char* src)
 static void free_regex(regex_t* p)
 {
 	if(p) {
-		regfree(p);
+		cli_regfree(p);
 	}
 }
 
@@ -977,12 +977,12 @@ void phishing_done(struct cl_engine* engine)
  */
 static int isURL(const struct phishcheck* pchk,const char* URL)
 {
-	return URL ? !regexec(&pchk->preg,URL,0,NULL,0) : 0;
+	return URL ? !cli_regexec(&pchk->preg,URL,0,NULL,0) : 0;
 }
 
 static int isNumericURL(const struct phishcheck* pchk,const char* URL)
 {
-	return URL ? !regexec(&pchk->preg_numeric,URL,0,NULL,0) : 0;
+	return URL ? !cli_regexec(&pchk->preg_numeric,URL,0,NULL,0) : 0;
 }
 
 /* Cleans up @urls
@@ -1013,7 +1013,7 @@ static int url_get_host(const struct phishcheck* pchk, struct url_check* url,str
 		string_free(host);
 		return CL_PHISH_TEXTURL;
 	}
-	if(url->flags&CHECK_CLOAKING && !regexec(&pchk->preg_hexurl,host->data,0,NULL,0)) {
+	if(url->flags&CHECK_CLOAKING && !cli_regexec(&pchk->preg_hexurl,host->data,0,NULL,0)) {
 		/* uses a regex here, so that we don't accidentally block 0xacab.net style hosts */
 		string_free(host);
 		return CL_PHISH_HEX_URL;

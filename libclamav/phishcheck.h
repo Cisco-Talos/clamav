@@ -20,9 +20,7 @@
 #ifndef _PHISH_CHECK_H
 #define _PHISH_CHECK_H
 
-#ifdef	HAVE_REGEX_H
-#include <regex.h>
-#endif
+#include "regex/regex.h"
 
 #define CL_PHISH_BASE 100
 enum phish_status {CL_PHISH_NODECISION=0,CL_PHISH_CLEAN=CL_PHISH_BASE, CL_PHISH_CLEANUP_OK,CL_PHISH_HOST_OK, CL_PHISH_DOMAIN_OK,
