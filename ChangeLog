@@ -1,3 +1,7 @@
+Mon Sep 17 14:36:27 BST 2007 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Bug 664
+
 Sat Sep 15 17:39:06 CEST 2007 (acab)
 ------------------------------------
   * libclamav/pe.c: fix nasty typo - thanks edwin!

@@ -4727,6 +4727,7 @@ isBounceStart(const char *line)
 			return FALSE;
 		if(numDigits < 11)
 			return FALSE;
+		return TRUE;
 	}
 	return cli_filetype((const unsigned char *)line, len) == CL_TYPE_MAIL;
 }
