@@ -2481,6 +2481,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 							messageDestroy(messages[i]);
 					free(messages);
 				}
+				if(aText && (textIn == NULL))
+					textDestroy(aText);
 
 				/*
 				 * Nothing to do
@@ -2828,17 +2830,25 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				if(l == NULL)
 					break;
 				s = lineGetData(l);
-				if(strncasecmp(s, "Content-Type:", 13) == 0)
+				if(strncasecmp(s, "Content-Type:", 13) == 0) {
 					/*
-					 * Don't bother with plain/text or
-					 * plain/html
+					 * Don't bother with text/plain or
+					 * text/html
 					 */
-					if(strstr(s, "text/") == NULL)
+					if(strstr(s, "text/plain") != NULL)
 						/*
-						 * Don't bother to save the unuseful
-						 * part
+						 * Don't bother to save the
+						 * unuseful part, read past
+						 * the headers then we'll go
+						 * on to look for the next
+						 * bounce message
 						 */
-						break;
+						continue;
+					if((!doPhishingScan) &&
+					   (strstr(s, "text/html") != NULL))
+						continue;
+					break;
+				}
 			}
 
 			if(lookahead && (lookahead->t_line == NULL)) {
@@ -3353,47 +3363,58 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 						 * and
 						 * Content-Type: multipart/mixed foo/bar
 						 */
-						if(s && *s) for(;;) {
-#ifdef	CL_THREAD_SAFE
-							int set = messageSetMimeType(m, strtok_r(s, "/", &strptr));
-#else
-							int set = messageSetMimeType(m, strtok(s, "/"));
-#endif
+						if(s && *s) {
+							char *buf2 = cli_strdup(buf);
 
-							/*
-							 * Stephen White <stephen@earth.li>
-							 * Some clients put space after
-							 * the mime type but before
-							 * the ;
-							 */
-#ifdef	CL_THREAD_SAFE
-							s = strtok_r(NULL, ";", &strptr);
-#else
-							s = strtok(NULL, ";");
-#endif
-							if(s == NULL)
-								break;
-							if(set) {
-								size_t len = strstrip(s) - 1;
-								if(s[len] == '\"') {
-									s[len] = '\0';
-									len = strstrip(s);
-								}
-								if(len) {
-									if(strchr(s, ' '))
-										messageSetMimeSubtype(m,
-											cli_strtokbuf(s, 0, " ", buf));
-									else
-										messageSetMimeSubtype(m, s);
-								}
+							if(buf2 == NULL) {
+								if(copy)
+									free(copy);
+								free(buf);
+								return -1;
 							}
+							for(;;) {
+#ifdef	CL_THREAD_SAFE
+								int set = messageSetMimeType(m, strtok_r(s, "/", &strptr));
+#else
+								int set = messageSetMimeType(m, strtok(s, "/"));
+#endif
 
-							while(*s && !isspace(*s))
-								s++;
-							if(*s++ == '\0')
-								break;
-							if(*s == '\0')
-								break;
+								/*
+								 * Stephen White <stephen@earth.li>
+								 * Some clients put space after
+								 * the mime type but before
+								 * the ;
+								 */
+#ifdef	CL_THREAD_SAFE
+								s = strtok_r(NULL, ";", &strptr);
+#else
+								s = strtok(NULL, ";");
+#endif
+								if(s == NULL)
+									break;
+								if(set) {
+									size_t len = strstrip(s) - 1;
+									if(s[len] == '\"') {
+										s[len] = '\0';
+										len = strstrip(s);
+									}
+									if(len) {
+										if(strchr(s, ' '))
+											messageSetMimeSubtype(m,
+												cli_strtokbuf(s, 0, " ", buf2));
+										else
+											messageSetMimeSubtype(m, s);
+									}
+								}
+
+								while(*s && !isspace(*s))
+									s++;
+								if(*s++ == '\0')
+									break;
+								if(*s == '\0')
+									break;
+							}
+							free(buf2);
 						}
 					}
 				}
