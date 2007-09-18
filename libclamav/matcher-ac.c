@@ -40,7 +40,7 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 {
 	struct cli_ac_node *pt, *next, **newtable;
 	struct cli_ac_patt *ph;
-	uint8_t i;
+	uint8_t i, match;
 	uint16_t len = MIN(root->ac_maxdepth, pattern->length);
 
 
@@ -120,9 +120,25 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
     while(ph) {
 	if((ph->length == pattern->length) && (ph->prefix_length == pattern->prefix_length)) {
 	    if(!memcmp(ph->pattern, pattern->pattern, ph->length * sizeof(uint16_t)) && !memcmp(ph->prefix, pattern->prefix, ph->prefix_length * sizeof(uint16_t))) {
-		pattern->next_same = ph->next_same;
-		ph->next_same = pattern;
-		return CL_SUCCESS;
+		if(!ph->alt && !pattern->alt) {
+		    match = 1;
+		} else if(ph->alt == pattern->alt) {
+		    match = 1;
+		    for(i = 0; i < ph->alt; i++) {
+			if((ph->altn[i] != pattern->altn[i]) || memcmp(ph->altc[i], pattern->altc[i], ph->altn[i])) {
+			    match = 0;
+			    break;
+			}
+		    }
+		} else {
+		    match = 0;
+		}
+
+		if(match) {
+		    pattern->next_same = ph->next_same;
+		    ph->next_same = pattern;
+		    return CL_SUCCESS;
+		}
 	    }
 	}
 	ph = ph->next;

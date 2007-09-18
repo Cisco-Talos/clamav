@@ -1,3 +1,7 @@
+Tue Sep 18 19:50:33 CEST 2007 (tk)
+----------------------------------
+  * libclamav/matcher-ac.c: properly handle alternatives in the new approach
+
 Tue Sep 18 13:45:34 BST 2007 (njh)
 ----------------------------------
  * libclamav/regex/regcomp.c:	Fix compilation error on systems without
