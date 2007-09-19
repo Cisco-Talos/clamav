@@ -12,7 +12,7 @@
 				Command="$(OutDir)\clamd.exe"
 				WorkingDirectory=""
 				CommandArguments="--temp=d: --debug"
-				Attach="false"
+				Attach="true"
 				DebuggerType="3"
 				Remote="1"
 				RemoteMachine="NJH"
@@ -35,34 +35,6 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			>
-			<DebugSettings
-				Command="$(OutDir)\clamd.exe"
-				WorkingDirectory=""
-				CommandArguments="--temp=d: --debug"
-				Attach="false"
-				DebuggerType="3"
-				Remote="1"
-				RemoteMachine="NJH"
-				RemoteCommand=""
-				HttpUrl=""
-				PDBPath=""
-				SQLDebugging=""
-				Environment=""
-				EnvironmentMerge="true"
-				DebuggerFlavor="0"
-				MPIRunCommand=""
-				MPIRunArguments=""
-				MPIRunWorkingDirectory=""
-				ApplicationCommand=""
-				ApplicationArguments=""
-				ShimCommand=""
-				MPIAcceptMode=""
-				MPIAcceptFilter=""
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release no .net|Win32"
 			>
 			<DebugSettings
 				Command="$(OutDir)\clamd.exe"
