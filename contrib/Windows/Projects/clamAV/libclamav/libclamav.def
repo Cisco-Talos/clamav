@@ -43,9 +43,9 @@ EXPORTS gettimeofday @1024 NONAME
 EXPORTS pthread_win32_process_attach_np @1025 NONAME
 EXPORTS geteuid @1026 NONAME
 EXPORTS chown @1027 NONAME
-EXPORTS regfree @1028 NONAME
-EXPORTS regexec @1029 NONAME
-EXPORTS regcomp @1030 NONAME
+EXPORTS cli_regfree @1028 NONAME
+EXPORTS cli_regexec @1029 NONAME
+EXPORTS cli_regcomp @1030 NONAME
 EXPORTS pthread_mutex_unlock @1031 NONAME
 EXPORTS pthread_mutex_lock @1032 NONAME
 EXPORTS pthread_mutex_init @1033 NONAME
