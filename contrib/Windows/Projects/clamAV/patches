@@ -1,7 +1,7 @@
-*** /home/njh/src/clamav-devel/trunk/./clamscan/clamscan.c	2007-08-13 22:24:06.000000000 +0100
---- ./clamscan/clamscan.c	2007-08-13 22:25:16.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./clamscan/clamscan.c	2007-09-07 17:06:21.000000000 +0100
+--- ./clamscan/clamscan.c	2007-09-07 17:08:50.000000000 +0100
 ***************
-*** 244,255 ****
+*** 241,252 ****
   
       opt_free(opt);
   
@@ -14,34 +14,24 @@
   
       return ret;
   }
---- 244,260 ----
+--- 241,257 ----
   
       opt_free(opt);
   
-! #ifdef	C_WINDOWS)
+! #ifdef	C_WINDOWS
 ! #ifdef	CL_THREAD_SAFE
       if(!pthread_win32_process_detach_np()) {
   	logg("!Can't stop the win32 pthreads layer\n");
   	return 72;
       }
   #endif
-+ #ifdef	_DEBUG
-+     _CrtDumpMemoryLeaks();
++ #ifdef        _DEBUG
++ 	_CrtDumpMemoryLeaks();
 + #endif
 + #endif
   
       return ret;
   }
-***************
-*** 316,321 ****
---- 321,327 ----
-      mprintf("    --block-encrypted                    Block encrypted archives\n");
-      mprintf("    --block-max                          Block archives that exceed limits\n");
-      mprintf("    --mail-follow-urls                   Download and scan URLs\n");
-+ 
-      mprintf("\n");
-      mprintf("    --max-space=#n                       Only extract first #n kilobytes from\n");
-      mprintf("                                         archived files\n");
 *** /home/njh/src/clamav-devel/trunk/./clamscan/manager.h	2007-06-14 11:04:12.000000000 +0100
 --- ./clamscan/manager.h	2007-04-21 08:44:22.000000000 +0100
 ***************
@@ -56,6 +46,35 @@
 + #endif
 + 
   #endif
+*** /home/njh/src/clamav-devel/trunk/./clamscan/others.c	2007-06-14 11:04:12.000000000 +0100
+--- ./clamscan/others.c	2007-09-19 14:49:26.000000000 +0100
+***************
+*** 138,149 ****
+  #else
+  	flags = REG_EXTENDED | REG_ICASE; /* case insensitive on Windows */
+  #endif	
+! 	if(regcomp(&reg, pattern, flags) != 0) {
+  	    logg("!%s: Could not parse regular expression %s.\n", filename, pattern);
+  		return 2;
+  	}
+! 	match = (regexec(&reg, filename, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
+! 	regfree(&reg);
+  	return match;
+  #else /* HAVE_REGEX_H */
+  	return strstr(filename, pattern) ? 1 : 0;
+--- 138,149 ----
+  #else
+  	flags = REG_EXTENDED | REG_ICASE; /* case insensitive on Windows */
+  #endif	
+! 	if(cli_regcomp(&reg, pattern, flags) != 0) {
+  	    logg("!%s: Could not parse regular expression %s.\n", filename, pattern);
+  		return 2;
+  	}
+! 	match = (cli_regexec(&reg, filename, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
+! 	cli_regfree(&reg);
+  	return match;
+  #else /* HAVE_REGEX_H */
+  	return strstr(filename, pattern) ? 1 : 0;
 *** /home/njh/src/clamav-devel/trunk/./freshclam/manager.c	2007-08-20 19:24:20.000000000 +0100
 --- ./freshclam/manager.c	2007-08-20 19:25:06.000000000 +0100
 ***************
@@ -109,8 +128,8 @@
       return -2;
   }
   
-*** /home/njh/src/clamav-devel/trunk/./clamd/scanner.c	2007-06-14 11:03:53.000000000 +0100
---- ./clamd/scanner.c	2007-04-21 08:46:12.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./clamd/scanner.c	2007-09-02 12:37:44.000000000 +0100
+--- ./clamd/scanner.c	2007-09-07 17:14:32.000000000 +0100
 ***************
 *** 475,487 ****
       if(!bound && !portscan) {
@@ -178,24 +197,30 @@
   	logg("!ScanStream %u: accept() failed.\n", port);
   	return -1;
 ***************
-*** 510,516 ****
+*** 508,517 ****
   
-      if ((tmpname = cli_gentempdesc(NULL, &tmpd)) == NULL) {
+      logg("*Accepted connection on port %u, fd %d\n", port, acceptd);
+  
+!     if(cli_gentempfd(NULL, &tmpname, &tmpd)) {
   	shutdown(sockfd, 2);
 ! 	close(sockfd);
-  	close(acceptd);
-  	mdprintf(odesc, "tempfile() failed. ERROR\n");
+! 	close(acceptd);
+  	mdprintf(odesc, "cli_gentempfd() failed. ERROR\n");
   	logg("!ScanStream %u: Can't create temporary file.\n", port);
---- 510,516 ----
+  	return -1;
+--- 508,517 ----
   
-      if ((tmpname = cli_gentempdesc(NULL, &tmpd)) == NULL) {
+      logg("*Accepted connection on port %u, fd %d\n", port, acceptd);
+  
+!     if (cli_gentempfd(NULL, &tmpname, &tmpd)) {
   	shutdown(sockfd, 2);
 ! 	closesocket(sockfd);
-  	close(acceptd);
-  	mdprintf(odesc, "tempfile() failed. ERROR\n");
+! 	closesocket(acceptd);
+  	mdprintf(odesc, "cli_gentempfd() failed. ERROR\n");
   	logg("!ScanStream %u: Can't create temporary file.\n", port);
-*** /home/njh/src/clamav-devel/trunk/./clamd/clamd.c	2007-08-13 22:24:06.000000000 +0100
---- ./clamd/clamd.c	2007-08-13 22:26:16.000000000 +0100
+  	return -1;
+*** /home/njh/src/clamav-devel/trunk/./clamd/clamd.c	2007-09-07 17:10:20.000000000 +0100
+--- ./clamd/clamd.c	2007-09-07 18:26:22.000000000 +0100
 ***************
 *** 35,41 ****
   #include <sys/stat.h>
@@ -252,10 +277,24 @@
   
       if(logg_size)
   	logg("Log file size limited to %d bytes.\n", logg_size);
-*** /home/njh/src/clamav-devel/trunk/./clamd/server-th.c	2007-06-14 11:03:51.000000000 +0100
---- ./clamd/server-th.c	2007-05-01 16:34:28.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./clamd/server-th.c	2007-09-07 17:12:04.000000000 +0100
+--- ./clamd/server-th.c	2007-09-10 11:01:04.000000000 +0100
 ***************
-*** 586,592 ****
+*** 506,511 ****
+--- 506,516 ----
+      sigaction(SIGHUP, &sigact, NULL);
+      sigaction(SIGPIPE, &sigact, NULL);
+      sigaction(SIGUSR2, &sigact, NULL);
++ 
++     if(!debug_mode) {
++ 	sigaddset(&sigact.sa_mask, SIGHUP);
++ 	sigaction(SIGSEGV, &sigact, NULL);
++     }
+  #endif
+  
+      pthread_mutex_init(&exit_mutex, NULL);
+***************
+*** 581,587 ****
   		client_conn->socketds = socketds;
   		client_conn->nsockets = nsockets;
   		if (!thrmgr_dispatch(thr_pool, client_conn)) {
@@ -272,7 +311,7 @@
   		    logg("!thread dispatch failed\n");
   		}
 ***************
-*** 594,602 ****
+*** 589,597 ****
   
   	pthread_mutex_lock(&exit_mutex);
   	if(progexit) {
@@ -297,7 +336,7 @@
   	    break;
   	}
 ***************
-*** 625,632 ****
+*** 615,622 ****
   	    engine = reload_db(engine, dboptions, copt, FALSE, &ret);
   	    if(ret) {
   		logg("Terminating because of a fatal error.\n");
@@ -306,7 +345,7 @@
   		break;
   	    }
   	    pthread_mutex_lock(&reload_mutex);
---- 629,638 ----
+--- 624,633 ----
   	    engine = reload_db(engine, dboptions, copt, FALSE, &ret);
   	    if(ret) {
   		logg("Terminating because of a fatal error.\n");
@@ -366,447 +405,6 @@
   	return -1;
       }
   
-*** /home/njh/src/clamav-devel/trunk/./clamdscan/client.c	2007-06-14 11:04:10.000000000 +0100
---- ./clamdscan/client.c	2007-04-21 14:00:56.000000000 +0100
-***************
-*** 16,36 ****
---- 16,44 ----
-   *  MA 02110-1301, USA.
-   */
-  
-+ #ifdef	_MSC_VER
-+ #include <winsock.h>
-+ #endif
-+ 
-  #if HAVE_CONFIG_H
-  #include "clamav-config.h"
-  #endif
-  
-  #include <stdio.h>
-+ #ifdef	HAVE_UNISTD_H
-  #include <unistd.h>
-+ #endif
-  #include <string.h>
-  #include <sys/types.h>
-  #include <sys/stat.h>
-+ #ifndef	C_WINDOWS
-  #include <sys/socket.h>
-  #include <sys/un.h>
-  #include <netinet/in.h>
-  #include <arpa/inet.h>
-  #include <netdb.h>
-  #include <utime.h>
-+ #endif
-  #include <errno.h>
-  
-  #ifdef HAVE_SYS_UIO_H
-***************
-*** 52,63 ****
---- 60,139 ----
-  # define SOCKET_INET	AF_INET
-  #endif
-  
-+ #ifndef	C_WINDOWS
-+ #define	closesocket(s)	close(s)
-+ #endif
-+ 
-  /* #define ENABLE_FD_PASSING	    FIXME: Doesn't work yet */
-  
-  void move_infected(const char *filename, const struct optstruct *opt);
-  int notremoved = 0, notmoved = 0;
-  static int ncore = 0;
-  
-+ #ifdef	C_WINDOWS
-+ static  int     get_a_line(int sockd, char *buf, size_t len);
-+ 
-+ static int
-+ dsresult(int sockd, const struct optstruct *opt)
-+ {
-+ 	char buff[BUFSIZ], *pt;
-+ 	int infected = 0, waserror = 0;
-+ 
-+ 	while(get_a_line(sockd, buff, sizeof(buff))) {
-+ 		if(strstr(buff, "FOUND\n")) {
-+ 			infected++;
-+ 			logg("%s", buff);
-+ 			if(opt_check(opt, "move") || opt_check(opt, "copy")) {
-+ 				/* filename: Virus FOUND */
-+ 				if((pt = strrchr(buff, ':'))) {
-+ 					*pt = 0;
-+ 					move_infected(buff, opt);
-+ 				} else
-+ 					mprintf("@Broken data format. File not %s.\n", opt_check(opt, "move") ? "moved" : "copied");
-+ 			} else if(opt_check(opt, "remove")) {
-+ 				if(!(pt = strrchr(buff, ':')))
-+ 					mprintf("@Broken data format. File not removed.\n");
-+ 				else {
-+ 					*pt = 0;
-+ 					if(unlink(buff)) {
-+ 						mprintf("%s: Can't remove.\n", buff);
-+ 						logg("%s: Can't remove.\n", buff);
-+ 						notremoved++;
-+ 					} else {
-+ 						mprintf("%s: Removed.\n", buff);
-+ 						logg("%s: Removed.\n", buff);
-+ 					}
-+ 				}
-+ 			}
-+ 		}
-+ 
-+ 		if(strstr(buff, "ERROR\n")) {
-+ 			logg("%s", buff);
-+ 			waserror = 1;
-+ 		}
-+ 	}
-+ 
-+ 	return infected ? infected : (waserror ? -1 : 0);
-+ }
-+ 
-+ static int
-+ get_a_line(int sockd, char *buf, size_t len)
-+ {
-+ 	char *ptr;
-+ 
-+ 	for(ptr = buf; ptr < &buf[len]; ptr++) {
-+ 		/* FIXME: very inefficient to call recv so many times */
-+ 		if(recv(sockd, ptr, sizeof(char), 0) <= 0)
-+ 			return 0;
-+ 		if(*ptr == '\n') {
-+ 			*++ptr = '\0';
-+ 			return 1;
-+ 		}
-+ 	}
-+ 	return 1;
-+ }
-+ 
-+ #else
-  static int dsresult(int sockd, const struct optstruct *opt)
-  {
-  	int infected = 0, waserror = 0;
-***************
-*** 68,74 ****
-  #ifndef C_OS2
-      if((fd = fdopen(dup(sockd), "r")) == NULL) {
-  #else /* FIXME: accoriding to YD OS/2 does not support dup() for sockets */
-!     if((fd = fdopen(sockd, "r")) == NULL) {
-  #endif
-  	logg("^Can't open descriptor for reading.\n");
-  	return -1;
---- 144,150 ----
-  #ifndef C_OS2
-      if((fd = fdopen(dup(sockd), "r")) == NULL) {
-  #else /* FIXME: accoriding to YD OS/2 does not support dup() for sockets */
-!     if((fd = fdopen(sockd, "rb")) == NULL) {
-  #endif
-  	logg("^Can't open descriptor for reading.\n");
-  	return -1;
-***************
-*** 116,121 ****
---- 192,198 ----
-  
-      return infected ? infected : (waserror ? -1 : 0);
-  }
-+ #endif	/* C_WINDOWS */
-  
-  static int dsfile(int sockd, const char *scantype, const char *filename, const struct optstruct *opt)
-  {
-***************
-*** 126,132 ****
-      scancmd = malloc(strlen(filename) + 20);
-      sprintf(scancmd, "%s %s", scantype, filename);
-  
-!     if(write(sockd, scancmd, strlen(scancmd)) <= 0) {
-  	logg("^Can't write to the socket.\n");
-  	free(scancmd);
-  	return -1;
---- 203,209 ----
-      scancmd = malloc(strlen(filename) + 20);
-      sprintf(scancmd, "%s %s", scantype, filename);
-  
-!     if(send(sockd, scancmd, strlen(scancmd), 0) <= 0) {
-  	logg("^Can't write to the socket.\n");
-  	free(scancmd);
-  	return -1;
-***************
-*** 200,206 ****
-  	char buff[4096], *pt;
-  
-  
-!     if(write(sockd, "STREAM", 6) <= 0) {
-  	logg("^Can't write to the socket.\n");
-  	return 2;
-      }
---- 277,283 ----
-  	char buff[4096], *pt;
-  
-  
-!     if(send(sockd, "STREAM", 6, 0) <= 0) {
-  	logg("^Can't write to the socket.\n");
-  	return 2;
-      }
-***************
-*** 252,258 ****
-      }
-  
-      if(connect(wsockd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) < 0) {
-! 	close(wsockd);
-  	perror("connect()");
-  	logg("^Can't connect to clamd [port: %d].\n", port);
-  	return -1;
---- 329,335 ----
-      }
-  
-      if(connect(wsockd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) < 0) {
-! 	closesocket(wsockd);
-  	perror("connect()");
-  	logg("^Can't connect to clamd [port: %d].\n", port);
-  	return -1;
-***************
-*** 261,271 ****
-      while((bread = read(0, buff, sizeof(buff))) > 0) {
-  	if(write(wsockd, buff, bread) <= 0) {
-  	    logg("^Can't write to the socket.\n");
-! 	    close(wsockd);
-  	    return -1;
-  	}
-      }
-!     close(wsockd);
-  
-      memset(buff, 0, sizeof(buff));
-      while((bread = read(sockd, buff, sizeof(buff))) > 0) {
---- 338,348 ----
-      while((bread = read(0, buff, sizeof(buff))) > 0) {
-  	if(write(wsockd, buff, bread) <= 0) {
-  	    logg("^Can't write to the socket.\n");
-! 	    closesocket(wsockd);
-  	    return -1;
-  	}
-      }
-!     closesocket(wsockd);
-  
-      memset(buff, 0, sizeof(buff));
-      while((bread = read(sockd, buff, sizeof(buff))) > 0) {
-***************
-*** 310,316 ****
---- 387,395 ----
-  
-  static int dconnect(const struct optstruct *opt)
-  {
-+ #ifndef	C_WINDOWS
-  	struct sockaddr_un server;
-+ #endif
-  	struct sockaddr_in server2;
-  	struct hostent *he;
-  	struct cfgstruct *copt, *cpt;
-***************
-*** 326,338 ****
---- 405,423 ----
-  	return -1;
-      }
-  
-+ #ifndef	C_WINDOWS
-      memset((char *) &server, 0, sizeof(server));
-+ #endif
-      memset((char *) &server2, 0, sizeof(server2));
-  
-      /* Set default address to connect to */
-      server2.sin_addr.s_addr = inet_addr("127.0.0.1");    
-  
-      if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
-+ #ifdef	C_WINDOWS
-+ 	logg("^LocalSocket is not supported under Windows");
-+ #else
-+     if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
-  
-  	server.sun_family = AF_UNIX;
-  	strncpy(server.sun_path, cpt->strarg, sizeof(server.sun_path));
-***************
-*** 345,359 ****
-  	}
-  
-  	if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
-! 	    close(sockd);
-  	    perror("connect()");
-  	    logg("^Can't connect to clamd.\n");
-  	    freecfg(copt);
-  	    return -1;
-  	}
-! 
-!     } else if((cpt = cfgopt(copt, "TCPSocket"))->enabled) {
-! 
-  	if((sockd = socket(SOCKET_INET, SOCK_STREAM, 0)) < 0) {
-  	    perror("socket()");
-  	    logg("^Can't create the socket.\n");
---- 430,453 ----
-  	}
-  
-  	if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
-! 	    closesocket(sockd);
-  	    perror("connect()");
-  	    logg("^Can't connect to clamd.\n");
-  	    freecfg(copt);
-  	    return -1;
-  	}
-! #endif
-!   
-!       } else if((cpt = cfgopt(copt, "TCPSocket"))->enabled) {
-! #ifdef  C_WINDOWS
-!                 WSADATA wsaData;
-! 
-!                 if(WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR) {
-!                         logg("!Error at WSAStartup(): %d\n", WSAGetLastError());
-!                         return -1;
-!                 }
-! #endif
-!   
-  	if((sockd = socket(SOCKET_INET, SOCK_STREAM, 0)) < 0) {
-  	    perror("socket()");
-  	    logg("^Can't create the socket.\n");
-***************
-*** 366,372 ****
-  
-  	if((cpt = cfgopt(copt, "TCPAddr"))->enabled) {
-  	    if ((he = gethostbyname(cpt->strarg)) == 0) {
-! 		close(sockd);
-  		perror("gethostbyname()");
-  		logg("^Can't lookup clamd hostname.\n");
-  		freecfg(copt);
---- 460,466 ----
-  
-  	if((cpt = cfgopt(copt, "TCPAddr"))->enabled) {
-  	    if ((he = gethostbyname(cpt->strarg)) == 0) {
-! 		closesocket(sockd);
-  		perror("gethostbyname()");
-  		logg("^Can't lookup clamd hostname.\n");
-  		freecfg(copt);
-***************
-*** 376,382 ****
-  	}
-  
-  	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
-! 	    close(sockd);
-  	    perror("connect()");
-  	    logg("^Can't connect to clamd.\n");
-  	    freecfg(copt);
---- 470,476 ----
-  	}
-  
-  	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
-! 	    closesocket(sockd);
-  	    perror("connect()");
-  	    logg("^Can't connect to clamd.\n");
-  	    freecfg(copt);
-***************
-*** 428,434 ****
-  	else
-  	    errors++;
-  
-! 	close(sockd);
-  
-  #if defined(ENABLE_FD_PASSING) && defined(HAVE_SENDMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN)
-      } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
---- 522,528 ----
-  	else
-  	    errors++;
-  
-! 	closesocket(sockd);
-  
-  #if defined(ENABLE_FD_PASSING) && defined(HAVE_SENDMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN)
-      } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
-***************
-*** 440,446 ****
-  	else
-  	    errors++;
-  
-! 	close(sockd);
-  #else
-      } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
-  	if((sockd = dconnect(opt)) < 0)
---- 534,540 ----
-  	else
-  	    errors++;
-  
-! 	closesocket(sockd);
-  #else
-      } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
-  	if((sockd = dconnect(opt)) < 0)
-***************
-*** 451,457 ****
-  	else
-  	    errors++;
-  
-! 	close(sockd);
-  #endif
-  
-      } else {
---- 545,551 ----
-  	else
-  	    errors++;
-  
-! 	closesocket(sockd);
-  #endif
-  
-      } else {
-***************
-*** 486,492 ****
-  			else
-  			    errors++;
-  
-! 			close(sockd);
-  			break;
-  
-  		    default:
---- 580,586 ----
-  			else
-  			    errors++;
-  
-! 			closesocket(sockd);
-  			break;
-  
-  		    default:
-***************
-*** 508,515 ****
-  	struct stat fstat, mfstat;
-  	int n, len, movefilename_size;
-  	int moveflag = opt_check(opt, "move");
-  	struct utimbuf ubuf;
-! 
-  
-      if((moveflag && !(movedir = opt_arg(opt, "move"))) ||
-          (!moveflag && !(movedir = opt_arg(opt, "copy")))) {
---- 602,610 ----
-  	struct stat fstat, mfstat;
-  	int n, len, movefilename_size;
-  	int moveflag = opt_check(opt, "move");
-+ #ifndef	C_WINDOWS
-  	struct utimbuf ubuf;
-! #endif
-  
-      if((moveflag && !(movedir = opt_arg(opt, "move"))) ||
-          (!moveflag && !(movedir = opt_arg(opt, "copy")))) {
-***************
-*** 594,602 ****
-  	chmod(movefilename, fstat.st_mode);
-  	chown(movefilename, fstat.st_uid, fstat.st_gid);
-  
-! 	ubuf.actime = fstat.st_atime;
-! 	ubuf.modtime = fstat.st_mtime;
-! 	utime(movefilename, &ubuf);
-  
-  	if(moveflag && unlink(filename)) {
-  	    logg("^cannot unlink '%s': %s\n", filename, strerror(errno));
---- 689,699 ----
-  	chmod(movefilename, fstat.st_mode);
-  	chown(movefilename, fstat.st_uid, fstat.st_gid);
-  
-! #ifndef	C_WINDOWS
-!   	ubuf.actime = fstat.st_atime;
-!   	ubuf.modtime = fstat.st_mtime;
-!   	utime(movefilename, &ubuf);
-! #endif
-  
-  	if(moveflag && unlink(filename)) {
-  	    logg("^cannot unlink '%s': %s\n", filename, strerror(errno));
 *** /home/njh/src/clamav-devel/trunk/./clamdscan/clamdscan.c	2007-06-14 11:04:11.000000000 +0100
 --- ./clamdscan/clamdscan.c	2007-04-21 13:59:56.000000000 +0100
 ***************
@@ -939,3 +537,363 @@
       exit(ret);
   }
   
+*** /home/njh/src/clamav-devel/trunk/./clamdscan/client.c	2007-09-07 17:10:19.000000000 +0100
+--- ./clamdscan/client.c	2007-09-07 17:47:34.000000000 +0100
+***************
+*** 15,36 ****
+--- 15,44 ----
+   *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   *  MA 02110-1301, USA.
+   */
++ #ifdef	_MSC_VER
++ #include <winsock.h>
++ #endif
++ 
+  
+  #if HAVE_CONFIG_H
+  #include "clamav-config.h"
+  #endif
+  
+  #include <stdio.h>
++ #ifdef	HAVE_UNISTD_H
+  #include <unistd.h>
++ #endif
+  #include <string.h>
+  #include <sys/types.h>
+  #include <sys/stat.h>
++ #ifndef	C_WINDOWS
+  #include <sys/socket.h>
+  #include <sys/un.h>
+  #include <netinet/in.h>
+  #include <arpa/inet.h>
+  #include <netdb.h>
+  #include <utime.h>
++ #endif
+  #include <errno.h>
+  
+  #ifdef HAVE_SYS_UIO_H
+***************
+*** 52,62 ****
+--- 60,137 ----
+  # define SOCKET_INET	AF_INET
+  #endif
+  
++ #ifndef	C_WINDOWS
++ #define	closesocket(s)	close(s)
++ #endif
++ 
+  /* #define ENABLE_FD_PASSING	    FIXME: Doesn't work yet */
+  
+  void move_infected(const char *filename, const struct optstruct *opt);
+  int notremoved = 0, notmoved = 0;
+  
++ #ifdef	C_WINDOWS
++ static  int     get_a_line(int sockd, char *buf, size_t len);
++ 
++ static int
++ dsresult(int sockd, const struct optstruct *opt)
++ {
++ 	char buff[BUFSIZ], *pt;
++ 	int infected = 0, waserror = 0;
++ 
++ 	while(get_a_line(sockd, buff, sizeof(buff))) {
++ 		if(strstr(buff, "FOUND\n")) {
++ 			infected++;
++ 			logg("%s", buff);
++ 			if(opt_check(opt, "move") || opt_check(opt, "copy")) {
++ 				/* filename: Virus FOUND */
++ 				if((pt = strrchr(buff, ':'))) {
++ 					*pt = 0;
++ 					move_infected(buff, opt);
++ 				} else
++ 					mprintf("@Broken data format. File not %s.\n", opt_check(opt, "move") ? "moved" : "copied");
++ 			} else if(opt_check(opt, "remove")) {
++ 				if(!(pt = strrchr(buff, ':')))
++ 					mprintf("@Broken data format. File not removed.\n");
++ 				else {
++ 					*pt = 0;
++ 					if(unlink(buff)) {
++ 						mprintf("%s: Can't remove.\n", buff);
++ 						logg("%s: Can't remove.\n", buff);
++ 						notremoved++;
++ 					} else {
++ 						mprintf("%s: Removed.\n", buff);
++ 						logg("%s: Removed.\n", buff);
++ 					}
++ 				}
++ 			}
++ 		}
++ 
++ 		if(strstr(buff, "ERROR\n")) {
++ 			logg("%s", buff);
++ 			waserror = 1;
++ 		}
++ 	}
++ 
++ 	return infected ? infected : (waserror ? -1 : 0);
++ }
++ 
++ static int
++ get_a_line(int sockd, char *buf, size_t len)
++ {
++ 	char *ptr;
++ 
++ 	for(ptr = buf; ptr < &buf[len]; ptr++) {
++ 		/* FIXME: very inefficient to call recv so many times */
++ 		if(recv(sockd, ptr, sizeof(char), 0) <= 0)
++ 			return 0;
++ 		if(*ptr == '\n') {
++ 			*++ptr = '\0';
++ 			return 1;
++ 		}
++ 	}
++ 	return 1;
++ }
++ #else
+  static int dsresult(int sockd, const struct optstruct *opt)
+  {
+  	int infected = 0, waserror = 0;
+***************
+*** 66,73 ****
+  
+  #ifndef C_OS2
+      if((fd = fdopen(dup(sockd), "r")) == NULL) {
+! #else /* FIXME: accoriding to YD OS/2 does not support dup() for sockets */
+!     if((fd = fdopen(sockd, "r")) == NULL) {
+  #endif
+  	logg("^Can't open descriptor for reading.\n");
+  	return -1;
+--- 141,148 ----
+  
+  #ifndef C_OS2
+      if((fd = fdopen(dup(sockd), "r")) == NULL) {
+! #else /* FIXME: according to YD OS/2 does not support dup() for sockets */
+!     if((fd = fdopen(sockd, "rb")) == NULL) {
+  #endif
+  	logg("^Can't open descriptor for reading.\n");
+  	return -1;
+***************
+*** 115,120 ****
+--- 190,196 ----
+  
+      return infected ? infected : (waserror ? -1 : 0);
+  }
++ #endif	/*C_WINDOWS*/
+  
+  static int dsfile(int sockd, const char *scantype, const char *filename, const struct optstruct *opt)
+  {
+***************
+*** 125,131 ****
+      scancmd = malloc(strlen(filename) + 20);
+      sprintf(scancmd, "%s %s", scantype, filename);
+  
+!     if(write(sockd, scancmd, strlen(scancmd)) <= 0) {
+  	logg("^Can't write to the socket.\n");
+  	free(scancmd);
+  	return -1;
+--- 201,207 ----
+      scancmd = malloc(strlen(filename) + 20);
+      sprintf(scancmd, "%s %s", scantype, filename);
+  
+!     if(send(sockd, scancmd, strlen(scancmd), 0) <= 0) {
+  	logg("^Can't write to the socket.\n");
+  	free(scancmd);
+  	return -1;
+***************
+*** 199,205 ****
+  	char buff[4096], *pt;
+  
+  
+!     if(write(sockd, "STREAM", 6) <= 0) {
+  	logg("^Can't write to the socket.\n");
+  	return 2;
+      }
+--- 275,281 ----
+  	char buff[4096], *pt;
+  
+  
+!     if(send(sockd, "STREAM", 6, 0) <= 0) {
+  	logg("^Can't write to the socket.\n");
+  	return 2;
+      }
+***************
+*** 251,257 ****
+      }
+  
+      if(connect(wsockd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) < 0) {
+! 	close(wsockd);
+  	perror("connect()");
+  	logg("^Can't connect to clamd [port: %d].\n", port);
+  	return -1;
+--- 327,333 ----
+      }
+  
+      if(connect(wsockd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) < 0) {
+! 	closesocket(wsockd);
+  	perror("connect()");
+  	logg("^Can't connect to clamd [port: %d].\n", port);
+  	return -1;
+***************
+*** 260,270 ****
+      while((bread = read(0, buff, sizeof(buff))) > 0) {
+  	if(write(wsockd, buff, bread) <= 0) {
+  	    logg("^Can't write to the socket.\n");
+! 	    close(wsockd);
+  	    return -1;
+  	}
+      }
+!     close(wsockd);
+  
+      memset(buff, 0, sizeof(buff));
+      while((bread = read(sockd, buff, sizeof(buff))) > 0) {
+--- 336,346 ----
+      while((bread = read(0, buff, sizeof(buff))) > 0) {
+  	if(write(wsockd, buff, bread) <= 0) {
+  	    logg("^Can't write to the socket.\n");
+! 	    closesocket(wsockd);
+  	    return -1;
+  	}
+      }
+!     closesocket(wsockd);
+  
+      memset(buff, 0, sizeof(buff));
+      while((bread = read(sockd, buff, sizeof(buff))) > 0) {
+***************
+*** 309,315 ****
+--- 385,393 ----
+  
+  static int dconnect(const struct optstruct *opt)
+  {
++ #ifndef	C_WINDOWS
+  	struct sockaddr_un server;
++ #endif
+  	struct sockaddr_in server2;
+  	struct hostent *he;
+  	struct cfgstruct *copt, *cpt;
+***************
+*** 325,337 ****
+--- 403,420 ----
+  	return -1;
+      }
+  
++ #ifndef	C_WINDOWS
+      memset((char *) &server, 0, sizeof(server));
++ #endif
+      memset((char *) &server2, 0, sizeof(server2));
+  
+      /* Set default address to connect to */
+      server2.sin_addr.s_addr = inet_addr("127.0.0.1");    
+  
+      if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
++ #ifdef	C_WINDOWS
++ 	logg("^LocalSocket is not supported under Windows");
++ #else
+  
+  	server.sun_family = AF_UNIX;
+  	strncpy(server.sun_path, cpt->strarg, sizeof(server.sun_path));
+***************
+*** 350,357 ****
+  	    freecfg(copt);
+  	    return -1;
+  	}
+  
+!     } else if((cpt = cfgopt(copt, "TCPSocket"))->enabled) {
+  
+  	if((sockd = socket(SOCKET_INET, SOCK_STREAM, 0)) < 0) {
+  	    perror("socket()");
+--- 433,450 ----
+  	    freecfg(copt);
+  	    return -1;
+  	}
++ #endif
++   
++ 	} else if((cpt = cfgopt(copt, "TCPSocket"))->enabled) {
++ #ifdef  C_WINDOWS
++ 	WSADATA wsaData;
+  
+! 	if(WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR) {
+! 		logg("!Error at WSAStartup(): %d\n", WSAGetLastError());
+! 		return -1;
+! 	}
+! #endif
+!   
+  
+  	if((sockd = socket(SOCKET_INET, SOCK_STREAM, 0)) < 0) {
+  	    perror("socket()");
+***************
+*** 365,371 ****
+  
+  	if((cpt = cfgopt(copt, "TCPAddr"))->enabled) {
+  	    if ((he = gethostbyname(cpt->strarg)) == 0) {
+! 		close(sockd);
+  		perror("gethostbyname()");
+  		logg("^Can't lookup clamd hostname.\n");
+  		freecfg(copt);
+--- 458,464 ----
+  
+  	if((cpt = cfgopt(copt, "TCPAddr"))->enabled) {
+  	    if ((he = gethostbyname(cpt->strarg)) == 0) {
+! 		closesocket(sockd);
+  		perror("gethostbyname()");
+  		logg("^Can't lookup clamd hostname.\n");
+  		freecfg(copt);
+***************
+*** 375,381 ****
+  	}
+  
+  	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
+! 	    close(sockd);
+  	    perror("connect()");
+  	    logg("^Can't connect to clamd.\n");
+  	    freecfg(copt);
+--- 468,474 ----
+  	}
+  
+  	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
+! 	    closesocket(sockd);
+  	    perror("connect()");
+  	    logg("^Can't connect to clamd.\n");
+  	    freecfg(copt);
+***************
+*** 422,428 ****
+  	else
+  	    errors++;
+  
+! 	close(sockd);
+  
+  #if defined(ENABLE_FD_PASSING) && defined(HAVE_SENDMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN)
+      } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
+--- 515,521 ----
+  	else
+  	    errors++;
+  
+! 	closesocket(sockd);
+  
+  #if defined(ENABLE_FD_PASSING) && defined(HAVE_SENDMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN)
+      } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
+***************
+*** 502,508 ****
+--- 595,603 ----
+  	struct stat fstat, mfstat;
+  	int n, len, movefilename_size;
+  	int moveflag = opt_check(opt, "move");
++ #ifndef	C_WINDOWS
+  	struct utimbuf ubuf;
++ #endif
+  
+  
+      if((moveflag && !(movedir = opt_arg(opt, "move"))) ||
+***************
+*** 588,596 ****
+--- 683,693 ----
+  	chmod(movefilename, fstat.st_mode);
+  	chown(movefilename, fstat.st_uid, fstat.st_gid);
+  
++ #ifndef	C_WINDOWS
+  	ubuf.actime = fstat.st_atime;
+  	ubuf.modtime = fstat.st_mtime;
+  	utime(movefilename, &ubuf);
++ #endif
+  
+  	if(moveflag && unlink(filename)) {
+  	    logg("^cannot unlink '%s': %s\n", filename, strerror(errno));
