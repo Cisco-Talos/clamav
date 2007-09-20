@@ -92,14 +92,15 @@ if(ctx->limits && ctx->limits->maxfilesize && (CHK) > ctx->limits->maxfilesize) 
     } \
 }
 
-#define CLI_UNPTEMP(NAME,...) \
+#define CLI_UNPTEMP(NAME,FREEME) \
 if(!(tempfile = cli_gentemp(NULL))) { \
-    cli_multifree(__VA_ARGS__,0); \
+    cli_multifree FREEME; \
     return CL_EMEM; \
 } \
 if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) { \
     cli_dbgmsg(NAME": Can't create file %s\n", tempfile); \
-    cli_multifree(tempfile,__VA_ARGS__,0); \
+    free(tempfile); \
+    cli_multifree FREEME; \
     return CL_EIO; \
 }
 
@@ -131,14 +132,15 @@ if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) { \
 	free(tempfile); \
 	break; \
 
-#define CLI_UNPRESULTS_(NAME,FSGSTUFF,EXPR,GOOD,...) \
+#define CLI_UNPRESULTS_(NAME,FSGSTUFF,EXPR,GOOD,FREEME) \
     switch(EXPR) { \
     case GOOD: /* Unpacked and rebuilt */ \
 	if(cli_leavetemps_flag) \
 	    cli_dbgmsg(NAME": Unpacked and rebuilt executable saved in %s\n", tempfile); \
 	else \
 	    cli_dbgmsg(NAME": Unpacked and rebuilt executable\n"); \
-	cli_multifree(__VA_ARGS__,exe_sections,0); \
+	cli_multifree FREEME; \
+        free(exe_sections); \
 	fsync(ndesc); \
 	lseek(ndesc, 0, SEEK_SET); \
 	cli_dbgmsg("***** Scanning rebuilt PE file *****\n"); \
@@ -153,19 +155,20 @@ if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) { \
 	free(tempfile); \
 	return CL_CLEAN; \
 \
-FSGSTUFF \
+FSGSTUFF; \
 \
     default: \
 	cli_dbgmsg(NAME": Unpacking failed\n"); \
 	close(ndesc); \
 	unlink(tempfile); \
-	cli_multifree(__VA_ARGS__,tempfile,0); \
+	cli_multifree FREEME; \
+        free(tempfile); \
     }
 
 
-#define CLI_UNPRESULTS(NAME,EXPR,GOOD,...) CLI_UNPRESULTS_(NAME,,EXPR,GOOD,__VA_ARGS__)
-#define CLI_UNPRESULTSFSG1(NAME,EXPR,GOOD,...) CLI_UNPRESULTS_(NAME,FSGCASE(NAME,free(sections)),EXPR,GOOD,__VA_ARGS__)
-#define CLI_UNPRESULTSFSG2(NAME,EXPR,GOOD,...) CLI_UNPRESULTS_(NAME,FSGCASE(NAME,),EXPR,GOOD,__VA_ARGS__)
+#define CLI_UNPRESULTS(NAME,EXPR,GOOD,FREEME) CLI_UNPRESULTS_(NAME,NULL,EXPR,GOOD,FREEME)
+#define CLI_UNPRESULTSFSG1(NAME,EXPR,GOOD,FREEME) CLI_UNPRESULTS_(NAME,FSGCASE(NAME,free(sections)),EXPR,GOOD,FREEME)
+#define CLI_UNPRESULTSFSG2(NAME,EXPR,GOOD,FREEME) CLI_UNPRESULTS_(NAME,FSGCASE(NAME,NULL),EXPR,GOOD,FREEME)
 
 struct offset_list {
     uint32_t offset;
@@ -1142,8 +1145,8 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	        uselzma = 0;
 	    }
 
-	    CLI_UNPTEMP("MEW",src,exe_sections);
-	    CLI_UNPRESULTS("MEW",(unmew11(i, src, offdiff, ssize, dsize, EC32(optional_hdr32.ImageBase), exe_sections[0].rva, uselzma, NULL, NULL, ndesc)),1,src);
+	    CLI_UNPTEMP("MEW",(src,exe_sections,0));
+	    CLI_UNPRESULTS("MEW",(unmew11(i, src, offdiff, ssize, dsize, EC32(optional_hdr32.ImageBase), exe_sections[0].rva, uselzma, NULL, NULL, ndesc)),1,(src,0));
 	    break;
 	}
     }
@@ -1253,8 +1256,8 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		return CL_EIO;
 	    }
 
-	    CLI_UNPTEMP("Upack",dest,exe_sections);
-	    CLI_UNPRESULTS("Upack",(unupack(upack, dest, dsize, epbuff, vma, ep, EC32(optional_hdr32.ImageBase), exe_sections[0].rva, ndesc)),1,dest);
+	    CLI_UNPTEMP("Upack",(dest,exe_sections,0));
+	    CLI_UNPRESULTS("Upack",(unupack(upack, dest, dsize, epbuff, vma, ep, EC32(optional_hdr32.ImageBase), exe_sections[0].rva, ndesc)),1,(dest,0));
 	    break;
 	}
     }
@@ -1348,8 +1351,8 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    return CL_EMEM;
 	}
 
-	CLI_UNPTEMP("FSG",src,dest,exe_sections);
-	CLI_UNPRESULTSFSG2("FSG",(unfsg_200(newesi - exe_sections[i + 1].rva + src, dest, ssize + exe_sections[i + 1].rva - newesi, dsize, newedi, EC32(optional_hdr32.ImageBase), newedx, ndesc)),1,src,dest);
+	CLI_UNPTEMP("FSG",(src,dest,exe_sections,0));
+	CLI_UNPRESULTSFSG2("FSG",(unfsg_200(newesi - exe_sections[i + 1].rva + src, dest, ssize + exe_sections[i + 1].rva - newesi, dsize, newedi, EC32(optional_hdr32.ImageBase), newedx, ndesc)),1,(src,dest,0));
 	break;
     }
 
@@ -1471,8 +1474,8 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	oldep = vep + 161 + 6 + cli_readint32(epbuff+163);
 	cli_dbgmsg("FSG: found old EP @%x\n", oldep);
 
-	CLI_UNPTEMP("FSG",src,dest,sections,exe_sections);
-	CLI_UNPRESULTSFSG1("FSG",(unfsg_133(src + newesi - exe_sections[i + 1].rva, dest, ssize + exe_sections[i + 1].rva - newesi, dsize, sections, sectcnt, EC32(optional_hdr32.ImageBase), oldep, ndesc)),1,src,dest,sections);
+	CLI_UNPTEMP("FSG",(src,dest,sections,exe_sections,0));
+	CLI_UNPRESULTSFSG1("FSG",(unfsg_133(src + newesi - exe_sections[i + 1].rva, dest, ssize + exe_sections[i + 1].rva - newesi, dsize, sections, sectcnt, EC32(optional_hdr32.ImageBase), oldep, ndesc)),1,(src,dest,sections,0));
 	break; /* were done with 1.33 */
     }
 
@@ -1593,8 +1596,8 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	oldep = vep + gp + 6 + cli_readint32(src+gp+2+oldep);
 	cli_dbgmsg("FSG: found old EP @%x\n", oldep);
 
-	CLI_UNPTEMP("FSG",src,dest,sections,exe_sections);
-	CLI_UNPRESULTSFSG1("FSG",(unfsg_133(src + newesi - exe_sections[i + 1].rva, dest, ssize + exe_sections[i + 1].rva - newesi, dsize, sections, sectcnt, EC32(optional_hdr32.ImageBase), oldep, ndesc)),1,src,dest,sections);
+	CLI_UNPTEMP("FSG",(src,dest,sections,exe_sections,0));
+	CLI_UNPRESULTSFSG1("FSG",(unfsg_133(src + newesi - exe_sections[i + 1].rva, dest, ssize + exe_sections[i + 1].rva - newesi, dsize, sections, sectcnt, EC32(optional_hdr32.ImageBase), oldep, ndesc)),1,(src,dest,sections,0));
 	break; /* were done with 1.31 */
     }
 
@@ -1706,7 +1709,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	free(src);
 	free(exe_sections);
 
-	CLI_UNPTEMP("UPX/FSG",dest);
+	CLI_UNPTEMP("UPX/FSG",(dest,0));
 
 	if((unsigned int) write(ndesc, dest, dsize) != dsize) {
 	    cli_dbgmsg("UPX/FSG: Can't write %d bytes\n", dsize);
@@ -1780,8 +1783,8 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		}
 	    }
 
-	    CLI_UNPTEMP("Petite",dest,exe_sections);
-	    CLI_UNPRESULTS("Petite",(petite_inflate2x_1to9(dest, min, max - min, exe_sections, nsections - (found == 1 ? 1 : 0), EC32(optional_hdr32.ImageBase),vep, ndesc, found, EC32(optional_hdr32.DataDirectory[2].VirtualAddress),EC32(optional_hdr32.DataDirectory[2].Size))),0,dest);
+	    CLI_UNPTEMP("Petite",(dest,exe_sections,0));
+	    CLI_UNPRESULTS("Petite",(petite_inflate2x_1to9(dest, min, max - min, exe_sections, nsections - (found == 1 ? 1 : 0), EC32(optional_hdr32.ImageBase),vep, ndesc, found, EC32(optional_hdr32.DataDirectory[2].VirtualAddress),EC32(optional_hdr32.DataDirectory[2].Size))),0,(dest,0));
 	}
     }
 
@@ -1809,8 +1812,8 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    return CL_EIO;
 	}
 
-	CLI_UNPTEMP("PESpin",spinned,exe_sections);
-	CLI_UNPRESULTS_("PEspin",SPINCASE(),(unspin(spinned, fsize, exe_sections, nsections - 1, vep, ndesc, ctx)),0,spinned);
+	CLI_UNPTEMP("PESpin",(spinned,exe_sections,0));
+	CLI_UNPRESULTS_("PEspin",SPINCASE(),(unspin(spinned, fsize, exe_sections, nsections - 1, vep, ndesc, ctx)),0,(spinned,0));
     }
 
 
@@ -1835,8 +1838,8 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    return CL_EIO;
 	}
 
-	CLI_UNPTEMP("yC",spinned,exe_sections);
-	CLI_UNPRESULTS("yC",(yc_decrypt(spinned, fsize, exe_sections, nsections-1, e_lfanew, ndesc)),0,spinned);
+	CLI_UNPTEMP("yC",(spinned,exe_sections,0));
+	CLI_UNPRESULTS("yC",(yc_decrypt(spinned, fsize, exe_sections, nsections-1, e_lfanew, ndesc)),0,(spinned,0));
     }
 
 
@@ -1901,7 +1904,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	
 	    free(wwp);
 
-	    CLI_UNPTEMP("WWPack",dest,exe_sections);
+	    CLI_UNPTEMP("WWPack",(dest,exe_sections,0));
 
 	    if((unsigned int) write(ndesc, dest, dsize) != dsize) {
 		cli_dbgmsg("WWPack: Can't write %d bytes\n", dsize);
@@ -1970,8 +1973,8 @@ int cli_scanpe(int desc, cli_ctx *ctx)
             break;
         }
 
-	CLI_UNPTEMP("Aspack",src,exe_sections);
-	CLI_UNPRESULTS("Aspack",(unaspack212((uint8_t *)src, ssize, exe_sections, nsections, vep-1, EC32(optional_hdr32.ImageBase), ndesc)),1,src);
+	CLI_UNPTEMP("Aspack",(src,exe_sections,0));
+	CLI_UNPRESULTS("Aspack",(unaspack212((uint8_t *)src, ssize, exe_sections, nsections, vep-1, EC32(optional_hdr32.ImageBase), ndesc)),1,(src,0));
 	break;
     }
 
@@ -2044,8 +2047,8 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	eprva=eprva+5+cli_readint32(nbuff+1);
 	cli_dbgmsg("NsPack: OEP = %08x\n", eprva);
 
-	CLI_UNPTEMP("NsPack",src,dest,exe_sections);
-	CLI_UNPRESULTS("NsPack",(unspack(src, dest, ctx, exe_sections[0].rva, EC32(optional_hdr32.ImageBase), eprva, ndesc)),0,src,dest);
+	CLI_UNPTEMP("NsPack",(src,dest,exe_sections,0));
+	CLI_UNPRESULTS("NsPack",(unspack(src, dest, ctx, exe_sections[0].rva, EC32(optional_hdr32.ImageBase), eprva, ndesc)),0,(src,dest,0));
 	break;
     }
 
