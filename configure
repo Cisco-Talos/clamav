@@ -1495,6 +1495,7 @@ Optional Features:
   --enable-fast-install[=PKGS]
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
+  --disable-gcc-vcheck	  do not check for buggy gcc version
   --enable-experimental	enable experimental code
   --enable-maintainer-mode enable make rules and dependencies not useful
                           (and sometimes confusing) to the casual installer
@@ -19967,6 +19968,346 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 fi
+
+
+# Check whether --enable-gcc-vcheck was given.
+if test "${enable_gcc_vcheck+set}" = set; then
+  enableval=$enable_gcc_vcheck; gcc_check=$enableval
+else
+  gcc_check="yes"
+fi
+
+
+msg_gcc_check="use --disable-gcc-vcheck to disable this check. Before reporting any bugs check with a supported version of gcc"
+
+if test "$gcc_check" = "yes"; then
+	if test "x$ac_compiler_gnu" = "xyes"; then
+		{ echo "$as_me:$LINENO: checking for a supported version of gcc" >&5
+echo $ECHO_N "checking for a supported version of gcc... $ECHO_C" >&6; }
+		gcc_version=`${CC} -dumpversion`
+		case "${gcc_version}" in
+			4.1.0*)
+				{ echo "$as_me:$LINENO: result: no (${gcc_version})" >&5
+echo "${ECHO_T}no (${gcc_version})" >&6; }
+				{ { echo "$as_me:$LINENO: error: gcc 4.1.0 is known to incorrectly compile upx.c. Upgrade your compiler to at least 4.1.1/4.1.2)" >&5
+echo "$as_me: error: gcc 4.1.0 is known to incorrectly compile upx.c. Upgrade your compiler to at least 4.1.1/4.1.2)" >&2;}
+   { (exit 1); exit 1; }; }
+				;;
+			*)
+				{ echo "$as_me:$LINENO: result: ok (${gcc_version})" >&5
+echo "${ECHO_T}ok (${gcc_version})" >&6; }
+				;;
+	esac
+	fi
+fi
+
+
+{ echo "$as_me:$LINENO: checking for gcc bug PR27603" >&5
+echo $ECHO_N "checking for gcc bug PR27603... $ECHO_C" >&6; }
+if test "$cross_compiling" = yes; then
+  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&5
+echo "$as_me: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&2;}
+   { (exit 1); exit 1; }; }
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+void exit (int);
+void abort (void);
+int a;
+int main()
+{
+  int j;
+  for (j = 0; j < 6; j++)
+  {
+    if ((unsigned)j - 3 <= 1)
+      exit (0);
+    a = 1000 * (6 - j);
+  }
+  abort ();
+}
+
+_ACEOF
+rm -f conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  { echo "$as_me:$LINENO: result: ok, bug not present" >&5
+echo "${ECHO_T}ok, bug not present" >&6; }
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+{ { echo "$as_me:$LINENO: error: your compiler has gcc PR27603 bug, use a different compiler, see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=27603" >&5
+echo "$as_me: error: your compiler has gcc PR27603 bug, use a different compiler, see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=27603" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+
+
+
+{ echo "$as_me:$LINENO: checking for gcc bug PR28045" >&5
+echo $ECHO_N "checking for gcc bug PR28045... $ECHO_C" >&6; }
+if test "$cross_compiling" = yes; then
+  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&5
+echo "$as_me: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&2;}
+   { (exit 1); exit 1; }; }
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+extern void abort(void);
+struct a
+{
+   unsigned int bits : 1;
+   signed long val : ((sizeof(long) * 8) - 1);
+};
+int Fnegate (struct a b)
+{
+  if ((-((long)b.val)) <= ((long) ((1UL << ((sizeof(long) * 8) - 2)) -1UL))
+      && (-((long)b.val)) >= (-(((long) ((1UL << ((sizeof(long) * 8) - 2)) -1UL))) - 1))
+     return 0 ;
+  abort ();
+}
+int main ()
+{
+  struct a b = {1, 1};
+  Fnegate (b);
+  return 0;
+}
+
+_ACEOF
+rm -f conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  { echo "$as_me:$LINENO: result: ok, bug not present" >&5
+echo "${ECHO_T}ok, bug not present" >&6; }
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+{ { echo "$as_me:$LINENO: error: your compiler has gcc PR28045 bug, use a different compiler, see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=28045" >&5
+echo "$as_me: error: your compiler has gcc PR28045 bug, use a different compiler, see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=28045" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+
+
+
+{ echo "$as_me:$LINENO: checking for gcc bug PR26763-2" >&5
+echo $ECHO_N "checking for gcc bug PR26763-2... $ECHO_C" >&6; }
+if test "$cross_compiling" = yes; then
+  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&5
+echo "$as_me: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&2;}
+   { (exit 1); exit 1; }; }
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+extern void abort(void);
+
+int try (char *a, int d)
+{
+  return a + d > a;
+}
+
+int main(void)
+{
+  char bla[100];
+
+  if (try (bla + 50, -1))
+    abort ();
+
+  return 0;
+}
+
+_ACEOF
+rm -f conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  { echo "$as_me:$LINENO: result: ok, bug not present" >&5
+echo "${ECHO_T}ok, bug not present" >&6; }
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+{ { echo "$as_me:$LINENO: error: your compiler has gcc PR26763-2 bug, use a different compiler, see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=26763" >&5
+echo "$as_me: error: your compiler has gcc PR26763-2 bug, use a different compiler, see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=26763" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+
+
+
+{ echo "$as_me:$LINENO: checking for valid code generation of CLI_ISCONTAINED" >&5
+echo $ECHO_N "checking for valid code generation of CLI_ISCONTAINED... $ECHO_C" >&6; }
+if test "$cross_compiling" = yes; then
+  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&5
+echo "$as_me: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&2;}
+   { (exit 1); exit 1; }; }
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+#include <stdint.h>
+#include <stdio.h>
+static struct v{
+	char* dst;
+	uint32_t dsize;
+	uint32_t dcur;
+	uint32_t backsize;
+ 	int32_t unp_offset;
+} values[] = {
+	{(char*)0xf78ab008, 0x2e000, 1, 4, 0xfffff9f3},
+	{(char*)0xb7af1008, 0x2e000, 1, 4, 0xfffff9f3}
+
+};
+extern void abort(void);
+
+#define CLI_ISCONTAINED(bb, bb_size, sb, sb_size)	\
+    (bb_size > 0 && sb_size > 0 && sb_size <= bb_size	\
+     && sb >= bb && sb + sb_size <= bb + bb_size && sb + sb_size > bb)
+
+int main()
+{
+	int i;
+	for(i=0;i<sizeof(values)/sizeof(values[0]);i++) {
+		struct v* v= &values[i];
+		char* dst = v->dst;
+		uint32_t* dsize = &v->dsize;
+		uint32_t dcur = v->dcur;
+		uint32_t backsize = v->backsize-1;
+		int32_t  unp_offset = v->unp_offset;
+
+		if(!CLI_ISCONTAINED(dst, *dsize, dst+dcur+unp_offset, backsize) ||
+				!CLI_ISCONTAINED(dst, *dsize,dst+dcur,backsize) || unp_offset >= 0)  {
+			continue;
+		}
+		abort();
+	}
+	return 0;
+}
+
+_ACEOF
+rm -f conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  { echo "$as_me:$LINENO: result: ok, bug not present" >&5
+echo "${ECHO_T}ok, bug not present" >&6; }
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+{ { echo "$as_me:$LINENO: error: your compiler has a bug that causes clamav 670, use a different compiler, see http://bugs.clamav.net/bugzilla/show_bug.cgi?id=670" >&5
+echo "$as_me: error: your compiler has a bug that causes clamav 670, use a different compiler, see http://bugs.clamav.net/bugzilla/show_bug.cgi?id=670" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+
+
 
 
 

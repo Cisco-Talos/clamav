@@ -1,3 +1,8 @@
+Fri Sep 21 00:13:32 EEST 2007(edwin)
+------------------------------------
+  * configure, configure.in: add check to detect certain compiler bugs that
+  cause incorrect code generation for CLI_ISCONTAINED.
+
 Thu Sep 20 23:19:20 EEST 2007(edwin)
 ------------------------------------
   * libclamav/phishcheck.c: improve url extraction algorithm.
