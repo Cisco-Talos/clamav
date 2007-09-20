@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-20080902"
+#define	CM_VERSION	"devel-20080920"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -81,9 +81,6 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 nj
 #include <pthread.h>
 #include <sys/time.h>
 #include <signal.h>
-#if	HAVE_REGEX_H
-#include <regex.h>
-#endif
 #include <fcntl.h>
 #include <pwd.h>
 #include <grp.h>
@@ -203,6 +200,7 @@ typedef	unsigned int	in_addr_t;
  *	address
  * TODO: optionally use zlib to compress data sent to remote hosts
  * TODO: Finish IPv6 support (serverIPs array and SPF are IPv4 only)
+ * TODO: Check domainkeys as well as SPF for phish false positives
  */
 
 struct header_node_t {
@@ -6281,7 +6279,7 @@ spf(struct privdata *privdata, table_t *prevhosts)
 			char *record;
 			struct in_addr remote_ip;	/* IP connecting to us */
 
-			logg("#%s(%s): SPF record %s\n",
+			logg("*%s(%s): SPF record %s\n",
 				host, privdata->ip, txt);
 #ifdef HAVE_INET_NTOP
 			/* IPv4 address ? */
@@ -6316,11 +6314,15 @@ spf(struct privdata *privdata, table_t *prevhosts)
 
 #ifdef HAVE_INET_NTOP
 					/* IPv4 address ? */
-					if(inet_pton(AF_INET, ip, &spf_range) <= 0)
+					if(inet_pton(AF_INET, ip, &spf_range) <= 0) {
+						free(record);
 						continue;
+					}
 #else
-					if(inet_aton(ip, &spf_range) == 0)
+					if(inet_aton(ip, &spf_range) == 0) {
+						free(record);
 						continue;
+					}
 #endif
 					mask = MAKEMASK(preflen);
 					if((ntohl(remote_ip.s_addr) & mask) == (ntohl(spf_range.s_addr) & mask)) {
