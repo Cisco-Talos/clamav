@@ -1,3 +1,7 @@
+Thu Sep 20 23:19:20 EEST 2007(edwin)
+------------------------------------
+  * libclamav/phishcheck.c: improve url extraction algorithm.
+
 Thu Sep 20 11:21:14 BST 2007 (njh)
 ----------------------------------
   * clamav-milter/clamav-milter.c:	Plug leak on SPF error handling

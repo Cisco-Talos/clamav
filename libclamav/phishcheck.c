@@ -657,30 +657,26 @@ static void clear_msb(char* begin)
  * <a href="www.yahoo.com">Check out yahoo.com</a>
  * Here we add a ., so we get: check.out.yahoo.com (it won't trigger)
  *
- * Rule for adding .: if substring from right contains dot, then add dot,
+ * Old Rule for adding .: if substring from right contains dot, then add dot,
  *	otherwise strip space
+ * New Rule: strip all spaces
+ *  strip leading and trailing garbage
  *
  */
 static void
 str_fixup_spaces(char **begin, const char **end)
 {
-	char *space = strchr(*begin, ' ');
-
-	if(space == NULL)
+	char* sbegin = *begin;
+	const char* send = *end;
+	if(!sbegin || !send || send < sbegin)
 		return;
-
-	/* strip any number of spaces after / */
-	while((space > *begin) && (space[-1] == '/') && (space[0] == ' ') && (space < *end)) {
-		memmove(space, space+1, *end-space+1);
-		(*end)--;
-	}
-
-	for(space = rfind(*begin,' ',*end-*begin);space && space[0]!='.' && space<*end;space++)
-		;
-	if(space && space[0]=='.')
-		str_replace(*begin,*end,' ','.');
-	else
-		str_strip(begin,end," ",1);
+	/* strip spaces */
+	str_strip(&sbegin, &send, " ",1);
+	/* strip leading/trailing garbage */
+	while(!isalnum(sbegin[0]) && sbegin <= send) sbegin++;
+	while(!isalnum(send[0]) && send >= sbegin) send--;
+	*begin = sbegin;
+	*end = send;
 }
 
 /* allocates memory */
@@ -1210,6 +1206,7 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 	if((!isURL(pchk, urls->displayLink.data) || !isURL(pchk, urls->realLink.data) )&&
 			( (phishy&PHISHY_NUMERIC_IP && !isNumericURL(pchk, urls->displayLink.data)) ||
 			  !(phishy&PHISHY_NUMERIC_IP))) {
+		cli_dbgmsg("Displayed 'url' is not url:%s\n",urls->displayLink.data);
 		free_if_needed(&host_url);
 		return CL_PHISH_TEXTURL;
 	}
