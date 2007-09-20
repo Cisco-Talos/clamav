@@ -43,9 +43,7 @@
 #include <signal.h>
 #include <target.h>
 
-#ifdef HAVE_REGEX_H
-#include <regex.h>
-#endif
+#include "regex/regex.h"
 
 #include "shared/output.h"
 #include "others.h"
@@ -130,22 +128,18 @@ int checkaccess(const char *path, const char *username, int mode)
 
 int match_regex(const char *filename, const char *pattern)
 {
-#ifdef HAVE_REGEX_H
 	regex_t reg;
 	int match, flags;
 #if !defined(C_CYGWIN) && !defined(C_OS2)
 	flags = REG_EXTENDED;
 #else
 	flags = REG_EXTENDED | REG_ICASE; /* case insensitive on Windows */
-#endif	
-	if(regcomp(&reg, pattern, flags) != 0) {
+#endif
+	if(cli_regcomp(&reg, pattern, flags) != 0) {
 	    logg("!%s: Could not parse regular expression %s.\n", filename, pattern);
 		return 2;
 	}
-	match = (regexec(&reg, filename, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
-	regfree(&reg);
+	match = (cli_regexec(&reg, filename, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
+	cli_regfree(&reg);
 	return match;
-#else /* HAVE_REGEX_H */
-	return strstr(filename, pattern) ? 1 : 0;
-#endif
 }
