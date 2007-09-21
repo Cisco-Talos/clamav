@@ -1,3 +1,7 @@
+Fri Sep 21 18:40:56 EEST 2007 (edwin)
+-------------------------------------
+  * configure, configure.in: add comment on origin of testcases.
+
 Fri Sep 21 00:33:37 CEST 2007 (acab)
 ------------------------------------
   * libclamav/pe.c: Avoid variadic macroes make vc6 happy. Big thx to

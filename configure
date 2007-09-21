@@ -20018,6 +20018,7 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 
+/* (C) Richard Guenther */
 void exit (int);
 void abort (void);
 int a;
@@ -20087,6 +20088,7 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 
+/* (C) Andrew Pinski */
 extern void abort(void);
 struct a
 {
@@ -20161,6 +20163,7 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 
+/* (C) Richard Guenther */
 extern void abort(void);
 
 int try (char *a, int d)

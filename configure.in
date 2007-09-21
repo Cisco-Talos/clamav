@@ -69,9 +69,11 @@ dnl we do these checks here to avoid receiving endless bugreports about
 dnl breakages due to compiler bugs.
 
 dnl Check if compiler produces invalid code on gcc PR27603 (affects upx.c)
+dnl testcase from gcc testsuite
 AC_MSG_CHECKING([for gcc bug PR27603])
 AC_TRY_RUN(
 	   [
+/* (C) Richard Guenther */	   
 void exit (int);
 void abort (void);
 int a;
@@ -90,9 +92,11 @@ int main()
 [AC_MSG_ERROR([your compiler has gcc PR27603 bug, use a different compiler, see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=27603])])
 
 dnl Check if compiler produces invalid code on gcc PR28045 (affects upx.c)
+dnl testcase from gcc testsuite
 AC_MSG_CHECKING([for gcc bug PR28045])
 AC_TRY_RUN(
 	   [
+/* (C) Andrew Pinski */	   
 extern void abort(void);
 struct a
 {
@@ -116,9 +120,11 @@ int main ()
 [AC_MSG_ERROR([your compiler has gcc PR28045 bug, use a different compiler, see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=28045])])
 
 dnl Check if compiler produces invalid code on gcc PR26763-2 (affects upx.c)
+dnl testcase from gcc testsuite
 AC_MSG_CHECKING([for gcc bug PR26763-2])
 AC_TRY_RUN(
 	   [
+/* (C) Richard Guenther */	   
 extern void abort(void);
 
 int try (char *a, int d)
