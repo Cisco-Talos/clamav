@@ -1,3 +1,8 @@
+Sat Sep 22 18:14:49 EEST 2007 (edwin)
+-------------------------------------
+  * libclamav/cvd.c: seek on the underlying file descriptor and not FILE*.
+       Avoids problems on OpenBSD with cvd unpacking.
+
 Fri Sep 21 18:40:56 EEST 2007 (edwin)
 -------------------------------------
   * configure, configure.in: add comment on origin of testcases.

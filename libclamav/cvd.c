@@ -365,7 +365,7 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short 
 	struct cl_cvd cvd;
 	int ret;
 	time_t s_time;
-
+	int cfd;
 
     cli_dbgmsg("in cli_cvdload()\n");
 
@@ -391,11 +391,6 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short 
 	cli_warnmsg("***********************************************************\n");
     }
 
-    if(fseek(fs, 512, SEEK_SET) == -1) {
-	cli_errmsg("cli_cvdload(): fseek(fs, 512, SEEK_SET) failed\n");
-	return CL_EIO;
-    }
-
     dir = cli_gentemp(NULL);
     if(mkdir(dir, 0700)) {
 	cli_errmsg("cli_cvdload(): Can't create temporary directory %s\n", dir);
@@ -403,7 +398,20 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short 
 	return CL_ETMPDIR;
     }
 
-    if(cli_untgz(fileno(fs), dir)) {
+    cfd = fileno(fs);
+
+    /* use only operations on file descriptors, and not on the FILE* from here on 
+     * if we seek the FILE*, the underlying descriptor may not seek as expected
+     * (for example on OpenBSD, cygwin, etc.).
+     * So seek the descriptor directly.
+     */ 
+
+    if(lseek(cfd, 512, SEEK_SET) == -1) {
+	cli_errmsg("cli_cvdload(): lseek(fs, 512, SEEK_SET) failed\n");
+	return CL_EIO;
+    }
+
+    if(cli_untgz(cfd, dir)) {
 	cli_errmsg("cli_cvdload(): Can't unpack CVD file.\n");
 	free(dir);
 	return CL_ECVDEXTR;
