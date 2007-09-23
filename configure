@@ -20235,14 +20235,13 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 
-#include <stdint.h>
 #include <stdio.h>
 static struct v{
 	char* dst;
-	uint32_t dsize;
-	uint32_t dcur;
-	uint32_t backsize;
- 	int32_t unp_offset;
+	unsigned long dsize;
+	unsigned long dcur;
+	unsigned long backsize;
+ 	signed long unp_offset;
 } values[] = {
 	{(char*)0xf78ab008, 0x2e000, 1, 4, 0xfffff9f3},
 	{(char*)0xb7af1008, 0x2e000, 1, 4, 0xfffff9f3}
@@ -20260,10 +20259,10 @@ int main()
 	for(i=0;i<sizeof(values)/sizeof(values[0]);i++) {
 		struct v* v= &values[i];
 		char* dst = v->dst;
-		uint32_t* dsize = &v->dsize;
-		uint32_t dcur = v->dcur;
-		uint32_t backsize = v->backsize-1;
-		int32_t  unp_offset = v->unp_offset;
+		unsigned long* dsize = &v->dsize;
+		unsigned long dcur = v->dcur;
+		unsigned long backsize = v->backsize-1;
+		signed long  unp_offset = v->unp_offset;
 
 		if(!CLI_ISCONTAINED(dst, *dsize, dst+dcur+unp_offset, backsize) ||
 				!CLI_ISCONTAINED(dst, *dsize,dst+dcur,backsize) || unp_offset >= 0)  {
