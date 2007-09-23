@@ -36,6 +36,8 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
 #endif
 #endif
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -156,7 +158,7 @@ typedef	enum {
 #endif
 #endif
 
-#if	(!defined(C_WINDOWS)) && !defined(C_BEOS)
+#ifndef	C_WINDOWS
 #define	closesocket(s)	close(s)
 #define	SOCKET	int
 #endif
@@ -182,6 +184,10 @@ typedef	unsigned	int	in_addr_t;
 #endif
 #if	(!defined(EISCONN)) && (defined(WSAEISCONN))
 #define EISCONN	WSAEISCONN
+#endif
+
+#ifdef	C_WINDOWS
+#define	strcasestr(h, n)	strstr(h, n)	/* This will cause isBounceMessage() to match too much */
 #endif
 
 /*
@@ -2835,7 +2841,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 					 * Don't bother with text/plain or
 					 * text/html
 					 */
-					if(strstr(s, "text/plain") != NULL)
+					if(strcasestr(s, "text/plain") != NULL)
 						/*
 						 * Don't bother to save the
 						 * unuseful part, read past
@@ -2845,7 +2851,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 						 */
 						continue;
 					if((!doPhishingScan) &&
-					   (strstr(s, "text/html") != NULL))
+					   (strcasestr(s, "text/html") != NULL))
 						continue;
 					break;
 				}
@@ -3990,6 +3996,31 @@ do_checkURLs(const char *dir, tag_arguments_t *hrefs)
 	t = tableCreate();
 	if(t == NULL)
 		return;
+
+	n = 0;
+
+	/*
+	 * Sort .exes higher up so that there's more chance they'll be
+	 * downloaded and scanned
+	 */
+	for(i = FOLLOWURLS; (i < hrefs->count) && (n < FOLLOWURLS); i++) {
+		const char *url = (const char *)hrefs->value[i];
+		const char *ptr;
+
+		if(strncasecmp("http://", url, 7) != 0)
+			continue;
+
+		ptr = strrchr(url, '.');
+		if(ptr == NULL)
+			continue;
+		if(strcasecmp(ptr, ".exe") == 0) {
+			/* FIXME: Could be swapping with another .exe */
+			cli_dbgmsg("swap %s %s\n", hrefs->value[n], hrefs->value[i]);
+			ptr = hrefs->value[n];
+			hrefs->value[n++] = url;
+			hrefs->value[i] = ptr;
+		}
+	}
 
 	n = 0;
 

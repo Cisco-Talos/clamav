@@ -1,3 +1,8 @@
+Sun Sep 23 13:49:12 BST 2007 (njh)
+----------------------------------
+  * libclamav/mbox.c:	MailFollowURLS: Prefer .exes for download, catches
+  				Trojan.IRC-Script-33
+
 Sat Sep 22 18:14:49 EEST 2007 (edwin)
 -------------------------------------
   * libclamav/cvd.c: seek on the underlying file descriptor and not FILE*.
