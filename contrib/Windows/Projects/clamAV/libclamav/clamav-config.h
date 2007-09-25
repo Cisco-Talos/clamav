@@ -208,6 +208,9 @@
 /* have resolv.h */
 /* #undef HAVE_RESOLV_H */
 
+/* Define signed right shift implementation */
+#define HAVE_SAR 1
+
 /* Define to 1 if you have the `sendmsg' function. */
 /* #undef HAVE_SENDMSG */
 
@@ -344,10 +347,11 @@
 #define STDC_HEADERS 1
 
 /* use syslog */
-/* #define USE_SYSLOG 1 */
+#define USE_SYSLOG 1
 
 /* Version number of package */
-#define VERSION "devel-20070527"
+#define VERSION "devel-20070925"
+/*#define	VERSION	"0.91.2"*/
 
 /* tcpwrappers support */
 /* #undef WITH_TCPWRAP */

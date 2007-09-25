@@ -41,6 +41,10 @@
 #include <io.h>
 #include <pthread.h>
 
+#ifdef	USE_SYSLOG
+#include "syslog.h"
+#endif
+
 static const char *basename (const char *file_name);
 
 /* Offset between 1/1/1601 and 1/1/1970 in 100 nanosec units */
@@ -365,3 +369,43 @@ chown(const char *filename, short uid, short gid)
 {
 	return 0;
 }
+
+#ifdef	USE_SYSLOG
+/*
+ * Put into the Windows Event Log (Right Click My Computer->Manage->Event Viewer->Application
+ * See http://cybertiggyr.com/gene/wel/src/insert-log.c for inspiration
+ */
+static	HANDLE	logg_handle;
+
+void
+openlog(const char *name, int options, int facility)
+{
+	logg_handle = RegisterEventSource(NULL, name);
+}
+
+void
+closelog(void)
+{
+	if(logg_handle != NULL)
+		CloseEventLog(logg_handle);
+}
+
+void
+syslog(int level, const char *format, ...)
+{
+	if(logg_handle != NULL) {
+		va_list args;
+		char buff[512];
+
+		va_start(args, format);
+		(void)vsnprintf(buff, sizeof(buff), format, args);
+		va_end(args);
+		
+		/*
+		 * Category = 0, eventId = 0, SID = NULL, 1 string
+		 */
+		(void)ReportEvent(logg_handle, (WORD)level, 0, 0, NULL, 1, 0, (LPCSTR *)buff, NULL);
+	}
+
+}
+#endif
