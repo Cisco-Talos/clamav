@@ -186,7 +186,8 @@ typedef	unsigned	int	in_addr_t;
 #define EISCONN	WSAEISCONN
 #endif
 
-#ifdef	C_WINDOWS
+/* Needs HAVE_STRCASSTR test in configure */
+#ifndef	C_LINUX
 #define	strcasestr(h, n)	strstr(h, n)	/* This will cause isBounceMessage() to match too much */
 #endif
 
