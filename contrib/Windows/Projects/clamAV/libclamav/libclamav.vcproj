@@ -41,7 +41,7 @@
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="false"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)mspack&quot;;&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)\unrar&quot;;&quot;$(ProjectDir)nsis&quot;;&quot;$(ProjectDir)pthread&quot;;&quot;$(ProjectDir)regex&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)mspack&quot;;&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)unrar&quot;;&quot;$(ProjectDir)nsis&quot;;&quot;$(ProjectDir)pthread&quot;;&quot;$(ProjectDir)regex&quot;;&quot;$(ProjectDir)zlib&quot;"
 				PreprocessorDefinitions="_USE_32BIT_TIME_T;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;PTW32_STATIC_LIB;_DEBUG"
 				StringPooling="true"
 				MinimalRebuild="true"
@@ -68,7 +68,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ws2_32.lib"
+				AdditionalDependencies="ws2_32.lib &quot;$(ProjectDir)pthread\pthreadVC2.lib&quot;"
 				ModuleDefinitionFile="$(InputDir)/libclamav.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -124,7 +124,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="false"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)mspack&quot;;&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)\unrar&quot;;&quot;$(ProjectDir)nsis&quot;;&quot;$(ProjectDir)pthread&quot;;&quot;$(ProjectDir)regex&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)mspack&quot;;&quot;$(ProjectDir)&quot;;&quot;$(ProjectDir)unrar&quot;;&quot;$(ProjectDir)nsis&quot;;&quot;$(ProjectDir)pthread&quot;;&quot;$(ProjectDir)regex&quot;;&quot;$(ProjectDir)zlib&quot;"
 				PreprocessorDefinitions="_USE_32BIT_TIME_T;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;PTW32_STATIC_LIB"
 				StringPooling="true"
 				ExceptionHandling="0"
@@ -150,7 +150,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ws2_32.lib"
+				AdditionalDependencies="ws2_32.lib &quot;$(ProjectDir)pthread\pthreadVC2.lib&quot;"
 				ModuleDefinitionFile="$(InputDir)/libclamav.def"
 				SubSystem="2"
 			/>
@@ -417,10 +417,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\mspack\system.c"
-				>
-			</File>
-			<File
 				RelativePath=".\table.c"
 				>
 			</File>
@@ -505,6 +501,50 @@
 				</File>
 			</Filter>
 			<Filter
+				Name="nsis"
+				>
+				<File
+					RelativePath=".\nsis\bzlib.c"
+					>
+				</File>
+				<File
+					RelativePath=".\nsis\infblock.c"
+					>
+				</File>
+				<File
+					RelativePath=".\nsis\LZMADecode.c"
+					>
+				</File>
+				<File
+					RelativePath=".\nsis\nulsft.c"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="regex"
+				>
+				<File
+					RelativePath=".\regex\regcomp.c"
+					>
+				</File>
+				<File
+					RelativePath=".\regex\regerror.c"
+					>
+				</File>
+				<File
+					RelativePath=".\regex\regexec.c"
+					>
+				</File>
+				<File
+					RelativePath=".\regex\regfree.c"
+					>
+				</File>
+				<File
+					RelativePath=".\regex\strlcpy.c"
+					>
+				</File>
+			</Filter>
+			<Filter
 				Name="zlib"
 				>
 				<File
@@ -557,58 +597,6 @@
 				</File>
 				<File
 					RelativePath=".\zlib\zutil.c"
-					>
-				</File>
-			</Filter>
-			<Filter
-				Name="pthread"
-				>
-				<File
-					RelativePath=".\pthread\pthread.c"
-					>
-				</File>
-			</Filter>
-			<Filter
-				Name="nsis"
-				>
-				<File
-					RelativePath=".\nsis\bzlib.c"
-					>
-				</File>
-				<File
-					RelativePath=".\nsis\infblock.c"
-					>
-				</File>
-				<File
-					RelativePath=".\nsis\LZMADecode.c"
-					>
-				</File>
-				<File
-					RelativePath=".\nsis\nulsft.c"
-					>
-				</File>
-			</Filter>
-			<Filter
-				Name="regex"
-				>
-				<File
-					RelativePath=".\regex\regcomp.c"
-					>
-				</File>
-				<File
-					RelativePath=".\regex\regerror.c"
-					>
-				</File>
-				<File
-					RelativePath=".\regex\regexec.c"
-					>
-				</File>
-				<File
-					RelativePath=".\regex\regfree.c"
-					>
-				</File>
-				<File
-					RelativePath=".\regex\strlcpy.c"
 					>
 				</File>
 			</Filter>
@@ -947,82 +935,6 @@
 				</File>
 			</Filter>
 			<Filter
-				Name="zlib"
-				>
-				<File
-					RelativePath=".\zlib\crc32.h"
-					>
-				</File>
-				<File
-					RelativePath=".\zlib\deflate.h"
-					>
-				</File>
-				<File
-					RelativePath=".\zlib\inffast.h"
-					>
-				</File>
-				<File
-					RelativePath=".\zlib\inffixed.h"
-					>
-				</File>
-				<File
-					RelativePath=".\zlib\inflate.h"
-					>
-				</File>
-				<File
-					RelativePath=".\zlib\inftrees.h"
-					>
-				</File>
-				<File
-					RelativePath=".\zlib\trees.h"
-					>
-				</File>
-				<File
-					RelativePath=".\zlib\zconf.h"
-					>
-				</File>
-				<File
-					RelativePath=".\zlib\zconf.in.h"
-					>
-				</File>
-				<File
-					RelativePath=".\zlib\zlib.h"
-					>
-				</File>
-				<File
-					RelativePath=".\zlib\zutil.h"
-					>
-				</File>
-			</Filter>
-			<Filter
-				Name="pthread"
-				>
-				<File
-					RelativePath=".\pthread\config.h"
-					>
-				</File>
-				<File
-					RelativePath=".\pthread\implement.h"
-					>
-				</File>
-				<File
-					RelativePath=".\pthread\need_errno.h"
-					>
-				</File>
-				<File
-					RelativePath=".\pthread\pthread.h"
-					>
-				</File>
-				<File
-					RelativePath=".\pthread\sched.h"
-					>
-				</File>
-				<File
-					RelativePath=".\pthread\semaphore.h"
-					>
-				</File>
-			</Filter>
-			<Filter
 				Name="nsis"
 				>
 				<File
@@ -1075,6 +987,54 @@
 				</File>
 				<File
 					RelativePath=".\regex\utils.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="zlib"
+				>
+				<File
+					RelativePath=".\zlib\crc32.h"
+					>
+				</File>
+				<File
+					RelativePath=".\zlib\deflate.h"
+					>
+				</File>
+				<File
+					RelativePath=".\zlib\inffast.h"
+					>
+				</File>
+				<File
+					RelativePath=".\zlib\inffixed.h"
+					>
+				</File>
+				<File
+					RelativePath=".\zlib\inflate.h"
+					>
+				</File>
+				<File
+					RelativePath=".\zlib\inftrees.h"
+					>
+				</File>
+				<File
+					RelativePath=".\zlib\trees.h"
+					>
+				</File>
+				<File
+					RelativePath=".\zlib\zconf.h"
+					>
+				</File>
+				<File
+					RelativePath=".\zlib\zconf.in.h"
+					>
+				</File>
+				<File
+					RelativePath=".\zlib\zlib.h"
+					>
+				</File>
+				<File
+					RelativePath=".\zlib\zutil.h"
 					>
 				</File>
 			</Filter>

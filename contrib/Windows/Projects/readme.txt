@@ -5,7 +5,11 @@ Some patches are needed against the rest of SVN for the code to
 compile (most of them are trivial), see clamAV/patches.
 
 You will need to get hold of w32-pthreads version 2.6 from
-http://sourceware.org/pthreads-win32/.
+http://sourceware.org/pthreads-win32/ and install pthreadVC2.dll into a
+location that CLamAV can find, such as c:\Program Files\ClamAV\pthreadVC2.dll.
+
+You will need to download the zlib source from http://www.zlib.net/
+and install the .c and .h files into .../libclamav/zlib.
 
 Thanks to acab@clamav.net for adding libclamav.dll support
 
@@ -15,6 +19,7 @@ TODO:	Support GMP
 	On access scanning
 	Investigation of .NET dependencies
 	Scan when a screensaver kicks in
-	zlib and pthreads should be DLL, not bundled into libclamav.dll
+	zlib should be DLL, not bundled into libclamav.dll (needs thought
+		on the C runtime library)
 
 -Nigel Horne
