@@ -46,35 +46,6 @@
 + #endif
 + 
   #endif
-*** /home/njh/src/clamav-devel/trunk/./clamscan/others.c	2007-06-14 11:04:12.000000000 +0100
---- ./clamscan/others.c	2007-09-19 14:49:26.000000000 +0100
-***************
-*** 138,149 ****
-  #else
-  	flags = REG_EXTENDED | REG_ICASE; /* case insensitive on Windows */
-  #endif	
-! 	if(regcomp(&reg, pattern, flags) != 0) {
-  	    logg("!%s: Could not parse regular expression %s.\n", filename, pattern);
-  		return 2;
-  	}
-! 	match = (regexec(&reg, filename, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
-! 	regfree(&reg);
-  	return match;
-  #else /* HAVE_REGEX_H */
-  	return strstr(filename, pattern) ? 1 : 0;
---- 138,149 ----
-  #else
-  	flags = REG_EXTENDED | REG_ICASE; /* case insensitive on Windows */
-  #endif	
-! 	if(cli_regcomp(&reg, pattern, flags) != 0) {
-  	    logg("!%s: Could not parse regular expression %s.\n", filename, pattern);
-  		return 2;
-  	}
-! 	match = (cli_regexec(&reg, filename, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
-! 	cli_regfree(&reg);
-  	return match;
-  #else /* HAVE_REGEX_H */
-  	return strstr(filename, pattern) ? 1 : 0;
 *** /home/njh/src/clamav-devel/trunk/./freshclam/manager.c	2007-08-20 19:24:20.000000000 +0100
 --- ./freshclam/manager.c	2007-08-20 19:25:06.000000000 +0100
 ***************
@@ -129,7 +100,7 @@
   }
   
 *** /home/njh/src/clamav-devel/trunk/./clamd/scanner.c	2007-09-02 12:37:44.000000000 +0100
---- ./clamd/scanner.c	2007-09-07 17:14:32.000000000 +0100
+--- ./clamd/scanner.c	2007-09-25 13:59:25.000000000 +0100
 ***************
 *** 475,487 ****
       if(!bound && !portscan) {
@@ -197,22 +168,18 @@
   	logg("!ScanStream %u: accept() failed.\n", port);
   	return -1;
 ***************
-*** 508,517 ****
+*** 510,517 ****
   
-      logg("*Accepted connection on port %u, fd %d\n", port, acceptd);
-  
-!     if(cli_gentempfd(NULL, &tmpname, &tmpd)) {
+      if(cli_gentempfd(NULL, &tmpname, &tmpd)) {
   	shutdown(sockfd, 2);
 ! 	close(sockfd);
 ! 	close(acceptd);
   	mdprintf(odesc, "cli_gentempfd() failed. ERROR\n");
   	logg("!ScanStream %u: Can't create temporary file.\n", port);
   	return -1;
---- 508,517 ----
+--- 510,517 ----
   
-      logg("*Accepted connection on port %u, fd %d\n", port, acceptd);
-  
-!     if (cli_gentempfd(NULL, &tmpname, &tmpd)) {
+      if(cli_gentempfd(NULL, &tmpname, &tmpd)) {
   	shutdown(sockfd, 2);
 ! 	closesocket(sockfd);
 ! 	closesocket(acceptd);
