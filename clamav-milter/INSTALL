@@ -178,7 +178,7 @@ You should have received a script to install into /etc/rc.d as /etc/rc.d/clamav
 with this software. Add to /etc/rc.conf:
 	clamd_enable="YES"
 	clamav_milter_enable="YES"
-	clamav_milter_flags="--max-children=2 --dont-wait --timeout=0 -P local:/var/run/clamav/clamav.sock --pidfile=/var/run/clamav/clamav-milter.pid --quarantine-dir=/var/run/clamav/quarantine"
+	clamav_milter_flags="--max-children=2 --dont-wait --timeout=0 -P local:/var/run/clamav/clmilter.sock --pidfile=/var/run/clamav/clamav-milter.pid --quarantine-dir=/var/run/clamav/quarantine"
 
 2.4 Solaris 10
 
@@ -202,6 +202,16 @@ You should have received a script to install into /etc/init.d as
 	/etc/init.d/clamav-milter start
 	/etc/init.d/sendmail restart
 
+2.5 OpenBSD4.1:
+
+OpenBSD4.1 should install out of the box.
+Edit <your .mc file>, or if you have none: cd into /usr/share/sendmail/cf,
+copy openbsd-proto.mc custom.mc, edit custom.mc adding:
+	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clamav-milter, F=, T=S:4m;R:4m')dnl
+Then run
+	m4 ../m4/cf.m4 custom.mc >/etc/mail/localhost.cf
+and finally restart sendmail by sending it a SIGHUP
+
 2.6 General Installation Issues
 
 You may find INPUT_MAIL_FILTERS is not needed on your machine, however it
@@ -216,7 +226,7 @@ ps and check your logs.
 The above example shows clamav-milter, clamd and sendmail all on the
 same machine, however using TCP they may reside on different machines,
 indeed clamav-milter is capable of talking to multiple clamds for redundancy
-and load balancing.
+and load balancing. An alternative load balancer is PEN (http://siag.nu/pen/).
 
 I suggest putting SpamAssassin first since you're more likely to get spam
 than a virus/worm sent to you.
@@ -412,12 +422,12 @@ suspect it should be a real copy.
 	chown clamav:clamav null
 
 In sendmail.mc:
-INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav-root/var/run/clamav/clamav.sock, F=T, T=S:4m;R:4m;C:30s;E:10m')dnl
+INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav-root/var/run/clamav/clmilter.sock, F=T, T=S:4m;R:4m;C:30s;E:10m')dnl
 
-When starting clamav-milter use options such as (notice that the localation
-of clamav.sock is different in sendmail.mc than the location clamav-milter
+When starting clamav-milter use options such as (notice that the location
+of clmilter.sock is different in sendmail.mc than the location clamav-milter
 expects to see it)
-	--chroot=/var/run/clamav-root --max-children=3 -P --pidfile=/var/run/clamav/clamav-milter.pid --blacklist=60 --black-hole-mode local:/var/run/clamav/clamav.sock
+	--chroot=/var/run/clamav-root --max-children=3 -P --pidfile=/var/run/clamav/clamav-milter.pid --blacklist=60 --black-hole-mode local:/var/run/clamav/clmilter.sock
 
 You may need to modify your shutdown script to look for clamav-milter.pid
 in /var/run/clamav-root/var/run/clamav/clamav-milter.pid
