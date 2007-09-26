@@ -331,6 +331,14 @@ void cli_ac_free(struct cli_matcher *root)
 
 #define AC_MATCH_CHAR(p,b)						\
     switch(wc = p & CLI_MATCH_WILDCARD) {				\
+	case CLI_MATCH_CHAR:						\
+	    if((unsigned char) p != b)					\
+		return 0;						\
+	    break;							\
+									\
+	case CLI_MATCH_IGNORE:						\
+	    break;							\
+									\
 	case CLI_MATCH_ALTERNATIVE:					\
 	    found = 0;							\
 	    for(j = 0; j < pattern->altn[alt]; j++) {			\
@@ -355,8 +363,8 @@ void cli_ac_free(struct cli_matcher *root)
 	    break;							\
 									\
 	default:							\
-	    if(wc != CLI_MATCH_IGNORE && (unsigned char) p != b)	\
-		return 0;						\
+	    cli_errmsg("ac_findmatch: Unknown wildcard 0x%x\n", wc);	\
+	    return 0;							\
     }
 
 inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uint32_t length, const struct cli_ac_patt *pattern)

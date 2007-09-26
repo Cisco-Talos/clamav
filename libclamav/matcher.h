@@ -32,6 +32,7 @@
 #include "matcher-bm.h"
 
 #define CLI_MATCH_WILDCARD	0xff00
+#define CLI_MATCH_CHAR		0x0000
 #define CLI_MATCH_IGNORE	0x0100
 #define CLI_MATCH_ALTERNATIVE	0x0200
 #define CLI_MATCH_NIBBLE_HIGH	0x0300
