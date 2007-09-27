@@ -265,6 +265,7 @@ static void url_check_init(struct url_check* urls)
 	urls->displayLink.refcount=0;
 	urls->displayLink.data=empty_string;
 	urls->displayLink.ref=NULL;
+	urls->pre_fixup.host_start = urls->pre_fixup.host_end = 0;
 }
 
 /* string reference counting implementation,
@@ -375,13 +376,13 @@ static int build_regex(regex_t* preg,const char* regex,int nosub)
 }
 
 /* allocates memory */
-static int get_host(const struct phishcheck* s,struct string* dest,const char* URL,int isReal,int* phishy)
+static int get_host(const struct phishcheck* s,const char* URL,int isReal,int* phishy,const char **hstart, const char **hend)
 {
 	int rc,ismailto = 0;
 	const char* start;
 	const char* end=NULL;
 	if(!URL) {
-		string_assign_null(dest);
+		*hstart=*hend=NULL;
 		return 0;
 	}
 	start = strstr(URL,"://");
@@ -438,9 +439,8 @@ static int get_host(const struct phishcheck* s,struct string* dest,const char* U
 		if(!end)
 			end  = start + strlen(start);
 	}
-
-	if(( rc = string_assign_dup(dest,start,end) ))
-		return rc;
+	*hstart = start;
+	*hend = end;
 	return 0;
 }
 
@@ -681,7 +681,7 @@ str_fixup_spaces(char **begin, const char **end)
 
 /* allocates memory */
 static int
-cleanupURL(struct string *URL, int isReal)
+cleanupURL(struct string *URL,struct string *pre_URL, int isReal)
 {
 	char *begin = URL->data;
 	const char *end;
@@ -697,6 +697,7 @@ cleanupURL(struct string *URL, int isReal)
 	len = strlen(begin);
 	if(len == 0) {
 		string_assign_null(URL);
+		string_assign_null(pre_URL);
 		return 0;
 	}
 
@@ -704,14 +705,17 @@ cleanupURL(struct string *URL, int isReal)
 	/*cli_dbgmsg("%d %d\n", end-begin, len);*/
 	if(begin >= end) {
 		string_assign_null(URL);
+		string_assign_null(pre_URL);
 		return 0;
 	}
 	while(isspace(*end))
 		end--;
 	/*TODO: convert \ to /, and stuff like that*/
 	/* From mailscanner, my comments enclosed in {} */
-	if(!strncmp(begin,dotnet,dotnet_len) || !strncmp(begin,adonet,adonet_len) || !strncmp(begin,aspnet,aspnet_len))
+	if(!strncmp(begin,dotnet,dotnet_len) || !strncmp(begin,adonet,adonet_len) || !strncmp(begin,aspnet,aspnet_len)) {
 		string_assign_null(URL);
+		string_assign_null(pre_URL);
+	}
 	else {
 		size_t host_len;
 		char* host_begin;
@@ -734,9 +738,19 @@ cleanupURL(struct string *URL, int isReal)
 		str_make_lowercase(host_begin,host_len);
 		/* convert %xx to real value */
 		str_hex_to_char(&begin,&end);
-		str_fixup_spaces(&begin,&end);
-		if (( rc = string_assign_dup(URL,begin,end+1) ))
+		/* trim space */
+		while((begin <= end) && (begin[0]==' '))  begin++;
+		while((begin <= end) && (end[0]==' ')) end--;
+		if (( rc = string_assign_dup(isReal ? URL : pre_URL,begin,end+1) )) {
+			string_assign_null(URL);
 			return rc;
+		}
+		if(!isReal) {
+			str_fixup_spaces(&begin,&end);
+			if (( rc = string_assign_dup(URL,begin,end+1) )) {
+				return rc;
+			}
+		}
 		/*cli_dbgmsg("%p::%s\n",URL->data,URL->data);*/
 	}
 	return 0;
@@ -987,8 +1001,8 @@ static int isNumericURL(const struct phishcheck* pchk,const char* URL)
 static enum phish_status cleanupURLs(struct url_check* urls)
 {
 	if(urls->flags&CLEANUP_URL) {
-		cleanupURL(&urls->realLink,1);
-		cleanupURL(&urls->displayLink,0);
+		cleanupURL(&urls->realLink,NULL,1);
+		cleanupURL(&urls->displayLink,&urls->pre_fixup.pre_displayLink,0);
 		if(!urls->displayLink.data || !urls->realLink.data)
 			return CL_PHISH_NODECISION;
 		if(!strcmp(urls->realLink.data,urls->displayLink.data))
@@ -999,8 +1013,24 @@ static enum phish_status cleanupURLs(struct url_check* urls)
 
 static int url_get_host(const struct phishcheck* pchk, struct url_check* url,struct url_check* host_url,int isReal,int* phishy)
 {
+	const char *start, *end;
 	struct string* host = isReal ? &host_url->realLink : &host_url->displayLink;
-	get_host(pchk, host, isReal ? url->realLink.data : url->displayLink.data, isReal, phishy);
+	const char* URL = isReal ? url->realLink.data : url->displayLink.data;
+	int rc;
+	if ((rc = get_host(pchk, URL, isReal, phishy, &start, &end))) {
+		return rc;
+	}
+	if(!start || !end) {
+		string_assign_null(host);
+	}
+	else {
+		if(( rc = string_assign_dup(host,start,end) ))
+			return rc;
+	}
+	if(!isReal) {
+		url->pre_fixup.host_start = start - URL;
+		url->pre_fixup.host_end = end - URL;
+	}
 	if(!host->data)
 		return CL_PHISH_CLEANUP_OK;
 	if(*phishy&REAL_IS_MAILTO)
@@ -1113,7 +1143,7 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 	if(whitelist_check(engine,urls,0))
 		return CL_PHISH_WHITELISTED;/* if url is whitelist don't perform further checks */
 
-	if(urls->flags&DOMAINLIST_REQUIRED && domainlist_match(engine,urls->realLink.data,urls->displayLink.data,0,&urls->flags))
+	if(urls->flags&DOMAINLIST_REQUIRED && domainlist_match(engine,urls->realLink.data,urls->displayLink.data,NULL,0,&urls->flags))
 		phishy |= DOMAIN_LISTED;
 	else {
 		/* although entire url is not listed, the host might be,
@@ -1133,7 +1163,7 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 
 	if(urls->flags&DOMAINLIST_REQUIRED) {
 		if(!(phishy&DOMAIN_LISTED)) {
-			if(domainlist_match(engine,host_url.displayLink.data,host_url.realLink.data,1,&urls->flags))
+			if(domainlist_match(engine,host_url.displayLink.data,host_url.realLink.data,&urls->pre_fixup,1,&urls->flags))
 				phishy |= DOMAIN_LISTED;
 			else {
 			}

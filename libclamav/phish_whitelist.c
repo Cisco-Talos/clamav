@@ -48,7 +48,7 @@ int whitelist_match(const struct cl_engine* engine,const char* real_url,const ch
 {
 	const char* info;/*unused*/
 	cli_dbgmsg("Phishing: looking up in whitelist: %s:%s; host-only:%d\n",real_url,display_url,hostOnly);
-	return	engine->whitelist_matcher ? regex_list_match(engine->whitelist_matcher,real_url,display_url,hostOnly,&info,1) : 0;
+	return	engine->whitelist_matcher ? regex_list_match(engine->whitelist_matcher,real_url,display_url,NULL,hostOnly,&info,1) : 0;
 }
 
 int init_whitelist(struct cl_engine* engine)

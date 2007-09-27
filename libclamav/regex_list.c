@@ -61,7 +61,6 @@
 #include "matcher-ac.h"
 #include "str.h"
 
-
 /*Tree*/
 enum token_op_t {OP_CHAR,OP_STDCLASS,OP_CUSTOMCLASS,OP_DOT,OP_LEAF,OP_ROOT,OP_PARCLOSE};
 typedef unsigned char* char_bitmap_p;
@@ -221,6 +220,20 @@ static void fatal_error(struct regex_matcher* matcher)
 }
 
 
+static inline size_t get_char_at_pos_with_skip(const struct pre_fixup_info* info, const char* buffer, size_t pos)
+{
+	size_t realpos=info->host_start;
+	if(!info) {
+		return buffer[pos];
+	}
+	for(++pos; pos>0; pos--) {
+		while(!isalnum(info->pre_displayLink.data[realpos])) realpos++;
+		realpos++;
+	}
+	cli_dbgmsg("calc_pos_with_skip:%s\n",info->pre_displayLink.data+realpos);	
+	return info->pre_displayLink.data[realpos];
+}
+
 /*
  * @matcher - matcher structure to use
  * @real_url - href target
@@ -234,7 +247,7 @@ static void fatal_error(struct regex_matcher* matcher)
  * Do not send NULL pointers to this function!!
  *
  */
-int regex_list_match(struct regex_matcher* matcher,const char* real_url,const char* display_url,int hostOnly,const char** info,int is_whitelist)
+int regex_list_match(struct regex_matcher* matcher,const char* real_url,const char* display_url,const struct pre_fixup_info* pre_fixup,int hostOnly,const char** info,int is_whitelist)
 {
 	massert(matcher);
 	massert(real_url);
@@ -275,17 +288,18 @@ int regex_list_match(struct regex_matcher* matcher,const char* real_url,const ch
 				rc = cli_ac_scanbuff((unsigned char*)buffer,buffer_len+1,info, &matcher->root_hosts[i] ,&mdata,0,0,0,-1,NULL);
 				cli_ac_freedata(&mdata);
 				if(rc) {
+					char c;
 					const char* matched = strchr(*info,':');	
 					const size_t match_len = matched ? strlen(matched+1) : 0;
 					if(match_len == buffer_len || /* full match */
 					        (match_len < buffer_len &&
-						buffer[buffer_len-match_len-1]=='.') 
+						((c=get_char_at_pos_with_skip(pre_fixup,buffer,buffer_len-match_len-1))=='.' || (c==' ')) ) 
 						/* subdomain matched*/) {
 
 						cli_dbgmsg("Got a match: %s with %s\n",buffer,*info);
 						break;
 					}
-					cli_dbgmsg("Ignoring false match: %s with %s\n",buffer,*info);
+					cli_dbgmsg("Ignoring false match: %s with %s,%c\n",buffer,*info,c);
 					rc=0;
 				}
 			}

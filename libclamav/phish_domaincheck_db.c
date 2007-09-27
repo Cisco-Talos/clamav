@@ -40,13 +40,14 @@
 
 #include "clamav.h"
 #include "others.h"
+#include "phishcheck.h"
 #include "phish_domaincheck_db.h"
 #include "regex_list.h"
 
-int domainlist_match(const struct cl_engine* engine,const char* real_url,const char* display_url,int hostOnly,unsigned short* flags)
+int domainlist_match(const struct cl_engine* engine,const char* real_url,const char* display_url,const struct pre_fixup_info* pre_fixup,int hostOnly,unsigned short* flags)
 {
 	const char* info;
-	int rc = engine->domainlist_matcher ? regex_list_match(engine->domainlist_matcher,real_url,display_url,hostOnly,&info,0) : 0;
+	int rc = engine->domainlist_matcher ? regex_list_match(engine->domainlist_matcher,real_url,display_url,hostOnly ? pre_fixup : NULL,hostOnly,&info,0) : 0;
 	if(rc && info && info[0] && info[0] != ':') {/*match successful, and has custom flags*/
 		if(strlen(info)==3 && isxdigit(info[0]) && isxdigit(info[1]) && isxdigit(info[2])) {
 			unsigned short notwantedflags=0;

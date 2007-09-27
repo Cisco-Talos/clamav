@@ -64,9 +64,17 @@ struct phishcheck {
 	int      is_disabled;
 };
 
+struct pre_fixup_info {
+	/* pre_* url before fixup_spaces */
+	struct string pre_displayLink;
+	size_t host_start;
+	size_t host_end;
+};
+
 struct url_check {
 	struct string realLink;
 	struct string displayLink;
+	struct pre_fixup_info pre_fixup;
 	unsigned short       flags;
 	unsigned short always_check_flags;
 	unsigned short       link_type;
