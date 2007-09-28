@@ -1,3 +1,14 @@
+Fri Sep 28 20:17:41 EEST 2007 (edwin)
+-------------------------------------
+  * libclamav/phishcheck.c: fix NULL deref. bug, use of uninitialized
+  variable, and memory leak from yesterday's commit. (r3255)
+  * Changelog: add log message for r3254 from svn log, forgot to update
+  Changelog yesterday (oops)
+  * libclamav/phish*.[ch], regex_list.[ch]: more improvements to the url extraction algorithm (more to come later).
+					    Reduces false negatives. False
+					    positives ratio should be same.
+					    (r3254)
+
 Wed Sep 26 23:36:06 CEST 2007 (tk)
 ----------------------------------
   * libclamav/matcher-ac.c: minor optimisation

@@ -259,13 +259,9 @@ static const char* phishing_ret_toString(enum phish_status rc);
 
 static void url_check_init(struct url_check* urls)
 {
-	urls->realLink.refcount=0;
-	urls->realLink.data=empty_string;
-	urls->realLink.ref=NULL;
-	urls->displayLink.refcount=0;
-	urls->displayLink.data=empty_string;
-	urls->displayLink.ref=NULL;
-	urls->pre_fixup.host_start = urls->pre_fixup.host_end = 0;
+	string_init_c(&urls->realLink, NULL);
+	string_init_c(&urls->displayLink, NULL);
+	string_init_c(&urls->pre_fixup.pre_displayLink, NULL);
 }
 
 /* string reference counting implementation,
@@ -305,7 +301,7 @@ static void string_assign(struct string* dest,struct string* src)
  * */
 static void string_init_c(struct string* dest,char* data)
 {
-	dest->refcount = 1;
+	dest->refcount = data ? 1 : 0;
 	dest->data = data ? data : empty_string;
 	dest->ref = NULL;
 }
@@ -328,10 +324,12 @@ static int string_assign_dup(struct string* dest,const char* start,const char* e
 
 static void string_assign_null(struct string* dest)
 {
-	string_free(dest);
-	dest->data=empty_string;
-	dest->refcount=-1;/* don't free it! */
-	dest->ref=NULL;
+	if(dest) {
+		string_free(dest);
+		dest->data=empty_string;
+		dest->refcount=-1;/* don't free it! */
+		dest->ref=NULL;
+	}
 }
 
 /* this string uses portion of another string*/
@@ -348,6 +346,7 @@ static void free_if_needed(struct url_check* url)
 {
 	string_free(&url->realLink);
 	string_free(&url->displayLink);
+	string_free(&url->pre_fixup.pre_displayLink);
 }
 
 static int build_regex(regex_t* preg,const char* regex,int nosub)
@@ -686,7 +685,7 @@ cleanupURL(struct string *URL,struct string *pre_URL, int isReal)
 	char *begin = URL->data;
 	const char *end;
 	size_t len;
-
+	
 	clear_msb(begin);
 	/*if(begin == NULL)
 		return;*/
@@ -797,11 +796,12 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 			}
 			string_init_c(&urls.realLink,(char*)hrefs->value[i]);
 			string_init_c(&urls.displayLink,(char*)blobGetData(hrefs->contents[i]));
-
+			string_init_c(&urls.pre_fixup.pre_displayLink, NULL);
 			if (urls.displayLink.data[blobGetDataSize(hrefs->contents[i])-1]) {
 				cli_warnmsg("urls.displayLink.data[...]");
 				return CL_CLEAN;
 			}
+
 			urls.realLink.refcount=-1;
 			urls.displayLink.refcount=-1;/*don't free these, caller will free*/
 			if(strcmp((char*)hrefs->tag[i],"href")) {
