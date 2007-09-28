@@ -1027,6 +1027,7 @@ static int url_get_host(const struct phishcheck* pchk, struct url_check* url,str
 		if(( rc = string_assign_dup(host,start,end) ))
 			return rc;
 	}
+	cli_dbgmsg("Phishcheck:host:%s\n", host->data);
 	if(!isReal) {
 		url->pre_fixup.host_start = start - URL;
 		url->pre_fixup.host_end = end - URL;

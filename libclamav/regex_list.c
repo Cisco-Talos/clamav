@@ -222,16 +222,20 @@ static void fatal_error(struct regex_matcher* matcher)
 
 static inline size_t get_char_at_pos_with_skip(const struct pre_fixup_info* info, const char* buffer, size_t pos)
 {
-	size_t realpos=info->host_start;
+	size_t realpos = 0;
 	if(!info) {
 		return buffer[pos];
 	}
-	for(++pos; pos>0; pos--) {
-		while(!isalnum(info->pre_displayLink.data[realpos])) realpos++;
+	cli_dbgmsg("calc_pos_with_skip: skip:%u, %u - %u \"%s\",\"%s\"\n",pos,info->host_start,info->host_end,info->pre_displayLink.data,buffer);
+	pos += info->host_start;
+	while(!isalnum(info->pre_displayLink.data[realpos])) realpos++;
+	for(; pos>0; pos--) {
+		while(info->pre_displayLink.data[realpos]==' ') realpos++;
 		realpos++;
 	}
+	while(info->pre_displayLink.data[realpos]==' ') realpos++;
 	cli_dbgmsg("calc_pos_with_skip:%s\n",info->pre_displayLink.data+realpos);	
-	return info->pre_displayLink.data[realpos];
+	return info->pre_displayLink.data[realpos>0?realpos-1:0];
 }
 
 /*
@@ -293,7 +297,7 @@ int regex_list_match(struct regex_matcher* matcher,const char* real_url,const ch
 					const size_t match_len = matched ? strlen(matched+1) : 0;
 					if(match_len == buffer_len || /* full match */
 					        (match_len < buffer_len &&
-						((c=get_char_at_pos_with_skip(pre_fixup,buffer,buffer_len-match_len-1))=='.' || (c==' ')) ) 
+						((c=get_char_at_pos_with_skip(pre_fixup,buffer,buffer_len-match_len))=='.' || (c==' ')) ) 
 						/* subdomain matched*/) {
 
 						cli_dbgmsg("Got a match: %s with %s\n",buffer,*info);
