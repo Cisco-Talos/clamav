@@ -151,8 +151,9 @@ static const char cctld_regex[] = "^"iana_cctld"$";
 static const char dotnet[] = ".net";
 static const char adonet[] = "ado.net";
 static const char aspnet[] = "asp.net";
-static const char lt[]="&lt;";
-static const char gt[]="&gt;";
+/* ; is replaced by ' ' so omit it here*/
+static const char lt[]="&lt";
+static const char gt[]="&gt";
 static const char cid[] = "cid:";
 static const char src_text[] = "src";
 static const char href_text[] = "href";
@@ -723,9 +724,10 @@ cleanupURL(struct string *URL,struct string *pre_URL, int isReal)
 		str_replace(begin,end,'\\','/');
 		/* some broken MUAs put > in the href, and then
 		 * we get a false positive, so remove them */
-		str_replace(begin,end,'<','/');
-		str_replace(begin,end,'>','/');
-		str_strip(&begin,&end,"\"",1);
+		str_replace(begin,end,'<',' ');
+		str_replace(begin,end,'>',' ');
+		str_replace(begin,end,'\"',' ');
+		str_replace(begin,end,';',' ');
 		str_strip(&begin,&end,lt,lt_len);
 		str_strip(&begin,&end,gt,gt_len);
 		/* convert hostname to lowercase, but only hostname! */

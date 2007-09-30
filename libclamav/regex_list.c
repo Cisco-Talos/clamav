@@ -222,20 +222,22 @@ static void fatal_error(struct regex_matcher* matcher)
 
 static inline size_t get_char_at_pos_with_skip(const struct pre_fixup_info* info, const char* buffer, size_t pos)
 {
+	const char* str;
 	size_t realpos = 0;
 	if(!info) {
-		return buffer[pos];
+		return (pos <= strlen(buffer)) ? buffer[pos>0 ? pos-1:0] : '\0';
 	}
-	cli_dbgmsg("calc_pos_with_skip: skip:%u, %u - %u \"%s\",\"%s\"\n",pos,info->host_start,info->host_end,info->pre_displayLink.data,buffer);
+	str = info->pre_displayLink.data;
+	cli_dbgmsg("calc_pos_with_skip: skip:%u, %u - %u \"%s\",\"%s\"\n", pos, info->host_start, info->host_end, str, buffer);
 	pos += info->host_start;
-	while(!isalnum(info->pre_displayLink.data[realpos])) realpos++;
-	for(; pos>0; pos--) {
-		while(info->pre_displayLink.data[realpos]==' ') realpos++;
+	while(str[realpos] && !isalnum(str[realpos])) realpos++;
+	for(; str[realpos] && (pos>0); pos--) {
+		while(str[realpos]==' ') realpos++;
 		realpos++;
 	}
-	while(info->pre_displayLink.data[realpos]==' ') realpos++;
-	cli_dbgmsg("calc_pos_with_skip:%s\n",info->pre_displayLink.data+realpos);	
-	return info->pre_displayLink.data[realpos>0?realpos-1:0];
+	while(str[realpos]==' ') realpos++;
+	cli_dbgmsg("calc_pos_with_skip:%s\n",str+realpos);	
+	return (pos>0 && !str[realpos]) ? '\0' : str[realpos>0?realpos-1:0];
 }
 
 /*
@@ -288,17 +290,18 @@ int regex_list_match(struct regex_matcher* matcher,const char* real_url,const ch
 			rc = 0;
 
 			for(i = 0; i < matcher->root_hosts_cnt; i++) {
-				/* needs to match terminating \0 too */
-				rc = cli_ac_scanbuff((unsigned char*)buffer,buffer_len+1,info, &matcher->root_hosts[i] ,&mdata,0,0,0,-1,NULL);
+				/* doesn't need to match terminating \0*/
+				rc = cli_ac_scanbuff((unsigned char*)buffer,buffer_len,info, &matcher->root_hosts[i] ,&mdata,0,0,0,-1,NULL);
 				cli_ac_freedata(&mdata);
 				if(rc) {
 					char c;
 					const char* matched = strchr(*info,':');	
 					const size_t match_len = matched ? strlen(matched+1) : 0;
-					if(match_len == buffer_len || /* full match */
+					if(((c=get_char_at_pos_with_skip(pre_fixup,buffer,buffer_len+1))==' ' || c=='\0' || c=='/' || c=='?') &&
+						(match_len == buffer_len || /* full match */
 					        (match_len < buffer_len &&
 						((c=get_char_at_pos_with_skip(pre_fixup,buffer,buffer_len-match_len))=='.' || (c==' ')) ) 
-						/* subdomain matched*/) {
+						/* subdomain matched*/)) {
 
 						cli_dbgmsg("Got a match: %s with %s\n",buffer,*info);
 						break;
@@ -427,9 +430,8 @@ static int add_regex_list_element(struct cli_matcher* root,const char* pattern,c
        massert(root);
        massert(pattern);
 
-       len = strlen(pattern)+1;
-       /* need to match \0 too, so we are sure
-	* matches only happen at end of string */
+       len = strlen(pattern);
+       /* need not to match \0 too */
        new->type = 0;
        new->sigid = 0;
        new->parts = 0;
