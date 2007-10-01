@@ -4005,8 +4005,8 @@ do_checkURLs(const char *dir, tag_arguments_t *hrefs)
 	 * downloaded and scanned
 	 */
 	for(i = FOLLOWURLS; (i < hrefs->count) && (n < FOLLOWURLS); i++) {
-		const char *url = (const char *)hrefs->value[i];
-		const char *ptr;
+		char *url = (char *)hrefs->value[i];
+		char *ptr;
 
 		if(strncasecmp("http://", url, 7) != 0)
 			continue;
@@ -4017,9 +4017,9 @@ do_checkURLs(const char *dir, tag_arguments_t *hrefs)
 		if(strcasecmp(ptr, ".exe") == 0) {
 			/* FIXME: Could be swapping with another .exe */
 			cli_dbgmsg("swap %s %s\n", hrefs->value[n], hrefs->value[i]);
-			ptr = hrefs->value[n];
-			hrefs->value[n++] = url;
-			hrefs->value[i] = ptr;
+			ptr = (char *)hrefs->value[n];
+			hrefs->value[n++] = (unsigned char *)url;
+			hrefs->value[i] = (unsigned char *)ptr;
 		}
 	}
 
@@ -4643,21 +4643,25 @@ print_trace(int use_syslog)
 	size_t i;
 	pid_t pid = getpid();
 
+	cli_errmsg("Segmentation fault, attempting to print backtrace\n");
+
 	size = backtrace(array, 10);
 	strings = backtrace_symbols(array, size);
 
-	if(use_syslog == 0)
-		cli_dbgmsg("Backtrace of pid %d:\n", pid);
-	else
+	cli_errmsg("Backtrace of pid %d:\n", pid);
+	if(use_syslog)
 		syslog(LOG_ERR, "Backtrace of pid %d:", pid);
 
-	for(i = 0; i < size; i++)
+	for(i = 0; i < size; i++) {
+		cli_errmsg("%s\n", strings[i]);
 		if(use_syslog)
 			syslog(LOG_ERR, "bt[%u]: %s", i, strings[i]);
-		else
-			cli_dbgmsg("%s\n", strings[i]);
+	}
 
-	/* TODO: dump the current email */
+#ifdef	SAVE_TMP
+	cli_errmsg("The errant mail file has been saved\n");
+#endif
+	/* #else TODO: dump the current email */
 
 	free(strings);
 }
@@ -4768,6 +4772,8 @@ isBounceStart(const char *line)
 	if((memcmp(line, "From ", 5) == 0) ||
 	   (memcmp(line, ">From ", 6) == 0)) {
 		int numSpaces = 0, numDigits = 0;
+
+		line += 4;
 
 		do
 			if(*line == ' ')

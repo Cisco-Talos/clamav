@@ -1,3 +1,9 @@
+Mon Oct  1 10:52:13 BST 2007 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Increase the chance of a stack trace being printed in
+				the event of trouble.
+			Various compiler warnings removed.
+
 Sun Sep 30 23:18:11 EEST 2007 (edwin)
 -------------------------------------
   * libclamav/phishcheck.c, regex_list.c: more improvements to the algorithm.
@@ -24,12 +30,12 @@ Wed Sep 26 23:36:06 CEST 2007 (tk)
 Tue Sep 25 10:43:35 BST 2007 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Only use strcasestr on Linux (for now, until it
-  				can be built into configure)
+				can be built into configure)
 
 Sun Sep 23 13:49:12 BST 2007 (njh)
 ----------------------------------
   * libclamav/mbox.c:	MailFollowURLS: Prefer .exes for download, catches
-  				Trojan.IRC-Script-33
+				Trojan.IRC-Script-33
 
 Sat Sep 22 18:14:49 EEST 2007 (edwin)
 -------------------------------------
@@ -43,7 +49,7 @@ Fri Sep 21 18:40:56 EEST 2007 (edwin)
 Fri Sep 21 00:33:37 CEST 2007 (acab)
 ------------------------------------
   * libclamav/pe.c: Avoid variadic macroes make vc6 happy. Big thx to
-  			Gianluigi Tiesi for reporting and testing.
+			Gianluigi Tiesi for reporting and testing.
 
 Fri Sep 21 00:18:08 EEST 2007(edwin)
 ------------------------------------
