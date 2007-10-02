@@ -1,3 +1,7 @@
+Tue Oct  2 21:29:03 EEST 2007 (edwin)
+-------------------------------------
+  * libclamav/phishcheck.[ch]: avoid false positives with outbind:// URLs
+
 Mon Oct  1 14:05:35 BST 2007 (njh)
 ----------------------------------
   * clamav-milter:	More informative message when SPF record is passed

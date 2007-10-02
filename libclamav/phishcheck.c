@@ -117,8 +117,6 @@ Checks if realLink is http, but displayedLink is https or viceversa.
 
 10. Hostname of real URL is extracted.
 
-11. Skip cid: displayedLink urls (images embedded in mails).
-
 12. Numeric IP detection.
 If url is a numeric IP, then -> phish.
 Maybe we should do DNS lookup?
@@ -154,7 +152,6 @@ static const char aspnet[] = "asp.net";
 /* ; is replaced by ' ' so omit it here*/
 static const char lt[]="&lt";
 static const char gt[]="&gt";
-static const char cid[] = "cid:";
 static const char src_text[] = "src";
 static const char href_text[] = "href";
 static const char mailto[] = "mailto:";
@@ -162,7 +159,6 @@ static const char https[]="https://";
 
 static const size_t href_text_len = sizeof(href_text);
 static const size_t src_text_len = sizeof(src_text);
-static const size_t cid_len = sizeof(cid)-1;
 static const size_t dotnet_len = sizeof(dotnet)-1;
 static const size_t adonet_len = sizeof(adonet)-1;
 static const size_t aspnet_len = sizeof(aspnet)-1;
@@ -223,7 +219,7 @@ static const size_t https_len  = sizeof(https)-1;
 #define URI_fragmentaddress2 URI_URI2
 #define URI_fragmentaddress3 URI_URI3"(#"URI_fragmentid")?"
 
-#define URI_CHECK_PROTOCOLS "(http|https|ftp)://.+"
+#define URI_CHECK_PROTOCOLS "(http|https|ftp|mailto)://.+"
 
 /*Warning: take care when modifying this regex, it has been tweaked, and tuned, just don't break it please.
  * there is fragmentaddress1, and 2  to work around the ISO limitation of 509 bytes max length for string constants*/
@@ -898,6 +894,7 @@ static void free_regex(regex_t* p)
 
 int phishing_init(struct cl_engine* engine)
 {
+	char *url_regex, *realurl_regex;
 	struct phishcheck* pchk;
 	if(!engine->phishcheck) {
 		pchk = engine->phishcheck = cli_malloc(sizeof(struct phishcheck));
@@ -934,20 +931,33 @@ int phishing_init(struct cl_engine* engine)
 		engine->phishcheck = NULL;
 		return CL_EFORMAT;	
 	}
-	pchk->url_regex = str_compose("^ *("URI_fragmentaddress1,URI_fragmentaddress2,URI_fragmentaddress3"|"URI_CHECK_PROTOCOLS") *$");
-	if(build_regex(&pchk->preg,pchk->url_regex,1)) {
+	url_regex = str_compose("^ *(("URI_CHECK_PROTOCOLS")|("URI_fragmentaddress1,URI_fragmentaddress2,URI_fragmentaddress3")) *$");
+	if(build_regex(&pchk->preg,url_regex,1)) {
 		free_regex(&pchk->preg_cctld);
 		free_regex(&pchk->preg_tld);
-		free(pchk->url_regex);
+		free(url_regex);
 		free(pchk);
 		engine->phishcheck = NULL;
 		return CL_EFORMAT;
 	}
+	free(url_regex);
+	realurl_regex = str_compose("^ *(("URI_CHECK_PROTOCOLS")|("URI_path1,URI_fragmentaddress2,URI_fragmentaddress3")) *$");
+	if(build_regex(&pchk->preg_realurl, realurl_regex,1)) {
+		free_regex(&pchk->preg_cctld);
+		free_regex(&pchk->preg_tld);
+		free_regex(&pchk->preg);
+		free(url_regex);
+		free(realurl_regex);
+		free(pchk);
+		engine->phishcheck = NULL;
+		return CL_EFORMAT;
+	}
+	free(realurl_regex);
 	if(build_regex(&pchk->preg_numeric,numeric_url_regex,1)) {
 		free_regex(&pchk->preg_cctld);
 		free_regex(&pchk->preg_tld);
 		free_regex(&pchk->preg);
-		free(pchk->url_regex);
+		free_regex(&pchk->preg_realurl);
 		free(pchk);
 		engine->phishcheck = NULL;
 		return CL_EFORMAT;
@@ -967,10 +977,7 @@ void phishing_done(struct cl_engine* engine)
 		free_regex(&pchk->preg_cctld);
 		free_regex(&pchk->preg_tld);
 		free_regex(&pchk->preg_numeric);
-		if(pchk->url_regex) {
-			free(pchk->url_regex);
-			pchk->url_regex = NULL;
-		}
+		free_regex(&pchk->preg_realurl);
 		pchk->is_disabled = 1;
 	}
 	whitelist_done(engine);
@@ -985,11 +992,19 @@ void phishing_done(struct cl_engine* engine)
 
 /*
  * Only those URLs are identified as URLs for which phishing detection can be performed.
- * This means that no attempt is made to properly recognize 'cid:' URLs
  */
 static int isURL(const struct phishcheck* pchk,const char* URL)
 {
 	return URL ? !cli_regexec(&pchk->preg,URL,0,NULL,0) : 0;
+}
+
+/*
+ * Check if this is a real URL, which basically means to check if it has a known URL scheme (http,https,ftp).
+ * This prevents false positives with outbind:// and blocked:: links.
+ */
+static int isRealURL(const struct phishcheck* pchk,const char* URL)
+{
+	return URL ? !cli_regexec(&pchk->preg_realurl,URL,0,NULL,0) : 0;
 }
 
 static int isNumericURL(const struct phishcheck* pchk,const char* URL)
@@ -1146,6 +1161,14 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 	if(whitelist_check(engine,urls,0))
 		return CL_PHISH_WHITELISTED;/* if url is whitelist don't perform further checks */
 
+	if((!isURL(pchk, urls->displayLink.data) || !isRealURL(pchk, urls->realLink.data) )&&
+			( (phishy&PHISHY_NUMERIC_IP && !isNumericURL(pchk, urls->displayLink.data)) ||
+			  !(phishy&PHISHY_NUMERIC_IP))) {
+		cli_dbgmsg("Displayed 'url' is not url:%s\n",urls->displayLink.data);
+		free_if_needed(&host_url);
+		return CL_PHISH_TEXTURL;
+	}
+
 	if(urls->flags&DOMAINLIST_REQUIRED && domainlist_match(engine,urls->realLink.data,urls->displayLink.data,NULL,0,&urls->flags))
 		phishy |= DOMAIN_LISTED;
 	else {
@@ -1226,23 +1249,11 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 		return CL_PHISH_HOST_NOT_LISTED;
 	}
 
-	if(!strncmp(urls->displayLink.data,cid,cid_len))/* cid: image */{
-		free_if_needed(&host_url);
-		return CL_PHISH_CLEAN_CID;
-	}
-
 	if(whitelist_check(engine,&host_url,1)) {
 		free_if_needed(&host_url);
 		return CL_PHISH_HOST_WHITELISTED;
 	}
 
-	if((!isURL(pchk, urls->displayLink.data) || !isURL(pchk, urls->realLink.data) )&&
-			( (phishy&PHISHY_NUMERIC_IP && !isNumericURL(pchk, urls->displayLink.data)) ||
-			  !(phishy&PHISHY_NUMERIC_IP))) {
-		cli_dbgmsg("Displayed 'url' is not url:%s\n",urls->displayLink.data);
-		free_if_needed(&host_url);
-		return CL_PHISH_TEXTURL;
-	}
 
 	if(urls->flags&HOST_SUFFICIENT) {
 		if(!strcmp(urls->realLink.data,urls->displayLink.data)) {
