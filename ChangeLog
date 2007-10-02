@@ -1,3 +1,7 @@
+Tue Oct  2 22:53:15 EEST 2007 (edwin)
+------------------------------------
+  * libclamav/phishcheck.c: remove incorrect free_if_needed call
+
 Tue Oct  2 21:29:03 EEST 2007 (edwin)
 -------------------------------------
   * libclamav/phishcheck.[ch]: avoid false positives with outbind:// URLs

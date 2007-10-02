@@ -1165,7 +1165,6 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 			( (phishy&PHISHY_NUMERIC_IP && !isNumericURL(pchk, urls->displayLink.data)) ||
 			  !(phishy&PHISHY_NUMERIC_IP))) {
 		cli_dbgmsg("Displayed 'url' is not url:%s\n",urls->displayLink.data);
-		free_if_needed(&host_url);
 		return CL_PHISH_TEXTURL;
 	}
 
