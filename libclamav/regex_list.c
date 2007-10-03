@@ -253,7 +253,7 @@ static inline size_t get_char_at_pos_with_skip(const struct pre_fixup_info* info
  * Do not send NULL pointers to this function!!
  *
  */
-int regex_list_match(struct regex_matcher* matcher,const char* real_url,const char* display_url,const struct pre_fixup_info* pre_fixup,int hostOnly,const char** info,int is_whitelist)
+int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* display_url,const struct pre_fixup_info* pre_fixup,int hostOnly,const char** info,int is_whitelist)
 {
 	massert(matcher);
 	massert(real_url);
@@ -304,6 +304,11 @@ int regex_list_match(struct regex_matcher* matcher,const char* real_url,const ch
 						/* subdomain matched*/)) {
 
 						cli_dbgmsg("Got a match: %s with %s\n",buffer,*info);
+						cli_dbgmsg("Before inserting .: %s\n",real_url);
+						if(real_len >= match_len + 1) {
+							real_url[real_len-match_len-1]='.';
+							cli_dbgmsg("After inserting .: %s\n",real_url);
+						}
 						break;
 					}
 					cli_dbgmsg("Ignoring false match: %s with %s,%c\n",buffer,*info,c);

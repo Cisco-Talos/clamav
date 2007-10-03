@@ -1,3 +1,8 @@
+Wed Oct  3 15:10:28 EEST 2007 (edwin)
+------------------------------------
+  * libclamav/regex_list.[ch]: avoid some false positives when there are
+  spaces in URL. 
+ 
 Wed Oct  3 01:48:26 CEST 2007 (tk)
 ----------------------------------
   * libclamav/matcher-ac.[ch]: - add basic support for string alternatives

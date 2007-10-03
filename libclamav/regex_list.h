@@ -52,7 +52,7 @@ struct regex_matcher {
 	struct node_stack node_stack_alt;
 };
 
-int regex_list_match(struct regex_matcher* matcher,const char* real_url,const char* display_url,const struct pre_fixup_info* pre_fixup, int hostOnly,const char** info,int is_whitelist);
+int regex_list_match(struct regex_matcher* matcher, char* real_url,const char* display_url,const struct pre_fixup_info* pre_fixup, int hostOnly,const char** info,int is_whitelist);
 int init_regex_list(struct regex_matcher* matcher);
 int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int options,int is_whitelist);
 void regex_list_cleanup(struct regex_matcher* matcher);
