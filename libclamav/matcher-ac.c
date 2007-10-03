@@ -40,6 +40,7 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 {
 	struct cli_ac_node *pt, *next, **newtable;
 	struct cli_ac_patt *ph;
+	struct cli_ac_alt *a1, *a2;
 	uint8_t i, match;
 	uint16_t len = MIN(root->ac_maxdepth, pattern->length);
 
@@ -125,9 +126,32 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 		} else if(ph->alt == pattern->alt) {
 		    match = 1;
 		    for(i = 0; i < ph->alt; i++) {
-			if((ph->altn[i] != pattern->altn[i]) || memcmp(ph->altc[i], pattern->altc[i], ph->altn[i])) {
+			a1 = ph->alttable[i];
+			a2 = pattern->alttable[i];
+
+			if(a1->num != a2->num) {
 			    match = 0;
 			    break;
+			}
+			if(a1->chmode != a2->chmode) {
+			    match = 0;
+			    break;
+			} else if(a1->chmode) {
+			    if(memcmp(a1->str, a2->str, a1->num)) {
+				match = 0;
+				break;
+			    }
+			} else {
+			    while(a1 && a2) {
+				if((a1->len != a2->len) || memcmp(a1->str, a2->str, a1->len))
+				    break;
+				a1 = a1->next;
+				a2 = a2->next;
+			    }
+			    if(a1 || a2) {
+				match = 0;
+				break;
+			    }
 			}
 		    }
 		} else {
@@ -155,7 +179,7 @@ struct bfs_list {
     struct bfs_list *next;
 };
 
-static int bfs_enqueue(struct bfs_list **bfs, struct cli_ac_node *n)
+static int bfs_enqueue(struct bfs_list **bfs, struct bfs_list **last, struct cli_ac_node *n)
 {
 	struct bfs_list *new;
 
@@ -165,42 +189,38 @@ static int bfs_enqueue(struct bfs_list **bfs, struct cli_ac_node *n)
 	cli_errmsg("bfs_enqueue: Can't allocate memory for bfs_list\n");
 	return CL_EMEM;
     }
-    new->next = *bfs;
+    new->next = NULL;
     new->node = n;
-    *bfs = new;
+
+    if(*last) {
+	(*last)->next = new;
+	*last = new;
+    } else {
+	*bfs = *last = new;
+    }
 
     return CL_SUCCESS;
 }
 
 static struct cli_ac_node *bfs_dequeue(struct bfs_list **bfs)
 {
-	struct bfs_list *lpt, *prev = NULL;
+	struct bfs_list *lpt;
 	struct cli_ac_node *pt;
 
 
-    lpt = *bfs;
-    while(lpt && lpt->next) {
-	prev = lpt;
-	lpt = lpt->next;
-    }
-
-    if(!lpt) {
+    if(!(lpt = *bfs)) {
 	return NULL;
     } else {
+	*bfs = (*bfs)->next;
 	pt = lpt->node;
 	free(lpt);
-	if(prev)
-	    prev->next = NULL;
-	else
-	    *bfs = NULL;
-
 	return pt;
     }
 }
 
 static int ac_maketrans(struct cli_matcher *root)
 {
-	struct bfs_list *bfs = NULL;
+	struct bfs_list *bfs = NULL, *bfs_last = NULL;
 	struct cli_ac_node *ac_root = root->ac_root, *child, *node, *fail;
 	struct cli_ac_patt *patt;
 	int i, ret;
@@ -212,7 +232,7 @@ static int ac_maketrans(struct cli_matcher *root)
 	    ac_root->trans[i] = ac_root;
 	} else {
 	    node->fail = ac_root;
-	    if((ret = bfs_enqueue(&bfs, node)))
+	    if((ret = bfs_enqueue(&bfs, &bfs_last, node)))
 		return ret;
 	}
     }
@@ -243,7 +263,7 @@ static int ac_maketrans(struct cli_matcher *root)
 		if(child->list)
 		    child->final = 1;
 
-		if((ret = bfs_enqueue(&bfs, child)) != 0)
+		if((ret = bfs_enqueue(&bfs, &bfs_last, child)) != 0)
 		    return ret;
 	    }
 	}
@@ -287,6 +307,28 @@ int cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth)
     return CL_SUCCESS;
 }
 
+static void ac_free_alt(struct cli_ac_patt *p)
+{
+	uint16_t i;
+	struct cli_ac_alt *a1, *a2;
+
+
+    if(!p->alt)
+	return;
+
+    for(i = 0; i < p->alt; i++) {
+	a1 = p->alttable[i];
+	while(a1) {
+	    a2 = a1;
+	    a1 = a1->next;
+	    if(a2->str)
+		free(a2->str);
+	    free(a2);
+	}
+    }
+    free(p->alttable);
+}
+
 void cli_ac_free(struct cli_matcher *root)
 {
 	uint32_t i, j;
@@ -303,12 +345,8 @@ void cli_ac_free(struct cli_matcher *root)
 	free(patt->virname);
 	if(patt->offset)
 	    free(patt->offset);
-	if(patt->alt) {
-	    free(patt->altn);
-	    for(j = 0; j < patt->alt; j++)
-		free(patt->altc[j]);
-	    free(patt->altc);
-	}
+	if(patt->alt)
+	    ac_free_alt(patt);
 	free(patt);
     }
     if(root->ac_pattable)
@@ -329,6 +367,14 @@ void cli_ac_free(struct cli_matcher *root)
     }
 }
 
+/* 
+ * FIXME: the current support for string alternatives uses a brute-force
+ *        approach and doesn't perform any kind of verification and
+ *        backtracking. This may easily lead to false negatives, eg. when
+ *        an alternative contains strings of different lengths and 
+ *        more than one of them can match at the current position.
+ */
+
 #define AC_MATCH_CHAR(p,b)						\
     switch(wc = p & CLI_MATCH_WILDCARD) {				\
 	case CLI_MATCH_CHAR:						\
@@ -341,15 +387,29 @@ void cli_ac_free(struct cli_matcher *root)
 									\
 	case CLI_MATCH_ALTERNATIVE:					\
 	    found = 0;							\
-	    for(j = 0; j < pattern->altn[alt]; j++) {			\
-		if(pattern->altc[alt][j] == b) {			\
-		    found = 1;						\
-		    break;						\
+	    alt = pattern->alttable[altcnt];				\
+	    if(alt->chmode) {						\
+		for(j = 0; j < alt->num; j++) {				\
+		    if(alt->str[j] == b) {				\
+			found = 1;					\
+			break;						\
+		    }							\
+		}							\
+	    } else {							\
+		while(alt) {						\
+		    if(bp + alt->len <= length) {			\
+			if(!memcmp(&buffer[bp], alt->str, alt->len)) {	\
+			    found = 1;					\
+			    bp += alt->len - 1;				\
+			    break;					\
+			}						\
+		    }							\
+		    alt = alt->next;					\
 		}							\
 	    }								\
 	    if(!found)							\
 		return 0;						\
-	    alt++;							\
+	    altcnt++;							\
 	    break;							\
 									\
 	case CLI_MATCH_NIBBLE_HIGH:					\
@@ -370,8 +430,9 @@ void cli_ac_free(struct cli_matcher *root)
 inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uint32_t length, const struct cli_ac_patt *pattern)
 {
 	uint32_t bp;
-	uint16_t wc, i, j, alt = pattern->alt_pattern;
+	uint16_t wc, i, j, altcnt = pattern->alt_pattern;
 	uint8_t found;
+	struct cli_ac_alt *alt;
 
 
     if((offset + pattern->length > length) || (pattern->prefix_length > offset))
@@ -385,7 +446,7 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
     }
 
     if(pattern->prefix) {
-	alt = 0;
+	altcnt = 0;
 	bp = offset - pattern->prefix_length;
 
 	for(i = 0; i < pattern->prefix_length; i++) {
@@ -643,17 +704,10 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	struct cli_ac_patt *new;
 	char *pt, *hex = NULL;
 	uint16_t i, j, ppos = 0, pend;
-	uint8_t wprefix = 0, zprefix = 1, error = 0, namelen, plen = 0;
-	int ret;
+	uint8_t wprefix = 0, zprefix = 1, namelen, plen = 0;
+	struct cli_ac_alt *newalt, *altpt, **newtable;
+	int ret, error = CL_SUCCESS;
 
-#define FREE_ALT			\
-    if(new->alt) {			\
-	free(new->altn);		\
-	for(i = 0; i < new->alt; i++)	\
-	    free(new->altc[i]);		\
-	free(new->altc);		\
-	free(hex);			\
-    }
 
     if(strlen(hexsig) / 2 < root->ac_mindepth)
 	return CL_EPATSHORT;
@@ -668,28 +722,17 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     new->mindist = mindist;
     new->maxdist = maxdist;
     new->target = target;
-    if(offset) {
-	new->offset = cli_strdup(offset);
-	if(!new->offset) {
-	    free(new);
-	    return CL_EMEM;
-	}
-    }
 
     if(strchr(hexsig, '(')) {
 	    char *hexcpy, *hexnew, *start, *h, *c;
 
 	if(!(hexcpy = cli_strdup(hexsig))) {
-	    if(new->offset)
-		free(new->offset);
 	    free(new);
 	    return CL_EMEM;
 	}
 
 	if(!(hexnew = (char *) cli_calloc(strlen(hexsig) + 1, 1))) {
 	    free(hexcpy);
-	    if(new->offset)
-		free(new->offset);
 	    free(new);
 	    return CL_EMEM;
 	}
@@ -699,7 +742,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	    *pt++ = 0;
 
 	    if(!start) {
-		error = 1;
+		error = CL_EMALFDB;
 		break;
 	    }
 
@@ -707,46 +750,88 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	    strcat(hexnew, "()");
 
 	    if(!(start = strchr(pt, ')'))) {
-		error = 1;
+		error = CL_EMALFDB;
 		break;
 	    }
 	    *start++ = 0;
 
-	    new->alt++;
-	    new->altn = (uint16_t *) cli_realloc2(new->altn, new->alt * sizeof(uint16_t));
-	    new->altn[new->alt - 1] = 0;
-	    new->altc = (unsigned char **) cli_realloc2(new->altc, new->alt * sizeof(char *));
-	    new->altc[new->alt - 1] = NULL;
-
-	    for(i = 0; i < strlen(pt); i++)
-		if(pt[i] == '|')
-		    new->altn[new->alt - 1]++;
-
-	    if(!new->altn[new->alt - 1]) {
-		error = 1;
-		break;
-	    } else
-		new->altn[new->alt - 1]++;
-
-	    if(!(new->altc[new->alt - 1] = (unsigned char *) cli_calloc(new->altn[new->alt - 1], 1))) {
-		error = 1;
+	    newalt = (struct cli_ac_alt *) cli_calloc(1, sizeof(struct cli_ac_alt));
+	    if(!newalt) {
+		cli_errmsg("cli_ac_addsig: Can't allocate newalt\n");
+		error = CL_EMEM;
 		break;
 	    }
 
-	    for(i = 0; i < new->altn[new->alt - 1]; i++) {
-		if((h = cli_strtok(pt, i, "|")) == NULL) {
-		    error = 1;
+	    new->alt++;
+	    newtable = (struct cli_ac_alt **) cli_realloc(new->alttable, new->alt * sizeof(struct cli_ac_alt *));
+	    if(!newtable) {
+		new->alt--;
+		free(newalt);
+		cli_errmsg("cli_ac_addsig: Can't realloc new->alttable\n");
+		error = CL_EMEM;
+		break;
+	    }
+	    newtable[new->alt - 1] = newalt;
+	    new->alttable = newtable;
+
+	    for(i = 0; i < strlen(pt); i++)
+		if(pt[i] == '|')
+		    newalt->num++;
+
+            if(!newalt->num) {
+                error = CL_EMALFDB;
+                break;
+            } else
+                newalt->num++;
+
+	    if(3 * newalt->num - 1 == (uint16_t) strlen(pt)) {
+		newalt->chmode = 1;
+		newalt->str = (char *) cli_malloc(newalt->num);
+		if(!newalt->str) {
+		    cli_errmsg("cli_ac_addsig: Can't allocate newalt->str\n");
+		    error = CL_EMEM;
+		    break;
+		}
+	    }
+
+	    for(i = 0; i < newalt->num; i++) {
+		if(!(h = cli_strtok(pt, i, "|"))) {
+		    error = CL_EMALFDB;
 		    break;
 		}
 
-		if((c = cli_hex2str(h)) == NULL) {
+		if(!(c = cli_hex2str(h))) {
 		    free(h);
-		    error = 1;
+		    error = CL_EMALFDB;
 		    break;
 		}
 
-		new->altc[new->alt - 1][i] = *c;
-		free(c);
+		if(newalt->chmode) {
+		    newalt->str[i] = *c;
+		    free(c);
+		} else {
+		    if(i) {
+			altpt = newalt;
+			while(altpt->next)
+			    altpt = altpt->next;
+
+			altpt->next = (struct cli_ac_alt *) cli_calloc(1, sizeof(struct cli_ac_alt));
+			if(!altpt->next) {
+			    cli_errmsg("cli_ac_addsig: Can't allocate altpt->next\n");
+			    error = CL_EMEM;
+			    free(c);
+			    free(h);
+			    break;
+			}
+
+			altpt->next->str = c;
+			altpt->next->len = strlen(h) / 2;
+		    } else {
+			newalt->str = c;
+			newalt->len = strlen(h) / 2;
+		    }
+		}
+
 		free(h);
 	    }
 
@@ -761,23 +846,26 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	free(hexcpy);
 
 	if(error) {
-	    FREE_ALT;
-	    if(new->offset)
-		free(new->offset);
+	    if(new->alt) {
+		free(hex);
+		ac_free_alt(new);
+	    }
 	    free(new);
-	    return CL_EMALFDB;
+	    return error;
 	}
     }
 
     if((new->pattern = cli_hex2ui(new->alt ? hex : hexsig)) == NULL) {
-	FREE_ALT;
-	if(new->offset)
-	    free(new->offset);
+	if(new->alt) {
+	    free(hex);
+	    ac_free_alt(new);
+	}
 	free(new);
 	return CL_EMALFDB;
     }
-
     new->length = strlen(new->alt ? hex : hexsig) / 2;
+    if(new->alt)
+	free(hex);
 
     for(i = 0; i < root->ac_maxdepth && i < new->length; i++) {
 	if(new->pattern[i] & CLI_MATCH_WILDCARD) {
@@ -809,9 +897,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
 	if(plen < root->ac_mindepth) {
 	    cli_errmsg("cli_ac_addsig: Can't find a static subpattern of length %u\n", root->ac_mindepth);
-	    FREE_ALT;
-	    if(new->offset)
-		free(new->offset);
+	    ac_free_alt(new);
 	    free(new->pattern);
 	    free(new);
 	    return CL_EMALFDB;
@@ -841,9 +927,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	    free(new->prefix);
 	else
 	    free(new->pattern);
-	FREE_ALT;
-	if(new->offset)
-	    free(new->offset);
+	ac_free_alt(new);
 	free(new);
 	return CL_EMALFDB;
     }
@@ -853,13 +937,25 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	    free(new->prefix);
 	else
 	    free(new->pattern);
-	FREE_ALT;
-	if(new->offset)
-	    free(new->offset);
+	ac_free_alt(new);
 	free(new);
 	return CL_EMEM;
     }
     strncpy(new->virname, virname, namelen);
+
+    if(offset) {
+	new->offset = cli_strdup(offset);
+	if(!new->offset) {
+	    if(new->prefix)
+		free(new->prefix);
+	    else
+		free(new->pattern);
+	    ac_free_alt(new);
+	    free(new->virname);
+	    free(new);
+	    return CL_EMEM;
+	}
+    }
 
     if((ret = cli_ac_addpatt(root, new))) {
 	if(new->prefix)
@@ -867,15 +963,12 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	else
 	    free(new->pattern);
 	free(new->virname);
-	FREE_ALT;
+	ac_free_alt(new);
 	if(new->offset)
 	    free(new->offset);
 	free(new);
 	return ret;
     }
-
-    if(new->alt)
-	free(hex);
 
     return CL_SUCCESS;
 }

@@ -1,3 +1,8 @@
+Wed Oct  3 01:48:26 CEST 2007 (tk)
+----------------------------------
+  * libclamav/matcher-ac.[ch]: - add basic support for string alternatives
+			       - optimise bfs_enqueue/dequeue
+
 Tue Oct  2 22:53:15 EEST 2007 (edwin)
 ------------------------------------
   * libclamav/phishcheck.c: remove incorrect free_if_needed call

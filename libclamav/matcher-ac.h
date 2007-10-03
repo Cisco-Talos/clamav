@@ -33,16 +33,23 @@ struct cli_ac_data {
     int32_t ***offmatrix;
 };
 
+struct cli_ac_alt {
+    uint8_t chmode;
+    char *str;
+    uint16_t len, num;
+    struct cli_ac_alt *next;
+};
+
 struct cli_ac_patt {
     uint16_t *pattern, *prefix, length, prefix_length;
     uint8_t depth;
     uint32_t mindist, maxdist;
     char *virname, *offset;
     uint32_t sigid;
-    uint16_t parts, partno, alt, *altn, alt_pattern;
+    uint16_t parts, partno, alt, alt_pattern;
+    struct cli_ac_alt **alttable;
     uint8_t target;
     uint16_t type;
-    unsigned char **altc;
     struct cli_ac_patt *next, *next_same;
 };
 
