@@ -427,7 +427,7 @@ void cli_ac_free(struct cli_matcher *root)
 	    return 0;							\
     }
 
-inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uint32_t length, const struct cli_ac_patt *pattern)
+inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t *end)
 {
 	uint32_t bp;
 	uint16_t wc, i, j, altcnt = pattern->alt_pattern;
@@ -440,10 +440,11 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
 
     bp = offset + pattern->depth;
 
-    for(i = pattern->depth; i < pattern->length; i++) {
+    for(i = pattern->depth; i < pattern->length && bp < length; i++) {
 	AC_MATCH_CHAR(pattern->pattern[i],buffer[bp]);
 	bp++;
     }
+    *end = bp;
 
     if(pattern->prefix) {
 	altcnt = 0;
@@ -529,7 +530,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 {
 	struct cli_ac_node *current;
 	struct cli_ac_patt *patt, *pt;
-        uint32_t i, bp, realoff;
+        uint32_t i, bp, realoff, matchend;
 	uint16_t j;
 	int32_t **offmatrix;
 	uint8_t found;
@@ -559,7 +560,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	    patt = current->list;
 	    while(patt) {
 		bp = i + 1 - patt->depth;
-		if(ac_findmatch(buffer, bp, length, patt)) {
+		if(ac_findmatch(buffer, bp, length, patt, &matchend)) {
 		    pt = patt;
 		    while(pt) {
 			realoff = offset + bp - pt->prefix_length;
@@ -621,8 +622,8 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 			    if(pt->partno == 1 || (found && (pt->partno != pt->parts))) {
 				offmatrix[pt->partno - 1][0] %= AC_DEFAULT_TRACKLEN;
 				offmatrix[pt->partno - 1][0]++;
+				offmatrix[pt->partno - 1][offmatrix[pt->partno - 1][0]] = offset + matchend;
 
-				offmatrix[pt->partno - 1][offmatrix[pt->partno - 1][0]] = realoff + pt->length + pt->prefix_length;
 				if(pt->partno == 1) /* save realoff for the first part */
 				    offmatrix[pt->parts - 1][offmatrix[pt->partno - 1][0]] = realoff;
 			    } else if(found && pt->partno == pt->parts) {

@@ -1,3 +1,8 @@
+Thu Oct  4 15:16:45 CEST 2007 (tk)
+----------------------------------
+  * libclamav/matcher-ac.c: fix range calculation for multipart sigs with string
+			    alternatives
+
 Thu Oct  4 13:29:02 CEST 2007 (tk)
 ----------------------------------
   * freshclam/manager.c: downgrade "file not found on remote server" to warning
