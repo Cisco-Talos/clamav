@@ -1,3 +1,7 @@
+Thu Oct  4 13:29:02 CEST 2007 (tk)
+----------------------------------
+  * freshclam/manager.c: downgrade "file not found on remote server" to warning
+
 Wed Oct  3 18:26:12 EEST 2007 (edwin)
 -------------------------------------
   * libclamav/clamav.h: make CL_SCAN_STDOPT consistent with clamscan/clamd's

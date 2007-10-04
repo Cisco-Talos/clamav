@@ -598,7 +598,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 
     /* check whether the resource actually existed or not */
     if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
-	logg("!getfile: %s not found on remote server (IP: %s)\n", srcfile, ipaddr);
+	logg("^getfile: %s not found on remote server (IP: %s)\n", srcfile, ipaddr);
 	/* mirman_update(mdat->currip, mdat, 1); */
 	closesocket(sd);
 	return 58;
