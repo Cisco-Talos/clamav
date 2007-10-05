@@ -1,3 +1,7 @@
+Fri Oct  5 14:30:38 CEST 2007 (tk)
+----------------------------------
+  * libclamav/readdb.c: code cleanup
+
 Fri Oct  5 11:02:07 BST 2007 (njh)
 ----------------------------------
   * clamav-milter:	Corrected comment on the meaning of NTRIES

@@ -599,11 +599,14 @@ static int scomp(const void *a, const void *b)
     return *(const uint32_t *)a - *(const uint32_t *)b;
 }
 
-static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo, unsigned short mode, unsigned int options)
+#define MD5_HDB	    0
+#define MD5_MDB	    1
+#define MD5_FP	    2
+static int cli_loadmd5(FILE *fd, struct cl_engine **engine, unsigned int *signo, uint8_t mode, unsigned int options)
 {
 	char buffer[FILEBUFF], *pt;
 	int ret = CL_SUCCESS;
-	uint8_t md5f = 0, sizef = 1, found;
+	uint8_t size_field = 1, md5_field = 0, found;
 	uint32_t line = 0, i;
 	struct cli_md5_node *new;
 	struct cli_bm_patt *bm_new;
@@ -615,9 +618,9 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	return ret;
     }
 
-    if(mode == 2) {
-	md5f = 1;
-	sizef = 0;
+    if(mode == MD5_MDB) {
+	size_field = 0;
+	md5_field = 1;
     }
 
     while(fgets(buffer, FILEBUFF, fd)) {
@@ -630,17 +633,17 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	    break;
 	}
 
-	if(mode == 1) /* fp */
+	if(mode == MD5_FP) /* fp */
 	    new->fp = 1;
 
-	if(!(pt = cli_strtok(buffer, md5f, ":"))) {
+	if(!(pt = cli_strtok(buffer, md5_field, ":"))) {
 	    free(new);
 	    ret = CL_EMALFDB;
 	    break;
 	}
 
 	if(!(new->md5 = (unsigned char *) cli_hex2str(pt))) {
-	    cli_errmsg("cli_loadhdb: Malformed MD5 string at line %u\n", line);
+	    cli_errmsg("cli_loadmd5: Malformed MD5 string at line %u\n", line);
 	    free(pt);
 	    free(new);
 	    ret = CL_EMALFDB;
@@ -648,7 +651,7 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	}
 	free(pt);
 
-	if(!(pt = cli_strtok(buffer, sizef, ":"))) {
+	if(!(pt = cli_strtok(buffer, size_field, ":"))) {
 	    free(new->md5);
 	    free(new);
 	    ret = CL_EMALFDB;
@@ -664,7 +667,7 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	    break;
 	}
 
-	if(mode == 2) { /* section MD5 */
+	if(mode == MD5_MDB) { /* section MD5 */
 	    if(!(*engine)->md5_sect) {
 		(*engine)->md5_sect = (struct cli_matcher *) cli_calloc(sizeof(struct cli_matcher), 1);
 		if(!(*engine)->md5_sect) {
@@ -675,7 +678,7 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 		    break;
 		}
 		if((ret = cli_bm_init((*engine)->md5_sect))) {
-		    cli_errmsg("cli_loadhdb: Can't initialise BM pattern matcher\n");
+		    cli_errmsg("cli_loadmd5: Can't initialise BM pattern matcher\n");
 		    free(new->virname);
 		    free(new->md5);
 		    free(new);
@@ -686,7 +689,7 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 
 	    bm_new = (struct cli_bm_patt *) cli_calloc(1, sizeof(struct cli_bm_patt));
 	    if(!bm_new) {
-		cli_errmsg("cli_loadhdb: Can't allocate memory for bm_new\n");
+		cli_errmsg("cli_loadmd5: Can't allocate memory for bm_new\n");
 		free(new->virname);
 		free(new->md5);
 		free(new);
@@ -710,7 +713,7 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 		md5_sect->soff_len++;
 		md5_sect->soff = (uint32_t *) cli_realloc2(md5_sect->soff, md5_sect->soff_len * sizeof(uint32_t));
 		if(!md5_sect->soff) {
-		    cli_errmsg("cli_loadhdb: Can't realloc md5_sect->soff\n");
+		    cli_errmsg("cli_loadmd5: Can't realloc md5_sect->soff\n");
 		    free(bm_new->pattern);
 		    free(bm_new->virname);
 		    free(bm_new);
@@ -724,7 +727,7 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	    free(new);
 
 	    if((ret = cli_bm_addpatt(md5_sect, bm_new))) {
-		cli_errmsg("cli_loadhdb: Error adding BM pattern\n");
+		cli_errmsg("cli_loadmd5: Error adding BM pattern\n");
 		free(bm_new->pattern);
 		free(bm_new->virname);
 		free(bm_new);
@@ -733,7 +736,7 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 
 	} else {
 	    if(!(*engine)->md5_hlist) {
-		cli_dbgmsg("cli_loadhdb: Initializing MD5 list structure\n");
+		cli_dbgmsg("cli_loadmd5: Initializing MD5 list structure\n");
 		(*engine)->md5_hlist = cli_calloc(256, sizeof(struct cli_md5_node *));
 		if(!(*engine)->md5_hlist) {
 		    free(new->virname);
@@ -750,13 +753,13 @@ static int cli_loadhdb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
     }
 
     if(!line) {
-	cli_errmsg("cli_loadhdb: Empty database file\n");
+	cli_errmsg("cli_loadmd5: Empty database file\n");
 	cl_free(*engine);
 	return CL_EMALFDB;
     }
 
     if(ret) {
-	cli_errmsg("cli_loadhdb: Problem parsing database at line %u\n", line);
+	cli_errmsg("cli_loadmd5: Problem parsing database at line %u\n", line);
 	cl_free(*engine);
 	return ret;
     }
@@ -951,9 +954,6 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
 	uint8_t skipped = 0;
 
 
-    if(cli_strbcasestr(filename, ".inc"))
-	return cli_loaddbdir(filename, engine, signo, options);
-
     if((fd = fopen(filename, "rb")) == NULL) {
 	cli_errmsg("cli_load(): Can't open file %s\n", filename);
 	return CL_EOPEN;
@@ -971,23 +971,23 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
 	ret = cli_cvdload(fd, engine, signo, warn, options);
 
     } else if(cli_strbcasestr(filename, ".hdb")) {
-	ret = cli_loadhdb(fd, engine, signo, 0, options);
+	ret = cli_loadmd5(fd, engine, signo, MD5_HDB, options);
 
     } else if(cli_strbcasestr(filename, ".hdu")) {
 	if(options & CL_DB_PUA)
-	    ret = cli_loadhdb(fd, engine, signo, 0, options);
+	    ret = cli_loadmd5(fd, engine, signo, MD5_HDB, options);
 	else
 	    skipped = 1;
 
     } else if(cli_strbcasestr(filename, ".fp")) {
-	ret = cli_loadhdb(fd, engine, signo, 1, options);
+	ret = cli_loadmd5(fd, engine, signo, MD5_FP, options);
 
     } else if(cli_strbcasestr(filename, ".mdb")) {
-	ret = cli_loadhdb(fd, engine, signo, 2, options);
+	ret = cli_loadmd5(fd, engine, signo, MD5_MDB, options);
 
     } else if(cli_strbcasestr(filename, ".mdu")) {
 	if(options & CL_DB_PUA)
-	    ret = cli_loadhdb(fd, engine, signo, 2, options);
+	    ret = cli_loadmd5(fd, engine, signo, MD5_MDB, options);
 	else
 	    skipped = 1;
 
@@ -1044,6 +1044,27 @@ int cl_loaddb(const char *filename, struct cl_engine **engine, unsigned int *sig
     return cli_load(filename, engine, signo, CL_DB_STDOPT);
 }
 
+#define CLI_DBEXT(ext)				\
+    (						\
+	cli_strbcasestr(ext, ".db")    ||	\
+	cli_strbcasestr(ext, ".db2")   ||	\
+	cli_strbcasestr(ext, ".db3")   ||	\
+	cli_strbcasestr(ext, ".hdb")   ||	\
+	cli_strbcasestr(ext, ".hdu")   ||	\
+	cli_strbcasestr(ext, ".fp")    ||	\
+	cli_strbcasestr(ext, ".mdb")   ||	\
+	cli_strbcasestr(ext, ".mdu")   ||	\
+	cli_strbcasestr(ext, ".ndb")   ||	\
+	cli_strbcasestr(ext, ".ndu")   ||	\
+	cli_strbcasestr(ext, ".sdb")   ||	\
+	cli_strbcasestr(ext, ".zmd")   ||	\
+	cli_strbcasestr(ext, ".rmd")   ||	\
+	cli_strbcasestr(ext, ".pdb")   ||	\
+	cli_strbcasestr(ext, ".wdb")   ||	\
+	cli_strbcasestr(ext, ".inc")   ||	\
+	cli_strbcasestr(ext, ".cvd")		\
+    )
+
 static int cli_loaddbdir_l(const char *dirname, struct cl_engine **engine, unsigned int *signo, unsigned int options)
 {
 	DIR *dd;
@@ -1090,24 +1111,7 @@ static int cli_loaddbdir_l(const char *dirname, struct cl_engine **engine, unsig
 	if(dent->d_ino)
 #endif
 	{
-	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") &&
-	    (cli_strbcasestr(dent->d_name, ".db")   ||
-	     cli_strbcasestr(dent->d_name, ".db2")  ||
-	     cli_strbcasestr(dent->d_name, ".db3")  ||
-	     cli_strbcasestr(dent->d_name, ".hdb")  ||
-	     cli_strbcasestr(dent->d_name, ".hdu")  ||
-	     cli_strbcasestr(dent->d_name, ".fp")   ||
-	     cli_strbcasestr(dent->d_name, ".mdb")  ||
-	     cli_strbcasestr(dent->d_name, ".mdu")  ||
-	     cli_strbcasestr(dent->d_name, ".ndb")  ||
-	     cli_strbcasestr(dent->d_name, ".ndu")  ||
-	     cli_strbcasestr(dent->d_name, ".sdb")  ||
-	     cli_strbcasestr(dent->d_name, ".zmd")  ||
-	     cli_strbcasestr(dent->d_name, ".rmd")  ||
-	     cli_strbcasestr(dent->d_name, ".pdb")  ||
-	     cli_strbcasestr(dent->d_name, ".wdb")  ||
-	     cli_strbcasestr(dent->d_name, ".inc")  ||
-	     cli_strbcasestr(dent->d_name, ".cvd"))) {
+	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && CLI_DBEXT(dent->d_name)) {
 
 		dbfile = (char *) cli_malloc(strlen(dent->d_name) + strlen(dirname) + 2);
 
@@ -1117,7 +1121,13 @@ static int cli_loaddbdir_l(const char *dirname, struct cl_engine **engine, unsig
 		    return CL_EMEM;
 		}
 		sprintf(dbfile, "%s/%s", dirname, dent->d_name);
-		if((ret = cli_load(dbfile, engine, signo, options))) {
+
+		if(cli_strbcasestr(dbfile, ".inc"))
+		    ret = cli_loaddbdir(dbfile, engine, signo, options);
+		else
+		    ret = cli_load(dbfile, engine, signo, options);
+
+		if(ret) {
 		    cli_dbgmsg("cli_loaddbdir(): error loading database %s\n", dbfile);
 		    free(dbfile);
 		    closedir(dd);
@@ -1246,26 +1256,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 	if(dent->d_ino)
 #endif
 	{
-	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") &&
-	    (cli_strbcasestr(dent->d_name, ".db")  ||
-	    cli_strbcasestr(dent->d_name, ".db2")  || 
-	    cli_strbcasestr(dent->d_name, ".db3")  || 
-	    cli_strbcasestr(dent->d_name, ".hdb")  || 
-	    cli_strbcasestr(dent->d_name, ".hdu")  || 
-	    cli_strbcasestr(dent->d_name, ".fp")   || 
-	    cli_strbcasestr(dent->d_name, ".mdb")  ||
-	    cli_strbcasestr(dent->d_name, ".mdu")  ||
-	    cli_strbcasestr(dent->d_name, ".ndb")  || 
-	    cli_strbcasestr(dent->d_name, ".ndu")  || 
-	    cli_strbcasestr(dent->d_name, ".sdb")  || 
-	    cli_strbcasestr(dent->d_name, ".zmd")  || 
-	    cli_strbcasestr(dent->d_name, ".rmd")  || 
-	    cli_strbcasestr(dent->d_name, ".cfg")  ||
-	    cli_strbcasestr(dent->d_name, ".pdb")  ||
-	    cli_strbcasestr(dent->d_name, ".wdb")  ||
-	    cli_strbcasestr(dent->d_name, ".inc")   ||
-	    cli_strbcasestr(dent->d_name, ".cvd"))) {
-
+	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && CLI_DBEXT(dent->d_name)) {
 		dbstat->entries++;
 		dbstat->stattab = (struct stat *) cli_realloc2(dbstat->stattab, dbstat->entries * sizeof(struct stat));
 		if(!dbstat->stattab) {
@@ -1291,10 +1282,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 		}
 
 		if(cli_strbcasestr(dent->d_name, ".inc")) {
-		    if(strstr(dent->d_name, "main"))
-			sprintf(fname, "%s/main.inc/main.info", dirname);
-		    else
-			sprintf(fname, "%s/daily.inc/daily.info", dirname);
+		    sprintf(fname, "%s/%s/%s.info", dirname, dent->d_name, strstr(dent->d_name, "daily") ? "daily" : "main");
 		} else {
 		    sprintf(fname, "%s/%s", dirname, dent->d_name);
 		}
@@ -1356,26 +1344,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 	if(dent->d_ino)
 #endif
 	{
-	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") &&
-	    (cli_strbcasestr(dent->d_name, ".db")  ||
-	    cli_strbcasestr(dent->d_name, ".db2")  || 
-	    cli_strbcasestr(dent->d_name, ".db3")  || 
-	    cli_strbcasestr(dent->d_name, ".hdb")  || 
-	    cli_strbcasestr(dent->d_name, ".hdu")  || 
-	    cli_strbcasestr(dent->d_name, ".fp")   || 
-	    cli_strbcasestr(dent->d_name, ".mdb")  ||
-	    cli_strbcasestr(dent->d_name, ".mdu")  ||
-	    cli_strbcasestr(dent->d_name, ".ndb")  || 
-	    cli_strbcasestr(dent->d_name, ".ndu")  || 
-	    cli_strbcasestr(dent->d_name, ".sdb")  || 
-	    cli_strbcasestr(dent->d_name, ".zmd")  || 
-	    cli_strbcasestr(dent->d_name, ".rmd")  || 
-	    cli_strbcasestr(dent->d_name, ".cfg")  ||
-	    cli_strbcasestr(dent->d_name, ".pdb")  ||
-	    cli_strbcasestr(dent->d_name, ".wdb")  ||
-	    cli_strbcasestr(dent->d_name, ".inc")   ||
-	    cli_strbcasestr(dent->d_name, ".cvd"))) {
-
+	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && CLI_DBEXT(dent->d_name)) {
                 fname = cli_malloc(strlen(dbstat->dir) + strlen(dent->d_name) + 32);
 		if(!fname) {
 		    closedir(dd);
@@ -1383,10 +1352,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 		}
 
 		if(cli_strbcasestr(dent->d_name, ".inc")) {
-		    if(strstr(dent->d_name, "main"))
-			sprintf(fname, "%s/main.inc/main.info", dbstat->dir);
-		    else
-			sprintf(fname, "%s/daily.inc/daily.info", dbstat->dir);
+		    sprintf(fname, "%s/%s/%s.info", dbstat->dir, dent->d_name, strstr(dent->d_name, "daily") ? "daily" : "main");
 		} else {
 		    sprintf(fname, "%s/%s", dbstat->dir, dent->d_name);
 		}
