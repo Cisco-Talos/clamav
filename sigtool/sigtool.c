@@ -997,6 +997,7 @@ static int cvdinfo(struct optstruct *opt)
 	mprintf("!cvdinfo: Can't read/parse CVD header of %s\n", pt);
 	return -1;
     }
+    mprintf("File: %s\n", pt);
 
     pt = strchr(cvd->time, '-');
     *pt = ':';
