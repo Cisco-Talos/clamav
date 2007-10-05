@@ -279,7 +279,9 @@ int main(int argc, char **argv)
     if(!cfgopt(copt, "Foreground")->enabled) {
 	daemonize();
 	if(!debug_mode)
-	    chdir("/");
+	    if(chdir("/") == -1)
+		logg("^Can't change current working directory to root\n");
+
     } else
         foreground = 1;
 

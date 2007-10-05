@@ -1,3 +1,7 @@
+Sat Oct  6 00:50:05 CEST 2007 (tk)
+----------------------------------
+  * clamscan, clamd: better error checking/reporting (bb#657)
+
 Sat Oct  6 00:25:17 CEST 2007 (tk)
 ----------------------------------
   * clamd: enable FixStaleSocket by default

@@ -171,7 +171,11 @@ int filecopy(const char *src, const char *dest)
     }
 
     while((bytes = read(s, buffer, FILEBUFF)) > 0)
-	write(d, buffer, bytes);
+	if(write(d, buffer, bytes) < bytes) {
+	    close(s);
+	    close(d);
+	    return -1;
+	}
 
     close(s);
     /* njh@bandsman.co.uk: check result of close for NFS file */

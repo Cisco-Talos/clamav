@@ -107,11 +107,16 @@ static int scanstdin(const struct cl_engine *engine, const struct cl_limits *lim
 
     if(!(fs = fopen(file, "wb"))) {
 	logg("!Can't open %s for writing\n", file);
+	free(file);
 	return 63;
     }
 
     while((ret = fread(buff, 1, FILEBUFF, stdin)))
-	fwrite(buff, 1, ret, fs);
+	if(fwrite(buff, 1, ret, fs) < ret) {
+	    logg("!Can't write to %s\n", file);
+	    free(file);
+	    return 58;
+	}
 
     fclose(fs);
 
@@ -460,7 +465,10 @@ static int clamav_unpack(const char *prog, const char **args, const char *tmpdir
 		}
 	    }
 #endif
-	    chdir(tmpdir);
+	    if(chdir(tmpdir) == -1) {
+		fprintf(stderr, "ERROR: chdir(%s) failed\n", tmpdir);
+		exit(1);
+	    }
 
 	    if(printinfected) {
   	        fdevnull = open("/dev/null", O_WRONLY);

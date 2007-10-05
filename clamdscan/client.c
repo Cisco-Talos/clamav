@@ -204,8 +204,8 @@ static int dsstream(int sockd, const struct optstruct *opt)
 	return 2;
     }
 
-    memset(buff, 0, sizeof(buff));
     while(loopw) {
+	memset(buff, 0, sizeof(buff));
 	read(sockd, buff, sizeof(buff));
 	if((pt = strstr(buff, "PORT"))) {
 	    pt += 5;
