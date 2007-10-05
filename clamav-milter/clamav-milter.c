@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-20081001"
+#define	CM_VERSION	"devel-20081005"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -170,7 +170,7 @@ typedef	unsigned int	in_addr_t;
 
 #define	VERSION_LENGTH	128
 #define	DEFAULT_TIMEOUT	120
-#define	NTRIES	30	/* How long to wait for the local clamd to start */
+#define	NTRIES	5	/* How many times we try to connect to a clamd */
 
 /*#define	SESSION*/
 		/* Keep one command connexion open to clamd, otherwise a new
@@ -2254,8 +2254,7 @@ pingServer(int serverNumber)
 	cli_dbgmsg("pingServer%d: sending VERSION\n", serverNumber);
 	if(send(sock, "VERSION\n", 8, 0) < 8) {
 		perror("send");
-		close(sock);
-		return 0;
+		return close(sock);
 	}
 
 	shutdown(sock, SHUT_WR);
@@ -4565,8 +4564,7 @@ connect2clamd(struct privdata *privdata)
 
 			pthread_mutex_lock(&sstatus_mutex);
 			session->status = CMDSOCKET_DOWN;
-			pthread_mutex_unlock(&sstatus_mutex);
-			return 0;
+			return pthread_mutex_unlock(&sstatus_mutex);
 		}
 #else
 		nbytes = clamd_recv(privdata->cmdSocket, buf, sizeof(buf));
@@ -6176,17 +6174,15 @@ resolve(const char *host, table_t *t)
  * Currently only handles ip4, a and mx fields in the DNS record
  * Having said that, this is NOT a replacement for spf-milter, it is NOT
  *	an SPF system, we ONLY use SPF records to reduce phish false positives
- * TODO: ptr
  * TODO: IPv6?
  * TODO: cache queries?
+ * TODO: check res_query is thread safe
  *
  * INPUT: prevhosts, a list of hosts already searched: stops include loops
  *	e.g. mercado.com includes medrcadosw.com which includes mercado.com,
  *	causing a loop
  * Return 1 if SPF says this email is from a legitimate source
  *	0 for fail or unknown
- *
- * TODO: check res_query is thread safe
  */
 static int
 spf(struct privdata *privdata, table_t *prevhosts)
@@ -6231,6 +6227,7 @@ spf(struct privdata *privdata, table_t *prevhosts)
 	if(ptr)
 		*ptr = '\0';
 
+	logg("*SPF query '%s'\n", host);
 	len = res_query(host, C_IN, T_TXT, (u_char *)&q, sizeof(q));
 	if(len < 0) {
 		free(host);
