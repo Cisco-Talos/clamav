@@ -1,3 +1,7 @@
+Fri Oct  5 22:50:37 CEST 2007 (tk)
+----------------------------------
+  * libclamav/pe.c: fix bb#495
+
 Fri Oct  5 14:30:38 CEST 2007 (tk)
 ----------------------------------
   * libclamav/readdb.c: code cleanup

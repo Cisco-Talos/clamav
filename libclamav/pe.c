@@ -335,6 +335,11 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	struct cli_matcher *md5_sect;
 
 
+    if(!ctx) {
+	cli_errmsg("cli_scanpe: ctx == NULL\n");
+	return CL_ENULLARG;
+    }
+
     if(cli_readn(desc, &e_magic, sizeof(e_magic)) != sizeof(e_magic)) {
 	cli_dbgmsg("Can't read DOS signature\n");
 	return CL_CLEAN;
