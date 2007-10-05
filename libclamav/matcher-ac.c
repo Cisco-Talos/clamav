@@ -331,7 +331,7 @@ static void ac_free_alt(struct cli_ac_patt *p)
 
 void cli_ac_free(struct cli_matcher *root)
 {
-	uint32_t i, j;
+	uint32_t i;
 	struct cli_ac_patt *patt;
 
 
@@ -787,7 +787,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
 	    if(3 * newalt->num - 1 == (uint16_t) strlen(pt)) {
 		newalt->chmode = 1;
-		newalt->str = (char *) cli_malloc(newalt->num);
+		newalt->str = (unsigned char *) cli_malloc(newalt->num);
 		if(!newalt->str) {
 		    cli_errmsg("cli_ac_addsig: Can't allocate newalt->str\n");
 		    error = CL_EMEM;
@@ -825,10 +825,10 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 			    break;
 			}
 
-			altpt->next->str = c;
+			altpt->next->str = (unsigned char *) c;
 			altpt->next->len = strlen(h) / 2;
 		    } else {
-			newalt->str = c;
+			newalt->str = (unsigned char *) c;
 			newalt->len = strlen(h) / 2;
 		    }
 		}

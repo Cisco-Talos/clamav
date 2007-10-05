@@ -35,7 +35,7 @@ struct cli_ac_data {
 
 struct cli_ac_alt {
     uint8_t chmode;
-    char *str;
+    unsigned char *str;
     uint16_t len, num;
     struct cli_ac_alt *next;
 };
