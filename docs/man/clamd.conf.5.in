@@ -89,7 +89,7 @@ Default: no
 \fBFixStaleSocket BOOL\fR
 Remove stale socket after unclean shutdown.
 .br 
-Default: no
+Default: yes
 .TP 
 \fBTCPSocket NUMBER\fR
 TCP port number the daemon will listen on.

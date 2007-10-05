@@ -86,7 +86,7 @@ struct cfgoption cfg_options[] = {
     {"Foreground", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
     {"Debug", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
     {"LeaveTemporaryFiles", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
-    {"FixStaleSocket", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"FixStaleSocket", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"User", OPT_QUOTESTR, -1, NULL, 0, OPT_CLAMD},
     {"AllowSupplementaryGroups", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
     {"SelfCheck", OPT_NUM, 1800, NULL, 0, OPT_CLAMD},

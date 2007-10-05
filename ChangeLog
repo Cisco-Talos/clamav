@@ -1,3 +1,7 @@
+Sat Oct  6 00:25:17 CEST 2007 (tk)
+----------------------------------
+  * clamd: enable FixStaleSocket by default
+
 Fri Oct  5 22:56:13 CEST 2007 (tk)
 ----------------------------------
   * sigtool/sigtool.c: print filename when using --info (bb#513)
