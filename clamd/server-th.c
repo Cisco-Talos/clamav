@@ -146,6 +146,7 @@ static void scanner_thread(void *arg)
 	}
     } while (session);
 
+    shutdown(conn->sd, 2);
     closesocket(conn->sd);
     cl_free(conn->engine);
     free(conn);
