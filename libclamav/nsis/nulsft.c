@@ -492,7 +492,8 @@ int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
 
     nsist.ifd = desc;
     nsist.off = offset;
-    nsist.dir = cli_gentemp(NULL);
+    if (!(nsist.dir = cli_gentemp(NULL)))
+        return CL_ETMPDIR;
     if(mkdir(nsist.dir, 0700)) {
 	cli_dbgmsg("NSIS: Can't create temporary directory %s\n", nsist.dir);
 	free(nsist.dir);
