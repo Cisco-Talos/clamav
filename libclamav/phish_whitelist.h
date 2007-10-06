@@ -29,7 +29,7 @@ int init_whitelist(struct cl_engine* engine);
 void whitelist_done(struct cl_engine* engine);
 void whitelist_cleanup(const struct cl_engine* engine);
 int is_whitelist_ok(const struct cl_engine* engine);
-int whitelist_match(const struct cl_engine* engine, const char* real_url,const char* display_url,int hostOnly);
+int whitelist_match(const struct cl_engine* engine, char* real_url,const char* display_url,int hostOnly);
 
 #endif
 

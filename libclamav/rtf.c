@@ -392,7 +392,7 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
 						    if(data->bread == 4) {
 							    out_data += i;
 							    data->bread=0;
-							    cli_dbgmsg("Dumping rtf embedded object of size:%ld\n",data->desc_len);
+							    cli_dbgmsg("Dumping rtf embedded object of size:%lu\n",data->desc_len);
 							    if((ret = cli_gentempfd(data->tmpdir, &data->name, &data->fd)))
 								    return ret;
 							    data->internal_state = DUMP_DATA;

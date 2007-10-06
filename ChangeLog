@@ -1,3 +1,7 @@
+Sat Oct  6 10:47:26 EEST 2007 (edwin)
+------------------------------------
+  * libclamav/phish*.[ch], regex_list.c, rtf.c: fix some warnings
+
 Sat Oct  6 01:10:40 CEST 2007 (tk)
 ----------------------------------
   * clamd/server-th.c: shutdown conn->sd when exiting scanner_thread() (bb#674)

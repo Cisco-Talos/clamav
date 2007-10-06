@@ -36,7 +36,7 @@
 
 /* TODO: when implementation of new version is complete, enable it in CL_EXPERIMENTAL */
 #ifdef CL_EXPERIMENTAL
-//#define USE_NEW_VERSION
+/*#define USE_NEW_VERSION*/
 #endif
 
 #ifndef USE_NEW_VERSION
@@ -228,7 +228,7 @@ static inline size_t get_char_at_pos_with_skip(const struct pre_fixup_info* info
 		return (pos <= strlen(buffer)) ? buffer[pos>0 ? pos-1:0] : '\0';
 	}
 	str = info->pre_displayLink.data;
-	cli_dbgmsg("calc_pos_with_skip: skip:%u, %u - %u \"%s\",\"%s\"\n", pos, info->host_start, info->host_end, str, buffer);
+	cli_dbgmsg("calc_pos_with_skip: skip:%lu, %lu - %lu \"%s\",\"%s\"\n", pos, info->host_start, info->host_end, str, buffer);
 	pos += info->host_start;
 	while(str[realpos] && !isalnum(str[realpos])) realpos++;
 	for(; str[realpos] && (pos>0); pos--) {
