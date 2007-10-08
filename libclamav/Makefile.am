@@ -25,6 +25,7 @@ libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 include_HEADERS = clamav.h
 
+
 libclamav_la_SOURCES = \
 	clamav.h \
         matcher-ac.c \
@@ -115,6 +116,11 @@ libclamav_la_SOURCES = \
 	regex/regerror.c \
 	regex/regexec.c \
 	regex/regfree.c \
+	regex/cclass.h \
+	regex/cname.h \
+	regex/regex.h \
+	regex/regex2.h \
+	regex/utils.h \
 	unrar/unrar15.c \
 	unrar/unrar20.h \
 	unrar/unrarcmd.h \
@@ -184,3 +190,4 @@ libclamav_la_SOURCES = \
 	lockdb.h
 
 lib_LTLIBRARIES = libclamav.la
+EXTRA_DIST = regex/engine.c
