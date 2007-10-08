@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Error handling</TITLE>
-<META NAME="description" CONTENT="Error handling">
+<TITLE>Engine structure</TITLE>
+<META NAME="description" CONTENT="Engine structure">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,47 +19,53 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node42.html">
 <LINK REL="previous" HREF="node40.html">
-<LINK REL="up" HREF="node38.html">
+<LINK REL="up" HREF="node37.html">
 <LINK REL="next" HREF="node42.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html729"
+<A NAME="tex2html723"
   HREF="node42.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html725"
-  HREF="node38.html">
-<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
 <A NAME="tex2html719"
+  HREF="node37.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html715"
   HREF="node40.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html727"
+<A NAME="tex2html721"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html730"
-  HREF="node42.html">Engine structure</A>
-<B> Up:</B> <A NAME="tex2html726"
-  HREF="node38.html">API</A>
-<B> Previous:</B> <A NAME="tex2html720"
-  HREF="node40.html">Database loading</A>
- &nbsp <B>  <A NAME="tex2html728"
+<B> Next:</B> <A NAME="tex2html724"
+  HREF="node42.html">Database reloading</A>
+<B> Up:</B> <A NAME="tex2html720"
+  HREF="node37.html">API</A>
+<B> Previous:</B> <A NAME="tex2html716"
+  HREF="node40.html">Error handling</A>
+ &nbsp <B>  <A NAME="tex2html722"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00074300000000000000">
-Error handling</A>
+<H3><A NAME="SECTION00073400000000000000">
+Engine structure</A>
 </H3>
-    Use <code>cl_strerror</code> to convert error codes into human readable messages.
-    The function returns a statically allocated string:
+    When all required databases are loaded you should prepare the detection
+    engine by calling <code>cl_build</code>. In the case of failure you should
+    free the memory occupied by the engine with <code>cl_free</code>:
     <PRE>
-	if(ret) {
-	    printf("cl_load() error: %s\n", cl_strerror(ret));
+	int cl_build(struct cl_engine *engine);
+	void cl_free(struct cl_engine *engine);
+</PRE>
+    In our example:
+    <PRE>
+	if((ret = cl_build(engine))) {
+	    printf("cl_build() error: %s\n", cl_strerror(ret));
+	    cl_free(engine);
 	    exit(1);
 	}
 </PRE>
@@ -68,7 +74,7 @@ Error handling</A>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2007-07-11
+2007-10-08
 </ADDRESS>
 </BODY>
 </HTML>

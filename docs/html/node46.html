@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>clamav-config</TITLE>
-<META NAME="description" CONTENT="clamav-config">
+<TITLE>Example</TITLE>
+<META NAME="description" CONTENT="Example">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,55 +19,53 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node47.html">
 <LINK REL="previous" HREF="node45.html">
-<LINK REL="up" HREF="node43.html">
+<LINK REL="up" HREF="node42.html">
 <LINK REL="next" HREF="node47.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html791"
+<A NAME="tex2html785"
   HREF="node47.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html787"
-  HREF="node43.html">
-<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
 <A NAME="tex2html781"
+  HREF="node42.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html777"
   HREF="node45.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html789"
+<A NAME="tex2html783"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html792"
-  HREF="node47.html">Example</A>
-<B> Up:</B> <A NAME="tex2html788"
-  HREF="node43.html">Database reloading</A>
-<B> Previous:</B> <A NAME="tex2html782"
-  HREF="node45.html">Memory</A>
- &nbsp <B>  <A NAME="tex2html790"
+<B> Next:</B> <A NAME="tex2html786"
+  HREF="node47.html">CVD format</A>
+<B> Up:</B> <A NAME="tex2html782"
+  HREF="node42.html">Database reloading</A>
+<B> Previous:</B> <A NAME="tex2html778"
+  HREF="node45.html">clamav-config</A>
+ &nbsp <B>  <A NAME="tex2html784"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00075300000000000000">
-clamav-config</A>
+<H3><A NAME="SECTION00074400000000000000">
+Example</A>
 </H3>
-    Use <code>clamav-config</code> to check compilation information for libclamav.
+    You will find an example scanner application in the clamav sources
+    (/example). Don't forget that all programs based on libclamav must be
+    linked against it:
     <PRE>
-	zolw@localhost:~$ clamav-config --libs
-	-L/usr/local/lib -lz -lbz2 -lgmp -lpthread
-	zolw@localhost:~$ clamav-config --cflags
-	-I/usr/local/include -g -O2
+	gcc -Wall ex1.c -o ex1 -lclamav
 </PRE>
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2007-07-11
+2007-10-08
 </ADDRESS>
 </BODY>
 </HTML>

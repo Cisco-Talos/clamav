@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Memory</TITLE>
-<META NAME="description" CONTENT="Memory">
+<TITLE>clamav-config</TITLE>
+<META NAME="description" CONTENT="clamav-config">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -21,48 +21,53 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node46.html">
 <LINK REL="previous" HREF="node44.html">
-<LINK REL="up" HREF="node43.html">
+<LINK REL="up" HREF="node42.html">
 <LINK REL="next" HREF="node46.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html779"
+<A NAME="tex2html775"
   HREF="node46.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html775"
-  HREF="node43.html">
+<A NAME="tex2html771"
+  HREF="node42.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html769"
+<A NAME="tex2html765"
   HREF="node44.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html777"
+<A NAME="tex2html773"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html780"
-  HREF="node46.html">clamav-config</A>
-<B> Up:</B> <A NAME="tex2html776"
-  HREF="node43.html">Database reloading</A>
-<B> Previous:</B> <A NAME="tex2html770"
-  HREF="node44.html">Data scan functions</A>
- &nbsp <B>  <A NAME="tex2html778"
+<B> Next:</B> <A NAME="tex2html776"
+  HREF="node46.html">Example</A>
+<B> Up:</B> <A NAME="tex2html772"
+  HREF="node42.html">Database reloading</A>
+<B> Previous:</B> <A NAME="tex2html766"
+  HREF="node44.html">Memory</A>
+ &nbsp <B>  <A NAME="tex2html774"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00075200000000000000">
-Memory</A>
+<H3><A NAME="SECTION00074300000000000000">
+clamav-config</A>
 </H3>
-    Because the engine structure consumes a few megabytes of system memory, you
-    should release it with <code>cl_free</code> if you no longer need to scan files.
+    Use <code>clamav-config</code> to check compilation information for libclamav.
+    <PRE>
+	zolw@localhost:~$ clamav-config --libs
+	-L/usr/local/lib -lz -lbz2 -lgmp -lpthread
+	zolw@localhost:~$ clamav-config --cflags
+	-I/usr/local/include -g -O2
+</PRE>
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2007-07-11
+2007-10-08
 </ADDRESS>
 </BODY>
 </HTML>

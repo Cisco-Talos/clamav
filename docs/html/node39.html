@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Header file</TITLE>
-<META NAME="description" CONTENT="Header file">
+<TITLE>Database loading</TITLE>
+<META NAME="description" CONTENT="Database loading">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -21,50 +21,88 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node40.html">
 <LINK REL="previous" HREF="node38.html">
-<LINK REL="up" HREF="node38.html">
+<LINK REL="up" HREF="node37.html">
 <LINK REL="next" HREF="node40.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html705"
+<A NAME="tex2html701"
   HREF="node40.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html701"
-  HREF="node38.html">
+<A NAME="tex2html697"
+  HREF="node37.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html695"
+<A NAME="tex2html691"
   HREF="node38.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html703"
+<A NAME="tex2html699"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html706"
-  HREF="node40.html">Database loading</A>
-<B> Up:</B> <A NAME="tex2html702"
-  HREF="node38.html">API</A>
-<B> Previous:</B> <A NAME="tex2html696"
-  HREF="node38.html">API</A>
- &nbsp <B>  <A NAME="tex2html704"
+<B> Next:</B> <A NAME="tex2html702"
+  HREF="node40.html">Error handling</A>
+<B> Up:</B> <A NAME="tex2html698"
+  HREF="node37.html">API</A>
+<B> Previous:</B> <A NAME="tex2html692"
+  HREF="node38.html">Header file</A>
+ &nbsp <B>  <A NAME="tex2html700"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00074100000000000000">
-Header file</A>
+<H3><A NAME="SECTION00073200000000000000">
+Database loading</A>
 </H3>
-    Every program using libclamav must include the header file <code>clamav.h</code>:
+    The following set of functions provides an interface for loading
+    the virus database:
     <PRE>
-	#include &lt;clamav.h&gt;
+	const char *cl_retdbdir(void);
+
+	int cl_load(const char *path, struct cl_engine **engine,
+		    unsigned int *signo, unsigned int options);
+</PRE>
+    <code>cl_retdbdir</code> returns the default (hardcoded) path to the directory
+    with ClamAV databases.
+    <code>cl_load</code> loads a single database file or all databases from a
+    directory (if <code>path</code> points to a directory). The second argument
+    is used for passing in the engine structure which should be previously
+    initialized with NULL. A number of loaded signatures will be <B>added</B>
+    to <code>signo</code> <A NAME="tex2html15"
+  HREF="footnode.html#foot290"><SUP>7</SUP></A>. The last argument can pass the following flags:
+    
+<UL>
+<LI><B>CL_DB_STDOPT</B>
+<BR>
+This is an alias for a recommended set of scan options.
+</LI>
+<LI><B>CL_DB_PHISHING</B>
+<BR>
+Load phishing signatures.
+</LI>
+<LI><B>CL_DB_PHISHING_URLS</B>
+<BR>
+Initialize the phishing detection module and load .wdb and .pdb files.
+    
+</LI>
+</UL>
+    <code>cl_load</code> returns 0 (<code>CL_SUCCESS</code>) on success and a non-negative
+    value on failure.
+    <PRE>
+	    ...
+	    struct cl_engine *engine = NULL;
+	    unsigned int sigs = 0;
+	    int ret;
+
+	ret = cl_load(cl_retdbdir(), &amp;engine, &amp;sigs, CL_DB_STDOPT);
 </PRE>
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2007-07-11
+2007-10-08
 </ADDRESS>
 </BODY>
 </HTML>

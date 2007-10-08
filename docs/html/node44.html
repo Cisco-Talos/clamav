@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Data scan functions</TITLE>
-<META NAME="description" CONTENT="Data scan functions">
+<TITLE>Memory</TITLE>
+<META NAME="description" CONTENT="Memory">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -21,212 +21,48 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node45.html">
 <LINK REL="previous" HREF="node43.html">
-<LINK REL="up" HREF="node43.html">
+<LINK REL="up" HREF="node42.html">
 <LINK REL="next" HREF="node45.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html767"
+<A NAME="tex2html763"
   HREF="node45.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html763"
-  HREF="node43.html">
+<A NAME="tex2html759"
+  HREF="node42.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html757"
+<A NAME="tex2html753"
   HREF="node43.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html765"
+<A NAME="tex2html761"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html768"
-  HREF="node45.html">Memory</A>
-<B> Up:</B> <A NAME="tex2html764"
-  HREF="node43.html">Database reloading</A>
-<B> Previous:</B> <A NAME="tex2html758"
-  HREF="node43.html">Database reloading</A>
- &nbsp <B>  <A NAME="tex2html766"
+<B> Next:</B> <A NAME="tex2html764"
+  HREF="node45.html">clamav-config</A>
+<B> Up:</B> <A NAME="tex2html760"
+  HREF="node42.html">Database reloading</A>
+<B> Previous:</B> <A NAME="tex2html754"
+  HREF="node43.html">Data scan functions</A>
+ &nbsp <B>  <A NAME="tex2html762"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00075100000000000000">
-Data scan functions</A>
+<H3><A NAME="SECTION00074200000000000000">
+Memory</A>
 </H3>
-    It's possible to scan a file or descriptor using:
-    <PRE>
-	int cl_scanfile(const char *filename, const char **virname,
-	unsigned long int *scanned, const struct cl_engine *engine,
-	const struct cl_limits *limits, unsigned int options);
-
-	int cl_scandesc(int desc, const char **virname, unsigned
-	long int *scanned, const struct cl_engine *engine, const
-	struct cl_limits *limits, unsigned int options);
-</PRE>
-    Both functions will save a virus name under the pointer <code>virname</code>,
-    the virus name is part of the engine structure and must not be released
-    directly. If the third argument (<code>scanned</code>) is not NULL, the
-    functions will increase its value with the size of scanned data (in
-    <code>CL_COUNT_PRECISION</code> units). Both functions have support for archive
-    limits in order to protect against Denial of Service attacks.
-    <PRE>
-struct cl_limits {
-    unsigned int maxreclevel;     /* maximum recursion level for archives */
-    unsigned int maxfiles;        /* maximum number of files to be scanned
-                                   * within a single archive
-                                   */
-    unsigned int maxmailrec;	  /* maximum recursion level for mail files */
-    unsigned int maxratio;	  /* maximum compression ratio */
-    unsigned long int maxfilesize;/* compressed files larger than this limit
-                                   * will not be scanned
-                                   */
-    unsigned short archivememlim;  /* limit memory usage for some unpackers */
-};
-</PRE>
-    The last argument (<code>options</code>) configures the scan engine and supports
-    the following flags (that can be combined using bit operators):
-    
-<UL>
-<LI><B>CL_SCAN_STDOPT</B>
-<BR>
-This is an alias for a recommended set of scan options. You
-	      should use it to make your software ready for new features
-	      in the future versions of libclamav.
-</LI>
-<LI><B>CL_SCAN_RAW</B>
-<BR>
-Use it alone if you want to disable support for special files.
-</LI>
-<LI><B>CL_SCAN_ARCHIVE</B>
-<BR>
-This flag enables transparent scanning of various archive formats.
-</LI>
-<LI><B>CL_SCAN_BLOCKENCRYPTED</B>
-<BR>
-With this flag the library will mark encrypted archives as viruses
-	      (Encrypted.Zip, Encrypted.RAR).
-</LI>
-<LI><B>CL_SCAN_BLOCKMAX</B>
-<BR>
-Mark archives as viruses if <code>maxfiles</code>, <code>maxfilesize</code>,
-	      or <code>maxreclevel</code> limit is reached.
-</LI>
-<LI><B>CL_SCAN_MAIL</B>
-<BR>
-Enable support for mail files.
-</LI>
-<LI><B>CL_SCAN_MAILURL</B>
-<BR>
-The mail scanner will download and scan URLs listed in a mail
-	      body. This flag should not be used on loaded servers. Due to
-	      potential problems please do not enable it by default but make
-	      it optional.
-</LI>
-<LI><B>CL_SCAN_OLE2</B>
-<BR>
-Enables support for OLE2 containers (used by MS Office and .msi
-	      files).
-</LI>
-<LI><B>CL_SCAN_PDF</B>
-<BR>
-Enables scanning within PDF files.
-</LI>
-<LI><B>CL_SCAN_PE</B>
-<BR>
-This flag enables deep scanning of Portable Executable files and
-	      allows libclamav to unpack executables compressed with run-time
-	      unpackers.
-</LI>
-<LI><B>CL_SCAN_ELF</B>
-<BR>
-Enable support for ELF files.
-</LI>
-<LI><B>CL_SCAN_BLOCKBROKEN</B>
-<BR>
-libclamav will try to detect broken executables and mark them as
-	      Broken.Executable.
-</LI>
-<LI><B>CL_SCAN_HTML</B>
-<BR>
-This flag enables HTML normalisation (including ScrEnc
-	      decryption).
-</LI>
-<LI><B>CL_SCAN_ALGORITHMIC</B>
-<BR>
-Enable algorithmic detection of viruses.
-</LI>
-<LI><B>CL_SCAN_PHISHING_DOMAINLIST</B>
-<BR>
-Phishing module: restrict URL scanning to domains from .pdf
-	      (RECOMMENDED).
-</LI>
-<LI><B>CL_SCAN_PHISHING_BLOCKSSL</B>
-<BR>
-Phishing module: always block SSL mismatches in URLs.
-</LI>
-<LI><B>CL_SCAN_PHISHING_BLOCKCLOAK</B>
-<BR>
-Phishing module: always block cloaked URLs.
-    
-</LI>
-</UL>
-    All functions return 0 (<code>CL_CLEAN</code>) when the file seems clean,
-    <code>CL_VIRUS</code> when a virus is detected and another value on failure.
-    <PRE>
-	    ...
-	    struct cl_limits limits;
-	    const char *virname;
-
-	memset(&amp;limits, 0, sizeof(struct cl_limits));
-	limits.maxfiles = 1000; /* max files */
-	limits.maxfilesize = 10 * 1048576; /* maximum size of archived or
-                                    * compressed file (files exceeding
-                                    * this limit will be ignored)
-                                    */
-	limits.maxreclevel = 5; /* maximum recursion level for archives */
-	limits.maxmailrec = 64; /* maximum recursion level for mail files */
-	limits.maxratio = 200; /* maximum compression ratio */
-
-	if((ret = cl_scanfile("/tmp/test.exe", &amp;virname, NULL, engine,
-	&amp;limits, CL_STDOPT)) == CL_VIRUS) {
-	    printf("Virus detected: %s\n", virname);
-	} else {
-	    printf("No virus detected.\n");
-	    if(ret != CL_CLEAN)
-	        printf("Error: %s\n", cl_strerror(ret));
-	}
-</PRE>
+    Because the engine structure consumes a few megabytes of system memory, you
+    should release it with <code>cl_free</code> if you no longer need to scan files.
 
 <P>
-<HR>
-<!--Navigation Panel-->
-<A NAME="tex2html767"
-  HREF="node45.html">
-<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html763"
-  HREF="node43.html">
-<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html757"
-  HREF="node43.html">
-<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html765"
-  HREF="node1.html">
-<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
-<BR>
-<B> Next:</B> <A NAME="tex2html768"
-  HREF="node45.html">Memory</A>
-<B> Up:</B> <A NAME="tex2html764"
-  HREF="node43.html">Database reloading</A>
-<B> Previous:</B> <A NAME="tex2html758"
-  HREF="node43.html">Database reloading</A>
- &nbsp <B>  <A NAME="tex2html766"
-  HREF="node1.html">Contents</A></B> 
-<!--End of Navigation Panel-->
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2007-07-11
+2007-10-08
 </ADDRESS>
 </BODY>
 </HTML>

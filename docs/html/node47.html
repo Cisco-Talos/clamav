@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Example</TITLE>
-<META NAME="description" CONTENT="Example">
+<TITLE>CVD format</TITLE>
+<META NAME="description" CONTENT="CVD format">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,53 +19,69 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="previous" HREF="node46.html">
-<LINK REL="up" HREF="node43.html">
+<LINK REL="next" HREF="node48.html">
+<LINK REL="previous" HREF="node42.html">
+<LINK REL="up" HREF="node29.html">
 <LINK REL="next" HREF="node48.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html801"
+<A NAME="tex2html797"
   HREF="node48.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html797"
-  HREF="node43.html">
-<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
 <A NAME="tex2html793"
+  HREF="node29.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html787"
   HREF="node46.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html799"
+<A NAME="tex2html795"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html802"
-  HREF="node48.html">CVD format</A>
-<B> Up:</B> <A NAME="tex2html798"
-  HREF="node43.html">Database reloading</A>
-<B> Previous:</B> <A NAME="tex2html794"
-  HREF="node46.html">clamav-config</A>
- &nbsp <B>  <A NAME="tex2html800"
+<B> Next:</B> <A NAME="tex2html798"
+  HREF="node48.html">Contributors</A>
+<B> Up:</B> <A NAME="tex2html794"
+  HREF="node29.html">LibClamAV</A>
+<B> Previous:</B> <A NAME="tex2html788"
+  HREF="node46.html">Example</A>
+ &nbsp <B>  <A NAME="tex2html796"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00075400000000000000">
-Example</A>
-</H3>
-    You will find an example scanner application in the clamav sources
-    (/example). Don't forget that all programs based on libclamav must be
-    linked against it:
+<H2><A NAME="SECTION00075000000000000000">
+CVD format</A>
+</H2>
+    CVD (ClamAV Virus Database) is a digitally signed tarball containing
+    one or more databases. The header is a 512-bytes long string with colon
+    separated fields:
     <PRE>
-	gcc -Wall ex1.c -o ex1 -lclamav
+ClamAV-VDB:build time:version:number of signatures:functionality
+level required:MD5 checksum:digital signature:builder name:build time (sec)
+</PRE>
+    <code>sigtool --info</code> displays detailed information on CVD files:
+    <PRE>
+zolw@localhost:/usr/local/share/clamav$ sigtool -i daily.cvd 
+Build time: 11 Feb 2007 19-28 +0000
+Version: 2553
+# of signatures: 6063
+Functionality level: 9
+Builder: ccordes
+MD5: 7f337b409249e11dea3effb04dd352f2
+Digital signature: 6Ybd2eeDHBAs8raaEwmayqzoa5ysGDNnQ5Cc89mS2VCm1jRXZP
+ke/itmkTyYQTc/rgJc2uQPr+NvzvUxRpsniwoyZ/gIkPniCLnqVCYOOytwtmirivbrV8j
+0kzxb9nHd+5UQqj/Z3rLbS7T5HCbRX3uE0JX1tAo642Gq9ACH9Fc
+Verification OK.
 </PRE>
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2007-07-11
+2007-10-08
 </ADDRESS>
 </BODY>
 </HTML>

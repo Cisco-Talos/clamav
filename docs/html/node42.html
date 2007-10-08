@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Engine structure</TITLE>
-<META NAME="description" CONTENT="Engine structure">
+<TITLE>Database reloading</TITLE>
+<META NAME="description" CONTENT="Database reloading">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,62 +19,89 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="previous" HREF="node41.html">
-<LINK REL="up" HREF="node38.html">
+<LINK REL="next" HREF="node47.html">
+<LINK REL="previous" HREF="node37.html">
+<LINK REL="up" HREF="node29.html">
 <LINK REL="next" HREF="node43.html">
 </HEAD>
 
 <BODY >
 <!--Navigation Panel-->
-<A NAME="tex2html739"
+<A NAME="tex2html735"
   HREF="node43.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html735"
-  HREF="node38.html">
-<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
 <A NAME="tex2html731"
+  HREF="node29.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html725"
   HREF="node41.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html737"
+<A NAME="tex2html733"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html740"
-  HREF="node43.html">Database reloading</A>
-<B> Up:</B> <A NAME="tex2html736"
-  HREF="node38.html">API</A>
-<B> Previous:</B> <A NAME="tex2html732"
-  HREF="node41.html">Error handling</A>
- &nbsp <B>  <A NAME="tex2html738"
+<B> Next:</B> <A NAME="tex2html736"
+  HREF="node43.html">Data scan functions</A>
+<B> Up:</B> <A NAME="tex2html732"
+  HREF="node29.html">LibClamAV</A>
+<B> Previous:</B> <A NAME="tex2html726"
+  HREF="node41.html">Engine structure</A>
+ &nbsp <B>  <A NAME="tex2html734"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00074400000000000000">
-Engine structure</A>
-</H3>
-    When all required databases are loaded you should prepare the detection
-    engine by calling <code>cl_build</code>. In the case of failure you should
-    free the memory occupied by the engine with <code>cl_free</code>:
+<H2><A NAME="SECTION00074000000000000000">
+Database reloading</A>
+</H2>
+    The most important thing is to keep the internal instance of the database
+    up to date. You can watch database changes with the <code>cl_stat</code>
+    family of functions.
     <PRE>
-	int cl_build(struct cl_engine *engine);
-	void cl_free(struct cl_engine *engine);
+	int cl_statinidir(const char *dirname, struct cl_stat *dbstat);
+	int cl_statchkdir(const struct cl_stat *dbstat);
+	int cl_statfree(struct cl_stat *dbstat);
 </PRE>
-    In our example:
+    Initialization:
     <PRE>
-	if((ret = cl_build(engine))) {
-	    printf("cl_build() error: %s\n", cl_strerror(ret));
-	    cl_free(engine);
-	    exit(1);
+	    ...
+	    struct cl_stat dbstat;
+
+	memset(&amp;dbstat, 0, sizeof(struct cl_stat));
+	cl_statinidir(dbdir, &amp;dbstat);
+</PRE>
+    To check for a change you just need to call <code>cl_statchkdir</code> and check
+    its return value:
+    <PRE>
+	if(cl_statchkdir(&amp;dbstat) == 1) {
+	    reload_database...;
+	    cl_statfree(&amp;dbstat);
+	    cl_statinidir(cl_retdbdir(), &amp;dbstat);
 	}
 </PRE>
+    Remember to reset the <code>cl_stat</code> structure after reload.
 
 <P>
 <BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL>
+<LI><A NAME="tex2html737"
+  HREF="node43.html">Data scan functions</A>
+<LI><A NAME="tex2html738"
+  HREF="node44.html">Memory</A>
+<LI><A NAME="tex2html739"
+  HREF="node45.html">clamav-config</A>
+<LI><A NAME="tex2html740"
+  HREF="node46.html">Example</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2007-07-11
+2007-10-08
 </ADDRESS>
 </BODY>
 </HTML>
