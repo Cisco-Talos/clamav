@@ -1,3 +1,7 @@
+Mon Oct  8 15:44:59 CEST 2007 (tk)
+----------------------------------
+  * clamdscan, freshclam: fix some warnings
+
 Mon Oct  8 14:09:05 CEST 2007 (tk)
 ----------------------------------
   * freshclam/freshclam.c: add support for LogFileMaxSize and LogTime

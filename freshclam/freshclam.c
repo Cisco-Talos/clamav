@@ -565,11 +565,14 @@ int main(int argc, char **argv)
 
     if(opt_check(opt, "on-error-execute")) {
 	if(ret > 1)
-	    system(opt_arg(opt, "on-error-execute"));
+	    if(system(opt_arg(opt, "on-error-execute")) == -1)
+		logg("!system(%s) failed\n", opt_arg(opt, "on-error-execute"));
 
     } else if((cpt = cfgopt(copt, "OnErrorExecute"))->enabled) {
 	if(ret > 1)
-	    system(cpt->strarg);
+	    if(system(cpt->strarg) == -1)
+		logg("!system(%s) failed\n", cpt->strarg);
+
     }
     if (pidfile) {
         unlink(pidfile);

@@ -174,7 +174,7 @@ int logg(const char *str, ...)
 
 	if(logg_size) {
 	    if(stat(logg_file, &sb) != -1) {
-		if(sb.st_size > logg_size) {
+		if((unsigned int) sb.st_size > logg_size) {
 		    logg_file = NULL;
 		    fprintf(logg_fd, "Log size = %u, max = %u\n", (unsigned int) sb.st_size, logg_size);
 		    fprintf(logg_fd, "LOGGING DISABLED (Maximal log file size exceeded).\n");

@@ -1254,8 +1254,8 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	if(arg) {
 	    if(opt_check(opt, "daemon"))
 		execute("OnUpdateExecute", arg);
-            else
-		system(arg);
+            else if(system(arg) == -1)
+		logg("!system(%s) failed\n", arg);
 	}
     }
 
@@ -1303,8 +1303,8 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	    if(newver) {
 		if(opt_check(opt, "daemon"))
 		    execute("OnOutdatedExecute", cmd);
-		else
-		    system(cmd);
+		else if(system(cmd) == -1)
+		logg("!system(%s) failed\n", cmd);
 	    }
 	    free(cmd);
 	}
