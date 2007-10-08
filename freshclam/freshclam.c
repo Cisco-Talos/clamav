@@ -364,9 +364,9 @@ int main(int argc, char **argv)
 	mprintf_stdout = 1;
 
     /* initialize logger */
-
-    if(cfgopt(copt, "LogVerbose")->enabled)
-	logg_verbose = 1;
+    logg_verbose = cfgopt(copt, "LogVerbose")->enabled;
+    logg_time = cfgopt(copt, "LogTime")->enabled;
+    logg_size = cfgopt(copt, "LogFileMaxSize")->numarg;
 
     if(opt_check(opt, "log")) {
 	logg_file = opt_arg(opt, "log");

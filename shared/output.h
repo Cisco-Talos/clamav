@@ -36,7 +36,7 @@ int logg(const char *str, ...);
 
 void logg_close(void);
 extern short int logg_verbose, logg_lock, logg_time;
-extern int logg_size;
+extern unsigned int logg_size;
 extern const char *logg_file;
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)

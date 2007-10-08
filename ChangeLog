@@ -1,3 +1,7 @@
+Mon Oct  8 14:09:05 CEST 2007 (tk)
+----------------------------------
+  * freshclam/freshclam.c: add support for LogFileMaxSize and LogTime
+
 Sat Oct  6 12:36:13 CEST 2007 (acab)
 ------------------------------------
   * libclamav/nsis/nulsft.c: check return value of gentemp()

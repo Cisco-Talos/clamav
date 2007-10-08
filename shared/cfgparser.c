@@ -34,8 +34,8 @@
 struct cfgoption cfg_options[] = {
     {"LogFile",	OPT_QUOTESTR, -1, NULL, 0, OPT_CLAMD},
     {"LogFileUnlock", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
-    {"LogFileMaxSize", OPT_COMPSIZE, 1048576, NULL, 0, OPT_CLAMD},
-    {"LogTime", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"LogFileMaxSize", OPT_COMPSIZE, 1048576, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
+    {"LogTime", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
     {"LogClean", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"LogVerbose", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
     {"LogSyslog", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},

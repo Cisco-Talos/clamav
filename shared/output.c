@@ -78,7 +78,7 @@ pthread_mutex_t logg_mutex = PTHREAD_MUTEX_INITIALIZER;
 FILE *logg_fd = NULL;
 
 short int logg_verbose = 0, logg_lock = 1, logg_time = 0, logg_foreground = 1;
-int logg_size = 0;
+unsigned int logg_size = 0;
 const char *logg_file = NULL;
 #if defined(USE_SYSLOG) && !defined(C_AIX)
 short logg_syslog;
@@ -176,7 +176,7 @@ int logg(const char *str, ...)
 	    if(stat(logg_file, &sb) != -1) {
 		if(sb.st_size > logg_size) {
 		    logg_file = NULL;
-		    fprintf(logg_fd, "Log size = %d, maximal = %d\n", (int) sb.st_size, logg_size);
+		    fprintf(logg_fd, "Log size = %u, max = %u\n", (unsigned int) sb.st_size, logg_size);
 		    fprintf(logg_fd, "LOGGING DISABLED (Maximal log file size exceeded).\n");
 		    fclose(logg_fd);
 		    logg_fd = NULL;
