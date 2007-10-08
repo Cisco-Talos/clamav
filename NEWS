@@ -1,24 +1,12 @@
-0.91
-----
+0.92rc1
+-------
 
-ClamAV 0.91 is the first release to enable the anti-phishing technology
-in default builds. This technology combines heuristics with special
-signatures and provides effective protection against phishing threats.
-Other important changes and add-ons in this version include:
-
-    - unpacker for NSIS (Nullsoft Scriptable Install System) self-extracting
-      archives
-    - unpacker for ASPack 2.12
-    - new implementation of the Aho-Corasick pattern matcher providing
-      better detection for wildcard enabled signatures
-    - support for nibble matching and floating offsets
-    - improved handling of .mdb files (fixes long startup times)
-    - extraction of PE files embedded into other executables
-    - better handling of PE & UPX
-    - removed dependency on libcurl (improves stability)
-    - libclamav.dll available under Windows
-    - IPv6 support in clamav-milter
-    - many other improvements and bugfixes
+This release provides various bugfixes, optimisations and improvements to the
+scanning engine. The new features include support for ARJ and SFX-ARJ archives,
+basic SPF parser in clamav-milter (to reduce phishing false-positives),
+faster scanning and others (see ChangeLog). To get a consistent behaviour of
+the anti-phishing module on all platforms, libclamav now includes the regex
+library from OpenBSD.
 
 --
 The ClamAV team (http://www.clamav.net/team)

@@ -2,6 +2,73 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.92rc1
+-------
+
+This release provides various bugfixes, optimisations and improvements to the
+scanning engine. The new features include support for ARJ and SFX-ARJ archives,
+basic SPF parser in clamav-milter (to reduce phishing false-positives),
+faster scanning and others (see ChangeLog). To get a consistent behaviour of
+the anti-phishing module on all platforms, libclamav now includes the regex
+library from OpenBSD.
+
+--
+The ClamAV team (http://www.clamav.net/team)
+
+
+0.91.2
+-------
+
+This release fixes various bugs in libclamav, freshclam and clamav-milter,
+and adds support for PUA (Potentially Unwanted Application) signatures
+(clamscan: --detect-pua, clamd: DetectPUA).
+
+** Announcement **
+
+Dear ClamAV users,
+
+On August 17, Sourcefire, the creators of Snort, acquired the ClamAV project.
+The full announcement is available here:
+
+http://www.sourcefire.com/products/clamav/
+
+We'd like to thank everyone in the ClamAV community for their dedication to
+the project. The acquisition by Sourcefire is a testament to the hard work of
+the entire ClamAV community in developing cutting edge technology that truly
+showcases the promise of the open source model. With the additional resources
+Sourcefire will provide we look forward to working with the community to
+continue the advancement of ClamAV.
+
+Sourcefire now owns ClamAV project and related trademarks, as well as the
+source code copyrights held by the five principal members of the ClamAV team.
+Sourcefire will also assume control of the ClamAV project including: the
+ClamAV.org domain, web site and web site content; and the ClamAV Sourceforge
+project page.
+
+What's most important is that from the end-user perspective very little will
+change beyond the additional resources Sourcefire will provide in our
+continued efforts to advance the ClamAV technology and improve our ability to
+interact with the open source community. The core team will continue to lead
+the advancement of ClamAV and the CVD as employees of Sourcefire. Both the
+ClamAV engine and the signature database will remain under GPL.
+
+For more information please visit our website and the following FAQ page:
+
+http://www.clamav.net/support/sf-faq
+
+--
+The ClamAV team (http://www.clamav.net/team)
+
+
+0.91.1
+------
+
+This release fixes stability and other issues of 0.91.
+
+--
+The ClamAV team (http://www.clamav.net/team)
+
+
 0.91
 ----
 
