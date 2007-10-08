@@ -30,6 +30,10 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <time.h>
+
+#include "shared/misc.h"
+#include "libclamav/clamav.h"
 
 #include "cfgparser.h"
 #define _GNU_SOURCE
@@ -98,7 +102,7 @@ static void printcfg(const char *cfgfile, int nondef)
 
     if((cfgowner & OPT_CLAMD) && (cfgowner & OPT_FRESHCLAM)) { /* merged cfg */
 	printf("%s: clamd and freshclam directives\n", cfgfile);
-	printf("-----------------\n");
+	printf("------------------------------\n");
 
 	printf("\n[common]\n");
 	for(i = 0; ; i++) {
@@ -137,7 +141,7 @@ static void printcfg(const char *cfgfile, int nondef)
 
 	if(cfgowner & OPT_CLAMD) {
 	    printf("%s: clamd directives\n", cfgfile);
-	    printf("-----------------\n");
+	    printf("------------------------------\n");
 
 	    for(i = 0; ; i++) {
 		opt = &cfg_options[i];
@@ -150,7 +154,7 @@ static void printcfg(const char *cfgfile, int nondef)
 	    }
 	} else {
 	    printf("%s: freshclam directives\n", cfgfile);
-	    printf("-----------------\n");
+	    printf("------------------------------\n");
 
 	    for(i = 0; ; i++) {
 		opt = &cfg_options[i];
@@ -163,8 +167,33 @@ static void printcfg(const char *cfgfile, int nondef)
 	    }
 	}
     }
-
     freecfg(cfg);
+
+}
+
+static void printdb(const char *dir, const char *db)
+{
+	struct cl_cvd *cvd;
+	char path[256];
+	unsigned int inc = 0;
+	time_t t;
+
+
+    snprintf(path, sizeof(path), "%s/%s.cvd", dir, db);
+    if(access(path, R_OK) == -1) {
+	snprintf(path, sizeof(path), "%s/%s.inc/%s.info", dir, db, db);
+	inc = 1;
+	if(access(path, R_OK) == -1) {
+	    printf("%s db: Not found\n", db);
+	    return;
+	}
+    }
+
+    if((cvd = cl_cvdhead(path))) {
+	t = (time_t) cvd->stime;
+	printf("%s db: Format: %s, Version: %u, Build time: %s", db, inc ? ".inc" : ".cvd", cvd->version, ctime(&t));
+	cl_cvdfree(cvd);
+    }
 }
 
 static void help(void)
@@ -191,7 +220,7 @@ int main(int argc, char **argv)
 	    {"non-default", 0, 0, 'n'},
 	    {0, 0, 0, 0}
     	};
-	char *confdir = strdup(CONFDIR);
+	char *confdir = strdup(CONFDIR), *dbdir;
 	int found = 0;
 
 
@@ -245,7 +274,31 @@ int main(int argc, char **argv)
 	free(confdir);
 	return 1;
     }
-
     free(confdir);
+
+    printf("\nEngine and signature databases\n");
+    printf("------------------------------\n");
+
+#ifdef CL_EXPERIMENTAL
+    printf("Engine version: "VERSION" (with experimental code)\n");
+#else
+    printf("Engine version: "VERSION"\n");
+#endif
+
+    if(strcmp(VERSION, cl_retver()))
+	printf("WARNING: Version mismatch: clamconf: "VERSION", libclamav: %s\n", cl_retver());
+
+    printf("Database directory: ");
+    dbdir = freshdbdir();
+    if(!dbdir) {
+	printf("Failed to retrieve\n");
+	return 1;
+    } else printf("%s\n", dbdir);
+
+    if(dbdir) {
+	printdb(dbdir, "main");
+	printdb(dbdir, "daily");
+	free(dbdir);
+    }
     return 0;
 }
