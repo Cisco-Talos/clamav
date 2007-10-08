@@ -551,7 +551,7 @@ void move_infected(const char *filename, const struct optstruct *opt)
     }
 
     if(!stat(movefilename, &mfstat)) {
-        if(ofstat.st_ino == mfstat.st_ino) { /* It's the same file*/
+        if((ofstat.st_dev == mfstat.st_dev) && (ofstat.st_ino == mfstat.st_ino)) { /* It's the same file*/
             logg("File excluded '%s'\n", filename);
             notmoved++;
             free(movefilename);
