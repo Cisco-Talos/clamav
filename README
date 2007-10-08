@@ -5,12 +5,12 @@ here may not be available in binary packages.
 0.92rc1
 -------
 
-This release provides various bugfixes, optimisations and improvements to the
-scanning engine. The new features include support for ARJ and SFX-ARJ archives,
-basic SPF parser in clamav-milter (to reduce phishing false-positives),
-faster scanning and others (see ChangeLog). To get a consistent behaviour of
-the anti-phishing module on all platforms, libclamav now includes the regex
-library from OpenBSD.
+This release provides various bugfixes, optimisations and improvements
+to the scanning engine. The new features include support for ARJ and
+SFX-ARJ archives (experimental), basic SPF parser in clamav-milter (to
+reduce phishing false-positives), faster scanning and others (see ChangeLog).
+To get a consistent behaviour of the anti-phishing module on all platforms,
+libclamav now includes the regex library from OpenBSD.
 
 --
 The ClamAV team (http://www.clamav.net/team)

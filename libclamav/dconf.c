@@ -71,7 +71,7 @@ static struct dconf_module modules[] = {
     { "ARCHIVE",    "ZIP",	    ARCH_CONF_ZIP,	    1 },
     { "ARCHIVE",    "GZIP",	    ARCH_CONF_GZ,	    1 },
     { "ARCHIVE",    "BZIP",	    ARCH_CONF_BZ,	    1 },
-    { "ARCHIVE",    "ARJ",          ARCH_CONF_ARJ,          1 },
+    { "ARCHIVE",    "ARJ",          ARCH_CONF_ARJ,          DCONF_ENABLE_EXPERIMENTAL }, /* exp */
     { "ARCHIVE",    "SZDD",	    ARCH_CONF_SZDD,	    1 },
     { "ARCHIVE",    "CAB",	    ARCH_CONF_CAB,	    1 },
     { "ARCHIVE",    "CHM",	    ARCH_CONF_CHM,	    1 },
