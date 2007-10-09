@@ -1,3 +1,8 @@
+Tue Oct  9 16:28:56 CEST 2007 (tk)
+----------------------------------
+  * libclamav/dconf.c: re-enable ARJ in standard builds
+  * libclamav/others.c: bump f-level
+
 Tue Oct  9 11:36:44 BST 2007 (trog)
 -----------------------------------
   * libclamav/unarj.c: Improve bounds checking.
