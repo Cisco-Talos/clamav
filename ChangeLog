@@ -1,3 +1,7 @@
+Tue Oct  9 16:53:48 CEST 2007 (tk)
+----------------------------------
+  * 0.92rc2 (released with JS and PST code removed)
+
 Tue Oct  9 16:28:56 CEST 2007 (tk)
 ----------------------------------
   * libclamav/dconf.c: re-enable ARJ in standard builds
