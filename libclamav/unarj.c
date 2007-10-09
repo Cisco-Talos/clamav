@@ -428,6 +428,10 @@ static uint16_t decode_p(arj_decode_t *decode_data)
 	if (j >= NP) {
 		mask = 1 << 7;
 		do {
+			if (j >= (2 * NC - 1)) {
+				cli_errmsg("ERROR: bounds exceeded\n");
+				return 0;
+			}
 			if (decode_data->bit_buf & mask) {
 				j = decode_data->right[j];
 			} else {
@@ -478,12 +482,16 @@ static int decode(int fd, arj_metadata_t *metadata)
 			if ((i = out_ptr - i - 1) < 0) {
 				i += DDICSIZ;
 			}
+			if ((i >= DDICSIZ) || (i < 0)) {
+				cli_warnmsg("UNARJ: bounds exceeded - probably a corrupted file.\n");
+				break;
+			}
 			if (out_ptr > i && out_ptr < DDICSIZ - MAXMATCH - 1) {
-				while (--j >= 0) {
+				while ((--j >= 0) && (i < DDICSIZ)) {
 					decode_data.text[out_ptr++] = decode_data.text[i++];
 				}
 			} else {
-				while (--j >= 0) {
+				while (--j >= 0) {				
 					decode_data.text[out_ptr] = decode_data.text[i];
 					if (++out_ptr >= DDICSIZ) {
 						out_ptr = 0;
@@ -588,6 +596,10 @@ static int decode_f(int fd, arj_metadata_t *metadata)
 			pos = decode_ptr(&decode_data);
 			if ((i = out_ptr - pos - 1) < 0) {
 				i += DDICSIZ;
+			}
+			if ((i >= DDICSIZ) || (i < 0)) {
+				cli_warnmsg("UNARJ: bounds exceeded - probably a corrupted file.\n");
+				break;
 			}
 			while (j-- > 0) {
 				decode_data.text[out_ptr] = decode_data.text[i];
