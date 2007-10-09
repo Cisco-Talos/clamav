@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-20081005"
+#define	CM_VERSION	"0.92rc1"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -573,8 +573,7 @@ static	void	spf_ip(char *ip, int zero, void *v);
 static	sfsistat	black_hole(const struct privdata *privdata);
 static	int	useful_header(const char *cmd);
 
-extern	short	logg_time, logg_lock, logg_verbose, logg_foreground;
-extern	int	logg_size;
+extern	short	logg_foreground;
 
 static void
 help(void)
