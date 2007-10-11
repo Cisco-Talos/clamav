@@ -31,14 +31,12 @@
 #include <unistd.h>
 #endif
 
+#ifndef O_BINARY
+#define O_BINARY        0
+#endif
+
 #include "others.h"
-
-/* STUFF TO BE REMOVED */
-#include <string.h>
-#define HERE printf("HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-#define cli_debug_flag 1
-#define cli_dbgmsg(...) printf(__VA_ARGS__)
-
+#include "scanners.h"
 
 /*********************
    MT realted stuff 
@@ -145,11 +143,11 @@ static uint32_t getbits(struct UNP *UNP, uint32_t size) {
 
 
 int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
-  uint8_t b[24];
+  uint8_t b[24], comp;
   uint8_t *buf = b;
   uint32_t s, us, m4sum=0;
-  uint8_t comp;
   int i;
+  char *tempfile;
   struct UNP UNP;
 
   lseek(desc, offset, SEEK_SET);
@@ -227,94 +225,110 @@ int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
   }
   MT_decrypt(buf,UNP.csize,0x22af+m4sum);
 
-  if (cli_readint32(buf)!=0x35304145) {
-    cli_dbgmsg("autoit: bad magic or unsupported version\n");
-    return CL_EFORMAT;
-  }
+  if (comp == 1) {
+    cli_dbgmsg("autoit: script is compressed\n");
+    if (cli_readint32(buf)!=0x35304145) {
+      cli_dbgmsg("autoit: bad magic or unsupported version\n");
+      return CL_EFORMAT;
+    }
 
-  UNP.usize = ntohl(*(uint32_t *)(buf+4)); /* FIXME: portable? */
-  if (!(UNP.outputbuf = cli_malloc(UNP.usize))) {
-    free(buf);
-    return CL_EMEM;
-  }
-  cli_dbgmsg("autoit: uncompressed size again: %x\n", UNP.usize);
+    UNP.usize = ntohl(*(uint32_t *)(buf+4)); /* FIXME: portable? */
+    if (!(UNP.outputbuf = cli_malloc(UNP.usize))) {
+      free(buf);
+      return CL_EMEM;
+    }
+    cli_dbgmsg("autoit: uncompressed size again: %x\n", UNP.usize);
 
-  UNP.inputbuf = buf;
-  UNP.cur_output = 0;
-  UNP.cur_input = 8;
-  UNP.bitmap.full = 0;
-  UNP.bits_avail = 0;
-  UNP.error = 0;
+    UNP.inputbuf = buf;
+    UNP.cur_output = 0;
+    UNP.cur_input = 8;
+    UNP.bitmap.full = 0;
+    UNP.bits_avail = 0;
+    UNP.error = 0;
   
-  while (!UNP.error && UNP.cur_output < UNP.usize) {
-    if (getbits(&UNP, 1)) {
-      uint32_t bb, bs, addme=0;
-      bb = getbits(&UNP, 15);
+    while (!UNP.error && UNP.cur_output < UNP.usize) {
+      if (getbits(&UNP, 1)) {
+	uint32_t bb, bs, addme=0;
+	bb = getbits(&UNP, 15);
       
-      if ((bs = getbits(&UNP, 2))==3) {
-	addme = 3;
-	if((bs = getbits(&UNP, 3))==7) {
-	  addme = 10;
-	  if((bs = getbits(&UNP, 5))==31) {
-	    addme = 41;
-	    if((bs = getbits(&UNP, 8))==255) {
-	      addme = 296;
-	      while((bs = getbits(&UNP, 8))==255) {
-		addme+=255;
+	if ((bs = getbits(&UNP, 2))==3) {
+	  addme = 3;
+	  if((bs = getbits(&UNP, 3))==7) {
+	    addme = 10;
+	    if((bs = getbits(&UNP, 5))==31) {
+	      addme = 41;
+	      if((bs = getbits(&UNP, 8))==255) {
+		addme = 296;
+		while((bs = getbits(&UNP, 8))==255) {
+		  addme+=255;
+		}
 	      }
 	    }
 	  }
 	}
-      }
-      bs += 3+addme;
+	bs += 3+addme;
 
-      if(!CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output], bs) ||
-	 !CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output-bb], bs)) {
-	UNP.error = 1;
-	break;
-      }
-      while(bs--) {
-	UNP.outputbuf[UNP.cur_output]=UNP.outputbuf[UNP.cur_output-bb];
+	if(!CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output], bs) ||
+	   !CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output-bb], bs)) {
+	  UNP.error = 1;
+	  break;
+	}
+	while(bs--) {
+	  UNP.outputbuf[UNP.cur_output]=UNP.outputbuf[UNP.cur_output-bb];
+	  UNP.cur_output++;
+	}
+      } else {
+	UNP.outputbuf[UNP.cur_output] = (uint8_t)getbits(&UNP, 8);
 	UNP.cur_output++;
       }
-    } else {
-      UNP.outputbuf[UNP.cur_output] = (uint8_t)getbits(&UNP, 8);
-      UNP.cur_output++;
     }
+
+    free(buf);
+    if (UNP.error) {
+      cli_dbgmsg("autoit: decompression error\n");
+      free(UNP.outputbuf);
+      return CL_CLEAN;
+    }
+  } else {
+    /* No clues how this would look like o.0 */
+    cli_dbgmsg("autoit: script is not compressed\n");
+    UNP.outputbuf = buf;
+    UNP.usize = UNP.csize;
   }
 
-  free(buf);
-  if (UNP.error) {
-    cli_dbgmsg("autoit: decompression error\n");
+
+  /* FIXME: TODO send to text notmalization */
+
+  if(!(tempfile = cli_gentemp(NULL))) {
     free(UNP.outputbuf);
-    return CL_CLEAN;
+    return CL_EMEM;
   }
-  cli_dbgmsg("autoit: estracted script to FIXME...\n");
-  i = open("script.txt", O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
-  write(i, UNP.outputbuf, UNP.usize);
-  /* FIXME: TODO send to text notmalization and call scandesc */
-  close(i);
+  if((i = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
+    cli_dbgmsg("autoit: Can't create file %s\n", tempfile);
+    free(tempfile);
+    free(UNP.outputbuf);
+    return CL_EIO;
+  }
+  if(write(i, UNP.outputbuf, UNP.usize) != UNP.usize) {
+    cli_dbgmsg("autoit: cannot write %d bytes\n", UNP.usize);
+    close(i);
+    free(tempfile);
+    free(UNP.outputbuf);
+    return CL_EIO;
+  }
   free(UNP.outputbuf);
+  if(cli_leavetemps_flag)
+    cli_dbgmsg("autoit: script estracted to %s\n", tempfile);
+  else 
+    cli_dbgmsg("autoit: script successfully extracted\n");
+  fsync(i);
+  lseek(i, 0, SEEK_SET);
+  if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
+    close(i);
+    if(!cli_leavetemps_flag) unlink(tempfile);
+    free(tempfile);
+    return CL_VIRUS;
+  }
+  close(i);
   return CL_CLEAN;
-}
-
-int main(int argc, char **argv) {
-  int i, j;
-  char magic[24];
-  cli_ctx ctx;
-  ctx.limits = NULL;
-  if (argc!=3) {
-    printf("usage: %s <file> <offset>\n", argv[0]);
-    return -1;
-  }
-  i = open(argv[1], O_RDONLY);
-  j = strtol(argv[2], NULL, 0);
-  lseek(i, j, SEEK_SET);
-  read(i, magic, 24);
-  if(memcmp(magic, "\xa3\x48\x4b\xbe\x98\x6c\x4a\xa9\x99\x4c\x53\x0a\x86\xd6\x48\x7d\x41\x55\x33\x21\x45\x41\x30\x35", 24)) {
-    printf("Bad file or offset\n");
-    return 0;
-  }
-
-  return cli_scanautoit(i, &ctx, j+24);
 }
