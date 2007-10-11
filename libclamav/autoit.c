@@ -29,11 +29,20 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <arpa/inet.h>
 
-#include <stdlib.h>
+/* #include <stdlib.h> */
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
+#include "others.h"
+
+#define HERE printf("HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+#define cli_debug_flag 1
+#define cli_dbgmsg(...) printf(__VA_ARGS__)
 
 /*********************
    MT realted stuff 
@@ -134,99 +143,116 @@ static uint32_t getbits(struct UNP *UNP, uint32_t size) {
    autoit3 handler 
 *********************/
 
-int main(int argc, char **argv) {
-  uint8_t b[20000];
+
+int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
+  uint8_t b[24]; /* FIXME */
   uint8_t *buf = b, *out, *alloc1_20k;
   uint32_t s, cs, us, m4sum=0;
   uint8_t comp;
   int i; 
   struct UNP UNP;
 
-  if (argc!=3) {
-    printf("usage: %s <file> <offset>\n", argv[0]);
-    return -1;
-  }
-  i = open(argv[1], O_RDONLY);
-  lseek(i, strtol(argv[2], NULL, 0), SEEK_SET);
-  read(i, buf, 20000);
-  close(i);
+  lseek(desc, offset, SEEK_SET);
+  if (cli_readn(desc, buf, 24)!=24)
+    return CL_CLEAN;
 
-  if(memcmp(buf, "\xa3\x48\x4b\xbe\x98\x6c\x4a\xa9\x99\x4c\x53\x0a\x86\xd6\x48\x7d\x41\x55\x33\x21\x45\x41\x30\x35", 8+8+4+4)) return -1;
-  buf+=8+8+4+4;
-  printf("found\n");
-
-  for (i=0; i<16; i++) m4sum += *buf++;
+  for (i=0; i<16; i++)
+    m4sum += *buf++;
   
   MT_decrypt(buf,4,0x16fa);
-  if(memcmp(buf, "FILE", 4)) return -1;
-  buf+=4;
-  printf("Got FILE\n");
-  s = *(uint32_t *)buf;
-  buf+=4;
-  s ^= 0x29bc;
-  printf("Magic size: %x vs %x\n", s, 0x17);
-  MT_decrypt(buf,s,s+0xa25e);
-  printf("%s\n", buf);
-  buf+=s;
+  if(cli_readint32(buf) != 0x454c4946) {
+    cli_dbgmsg("autoit: no FILE magic found, giving up\n");
+    return CL_CLEAN;
+  }
 
-  s = *(uint32_t *)buf;
   buf+=4;
-  s ^= 0x29ac;
-  printf("Original filename size: %x\n", s);
-  MT_decrypt(buf,s,s+0xf25e);
-  printf("%s\n", buf);
-  buf+=s;
+  s = cli_readint32(buf) ^ 0x29bc;
+  buf=b;
+  if (s > 23) {
+    cli_dbgmsg("autoit: magic string too long, giving up\n");
+    return CL_CLEAN;
+  }
+  if(cli_debug_flag) {
+    cli_dbgmsg("autoit: magic string size %d (expected values 23 or 15)\n", s);
+    if (cli_readn(desc, buf, s)!=s)
+      return CL_CLEAN;
+    buf[s]='\0';
+    MT_decrypt(buf,s,s+0xa25e);
+    cli_dbgmsg("autoit: magic string '%s'\n", buf);
+  } else {
+    lseek(desc, s, SEEK_CUR);
+  }
 
-  comp = *buf++;
-  
-  cs = *(uint32_t *)buf;
-  buf+=4;
-  cs ^= 0x45aa;
-  printf("Compressed size: %x\n", cs);
+  if (cli_readn(desc, buf, 4)!=4)
+    return CL_CLEAN;
+  s = cli_readint32(buf) ^ 0x29ac;
+  if(cli_debug_flag && s<300) {
+    char *n;
+    if (!(n = cli_malloc(s)))
+      return CL_EMEM;
+    if (cli_readn(desc, n, s)!=s) {
+      free(n);
+      return CL_CLEAN;
+    }
+    MT_decrypt(n,s,s+0xf25e);
+    cli_dbgmsg("autoit: original filename '%s'\n", n);
+    free(n);
+  } else {
+    lseek(desc, s, SEEK_CUR);
+  }
 
-  us = *(uint32_t *)buf;
-  buf+=4;
-  us ^= 0x45aa;
-  printf("Uncompressed size: %x\n", us);
-  out = malloc(us);
+  if (cli_readn(desc, buf, 13)!=13)
+    return CL_CLEAN;
+  comp = *buf; /* FIXME: TODO - nocomp */
+  cs = cli_readint32(buf+1) ^ 0x45aa;
+  cli_dbgmsg("autoit: compressed size: %x\n", cs);
+  us = cli_readint32(buf+5) ^ 0x45aa;
+  cli_dbgmsg("autoit: advertised uncompressed size %x\n", us);
+  out = malloc(us); /* FIXME don't use */
+  s = cli_readint32(buf+9) ^ 0xc3d2;
+  cli_dbgmsg("autoit: ref chksum: %x\n", s);
 
-  s = *(uint32_t *)buf;
-  buf+=20;
-  s ^= 0xc3d2;
-  printf("Ref chksum: %x\n", s);
+  if(ctx->limits && ctx->limits->maxfilesize && cs > ctx->limits->maxfilesize) {
+    cli_dbgmsg("autoit: sizes exceeded (%lu > %lu)\n", cs, ctx->limits->maxfilesize);
+    return CL_CLEAN;
+  }
 
+  lseek(desc, 16, SEEK_CUR);
+  if (!(buf = cli_malloc(cs)))
+    return CL_EMEM;
+  if (cli_readn(desc, buf, cs)!=cs) {
+    cli_dbgmsg("autoit: failed to read compressed stream. broken/truncated file?\n");
+    free(buf);
+    return CL_CLEAN;
+  }
   MT_decrypt(buf,cs,0x22af+m4sum);
-  /* verify_checksum() */
 
-  /* struct_init */
+  if (cli_readint32(buf)!=0x35304145) {
+    cli_dbgmsg("autoit: bad magic or unsupported version\n");
+    return CL_EFORMAT;
+  }
+
+  UNP.unc_size_again = ntohl(*(uint32_t *)(buf+4));
+  if (!(UNP.alloc1_20k = cli_malloc(UNP.unc_size_again))) {
+    free(buf);
+    return CL_EMEM;
+  }
+  cli_dbgmsg("autoit: uncompressed size again: %x\n", UNP.unc_size_again);
+
   UNP.outputbuf = out;
   UNP.inputbuf = buf;
   UNP.cur_output = 0;
   UNP.cur_input = 8;
-
-  /* in real_decode() */
   UNP.unc_current = 0;
   UNP.alloc1_cur = 0;
   UNP.bitmap.full = 0;
   UNP.bits_avail = 0;
   
-  /* in check_packed_header() */
-  if (*(uint32_t *)buf!=0x35304145) return -1;
-  UNP.unc_size_again = ntohl(*(uint32_t *)(buf+4));
-  printf("Uncompressed size again: %x\n", UNP.unc_size_again);
-  /* in check_packed_header */
-
-  /* in alloc123() */
-  UNP.alloc1_20k = malloc(0x20000);
-  /* out alloc123() */
-
-  /* in the_real_thing() */
   while (UNP.unc_current < UNP.unc_size_again) {
     if (getbits(&UNP, 1)) {
       uint32_t bb, bs, addme=0;
       bb = getbits(&UNP, 15);
       
-      /* in getback() */
       if ((bs = getbits(&UNP, 2))==3) {
 	addme = 3;
 	if((bs = getbits(&UNP, 3))==7) {
@@ -243,7 +269,6 @@ int main(int argc, char **argv) {
 	}
       }
       bs += 3+addme;
-      /* out getback() */
 
       while(bs--) {
 	UNP.alloc1_20k[UNP.unc_current & 0x1ffff]=UNP.alloc1_20k[(UNP.unc_current - bb) & 0x1ffff];
@@ -265,4 +290,25 @@ int main(int argc, char **argv) {
   write(i, UNP.outputbuf, UNP.unc_size_again);
   close(i);
   return 0;
+}
+
+int main(int argc, char **argv) {
+  int i, j;
+  char magic[24];
+  cli_ctx ctx;
+  ctx.limits = NULL;
+  if (argc!=3) {
+    printf("usage: %s <file> <offset>\n", argv[0]);
+    return -1;
+  }
+  i = open(argv[1], O_RDONLY);
+  j = strtol(argv[2], NULL, 0);
+  lseek(i, j, SEEK_SET);
+  read(i, magic, 24);
+  if(memcmp(magic, "\xa3\x48\x4b\xbe\x98\x6c\x4a\xa9\x99\x4c\x53\x0a\x86\xd6\x48\x7d\x41\x55\x33\x21\x45\x41\x30\x35", 24)) {
+    printf("Bad file or offset\n");
+    return 0;
+  }
+
+  return cli_scanautoit(i, &ctx, j+24);
 }
