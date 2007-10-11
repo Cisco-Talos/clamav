@@ -86,6 +86,7 @@
 #include "rtf.h"
 #include "unarj.h"
 #include "nulsft.h"
+#include "autoit.h"
 
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>
@@ -1920,6 +1921,13 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg)
 			}
 			break;
 
+		    case CL_TYPE_AUTOIT:
+		        if(1 && type == CL_TYPE_MSEXE /* FIXME_AUTOIT: DCONF THIS */) {
+			    cli_dbgmsg("AUTOIT signature found at %u\n", (unsigned int) fpt->offset);
+			    nret = cli_scanautoit(desc, ctx, fpt->offset + 24);
+			}
+			break;
+
 		    case CL_TYPE_MSEXE:
 			if(SCAN_PE && ctx->dconf->pe && fpt->offset) {
 			    cli_dbgmsg("PE signature found at %u\n", (unsigned int) fpt->offset);
@@ -2179,6 +2187,11 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	case CL_TYPE_SIS:
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_SIS))
 		ret = cli_scansis(desc, ctx);
+	    break;
+
+        case CL_TYPE_AUTOIT:
+	    if(1 /* FIXME_AUTOIT: DCONF THIS */)
+		ret = cli_scanautoit(desc, ctx, 24);
 	    break;
 
 	case CL_TYPE_DATA:

@@ -111,6 +111,8 @@ libclamav_la_SOURCES = \
 	is_tar.h \
 	tnef.c \
 	tnef.h \
+	autoit.c \
+	autoit.h \
 	regex/strlcpy.c \
 	regex/regcomp.c \
 	regex/regerror.c \

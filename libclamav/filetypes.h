@@ -55,7 +55,6 @@ typedef enum {
     CL_TYPE_PST,	/* Microsoft Outlook binary email folder (.pst file) */
     CL_TYPE_HTML_UTF16,
     CL_TYPE_RTF,
-    CL_TYPE_AUTOIT,
 
     /* bigger numbers have higher priority (in o-t-f detection) */
     CL_TYPE_HTML, /* on the fly */
@@ -65,7 +64,9 @@ typedef enum {
     CL_TYPE_RARSFX, /* on the fly */
     CL_TYPE_CABSFX,
     CL_TYPE_ARJSFX,
-    CL_TYPE_NULSFT /* on the fly */
+    CL_TYPE_NULSFT, /* on the fly */
+    CL_TYPE_AUTOIT /* FIXME_AUTOIT: good nuff? */
+
 } cli_file_t;
 
 struct cli_matched_type {

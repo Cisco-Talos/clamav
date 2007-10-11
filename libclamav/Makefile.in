@@ -84,11 +84,11 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	pe.lo upx.lo htmlnorm.lo chmunpack.lo rebuildpe.lo petite.lo \
 	wwunpack.lo unsp.lo aspack.lo packlibs.lo fsg.lo mew.lo \
 	upack.lo line.lo untar.lo unzip.lo special.lo binhex.lo \
-	is_tar.lo tnef.lo strlcpy.lo regcomp.lo regerror.lo regexec.lo \
-	regfree.lo unrar15.lo unrarvm.lo unrar.lo unrarfilter.lo \
-	unrarppm.lo unrar20.lo unrarcmd.lo unarj.lo LZMADecode.lo \
-	bzlib.lo infblock.lo nulsft.lo pdf.lo spin.lo yc.lo elf.lo \
-	sis.lo uuencode.lo pst.lo phishcheck.lo \
+	is_tar.lo tnef.lo autoit.lo strlcpy.lo regcomp.lo regerror.lo \
+	regexec.lo regfree.lo unrar15.lo unrarvm.lo unrar.lo \
+	unrarfilter.lo unrarppm.lo unrar20.lo unrarcmd.lo unarj.lo \
+	LZMADecode.lo bzlib.lo infblock.lo nulsft.lo pdf.lo spin.lo \
+	yc.lo elf.lo sis.lo uuencode.lo pst.lo phishcheck.lo \
 	phish_domaincheck_db.lo phish_whitelist.lo regex_list.lo \
 	sha256.lo mspack.lo cab.lo entconv.lo hashtab.lo dconf.lo \
 	lockdb.lo
@@ -326,6 +326,8 @@ libclamav_la_SOURCES = \
 	is_tar.h \
 	tnef.c \
 	tnef.h \
+	autoit.c \
+	autoit.h \
 	regex/strlcpy.c \
 	regex/regcomp.c \
 	regex/regerror.c \
@@ -477,6 +479,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/LZMADecode.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/aspack.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/autoit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/binhex.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/blob.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bzlib.Plo@am__quote@
