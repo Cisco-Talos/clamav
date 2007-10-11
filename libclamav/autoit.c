@@ -17,10 +17,6 @@
  *  MA 02110-1301, USA.
  */
 
-#ifndef I_AM_A_FOOL
-#error only a fool would use this stuff
-#endif
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -28,21 +24,21 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
 #include <arpa/inet.h>
 
-/* #include <stdlib.h> */
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
 #include "others.h"
 
+/* STUFF TO BE REMOVED */
+#include <string.h>
 #define HERE printf("HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 #define cli_debug_flag 1
 #define cli_dbgmsg(...) printf(__VA_ARGS__)
+
 
 /*********************
    MT realted stuff 
@@ -103,10 +99,9 @@ struct UNP {
   uint8_t *inputbuf;
   uint32_t cur_output;
   uint32_t cur_input;
-  uint32_t unc_size_again;
-  uint8_t *alloc1_20k;
-  uint32_t unc_current;
-  uint32_t alloc1_cur;
+  uint32_t usize;
+  uint32_t csize;
+  uint32_t bits_avail;
   union {
     uint32_t full;
     struct {
@@ -119,12 +114,17 @@ struct UNP {
 #endif
     } half;
   } bitmap;
-  uint32_t bits_avail;
+  uint32_t error;
 };
 
 
 static uint32_t getbits(struct UNP *UNP, uint32_t size) {
   UNP->bitmap.half.h = 0;
+  if (size > UNP->bits_avail && ((size - UNP->bits_avail - 1)/16+1)*2 > UNP->csize - UNP->cur_input) {
+    cli_dbgmsg("autoit: getbits() - not enough bits available");
+    UNP->error = 1;
+    return 0; /* won't infloop nor spam */
+  }
   while (size) {
     if (!UNP->bits_avail) {
       UNP->bitmap.half.l |= UNP->inputbuf[UNP->cur_input++]<<8;
@@ -145,11 +145,11 @@ static uint32_t getbits(struct UNP *UNP, uint32_t size) {
 
 
 int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
-  uint8_t b[24]; /* FIXME */
-  uint8_t *buf = b, *out, *alloc1_20k;
-  uint32_t s, cs, us, m4sum=0;
+  uint8_t b[24];
+  uint8_t *buf = b;
+  uint32_t s, us, m4sum=0;
   uint8_t comp;
-  int i; 
+  int i;
   struct UNP UNP;
 
   lseek(desc, offset, SEEK_SET);
@@ -174,7 +174,7 @@ int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
   }
   if(cli_debug_flag) {
     cli_dbgmsg("autoit: magic string size %d (expected values 23 or 15)\n", s);
-    if (cli_readn(desc, buf, s)!=s)
+    if (cli_readn(desc, buf, s)!=(int)s)
       return CL_CLEAN;
     buf[s]='\0';
     MT_decrypt(buf,s,s+0xa25e);
@@ -187,14 +187,15 @@ int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
     return CL_CLEAN;
   s = cli_readint32(buf) ^ 0x29ac;
   if(cli_debug_flag && s<300) {
-    char *n;
-    if (!(n = cli_malloc(s)))
+    uint8_t *n;
+    if (!(n = cli_malloc(s+1)))
       return CL_EMEM;
-    if (cli_readn(desc, n, s)!=s) {
+    if (cli_readn(desc, n, s)!=(int)s) {
       free(n);
       return CL_CLEAN;
     }
     MT_decrypt(n,s,s+0xf25e);
+    n[s]='\0';
     cli_dbgmsg("autoit: original filename '%s'\n", n);
     free(n);
   } else {
@@ -204,51 +205,48 @@ int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
   if (cli_readn(desc, buf, 13)!=13)
     return CL_CLEAN;
   comp = *buf; /* FIXME: TODO - nocomp */
-  cs = cli_readint32(buf+1) ^ 0x45aa;
-  cli_dbgmsg("autoit: compressed size: %x\n", cs);
+  UNP.csize = cli_readint32(buf+1) ^ 0x45aa;
+  cli_dbgmsg("autoit: compressed size: %x\n", UNP.csize);
   us = cli_readint32(buf+5) ^ 0x45aa;
   cli_dbgmsg("autoit: advertised uncompressed size %x\n", us);
-  out = malloc(us); /* FIXME don't use */
   s = cli_readint32(buf+9) ^ 0xc3d2;
   cli_dbgmsg("autoit: ref chksum: %x\n", s);
 
-  if(ctx->limits && ctx->limits->maxfilesize && cs > ctx->limits->maxfilesize) {
-    cli_dbgmsg("autoit: sizes exceeded (%lu > %lu)\n", cs, ctx->limits->maxfilesize);
+  if(ctx->limits && ctx->limits->maxfilesize && UNP.csize > ctx->limits->maxfilesize) {
+    cli_dbgmsg("autoit: sizes exceeded (%lu > %lu)\n", (unsigned long int)UNP.csize, ctx->limits->maxfilesize);
     return CL_CLEAN;
   }
 
   lseek(desc, 16, SEEK_CUR);
-  if (!(buf = cli_malloc(cs)))
+  if (!(buf = cli_malloc(UNP.csize)))
     return CL_EMEM;
-  if (cli_readn(desc, buf, cs)!=cs) {
+  if (cli_readn(desc, buf, UNP.csize)!=(int)UNP.csize) {
     cli_dbgmsg("autoit: failed to read compressed stream. broken/truncated file?\n");
     free(buf);
     return CL_CLEAN;
   }
-  MT_decrypt(buf,cs,0x22af+m4sum);
+  MT_decrypt(buf,UNP.csize,0x22af+m4sum);
 
   if (cli_readint32(buf)!=0x35304145) {
     cli_dbgmsg("autoit: bad magic or unsupported version\n");
     return CL_EFORMAT;
   }
 
-  UNP.unc_size_again = ntohl(*(uint32_t *)(buf+4));
-  if (!(UNP.alloc1_20k = cli_malloc(UNP.unc_size_again))) {
+  UNP.usize = ntohl(*(uint32_t *)(buf+4)); /* FIXME: portable? */
+  if (!(UNP.outputbuf = cli_malloc(UNP.usize))) {
     free(buf);
     return CL_EMEM;
   }
-  cli_dbgmsg("autoit: uncompressed size again: %x\n", UNP.unc_size_again);
+  cli_dbgmsg("autoit: uncompressed size again: %x\n", UNP.usize);
 
-  UNP.outputbuf = out;
   UNP.inputbuf = buf;
   UNP.cur_output = 0;
   UNP.cur_input = 8;
-  UNP.unc_current = 0;
-  UNP.alloc1_cur = 0;
   UNP.bitmap.full = 0;
   UNP.bits_avail = 0;
+  UNP.error = 0;
   
-  while (UNP.unc_current < UNP.unc_size_again) {
+  while (!UNP.error && UNP.cur_output < UNP.usize) {
     if (getbits(&UNP, 1)) {
       uint32_t bb, bs, addme=0;
       bb = getbits(&UNP, 15);
@@ -270,26 +268,34 @@ int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
       }
       bs += 3+addme;
 
+      if(!CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output], bs) ||
+	 !CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output-bb], bs)) {
+	UNP.error = 1;
+	break;
+      }
       while(bs--) {
-	UNP.alloc1_20k[UNP.unc_current & 0x1ffff]=UNP.alloc1_20k[(UNP.unc_current - bb) & 0x1ffff];
-	UNP.unc_current++;
+	UNP.outputbuf[UNP.cur_output]=UNP.outputbuf[UNP.cur_output-bb];
+	UNP.cur_output++;
       }
     } else {
-      UNP.alloc1_20k[UNP.unc_current & 0x1ffff] = (uint8_t)getbits(&UNP, 8);
-      UNP.unc_current++;
-    }
-    while (UNP.alloc1_cur<UNP.unc_current) { /* flush_output - FIXME: get rid of this crap */
-      UNP.outputbuf[UNP.cur_output] = UNP.alloc1_20k[UNP.alloc1_cur & 0x1fff];
-      UNP.alloc1_cur++;
+      UNP.outputbuf[UNP.cur_output] = (uint8_t)getbits(&UNP, 8);
       UNP.cur_output++;
     }
   }
 
-  printf("Unpacked %d out of %d bytes\n", UNP.unc_current, UNP.unc_size_again);
+  free(buf);
+  if (UNP.error) {
+    cli_dbgmsg("autoit: decompression error\n");
+    free(UNP.outputbuf);
+    return CL_CLEAN;
+  }
+  cli_dbgmsg("autoit: estracted script to FIXME...\n");
   i = open("script.txt", O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
-  write(i, UNP.outputbuf, UNP.unc_size_again);
+  write(i, UNP.outputbuf, UNP.usize);
+  /* FIXME: TODO send to text notmalization and call scandesc */
   close(i);
-  return 0;
+  free(UNP.outputbuf);
+  return CL_CLEAN;
 }
 
 int main(int argc, char **argv) {
