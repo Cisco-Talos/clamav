@@ -228,41 +228,6 @@ typedef struct unpack_data_tag
 {
 	int ofd;
 	
-/*	unsigned char in_buf[MAX_BUF_SIZE];
-	uint8_t window[MAXWINSIZE];
-	int in_addr;
-	int in_bit;
-	unsigned int unp_ptr;
-	unsigned int wr_ptr;
-	int tables_read;
-	int read_top;
-	int read_border;
-	int unp_block_type;
-	int prev_low_dist;
-	int low_dist_rep_count;
-	unsigned char unp_old_table[HUFF_TABLE_SIZE];
-	struct LitDecode LD;
-	struct DistDecode DD;
-	struct LowDistDecode LDD;
-	struct RepDecode RD;
-	struct BitDecode BD;
-	unsigned int old_dist[4];
-	unsigned int old_dist_ptr;
-	unsigned int last_dist;
-	unsigned int last_length;
-	ppm_data_t ppm_data;
-	int ppm_esc_char;
-	int ppm_error;
-	rar_filter_array_t Filters;
-	rar_filter_array_t PrgStack;
-	int *old_filter_lengths;
-	int last_filter, old_filter_lengths_size;
-	int64_t written_size;
-	int64_t dest_unp_size;
-	uint32_t pack_size;
-	rarvm_data_t rarvm_data;
-	unsigned int unp_crc;*/
-	
 	unsigned char in_buf[MAX_BUF_SIZE];
 	uint8_t window[MAXWINSIZE];
 	int in_addr;
