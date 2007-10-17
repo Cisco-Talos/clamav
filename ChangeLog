@@ -1,3 +1,7 @@
+Wed Oct 17 11:40:05 BST 2007 (trog)
+-----------------------------------
+  * libclamav/unrar: remove RARv3 support.
+
 Tue Oct  9 16:53:48 CEST 2007 (tk)
 ----------------------------------
   * 0.92rc2 (released with JS and PST code removed)
