@@ -33,10 +33,7 @@
 
 struct unpack_data_tag;
 
-#include "unrarppm.h"
-#include "unrarvm.h"
-#include "unrarcmd.h"
-#include "unrarfilter.h"
+#include "cltypes.h"
 #include "clamav.h"
 
 #define FALSE (0)
@@ -174,30 +171,6 @@ struct Decode
   unsigned int DecodeNum[2];
 };
 
-struct LitDecode
-{
-  unsigned int MaxNum;
-  unsigned int DecodeLen[16];
-  unsigned int DecodePos[16];
-  unsigned int DecodeNum[NC];
-};
-
-struct DistDecode
-{
-  unsigned int MaxNum;
-  unsigned int DecodeLen[16];
-  unsigned int DecodePos[16];
-  unsigned int DecodeNum[DC];
-};
-
-struct LowDistDecode
-{
-  unsigned int MaxNum;
-  unsigned int DecodeLen[16];
-  unsigned int DecodePos[16];
-  unsigned int DecodeNum[LDC];
-};
-
 struct RepDecode
 {
   unsigned int MaxNum;
@@ -214,13 +187,20 @@ struct BitDecode
   unsigned int DecodeNum[BC];
 };
 
-struct UnpackFilter
+struct LitDecode
 {
-  unsigned int block_start;
-  unsigned int block_length;
-  unsigned int exec_count;
-  int next_window;
-  struct rarvm_prepared_program prg;
+  unsigned int MaxNum;
+  unsigned int DecodeLen[16];
+  unsigned int DecodePos[16];
+  unsigned int DecodeNum[NC];
+};
+
+struct DistDecode
+{
+  unsigned int MaxNum;
+  unsigned int DecodeLen[16];
+  unsigned int DecodePos[16];
+  unsigned int DecodeNum[DC];
 };
 
 /* RAR2 structures */
@@ -248,7 +228,7 @@ typedef struct unpack_data_tag
 {
 	int ofd;
 	
-	unsigned char in_buf[MAX_BUF_SIZE];
+/*	unsigned char in_buf[MAX_BUF_SIZE];
 	uint8_t window[MAXWINSIZE];
 	int in_addr;
 	int in_bit;
@@ -281,8 +261,28 @@ typedef struct unpack_data_tag
 	int64_t dest_unp_size;
 	uint32_t pack_size;
 	rarvm_data_t rarvm_data;
-	unsigned int unp_crc;
+	unsigned int unp_crc;*/
 	
+	unsigned char in_buf[MAX_BUF_SIZE];
+	uint8_t window[MAXWINSIZE];
+	int in_addr;
+	int in_bit;
+	unsigned int unp_ptr;
+	unsigned int wr_ptr;
+	int read_top;
+	int read_border;
+	struct LitDecode LD;
+	struct DistDecode DD;
+	struct RepDecode RD;
+	struct BitDecode BD;
+	unsigned int old_dist[4];
+	unsigned int old_dist_ptr;
+	unsigned int last_dist;
+	unsigned int last_length;
+	int64_t written_size;
+	int64_t dest_unp_size;
+	uint32_t pack_size;
+
 	/* RAR2 variables */
 	int unp_cur_channel, unp_channel_delta, unp_audio_block, unp_channels;
 	unsigned char unp_old_table20[MC20 * 4];

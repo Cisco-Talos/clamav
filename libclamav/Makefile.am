@@ -123,18 +123,10 @@ libclamav_la_SOURCES = \
 	regex/utils.h \
 	unrar/unrar15.c \
 	unrar/unrar20.h \
-	unrar/unrarcmd.h \
 	unrar/unrar.h \
-	unrar/unrarvm.c \
 	unrar/unrar15.h \
 	unrar/unrar.c \
-	unrar/unrarfilter.c \
-	unrar/unrarppm.c \
-	unrar/unrarvm.h \
 	unrar/unrar20.c \
-	unrar/unrarcmd.c \
-	unrar/unrarfilter.h \
-	unrar/unrarppm.h \
 	unarj.c \
 	unarj.h \
 	nsis/LZMADecode.c \

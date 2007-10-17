@@ -85,10 +85,9 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	wwunpack.lo unsp.lo aspack.lo packlibs.lo fsg.lo mew.lo \
 	upack.lo line.lo untar.lo unzip.lo special.lo binhex.lo \
 	is_tar.lo tnef.lo strlcpy.lo regcomp.lo regerror.lo regexec.lo \
-	regfree.lo unrar15.lo unrarvm.lo unrar.lo unrarfilter.lo \
-	unrarppm.lo unrar20.lo unrarcmd.lo unarj.lo LZMADecode.lo \
-	bzlib.lo infblock.lo nulsft.lo pdf.lo spin.lo yc.lo elf.lo \
-	sis.lo uuencode.lo pst.lo phishcheck.lo \
+	regfree.lo unrar15.lo unrar.lo unrar20.lo unarj.lo \
+	LZMADecode.lo bzlib.lo infblock.lo nulsft.lo pdf.lo spin.lo \
+	yc.lo elf.lo sis.lo uuencode.lo pst.lo phishcheck.lo \
 	phish_domaincheck_db.lo phish_whitelist.lo regex_list.lo \
 	sha256.lo mspack.lo cab.lo entconv.lo hashtab.lo dconf.lo \
 	lockdb.lo
@@ -150,7 +149,6 @@ F77 = @F77@
 FFLAGS = @FFLAGS@
 FRESHCLAM_LIBS = @FRESHCLAM_LIBS@
 GETENT = @GETENT@
-GREP = @GREP@
 HAVE_MILTER_FALSE = @HAVE_MILTER_FALSE@
 HAVE_MILTER_TRUE = @HAVE_MILTER_TRUE@
 INSTALL_DATA = @INSTALL_DATA@
@@ -185,9 +183,12 @@ STRIP = @STRIP@
 THREAD_LIBS = @THREAD_LIBS@
 TH_SAFE = @TH_SAFE@
 VERSION = @VERSION@
+ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
 ac_ct_F77 = @ac_ct_F77@
+ac_ct_RANLIB = @ac_ct_RANLIB@
+ac_ct_STRIP = @ac_ct_STRIP@
 am__fastdepCC_FALSE = @am__fastdepCC_FALSE@
 am__fastdepCC_TRUE = @am__fastdepCC_TRUE@
 am__fastdepCXX_FALSE = @am__fastdepCXX_FALSE@
@@ -204,30 +205,23 @@ build_cpu = @build_cpu@
 build_os = @build_os@
 build_vendor = @build_vendor@
 datadir = @datadir@
-datarootdir = @datarootdir@
-docdir = @docdir@
-dvidir = @dvidir@
 exec_prefix = @exec_prefix@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
 host_os = @host_os@
 host_vendor = @host_vendor@
-htmldir = @htmldir@
 includedir = @includedir@
 infodir = @infodir@
 install_sh = @install_sh@
 libdir = @libdir@
 libexecdir = @libexecdir@
-localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
 oldincludedir = @oldincludedir@
-pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
-psdir = @psdir@
 sbindir = @sbindir@
 sendmailprog = @sendmailprog@
 sharedstatedir = @sharedstatedir@
@@ -338,18 +332,10 @@ libclamav_la_SOURCES = \
 	regex/utils.h \
 	unrar/unrar15.c \
 	unrar/unrar20.h \
-	unrar/unrarcmd.h \
 	unrar/unrar.h \
-	unrar/unrarvm.c \
 	unrar/unrar15.h \
 	unrar/unrar.c \
-	unrar/unrarfilter.c \
-	unrar/unrarppm.c \
-	unrar/unrarvm.h \
 	unrar/unrar20.c \
-	unrar/unrarcmd.c \
-	unrar/unrarfilter.h \
-	unrar/unrarppm.h \
 	unarj.c \
 	unarj.h \
 	nsis/LZMADecode.c \
@@ -538,10 +524,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrar15.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrar20.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrarcmd.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrarfilter.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrarppm.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrarvm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unsp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/untar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unzip.Plo@am__quote@
@@ -615,13 +597,6 @@ unrar15.lo: unrar/unrar15.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrar15.lo `test -f 'unrar/unrar15.c' || echo '$(srcdir)/'`unrar/unrar15.c
 
-unrarvm.lo: unrar/unrarvm.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrarvm.lo -MD -MP -MF "$(DEPDIR)/unrarvm.Tpo" -c -o unrarvm.lo `test -f 'unrar/unrarvm.c' || echo '$(srcdir)/'`unrar/unrarvm.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/unrarvm.Tpo" "$(DEPDIR)/unrarvm.Plo"; else rm -f "$(DEPDIR)/unrarvm.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unrar/unrarvm.c' object='unrarvm.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrarvm.lo `test -f 'unrar/unrarvm.c' || echo '$(srcdir)/'`unrar/unrarvm.c
-
 unrar.lo: unrar/unrar.c
 @am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrar.lo -MD -MP -MF "$(DEPDIR)/unrar.Tpo" -c -o unrar.lo `test -f 'unrar/unrar.c' || echo '$(srcdir)/'`unrar/unrar.c; \
 @am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/unrar.Tpo" "$(DEPDIR)/unrar.Plo"; else rm -f "$(DEPDIR)/unrar.Tpo"; exit 1; fi
@@ -629,33 +604,12 @@ unrar.lo: unrar/unrar.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrar.lo `test -f 'unrar/unrar.c' || echo '$(srcdir)/'`unrar/unrar.c
 
-unrarfilter.lo: unrar/unrarfilter.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrarfilter.lo -MD -MP -MF "$(DEPDIR)/unrarfilter.Tpo" -c -o unrarfilter.lo `test -f 'unrar/unrarfilter.c' || echo '$(srcdir)/'`unrar/unrarfilter.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/unrarfilter.Tpo" "$(DEPDIR)/unrarfilter.Plo"; else rm -f "$(DEPDIR)/unrarfilter.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unrar/unrarfilter.c' object='unrarfilter.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrarfilter.lo `test -f 'unrar/unrarfilter.c' || echo '$(srcdir)/'`unrar/unrarfilter.c
-
-unrarppm.lo: unrar/unrarppm.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrarppm.lo -MD -MP -MF "$(DEPDIR)/unrarppm.Tpo" -c -o unrarppm.lo `test -f 'unrar/unrarppm.c' || echo '$(srcdir)/'`unrar/unrarppm.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/unrarppm.Tpo" "$(DEPDIR)/unrarppm.Plo"; else rm -f "$(DEPDIR)/unrarppm.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unrar/unrarppm.c' object='unrarppm.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrarppm.lo `test -f 'unrar/unrarppm.c' || echo '$(srcdir)/'`unrar/unrarppm.c
-
 unrar20.lo: unrar/unrar20.c
 @am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrar20.lo -MD -MP -MF "$(DEPDIR)/unrar20.Tpo" -c -o unrar20.lo `test -f 'unrar/unrar20.c' || echo '$(srcdir)/'`unrar/unrar20.c; \
 @am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/unrar20.Tpo" "$(DEPDIR)/unrar20.Plo"; else rm -f "$(DEPDIR)/unrar20.Tpo"; exit 1; fi
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unrar/unrar20.c' object='unrar20.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrar20.lo `test -f 'unrar/unrar20.c' || echo '$(srcdir)/'`unrar/unrar20.c
-
-unrarcmd.lo: unrar/unrarcmd.c
-@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrarcmd.lo -MD -MP -MF "$(DEPDIR)/unrarcmd.Tpo" -c -o unrarcmd.lo `test -f 'unrar/unrarcmd.c' || echo '$(srcdir)/'`unrar/unrarcmd.c; \
-@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/unrarcmd.Tpo" "$(DEPDIR)/unrarcmd.Plo"; else rm -f "$(DEPDIR)/unrarcmd.Tpo"; exit 1; fi
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unrar/unrarcmd.c' object='unrarcmd.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrarcmd.lo `test -f 'unrar/unrarcmd.c' || echo '$(srcdir)/'`unrar/unrarcmd.c
 
 LZMADecode.lo: nsis/LZMADecode.c
 @am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT LZMADecode.lo -MD -MP -MF "$(DEPDIR)/LZMADecode.Tpo" -c -o LZMADecode.lo `test -f 'nsis/LZMADecode.c' || echo '$(srcdir)/'`nsis/LZMADecode.c; \
