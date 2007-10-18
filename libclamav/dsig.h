@@ -19,7 +19,15 @@
 #ifndef __DSIG_H
 #define __DSIG_H
 
-int cli_versig(const char *md5, const char *dsig);
-int cli_versigpss(const unsigned char *sha256, const char *dsig);
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
 
+#ifdef HAVE_GMP
+#include <gmp.h>
+
+int cli_versig(const char *md5, const char *dsig);
+unsigned char *cli_decodesig(const char *sig, unsigned int plen, mpz_t e, mpz_t n);
+
+#endif /* HAVE_GMP */
 #endif

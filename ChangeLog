@@ -1,3 +1,7 @@
+Thu Oct 18 14:54:20 EDT 2007 (tk)
+---------------------------------
+  * libclamav: move RSASSA-PSS code to shared/cdiff.c
+
 Wed Oct 17 11:40:05 BST 2007 (trog)
 -----------------------------------
   * libclamav/unrar: remove RARv3 support.

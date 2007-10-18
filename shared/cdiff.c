@@ -35,17 +35,22 @@
 #include "shared/misc.h"
 #include "shared/output.h"
 #include "shared/cdiff.h"
+#include "shared/sha256.h"
 
 #include "libclamav/str.h"
 #include "libclamav/others.h"
 #include "libclamav/cvd.h"
-#include "libclamav/sha256.h"
+
+#include "zlib.h"
 
 #ifdef HAVE_GMP
 #include "libclamav/dsig.h"
-#endif
 
-#include "zlib.h"
+#define PSS_NSTR "14783905874077467090262228516557917570254599638376203532031989214105552847269687489771975792123442185817287694951949800908791527542017115600501303394778618535864845235700041590056318230102449612217458549016089313306591388590790796515819654102320725712300822356348724011232654837503241736177907784198700834440681124727060540035754699658105895050096576226753008596881698828185652424901921668758326578462003247906470982092298106789657211905488986281078346361469524484829559560886227198091995498440676639639830463593211386055065360288422394053998134458623712540683294034953818412458362198117811990006021989844180721010947"
+#define PSS_ESTR "100002053"
+#define PSS_NBITS 2048
+#define PSS_DIGEST_LENGTH 32
+#endif /* HAVE_GMP */
 
 struct cdiff_node {
     unsigned int lineno;
@@ -761,6 +766,106 @@ static int cdiff_execute(const char *cmdstr, struct cdiff_ctx *ctx)
     return 0;
 }
 
+#ifdef HAVE_GMP
+static void pss_mgf(unsigned char *in, unsigned int inlen, unsigned char *out, unsigned int outlen)
+{
+	SHA256_CTX ctx;
+	unsigned int i, laps;
+	unsigned char cnt[4], digest[PSS_DIGEST_LENGTH];
+
+
+    laps = (outlen + PSS_DIGEST_LENGTH - 1) / PSS_DIGEST_LENGTH;
+
+    for(i = 0; i < laps; i++) {
+	cnt[0] = (unsigned char) 0;
+	cnt[1] = (unsigned char) 0;
+	cnt[2] = (unsigned char) (i / 256);
+	cnt[3] = (unsigned char) i;
+
+	sha256_init(&ctx);
+	sha256_update(&ctx, in, inlen);
+	sha256_update(&ctx, cnt, sizeof(cnt));
+	sha256_final(&ctx);
+	sha256_digest(&ctx, digest);
+
+	if(i != laps - 1)
+	    memcpy(&out[i * PSS_DIGEST_LENGTH], digest, PSS_DIGEST_LENGTH);
+	else
+	    memcpy(&out[i * PSS_DIGEST_LENGTH], digest, outlen - i * PSS_DIGEST_LENGTH);
+    }
+}
+
+static int pss_versig(const unsigned char *sha256, const char *dsig)
+{
+	mpz_t n, e;
+	SHA256_CTX ctx;
+	unsigned char *pt, digest1[PSS_DIGEST_LENGTH], digest2[PSS_DIGEST_LENGTH], *salt;
+	unsigned int plen = PSS_NBITS / 8, hlen, slen, i;
+	unsigned char dblock[PSS_NBITS / 8 - PSS_DIGEST_LENGTH - 1];
+	unsigned char mblock[PSS_NBITS / 8 - PSS_DIGEST_LENGTH - 1];
+	unsigned char fblock[8 + 2 * PSS_DIGEST_LENGTH];
+
+
+    hlen = slen = PSS_DIGEST_LENGTH;
+    mpz_init_set_str(n, PSS_NSTR, 10);
+    mpz_init_set_str(e, PSS_ESTR, 10);
+
+    if(!(pt = cli_decodesig(dsig, plen, e, n))) {
+	mpz_clear(n);
+	mpz_clear(e);
+	return -1;
+    }
+
+    mpz_clear(n);
+    mpz_clear(e);
+
+    if(pt[plen - 1] != 0xbc) {
+	/* cli_dbgmsg("cli_versigpss: Incorrect signature syntax (0xbc)\n"); */
+	free(pt);
+	return -1;
+    }
+
+    memcpy(mblock, pt, plen - hlen - 1);
+    memcpy(digest2, &pt[plen - hlen - 1], hlen);
+    free(pt);
+
+    pss_mgf(digest2, hlen, dblock, plen - hlen - 1);
+
+    for(i = 0; i < plen - hlen - 1; i++)
+	dblock[i] ^= mblock[i];
+
+    dblock[0] &= (0xff >> 1);
+
+    salt = memchr(dblock, 0x01, sizeof(dblock));
+    if(!salt) {
+	/* cli_dbgmsg("cli_versigpss: Can't find salt\n"); */
+	return -1;
+    }
+    salt++;
+
+    if((unsigned int) (dblock + sizeof(dblock) - salt) != slen) {
+	/* cli_dbgmsg("cli_versigpss: Bad salt size\n"); */
+	return -1;
+    }
+
+    memset(fblock, 0, 8);
+    memcpy(&fblock[8], sha256, hlen);
+    memcpy(&fblock[8 + hlen], salt, slen);
+
+    sha256_init(&ctx);
+    sha256_update(&ctx, fblock, sizeof(fblock));
+    sha256_final(&ctx);
+    sha256_digest(&ctx, digest1);
+
+    if(memcmp(digest1, digest2, hlen)) {
+	/* cli_dbgmsg("cli_versigpss: Signature doesn't match.\n"); */
+	return -1;
+    }
+
+    return 0;
+}
+#endif /* HAVE_GMP */
+
 int cdiff_apply(int fd, unsigned short mode)
 {
 	struct cdiff_ctx ctx;
@@ -848,7 +953,7 @@ int cdiff_apply(int fd, unsigned short mode)
 	sha256_final(&sha256ctx);
 	sha256_digest(&sha256ctx, digest);
 
-	if(cli_versigpss(digest, dsig)) {
+	if(pss_versig(digest, dsig)) {
 	    logg("!cdiff_apply: Incorrect digital signature\n");
 	    close(desc);
 	    return -1;

@@ -51,6 +51,7 @@
 #include "shared/cfgparser.h"
 #include "shared/misc.h"
 #include "shared/cdiff.h"
+#include "shared/sha256.h"
 
 #include "libclamav/clamav.h"
 #include "libclamav/cvd.h"
@@ -58,7 +59,6 @@
 #include "libclamav/str.h"
 #include "libclamav/ole2_extract.h"
 #include "libclamav/htmlnorm.h"
-#include "libclamav/sha256.h"
 
 #define MAX_DEL_LOOKAHEAD   200
 

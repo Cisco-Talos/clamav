@@ -164,8 +164,6 @@ libclamav_la_SOURCES = \
 	iana_tld.h \
 	regex_list.c \
 	regex_list.h \
-	sha256.c \
-	sha256.h \
 	mspack.c \
 	mspack.h \
 	cab.c \

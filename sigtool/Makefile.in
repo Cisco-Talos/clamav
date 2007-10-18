@@ -71,7 +71,8 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_sigtool_OBJECTS = output.$(OBJEXT) getopt.$(OBJEXT) \
 	cfgparser.$(OBJEXT) misc.$(OBJEXT) options.$(OBJEXT) \
-	cdiff.$(OBJEXT) vba.$(OBJEXT) sigtool.$(OBJEXT)
+	sha256.$(OBJEXT) cdiff.$(OBJEXT) vba.$(OBJEXT) \
+	sigtool.$(OBJEXT)
 sigtool_OBJECTS = $(am_sigtool_OBJECTS)
 sigtool_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
@@ -229,6 +230,7 @@ sigtool_SOURCES = \
     $(top_srcdir)/shared/misc.h \
     $(top_srcdir)/shared/options.c \
     $(top_srcdir)/shared/options.h \
+    $(top_srcdir)/shared/sha256.c \
     $(top_srcdir)/shared/cdiff.c \
     $(top_srcdir)/shared/cdiff.h \
     vba.c \
@@ -313,6 +315,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/options.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/output.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sha256.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sigtool.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vba.Po@am__quote@
 
@@ -406,6 +409,20 @@ options.obj: $(top_srcdir)/shared/options.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/options.c' object='options.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o options.obj `if test -f '$(top_srcdir)/shared/options.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/options.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/options.c'; fi`
+
+sha256.o: $(top_srcdir)/shared/sha256.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sha256.o -MD -MP -MF "$(DEPDIR)/sha256.Tpo" -c -o sha256.o `test -f '$(top_srcdir)/shared/sha256.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/sha256.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/sha256.Tpo" "$(DEPDIR)/sha256.Po"; else rm -f "$(DEPDIR)/sha256.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/sha256.c' object='sha256.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sha256.o `test -f '$(top_srcdir)/shared/sha256.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/sha256.c
+
+sha256.obj: $(top_srcdir)/shared/sha256.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sha256.obj -MD -MP -MF "$(DEPDIR)/sha256.Tpo" -c -o sha256.obj `if test -f '$(top_srcdir)/shared/sha256.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/sha256.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/sha256.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/sha256.Tpo" "$(DEPDIR)/sha256.Po"; else rm -f "$(DEPDIR)/sha256.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/sha256.c' object='sha256.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o sha256.obj `if test -f '$(top_srcdir)/shared/sha256.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/sha256.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/sha256.c'; fi`
 
 cdiff.o: $(top_srcdir)/shared/cdiff.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cdiff.o -MD -MP -MF "$(DEPDIR)/cdiff.Tpo" -c -o cdiff.o `test -f '$(top_srcdir)/shared/cdiff.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/cdiff.c; \
