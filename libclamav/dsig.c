@@ -64,7 +64,7 @@ static unsigned char cli_ndecode(unsigned char value)
 
 unsigned char *cli_decodesig(const char *sig, unsigned int plen, mpz_t e, mpz_t n)
 {
-	unsigned int i, slen = strlen(sig), dec;
+	int i, slen = strlen(sig), dec;
 	unsigned char *plain;
 	mpz_t r, p, c;
 

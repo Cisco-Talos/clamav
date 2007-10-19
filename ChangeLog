@@ -1,3 +1,7 @@
+Thu Oct 18 20:42:11 EDT 2007 (tk)
+---------------------------------
+  * libclamav/dsig.c: fix integer wrap introduced in r3305 (bb#688)
+
 Thu Oct 18 14:54:20 EDT 2007 (tk)
 ---------------------------------
   * libclamav: move RSASSA-PSS code to shared/cdiff.c
