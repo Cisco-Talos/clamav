@@ -4,7 +4,7 @@
  *  Copyright (C) 2004-2005 trog@uncon.org
  *
  *  This code is based on the OpenOffice and libgsf sources.
- *                  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -20,6 +20,9 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
 
 #include <stdio.h>
 #include <string.h>
@@ -35,12 +38,9 @@
 
 #include "clamav.h"
 
-#if HAVE_CONFIG_H
-#include "clamav-config.h"
-#endif
-
 #include "vba_extract.h"
 #include "others.h"
+#include "blob.h"
 
 #ifndef	O_BINARY
 #define	O_BINARY	0
@@ -61,7 +61,7 @@ static uint16_t vba_endian_convert_16(uint16_t value, int is_mac)
 	else
 		return le16_to_host(value);
 }
- 
+
 static uint32_t vba_endian_convert_32(uint32_t value, int is_mac)
 {
 	if (is_mac)
@@ -70,13 +70,8 @@ static uint32_t vba_endian_convert_32(uint32_t value, int is_mac)
 		return le32_to_host(value);
 }
 
-typedef struct byte_array_tag {
-	unsigned int length;
-	unsigned char *data;
-} byte_array_t;
-
 #define NUM_VBA_VERSIONS 14
-vba_version_t vba_version[] = {
+static const vba_version_t vba_version[] = {
 	{ { 0x5e, 0x00, 0x00, 0x01 }, "Office 97",              5, FALSE},
 	{ { 0x5f, 0x00, 0x00, 0x01 }, "Office 97 SR1",          5, FALSE },
 	{ { 0x65, 0x00, 0x00, 0x01 }, "Office 2000 alpha?",     6, FALSE },
@@ -101,7 +96,8 @@ vba_version_t vba_version[] = {
                                   2 +  /* type1 record count */ \
                                   2)   /* unknown */
 
-static char *get_unicode_name(char *name, int size, int is_mac)
+static char *
+get_unicode_name(const char *name, int size, int is_mac)
 {
         int i, j;
         char *newname;
@@ -126,11 +122,11 @@ static char *get_unicode_name(char *name, int size, int is_mac)
 			else {
 				const uint16_t x = (((uint16_t)name[i]) << 8) | name[i+1];
 				newname[j++] = '_';
-				newname[j++] = 'a'+((x&0xF));
-				newname[j++] = 'a'+((x>>4)&0xF);
-				newname[j++] = 'a'+((x>>8)&0xF);
-				newname[j++] = 'a'+((x>>16)&0xF);
-				newname[j++] = 'a'+((x>>24)&0xF);
+				newname[j++] = (char)('a'+((x&0xF)));
+				newname[j++] = (char)('a'+((x>>4)&0xF));
+				newname[j++] = (char)('a'+((x>>8)&0xF));
+				newname[j++] = (char)('a'+((x>>16)&0xF));	/* FIXME: x>>16 MUST == 0 */
+				newname[j++] = (char)('a'+((x>>24)&0xF));	/* FIXME: x>>24 MUST == 0 */
 			}
                         newname[j++] = '_';
                 }
@@ -150,7 +146,7 @@ static void vba56_test_middle(int fd)
 	};
 	/* MS Office middle */
 	static const uint8_t middle2_str[20] = {
-		0x00, 0x00, 0xe1, 0x2e, 0x45, 0x0d, 0x8f, 0xe0, 0x1a, 0x10, 
+		0x00, 0x00, 0xe1, 0x2e, 0x45, 0x0d, 0x8f, 0xe0, 0x1a, 0x10,
 		0x85, 0x2e, 0x02, 0x60, 0x8c, 0x4d, 0x0b, 0xb4, 0x00, 0x00
 	};
 
@@ -171,7 +167,8 @@ static void vba56_test_middle(int fd)
 static int vba_read_project_strings(int fd, int is_mac)
 {
 	uint16_t length;
-	unsigned char *buff, *name;
+	unsigned char *buff;
+	char *name;
 	uint32_t offset;
 
 	for (;;) {
@@ -196,7 +193,7 @@ static int vba_read_project_strings(int fd, int is_mac)
 			free(buff);
 			break;
 		}
-		name = get_unicode_name(buff, length, is_mac);
+		name = get_unicode_name((const char *)buff, length, is_mac);
 		if (name) {
 			cli_dbgmsg("name: %s\n", name);
 		} else {
@@ -209,7 +206,7 @@ static int vba_read_project_strings(int fd, int is_mac)
 		   having a 12 byte trailer */
 		/* TODO: Need to check if types H(same as G) and D(same as C) exist */
 		if (name && (!strncmp ("*\\G", name, 3) || !strncmp ("*\\H", name, 3)
-			 	|| !strncmp("*\\C", name, 3) || !strncmp("*\\D", name, 3))) {
+				|| !strncmp("*\\C", name, 3) || !strncmp("*\\D", name, 3))) {
 			if (cli_readn(fd, &length, 2) != 2) {
 				return FALSE;
 			}
@@ -254,7 +251,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 	unsigned char magic[2];
 	unsigned char version[4];
 	unsigned char *buff;
-        unsigned char vba56_signature[] = { 0xcc, 0x61 };
+        const unsigned char vba56_signature[] = { 0xcc, 0x61 };
 	uint16_t record_count, length;
 	uint16_t ooff;
 	uint16_t byte_count;
@@ -321,7 +318,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 			cli_warnmsg("Unable to guess VBA type\n");
 			close(fd);
 			return NULL;
-		}	
+		}
 	} else {
 		cli_dbgmsg("VBA Project: %s, VBA Version=%d\n", vba_version[i].name,
                                 vba_version[i].vba_version);
@@ -395,7 +392,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 		close(fd);
 		return NULL;
 	}
-	
+
 	/* junk some more stuff */
 	do {
 		if (cli_readn(fd, &ooff, 2) != 2) {
@@ -407,13 +404,13 @@ vba_project_t *vba56_dir_read(const char *dir)
 	/* check for alignment error */
 	lseek(fd, -3, SEEK_CUR);
 	if (cli_readn(fd, &ooff, 2) != 2) {
- 		close(fd);
+		close(fd);
 		return NULL;
 	}
 	if (ooff != 0xFFFF) {
 		lseek(fd, 1, SEEK_CUR);
 	}
-	
+
 	if (cli_readn(fd, &ooff, 2) != 2) {
 		close(fd);
 		return NULL;
@@ -450,7 +447,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 		close(fd);
 		return NULL;
 	}
-	
+
 	vba_project = (vba_project_t *) cli_malloc(sizeof(struct vba_project_tag));
 	if (!vba_project) {
 		close(fd);
@@ -492,7 +489,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 			free(buff);
 			goto out_error;
 		}
-		vba_project->name[i] = get_unicode_name(buff, length, is_mac);
+		vba_project->name[i] = get_unicode_name((const char *)buff, length, is_mac);
 		if (!vba_project->name[i]) {
 			offset = lseek(fd, 0, SEEK_CUR);
 			vba_project->name[i] = (char *) cli_malloc(18);
@@ -546,10 +543,10 @@ vba_project_t *vba56_dir_read(const char *dir)
 		cli_dbgmsg("offset:%u\n", offset);
 		lseek(fd, 2, SEEK_CUR);
 	}
-	
-	
+
+
 	{ /* There appears to be some code in here */
-	
+
 	off_t foffset;
 
 		foffset = lseek(fd, 0, SEEK_CUR);
@@ -574,45 +571,28 @@ out_error:
 
 #define VBA_COMPRESSION_WINDOW 4096
 
-static void byte_array_append(byte_array_t *array, unsigned char *src, unsigned int len)
-{
-	if (array->length == 0) {
-		array->data = (unsigned char *) cli_malloc(len);
-		if (!array->data) {
-			return;
-		}
-		array->length = len;
-		memcpy(array->data, src, len);
-	} else {
-		array->data = realloc(array->data, array->length+len);
-		if (!array->data) {
-			return;
-		}	
-		memcpy(array->data+array->length, src, len);
-		array->length += len;
-	}
-}
-
 unsigned char *vba_decompress(int fd, uint32_t offset, int *size)
 {
 	unsigned int i, pos=0, shift, win_pos, clean=TRUE, mask, distance;
 	uint8_t flag;
 	uint16_t token, len;
+	size_t s;
+	blob *b;
+	unsigned char *ret;
 	unsigned char buffer[VBA_COMPRESSION_WINDOW];
-	byte_array_t result;
-	
-	result.length=0;
-	result.data=NULL;
-	
-	lseek(fd, offset+3, SEEK_SET); /* 1byte ?? , 2byte length ?? */ 
-	
+
+	b = blobCreate();
+
+	if(b == NULL)
+		return NULL;
+
+	lseek(fd, offset+3, SEEK_SET); /* 1byte ?? , 2byte length ?? */
+
 	while (cli_readn(fd, &flag, 1) == 1) {
 		for (mask = 1; mask < 0x100; mask<<=1) {
 			if (flag & mask) {
 				if (cli_readn(fd, &token, 2) != 2) {
-					if (result.data) {
-						free(result.data);
-					}
+					blobDestroy(b);
 					if (size) {
 						*size = 0;
 					}
@@ -635,14 +615,14 @@ unsigned char *vba_decompress(int fd, uint32_t offset, int *size)
 						shift = 4;
 					}
 				}
-				len = (token & ((1 << shift) -1)) + 3;
+				len = (uint16_t)((token & ((1 << shift) -1)) + 3);
 				distance = token >> shift;
 				clean = TRUE;
-				
+
 				for (i=0 ; i < len; i++) {
 					unsigned int srcpos;
 					unsigned char c;
-					
+
 					srcpos = (pos - distance - 1) % VBA_COMPRESSION_WINDOW;
 					c = buffer[srcpos];
 					buffer[pos++ % VBA_COMPRESSION_WINDOW]= c;
@@ -650,18 +630,15 @@ unsigned char *vba_decompress(int fd, uint32_t offset, int *size)
 			} else {
 				if ((pos != 0) &&
 					((pos % VBA_COMPRESSION_WINDOW) == 0) && clean) {
-					
+
 					if (cli_readn(fd, &token, 2) != 2) {
-						if (result.data) {
-							free(result.data);
-						}
-						if (size) {
-                                         	       *size = 0;
-                                        	}
+						blobDestroy(b);
+						if(size)
+						       *size = 0;
 						return NULL;
 					}
 					clean = FALSE;
-					byte_array_append(&result, buffer, VBA_COMPRESSION_WINDOW);
+					(void)blobAddData(b, buffer, VBA_COMPRESSION_WINDOW);
 					break;
 				}
 				if (cli_readn(fd, buffer+(pos%VBA_COMPRESSION_WINDOW), 1) == 1){
@@ -671,34 +648,45 @@ unsigned char *vba_decompress(int fd, uint32_t offset, int *size)
 			}
 		}
 	}
-			
-	if (pos % VBA_COMPRESSION_WINDOW) {
-		byte_array_append(&result, buffer, pos % VBA_COMPRESSION_WINDOW);
-	}
-	if (size) {
-		*size = result.length;
-	}
-	return result.data;
 
+	if (pos % VBA_COMPRESSION_WINDOW)
+		if(blobAddData(b, buffer, pos%VBA_COMPRESSION_WINDOW) < 0) {
+			if(size)
+			       *size = 0;
+			blobDestroy(b);
+			return NULL;
+		}
+	s = blobGetDataSize(b);
+	ret = cli_malloc(s);
+	if(ret == NULL) {
+		blobDestroy(b);
+		if(size)
+		       *size = 0;
+		return NULL;
+	}
+	if(size)
+		*size = (int)s;
+	memcpy(ret, blobGetData(b), s);
+	blobDestroy(b);
+	return ret;
 }
 
 static uint32_t ole_copy_file_data(int ifd, int ofd, uint32_t len)
 {
-        unsigned char data[8192];
         unsigned int count, rem;
-        unsigned int todo;
+        unsigned char data[FILEBUFF];
 
         rem = len;
 
         while (rem > 0) {
-                todo = MIN(8192, rem);
+                unsigned int todo = MIN(sizeof(data), rem);
+
                 count = cli_readn(ifd, data, todo);
                 if (count != todo) {
                         return len-rem;
                 }
-                if (cli_writen(ofd, data, count) != count) {
+                if((unsigned int)cli_writen(ofd, data, count) != count)
                         return len-rem-count;
-                }
                 rem -= count;
         }
         return len;
@@ -714,7 +702,7 @@ int cli_decode_ole_object(int fd, const char *dir)
 	if (fstat(fd, &statbuf) == -1) {
 		return -1;
 	}
-	
+
 	if (cli_readn(fd, &object_size, 4) != 4) {
 		return -1;
 	}
@@ -725,39 +713,41 @@ int cli_decode_ole_object(int fd, const char *dir)
 		if (lseek(fd, 2, SEEK_CUR) == -1) {
 			return -1;
 		}
-		
+
 		/* Skip attachment name */
 		do {
 			if (cli_readn(fd, &ch, 1) != 1) {
 				return -1;
 			}
 		} while (ch);
-		
+
 		/* Skip attachment full path */
 		do {
 			if (cli_readn(fd, &ch, 1) != 1) {
 				return -1;
 			}
 		} while (ch);
-		
+
 		/* Skip unknown data */
 		if (lseek(fd, 8, SEEK_CUR) == -1) {
 			return -1;
 		}
-		
+
 		/* Skip attachment full path */
 		do {
 			if (cli_readn(fd, &ch, 1) != 1) {
 				return -1;
 			}
 		} while (ch);
-		
+
 		if (cli_readn(fd, &object_size, 4) != 4) {
 			return -1;
 		}
 		object_size = vba_endian_convert_32(object_size, FALSE);
 	}
 	fullname = cli_malloc(strlen(dir) + 18);
+	if(fullname == NULL)
+		return -1;
 	sprintf(fullname, "%s/_clam_ole_object", dir);
 	ofd = open(fullname, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, 0600);
 	free(fullname);
@@ -790,7 +780,7 @@ static int ppt_read_atom_header(int fd, atom_header_t *atom_header)
 		return FALSE;
 	}
 	atom_header->ver_inst = vba_endian_convert_16(atom_header->ver_inst, FALSE);
-	atom_header->version = atom_header->ver_inst & 0x000f;
+	atom_header->version = (uint8_t)(atom_header->ver_inst & 0x000f);
 	atom_header->instance = atom_header->ver_inst >> 4;
 	if (cli_readn(fd, &atom_header->type, 2) != 2) {
 		cli_dbgmsg("read ppt_current_user failed\n");
@@ -822,41 +812,41 @@ static int ppt_unlzw(const char *dir, int fd, uint32_t length)
 	char *fullname;
 	uint32_t bufflen;
 	z_stream stream;
-	
+
 	fullname = cli_malloc(strlen(dir) + 17);
 	if (!fullname) {
 		return FALSE;
 	}
-	sprintf(fullname, "%s/ppt%.8lx.doc", dir, lseek(fd, 0, SEEK_CUR));
-	
+	sprintf(fullname, "%s/ppt%.8lx.doc", dir, (long)lseek(fd, 0L, SEEK_CUR));
+
 	ofd = open(fullname, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, 0600);
 	free(fullname);
         if (ofd == -1) {
                 cli_dbgmsg("ppt_unlzw Open outfile failed\n");
                 return FALSE;
         }
-	
+
 	stream.zalloc = Z_NULL;
 	stream.zfree = Z_NULL;
 	stream.opaque = (void *)0;
-	
+
 	stream.next_in = inbuff;
 	bufflen = stream.avail_in = MIN(length, PPT_LZW_BUFFSIZE);
-	
+
 	if (cli_readn(fd, inbuff, stream.avail_in) != (int64_t)stream.avail_in) {
 		close(ofd);
 		return FALSE;
 	}
 	length -= stream.avail_in;
-	
+
 	retval = inflateInit(&stream);
 	if (retval != Z_OK) {
 		cli_dbgmsg(" ppt_unlzw !Z_OK: %d\n", retval);
 	}
-	
+
 	stream.next_out = outbuff;
 	stream.avail_out = PPT_LZW_BUFFSIZE;
-	
+
 	do {
 		if (stream.avail_out == 0) {
 			if (cli_writen(ofd, outbuff, PPT_LZW_BUFFSIZE)
@@ -880,7 +870,7 @@ static int ppt_unlzw(const char *dir, int fd, uint32_t length)
 		}
 		retval = inflate(&stream, Z_NO_FLUSH);
 	} while (retval == Z_OK);
-	
+
 	if (cli_writen(ofd, outbuff, bufflen) != (int64_t)bufflen) {
 		close(ofd);
 		inflateEnd(&stream);
@@ -893,24 +883,20 @@ static int ppt_unlzw(const char *dir, int fd, uint32_t length)
 
 static char *ppt_stream_iter(int fd)
 {
-	atom_header_t atom_header;
 	uint32_t ole_id;
 	char *out_dir;
 	off_t offset;
-	
+	atom_header_t atom_header;
+
 	/* Create a directory to store the extracted OLE2 objects */
 	out_dir = cli_gentemp(NULL);
 	if(mkdir(out_dir, 0700)) {
-	    printf("ScanOLE2 -> Can't create temporary directory %s\n", out_dir);
-	    free(out_dir);
-	    close(fd);
-	    return NULL;
+		cli_errmsg("ScanOLE2 -> Can't create temporary directory %s\n", out_dir);
+		free(out_dir);
+		return NULL;
 	}
 
-	while (1) {
-		if (!ppt_read_atom_header(fd, &atom_header)) {
-			break;
-		}
+	while(ppt_read_atom_header(fd, &atom_header)) {
 		ppt_print_atom_header(&atom_header);
 
 		if (atom_header.length == 0) {
@@ -928,7 +914,7 @@ static char *ppt_stream_iter(int fd)
 			}
 			ole_id = vba_endian_convert_32(ole_id, FALSE);
 			cli_dbgmsg("OleID: %d, length: %d\n",
-					ole_id, atom_header.length-4);
+					(int)ole_id, (int)atom_header.length-4);
 			if (!ppt_unlzw(out_dir, fd, atom_header.length-4)) {
 				cli_dbgmsg("ppt_unlzw failed\n");
 				cli_rmdirs(out_dir);
@@ -967,7 +953,7 @@ char *ppt_vba_read(const char *dir)
 		cli_dbgmsg("Open  PowerPoint Document failed\n");
 		return NULL;
 	}
-	
+
 	out_dir = ppt_stream_iter(fd);
 	close(fd);
 	return out_dir;
@@ -1054,6 +1040,10 @@ typedef struct mac_token2_tag {
 
 } mac_token2_t;
 
+static	void	wm_free_intnames(macro_intnames_t *macro_intnames);
+static	void	wm_free_extnames(macro_extnames_t *macro_extnames);
+static	void	wm_free_macro_info(macro_info_t *macro_info);
+
 static void wm_print_fib(mso_fib_t *fib)
 {
 	cli_dbgmsg("magic: 0x%.4x\n", fib->magic);
@@ -1063,7 +1053,7 @@ static void wm_print_fib(mso_fib_t *fib)
 	cli_dbgmsg("macro offset: 0x%.4x\n", fib->macro_offset);
 	cli_dbgmsg("macro len: 0x%.4x\n\n", fib->macro_len);
 }
-	
+
 static int wm_read_fib(int fd, mso_fib_t *fib)
 {
 	if (cli_readn(fd, &fib->magic, 2) != 2) {
@@ -1081,7 +1071,7 @@ static int wm_read_fib(int fd, mso_fib_t *fib)
 	if (cli_readn(fd, &fib->lid, 2) != 2) {
 		cli_dbgmsg("read wm_fib failed\n");
 		return FALSE;
-	}	
+	}
 	if (cli_readn(fd, &fib->next, 2) != 2) {
 		cli_dbgmsg("read wm_fib failed\n");
 		return FALSE;
@@ -1090,13 +1080,13 @@ static int wm_read_fib(int fd, mso_fib_t *fib)
 		cli_dbgmsg("read wm_fib failed\n");
 		return FALSE;
 	}
-	
+
 	/* don't need the information is this block, so seek forward */
 	if (lseek(fd, 0x118, SEEK_SET) != 0x118) {
 		cli_dbgmsg("lseek wm_fib failed\n");
 		return FALSE;
 	}
-	
+
 	if (cli_readn(fd, &fib->macro_offset, 4) != 4) {
 		cli_dbgmsg("read wm_fib failed\n");
 		return FALSE;
@@ -1113,7 +1103,7 @@ static int wm_read_fib(int fd, mso_fib_t *fib)
 	fib->status = vba_endian_convert_16(fib->status, FALSE);
 	fib->macro_offset = vba_endian_convert_32(fib->macro_offset, FALSE);
 	fib->macro_len = vba_endian_convert_32(fib->macro_len, FALSE);
-	
+
 	return TRUE;
 }
 
@@ -1130,7 +1120,7 @@ static int wm_read_macro_entry(int fd, macro_entry_t *macro_entry)
 	if (cli_readn(fd, &macro_entry->intname_i, 2) != 2) {
 		cli_dbgmsg("read macro_entry failed\n");
 		return FALSE;
-	}	
+	}
 	if (cli_readn(fd, &macro_entry->extname_i, 2) != 2) {
 		cli_dbgmsg("read macro_entry failed\n");
 		return FALSE;
@@ -1155,7 +1145,7 @@ static int wm_read_macro_entry(int fd, macro_entry_t *macro_entry)
 		cli_dbgmsg("read macro_entry failed\n");
 		return FALSE;
 	}
-	
+
 	macro_entry->intname_i = vba_endian_convert_16(macro_entry->intname_i, FALSE);
 	macro_entry->extname_i = vba_endian_convert_16(macro_entry->extname_i, FALSE);
 	macro_entry->xname_i = vba_endian_convert_16(macro_entry->xname_i, FALSE);
@@ -1190,21 +1180,20 @@ static macro_info_t *wm_read_macro_info(int fd)
 	for (i=0 ; i < macro_info->count ; i++) {
 		if (!wm_read_macro_entry(fd,
 				&macro_info->macro_entry[i])) {
-			free(macro_info->macro_entry);
-			free(macro_info);
+			wm_free_macro_info(macro_info);
 			return NULL;
 		}
 	}
 	return macro_info;
 }
 
-static void wm_free_macro_info(macro_info_t *macro_info)
+static	void
+wm_free_macro_info(macro_info_t *macro_info)
 {
 	if (macro_info) {
 		free(macro_info->macro_entry);
 		free(macro_info);
 	}
-	return;
 }
 
 static int wm_read_oxo3(int fd)
@@ -1220,7 +1209,7 @@ static int wm_read_oxo3(int fd)
 		return FALSE;
 	}
 	cli_dbgmsg("oxo3 records1: %d\n", count);
-	
+
 	if (cli_readn(fd, &count, 1) != 1) {
 		cli_dbgmsg("read oxo3 record2 failed\n");
 		return FALSE;
@@ -1244,7 +1233,7 @@ static int wm_read_oxo3(int fd)
 			cli_dbgmsg("lseek oxo3 failed\n");
 			return FALSE;
 		}
-	}				
+	}
 	cli_dbgmsg("oxo3 records2: %d\n", count);
 	return TRUE;
 }
@@ -1254,12 +1243,12 @@ static menu_info_t *wm_read_menu_info(int fd)
 	int i;
 	menu_info_t *menu_info;
 	menu_entry_t *menu_entry;
-	
+
 	menu_info = (menu_info_t *) cli_malloc(sizeof(menu_info_t));
 	if (!menu_info) {
 		return NULL;
 	}
-	
+
 	if (cli_readn(fd, &menu_info->count, 2) != 2) {
 		cli_dbgmsg("read menu_info failed\n");
 		free(menu_info);
@@ -1267,14 +1256,14 @@ static menu_info_t *wm_read_menu_info(int fd)
 	}
 	menu_info->count = vba_endian_convert_16(menu_info->count, FALSE);
 	cli_dbgmsg("menu_info count: %d\n", menu_info->count);
-	
+
 	menu_info->menu_entry =
 		(menu_entry_t *) cli_malloc(sizeof(menu_entry_t) * menu_info->count);
 	if (!menu_info->menu_entry) {
 		free(menu_info);
 		return NULL;
 	}
-	
+
 	for (i=0 ; i < menu_info->count ; i++) {
 		menu_entry = &menu_info->menu_entry[i];
 		if (cli_readn(fd, &menu_entry->context, 2) != 2) {
@@ -1303,7 +1292,7 @@ static menu_info_t *wm_read_menu_info(int fd)
 		cli_dbgmsg("menu entry: %d.%d\n", menu_entry->menu, menu_entry->pos);
 	}
 	return menu_info;
-	
+
 abort:
 	cli_dbgmsg("read menu_entry failed\n");
 	free(menu_info->menu_entry);
@@ -1317,25 +1306,24 @@ static void wm_free_menu_info(menu_info_t *menu_info)
 		free(menu_info->menu_entry);
 		free(menu_info);
 	}
-	return;
 }
 
 static macro_extnames_t *wm_read_macro_extnames(int fd)
 {
-	int i, is_unicode=0;
+	int is_unicode=0;
 	int16_t size;
-	off_t offset_end;	
+	off_t offset_end;
 	macro_extnames_t *macro_extnames;
 	macro_extname_t *macro_extname;
 	unsigned char *name_tmp;
-	
-	macro_extnames = (macro_extnames_t *) cli_malloc(sizeof(macro_extnames_t));
+
+	macro_extnames = (macro_extnames_t *)cli_malloc(sizeof(macro_extnames_t));
 	if (!macro_extnames) {
 		return NULL;
 	}
 	macro_extnames->count = 0;
 	macro_extnames->macro_extname = NULL;
-	
+
 	offset_end = lseek(fd, 0, SEEK_CUR);
 	if (cli_readn(fd, &size, 2) != 2) {
 		cli_dbgmsg("read macro_extnames failed\n");
@@ -1362,7 +1350,7 @@ static macro_extnames_t *wm_read_macro_extnames(int fd)
 				sizeof(macro_extname_t) * macro_extnames->count);
 		if (macro_extnames->macro_extname == NULL) {
 			cli_dbgmsg("read macro_extnames failed\n");
-			goto abort;;
+			goto abort;
 		}
 
 		macro_extname = &macro_extnames->macro_extname[macro_extnames->count-1];
@@ -1373,21 +1361,22 @@ static macro_extnames_t *wm_read_macro_extnames(int fd)
 			}
 			lseek(fd, 1, SEEK_CUR);
 			if (macro_extname->length > 0) {
-			    name_tmp = (char *) cli_malloc(macro_extname->length*2);
-			    if (name_tmp == NULL) {
+			    name_tmp = (unsigned char *)cli_malloc(macro_extname->length*2);
+			    if(name_tmp == NULL)
 				goto abort;
-			    }
-			    if (cli_readn(fd, name_tmp, macro_extname->length*2) != 
+			    if (cli_readn(fd, name_tmp, macro_extname->length*2) !=
 						macro_extname->length*2) {
 				cli_dbgmsg("read macro_extnames failed\n");
 				free(name_tmp);
 				goto abort;
 			    }
 			    macro_extname->extname =
-				get_unicode_name(name_tmp, macro_extname->length*2, FALSE);
+				(unsigned char *)get_unicode_name((const char *)name_tmp, macro_extname->length*2, FALSE);
 			    free(name_tmp);
 			} else {
-			    macro_extname->extname = cli_strdup("[no name]");
+			    macro_extname->extname = (unsigned char *)cli_strdup("[no name]");
+			    if(macro_extname->extname == NULL)
+				goto abort;
 			    macro_extname->length = 10;
 			}
 		} else {
@@ -1396,11 +1385,10 @@ static macro_extnames_t *wm_read_macro_extnames(int fd)
 				goto abort;
 			}
 			if (macro_extname->length > 0) {
-			    macro_extname->extname = (char *) cli_malloc(macro_extname->length+1);
-			    if (!macro_extname->extname) {
+			    macro_extname->extname = (unsigned char *)cli_malloc(macro_extname->length+1);
+			    if(macro_extname->extname == NULL)
 				goto abort;
-			    }
-			    if (cli_readn(fd, macro_extname->extname, macro_extname->length) != 
+			    if (cli_readn(fd, macro_extname->extname, macro_extname->length) !=
 						macro_extname->length) {
 				cli_dbgmsg("read macro_extnames failed\n");
 				free(macro_extname->extname);
@@ -1408,63 +1396,58 @@ static macro_extnames_t *wm_read_macro_extnames(int fd)
 			    }
 			    macro_extname->extname[macro_extname->length] = '\0';
 			} else {
-			    macro_extname->extname = cli_strdup("[no name]");
+			    macro_extname->extname = (unsigned char *)cli_strdup("[no name]");
+			    if(macro_extname->extname == NULL)
+				goto abort;
 			    macro_extname->length = 10;
 			}
 		}
 		if (cli_readn(fd, &macro_extname->numref, 2) != 2) {
 			cli_dbgmsg("read macro_extnames failed\n");
-			return NULL;
-		}	
+			goto abort;
+		}
 		macro_extname->numref = vba_endian_convert_16(macro_extname->numref, FALSE);
 		cli_dbgmsg("ext name: %s\n", macro_extname->extname);
 	}
 	return macro_extnames;
-	
+
 abort:
-	if (macro_extnames->macro_extname != NULL) {
-		for (i=0 ; i < macro_extnames->count-1 ; i++) {
-			free(macro_extnames->macro_extname[i].extname);
-		}
-		free(macro_extnames->macro_extname);
-	}
-	free(macro_extnames);
+	macro_extnames->count--;
+	wm_free_extnames(macro_extnames);
 	return NULL;
 }
 
-static void wm_free_extnames(macro_extnames_t *macro_extnames)
+static void
+wm_free_extnames(macro_extnames_t *macro_extnames)
 {
-	int i;
-	
 	if (macro_extnames) {
-		for (i=0 ; i < macro_extnames->count ; i++) {
+		int i;
+
+		for(i = 0 ;i < macro_extnames->count; i++)
 			free(macro_extnames->macro_extname[i].extname);
-		}
 		free(macro_extnames->macro_extname);
 		free(macro_extnames);
 	}
-	return;
 }
 
 static macro_intnames_t *wm_read_macro_intnames(int fd)
 {
-	int i;
+	uint16_t i, junk;
 	macro_intnames_t *macro_intnames;
 	macro_intname_t *macro_intname;
-	uint16_t junk;
-	
+
 	macro_intnames = (macro_intnames_t *) cli_malloc(sizeof(macro_intnames_t));
 	if (!macro_intnames) {
 		return NULL;
 	}
-	
+
 	if (cli_readn(fd, &macro_intnames->count, 2) != 2) {
 		cli_dbgmsg("read macro_intnames failed\n");
 		return NULL;
 	}
 	macro_intnames->count = vba_endian_convert_16(macro_intnames->count, FALSE);
 	cli_dbgmsg("int names count: %d\n", macro_intnames->count);
-	
+
 	macro_intnames->macro_intname =
 		(macro_intname_t *) cli_malloc(sizeof(macro_intname_t) * macro_intnames->count);
 	if (!macro_intnames->macro_intname) {
@@ -1482,9 +1465,9 @@ static macro_intnames_t *wm_read_macro_intnames(int fd)
 		if (cli_readn(fd, &macro_intname->length, 1) != 1) {
 			cli_dbgmsg("read macro_intnames failed\n");
 			macro_intnames->count = i;
-			goto abort;;
-		}	
-		macro_intname->intname = (char *) cli_malloc(macro_intname->length+1);
+			goto abort;
+		}
+		macro_intname->intname = (unsigned char *)cli_malloc(macro_intname->length+1);
 		if (!macro_intname->intname) {
 			macro_intnames->count = i;
 			goto abort;
@@ -1504,26 +1487,21 @@ static macro_intnames_t *wm_read_macro_intnames(int fd)
 	}
 	return macro_intnames;
 abort:
-	for (i=0 ; i < macro_intnames->count ; i++) {
-		free(macro_intnames->macro_intname[i].intname);
-	}
-	free(macro_intnames->macro_intname);
-	free(macro_intnames);
+	wm_free_intnames(macro_intnames);
 	return NULL;
 }
 
-static void wm_free_intnames(macro_intnames_t *macro_intnames)
+static void
+wm_free_intnames(macro_intnames_t *macro_intnames)
 {
-	int i;
-	
 	if (macro_intnames) {
-		for (i=0 ; i < macro_intnames->count ; i++) {
+		int i;
+
+		for(i = 0; i < macro_intnames->count; i++)
 			free(macro_intnames->macro_intname[i].intname);
-		}
 		free(macro_intnames->macro_intname);
 		free(macro_intnames);
 	}
-	return;
 }
 
 vba_project_t *wm_dir_read(const char *dir)
@@ -1538,7 +1516,7 @@ vba_project_t *wm_dir_read(const char *dir)
 	macro_intnames_t *macro_intnames=NULL;
 	vba_project_t *vba_project=NULL;
 	char *fullname;
-	
+
 	fullname = (char *) cli_malloc(strlen(dir) + 14);
 	if (!fullname) {
 		return NULL;
@@ -1550,28 +1528,28 @@ vba_project_t *wm_dir_read(const char *dir)
 		cli_dbgmsg("Open WordDocument failed\n");
 		return NULL;
 	}
-	
+
 	if (!wm_read_fib(fd, &fib)) {
 		close(fd);
 		return NULL;
 	}
 	wm_print_fib(&fib);
-	
+
 	if (lseek(fd, fib.macro_offset, SEEK_SET) != (int64_t)fib.macro_offset) {
 		cli_dbgmsg("lseek macro_offset failed\n");
 		close(fd);
 		return NULL;
 	}
-	
+
 	end_offset = fib.macro_offset + fib.macro_len;
-	
+
 	if (cli_readn(fd, &start_id, 1) != 1) {
 		cli_dbgmsg("read start_id failed\n");
 		close(fd);
 		return NULL;
 	}
 	cli_dbgmsg("start_id: %d\n", start_id);
-	
+
 	while ((lseek(fd, 0, SEEK_CUR) < end_offset) && !done) {
 		if (cli_readn(fd, &info_id, 1) != 1) {
 			cli_dbgmsg("read macro_info failed\n");
@@ -1606,7 +1584,7 @@ vba_project_t *wm_dir_read(const char *dir)
 				macro_intnames = wm_read_macro_intnames(fd);
 				if (macro_intnames == NULL) {
 					done = TRUE;
-				}				
+				}
 				break;
 			case 0x12:
 				/* No sure about these, always seems to
@@ -1623,7 +1601,7 @@ vba_project_t *wm_dir_read(const char *dir)
 				done = 1;
 		}
 	}
-	
+
 	if (macro_info) {
 		vba_project = (vba_project_t *) cli_malloc(sizeof(struct vba_project_tag));
 		if (!vba_project) {
@@ -1640,7 +1618,8 @@ vba_project_t *wm_dir_read(const char *dir)
 					macro_info->count);
 		if (!vba_project->offset) {
 			free(vba_project->name);
-			free(vba_project->dir);
+			if(vba_project->dir)
+				free(vba_project->dir);
 			free(vba_project);
 			vba_project = NULL;
 			goto abort;
@@ -1697,7 +1676,7 @@ unsigned char *wm_decrypt_macro(int fd, uint32_t offset, uint32_t len,
 {
 	unsigned char *buff;
 	uint32_t i;
-	
+
 	if (lseek(fd, offset, SEEK_SET) != (int64_t)offset) {
 		return NULL;
 	}
@@ -1710,10 +1689,8 @@ unsigned char *wm_decrypt_macro(int fd, uint32_t offset, uint32_t len,
 		free(buff);
 		return NULL;
 	}
-	if (key != 0) {
-		for (i=0 ; i < len; i++) {
-			buff[i] = buff[i] ^ key;
-		}
-	}
+	if (key != 0)
+		for (i=0 ; i < len; i++)
+			buff[i] ^= key;
 	return buff;
 }

@@ -1,3 +1,8 @@
+Mon Oct 22 20:39:10 BST 2007 (njh)
+----------------------------------
+  * libclamav/vba_extract.c:	Fixed warnings, removed double close() and
+  			some code tidies
+
 Thu Oct 18 20:42:11 EDT 2007 (tk)
 ---------------------------------
   * libclamav/dsig.c: fix integer wrap introduced in r3305 (bb#688)
