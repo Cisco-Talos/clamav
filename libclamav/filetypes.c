@@ -196,7 +196,7 @@ static const struct cli_smagic_s cli_smagic[] = {
     {"60ea{7}0102", "ARJ-SFX", CL_TYPE_ARJSFX},
     {"60ea{7}0202", "ARJ-SFX", CL_TYPE_ARJSFX},
     {"efbeadde4e756c6c736f6674496e7374", "NSIS", CL_TYPE_NULSFT},
-    {"a3484bbe986c4aa9994c530a86d6487d4155332145413035", "AUTOIT", CL_TYPE_AUTOIT},
+    {"a3484bbe986c4aa9994c530a86d6487d41553321454130(35|36)", "AUTOIT", CL_TYPE_AUTOIT},
 
     {"4d5a{60-300}50450000", "PE", CL_TYPE_MSEXE},
 

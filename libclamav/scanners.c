@@ -1924,7 +1924,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg)
 		    case CL_TYPE_AUTOIT:
 		        if(1 && type == CL_TYPE_MSEXE /* FIXME_AUTOIT: DCONF THIS */) {
 			    cli_dbgmsg("AUTOIT signature found at %u\n", (unsigned int) fpt->offset);
-			    nret = cli_scanautoit(desc, ctx, fpt->offset + 24);
+			    nret = cli_scanautoit(desc, ctx, fpt->offset + 23);
 			}
 			break;
 
@@ -2191,7 +2191,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
         case CL_TYPE_AUTOIT:
 	    if(1 /* FIXME_AUTOIT: DCONF THIS */)
-		ret = cli_scanautoit(desc, ctx, 24);
+		ret = cli_scanautoit(desc, ctx, 23);
 	    break;
 
 	case CL_TYPE_DATA:

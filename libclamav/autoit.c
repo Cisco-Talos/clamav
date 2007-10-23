@@ -26,6 +26,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <arpa/inet.h>
+#include <string.h>
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -138,11 +139,11 @@ static uint32_t getbits(struct UNP *UNP, uint32_t size) {
 
 
 /*********************
-   autoit3 handler 
+ autoit3 EA05 handler 
 *********************/
 
 
-int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
+static int ea05(int desc, cli_ctx *ctx) {
   uint8_t b[24], comp;
   uint8_t *buf = b;
   uint32_t s, us, m4sum=0;
@@ -150,7 +151,6 @@ int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
   char *tempfile;
   struct UNP UNP;
 
-  lseek(desc, offset, SEEK_SET);
   if (cli_readn(desc, buf, 24)!=24)
     return CL_CLEAN;
 
@@ -176,7 +176,7 @@ int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
       return CL_CLEAN;
     buf[s]='\0';
     MT_decrypt(buf,s,s+0xa25e);
-    cli_dbgmsg("autoit: magic string '%s'\n", buf);
+    cli_dbgmsg("autoit: magic string '%s'\n", buf); /* FIXME: CANNOT SPAM UNICODE */
   } else {
     lseek(desc, s, SEEK_CUR);
   }
@@ -194,7 +194,7 @@ int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
     }
     MT_decrypt(n,s,s+0xf25e);
     n[s]='\0';
-    cli_dbgmsg("autoit: original filename '%s'\n", n);
+    cli_dbgmsg("autoit: original filename '%s'\n", n); /* FIXME: CANNOT SPAM UNICODE */
     free(n);
   } else {
     lseek(desc, s, SEEK_CUR);
@@ -331,4 +331,211 @@ int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
   }
   close(i);
   return CL_CLEAN;
+}
+
+
+/*********************
+  LAME realted stuff 
+*********************/
+
+#define ROFL(a,b) (( a << (b % (sizeof(a)<<3) ))  |  (a >> (  (sizeof(a)<<3)  -  (b % (sizeof(a)<<3 )) ) ))
+
+struct LAME {
+  uint32_t c0;
+  uint32_t c1;
+  uint32_t grp1[17];
+  uint32_t grp2[17];
+  uint32_t grp3[17];
+  uint32_t unk2;
+  uint32_t unk3;
+};
+
+
+static double LAME_fpusht(struct LAME *l) {
+  union {
+    double as_double;
+    struct { /* FIXME: SWAP IF FPU_BIGENDIAN */
+      uint32_t lo;
+      uint32_t hi;
+    } as_uint;
+  } ret;
+
+  uint32_t rolled = ROFL(l->grp1[l->c0],9) +  ROFL(l->grp1[l->c1],13);
+
+  l->grp1[l->c0] = rolled;
+
+  if (!l->c0--) l->c0 = 16;
+  if (!l->c1--) l->c1 = 16;
+
+  if (l->grp1[l->c0] == l->grp2[0]) {
+    if (!memcmp(l->grp1, (uint32_t *)l + 0x24 - l->c0, 0x44)) {
+      printf("returned %e\n", 0);
+      return 0.0;
+    }
+  }
+
+  ret.as_uint.lo = rolled << 0x14;
+  ret.as_uint.hi = 0x3ff00000 | (rolled >> 0xc);
+  printf("returned %e\n", ret.as_double - 1.0);
+  return ret.as_double - 1.0;
+
+/*   if (l->unk2==0) { */
+/*     eax = edi; */
+/*     eax<<=14h; */
+/*     edi>>=0ch; */
+/*     edi |= 0x3ff00000; */
+/*     var8 = edi<<32 | eax; */
+/*     ST0 = var8 - 1.0f;	 */
+/*   } else { */
+/*     if(bufDC.unk2==1) { */
+/*       eax = edi; */
+/*       eax<<=14h; */
+/*       edi>>0ch; */
+/*       edi |= 0x3ff00000; */
+/*       var8 = eax<<32 | edi; */
+/*       ST0 = var8 - 1.0f; */
+/*     } else { */
+/*       ST0 = (float)edi; */
+/*       if ((int)edi<0) { */
+/* 	ST0 += k1; */
+/*       } */
+/*       ST0 *= k0; */
+/*     } */
+/*   } */
+}
+
+
+static void LAME_srand(struct LAME *l, uint32_t seed) {
+  unsigned int i;
+
+  for (i=0; i<17; i++) {
+    seed *= 0x53A9B4FB; /*1403630843*/
+    seed = 1 - seed;
+    l->grp1[i] = seed;
+  }
+
+  l->c0 = 0;
+  l->c1 = 10;
+  l->unk2 = 0;
+
+  memcpy(l->grp2, l->grp1, sizeof(l->grp1));
+  memcpy(l->grp3, l->grp1, sizeof(l->grp1));
+
+  for (i = 0; i < 9; i++)
+    LAME_fpusht(l);
+}
+
+static uint8_t LAME_getnext(struct LAME *l) {
+  double x;
+  uint8_t ret;
+  LAME_fpusht(l);
+  x = LAME_fpusht(l) * 256.0;
+  if ((int32_t)x < 256) ret = (uint8_t)x;
+  else ret=0xff;
+  printf("next: %02x\n", ret);
+  return ret;
+}
+
+static void LAME_decrypt (uint8_t *cypher, uint32_t size, uint16_t seed) {
+  struct LAME lame;
+  /* mt_srand_timewrap(struct srand_struc bufDC); */
+  lame.unk2 = 0;
+
+  LAME_srand(&lame, (uint32_t)seed);
+  while(size--)
+    *cypher++^=LAME_getnext(&lame);
+}
+
+
+
+/*********************
+ autoit3 EA06 handler 
+*********************/
+
+
+static int ea06(int desc, cli_ctx *ctx) {
+  uint8_t b[40];
+  uint8_t *buf = b;
+  uint32_t s;
+
+  if (cli_readn(desc, buf, 24)!=24)
+    return CL_CLEAN;
+
+  LAME_decrypt(buf, 0x10, 0x99f2);
+  buf+=0x10;
+
+  LAME_decrypt(buf, 4, 0x18ee);
+  if(cli_readint32(buf) != 0x454c4946) {
+    cli_dbgmsg("autoit: no FILE magic found, giving up\n");
+    return CL_CLEAN;
+  }
+
+  buf+=4;
+  s = cli_readint32(buf) ^ 0xadbc;
+  buf=b;
+  if (s > 19) {
+    cli_dbgmsg("autoit: magic string too long, giving up\n");
+    return CL_CLEAN;
+  }
+  if(cli_debug_flag) {
+    cli_dbgmsg("autoit: magic string size %d (expected value 19)\n", s);
+    if (cli_readn(desc, buf, s*2)!=(int)s*2)
+      return CL_CLEAN;
+    buf[s*2]='\0'; buf[s*2+1]='\0';
+    LAME_decrypt(buf,s*2,s+0xb33f);
+    cli_dbgmsg("autoit: magic string '%s'\n", buf); /* FIXME: CANNOT SPAM UNICODE */
+  } else {
+    lseek(desc, s*2, SEEK_CUR);
+  }
+
+  if (cli_readn(desc, buf, 4)!=4)
+    return CL_CLEAN;
+  s = cli_readint32(buf) ^ 0xf820;
+  if(cli_debug_flag && s<150) {
+    uint8_t *n;
+    if (!(n = cli_malloc(s*2+2)))
+      return CL_EMEM;
+    if (cli_readn(desc, n, s*2)!=(int)s*2) {
+      free(n);
+      return CL_CLEAN;
+    }
+    LAME_decrypt(n,s*2,s+0xf479);
+    n[s*2]='\0'; n[s*2+1]='\0';
+    cli_dbgmsg("autoit: original filename '%s'\n", n); /* FIXME: CANNOT SPAM UNICODE */
+    free(n);
+  } else {
+    lseek(desc, s*2, SEEK_CUR);
+  }
+
+
+  return CL_CLEAN;
+}
+
+
+
+/*********************
+   autoit3 wrapper 
+*********************/
+
+int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
+  uint8_t version;
+  int (*func)(int desc, cli_ctx *ctx);
+
+  lseek(desc, offset, SEEK_SET);
+  if (cli_readn(desc, &version, 1)!=1)
+    return CL_EIO;
+
+  switch(version) {
+  case 0x35:
+    func = ea05;
+    break;
+  case 0x36:
+    func = ea06;
+    break;
+  default:
+    /* NOT REACHED */
+    cli_dbgmsg("autoit: unknown method\n");
+  }
+
+  return func(desc, ctx);
 }
