@@ -1203,6 +1203,7 @@ AC_MSG_RESULT($have_signed_rightshift_extended);
 
 
 AC_OUTPUT([
+libclamunrar/Makefile
 libclamav/Makefile
 clamscan/Makefile
 database/Makefile

@@ -1,3 +1,9 @@
+Tue Oct 23 12:05:05 BST 2007 (trog)
+-----------------------------------
+  * libclamunrar: move unrar to a separate library, under an unrar license.
+
+  * libclamav/unarj: further bounds checking
+
 Mon Oct 22 20:39:10 BST 2007 (njh)
 ----------------------------------
   * libclamav/vba_extract.c:	Fixed warnings, removed double close() and

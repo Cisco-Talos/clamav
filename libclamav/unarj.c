@@ -314,7 +314,7 @@ static void read_pt_len(arj_decode_t *decode_data, int nn, int nbit, int i_speci
 		}
 	} else {
 		i = 0;
-		while (i < n) {
+		while ((i < n) && (i < NPT)) {
 			c = decode_data->bit_buf >> 13;
 			if (c == 7) {
 				mask = 1 << 12;
@@ -327,12 +327,12 @@ static void read_pt_len(arj_decode_t *decode_data, int nn, int nbit, int i_speci
 			decode_data->pt_len[i++] = (unsigned char) c;
 			if (i == i_special) {
 				c = arj_getbits(decode_data, 2);
-				while (--c >= 0) {
+				while ((--c >= 0) && (i < NPT)) {
 					decode_data->pt_len[i++] = 0;
 				}
 			}
 		}
-		while (i < nn) {
+		while ((i < nn) && (i < NPT)) {
 			decode_data->pt_len[i++] = 0;
 		}
 		make_table(decode_data, nn, decode_data->pt_len, 8, decode_data->pt_table, PTABLESIZE);
@@ -360,6 +360,10 @@ static int read_c_len(arj_decode_t *decode_data)
 			if (c >= NT) {
 				mask = 1 << 7;
 				do {
+					if (c >= (2 * NC - 1)) {
+						cli_warnmsg("ERROR: bounds exceeded\n");
+						return CL_EFORMAT;
+					}
 					if (decode_data->bit_buf & mask) {
 						c = decode_data->right[c];
 					} else {
@@ -408,6 +412,10 @@ static uint16_t decode_c(arj_decode_t *decode_data)
 	if (j >= NC) {
 		mask = 1 << 3;
 		do {
+			if (j >= (2 * NC - 1)) {
+				cli_warnmsg("ERROR: bounds exceeded\n");
+				return 0;
+			}
 			if (decode_data->bit_buf & mask) {
 				j = decode_data->right[j];
 			} else {
@@ -429,7 +437,7 @@ static uint16_t decode_p(arj_decode_t *decode_data)
 		mask = 1 << 7;
 		do {
 			if (j >= (2 * NC - 1)) {
-				cli_errmsg("ERROR: bounds exceeded\n");
+				cli_warnmsg("ERROR: bounds exceeded\n");
 				return 0;
 			}
 			if (decode_data->bit_buf & mask) {

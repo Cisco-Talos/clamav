@@ -17,9 +17,9 @@
 #  MA 02110-1301, USA.
 
 
-INCLUDES = -I$(top_srcdir) -I@srcdir@/unrar -I@srcdir@/nsis
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/libclamunrar -I@srcdir@/nsis
 
-libclamav_la_LIBADD = @LIBCLAMAV_LIBS@ @THREAD_LIBS@
+libclamav_la_LIBADD = @LIBCLAMAV_LIBS@ @THREAD_LIBS@ $(top_builddir)/libclamunrar/libclamunrar.la
 
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
@@ -121,12 +121,6 @@ libclamav_la_SOURCES = \
 	regex/regex.h \
 	regex/regex2.h \
 	regex/utils.h \
-	unrar/unrar15.c \
-	unrar/unrar20.h \
-	unrar/unrar.h \
-	unrar/unrar15.h \
-	unrar/unrar.c \
-	unrar/unrar20.c \
 	unarj.c \
 	unarj.h \
 	nsis/LZMADecode.c \

@@ -1,25 +1,20 @@
 /*
- *  Extract RAR archives
+ * Extract RAR archives
  *
- *  Copyright (C) 2005-2006 trog@uncon.org
+ * Copyright (C) 2005-2006 trog@uncon.org
  *
- *  This code is based on the work of Alexander L. Roshal
+ * This code is based on the work of Alexander L. Roshal (C)
  *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+ * The unRAR sources may be used in any software to handle RAR
+ * archives without limitations free of charge, but cannot be used
+ * to re-create the RAR compression algorithm, which is proprietary.
+ * Distribution of modified unRAR sources in separate form or as a
+ * part of other software is permitted, provided that it is clearly
+ * stated in the documentation and source comments that the code may
+ * not be used to develop a RAR (WinRAR) compatible archiver.
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- *  MA 02110-1301, USA.
  */
+
 
 #ifndef UNRAR_H
 #define UNRAR_H 1
@@ -33,7 +28,10 @@
 
 struct unpack_data_tag;
 
-#include "cltypes.h"
+#include "unrarppm.h"
+#include "unrarvm.h"
+#include "unrarcmd.h"
+#include "unrarfilter.h"
 #include "clamav.h"
 
 #define FALSE (0)
@@ -171,6 +169,30 @@ struct Decode
   unsigned int DecodeNum[2];
 };
 
+struct LitDecode
+{
+  unsigned int MaxNum;
+  unsigned int DecodeLen[16];
+  unsigned int DecodePos[16];
+  unsigned int DecodeNum[NC];
+};
+
+struct DistDecode
+{
+  unsigned int MaxNum;
+  unsigned int DecodeLen[16];
+  unsigned int DecodePos[16];
+  unsigned int DecodeNum[DC];
+};
+
+struct LowDistDecode
+{
+  unsigned int MaxNum;
+  unsigned int DecodeLen[16];
+  unsigned int DecodePos[16];
+  unsigned int DecodeNum[LDC];
+};
+
 struct RepDecode
 {
   unsigned int MaxNum;
@@ -187,20 +209,13 @@ struct BitDecode
   unsigned int DecodeNum[BC];
 };
 
-struct LitDecode
+struct UnpackFilter
 {
-  unsigned int MaxNum;
-  unsigned int DecodeLen[16];
-  unsigned int DecodePos[16];
-  unsigned int DecodeNum[NC];
-};
-
-struct DistDecode
-{
-  unsigned int MaxNum;
-  unsigned int DecodeLen[16];
-  unsigned int DecodePos[16];
-  unsigned int DecodeNum[DC];
+  unsigned int block_start;
+  unsigned int block_length;
+  unsigned int exec_count;
+  int next_window;
+  struct rarvm_prepared_program prg;
 };
 
 /* RAR2 structures */
@@ -234,20 +249,35 @@ typedef struct unpack_data_tag
 	int in_bit;
 	unsigned int unp_ptr;
 	unsigned int wr_ptr;
+	int tables_read;
 	int read_top;
 	int read_border;
+	int unp_block_type;
+	int prev_low_dist;
+	int low_dist_rep_count;
+	unsigned char unp_old_table[HUFF_TABLE_SIZE];
 	struct LitDecode LD;
 	struct DistDecode DD;
+	struct LowDistDecode LDD;
 	struct RepDecode RD;
 	struct BitDecode BD;
 	unsigned int old_dist[4];
 	unsigned int old_dist_ptr;
 	unsigned int last_dist;
 	unsigned int last_length;
+	ppm_data_t ppm_data;
+	int ppm_esc_char;
+	int ppm_error;
+	rar_filter_array_t Filters;
+	rar_filter_array_t PrgStack;
+	int *old_filter_lengths;
+	int last_filter, old_filter_lengths_size;
 	int64_t written_size;
 	int64_t dest_unp_size;
 	uint32_t pack_size;
-
+	rarvm_data_t rarvm_data;
+	unsigned int unp_crc;
+	
 	/* RAR2 variables */
 	int unp_cur_channel, unp_channel_delta, unp_audio_block, unp_channels;
 	unsigned char unp_old_table20[MC20 * 4];
