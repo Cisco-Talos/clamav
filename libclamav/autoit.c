@@ -39,6 +39,17 @@
 #include "others.h"
 #include "scanners.h"
 
+
+/* FIXME: use unicode detection and normalization from edwin */
+static void u2a(uint8_t *b, unsigned int s) {
+  unsigned int i;
+  if(s<2) return;
+  if(b[1]!=0) return;
+  for (i = 0 ; i < s; i+=2) b[i/2] = b[i];
+  b[i/2]='\0';
+}
+    
+
 /*********************
    MT realted stuff 
 *********************/
@@ -176,7 +187,7 @@ static int ea05(int desc, cli_ctx *ctx) {
       return CL_CLEAN;
     buf[s]='\0';
     MT_decrypt(buf,s,s+0xa25e);
-    cli_dbgmsg("autoit: magic string '%s'\n", buf); /* FIXME: CANNOT SPAM UNICODE */
+    cli_dbgmsg("autoit: magic string '%s'\n", buf);
   } else {
     lseek(desc, s, SEEK_CUR);
   }
@@ -194,7 +205,7 @@ static int ea05(int desc, cli_ctx *ctx) {
     }
     MT_decrypt(n,s,s+0xf25e);
     n[s]='\0';
-    cli_dbgmsg("autoit: original filename '%s'\n", n); /* FIXME: CANNOT SPAM UNICODE */
+    cli_dbgmsg("autoit: original filename '%s'\n", n);
     free(n);
   } else {
     lseek(desc, s, SEEK_CUR);
@@ -202,7 +213,7 @@ static int ea05(int desc, cli_ctx *ctx) {
 
   if (cli_readn(desc, buf, 13)!=13)
     return CL_CLEAN;
-  comp = *buf; /* FIXME: TODO - nocomp */
+  comp = *buf;
   UNP.csize = cli_readint32(buf+1) ^ 0x45aa;
   cli_dbgmsg("autoit: compressed size: %x\n", UNP.csize);
   us = cli_readint32(buf+5) ^ 0x45aa;
@@ -318,7 +329,7 @@ static int ea05(int desc, cli_ctx *ctx) {
   }
   free(UNP.outputbuf);
   if(cli_leavetemps_flag)
-    cli_dbgmsg("autoit: script estracted to %s\n", tempfile);
+    cli_dbgmsg("autoit: script extracted to %s\n", tempfile);
   else 
     cli_dbgmsg("autoit: script successfully extracted\n");
   fsync(i);
@@ -454,14 +465,17 @@ static void LAME_decrypt (uint8_t *cypher, uint32_t size, uint16_t seed) {
 
 
 static int ea06(int desc, cli_ctx *ctx) {
-  uint8_t b[40];
+  uint8_t b[40], comp;
   uint8_t *buf = b;
-  uint32_t s;
+  uint32_t s, us;
+  int i;
+  char *tempfile;
+  struct UNP UNP;
 
   if (cli_readn(desc, buf, 24)!=24)
     return CL_CLEAN;
 
-  LAME_decrypt(buf, 0x10, 0x99f2);
+  LAME_decrypt(buf, 0x10, 0x99f2); /* FIXME: Useless due to a bug in CRC calculation - LMAO!!1 */
   buf+=0x10;
 
   LAME_decrypt(buf, 4, 0x18ee);
@@ -483,7 +497,8 @@ static int ea06(int desc, cli_ctx *ctx) {
       return CL_CLEAN;
     buf[s*2]='\0'; buf[s*2+1]='\0';
     LAME_decrypt(buf,s*2,s+0xb33f);
-    cli_dbgmsg("autoit: magic string '%s'\n", buf); /* FIXME: CANNOT SPAM UNICODE */
+    u2a(buf, s*2); /* FIXME: GET RID OF THIS */
+    cli_dbgmsg("autoit: magic string '%s'\n", buf);
   } else {
     lseek(desc, s*2, SEEK_CUR);
   }
@@ -501,13 +516,39 @@ static int ea06(int desc, cli_ctx *ctx) {
     }
     LAME_decrypt(n,s*2,s+0xf479);
     n[s*2]='\0'; n[s*2+1]='\0';
-    cli_dbgmsg("autoit: original filename '%s'\n", n); /* FIXME: CANNOT SPAM UNICODE */
+    u2a(n,s*2); /* FIXME: GET RID OF THIS */
+    cli_dbgmsg("autoit: original filename '%s'\n", n);
     free(n);
   } else {
     lseek(desc, s*2, SEEK_CUR);
   }
 
+  if (cli_readn(desc, buf, 13)!=13)
+    return CL_CLEAN;
+  comp = *buf;
+  UNP.csize = cli_readint32(buf+1) ^ 0x87bc;
+  cli_dbgmsg("autoit: compressed size: %x\n", UNP.csize);
+  us = cli_readint32(buf+5) ^ 0x87bc;
+  cli_dbgmsg("autoit: advertised uncompressed size %x\n", us);
+  s = cli_readint32(buf+9) ^ 0xa685;
+  cli_dbgmsg("autoit: ref chksum: %x\n", s);
 
+  if(ctx->limits && ctx->limits->maxfilesize && UNP.csize > ctx->limits->maxfilesize) {
+    cli_dbgmsg("autoit: sizes exceeded (%lu > %lu)\n", (unsigned long int)UNP.csize, ctx->limits->maxfilesize);
+    return CL_CLEAN;
+  }
+
+  lseek(desc, 16, SEEK_CUR);
+  if (!(buf = cli_malloc(UNP.csize)))
+    return CL_EMEM;
+  if (cli_readn(desc, buf, UNP.csize)!=(int)UNP.csize) {
+    cli_dbgmsg("autoit: failed to read compressed stream. broken/truncated file?\n");
+    free(buf);
+    return CL_CLEAN;
+  }
+  LAME_decrypt(buf,UNP.csize,0x2477 /* + m4sum (broken by design) */ );
+
+  /* FIXME: TODO */
   return CL_CLEAN;
 }
 
