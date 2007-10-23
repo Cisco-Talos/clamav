@@ -17,6 +17,8 @@
  *  MA 02110-1301, USA.
  */
 
+#define printf(...)
+
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -506,7 +508,7 @@ static int ea06(int desc, cli_ctx *ctx) {
   if (cli_readn(desc, buf, 4)!=4)
     return CL_CLEAN;
   s = cli_readint32(buf) ^ 0xf820;
-  if(cli_debug_flag && s<150) {
+  if(cli_debug_flag && s<300) {
     uint8_t *n;
     if (!(n = cli_malloc(s*2+2)))
       return CL_EMEM;
@@ -548,10 +550,113 @@ static int ea06(int desc, cli_ctx *ctx) {
   }
   LAME_decrypt(buf,UNP.csize,0x2477 /* + m4sum (broken by design) */ );
 
-  /* FIXME: TODO */
+  if (comp == 1) {
+    cli_dbgmsg("autoit: script is compressed\n");
+    if (cli_readint32(buf)!=0x36304145) {
+      cli_dbgmsg("autoit: bad magic or unsupported version\n");
+      return CL_EFORMAT;
+    }
+
+    UNP.usize = ntohl(*(uint32_t *)(buf+4)); /* FIXME: portable? */
+    if (!(UNP.outputbuf = cli_malloc(UNP.usize))) {
+      free(buf);
+      return CL_EMEM;
+    }
+    cli_dbgmsg("autoit: uncompressed size again: %x\n", UNP.usize);
+
+    UNP.inputbuf = buf;
+    UNP.cur_output = 0;
+    UNP.cur_input = 8;
+    UNP.bitmap.full = 0;
+    UNP.bits_avail = 0;
+    UNP.error = 0;
+  
+    while (!UNP.error && UNP.cur_output < UNP.usize) {
+      if (!getbits(&UNP, 1)) {
+	uint32_t bb, bs, addme=0;
+	bb = getbits(&UNP, 15);
+      
+	if ((bs = getbits(&UNP, 2))==3) {
+	  addme = 3;
+	  if((bs = getbits(&UNP, 3))==7) {
+	    addme = 10;
+	    if((bs = getbits(&UNP, 5))==31) {
+	      addme = 41;
+	      if((bs = getbits(&UNP, 8))==255) {
+		addme = 296;
+		while((bs = getbits(&UNP, 8))==255) {
+		  addme+=255;
+		}
+	      }
+	    }
+	  }
+	}
+	bs += 3+addme;
+
+	if(!CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output], bs) ||
+	   !CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output-bb], bs)) {
+	  UNP.error = 1;
+	  break;
+	}
+	while(bs--) {
+	  UNP.outputbuf[UNP.cur_output]=UNP.outputbuf[UNP.cur_output-bb];
+	  UNP.cur_output++;
+	}
+      } else {
+	UNP.outputbuf[UNP.cur_output] = (uint8_t)getbits(&UNP, 8);
+	UNP.cur_output++;
+      }
+    }
+
+    free(buf);
+    if (UNP.error) {
+      cli_dbgmsg("autoit: decompression error\n");
+      free(UNP.outputbuf);
+      return CL_CLEAN;
+    }
+  } else {
+    /* No clues how this would look like o.0 */
+    cli_dbgmsg("autoit: script is not compressed\n");
+    UNP.outputbuf = buf;
+    UNP.usize = UNP.csize;
+  }
+
+
+  /* FIXME: TODO send to text notmalization */
+
+  if(!(tempfile = cli_gentemp(NULL))) {
+    free(UNP.outputbuf);
+    return CL_EMEM;
+  }
+  if((i = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
+    cli_dbgmsg("autoit: Can't create file %s\n", tempfile);
+    free(tempfile);
+    free(UNP.outputbuf);
+    return CL_EIO;
+  }
+  if(write(i, UNP.outputbuf, UNP.usize) != UNP.usize) {
+    cli_dbgmsg("autoit: cannot write %d bytes\n", UNP.usize);
+    close(i);
+    free(tempfile);
+    free(UNP.outputbuf);
+    return CL_EIO;
+  }
+  free(UNP.outputbuf);
+  if(cli_leavetemps_flag)
+    cli_dbgmsg("autoit: script extracted to %s\n", tempfile);
+  else 
+    cli_dbgmsg("autoit: script successfully extracted\n");
+  fsync(i);
+  lseek(i, 0, SEEK_SET);
+  if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
+    close(i);
+    if(!cli_leavetemps_flag) unlink(tempfile);
+    free(tempfile);
+    return CL_VIRUS;
+  }
+  close(i);
   return CL_CLEAN;
 }
-
 
 
 /*********************
