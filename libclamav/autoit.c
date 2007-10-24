@@ -395,30 +395,6 @@ static double LAME_fpusht(struct LAME *l) {
   ret.as_uint.hi = 0x3ff00000 | (rolled >> 0xc);
   printf("returned %e\n", ret.as_double - 1.0);
   return ret.as_double - 1.0;
-
-/*   if (l->unk2==0) { */
-/*     eax = edi; */
-/*     eax<<=14h; */
-/*     edi>>=0ch; */
-/*     edi |= 0x3ff00000; */
-/*     var8 = edi<<32 | eax; */
-/*     ST0 = var8 - 1.0f;	 */
-/*   } else { */
-/*     if(bufDC.unk2==1) { */
-/*       eax = edi; */
-/*       eax<<=14h; */
-/*       edi>>0ch; */
-/*       edi |= 0x3ff00000; */
-/*       var8 = eax<<32 | edi; */
-/*       ST0 = var8 - 1.0f; */
-/*     } else { */
-/*       ST0 = (float)edi; */
-/*       if ((int)edi<0) { */
-/* 	ST0 += k1; */
-/*       } */
-/*       ST0 *= k0; */
-/*     } */
-/*   } */
 }
 
 
