@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"0.92rc2"
+#define	CM_VERSION	"devel-20081024"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -517,6 +517,7 @@ static	const	char	*postmaster = "postmaster";
 static	const	char	*from = "MAILER-DAEMON";
 static	int	quitting;
 static	const	char	*report;	/* Report Phishing to this address */
+static	const	char	*report_fps;	/* Report Phish FPs to this address */
 
 static	const	char	*whitelistFile;	/*
 					 * file containing destination email
@@ -613,6 +614,7 @@ help(void)
 	puts(_("\t--quiet\t\t\t-q\tDon't send e-mail notifications of interceptions."));
 	puts(_("\t--quarantine=USER\t-Q EMAIL\tQuarantine e-mail account."));
 	puts(_("\t--report-phish=EMAIL\t-r EMAIL\tReport phish to this email address."));
+	puts(_("\t--report-phish-false-positives=EMAIL\t-R EMAIL\tReport phish false positves to this email address."));
 	puts(_("\t--quarantine-dir=DIR\t-U DIR\tDirectory to store infected emails."));
 	puts(_("\t--server=SERVER\t\t-s SERVER\tHostname/IP address of server(s) running clamd (when using TCPsocket)."));
 	puts(_("\t--sendmail-cf=FILE\t\tLocation of the sendmail.cf file to verify"));
@@ -710,15 +712,15 @@ main(int argc, char **argv)
 		int opt_index = 0;
 #ifdef	BOUNCE
 #ifdef	CL_DEBUG
-		const char *args = "a:AbB:c:C:dDefF:I:k:K:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:x:0:1:2";
+		const char *args = "a:AbB:c:C:dDefF:I:k:K:lLm:M:nNop:PqQ:r:R:hHs:St:T:U:VwW:x:0:1:2";
 #else
-		const char *args = "a:AbB:c:C:dDefF:I:k:K:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:0:1:2";
+		const char *args = "a:AbB:c:C:dDefF:I:k:K:lLm:M:nNop:PqQ:r:R:hHs:St:T:U:VwW:0:1:2";
 #endif
 #else	/*!BOUNCE*/
 #ifdef	CL_DEBUG
-		const char *args = "a:AB:c:C:dDefF:I:k:K:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:x:0:1:2";
+		const char *args = "a:AB:c:C:dDefF:I:k:K:lLm:M:nNop:PqQ:r:R:hHs:St:T:U:VwW:x:0:1:2";
 #else
-		const char *args = "a:AB:c:C:dDefF:I:k:K:lLm:M:nNop:PqQ:r:hHs:St:T:U:VwW:0:1:2";
+		const char *args = "a:AB:c:C:dDefF:I:k:K:lLm:M:nNop:PqQ:r:R:hHs:St:T:U:VwW:0:1:2";
 #endif
 #endif	/*BOUNCE*/
 
@@ -804,7 +806,10 @@ main(int argc, char **argv)
 				"quarantine", 1, NULL, 'Q',
 			},
 			{
-				"report-phishing", 1, NULL, 'r'
+				"report-phish", 1, NULL, 'r'
+			},
+			{
+				"report-phish-false-positives", 1, NULL, 'R'
 			},
 			{
 				"quarantine-dir", 1, NULL, 'U',
@@ -973,6 +978,9 @@ main(int argc, char **argv)
 			case 'r':	/* report phishing here */
 				/* e.g. reportphishing@antiphishing.org */
 				report = optarg;
+				break;
+			case 'R':	/* report phishing false positives here */
+				report_fps = optarg;
 				break;
 			case 's':	/* server running clamd */
 				server++;
@@ -1731,7 +1739,7 @@ main(int argc, char **argv)
 
 	if(report) {
 		if(!cfgopt(copt, "PhishingSignatures")->enabled) {
-			fprintf(stderr, "%s: You have chosen --report, but PhishingSignatures is off in %s\n",
+			fprintf(stderr, "%s: You have chosen --report-phish, but PhishingSignatures is off in %s\n",
 				argv[0], cfgfile);
 			return EX_USAGE;
 		}
@@ -1754,6 +1762,12 @@ main(int argc, char **argv)
 			return EX_USAGE;
 		}
 	}
+	if(report_fps)
+		if(!cfgopt(copt, "PhishingSignatures")->enabled) {
+			fprintf(stderr, "%s: You have chosen --report-phish-false-positives, but PhishingSignatures is off in %s\n",
+				argv[0], cfgfile);
+			return EX_USAGE;
+		}
 
 	if(cfgopt(copt, "Foreground")->enabled)
 		logg_foreground = 1;
@@ -1935,10 +1949,12 @@ main(int argc, char **argv)
 		if(getuid() == 0) {
 			if(chdir(rootdir) < 0) {
 				perror(rootdir);
+				logg("!chdir %s failed\n", rootdir);
 				return EX_CONFIG;
 			}
 			if(chroot(rootdir) < 0) {
 				perror(rootdir);
+				logg("!chroot %s failed\n", rootdir);
 				return EX_CONFIG;
 			}
 			logg("Chrooted to %s\n", rootdir);
@@ -2205,6 +2221,9 @@ pingServer(int serverNumber)
 			perror("socket");
 			return 0;
 		}
+		/*
+		 * FIXME: use non-blocking connect
+		 */
 		if(connect(sock, (struct sockaddr *)&server, sizeof(struct sockaddr_in)) < 0) {
 			int is_connected = 0;
 
@@ -3027,19 +3046,32 @@ clamfi_header(SMFICTX *ctx, char *headerf, char *headerv)
 	if((strcasecmp(headerf, "Message-ID") == 0) &&
 	   (strncasecmp(headerv, "<MDAEMON", 8) == 0))
 		privdata->discard = 1;
-	else if(strcasecmp(headerf, "Subject") == 0) {
+	else if((strcasecmp(headerf, "Subject") == 0) && headerv) {
 		if(privdata->subject)
 			free(privdata->subject);
 		if(headerv)
 			privdata->subject = cli_strdup(headerv);
 	} else if(strcasecmp(headerf, "X-Virus-Status") == 0)
 		privdata->statusCount++;
-	else if(strcasecmp(headerf, "Sender") == 0) {
+	else if((strcasecmp(headerf, "Sender") == 0) && headerv) {
 		if(privdata->sender)
 			free(privdata->sender);
-		if(headerv)
-			privdata->sender = cli_strdup(headerv);
+		privdata->sender = cli_strdup(headerv);
 	}
+#ifdef	HAVE_RESOLV_H
+	else if((strcasecmp(headerf, "From") == 0) && headerv) {
+		/*
+		 * SPF check against the from header, since the SMTP header
+		 * may be valid. This is not what the SPF spec says, but I
+		 * have seen SPF matches on what are clearly phishes, so by
+		 * checking against the from: header we're less likely to
+		 * FP a real phish
+		 */
+		if(privdata->from)
+			free(privdata->from);
+		privdata->from = cli_strdup(headerv);
+	}
+#endif
 
 	if(!useful_header(headerf)) {
 		logg("*Discarded the header\n");
@@ -3519,6 +3551,32 @@ clamfi_eom(SMFICTX *ctx)
 			logg(_("%s: Ignoring %s false positive from %s received from %s\n"),
 				sendmailId, mess, privdata->from, privdata->ip);
 			strcpy(mess, "OK");
+			/*
+			 * Report false positive to ClamAV, works best when
+			 * clamav-milter has had to create a local copy of
+			 * the email, e.g. when --quarantine-dir is on
+			 */
+			if(report_fps &&
+			   (smfi_addrcpt(ctx, report_fps) == MI_FAILURE)) {
+				if(privdata->filename) {
+					char cmd[1024];
+
+					snprintf(cmd, sizeof(cmd) - 1,
+						"mail -s \"False Positive: %s\" %s < %s",
+						mess, report_fps,
+						privdata->filename);
+					if(system(cmd) == 0)
+						logg(_("#Reported phishing false positive to %s"), report_fps);
+					else
+						logg(_("^Couldn't report false positive to %s\n"), report_fps);
+				} else
+					/*
+					 * Most likely this is because we're
+					 * attempting to add a recipient on
+					 * another host
+					 */
+					logg(_("^Can't set phish FP header\n"));
+			}
 		}
 		tableDestroy(prevhosts);
 	}
@@ -6213,7 +6271,7 @@ spf(struct privdata *privdata, table_t *prevhosts)
 
 	if(privdata->from == NULL)
 		return 0;
-	if((host = strchr(privdata->from, '@')) == NULL)
+	if((host = strrchr(privdata->from, '@')) == NULL)
 		return 0;
 
 	host = cli_strdup(++host);
@@ -6322,7 +6380,11 @@ spf(struct privdata *privdata, table_t *prevhosts)
 #endif
 					mask = MAKEMASK(preflen);
 					if((ntohl(remote_ip.s_addr) & mask) == (ntohl(spf_range.s_addr) & mask)) {
-						logg("#SPF ip4 pass\n");
+						if(privdata->subject)
+							logg("#SPF ip4 pass (%s) %s is valid for %s\n",
+								privdata->subject, ip, host);
+						else
+							logg("#SPF ip4 pass %s is valid for %s\n", ip, host);
 						privdata->spf_ok = 1;
 					}
 				} else if(strcmp(record, "mx") == 0) {
@@ -6402,7 +6464,10 @@ spf_ip(char *ip, int zero, void *v)
 	struct privdata *privdata = (struct privdata *)v;
 
 	if(strcmp(ip, privdata->ip) == 0) {
-		logg("#SPF mx/a pass %s\n", ip);
+		if(privdata->subject)
+			logg("#SPF mx/a pass (%s) %s\n", privdata->subject, ip);
+		else
+			logg("#SPF mx/a pass %s\n", ip);
 		privdata->spf_ok = 1;
 	}
 }

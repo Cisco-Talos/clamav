@@ -194,6 +194,9 @@ redirected to it.
 Report caught phishing to an anti-phish organisation's email address such
 as pirt_clamav@castlecops.com and reportphishing@antiphishing.org.
 .TP
+\fB-R, \-\-report-phish-false-positives=EMAILADDRESS\fR
+Report phish false positves to an email address, such as bugs@clamav.net.
+.TP
 \fB-U, \-\-quarantine-dir=DIR\fR
 If this option is given, infected files are left in this directory.
 The directory must not be publicly readable or writable, if it is,
