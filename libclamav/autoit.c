@@ -476,6 +476,8 @@ static int ea06(int desc, cli_ctx *ctx) {
   uint32_t s, us;
   int i;
   char *tempfile;
+  const char *prefixes[] = { "", "", "@", "$", "", ".", "\"", "#" };
+  const char *opers[] = { ",", "=", ">", "<", "<>", ">=", "<=", "(", ")", "+", "-", "/", "*", "&", "[", "]", "==", "^", "+=", "-=", "/=", "*=", "&=" };
   struct UNP UNP;
 
   if (cli_readn(desc, buf, 24)!=24)
@@ -647,8 +649,6 @@ static int ea06(int desc, cli_ctx *ctx) {
 
   while (!UNP.error && UNP.bits_avail && UNP.cur_input < UNP.usize) {
     uint8_t op;
-    char *prefixes[] = { "", "", "@", "$", "", ".", "\"", "#" };
-    char *opers[] = { ",", "=", ">", "<", "<>", ">=", "<=", "(", ")", "+", "-", "/", "*", "&", "[", "]", "==", "^", "+=", "-=", "/=", "*=", "&=" };
 
     switch((op = UNP.outputbuf[UNP.cur_input++])) {
     case 5: /* <INT> */
