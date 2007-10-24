@@ -246,6 +246,10 @@ static int ea05(int desc, cli_ctx *ctx) {
     }
 
     UNP.usize = ntohl(*(uint32_t *)(buf+4)); /* FIXME: portable? */
+    if(ctx->limits && ctx->limits->maxfilesize && UNP.usize > ctx->limits->maxfilesize) {
+      free(buf);
+      return CL_CLEAN;
+    }
     if (!(UNP.outputbuf = cli_malloc(UNP.usize))) {
       free(buf);
       return CL_EMEM;
@@ -322,7 +326,7 @@ static int ea05(int desc, cli_ctx *ctx) {
     free(UNP.outputbuf);
     return CL_EIO;
   }
-  if(write(i, UNP.outputbuf, UNP.usize) != UNP.usize) {
+  if(cli_writen(i, UNP.outputbuf, UNP.usize) != UNP.usize) {
     cli_dbgmsg("autoit: cannot write %d bytes\n", UNP.usize);
     close(i);
     free(tempfile);
@@ -558,6 +562,10 @@ static int ea06(int desc, cli_ctx *ctx) {
     }
 
     UNP.usize = ntohl(*(uint32_t *)(buf+4)); /* FIXME: portable? */
+    if(ctx->limits && ctx->limits->maxfilesize && UNP.usize > ctx->limits->maxfilesize) {
+      free(buf);
+      return CL_CLEAN;
+    }
     if (!(UNP.outputbuf = cli_malloc(UNP.usize))) {
       free(buf);
       return CL_EMEM;
@@ -621,6 +629,182 @@ static int ea06(int desc, cli_ctx *ctx) {
     UNP.usize = UNP.csize;
   }
 
+  if (UNP.usize<4) {
+    cli_dbgmsg("autoit: script is too short\n");
+    free(UNP.outputbuf);
+    return CL_CLEAN;
+  }
+
+  UNP.csize = UNP.usize;
+  if (!(buf = cli_malloc(UNP.csize))) {
+    free(UNP.outputbuf);
+    return CL_EMEM;
+  }
+  UNP.cur_output = 0;
+  UNP.cur_input = 4;
+  UNP.bits_avail = cli_readint32(UNP.outputbuf);
+  cli_dbgmsg("autoit: script has got %u lines\n", UNP.bits_avail);
+
+  while (!UNP.error && UNP.bits_avail && UNP.cur_input < UNP.usize) {
+    uint8_t op;
+    char *prefixes[] = { "", "", "@", "$", "", ".", "\"", "#" };
+    char *opers[] = { ",", "=", ">", "<", "<>", ">=", "<=", "(", ")", "+", "-", "/", "*", "&", "[", "]", "==", "^", "+=", "-=", "/=", "*=", "&=" };
+
+    switch((op = UNP.outputbuf[UNP.cur_input++])) {
+    case 5: /* <INT> */
+      if (UNP.cur_input >= UNP.usize-4) {
+	UNP.error = 1;
+	cli_dbgmsg("autoit: not enough space for an int\n");
+	break;
+      }
+      if (UNP.cur_output+12 >= UNP.csize) {
+	uint8_t *newout;
+	UNP.csize += 512;
+	if (!(newout = cli_realloc(buf, UNP.csize))) {
+	  UNP.error = 1;
+	  break;
+	}
+	buf = newout;
+      }
+      UNP.cur_output += sprintf(&buf[UNP.cur_output], "0x%x ", cli_readint32(&UNP.outputbuf[UNP.cur_input]));
+      UNP.cur_input += 4;
+      break;
+
+    case 0x20: /* <DOUBLE> */
+      if (UNP.usize < 8 || UNP.cur_input >= UNP.usize-8) {
+	UNP.error = 1;
+	cli_dbgmsg("autoit: not enough space for a double\n");
+	break;
+      }
+      if (UNP.cur_output+40 >= UNP.csize) {
+	uint8_t *newout;
+	UNP.csize += 512;
+	if (!(newout = cli_realloc(buf, UNP.csize))) {
+	  UNP.error = 1;
+	  break;
+	}
+	buf = newout;
+      }
+      snprintf(&buf[UNP.cur_output], 39, "%g ", *(double *)&UNP.outputbuf[UNP.cur_input]);
+      buf[UNP.cur_output+38]=' ';
+      buf[UNP.cur_output+39]='\0';
+      UNP.cur_output += strlen(&buf[UNP.cur_output]);
+      UNP.cur_input += 8;
+      break;
+
+    case 0x30: /* COSTRUCT */
+    case 0x31: /* COMMAND */
+    case 0x32: /* MACRO */
+    case 0x33: /* VAR */
+    case 0x34: /* FUNC */
+    case 0x35: /* OBJECT */
+    case 0x36: /* STRING */
+    case 0x37: /* DIRECTIVE */
+      {
+	uint32_t chars, dchars, i;
+
+	if (UNP.cur_input >= UNP.usize-4) {
+	  UNP.error = 1;
+	  cli_dbgmsg("autoit: not enough space for size\n");
+	  break;
+	}
+	chars = cli_readint32(&UNP.outputbuf[UNP.cur_input]);
+	dchars = chars*2;
+	UNP.cur_input+=4;
+
+	if (UNP.usize < dchars || UNP.cur_input >= UNP.usize-dchars) {
+	  UNP.error = 1;
+	  cli_dbgmsg("autoit: size too big - needed %d, total %d, avail %d\n", dchars, UNP.usize, UNP.usize - UNP.cur_input);
+	  break;
+	}
+	if (UNP.cur_output+chars+3 >= UNP.csize) {
+	  uint8_t *newout;
+	  UNP.csize += chars + 3;
+	  if (!(newout = cli_realloc(buf, UNP.csize))) {
+	    UNP.error = 1;
+	    break;
+	  }
+	  buf = newout;
+	}
+
+	UNP.cur_output += sprintf(&buf[UNP.cur_output], "%s", prefixes[op-0x30]);
+
+	if (chars) {
+	  for (i = 0; i<dchars; i+=2) {
+	    UNP.outputbuf[UNP.cur_input+i] ^= (uint8_t)chars;
+	    UNP.outputbuf[UNP.cur_input+i+1] ^= (uint8_t)(chars>>8);
+	  }
+	  u2a(&UNP.outputbuf[UNP.cur_input], dchars);
+	  memcpy(&buf[UNP.cur_output], &UNP.outputbuf[UNP.cur_input], chars);
+	  UNP.cur_output += chars;
+	  UNP.cur_input += dchars;
+	}
+	if (op==0x36)
+	  buf[UNP.cur_output++] = '"';
+	if (op!=0x34)
+	  buf[UNP.cur_output++] = ' ';
+      }
+      break;
+
+    case 0x40: /* , */
+    case 0x41: /* = */
+    case 0x42: /* > */
+    case 0x43: /* < */
+    case 0x44: /* <> */
+    case 0x45: /* >= */
+    case 0x46: /* <= */
+    case 0x47: /* ( */
+    case 0x48: /* ) */
+    case 0x49: /* + */
+    case 0x4a: /* - */
+    case 0x4b: /* / */
+    case 0x4c: /* * */
+    case 0x4d: /* & */
+    case 0x4e: /* [ */
+    case 0x4f: /* ] */
+    case 0x50: /* == */
+    case 0x51: /* ^ */
+    case 0x52: /* += */
+    case 0x53: /* -= */
+    case 0x54: /* /= */
+    case 0x55: /* *= */
+    case 0x56: /* &= */
+      if (UNP.cur_output+4 >= UNP.csize) {
+	uint8_t *newout;
+	UNP.csize += 512;
+	if (!(newout = cli_realloc(buf, UNP.csize))) {
+	  UNP.error = 1;
+	  break;
+	}
+	buf = newout;
+      }
+      UNP.cur_output += sprintf(&buf[UNP.cur_output], "%s ", opers[op-0x40]);
+      break;
+
+    case 0x7f:
+      UNP.bits_avail--;
+      if (UNP.cur_output+1 >= UNP.csize) {
+	uint8_t *newout;
+	UNP.csize += 512;
+	if (!(newout = cli_realloc(buf, UNP.csize))) {
+	  UNP.error = 1;
+	  break;
+	}
+	buf = newout;
+      }
+      buf[UNP.cur_output++]='\n';
+      break;
+
+    default:
+      cli_dbgmsg("autoit: found unknown op (%x)\n", op);
+      UNP.error = 1;
+    }
+  }
+
+  if (UNP.error)
+    cli_dbgmsg("autoit: decompilation aborted - partial script may exist\n");
+
+  free(UNP.outputbuf);
 
   /* FIXME: TODO send to text notmalization */
 
@@ -631,17 +815,17 @@ static int ea06(int desc, cli_ctx *ctx) {
   if((i = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
     cli_dbgmsg("autoit: Can't create file %s\n", tempfile);
     free(tempfile);
-    free(UNP.outputbuf);
+    free(buf);
     return CL_EIO;
   }
-  if(write(i, UNP.outputbuf, UNP.usize) != UNP.usize) {
+  if(cli_writen(i, buf, UNP.cur_output) != UNP.cur_output) {
     cli_dbgmsg("autoit: cannot write %d bytes\n", UNP.usize);
     close(i);
     free(tempfile);
-    free(UNP.outputbuf);
+    free(buf);
     return CL_EIO;
   }
-  free(UNP.outputbuf);
+  free(buf);
   if(cli_leavetemps_flag)
     cli_dbgmsg("autoit: script extracted to %s\n", tempfile);
   else 
