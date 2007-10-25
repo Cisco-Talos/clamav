@@ -17,8 +17,6 @@
  *  MA 02110-1301, USA.
  */
 
-#define printf(...)
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -245,7 +243,7 @@ static int ea05(int desc, cli_ctx *ctx) {
       return CL_EFORMAT;
     }
 
-    UNP.usize = ntohl(*(uint32_t *)(buf+4)); /* FIXME: portable? */
+    UNP.usize = ntohl(*(uint32_t *)(buf+4));
     if(ctx->limits && ctx->limits->maxfilesize && UNP.usize > ctx->limits->maxfilesize) {
       free(buf);
       return CL_CLEAN;
@@ -364,8 +362,6 @@ struct LAME {
   uint32_t grp1[17];
   uint32_t grp2[17];
   uint32_t grp3[17];
-  uint32_t unk2;
-  uint32_t unk3;
 };
 
 
@@ -373,8 +369,13 @@ static double LAME_fpusht(struct LAME *l) {
   union {
     double as_double;
     struct { /* FIXME: SWAP IF FPU_BIGENDIAN */
+#if FPU_WORDS_BIGENDIAN == 0
       uint32_t lo;
       uint32_t hi;
+#else
+      uint32_t hi;
+      uint32_t lo;
+#endif
     } as_uint;
   } ret;
 
@@ -386,15 +387,12 @@ static double LAME_fpusht(struct LAME *l) {
   if (!l->c1--) l->c1 = 16;
 
   if (l->grp1[l->c0] == l->grp2[0]) {
-    if (!memcmp(l->grp1, (uint32_t *)l + 0x24 - l->c0, 0x44)) {
-      printf("returned %e\n", 0);
+    if (!memcmp(l->grp1, (uint32_t *)l + 0x24 - l->c0, 0x44))
       return 0.0;
-    }
   }
 
   ret.as_uint.lo = rolled << 0x14;
   ret.as_uint.hi = 0x3ff00000 | (rolled >> 0xc);
-  printf("returned %e\n", ret.as_double - 1.0);
   return ret.as_double - 1.0;
 }
 
@@ -410,7 +408,6 @@ static void LAME_srand(struct LAME *l, uint32_t seed) {
 
   l->c0 = 0;
   l->c1 = 10;
-  l->unk2 = 0;
 
   memcpy(l->grp2, l->grp1, sizeof(l->grp1));
   memcpy(l->grp3, l->grp1, sizeof(l->grp1));
@@ -426,14 +423,12 @@ static uint8_t LAME_getnext(struct LAME *l) {
   x = LAME_fpusht(l) * 256.0;
   if ((int32_t)x < 256) ret = (uint8_t)x;
   else ret=0xff;
-  printf("next: %02x\n", ret);
   return ret;
 }
 
 static void LAME_decrypt (uint8_t *cypher, uint32_t size, uint16_t seed) {
   struct LAME lame;
   /* mt_srand_timewrap(struct srand_struc bufDC); */
-  lame.unk2 = 0;
 
   LAME_srand(&lame, (uint32_t)seed);
   while(size--)
@@ -538,7 +533,7 @@ static int ea06(int desc, cli_ctx *ctx) {
       return CL_EFORMAT;
     }
 
-    UNP.usize = ntohl(*(uint32_t *)(buf+4)); /* FIXME: portable? */
+    UNP.usize = ntohl(*(uint32_t *)(buf+4));
     if(ctx->limits && ctx->limits->maxfilesize && UNP.usize > ctx->limits->maxfilesize) {
       free(buf);
       return CL_CLEAN;
