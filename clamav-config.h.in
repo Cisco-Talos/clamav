@@ -87,6 +87,9 @@
 /* file i/o buffer size */
 #undef FILEBUFF
 
+/* FPU byte ordering is little endian */
+#undef FPU_WORDS_BIGENDIAN
+
 /* enable workaround for broken DNS servers */
 #undef FRESHCLAM_DNS_FIX
 
