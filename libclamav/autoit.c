@@ -355,6 +355,7 @@ static int ea05(int desc, cli_ctx *ctx) {
   LAME realted stuff 
 *********************/
 
+#ifdef FPU_WORDS_BIGENDIAN
 #define ROFL(a,b) (( a << (b % (sizeof(a)<<3) ))  |  (a >> (  (sizeof(a)<<3)  -  (b % (sizeof(a)<<3 )) ) ))
 
 struct LAME {
@@ -440,11 +441,9 @@ static void LAME_decrypt (uint8_t *cypher, uint32_t size, uint16_t seed) {
 }
 
 
-
 /*********************
  autoit3 EA06 handler 
 *********************/
-
 
 static int ea06(int desc, cli_ctx *ctx) {
   uint8_t b[40], comp;
@@ -818,6 +817,7 @@ static int ea06(int desc, cli_ctx *ctx) {
   return CL_CLEAN;
 }
 
+#endif /* FPU_WORDS_BIGENDIAN */
 
 /*********************
    autoit3 wrapper 
@@ -836,8 +836,13 @@ int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
     func = ea05;
     break;
   case 0x36:
+#ifdef FPU_WORDS_BIGENDIAN
     func = ea06;
     break;
+#else
+    cli_dbgmsg("autoit: EA06 support not available\n");
+    return CL_CLEAN;
+#endif
   default:
     /* NOT REACHED */
     cli_dbgmsg("autoit: unknown method\n");
