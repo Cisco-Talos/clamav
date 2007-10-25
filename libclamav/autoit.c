@@ -305,7 +305,6 @@ static int ea05(int desc, cli_ctx *ctx) {
       return CL_CLEAN;
     }
   } else {
-    /* No clues how this would look like o.0 */
     cli_dbgmsg("autoit: script is not compressed\n");
     UNP.outputbuf = buf;
     UNP.usize = UNP.csize;
@@ -460,6 +459,8 @@ static int ea06(int desc, cli_ctx *ctx) {
   const char *opers[] = { ",", "=", ">", "<", "<>", ">=", "<=", "(", ")", "+", "-", "/", "*", "&", "[", "]", "==", "^", "+=", "-=", "/=", "*=", "&=" };
   struct UNP UNP;
 
+  UNP.error = 0;
+
   if (cli_readn(desc, buf, 24)!=24)
     return CL_CLEAN;
 
@@ -559,7 +560,6 @@ static int ea06(int desc, cli_ctx *ctx) {
     UNP.cur_input = 8;
     UNP.bitmap.full = 0;
     UNP.bits_avail = 0;
-    UNP.error = 0;
   
     while (!UNP.error && UNP.cur_output < UNP.usize) {
       if (!getbits(&UNP, 1)) {
@@ -605,7 +605,6 @@ static int ea06(int desc, cli_ctx *ctx) {
       return CL_CLEAN;
     }
   } else {
-    /* No clues how this would look like o.0 */
     cli_dbgmsg("autoit: script is not compressed\n");
     UNP.outputbuf = buf;
     UNP.usize = UNP.csize;
