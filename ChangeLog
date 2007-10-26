@@ -1,7 +1,11 @@
+Fri Oct 26 16:36:12 BST 2007 (njh)
+----------------------------------
+  * libclamav/vba_extract.c:	Further cleanups
+
 Wed Oct 24 09:08:12 BST 2007 (njh)
 ----------------------------------
   * clamav-milter:	Improved SPF checking for phish false positives
-  			Improved chroot failure diagnostics
+			Improved chroot failure diagnostics
 			Added option to report phish false positives
 
 Tue Oct 23 12:05:05 BST 2007 (trog)
@@ -13,7 +17,7 @@ Tue Oct 23 12:05:05 BST 2007 (trog)
 Mon Oct 22 20:39:10 BST 2007 (njh)
 ----------------------------------
   * libclamav/vba_extract.c:	Fixed warnings, removed double close() and
-  			some code tidies
+			some code tidies
 
 Thu Oct 18 20:42:11 EDT 2007 (tk)
 ---------------------------------
@@ -125,8 +129,8 @@ Wed Oct  3 18:26:12 EEST 2007 (edwin)
 Wed Oct  3 15:10:28 EEST 2007 (edwin)
 ------------------------------------
   * libclamav/regex_list.[ch]: avoid some false positives when there are
-  spaces in URL. 
- 
+  spaces in URL.
+
 Wed Oct  3 01:48:26 CEST 2007 (tk)
 ----------------------------------
   * libclamav/matcher-ac.[ch]: - add basic support for string alternatives

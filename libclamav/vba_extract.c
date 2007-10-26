@@ -46,6 +46,41 @@
 #define	O_BINARY	0
 #endif
 
+#ifndef HAVE_ATTRIB_PACKED
+#define __attribute__(x)
+#endif
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
+
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1
+#endif
+
+struct vba56_header {
+	unsigned char magic[2];
+	unsigned char version[4];
+	uint16_t ooff __attribute__ ((packed));	/* 0x00FF */
+	uint32_t LidA __attribute__ ((packed));  /* Language identifiers */
+	uint32_t LidB __attribute__ ((packed));
+	uint16_t CharSet __attribute__ ((packed));
+	uint16_t LenA __attribute__ ((packed));
+	uint32_t UnknownB __attribute__ ((packed));
+	uint32_t UnknownC __attribute__ ((packed));
+	uint16_t LenB __attribute__ ((packed));
+	uint16_t LenC __attribute__ ((packed));
+	uint16_t LenD __attribute__ ((packed));
+};
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack()
+#endif
+
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack
+#endif
+
 typedef struct vba_version_tag {
 	unsigned char signature[4];
 	const char *name;
@@ -53,11 +88,10 @@ typedef struct vba_version_tag {
 	int is_mac;
 } vba_version_t;
 
-
 static uint16_t vba_endian_convert_16(uint16_t value, int is_mac)
 {
 	if (is_mac)
-		return be16_to_host(value);
+		return (uint16_t)be16_to_host(value);
 	else
 		return le16_to_host(value);
 }
@@ -117,10 +151,11 @@ get_unicode_name(const char *name, int size, int is_mac)
                 } else {
                         if (name[i] < 10 && name[i] >= 0) {
                                 newname[j++] = '_';
-                                newname[j++] = name[i] + '0';
+                                newname[j++] = (char)(name[i] + '0');
                         }
 			else {
-				const uint16_t x = (((uint16_t)name[i]) << 8) | name[i+1];
+				const uint16_t x = (uint16_t)(((name[i]) << 8) | name[i + 1]);
+
 				newname[j++] = '_';
 				newname[j++] = (char)('a'+((x&0xF)));
 				newname[j++] = (char)('a'+((x>>4)&0xF));
@@ -150,14 +185,14 @@ static void vba56_test_middle(int fd)
 		0x85, 0x2e, 0x02, 0x60, 0x8c, 0x4d, 0x0b, 0xb4, 0x00, 0x00
 	};
 
-        if (cli_readn(fd, &test_middle, 20) != 20) {
-                return;
-        }
+	if(cli_readn(fd, &test_middle, 20) != 20) {
+		return;
+	}
 
 	if ((memcmp(test_middle, middle1_str, 20) != 0) &&
 		(memcmp(test_middle, middle2_str, 20) != 0)) {
 		cli_dbgmsg("middle not found\n");
-	        lseek(fd, -20, SEEK_CUR);
+		lseek(fd, -20, SEEK_CUR);
 	} else {
 		cli_dbgmsg("middle found\n");
 	}
@@ -187,7 +222,8 @@ static int vba_read_project_strings(int fd, int is_mac)
 			return FALSE;
 		}
 		offset = lseek(fd, 0, SEEK_CUR);
-		if (cli_readn(fd, buff, length) != length) {
+
+		if (cli_readn(fd, buff, length) != (int)length) {
 			cli_dbgmsg("read name failed - rewinding\n");
 			lseek(fd, offset, SEEK_SET);
 			free(buff);
@@ -248,26 +284,16 @@ static int vba_read_project_strings(int fd, int is_mac)
 
 vba_project_t *vba56_dir_read(const char *dir)
 {
-	unsigned char magic[2];
-	unsigned char version[4];
 	unsigned char *buff;
-        const unsigned char vba56_signature[] = { 0xcc, 0x61 };
+	const unsigned char vba56_signature[] = { 0xcc, 0x61 };
 	uint16_t record_count, length;
-	uint16_t ooff;
+	uint16_t ffff;
 	uint16_t byte_count;
 	uint32_t offset;
-	uint32_t LidA;  /* Language identifiers */
-	uint32_t LidB;
-	uint16_t CharSet;
-	uint16_t LenA;
-	uint32_t UnknownB;
-	uint32_t UnknownC;
-	uint16_t LenB;
-	uint16_t LenC;
-	uint16_t LenD;
-	int i, j, fd, is_mac;
+	int i, fd, is_mac;
 	vba_project_t *vba_project;
 	char *fullname;
+	struct vba56_header v56h;
 
 	cli_dbgmsg("in vba56_dir_read()\n");
 
@@ -286,38 +312,36 @@ vba_project_t *vba56_dir_read(const char *dir)
         }
 	free(fullname);
 
-	if (cli_readn(fd, &magic, 2) != 2) {
+	if(cli_readn(fd, &v56h, sizeof(struct vba56_header)) != sizeof(struct vba56_header)) {
 		close(fd);
 		return NULL;
 	}
-	if (memcmp(magic, vba56_signature, 2) != 0) {
+	if (memcmp(v56h.magic, vba56_signature, sizeof(v56h.magic)) != 0) {
 		close(fd);
 		return NULL;
 	}
 
-	if (cli_readn(fd, &version, 4) != 4) {
-		close(fd);
-		return NULL;
-	}
-	for (i=0 ; i < NUM_VBA_VERSIONS ; i++) {
-		if (memcmp(version, vba_version[i].signature, 4) == 0) {
+	for(i = 0; i < NUM_VBA_VERSIONS; i++)
+		if(memcmp(v56h.version, vba_version[i].signature, sizeof(vba_version[i].signature)) == 0)
 			break;
-		}
-	}
 
 	if (i == NUM_VBA_VERSIONS) {
 		cli_warnmsg("Unknown VBA version signature %x %x %x %x\n",
-			version[0], version[1], version[2], version[3]);
-		if (version[3] == 0x01) {
-			cli_warnmsg("Guessing little-endian\n");
-			is_mac = FALSE;
-		} else if (version[3] == 0x0e) {
-			cli_warnmsg("Guessing big-endian\n");
-			is_mac = TRUE;
-		} else {
-			cli_warnmsg("Unable to guess VBA type\n");
-			close(fd);
-			return NULL;
+			v56h.version[0], v56h.version[1],
+			v56h.version[2], v56h.version[3]);
+		switch(v56h.version[3]) {
+			case 0x01:
+				cli_warnmsg("Guessing little-endian\n");
+				is_mac = FALSE;
+				break;
+			case 0x0E:
+				cli_warnmsg("Guessing big-endian\n");
+				is_mac = TRUE;
+				break;
+			default:
+				cli_warnmsg("Unable to guess VBA type\n");
+				close(fd);
+				return NULL;
 		}
 	} else {
 		cli_dbgmsg("VBA Project: %s, VBA Version=%d\n", vba_version[i].name,
@@ -325,68 +349,13 @@ vba_project_t *vba56_dir_read(const char *dir)
 		is_mac = vba_version[i].is_mac;
 	}
 
-	/*****************************************/
-
-	/* two bytes, should be equal to 0x00ff */
-	if (cli_readn(fd, &ooff, 2) != 2) {
+#if	0
+	if((vba_endian_convert_16(v56h.ooff, is_mac) != 0xFF00)) {
+		cli_warnmsg("Expected 0xFF00, got 0x%x\n", v56h.ooff);
 		close(fd);
 		return NULL;
 	}
-
-	if (cli_readn(fd, &LidA, 4) != 4) {
-		close(fd);
-		return NULL;
-	}
-
-	if (cli_readn(fd, &LidB, 4) != 4) {
-		close(fd);
-		return NULL;
-	}
-
-	if (cli_readn(fd, &CharSet, 2) != 2) {
-		close(fd);
-		return NULL;
-	}
-	if (cli_readn(fd, &LenA, 2) != 2) {
-		close(fd);
-		return NULL;
-	}
-
-	if (cli_readn(fd, &UnknownB, 4) != 4) {
-		close(fd);
-		return NULL;
-	}
-	if (cli_readn(fd, &UnknownC, 4) != 4) {
-		close(fd);
-		return NULL;
-	}
-
-	if (cli_readn(fd, &LenB, 2) != 2) {
-		close(fd);
-		return NULL;
-	}
-	if (cli_readn(fd, &LenC, 2) != 2) {
-		close(fd);
-		return NULL;
-	}
-	if (cli_readn(fd, &LenD, 2) != 2) {
-		close(fd);
-		return NULL;
-	}
-
-        LidA = vba_endian_convert_32(LidA, is_mac);
-        LidB = vba_endian_convert_32(LidB, is_mac);
-        CharSet = vba_endian_convert_16(CharSet, is_mac);
-        LenA = vba_endian_convert_16(LenA, is_mac);
-        LenB = vba_endian_convert_16(LenB, is_mac);
-        LenC = vba_endian_convert_16(LenC, is_mac);
-        LenD = vba_endian_convert_16(LenD, is_mac);
-
-	cli_dbgmsg(" LidA: %d\n LidB: %d\n CharSet: %d\n", LidA, LidB, CharSet);
-	cli_dbgmsg(" LenA: %d\n UnknownB: %d\n UnknownC: %d\n", LenA, UnknownB, UnknownC);
-	cli_dbgmsg(" LenB: %d\n LenC: %d\n LenD: %d\n", LenB, LenC, LenD);
-
-	record_count = LenC;
+#endif
 
 	if (!vba_read_project_strings(fd, is_mac)) {
 		close(fd);
@@ -395,39 +364,39 @@ vba_project_t *vba56_dir_read(const char *dir)
 
 	/* junk some more stuff */
 	do {
-		if (cli_readn(fd, &ooff, 2) != 2) {
+		if (cli_readn(fd, &ffff, 2) != 2) {
 			close(fd);
 			return NULL;
 		}
-	} while(ooff != 0xFFFF);
+	} while(ffff != 0xFFFF);
 
 	/* check for alignment error */
 	lseek(fd, -3, SEEK_CUR);
-	if (cli_readn(fd, &ooff, 2) != 2) {
+	if (cli_readn(fd, &ffff, 2) != 2) {
 		close(fd);
 		return NULL;
 	}
-	if (ooff != 0xFFFF) {
+	if (ffff != 0xFFFF) {
 		lseek(fd, 1, SEEK_CUR);
 	}
 
-	if (cli_readn(fd, &ooff, 2) != 2) {
+	if (cli_readn(fd, &ffff, 2) != 2) {
 		close(fd);
 		return NULL;
 	}
 
 	/* no idea what this stuff is */
-	if (ooff != 0xFFFF) {
-		ooff = vba_endian_convert_16(ooff, is_mac);
-		lseek(fd, ooff, SEEK_CUR);
+	if (ffff != 0xFFFF) {
+		ffff = vba_endian_convert_16(ffff, is_mac);
+		lseek(fd, ffff, SEEK_CUR);
 	}
-	if (cli_readn(fd, &ooff, 2) != 2) {
+	if (cli_readn(fd, &ffff, 2) != 2) {
 		close(fd);
 		return NULL;
 	}
-	if (ooff != 0xFFFF) {
-		ooff = vba_endian_convert_16(ooff, is_mac);
-		lseek(fd, ooff, SEEK_CUR);
+	if (ffff != 0xFFFF) {
+		ffff = vba_endian_convert_16(ffff, is_mac);
+		lseek(fd, ffff, SEEK_CUR);
 	}
 	lseek(fd, 100, SEEK_CUR);
 
@@ -439,8 +408,8 @@ vba_project_t *vba56_dir_read(const char *dir)
 	cli_dbgmsg("\nVBA Record count: %d\n", record_count);
 	if (record_count == 0) {
 		close(fd);
-                return NULL;
-        }
+		return NULL;
+	}
 	if (record_count > 1000) {
 		/* Almost certainly an error */
 		cli_dbgmsg("\nVBA Record count too big");
@@ -470,30 +439,34 @@ vba_project_t *vba56_dir_read(const char *dir)
 		return NULL;
 	}
 	vba_project->count = record_count;
-	for (i=0 ; i < record_count ; i++) {
-		if (cli_readn(fd, &length, 2) != 2) {
-			goto out_error;
-		}
+	for(i = 0; i < record_count; i++) {
+		if(cli_readn(fd, &length, 2) != 2)
+			break;
+
 		length = vba_endian_convert_16(length, is_mac);
 		if (length == 0) {
 			cli_dbgmsg("zero name length\n");
-			goto out_error;
-                }
+			break;
+		}
 		buff = (unsigned char *) cli_malloc(length);
 		if (!buff) {
 			cli_dbgmsg("cli_malloc failed\n");
-			goto out_error;
+			break;
 		}
 		if (cli_readn(fd, buff, length) != length) {
 			cli_dbgmsg("read name failed\n");
 			free(buff);
-			goto out_error;
+			break;
 		}
 		vba_project->name[i] = get_unicode_name((const char *)buff, length, is_mac);
 		if (!vba_project->name[i]) {
 			offset = lseek(fd, 0, SEEK_CUR);
 			vba_project->name[i] = (char *) cli_malloc(18);
-			snprintf(vba_project->name[i], 18, "clamav-%.10d", offset);
+			if(vba_project->name[i] == NULL) {
+				free(buff);
+				break;
+			}
+			snprintf(vba_project->name[i], 18, "clamav-%.10d", (int)offset);
 		}
 		cli_dbgmsg("project name: %s, ", vba_project->name[i]);
 		free(buff);
@@ -501,42 +474,39 @@ vba_project_t *vba56_dir_read(const char *dir)
 		/* some kind of string identifier ?? */
 		if (cli_readn(fd, &length, 2) != 2) {
 			free(vba_project->name[i]);
-			goto out_error;
+			break;
 		}
 		length = vba_endian_convert_16(length, is_mac);
 		lseek(fd, length, SEEK_CUR);
 
 		/* unknown stuff */
-		if (cli_readn(fd, &ooff, 2) != 2) {
+		if (cli_readn(fd, &ffff, 2) != 2) {
 			free(vba_project->name[i]);
-			goto out_error;
+			break;
 		}
-		ooff = vba_endian_convert_16(ooff, is_mac);
-		if (ooff == 0xFFFF) {
+		ffff = vba_endian_convert_16(ffff, is_mac);
+		if (ffff == 0xFFFF) {
 			lseek(fd, 2, SEEK_CUR);
-			if (cli_readn(fd, &ooff, 2) != 2) {
+			if (cli_readn(fd, &ffff, 2) != 2) {
 				free(vba_project->name[i]);
-				goto out_error;
+				break;
 			}
-			ooff = vba_endian_convert_16(ooff, is_mac);
-			lseek(fd, ooff, SEEK_CUR);
+			ffff = vba_endian_convert_16(ffff, is_mac);
+			lseek(fd, ffff, SEEK_CUR);
 		} else {
-			lseek(fd, 2 + ooff, SEEK_CUR);
+			lseek(fd, 2 + ffff, SEEK_CUR);
 		}
 
 		lseek(fd, 8, SEEK_CUR);
 		if (cli_readn(fd, &byte_count, 2) != 2) {
 			free(vba_project->name[i]);
-			goto out_error;
+			break;
 		}
 		byte_count = vba_endian_convert_16(byte_count, is_mac);
-		for (j=0 ; j<byte_count; j++) {
-			lseek(fd, 8, SEEK_CUR);
-		}
-		lseek(fd, 5, SEEK_CUR);
+		lseek(fd, (8 * byte_count) + 5, SEEK_CUR);
 		if (cli_readn(fd, &offset, 4) != 4) {
 			free(vba_project->name[i]);
-			goto out_error;
+			break;
 		}
 		offset = vba_endian_convert_32(offset, is_mac);
 		vba_project->offset[i] = offset;
@@ -544,29 +514,21 @@ vba_project_t *vba56_dir_read(const char *dir)
 		lseek(fd, 2, SEEK_CUR);
 	}
 
-
-	{ /* There appears to be some code in here */
-
-	off_t foffset;
-
-		foffset = lseek(fd, 0, SEEK_CUR);
-		cli_dbgmsg("\nOffset: 0x%x\n", (unsigned int)foffset);
-	}
 	close(fd);
+
+	if(i < record_count) {
+		/* above loop failed */
+		while(--i >= 0)
+			free(vba_project->name[i]);
+
+		free(vba_project->name);
+		free(vba_project->dir);
+		free(vba_project->offset);
+		free(vba_project);
+		return NULL;
+	}
+
 	return vba_project;
-
-out_error:
-	/* Note: only to be called from the above loop
-	   when i == number of allocated stings */
-	for (j=0 ; j<i ; j++) {
-		free(vba_project->name[j]);
-	}
-	free(vba_project->name);
-	free(vba_project->dir);
-	free(vba_project->offset);
-	free(vba_project);
-	close(fd);
-	return NULL;
 }
 
 #define VBA_COMPRESSION_WINDOW 4096
@@ -751,7 +713,7 @@ int cli_decode_ole_object(int fd, const char *dir)
 	sprintf(fullname, "%s/_clam_ole_object", dir);
 	ofd = open(fullname, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, 0600);
 	free(fullname);
-        if (ofd < 0) {
+	if (ofd < 0) {
 		return -1;
 	}
 	ole_copy_file_data(fd, ofd, object_size);
@@ -781,8 +743,8 @@ static int ppt_read_atom_header(int fd, atom_header_t *atom_header)
 	}
 	atom_header->ver_inst = vba_endian_convert_16(atom_header->ver_inst, FALSE);
 	atom_header->version = (uint8_t)(atom_header->ver_inst & 0x000f);
-	atom_header->instance = atom_header->ver_inst >> 4;
-	if (cli_readn(fd, &atom_header->type, 2) != 2) {
+	atom_header->instance = (uint16_t)(atom_header->ver_inst >> 4);
+	if(cli_readn(fd, &atom_header->type, sizeof(uint16_t)) != sizeof(uint16_t)) {
 		cli_dbgmsg("read ppt_current_user failed\n");
 		return FALSE;
 	}
@@ -821,10 +783,10 @@ static int ppt_unlzw(const char *dir, int fd, uint32_t length)
 
 	ofd = open(fullname, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, 0600);
 	free(fullname);
-        if (ofd == -1) {
-                cli_dbgmsg("ppt_unlzw Open outfile failed\n");
-                return FALSE;
-        }
+	if (ofd == -1) {
+		cli_dbgmsg("ppt_unlzw Open outfile failed\n");
+		return FALSE;
+	}
 
 	stream.zalloc = Z_NULL;
 	stream.zfree = Z_NULL;
@@ -877,8 +839,7 @@ static int ppt_unlzw(const char *dir, int fd, uint32_t length)
 		return FALSE;
 	}
 	inflateEnd(&stream);
-	close(ofd);
-	return TRUE;
+	return close(ofd);
 }
 
 static char *ppt_stream_iter(int fd)
@@ -1407,7 +1368,7 @@ static macro_extnames_t *wm_read_macro_extnames(int fd)
 			goto abort;
 		}
 		macro_extname->numref = vba_endian_convert_16(macro_extname->numref, FALSE);
-		cli_dbgmsg("ext name: %s\n", macro_extname->extname);
+		cli_dbgmsg("ext name: %s\n", (char *)macro_extname->extname);
 	}
 	return macro_extnames;
 
@@ -1474,16 +1435,16 @@ static macro_intnames_t *wm_read_macro_intnames(int fd)
 		}
 		if (cli_readn(fd, macro_intname->intname, macro_intname->length) != macro_intname->length) {
 			cli_dbgmsg("read macro_intnames failed\n");
-			macro_intnames->count = i+1;
+			macro_intnames->count = (uint16_t)(i + 1);
 			goto abort;
 		}
 		macro_intname->intname[macro_intname->length] = '\0';
 		if (cli_readn(fd, &junk, 1) != 1) {
 			cli_dbgmsg("read macro_intnames failed\n");
-			macro_intnames->count = i+1;
+			macro_intnames->count = (uint16_t)(i + 1);
 			goto abort;
 		}
-		cli_dbgmsg("int name: %s\n", macro_intname->intname);
+		cli_dbgmsg("int name: %s\n", (char *)macro_intname->intname);
 	}
 	return macro_intnames;
 abort:
