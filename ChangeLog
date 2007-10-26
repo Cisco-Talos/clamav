@@ -1,3 +1,7 @@
+Fri Oct 26 19:58:02 CEST 2007 (tk)
+----------------------------------
+  * add COPYING.unrar; TODO: add GPL exception for libclamunrar
+
 Fri Oct 26 19:51:52 CEST 2007 (tk)
 ----------------------------------
   * libclamav, configure: by default don't build and link with libclamunrar;
