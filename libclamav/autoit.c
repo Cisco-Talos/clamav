@@ -157,7 +157,7 @@ static uint32_t getbits(struct UNP *UNP, uint32_t size) {
 static int ea05(int desc, cli_ctx *ctx) {
   uint8_t b[24], comp;
   uint8_t *buf = b;
-  uint32_t s, us, m4sum=0;
+  uint32_t s, m4sum=0;
   int i;
   char *tempfile;
   struct UNP UNP;
@@ -195,7 +195,9 @@ static int ea05(int desc, cli_ctx *ctx) {
   if (cli_readn(desc, buf, 4)!=4)
     return CL_CLEAN;
   s = cli_readint32(buf) ^ 0x29ac;
-  if(cli_debug_flag && s<300) {
+  if ((int32_t)s<0)
+    return CL_CLEAN; /* the original code wouldn't seek back here */
+  if (cli_debug_flag && s<300) {
     uint8_t *n;
     if (!(n = cli_malloc(s+1)))
       return CL_EMEM;
@@ -216,10 +218,8 @@ static int ea05(int desc, cli_ctx *ctx) {
   comp = *buf;
   UNP.csize = cli_readint32(buf+1) ^ 0x45aa;
   cli_dbgmsg("autoit: compressed size: %x\n", UNP.csize);
-  us = cli_readint32(buf+5) ^ 0x45aa;
-  cli_dbgmsg("autoit: advertised uncompressed size %x\n", us);
-  s = cli_readint32(buf+9) ^ 0xc3d2;
-  cli_dbgmsg("autoit: ref chksum: %x\n", s);
+  cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32(buf+5) ^ 0x45aa);
+  cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32(buf+9) ^ 0xc3d2);
 
   if(ctx->limits && ctx->limits->maxfilesize && UNP.csize > ctx->limits->maxfilesize) {
     cli_dbgmsg("autoit: sizes exceeded (%lu > %lu)\n", (unsigned long int)UNP.csize, ctx->limits->maxfilesize);
@@ -344,6 +344,8 @@ static int ea05(int desc, cli_ctx *ctx) {
     return CL_VIRUS;
   }
   close(i);
+  if(!cli_leavetemps_flag) unlink(tempfile);
+  free(tempfile);
   return CL_CLEAN;
 }
 
@@ -385,7 +387,7 @@ static double LAME_fpusht(struct LAME *l) {
   if (!l->c0--) l->c0 = 16;
   if (!l->c1--) l->c1 = 16;
 
-  if (l->grp1[l->c0] == l->grp2[0]) {
+  if (l->grp1[l->c0] == l->grp2[0]) { /* FIXME: verify this is real or drop it */
     if (!memcmp(l->grp1, (uint32_t *)l + 0x24 - l->c0, 0x44))
       return 0.0;
   }
@@ -428,6 +430,7 @@ static void LAME_srand(struct LAME *l, uint32_t seed) {
 static uint8_t LAME_getnext(struct LAME *l) {
   double x;
   uint8_t ret;
+
   LAME_fpusht(l);
   x = LAME_fpusht(l) * 256.0;
   if ((int32_t)x < 256) ret = (uint8_t)x;
@@ -452,7 +455,7 @@ static void LAME_decrypt (uint8_t *cypher, uint32_t size, uint16_t seed) {
 static int ea06(int desc, cli_ctx *ctx) {
   uint8_t b[40], comp;
   uint8_t *buf = b;
-  uint32_t s, us;
+  uint32_t s;
   int i;
   char *tempfile;
   const char *prefixes[] = { "", "", "@", "$", "", ".", "\"", "#" };
@@ -517,10 +520,8 @@ static int ea06(int desc, cli_ctx *ctx) {
   comp = *buf;
   UNP.csize = cli_readint32(buf+1) ^ 0x87bc;
   cli_dbgmsg("autoit: compressed size: %x\n", UNP.csize);
-  us = cli_readint32(buf+5) ^ 0x87bc;
-  cli_dbgmsg("autoit: advertised uncompressed size %x\n", us);
-  s = cli_readint32(buf+9) ^ 0xa685;
-  cli_dbgmsg("autoit: ref chksum: %x\n", s);
+  cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32(buf+5) ^ 0x87bc);
+  cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32(buf+9) ^ 0xa685);
 
   if(ctx->limits && ctx->limits->maxfilesize && UNP.csize > ctx->limits->maxfilesize) {
     cli_dbgmsg("autoit: sizes exceeded (%lu > %lu)\n", (unsigned long int)UNP.csize, ctx->limits->maxfilesize);
@@ -818,6 +819,8 @@ static int ea06(int desc, cli_ctx *ctx) {
     return CL_VIRUS;
   }
   close(i);
+  if(!cli_leavetemps_flag) unlink(tempfile);
+  free(tempfile);
   return CL_CLEAN;
 }
 
