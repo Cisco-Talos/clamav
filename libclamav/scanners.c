@@ -62,7 +62,6 @@
 #include "matcher-ac.h"
 #include "matcher-bm.h"
 #include "matcher.h"
-#include "unrar.h"
 #include "ole2_extract.h"
 #include "vba_extract.h"
 #include "msexpand.h"
@@ -96,6 +95,10 @@
 #include <bzlib.h>
 #endif
 
+#ifdef ENABLE_UNRAR
+#include "unrar.h"
+#endif
+
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #include <limits.h>
 #include <stddef.h>
@@ -106,6 +109,7 @@
 
 static int cli_scanfile(const char *filename, cli_ctx *ctx);
 
+#ifdef ENABLE_UNRAR
 static int cli_unrar_scanmetadata(int desc, rar_metadata_t *metadata, cli_ctx *ctx, unsigned int files, uint32_t* sfx_check)
 {
 	int ret = CL_SUCCESS;
@@ -311,6 +315,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 
     return ret;
 }
+#endif /* ENABLE_UNRAR */
 
 static int cli_unarj_checklimits(const cli_ctx *ctx, const arj_metadata_t *metadata, unsigned int files)
 {
@@ -1887,10 +1892,12 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg)
 	    while(fpt) {
 		switch(fpt->type) {
 		    case CL_TYPE_RARSFX:
+#ifdef ENABLE_UNRAR
 			if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_RAR)) {
 			    cli_dbgmsg("RAR-SFX signature found at %u\n", (unsigned int) fpt->offset);
 			    nret = cli_scanrar(desc, ctx, fpt->offset, &lastrar);
 			}
+#endif
 			break;
 
 		    case CL_TYPE_ZIPSFX:
@@ -2046,8 +2053,12 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
     switch(type) {
 	case CL_TYPE_RAR:
+#ifdef ENABLE_UNRAR
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR))
 		ret = cli_scanrar(desc, ctx, 0, NULL);
+#else
+	    cli_warnmsg("RAR support not compiled in\n");
+#endif
 	    break;
 
 	case CL_TYPE_ZIP:

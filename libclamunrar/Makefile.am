@@ -2,6 +2,8 @@
 #  Copyright (C) 2007 Trog <trog@clamav.net>
 #
 
+if ENABLE_UNRAR
+
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/libclamav
 
 libclamunrar_la_LIBADD = @LIBCLAMAV_LIBS@ @THREAD_LIBS@
@@ -26,3 +28,5 @@ libclamunrar_la_SOURCES = \
 	unrarvm.h
 
 lib_LTLIBRARIES = libclamunrar.la
+
+endif

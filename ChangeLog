@@ -1,3 +1,8 @@
+Fri Oct 26 19:51:52 CEST 2007 (tk)
+----------------------------------
+  * libclamav, configure: by default don't build and link with libclamunrar;
+			  use --enable-unrar to build with RAR support
+
 Fri Oct 26 17:47:22 CEST 2007 (tk)
 ----------------------------------
   * libclamunrar/Makefile: remove

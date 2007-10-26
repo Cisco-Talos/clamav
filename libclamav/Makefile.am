@@ -19,7 +19,11 @@
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/libclamunrar -I@srcdir@/nsis
 
+if ENABLE_UNRAR
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@ @THREAD_LIBS@ $(top_builddir)/libclamunrar/libclamunrar.la
+else
+libclamav_la_LIBADD = @LIBCLAMAV_LIBS@ @THREAD_LIBS@
+endif
 
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
