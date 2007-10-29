@@ -673,7 +673,7 @@ static int ea06(int desc, cli_ctx *ctx) {
 
 	for(i=0; i<8; i++)
 	  j[7-i]=UNP.outputbuf[UNP.cur_input+i];
-	snprintf((char *)&buf[UNP.cur_output], 39, "%g ", &x); /* FIXME: check */
+	snprintf((char *)&buf[UNP.cur_output], 39, "%g ", x); /* FIXME: check */
       } while(0);
 #endif
       buf[UNP.cur_output+38]=' ';
