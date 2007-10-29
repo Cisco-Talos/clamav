@@ -735,9 +735,15 @@ cleanupURL(struct string *URL,struct string *pre_URL, int isReal)
 		str_make_lowercase(host_begin,host_len);
 		/* convert %xx to real value */
 		str_hex_to_char(&begin,&end);
-		/* trim space */
-		while((begin <= end) && (begin[0]==' '))  begin++;
-		while((begin <= end) && (end[0]==' ')) end--;
+		if(isReal) {
+			/* htmlnorm converts \n to space, so we have to strip spaces */
+			str_strip(&begin, &end, " ", 1);
+		}
+		else {
+			/* trim space */
+			while((begin <= end) && (begin[0]==' '))  begin++;
+			while((begin <= end) && (end[0]==' ')) end--;
+		}
 		if (( rc = string_assign_dup(isReal ? URL : pre_URL,begin,end+1) )) {
 			string_assign_null(URL);
 			return rc;

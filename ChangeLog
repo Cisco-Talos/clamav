@@ -1,3 +1,7 @@
+Mon Oct 29 20:27:36 EET 2007 (edwin)
+------------------------------------
+  * libclamav/phishcheck.c: better handling for \n
+
 Fri Oct 26 19:58:02 CEST 2007 (tk)
 ----------------------------------
   * add COPYING.unrar; TODO: add GPL exception for libclamunrar
