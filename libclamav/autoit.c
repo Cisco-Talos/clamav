@@ -240,6 +240,7 @@ static int ea05(int desc, cli_ctx *ctx) {
     cli_dbgmsg("autoit: script is compressed\n");
     if (cli_readint32(buf)!=0x35304145) {
       cli_dbgmsg("autoit: bad magic or unsupported version\n");
+      free(buf);
       return CL_EFORMAT;
     }
 
@@ -361,8 +362,6 @@ struct LAME {
   uint32_t c0;
   uint32_t c1;
   uint32_t grp1[17];
-  uint32_t grp2[17];
-  uint32_t grp3[17];
 };
 
 
@@ -387,10 +386,10 @@ static double LAME_fpusht(struct LAME *l) {
   if (!l->c0--) l->c0 = 16;
   if (!l->c1--) l->c1 = 16;
 
-  if (l->grp1[l->c0] == l->grp2[0]) { /* FIXME: verify this is real or drop it */
-    if (!memcmp(l->grp1, (uint32_t *)l + 0x24 - l->c0, 0x44))
-      return 0.0;
-  }
+/*   if (l->grp1[l->c0] == l->grp2[0]) { */
+/*     if (!memcmp(l->grp1, (uint32_t *)l + 0x24 - l->c0, 0x44)) */
+/*       return 0.0; */
+/*   } */
 
 #if WORDS_BIGENDIAN == FPU_WORDS_BIGENDIAN
   ret.as_uint.lo = rolled << 0x14;
@@ -419,9 +418,6 @@ static void LAME_srand(struct LAME *l, uint32_t seed) {
 
   l->c0 = 0;
   l->c1 = 10;
-
-  memcpy(l->grp2, l->grp1, sizeof(l->grp1));
-  memcpy(l->grp3, l->grp1, sizeof(l->grp1));
 
   for (i = 0; i < 9; i++)
     LAME_fpusht(l);
@@ -458,7 +454,7 @@ static int ea06(int desc, cli_ctx *ctx) {
   uint32_t s;
   int i;
   char *tempfile;
-  const char *prefixes[] = { "", "", "@", "$", "", ".", "\"", "#" };
+  const char prefixes[] = { '\0', '\0', '@', '$', '\0', '.', '"', '#' };
   const char *opers[] = { ",", "=", ">", "<", "<>", ">=", "<=", "(", ")", "+", "-", "/", "*", "&", "[", "]", "==", "^", "+=", "-=", "/=", "*=", "&=" };
   struct UNP UNP;
 
@@ -467,7 +463,8 @@ static int ea06(int desc, cli_ctx *ctx) {
   if (cli_readn(desc, buf, 24)!=24)
     return CL_CLEAN;
 
-  LAME_decrypt(buf, 0x10, 0x99f2); /* FIXME: Useless due to a bug in CRC calculation - LMAO!!1 */
+  /* Useless due to a bug in CRC calculation - LMAO!!1 */
+  /*   LAME_decrypt(buf, 0x10, 0x99f2); */
   buf+=0x10;
 
   LAME_decrypt(buf, 4, 0x18ee);
@@ -542,6 +539,7 @@ static int ea06(int desc, cli_ctx *ctx) {
     cli_dbgmsg("autoit: script is compressed\n");
     if (cli_readint32(buf)!=0x36304145) {
       cli_dbgmsg("autoit: bad magic or unsupported version\n");
+      free(buf);
       return CL_EFORMAT;
     }
 
@@ -646,7 +644,7 @@ static int ea06(int desc, cli_ctx *ctx) {
 	}
 	buf = newout;
       }
-      UNP.cur_output += sprintf(&buf[UNP.cur_output], "0x%x ", cli_readint32(&UNP.outputbuf[UNP.cur_input]));
+      UNP.cur_output += snprintf(&buf[UNP.cur_output], 12, "0x%08x ", cli_readint32(&UNP.outputbuf[UNP.cur_input]));
       UNP.cur_input += 4;
       break;
 
@@ -665,7 +663,19 @@ static int ea06(int desc, cli_ctx *ctx) {
 	}
 	buf = newout;
       }
+#if FPU_WORDS_BIGENDIAN == 0
       snprintf(&buf[UNP.cur_output], 39, "%g ", *(double *)&UNP.outputbuf[UNP.cur_input]);
+#else
+      do {
+	double x;
+	uint8_t *j = (uint8_t *)&x;
+	unsigned int i;
+
+	for(i=0; i<8; i++)
+	  j[7-i]=UNP.outputbuf[UNP.cur_input+i];
+	snprintf(&buf[UNP.cur_output], 39, "%g ", &x); /* FIXME: check */
+      } while(0);
+#endif
       buf[UNP.cur_output+38]=' ';
       buf[UNP.cur_output+39]='\0';
       UNP.cur_output += strlen(&buf[UNP.cur_output]);
@@ -699,7 +709,7 @@ static int ea06(int desc, cli_ctx *ctx) {
 	}
 	if (UNP.cur_output+chars+3 >= UNP.csize) {
 	  uint8_t *newout;
-	  UNP.csize += chars + 3;
+	  UNP.csize += chars + 512;
 	  if (!(newout = cli_realloc(buf, UNP.csize))) {
 	    UNP.error = 1;
 	    break;
@@ -707,7 +717,8 @@ static int ea06(int desc, cli_ctx *ctx) {
 	  buf = newout;
 	}
 
-	UNP.cur_output += sprintf(&buf[UNP.cur_output], "%s", prefixes[op-0x30]);
+	if(prefixes[op-0x30])
+	  buf[UNP.cur_output++] = prefixes[op-0x30];
 
 	if (chars) {
 	  for (i = 0; i<dchars; i+=2) {
@@ -758,7 +769,7 @@ static int ea06(int desc, cli_ctx *ctx) {
 	}
 	buf = newout;
       }
-      UNP.cur_output += sprintf(&buf[UNP.cur_output], "%s ", opers[op-0x40]);
+      UNP.cur_output += snprintf(&buf[UNP.cur_output], 4, "%s ", opers[op-0x40]);
       break;
 
     case 0x7f:
@@ -789,7 +800,7 @@ static int ea06(int desc, cli_ctx *ctx) {
   /* FIXME: TODO send to text notmalization */
 
   if(!(tempfile = cli_gentemp(NULL))) {
-    free(UNP.outputbuf);
+    free(buf);
     return CL_EMEM;
   }
   if((i = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
@@ -798,7 +809,7 @@ static int ea06(int desc, cli_ctx *ctx) {
     free(buf);
     return CL_EIO;
   }
-  if(cli_writen(i, buf, UNP.cur_output) != UNP.cur_output) {
+  if(cli_writen(i, buf, UNP.cur_output) != UNP.cur_output) { /* FIXME: valgrind */
     cli_dbgmsg("autoit: cannot write %d bytes\n", UNP.usize);
     close(i);
     free(tempfile);
@@ -853,6 +864,7 @@ int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
   default:
     /* NOT REACHED */
     cli_dbgmsg("autoit: unknown method\n");
+    return CL_CLEAN;
   }
 
   return func(desc, ctx);
