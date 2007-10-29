@@ -169,13 +169,13 @@ static int ea05(int desc, cli_ctx *ctx) {
     m4sum += *buf++;
   
   MT_decrypt(buf,4,0x16fa);
-  if(cli_readint32(buf) != 0x454c4946) {
+  if(cli_readint32((char *)buf) != 0x454c4946) {
     cli_dbgmsg("autoit: no FILE magic found, giving up\n");
     return CL_CLEAN;
   }
 
   buf+=4;
-  s = cli_readint32(buf) ^ 0x29bc;
+  s = cli_readint32((char *)buf) ^ 0x29bc;
   buf=b;
   if (s > 23) {
     cli_dbgmsg("autoit: magic string too long, giving up\n");
@@ -194,7 +194,7 @@ static int ea05(int desc, cli_ctx *ctx) {
 
   if (cli_readn(desc, buf, 4)!=4)
     return CL_CLEAN;
-  s = cli_readint32(buf) ^ 0x29ac;
+  s = cli_readint32((char *)buf) ^ 0x29ac;
   if ((int32_t)s<0)
     return CL_CLEAN; /* the original code wouldn't seek back here */
   if (cli_debug_flag && s<300) {
@@ -216,10 +216,10 @@ static int ea05(int desc, cli_ctx *ctx) {
   if (cli_readn(desc, buf, 13)!=13)
     return CL_CLEAN;
   comp = *buf;
-  UNP.csize = cli_readint32(buf+1) ^ 0x45aa;
+  UNP.csize = cli_readint32((char *)buf+1) ^ 0x45aa;
   cli_dbgmsg("autoit: compressed size: %x\n", UNP.csize);
-  cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32(buf+5) ^ 0x45aa);
-  cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32(buf+9) ^ 0xc3d2);
+  cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32((char *)buf+5) ^ 0x45aa);
+  cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32((char *)buf+9) ^ 0xc3d2);
 
   if(ctx->limits && ctx->limits->maxfilesize && UNP.csize > ctx->limits->maxfilesize) {
     cli_dbgmsg("autoit: sizes exceeded (%lu > %lu)\n", (unsigned long int)UNP.csize, ctx->limits->maxfilesize);
@@ -238,7 +238,7 @@ static int ea05(int desc, cli_ctx *ctx) {
 
   if (comp == 1) {
     cli_dbgmsg("autoit: script is compressed\n");
-    if (cli_readint32(buf)!=0x35304145) {
+    if (cli_readint32((char *)buf)!=0x35304145) {
       cli_dbgmsg("autoit: bad magic or unsupported version\n");
       free(buf);
       return CL_EFORMAT;
@@ -324,7 +324,7 @@ static int ea05(int desc, cli_ctx *ctx) {
     free(UNP.outputbuf);
     return CL_EIO;
   }
-  if(cli_writen(i, UNP.outputbuf, UNP.usize) != UNP.usize) {
+  if(cli_writen(i, UNP.outputbuf, UNP.usize) != (int32_t)UNP.usize) {
     cli_dbgmsg("autoit: cannot write %d bytes\n", UNP.usize);
     close(i);
     free(tempfile);
@@ -644,7 +644,7 @@ static int ea06(int desc, cli_ctx *ctx) {
 	}
 	buf = newout;
       }
-      UNP.cur_output += snprintf(&buf[UNP.cur_output], 12, "0x%08x ", cli_readint32(&UNP.outputbuf[UNP.cur_input]));
+      UNP.cur_output += snprintf((char *)&buf[UNP.cur_output], 12, "0x%08x ", cli_readint32(&UNP.outputbuf[UNP.cur_input]));
       UNP.cur_input += 4;
       break;
 
@@ -664,7 +664,7 @@ static int ea06(int desc, cli_ctx *ctx) {
 	buf = newout;
       }
 #if FPU_WORDS_BIGENDIAN == 0
-      snprintf(&buf[UNP.cur_output], 39, "%g ", *(double *)&UNP.outputbuf[UNP.cur_input]);
+      snprintf((char *)&buf[UNP.cur_output], 39, "%g ", *(double *)&UNP.outputbuf[UNP.cur_input]);
 #else
       do {
 	double x;
@@ -673,12 +673,12 @@ static int ea06(int desc, cli_ctx *ctx) {
 
 	for(i=0; i<8; i++)
 	  j[7-i]=UNP.outputbuf[UNP.cur_input+i];
-	snprintf(&buf[UNP.cur_output], 39, "%g ", &x); /* FIXME: check */
+	snprintf((char *)&buf[UNP.cur_output], 39, "%g ", &x); /* FIXME: check */
       } while(0);
 #endif
       buf[UNP.cur_output+38]=' ';
       buf[UNP.cur_output+39]='\0';
-      UNP.cur_output += strlen(&buf[UNP.cur_output]);
+      UNP.cur_output += strlen((char *)&buf[UNP.cur_output]);
       UNP.cur_input += 8;
       break;
 
@@ -769,7 +769,7 @@ static int ea06(int desc, cli_ctx *ctx) {
 	}
 	buf = newout;
       }
-      UNP.cur_output += snprintf(&buf[UNP.cur_output], 4, "%s ", opers[op-0x40]);
+      UNP.cur_output += snprintf((char *)&buf[UNP.cur_output], 4, "%s ", opers[op-0x40]);
       break;
 
     case 0x7f:
@@ -809,7 +809,7 @@ static int ea06(int desc, cli_ctx *ctx) {
     free(buf);
     return CL_EIO;
   }
-  if(cli_writen(i, buf, UNP.cur_output) != UNP.cur_output) { /* FIXME: valgrind */
+  if(cli_writen(i, buf, UNP.cur_output) != (int32_t)UNP.cur_output) { /* FIXME: valgrind */
     cli_dbgmsg("autoit: cannot write %d bytes\n", UNP.usize);
     close(i);
     free(tempfile);
