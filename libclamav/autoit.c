@@ -468,13 +468,13 @@ static int ea06(int desc, cli_ctx *ctx) {
   buf+=0x10;
 
   LAME_decrypt(buf, 4, 0x18ee);
-  if(cli_readint32(buf) != 0x454c4946) {
+  if(cli_readint32((char *)buf) != 0x454c4946) {
     cli_dbgmsg("autoit: no FILE magic found, giving up\n");
     return CL_CLEAN;
   }
 
   buf+=4;
-  s = cli_readint32(buf) ^ 0xadbc;
+  s = cli_readint32((char *)buf) ^ 0xadbc;
   buf=b;
   if (s > 19) {
     cli_dbgmsg("autoit: magic string too long, giving up\n");
@@ -494,7 +494,7 @@ static int ea06(int desc, cli_ctx *ctx) {
 
   if (cli_readn(desc, buf, 4)!=4)
     return CL_CLEAN;
-  s = cli_readint32(buf) ^ 0xf820;
+  s = cli_readint32((char *)buf) ^ 0xf820;
   if(cli_debug_flag && s<300) {
     uint8_t *n;
     if (!(n = cli_malloc(s*2+2)))
@@ -515,10 +515,10 @@ static int ea06(int desc, cli_ctx *ctx) {
   if (cli_readn(desc, buf, 13)!=13)
     return CL_CLEAN;
   comp = *buf;
-  UNP.csize = cli_readint32(buf+1) ^ 0x87bc;
+  UNP.csize = cli_readint32((char *)buf+1) ^ 0x87bc;
   cli_dbgmsg("autoit: compressed size: %x\n", UNP.csize);
-  cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32(buf+5) ^ 0x87bc);
-  cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32(buf+9) ^ 0xa685);
+  cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32((char *)buf+5) ^ 0x87bc);
+  cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32((char *)buf+9) ^ 0xa685);
 
   if(ctx->limits && ctx->limits->maxfilesize && UNP.csize > ctx->limits->maxfilesize) {
     cli_dbgmsg("autoit: sizes exceeded (%lu > %lu)\n", (unsigned long int)UNP.csize, ctx->limits->maxfilesize);
@@ -537,7 +537,7 @@ static int ea06(int desc, cli_ctx *ctx) {
 
   if (comp == 1) {
     cli_dbgmsg("autoit: script is compressed\n");
-    if (cli_readint32(buf)!=0x36304145) {
+    if (cli_readint32((char *)buf)!=0x36304145) {
       cli_dbgmsg("autoit: bad magic or unsupported version\n");
       free(buf);
       return CL_EFORMAT;
@@ -622,7 +622,7 @@ static int ea06(int desc, cli_ctx *ctx) {
   }
   UNP.cur_output = 0;
   UNP.cur_input = 4;
-  UNP.bits_avail = cli_readint32(UNP.outputbuf);
+  UNP.bits_avail = cli_readint32((char *)UNP.outputbuf);
   cli_dbgmsg("autoit: script has got %u lines\n", UNP.bits_avail);
 
   while (!UNP.error && UNP.bits_avail && UNP.cur_input < UNP.usize) {
@@ -644,7 +644,7 @@ static int ea06(int desc, cli_ctx *ctx) {
 	}
 	buf = newout;
       }
-      UNP.cur_output += snprintf((char *)&buf[UNP.cur_output], 12, "0x%08x ", cli_readint32(&UNP.outputbuf[UNP.cur_input]));
+      UNP.cur_output += snprintf((char *)&buf[UNP.cur_output], 12, "0x%08x ", cli_readint32((char *)&UNP.outputbuf[UNP.cur_input]));
       UNP.cur_input += 4;
       break;
 
@@ -698,7 +698,7 @@ static int ea06(int desc, cli_ctx *ctx) {
 	  cli_dbgmsg("autoit: not enough space for size\n");
 	  break;
 	}
-	chars = cli_readint32(&UNP.outputbuf[UNP.cur_input]);
+	chars = cli_readint32((char *)&UNP.outputbuf[UNP.cur_input]);
 	dchars = chars*2;
 	UNP.cur_input+=4;
 
