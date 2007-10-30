@@ -1210,6 +1210,7 @@ if test $have_signed_rightshift_extended = yes; then
 fi
 AC_MSG_RESULT($have_signed_rightshift_extended);
 
+AC_C_FPU_BIGENDIAN
 
 AC_OUTPUT([
 libclamunrar/Makefile
