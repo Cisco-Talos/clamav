@@ -125,7 +125,8 @@ typedef	enum {
 	OK,
 	OK_ATTACHMENTS_NOT_SAVED,
 	VIRUS,
-	MAXREC
+	MAXREC,
+	MAXFILES
 } mbox_status;
 
 #ifndef isblank
@@ -213,6 +214,7 @@ typedef	unsigned	int	in_addr_t;
 
 typedef	struct	mbox_ctx {
 	const	char	*dir;
+	unsigned	int	files;	/* number of files extracted */
 	const	table_t	*rfc821Table;
 	const	table_t	*subtypeTable;
 	cli_ctx	*ctx;
@@ -229,7 +231,7 @@ static	int	initialiseTables(table_t **rfc821Table, table_t **subtypeTable);
 static	int	getTextPart(message *const messages[], size_t size);
 static	size_t	strip(char *buf, int len);
 static	int	parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const char *arg);
-static	int	saveTextPart(message *m, const char *dir, int destroy_text);
+static	int	saveTextPart(mbox_ctx *mctx, message *m, int destroy_text);
 static	char	*rfc2047(const char *in);
 static	char	*rfc822comments(const char *in, char *out);
 #ifdef	PARTIAL_DIR
@@ -238,8 +240,8 @@ static	int	rfc1341(message *m, const char *dir);
 static	bool	usefulHeader(int commandNumber, const char *cmd);
 static	char	*getline_from_mbox(char *buffer, size_t len, FILE *fin);
 static	bool	isBounceStart(const char *line);
-static	bool	exportBinhexMessage(const char *dir, message *m);
-static	int	exportBounceMessage(text *start, const mbox_ctx *ctx);
+static	bool	exportBinhexMessage(mbox_ctx *mctx, message *m);
+static	int	exportBounceMessage(mbox_ctx *ctx, text *start);
 static	message	*do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, mbox_ctx *mctx, message *messageIn, text **tptr, unsigned int recursion_level);
 static	int	count_quotes(const char *buf);
 static	bool	next_is_folded_header(const text *t);
@@ -263,8 +265,6 @@ static	void	*getURL(void *a);
 #else
 static	void	*getURL(struct arg *arg);
 #endif
-static	long	nonblock_fcntl(SOCKET sock);
-static	void	restore_fcntl(SOCKET sock, long fcntl_flags);
 static	int	nonblock_connect(const char *url, SOCKET sock, const struct sockaddr *addr);
 static	int	connect_error(const char *url, SOCKET sock);
 static	int	my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
@@ -1267,6 +1267,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 	mctx.rfc821Table = rfc821;
 	mctx.subtypeTable = subtype;
 	mctx.ctx = ctx;
+	mctx.files = 0;
 
 	/*
 	 * Is it a UNIX style mbox with more than one
@@ -1274,9 +1275,8 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 	 *
 	 * TODO: It would be better if we called cli_scandir here rather than
 	 * in cli_scanmail. Then we could improve the way mailboxes with more
-	 * than one message is handled, e.g. stopping parsing when an infected
-	 * message is stopped, and giving a better indication of which message
-	 * within the mailbox is infected
+	 * than one message is handled, e.g. giving a better indication of
+	 * which message within the mailbox is infected
 	 */
 	/*if((strncmp(buffer, "From ", 5) == 0) && isalnum(buffer[5])) {*/
 	if(strncmp(buffer, "From ", 5) == 0) {
@@ -1430,6 +1430,9 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 					break;
 				case MAXREC:
 					retcode = CL_EMAXREC;
+					break;
+				case MAXFILES:
+					retcode = CL_EMAXFILES;
 					break;
 				case VIRUS:
 					retcode = CL_VIRUS;
@@ -1892,13 +1895,12 @@ parseEmailHeaders(message *m, const table_t *rfc821)
 static int
 parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 {
-	char *cmd;
-	int ret = -1;
+	int ret;
 #ifdef CL_THREAD_SAFE
 	char *strptr;
 #endif
 	const char *separater;
-	char *copy, tokenseparater[2];
+	char *cmd, *copy, tokenseparater[2];
 
 	cli_dbgmsg("parseEmailHeader '%s'\n", line);
 
@@ -1922,6 +1924,8 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 
 	tokenseparater[0] = *separater;
 	tokenseparater[1] = '\0';
+
+	ret = -1;
 
 #ifdef	CL_THREAD_SAFE
 	cmd = strtok_r(copy, tokenseparater, &strptr);
@@ -1970,24 +1974,36 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 	fileblob *fb;
 	bool infected = FALSE;
 	const int doPhishingScan = mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS && (DCONF_PHISHING & PHISHING_CONF_ENGINE);
+	const struct cl_limits *limits = mctx->ctx->limits;
 
-	cli_dbgmsg("in parseEmailBody\n");
+	cli_dbgmsg("in parseEmailBody, %u files saved so far\n",
+		mctx->files);
 
-	if(mctx->ctx->limits && mctx->ctx->limits->maxmailrec) {
-		const cli_ctx *ctx = mctx->ctx;	/* needed for BLOCKMAX :-( */
+	if(limits) {
+		if(limits->maxmailrec) {
+			const cli_ctx *ctx = mctx->ctx;	/* needed for BLOCKMAX :-( */
 
-		/*
-		 * This is approximate
-		 */
-		if(recursion_level > ctx->limits->maxmailrec) {
+			/*
+			 * This is approximate
+			 */
+			if(recursion_level > limits->maxmailrec) {
 
-			cli_warnmsg("parseEmailBody: hit maximum recursion level (%u)\n", recursion_level);
-			if(BLOCKMAX) {
-				if(ctx->virname)
-					*ctx->virname = "MIME.RecursionLimit";
-				return VIRUS;
-			} else
-				return MAXREC;
+				cli_warnmsg("parseEmailBody: hit maximum recursion level (%u)\n", recursion_level);
+				if(BLOCKMAX) {
+					if(ctx->virname)
+						*ctx->virname = "MIME.RecursionLimit";
+					return VIRUS;
+				} else
+					return MAXREC;
+			}
+		}
+		if(limits->maxfiles && (mctx->files >= limits->maxfiles)) {
+			/*
+			 * FIXME: This is only approx - it may have already
+			 * been exceeded
+			 */
+			cli_dbgmsg("parseEmailBody: number of files exceeded %u\n", limits->maxfiles);
+			return MAXFILES;
 		}
 	}
 
@@ -2106,7 +2122,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 					 * TODO: check yEnc
 					 */
 					if(binhexBegin(mainMessage) == t_line) {
-						if(exportBinhexMessage(mctx->dir, mainMessage)) {
+						if(exportBinhexMessage(mctx, mainMessage)) {
 							/* virus found */
 							rc = VIRUS;
 							infected = TRUE;
@@ -2682,6 +2698,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 					(void)textToFileblob(aText, fb, 1);
 
 					fileblobDestroy(fb);
+					mctx->files++;
 				}
 				textDestroy(aText);
 			}
@@ -2765,6 +2782,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 					cli_dbgmsg("Saving main message as attachment\n");
 					if(fileblobScanAndDestroy(fb) == CL_VIRUS)
 						rc = VIRUS;
+					mctx->files++;
 					if(mainMessage != messageIn) {
 						messageDestroy(mainMessage);
 						mainMessage = NULL;
@@ -2930,6 +2948,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
 			if(fileblobScanAndDestroy(fb) == CL_VIRUS)
 				rc = VIRUS;
+			mctx->files++;
 
 			if(topofbounce)
 				t = topofbounce;
@@ -2950,7 +2969,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 		 */
 		if((encodingLine(mainMessage) != NULL) &&
 		   ((t_line = bounceBegin(mainMessage)) != NULL))
-			rc = (exportBounceMessage(t_line, mctx) == CL_VIRUS) ? VIRUS : OK;
+			rc = (exportBounceMessage(mctx, t_line) == CL_VIRUS) ? VIRUS : OK;
 		else {
 			bool saveIt;
 
@@ -2981,6 +3000,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 					fileblobSetCTX(fb, mctx->ctx);
 					if(fileblobScanAndDestroy(textToFileblob(t_line, fb, 1)) == CL_VIRUS)
 						rc = VIRUS;
+					mctx->files++;
 				}
 				saveIt = FALSE;
 			} else
@@ -2994,7 +3014,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 			if(saveIt) {
 				cli_dbgmsg("Saving text part to scan, rc = %d\n",
 					(int)rc);
-				if(saveTextPart(mainMessage, mctx->dir, 1) == CL_VIRUS)
+				if(saveTextPart(mctx, mainMessage, 1) == CL_VIRUS)
 					rc = VIRUS;
 
 				if(mainMessage != messageIn) {
@@ -3479,17 +3499,18 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
  * Save the text portion of the message
  */
 static int
-saveTextPart(message *m, const char *dir, int destroy_text)
+saveTextPart(mbox_ctx *mctx, message *m, int destroy_text)
 {
 	fileblob *fb;
 
 	messageAddArgument(m, "filename=textportion");
-	if((fb = messageToFileblob(m, dir, destroy_text)) != NULL) {
+	if((fb = messageToFileblob(m, mctx->dir, destroy_text)) != NULL) {
 		/*
 		 * Save main part to scan that
 		 */
 		cli_dbgmsg("Saving main message\n");
 
+		mctx->files++;
 		return fileblobScanAndDestroy(fb);
 	}
 	return CL_ETMPFILE;
@@ -4277,14 +4298,27 @@ getURL(struct arg *arg)
 		fclose(fp);
 		return NULL;
 	}
+#ifdef	F_GETFL
+	flags = fcntl(sd, F_GETFL, 0);
+
+	if(flags == -1L)
+		cli_warnmsg("getfl: %s\n", strerror(errno));
+	else if(fcntl(sd, F_SETFL, (long)(flags | O_NONBLOCK)) < 0)
+		cli_warnmsg("setfl: %s\n", strerror(errno));
+#else
+	flags = -1L;
+#endif
 	server.sin_addr.s_addr = ip;
-	flags = nonblock_fcntl(sd);
 	if(nonblock_connect(url, sd, (struct sockaddr *)&server) < 0) {
 		closesocket(sd);
 		fclose(fp);
 		return NULL;
 	}
-	restore_fcntl(sd, flags);
+#ifdef	F_SETFL
+	if(flags != -1L)
+		if(fcntl(sd, F_SETFL, flags))
+			cli_warnmsg("f_setfl: %s\n", strerror(errno));
+#endif
 
 	/*
 	 * TODO: consider HTTP/1.1
@@ -4488,40 +4522,6 @@ my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t l
  * Non-blocking connect, based on an idea by Everton da Silva Marques
  *	 <everton.marques@gmail.com>
  */
-
-/*
- * Returns the fcntl flags on the given socket
- */
-static long
-nonblock_fcntl(SOCKET sock)
-{
-#ifdef	F_GETFL
-	int fcntl_flags = fcntl(sock, F_GETFL, 0);
-
-	if(fcntl_flags == -1)
-		cli_warnmsg("getfl: %s\n", strerror(errno));
-	else if(fcntl(sock, F_SETFL, (long)fcntl_flags | O_NONBLOCK) < 0)
-		cli_warnmsg("setfl: %s\n", strerror(errno));
-
-	return (long)fcntl_flags;
-#else
-	return -1L;
-#endif
-}
-
-/*
- * Restores the fcntl flags on the given socket
- */
-static void
-restore_fcntl(SOCKET sock, long fcntl_flags)
-{
-#ifdef	F_SETFL
-	if(fcntl_flags != -1L)
-		if(fcntl(sock, F_SETFL, fcntl_flags))
-			cli_warnmsg("setfl: %s\n", strerror(errno));
-#endif
-}
-
 static int
 nonblock_connect(const char *url, SOCKET sock, const struct sockaddr *addr)
 {
@@ -4796,7 +4796,7 @@ isBounceStart(const char *line)
  *	extract it
  */
 static bool
-exportBinhexMessage(const char *dir, message *m)
+exportBinhexMessage(mbox_ctx *mctx, message *m)
 {
 	bool infected = FALSE;
 	fileblob *fb;
@@ -4804,7 +4804,7 @@ exportBinhexMessage(const char *dir, message *m)
 	if(messageGetEncoding(m) == NOENCODING)
 		messageSetEncoding(m, "x-binhex");
 
-	fb = messageToFileblob(m, dir, 0);
+	fb = messageToFileblob(m, mctx->dir, 0);
 
 	if(fb) {
 		cli_dbgmsg("Binhex file decoded to %s\n",
@@ -4812,8 +4812,9 @@ exportBinhexMessage(const char *dir, message *m)
 
 		if(fileblobScanAndDestroy(fb) == CL_VIRUS)
 			infected = TRUE;
+		mctx->files++;
 	} else
-		cli_errmsg("Couldn't decode binhex file to %s\n", dir);
+		cli_errmsg("Couldn't decode binhex file to %s\n", mctx->dir);
 
 	return infected;
 }
@@ -4822,7 +4823,7 @@ exportBinhexMessage(const char *dir, message *m)
  * Locate any bounce message and extract it. Return cl_status
  */
 static int
-exportBounceMessage(text *start, const mbox_ctx *mctx)
+exportBounceMessage(mbox_ctx *mctx, text *start)
 {
 	int rc = CL_CLEAN;
 	text *t;
@@ -4886,6 +4887,7 @@ exportBounceMessage(text *start, const mbox_ctx *mctx)
 			fileblobDestroy(fb);
 		} else
 			rc = fileblobScanAndDestroy(fb);
+		mctx->files++;
 	} else
 		cli_dbgmsg("Not found a bounce message\n");
 
@@ -4927,7 +4929,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 				if(binhexBegin(aMessage)) {
 					cli_dbgmsg("Found binhex message in multipart/mixed mainMessage\n");
 
-					if(exportBinhexMessage(mctx->dir, mainMessage))
+					if(exportBinhexMessage(mctx, mainMessage))
 						*rc = VIRUS;
 				}
 				if(mainMessage != messageIn)
@@ -4936,7 +4938,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 			} else if(aMessage) {
 				if(binhexBegin(aMessage)) {
 					cli_dbgmsg("Found binhex message in multipart/mixed non mime part\n");
-					if(exportBinhexMessage(mctx->dir, aMessage))
+					if(exportBinhexMessage(mctx, aMessage))
 						*rc = VIRUS;
 					assert(aMessage == messages[i]);
 					messageReset(messages[i]);
@@ -5028,7 +5030,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 			 * Save this embedded message
 			 * to a temporary file
 			 */
-			if(saveTextPart(aMessage, mctx->dir, 1) == CL_VIRUS)
+			if(saveTextPart(mctx, aMessage, 1) == CL_VIRUS)
 				*rc = VIRUS;
 			assert(aMessage == messages[i]);
 			messageDestroy(messages[i]);
@@ -5098,9 +5100,11 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 		} else {
 			fileblob *fb = messageToFileblob(aMessage, mctx->dir, 1);
 
-			if(fb)
+			if(fb) {
 				if(fileblobScanAndDestroy(fb) == CL_VIRUS)
 					*rc = VIRUS;
+				mctx->files++;
+			}
 		}
 		if(messageContainsVirus(aMessage))
 			*rc = VIRUS;

@@ -520,7 +520,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		if(limits && limits->maxfiles && (files >= limits->maxfiles)) {
 			/* Bug 698 */
 			cli_dbgmsg("cli_pdf: number of files exceeded %u\n", limits->maxfiles);
-			break;
+			rc = CL_EMAXFILES;
 		}
 	}
 
