@@ -79,11 +79,11 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	char *buf, *alloced;	/* start of memory mapped area */
 	const char *p, *q, *trailerstart;
 	const char *xrefstart;	/* cross reference table */
+	const struct cl_limits *limits;
 	/*size_t xreflength;*/
-	int rc = CL_CLEAN;
 	table_t *md5table;
-	int printed_predictor_message;
-	int printed_embedded_font_message;
+	int printed_predictor_message, printed_embedded_font_message, rc;
+	unsigned int files;
 	struct stat statb;
 
 	cli_dbgmsg("in cli_pdf(%s)\n", dir);
@@ -209,6 +209,10 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	xreflength = (size_t)(trailerstart - xrefstart);
 	bytesleft -= xreflength;
 	 */
+
+	rc = CL_CLEAN;
+	files = 0;
+	limits = ctx->limits;
 
 	/*
 	 * The body section consists of a sequence of indirect objects
@@ -429,6 +433,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		if(streamend <= streamstart) {
 			close(fout);
 			cli_dbgmsg("Empty stream\n");
+			unlink(fullname);
 			continue;
 		}
 		calculated_streamlen = (int)(streamend - streamstart);
@@ -510,7 +515,13 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		} else
 			tableInsert(md5table, md5digest, 1);
 		free(md5digest);
-		cli_dbgmsg("cli_pdf: extracted to %s\n", fullname);
+		cli_dbgmsg("cli_pdf: extracted file %d to %s\n", ++files,
+			fullname);
+		if(limits && limits->maxfiles && (files >= limits->maxfiles)) {
+			/* Bug 698 */
+			cli_dbgmsg("cli_pdf: number of files exceeded %u\n", limits->maxfiles);
+			break;
+		}
 	}
 
 	if(alloced)
