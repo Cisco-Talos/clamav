@@ -245,10 +245,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\shared\memory.c"
-				>
-			</File>
-			<File
 				RelativePath=".\mirman.c"
 				>
 			</File>

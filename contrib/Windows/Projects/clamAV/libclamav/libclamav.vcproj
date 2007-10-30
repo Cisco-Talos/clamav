@@ -389,10 +389,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\sha256.c"
-				>
-			</File>
-			<File
 				RelativePath=".\sis.c"
 				>
 			</File>
@@ -481,22 +477,6 @@
 				</File>
 				<File
 					RelativePath=".\unrar\unrar20.c"
-					>
-				</File>
-				<File
-					RelativePath=".\unrar\unrarcmd.c"
-					>
-				</File>
-				<File
-					RelativePath=".\unrar\unrarfilter.c"
-					>
-				</File>
-				<File
-					RelativePath=".\unrar\unrarppm.c"
-					>
-				</File>
-				<File
-					RelativePath=".\unrar\unrarvm.c"
 					>
 				</File>
 			</Filter>
@@ -807,10 +787,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\sha256.h"
-				>
-			</File>
-			<File
 				RelativePath=".\sis.h"
 				>
 			</File>
@@ -836,6 +812,10 @@
 			</File>
 			<File
 				RelativePath=".\suecrypt.h"
+				>
+			</File>
+			<File
+				RelativePath=".\syslog.h"
 				>
 			</File>
 			<File
@@ -915,22 +895,6 @@
 				</File>
 				<File
 					RelativePath=".\unrar\unrar20.h"
-					>
-				</File>
-				<File
-					RelativePath=".\unrar\unrarcmd.h"
-					>
-				</File>
-				<File
-					RelativePath=".\unrar\unrarfilter.h"
-					>
-				</File>
-				<File
-					RelativePath=".\unrar\unrarppm.h"
-					>
-				</File>
-				<File
-					RelativePath=".\unrar\unrarvm.h"
 					>
 				</File>
 			</Filter>

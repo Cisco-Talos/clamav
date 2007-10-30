@@ -235,10 +235,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\shared\memory.c"
-				>
-			</File>
-			<File
 				RelativePath="..\shared\misc.c"
 				>
 			</File>
