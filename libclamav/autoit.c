@@ -449,8 +449,8 @@ static void LAME_decrypt (uint8_t *cypher, uint32_t size, uint16_t seed) {
 *********************/
 
 static int ea06(int desc, cli_ctx *ctx) {
-  uint8_t b[40], comp;
-  uint8_t *buf = b;
+  uint8_t b[600], comp, script=0;
+  uint8_t *buf;
   uint32_t s;
   int i;
   char *tempfile;
@@ -460,379 +460,378 @@ static int ea06(int desc, cli_ctx *ctx) {
 
   UNP.error = 0;
 
-  if (cli_readn(desc, buf, 24)!=24)
-    return CL_CLEAN;
-
   /* Useless due to a bug in CRC calculation - LMAO!!1 */
+  /*   if (cli_readn(desc, buf, 24)!=24) */
+  /*     return CL_CLEAN; */
   /*   LAME_decrypt(buf, 0x10, 0x99f2); */
-  buf+=0x10;
+  /*   buf+=0x10; */
+  lseek(desc, 16, SEEK_CUR);   /* for now we just skip the garbage */
 
-  LAME_decrypt(buf, 4, 0x18ee);
-  if(cli_readint32((char *)buf) != 0x454c4946) {
-    cli_dbgmsg("autoit: no FILE magic found, giving up\n");
-    return CL_CLEAN;
-  }
-
-  buf+=4;
-  s = cli_readint32((char *)buf) ^ 0xadbc;
-  buf=b;
-  if (s > 19) {
-    cli_dbgmsg("autoit: magic string too long, giving up\n");
-    return CL_CLEAN;
-  }
-  if(cli_debug_flag) {
-    cli_dbgmsg("autoit: magic string size %d (expected value 19)\n", s);
-    if (cli_readn(desc, buf, s*2)!=(int)s*2)
+  while (1) {
+    /* FIXME: count files here */
+    buf = b;
+    if (cli_readn(desc, buf, 8)!=8)
       return CL_CLEAN;
-    buf[s*2]='\0'; buf[s*2+1]='\0';
-    LAME_decrypt(buf,s*2,s+0xb33f);
-    u2a(buf, s*2); /* FIXME: GET RID OF THIS */
-    cli_dbgmsg("autoit: magic string '%s'\n", buf);
-  } else {
-    lseek(desc, s*2, SEEK_CUR);
-  }
+    LAME_decrypt(buf, 4, 0x18ee);
+    if(cli_readint32((char *)buf) != 0x454c4946) {
+      cli_dbgmsg("autoit: no FILE magic found, giving up\n");
+      return CL_CLEAN;
+    }
 
-  if (cli_readn(desc, buf, 4)!=4)
-    return CL_CLEAN;
-  s = cli_readint32((char *)buf) ^ 0xf820;
-  if(cli_debug_flag && s<300) {
-    uint8_t *n;
-    if (!(n = cli_malloc(s*2+2)))
+    s = cli_readint32((char *)buf+4) ^ 0xadbc;
+    if(cli_debug_flag && s<300) {
+      if (cli_readn(desc, buf, s*2)!=(int)s*2)
+	return CL_CLEAN;
+      LAME_decrypt(buf,s*2,s+0xb33f);
+      buf[s*2]='\0'; buf[s*2+1]='\0';
+      u2a(buf,s*2); /* FIXME: GET RID OF THIS */
+      cli_dbgmsg("autoit: magic string '%s'\n", buf);
+      script=!memcmp(">>>AUTOIT SCRIPT<<<", buf, 19);
+    } else {
+      cli_dbgmsg("autoit: magic string too long to print\n");
+      lseek(desc, s*2, SEEK_CUR);
+    }
+
+    if (cli_readn(desc, buf, 4)!=4)
+      return CL_CLEAN;
+    s = cli_readint32((char *)buf) ^ 0xf820;
+    if(cli_debug_flag && s<300) {
+      if (cli_readn(desc, buf, s*2)!=(int)s*2)
+	return CL_CLEAN;
+      LAME_decrypt(buf,s*2,s+0xf479);
+      buf[s*2]='\0'; buf[s*2+1]='\0';
+      u2a(buf,s*2); /* FIXME: GET RID OF THIS */
+      cli_dbgmsg("autoit: original filename '%s'\n", buf);
+    } else {
+      lseek(desc, s*2, SEEK_CUR);
+    }
+
+    if (cli_readn(desc, buf, 13)!=13)
+      return CL_CLEAN;
+    comp = *buf;
+    UNP.csize = cli_readint32((char *)buf+1) ^ 0x87bc;
+    cli_dbgmsg("autoit: compressed size: %x\n", UNP.csize);
+    cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32((char *)buf+5) ^ 0x87bc);
+    cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32((char *)buf+9) ^ 0xa685);
+
+    if(ctx->limits && ctx->limits->maxfilesize && UNP.csize > ctx->limits->maxfilesize) {
+      cli_dbgmsg("autoit: sizes exceeded (%lu > %lu)\n", (unsigned long int)UNP.csize, ctx->limits->maxfilesize);
+      return CL_CLEAN;
+    }
+
+    lseek(desc, 16, SEEK_CUR);
+    if (!(buf = cli_malloc(UNP.csize)))
       return CL_EMEM;
-    if (cli_readn(desc, n, s*2)!=(int)s*2) {
-      free(n);
-      return CL_CLEAN;
-    }
-    LAME_decrypt(n,s*2,s+0xf479);
-    n[s*2]='\0'; n[s*2+1]='\0';
-    u2a(n,s*2); /* FIXME: GET RID OF THIS */
-    cli_dbgmsg("autoit: original filename '%s'\n", n);
-    free(n);
-  } else {
-    lseek(desc, s*2, SEEK_CUR);
-  }
-
-  if (cli_readn(desc, buf, 13)!=13)
-    return CL_CLEAN;
-  comp = *buf;
-  UNP.csize = cli_readint32((char *)buf+1) ^ 0x87bc;
-  cli_dbgmsg("autoit: compressed size: %x\n", UNP.csize);
-  cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32((char *)buf+5) ^ 0x87bc);
-  cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32((char *)buf+9) ^ 0xa685);
-
-  if(ctx->limits && ctx->limits->maxfilesize && UNP.csize > ctx->limits->maxfilesize) {
-    cli_dbgmsg("autoit: sizes exceeded (%lu > %lu)\n", (unsigned long int)UNP.csize, ctx->limits->maxfilesize);
-    return CL_CLEAN;
-  }
-
-  lseek(desc, 16, SEEK_CUR);
-  if (!(buf = cli_malloc(UNP.csize)))
-    return CL_EMEM;
-  if (cli_readn(desc, buf, UNP.csize)!=(int)UNP.csize) {
-    cli_dbgmsg("autoit: failed to read compressed stream. broken/truncated file?\n");
-    free(buf);
-    return CL_CLEAN;
-  }
-  LAME_decrypt(buf,UNP.csize,0x2477 /* + m4sum (broken by design) */ );
-
-  if (comp == 1) {
-    cli_dbgmsg("autoit: script is compressed\n");
-    if (cli_readint32((char *)buf)!=0x36304145) {
-      cli_dbgmsg("autoit: bad magic or unsupported version\n");
-      free(buf);
-      return CL_EFORMAT;
-    }
-
-    UNP.usize = ntohl(*(uint32_t *)(buf+4));
-    if(ctx->limits && ctx->limits->maxfilesize && UNP.usize > ctx->limits->maxfilesize) {
+    if (cli_readn(desc, buf, UNP.csize)!=(int)UNP.csize) {
+      cli_dbgmsg("autoit: failed to read compressed stream. broken/truncated file?\n");
       free(buf);
       return CL_CLEAN;
     }
-    if (!(UNP.outputbuf = cli_malloc(UNP.usize))) {
-      free(buf);
-      return CL_EMEM;
-    }
-    cli_dbgmsg("autoit: uncompressed size again: %x\n", UNP.usize);
+    LAME_decrypt(buf,UNP.csize,0x2477 /* + m4sum (broken by design) */ );
 
-    UNP.inputbuf = buf;
-    UNP.cur_output = 0;
-    UNP.cur_input = 8;
-    UNP.bitmap.full = 0;
-    UNP.bits_avail = 0;
+    if (comp == 1) {
+      cli_dbgmsg("autoit: file is compressed\n");
+      if (cli_readint32((char *)buf)!=0x36304145) {
+	cli_dbgmsg("autoit: bad magic or unsupported version\n");
+	free(buf);
+	return CL_EFORMAT;
+      }
+
+      UNP.usize = ntohl(*(uint32_t *)(buf+4));
+      if(ctx->limits && ctx->limits->maxfilesize && UNP.usize > ctx->limits->maxfilesize) {
+	free(buf);
+	return CL_CLEAN;
+      }
+      if (!(UNP.outputbuf = cli_malloc(UNP.usize))) {
+	free(buf);
+	return CL_EMEM;
+      }
+      cli_dbgmsg("autoit: uncompressed size again: %x\n", UNP.usize);
+
+      UNP.inputbuf = buf;
+      UNP.cur_output = 0;
+      UNP.cur_input = 8;
+      UNP.bitmap.full = 0;
+      UNP.bits_avail = 0;
   
-    while (!UNP.error && UNP.cur_output < UNP.usize) {
-      if (!getbits(&UNP, 1)) {
-	uint32_t bb, bs, addme=0;
-	bb = getbits(&UNP, 15);
+      while (!UNP.error && UNP.cur_output < UNP.usize) {
+	if (!getbits(&UNP, 1)) {
+	  uint32_t bb, bs, addme=0;
+	  bb = getbits(&UNP, 15);
       
-	if ((bs = getbits(&UNP, 2))==3) {
-	  addme = 3;
-	  if((bs = getbits(&UNP, 3))==7) {
-	    addme = 10;
-	    if((bs = getbits(&UNP, 5))==31) {
-	      addme = 41;
-	      if((bs = getbits(&UNP, 8))==255) {
-		addme = 296;
-		while((bs = getbits(&UNP, 8))==255) {
-		  addme+=255;
+	  if ((bs = getbits(&UNP, 2))==3) {
+	    addme = 3;
+	    if((bs = getbits(&UNP, 3))==7) {
+	      addme = 10;
+	      if((bs = getbits(&UNP, 5))==31) {
+		addme = 41;
+		if((bs = getbits(&UNP, 8))==255) {
+		  addme = 296;
+		  while((bs = getbits(&UNP, 8))==255) {
+		    addme+=255;
+		  }
 		}
 	      }
 	    }
 	  }
-	}
-	bs += 3+addme;
+	  bs += 3+addme;
 
-	if(!CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output], bs) ||
-	   !CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output-bb], bs)) {
-	  UNP.error = 1;
-	  break;
-	}
-	while(bs--) {
-	  UNP.outputbuf[UNP.cur_output]=UNP.outputbuf[UNP.cur_output-bb];
-	  UNP.cur_output++;
-	}
-      } else {
-	UNP.outputbuf[UNP.cur_output] = (uint8_t)getbits(&UNP, 8);
-	UNP.cur_output++;
-      }
-    }
-
-    free(buf);
-    if (UNP.error) {
-      cli_dbgmsg("autoit: decompression error\n");
-      free(UNP.outputbuf);
-      return CL_CLEAN;
-    }
-  } else {
-    cli_dbgmsg("autoit: script is not compressed\n");
-    UNP.outputbuf = buf;
-    UNP.usize = UNP.csize;
-  }
-
-  if (UNP.usize<4) {
-    cli_dbgmsg("autoit: script is too short\n");
-    free(UNP.outputbuf);
-    return CL_CLEAN;
-  }
-
-  UNP.csize = UNP.usize;
-  if (!(buf = cli_malloc(UNP.csize))) {
-    free(UNP.outputbuf);
-    return CL_EMEM;
-  }
-  UNP.cur_output = 0;
-  UNP.cur_input = 4;
-  UNP.bits_avail = cli_readint32((char *)UNP.outputbuf);
-  cli_dbgmsg("autoit: script has got %u lines\n", UNP.bits_avail);
-
-  while (!UNP.error && UNP.bits_avail && UNP.cur_input < UNP.usize) {
-    uint8_t op;
-
-    switch((op = UNP.outputbuf[UNP.cur_input++])) {
-    case 5: /* <INT> */
-      if (UNP.cur_input >= UNP.usize-4) {
-	UNP.error = 1;
-	cli_dbgmsg("autoit: not enough space for an int\n");
-	break;
-      }
-      if (UNP.cur_output+12 >= UNP.csize) {
-	uint8_t *newout;
-	UNP.csize += 512;
-	if (!(newout = cli_realloc(buf, UNP.csize))) {
-	  UNP.error = 1;
-	  break;
-	}
-	buf = newout;
-      }
-      UNP.cur_output += snprintf((char *)&buf[UNP.cur_output], 12, "0x%08x ", cli_readint32((char *)&UNP.outputbuf[UNP.cur_input]));
-      UNP.cur_input += 4;
-      break;
-
-    case 0x20: /* <DOUBLE> */
-      if (UNP.usize < 8 || UNP.cur_input >= UNP.usize-8) {
-	UNP.error = 1;
-	cli_dbgmsg("autoit: not enough space for a double\n");
-	break;
-      }
-      if (UNP.cur_output+40 >= UNP.csize) {
-	uint8_t *newout;
-	UNP.csize += 512;
-	if (!(newout = cli_realloc(buf, UNP.csize))) {
-	  UNP.error = 1;
-	  break;
-	}
-	buf = newout;
-      }
-#if FPU_WORDS_BIGENDIAN == 0
-      snprintf((char *)&buf[UNP.cur_output], 39, "%g ", *(double *)&UNP.outputbuf[UNP.cur_input]);
-#else
-      do {
-	double x;
-	uint8_t *j = (uint8_t *)&x;
-	unsigned int i;
-
-	for(i=0; i<8; i++)
-	  j[7-i]=UNP.outputbuf[UNP.cur_input+i];
-	snprintf((char *)&buf[UNP.cur_output], 39, "%g ", x); /* FIXME: check */
-      } while(0);
-#endif
-      buf[UNP.cur_output+38]=' ';
-      buf[UNP.cur_output+39]='\0';
-      UNP.cur_output += strlen((char *)&buf[UNP.cur_output]);
-      UNP.cur_input += 8;
-      break;
-
-    case 0x30: /* COSTRUCT */
-    case 0x31: /* COMMAND */
-    case 0x32: /* MACRO */
-    case 0x33: /* VAR */
-    case 0x34: /* FUNC */
-    case 0x35: /* OBJECT */
-    case 0x36: /* STRING */
-    case 0x37: /* DIRECTIVE */
-      {
-	uint32_t chars, dchars, i;
-
-	if (UNP.cur_input >= UNP.usize-4) {
-	  UNP.error = 1;
-	  cli_dbgmsg("autoit: not enough space for size\n");
-	  break;
-	}
-	chars = cli_readint32((char *)&UNP.outputbuf[UNP.cur_input]);
-	dchars = chars*2;
-	UNP.cur_input+=4;
-
-	if (UNP.usize < dchars || UNP.cur_input >= UNP.usize-dchars) {
-	  UNP.error = 1;
-	  cli_dbgmsg("autoit: size too big - needed %d, total %d, avail %d\n", dchars, UNP.usize, UNP.usize - UNP.cur_input);
-	  break;
-	}
-	if (UNP.cur_output+chars+3 >= UNP.csize) {
-	  uint8_t *newout;
-	  UNP.csize += chars + 512;
-	  if (!(newout = cli_realloc(buf, UNP.csize))) {
+	  if(!CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output], bs) ||
+	     !CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output-bb], bs)) {
 	    UNP.error = 1;
 	    break;
 	  }
-	  buf = newout;
-	}
-
-	if(prefixes[op-0x30])
-	  buf[UNP.cur_output++] = prefixes[op-0x30];
-
-	if (chars) {
-	  for (i = 0; i<dchars; i+=2) {
-	    UNP.outputbuf[UNP.cur_input+i] ^= (uint8_t)chars;
-	    UNP.outputbuf[UNP.cur_input+i+1] ^= (uint8_t)(chars>>8);
+	  while(bs--) {
+	    UNP.outputbuf[UNP.cur_output]=UNP.outputbuf[UNP.cur_output-bb];
+	    UNP.cur_output++;
 	  }
-	  u2a(&UNP.outputbuf[UNP.cur_input], dchars);
-	  memcpy(&buf[UNP.cur_output], &UNP.outputbuf[UNP.cur_input], chars);
-	  UNP.cur_output += chars;
-	  UNP.cur_input += dchars;
+	} else {
+	  UNP.outputbuf[UNP.cur_output] = (uint8_t)getbits(&UNP, 8);
+	  UNP.cur_output++;
 	}
-	if (op==0x36)
-	  buf[UNP.cur_output++] = '"';
-	if (op!=0x34)
-	  buf[UNP.cur_output++] = ' ';
       }
-      break;
 
-    case 0x40: /* , */
-    case 0x41: /* = */
-    case 0x42: /* > */
-    case 0x43: /* < */
-    case 0x44: /* <> */
-    case 0x45: /* >= */
-    case 0x46: /* <= */
-    case 0x47: /* ( */
-    case 0x48: /* ) */
-    case 0x49: /* + */
-    case 0x4a: /* - */
-    case 0x4b: /* / */
-    case 0x4c: /* * */
-    case 0x4d: /* & */
-    case 0x4e: /* [ */
-    case 0x4f: /* ] */
-    case 0x50: /* == */
-    case 0x51: /* ^ */
-    case 0x52: /* += */
-    case 0x53: /* -= */
-    case 0x54: /* /= */
-    case 0x55: /* *= */
-    case 0x56: /* &= */
-      if (UNP.cur_output+4 >= UNP.csize) {
-	uint8_t *newout;
-	UNP.csize += 512;
-	if (!(newout = cli_realloc(buf, UNP.csize))) {
-	  UNP.error = 1;
-	  break;
-	}
-	buf = newout;
+      free(buf);
+      if (UNP.error) {
+	cli_dbgmsg("autoit: decompression error\n");
+	free(UNP.outputbuf);
+	return CL_CLEAN;
       }
-      UNP.cur_output += snprintf((char *)&buf[UNP.cur_output], 4, "%s ", opers[op-0x40]);
-      break;
-
-    case 0x7f:
-      UNP.bits_avail--;
-      if (UNP.cur_output+1 >= UNP.csize) {
-	uint8_t *newout;
-	UNP.csize += 512;
-	if (!(newout = cli_realloc(buf, UNP.csize))) {
-	  UNP.error = 1;
-	  break;
-	}
-	buf = newout;
-      }
-      buf[UNP.cur_output++]='\n';
-      break;
-
-    default:
-      cli_dbgmsg("autoit: found unknown op (%x)\n", op);
-      UNP.error = 1;
+    } else {
+      cli_dbgmsg("autoit: file is not compressed\n");
+      UNP.outputbuf = buf;
+      UNP.usize = UNP.csize;
     }
-  }
 
-  if (UNP.error)
-    cli_dbgmsg("autoit: decompilation aborted - partial script may exist\n");
+    if (UNP.usize<4) {
+      cli_dbgmsg("autoit: file is too short\n");
+      free(UNP.outputbuf);
+      return CL_CLEAN;
+    }
 
-  free(UNP.outputbuf);
+    if (script) {
+      UNP.csize = UNP.usize;
+      if (!(buf = cli_malloc(UNP.csize))) {
+	free(UNP.outputbuf);
+	return CL_EMEM;
+      }
+      UNP.cur_output = 0;
+      UNP.cur_input = 4;
+      UNP.bits_avail = cli_readint32((char *)UNP.outputbuf);
+      cli_dbgmsg("autoit: script has got %u lines\n", UNP.bits_avail);
 
-  /* FIXME: TODO send to text notmalization */
+      while (!UNP.error && UNP.bits_avail && UNP.cur_input < UNP.usize) {
+	uint8_t op;
 
-  if(!(tempfile = cli_gentemp(NULL))) {
+	switch((op = UNP.outputbuf[UNP.cur_input++])) {
+	case 5: /* <INT> */
+	  if (UNP.cur_input >= UNP.usize-4) {
+	    UNP.error = 1;
+	    cli_dbgmsg("autoit: not enough space for an int\n");
+	    break;
+	  }
+	  if (UNP.cur_output+12 >= UNP.csize) {
+	    uint8_t *newout;
+	    UNP.csize += 512;
+	    if (!(newout = cli_realloc(buf, UNP.csize))) {
+	      UNP.error = 1;
+	      break;
+	    }
+	    buf = newout;
+	  }
+	  UNP.cur_output += snprintf((char *)&buf[UNP.cur_output], 12, "0x%08x ", cli_readint32((char *)&UNP.outputbuf[UNP.cur_input]));
+	  UNP.cur_input += 4;
+	  break;
+
+	case 0x20: /* <DOUBLE> */
+	  if (UNP.usize < 8 || UNP.cur_input >= UNP.usize-8) {
+	    UNP.error = 1;
+	    cli_dbgmsg("autoit: not enough space for a double\n");
+	    break;
+	  }
+	  if (UNP.cur_output+40 >= UNP.csize) {
+	    uint8_t *newout;
+	    UNP.csize += 512;
+	    if (!(newout = cli_realloc(buf, UNP.csize))) {
+	      UNP.error = 1;
+	      break;
+	    }
+	    buf = newout;
+	  }
+#if FPU_WORDS_BIGENDIAN == 0
+	  snprintf((char *)&buf[UNP.cur_output], 39, "%g ", *(double *)&UNP.outputbuf[UNP.cur_input]);
+#else
+	  do {
+	    double x;
+	    uint8_t *j = (uint8_t *)&x;
+	    unsigned int i;
+
+	    for(i=0; i<8; i++)
+	      j[7-i]=UNP.outputbuf[UNP.cur_input+i];
+	    snprintf((char *)&buf[UNP.cur_output], 39, "%g ", x); /* FIXME: check */
+	  } while(0);
+#endif
+	  buf[UNP.cur_output+38]=' ';
+	  buf[UNP.cur_output+39]='\0';
+	  UNP.cur_output += strlen((char *)&buf[UNP.cur_output]);
+	  UNP.cur_input += 8;
+	  break;
+
+	case 0x30: /* COSTRUCT */
+	case 0x31: /* COMMAND */
+	case 0x32: /* MACRO */
+	case 0x33: /* VAR */
+	case 0x34: /* FUNC */
+	case 0x35: /* OBJECT */
+	case 0x36: /* STRING */
+	case 0x37: /* DIRECTIVE */
+	  {
+	    uint32_t chars, dchars, i;
+
+	    if (UNP.cur_input >= UNP.usize-4) {
+	      UNP.error = 1;
+	      cli_dbgmsg("autoit: not enough space for size\n");
+	      break;
+	    }
+	    chars = cli_readint32((char *)&UNP.outputbuf[UNP.cur_input]);
+	    dchars = chars*2;
+	    UNP.cur_input+=4;
+
+	    if (UNP.usize < dchars || UNP.cur_input >= UNP.usize-dchars) {
+	      UNP.error = 1;
+	      cli_dbgmsg("autoit: size too big - needed %d, total %d, avail %d\n", dchars, UNP.usize, UNP.usize - UNP.cur_input);
+	      break;
+	    }
+	    if (UNP.cur_output+chars+3 >= UNP.csize) {
+	      uint8_t *newout;
+	      UNP.csize += chars + 512;
+	      if (!(newout = cli_realloc(buf, UNP.csize))) {
+		UNP.error = 1;
+		break;
+	      }
+	      buf = newout;
+	    }
+
+	    if(prefixes[op-0x30])
+	      buf[UNP.cur_output++] = prefixes[op-0x30];
+
+	    if (chars) {
+	      for (i = 0; i<dchars; i+=2) {
+		UNP.outputbuf[UNP.cur_input+i] ^= (uint8_t)chars;
+		UNP.outputbuf[UNP.cur_input+i+1] ^= (uint8_t)(chars>>8);
+	      }
+	      u2a(&UNP.outputbuf[UNP.cur_input], dchars);
+	      memcpy(&buf[UNP.cur_output], &UNP.outputbuf[UNP.cur_input], chars);
+	      UNP.cur_output += chars;
+	      UNP.cur_input += dchars;
+	    }
+	    if (op==0x36)
+	      buf[UNP.cur_output++] = '"';
+	    if (op!=0x34)
+	      buf[UNP.cur_output++] = ' ';
+	  }
+	  break;
+
+	case 0x40: /* , */
+	case 0x41: /* = */
+	case 0x42: /* > */
+	case 0x43: /* < */
+	case 0x44: /* <> */
+	case 0x45: /* >= */
+	case 0x46: /* <= */
+	case 0x47: /* ( */
+	case 0x48: /* ) */
+	case 0x49: /* + */
+	case 0x4a: /* - */
+	case 0x4b: /* / */
+	case 0x4c: /* * */
+	case 0x4d: /* & */
+	case 0x4e: /* [ */
+	case 0x4f: /* ] */
+	case 0x50: /* == */
+	case 0x51: /* ^ */
+	case 0x52: /* += */
+	case 0x53: /* -= */
+	case 0x54: /* /= */
+	case 0x55: /* *= */
+	case 0x56: /* &= */
+	  if (UNP.cur_output+4 >= UNP.csize) {
+	    uint8_t *newout;
+	    UNP.csize += 512;
+	    if (!(newout = cli_realloc(buf, UNP.csize))) {
+	      UNP.error = 1;
+	      break;
+	    }
+	    buf = newout;
+	  }
+	  UNP.cur_output += snprintf((char *)&buf[UNP.cur_output], 4, "%s ", opers[op-0x40]);
+	  break;
+
+	case 0x7f:
+	  UNP.bits_avail--;
+	  if (UNP.cur_output+1 >= UNP.csize) {
+	    uint8_t *newout;
+	    UNP.csize += 512;
+	    if (!(newout = cli_realloc(buf, UNP.csize))) {
+	      UNP.error = 1;
+	      break;
+	    }
+	    buf = newout;
+	  }
+	  buf[UNP.cur_output++]='\n';
+	  break;
+
+	default:
+	  cli_dbgmsg("autoit: found unknown op (%x)\n", op);
+	  UNP.error = 1;
+	}
+      }
+
+      if (UNP.error)
+	cli_dbgmsg("autoit: decompilation aborted - partial script may exist\n");
+
+      free(UNP.outputbuf);
+    } else {
+      buf = UNP.outputbuf;
+      UNP.cur_output = UNP.usize ;
+    }
+
+    /* FIXME: TODO send to text notmalization */
+
+    if(!(tempfile = cli_gentemp(NULL))) {
+      free(buf);
+      return CL_EMEM;
+    }
+    if((i = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
+      cli_dbgmsg("autoit: Can't create file %s\n", tempfile);
+      free(tempfile);
+      free(buf);
+      return CL_EIO;
+    }
+    if(cli_writen(i, buf, UNP.cur_output) != (int32_t)UNP.cur_output) {
+      cli_dbgmsg("autoit: cannot write %d bytes\n", UNP.usize);
+      close(i);
+      free(tempfile);
+      free(buf);
+      return CL_EIO;
+    }
     free(buf);
-    return CL_EMEM;
-  }
-  if((i = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
-    cli_dbgmsg("autoit: Can't create file %s\n", tempfile);
-    free(tempfile);
-    free(buf);
-    return CL_EIO;
-  }
-  if(cli_writen(i, buf, UNP.cur_output) != (int32_t)UNP.cur_output) { /* FIXME: valgrind */
-    cli_dbgmsg("autoit: cannot write %d bytes\n", UNP.usize);
-    close(i);
-    free(tempfile);
-    free(buf);
-    return CL_EIO;
-  }
-  free(buf);
-  if(cli_leavetemps_flag)
-    cli_dbgmsg("autoit: script extracted to %s\n", tempfile);
-  else 
-    cli_dbgmsg("autoit: script successfully extracted\n");
-  fsync(i);
-  lseek(i, 0, SEEK_SET);
-  if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
+    if(cli_leavetemps_flag)
+      cli_dbgmsg("autoit: script extracted to %s\n", tempfile);
+    else 
+      cli_dbgmsg("autoit: script successfully extracted\n");
+    fsync(i);
+    lseek(i, 0, SEEK_SET);
+    if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
+      close(i);
+      if(!cli_leavetemps_flag) unlink(tempfile);
+      free(tempfile);
+      return CL_VIRUS;
+    }
     close(i);
     if(!cli_leavetemps_flag) unlink(tempfile);
     free(tempfile);
-    return CL_VIRUS;
   }
-  close(i);
-  if(!cli_leavetemps_flag) unlink(tempfile);
-  free(tempfile);
-  return CL_CLEAN;
 }
 
 #endif /* FPU_WORDS_BIGENDIAN */
