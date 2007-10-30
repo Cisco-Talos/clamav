@@ -65,7 +65,7 @@ typedef enum {
     CL_TYPE_CABSFX,
     CL_TYPE_ARJSFX,
     CL_TYPE_NULSFT, /* on the fly */
-    CL_TYPE_AUTOIT /* FIXME_AUTOIT: Tomasz, good nuff? */
+    CL_TYPE_AUTOIT
 } cli_file_t;
 
 struct cli_matched_type {

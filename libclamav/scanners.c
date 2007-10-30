@@ -1929,7 +1929,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg)
 			break;
 
 		    case CL_TYPE_AUTOIT:
-		        if(1 && type == CL_TYPE_MSEXE /* FIXME_AUTOIT: Tomasz, pls DCONF THIS */) {
+		        if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_AUTOIT)) {
 			    cli_dbgmsg("AUTOIT signature found at %u\n", (unsigned int) fpt->offset);
 			    nret = cli_scanautoit(desc, ctx, fpt->offset + 23);
 			}

@@ -1,3 +1,7 @@
+Tue Oct 30 19:30:54 CET 2007 (tk)
+---------------------------------
+  * libclamav: add dconf support for autoit
+
 Tue Oct 30 19:01:41 CET 2007 (acab)
 -----------------------------------
   * libclamav: Add preliminary autoit unpacking support
