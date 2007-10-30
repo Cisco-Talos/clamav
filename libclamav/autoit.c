@@ -854,7 +854,7 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
 
 int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
   uint8_t version;
-  int (*func)(int desc, cli_ctx *ctx, char *), r;
+  int r;
   char *tmpd;
 
   lseek(desc, offset, SEEK_SET);
@@ -875,23 +875,21 @@ int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
 
   switch(version) {
   case 0x35:
-    func = ea05;
+    r = ea05(desc, ctx, tmpd);
     break;
   case 0x36:
 #ifdef FPU_WORDS_BIGENDIAN
-    func = ea06;
-    break;
+    r = ea06(desc, ctx, tmpd);
 #else
     cli_dbgmsg("autoit: EA06 support not available\n");
-    return CL_CLEAN;
+    r = CL_CLEAN;
 #endif
+    break;
   default:
     /* NOT REACHED */
     cli_dbgmsg("autoit: unknown method\n");
-    return CL_CLEAN;
+    r = CL_CLEAN;
   }
-
-  r = func(desc, ctx, tmpd);
 
   if (!cli_leavetemps_flag)
     cli_rmdirs(tmpd);
