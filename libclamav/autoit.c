@@ -155,199 +155,192 @@ static uint32_t getbits(struct UNP *UNP, uint32_t size) {
 
 
 static int ea05(int desc, cli_ctx *ctx) {
-  uint8_t b[24], comp;
+  uint8_t b[300], comp;
   uint8_t *buf = b;
   uint32_t s, m4sum=0;
   int i;
   char *tempfile;
   struct UNP UNP;
 
-  if (cli_readn(desc, buf, 24)!=24)
+  if (cli_readn(desc, buf, 16)!=16)
     return CL_CLEAN;
 
   for (i=0; i<16; i++)
-    m4sum += *buf++;
-  
-  MT_decrypt(buf,4,0x16fa);
-  if(cli_readint32((char *)buf) != 0x454c4946) {
-    cli_dbgmsg("autoit: no FILE magic found, giving up\n");
-    return CL_CLEAN;
-  }
+    m4sum += buf[i];
 
-  buf+=4;
-  s = cli_readint32((char *)buf) ^ 0x29bc;
-  buf=b;
-  if (s > 23) {
-    cli_dbgmsg("autoit: magic string too long, giving up\n");
-    return CL_CLEAN;
-  }
-  if(cli_debug_flag) {
-    cli_dbgmsg("autoit: magic string size %d (expected values 23 or 15)\n", s);
-    if (cli_readn(desc, buf, s)!=(int)s)
+  while(1) {
+    buf = b;
+    if (cli_readn(desc, buf, 8)!=8)
       return CL_CLEAN;
-    buf[s]='\0';
-    MT_decrypt(buf,s,s+0xa25e);
-    cli_dbgmsg("autoit: magic string '%s'\n", buf);
-  } else {
-    lseek(desc, s, SEEK_CUR);
-  }
 
-  if (cli_readn(desc, buf, 4)!=4)
-    return CL_CLEAN;
-  s = cli_readint32((char *)buf) ^ 0x29ac;
-  if ((int32_t)s<0)
-    return CL_CLEAN; /* the original code wouldn't seek back here */
-  if (cli_debug_flag && s<300) {
-    uint8_t *n;
-    if (!(n = cli_malloc(s+1)))
+    /*     MT_decrypt(buf,4,0x16fa);  waste of time */
+    if((uint32_t)cli_readint32((char *)buf) != 0xceb06dff) {
+      cli_dbgmsg("autoit: no FILE magic found, giving up\n");
+      return CL_CLEAN;
+    }
+
+    s = cli_readint32((char *)buf+4) ^ 0x29bc;
+    buf=b;
+    if(cli_debug_flag && s<300) {
+      if (cli_readn(desc, buf, s)!=(int)s)
+	return CL_CLEAN;
+      buf[s]='\0';
+      MT_decrypt(buf,s,s+0xa25e);
+      cli_dbgmsg("autoit: magic string '%s'\n", buf);
+    } else {
+      lseek(desc, s, SEEK_CUR);
+    }
+
+    if (cli_readn(desc, buf, 4)!=4)
+      return CL_CLEAN;
+    s = cli_readint32((char *)buf) ^ 0x29ac;
+    if ((int32_t)s<0)
+      return CL_CLEAN; /* the original code wouldn't seek back here */
+    if (cli_debug_flag && s<300) {
+      if (cli_readn(desc, buf, s)!=(int)s)
+	return CL_CLEAN;
+      MT_decrypt(buf,s,s+0xf25e);
+      buf[s]='\0';
+      cli_dbgmsg("autoit: original filename '%s'\n", buf);
+    } else {
+      lseek(desc, s, SEEK_CUR);
+    }
+
+    if (cli_readn(desc, buf, 13)!=13)
+      return CL_CLEAN;
+    comp = *buf;
+    UNP.csize = cli_readint32((char *)buf+1) ^ 0x45aa;
+    cli_dbgmsg("autoit: compressed size: %x\n", UNP.csize);
+    cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32((char *)buf+5) ^ 0x45aa);
+    cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32((char *)buf+9) ^ 0xc3d2);
+
+    if(ctx->limits && ctx->limits->maxfilesize && UNP.csize > ctx->limits->maxfilesize) {
+      cli_dbgmsg("autoit: sizes exceeded (%lu > %lu)\n", (unsigned long int)UNP.csize, ctx->limits->maxfilesize);
+      return CL_CLEAN;
+    }
+
+    lseek(desc, 16, SEEK_CUR);
+    if (!(buf = cli_malloc(UNP.csize)))
       return CL_EMEM;
-    if (cli_readn(desc, n, s)!=(int)s) {
-      free(n);
-      return CL_CLEAN;
-    }
-    MT_decrypt(n,s,s+0xf25e);
-    n[s]='\0';
-    cli_dbgmsg("autoit: original filename '%s'\n", n);
-    free(n);
-  } else {
-    lseek(desc, s, SEEK_CUR);
-  }
-
-  if (cli_readn(desc, buf, 13)!=13)
-    return CL_CLEAN;
-  comp = *buf;
-  UNP.csize = cli_readint32((char *)buf+1) ^ 0x45aa;
-  cli_dbgmsg("autoit: compressed size: %x\n", UNP.csize);
-  cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32((char *)buf+5) ^ 0x45aa);
-  cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32((char *)buf+9) ^ 0xc3d2);
-
-  if(ctx->limits && ctx->limits->maxfilesize && UNP.csize > ctx->limits->maxfilesize) {
-    cli_dbgmsg("autoit: sizes exceeded (%lu > %lu)\n", (unsigned long int)UNP.csize, ctx->limits->maxfilesize);
-    return CL_CLEAN;
-  }
-
-  lseek(desc, 16, SEEK_CUR);
-  if (!(buf = cli_malloc(UNP.csize)))
-    return CL_EMEM;
-  if (cli_readn(desc, buf, UNP.csize)!=(int)UNP.csize) {
-    cli_dbgmsg("autoit: failed to read compressed stream. broken/truncated file?\n");
-    free(buf);
-    return CL_CLEAN;
-  }
-  MT_decrypt(buf,UNP.csize,0x22af+m4sum);
-
-  if (comp == 1) {
-    cli_dbgmsg("autoit: script is compressed\n");
-    if (cli_readint32((char *)buf)!=0x35304145) {
-      cli_dbgmsg("autoit: bad magic or unsupported version\n");
-      free(buf);
-      return CL_EFORMAT;
-    }
-
-    UNP.usize = ntohl(*(uint32_t *)(buf+4));
-    if(ctx->limits && ctx->limits->maxfilesize && UNP.usize > ctx->limits->maxfilesize) {
+    if (cli_readn(desc, buf, UNP.csize)!=(int)UNP.csize) {
+      cli_dbgmsg("autoit: failed to read compressed stream. broken/truncated file?\n");
       free(buf);
       return CL_CLEAN;
     }
-    if (!(UNP.outputbuf = cli_malloc(UNP.usize))) {
-      free(buf);
-      return CL_EMEM;
-    }
-    cli_dbgmsg("autoit: uncompressed size again: %x\n", UNP.usize);
+    MT_decrypt(buf,UNP.csize,0x22af+m4sum);
 
-    UNP.inputbuf = buf;
-    UNP.cur_output = 0;
-    UNP.cur_input = 8;
-    UNP.bitmap.full = 0;
-    UNP.bits_avail = 0;
-    UNP.error = 0;
+    if (comp == 1) {
+      cli_dbgmsg("autoit: file is compressed\n");
+      if (cli_readint32((char *)buf)!=0x35304145) {
+	cli_dbgmsg("autoit: bad magic or unsupported version\n");
+	free(buf);
+	return CL_EFORMAT;
+      }
+
+      UNP.usize = ntohl(*(uint32_t *)(buf+4));
+      if(ctx->limits && ctx->limits->maxfilesize && UNP.usize > ctx->limits->maxfilesize) {
+	free(buf);
+	return CL_CLEAN;
+      }
+      if (!(UNP.outputbuf = cli_malloc(UNP.usize))) {
+	free(buf);
+	return CL_EMEM;
+      }
+      cli_dbgmsg("autoit: uncompressed size again: %x\n", UNP.usize);
+
+      UNP.inputbuf = buf;
+      UNP.cur_output = 0;
+      UNP.cur_input = 8;
+      UNP.bitmap.full = 0;
+      UNP.bits_avail = 0;
+      UNP.error = 0;
   
-    while (!UNP.error && UNP.cur_output < UNP.usize) {
-      if (getbits(&UNP, 1)) {
-	uint32_t bb, bs, addme=0;
-	bb = getbits(&UNP, 15);
+      while (!UNP.error && UNP.cur_output < UNP.usize) {
+	if (getbits(&UNP, 1)) {
+	  uint32_t bb, bs, addme=0;
+	  bb = getbits(&UNP, 15);
       
-	if ((bs = getbits(&UNP, 2))==3) {
-	  addme = 3;
-	  if((bs = getbits(&UNP, 3))==7) {
-	    addme = 10;
-	    if((bs = getbits(&UNP, 5))==31) {
-	      addme = 41;
-	      if((bs = getbits(&UNP, 8))==255) {
-		addme = 296;
-		while((bs = getbits(&UNP, 8))==255) {
-		  addme+=255;
+	  if ((bs = getbits(&UNP, 2))==3) {
+	    addme = 3;
+	    if((bs = getbits(&UNP, 3))==7) {
+	      addme = 10;
+	      if((bs = getbits(&UNP, 5))==31) {
+		addme = 41;
+		if((bs = getbits(&UNP, 8))==255) {
+		  addme = 296;
+		  while((bs = getbits(&UNP, 8))==255) {
+		    addme+=255;
+		  }
 		}
 	      }
 	    }
 	  }
-	}
-	bs += 3+addme;
+	  bs += 3+addme;
 
-	if(!CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output], bs) ||
-	   !CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output-bb], bs)) {
-	  UNP.error = 1;
-	  break;
-	}
-	while(bs--) {
-	  UNP.outputbuf[UNP.cur_output]=UNP.outputbuf[UNP.cur_output-bb];
+	  if(!CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output], bs) ||
+	     !CLI_ISCONTAINED(UNP.outputbuf, UNP.usize, &UNP.outputbuf[UNP.cur_output-bb], bs)) {
+	    UNP.error = 1;
+	    break;
+	  }
+	  while(bs--) {
+	    UNP.outputbuf[UNP.cur_output]=UNP.outputbuf[UNP.cur_output-bb];
+	    UNP.cur_output++;
+	  }
+	} else {
+	  UNP.outputbuf[UNP.cur_output] = (uint8_t)getbits(&UNP, 8);
 	  UNP.cur_output++;
 	}
-      } else {
-	UNP.outputbuf[UNP.cur_output] = (uint8_t)getbits(&UNP, 8);
-	UNP.cur_output++;
       }
+
+      free(buf);
+      if (UNP.error) {
+	cli_dbgmsg("autoit: decompression error\n");
+	free(UNP.outputbuf);
+	return CL_CLEAN;
+      }
+    } else {
+      cli_dbgmsg("autoit: script is not compressed\n");
+      UNP.outputbuf = buf;
+      UNP.usize = UNP.csize;
     }
 
-    free(buf);
-    if (UNP.error) {
-      cli_dbgmsg("autoit: decompression error\n");
+
+    /* FIXME: TODO send to text notmalization */
+
+    if(!(tempfile = cli_gentemp(NULL))) {
       free(UNP.outputbuf);
-      return CL_CLEAN;
+      return CL_EMEM;
     }
-  } else {
-    cli_dbgmsg("autoit: script is not compressed\n");
-    UNP.outputbuf = buf;
-    UNP.usize = UNP.csize;
-  }
-
-
-  /* FIXME: TODO send to text notmalization */
-
-  if(!(tempfile = cli_gentemp(NULL))) {
+    if((i = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
+      cli_dbgmsg("autoit: Can't create file %s\n", tempfile);
+      free(tempfile);
+      free(UNP.outputbuf);
+      return CL_EIO;
+    }
+    if(cli_writen(i, UNP.outputbuf, UNP.usize) != (int32_t)UNP.usize) {
+      cli_dbgmsg("autoit: cannot write %d bytes\n", UNP.usize);
+      close(i);
+      free(tempfile);
+      free(UNP.outputbuf);
+      return CL_EIO;
+    }
     free(UNP.outputbuf);
-    return CL_EMEM;
-  }
-  if((i = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
-    cli_dbgmsg("autoit: Can't create file %s\n", tempfile);
-    free(tempfile);
-    free(UNP.outputbuf);
-    return CL_EIO;
-  }
-  if(cli_writen(i, UNP.outputbuf, UNP.usize) != (int32_t)UNP.usize) {
-    cli_dbgmsg("autoit: cannot write %d bytes\n", UNP.usize);
-    close(i);
-    free(tempfile);
-    free(UNP.outputbuf);
-    return CL_EIO;
-  }
-  free(UNP.outputbuf);
-  if(cli_leavetemps_flag)
-    cli_dbgmsg("autoit: script extracted to %s\n", tempfile);
-  else 
-    cli_dbgmsg("autoit: script successfully extracted\n");
-  fsync(i);
-  lseek(i, 0, SEEK_SET);
-  if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
+    if(cli_leavetemps_flag)
+      cli_dbgmsg("autoit: script extracted to %s\n", tempfile);
+    else 
+      cli_dbgmsg("autoit: script successfully extracted\n");
+    fsync(i);
+    lseek(i, 0, SEEK_SET);
+    if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
+      close(i);
+      if(!cli_leavetemps_flag) unlink(tempfile);
+      free(tempfile);
+      return CL_VIRUS;
+    }
     close(i);
     if(!cli_leavetemps_flag) unlink(tempfile);
     free(tempfile);
-    return CL_VIRUS;
   }
-  close(i);
-  if(!cli_leavetemps_flag) unlink(tempfile);
-  free(tempfile);
-  return CL_CLEAN;
 }
 
 
@@ -472,21 +465,22 @@ static int ea06(int desc, cli_ctx *ctx) {
     buf = b;
     if (cli_readn(desc, buf, 8)!=8)
       return CL_CLEAN;
-    LAME_decrypt(buf, 4, 0x18ee);
-    if(cli_readint32((char *)buf) != 0x454c4946) {
+    /*     LAME_decrypt(buf, 4, 0x18ee); FIXME: waste of time */
+    if(cli_readint32((char *)buf) != 0x52ca436b) {
       cli_dbgmsg("autoit: no FILE magic found, giving up\n");
       return CL_CLEAN;
     }
 
     s = cli_readint32((char *)buf+4) ^ 0xadbc;
-    if(cli_debug_flag && s<300) {
+    if(s<300) {
       if (cli_readn(desc, buf, s*2)!=(int)s*2)
 	return CL_CLEAN;
       LAME_decrypt(buf,s*2,s+0xb33f);
       buf[s*2]='\0'; buf[s*2+1]='\0';
       u2a(buf,s*2); /* FIXME: GET RID OF THIS */
       cli_dbgmsg("autoit: magic string '%s'\n", buf);
-      script=!memcmp(">>>AUTOIT SCRIPT<<<", buf, 19);
+      if (s==19 && memcmp(">>>AUTOIT SCRIPT<<<", buf, 19))
+	script = 1;
     } else {
       cli_dbgmsg("autoit: magic string too long to print\n");
       lseek(desc, s*2, SEEK_CUR);
