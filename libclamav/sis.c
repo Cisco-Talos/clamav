@@ -57,10 +57,6 @@ int cli_scansis(int desc, cli_ctx *ctx) {
   uint32_t uid[4];
 
   cli_dbgmsg("in scansis()\n");
-  if (ctx->limits && ctx->limits->maxreclevel && ctx->arec >= ctx->limits->maxreclevel) {
-    cli_dbgmsg("SIS: Archive recursion limit exceeded (arec == %u).\n", ctx->arec+1);
-    return CL_EMAXREC;
-  }
 
   if (!(tmpd = cli_gentemp(NULL)))    
     return CL_ETMPDIR;
@@ -80,6 +76,7 @@ int cli_scansis(int desc, cli_ctx *ctx) {
   }
   if (!(f=fdopen(i, "rb"))) {
     cli_dbgmsg("SIS: fdopen() failed\n");
+    close(i);
     cli_rmdirs(tmpd);
     free(tmpd);
     return CL_EIO;
@@ -94,13 +91,11 @@ int cli_scansis(int desc, cli_ctx *ctx) {
   }
 
   cli_dbgmsg("SIS: UIDS %x %x %x - %x\n", EC32(uid[0]), EC32(uid[1]), EC32(uid[2]), EC32(uid[3]));
-  ctx->arec++;
   if (uid[2]==EC32(0x10000419))
     i=real_scansis(f, ctx, tmpd);
   else if(uid[0]==EC32(0x10201a7a)) {
     i=real_scansis9x(f, ctx, tmpd);
   }
-  ctx->arec--;
 
   if (!cli_leavetemps_flag)
     cli_rmdirs(tmpd);
@@ -474,7 +469,7 @@ static int real_scansis(FILE *f, cli_ctx *ctx, const char *tmpd) {
 	      if (olens[j] < ctx->limits->maxfilesize)
 		olen = olens[j];
 	      else {
-		cli_dbgmsg("\tSkipping file due to size limit (%u, max: %lu)\n", olen, ctx->limits->maxfilesize);
+		cli_dbgmsg("\tSkipping file due to size limit (%u, max: %lu)\n", (unsigned int)olen, ctx->limits->maxfilesize);
 		free(comp);
 		continue;
 	      }
@@ -742,7 +737,7 @@ static int real_scansis9x(FILE *f, cli_ctx *ctx, const char *tmpd) {
 		  if (usize < ctx->limits->maxfilesize)
 		    uusize = usize;
 		  else {
-		    cli_dbgmsg("\tSkipping file due to size limit (%u, max: %lu)\n", uusize, ctx->limits->maxfilesize);
+		    cli_dbgmsg("\tSkipping file due to size limit (%u, max: %lu)\n", (unsigned int)uusize, ctx->limits->maxfilesize);
 		    free(src);
 		    break;
 		  }
