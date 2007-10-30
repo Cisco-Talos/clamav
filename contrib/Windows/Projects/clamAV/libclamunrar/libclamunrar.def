@@ -1,0 +1,6 @@
+LIBRARY libClamUnrar
+VERSION 0.92
+EXPORTS cli_unrar_open @1000
+EXPORTS cli_unrar_close @1001
+EXPORTS cli_unrar_extract_next_prepare @1002
+EXPORTS cli_unrar_extract_next @1003
