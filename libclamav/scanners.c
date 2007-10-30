@@ -2096,7 +2096,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
 
         case CL_TYPE_AUTOIT:
-	    if(1 /* FIXME_AUTOIT: DCONF THIS */)
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_AUTOIT))
 		ret = cli_scanautoit(desc, ctx, 23);
 	    break;
 /*
