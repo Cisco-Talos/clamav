@@ -210,7 +210,7 @@ static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
     s = cli_readint32((char *)buf) ^ 0x29ac;
     if ((int32_t)s<0)
       return CL_CLEAN; /* the original code wouldn't seek back here */
-    if (cli_debug_flag && s<300) {
+    if (cli_debug_flag && s<sizeof(b)) {
       if (cli_readn(desc, buf, s)!=(int)s)
 	return CL_CLEAN;
       MT_decrypt(buf,s,s+0xf25e);
