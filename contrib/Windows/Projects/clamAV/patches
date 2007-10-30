@@ -1,5 +1,5 @@
 *** /home/njh/src/clamav-devel/trunk/./clamscan/clamscan.c	2007-09-07 17:06:21.000000000 +0100
---- ./clamscan/clamscan.c	2007-09-07 17:08:50.000000000 +0100
+--- ./clamscan/clamscan.c	2007-09-07 18:08:50.000000000 +0100
 ***************
 *** 241,252 ****
   
@@ -33,7 +33,7 @@
       return ret;
   }
 *** /home/njh/src/clamav-devel/trunk/./clamscan/manager.h	2007-06-14 11:04:12.000000000 +0100
---- ./clamscan/manager.h	2007-04-21 08:44:22.000000000 +0100
+--- ./clamscan/manager.h	2007-04-21 09:44:22.000000000 +0100
 ***************
 *** 34,37 ****
 --- 34,42 ----
@@ -46,8 +46,8 @@
 + #endif
 + 
   #endif
-*** /home/njh/src/clamav-devel/trunk/./freshclam/manager.c	2007-08-20 19:24:20.000000000 +0100
---- ./freshclam/manager.c	2007-08-20 19:25:06.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./freshclam/manager.c	2007-10-08 14:56:12.000000000 +0100
+--- ./freshclam/manager.c	2007-10-30 13:40:42.000000000 +0000
 ***************
 *** 210,216 ****
   		break;
@@ -100,7 +100,7 @@
   }
   
 *** /home/njh/src/clamav-devel/trunk/./clamd/scanner.c	2007-09-02 12:37:44.000000000 +0100
---- ./clamd/scanner.c	2007-09-25 13:59:25.000000000 +0100
+--- ./clamd/scanner.c	2007-09-25 14:59:24.000000000 +0100
 ***************
 *** 475,487 ****
       if(!bound && !portscan) {
@@ -186,8 +186,8 @@
   	mdprintf(odesc, "cli_gentempfd() failed. ERROR\n");
   	logg("!ScanStream %u: Can't create temporary file.\n", port);
   	return -1;
-*** /home/njh/src/clamav-devel/trunk/./clamd/clamd.c	2007-09-07 17:10:20.000000000 +0100
---- ./clamd/clamd.c	2007-09-07 18:26:22.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./clamd/clamd.c	2007-10-07 12:48:24.000000000 +0100
+--- ./clamd/clamd.c	2007-10-30 13:41:55.000000000 +0000
 ***************
 *** 35,41 ****
   #include <sys/stat.h>
@@ -232,8 +232,8 @@
   	struct cl_engine *engine = NULL;
   	const char *dbdir, *cfgfile;
 ***************
-*** 285,292 ****
---- 292,301 ----
+*** 287,294 ****
+--- 294,303 ----
   
       logg("clamd daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
   
@@ -244,11 +244,11 @@
   
       if(logg_size)
   	logg("Log file size limited to %d bytes.\n", logg_size);
-*** /home/njh/src/clamav-devel/trunk/./clamd/server-th.c	2007-09-07 17:12:04.000000000 +0100
---- ./clamd/server-th.c	2007-09-10 11:01:04.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./clamd/server-th.c	2007-10-07 12:48:24.000000000 +0100
+--- ./clamd/server-th.c	2007-10-07 13:52:44.000000000 +0100
 ***************
-*** 506,511 ****
---- 506,516 ----
+*** 507,512 ****
+--- 507,517 ----
       sigaction(SIGHUP, &sigact, NULL);
       sigaction(SIGPIPE, &sigact, NULL);
       sigaction(SIGUSR2, &sigact, NULL);
@@ -261,7 +261,7 @@
   
       pthread_mutex_init(&exit_mutex, NULL);
 ***************
-*** 581,587 ****
+*** 582,588 ****
   		client_conn->socketds = socketds;
   		client_conn->nsockets = nsockets;
   		if (!thrmgr_dispatch(thr_pool, client_conn)) {
@@ -269,7 +269,7 @@
   		    free(client_conn);
   		    logg("!thread dispatch failed\n");
   		}
---- 586,592 ----
+--- 587,593 ----
   		client_conn->socketds = socketds;
   		client_conn->nsockets = nsockets;
   		if (!thrmgr_dispatch(thr_pool, client_conn)) {
@@ -278,7 +278,7 @@
   		    logg("!thread dispatch failed\n");
   		}
 ***************
-*** 589,597 ****
+*** 590,598 ****
   
   	pthread_mutex_lock(&exit_mutex);
   	if(progexit) {
@@ -288,7 +288,7 @@
   	    pthread_mutex_unlock(&exit_mutex);
   	    break;
   	}
---- 594,606 ----
+--- 595,607 ----
   
   	pthread_mutex_lock(&exit_mutex);
   	if(progexit) {
@@ -303,7 +303,7 @@
   	    break;
   	}
 ***************
-*** 615,622 ****
+*** 616,623 ****
   	    engine = reload_db(engine, dboptions, copt, FALSE, &ret);
   	    if(ret) {
   		logg("Terminating because of a fatal error.\n");
@@ -312,7 +312,7 @@
   		break;
   	    }
   	    pthread_mutex_lock(&reload_mutex);
---- 624,633 ----
+--- 625,634 ----
   	    engine = reload_db(engine, dboptions, copt, FALSE, &ret);
   	    if(ret) {
   		logg("Terminating because of a fatal error.\n");
@@ -324,7 +324,7 @@
   	    }
   	    pthread_mutex_lock(&reload_mutex);
 *** /home/njh/src/clamav-devel/trunk/./clamd/tcpserver.c	2007-06-14 11:03:52.000000000 +0100
---- ./clamd/tcpserver.c	2007-04-21 08:49:08.000000000 +0100
+--- ./clamd/tcpserver.c	2007-04-21 09:49:08.000000000 +0100
 ***************
 *** 51,56 ****
 --- 51,60 ----
@@ -373,7 +373,7 @@
       }
   
 *** /home/njh/src/clamav-devel/trunk/./clamdscan/clamdscan.c	2007-06-14 11:04:11.000000000 +0100
---- ./clamdscan/clamdscan.c	2007-04-21 13:59:56.000000000 +0100
+--- ./clamdscan/clamdscan.c	2007-04-21 14:59:56.000000000 +0100
 ***************
 *** 15,30 ****
    *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
@@ -504,8 +504,8 @@
       exit(ret);
   }
   
-*** /home/njh/src/clamav-devel/trunk/./clamdscan/client.c	2007-09-07 17:10:19.000000000 +0100
---- ./clamdscan/client.c	2007-09-07 17:47:34.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./clamdscan/client.c	2007-10-09 08:24:58.000000000 +0100
+--- ./clamdscan/client.c	2007-10-30 13:43:42.000000000 +0000
 ***************
 *** 15,36 ****
 --- 15,44 ----
@@ -667,7 +667,7 @@
   	free(scancmd);
   	return -1;
 ***************
-*** 199,205 ****
+*** 194,207 ****
   	char buff[4096], *pt;
   
   
@@ -675,7 +675,14 @@
   	logg("^Can't write to the socket.\n");
   	return 2;
       }
---- 275,281 ----
+  
+      while(loopw) {
+  	memset(buff, 0, sizeof(buff));
+! 	if(read(sockd, buff, sizeof(buff)) > 0) {
+  	    if((pt = strstr(buff, "PORT"))) {
+  		pt += 5;
+  		sscanf(pt, "%d", &port);
+--- 270,283 ----
   	char buff[4096], *pt;
   
   
@@ -683,8 +690,15 @@
   	logg("^Can't write to the socket.\n");
   	return 2;
       }
+  
+      while(loopw) {
+  	memset(buff, 0, sizeof(buff));
+! 	if(recv(sockd, buff, sizeof(buff), 0) > 0) {
+  	    if((pt = strstr(buff, "PORT"))) {
+  		pt += 5;
+  		sscanf(pt, "%d", &port);
 ***************
-*** 251,257 ****
+*** 247,253 ****
       }
   
       if(connect(wsockd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) < 0) {
@@ -692,7 +706,7 @@
   	perror("connect()");
   	logg("^Can't connect to clamd [port: %d].\n", port);
   	return -1;
---- 327,333 ----
+--- 323,329 ----
       }
   
       if(connect(wsockd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) < 0) {
@@ -701,7 +715,7 @@
   	logg("^Can't connect to clamd [port: %d].\n", port);
   	return -1;
 ***************
-*** 260,270 ****
+*** 256,266 ****
       while((bread = read(0, buff, sizeof(buff))) > 0) {
   	if(write(wsockd, buff, bread) <= 0) {
   	    logg("^Can't write to the socket.\n");
@@ -713,7 +727,7 @@
   
       memset(buff, 0, sizeof(buff));
       while((bread = read(sockd, buff, sizeof(buff))) > 0) {
---- 336,346 ----
+--- 332,342 ----
       while((bread = read(0, buff, sizeof(buff))) > 0) {
   	if(write(wsockd, buff, bread) <= 0) {
   	    logg("^Can't write to the socket.\n");
@@ -726,8 +740,8 @@
       memset(buff, 0, sizeof(buff));
       while((bread = read(sockd, buff, sizeof(buff))) > 0) {
 ***************
-*** 309,315 ****
---- 385,393 ----
+*** 305,311 ****
+--- 381,389 ----
   
   static int dconnect(const struct optstruct *opt)
   {
@@ -736,10 +750,10 @@
 + #endif
   	struct sockaddr_in server2;
   	struct hostent *he;
-  	struct cfgstruct *copt, *cpt;
+  	struct cfgstruct *copt;
 ***************
-*** 325,337 ****
---- 403,420 ----
+*** 322,334 ****
+--- 400,417 ----
   	return -1;
       }
   
@@ -759,7 +773,7 @@
   	server.sun_family = AF_UNIX;
   	strncpy(server.sun_path, cpt->strarg, sizeof(server.sun_path));
 ***************
-*** 350,357 ****
+*** 347,354 ****
   	    freecfg(copt);
   	    return -1;
   	}
@@ -768,7 +782,7 @@
   
   	if((sockd = socket(SOCKET_INET, SOCK_STREAM, 0)) < 0) {
   	    perror("socket()");
---- 433,450 ----
+--- 430,447 ----
   	    freecfg(copt);
   	    return -1;
   	}
@@ -788,7 +802,7 @@
   	if((sockd = socket(SOCKET_INET, SOCK_STREAM, 0)) < 0) {
   	    perror("socket()");
 ***************
-*** 365,371 ****
+*** 362,368 ****
   
   	if((cpt = cfgopt(copt, "TCPAddr"))->enabled) {
   	    if ((he = gethostbyname(cpt->strarg)) == 0) {
@@ -796,7 +810,7 @@
   		perror("gethostbyname()");
   		logg("^Can't lookup clamd hostname.\n");
   		freecfg(copt);
---- 458,464 ----
+--- 455,461 ----
   
   	if((cpt = cfgopt(copt, "TCPAddr"))->enabled) {
   	    if ((he = gethostbyname(cpt->strarg)) == 0) {
@@ -805,7 +819,7 @@
   		logg("^Can't lookup clamd hostname.\n");
   		freecfg(copt);
 ***************
-*** 375,381 ****
+*** 372,378 ****
   	}
   
   	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
@@ -813,7 +827,7 @@
   	    perror("connect()");
   	    logg("^Can't connect to clamd.\n");
   	    freecfg(copt);
---- 468,474 ----
+--- 465,471 ----
   	}
   
   	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
@@ -822,7 +836,7 @@
   	    logg("^Can't connect to clamd.\n");
   	    freecfg(copt);
 ***************
-*** 422,428 ****
+*** 419,425 ****
   	else
   	    errors++;
   
@@ -830,7 +844,7 @@
   
   #if defined(ENABLE_FD_PASSING) && defined(HAVE_SENDMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN)
       } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
---- 515,521 ----
+--- 512,518 ----
   	else
   	    errors++;
   
@@ -839,9 +853,9 @@
   #if defined(ENABLE_FD_PASSING) && defined(HAVE_SENDMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN)
       } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
 ***************
-*** 502,508 ****
---- 595,603 ----
-  	struct stat fstat, mfstat;
+*** 500,506 ****
+--- 593,601 ----
+  	struct stat ofstat, mfstat;
   	int n, len, movefilename_size;
   	int moveflag = opt_check(opt, "move");
 + #ifndef	C_WINDOWS
@@ -851,14 +865,15 @@
   
       if((moveflag && !(movedir = opt_arg(opt, "move"))) ||
 ***************
-*** 588,596 ****
---- 683,693 ----
-  	chmod(movefilename, fstat.st_mode);
-  	chown(movefilename, fstat.st_uid, fstat.st_gid);
+*** 587,595 ****
+--- 682,693 ----
+  	if(chown(movefilename, ofstat.st_uid, ofstat.st_gid) == -1)
+  	    logg("^chown() failed for %s: %s\n", movefilename, strerror(errno));
   
++ 
 + #ifndef	C_WINDOWS
-  	ubuf.actime = fstat.st_atime;
-  	ubuf.modtime = fstat.st_mtime;
+  	ubuf.actime = ofstat.st_atime;
+  	ubuf.modtime = ofstat.st_mtime;
   	utime(movefilename, &ubuf);
 + #endif
   
