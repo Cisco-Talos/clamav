@@ -224,6 +224,10 @@ static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
       return CL_CLEAN;
     comp = *buf;
     UNP.csize = cli_readint32((char *)buf+1) ^ 0x45aa;
+    if ((int32_t)UNP.csize<0) {
+      cli_dbgmsg("autoit: bad file size - giving up\n");
+      return CL_CLEAN;
+    }
     cli_dbgmsg("autoit: compressed size: %x\n", UNP.csize);
     cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32((char *)buf+5) ^ 0x45aa);
     cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32((char *)buf+9) ^ 0xc3d2);
@@ -272,12 +276,12 @@ static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
       UNP.bitmap.full = 0;
       UNP.bits_avail = 0;
       UNP.error = 0;
-  
+
       while (!UNP.error && UNP.cur_output < UNP.usize) {
 	if (getbits(&UNP, 1)) {
 	  uint32_t bb, bs, addme=0;
 	  bb = getbits(&UNP, 15);
-      
+
 	  if ((bs = getbits(&UNP, 2))==3) {
 	    addme = 3;
 	    if((bs = getbits(&UNP, 3))==7) {
@@ -326,7 +330,7 @@ static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
 
     /* FIXME: TODO send to text notmalization */
 
-    /* FIXME: ad-interim solution. ideally we should only u2a unicode scripts */
+    /* FIXME: ad-interim solution. ideally we should detect text and turn it to ascii */
     UNP.usize = u2a(UNP.outputbuf, UNP.usize);
 
     snprintf(tempfile, 1023, "%s/autoit.%.3u", tmpd, files);
