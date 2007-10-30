@@ -25,6 +25,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdio.h>
+/* Gianluigi, you may want to include winsuck here or just make ntohl a macro */
 #include <arpa/inet.h>
 #include <string.h>
 
@@ -41,12 +42,23 @@
 
 
 /* FIXME: use unicode detection and normalization from edwin */
-static void u2a(uint8_t *b, unsigned int s) {
-  unsigned int i;
-  if(s<2) return;
-  if(b[1]!=0) return;
-  for (i = 0 ; i < s; i+=2) b[i/2] = b[i];
-  b[i/2]='\0';
+static unsigned int u2a(uint8_t *d, unsigned int l) {
+  unsigned int i=l;
+  uint8_t *s = d;
+  if(l<2) return l;
+  if(d[0] == 0xff && d[1] == 0xfe) {
+    s += 2;
+    l -= 2;
+  } else if (d[1] != 0) {
+    return l;
+  }
+    
+  if(l<2) return i;
+
+  for (i = 0 ; i < l; i += 2)
+    *d++ = s[i];
+  *d = '\0';
+  return (unsigned int)(d-s);
 }
     
 
@@ -154,12 +166,13 @@ static uint32_t getbits(struct UNP *UNP, uint32_t size) {
 *********************/
 
 
-static int ea05(int desc, cli_ctx *ctx) {
+static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
   uint8_t b[300], comp;
   uint8_t *buf = b;
   uint32_t s, m4sum=0;
   int i;
-  char *tempfile;
+  unsigned int files=0;
+  char tempfile[1024];
   struct UNP UNP;
 
   if (cli_readn(desc, buf, 16)!=16)
@@ -168,14 +181,14 @@ static int ea05(int desc, cli_ctx *ctx) {
   for (i=0; i<16; i++)
     m4sum += buf[i];
 
-  while(1) {
+  while(!ctx->limits || !ctx->limits->maxfiles || files < ctx->limits->maxfiles) {
     buf = b;
     if (cli_readn(desc, buf, 8)!=8)
       return CL_CLEAN;
 
     /*     MT_decrypt(buf,4,0x16fa);  waste of time */
     if((uint32_t)cli_readint32((char *)buf) != 0xceb06dff) {
-      cli_dbgmsg("autoit: no FILE magic found, giving up\n");
+      cli_dbgmsg("autoit: no FILE magic found, extraction complete\n");
       return CL_CLEAN;
     }
 
@@ -214,12 +227,14 @@ static int ea05(int desc, cli_ctx *ctx) {
     cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32((char *)buf+5) ^ 0x45aa);
     cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32((char *)buf+9) ^ 0xc3d2);
 
+    lseek(desc, 16, SEEK_CUR);
+
     if(ctx->limits && ctx->limits->maxfilesize && UNP.csize > ctx->limits->maxfilesize) {
-      cli_dbgmsg("autoit: sizes exceeded (%lu > %lu)\n", (unsigned long int)UNP.csize, ctx->limits->maxfilesize);
-      return CL_CLEAN;
+      cli_dbgmsg("autoit: skipping file due to size limit (%u, max: %lu)\n", UNP.csize, ctx->limits->maxfilesize);
+      lseek(desc, UNP.csize, SEEK_CUR);
+      continue;
     }
 
-    lseek(desc, 16, SEEK_CUR);
     if (!(buf = cli_malloc(UNP.csize)))
       return CL_EMEM;
     if (cli_readn(desc, buf, UNP.csize)!=(int)UNP.csize) {
@@ -234,14 +249,16 @@ static int ea05(int desc, cli_ctx *ctx) {
       if (cli_readint32((char *)buf)!=0x35304145) {
 	cli_dbgmsg("autoit: bad magic or unsupported version\n");
 	free(buf);
-	return CL_EFORMAT;
+	continue;
       }
 
       UNP.usize = ntohl(*(uint32_t *)(buf+4));
       if(ctx->limits && ctx->limits->maxfilesize && UNP.usize > ctx->limits->maxfilesize) {
+	cli_dbgmsg("autoit: skipping file due to size limit (%u, max: %lu)\n", UNP.csize, ctx->limits->maxfilesize);
 	free(buf);
-	return CL_CLEAN;
+	continue;
       }
+
       if (!(UNP.outputbuf = cli_malloc(UNP.usize))) {
 	free(buf);
 	return CL_EMEM;
@@ -296,51 +313,51 @@ static int ea05(int desc, cli_ctx *ctx) {
       if (UNP.error) {
 	cli_dbgmsg("autoit: decompression error\n");
 	free(UNP.outputbuf);
-	return CL_CLEAN;
+	continue;
       }
     } else {
-      cli_dbgmsg("autoit: script is not compressed\n");
+      cli_dbgmsg("autoit: file is not compressed\n");
       UNP.outputbuf = buf;
       UNP.usize = UNP.csize;
     }
 
+    files++;
 
     /* FIXME: TODO send to text notmalization */
 
-    if(!(tempfile = cli_gentemp(NULL))) {
-      free(UNP.outputbuf);
-      return CL_EMEM;
-    }
+    /* FIXME: ad-interim solution. ideally we should only u2a unicode scripts */
+    UNP.usize = u2a(UNP.outputbuf, UNP.usize);
+
+    snprintf(tempfile, 1023, "%s/autoit.%.3u", tmpd, files);
+    tempfile[1023]='\0';
     if((i = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
       cli_dbgmsg("autoit: Can't create file %s\n", tempfile);
-      free(tempfile);
       free(UNP.outputbuf);
       return CL_EIO;
     }
     if(cli_writen(i, UNP.outputbuf, UNP.usize) != (int32_t)UNP.usize) {
       cli_dbgmsg("autoit: cannot write %d bytes\n", UNP.usize);
       close(i);
-      free(tempfile);
       free(UNP.outputbuf);
       return CL_EIO;
     }
     free(UNP.outputbuf);
     if(cli_leavetemps_flag)
-      cli_dbgmsg("autoit: script extracted to %s\n", tempfile);
+      cli_dbgmsg("autoit: file extracted to %s\n", tempfile);
     else 
-      cli_dbgmsg("autoit: script successfully extracted\n");
+      cli_dbgmsg("autoit: file successfully extracted\n");
     fsync(i);
     lseek(i, 0, SEEK_SET);
     if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
       close(i);
       if(!cli_leavetemps_flag) unlink(tempfile);
-      free(tempfile);
       return CL_VIRUS;
     }
     close(i);
     if(!cli_leavetemps_flag) unlink(tempfile);
-    free(tempfile);
   }
+  cli_dbgmsg("autoit: files limit reached (max: %u)\n", ctx->limits->maxfiles);
+  return CL_EMAXFILES;
 }
 
 
@@ -441,12 +458,13 @@ static void LAME_decrypt (uint8_t *cypher, uint32_t size, uint16_t seed) {
  autoit3 EA06 handler 
 *********************/
 
-static int ea06(int desc, cli_ctx *ctx) {
-  uint8_t b[600], comp, script=0;
+static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
+  uint8_t b[600], comp, script;
   uint8_t *buf;
   uint32_t s;
   int i;
-  char *tempfile;
+  unsigned int files=0;
+  char tempfile[1024];
   const char prefixes[] = { '\0', '\0', '@', '$', '\0', '.', '"', '#' };
   const char *opers[] = { ",", "=", ">", "<", "<>", ">=", "<=", "(", ")", "+", "-", "/", "*", "&", "[", "]", "==", "^", "+=", "-=", "/=", "*=", "&=" };
   struct UNP UNP;
@@ -460,7 +478,7 @@ static int ea06(int desc, cli_ctx *ctx) {
   /*   buf+=0x10; */
   lseek(desc, 16, SEEK_CUR);   /* for now we just skip the garbage */
 
-  while (1) {
+  while(!ctx->limits || !ctx->limits->maxfiles || files < ctx->limits->maxfiles) {
     /* FIXME: count files here */
     buf = b;
     if (cli_readn(desc, buf, 8)!=8)
@@ -472,6 +490,7 @@ static int ea06(int desc, cli_ctx *ctx) {
     }
 
     s = cli_readint32((char *)buf+4) ^ 0xadbc;
+    script = 0;
     if(s<300) {
       if (cli_readn(desc, buf, s*2)!=(int)s*2)
 	return CL_CLEAN;
@@ -479,7 +498,7 @@ static int ea06(int desc, cli_ctx *ctx) {
       buf[s*2]='\0'; buf[s*2+1]='\0';
       u2a(buf,s*2); /* FIXME: GET RID OF THIS */
       cli_dbgmsg("autoit: magic string '%s'\n", buf);
-      if (s==19 && memcmp(">>>AUTOIT SCRIPT<<<", buf, 19))
+      if (s==19 && !memcmp(">>>AUTOIT SCRIPT<<<", buf, 19))
 	script = 1;
     } else {
       cli_dbgmsg("autoit: magic string too long to print\n");
@@ -508,12 +527,15 @@ static int ea06(int desc, cli_ctx *ctx) {
     cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32((char *)buf+5) ^ 0x87bc);
     cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32((char *)buf+9) ^ 0xa685);
 
+    lseek(desc, 16, SEEK_CUR);
+
     if(ctx->limits && ctx->limits->maxfilesize && UNP.csize > ctx->limits->maxfilesize) {
-      cli_dbgmsg("autoit: sizes exceeded (%lu > %lu)\n", (unsigned long int)UNP.csize, ctx->limits->maxfilesize);
-      return CL_CLEAN;
+      cli_dbgmsg("autoit: skipping file due to size limit (%u, max: %lu)\n", UNP.csize, ctx->limits->maxfilesize);
+      lseek(desc, UNP.csize, SEEK_CUR);
+      continue;
     }
 
-    lseek(desc, 16, SEEK_CUR);
+    files++;
     if (!(buf = cli_malloc(UNP.csize)))
       return CL_EMEM;
     if (cli_readn(desc, buf, UNP.csize)!=(int)UNP.csize) {
@@ -528,13 +550,13 @@ static int ea06(int desc, cli_ctx *ctx) {
       if (cli_readint32((char *)buf)!=0x36304145) {
 	cli_dbgmsg("autoit: bad magic or unsupported version\n");
 	free(buf);
-	return CL_EFORMAT;
+	continue;
       }
 
       UNP.usize = ntohl(*(uint32_t *)(buf+4));
       if(ctx->limits && ctx->limits->maxfilesize && UNP.usize > ctx->limits->maxfilesize) {
 	free(buf);
-	return CL_CLEAN;
+	continue;
       }
       if (!(UNP.outputbuf = cli_malloc(UNP.usize))) {
 	free(buf);
@@ -589,7 +611,7 @@ static int ea06(int desc, cli_ctx *ctx) {
       if (UNP.error) {
 	cli_dbgmsg("autoit: decompression error\n");
 	free(UNP.outputbuf);
-	return CL_CLEAN;
+	continue;
       }
     } else {
       cli_dbgmsg("autoit: file is not compressed\n");
@@ -600,7 +622,7 @@ static int ea06(int desc, cli_ctx *ctx) {
     if (UNP.usize<4) {
       cli_dbgmsg("autoit: file is too short\n");
       free(UNP.outputbuf);
-      return CL_CLEAN;
+      continue;
     }
 
     if (script) {
@@ -792,40 +814,36 @@ static int ea06(int desc, cli_ctx *ctx) {
 
     /* FIXME: TODO send to text notmalization */
 
-    if(!(tempfile = cli_gentemp(NULL))) {
-      free(buf);
-      return CL_EMEM;
-    }
+    snprintf(tempfile, 1023, "%s/autoit.%.3u", tmpd, files);
+    tempfile[1023]='\0';
     if((i = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
       cli_dbgmsg("autoit: Can't create file %s\n", tempfile);
-      free(tempfile);
       free(buf);
       return CL_EIO;
     }
     if(cli_writen(i, buf, UNP.cur_output) != (int32_t)UNP.cur_output) {
       cli_dbgmsg("autoit: cannot write %d bytes\n", UNP.usize);
       close(i);
-      free(tempfile);
       free(buf);
       return CL_EIO;
     }
     free(buf);
     if(cli_leavetemps_flag)
-      cli_dbgmsg("autoit: script extracted to %s\n", tempfile);
+      cli_dbgmsg("autoit: %s extracted to %s\n", (script)?"script":"file", tempfile);
     else 
-      cli_dbgmsg("autoit: script successfully extracted\n");
+      cli_dbgmsg("autoit: %s successfully extracted\n", (script)?"script":"file");
     fsync(i);
     lseek(i, 0, SEEK_SET);
     if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
       close(i);
       if(!cli_leavetemps_flag) unlink(tempfile);
-      free(tempfile);
       return CL_VIRUS;
     }
     close(i);
     if(!cli_leavetemps_flag) unlink(tempfile);
-    free(tempfile);
   }
+  cli_dbgmsg("autoit: Files limit reached (max: %u)\n", ctx->limits->maxfiles);
+  return CL_EMAXFILES;
 }
 
 #endif /* FPU_WORDS_BIGENDIAN */
@@ -836,11 +854,24 @@ static int ea06(int desc, cli_ctx *ctx) {
 
 int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
   uint8_t version;
-  int (*func)(int desc, cli_ctx *ctx);
+  int (*func)(int desc, cli_ctx *ctx, char *), r;
+  char *tmpd;
 
   lseek(desc, offset, SEEK_SET);
   if (cli_readn(desc, &version, 1)!=1)
     return CL_EIO;
+
+  cli_dbgmsg("in scanautoit()\n");
+
+  if (!(tmpd = cli_gentemp(NULL)))    
+    return CL_ETMPDIR;
+  if (mkdir(tmpd, 0700)) {
+    cli_dbgmsg("autoit: Can't create temporary directory %s\n", tmpd);
+    free(tmpd);
+    return CL_ETMPDIR;
+  }
+  if (cli_leavetemps_flag)
+    cli_dbgmsg("autoit: Extracting files to %s\n", tmpd);
 
   switch(version) {
   case 0x35:
@@ -860,5 +891,11 @@ int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
     return CL_CLEAN;
   }
 
-  return func(desc, ctx);
+  r = func(desc, ctx, tmpd);
+
+  if (!cli_leavetemps_flag)
+    cli_rmdirs(tmpd);
+
+  free(tmpd);
+  return r;
 }
