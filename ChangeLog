@@ -1,3 +1,7 @@
+Wed Oct 31 17:45:45 GMT 2007 (njh)
+----------------------------------
+  * libclamav/vba_extract.c:	Tidy up and removed some unused code
+
 Wed Oct 31 16:08:39 CET 2007 (acab)
 -----------------------------------
   * libclamav/autoit: misc fixes

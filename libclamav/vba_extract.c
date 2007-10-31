@@ -201,12 +201,12 @@ static void vba56_test_middle(int fd)
 
 static int vba_read_project_strings(int fd, int is_mac)
 {
-	uint16_t length;
-	unsigned char *buff;
-	char *name;
-	uint32_t offset;
-
 	for (;;) {
+		uint32_t offset;
+		uint16_t length;
+		unsigned char *buff;
+		char *name;
+
 		if (cli_readn(fd, &length, 2) != 2) {
 			return FALSE;
 		}
@@ -243,6 +243,8 @@ static int vba_read_project_strings(int fd, int is_mac)
 		/* TODO: Need to check if types H(same as G) and D(same as C) exist */
 		if (name && (!strncmp ("*\\G", name, 3) || !strncmp ("*\\H", name, 3)
 				|| !strncmp("*\\C", name, 3) || !strncmp("*\\D", name, 3))) {
+			char namebuff[10];
+
 			if (cli_readn(fd, &length, 2) != 2) {
 				return FALSE;
 			}
@@ -252,20 +254,12 @@ static int vba_read_project_strings(int fd, int is_mac)
 				free(name);
 				continue;
 			}
-			buff = (unsigned char *) cli_malloc(10);
-			if (!buff) {
+			if (cli_readn(fd, namebuff, sizeof(namebuff)) != sizeof(namebuff)) {
+				cli_errmsg("failed to read namebuff\n");
 				free(name);
 				close(fd);
 				return FALSE;
 			}
-			if (cli_readn(fd, buff, 10) != 10) {
-				cli_errmsg("failed to read blob\n");
-				free(buff);
-				free(name);
-				close(fd);
-				return FALSE;
-			}
-			free(buff);
 		} else {
 			/* Unknown type - probably ran out of strings - rewind */
 			lseek(fd, -(length+2), SEEK_CUR);
@@ -292,25 +286,19 @@ vba_project_t *vba56_dir_read(const char *dir)
 	uint32_t offset;
 	int i, fd, is_mac;
 	vba_project_t *vba_project;
-	char *fullname;
 	struct vba56_header v56h;
+	char fullname[NAME_MAX + 1];
 
 	cli_dbgmsg("in vba56_dir_read()\n");
 
-	fullname = (char *) cli_malloc(strlen(dir) + 14);
-	if (!fullname) {
-		return NULL;
-	}
-	sprintf(fullname, "%s/_VBA_PROJECT", dir);
+	snprintf(fullname, sizeof(fullname) - 1, "%s/_VBA_PROJECT", dir);
         fd = open(fullname, O_RDONLY|O_BINARY);
 
         if (fd == -1) {
                 cli_dbgmsg("Can't open %s\n", fullname);
-		free(fullname);
 		/* vba56_old_dir_read(dir); */
                 return NULL;
         }
-	free(fullname);
 
 	if(cli_readn(fd, &v56h, sizeof(struct vba56_header)) != sizeof(struct vba56_header)) {
 		close(fd);
@@ -911,7 +899,7 @@ char *ppt_vba_read(const char *dir)
 	fd = open(fullname, O_RDONLY|O_BINARY);
 	free(fullname);
 	if (fd == -1) {
-		cli_dbgmsg("Open  PowerPoint Document failed\n");
+		cli_dbgmsg("Open PowerPoint Document failed\n");
 		return NULL;
 	}
 
@@ -926,12 +914,9 @@ char *ppt_vba_read(const char *dir)
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 typedef struct mso_fib_tag {
-	uint16_t magic;
-	uint16_t version;
-	uint16_t product;
-	uint16_t lid;
-	uint16_t next;
-	uint16_t status;
+	char ununsed[sizeof(uint16_t) + sizeof(uint16_t) +
+		sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint16_t) +
+		sizeof(uint16_t)];
 	/* block of 268 bytes - ignore */
 	uint32_t macro_offset;
 	uint32_t macro_len;
@@ -1007,41 +992,12 @@ static	void	wm_free_macro_info(macro_info_t *macro_info);
 
 static void wm_print_fib(mso_fib_t *fib)
 {
-	cli_dbgmsg("magic: 0x%.4x\n", fib->magic);
-	cli_dbgmsg("version: 0x%.4x\n", fib->version);
-	cli_dbgmsg("product: 0x%.4x\n", fib->product);
-	cli_dbgmsg("lid: 0x%.4x\n", fib->lid);
 	cli_dbgmsg("macro offset: 0x%.4x\n", fib->macro_offset);
 	cli_dbgmsg("macro len: 0x%.4x\n\n", fib->macro_len);
 }
 
 static int wm_read_fib(int fd, mso_fib_t *fib)
 {
-	if (cli_readn(fd, &fib->magic, 2) != 2) {
-		cli_dbgmsg("read wm_fib failed\n");
-		return FALSE;
-	}
-	if (cli_readn(fd, &fib->version, 2) != 2) {
-		cli_dbgmsg("read wm_fib failed\n");
-		return FALSE;
-	}
-	if (cli_readn(fd, &fib->product, 2) != 2) {
-		cli_dbgmsg("read wm_fib failed\n");
-		return FALSE;
-	}
-	if (cli_readn(fd, &fib->lid, 2) != 2) {
-		cli_dbgmsg("read wm_fib failed\n");
-		return FALSE;
-	}
-	if (cli_readn(fd, &fib->next, 2) != 2) {
-		cli_dbgmsg("read wm_fib failed\n");
-		return FALSE;
-	}
-	if (cli_readn(fd, &fib->status, 2) != 2) {
-		cli_dbgmsg("read wm_fib failed\n");
-		return FALSE;
-	}
-
 	/* don't need the information is this block, so seek forward */
 	if (lseek(fd, 0x118, SEEK_SET) != 0x118) {
 		cli_dbgmsg("lseek wm_fib failed\n");
@@ -1056,12 +1012,6 @@ static int wm_read_fib(int fd, mso_fib_t *fib)
 		cli_dbgmsg("read wm_fib failed\n");
 		return FALSE;
 	}
-	fib->magic = vba_endian_convert_16(fib->magic, FALSE);
-	fib->version = vba_endian_convert_16(fib->version, FALSE);
-	fib->product = vba_endian_convert_16(fib->product, FALSE);
-	fib->lid = vba_endian_convert_16(fib->lid, FALSE);
-	fib->next = vba_endian_convert_16(fib->next, FALSE);
-	fib->status = vba_endian_convert_16(fib->status, FALSE);
 	fib->macro_offset = vba_endian_convert_32(fib->macro_offset, FALSE);
 	fib->macro_len = vba_endian_convert_32(fib->macro_len, FALSE);
 
@@ -1472,7 +1422,6 @@ vba_project_t *wm_dir_read(const char *dir)
 	off_t end_offset;
 	unsigned char start_id, info_id;
 	macro_info_t *macro_info=NULL;
-	menu_info_t *menu_info=NULL;
 	macro_extnames_t *macro_extnames=NULL;
 	macro_intnames_t *macro_intnames=NULL;
 	vba_project_t *vba_project=NULL;
@@ -1512,6 +1461,8 @@ vba_project_t *wm_dir_read(const char *dir)
 	cli_dbgmsg("start_id: %d\n", start_id);
 
 	while ((lseek(fd, 0, SEEK_CUR) < end_offset) && !done) {
+		menu_info_t *menu_info;
+
 		if (cli_readn(fd, &info_id, 1) != 1) {
 			cli_dbgmsg("read macro_info failed\n");
 			close(fd);
@@ -1531,9 +1482,10 @@ vba_project_t *wm_dir_read(const char *dir)
 				break;
 			case 0x05:
 				menu_info = wm_read_menu_info(fd);
-				if (menu_info == NULL) {
+				if(menu_info)
+					wm_free_menu_info(menu_info);
+				else
 					done = TRUE;
-				}
 				break;
 			case 0x10:
 				macro_extnames = wm_read_macro_extnames(fd);
@@ -1604,23 +1556,20 @@ vba_project_t *wm_dir_read(const char *dir)
 			free(vba_project->dir);
 			free(vba_project);
 			vba_project = NULL;
-			goto abort;
-		}
-		vba_project->count = macro_info->count;
-		for (i=0 ; i < macro_info->count ; i++) {
-			vba_project->name[i] = cli_strdup("WordDocument");
-			vba_project->offset[i] = macro_info->macro_entry[i].offset;
-			vba_project->length[i] = macro_info->macro_entry[i].len;
-			vba_project->key[i] = macro_info->macro_entry[i].key;
+		} else {
+			vba_project->count = macro_info->count;
+			for(i = 0; i < macro_info->count; i++) {
+				vba_project->name[i] = cli_strdup("WordDocument");
+				vba_project->offset[i] = macro_info->macro_entry[i].offset;
+				vba_project->length[i] = macro_info->macro_entry[i].len;
+				vba_project->key[i] = macro_info->macro_entry[i].key;
+			}
 		}
 	}
 	/* Fall through */
 abort:
 	if (macro_info) {
 		wm_free_macro_info(macro_info);
-	}
-	if (menu_info) {
-		wm_free_menu_info(menu_info);
 	}
 	if (macro_extnames) {
 		wm_free_extnames(macro_extnames);
@@ -1646,7 +1595,7 @@ unsigned char *wm_decrypt_macro(int fd, uint32_t offset, uint32_t len,
 		return NULL;
 	}
 
-	if (cli_readn(fd, buff, len) != (int64_t)len) {
+	if (cli_readn(fd, buff, len) != (int)len) {
 		free(buff);
 		return NULL;
 	}
