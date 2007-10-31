@@ -25,9 +25,10 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdio.h>
-/* Gianluigi, you may want to include winsuck here or just make ntohl a macro */
-#include <arpa/inet.h>
+
+#if HAVE_STRING_H
 #include <string.h>
+#endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -257,7 +258,7 @@ static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
 	continue;
       }
 
-      UNP.usize = ntohl(*(uint32_t *)(buf+4));
+      UNP.usize = be32_to_host(*(uint32_t *)(buf+4));
       if(ctx->limits && ctx->limits->maxfilesize && UNP.usize > ctx->limits->maxfilesize) {
 	cli_dbgmsg("autoit: skipping file due to size limit (%u, max: %lu)\n", UNP.csize, ctx->limits->maxfilesize);
 	free(buf);
@@ -484,24 +485,25 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
   lseek(desc, 16, SEEK_CUR);   /* for now we just skip the garbage */
 
   while(!ctx->limits || !ctx->limits->maxfiles || files < ctx->limits->maxfiles) {
-    /* FIXME: count files here */
     buf = b;
     if (cli_readn(desc, buf, 8)!=8)
       return CL_CLEAN;
-    /*     LAME_decrypt(buf, 4, 0x18ee); FIXME: waste of time */
+    /*     LAME_decrypt(buf, 4, 0x18ee); waste of time */
     if(cli_readint32((char *)buf) != 0x52ca436b) {
       cli_dbgmsg("autoit: no FILE magic found, giving up\n");
       return CL_CLEAN;
     }
 
-    s = cli_readint32((char *)buf+4) ^ 0xadbc;
     script = 0;
+
+    s = cli_readint32((char *)buf+4) ^ 0xadbc;
+    if ((int32_t)(s*2)<0)
+      return CL_CLEAN; /* the original code wouldn't seek back here */
     if(s<300) {
       if (cli_readn(desc, buf, s*2)!=(int)s*2)
 	return CL_CLEAN;
       LAME_decrypt(buf,s*2,s+0xb33f);
-      buf[s*2]='\0'; buf[s*2+1]='\0';
-      u2a(buf,s*2); /* FIXME: GET RID OF THIS */
+      u2a(buf,s*2);
       cli_dbgmsg("autoit: magic string '%s'\n", buf);
       if (s==19 && !memcmp(">>>AUTOIT SCRIPT<<<", buf, 19))
 	script = 1;
@@ -513,12 +515,14 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
     if (cli_readn(desc, buf, 4)!=4)
       return CL_CLEAN;
     s = cli_readint32((char *)buf) ^ 0xf820;
+    if ((int32_t)(s*2)<0)
+      return CL_CLEAN; /* the original code wouldn't seek back here */
     if(cli_debug_flag && s<300) {
       if (cli_readn(desc, buf, s*2)!=(int)s*2)
 	return CL_CLEAN;
       LAME_decrypt(buf,s*2,s+0xf479);
       buf[s*2]='\0'; buf[s*2+1]='\0';
-      u2a(buf,s*2); /* FIXME: GET RID OF THIS */
+      u2a(buf,s*2);
       cli_dbgmsg("autoit: original filename '%s'\n", buf);
     } else {
       lseek(desc, s*2, SEEK_CUR);
@@ -528,6 +532,10 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
       return CL_CLEAN;
     comp = *buf;
     UNP.csize = cli_readint32((char *)buf+1) ^ 0x87bc;
+    if ((int32_t)UNP.csize<0) {
+      cli_dbgmsg("autoit: bad file size - giving up\n");
+      return CL_CLEAN;
+    }
     cli_dbgmsg("autoit: compressed size: %x\n", UNP.csize);
     cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32((char *)buf+5) ^ 0x87bc);
     cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32((char *)buf+9) ^ 0xa685);
@@ -558,7 +566,7 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
 	continue;
       }
 
-      UNP.usize = ntohl(*(uint32_t *)(buf+4));
+      UNP.usize = be32_to_host(*(uint32_t *)(buf+4));
       if(ctx->limits && ctx->limits->maxfilesize && UNP.usize > ctx->limits->maxfilesize) {
 	free(buf);
 	continue;
