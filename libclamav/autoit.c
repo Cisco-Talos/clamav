@@ -60,7 +60,7 @@ static unsigned int u2a(uint8_t *dest, unsigned int len) {
     for (i=0; i<j; i+=2)
       cnt+=(src[i]!=0 && src[i+1]==0);
 
-    if (cnt*2 < j)
+    if (cnt*4 < j)
       return len;
   }
 
@@ -71,6 +71,7 @@ static unsigned int u2a(uint8_t *dest, unsigned int len) {
 
   return len;
 }
+
 
 /*********************
    MT realted stuff 
