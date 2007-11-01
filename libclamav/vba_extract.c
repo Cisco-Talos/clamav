@@ -105,7 +105,7 @@ static uint32_t vba_endian_convert_32(uint32_t value, int is_mac)
 }
 
 #define NUM_VBA_VERSIONS 14
-static const vba_version_t vba_version[] = {
+static const vba_version_t vba_version[NUM_VBA_VERSIONS] = {
 	{ { 0x5e, 0x00, 0x00, 0x01 }, "Office 97",              5, FALSE},
 	{ { 0x5f, 0x00, 0x00, 0x01 }, "Office 97 SR1",          5, FALSE },
 	{ { 0x65, 0x00, 0x00, 0x01 }, "Office 2000 alpha?",     6, FALSE },
@@ -160,8 +160,10 @@ get_unicode_name(const char *name, int size, int is_mac)
 				newname[j++] = (char)('a'+((x&0xF)));
 				newname[j++] = (char)('a'+((x>>4)&0xF));
 				newname[j++] = (char)('a'+((x>>8)&0xF));
+#if	0
 				newname[j++] = (char)('a'+((x>>16)&0xF));	/* FIXME: x>>16 MUST == 0 */
 				newname[j++] = (char)('a'+((x>>24)&0xF));	/* FIXME: x>>24 MUST == 0 */
+#endif
 			}
                         newname[j++] = '_';
                 }
@@ -199,7 +201,8 @@ static void vba56_test_middle(int fd)
 	return;
 }
 
-static int vba_read_project_strings(int fd, int is_mac)
+static int
+vba_read_project_strings(int fd, int is_mac)
 {
 	for (;;) {
 		uint32_t offset;
@@ -215,7 +218,6 @@ static int vba_read_project_strings(int fd, int is_mac)
 			lseek(fd, -2, SEEK_CUR);
 			break;
 		}
-		cli_dbgmsg ("length: %d, ", length);
 		buff = (unsigned char *) cli_malloc(length);
 		if (!buff) {
 			cli_errmsg("cli_malloc failed\n");
@@ -230,46 +232,35 @@ static int vba_read_project_strings(int fd, int is_mac)
 			break;
 		}
 		name = get_unicode_name((const char *)buff, length, is_mac);
-		if (name) {
-			cli_dbgmsg("name: %s\n", name);
-		} else {
-			cli_dbgmsg("name: [null]\n");
-		}
+		if (name)
+			cli_dbgmsg("length: %d, name: %s\n", length, name);
+		else
+			cli_dbgmsg("length: %d, name: [null]\n", length);
 		free(buff);
 
 		/* Ignore twelve bytes from entries of type 'G'.
 		   Type 'C' entries come in pairs, the second also
 		   having a 12 byte trailer */
 		/* TODO: Need to check if types H(same as G) and D(same as C) exist */
-		if (name && (!strncmp ("*\\G", name, 3) || !strncmp ("*\\H", name, 3)
-				|| !strncmp("*\\C", name, 3) || !strncmp("*\\D", name, 3))) {
-			char namebuff[10];
-
-			if (cli_readn(fd, &length, 2) != 2) {
-				return FALSE;
-			}
-			length = vba_endian_convert_16(length, is_mac);
-			if ((length != 0) && (length != 65535)) {
-				lseek(fd, -2, SEEK_CUR);
-				free(name);
-				continue;
-			}
-			if (cli_readn(fd, namebuff, sizeof(namebuff)) != sizeof(namebuff)) {
-				cli_errmsg("failed to read namebuff\n");
-				free(name);
-				close(fd);
-				return FALSE;
-			}
-		} else {
+		if((name == NULL) || (memcmp("*\\", name, 2) != 0) ||
+		   (strchr("GCHD", name[2]) == NULL)) {
 			/* Unknown type - probably ran out of strings - rewind */
 			lseek(fd, -(length+2), SEEK_CUR);
-			if (name) {
+			if(name)
 				free(name);
-			}
 			break;
 		}
 		free(name);
-		offset = lseek(fd, 0, SEEK_CUR);
+
+		if (cli_readn(fd, &length, 2) != 2)
+			return FALSE;
+
+		length = vba_endian_convert_16(length, is_mac);
+		if ((length != 0) && (length != 65535)) {
+			lseek(fd, -2, SEEK_CUR);
+			continue;
+		}
+		offset = lseek(fd, 10, SEEK_CUR);
 		cli_dbgmsg("offset: %u\n", offset);
 		vba56_test_middle(fd);
 	}
@@ -336,14 +327,6 @@ vba_project_t *vba56_dir_read(const char *dir)
                                 vba_version[i].vba_version);
 		is_mac = vba_version[i].is_mac;
 	}
-
-#if	0
-	if((vba_endian_convert_16(v56h.ooff, is_mac) != 0xFF00)) {
-		cli_warnmsg("Expected 0xFF00, got 0x%x\n", v56h.ooff);
-		close(fd);
-		return NULL;
-	}
-#endif
 
 	if (!vba_read_project_strings(fd, is_mac)) {
 		close(fd);
@@ -447,17 +430,16 @@ vba_project_t *vba56_dir_read(const char *dir)
 			break;
 		}
 		vba_project->name[i] = get_unicode_name((const char *)buff, length, is_mac);
+		free(buff);
 		if (!vba_project->name[i]) {
 			offset = lseek(fd, 0, SEEK_CUR);
 			vba_project->name[i] = (char *) cli_malloc(18);
 			if(vba_project->name[i] == NULL) {
-				free(buff);
 				break;
 			}
 			snprintf(vba_project->name[i], 18, "clamav-%.10d", (int)offset);
 		}
 		cli_dbgmsg("project name: %s, ", vba_project->name[i]);
-		free(buff);
 
 		/* some kind of string identifier ?? */
 		if (cli_readn(fd, &length, 2) != 2) {
@@ -785,6 +767,7 @@ static int ppt_unlzw(const char *dir, int fd, uint32_t length)
 
 	if (cli_readn(fd, inbuff, stream.avail_in) != (int64_t)stream.avail_in) {
 		close(ofd);
+		unlink(fullname);
 		return FALSE;
 	}
 	length -= stream.avail_in;
@@ -888,16 +871,12 @@ static char *ppt_stream_iter(int fd)
 
 char *ppt_vba_read(const char *dir)
 {
-	char *fullname, *out_dir;
+	char *out_dir;
 	int fd;
+	char fullname[NAME_MAX + 1];
 
-	fullname = (char *) cli_malloc(strlen(dir) + 21);
-	if (!fullname) {
-		return NULL;
-	}
-	sprintf(fullname, "%s/PowerPoint Document", dir);
+	snprintf(fullname, sizeof(fullname) - 1, "%s/PowerPoint Document", dir);
 	fd = open(fullname, O_RDONLY|O_BINARY);
-	free(fullname);
 	if (fd == -1) {
 		cli_dbgmsg("Open PowerPoint Document failed\n");
 		return NULL;
@@ -917,7 +896,6 @@ typedef struct mso_fib_tag {
 	char ununsed[sizeof(uint16_t) + sizeof(uint16_t) +
 		sizeof(uint16_t) + sizeof(uint16_t) + sizeof(uint16_t) +
 		sizeof(uint16_t)];
-	/* block of 268 bytes - ignore */
 	uint32_t macro_offset;
 	uint32_t macro_len;
 } mso_fib_t;
@@ -969,11 +947,6 @@ typedef struct menu_entry_tag {
 	uint16_t intname_i;
 	uint16_t pos;
 } menu_entry_t;
-
-typedef struct menu_info_tag {
-	uint16_t count;
-	struct menu_entry_tag *menu_entry;
-} menu_info_t;
 
 typedef struct mac_token_tag {
 	unsigned char token;
@@ -1149,74 +1122,22 @@ static int wm_read_oxo3(int fd)
 	return TRUE;
 }
 
-static menu_info_t *wm_read_menu_info(int fd)
+static int
+wm_skip_menu_info(int fd)
 {
-	int i;
-	menu_info_t *menu_info;
-	menu_entry_t *menu_entry;
+	uint16_t count;
 
-	menu_info = (menu_info_t *) cli_malloc(sizeof(menu_info_t));
-	if (!menu_info) {
-		return NULL;
-	}
-
-	if (cli_readn(fd, &menu_info->count, 2) != 2) {
+	if (cli_readn(fd, &count, sizeof(uint16_t)) != sizeof(uint16_t)) {
 		cli_dbgmsg("read menu_info failed\n");
-		free(menu_info);
-		return NULL;
+		return FALSE;
 	}
-	menu_info->count = vba_endian_convert_16(menu_info->count, FALSE);
-	cli_dbgmsg("menu_info count: %d\n", menu_info->count);
+	count = vba_endian_convert_16(count, FALSE);
+	cli_dbgmsg("menu_info count: %d\n", count);
 
-	menu_info->menu_entry =
-		(menu_entry_t *) cli_malloc(sizeof(menu_entry_t) * menu_info->count);
-	if (!menu_info->menu_entry) {
-		free(menu_info);
-		return NULL;
-	}
-
-	for (i=0 ; i < menu_info->count ; i++) {
-		menu_entry = &menu_info->menu_entry[i];
-		if (cli_readn(fd, &menu_entry->context, 2) != 2) {
-			goto abort;
-		}
-		if (cli_readn(fd, &menu_entry->menu, 2) != 2) {
-			goto abort;
-		}
-		if (cli_readn(fd, &menu_entry->extname_i, 2) != 2) {
-			goto abort;
-		}
-		if (cli_readn(fd, &menu_entry->unknown, 2) != 2) {
-			goto abort;
-		}
-		if (cli_readn(fd, &menu_entry->intname_i, 2) != 2) {
-			goto abort;
-		}
-		if (cli_readn(fd, &menu_entry->pos, 2) != 2) {
-			goto abort;
-		}
-		menu_entry->context = vba_endian_convert_16(menu_entry->context, FALSE);
-		menu_entry->menu = vba_endian_convert_16(menu_entry->menu, FALSE);
-		menu_entry->extname_i = vba_endian_convert_16(menu_entry->extname_i, FALSE);
-		menu_entry->intname_i = vba_endian_convert_16(menu_entry->intname_i, FALSE);
-		menu_entry->pos = vba_endian_convert_16(menu_entry->pos, FALSE);
-		cli_dbgmsg("menu entry: %d.%d\n", menu_entry->menu, menu_entry->pos);
-	}
-	return menu_info;
-
-abort:
-	cli_dbgmsg("read menu_entry failed\n");
-	free(menu_info->menu_entry);
-	free(menu_info);
-	return NULL;
-}
-
-static void wm_free_menu_info(menu_info_t *menu_info)
-{
-	if (menu_info) {
-		free(menu_info->menu_entry);
-		free(menu_info);
-	}
+	if(count)
+		if(lseek(fd, count * 12, SEEK_CUR) == -1)
+			return FALSE;
+	return TRUE;
 }
 
 static macro_extnames_t *wm_read_macro_extnames(int fd)
@@ -1420,20 +1341,13 @@ vba_project_t *wm_dir_read(const char *dir)
 	int fd, done=FALSE, i;
 	mso_fib_t fib;
 	off_t end_offset;
-	unsigned char start_id, info_id;
+	unsigned char info_id;
 	macro_info_t *macro_info=NULL;
-	macro_extnames_t *macro_extnames=NULL;
-	macro_intnames_t *macro_intnames=NULL;
 	vba_project_t *vba_project=NULL;
-	char *fullname;
+	char fullname[NAME_MAX + 1];
 
-	fullname = (char *) cli_malloc(strlen(dir) + 14);
-	if (!fullname) {
-		return NULL;
-	}
-	sprintf(fullname, "%s/WordDocument", dir);
+	snprintf(fullname, sizeof(fullname) - 1, "%s/WordDocument", dir);
 	fd = open(fullname, O_RDONLY|O_BINARY);
-	free(fullname);
 	if (fd == -1) {
 		cli_dbgmsg("Open WordDocument failed\n");
 		return NULL;
@@ -1443,9 +1357,16 @@ vba_project_t *wm_dir_read(const char *dir)
 		close(fd);
 		return NULL;
 	}
+	if(fib.macro_len == 0) {
+		cli_dbgmsg("No macros detected\n");
+		/* Must be clean */
+		close(fd);
+		return NULL;
+	}
 	wm_print_fib(&fib);
 
-	if (lseek(fd, fib.macro_offset, SEEK_SET) != (int64_t)fib.macro_offset) {
+	/* Go one past the start to ignore start_id */
+	if (lseek(fd, fib.macro_offset + 1, SEEK_SET) != (off_t)(fib.macro_offset + 1)) {
 		cli_dbgmsg("lseek macro_offset failed\n");
 		close(fd);
 		return NULL;
@@ -1453,15 +1374,9 @@ vba_project_t *wm_dir_read(const char *dir)
 
 	end_offset = fib.macro_offset + fib.macro_len;
 
-	if (cli_readn(fd, &start_id, 1) != 1) {
-		cli_dbgmsg("read start_id failed\n");
-		close(fd);
-		return NULL;
-	}
-	cli_dbgmsg("start_id: %d\n", start_id);
-
 	while ((lseek(fd, 0, SEEK_CUR) < end_offset) && !done) {
-		menu_info_t *menu_info;
+		macro_intnames_t *macro_intnames;
+		macro_extnames_t *macro_extnames;
 
 		if (cli_readn(fd, &info_id, 1) != 1) {
 			cli_dbgmsg("read macro_info failed\n");
@@ -1476,42 +1391,40 @@ vba_project_t *wm_dir_read(const char *dir)
 				}
 				break;
 			case 0x03:
-				if (!wm_read_oxo3(fd)) {
+				if(!wm_read_oxo3(fd))
 					done = TRUE;
-				}
 				break;
 			case 0x05:
-				menu_info = wm_read_menu_info(fd);
-				if(menu_info)
-					wm_free_menu_info(menu_info);
-				else
+				if(!wm_skip_menu_info(fd))
 					done = TRUE;
 				break;
 			case 0x10:
 				macro_extnames = wm_read_macro_extnames(fd);
-				if (macro_extnames == NULL) {
+				if(macro_extnames)
+					wm_free_extnames(macro_extnames);
+				else
 					done = TRUE;
-				}
 				break;
 			case 0x11:
 				macro_intnames = wm_read_macro_intnames(fd);
-				if (macro_intnames == NULL) {
+				if(macro_intnames)
+					wm_free_intnames(macro_intnames);
+				else
 					done = TRUE;
-				}
 				break;
 			case 0x12:
 				/* No sure about these, always seems to
 				come after the macros though, so finish
 				*/
-				done = 1;
+				done = TRUE;
 				break;
 			case 0x40:
 				/* end marker */
-				done = 1;
+				done = TRUE;
 				break;
 			default:
 				cli_dbgmsg("\nunknown type: 0x%x\n", info_id);
-				done = 1;
+				done = TRUE;
 		}
 	}
 
@@ -1568,15 +1481,8 @@ vba_project_t *wm_dir_read(const char *dir)
 	}
 	/* Fall through */
 abort:
-	if (macro_info) {
+	if (macro_info)
 		wm_free_macro_info(macro_info);
-	}
-	if (macro_extnames) {
-		wm_free_extnames(macro_extnames);
-	}
-	if (macro_intnames) {
-		wm_free_intnames(macro_intnames);
-	}
 	close(fd);
 	return vba_project;
 }
