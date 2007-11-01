@@ -153,7 +153,7 @@ struct UNP {
 static uint32_t getbits(struct UNP *UNP, uint32_t size) {
   UNP->bitmap.half.h = 0;
   if (size > UNP->bits_avail && ((size - UNP->bits_avail - 1)/16+1)*2 > UNP->csize - UNP->cur_input) {
-    cli_dbgmsg("autoit: getbits() - not enough bits available");
+    cli_dbgmsg("autoit: getbits() - not enough bits available\n");
     UNP->error = 1;
     return 0; /* won't infloop nor spam */
   }
@@ -325,11 +325,15 @@ static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
       }
 
       free(buf);
-      if (UNP.error) {
-	cli_dbgmsg("autoit: decompression error\n");
-	free(UNP.outputbuf);
-	continue;
-      }
+      /* Sometimes the autoit exe is in turn packed/lamed with a runtime compressor and similar shit.
+       * However, since the autoit script doesn't compress a second time very well, chances are we're
+       * still able to match the headers and unpack something (see sample 0811129)
+       * I'd rather unpack something (although possibly highly corrupted) than nothing at all
+       *
+       * - Fortuna audaces iuvat -
+       */
+      if (UNP.error) 
+	cli_dbgmsg("autoit: decompression error - partial file may exist\n");
     } else {
       cli_dbgmsg("autoit: file is not compressed\n");
       UNP.outputbuf = buf;
@@ -630,11 +634,8 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
       }
 
       free(buf);
-      if (UNP.error) {
-	cli_dbgmsg("autoit: decompression error\n");
-	free(UNP.outputbuf);
-	continue;
-      }
+      if (UNP.error) 
+	cli_dbgmsg("autoit: decompression error - partial file may exist\n");
     } else {
       cli_dbgmsg("autoit: file is not compressed\n");
       UNP.outputbuf = buf;
@@ -677,9 +678,35 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
 	    }
 	    buf = newout;
 	  }
-	  UNP.cur_output += snprintf((char *)&buf[UNP.cur_output], 12, "0x%08x ", cli_readint32((char *)&UNP.outputbuf[UNP.cur_input]));
+	  snprintf((char *)&buf[UNP.cur_output], 12, "0x%08x ", cli_readint32((char *)&UNP.outputbuf[UNP.cur_input]));
+	  UNP.cur_output += 11;
 	  UNP.cur_input += 4;
 	  break;
+
+	case 0x10: /* <INT64> */ {
+	  uint64_t val;
+	  if (UNP.usize < 8 || UNP.cur_input >= UNP.usize-8) {
+	    UNP.error = 1;
+	    cli_dbgmsg("autoit: not enough space for an int64\n");
+	    break;
+	  }
+	  if (UNP.cur_output+20 >= UNP.csize) {
+	    uint8_t *newout;
+	    UNP.csize += 512;
+	    if (!(newout = cli_realloc(buf, UNP.csize))) {
+	      UNP.error = 1;
+	      break;
+	    }
+	    buf = newout;
+	  }
+	  val = (uint64_t)cli_readint32((char *)&UNP.outputbuf[UNP.cur_input+4]);
+	  val <<=32;
+	  val += (uint64_t)cli_readint32((char *)&UNP.outputbuf[UNP.cur_input]);
+	  snprintf((char *)&buf[UNP.cur_output], 20, "0x%016lx ", val);
+	  UNP.cur_output += 19;
+	  UNP.cur_input += 8;
+	  break;
+	}
 
 	case 0x20: /* <DOUBLE> */
 	  if (UNP.usize < 8 || UNP.cur_input >= UNP.usize-8) {
@@ -834,8 +861,6 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
       UNP.cur_output = UNP.usize ;
     }
 
-    /* FIXME: TODO send to text notmalization */
-
     snprintf(tempfile, 1023, "%s/autoit.%.3u", tmpd, files);
     tempfile[1023]='\0';
     if((i = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
@@ -856,7 +881,7 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
       cli_dbgmsg("autoit: %s successfully extracted\n", (script)?"script":"file");
     fsync(i);
     lseek(i, 0, SEEK_SET);
-    if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
+    if(0 /*cli_magic_scandesc(i, ctx) == CL_VIRUS*/) { /* FIXME REENABLE */
       close(i);
       if(!cli_leavetemps_flag) unlink(tempfile);
       return CL_VIRUS;
