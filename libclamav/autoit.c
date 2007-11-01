@@ -488,8 +488,6 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
   const char *opers[] = { ",", "=", ">", "<", "<>", ">=", "<=", "(", ")", "+", "-", "/", "*", "&", "[", "]", "==", "^", "+=", "-=", "/=", "*=", "&=" };
   struct UNP UNP;
 
-  UNP.error = 0;
-
   /* Useless due to a bug in CRC calculation - LMAO!!1 */
   /*   if (cli_readn(desc, buf, 24)!=24) */
   /*     return CL_CLEAN; */
@@ -595,7 +593,8 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
       UNP.cur_input = 8;
       UNP.bitmap.full = 0;
       UNP.bits_avail = 0;
-  
+      UNP.error = 0;
+
       while (!UNP.error && UNP.cur_output < UNP.usize) {
 	if (!getbits(&UNP, 1)) {
 	  uint32_t bb, bs, addme=0;
@@ -657,6 +656,7 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
       UNP.cur_output = 0;
       UNP.cur_input = 4;
       UNP.bits_avail = cli_readint32((char *)UNP.outputbuf);
+      UNP.error = 0;
       cli_dbgmsg("autoit: script has got %u lines\n", UNP.bits_avail);
 
       while (!UNP.error && UNP.bits_avail && UNP.cur_input < UNP.usize) {
@@ -683,7 +683,7 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
 	  UNP.cur_input += 4;
 	  break;
 
-	case 0x10: /* <INT64> */ {
+	case 0x11: /* <INT64> */ {
 	  uint64_t val;
 	  if (UNP.usize < 8 || UNP.cur_input >= UNP.usize-8) {
 	    UNP.error = 1;
@@ -881,7 +881,7 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
       cli_dbgmsg("autoit: %s successfully extracted\n", (script)?"script":"file");
     fsync(i);
     lseek(i, 0, SEEK_SET);
-    if(0 /*cli_magic_scandesc(i, ctx) == CL_VIRUS*/) { /* FIXME REENABLE */
+    if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
       close(i);
       if(!cli_leavetemps_flag) unlink(tempfile);
       return CL_VIRUS;
