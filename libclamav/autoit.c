@@ -43,25 +43,34 @@
 
 
 /* FIXME: use unicode detection and normalization from edwin */
-static unsigned int u2a(uint8_t *d, unsigned int l) {
-  unsigned int i=l;
-  uint8_t *s = d;
-  if(l<2) return l;
-  if(d[0] == 0xff && d[1] == 0xfe) {
-    s += 2;
-    l -= 2;
-  } else if (d[1] != 0) {
-    return l;
-  }
-    
-  if(l<2) return i;
+static unsigned int u2a(uint8_t *dest, unsigned int len) {
+  uint8_t *src = dest;
+  unsigned int i,j;
 
-  for (i = 0 ; i < l; i += 2)
-    *d++ = s[i];
-  *d = '\0';
-  return (unsigned int)(d-s);
+  if (len<2)
+    return len;
+
+  if (len>4 && src[0]==0xff && src[1]==0xfe && src[2]) {
+    len-=2;
+    src+=2;
+  } else {
+    unsigned int cnt=0;
+    j = (len > 20) ? 20 : (len&~1);
+      
+    for (i=0; i<j; i+=2)
+      cnt+=(src[i]!=0 && src[i+1]==0);
+
+    if (cnt*2 < j)
+      return len;
+  }
+
+  j=len;
+  len>>=1;
+  for (i=0; i<j; i+=2)
+    *dest++ = src[i];
+
+  return len;
 }
-    
 
 /*********************
    MT realted stuff 
