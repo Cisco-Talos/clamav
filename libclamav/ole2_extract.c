@@ -52,8 +52,8 @@
 #include "mbox.h"
 #include "blob.h" /* sanitiseName() */
 
-#define ole2_endian_convert_16(v) le16_to_host(v)
-#define ole2_endian_convert_32(v) le32_to_host(v)
+#define ole2_endian_convert_16(v) le16_to_host((uint16_t)(v))
+#define ole2_endian_convert_32(v) le32_to_host((uint32_t)(v))
 
 #ifndef HAVE_ATTRIB_PACKED
 #define __attribute__(x)
