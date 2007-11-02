@@ -684,30 +684,31 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
 	  UNP.cur_input += 4;
 	  break;
 
-	case 0x11: /* <INT64> */ {
-	  uint64_t val;
-	  if (UNP.usize < 8 || UNP.cur_input >= UNP.usize-8) {
-	    UNP.error = 1;
-	    cli_dbgmsg("autoit: not enough space for an int64\n");
-	    break;
-	  }
-	  if (UNP.cur_output+20 >= UNP.csize) {
-	    uint8_t *newout;
-	    UNP.csize += 512;
-	    if (!(newout = cli_realloc(buf, UNP.csize))) {
+	case 0x10: /* <INT64> */
+	  {
+	    uint64_t val;
+	    if (UNP.usize < 8 || UNP.cur_input >= UNP.usize-8) {
 	      UNP.error = 1;
+	      cli_dbgmsg("autoit: not enough space for an int64\n");
 	      break;
 	    }
-	    buf = newout;
+	    if (UNP.cur_output+20 >= UNP.csize) {
+	      uint8_t *newout;
+	      UNP.csize += 512;
+	      if (!(newout = cli_realloc(buf, UNP.csize))) {
+	      UNP.error = 1;
+	      break;
+	      }
+	      buf = newout;
+	    }
+	    val = (uint64_t)cli_readint32((char *)&UNP.outputbuf[UNP.cur_input+4]);
+	    val <<=32;
+	    val += (uint64_t)cli_readint32((char *)&UNP.outputbuf[UNP.cur_input]);
+	    snprintf((char *)&buf[UNP.cur_output], 20, "0x%016lx ", val);
+	    UNP.cur_output += 19;
+	    UNP.cur_input += 8;
+	    break;
 	  }
-	  val = (uint64_t)cli_readint32((char *)&UNP.outputbuf[UNP.cur_input+4]);
-	  val <<=32;
-	  val += (uint64_t)cli_readint32((char *)&UNP.outputbuf[UNP.cur_input]);
-	  snprintf((char *)&buf[UNP.cur_output], 20, "0x%016lx ", val);
-	  UNP.cur_output += 19;
-	  UNP.cur_input += 8;
-	  break;
-	}
 
 	case 0x20: /* <DOUBLE> */
 	  if (UNP.usize < 8 || UNP.cur_input >= UNP.usize-8) {
