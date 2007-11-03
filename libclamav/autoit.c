@@ -421,18 +421,8 @@ static double LAME_fpusht(struct LAME *l) {
 /*       return 0.0; */
 /*   } */
 
-#if WORDS_BIGENDIAN == FPU_WORDS_BIGENDIAN
   ret.as_uint.lo = rolled << 0x14;
   ret.as_uint.hi = 0x3ff00000 | (rolled >> 0xc);
-#else
-  do {
-    uint32_t tmp = rolled << 0x14;
-  
-    ret.as_uint.lo = ((tmp&0xff)<<24) | (((tmp>>8)&0xff)<<16) | (((tmp>>16)&0xff)<<8) | ((tmp>>24)&0xff);
-    tmp = 0x3ff00000 | (rolled >> 0xc);
-    ret.as_uint.hi = ((tmp&0xff)<<24) | (((tmp>>8)&0xff)<<16) | (((tmp>>16)&0xff)<<8) | ((tmp>>24)&0xff);
-  } while(0);
-#endif
   return ret.as_double - 1.0;
 }
 

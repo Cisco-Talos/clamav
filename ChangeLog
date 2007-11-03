@@ -1,3 +1,6 @@
+Sat Nov  3 14:28:17 CET 2007 (edwin)
+  * libclamav/autoit.c: fix endianess checks for arm - thanks edwin
+
 Sat Nov  3 00:25:52 EET 2007 (edwin)
 ------------------------------------
   * libclamav/ole2_extract.c: make endian conversion macros work when operand
