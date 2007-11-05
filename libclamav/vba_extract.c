@@ -1168,26 +1168,21 @@ wm_skip_macro_extnames(int fd)
 	offset_end += size;
 	while(lseek(fd, 0, SEEK_CUR) < offset_end) {
 		uint8_t length;
+		off_t offset;
 
 		if (cli_readn(fd, &length, 1) != 1) {
 			cli_dbgmsg("read macro_extnames failed\n");
 			return FALSE;
 		}
 
-		if(is_unicode) {
-			if(lseek(fd, SEEK_CUR, (length * 2) + 1) == -1) {
-				cli_dbgmsg("read macro_extname failed\n");
-				return FALSE;
-			}
-		} else if(length > 0) {
-			if(lseek(fd, SEEK_CUR, length) == -1) {
-				cli_dbgmsg("read macro_extname failed\n");
-				return FALSE;
-			}
-		}
-		/* numref */
-		if(lseek(fd, sizeof(uint16_t), SEEK_CUR) == -1) {
-			cli_dbgmsg("read macro_extnames failed\n");
+		if(is_unicode)
+			offset = length * 2 + 1;
+		else
+			offset = length;
+
+		offset += sizeof(uint16_t);	/* numref */
+		if(lseek(fd, offset, SEEK_CUR) == -1) {
+			cli_dbgmsg("read macro_extnames failed to seek\n");
 			return FALSE;
 		}
 	}
@@ -1315,7 +1310,6 @@ vba_project_t *wm_dir_read(const char *dir)
 			close(fd);
 			return NULL;
 		}
-printf(">>>>>>>>>>>>>> 0x%x\n", info_id);
 		switch (info_id) {
 			case 0x01:
 				macro_info = wm_read_macro_info(fd);
