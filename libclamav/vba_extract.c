@@ -917,6 +917,7 @@ typedef struct macro_info_tag {
 	struct macro_entry_tag *macro_entry;
 } macro_info_t;
 
+#if	0
 typedef struct macro_extname_tag {
 	uint8_t length;
 	unsigned char *extname;
@@ -927,6 +928,7 @@ typedef struct macro_extnames_tag {
 	uint16_t count;
 	struct macro_extname_tag *macro_extname;
 } macro_extnames_t;
+#endif
 
 typedef struct macro_intnames_tag {
 	uint16_t count;
@@ -960,7 +962,6 @@ typedef struct mac_token2_tag {
 } mac_token2_t;
 
 static	void	wm_free_intnames(macro_intnames_t *macro_intnames);
-static	void	wm_free_extnames(macro_extnames_t *macro_extnames);
 static	void	wm_free_macro_info(macro_info_t *macro_info);
 
 static void wm_print_fib(mso_fib_t *fib)
@@ -1140,126 +1141,57 @@ wm_skip_menu_info(int fd)
 	return TRUE;
 }
 
-static macro_extnames_t *wm_read_macro_extnames(int fd)
+static int
+wm_skip_macro_extnames(int fd)
 {
-	int is_unicode=0;
+	int is_unicode;
 	int16_t size;
-	off_t offset_end;
-	macro_extnames_t *macro_extnames;
-	macro_extname_t *macro_extname;
-	unsigned char *name_tmp;
+	off_t offset_end = lseek(fd, 0, SEEK_CUR);
 
-	macro_extnames = (macro_extnames_t *)cli_malloc(sizeof(macro_extnames_t));
-	if (!macro_extnames) {
-		return NULL;
-	}
-	macro_extnames->count = 0;
-	macro_extnames->macro_extname = NULL;
-
-	offset_end = lseek(fd, 0, SEEK_CUR);
-	if (cli_readn(fd, &size, 2) != 2) {
+	if(cli_readn(fd, &size, sizeof(int16_t)) != sizeof(int16_t)) {
 		cli_dbgmsg("read macro_extnames failed\n");
-		free(macro_extnames);
-		return NULL;
+		return FALSE;
 	}
 	size = vba_endian_convert_16(size, FALSE);
 	if (size == -1) { /* Unicode flag */
-		is_unicode=1;
-		if (cli_readn(fd, &size, 2) != 2) {
+		if(cli_readn(fd, &size, sizeof(int16_t)) != sizeof(int16_t)) {
 			cli_dbgmsg("read macro_extnames failed\n");
-			free(macro_extnames);
-			return NULL;
+			return FALSE;
 		}
 		size = vba_endian_convert_16(size, FALSE);
-	}
+		is_unicode = 1;
+	} else
+		is_unicode = 0;
+
 	cli_dbgmsg("ext names size: 0x%x\n", size);
 
 	offset_end += size;
-	while (lseek(fd, 0, SEEK_CUR) < offset_end) {
-		macro_extnames->count++;
-		macro_extnames->macro_extname = (macro_extname_t *)
-			cli_realloc2(macro_extnames->macro_extname,
-				sizeof(macro_extname_t) * macro_extnames->count);
-		if (macro_extnames->macro_extname == NULL) {
+	while(lseek(fd, 0, SEEK_CUR) < offset_end) {
+		uint8_t length;
+
+		if (cli_readn(fd, &length, 1) != 1) {
 			cli_dbgmsg("read macro_extnames failed\n");
-			goto abort;
+			return FALSE;
 		}
 
-		macro_extname = &macro_extnames->macro_extname[macro_extnames->count-1];
-		if (is_unicode) {
-			if (cli_readn(fd, &macro_extname->length, 1) != 1) {
-				cli_dbgmsg("read macro_extnames failed\n");
-				goto abort;
+		if(is_unicode) {
+			if(lseek(fd, SEEK_CUR, (length * 2) + 1) == -1) {
+				cli_dbgmsg("read macro_extname failed\n");
+				return FALSE;
 			}
-			lseek(fd, 1, SEEK_CUR);
-			if (macro_extname->length > 0) {
-			    name_tmp = (unsigned char *)cli_malloc(macro_extname->length*2);
-			    if(name_tmp == NULL)
-				goto abort;
-			    if (cli_readn(fd, name_tmp, macro_extname->length*2) !=
-						macro_extname->length*2) {
-				cli_dbgmsg("read macro_extnames failed\n");
-				free(name_tmp);
-				goto abort;
-			    }
-			    macro_extname->extname =
-				(unsigned char *)get_unicode_name((const char *)name_tmp, macro_extname->length*2, FALSE);
-			    free(name_tmp);
-			} else {
-			    macro_extname->extname = (unsigned char *)cli_strdup("[no name]");
-			    if(macro_extname->extname == NULL)
-				goto abort;
-			    macro_extname->length = 10;
-			}
-		} else {
-			if (cli_readn(fd, &macro_extname->length, 1) != 1) {
-				cli_dbgmsg("read macro_extnames failed\n");
-				goto abort;
-			}
-			if (macro_extname->length > 0) {
-			    macro_extname->extname = (unsigned char *)cli_malloc(macro_extname->length+1);
-			    if(macro_extname->extname == NULL)
-				goto abort;
-			    if (cli_readn(fd, macro_extname->extname, macro_extname->length) !=
-						macro_extname->length) {
-				cli_dbgmsg("read macro_extnames failed\n");
-				free(macro_extname->extname);
-				goto abort;
-			    }
-			    macro_extname->extname[macro_extname->length] = '\0';
-			} else {
-			    macro_extname->extname = (unsigned char *)cli_strdup("[no name]");
-			    if(macro_extname->extname == NULL)
-				goto abort;
-			    macro_extname->length = 10;
+		} else if(length > 0) {
+			if(lseek(fd, SEEK_CUR, length) == -1) {
+				cli_dbgmsg("read macro_extname failed\n");
+				return FALSE;
 			}
 		}
-		if (cli_readn(fd, &macro_extname->numref, 2) != 2) {
+		/* numref */
+		if(lseek(fd, sizeof(uint16_t), SEEK_CUR) == -1) {
 			cli_dbgmsg("read macro_extnames failed\n");
-			goto abort;
+			return FALSE;
 		}
-		macro_extname->numref = vba_endian_convert_16(macro_extname->numref, FALSE);
-		cli_dbgmsg("ext name: %s\n", (char *)macro_extname->extname);
 	}
-	return macro_extnames;
-
-abort:
-	macro_extnames->count--;
-	wm_free_extnames(macro_extnames);
-	return NULL;
-}
-
-static void
-wm_free_extnames(macro_extnames_t *macro_extnames)
-{
-	if (macro_extnames) {
-		int i;
-
-		for(i = 0 ;i < macro_extnames->count; i++)
-			free(macro_extnames->macro_extname[i].extname);
-		free(macro_extnames->macro_extname);
-		free(macro_extnames);
-	}
+	return TRUE;
 }
 
 static macro_intnames_t *wm_read_macro_intnames(int fd)
@@ -1338,12 +1270,12 @@ wm_free_intnames(macro_intnames_t *macro_intnames)
 
 vba_project_t *wm_dir_read(const char *dir)
 {
-	int fd, done=FALSE, i;
-	mso_fib_t fib;
+	int fd, done, i;
 	off_t end_offset;
 	unsigned char info_id;
 	macro_info_t *macro_info=NULL;
-	vba_project_t *vba_project=NULL;
+	vba_project_t *vba_project;
+	mso_fib_t fib;
 	char fullname[NAME_MAX + 1];
 
 	snprintf(fullname, sizeof(fullname) - 1, "%s/WordDocument", dir);
@@ -1373,16 +1305,17 @@ vba_project_t *wm_dir_read(const char *dir)
 	}
 
 	end_offset = fib.macro_offset + fib.macro_len;
+	done = FALSE;
 
 	while ((lseek(fd, 0, SEEK_CUR) < end_offset) && !done) {
 		macro_intnames_t *macro_intnames;
-		macro_extnames_t *macro_extnames;
 
 		if (cli_readn(fd, &info_id, 1) != 1) {
 			cli_dbgmsg("read macro_info failed\n");
 			close(fd);
 			return NULL;
 		}
+printf(">>>>>>>>>>>>>> 0x%x\n", info_id);
 		switch (info_id) {
 			case 0x01:
 				macro_info = wm_read_macro_info(fd);
@@ -1399,10 +1332,7 @@ vba_project_t *wm_dir_read(const char *dir)
 					done = TRUE;
 				break;
 			case 0x10:
-				macro_extnames = wm_read_macro_extnames(fd);
-				if(macro_extnames)
-					wm_free_extnames(macro_extnames);
-				else
+				if(!wm_skip_macro_extnames(fd))
 					done = TRUE;
 				break;
 			case 0x11:
@@ -1423,10 +1353,12 @@ vba_project_t *wm_dir_read(const char *dir)
 				done = TRUE;
 				break;
 			default:
-				cli_dbgmsg("\nunknown type: 0x%x\n", info_id);
+				cli_dbgmsg("unknown type: 0x%x\n", info_id);
 				done = TRUE;
 		}
 	}
+
+	close(fd);
 
 	if (macro_info) {
 		vba_project = (vba_project_t *) cli_malloc(sizeof(struct vba_project_tag));
@@ -1478,12 +1410,13 @@ vba_project_t *wm_dir_read(const char *dir)
 				vba_project->key[i] = macro_info->macro_entry[i].key;
 			}
 		}
-	}
+	} else
+		vba_project = NULL;
+
 	/* Fall through */
 abort:
 	if (macro_info)
 		wm_free_macro_info(macro_info);
-	close(fd);
 	return vba_project;
 }
 
