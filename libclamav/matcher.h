@@ -43,7 +43,7 @@ struct cli_matcher {
     uint8_t ac_only;
 
     /* Extended Boyer-Moore */
-    int32_t *bm_shift;
+    uint8_t *bm_shift;
     struct cli_bm_patt **bm_suffix;
     uint32_t *soff, soff_len; /* for PE section sigs */
 
