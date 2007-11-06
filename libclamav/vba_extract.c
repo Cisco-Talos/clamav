@@ -917,30 +917,6 @@ typedef struct macro_info_tag {
 	struct macro_entry_tag *macro_entry;
 } macro_info_t;
 
-#if	0
-typedef struct macro_extname_tag {
-	uint8_t length;
-	unsigned char *extname;
-	uint16_t numref;
-} macro_extname_t;
-
-typedef struct macro_extnames_tag {
-	uint16_t count;
-	struct macro_extname_tag *macro_extname;
-} macro_extnames_t;
-#endif
-
-typedef struct macro_intnames_tag {
-	uint16_t count;
-	struct macro_intname_tag *macro_intname;
-} macro_intnames_t;
-
-typedef struct macro_intname_tag {
-	uint16_t id;
-	uint8_t length;
-	unsigned char *intname;
-} macro_intname_t;
-
 typedef struct menu_entry_tag {
 	uint16_t context;
 	uint16_t menu;
@@ -961,7 +937,6 @@ typedef struct mac_token2_tag {
 
 } mac_token2_t;
 
-static	void	wm_free_intnames(macro_intnames_t *macro_intnames);
 static	void	wm_free_macro_info(macro_info_t *macro_info);
 
 static void wm_print_fib(mso_fib_t *fib)
@@ -1176,9 +1151,9 @@ wm_skip_macro_extnames(int fd)
 		}
 
 		if(is_unicode)
-			offset = length * 2 + 1;
+			offset = (off_t)length * 2 + 1;
 		else
-			offset = length;
+			offset = (off_t)length;
 
 		offset += sizeof(uint16_t);	/* numref */
 		if(lseek(fd, offset, SEEK_CUR) == -1) {
@@ -1189,78 +1164,39 @@ wm_skip_macro_extnames(int fd)
 	return TRUE;
 }
 
-static macro_intnames_t *wm_read_macro_intnames(int fd)
+static int
+wm_skip_macro_intnames(int fd)
 {
-	uint16_t i, junk;
-	macro_intnames_t *macro_intnames;
-	macro_intname_t *macro_intname;
+	uint16_t i, count;
 
-	macro_intnames = (macro_intnames_t *) cli_malloc(sizeof(macro_intnames_t));
-	if (!macro_intnames) {
-		return NULL;
-	}
-
-	if (cli_readn(fd, &macro_intnames->count, 2) != 2) {
+	if (cli_readn(fd, &count, sizeof(uint16_t)) != sizeof(uint16_t)) {
 		cli_dbgmsg("read macro_intnames failed\n");
-		return NULL;
+		return FALSE;
 	}
-	macro_intnames->count = vba_endian_convert_16(macro_intnames->count, FALSE);
-	cli_dbgmsg("int names count: %d\n", macro_intnames->count);
+	count = vba_endian_convert_16(count, FALSE);
+	cli_dbgmsg("int names count: %u\n", count);
 
-	macro_intnames->macro_intname =
-		(macro_intname_t *) cli_malloc(sizeof(macro_intname_t) * macro_intnames->count);
-	if (!macro_intnames->macro_intname) {
-		free(macro_intnames);
-		return NULL;
-	}
-	for (i=0 ; i < macro_intnames->count ; i++) {
-		macro_intname = &macro_intnames->macro_intname[i];
-		if (cli_readn(fd, &macro_intname->id, 2) != 2) {
-			cli_dbgmsg("read macro_intnames failed\n");
-			macro_intnames->count = i;
-			goto abort;
-		}
-		macro_intname->id = vba_endian_convert_16(macro_intname->id, FALSE);
-		if (cli_readn(fd, &macro_intname->length, 1) != 1) {
-			cli_dbgmsg("read macro_intnames failed\n");
-			macro_intnames->count = i;
-			goto abort;
-		}
-		macro_intname->intname = (unsigned char *)cli_malloc(macro_intname->length+1);
-		if (!macro_intname->intname) {
-			macro_intnames->count = i;
-			goto abort;
-		}
-		if (cli_readn(fd, macro_intname->intname, macro_intname->length) != macro_intname->length) {
-			cli_dbgmsg("read macro_intnames failed\n");
-			macro_intnames->count = (uint16_t)(i + 1);
-			goto abort;
-		}
-		macro_intname->intname[macro_intname->length] = '\0';
-		if (cli_readn(fd, &junk, 1) != 1) {
-			cli_dbgmsg("read macro_intnames failed\n");
-			macro_intnames->count = (uint16_t)(i + 1);
-			goto abort;
-		}
-		cli_dbgmsg("int name: %s\n", (char *)macro_intname->intname);
-	}
-	return macro_intnames;
-abort:
-	wm_free_intnames(macro_intnames);
-	return NULL;
-}
+	for(i = 0; i < count; i++) {
+		uint8_t length;
 
-static void
-wm_free_intnames(macro_intnames_t *macro_intnames)
-{
-	if (macro_intnames) {
-		int i;
+		/* id */
+		if(lseek(fd, sizeof(uint16_t), SEEK_CUR) == -1) {
+			cli_dbgmsg("skip_macro_intnames failed\n");
+			return FALSE;
+		}
 
-		for(i = 0; i < macro_intnames->count; i++)
-			free(macro_intnames->macro_intname[i].intname);
-		free(macro_intnames->macro_intname);
-		free(macro_intnames);
+		if(cli_readn(fd, &length, sizeof(uint8_t)) != sizeof(uint8_t)) {
+			cli_dbgmsg("skip_macro_intnames failed\n");
+			return FALSE;
+		}
+
+		/* Internal name, plus one byte of unknown data */
+		if(lseek(fd, length + 1, SEEK_CUR) == -1) {
+			cli_dbgmsg("skip_macro_intnames failed\n");
+			return FALSE;
+		}
 	}
+	return TRUE;
 }
 
 vba_project_t *wm_dir_read(const char *dir)
@@ -1303,8 +1239,6 @@ vba_project_t *wm_dir_read(const char *dir)
 	done = FALSE;
 
 	while ((lseek(fd, 0, SEEK_CUR) < end_offset) && !done) {
-		macro_intnames_t *macro_intnames;
-
 		if (cli_readn(fd, &info_id, 1) != 1) {
 			cli_dbgmsg("read macro_info failed\n");
 			close(fd);
@@ -1312,10 +1246,11 @@ vba_project_t *wm_dir_read(const char *dir)
 		}
 		switch (info_id) {
 			case 0x01:
+				if(macro_info)
+					wm_free_macro_info(macro_info);
 				macro_info = wm_read_macro_info(fd);
-				if (macro_info == NULL) {
+				if(macro_info == NULL)
 					done = TRUE;
-				}
 				break;
 			case 0x03:
 				if(!wm_read_oxo3(fd))
@@ -1330,10 +1265,7 @@ vba_project_t *wm_dir_read(const char *dir)
 					done = TRUE;
 				break;
 			case 0x11:
-				macro_intnames = wm_read_macro_intnames(fd);
-				if(macro_intnames)
-					wm_free_intnames(macro_intnames);
-				else
+				if(!wm_skip_macro_intnames(fd))
 					done = TRUE;
 				break;
 			case 0x12:
