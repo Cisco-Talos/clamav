@@ -1,3 +1,8 @@
+Tue Nov  6 17:49:03 GMT 2007 (njh)
+----------------------------------
+  * libclamav/vba_extract.c:	Added sanity check to get_unicode_name(),
+					needed for W97M.Advice
+
 Tue Nov  6 17:17:56 CET 2007 (tk)
 ---------------------------------
   * libclamav/matcher-bm.c: minor code cleanup; load balance bm_suffix

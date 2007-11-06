@@ -133,42 +133,48 @@ static const vba_version_t vba_version[NUM_VBA_VERSIONS] = {
 static char *
 get_unicode_name(const char *name, int size, int is_mac)
 {
-        int i, j;
-        char *newname;
+        int i, increment;
+        char *newname, *ret;
 
-	if (!name || *name == 0 || size <= 0) {
+	if((name == NULL) || (*name == '\0') || (size <= 0))
                 return NULL;
-        }
 
-        newname = (char *) cli_malloc(size*7);
-        if (!newname) {
+        newname = (char *)cli_malloc(size * 7);
+        if(newname == NULL)
                 return NULL;
-        }
-        j=0;
-        for (i=0 ; i < size; i += (is_mac ? 1 : 2) ) {
-                if (isprint(name[i])) {
-                        newname[j++] = name[i];
-                } else {
-                        if (name[i] < 10 && name[i] >= 0) {
-                                newname[j++] = '_';
-                                newname[j++] = (char)(name[i] + '0');
-                        }
-			else {
+
+	if((!is_mac) && (size & 0x1)) {
+		cli_dbgmsg("get_unicode_name: odd number of bytes %d\n", size);
+		--size;
+	}
+
+	increment = (is_mac) ? 1 : 2;
+	ret = newname;
+
+        for(i = 0; i < size; i += increment) {
+                if(isprint(name[i]))
+                        *ret++ = name[i];
+                else {
+			if(name[i] < 10 && name[i] >= 0) {
+				*ret++ = '_';
+				*ret++ = (char)(name[i] + '0');
+			} else {
 				const uint16_t x = (uint16_t)(((name[i]) << 8) | name[i + 1]);
 
-				newname[j++] = '_';
-				newname[j++] = (char)('a'+((x&0xF)));
-				newname[j++] = (char)('a'+((x>>4)&0xF));
-				newname[j++] = (char)('a'+((x>>8)&0xF));
+				*ret++ = '_';
+				*ret++ = (char)('a'+((x&0xF)));
+				*ret++ = (char)('a'+((x>>4)&0xF));
+				*ret++ = (char)('a'+((x>>8)&0xF));
 #if	0
-				newname[j++] = (char)('a'+((x>>16)&0xF));	/* FIXME: x>>16 MUST == 0 */
-				newname[j++] = (char)('a'+((x>>24)&0xF));	/* FIXME: x>>24 MUST == 0 */
+				*ret++ = (char)('a'+((x>>16)&0xF));	/* FIXME: x>>16 MUST == 0 */
+				*ret++ = (char)('a'+((x>>24)&0xF));	/* FIXME: x>>24 MUST == 0 */
 #endif
 			}
-                        newname[j++] = '_';
-                }
-        }
-        newname[j] = '\0';
+			*ret++ = '_';
+		}
+	}
+
+        *ret = '\0';
         return newname;
 }
 
