@@ -150,6 +150,9 @@ blobGetFilename(const blob *b)
 	return b->name;
 }
 
+/*
+ * Returns <0 for failure
+ */
 int
 blobAddData(blob *b, const unsigned char *data, size_t len)
 {
@@ -678,8 +681,11 @@ fileblobScan(const fileblob *fb)
 		return CL_VIRUS;
 	}
 	cli_dbgmsg("%s is clean\n", fb->fullname);
-#endif	/*C_WINDOWS*/
 	return CL_BREAK;
+#else	/*C_WINDOWS*/
+	/* Ensure that the file is saved and scanned */
+	return CL_CLEAN;	/* there is no CL_UNKNOWN :-( */
+#endif	/*C_WINDOWS*/
 }
 
 /*
