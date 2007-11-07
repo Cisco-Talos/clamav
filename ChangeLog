@@ -1,3 +1,9 @@
+Wed Nov  7 20:37:27 GMT 2007 (njh)
+----------------------------------
+  * clamav-milter:	Added signal handling: SIGUSR2 to reload database
+				(when not external mode); SIGHUP to reopen
+				the logfile (to aid logrotate)
+
 Wed Nov  7 13:06:54 GMT 2007 (njh)
 ----------------------------------
   * libclamav/blob.c:	VBS.Redlof-A was not being detected under Windows

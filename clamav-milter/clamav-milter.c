@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-20081024"
+#define	CM_VERSION	"devel-20071107"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -516,6 +516,7 @@ static	pthread_cond_t	watchdog_cond = PTHREAD_COND_INITIALIZER;
 static	const	char	*postmaster = "postmaster";
 static	const	char	*from = "MAILER-DAEMON";
 static	int	quitting;
+static	int	reload;	/* reload database when SIGUSR2 is received */
 static	const	char	*report;	/* Report Phishing to this address */
 static	const	char	*report_fps;	/* Report Phish FPs to this address */
 
@@ -552,6 +553,8 @@ static	pthread_mutex_t	blacklist_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 static	void	sigsegv(int sig);
+static	void	sighup(int sig);
+static	void	sigusr2(int sig);
 
 #ifdef HAVE_BACKTRACE
 #include <execinfo.h>
@@ -1790,8 +1793,6 @@ main(int argc, char **argv)
 		close(0);
 		open("/dev/null", O_RDONLY);
 
-		close(1);
-
 		/* initialize logger */
 		logg_lock = cfgopt(copt, "LogFileUnlock")->enabled;
 		logg_time = cfgopt(copt, "LogTime")->enabled;
@@ -1800,7 +1801,7 @@ main(int argc, char **argv)
 		logg_verbose = mprintf_verbose = cfgopt(copt, "LogVerbose")->enabled;
 
 		if(cfgopt(copt, "Debug")->enabled) /* enable debug messages in libclamav */
-		cl_debug();
+			cl_debug();
 
 		if((cpt = cfgopt(copt, "LogFile"))->enabled) {
 			time_t currtime;
@@ -1814,6 +1815,7 @@ main(int argc, char **argv)
 				return 1;
 			}
 			time(&currtime);
+			close(1);
 			if(logg("#ClamAV-milter started at %s", ctime(&currtime))) {
 				fprintf(stderr, "ERROR: Problem with internal logger. Please check the permissions on the %s file.\n", logg_file);
 				logg_close();
@@ -1822,6 +1824,7 @@ main(int argc, char **argv)
 			}
 		} else {
 #ifdef	CL_DEBUG
+			close(1);
 			logg_file = console;
 			if(consolefd < 0) {
 				perror(console);
@@ -2096,6 +2099,9 @@ main(int argc, char **argv)
 #endif
 
 	(void)signal(SIGSEGV, sigsegv);
+	(void)signal(SIGHUP, sighup);
+	if(!external)
+		(void)signal(SIGUSR2, sigusr2);
 
 	return smfi_main();
 }
@@ -3435,14 +3441,22 @@ clamfi_eom(SMFICTX *ctx)
 #else
 			char *hostname = cli_strtok(serverHostNames, privdata->serverNumber, ":");
 #endif
+			if(privdata->subject)
+				logg(_("clamfi_eom: read nothing from clamd on %s, from %s (%s)"),
+					hostname, privdata->from, privdata->subject);
+			else
+				logg(_("clamfi_eom: read nothing from clamd on %s, from %s"),
+					hostname, privdata->from);
+
+#ifndef	MAXHOSTNAMELEN
+			free(hostname);
+#endif
 			/*
 			 * TODO: if more than one host has been specified, try
 			 * another one - setting cl_error to SMFIS_TEMPFAIL
 			 * helps by forcing a retry
 			 */
 			clamfi_cleanup(ctx);
-
-			logg(_("clamfi_eom: read nothing from clamd on %s\n"), hostname);
 
 #ifdef	SESSION
 			pthread_mutex_lock(&sstatus_mutex);
@@ -5393,6 +5407,7 @@ watchdog(void *a)
 				perror("pthread_cond_timedwait");
 		}
 		pthread_mutex_unlock(&watchdog_mutex);
+
 		cli_dbgmsg("watchdog wakes\n");
 
 		if(check_and_reload_database() != 0) {
@@ -5519,6 +5534,7 @@ watchdog(void *a)
 		ts.tv_sec = tp.tv_sec + freshclam_monitor;
 		ts.tv_nsec = tp.tv_usec * 1000;
 		cli_dbgmsg("watchdog sleeps\n");
+
 		pthread_mutex_lock(&watchdog_mutex);
 		/*
 		 * Sometimes this returns EPIPE which isn't listed as a
@@ -5572,7 +5588,13 @@ check_and_reload_database(void)
 	if(external)
 		return 0;
 
-	switch(rc = cl_statchkdir(&dbstat)) {
+	if(reload) {
+		rc = 1;
+		reload = 0;
+	} else
+		rc = cl_statchkdir(&dbstat);
+
+	switch(rc) {
 		case 1:
 			logg("^Database has changed, loading updated database\n");
 			cl_statfree(&dbstat);
@@ -5831,7 +5853,30 @@ sigsegv(int sig)
 
 	logg("!Segmentation fault :-( Bye..\n");
 
+	quitting++;
 	smfi_stop();
+}
+
+static void
+sighup(int sig)
+{
+	const struct cfgstruct *cpt;
+
+	signal(SIGHUP, sighup);
+
+	logg("SIGHUP caught: re-opening log file\n");
+	logg_close();
+	if(!logg_file && (cpt = cfgopt(copt, "LogFile"))->enabled)
+		logg_file = cpt->strarg;
+}
+
+static void
+sigusr2(int sig)
+{
+	signal(SIGUSR2, sighup);
+
+	logg("^SIGUSR2 caught: scheduling database reload\n");
+	reload++;
 }
 
 #ifdef HAVE_BACKTRACE
