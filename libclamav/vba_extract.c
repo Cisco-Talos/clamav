@@ -634,8 +634,9 @@ int cli_decode_ole_object(int fd, const char *dir)
 {
 	int ofd;
 	struct stat statbuf;
-	char ch, *fullname;
+	char ch;
 	uint32_t object_size;
+	char fullname[NAME_MAX + 1];
 
 	if (fstat(fd, &statbuf) == -1) {
 		return -1;
@@ -683,12 +684,8 @@ int cli_decode_ole_object(int fd, const char *dir)
 		}
 		object_size = vba_endian_convert_32(object_size, FALSE);
 	}
-	fullname = cli_malloc(strlen(dir) + 18);
-	if(fullname == NULL)
-		return -1;
-	sprintf(fullname, "%s/_clam_ole_object", dir);
+	snprintf(fullname, sizeof(fullname) - 1, "%s/_clam_ole_object", dir);
 	ofd = open(fullname, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, 0600);
-	free(fullname);
 	if (ofd < 0) {
 		return -1;
 	}
@@ -922,26 +919,6 @@ typedef struct macro_info_tag {
 	uint16_t count;
 	struct macro_entry_tag *macro_entry;
 } macro_info_t;
-
-typedef struct menu_entry_tag {
-	uint16_t context;
-	uint16_t menu;
-	uint16_t extname_i;
-	uint16_t unknown;
-	uint16_t intname_i;
-	uint16_t pos;
-} menu_entry_t;
-
-typedef struct mac_token_tag {
-	unsigned char token;
-	unsigned char *str;
-} mac_token_t;
-
-typedef struct mac_token2_tag {
-	uint16_t token;
-	unsigned char *str;
-
-} mac_token2_t;
 
 static	void	wm_free_macro_info(macro_info_t *macro_info);
 
@@ -1207,7 +1184,7 @@ wm_skip_macro_intnames(int fd)
 
 vba_project_t *wm_dir_read(const char *dir)
 {
-	int fd, done, i;
+	int fd, done;
 	off_t end_offset;
 	unsigned char info_id;
 	macro_info_t *macro_info=NULL;
@@ -1334,6 +1311,8 @@ vba_project_t *wm_dir_read(const char *dir)
 			free(vba_project);
 			vba_project = NULL;
 		} else {
+			int i;
+
 			vba_project->count = macro_info->count;
 			for(i = 0; i < macro_info->count; i++) {
 				vba_project->name[i] = cli_strdup("WordDocument");
@@ -1342,13 +1321,12 @@ vba_project_t *wm_dir_read(const char *dir)
 				vba_project->key[i] = macro_info->macro_entry[i].key;
 			}
 		}
+abort:
+		wm_free_macro_info(macro_info);
+		/* Fall through */
 	} else
 		vba_project = NULL;
 
-	/* Fall through */
-abort:
-	if (macro_info)
-		wm_free_macro_info(macro_info);
 	return vba_project;
 }
 
