@@ -383,7 +383,7 @@ int cli_addtypesigs(struct cl_engine *engine)
 	    return CL_EMEM;
 	}
 
-	if((ret = cli_ac_init(root, AC_DEFAULT_MIN_DEPTH, AC_DEFAULT_MAX_DEPTH))) {
+	if((ret = cli_ac_init(root, cli_ac_mindepth, cli_ac_maxdepth))) {
 	    /* No need to free previously allocated memory here - all engine
 	     * elements will be properly freed by cl_free()
 	     */

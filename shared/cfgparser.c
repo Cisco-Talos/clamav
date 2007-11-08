@@ -117,6 +117,10 @@ struct cfgoption cfg_options[] = {
     {"LocalIPAddress", OPT_QUOTESTR, -1, NULL, 0, OPT_FRESHCLAM},
     {"ConnectTimeout", OPT_NUM, 30, NULL, 0, OPT_FRESHCLAM},
     {"ReceiveTimeout", OPT_NUM, 30, NULL, 0, OPT_FRESHCLAM},
+
+    {"DevACOnly", OPT_BOOL, -1, NULL, 0, OPT_CLAMD},
+    {"DevACDepth", OPT_NUM, -1, NULL, 0, OPT_CLAMD},
+
     {NULL, 0, 0, NULL, 0, 0}
 };
 

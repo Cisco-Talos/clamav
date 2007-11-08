@@ -616,7 +616,7 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
  				memset(root, 0, sizeof(struct cli_matcher));
 
 				cli_dbgmsg("regex_list: Initialising AC pattern matcher\n");
-				if((rc = cli_ac_init(root, AC_DEFAULT_MIN_DEPTH, AC_DEFAULT_MAX_DEPTH))) {
+				if((rc = cli_ac_init(root, cli_ac_mindepth, cli_ac_maxdepth))) {
 					/* no need to free previously allocated memory here */
 					cli_errmsg("regex_list: Can't initialise AC pattern matcher\n");
 					return rc;

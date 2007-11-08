@@ -27,6 +27,7 @@
 #define AC_DEFAULT_MIN_DEPTH 2
 #define AC_DEFAULT_MAX_DEPTH 3
 #define AC_DEFAULT_TRACKLEN 8
+extern uint8_t cli_ac_mindepth, cli_ac_maxdepth;
 
 struct cli_ac_data {
     uint32_t partsigs;

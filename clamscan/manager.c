@@ -188,6 +188,9 @@ int scanmanager(const struct optstruct *opt)
     if(opt_check(opt, "dev-ac-only"))
 	dboptions |= CL_DB_ACONLY;
 
+    if(opt_check(opt, "dev-ac-depth"))
+	cli_ac_setdepth(AC_DEFAULT_MIN_DEPTH, atoi(opt_arg(opt, "dev-ac-depth")));
+
     if(opt_check(opt, "detect-pua"))
 	dboptions |= CL_DB_PUA;
 

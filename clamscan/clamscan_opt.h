@@ -90,6 +90,7 @@ static struct option clamscan_longopt[] = {
 
     /* developers only */
     {"dev-ac-only", 0, 0, 0},
+    {"dev-ac-depth", 1, 0, 0},
 
     {0, 0, 0, 0}
 };

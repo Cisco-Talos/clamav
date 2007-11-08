@@ -52,6 +52,7 @@
 
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
+#include "libclamav/matcher-ac.h"
 
 #include "shared/output.h"
 #include "shared/options.h"
@@ -313,6 +314,16 @@ int main(int argc, char **argv)
 	dboptions |= CL_DB_PHISHING_URLS;
     else
 	logg("Disabling URL based phishing detection.\n");
+
+    if(cfgopt(copt,"DevACOnly")->enabled) {
+	logg("Only using the A-C matcher.\n");
+	dboptions |= CL_DB_ACONLY;
+    }
+
+    if((cpt = cfgopt(copt, "DevACDepth"))->enabled) {
+	cli_ac_setdepth(AC_DEFAULT_MIN_DEPTH, cpt->numarg);
+	logg("Max A-C depth set to %u\n", cpt->numarg);
+    }
 
     if((ret = cl_load(dbdir, &engine, &sigs, dboptions))) {
 	logg("!%s\n", cl_strerror(ret));

@@ -1,3 +1,9 @@
+Thu Nov  8 15:18:39 CET 2007 (tk)
+---------------------------------
+  * libclamav: add cli_ac_setdepth()
+  * clamscan: --dev-ac-depth
+  * clamd: DevACOnly, DevACDepth
+
 Wed Nov  7 20:37:27 GMT 2007 (njh)
 ----------------------------------
   * clamav-milter:	Added signal handling: SIGUSR2 to reload database
