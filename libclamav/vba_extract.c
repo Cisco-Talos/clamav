@@ -50,6 +50,10 @@
 #define __attribute__(x)
 #endif
 
+#define PPT_LZW_BUFFSIZE 8192
+#define NUM_VBA_VERSIONS 14
+#define VBA_COMPRESSION_WINDOW 4096
+
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)
 #endif
@@ -84,7 +88,6 @@ struct vba56_header {
 typedef struct vba_version_tag {
 	unsigned char signature[4];
 	const char *name;
-	int vba_version;
 	int is_mac;
 } vba_version_t;
 
@@ -104,31 +107,22 @@ static uint32_t vba_endian_convert_32(uint32_t value, int is_mac)
 		return le32_to_host(value);
 }
 
-#define NUM_VBA_VERSIONS 14
 static const vba_version_t vba_version[NUM_VBA_VERSIONS] = {
-	{ { 0x5e, 0x00, 0x00, 0x01 }, "Office 97",              5, FALSE},
-	{ { 0x5f, 0x00, 0x00, 0x01 }, "Office 97 SR1",          5, FALSE },
-	{ { 0x65, 0x00, 0x00, 0x01 }, "Office 2000 alpha?",     6, FALSE },
-	{ { 0x6b, 0x00, 0x00, 0x01 }, "Office 2000 beta?",      6, FALSE },
-	{ { 0x6d, 0x00, 0x00, 0x01 }, "Office 2000",            6, FALSE },
-	{ { 0x6f, 0x00, 0x00, 0x01 }, "Office 2000",            6, FALSE },
-	{ { 0x70, 0x00, 0x00, 0x01 }, "Office XP beta 1/2",     6, FALSE },
-	{ { 0x73, 0x00, 0x00, 0x01 }, "Office XP",              6, FALSE },
-	{ { 0x76, 0x00, 0x00, 0x01 }, "Office 2003",            6, FALSE },
-	{ { 0x79, 0x00, 0x00, 0x01 }, "Office 2003",            6, FALSE },
-	{ { 0x60, 0x00, 0x00, 0x0e }, "MacOffice 98",           5, TRUE },
-	{ { 0x62, 0x00, 0x00, 0x0e }, "MacOffice 2001",         5, TRUE },
-	{ { 0x63, 0x00, 0x00, 0x0e }, "MacOffice X",		6, TRUE },
-	{ { 0x64, 0x00, 0x00, 0x0e }, "MacOffice 2004",         6, TRUE },
+	{ { 0x5e, 0x00, 0x00, 0x01 }, "Office 97",              FALSE},
+	{ { 0x5f, 0x00, 0x00, 0x01 }, "Office 97 SR1",          FALSE },
+	{ { 0x65, 0x00, 0x00, 0x01 }, "Office 2000 alpha?",     FALSE },
+	{ { 0x6b, 0x00, 0x00, 0x01 }, "Office 2000 beta?",      FALSE },
+	{ { 0x6d, 0x00, 0x00, 0x01 }, "Office 2000",            FALSE },
+	{ { 0x6f, 0x00, 0x00, 0x01 }, "Office 2000",            FALSE },
+	{ { 0x70, 0x00, 0x00, 0x01 }, "Office XP beta 1/2",     FALSE },
+	{ { 0x73, 0x00, 0x00, 0x01 }, "Office XP",              FALSE },
+	{ { 0x76, 0x00, 0x00, 0x01 }, "Office 2003",            FALSE },
+	{ { 0x79, 0x00, 0x00, 0x01 }, "Office 2003",            FALSE },
+	{ { 0x60, 0x00, 0x00, 0x0e }, "MacOffice 98",           TRUE },
+	{ { 0x62, 0x00, 0x00, 0x0e }, "MacOffice 2001",         TRUE },
+	{ { 0x63, 0x00, 0x00, 0x0e }, "MacOffice X",		TRUE },
+	{ { 0x64, 0x00, 0x00, 0x0e }, "MacOffice 2004",         TRUE },
 };
-
-#define VBA56_DIRENT_RECORD_COUNT (2 + /* magic */              \
-                                   4 + /* version */            \
-                                   2 + /* 0x00 0xff */          \
-                                  22)  /* unknown */
-#define VBA56_DIRENT_HEADER_SIZE (VBA56_DIRENT_RECORD_COUNT +   \
-                                  2 +  /* type1 record count */ \
-                                  2)   /* unknown */
 
 static char *
 get_unicode_name(const char *name, int size, int is_mac)
@@ -329,8 +323,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 				return NULL;
 		}
 	} else {
-		cli_dbgmsg("VBA Project: %s, VBA Version=%d\n", vba_version[i].name,
-                                vba_version[i].vba_version);
+		cli_dbgmsg("VBA Project: %s\n", vba_version[i].name);
 		is_mac = vba_version[i].is_mac;
 	}
 
@@ -506,8 +499,6 @@ vba_project_t *vba56_dir_read(const char *dir)
 
 	return vba_project;
 }
-
-#define VBA_COMPRESSION_WINDOW 4096
 
 unsigned char *vba_decompress(int fd, uint32_t offset, int *size)
 {
@@ -739,23 +730,18 @@ static void ppt_print_atom_header(atom_header_t *atom_header)
 	cli_dbgmsg("  Length: 0x%.8x\n", atom_header->length);
 }
 
-#define PPT_LZW_BUFFSIZE 8192
 static int ppt_unlzw(const char *dir, int fd, uint32_t length)
 {
 	int ofd, retval;
 	unsigned char inbuff[PPT_LZW_BUFFSIZE], outbuff[PPT_LZW_BUFFSIZE];
-	char *fullname;
 	uint32_t bufflen;
 	z_stream stream;
+	char fullname[NAME_MAX + 1];
 
-	fullname = cli_malloc(strlen(dir) + 17);
-	if (!fullname) {
-		return FALSE;
-	}
-	sprintf(fullname, "%s/ppt%.8lx.doc", dir, (long)lseek(fd, 0L, SEEK_CUR));
+	snprintf(fullname, sizeof(fullname) - 1, "%s/ppt%.8lx.doc",
+		dir, (long)lseek(fd, 0L, SEEK_CUR));
 
 	ofd = open(fullname, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, 0600);
-	free(fullname);
 	if (ofd == -1) {
 		cli_dbgmsg("ppt_unlzw Open outfile failed\n");
 		return FALSE;
