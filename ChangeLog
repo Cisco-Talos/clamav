@@ -1,12 +1,3 @@
-Wed Nov 14 21:56:33 EET 2007 (edwin)
-------------------------------------
-  * libclamav/phishcheck.[ch]: 
-    remove "all domain scan" feature from phishcheck
-    (--no-phishing-restrictedscan). Nobody is using it.
-    Don't care why an url is clean, just state it is clean.
-    Various cleanups resulting from this.
-    Prepare to introduce selective turn on of sub-features.
-
 Mon Nov 12 17:47:21 GMT 2007 (njh)
 ----------------------------------
   * libclamav/vba_extract.c:	Removed more unused code

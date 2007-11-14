@@ -255,6 +255,11 @@ Scan URLs found in mails for phishing attempts using heuristics. This will class
 .br
 Default: yes
 .TP
+\fBPhishingRestrictedScan BOOL\fR
+Use phishing detection only for domains listed in the .pdb database. It is not recommended to have this option turned off, because scanning of all domains may lead to many false positives!
+.br
+Default: yes
+.TP
 \fBPhishingAlwaysBlockSSLMismatch BOOL\fR
 Always block SSL mismatches in URLs, even if the URL isn't in the database. This can lead to false positives.
 .br

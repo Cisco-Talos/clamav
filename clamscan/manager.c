@@ -174,6 +174,10 @@ int scanmanager(const struct optstruct *opt)
 
     if(!opt_check(opt,"no-phishing-scan-urls"))
 	dboptions |= CL_DB_PHISHING_URLS;
+    if(!opt_check(opt,"no-phishing-restrictedscan")) {
+	/* not scanning all domains, check only URLs with domains from .pdb */
+	options |= CL_SCAN_PHISHING_DOMAINLIST;
+    }
     if(opt_check(opt,"phishing-ssl")) {
 	options |= CL_SCAN_PHISHING_BLOCKSSL;
     }
