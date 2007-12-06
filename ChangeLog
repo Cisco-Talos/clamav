@@ -1,3 +1,8 @@
+Thu Dec  6 15:22:27 CET 2007 (tk)
+---------------------------------
+  * libclamav/pe.c: fix possible integer overflow in MEW related code
+		    Reported by iDefense [IDEF2842]
+
 Thu Dec  6 15:19:53 CET 2007 (tk)
 ---------------------------------
   * libclamav/sis.c: fix error path descriptor leak (bb#704)

@@ -1116,6 +1116,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 	    cli_dbgmsg("MEW: ssize %08x dsize %08x offdiff: %08x\n", ssize, dsize, offdiff);
 
+	    CLI_UNPSIZELIMITS("MEW", MAX(ssize, dsize));
 	    CLI_UNPSIZELIMITS("MEW", MAX(ssize + dsize, exe_sections[i + 1].rsz));
 
 	    /* allocate needed buffer */
