@@ -1,3 +1,7 @@
+Thu Dec  6 15:11:25 CET 2007 (tk)
+---------------------------------
+  * libclamav/mbox.c: some attachments were not being scanned (NJH, bb#660)
+
 Thu Dec  6 15:08:01 CET 2007 (tk)
 ---------------------------------
   * libclamav/htmlnorm.c: properly truncate long URLs (Edwin, bb#645)

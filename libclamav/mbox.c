@@ -2770,6 +2770,15 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				free(messages);
 			return rc;
 
+		default:
+			cli_warnmsg("Message received with unknown mime encoding - assume application");
+			/*
+			 * Some Yahoo emails attach as
+			 * Content-Type: X-unknown/unknown;
+			 * instead of
+			 * Content-Type: application/unknown;
+			 * so let's try our best to salvage something
+			 */
 		case APPLICATION:
 			/*cptr = messageGetMimeSubtype(mainMessage);
 
@@ -2796,10 +2805,6 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 		case AUDIO:
 		case VIDEO:
 		case IMAGE:
-			break;
-
-		default:
-			cli_warnmsg("Message received with unknown mime encoding");
 			break;
 		}
 
@@ -5087,9 +5092,9 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 			}
 			return mainMessage;
 		default:
-			cli_warnmsg("Only text and application attachments are supported, type = %d\n",
+			cli_warnmsg("Only text and application attachments are fully supported, type = %d\n",
 				messageGetMimeType(aMessage));
-			return mainMessage;
+			/* fall through - we may be able to salvage something */
 	}
 
 	if(*rc != VIRUS) {
