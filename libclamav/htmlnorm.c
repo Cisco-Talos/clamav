@@ -430,7 +430,11 @@ static inline void html_tag_set_inahref(tag_arguments_t *tags,int idx,int in_ahr
 static inline void html_tag_contents_append(tag_arguments_t *tags,int idx,const unsigned char* begin,const unsigned char *end)
 {
 	if(end && (begin<end)) {
-		blobAddData(tags->contents[idx-1],begin,end-begin);
+		const size_t blob_len = blobGetDataSize(tags->contents[idx-1]);
+		const size_t blob_sizeleft = blob_len <= MAX_TAG_CONTENTS_LENGTH ? (MAX_TAG_CONTENTS_LENGTH - blob_len) : 0;
+		const size_t str_len = end - begin;
+		if(blob_sizeleft)
+			blobAddData(tags->contents[idx-1],begin, blob_sizeleft < str_len ? blob_sizeleft : str_len );
 	}
 }
 
@@ -441,15 +445,6 @@ static inline void html_tag_contents_done(tag_arguments_t *tags,int idx)
 	blobAddData(tags->contents[idx-1], "", 1);
 	blobClose(tags->contents[idx-1]);
 }
-
-static inline void html_tag_contents_length_check(tag_arguments_t *tags,int* idx)
-{
-	if (blobGetDataSize(tags->contents[*idx-1])>MAX_TAG_CONTENTS_LENGTH) {
-		html_tag_contents_done(tags,*idx);
-		*idx=0;/*in_ahref=0;*/
-	}
-}
-
 
 static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag_arguments_t *hrefs,const struct cli_dconf* dconf)
 {
@@ -645,7 +640,6 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					if(hrefs && hrefs->scanContents && in_ahref && href_contents_begin) {
 						/*append this text portion to the contents of <a>*/
 						html_tag_contents_append(hrefs,in_ahref,href_contents_begin,ptr);
-						html_tag_contents_length_check(hrefs,&in_ahref);
 						href_contents_begin=NULL;/*We just encountered another tag inside <a>, so skip it*/
 					}
 					ptr++;

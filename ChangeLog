@@ -1,3 +1,7 @@
+Thu Dec  6 15:08:01 CET 2007 (tk)
+---------------------------------
+  * libclamav/htmlnorm.c: properly truncate long URLs (Edwin, bb#645)
+
 Thu Dec  6 15:03:16 CET 2007 (tk)
 ---------------------------------
   * libclamunrar: temporarily remove the RAR code
