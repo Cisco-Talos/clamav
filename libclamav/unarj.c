@@ -84,10 +84,6 @@
 #endif
 
 #define GARBLE_FLAG     0x01
-#define VOLUME_FLAG     0x04
-#define EXTFILE_FLAG    0x08
-#define PATHSYM_FLAG    0x10
-#define BACKUP_FLAG     0x20
 
 #ifndef HAVE_ATTRIB_PACKED
 #define __attribute__(x)
@@ -382,9 +378,17 @@ static int read_c_len(arj_decode_t *decode_data)
 					c = arj_getbits(decode_data, CBIT) + 20;
 				}
 				while (--c >= 0) {
+					if (i >= NC) {
+						cli_warnmsg("ERROR: bounds exceeded\n");
+						return CL_EFORMAT;
+					}
 					decode_data->c_len[i++] = 0;
 				}
 			} else {
+				if (i >= NC) {
+					cli_warnmsg("ERROR: bounds exceeded\n");
+					return CL_EFORMAT;
+				}
 				decode_data->c_len[i++] = (unsigned char) (c - 2);
 			}
 		}
@@ -495,7 +499,7 @@ static int decode(int fd, arj_metadata_t *metadata)
 				break;
 			}
 			if (out_ptr > i && out_ptr < DDICSIZ - MAXMATCH - 1) {
-				while ((--j >= 0) && (i < DDICSIZ)) {
+				while ((--j >= 0) && (i < DDICSIZ) && (out_ptr < DDICSIZ)) {
 					decode_data.text[out_ptr++] = decode_data.text[i++];
 				}
 			} else {
@@ -629,7 +633,7 @@ static int decode_f(int fd, arj_metadata_t *metadata)
 	return CL_SUCCESS;
 }	
 
-static uint32_t arj_unstore(int ifd, int ofd, uint64_t len)
+static uint32_t arj_unstore(int ifd, int ofd, uint32_t len)
 {
 	unsigned char data[8192];
 	uint32_t count, rem;
@@ -639,7 +643,7 @@ static uint32_t arj_unstore(int ifd, int ofd, uint64_t len)
 	rem = len;
 
 	while (rem > 0) {
-		todo = MIN(8192, rem);
+		todo = (unsigned int) MIN(8192, rem);
 		count = cli_readn(ifd, data, todo);
 		if (count != todo) {
 			return len-rem;
@@ -683,7 +687,7 @@ static int arj_read_main_header(int fd)
 	cli_dbgmsg("Header Size: %d\n", header_size);
 	if (header_size == 0) {
 		/* End of archive */
-		return 0;
+		return FALSE;
 	}
 	if (header_size > HEADERSIZE_MAX) {
 		cli_dbgmsg("arj_read_header: invalid header_size: %u\n ", header_size);
@@ -693,13 +697,6 @@ static int arj_read_main_header(int fd)
 	if (cli_readn(fd, &main_hdr, 30) != 30) {
 		return FALSE;
 	}
-	main_hdr.time_created = le32_to_host(main_hdr.time_created);
-	main_hdr.time_modified = le32_to_host(main_hdr.time_modified);
-	main_hdr.archive_size = le32_to_host(main_hdr.archive_size);
-	main_hdr.sec_env_file_position = le32_to_host(main_hdr.sec_env_file_position);
-	main_hdr.entryname_pos = le16_to_host(main_hdr.entryname_pos);
-	main_hdr.sec_trail_size = le16_to_host(main_hdr.sec_trail_size);
-	main_hdr.host_data = le16_to_host(main_hdr.host_data);
 	
 	cli_dbgmsg("ARJ Main File Header\n");
 	cli_dbgmsg("First Header Size: %d\n", main_hdr.first_hdr_size);
@@ -709,23 +706,21 @@ static int arj_read_main_header(int fd)
 	cli_dbgmsg("Flags: 0x%x\n", main_hdr.flags);
 	cli_dbgmsg("Security version: %d\n", main_hdr.security_version);
 	cli_dbgmsg("File type: %d\n", main_hdr.file_type);
-	cli_dbgmsg("Time created: %lu\n", main_hdr.time_created);
-	cli_dbgmsg("Time modified: %lu\n", main_hdr.time_modified);
-	cli_dbgmsg("Archive size: %lu\n", main_hdr.archive_size);
-	cli_dbgmsg("Security envelope file pos: %lu\n", main_hdr.archive_size);
-	cli_dbgmsg("Entryname pos: %u\n", main_hdr.entryname_pos);
-	cli_dbgmsg("Security trailer size: %u\n", main_hdr.sec_trail_size);
-	cli_dbgmsg("Host data: %u\n\n", main_hdr.host_data);
 
 	if (main_hdr.first_hdr_size < 30) {
 		cli_dbgmsg("Format error. First Header Size < 30\n");
 		return FALSE;
 	}
 	if (main_hdr.first_hdr_size > 30) {
-		lseek(fd, main_hdr.first_hdr_size - 30, SEEK_CUR);
+		if (lseek(fd, main_hdr.first_hdr_size - 30, SEEK_CUR) == -1) {
+			return FALSE;
+		}
 	}
 
 	filename = (char *) cli_malloc(header_size);
+	if (!filename) {
+		return FALSE;
+	}
 	for (count=0 ; count < header_size ; count++) {
 		if (cli_readn(fd, &filename[count], 1) != 1) {
 			free(filename);
@@ -740,6 +735,10 @@ static int arj_read_main_header(int fd)
 		return FALSE;
 	}
 	comment = (char *) cli_malloc(header_size);
+	if (!comment) {
+		free(filename);
+		return FALSE;
+	}
 	for (count=0 ; count < header_size ; count++) {
 		if (cli_readn(fd, &comment[count], 1) != 1) {
 			free(filename);
@@ -771,11 +770,12 @@ static int arj_read_main_header(int fd)
 			return FALSE;
 		}
 		count = le16_to_host(count);
-		cli_dbgmsg("Count: %d\n", count);
+		cli_dbgmsg("Extended header size: %d\n", count);
 		if (count == 0) {
 			break;
 		}
-		if (lseek(fd, (off_t) (count + 4), SEEK_CUR) != (count + 4)) {
+		/* Skip extended header + 4byte CRC */
+		if (lseek(fd, (off_t) (count + 4), SEEK_CUR) == -1) {
 			return FALSE;
 		}
 	}
@@ -805,13 +805,8 @@ static int arj_read_file_header(int fd, arj_metadata_t *metadata)
 	if (cli_readn(fd, &file_hdr, 30) != 30) {
 		return CL_EFORMAT;
 	}
-	file_hdr.time_modified = le32_to_host(file_hdr.time_modified);
 	file_hdr.comp_size = le32_to_host(file_hdr.comp_size);
 	file_hdr.orig_size = le32_to_host(file_hdr.orig_size);
-	file_hdr.orig_crc = le32_to_host(file_hdr.orig_crc);
-	file_hdr.entryname_pos = le16_to_host(file_hdr.entryname_pos);
-	file_hdr.file_mode = le16_to_host(file_hdr.file_mode);
-	file_hdr.host_data = le16_to_host(file_hdr.host_data);
 	
 	cli_dbgmsg("ARJ File Header\n");
 	cli_dbgmsg("First Header Size: %d\n", file_hdr.first_hdr_size);
@@ -822,23 +817,25 @@ static int arj_read_file_header(int fd, arj_metadata_t *metadata)
 	cli_dbgmsg("Method: %d\n", file_hdr.method);
 	cli_dbgmsg("File type: %d\n", file_hdr.file_type);
 	cli_dbgmsg("File type: %d\n", file_hdr.password_mod);
-	cli_dbgmsg("Time modified: %lu\n", file_hdr.time_modified);
-	cli_dbgmsg("Compressed size: %lu\n", file_hdr.comp_size);
-	cli_dbgmsg("Original size: %lu\n", file_hdr.orig_size);	
-	cli_dbgmsg("Original crc: %lu\n", file_hdr.orig_crc);	
-	cli_dbgmsg("Entryname pos: %u\n", file_hdr.entryname_pos);
-	cli_dbgmsg("File access mode: %u\n", file_hdr.file_mode);
-	cli_dbgmsg("Host data: %u\n\n", file_hdr.host_data);
+	cli_dbgmsg("Compressed size: %u\n", file_hdr.comp_size);
+	cli_dbgmsg("Original size: %u\n", file_hdr.orig_size);	
 
 	if (file_hdr.first_hdr_size < 30) {
 		cli_dbgmsg("Format error. First Header Size < 30\n");
 		return CL_EFORMAT;
 	}
+
+	/* Note: this skips past any extended file start position data (multi-volume) */
 	if (file_hdr.first_hdr_size > 30) {
-		lseek(fd, file_hdr.first_hdr_size - 30, SEEK_CUR);
+		if (lseek(fd, file_hdr.first_hdr_size - 30, SEEK_CUR) == -1) {
+			return CL_EFORMAT;
+		}
 	}
 
 	filename = (char *) cli_malloc(header_size);
+	if (!filename) {
+		return CL_EMEM;
+	}
 	for (count=0 ; count < header_size ; count++) {
 		if (cli_readn(fd, &filename[count], 1) != 1) {
 			free(filename);
@@ -854,6 +851,10 @@ static int arj_read_file_header(int fd, arj_metadata_t *metadata)
 	}
 
 	comment = (char *) cli_malloc(header_size);
+	if (!comment) {
+		free(filename);
+		return CL_EFORMAT;
+	}
 	for (count=0 ; count < header_size ; count++) {
 		if (cli_readn(fd, &comment[count], 1) != 1) {
 			free(filename);
@@ -875,8 +876,9 @@ static int arj_read_file_header(int fd, arj_metadata_t *metadata)
 
 	free(filename);
 	free(comment);
-	
-	if (cli_readn(fd, &metadata->crc, 4) != 4) {
+
+	/* Skip CRC */
+	if (lseek(fd, (off_t) 4, SEEK_CUR) == -1) {
 		return CL_EFORMAT;
 	}
 	
@@ -886,22 +888,19 @@ static int arj_read_file_header(int fd, arj_metadata_t *metadata)
 			return CL_EFORMAT;
 		}
 		count = le16_to_host(count);
-		cli_dbgmsg("Count: %d\n", count);
+		cli_dbgmsg("Extended header size: %d\n", count);
 		if (count == 0) {
 			break;
 		}
-		if (lseek(fd, (off_t) (count + 4), SEEK_CUR) != (count + 4)) {
+		/* Skip extended header + 4byte CRC */
+		if (lseek(fd, (off_t) (count + 4), SEEK_CUR) == -1) {
 			return CL_EFORMAT;
 		}
 	}
-	metadata->min_version = file_hdr.min_version;
 	metadata->comp_size = file_hdr.comp_size;
 	metadata->orig_size = file_hdr.orig_size;
-	metadata->orig_crc = file_hdr.orig_crc;
-	metadata->host_os = file_hdr.host_os;
-	metadata->flags = file_hdr.flags;
 	metadata->method = file_hdr.method;
-	metadata->encrypted = ((metadata->flags & GARBLE_FLAG) != 0) ? TRUE : FALSE;
+	metadata->encrypted = ((file_hdr.flags & GARBLE_FLAG) != 0) ? TRUE : FALSE;
 	metadata->ofd = -1;
 	if (!metadata->filename) {
 		return CL_EMEM;
@@ -928,8 +927,10 @@ int cli_unarj_open(int fd, const char *dirname)
 
 int cli_unarj_prepare_file(int fd, const char *dirname, arj_metadata_t *metadata)
 {
-	
 	cli_dbgmsg("in cli_unarj_prepare_file\n");
+	if (!metadata || !dirname || (fd < 0)) {
+		return CL_ENULLARG;
+	}
 	/* Each file is preceeded by the ARJ file marker */
 	if (!is_arj_archive(fd)) {
 		cli_dbgmsg("Not in ARJ format\n");
@@ -945,6 +946,9 @@ int cli_unarj_extract_file(int fd, const char *dirname, arj_metadata_t *metadata
 	char filename[1024];
 	
 	cli_dbgmsg("in cli_unarj_extract_file\n");
+	if (!metadata || !dirname || (fd < 0)) {
+		return CL_ENULLARG;
+	}
 
 	if (metadata->encrypted) {
 		cli_dbgmsg("PASSWORDed file (skipping)\n");
@@ -985,4 +989,3 @@ int cli_unarj_extract_file(int fd, const char *dirname, arj_metadata_t *metadata
 	}
 	return ret;
 }
-	

@@ -22,15 +22,10 @@
 #define __UNARJ_H
 
 typedef struct arj_metadata_tag {
-	uint8_t min_version;
 	uint32_t comp_size;
 	uint32_t orig_size;
-	uint32_t orig_crc;
-	uint8_t host_os;
-	uint8_t flags;
 	uint8_t method;
 	char *filename;
-	uint32_t crc;
 	int encrypted;
 	int ofd;
 } arj_metadata_t;
