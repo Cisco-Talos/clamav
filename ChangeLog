@@ -1,3 +1,7 @@
+Thu Dec  6 15:19:53 CET 2007 (tk)
+---------------------------------
+  * libclamav/sis.c: fix error path descriptor leak (bb#704)
+
 Thu Dec  6 15:15:45 CET 2007 (tk)
 ---------------------------------
   * libclamav/mspack.c: fix off-by-one error in LZX_READ_HUFFSYM() (bb#663)

@@ -325,6 +325,7 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 	    free(fname);
 	    if(compressed)
 		free(buff);
+	    close(desc);
 	    return CL_EIO;
 	} else {
 	    if(compressed)
