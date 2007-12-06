@@ -1,3 +1,7 @@
+Thu Dec  6 15:03:16 CET 2007 (tk)
+---------------------------------
+  * libclamunrar: temporarily remove the RAR code
+
 Mon Nov 12 17:47:21 GMT 2007 (njh)
 ----------------------------------
   * libclamav/vba_extract.c:	Removed more unused code

@@ -2064,8 +2064,6 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 #ifdef ENABLE_UNRAR
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR))
 		ret = cli_scanrar(desc, ctx, 0, NULL);
-#else
-	    cli_warnmsg("RAR support not compiled in\n");
 #endif
 	    break;
 

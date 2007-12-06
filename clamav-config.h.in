@@ -84,9 +84,6 @@
 /* "default FD_SETSIZE value" */
 #undef DEFAULT_FD_SETSIZE
 
-/* link with libclamunrar (non-GPL, see COPYING.unrar) */
-#undef ENABLE_UNRAR
-
 /* file i/o buffer size */
 #undef FILEBUFF
 
