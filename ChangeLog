@@ -1,3 +1,8 @@
+Thu Dec  6 15:44:01 CET 2007 (edwin)
+------------------------------------
+  * libclamav/regex_list.c: avoid circular list construction, when different
+			    versions of same .wdb is loaded twice. (BB #718)
+
 Thu Dec  6 15:41:04 CET 2007 (trog)
 -----------------------------------
   * libclamav/unarj.c: minor code cleanup

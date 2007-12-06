@@ -1053,9 +1053,7 @@ static void tree_node_insert_nonbin(struct tree_node* node, struct tree_node* ne
 				while(node->next && !node->listend)
 					node = node->next;
 				node->listend = 0;
-				if(new->next == node) {
-					new->next = node->next;
-				}
+				new->next = node->next;
 				node->next = new;
 				new->listend=1;
 				return;
