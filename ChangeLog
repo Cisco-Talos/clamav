@@ -1,3 +1,7 @@
+Thu Dec  6 15:29:00 CET 2007 (tk)
+---------------------------------
+  * libclamav/others.c: bump f-level
+
 Thu Dec  6 15:22:27 CET 2007 (tk)
 ---------------------------------
   * libclamav/pe.c: fix possible integer overflow in MEW related code
