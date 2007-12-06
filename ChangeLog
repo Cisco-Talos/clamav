@@ -1,3 +1,7 @@
+Thu Dec  6 15:39:11 CET 2007 (tk)
+---------------------------------
+  * libclamav/matcher-ac.c: fix handling of bfs_last (bb#713)
+
 Thu Dec  6 15:29:00 CET 2007 (tk)
 ---------------------------------
   * libclamav/others.c: bump f-level

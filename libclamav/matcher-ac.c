@@ -204,7 +204,7 @@ static int bfs_enqueue(struct bfs_list **bfs, struct bfs_list **last, struct cli
     return CL_SUCCESS;
 }
 
-static struct cli_ac_node *bfs_dequeue(struct bfs_list **bfs)
+static struct cli_ac_node *bfs_dequeue(struct bfs_list **bfs, struct bfs_list **last)
 {
 	struct bfs_list *lpt;
 	struct cli_ac_node *pt;
@@ -215,6 +215,8 @@ static struct cli_ac_node *bfs_dequeue(struct bfs_list **bfs)
     } else {
 	*bfs = (*bfs)->next;
 	pt = lpt->node;
+	if(lpt == *last)
+	    *last = NULL;
 	free(lpt);
 	return pt;
     }
@@ -239,7 +241,7 @@ static int ac_maketrans(struct cli_matcher *root)
 	}
     }
 
-    while((node = bfs_dequeue(&bfs))) {
+    while((node = bfs_dequeue(&bfs, &bfs_last))) {
 	if(node->leaf)
 	    continue;
 
