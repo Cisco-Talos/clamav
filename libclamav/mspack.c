@@ -734,7 +734,7 @@ void mszip_free(struct mszip_stream *zip) {
 
 #define LZX_ENSURE_BITS(nbits)                                              \
   while (bits_left < (nbits)) {                                         \
-    if (i_ptr >= i_end) {                                               \
+    if (i_ptr + 1 >= i_end) {                                               \
       if (lzx_read_input(lzx)) return lzx->error;                      \
       i_ptr = lzx->i_ptr;                                               \
       i_end = lzx->i_end;                                               \

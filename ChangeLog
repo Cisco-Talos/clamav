@@ -1,3 +1,7 @@
+Thu Dec  6 15:15:45 CET 2007 (tk)
+---------------------------------
+  * libclamav/mspack.c: fix off-by-one error in LZX_READ_HUFFSYM() (bb#663)
+
 Thu Dec  6 15:11:25 CET 2007 (tk)
 ---------------------------------
   * libclamav/mbox.c: some attachments were not being scanned (NJH, bb#660)
