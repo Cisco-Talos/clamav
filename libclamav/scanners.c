@@ -425,6 +425,8 @@ static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
     }
 
     cli_dbgmsg("ARJ: Exit code: %d\n", ret);
+    if (ret == CL_BREAK)
+	ret = CL_CLEAN;
 
     return ret;
 }

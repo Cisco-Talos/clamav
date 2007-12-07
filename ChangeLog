@@ -1,3 +1,7 @@
+Fri Dec  7 08:56:02 GMT 2007 (trog)
+-----------------------------------
+  * libclamav/scanners.c: fixup return value.
+
 Thu Dec  6 15:44:01 CET 2007 (edwin)
 ------------------------------------
   * libclamav/regex_list.c: avoid circular list construction, when different
