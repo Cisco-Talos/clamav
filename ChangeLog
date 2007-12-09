@@ -1,3 +1,8 @@
+Sun Dec  9 11:43:03 EET 2007 (edwin)
+------------------------------------
+  * shared/misc.c: pass mode to open with O_CREAT. 
+  Avoids build failure with -D_FORTIFY_SOURCE=2 on gcc4.3 with glibc 2.7.
+
 Fri Dec  7 08:56:02 GMT 2007 (trog)
 -----------------------------------
   * libclamav/scanners.c: fixup return value.

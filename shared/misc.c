@@ -165,7 +165,7 @@ int filecopy(const char *src, const char *dest)
     if((s = open(src, O_RDONLY|O_BINARY)) == -1)
 	return -1;
 
-    if((d = open(dest, O_CREAT|O_WRONLY|O_TRUNC|O_BINARY)) == -1) {
+    if((d = open(dest, O_CREAT|O_WRONLY|O_TRUNC|O_BINARY, 0644)) == -1) {
 	close(s);
 	return -1;
     }
