@@ -422,11 +422,13 @@ typedef
 /*-- Macros for decompression. --*/
 
 #define BZ_GET_FAST(cccc)                     \
+    if (s->tPos >= s->blockSize100k * 100000) return True; \
     s->tPos = s->tt[s->tPos];                 \
     cccc = (UChar)(s->tPos & 0xff);           \
     s->tPos >>= 8;
 
 #define BZ_GET_FAST_C(cccc)                   \
+    if (c_tPos >= s->blockSize100k * 100000) return True; \
     c_tPos = c_tt[c_tPos];                    \
     cccc = (UChar)(c_tPos & 0xff);            \
     c_tPos >>= 8;
