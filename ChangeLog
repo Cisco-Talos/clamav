@@ -1,3 +1,7 @@
+Mon Dec 10 15:54:20 CET 2007 (tk)
+---------------------------------
+  * libclamav/nsis/bzlib_private.h: fix bzlib bug (aCaB)
+
 Mon Dec 10 15:50:22 CET 2007 (tk)
 ---------------------------------
   * libclamav: eliminate some warning msgs
