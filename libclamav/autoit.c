@@ -239,11 +239,16 @@ static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
       cli_dbgmsg("autoit: bad file size - giving up\n");
       return CL_CLEAN;
     }
+
+    lseek(desc, 16, SEEK_CUR);
+
+    if(!UNP.csize) {
+      cli_dbgmsg("autoit: skipping empty file\n");
+      continue;
+    }
     cli_dbgmsg("autoit: compressed size: %x\n", UNP.csize);
     cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32((char *)buf+5) ^ 0x45aa);
     cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32((char *)buf+9) ^ 0xc3d2);
-
-    lseek(desc, 16, SEEK_CUR);
 
     if(ctx->limits && ctx->limits->maxfilesize && UNP.csize > ctx->limits->maxfilesize) {
       cli_dbgmsg("autoit: skipping file due to size limit (%u, max: %lu)\n", UNP.csize, ctx->limits->maxfilesize);
@@ -268,7 +273,8 @@ static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
 	continue;
       }
 
-      UNP.usize = be32_to_host(*(uint32_t *)(buf+4));
+      if(!(UNP.usize = be32_to_host(*(uint32_t *)(buf+4))))
+	UNP.usize = UNP.csize; /* only a specifically crafted or badly corrupted sample should land here */
       if(ctx->limits && ctx->limits->maxfilesize && UNP.usize > ctx->limits->maxfilesize) {
 	cli_dbgmsg("autoit: skipping file due to size limit (%u, max: %lu)\n", UNP.csize, ctx->limits->maxfilesize);
 	free(buf);
@@ -538,11 +544,16 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
       cli_dbgmsg("autoit: bad file size - giving up\n");
       return CL_CLEAN;
     }
+
+    lseek(desc, 16, SEEK_CUR);
+
+    if(!UNP.csize) {
+      cli_dbgmsg("autoit: skipping empty file\n");
+      continue;
+    }
     cli_dbgmsg("autoit: compressed size: %x\n", UNP.csize);
     cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32((char *)buf+5) ^ 0x87bc);
     cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32((char *)buf+9) ^ 0xa685);
-
-    lseek(desc, 16, SEEK_CUR);
 
     if(ctx->limits && ctx->limits->maxfilesize && UNP.csize > ctx->limits->maxfilesize) {
       cli_dbgmsg("autoit: skipping file due to size limit (%u, max: %lu)\n", UNP.csize, ctx->limits->maxfilesize);
@@ -568,7 +579,8 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
 	continue;
       }
 
-      UNP.usize = be32_to_host(*(uint32_t *)(buf+4));
+      if(!(UNP.usize = be32_to_host(*(uint32_t *)(buf+4))))
+	UNP.usize = UNP.csize; /* only a specifically crafted or badly corrupted sample should land here */
       if(ctx->limits && ctx->limits->maxfilesize && UNP.usize > ctx->limits->maxfilesize) {
 	free(buf);
 	continue;

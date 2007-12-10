@@ -246,7 +246,7 @@ static int __zip_parse_root_directory(int fd, struct zip_disk_trailer *trailer, 
 
 	bfcnt = 0;
 	if(!hdr->d_compr && hdr->d_csize != hdr->d_usize) {
-	    cli_warnmsg("Unzip: __zip_parse_root_directory: File claims to be stored but csize != usize\n");
+	    cli_dbgmsg("Unzip: __zip_parse_root_directory: File claims to be stored but csize != usize\n");
 	    cli_dbgmsg("Unzip: __zip_parse_root_directory: Also checking for method 'deflated'\n");
 	    hdr->d_bf[bfcnt] = ZIP_METHOD_DEFLATED;
 	    bfcnt++;

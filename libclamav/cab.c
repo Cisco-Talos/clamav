@@ -421,7 +421,7 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	if(fidx < 0xfffd) {
 	    if(fidx > cab->nfolders) {
 		if(bscore < 3)
-		    cli_warnmsg("cab_open: File %s is not associated with any folder\n", file->name);
+		    cli_dbgmsg("cab_open: File %s is not associated with any folder\n", file->name);
 		bscore++;
 		free(file->name);
 		free(file);
@@ -465,7 +465,7 @@ static int cab_read_block(int fd, struct cab_state *state, uint16_t resdata)
 
 
     if(cli_readn(fd, &block_hdr, sizeof(block_hdr)) != sizeof(block_hdr)) {
-	cli_errmsg("cab_read_block: Can't read block header\n");
+	cli_dbgmsg("cab_read_block: Can't read block header\n");
 	return CL_EIO;
     }
 

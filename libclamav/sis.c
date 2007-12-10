@@ -77,7 +77,7 @@ static char *sis_utf16_decode(const char *str, uint32_t length)
 
 
     if(!length || length % 2) {
-	cli_warnmsg("SIS: sis_utf16_decode: Broken filename (length == %d)\n", length);
+	cli_dbgmsg("SIS: sis_utf16_decode: Broken filename (length == %d)\n", length);
 	return NULL;
     }
 
@@ -294,7 +294,7 @@ static int sis_extract_simple(int fd, char *mfile, uint32_t length, uint32_t off
 	    } 
 
 	    if(uncompress((Bytef *) buff, &osize , (Bytef *) mfile + fileoff, csize) != Z_OK) {
-		cli_errmsg("SIS: sis_extract_simple: File decompression failed\n");
+		cli_dbgmsg("SIS: sis_extract_simple: File decompression failed\n");
 		free(buff);
 		free(subdir);
 		free(fname);
