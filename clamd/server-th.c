@@ -434,19 +434,6 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 
     if(cfgopt(copt,"PhishingScanURLs")->enabled) {
 
-	if(cfgopt(copt,"PhishingRestrictedScan")->enabled) {
-	    /* we don't scan urls from all domains, just those listed in
-	     * .pdb file. This is the safe default
-	     */
-	    options |= CL_SCAN_PHISHING_DOMAINLIST;
-	} else {
-	    /* This is a false positive prone option, since newsletters, etc.
-	     * often contain links that will be classified as phishing attempts,
-	     * even though the site they link to isn't a phish site.
-	     */
-	    logg("Phishing: Checking all URLs, regardless of domain (FP prone).\n");
-	}
-
 	if(cfgopt(copt,"PhishingAlwaysBlockCloak")->enabled) {
 	    options |= CL_SCAN_PHISHING_BLOCKCLOAK; 
 	    logg("Phishing: Always checking for cloaked urls\n");

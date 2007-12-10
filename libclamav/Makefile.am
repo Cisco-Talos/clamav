@@ -16,15 +16,15 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
+SUBDIRS = lzma .
 
-INCLUDES = -I$(top_srcdir) -I@srcdir@/unrar -I@srcdir@/nsis
+INCLUDES = -I$(top_srcdir) -I@srcdir@/unrar -I@srcdir@/nsis -I@srcdir@/lzma
 
-libclamav_la_LIBADD = @LIBCLAMAV_LIBS@ @THREAD_LIBS@
+libclamav_la_LIBADD = @LIBCLAMAV_LIBS@ @THREAD_LIBS@ lzma/liblzma.la
 
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 include_HEADERS = clamav.h
-
 
 libclamav_la_SOURCES = \
 	clamav.h \
@@ -139,15 +139,9 @@ libclamav_la_SOURCES = \
 	unrar/unrarppm.h \
 	unarj.c \
 	unarj.h \
-	nsis/LZMADecode.c \
-	nsis/LZMADecode.h \
 	nsis/bzlib.c \
 	nsis/bzlib_private.h \
-	nsis/infblock.c \
 	nsis/nsis_bzlib.h \
-	nsis/nsis_zconf.h \
-	nsis/nsis_zlib.h \
-	nsis/nsis_zutil.h \
 	nsis/nulsft.c \
 	nsis/nulsft.h \
 	pdf.c \
@@ -189,7 +183,8 @@ libclamav_la_SOURCES = \
 	dconf.c \
 	dconf.h \
 	lockdb.c \
-	lockdb.h
+	lockdb.h \
+	lzma_iface.c
 
 lib_LTLIBRARIES = libclamav.la
 EXTRA_DIST = regex/engine.c

@@ -1,0 +1,72 @@
+Original unmodified files from the LZMA SDK are included under libclamav/lzma.
+The original lzma.txt license file, a small portion of which is reproduced below,
+is available under libclamav/lzma/lzma.txt. 
+
+LICENSE
+-------
+
+LZMA SDK is available under any of the following licenses:
+
+1) GNU Lesser General Public License (GNU LGPL)
+2) Common Public License (CPL)
+3) Simplified license for unmodified code (read SPECIAL EXCEPTION) 
+4) Proprietary license 
+
+It means that you can select one of these four options and follow rules of that license.
+
+
+1,2) GNU LGPL and CPL licenses are pretty similar and both these
+licenses are classified as 
+ - "Free software licenses" at http://www.gnu.org/ 
+ - "OSI-approved" at http://www.opensource.org/
+
+
+3) SPECIAL EXCEPTION
+
+Igor Pavlov, as the author of this code, expressly permits you 
+to statically or dynamically link your code (or bind by name) 
+to the files from LZMA SDK without subjecting your linked 
+code to the terms of the CPL or GNU LGPL. 
+Any modifications or additions to files from LZMA SDK, however, 
+are subject to the GNU LGPL or CPL terms.
+
+SPECIAL EXCEPTION allows you to use LZMA SDK in applications with closed code, 
+while you keep LZMA SDK code unmodified.
+
+
+SPECIAL EXCEPTION #2: Igor Pavlov, as the author of this code, expressly permits 
+you to use this code under the same terms and conditions contained in the License 
+Agreement you have for any previous version of LZMA SDK developed by Igor Pavlov.
+
+SPECIAL EXCEPTION #2 allows owners of proprietary licenses to use latest version 
+of LZMA SDK as update for previous versions.
+
+
+SPECIAL EXCEPTION #3: Igor Pavlov, as the author of this code, expressly permits 
+you to use code of the following files: 
+BranchTypes.h, LzmaTypes.h, LzmaTest.c, LzmaStateTest.c, LzmaAlone.cpp, 
+LzmaAlone.cs, LzmaAlone.java
+as public domain code. 
+
+
+4) Proprietary license
+
+LZMA SDK also can be available under a proprietary license which 
+can include:
+
+1) Right to modify code without subjecting modified code to the 
+terms of the CPL or GNU LGPL
+2) Technical support for code
+
+To request such proprietary license or any additional consultations,
+send email message from that page:
+http://www.7-zip.org/support.html
+
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+You should have received a copy of the Common Public License
+along with this library.
+

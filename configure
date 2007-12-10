@@ -26359,7 +26359,7 @@ echo "$as_me: WARNING: Unable to determine FPU endianess, some features may not 
 esac
 
 
-ac_config_files="$ac_config_files libclamav/Makefile clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile Makefile clamav-config libclamav.pc docs/man/clamav-milter.8 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1"
+ac_config_files="$ac_config_files libclamav/lzma/Makefile libclamav/Makefile clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile Makefile clamav-config libclamav.pc docs/man/clamav-milter.8 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -26967,6 +26967,7 @@ do
   case $ac_config_target in
     "clamav-config.h") CONFIG_HEADERS="$CONFIG_HEADERS clamav-config.h" ;;
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
+    "libclamav/lzma/Makefile") CONFIG_FILES="$CONFIG_FILES libclamav/lzma/Makefile" ;;
     "libclamav/Makefile") CONFIG_FILES="$CONFIG_FILES libclamav/Makefile" ;;
     "clamscan/Makefile") CONFIG_FILES="$CONFIG_FILES clamscan/Makefile" ;;
     "database/Makefile") CONFIG_FILES="$CONFIG_FILES database/Makefile" ;;

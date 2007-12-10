@@ -1204,6 +1204,7 @@ AC_MSG_RESULT($have_signed_rightshift_extended);
 AC_C_FPU_BIGENDIAN
 
 AC_OUTPUT([
+libclamav/lzma/Makefile
 libclamav/Makefile
 clamscan/Makefile
 database/Makefile

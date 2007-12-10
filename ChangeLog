@@ -1,3 +1,12 @@
+ Wed Nov 14 21:56:33 EET 2007 (edwin)
+ ------------------------------------
+   * libclamav/phishcheck.[ch]: 
+     remove "all domain scan" feature from phishcheck
+     (--no-phishing-restrictedscan). Nobody is using it.
+     Don't care why an url is clean, just state it is clean.
+     Various cleanups resulting from this.
+     Prepare to introduce selective turn on of sub-features.
+ 
 Tue Oct  9 16:53:48 CEST 2007 (tk)
 ----------------------------------
   * 0.92rc2 (released with JS and PST code removed)

@@ -32,8 +32,8 @@
 #include "others.h"
 #include "cltypes.h"
 #include "nsis_bzlib.h"
-#include "LZMADecode.h"
-#include "nsis_zlib.h"
+#include "lzma_iface.h"
+#include "zlib.h"
 #include "matcher.h"
 #include "scanners.h"
 #include "nulsft.h" /* SHUT UP GCC -Wextra */
@@ -67,8 +67,8 @@ struct nsis_st {
     unsigned char *next_out;
   } nsis;
   nsis_bzstream bz;
-  lzma_stream lz;
-  nsis_z_stream z;
+  CLI_LZMA lz;
+  z_stream z;
   unsigned char *freeme;
   uint8_t comp;
   uint8_t solid;
@@ -85,16 +85,19 @@ struct nsis_st {
 static int nsis_init(struct nsis_st *n) {
   switch(n->comp) {
   case COMP_BZIP2:
+    memset(&n->bz, 0, sizeof(nsis_bzstream));
     if (nsis_BZ2_bzDecompressInit(&n->bz, 0, 0)!=BZ_OK)
       return CL_EBZIP;
     n->freecomp=1;
     break;
   case COMP_LZMA:
-    lzmaInit(&n->lz);
+    memset(&n->lz, 0, sizeof(CLI_LZMA));
+    cli_LzmaInit(&n->lz, 0xffffffffffffffff);
     n->freecomp=1;
     break;
   case COMP_ZLIB:
-    nsis_inflateInit(&n->z);
+    memset(&n->bz, 0, sizeof(z_stream));
+    inflateInit2(&n->z, -MAX_WBITS);
     n->freecomp=0;
   }
   return CL_SUCCESS;
@@ -109,8 +112,9 @@ static void nsis_shutdown(struct nsis_st *n) {
     nsis_BZ2_bzDecompressEnd(&n->bz);
     break;
   case COMP_LZMA:
-    lzmaShutdown(&n->lz);
+    cli_LzmaShutdown(&n->lz);
   case COMP_ZLIB:
+    inflateEnd(&n->z);
     break;
   }
 
@@ -142,8 +146,8 @@ static int nsis_decomp(struct nsis_st *n) {
     n->lz.next_in = n->nsis.next_in;
     n->lz.avail_out = n->nsis.avail_out;
     n->lz.next_out = n->nsis.next_out;
-    switch (lzmaDecode(&n->lz)) {
-    case LZMA_OK:
+    switch (cli_LzmaDecode(&n->lz)) {
+    case LZMA_RESULT_OK:
       ret = CL_SUCCESS;
       break;
     case LZMA_STREAM_END:
@@ -159,12 +163,13 @@ static int nsis_decomp(struct nsis_st *n) {
     n->z.next_in = n->nsis.next_in;
     n->z.avail_out = n->nsis.avail_out;
     n->z.next_out = n->nsis.next_out;
-    switch (nsis_inflate(&n->z)) {
+    switch (inflate(&n->z, Z_NO_FLUSH)) {
     case Z_OK:
       ret = CL_SUCCESS;
       break;
     case Z_STREAM_END:
       ret = CL_BREAK;
+    /* FIXME: regression needed */ 
     }
     n->nsis.avail_in = n->z.avail_in;
     n->nsis.next_in = n->z.next_in;
