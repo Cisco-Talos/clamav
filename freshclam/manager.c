@@ -820,7 +820,7 @@ static struct cl_cvd *currentdb(const char *dbname, unsigned int *inc)
 {
 	struct stat sb;
 	char path[512];
-	struct cl_cvd *cvd;
+	struct cl_cvd *cvd = NULL;
 
 
     snprintf(path, sizeof(path), "%s.inc", dbname);
@@ -834,7 +834,8 @@ static struct cl_cvd *currentdb(const char *dbname, unsigned int *inc)
 	    *inc = 0;
     }
 
-    cvd = cl_cvdhead(path);
+    if(!access(path, R_OK))
+	cvd = cl_cvdhead(path);
 
     return cvd;
 }
