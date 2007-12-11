@@ -103,6 +103,10 @@ libclamav_la_SOURCES = \
 	untar.h \
 	unzip.c \
 	unzip.h \
+	inflate64.c \
+	inflate64.h \
+	inffixed64.h \
+	inflate64_priv.h \
 	special.c \
 	special.h \
 	binhex.c \

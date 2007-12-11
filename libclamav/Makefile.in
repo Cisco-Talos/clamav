@@ -83,11 +83,11 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	table.lo text.lo ole2_extract.lo vba_extract.lo msexpand.lo \
 	pe.lo upx.lo htmlnorm.lo chmunpack.lo rebuildpe.lo petite.lo \
 	wwunpack.lo unsp.lo aspack.lo packlibs.lo fsg.lo mew.lo \
-	upack.lo line.lo untar.lo unzip.lo special.lo binhex.lo \
-	is_tar.lo tnef.lo autoit.lo strlcpy.lo regcomp.lo regerror.lo \
-	regexec.lo regfree.lo unrar15.lo unrarvm.lo unrar.lo \
-	unrarfilter.lo unrarppm.lo unrar20.lo unrarcmd.lo unarj.lo \
-	bzlib.lo nulsft.lo pdf.lo spin.lo yc.lo elf.lo sis.lo \
+	upack.lo line.lo untar.lo unzip.lo inflate64.lo special.lo \
+	binhex.lo is_tar.lo tnef.lo autoit.lo strlcpy.lo regcomp.lo \
+	regerror.lo regexec.lo regfree.lo unrar15.lo unrarvm.lo \
+	unrar.lo unrarfilter.lo unrarppm.lo unrar20.lo unrarcmd.lo \
+	unarj.lo bzlib.lo nulsft.lo pdf.lo spin.lo yc.lo elf.lo sis.lo \
 	uuencode.lo pst.lo phishcheck.lo phish_domaincheck_db.lo \
 	phish_whitelist.lo regex_list.lo sha256.lo mspack.lo cab.lo \
 	entconv.lo hashtab.lo dconf.lo lockdb.lo lzma_iface.lo
@@ -325,6 +325,10 @@ libclamav_la_SOURCES = \
 	untar.h \
 	unzip.c \
 	unzip.h \
+	inflate64.c \
+	inflate64.h \
+	inffixed64.h \
+	inflate64_priv.h \
 	special.c \
 	special.h \
 	binhex.c \
@@ -495,6 +499,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fsg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hashtab.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/htmlnorm.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/inflate64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/is_tar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/line.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lockdb.Plo@am__quote@
