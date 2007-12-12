@@ -40,6 +40,9 @@
 
 #include "vba_extract.h"
 #include "others.h"
+#ifdef  CL_DEBUG
+#include "mbox.h"
+#endif
 #include "blob.h"
 
 #ifndef	O_BINARY
