@@ -1632,7 +1632,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg)
 		    case CL_TYPE_ZIPSFX:
 			if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_ZIP) && fpt->offset) {
 			    cli_dbgmsg("ZIP-SFX signature found at %u\n", (unsigned int) fpt->offset);
-			    nret = cli_unzip(desc, ctx, fpt->offset);
+			    nret = cli_unzip_single(desc, ctx, fpt->offset);
 			}
 			break;
 
@@ -1795,7 +1795,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 	case CL_TYPE_ZIP:
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP))
-		ret = cli_unzip(desc, ctx, 0);
+		ret = cli_unzip(desc, ctx);
 	    break;
 
 	case CL_TYPE_GZ:

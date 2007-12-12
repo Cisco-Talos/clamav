@@ -21,6 +21,6 @@
 #define __UNZIP_H
 
 #include "others.h"
-int cli_unzip(int, cli_ctx *, off_t);
-
+int cli_unzip(int, cli_ctx *);
+int cli_unzip_single(int, cli_ctx *, off_t);
 #endif
