@@ -1,3 +1,7 @@
+Wed Dec 12 23:17:02 CET 2007 (tk)
+---------------------------------
+  * libclamav/matcher-ac.h: add missing prototype for cli_ac_setdepth() (bb#711)
+
 Wed Dec 12 21:59:00 CET 2007 (tk)
 ---------------------------------
   * libclamunrar, libclamunrar_iface: re-include RAR code

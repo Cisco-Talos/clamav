@@ -70,6 +70,6 @@ int cli_ac_buildtrie(struct cli_matcher *root);
 int cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth);
 void cli_ac_free(struct cli_matcher *root);
 int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, uint8_t target);
-
+void cli_ac_setdepth(uint8_t mindepth, uint8_t maxdepth);
 
 #endif
