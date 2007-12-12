@@ -2,8 +2,8 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
-0.92rc2
--------
+0.92
+----
 
 This release provides various bugfixes, optimisations and improvements
 to the scanning engine. The new features include support for ARJ and
