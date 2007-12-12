@@ -97,7 +97,7 @@
 #endif
 
 #ifdef ENABLE_UNRAR
-#include "unrar.h"
+#include "libclamunrar_iface/unrar_iface.h"
 #endif
 
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
@@ -111,7 +111,7 @@
 static int cli_scanfile(const char *filename, cli_ctx *ctx);
 
 #ifdef ENABLE_UNRAR
-static int cli_unrar_scanmetadata(int desc, rar_metadata_t *metadata, cli_ctx *ctx, unsigned int files, uint32_t* sfx_check)
+static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx *ctx, unsigned int files, uint32_t* sfx_check)
 {
 	int ret = CL_SUCCESS;
 	struct cli_meta_node* mdata;
@@ -188,7 +188,7 @@ static int cli_unrar_scanmetadata(int desc, rar_metadata_t *metadata, cli_ctx *c
     return ret;
 }
 
-static int cli_unrar_checklimits(const cli_ctx *ctx, const rar_metadata_t *metadata, unsigned int files)
+static int cli_unrar_checklimits(const cli_ctx *ctx, const unrar_metadata_t *metadata, unsigned int files)
 {
     if(ctx->limits) {
 	if(ctx->limits->maxratio && metadata->unpack_size && metadata->pack_size) {
@@ -227,9 +227,9 @@ static int cli_unrar_checklimits(const cli_ctx *ctx, const rar_metadata_t *metad
 static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 {
 	int ret = CL_CLEAN;
-	rar_metadata_t *metadata, *metadata_tmp;
+	unrar_metadata_t *metadata, *metadata_tmp;
 	char *dir;
-	rar_state_t rar_state;
+	unrar_state_t rar_state;
 
 
     cli_dbgmsg("in scanrar()\n");
@@ -245,20 +245,29 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
     if(sfx_offset)
 	lseek(desc, sfx_offset, SEEK_SET);
 
-    if((ret = cli_unrar_open(desc, dir, &rar_state)) != CL_SUCCESS) {
+    if((ret = unrar_open(desc, dir, &rar_state)) != UNRAR_OK) {
 	if(!cli_leavetemps_flag)
 	    cli_rmdirs(dir);
 	free(dir);
-	cli_dbgmsg("RAR: Error: %s\n", cl_strerror(ret));
-	return ret;
+	if(ret == UNRAR_EMEM)
+	    return CL_EMEM;
+	else
+	    return CL_ERAR;
     }
 
     do {
 	int rc;
-	rar_state.unpack_data->ofd = -1;
-	ret = cli_unrar_extract_next_prepare(&rar_state,dir);
-	if(ret != CL_SUCCESS) 
+	rar_state.ofd = -1;
+	ret = unrar_extract_next_prepare(&rar_state,dir);
+	if(ret != UNRAR_OK) {
+	    if(ret == UNRAR_BREAK)
+		ret = CL_BREAK;
+	    else if(ret == UNRAR_EMEM)
+		ret = CL_EMEM;
+	    else
+		ret = CL_ERAR;
 	    break;
+	}
 	ret = cli_unrar_checklimits(ctx, rar_state.metadata_tail, rar_state.file_count);
 	if(ret && ret != CL_VIRUS) {
 	    free(rar_state.file_header->filename);
@@ -271,11 +280,18 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    free(rar_state.file_header);	   
 	    break;
 	}
-	ret = cli_unrar_extract_next(&rar_state,dir);
-	if(rar_state.unpack_data->ofd > 0) {
-	    lseek(rar_state.unpack_data->ofd,0,SEEK_SET);
-	    rc = cli_magic_scandesc(rar_state.unpack_data->ofd,ctx);
-	    close(rar_state.unpack_data->ofd);
+	ret = unrar_extract_next(&rar_state,dir);
+	if(ret == UNRAR_OK)
+	    ret = CL_SUCCESS;
+	else if(ret == UNRAR_EMEM)
+	    ret = CL_EMEM;
+	else
+	    ret = CL_ERAR;
+
+	if(rar_state.ofd > 0) {
+	    lseek(rar_state.ofd,0,SEEK_SET);
+	    rc = cli_magic_scandesc(rar_state.ofd,ctx);
+	    close(rar_state.ofd);
 	    if(!cli_leavetemps_flag) 
 		unlink(rar_state.filename);
 	    if(rc == CL_VIRUS ) {
@@ -298,7 +314,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
     if(cli_scandir(rar_state.comment_dir, ctx) == CL_VIRUS)
 	ret = CL_VIRUS;
 
-    cli_unrar_close(&rar_state);
+    unrar_close(&rar_state);
 
     if(!cli_leavetemps_flag)
         cli_rmdirs(dir);
@@ -2066,6 +2082,8 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 #ifdef ENABLE_UNRAR
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR))
 		ret = cli_scanrar(desc, ctx, 0, NULL);
+#else
+	    cli_warnmsg("RAR code not compiled-in\n");
 #endif
 	    break;
 

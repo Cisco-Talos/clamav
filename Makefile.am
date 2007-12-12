@@ -16,11 +16,10 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-SUBDIRS = libclamav clamscan clamd clamdscan freshclam sigtool clamconf database docs etc clamav-milter
-EXTRA_DIST = FAQ contrib test examples BUGS shared libclamav.pc.in UPGRADE COPYING.nsis
+SUBDIRS = libclamunrar libclamunrar_iface libclamav clamscan clamd clamdscan freshclam sigtool clamconf database docs etc clamav-milter
+EXTRA_DIST = FAQ contrib test examples BUGS shared libclamav.pc.in UPGRADE COPYING.nsis COPYING.unrar COPYING.LGPL
 
 bin_SCRIPTS=clamav-config
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libclamav.pc
-

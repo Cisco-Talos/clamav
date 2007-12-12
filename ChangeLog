@@ -1,3 +1,7 @@
+Wed Dec 12 21:59:00 CET 2007 (tk)
+---------------------------------
+  * libclamunrar, libclamunrar_iface: re-include RAR code
+
 Tue Dec 11 20:20:36 CET 2007 (tk)
 ---------------------------------
   * freshclam/manager.c: eliminate misleading error message when downloading

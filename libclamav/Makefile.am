@@ -17,14 +17,17 @@
 #  MA 02110-1301, USA.
 
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/libclamunrar -I@srcdir@/nsis
+INCLUDES = -I$(top_srcdir) -I@srcdir@/nsis
 
+if ENABLE_UNRAR
+libclamav_la_LIBADD = @LIBCLAMAV_LIBS@ @THREAD_LIBS@ $(top_builddir)/libclamunrar_iface/libclamunrar_iface.la
+else
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@ @THREAD_LIBS@
+endif
 
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 include_HEADERS = clamav.h
-
 
 libclamav_la_SOURCES = \
 	clamav.h \

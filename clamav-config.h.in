@@ -84,6 +84,9 @@
 /* "default FD_SETSIZE value" */
 #undef DEFAULT_FD_SETSIZE
 
+/* "build unrar code" */
+#undef ENABLE_UNRAR
+
 /* file i/o buffer size */
 #undef FILEBUFF
 
