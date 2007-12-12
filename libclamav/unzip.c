@@ -17,30 +17,38 @@
  *  MA 02110-1301, USA.
  */
 
+/* FIXME: get a clue about masked stuff */
+/* FIXME: is unz() infloop safe ? */
+
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
 
-/* FIXME: get a clue about masked stuff */
-/* FIXME: is unz() infloop safe ? */
+#if HAVE_MMAP
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <stdio.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <sys/mman.h>
-
+#endif
+#if HAVE_STRING_H
 #include <string.h>
+#endif
+#include <sys/mman.h>
+#include <stdio.h>
 
 #include <zlib.h>
 #include <bzlib.h>
 #include "inflate64.h"
 
 #include "others.h"
+#include "clamav.h"
+#include "scanners.h"
 
+#ifndef O_BINARY
 #define O_BINARY 0
+#endif
 
 #define F_ENCR  (1<<0)
 #define F_ALGO1 (1<<1)
@@ -156,15 +164,15 @@ static int wrap_inflateinit2(void *a, int b) {
   return inflateInit2(a, b);
 }
 
-static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, unsigned int *fu) {
+static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, unsigned int *fu, cli_ctx *ctx, char *tmpd) {
   char name[1024];
   char obuf[BUFSIZ];
   int of, ret=CL_CLEAN;
   unsigned int res=1;
 
-  snprintf(name, sizeof(name), "zip%03u", *fu);
+  snprintf(name, sizeof(name), "%s/zip.%03u", tmpd, *fu);
   name[sizeof(name)-1]='\0';
-  if((of = creat(name, O_WRONLY|S_IRUSR|S_IWUSR))==-1) {
+  if((of = open(name, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRUSR|S_IWUSR))==-1) {
     cli_warnmsg("cli_unzip: failed to create temporary file %s\n", name);
     return CL_EIO;
   }
@@ -173,14 +181,14 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, un
     if(csize<usize) {
       unsigned int fake = *fu + 1;
       cli_dbgmsg("cli_unzip: attempting to inflate stored file with inconsistent size\n");
-      if ((ret=unz(src, csize, usize, ALG_DEFLATE, &fake))==CL_CLEAN) {
+      if ((ret=unz(src, csize, usize, ALG_DEFLATE, &fake, ctx, tmpd))==CL_CLEAN) {
 	(*fu)++;
 	res=fake-(*fu);
       }
       else break;
     }
     if(res==1) {
-      if(write(of, src, csize)!=csize) ret = CL_EIO;
+      if(cli_writen(of, src, csize)!=(int)csize) ret = CL_EIO;
       else res=0;
     }
     break;
@@ -236,7 +244,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, un
     while(1) {
       while((res = unz_unz(&strm, Z_NO_FLUSH))==Z_OK) {};
       if(*avail_out!=sizeof(obuf)) {
-	if(write(of, obuf, sizeof(obuf)-(*avail_out)) != (ssize_t)(sizeof(obuf)-(*avail_out))) {
+	if(cli_writen(of, obuf, sizeof(obuf)-(*avail_out)) != (int)(sizeof(obuf)-(*avail_out))) {
 	  cli_warnmsg("cli_unzip: falied to write %lu inflated bytes\n", sizeof(obuf)-(*avail_out));
 	  ret = CL_EIO;
 	  res=1;
@@ -265,7 +273,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, un
     }
     while((res = BZ2_bzDecompress(&strm))==BZ_OK || res==BZ_STREAM_END) {
       if(strm.avail_out!=sizeof(obuf)) {
-	if(write(of, obuf, sizeof(obuf)-strm.avail_out) != (ssize_t)(sizeof(obuf)-strm.avail_out)) {
+	if(cli_writen(of, obuf, sizeof(obuf)-strm.avail_out) != (int)(sizeof(obuf)-strm.avail_out)) {
 	  cli_warnmsg("cli_unzip: falied to write %lu bunzipped bytes\n", sizeof(obuf)-strm.avail_out);
 	  ret = CL_EIO;
 	  res=1;
@@ -309,19 +317,23 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, un
     break;
   }
 
-  close(of);
   if(!res) {
     (*fu)++;
     cli_dbgmsg("cli_unzip: extracted to %s\n", name);
-    /* FIXME: cli_magicscandesc() */
-    return CL_CLEAN;
-  } else {
-    cli_dbgmsg("cli_unzip: extraction failed\n");
+    lseek(of, 0, SEEK_SET);
+    ret = cli_magic_scandesc(of, ctx);
+    close(of);
+    if(!cli_leavetemps_flag) unlink(name);
     return ret;
   }
+
+  close(of);
+  if(!cli_leavetemps_flag) unlink(name);
+  cli_dbgmsg("cli_unzip: extraction failed\n");
+  return ret;
 }
 
-static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, uint8_t *ch, int *ret) {
+static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, uint8_t *ch, int *ret, cli_ctx *ctx, char *tmpd) {
   uint8_t *lh = zip;
   char name[256];
   uint32_t csize;
@@ -383,7 +395,7 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, uint8_t
     if(LH_flags & F_ENCR) {
       cli_dbgmsg("cli_unzip: lh - skipping encrypted file\n");
     } else {
-      *ret = unz(zip, csize, LH_usize, LH_method, fu);
+      *ret = unz(zip, csize, LH_usize, LH_method, fu, ctx, tmpd);
     }
     zip+=csize;
     zsize-=csize;
@@ -408,7 +420,7 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, uint8_t
 }
 
 
-static unsigned int chdr(uint8_t *zip, uint32_t coff, uint32_t zsize, unsigned int *fu, int *ret) {
+static unsigned int chdr(uint8_t *zip, uint32_t coff, uint32_t zsize, unsigned int *fu, int *ret, cli_ctx *ctx, char *tmpd) {
   uint8_t *ch = &zip[coff];
   char name[256];
   int last = 0;
@@ -446,7 +458,7 @@ static unsigned int chdr(uint8_t *zip, uint32_t coff, uint32_t zsize, unsigned i
   coff+=CH_clen;
 
   if(CH_off<zsize-SIZEOF_LH) {
-    if(lhdr(&zip[CH_off], zsize-CH_off, fu, ch, ret)!=CL_CLEAN) return 0;
+    lhdr(&zip[CH_off], zsize-CH_off, fu, ch, ret, ctx, tmpd);
   } else cli_dbgmsg("cli_unzip: ch - local hdr out of file\n");
   return last?0:coff;
 }
@@ -455,11 +467,12 @@ static unsigned int chdr(uint8_t *zip, uint32_t coff, uint32_t zsize, unsigned i
 int cli_unzip(int f, cli_ctx *ctx, off_t zoffl) {
   unsigned int fc=0, fu=0;
   int ret=CL_CLEAN;
-  uint32_t misc, fsize, zoff = (uint32_t)zoffl, coff = (uint32_t)zoffl;
+  uint32_t fsize, zoff = (uint32_t)zoffl, coff = (uint32_t)zoffl;
   struct stat st;
   uint8_t *map;
+  char *tmpd;
 
-  cli_dbgmsg("in cli_unzip");
+  cli_dbgmsg("in cli_unzip\n");
   fstat(f, &st);
   fsize = (uint32_t)st.st_size;
   if(sizeof(off_t)!=sizeof(uint32_t) && ((off_t)zoff!=zoffl || (off_t)fsize!=st.st_size)) {
@@ -475,28 +488,53 @@ int cli_unzip(int f, cli_ctx *ctx, off_t zoffl) {
     return CL_EMEM;
   }
 
+  if (!(tmpd = cli_gentemp(NULL)))    
+    return CL_ETMPDIR;
+  if (mkdir(tmpd, 0700)) {
+    cli_dbgmsg("cli_unzip: Can't create temporary directory %s\n", tmpd);
+    free(tmpd);
+    return CL_ETMPDIR;
+  }
+
   for(coff=fsize-22 ; coff>zoff ; coff--) { /* sizeof(EOC)==22 */
     if(cli_readint32(&map[coff])==0x06054b50) {
-      misc = cli_readint32(&map[coff+16]);
-      if(misc>fsize-SIZEOF_CH) continue;
-      misc+=zoff; /* break optimization - FIXME: use CLI_ISCONTAINED ? */
-      if(misc>fsize-SIZEOF_CH || misc<zoff) continue;
-      coff=misc;
+      uint32_t chptr = cli_readint32(&map[coff+16]);
+      if(!CLI_ISCONTAINED(map+zoff, fsize-zoff, map+chptr+zoff, SIZEOF_CH)) continue;
+      coff=chptr+zoff;
       break;
     }
   }
 
-  if((misc=(coff!=zoff))) {
+  if(coff!=zoff) {
     cli_dbgmsg("cli_unzip: central @%x\n", coff);
     /* FIXME: fu vs maxfiles */
-    while(coff<fsize && (coff=chdr(&map[zoff], coff-zoff, fsize-zoff, &fu, &ret))) { fc++; coff+=zoff; }
-    misc=fu>(fc/4); /* FIXME: make up a sane ratio or remove the whole logic */
+    while(ret==CL_CLEAN && coff<fsize && (coff=chdr(&map[zoff], coff-zoff, fsize-zoff, &fu, &ret, ctx, tmpd))) {
+      fc++;
+      coff+=zoff;
+    }
   } else cli_dbgmsg("cli_unzip: central not found, using localhdrs\n");
-  if(!misc) {
+  if(fu<(fc/4)) { /* FIXME: make up a sane ratio or remove the whole logic */
     /* FIXME: fu vs maxfiles */
-    while (zoff<fsize && (coff=lhdr(&map[zoff], fsize-zoff, &fu, NULL, &ret))) { fc++; zoff+=coff; }
+    while (ret==CL_CLEAN && zoff<fsize && (coff=lhdr(&map[zoff], fsize-zoff, &fu, NULL, &ret, ctx, tmpd))) {
+      fc++;
+      zoff+=coff;
+    }
   }
 
   munmap(map, fsize);
+  if (!cli_leavetemps_flag) cli_rmdirs(tmpd);
+  free(tmpd);
+
   return ret;
 }
+
+#else /* HAVE_MMAP */
+
+#include "others.h"
+#include "clamav.h"
+int cli_unzip(int f, cli_ctx *ctx, off_t zoffl) {
+  cli_warnmsg("cli_unzip: unzip support not compiled in\n");
+  return CL_CLEAN;
+}
+
+#endif /* HAVE_MMAP */

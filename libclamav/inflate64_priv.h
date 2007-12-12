@@ -10,6 +10,10 @@
 #endif
 /* compile with -Dlocal if your debugger can't find static symbols */
 
+#ifndef PKZIP_BUG_WORKAROUND
+#define PKZIP_BUG_WORKAROUND
+#endif
+
 /* Diagnostic functions */
 #ifdef INF64DEBUG
 #  include <stdio.h>

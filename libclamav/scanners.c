@@ -87,10 +87,10 @@
 #include "unarj.h"
 #include "nulsft.h"
 #include "autoit.h"
+#include "unzip.h"
 
 #ifdef HAVE_ZLIB_H
 #include <zlib.h>
-#include "unzip.h"
 #endif
 
 #ifdef HAVE_BZLIB_H
