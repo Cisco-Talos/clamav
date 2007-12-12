@@ -498,7 +498,7 @@ int cli_unzip(int f, cli_ctx *ctx, off_t zoffl) {
 
   for(coff=fsize-22 ; coff>zoff ; coff--) { /* sizeof(EOC)==22 */
     if(cli_readint32(&map[coff])==0x06054b50) {
-      uint32_t chptr = cli_readint32(&map[coff+16]);
+      uint32_t chptr = cli_readint32(&map[coff+16]); /* FIXME: allow for abs and rel offsets */
       if(!CLI_ISCONTAINED(map+zoff, fsize-zoff, map+chptr+zoff, SIZEOF_CH)) continue;
       coff=chptr+zoff;
       break;
@@ -513,7 +513,7 @@ int cli_unzip(int f, cli_ctx *ctx, off_t zoffl) {
       coff+=zoff;
     }
   } else cli_dbgmsg("cli_unzip: central not found, using localhdrs\n");
-  if(fu<(fc/4)) { /* FIXME: make up a sane ratio or remove the whole logic */
+  if(fu<=(fc/4)) { /* FIXME: make up a sane ratio or remove the whole logic */
     /* FIXME: fu vs maxfiles */
     while (ret==CL_CLEAN && zoff<fsize && (coff=lhdr(&map[zoff], fsize-zoff, &fu, NULL, &ret, ctx, tmpd))) {
       fc++;
