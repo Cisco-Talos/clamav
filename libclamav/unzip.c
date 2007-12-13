@@ -360,21 +360,6 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
   zip+=SIZEOF_LH;
   zsize-=SIZEOF_LH;
 
-  cli_dbgmsg("cli_unzip: lh - flags %x - method %x - csize %x - usize %x - flen %x - elen %x\n", LH_flags, LH_method, LH_csize, LH_usize, LH_flen, LH_elen);
-  /* ZMDfmt virname:encrypted(0-1):filename(exact|*):usize(exact|*):csize(exact|*):crc32(exact|*):method(exact|*):fileno(exact|*):maxdepth(exact|*) */
-
-  if(LH_flags & F_MSKED) {
-    cli_dbgmsg("cli_unzip: lh - header has got unusable masked data\n");
-    /* FIXME: need to find/craft a sample */
-    return 0;
-  }
-
-  if(LH_flags & F_USEDD) {
-    cli_dbgmsg("cli_unzip: lh - has data desc\n");
-    if(!ch) return 0;
-    else csize = CH_csize;
-  } else csize = LH_csize;
-
   if(zsize<=LH_flen) {
     cli_dbgmsg("cli_unzip: lh - fname out of file\n");
     return 0;
@@ -383,10 +368,12 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
     uint32_t nsize = (LH_flen>=sizeof(name))?sizeof(name)-1:LH_flen;
     memcpy(name, zip, nsize);
     name[nsize]='\0';
-    cli_dbgmsg("cli_unzip: lh - fname: %s\n", name);
   }
   zip+=LH_flen;
   zsize-=LH_flen;
+
+  cli_dbgmsg("cli_unzip: lh - ZMDNAME:%d:%s:%u:%u:%u:%u:%u:%u\n", ((LH_flags & F_ENCR)==0), name, LH_usize, LH_csize, LH_crc32, LH_method, fc, ctx->arec);
+  /* ZMDfmt virname:encrypted(0-1):filename(exact|*):usize(exact|*):csize(exact|*):crc32(exact|*):method(exact|*):fileno(exact|*):maxdepth(exact|*) */
 
   while(meta &&
 	(
@@ -405,6 +392,18 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
     *ret = CL_VIRUS;
     return 0;
   }
+
+  if(LH_flags & F_MSKED) {
+    cli_dbgmsg("cli_unzip: lh - header has got unusable masked data\n");
+    /* FIXME: need to find/craft a sample */
+    return 0;
+  }
+
+  if(LH_flags & F_USEDD) {
+    cli_dbgmsg("cli_unzip: lh - has data desc\n");
+    if(!ch) return 0;
+    else csize = CH_csize;
+  } else csize = LH_csize;
 
   if(zsize<=LH_elen) {
     cli_dbgmsg("cli_unzip: lh - extra out of file\n");
