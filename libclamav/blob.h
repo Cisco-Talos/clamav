@@ -37,6 +37,7 @@ typedef struct blob {
 blob	*blobCreate(void);
 void	blobDestroy(blob *b);
 void	blobArrayDestroy(blob *b[], int n);
+void	*blobToMem(blob *b);
 void	blobSetFilename(blob *b, const char *dir, const char *filename);
 int	blobAddData(blob *b, const unsigned char *data, size_t len);
 unsigned char *blobGetData(const blob *b);

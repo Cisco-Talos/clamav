@@ -4,7 +4,7 @@
  *  Copyright (C) 2004 trog@uncon.org
  *
  *  This code is based on the OpenOffice and libgsf sources.
- *                  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 2 of the License, or
@@ -36,13 +36,13 @@ typedef struct vba_project_tag {
 } vba_project_t;
 
 vba_project_t *vba56_dir_read(const char *dir);
-unsigned char *vba_decompress(int fd, uint32_t offset, int *size);
+unsigned char *vba_decompress(int fd, off_t offset, int *size);
 int cli_decode_ole_object(int fd, const char *dir);
 
-char *ppt_vba_read(const char *dir);
+char *ppt_vba_read(const char *filename);
 
 vba_project_t *wm_dir_read(const char *dir);
-unsigned char *wm_decrypt_macro(int fd, uint32_t offset, uint32_t len,
+unsigned char *wm_decrypt_macro(int fd, off_t offset, uint32_t len,
 					unsigned char key);
 
 #endif

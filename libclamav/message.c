@@ -299,9 +299,9 @@ messageSetMimeType(message *mess, const char *type)
 					}
 				}
 				if(highestSimil >= 50) {
-					cli_dbgmsg("Unknown MIME type \"%s\" - guessing as %s (%u%% certainty)\n",
+					cli_dbgmsg("Unknown MIME type \"%s\" - guessing as %s (%d%% certainty)\n",
 						type, closest,
-						(int)highestSimil);
+						highestSimil);
 					mess->mimeType = (mime_type)t;
 				} else {
 					cli_dbgmsg("Unknown MIME type: `%s', set to Application - if you believe this file contains a virus, submit it to www.clamav.net\n", type);
@@ -2009,12 +2009,6 @@ encodingLine(message *m)
 }
 #endif
 
-void
-messageClearMarkers(message *m)
-{
-	m->encoding = m->bounce = m->binhex = NULL;
-}
-
 /*
  * Decode a line and add it to a buffer, return the end of the buffer
  * to help appending callers. There is no new line at the end of "line"
@@ -2083,10 +2077,9 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 					 * quoted-printable encoding of
 					 * href=\"http://, instead of =3D
 					 */
-					if(byte != '=') {
-						byte <<= 4;
-						byte += hex(*line);
-					} else
+					if(byte != '=')
+						byte = (byte << 4) | hex(*line);
+					else
 						line -= 2;
 
 					*buf++ = byte;
@@ -2197,15 +2190,15 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 static void
 sanitiseBase64(char *s)
 {
-	/*cli_dbgmsg("sanitiseBase64 '%s'\n", s);*/
-	for(; *s; s++)
+	cli_dbgmsg("sanitiseBase64 '%s'\n", s);
+	while(*s)
 		if(base64Table[(unsigned int)(*s & 0xFF)] == 255) {
 			char *p1;
 
 			for(p1 = s; p1[0] != '\0'; p1++)
 				p1[0] = p1[1];
-			--s;
-		}
+		} else
+			s++;
 }
 
 /*
@@ -2534,8 +2527,38 @@ rfc2231(const char *in)
 	enum { LANGUAGE, CHARSET, CONTENTS } field;
 
 	if(strstr(in, "*0*=") != NULL) {
-		cli_warnmsg("RFC2231 parameter continuations are not yet handled\n");
-		return cli_strdup(in);
+		char *p;
+
+		/* Don't handle continuations, decode what we can */
+		p = ret = cli_malloc(strlen(in) + 16);
+		if(ret == NULL)
+			return NULL;
+
+		do {
+			switch(*in) {
+				default:
+					*p++ = *in++;
+					continue;
+				case '*':
+					do
+						in++;
+					while((*in != '*') && *in);
+					if(*in) {
+						in++;
+						continue;
+					}
+					break;
+				case '=':
+					/*strcpy(p, in);*/
+					strcpy(p, "=rfc2231failure");
+					break;
+			}
+			break;
+		} while(*in);
+
+		cli_warnmsg("RFC2231 parameter continuations are not yet handled, returning \"%s\"\n",
+			ret);
+		return ret;
 	}
 
 	ptr = strstr(in, "*0=");

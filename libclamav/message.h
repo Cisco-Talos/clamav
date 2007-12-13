@@ -76,7 +76,6 @@ text	*binhexBegin(message *m);
 text	*yEncBegin(message *m);
 text	*bounceBegin(message *m);
 text	*encodingLine(message *m);
-void	messageClearMarkers(message *m);
 unsigned char	*decodeLine(message *m, encoding_type enctype, const char *line, unsigned char *buf, size_t buflen);
 int	isuuencodebegin(const char *line);
 void	messageSetCTX(message *m, cli_ctx *ctx);

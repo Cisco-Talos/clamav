@@ -250,7 +250,7 @@ static	bool	newline_in_header(const char *line);
 static	blob	*getHrefs(message *m, tag_arguments_t *hrefs);
 static	void	hrefs_done(blob *b, tag_arguments_t *hrefs);
 static	void	checkURLs(message *m, mbox_ctx *mctx, mbox_status *rc, int is_html);
-static	void	do_checkURLs(const char *dir, tag_arguments_t *hrefs);
+static	void	do_checkURLs(mbox_ctx *mctx, tag_arguments_t *hrefs);
 
 #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
 struct arg {
@@ -259,14 +259,14 @@ struct arg {
 	char *filename;
 	int	depth;
 };
-#define	URL_TIMEOUT	5	/* Allow 5 seconds to connect */
+#define	CONNECT_TIMEOUT	5	/* Allow 5 seconds to connect */
 #ifdef	CL_THREAD_SAFE
 static	void	*getURL(void *a);
 #else
 static	void	*getURL(struct arg *arg);
 #endif
-static	int	nonblock_connect(const char *url, SOCKET sock, const struct sockaddr *addr);
-static	int	connect_error(const char *url, SOCKET sock);
+static	int	nonblock_connect(int sock, const struct sockaddr_in *sin, const char *hostname);
+static	int	connect_error(int sock, const char *hostname);
 static	int	my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
 
 #define NONBLOCK_SELECT_MAX_FAILURES	3
@@ -274,7 +274,7 @@ static	int	my_r_gethostbyname(const char *hostname, struct hostent *hp, char *bu
 
 #endif
 
-/* Maximum line length according to RFC821 */
+/* Maximum line length according to RFC2821 */
 #define	RFC2821LENGTH	1000
 
 /* Hashcodes for our hash tables */
@@ -1575,7 +1575,21 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 					 */
 					if(isblank(line[0]))
 						continue;
-
+#ifdef	BUGFIX647	/* do not define, it slows it all down */
+					/*
+					 * TODO: will this be a performance hog? 
+					 * Needed to handle (broken?) email headers like:
+					 * Content-
+					 * Transfer-Encoding:quoted-printable
+					 *
+					 * Content-Transfer-Enco
+					 * ding:quoted-printable
+					 *
+					 * [Otherwise we'll miss the encoding]
+					 * */
+					fullline = cli_strdup(line);
+					fulllinelength = strlen(line) + 1;
+#endif
 					/*
 					 * Is this a header we're interested in?
 					 */
@@ -4004,17 +4018,18 @@ checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
 			}
 		}
 		if(is_html && (mctx->ctx->options&CL_SCAN_MAILURL) && (*rc != VIRUS))
-			do_checkURLs(mctx->dir, &hrefs);
+			do_checkURLs(mctx, &hrefs);
 	}
 	hrefs_done(b,&hrefs);
 }
 
 #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
 static void
-do_checkURLs(const char *dir, tag_arguments_t *hrefs)
+do_checkURLs(mbox_ctx *mctx, tag_arguments_t *hrefs)
 {
 	table_t *t;
 	int i, n;
+	const char *dir;
 #ifdef	CL_THREAD_SAFE
 	pthread_t tid[FOLLOWURLS];
 	struct arg args[FOLLOWURLS];
@@ -4025,6 +4040,7 @@ do_checkURLs(const char *dir, tag_arguments_t *hrefs)
 		return;
 
 	n = 0;
+	dir = mctx->dir;
 
 	/*
 	 * Sort .exes higher up so that there's more chance they'll be
@@ -4073,7 +4089,7 @@ do_checkURLs(const char *dir, tag_arguments_t *hrefs)
 			 * What about foreign character spoofing?
 			 */
 			if(strchr(url, '%') && strchr(url, '@'))
-				cli_warnmsg("Possible URL spoofing attempt noticed, but not yet handled (%s)\n", url);
+				cli_warnmsg("Possible URL spoofing attempt noticed, but not blocked (%s)\n", url);
 
 			if(n == FOLLOWURLS) {
 				cli_warnmsg("URL %s will not be scanned (FOLLOWURLS limit %d was reached)\n",
@@ -4120,7 +4136,7 @@ do_checkURLs(const char *dir, tag_arguments_t *hrefs)
 #else	/*!FOLLOWURLS*/
 
 static void
-do_checkURLs(const char *dir, tag_arguments_t *hrefs)
+do_checkURLs(mbox_ctx *mctx, tag_arguments_t *hrefs)
 {
 }
 
@@ -4168,7 +4184,6 @@ getURL(struct arg *arg)
 	static int tcp;
 	int doingsite, firstpacket;
 	char *ptr;
-	long flags;
 	int via_proxy;
 	const char *proxy;
 	char buf[BUFSIZ + 1], site[BUFSIZ], fout[NAME_MAX + 1];
@@ -4303,27 +4318,12 @@ getURL(struct arg *arg)
 		fclose(fp);
 		return NULL;
 	}
-#ifdef	F_GETFL
-	flags = fcntl(sd, F_GETFL, 0);
-
-	if(flags == -1L)
-		cli_warnmsg("getfl: %s\n", strerror(errno));
-	else if(fcntl(sd, F_SETFL, (long)(flags | O_NONBLOCK)) < 0)
-		cli_warnmsg("setfl: %s\n", strerror(errno));
-#else
-	flags = -1L;
-#endif
 	server.sin_addr.s_addr = ip;
-	if(nonblock_connect(url, sd, (struct sockaddr *)&server) < 0) {
+	if(nonblock_connect(sd, &server, url) < 0) {
 		closesocket(sd);
 		fclose(fp);
 		return NULL;
 	}
-#ifdef	F_SETFL
-	if(flags != -1L)
-		if(fcntl(sd, F_SETFL, flags))
-			cli_warnmsg("f_setfl: %s\n", strerror(errno));
-#endif
 
 	/*
 	 * TODO: consider HTTP/1.1
@@ -4526,36 +4526,64 @@ my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t l
 /*
  * Non-blocking connect, based on an idea by Everton da Silva Marques
  *	 <everton.marques@gmail.com>
+ * FIXME: There are lots of copies of this code :-(
  */
 static int
-nonblock_connect(const char *url, SOCKET sock, const struct sockaddr *addr)
+nonblock_connect(int sock, const struct sockaddr_in *sin, const char *hostname)
 {
 	int select_failures;	/* Max. of unexpected select() failures */
 	int attempts;
 	struct timeval timeout;	/* When we should time out */
 	int numfd;		/* Highest fdset fd plus 1 */
+	long flags;
 
 	gettimeofday(&timeout, 0);	/* store when we started to connect */
 
-	if(connect(sock, addr, sizeof(struct sockaddr_in)) != 0)
+	if(hostname == NULL)
+		hostname = "remote";	/* It's only used in debug messages */
+
+#ifdef	F_GETFL
+	flags = fcntl(sock, F_GETFL, 0);
+
+	if(flags == -1L)
+		cli_warnmsg("getfl: %s\n", strerror(errno));
+	else if(fcntl(sock, F_SETFL, (long)(flags | O_NONBLOCK)) < 0)
+		cli_warnmsg("setfl: %s\n", strerror(errno));
+#else
+	flags = -1L;
+#endif
+	if(connect(sock, (const struct sockaddr *)sin, sizeof(struct sockaddr_in)) != 0)
 		switch(errno) {
 			case EALREADY:
 			case EINPROGRESS:
-				cli_dbgmsg("%s: connect: %s\n", url, strerror(errno));
+				cli_dbgmsg("%s: connect: %s\n", hostname,
+					strerror(errno));
 				break; /* wait for connection */
 			case EISCONN:
 				return 0; /* connected */
 			default:
-				cli_warnmsg("%s: connect: %s\n", url, strerror(errno));
+				cli_warnmsg("%s: connect: %s\n",
+					hostname, strerror(errno));
+#ifdef	F_SETFL
+				if(flags != -1L)
+					if(fcntl(sock, F_SETFL, flags))
+						cli_warnmsg("f_setfl: %s\n", strerror(errno));
+#endif
 				return -1; /* failed */
 		}
-	else
-		return connect_error(url, sock);
+	else {
+#ifdef	F_SETFL
+		if(flags != -1L)
+			if(fcntl(sock, F_SETFL, flags))
+				cli_warnmsg("f_setfl: %s\n", strerror(errno));
+#endif
+		return connect_error(sock, hostname);
+	}
 
 	numfd = (int)sock + 1;
 	select_failures = NONBLOCK_SELECT_MAX_FAILURES;
 	attempts = 1;
-	timeout.tv_sec += URL_TIMEOUT;
+	timeout.tv_sec += CONNECT_TIMEOUT;
 
 	for (;;) {
 		int n, t;
@@ -4570,7 +4598,7 @@ nonblock_connect(const char *url, SOCKET sock, const struct sockaddr *addr)
 
 		if(t) {
 			cli_warnmsg("%s: connect timeout (%d secs)\n",
-				url, URL_TIMEOUT);
+				hostname, CONNECT_TIMEOUT);
 			break;
 		}
 
@@ -4589,29 +4617,40 @@ nonblock_connect(const char *url, SOCKET sock, const struct sockaddr *addr)
 		n = select(numfd, 0, &fds, 0, &waittime);
 		if(n < 0) {
 			cli_warnmsg("%s: select attempt %d %s\n",
-				url, select_failures, strerror(errno));
+				hostname, select_failures, strerror(errno));
 			if(--select_failures >= 0)
 				continue; /* not timed-out, try again */
 			break; /* failed */
 		}
 
-		cli_dbgmsg("%s: select = %d\n", url, n);
+		cli_dbgmsg("%s: select = %d\n", hostname, n);
 
-		if(n)
-			return connect_error(url, sock);
+		if(n) {
+#ifdef	F_SETFL
+			if(flags != -1L)
+				if(fcntl(sock, F_SETFL, flags))
+					cli_warnmsg("f_setfl: %s\n", strerror(errno));
+#endif
+			return connect_error(sock, hostname);
+		}
 
 		/* timeout */
 		if(attempts++ == NONBLOCK_MAX_ATTEMPTS) {
-			cli_warnmsg("timeout connecting to %s\n", url);
+			cli_warnmsg("timeout connecting to %s\n", hostname);
 			break;
 		}
 	}
 
+#ifdef	F_SETFL
+	if(flags != -1L)
+		if(fcntl(sock, F_SETFL, flags))
+			cli_warnmsg("f_setfl: %s\n", strerror(errno));
+#endif
 	return -1; /* failed */
 }
 
 static int
-connect_error(const char *url, SOCKET sock)
+connect_error(int sock, const char *hostname)
 {
 #ifdef	SO_ERROR
 	int optval;
@@ -4620,7 +4659,7 @@ connect_error(const char *url, SOCKET sock)
 	getsockopt(sock, SOL_SOCKET, SO_ERROR, &optval, &optlen);
 
 	if(optval) {
-		cli_warnmsg("%s: %s\n", url, strerror(optval));
+		cli_warnmsg("%s: %s\n", hostname, strerror(optval));
 		return -1;
 	}
 #endif
@@ -4718,15 +4757,15 @@ getline_from_mbox(char *buffer, size_t len, FILE *fin)
 			return NULL;
 
 		switch(c) {
+			default:
+				*buffer++ = (char)c;
+				continue;
 			case '\n':
 				*buffer++ = '\n';
 				c = getc(fin);
 				if((c != '\r') && !feof(fin))
 					ungetc(c, fin);
 				break;
-			default:
-				*buffer++ = (char)c;
-				continue;
 			case EOF:
 				break;
 			case '\r':

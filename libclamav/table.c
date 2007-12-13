@@ -119,6 +119,9 @@ tableInsert(table_t *table, const char *key, int value)
 /*
  * Returns the value - -1 for not found. This means the value of a valid key
  *	can't be -1 :-(
+ *
+ * Linear search. Since tables are rarely more than 3 or 4 in size, and never
+ *	reach double figures, there's no need for optimisation
  */
 int
 tableFind(const table_t *table, const char *key)

@@ -167,6 +167,8 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	if(cli_pmemstr(trailerstart, trailerlength, "Encrypt", 7)) {
 		/*
 		 * This tends to mean that the file is, in effect, read-only
+		 * http://www.cs.cmu.edu/~dst/Adobe/Gallery/anon21jul01-pdf-encryption.txt
+		 * http://www.adobe.com/devnet/pdf/
 		 */
 		if(alloced)
 			free(alloced);
@@ -301,10 +303,10 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 						char b[14];
 
 						q += 4;
-						cli_dbgmsg("Length is in indirect obj %ld\n",
+						cli_dbgmsg("Length is in indirect obj %lu\n",
 							length);
 						snprintf(b, sizeof(b),
-							"\n%ld 0 obj", length);
+							"\n%lu 0 obj", length);
 						length = (unsigned long)strlen(b);
 						r = cli_pmemstr(alloced ? alloced : buf,
 							size, b, length);
@@ -320,7 +322,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 								length = atoi(r);
 								while(isdigit(*r))
 									r++;
-								cli_dbgmsg("length in '%s' %ld\n",
+								cli_dbgmsg("length in '%s' %lu\n",
 									&b[1],
 									length);
 							}
@@ -442,7 +444,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		if(calculated_streamlen != real_streamlen)
 			cli_dbgmsg("cli_pdf: Incorrect Length field in file attempting to recover\n");
 
-		cli_dbgmsg("length %ld, calculated_streamlen %ld isFlate %d isASCII85 %d\n",
+		cli_dbgmsg("length %lu, calculated_streamlen %lu isFlate %d isASCII85 %d\n",
 			length, calculated_streamlen,
 			is_flatedecode, is_ascii85decode);
 
@@ -515,7 +517,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		} else
 			tableInsert(md5table, md5digest, 1);
 		free(md5digest);
-		cli_dbgmsg("cli_pdf: extracted file %d to %s\n", ++files,
+		cli_dbgmsg("cli_pdf: extracted file %u to %s\n", ++files,
 			fullname);
 		if(limits && limits->maxfiles && (files >= limits->maxfiles)) {
 			/* Bug 698 */
@@ -659,7 +661,7 @@ flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 					cli_dbgmsg("pdf: after writing %lu bytes, got error %d inflating PDF attachment\n",
 						(unsigned long)nbytes, zstat);
 				inflateEnd(&stream);
-				return (zstat == Z_OK) ? CL_SUCCESS : CL_EZIP;
+				return CL_EZIP;
 		}
 		break;
 	}

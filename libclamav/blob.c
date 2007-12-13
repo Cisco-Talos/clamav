@@ -122,6 +122,31 @@ blobArrayDestroy(blob *blobList[], int n)
 	}
 }
 
+/*
+ * No longer needed to be growable, so turn into a normal memory area which
+ * the caller must free. The passed blob is destroyed
+ */
+void *
+blobToMem(blob *b)
+{
+	void *ret;
+
+	assert(b != NULL);
+	assert(b->magic == BLOBCLASS);
+
+	if(!b->isClosed)
+		blobClose(b);
+	if(b->name)
+		free(b->name);
+#ifdef	CL_DEBUG
+	b->magic = INVALIDCLASS;
+#endif
+	ret = (void *)b->data;
+	free(b);
+
+	return ret;
+}
+
 /*ARGSUSED*/
 void
 blobSetFilename(blob *b, const char *dir, const char *filename)
@@ -502,6 +527,12 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 
 #if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN) || defined(C_QNX6)
 	cli_dbgmsg("fileblobSetFilename: mkstemp(%s)\n", fullname);
+	/*
+	 * On older Cygwin, mkstemp opened in O_TEXT mode, rather than
+	 *	O_BINARY. I understand this is now fixed, but I don't know in
+	 *	what version
+	 * See http://cygwin.com/ml/cygwin-patches/2006-q2/msg00014.html
+	 */
 	fd = mkstemp(fullname);
 	if((fd < 0) && (errno == EINVAL)) {
 		/*
