@@ -1,3 +1,13 @@
+Thu Dec 13 21:47:53 CET 2007 (acab)
+-----------------------------------
+  * libclamav: merge the post 0.92 code
+    - NSIS: zlib compression now handled via system zlib
+    - NSIS: unmodified lzma state decoder now statically linked
+    - SIS: handler rewritten to support more recent sis archives
+    - PE: rewritten wwpack32 handler
+    - SPIN: cosmetic changes
+    - UNZIP: decompressor rewritten with bzip2 and deflate64 support
+
 Thu Dec 13 14:57:39 GMT 2007 (trog)
 -----------------------------------
   * libclamav/chmunpack.c: Code cleanup. Reduce dynamic memory footprint.
