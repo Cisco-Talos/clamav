@@ -45,6 +45,7 @@
 #include "others.h"
 #include "clamav.h"
 #include "scanners.h"
+#include "matcher.h"
 
 #ifndef O_BINARY
 #define O_BINARY 0
@@ -340,10 +341,11 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, un
   return ret;
 }
 
-static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, uint8_t *ch, int *ret, cli_ctx *ctx, char *tmpd) {
+static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigned int fc, uint8_t *ch, int *ret, cli_ctx *ctx, char *tmpd) {
   uint8_t *lh = zip;
   char name[256];
   uint32_t csize;
+  struct cli_meta_node *meta = ctx->engine->zip_mlist;
 
   if(zsize<=SIZEOF_LH) {
     cli_dbgmsg("cli_unzip: lh - out of file\n");
@@ -359,6 +361,7 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, uint8_t
   zsize-=SIZEOF_LH;
 
   cli_dbgmsg("cli_unzip: lh - flags %x - method %x - csize %x - usize %x - flen %x - elen %x\n", LH_flags, LH_method, LH_csize, LH_usize, LH_flen, LH_elen);
+  /* ZMDfmt virname:encrypted(0-1):filename(exact|*):usize(exact|*):csize(exact|*):crc32(exact|*):method(exact|*):fileno(exact|*):maxdepth(exact|*) */
 
   if(LH_flags & F_MSKED) {
     cli_dbgmsg("cli_unzip: lh - header has got unusable masked data\n");
@@ -376,7 +379,7 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, uint8_t
     cli_dbgmsg("cli_unzip: lh - fname out of file\n");
     return 0;
   }
-  if(cli_debug_flag) {
+  if(meta) {
     uint32_t nsize = (LH_flen>=sizeof(name))?sizeof(name)-1:LH_flen;
     memcpy(name, zip, nsize);
     name[nsize]='\0';
@@ -384,6 +387,24 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, uint8_t
   }
   zip+=LH_flen;
   zsize-=LH_flen;
+
+  while(meta &&
+	(
+	 meta->encrypted != ((LH_flags & F_ENCR)!=0) ||
+	 (meta->crc32    && meta->crc32  != LH_crc32) ||
+	 (meta->csize>0  && (uint32_t)meta->csize  != LH_csize) ||
+	 (meta->size>0   && (uint32_t)meta->size   != LH_usize) ||
+	 (meta->method>0 && meta->method != LH_method) ||
+	 (meta->fileno   && meta->fileno != fc ) ||
+	 (meta->maxdepth && ctx->arec > meta->maxdepth) ||
+	 (meta->filename && strcmp(name, meta->filename))
+	 )
+	) meta = meta->next;
+  if(meta) {
+    *ctx->virname = meta->virname;
+    *ret = CL_VIRUS;
+    return 0;
+  }
 
   if(zsize<=LH_elen) {
     cli_dbgmsg("cli_unzip: lh - extra out of file\n");
@@ -427,7 +448,7 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, uint8_t
 }
 
 
-static unsigned int chdr(uint8_t *zip, uint32_t coff, uint32_t zsize, unsigned int *fu, int *ret, cli_ctx *ctx, char *tmpd) {
+static unsigned int chdr(uint8_t *zip, uint32_t coff, uint32_t zsize, unsigned int *fu, unsigned int fc, int *ret, cli_ctx *ctx, char *tmpd) {
   uint8_t *ch = &zip[coff];
   char name[256];
   int last = 0;
@@ -465,7 +486,7 @@ static unsigned int chdr(uint8_t *zip, uint32_t coff, uint32_t zsize, unsigned i
   coff+=CH_clen;
 
   if(CH_off<zsize-SIZEOF_LH) {
-    lhdr(&zip[CH_off], zsize-CH_off, fu, ch, ret, ctx, tmpd);
+    lhdr(&zip[CH_off], zsize-CH_off, fu, fc, ch, ret, ctx, tmpd);
   } else cli_dbgmsg("cli_unzip: ch - local hdr out of file\n");
   return last?0:coff;
 }
@@ -517,15 +538,23 @@ int cli_unzip(int f, cli_ctx *ctx) {
 
   if(coff) {
     cli_dbgmsg("cli_unzip: central @%x\n", coff);
-    /* FIXME: fu vs maxfiles */
-    while(ret==CL_CLEAN && (coff=chdr(map, coff, fsize, &fu, &ret, ctx, tmpd)))
+    while(ret==CL_CLEAN && (coff=chdr(map, coff, fsize, &fu, fc+1, &ret, ctx, tmpd))) {
       fc++;
+      if (ctx->limits && ctx->limits->maxfiles && fu>=ctx->limits->maxfiles) {
+	cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->limits->maxfiles);
+	ret=CL_EMAXFILES;
+      }
+    }
   } else cli_dbgmsg("cli_unzip: central not found, using localhdrs\n");
   if(fu<=(fc/4)) { /* FIXME: make up a sane ratio or remove the whole logic */
-    /* FIXME: fu vs maxfiles */
-    while (ret==CL_CLEAN && lhoff<fsize && (coff=lhdr(&map[lhoff], fsize-lhoff, &fu, NULL, &ret, ctx, tmpd))) {
+    fc = 0;
+    while (ret==CL_CLEAN && lhoff<fsize && (coff=lhdr(&map[lhoff], fsize-lhoff, &fu, fc+1, NULL, &ret, ctx, tmpd))) {
       fc++;
       lhoff+=coff;
+      if (ctx->limits && ctx->limits->maxfiles && fu>=ctx->limits->maxfiles) {
+	cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->limits->maxfiles);
+	ret=CL_EMAXFILES;
+      }
     }
   }
 
@@ -538,11 +567,10 @@ int cli_unzip(int f, cli_ctx *ctx) {
 
 int cli_unzip_single(int f, cli_ctx *ctx, off_t lhoffl) {
   int ret=CL_CLEAN;
-  unsigned int fc=0, fu=0;
+  unsigned int fu=0;
   struct stat st;
   uint32_t fsize;
   uint8_t *map;
-  char *tmpd;
 
   cli_dbgmsg("in cli_unzip_single\n");
   if (fstat(f, &st)==-1) {
@@ -564,7 +592,7 @@ int cli_unzip_single(int f, cli_ctx *ctx, off_t lhoffl) {
     return CL_EMEM;
   }
 
-  lhdr(&map[lhoffl], fsize, &fu, NULL, &ret, ctx, NULL);
+  lhdr(&map[lhoffl], fsize, &fu, 0, NULL, &ret, ctx, NULL);
 
   munmap(map, fsize);
   return ret;
