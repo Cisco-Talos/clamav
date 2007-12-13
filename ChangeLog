@@ -1,3 +1,7 @@
+Thu Dec 13 00:26:58 CET 2007 (tk)
+---------------------------------
+  * 0.92 (released with JS and PST code removed)
+
 Wed Dec 12 23:45:21 CET 2007 (tk)
 ---------------------------------
   * libclamav/vba_extract.c: fix compilation error with --enable-debug (NJH)
