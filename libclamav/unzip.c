@@ -18,7 +18,6 @@
  */
 
 /* FIXME: get a clue about masked stuff */
-/* FIXME: is unz() infloop safe ? */
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -36,7 +35,7 @@
 #endif
 #include <stdlib.h>
 #include <sys/mman.h>
-//#include <stdio.h>
+#include <stdio.h>
 
 #include <zlib.h>
 #include "inflate64.h"
@@ -65,7 +64,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, un
   char name[1024], obuf[BUFSIZ];
   char *tempfile = name;
   int of, ret=CL_CLEAN;
-  unsigned int res=1;
+  unsigned int res=1, written=0;
 
   if(tmpd) {
     snprintf(name, sizeof(name), "%s/zip.%03u", tmpd, *fu);
@@ -90,6 +89,15 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, un
       else break;
     }
     if(res==1) {
+      if(ctx->limits && ctx->limits->maxfilesize && csize > ctx->limits->maxfilesize) {
+	if(BLOCKMAX) {
+	  *ctx->virname = "Zip.ExceededFileSize";
+	  ret = CL_VIRUS;
+	  break;
+	}
+	cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->limits->maxfilesize);
+	csize = ctx->limits->maxfilesize;
+      }
       if(cli_writen(of, src, csize)!=(int)csize) ret = CL_EIO;
       else res=0;
     }
@@ -146,6 +154,17 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, un
     while(1) {
       while((res = unz_unz(&strm, Z_NO_FLUSH))==Z_OK) {};
       if(*avail_out!=sizeof(obuf)) {
+	written+=sizeof(obuf)-(*avail_out);
+	if(ctx->limits && ctx->limits->maxfilesize && written > ctx->limits->maxfilesize) {
+	  if(BLOCKMAX) {
+	    *ctx->virname = "Zip.ExceededFileSize";
+	    ret = CL_VIRUS;
+	    break;
+	  }
+	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->limits->maxfilesize);
+	  res = Z_STREAM_END;
+	  break;
+	}
 	if(cli_writen(of, obuf, sizeof(obuf)-(*avail_out)) != (int)(sizeof(obuf)-(*avail_out))) {
 	  cli_warnmsg("cli_unzip: falied to write %lu inflated bytes\n", sizeof(obuf)-(*avail_out));
 	  ret = CL_EIO;
@@ -177,6 +196,17 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, un
     }
     while((res = BZ2_bzDecompress(&strm))==BZ_OK || res==BZ_STREAM_END) {
       if(strm.avail_out!=sizeof(obuf)) {
+	written+=sizeof(obuf)-strm.avail_out;
+	if(ctx->limits && ctx->limits->maxfilesize && written > ctx->limits->maxfilesize) {
+	  if(BLOCKMAX) {
+	    *ctx->virname = "Zip.ExceededFileSize";
+	    ret = CL_VIRUS;
+	    break;
+	  }
+	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->limits->maxfilesize);
+	  res = Z_STREAM_END;
+	  break;
+	}
 	if(cli_writen(of, obuf, sizeof(obuf)-strm.avail_out) != (int)(sizeof(obuf)-strm.avail_out)) {
 	  cli_warnmsg("cli_unzip: falied to write %lu bunzipped bytes\n", sizeof(obuf)-strm.avail_out);
 	  ret = CL_EIO;
@@ -329,16 +359,11 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
 	return 0;
       }
       cli_dbgmsg("cli_unzip: lh - skipping encrypted file\n");
-    } else {
-      if(ctx->limits && ctx->limits->maxfilesize && csize > ctx->limits->maxfilesize) {
-	if(BLOCKMAX) {
-	  *ctx->virname = "Zip.ExceededFileSize";
-	  *ret = CL_VIRUS;
-	  return 0;
-	}
-	cli_dbgmsg("cli_unzip: skipping oversized file\n");
-      } else *ret = unz(zip, csize, LH_usize, LH_method, fu, ctx, tmpd);
-    }
+    } else if(ctx->limits && ctx->limits->maxratio > 0 && (LH_usize / LH_csize) >= ctx->limits->maxratio) {
+      *ctx->virname = "Oversized.Zip";
+      *ret = CL_VIRUS;
+      return 0;
+    } else *ret = unz(zip, csize, LH_usize, LH_method, fu, ctx, tmpd);
     zip+=csize;
     zsize-=csize;
   }
