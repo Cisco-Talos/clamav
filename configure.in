@@ -1217,6 +1217,7 @@ AC_OUTPUT([
 libclamunrar/Makefile
 libclamunrar_iface/Makefile
 libclamav/Makefile
+libclamav/lzma/Makefile
 clamscan/Makefile
 database/Makefile
 docs/Makefile

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
+#  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -16,13 +16,14 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
+SUBDIRS = lzma .
 
-INCLUDES = -I$(top_srcdir) -I@srcdir@/nsis
+INCLUDES = -I$(top_srcdir) -I@srcdir@/nsis -I@srcdir@/lzma
 
 if ENABLE_UNRAR
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@ @THREAD_LIBS@ $(top_builddir)/libclamunrar_iface/libclamunrar_iface.la
 else
-libclamav_la_LIBADD = @LIBCLAMAV_LIBS@ @THREAD_LIBS@
+libclamav_la_LIBADD = @LIBCLAMAV_LIBS@ @THREAD_LIBS@ lzma/liblzma.la
 endif
 
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
@@ -106,6 +107,10 @@ libclamav_la_SOURCES = \
 	untar.h \
 	unzip.c \
 	unzip.h \
+	inflate64.c \
+	inflate64.h \
+	inffixed64.h \
+	inflate64_priv.h \
 	special.c \
 	special.h \
 	binhex.c \
@@ -128,15 +133,9 @@ libclamav_la_SOURCES = \
 	regex/utils.h \
 	unarj.c \
 	unarj.h \
-	nsis/LZMADecode.c \
-	nsis/LZMADecode.h \
 	nsis/bzlib.c \
 	nsis/bzlib_private.h \
-	nsis/infblock.c \
 	nsis/nsis_bzlib.h \
-	nsis/nsis_zconf.h \
-	nsis/nsis_zlib.h \
-	nsis/nsis_zutil.h \
 	nsis/nulsft.c \
 	nsis/nulsft.h \
 	pdf.c \
@@ -176,7 +175,9 @@ libclamav_la_SOURCES = \
 	dconf.c \
 	dconf.h \
 	lockdb.c \
-	lockdb.h
+	lockdb.h \
+	lzma_iface.c \
+	lzma_iface.h
 
 lib_LTLIBRARIES = libclamav.la
 EXTRA_DIST = regex/engine.c

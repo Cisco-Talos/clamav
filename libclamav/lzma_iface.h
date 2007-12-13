@@ -1,6 +1,7 @@
 /*
- *  Copyright (C) 2006 Sensory Networks, Inc.
- *             Written by aCaB <acab@clamav.net>
+ *  Copyright (C) 2007 Sourcefire Inc.
+ *  Author: aCaB <acab@clamav.net>
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
  *  published by the Free Software Foundation.
@@ -16,12 +17,27 @@
  *  MA 02110-1301, USA.
  */
 
-#ifndef __WWP32_H
-#define __WWP32_H
+/* a cleaner state interface to LZMA */
 
+#ifndef __LZMA_IFACE_H
+#define __LZMA_IFACE_H
+
+#include "LzmaStateDecode.h"
 #include "cltypes.h"
-#include "rebuildpe.h"
 
-int wwunpack(char *, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, char *, uint32_t, uint16_t);
+typedef struct {
+  CLzmaDecoderState state;
+  const unsigned char *next_in;
+  SizeT avail_in;
+  unsigned char *next_out;
+  SizeT avail_out;
+  int initted;
+  uint64_t usize;
+} CLI_LZMA;
 
-#endif
+int cli_LzmaInit(CLI_LZMA *, uint64_t);
+void cli_LzmaShutdown(CLI_LZMA *);
+int cli_LzmaDecode(CLI_LZMA *);
+
+#define LZMA_STREAM_END 2
+#endif /* __LZMA_IFACE_H */

@@ -13,7 +13,7 @@
    This file was modified for ClamAV by aCaB <acab@clamav.net>
 
    This program is released under the terms of the license contained
-   in the file COPYING.nsis.
+   in the file COPYING.bzip2.
    ------------------------------------------------------------------ */
 
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004 - 2006 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2004 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *			      aCaB <acab@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -23,11 +23,12 @@
 #endif
 
 #include <stdio.h>
+#if HAVE_STRING_H
 #include <string.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <sys/stat.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -1848,106 +1849,65 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	CLI_UNPRESULTS("yC",(yc_decrypt(spinned, fsize, exe_sections, nsections-1, e_lfanew, ndesc)),0,(spinned,0));
     }
 
-
     /* WWPack */
 
-    if((DCONF & PE_CONF_WWPACK) && nsections > 1 &&
-       exe_sections[nsections-1].raw>0x2b1 &&
+    while ((DCONF & PE_CONF_WWPACK) && nsections > 1 &&
        vep == exe_sections[nsections - 1].rva &&
-       exe_sections[nsections - 1].rva + exe_sections[nsections - 1].rsz == max &&
        memcmp(epbuff, "\x53\x55\x8b\xe8\x33\xdb\xeb", 7) == 0 &&
        memcmp(epbuff+0x68, "\xe8\x00\x00\x00\x00\x58\x2d\x6d\x00\x00\x00\x50\x60\x33\xc9\x50\x58\x50\x50", 19) == 0)  {
-	uint32_t headsize=exe_sections[nsections - 1].raw;
-	char *dest, *wwp;
+	uint32_t head = exe_sections[nsections - 1].raw;
+        uint8_t *packer;
 
-	for(i = 0 ; i < (unsigned int)nsections-1; i++)
-	    if (exe_sections[i].raw<headsize) headsize=exe_sections[i].raw;
-      
-	dsize = max-min+headsize-exe_sections[nsections - 1].rsz;
+	ssize = 0;
+	for(i=0 ; ; i++) {
+	    if(exe_sections[i].raw<head) 
+	        head=exe_sections[i].raw;
+	    if(i==nsections-1) break;
+	    if(ssize<exe_sections[i].rva+exe_sections[i].vsz)
+		ssize=exe_sections[i].rva+exe_sections[i].vsz;
+	}
+	if(!head || !ssize || head>ssize) break;
 
-	CLI_UNPSIZELIMITS("WWPack", dsize);
+	CLI_UNPSIZELIMITS("WWPack", ssize);
 
-	if((dest = (char *) cli_calloc(dsize, sizeof(char))) == NULL) {
-	    cli_dbgmsg("WWPack: Can't allocate %d bytes\n", dsize);
+        if(!(src=(char *)cli_calloc(ssize, sizeof(char)))) {
 	    free(exe_sections);
 	    return CL_EMEM;
 	}
-
 	lseek(desc, 0, SEEK_SET);
-	if((size_t) cli_readn(desc, dest, headsize) != headsize) {
-	    cli_dbgmsg("WWPack: Can't read %d bytes from headers\n", headsize);
-	    free(dest);
+	if((size_t) cli_readn(desc, src, head) != head) {
+	    cli_dbgmsg("WWPack: Can't read %d bytes from headers\n", head);
+	    free(src);
 	    free(exe_sections);
 	    return CL_EIO;
 	}
-
-	for(i = 0 ; i < (unsigned int)nsections-1; i++) {
-	    if(exe_sections[i].rsz) {
-		if(!cli_seeksect(desc, &exe_sections[i]) || (unsigned int) cli_readn(desc, dest + headsize + exe_sections[i].rva - min, exe_sections[i].rsz) != exe_sections[i].rsz) {
-		    free(dest);
-		    free(exe_sections);
-		    return CL_EIO;
-		}
-	    }
-	}
-
-	if((wwp = (char *) cli_calloc(exe_sections[nsections - 1].rsz, sizeof(char))) == NULL) {
-	    cli_dbgmsg("WWPack: Can't allocate %d bytes\n", exe_sections[nsections - 1].rsz);
-	    free(dest);
+        for(i = 0 ; i < (unsigned int)nsections-1; i++) {
+	    if(!exe_sections[i].rsz) continue;
+	    if(!cli_seeksect(desc, &exe_sections[i])) break;
+            if(!CLI_ISCONTAINED(src, ssize, src+exe_sections[i].rva, exe_sections[i].rsz)) break;
+            if(cli_readn(desc, src+exe_sections[i].rva, exe_sections[i].rsz)!=exe_sections[i].rsz) break;
+        }
+        if(i!=nsections-1) {
+            cli_dbgmsg("WWpack: Probably hacked/damaged file.\n");
+            free(src);
+            break;
+        }
+	if((packer = (char *) cli_calloc(exe_sections[nsections - 1].rsz, sizeof(char))) == NULL) {
+	    free(src);
 	    free(exe_sections);
 	    return CL_EMEM;
 	}
-
-	if(!cli_seeksect(desc, &exe_sections[nsections - 1]) || (size_t) cli_readn(desc, wwp, exe_sections[nsections - 1].rsz) != exe_sections[nsections - 1].rsz) {
+	if(!cli_seeksect(desc, &exe_sections[nsections - 1]) || (size_t) cli_readn(desc, packer, exe_sections[nsections - 1].rsz) != exe_sections[nsections - 1].rsz) {
 	    cli_dbgmsg("WWPack: Can't read %d bytes from wwpack sect\n", exe_sections[nsections - 1].rsz);
-	    free(dest);
-	    free(wwp);
+	    free(src);
+	    free(packer);
 	    free(exe_sections);
 	    return CL_EIO;
 	}
 
-	if (!wwunpack(dest, dsize, headsize, min, exe_sections[nsections-1].rva, e_lfanew, wwp, exe_sections[nsections - 1].rsz, nsections-1)) {
-	
-	    free(wwp);
-
-	    CLI_UNPTEMP("WWPack",(dest,exe_sections,0));
-
-	    if((unsigned int) write(ndesc, dest, dsize) != dsize) {
-		cli_dbgmsg("WWPack: Can't write %d bytes\n", dsize);
-		close(ndesc);
-		free(tempfile);
-		free(dest);
-		free(exe_sections);
-		return CL_EIO;
-	    }
-
-	    free(dest);
-	    if (cli_leavetemps_flag)
-		cli_dbgmsg("WWPack: Unpacked and rebuilt executable saved in %s\n", tempfile);
-	    else
-		cli_dbgmsg("WWPack: Unpacked and rebuilt executable\n");
-
-	    fsync(ndesc);
-	    lseek(ndesc, 0, SEEK_SET);
-
-	    if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) {
-		free(exe_sections);
-		close(ndesc);
-		if(!cli_leavetemps_flag)
-		    unlink(tempfile);
-		free(tempfile);
-		return CL_VIRUS;
-	    }
-
-	    close(ndesc);
-	    if(!cli_leavetemps_flag)
-		unlink(tempfile);
-	    free(tempfile);
-	} else {
-	    free(wwp);
-	    free(dest);
-	    cli_dbgmsg("WWPpack: Decompression failed\n");
-	}
+	CLI_UNPTEMP("WWPack",(src,packer,exe_sections,0));
+	CLI_UNPRESULTS("WWPack",(wwunpack(src, ssize, packer, exe_sections, nsections-1, e_lfanew, ndesc)),0,(src,packer,0));
+	break;
     }
 
 

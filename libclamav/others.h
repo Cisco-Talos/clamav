@@ -203,6 +203,7 @@ int cli_bitset_test(bitset_t *bs, unsigned long bit_offset);
 
 #if WORDS_BIGENDIAN == 0
 #define cli_readint32(buff) (*(const int32_t *)(buff))
+#define cli_readint16(buff) (*(const int16_t *)(buff))
 #define cli_writeint32(offset, value) (*(uint32_t *)(offset)=(uint32_t)(value))
 #else
 static inline int32_t cli_readint32(const char *buff)
@@ -212,6 +213,14 @@ static inline int32_t cli_readint32(const char *buff)
     ret |= (buff[1] & 0xff) << 8;
     ret |= (buff[2] & 0xff) << 16;
     ret |= (buff[3] & 0xff) << 24;
+    return ret;
+}
+
+static inline int16_t cli_readint32(const char *buff)
+{
+	int16_t ret;
+    ret = buff[0] & 0xff;
+    ret |= (buff[1] & 0xff) << 8;
     return ret;
 }
 

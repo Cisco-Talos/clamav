@@ -15,7 +15,22 @@
 @SET_MAKE@
 
 #
-#  Copyright (C) 2007 Sourcefire, Inc.
+#  Copyright (C) 2007 Sourcefire Inc.
+#  Author: aCaB <acab@clamav.net>
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+#  MA 02110-1301, USA.
 #
 
 srcdir = @srcdir@
@@ -24,7 +39,7 @@ VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
-top_builddir = ..
+top_builddir = ../..
 am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
 INSTALL = @INSTALL@
 install_sh_DATA = $(install_sh) -c -m 644
@@ -41,7 +56,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = libclamunrar_iface
+subdir = libclamav/lzma
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/acinclude.m4 \
@@ -60,11 +75,9 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(libdir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
-@ENABLE_UNRAR_TRUE@libclamunrar_iface_la_DEPENDENCIES = $(top_builddir)/libclamunrar/libclamunrar.la
-am__libclamunrar_iface_la_SOURCES_DIST = unrar_iface.c unrar_iface.h
-@ENABLE_UNRAR_TRUE@am_libclamunrar_iface_la_OBJECTS = unrar_iface.lo
-libclamunrar_iface_la_OBJECTS = $(am_libclamunrar_iface_la_OBJECTS)
-@ENABLE_UNRAR_TRUE@am_libclamunrar_iface_la_rpath = -rpath $(libdir)
+liblzma_la_LIBADD =
+am_liblzma_la_OBJECTS = LzmaStateDecode.lo
+liblzma_la_OBJECTS = $(am_liblzma_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -76,8 +89,8 @@ LTCOMPILE = $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(libclamunrar_iface_la_SOURCES)
-DIST_SOURCES = $(am__libclamunrar_iface_la_SOURCES_DIST)
+SOURCES = $(liblzma_la_SOURCES)
+DIST_SOURCES = $(liblzma_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -209,14 +222,10 @@ target_alias = @target_alias@
 target_cpu = @target_cpu@
 target_os = @target_os@
 target_vendor = @target_vendor@
-@ENABLE_UNRAR_TRUE@INCLUDES = -I$(top_srcdir)
-@ENABLE_UNRAR_TRUE@libclamunrar_iface_la_LIBADD = $(top_builddir)/libclamunrar/libclamunrar.la
-@ENABLE_UNRAR_TRUE@libclamunrar_iface_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
-@ENABLE_UNRAR_TRUE@libclamunrar_iface_la_SOURCES = \
-@ENABLE_UNRAR_TRUE@	unrar_iface.c \
-@ENABLE_UNRAR_TRUE@	unrar_iface.h
-
-@ENABLE_UNRAR_TRUE@lib_LTLIBRARIES = libclamunrar_iface.la
+AM_CFLAGS = -fPIC -DPIC
+lib_LTLIBRARIES = liblzma.la
+liblzma_la_SOURCES = LzmaStateDecode.c
+liblzma_la_LDFLAGS = -static
 all: all-am
 
 .SUFFIXES:
@@ -230,9 +239,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  libclamunrar_iface/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  libclamav/lzma/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu  libclamunrar_iface/Makefile
+	  $(AUTOMAKE) --gnu  libclamav/lzma/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -277,8 +286,8 @@ clean-libLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-libclamunrar_iface.la: $(libclamunrar_iface_la_OBJECTS) $(libclamunrar_iface_la_DEPENDENCIES) 
-	$(LINK) $(am_libclamunrar_iface_la_rpath) $(libclamunrar_iface_la_LDFLAGS) $(libclamunrar_iface_la_OBJECTS) $(libclamunrar_iface_la_LIBADD) $(LIBS)
+liblzma.la: $(liblzma_la_OBJECTS) $(liblzma_la_DEPENDENCIES) 
+	$(LINK) -rpath $(libdir) $(liblzma_la_LDFLAGS) $(liblzma_la_OBJECTS) $(liblzma_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -286,7 +295,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrar_iface.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/LzmaStateDecode.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \

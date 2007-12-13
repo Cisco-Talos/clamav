@@ -86,11 +86,8 @@
 #include "unarj.h"
 #include "nulsft.h"
 #include "autoit.h"
-
-#ifdef HAVE_ZLIB_H
 #include <zlib.h>
 #include "unzip.h"
-#endif
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -446,272 +443,6 @@ static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 
     return ret;
 }
-#ifdef HAVE_ZLIB_H
-static int cli_scanzip(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
-{
-	zip_dir *zdir;
-	zip_dirent zdirent;
-	zip_file *zfp;
-	char *tmpname = NULL, *buff;
-	int fd = -1, bytes, ret = CL_CLEAN;
-	unsigned long int size = 0;
-	unsigned int files = 0, encrypted, bfcnt;
-	struct stat source;
-	struct cli_meta_node *mdata;
-	int err;
-	uint8_t swarning = 0, fail, success;
-
-
-    cli_dbgmsg("in scanzip()\n");
-
-    if((zdir = zip_dir_open(desc, sfx_offset, &err)) == NULL) {
-	cli_dbgmsg("Zip: zip_dir_open() return code: %d\n", err);
-	/* no return with CL_EZIP due to password protected zips */
-	return CL_CLEAN;
-    }
-
-    fstat(desc, &source);
-
-    if(!(buff = (char *) cli_malloc(FILEBUFF))) {
-	cli_dbgmsg("Zip: unable to malloc(%u)\n", FILEBUFF);
-	zip_dir_close(zdir);
-	return CL_EMEM;
-    }
-
-    while(zip_dir_read(zdir, &zdirent)) {
-	files++;
-
-	if(files == 1 && sfx_check) {
-	    if(*sfx_check == zdirent.d_crc32)
-		break;
-	    else
-		*sfx_check = zdirent.d_crc32;
-	}
-
-	if(!zdirent.d_name) {
-	    cli_dbgmsg("Zip: zdirent.d_name == NULL\n");
-	    *ctx->virname = "Suspect.Zip";
-	    ret = CL_VIRUS;
-	    break;
-	}
-
-        /* Bit 0: file is encrypted
-	 * Bit 6: Strong encryption was used
-	 * Bit 13: Encrypted central directory
-	 */
-	encrypted = ((zdirent.d_flags & 0x2041) != 0);
-
-	cli_dbgmsg("Zip: %s, crc32: 0x%x, offset: %u, encrypted: %u, compressed: %u, normal: %u, method: %u, ratio: %u (max: %u)\n", zdirent.d_name, zdirent.d_crc32, zdirent.d_off, encrypted, zdirent.d_csize, zdirent.st_size, zdirent.d_compr, zdirent.d_csize ? (zdirent.st_size / zdirent.d_csize) : 0, ctx->limits ? ctx->limits->maxratio : 0);
-
-	if(!zdirent.st_size) {
-	    if(zdirent.d_crc32) {
-		cli_dbgmsg("Zip: Broken file or modified information in local header part of archive\n");
-		*ctx->virname = "Exploit.Zip.ModifiedHeaders";
-		ret = CL_VIRUS;
-		break;
-	    }
-	    continue;
-	}
-
-	/* Scan metadata */
-	mdata = ctx->engine->zip_mlist;
-	if(mdata) do {
-	    if(mdata->encrypted != encrypted)
-		continue;
-
-	    if(mdata->crc32 && mdata->crc32 != zdirent.d_crc32)
-		continue;
-
-	    if(mdata->csize > 0 && (uint32_t) mdata->csize != zdirent.d_csize)
-		continue;
-
-	    if(mdata->size >= 0 && (uint32_t) mdata->size != zdirent.st_size)
-		continue;
-
-	    if(mdata->method >= 0 && (uint16_t) mdata->method != zdirent.d_compr)
-		continue;
-
-	    if(mdata->fileno && mdata->fileno != files)
-		continue;
-
-	    if(mdata->maxdepth && ctx->arec > mdata->maxdepth)
-		continue;
-
-	    /* TODO add support for regex */
-	    /*if(mdata->filename && !strstr(zdirent.d_name, mdata->filename))*/
-	    if(mdata->filename && strcmp(zdirent.d_name, mdata->filename))
-		continue;
-
-	    break; /* matched */
-
-	} while((mdata = mdata->next));
-
-	if(mdata) {
-	    *ctx->virname = mdata->virname;
-	    ret = CL_VIRUS;
-	    break;
-	}
-
-	/* 
-	 * Workaround for archives created with ICEOWS.
-	 * ZZIP_DIRENT does not contain information on file type
-	 * so we try to determine a directory via a filename
-	 */
-	if(zdirent.d_name[strlen(zdirent.d_name) - 1] == '/') {
-	    cli_dbgmsg("Zip: Directory entry with st_size != 0\n");
-	    continue;
-	}
-
-	if(!zdirent.d_csize) {
-	    cli_dbgmsg("Zip: Malformed file (d_csize == 0 but st_size != 0)\n");
-	    *ctx->virname = "Suspect.Zip";
-	    ret = CL_VIRUS;
-	    break;
-	}
-
-	if(ctx->limits && ctx->limits->maxratio > 0 && ((unsigned) zdirent.st_size / (unsigned) zdirent.d_csize) >= ctx->limits->maxratio) {
-	    *ctx->virname = "Oversized.Zip";
-	    ret = CL_VIRUS;
-	    break;
-        }
-
-	if(encrypted) {
-	    if(DETECT_ENCRYPTED) {
-		cli_dbgmsg("Zip: Encrypted files found in archive.\n");
-		lseek(desc, 0, SEEK_SET);
-		ret = cli_scandesc(desc, ctx, 0, 0, 0, NULL);
-		if(ret < 0) {
-		    break;
-		} else if(ret != CL_VIRUS) {
-		    *ctx->virname = "Encrypted.Zip";
-		    ret = CL_VIRUS;
-		}
-		break;
-	    } else continue;
-	}
-
-	if(ctx->limits) {
-	    if(ctx->limits->maxfilesize && ((unsigned int) zdirent.st_size > ctx->limits->maxfilesize)) {
-		cli_dbgmsg("Zip: %s: Size exceeded (%u, max: %lu)\n", zdirent.d_name, zdirent.st_size, ctx->limits->maxfilesize);
-		/* ret = CL_EMAXSIZE; */
-		if(BLOCKMAX) {
-		    *ctx->virname = "Zip.ExceededFileSize";
-		    ret = CL_VIRUS;
-		    break;
-		}
-		continue; /* continue scanning */
-	    }
-
-	    if(ctx->limits->maxfiles && (files > ctx->limits->maxfiles)) {
-		cli_dbgmsg("Zip: Files limit reached (max: %u)\n", ctx->limits->maxfiles);
-		if(BLOCKMAX) {
-		    *ctx->virname = "Zip.ExceededFilesLimit";
-		    ret = CL_VIRUS;
-		    break;
-		}
-		break;
-	    }
-	}
-
-	if((zfp = zip_file_open(zdir, zdirent.d_name, zdirent.d_off)) == NULL) {
-	    if(zdir->errcode == CL_ESUPPORT) {
-		ret = CL_ESUPPORT;
-		if(!swarning) {
-		    cli_warnmsg("Not supported compression method in one or more files\n");
-		    swarning = 1;
-		}
-		continue;
-	    } else {
-		cli_dbgmsg("Zip: Can't open file %s\n", zdirent.d_name);
-		ret = CL_EZIP;
-		break;
-	    }
-	}
-
-	bfcnt = 0;
-	success = 0;
-	while(1) {
-	    fail = 0;
-
-	    if((ret = cli_gentempfd(NULL, &tmpname, &fd)))
-		break;
-
-	    size = 0;
-	    while((bytes = zip_file_read(zfp, buff, FILEBUFF)) > 0) {
-		size += bytes;
-		if(cli_writen(fd, buff, bytes) != bytes) {
-		    cli_dbgmsg("Zip: Can't write to file.\n");
-		    ret = CL_EIO;
-		    break;
-		}
-	    }
-
-	    if(!encrypted) {
-		if(size != zdirent.st_size) {
-		    cli_dbgmsg("Zip: Incorrectly decompressed (%lu != %lu)\n", size, (unsigned long int) zdirent.st_size);
-		    if(zfp->bf[0] == -1) {
-			ret = CL_EZIP;
-			break;
-		    } else {
-			fail = 1;
-		    }
-		} else {
-		    cli_dbgmsg("Zip: File decompressed to %s\n", tmpname);
-		    success = 1;
-		}
-	    }
-
-	    if(!fail) {
-		if(fsync(fd) == -1) {
-		    cli_dbgmsg("Zip: fsync() failed\n");
-		    ret = CL_EFSYNC;
-		    break;
-		}
-		lseek(fd, 0, SEEK_SET);
-
-		if((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS ) {
-		    cli_dbgmsg("Zip: Infected with %s\n", *ctx->virname);
-		    ret = CL_VIRUS;
-		    break;
-		}
-	    }
-
-	    close(fd);
-	    if(!cli_leavetemps_flag)
-		unlink(tmpname);
-	    free(tmpname);
-	    fd = -1;
-
-	    if(zfp->bf[bfcnt] == -1)
-		break;
-
-	    zfp->method = (uint16_t) zfp->bf[bfcnt];
-	    cli_dbgmsg("Zip: Brute force mode - checking compression method %u\n", zfp->method);
-	    bfcnt++;
-	}
-	zip_file_close(zfp);
-
-
-	if(!ret && !encrypted && !success) { /* brute-force decompression failed */
-	    cli_dbgmsg("Zip: All attempts to decompress file failed\n");
-	    ret = CL_EZIP;
-	}
-
-	if(ret) 
-	    break;
-    }
-
-    zip_dir_close(zdir);
-    if(fd != -1) {
-	close(fd);
-	if(!cli_leavetemps_flag)
-	    unlink(tmpname);
-	free(tmpname);
-    }
-
-    free(buff);
-    return ret;
-}
 
 static int cli_scangzip(int desc, cli_ctx *ctx)
 {
@@ -806,7 +537,6 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
 
     return ret;
 }
-#endif
 
 #ifdef HAVE_BZLIB_H
 
@@ -1922,7 +1652,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg)
 		    case CL_TYPE_ZIPSFX:
 			if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_ZIP) && fpt->offset) {
 			    cli_dbgmsg("ZIP-SFX signature found at %u\n", (unsigned int) fpt->offset);
-			    nret = cli_scanzip(desc, ctx, fpt->offset, &lastzip);
+			    nret = cli_unzip_single(desc, ctx, fpt->offset, &lastzip);
 			}
 			break;
 
@@ -2089,7 +1819,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 	case CL_TYPE_ZIP:
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP))
-		ret = cli_scanzip(desc, ctx, 0, NULL);
+		ret = cli_unzip(desc, ctx, 0, NULL);
 	    break;
 
 	case CL_TYPE_GZ:
