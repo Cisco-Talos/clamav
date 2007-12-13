@@ -364,7 +364,7 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
     cli_dbgmsg("cli_unzip: lh - fname out of file\n");
     return 0;
   }
-  if(meta) {
+  if(meta || cli_debug_flag) {
     uint32_t nsize = (LH_flen>=sizeof(name))?sizeof(name)-1:LH_flen;
     memcpy(name, zip, nsize);
     name[nsize]='\0';
@@ -378,9 +378,9 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
   while(meta &&
 	(
 	 meta->encrypted != ((LH_flags & F_ENCR)!=0) ||
-	 (meta->crc32    && meta->crc32  != LH_crc32) ||
-	 (meta->csize>0  && (uint32_t)meta->csize  != LH_csize) ||
 	 (meta->size>0   && (uint32_t)meta->size   != LH_usize) ||
+	 (meta->csize>0  && (uint32_t)meta->csize  != LH_csize) ||
+	 (meta->crc32    && meta->crc32  != LH_crc32) ||
 	 (meta->method>0 && meta->method != LH_method) ||
 	 (meta->fileno   && meta->fileno != fc ) ||
 	 (meta->maxdepth && ctx->arec > meta->maxdepth) ||
@@ -420,6 +420,12 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
       return 0;
     } 
     if(LH_flags & F_ENCR) {
+      if(DETECT_ENCRYPTED) {
+	cli_dbgmsg("cli_unzip: Encrypted files found in archive.\n");
+	*ctx->virname = "Encrypted.Zip";
+	*ret = CL_VIRUS;
+	return 0;
+      }
       cli_dbgmsg("cli_unzip: lh - skipping encrypted file\n");
     } else {
       *ret = unz(zip, csize, LH_usize, LH_method, fu, ctx, tmpd);
