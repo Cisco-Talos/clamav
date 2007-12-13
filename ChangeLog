@@ -1,3 +1,7 @@
+Thu Dec 13 14:57:39 GMT 2007 (trog)
+-----------------------------------
+  * libclamav/chmunpack.c: Code cleanup. Reduce dynamic memory footprint.
+
 Thu Dec 13 00:26:58 CET 2007 (tk)
 ---------------------------------
   * 0.92 (released with JS and PST code removed)

@@ -1,7 +1,7 @@
 /*
  *  Extract component parts of MS CHM files
  *
- *  Copyright (C) 2004-2005 trog@uncon.org
+ *  Copyright (C) 2004-2007 trog@uncon.org
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -68,14 +68,14 @@
 #define CHM_ITSF_MIN_LEN (0x60)
 typedef struct itsf_header_tag
 {
-	unsigned char signature[4] __attribute__ ((packed));
+	unsigned char signature[4];
 	int32_t version __attribute__ ((packed));
 	int32_t header_len __attribute__ ((packed));
 	uint32_t unknown __attribute__ ((packed));
 	uint32_t last_modified __attribute__ ((packed));
 	uint32_t lang_id __attribute__ ((packed));
-	unsigned char dir_clsid[16] __attribute__ ((packed));
-	unsigned char stream_clsid[16] __attribute__ ((packed));
+	unsigned char dir_clsid[16];
+	unsigned char stream_clsid[16];
 	uint64_t sec0_offset __attribute__ ((packed));
 	uint64_t sec0_len __attribute__ ((packed));
 	uint64_t dir_offset __attribute__ ((packed));
@@ -86,7 +86,7 @@ typedef struct itsf_header_tag
 #define CHM_ITSP_LEN (0x54)
 typedef struct itsp_header_tag
 {
-	unsigned char signature[4] __attribute__ ((packed));
+	unsigned char signature[4];
 	int32_t version __attribute__ ((packed));
 	int32_t header_len __attribute__ ((packed));
 	int32_t unknown1 __attribute__ ((packed));
@@ -99,25 +99,24 @@ typedef struct itsp_header_tag
 	int32_t unknown2 __attribute__ ((packed));
 	uint32_t num_blocks __attribute__ ((packed));
 	uint32_t lang_id __attribute__ ((packed));
-	unsigned char system_clsid[16] __attribute__ ((packed));
-	unsigned char unknown4[16] __attribute__ ((packed));
+	unsigned char system_clsid[16];
+	unsigned char unknown4[16];
 } itsp_header_t;
 
 #define CHM_CHUNK_HDR_LEN (0x14)
 typedef struct chunk_header_tag
 {
-	unsigned char signature[4] __attribute__ ((packed));
+	char signature[4];
 	uint32_t free_space __attribute__ ((packed));
 	uint32_t unknown __attribute__ ((packed));
 	int32_t block_prev __attribute__ ((packed));
 	int32_t block_next __attribute__ ((packed));
-	unsigned char *chunk_data;
+	char *chunk_data;
 	uint16_t num_entries;
 } chunk_header_t;
 
 typedef struct file_list_tag
 {
-	unsigned char *name;
 	uint64_t section;
 	uint64_t offset;
 	uint64_t length;
@@ -127,7 +126,7 @@ typedef struct file_list_tag
 #define CHM_CONTROL_LEN (0x18)
 typedef struct lzx_control_tag {
 	uint32_t length __attribute__ ((packed));
-	unsigned char signature[4] __attribute__ ((packed));
+	unsigned char signature[4];
 	uint32_t version __attribute__ ((packed));
 	uint32_t reset_interval __attribute__ ((packed));
 	uint32_t window_size __attribute__ ((packed));
@@ -159,13 +158,21 @@ typedef struct lzx_content_tag {
 #pragma pack
 #endif
 
+#define CHM_SYS_CONTROL_NAME "::DataSpace/Storage/MSCompressed/ControlData"
+#define CHM_SYS_CONTENT_NAME "::DataSpace/Storage/MSCompressed/Content"
+#define CHM_SYS_RESETTABLE_NAME "::DataSpace/Storage/MSCompressed/Transform/{7FC28940-9D31-11D0-9B27-00A0C91E9C7C}/InstanceData/ResetTable"
+
+#define CHM_SYS_CONTROL_LEN 44
+#define CHM_SYS_CONTENT_LEN 40
+#define CHM_SYS_RESETTABLE_LEN 105
+
 #define chm_endian_convert_16(x) le16_to_host(x) 
 #define chm_endian_convert_32(x) le32_to_host(x) 
 #define chm_endian_convert_64(x) le64_to_host(x)
 
 /* Read in a block of data from either the mmap area or the given fd */
-static int chm_read_data(int fd, unsigned char *dest, off_t offset, off_t len,
-			unsigned char *m_area, off_t m_length)
+static int chm_read_data(int fd, char *dest, off_t offset, off_t len,
+			char *m_area, off_t m_length)
 {
 	if ((offset < 0) || (len < 0) || ((offset+len) < 0)) {
 		return FALSE;
@@ -214,9 +221,6 @@ static void free_file_list(file_list_t *file_l)
 	
 	while (file_l) {
 		next = file_l->next;
-		if (file_l->name) {
-			free(file_l->name);
-		}
 		free(file_l);
 		file_l = next;
 	}
@@ -232,7 +236,7 @@ static void itsf_print_header(itsf_header_t *itsf_hdr)
 	cli_dbgmsg("Signature:\t%c%c%c%c\n", itsf_hdr->signature[0],
 		itsf_hdr->signature[1],itsf_hdr->signature[2],itsf_hdr->signature[3]);
 	cli_dbgmsg("Version:\t%d\n", itsf_hdr->version);
-	cli_dbgmsg("Header len:\t%ld\n", itsf_hdr->header_len);
+	cli_dbgmsg("Header len:\t%d\n", itsf_hdr->header_len);
 	cli_dbgmsg("Lang ID:\t%d\n", itsf_hdr->lang_id);
 	cli_dbgmsg("Sec0 offset:\t%llu\n", itsf_hdr->sec0_offset);
 	cli_dbgmsg("Sec0 len:\t%llu\n", itsf_hdr->sec0_len);
@@ -243,10 +247,10 @@ static void itsf_print_header(itsf_header_t *itsf_hdr)
 	}
 }
 
-static int itsf_read_header(int fd, itsf_header_t *itsf_hdr, unsigned char *m_area, off_t m_length)
+static int itsf_read_header(int fd, itsf_header_t *itsf_hdr, char *m_area, off_t m_length)
 {
 #if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
-	if (!chm_read_data(fd, (unsigned char *) itsf_hdr, 0, CHM_ITSF_MIN_LEN,
+	if (!chm_read_data(fd, (char *) itsf_hdr, 0, CHM_ITSF_MIN_LEN,
 				m_area,	m_length)) {
 		return FALSE;
 	}
@@ -321,21 +325,21 @@ static void itsp_print_header(itsp_header_t *itsp_hdr)
 	cli_dbgmsg("Signature:\t%c%c%c%c\n", itsp_hdr->signature[0],
 		itsp_hdr->signature[1],itsp_hdr->signature[2],itsp_hdr->signature[3]);
 	cli_dbgmsg("Version:\t%d\n", itsp_hdr->version);
-	cli_dbgmsg("Block len:\t%ld\n", itsp_hdr->block_len);
+	cli_dbgmsg("Block len:\t%u\n", itsp_hdr->block_len);
 	cli_dbgmsg("Block idx int:\t%d\n", itsp_hdr->blockidx_intvl);
 	cli_dbgmsg("Index depth:\t%d\n", itsp_hdr->index_depth);
 	cli_dbgmsg("Index root:\t%d\n", itsp_hdr->index_root);
 	cli_dbgmsg("Index head:\t%u\n", itsp_hdr->index_head);
 	cli_dbgmsg("Index tail:\t%u\n", itsp_hdr->index_tail);
 	cli_dbgmsg("Num Blocks:\t%u\n", itsp_hdr->num_blocks);
-	cli_dbgmsg("Lang ID:\t%lu\n\n", itsp_hdr->lang_id);
+	cli_dbgmsg("Lang ID:\t%u\n\n", itsp_hdr->lang_id);
 }
 
 static int itsp_read_header(int fd, itsp_header_t *itsp_hdr, off_t offset,
-				unsigned char *m_area, off_t m_length)
+				char *m_area, off_t m_length)
 {
 #if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
-	if (!chm_read_data(fd, (unsigned char *) itsp_hdr, offset, CHM_ITSP_LEN,
+	if (!chm_read_data(fd, (char *) itsp_hdr, offset, CHM_ITSP_LEN,
 				m_area,	m_length)) {
 		return FALSE;
 	}
@@ -412,10 +416,10 @@ static int itsp_read_header(int fd, itsp_header_t *itsp_hdr, off_t offset,
 	return TRUE;
 }
 
-static uint64_t read_enc_int(unsigned char **start, unsigned char *end)
+static uint64_t read_enc_int(char **start, char *end)
 {
 	uint64_t retval=0;
-	unsigned char *current;
+	char *current;
 	
 	current = *start;
 	
@@ -436,11 +440,11 @@ static uint64_t read_enc_int(unsigned char **start, unsigned char *end)
 
 /* Read chunk entries */
 /* Note: the file lists end up in reverse order to the order in the chunk */
-static int read_chunk_entries(unsigned char *chunk, uint32_t chunk_len,
+static int read_chunk_entries(char *chunk, uint32_t chunk_len,
 					uint16_t num_entries,
 					file_list_t *file_l, file_list_t *sys_file_l)
 {
-	unsigned char *current, *end;
+	char *current, *end;
 	uint64_t name_len;
 	file_list_t *file_e;
 
@@ -453,49 +457,44 @@ static int read_chunk_entries(unsigned char *chunk, uint32_t chunk_len,
 			return FALSE;
 		}
 
-		file_e = (file_list_t *) cli_malloc(sizeof(file_list_t));
-		if (!file_e) {
-			return FALSE;
-		}
-		file_e->next = NULL;
-		
 		name_len = read_enc_int(&current, end);
 		if (((current + name_len) > end) || ((current + name_len) < chunk)) {
 			cli_dbgmsg("Bad CHM name_len detected\n");
-			free(file_e);
 			return FALSE;
 		}
-		if (name_len > 0xFFFFFF) {
-			cli_dbgmsg("CHM file name too long: %llu\n", name_len);
-			file_e->name = (unsigned char *) cli_strdup("truncated");
-	                if (!file_e->name) {
-        	                free(file_e);
-                	        return FALSE;
-                	}
+		if ((name_len >= 2) && (current[0] == ':') &&
+				(current[1] == ':')) {
+			if ((name_len == CHM_SYS_CONTROL_LEN) && (strcmp(current, CHM_SYS_CONTROL_NAME) == 0)) {
+				current += name_len;
+				sys_file_l[0].section = read_enc_int(&current, end);
+				sys_file_l[0].offset = read_enc_int(&current, end);
+				sys_file_l[0].length = read_enc_int(&current, end);
+			} else if ((name_len == CHM_SYS_CONTENT_LEN) && (strcmp(current, CHM_SYS_CONTENT_NAME) == 0)) {
+				current += name_len;
+				sys_file_l[1].section = read_enc_int(&current, end);
+				sys_file_l[1].offset = read_enc_int(&current, end);
+				sys_file_l[1].length = read_enc_int(&current, end);
+			} else if ((name_len == CHM_SYS_RESETTABLE_LEN) && (strcmp(current, CHM_SYS_RESETTABLE_NAME) == 0)) {
+				current += name_len;
+				sys_file_l[2].section = read_enc_int(&current, end);
+				sys_file_l[2].offset = read_enc_int(&current, end);
+				sys_file_l[2].length = read_enc_int(&current, end);
+			}
 		} else {
-			file_e->name = (unsigned char *) cli_malloc(name_len+1);
-			if (!file_e->name) {
-				free(file_e);
+			current += name_len;
+			file_e = (file_list_t *) cli_malloc(sizeof(file_list_t));
+			if (!file_e) {
 				return FALSE;
 			}
-			strncpy(file_e->name, current, name_len);
-			file_e->name[name_len] = '\0';
-		}
-		current += name_len;
-		file_e->section = read_enc_int(&current, end);
-		file_e->offset = read_enc_int(&current, end);
-		file_e->length = read_enc_int(&current, end);
-		if ((name_len >= 2) && (file_e->name[0] == ':') &&
-				(file_e->name[1] == ':')) {
-			file_e->next = sys_file_l->next;
-			sys_file_l->next = file_e;
-		} else {
+			file_e->section = read_enc_int(&current, end);
+			file_e->offset = read_enc_int(&current, end);
+			file_e->length = read_enc_int(&current, end);
 			file_e->next = file_l->next;
 			file_l->next = file_e;
-		}
-		cli_dbgmsg("Section: %llu Offset: %llu Length: %llu, Name: %s\n",
+			cli_dbgmsg("Section: %llu Offset: %llu Length: %llu\n",
 					file_e->section, file_e->offset,
-					file_e->length, file_e->name);
+					file_e->length);
+		}
 	}
 	return TRUE;
 }
@@ -516,7 +515,7 @@ static void print_chunk(chunk_header_t *chunk)
 }
 
 static int read_chunk(int fd, off_t offset, uint32_t chunk_len,
-					unsigned char *m_area, off_t m_length,
+					char *m_area, off_t m_length,
 					file_list_t *file_l, file_list_t *sys_file_l)
 {
 	chunk_header_t *chunk_hdr;
@@ -531,7 +530,7 @@ static int read_chunk(int fd, off_t offset, uint32_t chunk_len,
 		return FALSE;
 	}
 	
-	chunk_hdr->chunk_data = (unsigned char *) cli_malloc(chunk_len);
+	chunk_hdr->chunk_data = (char *) cli_malloc(chunk_len);
 	if (!chunk_hdr->chunk_data) {
 		free(chunk_hdr);
 		return FALSE;
@@ -568,7 +567,7 @@ static int read_chunk(int fd, off_t offset, uint32_t chunk_len,
 	
 	if (memcmp(chunk_hdr->signature, "PMGL", 4) == 0) {
 #if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
-		if (!chm_read_data(fd, (unsigned char *) &chunk_hdr->unknown, offset+8, 12,
+		if (!chm_read_data(fd, (char *) &chunk_hdr->unknown, offset+8, 12,
 					m_area,	m_length)) {
 			goto abort;
 		}
@@ -609,7 +608,7 @@ static void print_sys_control(lzx_control_t *lzx_control)
 	}
 
 	cli_dbgmsg("---- Control ----\n");	
-	cli_dbgmsg("Length:\t\t%lu\n", lzx_control->length);
+	cli_dbgmsg("Length:\t\t%u\n", lzx_control->length);
 	cli_dbgmsg("Signature:\t%c%c%c%c\n", lzx_control->signature[0],
 		lzx_control->signature[1],lzx_control->signature[2],lzx_control->signature[3]);
 	cli_dbgmsg("Version:\t%d\n", lzx_control->version);
@@ -619,7 +618,7 @@ static void print_sys_control(lzx_control_t *lzx_control)
 }
 
 static lzx_control_t *read_sys_control(int fd, itsf_header_t *itsf_hdr, file_list_t *file_e,
-					unsigned char *m_area, off_t m_length)
+					char *m_area, off_t m_length)
 {
 	off_t offset;
 	lzx_control_t *lzx_control;
@@ -637,7 +636,7 @@ static lzx_control_t *read_sys_control(int fd, itsf_header_t *itsf_hdr, file_lis
 		return NULL;
 	}
 #if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
-	if (!chm_read_data(fd, (unsigned char *) lzx_control, offset, CHM_CONTROL_LEN,
+	if (!chm_read_data(fd, (char *) lzx_control, offset, CHM_CONTROL_LEN,
 				m_area,	m_length)) {
 		goto abort;
 	}
@@ -670,7 +669,7 @@ static lzx_control_t *read_sys_control(int fd, itsf_header_t *itsf_hdr, file_lis
 	lzx_control->window_size = chm_endian_convert_32(lzx_control->window_size);
 	lzx_control->cache_size = chm_endian_convert_32(lzx_control->cache_size);
 	
-	if (strncmp("LZXC", lzx_control->signature, 4) != 0) {
+	if (strncmp((const char *) "LZXC", (const char *) lzx_control->signature, 4) != 0) {
 		cli_dbgmsg("bad sys_control signature");
 		goto abort;
 	}
@@ -726,16 +725,16 @@ static void print_sys_reset_table(lzx_reset_table_t *lzx_reset_table)
 	}
 	
 	cli_dbgmsg("---- Reset Table ----\n");
-	cli_dbgmsg("Num Entries:\t%lu\n", lzx_reset_table->num_entries);
-	cli_dbgmsg("Entry Size:\t%lu\n", lzx_reset_table->entry_size);
-	cli_dbgmsg("Table Offset:\t%lu\n", lzx_reset_table->table_offset);
+	cli_dbgmsg("Num Entries:\t%u\n", lzx_reset_table->num_entries);
+	cli_dbgmsg("Entry Size:\t%u\n", lzx_reset_table->entry_size);
+	cli_dbgmsg("Table Offset:\t%u\n", lzx_reset_table->table_offset);
 	cli_dbgmsg("Uncom Len:\t%llu\n", lzx_reset_table->uncom_len);
 	cli_dbgmsg("Com Len:\t%llu\n", lzx_reset_table->com_len);
 	cli_dbgmsg("Frame Len:\t%llu\n\n", lzx_reset_table->frame_len);
 }
 
 static lzx_reset_table_t *read_sys_reset_table(int fd, itsf_header_t *itsf_hdr, file_list_t *file_e,
-						unsigned char *m_area, off_t m_length)
+						char *m_area, off_t m_length)
 {
 	off_t offset;
 	lzx_reset_table_t *lzx_reset_table;
@@ -759,7 +758,7 @@ static lzx_reset_table_t *read_sys_reset_table(int fd, itsf_header_t *itsf_hdr, 
 	lzx_reset_table->rt_offset = offset-4;
 
 #if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
-	if (!chm_read_data(fd, (unsigned char *) lzx_reset_table, offset, CHM_RESET_TABLE_LEN,
+	if (!chm_read_data(fd, (char *) lzx_reset_table, offset, CHM_RESET_TABLE_LEN,
 				m_area,	m_length)) {
 		goto abort;
 	}
@@ -794,7 +793,7 @@ static lzx_reset_table_t *read_sys_reset_table(int fd, itsf_header_t *itsf_hdr, 
 	lzx_reset_table->frame_len = chm_endian_convert_64(lzx_reset_table->frame_len);
 
 	if (lzx_reset_table->frame_len != LZX_FRAME_SIZE) {
-		cli_dbgmsg("bad sys_reset_table frame_len: 0x%x\n",lzx_reset_table->frame_len);
+		cli_dbgmsg("bad sys_reset_table frame_len: 0x%lx\n", (long unsigned int) lzx_reset_table->frame_len);
 		goto abort;
 	}
 	if ((lzx_reset_table->entry_size != 4) && (lzx_reset_table->entry_size != 8)) {
@@ -812,13 +811,9 @@ abort:
 /* This section interfaces to the mspack files. As such, this is a */
 /* little bit dirty compared to my usual code */
 
-#define CHM_SYS_CONTROL_NAME "::DataSpace/Storage/MSCompressed/ControlData"
-#define CHM_SYS_CONTENT_NAME "::DataSpace/Storage/MSCompressed/Content"
-#define CHM_SYS_RESETTABLE_NAME "::DataSpace/Storage/MSCompressed/Transform/{7FC28940-9D31-11D0-9B27-00A0C91E9C7C}/InstanceData/ResetTable"
-
 static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *itsf_hdr,
 				file_list_t *file_l, file_list_t *sys_file_l,
-				unsigned char *m_area, off_t m_length)
+				char *m_area, off_t m_length)
 {
 	file_list_t *entry;
 	lzx_content_t *lzx_content=NULL;
@@ -827,7 +822,7 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 	int window_bits, count, length, tmpfd, ofd, retval=FALSE;
 	uint64_t com_offset;
 	struct lzx_stream * stream;
-	unsigned char filename[1024];
+	char filename[1024];
 	
 	snprintf(filename, 1024, "%s/clamav-unchm.bin", dirname);
 	tmpfd = open(filename, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
@@ -836,18 +831,14 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 		return FALSE;
 	}
 
-	entry = sys_file_l->next;
-	while (entry) {
-		if (strcmp(entry->name, CHM_SYS_CONTROL_NAME) == 0) {
-			lzx_control = read_sys_control(fd, itsf_hdr, entry, m_area, m_length);
-		} else if (strcmp(entry->name, CHM_SYS_CONTENT_NAME) == 0) {
-			lzx_content = read_sys_content(fd, itsf_hdr, entry);
-		} else if (strcmp(entry->name, CHM_SYS_RESETTABLE_NAME) == 0) {
-			lzx_reset_table = read_sys_reset_table(fd, itsf_hdr, entry, m_area, m_length);
-		}
-		entry = entry->next;
+	if (!sys_file_l[0].length || !sys_file_l[1].length ||!sys_file_l[2].length) {
+		goto abort;
 	}
-	
+
+	lzx_control = read_sys_control(fd, itsf_hdr, &sys_file_l[0], m_area, m_length);
+	lzx_content = read_sys_content(fd, itsf_hdr, &sys_file_l[1]);
+	lzx_reset_table = read_sys_reset_table(fd, itsf_hdr, &sys_file_l[2], m_area, m_length);
+
 	if (!lzx_content || !lzx_reset_table || !lzx_control) {
 		goto abort;
 	}
@@ -935,7 +926,7 @@ static int chm_decompress_stream(int fd, const char *dirname, itsf_header_t *its
 			continue;
 		}
 		if (chm_copy_file_data(tmpfd, ofd, entry->length) != entry->length) {
-			cli_dbgmsg("failed to copy %lu bytes\n", entry->length);
+			cli_dbgmsg("failed to copy %lu bytes\n", (long unsigned int) entry->length);
 		}
 		
 		close(ofd);		
@@ -967,9 +958,9 @@ abort:
 int chm_unpack(int fd, const char *dirname)
 {
 	int retval=FALSE;
-	unsigned char *m_area=NULL;
+	char *m_area=NULL;
 	off_t m_length=0, offset;
-	file_list_t *file_l, *sys_file_l;
+	file_list_t *file_l, sys_file_l[3];
 	struct stat statbuf;
 	itsf_header_t itsf_hdr;
 	itsp_header_t itsp_hdr;
@@ -983,14 +974,7 @@ int chm_unpack(int fd, const char *dirname)
 		return FALSE;
 	}
 	file_l->next = NULL;
-	file_l->name = NULL;
-	sys_file_l = (file_list_t *) cli_malloc(sizeof(file_list_t));
-	if (!sys_file_l) {
-		free(file_l);
-		return FALSE;
-	}
-	sys_file_l->next = NULL;
-	sys_file_l->name = NULL;
+	sys_file_l[0].length = sys_file_l[1].length = sys_file_l[2].length = 0;
 	
 #ifdef HAVE_MMAP
 	if (fstat(fd, &statbuf) == 0) {
@@ -998,7 +982,7 @@ int chm_unpack(int fd, const char *dirname)
 			goto abort;
 		}
 		m_length = statbuf.st_size;
-		m_area = (unsigned char *) mmap(NULL, m_length, PROT_READ, MAP_PRIVATE, fd, 0);
+		m_area = (char *) mmap(NULL, m_length, PROT_READ, MAP_PRIVATE, fd, 0);
 		if (m_area == MAP_FAILED) {
 			m_area = NULL;
 		}
@@ -1048,7 +1032,6 @@ int chm_unpack(int fd, const char *dirname)
 	retval = TRUE;
 abort:
 	free_file_list(file_l);
-	free_file_list(sys_file_l);
 
 #ifdef HAVE_MMAP
 	if (m_area) {
