@@ -1,15 +1,11 @@
 /*
- *  msexpand: Microsoft "compress.exe/expand.exe" compatible decompressor
- *
- *  Copyright (c) 2000 Martin Hinner <mhi@penguin.cz>
- *  Algorithm & data structures by M. Winterhoff <100326.2776@compuserve.com>
- *
- *  Corrected and adapted to ClamAV by Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2007 Sourcefire, Inc.
+ *  Author: Tomasz Kojm <tkojm@clamav.net>
+ *  Credits: Decompression scheme by M. Winterhoff
  *
  *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2, or (at your option)
- *  any later version.
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -23,124 +19,137 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
-#ifdef	HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-#include <string.h>
+#include <stddef.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
-#if HAVE_CONFIG_H
-#include "clamav-config.h"
-#endif
+#include "clamav.h"
 #include "cltypes.h"
 #include "others.h"
 #include "msexpand.h"
 
-int cli_msexpand(FILE *in, FILE *out)
+#ifndef HAVE_ATTRIB_PACKED
+#define __attribute__(x)
+#endif
+
+#define EC32(x) le32_to_host(x)
+#define EC16(x) le16_to_host(x)
+
+#define MAGIC1	0x44445a53
+#define MAGIC2	0x3327f088
+#define MAGIC3	0x0041
+
+struct msexp_hdr {
+    uint32_t magic1;
+    uint32_t magic2;
+    uint16_t magic3;
+    uint32_t fsize;
+} __attribute((packed));
+
+#define BSIZE 4096
+#define RWBUFF 2048
+
+#define READBYTES				\
+    ret = cli_readn(fd, rbuff, RWBUFF);		\
+    if(ret == -1)				\
+	return CL_EIO;				\
+    if(!ret)					\
+	break;					\
+    rbytes = (unsigned int) ret;		\
+    r = 0;
+
+#define WRITEBYTES				\
+    ret = cli_writen(ofd, wbuff, w);		\
+    if(ret == -1 || (unsigned int) ret != w)	\
+	return CL_EIO;				\
+    wbytes += w;				\
+    if(wbytes >= hdr.fsize)			\
+	return CL_SUCCESS;			\
+    w = 0;
+
+
+int cli_msexpand(int fd, int ofd, cli_ctx *ctx)
 {
-	int bits, ch, i, j, len, mask;
-	unsigned char *buffer;
-	uint32_t magic1, magic2, magic3, filesize;
-	uint16_t reserved;
+	struct msexp_hdr hdr;
+	uint8_t i, mask, bits;
+	unsigned char buff[BSIZE], rbuff[RWBUFF], wbuff[RWBUFF];
+	unsigned int j = BSIZE - 16, k, l, r = 0, w = 0, rbytes = 0, wbytes = 0;
+	int ret;
 
 
-    if(fread(&magic1, sizeof(magic1), 1, in) != 1) {
-	return -1;
+    if(cli_readn(fd, &hdr, sizeof(hdr)) == -1)
+	return CL_EIO;
+
+    if(EC32(hdr.magic1) != MAGIC1 || EC32(hdr.magic2) != MAGIC2 || EC16(hdr.magic3) != MAGIC3) {
+	cli_dbgmsg("MSEXPAND: Not supported file format\n");
+	return CL_EFORMAT;
     }
 
-    if(magic1 == le32_to_host(0x44445A53L))
-    {
-	if(fread(&magic2, sizeof(magic2), 1, in) != 1) {
-	    return -1;
-	}
+    cli_dbgmsg("MSEXPAND: File size from header: %u\n", hdr.fsize);
 
-	if(fread(&reserved, sizeof(reserved), 1, in) != 1) {
-	    return -1;
-	}
-
-	if(fread(&filesize, sizeof(filesize), 1, in) != 1) {
-	    return -1;
-	}
-
-	if(magic2 != le32_to_host(0x3327F088L))
-	{
-	    cli_warnmsg("msexpand: Not a MS-compressed file\n");
-	    return -1;
-	}
-
-    } else
-    if(magic1 == le32_to_host(0x4A41574BL))
-    {
-	if(fread(&magic2, sizeof(magic2), 1, in) != 1) {
-	    return -1;
-	}
-
-	if(fread(&magic3, sizeof(magic3), 1, in) != 1) {
-	    return -1;
-	}
-
-	if(fread(&reserved, sizeof(reserved), 1, in) != 1) {
-	    return -1;
-	}
-
-	if(magic2 != le32_to_host(0xD127F088L) || magic3 != le32_to_host(0x00120003L))
-	{
-	    cli_warnmsg("msexpand: Not a MS-compressed file\n");
-	    return -1;
-	}
-
-	cli_warnmsg("msexpand: unsupported version 6.22\n");
-	return -1;
-
-    } else {
-	cli_warnmsg("msexpand: Not a MS-compressed file\n");
-	return -1;
+    if(ctx->limits && ctx->limits->maxfilesize && (hdr.fsize > ctx->limits->maxfilesize)) {
+	cli_dbgmsg("MSEXPAND: Size exceeded (%u, max: %lu)\n", hdr.fsize, ctx->limits->maxfilesize);
+        if(BLOCKMAX) {
+	    *ctx->virname = "MSEXPAND.ExceededFileSize";
+            return CL_VIRUS;
+        }
+	hdr.fsize = ctx->limits->maxfilesize;
+	cli_dbgmsg("MSEXPAND: Only extracting first %u bytes\n", hdr.fsize); /* may extract up to 2kB more */
     }
 
-    if((buffer = (unsigned char *) cli_calloc(4096, sizeof(char))) == NULL) {
-	cli_errmsg("msexpand: Can't allocate memory\n");
-	return -1;
-    }
+    while(1) {
 
-    i = 4096 - 16;
+	if(!rbytes || (r == rbytes)) {
+	    READBYTES;
+	}
 
-    while (1) {
-	if((bits = fgetc(in)) == EOF)
-	    break;
+	bits = rbuff[r]; r++;
 
-	for(mask = 0x01; mask & 0xFF; mask <<= 1) {
-	    if(!(bits & mask)) {
-		if((j = fgetc(in)) == EOF)
-		    break;
-		len = fgetc(in);
-		j += (len & 0xF0) << 4;
-		len = (len & 15) + 3;
-		while(len--) {
-		    buffer[i] = buffer[j];
-		    if(fwrite(&buffer[i], sizeof(unsigned char), 1, out) != 1) {
-			free(buffer);
-			return -1;
-		    }
-		    j++;
-		    j %= 4096;
-		    i++;
-		    i %= 4096;
+	mask = 1;
+	for(i = 0; i < 8; i++) {
+	    if(bits & mask) {
+		if(r == rbytes) {
+		    READBYTES;
 		}
+
+		if(w == RWBUFF) {
+		    WRITEBYTES;
+		}
+
+		wbuff[w] = buff[j] = rbuff[r];
+		r++; w++;
+		j++; j %= BSIZE;
 	    } else {
-		if((ch = fgetc(in)) == EOF)
-		    break;
-
-		buffer[i] = ch;
-		if(fwrite(&buffer[i], sizeof(unsigned char), 1, out) != 1) {
-		    free(buffer);
-		    return -1;
+		if(r == rbytes) {
+		    READBYTES;
 		}
-		i++;
-		i %= 4096;
+		k = rbuff[r]; r++;
+
+		if(r == rbytes) {
+		    READBYTES;
+		}
+		l = rbuff[r]; r++;
+
+		k += (l & 0xf0) << 4;
+		l = (l & 0x0f) + 3;
+		while(l--) {
+		    if(w == RWBUFF) {
+			WRITEBYTES;
+		    }
+		    wbuff[w] = buff[j] = buff[k];
+		    w++;
+		    k++; k %= BSIZE;
+		    j++; j %= BSIZE;
+		}
 	    }
+	    mask *= 2;
 	}
     }
 
-    free(buffer);
-    return 0;
+    if(w) {
+	WRITEBYTES;
+    }
+
+    return CL_SUCCESS;
 }

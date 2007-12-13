@@ -1,3 +1,7 @@
+Thu Dec 13 23:34:22 CET 2007 (tk)
+---------------------------------
+  * libclamav: rewritten decompressor for mscompress - faster and more secure
+
 Thu Dec 13 21:47:53 CET 2007 (acab)
 -----------------------------------
   * libclamav: merge the post 0.92 code

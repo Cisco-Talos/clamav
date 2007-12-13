@@ -652,71 +652,40 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
 }
 #endif
 
-/*
 static int cli_scanszdd(int desc, cli_ctx *ctx)
 {
-	int fd, ret = CL_CLEAN, dcpy;
-	FILE *tmp = NULL, *in;
+	int ofd, ret;
 	char *tmpname;
 
 
     cli_dbgmsg("in cli_scanszdd()\n");
 
-    if((dcpy = dup(desc)) == -1) {
-	cli_dbgmsg("SZDD: Can't duplicate descriptor %d\n", desc);
-	return CL_EIO;
+    if((ret = cli_gentempfd(NULL, &tmpname, &ofd))) {
+	cli_dbgmsg("MSEXPAND: Can't generate temporary file/descriptor\n");
+	return ret;
     }
 
-    if((in = fdopen(dcpy, "rb")) == NULL) {
-	cli_dbgmsg("SZDD: Can't open descriptor %d\n", desc);
-	close(dcpy);
-	return CL_EMSCOMP;
-    }
+    lseek(desc, 0, SEEK_SET);
+    ret = cli_msexpand(desc, ofd, ctx);
 
-    if((tmpname = cli_gentempstream(NULL, &tmp)) == NULL) {
-	cli_dbgmsg("SZDD: Can't generate temporary file.\n");
-	fclose(in);
-	return CL_ETMPFILE;
-    }
-
-    if(cli_msexpand(in, tmp) == -1) {
-	cli_dbgmsg("SZDD: msexpand failed.\n");
-	fclose(in);
-	fclose(tmp);
+    if(ret != CL_SUCCESS) { /* CL_VIRUS or some error */
+	close(ofd);
 	if(!cli_leavetemps_flag)
 	    unlink(tmpname);
 	free(tmpname);	
-	return CL_EMSCOMP;
+	return ret;
     }
 
-    fclose(in);
-    if(fflush(tmp)) {
-	cli_dbgmsg("SZDD: fflush() failed.\n");
-	fclose(tmp);
-	if(!cli_leavetemps_flag)
-	    unlink(tmpname);
-	free(tmpname);	
-	return CL_EFSYNC;
-    }
-
-    fd = fileno(tmp);
-    lseek(fd, 0, SEEK_SET);
-    if((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS) {
-	cli_dbgmsg("SZDD: Infected with %s\n", *ctx->virname);
-	fclose(tmp);
-	if(!cli_leavetemps_flag)
-	    unlink(tmpname);
-	free(tmpname);	
-	return CL_VIRUS;
-    }
-
-    fclose(tmp);
+    cli_dbgmsg("MSEXPAND: Decompressed into %s\n", tmpname);
+    lseek(ofd, 0, SEEK_SET);
+    ret = cli_magic_scandesc(ofd, ctx);
+    close(ofd);
     if(!cli_leavetemps_flag)
 	unlink(tmpname);
     free(tmpname);	
+
     return ret;
 }
-*/
 
 static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
 {
@@ -1847,12 +1816,12 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_AUTOIT))
 		ret = cli_scanautoit(desc, ctx, 23);
 	    break;
-/*
+
 	case CL_TYPE_MSSZDD:
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_SZDD))
 		ret = cli_scanszdd(desc, ctx);
 	    break;
-*/
+
 	case CL_TYPE_MSCAB:
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CAB))
 		ret = cli_scanmscab(desc, ctx, 0);
