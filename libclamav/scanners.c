@@ -89,9 +89,7 @@
 #include "autoit.h"
 #include "unzip.h"
 
-#ifdef HAVE_ZLIB_H
 #include <zlib.h>
-#endif
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -424,7 +422,6 @@ static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
     return ret;
 }
 
-#ifdef HAVE_ZLIB_H
 static int cli_scangzip(int desc, cli_ctx *ctx)
 {
 	int fd, bytes, ret = CL_CLEAN;
@@ -518,7 +515,6 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
 
     return ret;
 }
-#endif
 
 #ifdef HAVE_BZLIB_H
 

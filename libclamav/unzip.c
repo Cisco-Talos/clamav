@@ -25,7 +25,6 @@
 #endif
 
 #if HAVE_MMAP
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -35,131 +34,28 @@
 #if HAVE_STRING_H
 #include <string.h>
 #endif
+#include <stdlib.h>
 #include <sys/mman.h>
-#include <stdio.h>
+//#include <stdio.h>
 
 #include <zlib.h>
-#include <bzlib.h>
 #include "inflate64.h"
+#if HAVE_BZLIB_H
+#include <bzlib.h>
+#endif
 
 #include "others.h"
 #include "clamav.h"
 #include "scanners.h"
 #include "matcher.h"
 
+#define UNZIP_PRIVATE
+#include "unzip.h"
+
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
 
-#define F_ENCR  (1<<0)
-#define F_ALGO1 (1<<1)
-#define F_ALGO2 (1<<2)
-#define F_USEDD (1<<3)
-#define F_RSVD1 (1<<4)
-#define F_PATCH (1<<5)
-#define F_STRNG (1<<6)
-#define F_UNUS1 (1<<7)
-#define F_UNUS2 (1<<8)
-#define F_UNUS3 (1<<9)
-#define F_UNUS4 (1<<10)
-#define F_UTF8  (1<<11)
-#define F_RSVD2 (1<<12)
-#define F_MSKED (1<<13)
-#define F_RSVD3 (1<<14)
-#define F_RSVD4 (1<<15)
-
-enum ALGO {
-  ALG_STORED,
-  ALG_SHRUNK,
-  ALG_REDUCE1,
-  ALG_REDUCE2,
-  ALG_REDUCE3,
-  ALG_REDUCE4,
-  ALG_IMPLODE,
-  ALG_TOKENZD,
-  ALG_DEFLATE,
-  ALG_DEFLATE64,
-  ALG_OLDTERSE,
-  ALG_RSVD1,
-  ALG_BZIP2,
-  ALG_RSVD2,
-  ALG_LZMA,
-  ALG_RSVD3,
-  ALG_RSVD4,
-  ALG_RSVD5,
-  ALG_NEWTERSE,
-  ALG_LZ77,
-  ALG_WAVPACK = 97,
-  ALG_PPMD
-};
-
-
-/* struct LH { */
-/*   uint32_t magic; */
-/*   uint16_t version; */
-/*   uint16_t flags; */
-/*   uint16_t method; */
-/*   uint32_t mtime; */
-/*   uint32_t crc32; */
-/*   uint32_t csize; */
-/*   uint32_t usize; */
-/*   uint16_t flen; */
-/*   uint16_t elen; */
-/*   char fname[flen] */
-/*   char extra[elen] */
-/* } __attribute__((packed)); */
-
-#define LH_magic	((uint32_t)cli_readint32((uint8_t *)(lh)+0))
-#define LH_version	((uint16_t)cli_readint16((uint8_t *)(lh)+4))
-#define LH_flags	((uint16_t)cli_readint16((uint8_t *)(lh)+6))
-#define LH_method	((uint16_t)cli_readint16((uint8_t *)(lh)+8))
-#define LH_mtime	((uint32_t)cli_readint32((uint8_t *)(lh)+10))
-#define LH_crc32	((uint32_t)cli_readint32((uint8_t *)(lh)+14))
-#define LH_csize	((uint32_t)cli_readint32((uint8_t *)(lh)+18))
-#define LH_usize	((uint32_t)cli_readint32((uint8_t *)(lh)+22))
-#define LH_flen 	((uint16_t)cli_readint16((uint8_t *)(lh)+26))
-#define LH_elen 	((uint16_t)cli_readint16((uint8_t *)(lh)+28))
-#define SIZEOF_LH 30
-
-/* struct CH { */
-/*   uint32_t magic; */
-/*   uint16_t vermade; */
-/*   uint16_t verneed; */
-/*   uint16_t flags; */
-/*   uint16_t method; */
-/*   uint32_t mtime; */
-/*   uint32_t crc32; */
-/*   uint32_t csize; */
-/*   uint32_t usize; */
-/*   uint16_t flen; */
-/*   uint16_t elen; */
-/*   uint16_t clen; */
-/*   uint16_t dsk; */
-/*   uint16_t iattrib; */
-/*   uint32_t eattrib; */
-/*   uint32_t off; */
-/*   char fname[flen] */
-/*   char extra[elen] */
-/*   char comment[clen] */
-/* } __attribute__((packed)); */
-
-#define CH_magic	((uint32_t)cli_readint32((uint8_t *)(ch)+0))
-#define CH_vermade	((uint16_t)cli_readint16((uint8_t *)(ch)+4))
-#define CH_verneed	((uint16_t)cli_readint16((uint8_t *)(ch)+6))
-#define CH_flags	((uint16_t)cli_readint16((uint8_t *)(ch)+8))
-#define CH_method	((uint16_t)cli_readint16((uint8_t *)(ch)+10))
-#define CH_mtime	((uint32_t)cli_readint32((uint8_t *)(ch)+12))
-#define CH_crc32	((uint32_t)cli_readint32((uint8_t *)(ch)+16))
-#define CH_csize	((uint32_t)cli_readint32((uint8_t *)(ch)+20))
-#define CH_usize	((uint32_t)cli_readint32((uint8_t *)(ch)+24))
-#define CH_flen 	((uint16_t)cli_readint16((uint8_t *)(ch)+28))
-#define CH_elen 	((uint16_t)cli_readint16((uint8_t *)(ch)+30))
-#define CH_clen 	((uint16_t)cli_readint16((uint8_t *)(ch)+32))
-#define CH_dsk  	((uint16_t)cli_readint16((uint8_t *)(ch)+34))
-#define CH_iattrib	((uint16_t)cli_readint16((uint8_t *)(ch)+36))
-#define CH_eattrib	((uint32_t)cli_readint32((uint8_t *)(ch)+38))
-#define CH_off  	((uint32_t)cli_readint32((uint8_t *)(ch)+42))
-#define SIZEOF_CH 46
 
 static int wrap_inflateinit2(void *a, int b) {
   return inflateInit2(a, b);
@@ -266,6 +162,8 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, un
     break;
   }
 
+
+#if HAVE_BZLIB_H
   case ALG_BZIP2: {
     bz_stream strm;
     memset(&strm, 0, sizeof(strm));
@@ -295,10 +193,14 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, un
     }
     break;
   }
+#endif /* HAVE_BZLIB_H */
 
   case ALG_LZMA:
     /* easy but there's not a single sample in the zoo */
 
+#if !HAVE_BZLIB_H
+  case ALG_BZIP2:
+#endif
   case ALG_SHRUNK:
   case ALG_REDUCE1:
   case ALG_REDUCE2:
@@ -384,7 +286,7 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
 	 (meta->method>0 && meta->method != LH_method) ||
 	 (meta->fileno   && meta->fileno != fc ) ||
 	 (meta->maxdepth && ctx->arec > meta->maxdepth) ||
-	 (meta->filename && strcmp(name, meta->filename))
+	 (meta->filename && strcmp(name, meta->filename)) /* TODO: use a regex */
 	 )
 	) meta = meta->next;
   if(meta) {
@@ -428,18 +330,44 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
       }
       cli_dbgmsg("cli_unzip: lh - skipping encrypted file\n");
     } else {
-      *ret = unz(zip, csize, LH_usize, LH_method, fu, ctx, tmpd);
+      if(ctx->limits && ctx->limits->maxfilesize && csize > ctx->limits->maxfilesize) {
+	if(BLOCKMAX) {
+	  *ctx->virname = "Zip.ExceededFileSize";
+	  *ret = CL_VIRUS;
+	  return 0;
+	}
+	cli_dbgmsg("cli_unzip: skipping oversized file\n");
+      } else *ret = unz(zip, csize, LH_usize, LH_method, fu, ctx, tmpd);
     }
     zip+=csize;
     zsize-=csize;
   }
 
+  if(!LH_flen) {
+    cli_dbgmsg("cli_unzip: found noname file\n");
+    *ctx->virname = "Suspect.Zip";
+    *ret = CL_VIRUS;
+    return 0;
+  }
+  if(!LH_usize && LH_crc32) {
+    cli_dbgmsg("Zip: Broken file or modified information in local header part of archive\n");
+    *ctx->virname = "Exploit.Zip.ModifiedHeaders";
+    * ret = CL_VIRUS;
+    return 0;
+  }
+  if(!LH_csize && LH_usize) {
+    cli_dbgmsg("Zip: Malformed file (csize == 0 but usize != 0)\n");
+    *ctx->virname = "Suspect.Zip";
+    *ret = CL_VIRUS;
+    return 0;
+  }
+
   if(LH_flags & F_USEDD) {
-    if(zsize<20) {
+    if(zsize<12) {
       cli_dbgmsg("cli_unzip: lh - data desc out of file\n");
       return 0;
     }
-    zsize-=20;
+    zsize-=12;
     if(cli_readint32(zip)==0x08074b50) {
       if(zsize<4) {
 	cli_dbgmsg("cli_unzip: lh - data desc out of file\n");
@@ -561,6 +489,11 @@ int cli_unzip(int f, cli_ctx *ctx) {
 	ret=CL_EMAXFILES;
       }
     }
+  }
+
+  if(ret == CL_EMAXFILES && BLOCKMAX) {
+    *ctx->virname = "Zip.ExceededFilesLimit";
+    ret = CL_VIRUS;
   }
 
   munmap(map, fsize);

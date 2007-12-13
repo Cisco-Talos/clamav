@@ -1,7 +1,11 @@
-#ifndef INFLATE64_H
-#define INFLATE64_H
+#ifndef __INFLATE64_H
+#define __INFLATE64_H
 
-#include <stdint.h> /* FIXME */
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#include "others.h"
 
 #ifndef OF /* function prototypes */
 #  ifdef STDC
@@ -52,4 +56,4 @@ ZEXTERN int ZEXPORT inflate64 OF((z_stream64p strm, int flush));
 ZEXTERN int ZEXPORT inflate64End OF((z_stream64p strm));
 ZEXTERN int ZEXPORT inflate64Init2 OF((z_stream64p strm, int  windowBits));
 
-#endif /* INFLATE64_H */
+#endif /* __INFLATE64_H */

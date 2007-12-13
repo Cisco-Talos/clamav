@@ -1,5 +1,9 @@
-#ifndef INFLATE64_PRIV_H
-#define INFLATE64_PRIV_H
+#ifndef __INFLATE64_PRIV_H
+#define __INFLATE64_PRIV_H
+
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
 
 #include "inflate64.h"
 

@@ -20,6 +20,8 @@ const char inflate64_copyright[] =
 #include <stdlib.h> /* calloc/free */
 #include <string.h> /* memcpy */
 
+#include "others.h"
+
 /* function prototypes */
 local void fixedtables OF((struct inflate_state FAR *state));
 local int updatewindow OF((z_stream64p strm, unsigned out));
@@ -35,7 +37,7 @@ int windowBits;
     struct inflate_state FAR *state;
 
     if (strm == Z_NULL) return Z_STREAM_ERROR;
-    state = (struct inflate_state FAR *)calloc(1, sizeof(struct inflate_state));
+    state = (struct inflate_state FAR *)cli_calloc(1, sizeof(struct inflate_state));
     if (state == Z_NULL) return Z_MEM_ERROR;
     Tracev((stderr, "inflate: allocated\n"));
     strm->state = (struct internal_state FAR *)state;
@@ -147,7 +149,7 @@ unsigned out;
 
     /* if it hasn't been done already, allocate space for the window */
     if (state->window == Z_NULL) {
-        state->window = (unsigned char FAR *)calloc(1U << state->wbits, sizeof(unsigned char));
+        state->window = (unsigned char FAR *)cli_calloc(1U << state->wbits, sizeof(unsigned char));
         if (state->window == Z_NULL) return 1;
     }
 
