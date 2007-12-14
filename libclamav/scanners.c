@@ -1768,7 +1768,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     type = cli_filetype2(desc, ctx->engine);
     lseek(desc, 0, SEEK_SET);
 
-    if(type != CL_TYPE_DATA && ctx->engine->sdb) {
+    if(type != CL_TYPE_IGNORED && ctx->engine->sdb) {
 	if((ret = cli_scanraw(desc, ctx, type, 0)) == CL_VIRUS)
 	    return CL_VIRUS;
 	lseek(desc, 0, SEEK_SET);
@@ -1777,6 +1777,9 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     type == CL_TYPE_MAIL ? ctx->mrec++ : ctx->arec++;
 
     switch(type) {
+	case CL_TYPE_IGNORED:
+	    break;
+
 	case CL_TYPE_RAR:
 #ifdef ENABLE_UNRAR
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR))
@@ -1922,14 +1925,6 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 		ret = cli_scansis(desc, ctx);
 	    break;
 
-	case CL_TYPE_DATA:
-	    /* it could be a false positive and a standard DOS .COM file */
-	    {
-		struct stat s;
-		if(fstat(desc, &s) == 0 && S_ISREG(s.st_mode) && s.st_size < 65536)
-		type = CL_TYPE_UNKNOWN_DATA;
-	    }
-
 	case CL_TYPE_UNKNOWN_DATA:
 	    ret = cli_check_mydoom_log(desc, ctx->virname);
 	    break;
@@ -1947,7 +1942,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	}
     }
 
-    if(type != CL_TYPE_DATA && ret != CL_VIRUS && !ctx->engine->sdb) {
+    if(type != CL_TYPE_IGNORED && ret != CL_VIRUS && !ctx->engine->sdb) {
 	if(cli_scanraw(desc, ctx, type, typercg) == CL_VIRUS)
 	    return CL_VIRUS;
     }

@@ -53,6 +53,8 @@
 #include "str.h"
 #include "dconf.h"
 #include "lockdb.h"
+#include "filetypes.h"
+#include "filetypes_int.h"
 #include "readdb.h"
 
 #include "phishcheck.h"
@@ -75,7 +77,6 @@ static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
  */
 int cl_loaddb(const char *filename, struct cl_engine **engine, unsigned int *signo);
 int cl_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo);
-
 
 int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, unsigned short type, const char *offset, unsigned short target)
 {
@@ -594,6 +595,99 @@ static int cli_loadndb(FILE *fd, struct cl_engine **engine, unsigned int *signo,
     return CL_SUCCESS;
 }
 
+#define FT_TOKENS 4
+static int cli_loadft(FILE *fd, struct cl_engine **engine, unsigned int options, unsigned int internal)
+{
+	const char *tokens[FT_TOKENS];
+	char buffer[FILEBUFF];
+	unsigned int line = 0;
+	struct cli_ftype *new;
+	cli_file_t type;
+	int ret;
+
+
+    if((ret = cli_initengine(engine, options))) {
+	cl_free(*engine);
+	return ret;
+    }
+
+    if((ret = cli_initroots(*engine, options))) {
+	cl_free(*engine);
+	return ret;
+    }
+
+    while(1) {
+	if(internal) {
+	    if(!ftypes_int[line])
+		break;
+	    strncpy(buffer, ftypes_int[line], sizeof(buffer));
+	} else {
+	    if(!fgets(buffer, FILEBUFF, fd))
+		break;
+	    cli_chomp(buffer);
+	}
+	line++;
+	cli_strtokenize(buffer, ':', FT_TOKENS, tokens);
+
+	if(!tokens[0] || !tokens[1] || !tokens[2] || !tokens[3]) {
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	type = cli_ftcode(tokens[3]);
+	if(type == CL_TYPE_ERROR) {
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if(*tokens[0] == '*') {
+	    if((ret = cli_parse_add((*engine)->root[0], tokens[2], tokens[1], type, NULL, 0)))
+		break;
+
+	} else {
+	    new = (struct cli_ftype *) cli_malloc(sizeof(struct cli_ftype));
+	    if(!new) {
+		ret = CL_EMEM;
+		break;
+	    }
+	    new->type = type;
+	    new->offset = atoi(tokens[0]);
+	    new->magic = (unsigned char *) cli_hex2str(tokens[1]);
+	    if(!new->magic) {
+		cli_errmsg("cli_loadft: Can't decode the hex string\n");
+		ret = CL_EMALFDB;
+		free(new);
+		break;
+	    }
+	    new->length = strlen(tokens[1]) / 2;
+	    new->tname = cli_strdup(tokens[2]);
+	    if(!new->tname) {
+		free(new->magic);
+		free(new);
+		ret = CL_EMEM;
+		break;
+	    }
+	    new->next = (*engine)->ftypes;
+	    (*engine)->ftypes = new;
+	}
+    }
+
+    if(!line) {
+	cli_errmsg("Empty %s filetype database\n", internal ? "built-in" : ".ft");
+	cl_free(*engine);
+	return CL_EMALFDB;
+    }
+
+    if(ret) {
+	cli_errmsg("Problem parsing %s filetype database at line %u\n", internal ? "built-in" : ".ft", line);
+	cl_free(*engine);
+	return ret;
+    }
+
+    cli_dbgmsg("Loaded %u filetype definitions\n", line);
+    return CL_SUCCESS;
+}
+
 static int scomp(const void *a, const void *b)
 {
     return *(const uint32_t *)a - *(const uint32_t *)b;
@@ -1022,6 +1116,9 @@ static int cli_load(const char *filename, struct cl_engine **engine, unsigned in
 	    ret = cli_loadpdb(fd, engine, options);
 	else
 	    skipped = 1;
+    } else if(cli_strbcasestr(filename, ".ft")) {
+	ret = cli_loadft(fd, engine, options, 0);
+
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
 	ret = cli_loaddb(fd, engine, signo, options);
@@ -1061,6 +1158,7 @@ int cl_loaddb(const char *filename, struct cl_engine **engine, unsigned int *sig
 	cli_strbcasestr(ext, ".rmd")   ||	\
 	cli_strbcasestr(ext, ".pdb")   ||	\
 	cli_strbcasestr(ext, ".wdb")   ||	\
+	cli_strbcasestr(ext, ".ft")    ||	\
 	cli_strbcasestr(ext, ".inc")   ||	\
 	cli_strbcasestr(ext, ".cvd")		\
     )
@@ -1509,18 +1607,24 @@ void cl_free(struct cl_engine *engine)
     if(engine->dconf)
 	free(engine->dconf);
 
+    cli_ftfree(engine->ftypes);
     cli_freelocks();
     free(engine);
 }
 
 int cl_build(struct cl_engine *engine)
 {
-	int i, ret;
+	unsigned int i;
+	int ret;
 	struct cli_matcher *root;
 
 
-    if((ret = cli_addtypesigs(engine)))
-	return ret;
+    if(!engine)
+	return CL_ENULLARG;
+
+    if(!engine->ftypes)
+	if((ret = cli_loadft(NULL, &engine, 0, 1)))
+	    return ret;
 
     for(i = 0; i < CL_TARGET_TABLE_SIZE; i++)
 	if((root = engine->root[i]))

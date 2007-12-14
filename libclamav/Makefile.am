@@ -54,6 +54,7 @@ libclamav_la_SOURCES = \
 	scanners.h \
 	filetypes.c \
 	filetypes.h \
+	filetypes_int.h \
 	rtf.c \
 	rtf.h \
 	blob.c \

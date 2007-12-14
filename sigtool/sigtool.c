@@ -701,7 +701,7 @@ static int build(struct optstruct *opt)
 				 "daily.ndb", "main.ndu", "daily.ndu",
 				 "main.sdb", "daily.sdb", "main.zmd",
 				 "daily.zmd", "main.rmd", "daily.rmd",
-				 "main.fp", "daily.fp", "main.mdb",
+				 "main.fp", "daily.fp", "daily.ft", "main.mdb",
 				 "daily.mdb", "main.mdu", "daily.mdu",
 				 "daily.info", "main.info", "main.wdb",
 				 "daily.wdb", "main.pdb", "daily.pdb",

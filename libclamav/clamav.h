@@ -129,6 +129,9 @@ struct cl_engine {
 
     /* Dynamic configuration */
     void *dconf;
+
+    /* Filetype definitions */
+    void *ftypes;
 };
 
 struct cl_limits {

@@ -239,7 +239,7 @@ static	int	rfc1341(message *m, const char *dir);
 #endif
 static	bool	usefulHeader(int commandNumber, const char *cmd);
 static	char	*getline_from_mbox(char *buffer, size_t len, FILE *fin);
-static	bool	isBounceStart(const char *line);
+static	bool	isBounceStart(mbox_ctx *mctx, const char *line);
 static	bool	exportBinhexMessage(mbox_ctx *mctx, message *m);
 static	int	exportBounceMessage(mbox_ctx *ctx, text *start);
 static	message	*do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, mbox_ctx *mctx, message *messageIn, text **tptr, unsigned int recursion_level);
@@ -608,7 +608,7 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 
 		free_map();
 
-		type = cli_filetype(start, size);
+		type = cli_filetype(start, size, ctx->engine);
 
 		if((type == CL_TYPE_UNKNOWN_TEXT) &&
 		   (strncmp(start, "Microsoft Mail Internet Headers", 31) == 0))
@@ -2848,12 +2848,12 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
 			if(lookahead_definately_is_bounce)
 				lookahead_definately_is_bounce = FALSE;
-			else if(!isBounceStart(lineGetData(l)))
+			else if(!isBounceStart(mctx, lineGetData(l)))
 				continue;
 
 			lookahead = t->t_next;
 			if(lookahead) {
-				if(isBounceStart(lineGetData(lookahead->t_line))) {
+				if(isBounceStart(mctx, lineGetData(lookahead->t_line))) {
 					lookahead_definately_is_bounce = TRUE;
 					/* don't save worthless header lines */
 					continue;
@@ -2957,7 +2957,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				l = t->t_line;
 				if((!inheader) && l) {
 					s = lineGetData(l);
-					if(isBounceStart(s)) {
+					if(isBounceStart(mctx, s)) {
 						cli_dbgmsg("Found the start of another bounce candidate (%s)\n", s);
 						lookahead_definately_is_bounce = TRUE;
 						break;
@@ -4796,7 +4796,7 @@ getline_from_mbox(char *buffer, size_t len, FILE *fin)
  * Is this line a candidate for the start of a bounce message?
  */
 static bool
-isBounceStart(const char *line)
+isBounceStart(mbox_ctx *mctx, const char *line)
 {
 	size_t len;
 
@@ -4832,7 +4832,7 @@ isBounceStart(const char *line)
 			return FALSE;
 		return TRUE;
 	}
-	return cli_filetype((const unsigned char *)line, len) == CL_TYPE_MAIL;
+	return cli_filetype((const unsigned char *)line, len, mctx->ctx->engine) == CL_TYPE_MAIL;
 }
 
 /*

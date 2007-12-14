@@ -1,4 +1,7 @@
 /*
+ *  Copyright (C) 2007 Sourcefire, Inc.
+ *  Author: Tomasz Kojm <tkojm@clamav.net>
+ *
  *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *  With enhancements from Thomas Lamy <Thomas.Lamy@in-online.net>
  *
@@ -22,6 +25,9 @@
 
 #include <sys/types.h>
 
+#include "clamav.h"
+#include "cltypes.h"
+
 #define MAGIC_BUFFER_SIZE 256
 #define CL_TYPENO 500
 #define MAX_EMBEDDED_OBJ 10
@@ -29,9 +35,10 @@
 typedef enum {
     CL_TYPE_UNKNOWN_TEXT = CL_TYPENO,
     CL_TYPE_UNKNOWN_DATA,
+    CL_TYPE_IGNORED,
+    CL_TYPE_ERROR,
     CL_TYPE_MSEXE,
     CL_TYPE_ELF,
-    CL_TYPE_DATA,
     CL_TYPE_POSIX_TAR,
     CL_TYPE_OLD_TAR,
     CL_TYPE_GZ,
@@ -68,6 +75,15 @@ typedef enum {
     CL_TYPE_AUTOIT
 } cli_file_t;
 
+struct cli_ftype {
+    cli_file_t type;
+    uint32_t offset;
+    unsigned char *magic;
+    uint16_t length;
+    char *tname;
+    struct cli_ftype *next;
+};
+
 struct cli_matched_type {
     cli_file_t type;
     off_t offset;
@@ -75,7 +91,9 @@ struct cli_matched_type {
     struct cli_matched_type *next;
 };
 
-cli_file_t cli_filetype(const unsigned char *buf, size_t buflen);
+cli_file_t cli_ftcode(const char *name);
+void cli_ftfree(struct cli_ftype *ftypes);
+cli_file_t cli_filetype(const unsigned char *buf, size_t buflen, const struct cl_engine *engine);
 cli_file_t cli_filetype2(int desc, const struct cl_engine *engine);
 int cli_addtypesigs(struct cl_engine *engine);
 

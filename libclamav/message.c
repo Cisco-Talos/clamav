@@ -1102,7 +1102,7 @@ messageIsEncoding(message *m)
 		m->encoding = m->body_last;
 	else if((m->bounce == NULL) &&
 		(strncasecmp(line, "Received: ", 10) == 0) &&
-		(cli_filetype((const unsigned char *)line, strlen(line)) == CL_TYPE_MAIL))
+		(cli_filetype((const unsigned char *)line, strlen(line), m->ctx->engine) == CL_TYPE_MAIL))
 			m->bounce = m->body_last;
 		/* Not needed with fast track visa technology */
 	/*else if((m->uuencode == NULL) && isuuencodebegin(line))
