@@ -34,7 +34,9 @@
 #include <string.h>
 #endif
 #include <stdlib.h>
+#ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
+#endif
 #include <stdio.h>
 
 #include <zlib.h>
