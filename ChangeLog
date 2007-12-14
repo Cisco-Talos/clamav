@@ -1,3 +1,13 @@
+Fri Dec 14 13:02:38 EET 2007 (edwin)
+------------------------------------
+  * libclamav/phishcheck.[ch]:
+	merged from not_for_0.92_tempbranch.
+	remove "all domain scan" feature from phishcheck
+	(--no-phishing-restrictedscan). Nobody is using it.
+	Don't care why an url is clean, just state it is clean.
+	Various cleanups resulting from this.
+	Prepare to introduce selective turn on of sub-features.
+  
 Thu Dec 13 23:34:22 CET 2007 (tk)
 ---------------------------------
   * libclamav: rewritten decompressor for mscompress - faster and more secure
