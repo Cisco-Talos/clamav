@@ -1,3 +1,7 @@
+Sat Dec 15 15:22:54 EET 2007 (edwin)
+-----------------------------------
+  * libclamav/phishcheck.c: fix leaks introduced by r3417.
+
 Fri Dec 14 22:55:32 CET 2007 (tk)
 ---------------------------------
   * libclamav: improved filetype detection code; filetype definitions can now

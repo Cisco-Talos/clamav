@@ -1136,12 +1136,15 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 
 	if(!(phishy&DOMAIN_LISTED) &&
 		!domainlist_match(engine,host_url.displayLink.data,host_url.realLink.data,&urls->pre_fixup,1,&urls->flags)) {
-			return CL_PHISH_CLEAN; /* domain not listed */
+		free_if_needed(&host_url);
+		return CL_PHISH_CLEAN; /* domain not listed */
 	}
 
 	/* link type filtering must occur after last domainlist_match */
-	if(urls->link_type & LINKTYPE_IMAGE && !(urls->flags&CHECK_IMG_URL))
+	if(urls->link_type & LINKTYPE_IMAGE && !(urls->flags&CHECK_IMG_URL)) {
+		free_if_needed(&host_url);
 		return CL_PHISH_CLEAN;/* its listed, but this link type is filtered */
+	}
 
 	if(urls->flags&CHECK_CLOAKING) {
 		/*Checks if URL is cloaked.
