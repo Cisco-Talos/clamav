@@ -278,7 +278,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, un
 static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigned int fc, uint8_t *ch, int *ret, cli_ctx *ctx, char *tmpd) {
   uint8_t *lh = zip;
   char name[256];
-  uint32_t csize;
+  uint32_t csize, usize;
   struct cli_meta_node *meta = ctx->engine->zip_mlist;
 
   if(zsize<=SIZEOF_LH) {
@@ -336,8 +336,8 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
   if(LH_flags & F_USEDD) {
     cli_dbgmsg("cli_unzip: lh - has data desc\n");
     if(!ch) return 0;
-    else csize = CH_csize;
-  } else csize = LH_csize;
+    else { usize = CH_usize; csize = CH_csize; }
+  } else { usize = LH_usize; csize = LH_csize; }
 
   if(zsize<=LH_elen) {
     cli_dbgmsg("cli_unzip: lh - extra out of file\n");
@@ -361,11 +361,11 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
 	return 0;
       }
       cli_dbgmsg("cli_unzip: lh - skipping encrypted file\n");
-    } else if(ctx->limits && ctx->limits->maxratio > 0 && (LH_usize / LH_csize) >= ctx->limits->maxratio) {
+    } else if(ctx->limits && ctx->limits->maxratio > 0 && (usize / csize) >= ctx->limits->maxratio) {
       *ctx->virname = "Oversized.Zip";
       *ret = CL_VIRUS;
       return 0;
-    } else *ret = unz(zip, csize, LH_usize, LH_method, fu, ctx, tmpd);
+    } else *ret = unz(zip, csize, usize, LH_method, fu, ctx, tmpd);
     zip+=csize;
     zsize-=csize;
   }
