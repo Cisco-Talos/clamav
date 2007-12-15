@@ -98,7 +98,7 @@ static int nsis_init(struct nsis_st *n) {
   case COMP_ZLIB:
     memset(&n->bz, 0, sizeof(z_stream));
     inflateInit2(&n->z, -MAX_WBITS);
-    n->freecomp=0;
+    n->freecomp=1;
   }
   return CL_SUCCESS;
 }
@@ -113,6 +113,7 @@ static void nsis_shutdown(struct nsis_st *n) {
     break;
   case COMP_LZMA:
     cli_LzmaShutdown(&n->lz);
+    break;
   case COMP_ZLIB:
     inflateEnd(&n->z);
     break;
