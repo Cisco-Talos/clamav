@@ -696,15 +696,48 @@ static int scomp(const void *a, const void *b)
 #define MD5_HDB	    0
 #define MD5_MDB	    1
 #define MD5_FP	    2
-static int cli_loadmd5(FILE *fd, struct cl_engine **engine, unsigned int *signo, uint8_t mode, unsigned int options)
+
+static int cli_md5db_init(struct cl_engine **engine, unsigned int mode)
+{
+	struct cli_matcher *bm = NULL;
+	int ret;
+
+
+    if(mode == MD5_HDB) {
+	bm = (*engine)->md5_hdb = (struct cli_matcher *) cli_calloc(sizeof(struct cli_matcher), 1);
+    } else if(mode == MD5_MDB) {
+	bm = (*engine)->md5_mdb = (struct cli_matcher *) cli_calloc(sizeof(struct cli_matcher), 1);
+    } else {
+	bm = (*engine)->md5_fp = (struct cli_matcher *) cli_calloc(sizeof(struct cli_matcher), 1);
+    }
+
+    if(!bm)
+	return CL_EMEM;
+
+    if((ret = cli_bm_init(bm))) {
+	cli_errmsg("cli_md5db_init: Failed to initialize B-M\n");
+	return ret;
+    }
+
+    return CL_SUCCESS;
+}
+
+#define MD5_DB			    \
+    if(mode == MD5_HDB)		    \
+	db = (*engine)->md5_hdb;    \
+    else if(mode == MD5_MDB)	    \
+	db = (*engine)->md5_mdb;    \
+    else			    \
+	db = (*engine)->md5_fp;
+
+static int cli_loadmd5(FILE *fd, struct cl_engine **engine, unsigned int *signo, unsigned int mode, unsigned int options)
 {
 	char buffer[FILEBUFF], *pt;
 	int ret = CL_SUCCESS;
-	uint8_t size_field = 1, md5_field = 0, found;
-	uint32_t line = 0, i;
-	struct cli_md5_node *new;
-	struct cli_bm_patt *bm_new;
-	struct cli_matcher *md5_sect = NULL;
+	unsigned int size_field = 1, md5_field = 0, found, line = 0, i;
+	uint32_t size;
+	struct cli_bm_patt *new;
+	struct cli_matcher *db = NULL;
 
 
     if((ret = cli_initengine(engine, options))) {
@@ -721,14 +754,11 @@ static int cli_loadmd5(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	line++;
 	cli_chomp(buffer);
 
-	new = (struct cli_md5_node *) cli_calloc(1, sizeof(struct cli_md5_node));
+	new = (struct cli_bm_patt *) cli_calloc(1, sizeof(struct cli_bm_patt));
 	if(!new) {
 	    ret = CL_EMEM;
 	    break;
 	}
-
-	if(mode == MD5_FP) /* fp */
-	    new->fp = 1;
 
 	if(!(pt = cli_strtok(buffer, md5_field, ":"))) {
 	    free(new);
@@ -736,7 +766,7 @@ static int cli_loadmd5(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	    break;
 	}
 
-	if(!(new->md5 = (unsigned char *) cli_hex2str(pt))) {
+	if(strlen(pt) != 32 || !(new->pattern = (unsigned char *) cli_hex2str(pt))) {
 	    cli_errmsg("cli_loadmd5: Malformed MD5 string at line %u\n", line);
 	    free(pt);
 	    free(new);
@@ -744,105 +774,60 @@ static int cli_loadmd5(FILE *fd, struct cl_engine **engine, unsigned int *signo,
 	    break;
 	}
 	free(pt);
+	new->length = 16;
 
 	if(!(pt = cli_strtok(buffer, size_field, ":"))) {
-	    free(new->md5);
+	    free(new->pattern);
 	    free(new);
 	    ret = CL_EMALFDB;
 	    break;
 	}
-	new->size = atoi(pt);
+	size = atoi(pt);
 	free(pt);
 
 	if(!(new->virname = cli_strtok(buffer, 2, ":"))) {
-	    free(new->md5);
+	    free(new->pattern);
 	    free(new);
 	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	MD5_DB;
+	if(!db && (ret = cli_md5db_init(engine, mode))) {
+	    free(new->pattern);
+	    free(new->virname);
+	    free(new);
+	    break;
+	} else {
+	    MD5_DB;
+	}
+
+	if((ret = cli_bm_addpatt(db, new))) {
+	    cli_errmsg("cli_loadmd5: Error adding BM pattern\n");
+	    free(new->pattern);
+	    free(new->virname);
+	    free(new);
 	    break;
 	}
 
 	if(mode == MD5_MDB) { /* section MD5 */
-	    if(!(*engine)->md5_sect) {
-		(*engine)->md5_sect = (struct cli_matcher *) cli_calloc(sizeof(struct cli_matcher), 1);
-		if(!(*engine)->md5_sect) {
-		    free(new->virname);
-		    free(new->md5);
-		    free(new);
-		    ret = CL_EMEM;
-		    break;
-		}
-		if((ret = cli_bm_init((*engine)->md5_sect))) {
-		    cli_errmsg("cli_loadmd5: Can't initialise BM pattern matcher\n");
-		    free(new->virname);
-		    free(new->md5);
-		    free(new);
-		    break;
-		}
-	    }
-	    md5_sect = (*engine)->md5_sect;
-
-	    bm_new = (struct cli_bm_patt *) cli_calloc(1, sizeof(struct cli_bm_patt));
-	    if(!bm_new) {
-		cli_errmsg("cli_loadmd5: Can't allocate memory for bm_new\n");
-		free(new->virname);
-		free(new->md5);
-		free(new);
-		ret = CL_EMEM;
-		break;
-	    }
-
-	    bm_new->pattern = new->md5;
-	    bm_new->length = 16;
-	    bm_new->virname = new->virname;
-
 	    found = 0;
-	    for(i = 0; i < md5_sect->soff_len; i++) {
-		if(md5_sect->soff[i] == new->size) {
+	    for(i = 0; i < db->soff_len; i++) {
+		if(db->soff[i] == size) {
 		    found = 1;
 		    break;
 		}
 	    }
-
 	    if(!found) {
-		md5_sect->soff_len++;
-		md5_sect->soff = (uint32_t *) cli_realloc2(md5_sect->soff, md5_sect->soff_len * sizeof(uint32_t));
-		if(!md5_sect->soff) {
-		    cli_errmsg("cli_loadmd5: Can't realloc md5_sect->soff\n");
-		    free(bm_new->pattern);
-		    free(bm_new->virname);
-		    free(bm_new);
-		    free(new);
+		db->soff_len++;
+		db->soff = (uint32_t *) cli_realloc2(db->soff, db->soff_len * sizeof(uint32_t));
+		if(!db->soff) {
+		    cli_errmsg("cli_loadmd5: Can't realloc db->soff\n");
 		    ret = CL_EMEM;
 		    break;
 		}
-		md5_sect->soff[md5_sect->soff_len - 1] = new->size;
+		db->soff[db->soff_len - 1] = size;
 	    }
-
-	    free(new);
-
-	    if((ret = cli_bm_addpatt(md5_sect, bm_new))) {
-		cli_errmsg("cli_loadmd5: Error adding BM pattern\n");
-		free(bm_new->pattern);
-		free(bm_new->virname);
-		free(bm_new);
-		break;
-	    }
-
-	} else {
-	    if(!(*engine)->md5_hlist) {
-		cli_dbgmsg("cli_loadmd5: Initializing MD5 list structure\n");
-		(*engine)->md5_hlist = cli_calloc(256, sizeof(struct cli_md5_node *));
-		if(!(*engine)->md5_hlist) {
-		    free(new->virname);
-		    free(new->md5);
-		    free(new);
-		    ret = CL_EMEM;
-		    break;
-		}
-	    }
-
-	    new->next = (*engine)->md5_hlist[new->md5[0] & 0xff];
-	    (*engine)->md5_hlist[new->md5[0] & 0xff] = new;
 	}
     }
 
@@ -861,8 +846,8 @@ static int cli_loadmd5(FILE *fd, struct cl_engine **engine, unsigned int *signo,
     if(signo)
 	*signo += line;
 
-    if(md5_sect)
-	qsort(md5_sect->soff, md5_sect->soff_len, sizeof(uint32_t), scomp);
+    if(db && mode == MD5_MDB)
+	qsort(db->soff, db->soff_len, sizeof(uint32_t), scomp);
 
     return CL_SUCCESS;
 }
@@ -1523,7 +1508,6 @@ int cl_statfree(struct cl_stat *dbstat)
 void cl_free(struct cl_engine *engine)
 {
 	int i;
-	struct cli_md5_node *md5pt, *md5h;
 	struct cli_meta_node *metapt, *metah;
 	struct cli_matcher *root;
 
@@ -1561,23 +1545,19 @@ void cl_free(struct cl_engine *engine)
 	free(engine->root);
     }
 
-    if(engine->md5_hlist) {
-	for(i = 0; i < 256; i++) {
-	    md5pt = engine->md5_hlist[i];
-	    while(md5pt) {
-		md5h = md5pt;
-		md5pt = md5pt->next;
-		free(md5h->md5);
-		free(md5h->virname);
-		free(md5h);
-	    }
-	}
-	free(engine->md5_hlist);
+    if((root = engine->md5_hdb)) {
+	cli_bm_free(root);
+	free(root);
     }
 
-    if((root = engine->md5_sect)) {
+    if((root = engine->md5_mdb)) {
 	cli_bm_free(root);
 	free(root->soff);
+	free(root);
+    }
+
+    if((root = engine->md5_fp)) {
+	cli_bm_free(root);
 	free(root);
     }
 

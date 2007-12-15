@@ -1,3 +1,9 @@
+Sat Dec 15 20:50:02 CET 2007 (tk)
+---------------------------------
+  * libclamav: - use B-M to handle .hdb and .fp databases
+	       - whitelisting now works for MD5 sigs
+	       - other minor cleanups
+
 Sat Dec 15 15:22:54 EET 2007 (edwin)
 -----------------------------------
   * libclamav/phishcheck.c: fix leaks introduced by r3417.

@@ -174,14 +174,6 @@ static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx 
 	}
     }
 
-/*
-    TROG - TODO: multi-volume files
-    if((rarlist->item.Flags & 0x03) != 0) {
-	cli_dbgmsg("RAR: Skipping %s (split)\n", rarlist->item.Name);
-	rarlist = rarlist->next;
-	continue;
-    }
-*/
     return ret;
 }
 
@@ -231,6 +223,10 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 
     cli_dbgmsg("in scanrar()\n");
 
+    if(sfx_offset)
+	if(lseek(desc, sfx_offset, SEEK_SET) == -1)
+	    return CL_EIO;
+
     /* generate the temporary directory */
     dir = cli_gentemp(NULL);
     if(mkdir(dir, 0700)) {
@@ -238,9 +234,6 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	free(dir);
 	return CL_ETMPDIR;
     }
-
-    if(sfx_offset)
-	lseek(desc, sfx_offset, SEEK_SET);
 
     if((ret = unrar_open(desc, dir, &rar_state)) != UNRAR_OK) {
 	if(!cli_leavetemps_flag)
@@ -893,10 +886,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
 		}
 		free(fullname);
 		cli_dbgmsg("VBADir: Decompress WM project '%s' macro:%d key:%d length:%d\n", vba_project->name[i], i, vba_project->key[i], vba_project->length[i]);
-		if(vba_project->length[i])
-		    data = (unsigned char *) wm_decrypt_macro(fd, vba_project->offset[i], vba_project->length[i], vba_project->key[i]);
-		else
-		    data = NULL;
+		data = (unsigned char *) wm_decrypt_macro(fd, vba_project->offset[i], vba_project->length[i], vba_project->key[i]);
 		close(fd);
 		
 		if(!data) {

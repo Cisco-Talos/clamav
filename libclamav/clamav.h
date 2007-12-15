@@ -110,11 +110,14 @@ struct cl_engine {
     /* Roots table */
     void **root;
 
-    /* MD5 */
-    void **md5_hlist;
+    /* B-M matcher for standard MD5 sigs */
+    void *md5_hdb;
 
     /* B-M matcher for MD5 sigs for PE sections */
-    void *md5_sect;
+    void *md5_mdb;
+
+    /* B-M matcher for whitelist db */
+    void *md5_fp;
 
     /* Zip metadata */
     void *zip_mlist;

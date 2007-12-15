@@ -797,13 +797,13 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    if(SCAN_ALGO && (DCONF & PE_CONF_POLIPOS) && !*sname && exe_sections[i].vsz > 40000 && exe_sections[i].vsz < 70000 && exe_sections[i].chr == 0xe0000060) polipos = i;
 
 	    /* check MD5 section sigs */
-	    md5_sect = ctx->engine->md5_sect;
+	    md5_sect = ctx->engine->md5_mdb;
 	    if((DCONF & PE_CONF_MD5SECT) && md5_sect) {
 		found = 0;
 		for(j = 0; j < md5_sect->soff_len && md5_sect->soff[j] <= exe_sections[i].rsz; j++) {
 		    if(md5_sect->soff[j] == exe_sections[i].rsz) {
 			unsigned char md5_dig[16];
-			if(cli_md5sect(desc, &exe_sections[i], md5_dig) && cli_bm_scanbuff(md5_dig, 16, ctx->virname, ctx->engine->md5_sect, 0, 0, -1) == CL_VIRUS) {
+			if(cli_md5sect(desc, &exe_sections[i], md5_dig) && cli_bm_scanbuff(md5_dig, 16, ctx->virname, ctx->engine->md5_mdb, 0, 0, -1) == CL_VIRUS) {
 				free(section_hdr);
 				free(exe_sections);
 				return CL_VIRUS;

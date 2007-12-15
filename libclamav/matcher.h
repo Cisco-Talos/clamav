@@ -54,14 +54,6 @@ struct cli_matcher {
     uint32_t ac_partsigs, ac_nodes, ac_patterns;
 };
 
-struct cli_md5_node {
-    char *virname;
-    unsigned char *md5;
-    unsigned int size;
-    unsigned short fp;
-    struct cli_md5_node *next;
-};
-
 struct cli_meta_node {
     int csize, size, method;
     unsigned int crc32, fileno, encrypted, maxdepth;
@@ -82,8 +74,6 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, const char **virn
 int cli_scandesc(int desc, cli_ctx *ctx, uint8_t otfrec, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset);
 
 int cli_validatesig(cli_file_t ftype, const char *offstr, off_t fileoff, struct cli_target_info *info, int desc, const char *virname);
-
-struct cli_md5_node *cli_vermd5(const unsigned char *md5, const struct cl_engine *engine);
 
 off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, cli_file_t ftype, int *ret, unsigned int *maxshift);
 

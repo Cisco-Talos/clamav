@@ -1199,6 +1199,9 @@ wm_decrypt_macro(int fd, off_t offset, uint32_t len, unsigned char key)
 {
 	unsigned char *buff;
 
+	if(!len)
+		return NULL;
+
 	buff = (unsigned char *)cli_malloc(len);
 	if(buff == NULL)
 		return NULL;

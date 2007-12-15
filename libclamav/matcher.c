@@ -93,24 +93,6 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, const char **virn
     return ret;
 }
 
-struct cli_md5_node *cli_vermd5(const unsigned char *md5, const struct cl_engine *engine)
-{
-	struct cli_md5_node *pt;
-
-
-    if(!(pt = engine->md5_hlist[md5[0] & 0xff]))
-	return NULL;
-
-    while(pt) {
-	if(!memcmp(pt->md5, md5, 16))
-	    return pt;
-
-	pt = pt->next;
-    }
-
-    return NULL;
-}
-
 off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, cli_file_t ftype, int *ret, unsigned int *maxshift)
 {
 	int (*einfo)(int, struct cli_exe_info *) = NULL;
@@ -214,32 +196,21 @@ off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, cli_f
 
 static int cli_checkfp(int fd, const struct cl_engine *engine)
 {
-	struct cli_md5_node *md5_node;
 	unsigned char *digest;
+	const char *virname;
 
 
-    if(engine->md5_hlist) {
-
+    if(engine->md5_fp) {
 	if(!(digest = cli_md5digest(fd))) {
 	    cli_errmsg("cli_checkfp(): Can't generate MD5 checksum\n");
 	    return 0;
 	}
 
-	if((md5_node = cli_vermd5(digest, engine)) && md5_node->fp) {
-		struct stat sb;
-
-	    if(fstat(fd, &sb))
-		return CL_EIO;
-
-	    if((unsigned int) sb.st_size != md5_node->size) {
-		cli_warnmsg("Detected false positive MD5 match. Please report.\n");
-	    } else {
-		cli_dbgmsg("Eliminated false positive match (fp sig: %s)\n", md5_node->virname);
-		free(digest);
-		return 1;
-	    }
+	if(cli_bm_scanbuff(digest, 16, &virname, engine->md5_fp, 0, 0, -1) == CL_VIRUS) {
+	    cli_dbgmsg("Eliminated false positive match (fp sig: %s)\n", virname);
+	    free(digest);
+	    return 1;
 	}
-
 	free(digest);
     }
 
@@ -283,7 +254,6 @@ int cli_scandesc(int desc, cli_ctx *ctx, uint8_t otfrec, cli_file_t ftype, uint8
 	struct cli_ac_data gdata, tdata;
 	cli_md5_ctx md5ctx;
 	unsigned char digest[16];
-	struct cli_md5_node *md5_node;
 	struct cli_matcher *groot = NULL, *troot = NULL;
 
 
@@ -331,7 +301,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, uint8_t otfrec, cli_file_t ftype, uint8
 	    return ret;
     }
 
-    if(!ftonly && ctx->engine->md5_hlist)
+    if(!ftonly && ctx->engine->md5_hdb)
 	cli_md5_init(&md5ctx);
 
     buff = buffer;
@@ -388,7 +358,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, uint8_t otfrec, cli_file_t ftype, uint8
 		    type = ret;
 	    }
 
-	    if(ctx->engine->md5_hlist)
+	    if(ctx->engine->md5_hdb)
 		cli_md5_update(&md5ctx, buff + shift, bytes);
 	}
 
@@ -415,24 +385,10 @@ int cli_scandesc(int desc, cli_ctx *ctx, uint8_t otfrec, cli_file_t ftype, uint8
     if(troot)
 	cli_ac_freedata(&tdata);
 
-    if(!ftonly && ctx->engine->md5_hlist) {
+    if(!ftonly && ctx->engine->md5_hdb) {
 	cli_md5_final(digest, &md5ctx);
-
-	if((md5_node = cli_vermd5(digest, ctx->engine)) && !md5_node->fp) {
-		struct stat sb;
-
-	    if(fstat(desc, &sb))
-		return CL_EIO;
-
-	    if((unsigned int) sb.st_size != md5_node->size) {
-		cli_warnmsg("Detected false positive MD5 match. Please report.\n");
-	    } else {
-		if(ctx->virname)
-		    *ctx->virname = md5_node->virname;
-
-		return CL_VIRUS;
-	    }
-	}
+	if(cli_bm_scanbuff(digest, 16, ctx->virname, ctx->engine->md5_hdb, 0, 0, -1) == CL_VIRUS && (cli_bm_scanbuff(digest, 16, NULL, ctx->engine->md5_fp, 0, 0, -1) != CL_VIRUS))
+	    return CL_VIRUS;
     }
 
     return otfrec ? type : CL_CLEAN;
