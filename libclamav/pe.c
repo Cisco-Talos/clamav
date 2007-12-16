@@ -804,9 +804,17 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    if(md5_sect->soff[j] == exe_sections[i].rsz) {
 			unsigned char md5_dig[16];
 			if(cli_md5sect(desc, &exe_sections[i], md5_dig) && cli_bm_scanbuff(md5_dig, 16, ctx->virname, ctx->engine->md5_mdb, 0, 0, -1) == CL_VIRUS) {
+			    /* Since .mdb sigs are not fp-prone, to save
+			     * performance we don't call cli_checkfp() here,
+			     * just give the possibility of whitelisting
+			     * idividual .mdb entries via daily.fp
+			     */
+			    if(cli_bm_scanbuff(md5_dig, 16, NULL, ctx->engine->md5_fp, 0, 0, -1) != CL_VIRUS) {
+
 				free(section_hdr);
 				free(exe_sections);
 				return CL_VIRUS;
+			    }
 			}
 			break;
 		    }

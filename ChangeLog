@@ -1,3 +1,7 @@
+Sun Dec 16 19:09:36 CET 2007 (tk)
+---------------------------------
+  * libclamav/pe.c: support whitelisting of individual .mdb sigs
+
 Sat Dec 15 20:50:02 CET 2007 (tk)
 ---------------------------------
   * libclamav: - use B-M to handle .hdb and .fp databases
