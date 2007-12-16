@@ -1932,7 +1932,8 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	}
     }
 
-    if(type != CL_TYPE_IGNORED && ret != CL_VIRUS && !ctx->engine->sdb) {
+    /* CL_TYPE_HTML: raw HTML file already scanned in cli_scanhtml() */
+    if(type != CL_TYPE_IGNORED && type != CL_TYPE_HTML && ret != CL_VIRUS && !ctx->engine->sdb) {
 	if(cli_scanraw(desc, ctx, type, typercg) == CL_VIRUS)
 	    return CL_VIRUS;
     }
