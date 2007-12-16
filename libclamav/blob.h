@@ -59,7 +59,7 @@ typedef	struct fileblob {
 	unsigned	int	isNotEmpty : 1;
 	unsigned	int	isInfected : 1;
 	unsigned	long	bytes_scanned;
-	cli_ctx	*ctx;
+	cli_ctx	*ctx;	/* When set we can scan the blob, otherwise NULL */
 } fileblob;
 
 fileblob	*fileblobCreate(void);

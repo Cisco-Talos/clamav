@@ -30,7 +30,7 @@ typedef struct message {
 	char	**mimeArguments;
 	char	*mimeDispositionType;	/* probably attachment */
 	text	*body_first, *body_last;
-	cli_ctx	*ctx;
+	cli_ctx	*ctx;	/* When set we can scan the message, otherwise NULL */
 
 	char	base64_1, base64_2, base64_3;
 	int	base64chars;
