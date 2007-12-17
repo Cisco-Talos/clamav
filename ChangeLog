@@ -1,3 +1,7 @@
+Mon Dec 17 19:41:40 GMT 2007 (njh)
+----------------------------------
+  * libclamav:	Small code cleanups
+
 Sun Dec 16 21:15:17 CET 2007 (tk)
 ---------------------------------
   * libclamav/scanners.c: avoid double scanning of raw HTML files
@@ -31,7 +35,7 @@ Fri Dec 14 13:02:38 EET 2007 (edwin)
 	Don't care why an url is clean, just state it is clean.
 	Various cleanups resulting from this.
 	Prepare to introduce selective turn on of sub-features.
-  
+
 Thu Dec 13 23:34:22 CET 2007 (tk)
 ---------------------------------
   * libclamav: rewritten decompressor for mscompress - faster and more secure
