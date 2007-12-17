@@ -1873,7 +1873,7 @@ parseEmailHeaders(message *m, const table_t *rfc821)
 			}
 			/*if(t->t_line && isuuencodebegin(t->t_line))
 				puts("FIXME: add fast visa here");*/
-			cli_dbgmsg("parseEmailHeaders: inished with headers, moving body\n");
+			cli_dbgmsg("parseEmailHeaders: finished with headers, moving body\n");
 			messageMoveText(ret, t, m);
 			break;
 		}
@@ -2068,6 +2068,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 		case NOMIME:
 			cli_dbgmsg("Not a mime encoded message\n");
 			aText = textAddMessage(aText, mainMessage);
+
 			if(!doPhishingScan)
 				break;
 			/*
@@ -2316,7 +2317,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
 								if((messageGetEncoding(aMessage) == NOENCODING) &&
 								   (messageGetMimeType(aMessage) == APPLICATION) &&
-								   strstr(data, "base64")) {
+								   data && strstr(data, "base64")) {
 									/*
 									 * Handle this nightmare (note the blank
 									 * line in the header and the incorrect
@@ -2553,6 +2554,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
 				if(htmltextPart >= 0) {
 					if(messageGetBody(messages[htmltextPart]))
+
 						aText = textAddMessage(aText, messages[htmltextPart]);
 				} else
 					/*
@@ -3490,11 +3492,9 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 				return -1;
 			}
 			p = cli_strtokbuf(ptr, 0, ";", buf);
-			if(p) {
-				if(*p) {
-					messageSetDispositionType(m, p);
-					messageAddArgument(m, cli_strtokbuf(ptr, 1, ";", buf));
-				}
+			if(p && *p) {
+				messageSetDispositionType(m, p);
+				messageAddArgument(m, cli_strtokbuf(ptr, 1, ";", buf));
 			}
 			if(!messageHasFilename(m))
 				/*
@@ -3557,6 +3557,9 @@ rfc822comments(const char *in, char *out)
 		return NULL;
 
 	assert(out != in);
+
+	while(isspace(*in))
+		in++;
 
 	if(out == NULL) {
 		out = cli_malloc(strlen(in) + 1);

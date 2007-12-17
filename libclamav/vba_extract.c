@@ -277,15 +277,17 @@ vba_project_t *vba56_dir_read(const char *dir)
 
 	cli_dbgmsg("in vba56_dir_read()\n");
 
+	if(dir == NULL)
+		return NULL;
+
 	/*
 	 * _VBA_PROJECT files are embedded within office documents (OLE2)
 	 */
 	snprintf(fullname, sizeof(fullname) - 1, "%s/_VBA_PROJECT", dir);
 	fd = open(fullname, O_RDONLY|O_BINARY);
 
-	if (fd == -1) {
+	if(fd == -1) {
 		cli_dbgmsg("Can't open %s\n", fullname);
-		/* vba56_old_dir_read(dir); */
 		return NULL;
 	}
 
@@ -476,13 +478,17 @@ vba_project_t *vba56_dir_read(const char *dir)
 	return vba_project;
 }
 
-unsigned char *vba_decompress(int fd, off_t offset, int *size)
+unsigned char *
+vba_decompress(int fd, off_t offset, int *size)
 {
-	unsigned int i, pos=0, shift, mask, distance, clean;
+	unsigned int pos, shift, mask, distance, clean;
 	uint8_t flag;
-	uint16_t token, len;
+	uint16_t token;
 	blob *b;
 	unsigned char buffer[VBA_COMPRESSION_WINDOW];
+
+	if(fd < 0)
+		return NULL;
 
 	b = blobCreate();
 
@@ -491,34 +497,30 @@ unsigned char *vba_decompress(int fd, off_t offset, int *size)
 
 	lseek(fd, offset+3, SEEK_SET); /* 1byte ?? , 2byte length ?? */
 	clean = TRUE;
+	pos = 0;
 
 	while (cli_readn(fd, &flag, 1) == 1) {
-		for (mask = 1; mask < 0x100; mask<<=1) {
+		for(mask = 1; mask < 0x100; mask<<=1) {
 			unsigned int winpos = pos % VBA_COMPRESSION_WINDOW;
 			if (flag & mask) {
+				uint16_t len;
 				unsigned int srcpos;
+
 				if(!read_uint16(fd, &token, FALSE)) {
 					blobDestroy(b);
 					if(size)
 						*size = 0;
 					return NULL;
 				}
-				if (winpos <= 0x80) {
-					if (winpos <= 0x20) {
-						shift = (winpos <= 0x10) ? 12:11;
-					} else {
-						shift = (winpos <= 0x40) ? 10:9;
-					}
-				} else {
-					if (winpos <= 0x200) {
-						shift = (winpos <= 0x100) ? 8:7;
-					} else if (winpos <= 0x800) {
-						shift = (winpos <= 0x400) ? 6:5;
-					} else {
-						shift = 4;
-					}
-				}
-				len = (uint16_t)((token & ((1 << shift) -1)) + 3);
+				shift = 12 - (winpos > 0x10)
+						- (winpos > 0x20)
+						- (winpos > 0x40)
+						- (winpos > 0x80)
+						- (winpos > 0x100)
+						- (winpos > 0x200)
+						- (winpos > 0x400)
+						- (winpos > 0x800);
+				len = (uint16_t)((token & ((1 << shift) - 1)) + 3);
 				distance = token >> shift;
 
 				srcpos = pos - distance - 1;
@@ -528,16 +530,16 @@ unsigned char *vba_decompress(int fd, off_t offset, int *size)
 				   (len <= VBA_COMPRESSION_WINDOW)) {
 					srcpos %= VBA_COMPRESSION_WINDOW;
 
-					cli_dbgmsg("memcpy(%d, %d, %d)\n",
+					cli_dbgmsg("memcpy(%u, %u, %d)\n",
 						winpos, srcpos, len);
 
 					memcpy(&buffer[winpos], &buffer[srcpos],
 						len);
 					pos += len;
 				} else
-					for(i = 0; i < len; i++) {
+					while(len-- > 0) {
 						srcpos = (pos - distance - 1) % VBA_COMPRESSION_WINDOW;
-						cli_dbgmsg("Copying %d to %d\n",
+						cli_dbgmsg("Copying %u to %u\n",
 							srcpos, pos % VBA_COMPRESSION_WINDOW);
 						buffer[pos++ % VBA_COMPRESSION_WINDOW] = buffer[srcpos];
 					}
@@ -592,12 +594,19 @@ ole_copy_file_data(int s, int d, uint32_t len)
 	}
 }
 
-int cli_decode_ole_object(int fd, const char *dir)
+int
+cli_decode_ole_object(int fd, const char *dir)
 {
 	int ofd;
 	uint32_t object_size;
 	struct stat statbuf;
 	char fullname[NAME_MAX + 1];
+
+	if(dir == NULL)
+		return -1;
+
+	if(fd < 0)
+		return -1;
 
 	if(!read_uint32(fd, &object_size, FALSE))
 		return -1;
@@ -795,6 +804,9 @@ ppt_vba_read(const char *filename)
 	int fd;
 	char fullname[NAME_MAX + 1];
 
+	if(filename == NULL)
+		return NULL;
+
 	snprintf(fullname, sizeof(fullname) - 1, "%s/PowerPoint Document",
 		filename);
 	fd = open(fullname, O_RDONLY|O_BINARY);
@@ -861,7 +873,7 @@ word_read_fib(int fd, mso_fib_t *fib)
 static int
 word_read_macro_entry(int fd, macro_info_t *macro_info)
 {
-	int msize, i;
+	int msize;
 	int count = macro_info->count;
 	macro_entry_t *macro_entry;
 #ifdef HAVE_PRAGMA_PACK
@@ -902,13 +914,13 @@ word_read_macro_entry(int fd, macro_info_t *macro_info)
 	}
 	macro_entry = macro_info->entries;
 	n = m;
-	for(i = 0; i < count; i++) {
+	do {
 		macro_entry->key = n->key;
 		macro_entry->len = vba_endian_convert_32(n->len, FALSE);
 		macro_entry->offset = vba_endian_convert_32(n->offset, FALSE);
 		macro_entry++;
 		n++;
-	}
+	} while(--count > 0);
 	free(m);
 	return TRUE;
 }
@@ -966,12 +978,12 @@ word_skip_oxo3(int fd)
 		}
 		count = twobytes[1];
 	}
-	if (count > 0) {
+	if(count > 0)
 		if (lseek(fd, (count*4)+1, SEEK_CUR) == -1) {
 			cli_dbgmsg("lseek oxo3 failed\n");
 			return FALSE;
 		}
-	}
+
 	cli_dbgmsg("oxo3 records2: %d\n", count);
 	return TRUE;
 }
@@ -1042,7 +1054,7 @@ word_skip_macro_extnames(int fd)
 static int
 word_skip_macro_intnames(int fd)
 {
-	uint16_t i, count;
+	uint16_t count;
 
 	if(!read_uint16(fd, &count, FALSE)) {
 		cli_dbgmsg("read macro_intnames failed\n");
@@ -1050,7 +1062,7 @@ word_skip_macro_intnames(int fd)
 	}
 	cli_dbgmsg("int names count: %u\n", (unsigned int)count);
 
-	for(i = 0; i < count; i++) {
+	while(count-- > 0) {
 		uint8_t length;
 
 		/* id */
@@ -1068,7 +1080,8 @@ word_skip_macro_intnames(int fd)
 	return TRUE;
 }
 
-vba_project_t *wm_dir_read(const char *dir)
+vba_project_t *
+wm_dir_read(const char *dir)
 {
 	int fd, done;
 	off_t end_offset;
@@ -1077,6 +1090,9 @@ vba_project_t *wm_dir_read(const char *dir)
 	vba_project_t *vba_project;
 	mso_fib_t fib;
 	char fullname[NAME_MAX + 1];
+
+	if(dir == NULL)
+		return NULL;
 
 	snprintf(fullname, sizeof(fullname) - 1, "%s/WordDocument", dir);
 	fd = open(fullname, O_RDONLY|O_BINARY);
@@ -1199,7 +1215,10 @@ wm_decrypt_macro(int fd, off_t offset, uint32_t len, unsigned char key)
 {
 	unsigned char *buff;
 
-	if(!len)
+	if(len == 0)
+		return NULL;
+
+	if(fd < 0)
 		return NULL;
 
 	buff = (unsigned char *)cli_malloc(len);
@@ -1212,7 +1231,7 @@ wm_decrypt_macro(int fd, off_t offset, uint32_t len, unsigned char key)
 	}
 	if(key) {
 		unsigned char *p;
-		
+
 		for(p = buff; p < &buff[len]; p++)
 			*p ^= key;
 	}

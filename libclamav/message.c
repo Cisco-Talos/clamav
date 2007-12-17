@@ -393,6 +393,7 @@ void
 messageAddArgument(message *m, const char *arg)
 {
 	int offset;
+	char *p;
 
 	assert(m != NULL);
 
@@ -418,18 +419,34 @@ messageAddArgument(message *m, const char *arg)
 			return;	/* already in there */
 
 	if(offset == m->numberOfArguments) {
-		char **ptr;
+		char **q;
 
 		m->numberOfArguments++;
-		ptr = (char **)cli_realloc(m->mimeArguments, m->numberOfArguments * sizeof(char *));
-		if(ptr == NULL) {
+		q = (char **)cli_realloc(m->mimeArguments, m->numberOfArguments * sizeof(char *));
+		if(q == NULL) {
 			m->numberOfArguments--;
 			return;
 		}
-		m->mimeArguments = ptr;
+		m->mimeArguments = q;
 	}
 
-	arg = m->mimeArguments[offset] = rfc2231(arg);
+	p = m->mimeArguments[offset] = rfc2231(arg);
+
+	if(strchr(p, '=') == NULL) {
+		if(strncmp(p, "filename", 8) == 0) {
+			/*
+			 * FIXME: Bounce message handling is corrupting the in
+			 * core copies of headers
+			 */
+			cli_warnmsg("Possible data corruption fixed\n");
+			p[8] = '=';
+		} else {
+			cli_warnmsg("messageAddArgument, '%s' contains no '='\n", p);
+			free(m->mimeArguments[offset]);
+			m->mimeArguments[offset] = NULL;
+			return;
+		}
+	}
 
 	/*
 	 * This is terribly broken from an RFC point of view but is useful
@@ -437,7 +454,7 @@ messageAddArgument(message *m, const char *arg)
 	 * mime. By pretending defaulting to an application rather than
 	 * to nomime we can ensure they're saved and scanned
 	 */
-	if(arg && ((strncasecmp(arg, "filename=", 9) == 0) || (strncasecmp(arg, "name=", 5) == 0)))
+	if(p && ((strncasecmp(p, "filename=", 9) == 0) || (strncasecmp(p, "name=", 5) == 0)))
 		if(messageGetMimeType(m) == NOMIME) {
 			cli_dbgmsg("Force mime encoding to application\n");
 			messageSetMimeType(m, "application");
@@ -707,7 +724,7 @@ messageHasArgument(const message *m, const char *variable)
 		if((ptr == NULL) || (*ptr == '\0'))
 			continue;
 #ifdef	CL_DEBUG
-		cli_dbgmsg("messageArgumentExists: compare %lu bytes of %s with %s\n",
+		cli_dbgmsg("messageHasArgument: compare %lu bytes of %s with %s\n",
 			(unsigned long)len, variable, ptr);
 #endif
 		if(strncasecmp(ptr, variable, len) == 0) {
@@ -715,7 +732,7 @@ messageHasArgument(const message *m, const char *variable)
 			while(isspace(*ptr))
 				ptr++;
 			if(*ptr != '=') {
-				cli_warnmsg("messageArgumentExists: no '=' sign found in MIME header '%s' (%s)\n", variable, messageGetArgument(m, i));
+				cli_warnmsg("messageHasArgument: no '=' sign found in MIME header '%s' (%s)\n", variable, messageGetArgument(m, i));
 				return 0;
 			}
 			return 1;
@@ -1096,11 +1113,14 @@ messageIsEncoding(message *m)
 	static const char binhex[] = "(This file must be converted with BinHex 4.0)";
 	const char *line = lineGetData(m->body_last->t_line);
 
+	/*if(m->ctx == NULL)
+		cli_dbgmsg("messageIsEncoding, ctx == NULL\n");*/
+
 	if((m->encoding == NULL) &&
 	   (strncasecmp(line, encoding, sizeof(encoding) - 1) == 0) &&
 	   (strstr(line, "7bit") == NULL))
 		m->encoding = m->body_last;
-	else if((m->bounce == NULL) &&
+	else if((m->bounce == NULL) && m->ctx &&
 		(strncasecmp(line, "Received: ", 10) == 0) &&
 		(cli_filetype((const unsigned char *)line, strlen(line), m->ctx->engine) == CL_TYPE_MAIL))
 			m->bounce = m->body_last;
@@ -2573,8 +2593,12 @@ rfc2231(const char *in)
 		field = LANGUAGE;
 	}
 
-	if(ptr == NULL)	/* quick return */
-		return cli_strdup(in);
+	if(ptr == NULL) {	/* quick return */
+		out = ret = cli_strdup(in);
+		while(*out)
+			*out++ &= 0x7F;
+		return ret;
+	}
 
 	cli_dbgmsg("rfc2231 '%s'\n", in);
 
