@@ -265,8 +265,8 @@ static	void	*getURL(void *a);
 #else
 static	void	*getURL(struct arg *arg);
 #endif
-static	int	nonblock_connect(int sock, const struct sockaddr_in *sin, const char *hostname);
-static	int	connect_error(int sock, const char *hostname);
+static	int	nonblock_connect(SOCKET sock, const struct sockaddr_in *sin, const char *hostname);
+static	int	connect_error(SOCKET sock, const char *hostname);
 static	int	my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
 
 #define NONBLOCK_SELECT_MAX_FAILURES	3
@@ -1513,7 +1513,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 		}
 		if(inHeader) {
 			cli_dbgmsg("parseEmailFile: check '%s' fullline %p\n",
-				buffer ? buffer : "", fullline);
+				buffer, fullline);
 			/*
 			 * Ensure wide characters are handled where
 			 * sizeof(char) > 1
@@ -4434,10 +4434,13 @@ getURL(struct arg *arg)
 						fclose(fp);
 						closesocket(sd);
 
-						free(arg->url);
-						arg->url = cli_strdup(location);
+						if(strlen(arg->url) < strlen(location)) {
+							free(arg->url);
+							arg->url = cli_strdup(location);
+						} else
+							strcpy(arg->url, location);
 						arg->depth++;
-						cli_dbgmsg("Redirecting to %s\n", arg->url);
+						cli_dbgmsg("Redirecting to %s\n", location);
 						return getURL(arg);
 					}
 				}
@@ -4537,7 +4540,7 @@ my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t l
  * FIXME: There are lots of copies of this code :-(
  */
 static int
-nonblock_connect(int sock, const struct sockaddr_in *sin, const char *hostname)
+nonblock_connect(SOCKET sock, const struct sockaddr_in *sin, const char *hostname)
 {
 	int select_failures;	/* Max. of unexpected select() failures */
 	int attempts;
@@ -4658,7 +4661,7 @@ nonblock_connect(int sock, const struct sockaddr_in *sin, const char *hostname)
 }
 
 static int
-connect_error(int sock, const char *hostname)
+connect_error(SOCKET sock, const char *hostname)
 {
 #ifdef	SO_ERROR
 	int optval;
@@ -4840,7 +4843,7 @@ isBounceStart(mbox_ctx *mctx, const char *line)
 			return FALSE;
 		return TRUE;
 	}
-	return cli_filetype((const unsigned char *)line, len, mctx->ctx->engine) == CL_TYPE_MAIL;
+	return (bool)(cli_filetype((const unsigned char *)line, len, mctx->ctx->engine) == CL_TYPE_MAIL);
 }
 
 /*
