@@ -4415,21 +4415,26 @@ getURL(struct arg *arg)
 						char *end;
 
 						unlink(fout);
+						location += 11;
+						end = location;
+						while(*end && (*end != '\n'))
+							end++;
+						*end = '\0';
 						if(arg->depth >= FOLLOWURLS) {
 							cli_warnmsg("URL %s will not be followed to %s (FOLLOWURLS limit %d was reached)\n",
 								arg->url, location, FOLLOWURLS);
+							break;
+						}
+						if(strcmp(location, arg->url) == 0) {
+							cli_dbgmsg("URL %s redirects to itself\n",
+								location);
 							break;
 						}
 
 						fclose(fp);
 						closesocket(sd);
 
-						location += 11;
 						free(arg->url);
-						end = location;
-						while(*end && (*end != '\n'))
-							end++;
-						*end = '\0';
 						arg->url = cli_strdup(location);
 						arg->depth++;
 						cli_dbgmsg("Redirecting to %s\n", arg->url);
