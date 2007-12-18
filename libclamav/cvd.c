@@ -40,6 +40,7 @@
 #include "dsig.h"
 #include "str.h"
 #include "cvd.h"
+#include "readdb.h"
 
 #define TAR_BLOCKSIZE 512
 
@@ -170,6 +171,99 @@ int cli_untgz(int fd, const char *destdir)
 
     gzclose(infile);
     free(path);
+    return 0;
+}
+
+static int cli_tgzload(int fd, struct cl_engine **engine, unsigned int *signo, unsigned int options)
+{
+	char osize[13], name[101];
+	char block[TAR_BLOCKSIZE];
+	int nread, fdd, ret;
+	unsigned int type, size;
+	gzFile *infile;
+	z_off_t off;
+
+
+    cli_dbgmsg("in cli_untgz()\n");
+
+    if((fdd = dup(fd)) == -1) {
+	cli_errmsg("cli_tgzload: Can't duplicate descriptor %d\n", fd);
+	return CL_EIO;
+    }
+
+    if((infile = gzdopen(fdd, "rb")) == NULL) {
+	cli_errmsg("cli_tgzload: Can't gzdopen() descriptor %d, errno = %d\n", fdd, errno);
+	return CL_EIO;
+    }
+
+    while(1) {
+
+	nread = gzread(infile, block, TAR_BLOCKSIZE);
+
+	if(!nread)
+	    break;
+
+	if(nread != TAR_BLOCKSIZE) {
+	    cli_errmsg("cli_tgzload: Incomplete block read\n");
+	    gzclose(infile);
+	    return CL_EMALFDB;
+	}
+
+	if(block[0] == '\0')  /* We're done */
+	    break;
+
+	strncpy(name, block, 100);
+	name[100] = '\0';
+
+	if(strchr(name, '/')) {
+	    cli_errmsg("cli_tgzload: Slash separators are not allowed in CVD\n");
+	    gzclose(infile);
+	    return CL_EMALFDB;
+	}
+
+	type = block[156];
+
+	switch(type) {
+	    case '0':
+	    case '\0':
+		break;
+	    case '5':
+		cli_errmsg("cli_tgzload: Directories are not supported in CVD\n");
+	        gzclose(infile);
+		return CL_EMALFDB;
+	    default:
+		cli_errmsg("cli_tgzload: Unknown type flag '%c'\n", type);
+	        gzclose(infile);
+		return CL_EMALFDB;
+	}
+
+	strncpy(osize, block + 124, 12);
+	osize[12] = '\0';
+
+	if((sscanf(osize, "%o", &size)) == 0) {
+	    cli_errmsg("cli_tgzload: Invalid size in header\n");
+	    gzclose(infile);
+	    return CL_EMALFDB;
+	}
+
+	/* cli_dbgmsg("cli_tgzload: Loading %s, size: %u\n", name, size); */
+	off = gzseek(infile, 0, SEEK_CUR);
+	if(CLI_DBEXT(name)) {
+	    ret = cli_load(name, engine, signo, options, infile, size);
+	    if(ret) {
+		cli_errmsg("cli_tgzload: Invalid size in header\n");
+		gzclose(infile);
+		return CL_EMALFDB;
+	    }
+	}
+	if(off == gzseek(infile, 0, SEEK_CUR))
+	    gzseek(infile, size + TAR_BLOCKSIZE - (size % TAR_BLOCKSIZE), SEEK_CUR);
+	else
+	    gzseek(infile, TAR_BLOCKSIZE - (size % TAR_BLOCKSIZE), SEEK_CUR);
+
+    }
+
+    gzclose(infile);
     return 0;
 }
 
@@ -391,37 +485,42 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short 
 	cli_warnmsg("***********************************************************\n");
     }
 
-    dir = cli_gentemp(NULL);
-    if(mkdir(dir, 0700)) {
-	cli_errmsg("cli_cvdload(): Can't create temporary directory %s\n", dir);
-	free(dir);
-	return CL_ETMPDIR;
-    }
-
     cfd = fileno(fs);
-
     /* use only operations on file descriptors, and not on the FILE* from here on 
      * if we seek the FILE*, the underlying descriptor may not seek as expected
      * (for example on OpenBSD, cygwin, etc.).
      * So seek the descriptor directly.
      */ 
-
     if(lseek(cfd, 512, SEEK_SET) == -1) {
 	cli_errmsg("cli_cvdload(): lseek(fs, 512, SEEK_SET) failed\n");
 	return CL_EIO;
     }
 
-    if(cli_untgz(cfd, dir)) {
-	cli_errmsg("cli_cvdload(): Can't unpack CVD file.\n");
+    if(options & CL_DB_CVDNOTMP) {
+
+	return cli_tgzload(cfd, engine, signo, options);
+
+    } else {
+
+	dir = cli_gentemp(NULL);
+	if(mkdir(dir, 0700)) {
+	    cli_errmsg("cli_cvdload(): Can't create temporary directory %s\n", dir);
+	    free(dir);
+	    return CL_ETMPDIR;
+	}
+
+	if(cli_untgz(cfd, dir)) {
+	    cli_errmsg("cli_cvdload(): Can't unpack CVD file.\n");
+	    free(dir);
+	    return CL_ECVDEXTR;
+	}
+
+	/* load extracted directory */
+	ret = cl_load(dir, engine, signo, options);
+
+	cli_rmdirs(dir);
 	free(dir);
-	return CL_ECVDEXTR;
+
+	return ret;
     }
-
-    /* load extracted directory */
-    ret = cl_load(dir, engine, signo, options);
-
-    cli_rmdirs(dir);
-    free(dir);
-
-    return ret;
 }

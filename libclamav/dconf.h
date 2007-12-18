@@ -20,6 +20,7 @@
 #define __DCONF_H
 
 #include <stdio.h>
+#include <zlib.h>
 
 #include "clamav.h"
 #include "cltypes.h"
@@ -91,6 +92,5 @@ struct cli_dconf {
 
 struct cli_dconf *cli_dconf_init(void);
 void cli_dconf_print(struct cli_dconf *dconf);
-int cli_dconf_load(FILE *fd, struct cl_engine **engine, unsigned int options);
-
+int cli_dconf_load(FILE *fs, struct cl_engine **engine, unsigned int options, gzFile *gzs, unsigned int gzrsize);
 #endif

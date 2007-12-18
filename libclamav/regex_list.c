@@ -48,6 +48,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <zlib.h>
 
 #include <limits.h>
 #include <sys/types.h>
@@ -60,6 +61,7 @@
 #include "regex_list.h"
 #include "matcher-ac.h"
 #include "str.h"
+#include "readdb.h"
 
 /*Tree*/
 enum token_op_t {OP_CHAR,OP_STDCLASS,OP_CUSTOMCLASS,OP_DOT,OP_LEAF,OP_ROOT,OP_PARCLOSE};
@@ -513,13 +515,12 @@ static int functionality_level_check(char* line)
 
 
 /* Load patterns/regexes from file */
-int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int options,int is_whitelist)
+int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int options,int is_whitelist,gzFile *gzs,unsigned int gzrsize)
 {
 	int rc,line=0;
 	char buffer[FILEBUFF];
 
 	massert(matcher);
-	massert(fd);
 
 	if(matcher->list_inited==-1)
 		return CL_EMALFDB; /* already failed to load */
@@ -527,7 +528,7 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 		cli_warnmsg("Regex list has already been loaded, ignoring further requests for load\n");
 		return CL_SUCCESS;
 	}*/
-	if(!fd) {
+	if(!fd && !gzs) {
 		cli_errmsg("Unable to load regex list (null file)\n");
 		return CL_EIO;
 	}
@@ -562,7 +563,7 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 	 * If a line in the file doesn't conform to this format, loading fails
 	 * 
 	 */
-	while(fgets(buffer,FILEBUFF,fd)) {
+	while(cli_dbgets(buffer, FILEBUFF, fd, gzs, &gzrsize)) {
 		char* pattern;
 		char* flags;
 		cli_chomp(buffer);

@@ -24,6 +24,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <zlib.h>
 
 #include "clamav.h"
 #include "cltypes.h"
@@ -259,7 +260,7 @@ static int chkflevel(const char *entry, int field)
     return 1;
 }
 
-int cli_dconf_load(FILE *fd, struct cl_engine **engine, unsigned int options)
+int cli_dconf_load(FILE *fs, struct cl_engine **engine, unsigned int options, gzFile *gzs, unsigned int gzrsize)
 {
 	char buffer[FILEBUFF];
 	unsigned int line = 0;
@@ -275,7 +276,7 @@ int cli_dconf_load(FILE *fd, struct cl_engine **engine, unsigned int options)
 
     dconf = (struct cli_dconf *) (*engine)->dconf;
 
-    while(fgets(buffer, FILEBUFF, fd)) {
+    while(cli_dbgets(buffer, FILEBUFF, fs, gzs, &gzrsize)) {
 	line++;
 	cli_chomp(buffer);
 
