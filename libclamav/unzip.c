@@ -479,10 +479,13 @@ int cli_unzip(int f, cli_ctx *ctx) {
     return CL_EMEM;
   }
 
-  if (!(tmpd = cli_gentemp(NULL)))    
+  if (!(tmpd = cli_gentemp(NULL))) {
+    munmap(map, fsize);
     return CL_ETMPDIR;
+  }
   if (mkdir(tmpd, 0700)) {
     cli_dbgmsg("cli_unzip: Can't create temporary directory %s\n", tmpd);
+    munmap(map, fsize);
     free(tmpd);
     return CL_ETMPDIR;
   }
