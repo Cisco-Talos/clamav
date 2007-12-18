@@ -262,8 +262,8 @@ vba_read_project_strings(int fd, int is_mac)
 	return TRUE;
 }
 
-/* Based on libgsf code */
-vba_project_t *vba56_dir_read(const char *dir)
+vba_project_t *
+cli_vba_readdir(const char *dir)
 {
 	unsigned char *buf;
 	const unsigned char vba56_signature[] = { 0xcc, 0x61 };
@@ -275,7 +275,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 	struct vba56_header v56h;
 	char fullname[NAME_MAX + 1];
 
-	cli_dbgmsg("in vba56_dir_read()\n");
+	cli_dbgmsg("in cli_vba_readdir()\n");
 
 	if(dir == NULL)
 		return NULL;
@@ -479,7 +479,7 @@ vba_project_t *vba56_dir_read(const char *dir)
 }
 
 unsigned char *
-vba_decompress(int fd, off_t offset, int *size)
+cli_vba_inflate(int fd, off_t offset, int *size)
 {
 	unsigned int pos, shift, mask, distance, clean;
 	uint8_t flag;
@@ -797,7 +797,7 @@ ppt_stream_iter(int fd, const char *dir)
 }
 
 char *
-ppt_vba_read(const char *filename)
+cli_ppt_vba_read(const char *filename)
 {
 	char *dir;
 	const char *ret;
@@ -817,8 +817,10 @@ ppt_vba_read(const char *filename)
 
 	/* Create a directory to store the extracted OLE2 objects */
 	dir = cli_gentemp(NULL);
+	if(dir == NULL)
+		return NULL;
 	if(mkdir(dir, 0700)) {
-		cli_errmsg("ppt_vba_read: Can't create temporary directory %s\n", dir);
+		cli_errmsg("cli_ppt_vba_read: Can't create temporary directory %s\n", dir);
 		free(dir);
 		return NULL;
 	}
@@ -1081,7 +1083,7 @@ word_skip_macro_intnames(int fd)
 }
 
 vba_project_t *
-wm_dir_read(const char *dir)
+cli_wm_readdir(const char *dir)
 {
 	int fd, done;
 	off_t end_offset;
@@ -1211,7 +1213,7 @@ wm_dir_read(const char *dir)
 }
 
 unsigned char *
-wm_decrypt_macro(int fd, off_t offset, uint32_t len, unsigned char key)
+cli_wm_decrypt_macro(int fd, off_t offset, uint32_t len, unsigned char key)
 {
 	unsigned char *buff;
 

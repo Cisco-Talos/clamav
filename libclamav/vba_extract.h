@@ -35,14 +35,12 @@ typedef struct vba_project_tag {
 	char *dir;
 } vba_project_t;
 
-vba_project_t *vba56_dir_read(const char *dir);
-unsigned char *vba_decompress(int fd, off_t offset, int *size);
+vba_project_t	*cli_vba_readdir(const char *dir);
+unsigned char	*cli_vba_inflate(int fd, off_t offset, int *size);
 int cli_decode_ole_object(int fd, const char *dir);
-
-char *ppt_vba_read(const char *filename);
-
-vba_project_t *wm_dir_read(const char *dir);
-unsigned char *wm_decrypt_macro(int fd, off_t offset, uint32_t len,
+char	*cli_ppt_vba_read(const char *filename);
+vba_project_t	*cli_wm_readdir(const char *dir);
+unsigned char	*cli_wm_decrypt_macro(int fd, off_t offset, uint32_t len,
 					unsigned char key);
 
 #endif

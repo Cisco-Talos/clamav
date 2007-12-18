@@ -1039,7 +1039,7 @@ int sigtool_vba_scandir (const char *dirname, int hex_output)
     unsigned char *data;
 
     cli_dbgmsg ("VBA scan dir: %s\n", dirname);
-    if ((vba_project = (vba_project_t *) vba56_dir_read (dirname))) {
+    if ((vba_project = (vba_project_t *)cli_vba_readdir(dirname))) {
 
 	for (i = 0; i < vba_project->count; i++) {
 	    fullname = (char *) malloc (strlen (vba_project->dir) + strlen (vba_project->name[i]) + 2);
@@ -1054,7 +1054,7 @@ int sigtool_vba_scandir (const char *dirname, int hex_output)
 	    free (fullname);
 	    cli_dbgmsg ("decompress VBA project '%s'\n", vba_project->name[i]);
 	    printf ("-------------- start of %s ------------------\n", vba_project->name[i]);
-	    data = (unsigned char *) vba_decompress (fd, vba_project->offset[i], &data_len);
+	    data = (unsigned char *)cli_vba_inflate(fd, vba_project->offset[i], &data_len);
 	    close (fd);
 
 	    if (!data) {
@@ -1075,13 +1075,13 @@ int sigtool_vba_scandir (const char *dirname, int hex_output)
 	free (vba_project->dir);
 	free (vba_project->offset);
 	free (vba_project);
-    } else if ((fullname = ppt_vba_read (dirname))) {
+    } else if ((fullname = cli_ppt_vba_read(dirname))) {
 	if (sigtool_scandir (fullname, hex_output) == CL_VIRUS) {
 	    ret = CL_VIRUS;
 	}
 	cli_rmdirs (fullname);
 	free (fullname);
-    } else if ((vba_project = (vba_project_t *) wm_dir_read (dirname))) {
+    } else if ((vba_project = (vba_project_t *)cli_wm_readdir(dirname))) {
 	for (i = 0; i < vba_project->count; i++) {
 	    fullname = (char *) malloc (strlen (vba_project->dir) + strlen (vba_project->name[i]) + 2);
 	    sprintf (fullname, "%s/%s", vba_project->dir, vba_project->name[i]);
@@ -1096,7 +1096,7 @@ int sigtool_vba_scandir (const char *dirname, int hex_output)
 	    cli_dbgmsg ("decompress WM project '%s' macro %d\n", vba_project->name[i], i);
 	    printf ("\n\n-------------- start of macro:%d key:%d length:%d ------------------\n", i,
 		    vba_project->key[i], vba_project->length[i]);
-	    data = (unsigned char *) wm_decrypt_macro (fd, vba_project->offset[i], vba_project->length[i],
+	    data = (unsigned char *)cli_wm_decrypt_macro(fd, vba_project->offset[i], vba_project->length[i],
 						    vba_project->key[i]);
 	    close (fd);
 

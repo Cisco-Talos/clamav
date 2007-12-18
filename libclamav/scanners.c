@@ -819,7 +819,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
 
 
     cli_dbgmsg("VBADir: %s\n", dirname);
-    if((vba_project = (vba_project_t *) vba56_dir_read(dirname))) {
+    if((vba_project = (vba_project_t *)cli_vba_readdir(dirname))) {
 
 	for(i = 0; i < vba_project->count; i++) {
 	    fullname = (char *) cli_malloc(strlen(vba_project->dir) + strlen(vba_project->name[i]) + 2);
@@ -837,7 +837,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
 	    }
 	    free(fullname);
             cli_dbgmsg("VBADir: Decompress VBA project '%s'\n", vba_project->name[i]);
-	    data = (unsigned char *) vba_decompress(fd, vba_project->offset[i], &data_len);
+	    data = (unsigned char *)cli_vba_inflate(fd, vba_project->offset[i], &data_len);
 	    close(fd);
 
 	    if(!data) {
@@ -862,14 +862,14 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
 	free(vba_project->dir);
 	free(vba_project->offset);
 	free(vba_project);
-    } else if ((fullname = ppt_vba_read(dirname))) {
+    } else if ((fullname = cli_ppt_vba_read(dirname))) {
     	if(cli_scandir(fullname, ctx) == CL_VIRUS) {
 	    ret = CL_VIRUS;
 	}
 	if(!cli_leavetemps_flag)
 	    cli_rmdirs(fullname);
     	free(fullname);
-    } else if ((vba_project = (vba_project_t *) wm_dir_read(dirname))) {
+    } else if ((vba_project = (vba_project_t *)cli_wm_readdir(dirname))) {
     	for (i = 0; i < vba_project->count; i++) {
 		fullname = (char *) cli_malloc(strlen(vba_project->dir) + strlen(vba_project->name[i]) + 2);
 		if(!fullname) {
@@ -886,7 +886,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
 		}
 		free(fullname);
 		cli_dbgmsg("VBADir: Decompress WM project '%s' macro:%d key:%d length:%d\n", vba_project->name[i], i, vba_project->key[i], vba_project->length[i]);
-		data = (unsigned char *) wm_decrypt_macro(fd, vba_project->offset[i], vba_project->length[i], vba_project->key[i]);
+		data = (unsigned char *)cli_wm_decrypt_macro(fd, vba_project->offset[i], vba_project->length[i], vba_project->key[i]);
 		close(fd);
 		
 		if(!data) {
