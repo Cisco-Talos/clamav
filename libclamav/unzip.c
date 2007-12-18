@@ -562,7 +562,7 @@ int cli_unzip_single(int f, cli_ctx *ctx, off_t lhoffl) {
 
   lhdr(&map[lhoffl], fsize, &fu, 0, NULL, &ret, ctx, NULL);
 
-  munmap(map, fsize);
+  munmap(map, st.st_size);
   return ret;
 }
 
