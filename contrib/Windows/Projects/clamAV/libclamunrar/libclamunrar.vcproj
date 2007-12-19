@@ -46,7 +46,9 @@
 				Optimization="0"
 				AdditionalIncludeDirectories="&quot;$(ProjectDir)..\libclamav&quot;;&quot;$(ProjectDir)..&quot;"
 				PreprocessorDefinitions="_USE_32BIT_TIME_T;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;PTW32_STATIC_LIB;_DEBUG"
+				StringPooling="true"
 				MinimalRebuild="true"
+				ExceptionHandling="0"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
@@ -69,9 +71,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="&quot;$(TargetDir)\libclamav.lib&quot;"
 				LinkIncremental="2"
-				ModuleDefinitionFile=".\libclamunrar.def"
+				ModuleDefinitionFile="$(InputDir)/libclamunrar.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -132,6 +133,8 @@
 				UseUnicodeResponseFiles="false"
 				AdditionalIncludeDirectories="&quot;$(ProjectDir)..\libclamav&quot;;&quot;$(ProjectDir)..&quot;"
 				PreprocessorDefinitions="_USE_32BIT_TIME_T;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;PTW32_STATIC_LIB"
+				StringPooling="true"
+				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="4"
@@ -153,9 +156,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="&quot;$(TargetDir)\libclamav.lib&quot;"
 				LinkIncremental="1"
-				ModuleDefinitionFile=".\libclamunrar.def"
+				ModuleDefinitionFile="$(InputDir)/libclamunrar.def"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -217,6 +219,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\unrarhlp.c"
+				>
+			</File>
+			<File
 				RelativePath=".\unrarppm.c"
 				>
 			</File>
@@ -251,6 +257,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\unrarhlp.h"
+				>
+			</File>
+			<File
 				RelativePath=".\unrarppm.h"
 				>
 			</File>
@@ -263,7 +273,7 @@
 			Name="Resource Files"
 			>
 			<File
-				RelativePath="..\libclamav\libclamunrar.def"
+				RelativePath=".\libclamunrar.def"
 				>
 			</File>
 		</Filter>

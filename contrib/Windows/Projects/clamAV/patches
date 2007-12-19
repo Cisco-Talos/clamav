@@ -1,4 +1,79 @@
-*** /home/njh/src/clamav-devel/trunk/./clamscan/clamscan.c	2007-09-07 17:06:21.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./libclamav/msexpand.c	2007-12-14 12:50:49.000000000 +0000
+--- ./libclamav/msexpand.c	2007-12-14 14:12:22.000000000 +0000
+***************
+*** 45,55 ****
+  #define MAGIC3	0x0041
+  
+  struct msexp_hdr {
+!     uint32_t magic1;
+!     uint32_t magic2;
+!     uint16_t magic3;
+!     uint32_t fsize;
+! } __attribute((packed));
+  
+  #define BSIZE 4096
+  #define RWBUFF 2048
+--- 45,60 ----
+  #define MAGIC3	0x0041
+  
+  struct msexp_hdr {
+!     uint32_t magic1 __attribute__ ((packed));
+!     uint32_t magic2 __attribute__ ((packed));
+!     uint16_t magic3 __attribute__ ((packed));
+!     uint32_t fsize __attribute__ ((packed));
+! };
+! 
+! #ifndef HAVE_ATTRIB_PACKED
+! #define __attribute__(x)
+! #endif
+! 
+  
+  #define BSIZE 4096
+  #define RWBUFF 2048
+*** /home/njh/src/clamav-devel/trunk/./libclamav/cvd.c	2007-12-19 13:48:48.000000000 +0000
+--- ./libclamav/cvd.c	2007-12-18 19:00:28.000000000 +0000
+***************
+*** 179,185 ****
+  	char osize[13], name[101];
+  	char block[TAR_BLOCKSIZE];
+  	int nread, fdd, ret;
+! 	unsigned int type, size, pad;
+  	gzFile *infile;
+  	z_off_t off;
+  
+--- 179,185 ----
+  	char osize[13], name[101];
+  	char block[TAR_BLOCKSIZE];
+  	int nread, fdd, ret;
+! 	unsigned int type, size;
+  	gzFile *infile;
+  	z_off_t off;
+  
+***************
+*** 256,266 ****
+  		return CL_EMALFDB;
+  	    }
+  	}
+- 	pad = size % TAR_BLOCKSIZE ? (TAR_BLOCKSIZE - (size % TAR_BLOCKSIZE)) : 0;
+  	if(off == gzseek(infile, 0, SEEK_CUR))
+! 	    gzseek(infile, size + pad, SEEK_CUR);
+! 	else if(pad)
+! 	    gzseek(infile, pad, SEEK_CUR);
+  
+      }
+  
+--- 256,265 ----
+  		return CL_EMALFDB;
+  	    }
+  	}
+  	if(off == gzseek(infile, 0, SEEK_CUR))
+! 	    gzseek(infile, size + TAR_BLOCKSIZE - (size % TAR_BLOCKSIZE), SEEK_CUR);
+! 	else
+! 	    gzseek(infile, TAR_BLOCKSIZE - (size % TAR_BLOCKSIZE), SEEK_CUR);
+  
+      }
+  
+*** /home/njh/src/clamav-devel/trunk/./clamscan/clamscan.c	2007-12-06 18:32:26.000000000 +0000
 --- ./clamscan/clamscan.c	2007-09-07 18:08:50.000000000 +0100
 ***************
 *** 241,252 ****
@@ -32,7 +107,7 @@
   
       return ret;
   }
-*** /home/njh/src/clamav-devel/trunk/./clamscan/manager.h	2007-06-14 11:04:12.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./clamscan/manager.h	2007-12-06 18:32:26.000000000 +0000
 --- ./clamscan/manager.h	2007-04-21 09:44:22.000000000 +0100
 ***************
 *** 34,37 ****
@@ -46,8 +121,8 @@
 + #endif
 + 
   #endif
-*** /home/njh/src/clamav-devel/trunk/./freshclam/manager.c	2007-10-08 14:56:12.000000000 +0100
---- ./freshclam/manager.c	2007-10-30 13:40:42.000000000 +0000
+*** /home/njh/src/clamav-devel/trunk/./freshclam/manager.c	2007-12-11 20:35:17.000000000 +0000
+--- ./freshclam/manager.c	2007-12-11 20:36:34.000000000 +0000
 ***************
 *** 210,216 ****
   		break;
@@ -99,7 +174,7 @@
       return -2;
   }
   
-*** /home/njh/src/clamav-devel/trunk/./clamd/scanner.c	2007-09-02 12:37:44.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./clamd/scanner.c	2007-12-06 18:32:35.000000000 +0000
 --- ./clamd/scanner.c	2007-09-25 14:59:24.000000000 +0100
 ***************
 *** 475,487 ****
@@ -186,8 +261,8 @@
   	mdprintf(odesc, "cli_gentempfd() failed. ERROR\n");
   	logg("!ScanStream %u: Can't create temporary file.\n", port);
   	return -1;
-*** /home/njh/src/clamav-devel/trunk/./clamd/clamd.c	2007-10-07 12:48:24.000000000 +0100
---- ./clamd/clamd.c	2007-10-30 13:41:55.000000000 +0000
+*** /home/njh/src/clamav-devel/trunk/./clamd/clamd.c	2007-12-18 21:45:04.000000000 +0000
+--- ./clamd/clamd.c	2007-11-08 14:26:38.000000000 +0000
 ***************
 *** 35,41 ****
   #include <sys/stat.h>
@@ -208,8 +283,8 @@
   #include <grp.h>
   #endif
 ***************
-*** 64,69 ****
---- 66,74 ----
+*** 65,70 ****
+--- 67,75 ----
   #include "others.h"
   #include "shared.h"
   
@@ -220,8 +295,8 @@
   short debug_mode = 0, logok = 0;
   short foreground = 0;
 ***************
-*** 85,91 ****
---- 90,98 ----
+*** 86,92 ****
+--- 91,99 ----
   {
   	struct cfgstruct *copt;
   	const struct cfgstruct *cpt;
@@ -232,8 +307,8 @@
   	struct cl_engine *engine = NULL;
   	const char *dbdir, *cfgfile;
 ***************
-*** 287,294 ****
---- 294,303 ----
+*** 288,295 ****
+--- 295,304 ----
   
       logg("clamd daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
   
@@ -244,24 +319,10 @@
   
       if(logg_size)
   	logg("Log file size limited to %d bytes.\n", logg_size);
-*** /home/njh/src/clamav-devel/trunk/./clamd/server-th.c	2007-10-07 12:48:24.000000000 +0100
---- ./clamd/server-th.c	2007-10-07 13:52:44.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./clamd/server-th.c	2007-12-14 11:51:46.000000000 +0000
+--- ./clamd/server-th.c	2007-12-14 11:52:52.000000000 +0000
 ***************
-*** 507,512 ****
---- 507,517 ----
-      sigaction(SIGHUP, &sigact, NULL);
-      sigaction(SIGPIPE, &sigact, NULL);
-      sigaction(SIGUSR2, &sigact, NULL);
-+ 
-+     if(!debug_mode) {
-+ 	sigaddset(&sigact.sa_mask, SIGHUP);
-+ 	sigaction(SIGSEGV, &sigact, NULL);
-+     }
-  #endif
-  
-      pthread_mutex_init(&exit_mutex, NULL);
-***************
-*** 582,588 ****
+*** 569,575 ****
   		client_conn->socketds = socketds;
   		client_conn->nsockets = nsockets;
   		if (!thrmgr_dispatch(thr_pool, client_conn)) {
@@ -269,7 +330,7 @@
   		    free(client_conn);
   		    logg("!thread dispatch failed\n");
   		}
---- 587,593 ----
+--- 569,575 ----
   		client_conn->socketds = socketds;
   		client_conn->nsockets = nsockets;
   		if (!thrmgr_dispatch(thr_pool, client_conn)) {
@@ -278,7 +339,7 @@
   		    logg("!thread dispatch failed\n");
   		}
 ***************
-*** 590,598 ****
+*** 577,585 ****
   
   	pthread_mutex_lock(&exit_mutex);
   	if(progexit) {
@@ -288,7 +349,7 @@
   	    pthread_mutex_unlock(&exit_mutex);
   	    break;
   	}
---- 595,607 ----
+--- 577,589 ----
   
   	pthread_mutex_lock(&exit_mutex);
   	if(progexit) {
@@ -303,7 +364,7 @@
   	    break;
   	}
 ***************
-*** 616,623 ****
+*** 603,610 ****
   	    engine = reload_db(engine, dboptions, copt, FALSE, &ret);
   	    if(ret) {
   		logg("Terminating because of a fatal error.\n");
@@ -312,7 +373,7 @@
   		break;
   	    }
   	    pthread_mutex_lock(&reload_mutex);
---- 625,634 ----
+--- 607,616 ----
   	    engine = reload_db(engine, dboptions, copt, FALSE, &ret);
   	    if(ret) {
   		logg("Terminating because of a fatal error.\n");
@@ -323,7 +384,7 @@
   		break;
   	    }
   	    pthread_mutex_lock(&reload_mutex);
-*** /home/njh/src/clamav-devel/trunk/./clamd/tcpserver.c	2007-06-14 11:03:52.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./clamd/tcpserver.c	2007-12-06 18:32:35.000000000 +0000
 --- ./clamd/tcpserver.c	2007-04-21 09:49:08.000000000 +0100
 ***************
 *** 51,56 ****
@@ -372,7 +433,7 @@
   	return -1;
       }
   
-*** /home/njh/src/clamav-devel/trunk/./clamdscan/clamdscan.c	2007-06-14 11:04:11.000000000 +0100
+*** /home/njh/src/clamav-devel/trunk/./clamdscan/clamdscan.c	2007-12-06 18:32:26.000000000 +0000
 --- ./clamdscan/clamdscan.c	2007-04-21 14:59:56.000000000 +0100
 ***************
 *** 15,30 ****
@@ -504,8 +565,8 @@
       exit(ret);
   }
   
-*** /home/njh/src/clamav-devel/trunk/./clamdscan/client.c	2007-10-09 08:24:58.000000000 +0100
---- ./clamdscan/client.c	2007-10-30 13:43:42.000000000 +0000
+*** /home/njh/src/clamav-devel/trunk/./clamdscan/client.c	2007-12-06 18:32:26.000000000 +0000
+--- ./clamdscan/client.c	2007-12-19 13:21:14.000000000 +0000
 ***************
 *** 15,36 ****
 --- 15,44 ----
@@ -753,7 +814,7 @@
   	struct cfgstruct *copt;
 ***************
 *** 322,334 ****
---- 400,417 ----
+--- 400,418 ----
   	return -1;
       }
   
@@ -768,6 +829,7 @@
       if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
 + #ifdef	C_WINDOWS
 + 	logg("^LocalSocket is not supported under Windows");
++ 	return -1;
 + #else
   
   	server.sun_family = AF_UNIX;
@@ -782,7 +844,7 @@
   
   	if((sockd = socket(SOCKET_INET, SOCK_STREAM, 0)) < 0) {
   	    perror("socket()");
---- 430,447 ----
+--- 431,448 ----
   	    freecfg(copt);
   	    return -1;
   	}
@@ -810,7 +872,7 @@
   		perror("gethostbyname()");
   		logg("^Can't lookup clamd hostname.\n");
   		freecfg(copt);
---- 455,461 ----
+--- 456,462 ----
   
   	if((cpt = cfgopt(copt, "TCPAddr"))->enabled) {
   	    if ((he = gethostbyname(cpt->strarg)) == 0) {
@@ -827,7 +889,7 @@
   	    perror("connect()");
   	    logg("^Can't connect to clamd.\n");
   	    freecfg(copt);
---- 465,471 ----
+--- 466,472 ----
   	}
   
   	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
@@ -844,7 +906,7 @@
   
   #if defined(ENABLE_FD_PASSING) && defined(HAVE_SENDMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN)
       } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
---- 512,518 ----
+--- 513,519 ----
   	else
   	    errors++;
   
@@ -853,8 +915,25 @@
   #if defined(ENABLE_FD_PASSING) && defined(HAVE_SENDMSG) && (defined(HAVE_ACCRIGHTS_IN_MSGHDR) || defined(HAVE_CONTROL_IN_MSGHDR)) && !defined(C_CYGWIN)
       } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
 ***************
+*** 477,483 ****
+  			else
+  			    errors++;
+  
+! 			close(sockd);
+  			break;
+  
+  		    default:
+--- 571,577 ----
+  			else
+  			    errors++;
+  
+! 			closesocket(sockd);
+  			break;
+  
+  		    default:
+***************
 *** 500,506 ****
---- 593,601 ----
+--- 594,602 ----
   	struct stat ofstat, mfstat;
   	int n, len, movefilename_size;
   	int moveflag = opt_check(opt, "move");
@@ -866,7 +945,7 @@
       if((moveflag && !(movedir = opt_arg(opt, "move"))) ||
 ***************
 *** 587,595 ****
---- 682,693 ----
+--- 683,694 ----
   	if(chown(movefilename, ofstat.st_uid, ofstat.st_gid) == -1)
   	    logg("^chown() failed for %s: %s\n", movefilename, strerror(errno));
   

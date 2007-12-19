@@ -41,7 +41,7 @@
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="false"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)&quot;;&quot;$(SolutionDir)libclamunrar&quot;;&quot;$(ProjectDir)nsis&quot;;&quot;$(ProjectDir)regex&quot;;&quot;$(ProjectDir)zlib&quot;;&quot;$(ProjectDir)pthread&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)&quot;;&quot;$(SolutionDir)libclamunrar&quot;;&quot;$(ProjectDir)nsis&quot;;&quot;$(ProjectDir)regex&quot;;&quot;$(ProjectDir)zlib&quot;;&quot;$(ProjectDir)pthread&quot;;&quot;$(SolutionDir)&quot;;&quot;$(ProjectDir)lzma&quot;"
 				PreprocessorDefinitions="_USE_32BIT_TIME_T;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;PTW32_STATIC_LIB;_DEBUG"
 				StringPooling="true"
 				MinimalRebuild="true"
@@ -68,9 +68,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ws2_32.lib &quot;$(ProjectDir)pthread\pthreadVC2.lib&quot; &quot;$(TargetDir)\libclamunrar.lib&quot;"
+				AdditionalDependencies="ws2_32.lib &quot;$(ProjectDir)pthread\pthreadVC2.lib&quot; &quot;$(TargetDir)\libclamunrar_iface.lib&quot;"
 				ModuleDefinitionFile="$(InputDir)/libclamav.def"
 				GenerateDebugInformation="true"
+				AssemblyDebug="1"
 				SubSystem="2"
 			/>
 			<Tool
@@ -124,12 +125,13 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="false"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)&quot;;&quot;$(SolutionDir)libclamunrar&quot;;&quot;$(ProjectDir)nsis&quot;;&quot;$(ProjectDir)regex&quot;;&quot;$(ProjectDir)zlib&quot;;&quot;$(ProjectDir)pthread&quot;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)&quot;;&quot;$(SolutionDir)libclamunrar&quot;;&quot;$(ProjectDir)nsis&quot;;&quot;$(ProjectDir)regex&quot;;&quot;$(ProjectDir)zlib&quot;;&quot;$(ProjectDir)pthread&quot;;&quot;$(SolutionDir)&quot;;&quot;$(ProjectDir)lzma&quot;"
 				PreprocessorDefinitions="_USE_32BIT_TIME_T;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;PTW32_STATIC_LIB"
 				StringPooling="true"
 				ExceptionHandling="0"
 				RuntimeLibrary="2"
 				StructMemberAlignment="0"
+				BufferSecurityCheck="false"
 				DefaultCharIsUnsigned="false"
 				TreatWChar_tAsBuiltInType="false"
 				UsePrecompiledHeader="0"
@@ -150,7 +152,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="ws2_32.lib &quot;$(ProjectDir)pthread\pthreadVC2.lib&quot; &quot;$(TargetDir)\libclamunrar.lib&quot;"
+				AdditionalDependencies="ws2_32.lib &quot;$(ProjectDir)pthread\pthreadVC2.lib&quot; &quot;$(TargetDir)\libclamunrar_iface.lib&quot;"
 				ModuleDefinitionFile="$(InputDir)/libclamav.def"
 				SubSystem="2"
 			/>
@@ -281,6 +283,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\inflate64.c"
+				>
+			</File>
+			<File
 				RelativePath=".\is_tar.c"
 				>
 			</File>
@@ -294,6 +300,10 @@
 			</File>
 			<File
 				RelativePath=".\lockdb.c"
+				>
+			</File>
+			<File
+				RelativePath=".\lzma_iface.c"
 				>
 			</File>
 			<File
@@ -568,6 +578,14 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="lzma"
+				>
+				<File
+					RelativePath=".\lzma\LzmaStateDecode.c"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -659,6 +677,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\inflate64.h"
+				>
+			</File>
+			<File
 				RelativePath=".\is_tar.h"
 				>
 			</File>
@@ -676,6 +698,10 @@
 			</File>
 			<File
 				RelativePath=".\lockdb.h"
+				>
+			</File>
+			<File
+				RelativePath=".\lzma_iface.h"
 				>
 			</File>
 			<File
@@ -975,6 +1001,18 @@
 				</File>
 				<File
 					RelativePath=".\zlib\zutil.h"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="lzma"
+				>
+				<File
+					RelativePath=".\lzma\LzmaStateDecode.h"
+					>
+				</File>
+				<File
+					RelativePath=".\lzma\LzmaTypes.h"
 					>
 				</File>
 			</Filter>
