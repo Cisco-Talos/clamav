@@ -22,6 +22,24 @@
 #ifndef __CHM_UNPACK_H
 #define __CHM_UNPACK_H
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#include "cltypes.h"
+
+#ifndef HAVE_ATTRIB_PACKED
+#define __attribute__(x)
+#endif
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
+
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1
+#endif
+
 #define CHM_ITSF_MIN_LEN (0x60)
 typedef struct chm_itsf_header_tag
 {
@@ -59,6 +77,14 @@ typedef struct chm_itsp_header_tag
 	unsigned char system_clsid[16];
 	unsigned char unknown4[16];
 } chm_itsp_header_t;
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack()
+#endif
+
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack
+#endif
 
 typedef struct chm_sys_entry_tag
 {
