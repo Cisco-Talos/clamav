@@ -1,3 +1,8 @@
+Wed Dec 19 10:17:02 GMT 2007 (trog)
+-----------------------------------
+  * libclamav/chmunpack.[ch], scanners.c: re-structure CHM unpacker. Uses no
+  			dynamic memory when mmap() available.
+
 Tue Dec 18 19:55:13 CET 2007 (acab)
 -----------------------------------
   * libclamav/unzip.c: Fix mmap leaks in unzip 

@@ -21,7 +21,71 @@
  
 #ifndef __CHM_UNPACK_H
 #define __CHM_UNPACK_H
- 
+
+#define CHM_ITSF_MIN_LEN (0x60)
+typedef struct chm_itsf_header_tag
+{
+	unsigned char signature[4];
+	int32_t version __attribute__ ((packed));
+	int32_t header_len __attribute__ ((packed));
+	uint32_t unknown __attribute__ ((packed));
+	uint32_t last_modified __attribute__ ((packed));
+	uint32_t lang_id __attribute__ ((packed));
+	unsigned char dir_clsid[16];
+	unsigned char stream_clsid[16];
+	uint64_t sec0_offset __attribute__ ((packed));
+	uint64_t sec0_len __attribute__ ((packed));
+	uint64_t dir_offset __attribute__ ((packed));
+	uint64_t dir_len __attribute__ ((packed));
+	uint64_t data_offset __attribute__ ((packed));
+} chm_itsf_header_t;
+
+#define CHM_ITSP_LEN (0x54)
+typedef struct chm_itsp_header_tag
+{
+	unsigned char signature[4];
+	int32_t version __attribute__ ((packed));
+	int32_t header_len __attribute__ ((packed));
+	int32_t unknown1 __attribute__ ((packed));
+	uint32_t block_len __attribute__ ((packed));
+	int32_t blockidx_intvl __attribute__ ((packed));
+	int32_t index_depth __attribute__ ((packed));
+	int32_t index_root __attribute__ ((packed));
+	int32_t index_head __attribute__ ((packed));
+	int32_t index_tail __attribute__ ((packed));
+	int32_t unknown2 __attribute__ ((packed));
+	uint32_t num_blocks __attribute__ ((packed));
+	uint32_t lang_id __attribute__ ((packed));
+	unsigned char system_clsid[16];
+	unsigned char unknown4[16];
+} chm_itsp_header_t;
+
+typedef struct chm_sys_entry_tag
+{
+	uint64_t offset;
+	uint64_t length;
+} chm_sys_entry_t;
+
+typedef struct chm_metadata_tag {
+	chm_sys_entry_t sys_control;
+	chm_sys_entry_t sys_content;
+	chm_sys_entry_t sys_reset;
+	off_t m_length;
+	char *m_area;
+	chm_itsf_header_t itsf_hdr;
+	chm_itsp_header_t itsp_hdr;
+	int ufd;
+	int ofd;
+	uint32_t num_chunks;
+	off_t chunk_offset;
+	char *chunk_data;
+	char *chunk_current;
+	char *chunk_end;
+	uint16_t chunk_entries;
+	uint64_t file_length;
+	uint64_t file_offset;
+} chm_metadata_t;
+
 int chm_unpack(int fd, const char *dirname);
 
 #endif

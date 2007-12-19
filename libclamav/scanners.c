@@ -376,7 +376,7 @@ static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
      /* generate the temporary directory */
     dir = cli_gentemp(NULL);
     if(mkdir(dir, 0700)) {
-	cli_dbgmsg("RAR: Can't create temporary directory %s\n", dir);
+	cli_dbgmsg("ARJ: Can't create temporary directory %s\n", dir);
 	free(dir);
 	return CL_ETMPDIR;
     }
@@ -1204,26 +1204,60 @@ static int cli_scanbinhex(int desc, cli_ctx *ctx)
 
 static int cli_scanmschm(int desc, cli_ctx *ctx)
 {
-	char *tempname;
-	int ret = CL_CLEAN;
+	int ret = CL_CLEAN, rc;
+	chm_metadata_t metadata;
+	char *dir;
+	unsigned int file_count = 1;
 
+    cli_dbgmsg("in cli_scanmschm()\n");
 
-    cli_dbgmsg("in cli_scanmschm()\n");	
-
-    tempname = cli_gentemp(NULL);
-    if(mkdir(tempname, 0700)) {
-	cli_dbgmsg("CHM: Can't create temporary directory %s\n", tempname);
-	free(tempname);
+     /* generate the temporary directory */
+    dir = cli_gentemp(NULL);
+    if(mkdir(dir, 0700)) {
+	cli_dbgmsg("CHM: Can't create temporary directory %s\n", dir);
+	free(dir);
 	return CL_ETMPDIR;
     }
 
-    if(chm_unpack(desc, tempname))
-	ret = cli_scandir(tempname, ctx);
+    ret = cli_chm_open(desc, dir, &metadata);
+    if (ret != CL_SUCCESS) {
+	if(!cli_leavetemps_flag)
+	    cli_rmdirs(dir);
+	free(dir);
+	cli_dbgmsg("CHM: Error: %s\n", cl_strerror(ret));
+	return ret;
+    }
 
+   do {
+	ret = cli_chm_prepare_file(desc, dir, &metadata);
+	if (ret != CL_SUCCESS) {
+	   break;
+	}
+	ret = cli_chm_extract_file(desc, dir, &metadata);
+	if (ret == CL_SUCCESS) {
+	    lseek(metadata.ofd, 0, SEEK_SET);
+	    rc = cli_magic_scandesc(metadata.ofd, ctx);
+	    close(metadata.ofd);
+	    if (rc == CL_VIRUS) {
+		cli_dbgmsg("CHM: infected with %s\n",*ctx->virname);
+		ret = CL_VIRUS;
+		break;
+	    }
+	}
+
+    } while(ret == CL_SUCCESS);
+    
     if(!cli_leavetemps_flag)
-	cli_rmdirs(tempname);
+	cli_rmdirs(dir);
 
-    free(tempname);
+    free(dir);
+
+    cli_chm_close(&metadata);
+   
+    cli_dbgmsg("CHM: Exit code: %d\n", ret);
+    if (ret == CL_BREAK)
+	ret = CL_CLEAN;
+
     return ret;
 }
 
