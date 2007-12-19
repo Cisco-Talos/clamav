@@ -179,7 +179,7 @@ static int cli_tgzload(int fd, struct cl_engine **engine, unsigned int *signo, u
 	char osize[13], name[101];
 	char block[TAR_BLOCKSIZE];
 	int nread, fdd, ret;
-	unsigned int type, size;
+	unsigned int type, size, pad;
 	gzFile *infile;
 	z_off_t off;
 
@@ -256,10 +256,11 @@ static int cli_tgzload(int fd, struct cl_engine **engine, unsigned int *signo, u
 		return CL_EMALFDB;
 	    }
 	}
+	pad = size % TAR_BLOCKSIZE ? (TAR_BLOCKSIZE - (size % TAR_BLOCKSIZE)) : 0;
 	if(off == gzseek(infile, 0, SEEK_CUR))
-	    gzseek(infile, size + TAR_BLOCKSIZE - (size % TAR_BLOCKSIZE), SEEK_CUR);
-	else
-	    gzseek(infile, TAR_BLOCKSIZE - (size % TAR_BLOCKSIZE), SEEK_CUR);
+	    gzseek(infile, size + pad, SEEK_CUR);
+	else if(pad)
+	    gzseek(infile, pad, SEEK_CUR);
 
     }
 
