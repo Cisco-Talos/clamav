@@ -372,8 +372,13 @@ chown(const char *filename, short uid, short gid)
 
 #ifdef	USE_SYSLOG
 /*
- * Put into the Windows Event Log (Right Click My Computer->Manage->Event Viewer->Application
+ * Put into the Windows Event Log
+ *	Right Click My Computer->Manage->Event Viewer->Application
  * See http://cybertiggyr.com/gene/wel/src/insert-log.c for inspiration
+ * and http://msdn2.microsoft.com/en-us/library/aa363680(VS.85).aspx
+ *
+ * FIXME: Not thread safe, but see shared/output.c, which ensures this code is
+ *	single threaded - therefore don't call this code directly
  */
 static	HANDLE	logg_handle;
 
@@ -381,13 +386,16 @@ void
 openlog(const char *name, int options, int facility)
 {
 	logg_handle = RegisterEventSource(NULL, name);
+
+	if(logg_handle == NULL)
+		cli_warnmsg("openlog: Can't register source %s - error %d\n", name, GetLastError());
 }
 
 void
 closelog(void)
 {
 	if(logg_handle != NULL)
-		CloseEventLog(logg_handle);
+		DeregisterEventSource(logg_handle);
 }
 
 void
@@ -400,11 +408,11 @@ syslog(int level, const char *format, ...)
 		va_start(args, format);
 		(void)vsnprintf(buff, sizeof(buff), format, args);
 		va_end(args);
-		
+
 		/*
-		 * Category = 0, eventId = 0, SID = NULL, 1 string
+		 * Category = NULL, eventId = 0, SID = NULL, 1 string
 		 */
-		(void)ReportEvent(logg_handle, (WORD)level, 0, 0, NULL, 1, 0, (LPCSTR *)buff, NULL);
+		(void)ReportEvent(logg_handle, (WORD)level, 0, 0, NULL, 1, 0, (LPCSTR *)&buff, NULL);
 	}
 
 }
