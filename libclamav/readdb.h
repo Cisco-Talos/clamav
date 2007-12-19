@@ -43,8 +43,8 @@
 	cli_strbcasestr(ext, ".pdb")   ||	\
 	cli_strbcasestr(ext, ".wdb")   ||	\
 	cli_strbcasestr(ext, ".ft")    ||	\
-	cli_strbcasestr(ext, ".inc")   ||	\
-	cli_strbcasestr(ext, ".cvd")		\
+	cli_strbcasestr(ext, ".cvd")   ||	\
+	cli_strbcasestr(ext, ".cld")		\
     )
 
 

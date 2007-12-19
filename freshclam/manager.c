@@ -49,6 +49,7 @@
 #include <time.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #include <errno.h>
 
 #include "manager.h"
@@ -63,12 +64,12 @@
 #include "shared/output.h"
 #include "shared/misc.h"
 #include "shared/cdiff.h"
+#include "shared/tar.h"
 
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
 #include "libclamav/str.h"
 #include "libclamav/cvd.h"
-#include "libclamav/lockdb.h"
 
 #ifndef	O_BINARY
 #define	O_BINARY	0
@@ -676,97 +677,78 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     return 0;
 }
 
-static int getcvd(const char *dbfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int nodb, unsigned int newver, int ctimeout, int rtimeout, struct mirdat *mdat)
+static int getcvd(const char *cvdfile, const char *newfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int nodb, unsigned int newver, int ctimeout, int rtimeout, struct mirdat *mdat)
 {
-	char *tempname;
 	struct cl_cvd *cvd;
 	int ret;
 
 
-    tempname = cli_gentemp(".");
-
-    logg("*Retrieving http://%s/%s\n", hostname, dbfile);
-    if((ret = getfile(dbfile, tempname, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat))) {
-        logg("!Can't download %s from %s\n", dbfile, hostname);
-        unlink(tempname);
-        free(tempname);
+    logg("*Retrieving http://%s/%s\n", hostname, cvdfile);
+    if((ret = getfile(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat))) {
+        logg("!Can't download %s from %s\n", cvdfile, hostname);
+        unlink(newfile);
         return ret;
     }
 
-    if((ret = cl_cvdverify(tempname))) {
+    if((ret = cl_cvdverify(newfile))) {
         logg("!Verification: %s\n", cl_strerror(ret));
-        unlink(tempname);
-        free(tempname);
+        unlink(newfile);
         return 54;
     }
 
-    if(!(cvd = cl_cvdhead(tempname))) {
-	logg("!Can't read CVD header of new %s database.\n", dbfile);
-	unlink(tempname);
-	free(tempname);
+    if(!(cvd = cl_cvdhead(newfile))) {
+	logg("!Can't read CVD header of new %s database.\n", cvdfile);
+	unlink(newfile);
 	return 54;
     }
 
     if(cvd->version < newver) {
 	logg("^Mirror %s is not synchronized.\n", ip);
     	cl_cvdfree(cvd);
-	unlink(tempname);
-	free(tempname);
+	unlink(newfile);
 	return 59;
     }
 
-    if(!nodb && unlink(dbfile)) {
-	logg("!Can't unlink %s. Please fix it and try again.\n", dbfile);
-    	cl_cvdfree(cvd);
-	unlink(tempname);
-	free(tempname);
-	return 53;
-    } else {
-    	if(rename(tempname, dbfile) == -1) {
-    	    if(errno == EEXIST) {
-    	        unlink(dbfile);
-    	        if(rename(tempname, dbfile) == -1) {
-                   logg("!All attempts to rename the temporary file failed: %s\n", strerror(errno));
-		   return 57;
-		}
-            }
-        }
-    }
-
+    cl_cvdfree(cvd);
     return 0;
 }
 
-static int chdir_inc(const char *dbname)
+static int chdir_tmp(const char *dbname, const char *tmpdir)
 {
-	struct stat sb;
-	char path[32], dbfile[32];
+	char cvdfile[32];
 
 
-    sprintf(path, "%s.inc", dbname);
-    sprintf(dbfile, "%s.cvd", dbname);
+    if(access(tmpdir, R_OK|W_OK) == -1) {
+	sprintf(cvdfile, "%s.cvd", dbname);
+	if(access(cvdfile, R_OK) == -1) {
+	    sprintf(cvdfile, "%s.cld", dbname);
+	    if(access(cvdfile, R_OK) == -1) {
+		logg("!chdir_tmp: Can't access local %s database\n", dbname);
+		return -1;
+	    }
+	}
 
-    if(stat(path, &sb) == -1) {
-	if(mkdir(path, 0755) == -1) {
-	    logg("!chdir_inc: Can't create directory %s\n", path);
+	if(mkdir(tmpdir, 0755) == -1) {
+	    logg("!chdir_tmp: Can't create directory %s\n", tmpdir);
 	    return -1;
 	}
 
-	if(cvd_unpack(dbfile, path) == -1) {
-	    logg("!chdir_inc: Can't unpack %s into %s\n", dbfile, path);
-	    cli_rmdirs(path);
+	if(cvd_unpack(cvdfile, tmpdir) == -1) {
+	    logg("!chdir_tmp: Can't unpack %s into %s\n", cvdfile, tmpdir);
+	    cli_rmdirs(tmpdir);
 	    return -1;
 	}
     }
 
-    if(chdir(path) == -1) {
-	logg("!chdir_inc: Can't change directory to %s\n", path);
+    if(chdir(tmpdir) == -1) {
+	logg("!chdir_tmp: Can't change directory to %s\n", tmpdir);
 	return -1;
     }
 
     return 0;
 }
 
-static int getpatch(const char *dbname, int version, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int ctimeout, int rtimeout, struct mirdat *mdat)
+static int getpatch(const char *dbname, const char *tmpdir, int version, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int ctimeout, int rtimeout, struct mirdat *mdat)
 {
 	char *tempname, patch[32], olddir[512];
 	int ret, fd;
@@ -777,7 +759,7 @@ static int getpatch(const char *dbname, int version, const char *hostname, char 
 	return 50; /* FIXME */
     }
 
-    if(chdir_inc(dbname) == -1)
+    if(chdir_tmp(dbname, tmpdir) == -1)
 	return 50;
 
     tempname = cli_gentemp(".");
@@ -816,28 +798,110 @@ static int getpatch(const char *dbname, int version, const char *hostname, char 
     return 0;
 }
 
-static struct cl_cvd *currentdb(const char *dbname, unsigned int *inc)
+static struct cl_cvd *currentdb(const char *dbname, char *localname)
 {
-	struct stat sb;
-	char path[512];
+	char db[32];
 	struct cl_cvd *cvd = NULL;
 
 
-    snprintf(path, sizeof(path), "%s.inc", dbname);
-    if(stat(path, &sb) != -1) {
-	snprintf(path, sizeof(path), "%s.inc/%s.info", dbname, dbname);
-	if(inc)
-	    *inc = 1;
-    } else {
-	snprintf(path, sizeof(path), "%s.cvd", dbname);
-	if(inc)
-	    *inc = 0;
+    snprintf(db, sizeof(db), "%s.cvd", dbname);
+    if(localname)
+	strcpy(localname, db);
+
+    if(access(db, R_OK) == -1) {
+	snprintf(db, sizeof(db), "%s.cld", dbname);
+	if(localname)
+	    strcpy(localname, db);
     }
 
-    if(!access(path, R_OK))
-	cvd = cl_cvdhead(path);
+    if(!access(db, R_OK))
+	cvd = cl_cvdhead(db);
 
     return cvd;
+}
+
+static int buildcld(const char *tmpdir, const char *dbname, const char *newfile)
+{
+	DIR *dir;
+	char cwd[512], info[32], buff[512], *pt;
+	struct dirent *dent;
+	int fd;
+
+
+    getcwd(cwd, sizeof(cwd));
+    if(chdir(tmpdir) == -1) {
+	logg("!buildcld: Can't access directory %s\n", tmpdir);
+	return -1;
+    }
+
+    snprintf(info, sizeof(info), "%s.info", dbname);
+    if((fd = open(info, O_RDONLY|O_BINARY)) == -1) {
+	logg("!buildcld: Can't open %s\n", info);
+	chdir(cwd);
+	return -1;
+    }
+
+    if(read(fd, buff, 512) == -1) {
+	logg("!buildcld: Can't read %s\n", info);
+	chdir(cwd);
+	close(fd);
+	return -1;
+    }
+    close(fd);
+
+    if(!(pt = strchr(buff, '\n'))) {
+	logg("!buildcld: Bad format of %s\n", info);
+	chdir(cwd);
+	return -1;
+    }
+    memset(pt, ' ', 512 + buff - pt);
+
+    if((fd = open(newfile, O_WRONLY|O_CREAT|O_EXCL|O_BINARY, 0644)) == -1) {
+	logg("!buildcld: Can't open %s for writing\n", newfile);
+	chdir(cwd);
+	return -1;
+    }
+    if(write(fd, buff, 512) != 512) {
+	logg("!buildcld: Can't write to %s\n", newfile);
+	chdir(cwd);
+	unlink(newfile);
+	close(fd);
+	return -1;
+    }
+    close(fd);
+
+    if((dir = opendir(".")) == NULL) {
+	logg("!buildcld: Can't open directory %s\n", tmpdir);
+	chdir(cwd);
+	unlink(newfile);
+	return -1;
+    }
+
+    while((dent = readdir(dir))) {
+#ifndef C_INTERIX
+	if(dent->d_ino)
+#endif
+	{
+	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, ".."))
+		continue;
+
+	    if(tar_addfile(newfile, dent->d_name) == -1) {
+		logg("!buildcld: Can't add %s to .cld file\n", dent->d_name);
+		chdir(cwd);
+		unlink(newfile);
+		closedir(dir);
+		return -1;
+	    }
+	}
+    }
+    closedir(dir);
+
+    if(chdir(cwd) == -1) {
+	logg("!buildcld: Can't return to previous directory %s\n", cwd);
+	return -1;
+    }
+
+    return 0;
 }
 
 static int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, const char *dnsreply, char *localip, int outdated, struct mirdat *mdat)
@@ -846,34 +910,17 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	const struct cfgstruct *cpt;
 	unsigned int nodb = 0, currver = 0, newver = 0, port = 0, i, j;
 	int ret, ims = -1;
-	char *pt, dbfile[32], dbinc[32], *bacinc = NULL;
+	char *pt, cvdfile[32], localname[32], *tmpdir = NULL, *newfile, cwd[512];
 	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL;
-	unsigned int flevel = cl_retflevel(), inc, maxattempts;
-	struct stat sb;
+	unsigned int flevel = cl_retflevel(), maxattempts;
 	int ctimeout, rtimeout;
 
 
-    snprintf(dbfile, sizeof(dbfile), "%s.cvd", dbname);
-    snprintf(dbinc, sizeof(dbinc), "%s.inc", dbname);
+    snprintf(cvdfile, sizeof(cvdfile), "%s.cvd", dbname);
 
-    if(!(current = currentdb(dbname, &inc))) {
+    if(!(current = currentdb(dbname, localname))) {
 	nodb = 1;
-	inc = 0;
-	if(stat(dbinc, &sb) != -1) {
-	    logg("^Removing corrupted incremental directory %s\n", dbinc);
-	    if(cli_rmdirs(dbinc)) {
-		logg("!Can't remove incremental directory\n");
-		return 53;
-	    }
-
-	    if(stat(dbfile, &sb) != -1) {
-		logg("^Removing obsolete %s\n", dbfile);
-		if(unlink(dbfile)) {
-		    logg("!Can't unlink %s\n", dbfile);
-		    return 53;
-		}
-	    }
-	}
+	strcpy(localname, cvdfile);
     } else {
 	mdat->dbflevel = current->fl;
     }
@@ -896,7 +943,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 		logg("^Broken database version in TXT record.\n");
 	    } else {
 		newver = atoi(pt);
-		logg("*%s version from DNS: %d\n", dbfile, newver);
+		logg("*%s version from DNS: %d\n", cvdfile, newver);
 	    }
 	    free(pt);
 	} else {
@@ -936,17 +983,17 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 
     if(!nodb && !newver) {
 
-	remote = remote_cvdhead(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, &ims, ctimeout, rtimeout, mdat);
+	remote = remote_cvdhead(cvdfile, hostname, ip, localip, proxy, port, user, pass, uas, &ims, ctimeout, rtimeout, mdat);
 
 	if(!nodb && !ims) {
-	    logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", inc ? dbinc : dbfile, current->version, current->sigs, current->fl, current->builder);
+	    logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
 	    *signo += current->sigs;
 	    cl_cvdfree(current);
 	    return 1;
 	}
 
 	if(!remote) {
-	    logg("^Can't read %s header from %s (IP: %s)\n", dbfile, hostname, ip);
+	    logg("^Can't read %s header from %s (IP: %s)\n", cvdfile, hostname, ip);
 	    cl_cvdfree(current);
 	    return 58;
 	}
@@ -956,7 +1003,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
     }
 
     if(!nodb && (current->version >= newver)) {
-	logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", inc ? dbinc : dbfile, current->version, current->sigs, current->fl, current->builder);
+	logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
 
 	if(!outdated && flevel < current->fl) {
 	    /* display warning even for already installed database */
@@ -997,29 +1044,26 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
     if(!cfgopt(copt, "ScriptedUpdates")->enabled)
 	nodb = 1;
 
+    getcwd(cwd, sizeof(cwd));
+    newfile = cli_gentemp(cwd);
+
     if(nodb) {
-	ret = getcvd(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, nodb, newver, ctimeout, rtimeout, mdat);
+	ret = getcvd(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, nodb, newver, ctimeout, rtimeout, mdat);
 	if(ret) {
 	    memset(ip, 0, 16);
+	    free(newfile);
 	    return ret;
 	}
+	snprintf(localname, sizeof(localname), "%s.cvd", dbname);
 
     } else {
 	ret = 0;
 
-	if(!access(dbinc, X_OK)) {
-	    if((bacinc = cli_gentemp("."))) {
-		if(dircopy(dbinc, bacinc) == -1) {
-		    free(bacinc);
-		    bacinc = NULL;
-		}
-	    }
-	}
-
+	tmpdir = cli_gentemp(".");
 	maxattempts = cfgopt(copt, "MaxAttempts")->numarg;
 	for(i = currver + 1; i <= newver; i++) {
 	    for(j = 0; j < maxattempts; j++) {
-		ret = getpatch(dbname, i, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat);
+		ret = getpatch(dbname, tmpdir, i, hostname, ip, localip, proxy, port, user, pass, uas, ctimeout, rtimeout, mdat);
 		if(ret == 52 || ret == 58) {
 		    memset(ip, 0, 16);
 		    continue;
@@ -1032,43 +1076,58 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	}
 
 	if(ret) {
-	    logg("^Incremental update failed, trying to download %s\n", dbfile);
-
-	    ret = getcvd(dbfile, hostname, ip, localip, proxy, port, user, pass, uas, 1, newver, ctimeout, rtimeout, mdat);
+	    cli_rmdirs(tmpdir);
+	    free(tmpdir);
+	    logg("^Incremental update failed, trying to download %s\n", cvdfile);
+	    ret = getcvd(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, 1, newver, ctimeout, rtimeout, mdat);
 	    if(ret) {
-		if(bacinc) {
-		    logg("*Restoring incremental directory %s from backup\n", dbinc);
-		    cli_rmdirs(dbinc);
-		    rename(bacinc, dbinc);
-		    free(bacinc);
-		}
+		free(newfile);
 		return ret;
-	    } else {
-		logg("*Removing incremental directory %s\n", dbinc);
-		cli_rmdirs(dbinc);
 	    }
-
+	    snprintf(localname, sizeof(localname), "%s.cvd", dbname);
 	} else {
-	    unlink(dbfile);
-	}
-
-	if(bacinc) {
-	    logg("*Removing backup directory %s\n", bacinc);
-	    cli_rmdirs(bacinc);
-	    free(bacinc);
+	    if(buildcld(tmpdir, dbname, newfile) == -1) {
+		logg("!Can't create local database\n");
+		cli_rmdirs(tmpdir);
+		free(tmpdir);
+		free(newfile);
+		return 70; /* FIXME */
+	    }
+	    snprintf(localname, sizeof(localname), "%s.cld", dbname);
+	    cli_rmdirs(tmpdir);
+	    free(tmpdir);
 	}
     }
 
-    if(!(current = currentdb(dbname, NULL))) {
-	/* should never be reached */
-	logg("!Can't parse new database\n");
+    if(!nodb && !access(cvdfile, R_OK) && unlink(cvdfile)) {
+	logg("!Can't unlink %s. Please fix it and try again.\n", cvdfile);
+	unlink(newfile);
+	free(newfile);
+	return 53;
+    }
+
+    if(!nodb && strcmp(cvdfile, localname) && !access(localname, R_OK) && unlink(localname)) {
+	logg("!Can't unlink %s. Please fix it and try again.\n", localname);
+	unlink(newfile);
+	free(newfile);
+	return 53;
+    }
+
+    if(rename(newfile, localname) == -1) {
+	logg("!Can't rename %s to %s\n", newfile, localname);
+	unlink(newfile);
+	free(newfile);
+	return 57;
+    }
+    free(newfile);
+
+    if(!(current = cl_cvdhead(localname))) {
+	logg("!Can't parse new database %s\n", localname);
+	unlink(localname);
 	return 55; /* FIXME */
     }
 
-    if(nodb && inc)
-	cli_rmdirs(dbinc);
-
-    logg("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", inc ? dbinc : dbfile, current->version, current->sigs, current->fl, current->builder);
+    logg("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
 
     if(flevel < current->fl) {
 	logg("^Your ClamAV installation is OUTDATED!\n");
@@ -1085,7 +1144,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 {
 	time_t currtime;
 	int ret, updated = 0, outdated = 0, signo = 0;
-	unsigned int ttl, try = 0;
+	unsigned int ttl;
 	char ipaddr[16], *dnsreply = NULL, *pt, *localip = NULL, *newver = NULL;
 	const char *arg = NULL;
 	const struct cfgstruct *cpt;
@@ -1173,19 +1232,6 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	localip = cpt->strarg;
     }
 
-    while(cli_writelockdb(dbdir, 0) == CL_ELOCKDB) {
-	logg("*Waiting to lock database directory: %s\n", dbdir);
-	sleep(5);
-	if(++try > 12) {
-	    logg("!Can't lock database directory: %s\n", dbdir);
-	    if(dnsreply)
-		free(dnsreply);
-	    if(newver)
-		free(newver);
-	    return 61; 
-	}
-    }
-
     if(cfgopt(copt, "HTTPProxyServer")->enabled)
 	mirman_read("mirrors.dat", &mdat, 0);
     else
@@ -1201,7 +1247,6 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	    free(newver);
 
 	mirman_write("mirrors.dat", &mdat);
-	cli_unlockdb(dbdir);
 	return ret;
 
     } else if(ret == 0)
@@ -1216,7 +1261,6 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	    free(newver);
 
 	mirman_write("mirrors.dat", &mdat);
-	cli_unlockdb(dbdir);
 	return ret;
 
     } else if(ret == 0)
@@ -1226,7 +1270,6 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	free(dnsreply);
 
     mirman_write("mirrors.dat", &mdat);
-    cli_unlockdb(dbdir);
 
     if(updated) {
 	if(cfgopt(copt, "HTTPProxyServer")->enabled) {

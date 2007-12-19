@@ -175,8 +175,6 @@ libclamav_la_SOURCES = \
 	hashtab.h \
 	dconf.c \
 	dconf.h \
-	lockdb.c \
-	lockdb.h \
 	lzma_iface.c \
 	lzma_iface.h
 

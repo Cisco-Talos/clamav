@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include "clamav.h"
 
-int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short warn, unsigned int options);
+int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short warn, unsigned int options, unsigned int cld);
 int cli_untgz(int fd, const char *destdir);
 
 #endif

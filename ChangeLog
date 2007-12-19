@@ -1,3 +1,12 @@
+Wed Dec 19 22:11:17 CET 2007 (tk)
+---------------------------------
+  * freshclam, libclamav: drop support for .inc directories and instead use
+			  local containers with .cvd-like structure but
+			  uncompressed by default
+  * libclamav/lockdb.[ch]: remove files (no longer needed)
+  * TODO: sigtool, optional compression for .cld in freshclam
+  * .inc dirs are no longer used and should be removed manually
+
 Wed Dec 19 16:22:24 CET 2007 (tk)
 ---------------------------------
   * shared/tar.[ch]: minimalistic tar archiver for sigtool and freshclam

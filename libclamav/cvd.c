@@ -184,7 +184,7 @@ static int cli_tgzload(int fd, struct cl_engine **engine, unsigned int *signo, u
 	z_off_t off;
 
 
-    cli_dbgmsg("in cli_untgz()\n");
+    cli_dbgmsg("in cli_tgzload()\n");
 
     if((fdd = dup(fd)) == -1) {
 	cli_errmsg("cli_tgzload: Can't duplicate descriptor %d\n", fd);
@@ -391,7 +391,7 @@ void cl_cvdfree(struct cl_cvd *cvd)
     free(cvd);
 }
 
-static int cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt)
+static int cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt, unsigned int cld)
 {
 	struct cl_cvd *cvd;
 	char *md5, head[513];
@@ -412,6 +412,11 @@ static int cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt)
 
     if(cvdpt)
 	memcpy(cvdpt, cvd, sizeof(struct cl_cvd));
+
+    if(cld) {
+	cl_cvdfree(cvd);
+	return CL_SUCCESS;
+    }
 
     md5 = cli_md5stream(fs, NULL);
     cli_dbgmsg("MD5(.tar.gz) = %s\n", md5);
@@ -434,7 +439,7 @@ static int cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt)
 
     free(md5);
     cl_cvdfree(cvd);
-    return 0;
+    return CL_SUCCESS;
 }
 
 int cl_cvdverify(const char *file)
@@ -448,13 +453,13 @@ int cl_cvdverify(const char *file)
 	return CL_EOPEN;
     }
 
-    ret = cli_cvdverify(fs, NULL);
+    ret = cli_cvdverify(fs, NULL, 0);
     fclose(fs);
 
     return ret;
 }
 
-int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short warn, unsigned int options)
+int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short warn, unsigned int options, unsigned int cld)
 {
         char *dir;
 	struct cl_cvd cvd;
@@ -466,7 +471,7 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short 
 
     /* verify */
 
-    if((ret = cli_cvdverify(fs, &cvd)))
+    if((ret = cli_cvdverify(fs, &cvd, cld)))
 	return ret;
 
     if(cvd.stime && warn) {

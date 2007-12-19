@@ -53,7 +53,6 @@
 #include "others.h"
 #include "str.h"
 #include "dconf.h"
-#include "lockdb.h"
 #include "filetypes.h"
 #include "filetypes_int.h"
 #include "readdb.h"
@@ -1069,7 +1068,15 @@ int cli_load(const char *filename, struct cl_engine **engine, unsigned int *sign
 	if(strstr(filename, "daily.cvd"))
 	    warn = 1;
 
-	ret = cli_cvdload(fs, engine, signo, warn, options);
+	ret = cli_cvdload(fs, engine, signo, warn, options, 0);
+
+    } else if(cli_strbcasestr(filename, ".cld")) {
+	    int warn = 0;
+
+	if(strstr(filename, "daily.cld"))
+	    warn = 1;
+
+	ret = cli_cvdload(fs, engine, signo, warn, options | CL_DB_CVDNOTMP, 1);
 
     } else if(cli_strbcasestr(filename, ".hdb")) {
 	ret = cli_loadmd5(fs, engine, signo, MD5_HDB, options, gzs, gzrsize);
@@ -1150,7 +1157,7 @@ int cl_loaddb(const char *filename, struct cl_engine **engine, unsigned int *sig
     return cli_load(filename, engine, signo, CL_DB_STDOPT, NULL, 0);
 }
 
-static int cli_loaddbdir_l(const char *dirname, struct cl_engine **engine, unsigned int *signo, unsigned int options)
+static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo, unsigned int options)
 {
 	DIR *dd;
 	struct dirent *dent;
@@ -1206,11 +1213,7 @@ static int cli_loaddbdir_l(const char *dirname, struct cl_engine **engine, unsig
 		    return CL_EMEM;
 		}
 		sprintf(dbfile, "%s/%s", dirname, dent->d_name);
-
-		if(cli_strbcasestr(dbfile, ".inc"))
-		    ret = cli_loaddbdir(dbfile, engine, signo, options);
-		else
-		    ret = cli_load(dbfile, engine, signo, options, NULL, 0);
+		ret = cli_load(dbfile, engine, signo, options, NULL, 0);
 
 		if(ret) {
 		    cli_dbgmsg("cli_loaddbdir(): error loading database %s\n", dbfile);
@@ -1226,31 +1229,6 @@ static int cli_loaddbdir_l(const char *dirname, struct cl_engine **engine, unsig
     closedir(dd);
     if(ret == CL_ESUPPORT)
 	cli_errmsg("cli_loaddb(): No supported database files found in %s\n", dirname);
-
-    return ret;
-}
-
-static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo, unsigned int options)
-{
-	int ret, try = 0, lock;
-
-
-    cli_dbgmsg("cli_loaddbdir: Acquiring dbdir lock\n");
-    while((lock = cli_readlockdb(dirname, 0)) == CL_ELOCKDB) {
-#ifdef C_WINDOWS
-	Sleep(5);
-#else
-	sleep(5);
-#endif
-	if(try++ > 24) {
-	    cli_errmsg("cl_load(): Unable to lock database directory: %s\n", dirname);
-	    return CL_ELOCKDB;
-	}
-    }
-
-    ret = cli_loaddbdir_l(dirname, engine, signo, options);
-    if(lock == CL_SUCCESS)
-	cli_unlockdb(dirname);
 
     return ret;
 }
@@ -1365,12 +1343,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 		    closedir(dd);
 		    return CL_EMEM;
 		}
-
-		if(cli_strbcasestr(dent->d_name, ".inc")) {
-		    sprintf(fname, "%s/%s/%s.info", dirname, dent->d_name, strstr(dent->d_name, "daily") ? "daily" : "main");
-		} else {
-		    sprintf(fname, "%s/%s", dirname, dent->d_name);
-		}
+		sprintf(fname, "%s/%s", dirname, dent->d_name);
 #if defined(C_INTERIX) || defined(C_OS2)
 		dbstat->statdname[dbstat->entries - 1] = (char *) cli_malloc(strlen(dent->d_name) + 1);
 		if(!dbstat->statdname[dbstat->entries - 1]) {
@@ -1436,11 +1409,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 		    return CL_EMEM;
 		}
 
-		if(cli_strbcasestr(dent->d_name, ".inc")) {
-		    sprintf(fname, "%s/%s/%s.info", dbstat->dir, dent->d_name, strstr(dent->d_name, "daily") ? "daily" : "main");
-		} else {
-		    sprintf(fname, "%s/%s", dbstat->dir, dent->d_name);
-		}
+		sprintf(fname, "%s/%s", dbstat->dir, dent->d_name);
 		stat(fname, &sb);
 		free(fname);
 
@@ -1590,7 +1559,6 @@ void cl_free(struct cl_engine *engine)
 	free(engine->dconf);
 
     cli_ftfree(engine->ftypes);
-    cli_freelocks();
     free(engine);
 }
 
