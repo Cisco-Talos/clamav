@@ -1,3 +1,7 @@
+Wed Dec 19 16:22:24 CET 2007 (tk)
+---------------------------------
+  * shared/tar.[ch]: minimalistic tar archiver for sigtool and freshclam
+
 Wed Dec 19 10:17:02 GMT 2007 (trog)
 -----------------------------------
   * libclamav/chmunpack.[ch], scanners.c: re-structure CHM unpacker. Uses no
