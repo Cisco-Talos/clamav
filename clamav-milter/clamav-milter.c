@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-20071213"
+#define	CM_VERSION	"devel-20071220"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1199,7 +1199,7 @@ main(int argc, char **argv)
 			if(setuid(user->pw_uid) < 0)
 				perror(cpt->strarg);
 			else
-				cli_dbgmsg(_("Running as user %s (UID %d, GID %d)\n"),
+				logg(_("Running as user %s (UID %d, GID %d)\n"),
 					cpt->strarg, (int)user->pw_uid,
 					(int)user->pw_gid);
 
@@ -1559,7 +1559,7 @@ main(int argc, char **argv)
 			free(hostname);
 		}
 
-		cli_dbgmsg("numServers: %d\n", numServers);
+		logg("numServers: %d\n", numServers);
 
 		serverIPs = (in_addr_t *)cli_malloc(numServers * sizeof(in_addr_t));
 		if(serverIPs == NULL)
@@ -1648,7 +1648,7 @@ main(int argc, char **argv)
 			if(pingServer(i))
 				activeServers++;
 			else {
-				cli_warnmsg(_("Can't talk to clamd server %s on port %d\n"),
+				logg(_("^Can't talk to clamd server %s on port %d\n"),
 					hostname, tcpSocket);
 				if(serverIPs[i] == htonl(INADDR_LOOPBACK)) {
 					if(cfgopt(copt, "TCPAddr")->enabled)
@@ -4646,7 +4646,7 @@ connect2clamd(struct privdata *privdata)
 		 */
 		if((privdata->dataSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 			perror("socket");
-			logg(_("!failed to create TCPSocket to talk to clamd"));
+			logg(_("!failed to create TCPSocket to talk to clamd\n"));
 			return 0;
 		}
 
@@ -4657,9 +4657,9 @@ connect2clamd(struct privdata *privdata)
 		if(nbytes <= 0) {
 			if(nbytes < 0) {
 				perror("recv");
-				logg(_("!recv failed from clamd getting PORT"));
+				logg(_("!recv failed from clamd getting PORT\n"));
 			} else
-				logg(_("!EOF from clamd getting PORT"));
+				logg(_("!EOF from clamd getting PORT\n"));
 
 			pthread_mutex_lock(&sstatus_mutex);
 			session->status = CMDSOCKET_DOWN;
@@ -4670,9 +4670,9 @@ connect2clamd(struct privdata *privdata)
 		if(nbytes <= 0) {
 			if(nbytes < 0) {
 				perror("recv");
-				logg(_("!recv failed from clamd getting PORT"));
+				logg(_("!recv failed from clamd getting PORT\n"));
 			} else
-				logg(_("!EOF from clamd getting PORT"));
+				logg(_("!EOF from clamd getting PORT\n"));
 
 			return 0;
 		}
@@ -4683,7 +4683,7 @@ connect2clamd(struct privdata *privdata)
 			cli_dbgmsg("Received: %s", buf);
 #endif
 		if(sscanf(buf, "PORT %hu\n", &p) != 1) {
-			logg(_("!Expected port information from clamd, got '%s'"),
+			logg(_("!Expected port information from clamd, got '%s'\n"),
 				buf);
 #ifdef	SESSION
 			session->status = CMDSOCKET_DOWN;
@@ -5865,7 +5865,7 @@ loadDatabase(void)
 		cl_free(oldroot);
 		logg("#Database correctly reloaded (%u viruses)\n", signatures);
 	} else
-		cli_dbgmsg("Database loaded\n");
+		logg("*Database loaded\n");
 
 	return cl_statinidir(dbdir, &dbstat);
 }
@@ -5901,7 +5901,7 @@ sighup(int sig)
 static void
 sigusr2(int sig)
 {
-	signal(SIGUSR2, sighup);
+	signal(SIGUSR2, sigusr2);
 
 	logg("^SIGUSR2 caught: scheduling database reload\n");
 	reload++;
@@ -6745,11 +6745,11 @@ increment_connexions(void)
 		}
 		n_children++;
 
-		cli_dbgmsg(">n_children = %d\n", n_children);
+		logg("*>n_children = %d\n", n_children);
 		pthread_mutex_unlock(&n_children_mutex);
 
 		if(child_timeout && (rc == ETIMEDOUT))
-			logg(_("*Timeout waiting for a child to die\n"));
+			logg(_("Timeout waiting for a child to die\n"));
 	}
 
 	return 1;
@@ -6760,22 +6760,22 @@ decrement_connexions(void)
 {
 	if(max_children > 0) {
 		pthread_mutex_lock(&n_children_mutex);
-		cli_dbgmsg("decrement_connexions: n_children = %d\n", n_children);
+		logg("*decrement_connexions: n_children = %d\n", n_children);
 		/*
 		 * Deliberately errs on the side of broadcasting too many times
 		 */
 		if(n_children > 0)
 			if(--n_children == 0) {
-				cli_dbgmsg("%s is idle\n", progname);
+				logg("*%s is idle\n", progname);
 				if(pthread_cond_broadcast(&watchdog_cond) < 0)
 					perror("pthread_cond_broadcast");
 			}
 #ifdef	CL_DEBUG
-		cli_dbgmsg("pthread_cond_broadcast\n");
+		logg("*pthread_cond_broadcast\n");
 #endif
 		if(pthread_cond_broadcast(&n_children_cond) < 0)
 			perror("pthread_cond_broadcast");
-		cli_dbgmsg("<n_children = %d\n", n_children);
+		logg("*<n_children = %d\n", n_children);
 		pthread_mutex_unlock(&n_children_mutex);
 	}
 }
