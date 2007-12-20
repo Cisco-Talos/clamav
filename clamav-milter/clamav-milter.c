@@ -1198,10 +1198,12 @@ main(int argc, char **argv)
 
 			if(setuid(user->pw_uid) < 0)
 				perror(cpt->strarg);
+#ifdef	CL_DEBUG
 			else
-				logg(_("Running as user %s (UID %d, GID %d)\n"),
+				printf(_("Running as user %s (UID %d, GID %d)\n"),
 					cpt->strarg, (int)user->pw_uid,
 					(int)user->pw_gid);
+#endif
 
 			/*
 			 * Note, some O/Ss (e.g. OpenBSD/Fedora Linux) FORCE
@@ -1261,7 +1263,7 @@ main(int argc, char **argv)
 				}
 			}
 		} else
-			logg(_("^%s: running as root is not recommended (check \"User\" in %s)\n"), argv[0], cfgfile);
+			printf(_("^%s: running as root is not recommended (check \"User\" in %s)\n"), argv[0], cfgfile);
 	} else if(iface) {
 		fprintf(stderr, _("%s: Only root can set an interface for --broadcast\n"), argv[0]);
 		return EX_USAGE;
@@ -1559,7 +1561,9 @@ main(int argc, char **argv)
 			free(hostname);
 		}
 
-		logg("numServers: %d\n", numServers);
+#ifdef	CL_DEBUG
+		printf("numServers: %d\n", numServers);
+#endif
 
 		serverIPs = (in_addr_t *)cli_malloc(numServers * sizeof(in_addr_t));
 		if(serverIPs == NULL)
@@ -1634,7 +1638,7 @@ main(int argc, char **argv)
 						break;
 					if(checkClamd(1))	/* will try all servers */
 						break;
-					logg(_("Waiting for clamd to come up\n"));
+					puts(_("Waiting for clamd to come up"));
 					/*
 					 * something to do as the system starts
 					 */
@@ -1648,13 +1652,13 @@ main(int argc, char **argv)
 			if(pingServer(i))
 				activeServers++;
 			else {
-				logg(_("^Can't talk to clamd server %s on port %d\n"),
+				printf(_("Can't talk to clamd server %s on port %d\n"),
 					hostname, tcpSocket);
 				if(serverIPs[i] == htonl(INADDR_LOOPBACK)) {
 					if(cfgopt(copt, "TCPAddr")->enabled)
-						cli_warnmsg(_("Check the value for TCPAddr in %s\n"), cfgfile);
+						printf(_("Check the value for TCPAddr in %s\n"), cfgfile);
 				} else
-					cli_warnmsg(_("Check the value for TCPAddr in clamd.conf on %s\n"), hostname);
+					printf(_("Check the value for TCPAddr in clamd.conf on %s\n"), hostname);
 			}
 #endif
 
@@ -1670,15 +1674,14 @@ main(int argc, char **argv)
 			if(createSession(i) < 0)
 				return EX_UNAVAILABLE;
 		if(activeServers == 0) {
-			logg(_("!Can't find any clamd server\n"));
-			cli_warnmsg(_("Check your entry for TCPSocket in %s\n"),
+			fprintf(stderr, _("Check your entry for TCPSocket in %s\n"),
 				cfgfile);
 		}
 #else
 		if(activeServers == 0) {
-			cli_errmsg(_("Check your entry for TCPSocket in %s\n"),
+			fprintf(stderr, _("Check your entry for TCPSocket in %s\n"),
 				cfgfile);
-			logg(_("!Can't find any clamd server\n"));
+			fputs(_("Can't find any clamd server\n"), stderr);
 			return EX_CONFIG;
 		}
 		last_failed_pings = (time_t *)cli_calloc(numServers, sizeof(time_t));
@@ -2034,14 +2037,14 @@ main(int argc, char **argv)
 	}
 
 	if(smfi_register(smfilter) == MI_FAILURE) {
-		cli_errmsg("smfi_register failure, ensure that you have linked against the correct version of sendmail\n");
+		fprintf(stderr, "smfi_register failure, ensure that you have linked against the correct version of sendmail\n");
 		return EX_UNAVAILABLE;
 	}
 
 #if	((SENDMAIL_VERSION_A > 8) || ((SENDMAIL_VERSION_A == 8) && (SENDMAIL_VERSION_B >= 13)))
 	if(smfi_opensocket(1) == MI_FAILURE) {
 		perror(port);
-		cli_errmsg("Can't open/create %s\n", port);
+		fprintf(stderr, "Can't open/create %s\n", port);
 		return EX_CONFIG;
 	}
 #endif
@@ -2091,7 +2094,8 @@ main(int argc, char **argv)
 #endif
 
 	(void)signal(SIGSEGV, sigsegv);
-	(void)signal(SIGHUP, sighup);
+	if(!logg_foreground)
+		(void)signal(SIGHUP, sighup);
 	if(!external)
 		(void)signal(SIGUSR2, sigusr2);
 
@@ -5888,14 +5892,18 @@ sigsegv(int sig)
 static void
 sighup(int sig)
 {
-	const struct cfgstruct *cpt;
+	extern FILE *logg_fd;
 
 	signal(SIGHUP, sighup);
 
+	if(!(cfgopt(copt, "LogFile"))->enabled)
+		return;
+
 	logg("SIGHUP caught: re-opening log file\n");
 	logg_close();
-	if(!logg_file && (cpt = cfgopt(copt, "LogFile"))->enabled)
-		logg_file = cpt->strarg;
+	logg("*Log file re-opened\n");
+	close(2);
+	dup(fileno(logg_fd));
 }
 
 static void
@@ -5919,7 +5927,7 @@ print_trace(void)
 	size = backtrace(array, BACKTRACE_SIZE);
 	strings = backtrace_symbols(array, size);
 
-	cli_dbgmsg("Backtrace of pid %d:\n", pid);
+	logg("*Backtrace of pid %d:\n", pid);
 
 	for(i = 0; i < size; i++)
 		logg("bt[%u]: %s", i, strings[i]);
@@ -6018,7 +6026,7 @@ isWhitelisted(const char *emailaddress, int to)
 	static table_t *to_whitelist, *from_whitelist;	/* never freed */
 	table_t *table;
 
-	cli_dbgmsg("isWhitelisted %s\n", emailaddress);
+	logg("*isWhitelisted %s\n", emailaddress);
 
 	/*
 	 * Don't scan messages to the quarantine email address
@@ -6117,7 +6125,7 @@ isBlacklisted(const char *ip_address)
 		/* Blacklisting not being used */
 		return 0;
 
-	cli_dbgmsg("isBlacklisted %s\n", ip_address);
+	logg("*isBlacklisted %s\n", ip_address);
 
 	if(isLocal(ip_address))
 		return 0;
@@ -6574,7 +6582,7 @@ black_hole(const struct privdata *privdata)
 		FILE *sendmail;
 		char buf[BUFSIZ];
 
-		cli_dbgmsg("Calling \"%s -bv %s\"\n", SENDMAIL_BIN, *to);
+		logg("*Calling \"%s -bv %s\"\n", SENDMAIL_BIN, *to);
 
 		if(pipe(pv) < 0) {
 			perror("pipe");
@@ -6619,7 +6627,7 @@ black_hole(const struct privdata *privdata)
 			if(cli_chomp(buf) == 0)
 				continue;
 
-			cli_dbgmsg("sendmail output: %s\n", buf);
+			logg("*sendmail output: %s\n", buf);
 
 			if(strstr(buf, "... deliverable: mailer ")) {
 				const char *p = strstr(buf, ", user ");
@@ -6809,9 +6817,9 @@ nonblock_connect(int sock, const struct sockaddr_in *sin, const char *hostname)
 	flags = fcntl(sock, F_GETFL, 0);
 
 	if(flags == -1L)
-		cli_warnmsg("getfl: %s\n", strerror(errno));
+		logg("^getfl: %s\n", strerror(errno));
 	else if(fcntl(sock, F_SETFL, (long)(flags | O_NONBLOCK)) < 0)
-		cli_warnmsg("setfl: %s\n", strerror(errno));
+		logg("^setfl: %s\n", strerror(errno));
 #else
 	flags = -1L;
 #endif
@@ -6819,18 +6827,18 @@ nonblock_connect(int sock, const struct sockaddr_in *sin, const char *hostname)
 		switch(errno) {
 			case EALREADY:
 			case EINPROGRESS:
-				cli_dbgmsg("%s: connect: %s\n", hostname,
+				logg("*%s: connect: %s\n", hostname,
 					strerror(errno));
 				break; /* wait for connection */
 			case EISCONN:
 				return 0; /* connected */
 			default:
-				cli_warnmsg("%s: connect: %s\n",
-					hostname, strerror(errno));
+				logg("^%s: connect: %s\n", hostname,
+					strerror(errno));
 #ifdef	F_SETFL
 				if(flags != -1L)
 					if(fcntl(sock, F_SETFL, flags))
-						cli_warnmsg("f_setfl: %s\n", strerror(errno));
+						logg("^f_setfl: %s\n", strerror(errno));
 #endif
 				return -1; /* failed */
 		}
@@ -6838,7 +6846,7 @@ nonblock_connect(int sock, const struct sockaddr_in *sin, const char *hostname)
 #ifdef	F_SETFL
 		if(flags != -1L)
 			if(fcntl(sock, F_SETFL, flags))
-				cli_warnmsg("f_setfl: %s\n", strerror(errno));
+				logg("^f_setfl: %s\n", strerror(errno));
 #endif
 		return connect_error(sock, hostname);
 	}
@@ -6860,7 +6868,7 @@ nonblock_connect(int sock, const struct sockaddr_in *sin, const char *hostname)
 			(now.tv_sec > timeout.tv_sec);
 
 		if(t) {
-			cli_warnmsg("%s: connect timeout (%d secs)\n",
+			logg("^%s: connect timeout (%d secs)\n",
 				hostname, CONNECT_TIMEOUT);
 			break;
 		}
@@ -6879,27 +6887,27 @@ nonblock_connect(int sock, const struct sockaddr_in *sin, const char *hostname)
 
 		n = select(numfd, 0, &fds, 0, &waittime);
 		if(n < 0) {
-			cli_warnmsg("%s: select attempt %d %s\n",
+			logg("^%s: select attempt %d %s\n",
 				hostname, select_failures, strerror(errno));
 			if(--select_failures >= 0)
 				continue; /* not timed-out, try again */
 			break; /* failed */
 		}
 
-		cli_dbgmsg("%s: select = %d\n", hostname, n);
+		logg("*%s: select = %d\n", hostname, n);
 
 		if(n) {
 #ifdef	F_SETFL
 			if(flags != -1L)
 				if(fcntl(sock, F_SETFL, flags))
-					cli_warnmsg("f_setfl: %s\n", strerror(errno));
+					logg("^f_setfl: %s\n", strerror(errno));
 #endif
 			return connect_error(sock, hostname);
 		}
 
 		/* timeout */
 		if(attempts++ == NONBLOCK_MAX_ATTEMPTS) {
-			cli_warnmsg("timeout connecting to %s\n", hostname);
+			logg("^timeout connecting to %s\n", hostname);
 			break;
 		}
 	}
@@ -6907,7 +6915,7 @@ nonblock_connect(int sock, const struct sockaddr_in *sin, const char *hostname)
 #ifdef	F_SETFL
 	if(flags != -1L)
 		if(fcntl(sock, F_SETFL, flags))
-			cli_warnmsg("f_setfl: %s\n", strerror(errno));
+			logg("^f_setfl: %s\n", strerror(errno));
 #endif
 	return -1; /* failed */
 }
@@ -6922,7 +6930,7 @@ connect_error(int sock, const char *hostname)
 	getsockopt(sock, SOL_SOCKET, SO_ERROR, &optval, &optlen);
 
 	if(optval) {
-		cli_warnmsg("%s: %s\n", hostname, strerror(optval));
+		logg("^%s: %s\n", hostname, strerror(optval));
 		return -1;
 	}
 #endif

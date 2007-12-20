@@ -1,3 +1,7 @@
+Thu Dec 20 22:48:35 GMT 2007 (njh)
+----------------------------------
+  * clamav-milter:	Removed calls to cli_*msg()
+
 Thu Dec 20 12:09:22 GMT 2007 (njh)
 ----------------------------------
   * clamav-milter:	Fix handling of 2nd and subsequent SIGUSR2 calls
