@@ -42,10 +42,11 @@
 #include <pthread.h>
 
 #ifdef	USE_SYSLOG
+#include <strsafe.h>
 #include "syslog.h"
 #endif
 
-static const char *basename (const char *file_name);
+static	const	char	*basename(const char *file_name);
 
 /* Offset between 1/1/1601 and 1/1/1970 in 100 nanosec units */
 #define _W32_FT_OFFSET (116444736000000000ULL)
@@ -281,7 +282,7 @@ mmap(caddr_t address, size_t length, int protection, int flags, int fd, off_t of
 	struct mmap_context *ctx;
 
 	if(flags != MAP_PRIVATE) {
-		cli_errmsg("mmap: only MAP_SHARED is supported\n");
+		cli_errmsg("mmap: only MAP_PRIVATE is supported\n");
 		return MAP_FAILED;
 	}
 	if(protection != PROT_READ) {
@@ -334,27 +335,31 @@ mmap(caddr_t address, size_t length, int protection, int flags, int fd, off_t of
 int
 munmap(caddr_t addr, size_t length)
 {
-	struct mmap_context *ctx, *lctx = NULL;
+	struct mmap_context *ctx = mmaps, *lctx = NULL;
 
 	pthread_mutex_lock(&mmap_mutex);
-	for(ctx = mmaps; ctx && (ctx->view != addr); ) {
+	
+	for(; ctx && (ctx->view != addr); ctx = ctx->link)
 		lctx = ctx;
-		ctx = ctx->link;
-	}
+
 	if(ctx == NULL) {
 		pthread_mutex_unlock(&mmap_mutex);
 		cli_warnmsg("munmap with no corresponding mmap\n");
 		return -1;
 	}
+
 	if(ctx->length != length) {
 		pthread_mutex_unlock(&mmap_mutex);
-		cli_warnmsg("munmap with incorrect length specified - partial munmap unsupported\n");
+		cli_warnmsg("munmap with incorrect length specified (%u != %u) - partial munmap unsupported\n",
+			length, ctx->length);
 		return -1;
 	}
-	if(NULL == lctx)
+
+	if(lctx == NULL)
 		mmaps = ctx->link;
 	else
 		lctx->link = ctx->link;
+
 	pthread_mutex_unlock(&mmap_mutex);
 
 	UnmapViewOfFile(ctx->view);
@@ -375,16 +380,23 @@ chown(const char *filename, short uid, short gid)
  * Put into the Windows Event Log
  *	Right Click My Computer->Manage->Event Viewer->Application
  * See http://cybertiggyr.com/gene/wel/src/insert-log.c for inspiration
+ * http://msdn2.microsoft.com/en-gb/library/aa363634(VS.85).aspx
  * and http://msdn2.microsoft.com/en-us/library/aa363680(VS.85).aspx
  *
  * FIXME: Not thread safe, but see shared/output.c, which ensures this code is
  *	single threaded - therefore don't call this code directly
  */
 static	HANDLE	logg_handle;
+static	int	initlog(const wchar_t *source);
 
 void
 openlog(const char *name, int options, int facility)
 {
+	if(logg_handle != NULL)
+		closelog();
+	else
+		(void)initlog((const wchar_t *)name);
+
 	logg_handle = RegisterEventSource(NULL, name);
 
 	if(logg_handle == NULL)
@@ -414,6 +426,65 @@ syslog(int level, const char *format, ...)
 		 */
 		(void)ReportEvent(logg_handle, (WORD)level, 0, 0, NULL, 1, 0, (LPCSTR *)&buff, NULL);
 	}
+}
 
+static int
+initlog(const wchar_t *source)
+{
+	const wchar_t *logName = L"Application";	/* Name of the event log */
+	DWORD dwCategoryNum = 1;	/* The number of categories for the event source. */
+	HKEY hk; 
+	DWORD dwData, dwDisp, len;
+	size_t cchSize = MAX_PATH;
+	TCHAR szBuf[MAX_PATH];
+
+	/* Create the event source as a subkey of the log. */
+	(void)StringCchPrintf(szBuf, cchSize, 
+		L"SYSTEM\\CurrentControlSet\\Services\\EventLog\\%s\\%s",
+		logName, source);
+ 
+	if(RegCreateKeyEx(HKEY_LOCAL_MACHINE, szBuf, 
+	    0, NULL, REG_OPTION_NON_VOLATILE,
+	    KEY_WRITE, NULL, &hk, &dwDisp)) {
+		cli_warnmsg("Could not create the registry key\n"); 
+		/*return 0;*/
+	}
+ 
+	/* Set the name of the message file. */
+	len = (DWORD)((lstrlen(libclamav_dll) + 1) * sizeof(TCHAR));
+	
+	if(RegSetValueEx(hk, L"EventMessageFile", 0, REG_EXPAND_SZ, (LPBYTE)libclamav_dll, len)) {
+		cli_warnmsg("Could not set the event message file\n"); 
+		RegCloseKey(hk); 
+		return 0;
+	}
+ 
+	/* Set the supported event types. */
+ 
+	dwData = EVENTLOG_ERROR_TYPE | EVENTLOG_WARNING_TYPE | EVENTLOG_INFORMATION_TYPE; 
+ 
+	if(RegSetValueEx(hk, L"TypesSupported", 0, REG_DWORD, (LPBYTE)&dwData, sizeof(DWORD))) { 
+		cli_warnmsg("Could not set the supported types\n"); 
+		RegCloseKey(hk); 
+		return 0;
+	}
+ 
+	/* Set the category message file and number of categories. */
+
+	if(RegSetValueEx(hk, L"CategoryMessageFile", 0, REG_EXPAND_SZ,
+	    (LPBYTE)libclamav_dll, len)) {
+		cli_warnmsg("Could not set the category message file\n"); 
+		RegCloseKey(hk); 
+		return 0;
+	}
+ 
+	if(RegSetValueEx(hk, L"CategoryCount", 0, REG_DWORD, (LPBYTE)&dwCategoryNum, sizeof(DWORD))) {
+		cli_warnmsg("Could not set the category count\n"); 
+		RegCloseKey(hk); 
+		return 0;
+	}
+
+	RegCloseKey(hk); 
+	return 1;
 }
 #endif

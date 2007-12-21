@@ -41,21 +41,23 @@ static char _CONFDIR[MAX_PATH];
 static char _CONFFRESHCLAM[MAX_PATH];
 static char _CONFCLAMD[MAX_PATH];
 
-char *CONFDIR=_CONFDIR;
-char *CONFFRESHCLAM=_CONFFRESHCLAM;
-char *CONFCLAMD=_CONFCLAMD;
+char *CONFDIR =_CONFDIR;
+char *CONFFRESHCLAM =_CONFFRESHCLAM;
+char *CONFCLAMD =_CONFCLAMD;
+const	char	*LIBCLAMAV_DLL;	/* Read from the registry */
 
 #else
 const	char *CONFDIR = NULL;
 const	char *CONFFRESHCLAM = NULL;
 const	char *CONFCLAMD = NULL;
+const	char	*libclamav_dll = "C:\\Program Files\\clamAV\\libclamav.dll";
 #endif
 
 #ifdef _MANAGED
 #pragma managed(push, off)
 #endif
 #include <winerror.h>
-BOOL APIENTRY DllMain(HMODULE m, DWORD  wassup, LPVOID r)
+BOOL APIENTRY DllMain(HMODULE m, DWORD wassup, LPVOID r)
 {
 #ifdef	LATER
 	HKEY key;

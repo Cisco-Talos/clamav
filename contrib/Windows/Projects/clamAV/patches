@@ -30,49 +30,6 @@
   
   #define BSIZE 4096
   #define RWBUFF 2048
-*** /home/njh/src/clamav-devel/trunk/./libclamav/cvd.c	2007-12-19 13:48:48.000000000 +0000
---- ./libclamav/cvd.c	2007-12-18 19:00:28.000000000 +0000
-***************
-*** 179,185 ****
-  	char osize[13], name[101];
-  	char block[TAR_BLOCKSIZE];
-  	int nread, fdd, ret;
-! 	unsigned int type, size, pad;
-  	gzFile *infile;
-  	z_off_t off;
-  
---- 179,185 ----
-  	char osize[13], name[101];
-  	char block[TAR_BLOCKSIZE];
-  	int nread, fdd, ret;
-! 	unsigned int type, size;
-  	gzFile *infile;
-  	z_off_t off;
-  
-***************
-*** 256,266 ****
-  		return CL_EMALFDB;
-  	    }
-  	}
-- 	pad = size % TAR_BLOCKSIZE ? (TAR_BLOCKSIZE - (size % TAR_BLOCKSIZE)) : 0;
-  	if(off == gzseek(infile, 0, SEEK_CUR))
-! 	    gzseek(infile, size + pad, SEEK_CUR);
-! 	else if(pad)
-! 	    gzseek(infile, pad, SEEK_CUR);
-  
-      }
-  
---- 256,265 ----
-  		return CL_EMALFDB;
-  	    }
-  	}
-  	if(off == gzseek(infile, 0, SEEK_CUR))
-! 	    gzseek(infile, size + TAR_BLOCKSIZE - (size % TAR_BLOCKSIZE), SEEK_CUR);
-! 	else
-! 	    gzseek(infile, TAR_BLOCKSIZE - (size % TAR_BLOCKSIZE), SEEK_CUR);
-  
-      }
-  
 *** /home/njh/src/clamav-devel/trunk/./clamscan/clamscan.c	2007-12-06 18:32:26.000000000 +0000
 --- ./clamscan/clamscan.c	2007-09-07 18:08:50.000000000 +0100
 ***************
@@ -121,10 +78,22 @@
 + #endif
 + 
   #endif
-*** /home/njh/src/clamav-devel/trunk/./freshclam/manager.c	2007-12-11 20:35:17.000000000 +0000
---- ./freshclam/manager.c	2007-12-11 20:36:34.000000000 +0000
+*** /home/njh/src/clamav-devel/trunk/./freshclam/manager.c	2007-12-20 07:37:36.000000000 +0000
+--- ./freshclam/manager.c	2007-12-20 08:28:28.000000000 +0000
 ***************
-*** 210,216 ****
+*** 49,55 ****
+--- 49,57 ----
+  #include <time.h>
+  #include <fcntl.h>
+  #include <sys/stat.h>
++ #ifndef	C_WINDOWS
+  #include <dirent.h>
++ #endif
+  #include <errno.h>
+  
+  #include "manager.h"
+***************
+*** 211,217 ****
   		break;
   	}
           logg("!Can't get information about %s: %s\n", hostpt, herr);
@@ -132,7 +101,7 @@
   	return -1;
       }
   
---- 210,216 ----
+--- 213,219 ----
   		break;
   	}
           logg("!Can't get information about %s: %s\n", hostpt, herr);
@@ -141,7 +110,7 @@
       }
   
 ***************
-*** 242,248 ****
+*** 243,249 ****
   	if(connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in)) == -1) {
   #endif
   	    logg("Can't connect to port %d of host %s (IP: %s)\n", port, hostpt, ipaddr);
@@ -149,7 +118,7 @@
   	    if((socketfd = getclientsock(localip)) == -1)
   		return -1;
   
---- 242,248 ----
+--- 245,251 ----
   	if(connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in)) == -1) {
   #endif
   	    logg("Can't connect to port %d of host %s (IP: %s)\n", port, hostpt, ipaddr);
@@ -158,7 +127,7 @@
   		return -1;
   
 ***************
-*** 253,259 ****
+*** 254,260 ****
   	}
       }
   
@@ -166,7 +135,7 @@
       return -2;
   }
   
---- 253,259 ----
+--- 256,262 ----
   	}
       }
   
@@ -174,6 +143,23 @@
       return -2;
   }
   
+***************
+*** 878,884 ****
+      }
+  
+      while((dent = readdir(dir))) {
+! #ifndef C_INTERIX
+  	if(dent->d_ino)
+  #endif
+  	{
+--- 880,886 ----
+      }
+  
+      while((dent = readdir(dir))) {
+! #if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS))
+  	if(dent->d_ino)
+  #endif
+  	{
 *** /home/njh/src/clamav-devel/trunk/./clamd/scanner.c	2007-12-06 18:32:35.000000000 +0000
 --- ./clamd/scanner.c	2007-09-25 14:59:24.000000000 +0100
 ***************
@@ -262,7 +248,7 @@
   	logg("!ScanStream %u: Can't create temporary file.\n", port);
   	return -1;
 *** /home/njh/src/clamav-devel/trunk/./clamd/clamd.c	2007-12-18 21:45:04.000000000 +0000
---- ./clamd/clamd.c	2007-11-08 14:26:38.000000000 +0000
+--- ./clamd/clamd.c	2007-12-19 17:51:42.000000000 +0000
 ***************
 *** 35,41 ****
   #include <sys/stat.h>
@@ -319,6 +305,23 @@
   
       if(logg_size)
   	logg("Log file size limited to %d bytes.\n", logg_size);
+***************
+*** 373,379 ****
+  	    logg_close();
+  	    freecfg(copt);
+  	    if(tcpsock)
+! 		close(lsockets[0]);
+  	    return 1;
+  	}
+  	nlsockets++;
+--- 382,388 ----
+  	    logg_close();
+  	    freecfg(copt);
+  	    if(tcpsock)
+! 		closesocket(lsockets[0]);
+  	    return 1;
+  	}
+  	nlsockets++;
 *** /home/njh/src/clamav-devel/trunk/./clamd/server-th.c	2007-12-14 11:51:46.000000000 +0000
 --- ./clamd/server-th.c	2007-12-14 11:52:52.000000000 +0000
 ***************

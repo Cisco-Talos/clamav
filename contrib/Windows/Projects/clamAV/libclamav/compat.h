@@ -115,6 +115,8 @@ int	gettimeofday(struct timeval* tp, void* tz);
 #define	sleep(seconds)	Sleep(seconds * 1000)
 #define	pause();
 
+extern	const	char	*libclamav_dll;
+
 #ifdef	_DEBUG
 
 /* http://msdn2.microsoft.com/en-us/library/e5ewb1h3(VS.80).asp */
