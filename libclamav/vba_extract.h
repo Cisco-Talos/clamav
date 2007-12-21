@@ -1,9 +1,7 @@
 /*
  *  Extract VBA source code for component MS Office Documents
  *
- *  Copyright (C) 2004 trog@uncon.org
- *
- *  This code is based on the OpenOffice and libgsf sources.
+ *  Copyright (C) 2007 SourceFIRE Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -37,7 +35,7 @@ typedef struct vba_project_tag {
 
 vba_project_t	*cli_vba_readdir(const char *dir);
 unsigned char	*cli_vba_inflate(int fd, off_t offset, int *size);
-int cli_decode_ole_object(int fd, const char *dir);
+int	cli_decode_ole_object(int fd, const char *dir);
 char	*cli_ppt_vba_read(const char *filename);
 vba_project_t	*cli_wm_readdir(const char *dir);
 unsigned char	*cli_wm_decrypt_macro(int fd, off_t offset, uint32_t len,
