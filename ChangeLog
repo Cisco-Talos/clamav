@@ -1,3 +1,7 @@
+Sat Dec 22 00:10:53 CET 2007 (tk)
+---------------------------------
+  * libclamav: various platform-specific cleanups
+
 Fri Dec 21 10:39:22 GMT 2007 (njh)
 ----------------------------------
   * libclamav/vba_extract.c:	More tidies

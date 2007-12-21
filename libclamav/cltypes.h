@@ -25,42 +25,43 @@
 #include "clamav-config.h"
 #endif
 
-#ifdef HAVE_STDINT_H
-#include <stdint.h>
-#elif defined HAVE_SYS_INT_TYPES_H /*solaris*/
+#ifdef HAVE_SYS_INT_TYPES_H
+/* First to give it higher priority on Solaris */
 #include <sys/int_types.h>
-#elif defined HAVE_INTTYPES_H /*freebsd*/
+#elif defined(HAVE_INTTYPES_H)
+/* C99: inttypes.h should include stdint.h; more universal because some
+ * older platforms don't provide stdint.h
+ */
 #include <inttypes.h>
+#elif defined(HAVE_STDINT_H)
+#include <stdint.h>
 #else
-    typedef unsigned char uint8_t;      typedef signed char int8_t;
+    typedef signed char int8_t;
+    typedef unsigned char uint8_t;
 
-# if SIZEOF_INT == 2
-    typedef unsigned int uint16_t;      typedef signed int int16_t;
-# elif SIZEOF_SHORT == 2
-    typedef unsigned short uint16_t;    typedef signed short int16_t;
-# else
-#   error unable to typedef int16_t from either int or short
-    typedef unsigned short uint16_t;    typedef signed short int16_t;
-# endif
+#if SIZEOF_INT == 2
+    typedef signed int int16_t;
+    typedef unsigned int uint16_t;
+#elif SIZEOF_SHORT == 2
+    typedef signed short int16_t;
+    typedef unsigned short uint16_t;
+#endif
 
-# if SIZEOF_INT == 4
-    typedef unsigned int uint32_t;      typedef signed int int32_t;
-# elif SIZEOF_LONG == 4
-    typedef unsigned long uint32_t;     typedef signed long int32_t;
-# else
-#   error unable to typedef int32_t from either int or long
-    typedef unsigned long uint32_t;     typedef signed long int32_t;
-# endif
+#if SIZEOF_INT == 4
+    typedef signed int int32_t;
+    typedef unsigned int uint32_t;
+#elif SIZEOF_LONG == 4
+    typedef signed long int32_t;
+    typedef unsigned long uint32_t;
+#endif
 
-# if SIZEOF_LONG == 8
-    typedef unsigned long uint64_t;      typedef signed long int64_t;
-# elif SIZEOF_LONG_LONG == 8
-    typedef unsigned long long uint64_t;     typedef signed long long int64_t;
-# else
-#   error unable to typedef int64_t from either long or long long
-    typedef unsigned long long uint64_t;     typedef signed long long int64_t;
-# endif
-
+#if SIZEOF_LONG == 8
+    typedef signed long int64_t;
+    typedef unsigned long uint64_t;
+#elif SIZEOF_LONG_LONG == 8
+    typedef signed long long int64_t;
+    typedef unsigned long long uint64_t;
+#endif
 #endif
 
 #endif
