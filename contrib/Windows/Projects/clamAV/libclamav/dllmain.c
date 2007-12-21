@@ -44,13 +44,10 @@ static char _CONFCLAMD[MAX_PATH];
 char *CONFDIR =_CONFDIR;
 char *CONFFRESHCLAM =_CONFFRESHCLAM;
 char *CONFCLAMD =_CONFCLAMD;
-const	char	*LIBCLAMAV_DLL;	/* Read from the registry */
-
 #else
 const	char *CONFDIR = NULL;
 const	char *CONFFRESHCLAM = NULL;
 const	char *CONFCLAMD = NULL;
-const	char	*libclamav_dll = "C:\\Program Files\\clamAV\\libclamav.dll";
 #endif
 
 #ifdef _MANAGED

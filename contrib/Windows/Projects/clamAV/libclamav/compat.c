@@ -387,7 +387,7 @@ chown(const char *filename, short uid, short gid)
  *	single threaded - therefore don't call this code directly
  */
 static	HANDLE	logg_handle;
-static	int	initlog(const wchar_t *source);
+static	int	initlog(const char *source);
 
 void
 openlog(const char *name, int options, int facility)
@@ -395,7 +395,7 @@ openlog(const char *name, int options, int facility)
 	if(logg_handle != NULL)
 		closelog();
 	else
-		(void)initlog((const wchar_t *)name);
+		(void)initlog(name);
 
 	logg_handle = RegisterEventSource(NULL, name);
 
@@ -413,76 +413,82 @@ closelog(void)
 void
 syslog(int level, const char *format, ...)
 {
+	if(logg_handle == NULL)
+		openlog("Clam AntiVirus", 0, LOG_LOCAL6);
+		
 	if(logg_handle != NULL) {
 		va_list args;
 		char buff[512];
+		char *ptr;
 
 		va_start(args, format);
 		(void)vsnprintf(buff, sizeof(buff), format, args);
 		va_end(args);
+		
+		ptr = buff;
 
 		/*
-		 * Category = NULL, eventId = 0, SID = NULL, 1 string
+		 * Category = 0, eventId = CLAMAV_EVENTMSG, SID = NULL, 1 string
 		 */
-		(void)ReportEvent(logg_handle, (WORD)level, 0, 0, NULL, 1, 0, (LPCSTR *)&buff, NULL);
+		if(!ReportEventA(logg_handle, (WORD)level, 0, CLAMAV_EVENTMSG, NULL, 1, 0, (LPCSTR *)&ptr, NULL))
+			cli_warnmsg("syslog: ReportEventA(%d, %d, 0, %d, NULL, 1, 0, %s, NULL) failed: %d\n",
+				logg_handle, level, CLAMAV_EVENTMSG, buff, GetLastError());
 	}
 }
 
 static int
-initlog(const wchar_t *source)
+initlog(const char *source)
 {
-	const wchar_t *logName = L"Application";	/* Name of the event log */
-	DWORD dwCategoryNum = 1;	/* The number of categories for the event source. */
+	/*DWORD dwCategoryNum = 1;	/* The number of categories for the event source. */
 	HKEY hk; 
-	DWORD dwData, dwDisp, len;
-	size_t cchSize = MAX_PATH;
-	TCHAR szBuf[MAX_PATH];
+	DWORD dwData, /*dwDisp,*/ len;
+	char path[MAX_PATH];
 
 	/* Create the event source as a subkey of the log. */
-	(void)StringCchPrintf(szBuf, cchSize, 
-		L"SYSTEM\\CurrentControlSet\\Services\\EventLog\\%s\\%s",
-		logName, source);
+	(void)snprintf(path, sizeof(path),
+		"SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application\\%s",
+		source);
  
-	if(RegCreateKeyEx(HKEY_LOCAL_MACHINE, szBuf, 
-	    0, NULL, REG_OPTION_NON_VOLATILE,
-	    KEY_WRITE, NULL, &hk, &dwDisp)) {
+	if(RegCreateKey(HKEY_LOCAL_MACHINE, path, &hk) != 0) {
 		cli_warnmsg("Could not create the registry key\n"); 
 		/*return 0;*/
 	}
  
 	/* Set the name of the message file. */
-	len = (DWORD)((lstrlen(libclamav_dll) + 1) * sizeof(TCHAR));
-	
-	if(RegSetValueEx(hk, L"EventMessageFile", 0, REG_EXPAND_SZ, (LPBYTE)libclamav_dll, len)) {
+	GetModuleFileName(NULL, path, sizeof(path));
+	path[sizeof(path) - 1] = '\0';
+	len = (DWORD)(strlen(path) + 1);
+
+	if(RegSetValueEx(hk, "EventMessageFile", 0, REG_EXPAND_SZ, (LPBYTE)path, len)) {
 		cli_warnmsg("Could not set the event message file\n"); 
 		RegCloseKey(hk); 
 		return 0;
 	}
  
 	/* Set the supported event types. */
- 
 	dwData = EVENTLOG_ERROR_TYPE | EVENTLOG_WARNING_TYPE | EVENTLOG_INFORMATION_TYPE; 
  
-	if(RegSetValueEx(hk, L"TypesSupported", 0, REG_DWORD, (LPBYTE)&dwData, sizeof(DWORD))) { 
+	if(RegSetValueEx(hk, "TypesSupported", 0, REG_DWORD, (LPBYTE)&dwData, sizeof(DWORD))) { 
 		cli_warnmsg("Could not set the supported types\n"); 
 		RegCloseKey(hk); 
 		return 0;
 	}
  
+#if	0
 	/* Set the category message file and number of categories. */
-
-	if(RegSetValueEx(hk, L"CategoryMessageFile", 0, REG_EXPAND_SZ,
-	    (LPBYTE)libclamav_dll, len)) {
+	if(RegSetValueEx(hk, "CategoryMessageFile", 0, REG_EXPAND_SZ,
+	    (LPBYTE)path, len)) {
 		cli_warnmsg("Could not set the category message file\n"); 
 		RegCloseKey(hk); 
 		return 0;
 	}
  
-	if(RegSetValueEx(hk, L"CategoryCount", 0, REG_DWORD, (LPBYTE)&dwCategoryNum, sizeof(DWORD))) {
+	if(RegSetValueEx(hk, "CategoryCount", 0, REG_DWORD, (LPBYTE)&dwCategoryNum, sizeof(DWORD))) {
 		cli_warnmsg("Could not set the category count\n"); 
 		RegCloseKey(hk); 
 		return 0;
 	}
+#endif
 
 	RegCloseKey(hk); 
 	return 1;

@@ -69,6 +69,7 @@
 				UseUnicodeResponseFiles="false"
 				AdditionalOptions="/SAFESEH"
 				AdditionalDependencies="&quot;$(TargetDir)\libclamav.lib&quot; ws2_32.lib"
+				Version="0.92"
 				LinkIncremental="2"
 				GenerateManifest="true"
 				DelayLoadDLLs=""
@@ -156,6 +157,7 @@
 				UseUnicodeResponseFiles="false"
 				AdditionalOptions="/SAFESEH"
 				AdditionalDependencies="&quot;$(TargetDir)\libclamav.lib&quot; ws2_32.lib"
+				Version="0.92"
 				LinkIncremental="1"
 				GenerateManifest="true"
 				DelayLoadDLLs=""
@@ -331,6 +333,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\resource2.h"
+				>
+			</File>
+			<File
 				RelativePath=".\scanner.h"
 				>
 			</File>
@@ -360,6 +366,10 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+			<File
+				RelativePath="..\libclamav\eventlog.rc"
+				>
+			</File>
 		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"

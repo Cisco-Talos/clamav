@@ -68,7 +68,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				UseUnicodeResponseFiles="false"
 				AdditionalDependencies="ws2_32.lib &quot;$(ProjectDir)pthread\pthreadVC2.lib&quot; &quot;$(TargetDir)\libclamunrar_iface.lib&quot;"
+				Version="0.92"
 				ModuleDefinitionFile="$(InputDir)/libclamav.def"
 				GenerateDebugInformation="true"
 				AssemblyDebug="1"
@@ -152,7 +154,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				UseUnicodeResponseFiles="false"
 				AdditionalDependencies="ws2_32.lib &quot;$(ProjectDir)pthread\pthreadVC2.lib&quot; &quot;$(TargetDir)\libclamunrar_iface.lib&quot;"
+				Version="0.92"
 				ModuleDefinitionFile="$(InputDir)/libclamav.def"
 				SubSystem="2"
 			/>
@@ -296,10 +300,6 @@
 			</File>
 			<File
 				RelativePath=".\line.c"
-				>
-			</File>
-			<File
-				RelativePath=".\lockdb.c"
 				>
 			</File>
 			<File
@@ -653,6 +653,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\eventlog.h"
+				>
+			</File>
+			<File
 				RelativePath=".\execs.h"
 				>
 			</File>
@@ -694,10 +698,6 @@
 			</File>
 			<File
 				RelativePath=".\line.h"
-				>
-			</File>
-			<File
-				RelativePath=".\lockdb.h"
 				>
 			</File>
 			<File

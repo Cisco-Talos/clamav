@@ -19,6 +19,9 @@
  * Syslog compatibility for Windows
  * Tested under Microsoft Visual Studio 2005
  */
+ 
+#include "eventlog.h"	/* generated from eventlog.mc by mc -U eventlog.mc */
+
 #define	LOG_ERR		EVENTLOG_ERROR_TYPE	/* or EVENTLOG_AUDIT_FAILURE? */
 #define	LOG_WARNING	EVENTLOG_WARNING_TYPE
 #define	LOG_INFO	EVENTLOG_INFORMATION_TYPE
@@ -30,6 +33,6 @@
 
 #define	LOG_PID		0x01
 
-void	openlog(const char *name, int options , int facility);
+void	openlog(const char *name, int options, int facility);
 void	closelog(void);
 void	syslog(int level, const char *format, ...);
