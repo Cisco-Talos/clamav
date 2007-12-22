@@ -1,3 +1,8 @@
+Sat Dec 22 02:07:55 CET 2007 (tk)
+---------------------------------
+  * freshclam/manager.c: improve db check; make new db available already
+			 in unlink-rename time window
+
 Sat Dec 22 00:10:53 CET 2007 (tk)
 ---------------------------------
   * libclamav: various platform-specific cleanups

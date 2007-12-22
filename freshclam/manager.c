@@ -910,7 +910,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	const struct cfgstruct *cpt;
 	unsigned int nodb = 0, currver = 0, newver = 0, port = 0, i, j;
 	int ret, ims = -1;
-	char *pt, cvdfile[32], localname[32], *tmpdir = NULL, *newfile, cwd[512];
+	char *pt, cvdfile[32], localname[32], *tmpdir = NULL, *newfile, newdb[512], cwd[512];
 	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL;
 	unsigned int flevel = cl_retflevel(), maxattempts;
 	int ctimeout, rtimeout;
@@ -1099,32 +1099,49 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	}
     }
 
-    if(!nodb && !access(cvdfile, R_OK) && unlink(cvdfile)) {
-	logg("!Can't unlink %s. Please fix it and try again.\n", cvdfile);
+    if(!(current = cl_cvdhead(newfile))) {
+	logg("!Can't parse new database %s\n",newfile);
 	unlink(newfile);
 	free(newfile);
-	return 53;
+	return 55; /* FIXME */
     }
 
-    if(!nodb && strcmp(cvdfile, localname) && !access(localname, R_OK) && unlink(localname)) {
-	logg("!Can't unlink %s. Please fix it and try again.\n", localname);
+    if(strlen(newfile) > 507) { /* shouldn't happen */
+	logg("!newfile: File name too long\n");
 	unlink(newfile);
 	free(newfile);
-	return 53;
+	return 70; /* FIXME */
     }
 
-    if(rename(newfile, localname) == -1) {
-	logg("!Can't rename %s to %s\n", newfile, localname);
+    if(strstr(localname, ".cld"))
+	snprintf(newdb, sizeof(newdb), "%s.cld", newfile);
+    else
+	snprintf(newdb, sizeof(newdb), "%s.cvd", newfile);
+
+    if(rename(newfile, newdb) == -1) {
+	logg("!Can't rename %s to %s\n", newfile, newdb);
 	unlink(newfile);
 	free(newfile);
 	return 57;
     }
     free(newfile);
 
-    if(!(current = cl_cvdhead(localname))) {
-	logg("!Can't parse new database %s\n", localname);
-	unlink(localname);
-	return 55; /* FIXME */
+    if(!nodb && !access(cvdfile, R_OK) && unlink(cvdfile)) {
+	logg("!Can't unlink %s. Please fix it and try again.\n", cvdfile);
+	unlink(newdb);
+	return 53;
+    }
+
+    if(!nodb && strcmp(cvdfile, localname) && !access(localname, R_OK) && unlink(localname)) {
+	logg("!Can't unlink %s. Please fix it and try again.\n", localname);
+	unlink(newdb);
+	return 53;
+    }
+
+    if(rename(newdb, localname) == -1) {
+	logg("!Can't rename %s to %s\n", newdb, localname);
+	unlink(newdb);
+	return 57;
     }
 
     logg("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
