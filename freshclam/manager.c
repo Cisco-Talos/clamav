@@ -51,6 +51,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <errno.h>
+#include <zlib.h>
 
 #include "manager.h"
 #include "notify.h"
@@ -820,12 +821,13 @@ static struct cl_cvd *currentdb(const char *dbname, char *localname)
     return cvd;
 }
 
-static int buildcld(const char *tmpdir, const char *dbname, const char *newfile)
+static int buildcld(const char *tmpdir, const char *dbname, const char *newfile, unsigned int compr)
 {
 	DIR *dir;
 	char cwd[512], info[32], buff[512], *pt;
 	struct dirent *dent;
 	int fd;
+	gzFile *gzs = NULL;
 
 
     getcwd(cwd, sizeof(cwd));
@@ -868,13 +870,24 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile)
 	close(fd);
 	return -1;
     }
-    close(fd);
 
     if((dir = opendir(".")) == NULL) {
 	logg("!buildcld: Can't open directory %s\n", tmpdir);
 	chdir(cwd);
 	unlink(newfile);
+	close(fd);
 	return -1;
+    }
+
+    if(compr) {
+	close(fd);
+	if(!(gzs = gzopen(newfile, "ab"))) {
+	    logg("!buildcld: gzopen() failed for %s\n", newfile);
+	    chdir(cwd);
+	    unlink(newfile);
+	    closedir(dir);
+	    return -1;
+	}
     }
 
     while((dent = readdir(dir))) {
@@ -885,9 +898,13 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile)
 	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, ".."))
 		continue;
 
-	    if(tar_addfile(newfile, dent->d_name) == -1) {
+	    if(tar_addfile(fd, gzs, dent->d_name) == -1) {
 		logg("!buildcld: Can't add %s to .cld file\n", dent->d_name);
 		chdir(cwd);
+		if(gzs)
+		    gzclose(gzs);
+		else
+		    close(fd);
 		unlink(newfile);
 		closedir(dir);
 		return -1;
@@ -895,6 +912,20 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile)
 	}
     }
     closedir(dir);
+
+    if(gzs) {
+	if(gzclose(gzs)) {
+	    logg("!buildcld: gzclose() failed for %s\n", newfile);
+	    unlink(newfile);
+	    return -1;
+	}
+    } else {
+	if(close(fd) == -1) {
+	    logg("!buildcld: close() failed for %s\n", newfile);
+	    unlink(newfile);
+	    return -1;
+	}
+    }
 
     if(chdir(cwd) == -1) {
 	logg("!buildcld: Can't return to previous directory %s\n", cwd);
@@ -1086,7 +1117,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	    }
 	    snprintf(localname, sizeof(localname), "%s.cvd", dbname);
 	} else {
-	    if(buildcld(tmpdir, dbname, newfile) == -1) {
+	    if(buildcld(tmpdir, dbname, newfile, cfgopt(copt, "CompressLocalDatabase")->enabled) == -1) {
 		logg("!Can't create local database\n");
 		cli_rmdirs(tmpdir);
 		free(tmpdir);

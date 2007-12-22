@@ -1,3 +1,7 @@
+Sat Dec 22 21:52:51 CET 2007 (tk)
+---------------------------------
+  * freshclam: new option CompressLocalDatabase (default: no)
+
 Sat Dec 22 02:07:55 CET 2007 (tk)
 ---------------------------------
   * freshclam/manager.c: improve db check; make new db available already

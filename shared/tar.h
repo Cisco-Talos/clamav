@@ -21,6 +21,8 @@
 #ifndef __TAR_H
 #define __TAR_H
 
-int tar_addfile(const char *tar, const char *file);
+#include <zlib.h>
+
+int tar_addfile(int fd, gzFile *gzs, const char *file);
 
 #endif

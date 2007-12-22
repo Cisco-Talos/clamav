@@ -29,6 +29,7 @@
 #ifdef  HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <zlib.h>
 
 #include "tar.h"
 
@@ -50,17 +51,14 @@ struct tar_header {
 };
 #define TARBLK 512
 
-int tar_addfile(const char *tar, const char *file)
+int tar_addfile(int fd, gzFile *gzs, const char *file)
 {
-	int s, d, bytes;
+	int s, bytes;
 	struct tar_header hdr;
 	struct stat sb;
 	unsigned char buff[FILEBUFF], *pt;
 	unsigned int i, chksum = 0;
 
-
-    if((d = open(tar, O_WRONLY|O_APPEND|O_CREAT|O_BINARY, 0644)) == -1)
-	return -1;
 
     if((s = open(file, O_RDONLY|O_BINARY)) == -1) {
 	close(s);
@@ -68,7 +66,6 @@ int tar_addfile(const char *tar, const char *file)
     }
 
     if(fstat(s, &sb) == -1) {
-	close(d);
 	close(s);
 	return -1;
     }
@@ -81,29 +78,43 @@ int tar_addfile(const char *tar, const char *file)
 	chksum += *pt++;
     snprintf(hdr.chksum, 8, "%06o", chksum + 256);
 
-    if(write(d, &hdr, TARBLK) != TARBLK) {
-	close(d);
-	close(s);
-	return -1;
+    if(gzs) {
+	if(!gzwrite(gzs, &hdr, TARBLK)) {
+	    close(s);
+	    return -1;
+	}
+    } else {
+	if(write(fd, &hdr, TARBLK) != TARBLK) {
+	    close(s);
+	    return -1;
+	}
     }
 
     while((bytes = read(s, buff, FILEBUFF)) > 0) {
-	if(write(d, buff, bytes) != bytes) {
-	    close(d);
-	    close(s);
-	    return -1;
+	if(gzs) {
+	    if(!gzwrite(gzs, buff, bytes)) {
+		close(s);
+		return -1;
+	    }
+	} else {
+	    if(write(fd, buff, bytes) != bytes) {
+		close(s);
+		return -1;
+	    }
 	}
     }
+    close(s);
 
     if(sb.st_size % TARBLK) {
 	memset(&hdr, 0, TARBLK);
-	if(write(d, &hdr, TARBLK - (sb.st_size % TARBLK)) == -1) {
-	    close(d);
-	    close(s);
-	    return -1;
+	if(gzs) {
+	    if(!gzwrite(gzs, &hdr, TARBLK - (sb.st_size % TARBLK)))
+		return -1;
+	} else {
+	    if(write(fd, &hdr, TARBLK - (sb.st_size % TARBLK)) == -1)
+		return -1;
 	}
     }
 
-    close(s);
-    return close(d);
+    return 0;
 }
