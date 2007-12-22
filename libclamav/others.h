@@ -143,7 +143,7 @@ static inline int32_t cli_readint32(const char *buff)
     return ret;
 }
 
-static inline int16_t cli_readint32(const char *buff)
+static inline int16_t cli_readint16(const char *buff)
 {
 	int16_t ret;
     ret = buff[0] & 0xff;
