@@ -96,7 +96,6 @@ typedef struct unrar_state_tag {
     unrar_main_header_t *main_hdr;
     char *comment_dir;
     unsigned long file_count;
-    off_t offset;
     int fd, ofd;
     char filename[1024];
 } unrar_state_t;

@@ -377,7 +377,6 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
     state->main_hdr = main_hdr;
     state->metadata_tail = state->metadata = NULL;
     state->file_count = 1;
-    state->offset = offset;
     state->fd = fd;
 
     return UNRAR_OK;
@@ -457,7 +456,7 @@ int unrar_extract_next(unrar_state_t *state, const char *dirname)
 
 
     if(lseek(state->fd, state->file_header->start_offset+state->file_header->head_size, SEEK_SET) != state->file_header->start_offset+state->file_header->head_size) {
-	unrar_dbgmsg("UNRAR: Seek failed: %ld\n", state->offset+state->file_header->head_size);
+	unrar_dbgmsg("UNRAR: Seek failed: %ld\n", state->file_header->start_offset+state->file_header->head_size);
 	free(state->file_header->filename);
 	free(state->file_header);
 	return UNRAR_ERR;
