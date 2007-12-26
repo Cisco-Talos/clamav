@@ -200,7 +200,7 @@ int wwunpack(uint8_t *exe, uint32_t exesz, uint8_t *wwsect, struct cli_exe_secti
       }
 
       if(!CLI_ISCONTAINED(exe, exesz, ucur, backsize) || !CLI_ISCONTAINED(exe, exesz, ucur-backbytes, backsize)) error=1;
-      while(backsize--) {
+      else while(backsize--) {
 	*ucur=*(ucur-backbytes);
 	ucur++;
       }
