@@ -419,7 +419,7 @@ static int prepare_file(int fd, chm_metadata_t *metadata)
 {
 	uint64_t name_len, section;
 
-	while (metadata->chunk_entries--) {
+	while (metadata->chunk_entries != 0) {
 		if (metadata->chunk_current >= metadata->chunk_end) {
 			return CL_EFORMAT;
 		}
@@ -433,7 +433,8 @@ static int prepare_file(int fd, chm_metadata_t *metadata)
 		metadata->chunk_current += name_len;
 		section = read_enc_int(&metadata->chunk_current, metadata->chunk_end);
 		metadata->file_offset = read_enc_int(&metadata->chunk_current, metadata->chunk_end);
-                metadata->file_length = read_enc_int(&metadata->chunk_current, metadata->chunk_end);
+		metadata->file_length = read_enc_int(&metadata->chunk_current, metadata->chunk_end);
+		metadata->chunk_entries--;
 		if (section == 1) {
 			return CL_SUCCESS;
 		}
@@ -836,16 +837,20 @@ int cli_chm_prepare_file(int fd, char *dirname, chm_metadata_t *metadata)
 	
 	cli_dbgmsg("in cli_chm_prepare_file\n");
 
-	if (metadata->chunk_entries == 0) {
-		if (metadata->num_chunks == 0) {
-			return CL_BREAK;
+	do {
+		if (metadata->chunk_entries == 0) {
+			if (metadata->num_chunks == 0) {
+				return CL_BREAK;
+			}
+			if ((retval = read_chunk(metadata, fd)) != CL_SUCCESS) {
+				return retval;
+			}
+			metadata->num_chunks--;
+			metadata->chunk_offset += metadata->itsp_hdr.block_len;
 		}
-		if ((retval = read_chunk(metadata, fd)) != CL_SUCCESS) {
-			return retval;
-		}
-	}
-
-	return prepare_file(fd, metadata);
+		retval = prepare_file(fd, metadata);
+	} while (retval == CL_BREAK); /* Ran out of chunk entries before finding a file */
+	return retval;
 }
 
 int cli_chm_open(int fd, const char *dirname, chm_metadata_t *metadata)
