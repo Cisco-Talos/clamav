@@ -210,7 +210,7 @@ AC_CHECK_LIB(nsl, gethostent, [LIBS="$LIBS -lnsl"; CLAMAV_MILTER_LIBS="$CLAMAV_M
 
 AC_CHECK_LIB(iconv, libiconv_open, LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -liconv")
 
-AC_CHECK_FUNCS(poll setsid memcpy snprintf vsnprintf strerror_r strlcpy strlcat inet_ntop setgroups initgroups ctime_r mkstemp)
+AC_CHECK_FUNCS(poll setsid memcpy snprintf vsnprintf strerror_r strlcpy strlcat strcasestr inet_ntop setgroups initgroups ctime_r mkstemp)
 AC_FUNC_MMAP
 AC_FUNC_FSEEKO
 

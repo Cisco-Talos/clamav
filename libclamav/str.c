@@ -397,6 +397,24 @@ char *cli_strrcpy(char *dest, const char *source) /* by NJH */
     return --dest;
 }
 
+#ifndef HAVE_STRCASESTR
+const char* cli_strcasestr(const char* a, const char *b)
+{
+	/*
+	 * From http://unixpapa.com/incnote/string.html, which has this notice:
+	 * All of the C code on this page is public domain and may be used without concern for licenses. Some was contributed by Dan Cross.
+	 */
+	size_t l;
+	char f[3];
+
+	snprintf(f, sizeof(f), "%c%c", tolower(*b), toupper(*b));
+	for (l = strcspn(a, f); l != strlen(a); l += strcspn(a + l + 1, f) + 1)
+		if (strncasecmp(a + l, b, strlen(b)) == 0)
+			return(a + l);
+	return(NULL);
+}
+#endif
+
 void cli_strtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens)
 {
 	size_t tokens_found;

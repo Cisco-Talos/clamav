@@ -23,6 +23,12 @@
 
 #include "cltypes.h"
 
+#ifdef HAVE_STRCASESTR
+#define cli_strcasestr strcasestr
+#else
+const char *cli_strcasestr(const char *haystack, const char *needle);
+#endif
+
 int cli_strbcasestr(const char *haystack, const char *needle);
 int cli_chomp(char *string);
 char *cli_strtok(const char *line, int field, const char *delim);
