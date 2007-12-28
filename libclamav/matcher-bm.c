@@ -150,7 +150,7 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	struct cli_target_info info;
 
 
-    if(!root->bm_shift)
+    if(!root || !root->bm_shift)
 	return CL_CLEAN;
 
     if(length < BM_MIN_LENGTH)

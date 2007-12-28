@@ -1,3 +1,7 @@
+Fri Dec 28 13:06:56 CET 2007 (acab)
+-----------------------------------
+  * libclamav/matcher-bm.c: typo causing null dereference on mdb matches
+
 Fri Dec 28 13:53:33 EET 2007 (edwin)
 ------------------------------------
   * libclamav/phishcheck.h, regex_list.[ch], rtf.c:
