@@ -36,9 +36,9 @@ enum phish_status {CL_PHISH_NODECISION=0, CL_PHISH_CLEAN=CL_PHISH_BASE,
 #define CL_PHISH_ALL_CHECKS (CLEANUP_URL|CHECK_SSL|CHECK_CLOAKING|CHECK_IMG_URL)
 
 struct string {
-	int refcount;
 	struct string* ref;
 	char* data;
+	int refcount;
 };
 
 struct phishcheck {

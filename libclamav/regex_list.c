@@ -77,15 +77,15 @@ typedef unsigned char* char_bitmap_p;
  */
 struct tree_node {
 	struct tree_node* next;/* next regex/complex sibling, or parent, if no more siblings , can't be NULL except for root node*/
-	unsigned char c;
-	enum token_op_t op;
-	char alternatives;/* number of (non-regex) children of node, i.e. sizeof(children)*/
-	char listend;/* no more siblings, next pointer is pointer to parent*/
 	union {
 		struct tree_node** children;/* alternatives nr. of children, followed by (a null pointer terminated) regex leaf node pointers) */
 		char_bitmap_p* bitmap;
 		struct leaf_info*  leaf;
 	} u;
+	enum token_op_t op;
+	unsigned char c;
+	char alternatives;/* number of (non-regex) children of node, i.e. sizeof(children)*/
+	char listend;/* no more siblings, next pointer is pointer to parent*/
 };
 
 struct leaf_info {

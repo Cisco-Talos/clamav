@@ -50,6 +50,10 @@ typedef int (*rtf_callback_process)(struct rtf_state*, const unsigned char* data
 typedef int (*rtf_callback_end)(struct rtf_state*, cli_ctx*);
 
 struct rtf_state {
+	rtf_callback_begin cb_begin;/* must be non-null if you want cb_process, and cb_end to be called, also it must change cb_data to non-null */
+	rtf_callback_process cb_process;
+	rtf_callback_end cb_end;
+	void* cb_data;/* data set up by cb_begin, used by cb_process, and cleaned up by cb_end. typically state data */
 	size_t default_elements;
 	size_t controlword_cnt;
 	ssize_t controlword_param;
@@ -57,14 +61,10 @@ struct rtf_state {
 	int  controlword_param_sign;
 	int  encounteredTopLevel;/* encountered top-level control words that we care about */
 	char controlword[33];
-	rtf_callback_begin cb_begin;/* must be non-null if you want cb_process, and cb_end to be called, also it must change cb_data to non-null */
-	rtf_callback_process cb_process;
-	rtf_callback_end cb_end;
-	void* cb_data;/* data set up by cb_begin, used by cb_process, and cleaned up by cb_end. typically state data */
 };
 
 static const struct rtf_state base_state = {
-	0,0,0,PARSE_MAIN,0,0,"                              ",NULL,NULL,NULL,NULL
+	NULL,NULL,NULL,NULL,0,0,0,PARSE_MAIN,0,0,"                              "
 };
 
 struct stack {

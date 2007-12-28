@@ -1,3 +1,8 @@
+Fri Dec 28 13:53:33 EET 2007 (edwin)
+------------------------------------
+  * libclamav/phishcheck.h, regex_list.[ch], rtf.c:
+	avoid holes in data-structures due to alignment.
+
 Thu Dec 27 14:21:52 GMT 2007 (trog)
 -----------------------------------
   * libclamav/chmunpack.c: fix bb#740
