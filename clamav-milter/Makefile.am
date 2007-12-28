@@ -35,7 +35,7 @@ clamav_milter_SOURCES = \
     $(top_srcdir)/shared/network.h \
     clamav-milter.c
 
-man_MANS = $(top_srcdir)/docs/man/clamav-milter.8
+man_MANS = $(top_builddir)/docs/man/clamav-milter.8
 
 endif
 endif

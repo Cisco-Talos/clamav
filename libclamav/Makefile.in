@@ -52,6 +52,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+@VERSIONSCRIPT_TRUE@am__append_1 = -Wl,--version-script=@top_srcdir@/libclamav/libclamav.map
 subdir = libclamav
 DIST_COMMON = $(include_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
@@ -92,6 +93,14 @@ libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 libclamav_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libclamav_la_LDFLAGS) $(LDFLAGS) -o $@
+libclamav_internal_utils_la_LIBADD =
+am_libclamav_internal_utils_la_OBJECTS = str.lo others.lo md5.lo
+libclamav_internal_utils_la_OBJECTS =  \
+	$(am_libclamav_internal_utils_la_OBJECTS)
+libclamav_internal_utils_la_LINK = $(LIBTOOL) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(libclamav_internal_utils_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I. -I$(top_builddir)@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -104,8 +113,10 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libclamav_la_SOURCES)
-DIST_SOURCES = $(libclamav_la_SOURCES)
+SOURCES = $(libclamav_la_SOURCES) \
+	$(libclamav_internal_utils_la_SOURCES)
+DIST_SOURCES = $(libclamav_la_SOURCES) \
+	$(libclamav_internal_utils_la_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-dvi-recursive install-exec-recursive \
@@ -249,7 +260,8 @@ SUBDIRS = lzma .
 INCLUDES = -I$(top_srcdir) -I@srcdir@/nsis -I@srcdir@/lzma
 @ENABLE_UNRAR_FALSE@libclamav_la_LIBADD = @LIBCLAMAV_LIBS@ @THREAD_LIBS@ lzma/liblzma.la
 @ENABLE_UNRAR_TRUE@libclamav_la_LIBADD = @LIBCLAMAV_LIBS@ @THREAD_LIBS@ lzma/liblzma.la $(top_builddir)/libclamunrar_iface/libclamunrar_iface.la
-libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
+libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ \
+	-no-undefined $(am__append_1)
 include_HEADERS = clamav.h
 libclamav_la_SOURCES = \
 	clamav.h \
@@ -397,9 +409,18 @@ libclamav_la_SOURCES = \
 	dconf.c \
 	dconf.h \
 	lzma_iface.c \
-	lzma_iface.h
+	lzma_iface.h \
+	libclamav.map
 
-lib_LTLIBRARIES = libclamav.la
+libclamav_internal_utils_la_SOURCES = str.c \
+				    str.h \
+				    others.c \
+				    others.h \
+				    md5.c \
+				    md5.h
+
+libclamav_internal_utils_la_LDFLAGS = -static
+lib_LTLIBRARIES = libclamav.la libclamav_internal_utils.la
 EXTRA_DIST = regex/engine.c
 all: all-recursive
 
@@ -463,6 +484,8 @@ clean-libLTLIBRARIES:
 	done
 libclamav.la: $(libclamav_la_OBJECTS) $(libclamav_la_DEPENDENCIES) 
 	$(libclamav_la_LINK) -rpath $(libdir) $(libclamav_la_OBJECTS) $(libclamav_la_LIBADD) $(LIBS)
+libclamav_internal_utils.la: $(libclamav_internal_utils_la_OBJECTS) $(libclamav_internal_utils_la_DEPENDENCIES) 
+	$(libclamav_internal_utils_la_LINK) -rpath $(libdir) $(libclamav_internal_utils_la_OBJECTS) $(libclamav_internal_utils_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

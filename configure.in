@@ -254,6 +254,39 @@ fi
 AC_MSG_RESULT($ZLIB_HOME)
 ])
 
+AC_CACHE_CHECK([for ld --version-script], [ac_cv_ld_version_script], [dnl
+  cat > conftest.c <<EOF
+void cl_symbol1(void) {}
+void cli_symbol2(void) {}
+EOF
+  cat > conftest.map <<EOF
+RELEASE
+{
+	global:
+		cl_*;
+	local:
+		*;
+};
+PRIVATE
+{
+	global:
+		cli_*;
+	local:
+		*;
+};
+EOF
+  if AC_TRY_COMMAND([${CC-cc} $CFLAGS $pic_flag $LDFLAGS -shared
+				-o conftest.so conftest.c
+				-Wl,--version-script,conftest.map
+		       1>&AS_MESSAGE_LOG_FD]);
+  then
+      ac_cv_ld_version_script=yes
+  else
+      ac_cv_ld_version_script=no
+  fi
+ rm -f conftest*])
+AM_CONDITIONAL(VERSIONSCRIPT, test "x$ac_cv_ld_version_script" = "xyes")
+
 AC_ARG_ENABLE(zlib-vcheck,
 [  --disable-zlib-vcheck	  do not check for buggy zlib version ],
 zlib_check=$enableval, zlib_check="yes")

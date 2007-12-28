@@ -1,3 +1,10 @@
+Fri Dec 28 23:23:40 EET 2007 (edwin)
+------------------------------------
+  * configure, libclamav/Makefile.in/am : add ld version script support.
+       cl_ symbols are exported with a CLAMAV_PUBLIC version,
+       cli_ symbols with a CLAMAV_PRIVATE version.
+  * clamav-milter/Makefile.in/am: fix out-of-tree builds of manpage.
+
 Fri Dec 28 16:37:43 EET 2007 (edwin)
 ------------------------------------
   * configure, libclamav/str.[ch] : strcasestr() check and replacement.
