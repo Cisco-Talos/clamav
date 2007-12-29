@@ -2282,7 +2282,7 @@ pingServer(int serverNumber)
 
 	shutdown(sock, SHUT_WR);
 
-	nbytes = clamd_recv(sock, buf, sizeof(buf));
+	nbytes = clamd_recv(sock, buf, sizeof(buf) - 1);
 
 	close(sock);
 
@@ -2293,7 +2293,7 @@ pingServer(int serverNumber)
 	if(nbytes == 0)
 		return 0;
 
-	buf[nbytes - 1] = '\0';
+	buf[nbytes] = '\0';
 
 	/* Remove the trailing new line from the reply */
 	if((ptr = strchr(buf, '\n')) != NULL)
