@@ -37,6 +37,14 @@
 #define __attribute__(x)
 #endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
+
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1
+#endif
+
 #define EC32(x) le32_to_host(x)
 #define EC16(x) le16_to_host(x)
 
@@ -49,7 +57,15 @@ struct msexp_hdr {
     uint32_t magic2;
     uint16_t magic3;
     uint32_t fsize;
-} __attribute((packed));
+} __attribute__((packed));
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack()
+#endif
+
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack
+#endif
 
 #define BSIZE 4096
 #define RWBUFF 2048
