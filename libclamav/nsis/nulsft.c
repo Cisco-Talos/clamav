@@ -32,8 +32,8 @@
 #include "others.h"
 #include "cltypes.h"
 #include "nsis_bzlib.h"
-#include "lzma_iface.h"
 #include "zlib.h"
+#include "lzma_iface.h"
 #include "matcher.h"
 #include "scanners.h"
 #include "nulsft.h" /* SHUT UP GCC -Wextra */

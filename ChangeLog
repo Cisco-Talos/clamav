@@ -1,3 +1,8 @@
+Sat Dec 29 14:41:29 CET 2007 (acab)
+-----------------------------------
+  * libclamav:	Misc fixes to make gcc 3.4.6 work on solaris
+  		(requested by Edwin)
+
 Sat Dec 29 12:36:36 EET 2007 (edwin)
 ------------------------------------
   * libclamav/others.h: fix typo causing build failure on ppc.

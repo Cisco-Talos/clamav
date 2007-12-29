@@ -66,9 +66,6 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 liblzma_la_LIBADD =
 am_liblzma_la_OBJECTS = LzmaStateDecode.lo
 liblzma_la_OBJECTS = $(am_liblzma_la_OBJECTS)
-liblzma_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(liblzma_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I. -I$(top_builddir)@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -216,7 +213,6 @@ liblzma_la_SOURCES = LzmaStateDecode.c \
 		     LzmaStateDecode.h \
 		     LzmaTypes.h
 
-liblzma_la_LDFLAGS = -static
 all: all-am
 
 .SUFFIXES:
@@ -260,7 +256,7 @@ clean-noinstLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 liblzma.la: $(liblzma_la_OBJECTS) $(liblzma_la_DEPENDENCIES) 
-	$(liblzma_la_LINK)  $(liblzma_la_OBJECTS) $(liblzma_la_LIBADD) $(LIBS)
+	$(LINK)  $(liblzma_la_OBJECTS) $(liblzma_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
