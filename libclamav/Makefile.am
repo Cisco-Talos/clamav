@@ -192,5 +192,6 @@ libclamav_internal_utils_la_SOURCES=str.c \
 
 libclamav_internal_utils_la_LDFLAGS=-static
 
-lib_LTLIBRARIES = libclamav.la libclamav_internal_utils.la
+lib_LTLIBRARIES = libclamav.la
+noinst_LTLIBRARIES = libclamav_internal_utils.la
 EXTRA_DIST = regex/engine.c

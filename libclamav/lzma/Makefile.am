@@ -19,7 +19,9 @@
 
 AM_CFLAGS = -fPIC -DPIC
 
-lib_LTLIBRARIES = liblzma.la
-liblzma_la_SOURCES = LzmaStateDecode.c
+noinst_LTLIBRARIES = liblzma.la
+liblzma_la_SOURCES = LzmaStateDecode.c \
+		     LzmaStateDecode.h \
+		     LzmaTypes.h
 liblzma_la_LDFLAGS = -static
 

@@ -1,3 +1,8 @@
+Sat Dec 29 12:36:36 EET 2007 (edwin)
+------------------------------------
+  * libclamav/others.h: fix typo causing build failure on ppc.
+    libclamav/Makefile.in/am: minor cleanup
+
 Fri Dec 28 23:23:40 EET 2007 (edwin)
 ------------------------------------
   * configure, libclamav/Makefile.in/am : add ld version script support.

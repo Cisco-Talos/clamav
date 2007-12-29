@@ -72,7 +72,7 @@ am__vpath_adj = case $$p in \
 am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
-LTLIBRARIES = $(lib_LTLIBRARIES)
+LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
 @ENABLE_UNRAR_FALSE@libclamav_la_DEPENDENCIES = lzma/liblzma.la
 @ENABLE_UNRAR_TRUE@libclamav_la_DEPENDENCIES = lzma/liblzma.la \
 @ENABLE_UNRAR_TRUE@	$(top_builddir)/libclamunrar_iface/libclamunrar_iface.la
@@ -420,7 +420,8 @@ libclamav_internal_utils_la_SOURCES = str.c \
 				    md5.h
 
 libclamav_internal_utils_la_LDFLAGS = -static
-lib_LTLIBRARIES = libclamav.la libclamav_internal_utils.la
+lib_LTLIBRARIES = libclamav.la
+noinst_LTLIBRARIES = libclamav_internal_utils.la
 EXTRA_DIST = regex/engine.c
 all: all-recursive
 
@@ -482,10 +483,19 @@ clean-libLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
+
+clean-noinstLTLIBRARIES:
+	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
+	@list='$(noinst_LTLIBRARIES)'; for p in $$list; do \
+	  dir="`echo $$p | sed -e 's|/[^/]*$$||'`"; \
+	  test "$$dir" != "$$p" || dir=.; \
+	  echo "rm -f \"$${dir}/so_locations\""; \
+	  rm -f "$${dir}/so_locations"; \
+	done
 libclamav.la: $(libclamav_la_OBJECTS) $(libclamav_la_DEPENDENCIES) 
 	$(libclamav_la_LINK) -rpath $(libdir) $(libclamav_la_OBJECTS) $(libclamav_la_LIBADD) $(LIBS)
 libclamav_internal_utils.la: $(libclamav_internal_utils_la_OBJECTS) $(libclamav_internal_utils_la_DEPENDENCIES) 
-	$(libclamav_internal_utils_la_LINK) -rpath $(libdir) $(libclamav_internal_utils_la_OBJECTS) $(libclamav_internal_utils_la_LIBADD) $(LIBS)
+	$(libclamav_internal_utils_la_LINK)  $(libclamav_internal_utils_la_OBJECTS) $(libclamav_internal_utils_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -864,7 +874,7 @@ maintainer-clean-generic:
 clean: clean-recursive
 
 clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
-	mostlyclean-am
+	clean-noinstLTLIBRARIES mostlyclean-am
 
 distclean: distclean-recursive
 	-rm -rf ./$(DEPDIR)
@@ -925,12 +935,12 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 
 .PHONY: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) CTAGS GTAGS \
 	all all-am check check-am clean clean-generic \
-	clean-libLTLIBRARIES clean-libtool ctags ctags-recursive \
-	distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am \
+	clean-libLTLIBRARIES clean-libtool clean-noinstLTLIBRARIES \
+	ctags ctags-recursive distclean distclean-compile \
+	distclean-generic distclean-libtool distclean-tags distdir dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
 	install-includeHEADERS install-info install-info-am \
 	install-libLTLIBRARIES install-man install-pdf install-pdf-am \
 	install-ps install-ps-am install-strip installcheck \
