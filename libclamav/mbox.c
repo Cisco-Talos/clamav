@@ -187,8 +187,7 @@ typedef	unsigned	int	in_addr_t;
 #define EISCONN	WSAEISCONN
 #endif
 
-/* Needs HAVE_STRCASSTR test in configure */
-#ifndef	C_LINUX
+#ifndef HAVE_STRCASESTR
 #define	strcasestr(h, n)	strstr(h, n)	/* This will cause isBounceMessage() to match too much */
 #endif
 
@@ -1577,7 +1576,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 						continue;
 #ifdef	BUGFIX647	/* do not define, it slows it all down */
 					/*
-					 * TODO: will this be a performance hog? 
+					 * TODO: will this be a performance hog?
 					 * Needed to handle (broken?) email headers like:
 					 * Content-
 					 * Transfer-Encoding:quoted-printable
