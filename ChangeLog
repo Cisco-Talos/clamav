@@ -1,3 +1,7 @@
+Sat Dec 29 15:05:11 GMT 2007 (njh)
+----------------------------------
+  * clamav-milter:	Correct nul termination in ping response from clamd
+
 Sat Dec 29 16:02:47 EET 2007 (edwin)
 ------------------------------------
   * libclamav: the ugly hack isn't needed on Solaris after all, if building

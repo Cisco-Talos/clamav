@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-20071220"
+#define	CM_VERSION	"devel-20071229"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2293,7 +2293,7 @@ pingServer(int serverNumber)
 	if(nbytes == 0)
 		return 0;
 
-	buf[nbytes] = '\0';
+	buf[nbytes - 1] = '\0';
 
 	/* Remove the trailing new line from the reply */
 	if((ptr = strchr(buf, '\n')) != NULL)
@@ -2542,7 +2542,8 @@ findServer(void)
 /*
  * How many servers are up at the moment? If a server is marked as down,
  *	don't keep on flooding it with requests to see if it's now back up
- * If only one server is active, let the caller know
+ * If only one server is active, let the caller know, which server is the
+ *	active one
  */
 static int
 active_servers(int *active)
@@ -2617,6 +2618,8 @@ try_server(void *var)
 
 /*
  * Sendmail wants to establish a connexion to us
+ * TODO: is it possible (desirable?) to determine if the remote machine has been
+ *	compromised?
  */
 static sfsistat
 clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
