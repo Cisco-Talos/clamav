@@ -22,9 +22,6 @@
 #ifndef __LZMA_IFACE_H
 #define __LZMA_IFACE_H
 
-/* DIRTY HACK TO COMPILE ON SOLARIS GCC 3.4.6 */
-#define Byte BByte
-/* DIRTY HACK TO COMPILE ON SOLARIS GCC 3.4.6 */
 
 #include "LzmaStateDecode.h"
 #include "cltypes.h"

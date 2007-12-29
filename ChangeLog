@@ -1,3 +1,8 @@
+Sat Dec 29 16:02:47 EET 2007 (edwin)
+------------------------------------
+  * libclamav: the ugly hack isn't needed on Solaris after all, if building
+  with system zlib. Instead defining only Z_BLOCK is enough.
+
 Sat Dec 29 14:41:29 CET 2007 (acab)
 -----------------------------------
   * libclamav:	Misc fixes to make gcc 3.4.6 work on solaris

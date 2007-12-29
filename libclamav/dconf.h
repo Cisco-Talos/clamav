@@ -19,11 +19,6 @@
 #ifndef __DCONF_H
 #define __DCONF_H
 
-/* DIRTY HACK TO COMPILE ON SOLARIS GCC 3.4.6 */
-#ifdef Byte
-#undef Byte
-#endif
-/* DIRTY HACK TO COMPILE ON SOLARIS GCC 3.4.6 */
 
 #include <stdio.h>
 #include <zlib.h>

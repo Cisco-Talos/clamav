@@ -48,6 +48,10 @@
 
 #include <zlib.h> /* adler/crc32 */
 
+#ifndef Z_BLOCK
+#define Z_BLOCK 5
+#endif
+
 #ifndef local
 #  define local static
 #endif
