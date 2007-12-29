@@ -1,0 +1,57 @@
+CLAMAV_PUBLIC {
+  global:
+    cl_*;
+  local:
+    *;
+};
+CLAMAV_PRIVATE {
+  global:
+    cli_ac_setdepth;
+    cli_strtok;
+    cli_untgz;
+    cli_regcomp;
+    cli_regexec;
+    cli_regfree;
+    cli_strrcpy;
+    cli_strbcasestr;
+    cli_gentemp;
+    cli_gentempfd;
+    cli_rmdirs;
+    cli_chomp;
+    cli_rndnum;
+    cli_decodesig;
+
+    cli_calloc;
+    cli_ole2_extract;
+    cli_errmsg;
+    cli_dbgmsg;
+    cli_vba_readdir;
+    cli_vba_inflate;
+    cli_ppt_vba_read;
+    cli_wm_readdir;
+    cli_wm_decrypt_macro;
+    cli_readn;
+    cli_str2hex;
+    cli_md5file;
+    cli_md5stream;
+    html_normalise_fd;
+    cli_utf16toascii;
+
+    cli_malloc;
+    cli_strtok_buf;
+    cli_memstr;
+    cli_strdup;
+    cli_realloc;
+    tableCreate;
+    tableDestroy;
+    tableRemove;
+    tableFind;
+    tableIterate;
+    tableUpdate;
+    tableInsert;
+    cli_warnmsg;
+    cli_strtokbuf;
+    cli_leavetemps_flag;
+  local:
+    *;
+};
