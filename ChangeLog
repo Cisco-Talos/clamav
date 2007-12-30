@@ -1,3 +1,7 @@
+Sun Dec 30 13:57:45 EET 2007 (edwin)
+-----------------------------------
+ * libclamav/str.c: optimize cli_strcasestr()
+
 Sat Dec 29 20:18:40 GMT 2007 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Bug 693

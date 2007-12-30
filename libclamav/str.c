@@ -406,10 +406,14 @@ const char* cli_strcasestr(const char* a, const char *b)
 	 */
 	size_t l;
 	char f[3];
+	const size_t strlen_a = strlen(a);
+	const size_t strlen_b = strlen(b);
 
-	snprintf(f, sizeof(f), "%c%c", tolower(*b), toupper(*b));
-	for (l = strcspn(a, f); l != strlen(a); l += strcspn(a + l + 1, f) + 1)
-		if (strncasecmp(a + l, b, strlen(b)) == 0)
+	f[0] = tolower(*b);
+	f[1] = toupper(*b);
+	f[2] = '\0';
+	for (l = strcspn(a, f); l != strlen_a; l += strcspn(a + l + 1, f) + 1)
+		if (strncasecmp(a + l, b, strlen_b) == 0)
 			return(a + l);
 	return(NULL);
 }
