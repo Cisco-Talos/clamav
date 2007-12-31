@@ -1059,7 +1059,7 @@ main(int argc, char **argv)
 #ifdef	SESSION
 	if(!external) {
 		fprintf(stderr,
-			_("%s: SESSIONS mode requires --external\n"));
+			_("%s: SESSIONS mode requires --external\n"), argv[0]);
 		return EX_USAGE;
 	}
 #endif
