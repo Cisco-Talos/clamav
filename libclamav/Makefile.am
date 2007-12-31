@@ -29,7 +29,7 @@ endif
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 if VERSIONSCRIPT
-libclamav_la_LDFLAGS += -Wl,--version-script=@top_srcdir@/libclamav/libclamav.map
+libclamav_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamav/libclamav.map
 endif
 
 include_HEADERS = clamav.h
@@ -180,8 +180,7 @@ libclamav_la_SOURCES = \
 	dconf.c \
 	dconf.h \
 	lzma_iface.c \
-	lzma_iface.h \
-	libclamav.map
+	lzma_iface.h
 
 libclamav_internal_utils_la_SOURCES=str.c \
 				    str.h \
@@ -194,4 +193,4 @@ libclamav_internal_utils_la_LDFLAGS=-static
 
 lib_LTLIBRARIES = libclamav.la
 noinst_LTLIBRARIES = libclamav_internal_utils.la
-EXTRA_DIST = regex/engine.c
+EXTRA_DIST = regex/engine.c libclamav.map

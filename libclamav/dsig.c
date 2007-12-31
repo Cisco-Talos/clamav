@@ -148,4 +148,9 @@ int cli_versig(const char *md5, const char *dsig)
     cli_dbgmsg("cli_versig: Digital signature is correct.\n");
     return CL_SUCCESS;
 }
+#else
+/* since we are using linker version scripts, we must define all symbols listed in the .map,
+ * otherwise linking will fail (at least on Solaris).
+ * So here is a dummy definition for cli_decodesig.*/
+unsigned char *cli_decodesig() {}
 #endif

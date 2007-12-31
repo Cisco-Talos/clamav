@@ -37,6 +37,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+@ENABLE_UNRAR_TRUE@@VERSIONSCRIPT_TRUE@am__append_1 = -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamunrar/libclamunrar.map
 subdir = libclamunrar
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -154,6 +155,7 @@ STRIP = @STRIP@
 THREAD_LIBS = @THREAD_LIBS@
 TH_SAFE = @TH_SAFE@
 VERSION = @VERSION@
+VERSIONSCRIPTFLAG = @VERSIONSCRIPTFLAG@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -211,7 +213,9 @@ target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 @ENABLE_UNRAR_TRUE@INCLUDES = -I$(top_srcdir)
-@ENABLE_UNRAR_TRUE@libclamunrar_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
+@ENABLE_UNRAR_TRUE@libclamunrar_la_LDFLAGS = @TH_SAFE@ -version-info \
+@ENABLE_UNRAR_TRUE@	@LIBCLAMAV_VERSION@ -no-undefined \
+@ENABLE_UNRAR_TRUE@	$(am__append_1)
 @ENABLE_UNRAR_TRUE@libclamunrar_la_SOURCES = \
 @ENABLE_UNRAR_TRUE@	unrar15.c \
 @ENABLE_UNRAR_TRUE@	unrar20.h \
@@ -232,6 +236,7 @@ top_srcdir = @top_srcdir@
 @ENABLE_UNRAR_TRUE@	unrarhlp.h
 
 @ENABLE_UNRAR_TRUE@lib_LTLIBRARIES = libclamunrar.la
+@ENABLE_UNRAR_TRUE@EXTRA_DIST = libclamunrar.map
 all: all-am
 
 .SUFFIXES:

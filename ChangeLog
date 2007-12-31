@@ -1,3 +1,13 @@
+Mon Dec 31 14:08:40 EET 2007 (edwin)
+------------------------------------
+ * configure*: add support for version scripts when using Sun's ld on Solaris.
+ * acinclude.m4: use $GREP to grep binary files, needed for autoit to build on
+ Solaris.
+ * */Makefile.am/.in: add support for both GNU and Sun ld version scripts.
+ * */*.map: add version script maps to libclamunrar, libclamunrar_iface.
+  Enumerate all symbols, Sun's ld doesn't support cl_* (only *).
+ * libclamav/dsig.c: cli_decodesig needs a dummy definition on Solaris.
+
 Sun Dec 30 13:57:45 EET 2007 (edwin)
 -----------------------------------
  * libclamav/str.c: optimize cli_strcasestr()

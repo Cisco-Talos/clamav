@@ -594,10 +594,10 @@ AC_DEFUN([AC_C_FPU_BIGENDIAN],
 [AC_CACHE_CHECK([whether FPU byte ordering is bigendian], [ac_cv_c_fpu_bigendian],
 [ac_cv_c_fpu_bigendian=unknown
 AC_COMPILE_IFELSE([AC_LANG_SOURCE([[double d = 3815911171354501045744583353695226502220105394563506259449467213186125718792664588210662403287568710818873279842508553551908601408568128557088985172985437412593385138085986771664896.0;]])],[
-if grep emmeelle conftest.$ac_objext >/dev/null 2>&1 ; then
+if ${GREP-grep} emmeelle conftest.$ac_objext >/dev/null 2>&1 ; then
 	ac_cv_c_fpu_bigendian=yes
 fi
-if grep elleemme conftest.$ac_objext >/dev/null 2>&1 ; then
+if ${GREP-grep} elleemme conftest.$ac_objext >/dev/null 2>&1 ; then
 	ac_cv_c_fpu_bigendian=no
 fi
 ])])

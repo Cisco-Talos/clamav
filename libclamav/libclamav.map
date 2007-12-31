@@ -1,6 +1,26 @@
 CLAMAV_PUBLIC {
   global:
-    cl_*;
+    cl_build;
+    cl_cvdfree;
+    cl_cvdhead;
+    cl_cvdparse;
+    cl_cvdverify;
+    cl_debug;
+    cl_dup;
+    cl_free;
+    cl_load;
+    cl_loaddb;
+    cl_loaddbdir;
+    cl_retdbdir;
+    cl_retflevel;
+    cl_retver;
+    cl_scandesc;
+    cl_scanfile;
+    cl_settempdir;
+    cl_statchkdir;
+    cl_statfree;
+    cl_statinidir;
+    cl_strerror;
   local:
     *;
 };
@@ -38,7 +58,6 @@ CLAMAV_PRIVATE {
     cli_utf16toascii;
 
     cli_malloc;
-    cli_strtok_buf;
     cli_memstr;
     cli_strdup;
     cli_realloc;

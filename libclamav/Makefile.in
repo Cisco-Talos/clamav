@@ -52,7 +52,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@VERSIONSCRIPT_TRUE@am__append_1 = -Wl,--version-script=@top_srcdir@/libclamav/libclamav.map
+@VERSIONSCRIPT_TRUE@am__append_1 = -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamav/libclamav.map
 subdir = libclamav
 DIST_COMMON = $(include_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
@@ -200,6 +200,7 @@ STRIP = @STRIP@
 THREAD_LIBS = @THREAD_LIBS@
 TH_SAFE = @TH_SAFE@
 VERSION = @VERSION@
+VERSIONSCRIPTFLAG = @VERSIONSCRIPTFLAG@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -409,8 +410,7 @@ libclamav_la_SOURCES = \
 	dconf.c \
 	dconf.h \
 	lzma_iface.c \
-	lzma_iface.h \
-	libclamav.map
+	lzma_iface.h
 
 libclamav_internal_utils_la_SOURCES = str.c \
 				    str.h \
@@ -422,7 +422,7 @@ libclamav_internal_utils_la_SOURCES = str.c \
 libclamav_internal_utils_la_LDFLAGS = -static
 lib_LTLIBRARIES = libclamav.la
 noinst_LTLIBRARIES = libclamav_internal_utils.la
-EXTRA_DIST = regex/engine.c
+EXTRA_DIST = regex/engine.c libclamav.map
 all: all-recursive
 
 .SUFFIXES:
