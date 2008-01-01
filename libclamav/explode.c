@@ -283,10 +283,8 @@ int explode(struct xplstate *X) {
 	  X->backsize|=val<<(15-X->got);
 	  if((temp=lookup_tree(X->len_tree, 64, X->backsize, X->got))!=-1) break;
 	}
-	if(temp==-1) {
-	  cli_dbgmsg("HERE3\n");
-	  return EXPLODE_ESTREAM;
-	}
+	if(temp==-1) return EXPLODE_ESTREAM;
+
 	if(temp==63) {
 	  SETCASE(EXPLODE_DECODEEXTRA);
 	  GETBITS(8);
