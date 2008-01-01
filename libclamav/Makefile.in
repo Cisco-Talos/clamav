@@ -88,7 +88,7 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	pdf.lo spin.lo yc.lo elf.lo sis.lo uuencode.lo pst.lo \
 	phishcheck.lo phish_domaincheck_db.lo phish_whitelist.lo \
 	regex_list.lo mspack.lo cab.lo entconv.lo hashtab.lo dconf.lo \
-	lzma_iface.lo
+	lzma_iface.lo explode.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 libclamav_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -410,7 +410,9 @@ libclamav_la_SOURCES = \
 	dconf.c \
 	dconf.h \
 	lzma_iface.c \
-	lzma_iface.h
+	lzma_iface.h \
+	explode.c \
+	explode.h
 
 libclamav_internal_utils_la_SOURCES = str.c \
 				    str.h \
@@ -515,6 +517,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dsig.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/elf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/entconv.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/explode.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/filetypes.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fsg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hashtab.Plo@am__quote@

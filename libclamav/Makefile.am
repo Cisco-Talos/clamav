@@ -180,7 +180,9 @@ libclamav_la_SOURCES = \
 	dconf.c \
 	dconf.h \
 	lzma_iface.c \
-	lzma_iface.h
+	lzma_iface.h \
+	explode.c \
+	explode.h
 
 libclamav_internal_utils_la_SOURCES=str.c \
 				    str.h \

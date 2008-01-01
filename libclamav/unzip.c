@@ -45,6 +45,7 @@
 #include <bzlib.h>
 #endif
 
+#include "explode.h"
 #include "others.h"
 #include "clamav.h"
 #include "scanners.h"
@@ -62,7 +63,7 @@ static int wrap_inflateinit2(void *a, int b) {
   return inflateInit2(a, b);
 }
 
-static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, unsigned int *fu, cli_ctx *ctx, char *tmpd) {
+static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, uint16_t flags, unsigned int *fu, cli_ctx *ctx, char *tmpd) {
   char name[1024], obuf[BUFSIZ];
   char *tempfile = name;
   int of, ret=CL_CLEAN;
@@ -84,7 +85,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, un
     if(csize<usize) {
       unsigned int fake = *fu + 1;
       cli_dbgmsg("cli_unzip: attempting to inflate stored file with inconsistent size\n");
-      if ((ret=unz(src, csize, usize, ALG_DEFLATE, &fake, ctx, tmpd))==CL_CLEAN) {
+      if ((ret=unz(src, csize, usize, ALG_DEFLATE, 0, &fake, ctx, tmpd))==CL_CLEAN) {
 	(*fu)++;
 	res=fake-(*fu);
       }
@@ -206,7 +207,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, un
 	    break;
 	  }
 	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->limits->maxfilesize);
-	  res = Z_STREAM_END;
+	  res = BZ_STREAM_END;
 	  break;
 	}
 	if(cli_writen(of, obuf, sizeof(obuf)-strm.avail_out) != (int)(sizeof(obuf)-strm.avail_out)) {
@@ -216,6 +217,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, un
 	}
 	strm.next_out = obuf;
 	strm.avail_out = sizeof(obuf);
+	continue;
       }
       break;
     }
@@ -226,6 +228,45 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, un
     break;
   }
 #endif /* HAVE_BZLIB_H */
+
+
+  case ALG_IMPLODE: {
+    struct xplstate strm;
+    strm.next_in = (char *)src;
+    strm.next_out = obuf;
+    strm.avail_in = csize;
+    strm.avail_out = sizeof(obuf);
+    if (explode_init(&strm, flags)!=EXPLODE_OK) {
+      cli_dbgmsg("cli_unzip: explode_init() failed\n");
+      break;
+    }
+    while((res = explode(&strm))==EXPLODE_OK) {
+      if(strm.avail_out!=sizeof(obuf)) {
+	written+=sizeof(obuf)-strm.avail_out;
+	if(ctx->limits && ctx->limits->maxfilesize && written > ctx->limits->maxfilesize) {
+	  if(BLOCKMAX) {
+	    *ctx->virname = "Zip.ExceededFileSize";
+	    ret = CL_VIRUS;
+	    break;
+	  }
+	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->limits->maxfilesize);
+	  res = 0;
+	  break;
+	}
+	if(cli_writen(of, obuf, sizeof(obuf)-strm.avail_out) != (int)(sizeof(obuf)-strm.avail_out)) {
+	  cli_warnmsg("cli_unzip: falied to write %lu exploded bytes\n", sizeof(obuf)-strm.avail_out);
+	  ret = CL_EIO;
+	  res=1;
+	}
+	strm.next_out = obuf;
+	strm.avail_out = sizeof(obuf);
+	continue;
+      }
+      break;
+    }
+    break;
+  }
+
 
   case ALG_LZMA:
     /* easy but there's not a single sample in the zoo */
@@ -238,7 +279,6 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, un
   case ALG_REDUCE2:
   case ALG_REDUCE3:
   case ALG_REDUCE4:
-  case ALG_IMPLODE:
   case ALG_TOKENZD:
   case ALG_OLDTERSE:
   case ALG_RSVD1:
@@ -365,7 +405,7 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
       *ctx->virname = "Oversized.Zip";
       *ret = CL_VIRUS;
       return 0;
-    } else *ret = unz(zip, csize, usize, LH_method, fu, ctx, tmpd);
+    } else *ret = unz(zip, csize, usize, LH_method, LH_flags, fu, ctx, tmpd);
     zip+=csize;
     zsize-=csize;
   }
