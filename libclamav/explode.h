@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007 Sourcefire Inc.
+ *  Copyright (C) 2008 Sourcefire Inc.
  *  Author: aCaB <acab@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
