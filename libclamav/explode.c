@@ -38,6 +38,7 @@
 #endif
 
 #include "explode.h"
+#include "others.h"
 
 /* NOTE: sorting algo must be stable! */
 static void bs(uint8_t *k, uint8_t *v, unsigned int elements) {
@@ -151,7 +152,7 @@ int explode_init(struct xplstate *X, uint8_t flags) {
   } else {					\
     if(!X->avail_in) return EXPLODE_EBUFF;	\
     if(X->avail_in>=4) {			\
-      X->bitmap=*(uint32_t *)X->next_in;	\
+      X->bitmap=cli_readint32(X->next_in);	\
       X->bits=31;				\
       X->next_in+=4;				\
       X->avail_in-=4;				\
@@ -175,7 +176,7 @@ int explode_init(struct xplstate *X, uint8_t flags) {
     if(X->avail_in*8+X->bits<(NUM)) return EXPLODE_EBUFF;	\
     val=X->bitmap;						\
     if(X->avail_in>=4) {					\
-      X->bitmap=*(uint32_t *)X->next_in;			\
+      X->bitmap=cli_readint32(X->next_in);			\
       X->next_in+=4;						\
       X->avail_in-=4;						\
       val|=(X->bitmap&((1<<((NUM)-X->bits))-1))<<X->bits;	\
@@ -262,7 +263,7 @@ int explode(struct xplstate *X) {
 	X->next_out++;
       } else {
 	SETCASE(EXPLODE_BASEDIST);
-	GETBITS(6+X->largewin);
+	GETBITS(6u+X->largewin);
 	X->backbytes=val;
 	X->backsize=0;
 	X->state=EXPLODE_DECODEDISTS;
