@@ -105,7 +105,6 @@ int command(int desc, const struct cl_engine *engine, const struct cl_limits *li
 	    const char *dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
 	    char *path;
 	    struct cl_cvd *daily;
-	    struct stat foo;
 
 
 	if(!(path = malloc(strlen(dbdir) + 30))) {
@@ -114,10 +113,10 @@ int command(int desc, const struct cl_engine *engine, const struct cl_limits *li
 	}
 
 	sprintf(path, "%s/daily.cvd", dbdir);
-	if(stat(path, &foo) == -1)
-	    sprintf(path, "%s/daily.inc/daily.info", dbdir);
+	if(access(path, R_OK))
+	    sprintf(path, "%s/daily.cld", dbdir);
 
-	if((daily = cl_cvdhead(path))) {
+	if(!access(path, R_OK) && (daily = cl_cvdhead(path))) {
 		time_t t = (time_t) daily->stime;
 
 	    pthread_mutex_lock(&ctime_mutex);

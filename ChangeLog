@@ -1,3 +1,7 @@
+Thu Jan  3 12:38:03 CET 2008 (tk)
+---------------------------------
+  * shared/misc.c, clamd/session.c: add support for .cld files (bb#745)
+
 Wed Jan  2 13:46:24 CET 2008 (acab)
   * libclamav/explode.c: big endian support
 

@@ -59,7 +59,6 @@ char *freshdbdir(void)
 	struct cl_cvd *d1, *d2;
 	struct cfgstruct *copt;
 	const struct cfgstruct *cpt;
-	struct stat foo;
 	const char *dbdir;
 	char *retdir;
 
@@ -71,13 +70,13 @@ char *freshdbdir(void)
 	    if(strcmp(dbdir, cpt->strarg)) {
 		    char *daily = (char *) malloc(strlen(cpt->strarg) + strlen(dbdir) + 30);
 		sprintf(daily, "%s/daily.cvd", cpt->strarg);
-		if(stat(daily, &foo) == -1)
-		    sprintf(daily, "%s/daily.inc/daily.info", cpt->strarg);
+		if(access(daily, R_OK))
+		    sprintf(daily, "%s/daily.cld", cpt->strarg);
 
 		if((d1 = cl_cvdhead(daily))) {
 		    sprintf(daily, "%s/daily.cvd", dbdir);
-		    if(stat(daily, &foo) == -1)
-			sprintf(daily, "%s/daily.inc/daily.info", dbdir);
+		    if(access(daily, R_OK))
+			sprintf(daily, "%s/daily.cld", dbdir);
 
 		    if((d2 = cl_cvdhead(daily))) {
 			free(daily);
@@ -106,10 +105,8 @@ char *freshdbdir(void)
 
 void print_version(void)
 {
-	char *dbdir;
-	char *path;
+	char *dbdir, *path;
 	struct cl_cvd *daily;
-	struct stat foo;
 
 
     dbdir = freshdbdir();
@@ -119,11 +116,11 @@ void print_version(void)
     }
 
     sprintf(path, "%s/daily.cvd", dbdir);
-    if(stat(path, &foo) == -1)
-	sprintf(path, "%s/daily.inc/daily.info", dbdir);
+    if(access(path, R_OK))
+	sprintf(path, "%s/daily.cld", dbdir);
     free(dbdir);
 
-    if((daily = cl_cvdhead(path))) {
+    if(!access(path, R_OK) && (daily = cl_cvdhead(path))) {
 	    time_t t = (time_t) daily->stime;
 
 	printf("ClamAV "VERSION_EXP"/%d/%s", daily->version, ctime(&t));
