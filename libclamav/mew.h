@@ -36,6 +36,6 @@ int mew_lzma(char *, char *, uint32_t, uint32_t, uint32_t);
 uint32_t lzma_upack_esi_00(struct lzmastate *, char *, char *, uint32_t);
 uint32_t lzma_upack_esi_50(struct lzmastate *, uint32_t, uint32_t, char **, char *, uint32_t *, char *, uint32_t);
 uint32_t lzma_upack_esi_54(struct lzmastate *, uint32_t, uint32_t *, char **, uint32_t *, char *, uint32_t);
-int unmew11(int, char *, int, int, int, uint32_t, uint32_t, int, char **, char **, int);
+int unmew11(char *, int, int, int, uint32_t, uint32_t, int, int);
 
 #endif

@@ -83,7 +83,7 @@
 
 #define CLI_UNPSIZELIMITS(NAME,CHK) \
 if(ctx->limits && ctx->limits->maxfilesize && (CHK) > ctx->limits->maxfilesize) { \
-    cli_dbgmsg(NAME": Sizes exceeded (%lu > %lu)\n", (CHK), ctx->limits->maxfilesize); \
+  cli_dbgmsg(NAME": Sizes exceeded (%lu > %lu)\n", (unsigned long)(CHK), (unsigned long)ctx->limits->maxfilesize); \
     free(exe_sections); \
     if(BLOCKMAX) { \
         *ctx->virname = "PE."NAME".ExceededFileSize"; \
@@ -783,7 +783,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 	if (exe_sections[i].rsz) { /* Don't bother with virtual only sections */
 	    if (exe_sections[i].raw >= fsize) { /* really broken */
-	        cli_dbgmsg("Broken PE file - Section %d starts beyond the end of file (Offset@ %d, Total filesize %d)\n", i, exe_sections[i].raw, fsize);
+	      cli_dbgmsg("Broken PE file - Section %d starts beyond the end of file (Offset@ %lu, Total filesize %lu)\n", i, (unsigned long)exe_sections[i].raw, (unsigned long)fsize);
 		free(section_hdr);
 		free(exe_sections);
 		if(DETECT_BROKEN) {
@@ -1103,7 +1103,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    }
 
 	    if((bytes = read(desc, buff, 0xb0)) != 0xb0) {
-	        cli_dbgmsg("MEW: Can't read 0xb0 bytes at 0x%x (%d) %d\n", fileoffset, fileoffset, bytes);
+	        cli_dbgmsg("MEW: Can't read 0xb0 bytes at 0x%x (%d) %lu\n", fileoffset, fileoffset, (unsigned long)bytes);
 		break;
 	    }
 
@@ -1141,12 +1141,12 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    }
 
 	    if((bytes = read(desc, src + dsize, exe_sections[i + 1].rsz)) != exe_sections[i + 1].rsz) {
-	        cli_dbgmsg("MEW: Can't read %d bytes [read: %d]\n", exe_sections[i + 1].rsz, bytes);
+	      cli_dbgmsg("MEW: Can't read %d bytes [read: %lu]\n", exe_sections[i + 1].rsz, (unsigned long)bytes);
 		free(exe_sections);
 		free(src);
 		return CL_EIO;
 	    }
-	    cli_dbgmsg("MEW: %d (%08x) bytes read\n", bytes, bytes);
+	    cli_dbgmsg("MEW: %u (%08x) bytes read\n", (unsigned int)bytes, (unsigned int)bytes);
 
 	    /* count offset to lzma proc, if lzma used, 0xe8 -> call */
 	    if (buff[0x7b] == '\xe8') {
@@ -1161,7 +1161,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    }
 
 	    CLI_UNPTEMP("MEW",(src,exe_sections,0));
-	    CLI_UNPRESULTS("MEW",(unmew11(i, src, offdiff, ssize, dsize, EC32(optional_hdr32.ImageBase), exe_sections[0].rva, uselzma, NULL, NULL, ndesc)),1,(src,0));
+	    CLI_UNPRESULTS("MEW",(unmew11(src, offdiff, ssize, dsize, EC32(optional_hdr32.ImageBase), exe_sections[0].rva, uselzma, ndesc)),1,(src,0));
 	    break;
 	}
     }
@@ -1821,7 +1821,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 	lseek(desc, 0, SEEK_SET);
 	if((size_t) cli_readn(desc, spinned, fsize) != fsize) {
-	    cli_dbgmsg("PESpin: Can't read %d bytes\n", fsize);
+	    cli_dbgmsg("PESpin: Can't read %lu bytes\n", (unsigned long)fsize);
 	    free(spinned);
 	    free(exe_sections);
 	    return CL_EIO;
@@ -1847,7 +1847,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 	lseek(desc, 0, SEEK_SET);
 	if((size_t) cli_readn(desc, spinned, fsize) != fsize) {
-	    cli_dbgmsg("yC: Can't read %d bytes\n", fsize);
+	    cli_dbgmsg("yC: Can't read %lu bytes\n", (unsigned long)fsize);
 	    free(spinned);
 	    free(exe_sections);
 	    return CL_EIO;
@@ -1900,7 +1900,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
             free(src);
             break;
         }
-	if((packer = (char *) cli_calloc(exe_sections[nsections - 1].rsz, sizeof(char))) == NULL) {
+	if((packer = (uint8_t *) cli_calloc(exe_sections[nsections - 1].rsz, sizeof(char))) == NULL) {
 	    free(src);
 	    free(exe_sections);
 	    return CL_EMEM;
@@ -1914,7 +1914,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
 
 	CLI_UNPTEMP("WWPack",(src,packer,exe_sections,0));
-	CLI_UNPRESULTS("WWPack",(wwunpack(src, ssize, packer, exe_sections, nsections-1, e_lfanew, ndesc)),0,(src,packer,0));
+	CLI_UNPRESULTS("WWPack",(wwunpack((uint8_t *)src, ssize, packer, exe_sections, nsections-1, e_lfanew, ndesc)),0,(src,packer,0));
 	break;
     }
 

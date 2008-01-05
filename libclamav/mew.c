@@ -386,7 +386,7 @@ int mew_lzma(char *orgsource, char *buf, uint32_t size_sum, uint32_t vma, uint32
 		var28 = cli_readint32 (source);
 		source += 4;
 		temp = cli_readint32 (source) - vma;
-		var18 = orgsource + temp;
+		var18 = (uint8_t *)(orgsource + temp);
 		if (special) pushed_esi = orgsource + temp;
 		source += 4;
 		temp = cli_readint32 (source);
@@ -562,7 +562,7 @@ int mew_lzma(char *orgsource, char *buf, uint32_t size_sum, uint32_t vma, uint32
 				break;
 			} else {
 				var0C += 2;
-				new_ecx = var18;
+				new_ecx = (char *)var18;
 				new_edx = new_eax = var08;
 				new_eax -= loc_edi;
 				if ( ((var0C < var28 - new_edx) &&
@@ -693,9 +693,9 @@ uint32_t lzma_upack_esi_00(struct lzmastate *p, char *old_ecx, char *bb, uint32_
 	if (!CLI_ISCONTAINED(bb, bl, old_ecx, 4) || !CLI_ISCONTAINED(bb, bl, p->p0, 4))
 	{
 		if (!CLI_ISCONTAINED(bb, bl, old_ecx, 4))
-			cli_dbgmsg("contain error! %08x %08x ecx: %08x [%08x]\n", bb, bl, old_ecx,bb+bl);
+			cli_dbgmsg("contain error! %p %08x ecx: %p [%p]\n", bb, bl, old_ecx,bb+bl);
 		else
-			cli_dbgmsg("contain error! %08x %08x p0: %08x [%08x]\n", bb, bl, p->p0,bb+bl);
+			cli_dbgmsg("contain error! %p %08x p0: %p [%p]\n", bb, bl, p->p0,bb+bl);
 		return 0xffffffff;
 	}
 	ret = cli_readint32(old_ecx);
@@ -730,7 +730,7 @@ uint32_t lzma_upack_esi_00(struct lzmastate *p, char *old_ecx, char *bb, uint32_
  */
 uint32_t lzma_upack_esi_50(struct lzmastate *p, uint32_t old_eax, uint32_t old_ecx, char **old_edx, char *old_ebp, uint32_t *retval, char *bs, uint32_t bl)
 {
-	uint32_t loc_eax = old_eax, original = old_eax, ret;
+	uint32_t loc_eax = old_eax, ret;
 
 	do {
 		*old_edx = old_ebp + (loc_eax<<2);
@@ -740,7 +740,6 @@ uint32_t lzma_upack_esi_50(struct lzmastate *p, uint32_t old_eax, uint32_t old_e
 		loc_eax += ret;
 	} while (loc_eax < old_ecx);
 
-/*	cli_dbgmsg("loc_eax: %08x - ecx: %08x = %08x || original: %08x\n", loc_eax, old_ecx, loc_eax - old_ecx, original); */
 	*retval = loc_eax - old_ecx;
 	return 0;
 }
@@ -772,10 +771,10 @@ uint32_t lzma_upack_esi_54(struct lzmastate *p, uint32_t old_eax, uint32_t *old_
 }
 
 
-int unmew11(int sectnum, char *src, int off, int ssize, int dsize, uint32_t base, uint32_t vadd, int uselzma, char **endsrc, char **enddst, int filedesc)
+int unmew11(char *src, int off, int ssize, int dsize, uint32_t base, uint32_t vadd, int uselzma, int filedesc)
 {
 	uint32_t entry_point, newedi, loc_ds=dsize, loc_ss=ssize;
-	char *source = src + dsize + off; /*EC32(section_hdr[sectnum].VirtualSize) + off;*/
+	char *source = src + dsize + off;
 	char *lesi = source + 12, *ledi;
 	char *f1, *f2;
 	int i;
@@ -790,7 +789,7 @@ int unmew11(int sectnum, char *src, int off, int ssize, int dsize, uint32_t base
 	ssize -= 12;
 	while (1)
 	{
-  		cli_dbgmsg("MEW unpacking section %d (%08x->%08x)\n", i, lesi, ledi);
+  		cli_dbgmsg("MEW unpacking section %d (%p->%p)\n", i, lesi, ledi);
 		if (!CLI_ISCONTAINED(src, size_sum, lesi, 4) || !CLI_ISCONTAINED(src, size_sum, ledi, 4))
 		{
 			cli_dbgmsg("Possibly programmer error or hand-crafted PE file, report to clamav team\n");

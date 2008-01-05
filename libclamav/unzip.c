@@ -232,8 +232,8 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
 
   case ALG_IMPLODE: {
     struct xplstate strm;
-    strm.next_in = (char *)src;
-    strm.next_out = obuf;
+    strm.next_in = src;
+    strm.next_out = (uint8_t *)obuf;
     strm.avail_in = csize;
     strm.avail_out = sizeof(obuf);
     if (explode_init(&strm, flags)!=EXPLODE_OK) {
@@ -258,7 +258,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
 	  ret = CL_EIO;
 	  res=1;
 	}
-	strm.next_out = obuf;
+	strm.next_out = (uint8_t *)obuf;
 	strm.avail_out = sizeof(obuf);
 	continue;
       }

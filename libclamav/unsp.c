@@ -353,7 +353,7 @@ uint32_t very_real_unpack(uint16_t *table, uint32_t tablesz, uint32_t tre, uint3
       if (!CLI_ISCONTAINED(dst, dsize, &dst[unpacked_so_far], backsize) ||
 	  !CLI_ISCONTAINED(dst, dsize, &dst[unpacked_so_far - backbytes], backsize)
 	  ) {
-	cli_dbgmsg("%x %x %x %x\n", dst, dsize, &dst[unpacked_so_far], backsize);
+	cli_dbgmsg("%p %x %p %x\n", dst, dsize, &dst[unpacked_so_far], backsize);
 	return 1;
       }
       

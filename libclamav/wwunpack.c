@@ -219,7 +219,7 @@ int wwunpack(uint8_t *exe, uint32_t exesz, uint8_t *wwsect, struct cli_exe_secti
     cli_writeint32(&exe[pe+0x28], cli_readint32(wwsect+0x295)+sects[scount].rva+0x299);
     cli_writeint32(&exe[pe+0x50], cli_readint32(&exe[pe+0x50])-sects[scount].vsz);
 
-    structs = &exe[0xffff&cli_readint32(&exe[pe+0x14])+pe+0x18];
+    structs = &exe[(0xffff&cli_readint32(&exe[pe+0x14]))+pe+0x18];
     for(i=0 ; i<scount ; i++) {
       cli_writeint32(structs+8, sects[i].vsz);
       cli_writeint32(structs+12, sects[i].rva);

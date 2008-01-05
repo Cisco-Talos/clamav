@@ -1,3 +1,6 @@
+Sat Jan  5 03:07:37 CET 2008 (acab)
+  * libclamav: fix several warnings - mostly format strings
+
 Thu Jan  3 12:38:03 CET 2008 (tk)
 ---------------------------------
   * shared/misc.c, clamd/session.c: add support for .cld files (bb#745)

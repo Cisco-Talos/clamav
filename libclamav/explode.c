@@ -122,7 +122,7 @@ static int lookup_tree(uint32_t *tree, unsigned int size, uint16_t code, uint8_t
   return -1;
 }
 
-int explode_init(struct xplstate *X, uint8_t flags) {
+int explode_init(struct xplstate *X, uint16_t flags) {
   X->bits = X->cur = 0;
   if(flags&2) {
     X->largewin = 1;
@@ -311,4 +311,4 @@ int explode(struct xplstate *X) {
   return EXPLODE_EBUFF;
 }
 
-void explode_shutdown() {};
+void explode_shutdown() {}

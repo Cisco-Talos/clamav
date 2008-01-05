@@ -66,7 +66,7 @@ struct xplstate {
   enum XPL_STATE state;
 };
 
-int explode_init(struct xplstate *, uint8_t);
+int explode_init(struct xplstate *, uint16_t);
 int explode(struct xplstate *);
 void explode_shutdown();
 
