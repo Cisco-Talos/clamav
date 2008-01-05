@@ -1,3 +1,7 @@
+Sat Jan  5 10:25:22 GMT 2008 (njh)
+----------------------------------
+  * libclamav/vba_extract.c:	Minor optimisation
+
 Sat Jan  5 03:07:37 CET 2008 (acab)
   * libclamav: fix several warnings - mostly format strings
 

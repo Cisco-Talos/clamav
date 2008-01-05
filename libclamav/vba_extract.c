@@ -70,30 +70,6 @@ typedef struct {
 	int	big_endian;	/* e.g. MAC Office */
 } vba_version_t;
 
-static	int	skip_past_nul(int fd);
-static	int	read_uint16(int fd, uint16_t *u, int big_endian);
-static	int	read_uint32(int fd, uint32_t *u, int big_endian);
-static	int	seekandread(int fd, off_t offset, int whence, void *data, size_t len);
-static	vba_project_t	*create_vba_project(int record_count, const char *dir);
-static	uint32_t	sigtouint32(const unsigned char *fourbytes);
-
-static uint16_t vba_endian_convert_16(uint16_t value, int big_endian)
-{
-	if (big_endian)
-		return (uint16_t)be16_to_host(value);
-	else
-		return le16_to_host(value);
-}
-
-/* Seems to be a duplicate of riff_endian_convert_32() */
-static uint32_t vba_endian_convert_32(uint32_t value, int big_endian)
-{
-	if (big_endian)
-		return be32_to_host(value);
-	else
-		return le32_to_host(value);
-}
-
 /* from libgsf */
 static const vba_version_t vba_versions[] = {
 	{ { 0x5e, 0x00, 0x00, 0x01 }, "Office 97",              FALSE },
@@ -112,6 +88,32 @@ static const vba_version_t vba_versions[] = {
 	{ { 0x64, 0x00, 0x00, 0x0e }, "MacOffice 2004",         TRUE },
 	{ { 0x00, 0x00, 0x00, 0x00 }, NULL,		        FALSE },
 };
+
+static	int	skip_past_nul(int fd);
+static	int	read_uint16(int fd, uint16_t *u, int big_endian);
+static	int	read_uint32(int fd, uint32_t *u, int big_endian);
+static	int	seekandread(int fd, off_t offset, int whence, void *data, size_t len);
+static	vba_project_t	*create_vba_project(int record_count, const char *dir);
+static	uint32_t	sigtouint32(const unsigned char *fourbytes);
+
+static uint16_t
+vba_endian_convert_16(uint16_t value, int big_endian)
+{
+	if (big_endian)
+		return (uint16_t)be16_to_host(value);
+	else
+		return le16_to_host(value);
+}
+
+/* Seems to be a duplicate of riff_endian_convert_32() */
+static uint32_t
+vba_endian_convert_32(uint32_t value, int big_endian)
+{
+	if (big_endian)
+		return be32_to_host(value);
+	else
+		return le32_to_host(value);
+}
 
 static char *
 get_unicode_name(const char *name, int size, int big_endian)
@@ -332,12 +334,12 @@ cli_vba_readdir(const char *dir)
 	}
 
 	/* junk some more stuff */
-	do {
+	do
 		if (cli_readn(fd, &ffff, 2) != 2) {
 			close(fd);
 			return NULL;
 		}
-	} while(ffff != 0xFFFF);
+	while(ffff != 0xFFFF);
 
 	/* check for alignment error */
 	if(!seekandread(fd, -3, SEEK_CUR, &ffff, sizeof(uint16_t))) {
@@ -391,6 +393,7 @@ cli_vba_readdir(const char *dir)
 	buflen = 0;
 	for(i = 0; i < record_count; i++) {
 		uint16_t length;
+		char *ptr;
 
 		if(!read_uint16(fd, &length, big_endian))
 			break;
@@ -410,30 +413,30 @@ cli_vba_readdir(const char *dir)
 			cli_dbgmsg("read name failed\n");
 			break;
 		}
-		vba_project->name[i] = get_unicode_name((const char *)buf, length, big_endian);
-		if (!vba_project->name[i]) {
+		ptr = get_unicode_name((const char *)buf, length, big_endian);
+		if(ptr == NULL) {
 			offset = lseek(fd, 0, SEEK_CUR);
-			vba_project->name[i] = (char *) cli_malloc(18);
-			if(vba_project->name[i] == NULL)
+			ptr = (char *)cli_malloc(18);
+			if(ptr == NULL)
 				break;
-			sprintf(vba_project->name[i], "clamav-%.10d", (int)offset);
+			sprintf(ptr, "clamav-%.10d", (int)offset);
 		}
-		cli_dbgmsg("project name: %s\n", vba_project->name[i]);
+		cli_dbgmsg("project name: %s\n", ptr);
 
 		if(!read_uint16(fd, &length, big_endian)) {
-			free(vba_project->name[i]);
+			free(ptr);
 			break;
 		}
 		lseek(fd, length, SEEK_CUR);
 
 		if(!read_uint16(fd, &ffff, big_endian)) {
-			free(vba_project->name[i]);
+			free(ptr);
 			break;
 		}
 		if (ffff == 0xFFFF) {
 			lseek(fd, 2, SEEK_CUR);
 			if(!read_uint16(fd, &ffff, big_endian)) {
-				free(vba_project->name[i]);
+				free(ptr);
 				break;
 			}
 			lseek(fd, ffff + 8, SEEK_CUR);
@@ -441,16 +444,17 @@ cli_vba_readdir(const char *dir)
 			lseek(fd, ffff + 10, SEEK_CUR);
 
 		if(!read_uint16(fd, &byte_count, big_endian)) {
-			free(vba_project->name[i]);
+			free(ptr);
 			break;
 		}
 		lseek(fd, (8 * byte_count) + 5, SEEK_CUR);
 		if(!read_uint32(fd, &offset, big_endian)) {
-			free(vba_project->name[i]);
+			free(ptr);
 			break;
 		}
-		vba_project->offset[i] = offset;
 		cli_dbgmsg("offset: %u\n", (unsigned int)offset);
+		vba_project->offset[i] = offset;
+		vba_project->name[i] = ptr;
 		lseek(fd, 2, SEEK_CUR);
 	}
 
