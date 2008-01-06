@@ -20027,11 +20027,8 @@ fi
 { echo "$as_me:$LINENO: checking for gcc bug PR27603" >&5
 echo $ECHO_N "checking for gcc bug PR27603... $ECHO_C" >&6; }
 if test "$cross_compiling" = yes; then
-  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&5
-echo "$as_me: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&2;}
-   { (exit 1); exit 1; }; }
+  { echo "$as_me:$LINENO: result: cross-compiling, assumed ok" >&5
+echo "${ECHO_T}cross-compiling, assumed ok" >&6; }
 else
   cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
@@ -20097,11 +20094,8 @@ fi
 { echo "$as_me:$LINENO: checking for gcc bug PR28045" >&5
 echo $ECHO_N "checking for gcc bug PR28045... $ECHO_C" >&6; }
 if test "$cross_compiling" = yes; then
-  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&5
-echo "$as_me: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&2;}
-   { (exit 1); exit 1; }; }
+  { echo "$as_me:$LINENO: result: cross-compiling, assumed ok" >&5
+echo "${ECHO_T}cross-compiling, assumed ok" >&6; }
 else
   cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
@@ -20172,11 +20166,8 @@ fi
 { echo "$as_me:$LINENO: checking for gcc bug PR26763-2" >&5
 echo $ECHO_N "checking for gcc bug PR26763-2... $ECHO_C" >&6; }
 if test "$cross_compiling" = yes; then
-  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&5
-echo "$as_me: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&2;}
-   { (exit 1); exit 1; }; }
+  { echo "$as_me:$LINENO: result: cross-compiling, assumed ok" >&5
+echo "${ECHO_T}cross-compiling, assumed ok" >&6; }
 else
   cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
@@ -20244,11 +20235,8 @@ fi
 { echo "$as_me:$LINENO: checking for valid code generation of CLI_ISCONTAINED" >&5
 echo $ECHO_N "checking for valid code generation of CLI_ISCONTAINED... $ECHO_C" >&6; }
 if test "$cross_compiling" = yes; then
-  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&5
-echo "$as_me: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&2;}
-   { (exit 1); exit 1; }; }
+  { echo "$as_me:$LINENO: result: cross-compiling, assumed ok" >&5
+echo "${ECHO_T}cross-compiling, assumed ok" >&6; }
 else
   cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
@@ -21838,11 +21826,11 @@ if test "x$ac_cv_func_snprintf" = "xyes" ; then
         { echo "$as_me:$LINENO: checking whether snprintf correctly terminates long strings" >&5
 echo $ECHO_N "checking whether snprintf correctly terminates long strings... $ECHO_C" >&6; }
         if test "$cross_compiling" = yes; then
-  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&5
-echo "$as_me: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&2;}
-   { (exit 1); exit 1; }; }
+
+			{ echo "$as_me:$LINENO: result: cross-compiling, assumed ok" >&5
+echo "${ECHO_T}cross-compiling, assumed ok" >&6; }
+
+
 else
   cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
@@ -21893,7 +21881,6 @@ _ACEOF
 
                         { echo "$as_me:$LINENO: WARNING: ****** Your snprintf() function is broken, complain to your vendor" >&5
 echo "$as_me: WARNING: ****** Your snprintf() function is broken, complain to your vendor" >&2;}
-
 
 fi
 rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
@@ -22776,7 +22763,8 @@ else
 fi
 
 
-{ echo "$as_me:$LINENO: checking whether setpgrp takes no argument" >&5
+if test "$cross_compiling" = no; then
+ { echo "$as_me:$LINENO: checking whether setpgrp takes no argument" >&5
 echo $ECHO_N "checking whether setpgrp takes no argument... $ECHO_C" >&6; }
 if test "${ac_cv_func_setpgrp_void+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
@@ -22848,6 +22836,70 @@ _ACEOF
 
 fi
 
+else
+ { echo "$as_me:$LINENO: checking whether setpgrp takes no argument" >&5
+echo $ECHO_N "checking whether setpgrp takes no argument... $ECHO_C" >&6; }
+if test "${ac_cv_func_setpgrp_void+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+#include <unistd.h>
+
+int
+main ()
+{
+
+ if (setpgrp(1,1) == -1)
+   exit (0);
+ else
+   exit (1);
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_cv_func_setpgrp_void=no
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_func_setpgrp_void=yes
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_func_setpgrp_void" >&5
+echo "${ECHO_T}$ac_cv_func_setpgrp_void" >&6; }
+if test $ac_cv_func_setpgrp_void = yes; then
+ cat >>confdefs.h <<\_ACEOF
+#define SETPGRP_VOID 1
+_ACEOF
+
+fi
+fi
 
 # Check whether --enable-milter was given.
 if test "${enable_milter+set}" = set; then
@@ -23275,14 +23327,9 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-if test "$cross_compiling" = yes; then
-  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&5
-echo "$as_me: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&2;}
-   { (exit 1); exit 1; }; }
-else
-  cat >conftest.$ac_ext <<_ACEOF
+{ echo "$as_me:$LINENO: checking whether in_port_t is defined" >&5
+echo $ECHO_N "checking whether in_port_t is defined... $ECHO_C" >&6; }
+cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
@@ -23291,56 +23338,54 @@ cat >>conftest.$ac_ext <<_ACEOF
 
 #include <sys/types.h>
 #include <netinet/in.h>
-int main(int argc, char **argv) { in_port_t pt; pt = 0; return pt; }
 
+int
+main ()
+{
+int main(int argc, char **argv) { in_port_t pt; pt = 0; return pt; }
+  ;
+  return 0;
+}
 _ACEOF
-rm -f conftest$ac_exeext
-if { (ac_try="$ac_link"
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
 case "(($ac_try" in
   *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
   *) ac_try_echo=$ac_try;;
 esac
 eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>&5
+  (eval "$ac_compile") 2>conftest.er1
   ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_try") 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+
+    { echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_IN_PORT_T 1
 _ACEOF
 
+
 else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
+  echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-( exit $ac_status )
-{ echo "$as_me:$LINENO: result: in_port_t is not defined" >&5
-echo "${ECHO_T}in_port_t is not defined" >&6; }
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+	{ echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
 fi
 
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
-
-if test "$cross_compiling" = yes; then
-  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&5
-echo "$as_me: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&2;}
-   { (exit 1); exit 1; }; }
-else
-  cat >conftest.$ac_ext <<_ACEOF
+{ echo "$as_me:$LINENO: checking for in_addr_t definition" >&5
+echo $ECHO_N "checking for in_addr_t definition... $ECHO_C" >&6; }
+cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
@@ -23349,47 +23394,50 @@ cat >>conftest.$ac_ext <<_ACEOF
 
 #include <sys/types.h>
 #include <netinet/in.h>
-int main(int argc, char **argv) { in_addr_t pt; pt = 0; return pt; }
 
+int
+main ()
+{
+int main(int argc, char **argv) { in_addr_t pt; pt = 0; return pt; }
+  ;
+  return 0;
+}
 _ACEOF
-rm -f conftest$ac_exeext
-if { (ac_try="$ac_link"
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
 case "(($ac_try" in
   *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
   *) ac_try_echo=$ac_try;;
 esac
 eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>&5
+  (eval "$ac_compile") 2>conftest.er1
   ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_try") 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+
+    { echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_IN_ADDR_T 1
 _ACEOF
 
+
 else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
+  echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-( exit $ac_status )
-{ echo "$as_me:$LINENO: result: in_addr_t is not defined" >&5
-echo "${ECHO_T}in_addr_t is not defined" >&6; }
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+	{ echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
 fi
 
-
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 case "$target_os" in
 linux*)
@@ -24422,14 +24470,7 @@ if test "${ac_cv_have_accrights_in_msghdr+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
 
-    if test "$cross_compiling" = yes; then
-  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&5
-echo "$as_me: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&2;}
-   { (exit 1); exit 1; }; }
-else
-  cat >conftest.$ac_ext <<_ACEOF
+    cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
@@ -24439,50 +24480,51 @@ cat >>conftest.$ac_ext <<_ACEOF
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
+
+int
+main ()
+{
+
 int main() {
 #ifdef msg_accrights
-exit(1);
+#error msg_accrights defined
 #endif
 struct msghdr m;
 m.msg_accrights = 0;
-exit(0);
+return 0;
 }
 
+
+  ;
+  return 0;
+}
 _ACEOF
-rm -f conftest$ac_exeext
-if { (ac_try="$ac_link"
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
 case "(($ac_try" in
   *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
   *) ac_try_echo=$ac_try;;
 esac
 eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>&5
+  (eval "$ac_compile") 2>conftest.er1
   ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_try") 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-   ac_cv_have_accrights_in_msghdr="yes"
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_cv_have_accrights_in_msghdr="yes"
 else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
+  echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-( exit $ac_status )
- ac_cv_have_accrights_in_msghdr="no"
-
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+	ac_cv_have_accrights_in_msghdr="no"
 fi
 
-
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 fi
 { echo "$as_me:$LINENO: result: $ac_cv_have_accrights_in_msghdr" >&5
@@ -24501,14 +24543,7 @@ if test "${ac_cv_have_control_in_msghdr+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
 
-    if test "$cross_compiling" = yes; then
-  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&5
-echo "$as_me: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&2;}
-   { (exit 1); exit 1; }; }
-else
-  cat >conftest.$ac_ext <<_ACEOF
+    cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
@@ -24518,50 +24553,50 @@ cat >>conftest.$ac_ext <<_ACEOF
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
+
+int
+main ()
+{
+
 int main() {
 #ifdef msg_control
-exit(1);
+#error msg_control defined
 #endif
 struct msghdr m;
 m.msg_control = 0;
-exit(0);
+return 0;
 }
 
+  ;
+  return 0;
+}
 _ACEOF
-rm -f conftest$ac_exeext
-if { (ac_try="$ac_link"
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
 case "(($ac_try" in
   *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
   *) ac_try_echo=$ac_try;;
 esac
 eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>&5
+  (eval "$ac_compile") 2>conftest.er1
   ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_try") 2>&5
-  ac_status=$?
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
    ac_cv_have_control_in_msghdr="yes"
 else
-  echo "$as_me: program exited with status $ac_status" >&5
-echo "$as_me: failed program was:" >&5
+  echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-( exit $ac_status )
- ac_cv_have_control_in_msghdr="no"
-
-fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+	 ac_cv_have_control_in_msghdr="no"
 fi
 
-
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 fi
 { echo "$as_me:$LINENO: result: $ac_cv_have_control_in_msghdr" >&5
@@ -26342,8 +26377,8 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-{ echo "$as_me:$LINENO: checking if signed right shift is sign extended" >&5
-echo $ECHO_N "checking if signed right shift is sign extended... $ECHO_C" >&6; }
+{ echo "$as_me:$LINENO: checking whether signed right shift is sign extended" >&5
+echo $ECHO_N "checking whether signed right shift is sign extended... $ECHO_C" >&6; }
 if test "$cross_compiling" = yes; then
   have_signed_rightshift_extended=no
 else
@@ -27952,5 +27987,23 @@ if test "$no_create" != yes; then
   # Use ||, not &&, to avoid exiting from the if with $? = 1, which
   # would make configure fail if this is the last instruction.
   $ac_cs_success || { (exit 1); exit 1; }
+fi
+
+
+if test "x$cross_compiling" != "xno" || test "x$gcc_check" = "xno" || test "x$zlib_check" = "xno" ; then
+{ echo "$as_me:$LINENO: WARNING:
+****** WARNING:
+****** You are either cross compiling to a different host or
+****** you have manually disabled important configure checks.
+****** Please be aware that this build may be badly broken.
+****** DO NOT REPORT BUGS BASED ON THIS BUILD !!!
+" >&5
+echo "$as_me: WARNING:
+****** WARNING:
+****** You are either cross compiling to a different host or
+****** you have manually disabled important configure checks.
+****** Please be aware that this build may be badly broken.
+****** DO NOT REPORT BUGS BASED ON THIS BUILD !!!
+" >&2;}
 fi
 
