@@ -1,3 +1,8 @@
+Sun Jan  6 19:35:28 EET 2008 (edwin)
+------------------------------------
+ * build system: improve iconv() detection, by actually trying to link a
+ test-program (bb #599).
+
 Sun Jan  6 18:26:57 EET 2008 (edwin)
 ------------------------------------
  * build system: avoid bringing in checks for languages we don't use

@@ -40,9 +40,10 @@
 #include "entitylist.h"
 #include "cltypes.h"
 
-#ifdef HAVE_ICONV_H
+#ifdef HAVE_ICONV
 #include <iconv.h>
 #endif
+
 #include "encoding_aliases.h"
 
 
@@ -178,7 +179,7 @@ static size_t encoding_bytes(const unsigned char* fromcode, enum encodings* enco
 	}
 	}
 
-#ifndef HAVE_ICONV_H
+#ifndef HAVE_ICONV
 typedef struct {
 	enum encodings encoding;
 	size_t size;

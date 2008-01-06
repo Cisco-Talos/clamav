@@ -193,7 +193,7 @@ int main()
 ], [AC_MSG_RESULT([ok, bug not present])],
 [AC_MSG_ERROR([your compiler has a bug that causes clamav 670, use a different compiler, see http://bugs.clamav.net/bugzilla/show_bug.cgi?id=670])], [AC_MSG_RESULT([cross-compiling, assumed ok])])
 
-AC_CHECK_HEADERS(stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h poll.h limits.h sys/filio.h sys/uio.h termios.h iconv.h stdbool.h pwd.h grp.h)
+AC_CHECK_HEADERS(stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h poll.h limits.h sys/filio.h sys/uio.h termios.h stdbool.h pwd.h grp.h)
 AC_CHECK_HEADER(syslog.h,AC_DEFINE(USE_SYSLOG,1,[use syslog]),)
 
 AC_TYPE_OFF_T
@@ -213,7 +213,40 @@ fi
 AC_CHECK_LIB(socket, bind, [LIBS="$LIBS -lsocket"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsocket"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsocket"; CLAMD_LIBS="$CLAMD_LIBS -lsocket"])
 AC_CHECK_LIB(nsl, gethostent, [LIBS="$LIBS -lnsl"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lnsl"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lnsl"; CLAMD_LIBS="$CLAMD_LIBS -lnsl"])
 
-AC_CHECK_LIB(iconv, libiconv_open, LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -liconv")
+dnl we need to try to link with iconv, otherwise there could be a 
+dnl mismatch between a 32-bit and 64-bit lib. Detect this at configure time.
+AC_ARG_WITH(iconv, [  --with-iconv supports iconv() (default=auto)],
+[
+ case "$withval" in
+	 yes|no) wiconv="$withval";;
+	 *) AC_MSG_ERROR([--with-iconv does not take an argument]);;
+ esac],
+[ wiconv=auto ])
+if test "X$wiconv" != "Xno"; then
+	AC_CHECK_LIB(iconv, libiconv_open, LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -liconv")
+	AC_MSG_CHECKING([for iconv])
+	save_LIBS="$LIBS"
+	LIBS="$LIBCLAMAV_LIBS"
+	AC_TRY_LINK([
+		     #include <iconv.h>
+	],[
+int main(int argc, char** argv) {
+	char** xin,**xout;
+	unsigned il,ol;
+	int rc;
+	iconv_t iconv_struct = iconv_open("UTF-16BE","UTF-8");
+	rc = iconv(iconv_struct,xin,&il,xout,&ol);
+	iconv_close(iconv_struct);
+	return 0;
+}
+],[
+   AC_MSG_RESULT(yes)
+   AC_DEFINE(HAVE_ICONV, 1, [iconv() available])
+],[
+	AC_MSG_RESULT(no)
+])
+	LIBS="$save_LIBS"
+fi
 
 AC_CHECK_FUNCS(poll setsid memcpy snprintf vsnprintf strerror_r strlcpy strlcat strcasestr inet_ntop setgroups initgroups ctime_r mkstemp)
 AC_FUNC_MMAP
