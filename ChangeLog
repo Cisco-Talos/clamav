@@ -1,3 +1,8 @@
+Sun Jan  6 18:26:57 EET 2008 (edwin)
+------------------------------------
+ * build system: avoid bringing in checks for languages we don't use
+ (decreases configure size by 300Kb+).
+
 Sun Jan  6 15:36:46 CET 2008 (acab)
 -----------------------------------
   * build system: reenable canadian cross in configure

@@ -1,4 +1,4 @@
-dnl
+
 dnl   Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
 dnl   gethostbyname_r and readdir_r checks (c) COPYRIGHT MIT 1995
 dnl   socklen_t check (c) Alexander V. Lukyanov <lav@yars.free.net>
@@ -34,6 +34,11 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
+
+dnl libtool by default brings in check for all the languages/compilers (CXX/F77/...)
+dnl we don't need them, so avoid tagged configuration
+dnl libtool-1.6 should already do it right, but thats not stable yet
+m4_define([_LT_AC_TAGCONFIG])
 AC_PROG_LIBTOOL
 
 AC_DEFINE(SCANBUFF, 131072, [scan buffer size])
