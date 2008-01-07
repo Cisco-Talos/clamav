@@ -33,8 +33,12 @@
 #define MAX_EMBEDDED_OBJ 10
 
 typedef enum {
-    CL_TYPE_UNKNOWN_TEXT = CL_TYPENO,
-    CL_TYPE_UNKNOWN_DATA,
+    CL_TYPE_TEXT_ASCII = CL_TYPENO, /* X3.4, ISO-8859, non-ISO ext. ASCII */
+    CL_TYPE_TEXT_UTF8,
+    CL_TYPE_TEXT_UTF16LE,
+    CL_TYPE_TEXT_UTF16BE,
+    CL_TYPE_BINARY_DATA,
+    /* Please do not add any new types above this line */
     CL_TYPE_IGNORED,
     CL_TYPE_ERROR,
     CL_TYPE_MSEXE,

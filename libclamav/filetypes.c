@@ -38,6 +38,7 @@
 #include "readdb.h"
 #include "matcher-ac.h"
 #include "str.h"
+#include "textdet.h"
 
 #include "htmlnorm.h"
 #include "entconv.h"
@@ -46,8 +47,11 @@ static const struct ftmap_s {
     const char *name;
     cli_file_t code;
 } ftmap[] = {
-    { "CL_TYPE_UNKNOWN_TEXT",	CL_TYPE_UNKNOWN_TEXT	},
-    { "CL_TYPE_UNKNOWN_DATA",	CL_TYPE_UNKNOWN_DATA	},
+    { "CL_TYPE_TEXT_ASCII",	CL_TYPE_TEXT_ASCII	},
+    { "CL_TYPE_TEXT_UTF8",	CL_TYPE_TEXT_UTF8	},
+    { "CL_TYPE_TEXT_UTF16LE",	CL_TYPE_TEXT_UTF16LE	},
+    { "CL_TYPE_TEXT_UTF16BE",	CL_TYPE_TEXT_UTF16BE	},
+    { "CL_TYPE_BINARY_DATA",	CL_TYPE_BINARY_DATA	},
     { "CL_TYPE_IGNORED",	CL_TYPE_IGNORED		},
     { "CL_TYPE_MSEXE",		CL_TYPE_MSEXE		},
     { "CL_TYPE_ELF",		CL_TYPE_ELF		},
@@ -83,7 +87,7 @@ static const struct ftmap_s {
     { "CL_TYPE_ARJSFX",		CL_TYPE_ARJSFX		},
     { "CL_TYPE_NULSFT",		CL_TYPE_NULSFT		},
     { "CL_TYPE_AUTOIT",		CL_TYPE_AUTOIT		},
-    { NULL,			CL_TYPE_UNKNOWN_DATA	}
+    { NULL,			CL_TYPE_IGNORED		}
 };
 
 cli_file_t cli_ftcode(const char *name)
@@ -125,19 +129,7 @@ cli_file_t cli_filetype(const unsigned char *buf, size_t buflen, const struct cl
 	ftype = ftype->next;
     }
 
-/* FIXME: improve or drop this code
- * https://wwws.clamav.net/bugzilla/show_bug.cgi?id=373
- *
-	int i, text = 1, len;
-    buflen < 25 ? (len = buflen) : (len = 25);
-    for(i = 0; i < len; i++)
-	if(!iscntrl(buf[i]) && !isprint(buf[i]) && !internat[buf[i] & 0xff]) {
-	    text = 0;
-	    break;
-	}
-    return text ? CL_TYPE_UNKNOWN_TEXT : CL_TYPE_UNKNOWN_DATA;
-*/
-    return CL_TYPE_UNKNOWN_TEXT;
+    return cli_texttype(buf, buflen);
 }
 
 int is_tar(unsigned char *buf, unsigned int nbytes);
@@ -146,16 +138,24 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 {
 	unsigned char smallbuff[MAGIC_BUFFER_SIZE + 1], *decoded, *bigbuff;
 	int bread, sret;
-	cli_file_t ret = CL_TYPE_UNKNOWN_DATA;
+	cli_file_t ret = CL_TYPE_BINARY_DATA;
 	struct cli_matcher *root;
 	struct cli_ac_data mdata;
 
+
+    if(!engine) {
+	cli_errmsg("cli_filetype2: engine == NULL\n");
+	return CL_TYPE_ERROR;
+    }
 
     memset(smallbuff, 0, sizeof(smallbuff));
     if((bread = read(desc, smallbuff, MAGIC_BUFFER_SIZE)) > 0)
 	ret = cli_filetype(smallbuff, bread, engine);
 
-    if(engine && ret == CL_TYPE_UNKNOWN_TEXT) {
+    if(ret >= CL_TYPE_TEXT_ASCII && ret <= CL_TYPE_BINARY_DATA) {
+	/* HTML files may contain special characters and could be
+	 * misidentified as BINARY_DATA by cli_filetype()
+	 */
 	root = engine->root[0];
 	if(!root)
 	    return ret;
@@ -221,7 +221,7 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 	}
     }
 
-    if(ret == CL_TYPE_UNKNOWN_DATA || ret == CL_TYPE_UNKNOWN_TEXT) {
+    if(ret == CL_TYPE_BINARY_DATA) {
 
 	if(!(bigbuff = (unsigned char *) cli_calloc(37638 + 1, sizeof(unsigned char))))
 	    return ret;
@@ -243,8 +243,7 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 	    }
 	}
 
-	if(ret == CL_TYPE_UNKNOWN_DATA || ret == CL_TYPE_UNKNOWN_TEXT) {
-
+	if(ret == CL_TYPE_BINARY_DATA) {
 	    if(!memcmp(bigbuff + 32769, "CD001" , 5) || !memcmp(bigbuff + 37633, "CD001" , 5)) {
 		cli_dbgmsg("Recognized ISO 9660 CD-ROM data\n");
 		ret = CL_TYPE_IGNORED;

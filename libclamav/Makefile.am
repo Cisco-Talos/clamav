@@ -56,6 +56,8 @@ libclamav_la_SOURCES = \
 	str.h \
 	scanners.c \
 	scanners.h \
+	textdet.c \
+	textdet.h \
 	filetypes.c \
 	filetypes.h \
 	filetypes_int.h \

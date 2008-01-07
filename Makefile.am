@@ -17,7 +17,7 @@
 #  MA 02110-1301, USA.
 
 SUBDIRS = libclamunrar libclamunrar_iface libclamav clamscan clamd clamdscan freshclam sigtool clamconf database docs etc clamav-milter
-EXTRA_DIST = FAQ contrib test examples BUGS shared libclamav.pc.in UPGRADE COPYING.bzip2 COPYING.lzma COPYING.unrar COPYING.LGPL
+EXTRA_DIST = FAQ contrib test examples BUGS shared libclamav.pc.in UPGRADE COPYING.bzip2 COPYING.lzma COPYING.unrar COPYING.LGPL COPYING.file
 
 bin_SCRIPTS=clamav-config
 

@@ -1,3 +1,8 @@
+Mon Jan  7 14:50:24 CET 2008 (tk)
+---------------------------------
+  * libclamav/textdet.c: text detection code based on file-4.23
+  * libclamav/filetypes.c: re-enable text detection (ASCII, UTF8, UTF16)
+
 Sun Jan  6 19:35:28 EET 2008 (edwin)
 ------------------------------------
  * build system: improve iconv() detection, by actually trying to link a

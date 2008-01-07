@@ -78,17 +78,17 @@ LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
 @ENABLE_UNRAR_TRUE@	$(top_builddir)/libclamunrar_iface/libclamunrar_iface.la
 am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	md5.lo others.lo readdb.lo cvd.lo dsig.lo str.lo scanners.lo \
-	filetypes.lo rtf.lo blob.lo mbox.lo message.lo snprintf.lo \
-	table.lo text.lo ole2_extract.lo vba_extract.lo msexpand.lo \
-	pe.lo upx.lo htmlnorm.lo chmunpack.lo rebuildpe.lo petite.lo \
-	wwunpack.lo unsp.lo aspack.lo packlibs.lo fsg.lo mew.lo \
-	upack.lo line.lo untar.lo unzip.lo inflate64.lo special.lo \
-	binhex.lo is_tar.lo tnef.lo autoit.lo strlcpy.lo regcomp.lo \
-	regerror.lo regexec.lo regfree.lo unarj.lo bzlib.lo nulsft.lo \
-	pdf.lo spin.lo yc.lo elf.lo sis.lo uuencode.lo pst.lo \
-	phishcheck.lo phish_domaincheck_db.lo phish_whitelist.lo \
-	regex_list.lo mspack.lo cab.lo entconv.lo hashtab.lo dconf.lo \
-	lzma_iface.lo explode.lo
+	textdet.lo filetypes.lo rtf.lo blob.lo mbox.lo message.lo \
+	snprintf.lo table.lo text.lo ole2_extract.lo vba_extract.lo \
+	msexpand.lo pe.lo upx.lo htmlnorm.lo chmunpack.lo rebuildpe.lo \
+	petite.lo wwunpack.lo unsp.lo aspack.lo packlibs.lo fsg.lo \
+	mew.lo upack.lo line.lo untar.lo unzip.lo inflate64.lo \
+	special.lo binhex.lo is_tar.lo tnef.lo autoit.lo strlcpy.lo \
+	regcomp.lo regerror.lo regexec.lo regfree.lo unarj.lo bzlib.lo \
+	nulsft.lo pdf.lo spin.lo yc.lo elf.lo sis.lo uuencode.lo \
+	pst.lo phishcheck.lo phish_domaincheck_db.lo \
+	phish_whitelist.lo regex_list.lo mspack.lo cab.lo entconv.lo \
+	hashtab.lo dconf.lo lzma_iface.lo explode.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 libclamav_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -278,6 +278,8 @@ libclamav_la_SOURCES = \
 	str.h \
 	scanners.c \
 	scanners.h \
+	textdet.c \
+	textdet.h \
 	filetypes.c \
 	filetypes.h \
 	filetypes_int.h \
@@ -555,6 +557,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strlcpy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/table.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/text.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/textdet.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tnef.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unarj.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unsp.Plo@am__quote@

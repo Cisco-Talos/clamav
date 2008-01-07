@@ -1602,7 +1602,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg)
 
 
     if(typercg) switch(type) {
-	case CL_TYPE_UNKNOWN_TEXT:
+	case CL_TYPE_TEXT_ASCII:
 	case CL_TYPE_MSEXE:
 	case CL_TYPE_ZIP:
 	    ftrec = 1;
@@ -1620,7 +1620,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg)
 
     if(ret >= CL_TYPENO) {
 
-	if(type == CL_TYPE_UNKNOWN_TEXT) {
+	if(type == CL_TYPE_TEXT_ASCII) {
 	    lseek(desc, 0, SEEK_SET);
 
 	    nret = cli_scandesc(desc, ctx, 0, ret, 1, NULL);
@@ -1713,12 +1713,12 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg)
 
 	if(nret != CL_VIRUS) switch(ret) {
 	    case CL_TYPE_HTML:
-		if(SCAN_HTML && type == CL_TYPE_UNKNOWN_TEXT && (DCONF_DOC & DOC_CONF_HTML))
+		if(SCAN_HTML && type == CL_TYPE_TEXT_ASCII && (DCONF_DOC & DOC_CONF_HTML))
 		    nret = cli_scanhtml(desc, ctx);
 		break;
 
 	    case CL_TYPE_MAIL:
-		if(SCAN_MAIL && type == CL_TYPE_UNKNOWN_TEXT && (DCONF_MAIL & MAIL_CONF_MBOX))
+		if(SCAN_MAIL && type == CL_TYPE_TEXT_ASCII && (DCONF_MAIL & MAIL_CONF_MBOX))
 		    nret = cli_scanmail(desc, ctx);
 		break;
 
@@ -1949,7 +1949,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 		ret = cli_scansis(desc, ctx);
 	    break;
 
-	case CL_TYPE_UNKNOWN_DATA:
+	case CL_TYPE_BINARY_DATA:
 	    ret = cli_check_mydoom_log(desc, ctx->virname);
 	    break;
 
