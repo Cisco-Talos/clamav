@@ -69,6 +69,7 @@ int cli_untgz(int fd, const char *destdir)
     path = (char *) cli_calloc(sizeof(char), pathlen);
     if(!path) {
 	cli_errmsg("cli_untgz: Can't allocate memory for path\n");
+	gzclose(infile);
 	return -1;
     }
 

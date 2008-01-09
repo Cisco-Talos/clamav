@@ -255,8 +255,11 @@ int cvd_unpack(const char *cvd, const char *destdir)
 	return -1;
     }
 
-    if(cli_untgz(fd, destdir) == -1) /* cli_untgz() will close fd */
+    if(cli_untgz(fd, destdir) == -1) {
+	close(fd);
 	return -1;
+    }
+    close(fd);
 
     return 0;
 }

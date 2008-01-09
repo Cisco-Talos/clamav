@@ -1,3 +1,8 @@
+Wed Jan  9 11:13:25 CET 2008 (tk)
+---------------------------------
+  * libclamav/cvd.c: fix error path descriptor leak (reported by G. Tiesi)
+  * shared/misc.c: cvd_unpack: cli_untgz() no longer closes fd
+
 Mon Jan  7 14:50:24 CET 2008 (tk)
 ---------------------------------
   * libclamav/textdet.c: text detection code based on file-4.23
