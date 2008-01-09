@@ -51,6 +51,7 @@ int cli_untgz(int fd, const char *destdir)
 	int nbytes, nread, nwritten, in_block = 0, fdd;
 	unsigned int size, pathlen = strlen(destdir) + 100 + 5;
 	FILE *outfile = NULL;
+	struct stat foo;
 	gzFile *infile;
 
 
@@ -63,6 +64,8 @@ int cli_untgz(int fd, const char *destdir)
 
     if((infile = gzdopen(fdd, "rb")) == NULL) {
 	cli_errmsg("cli_untgz: Can't gzdopen() descriptor %d, errno = %d\n", fdd, errno);
+	if(fstat(fdd, &foo) == 0)
+	    close(fdd);
 	return -1;
     }
 

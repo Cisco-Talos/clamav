@@ -1,3 +1,7 @@
+Wed Jan  9 12:29:48 CET 2008 (tk)
+---------------------------------
+  * libclamav/cvd.c: gzdopen() may not close fd
+
 Wed Jan  9 11:13:25 CET 2008 (tk)
 ---------------------------------
   * libclamav/cvd.c: fix error path descriptor leak (reported by G. Tiesi)
