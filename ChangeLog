@@ -1,3 +1,7 @@
+Wed Jan  9 20:13:52 CET 2008 (tk)
+---------------------------------
+  * libclamav/others.c: improve cli_rndnum() and cli_gentempfd()
+
 Wed Jan  9 14:19:15 CET 2008 (tk)
 ---------------------------------
   * freshclam/manager.c: under some conditions old db files were not being

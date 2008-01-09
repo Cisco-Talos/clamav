@@ -437,7 +437,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     while(!bound && --portscan) {
 	if(rnd_port_first) {
 	    /* try a random port first */
-	    port = min_port + cli_rndnum(max_port - min_port + 1);
+	    port = min_port + cli_rndnum(max_port - min_port);
 	    rnd_port_first = 0;
 	} else {
 	    /* try the neighbor ports */

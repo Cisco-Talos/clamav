@@ -404,12 +404,13 @@ char *cli_strdup(const char *s)
 
 unsigned int cli_rndnum(unsigned int max)
 {
-    struct timeval tv;
+    if(name_salt[0] == 16) { /* minimizes re-seeding after the first call to cli_gentemp() */
+	    struct timeval tv;
+	gettimeofday(&tv, (struct timezone *) 0);
+	srand(tv.tv_usec+clock());
+    }
 
-  gettimeofday(&tv, (struct timezone *) 0);
-  srand(tv.tv_usec+clock());
-
-  return rand() % max;
+    return 1 + (unsigned int) (max * (rand() / (1.0 + RAND_MAX)));
 }
 
 void cl_settempdir(const char *dir, short leavetemps)
@@ -460,7 +461,7 @@ char *cli_gentemp(const char *dir)
     memcpy(salt, name_salt, 16);
 
     for(i = 16; i < 48; i++)
-	salt[i] = cli_rndnum(256);
+	salt[i] = cli_rndnum(255);
 
     tmp = cli_md5buff(salt, 48, name_salt);
 
@@ -492,8 +493,12 @@ int cli_gentempfd(const char *dir, char **name, int *fd)
     if(!*name)
 	return CL_EMEM;
 
-    *fd = open(*name, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
-    if(*fd == -1) {
+    *fd = open(*name, O_RDWR|O_CREAT|O_TRUNC|O_BINARY|O_EXCL, S_IRWXU);
+    /*
+     * EEXIST is almost impossible to occur, so we just treat it as other
+     * errors
+     */
+   if(*fd == -1) {
 	cli_errmsg("cli_gentempfd: Can't create temporary file %s: %s\n", *name, strerror(errno));
 	free(*name);
 	return CL_EIO;
