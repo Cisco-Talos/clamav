@@ -941,7 +941,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	const struct cfgstruct *cpt;
 	unsigned int nodb = 0, currver = 0, newver = 0, port = 0, i, j;
 	int ret, ims = -1;
-	char *pt, cvdfile[32], localname[32], *tmpdir = NULL, *newfile, newdb[512], cwd[512];
+	char *pt, cvdfile[32], localname[32], *tmpdir = NULL, *newfile, newdb[32], cwd[512];
 	const char *proxy = NULL, *user = NULL, *pass = NULL, *uas = NULL;
 	unsigned int flevel = cl_retflevel(), maxattempts;
 	int ctimeout, rtimeout;
@@ -951,7 +951,6 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 
     if(!(current = currentdb(dbname, localname))) {
 	nodb = 1;
-	strcpy(localname, cvdfile);
     } else {
 	mdat->dbflevel = current->fl;
     }
@@ -1085,7 +1084,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	    free(newfile);
 	    return ret;
 	}
-	snprintf(localname, sizeof(localname), "%s.cvd", dbname);
+	snprintf(newdb, sizeof(newdb), "%s.cvd", dbname);
 
     } else {
 	ret = 0;
@@ -1115,7 +1114,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 		free(newfile);
 		return ret;
 	    }
-	    snprintf(localname, sizeof(localname), "%s.cvd", dbname);
+	    snprintf(newdb, sizeof(newdb), "%s.cvd", dbname);
 	} else {
 	    if(buildcld(tmpdir, dbname, newfile, cfgopt(copt, "CompressLocalDatabase")->enabled) == -1) {
 		logg("!Can't create local database\n");
@@ -1124,30 +1123,25 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 		free(newfile);
 		return 70; /* FIXME */
 	    }
-	    snprintf(localname, sizeof(localname), "%s.cld", dbname);
+	    snprintf(newdb, sizeof(newdb), "%s.cld", dbname);
 	    cli_rmdirs(tmpdir);
 	    free(tmpdir);
 	}
     }
 
     if(!(current = cl_cvdhead(newfile))) {
-	logg("!Can't parse new database %s\n",newfile);
+	logg("!Can't parse new database %s\n", newfile);
 	unlink(newfile);
 	free(newfile);
 	return 55; /* FIXME */
     }
 
-    if(strlen(newfile) > 507) { /* shouldn't happen */
-	logg("!newfile: File name too long\n");
+    if(!nodb && !access(localname, R_OK) && unlink(localname)) {
+	logg("!Can't unlink %s. Please fix it and try again.\n", localname);
 	unlink(newfile);
 	free(newfile);
-	return 70; /* FIXME */
+	return 53;
     }
-
-    if(strstr(localname, ".cld"))
-	snprintf(newdb, sizeof(newdb), "%s.cld", newfile);
-    else
-	snprintf(newdb, sizeof(newdb), "%s.cvd", newfile);
 
     if(rename(newfile, newdb) == -1) {
 	logg("!Can't rename %s to %s\n", newfile, newdb);
@@ -1157,25 +1151,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
     }
     free(newfile);
 
-    if(!nodb && !access(cvdfile, R_OK) && unlink(cvdfile)) {
-	logg("!Can't unlink %s. Please fix it and try again.\n", cvdfile);
-	unlink(newdb);
-	return 53;
-    }
-
-    if(!nodb && strcmp(cvdfile, localname) && !access(localname, R_OK) && unlink(localname)) {
-	logg("!Can't unlink %s. Please fix it and try again.\n", localname);
-	unlink(newdb);
-	return 53;
-    }
-
-    if(rename(newdb, localname) == -1) {
-	logg("!Can't rename %s to %s\n", newdb, localname);
-	unlink(newdb);
-	return 57;
-    }
-
-    logg("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
+    logg("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", newdb, current->version, current->sigs, current->fl, current->builder);
 
     if(flevel < current->fl) {
 	logg("^Your ClamAV installation is OUTDATED!\n");
