@@ -145,7 +145,7 @@ int filecopy(const char *src, const char *dest)
 	case -1:
 	    return -1;
 	case 0:
-	    execl("/usr/bin/ditto", "ditto", "--rsrc", src, dest, NULL);
+	    execl("/usr/bin/ditto", "ditto", src, dest, NULL);
 	    perror("execl(ditto)");
 	    break;
 	default:

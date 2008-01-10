@@ -1,3 +1,7 @@
+Thu Jan 10 18:33:26 CET 2008 (tk)
+---------------------------------
+  * shared/misc.c: don't pass --rsrc flag to ditto (bb#380)
+
 Thu Jan 10 15:17:19 CET 2008 (tk)
 ---------------------------------
   * libclamav: fix printing of size_t and off_t vars (bb#444);
