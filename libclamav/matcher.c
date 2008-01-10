@@ -234,11 +234,11 @@ int cli_validatesig(cli_file_t ftype, const char *offstr, off_t fileoff, struct 
 
 	if(maxshift) {
 	    if((fileoff < offset) || (fileoff > offset + (off_t) maxshift)) {
-		cli_dbgmsg("Signature offset: %lu, expected: [%lu..%lu] (%s)\n", fileoff, offset, offset + maxshift, virname);
+		cli_dbgmsg("Signature offset: %ju, expected: [%ju..%ju] (%s)\n", (uintmax_t) fileoff, (uintmax_t) offset, (uintmax_t) (offset + maxshift), virname);
 		return 0;
 	    }
 	} else if(fileoff != offset) {
-	    cli_dbgmsg("Signature offset: %lu, expected: %lu (%s)\n", fileoff, offset, virname);
+	    cli_dbgmsg("Signature offset: %ju, expected: %ju (%s)\n", (uintmax_t) fileoff, (uintmax_t) offset, virname);
 	    return 0;
 	}
     }

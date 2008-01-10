@@ -304,7 +304,7 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
 						 cli_dbgmsg("RTF: waiting for magic\n");
 						 for(i=0; i<out_cnt && data->bread < rtf_data_magic_len; i++, data->bread++)
 							 if(rtf_data_magic[data->bread] != out_data[i]) {
-								 cli_dbgmsg("Warning: rtf objdata magic number not matched, expected:%d, got: %d, at pos:%lu\n",rtf_data_magic[i],out_data[i],data->bread);
+								 cli_dbgmsg("Warning: rtf objdata magic number not matched, expected:%d, got: %d, at pos:%ju\n",rtf_data_magic[i],out_data[i], (uintmax_t) data->bread);
 							 }
 						 out_cnt  -= i;
 						 if(data->bread == rtf_data_magic_len) {
@@ -324,7 +324,7 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
 							    out_data += i;
 							    data->bread=0;
 							    if(data->desc_len > 64) {
-								    cli_dbgmsg("Description length too big (%lu), showing only 64 bytes of it\n",data->desc_len);
+								    cli_dbgmsg("Description length too big (%ju), showing only 64 bytes of it\n", (uintmax_t) data->desc_len);
 								    data->desc_name = cli_malloc(65);
 							    }
 							    else
@@ -333,7 +333,7 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
 								    return CL_EMEM;
 							    }
 							    data->internal_state = WAIT_DESC;
-							    cli_dbgmsg("RTF: description length:%lu\n",data->desc_len);
+							    cli_dbgmsg("RTF: description length:%ju\n", (uintmax_t) data->desc_len);
 						    }
 						    break;
 					    }
@@ -392,7 +392,7 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
 						    if(data->bread == 4) {
 							    out_data += i;
 							    data->bread=0;
-							    cli_dbgmsg("Dumping rtf embedded object of size:%lu\n",data->desc_len);
+							    cli_dbgmsg("Dumping rtf embedded object of size:%ju\n", (uintmax_t) data->desc_len);
 							    if((ret = cli_gentempfd(data->tmpdir, &data->name, &data->fd)))
 								    return ret;
 							    data->internal_state = DUMP_DATA;

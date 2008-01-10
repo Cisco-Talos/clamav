@@ -1,3 +1,8 @@
+Thu Jan 10 15:17:19 CET 2008 (tk)
+---------------------------------
+  * libclamav: fix printing of size_t and off_t vars (bb#444);
+	       reported by Anton Yuzhaninov <citrin*rambler-co.ru>
+
 Thu Jan 10 14:29:28 CET 2008 (tk)
 ---------------------------------
   * clamdscan: remove dependendcy on libclamav (bb#750), patch from Edwin
