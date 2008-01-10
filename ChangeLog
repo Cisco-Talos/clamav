@@ -1,3 +1,8 @@
+Thu Jan 10 20:08:58 CET 2008 (tk)
+---------------------------------
+  * libclamav: avoid holes in often used data structures (bb#748);
+	       thanks to Edwin
+
 Thu Jan 10 18:33:26 CET 2008 (tk)
 ---------------------------------
   * shared/misc.c: don't pass --rsrc flag to ditto (bb#380)

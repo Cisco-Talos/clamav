@@ -25,11 +25,11 @@
 
 struct cli_bm_patt {
     unsigned char *pattern, *prefix;
-    uint16_t length, prefix_length;
     char *virname, *offset;
-    uint8_t target;
     struct cli_bm_patt *next;
+    uint16_t length, prefix_length;
     uint16_t cnt;
+    uint8_t target;
 };
 
 int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern);

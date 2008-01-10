@@ -83,16 +83,16 @@ struct cli_ftype {
     cli_file_t type;
     uint32_t offset;
     unsigned char *magic;
-    uint16_t length;
     char *tname;
     struct cli_ftype *next;
+    uint16_t length;
 };
 
 struct cli_matched_type {
-    cli_file_t type;
-    off_t offset;
-    unsigned short cnt;
     struct cli_matched_type *next;
+    off_t offset;
+    cli_file_t type;
+    unsigned short cnt;
 };
 
 cli_file_t cli_ftcode(const char *name);

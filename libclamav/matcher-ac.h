@@ -30,34 +30,34 @@
 extern uint8_t cli_ac_mindepth, cli_ac_maxdepth;
 
 struct cli_ac_data {
-    uint32_t partsigs;
     int32_t ***offmatrix;
+    uint32_t partsigs;
 };
 
 struct cli_ac_alt {
-    uint8_t chmode;
     unsigned char *str;
-    uint16_t len, num;
     struct cli_ac_alt *next;
+    uint16_t len, num;
+    uint8_t chmode;
 };
 
 struct cli_ac_patt {
     uint16_t *pattern, *prefix, length, prefix_length;
-    uint8_t depth;
     uint32_t mindist, maxdist;
-    char *virname, *offset;
     uint32_t sigid;
+    char *virname, *offset;
     uint16_t parts, partno, alt, alt_pattern;
     struct cli_ac_alt **alttable;
+    struct cli_ac_patt *next, *next_same;
+    uint8_t depth;
     uint8_t target;
     uint16_t type;
-    struct cli_ac_patt *next, *next_same;
 };
 
 struct cli_ac_node {
-    uint8_t leaf, final;
     struct cli_ac_patt *list;
     struct cli_ac_node **trans, *fail;
+    uint8_t leaf, final;
 };
 
 #include "matcher.h"
