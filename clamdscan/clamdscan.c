@@ -43,6 +43,20 @@ short printinfected = 0;
 
 extern int notremoved, notmoved;
 
+#ifdef CL_EXPERIMENTAL
+#define VERSION_EXP     VERSION"-exp"
+#else
+#define VERSION_EXP     VERSION
+#endif
+
+static void print_server_version(const struct optstruct *opt)
+{
+    if(get_clamd_version(opt)) {
+	/* can't get version from server, fallback */
+	printf("ClamAV "VERSION_EXP"\n");
+    }
+}
+
 int main(int argc, char **argv)
 {
 	int ds, dms, ret, infected;
@@ -74,7 +88,7 @@ int main(int argc, char **argv)
 	mprintf_stdout = 1;
 
     if(opt_check(opt, "version")) {
-	print_version();
+	print_server_version(opt);
 	opt_free(opt);
 	exit(0);
     }

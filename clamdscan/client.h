@@ -22,5 +22,6 @@
 #include "options.h"
 
 int client(const struct optstruct *opt, int *infected);
+int get_clamd_version(const struct optstruct *opt);
 
 #endif

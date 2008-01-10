@@ -390,6 +390,29 @@ static int dconnect(const struct optstruct *opt)
     return sockd;
 }
 
+int get_clamd_version(const struct optstruct *opt)
+{
+	char buff[64];
+	int bread, sockd;
+
+
+    if((sockd = dconnect(opt)) < 0)
+	return 2;
+
+    if(write(sockd, "VERSION", 7) <= 0) {
+	logg("^Can't write to the socket.\n");
+	return 2;
+    }
+
+    while((bread = read(sockd, buff, sizeof(buff)-1)) > 0) {
+	buff[bread] = '\0';
+	printf("%s\n", buff);
+    }
+
+    close(sockd);
+    return 0;
+}
+
 int client(const struct optstruct *opt, int *infected)
 {
 	char cwd[200], *fullpath;

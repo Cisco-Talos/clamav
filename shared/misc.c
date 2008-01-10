@@ -54,6 +54,8 @@
 #define VERSION_EXP	VERSION
 #endif
 
+/* CL_NOLIBCLAMAV means to omit functions that depends on libclamav */
+#ifndef CL_NOLIBCLAMAV
 char *freshdbdir(void)
 {
 	struct cl_cvd *d1, *d2;
@@ -131,7 +133,7 @@ void print_version(void)
 
     free(path);
 }
-
+#endif
 int filecopy(const char *src, const char *dest)
 {
 
@@ -187,6 +189,7 @@ int filecopy(const char *src, const char *dest)
 
 }
 
+#ifndef CL_NOLIBCLAMAV
 int dircopy(const char *src, const char *dest)
 {
 	DIR *dd;
@@ -230,6 +233,7 @@ int dircopy(const char *src, const char *dest)
     closedir(dd);
     return 0;
 }
+#endif
 
 int isnumb(const char *str)
 {
@@ -242,6 +246,7 @@ int isnumb(const char *str)
     return 1;
 }
 
+#ifndef CL_NOLIBCLAMAV
 int cvd_unpack(const char *cvd, const char *destdir)
 {
 	int fd;
@@ -263,6 +268,7 @@ int cvd_unpack(const char *cvd, const char *destdir)
 
     return 0;
 }
+#endif
 
 void daemonize(void)
 {
