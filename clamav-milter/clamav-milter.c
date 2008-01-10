@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-20071229"
+#define	CM_VERSION	"devel-20080110"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -2421,11 +2421,9 @@ findServer(void)
 			j = 0;
 	} else
 		/*
-		 * cli_rndnum returns 0..(max-1) - the max argument is not
-		 * the maximum number you want it to return, it is in fact
-		 * one *more* than the maximum number you want it to return
+		 * cli_rndnum returns 0..max
 		 */
-		j = cli_rndnum(numServers);
+		j = cli_rndnum(numServers - 1);
 
 	for(i = 0; i < numServers; i++)
 		socks[i].sock = -1;
@@ -5954,7 +5952,7 @@ print_trace(void)
  *	clamav-milter before I put this check in!
  *
  * FIXME: return different codes for "the value is wrong" and "sendmail.cf"
- *	hasn't been set up
+ *	hasn't been set up, though that's not so easy to work out.
  */
 static int
 verifyIncomingSocketName(const char *sockName)
