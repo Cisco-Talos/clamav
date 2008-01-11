@@ -1,3 +1,7 @@
+Fri Jan 11 22:50:33 CET 2008 (tk)
+---------------------------------
+  * libclamav/cvd.c: fix loading of .cld files on some platforms (bb#770)
+
 Thu Jan 10 20:08:58 CET 2008 (tk)
 ---------------------------------
   * libclamav: avoid holes in often used data structures (bb#748);

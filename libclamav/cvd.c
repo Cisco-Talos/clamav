@@ -200,6 +200,8 @@ static int cli_tgzload(int fd, struct cl_engine **engine, unsigned int *signo, u
 	return CL_EIO;
     }
 
+    gzseek(infile, 512, SEEK_SET);
+
     while(1) {
 
 	nread = gzread(infile, block, TAR_BLOCKSIZE);
