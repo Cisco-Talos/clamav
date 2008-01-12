@@ -1,3 +1,9 @@
+Sat Jan 12 23:00:17 EET 2008 (edwin)
+------------------------------------
+  * libclamav/Makefile.am/in, others.c: Fix build problem on OpenBSD: don't compile in
+  functions depending on pthreads into libclamav_internal_utils.a, because
+  clamdscan is compiled without pthreads.
+
 Fri Jan 11 22:50:33 CET 2008 (tk)
 ---------------------------------
   * libclamav/cvd.c: fix loading of .cld files on some platforms (bb#770)

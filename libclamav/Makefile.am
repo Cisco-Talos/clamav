@@ -189,12 +189,10 @@ libclamav_la_SOURCES = \
 libclamav_internal_utils_la_SOURCES=str.c \
 				    str.h \
 				    others.c \
-				    others.h \
-				    md5.c \
-				    md5.h
+				    others.h
 
 libclamav_internal_utils_la_LDFLAGS=-static
-
+libclamav_internal_utils_la_CFLAGS=-DCLI_MEMFUNSONLY
 lib_LTLIBRARIES = libclamav.la
 noinst_LTLIBRARIES = libclamav_internal_utils.la
 EXTRA_DIST = regex/engine.c libclamav.map

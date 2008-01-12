@@ -116,6 +116,7 @@ void cli_dbgmsg(const char *str, ...)
     }
 }
 
+#ifndef CLI_MEMFUNSONLY
 void cl_debug(void)
 {
     cli_debug_flag = 1;
@@ -290,6 +291,7 @@ static char *cli_md5buff(const unsigned char *buffer, unsigned int len, unsigned
 
     return md5str;
 }
+#endif
 
 void *cli_malloc(size_t size)
 {
@@ -402,6 +404,7 @@ char *cli_strdup(const char *s)
     return alloc;
 }
 
+#ifndef CLI_MEMFUNSONLY
 unsigned int cli_rndnum(unsigned int max)
 {
     if(name_salt[0] == 16) { /* minimizes re-seeding after the first call to cli_gentemp() */
@@ -506,6 +509,7 @@ int cli_gentempfd(const char *dir, char **name, int *fd)
 
     return CL_SUCCESS;
 }
+#endif
 
 #ifdef	C_WINDOWS
 /*
