@@ -187,6 +187,7 @@ typedef struct {
 
 static iconv_t iconv_open(const char *tocode, const char* fromcode)
 {
+	cli_dbgmsg("Internal iconv\n");
 	iconv_t iconv = cli_malloc(sizeof(*iconv));
 	if(!iconv)
 		return NULL;
@@ -813,7 +814,7 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 		return NULL;
 	else {
 		/* stream_in|in_m_area ->(read_raw) conv->tmp_area -> (iconv) conv->out_area -> (normalize) conv->norm_area -> (cli_readline) return value*/
-		const size_t tmp_move = conv->tmp_area.length - conv->tmp_area.offset;
+		const size_t tmp_move = conv->tmp_area.length >= conv->tmp_area.offset ? conv->tmp_area.length - conv->tmp_area.offset : 0;
 		const size_t tmp_available = conv->buffer_size - tmp_move;
 		const size_t max_read = maxlen < tmp_available ? maxlen : tmp_available;
 		unsigned char* tmpbuff = &conv->tmp_area.buffer[tmp_move];

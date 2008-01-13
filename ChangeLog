@@ -1,3 +1,7 @@
+Sun Jan 13 11:09:18 EET 2008 (edwin)
+-----------------------------------
+ * libclamav/entconv.c: don't make tmp_move negative (bb #772).
+
 Sat Jan 12 23:00:17 EET 2008 (edwin)
 ------------------------------------
   * libclamav/Makefile.am/in, others.c: Fix build problem on OpenBSD: don't compile in
