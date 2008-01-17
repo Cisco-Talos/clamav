@@ -1,3 +1,8 @@
+Thu Jan 17 21:38:58 CET 2008 (acab)
+-----------------------------------
+  * libclamav/nsis: use mmap if avail, prevent cli_malloc() spam if unavail,
+  		    nsis_st reordered, close bb#738
+
 Thu Jan 17 10:15:59 EST 2008 (tk)
 ---------------------------------
   * libclamav: disable some debug spam

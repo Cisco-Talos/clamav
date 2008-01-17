@@ -29,6 +29,12 @@
 #include <unistd.h>
 #endif
 
+#if HAVE_MMAP
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
+#endif
+
 #include "others.h"
 #include "cltypes.h"
 #include "nsis_bzlib.h"
@@ -56,10 +62,15 @@ struct nsis_st {
   int ifd;
   int ofd;
   off_t off;
+  off_t fullsz;
   char *dir;
   uint32_t asz;
   uint32_t hsz;
   uint32_t fno;
+  uint8_t comp;
+  uint8_t solid;
+  uint8_t freecomp;
+  uint8_t eof;
   struct {
     uint32_t avail_in;
     unsigned char *next_in;
@@ -70,10 +81,6 @@ struct nsis_st {
   CLI_LZMA lz;
   z_stream z;
   unsigned char *freeme;
-  uint8_t comp;
-  uint8_t solid;
-  uint8_t freecomp;
-  uint8_t eof;
   char ofn[1024];
 };
 
@@ -92,7 +99,7 @@ static int nsis_init(struct nsis_st *n) {
     break;
   case COMP_LZMA:
     memset(&n->lz, 0, sizeof(CLI_LZMA));
-    cli_LzmaInit(&n->lz, 0xffffffffffffffff);
+    cli_LzmaInit(&n->lz, 0xffffffffffffffffULL);
     n->freecomp=1;
     break;
   case COMP_ZLIB:
@@ -321,8 +328,21 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 	close(n->ofd);
 	return ret;
       }
+#if HAVE_MMAP
+      if((n->freeme= (unsigned char *)mmap(NULL, n->fullsz, PROT_READ, MAP_PRIVATE, n->ifd, 0))==MAP_FAILED) {
+	cli_dbgmsg("NSIS: mmap() failed"__AT__"\n");
+	close(n->ofd);
+	return CL_EIO;
+      }
+      n->nsis.next_in = n->freeme+n->off+0x1c;
+#else /* HAVE_MMAP */
+      if(!size || size > CLI_MAX_ALLOCATION) {
+	cli_dbgmsg("NSIS: mmap() support not compiled in and input file too big\n");
+	close(n->ofd);
+	return CL_EMEM;
+      }
       if (!(n->freeme= (unsigned char *) cli_malloc(n->asz))) {
-	cli_dbgmsg("NSIS: out of memory\n");
+	cli_dbgmsg("NSIS: out of memory"__AT__"\n");
 	close(n->ofd);
 	return CL_EMEM;
       }
@@ -332,6 +352,7 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 	return CL_EIO;
       }
       n->nsis.next_in = n->freeme;
+#endif /* HAVE_MMAP */
       n->nsis.avail_in = n->asz;
     }
 
@@ -424,6 +445,7 @@ static int nsis_headers(struct nsis_st *n, cli_ctx *ctx) {
 
   n->hsz = (uint32_t)cli_readint32(buf+0x14);
   n->asz = (uint32_t)cli_readint32(buf+0x18);
+  n->fullsz = st.st_size;
 
   cli_dbgmsg("NSIS: Header info - Flags=%x, Header size=%x, Archive size=%x\n", cli_readint32(buf), n->hsz, n->asz);
 
@@ -481,7 +503,13 @@ static int cli_nsis_unpack(struct nsis_st *n, cli_ctx *ctx) {
 
 static void cli_nsis_free(struct nsis_st *n) {
   nsis_shutdown(n);
-  if (n->solid && n->freeme) free(n->freeme);
+  if (n->solid && n->freeme) {
+#if HAVE_MMAP
+    munmap(n->freeme, n->fullsz);
+#else
+    free(n->freeme);
+#endif
+  }
 }
 
 int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
