@@ -1,6 +1,6 @@
 /*
  *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
- *  HTTP/1.0 compliance by Arkadiusz Miskiewicz <misiek@pld.org.pl>
+ *  HTTP/1.1 compliance by Arkadiusz Miskiewicz <misiek@pld.org.pl>
  *  Proxy support by Nigel Horne <njh@bandsman.co.uk>
  *  Proxy authorization support by Gernot Tenchio <g.tenchio@telco-tech.de>
  *		     (uses fmt_base64() from libowfat (http://www.fefe.de))
@@ -385,7 +385,7 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 #endif
 
     snprintf(cmd, sizeof(cmd),
-	"GET %s/%s HTTP/1.0\r\n"
+	"GET %s/%s HTTP/1.1\r\n"
 	"Host: %s\r\n%s"
 	"User-Agent: %s\r\n"
 	"Connection: close\r\n"
@@ -439,14 +439,14 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 	return NULL;
     }
 
-    if((strstr(buffer, "HTTP/1.0 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
+    if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.1 404")) != NULL) { 
 	logg("!CVD file not found on remote server\n");
 	/* mirman_update(mdat->currip, mdat, 1); */
 	return NULL;
     }
 
     /* check whether the resource is up-to-date */
-    if((strstr(buffer, "HTTP/1.0 304")) != NULL || (strstr(buffer, "HTTP/1.0 304")) != NULL) { 
+    if((strstr(buffer, "HTTP/1.1 304")) != NULL || (strstr(buffer, "HTTP/1.1 304")) != NULL) { 
 	*ims = 0;
 	logg("OK (IMS)\n");
 	mirman_update(mdat->currip, mdat, 0);
@@ -455,8 +455,8 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 	*ims = 1;
     }
 
-    if(!strstr(buffer, "HTTP/1.0 200") && !strstr(buffer, "HTTP/1.0 200") &&
-       !strstr(buffer, "HTTP/1.0 206") && !strstr(buffer, "HTTP/1.0 206")) {
+    if(!strstr(buffer, "HTTP/1.1 200") && !strstr(buffer, "HTTP/1.1 200") &&
+       !strstr(buffer, "HTTP/1.1 206") && !strstr(buffer, "HTTP/1.1 206")) {
 	logg("!Unknown response from remote server\n");
 	mirman_update(mdat->currip, mdat, 1);
 	return NULL;
@@ -537,7 +537,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 #endif
 
     snprintf(cmd, sizeof(cmd),
-	"GET %s/%s HTTP/1.0\r\n"
+	"GET %s/%s HTTP/1.1\r\n"
 	"Host: %s\r\n%s"
 	"User-Agent: %s\r\n"
 #ifdef FRESHCLAM_NO_CACHE
@@ -599,15 +599,15 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     buffer[i] = 0;
 
     /* check whether the resource actually existed or not */
-    if((strstr(buffer, "HTTP/1.0 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
+    if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.1 404")) != NULL) { 
 	logg("^getfile: %s not found on remote server (IP: %s)\n", srcfile, ipaddr);
 	/* mirman_update(mdat->currip, mdat, 1); */
 	closesocket(sd);
 	return 58;
     }
 
-    if(!strstr(buffer, "HTTP/1.0 200") && !strstr(buffer, "HTTP/1.0 200") &&
-       !strstr(buffer, "HTTP/1.0 206") && !strstr(buffer, "HTTP/1.0 206")) {
+    if(!strstr(buffer, "HTTP/1.1 200") && !strstr(buffer, "HTTP/1.1 200") &&
+       !strstr(buffer, "HTTP/1.1 206") && !strstr(buffer, "HTTP/1.1 206")) {
 	logg("!getfile: Unknown response from remote server (IP: %s)\n", ipaddr);
 	mirman_update(mdat->currip, mdat, 1);
 	closesocket(sd);
