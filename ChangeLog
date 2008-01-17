@@ -1,3 +1,7 @@
+Wed Jan 16 23:53:36 EST 2008 (tk)
+---------------------------------
+  * freshclam/manager.c: advertise itself as HTTP/1.0 compliant (instead of 1.1)
+
 Wed Jan 16 22:33:41 EST 2008 (tk)
 ---------------------------------
   * libclamav: remove experimental JS and PST code
