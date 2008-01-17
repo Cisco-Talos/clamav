@@ -1,3 +1,8 @@
+Thu Jan 17 03:51:08 CET 2008 (acab)
+-----------------------------------
+ * libclamav/scanners.c: allow chm tempfile unlinking on win32. Thanks to 
+   Gianluigi Tiesi <sherpya*netfarm.it>
+
 Sun Jan 13 11:09:18 EET 2008 (edwin)
 -----------------------------------
  * libclamav/entconv.c: don't make tmp_move negative (bb #772).

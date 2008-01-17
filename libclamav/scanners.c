@@ -1246,14 +1246,14 @@ static int cli_scanmschm(int desc, cli_ctx *ctx)
 	}
 
     } while(ret == CL_SUCCESS);
-    
+
+    cli_chm_close(&metadata);
+   
     if(!cli_leavetemps_flag)
 	cli_rmdirs(dir);
 
     free(dir);
 
-    cli_chm_close(&metadata);
-   
     cli_dbgmsg("CHM: Exit code: %d\n", ret);
     if (ret == CL_BREAK)
 	ret = CL_CLEAN;
