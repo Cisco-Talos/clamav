@@ -1,3 +1,7 @@
+Wed Jan 16 22:33:41 EST 2008 (tk)
+---------------------------------
+  * libclamav: remove experimental JS and PST code
+
 Thu Jan 17 03:51:08 CET 2008 (acab)
 -----------------------------------
  * libclamav/scanners.c: allow chm tempfile unlinking on win32. Thanks to 

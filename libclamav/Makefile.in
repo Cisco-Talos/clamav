@@ -86,9 +86,9 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	special.lo binhex.lo is_tar.lo tnef.lo autoit.lo strlcpy.lo \
 	regcomp.lo regerror.lo regexec.lo regfree.lo unarj.lo bzlib.lo \
 	nulsft.lo pdf.lo spin.lo yc.lo elf.lo sis.lo uuencode.lo \
-	pst.lo phishcheck.lo phish_domaincheck_db.lo \
-	phish_whitelist.lo regex_list.lo mspack.lo cab.lo entconv.lo \
-	hashtab.lo dconf.lo lzma_iface.lo explode.lo
+	phishcheck.lo phish_domaincheck_db.lo phish_whitelist.lo \
+	regex_list.lo mspack.lo cab.lo entconv.lo hashtab.lo dconf.lo \
+	lzma_iface.lo explode.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 libclamav_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -382,8 +382,6 @@ libclamav_la_SOURCES = \
 	sis.h \
 	uuencode.c \
 	uuencode.h \
-	pst.c \
-	pst.h \
 	phishcheck.c \
 	phishcheck.h \
 	phish_domaincheck_db.c \
@@ -542,7 +540,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/phish_domaincheck_db.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/phish_whitelist.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/phishcheck.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pst.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/readdb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rebuildpe.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regcomp.Plo@am__quote@

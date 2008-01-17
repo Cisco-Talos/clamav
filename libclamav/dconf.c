@@ -89,7 +89,6 @@ static struct dconf_module modules[] = {
 
     { "MAIL",	    "MBOX",	    MAIL_CONF_MBOX,	    1 },
     { "MAIL",	    "TNEF",	    MAIL_CONF_TNEF,	    1 },
-    { "MAIL",	    "PST",	    MAIL_CONF_PST,	    1 },
 
     { "OTHER",	    "UUENCODED",    OTHER_CONF_UUENC,	    1 },
     { "OTHER",	    "SCRENC",	    OTHER_CONF_SCRENC,	    1 },

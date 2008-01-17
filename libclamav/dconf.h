@@ -78,7 +78,6 @@ struct cli_dconf {
 /* Mail flags */
 #define MAIL_CONF_MBOX	    0x1
 #define MAIL_CONF_TNEF	    0x2
-#define MAIL_CONF_PST	    0x4
 
 /* Other flags */
 #define OTHER_CONF_UUENC    0x1

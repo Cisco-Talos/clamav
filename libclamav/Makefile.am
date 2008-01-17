@@ -158,8 +158,6 @@ libclamav_la_SOURCES = \
 	sis.h \
 	uuencode.c \
 	uuencode.h \
-	pst.c \
-	pst.h \
 	phishcheck.c \
 	phishcheck.h \
 	phish_domaincheck_db.c \
