@@ -1,3 +1,9 @@
+Fri Jan 18 12:13:16 CET 2008 (acab)
+-----------------------------------
+  * test: Storing the testifles byteswapped to avoid detection of the tarball.
+  	  Real files are generated at make time and are additionally available
+	  under /contrib/test - close bb#398
+
 Thu Jan 17 21:38:58 CET 2008 (acab)
 -----------------------------------
   * libclamav/nsis: use mmap if avail, prevent cli_malloc() spam if unavail,

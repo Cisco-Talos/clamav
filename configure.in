@@ -1345,6 +1345,7 @@ freshclam/Makefile
 sigtool/Makefile
 clamconf/Makefile
 etc/Makefile
+test/Makefile
 Makefile
 clamav-config
 libclamav.pc
