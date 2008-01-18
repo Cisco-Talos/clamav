@@ -1,3 +1,8 @@
+Fri Jan 18 17:01:25 EET 2008 (edwin)
+------------------------------------
+  * docs/phishsigs_howto.tex/.pdf: update documentation. Part I, more to come.
+  (bb #554).
+
 Fri Jan 18 12:13:16 CET 2008 (acab)
 -----------------------------------
   * test: Storing the testifles byteswapped to avoid detection of the tarball.
