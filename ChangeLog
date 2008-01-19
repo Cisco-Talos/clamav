@@ -1,3 +1,7 @@
+Sat Jan 19 14:41:50 CET 2008 (acab)
+-----------------------------------
+  * test: using splitted instead of byteswapped files
+
 Fri Jan 18 17:01:25 EET 2008 (edwin)
 ------------------------------------
   * docs/phishsigs_howto.tex/.pdf: update documentation. Part I, more to come.
