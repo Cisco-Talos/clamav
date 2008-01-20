@@ -11397,15 +11397,12 @@ int
 main ()
 {
 
-int main(int argc, char** argv) {
 	char** xin,**xout;
 	unsigned il,ol;
 	int rc;
 	iconv_t iconv_struct = iconv_open("UTF-16BE","UTF-8");
 	rc = iconv(iconv_struct,xin,&il,xout,&ol);
 	iconv_close(iconv_struct);
-	return 0;
-}
 
   ;
   return 0;

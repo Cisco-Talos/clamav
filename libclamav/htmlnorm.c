@@ -491,7 +491,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 		}
 	}
 
-	if(dconf_entconv && (rc = init_entity_converter(&conv, UNKNOWN, 16384) )) {
+	if(dconf_entconv && (rc = init_entity_converter(&conv, 16384) )) {
 		if (!m_area) {
 			fclose(stream_in);
 		}
@@ -502,7 +502,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	tag_args.tag = NULL;
 	tag_args.value = NULL;
 	tag_args.contents = NULL;
-	
+
 	if (dirname) {
 		snprintf(filename, 1024, "%s/rfc2397", dirname);
 		if (mkdir(filename, 0700) && errno != EEXIST) {
@@ -514,14 +514,14 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 			file_buff_o1 = file_buff_o2 = file_buff_script = NULL;
 			goto abort;
 		}
-		
+
 		file_buff_o2 = (file_buff_t *) cli_malloc(sizeof(file_buff_t));
 		if (!file_buff_o2) {
 			free(file_buff_o1);
 			file_buff_o1 = file_buff_o2 = file_buff_script = NULL;
 			goto abort;
 		}
-		
+
 		file_buff_script = (file_buff_t *) cli_malloc(sizeof(file_buff_t));
 		if (!file_buff_script) {
 			free(file_buff_o1);
@@ -529,7 +529,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 			file_buff_o1 = file_buff_o2 = file_buff_script = NULL;
 			goto abort;
 		}
-		
+
 		snprintf(filename, 1024, "%s/comment.html", dirname);
 		file_buff_o1->fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
 		if (!file_buff_o1->fd) {
@@ -574,12 +574,12 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 		file_buff_o2 = NULL;
 		file_buff_script = NULL;
 	}
-	
+
 	binary = FALSE;
 
 	if(dconf_entconv)
-		ptr = line = encoding_norm_readline(&conv, stream_in, m_area, 8192);
-	else   
+		ptr = line = encoding_norm_readline(&conv, stream_in, m_area);
+	else
 		ptr = line = cli_readline(stream_in, m_area, 8192);
 
 	while (line) {
@@ -766,7 +766,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					if (file_buff_o2 && (file_buff_o2->length > 0)) {
 						file_buff_o2->length--;
 					}
-					
+
 					if (quoted != NOT_QUOTED) {
 						html_output_c(file_buff_o1, file_buff_o2, '"');
 					}
@@ -783,7 +783,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					if (file_buff_o2 && (file_buff_o2->length > 0)) {
 						file_buff_o2->length--;
 					}
-					
+
 					if (quoted != NOT_QUOTED) {
 						html_output_c(file_buff_o1, file_buff_o2, '"');
 					}
@@ -832,7 +832,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						}
 						ptr++;
 					} else {
-						if (!escape && (quoted==DOUBLE_QUOTED)) {					
+						if (!escape && (quoted==DOUBLE_QUOTED)) {
 							html_output_c(file_buff_o1, file_buff_o2, '"');
 							if (tag_val_length < HTML_STR_LENGTH) {
 								tag_val[tag_val_length++] = '"';
@@ -880,7 +880,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					}
 					ptr++;
 				}
-				
+
 				if (*ptr == '\\') {
 					escape = TRUE;
 				} else {
@@ -899,7 +899,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				ptr++;
 				break;
 			case HTML_PROCESS_TAG:
-				
+
 				/* Default to no action for this tag */
 				state = HTML_SKIP_WS;
 				next_state = HTML_NORM;
@@ -938,6 +938,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						in_script = TRUE;
 					}
 					html_output_tag(file_buff_script, tag, &tag_args);
+				} else if (dconf_entconv && strcmp(tag, "body") == 0) {
+					/* no more charset changes accepted after body encountered */
+					process_encoding_set(&conv, NULL, SWITCH_TO_BLOCKMODE);
 				} else if (dconf_entconv && strcmp(tag, "meta") == 0) {
 					const unsigned char* http_equiv = html_tag_arg_value(&tag_args, "http-equiv");
 					const unsigned char* http_content = html_tag_arg_value(&tag_args, "content");
@@ -953,7 +956,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 							http_content2[i] = tolower(http_content[i]);
 						http_content2[len] = '\0';
 						charset = (unsigned char*) strstr((char*)http_content2,"charset");
-						if(charset) {							
+						if(charset) {
 							while(*charset && *charset != '=')
 								charset++;
 							if(*charset)
@@ -1011,8 +1014,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					} else if (strcmp(tag,"form") == 0 && hrefs->scanContents) {
 						const unsigned char* arg_action_value = html_tag_arg_value(&tag_args,"action");
 						if (arg_action_value) {
-							if(in_form_action) 
-								free(in_form_action);							
+							if(in_form_action)
+								free(in_form_action);
 							in_form_action = cli_strdup(arg_action_value);
 						}
 					} else if (strcmp(tag, "img") == 0) {
@@ -1077,7 +1080,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 									in_form_action + strlen(in_form_action));
 								html_tag_contents_done(hrefs,hrefs->count);
 							}
-						}						
+						}
 					}
 					/* TODO:imagemaps can have urls too */
 				}
@@ -1123,7 +1126,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						html_output_c(file_buff_o1, file_buff_o2, '&');
 						if (next_state == HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
 								tag_val[tag_val_length++] = '&';
-						}						
+						}
 						for(i=0; i < entity_val_length; i++) {
 							const char c = tolower(entity_val[i]);
 							html_output_c(file_buff_o1, file_buff_o2, c);
@@ -1266,7 +1269,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						case 0x24:
 							html_output_c(file_buff_o1, file_buff_o2, 0x40);
 							html_output_c(file_buff_script, NULL, 0x40);
-							break;				
+							break;
 						case 0x26:
 							html_output_c(file_buff_o1, file_buff_o2, 0x0a);
 							html_output_c(file_buff_script, NULL, 0x0a);
@@ -1285,7 +1288,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				ptr++;
 				length--;
 				break;
-				
+
 			case HTML_RFC2397_TYPE:
 				if (*ptr == '\'') {
 					if (!escape && (quoted==SINGLE_QUOTED)) {
@@ -1340,7 +1343,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					escape = FALSE;
 					next_state = HTML_BAD_STATE;
 					ptr++;
-				
+
 				} else {
 					if (tag_val_length < HTML_STR_LENGTH) {
 						tag_val[tag_val_length++] = tolower(*ptr);
@@ -1370,7 +1373,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						goto abort;
 					}
 					file_tmp_o1->length = 0;
-				
+
 					html_output_str(file_tmp_o1, "From html-normalise\n", 20);
 					html_output_str(file_tmp_o1, "Content-type: ", 14);
 					if ((tag_val_length == 0) && (*tag_val == ';')) {
@@ -1455,7 +1458,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					html_output_c(file_tmp_o1, NULL, '%');
 				}
 				state = HTML_RFC2397_DATA;
-				break;		
+				break;
 			case HTML_ESCAPE_CHAR:
 				value *= 16;
 				length++;
@@ -1472,22 +1475,23 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					state = next_state;
 				}
 				ptr++;
-				break;	
+				break;
 			}
 		}
 		if(hrefs && hrefs->scanContents && in_ahref && href_contents_begin)
 			/* end of line, append contents now, resume on next line */
 			html_tag_contents_append(hrefs,in_ahref,href_contents_begin,ptr);
 		ptrend = NULL;
-		free(line);
- 		if(dconf_entconv)
- 			ptr = line = encoding_norm_readline(&conv, stream_in, m_area, 8192);
- 		else
- 			ptr = line = cli_readline(stream_in, m_area, 8192);
+		if(dconf_entconv)
+			ptr = line = encoding_norm_readline(&conv, stream_in, m_area);
+		else {
+			free(line);
+			ptr = line = cli_readline(stream_in, m_area, 8192);
+		}
 	}
-	
- 	if(dconf_entconv) {
- 		/* handle "unfinished" entitites */
+
+	if(dconf_entconv) {
+		/* handle "unfinished" entitites */
 		size_t i;
 		unsigned char* normalized;
 		entity_val[entity_val_length] = '\0';

@@ -1,3 +1,13 @@
+Sun Jan 20 23:49:41 EET 2008 (edwin)
+------------------------------------
+  * configure: AC_TRY_LINK already adds a main(), remove duplicate main()
+  * libclamav: entconv improvements to improve security and performance
+		Part I for  (bb #686, #386)
+	       TODO: * optimize entity_norm
+	             * create testfiles for unicode encoding variants
+		     * create a regression test
+		     * check for memory leaks
+
 Sat Jan 19 14:41:50 CET 2008 (acab)
 -----------------------------------
   * test: using splitted instead of byteswapped files

@@ -185,37 +185,35 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 		    struct entity_conv conv;
 		    const size_t conv_size = 2*bread < 256 ? 256 : 2*bread;
 
-		if(init_entity_converter(&conv,UNKNOWN,conv_size) == 0) {
-			int end = 0;
-			m_area_t area;
-			area.buffer = (unsigned char *) smallbuff;
-			area.length = bread;
-			area.offset = 0;
+		    /* TODO: make detection via daily.ft, then we can get rid of line-mode entirely!*/
+		    if(init_entity_converter(&conv, conv_size) == 0) {
+			    m_area_t area;
+			    area.buffer = (unsigned char *) smallbuff;
+			    area.length = bread;
+			    area.offset = 0;
 
-		    while(!end) {
-			if(cli_ac_initdata(&mdata, root->ac_partsigs, AC_DEFAULT_TRACKLEN))
-			    return ret;
+			    /* switch to blockmode, so that we convert all the input buffer at once,
+			     * rather than line-by-line */
+			    process_encoding_set(&conv, NULL, SWITCH_TO_BLOCKMODE);
 
-			decoded =  encoding_norm_readline(&conv, NULL, &area, bread);
+			    if(cli_ac_initdata(&mdata, root->ac_partsigs, AC_DEFAULT_TRACKLEN))
+				    return ret;
 
-			if(decoded) {
-			    sret = cli_ac_scanbuff(decoded, strlen((const char *) decoded), NULL, engine->root[0], &mdata, 1, 0, 0, -1, NULL);
-			    free(decoded);
-			    if(sret == CL_TYPE_HTML) {
-				ret = CL_TYPE_HTML;
-				end = 1;
+			    decoded =  encoding_norm_readline(&conv, NULL, &area);
+
+			    if(decoded) {
+				    sret = cli_ac_scanbuff(decoded, strlen((const char *) decoded), NULL, engine->root[0], &mdata, 1, 0, 0, -1, NULL);
+				    if(sret == CL_TYPE_HTML) {
+					    ret = CL_TYPE_HTML;
+				    }
 			    }
-			} else
-			    end = 1;
 
-			cli_ac_freedata(&mdata);
+			    cli_ac_freedata(&mdata);
+
+			    entity_norm_done(&conv);
+		    } else {
+			    cli_warnmsg("cli_filetype2: Error initializing entity converter\n");
 		    }
-
-		    entity_norm_done(&conv);
-
-		} else {
-		    cli_warnmsg("cli_filetype2: Error initializing entity converter\n");
-		}
 	    }
 	}
     }
