@@ -610,7 +610,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 		if (!name) {
 			return FALSE;
 		}
-		snprintf(name, 11, "%.10jd", (intmax_t) (i + (long int) prop));
+		snprintf(name, 11, "%.10ld", (long int) (i + (long int) prop));
 	} else {
 		/* Sanitize the file name */
 		sanitiseName(name);

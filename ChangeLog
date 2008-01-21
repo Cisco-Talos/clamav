@@ -1,3 +1,7 @@
+Mon Jan 21 18:02:56 CET 2008 (tk)
+---------------------------------
+  * libclamav: use %lu/(unsigned long int) instead of %ju/(uintmax_t) (bb#444)
+
 Mon Jan 21 17:27:54 EET 2008 (edwin)
 ------------------------------------
  * contrib/entitynorm:

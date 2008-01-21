@@ -823,7 +823,7 @@ int cli_chm_extract_file(int fd, char *dirname, chm_metadata_t *metadata)
 		return CL_EIO;
 	}
 	if (chm_copy_file_data(metadata->ufd, metadata->ofd, metadata->file_length) != metadata->file_length) {
-		cli_dbgmsg("failed to copy %ju bytes\n", (uintmax_t) metadata->file_length);
+		cli_dbgmsg("failed to copy %lu bytes\n", (unsigned long int) metadata->file_length);
 		close(metadata->ofd);
 		return CL_EIO;
 	}
