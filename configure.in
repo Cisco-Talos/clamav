@@ -249,26 +249,6 @@ AC_CHECK_FUNCS(poll setsid memcpy snprintf vsnprintf strerror_r strlcpy strlcat 
 AC_FUNC_MMAP
 AC_FUNC_FSEEKO
 
-dnl Check for broken snprintf (code by Phil Oleson <oz*nixil.net>)
-if test "x$ac_cv_func_snprintf" = "xyes" ; then
-        AC_MSG_CHECKING([whether snprintf correctly terminates long strings])
-        AC_TRY_RUN(
-                [
-#include <stdio.h>
-int main(void){char b[5];snprintf(b,5,"123456789");return(b[4]!='\0');}
-                ],
-                [AC_MSG_RESULT(yes)],
-                [
-                        AC_MSG_RESULT(no)
-                        AC_DEFINE(BROKEN_SNPRINTF,1,[Define if your snprintf is busted])
-                        AC_MSG_WARN([****** Your snprintf() function is broken, complain to your vendor])
-                ],
-		[
-			AC_MSG_RESULT([cross-compiling, assumed ok])
-		]
-        )
-fi
-
 have_pthreads=no
 AC_CHECK_HEADER(pthread.h,[have_pthreads=yes],)
 

@@ -3,9 +3,6 @@
 /* enable bind8 compatibility */
 #undef BIND_8_COMPAT
 
-/* Define if your snprintf is busted */
-#undef BROKEN_SNPRINTF
-
 /* "build clamd" */
 #undef BUILD_CLAMD
 

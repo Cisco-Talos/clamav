@@ -1,3 +1,7 @@
+Mon Jan 21 18:16:53 CET 2008 (tk)
+---------------------------------
+  * configure,libclamav: drop internal snprintf implementation
+
 Mon Jan 21 18:09:47 CET 2008 (tk)
 ---------------------------------
   * libclamunrar_iface/unrar_iface.h: add missing #pragma pack direct.  (bb#769)

@@ -69,8 +69,6 @@ libclamav_la_SOURCES = \
 	mbox.h \
 	message.c \
 	message.h \
-	snprintf.c \
-	snprintf.h \
 	table.c \
 	table.h \
 	text.c \
