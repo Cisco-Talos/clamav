@@ -1,3 +1,8 @@
+Mon Jan 21 16:04:35 EET 2008 (edwin)
+-----------------------------------
+  * libclamav/hashtab.[ch]: fix a gcc warning (bb #786). Thanks to
+  Gianluigi Tiesi <sherpya*netfarm.it>
+
 Sun Jan 20 23:49:41 EET 2008 (edwin)
 ------------------------------------
   * configure: AC_TRY_LINK already adds a main(), remove duplicate main()

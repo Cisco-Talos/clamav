@@ -77,7 +77,7 @@ struct hashtable {
 int hashtab_generate_c(const struct hashtable *s,const char* name);
 struct element* hashtab_find(const struct hashtable *s,const unsigned char* key,const size_t len);
 int hashtab_init(struct hashtable *s,size_t capacity);
-int hashtab_insert(struct hashtable *s,const unsigned char* key,size_t len,element_data data);
+int hashtab_insert(struct hashtable *s,const unsigned char* key,const size_t len,const element_data data);
 void hashtab_delete(struct hashtable *s,const unsigned char* key,const size_t len);
 void hashtab_clear(struct hashtable *s);
 

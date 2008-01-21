@@ -344,7 +344,7 @@ void hashtab_delete(struct hashtable *s,const unsigned char* key,const size_t le
 	struct element* e = hashtab_find(s,key,len);
 	if(e && e->key) {	
 		PROFILE_HASH_DELETE(s);
-		free(e->key);/*FIXME: any way to shut up warnings here? if I make key char*, I get tons of warnings in entitylist.h */
+		free((void *)e->key);
 		e->key = DELETED_KEY;
 		s->used--;
 	}
@@ -356,7 +356,7 @@ void hashtab_clear(struct hashtable *s)
 	PROFILE_HASH_CLEAR(s);
 	for(i=0;i < s->capacity;i++) {
 		if(s->htable[i].key && s->htable[i].key != DELETED_KEY)
-			free(s->htable[i].key);/*FIXME: shut up warnings */
+			free((void *)s->htable[i].key);
 	}
 	memset(s->htable, 0, s->capacity);
 	s->used = 0;
