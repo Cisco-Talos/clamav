@@ -28,6 +28,14 @@
 #define __attribute__(x)
 #endif
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
+
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1
+#endif
+
 #define UNRAR_OK	 0
 #define UNRAR_BREAK	 1
 #define UNRAR_EMEM	-1
