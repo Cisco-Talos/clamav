@@ -1,3 +1,7 @@
+Mon Jan 21 19:59:41 EET 2008 (edwin)
+------------------------------------
+  * libclamav/entconv.c: fix EOF handling, bug introduced in r3515.
+
 Mon Jan 21 18:16:53 CET 2008 (tk)
 ---------------------------------
   * configure,libclamav: drop internal snprintf implementation

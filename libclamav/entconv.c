@@ -1015,7 +1015,7 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 				conv->encoding_symbolic = E_OTHER;
 			case E_UNKNOWN:
 			case E_OTHER:
-				if(!input_limit) {
+				if(!input_limit || input_offset == input_limit) {
 					/* nothing to do, EOF */
 					return NULL;
 				}
