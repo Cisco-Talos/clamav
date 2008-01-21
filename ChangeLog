@@ -1,3 +1,15 @@
+Mon Jan 21 17:27:54 EET 2008 (edwin)
+------------------------------------
+ * contrib/entitynorm:
+			* use fewer entities, browsers don't support all either.
+		       	* update to generate code for new entconv.
+		       	* no need for configure, use just a simple Makefile
+			 (it is an internal tool)
+  libclamav/entconv.c, hashtab.c, htmlnorm.c:
+			* don't allocate memory for each entity_norm call.
+			* don't touch length of mmaped area (bb #785)
+			* update htmlnorm to use new entity_norm
+
 Mon Jan 21 16:04:35 EET 2008 (edwin)
 -----------------------------------
   * libclamav/hashtab.[ch]: fix a gcc warning (bb #786). Thanks to

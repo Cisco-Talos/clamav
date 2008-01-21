@@ -21,6 +21,7 @@
 
 #ifndef _ENTITIES_H
 #define _ENTITIES_H
+
 #include "cltypes.h"
 
 #include "hashtab.h"
@@ -49,7 +50,7 @@ enum encodings {E_UCS4,E_UTF16,E_UCS4_1234,E_UCS4_4321,E_UCS4_2143,E_UCS4_3412,E
 #define MAX_ENTITY_SIZE 22
 
 struct entity_conv {
-	unsigned char* encoding;
+	char* encoding;
 	enum encoding_priority priority;
 	enum encodings encoding_symbolic;
 	unsigned short int encoding_specific;/* sub-encoding, used for ISO*/
@@ -62,9 +63,8 @@ struct entity_conv {
 	unsigned char bom[4];
 	size_t buffer_size;
 	size_t buffer_cnt;
-	uint8_t entity_buffcnt;
 	void* iconv_struct;
-	char entity_buff[MAX_ENTITY_SIZE+2];
+	unsigned char entity_buff[MAX_ENTITY_SIZE+2];
 	m_area_t tmp_area;
 	m_area_t out_area;
 	m_area_t norm_area;
@@ -78,7 +78,7 @@ void process_encoding_set(struct entity_conv* conv,const unsigned char* encoding
 int entity_norm_done(struct entity_conv* conv);
 
 unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in, m_area_t* in_m_area);
-unsigned char* entity_norm(const struct entity_conv* conv,const unsigned char* entity);
+const char* entity_norm(struct entity_conv* conv,const unsigned char* entity);
 int entitynorm_init(void);
 
 #endif

@@ -1109,18 +1109,17 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 			case HTML_ENTITY_REF_DECODE:
 				if(*ptr == ';') {
 					size_t i;
-					unsigned char* normalized;
+					const char* normalized;
 					entity_val[entity_val_length] = '\0';
 					normalized = entity_norm(&conv, entity_val);
 					if(normalized) {
 						for(i=0; i < strlen(normalized); i++) {
-							const char c = tolower(normalized[i]);
+							const unsigned char c = normalized[i]&0xff;
 							html_output_c(file_buff_o1, file_buff_o2, c);
 							if (next_state == HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
 								tag_val[tag_val_length++] = c;
 							}
 						}
-						free(normalized);
 					}
 					else {
 						html_output_c(file_buff_o1, file_buff_o2, '&');
@@ -1181,7 +1180,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 							html_output_c(file_buff_o1, file_buff_o2, tolower(value));
 						else {
 							unsigned char buff[10];
-							snprintf((char*)buff,9,"&#%d;",value);
+							snprintf((char*)buff,9,"&#x%x;",value);
 							buff[9] = '\0';
 							html_output_str(file_buff_o1, buff, strlen(buff));
 							html_output_str(file_buff_o2, buff, strlen(buff));
@@ -1493,13 +1492,12 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	if(dconf_entconv) {
 		/* handle "unfinished" entitites */
 		size_t i;
-		unsigned char* normalized;
+		const char* normalized;
 		entity_val[entity_val_length] = '\0';
 		normalized = entity_norm(&conv, entity_val);
 		if(normalized) {
 			for(i=0; i < strlen(normalized); i++)
-				html_output_c(file_buff_o1, file_buff_o2, tolower(normalized[i]));
-						free(normalized);
+				html_output_c(file_buff_o1, file_buff_o2, normalized[i]&0xff);
 		}
 		else {
 			if(entity_val_length) {

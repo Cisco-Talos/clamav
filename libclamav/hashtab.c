@@ -43,7 +43,7 @@ static const size_t prime_list[] =
 
 static const size_t prime_n = sizeof(prime_list)/sizeof(prime_list[0]);
 
-static unsigned char DELETED_KEY[] = "";
+static const char DELETED_KEY[] = "";
 
 static size_t get_nearest_capacity(const size_t capacity)
 {
@@ -204,24 +204,24 @@ static size_t hash(const unsigned char* k,const size_t len,const size_t SIZE)
 }
 
 /* if returned element has key==NULL, then key was not found in table */
-struct element* hashtab_find(const struct hashtable *s,const unsigned char* key,const size_t len)
+struct element* hashtab_find(const struct hashtable *s,const char* key,const size_t len)
 {
 	struct element* element;
-	size_t tries = 1; 
+	size_t tries = 1;
 	size_t idx;
 
 	if(!s)
-		return NULL; 
+		return NULL;
 	PROFILE_CALC_HASH(s);
 	PROFILE_FIND_ELEMENT(s);
-	idx = hash(key, len, s->capacity); 
+	idx = hash((const unsigned char*)key, len, s->capacity);
 	element = &s->htable[idx];
 	do {
 		if(!element->key) {
 			PROFILE_FIND_NOTFOUND(s, tries);
 			return NULL; /* element not found, place is empty*/
 		}
-		else if(element->key != DELETED_KEY && strncmp((const char*)key,(const char*)element->key,len)==0) {
+		else if(element->key != DELETED_KEY && strncmp(key, element->key,len)==0) {
 			PROFILE_FIND_FOUND(s, tries);
 			return element;/* found */
 		}
@@ -247,10 +247,10 @@ static int hashtab_grow(struct hashtable *s)
 	for(i=0; i < s->capacity;i++) {
 		if(s->htable[i].key && s->htable[i].key != DELETED_KEY) {
 			struct element* element;
-			size_t tries = 1;				
+			size_t tries = 1;
 
 			PROFILE_CALC_HASH(s);
-			idx = hash(s->htable[i].key, strlen((const char*)s->htable[i].key), new_capacity);
+			idx = hash((const unsigned char*)s->htable[i].key, strlen(s->htable[i].key), new_capacity);
 			element = &htable[idx];
 
 			while(element->key && tries <= new_capacity) {
@@ -279,23 +279,22 @@ static int hashtab_grow(struct hashtable *s)
 	return CL_SUCCESS;
 }
 
-
-int hashtab_insert(struct hashtable *s,const unsigned char* key,const size_t len,const element_data data)
+int hashtab_insert(struct hashtable *s, const char* key, const size_t len, const element_data data)
 {
 	struct element* element;
 	struct element* deleted_element = NULL;
-	size_t tries = 1; 
+	size_t tries = 1;
 	size_t idx;
 	if(!s)
-		return CL_ENULLARG; 
+		return CL_ENULLARG;
 	do {
 		PROFILE_CALC_HASH(s);
-		idx = hash(key, len, s->capacity); 
+		idx = hash((const unsigned char*)key, len, s->capacity);
 		element = &s->htable[idx];
 
 		do {
 			if(!element->key) {
-				unsigned char* thekey;
+				char* thekey;
 				/* element not found, place is empty, insert*/
 				if(deleted_element) {
 					/* reuse deleted elements*/
@@ -308,10 +307,10 @@ int hashtab_insert(struct hashtable *s,const unsigned char* key,const size_t len
 				thekey = cli_malloc(len+1);
 				if(!thekey)
 					return CL_EMEM;
-				strncpy((char*)thekey,(const char*)key,len+1);
+				strncpy(thekey,(const char*)key,len+1);
 				element->key = thekey;
 				element->data = data;
-				s->used++;		
+				s->used++;
 				if(s->used > s->maxfill) {
 					cli_dbgmsg("hashtab.c:Growing hashtable %p, because it has exceeded maxfill, old size:%ld\n",(void*)s,s->capacity);
 					hashtab_grow(s);
@@ -339,10 +338,10 @@ int hashtab_insert(struct hashtable *s,const unsigned char* key,const size_t len
 	return CL_EMEM;
 }
 
-void hashtab_delete(struct hashtable *s,const unsigned char* key,const size_t len)
+void hashtab_delete(struct hashtable *s, const char* key, const size_t len)
 {
 	struct element* e = hashtab_find(s,key,len);
-	if(e && e->key) {	
+	if(e && e->key) {
 		PROFILE_HASH_DELETE(s);
 		free((void *)e->key);
 		e->key = DELETED_KEY;
@@ -388,7 +387,7 @@ int hashtab_generate_c(const struct hashtable *s,const char* name)
 		else if(e->key == DELETED_KEY)
 			printf("\t{DELETED_KEY,0},\n");
 		else
-			printf("\t{(const unsigned char*)\"%s\", %ld},\n", e->key, e->data);
+			printf("\t{\"%s\", %ld},\n", e->key, e->data);
 	}
 	printf("};\n");
 	printf("const struct hashtable %s = {\n",name);
@@ -403,10 +402,10 @@ int hashtab_load(FILE* in, struct hashtable *s)
 {
 	char line[1024];
 	while (fgets(line, sizeof(line), in)) {
-		unsigned char l[1024];
+		char l[1024];
 		int val;
 		sscanf(line,"%d %1023s",&val,l);
-		hashtab_insert(s,l,strlen((const char*)l),val);
+		hashtab_insert(s,l,strlen(l),val);
 	}
 	return CL_SUCCESS;
 }

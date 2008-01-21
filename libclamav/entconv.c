@@ -60,43 +60,61 @@
 #define EILSEQ 84
 #endif
 
-unsigned char* entity_norm(const struct entity_conv* conv,const unsigned char* entity)
+#ifndef HAVE_ICONV
+typedef struct {
+	enum encodings encoding;
+	size_t size;
+} * iconv_t;
+#endif
+
+/* TODO: gcc refuses to inline because it consider call unlikely and code size grows */
+static inline unsigned char* u16_normalize(uint16_t u16, unsigned char* out, const ssize_t limit)
 {
-	struct element* e = hashtab_find(conv->ht,entity,strlen((const char*)entity));
-	if(e && e->key) {
-		const int val = e->data;
-		/* TODO: don't allocate memory here, but use a buffer in struct entity_conv */
-		if(val == '<')/* this was an escaped <, so output it escaped*/
-			return (unsigned char*)cli_strdup("&lt;");
-		else if(val == '>')/* see above */
-			return (unsigned char*)cli_strdup("&gt;");
-		else if(val >= 0 && val <= 0xff) {
-			unsigned char *e_out = cli_malloc(2);
-
-			if(!e_out)
-			    return NULL;
-
-			e_out[0] = (unsigned char)val;
-			e_out[1] = '\0';
-			return e_out;
-		}
-		else if(val==160)
-			return (unsigned char*)cli_strdup(" ");
-		else {
-			/* TODO: use optimized version from u16_normalize */
-			unsigned char *ent_out = cli_malloc(10);
-
-			if(!ent_out)
-			    return NULL;
-
-			snprintf((char*)ent_out,9,"&#%d;",val);
-			ent_out[9] = '\0';
-			return ent_out;
-		}
+	assert(limit > 0 && "u16_normalize must be called with positive limit");
+	/* \0 is just ignored */
+	if(u16 > 0 && u16 < 0xff) {
+		assert((uint8_t)u16 != 0);
+		*out++ = (uint8_t)u16;
 	}
-	else
-		return NULL;
+	else {
+		/* normalize only >255 to speed up */
+		char buf[10];
+		const ssize_t max_num_length = sizeof(buf)-1;
+		size_t i = sizeof(buf)-1;
+
+		if(limit <=  max_num_length) {
+			/* not enough space available */
+			return NULL;
+		}
+		/* inline version of
+		 * out += snprintf(out, max_num_length, "&#%d;", u16) */
+		buf[i] = '\0';
+		while(u16 && i > 0 ) {
+			buf[--i] = '0' + (u16 % 10);
+			u16 /= 10;
+		}
+		*out++ = '&';
+		*out++ = '#';
+		while(buf[i]) *out++ = buf[i++];
+		*out++ = ';';
+	}
+	return out;
 }
+
+const char* entity_norm(struct entity_conv* conv,const unsigned char* entity)
+{
+	struct element* e = hashtab_find(conv->ht, (const char*)entity, strlen((const char*)entity));
+	if(e && e->key) {
+		const uint16_t val = e->data;
+		unsigned char* out = u16_normalize(val, conv->entity_buff, sizeof(conv->entity_buff)-1);
+		if(out) {
+			*out++ = '\0';
+		}
+		return (const char*) out;
+	}
+	return NULL;
+}
+
 /* sane default, must be larger, than the longest possible return string,
  * which is
  * &#xxx;*/
@@ -117,7 +135,6 @@ int init_entity_converter(struct entity_conv* conv, size_t buffer_size)
 		conv->buffer_cnt = 0;
 		conv->bytes_read = 0;
 		conv->partial = 0;
-		conv->entity_buffcnt = 0;
 		conv->buffer_size = buffer_size;
 		conv->priority = NOPRIO;
 		/* start in linemode */
@@ -165,11 +182,10 @@ int init_entity_converter(struct entity_conv* conv, size_t buffer_size)
 		return CL_ENULLARG;
 }
 
-static size_t encoding_bytes(const unsigned char* fromcode, enum encodings* encoding)
+static size_t encoding_bytes(const char* fromcode, enum encodings* encoding)
 {
-	const unsigned char* from = (const unsigned char*) fromcode;
 	/* special case for these unusual byteorders */
-	struct element * e = hashtab_find(&aliases_htable,from,strlen((const char*)fromcode));
+	struct element * e = hashtab_find(&aliases_htable,fromcode,strlen(fromcode));
 	if(e && e->key) {
 		*encoding = e->data;
 	} else {
@@ -196,11 +212,6 @@ static size_t encoding_bytes(const unsigned char* fromcode, enum encodings* enco
 }
 
 #ifndef HAVE_ICONV
-typedef struct {
-	enum encodings encoding;
-	size_t size;
-} * iconv_t;
-
 static iconv_t iconv_open(const char *tocode, const char* fromcode)
 {
 	iconv_t iconv = cli_malloc(sizeof(*iconv));
@@ -530,9 +541,9 @@ static const uint8_t encname_chars[256] = {
 };
 
 /* checks that encoding is sane, and normalizes to uppercase */
-static unsigned char* normalize_encoding(const unsigned char* enc)
+static char* normalize_encoding(const unsigned char* enc)
 {
-	unsigned char* norm;
+	char* norm;
 	size_t i, len;
 
 	if(!enc)
@@ -547,7 +558,7 @@ static unsigned char* normalize_encoding(const unsigned char* enc)
 	norm = cli_malloc( len+1 );
 	if(!norm)
 		return NULL;
-	for(i=0;i < strlen((const char*)enc); i++)
+	for(i=0;i < len; i++)
 		norm[i] = toupper(enc[i]);
 	norm[len]='\0';
 	return norm;
@@ -720,7 +731,7 @@ static inline struct iconv_cache* cache_get_tls_instance(void)
 
 #endif
 
-static iconv_t iconv_open_cached(const unsigned char* fromcode)
+static iconv_t iconv_open_cached(const char* fromcode)
 {
 	struct iconv_cache * cache;
 	size_t idx;
@@ -767,7 +778,7 @@ static iconv_t iconv_open_cached(const unsigned char* fromcode)
 
 void process_encoding_set(struct entity_conv* conv,const unsigned char* encoding,enum encoding_priority prio)
 {
-	unsigned char *tmp_encoding;
+	char *tmp_encoding;
 	enum encodings tmp;
 	size_t new_size,old_size;
 
@@ -836,7 +847,10 @@ static int in_iconv_u16(m_area_t* in_m_area, iconv_t* iconv_struct, m_area_t* ou
 	size_t outleft = out_m_area->length > 0 ? out_m_area->length : 0;/*TODO: use real buffer size not last one*/
 	char* out      = (char*)out_m_area->buffer;
 
-
+	if(!inleft) {
+		/* EOF */
+		out_m_area->offset = out_m_area->length = 0;
+	}
 	/* convert encoding conv->tmp_area. conv->out_area */
 	alignfix = inleft%4;/* iconv gives an error if we give him 3 bytes to convert, 
 			       and we are using ucs4, ditto for utf16, and 1 byte*/
@@ -877,39 +891,6 @@ static int in_iconv_u16(m_area_t* in_m_area, iconv_t* iconv_struct, m_area_t* ou
 	return 0;
 }
 
-static inline unsigned char* u16_normalize(uint16_t u16, unsigned char* out, const ssize_t limit)
-{
-	assert(limit > 0 && "u16_normalize must be called with positive limit");
-	/* \0 is just ignored */
-	if(u16 > 0 && u16 < 0xff) {
-		assert((uint8_t)u16 != 0);
-		*out++ = (uint8_t)u16;
-	}
-	else {
-		/* normalize only >255 to speed up */
-		char buf[10];
-		const ssize_t max_num_length = sizeof(buf)-1;
-		int i = sizeof(buf)-1;
-
-		if(limit <=  max_num_length) {
-			/* not enough space available */
-			return NULL;
-		}
-		/* inline version of
-		 * out += snprintf(out, max_num_length, "&#%d;", u16) */
-		buf[i] = '\0';
-		do {
-			buf[--i] = '0' + (u16 % 10);
-			u16 /= 10;
-		} while (u16 && i > 0);
-		*out++ = '&';
-		*out++ = '#';
-		while(buf[i]) *out++ = buf[i++];
-		*out++ = ';';
-	}
-	assert(out);
-	return out;
-}
 
 #define NORMALIZE_CHAR(c, out, limit, linemode) \
 {\
@@ -954,7 +935,7 @@ static inline m_area_t* read_raw(struct entity_conv* conv, m_area_t* m_area, FIL
 	} else {
 		if(!OFFSET_INBOUNDS(m_area->offset, m_area->length)) {
 			cli_dbgmsg(MODULE_NAME "EOF reached\n");
-			m_area->length = m_area->offset = 0; /* EOF marker */
+			m_area->offset = m_area->length; /* EOF marker */
 		}
 	}
 	return m_area;
@@ -984,7 +965,7 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 		off_t i = 0;
 
 		/* read_raw() ensures this condition */
-		assert((!input_limit && !input_offset) || (input_offset >=0 && input_limit > 0 && input_offset < input_limit));
+		assert((!input_limit && !input_offset) || (input_offset >=0 && input_limit > 0 && input_offset <= input_limit));
 
 		if(!conv->bom_cnt && input_offset + 4 < input_limit) {/* detect Byte Order Mark */
 			size_t bom_len;
@@ -1038,9 +1019,14 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 					/* nothing to do, EOF */
 					return NULL;
 				}
-				for(i = input_offset; i < input_limit && limit > 0 && out; i++) {
-					const uint16_t c = input[i];
-					NORMALIZE_CHAR(c, out, limit, conv->linemode);
+				for(i = input_offset; i < input_limit && limit > 0; i++) {
+					const unsigned char c = input[i];
+					if(conv->linemode && c == '\n') {
+						i++;
+						break;
+					}
+					*out++ = c;
+					limit--;
 				}
 				in_m_area->offset = i;
 		}
