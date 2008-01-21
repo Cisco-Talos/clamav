@@ -3,6 +3,4 @@ a nice message :-) You can use it to test attachment scanning in your ClamAV
 based mail scanner.
 
 NOTE: upon request the testfiles are not shipped anymore
-Instead they are dinamycally generated at make time.
-
-
+Instead they are dynamically generated at make time.
