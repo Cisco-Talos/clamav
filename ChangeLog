@@ -1,3 +1,7 @@
+Tue Jan 22 11:28:20 CET 2008 (tk)
+---------------------------------
+  * configure: don't link with nsl if not needed (bb#754)
+
 Tue Jan 22 11:20:12 CET 2008 (tk)
 ---------------------------------
   * shared/misc.c, clamd, clamscan, freshclam: respect custom dbdir settings
