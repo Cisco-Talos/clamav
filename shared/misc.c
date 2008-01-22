@@ -283,30 +283,50 @@ int cvd_unpack(const char *cvd, const char *destdir)
 }
 #endif
 
-void daemonize(void)
+int daemonize(void)
 {
-#if	defined(C_OS2) || defined(C_WINDOWS)
-	fputs("Background mode is not supported on your operating system\n", stderr);
+#if defined(C_OS2) || defined(C_WINDOWS)
+    fputs("Background mode is not supported on your operating system\n", stderr);
     return;
 #else
-	int i;
+	int fds[3], i;
+	pid_t pid;
 
 
-    if((i = open("/dev/null", O_RDWR)) == -1) {
+    fds[0] = open("/dev/null", O_RDONLY);
+    fds[1] = open("/dev/null", O_WRONLY);
+    fds[2] = open("/dev/null", O_WRONLY);
+    if(fds[0] == -1 || fds[1] == -1 || fds[2] == -1) {
+	fputs("Can't open /dev/null\n", stderr);
 	for(i = 0; i <= 2; i++)
-	    close(i);
-
-    } else {
-	dup2(i, 0);
-	dup2(i, 1);
-	dup2(i, 2);
-	if(i > 2)
-	    close(i);
+	    if(fds[i] != -1)
+		close(fds[i]);
+	return -1;
     }
 
-    if(fork())
+    for(i = 0; i <= 2; i++) {
+	if(dup2(fds[i], i) == -1) {
+	    fprintf(stderr, "dup2(%d, %d) failed\n", fds[i], i); /* may not be printed */
+	    for(i = 0; i <= 2; i++)
+		if(fds[i] != -1)
+		    close(fds[i]);
+	    return -1;
+	}
+    }
+
+    for(i = 0; i <= 2; i++)
+	if(fds[i] > 2)
+	    close(fds[i]);
+
+    pid = fork();
+
+    if(pid == -1)
+	return -1;
+
+    if(pid)
 	exit(0);
 
     setsid();
+    return 0;
 #endif
 }

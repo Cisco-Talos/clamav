@@ -481,8 +481,13 @@ int main(int argc, char **argv)
 	bigsleep = 24 * 3600 / checks;
 
 	if(!cfgopt(copt, "Foreground")->enabled) {
+	    if(daemonize() == -1) {
+		logg("!daemonize() failed\n");
+		opt_free(opt);
+		freecfg(copt);
+		return 70; /* FIXME */
+	    }
             foreground = 0;
-	    daemonize();
 	    mprintf_disabled = 1;
         }
 

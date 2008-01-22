@@ -38,6 +38,6 @@ int filecopy(const char *src, const char *dest);
 int isnumb(const char *str);
 int dircopy(const char *src, const char *dest);
 int cvd_unpack(const char *cvd, const char *destdir);
-void daemonize(void);
+int daemonize(void);
 
 #endif

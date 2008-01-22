@@ -280,7 +280,12 @@ int main(int argc, char **argv)
 
     /* fork into background */
     if(!cfgopt(copt, "Foreground")->enabled) {
-	daemonize();
+	if(daemonize() == -1) {
+	    logg("!daemonize() failed\n");
+	    logg_close();
+	    freecfg(copt);
+	    return 1;
+	}
 	if(!debug_mode)
 	    if(chdir("/") == -1)
 		logg("^Can't change current working directory to root\n");
