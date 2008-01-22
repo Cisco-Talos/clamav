@@ -1,3 +1,8 @@
+Tue Jan 22 11:54:52 CET 2008 (tk)
+---------------------------------
+  * libclamunrar/unrar.c: disable 'Unknown RAR pack method' error message due
+			  to false alerts with some SFX archives (bb#399)
+
 Tue Jan 22 11:28:20 CET 2008 (tk)
 ---------------------------------
   * configure: don't link with nsl if not needed (bb#754)

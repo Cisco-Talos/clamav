@@ -1158,7 +1158,6 @@ int rar_unpack(int fd, int method, int solid, unpack_data_t *unpack_data)
 		retval = rar_unpack29(fd, solid, unpack_data);
 		break;
 	default:
-		fprintf(stderr, "UNRAR: ERROR: Unknown RAR pack method: %d\n", method);
 		break;
 	}
 	return retval;
