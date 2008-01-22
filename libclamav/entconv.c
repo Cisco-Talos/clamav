@@ -850,6 +850,7 @@ static int in_iconv_u16(m_area_t* in_m_area, iconv_t* iconv_struct, m_area_t* ou
 	if(!inleft) {
 		/* EOF */
 		out_m_area->offset = out_m_area->length = 0;
+		return 0;
 	}
 	/* convert encoding conv->tmp_area. conv->out_area */
 	alignfix = inleft%4;/* iconv gives an error if we give him 3 bytes to convert, 
@@ -864,21 +865,31 @@ static int in_iconv_u16(m_area_t* in_m_area, iconv_t* iconv_struct, m_area_t* ou
 		inleft = 4;
 	}
 
-	rc = (size_t)-1;
-	while (inleft && (outleft >= 2) && rc == (size_t)-1) { /* iconv doesn't like inleft to be 0 */
+	while (inleft && (outleft >= 2)) { /* iconv doesn't like inleft to be 0 */
+		const size_t outleft_last = outleft;
 		assert(*iconv_struct != (iconv_t)-1);
 		rc = iconv(*iconv_struct, (char**) &input,  &inleft, (char**) &out, &outleft);
-		if(rc == (size_t)-1 && errno != E2BIG) {
-			cli_dbgmsg("iconv error:%s, silently resuming (%lu, %lu, %ld, %ld)\n",
-					strerror(errno), inleft, outleft, input - (char*)in_m_area->buffer,
-					out - (char*)out_m_area->buffer);
-			/* output raw byte, and resume at next byte */
-			if(outleft < 2) break;
-			outleft -= 2;
-			*out++ = 0;
-			*out++ = *input++;
-			inleft--;
+		if(rc == (size_t)-1) {
+			if(errno == E2BIG) {
+				/* not enough space in output buffer */
+				break;
+			}
+			cli_dbgmsg(MODULE_NAME "iconv error:%s\n", strerror(errno));
+		} else if(outleft == outleft_last) {
+			cli_dbgmsg(MODULE_NAME "iconv stall (no output)\n");
+		} else {
+			/* everything ok */
+			continue;
 		}
+		cli_dbgmsg(MODULE_NAME "resuming (inleft:%lu, outleft:%lu, inpos:%ld, %ld)\n",
+					inleft, outleft, input - (char*)in_m_area->buffer,
+					out - (char*)out_m_area->buffer);
+		/* output raw byte, and resume at next byte */
+		if(outleft < 2) break;
+		outleft -= 2;
+		*out++ = 0;
+		*out++ = *input++;
+		inleft--;
 	}
 	in_m_area->offset = in_m_area->length - inleft;
 	if(out_m_area->length >= 0 && out_m_area->length >= (off_t)outleft) {
