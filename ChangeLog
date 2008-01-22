@@ -1,3 +1,7 @@
+Tue Jan 22 19:26:04 CET 2008 (tk)
+---------------------------------
+  * freshclam/manager.c: fix typos introduced in r3503 (thanks Edwin)
+
 Tue Jan 22 19:28:43 EET 2008 (edwin)
 ------------------------------------
   * libclamav/entconv.c: fix typo (thanks Nigel)

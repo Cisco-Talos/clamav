@@ -439,14 +439,14 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 	return NULL;
     }
 
-    if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.1 404")) != NULL) { 
+    if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
 	logg("!CVD file not found on remote server\n");
 	/* mirman_update(mdat->currip, mdat, 1); */
 	return NULL;
     }
 
     /* check whether the resource is up-to-date */
-    if((strstr(buffer, "HTTP/1.1 304")) != NULL || (strstr(buffer, "HTTP/1.1 304")) != NULL) { 
+    if((strstr(buffer, "HTTP/1.1 304")) != NULL || (strstr(buffer, "HTTP/1.0 304")) != NULL) { 
 	*ims = 0;
 	logg("OK (IMS)\n");
 	mirman_update(mdat->currip, mdat, 0);
@@ -455,8 +455,8 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 	*ims = 1;
     }
 
-    if(!strstr(buffer, "HTTP/1.1 200") && !strstr(buffer, "HTTP/1.1 200") &&
-       !strstr(buffer, "HTTP/1.1 206") && !strstr(buffer, "HTTP/1.1 206")) {
+    if(!strstr(buffer, "HTTP/1.1 200") && !strstr(buffer, "HTTP/1.0 200") &&
+       !strstr(buffer, "HTTP/1.1 206") && !strstr(buffer, "HTTP/1.0 206")) {
 	logg("!Unknown response from remote server\n");
 	mirman_update(mdat->currip, mdat, 1);
 	return NULL;
