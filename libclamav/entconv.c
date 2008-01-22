@@ -272,7 +272,7 @@ static int iconv(iconv_t iconv_struct,char **inbuf, size_t *inbytesleft,
 				}
 				break;
 			}
-		case E_UCS4_2134: 
+		case E_UCS4_2143: 
 			{
 				const uint16_t *in = (const uint16_t*)input;
 				uint16_t* out = (uint16_t*)output;

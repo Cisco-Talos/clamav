@@ -1,3 +1,7 @@
+Tue Jan 22 19:28:43 EET 2008 (edwin)
+------------------------------------
+  * libclamav/entconv.c: fix typo (thanks Nigel)
+
 Tue Jan 22 18:24:12 CET 2008 (tk)
 ---------------------------------
   * shared/misc.c: add error reporting to daemonize() (bb#729)
