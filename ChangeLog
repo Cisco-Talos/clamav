@@ -1,3 +1,7 @@
+Tue Jan 22 09:16:24 CET 2008 (tk)
+---------------------------------
+  * clamd, clamdscan: drop support for direct fd passing (not maintained)
+
 Mon Jan 21 19:59:41 EET 2008 (edwin)
 ------------------------------------
   * libclamav/entconv.c: fix EOF handling, bug introduced in r3515.

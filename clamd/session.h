@@ -35,7 +35,7 @@
 #define CMD9 "SESSION"
 #define CMD10 "END"
 #define CMD11 "SHUTDOWN"
-#define CMD12 "FD"
+/* #define CMD12 "FD" */
 #define CMD13 "MULTISCAN"
 
 #include "libclamav/clamav.h"

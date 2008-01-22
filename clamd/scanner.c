@@ -374,40 +374,6 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_engin
     return ret;
 }
 
-int scanfd(const int fd, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int odesc)
-{
-	int ret;
-	const char *virname;
-	struct stat statbuf;
-	char fdstr[32];      
-
-
-    if(fstat(fd, &statbuf) == -1)
-	return -1;
-
-    if(!S_ISREG(statbuf.st_mode))
-	return -1;
-
-    snprintf(fdstr, sizeof(fdstr), "fd[%d]", fd);
-
-    ret = cl_scandesc(fd, &virname, scanned, engine, limits, options);
-
-    if(ret == CL_VIRUS) {
-	mdprintf(odesc, "%s: %s FOUND\n", fdstr, virname);
-	logg("%s: %s FOUND\n", fdstr, virname);
-	virusaction(fdstr, virname, copt);
-    } else if(ret != CL_CLEAN) {
-	mdprintf(odesc, "%s: %s ERROR\n", fdstr, cl_strerror(ret));
-	logg("%s: %s ERROR\n", fdstr, cl_strerror(ret));
-    } else {
-	mdprintf(odesc, "%s: OK\n", fdstr);
-        if(logok)
-	    logg("%s: OK\n", fdstr); 
-    }
-
-    return ret;
-}
-
 int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt)
 {
 	int ret, sockfd, acceptd;

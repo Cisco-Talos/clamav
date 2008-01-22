@@ -143,12 +143,6 @@ int command(int desc, const struct cl_engine *engine, const struct cl_limits *li
     } else if(!strncmp(buff, CMD11, strlen(CMD11))) { /* SHUTDOWN */
 	return COMMAND_SHUTDOWN;
 
-    } else if(!strncmp(buff, CMD12, strlen(CMD12))) { /* FD */
-	    int fd = atoi(buff + strlen(CMD12) + 1);
-
-	scanfd(fd, NULL, engine, limits, options, copt, desc);
-	close(fd); /* FIXME: should we close it here? */
-
     } else if(!strncmp(buff, CMD13, strlen(CMD13))) { /* MULTISCAN */
 	if(scan(buff + strlen(CMD13) + 1, NULL, engine, limits, options, copt, desc, TYPE_MULTISCAN) == -2)
 	    if(cfgopt(copt, "ExitOnOOM")->enabled)
