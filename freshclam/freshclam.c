@@ -247,12 +247,6 @@ int main(int argc, char **argv)
 	return 0;
     }
 
-    if(opt_check(opt, "version")) {
-	print_version();
-	opt_free(opt);
-	return 0;
-    }
-
     /* parse the config file */
     if((cfgfile = opt_arg(opt, "config-file"))) {
 	copt = getcfg(cfgfile, 1);
@@ -266,6 +260,18 @@ int main(int argc, char **argv)
 	logg("!Can't parse the config file %s\n", cfgfile);
 	opt_free(opt);
 	return 56;
+    }
+
+    if(opt_check(opt, "datadir"))
+	newdir = opt_arg(opt, "datadir");
+    else
+	newdir = cfgopt(copt, "DatabaseDirectory")->strarg;
+
+    if(opt_check(opt, "version")) {
+	print_version(newdir);
+	opt_free(opt);
+	freecfg(copt);
+	return 0;
     }
 
 #ifdef C_WINDOWS
@@ -406,11 +412,6 @@ int main(int argc, char **argv)
 #endif
 
     /* change the current working directory */
-    if(opt_check(opt, "datadir"))
-	newdir = opt_arg(opt, "datadir");
-    else
-	newdir = cfgopt(copt, "DatabaseDirectory")->strarg;
-
     if(chdir(newdir)) {
 	logg("Can't change dir to %s\n", newdir);
 	opt_free(opt);

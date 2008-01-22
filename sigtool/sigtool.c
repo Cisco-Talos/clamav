@@ -1787,7 +1787,7 @@ int main(int argc, char **argv)
 	cl_debug();
 
     if(opt_check(opt, "version")) {
-	print_version();
+	print_version(NULL);
 	opt_free(opt);
 	return 0;
     }

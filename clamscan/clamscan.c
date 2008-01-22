@@ -104,8 +104,8 @@ int main(int argc, char **argv)
     }
 
     if(opt_check(opt, "version")) {
+	print_version(opt_arg(opt, "database"));
 	opt_free(opt);
-	print_version();
 	return 0;
     }
 

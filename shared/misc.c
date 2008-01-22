@@ -105,22 +105,35 @@ char *freshdbdir(void)
     return retdir;
 }
 
-void print_version(void)
+void print_version(const char *dbdir)
 {
-	char *dbdir, *path;
+	char *fdbdir, *path;
+	const char *pt;
 	struct cl_cvd *daily;
 
 
-    dbdir = freshdbdir();
-    if(!(path = malloc(strlen(dbdir) + 30))) {
-	free(dbdir);
+    if(dbdir)
+	pt = dbdir;
+    else
+	pt = fdbdir = freshdbdir();
+
+    if(!pt) {
+	printf("ClamAV "VERSION_EXP"\n");
 	return;
     }
 
-    sprintf(path, "%s/daily.cvd", dbdir);
+    if(!(path = malloc(strlen(pt) + 11))) {
+	if(!dbdir)
+	    free(fdbdir);
+	return;
+    }
+
+    sprintf(path, "%s/daily.cvd", pt);
     if(access(path, R_OK))
-	sprintf(path, "%s/daily.cld", dbdir);
-    free(dbdir);
+	sprintf(path, "%s/daily.cld", pt);
+
+    if(!dbdir)
+	free(fdbdir);
 
     if(!access(path, R_OK) && (daily = cl_cvdhead(path))) {
 	    time_t t = (time_t) daily->stime;

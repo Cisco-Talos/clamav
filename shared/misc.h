@@ -33,7 +33,7 @@
 #include "cfgparser.h"
 
 char *freshdbdir(void);
-void print_version(void);
+void print_version(const char *dbdir);
 int filecopy(const char *src, const char *dest);
 int isnumb(const char *str);
 int dircopy(const char *src, const char *dest);

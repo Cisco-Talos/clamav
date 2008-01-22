@@ -121,12 +121,6 @@ int main(int argc, char **argv)
 	return 1;
     }
 
-    if(opt_check(opt, "version")) {
-	print_version();
-	opt_free(opt);
-	return 0;
-    }
-
     if(opt_check(opt, "help")) {
     	help();
 	opt_free(opt);
@@ -156,6 +150,14 @@ int main(int argc, char **argv)
 	opt_free(opt);
 	return 1;
     }
+
+    if(opt_check(opt, "version")) {
+	print_version(cfgopt(copt, "DatabaseDirectory")->strarg);
+	opt_free(opt);
+	freecfg(copt);
+	return 0;
+    }
+
     opt_free(opt);
 
     umask(0);
