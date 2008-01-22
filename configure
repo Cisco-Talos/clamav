@@ -15737,10 +15737,17 @@ fi
 
     if test "$use_netinfo" = "yes"
     then
-	{ echo "$as_me:$LINENO: checking for $clamav_user using netinfo" >&5
+	if test -x /usr/bin/dscl; then
+	    { echo "$as_me:$LINENO: checking for $clamav_user using dscl" >&5
+echo $ECHO_N "checking for $clamav_user using dscl... $ECHO_C" >&6; }
+	    clamavuser=`/usr/bin/dscl . -list /Users |grep ${clamav_user}`
+	    clamavgroup=`/usr/bin/dscl . -list /Groups |grep ${clamav_group}`
+	else
+	    { echo "$as_me:$LINENO: checking for $clamav_user using netinfo" >&5
 echo $ECHO_N "checking for $clamav_user using netinfo... $ECHO_C" >&6; }
-        clamavuser=`/usr/bin/nidump passwd . |grep ${clamav_user}`
-        clamavgroup=`/usr/bin/nidump group . |grep ${clamav_group}`
+	    clamavuser=`/usr/bin/nidump passwd . |grep ${clamav_user}`
+	    clamavgroup=`/usr/bin/nidump group . |grep ${clamav_group}`
+	fi
     fi
 
     if test "$use_yp" = "yes"

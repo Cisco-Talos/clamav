@@ -1162,9 +1162,15 @@ then
 
     if test "$use_netinfo" = "yes"
     then
-	AC_MSG_CHECKING(for $clamav_user using netinfo)
-        clamavuser=`/usr/bin/nidump passwd . |grep ${clamav_user}`
-        clamavgroup=`/usr/bin/nidump group . |grep ${clamav_group}`
+	if test -x /usr/bin/dscl; then
+	    AC_MSG_CHECKING(for $clamav_user using dscl)
+	    clamavuser=`/usr/bin/dscl . -list /Users |grep ${clamav_user}`
+	    clamavgroup=`/usr/bin/dscl . -list /Groups |grep ${clamav_group}`
+	else
+	    AC_MSG_CHECKING(for $clamav_user using netinfo)
+	    clamavuser=`/usr/bin/nidump passwd . |grep ${clamav_user}`
+	    clamavgroup=`/usr/bin/nidump group . |grep ${clamav_group}`
+	fi
     fi
 
     if test "$use_yp" = "yes"
