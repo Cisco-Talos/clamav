@@ -78,8 +78,9 @@ static inline unsigned char* u16_normalize(uint16_t u16, unsigned char* out, con
 	}
 	else if (u16) {
 		/* normalize only >255 to speed up */
-		char buf[10];
-		const ssize_t max_num_length = sizeof(buf)-1;
+		char buf[6];
+		/* &#65535; 8 bytes, buffer: 65535\0 6 bytes => max_num = sizeof(buf) + 2 */
+		const ssize_t max_num_length = sizeof(buf) + 2;
 		size_t i = sizeof(buf)-1;
 
 		if(limit <=  max_num_length) {
@@ -93,6 +94,7 @@ static inline unsigned char* u16_normalize(uint16_t u16, unsigned char* out, con
 			buf[--i] = '0' + (u16 % 10);
 			u16 /= 10;
 		}
+
 		*out++ = '&';
 		*out++ = '#';
 		while(buf[i]) *out++ = buf[i++];
@@ -101,16 +103,26 @@ static inline unsigned char* u16_normalize(uint16_t u16, unsigned char* out, con
 	return out;
 }
 
+/* buffer must be at least 2 bytes in size */
+unsigned char* u16_normalize_tobuffer(uint16_t u16, unsigned char* dst, size_t dst_size)
+{
+	unsigned char* out = u16_normalize(u16, dst, dst_size-1);
+	if(out) {
+		*out++ = '\0';
+		return out;
+	}
+	return NULL;
+}
+
 const char* entity_norm(struct entity_conv* conv,const unsigned char* entity)
 {
 	struct element* e = hashtab_find(&entities_htable, (const char*)entity, strlen((const char*)entity));
 	if(e && e->key) {
-		const uint16_t val = e->data;
-		unsigned char* out = u16_normalize(val, conv->entity_buff, sizeof(conv->entity_buff)-1);
+		unsigned char* out = u16_normalize(e->data, conv->entity_buff, sizeof(conv->entity_buff)-1);
 		if(out) {
 			*out++ = '\0';
+			return (const char*)conv->entity_buff;
 		}
-		return (const char*) conv->entity_buff;
 	}
 	return NULL;
 }

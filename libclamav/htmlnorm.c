@@ -1180,10 +1180,11 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 							html_output_c(file_buff_o1, file_buff_o2, tolower(value));
 						else {
 							unsigned char buff[10];
-							snprintf((char*)buff,9,"&#x%x;",value);
-							buff[9] = '\0';
-							html_output_str(file_buff_o1, buff, strlen(buff));
-							html_output_str(file_buff_o2, buff, strlen(buff));
+							unsigned char* out = u16_normalize_tobuffer(value, buff, 10);
+							if(out) {
+								html_output_str(file_buff_o1, buff, out-buff);
+								html_output_str(file_buff_o2, buff, out-buff);
+							}
 						}
 					} else
 							html_output_c(file_buff_o1, file_buff_o2, tolower(value&0xff));

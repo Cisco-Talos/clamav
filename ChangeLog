@@ -1,3 +1,7 @@
+Wed Jan 23 17:19:59 EET 2008 (edwin)
+------------------------------------
+ * libclamav/htmlnorm.c, entconv.c: optimize char reference handling
+
 Wed Jan 23 15:54:00 EET 2008 (edwin)
 ------------------------------------
   * contrib/entitynorm, entconv.c: fix valid characters table for encoding name

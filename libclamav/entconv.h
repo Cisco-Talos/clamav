@@ -71,6 +71,7 @@ int init_entity_converter(struct entity_conv* conv, size_t buffer_size);
 void process_encoding_set(struct entity_conv* conv,const unsigned char* encoding,enum encoding_priority priority);
 int entity_norm_done(struct entity_conv* conv);
 
+unsigned char* u16_normalize_tobuffer(uint16_t u16, unsigned char* dst, size_t dst_size);
 unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in, m_area_t* in_m_area);
 const char* entity_norm(struct entity_conv* conv,const unsigned char* entity);
 int entitynorm_init(void);
