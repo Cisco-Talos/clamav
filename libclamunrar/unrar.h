@@ -219,9 +219,9 @@ typedef struct unpack_data_tag
 	int last_filter, old_filter_lengths_size;
 	int64_t written_size;
 	int64_t dest_unp_size;
-	uint32_t pack_size;
 	rarvm_data_t rarvm_data;
 	unsigned int unp_crc;
+	uint32_t pack_size;
 	
 	/* RAR2 variables */
 	int unp_cur_channel, unp_channel_delta, unp_audio_block, unp_channels;

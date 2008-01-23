@@ -1,3 +1,7 @@
+Wed Jan 23 17:45:12 CET 2008 (acab)
+-----------------------------------
+  * libclamunrar: realign structs (related to bb#474)
+
 Wed Jan 23 17:15:28 CET 2008 (tk)
 ---------------------------------
   * shared/output.c: fix handling of special characters in mprintf/logg (bb#360)

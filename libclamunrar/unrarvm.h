@@ -64,10 +64,10 @@ enum rarvm_op_type {
 };
 
 struct rarvm_prepared_operand {
+	unsigned int *addr;
 	enum rarvm_op_type type;
 	unsigned int data;
 	unsigned int base;
-	unsigned int *addr;
 };
 
 struct rarvm_prepared_command {
@@ -79,12 +79,12 @@ struct rarvm_prepared_command {
 struct rarvm_prepared_program {
 	rar_cmd_array_t cmd;
 	struct rarvm_prepared_command *alt_cmd;
-	int cmd_count;
 	unsigned char *global_data;
 	unsigned char *static_data;
-	long global_size, static_size;
-	unsigned int init_r[7];
 	uint8_t *filtered_data;
+	long global_size, static_size;
+	int cmd_count;
+	unsigned int init_r[7];
 	unsigned int filtered_data_size;
 };
 

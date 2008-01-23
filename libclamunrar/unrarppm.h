@@ -27,8 +27,8 @@
 
 typedef struct rar_mem_blk_tag
 {
-	uint16_t stamp, nu;
 	struct rar_mem_blk_tag *next, *prev;
+	uint16_t stamp, nu;
 } rar_mem_blk_t;
 
 struct rar_node
@@ -38,12 +38,11 @@ struct rar_node
 
 typedef struct sub_allocator_tag
 {
-	long sub_allocator_size;
-	int16_t indx2units[N_INDEXES], units2indx[128], glue_count;
-	uint8_t *heap_start, *lo_unit, *hi_unit;
-	struct rar_node free_list[N_INDEXES];
-	
 	uint8_t *ptext, *units_start, *heap_end, *fake_units_start;
+	uint8_t *heap_start, *lo_unit, *hi_unit;
+	long sub_allocator_size;
+	struct rar_node free_list[N_INDEXES];
+	int16_t indx2units[N_INDEXES], units2indx[128], glue_count;
 } sub_allocator_t;
 
 typedef struct range_coder_tag
@@ -62,37 +61,39 @@ struct see2_context_tag
 
 struct state_tag
 {
+	struct ppm_context *successor;
 	uint8_t symbol;
 	uint8_t freq;
-	struct ppm_context *successor;
 };
 
 struct freq_data_tag
 {
-	uint16_t summ_freq;
 	struct state_tag *stats;
+	uint16_t summ_freq;
 };
 
 struct ppm_context {
-	uint16_t num_stats;
+	struct ppm_context *suffix;
 	union {
 		struct freq_data_tag u;
 		struct state_tag one_state;
 	} con_ut;
-	struct ppm_context *suffix;
+	uint16_t num_stats;
 };
 
 typedef struct ppm_data_tag
 {
+	struct state_tag *found_state;
+	struct ppm_context *min_context, *max_context;
+	struct see2_context_tag see2cont[25][16], dummy_sse2cont;
+	int num_masked;
 	sub_allocator_t sub_alloc;
 	range_coder_t coder;
-	int num_masked, init_esc, order_fall, max_order, run_length, init_rl;
-	struct ppm_context *min_context, *max_context;
-	struct state_tag *found_state;
+	int init_esc, order_fall, max_order, run_length, init_rl;
 	uint8_t char_mask[256], ns2indx[256], ns2bsindx[256], hb2flag[256];
-	uint8_t esc_count, prev_success, hi_bits_flag;
-	struct see2_context_tag see2cont[25][16], dummy_sse2cont;
 	uint16_t bin_summ[128][64];
+	uint8_t esc_count, prev_success, hi_bits_flag;
+
 } ppm_data_t;
 
 int ppm_decode_init(ppm_data_t *ppm_data, int fd, struct unpack_data_tag *unpack_data, int *EscChar);
