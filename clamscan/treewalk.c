@@ -71,7 +71,7 @@ int treewalk(const char *dirname, struct cl_engine *engine, const struct passwd 
 	while(argument) {
 	    if(match_regex(dirname, argument) == 1) {
 		if(!printinfected)
-		    logg("%s: Excluded\n", dirname);
+		    logg("~%s: Excluded\n", dirname);
 		return 0;
 	    }
 	    argument = opt_nextarg(&optnode, "exclude-dir");
@@ -91,7 +91,7 @@ int treewalk(const char *dirname, struct cl_engine *engine, const struct passwd 
 
 	if(!included) {
 	    if(!printinfected)
-		logg("%s: Excluded\n", dirname);
+		logg("~%s: Excluded\n", dirname);
 	    return 0;
 	}
     }
@@ -135,7 +135,7 @@ int treewalk(const char *dirname, struct cl_engine *engine, const struct passwd 
 	}
     } else {
 	if(!printinfected)
-	    logg("%s: Can't open directory.\n", dirname);
+	    logg("~%s: Can't open directory.\n", dirname);
 	return 53;
     }
 
@@ -237,7 +237,7 @@ int fixperms(const char *dirname)
 	}
     } else {
 	if(!printinfected)
-	    logg("%s: Can't open directory.\n", dirname);
+	    logg("~%s: Can't open directory.\n", dirname);
 	return 53;
     }
 
@@ -285,7 +285,7 @@ int du(const char *dirname, struct s_du *n)
 	}
     } else {
 	if(!printinfected)
-	    logg("%s: Can't open directory.\n", dirname);
+	    logg("~%s: Can't open directory.\n", dirname);
 	return 53;
     }
 

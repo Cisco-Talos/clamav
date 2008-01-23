@@ -90,12 +90,12 @@ static int dsresult(int sockd, const struct optstruct *opt)
 		} else {
 		    *pt = 0;
 		    if(unlink(buff)) {
-			mprintf("%s: Can't remove.\n", buff);
-			logg("%s: Can't remove.\n", buff);
+			mprintf("~%s: Can't remove.\n", buff);
+			logg("~%s: Can't remove.\n", buff);
 			notremoved++;
 		    } else {
-			mprintf("%s: Removed.\n", buff);
-			logg("%s: Removed.\n", buff);
+			mprintf("~%s: Removed.\n", buff);
+			logg("~%s: Removed.\n", buff);
 		    }
 		}
 	    }
@@ -134,7 +134,7 @@ static int dsfile(int sockd, const char *scantype, const char *filename, const s
     ret = dsresult(sockd, opt);
 
     if(!ret)
-	logg("%s: OK\n", filename);
+	logg("~%s: OK\n", filename);
 
     return ret;
 }

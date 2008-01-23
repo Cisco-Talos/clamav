@@ -1,3 +1,7 @@
+Wed Jan 23 17:15:28 CET 2008 (tk)
+---------------------------------
+  * shared/output.c: fix handling of special characters in mprintf/logg (bb#360)
+
 Wed Jan 23 17:19:59 EET 2008 (edwin)
 ------------------------------------
  * libclamav/htmlnorm.c, entconv.c: optimize char reference handling
