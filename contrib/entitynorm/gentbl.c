@@ -16,7 +16,7 @@ int main(int argc, char* argv[])
 		tbl[*v] = 1;
 		if(v[1] == '-') {
 			int j;
-			for(j=v[0]+1;j<v[2];j++) {
+			for(j=v[0]+1;j<=v[2];j++) {
 				tbl[j]=1;
 			}
 		} else if(v[1]){

@@ -53,22 +53,16 @@ struct entity_conv {
 	char* encoding;
 	enum encoding_priority priority;
 	enum encodings encoding_symbolic;
-	unsigned short int encoding_specific;/* sub-encoding, used for ISO*/
-	const struct hashtable* ht;
 	uint8_t has_bom;
 	uint8_t enc_bytes;
-	uint8_t bytes_read;
 	uint8_t  bom_cnt;
-	uint32_t partial;
 	unsigned char bom[4];
 	size_t buffer_size;
-	size_t buffer_cnt;
 	void* iconv_struct;
 	unsigned char entity_buff[MAX_ENTITY_SIZE+2];
 	m_area_t tmp_area;
 	m_area_t out_area;
 	m_area_t norm_area;
-	int      msg_zero_shown;
 	int      linemode;/* TODO:set */
 	int      linemode_processed;
 };

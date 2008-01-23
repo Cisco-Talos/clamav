@@ -76,7 +76,7 @@ static inline unsigned char* u16_normalize(uint16_t u16, unsigned char* out, con
 		assert((uint8_t)u16 != 0);
 		*out++ = (uint8_t)u16;
 	}
-	else {
+	else if (u16) {
 		/* normalize only >255 to speed up */
 		char buf[10];
 		const ssize_t max_num_length = sizeof(buf)-1;
@@ -103,14 +103,14 @@ static inline unsigned char* u16_normalize(uint16_t u16, unsigned char* out, con
 
 const char* entity_norm(struct entity_conv* conv,const unsigned char* entity)
 {
-	struct element* e = hashtab_find(conv->ht, (const char*)entity, strlen((const char*)entity));
+	struct element* e = hashtab_find(&entities_htable, (const char*)entity, strlen((const char*)entity));
 	if(e && e->key) {
 		const uint16_t val = e->data;
 		unsigned char* out = u16_normalize(val, conv->entity_buff, sizeof(conv->entity_buff)-1);
 		if(out) {
 			*out++ = '\0';
 		}
-		return (const char*) out;
+		return (const char*) conv->entity_buff;
 	}
 	return NULL;
 }
@@ -132,9 +132,6 @@ int init_entity_converter(struct entity_conv* conv, size_t buffer_size)
 		conv->encoding = NULL;
 		conv->encoding_symbolic = E_UNKNOWN;
 		conv->bom_cnt = 0;
-		conv->buffer_cnt = 0;
-		conv->bytes_read = 0;
-		conv->partial = 0;
 		conv->buffer_size = buffer_size;
 		conv->priority = NOPRIO;
 		/* start in linemode */
@@ -165,9 +162,6 @@ int init_entity_converter(struct entity_conv* conv, size_t buffer_size)
 			free(conv->out_area.buffer);
 			return CL_EMEM;
 		}
-
-		conv->ht = &entities_htable;
-		conv->msg_zero_shown = 0;
 
 		conv->iconv_struct = cli_calloc(1, sizeof(iconv_t));
 		if(!conv->iconv_struct) {
@@ -520,16 +514,16 @@ static inline void process_bom(struct entity_conv* conv)
 	conv->has_bom = has_bom;
 }
 
-/*()-./012345678:ABCDEFGHIJKLMNOPQRSTUVWXY_abcdefghijklmnopqrstuvwxy*/
+/*()-./0123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz*/
 static const uint8_t encname_chars[256] = {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
         0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
         0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -582,6 +576,9 @@ static int encoding_norm_done(struct entity_conv* conv)
 	if(conv->norm_area.buffer) {
 		free(conv->norm_area.buffer);
 		conv->norm_area.buffer = NULL;
+	}
+	if(conv->iconv_struct) {
+		free(conv->iconv_struct);
 	}
 	return 0;
 }
@@ -752,6 +749,9 @@ static iconv_t iconv_open_cached(const char* fromcode)
 		e = NULL;
 	}
 	if(e) {
+		size_t dummy_in, dummy_out;
+		/* reset state */
+		iconv(cache->tab[e->data], NULL, &dummy_in, NULL, &dummy_out);
 		return cache->tab[e->data];
 	}
 	cli_dbgmsg(MODULE_NAME "iconv not found in cache, for encoding:%s\n",fromcode);
@@ -863,6 +863,7 @@ static int in_iconv_u16(m_area_t* in_m_area, iconv_t* iconv_struct, m_area_t* ou
 		memcpy(tmp4, input, alignfix);
 		input = tmp4;
 		inleft = 4;
+		alignfix = 0;
 	}
 
 	while (inleft && (outleft >= 2)) { /* iconv doesn't like inleft to be 0 */
@@ -891,7 +892,9 @@ static int in_iconv_u16(m_area_t* in_m_area, iconv_t* iconv_struct, m_area_t* ou
 		*out++ = *input++;
 		inleft--;
 	}
-	in_m_area->offset = in_m_area->length - inleft;
+	/* length - offset - alignfix is original value of inleft, new value is inleft, 
+	 * difference tells how much it moved. */
+	in_m_area->offset = in_m_area->length - alignfix - inleft;
 	if(out_m_area->length >= 0 && out_m_area->length >= (off_t)outleft) {
 		out_m_area->length -= (off_t)outleft;
 	} else {
@@ -1036,8 +1039,10 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 						i++;
 						break;
 					}
-					*out++ = c;
-					limit--;
+					if(c) {
+						*out++ = c;
+						limit--;
+					}
 				}
 				in_m_area->offset = i;
 		}
@@ -1048,8 +1053,6 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 		}
 
 		if(limit < 0) limit = 0;
-/*		assert((unsigned)(conv->out_area.length - limit - 1) < conv->buffer_size);
-		assert(conv->out_area.length - limit - 1 >= 0); */
 		conv->out_area.buffer[conv->out_area.length - limit - 1] = '\0';
 		return conv->out_area.buffer;
 	}

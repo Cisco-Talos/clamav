@@ -1,3 +1,14 @@
+Wed Jan 23 15:54:00 EET 2008 (edwin)
+------------------------------------
+  * contrib/entitynorm, entconv.c: fix valid characters table for encoding name
+  * libclamav/entconv.[ch]:
+			* skip \0 characters
+			* account for alignfix when calculating offset
+			* reset iconv state before reusing  
+  			* fix entity handling 
+  			* fix memory leaks reported by valgrind
+			* remove unused fields
+
 Wed Jan 23 12:49:46 CET 2008 (tk)
 ---------------------------------
   * freshclam/manager.c: reduce the number of error messages (bb#478);

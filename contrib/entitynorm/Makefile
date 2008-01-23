@@ -1,7 +1,7 @@
 PERL=perl
 CC=cc
 
-all: entitylist.h encoding_aliases.h gentbl
+all: entitylist.h encoding_aliases.h gentbl encname_chars.h
 
 entities_parsed: entities entities/* entity_decl_parse.pl
 	$(PERL) entity_decl_parse.pl $</* | sort -u >$@
@@ -20,6 +20,8 @@ encoding_aliases.h: generate_encoding_aliases
 
 gentbl: gentbl.c
 	$(CC) $< -o $@
+encname_chars.h: gentbl
+	./gentbl encname_chars 0-9 a-z A-Z _ . / \( \) - : >$@
 
 clean: 
 	rm -f entitylist.h encoding_aliases.h entities_parsed generate_entitylist generate_encoding_aliases gentbl
