@@ -35,7 +35,7 @@ int logg(const char *str, ...);
 #endif
 
 void logg_close(void);
-extern short int logg_verbose, logg_lock, logg_time;
+extern short int logg_verbose, logg_nowarn, logg_lock, logg_time;
 extern unsigned int logg_size;
 extern const char *logg_file;
 
@@ -50,6 +50,6 @@ void mprintf(const char *str, ...) __attribute__((format(printf, 1, 2)));
 void mprintf(const char *str, ...);
 #endif
 
-extern short int mprintf_disabled, mprintf_verbose, mprintf_quiet, mprintf_stdout;
+extern short int mprintf_disabled, mprintf_verbose, mprintf_quiet, mprintf_nowarn, mprintf_stdout;
 
 #endif

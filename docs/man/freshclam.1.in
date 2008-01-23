@@ -24,6 +24,9 @@ Be verbose. This option causes freshclam to print many additional informations.
 \fB\-\-quiet\fR
 Be quiet \- output only error messages.
 .TP 
+\fB\-\-no\-warnings\fR
+Don't print and log warnings.
+.TP 
 \fB\-\-stdout\fR
 Write all messages to stdout.
 .TP 

@@ -1,3 +1,9 @@
+Wed Jan 23 12:49:46 CET 2008 (tk)
+---------------------------------
+  * freshclam/manager.c: reduce the number of error messages (bb#478);
+			 thanks to Vincent Regnard <devel*regnard.org>
+  * freshclam: new cmdline switch --no-warnings
+
 Tue Jan 22 19:26:04 CET 2008 (tk)
 ---------------------------------
   * freshclam/manager.c: fix typos introduced in r3503 (thanks Edwin)

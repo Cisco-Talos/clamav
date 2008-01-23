@@ -125,6 +125,7 @@ static void help(void)
     mprintf("    --verbose            -v              be verbose\n");
     mprintf("    --debug                              enable debug messages\n");
     mprintf("    --quiet                              only output error messages\n");
+    mprintf("    --no-warnings                        don't print and log warnings\n");
     mprintf("    --stdout                             write to stdout instead of stderr\n");
     mprintf("\n");
     mprintf("    --config-file=FILE                   read configuration from FILE.\n");
@@ -161,7 +162,7 @@ static int download(const struct cfgstruct *copt, const struct optstruct *opt, c
 	return 56;
     } else {
 	while(cpt) {
-	    ret = downloadmanager(copt, opt, cpt->strarg, datadir);
+	    ret = downloadmanager(copt, opt, cpt->strarg, datadir, try == maxattempts - 1);
 	    alarm(0);
 
 	    if(ret == 52 || ret == 54 || ret == 58 || ret == 59) {
@@ -210,6 +211,7 @@ int main(int argc, char **argv)
 	static struct option long_options[] = {
 	    {"help", 0, 0, 'h'},
 	    {"quiet", 0, 0, 0},
+	    {"no-warnings", 0, 0, 0},
 	    {"verbose", 0, 0, 'v'},
 	    {"debug", 0, 0, 0},
 	    {"version", 0, 0, 'V'},
@@ -365,6 +367,11 @@ int main(int argc, char **argv)
 
     if(opt_check(opt, "quiet"))
 	mprintf_quiet = 1;
+
+    if(opt_check(opt, "no-warnings")) {
+	mprintf_nowarn = 1;
+	logg_nowarn = 1;
+    }
 
     if(opt_check(opt, "stdout"))
 	mprintf_stdout = 1;
