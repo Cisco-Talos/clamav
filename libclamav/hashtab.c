@@ -221,7 +221,7 @@ struct element* hashtab_find(const struct hashtable *s,const char* key,const siz
 			PROFILE_FIND_NOTFOUND(s, tries);
 			return NULL; /* element not found, place is empty*/
 		}
-		else if(element->key != DELETED_KEY && strncmp(key, element->key,len)==0) {
+		else if(element->key != DELETED_KEY && len == element->len && strncmp(key, element->key,len)==0) {
 			PROFILE_FIND_FOUND(s, tries);
 			return element;/* found */
 		}
@@ -250,7 +250,7 @@ static int hashtab_grow(struct hashtable *s)
 			size_t tries = 1;
 
 			PROFILE_CALC_HASH(s);
-			idx = hash((const unsigned char*)s->htable[i].key, strlen(s->htable[i].key), new_capacity);
+			idx = hash((const unsigned char*)s->htable[i].key, s->htable[i].len, new_capacity);
 			element = &htable[idx];
 
 			while(element->key && tries <= new_capacity) {
@@ -307,9 +307,10 @@ int hashtab_insert(struct hashtable *s, const char* key, const size_t len, const
 				thekey = cli_malloc(len+1);
 				if(!thekey)
 					return CL_EMEM;
-				strncpy(thekey,(const char*)key,len+1);
+				strncpy(thekey, key, len+1);
 				element->key = thekey;
 				element->data = data;
+				element->len = len;
 				s->used++;
 				if(s->used > s->maxfill) {
 					cli_dbgmsg("hashtab.c:Growing hashtable %p, because it has exceeded maxfill, old size:%ld\n",(void*)s,s->capacity);
@@ -320,10 +321,10 @@ int hashtab_insert(struct hashtable *s, const char* key, const size_t len, const
 			else if(element->key == DELETED_KEY) {
 				deleted_element = element;
 			}
-			else if(strncmp((const char*)key,(const char*)element->key,len)==0) {
+			else if(len == element->len && strncmp(key, element->key, len)==0) {
 				PROFILE_DATA_UPDATE(s, tries);
 				element->data = data;/* key found, update */
-				return 0;		
+				return 0;
 			}
 			else {
 				idx = (idx + tries++) % s->capacity;
@@ -383,11 +384,11 @@ int hashtab_generate_c(const struct hashtable *s,const char* name)
 	for(i=0; i < s->capacity; i++) {
 		const struct element* e = &s->htable[i];
 		if(!e->key)
-			printf("\t{NULL, 0},\n");
+			printf("\t{NULL,0,0},\n");
 		else if(e->key == DELETED_KEY)
-			printf("\t{DELETED_KEY,0},\n");
+			printf("\t{DELETED_KEY,0,0},\n");
 		else
-			printf("\t{\"%s\", %ld},\n", e->key, e->data);
+			printf("\t{\"%s\", %ld, %ld},\n", e->key, e->data, e->len);
 	}
 	printf("};\n");
 	printf("const struct hashtable %s = {\n",name);

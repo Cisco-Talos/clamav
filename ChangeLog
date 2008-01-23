@@ -1,3 +1,11 @@
+Wed Jan 23 21:52:06 EET 2008 (edwin)
+------------------------------------
+ * libclamav/entconv.c: optimize u16_normalize, encode as hex entities
+ (&#x0200;)
+ * contrib/entitynorm: update dependencies to rebuild on hashtab.c change
+ * libclamav/hashtab.[ch]: support keys with common prefix by checking match length
+ * libclamav/entitylist.h, encoding_aliases.h: update due to hashtab change
+
 Wed Jan 23 17:53:10 CET 2008 (acab)
 -----------------------------------
   * libclamunrar_iface: realign structs (related to bb#474)

@@ -60,6 +60,7 @@ typedef struct {
 struct element
 {
 	const char* key;
+	size_t len;
 	element_data data;
 };
 

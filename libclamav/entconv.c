@@ -67,38 +67,38 @@ typedef struct {
 } * iconv_t;
 #endif
 
+static unsigned char tohex[] = {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
+
 /* TODO: gcc refuses to inline because it consider call unlikely and code size grows */
 static inline unsigned char* u16_normalize(uint16_t u16, unsigned char* out, const ssize_t limit)
 {
 	assert(limit > 0 && "u16_normalize must be called with positive limit");
 	/* \0 is just ignored */
-	if(u16 > 0 && u16 < 0xff) {
+	if(!u16) {
+		return out;
+	}
+
+	if(u16 < 0xff) {
 		assert((uint8_t)u16 != 0);
 		*out++ = (uint8_t)u16;
-	}
-	else if (u16) {
+	} else {
+		size_t i;
 		/* normalize only >255 to speed up */
-		char buf[6];
-		/* &#65535; 8 bytes, buffer: 65535\0 6 bytes => max_num = sizeof(buf) + 2 */
-		const ssize_t max_num_length = sizeof(buf) + 2;
-		size_t i = sizeof(buf)-1;
-
-		if(limit <=  max_num_length) {
+		if(limit <=  8) {
 			/* not enough space available */
 			return NULL;
 		}
 		/* inline version of
-		 * out += snprintf(out, max_num_length, "&#%d;", u16) */
-		buf[i] = '\0';
-		while(u16 && i > 0 ) {
-			buf[--i] = '0' + (u16 % 10);
-			u16 /= 10;
+		 * out += snprintf(out, max_num_length, "&#x%x;", u16) */
+		out[0] = '&';
+		out[1] = '#';
+		out[2] = 'x';
+		out[7] = ';';
+		for(i=6; i >= 3; --i) {
+			out[i] = tohex[u16 & 0xf];
+			u16 >>= 4;
 		}
-
-		*out++ = '&';
-		*out++ = '#';
-		while(buf[i]) *out++ = buf[i++];
-		*out++ = ';';
+		out += 8;
 	}
 	return out;
 }
