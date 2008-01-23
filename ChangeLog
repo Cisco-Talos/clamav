@@ -1,3 +1,7 @@
+Wed Jan 23 17:53:10 CET 2008 (acab)
+-----------------------------------
+  * libclamunrar_iface: realign structs (related to bb#474)
+
 Wed Jan 23 17:45:12 CET 2008 (acab)
 -----------------------------------
   * libclamunrar: realign structs (related to bb#474)

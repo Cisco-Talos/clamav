@@ -89,11 +89,11 @@ typedef struct unrar_metadata_tag
 {
     uint64_t pack_size;
     uint64_t unpack_size;
+    char *filename;
+    struct unrar_metadata_tag *next;
     uint32_t crc;
     unsigned int encrypted;
     uint8_t method;
-    char *filename;
-    struct unrar_metadata_tag *next;
 } unrar_metadata_t;
 
 typedef struct unrar_state_tag {
