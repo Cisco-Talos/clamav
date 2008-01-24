@@ -46,6 +46,9 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
 #ifdef	HAVE_STRINGS_H
 #include <strings.h>
 #endif
+#ifdef	HAVE_STRING_H
+#include <string.h>
+#endif
 #include <ctype.h>
 #include <time.h>
 #include <fcntl.h>
@@ -185,10 +188,6 @@ typedef	unsigned	int	in_addr_t;
 #endif
 #if	(!defined(EISCONN)) && (defined(WSAEISCONN))
 #define EISCONN	WSAEISCONN
-#endif
-
-#ifndef HAVE_STRCASESTR
-#define	strcasestr(h, n)	strstr(h, n)	/* This will cause isBounceMessage() to match too much */
 #endif
 
 /*
@@ -2880,7 +2879,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 					 * Don't bother with text/plain or
 					 * text/html
 					 */
-					if(strcasestr(s, "text/plain") != NULL)
+					if(cli_strcasestr(s, "text/plain") != NULL)
 						/*
 						 * Don't bother to save the
 						 * unuseful part, read past
@@ -2890,7 +2889,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 						 */
 						continue;
 					if((!doPhishingScan) &&
-					   (strcasestr(s, "text/html") != NULL))
+					   (cli_strcasestr(s, "text/html") != NULL))
 						continue;
 					break;
 				}

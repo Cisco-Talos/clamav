@@ -1,3 +1,7 @@
+Thu Jan 24 13:35:51 GMT 2008 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Use cli_strcasestr
+
 Thu Jan 24 15:01:03 CET 2008 (acab)
 -----------------------------------
  * libclamav: realign structs (related to bb#474)
