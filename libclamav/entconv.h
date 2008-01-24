@@ -53,10 +53,6 @@ struct entity_conv {
 	char* encoding;
 	enum encoding_priority priority;
 	enum encodings encoding_symbolic;
-	uint8_t has_bom;
-	uint8_t enc_bytes;
-	uint8_t  bom_cnt;
-	unsigned char bom[4];
 	size_t buffer_size;
 	void* iconv_struct;
 	unsigned char entity_buff[MAX_ENTITY_SIZE+2];
@@ -65,6 +61,10 @@ struct entity_conv {
 	m_area_t norm_area;
 	int      linemode;/* TODO:set */
 	int      linemode_processed;
+	unsigned char bom[4];
+	uint8_t has_bom;
+	uint8_t enc_bytes;
+	uint8_t  bom_cnt;
 };
 
 int init_entity_converter(struct entity_conv* conv, size_t buffer_size);

@@ -57,9 +57,6 @@
 struct mszip_stream {
   int fd;		    /* input file descriptor */
   int ofd;                  /* output file descriptor */
-  unsigned char wflag;	    /* write flag */
-
-  unsigned int window_posn;             /* offset within window  */
 
   /* inflate() will call this whenever the window should be emptied. */
   int (*flush_window)(struct mszip_stream *, unsigned int);
@@ -69,6 +66,8 @@ struct mszip_stream {
   /* I/O buffering */
   unsigned char *inbuf, *i_ptr, *i_end, *o_ptr, *o_end;
   unsigned int bit_buffer, bits_left, inbuf_size;
+
+  unsigned int window_posn;             /* offset within window  */
 
   /* huffman code lengths */
   unsigned char  LITERAL_len[MSZIP_LITERAL_MAXSYMBOLS];
@@ -84,6 +83,9 @@ struct mszip_stream {
   /* cabinet related stuff */
   struct cab_file *file;
   int (*read)(struct cab_file *, unsigned char *, int);
+
+  unsigned char wflag;	    /* write flag */
+
 };
 
 struct mszip_stream *mszip_init(int fd,
@@ -118,7 +120,6 @@ struct qtm_model {
 struct qtm_stream {
   int fd;                   /* input file descriptor */
   int ofd;                  /* output file descriptor */
-  unsigned char wflag;	    /* write flag */
 
   unsigned char *window;          /* decoding window                         */
   unsigned int window_size;       /* window size                             */
@@ -127,13 +128,9 @@ struct qtm_stream {
 
   unsigned short H, L, C;         /* high/low/current: arith coding state    */
   unsigned char header_read;      /* have we started decoding a new frame?   */
+  unsigned char wflag;	    /* write flag */
 
   int error;
-
-  /* I/O buffers */
-  unsigned char *inbuf, *i_ptr, *i_end, *o_ptr, *o_end;
-  unsigned int  bit_buffer, inbuf_size;
-  unsigned char bits_left;
 
   /* data tables */
   unsigned int  position_base[42];
@@ -165,9 +162,17 @@ struct qtm_stream {
   struct qtm_modelsym m6sym[42 + 1], m6lsym[27 + 1];
   struct qtm_modelsym m7sym[7 + 1];
 
+  /* I/O buffers - 1*/
+  unsigned int  bit_buffer;
+
   /* cabinet related stuff */
   struct cab_file *file;
   int (*read)(struct cab_file *, unsigned char *, int);
+
+  /* I/O buffers - 2*/
+  unsigned char *inbuf, *i_ptr, *i_end, *o_ptr, *o_end;
+  unsigned int  inbuf_size;
+  unsigned char bits_left;
 
 };
 
@@ -215,7 +220,6 @@ void qtm_free(struct qtm_stream *qtm);
 struct lzx_stream {
   int fd;			  /* input file descriptor                   */
   int ofd;			  /* output file descriptor                  */
-  unsigned char wflag;		  /* write flag */
 
   off_t   offset;                 /* number of bytes actually output         */
   off_t   length;                 /* overall decompressed length of stream   */
@@ -238,7 +242,6 @@ struct lzx_stream {
   unsigned char  block_type;      /* type of the current block               */
   unsigned char  header_read;     /* have we started decoding at all yet?    */
   unsigned char  posn_slots;      /* how many posn slots in stream?          */
-  unsigned char  input_end;       /* have we reached the end of input?       */
 
   int error;
 
@@ -261,16 +264,20 @@ struct lzx_stream {
 				(LZX_LENGTH_MAXSYMBOLS * 2)];
   unsigned short ALIGNED_table [(1 << LZX_ALIGNED_TABLEBITS) +
 				(LZX_ALIGNED_MAXSYMBOLS * 2)];
-
-  unsigned int  position_base[51];
-  unsigned char extra_bits[51];
+  unsigned char  input_end;       /* have we reached the end of input?       */
+  unsigned char wflag;		  /* write flag */
 
   /* this is used purely for doing the intel E8 transform */
   unsigned char  e8_buf[LZX_FRAME_SIZE];
 
+  unsigned int  position_base[51];
+
   /* cabinet related stuff */
   struct cab_file *file;
   int (*read)(struct cab_file *, unsigned char *, int);
+
+  unsigned char extra_bits[51];
+
 };
 
 struct lzx_stream *lzx_init(int fd,

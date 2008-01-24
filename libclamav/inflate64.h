@@ -76,17 +76,17 @@ struct internal_state;
 
 typedef struct z_stream64_s {
     uint8_t		*next_in;  /* next input byte */
-    unsigned int	avail_in;  /* number of bytes available at next_in */
     unsigned long	total_in;  /* total nb of input bytes read so far */
+    unsigned int	avail_in;  /* number of bytes available at next_in */
 
-    uint8_t		*next_out; /* next output byte should be put there */
     unsigned int	avail_out; /* remaining free space at next_out */
+    uint8_t		*next_out; /* next output byte should be put there */
     unsigned long	total_out; /* total nb of bytes output so far */
 
     struct internal_state FAR *state; /* not visible by applications */
 
-    int     data_type;  /* best guess about the data type: binary or text */
     unsigned long   adler;      /* adler32 value of the uncompressed data */
+    int     data_type;  /* best guess about the data type: binary or text */
 } z_stream64;
 
 typedef z_stream64 FAR *z_stream64p;

@@ -39,19 +39,19 @@
 #define CLI_MATCH_NIBBLE_LOW	0x0400
 
 struct cli_matcher {
-    uint16_t maxpatlen;
-    uint8_t ac_only;
-
     /* Extended Boyer-Moore */
     uint8_t *bm_shift;
     struct cli_bm_patt **bm_suffix;
     uint32_t *soff, soff_len; /* for PE section sigs */
 
     /* Extended Aho-Corasick */
-    uint8_t ac_mindepth, ac_maxdepth;
+    uint32_t ac_partsigs, ac_nodes, ac_patterns;
     struct cli_ac_node *ac_root, **ac_nodetable;
     struct cli_ac_patt **ac_pattable;
-    uint32_t ac_partsigs, ac_nodes, ac_patterns;
+    uint8_t ac_mindepth, ac_maxdepth;
+
+    uint16_t maxpatlen;
+    uint8_t ac_only;
 };
 
 struct cli_meta_node {

@@ -146,11 +146,10 @@ typedef struct arj_file_hdr_tag {
 #endif
 
 typedef struct arj_decode_tag {
-	int fd;
 	unsigned char *text;
+	int fd;
 	uint16_t blocksize;
 	uint16_t bit_buf;
-	unsigned char sub_bit_buf;
 	int bit_count;
 	uint32_t comp_size;
 	int16_t getlen, getbuf;
@@ -159,6 +158,7 @@ typedef struct arj_decode_tag {
 	unsigned char c_len[NC];
 	uint16_t c_table[CTABLESIZE];
 	unsigned char pt_len[NPT];
+	unsigned char sub_bit_buf;
 	uint16_t pt_table[PTABLESIZE];
 } arj_decode_t;
 

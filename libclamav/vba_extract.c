@@ -851,14 +851,14 @@ typedef struct {
 } mso_fib_t;
 
 typedef struct macro_entry_tag {
-	unsigned char key;
 	uint32_t len;
 	uint32_t offset;
+	unsigned char key;
 } macro_entry_t;
 
 typedef struct macro_info_tag {
-	uint16_t count;
 	struct macro_entry_tag *entries;
+	uint16_t count;
 } macro_info_t;
 
 static int

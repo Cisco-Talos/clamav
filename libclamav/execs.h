@@ -36,10 +36,10 @@ struct cli_exe_section {
 };
 
 struct cli_exe_info {
+    struct cli_exe_section *section;
+    off_t offset;
     uint32_t ep;
     uint16_t nsections;
-    off_t offset;
-    struct cli_exe_section *section;
 };
 
 #endif

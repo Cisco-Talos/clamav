@@ -93,6 +93,8 @@ typedef struct chm_sys_entry_tag
 } chm_sys_entry_t;
 
 typedef struct chm_metadata_tag {
+	uint64_t file_length;
+	uint64_t file_offset;
 	chm_sys_entry_t sys_control;
 	chm_sys_entry_t sys_content;
 	chm_sys_entry_t sys_reset;
@@ -108,8 +110,6 @@ typedef struct chm_metadata_tag {
 	char *chunk_current;
 	char *chunk_end;
 	uint16_t chunk_entries;
-	uint64_t file_length;
-	uint64_t file_offset;
 } chm_metadata_t;
 
 int chm_unpack(int fd, const char *dirname);

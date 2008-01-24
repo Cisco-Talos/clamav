@@ -22,8 +22,8 @@
  */
 typedef	struct	tableEntry {
 	char	*key;
-	int	value;
 	struct	tableEntry	*next;
+	int	value;
 } tableEntry;
 
 typedef struct table {

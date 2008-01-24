@@ -213,10 +213,10 @@ typedef	unsigned	int	in_addr_t;
 
 typedef	struct	mbox_ctx {
 	const	char	*dir;
-	unsigned	int	files;	/* number of files extracted */
 	const	table_t	*rfc821Table;
 	const	table_t	*subtypeTable;
 	cli_ctx	*ctx;
+	unsigned	int	files;	/* number of files extracted */
 } mbox_ctx;
 
 static	int	cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx);

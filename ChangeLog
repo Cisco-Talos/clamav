@@ -1,3 +1,7 @@
+Thu Jan 24 15:01:03 CET 2008 (acab)
+-----------------------------------
+ * libclamav: realign structs (related to bb#474)
+
 Wed Jan 23 21:52:06 EET 2008 (edwin)
 ------------------------------------
  * libclamav/entconv.c: optimize u16_normalize, encode as hex entities

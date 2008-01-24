@@ -78,9 +78,9 @@ static unsigned int u2a(uint8_t *dest, unsigned int len) {
 *********************/
 
 struct MT {
-  uint32_t mt[624];
-  uint32_t items;
   uint32_t *next;
+  uint32_t items;
+  uint32_t mt[624];
 };
 
 static uint8_t MT_getnext(struct MT *MT) {

@@ -22,19 +22,16 @@
 
 /* The contents could change, ONLY access in message.c */
 typedef struct message {
-	mime_type	mimeType;
 	encoding_type	*encodingTypes;
+	mime_type	mimeType;
 	int	numberOfEncTypes;	/* size of encodingTypes */
 	char	*mimeSubtype;
-	int	numberOfArguments;	/* count of mimeArguments */
 	char	**mimeArguments;
 	char	*mimeDispositionType;	/* probably attachment */
 	text	*body_first, *body_last;
 	cli_ctx	*ctx;	/* When set we can scan the message, otherwise NULL */
-
-	char	base64_1, base64_2, base64_3;
+	int	numberOfArguments;	/* count of mimeArguments */
 	int	base64chars;
-	unsigned	int	isInfected : 1;
 
 	/*
 	 * Markers for the start of various non MIME messages that could
@@ -45,6 +42,10 @@ typedef struct message {
 	text	*yenc;		/* start of a yEnc message */
 	text	*encoding;	/* is the non MIME message encoded? */
 	const text	*dedupedThisFar;
+
+	char	base64_1, base64_2, base64_3;
+	unsigned	int	isInfected : 1;
+
 } message;
 
 message	*messageCreate(void);

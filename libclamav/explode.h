@@ -60,10 +60,10 @@ struct xplstate {
   uint16_t backbytes;
   uint16_t backsize;
   uint8_t window[8192];
+  enum XPL_STATE state;
   uint8_t bits;
   uint8_t largewin;
   uint8_t litcodes;
-  enum XPL_STATE state;
 };
 
 int explode_init(struct xplstate *, uint16_t);

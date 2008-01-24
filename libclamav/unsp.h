@@ -29,8 +29,8 @@ struct UNSP {
   uint32_t oldval;
   int error;
   /* the following are not in the original structure */
-  char *table;
   uint32_t tablesz;
+  char *table;
 };
 
 uint32_t unspack(char *, char *, cli_ctx *, uint32_t, uint32_t, uint32_t, int);

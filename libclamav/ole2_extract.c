@@ -99,10 +99,10 @@ typedef struct ole2_header_tag
 	/* must take account of the size of variables below here when
 	   reading the header */
 	int32_t sbat_root_start __attribute__ ((packed));
+	uint32_t max_block_no;
 	unsigned char *m_area;
 	off_t m_length;
 	bitset_t *bitset;
-	uint32_t max_block_no;
 } ole2_header_t;
 
 typedef struct property_tag

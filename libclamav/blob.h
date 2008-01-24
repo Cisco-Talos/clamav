@@ -56,10 +56,10 @@ typedef	struct fileblob {
 			 * email, not the full path name of the temporary file
 			 */
 	char	*fullname;	/* full pathname of the file */
+	cli_ctx	*ctx;	/* When set we can scan the blob, otherwise NULL */
+	unsigned	long	bytes_scanned;
 	unsigned	int	isNotEmpty : 1;
 	unsigned	int	isInfected : 1;
-	unsigned	long	bytes_scanned;
-	cli_ctx	*ctx;	/* When set we can scan the blob, otherwise NULL */
 } fileblob;
 
 fileblob	*fileblobCreate(void);

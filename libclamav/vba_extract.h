@@ -25,12 +25,12 @@
 #include "cltypes.h"
 
 typedef struct vba_project_tag {
-	int count;
 	char **name;
 	uint32_t *offset;
 	uint32_t *length;	/* for Word 6 macros */
 	unsigned char *key;	/* for Word 6 macros */
 	char *dir;
+	int count;
 } vba_project_t;
 
 vba_project_t	*cli_vba_readdir(const char *dir);
