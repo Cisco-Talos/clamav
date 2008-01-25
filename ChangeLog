@@ -1,3 +1,7 @@
+Fri Jan 25 18:03:22 CET 2008 (tk)
+---------------------------------
+  * libclamav/cab.c: properly handle stored files
+
 Fri Jan 25 17:35:26 CET 2008 (tk)
 ---------------------------------
   * freshclam/manager.c: advertise itself as HTTP/1.0 client

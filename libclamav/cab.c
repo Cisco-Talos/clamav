@@ -561,7 +561,7 @@ static int cab_read(struct cab_file *file, unsigned char *buffer, int bytes)
     return bytes - todo;
 }
 
-static int cab_unstore(struct cab_file *file, int bytes, uint8_t wflag)
+static int cab_unstore(struct cab_file *file, int bytes)
 {
 	int todo;
 	unsigned char buff[4096];
@@ -580,7 +580,7 @@ static int cab_unstore(struct cab_file *file, int bytes, uint8_t wflag)
 	    if(cab_read(file, buff, todo) == -1) {
 		cli_dbgmsg("cab_unstore: cab_read failed for descriptor %d\n", file->fd);
 		return CL_EIO;
-	    } else if(wflag && cli_writen(file->ofd, buff, todo) == -1) {
+	    } else if(cli_writen(file->ofd, buff, todo) == -1) {
 		cli_dbgmsg("cab_unstore: Can't write to descriptor %d\n", file->ofd);
 		return CL_EIO;
 	    }
@@ -590,7 +590,7 @@ static int cab_unstore(struct cab_file *file, int bytes, uint8_t wflag)
 	    if(cab_read(file, buff, sizeof(buff)) == -1) {
 		cli_dbgmsg("cab_unstore: cab_read failed for descriptor %d\n", file->fd);
 		return CL_EIO;
-	    } else if(wflag && cli_writen(file->ofd, buff, sizeof(buff)) == -1) {
+	    } else if(cli_writen(file->ofd, buff, sizeof(buff)) == -1) {
 		cli_dbgmsg("cab_unstore: Can't write to descriptor %d\n", file->ofd);
 		return CL_EIO;
 	    }
@@ -637,7 +637,7 @@ static int cab_unstore(struct cab_file *file, int bytes, uint8_t wflag)
 	    case 0x0003:						\
 		file->cab->state->stream = (struct lzx_stream *) lzx_init(file->fd, file->ofd, (int) (file->folder->cmethod >> 8) & 0x1f, 0, 4096, 0, file, &cab_read);									\
 	}								\
-	if(!file->cab->state->stream) {					\
+	if((file->folder->cmethod & 0x000f) && !file->cab->state->stream) { \
 	    free(file->cab->state);					\
 	    close(file->ofd);						\
 	    return CL_EMSCAB;						\
@@ -669,10 +669,9 @@ int cab_extract(struct cab_file *file, const char *name)
 
     switch(file->folder->cmethod & 0x000f) {
 	case 0x0000: /* STORE */
-	    if(file->offset > 0)
-		cab_unstore(file, file->offset, 0);
-
-	    ret = cab_unstore(file, file->length, 1);
+	    cli_dbgmsg("CAB: Compression method: STORED\n");
+	    CAB_CHGFOLDER;
+	    ret = cab_unstore(file, file->length);
 	    break;
 
 	case 0x0001: /* MSZIP */
