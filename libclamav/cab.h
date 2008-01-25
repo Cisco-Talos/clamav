@@ -1,4 +1,7 @@
 /*
+ *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Author: Tomasz Kojm <tkojm@clamav.net>
+ *
  *  Copyright (C) 2006 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -26,8 +29,9 @@
 #define CAB_INPUTMAX (CAB_BLOCKMAX + 6144)
 
 struct cab_archive {
-    struct cab_folder *folders;
+    struct cab_folder *folders, *actfol;
     struct cab_file *files;
+    struct cab_state *state;
     uint32_t length;
     uint16_t nfolders;
     uint16_t nfiles;
@@ -43,6 +47,7 @@ struct cab_state {
     uint16_t blklen;
     uint16_t outlen;
     uint16_t blknum;
+    uint16_t cmethod;
 };
 
 struct cab_file {
@@ -55,7 +60,6 @@ struct cab_file {
     struct cab_folder *folder;
     struct cab_file *next;
     struct cab_archive *cab;
-    struct cab_state *state;
     uint16_t attribs;
 };
 

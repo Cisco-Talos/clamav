@@ -1,3 +1,8 @@
+Fri Jan 25 16:35:34 CET 2008 (tk)
+---------------------------------
+  * libclamav/cab.[ch]: rewrite file/folder handling code as a complete
+			and proper solution for bb#730
+
 Fri Jan 25 12:43:30 CET 2008 (tk)
 ---------------------------------
   * libclamav/cab.c: improve performance of cabinet extractor (bb#730)
