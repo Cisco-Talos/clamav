@@ -1071,7 +1071,6 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 
 		if(limit < 0) limit = 0;
 		conv->out_area.buffer[conv->out_area.length - limit - 1] = '\0';
-		puts(conv->out_area.buffer);
 		return conv->out_area.buffer;
 	}
 }
