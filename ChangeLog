@@ -1,3 +1,7 @@
+Fri Jan 25 17:16:53 CET 2008 (acab)
+-----------------------------------
+  * libclamunrar: same behaviour on 32bit and 64bit systems - bb#474
+
 Fri Jan 25 18:15:21 EET 2008 (edwin)
 ------------------------------------
   * libclamav/htmlnorm.[ch]: handle NULL characters in HTML files. (bb #539).

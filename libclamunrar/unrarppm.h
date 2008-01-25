@@ -59,18 +59,27 @@ struct see2_context_tag
 	uint8_t shift, count;
 };
 
+#ifndef HAVE_ATTRIB_PACKED
+#define __attribute__(x)
+#endif
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1
+#endif
 struct state_tag
 {
 	struct ppm_context *successor;
 	uint8_t symbol;
 	uint8_t freq;
-};
+} __attribute__((packed));
 
 struct freq_data_tag
 {
 	struct state_tag *stats;
 	uint16_t summ_freq;
-};
+} __attribute__((packed));
 
 struct ppm_context {
 	struct ppm_context *suffix;
@@ -79,7 +88,13 @@ struct ppm_context {
 		struct state_tag one_state;
 	} con_ut;
 	uint16_t num_stats;
-};
+} __attribute__((packed));
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack()
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack
+#endif
 
 typedef struct ppm_data_tag
 {
