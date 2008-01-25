@@ -1,3 +1,7 @@
+Fri Jan 25 17:35:26 CET 2008 (tk)
+---------------------------------
+  * freshclam/manager.c: advertise itself as HTTP/1.0 client
+
 Fri Jan 25 17:16:53 CET 2008 (acab)
 -----------------------------------
   * libclamunrar: same behaviour on 32bit and 64bit systems - bb#474

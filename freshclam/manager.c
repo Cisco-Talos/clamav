@@ -385,7 +385,7 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 #endif
 
     snprintf(cmd, sizeof(cmd),
-	"GET %s/%s HTTP/1.1\r\n"
+	"GET %s/%s HTTP/1.0\r\n"
 	"Host: %s\r\n%s"
 	"User-Agent: %s\r\n"
 	"Connection: close\r\n"
@@ -537,7 +537,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 #endif
 
     snprintf(cmd, sizeof(cmd),
-	"GET %s/%s HTTP/1.1\r\n"
+	"GET %s/%s HTTP/1.0\r\n"
 	"Host: %s\r\n%s"
 	"User-Agent: %s\r\n"
 #ifdef FRESHCLAM_NO_CACHE
