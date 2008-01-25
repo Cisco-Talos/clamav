@@ -1,3 +1,7 @@
+Fri Jan 25 12:43:30 CET 2008 (tk)
+---------------------------------
+  * libclamav/cab.c: improve performance of cabinet extractor (bb#730)
+
 Fri Jan 25 10:14:23 EET 2008 (edwin)
 ------------------------------------
   * libclamav/entconv.[ch]: make iconv replacement function handle NULL args

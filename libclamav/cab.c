@@ -634,24 +634,23 @@ int cab_extract(struct cab_file *file, const char *name)
 		close(file->ofd);
 		return CL_EMSCAB;
 	    }
-	    if(file->offset > 0) {
-		((struct mszip_stream *) file->state->stream)->wflag = 0;
-		ret = mszip_decompress(file->state->stream, file->offset);
-		((struct mszip_stream *) file->state->stream)->wflag = 1;
-		if(ret < 0) {
-		    mszip_free(file->state->stream);
-		    memset(file->state, 0, sizeof(struct cab_state));
-		    file->state->stream = (struct mszip_stream *) mszip_init(file->fd, file->ofd, 4096, 1, file, &cab_read);
-		    if(!file->state->stream) {
-			free(file->state);
-			close(file->ofd);
-			return CL_EMSCAB;
-		    }
-                    lseek(file->fd, file->folder->offset, SEEK_SET);
-		}
-	    }
 	    ret = mszip_decompress(file->state->stream, file->length);
 	    mszip_free(file->state->stream);
+	    if(ret < 0 && file->offset > 0) {
+		memset(file->state, 0, sizeof(struct cab_state));
+		file->state->stream = (struct mszip_stream *) mszip_init(file->fd, file->ofd, 4096, 1, file, &cab_read);
+		if(!file->state->stream) {
+		    free(file->state);
+		    close(file->ofd);
+		    return CL_EMSCAB;
+		}
+		((struct mszip_stream *) file->state->stream)->wflag = 0;
+		if(mszip_decompress(file->state->stream, file->offset) == CL_SUCCESS) {
+		    ((struct mszip_stream *) file->state->stream)->wflag = 1;
+		    ret = mszip_decompress(file->state->stream, file->length);
+		}
+		mszip_free(file->state->stream);
+	    }
 	    break;
 
 	case 0x0002: /* QUANTUM */
@@ -662,13 +661,23 @@ int cab_extract(struct cab_file *file, const char *name)
 		close(file->ofd);
 		return CL_EMSCAB;
 	    }
-	    if(file->offset > 0) {
-		((struct qtm_stream *) file->state->stream)->wflag = 0;
-		qtm_decompress(file->state->stream, file->offset);
-		((struct qtm_stream *) file->state->stream)->wflag = 1;
-	    }
 	    ret = qtm_decompress(file->state->stream, file->length);
 	    qtm_free(file->state->stream);
+	    if(ret < 0 && file->offset > 0) {
+		memset(file->state, 0, sizeof(struct cab_state));
+		file->state->stream = (struct qtm_stream *) qtm_init(file->fd, file->ofd, (int) (file->folder->cmethod >> 8) & 0x1f, 4096, file, &cab_read);
+		if(!file->state->stream) {
+		    free(file->state);
+		    close(file->ofd);
+		    return CL_EMSCAB;
+		}
+		((struct qtm_stream *) file->state->stream)->wflag = 0;
+		if(qtm_decompress(file->state->stream, file->offset) == CL_SUCCESS) {
+		    ((struct qtm_stream *) file->state->stream)->wflag = 1;
+		    ret = qtm_decompress(file->state->stream, file->length);
+		}
+		qtm_free(file->state->stream);
+	    }
 	    break;
 
 	case 0x0003: /* LZX */
