@@ -240,10 +240,15 @@ static int iconv_close(iconv_t cd)
 static int iconv(iconv_t iconv_struct,char **inbuf, size_t *inbytesleft,
 		char** outbuf, size_t *outbytesleft)
 {
-	const size_t maxcopy = (*inbytesleft > *outbytesleft ? *outbytesleft  : *inbytesleft) & ~(iconv_struct->size - 1);
-	const uint8_t* input = (const uint8_t*)*inbuf;
-	uint8_t* output = (uint8_t*)*outbuf;
-	size_t i;
+	const uint8_t* input;
+	uint8_t* output;
+	size_t maxcopy, i;
+	if(!inbuf || !outbuf) {
+		return 0;
+	}
+	maxcopy = (*inbytesleft > *outbytesleft ? *outbytesleft  : *inbytesleft) & ~(iconv_struct->size - 1);
+	input = (const uint8_t*)*inbuf;
+	output = (uint8_t*)*outbuf;
 
 	/*,maxcopy is aligned to data size */
 	/* output is always utf16be !*/
@@ -1066,6 +1071,7 @@ unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in,
 
 		if(limit < 0) limit = 0;
 		conv->out_area.buffer[conv->out_area.length - limit - 1] = '\0';
+		puts(conv->out_area.buffer);
 		return conv->out_area.buffer;
 	}
 }

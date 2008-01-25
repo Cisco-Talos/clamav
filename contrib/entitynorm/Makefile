@@ -24,4 +24,4 @@ encname_chars.h: gentbl
 	./gentbl encname_chars 0-9 a-z A-Z _ . / \( \) - : >$@
 
 clean: 
-	rm -f entitylist.h encoding_aliases.h entities_parsed generate_entitylist generate_encoding_aliases gentbl
+	rm -f entitylist.h encoding_aliases.h entities_parsed generate_entitylist generate_encoding_aliases gentbl encname_chars.h

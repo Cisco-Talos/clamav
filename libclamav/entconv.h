@@ -26,8 +26,8 @@
 
 #include "hashtab.h"
 
-#define UCS4_1234 "UCS-4LE"
-#define UCS4_4321 "UCS-4BE"
+#define UCS4_1234 "UCS-4BE"
+#define UCS4_4321 "UCS-4LE"
 #define UCS4_2143 "UCS4"
 #define UCS4_3412 "UCS-4"
 #define UTF16_BE "UTF-16BE"

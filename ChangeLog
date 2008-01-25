@@ -1,3 +1,8 @@
+Fri Jan 25 10:14:23 EET 2008 (edwin)
+------------------------------------
+  * libclamav/entconv.[ch]: make iconv replacement function handle NULL args
+  (bb #792)
+
 Thu Jan 24 13:35:51 GMT 2008 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Use cli_strcasestr
