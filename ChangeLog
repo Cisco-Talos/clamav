@@ -1,3 +1,7 @@
+Fri Jan 25 18:15:21 EET 2008 (edwin)
+------------------------------------
+  * libclamav/htmlnorm.[ch]: handle NULL characters in HTML files. (bb #539).
+
 Fri Jan 25 16:35:34 CET 2008 (tk)
 ---------------------------------
   * libclamav/cab.[ch]: rewrite file/folder handling code as a complete

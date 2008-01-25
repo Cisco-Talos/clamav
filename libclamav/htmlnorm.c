@@ -156,13 +156,27 @@ int decrypt_tables[3][128] = {
        0x3B, 0x57, 0x22, 0x6D, 0x4D, 0x25, 0x28, 0x46, 0x4A, 0x32, 0x41, 0x3D, 0x5F, 0x4F, 0x42, 0x65}
 };
 
-unsigned char *cli_readline(FILE *stream, m_area_t *m_area, unsigned int max_len)
+static inline unsigned int rewind_tospace(const unsigned char* chunk, unsigned int len)
 {
-	unsigned char *line, *ptr, *start, *end;
-	unsigned int line_len, count;
+	unsigned int count = len;
+	while (!isspace(chunk[len - 1]) && (len > 1)) {
+		len--;
+	}
+	if (len == 1) {
+		return count;
+	}
+	return len;
+}
 
-	line = (unsigned char *) cli_malloc(max_len);
-	if (!line) {
+/* read at most @max_len of data from @m_area or @stream, skipping NULL chars.
+ * This used to be called cli_readline, but we don't stop at end-of-line anymore */
+static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int max_len)
+{
+	unsigned char *chunk, *start, *ptr, *end;
+	unsigned int chunk_len, count;
+
+	chunk = (unsigned char *) cli_malloc(max_len);
+	if (!chunk) {
 		return NULL;
 	}
 
@@ -171,66 +185,103 @@ unsigned char *cli_readline(FILE *stream, m_area_t *m_area, unsigned int max_len
 		start = ptr = m_area->buffer + m_area->offset;
 		end = m_area->buffer + m_area->length;
 		if (start >= end) {
-			free(line);
+			free(chunk);
 			return NULL;
 		}
-		line_len = 1;
-		while ((ptr < end) && (*ptr != '\n') && (line_len < (max_len-1))) {
-			ptr++;
-			line_len++;
-		}
-		if (ptr == end) {
-			line_len--;
-			memcpy(line, start, line_len);
-			line[line_len] = '\0';
-		} else if (*ptr == '\n') {
-			memcpy(line, start, line_len);
-			line[line_len] = '\0';
+		/* maximum we can copy into the buffer,
+		 * we could have less than max_len bytes available */
+		chunk_len = MIN(end-start, max_len-1);
+
+		/* look for NULL chars */
+		ptr = memchr(start, 0, chunk_len);
+	        if(!ptr) {
+			/* no NULL chars found, copy all */
+			memcpy(chunk, start, chunk_len);
+			chunk[chunk_len] = '\0';
+			m_area->offset += chunk_len;
+			/* point ptr to end of chunk,
+			 * so we can check and rewind to a space below */
+			ptr = start + chunk_len;
 		} else {
-			/* Hit max_len */
-			/* Store the current line end and length*/
-			count = line_len;
-			while (!isspace(*ptr) && (line_len > 1)) {
-				ptr--;
-				line_len--;
+			/* copy portion that doesn't contain NULL chars */
+			chunk_len = ptr - start;
+			if(chunk_len < max_len) {
+				memcpy(chunk, start, chunk_len);
+			} else {
+				chunk_len = 0;
+				ptr = start;
 			}
-			if (line_len == 1) {
-				line_len=count;
+			/* we have unknown number of NULL chars,
+			 * copy char-by-char and skip them */
+			while((ptr < end) && (chunk_len < max_len-1)) {
+				const unsigned char c = *ptr++;
+				if(c) {
+					chunk[chunk_len++] = c;
+				}
 			}
-			memcpy(line, start, line_len);
-			line[line_len] = '\0';
+			chunk[chunk_len] = '\0';
+			/* we can't use chunk_len to determine how many bytes we read, since
+			 * we skipped chars */
+			m_area->offset = ptr - m_area->buffer;
 		}
-		m_area->offset += line_len;
+		if(ptr && ptr < end && !isspace(*ptr)) {
+			/* we hit max_len, rewind to a space */
+			count = rewind_tospace(chunk, chunk_len);
+			if(count < chunk_len) {
+				chunk[count] = '\0';
+				m_area->offset -= chunk_len - count;
+			}
+		}
 	} else {
 		if (!stream) {
 			cli_dbgmsg("No HTML stream\n");
-			free(line);
+			free(chunk);
 			return NULL;
 		}
-		if (fgets(line, max_len, stream) == NULL) {
-			free(line);
+		chunk_len = fread(chunk, 1, max_len-1, stream);
+		if(!chunk_len || chunk_len > max_len-1) {
+			/* EOF, or prevent overflow */
+			free(chunk);
 			return NULL;
 		}
 
-		line_len=strlen(line);
-		if (line_len == 0) {
-			free(line);
-			return NULL;
-		}
-		if (line_len == max_len-1) {
-			/* didn't find a whole line - rewind to a space*/
-			count = 0;
-			while (!isspace(line[--line_len])) {
-				count--;
-				if (line_len == 0) {
-					return line;
+		/* Look for NULL chars */
+		ptr = memchr(chunk, 0, chunk_len);
+		if(ptr) {
+			/* NULL char found */
+			/* save buffer limits */
+		        start = ptr;
+			end = chunk + chunk_len;
+
+			/* start of NULL chars, we will copy non-NULL characters
+			 * to this position */
+			chunk_len = ptr - chunk;
+
+			/* find first non-NULL char */
+			while((ptr < end) && !(*ptr)) {
+				ptr++;
+			}
+			/* skip over NULL chars, and move back the rest */
+		        while((ptr < end) && (chunk_len < max_len-1)) {
+				const unsigned char c = *ptr++;
+				if(c) {
+					chunk[chunk_len++] = c;
 				}
 			}
-			fseek(stream, count, SEEK_CUR);
-			line[line_len+1] = '\0';
+			chunk[chunk_len] = '\0';
+		}
+		if(chunk_len == max_len - 1) {
+			/* rewind to a space (which includes newline) */
+			count = rewind_tospace(chunk, chunk_len);
+			if(count < chunk_len) {
+				chunk[count] = '\0';
+				/* seek-back to space */
+				fseek(stream, (long)(count - chunk_len), SEEK_CUR);
+			}
 		}
 	}
-	return line;
+
+	return chunk;
 }
 
 static void html_output_flush(file_buff_t *fbuff)
@@ -580,7 +631,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	if(dconf_entconv)
 		ptr = line = encoding_norm_readline(&conv, stream_in, m_area);
 	else
-		ptr = line = cli_readline(stream_in, m_area, 8192);
+		ptr = line = cli_readchunk(stream_in, m_area, 8192);
 
 	while (line) {
 		if(href_contents_begin)
@@ -1486,7 +1537,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 			ptr = line = encoding_norm_readline(&conv, stream_in, m_area);
 		else {
 			free(line);
-			ptr = line = cli_readline(stream_in, m_area, 8192);
+			ptr = line = cli_readchunk(stream_in, m_area, 8192);
 		}
 	}
 
@@ -1609,7 +1660,7 @@ int html_screnc_decode(int fd, const char *dirname)
 		return FALSE;
 	}
 	
-	while ((line = cli_readline(stream_in, NULL, 8192)) != NULL) {
+	while ((line = cli_readchunk(stream_in, NULL, 8192)) != NULL) {
 		ptr = strstr(line, "#@~^");
 		if (ptr) {
 			break;
@@ -1626,7 +1677,7 @@ int html_screnc_decode(int fd, const char *dirname)
 	do {
 		if (! *ptr) {
 			free(line);
-			ptr = line = cli_readline(stream_in, NULL, 8192);
+			ptr = line = cli_readchunk(stream_in, NULL, 8192);
 			if (!line) {
 				goto abort;
 			}
@@ -1701,7 +1752,7 @@ int html_screnc_decode(int fd, const char *dirname)
 		}
 		free(line);
 		if (length) {
-			ptr = line = cli_readline(stream_in, NULL, 8192);
+			ptr = line = cli_readchunk(stream_in, NULL, 8192);
 		}
 	}
 	retval = TRUE;
