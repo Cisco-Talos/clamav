@@ -1,3 +1,7 @@
+Sat Jan 26 20:03:30 CET 2008 (acab)
+-----------------------------------
+  * libclamav/pdf.c: Zip module failure in pdf files - bb#617
+
 Fri Jan 25 18:03:22 CET 2008 (tk)
 ---------------------------------
   * libclamav/cab.c: properly handle stored files
