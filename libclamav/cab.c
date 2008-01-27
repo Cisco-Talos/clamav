@@ -161,15 +161,17 @@ void cab_free(struct cab_archive *cab)
 
 
     if(cab->state) {
-	switch(cab->state->cmethod & 0x000f) {
-	    case 0x0001:
-		mszip_free(cab->state->stream);
-		break;
-	    case 0x0002:
-		qtm_free(cab->state->stream);
-		break;
-	    case 0x0003:
-		lzx_free(cab->state->stream);
+	if(cab->state->stream) {
+	    switch(cab->state->cmethod & 0x000f) {
+		case 0x0001:
+		    mszip_free(cab->state->stream);
+		    break;
+		case 0x0002:
+		    qtm_free(cab->state->stream);
+		    break;
+		case 0x0003:
+		    lzx_free(cab->state->stream);
+	    }
 	}
 	free(cab->state);
     }
@@ -604,19 +606,21 @@ static int cab_unstore(struct cab_file *file, int bytes)
 #define CAB_CHGFOLDER							\
     if(!file->cab->actfol || (file->folder != file->cab->actfol)) {	\
 	if(file->cab->state) {						\
-	    switch(file->cab->state->cmethod & 0x000f) {		\
-		case 0x0001:						\
-		    mszip_free(file->cab->state->stream);		\
-		    break;						\
-		case 0x0002:						\
-		    qtm_free(file->cab->state->stream);			\
-		    break;						\
-		case 0x0003:						\
-		    lzx_free(file->cab->state->stream);			\
+	    if(file->cab->state->stream) {				\
+		switch(file->cab->state->cmethod & 0x000f) {		\
+		    case 0x0001:					\
+			mszip_free(file->cab->state->stream);		\
+			break;						\
+		    case 0x0002:					\
+			qtm_free(file->cab->state->stream);		\
+			break;						\
+		    case 0x0003:					\
+			lzx_free(file->cab->state->stream);		\
+		}							\
 	    }								\
 	    free(file->cab->state);					\
+	    file->cab->state = NULL;					\
 	}								\
-	file->cab->actfol = file->folder;				\
 	if(lseek(file->fd, file->folder->offset, SEEK_SET) == -1) {	\
 	    cli_dbgmsg("cab_extract: Can't lseek to %u\n", (unsigned int) file->folder->offset);							\
 	    return CL_EFORMAT; /* truncated file? */			\
@@ -638,10 +642,10 @@ static int cab_unstore(struct cab_file *file, int bytes)
 		file->cab->state->stream = (struct lzx_stream *) lzx_init(file->fd, file->ofd, (int) (file->folder->cmethod >> 8) & 0x1f, 0, 4096, 0, file, &cab_read);									\
 	}								\
 	if((file->folder->cmethod & 0x000f) && !file->cab->state->stream) { \
-	    free(file->cab->state);					\
 	    close(file->ofd);						\
 	    return CL_EMSCAB;						\
 	}								\
+	file->cab->actfol = file->folder;				\
     }
 
 
@@ -663,7 +667,6 @@ int cab_extract(struct cab_file *file, const char *name)
     file->ofd = open(name, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
     if(file->ofd == -1) {
 	cli_errmsg("cab_extract: Can't open file %s in write mode\n", name);
-	free(file->cab->state);
 	return CL_EIO;
     }
 

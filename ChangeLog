@@ -1,3 +1,7 @@
+Sun Jan 27 20:09:35 CET 2008 (tk)
+---------------------------------
+  * libclamav/cab.c: fix memory errors in new code (bb#793)
+
 Sat Jan 26 20:03:30 CET 2008 (acab)
 -----------------------------------
   * libclamav/pdf.c: Zip module failure in pdf files - bb#617
