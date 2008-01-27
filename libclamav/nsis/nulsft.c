@@ -517,10 +517,6 @@ int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
 	struct nsis_st nsist;
 
     cli_dbgmsg("in scannulsft()\n");
-    if(ctx->limits && ctx->limits->maxreclevel && ctx->arec >= ctx->limits->maxreclevel) {
-        cli_dbgmsg("Archive recursion limit exceeded (arec == %u).\n", ctx->arec+1);
-	return CL_EMAXREC;
-    }
 
     memset(&nsist, 0, sizeof(struct nsis_st));
 
@@ -535,8 +531,6 @@ int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
     }
 
     if(cli_leavetemps_flag) cli_dbgmsg("NSIS: Extracting files to %s\n", nsist.dir);
-
-    ctx->arec++;
 
     do {
         ret = cli_nsis_unpack(&nsist, ctx);
@@ -572,7 +566,6 @@ int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
 
     free(nsist.dir);
 
-    ctx->arec--;    
     return ret;
 }
 

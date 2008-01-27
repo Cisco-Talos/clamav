@@ -80,9 +80,9 @@ typedef struct {
     const struct cli_matcher *root;
     const struct cl_engine *engine;
     const struct cl_limits *limits;
+    unsigned long scansize;
     unsigned int options;
     unsigned int arec;
-    unsigned int mrec;
     unsigned int found_possibly_unwanted;
     struct cli_dconf *dconf;
 } cli_ctx;
