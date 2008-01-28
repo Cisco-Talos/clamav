@@ -200,7 +200,7 @@ int cli_sizelimits(cli_ctx *ctx, unsigned long need1, unsigned long need2, unsig
   int ret = CL_SUCCESS;
   unsigned long needed;
 
-  /* if called without limits, go on, unpack */
+  /* if called without limits, go on, unpack, scan */
   if(!ctx || !ctx->limits) return CL_SUCCESS;
 
   needed = (need1>need2)?need1:need2;
@@ -236,7 +236,23 @@ int cli_sizelimits(cli_ctx *ctx, unsigned long need1, unsigned long need2, unsig
   }
 
   return ret;
-  /* FIXME: set/check ctx->scanned in magic_scandesc */
+}
+
+int cli_filelimits(cli_ctx *ctx) {
+  /* FIXME: inline in magic_scandesc? */
+
+  /* if called without limits, go on, unpack, scan */
+  if(!ctx || !ctx->limits || !ctx->limits->maxfiles) return CL_SUCCESS;
+
+  /* if we are within the limit */
+  if(ctx->limits->maxfiles > ctx->scanned) {
+    /* update counters and ack */
+    ctx->scanned++;
+    return CL_SUCCESS;
+  } else {
+    /* else tell the caller to quit */
+    return CL_BREAK;
+  }
 }
 
 unsigned char *cli_md5digest(int desc)
