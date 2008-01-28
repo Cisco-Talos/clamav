@@ -1969,16 +1969,18 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options)
 {
     cli_ctx ctx;
+    cl_limits l_limits;
     int rc;
 
     memset(&ctx, '\0', sizeof(cli_ctx));
     ctx.engine = engine;
     ctx.virname = virname;
-    ctx.limits = limits;
+    ctx.limits = &l_limits;
     ctx.scanned = scanned;
     ctx.options = options;
     ctx.found_possibly_unwanted = 0;
     ctx.dconf = (struct cli_dconf *) engine->dconf;
+    memcpy(&l_limits, limits, sizeof(struct cl_limits));
 
     rc = cli_magic_scandesc(desc, &ctx);
     if(rc == CL_CLEAN && ctx.found_possibly_unwanted)

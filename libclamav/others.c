@@ -196,6 +196,49 @@ const char *cl_strerror(int clerror)
     }
 }
 
+int cli_sizelimits(cli_ctx *ctx, unsigned long need1, unsigned long need2, unsigned long need3) {
+  int ret = CL_SUCCESS;
+  unsigned long needed;
+
+  /* if called without limits, go on, unpack */
+  if(!ctx || !ctx->limits) return CL_SUCCESS;
+
+  needed = (need1>need2)?need1:need2;
+  needed = (needed>need3)?needed:need3;
+
+  /* if we have global scan limits */
+  if(ctx->limits->maxscansize) {
+    /* if the remaining scansize is too small... */
+    if(ctx->limits->maxscansize-ctx->scansize<needed) {
+      cli_dbgmsg("cli_limits: scansize exceeded (initial: %u, remaining: %u, needed: %u)\n", ctx->limits->maxscansize, ctx->scansize, needed);
+      /* ... we return INFECTED only upon request */ 
+      if(BLOCKMAX) {
+	*ctx->virname = "Archive.ExceededScanSize";
+	return CL_VIRUS;
+      }
+      /* ... otherwise we tell the caller to skip this file */
+      ret = CL_BREAK;
+    } else {
+      /* if the remaining scanzise is big enough, we update it */
+      ctx->scansize+=needed;
+    }
+  }
+
+  /* if we have per-file size limits, and we are overlimit... */
+  if(ctx->limits->maxfilesize && ctx->limits->maxfilesize<needed) {
+    /* ... we return INFECTED only upon request */ 
+    if(BLOCKMAX) {
+      *ctx->virname = "Archive.ExceededFileSize";
+      return CL_VIRUS;
+    }
+    /* ... otherwise we tell the caller to skip this file */
+    ret = CL_BREAK;
+  }
+
+  return ret;
+  /* FIXME: set/check ctx->scanned in magic_scandesc */
+}
+
 unsigned char *cli_md5digest(int desc)
 {
 	unsigned char *digest;
@@ -628,11 +671,7 @@ int cli_rmdirs(const char *dirname)
 			    return -1;
 			}
 
-#ifdef	C_WINDOWS
-			sprintf(path, "%s\\%s", dirname, dent->d_name);
-#else
 			sprintf(path, "%s/%s", dirname, dent->d_name);
-#endif
 
 			/* stat the file */
 			if(lstat(path, &statbuf) != -1) {

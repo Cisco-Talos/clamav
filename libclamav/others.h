@@ -82,7 +82,8 @@ typedef struct {
     const struct cl_limits *limits;
     unsigned long scansize;
     unsigned int options;
-    unsigned int arec;
+    unsigned int recursion;
+    unsigned int scanned;
     unsigned int found_possibly_unwanted;
     struct cli_dconf *dconf;
 } cli_ctx;
