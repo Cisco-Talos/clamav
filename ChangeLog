@@ -1,3 +1,8 @@
+Mon Jan 28 16:05:29 CET 2008 (tk)
+---------------------------------
+  * libclamav/matcher-bm.c: on Solaris/Intel bm_shift could be improperly
+			    allocated (bb#773)
+
 Sun Jan 27 20:09:35 CET 2008 (tk)
 ---------------------------------
   * libclamav/cab.c: fix memory errors in new code (bb#793)

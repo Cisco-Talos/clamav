@@ -95,7 +95,7 @@ int cli_bm_init(struct cli_matcher *root)
 	uint16_t i, size = HASH(255, 255, 255) + 1;
 
 
-    if(!(root->bm_shift = (uint8_t *) cli_malloc(size * sizeof(uint8_t))))
+    if(!(root->bm_shift = (uint8_t *) cli_calloc(size, sizeof(uint8_t))))
 	return CL_EMEM;
 
     if(!(root->bm_suffix = (struct cli_bm_patt **) cli_calloc(size, sizeof(struct cli_bm_patt *)))) {
