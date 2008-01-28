@@ -1,3 +1,7 @@
+Mon Jan 28 23:42:24 EET 2008 (edwin)
+------------------------------------
+  * docs/phishsigs_howto.tex/.pdf: more documentation update
+
 Mon Jan 28 16:05:29 CET 2008 (tk)
 ---------------------------------
   * libclamav/matcher-bm.c: on Solaris/Intel bm_shift could be improperly
