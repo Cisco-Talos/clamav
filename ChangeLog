@@ -1,3 +1,8 @@
+Tue Jan 29 17:10:54 GMT 2008 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Downgrade some messages from warning to debug
+				(Patch from Edwin)
+
 Mon Jan 28 23:42:24 EET 2008 (edwin)
 ------------------------------------
   * docs/phishsigs_howto.tex/.pdf: more documentation update

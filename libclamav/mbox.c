@@ -2095,7 +2095,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 			boundary = messageFindArgument(mainMessage, "boundary");
 
 			if(boundary == NULL) {
-				cli_warnmsg("Multipart/%s MIME message contains no boundary header\n",
+				cli_dbgmsg("Multipart/%s MIME message contains no boundary header\n",
 					mimeSubtype);
 				/* Broken e-mail message */
 				mimeType = NOMIME;
@@ -3956,7 +3956,7 @@ getHrefs(message *m, tag_arguments_t *hrefs)
 
 	/* TODO: make this size customisable */
 	if(len > 100*1024) {
-		cli_warnmsg("Viruses pointed to by URLs not scanned in large message\n");
+		cli_dbgmsg("Viruses pointed to by URLs not scanned in large message\n");
 		blobDestroy(b);
 		return NULL;
 	}
