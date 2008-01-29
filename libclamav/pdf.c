@@ -79,10 +79,9 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	char *buf;	/* start of memory mapped area */
 	const char *p, *q, *trailerstart;
 	const char *xrefstart;	/* cross reference table */
-	const struct cl_limits *limits;
 	/*size_t xreflength;*/
 	table_t *md5table;
-	int printed_predictor_message, printed_embedded_font_message, rc;
+	int printed_predictor_message, printed_embedded_font_message, rc, ret;
 	unsigned int files;
 	struct stat statb;
 
@@ -192,7 +191,6 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 
 	rc = CL_CLEAN;
 	files = 0;
-	limits = ctx->limits;
 
 	/*
 	 * The body section consists of a sequence of indirect objects
@@ -494,10 +492,10 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		free(md5digest);
 		cli_dbgmsg("cli_pdf: extracted file %u to %s\n", ++files,
 			fullname);
-		if(limits && limits->maxfiles && (files >= limits->maxfiles)) {
+
+		if((ret=cli_checklimits("cli_pdf", ctx, 0, 0, 0))!=CL_CONTINUE) {
 			/* Bug 698 */
-			cli_dbgmsg("cli_pdf: number of files exceeded %u\n", limits->maxfiles);
-			rc = CL_EMAXFILES;
+			rc = ret;
 		}
 	}
 
@@ -541,7 +539,7 @@ try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fo
 static int
 flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 {
-	int zstat;
+	int zstat, ret;
 	off_t nbytes;
 	z_stream stream;
 	unsigned char output[BUFSIZ];
@@ -611,17 +609,9 @@ flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 					}
 					nbytes += written;
 
-					if(ctx->limits &&
-					   ctx->limits->maxfilesize &&
-					   (nbytes > (off_t) ctx->limits->maxfilesize)) {
-						cli_dbgmsg("cli_pdf: flatedecode size exceeded (%lu > %lu)\n",
-							   (unsigned long)nbytes, (unsigned long)ctx->limits->maxfilesize);
+					if((ret=cli_checklimits("cli_pdf", ctx, nbytes, 0, 0))!=CL_CONTINUE) {
 						inflateEnd(&stream);
-						if(BLOCKMAX) {
-							*ctx->virname = "PDF.ExceededFileSize";
-							return CL_VIRUS;
-						}
-						return CL_CLEAN;
+						return ret;
 					}
 					stream.next_out = output;
 					stream.avail_out = sizeof(output);
@@ -651,28 +641,6 @@ flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 		}
 	}
 			
-
-	/*
-	 * On BSD systems total_in and total_out are "long long", so these
-	 * numbers could (in theory) get truncated in the debug statement
-	 */
-	cli_dbgmsg("cli_pdf: flatedecode in=%lu out=%lu ratio %lu (max %u)\n",
-		(unsigned long)stream.total_in, (unsigned long)stream.total_out,
-		(unsigned long)(stream.total_out / stream.total_in),
-		ctx->limits ? ctx->limits->maxratio : 0);
-
-	if(ctx->limits &&
-	   ctx->limits->maxratio &&
-	   ((stream.total_out / stream.total_in) > ctx->limits->maxratio)) {
-		cli_dbgmsg("cli_pdf: flatedecode Max ratio reached\n");
-		inflateEnd(&stream);
-		if(BLOCKMAX) {
-			*ctx->virname = "Oversized.PDF";
-			return CL_VIRUS;
-		}
-		return CL_CLEAN;
-	}
-
 #ifdef	SAVE_TMP
 	unlink(tmpfilename);
 #endif
