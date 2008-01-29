@@ -1,6 +1,6 @@
 %% LyX 1.5.3 created this file.  For more info, see http://www.lyx.org/.
 %% Do not edit unless you really know what you are doing.
-\documentclass[a4paper,english,12pt]{article}
+\documentclass[a4paper,english,10pt]{article}
 \usepackage{amssymb}
 \usepackage{pslatex}
 \usepackage[T1]{fontenc}
@@ -82,7 +82,6 @@ M:RealHostname:DisplayedHostname[:FuncLevelSpec]
 \end{itemize}
 
 
-%TODO: move these to proper chapter
 \subsection{Examples of PDB signatures}
 To check for phishing mails that target amazon.com, or subdomains of amazon.com:
 \begin{verbatim}
@@ -143,7 +142,6 @@ expressions splitted at the {:}).
 When you whitelist an entry make sure you check that both domains are owned by the same entity.
 What this whitelist entry allows is:
 Links claiming to point to amazon.com (\textsc{DisplayedURL}), but really go to country-specific domain of amazon (\textsc{RealURL}).
-
 
 \subsection{Example for how the URL extractor works}
 Consider the following HTML file:
@@ -225,7 +223,6 @@ and this href: \verb+<a href='http://www.google.ro'>www.google.com</a>+
 then it will be whitelisted, but: \verb+<a href='http://images.google.com'>www.google.com</a>+
 will not.
 
-%TODO: review & update these chapters
 \subsubsection{What happens when a match is found}
 
 In the case of the whitelist, a match means that the \textsc{RealURL/DisplayedURL}
@@ -235,12 +232,7 @@ performed on it.
 In the case of the domainlist, a match means that the \textsc{RealURL/displayedURL}
 is going to be checked for phishing attempts. 
 
-%TODO: this is gone in SVN, but still present in 0.92, drop from documentation?
-This is only done if you don't run clamav with the \emph{alldomains} option (since then
-all urls are checked). 
-%---
 Furthermore you can restrict what checks are to be performed by specifying the 3-digit hexnumber.
-%TODO: add section reference here
 
 \subsubsection{Extraction of \textsc{realURL}, \textsc{displayedURL} from HTML tags\label{sub:Extraction-of-realURL,}}
 
@@ -514,7 +506,9 @@ Lets assume you are having problems because of links like this in
 a mail:
 
 \begin{verbatim}
-<a href=''http://69.0.241.57/bCentral/L.asp?L=XXXXXXXX''>http://www.bcentral.it/</a>
+<a href=''http://69.0.241.57/bCentral/L.asp?L=XXXXXXXX''>
+  http://www.bcentral.it/
+</a>
 \end{verbatim}
 After investigating those sites further, you decide they are no threat,
 and create a line like this in daily.wdb:
@@ -592,12 +586,6 @@ If the mail is not detected, then try using:
 
 Then see what urls are being checked, see if any of them is in a
 whitelist, see if all urls are detected, etc.
-
-
-\section{Hints and recomandations}
-
-
-\section{Examples}
 
 
 \end{document}
