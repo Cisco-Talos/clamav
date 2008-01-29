@@ -1,3 +1,8 @@
+Tue Jan 29 17:50:05 GMT 2008 (njh)
+----------------------------------
+  * libclamav/tnef.c:	Handle trailing CR and change handling of truncated
+  				files (Based on a Patch from Edwin)
+
 Tue Jan 29 17:10:54 GMT 2008 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Downgrade some messages from warning to debug
