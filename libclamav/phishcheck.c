@@ -242,6 +242,7 @@ static const short int hextable[256] = {
 
 /* Prototypes*/
 static void string_init_c(struct string* dest,char* data);
+static int string_assign_concatenated(struct string* dest, const char* prefix, const char* begin, const char* end);
 static void string_assign_null(struct string* dest);
 static char *rfind(char *start, char c, size_t len);
 static char hex2int(const unsigned char* src);
@@ -298,19 +299,32 @@ static void string_init_c(struct string* dest,char* data)
 	dest->ref = NULL;
 }
 
+/* assigns to @dest the string made from concatenating @prefix with the string between @begin and @end */
+static int string_assign_concatenated(struct string* dest, const char* prefix, const char* begin, const char* end)
+{
+	const size_t prefix_len = strlen(prefix);
+	char* ret = cli_malloc(prefix_len + end - begin + 1);
+	if(!ret)
+		return CL_EMEM;
+	strncpy(ret, prefix, prefix_len);
+	strncpy(ret+prefix_len, begin, end-begin);
+	ret[prefix_len+end-begin]='\0';
+	string_free(dest);
+	string_init_c(dest, ret);
+	return CL_SUCCESS;
+}
+
 /* make a copy of the string between start -> end*/
 static int string_assign_dup(struct string* dest,const char* start,const char* end)
 {
-	char*	    ret  = cli_malloc(end-start+1);
+	char* ret  = cli_malloc(end-start+1);
 	if(!ret)
 		return CL_EMEM;
 	strncpy(ret,start,end-start);
 	ret[end-start]='\0';
 
 	string_free(dest);
-	dest->data=ret;
-	dest->refcount=1;
-	dest->ref=NULL;
+	string_init_c(dest, ret);
 	return CL_SUCCESS;
 }
 
@@ -745,11 +759,10 @@ cleanupURL(struct string *URL,struct string *pre_URL, int isReal)
 		}
 		if(!isReal) {
 			str_fixup_spaces(&begin,&end);
-			if (( rc = string_assign_dup(URL,begin,end+1) )) {
+			if (( rc = string_assign_dup(URL, begin, end+1) )) {
 				return rc;
 			}
 		}
-		/*cli_dbgmsg("%p::%s\n",URL->data,URL->data);*/
 	}
 	return 0;
 }
@@ -765,6 +778,7 @@ static int found_possibly_unwanted(cli_ctx* ctx)
 
 int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 {
+	/* TODO: get_host and then apply regex, etc. */
 	int i;
 	struct phishcheck* pchk = (struct phishcheck*) ctx->engine->phishcheck;
 	/* check for status of whitelist fatal error, etc. */
@@ -1003,6 +1017,7 @@ static enum phish_status cleanupURLs(struct url_check* urls)
 {
 	if(urls->flags&CLEANUP_URL) {
 		cleanupURL(&urls->realLink,NULL,1);
+
 		cleanupURL(&urls->displayLink,&urls->pre_fixup.pre_displayLink,0);
 		if(!urls->displayLink.data || !urls->realLink.data)
 			return CL_PHISH_NODECISION;
@@ -1024,7 +1039,7 @@ static int url_get_host(const struct phishcheck* pchk, struct url_check* url,str
 	if(!start || !end) {
 		string_assign_null(host);
 	}
-	else if(( rc = string_assign_dup(host,start,end) )) {
+	else if(( rc = string_assign_concatenated(host, ".", start, end) )) {
 		return rc;
 	}
 
@@ -1110,6 +1125,8 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 		return rc < 0 ? rc : CL_PHISH_CLEAN;
 	}
 
+	cli_dbgmsg("Phishcheck:URL after cleanup: %s->%s\n", urls->realLink.data,
+		urls->displayLink.data);
 	if(whitelist_check(engine, urls, 0))
 		return CL_PHISH_CLEAN;/* if url is whitelisted don't perform further checks */
 
