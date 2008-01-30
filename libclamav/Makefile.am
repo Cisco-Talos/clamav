@@ -18,7 +18,7 @@
 
 SUBDIRS = lzma .
 
-INCLUDES = -I$(top_srcdir) -I@srcdir@/nsis -I@srcdir@/lzma
+AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis -I@srcdir@/lzma
 
 if ENABLE_UNRAR
 libclamav_la_LIBADD = @LIBCLAMAV_LIBS@ @THREAD_LIBS@ lzma/liblzma.la $(top_builddir)/libclamunrar_iface/libclamunrar_iface.la

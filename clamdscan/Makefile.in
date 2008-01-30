@@ -59,7 +59,7 @@ am__aclocal_m4_deps = $(top_srcdir)/acinclude.m4 \
 	$(top_srcdir)/configure.in
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
-mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
+mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/clamav-config.h
 CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
@@ -79,7 +79,7 @@ am__clamdscan_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 clamdscan_OBJECTS = $(am_clamdscan_OBJECTS)
 clamdscan_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I. -I$(top_builddir)@am__isrc@
-depcomp = $(SHELL) $(top_srcdir)/depcomp
+depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -228,7 +228,7 @@ top_srcdir = @top_srcdir@
 @BUILD_CLAMD_TRUE@    client.h \
 @BUILD_CLAMD_TRUE@    defaults.h
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/clamscan -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamscan -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 all: all-am
 
 .SUFFIXES:
@@ -242,9 +242,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  clamdscan/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  clamdscan/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu  clamdscan/Makefile
+	  $(AUTOMAKE) --foreign  clamdscan/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \

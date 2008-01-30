@@ -57,7 +57,7 @@ am__aclocal_m4_deps = $(top_srcdir)/acinclude.m4 \
 	$(top_srcdir)/configure.in
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
-mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
+mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/clamav-config.h
 CONFIG_CLEAN_FILES =
 SOURCES =
@@ -187,7 +187,7 @@ target_os = @target_os@
 target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-EXTRA_DIST = html man/*.in clamdoc.pdf clamdoc.tex clamav-mirror-howto.pdf clamav-mirror-howto.tex signatures.pdf signatures.tex clam.eps
+EXTRA_DIST = html $(top_srcdir)/docs/man/*.in clamdoc.pdf clamdoc.tex clamav-mirror-howto.pdf clamav-mirror-howto.tex phishsigs_howto.tex phishsigs_howto.pdf signatures.pdf signatures.tex clam.eps
 man_MANS = man/clamscan.1 man/freshclam.1 man/sigtool.1 man/clamd.8 man/clamd.conf.5 man/clamdscan.1 man/clamav-milter.8 man/freshclam.conf.5 man/clamconf.1
 all: all-am
 
@@ -201,9 +201,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  docs/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  docs/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu  docs/Makefile
+	  $(AUTOMAKE) --foreign  docs/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \

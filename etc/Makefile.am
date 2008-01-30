@@ -19,7 +19,7 @@
 EXTRA_DIST = clamd.conf freshclam.conf
 CFGINST = @CFGDIR@
  
-install:
+install-data-local:
 	$(mkinstalldirs) $(DESTDIR)$(CFGINST)
 	@test -f $(DESTDIR)$(CFGINST)/clamd.conf || \
 	$(INSTALL_DATA) $(srcdir)/clamd.conf $(DESTDIR)$(CFGINST)

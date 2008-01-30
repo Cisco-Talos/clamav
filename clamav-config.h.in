@@ -306,7 +306,7 @@
 /* "no fd_set" */
 #undef NO_FD_SET
 
-/* Name of package */
+/* package name */
 #undef PACKAGE
 
 /* Define to the address where bug reports for this package should be sent. */
@@ -360,7 +360,7 @@
 /* use syslog */
 #undef USE_SYSLOG
 
-/* Version number of package */
+/* package version */
 #undef VERSION
 
 /* tcpwrappers support */

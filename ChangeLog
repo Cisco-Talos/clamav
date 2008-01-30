@@ -1,10 +1,23 @@
+Wed Jan 30 22:42:39 EET 2008 (edwin)
+------------------------------------
+ * build system modernization: (based on suggestion from
+		  Markus Elfring <Markus.Elfring*web.de> in bb #452)
+	* use AC_CONFIG_HEADER, since AM_CONFIG_HEADER is obsolete
+	* put configure files into auxiliary directory
+	* fix main declaration in FD_SETSIZE test
+	* check for failure on fopen in FD_SETSIZE test
+	* move version from AM_INIT_AUTOMAKE to AC_INIT, old form was obsolete
+	* eliminate automake warnings, update Makefile.am
+	* rename .splitted to .split (requested by aCaB)
+
+
 Wed Jan 30 20:45:38 CET 2008 (tk)
 ---------------------------------
   * libclamav/readdb.c: make the parser more sensitive to syntax errors (bb#238)
 
 Wed Jan 30 20:23:20 EET 2008 (edwin)
 ------------------------------------
-  * libclamav/phishcheck.c, regex_list.c: when domain matchers, preserve full
+  * libclamav/phishcheck.c, regex_list.c: when domain matches, preserve full
   subdomain(bb #721)
 
 Tue Jan 29 17:50:05 GMT 2008 (njh)

@@ -18,10 +18,30 @@ dnl   along with this program; if not, write to the Free Software
 dnl   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 dnl   MA 02110-1301, USA.
 
-AC_INIT(clamscan/clamscan.c)
+AC_PREREQ(2.59)
+dnl For a release change [devel] to the real version [0.xy]
+dnl also change VERSION below
+AC_INIT([clamav], [devel], [http://bugs.clamav.net/])
+
+dnl put configure auxiliary into config
+AC_CONFIG_AUX_DIR(config)
+AC_PROG_CC
+AC_CONFIG_HEADER(clamav-config.h)
+
+dnl safety check, this used to be a parameter to AC_INIT
+AC_CONFIG_SRCDIR([clamscan/clamscan.c])
+
 AC_CREATE_TARGET_H(target.h)
-AM_INIT_AUTOMAKE(clamav, "devel-`date +%Y%m%d`")
-AM_CONFIG_HEADER(clamav-config.h)
+
+dnl -Wall and -Werror here are NOT CFLAGS, they refer to automake warnings
+AM_INIT_AUTOMAKE([-Wall -Werror foreign dist-bzip2 no-define])
+
+dnl we told automake to not define these, since we want to include
+dnl the date in the version
+AC_DEFINE(PACKAGE, PACKAGE_NAME, [package name])
+
+dnl change this on a release
+AC_DEFINE(VERSION,["devel-`date +%Y%m%d`"],[package version])
 
 LC_CURRENT=3
 LC_REVISION=3
@@ -30,7 +50,6 @@ LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 AC_SUBST(LIBCLAMAV_VERSION)
 
 AC_PROG_AWK
-AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
@@ -38,7 +57,7 @@ AC_PROG_MAKE_SET
 dnl libtool by default brings in check for all the languages/compilers (CXX/F77/...)
 dnl we don't need them, so avoid tagged configuration
 dnl libtool-1.6 should already do it right, but thats not stable yet
-m4_define([_LT_AC_TAGCONFIG])
+AC_DEFUN([_LT_AC_TAGCONFIG])
 AC_PROG_LIBTOOL
 
 AC_DEFINE(SCANBUFF, 131072, [scan buffer size])
@@ -1288,9 +1307,18 @@ AC_TRY_RUN([
 #include <sys/time.h>
 #include <sys/select.h>
 #include <sys/types.h>
-main() {
+#include <errno.h>
+int main(void) {
         FILE *fp = fopen("conftestval", "w");
-        fprintf (fp, "%d\n", FD_SETSIZE);
+	if(fp) {
+		if(fprintf (fp, "%d\n", FD_SETSIZE) < 1)  {
+			perror("fprintf failed");
+			return errno;
+		}
+	} else {
+		perror("fopen failed");
+		return errno;
+	}
         exit(0);
 }
 ],
