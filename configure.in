@@ -38,10 +38,11 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign dist-bzip2 no-define])
 
 dnl we told automake to not define these, since we want to include
 dnl the date in the version
-AC_DEFINE(PACKAGE, PACKAGE_NAME, [package name])
+AC_DEFINE(PACKAGE, PACKAGE_NAME, [Name of package])
 
 dnl change this on a release
-AC_DEFINE(VERSION,["devel-`date +%Y%m%d`"],[package version])
+VERSION="devel-`date +%Y%m%d`"
+AC_DEFINE_UNQUOTED(VERSION,"$VERSION",[Version number of package])
 
 LC_CURRENT=3
 LC_REVISION=3

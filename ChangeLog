@@ -1,3 +1,7 @@
+Wed Jan 30 23:13:19 EET 2008 (edwin)
+------------------------------------
+ * configure.in,configure: fix quoting of version.
+
 Wed Jan 30 22:52:54 EET 2008 (edwin)
 ------------------------------------
  * configure.in,configure: add AC_C_RESTRICT (bb #452)
