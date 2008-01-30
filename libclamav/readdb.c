@@ -175,6 +175,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 		if((n = cli_strtok(pt, 2, "-"))) { /* strict check */
 		    error = 1;
 		    free(n);
+		    break;
 		}
 	    }
 	}
