@@ -390,5 +390,9 @@
 /* Define to `long int' if <sys/types.h> does not define. */
 #undef off_t
 
+/* Define to equivalent of C99 restrict keyword, or to nothing if this is not
+   supported. Do not define if restrict is supported directly. */
+#undef restrict
+
 /* Define to "int" if <sys/socket.h> does not define. */
 #undef socklen_t

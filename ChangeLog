@@ -1,3 +1,7 @@
+Wed Jan 30 22:52:54 EET 2008 (edwin)
+------------------------------------
+ * configure.in,configure: add AC_C_RESTRICT (bb #452)
+
 Wed Jan 30 22:42:39 EET 2008 (edwin)
 ------------------------------------
  * build system modernization: (based on suggestion from
