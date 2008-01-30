@@ -34,6 +34,7 @@ CLAMAV_PRIVATE {
     cli_regfree;
     cli_strrcpy;
     cli_strbcasestr;
+    cli_isnumber;
     cli_gentemp;
     cli_gentempfd;
     cli_rmdirs;

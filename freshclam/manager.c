@@ -969,7 +969,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	}
 
 	if(field && (pt = cli_strtok(dnsreply, field, ":"))) {
-	    if(!isnumb(pt)) {
+	    if(!cli_isnumber(pt)) {
 		logg("^Broken database version in TXT record.\n");
 	    } else {
 		newver = atoi(pt);

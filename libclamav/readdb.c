@@ -149,13 +149,13 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	    }
 
 	    if(!strchr(pt, '-')) {
-		if((mindist = maxdist = atoi(pt)) < 0) {
+		if(!cli_isnumber(pt) || (mindist = maxdist = atoi(pt)) < 0) {
 		    error = 1;
 		    break;
 		}
 	    } else {
 		if((n = cli_strtok(pt, 0, "-"))) {
-		    if((mindist = atoi(n)) < 0) {
+		    if(!cli_isnumber(n) || (mindist = atoi(n)) < 0) {
 			error = 1;
 			free(n);
 			break;
@@ -164,11 +164,16 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 		}
 
 		if((n = cli_strtok(pt, 1, "-"))) {
-		    if((maxdist = atoi(n)) < 0) {
+		    if(!cli_isnumber(n) || (maxdist = atoi(n)) < 0) {
 			error = 1;
 			free(n);
 			break;
 		    }
+		    free(n);
+		}
+
+		if((n = cli_strtok(pt, 2, "-"))) { /* strict check */
+		    error = 1;
 		    free(n);
 		}
 	    }
@@ -406,7 +411,6 @@ static int cli_loaddb(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 	if(*pt == '=') continue;
 
 	if((ret = cli_parse_add(root, start, pt, 0, NULL, 0))) {
-	    cli_errmsg("Problem parsing signature at line %d\n", line);
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -586,7 +590,6 @@ static int cli_loadndb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	}
 
 	if((ret = cli_parse_add(root, virname, sig, 0, offset, target))) {
-	    cli_errmsg("Problem parsing signature at line %d\n", line);
 	    ret = CL_EMALFDB;
 	    break;
 	}

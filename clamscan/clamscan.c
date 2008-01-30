@@ -46,6 +46,8 @@
 #include "shared/output.h"
 #include "shared/options.h"
 
+#include "libclamav/str.h"
+
 void help(void);
 
 #if defined(C_WINDOWS) && defined(CL_DEBUG)
@@ -147,7 +149,7 @@ int main(int argc, char **argv)
     if(opt_check(opt, "max-space")) {
 	pt = opt_arg(opt, "max-space");
 	if(!strchr(pt, 'M') && !strchr(pt, 'm')) {
-	    if(!isnumb(pt)) {
+	    if(!cli_isnumber(pt)) {
 		logg("!--max-space requires a natural number\n");
 		opt_free(opt);
 		return 40;
@@ -156,7 +158,7 @@ int main(int argc, char **argv)
     }
 
     if(opt_check(opt, "max-files")) {
-	if(!isnumb(opt_arg(opt, "max-files"))) {
+	if(!cli_isnumber(opt_arg(opt, "max-files"))) {
 	    logg("!--max-files requires a natural number\n");
 	    opt_free(opt);
 	    return 40;
@@ -164,7 +166,7 @@ int main(int argc, char **argv)
     }
 
     if(opt_check(opt, "max-recursion")) {
-	if(!isnumb(opt_arg(opt, "max-recursion"))) {
+	if(!cli_isnumber(opt_arg(opt, "max-recursion"))) {
 	    logg("!--max-recursion requires a natural number\n");
 	    opt_free(opt);
 	    return 40;
@@ -172,7 +174,7 @@ int main(int argc, char **argv)
     }
 
     if(opt_check(opt, "max-mail-recursion")) {
-	if(!isnumb(opt_arg(opt, "max-mail-recursion"))) {
+	if(!cli_isnumber(opt_arg(opt, "max-mail-recursion"))) {
 	    logg("!--max-mail-recursion requires a natural number\n");
 	    opt_free(opt);
 	    return 40;
@@ -180,7 +182,7 @@ int main(int argc, char **argv)
     }
 
     if(opt_check(opt, "max-dir-recursion")) {
-	if(!isnumb(opt_arg(opt, "max-dir-recursion"))) {
+	if(!cli_isnumber(opt_arg(opt, "max-dir-recursion"))) {
 	    logg("!--max-dir-recursion requires a natural number\n");
 	    opt_free(opt);
 	    return 40;
@@ -188,7 +190,7 @@ int main(int argc, char **argv)
     }
 
     if(opt_check(opt, "max-ratio")) {
-	if(!isnumb(opt_arg(opt, "max-ratio"))) {
+	if(!cli_isnumber(opt_arg(opt, "max-ratio"))) {
 	    logg("!--max-ratio requires a natural number\n");
 	    opt_free(opt);
 	    return 40;
