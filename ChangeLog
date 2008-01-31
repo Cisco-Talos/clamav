@@ -1,3 +1,15 @@
+Thu Jan 31 13:48:24 EET 2008 (edwin)
+------------------------------------
+ * build system:
+	* allow to specify libgmp location, by using --with-libgmp-prefix,
+		by default current prefix is also searched
+ 	* allow to specify libb2 location, by using --with-bz2-prefix,
+		by default current prefix is also searched
+	* locating gmp and bz2 works by default on OpenBSD (bb #301)
+	* move local m4 macros to m4/
+	* import lib-link.m4 and dependent files
+	* quoting for autoconf macros (bb #452)
+
 Wed Jan 30 23:13:19 EET 2008 (edwin)
 ------------------------------------
  * configure.in,configure: fix quoting of version.

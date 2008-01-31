@@ -55,7 +55,8 @@ target_triplet = @target@
 subdir = clamdscan
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/acinclude.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
+	$(top_srcdir)/m4/lib-link.m4 $(top_srcdir)/m4/lib-prefix.m4 \
 	$(top_srcdir)/configure.in
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -125,18 +126,25 @@ EXEEXT = @EXEEXT@
 FRESHCLAM_LIBS = @FRESHCLAM_LIBS@
 GETENT = @GETENT@
 GREP = @GREP@
+HAVE_LIBGMP = @HAVE_LIBGMP@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
+LIBBZ2 = @LIBBZ2@
+LIBBZ2_PREFIX = @LIBBZ2_PREFIX@
 LIBCLAMAV_LIBS = @LIBCLAMAV_LIBS@
 LIBCLAMAV_VERSION = @LIBCLAMAV_VERSION@
+LIBGMP = @LIBGMP@
+LIBGMP_PREFIX = @LIBGMP_PREFIX@
 LIBOBJS = @LIBOBJS@
 LIBS = $(top_builddir)/libclamav/libclamav_internal_utils.la @FRESHCLAM_LIBS@
 LIBTOOL = @LIBTOOL@
 LN_S = @LN_S@
+LTLIBBZ2 = @LTLIBBZ2@
+LTLIBGMP = @LTLIBGMP@
 LTLIBOBJS = @LTLIBOBJS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@

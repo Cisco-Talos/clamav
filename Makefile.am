@@ -16,6 +16,7 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
+ACLOCAL_AMFLAGS=-I m4
 SUBDIRS = libclamunrar libclamunrar_iface libclamav clamscan clamd clamdscan freshclam sigtool clamconf database docs etc clamav-milter test
 EXTRA_DIST = FAQ examples BUGS shared libclamav.pc.in UPGRADE COPYING.bzip2 COPYING.lzma COPYING.unrar COPYING.LGPL COPYING.file
 
