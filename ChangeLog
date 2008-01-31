@@ -1,3 +1,8 @@
+Thu Jan 31 17:44:35 EET 2008 (edwin)
+------------------------------------
+  * libclamav/phishcheck.c, docs/phishsigs_howto.tex: ignore invalid URLs
+  containing double dots, optimization: cut URL after hostname
+
 Thu Jan 31 16:33:56 CET 2008 (tk)
 ---------------------------------
   * libclamav/vba_extract.c: minor code tidy; drop broken sigtouint32()

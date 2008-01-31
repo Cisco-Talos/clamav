@@ -173,46 +173,34 @@ static const size_t https_len  = sizeof(https)-1;
 #define URI_safe_nodot  "-$_@&"
 #define URI_safe	"-$_@.&"
 #define URI_extra	"!*\"'(),"
-#define URI_reserved    "=;/#?: "
-#define URI_national    "{}|[]\\^~"
-#define URI_punctuation "<>"
 
 #define URI_hex		 "[0-9a-fA-f]"
 #define URI_escape      "%"URI_hex"{2}"
 #define URI_xalpha "([" URI_safe URI_alpha URI_digit  URI_extra "]|"URI_escape")" /* URI_safe has to be first, because it contains - */
 #define URI_xalpha_nodot "([" URI_safe_nodot URI_alpha URI_digit URI_extra "]|"URI_escape")"
 
-#define URI_xalphas URI_xalpha"+"
 #define URI_xalphas_nodot URI_xalpha_nodot"*"
 
 #define URI_ialpha  "["URI_alpha"]"URI_xalphas_nodot""
 #define URI_xpalpha URI_xalpha"|\\+"
 #define URI_xpalpha_nodot URI_xalpha_nodot"|\\+"
-#define URI_xpalphas "("URI_xpalpha")+"
 #define URI_xpalphas_nodot "("URI_xpalpha_nodot")+"
-#define optional_URI_xpalphas "("URI_xpalpha"|=)*"
 
 #define URI_scheme URI_ialpha
 #define URI_tld iana_tld
 #define URI_path1 URI_xpalphas_nodot"\\.("URI_xpalphas_nodot"\\.)*"
-#define URI_path2 URI_tld
-#define URI_path3 "(/"optional_URI_xpalphas")*"
-
-#define URI_search "("URI_xalphas")*"
-#define URI_fragmentid URI_xalphas
 
 #define URI_IP_digits "["URI_digit"]{1,3}"
-#define URI_numeric_path URI_IP_digits"(\\."URI_IP_digits"){3}(:"URI_xpalphas_nodot")?(/("URI_xpalphas"/?)*)?"
-#define URI_numeric_URI "("URI_scheme":(//)?)?"URI_numeric_path"(\\?" URI_search")?"
-#define URI_numeric_fragmentaddress URI_numeric_URI"(#"URI_fragmentid")?"
+#define URI_path_start "[/?:]?"
+#define URI_numeric_path URI_IP_digits"(\\."URI_IP_digits"){3}"URI_path_start
+#define URI_numeric_URI "("URI_scheme":(//)?)?"URI_numeric_path
+#define URI_numeric_fragmentaddress URI_numeric_URI
 
 #define URI_URI1 "("URI_scheme":(//)?)?"URI_path1
-#define URI_URI2 URI_path2
-#define URI_URI3 URI_path3"(\\?" URI_search")?"
+#define URI_URI2 URI_tld
 
 #define URI_fragmentaddress1 URI_URI1
-#define URI_fragmentaddress2 URI_URI2
-#define URI_fragmentaddress3 URI_URI3"(#"URI_fragmentid")?"
+#define URI_fragmentaddress2 URI_URI2""URI_path_start
 
 #define URI_CHECK_PROTOCOLS "(http|https|ftp|mailto)://.+"
 
@@ -680,6 +668,9 @@ str_fixup_spaces(char **begin, const char **end)
 	/* strip leading/trailing garbage */
 	while(!isalnum(sbegin[0]) && sbegin <= send) sbegin++;
 	while(!isalnum(send[0]) && send >= sbegin) send--;
+
+	/* keep terminating slash character*/
+	if(send[1] == '/') send++;
 	*begin = sbegin;
 	*end = send;
 }
@@ -715,7 +706,6 @@ cleanupURL(struct string *URL,struct string *pre_URL, int isReal)
 	}
 	while(isspace(*end))
 		end--;
-	/*TODO: convert \ to /, and stuff like that*/
 	/* From mailscanner, my comments enclosed in {} */
 	if(!strncmp(begin,dotnet,dotnet_len) || !strncmp(begin,adonet,adonet_len) || !strncmp(begin,aspnet,aspnet_len)) {
 		string_assign_null(URL);
@@ -727,6 +717,32 @@ cleanupURL(struct string *URL,struct string *pre_URL, int isReal)
 		int rc;
 
 		str_replace(begin,end,'\\','/');
+		/* find beginning of hostname, because:
+		 * - we want to keep only protocol, host, and 
+		 *  strip path & query parameter(s) 
+		 * - we want to make hostname lowercase*/
+		host_begin = strchr(begin,':');
+		while(host_begin && (host_begin < end) && (host_begin[1] == '/'))  host_begin++;
+		if(!host_begin) host_begin=begin;
+		else host_begin++;
+		host_len = strcspn(host_begin,":/?");
+	        if(host_begin + host_len > end + 1) {
+			/* prevent hostname extending beyond end, it can happen
+			 * if we have spaces at the end, we don't want those part of 
+			 * the hostname */
+			host_len = end - host_begin + 1;
+		} else {
+			/* cut the URL after the hostname */
+			/* @end points to last character we want to be part of the URL */
+			end = host_begin + host_len - 1;
+		}
+		/* terminate URL with a slash, except when we're at end of string */
+		if(host_begin[host_len]) {
+			host_begin[host_len] = '/';
+			end++;
+		}
+		/* convert hostname to lowercase, but only hostname! */
+		str_make_lowercase(host_begin, host_len);
 		/* some broken MUAs put > in the href, and then
 		 * we get a false positive, so remove them */
 		str_replace(begin,end,'<',' ');
@@ -735,13 +751,6 @@ cleanupURL(struct string *URL,struct string *pre_URL, int isReal)
 		str_replace(begin,end,';',' ');
 		str_strip(&begin,&end,lt,lt_len);
 		str_strip(&begin,&end,gt,gt_len);
-		/* convert hostname to lowercase, but only hostname! */
-		host_begin = strchr(begin,':');
-		while(host_begin && host_begin[1]=='/') host_begin++;
-		if(!host_begin) host_begin=begin;
-		else host_begin++;
-		host_len = strcspn(host_begin,"/?");
-		str_make_lowercase(host_begin,host_len);
 		/* convert %xx to real value */
 		str_hex_to_char(&begin,&end);
 		if(isReal) {
@@ -929,7 +938,7 @@ int phishing_init(struct cl_engine* engine)
 		engine->phishcheck = NULL;
 		return CL_EFORMAT;
 	}
-	url_regex = str_compose("^ *(("URI_CHECK_PROTOCOLS")|("URI_fragmentaddress1,URI_fragmentaddress2,URI_fragmentaddress3")) *$");
+	url_regex = str_compose("^ *(("URI_CHECK_PROTOCOLS")|(",URI_fragmentaddress1,URI_fragmentaddress2")) *$");
 	if(build_regex(&pchk->preg,url_regex,1)) {
 		free_regex(&pchk->preg_cctld);
 		free_regex(&pchk->preg_tld);
@@ -939,7 +948,7 @@ int phishing_init(struct cl_engine* engine)
 		return CL_EFORMAT;
 	}
 	free(url_regex);
-	realurl_regex = str_compose("^ *(("URI_CHECK_PROTOCOLS")|("URI_path1,URI_fragmentaddress2,URI_fragmentaddress3")) *$");
+	realurl_regex = str_compose("^ *(("URI_CHECK_PROTOCOLS")|(",URI_path1,URI_fragmentaddress2")) *$");
 	if(build_regex(&pchk->preg_realurl, realurl_regex,1)) {
 		free_regex(&pchk->preg_cctld);
 		free_regex(&pchk->preg_tld);
@@ -1017,7 +1026,6 @@ static enum phish_status cleanupURLs(struct url_check* urls)
 {
 	if(urls->flags&CLEANUP_URL) {
 		cleanupURL(&urls->realLink,NULL,1);
-
 		cleanupURL(&urls->displayLink,&urls->pre_fixup.pre_displayLink,0);
 		if(!urls->displayLink.data || !urls->realLink.data)
 			return CL_PHISH_NODECISION;
@@ -1045,12 +1053,14 @@ static int url_get_host(const struct phishcheck* pchk, struct url_check* url,str
 
 	cli_dbgmsg("Phishcheck:host:%s\n", host->data);
 
-	if(!host->data || (isReal && host->data[0]=='\0') || *phishy&REAL_IS_MAILTO || strchr(host->data,' ')) {
+	if(!host->data || (isReal && (host->data[0]=='\0' || strstr(host->data,".."))) || *phishy&REAL_IS_MAILTO || strchr(host->data,' ')) {
 		/* no host,
 		 * link without domain, such as: href="/isapi.dll?...
 		 * mailto:
 		 * spaces in hostname
+		 * double dots
 		 */
+		cli_dbgmsg("Phishcheck:skipping invalid host\n");
 		return CL_PHISH_CLEAN;
 	}
 	if(url->flags&CHECK_CLOAKING && !cli_regexec(&pchk->preg_hexurl,host->data,0,NULL,0)) {
@@ -1127,6 +1137,7 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 
 	cli_dbgmsg("Phishcheck:URL after cleanup: %s->%s\n", urls->realLink.data,
 		urls->displayLink.data);
+
 	if(whitelist_check(engine, urls, 0))
 		return CL_PHISH_CLEAN;/* if url is whitelisted don't perform further checks */
 

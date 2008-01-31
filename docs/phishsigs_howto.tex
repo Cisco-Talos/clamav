@@ -237,7 +237,10 @@ Furthermore you can restrict what checks are to be performed by specifying the 3
 \subsubsection{Extraction of \textsc{realURL}, \textsc{displayedURL} from HTML tags\label{sub:Extraction-of-realURL,}}
 
 The html parser extracts pairs of \textsc{realURL}/\textsc{displayedURL}
-based on the following rules:
+based on the following rules.
+
+In version 0.93: After URLs have been extracted, they are normalized, and cut after the hostname.
+\verb+http://test.example.com/path/somecgi?queryparameters+ becomes \verb+http://test.example.com/+
 
 \begin{description}
 \item [{a}] (anchor) the \emph{href} is the \textsc{realURL}, its \emph{contents}
