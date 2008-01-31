@@ -1183,7 +1183,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
     time(&currtime);
     logg("ClamAV update process started at %s", ctime(&currtime));
 
-#ifndef HAVE_GMP
+#ifndef HAVE_LIBGMP
     logg("SECURITY WARNING: NO SUPPORT FOR DIGITAL SIGNATURES\n");
     logg("See the FAQ at http://www.clamav.net/support/faq for an explanation.\n");
 #endif

@@ -1009,7 +1009,7 @@ static int cvdinfo(struct optstruct *opt)
     mprintf("MD5: %s\n", cvd->md5);
     mprintf("Digital signature: %s\n", cvd->dsig);
 
-#ifndef HAVE_GMP
+#ifndef HAVE_LIBGMP
     mprintf("^Digital signature support not compiled in.\n");
 #endif
 

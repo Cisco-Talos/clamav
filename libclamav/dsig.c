@@ -22,7 +22,7 @@
 #include "clamav-config.h"
 #endif
 
-#ifdef HAVE_GMP
+#ifdef HAVE_LIBGMP
 
 #include <stdio.h>
 #include <string.h>
