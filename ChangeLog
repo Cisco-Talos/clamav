@@ -1,3 +1,7 @@
+Thu Jan 31 16:33:56 CET 2008 (tk)
+---------------------------------
+  * libclamav/vba_extract.c: minor code tidy; drop broken sigtouint32()
+
 Thu Jan 31 12:59:18 CET 2008 (tk)
 ---------------------------------
   * libclamav, freshclam, sigtool: s/HAVE_GMP/HAVE_LIBGMP
