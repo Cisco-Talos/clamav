@@ -1,4 +1,7 @@
 /*
+ *  Copyright (C) 2007 - 2008 Sourcefire, Inc.
+ *  Author: Tomasz Kojm <tkojm@clamav.net>
+ *
  *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -294,7 +297,7 @@ int cli_initengine(struct cl_engine **engine, unsigned int options)
 
 	(*engine)->refcount = 1;
 
-	(*engine)->root = cli_calloc(CL_TARGET_TABLE_SIZE, sizeof(struct cli_matcher *));
+	(*engine)->root = cli_calloc(CLI_MTARGETS, sizeof(struct cli_matcher *));
 	if(!(*engine)->root) {
 	    /* no need to free previously allocated memory here */
 	    cli_errmsg("Can't allocate memory for roots!\n");
@@ -321,7 +324,7 @@ static int cli_initroots(struct cl_engine *engine, unsigned int options)
 	struct cli_matcher *root;
 
 
-    for(i = 0; i < CL_TARGET_TABLE_SIZE; i++) {
+    for(i = 0; i < CLI_MTARGETS; i++) {
 	if(!engine->root[i]) {
 	    cli_dbgmsg("Initializing engine->root[%d]\n", i);
 	    root = engine->root[i] = (struct cli_matcher *) cli_calloc(1, sizeof(struct cli_matcher));
@@ -330,10 +333,8 @@ static int cli_initroots(struct cl_engine *engine, unsigned int options)
 		return CL_EMEM;
 	    }
 
-	    if(options & CL_DB_ACONLY) {
-		cli_dbgmsg("cli_initroots: Only using AC pattern matcher.\n");
+	    if(cli_mtargets[i].ac_only || (options & CL_DB_ACONLY))
 		root->ac_only = 1;
-	    }
 
 	    cli_dbgmsg("Initialising AC pattern matcher of root[%d]\n", i);
 	    if((ret = cli_ac_init(root, cli_ac_mindepth, cli_ac_maxdepth))) {
@@ -570,7 +571,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	}
 	target = (unsigned short) atoi(pt);
 
-	if(target >= CL_TARGET_TABLE_SIZE) {
+	if(target >= CLI_MTARGETS) {
 	    cli_dbgmsg("Not supported target type in signature for %s\n", virname);
 	    sigs--;
 	    continue;
@@ -1509,7 +1510,7 @@ void cl_free(struct cl_engine *engine)
 #endif
 
     if(engine->root) {
-	for(i = 0; i < CL_TARGET_TABLE_SIZE; i++) {
+	for(i = 0; i < CLI_MTARGETS; i++) {
 	    if((root = engine->root[i])) {
 		if(!root->ac_only)
 		    cli_bm_free(root);
@@ -1580,10 +1581,13 @@ int cl_build(struct cl_engine *engine)
 	if((ret = cli_loadft(NULL, &engine, 0, 1, NULL, 0)))
 	    return ret;
 
-    for(i = 0; i < CL_TARGET_TABLE_SIZE; i++)
-	if((root = engine->root[i]))
-	    cli_ac_buildtrie(root);
-    /* FIXME: check return values of cli_ac_buildtree */
+    for(i = 0; i < CLI_MTARGETS; i++) {
+	if((root = engine->root[i])) {
+	    if((ret = cli_ac_buildtrie(root)))
+		return ret;
+	    cli_dbgmsg("matcher[%u]: %s: AC sigs: %u BM sigs: %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->bm_patterns, root->ac_only ? "(ac_only mode)" : "");
+	}
+    }
 
     cli_dconf_print(engine->dconf);
 

@@ -87,6 +87,7 @@ int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern)
     }
     root->bm_suffix[idx]->cnt++;
 
+    root->bm_patterns++;
     return CL_SUCCESS;
 }
 

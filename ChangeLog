@@ -1,3 +1,8 @@
+Fri Feb  1 00:58:05 CET 2008 (tk)
+---------------------------------
+  * libclamav: ndb sigs: add new target type (7) for ASCII files; handle
+	       sigs for targets 2..7 with A-C only
+
 Thu Jan 31 17:44:35 EET 2008 (edwin)
 ------------------------------------
   * libclamav/phishcheck.c, docs/phishsigs_howto.tex: ignore invalid URLs

@@ -1,4 +1,7 @@
 /*
+ *  Copyright (C) 2007 - 2008 Sourcefire, Inc.
+ *  Author: Tomasz Kojm <tkojm@clamav.net>
+ *
  *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -43,6 +46,7 @@ struct cli_matcher {
     uint8_t *bm_shift;
     struct cli_bm_patt **bm_suffix;
     uint32_t *soff, soff_len; /* for PE section sigs */
+    uint32_t bm_patterns;
 
     /* Extended Aho-Corasick */
     uint32_t ac_partsigs, ac_nodes, ac_patterns;
@@ -61,7 +65,24 @@ struct cli_meta_node {
     unsigned int crc32, fileno, encrypted, maxdepth;
 };
 
-#define CL_TARGET_TABLE_SIZE 7
+struct cli_mtarget {
+    cli_file_t target;
+    const char *name;
+    uint8_t idx;    /* idx of matcher */
+    uint8_t ac_only;
+};
+
+#define CLI_MTARGETS 8
+static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] =  {
+    { 0,		    "GENERIC",	    0,	0   },
+    { CL_TYPE_MSEXE,	    "PE",	    1,	0   },
+    { CL_TYPE_MSOLE2,	    "OLE2",	    2,	1   },
+    { CL_TYPE_HTML,	    "HTML",	    3,	1   },
+    { CL_TYPE_MAIL,	    "MAIL",	    4,	1   },
+    { CL_TYPE_GRAPHICS,	    "GRAPHICS",	    5,	1   },
+    { CL_TYPE_ELF,	    "ELF",	    6,	1   },
+    { CL_TYPE_TEXT_ASCII,   "ASCII",	    7,	1   }
+};
 
 struct cli_target_info {
     off_t fsize;
