@@ -542,13 +542,6 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 		}
 	}
 
-	if(dconf_entconv && (rc = init_entity_converter(&conv, 16384) )) {
-		if (!m_area) {
-			fclose(stream_in);
-		}
-		return rc;
-	}
-
 	tag_args.count = 0;
 	tag_args.tag = NULL;
 	tag_args.value = NULL;
@@ -628,10 +621,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 
 	binary = FALSE;
 
-	if(dconf_entconv)
-		ptr = line = encoding_norm_readline(&conv, stream_in, m_area);
-	else
-		ptr = line = cli_readchunk(stream_in, m_area, 8192);
+	ptr = line = cli_readchunk(stream_in, m_area, 8192);
 
 	while (line) {
 		if(href_contents_begin)
@@ -989,37 +979,6 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						in_script = TRUE;
 					}
 					html_output_tag(file_buff_script, tag, &tag_args);
-				} else if (dconf_entconv && strcmp(tag, "body") == 0) {
-					/* no more charset changes accepted after body encountered */
-					process_encoding_set(&conv, NULL, SWITCH_TO_BLOCKMODE);
-				} else if (dconf_entconv && strcmp(tag, "meta") == 0) {
-					const unsigned char* http_equiv = html_tag_arg_value(&tag_args, "http-equiv");
-					const unsigned char* http_content = html_tag_arg_value(&tag_args, "content");
-					if(http_equiv && http_content && strcasecmp(http_equiv,"content-type") == 0) {
-						size_t len = strlen((const char*)http_content);
-						unsigned char* http_content2 = cli_malloc( len + 1);
-						unsigned char* charset;
-						size_t i;
-
-						if(!http_content2)
-							return CL_EMEM;
-						for(i = 0; i < len; i++)
-							http_content2[i] = tolower(http_content[i]);
-						http_content2[len] = '\0';
-						charset = (unsigned char*) strstr((char*)http_content2,"charset");
-						if(charset) {
-							while(*charset && *charset != '=')
-								charset++;
-							if(*charset)
-								charset++;/* skip = */
-							len = strcspn((const char*)charset," \"'");
-							charset[len] = '\0';
-							if(len) {
-								process_encoding_set(&conv, charset, META);
-							}
-						}
-						free(http_content2);
-					}
 				} else if (hrefs) {
 					if(in_ahref && !href_contents_begin)
 						href_contents_begin=ptr;
@@ -1533,12 +1492,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 			/* end of line, append contents now, resume on next line */
 			html_tag_contents_append(hrefs,in_ahref,href_contents_begin,ptr);
 		ptrend = NULL;
-		if(dconf_entconv)
-			ptr = line = encoding_norm_readline(&conv, stream_in, m_area);
-		else {
-			free(line);
-			ptr = line = cli_readchunk(stream_in, m_area, 8192);
-		}
+		free(line);
+		ptr = line = cli_readchunk(stream_in, m_area, 8192);
 	}
 
 	if(dconf_entconv) {
@@ -1566,8 +1521,6 @@ abort:
 	if (in_ahref) /* tag not closed, force closing */
 		html_tag_contents_done(hrefs,in_ahref);
 
-	if(dconf_entconv)
-		entity_norm_done(&conv);
 	html_tag_arg_free(&tag_args);
 	if (!m_area) {
 		fclose(stream_in);
@@ -1593,11 +1546,11 @@ abort:
 int html_normalise_mem(unsigned char *in_buff, off_t in_size, const char *dirname, tag_arguments_t *hrefs,const struct cli_dconf* dconf)
 {
 	m_area_t m_area;
-	
+
 	m_area.buffer = in_buff;
 	m_area.length = in_size;
 	m_area.offset = 0;
-	
+
 	return cli_html_normalise(-1, &m_area, dirname, hrefs, dconf);
 }
 
@@ -1607,7 +1560,7 @@ int html_normalise_fd(int fd, const char *dirname, tag_arguments_t *hrefs,const 
 	int retval=FALSE;
 	m_area_t m_area;
 	struct stat statbuf;
-	
+
 	if (fstat(fd, &statbuf) == 0) {
 		m_area.length = statbuf.st_size;
 		m_area.buffer = (unsigned char *) mmap(NULL, m_area.length, PROT_READ, MAP_PRIVATE, fd, 0);

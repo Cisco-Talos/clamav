@@ -1,3 +1,12 @@
+Fri Feb  1 21:19:58 EET 2008 (edwin)
+------------------------------------
+  * libclamav/filetypes.c: use entconv to detect UTF-16BE, and UCS-4 variants
+  * libclamav/htmlnorm.c: use only cli_readline() we don't need exact
+  conversion
+  * libclamav/entconv.c:
+	* drop unused functions,
+  	* simplify encoding_norm_readline(), and rename to encoding_normalize_toascii()
+
 Fri Feb  1 00:58:05 CET 2008 (tk)
 ---------------------------------
   * libclamav: ndb sigs: add new target type (7) for ASCII files; handle

@@ -44,37 +44,20 @@
 #define UNKNOWN "\0"
 #define OTHER   "OTHER"
 
+
 enum encoding_priority {NOPRIO,CONTENT_TYPE,BOM,NOBOM_AUTODETECT,XML_CHARSET,META, SWITCH_TO_BLOCKMODE};
 
 enum encodings {E_UCS4,E_UTF16,E_UCS4_1234,E_UCS4_4321,E_UCS4_2143,E_UCS4_3412,E_UTF16_BE,E_UTF16_LE,E_UTF8, E_UNKNOWN,E_OTHER, E_ICONV};
 #define MAX_ENTITY_SIZE 22
 
 struct entity_conv {
-	char* encoding;
-	enum encoding_priority priority;
-	enum encodings encoding_symbolic;
-	size_t buffer_size;
-	void* iconv_struct;
 	unsigned char entity_buff[MAX_ENTITY_SIZE+2];
-	m_area_t tmp_area;
-	m_area_t out_area;
-	m_area_t norm_area;
-	int      linemode;/* TODO:set */
-	int      linemode_processed;
-	unsigned char bom[4];
-	uint8_t has_bom;
-	uint8_t enc_bytes;
-	uint8_t  bom_cnt;
 };
 
-int init_entity_converter(struct entity_conv* conv, size_t buffer_size);
-void process_encoding_set(struct entity_conv* conv,const unsigned char* encoding,enum encoding_priority priority);
-int entity_norm_done(struct entity_conv* conv);
-
 unsigned char* u16_normalize_tobuffer(uint16_t u16, unsigned char* dst, size_t dst_size);
-unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in, m_area_t* in_m_area);
 const char* entity_norm(struct entity_conv* conv,const unsigned char* entity);
-int entitynorm_init(void);
+const char* encoding_detect_bom(const unsigned char* bom);
+int encoding_normalize_toascii(const m_area_t* in_m_area, const char* initial_encoding, m_area_t* out_m_area);
 
 #endif
 
