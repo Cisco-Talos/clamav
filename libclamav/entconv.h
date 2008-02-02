@@ -47,6 +47,8 @@ struct entity_conv {
 	unsigned char entity_buff[MAX_ENTITY_SIZE+2];
 };
 
+enum encodings {E_UCS4,E_UTF16,E_UCS4_1234,E_UCS4_4321,E_UCS4_2143,E_UCS4_3412,E_UTF16_BE,E_UTF16_LE,E_UTF8, E_UNKNOWN,E_OTHER, E_ICONV};
+
 unsigned char* u16_normalize_tobuffer(uint16_t u16, unsigned char* dst, size_t dst_size);
 const char* entity_norm(struct entity_conv* conv,const unsigned char* entity);
 const char* encoding_detect_bom(const unsigned char* bom);

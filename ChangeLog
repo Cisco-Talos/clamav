@@ -1,3 +1,7 @@
+Sat Feb  2 18:51:55 EET 2008 (edwin)
+-----------------------------------
+  * libclamav/entconv.h: enum encodings was missing (bb #807)
+
 Sat Feb  2 10:22:45 CET 2008 (tk)
 ---------------------------------
   * libclamav/cab.c: fix error path descriptor leaks
