@@ -1,3 +1,7 @@
+Sat Feb  2 10:22:45 CET 2008 (tk)
+---------------------------------
+  * libclamav/cab.c: fix error path descriptor leaks
+
 Fri Feb  1 21:19:58 EET 2008 (edwin)
 ------------------------------------
   * libclamav/filetypes.c: use entconv to detect UTF-16BE, and UCS-4 variants

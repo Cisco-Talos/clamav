@@ -623,11 +623,13 @@ static int cab_unstore(struct cab_file *file, int bytes)
 	}								\
 	if(lseek(file->fd, file->folder->offset, SEEK_SET) == -1) {	\
 	    cli_dbgmsg("cab_extract: Can't lseek to %u\n", (unsigned int) file->folder->offset);							\
+	    close(file->ofd);						\
 	    return CL_EFORMAT; /* truncated file? */			\
 	}								\
 	file->cab->state = (struct cab_state *) cli_calloc(1, sizeof(struct cab_state));								\
 	if(!file->cab->state) {						\
 	    cli_errmsg("cab_extract: Can't allocate memory for internal state\n");									\
+	    close(file->ofd);						\
 	    return CL_EMEM;						\
 	}								\
 	file->cab->state->cmethod = file->folder->cmethod;		\
