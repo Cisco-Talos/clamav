@@ -366,7 +366,7 @@ static int iconv(iconv_t iconv_struct,char **inbuf, size_t *inbytesleft,
 
 static inline const char* detect_encoding(const unsigned char* bom, uint8_t* bom_found, uint8_t* enc_width)
 {
-	const char* encoding;
+	const char* encoding = NULL;
 	int has_bom = 0;
 	uint8_t enc_bytes = 1; /* default is UTF8, which has a minimum of 1 bytes */
 	/* undecided 32-bit encodings are treated as ucs4, and
@@ -473,11 +473,16 @@ static inline const char* detect_encoding(const unsigned char* bom, uint8_t* bom
 
 /* detects UTF-16(LE/BE), UCS-4(all 4 variants).
  * UTF-8 and simple ASCII are ignored, because we can process those as text */
-const char* encoding_detect_bom(const unsigned char* bom)
+const char* encoding_detect_bom(const unsigned char* bom, const size_t length)
 {
 	uint8_t has_bom;
 	uint8_t enc_width;
-	const char* encoding = detect_encoding(bom, &has_bom, &enc_width);
+	const char* encoding;
+
+	if(length < 4) {
+		return NULL;
+	}
+	encoding = detect_encoding(bom, &has_bom, &enc_width);
 	return enc_width > 1 ? encoding : NULL;
 }
 

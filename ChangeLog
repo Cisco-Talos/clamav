@@ -1,3 +1,7 @@
+Sun Feb  3 10:38:08 EET 2008 (edwin)
+------------------------------------
+  * libclamav/entconv.c: don't leave return value uninitialized. (bb #808).
+
 Sat Feb  2 18:51:55 EET 2008 (edwin)
 -----------------------------------
   * libclamav/entconv.h: enum encodings was missing (bb #807)

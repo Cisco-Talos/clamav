@@ -187,7 +187,7 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 		    /* check if we can autodetect this encoding.
 		     * If we can't don't try to detect HTML sig, since
 		     * we just tried that above, and failed */
-		    if((encoding = encoding_detect_bom(smallbuff))) {
+		    if((encoding = encoding_detect_bom(smallbuff, bread))) {
 			    unsigned char decodedbuff[sizeof(smallbuff)*2];
 			    m_area_t in_area, out_area;
 
