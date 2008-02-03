@@ -1,3 +1,7 @@
+Sun Feb  3 19:13:43 CET 2008 (tk)
+---------------------------------
+  * libclamav/filetypes.h: set MAGIC_BUFFER_SIZE to 512
+
 Sun Feb  3 18:49:57 CET 2008 (tk)
 ---------------------------------
   * libclamav/chmunpack.c: fix invalid free() (bb#809)

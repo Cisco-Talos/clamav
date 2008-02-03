@@ -28,7 +28,7 @@
 #include "clamav.h"
 #include "cltypes.h"
 
-#define MAGIC_BUFFER_SIZE 256
+#define MAGIC_BUFFER_SIZE 512
 #define CL_TYPENO 500
 #define MAX_EMBEDDED_OBJ 10
 
