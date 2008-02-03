@@ -481,7 +481,7 @@ static int read_chunk(chm_metadata_t *metadata, int fd)
 		metadata->chunk_entries = (uint16_t)((((uint8_t const *)(metadata->chunk_data))[metadata->itsp_hdr.block_len-2] << 0)
 					| (((uint8_t const *)(metadata->chunk_data))[metadata->itsp_hdr.block_len-1] << 8));
 	} else if (memcmp(metadata->chunk_data, "PMGI", 4) != 0) {
-		if (metadata->m_area != NULL) {
+		if (!metadata->m_area && metadata->chunk_data) {
 			free(metadata->chunk_data);
 		}
 		return CL_BREAK;
@@ -489,7 +489,7 @@ static int read_chunk(chm_metadata_t *metadata, int fd)
 
 	return CL_SUCCESS;
 abort:
-	if (metadata->m_area != NULL) {
+	if (!metadata->m_area && metadata->chunk_data) {
 		free(metadata->chunk_data);
 		metadata->chunk_data = NULL;
 	}
@@ -785,7 +785,6 @@ static int chm_init_metadata(chm_metadata_t *metadata)
 	
 	metadata->sys_control.length = metadata->sys_content.length = metadata->sys_reset.length = 0;
 	metadata->m_area = NULL;
-	metadata->m_area = 0;
 	metadata->ufd = -1;
 	metadata->num_chunks = metadata->chunk_entries = 0;
 	metadata->chunk_data = NULL;
@@ -802,7 +801,7 @@ void cli_chm_close(chm_metadata_t *metadata)
 	}
 #ifdef HAVE_MMAP
 	if (metadata->m_area) {
-		munmap(metadata->m_area, metadata-> m_length);
+		munmap(metadata->m_area, metadata->m_length);
 	}
 #endif
 }
