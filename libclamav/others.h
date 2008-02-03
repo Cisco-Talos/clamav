@@ -230,5 +230,6 @@ bitset_t *cli_bitset_init(void);
 void cli_bitset_free(bitset_t *bs);
 int cli_bitset_set(bitset_t *bs, unsigned long bit_offset);
 int cli_bitset_test(bitset_t *bs, unsigned long bit_offset);
+const char* cli_ctime(const time_t *timep, char *buf, const size_t bufsize);
 
 #endif

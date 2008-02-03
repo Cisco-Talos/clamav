@@ -59,6 +59,11 @@
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
 static pthread_mutex_t cli_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+# ifndef HAVE_CTIME_R
+static pthread_mutex_t cli_ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
+# endif
+
 #endif
 
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
@@ -853,3 +858,32 @@ int cli_bitset_test(bitset_t *bs, unsigned long bit_offset)
 	}
 	return (bs->bitset[char_offset] & ((unsigned char)1 << bit_offset));
 }
+
+const char* cli_ctime(const time_t *timep, char *buf, const size_t bufsize)
+{
+	if(bufsize < 26) {
+		/* standard says we must have at least 26 bytes buffer */
+		cli_warnmsg("buffer too small for ctime\n");
+		return NULL;
+	}
+#ifdef HAVE_CTIME_R	
+# ifdef HAVE_CTIME_R_2
+	char* y = ctime_r(timep, buf);
+	return y;
+# else
+	return ctime_r(timep, buf, bufsize);
+# endif
+#else /* no ctime_r */
+
+# ifdef CL_THREAD_SAFE
+	pthread_mutex_lock(&cli_ctime_mutex);
+# endif
+	strncpy(buf, ctime(timep), bufsize-1);
+	buf[bufsize-1] = '\0';
+# ifdef CL_THREAD_SAFE
+	pthread_mutex_unlock(&cli_ctime_mutex);
+# endif
+	return buf;
+#endif
+}
+

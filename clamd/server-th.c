@@ -50,6 +50,7 @@
 #include "clamuko.h"
 #include "others.h"
 #include "shared.h"
+#include "libclamav/others.h"
 
 #ifndef	C_WINDOWS
 #define	closesocket(s)	close(s)
@@ -260,6 +261,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	int max_threads, i, ret = 0;
 	unsigned int options = 0;
 	threadpool_t *thr_pool;
+	char timestr[32];
 #ifndef	C_WINDOWS
 	struct sigaction sigact;
 #endif
@@ -664,7 +666,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     }
 
     time(&current_time);
-    logg("--- Stopped at %s", ctime(&current_time));
+    logg("--- Stopped at %s", cli_ctime(&current_time, timestr, sizeof(timestr)));
 
     return ret;
 }

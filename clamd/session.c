@@ -43,6 +43,7 @@
 
 #include "libclamav/clamav.h"
 #include "libclamav/str.h"
+#include "libclamav/others.h"
 
 #include "shared/cfgparser.h"
 #include "shared/output.h"
@@ -52,8 +53,6 @@
 #include "scanner.h"
 #include "server.h"
 #include "session.h"
-
-static pthread_mutex_t ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int command(int desc, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int timeout)
 {
@@ -117,11 +116,10 @@ int command(int desc, const struct cl_engine *engine, const struct cl_limits *li
 	    sprintf(path, "%s/daily.cld", dbdir);
 
 	if(!access(path, R_OK) && (daily = cl_cvdhead(path))) {
+		char timestr[32];
 		time_t t = (time_t) daily->stime;
 
-	    pthread_mutex_lock(&ctime_mutex);
-	    mdprintf(desc, "ClamAV "VERSION"/%d/%s", daily->version, ctime(&t));
-	    pthread_mutex_unlock(&ctime_mutex);
+	    mdprintf(desc, "ClamAV "VERSION"/%d/%s", daily->version, cli_ctime(&t, timestr, sizeof(timestr)));
 	    cl_cvdfree(daily);
 	} else {
 	    mdprintf(desc, "ClamAV "VERSION"\n");

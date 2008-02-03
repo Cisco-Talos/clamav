@@ -216,6 +216,7 @@ int main(int argc, char **argv)
 	cl_debug();
 
     if((cpt = cfgopt(copt, "LogFile"))->enabled) {
+	char timestr[32];
 	logg_file = cpt->strarg;
 	if(strlen(logg_file) < 2 || (logg_file[0] != '/' && logg_file[0] != '\\' && logg_file[1] != ':')) {
 	    fprintf(stderr, "ERROR: LogFile requires full path.\n");
@@ -224,7 +225,7 @@ int main(int argc, char **argv)
 	    return 1;
 	}
 	time(&currtime);
-	if(logg("#+++ Started at %s", ctime(&currtime))) {
+	if(logg("#+++ Started at %s", cli_ctime(&currtime, timestr, sizeof(timestr)))) {
 	    fprintf(stderr, "ERROR: Problem with internal logger. Please check the permissions on the %s file.\n", logg_file);
 	    logg_close();
 	    freecfg(copt);

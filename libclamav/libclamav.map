@@ -62,6 +62,7 @@ CLAMAV_PRIVATE {
     cli_memstr;
     cli_strdup;
     cli_realloc;
+    cli_ctime;
     tableCreate;
     tableDestroy;
     tableRemove;

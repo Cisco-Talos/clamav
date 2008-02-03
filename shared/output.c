@@ -50,6 +50,7 @@
 #endif
 
 #include "output.h"
+#include "libclamav/others.h"
 
 #ifdef CL_NOTHREADS
 #undef CL_THREAD_SAFE
@@ -132,7 +133,7 @@ int logg(const char *str, ...)
 #ifdef F_WRLCK
 	struct flock fl;
 #endif
-	char *pt, *timestr, vbuff[1025];
+	char vbuff[1025];
 	time_t currtime;
 	struct stat sb;
 	mode_t old_umask;
@@ -189,12 +190,12 @@ int logg(const char *str, ...)
                is not set or we get a bunch of timestamps in the log without
                newlines... */
 	    if(logg_time && ((*vbuff != '*') || logg_verbose)) {
+	        char timestr[32];
 		time(&currtime);
-		pt = ctime(&currtime);
-		timestr = calloc(strlen(pt), 1);
-		strncpy(timestr, pt, strlen(pt) - 1);
+		cli_ctime(&currtime, timestr, sizeof(timestr));
+		/* cut trailing \n */
+		timestr[strlen(timestr)-1] = '\0';
 		fprintf(logg_fd, "%s -> ", timestr);
-		free(timestr);
 	    }
 
 	    if(*vbuff == '!') {
