@@ -1,3 +1,8 @@
+Mon Feb  4 23:20:12 EET 2008 (edwin)
+------------------------------------
+  * libclamav/scanners, filetypes, dconf:
+	support for generic text normalizer (CL_TYPE_SCRIPT)
+
 Mon Feb  4 23:06:34 EET 2008 (edwin)
 ---------------------------------
   * libclamav/textnorm.[ch]: generic text normalizer (bb #241)

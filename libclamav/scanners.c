@@ -85,6 +85,7 @@
 #include "unarj.h"
 #include "nulsft.h"
 #include "autoit.h"
+#include "textnorm.h"
 #include <zlib.h>
 #include "unzip.h"
 
@@ -1064,6 +1065,73 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
     return ret;
 }
 
+static int cli_scanscript(int desc, cli_ctx *ctx)
+{
+	unsigned char buff[FILEBUFF];
+	unsigned char normalized[SCANBUFF];
+	struct text_norm_state state;
+	struct stat sb;
+	char *tmpname = NULL;
+	int ofd = -1, ret;
+	ssize_t nread;
+
+	cli_dbgmsg("in cli_scantext()\n");
+
+	if(fstat(desc, &sb) == -1) {
+		cli_errmsg("cli_scanscript: fstat() failed for descriptor %d\n", desc);
+		return CL_EIO;
+	}
+
+	/* don't normalize files that are too large */
+	if(sb.st_size > 10485760) {
+		cli_dbgmsg("cli_scanscript: exiting (file larger than 10 MB)\n");
+		return CL_CLEAN;
+	}
+
+	/* dump to disk only if explicitly asked to,
+	 * otherwise we can process just in-memory */
+	if(cli_leavetemps_flag) {
+		if((ret = cli_gentempfd(NULL, &tmpname, &ofd))) {
+			cli_dbgmsg("cli_scanscript: Can't generate temporary file/descriptor\n");
+			return ret;
+		}
+	}
+
+	text_normalize_init(&state, normalized, sizeof(normalized));
+	ret = CL_CLEAN;
+
+	do {
+		nread = cli_readn(desc, buff, sizeof(buff));
+		if(nread <= 0 || state.out_pos + nread > state.out_len) {
+			/* flush if error/EOF, or too little buffer space left */
+			if((ofd != -1) && (write(ofd, state.out, state.out_pos) == -1)) {
+				cli_errmsg("cli_scanscript: can't write to file %s\n",tmpname);
+				close(ofd);
+				ofd = -1;
+				/* we can continue to scan in memory */
+			}
+			/* when we flush the buffer also scan */
+			if(cli_scanbuff(state.out, state.out_pos, ctx->virname, ctx->engine, CL_TYPE_TEXT_ASCII) == CL_VIRUS) {
+				ret = CL_VIRUS;
+				break;
+			}
+			text_normalize_reset(&state);
+		}
+		if(nread > 0 && (text_normalize_buffer(&state, buff, nread)) != nread) {
+			cli_dbgmsg("cli_scanscript: short read during normalizing\n");
+		}
+		/* used a do {}while() here, since we need to flush our buffers at the end,
+		 * and using while(){} loop would mean code duplication */
+	} while (nread > 0);
+
+	if(cli_leavetemps_flag) {
+		free(tmpname);
+		close(ofd);
+	}
+
+	return ret;
+}
+
 static int cli_scanhtml_utf16(int desc, cli_ctx *ctx)
 {
 	char *tempname, buff[512], *decoded;
@@ -1836,6 +1904,11 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	case CL_TYPE_HTML_UTF16:
 	    if(SCAN_HTML && (DCONF_DOC & DOC_CONF_HTML))
 		ret = cli_scanhtml_utf16(desc, ctx);
+	    break;
+
+	case CL_TYPE_SCRIPT:
+	    if(DCONF_DOC & DOC_CONF_SCRIPT)
+	        ret = cli_scanscript(desc, ctx);
 	    break;
 
 	case CL_TYPE_RTF:
