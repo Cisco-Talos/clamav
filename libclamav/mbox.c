@@ -100,7 +100,7 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
 static	void	sigsegv(int sig);
 static	void	print_trace(int use_syslog);
 
-/*#define	SAVE_TMP	/* Save the file being worked on in tmp */
+/*#define	SAVE_TMP */	/* Save the file being worked on in tmp */
 #endif
 
 #if	defined(NO_STRTOK_R) || !defined(CL_THREAD_SAFE)
@@ -1414,6 +1414,9 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 		if((retcode == CL_SUCCESS) && messageGetBody(body)) {
 			messageSetCTX(body, ctx);
 			switch(parseEmailBody(body, NULL, &mctx, 0)) {
+				case OK:
+				case OK_ATTACHMENTS_NOT_SAVED:
+					break;
 				case FAIL:
 					/*
 					 * beware: cli_magic_scandesc(),
@@ -3044,7 +3047,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 			}
 		}
 	} /*else
-		rc = OK_ATTACHMENTS_NOT_SAVED;	/* nothing saved */
+		rc = OK_ATTACHMENTS_NOT_SAVED; */	/* nothing saved */
 
 	if(mainMessage && (mainMessage != messageIn))
 		messageDestroy(mainMessage);

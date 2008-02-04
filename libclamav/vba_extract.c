@@ -1321,9 +1321,3 @@ create_vba_project(int record_count, const char *dir)
 
 	return ret;
 }
-
-static uint32_t
-sigtouint32(const unsigned char *fourbytes)
-{
-	return (uint32_t)((*fourbytes++ << 24) | (*fourbytes++ << 16) | (*fourbytes++ << 8) | *fourbytes);
-}

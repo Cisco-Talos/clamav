@@ -171,12 +171,12 @@ static void itsf_print_header(chm_itsf_header_t *itsf_hdr)
 	cli_dbgmsg("Version:\t%d\n", itsf_hdr->version);
 	cli_dbgmsg("Header len:\t%d\n", itsf_hdr->header_len);
 	cli_dbgmsg("Lang ID:\t%d\n", itsf_hdr->lang_id);
-	cli_dbgmsg("Sec0 offset:\t%llu\n", itsf_hdr->sec0_offset);
-	cli_dbgmsg("Sec0 len:\t%llu\n", itsf_hdr->sec0_len);
-	cli_dbgmsg("Dir offset:\t%llu\n", itsf_hdr->dir_offset);
-	cli_dbgmsg("Dir len:\t%llu\n", itsf_hdr->dir_len);
+	cli_dbgmsg("Sec0 offset:\t%lu\n", (unsigned long int) itsf_hdr->sec0_offset);
+	cli_dbgmsg("Sec0 len:\t%lu\n", (unsigned long int) itsf_hdr->sec0_len);
+	cli_dbgmsg("Dir offset:\t%lu\n", (unsigned long int) itsf_hdr->dir_offset);
+	cli_dbgmsg("Dir len:\t%lu\n", (unsigned long int) itsf_hdr->dir_len);
 	if (itsf_hdr->version > 2) {
-		cli_dbgmsg("Data offset:\t%llu\n\n", itsf_hdr->data_offset);
+		cli_dbgmsg("Data offset:\t%lu\n\n", (unsigned long int) itsf_hdr->data_offset);
 	}
 }
 
@@ -470,7 +470,7 @@ static int read_chunk(chm_metadata_t *metadata, int fd)
         	if (lseek(fd, metadata->chunk_offset, SEEK_SET) != metadata->chunk_offset) {
                 	goto abort;
         	}
-        	if (cli_readn(fd, metadata->chunk_data, metadata->itsp_hdr.block_len) != metadata->itsp_hdr.block_len) {
+        	if ((uint32_t) cli_readn(fd, metadata->chunk_data, metadata->itsp_hdr.block_len) != metadata->itsp_hdr.block_len) {
                		goto abort;
         	}
 	}
@@ -585,8 +585,8 @@ static void print_sys_content(lzx_content_t *lzx_content)
 	}
 	
 	cli_dbgmsg("---- Content ----\n");
-	cli_dbgmsg("Offset:\t%llu\n", lzx_content->offset);
-	cli_dbgmsg("Length:\t%llu\n\n", lzx_content->length);
+	cli_dbgmsg("Offset:\t%lu\n", (unsigned long int) lzx_content->offset);
+	cli_dbgmsg("Length:\t%lu\n\n", (unsigned long int) lzx_content->length);
 }
 
 static int read_sys_content(int fd, chm_metadata_t *metadata, lzx_content_t *lzx_content)
@@ -608,9 +608,9 @@ static void print_sys_reset_table(lzx_reset_table_t *lzx_reset_table)
 	cli_dbgmsg("Num Entries:\t%u\n", lzx_reset_table->num_entries);
 	cli_dbgmsg("Entry Size:\t%u\n", lzx_reset_table->entry_size);
 	cli_dbgmsg("Table Offset:\t%u\n", lzx_reset_table->table_offset);
-	cli_dbgmsg("Uncom Len:\t%llu\n", lzx_reset_table->uncom_len);
-	cli_dbgmsg("Com Len:\t%llu\n", lzx_reset_table->com_len);
-	cli_dbgmsg("Frame Len:\t%llu\n\n", lzx_reset_table->frame_len);
+	cli_dbgmsg("Uncom Len:\t%lu\n", (unsigned long int) lzx_reset_table->uncom_len);
+	cli_dbgmsg("Com Len:\t%lu\n", (unsigned long int) lzx_reset_table->com_len);
+	cli_dbgmsg("Frame Len:\t%lu\n\n", (unsigned long int) lzx_reset_table->frame_len);
 }
 
 static int read_sys_reset_table(int fd, chm_metadata_t *metadata, lzx_reset_table_t *lzx_reset_table)
@@ -748,8 +748,8 @@ static int chm_decompress_stream(int fd, chm_metadata_t *metadata, const char *d
 	length += lzx_control.reset_interval;
 	length &= -lzx_control.reset_interval;
 	
-	cli_dbgmsg("Compressed offset: %llu\n", lzx_content.offset);
-	if (lseek(fd, lzx_content.offset, SEEK_SET) != lzx_content.offset) {
+	cli_dbgmsg("Compressed offset: %lu\n", (unsigned long int) lzx_content.offset);
+	if ((uint64_t) lseek(fd, lzx_content.offset, SEEK_SET) != lzx_content.offset) {
 		goto abort;
 	}
 	
@@ -816,7 +816,7 @@ int cli_chm_extract_file(int fd, char *dirname, chm_metadata_t *metadata)
 		cli_dbgmsg("seek in uncompressed stream failed\n");
 		return CL_EFORMAT;
 	}
-	snprintf(filename, 1024, "%s/%llu.chm", dirname, metadata->file_offset);
+	snprintf(filename, 1024, "%s/%lu.chm", dirname, (unsigned long int) metadata->file_offset);
 	metadata->ofd = open(filename, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
 	if (metadata->ofd < 0) {
 		return CL_EIO;

@@ -1206,7 +1206,6 @@ static int cli_scanmschm(int desc, cli_ctx *ctx)
 	int ret = CL_CLEAN, rc;
 	chm_metadata_t metadata;
 	char *dir;
-	unsigned int file_count = 1;
 
     cli_dbgmsg("in cli_scanmschm()\n");
 

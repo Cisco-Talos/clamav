@@ -1,4 +1,7 @@
 /*
+ *  Copyright (C) 2007 - 2008 Sourcefire, Inc.
+ *  Author: Tomasz Kojm <tkojm@clamav.net>
+ *
  *  Copyright (C) 1999 - 2005 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -279,7 +282,7 @@ static char *cli_md5buff(const unsigned char *buffer, unsigned int len, unsigned
 
 
     cli_md5_init(&ctx);
-    cli_md5_update(&ctx, buffer, len);
+    cli_md5_update(&ctx, (char *) buffer, len);
     cli_md5_final(digest, &ctx);
 
     if(dig)
@@ -304,7 +307,7 @@ void *cli_malloc(size_t size)
 
 
     if(!size || size > CLI_MAX_ALLOCATION) {
-	cli_errmsg("cli_malloc(): Attempt to allocate %u bytes. Please report to http://bugs.clamav.net\n", size);
+	cli_errmsg("cli_malloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
 	return NULL;
     }
 
@@ -315,7 +318,7 @@ void *cli_malloc(size_t size)
 #endif
 
     if(!alloc) {
-	cli_errmsg("cli_malloc(): Can't allocate memory (%u bytes).\n", size);
+	cli_errmsg("cli_malloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int) size);
 	perror("malloc_problem");
 	return NULL;
     } else return alloc;
@@ -327,7 +330,7 @@ void *cli_calloc(size_t nmemb, size_t size)
 
 
     if(!size || size > CLI_MAX_ALLOCATION) {
-	cli_errmsg("cli_calloc(): Attempt to allocate %u bytes. Please report to http://bugs.clamav.net\n", size);
+	cli_errmsg("cli_calloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
 	return NULL;
     }
 
@@ -338,7 +341,7 @@ void *cli_calloc(size_t nmemb, size_t size)
 #endif
 
     if(!alloc) {
-	cli_errmsg("cli_calloc(): Can't allocate memory (%u bytes).\n", nmemb * size);
+	cli_errmsg("cli_calloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int) (nmemb * size));
 	perror("calloc_problem");
 	return NULL;
     } else return alloc;
@@ -350,14 +353,14 @@ void *cli_realloc(void *ptr, size_t size)
 
 
     if(!size || size > CLI_MAX_ALLOCATION) {
-	cli_errmsg("cli_realloc(): Attempt to allocate %u bytes. Please report to http://bugs.clamav.net\n", size);
+	cli_errmsg("cli_realloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
 	return NULL;
     }
 
     alloc = realloc(ptr, size);
 
     if(!alloc) {
-	cli_errmsg("cli_realloc(): Can't re-allocate memory to %u bytes.\n", size);
+	cli_errmsg("cli_realloc(): Can't re-allocate memory to %lu bytes.\n", (unsigned long int) size);
 	perror("realloc_problem");
 	return NULL;
     } else return alloc;
@@ -369,14 +372,14 @@ void *cli_realloc2(void *ptr, size_t size)
 
 
     if(!size || size > CLI_MAX_ALLOCATION) {
-	cli_errmsg("cli_realloc2(): Attempt to allocate %u bytes. Please report to http://bugs.clamav.net\n", size);
+	cli_errmsg("cli_realloc2(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
 	return NULL;
     }
 
     alloc = realloc(ptr, size);
 
     if(!alloc) {
-	cli_errmsg("cli_realloc2(): Can't re-allocate memory to %u bytes.\n", size);
+	cli_errmsg("cli_realloc2(): Can't re-allocate memory to %lu bytes.\n", (unsigned long int) size);
 	perror("realloc_problem");
 	if(ptr)
 	    free(ptr);
@@ -401,7 +404,7 @@ char *cli_strdup(const char *s)
 #endif
 
     if(!alloc) {
-        cli_errmsg("cli_strdup(): Can't allocate memory (%u bytes).\n", strlen(s));
+        cli_errmsg("cli_strdup(): Can't allocate memory (%u bytes).\n", (unsigned int) strlen(s));
         perror("strdup_problem");
         return NULL;
     }
@@ -868,8 +871,10 @@ const char* cli_ctime(const time_t *timep, char *buf, const size_t bufsize)
 	}
 #ifdef HAVE_CTIME_R	
 # ifdef HAVE_CTIME_R_2
-	char* y = ctime_r(timep, buf);
-	return y;
+	{
+	    char* y = ctime_r(timep, buf);
+	    return y;
+	}
 # else
 	return ctime_r(timep, buf, bufsize);
 # endif

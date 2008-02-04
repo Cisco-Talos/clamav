@@ -68,6 +68,6 @@ struct xplstate {
 
 int explode_init(struct xplstate *, uint16_t);
 int explode(struct xplstate *);
-void explode_shutdown();
+void explode_shutdown(void);
 
 #endif /* __EXPLODE_H */

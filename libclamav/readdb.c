@@ -881,7 +881,7 @@ static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 static int cli_loadmd(FILE *fs, struct cl_engine **engine, unsigned int *signo, int type, unsigned int options, gzFile *gzs, unsigned int gzrsize)
 {
 	char buffer[FILEBUFF], *pt;
-	int line = 0, comments = 0, ret = 0, crc32;
+	int line = 0, comments = 0, ret = 0, crc;
 	struct cli_meta_node *new;
 
 
@@ -971,12 +971,12 @@ static int cli_loadmd(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 	    if(!strcmp(pt, "*")) {
 		new->crc32 = 0;
 	    } else {
-		crc32 = cli_hex2num(pt);
-		if(crc32 == -1) {
+		crc = cli_hex2num(pt);
+		if(crc == -1) {
 		    ret = CL_EMALFDB;
 		    break;
 		}
-		new->crc32 = (unsigned int) crc32;
+		new->crc32 = (unsigned int) crc;
 	    }
 	    free(pt);
 	}
