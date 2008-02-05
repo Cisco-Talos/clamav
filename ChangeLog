@@ -1,3 +1,11 @@
+Tue Feb  5 20:06:28 EET 2008 (edwin)
+------------------------------------
+  * libclamav/lzma_iface.[ch], nsis/nulsft.c:
+	* don't include both zlib and  LzmaTypes.h (bb #805)
+	* fixes build failure with non-system zlib
+	* move declaration of CLI_LZMA into lzma_iface.c
+	* allocate CLI_LZMA* in lzma_iface.c
+
 Mon Feb  4 23:20:12 EET 2008 (edwin)
 ------------------------------------
   * libclamav/scanners, filetypes, dconf:
