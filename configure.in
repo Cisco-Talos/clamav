@@ -116,34 +116,6 @@ int main()
 ], [AC_MSG_RESULT([ok, bug not present])],
 [AC_MSG_ERROR([your compiler has gcc PR27603 bug, use a different compiler, see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=27603])], [AC_MSG_RESULT([cross-compiling, assumed ok])])
 
-dnl Check if compiler produces invalid code on gcc PR28045 (affects upx.c)
-dnl testcase from gcc testsuite
-AC_MSG_CHECKING([for gcc bug PR28045])
-AC_TRY_RUN(
-	   [
-/* (C) Andrew Pinski */	   
-extern void abort(void);
-struct a
-{
-   unsigned int bits : 1;
-   signed long val : ((sizeof(long) * 8) - 1);
-};
-int Fnegate (struct a b)
-{
-  if ((-((long)b.val)) <= ((long) ((1UL << ((sizeof(long) * 8) - 2)) -1UL))
-      && (-((long)b.val)) >= (-(((long) ((1UL << ((sizeof(long) * 8) - 2)) -1UL))) - 1))
-     return 0 ;
-  abort ();
-}
-int main ()
-{
-  struct a b = {1, 1};
-  Fnegate (b);
-  return 0;
-}
-], [AC_MSG_RESULT([ok, bug not present])],
-[AC_MSG_ERROR([your compiler has gcc PR28045 bug, use a different compiler, see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=28045])], [AC_MSG_RESULT([cross-compiling, assumed ok])])
-
 dnl Check if compiler produces invalid code on gcc PR26763-2 (affects upx.c)
 dnl testcase from gcc testsuite
 AC_MSG_CHECKING([for gcc bug PR26763-2])
@@ -172,17 +144,17 @@ int main(void)
 dnl Check if compiler produces invalid code on own testcase based on upx.c
 AC_MSG_CHECKING([for valid code generation of CLI_ISCONTAINED])
 AC_TRY_RUN(
-	   [	   
+	   [
 #include <stdio.h>
 static struct v{
 	char* dst;
-	unsigned long dsize;
-	unsigned long dcur;
-	unsigned long backsize;
- 	signed long unp_offset;
+	unsigned int dsize;
+	unsigned int dcur;
+	unsigned int backsize;
+	signed int unp_offset;
 } values[] = {
-	{(char*)0xf78ab008, 0x2e000, 1, 4, 0xfffff9f3},
-	{(char*)0xb7af1008, 0x2e000, 1, 4, 0xfffff9f3}
+	{(char*)0xf78ab008, 0x2e000, 1, 4, -1594},
+	{(char*)0xb7af1008, 0x2e000, 1, 4, -1594}
 
 };
 extern void abort(void);
@@ -191,16 +163,34 @@ extern void abort(void);
     (bb_size > 0 && sb_size > 0 && sb_size <= bb_size	\
      && sb >= bb && sb + sb_size <= bb + bb_size && sb + sb_size > bb)
 
+int crashtest()
+{
+	unsigned int backsize, dcur,i;
+	int dval=0x12000, unp_offset;
+	int* dsize = &dval;
+	char* dst = (char*)0x12000;
+	while(1) {
+		backsize=4;
+		dcur=0;
+		unp_offset=0x800002c7;
+
+		if (!CLI_ISCONTAINED(dst, *dsize, dst+dcur+unp_offset, backsize) || !CLI_ISCONTAINED(dst, *dsize, dst+dcur, backsize) || unp_offset >=0)
+			return -1;
+		abort();
+	}
+	return 0;
+}
+
 int main()
 {
 	int i;
 	for(i=0;i<sizeof(values)/sizeof(values[0]);i++) {
 		struct v* v= &values[i];
 		char* dst = v->dst;
-		unsigned long* dsize = &v->dsize;
-		unsigned long dcur = v->dcur;
-		unsigned long backsize = v->backsize-1;
-		signed long  unp_offset = v->unp_offset;
+		unsigned int* dsize = &v->dsize;
+		unsigned int dcur = v->dcur;
+		unsigned int backsize = v->backsize-1;
+		signed int  unp_offset = v->unp_offset;
 
 		if(!CLI_ISCONTAINED(dst, *dsize, dst+dcur+unp_offset, backsize) ||
 				!CLI_ISCONTAINED(dst, *dsize,dst+dcur,backsize) || unp_offset >= 0)  {
@@ -208,10 +198,40 @@ int main()
 		}
 		abort();
 	}
+	crashtest();
 	return 0;
 }
 ], [AC_MSG_RESULT([ok, bug not present])],
-[AC_MSG_ERROR([your compiler has a bug that causes clamav 670, use a different compiler, see http://bugs.clamav.net/bugzilla/show_bug.cgi?id=670])], [AC_MSG_RESULT([cross-compiling, assumed ok])])
+[AC_MSG_ERROR([your compiler has a bug that causes clamav bug no. 670, use a different compiler, see http://bugs.clamav.net/bugzilla/show_bug.cgi?id=670])], [AC_MSG_RESULT([cross-compiling, assumed ok])])
+
+dnl Check if compiler produces invalid code on gcc PR28045 (affects upx.c)
+dnl testcase from gcc testsuite
+AC_MSG_CHECKING([for gcc bug PR28045])
+AC_TRY_RUN(
+	   [
+/* (C) Andrew Pinski */
+extern void abort(void);
+struct a
+{
+   unsigned int bits : 1;
+   signed long val : ((sizeof(long) * 8) - 1);
+};
+int Fnegate (struct a b)
+{
+  if ((-((long)b.val)) <= ((long) ((1UL << ((sizeof(long) * 8) - 2)) -1UL))
+      && (-((long)b.val)) >= (-(((long) ((1UL << ((sizeof(long) * 8) - 2)) -1UL))) - 1))
+     return 0 ;
+  abort ();
+}
+int main ()
+{
+  struct a b = {1, 1};
+  Fnegate (b);
+  return 0;
+}
+], [AC_MSG_RESULT([ok, bug not present])],
+[AC_MSG_ERROR([your compiler has gcc PR28045 bug, use a different compiler, see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=28045])], [AC_MSG_RESULT([cross-compiling, assumed ok])])
+
 
 AC_CHECK_HEADERS(stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h poll.h limits.h sys/filio.h sys/uio.h termios.h stdbool.h pwd.h grp.h)
 AC_CHECK_HEADER(syslog.h,AC_DEFINE(USE_SYSLOG,1,[use syslog]),)
