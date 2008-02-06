@@ -1,3 +1,7 @@
+Wed Feb  6 21:30:55 CET 2008 (tk)
+---------------------------------
+  * libclamav/regex_list.c: compatibility with new matcher extension
+
 Wed Feb  6 20:36:05 EET 2008 (edwin)
 ------------------------------------
   * contrib/entitynorm/, libclamav/hashtab.[ch], readdb.c, matcher.h, entitylist.h, encoding_aliases.h:

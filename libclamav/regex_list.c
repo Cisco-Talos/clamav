@@ -60,6 +60,7 @@
 #include "others.h"
 #include "regex_list.h"
 #include "matcher-ac.h"
+#include "matcher.h"
 #include "str.h"
 #include "readdb.h"
 
@@ -462,6 +463,7 @@ static int add_regex_list_element(struct cli_matcher* root,const char* pattern,c
        new->offset = 0;
        new->target = 0;
        new->length = len;
+       new->ch[0] = new->ch[1] |= CLI_MATCH_IGNORE;
        if(new->length > root->maxpatlen)
                root->maxpatlen = new->length;
 
