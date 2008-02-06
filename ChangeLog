@@ -1,3 +1,12 @@
+Wed Feb  6 20:36:05 EET 2008 (edwin)
+------------------------------------
+  * contrib/entitynorm/, libclamav/hashtab.[ch], readdb.c, matcher.h, entitylist.h, encoding_aliases.h:
+	* introduce hashset_* functions
+	* use a faster hash function
+	* use hashset to load mdb signatures to optimize DB load time
+  	* regenerate files due to hash function change
+	* enable hash function profiling during generation
+
 Wed Feb  6 13:12:24 CET 2008 (tk)
 ---------------------------------
   * libclamav/matcher-ac.[ch]: add support for matching single bytes anchored

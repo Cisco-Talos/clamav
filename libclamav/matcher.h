@@ -33,6 +33,7 @@
 
 #include "matcher-ac.h"
 #include "matcher-bm.h"
+#include "hashtab.h"
 
 #define CLI_MATCH_WILDCARD	0xff00
 #define CLI_MATCH_CHAR		0x0000
@@ -45,6 +46,7 @@ struct cli_matcher {
     /* Extended Boyer-Moore */
     uint8_t *bm_shift;
     struct cli_bm_patt **bm_suffix;
+    struct hashset md5_sizes_hs;
     uint32_t *soff, soff_len; /* for PE section sigs */
     uint32_t bm_patterns;
 

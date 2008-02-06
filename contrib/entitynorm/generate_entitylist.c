@@ -62,12 +62,14 @@ static void loadEntities(struct hashtable* s)
 		hashtab_insert(s,name,strlen(name), converted);
 	}
 }
+extern short cli_debug_flag;
 
 int main(int argc, char* argv[])
 {
 	struct hashtable ht;
 	int i;
-	hashtab_init(&ht,512);
+	cli_debug_flag=1;
+	hashtab_init(&ht,2048);
 
 	loadEntities(&ht);
 	hashtab_generate_c(&ht,"entities_htable");

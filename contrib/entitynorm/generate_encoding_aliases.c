@@ -58,13 +58,15 @@ static const struct {
 };
 
 static const size_t aliases_cnt = sizeof(aliases)/sizeof(aliases[0]);
+extern short cli_debug_flag;
 
 int main(int argc, char* argv[])
 {
 	struct hashtable ht;
 	size_t i;
 
-	hashtab_init(&ht,aliases_cnt*5/4);
+	cli_debug_flag=1;
+	hashtab_init(&ht,aliases_cnt);
 
 	for(i=0;i < aliases_cnt;i++) {
 		hashtab_insert(&ht,(const unsigned char*)aliases[i].alias,strlen(aliases[i].alias),aliases[i].encoding);

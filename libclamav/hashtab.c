@@ -29,31 +29,21 @@
 #include "others.h"
 #include "hashtab.h"
 
-
-static const size_t prime_list[] =
-{
-     53ul,         97ul,         193ul,       389ul,       769ul,
-     1543ul,       3079ul,       6151ul,      12289ul,     24593ul,
-     49157ul,      98317ul,      196613ul,    393241ul,    786433ul,
-     1572869ul,    3145739ul,    6291469ul,   12582917ul,  25165843ul,
-     50331653ul,   100663319ul,  201326611ul, 402653189ul, 805306457ul,
-     1610612741ul, 3221225473ul
-};
-
-
-static const size_t prime_n = sizeof(prime_list)/sizeof(prime_list[0]);
+#define MODULE_NAME "hashtab: "
 
 static const char DELETED_KEY[] = "";
 
-static size_t get_nearest_capacity(const size_t capacity)
+static unsigned long nearest_power(unsigned long num)
 {
-	size_t i;
-	for(i=0 ;i < prime_n; i++) {
-		if (prime_list[i] > capacity)
-			return prime_list[i];
+	unsigned long n = 64;
+
+	while (n < num) {
+		n <<= 1;
+		if (n == 0) {
+			return num;
+		}
 	}
-	cli_errmsg("Requested hashtable size is too big!");
-	return prime_list[prime_n-1];
+	return n;
 }
 
 #ifdef PROFILE_HASHTABLE
@@ -184,7 +174,7 @@ int hashtab_init(struct hashtable *s,size_t capacity)
 
 	PROFILE_INIT(s);
 
-	capacity = get_nearest_capacity(capacity);
+	capacity = nearest_power(capacity);
 	s->htable = cli_calloc(capacity,sizeof(*s->htable));
 	if(!s->htable)
 		return CL_EMEM;
@@ -194,13 +184,31 @@ int hashtab_init(struct hashtable *s,size_t capacity)
 	return 0;
 }
 
-static size_t hash(const unsigned char* k,const size_t len,const size_t SIZE)
+static inline uint32_t hash32shift(uint32_t key)
 {
-	size_t Hash = 0;	
+ /* Thomas Wang's 32-bit integer hash function.
+  * http://www.cris.com/~Ttwang/tech/inthash.htm */
+  key = ~key + (key << 15);
+  key = key ^ (key >> 12);
+  key = key + (key << 2);
+  key = key ^ (key >> 4);
+  key = (key + (key << 3)) + (key << 11);
+  key = key ^ (key >> 16);
+  return key;
+}
+
+static inline size_t hash(const unsigned char* k,const size_t len,const size_t SIZE)
+{
+	size_t Hash = 1;
 	size_t i;
-	for(i=len;i>0;i--)
-		Hash = ((Hash << 8) + k[i-1]) % SIZE;
-	return Hash;
+	for(i=0;i<len;i++) {
+		/* a simple add is good, because we use the mixing function below */
+		Hash +=  k[i];
+		/* mixing function */
+		Hash = hash32shift(Hash);
+	}
+	/* SIZE is power of 2 */
+	return Hash & (SIZE - 1);
 }
 
 /* if returned element has key==NULL, then key was not found in table */
@@ -236,7 +244,7 @@ struct element* hashtab_find(const struct hashtable *s,const char* key,const siz
 
 static int hashtab_grow(struct hashtable *s)
 {
-	const size_t new_capacity = get_nearest_capacity(s->capacity);
+	const size_t new_capacity = nearest_power(s->capacity);
 	struct element* htable = cli_calloc(new_capacity, sizeof(*s->htable));
 	size_t i,idx, used = 0;
 	if(new_capacity == s->capacity || !htable)
@@ -411,3 +419,142 @@ int hashtab_load(FILE* in, struct hashtable *s)
 	return CL_SUCCESS;
 }
 
+/* Initialize hashset. @initial_capacity is rounded to nearest power of 2.
+ * Load factor is between 50 and 99. When capacity*load_factor/100 is reached, the hashset is growed */
+int hashset_init(struct hashset* hs, size_t initial_capacity, uint8_t load_factor)
+{
+	if(load_factor < 50 || load_factor > 99) {
+		cli_dbgmsg(MODULE_NAME "Invalid load factor: %u, using default of 80%%\n", load_factor);
+		load_factor = 80;
+	}
+	initial_capacity = nearest_power(initial_capacity);
+	hs->load_factor = load_factor;
+	hs->limit = initial_capacity * load_factor / 100;
+	hs->capacity = initial_capacity;
+	hs->mask = initial_capacity - 1;
+	hs->count=0;
+	hs->keys = cli_malloc(initial_capacity * sizeof(*hs->keys));
+	if(!hs->keys) {
+		return CL_EMEM;
+	}
+	hs->bitmap = cli_calloc(initial_capacity / 8, sizeof(*hs->bitmap));
+	if(!hs->bitmap) {
+		free(hs->keys);
+		return CL_EMEM;
+	}
+	return 0;
+}
+
+void hashset_destroy(struct hashset* hs)
+{
+	cli_dbgmsg(MODULE_NAME "Freeing hashset, elements: %lu, capacity: %lu\n", hs->count, hs->capacity);
+	free(hs->keys);
+	free(hs->bitmap);
+	hs->keys = hs->bitmap = NULL;
+	hs->capacity = 0;
+}
+
+#define BITMAP_CONTAINS(bmap, val) ((bmap)[(val) >> 5] & (1 << ((val) & 0x1f)))
+#define BITMAP_INSERT(bmap, val) ((bmap)[(val) >> 5] |= (1 << ((val) & 0x1f)))
+
+/*
+ * searches the hashset for the @key.
+ * Returns the position the key is at, or a candidate position where it could be inserted.
+ */
+static inline size_t hashset_search(const struct hashset* hs, const uint32_t key)
+{
+	/* calculate hash value for this key, and map it to our table */
+	size_t idx = hash32shift(key) & (hs->mask);
+	size_t tries = 1;
+
+	/* check wether the entry is used, and if the key matches */
+	while(BITMAP_CONTAINS(hs->bitmap, idx) && (hs->keys[idx] != key)) {
+		/* entry used, key different -> collision */
+		idx = (idx + tries++)&(hs->mask);
+		/* quadratic probing, with c1 = c2 = 1/2, guaranteed to walk the entire table
+		 * for table sizes power of 2.*/
+	}
+	/* we have either found the key, or a candidate insertion position */
+	return idx;
+}
+
+
+static void hashset_addkey_internal(struct hashset* hs, const uint32_t key)
+{
+	const size_t idx = hashset_search(hs, key);
+	/* we know hashtable is not full, when this method is called */
+
+	if(!BITMAP_CONTAINS(hs->bitmap, idx)) {
+		/* add new key */
+		BITMAP_INSERT(hs->bitmap, idx);
+		hs->keys[idx] = key;
+		hs->count++;
+	}
+}
+
+static int hashset_grow(struct hashset *hs)
+{
+	struct hashset new_hs;
+	size_t i;
+	int rc;
+
+	/* in-place growing is not possible, since the new keys
+	 * will hash to different locations. */
+	cli_dbgmsg(MODULE_NAME "Growing hashset, used: %lu, capacity: %lu\n", hs->count, hs->capacity);
+	/* create a bigger hashset */
+	if((rc = hashset_init(&new_hs, hs->capacity << 1, hs->load_factor)) < 0) {
+		return rc;
+	}
+	/* and copy keys */
+	for(i=0;i < hs->capacity;i++) {
+		if(BITMAP_CONTAINS(hs->bitmap, i)) {
+			const size_t key = hs->keys[i];
+			hashset_addkey_internal(&new_hs, key);
+		}
+	}
+	hashset_destroy(hs);
+	/* replace old hashset with new one */
+	*hs = new_hs;
+	return 0;
+}
+
+int hashset_addkey(struct hashset* hs, const uint32_t key)
+{
+	/* check that we didn't reach the load factor.
+	 * Even if we don't know yet whether we'd add this key */
+	if(hs->count + 1 > hs->limit) {
+		int rc = hashset_grow(hs);
+		if(rc) {
+			return rc;
+		}
+	}
+	hashset_addkey_internal(hs, key);
+	return 0;
+}
+
+int hashset_contains(const struct hashset* hs, const uint32_t key)
+{
+	const size_t idx =  hashset_search(hs, key);
+	return BITMAP_CONTAINS(hs->bitmap, idx);
+}
+
+ssize_t hashset_toarray(const struct hashset* hs, uint32_t** array)
+{
+	size_t i, j;
+	uint32_t* arr;
+
+	if(!array) {
+		return CL_ENULLARG;
+	}
+	*array = arr = cli_malloc(hs->count * sizeof(*arr));
+	if(!arr) {
+		return CL_EMEM;
+	}
+
+	for(i=0,j=0 ; i < hs->capacity && j < hs->count;i++) {
+		if(BITMAP_CONTAINS(hs->bitmap, i)) {
+			arr[j++] = hs->keys[i];
+		}
+	}
+	return j;
+}

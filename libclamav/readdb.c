@@ -64,6 +64,7 @@
 #include "phish_whitelist.h"
 #include "phish_domaincheck_db.h"
 #include "regex_list.h"
+#include "hashtab.h"
 
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #include <limits.h>
@@ -760,11 +761,10 @@ static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 {
 	char buffer[FILEBUFF], *pt;
 	int ret = CL_SUCCESS;
-	unsigned int size_field = 1, md5_field = 0, found, line = 0, i;
+	unsigned int size_field = 1, md5_field = 0, line = 0;
 	uint32_t size;
 	struct cli_bm_patt *new;
 	struct cli_matcher *db = NULL;
-
 
     if((ret = cli_initengine(engine, options))) {
 	cl_free(*engine);
@@ -837,23 +837,10 @@ static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	}
 
 	if(mode == MD5_MDB) { /* section MD5 */
-	    found = 0;
-	    for(i = 0; i < db->soff_len; i++) {
-		if(db->soff[i] == size) {
-		    found = 1;
-		    break;
-		}
+	    if(!db->md5_sizes_hs.capacity) {
+		    hashset_init(&db->md5_sizes_hs, 32768, 80);
 	    }
-	    if(!found) {
-		db->soff_len++;
-		db->soff = (uint32_t *) cli_realloc2(db->soff, db->soff_len * sizeof(uint32_t));
-		if(!db->soff) {
-		    cli_errmsg("cli_loadmd5: Can't realloc db->soff\n");
-		    ret = CL_EMEM;
-		    break;
-		}
-		db->soff[db->soff_len - 1] = size;
-	    }
+	    hashset_addkey(&db->md5_sizes_hs, size);
 	}
     }
 
@@ -871,9 +858,6 @@ static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 
     if(signo)
 	*signo += line;
-
-    if(db && mode == MD5_MDB)
-	qsort(db->soff, db->soff_len, sizeof(uint32_t), scomp);
 
     return CL_SUCCESS;
 }
@@ -1529,6 +1513,9 @@ void cl_free(struct cl_engine *engine)
     if((root = engine->md5_mdb)) {
 	cli_bm_free(root);
 	free(root->soff);
+	if(root->md5_sizes_hs.capacity) {
+		hashset_destroy(&root->md5_sizes_hs);
+	}
 	free(root);
     }
 
@@ -1567,6 +1554,18 @@ void cl_free(struct cl_engine *engine)
     free(engine);
 }
 
+static void cli_md5db_build(struct cli_matcher* root)
+{
+	if(root && root->md5_sizes_hs.capacity) {
+		/* TODO: use hashset directly, instead of the array when matching*/
+		cli_dbgmsg("Converting hashset to array: %lu entries\n", root->md5_sizes_hs.count);
+		root->soff_len = hashset_toarray(&root->md5_sizes_hs, &root->soff);
+		hashset_destroy(&root->md5_sizes_hs);
+		qsort(root->soff, root->soff_len, sizeof(uint32_t), scomp);
+	}
+}
+
+
 int cl_build(struct cl_engine *engine)
 {
 	unsigned int i;
@@ -1588,6 +1587,8 @@ int cl_build(struct cl_engine *engine)
 	    cli_dbgmsg("matcher[%u]: %s: AC sigs: %u BM sigs: %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->bm_patterns, root->ac_only ? "(ac_only mode)" : "");
 	}
     }
+
+    cli_md5db_build(engine->md5_mdb);
 
     cli_dconf_print(engine->dconf);
 
