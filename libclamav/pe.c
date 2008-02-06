@@ -85,12 +85,7 @@
 if(ctx->limits && ctx->limits->maxfilesize && (CHK) > ctx->limits->maxfilesize) { \
   cli_dbgmsg(NAME": Sizes exceeded (%lu > %lu)\n", (unsigned long)(CHK), (unsigned long)ctx->limits->maxfilesize); \
     free(exe_sections); \
-    if(BLOCKMAX) { \
-        *ctx->virname = "PE."NAME".ExceededFileSize"; \
-        return CL_VIRUS; \
-    } else { \
-        return CL_CLEAN; \
-    } \
+    return CL_CLEAN;	\
 }
 
 #define CLI_UNPTEMP(NAME,FREEME) \
@@ -124,12 +119,6 @@ if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) { \
 	close(ndesc); \
 	unlink(tempfile); \
 	cli_dbgmsg("PESpin: Size exceeded\n"); \
-	if(BLOCKMAX) { \
-	    free(tempfile); \
-	    free(exe_sections); \
-	    *ctx->virname = "PE.Pespin.ExceededFileSize"; \
-	    return CL_VIRUS; \
-	} \
 	free(tempfile); \
 	break; \
 

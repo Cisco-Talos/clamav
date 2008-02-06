@@ -142,9 +142,9 @@ uint32_t unspack(char *start_of_stuff, char *dest, cli_ctx *ctx, uint32_t rva, u
   i = allocsz;
   c = (tre+i)&0xff;
   tablesz = ((0x300<<c)+0x736)*sizeof(uint16_t);
-  if(ctx->limits && ctx->limits->maxfilesize && tablesz > ctx->limits->maxfilesize) {
+
+  if(cli_checklimits("nspack", ctx, tablesz, 0, 0)!=CL_CLEAN)
     return 1; /* Should be ~15KB, if it's so big it's prolly just not nspacked */
-  }
     
   cli_dbgmsg("unsp: table size = %d\n", tablesz);
   if (!(table = cli_malloc(tablesz))) return 1;

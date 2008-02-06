@@ -49,7 +49,7 @@
 #endif
 
 /* hard limits */
-#define CAB_FOLDER_LIMIT    5000
+#define CAB_FOLDER_LIMIT    5000 /* FIXMELIMITS */
 #define CAB_FILE_LIMIT	    5000
 
 /* Cabinet format data structures */

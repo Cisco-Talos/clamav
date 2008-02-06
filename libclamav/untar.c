@@ -61,9 +61,9 @@ octal(const char *str)
 }
 
 int
-cli_untar(const char *dir, int desc, unsigned int posix, const struct cl_limits *limits)
+cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 {
-	int size = 0;
+	int size = 0, ret;
 	int in_block = 0;
 	unsigned int files = 0;
 	char fullname[NAME_MAX + 1];
@@ -103,11 +103,8 @@ cli_untar(const char *dir, int desc, unsigned int posix, const struct cl_limits 
 
 			if(block[0] == '\0')	/* We're done */
 				break;
-
-			if(limits && limits->maxfiles && (files >= limits->maxfiles)) {
-				cli_dbgmsg("cli_untar: number of files exceeded %u\n", limits->maxfiles);
-				return CL_CLEAN;
-			}
+			if((ret=cli_checklimits("cli_untar", ctx, 0, 0, 0))!=CL_CLEAN)
+				return ret;
 
 			/* Notice assumption that BLOCKSIZE > 262 */
 			if(posix) {
@@ -176,8 +173,7 @@ cli_untar(const char *dir, int desc, unsigned int posix, const struct cl_limits 
 				return CL_EFORMAT;
 			}
 			cli_dbgmsg("cli_untar: size = %d\n", size);
-			if(limits && limits->maxfilesize && ((unsigned int)size > limits->maxfilesize)) {
-				cli_dbgmsg("cli_untar: size exceeded %d bytes\n", size);
+			if((ret=cli_checklimits("cli_untar", ctx, size, 0, 0))!=CL_CLEAN) {
 				skipEntry++;
 			}
 
@@ -250,7 +246,7 @@ cli_untar(const char *dir, int desc, unsigned int posix, const struct cl_limits 
 		}
 		if (size == 0)
 			in_block = 0;
-	}
+        }	
 	if(outfile)
 		return fclose(outfile);
 

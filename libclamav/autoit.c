@@ -192,7 +192,7 @@ static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
   for (i=0; i<16; i++)
     m4sum += buf[i];
 
-  while((ret=cli_checklimits("autoit", ctx, 0, 0, 0))==CL_CONTINUE) {
+  while((ret=cli_checklimits("autoit", ctx, 0, 0, 0))==CL_CLEAN) {
     buf = b;
     if (cli_readn(desc, buf, 8)!=8)
       return CL_CLEAN;
@@ -251,8 +251,7 @@ static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
     cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32((char *)buf+9) ^ 0xc3d2);
 
     
-    if((ret=cli_checklimits("autoit", ctx, UNP.csize, 0, 0))!=CL_CONTINUE) {
-      if(ret==CL_VIRUS) return ret;
+    if(cli_checklimits("autoit", ctx, UNP.csize, 0, 0)!=CL_CLEAN) {
       lseek(desc, UNP.csize, SEEK_CUR);
       continue;
     }
@@ -276,9 +275,8 @@ static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
 
       if(!(UNP.usize = be32_to_host(*(uint32_t *)(buf+4))))
 	UNP.usize = UNP.csize; /* only a specifically crafted or badly corrupted sample should land here */
-      if((ret=cli_checklimits("autoit", ctx, UNP.usize, 0, 0))!=CL_CONTINUE) {
+      if(cli_checklimits("autoit", ctx, UNP.usize, 0, 0)!=CL_CLEAN) {
 	free(buf);
-	if(ret==CL_VIRUS) return ret;
 	continue;
       }
 
@@ -492,7 +490,7 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
   /*   buf+=0x10; */
   lseek(desc, 16, SEEK_CUR);   /* for now we just skip the garbage */
 
-  while((ret=cli_checklimits("cli_autoit", ctx, 0, 0, 0))==CL_CONTINUE) {
+  while((ret=cli_checklimits("cli_autoit", ctx, 0, 0, 0))==CL_CLEAN) {
     buf = b;
     if (cli_readn(desc, buf, 8)!=8)
       return CL_CLEAN;
@@ -555,8 +553,7 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
     cli_dbgmsg("autoit: advertised uncompressed size %x\n", cli_readint32((char *)buf+5) ^ 0x87bc);
     cli_dbgmsg("autoit: ref chksum: %x\n", cli_readint32((char *)buf+9) ^ 0xa685);
 
-    if((ret=cli_checklimits("autoit", ctx, UNP.csize, 0, 0))!=CL_CONTINUE) {
-      if(ret==CL_VIRUS) return ret;
+    if(cli_checklimits("autoit", ctx, UNP.csize, 0, 0)!=CL_CLEAN) {
       lseek(desc, UNP.csize, SEEK_CUR);
       continue;
     }
@@ -581,9 +578,8 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
 
       if(!(UNP.usize = be32_to_host(*(uint32_t *)(buf+4))))
 	UNP.usize = UNP.csize; /* only a specifically crafted or badly corrupted sample should land here */
-      if((ret=cli_checklimits("autoit", ctx, UNP.usize, 0, 0))!=CL_CONTINUE) {
+      if(cli_checklimits("autoit", ctx, UNP.usize, 0, 0)!=CL_CLEAN) {
 	free(buf);
-	if(ret==CL_VIRUS) return ret;
 	continue;
       }
       if (!(UNP.outputbuf = cli_malloc(UNP.usize))) {

@@ -332,12 +332,6 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	    logg("^Archive: Files limit protection disabled.\n");
 	}
 
-	if((limits.maxratio = cfgopt(copt, "ArchiveMaxCompressionRatio")->numarg)) {
-	    logg("Archive: Compression ratio limit set to %u.\n", limits.maxratio);
-	} else {
-	    logg("^Archive: Compression ratio limit disabled.\n");
-	}
-
 	if(cfgopt(copt, "ArchiveLimitMemoryUsage")->enabled) {
 	    limits.archivememlim = 1;
 	    logg("Archive: Limited memory usage.\n");
@@ -399,12 +393,6 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	if(cfgopt(copt, "MailFollowURLs")->enabled) {
 	    logg("Mail: URL scanning enabled.\n");
 	    options |= CL_SCAN_MAILURL;
-	}
-
-	if((limits.maxmailrec = cfgopt(copt, "MailMaxRecursion")->numarg)) {
-	    logg("Mail: Recursion level limit set to %u.\n", limits.maxmailrec);
-	} else {
-	    logg("^Mail: Recursion level limit protection disabled.\n");
 	}
 
     } else {

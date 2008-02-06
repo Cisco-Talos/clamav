@@ -195,7 +195,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	/*
 	 * The body section consists of a sequence of indirect objects
 	 */
-	while((p < xrefstart) && (rc == CL_CLEAN) &&
+	while((p < xrefstart) && ((rc=cli_checklimits("cli_pdf", ctx, 0, 0, 0))==CL_CLEAN) &&
 	      ((q = pdf_nextobject(p, bytesleft)) != NULL)) {
 		int is_ascii85decode, is_flatedecode, fout, len, has_cr;
 		/*int object_number, generation_number;*/
@@ -492,11 +492,6 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		free(md5digest);
 		cli_dbgmsg("cli_pdf: extracted file %u to %s\n", ++files,
 			fullname);
-
-		if((ret=cli_checklimits("cli_pdf", ctx, 0, 0, 0))!=CL_CONTINUE) {
-			/* Bug 698 */
-			rc = ret;
-		}
 	}
 
 	munmap(buf, size);
@@ -609,7 +604,8 @@ flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 					}
 					nbytes += written;
 
-					if((ret=cli_checklimits("cli_pdf", ctx, nbytes, 0, 0))!=CL_CONTINUE) {
+					if((ret=cli_checklimits("cli_pdf", ctx, nbytes, 0, 0))!=CL_CLEAN) {
+						/* FIXMELIMITS */
 						inflateEnd(&stream);
 						return ret;
 					}

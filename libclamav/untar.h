@@ -34,4 +34,12 @@
  * First draft
  *
  */
-int cli_untar(const char *dir, int desc, unsigned int posix, const struct cl_limits *limits);
+
+#ifndef __UNTAR_H
+#define __UNTAR_H
+
+#include "others.h"
+
+int cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx);
+
+#endif

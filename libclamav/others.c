@@ -196,65 +196,62 @@ const char *cl_strerror(int clerror)
     }
 }
 
+unsigned long cli_getsizelimit(cli_ctx *ctx, unsigned long needed) {
+    if(!ctx || ! ctx->limits)
+	return needed;
+    if(needed > ctx->limits->maxfilesize)
+	needed = ctx->limits->maxfilesize;
+    if(needed > ctx->limits->maxscansize-ctx->scansize)
+	needed = ctx->limits->maxscansize-ctx->scansize;
+    return needed;
+}
+
 int cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned long need2, unsigned long need3) {
     int ret = CL_SUCCESS;
     unsigned long needed;
 
     /* if called without limits, go on, unpack, scan */
-    if(!ctx || !ctx->limits) return CL_SUCCESS;
-
-    /* check if we have limits on the number of files */
-    /* FIMMELIMITS: this only makes sense in updatelimits */
-    if(ctx->limits->maxfiles && ctx->scanned>=ctx->limits->maxfiles) {
-        cli_dbgmsg("%s: files limit reached (max: %u)\n", who, ctx->maxfiles);
-        return CL_EMAXFILES;
-    }
+    if(!ctx || !ctx->limits) return CL_CLEAN;
 
     needed = (need1>need2)?need1:need2;
     needed = (needed>need3)?needed:need3;
 
     /* if we have global scan limits */
-    if(ctx->limits->maxscansize) {
+    if(needed && ctx->limits->maxscansize) {
         /* if the remaining scansize is too small... */
         if(ctx->limits->maxscansize-ctx->scansize<needed) {
+	    /* ... we tell the caller to skip this file */
 	    cli_dbgmsg("%s: scansize exceeded (initial: %u, remaining: %u, needed: %u)\n", who, ctx->limits->maxscansize, ctx->scansize, needed);
-	    /* ... we return INFECTED only upon request */ 
-	    if(BLOCKMAX) {
-	        *ctx->virname = "Archive.ExceededScanSize";
-		return CL_VIRUS;
-	    }
-	    /* ... otherwise we tell the caller to skip this file */
 	    ret = CL_EMAXSIZE;
 	}
     }
 
     /* if we have per-file size limits, and we are overlimit... */
-    if(ctx->limits->maxfilesize && ctx->limits->maxfilesize<needed) {
+    if(needed && ctx->limits->maxfilesize && ctx->limits->maxfilesize<needed) {
+	/* ... we tell the caller to skip this file */
         cli_dbgmsg("%s: filesize exceeded (allowed: %u, needed: %u)\n", who, ctx->limits->maxfilesize, needed);
-        /* ... we return INFECTED only upon request */ 
-        if(BLOCKMAX) {
-	    *ctx->virname = "Archive.ExceededFileSize";
-	    return CL_VIRUS;
-	}
-	/* ... otherwise we tell the caller to skip this file */
 	ret = CL_EMAXSIZE;
+    }
+
+    if(ctx->limits->maxfiles && ctx->scannedfiles>=ctx->limits->maxfiles) {
+        cli_dbgmsg("%s: files limit reached (max: %u)\n", who, ctx->limits->maxfiles);
+	return CL_EMAXFILES;
     }
     return ret;
 }
 
-int cli_updatelimits(cli_ctx *ctx, unsigned long need) {
-    int ret;
+int cli_updatelimits(cli_ctx *ctx, unsigned long needed) {
+    /* FIXMELIMITS:
+     *  we enter here via magicscan only
+     *  magiscan callers should check for !CL_CLEAN instead of CL_VIRUS
+     */
 
-    if((ret=cli_checklimits(ctx, need, 0, 0))==CL_SUCCESS) {
-        /* update counter */
-        ctx->scanned++;
-	/* update the remaining scanzise */
-	ctx->scansize+=needed;
-	if(ctx->scansize > ctx->limits->maxscansize)
-	    ctx->scansize = ctx->limits->maxscansize;
-    }
+    ctx->scannedfiles++;
+    ctx->scansize+=needed;
+    if(ctx->scansize > ctx->limits->maxscansize)
+        ctx->scansize = ctx->limits->maxscansize;
 
-    return ret;
+    return cli_checklimits("updatelimits", ctx, needed, 0, 0);
 }
 
 unsigned char *cli_md5digest(int desc)

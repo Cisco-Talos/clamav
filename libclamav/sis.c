@@ -453,10 +453,7 @@ static int real_scansis(FILE *f, cli_ctx *ctx, const char *tmpd) {
 	    cli_dbgmsg("\tSkipping empty file\n");
 	    continue;
 	  }
-	  if (ctx->limits && ctx->limits->maxfilesize && lens[j] > ctx->limits->maxfilesize) {
-	    cli_dbgmsg("\tSkipping file due to size limit (%u, max: %lu)\n", lens[j], ctx->limits->maxfilesize);
-	    continue;
-	  }
+	  if (cli_checklimits("sis", ctx,lens[j], 0, 0)!=CL_CLEAN) continue;
 	  cli_dbgmsg("\tUnpacking lang#%d - ptr:%x csize:%x osize:%x\n", j, ptrs[j], lens[j], olens[j]);
 	  if (!(comp=cli_malloc(lens[j]))) {
 	    cli_dbgmsg("\tOOM\n");
@@ -471,15 +468,13 @@ static int real_scansis(FILE *f, cli_ctx *ctx, const char *tmpd) {
 	    continue;
 	  }
 	  if (compd) {
-	    olen = (olens[j]<=lens[j]*3  || (ctx->limits && ctx->limits->maxfilesize && olens[j] > ctx->limits->maxfilesize)) ? lens[j]*3 : olens[j];
-	    if (ctx->limits && ctx->limits->maxfilesize && olen > ctx->limits->maxfilesize) {
-	      if (olens[j] < ctx->limits->maxfilesize)
-		olen = olens[j];
-	      else {
-		cli_dbgmsg("\tSkipping file due to size limit (%u, max: %lu)\n", (unsigned int)olen, ctx->limits->maxfilesize);
-		free(comp);
-		continue;
-	      }
+	    if (olens[j]<=lens[j]*3 && cli_checklimits("sis", ctx, lens[j]*3, 0, 0)==CL_CLEAN)
+	      olen=lens[j]*3;
+	    else if (cli_checklimits("sis", ctx, olens[j], 0, 0)==CL_CLEAN)
+	      olen=olens[j];
+	    else {
+	      free(comp);
+	      continue;
 	    }
 	      
 	    if (!(decomp=cli_malloc(olen))) {
@@ -524,12 +519,6 @@ static int real_scansis(FILE *f, cli_ctx *ctx, const char *tmpd) {
 	  }
 	  close(fd);
 	  umped++;
-	  if (ctx->limits && umped > ctx->limits->maxfiles) {
-	    cli_dbgmsg("NSIS: Files limit reached (max: %u)\n", ctx->limits->maxfiles);
-	    free(ptrs);
-	    free(alangs);
-	    return CL_EMAXFILES;
-	  }
 	}
 	fseek(f,fpos,SEEK_SET);
       }
@@ -726,10 +715,7 @@ static int real_scansis9x(FILE *f, cli_ctx *ctx, const char *tmpd) {
 	      fseek(s->f, -(long)s->sleft, SEEK_CUR);
 	      s->sleft = s->smax = 0;
 
-	      if (ctx->limits && ctx->limits->maxfilesize && ALIGN4(s->fsize[s->level]) > ctx->limits->maxfilesize) {
-		cli_dbgmsg("SIS: Skipping file due to size limit (%u, max: %lu)\n", ALIGN4(s->fsize[s->level]), ctx->limits->maxfilesize);
-		break;
-	      }
+	      if (cli_checklimits("sis", ctx,ALIGN4(s->fsize[s->level]), 0, 0)!=CL_CLEAN) break;
 	      if (!(src=cli_malloc(ALIGN4(s->fsize[s->level])))) break;
 	      if (fread(src, ALIGN4(s->fsize[s->level]),1,s->f) != 1) {
 		free(src);
@@ -739,16 +725,15 @@ static int real_scansis9x(FILE *f, cli_ctx *ctx, const char *tmpd) {
 	      if(field) { /* compressed */
 		int zresult;
 
-		uusize = (usize<=s->fsize[s->level]*3 || (ctx->limits && ctx->limits->maxfilesize && uusize > ctx->limits->maxfilesize)) ? s->fsize[s->level]*3 : usize;
-		if (ctx->limits && ctx->limits->maxfilesize && uusize > ctx->limits->maxfilesize) {
-		  if (usize < ctx->limits->maxfilesize)
-		    uusize = usize;
-		  else {
-		    cli_dbgmsg("\tSkipping file due to size limit (%u, max: %lu)\n", (unsigned int)uusize, ctx->limits->maxfilesize);
-		    free(src);
-		    break;
-		  }
+		if (usize<=s->fsize[s->level]*3 && cli_checklimits("sis", ctx, s->fsize[s->level]*3, 0, 0)==CL_CLEAN)
+		  uusize=s->fsize[s->level]*3;
+		else if (cli_checklimits("sis", ctx, usize, 0, 0)==CL_CLEAN)
+		  uusize=usize;
+		else {
+		  free(src);
+		  break;
 		}
+
 		if (!(dst=cli_malloc(uusize))) {
 		  free(src);
 		  break;

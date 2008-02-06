@@ -243,16 +243,6 @@ int scanmanager(const struct optstruct *opt)
     else
         limits.maxreclevel = 8;
 
-    if(opt_check(opt, "max-mail-recursion"))
-        limits.maxmailrec = atoi(opt_arg(opt, "max-mail-recursion"));
-    else
-        limits.maxmailrec = 64;
-
-    if(opt_check(opt, "max-ratio"))
-        limits.maxratio = atoi(opt_arg(opt, "max-ratio"));
-    else
-        limits.maxratio = 250;
-
     /* set options */
 
     if(opt_check(opt, "disable-archive") || opt_check(opt, "no-archive"))
@@ -265,9 +255,6 @@ int scanmanager(const struct optstruct *opt)
 
     if(opt_check(opt, "block-encrypted"))
 	options |= CL_SCAN_BLOCKENCRYPTED;
-
-    if(opt_check(opt, "block-max"))
-	options |= CL_SCAN_BLOCKMAX;
 
     if(opt_check(opt, "no-pe"))
 	options &= ~CL_SCAN_PE;

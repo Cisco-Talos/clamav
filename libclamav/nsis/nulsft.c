@@ -534,15 +534,8 @@ int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
 
     do {
         ret = cli_nsis_unpack(&nsist, ctx);
-	if(ret != CL_SUCCESS) {
-	    if(ret == CL_EMAXSIZE) {
-	        if(BLOCKMAX) {
-		    *ctx->virname = "NSIS.ExceededFileSize";
-		    ret=CL_VIRUS;
-		} else {
-		    ret = nsist.solid ? CL_BREAK : CL_SUCCESS;
-		}
-	    }
+	if(ret == CL_EMAXSIZE) {
+	  ret = nsist.solid ? CL_BREAK : CL_SUCCESS;
 	} else {
 	    cli_dbgmsg("NSIS: Successully extracted file #%u\n", nsist.fno);
 	    lseek(nsist.ofd, 0, SEEK_SET);
