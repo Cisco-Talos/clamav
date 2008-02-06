@@ -314,12 +314,12 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 						if(real_len >= match_len + 1) {
 							const size_t pos = real_len - match_len - 1;
 							if(real_url[pos] != '.') {
-								cli_dbgmsg("No dot here:%s\n",real_url+pos);
 								/* we need to shift left, and insert a '.'
 								 * we have an extra '.' at the beginning inserted by get_host to have room,
 								 * orig_real_url has to be used here, 
 								 * because we want to overwrite that extra '.' */
 								size_t orig_real_len = strlen(orig_real_url);
+								cli_dbgmsg("No dot here:%s\n",real_url+pos);
 								real_url = orig_real_url;
 								memmove(real_url, real_url+1, orig_real_len-match_len-1);
 								real_url[orig_real_len-match_len-1]='.';
