@@ -309,27 +309,36 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     logg("*Listening daemon: PID: %u\n", (unsigned int) mainpid);
     max_threads = cfgopt(copt, "MaxThreads")->numarg;
 
-    if(cfgopt(copt, "ScanArchive")->enabled) {
+    if(cfgopt(copt, "ScanArchive")->enabled) { /* FIXMELIMITS: unparsed if archives disabled! */
 
 	/* set up limits */
 	memset(&limits, 0, sizeof(struct cl_limits));
 
-	if((limits.maxfilesize = cfgopt(copt, "ArchiveMaxFileSize")->numarg)) {
-	    logg("Archive: Archived file size limit set to %lu bytes.\n", limits.maxfilesize);
+	logg("Archive support enabled.\n");
+	options |= CL_SCAN_ARCHIVE;
+
+	if((limits.maxfilesize = cfgopt(copt, "MaxScanSize")->numarg)) {
+	    logg("Limits: Global size limit set to %lu bytes.\n", limits.maxscansize);
 	} else {
-	    logg("^Archive: File size limit protection disabled.\n");
+	    logg("^Limits: Global size limit protection disabled.\n");
 	}
 
-	if((limits.maxreclevel = cfgopt(copt, "ArchiveMaxRecursion")->numarg)) {
-	    logg("Archive: Recursion level limit set to %u.\n", limits.maxreclevel);
+	if((limits.maxfilesize = cfgopt(copt, "MaxFileSize")->numarg)) {
+	    logg("Limits: File size limit set to %lu bytes.\n", limits.maxfilesize);
 	} else {
-	    logg("^Archive: Recursion level limit protection disabled.\n");
+	    logg("^Limits: File size limit protection disabled.\n");
 	}
 
-	if((limits.maxfiles = cfgopt(copt, "ArchiveMaxFiles")->numarg)) {
-	    logg("Archive: Files limit set to %u.\n", limits.maxfiles);
+	if((limits.maxreclevel = cfgopt(copt, "MaxRecursion")->numarg)) {
+	    logg("Limits: Recursion level limit set to %u.\n", limits.maxreclevel);
 	} else {
-	    logg("^Archive: Files limit protection disabled.\n");
+	    logg("^Limits: Recursion level limit protection disabled.\n");
+	}
+
+	if((limits.maxfiles = cfgopt(copt, "MaxFiles")->numarg)) {
+	    logg("Limits: Files limit set to %u.\n", limits.maxfiles);
+	} else {
+	    logg("^Limits: Files limit protection disabled.\n");
 	}
 
 	if(cfgopt(copt, "ArchiveLimitMemoryUsage")->enabled) {
@@ -338,20 +347,10 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	} else {
 	    limits.archivememlim = 0;
 	}
-    }
-
-    if(cfgopt(copt, "ScanArchive")->enabled) {
-	logg("Archive support enabled.\n");
-	options |= CL_SCAN_ARCHIVE;
 
 	if(cfgopt(copt, "ArchiveBlockEncrypted")->enabled) {
 	    logg("Archive: Blocking encrypted archives.\n");
 	    options |= CL_SCAN_BLOCKENCRYPTED;
-	}
-
-	if(cfgopt(copt, "ArchiveBlockMax")->enabled) {
-	    logg("Archive: Blocking archives that exceed limits.\n");
-	    options |= CL_SCAN_BLOCKMAX;
 	}
 
     } else {

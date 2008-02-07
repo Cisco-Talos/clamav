@@ -220,9 +220,22 @@ int scanmanager(const struct optstruct *opt)
     /* set limits */
     memset(&limits, 0, sizeof(struct cl_limits));
 
-    if(opt_check(opt, "max-space")) {
+    if(opt_check(opt, "max-scansize")) {
 	char *cpy, *ptr;
-	ptr = opt_arg(opt, "max-space");
+	ptr = opt_arg(opt, "max-scansize");
+	if(tolower(ptr[strlen(ptr) - 1]) == 'm') {
+	    cpy = calloc(strlen(ptr), 1);
+	    strncpy(cpy, ptr, strlen(ptr) - 1);
+	    limits.maxfilesize = atoi(cpy) * 1024 * 1024;
+	    free(cpy);
+	} else
+	    limits.maxscansize = atoi(ptr) * 1024;
+    } else
+	limits.maxscansize = 104857600;  /* FIXMELIMITS */
+
+    if(opt_check(opt, "max-filesize")) {
+	char *cpy, *ptr;
+	ptr = opt_arg(opt, "max-filesize");
 	if(tolower(ptr[strlen(ptr) - 1]) == 'm') {
 	    cpy = calloc(strlen(ptr), 1);
 	    strncpy(cpy, ptr, strlen(ptr) - 1);
@@ -231,7 +244,7 @@ int scanmanager(const struct optstruct *opt)
 	} else
 	    limits.maxfilesize = atoi(ptr) * 1024;
     } else
-	limits.maxfilesize = 10485760;
+	limits.maxfilesize = 10485760;  /* FIXMELIMITS */
 
     if(opt_check(opt, "max-files"))
 	limits.maxfiles = atoi(opt_arg(opt, "max-files"));
@@ -412,9 +425,10 @@ static int clamav_unpack(const char *prog, const char **args, const char *tmpdir
     else
 	maxfiles = 0;
 
-    if(opt_check(opt, "max-space")) {
+    /* FIXMELIMITS */
+    if(opt_check(opt, "max-filesize")) {
 	    char *cpy, *ptr;
-	ptr = opt_arg(opt, "max-space");
+	ptr = opt_arg(opt, "max-filesize");
 	if(tolower(ptr[strlen(ptr) - 1]) == 'm') { /* megabytes */
 	    cpy = calloc(strlen(ptr), 1);
 	    strncpy(cpy, ptr, strlen(ptr) - 1);
