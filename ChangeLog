@@ -1,3 +1,11 @@
+Thu Feb  7 22:30:51 EET 2008 (edwin)
+------------------------------------
+  * clamd: (bb #803)
+	* don't ignore SIGBUS, SIGFPE, SIGILL, and SIGSEGV. 
+	  POSIX says the behaviour is undefined if they are ignored.
+	  (on HP-UX behaviour was: hang)
+	* make BIGSTACK the default on HPUX 
+
 Wed Feb  6 21:30:55 CET 2008 (tk)
 ---------------------------------
   * libclamav/regex_list.c: compatibility with new matcher extension

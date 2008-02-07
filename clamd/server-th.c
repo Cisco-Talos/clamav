@@ -95,6 +95,14 @@ static void scanner_thread(void *arg)
 #ifndef	C_WINDOWS
     /* ignore all signals */
     sigfillset(&sigset);
+    /* The behavior of a process is undefined after it ignores a 
+     * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
+    sigdelset(&sigset, SIGFPE);
+    sigdelset(&sigset, SIGILL);
+    sigdelset(&sigset, SIGSEGV);
+#ifdef SIGBUS
+    sigdelset(&sigset, SIGBUS);
+#endif
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
 #endif
 
@@ -279,10 +287,6 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	time_t start_time, current_time;
 	pid_t mainpid;
 	int idletimeout;
-
-#if defined(C_BIGSTACK) || defined(C_BSD)
-        size_t stacksize;
-#endif
 
 #ifdef CLAMUKO
 	pthread_t clamuko_pid;
@@ -481,8 +485,16 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     sigdelset(&sigset, SIGHUP);
     sigdelset(&sigset, SIGPIPE);
     sigdelset(&sigset, SIGUSR2);
+    /* The behavior of a process is undefined after it ignores a 
+     * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
+    sigdelset(&sigset, SIGFPE);
+    sigdelset(&sigset, SIGILL);
+    sigdelset(&sigset, SIGSEGV);
+#ifdef SIGBUS    
+    sigdelset(&sigset, SIGBUS);
+#endif
     sigprocmask(SIG_SETMASK, &sigset, NULL);
- 
+
     /* SIGINT, SIGTERM, SIGSEGV */
     sigact.sa_handler = sighandler_th;
     sigemptyset(&sigact.sa_mask);

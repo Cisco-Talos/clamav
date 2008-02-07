@@ -78,7 +78,14 @@ void *clamukoth(void *arg)
     /* ignore all signals except SIGUSR1 */
     sigfillset(&sigset);
     sigdelset(&sigset, SIGUSR1);
+    /* The behavior of a process is undefined after it ignores a 
+     * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
+    sigdelset(&sigset, SIGFPE);
+    sigdelset(&sigset, SIGILL);
     sigdelset(&sigset, SIGSEGV);
+#ifdef SIGBUS    
+    sigdelset(&sigset, SIGBUS);
+#endif
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
     act.sa_handler = clamuko_exit;
     sigfillset(&(act.sa_mask));
