@@ -311,4 +311,4 @@ int explode(struct xplstate *X) {
   return EXPLODE_EBUFF;
 }
 
-void explode_shutdown() {}
+void explode_shutdown(void) {}

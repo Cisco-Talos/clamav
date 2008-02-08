@@ -1,4 +1,7 @@
 /*
+ *  Copyright (C) 2007 - 2008 Sourcefire, Inc.
+ *  Author: Tomasz Kojm <tkojm@clamav.net>
+ *
  *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -61,6 +64,7 @@
 #include "phish_whitelist.h"
 #include "phish_domaincheck_db.h"
 #include "regex_list.h"
+#include "hashtab.h"
 
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #include <limits.h>
@@ -149,13 +153,13 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	    }
 
 	    if(!strchr(pt, '-')) {
-		if((mindist = maxdist = atoi(pt)) < 0) {
+		if(!cli_isnumber(pt) || (mindist = maxdist = atoi(pt)) < 0) {
 		    error = 1;
 		    break;
 		}
 	    } else {
 		if((n = cli_strtok(pt, 0, "-"))) {
-		    if((mindist = atoi(n)) < 0) {
+		    if(!cli_isnumber(n) || (mindist = atoi(n)) < 0) {
 			error = 1;
 			free(n);
 			break;
@@ -164,12 +168,18 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 		}
 
 		if((n = cli_strtok(pt, 1, "-"))) {
-		    if((maxdist = atoi(n)) < 0) {
+		    if(!cli_isnumber(n) || (maxdist = atoi(n)) < 0) {
 			error = 1;
 			free(n);
 			break;
 		    }
 		    free(n);
+		}
+
+		if((n = cli_strtok(pt, 2, "-"))) { /* strict check */
+		    error = 1;
+		    free(n);
+		    break;
 		}
 	    }
 	}
@@ -288,7 +298,7 @@ int cli_initengine(struct cl_engine **engine, unsigned int options)
 
 	(*engine)->refcount = 1;
 
-	(*engine)->root = cli_calloc(CL_TARGET_TABLE_SIZE, sizeof(struct cli_matcher *));
+	(*engine)->root = cli_calloc(CLI_MTARGETS, sizeof(struct cli_matcher *));
 	if(!(*engine)->root) {
 	    /* no need to free previously allocated memory here */
 	    cli_errmsg("Can't allocate memory for roots!\n");
@@ -315,7 +325,7 @@ static int cli_initroots(struct cl_engine *engine, unsigned int options)
 	struct cli_matcher *root;
 
 
-    for(i = 0; i < CL_TARGET_TABLE_SIZE; i++) {
+    for(i = 0; i < CLI_MTARGETS; i++) {
 	if(!engine->root[i]) {
 	    cli_dbgmsg("Initializing engine->root[%d]\n", i);
 	    root = engine->root[i] = (struct cli_matcher *) cli_calloc(1, sizeof(struct cli_matcher));
@@ -324,10 +334,8 @@ static int cli_initroots(struct cl_engine *engine, unsigned int options)
 		return CL_EMEM;
 	    }
 
-	    if(options & CL_DB_ACONLY) {
-		cli_dbgmsg("cli_initroots: Only using AC pattern matcher.\n");
+	    if(cli_mtargets[i].ac_only || (options & CL_DB_ACONLY))
 		root->ac_only = 1;
-	    }
 
 	    cli_dbgmsg("Initialising AC pattern matcher of root[%d]\n", i);
 	    if((ret = cli_ac_init(root, cli_ac_mindepth, cli_ac_maxdepth))) {
@@ -406,7 +414,6 @@ static int cli_loaddb(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 	if(*pt == '=') continue;
 
 	if((ret = cli_parse_add(root, start, pt, 0, NULL, 0))) {
-	    cli_errmsg("Problem parsing signature at line %d\n", line);
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -565,7 +572,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	}
 	target = (unsigned short) atoi(pt);
 
-	if(target >= CL_TARGET_TABLE_SIZE) {
+	if(target >= CLI_MTARGETS) {
 	    cli_dbgmsg("Not supported target type in signature for %s\n", virname);
 	    sigs--;
 	    continue;
@@ -586,7 +593,6 @@ static int cli_loadndb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	}
 
 	if((ret = cli_parse_add(root, virname, sig, 0, offset, target))) {
-	    cli_errmsg("Problem parsing signature at line %d\n", line);
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -755,11 +761,10 @@ static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 {
 	char buffer[FILEBUFF], *pt;
 	int ret = CL_SUCCESS;
-	unsigned int size_field = 1, md5_field = 0, found, line = 0, i;
+	unsigned int size_field = 1, md5_field = 0, line = 0;
 	uint32_t size;
 	struct cli_bm_patt *new;
 	struct cli_matcher *db = NULL;
-
 
     if((ret = cli_initengine(engine, options))) {
 	cl_free(*engine);
@@ -832,23 +837,10 @@ static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	}
 
 	if(mode == MD5_MDB) { /* section MD5 */
-	    found = 0;
-	    for(i = 0; i < db->soff_len; i++) {
-		if(db->soff[i] == size) {
-		    found = 1;
-		    break;
-		}
+	    if(!db->md5_sizes_hs.capacity) {
+		    hashset_init(&db->md5_sizes_hs, 32768, 80);
 	    }
-	    if(!found) {
-		db->soff_len++;
-		db->soff = (uint32_t *) cli_realloc2(db->soff, db->soff_len * sizeof(uint32_t));
-		if(!db->soff) {
-		    cli_errmsg("cli_loadmd5: Can't realloc db->soff\n");
-		    ret = CL_EMEM;
-		    break;
-		}
-		db->soff[db->soff_len - 1] = size;
-	    }
+	    hashset_addkey(&db->md5_sizes_hs, size);
 	}
     }
 
@@ -867,16 +859,13 @@ static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo,
     if(signo)
 	*signo += line;
 
-    if(db && mode == MD5_MDB)
-	qsort(db->soff, db->soff_len, sizeof(uint32_t), scomp);
-
     return CL_SUCCESS;
 }
 
 static int cli_loadmd(FILE *fs, struct cl_engine **engine, unsigned int *signo, int type, unsigned int options, gzFile *gzs, unsigned int gzrsize)
 {
 	char buffer[FILEBUFF], *pt;
-	int line = 0, comments = 0, ret = 0, crc32;
+	int line = 0, comments = 0, ret = 0, crc;
 	struct cli_meta_node *new;
 
 
@@ -966,12 +955,12 @@ static int cli_loadmd(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 	    if(!strcmp(pt, "*")) {
 		new->crc32 = 0;
 	    } else {
-		crc32 = cli_hex2num(pt);
-		if(crc32 == -1) {
+		crc = cli_hex2num(pt);
+		if(crc == -1) {
 		    ret = CL_EMALFDB;
 		    break;
 		}
-		new->crc32 = (unsigned int) crc32;
+		new->crc32 = (unsigned int) crc;
 	    }
 	    free(pt);
 	}
@@ -1505,7 +1494,7 @@ void cl_free(struct cl_engine *engine)
 #endif
 
     if(engine->root) {
-	for(i = 0; i < CL_TARGET_TABLE_SIZE; i++) {
+	for(i = 0; i < CLI_MTARGETS; i++) {
 	    if((root = engine->root[i])) {
 		if(!root->ac_only)
 		    cli_bm_free(root);
@@ -1524,6 +1513,9 @@ void cl_free(struct cl_engine *engine)
     if((root = engine->md5_mdb)) {
 	cli_bm_free(root);
 	free(root->soff);
+	if(root->md5_sizes_hs.capacity) {
+		hashset_destroy(&root->md5_sizes_hs);
+	}
 	free(root);
     }
 
@@ -1562,6 +1554,18 @@ void cl_free(struct cl_engine *engine)
     free(engine);
 }
 
+static void cli_md5db_build(struct cli_matcher* root)
+{
+	if(root && root->md5_sizes_hs.capacity) {
+		/* TODO: use hashset directly, instead of the array when matching*/
+		cli_dbgmsg("Converting hashset to array: %lu entries\n", root->md5_sizes_hs.count);
+		root->soff_len = hashset_toarray(&root->md5_sizes_hs, &root->soff);
+		hashset_destroy(&root->md5_sizes_hs);
+		qsort(root->soff, root->soff_len, sizeof(uint32_t), scomp);
+	}
+}
+
+
 int cl_build(struct cl_engine *engine)
 {
 	unsigned int i;
@@ -1576,10 +1580,15 @@ int cl_build(struct cl_engine *engine)
 	if((ret = cli_loadft(NULL, &engine, 0, 1, NULL, 0)))
 	    return ret;
 
-    for(i = 0; i < CL_TARGET_TABLE_SIZE; i++)
-	if((root = engine->root[i]))
-	    cli_ac_buildtrie(root);
-    /* FIXME: check return values of cli_ac_buildtree */
+    for(i = 0; i < CLI_MTARGETS; i++) {
+	if((root = engine->root[i])) {
+	    if((ret = cli_ac_buildtrie(root)))
+		return ret;
+	    cli_dbgmsg("matcher[%u]: %s: AC sigs: %u BM sigs: %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->bm_patterns, root->ac_only ? "(ac_only mode)" : "");
+	}
+    }
+
+    cli_md5db_build(engine->md5_mdb);
 
     cli_dconf_print(engine->dconf);
 

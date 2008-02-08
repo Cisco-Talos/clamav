@@ -28,7 +28,7 @@
 #include "clamav.h"
 #include "cltypes.h"
 
-#define MAGIC_BUFFER_SIZE 256
+#define MAGIC_BUFFER_SIZE 512
 #define CL_TYPENO 500
 #define MAX_EMBEDDED_OBJ 10
 
@@ -63,6 +63,7 @@ typedef enum {
     CL_TYPE_CRYPTFF,
     CL_TYPE_PDF,
     CL_TYPE_UUENCODED,
+    CL_TYPE_SCRIPT,
     CL_TYPE_HTML_UTF16,
     CL_TYPE_RTF,
 

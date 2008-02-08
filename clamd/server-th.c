@@ -50,6 +50,7 @@
 #include "clamuko.h"
 #include "others.h"
 #include "shared.h"
+#include "libclamav/others.h"
 
 #ifndef	C_WINDOWS
 #define	closesocket(s)	close(s)
@@ -94,6 +95,14 @@ static void scanner_thread(void *arg)
 #ifndef	C_WINDOWS
     /* ignore all signals */
     sigfillset(&sigset);
+    /* The behavior of a process is undefined after it ignores a 
+     * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
+    sigdelset(&sigset, SIGFPE);
+    sigdelset(&sigset, SIGILL);
+    sigdelset(&sigset, SIGSEGV);
+#ifdef SIGBUS
+    sigdelset(&sigset, SIGBUS);
+#endif
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
 #endif
 
@@ -260,6 +269,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	int max_threads, i, ret = 0;
 	unsigned int options = 0;
 	threadpool_t *thr_pool;
+	char timestr[32];
 #ifndef	C_WINDOWS
 	struct sigaction sigact;
 #endif
@@ -277,10 +287,6 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	time_t start_time, current_time;
 	pid_t mainpid;
 	int idletimeout;
-
-#if defined(C_BIGSTACK) || defined(C_BSD)
-        size_t stacksize;
-#endif
 
 #ifdef CLAMUKO
 	pthread_t clamuko_pid;
@@ -466,8 +472,16 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     sigdelset(&sigset, SIGHUP);
     sigdelset(&sigset, SIGPIPE);
     sigdelset(&sigset, SIGUSR2);
+    /* The behavior of a process is undefined after it ignores a 
+     * SIGFPE, SIGILL, SIGSEGV, or SIGBUS signal */
+    sigdelset(&sigset, SIGFPE);
+    sigdelset(&sigset, SIGILL);
+    sigdelset(&sigset, SIGSEGV);
+#ifdef SIGBUS    
+    sigdelset(&sigset, SIGBUS);
+#endif
     sigprocmask(SIG_SETMASK, &sigset, NULL);
- 
+
     /* SIGINT, SIGTERM, SIGSEGV */
     sigact.sa_handler = sighandler_th;
     sigemptyset(&sigact.sa_mask);
@@ -651,7 +665,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     }
 
     time(&current_time);
-    logg("--- Stopped at %s", ctime(&current_time));
+    logg("--- Stopped at %s", cli_ctime(&current_time, timestr, sizeof(timestr)));
 
     return ret;
 }

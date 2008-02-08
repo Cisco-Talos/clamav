@@ -1,15 +1,14 @@
 %% LyX 1.5.3 created this file.  For more info, see http://www.lyx.org/.
 %% Do not edit unless you really know what you are doing.
-\documentclass[a4paper,english]{article}
-\usepackage{mathptmx}
-\usepackage[T1]{fontenc}
-\usepackage{varioref}
-\usepackage{prettyref}
+\documentclass[a4paper,english,10pt]{article}
 \usepackage{amssymb}
 \usepackage{pslatex}
+\usepackage[T1]{fontenc}
 \usepackage[dvips]{graphicx}
-\usepackage{wrapfig}
 \usepackage{url}
+\usepackage{fancyhdr}
+\usepackage{varioref}
+\usepackage{prettyref}
 \date{}
 
 \begin{document}
@@ -17,6 +16,8 @@
 \title{{\huge Phishing signatures creation HOWTO}}
 \author{T\"or\"ok Edwin}
 \maketitle
+
+%TODO: define a LaTeX command, instead of using \textsc{RealURL} each time
 
 \section{Database file format}
 
@@ -42,9 +43,9 @@ H[Filter]:DisplayedHostname[:FuncLevelSpec]
  		\item for details on how to construct a flag number see section \prettyref{sec:Flags}
 	\end{itemize}
 
- \item [{RealURL }] is the URL the user is sent to
- \item [{DisplayedURL}] is the URL description displayed to the user, that is where it is \emph{claimed} they are sent, the most obvious example is that of an html anchor (<a>tag): its href attribute is the \textsc{realURL}, and its contents is the \textsc{displayedURL}
- \item [{DisplayedHostname}] is the hostname portion of the [{DisplayedURL}]
+ \item [{\textsc{RealURL}}] is the URL the user is sent to, example: \emph{href} attribute of an html anchor (\emph{<a> tag})
+ \item [{\textsc{DisplayedURL}}] is the URL description displayed to the user, where its \emph{claimed} they are sent, example: contents of an html anchor (\emph{<a> tag})
+ \item [{DisplayedHostname}] is the hostname portion of the \textsc{DisplayedURL}
  \item [{FuncLevelSpec}] an (optional) functionality level, 2 formats are possible:
 	\begin{itemize}
  		\item \verb+minlevel+ all engines having functionality level >= \verb+minlevel+ will load this line
@@ -61,13 +62,13 @@ M:RealHostname:DisplayedHostname[:FuncLevelSpec]
 \end{verbatim}
 
 \begin{description}
- \item [{X}] regular expression, for the \textsc{entire URL}, not just the hostname
+ \item [{X}] regular expression, for the \emph{entire URL}, not just the hostname
  \begin{itemize}
   \item The regular expression is by default anchored to start-of-line and end-of-line, as if you have used \verb+^RegularExpression$+
   \item A trailing \verb+/+ is automatically added both to the regex, and the input string to avoid false matches
-  \item The regular expression matches the \textsc{concatenation} of RealURL, a colon(\verb+:+), and DisplayedURL as a single string. It doesn't separately match RealURL and DisplayedURL!
+  \item The regular expression matches the \emph{concatenation} of the \textsc{RealURL}, a colon(\verb+:+), and the \textsc{DisplayedURL} as a single string. It doesn't separately match \textsc{RealURL} and \textsc{DisplayedURL}!
  \end{itemize}
- \item [{M}] matches hostname, or subdomain of it, see notes for \textsc{H} above
+ \item [{M}] matches hostname, or subdomain of it, see notes for {H} above
 \end{description}
 
 \subsection{Hints}
@@ -80,62 +81,166 @@ M:RealHostname:DisplayedHostname[:FuncLevelSpec]
  \item see section \vref{sub:Extraction-of-realURL,} for more details on \textsc{realURL/displayedURL}
 \end{itemize}
 
-%TODO: give up-to-date examples
 
-\subsubsection{Example}
+\subsection{Examples of PDB signatures}
+To check for phishing mails that target amazon.com, or subdomains of amazon.com:
+\begin{verbatim}
+H:amazon.com
+\end{verbatim}
 
-The following line:
+To do the same, but for amazon.co.uk:
+\begin{verbatim}
+H:amazon.co.uk 
+\end{verbatim}
 
-\emph{R http://www\textbackslash{}.google\textbackslash{}.(com|ro|it)
-www\textbackslash{}.google\textbackslash{}.com}
+To limit the signatures to certain engine versions:
+\begin{verbatim}
+H:amazon.co.uk:20-30
+H:amazon.co.uk:20-
+H:amazon.co.uk:0-20 
+\end{verbatim}
+First line: engine versions 20, 21, ..., 29 can load it 
 
-Means: \emph{\textsc{R}}\textsc{ }- this is a regex. 
+Second line: engine versions >= 20 can load it
 
-Example of url pairs matching: http://www.google.com www.google.com,
-http://www.google.it www.google.com.
+Third line: engine versions < 20 can load it
 
-Example of url pairs not matching: http://www.google.c0m www.google.com
+In a real situation, you'd probably use the second form. A situation like that would be if you are using a feature of the signatures
+not available in earlier versions, or if earlier versions have bugs with your signature. Its neither case here, the above examples
+are for illustrative purposes only.
+
+\subsection{Examples of WDB signatures}
+To allow amazon's country specific domains and amazon.com, to mix domain names in \textsc{DisplayedURL}, and \textsc{RealURL}:
+\begin{verbatim}
+X:.+\.amazon\.(at|ca|co\.uk|co\.jp|de|fr)([/?].*)?:.+\.amazon\.com([/?].*)?:17-
+\end{verbatim}
+Explanation of this signature:
+\begin{description}
+ \item [{X:}] this is a regular expression
+ \item [{:17-}] load signature only for engines with functionality level >= 17 (recommended for type X)
+\end{description}
+
+The regular expression is the following (X:, :17- stripped, and a / appended)
+\begin{verbatim}
+.+\.amazon\.(at|ca|co\.uk|co\.jp|de|fr)([/?].*)?:.+\.amazon\.com([/?].*)?/ 
+\end{verbatim}
+
+Explanation of this regular expression (note that it is a single regular expression, and not 2 regular
+expressions splitted at the {:}).
+\begin{itemize}
+ \item \verb;.+; any subdomain of
+ \item \verb;\.amazon\.; domain we are whitelisting (\textsc{RealURL} part)
+ \item \verb;(at|ca|co\.uk|co\.jp|de|fr); country-domains: at, ca, co.uk, co.jp, de, fr
+ \item \verb;([/?].*)?; recomended way to end real url part of whitelist, this protects against embedded URLs (evilurl.example.com/amazon.co.uk/)
+ \item \verb;:; \textsc{RealURL} and \textsc{DisplayedURL} are concatenated via a {:}, so match a literal {:} here
+ \item \verb;.+; any subdomain of
+ \item \verb;\.amazon\.com; whitelisted DisplayedURL
+ \item \verb;([/?].*)?; recommended way to end displayed url part, to protect against embedded URLs
+ \item \verb;/; automatically added to further protect against embedded URLs
+\end{itemize}
+
+When you whitelist an entry make sure you check that both domains are owned by the same entity.
+What this whitelist entry allows is:
+Links claiming to point to amazon.com (\textsc{DisplayedURL}), but really go to country-specific domain of amazon (\textsc{RealURL}).
+
+\subsection{Example for how the URL extractor works}
+Consider the following HTML file:
+\begin{verbatim}
+<html>
+<a href="http://1.realurl.example.com/">
+  1.displayedurl.example.com
+</a>
+<a href="http://2.realurl.example.com">
+  2 d<b>i<p>splayedurl.e</b>xa<i>mple.com
+</a>
+<a href="http://3.realurl.example.com">	
+  3.nested.example.com
+  <a href="http://4.realurl.example.com">
+    4.displayedurl.example.com
+  </a>
+</a>
+<form action="http://5.realurl.example.com">
+  sometext
+  <img src="http://5.displayedurl.example.com/img0.gif"/>
+  <a href="http://5.form.nested.displayedurl.example.com">
+    5.form.nested.link-displayedurl.example.com
+  </a>
+</form>
+<a href="http://6.realurl.example.com">
+  6.displ
+  <img src="6.displayedurl.example.com/img1.gif"/>
+  ayedurl.example.com
+</a>
+<a href="http://7.realurl.example.com">
+  <iframe src="http://7.displayedurl.example.com">
+</a>
+\end{verbatim}
+
+The phishing engine extract the following \textsc{RealURL/DisplayedURL} pairs from it:
+\begin{verbatim}
+http://1.realurl.example.com/
+1.displayedurl.example.com
+
+http://2.realurl.example.com
+2displayedurl.example.com
+
+http://3.realurl.example.com
+3.nested.example.com
+
+http://4.realurl.example.com
+4.displayedurl.example.com
+
+http://5.realurl.example.com
+http://5.displayedurl.example.com/img0.gif
+
+http://5.realurl.example.com
+http://5.form.nested.displayedurl.example.com
+
+http://5.form.nested.displayedurl.example.com
+5.form.nested.link-displayedurl.example.com
+
+http://6.realurl.example.com
+6.displayedurl.example.com
+
+http://6.realurl.example.com
+6.displayedurl.example.com/img1.gif
+\end{verbatim}
 
 
 \subsection{How matching works}
 
-
 \subsubsection{RealURL, displayedURL concatenation\label{sub:RealURL,-displayedURL-concatenation}}
 
-The phishing detection module processes pairs of realURL/displayedURL,
-and the matching against daily.wdb/daily.pdb is done as follows: the
-realURL is concatenated with a space, and with the displayedURL, then
-that \emph{line} is matched against the lines in daily.wdb/daily.pdb
+The phishing detection module processes pairs of \textsc{RealURL/DisplayedURL}.
+Matching against daily.wdb is done as follows: the \textsc{realURL} is concatenated with a \verb+:+, and with the \textsc{DisplayedURL}, then that \emph{line} is matched against the lines in daily.wdb/daily.pdb
 
-So if you have a line like
+So if you have this line in daily.wdb:
+\begin{verbatim}
+M:www.google.ro:www.google.com
+\end{verbatim}
 
-\textit{~www.google.ro~www.google.com}
-
-and a href like: \emph{<a href=''http://www.google.ro''>www.google.com</a>,}
-then it will match, but: \emph{<a href=''http://images.google.com''>www.google.com</a>}
-will not match.
-
-If you use the \textbf{\textsc{H}} flag, then the 2nd href will match
-too.
-
+and this href: \verb+<a href='http://www.google.ro'>www.google.com</a>+
+then it will be whitelisted, but: \verb+<a href='http://images.google.com'>www.google.com</a>+
+will not.
 
 \subsubsection{What happens when a match is found}
 
-In the case of the whitelist, a match means that the realURL/displayedURL
+In the case of the whitelist, a match means that the \textsc{RealURL/DisplayedURL}
 combination is considered \textsc{clean}, and no further checks are
 performed on it.
 
-In the case of the domainlist, a match means that the realURL/displayedURL
-is going to be checked for phishing attempts. This is only done if
-you don't run clamav with the \emph{alldomains} option (since then
-all urls are checked). Furthermore you can restrict what checks are
-to be performed by specifying the 3-digit hexnumber.
+In the case of the domainlist, a match means that the \textsc{RealURL/displayedURL}
+is going to be checked for phishing attempts. 
 
+Furthermore you can restrict what checks are to be performed by specifying the 3-digit hexnumber.
 
 \subsubsection{Extraction of \textsc{realURL}, \textsc{displayedURL} from HTML tags\label{sub:Extraction-of-realURL,}}
 
 The html parser extracts pairs of \textsc{realURL}/\textsc{displayedURL}
-based on the following rules:
+based on the following rules.
+
+In version 0.93: After URLs have been extracted, they are normalized, and cut after the hostname.
+\verb+http://test.example.com/path/somecgi?queryparameters+ becomes \verb+http://test.example.com/+
 
 \begin{description}
 \item [{a}] (anchor) the \emph{href} is the \textsc{realURL}, its \emph{contents}
@@ -159,7 +264,7 @@ if nested withing a \emph{form} tag, then the action attribute of
 the \emph{form} tag is the \textsc{realURL} 
 
 \item [{iframe}] if nested withing an \emph{<a>} tag the \emph{src} attribute
-is the displayedURL, and the \emph{href} of its parent \emph{a} tag
+is the \textsc{displayedURL}, and the \emph{href} of its parent \emph{a} tag
 is the \textsc{realURL}
 
 
@@ -237,7 +342,7 @@ Currently the clamav regex matcher supports:
 
 \begin{itemize}
 \item . (dot) character
-\item \textbackslash{} (escaping special characters)
+\item $\backslash$ (escaping special characters)
 \item | (pipe) alternatives
 \item {[}] (character classes)
 \item () (paranthesis for grouping, but no group extraction is performed)
@@ -260,7 +365,7 @@ from the first unsupported token, everything before that is still
 processed by the internal matcher). An example might make this more
 clear:
 
-\emph{www\textbackslash{}.google\textbackslash{}.(com|ro|it) ({[}a-zA-Z])+\textbackslash{}.google\textbackslash{}.(com|ro|it)}
+\emph{www$\backslash$.google$\backslash$.(com|ro|it) ({[}a-zA-Z])+$\backslash$.google$\backslash$.(com|ro|it)}
 
 Everything till \emph{({[}a-zA-Z])+} is processed internally, that
 paranthesis (and everything beyond) is processed by the posix core.
@@ -300,7 +405,9 @@ These constants are defined in libclamav/phishcheck.h, you can check
 there for the latest flags.
 
 There is a default set of flags that are enabled, these are currently:
-(CLEANUP\_URL|DOMAIN\_SUFFICIENT|CHECK\_SSL|CHECK\_CLOAKING|DOMAINLIST\_REQUIRED|CHECK\_IMG\_URL),
+\begin{verbatim}
+(CLEANUP\_URL|CHECK\_SSL|CHECK\_CLOAKING|CHECK\_IMG\_URL)
+\end{verbatim}
 ssl checking is performed only for a tags currently.
 
 You must decide for each line in the domainlist if you want to filter
@@ -331,7 +438,7 @@ Recomended reading:
 \begin{description}
 \item [{{[}}] the opening square bracket - it marks the beginning of a
 character class, see section\vref{sub:Character-classes}
-\item [{\textbackslash{}}] the backslash - escapes special characters,
+\item [{$\backslash$}] the backslash - escapes special characters,
 see section \vref{sub:Escaping}
 \item [{\^{ }}] the caret - matches the beginning of a line (not needed
 in clamav regexes, this is implied)
@@ -360,9 +467,9 @@ Escaping has two purposes:
 
 \begin{itemize}
 \item it allows you to actually match the special characters themselves,
-for example to match the literal \emph{+}, you would write \emph{\textbackslash{}+}
+for example to match the literal \emph{+}, you would write \emph{$\backslash$+}
 \item it also allows you to match non-printable characters, such as the
-tab (\emph{\textbackslash{}t}), newline (\emph{\textbackslash{}n}),
+tab (\emph{$\backslash$t}), newline (\emph{$\backslash$n}),
 ..
 \end{itemize}
 However since non-printable characters are not valid inside an url,
@@ -401,14 +508,16 @@ not, you have 2 choices:
 Lets assume you are having problems because of links like this in
 a mail:
 
-\begin{quote}
-<a href=''http://69.0.241.57/bCentral/L.asp?L=XXXXXXXX''>http://www.bcentral.it/</a>
-\end{quote}
+\begin{verbatim}
+<a href=''http://69.0.241.57/bCentral/L.asp?L=XXXXXXXX''>
+  http://www.bcentral.it/
+</a>
+\end{verbatim}
 After investigating those sites further, you decide they are no threat,
 and create a line like this in daily.wdb:
 
 \begin{quote}
-R http://www\textbackslash{}.bcentral\textbackslash{}.it/.+ http://69\textbackslash{}.0\textbackslash{}.241\textbackslash{}.57/bCentral/L\textbackslash{}.asp?L=.+ 
+R http://www$\backslash$.bcentral$\backslash$.it/.+ http://69$\backslash$.0$\backslash$.241$\backslash$.57/bCentral/L$\backslash$.asp?L=.+ 
 \end{quote}
 Note: urls like the above can be used to track unique mail recipients,
 and thus know if somebody actually reads mails (so they can send more
@@ -429,7 +538,7 @@ Lets assume that you've recently seen many phishing attempts claiming
 they come from Paypal. Thus you need to add paypal to daily.pdb:
 
 \begin{quote}
-R .+ .+\textbackslash{}.paypal\textbackslash{}.com
+R .+ .+$\backslash$.paypal$\backslash$.com
 \end{quote}
 The above line will block (detect as phishing) mails that contain
 urls that claim to lead to paypal, but they don't in fact.
@@ -480,12 +589,6 @@ If the mail is not detected, then try using:
 
 Then see what urls are being checked, see if any of them is in a
 whitelist, see if all urls are detected, etc.
-
-
-\section{Hints and recomandations}
-
-
-\section{Examples}
 
 
 \end{document}

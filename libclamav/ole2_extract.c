@@ -467,12 +467,12 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 				unsigned int rec_level, unsigned int *file_count, const struct cl_limits *limits)
 {
 	property_t prop_block[4];
-	int32_t index, current_block, i;
+	int32_t idx, current_block, i;
 	char *dirname;
 
 	current_block = hdr->prop_start;
 
-	if ((prop_index < 0) || (prop_index > hdr->max_block_no) || (rec_level > 100) || (*file_count > 100000)) {
+	if ((prop_index < 0) || (prop_index > (int32_t) hdr->max_block_no) || (rec_level > 100) || (*file_count > 100000)) {
 		return;
 	}
 	/* FIXMELIMITS */
@@ -486,34 +486,34 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 		return;
 	}
 
-	index = prop_index / 4;
-	for (i=0 ; i < index ; i++) {
+	idx = prop_index / 4;
+	for (i=0 ; i < idx ; i++) {
 		current_block = ole2_get_next_block_number(fd, hdr, current_block);
 		if (current_block < 0) {
 			return;
 		}
 	}
-	index = prop_index % 4;
+	idx = prop_index % 4;
 	if (!ole2_read_block(fd, hdr, prop_block,
 			current_block)) {
 		return;
 	}	
-	if (prop_block[index].type <= 0) {
+	if (prop_block[idx].type <= 0) {
 		return;
 	}
-	prop_block[index].name_size = ole2_endian_convert_16(prop_block[index].name_size);
-	prop_block[index].prev = ole2_endian_convert_32(prop_block[index].prev);
-	prop_block[index].next = ole2_endian_convert_32(prop_block[index].next);
-	prop_block[index].child = ole2_endian_convert_32(prop_block[index].child);
-	prop_block[index].user_flags = ole2_endian_convert_32(prop_block[index].user_flags);
-	prop_block[index].create_lowdate = ole2_endian_convert_32(prop_block[index].create_lowdate);
-	prop_block[index].create_highdate = ole2_endian_convert_32(prop_block[index].create_highdate);
-	prop_block[index].mod_lowdate = ole2_endian_convert_32(prop_block[index].mod_lowdate);
-	prop_block[index].mod_highdate = ole2_endian_convert_32(prop_block[index].mod_highdate);
-	prop_block[index].start_block = ole2_endian_convert_32(prop_block[index].start_block);
-	prop_block[index].size = ole2_endian_convert_32(prop_block[index].size);
+	prop_block[idx].name_size = ole2_endian_convert_16(prop_block[idx].name_size);
+	prop_block[idx].prev = ole2_endian_convert_32(prop_block[idx].prev);
+	prop_block[idx].next = ole2_endian_convert_32(prop_block[idx].next);
+	prop_block[idx].child = ole2_endian_convert_32(prop_block[idx].child);
+	prop_block[idx].user_flags = ole2_endian_convert_32(prop_block[idx].user_flags);
+	prop_block[idx].create_lowdate = ole2_endian_convert_32(prop_block[idx].create_lowdate);
+	prop_block[idx].create_highdate = ole2_endian_convert_32(prop_block[idx].create_highdate);
+	prop_block[idx].mod_lowdate = ole2_endian_convert_32(prop_block[idx].mod_lowdate);
+	prop_block[idx].mod_highdate = ole2_endian_convert_32(prop_block[idx].mod_highdate);
+	prop_block[idx].start_block = ole2_endian_convert_32(prop_block[idx].start_block);
+	prop_block[idx].size = ole2_endian_convert_32(prop_block[idx].size);
 	
-	print_ole2_property(&prop_block[index]);
+	print_ole2_property(&prop_block[idx]);
 
 	/* Check we aren't in a loop */
 	if (cli_bitset_test(hdr->bitset, (unsigned long) prop_index)) {
@@ -525,7 +525,7 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 		return;
 	}
 
-	switch (prop_block[index].type) {
+	switch (prop_block[idx].type) {
 		case 5: /* Root Entry */
 			if ((prop_index != 0) || (rec_level !=0) ||
 					(*file_count != 0)) {
@@ -533,17 +533,17 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 				cli_dbgmsg("ERROR: illegal Root Entry\n");
 				return;
 			}
-			hdr->sbat_root_start = prop_block[index].start_block;
+			hdr->sbat_root_start = prop_block[idx].start_block;
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[index].prev, handler, rec_level+1, file_count, limits);
+				prop_block[idx].prev, handler, rec_level+1, file_count, limits);
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[index].next, handler, rec_level+1, file_count, limits);
+				prop_block[idx].next, handler, rec_level+1, file_count, limits);
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[index].child, handler, rec_level+1, file_count, limits);
+				prop_block[idx].child, handler, rec_level+1, file_count, limits);
 			break;
 		case 2: /* File */
 			(*file_count)++;
-			if (!handler(fd, hdr, &prop_block[index], dir)) {
+			if (!handler(fd, hdr, &prop_block[idx], dir)) {
 				cli_dbgmsg("ERROR: handler failed\n");
 				/* If we don't return on this error then
 					we can sometimes pull VBA code
@@ -552,11 +552,11 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 			
 			}
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[index].prev, handler, rec_level, file_count, limits);
+				prop_block[idx].prev, handler, rec_level, file_count, limits);
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[index].next, handler, rec_level, file_count, limits);
+				prop_block[idx].next, handler, rec_level, file_count, limits);
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[index].child, handler, rec_level, file_count, limits);
+				prop_block[idx].child, handler, rec_level, file_count, limits);
 			break;
 		case 1: /* Directory */
 			dirname = (char *) cli_malloc(strlen(dir)+8);
@@ -570,15 +570,15 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 			}
 			cli_dbgmsg("OLE2 dir entry: %s\n",dirname);
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[index].prev, handler, rec_level+1, file_count, limits);
+				prop_block[idx].prev, handler, rec_level+1, file_count, limits);
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[index].next, handler, rec_level+1, file_count, limits);
+				prop_block[idx].next, handler, rec_level+1, file_count, limits);
 			ole2_walk_property_tree(fd, hdr, dirname,
-				prop_block[index].child, handler, rec_level+1, file_count, limits);
+				prop_block[idx].child, handler, rec_level+1, file_count, limits);
 			free(dirname);
 			break;
 		default:
-			cli_dbgmsg("ERROR: unknown OLE2 entry type: %d\n", prop_block[index].type);
+			cli_dbgmsg("ERROR: unknown OLE2 entry type: %d\n", prop_block[idx].type);
 			break;
 	}
 	return;
@@ -648,7 +648,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 		return FALSE;
 	}
 	while((current_block >= 0) && (len > 0)) {
-		if (current_block > hdr->max_block_no) {
+		if (current_block > (int32_t) hdr->max_block_no) {
                         cli_dbgmsg("OLE2: Max block number for file size exceeded: %d\n", current_block);
                         close(ofd);
                         free(buff);
@@ -870,7 +870,7 @@ int cli_ole2_extract(int fd, const char *dirname, const struct cl_limits *limits
 	hdr.max_block_no = ((statbuf.st_size / hdr.log2_big_block_size) + 1) * 8;
 	
 	print_ole2_header(&hdr);
-	cli_dbgmsg("Max block number: %lu\n", hdr.max_block_no);
+	cli_dbgmsg("Max block number: %lu\n", (unsigned long int) hdr.max_block_no);
 
 	/* NOTE: Select only ONE of the following two methods */
 	

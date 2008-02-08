@@ -22,7 +22,7 @@ typedef struct {
 } cli_md5_ctx;
 
 extern void cli_md5_init(cli_md5_ctx *ctx);
-extern void cli_md5_update(cli_md5_ctx *ctx, void *data, unsigned long size);
+extern void cli_md5_update(cli_md5_ctx *ctx, const void *data, unsigned long size);
 extern void cli_md5_final(unsigned char *result, cli_md5_ctx *ctx);
 
 #endif

@@ -127,67 +127,7 @@ const char* entity_norm(struct entity_conv* conv,const unsigned char* entity)
 	return NULL;
 }
 
-/* sane default, must be larger, than the longest possible return string,
- * which is
- * &#xxx;*/
-#define MIN_BUFFER_SIZE 32
-
-#define LINEMODE_LIMIT 16384
-
-int init_entity_converter(struct entity_conv* conv, size_t buffer_size)
-{
-	if(buffer_size < MIN_BUFFER_SIZE) {
-		cli_warnmsg("Entity converter: Supplied buffer size:%lu, smaller than minimum required: %d\n",(unsigned long)buffer_size,MIN_BUFFER_SIZE);
-		return CL_ENULLARG;
-	}
-	if(conv) {
-		conv->encoding = NULL;
-		conv->encoding_symbolic = E_UNKNOWN;
-		conv->bom_cnt = 0;
-		conv->buffer_size = buffer_size;
-		conv->priority = NOPRIO;
-		/* start in linemode */
-		conv->linemode = 1;
-		conv->linemode_processed = 0;
-
-		conv->tmp_area.offset = 0;
-		conv->tmp_area.length = 0;
-		conv->tmp_area.buffer  =  cli_malloc(buffer_size);
-		if(!conv->tmp_area.buffer) {
-			return CL_EMEM;
-		}
-
-		conv->out_area.offset = 0;
-		conv->out_area.length = buffer_size;
-		conv->out_area.buffer = cli_malloc(buffer_size);
-		if(!conv->out_area.buffer) {
-			free(conv->tmp_area.buffer);
-			return CL_EMEM;
-		}
-
-		conv->buffer_size = buffer_size;
-		conv->norm_area.offset = 0;
-		conv->norm_area.length = 0;
-		conv->norm_area.buffer = cli_malloc(buffer_size);
-		if(!conv->norm_area.buffer) {
-			free(conv->tmp_area.buffer);
-			free(conv->out_area.buffer);
-			return CL_EMEM;
-		}
-
-		conv->iconv_struct = cli_calloc(1, sizeof(iconv_t));
-		if(!conv->iconv_struct) {
-			free(conv->tmp_area.buffer);
-			free(conv->out_area.buffer);
-			free(conv->norm_area.buffer);
-			return CL_EMEM;
-		}
-		return 0;
-	}
-	else 
-		return CL_ENULLARG;
-}
-
+#ifndef HAVE_ICONV
 static size_t encoding_bytes(const char* fromcode, enum encodings* encoding)
 {
 	/* special case for these unusual byteorders */
@@ -217,7 +157,6 @@ static size_t encoding_bytes(const char* fromcode, enum encodings* encoding)
 	}
 }
 
-#ifndef HAVE_ICONV
 static iconv_t iconv_open(const char *tocode, const char* fromcode)
 {
 	iconv_t iconv = cli_malloc(sizeof(*iconv));
@@ -235,7 +174,6 @@ static int iconv_close(iconv_t cd)
 		free(cd);
 	return 0;
 }
-
 
 static int iconv(iconv_t iconv_struct,char **inbuf, size_t *inbytesleft,
 		char** outbuf, size_t *outbytesleft)
@@ -426,14 +364,11 @@ static int iconv(iconv_t iconv_struct,char **inbuf, size_t *inbytesleft,
 
 #endif
 
-/* new iconv() version */
-static inline void process_bom(struct entity_conv* conv)
+static inline const char* detect_encoding(const unsigned char* bom, uint8_t* bom_found, uint8_t* enc_width)
 {
-	const unsigned char* bom = conv->bom;
 	const char* encoding = NULL;
 	int has_bom = 0;
-	uint8_t enc_bytes = 1;/* default is UTF8, which has a minimum of 1 bytes*/
-
+	uint8_t enc_bytes = 1; /* default is UTF8, which has a minimum of 1 bytes */
 	/* undecided 32-bit encodings are treated as ucs4, and
 	 * 16 bit as utf16*/
 	switch(bom[0]) {
@@ -442,23 +377,28 @@ static inline void process_bom(struct entity_conv* conv)
 				if(bom[2] == 0xFE && bom[3] == 0xFF) {
 					encoding = UCS4_1234;/* UCS-4 big-endian*/
 					has_bom = 1;
+					enc_bytes = 4;
 				}
 				else if(bom[2] == 0xFF && bom[3] == 0xFE) {
 					encoding = UCS4_2143;/* UCS-4 unusual order 2143 */
 					has_bom = 1;
+					enc_bytes = 4;
 				}
 				else if(bom[2] == 0x00 && bom[3] == 0x3C) {
 					/* undecided, treat as ucs4 */
 					encoding = UCS4_1234;
+					enc_bytes = 4;
 				}
 				else if(bom[2] == 0x3C && bom[3] == 0x00) {
 					encoding = UCS4_2143;
+					enc_bytes = 4;
 				}
 			}/* 0x00 0x00 */
 			else if(bom[1] == 0x3C) {
 				if(bom[2] == 0x00) {
 					if(bom[3] == 0x00) {
 						encoding = UCS4_3412;
+						enc_bytes = 4;
 					}
 					else if(bom[3] == 0x3F) {
 						encoding = UTF16_BE;
@@ -471,6 +411,7 @@ static inline void process_bom(struct entity_conv* conv)
 			if(bom[1] == 0xFE) {
 				if(bom[2] == 0x00 && bom[3] == 0x00) {
 					encoding = UCS4_4321;
+					enc_bytes = 4;
 					has_bom = 1;
 				}
 				else {
@@ -484,6 +425,7 @@ static inline void process_bom(struct entity_conv* conv)
 			if(bom[1] == 0xFF) {
 					if(bom[2] == 0x00 && bom[3] == 0x00) {
 						encoding = UCS4_3412;
+						enc_bytes = 4;
 						has_bom = 1;
 					}
 					else {
@@ -504,6 +446,7 @@ static inline void process_bom(struct entity_conv* conv)
 				if(bom[1] == 0x00) {
 					if(bom[2] == 0x00 && bom[3] == 0x00) {
 						encoding = UCS4_4321;
+						enc_bytes = 4;
 					}
 					else if(bom[2] == 0x3F && bom[3] == 0x00) {
 						encoding = UTF16_LE;
@@ -523,12 +466,24 @@ static inline void process_bom(struct entity_conv* conv)
 				}/*4C 6F A7 94*/
 				break;
 	}/*switch*/
-	if(encoding) {
-		cli_dbgmsg(MODULE_NAME "encoding detected as :%s\n", encoding);
-		process_encoding_set(conv, (const unsigned char*)encoding, has_bom ? BOM : NOBOM_AUTODETECT);
+	*enc_width = enc_bytes;
+	*bom_found = has_bom;
+	return encoding;
+}
+
+/* detects UTF-16(LE/BE), UCS-4(all 4 variants).
+ * UTF-8 and simple ASCII are ignored, because we can process those as text */
+const char* encoding_detect_bom(const unsigned char* bom, const size_t length)
+{
+	uint8_t has_bom;
+	uint8_t enc_width;
+	const char* encoding;
+
+	if(length < 4) {
+		return NULL;
 	}
-	conv->enc_bytes = enc_bytes;
-	conv->has_bom = has_bom;
+	encoding = detect_encoding(bom, &has_bom, &enc_width);
+	return enc_width > 1 ? encoding : NULL;
 }
 
 /*()-./0123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz*/
@@ -575,53 +530,6 @@ static char* normalize_encoding(const unsigned char* enc)
 	return norm;
 }
 
-static int encoding_norm_done(struct entity_conv* conv)
-{
-	if(conv->encoding) {
-		free(conv->encoding);
-		conv->encoding = NULL;
-	}
-	conv->buffer_size = 0;
-	if(conv->tmp_area.buffer) {
-		free(conv->tmp_area.buffer);
-		conv->tmp_area.buffer = NULL;
-	}
-	if(conv->out_area.buffer) {
-		free(conv->out_area.buffer);
-		conv->out_area.buffer = NULL;
-	}
-	if(conv->norm_area.buffer) {
-		free(conv->norm_area.buffer);
-		conv->norm_area.buffer = NULL;
-	}
-	if(conv->iconv_struct) {
-		free(conv->iconv_struct);
-	}
-	return 0;
-}
-
-int entity_norm_done(struct entity_conv* conv)
-{
-	return encoding_norm_done(conv);
-}
-
-static unsigned short bom_length(struct entity_conv* conv)
-{
-	if(conv->has_bom) {
-		switch(conv->enc_bytes) {
-			case 1:
-				if(conv->encoding_symbolic == E_UTF8) {
-					return 3;
-				}
-				break;
-			case 2:
-				return 2;
-			case 4:
-				return 4;
-		}
-	}
-	return 0;
-}
 /* sarge leaks on iconv_open/iconv_close, so lets not open/close so many times,
  * just keep on each thread its own pool of iconvs*/
 
@@ -774,99 +682,36 @@ static iconv_t iconv_open_cached(const char* fromcode)
 	cli_dbgmsg(MODULE_NAME "iconv not found in cache, for encoding:%s\n",fromcode);
 	iconv_struct = iconv_open("UTF-16BE",(const char*)fromcode);
 	if(iconv_struct != (iconv_t)-1) {
-	idx = cache->last++;
-	if(idx >= cache->len) {
-		cache->len += 16;
-		cache->tab = cli_realloc2(cache->tab, cache->len*sizeof(cache->tab[0]));
-		if(!cache->tab) {
-			cli_dbgmsg(MODULE_NAME "!Out of mem in iconv-pool\n");
-			errno = ENOMEM;
-			return (iconv_t)-1;
+		idx = cache->last++;
+		if(idx >= cache->len) {
+			cache->len += 16;
+			cache->tab = cli_realloc2(cache->tab, cache->len*sizeof(cache->tab[0]));
+			if(!cache->tab) {
+				cli_dbgmsg(MODULE_NAME "!Out of mem in iconv-pool\n");
+				errno = ENOMEM;
+				return (iconv_t)-1;
+			}
 		}
-	}
 
-	hashtab_insert(&cache->hashtab, fromcode, fromcode_len, idx);
+		hashtab_insert(&cache->hashtab, fromcode, fromcode_len, idx);
 		cache->tab[idx] = iconv_struct;
-	cli_dbgmsg(MODULE_NAME "iconv_open(),for:%s -> %p\n",fromcode,(void*)cache->tab[idx]);
-	return cache->tab[idx];
-}
+		cli_dbgmsg(MODULE_NAME "iconv_open(),for:%s -> %p\n",fromcode,(void*)cache->tab[idx]);
+		return cache->tab[idx];
+	}
 	return (iconv_t)-1;
 }
 
-void process_encoding_set(struct entity_conv* conv,const unsigned char* encoding,enum encoding_priority prio)
-{
-	char *tmp_encoding;
-	enum encodings tmp;
-	size_t new_size,old_size;
-
-	if(!encoding && prio == SWITCH_TO_BLOCKMODE) {
-		if(conv->linemode) {
-			cli_dbgmsg(MODULE_NAME "Switching to block-mode, bytes processed in line-mode: %u\n", conv->linemode_processed);
-			conv->linemode = 0;
-		}
-		return;
-	}
-
-	cli_dbgmsg(MODULE_NAME "Request to set encoding for %p to %s, priority: %d\n", (void*)conv, encoding, prio);
-
-	if(conv->priority == CONTENT_TYPE || conv->encoding || conv->encoding_symbolic == E_ICONV) {
-		cli_dbgmsg(MODULE_NAME "won't override encoding due to priorities\n");
-		return;
-		/* Content-type in header is highest priority, no overrides possible.
-		 * Also no overrides after an encoding has been set.*/
-	}
-
-	/* validate encoding name, and normalize to uppercase */
-	if(!(tmp_encoding = normalize_encoding(encoding))) {
-		cli_dbgmsg(MODULE_NAME "encoding name is not valid, ignoring\n");
-		return;
-	}
-
-	/* don't allow to change between unicode encodings that have different byte-size */
-	if(prio == META) {
-		/* need to consider minimum size of an encoding here */
-		old_size =  conv->enc_bytes;
-		new_size = encoding_bytes(tmp_encoding,&tmp);
-		if(old_size != new_size)  {
-			/* on x86 gcc wants %u for size_t, on x86_64 it wants %lu for size_t. So just cast to unsigned long to make warnings go away. */
-			cli_dbgmsg(MODULE_NAME "refusing to override encoding - new encoding size differs: %s(%lu) != %s(%lu)\n", conv->encoding, (unsigned long)old_size, tmp_encoding, (unsigned long)new_size);
-			free(tmp_encoding);
-			return;
-		}
-	}
-
-	conv->encoding = tmp_encoding;
-	cli_dbgmsg(MODULE_NAME "New encoding for %p:%s\n", (void*)conv, conv->encoding);
-	*(iconv_t*)conv->iconv_struct = iconv_open_cached( conv->encoding );
-	if(*(iconv_t*)conv->iconv_struct == (iconv_t)-1) {
-		cli_dbgmsg(MODULE_NAME "Encoding not accepted by iconv_open()%s, falling back to default!\n", conv->encoding);
-		/* message shown only once/file */
-		/* what can we do? short-circuit iconv */
-		free(conv->encoding);
-		conv->encoding = NULL;
-		/* we will process using whatever we currently have for encoding_symbolic.
-		 * If encoding was already set to iconv, we shouldn't be here.*/
-		assert(conv->encoding_symbolic != E_ICONV);
-	} else {
-		cli_dbgmsg(MODULE_NAME "Switching to block-mode, bytes processed in line-mode: %u\n", conv->linemode_processed);
-		conv->encoding_symbolic = E_ICONV;
-		conv->priority = prio;
-		conv->linemode = 0;
-	}
-}
-
-static int in_iconv_u16(m_area_t* in_m_area, iconv_t* iconv_struct, m_area_t* out_m_area)
+static int in_iconv_u16(const m_area_t* in_m_area, iconv_t* iconv_struct, m_area_t* out_m_area)
 {
 	char   tmp4[4];
 	size_t inleft = in_m_area->length - in_m_area->offset;
 	size_t rc, alignfix;
 	char*  input   = (char*)in_m_area->buffer + in_m_area->offset;
-	size_t outleft = out_m_area->length > 0 ? out_m_area->length : 0;/*TODO: use real buffer size not last one*/
+	size_t outleft = out_m_area->length > 0 ? out_m_area->length : 0;
 	char* out      = (char*)out_m_area->buffer;
 
+	out_m_area->offset = 0;
 	if(!inleft) {
-		/* EOF */
-		out_m_area->offset = out_m_area->length = 0;
 		return 0;
 	}
 	/* convert encoding conv->tmp_area. conv->out_area */
@@ -886,7 +731,7 @@ static int in_iconv_u16(m_area_t* in_m_area, iconv_t* iconv_struct, m_area_t* ou
 	while (inleft && (outleft >= 2)) { /* iconv doesn't like inleft to be 0 */
 		const size_t outleft_last = outleft;
 		assert(*iconv_struct != (iconv_t)-1);
-		rc = iconv(*iconv_struct, (char**) &input,  &inleft, (char**) &out, &outleft);
+		rc = iconv(*iconv_struct, &input,  &inleft, &out, &outleft);
 		if(rc == (size_t)-1) {
 			if(errno == E2BIG) {
 				/* not enough space in output buffer */
@@ -909,9 +754,7 @@ static int in_iconv_u16(m_area_t* in_m_area, iconv_t* iconv_struct, m_area_t* ou
 		*out++ = *input++;
 		inleft--;
 	}
-	/* length - offset - alignfix is original value of inleft, new value is inleft, 
-	 * difference tells how much it moved. */
-	in_m_area->offset = in_m_area->length - alignfix - inleft;
+	cli_dbgmsg("in_iconv_u16: unprocessed bytes: %lu\n", (unsigned long)inleft);
 	if(out_m_area->length >= 0 && out_m_area->length >= (off_t)outleft) {
 		out_m_area->length -= (off_t)outleft;
 	} else {
@@ -922,156 +765,36 @@ static int in_iconv_u16(m_area_t* in_m_area, iconv_t* iconv_struct, m_area_t* ou
 	return 0;
 }
 
-
-#define NORMALIZE_CHAR(c, out, limit, linemode) \
-{\
-	        if (linemode && c == '\n') {\
-			i++;\
-			break;\
-		} else {\
-			unsigned char* out_new = u16_normalize(c, out, limit);\
-			if(out_new) {\
-				limit -= out_new - out;\
-			}\
-			out = out_new;\
-		}\
-}
-
-/* don't use CLI_ISCONTAINED2 here, because values are signed, and gcc4.3
- * assumes signed overflow doesn't occur when optimizing (see -Wstrict-overflow) */
-#define LIMIT_LENGTH(siz, siz_limit) ((siz) <= (siz_limit) ? (siz) : (siz_limit))
-#define OFFSET_INBOUNDS(offset, length) ((offset) >= 0 && (length) >= 0 && (offset) < (length))
-
-/* EOF marker is m_area->length == 0 */
-
-/* reads input from either @m_area or @stream, and returns an m_area_t pointing to the data read.
- * When we can't read anything due to EOF ->length will be set to 0.
- * bounds checks offset and length*/
-static inline m_area_t* read_raw(struct entity_conv* conv, m_area_t* m_area, FILE* stream)
+int encoding_normalize_toascii(const m_area_t* in_m_area, const char* initial_encoding, m_area_t* out_m_area)
 {
-	if(!m_area) {
-		size_t iread;
+	iconv_t iconv_struct;
+	off_t i, j;
+	char *encoding;
 
-		m_area = &conv->tmp_area;
-		if(OFFSET_INBOUNDS(m_area->offset, m_area->length)) {
-			return m_area;
-		}
-		/* offset out of bounds -> all the buffer was processed, fill it again */
-		iread = fread(m_area->buffer, 1, conv->buffer_size, stream);
-		m_area->length = LIMIT_LENGTH(iread, conv->buffer_size);
-		m_area->offset = 0;
-		if(ferror(stream)) {
-			cli_errmsg("Error while reading HTML stream\n");
-		}
-	} else {
-		if(!OFFSET_INBOUNDS(m_area->offset, m_area->length)) {
-			cli_dbgmsg(MODULE_NAME "EOF reached\n");
-			m_area->offset = m_area->length; /* EOF marker */
+	if(!initial_encoding || !in_m_area || !out_m_area) {
+		return CL_ENULLARG;
+	}
+
+	encoding = normalize_encoding((const unsigned char*)initial_encoding);
+	if(!encoding) {
+		cli_dbgmsg(MODULE_NAME "encoding name is not valid, ignoring\n");
+		return -1;
+	}
+
+	cli_dbgmsg(MODULE_NAME "Encoding %s\n", encoding);
+	iconv_struct = iconv_open_cached( encoding );
+	if(iconv_struct == (iconv_t)-1) {
+		cli_dbgmsg(MODULE_NAME "Encoding not accepted by iconv_open(): %s\n", encoding);
+		free(encoding);
+		return -1;
+	}
+	in_iconv_u16(in_m_area, &iconv_struct, out_m_area);
+	for(i = 0, j = 0; i < out_m_area->length ; i += 2) {
+		const unsigned char c = (out_m_area->buffer[i] << 4) + out_m_area->buffer[i+1];
+		if(c) {
+			out_m_area->buffer[j++] = c;
 		}
 	}
-	return m_area;
+	out_m_area->length = j;
+	return 0;
 }
-
-static inline uint16_t get_u16(const unsigned char* buf, const size_t i)
-{
-	return ((uint16_t)buf[i] << 8) | buf[i+1];
-}
-
-unsigned char* encoding_norm_readline(struct entity_conv* conv, FILE* stream_in, m_area_t* in_m_area)
-{
-	unsigned char* out = conv->out_area.buffer;
-	if(!conv || !conv->out_area.buffer || !conv->tmp_area.buffer || !out) {
-		return NULL;
-	}
-	if(!(in_m_area = read_raw(conv, in_m_area, stream_in))) {
-		/* error encountered */
-		return NULL;
-	}
-	else {
-		const off_t input_limit  = in_m_area->length;
-		const unsigned char* input = in_m_area->buffer;
-		off_t input_offset = in_m_area->offset;
-		off_t limit = conv->out_area.length - 1;
-		off_t limit_prev = limit;
-		off_t i = 0;
-
-		/* read_raw() ensures this condition */
-		assert((!input_limit && !input_offset) || (input_offset >=0 && input_limit > 0 && input_offset <= input_limit));
-
-		if(!conv->bom_cnt && input_offset + 4 < input_limit) {/* detect Byte Order Mark */
-			size_t bom_len;
-			memcpy(conv->bom, input, 4);
-			process_bom(conv);
-			bom_len = bom_length(conv);
-			in_m_area->offset = input_offset = input_offset + bom_len;
-			conv->bom_cnt = 1;
-		}
-
-		if(conv->linemode && conv->linemode_processed > LINEMODE_LIMIT) {
-			cli_dbgmsg(MODULE_NAME "Line-mode limit exceeded (%u), switching to block-mode\n", conv->linemode_processed);
-			conv->linemode = 0;
-		}
-
-		switch(conv->encoding_symbolic) {
-			case E_ICONV:/* only in block-mode */
-				/* normalize already converted characters from a previous pass
-				 * (output buffer was full, and we couldn't normalize more in previous pass) */
-				for(i = conv->norm_area.offset;i < conv->norm_area.length && limit > 0 && out; i += 2) {
-					const uint16_t c = get_u16(conv->norm_area.buffer, i);
-					NORMALIZE_CHAR(c, out, limit, 0);
-				}
-				conv->norm_area.offset = i;
-			        if(limit > 0) {
-					conv->norm_area.length = conv->buffer_size;
-					in_iconv_u16(in_m_area, conv->iconv_struct, &conv->norm_area);
-
-					/*in_iconv_u16 always fills entire norm_area buffer starting from 0. */
-					for(i = 0;i < conv->norm_area.length && limit >  0 && out; i += 2) {
-						const uint16_t c = get_u16(conv->norm_area.buffer, i);
-						NORMALIZE_CHAR(c, out, limit, 0);
-					}
-					if(i) {
-						conv->norm_area.offset = i;
-					}
-				}
-				if(limit == limit_prev) {
-					/* output pointer didn't move => EOF */
-					return NULL;
-				}
-				break;
-				/* out_area must have enough space to allow all bytes in norm_area normalized,
-				 * if we norm with &x;, then we need 7* space. */
-			default:
-				cli_dbgmsg(MODULE_NAME "Unhandled encoding:%d\n",conv->encoding_symbolic);
-				conv->encoding_symbolic = E_OTHER;
-			case E_UNKNOWN:
-			case E_OTHER:
-				if(!input_limit || input_offset == input_limit) {
-					/* nothing to do, EOF */
-					return NULL;
-				}
-				for(i = input_offset; i < input_limit && limit > 0; i++) {
-					const unsigned char c = input[i];
-					if(conv->linemode && c == '\n') {
-						i++;
-						break;
-					}
-					if(c) {
-						*out++ = c;
-						limit--;
-					}
-				}
-				in_m_area->offset = i;
-		}
-
-
-		if(conv->linemode) {
-			conv->linemode_processed += i - input_offset;
-		}
-
-		if(limit < 0) limit = 0;
-		conv->out_area.buffer[conv->out_area.length - limit - 1] = '\0';
-		return conv->out_area.buffer;
-	}
-}
-

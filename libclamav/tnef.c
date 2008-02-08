@@ -60,6 +60,8 @@ static	int	tnef_header(FILE *fp, uint8_t *part, uint16_t *type, uint16_t *tag, i
 #define host16(v)	le16_to_host(v)
 #define host32(v)	le32_to_host(v)
 
+/* a TNEF file must be at least this size */
+#define	MIN_SIZE	(sizeof(uint32_t) + sizeof(uint16_t))
 
 int
 cli_tnef(const char *dir, int desc)
@@ -80,6 +82,11 @@ cli_tnef(const char *dir, int desc)
 	}
 	fsize = statb.st_size;
 
+	if(fsize < MIN_SIZE) {
+		cli_dbgmsg("cli_tngs: file too small, ignoring\n");
+		return CL_CLEAN;
+	}
+
 	i = dup(desc);
 	if((fp = fdopen(i, "rb")) == NULL) {
 		cli_errmsg("Can't open descriptor %d\n", desc);
@@ -89,6 +96,7 @@ cli_tnef(const char *dir, int desc)
 
 	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1) {
 		fclose(fp);
+		/* The file is at least MIN_SIZE bytes, so it "can't" fail */
 		return CL_EIO;
 	}
 	if(host32(i32) != TNEF_SIGNATURE) {
@@ -98,6 +106,7 @@ cli_tnef(const char *dir, int desc)
 
 	if(fread(&i16, sizeof(uint16_t), 1, fp) != 1) {
 		fclose(fp);
+		/* The file is at least MIN_SIZE bytes, so it "can't" fail */
 		return CL_EIO;
 	}
 
@@ -121,7 +130,12 @@ cli_tnef(const char *dir, int desc)
 			case 1:
 				break;
 			default:
-				ret = CL_EIO;
+				/*
+				 * Assume truncation, not file I/O error
+				 */
+				/*ret = CL_EIO;*/
+				cli_warnmsg("cli_tnef: file truncated, returning CLEAN\n");
+				ret = CL_CLEAN;
 				alldone = 1;
 				break;
 		}
@@ -382,7 +396,7 @@ tnef_header(FILE *fp, uint8_t *part, uint16_t *type, uint16_t *tag, int32_t *len
 		return 0;
 
 	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1) {
-		if((*part == '\n') && feof(fp)) {
+		if(((*part == '\n') || (*part == '\r')) && feof(fp)) {
 			/*
 			 * trailing newline in the file, could be caused by
 			 * broken quoted-printable encoding in the source

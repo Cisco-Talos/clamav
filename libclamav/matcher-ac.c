@@ -1,4 +1,7 @@
 /*
+ *  Copyright (C) 2007 - 2008 Sourcefire, Inc.
+ *  Author: Tomasz Kojm <tkojm@clamav.net>
+ *
  *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -341,11 +344,7 @@ void cli_ac_free(struct cli_matcher *root)
 
     for(i = 0; i < root->ac_patterns; i++) {
 	patt = root->ac_pattable[i];
-
-	if(patt->prefix)
-	    free(patt->prefix);
-	else
-	    free(patt->pattern);
+	patt->prefix ? free(patt->prefix) : free(patt->pattern);
 	free(patt->virname);
 	if(patt->offset)
 	    free(patt->offset);
@@ -383,19 +382,19 @@ void cli_ac_free(struct cli_matcher *root)
     switch(wc = p & CLI_MATCH_WILDCARD) {				\
 	case CLI_MATCH_CHAR:						\
 	    if((unsigned char) p != b)					\
-		return 0;						\
+		match = 0;						\
 	    break;							\
 									\
 	case CLI_MATCH_IGNORE:						\
 	    break;							\
 									\
 	case CLI_MATCH_ALTERNATIVE:					\
-	    found = 0;							\
+	    match = 0;							\
 	    alt = pattern->alttable[altcnt];				\
 	    if(alt->chmode) {						\
 		for(j = 0; j < alt->num; j++) {				\
 		    if(alt->str[j] == b) {				\
-			found = 1;					\
+			match = 1;					\
 			break;						\
 		    }							\
 		}							\
@@ -403,7 +402,7 @@ void cli_ac_free(struct cli_matcher *root)
 		while(alt) {						\
 		    if(bp + alt->len <= length) {			\
 			if(!memcmp(&buffer[bp], alt->str, alt->len)) {	\
-			    found = 1;					\
+			    match = 1;					\
 			    bp += alt->len - 1;				\
 			    break;					\
 			}						\
@@ -411,31 +410,28 @@ void cli_ac_free(struct cli_matcher *root)
 		    alt = alt->next;					\
 		}							\
 	    }								\
-	    if(!found)							\
-		return 0;						\
 	    altcnt++;							\
 	    break;							\
 									\
 	case CLI_MATCH_NIBBLE_HIGH:					\
 	    if((unsigned char) (p & 0x00f0) != (b & 0xf0))		\
-		return 0;						\
+		match = 0;						\
 	    break;							\
 									\
 	case CLI_MATCH_NIBBLE_LOW:					\
 	    if((unsigned char) (p & 0x000f) != (b & 0x0f))		\
-		return 0;						\
+		match = 0;						\
 	    break;							\
 									\
 	default:							\
 	    cli_errmsg("ac_findmatch: Unknown wildcard 0x%x\n", wc);	\
-	    return 0;							\
+	    match = 0;							\
     }
 
 inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t *end)
 {
-	uint32_t bp;
+	uint32_t bp, match;
 	uint16_t wc, i, j, altcnt = pattern->alt_pattern;
-	uint8_t found;
 	struct cli_ac_alt *alt;
 
 
@@ -444,20 +440,59 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
 
     bp = offset + pattern->depth;
 
+    match = 1;
     for(i = pattern->depth; i < pattern->length && bp < length; i++) {
 	AC_MATCH_CHAR(pattern->pattern[i],buffer[bp]);
+	if(!match)
+	    return 0;
 	bp++;
     }
     *end = bp;
 
+    if(!(pattern->ch[1] & CLI_MATCH_IGNORE)) {
+	bp += pattern->ch_mindist[1];
+	for(i = pattern->ch_mindist[1]; i <= pattern->ch_maxdist[1]; i++) {
+	    if(bp >= length)
+		return 0;
+	    match = 1;
+	    AC_MATCH_CHAR(pattern->ch[1],buffer[bp]);
+	    if(match)
+		break;
+	    bp++;
+	}
+	if(!match)
+	    return 0;
+    }
+
     if(pattern->prefix) {
 	altcnt = 0;
 	bp = offset - pattern->prefix_length;
-
+	match = 1;
 	for(i = 0; i < pattern->prefix_length; i++) {
 	    AC_MATCH_CHAR(pattern->prefix[i],buffer[bp]);
+	    if(!match)
+		return 0;
 	    bp++;
 	}
+    }
+
+    if(!(pattern->ch[0] & CLI_MATCH_IGNORE)) {
+	bp = offset - pattern->prefix_length;
+	if(pattern->ch_mindist[0] + 1 > bp)
+	    return 0;
+	bp -= pattern->ch_mindist[0] + 1;
+	for(i = pattern->ch_mindist[0]; i <= pattern->ch_maxdist[0]; i++) {
+	    match = 1;
+	    AC_MATCH_CHAR(pattern->ch[0],buffer[bp]);
+	    if(match)
+		break;
+	    if(!bp)
+		return 0;
+	    else
+		bp--;
+	}
+	if(!match)
+	    return 0;
     }
 
     return 1;
@@ -707,8 +742,8 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, uint8_t target)
 {
 	struct cli_ac_patt *new;
-	char *pt, *hex = NULL;
-	uint16_t i, j, ppos = 0, pend;
+	char *pt, *pt2, *hex = NULL, *hexcpy = NULL;
+	uint16_t i, j, ppos = 0, pend, *dec;
 	uint8_t wprefix = 0, zprefix = 1, namelen, plen = 0;
 	struct cli_ac_alt *newalt, *altpt, **newtable;
 	int ret, error = CL_SUCCESS;
@@ -727,11 +762,94 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     new->mindist = mindist;
     new->maxdist = maxdist;
     new->target = target;
+    new->ch[0] |= CLI_MATCH_IGNORE;
+    new->ch[1] |= CLI_MATCH_IGNORE;
+
+    if(strchr(hexsig, '[')) {
+	if(!(hexcpy = cli_strdup(hexsig))) {
+	    free(new);
+	    return CL_EMEM;
+	}
+
+	hex = hexcpy;
+	for(i = 0; i < 2; i++) {
+		unsigned int n1, n2;
+
+	    if(!(pt = strchr(hex, '[')))
+		break;
+	    *pt++ = 0;
+
+	    if(!(pt2 = strchr(pt, ']'))) {
+		cli_dbgmsg("cli_ac_addsig: missing closing square bracket\n");
+		error = CL_EMALFDB;
+		break;
+	    }
+	    *pt2++ = 0;
+
+            if(sscanf(pt, "%u-%u", &n1, &n2) != 2) {
+		cli_dbgmsg("cli_ac_addsig: incorrect range inside square brackets\n");
+		error = CL_EMALFDB;
+		break;
+	    }
+
+	    if((n1 > n2) || (n2 > AC_CH_MAXDIST)) {
+		cli_dbgmsg("cli_ac_addsig: incorrect range inside square brackets\n");
+		error = CL_EMALFDB;
+		break;
+	    }
+
+	    if(strlen(hex) == 2) {
+		if(i) {
+		    error = CL_EMALFDB;
+		    break;
+		}
+		dec = cli_hex2ui(hex);
+		if(!dec) {
+		    error = CL_EMALFDB;
+		    break;
+		}
+		new->ch[i] = *dec;
+		free(dec);
+		new->ch_mindist[i] = n1;
+		new->ch_maxdist[i] = n2;
+		hex = pt2;
+	    } else if(strlen(pt2) == 2) {
+		i = 1;
+		dec = cli_hex2ui(pt2);
+		if(!dec) {
+		    error = CL_EMALFDB;
+		    break;
+		}
+		new->ch[i] = *dec;
+		free(dec);
+		new->ch_mindist[i] = n1;
+		new->ch_maxdist[i] = n2;
+	    } else {
+		error = CL_EMALFDB;
+		break;
+	    }
+	}
+
+	if(error) {
+	    free(hexcpy);
+	    free(new);
+	    return error;
+	}
+
+	hex = cli_strdup(hex);
+	free(hexcpy);
+	if(!hex) {
+	    free(new);
+	    return CL_EMEM;
+	}
+    }
 
     if(strchr(hexsig, '(')) {
-	    char *hexcpy, *hexnew, *start, *h, *c;
+	    char *hexnew, *start, *h, *c;
 
-	if(!(hexcpy = cli_strdup(hexsig))) {
+	if(hex) {
+	    hexcpy = hex;
+	} else if(!(hexcpy = cli_strdup(hexsig))) {
 	    free(new);
 	    return CL_EMEM;
 	}
@@ -860,17 +978,15 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	}
     }
 
-    if((new->pattern = cli_hex2ui(new->alt ? hex : hexsig)) == NULL) {
-	if(new->alt) {
-	    free(hex);
+    if((new->pattern = cli_hex2ui(hex ? hex : hexsig)) == NULL) {
+	if(new->alt)
 	    ac_free_alt(new);
-	}
+	free(hex);
 	free(new);
 	return CL_EMALFDB;
     }
-    new->length = strlen(new->alt ? hex : hexsig) / 2;
-    if(new->alt)
-	free(hex);
+    new->length = strlen(hex ? hex : hexsig) / 2;
+    free(hex);
 
     for(i = 0; i < root->ac_maxdepth && i < new->length; i++) {
 	if(new->pattern[i] & CLI_MATCH_WILDCARD) {
@@ -928,20 +1044,14 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
     if(!namelen) {
 	cli_errmsg("cli_ac_addsig: No virus name\n");
-	if(new->prefix)
-	    free(new->prefix);
-	else
-	    free(new->pattern);
+	new->prefix ? free(new->prefix) : free(new->pattern);
 	ac_free_alt(new);
 	free(new);
 	return CL_EMALFDB;
     }
 
     if((new->virname = cli_calloc(namelen + 1, sizeof(char))) == NULL) {
-	if(new->prefix)
-	    free(new->prefix);
-	else
-	    free(new->pattern);
+	new->prefix ? free(new->prefix) : free(new->pattern);
 	ac_free_alt(new);
 	free(new);
 	return CL_EMEM;
@@ -951,10 +1061,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     if(offset) {
 	new->offset = cli_strdup(offset);
 	if(!new->offset) {
-	    if(new->prefix)
-		free(new->prefix);
-	    else
-		free(new->pattern);
+	    new->prefix ? free(new->prefix) : free(new->pattern);
 	    ac_free_alt(new);
 	    free(new->virname);
 	    free(new);
@@ -963,10 +1070,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     }
 
     if((ret = cli_ac_addpatt(root, new))) {
-	if(new->prefix)
-	    free(new->prefix);
-	else
-	    free(new->pattern);
+	new->prefix ? free(new->prefix) : free(new->pattern);
 	free(new->virname);
 	ac_free_alt(new);
 	if(new->offset)

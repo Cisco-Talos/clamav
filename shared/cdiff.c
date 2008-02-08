@@ -43,14 +43,14 @@
 
 #include "zlib.h"
 
-#ifdef HAVE_GMP
+#ifdef HAVE_LIBGMP
 #include "libclamav/dsig.h"
 
 #define PSS_NSTR "14783905874077467090262228516557917570254599638376203532031989214105552847269687489771975792123442185817287694951949800908791527542017115600501303394778618535864845235700041590056318230102449612217458549016089313306591388590790796515819654102320725712300822356348724011232654837503241736177907784198700834440681124727060540035754699658105895050096576226753008596881698828185652424901921668758326578462003247906470982092298106789657211905488986281078346361469524484829559560886227198091995498440676639639830463593211386055065360288422394053998134458623712540683294034953818412458362198117811990006021989844180721010947"
 #define PSS_ESTR "100002053"
 #define PSS_NBITS 2048
 #define PSS_DIGEST_LENGTH 32
-#endif /* HAVE_GMP */
+#endif /* HAVE_LIBGMP */
 
 struct cdiff_node {
     unsigned int lineno;
@@ -766,7 +766,7 @@ static int cdiff_execute(const char *cmdstr, struct cdiff_ctx *ctx)
     return 0;
 }
 
-#ifdef HAVE_GMP
+#ifdef HAVE_LIBGMP
 static void pss_mgf(unsigned char *in, unsigned int inlen, unsigned char *out, unsigned int outlen)
 {
 	SHA256_CTX ctx;
@@ -864,7 +864,7 @@ static int pss_versig(const unsigned char *sha256, const char *dsig)
 
     return 0;
 }
-#endif /* HAVE_GMP */
+#endif /* HAVE_LIBGMP */
 
 int cdiff_apply(int fd, unsigned short mode)
 {
@@ -877,7 +877,7 @@ int cdiff_apply(int fd, unsigned short mode)
 	int end, i, n;
 	struct stat sb;
 	int desc;
-#ifdef HAVE_GMP
+#ifdef HAVE_LIBGMP
 	SHA256_CTX sha256ctx;
 	unsigned char digest[32];
 	int sum, bread;
@@ -938,7 +938,7 @@ int cdiff_apply(int fd, unsigned short mode)
 	    return -1;
 	}
 
-#ifdef HAVE_GMP
+#ifdef HAVE_LIBGMP
 	sha256_init(&sha256ctx);
 	sum = 0;
 	while((bread = read(desc, buff, FILEBUFF)) > 0) {

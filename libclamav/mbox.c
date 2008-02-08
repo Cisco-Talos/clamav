@@ -100,7 +100,7 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
 static	void	sigsegv(int sig);
 static	void	print_trace(int use_syslog);
 
-/*#define	SAVE_TMP	/* Save the file being worked on in tmp */
+/*#define	SAVE_TMP */	/* Save the file being worked on in tmp */
 #endif
 
 #if	defined(NO_STRTOK_R) || !defined(CL_THREAD_SAFE)
@@ -1414,6 +1414,9 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 		if((retcode == CL_SUCCESS) && messageGetBody(body)) {
 			messageSetCTX(body, ctx);
 			switch(parseEmailBody(body, NULL, &mctx, 0)) {
+				case OK:
+				case OK_ATTACHMENTS_NOT_SAVED:
+					break;
 				case FAIL:
 					/*
 					 * beware: cli_magic_scandesc(),
@@ -2090,7 +2093,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 			boundary = messageFindArgument(mainMessage, "boundary");
 
 			if(boundary == NULL) {
-				cli_warnmsg("Multipart/%s MIME message contains no boundary header\n",
+				cli_dbgmsg("Multipart/%s MIME message contains no boundary header\n",
 					mimeSubtype);
 				/* Broken e-mail message */
 				mimeType = NOMIME;
@@ -3039,7 +3042,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 			}
 		}
 	} /*else
-		rc = OK_ATTACHMENTS_NOT_SAVED;	/* nothing saved */
+		rc = OK_ATTACHMENTS_NOT_SAVED; */	/* nothing saved */
 
 	if(mainMessage && (mainMessage != messageIn))
 		messageDestroy(mainMessage);
@@ -3951,7 +3954,7 @@ getHrefs(message *m, tag_arguments_t *hrefs)
 
 	/* TODO: make this size customisable */
 	if(len > 100*1024) {
-		cli_warnmsg("Viruses pointed to by URLs not scanned in large message\n");
+		cli_dbgmsg("Viruses pointed to by URLs not scanned in large message\n");
 		blobDestroy(b);
 		return NULL;
 	}

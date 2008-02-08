@@ -4,7 +4,7 @@
 
 if ENABLE_UNRAR
 
-INCLUDES = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir)
 
 libclamunrar_iface_la_LIBADD = $(top_builddir)/libclamunrar/libclamunrar.la
 

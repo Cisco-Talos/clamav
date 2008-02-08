@@ -22,23 +22,22 @@
 #ifndef __LZMA_IFACE_H
 #define __LZMA_IFACE_H
 
-
-#include "LzmaStateDecode.h"
 #include "cltypes.h"
 
-typedef struct {
-  CLzmaDecoderState state;
-  const unsigned char *next_in;
-  SizeT avail_in;
-  unsigned char *next_out;
-  SizeT avail_out;
-  int initted;
-  uint64_t usize;
-} CLI_LZMA;
+typedef struct CLI_LZMA_tag CLI_LZMA;
 
-int cli_LzmaInit(CLI_LZMA *, uint64_t);
-void cli_LzmaShutdown(CLI_LZMA *);
-int cli_LzmaDecode(CLI_LZMA *);
+struct stream_state {
+	uint32_t avail_in;
+	unsigned char *next_in;
+	uint32_t avail_out;
+	unsigned char *next_out;
+};
+
+int cli_LzmaInit(CLI_LZMA **, uint64_t);
+void cli_LzmaShutdown(CLI_LZMA **);
+int cli_LzmaDecode(CLI_LZMA **, struct stream_state*);
 
 #define LZMA_STREAM_END 2
+#define LZMA_RESULT_OK 0
+#define LZMA_RESULT_DATA_ERROR 1
 #endif /* __LZMA_IFACE_H */

@@ -1,4 +1,4 @@
-SPLIT_DIR=$(top_srcdir)/test/.splitted
+SPLIT_DIR=$(top_srcdir)/test/.split
 
 all: clam-v2.rar clam-v3.rar clam.cab clam.exe.bz2 clam.exe clam.zip
 
@@ -20,7 +20,7 @@ clam.exe:
 clam.zip:
 	cat $(SPLIT_DIR)/split.clam.zipaa $(SPLIT_DIR)/split.clam.zipab >clam.zip
 
-clean:
+clean-local:
 	rm -f clam-v2.rar clam-v3.rar clam.cab clam.exe.bz2 clam.exe clam.zip
 
-EXTRA_DIST = .splitted
+EXTRA_DIST = .split

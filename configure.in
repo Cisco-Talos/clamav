@@ -18,19 +18,38 @@ dnl   along with this program; if not, write to the Free Software
 dnl   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 dnl   MA 02110-1301, USA.
 
-AC_INIT(clamscan/clamscan.c)
-AC_CREATE_TARGET_H(target.h)
-AM_INIT_AUTOMAKE(clamav, "devel-`date +%Y%m%d`")
-AM_CONFIG_HEADER(clamav-config.h)
+AC_PREREQ([2.59])
+dnl For a release change [devel] to the real version [0.xy]
+dnl also change VERSION below
+AC_INIT([clamav], [devel], [http://bugs.clamav.net/])
+
+dnl put configure auxiliary into config
+AC_CONFIG_AUX_DIR([config])
+AC_CONFIG_HEADER([clamav-config.h])
+
+dnl safety check, this used to be a parameter to AC_INIT
+AC_CONFIG_SRCDIR([clamscan/clamscan.c])
+AC_CONFIG_MACRO_DIR([m4])
+AC_CREATE_TARGET_H([target.h])
+
+dnl -Wall and -Werror here are NOT CFLAGS, they refer to automake warnings
+AM_INIT_AUTOMAKE([-Wall -Werror foreign dist-bzip2 no-define])
+
+dnl we told automake to not define these, since we want to include
+dnl the date in the version
+AC_DEFINE([PACKAGE], PACKAGE_NAME, [Name of package])
+
+dnl change this on a release
+VERSION="devel-`date +%Y%m%d`"
+AC_DEFINE_UNQUOTED([VERSION],"$VERSION",[Version number of package])
 
 LC_CURRENT=3
 LC_REVISION=3
 LC_AGE=0
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
-AC_SUBST(LIBCLAMAV_VERSION)
+AC_SUBST([LIBCLAMAV_VERSION])
 
 AC_PROG_AWK
-AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
@@ -38,15 +57,25 @@ AC_PROG_MAKE_SET
 dnl libtool by default brings in check for all the languages/compilers (CXX/F77/...)
 dnl we don't need them, so avoid tagged configuration
 dnl libtool-1.6 should already do it right, but thats not stable yet
-m4_define([_LT_AC_TAGCONFIG])
+AC_DEFUN([_LT_AC_TAGCONFIG])
 AC_PROG_LIBTOOL
 
-AC_DEFINE(SCANBUFF, 131072, [scan buffer size])
-AC_DEFINE(FILEBUFF, 8192,   [file i/o buffer size])
+AC_DEFINE([SCANBUFF], 131072, [scan buffer size])
+AC_DEFINE([FILEBUFF], 8192,   [file i/o buffer size])
 
 AC_HEADER_STDC
+AC_C_RESTRICT
+AC_C_CONST
+AC_C_INLINE
+AC_C_FPU_BIGENDIAN
+AC_C_BIGENDIAN
+if test $ac_cv_c_bigendian = yes; then
+  AC_DEFINE([WORDS_BIGENDIAN],1,endianess)
+else
+  AC_DEFINE([WORDS_BIGENDIAN],0,endianess)
+fi
 
-AC_ARG_ENABLE(gcc-vcheck,
+AC_ARG_ENABLE([gcc-vcheck],
 [  --disable-gcc-vcheck	  do not check for buggy gcc version ],
 gcc_check=$enableval, gcc_check="yes")
 
@@ -82,7 +111,7 @@ AC_TRY_RUN(
 void exit (int);
 void abort (void);
 int a;
-int main()
+int main(void)
 {
   int j;
   for (j = 0; j < 6; j++)
@@ -95,34 +124,6 @@ int main()
 }
 ], [AC_MSG_RESULT([ok, bug not present])],
 [AC_MSG_ERROR([your compiler has gcc PR27603 bug, use a different compiler, see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=27603])], [AC_MSG_RESULT([cross-compiling, assumed ok])])
-
-dnl Check if compiler produces invalid code on gcc PR28045 (affects upx.c)
-dnl testcase from gcc testsuite
-AC_MSG_CHECKING([for gcc bug PR28045])
-AC_TRY_RUN(
-	   [
-/* (C) Andrew Pinski */	   
-extern void abort(void);
-struct a
-{
-   unsigned int bits : 1;
-   signed long val : ((sizeof(long) * 8) - 1);
-};
-int Fnegate (struct a b)
-{
-  if ((-((long)b.val)) <= ((long) ((1UL << ((sizeof(long) * 8) - 2)) -1UL))
-      && (-((long)b.val)) >= (-(((long) ((1UL << ((sizeof(long) * 8) - 2)) -1UL))) - 1))
-     return 0 ;
-  abort ();
-}
-int main ()
-{
-  struct a b = {1, 1};
-  Fnegate (b);
-  return 0;
-}
-], [AC_MSG_RESULT([ok, bug not present])],
-[AC_MSG_ERROR([your compiler has gcc PR28045 bug, use a different compiler, see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=28045])], [AC_MSG_RESULT([cross-compiling, assumed ok])])
 
 dnl Check if compiler produces invalid code on gcc PR26763-2 (affects upx.c)
 dnl testcase from gcc testsuite
@@ -152,17 +153,17 @@ int main(void)
 dnl Check if compiler produces invalid code on own testcase based on upx.c
 AC_MSG_CHECKING([for valid code generation of CLI_ISCONTAINED])
 AC_TRY_RUN(
-	   [	   
+	   [
 #include <stdio.h>
 static struct v{
 	char* dst;
-	unsigned long dsize;
-	unsigned long dcur;
-	unsigned long backsize;
- 	signed long unp_offset;
+	unsigned int dsize;
+	unsigned int dcur;
+	unsigned int backsize;
+	signed int unp_offset;
 } values[] = {
-	{(char*)0xf78ab008, 0x2e000, 1, 4, 0xfffff9f3},
-	{(char*)0xb7af1008, 0x2e000, 1, 4, 0xfffff9f3}
+	{(char*)0xf78ab008, 0x2e000, 1, 4, -1594},
+	{(char*)0xb7af1008, 0x2e000, 1, 4, -1594}
 
 };
 extern void abort(void);
@@ -171,16 +172,34 @@ extern void abort(void);
     (bb_size > 0 && sb_size > 0 && sb_size <= bb_size	\
      && sb >= bb && sb + sb_size <= bb + bb_size && sb + sb_size > bb)
 
-int main()
+int crashtest()
+{
+	unsigned int backsize, dcur,i;
+	int dval=0x12000, unp_offset;
+	int* dsize = &dval;
+	char* dst = (char*)0x12000;
+	while(1) {
+		backsize=4;
+		dcur=0;
+		unp_offset=0x800002c7;
+
+		if (!CLI_ISCONTAINED(dst, *dsize, dst+dcur+unp_offset, backsize) || !CLI_ISCONTAINED(dst, *dsize, dst+dcur, backsize) || unp_offset >=0)
+			return -1;
+		abort();
+	}
+	return 0;
+}
+
+int main(void)
 {
 	int i;
 	for(i=0;i<sizeof(values)/sizeof(values[0]);i++) {
 		struct v* v= &values[i];
 		char* dst = v->dst;
-		unsigned long* dsize = &v->dsize;
-		unsigned long dcur = v->dcur;
-		unsigned long backsize = v->backsize-1;
-		signed long  unp_offset = v->unp_offset;
+		unsigned int* dsize = &v->dsize;
+		unsigned int dcur = v->dcur;
+		unsigned int backsize = v->backsize-1;
+		signed int  unp_offset = v->unp_offset;
 
 		if(!CLI_ISCONTAINED(dst, *dsize, dst+dcur+unp_offset, backsize) ||
 				!CLI_ISCONTAINED(dst, *dsize,dst+dcur,backsize) || unp_offset >= 0)  {
@@ -188,90 +207,41 @@ int main()
 		}
 		abort();
 	}
+	crashtest();
 	return 0;
 }
 ], [AC_MSG_RESULT([ok, bug not present])],
-[AC_MSG_ERROR([your compiler has a bug that causes clamav 670, use a different compiler, see http://bugs.clamav.net/bugzilla/show_bug.cgi?id=670])], [AC_MSG_RESULT([cross-compiling, assumed ok])])
+[AC_MSG_ERROR([your compiler has a bug that causes clamav bug no. 670, use a different compiler, see http://bugs.clamav.net/bugzilla/show_bug.cgi?id=670])], [AC_MSG_RESULT([cross-compiling, assumed ok])])
 
-AC_CHECK_HEADERS(stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h poll.h limits.h sys/filio.h sys/uio.h termios.h stdbool.h pwd.h grp.h)
-AC_CHECK_HEADER(syslog.h,AC_DEFINE(USE_SYSLOG,1,[use syslog]),)
+dnl Check if compiler produces invalid code on gcc PR28045 (affects upx.c)
+dnl testcase from gcc testsuite
+AC_MSG_CHECKING([for gcc bug PR28045])
+AC_TRY_RUN(
+	   [
+/* (C) Andrew Pinski */
+extern void abort(void);
+struct a
+{
+   unsigned int bits : 1;
+   signed long val : ((sizeof(long) * 8) - 1);
+};
+int Fnegate (struct a b)
+{
+  if ((-((long)b.val)) <= ((long) ((1UL << ((sizeof(long) * 8) - 2)) -1UL))
+      && (-((long)b.val)) >= (-(((long) ((1UL << ((sizeof(long) * 8) - 2)) -1UL))) - 1))
+     return 0 ;
+  abort ();
+}
+int main ()
+{
+  struct a b = {1, 1};
+  Fnegate (b);
+  return 0;
+}
+], [AC_MSG_RESULT([ok, bug not present])],
+[AC_MSG_ERROR([your compiler has gcc PR28045 bug, use a different compiler, see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=28045])], [AC_MSG_RESULT([cross-compiling, assumed ok])])
 
-AC_TYPE_OFF_T
-AC_COMPILE_CHECK_SIZEOF(short)
-AC_COMPILE_CHECK_SIZEOF(int)
-AC_COMPILE_CHECK_SIZEOF(long)
-AC_COMPILE_CHECK_SIZEOF(long long)
-
-AC_ARG_ENABLE(experimental,
-[  --enable-experimental	enable experimental code],
-enable_experimental=$enableval, enable_experimental="no")
-
-if test "$enable_experimental" = "yes"; then
-  AC_DEFINE(CL_EXPERIMENTAL,1,[enable experimental code])
-fi
-
-AC_CHECK_LIB(socket, bind, [LIBS="$LIBS -lsocket"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsocket"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsocket"; CLAMD_LIBS="$CLAMD_LIBS -lsocket"])
-AC_SEARCH_LIBS([gethostent],[nsl], [(LIBS="$LIBS -lnsl"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lnsl"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lnsl"; CLAMD_LIBS="$CLAMD_LIBS -lnsl")])
-
-dnl we need to try to link with iconv, otherwise there could be a 
-dnl mismatch between a 32-bit and 64-bit lib. Detect this at configure time.
-AC_ARG_WITH(iconv, [  --with-iconv supports iconv() (default=auto)],
-[
- case "$withval" in
-	 yes|no) wiconv="$withval";;
-	 *) AC_MSG_ERROR([--with-iconv does not take an argument]);;
- esac],
-[ wiconv=auto ])
-if test "X$wiconv" != "Xno"; then
-	AC_CHECK_LIB(iconv, libiconv_open, LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -liconv")
-	AC_MSG_CHECKING([for iconv])
-	save_LIBS="$LIBS"
-	LIBS="$LIBCLAMAV_LIBS"
-	AC_TRY_LINK([
-		     #include <iconv.h>
-	],[
-	char** xin,**xout;
-	unsigned il,ol;
-	int rc;
-	iconv_t iconv_struct = iconv_open("UTF-16BE","UTF-8");
-	rc = iconv(iconv_struct,xin,&il,xout,&ol);
-	iconv_close(iconv_struct);
-],[
-   AC_MSG_RESULT(yes)
-   AC_DEFINE(HAVE_ICONV, 1, [iconv() available])
-],[
-	AC_MSG_RESULT(no)
-])
-	LIBS="$save_LIBS"
-fi
-
-AC_CHECK_FUNCS(poll setsid memcpy snprintf vsnprintf strerror_r strlcpy strlcat strcasestr inet_ntop setgroups initgroups ctime_r mkstemp)
-AC_FUNC_MMAP
-AC_FUNC_FSEEKO
-
-have_pthreads=no
-AC_CHECK_HEADER(pthread.h,[have_pthreads=yes],)
-
-AM_MAINTAINER_MODE
-dnl Check for zlib
-AC_MSG_CHECKING(for zlib installation)
-AC_ARG_WITH(zlib,
-[  --with-zlib=DIR	  path to directory containing zlib library (default=
-			  /usr/local or /usr if not found in /usr/local)],
-[
-if test "$withval"; then
-  ZLIB_HOME="$withval"
-  AC_MSG_RESULT(using $ZLIB_HOME)
-fi
-], [
-ZLIB_HOME=/usr/local
-if test ! -f "$ZLIB_HOME/include/zlib.h"
-then
-  ZLIB_HOME=/usr
-fi
-AC_MSG_RESULT($ZLIB_HOME)
-])
-
+dnl Linker feature checks
 dnl check for version script support in the linker (GNU ld, or Solaris ld style)
 AC_CACHE_CHECK([for ld --version-script], [ac_cv_ld_version_script], [dnl
   cat > conftest.c <<EOF
@@ -316,16 +286,95 @@ EOF
 	fi
   fi
  rm -f conftest*])
-AC_SUBST(VERSIONSCRIPTFLAG)
-AM_CONDITIONAL(VERSIONSCRIPT, test "x$ac_cv_ld_version_script" = "xyes")
+AC_SUBST([VERSIONSCRIPTFLAG])
+AM_CONDITIONAL([VERSIONSCRIPT], test "x$ac_cv_ld_version_script" = "xyes")
 
-AC_ARG_ENABLE(zlib-vcheck,
+AC_CHECK_HEADERS([stdint.h unistd.h sys/int_types.h dlfcn.h inttypes.h sys/inttypes.h memory.h ndir.h stdlib.h strings.h string.h sys/mman.h sys/param.h sys/stat.h sys/types.h malloc.h poll.h limits.h sys/filio.h sys/uio.h termios.h stdbool.h pwd.h grp.h])
+AC_CHECK_HEADER([syslog.h],AC_DEFINE([USE_SYSLOG],1,[use syslog]),)
+
+AC_TYPE_OFF_T
+AC_COMPILE_CHECK_SIZEOF([short])
+AC_COMPILE_CHECK_SIZEOF([int])
+AC_COMPILE_CHECK_SIZEOF([long])
+AC_COMPILE_CHECK_SIZEOF([long long])
+
+AC_ARG_ENABLE([experimental],
+[  --enable-experimental	enable experimental code],
+enable_experimental=$enableval, enable_experimental="no")
+
+if test "$enable_experimental" = "yes"; then
+  AC_DEFINE([CL_EXPERIMENTAL],1,[enable experimental code])
+fi
+
+AC_CHECK_LIB([socket], [bind], [LIBS="$LIBS -lsocket"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsocket"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsocket"; CLAMD_LIBS="$CLAMD_LIBS -lsocket"])
+AC_SEARCH_LIBS([gethostent],[nsl], [(LIBS="$LIBS -lnsl"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lnsl"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lnsl"; CLAMD_LIBS="$CLAMD_LIBS -lnsl")])
+
+dnl we need to try to link with iconv, otherwise there could be a 
+dnl mismatch between a 32-bit and 64-bit lib. Detect this at configure time.
+AC_ARG_WITH([iconv], [  --with-iconv supports iconv() (default=auto)],
+[
+ case "$withval" in
+	 yes|no) wiconv="$withval";;
+	 *) AC_MSG_ERROR([--with-iconv does not take an argument]);;
+ esac],
+[ wiconv=auto ])
+if test "X$wiconv" != "Xno"; then
+	AC_CHECK_LIB([iconv], [libiconv_open], LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -liconv")
+	AC_MSG_CHECKING([for iconv])
+	save_LIBS="$LIBS"
+	LIBS="$LIBCLAMAV_LIBS"
+	AC_TRY_LINK([
+		     #include <iconv.h>
+	],[
+	char** xin,**xout;
+	unsigned il,ol;
+	int rc;
+	iconv_t iconv_struct = iconv_open("UTF-16BE","UTF-8");
+	rc = iconv(iconv_struct,xin,&il,xout,&ol);
+	iconv_close(iconv_struct);
+],[
+   AC_MSG_RESULT(yes)
+   AC_DEFINE([HAVE_ICONV], 1, [iconv() available])
+],[
+	AC_MSG_RESULT(no)
+])
+	LIBS="$save_LIBS"
+fi
+
+AC_CHECK_FUNCS([poll setsid memcpy snprintf vsnprintf strerror_r strlcpy strlcat strcasestr inet_ntop setgroups initgroups ctime_r mkstemp])
+AC_FUNC_MMAP
+AC_FUNC_FSEEKO
+
+have_pthreads=no
+AC_CHECK_HEADER([pthread.h],[have_pthreads=yes],)
+
+AM_MAINTAINER_MODE
+dnl Check for zlib
+AC_MSG_CHECKING([for zlib installation])
+AC_ARG_WITH([zlib],
+[  --with-zlib=DIR	  path to directory containing zlib library (default=
+			  /usr/local or /usr if not found in /usr/local)],
+[
+if test "$withval"; then
+  ZLIB_HOME="$withval"
+  AC_MSG_RESULT([using $ZLIB_HOME])
+fi
+], [
+ZLIB_HOME=/usr/local
+if test ! -f "$ZLIB_HOME/include/zlib.h"
+then
+  ZLIB_HOME=/usr
+fi
+AC_MSG_RESULT([$ZLIB_HOME])
+])
+
+AC_ARG_ENABLE([zlib-vcheck],
 [  --disable-zlib-vcheck	  do not check for buggy zlib version ],
 zlib_check=$enableval, zlib_check="yes")
 
 if test ! -f "$ZLIB_HOME/include/zlib.h"
 then
-    AC_MSG_ERROR(Please install zlib and zlib-devel packages)
+    AC_MSG_ERROR([Please install zlib and zlib-devel packages])
 else
 
     vuln=`grep "ZLIB_VERSION \"1.2.0" $ZLIB_HOME/include/zlib.h`
@@ -347,44 +396,54 @@ else
 	CPPFLAGS="$CPPFLAGS -I$ZLIB_HOME/include"
 	save_LDFLAGS="$LDFLAGS"
 	LDFLAGS="$LIBS -L$ZLIB_HOME/lib"
-	AC_CHECK_LIB(z, inflateEnd, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -L$ZLIB_HOME/lib -lz"; AC_DEFINE(HAVE_ZLIB_H,1,zlib installed)], AC_MSG_ERROR(Please install zlib and zlib-devel packages))
+	AC_CHECK_LIB([z], [inflateEnd], [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -L$ZLIB_HOME/lib -lz"; AC_DEFINE([HAVE_ZLIB_H],1,zlib installed)], AC_MSG_ERROR([Please install zlib and zlib-devel packages]))
 	LDFLAGS="$save_LDFLAGS"
     else
-	AC_CHECK_LIB(z, inflateEnd, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lz"; AC_DEFINE(HAVE_ZLIB_H,1,zlib installed)], AC_MSG_ERROR(Please install zlib and zlib-devel packages))
+	AC_CHECK_LIB([z], [inflateEnd], [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lz"; AC_DEFINE([HAVE_ZLIB_H],1,zlib installed)], AC_MSG_ERROR([Please install zlib and zlib-devel packages]))
     fi
 fi
 
-AC_ARG_ENABLE(bzip2,
+AC_ARG_ENABLE([bzip2],
 [  --disable-bzip2	  disable bzip2 support],
 want_bzip2=$enableval, want_bzip2="yes")
 
 if test "$want_bzip2" = "yes"
 then
-    AC_CHECK_LIB(bz2, bzReadOpen, AC_DEFINE(NOBZ2PREFIX,1,bzip funtions do not have bz2 prefix),)
-    AC_CHECK_HEADER(bzlib.h,[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lbz2"; AC_DEFINE(HAVE_BZLIB_H,1,have bzip2)], AC_MSG_WARN([****** bzip2 support disabled]))
+    AC_LIB_LINKFLAGS([bz2])
+    AC_CHECK_LIB([bz2], [bzReadOpen],
+		 [AC_DEFINE([NOBZ2PREFIX],1,[bzip funtions do not have bz2 prefix])],,
+		 [-L$LIBBZ2_PREFIX/lib])
+    if test "$HAVE_LIBBZ2" = "yes"; then
+	AC_CHECK_HEADER([bzlib.h],
+			[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $LTLIBBZ2";
+			 AC_DEFINE([HAVE_BZLIB_H],1,[have bzip2])],
+			[AC_MSG_WARN([****** bzip2 support disabled])])
+    else
+	AC_MSG_WARN([****** bzip2 support disabled])
+    fi
 fi
 
-AC_ARG_ENABLE(unrar,
+AC_ARG_ENABLE([unrar],
 [  --disable-unrar	  don't build libclamunrar and libclamunrar_iface ],
 want_unrar=$enableval, want_unrar="yes")
 
-AC_ARG_ENABLE(dns,
+AC_ARG_ENABLE([dns],
     AC_HELP_STRING([--disable-dns], [disable support for database verification through DNS]),
     [want_dns=$enableval], [want_dns=yes]
 )
 if test $want_dns = yes; then
-    AC_CHECK_LIB(resolv, __dn_expand, resolv_lib="-lresolv",)
+    AC_CHECK_LIB([resolv], [__dn_expand], [resolv_lib="-lresolv"],)
     if test -z "$resolv_lib"; then
-	AC_CHECK_LIB(resolv, dn_expand, resolv_lib="-lresolv",)
+	AC_CHECK_LIB([resolv], [dn_expand], [resolv_lib="-lresolv"],)
     fi
-    AC_CHECK_HEADER(resolv.h,[FRESHCLAM_LIBS="$FRESHCLAM_LIBS $resolv_lib"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS $resolv_lib"; AC_DEFINE(HAVE_RESOLV_H,1,have resolv.h)], AC_MSG_WARN([****** DNS support disabled]), [
+    AC_CHECK_HEADER([resolv.h],[FRESHCLAM_LIBS="$FRESHCLAM_LIBS $resolv_lib"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS $resolv_lib"; AC_DEFINE([HAVE_RESOLV_H],1,[have resolv.h])], AC_MSG_WARN([****** DNS support disabled]), [
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
 ])
 fi
 
-AC_ARG_ENABLE(clamuko,
+AC_ARG_ENABLE([clamuko],
 [  --disable-clamuko	  disable clamuko support (Linux, DragonFly and FreeBSD only)],
 want_clamuko=$enableval, want_clamuko="yes")
 
@@ -394,7 +453,7 @@ dnl testcase from gdb/configure.ac
 if test "$cross_compiling" = no; then
  AC_FUNC_SETPGRP
 else
- AC_CACHE_CHECK([whether setpgrp takes no argument], ac_cv_func_setpgrp_void,
+ AC_CACHE_CHECK([whether setpgrp takes no argument], [ac_cv_func_setpgrp_void],
    [AC_TRY_COMPILE([
 #include <unistd.h>
 ], [
@@ -404,25 +463,25 @@ else
    exit (1);
 ], ac_cv_func_setpgrp_void=no, ac_cv_func_setpgrp_void=yes)])
 if test $ac_cv_func_setpgrp_void = yes; then
- AC_DEFINE(SETPGRP_VOID, 1)
+ AC_DEFINE([SETPGRP_VOID], 1)
 fi
 fi
 
-AC_ARG_ENABLE(milter,
+AC_ARG_ENABLE([milter],
 [  --enable-milter	  build clamav-milter],
 have_milter=$enableval, have_milter="no")
 
 if test "$have_milter" = "yes"; then
   sendmailprog=no
-  AC_ARG_WITH(sendmail,
+  AC_ARG_WITH([sendmail],
   [  --with-sendmail=PATH    specify location of Sendmail binary (default=auto find)],
   sendmailprog=$with_sendmail, sendmailprog=no)
 
   if test "$sendmailprog" = "no" ; then
-    AC_PATH_PROG(sendmailprog, sendmail, no, $PATH:/sbin:/usr/sbin:/usr/lib:/usr/libexec)
+    AC_PATH_PROG([sendmailprog], sendmail, no, $PATH:/sbin:/usr/sbin:/usr/lib:/usr/libexec)
   fi
 
-  AC_DEFINE_UNQUOTED(SENDMAIL_BIN, "$sendmailprog", [location of Sendmail binary])
+  AC_DEFINE_UNQUOTED([SENDMAIL_BIN], "$sendmailprog", [location of Sendmail binary])
 
   sendmailver=`$sendmailprog -d0 < /dev/null | head -1 | awk '{print $2}'`
 
@@ -431,85 +490,98 @@ if test "$have_milter" = "yes"; then
     sendmailver_b=`echo $sendmailver | awk -F. '{printf $2}'`
     sendmailver_c=`echo $sendmailver | awk -F. '{printf $3}'`
 
-    AC_DEFINE_UNQUOTED(SENDMAIL_VERSION_A, $sendmailver_a, [major version of Sendmail])
-    AC_DEFINE_UNQUOTED(SENDMAIL_VERSION_B, $sendmailver_b, [minor version of Sendmail])
-    AC_DEFINE_UNQUOTED(SENDMAIL_VERSION_C, $sendmailver_c, [subversion of Sendmail])
+    AC_DEFINE_UNQUOTED([SENDMAIL_VERSION_A], $sendmailver_a, [major version of Sendmail])
+    AC_DEFINE_UNQUOTED([SENDMAIL_VERSION_B], $sendmailver_b, [minor version of Sendmail])
+    AC_DEFINE_UNQUOTED([SENDMAIL_VERSION_C], $sendmailver_c, [subversion of Sendmail])
   fi
 fi
 
-AC_ARG_ENABLE(dsig,
+AC_ARG_ENABLE([dsig],
 [  --disable-dsig	  disable support for digital signatures],
 want_dsig=$enableval, want_dsig="yes")
 
 if test "$want_dsig" = "yes"
 then
-    AC_CHECK_LIB(gmp, __gmpz_init, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; AC_DEFINE(HAVE_GMP,1,have gmp installed)], [AC_CHECK_LIB(gmp, mpz_init, [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lgmp"; AC_DEFINE(HAVE_GMP,1,have gmp installed)], AC_MSG_WARN([****** GNU MP 2 or newer NOT FOUND - digital signature support will be disabled !]); want_dsig="no")])
+    dnl defines HAVE_LIBGMP, LIBGMP, and LTLIBGMP
+    dnl also adds option --with-libgmp-prefix to configure
+    AC_LIB_HAVE_LINKFLAGS([gmp],,
+	[#include <gmp.h>
+	],
+	[mpz_init(0);])
+    dnl we don't need to check for __gmpz_init and mpz_init,
+    dnl since we are not checking directly for symbols
+    if test "$HAVE_LIBGMP" = "yes"; then
+	    LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $LTLIBGMP";
+    else
+	    AC_MSG_WARN([****** GNU MP 2 or newer NOT FOUND - digital signature support will be disabled !]);
+	    want_dsig="no";
+    fi
 fi
 
-AC_ARG_ENABLE(pthreads,
+AC_ARG_ENABLE([pthreads],
 [  --disable-pthreads      disable POSIX threads support],
 have_pthreads=$enableval,)
 
-AC_ARG_ENABLE(cr,
+AC_ARG_ENABLE([cr],
 [  --disable-cr		  don't link with C reentrant library (BSD) ],
 use_cr=$enableval,)
 
-AC_ARG_ENABLE(id-check,
+AC_ARG_ENABLE([id-check],
 [  --enable-id-check	  use id utility instead of /etc/passwd parsing],
 use_id=$enableval, use_id="no")
 
-AC_ARG_ENABLE(yp-check,
+AC_ARG_ENABLE([yp-check],
 [  --enable-yp-check	  use ypmatch utility instead of /etc/passwd parsing],
 use_yp=$enableval, use_yp="no")
 
-AC_ARG_WITH(user, 
+AC_ARG_WITH([user], 
 [  --with-user=uid	  name of the clamav user (default=clamav)],
 clamav_user="$withval", clamav_user="clamav")
 
-AC_ARG_WITH(group, 
+AC_ARG_WITH([group], 
 [  --with-group=gid	  name of the clamav group (default=clamav)],
 clamav_group="$withval", clamav_group="clamav")
 
-AC_DEFINE_UNQUOTED(CLAMAVUSER,"$clamav_user",[name of the clamav user])
-AC_DEFINE_UNQUOTED(CLAMAVGROUP,"$clamav_group",[name of the clamav group])
+AC_DEFINE_UNQUOTED([CLAMAVUSER],"$clamav_user",[name of the clamav user])
+AC_DEFINE_UNQUOTED([CLAMAVGROUP],"$clamav_group",[name of the clamav group])
 
-AC_ARG_ENABLE(clamav,
+AC_ARG_ENABLE([clamav],
 [  --disable-clamav	  disable test for clamav user/group],
 test_clamav=$enableval, test_clamav=yes)
 
-AC_ARG_ENABLE(debug,
+AC_ARG_ENABLE([debug],
 [  --enable-debug	  enable debug code],
 enable_debug=$enableval, enable_debug="no")
 
 if test "$enable_debug" = "yes"; then
-  AC_DEFINE(CL_DEBUG,1,[enable debugging])
+  AC_DEFINE([CL_DEBUG],1,[enable debugging])
 fi
 
-AC_ARG_ENABLE(no-cache,
+AC_ARG_ENABLE([no-cache],
 [  --enable-no-cache	  use "Cache-Control: no-cache" in freshclam],
 enable_nocache=$enableval, enable_nocache="no")
 
 if test "$enable_nocache" = "yes"; then
-  AC_DEFINE(FRESHCLAM_NO_CACHE,1,[use "Cache-Control: no-cache" in freshclam])
+  AC_DEFINE([FRESHCLAM_NO_CACHE],1,[use "Cache-Control: no-cache" in freshclam])
 fi
 
-AC_ARG_ENABLE(dns-fix,
+AC_ARG_ENABLE([dns-fix],
 [  --enable-dns-fix	  enable workaround for broken DNS servers (as in SpeedTouch 510)],
 enable_dnsfix=$enableval, enable_dnsfix="no")
 
 if test "$enable_dnsfix" = "yes"; then
-  AC_DEFINE(FRESHCLAM_DNS_FIX,1,[enable workaround for broken DNS servers])
+  AC_DEFINE([FRESHCLAM_DNS_FIX],1,[enable workaround for broken DNS servers])
 fi
 
-AC_ARG_ENABLE(bigstack,
+AC_ARG_ENABLE([bigstack],
 [  --enable-bigstack	  increase thread stack size],
 enable_bigstack=$enableval, enable_bigstack="no")
 
 if test "$enable_bigstack" = "yes"; then
-  AC_DEFINE(C_BIGSTACK,1,[Increase thread stack size.])
+  AC_DEFINE([C_BIGSTACK],1,[Increase thread stack size.])
 fi
 
-AC_ARG_WITH(dbdir, 
+AC_ARG_WITH([dbdir], 
 [  --with-dbdir=path	  path to virus database directory],
 db_dir="$withval", db_dir="_default_")
 
@@ -524,9 +596,9 @@ then
     fi
 fi
 
-AC_DEFINE_UNQUOTED(DATADIR,"$db_dir", [Path to virus database directory.])
+AC_DEFINE_UNQUOTED([DATADIR],"$db_dir", [Path to virus database directory.])
 DBDIR="$db_dir"
-AC_SUBST(DBDIR)
+AC_SUBST([DBDIR])
 
 dnl configure config directory
 cfg_dir=`echo $sysconfdir | grep prefix`
@@ -543,8 +615,8 @@ else
 fi
 
 CFGDIR=$cfg_dir
-AC_SUBST(CFGDIR)
-AC_DEFINE_UNQUOTED(CONFDIR,"$cfg_dir",[where to look for the config file])
+AC_SUBST([CFGDIR])
+AC_DEFINE_UNQUOTED([CONFDIR],"$cfg_dir",[where to look for the config file])
 
 dnl check for in_port_t definition
 AC_MSG_CHECKING([whether in_port_t is defined])
@@ -555,7 +627,7 @@ AC_TRY_COMPILE([
 [int main(int argc, char **argv) { in_port_t pt; pt = 0; return pt; }],
 [
     AC_MSG_RESULT(yes)
-    AC_DEFINE(HAVE_IN_PORT_T,1,[in_port_t is defined])
+    AC_DEFINE([HAVE_IN_PORT_T],1,[in_port_t is defined])
 ],
 AC_MSG_RESULT(no))
 
@@ -568,42 +640,42 @@ AC_TRY_COMPILE([
 [int main(int argc, char **argv) { in_addr_t pt; pt = 0; return pt; }],
 [
     AC_MSG_RESULT(yes)
-    AC_DEFINE(HAVE_IN_ADDR_T,1,[in_addr_t is defined])
+    AC_DEFINE([HAVE_IN_ADDR_T],1,[in_addr_t is defined])
 ],
 AC_MSG_RESULT(no))
 
 case "$target_os" in
 linux*)
-    AC_DEFINE(C_LINUX,1,[target is linux])
+    AC_DEFINE([C_LINUX],1,[target is linux])
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
-	AC_DEFINE(_REENTRANT,1,[thread safe])
+	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
+	AC_DEFINE([_REENTRANT],1,[thread safe])
 	if test "$want_clamuko" = "yes"; then
-	    AC_DEFINE(CLAMUKO,1,[enable clamuko])
+	    AC_DEFINE([CLAMUKO],1,[enable clamuko])
 	fi
     fi
     case `uname -r` in
     1.*|2.0.*)
-       AC_DEFINE(INCOMPLETE_CMSG,1,[Early Linux doesn't set cmsg fields])
+       AC_DEFINE([INCOMPLETE_CMSG],1,[Early Linux doesn't set cmsg fields])
        ;;
     esac
     ;;
 kfreebsd*-gnu)
-    AC_DEFINE(C_KFREEBSD_GNU,1,[target is kfreebsd-gnu])
+    AC_DEFINE([C_KFREEBSD_GNU],1,[target is kfreebsd-gnu])
     if test "$have_pthreads" = "yes"; then
        THREAD_LIBS="-lpthread"
        TH_SAFE="-thread-safe"
-       AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
-       AC_DEFINE(_REENTRANT,1,[thread safe])
+       AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
+       AC_DEFINE([_REENTRANT],1,[thread safe])
        if test "$want_clamuko" = "yes"; then
-           AC_DEFINE(CLAMUKO,1,[enable clamuko])
+           AC_DEFINE([CLAMUKO],1,[enable clamuko])
        fi
     fi
     ;;
 cygwin*)
-    AC_DEFINE(C_CYGWIN,1,[os is cygwin])
+    AC_DEFINE([C_CYGWIN],1,[os is cygwin])
     if test "$test_clamav" = "yes"; then
 	if test ! -r /etc/passwd; then
 	   test_clamav="no"
@@ -612,8 +684,8 @@ cygwin*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
-	AC_DEFINE(_REENTRANT,1,[thread safe])
+	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
+	AC_DEFINE([_REENTRANT],1,[thread safe])
     fi
     use_gethostbyname_r="no"
     ;;
@@ -624,48 +696,48 @@ solaris*)
 	CLAMD_LIBS="$CLAMD_LIBS -lresolv"
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lresolv"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
-	AC_DEFINE(_REENTRANT,1,[thread safe])
+	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
+	AC_DEFINE([_REENTRANT],1,[thread safe])
     fi
-    AC_DEFINE(C_SOLARIS,1,[os is solaris])
+    AC_DEFINE([C_SOLARIS],1,[os is solaris])
     ;;
 freebsd[[45]]*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-pthread -lc_r"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
-	AC_DEFINE(_REENTRANT,1,[thread safe])
+	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
+	AC_DEFINE([_REENTRANT],1,[thread safe])
 	if test "$want_clamuko" = "yes"; then
-	    AC_DEFINE(CLAMUKO,1,[enable clamuko])
+	    AC_DEFINE([CLAMUKO],1,[enable clamuko])
 	fi
     fi
-    AC_DEFINE(C_BSD,1,[os is freebsd 4 or 5])
+    AC_DEFINE([C_BSD],1,[os is freebsd 4 or 5])
     use_gethostbyname_r="no"
     ;;
 freebsd*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lthr"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
-	AC_DEFINE(_REENTRANT,1,[thread safe])
+	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
+	AC_DEFINE([_REENTRANT],1,[thread safe])
 	if test "$want_clamuko" = "yes"; then
-	    AC_DEFINE(CLAMUKO,1,[enable clamuko])
+	    AC_DEFINE([CLAMUKO],1,[enable clamuko])
 	fi
     fi
-    AC_DEFINE(C_BSD,1,[os is freebsd 6])
+    AC_DEFINE([C_BSD],1,[os is freebsd 6])
     use_gethostbyname_r="no"
     ;;
 dragonfly*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-pthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
-	AC_DEFINE(_REENTRANT,1,[thread safe])
+	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
+	AC_DEFINE([_REENTRANT],1,[thread safe])
 	if test "$want_clamuko" = "yes"; then
-	    AC_DEFINE(CLAMUKO,1,[enable clamuko])
+	    AC_DEFINE([CLAMUKO],1,[enable clamuko])
 	fi
     fi
-    AC_DEFINE(C_BSD,1,[os is dragonfly])
+    AC_DEFINE([C_BSD],1,[os is dragonfly])
     use_gethostbyname_r="no"
     ;;
 openbsd*)
@@ -676,46 +748,46 @@ openbsd*)
 	    THREAD_LIBS="-pthread -lc_r"
 	fi
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
-	AC_DEFINE(_REENTRANT,1,[thread safe])
+	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
+	AC_DEFINE([_REENTRANT],1,[thread safe])
     fi
-    AC_DEFINE(C_BSD,1,[os is OpenBSD])
+    AC_DEFINE([C_BSD],1,[os is OpenBSD])
     use_gethostbyname_r="no"
     ;;
 bsdi*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-pthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
-	AC_DEFINE(_REENTRANT,1,[thread safe])
+	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
+	AC_DEFINE([_REENTRANT],1,[thread safe])
     fi
-    AC_DEFINE(C_BSD,1,[os is BSDI BSD/OS])
+    AC_DEFINE([C_BSD],1,[os is BSDI BSD/OS])
     use_gethostbyname_r="no"
     ;;
 netbsd*)
      if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
-	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
-	AC_DEFINE(_REENTRANT,1,[thread safe])
+	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
+	AC_DEFINE([_REENTRANT],1,[thread safe])
      fi
-    AC_DEFINE(C_BSD,1,[os is NetBSD])
+    AC_DEFINE([C_BSD],1,[os is NetBSD])
     use_gethostbyname_r="no"
     ;;
 bsd*)
-    AC_MSG_RESULT(Unknown BSD detected. Disabling thread support.)
+    AC_MSG_RESULT([Unknown BSD detected. Disabling thread support.])
     have_pthreads="no"
-    AC_DEFINE(C_BSD,1,[os is bsd flavor])
+    AC_DEFINE([C_BSD],1,[os is bsd flavor])
     use_gethostbyname_r="no"
     ;;
 beos*)
-    AC_MSG_RESULT(BeOS detected. Disabling thread support.)
+    AC_MSG_RESULT([BeOS detected. Disabling thread support.])
     have_pthreads="no"
-    AC_DEFINE(C_BEOS,1,[os is beos])
+    AC_DEFINE([C_BEOS],1,[os is beos])
     ;;
 darwin*)
-    AC_DEFINE(C_BSD,1,[os is bsd flavor])
-    AC_DEFINE(C_DARWIN,1,[os is darwin])
-    AC_DEFINE(BIND_8_COMPAT,1,[enable bind8 compatibility])
+    AC_DEFINE([C_BSD],1,[os is bsd flavor])
+    AC_DEFINE([C_DARWIN],1,[os is darwin])
+    AC_DEFINE([BIND_8_COMPAT],1,[enable bind8 compatibility])
     use_netinfo="yes"
     use_gethostbyname_r="no"
     ;;
@@ -726,10 +798,10 @@ os2*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
-	AC_DEFINE(_REENTRANT,1,[thread safe])
+	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
+	AC_DEFINE([_REENTRANT],1,[thread safe])
     fi
-    AC_DEFINE(C_OS2,1,[os is OS/2])
+    AC_DEFINE([C_OS2],1,[os is OS/2])
     ;;
 sco*)
     dnl njh@bandsman.sco.uk: SCO Unix port
@@ -741,49 +813,49 @@ hpux*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
-	AC_DEFINE(_REENTRANT,1,[thread safe])
+	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
+	AC_DEFINE([_REENTRANT],1,[thread safe])
     fi
-    AC_DEFINE(C_HPUX,1,[os is hpux])
+    AC_DEFINE([C_HPUX],1,[os is hpux])
     use_gethostbyname_r="no"
     ;;
 aix*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
-	AC_DEFINE(_REENTRANT,1,[thread safe])
+	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
+	AC_DEFINE([_REENTRANT],1,[thread safe])
     fi
-    AC_DEFINE(C_AIX,1,[os is aix])
+    AC_DEFINE([C_AIX],1,[os is aix])
     ;;
 *-*-osf*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-pthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
-	AC_DEFINE(_REENTRANT,1,[thread safe])
-	AC_DEFINE(_POSIX_PII_SOCKET,1,[POSIX compatibility])
+	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
+	AC_DEFINE([_REENTRANT],1,[thread safe])
+	AC_DEFINE([_POSIX_PII_SOCKET],1,[POSIX compatibility])
     fi
-    AC_DEFINE(C_OSF,1,[os is osf/tru64])
+    AC_DEFINE([C_OSF],1,[os is osf/tru64])
     ;;
 nto-qnx*)
      if test "$have_pthreads" = "yes"; then
-       AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
-       AC_DEFINE(_REENTRANT,1,[thread safe])
+       AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
+       AC_DEFINE([_REENTRANT],1,[thread safe])
      fi
-    AC_DEFINE(C_QNX6,1,[os is QNX 6.x.x])
+    AC_DEFINE([C_QNX6],1,[os is QNX 6.x.x])
     ;;
 irix*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
-	AC_DEFINE(_REENTRANT,1,[thread safe])
+	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
+	AC_DEFINE([_REENTRANT],1,[thread safe])
     fi
-    AC_DEFINE(C_IRIX,1,[os is irix])
+    AC_DEFINE([C_IRIX],1,[os is irix])
     ;;
 interix*)
-    AC_DEFINE(C_INTERIX,1,[os is interix])
+    AC_DEFINE([C_INTERIX],1,[os is interix])
     if test "$test_clamav" = "yes"; then
 	if test ! -r /etc/passwd; then
 	   test_clamav="no"
@@ -792,29 +864,29 @@ interix*)
     if test "$have_pthreads" = "yes"; then
 	THREAD_LIBS="-lpthread"
 	TH_SAFE="-thread-safe"
-	AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
-	AC_DEFINE(_REENTRANT,1,[thread safe])
+	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
+	AC_DEFINE([_REENTRANT],1,[thread safe])
     fi
     ;;
 gnu*)
-    AC_DEFINE(C_GNU_HURD,1,[target is gnu-hurd])
+    AC_DEFINE([C_GNU_HURD],1,[target is gnu-hurd])
     if test "$have_pthreads" = "yes"; then
        THREAD_LIBS="-lpthread"
        TH_SAFE="-thread-safe"
-       AC_DEFINE(CL_THREAD_SAFE,1,[thread safe])
-       AC_DEFINE(_REENTRANT,1,[thread safe])
+       AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
+       AC_DEFINE([_REENTRANT],1,[thread safe])
     fi
     ;;
 *)
     ;;
 esac
 
-AC_SUBST(LIBCLAMAV_LIBS)
-AC_SUBST(CLAMD_LIBS)
-AC_SUBST(CLAMAV_MILTER_LIBS)
-AC_SUBST(FRESHCLAM_LIBS)
-AC_SUBST(TH_SAFE)
-AC_SUBST(THREAD_LIBS)
+AC_SUBST([LIBCLAMAV_LIBS])
+AC_SUBST([CLAMD_LIBS])
+AC_SUBST([CLAMAV_MILTER_LIBS])
+AC_SUBST([FRESHCLAM_LIBS])
+AC_SUBST([TH_SAFE])
+AC_SUBST([THREAD_LIBS])
 
 dnl --enable-milter
 if test "$have_milter" = "yes"; then
@@ -828,40 +900,40 @@ if test "$have_milter" = "yes"; then
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -L/usr/lib/libmilter"
     fi
     LDFLAGS="$LDFLAGS -lmilter $CLAMAV_MILTER_LIBS"
-    AC_CHECK_LIB(milter, mi_stop,[CLAMAV_MILTER_LIBS="-lmilter $CLAMAV_MILTER_LIBS"],[
+    AC_CHECK_LIB([milter],[mi_stop],[CLAMAV_MILTER_LIBS="-lmilter $CLAMAV_MILTER_LIBS"],[
 	dnl Older sendmails require libsm or libsmutil for support functions
-	AC_SEARCH_LIBS(strlcpy, [sm smutil], [test "$ac_cv_search_strlcpy" = "none required" || CLAMAV_MILTER_XLIB="$ac_cv_search_strlcpy"])
+	AC_SEARCH_LIBS([strlcpy], [sm smutil], [test "$ac_cv_search_strlcpy" = "none required" || CLAMAV_MILTER_XLIB="$ac_cv_search_strlcpy"])
 	LDFLAGS="$save_LDFLAGS $CLAMAV_MILTER_LIBS $CLAMAV_MILTER_XLIB"
 	$as_unset ac_cv_lib_milter_mi_stop
-	AC_CHECK_LIB(milter, mi_stop,[CLAMAV_MILTER_LIBS="-lmilter $CLAMAV_MILTER_XLIB $CLAMAV_MILTER_LIBS"],[
+	AC_CHECK_LIB([milter],[mi_stop],[CLAMAV_MILTER_LIBS="-lmilter $CLAMAV_MILTER_XLIB $CLAMAV_MILTER_LIBS"],[
 	    AC_MSG_ERROR([Cannot find libmilter])
 	])
     ])
     LDFLAGS="$save_LDFLAGS"
-    AC_CHECK_HEADERS(libmilter/mfapi.h,have_milter="yes",[
+    AC_CHECK_HEADERS([libmilter/mfapi.h],[have_milter="yes"],[
 	AC_MSG_ERROR([Please install mfapi.h from the sendmail distribution])
     ])
 fi
 
-AM_CONDITIONAL(BUILD_CLAMD, test "$have_pthreads" = "yes")
-AM_CONDITIONAL(HAVE_MILTER, test "$have_milter" = "yes")
-AM_CONDITIONAL(ENABLE_UNRAR, test "$want_unrar" = "yes")
+AM_CONDITIONAL([BUILD_CLAMD],[test "$have_pthreads" = "yes"])
+AM_CONDITIONAL([HAVE_MILTER],[test "$have_milter" = "yes"])
+AM_CONDITIONAL([ENABLE_UNRAR],[test "$want_unrar" = "yes"])
 
 if test "$have_pthreads" = "yes"
 then
-    AC_DEFINE(BUILD_CLAMD, 1, "build clamd")
+    AC_DEFINE([BUILD_CLAMD], 1, "build clamd")
 fi
 
 if test "$want_unrar" = "yes"
 then
-    AC_DEFINE(ENABLE_UNRAR, 1, "build unrar code")
+    AC_DEFINE([ENABLE_UNRAR], 1, "build unrar code")
 fi
 
 dnl Check if we can do fd passing
 dnl Submitted by Richard Lyons <frob-clamav@webcentral.com.au>
-AC_CHECK_FUNCS(recvmsg sendmsg)
+AC_CHECK_FUNCS([recvmsg sendmsg])
 AC_CACHE_CHECK([for msg_accrights field in struct msghdr],
-	ac_cv_have_accrights_in_msghdr, [
+	[ac_cv_have_accrights_in_msghdr], [
     AC_TRY_COMPILE(
 [
 #include <sys/types.h>
@@ -869,7 +941,7 @@ AC_CACHE_CHECK([for msg_accrights field in struct msghdr],
 #include <sys/uio.h>
 ],
 [
-int main() {
+int main(void) {
 #ifdef msg_accrights
 #error msg_accrights defined
 #endif
@@ -881,11 +953,11 @@ return 0;
 , [ac_cv_have_accrights_in_msghdr="yes"],[ac_cv_have_accrights_in_msghdr="no"])
 ])
 if test "x$ac_cv_have_accrights_in_msghdr" = "xyes" ; then
-    AC_DEFINE(HAVE_ACCRIGHTS_IN_MSGHDR,1,[access rights in msghdr])
+    AC_DEFINE([HAVE_ACCRIGHTS_IN_MSGHDR],1,[access rights in msghdr])
 fi
 
 AC_CACHE_CHECK([for msg_control field in struct msghdr],
-	ac_cv_have_control_in_msghdr, [
+	[ac_cv_have_control_in_msghdr], [
     AC_TRY_COMPILE(
 [
 #include <sys/types.h>
@@ -893,7 +965,7 @@ AC_CACHE_CHECK([for msg_control field in struct msghdr],
 #include <sys/uio.h>
 ],
 [
-int main() {
+int main(void) {
 #ifdef msg_control
 #error msg_control defined
 #endif
@@ -904,12 +976,12 @@ return 0;
 ], [ ac_cv_have_control_in_msghdr="yes" ], [ ac_cv_have_control_in_msghdr="no" ])
 ])
 if test "x$ac_cv_have_control_in_msghdr" = "xyes" ; then
-    AC_DEFINE(HAVE_CONTROL_IN_MSGHDR,1,[ancillary data style fd pass])
+    AC_DEFINE([HAVE_CONTROL_IN_MSGHDR],1,[ancillary data style fd pass])
 fi
 
 dnl tcpwrappers support
 dnl rules from http://ma.ph-freiburg.de/tng/tng-technical/2002-01/msg00094.html
-AC_ARG_WITH(tcpwrappers,
+AC_ARG_WITH([tcpwrappers],
 [  --with-tcpwrappers      support hosts.allow / hosts.deny (default=auto)],
 [ case "$withval" in
   yes|no) tcpw="$withval" ;;
@@ -918,7 +990,7 @@ AC_ARG_WITH(tcpwrappers,
 [ tcpw=auto ])
 
 if test "$tcpw" != "no" && test "$have_milter" = "yes" ; then
-        AC_CHECK_HEADERS(tcpd.h,[
+        AC_CHECK_HEADERS([tcpd.h],[
                 AC_MSG_CHECKING([for TCP wrappers library])
                 save_LIBS="$LIBS"
                 LIBS="$LIBS -lwrap $FRESHCLAM_LIBS"
@@ -953,7 +1025,7 @@ hosts_access(req)
                 have_wrappers=no])],[have_wrappers=no])
 
         if test $have_wrappers = yes ; then
-                AC_DEFINE(WITH_TCPWRAP,1, [tcpwrappers support])
+                AC_DEFINE([WITH_TCPWRAP],1, [tcpwrappers support])
         elif test $tcpw = yes ; then
                 AC_MSG_ERROR([could not find TCP wrappers])
         else
@@ -963,7 +1035,7 @@ fi
 
 dnl Check for gethostbyname_r and number of its arguments
 dnl Code from libwww/configure.in
-AC_MSG_CHECKING(for gethostbyname_r)
+AC_MSG_CHECKING([for gethostbyname_r])
 if test -z "$ac_cv_gethostbyname_args"; then
 AC_TRY_COMPILE(
 [
@@ -1008,21 +1080,21 @@ rc = gethostbyname_r(name, &h, buf, 10, &hp, &h_errno);
 ], ac_cv_gethostbyname_args=6)
 fi
 
-AC_ARG_ENABLE(gethostbyname_r,
+AC_ARG_ENABLE([gethostbyname_r],
 [  --disable-gethostbyname_r	  disable support for gethostbyname_r],
 use_gethostbyname_r=$enableval,)
 
 if test "$use_gethostbyname_r" = "no"; then
-    AC_MSG_RESULT(support disabled)
+    AC_MSG_RESULT([support disabled])
 elif test -z "$ac_cv_gethostbyname_args"; then
     AC_MSG_RESULT(no)
 else
     if test "$ac_cv_gethostbyname_args" = 3; then
-	AC_DEFINE(HAVE_GETHOSTBYNAME_R_3,1,[gethostbyname_r takes 3 arguments])
+	AC_DEFINE([HAVE_GETHOSTBYNAME_R_3],1,[gethostbyname_r takes 3 arguments])
     elif test "$ac_cv_gethostbyname_args" = 5; then
-	AC_DEFINE(HAVE_GETHOSTBYNAME_R_5,1,[gethostbyname_r takes 5 arguments])
+	AC_DEFINE([HAVE_GETHOSTBYNAME_R_5],1,[gethostbyname_r takes 5 arguments])
     elif test "$ac_cv_gethostbyname_args" = 6; then
-	AC_DEFINE(HAVE_GETHOSTBYNAME_R_6,1,[gethostbyname_r takes 6 arguments])
+	AC_DEFINE([HAVE_GETHOSTBYNAME_R_6],1,[gethostbyname_r takes 6 arguments])
     fi
     AC_MSG_RESULT([yes, and it takes $ac_cv_gethostbyname_args arguments])
 fi
@@ -1030,7 +1102,7 @@ fi
 dnl Check for readdir_r and number of its arguments
 dnl Code from libwww/configure.in
 
-AC_MSG_CHECKING(for readdir_r)
+AC_MSG_CHECKING([for readdir_r])
 if test -z "$ac_cv_readdir_args"; then
     AC_TRY_COMPILE(
     [
@@ -1057,7 +1129,7 @@ if test -z "$ac_cv_readdir_args"; then
     ], ac_cv_readdir_args=3)
 fi
 
-AC_ARG_ENABLE(readdir_r,
+AC_ARG_ENABLE([readdir_r],
 [  --enable-readdir_r		    enable support for readdir_r],
 enable_readdir_r=$enableval, enable_readdir_r="no")
 
@@ -1067,14 +1139,14 @@ elif test -z "$ac_cv_readdir_args"; then
     AC_MSG_RESULT(no)
 else
     if test "$ac_cv_readdir_args" = 2; then
-	AC_DEFINE(HAVE_READDIR_R_2,1,[readdir_r takes 2 arguments])
+	AC_DEFINE([HAVE_READDIR_R_2],1,[readdir_r takes 2 arguments])
     elif test "$ac_cv_readdir_args" = 3; then
-	AC_DEFINE(HAVE_READDIR_R_3,1,[readdir_r takes 3 arguments])
+	AC_DEFINE([HAVE_READDIR_R_3],1,[readdir_r takes 3 arguments])
     fi
     AC_MSG_RESULT([yes, and it takes $ac_cv_readdir_args arguments])
 fi
 
-AC_MSG_CHECKING(for ctime_r)
+AC_MSG_CHECKING([for ctime_r])
 if test "$ac_cv_func_ctime_r" = "yes"; then
     AC_TRY_COMPILE([
 	#include <time.h>
@@ -1084,18 +1156,18 @@ if test "$ac_cv_func_ctime_r" = "yes"; then
 	ctime_r(&t, buf, 30);
     ],[
 	ac_cv_ctime_args=3
-	AC_DEFINE(HAVE_CTIME_R_3,1,[ctime_r takes 3 arguments])
+	AC_DEFINE([HAVE_CTIME_R_3],1,[ctime_r takes 3 arguments])
     ],[
 	ac_cv_ctime_args=2
-	AC_DEFINE(HAVE_CTIME_R_2,1,[ctime_r takes 2 arguments])
+	AC_DEFINE([HAVE_CTIME_R_2],1,[ctime_r takes 2 arguments])
     ])
 
     AC_MSG_RESULT([yes, and it takes $ac_cv_ctime_args arguments])
 fi
 
 dnl Determine socklen_t type. Code from lftp.
-AC_MSG_CHECKING(for socklen_t)
-AC_CACHE_VAL(ac_cv_socklen_t,
+AC_MSG_CHECKING([for socklen_t])
+AC_CACHE_VAL([ac_cv_socklen_t],
 [
     ac_cv_socklen_t=no
     AC_TRY_COMPILE([
@@ -1110,10 +1182,10 @@ AC_CACHE_VAL(ac_cv_socklen_t,
 	ac_cv_socklen_t=yes
     ])
 ])
-AC_MSG_RESULT($ac_cv_socklen_t)
+AC_MSG_RESULT([$ac_cv_socklen_t])
     if test $ac_cv_socklen_t = no; then
-    AC_MSG_CHECKING(for socklen_t equivalent)
-    AC_CACHE_VAL(ac_cv_socklen_t_equiv,
+    AC_MSG_CHECKING([for socklen_t equivalent])
+    AC_CACHE_VAL([ac_cv_socklen_t_equiv],
     [
 	ac_cv_socklen_t_equiv=int
         for t in int size_t unsigned long "unsigned long"; do
@@ -1131,8 +1203,8 @@ AC_MSG_RESULT($ac_cv_socklen_t)
             ])
 	done
     ])
-    AC_MSG_RESULT($ac_cv_socklen_t_equiv)
-    AC_DEFINE_UNQUOTED(socklen_t, $ac_cv_socklen_t_equiv, [Define to "int" if <sys/socket.h> does not define.])
+    AC_MSG_RESULT([$ac_cv_socklen_t_equiv])
+    AC_DEFINE_UNQUOTED([socklen_t], $ac_cv_socklen_t_equiv, [Define to "int" if <sys/socket.h> does not define.])
 fi
 
 dnl Check for clamav in /etc/passwd
@@ -1141,13 +1213,13 @@ then
     dnl parse /etc/passwd
     if test "$use_id" = "no"
     then
-	AC_MSG_CHECKING(for $clamav_user in /etc/passwd)
+	AC_MSG_CHECKING([for $clamav_user in /etc/passwd])
 	if test -r /etc/passwd; then
 	    clamavuser=`cat /etc/passwd|grep "^$clamav_user:"`
 	    clamavgroup=`cat /etc/group|grep "^$clamav_group:"`
 	fi
     else
-	AC_MSG_CHECKING(for $clamav_user using id)
+	AC_MSG_CHECKING([for $clamav_user using id])
 	id $clamav_user > /dev/null 2>&1
 	if test "$?" = 0 ; then
 	    clamavuser=1
@@ -1163,11 +1235,11 @@ then
     if test "$use_netinfo" = "yes"
     then
 	if test -x /usr/bin/dscl; then
-	    AC_MSG_CHECKING(for $clamav_user using dscl)
+	    AC_MSG_CHECKING([for $clamav_user using dscl])
 	    clamavuser=`/usr/bin/dscl . -list /Users |grep ${clamav_user}`
 	    clamavgroup=`/usr/bin/dscl . -list /Groups |grep ${clamav_group}`
 	else
-	    AC_MSG_CHECKING(for $clamav_user using netinfo)
+	    AC_MSG_CHECKING([for $clamav_user using netinfo])
 	    clamavuser=`/usr/bin/nidump passwd . |grep ${clamav_user}`
 	    clamavgroup=`/usr/bin/nidump group . |grep ${clamav_group}`
 	fi
@@ -1175,7 +1247,7 @@ then
 
     if test "$use_yp" = "yes"
     then
-	AC_MSG_CHECKING(for $clamav_user using ypmatch)
+	AC_MSG_CHECKING([for $clamav_user using ypmatch])
         clamavuser=`ypmatch ${clamav_user} passwd`
         clamavgroup=`ypmatch ${clamav_group} group`
     fi
@@ -1183,38 +1255,29 @@ then
     if test -z "$clamavuser" || test -z "$clamavgroup"
     then
 	AC_MSG_RESULT(no)
-	AC_MSG_ERROR(User $clamav_user (and/or group $clamav_group) doesn't exist. Please read the documentation !)
+	AC_MSG_ERROR([User $clamav_user (and/or group $clamav_group) doesn't exist. Please read the documentation !])
     else
 	AC_MSG_RESULT([yes, user $clamav_user and group $clamav_group])
         CLAMAVUSER="$clamav_user"
         CLAMAVGROUP="$clamav_group"
-        AC_SUBST(CLAMAVUSER)
-        AC_SUBST(CLAMAVGROUP)
+        AC_SUBST([CLAMAVUSER])
+        AC_SUBST([CLAMAVGROUP])
     fi
-fi
-
-AC_C_CONST
-AC_C_INLINE
-AC_C_BIGENDIAN
-if test $ac_cv_c_bigendian = yes; then
-  AC_DEFINE(WORDS_BIGENDIAN,1,endianess)
-else
-  AC_DEFINE(WORDS_BIGENDIAN,0,endianess)
 fi
 
 dnl check for __attribute__((packed))
 AC_MSG_CHECKING([for structure packing via __attribute__((packed))])
-AC_CACHE_VAL(have_attrib_packed,[
+AC_CACHE_VAL([have_attrib_packed],[
 	AC_TRY_COMPILE(,
 		[struct { int i __attribute__((packed)); } s; ],
 		[have_attrib_packed=yes],
 		[have_attrib_packed=no])
 	])
-AC_MSG_RESULT($have_attrib_packed)
+AC_MSG_RESULT([$have_attrib_packed])
 
 if test "$have_attrib_packed" = no; then
-	AC_MSG_CHECKING(for structure packing via pragma)
-	AC_CACHE_VAL(have_pragma_pack,[
+	AC_MSG_CHECKING([for structure packing via pragma])
+	AC_CACHE_VAL([have_pragma_pack],[
 		AC_TRY_RUN([int main(int argc, char **argv) {
 #pragma pack(1)			/* has to be in column 1 ! */
 			struct { char c; long l; } s;
@@ -1222,12 +1285,12 @@ if test "$have_attrib_packed" = no; then
 			[have_pragma_pack=yes],
 			[have_pragma_pack=no])
 		])
-	AC_MSG_RESULT($have_pragma_pack)
+	AC_MSG_RESULT([$have_pragma_pack])
 	if test "$have_pragma_pack" = yes; then
-		AC_DEFINE(HAVE_PRAGMA_PACK, 1, "pragma pack")
+		AC_DEFINE([HAVE_PRAGMA_PACK], 1, "pragma pack")
 	else
-		AC_MSG_CHECKING(for structure packing via hppa/hp-ux pragma)
-		AC_CACHE_VAL(have_pragma_pack_hpux,[
+		AC_MSG_CHECKING([for structure packing via hppa/hp-ux pragma])
+		AC_CACHE_VAL([have_pragma_pack_hpux],[
 			AC_TRY_RUN([
 			/* hppa/hp-ux wants pragma outside of function */
 #pragma pack 1 /* has to be in column 1 ! */
@@ -1237,31 +1300,31 @@ if test "$have_attrib_packed" = no; then
 			[have_pragma_pack_hpux=yes],
 			[have_pragma_pack_hpux=no])
 		])
-		AC_MSG_RESULT($have_pragma_pack_hpux)
-		AC_DEFINE(HAVE_PRAGMA_PACK_HPPA, 1, "pragma pack hppa/hp-ux style")
+		AC_MSG_RESULT([$have_pragma_pack_hpux])
+		AC_DEFINE([HAVE_PRAGMA_PACK_HPPA], 1, "pragma pack hppa/hp-ux style")
 	fi
 fi
 
 dnl check for __attribute__((aligned))
 AC_MSG_CHECKING([for type aligning via __attribute__((aligned))])
-AC_CACHE_VAL(have_attrib_aligned,[
+AC_CACHE_VAL([have_attrib_aligned],[
 	AC_TRY_COMPILE(,
 		[typedef int cl_aligned_int __attribute__((aligned));],
 		[have_attrib_aligned=yes],
 		[have_attrib_aligned=no])
 	])
-AC_MSG_RESULT($have_attrib_aligned)
+AC_MSG_RESULT([$have_attrib_aligned])
 
 if test "$have_attrib_packed" = no -a "$have_pragma_pack" = no -a "$have_pragma_pack_hpux" = no; then
 	AC_MSG_ERROR(Need to know how to pack structures with this compiler)
 fi
 
 if test "$have_attrib_packed" = yes; then
-	AC_DEFINE(HAVE_ATTRIB_PACKED, 1, [attrib packed])
+	AC_DEFINE([HAVE_ATTRIB_PACKED], 1, [attrib packed])
 fi
 
 if test "$have_attrib_aligned" = yes; then
-	AC_DEFINE(HAVE_ATTRIB_ALIGNED, 1, [attrib aligned])
+	AC_DEFINE([HAVE_ATTRIB_ALIGNED], 1, [attrib aligned])
 fi
 
 dnl Check if <sys/select.h> needs to be included for fd_set
@@ -1271,47 +1334,54 @@ AC_TRY_COMPILE([#include <sys/types.h>],
 if test $have_fd_set = yes; then
     AC_MSG_RESULT([yes, found in sys/types.h])
 else
-    AC_HEADER_EGREP(fd_mask, sys/select.h, have_fd_set=yes)
+    AC_HEADER_EGREP([fd_mask], [sys/select.h], [have_fd_set=yes])
     if test $have_fd_set = yes; then
-        AC_DEFINE(HAVE_SYS_SELECT_H, 1, "have <sys/select.h>")
+        AC_DEFINE([HAVE_SYS_SELECT_H], 1, "have <sys/select.h>")
         AC_MSG_RESULT([yes, found in sys/select.h])
     else
-        AC_DEFINE(NO_FD_SET, 1, "no fd_set")
+        AC_DEFINE([NO_FD_SET], 1, "no fd_set")
         AC_MSG_RESULT(no)
     fi
 fi
 
-AC_MSG_CHECKING(default FD_SETSIZE value)
+AC_MSG_CHECKING([default FD_SETSIZE value])
 AC_TRY_RUN([
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/time.h>
 #include <sys/select.h>
 #include <sys/types.h>
-main() {
+#include <errno.h>
+int main(void) {
         FILE *fp = fopen("conftestval", "w");
-        fprintf (fp, "%d\n", FD_SETSIZE);
-        exit(0);
+	if(fp) {
+		if(fprintf (fp, "%d\n", FD_SETSIZE) < 1)  {
+			perror("fprintf failed");
+			return errno;
+		}
+	} else {
+		perror("fopen failed");
+		return errno;
+	}
+        return EXIT_SUCCESS;
 }
 ],
 DEFAULT_FD_SETSIZE=`cat conftestval`,
 DEFAULT_FD_SETSIZE=256,
 DEFAULT_FD_SETSIZE=256)
-AC_MSG_RESULT($DEFAULT_FD_SETSIZE)
-AC_DEFINE_UNQUOTED(DEFAULT_FD_SETSIZE, $DEFAULT_FD_SETSIZE, "default FD_SETSIZE value")
+AC_MSG_RESULT([$DEFAULT_FD_SETSIZE])
+AC_DEFINE_UNQUOTED([DEFAULT_FD_SETSIZE], $DEFAULT_FD_SETSIZE, "default FD_SETSIZE value")
 
 dnl Check signed right shift implementation
-AC_MSG_CHECKING(whether signed right shift is sign extended)
+AC_MSG_CHECKING([whether signed right shift is sign extended])
 AC_TRY_RUN([int main(void){int a=-1;int b=a>>1;return(a!=b);}],
     [have_signed_rightshift_extended=yes],
     [have_signed_rightshift_extended=no],
     [have_signed_rightshift_extended=no])
 if test $have_signed_rightshift_extended = yes; then
-    AC_DEFINE(HAVE_SAR, 1, Define signed right shift implementation)
+    AC_DEFINE([HAVE_SAR], 1, [Define signed right shift implementation])
 fi
-AC_MSG_RESULT($have_signed_rightshift_extended);
-
-AC_C_FPU_BIGENDIAN
+AC_MSG_RESULT([$have_signed_rightshift_extended]);
 
 AC_OUTPUT([
 libclamunrar/Makefile

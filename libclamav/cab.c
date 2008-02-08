@@ -623,11 +623,13 @@ static int cab_unstore(struct cab_file *file, int bytes)
 	}								\
 	if(lseek(file->fd, file->folder->offset, SEEK_SET) == -1) {	\
 	    cli_dbgmsg("cab_extract: Can't lseek to %u\n", (unsigned int) file->folder->offset);							\
+	    close(file->ofd);						\
 	    return CL_EFORMAT; /* truncated file? */			\
 	}								\
 	file->cab->state = (struct cab_state *) cli_calloc(1, sizeof(struct cab_state));								\
 	if(!file->cab->state) {						\
 	    cli_errmsg("cab_extract: Can't allocate memory for internal state\n");									\
+	    close(file->ofd);						\
 	    return CL_EMEM;						\
 	}								\
 	file->cab->state->cmethod = file->folder->cmethod;		\
@@ -646,6 +648,20 @@ static int cab_unstore(struct cab_file *file, int bytes)
 	    return CL_EMSCAB;						\
 	}								\
 	file->cab->actfol = file->folder;				\
+    } else {								\
+    	if(file->cab->state && file->cab->state->stream) {		\
+	    switch(file->cab->state->cmethod & 0x000f) {		\
+		case 0x0001:						\
+		    ((struct mszip_stream *) file->cab->state->stream)->ofd = file->ofd;									\
+		    break;						\
+		case 0x0002:						\
+		    ((struct qtm_stream *) file->cab->state->stream)->ofd = file->ofd;									\
+		    break;						\
+		case 0x0003:						\
+		    ((struct lzx_stream *) file->cab->state->stream)->ofd = file->ofd;									\
+		    break;						\
+	    }								\
+	}								\
     }
 
 

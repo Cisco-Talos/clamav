@@ -23,11 +23,11 @@
 #include "clamav-config.h"
 #endif
 
-#ifdef HAVE_GMP
+#ifdef HAVE_LIBGMP
 #include <gmp.h>
 
 int cli_versig(const char *md5, const char *dsig);
 unsigned char *cli_decodesig(const char *sig, unsigned int plen, mpz_t e, mpz_t n);
 
-#endif /* HAVE_GMP */
+#endif /* HAVE_LIBGMP */
 #endif

@@ -65,28 +65,28 @@ struct vba56_header {
 };
 
 typedef struct {
-	unsigned char signature[4];
-	const char *name;
+	uint32_t sig;
+	const char *ver;
 	int	big_endian;	/* e.g. MAC Office */
 } vba_version_t;
 
 /* from libgsf */
 static const vba_version_t vba_versions[] = {
-	{ { 0x5e, 0x00, 0x00, 0x01 }, "Office 97",              FALSE },
-	{ { 0x5f, 0x00, 0x00, 0x01 }, "Office 97 SR1",          FALSE },
-	{ { 0x65, 0x00, 0x00, 0x01 }, "Office 2000 alpha?",     FALSE },
-	{ { 0x6b, 0x00, 0x00, 0x01 }, "Office 2000 beta?",      FALSE },
-	{ { 0x6d, 0x00, 0x00, 0x01 }, "Office 2000",            FALSE },
-	{ { 0x6f, 0x00, 0x00, 0x01 }, "Office 2000",            FALSE },
-	{ { 0x70, 0x00, 0x00, 0x01 }, "Office XP beta 1/2",     FALSE },
-	{ { 0x73, 0x00, 0x00, 0x01 }, "Office XP",              FALSE },
-	{ { 0x76, 0x00, 0x00, 0x01 }, "Office 2003",            FALSE },
-	{ { 0x79, 0x00, 0x00, 0x01 }, "Office 2003",            FALSE },
-	{ { 0x60, 0x00, 0x00, 0x0e }, "MacOffice 98",           TRUE },
-	{ { 0x62, 0x00, 0x00, 0x0e }, "MacOffice 2001",         TRUE },
-	{ { 0x63, 0x00, 0x00, 0x0e }, "MacOffice X",		TRUE },
-	{ { 0x64, 0x00, 0x00, 0x0e }, "MacOffice 2004",         TRUE },
-	{ { 0x00, 0x00, 0x00, 0x00 }, NULL,		        FALSE },
+	{ 0x0100005e, "97",             FALSE },
+	{ 0x0100005f, "97 SR1",         FALSE },
+	{ 0x01000065, "2000 alpha",	FALSE },
+	{ 0x0100006b, "2000 beta",	FALSE },
+	{ 0x0100006d, "2000",           FALSE },
+	{ 0x0100006f, "2000",           FALSE },
+	{ 0x01000070, "XP beta 1/2",	FALSE },
+	{ 0x01000073, "XP",             FALSE },
+	{ 0x01000073, "2003",           FALSE },
+	{ 0x01000079, "2003",           FALSE },
+	{ 0x0e000060, "98",		TRUE  },
+	{ 0x0e000062, "2001",		TRUE  },
+	{ 0x0e000063, "X",		TRUE  },
+	{ 0x0e000064, "2004",		TRUE  },
+	{ 0x00000000, NULL,		FALSE },
 };
 
 static	int	skip_past_nul(int fd);
@@ -94,7 +94,6 @@ static	int	read_uint16(int fd, uint16_t *u, int big_endian);
 static	int	read_uint32(int fd, uint32_t *u, int big_endian);
 static	int	seekandread(int fd, off_t offset, int whence, void *data, size_t len);
 static	vba_project_t	*create_vba_project(int record_count, const char *dir);
-static	uint32_t	sigtouint32(const unsigned char *fourbytes);
 
 static uint16_t
 vba_endian_convert_16(uint16_t value, int big_endian)
@@ -299,13 +298,12 @@ cli_vba_readdir(const char *dir)
 		return NULL;
 	}
 
-	sig = sigtouint32(v56h.version);
-
-	for(v = vba_versions; v->name; v++)
-		if(sigtouint32(v->signature) == sig)
+	sig = cli_readint32(v56h.version);
+	for(v = vba_versions; v->sig; v++)
+		if(v->sig == sig)
 			break;
 
-	if(v->name == NULL) {
+	if(!v->sig) {
 		cli_warnmsg("Unknown VBA version signature %x %x %x %x\n",
 			v56h.version[0], v56h.version[1],
 			v56h.version[2], v56h.version[3]);
@@ -324,7 +322,7 @@ cli_vba_readdir(const char *dir)
 				return NULL;
 		}
 	} else {
-		cli_dbgmsg("VBA Project: %s\n", v->name);
+		cli_dbgmsg("VBA Project: %s %s\n", v->big_endian ? "MacOffice" : "Office",  v->ver);
 		big_endian = v->big_endian;
 	}
 
@@ -528,18 +526,12 @@ cli_vba_inflate(int fd, off_t offset, int *size)
 				   (((srcpos % VBA_COMPRESSION_WINDOW) + len) < VBA_COMPRESSION_WINDOW) &&
 				   (len <= VBA_COMPRESSION_WINDOW)) {
 					srcpos %= VBA_COMPRESSION_WINDOW;
-
-					cli_dbgmsg("memcpy(%u, %u, %d)\n",
-						winpos, srcpos, len);
-
 					memcpy(&buffer[winpos], &buffer[srcpos],
 						len);
 					pos += len;
 				} else
 					while(len-- > 0) {
 						srcpos = (pos - distance - 1) % VBA_COMPRESSION_WINDOW;
-						cli_dbgmsg("Copying %u to %u\n",
-							srcpos, pos % VBA_COMPRESSION_WINDOW);
 						buffer[pos++ % VBA_COMPRESSION_WINDOW] = buffer[srcpos];
 					}
 			} else {
@@ -1328,10 +1320,4 @@ create_vba_project(int record_count, const char *dir)
 	ret->count = record_count;
 
 	return ret;
-}
-
-static uint32_t
-sigtouint32(const unsigned char *fourbytes)
-{
-	return (uint32_t)((*fourbytes++ << 24) | (*fourbytes++ << 16) | (*fourbytes++ << 8) | *fourbytes);
 }

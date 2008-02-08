@@ -1,6 +1,7 @@
 /*
- *  Copyright (C) 2006 Sensory Networks, Inc.
- *             Written by aCaB <acab@clamav.net>
+ *  Copyright (C) 2007 Sourcefire Inc.
+ *  Author: aCaB <acab@clamav.net>
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
  *  published by the Free Software Foundation.

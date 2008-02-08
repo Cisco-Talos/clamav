@@ -76,6 +76,7 @@ static const struct ftmap_s {
     { "CL_TYPE_PDF",		CL_TYPE_PDF		},
     { "CL_TYPE_UUENCODED",	CL_TYPE_UUENCODED	},
     { "CL_TYPE_HTML_UTF16",	CL_TYPE_HTML_UTF16	},
+    { "CL_TYPE_SCRIPT",         CL_TYPE_SCRIPT          },
     { "CL_TYPE_RTF",		CL_TYPE_RTF		},
     { "CL_TYPE_HTML",		CL_TYPE_HTML		},
     { "CL_TYPE_MAIL",		CL_TYPE_MAIL		},
@@ -182,37 +183,42 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 	    cli_ac_freedata(&mdata);
 
 	    if((((struct cli_dconf*) engine->dconf)->phishing & PHISHING_CONF_ENTCONV) && ret != CL_TYPE_HTML_UTF16) {
-		    struct entity_conv conv;
-		    const size_t conv_size = 2*bread < 256 ? 256 : 2*bread;
+		    const char* encoding;
 
-		    /* TODO: make detection via daily.ft, then we can get rid of line-mode entirely!*/
-		    if(init_entity_converter(&conv, conv_size) == 0) {
-			    m_area_t area;
-			    area.buffer = (unsigned char *) smallbuff;
-			    area.length = bread;
-			    area.offset = 0;
+		    /* check if we can autodetect this encoding.
+		     * If we can't don't try to detect HTML sig, since
+		     * we just tried that above, and failed */
+		    if((encoding = encoding_detect_bom(smallbuff, bread))) {
+			    unsigned char decodedbuff[sizeof(smallbuff)*2];
+			    m_area_t in_area, out_area;
 
-			    /* switch to blockmode, so that we convert all the input buffer at once,
-			     * rather than line-by-line */
-			    process_encoding_set(&conv, NULL, SWITCH_TO_BLOCKMODE);
+			    in_area.buffer = (unsigned char *) smallbuff;
+			    in_area.length = bread;
+			    in_area.offset = 0;
+			    out_area.buffer = decodedbuff;
+			    out_area.length = sizeof(decodedbuff);
+			    out_area.offset = 0;
 
-			    if(cli_ac_initdata(&mdata, root->ac_partsigs, AC_DEFAULT_TRACKLEN))
-				    return ret;
+			    /* in htmlnorm we simply skip over \0 chars, and that allows to parse HTML in any unicode 
+			     * (multibyte characters will not be exactly handled, but that is not a problem).
+			     * However when detecting whether a file is HTML or not, we need exact conversion.
+			     * (just eliminating zeros and matching would introduce false positives */
+			    if(encoding_normalize_toascii(&in_area, encoding, &out_area) >= 0 && out_area.length > 0) {
+				    out_area.buffer[out_area.length] = '\0';
+				    if(cli_ac_initdata(&mdata, root->ac_partsigs, AC_DEFAULT_TRACKLEN))
+					    return ret;
 
-			    decoded =  encoding_norm_readline(&conv, NULL, &area);
-
-			    if(decoded) {
-				    sret = cli_ac_scanbuff(decoded, strlen((const char *) decoded), NULL, engine->root[0], &mdata, 1, 0, 0, -1, NULL);
-				    if(sret == CL_TYPE_HTML) {
-					    ret = CL_TYPE_HTML;
+				    if(out_area.length > 0) {
+					    sret = cli_ac_scanbuff(decodedbuff, out_area.length, NULL, engine->root[0], &mdata, 1, 0, 0, -1, NULL);
+					    if(sret == CL_TYPE_HTML) {
+						    cli_dbgmsg("cli_filetype2: detected HTML signature in Unicode file\n");
+						    /* htmlnorm is able to handle any unicode now, since it skips null chars */
+						    ret = CL_TYPE_HTML;
+					    }
 				    }
+
+				    cli_ac_freedata(&mdata);
 			    }
-
-			    cli_ac_freedata(&mdata);
-
-			    entity_norm_done(&conv);
-		    } else {
-			    cli_warnmsg("cli_filetype2: Error initializing entity converter\n");
 		    }
 	    }
 	}

@@ -21,10 +21,35 @@
 
 
 #include "lzma_iface.h"
+#include "LzmaStateDecode.h"
 #include "cltypes.h"
+
+/* we don't need zlib, and zlib defines Byte, that lzma also defines.
+ * Enabling prefixes for zlib types avoids problems, and since
+ * we don't call any zlib functions here avoids unresolved symbols too */
+#define Z_PREFIX
 #include "others.h"
 
-int cli_LzmaInit(CLI_LZMA *L, uint64_t size_override) {
+struct CLI_LZMA_tag {
+  CLzmaDecoderState state;
+  unsigned char *next_in;
+  SizeT avail_in;
+  unsigned char *next_out;
+  SizeT avail_out;
+  int initted;
+  uint64_t usize;
+};
+
+int cli_LzmaInit(CLI_LZMA **Lp, uint64_t size_override) {
+  CLI_LZMA *L = *Lp;
+
+  if(!L) {
+	  *Lp = L = cli_calloc(sizeof(*L), 1);
+	  if(!L) {
+		  return CL_EMEM;
+	  }
+  }
+
   L->initted = 0;
   if(size_override) L->usize=size_override;
 
@@ -55,19 +80,38 @@ int cli_LzmaInit(CLI_LZMA *L, uint64_t size_override) {
   return LZMA_RESULT_OK;
 }
 
-void cli_LzmaShutdown(CLI_LZMA *L) {
-  if(!L->initted) return;
-  if(L->state.Probs) free(L->state.Probs);
-  if(L->state.Dictionary) free(L->state.Dictionary);
+void cli_LzmaShutdown(CLI_LZMA **Lp) {
+  CLI_LZMA *L;
+
+  if(!Lp) return;
+  L = *Lp;
+  if(L->initted) {
+    if(L->state.Probs) free(L->state.Probs);
+    if(L->state.Dictionary) free(L->state.Dictionary);
+  }
+  free(L);
+  *Lp = NULL;
   return;
 }
 
-int cli_LzmaDecode(CLI_LZMA *L) {
+int cli_LzmaDecode(CLI_LZMA **Lp, struct stream_state* state) {
   int res;
   SizeT processed_in, processed_out;
+  CLI_LZMA* L = *Lp;
 
-  if (!L->initted && cli_LzmaInit(L, 0) != LZMA_RESULT_OK) 
-    return LZMA_RESULT_DATA_ERROR;
+  if(L) {
+	  L->avail_in = state->avail_in;
+	  L->next_in = state->next_in;
+	  L->avail_out = state->avail_out;
+	  L->next_out = state->next_out;
+  }
+
+  if (!L || !L->initted) {
+	  if(cli_LzmaInit(Lp, 0) != LZMA_RESULT_OK)
+		  return LZMA_RESULT_DATA_ERROR;
+	  L = *Lp;
+  }
+
 
   res = LzmaDecode(&L->state, L->next_in, L->avail_in, &processed_in, L->next_out, L->avail_out, &processed_out, (L->avail_in==0));
 
@@ -75,6 +119,11 @@ int cli_LzmaDecode(CLI_LZMA *L) {
   L->avail_in -= processed_in;
   L->next_out += processed_out;
   L->avail_out -= processed_out;
+
+  state->avail_in = L->avail_in;
+  state->next_in = L->next_in;
+  state->avail_out = L->avail_out;
+  state->next_out = L->next_out;
 
   return res;
 }

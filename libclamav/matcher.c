@@ -1,4 +1,7 @@
 /*
+ *  Copyright (C) 2007 - 2008 Sourcefire, Inc.
+ *  Author: Tomasz Kojm <tkojm@clamav.net>
+ *
  *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -42,7 +45,6 @@
 #include "str.h"
 #include "cltypes.h"
 
-static cli_file_t targettab[CL_TARGET_TABLE_SIZE] = { 0, CL_TYPE_MSEXE, CL_TYPE_MSOLE2, CL_TYPE_HTML, CL_TYPE_MAIL, CL_TYPE_GRAPHICS, CL_TYPE_ELF };
 
 int cli_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cl_engine *engine, cli_file_t ftype)
 {
@@ -60,8 +62,8 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, const char **virn
     groot = engine->root[0]; /* generic signatures */
 
     if(ftype) {
-	for(i = 1; i < CL_TARGET_TABLE_SIZE; i++) {
-	    if(targettab[i] == ftype) {
+	for(i = 1; i < CLI_MTARGETS; i++) {
+	    if(cli_mtargets[i].target == ftype) {
 		troot = engine->root[i];
 		break;
 	    }
@@ -266,8 +268,8 @@ int cli_scandesc(int desc, cli_ctx *ctx, uint8_t otfrec, cli_file_t ftype, uint8
 	groot = ctx->engine->root[0]; /* generic signatures */
 
     if(ftype) {
-	for(i = 1; i < CL_TARGET_TABLE_SIZE; i++) {
-	    if(targettab[i] == ftype) {
+	for(i = 1; i < CLI_MTARGETS; i++) {
+	    if(cli_mtargets[i].target == ftype) {
 		troot = ctx->engine->root[i];
 		break;
 	    }

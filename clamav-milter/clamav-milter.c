@@ -5780,22 +5780,11 @@ loadDatabase(void)
 	if(d) {
 		char *ptr;
 		time_t t = d->stime;
-#ifdef	HAVE_CTIME_R
 		char buf[26];
 
-#ifdef	HAVE_CTIME_R_2
 		snprintf(clamav_version, VERSION_LENGTH,
 			"ClamAV %s/%u/%s", VERSION, d->version,
-			ctime_r(&t, buf));
-#else
-		snprintf(clamav_version, VERSION_LENGTH,
-			"ClamAV %s/%d/%s", VERSION, d->version,
-			ctime_r(&t, buf, sizeof(buf)));
-#endif
-#else
-		snprintf(clamav_version, VERSION_LENGTH,
-			"ClamAV %s/%d/%s", VERSION, d->version, ctime(&t));
-#endif
+			cli_ctime(&t, buf, sizeof(buf)));
 
 		/* Remove ctime's trailing \n */
 		if((ptr = strchr(clamav_version, '\n')) != NULL)

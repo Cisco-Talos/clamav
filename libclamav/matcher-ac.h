@@ -1,4 +1,7 @@
 /*
+ *  Copyright (C) 2007 - 2008 Sourcefire, Inc.
+ *  Author: Tomasz Kojm <tkojm@clamav.net>
+ *
  *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -27,6 +30,7 @@
 #define AC_DEFAULT_MIN_DEPTH 2
 #define AC_DEFAULT_MAX_DEPTH 3
 #define AC_DEFAULT_TRACKLEN 8
+#define AC_CH_MAXDIST 32
 extern uint8_t cli_ac_mindepth, cli_ac_maxdepth;
 
 struct cli_ac_data {
@@ -46,6 +50,9 @@ struct cli_ac_patt {
     uint32_t mindist, maxdist;
     uint32_t sigid;
     char *virname, *offset;
+    uint16_t ch[2];
+    uint16_t ch_mindist[2];
+    uint16_t ch_maxdist[2];
     uint16_t parts, partno, alt, alt_pattern;
     struct cli_ac_alt **alttable;
     struct cli_ac_patt *next, *next_same;

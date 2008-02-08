@@ -322,6 +322,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	uint32_t valign, falign, hdr_size, j;
 	struct cli_exe_section *exe_sections;
 	struct cli_matcher *md5_sect;
+	char timestr[32];
 
 
     if(!ctx) {
@@ -494,7 +495,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     cli_dbgmsg("NumberOfSections: %d\n", nsections);
 
     timestamp = (time_t) EC32(file_hdr.TimeDateStamp);
-    cli_dbgmsg("TimeDateStamp: %s", ctime(&timestamp));
+    cli_dbgmsg("TimeDateStamp: %s", cli_ctime(&timestamp, timestr, sizeof(timestr)));
 
     cli_dbgmsg("SizeOfOptionalHeader: %x\n", EC16(file_hdr.SizeOfOptionalHeader));
 

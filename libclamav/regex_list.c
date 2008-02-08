@@ -60,6 +60,7 @@
 #include "others.h"
 #include "regex_list.h"
 #include "matcher-ac.h"
+#include "matcher.h"
 #include "str.h"
 #include "readdb.h"
 
@@ -238,7 +239,7 @@ static inline size_t get_char_at_pos_with_skip(const struct pre_fixup_info* info
 		realpos++;
 	}
 	while(str[realpos]==' ') realpos++;
-	cli_dbgmsg("calc_pos_with_skip:%s\n",str+realpos);	
+	cli_dbgmsg("calc_pos_with_skip:%s\n",str+realpos);
 	return (pos>0 && !str[realpos]) ? '\0' : str[realpos>0?realpos-1:0];
 }
 
@@ -257,6 +258,7 @@ static inline size_t get_char_at_pos_with_skip(const struct pre_fixup_info* info
  */
 int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* display_url,const struct pre_fixup_info* pre_fixup,int hostOnly,const char** info,int is_whitelist)
 {
+	char* orig_real_url = real_url;
 	massert(matcher);
 	massert(real_url);
 	massert(display_url);
@@ -264,6 +266,9 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 	if(!matcher->list_inited)
 		return 0;
 	massert(matcher->list_built);
+	/* skip initial '.' inserted by get_host */
+	if(real_url[0] == '.') real_url++;
+	if(display_url[0] == '.') display_url++;
 	{
 		size_t real_len    = strlen(real_url);
 		size_t display_len = strlen(display_url);
@@ -280,7 +285,7 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 		buffer[real_len]= (!is_whitelist && hostOnly) ? '\0' : ':';
 		if(!hostOnly || is_whitelist) {
 			strncpy(buffer+real_len+1,display_url,display_len);
-			if(is_whitelist) 
+			if(is_whitelist)
 				buffer[buffer_len - 1] = '/';
 			buffer[buffer_len]=0;
 		}
@@ -297,30 +302,40 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 				cli_ac_freedata(&mdata);
 				if(rc) {
 					char c;
-					const char* matched = strchr(*info,':');	
+					const char* matched = strchr(*info,':');
 					const size_t match_len = matched ? strlen(matched+1) : 0;
 					if(((c=get_char_at_pos_with_skip(pre_fixup,buffer,buffer_len+1))==' ' || c=='\0' || c=='/' || c=='?') &&
 						(match_len == buffer_len || /* full match */
 					        (match_len < buffer_len &&
-						((c=get_char_at_pos_with_skip(pre_fixup,buffer,buffer_len-match_len))=='.' || (c==' ')) ) 
+						((c=get_char_at_pos_with_skip(pre_fixup,buffer,buffer_len-match_len))=='.' || (c==' ')) )
 						/* subdomain matched*/)) {
 
-						cli_dbgmsg("Got a match: %s with %s\n",buffer,*info);
-						cli_dbgmsg("Before inserting .: %s\n",real_url);
+						cli_dbgmsg("Got a match: %s with %s\n", buffer, *info);
+						cli_dbgmsg("Before inserting .: %s\n", orig_real_url);
 						if(real_len >= match_len + 1) {
-							real_url[real_len-match_len-1]='.';
-							cli_dbgmsg("After inserting .: %s\n",real_url);
+							const size_t pos = real_len - match_len - 1;
+							if(real_url[pos] != '.') {
+								/* we need to shift left, and insert a '.'
+								 * we have an extra '.' at the beginning inserted by get_host to have room,
+								 * orig_real_url has to be used here, 
+								 * because we want to overwrite that extra '.' */
+								size_t orig_real_len = strlen(orig_real_url);
+								cli_dbgmsg("No dot here:%s\n",real_url+pos);
+								real_url = orig_real_url;
+								memmove(real_url, real_url+1, orig_real_len-match_len-1);
+								real_url[orig_real_len-match_len-1]='.';
+								cli_dbgmsg("After inserting .: %s\n", real_url);
+							}
 						}
 						break;
 					}
-					cli_dbgmsg("Ignoring false match: %s with %s,%c\n",buffer,*info,c);
+					cli_dbgmsg("Ignoring false match: %s with %s, mismatched character: %c\n", buffer, *info, c);
 					rc=0;
 				}
 			}
 		} else
 			rc = 0;
-    
-		if(!rc) 
+		if(!rc)
 			rc = match_node(hostOnly ? matcher->root_regex_hostonly : matcher->root_regex,(unsigned char*)buffer,buffer_len,info) == MATCH_SUCCESS ? CL_VIRUS : CL_SUCCESS;
 		free(buffer);
 		if(!rc)
@@ -448,6 +463,7 @@ static int add_regex_list_element(struct cli_matcher* root,const char* pattern,c
        new->offset = 0;
        new->target = 0;
        new->length = len;
+       new->ch[0] = new->ch[1] |= CLI_MATCH_IGNORE;
        if(new->length > root->maxpatlen)
                root->maxpatlen = new->length;
 

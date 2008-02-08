@@ -34,6 +34,11 @@
 #define FALSE (0)
 #define TRUE (1)
 
+/* BSD and HP-UX need a bigger stacksize than the system default */
+#if defined (C_BSD) || defined (C_HPUX)
+#define C_BIGSTACK 1
+#endif
+
 static work_queue_t *work_queue_new(void)
 {
 	work_queue_t *work_q;
@@ -133,7 +138,7 @@ void thrmgr_destroy(threadpool_t *threadpool)
 threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void *))
 {
 	threadpool_t *threadpool;
-#if defined(C_BIGSTACK) || defined(C_BSD)
+#if defined(C_BIGSTACK)
 	size_t stacksize;
 #endif
 	
@@ -182,7 +187,7 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void
 		return NULL;
 	}
 
-#if defined(C_BIGSTACK) || defined(C_BSD)
+#if defined(C_BIGSTACK)
 	pthread_attr_getstacksize(&(threadpool->pool_attr), &stacksize);
 	stacksize = stacksize + 64 * 1024;
 	if (stacksize < 1048576) stacksize = 1048576; /* at least 1MB please */

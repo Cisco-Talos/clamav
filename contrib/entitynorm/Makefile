@@ -7,10 +7,10 @@ entities_parsed: entities entities/* entity_decl_parse.pl
 	$(PERL) entity_decl_parse.pl $</* | sort -u >$@
 
 generate_entitylist: generate_entitylist.c ../../libclamav/hashtab.h ../../libclamav/hashtab.c ../../libclamav/others.c
-	$(CC) -I. -DHAVE_CONFIG_H -DCLI_MEMFUNSONLY $< ../../libclamav/hashtab.c ../../libclamav/others.c -o $@
+	$(CC) -I. -DHAVE_CONFIG_H -DCLI_MEMFUNSONLY -DPROFILE_HASHTABLE $< ../../libclamav/hashtab.c ../../libclamav/others.c -o $@
 
 generate_encoding_aliases: generate_encoding_aliases.c ../../libclamav/hashtab.c ../../libclamav/others.c ../../libclamav/htmlnorm.h ../../libclamav/entconv.h ../../libclamav/cltypes.h ../../libclamav/hashtab.h ../../libclamav/hashtab.h
-	$(CC) -I. -DHAVE_CONFIG_H -DCLI_MEMFUNSONLY $< ../../libclamav/hashtab.c ../../libclamav/others.c -o $@
+	$(CC) -I. -DHAVE_CONFIG_H -DCLI_MEMFUNSONLY -DPROFILE_HASHTABLE $< ../../libclamav/hashtab.c ../../libclamav/others.c -o $@
 
 entitylist.h: generate_entitylist entities_parsed
 	./$< <entities_parsed >$@

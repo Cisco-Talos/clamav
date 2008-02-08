@@ -256,7 +256,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 				}
 				break;
 			    case OPT_NUM:
-				if(!arg || !isnumb(arg)) {
+				if(!arg || !cli_isnumber(arg)) {
 				    if(verbose)
 					fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires numerical argument.\n", line, name);
 				    fclose(fs);
@@ -288,7 +288,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 				if(ctype == 'm' || ctype == 'k') {
 				    char *cpy = (char *) calloc(strlen(arg), 1);
 				    strncpy(cpy, arg, strlen(arg) - 1);
-				    if(!isnumb(cpy)) {
+				    if(!cli_isnumber(cpy)) {
 					if(verbose)
 					    fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires numerical (raw/K/M) argument.\n", line, name);
 					fclose(fs);
@@ -303,7 +303,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 					calc = atoi(cpy) * 1024;
 				    free(cpy);
 				} else {
-				    if(!isnumb(arg)) {
+				    if(!cli_isnumber(arg)) {
 					if(verbose)
 					    fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires numerical (raw/K/M) argument.\n", line, name);
 					fclose(fs);

@@ -71,14 +71,9 @@ struct nsis_st {
   uint8_t solid;
   uint8_t freecomp;
   uint8_t eof;
-  struct {
-    uint32_t avail_in;
-    unsigned char *next_in;
-    uint32_t avail_out;
-    unsigned char *next_out;
-  } nsis;
+  struct stream_state nsis;
   nsis_bzstream bz;
-  CLI_LZMA lz;
+  CLI_LZMA* lz;
   z_stream z;
   unsigned char *freeme;
   char ofn[1024];
@@ -98,7 +93,6 @@ static int nsis_init(struct nsis_st *n) {
     n->freecomp=1;
     break;
   case COMP_LZMA:
-    memset(&n->lz, 0, sizeof(CLI_LZMA));
     cli_LzmaInit(&n->lz, 0xffffffffffffffffULL);
     n->freecomp=1;
     break;
@@ -150,21 +144,13 @@ static int nsis_decomp(struct nsis_st *n) {
     n->nsis.next_out = n->bz.next_out;
     break;
   case COMP_LZMA:
-    n->lz.avail_in = n->nsis.avail_in;
-    n->lz.next_in = n->nsis.next_in;
-    n->lz.avail_out = n->nsis.avail_out;
-    n->lz.next_out = n->nsis.next_out;
-    switch (cli_LzmaDecode(&n->lz)) {
+    switch (cli_LzmaDecode(&n->lz, &n->nsis)) {
     case LZMA_RESULT_OK:
       ret = CL_SUCCESS;
       break;
     case LZMA_STREAM_END:
       ret = CL_BREAK;
     }
-    n->nsis.avail_in = n->lz.avail_in;
-    n->nsis.next_in = n->lz.next_in;
-    n->nsis.avail_out = n->lz.avail_out;
-    n->nsis.next_out = n->lz.next_out;
     break;
   case COMP_ZLIB:
     n->z.avail_in = n->nsis.avail_in;

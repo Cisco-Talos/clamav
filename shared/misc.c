@@ -248,17 +248,6 @@ int dircopy(const char *src, const char *dest)
 }
 #endif
 
-int isnumb(const char *str)
-{
-    while(*str) {
-	if(!isdigit(*str & 0xff))
-	    return 0;
-	str++;
-    }
-
-    return 1;
-}
-
 #ifndef CL_NOLIBCLAMAV
 int cvd_unpack(const char *cvd, const char *destdir)
 {

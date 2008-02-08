@@ -85,5 +85,24 @@ void hashtab_clear(struct hashtable *s);
 int hashtab_load(FILE* in, struct hashtable *s);
 int hashtab_store(const struct hashtable *s,FILE* out);
 
+/* A set of unique keys. */
+struct hashset {
+	uint32_t* keys;
+	uint32_t* bitmap;
+	size_t capacity;
+	size_t mask;
+	size_t count;
+	size_t limit;
+	uint8_t load_factor;
+};
+
+int hashset_init(struct hashset* hs, size_t initial_capacity, uint8_t load_factor);
+int hashset_addkey(struct hashset* hs, const uint32_t key);
+int hashset_removekey(struct hashset* hs, const uint32_t key);
+int hashset_contains(const struct hashset* hs, const uint32_t key);
+int hashset_clear(struct hashset* hs);
+void hashset_destroy(struct hashset* hs);
+ssize_t hashset_toarray(const struct hashset* hs, uint32_t** array);
+
 #endif
 
