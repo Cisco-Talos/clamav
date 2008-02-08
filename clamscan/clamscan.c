@@ -149,7 +149,7 @@ int main(int argc, char **argv)
     if(opt_check(opt, "max-scansize")) {
 	pt = opt_arg(opt, "max-scansize");
 	if(!strchr(pt, 'M') && !strchr(pt, 'm')) {
-	    if(!isnumb(pt)) {
+	    if(!cli_isnumber(pt)) {
 		logg("!--max-scansize requires a natural number\n");
 		opt_free(opt);
 		return 40;
@@ -160,7 +160,7 @@ int main(int argc, char **argv)
     if(opt_check(opt, "max-filesize")) {
 	pt = opt_arg(opt, "max-filesize");
 	if(!strchr(pt, 'M') && !strchr(pt, 'm')) {
-	    if(!isnumb(pt)) {
+	    if(!cli_isnumber(pt)) {
 		logg("!--max-filesize requires a natural number\n");
 		opt_free(opt);
 		return 40;
