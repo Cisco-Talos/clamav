@@ -1,3 +1,11 @@
+Fri Feb  8 14:20:55 EET 2008 (edwin)
+------------------------------------
+  * configure.in:
+	* quote macro arguments, group AC_C_* macros (bb #452), 
+	  thanks to Markus Elfring <Markus.Elfring*web.de>
+	* move ld --version-script check after compiler checks
+  * run autoreconf (new libtool)
+
 Fri Feb  8 13:50:18 EET 2008 (edwin)
 ------------------------------------
   * reduce stack usage of cli_scanscript (bb #819)
