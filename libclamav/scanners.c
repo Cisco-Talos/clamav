@@ -1068,14 +1068,14 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
 static int cli_scanscript(int desc, cli_ctx *ctx)
 {
 	unsigned char buff[FILEBUFF];
-	unsigned char normalized[SCANBUFF];
+	unsigned char* normalized;
 	struct text_norm_state state;
 	struct stat sb;
 	char *tmpname = NULL;
 	int ofd = -1, ret;
 	ssize_t nread;
 
-	cli_dbgmsg("in cli_scantext()\n");
+	cli_dbgmsg("in cli_scanscript()\n");
 
 	if(fstat(desc, &sb) == -1) {
 		cli_errmsg("cli_scanscript: fstat() failed for descriptor %d\n", desc);
@@ -1097,7 +1097,12 @@ static int cli_scanscript(int desc, cli_ctx *ctx)
 		}
 	}
 
-	text_normalize_init(&state, normalized, sizeof(normalized));
+	if(!(normalized = cli_malloc(SCANBUFF))) {
+		cli_dbgmsg("cli_scanscript: Unable to malloc %u bytes\n", SCANBUFF);
+		return CL_EMEM;
+	}
+
+	text_normalize_init(&state, normalized, SCANBUFF);
 	ret = CL_CLEAN;
 
 	do {
@@ -1128,6 +1133,7 @@ static int cli_scanscript(int desc, cli_ctx *ctx)
 		free(tmpname);
 		close(ofd);
 	}
+	free(normalized);
 
 	return ret;
 }

@@ -1,3 +1,7 @@
+Fri Feb  8 13:50:18 EET 2008 (edwin)
+------------------------------------
+  * reduce stack usage of cli_scanscript (bb #819)
+
 Thu Feb  7 22:30:51 EET 2008 (edwin)
 ------------------------------------
   * clamd: (bb #803)
