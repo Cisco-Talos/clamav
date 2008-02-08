@@ -196,16 +196,6 @@ const char *cl_strerror(int clerror)
     }
 }
 
-unsigned long cli_getsizelimit(cli_ctx *ctx, unsigned long needed) {
-    if(!ctx || ! ctx->limits)
-	return needed;
-    if(needed > ctx->limits->maxfilesize)
-	needed = ctx->limits->maxfilesize;
-    if(needed > ctx->limits->maxscansize-ctx->scansize)
-	needed = ctx->limits->maxscansize-ctx->scansize;
-    return needed;
-}
-
 int cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned long need2, unsigned long need3) {
     int ret = CL_SUCCESS;
     unsigned long needed;
@@ -221,7 +211,7 @@ int cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned
         /* if the remaining scansize is too small... */
         if(ctx->limits->maxscansize-ctx->scansize<needed) {
 	    /* ... we tell the caller to skip this file */
-	    cli_dbgmsg("%s: scansize exceeded (initial: %u, remaining: %u, needed: %u)\n", who, ctx->limits->maxscansize, ctx->scansize, needed);
+	    cli_dbgmsg("%s: scansize exceeded (initial: %lu, remaining: %lu, needed: %lu)\n", who, ctx->limits->maxscansize, ctx->scansize, needed);
 	    ret = CL_EMAXSIZE;
 	}
     }
@@ -229,7 +219,7 @@ int cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned
     /* if we have per-file size limits, and we are overlimit... */
     if(needed && ctx->limits->maxfilesize && ctx->limits->maxfilesize<needed) {
 	/* ... we tell the caller to skip this file */
-        cli_dbgmsg("%s: filesize exceeded (allowed: %u, needed: %u)\n", who, ctx->limits->maxfilesize, needed);
+        cli_dbgmsg("%s: filesize exceeded (allowed: %lu, needed: %lu)\n", who, ctx->limits->maxfilesize, needed);
 	ret = CL_EMAXSIZE;
     }
 
@@ -241,17 +231,14 @@ int cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned
 }
 
 int cli_updatelimits(cli_ctx *ctx, unsigned long needed) {
-    /* FIXMELIMITS:
-     *  we enter here via magicscan only
-     *  magiscan callers should check for !CL_CLEAN instead of CL_VIRUS
-     */
+    int ret=cli_checklimits("cli_updatelimits", ctx, needed, 0, 0);
 
+    if (ret != CL_CLEAN) return ret;
     ctx->scannedfiles++;
     ctx->scansize+=needed;
     if(ctx->scansize > ctx->limits->maxscansize)
         ctx->scansize = ctx->limits->maxscansize;
-
-    return cli_checklimits("updatelimits", ctx, needed, 0, 0);
+    return CL_CLEAN;
 }
 
 unsigned char *cli_md5digest(int desc)

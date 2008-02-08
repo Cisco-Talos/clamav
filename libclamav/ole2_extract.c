@@ -475,7 +475,7 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 	if ((prop_index < 0) || (prop_index > hdr->max_block_no) || (rec_level > 100) || (*file_count > 100000)) {
 		return;
 	}
-
+	/* FIXMELIMITS */
 	if (limits && limits->maxfiles && (*file_count > limits->maxfiles)) {
 		cli_dbgmsg("OLE2: File limit reached (max: %d)\n", limits->maxfiles);
 		return;

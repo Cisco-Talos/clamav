@@ -286,7 +286,6 @@ static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	int ret = CL_CLEAN, rc;
 	arj_metadata_t metadata;
 	char *dir;
-	unsigned int file_count = 1;
 
     cli_dbgmsg("in cli_scanarj()\n");
 
@@ -1094,7 +1093,6 @@ static int cli_scanmschm(int desc, cli_ctx *ctx)
 	int ret = CL_CLEAN, rc;
 	chm_metadata_t metadata;
 	char *dir;
-	unsigned int file_count = 1;
 
     cli_dbgmsg("in cli_scanmschm()\n");
 
@@ -1630,6 +1628,9 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, desc);
 	return ret;
     }
+
+    if(cli_updatelimits(ctx, sb.st_size)!=CL_CLEAN)
+        return CL_CLEAN;
 
     if((SCAN_MAIL || SCAN_ARCHIVE) && ctx->limits && ctx->limits->maxreclevel && ctx->recursion > ctx->limits->maxreclevel) {
         cli_dbgmsg("Archive recursion limit exceeded (level = %u).\n", ctx->recursion);
