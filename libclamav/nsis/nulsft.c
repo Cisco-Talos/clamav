@@ -520,18 +520,19 @@ int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
 
     do {
         ret = cli_nsis_unpack(&nsist, ctx);
-	if(ret == CL_EMAXSIZE) {
-	  ret = nsist.solid ? CL_BREAK : CL_SUCCESS;
-	} else {
-	    cli_dbgmsg("NSIS: Successully extracted file #%u\n", nsist.fno);
-	    lseek(nsist.ofd, 0, SEEK_SET);
-	    if(nsist.fno == 1)
-	        ret=cli_scandesc(nsist.ofd, ctx, 0, 0, 0, NULL);
-	    else
-	        ret=cli_magic_scandesc(nsist.ofd, ctx);
-	    close(nsist.ofd);
-	    if(!cli_leavetemps_flag)
-	        unlink(nsist.ofn);
+	if (ret == CL_SUCCESS) {
+	  cli_dbgmsg("NSIS: Successully extracted file #%u\n", nsist.fno);
+	  lseek(nsist.ofd, 0, SEEK_SET);
+	  if(nsist.fno == 1)
+	    ret=cli_scandesc(nsist.ofd, ctx, 0, 0, 0, NULL);
+	  else
+	    ret=cli_magic_scandesc(nsist.ofd, ctx);
+	  close(nsist.ofd);
+	  if(!cli_leavetemps_flag)
+	    unlink(nsist.ofn);
+	} else if(ret == CL_EMAXSIZE) {
+	    cli_errmsg("returned %d\n", ret);
+	    ret = nsist.solid ? CL_BREAK : CL_SUCCESS;
 	}
     } while(ret == CL_SUCCESS);
 

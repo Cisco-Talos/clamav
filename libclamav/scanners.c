@@ -1682,7 +1682,8 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 
     if(fstat(desc, &sb) == -1) {
-	cli_errmsg("Can't fstat descriptor %d\n", desc);
+	cli_errmsg("magic_scandesc: Can't fstat descriptor %d\n", desc);
+	abort();
 	return CL_EIO;
     }
 
