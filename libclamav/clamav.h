@@ -136,6 +136,9 @@ struct cl_engine {
 
     /* Filetype definitions */
     void *ftypes;
+
+    /* Ignored signatures */
+    void *ignored;
 };
 
 struct cl_limits {

@@ -76,6 +76,17 @@
 static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
+struct cli_ignsig {
+    char *dbname, *signame;
+    unsigned int line;
+    struct cli_ignsig *next;
+};
+
+struct cli_ignored {
+    struct hashset hs;
+    struct cli_ignsig *list;
+};
+
 /* Prototypes for old public functions just to shut up some gcc warnings;
  * to be removed in 1.0
  */
@@ -378,10 +389,32 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, gzFile *gzs, unsigned 
     }
 }
 
-static int cli_loaddb(FILE *fs, struct cl_engine **engine, unsigned int *signo, unsigned int options, gzFile *gzs, unsigned int gzrsize)
+static int cli_chkign(const struct cli_ignored *ignored, const char *dbname, unsigned int line, const char *signame)
+{
+	struct cli_ignsig *pt;
+
+    if(!ignored || !dbname || !signame)
+	return 0;
+
+    if(hashset_contains(&ignored->hs, line)) {
+	pt = ignored->list;
+	while(pt) {
+	    if(pt->line == line && !strcmp(pt->dbname, dbname) && !strcmp(pt->signame, signame)) {
+		cli_dbgmsg("Skipping signature %s @ %s:%u\n", signame, dbname, line);
+		return 1;
+	    }
+	    pt = pt->next;
+	}
+    }
+
+    return 0;
+}
+
+static int cli_loaddb(FILE *fs, struct cl_engine **engine, unsigned int *signo, unsigned int options, gzFile *gzs, unsigned int gzrsize, const char *dbname)
 {
 	char buffer[FILEBUFF], *pt, *start;
-	int line = 0, ret = 0;
+	unsigned int line = 0, sigs = 0;
+	int ret = 0;
 	struct cli_matcher *root;
 
 
@@ -411,12 +444,16 @@ static int cli_loaddb(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 	start = buffer;
 	*pt++ = 0;
 
+	if((*engine)->ignored && cli_chkign((*engine)->ignored, dbname, line, start))
+	    continue;
+
 	if(*pt == '=') continue;
 
 	if((ret = cli_parse_add(root, start, pt, 0, NULL, 0))) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
+	sigs++;
     }
 
     if(!line) {
@@ -432,7 +469,7 @@ static int cli_loaddb(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
     }
 
     if(signo)
-	*signo += line;
+	*signo += sigs;
 
     return CL_SUCCESS;
 }
@@ -498,7 +535,7 @@ static int cli_loadpdb(FILE *fs, struct cl_engine **engine, unsigned int options
 }
 
 #define NDB_TOKENS 6
-static int cli_loadndb(FILE *fs, struct cl_engine **engine, unsigned int *signo, unsigned short sdb, unsigned int options, gzFile *gzs, unsigned int gzrsize)
+static int cli_loadndb(FILE *fs, struct cl_engine **engine, unsigned int *signo, unsigned short sdb, unsigned int options, gzFile *gzs, unsigned int gzrsize, const char *dbname)
 {
 	const char *tokens[NDB_TOKENS];
 	char buffer[FILEBUFF];
@@ -529,7 +566,6 @@ static int cli_loadndb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	    if(!strncmp(buffer, "HTML.Phishing", 13) || !strncmp(buffer, "Email.Phishing", 14))
 		continue;
 
-	sigs++;
 	cli_chomp(buffer);
 
 	cli_strtokenize(buffer, ':', NDB_TOKENS, tokens);
@@ -539,6 +575,9 @@ static int cli_loadndb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	    break;
 	}
 
+	if((*engine)->ignored && cli_chkign((*engine)->ignored, dbname, line, virname))
+	    continue;
+
 	if((pt = tokens[4])) { /* min version */
 	    if(!isdigit(*pt)) {
 		ret = CL_EMALFDB;
@@ -547,7 +586,6 @@ static int cli_loadndb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 
 	    if((unsigned int) atoi(pt) > cl_retflevel()) {
 		cli_dbgmsg("Signature for %s not loaded (required f-level: %d)\n", virname, atoi(pt));
-		sigs--;
 		continue;
 	    }
 
@@ -559,7 +597,6 @@ static int cli_loadndb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 		}
 
 		if((unsigned int) atoi(pt) < cl_retflevel()) {
-		    sigs--;
 		    continue;
 		}
 
@@ -574,7 +611,6 @@ static int cli_loadndb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 
 	if(target >= CLI_MTARGETS) {
 	    cli_dbgmsg("Not supported target type in signature for %s\n", virname);
-	    sigs--;
 	    continue;
 	}
 
@@ -596,7 +632,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	    ret = CL_EMALFDB;
 	    break;
 	}
-
+	sigs++;
     }
 
     if(!line) {
@@ -715,6 +751,100 @@ static int cli_loadft(FILE *fs, struct cl_engine **engine, unsigned int options,
     return CL_SUCCESS;
 }
 
+static int cli_loadign(FILE *fs, struct cl_engine **engine, unsigned int options, gzFile *gzs, unsigned int gzrsize)
+{
+	char buffer[FILEBUFF], *pt;
+	unsigned int line = 0;
+	struct cli_ignsig *new, *last = NULL;
+	struct cli_ignored *ignored;
+	int ret;
+
+
+    if((ret = cli_initengine(engine, options))) {
+	cl_free(*engine);
+	return ret;
+    }
+
+    if(!(ignored = (*engine)->ignored)) {
+	ignored = (*engine)->ignored = (struct cli_ignored *) cli_calloc(sizeof(struct cli_ignored), 1);
+	if(!ignored || hashset_init(&ignored->hs, 64, 50)) {
+	    cl_free(*engine);
+	    return CL_EMEM;
+	}
+    }
+
+    while(cli_dbgets(buffer, FILEBUFF, fs, gzs, &gzrsize)) {
+	line++;
+	cli_chomp(buffer);
+
+	new = (struct cli_ignsig *) cli_calloc(1, sizeof(struct cli_ignsig));
+	if(!new) {
+	    ret = CL_EMEM;
+	    break;
+	}
+
+	if(!(new->dbname = cli_strtok(buffer, 0, ":"))) {
+	    free(new);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if(!(pt = cli_strtok(buffer, 1, ":"))) {
+	    free(new->dbname);
+	    free(new);
+	    ret = CL_EMALFDB;
+	    break;
+	} else {
+	    new->line = atoi(pt);
+	    free(pt);
+	}
+
+	if((ret = hashset_addkey(&ignored->hs, new->line)))
+	    break;
+
+	if(!(new->signame = cli_strtok(buffer, 2, ":"))) {
+	    free(new->dbname);
+	    free(new);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if(!last) {
+	    last = ignored->list = new;
+	} else {
+	    last->next = new;
+	    last = new;
+	}
+    }
+
+    if(ret) {
+	cli_errmsg("cli_loadign: Problem parsing database at line %u\n", line);
+	cl_free(*engine);
+	return ret;
+    }
+
+    return CL_SUCCESS;
+}
+
+static void cli_freeign(struct cl_engine *engine)
+{
+	struct cli_ignsig *pt;
+	struct cli_ignored *ignored;
+
+    if((ignored = engine->ignored)) {
+	while(ignored->list) {
+	    pt = ignored->list;
+	    ignored->list = ignored->list->next;
+	    free(pt->dbname);
+	    free(pt->signame);
+	    free(pt);
+	}
+	hashset_destroy(&ignored->hs);
+	free(engine->ignored);
+	engine->ignored = NULL;
+    }
+}
+
 static int scomp(const void *a, const void *b)
 {
     return *(const uint32_t *)a - *(const uint32_t *)b;
@@ -757,11 +887,11 @@ static int cli_md5db_init(struct cl_engine **engine, unsigned int mode)
     else			    \
 	db = (*engine)->md5_fp;
 
-static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo, unsigned int mode, unsigned int options, gzFile *gzs, unsigned int gzrsize)
+static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo, unsigned int mode, unsigned int options, gzFile *gzs, unsigned int gzrsize, const char *dbname)
 {
 	char buffer[FILEBUFF], *pt;
 	int ret = CL_SUCCESS;
-	unsigned int size_field = 1, md5_field = 0, line = 0;
+	unsigned int size_field = 1, md5_field = 0, line = 0, sigs = 0;
 	uint32_t size;
 	struct cli_bm_patt *new;
 	struct cli_matcher *db = NULL;
@@ -818,6 +948,13 @@ static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	    break;
 	}
 
+	if((*engine)->ignored && cli_chkign((*engine)->ignored, dbname, line, new->virname)) {
+	    free(new->virname);
+	    free(new->pattern);
+	    free(new);
+	    continue;
+	}
+
 	MD5_DB;
 	if(!db && (ret = cli_md5db_init(engine, mode))) {
 	    free(new->pattern);
@@ -842,6 +979,8 @@ static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	    }
 	    hashset_addkey(&db->md5_sizes_hs, size);
 	}
+
+	sigs++;
     }
 
     if(!line) {
@@ -857,15 +996,16 @@ static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo,
     }
 
     if(signo)
-	*signo += line;
+	*signo += sigs;
 
     return CL_SUCCESS;
 }
 
-static int cli_loadmd(FILE *fs, struct cl_engine **engine, unsigned int *signo, int type, unsigned int options, gzFile *gzs, unsigned int gzrsize)
+static int cli_loadmd(FILE *fs, struct cl_engine **engine, unsigned int *signo, int type, unsigned int options, gzFile *gzs, unsigned int gzrsize, const char *dbname)
 {
 	char buffer[FILEBUFF], *pt;
-	int line = 0, comments = 0, ret = 0, crc;
+	unsigned int line = 0, sigs = 0;
+	int ret, crc;
 	struct cli_meta_node *new;
 
 
@@ -876,10 +1016,8 @@ static int cli_loadmd(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 
     while(cli_dbgets(buffer, FILEBUFF, fs, gzs, &gzrsize)) {
 	line++;
-	if(buffer[0] == '#') {
-	    comments++;
+	if(buffer[0] == '#')
 	    continue;
-	}
 
 	cli_chomp(buffer);
 
@@ -893,6 +1031,12 @@ static int cli_loadmd(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 	    free(new);
 	    ret = CL_EMALFDB;
 	    break;
+	}
+
+	if((*engine)->ignored && cli_chkign((*engine)->ignored, dbname, line, new->virname)) {
+	    free(new->virname);
+	    free(new);
+	    continue;
 	}
 
 	if(!(pt = cli_strtok(buffer, 1, ":"))) {
@@ -1014,6 +1158,8 @@ static int cli_loadmd(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 	    new->next = (*engine)->rar_mlist;
 	    (*engine)->rar_mlist = new;
 	}
+
+	sigs++;
     }
 
     if(!line) {
@@ -1029,7 +1175,7 @@ static int cli_loadmd(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
     }
 
     if(signo)
-	*signo += (line - comments);
+	*signo += sigs;
 
     return CL_SUCCESS;
 }
@@ -1041,6 +1187,7 @@ int cli_load(const char *filename, struct cl_engine **engine, unsigned int *sign
 	FILE *fs = NULL;
 	int ret = CL_SUCCESS;
 	uint8_t skipped = 0;
+	const char *dbname;
 
 
     if(!gzs && (fs = fopen(filename, "rb")) == NULL) {
@@ -1048,83 +1195,97 @@ int cli_load(const char *filename, struct cl_engine **engine, unsigned int *sign
 	return CL_EOPEN;
     }
 
-    if(cli_strbcasestr(filename, ".db")) {
-	ret = cli_loaddb(fs, engine, signo, options, gzs, gzrsize);
+/*
+#ifdef C_WINDOWS
+    if((dbname = strrchr(filename, '\\')))
+#else
+*/
+    if((dbname = strrchr(filename, '/')))
+/*#endif */
+	dbname++;
+    else
+	dbname = filename;
 
-    } else if(cli_strbcasestr(filename, ".cvd")) {
+    if(cli_strbcasestr(dbname, ".db")) {
+	ret = cli_loaddb(fs, engine, signo, options, gzs, gzrsize, dbname);
+
+    } else if(cli_strbcasestr(dbname, ".cvd")) {
 	    int warn = 0;
 
-	if(strstr(filename, "daily.cvd"))
+	if(!strcmp(dbname, "daily.cvd"))
 	    warn = 1;
 
 	ret = cli_cvdload(fs, engine, signo, warn, options, 0);
 
-    } else if(cli_strbcasestr(filename, ".cld")) {
+    } else if(cli_strbcasestr(dbname, ".cld")) {
 	    int warn = 0;
 
-	if(strstr(filename, "daily.cld"))
+	if(!strcmp(dbname, "daily.cld"))
 	    warn = 1;
 
 	ret = cli_cvdload(fs, engine, signo, warn, options | CL_DB_CVDNOTMP, 1);
 
-    } else if(cli_strbcasestr(filename, ".hdb")) {
-	ret = cli_loadmd5(fs, engine, signo, MD5_HDB, options, gzs, gzrsize);
+    } else if(cli_strbcasestr(dbname, ".hdb")) {
+	ret = cli_loadmd5(fs, engine, signo, MD5_HDB, options, gzs, gzrsize, dbname);
 
-    } else if(cli_strbcasestr(filename, ".hdu")) {
+    } else if(cli_strbcasestr(dbname, ".hdu")) {
 	if(options & CL_DB_PUA)
-	    ret = cli_loadmd5(fs, engine, signo, MD5_HDB, options, gzs, gzrsize);
+	    ret = cli_loadmd5(fs, engine, signo, MD5_HDB, options, gzs, gzrsize, dbname);
 	else
 	    skipped = 1;
 
-    } else if(cli_strbcasestr(filename, ".fp")) {
-	ret = cli_loadmd5(fs, engine, signo, MD5_FP, options, gzs, gzrsize);
+    } else if(cli_strbcasestr(dbname, ".fp")) {
+	ret = cli_loadmd5(fs, engine, signo, MD5_FP, options, gzs, gzrsize, dbname);
 
-    } else if(cli_strbcasestr(filename, ".mdb")) {
-	ret = cli_loadmd5(fs, engine, signo, MD5_MDB, options, gzs, gzrsize);
+    } else if(cli_strbcasestr(dbname, ".mdb")) {
+	ret = cli_loadmd5(fs, engine, signo, MD5_MDB, options, gzs, gzrsize, dbname);
 
-    } else if(cli_strbcasestr(filename, ".mdu")) {
+    } else if(cli_strbcasestr(dbname, ".mdu")) {
 	if(options & CL_DB_PUA)
-	    ret = cli_loadmd5(fs, engine, signo, MD5_MDB, options, gzs, gzrsize);
+	    ret = cli_loadmd5(fs, engine, signo, MD5_MDB, options, gzs, gzrsize, dbname);
 	else
 	    skipped = 1;
 
-    } else if(cli_strbcasestr(filename, ".ndb")) {
-	ret = cli_loadndb(fs, engine, signo, 0, options, gzs, gzrsize);
+    } else if(cli_strbcasestr(dbname, ".ndb")) {
+	ret = cli_loadndb(fs, engine, signo, 0, options, gzs, gzrsize, dbname);
 
-    } else if(cli_strbcasestr(filename, ".ndu")) {
+    } else if(cli_strbcasestr(dbname, ".ndu")) {
 	if(!(options & CL_DB_PUA))
 	    skipped = 1;
 	else
-	    ret = cli_loadndb(fs, engine, signo, 0, options, gzs, gzrsize);
+	    ret = cli_loadndb(fs, engine, signo, 0, options, gzs, gzrsize, dbname);
 
-    } else if(cli_strbcasestr(filename, ".sdb")) {
-	ret = cli_loadndb(fs, engine, signo, 1, options, gzs, gzrsize);
+    } else if(cli_strbcasestr(dbname, ".sdb")) {
+	ret = cli_loadndb(fs, engine, signo, 1, options, gzs, gzrsize, dbname);
 
-    } else if(cli_strbcasestr(filename, ".zmd")) {
-	ret = cli_loadmd(fs, engine, signo, 1, options, gzs, gzrsize);
+    } else if(cli_strbcasestr(dbname, ".zmd")) {
+	ret = cli_loadmd(fs, engine, signo, 1, options, gzs, gzrsize, dbname);
 
-    } else if(cli_strbcasestr(filename, ".rmd")) {
-	ret = cli_loadmd(fs, engine, signo, 2, options, gzs, gzrsize);
+    } else if(cli_strbcasestr(dbname, ".rmd")) {
+	ret = cli_loadmd(fs, engine, signo, 2, options, gzs, gzrsize, dbname);
 
-    } else if(cli_strbcasestr(filename, ".cfg")) {
+    } else if(cli_strbcasestr(dbname, ".cfg")) {
 	ret = cli_dconf_load(fs, engine, options, gzs, gzrsize);
 
-    } else if(cli_strbcasestr(filename, ".wdb")) {
+    } else if(cli_strbcasestr(dbname, ".wdb")) {
 	if(options & CL_DB_PHISHING_URLS) {
 	    ret = cli_loadwdb(fs, engine, options, gzs, gzrsize);
 	} else
 	    skipped = 1;
-    } else if(cli_strbcasestr(filename, ".pdb")) {
+    } else if(cli_strbcasestr(dbname, ".pdb")) {
 	if(options & CL_DB_PHISHING_URLS) {
 	    ret = cli_loadpdb(fs, engine, options, gzs, gzrsize);
 	} else
 	    skipped = 1;
-    } else if(cli_strbcasestr(filename, ".ft")) {
+    } else if(cli_strbcasestr(dbname, ".ft")) {
 	ret = cli_loadft(fs, engine, options, 0, gzs, gzrsize);
+
+    } else if(cli_strbcasestr(dbname, ".ign")) {
+	ret = cli_loadign(fs, engine, options, gzs, gzrsize);
 
     } else {
 	cli_dbgmsg("cli_load: unknown extension - assuming old database format\n");
-	ret = cli_loaddb(fs, engine, signo, options, gzs, gzrsize);
+	ret = cli_loaddb(fs, engine, signo, options, gzs, gzrsize, dbname);
     }
 
     if(ret) {
@@ -1156,23 +1317,41 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigne
 	    char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
 	} result;
 #endif
-	struct stat sb;
 	char *dbfile;
 	int ret = CL_ESUPPORT;
 
 
     cli_dbgmsg("Loading databases from %s\n", dirname);
-
-    /* check for and load daily.cfg */
-    dbfile = (char *) cli_malloc(strlen(dirname) + 11);
+    dbfile = (char *) cli_malloc(strlen(dirname) + 20);
     if(!dbfile)
 	return CL_EMEM;
+
+    /* try to load local.ign and daily.cvd/daily.ign first */
+    sprintf(dbfile, "%s/local.ign", dirname);
+    if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL, 0))) {
+	free(dbfile);
+	return ret;
+    }
+
+    sprintf(dbfile, "%s/daily.cld", dirname);
+    if(access(dbfile, R_OK))
+	sprintf(dbfile, "%s/daily.cvd", dirname);
+    if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL, 0))) {
+	free(dbfile);
+	return ret;
+    }
+
+    sprintf(dbfile, "%s/daily.ign", dirname);
+    if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL, 0))) {
+	free(dbfile);
+	return ret;
+    }
+
+    /* check for and load daily.cfg */
     sprintf(dbfile, "%s/daily.cfg", dirname);
-    if(stat(dbfile, &sb) != -1) {
-	if((ret = cli_load(dbfile, engine, signo, options, NULL, 0))) {
-	    free(dbfile);
-	    return ret;
-	}
+    if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL, 0))) {
+	free(dbfile);
+	return ret;
     }
     free(dbfile);
 
@@ -1192,7 +1371,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigne
 	if(dent->d_ino)
 #endif
 	{
-	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && CLI_DBEXT(dent->d_name)) {
+	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && strcmp(dent->d_name, "daily.cvd") && strcmp(dent->d_name, "daily.cld") && strcmp(dent->d_name, "daily.ign") && strcmp(dent->d_name, "daily.cfg") && strcmp(dent->d_name, "local.ign") && CLI_DBEXT(dent->d_name)) {
 
 		dbfile = (char *) cli_malloc(strlen(dent->d_name) + strlen(dirname) + 2);
 
@@ -1551,6 +1730,7 @@ void cl_free(struct cl_engine *engine)
 	free(engine->dconf);
 
     cli_ftfree(engine->ftypes);
+    cli_freeign(engine);
     free(engine);
 }
 
@@ -1589,7 +1769,7 @@ int cl_build(struct cl_engine *engine)
     }
 
     cli_md5db_build(engine->md5_mdb);
-
+    cli_freeign(engine);
     cli_dconf_print(engine->dconf);
 
     return CL_SUCCESS;
