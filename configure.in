@@ -1349,8 +1349,12 @@ AC_TRY_RUN([
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/time.h>
+#ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 #include <errno.h>
 int main(void) {
         FILE *fp = fopen("conftestval", "w");
@@ -1363,7 +1367,7 @@ int main(void) {
 		perror("fopen failed");
 		return errno;
 	}
-        return EXIT_SUCCESS;
+        return 0;
 }
 ],
 DEFAULT_FD_SETSIZE=`cat conftestval`,
