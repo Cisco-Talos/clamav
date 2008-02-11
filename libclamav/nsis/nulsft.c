@@ -184,7 +184,7 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
     return CL_BREAK;
   }
   
-  if ((ret=cli_checklimits("NSIS", ctx 0, 0, 0))!=CL_CLEAN)
+  if ((ret=cli_checklimits("NSIS", ctx, 0, 0, 0))!=CL_CLEAN)
     return ret;
 
   if (n->fno)
@@ -223,7 +223,7 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 
     n->asz -= size+4;
 
-    if ((ret=cli_checklimits("NSIS", ctx, size, 0, 0)!=CL_CLEAN) {
+    if ((ret=cli_checklimits("NSIS", ctx, size, 0, 0))!=CL_CLEAN) {
       close(n->ofd);
       if (lseek(n->ifd, size, SEEK_CUR)==-1) return CL_EIO;
       return ret;
