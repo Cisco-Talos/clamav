@@ -163,7 +163,6 @@ static int nsis_decomp(struct nsis_st *n) {
       break;
     case Z_STREAM_END:
       ret = CL_BREAK;
-    /* FIXME: regression needed */ 
     }
     n->nsis.avail_in = n->z.avail_in;
     n->nsis.next_in = n->z.next_in;
@@ -184,10 +183,9 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
     cli_dbgmsg("NSIS: extraction complete\n");
     return CL_BREAK;
   }
-  if (ctx->limits && ctx->limits->maxfiles && n->fno >= ctx->limits->maxfiles) {
-    cli_dbgmsg("NSIS: Files limit reached (max: %u)\n", ctx->limits->maxfiles);
-    return CL_EMAXFILES;
-  }
+  
+  if ((ret=cli_checklimits("NSIS", ctx 0, 0, 0))!=CL_CLEAN)
+    return ret;
 
   if (n->fno)
     snprintf(n->ofn, 1023, "%s/content.%.3u", n->dir, n->fno);
@@ -225,11 +223,10 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 
     n->asz -= size+4;
 
-    if (ctx->limits && ctx->limits->maxfilesize && size > ctx->limits->maxfilesize) {
-      cli_dbgmsg("NSIS: Skipping file due to size limit (%u, max: %lu)\n", size, ctx->limits->maxfilesize);
+    if ((ret=cli_checklimits("NSIS", ctx, size, 0, 0)!=CL_CLEAN) {
       close(n->ofd);
       if (lseek(n->ifd, size, SEEK_CUR)==-1) return CL_EIO;
-      return CL_EMAXSIZE;
+      return ret;
     }
     if (!(ibuf= (unsigned char *) cli_malloc(size))) {
       	cli_dbgmsg("NSIS: out of memory"__AT__"\n");
@@ -274,12 +271,11 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 	  n->nsis.next_out = obuf;
 	  n->nsis.avail_out = BUFSIZ;
 	  loops=0;
-	  if (ctx->limits && ctx->limits->maxfilesize && size > ctx->limits->maxfilesize) {
-	    cli_dbgmsg("NSIS: Skipping file due to size limit (%u, max: %lu)\n", size, ctx->limits->maxfilesize);
+	  if ((ret=cli_checklimits("NSIS", ctx, size, 0, 0))!=CL_CLEAN) {
 	    free(ibuf);
 	    close(n->ofd);
 	    nsis_shutdown(n);
-	    return CL_EMAXSIZE;
+	    return ret;
 	  }
 	} else if (++loops > 10) {
 	  cli_dbgmsg("NSIS: xs looping, breaking out"__AT__"\n");
@@ -367,10 +363,9 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
     }
 
     size=cli_readint32(obuf);
-    if (ctx->limits && ctx->limits->maxfilesize && size > ctx->limits->maxfilesize) {
-      cli_dbgmsg("NSIS: Breaking out due to filesize limit (%u, max: %lu) in solid archive\n", size, ctx->limits->maxfilesize);
+    if ((ret=cli_checklimits("NSIS", ctx, size, 0, 0))!=CL_CLEAN) {
       close(n->ofd);
-      return CL_EFORMAT;
+      return ret;
     }
 
     n->nsis.next_out = obuf;
@@ -536,7 +531,7 @@ int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
 	}
     } while(ret == CL_SUCCESS);
 
-    if(ret == CL_BREAK)
+    if(ret == CL_BREAK || ret == CL_EMAXFILES)
 	ret = CL_CLEAN;
 
     cli_nsis_free(&nsist);

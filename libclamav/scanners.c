@@ -102,9 +102,6 @@
 #include <stddef.h>
 #endif
 
-#define MAX_MAIL_RECURSION  15
-
-
 static int cli_scanfile(const char *filename, cli_ctx *ctx);
 
 #ifdef ENABLE_UNRAR
@@ -1077,6 +1074,9 @@ static int cli_scanole2(int desc, cli_ctx *ctx)
 
     cli_dbgmsg("in cli_scanole2()\n");
 
+    if(ctx->limits && ctx->limits->maxreclevel && ctx->recursion >= ctx->limits->maxreclevel)
+        return CL_EMAXREC;
+
     /* generate the temporary directory */
     dir = cli_gentemp(NULL);
     if(mkdir(dir, 0700)) {
@@ -1085,19 +1085,24 @@ static int cli_scanole2(int desc, cli_ctx *ctx)
 	return CL_ETMPDIR;
     }
 
-    if((ret = cli_ole2_extract(desc, dir, ctx->limits))) {
+    if((ret = cli_ole2_extract(desc, dir, ctx))) {
 	cli_dbgmsg("OLE2: %s\n", cl_strerror(ret));
 	if(!cli_leavetemps_flag)
 	    cli_rmdirs(dir);
 	free(dir);
+	ctx->recursion--;
 	return ret;
     }
+
+    ctx->recursion++;
 
     if((ret = cli_vba_scandir(dir, ctx)) != CL_VIRUS) {
 	if(cli_scandir(dir, ctx) == CL_VIRUS) {
 	    ret = CL_VIRUS;
 	}
     }
+
+    ctx->recursion--;
 
     if(!cli_leavetemps_flag)
 	cli_rmdirs(dir);
@@ -1758,7 +1763,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
 
         case CL_TYPE_NULSFT:
-	    if(SCAN_ARCHIVE)
+	  if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_NSIS))
 		ret = cli_scannulsft(desc, ctx, 0);
 	    break;
 
