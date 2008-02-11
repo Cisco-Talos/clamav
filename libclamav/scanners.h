@@ -1,4 +1,7 @@
 /*
+ *  Copyright (C) 2007 - 2008 Sourcefire, Inc.
+ *  Author: Tomasz Kojm <tkojm@clamav.net>
+ *
  *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -23,7 +26,5 @@
 #include "others.h"
 
 int cli_magic_scandesc(int desc, cli_ctx *ctx);
-
-int cli_scandir(const char *dirname, cli_ctx *ctx);
 
 #endif

@@ -1,3 +1,8 @@
+Mon Feb 11 19:15:16 CET 2008 (tk)
+---------------------------------
+  * libclamav: mail: scan text attachments and decoded base64 bodies also with
+	       type 4 sigs (bb#378)
+
 Mon Feb 11 18:19:48 CET 2008 (acab)
 -----------------------------------
   * WARNING: NEW LOGIC IN SCAN LIMITS

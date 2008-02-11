@@ -49,6 +49,7 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.64 2007/02/12 22:25:14 njh Exp $";
 #include "mbox.h"
 #include "matcher.h"
 #include "scanners.h"
+#include "filetypes.h"
 
 #ifndef	CL_DEBUG
 #define	NDEBUG	/* map CLAMAV debug onto standard */
@@ -670,6 +671,7 @@ fileblobScan(const fileblob *fb)
 {
 #ifndef	C_WINDOWS
 	int rc, fd;
+	cli_file_t ftype;
 #endif
 
 	if(fb->isInfected)
@@ -705,6 +707,16 @@ fileblobScan(const fileblob *fb)
 	}*/
 
 	rc = cli_magic_scandesc(fd, fb->ctx);
+
+	if(rc == CL_CLEAN) {
+		lseek(fd, 0, SEEK_SET);
+		ftype = cli_filetype2(fd, fb->ctx->engine);
+		if(ftype >= CL_TYPE_TEXT_ASCII && ftype <= CL_TYPE_TEXT_UTF16BE) {
+			lseek(fd, 0, SEEK_SET);
+			rc = cli_scandesc(fd, fb->ctx, 0, CL_TYPE_MAIL, 0, NULL);
+		}
+	}
+
 	close(fd);
 
 	if(rc == CL_VIRUS) {

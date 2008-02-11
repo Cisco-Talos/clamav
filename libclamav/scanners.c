@@ -1,4 +1,7 @@
 /*
+ *  Copyright (C) 2007 - 2008 Sourcefire, Inc.
+ *  Author: Tomasz Kojm <tkojm@clamav.net>
+ *
  *  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -48,7 +51,6 @@
 #ifndef	O_BINARY
 #define	O_BINARY	0
 #endif
-
 
 #define DCONF_ARCH  ctx->dconf->archive
 #define DCONF_DOC   ctx->dconf->doc
@@ -103,6 +105,90 @@
 #endif
 
 static int cli_scanfile(const char *filename, cli_ctx *ctx);
+
+static int cli_scandir(const char *dirname, cli_ctx *ctx, cli_file_t container)
+{
+	DIR *dd;
+	struct dirent *dent;
+#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
+	union {
+	    struct dirent d;
+	    char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
+	} result;
+#endif
+	struct stat statbuf;
+	char *fname;
+	int fd, ret = CL_CLEAN;
+	cli_file_t ftype;
+
+
+    if((dd = opendir(dirname)) != NULL) {
+#ifdef HAVE_READDIR_R_3
+	while(!readdir_r(dd, &result.d, &dent) && dent) {
+#elif defined(HAVE_READDIR_R_2)
+	while((dent = (struct dirent *) readdir_r(dd, &result.d))) {
+#else
+	while((dent = readdir(dd))) {
+#endif
+#if	(!defined(C_CYGWIN)) && (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
+	    if(dent->d_ino)
+#endif
+	    {
+		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
+		    /* build the full name */
+		    fname = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
+		    if(!fname) {
+			closedir(dd);
+			return CL_EMEM;
+		    }
+
+		    sprintf(fname, "%s/%s", dirname, dent->d_name);
+
+		    /* stat the file */
+		    if(lstat(fname, &statbuf) != -1) {
+			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
+			    if(cli_scandir(fname, ctx, container) == CL_VIRUS) {
+				free(fname);
+				closedir(dd);
+				return CL_VIRUS;
+			    }
+			} else {
+			    if(S_ISREG(statbuf.st_mode)) {
+				if(cli_scanfile(fname, ctx) == CL_VIRUS) {
+				    free(fname);
+				    closedir(dd);
+				    return CL_VIRUS;
+				}
+
+				if(container == CL_TYPE_MAIL) {
+				    fd = open(fname, O_RDONLY|O_BINARY);
+				    ftype = cli_filetype2(fd, ctx->engine);
+				    if(ftype >= CL_TYPE_TEXT_ASCII && ftype <= CL_TYPE_TEXT_UTF16BE) {
+					lseek(fd, 0, SEEK_SET);
+					ret = cli_scandesc(fd, ctx, 0, CL_TYPE_MAIL, 0, NULL);
+				    }
+				    close(fd);
+				    if(ret == CL_VIRUS) {
+					free(fname);
+					closedir(dd);
+					return CL_VIRUS;
+				    }
+				}
+			    }
+			}
+		    }
+		    free(fname);
+		}
+	    }
+	}
+    } else {
+	cli_dbgmsg("cli_scandir: Can't open directory %s.\n", dirname);
+	return CL_EOPEN;
+    }
+
+    closedir(dd);
+    return CL_CLEAN;
+}
 
 #ifdef ENABLE_UNRAR
 static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx *ctx, unsigned int files, uint32_t* sfx_check)
@@ -256,7 +342,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 
     metadata = metadata_tmp = rar_state.metadata; 
 
-    if(cli_scandir(rar_state.comment_dir, ctx) == CL_VIRUS)
+    if(cli_scandir(rar_state.comment_dir, ctx, 0) == CL_VIRUS)
 	ret = CL_VIRUS;
 
     unrar_close(&rar_state);
@@ -619,72 +705,6 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
     return ret;
 }
 
-int cli_scandir(const char *dirname, cli_ctx *ctx)
-{
-	DIR *dd;
-	struct dirent *dent;
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-	union {
-	    struct dirent d;
-	    char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
-	} result;
-#endif
-	struct stat statbuf;
-	char *fname;
-
-
-    if((dd = opendir(dirname)) != NULL) {
-#ifdef HAVE_READDIR_R_3
-	while(!readdir_r(dd, &result.d, &dent) && dent) {
-#elif defined(HAVE_READDIR_R_2)
-	while((dent = (struct dirent *) readdir_r(dd, &result.d))) {
-#else
-	while((dent = readdir(dd))) {
-#endif
-#if	(!defined(C_CYGWIN)) && (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
-	    if(dent->d_ino)
-#endif
-	    {
-		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
-		    /* build the full name */
-		    fname = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
-		    if(!fname) {
-			closedir(dd);
-			return CL_EMEM;
-		    }
-
-		    sprintf(fname, "%s/%s", dirname, dent->d_name);
-
-		    /* stat the file */
-		    if(lstat(fname, &statbuf) != -1) {
-			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
-			    if (cli_scandir(fname, ctx) == CL_VIRUS) {
-				free(fname);
-				closedir(dd);
-				return CL_VIRUS;
-			    }
-			} else
-			    if(S_ISREG(statbuf.st_mode))
-				if(cli_scanfile(fname, ctx) == CL_VIRUS) {
-				    free(fname);
-				    closedir(dd);
-				    return CL_VIRUS;
-				}
-
-		    }
-		    free(fname);
-		}
-	    }
-	}
-    } else {
-	cli_dbgmsg("ScanDir: Can't open directory %s.\n", dirname);
-	return CL_EOPEN;
-    }
-
-    closedir(dd);
-    return 0;
-}
-
 static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
 {
 	int ret = CL_CLEAN, i, fd, ofd, data_len;
@@ -747,7 +767,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
 	free(vba_project->offset);
 	free(vba_project);
     } else if ((fullname = cli_ppt_vba_read(dirname))) {
-    	if(cli_scandir(fullname, ctx) == CL_VIRUS) {
+    	if(cli_scandir(fullname, ctx, 0) == CL_VIRUS) {
 	    ret = CL_VIRUS;
 	}
 	if(!cli_leavetemps_flag)
@@ -939,7 +959,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
 
     if (ret == CL_CLEAN) {
     	snprintf(fullname, 1024, "%s/rfc2397", tempname);
-    	ret = cli_scandir(fullname, ctx);
+    	ret = cli_scandir(fullname, ctx, 0);
     }
 
     if(!cli_leavetemps_flag)
@@ -1097,7 +1117,7 @@ static int cli_scanole2(int desc, cli_ctx *ctx)
     ctx->recursion++;
 
     if((ret = cli_vba_scandir(dir, ctx)) != CL_VIRUS) {
-	if(cli_scandir(dir, ctx) == CL_VIRUS) {
+	if(cli_scandir(dir, ctx, 0) == CL_VIRUS) {
 	    ret = CL_VIRUS;
 	}
     }
@@ -1129,7 +1149,7 @@ static int cli_scantar(int desc, cli_ctx *ctx, unsigned int posix)
     if((ret = cli_untar(dir, desc, posix, ctx)))
 	cli_dbgmsg("Tar: %s\n", cl_strerror(ret));
     else
-	ret = cli_scandir(dir, ctx);
+	ret = cli_scandir(dir, ctx, 0);
 
     if(!cli_leavetemps_flag)
 	cli_rmdirs(dir);
@@ -1158,7 +1178,7 @@ static int cli_scanbinhex(int desc, cli_ctx *ctx)
     if((ret = cli_binhex(dir, desc)))
 	cli_dbgmsg("Binhex: %s\n", cl_strerror(ret));
     else
-	ret = cli_scandir(dir, ctx);
+	ret = cli_scandir(dir, ctx, 0);
 
     if(!cli_leavetemps_flag)
 	cli_rmdirs(dir);
@@ -1240,7 +1260,7 @@ static int cli_scanscrenc(int desc, cli_ctx *ctx)
     }
 
     if (html_screnc_decode(desc, tempname))
-	ret = cli_scandir(tempname, ctx);
+	ret = cli_scandir(tempname, ctx, 0);
 
     if(!cli_leavetemps_flag)
 	cli_rmdirs(tempname);
@@ -1376,7 +1396,7 @@ static int cli_scanpdf(int desc, cli_ctx *ctx)
     ret = cli_pdf(dir, desc, ctx);
 
     if(ret == CL_CLEAN)
-	ret = cli_scandir(dir, ctx);
+	ret = cli_scandir(dir, ctx, 0);
 
     if(!cli_leavetemps_flag)
 	cli_rmdirs(dir);
@@ -1400,7 +1420,7 @@ static int cli_scantnef(int desc, cli_ctx *ctx)
     ret = cli_tnef(dir, desc);
 
     if(ret == CL_CLEAN)
-	ret = cli_scandir(dir, ctx);
+	ret = cli_scandir(dir, ctx, 0);
 
     if(!cli_leavetemps_flag)
 	cli_rmdirs(dir);
@@ -1423,7 +1443,7 @@ static int cli_scanuuencoded(int desc, cli_ctx *ctx)
     ret = cli_uuencode(dir, desc);
 
     if(ret == CL_CLEAN)
-	ret = cli_scandir(dir, ctx);
+	ret = cli_scandir(dir, ctx, 0);
 
     if(!cli_leavetemps_flag)
 	cli_rmdirs(dir);
@@ -1458,7 +1478,7 @@ static int cli_scanmail(int desc, cli_ctx *ctx)
 	return ret;
     }
 
-    ret = cli_scandir(dir, ctx);
+    ret = cli_scandir(dir, ctx, CL_TYPE_MAIL);
 
     if(!cli_leavetemps_flag)
 	cli_rmdirs(dir);
