@@ -65,11 +65,12 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.64 2007/02/12 22:25:14 njh Exp $";
 #include <windows.h>
 #endif
 
-#define	MAX_SCAN_SIZE	20*1024	/*
-				 * The performance benefit of scanning
-				 * early disappears on medium and
-				 * large sized files
-				 */
+/* Scehduled for rewite in 0.94 (bb#804). Disabling for now */
+/* #define	MAX_SCAN_SIZE	20*1024	/\* */
+/* 				 * The performance benefit of scanning */
+/* 				 * early disappears on medium and */
+/* 				 * large sized files */
+/* 				 *\/ */
 
 static	const	char	*blobGetFilename(const blob *b);
 
@@ -618,9 +619,8 @@ fileblobAddData(fileblob *fb, const unsigned char *data, size_t len)
 		if(ctx) {
 			int do_scan = 1;
 
-			if(ctx->limits && ctx->limits->maxfilesize) /* FIXMELIMITS */
-				if(fb->bytes_scanned >= ctx->limits->maxfilesize)
-					do_scan = 0;
+			if(cli_checklimits("fileblobAddData", ctx, fb->bytes_scanned, 0, 0)!=CL_CLEAN)
+			        do_scan = 0;
 
 			if(fb->bytes_scanned > MAX_SCAN_SIZE)
 				do_scan = 0;

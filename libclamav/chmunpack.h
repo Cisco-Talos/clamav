@@ -116,8 +116,4 @@ int cli_chm_open(int fd, const char *dirname, chm_metadata_t *metadata);
 int cli_chm_prepare_file(int fd, char *dirname, chm_metadata_t *metadata);
 int cli_chm_extract_file(int fd, char *dirname, chm_metadata_t *metadata);
 void cli_chm_close(chm_metadata_t *metadata);
-int cli_chm_open(int fd, const char *dirname, chm_metadata_t *metadata);
-void cli_chm_close(chm_metadata_t *metadata);
-int cli_chm_extract_file(int fd, char *dirname, chm_metadata_t *metadata);
-int cli_chm_prepare_file(int fd, char *dirname, chm_metadata_t *metadata);
 #endif

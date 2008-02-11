@@ -2010,9 +2010,9 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 	cli_dbgmsg("in parseEmailBody, %u files saved so far\n",
 		mctx->files);
 
-	if(limits) { /* FIXMELIMITS */
+	if(limits) { /* FIXMELIMITS: this should be better integrated */
 		if(limits->maxreclevel) {
-			const cli_ctx *ctx = mctx->ctx;	/* needed for BLOCKMAX :-( */
+			const cli_ctx *ctx = mctx->ctx;
 
 			/*
 			 * This is approximate

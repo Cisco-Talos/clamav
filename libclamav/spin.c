@@ -372,7 +372,7 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
   bitmap = cli_readint32(ep+0x3061);
   bitman = bitmap;
 
-  /* FIXMELIMITS */
+  /* FIXMELIMITS: possibly rewrite to use the limits api */
   if(ctx->limits && ctx->limits->maxfilesize) {
     unsigned long int filesize = 0;
     

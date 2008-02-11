@@ -189,7 +189,6 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	bytesleft -= xreflength;
 	 */
 
-	rc = CL_CLEAN;
 	files = 0;
 
 	/*
@@ -430,13 +429,20 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 #endif
 
 		if(is_ascii85decode) {
-			unsigned char *tmpbuf = cli_malloc(calculated_streamlen * 5);
-			int ret;
+			unsigned char *tmpbuf; = cli_malloc(calculated_streamlen * 5);
+			int ret = cli_checklimits("cli_pdf", ctx, calculated_streamlen * 5, calculated_streamlen, 0);
+
+			if(ret != CL_CLEAN) {
+				close(fout);
+				unlink(fullname);
+				continue;
+			}
+
+			tmpbuf = cli_malloc(calculated_streamlen * 5);
 
 			if(tmpbuf == NULL) {
 				close(fout);
 				unlink(fullname);
-				rc = CL_EMEM;
 				continue;
 			}
 
@@ -446,7 +452,6 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 				free(tmpbuf);
 				close(fout);
 				unlink(fullname);
-				rc = CL_CLEAN;
 				continue;
 			}
 			if(ret) {
@@ -459,7 +464,6 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 					free(tmpbuf);
 					close(fout);
 					unlink(fullname);
-					rc = CL_EMEM;
 					continue;
 				}
 				tmpbuf = t;
@@ -467,16 +471,17 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 				 * Note that it will probably be both
 				 * ascii85encoded and flateencoded
 				 */
+
 				if(is_flatedecode)
 					rc = try_flatedecode((unsigned char *)tmpbuf, real_streamlen, real_streamlen, fout, ctx);
 				else
 					cli_writen(fout, (const char *)streamstart, real_streamlen);
 			}
 			free(tmpbuf);
-		} else if(is_flatedecode)
+		} else if(is_flatedecode) {
 			rc = try_flatedecode((unsigned char *)streamstart, real_streamlen, calculated_streamlen, fout, ctx);
 
-		else {
+		} else {
 			cli_dbgmsg("cli_pdf: writing %lu bytes from the stream\n",
 				(unsigned long)real_streamlen);
 			cli_writen(fout, (const char *)streamstart, real_streamlen);
@@ -508,9 +513,9 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 static int
 try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fout, const cli_ctx *ctx)
 {
-	int ret = flatedecode(buf, real_len, fout, ctx);
+	int ret = cli_checklimits("cli_pdf", ctx, real_len, 0, 0);
 
-	if(ret == CL_SUCCESS)
+	if (ret==CL_CLEAN && flatedecode(buf, real_len, fout, ctx) == CL_SUCCESS)
 		return CL_SUCCESS;
 
 	if(real_len == calculated_len) {
@@ -520,6 +525,9 @@ try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fo
 		cli_dbgmsg("cli_pdf: Bad compression in flate stream\n");
 		return CL_CLEAN;
 	}
+
+	if(cli_checklimits("cli_pdf", ctx, calculated_len, 0, 0)!=CL_CLEAN)
+		return CL_CLEAN;
 
 	ret = flatedecode(buf, calculated_len, fout, ctx);
 	if(ret == CL_SUCCESS)
@@ -605,7 +613,6 @@ flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
 					nbytes += written;
 
 					if((ret=cli_checklimits("cli_pdf", ctx, nbytes, 0, 0))!=CL_CLEAN) {
-						/* FIXMELIMITS */
 						inflateEnd(&stream);
 						return ret;
 					}

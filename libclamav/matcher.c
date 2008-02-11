@@ -53,11 +53,13 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, const char **virn
 	struct cli_ac_data mdata;
 	struct cli_matcher *groot, *troot = NULL;
 
-
     if(!engine) {
 	cli_errmsg("cli_scanbuff: engine == NULL\n");
 	return CL_ENULLARG;
     }
+
+    if(cli_updatelimits(ctx, length)!=CL_CLEAN)
+        return CL_CLEAN;
 
     groot = engine->root[0]; /* generic signatures */
 

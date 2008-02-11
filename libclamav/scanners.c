@@ -230,7 +230,7 @@ static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx 
 	if(mdata->fileno && mdata->fileno != files)
 	    continue;
 
-	if(mdata->maxdepth && ctx->recursion > mdata->maxdepth) /* FIXMELIMITS */
+	if(mdata->maxdepth && ctx->recursion > mdata->maxdepth)
 	    continue;
 
 	/* TODO add support for regex */
@@ -401,7 +401,6 @@ static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	   break;
 	}
 	if ((ret = cli_checklimits("ARJ", ctx, metadata.orig_size, metadata.comp_size, 0))!=CL_CLEAN) {
-	  /* FIXMELIMITS: is this correct, shall I free something? */
 	    ret = CL_SUCCESS;
 	    continue;
 	}
