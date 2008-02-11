@@ -1,3 +1,8 @@
+Mon Feb 11 23:27:47 EET 2008 (edwin)
+------------------------------------
+  * libclamav/scanners.c, htmlnorm.c: tagless version of HTML file (bb #162)
+  * libclamav/scanners.c, textnorm.[ch]: fix compiler warning
+
 Mon Feb 11 22:16:10 CET 2008 (acab)
 -----------------------------------
   * libclamav: account for scanned data in cli_scanbuff too

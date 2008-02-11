@@ -885,6 +885,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
 	char *tempname, fullname[1024];
 	int ret=CL_CLEAN, fd;
 	struct stat sb;
+	struct stat first_stat;
 
 
     cli_dbgmsg("in cli_scanhtml()\n");
@@ -910,34 +911,38 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
     }
 
     html_normalise_fd(desc, tempname, NULL, ctx->dconf);
-    snprintf(fullname, 1024, "%s/comment.html", tempname);
+    snprintf(fullname, 1024, "%s/nocomment.html", tempname);
     fd = open(fullname, O_RDONLY|O_BINARY);
     if (fd >= 0) {
-        ret = cli_scandesc(fd, ctx, 0, CL_TYPE_HTML, 0, NULL);
-	close(fd);
-    }
-
-    if(ret < 0 || ret == CL_VIRUS) {
-	if(!cli_leavetemps_flag)
-	    cli_rmdirs(tempname);
-	free(tempname);
-	return ret;
-    }
-
-    if (ret == CL_CLEAN) {
-	snprintf(fullname, 1024, "%s/nocomment.html", tempname);
-	fd = open(fullname, O_RDONLY|O_BINARY);
-	if (fd >= 0) {
-	    ret = cli_scandesc(fd, ctx, 0, CL_TYPE_HTML, 0, NULL);
-	    close(fd);
+	if(fstat(fd, &first_stat) == -1) {
+		cli_errmsg("cli_scanhtml: fstat() failed for %s: %d\n", fullname, fd);
+		close(fd);
+		ret = CL_EIO;
+	} else {
+		ret = cli_scandesc(fd, ctx, 0, CL_TYPE_HTML, 0, NULL);
+		close(fd);
 	}
     }
 
-    if(ret < 0 || ret == CL_VIRUS) {
-	if(!cli_leavetemps_flag)
-	    cli_rmdirs(tempname);
-	free(tempname);
-	return ret;
+    if (ret == CL_CLEAN) {
+	snprintf(fullname, 1024, "%s/comment.html", tempname);
+	fd = open(fullname, O_RDONLY|O_BINARY);
+	if (fd >= 0) {
+	    if(fstat(fd, &sb) == -1) {
+		cli_errmsg("cli_scanhtml: fstat() failed for %s: %d\n", fullname, fd);
+		close(fd);
+		ret = CL_EIO;
+	    } else {
+		    if(sb.st_size != first_stat.st_size) {
+			    /* scan only if HTML contained comments, otherwise we already scanned it
+			     * above */
+			    ret = cli_scandesc(fd, ctx, 0, CL_TYPE_HTML, 0, NULL);
+		    } else {
+			    cli_dbgmsg("Skipping comment.html because it is identical to nocomment.html\n");
+		    }
+		    close(fd);
+	    }
+	}
     }
 
     if (ret == CL_CLEAN) {
@@ -949,16 +954,18 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
 	}
     }
 
-    if(ret < 0 || ret == CL_VIRUS) {
-	if(!cli_leavetemps_flag)
-	    cli_rmdirs(tempname);
-	free(tempname);
-	return ret;
+    if(ret == CL_CLEAN) {
+	    snprintf(fullname, 1024, "%s/notags.html", tempname);
+	    fd = open(fullname, O_RDONLY|O_BINARY);
+	    if(fd >= 0) {
+		    ret = cli_scandesc(fd, ctx, 0, CL_TYPE_HTML, 0, NULL);
+		    close(fd);
+	    }
     }
 
     if (ret == CL_CLEAN) {
-    	snprintf(fullname, 1024, "%s/rfc2397", tempname);
-    	ret = cli_scandir(fullname, ctx, 0);
+	snprintf(fullname, 1024, "%s/rfc2397", tempname);
+	ret = cli_scandir(fullname, ctx, 0);
     }
 
     if(!cli_leavetemps_flag)
@@ -1025,7 +1032,7 @@ static int cli_scanscript(int desc, cli_ctx *ctx)
 			}
 			text_normalize_reset(&state);
 		}
-		if(nread > 0 && (text_normalize_buffer(&state, buff, nread)) != nread) {
+		if(nread > 0 && (text_normalize_buffer(&state, buff, nread) != nread)) {
 			cli_dbgmsg("cli_scanscript: short read during normalizing\n");
 		}
 		/* used a do {}while() here, since we need to flush our buffers at the end,
