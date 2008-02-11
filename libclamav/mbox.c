@@ -1971,7 +1971,6 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 
 /*
  * This is a recursive routine.
- * FIXME: We are not passed &mrec so we can't check against MAX_MAIL_RECURSION
  *
  * This function parses the body of mainMessage and saves its attachments in dir
  *
