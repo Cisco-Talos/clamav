@@ -83,9 +83,10 @@ typedef struct {
     const struct cli_matcher *root;
     const struct cl_engine *engine;
     const struct cl_limits *limits;
+    unsigned long scansize;
     unsigned int options;
-    unsigned int arec;
-    unsigned int mrec;
+    unsigned int recursion;
+    unsigned int scannedfiles;
     unsigned int found_possibly_unwanted;
     struct cli_dconf *dconf;
 } cli_ctx;
@@ -99,7 +100,7 @@ typedef struct {
 #define SCAN_ELF	    (ctx->options & CL_SCAN_ELF)
 #define SCAN_ALGO 	    (ctx->options & CL_SCAN_ALGORITHMIC)
 #define DETECT_ENCRYPTED    (ctx->options & CL_SCAN_BLOCKENCRYPTED)
-#define BLOCKMAX	    (ctx->options & CL_SCAN_BLOCKMAX)
+/* #define BLOCKMAX	    (ctx->options & CL_SCAN_BLOCKMAX) */
 #define DETECT_BROKEN	    (ctx->options & CL_SCAN_BLOCKBROKEN)
 
 /* based on macros from A. Melnikoff */
@@ -234,5 +235,7 @@ void cli_bitset_free(bitset_t *bs);
 int cli_bitset_set(bitset_t *bs, unsigned long bit_offset);
 int cli_bitset_test(bitset_t *bs, unsigned long bit_offset);
 const char* cli_ctime(const time_t *timep, char *buf, const size_t bufsize);
-
+int cli_checklimits(const char *, cli_ctx *, unsigned long, unsigned long, unsigned long);
+int cli_updatelimits(cli_ctx *, unsigned long);
+unsigned long cli_getsizelimit(cli_ctx *, unsigned long);
 #endif

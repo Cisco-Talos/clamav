@@ -204,6 +204,51 @@ const char *cl_strerror(int clerror)
     }
 }
 
+int cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned long need2, unsigned long need3) {
+    int ret = CL_SUCCESS;
+    unsigned long needed;
+
+    /* if called without limits, go on, unpack, scan */
+    if(!ctx || !ctx->limits) return CL_CLEAN;
+
+    needed = (need1>need2)?need1:need2;
+    needed = (needed>need3)?needed:need3;
+
+    /* if we have global scan limits */
+    if(needed && ctx->limits->maxscansize) {
+        /* if the remaining scansize is too small... */
+        if(ctx->limits->maxscansize-ctx->scansize<needed) {
+	    /* ... we tell the caller to skip this file */
+	    cli_dbgmsg("%s: scansize exceeded (initial: %lu, remaining: %lu, needed: %lu)\n", who, ctx->limits->maxscansize, ctx->scansize, needed);
+	    ret = CL_EMAXSIZE;
+	}
+    }
+
+    /* if we have per-file size limits, and we are overlimit... */
+    if(needed && ctx->limits->maxfilesize && ctx->limits->maxfilesize<needed) {
+	/* ... we tell the caller to skip this file */
+        cli_dbgmsg("%s: filesize exceeded (allowed: %lu, needed: %lu)\n", who, ctx->limits->maxfilesize, needed);
+	ret = CL_EMAXSIZE;
+    }
+
+    if(ctx->limits->maxfiles && ctx->scannedfiles>=ctx->limits->maxfiles) {
+        cli_dbgmsg("%s: files limit reached (max: %u)\n", who, ctx->limits->maxfiles);
+	return CL_EMAXFILES;
+    }
+    return ret;
+}
+
+int cli_updatelimits(cli_ctx *ctx, unsigned long needed) {
+    int ret=cli_checklimits("cli_updatelimits", ctx, needed, 0, 0);
+
+    if (ret != CL_CLEAN) return ret;
+    ctx->scannedfiles++;
+    ctx->scansize+=needed;
+    if(ctx->scansize > ctx->limits->maxscansize)
+        ctx->scansize = ctx->limits->maxscansize;
+    return CL_CLEAN;
+}
+
 unsigned char *cli_md5digest(int desc)
 {
 	unsigned char *digest;
@@ -636,11 +681,7 @@ int cli_rmdirs(const char *dirname)
 			    return -1;
 			}
 
-#ifdef	C_WINDOWS
-			sprintf(path, "%s\\%s", dirname, dent->d_name);
-#else
 			sprintf(path, "%s/%s", dirname, dent->d_name);
-#endif
 
 			/* stat the file */
 			if(lstat(path, &statbuf) != -1) {

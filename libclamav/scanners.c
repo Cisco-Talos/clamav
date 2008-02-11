@@ -102,9 +102,6 @@
 #include <stddef.h>
 #endif
 
-#define MAX_MAIL_RECURSION  15
-
-
 static int cli_scanfile(const char *filename, cli_ctx *ctx);
 
 #ifdef ENABLE_UNRAR
@@ -121,10 +118,10 @@ static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx 
 	    *sfx_check = metadata->crc;
     }
 
-    cli_dbgmsg("RAR: %s, crc32: 0x%x, encrypted: %u, compressed: %u, normal: %u, method: %u, ratio: %u (max: %u)\n",
+    cli_dbgmsg("RAR: %s, crc32: 0x%x, encrypted: %u, compressed: %u, normal: %u, method: %u, ratio: %u\n",
 	metadata->filename, metadata->crc, metadata->encrypted, (unsigned int) metadata->pack_size,
 	(unsigned int) metadata->unpack_size, metadata->method,
-	metadata->pack_size ? (unsigned int) (metadata->unpack_size / metadata->pack_size) : 0, ctx->limits ? ctx->limits->maxratio : 0);
+	metadata->pack_size ? (unsigned int) (metadata->unpack_size / metadata->pack_size) : 0);
 
     /* Scan metadata */
     mdata = ctx->engine->rar_mlist;
@@ -147,7 +144,7 @@ static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx 
 	if(mdata->fileno && mdata->fileno != files)
 	    continue;
 
-	if(mdata->maxdepth && ctx->arec > mdata->maxdepth)
+	if(mdata->maxdepth && ctx->recursion > mdata->maxdepth) /* FIXMELIMITS */
 	    continue;
 
 	/* TODO add support for regex */
@@ -175,42 +172,6 @@ static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx 
     }
 
     return ret;
-}
-
-static int cli_unrar_checklimits(const cli_ctx *ctx, const unrar_metadata_t *metadata, unsigned int files)
-{
-    if(ctx->limits) {
-	if(ctx->limits->maxratio && metadata->unpack_size && metadata->pack_size) {
-	    if(metadata->unpack_size / metadata->pack_size >= ctx->limits->maxratio) {
-		cli_dbgmsg("RAR: Max ratio reached (%u, max: %u)\n", (unsigned int) (metadata->unpack_size / metadata->pack_size), ctx->limits->maxratio);
-		if(BLOCKMAX) {
-		    *ctx->virname = "Oversized.RAR";
-		    return CL_VIRUS;
-		}
-		return CL_EMAXSIZE;
-	    }
-	}
-
-	if(ctx->limits->maxfilesize && (metadata->unpack_size > ctx->limits->maxfilesize)) {
-	    cli_dbgmsg("RAR: %s: Size exceeded (%lu, max: %lu)\n", metadata->filename, (unsigned long int) metadata->unpack_size, ctx->limits->maxfilesize);
-	    if(BLOCKMAX) {
-		*ctx->virname = "RAR.ExceededFileSize";
-		return CL_VIRUS;
-	    }
-	    return CL_EMAXSIZE;
-	}
-
-	if(ctx->limits->maxfiles && (files > ctx->limits->maxfiles)) {
-	    cli_dbgmsg("RAR: Files limit reached (max: %u)\n", ctx->limits->maxfiles);
-	    if(BLOCKMAX) {
-		*ctx->virname = "RAR.ExceededFilesLimit";
-		return CL_VIRUS;
-	    }
-	    return CL_EMAXFILES;
-	}
-    }
-
-    return CL_SUCCESS;
 }
 
 static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
@@ -258,17 +219,11 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 		ret = CL_ERAR;
 	    break;
 	}
-	ret = cli_unrar_checklimits(ctx, rar_state.metadata_tail, rar_state.file_count);
-	if(ret && ret != CL_VIRUS) {
+	if((ret=cli_checklimits("RAR", ctx, rar_state.metadata_tail->unpack_size, rar_state.metadata_tail->pack_size, 0)!=CL_CLEAN)) {
 	    free(rar_state.file_header->filename);
 	    free(rar_state.file_header);
 	    ret = CL_CLEAN;
 	    continue;
-	} else if(ret == CL_VIRUS) {
-	    /* needed since we didn't reach unrar_extract_next to clean this up*/
-	    free(rar_state.file_header->filename);
-	    free(rar_state.file_header);	   
-	    break;
 	}
 	ret = unrar_extract_next(&rar_state,dir);
 	if(ret == UNRAR_OK)
@@ -324,52 +279,11 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 }
 #endif /* ENABLE_UNRAR */
 
-static int cli_unarj_checklimits(const cli_ctx *ctx, const arj_metadata_t *metadata, unsigned int files)
-{
-    if (ctx->limits) {
-	if (ctx->limits->maxfilesize && (metadata->orig_size > ctx->limits->maxfilesize)) {
-	    cli_dbgmsg("ARJ: %s: Size exceeded (%lu, max: %lu)\n", metadata->filename ? metadata->filename : "(none)",
-	    		(unsigned long int) metadata->orig_size, ctx->limits->maxfilesize);
-	    if (BLOCKMAX) {
-		*ctx->virname = "ARJ.ExceededFileSize";
-		return CL_VIRUS;
-	    }
-	    return CL_EMAXSIZE;
-	}
-	
-	if (ctx->limits->maxratio && metadata->orig_size && metadata->comp_size) {
-	    if (metadata->orig_size / metadata->comp_size >= ctx->limits->maxratio) {
-		cli_dbgmsg("ARJ: Max ratio reached (%u, max: %u)\n", (unsigned int) (metadata->orig_size / metadata->comp_size), ctx->limits->maxratio);
-		if (ctx->limits->maxfilesize && (metadata->orig_size <= ctx->limits->maxfilesize)) {
-		    cli_dbgmsg("ARJ: Ignoring ratio limit (file size doesn't hit limits)\n");
-		} else {
-		    if(BLOCKMAX) {
-		    	*ctx->virname = "Oversized.ARJ";
-			return CL_VIRUS;
-		    }
-		}
-	    }
-	}
-	
-	if(ctx->limits->maxfiles && (files > ctx->limits->maxfiles)) {
-	    cli_dbgmsg("ARJ: Files limit reached (max: %u)\n", ctx->limits->maxfiles);
-	    if (BLOCKMAX) {
-	    	*ctx->virname = "ARJ.ExceededFilesLimit";
-		return CL_VIRUS;
-	    }
-	    return CL_EMAXFILES;
-	}
-    }
-    
-    return CL_SUCCESS;
-}
-
 static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 {
 	int ret = CL_CLEAN, rc;
 	arj_metadata_t metadata;
 	char *dir;
-	unsigned int file_count = 1;
 
     cli_dbgmsg("in cli_scanarj()\n");
 
@@ -400,9 +314,10 @@ static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	if (ret != CL_SUCCESS) {
 	   break;
 	}
-	ret = cli_unarj_checklimits(ctx, &metadata, file_count);
-	if (ret == CL_VIRUS) {
-		break;
+	if ((ret = cli_checklimits("ARJ", ctx, metadata.orig_size, metadata.comp_size, 0))!=CL_CLEAN) {
+	  /* FIXMELIMITS: is this correct, shall I free something? */
+	    ret = CL_SUCCESS;
+	    continue;
 	}
 	ret = cli_unarj_extract_file(desc, dir, &metadata);
 	if (metadata.ofd >= 0) {
@@ -472,15 +387,8 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
     while((bytes = gzread(gd, buff, FILEBUFF)) > 0) {
 	size += bytes;
 
-	if(ctx->limits)
-	    if(ctx->limits->maxfilesize && (size + FILEBUFF > ctx->limits->maxfilesize)) {
-		cli_dbgmsg("GZip: Size exceeded (stopped at %ld, max: %ld)\n", size, ctx->limits->maxfilesize);
-		if(BLOCKMAX) {
-		    *ctx->virname = "GZip.ExceededFileSize";
-		    ret = CL_VIRUS;
-		}
-		break;
-	    }
+	if(cli_checklimits("GZip", ctx, size + FILEBUFF, 0, 0)!=CL_CLEAN)
+	    break;
 
 	if(cli_writen(fd, buff, bytes) != bytes) {
 	    cli_dbgmsg("GZip: Can't write to file.\n");
@@ -586,15 +494,8 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
     while((bytes = BZ2_bzRead(&bzerror, bfd, buff, FILEBUFF)) > 0) {
 	size += bytes;
 
-	if(ctx->limits)
-	    if(ctx->limits->maxfilesize && (size + FILEBUFF > ctx->limits->maxfilesize)) {
-		cli_dbgmsg("Bzip: Size exceeded (stopped at %ld, max: %ld)\n", size, ctx->limits->maxfilesize);
-		if(BLOCKMAX) {
-		    *ctx->virname = "BZip.ExceededFileSize";
-		    ret = CL_VIRUS;
-		}
-		break;
-	    }
+	if(cli_checklimits("Bzip", ctx, size + FILEBUFF, 0, 0)!=CL_CLEAN)
+	    break;
 
 	if(cli_writen(fd, buff, bytes) != bytes) {
 	    cli_dbgmsg("Bzip: Can't write to file.\n");
@@ -697,25 +598,8 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
     for(file = cab.files; file; file = file->next) {
 	files++;
 
-	if(ctx->limits && ctx->limits->maxfilesize && (file->length > ctx->limits->maxfilesize)) {
-	    cli_dbgmsg("CAB: %s: Size exceeded (%u, max: %lu)\n", file->name, file->length, ctx->limits->maxfilesize);
-	    if(BLOCKMAX) {
-		*ctx->virname = "CAB.ExceededFileSize";
-		cab_free(&cab);
-		return CL_VIRUS;
-	    }
+	if(cli_checklimits("CAB", ctx, file->length, 0, 0)!=CL_CLEAN)
 	    continue;
-	}
-
-	if(ctx->limits && ctx->limits->maxfiles && (files > ctx->limits->maxfiles)) {
-	    cli_dbgmsg("CAB: Files limit reached (max: %u)\n", ctx->limits->maxfiles);
-            cab_free(&cab);
-	    if(BLOCKMAX) {
-		*ctx->virname = "CAB.ExceededFilesLimit";
-		return CL_VIRUS;
-	    }
-	    return CL_CLEAN;
-	}
 
 	tempname = cli_gentemp(NULL);
 	cli_dbgmsg("CAB: Extracting file %s to %s, size %u\n", file->name, tempname, file->length);
@@ -1190,6 +1074,9 @@ static int cli_scanole2(int desc, cli_ctx *ctx)
 
     cli_dbgmsg("in cli_scanole2()\n");
 
+    if(ctx->limits && ctx->limits->maxreclevel && ctx->recursion >= ctx->limits->maxreclevel)
+        return CL_EMAXREC;
+
     /* generate the temporary directory */
     dir = cli_gentemp(NULL);
     if(mkdir(dir, 0700)) {
@@ -1198,19 +1085,24 @@ static int cli_scanole2(int desc, cli_ctx *ctx)
 	return CL_ETMPDIR;
     }
 
-    if((ret = cli_ole2_extract(desc, dir, ctx->limits))) {
+    if((ret = cli_ole2_extract(desc, dir, ctx))) {
 	cli_dbgmsg("OLE2: %s\n", cl_strerror(ret));
 	if(!cli_leavetemps_flag)
 	    cli_rmdirs(dir);
 	free(dir);
+	ctx->recursion--;
 	return ret;
     }
+
+    ctx->recursion++;
 
     if((ret = cli_vba_scandir(dir, ctx)) != CL_VIRUS) {
 	if(cli_scandir(dir, ctx) == CL_VIRUS) {
 	    ret = CL_VIRUS;
 	}
     }
+
+    ctx->recursion--;
 
     if(!cli_leavetemps_flag)
 	cli_rmdirs(dir);
@@ -1234,7 +1126,7 @@ static int cli_scantar(int desc, cli_ctx *ctx, unsigned int posix)
 	return CL_ETMPDIR;
     }
 
-    if((ret = cli_untar(dir, desc, posix, ctx->limits)))
+    if((ret = cli_untar(dir, desc, posix, ctx)))
 	cli_dbgmsg("Tar: %s\n", cl_strerror(ret));
     else
 	ret = cli_scandir(dir, ctx);
@@ -1546,7 +1438,7 @@ static int cli_scanmail(int desc, cli_ctx *ctx)
 	int ret;
 
 
-    cli_dbgmsg("Starting cli_scanmail(), mrec == %u, arec == %u\n", ctx->mrec, ctx->arec);
+    cli_dbgmsg("Starting cli_scanmail(), recursion = %u\n", ctx->recursion);
 
     /* generate the temporary directory */
     dir = cli_gentemp(NULL);
@@ -1596,11 +1488,8 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
     while((bytes = read(desc, buff, sizeof(buff))) > 0) {
 	size += bytes;
 
-	if(ctx->limits && ctx->limits->maxfilesize && (size + sizeof(buff) > ctx->limits->maxfilesize)) {
-	    cli_dbgmsg("cli_scanembpe: Size exceeded (stopped at %lu, max: %lu)\n", size, ctx->limits->maxfilesize);
-	    /* BLOCKMAX should be ignored here */
+	if(cli_checklimits("cli_scanembpe", ctx, size + sizeof(buff), 0, 0)!=CL_CLEAN)
 	    break;
-	}
 
 	if(cli_writen(fd, buff, bytes) != bytes) {
 	    cli_dbgmsg("cli_scanembpe: Can't write to temporary file\n");
@@ -1757,7 +1646,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg)
 	    }
 	}
 
-	ret == CL_TYPE_MAIL ? ctx->mrec++ : ctx->arec++;
+	ctx->recursion++;
 
 	if(nret != CL_VIRUS) switch(ret) {
 	    case CL_TYPE_HTML:
@@ -1773,7 +1662,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg)
 	    default:
 		break;
 	}
-	ret == CL_TYPE_MAIL ? ctx->mrec-- : ctx->arec--;
+	ctx->recursion--;
 	ret = nret;
     }
 
@@ -1798,7 +1687,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 
     if(fstat(desc, &sb) == -1) {
-	cli_errmsg("Can't fstat descriptor %d\n", desc);
+	cli_errmsg("magic_scandesc: Can't fstat descriptor %d\n", desc);
 	return CL_EIO;
     }
 
@@ -1819,22 +1708,13 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	return ret;
     }
 
-    if(SCAN_ARCHIVE && ctx->limits && ctx->limits->maxreclevel)
-	if(ctx->arec > ctx->limits->maxreclevel) {
-	    cli_dbgmsg("Archive recursion limit exceeded (arec == %u).\n", ctx->arec);
-	    if(BLOCKMAX) {
-		*ctx->virname = "Archive.ExceededRecursionLimit";
-		return CL_VIRUS;
-	    }
-	    return CL_CLEAN;
-	}
+    if(cli_updatelimits(ctx, sb.st_size)!=CL_CLEAN)
+        return CL_CLEAN;
 
-    if(SCAN_MAIL)
-	if(ctx->mrec > MAX_MAIL_RECURSION) {
-	    cli_dbgmsg("Mail recursion level exceeded (mrec == %u).\n", ctx->mrec);
-	    /* return CL_EMAXREC; */
-	    return CL_CLEAN;
-	}
+    if((SCAN_MAIL || SCAN_ARCHIVE) && ctx->limits && ctx->limits->maxreclevel && ctx->recursion > ctx->limits->maxreclevel) {
+        cli_dbgmsg("Archive recursion limit exceeded (level = %u).\n", ctx->recursion);
+	return CL_CLEAN;
+    }
 
     lseek(desc, 0, SEEK_SET);
     type = cli_filetype2(desc, ctx->engine);
@@ -1850,7 +1730,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	lseek(desc, 0, SEEK_SET);
     }
 
-    type == CL_TYPE_MAIL ? ctx->mrec++ : ctx->arec++;
+    ctx->recursion++;
 
     switch(type) {
 	case CL_TYPE_IGNORED:
@@ -1887,7 +1767,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
 
         case CL_TYPE_NULSFT:
-	    if(SCAN_ARCHIVE)
+	  if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_NSIS))
 		ret = cli_scannulsft(desc, ctx, 0);
 	    break;
 
@@ -1922,7 +1802,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
 
 	case CL_TYPE_RTF:
-	    if(DCONF_DOC & DOC_CONF_RTF)
+	    if(SCAN_ARCHIVE && (DCONF_DOC & DOC_CONF_RTF))
 		ret = cli_scanrtf(desc, ctx);
 	    break;
 
@@ -2009,7 +1889,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
     }
 
-    type == CL_TYPE_MAIL ? ctx->mrec-- : ctx->arec--;
+    ctx->recursion--;
 
     if(type == CL_TYPE_ZIP && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP)) {
 	if(sb.st_size > 1048576) {
@@ -2024,7 +1904,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    return CL_VIRUS;
     }
 
-    ctx->arec++;
+    ctx->recursion++;
     lseek(desc, 0, SEEK_SET);
     switch(type) {
 	/* Due to performance reasons all executables were first scanned
@@ -2038,7 +1918,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	default:
 	    break;
     }
-    ctx->arec--;
+    ctx->recursion--;
 
     if(ret == CL_EFORMAT) {
 	cli_dbgmsg("Descriptor[%d]: %s\n", desc, cl_strerror(CL_EFORMAT));
@@ -2051,16 +1931,20 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options)
 {
     cli_ctx ctx;
+    struct cl_limits l_limits;
     int rc;
 
     memset(&ctx, '\0', sizeof(cli_ctx));
     ctx.engine = engine;
     ctx.virname = virname;
-    ctx.limits = limits;
     ctx.scanned = scanned;
     ctx.options = options;
     ctx.found_possibly_unwanted = 0;
     ctx.dconf = (struct cli_dconf *) engine->dconf;
+    if (limits) {
+      ctx.limits = &l_limits;
+      memcpy(&l_limits, limits, sizeof(struct cl_limits));
+    }
 
     rc = cli_magic_scandesc(desc, &ctx);
     if(rc == CL_CLEAN && ctx.found_possibly_unwanted)

@@ -146,11 +146,22 @@ int main(int argc, char **argv)
 
     /* validate some numerical options */
 
-    if(opt_check(opt, "max-space")) {
-	pt = opt_arg(opt, "max-space");
+    if(opt_check(opt, "max-scansize")) {
+	pt = opt_arg(opt, "max-scansize");
 	if(!strchr(pt, 'M') && !strchr(pt, 'm')) {
 	    if(!cli_isnumber(pt)) {
-		logg("!--max-space requires a natural number\n");
+		logg("!--max-scansize requires a natural number\n");
+		opt_free(opt);
+		return 40;
+	    }
+	}
+    }
+
+    if(opt_check(opt, "max-filesize")) {
+	pt = opt_arg(opt, "max-filesize");
+	if(!strchr(pt, 'M') && !strchr(pt, 'm')) {
+	    if(!cli_isnumber(pt)) {
+		logg("!--max-filesize requires a natural number\n");
 		opt_free(opt);
 		return 40;
 	    }
@@ -313,14 +324,11 @@ void help(void)
     mprintf("    --block-max                          Block archives that exceed limits\n");
     mprintf("    --mail-follow-urls                   Download and scan URLs\n");
     mprintf("\n");
-    mprintf("    --max-space=#n                       Only extract first #n kilobytes from\n");
-    mprintf("                                         archived files\n");
-    mprintf("    --max-files=#n                       Only extract first #n files from\n");
-    mprintf("                                         archives\n");
-    mprintf("    --max-ratio=#n                       Maximum compression ratio limit\n");
+    mprintf("    --max-scansize=#n                    FIXMELIMITS\n");
+    mprintf("    --max-filesize=#n                    FIXMELIMITS\n");
+    mprintf("    --max-files=#n                       FIXMELIMITS\n");
     mprintf("    --max-recursion=#n                   Maximum archive recursion level\n");
     mprintf("    --max-dir-recursion=#n               Maximum directory recursion level\n");
-    mprintf("    --max-mail-recursion=#n              Maximum mail recursion level\n");
     mprintf("    --unzip[=FULLPATH]                   Enable support for .zip files\n");
     mprintf("    --unrar[=FULLPATH]                   Enable support for .rar files\n");
     mprintf("    --arj[=FULLPATH]                     Enable support for .arj files\n");

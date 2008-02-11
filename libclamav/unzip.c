@@ -93,11 +93,6 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
     }
     if(res==1) {
       if(ctx->limits && ctx->limits->maxfilesize && csize > ctx->limits->maxfilesize) {
-	if(BLOCKMAX) {
-	  *ctx->virname = "Zip.ExceededFileSize";
-	  ret = CL_VIRUS;
-	  break;
-	}
 	cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->limits->maxfilesize);
 	csize = ctx->limits->maxfilesize;
       }
@@ -159,11 +154,6 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
       if(*avail_out!=sizeof(obuf)) {
 	written+=sizeof(obuf)-(*avail_out);
 	if(ctx->limits && ctx->limits->maxfilesize && written > ctx->limits->maxfilesize) {
-	  if(BLOCKMAX) {
-	    *ctx->virname = "Zip.ExceededFileSize";
-	    ret = CL_VIRUS;
-	    break;
-	  }
 	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->limits->maxfilesize);
 	  res = Z_STREAM_END;
 	  break;
@@ -201,11 +191,6 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
       if(strm.avail_out!=sizeof(obuf)) {
 	written+=sizeof(obuf)-strm.avail_out;
 	if(ctx->limits && ctx->limits->maxfilesize && written > ctx->limits->maxfilesize) {
-	  if(BLOCKMAX) {
-	    *ctx->virname = "Zip.ExceededFileSize";
-	    ret = CL_VIRUS;
-	    break;
-	  }
 	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->limits->maxfilesize);
 	  res = BZ_STREAM_END;
 	  break;
@@ -244,11 +229,6 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
       if(strm.avail_out!=sizeof(obuf)) {
 	written+=sizeof(obuf)-strm.avail_out;
 	if(ctx->limits && ctx->limits->maxfilesize && written > ctx->limits->maxfilesize) {
-	  if(BLOCKMAX) {
-	    *ctx->virname = "Zip.ExceededFileSize";
-	    ret = CL_VIRUS;
-	    break;
-	  }
 	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->limits->maxfilesize);
 	  res = 0;
 	  break;
@@ -346,7 +326,7 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
   zip+=LH_flen;
   zsize-=LH_flen;
 
-  cli_dbgmsg("cli_unzip: lh - ZMDNAME:%d:%s:%u:%u:%u:%u:%u:%u\n", ((LH_flags & F_ENCR)==0), name, LH_usize, LH_csize, LH_crc32, LH_method, fc, ctx->arec);
+  cli_dbgmsg("cli_unzip: lh - ZMDNAME:%d:%s:%u:%u:%u:%u:%u:%u\n", ((LH_flags & F_ENCR)==0), name, LH_usize, LH_csize, LH_crc32, LH_method, fc, ctx->recursion);
   /* ZMDfmt virname:encrypted(0-1):filename(exact|*):usize(exact|*):csize(exact|*):crc32(exact|*):method(exact|*):fileno(exact|*):maxdepth(exact|*) */
 
   while(meta &&
@@ -357,7 +337,7 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
 	 (meta->crc32    && meta->crc32  != LH_crc32) ||
 	 (meta->method>0 && meta->method != LH_method) ||
 	 (meta->fileno   && meta->fileno != fc ) ||
-	 (meta->maxdepth && ctx->arec > meta->maxdepth) ||
+	 (meta->maxdepth && ctx->recursion > meta->maxdepth) ||
 	 (meta->filename && strcmp(name, meta->filename)) /* TODO: use a regex */
 	 )
 	) meta = meta->next;
@@ -401,10 +381,6 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
 	return 0;
       }
       cli_dbgmsg("cli_unzip: lh - skipping encrypted file\n");
-    } else if(ctx->limits && ctx->limits->maxratio > 0 && (usize / csize) >= ctx->limits->maxratio) {
-      *ctx->virname = "Oversized.Zip";
-      *ret = CL_VIRUS;
-      return 0;
     } else *ret = unz(zip, csize, usize, LH_method, LH_flags, fu, ctx, tmpd);
     zip+=csize;
     zsize-=csize;
@@ -559,11 +535,6 @@ int cli_unzip(int f, cli_ctx *ctx) {
 	ret=CL_EMAXFILES;
       }
     }
-  }
-
-  if(ret == CL_EMAXFILES && BLOCKMAX) {
-    *ctx->virname = "Zip.ExceededFilesLimit";
-    ret = CL_VIRUS;
   }
 
   munmap(map, fsize);

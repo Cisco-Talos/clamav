@@ -590,7 +590,7 @@ cli_decode_ole_object(int fd, const char *dir)
 	int ofd;
 	uint32_t object_size;
 	struct stat statbuf;
-	char fullname[NAME_MAX + 1];
+	char *fullname;
 
 	if(dir == NULL)
 		return -1;
@@ -629,15 +629,19 @@ cli_decode_ole_object(int fd, const char *dir)
 		if(!read_uint32(fd, &object_size, FALSE))
 			return -1;
 	}
-	snprintf(fullname, sizeof(fullname) - 1, "%s/_clam_ole_object", dir);
+	if(!(fullname = cli_gentemp(dir))) {
+		return -1;
+	}
 	ofd = open(fullname, O_RDWR|O_CREAT|O_TRUNC|O_BINARY|O_EXCL,
 		S_IWUSR|S_IRUSR);
 	if (ofd < 0) {
-		cli_warnmsg("cli_decode_ole_object: can't create %s\n",
-			fullname);
+		cli_warnmsg("cli_decode_ole_object: can't create %s\n",	fullname);
+		free(fullname);
 		return -1;
+	} else {
+		cli_dbgmsg("cli_decode_ole_object: decoding to %s\n", fullname);
 	}
-
+	free(fullname);
 	ole_copy_file_data(fd, ofd, object_size);
 	lseek(ofd, 0, SEEK_SET);
 	return ofd;

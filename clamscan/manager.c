@@ -220,9 +220,22 @@ int scanmanager(const struct optstruct *opt)
     /* set limits */
     memset(&limits, 0, sizeof(struct cl_limits));
 
-    if(opt_check(opt, "max-space")) {
+    if(opt_check(opt, "max-scansize")) {
 	char *cpy, *ptr;
-	ptr = opt_arg(opt, "max-space");
+	ptr = opt_arg(opt, "max-scansize");
+	if(tolower(ptr[strlen(ptr) - 1]) == 'm') {
+	    cpy = calloc(strlen(ptr), 1);
+	    strncpy(cpy, ptr, strlen(ptr) - 1);
+	    limits.maxfilesize = atoi(cpy) * 1024 * 1024;
+	    free(cpy);
+	} else
+	    limits.maxscansize = atoi(ptr) * 1024;
+    } else
+	limits.maxscansize = 104857600;  /* FIXMELIMITS */
+
+    if(opt_check(opt, "max-filesize")) {
+	char *cpy, *ptr;
+	ptr = opt_arg(opt, "max-filesize");
 	if(tolower(ptr[strlen(ptr) - 1]) == 'm') {
 	    cpy = calloc(strlen(ptr), 1);
 	    strncpy(cpy, ptr, strlen(ptr) - 1);
@@ -231,7 +244,7 @@ int scanmanager(const struct optstruct *opt)
 	} else
 	    limits.maxfilesize = atoi(ptr) * 1024;
     } else
-	limits.maxfilesize = 10485760;
+	limits.maxfilesize = 10485760;  /* FIXMELIMITS */
 
     if(opt_check(opt, "max-files"))
 	limits.maxfiles = atoi(opt_arg(opt, "max-files"));
@@ -242,16 +255,6 @@ int scanmanager(const struct optstruct *opt)
         limits.maxreclevel = atoi(opt_arg(opt, "max-recursion"));
     else
         limits.maxreclevel = 8;
-
-    if(opt_check(opt, "max-mail-recursion"))
-        limits.maxmailrec = atoi(opt_arg(opt, "max-mail-recursion"));
-    else
-        limits.maxmailrec = 64;
-
-    if(opt_check(opt, "max-ratio"))
-        limits.maxratio = atoi(opt_arg(opt, "max-ratio"));
-    else
-        limits.maxratio = 250;
 
     /* set options */
 
@@ -265,9 +268,6 @@ int scanmanager(const struct optstruct *opt)
 
     if(opt_check(opt, "block-encrypted"))
 	options |= CL_SCAN_BLOCKENCRYPTED;
-
-    if(opt_check(opt, "block-max"))
-	options |= CL_SCAN_BLOCKMAX;
 
     if(opt_check(opt, "no-pe"))
 	options &= ~CL_SCAN_PE;
@@ -425,9 +425,10 @@ static int clamav_unpack(const char *prog, const char **args, const char *tmpdir
     else
 	maxfiles = 0;
 
-    if(opt_check(opt, "max-space")) {
+    /* FIXMELIMITS */
+    if(opt_check(opt, "max-filesize")) {
 	    char *cpy, *ptr;
-	ptr = opt_arg(opt, "max-space");
+	ptr = opt_arg(opt, "max-filesize");
 	if(tolower(ptr[strlen(ptr) - 1]) == 'm') { /* megabytes */
 	    cpy = calloc(strlen(ptr), 1);
 	    strncpy(cpy, ptr, strlen(ptr) - 1);

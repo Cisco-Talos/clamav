@@ -1988,7 +1988,6 @@ parseEmailHeader(message *m, const char *line, const table_t *rfc821)
 
 /*
  * This is a recursive routine.
- * FIXME: We are not passed &mrec so we can't check against MAX_MAIL_RECURSION
  *
  * This function parses the body of mainMessage and saves its attachments in dir
  *
@@ -2011,22 +2010,17 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 	cli_dbgmsg("in parseEmailBody, %u files saved so far\n",
 		mctx->files);
 
-	if(limits) {
-		if(limits->maxmailrec) {
+	if(limits) { /* FIXMELIMITS */
+		if(limits->maxreclevel) {
 			const cli_ctx *ctx = mctx->ctx;	/* needed for BLOCKMAX :-( */
 
 			/*
 			 * This is approximate
 			 */
-			if(recursion_level > limits->maxmailrec) {
+			if(recursion_level > limits->maxreclevel) {
 
 				cli_warnmsg("parseEmailBody: hit maximum recursion level (%u)\n", recursion_level);
-				if(BLOCKMAX) {
-					if(ctx->virname)
-						*ctx->virname = "MIME.RecursionLimit";
-					return VIRUS;
-				} else
-					return MAXREC;
+				return MAXREC;
 			}
 		}
 		if(limits->maxfiles && (mctx->files >= limits->maxfiles)) {

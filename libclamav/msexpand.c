@@ -108,15 +108,8 @@ int cli_msexpand(int fd, int ofd, cli_ctx *ctx)
 
     cli_dbgmsg("MSEXPAND: File size from header: %u\n", hdr.fsize);
 
-    if(ctx->limits && ctx->limits->maxfilesize && (hdr.fsize > ctx->limits->maxfilesize)) {
-	cli_dbgmsg("MSEXPAND: Size exceeded (%u, max: %lu)\n", hdr.fsize, ctx->limits->maxfilesize);
-        if(BLOCKMAX) {
-	    *ctx->virname = "MSEXPAND.ExceededFileSize";
-            return CL_VIRUS;
-        }
-	hdr.fsize = ctx->limits->maxfilesize;
-	cli_dbgmsg("MSEXPAND: Only extracting first %u bytes\n", hdr.fsize); /* may extract up to 2kB more */
-    }
+    if(cli_checklimits("MSEXPAND", ctx, hdr.fsize, 0, 0)!=CL_CLEAN)
+        return CL_SUCCESS;
 
     while(1) {
 

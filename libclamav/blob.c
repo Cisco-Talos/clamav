@@ -617,7 +617,7 @@ fileblobAddData(fileblob *fb, const unsigned char *data, size_t len)
 		if(ctx) {
 			int do_scan = 1;
 
-			if(ctx->limits)
+			if(ctx->limits && ctx->limits->maxfilesize) /* FIXMELIMITS */
 				if(fb->bytes_scanned >= ctx->limits->maxfilesize)
 					do_scan = 0;
 

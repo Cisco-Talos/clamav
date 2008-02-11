@@ -1,3 +1,13 @@
+Mon Feb 11 18:19:48 CET 2008 (acab)
+-----------------------------------
+  * WARNING: NEW LOGIC IN SCAN LIMITS
+    The logic in the scanner limits have been reworked. This results in
+    different command line options to clamscan, different config options to
+    clamd and, overall, a different behaviour.
+    I repeat: SOME THINGS HAVE CHANGED, BE CAREFUL!
+    At the moment this is a work in progress. Final version will be available
+    soon which will include a detailed ChangeLog and updated documentation.
+
 Mon Feb 11 18:33:22 EET 2008 (edwin)
 ------------------------------------
   * libclamav/mbox.c: replace getc() with getc_unlocked() when available. This

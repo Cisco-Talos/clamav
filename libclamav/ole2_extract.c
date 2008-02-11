@@ -475,7 +475,9 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 	if ((prop_index < 0) || (prop_index > (int32_t) hdr->max_block_no) || (rec_level > 100) || (*file_count > 100000)) {
 		return;
 	}
-
+	/* FIXMELIMITS
+	 * DOES recursion on virtual object make sense ?
+	 * WHY no size checking ? */
 	if (limits && limits->maxfiles && (*file_count > limits->maxfiles)) {
 		cli_dbgmsg("OLE2: File limit reached (max: %d)\n", limits->maxfiles);
 		return;
@@ -778,7 +780,7 @@ static int ole2_read_header(int fd, ole2_header_t *hdr)
 }
 #endif
 
-int cli_ole2_extract(int fd, const char *dirname, const struct cl_limits *limits)
+int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx)
 {
 	ole2_header_t hdr;
 	int hdr_size;
@@ -878,7 +880,7 @@ int cli_ole2_extract(int fd, const char *dirname, const struct cl_limits *limits
 	
 	/* OR */
 	
-	ole2_walk_property_tree(fd, &hdr, dirname, 0, handler_writefile, 0, &file_count, limits);
+	ole2_walk_property_tree(fd, &hdr, dirname, 0, handler_writefile, 0, &file_count, ctx->limits);
 
 abort:
 #ifdef HAVE_MMAP
