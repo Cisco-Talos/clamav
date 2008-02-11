@@ -1,3 +1,9 @@
+Mon Feb 11 18:33:22 EET 2008 (edwin)
+------------------------------------
+  * libclamav/mbox.c: replace getc() with getc_unlocked() when available. This
+		      avoids a function call on systems that have getc_unlocked()
+		      implemented as a macro.
+
 Mon Feb 11 15:46:39 CET 2008 (tk)
 ---------------------------------
   * libclamav/server-th.c: add missing mutex sync for progexit (bb#461)

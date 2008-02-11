@@ -218,6 +218,19 @@ typedef	struct	mbox_ctx {
 	unsigned	int	files;	/* number of files extracted */
 } mbox_ctx;
 
+/* if supported by the system, use the optimized
+ * version of getc, that doesn't do locking,
+ * and is possibly implemented entirely as a macro */
+#if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE >= 200112L
+#define GETC(fp) getc_unlocked(fp)
+#define LOCKFILE(fp) flockfile(fp)
+#define UNLOCKFILE(fp) funlockfile(fp)
+#else
+#define GETC(fp) getc(fp)
+#define LOCKFILE(fp)
+#define UNLOCKFILE(fp)
+#endif
+
 static	int	cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx);
 static	message	*parseEmailFile(FILE *fin, const table_t *rfc821Table, const char *firstLine, const char *dir);
 static	message	*parseEmailHeaders(message *m, const table_t *rfc821Table);
@@ -1394,6 +1407,9 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 			while((fgets(buffer, sizeof(buffer) - 1, fd) != NULL) &&
 				(strchr("\r\n", buffer[0]) == NULL))
 					;
+		LOCKFILE(fd);
+		/* getline_from_mbox could be using unlocked_stdio(3),
+		 * so lock file here */
 		/*
 		 * Ignore any blank lines at the top of the message
 		 */
@@ -1404,6 +1420,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 		buffer[sizeof(buffer) - 1] = '\0';
 
 		body = parseEmailFile(fd, rfc821, buffer, dir);
+		UNLOCKFILE(fd);
 		fclose(fd);
 	}
 
@@ -1628,7 +1645,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 
 				assert(fullline != NULL);
 
-				lookahead = getc(fin);
+				lookahead = GETC(fin);
 				if(lookahead != EOF) {
 					ungetc(lookahead, fin);
 
@@ -4752,8 +4769,9 @@ getline_from_mbox(char *buffer, size_t len, FILE *fin)
 {
 	char *ret;
 
-	if(feof(fin))
-		return NULL;
+/*	we check for eof from the result of GETC()
+ *	if(feof(fin)) 
+		return NULL;*/
 
 	if((len == 0) || (buffer == NULL)) {
 		cli_errmsg("Invalid call to getline_from_mbox(). Refer to http://www.clamav.net/bugs\n");
@@ -4763,10 +4781,7 @@ getline_from_mbox(char *buffer, size_t len, FILE *fin)
 	ret = buffer;
 
 	do {
-		int c = getc(fin);
-
-		if(ferror(fin))
-			return NULL;
+		int c = GETC(fin);
 
 		switch(c) {
 			default:
@@ -4774,15 +4789,19 @@ getline_from_mbox(char *buffer, size_t len, FILE *fin)
 				continue;
 			case '\n':
 				*buffer++ = '\n';
-				c = getc(fin);
+				c = GETC(fin);
 				if((c != '\r') && !feof(fin))
 					ungetc(c, fin);
 				break;
 			case EOF:
+				if(ret == buffer || ferror(fin)) {
+					/* EOF on first char, or error */
+					return NULL;
+				}
 				break;
 			case '\r':
 				*buffer++ = '\n';
-				c = getc(fin);
+				c = GETC(fin);
 				if((c != '\n') && !feof(fin))
 					ungetc(c, fin);
 				break;
