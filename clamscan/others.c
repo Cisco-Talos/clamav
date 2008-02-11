@@ -130,7 +130,10 @@ int match_regex(const char *filename, const char *pattern)
 {
 	regex_t reg;
 	int match, flags;
-#if !defined(C_CYGWIN) && !defined(C_OS2)
+	char fname[513];
+	size_t len;
+
+#if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_WINDOWS)
 	flags = REG_EXTENDED;
 #else
 	flags = REG_EXTENDED | REG_ICASE; /* case insensitive on Windows */
@@ -139,7 +142,24 @@ int match_regex(const char *filename, const char *pattern)
 	    logg("!%s: Could not parse regular expression %s.\n", filename, pattern);
 		return 2;
 	}
-	match = (cli_regexec(&reg, filename, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
+
+#if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_WINDOWS)
+	if(pattern[strlen(pattern) - 1] == '/') {
+	    snprintf(fname, 511, "%s/", filename);
+	    fname[512] = 0;
+#else
+	if(pattern[strlen(pattern) - 1] == '\\') {
+	    strncpy(fname, filename, 510);
+	    len = strlen(fname);
+	    if(fname[len - 1] != '\\') {
+		fname[len] = '\\';
+		fname[len + 1] = 0;
+	    }
+#endif
+	} else
+	    strncpy(fname, filename, 513);
+
+	match = (cli_regexec(&reg, fname, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
 	cli_regfree(&reg);
 	return match;
 }

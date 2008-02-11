@@ -1,3 +1,8 @@
+Mon Feb 11 12:21:19 CET 2008 (tk)
+---------------------------------
+  * clamscan: match_regex: make sure --exclude/include patterns with
+	      trailing slashes are handled correctly (bb#820)
+
 Mon Feb 11 11:15:57 CET 2008 (tk)
 ---------------------------------
   * shared/misc.c: fix return value of daemonize() under Windows&OS/2 (thx NJH)
