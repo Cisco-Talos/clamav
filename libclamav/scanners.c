@@ -1838,6 +1838,10 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
     lseek(desc, 0, SEEK_SET);
     type = cli_filetype2(desc, ctx->engine);
+    if(type == CL_TYPE_ERROR) {
+	cli_dbgmsg("cli_magic_scandesc: cli_filetype2 returned CL_TYPE_ERROR\n");
+	return CL_EIO;
+    }
     lseek(desc, 0, SEEK_SET);
 
     if(type != CL_TYPE_IGNORED && ctx->engine->sdb) {

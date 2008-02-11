@@ -149,8 +149,11 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
     }
 
     memset(smallbuff, 0, sizeof(smallbuff));
-    if((bread = read(desc, smallbuff, MAGIC_BUFFER_SIZE)) > 0)
-	ret = cli_filetype(smallbuff, bread, engine);
+    bread = cli_readn(desc, smallbuff, MAGIC_BUFFER_SIZE);
+    if(bread == -1)
+	return CL_TYPE_ERROR;
+
+    ret = cli_filetype(smallbuff, bread, engine);
 
     if(ret >= CL_TYPE_TEXT_ASCII && ret <= CL_TYPE_BINARY_DATA) {
 	/* HTML files may contain special characters and could be
@@ -230,7 +233,7 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 	    return ret;
 
 	lseek(desc, 0, SEEK_SET);
-	if((bread = read(desc, bigbuff, 37638)) > 0) {
+	if((bread = cli_readn(desc, bigbuff, 37638)) > 0) {
 
 	    bigbuff[bread] = 0;
 

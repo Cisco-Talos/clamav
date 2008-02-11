@@ -1,3 +1,7 @@
+Mon Feb 11 11:09:10 CET 2008 (tk)
+---------------------------------
+  * libclamav/filetypes.c: improve I/O error handling in cli_filetype2 (bb#818)
+
 Sun Feb 10 10:28:55 EET 2008 (edwin)
 ------------------------------------
   * configure, configure.in: don't use EXIT_SUCCESS if <stdlib.h> is not
