@@ -1,3 +1,7 @@
+Mon Feb 11 15:46:39 CET 2008 (tk)
+---------------------------------
+  * libclamav/server-th.c: add missing mutex sync for progexit (bb#461)
+
 Mon Feb 11 12:21:19 CET 2008 (tk)
 ---------------------------------
   * clamscan: match_regex: make sure --exclude/include patterns with

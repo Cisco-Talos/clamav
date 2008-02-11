@@ -551,9 +551,12 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	if (new_sd != -1)
 	    new_sd = accept(socketd, NULL, NULL);
 	if((new_sd == -1) && (errno != EINTR)) {
+	    pthread_mutex_lock(&exit_mutex);
 	    if(progexit) {
+		pthread_mutex_unlock(&exit_mutex);
 	    	break;
 	    }
+	    pthread_mutex_unlock(&exit_mutex);
 	    /* very bad - need to exit or restart */
 #ifdef HAVE_STRERROR_R
 	    strerror_r(errno, buff, BUFFSIZE);
