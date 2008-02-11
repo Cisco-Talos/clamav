@@ -46,21 +46,22 @@
 #include "cltypes.h"
 
 
-int cli_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cl_engine *engine, cli_file_t ftype)
+int cli_scanbuff(const unsigned char *buffer, uint32_t length, cli_ctx *ctx, cli_file_t ftype)
 {
 	int ret = CL_CLEAN;
 	unsigned int i;
 	struct cli_ac_data mdata;
 	struct cli_matcher *groot, *troot = NULL;
+	const char **virname=ctx->virname;
+	const struct cl_engine *engine=ctx->engine;
 
     if(!engine) {
 	cli_errmsg("cli_scanbuff: engine == NULL\n");
 	return CL_ENULLARG;
     }
 
-    /* FIXMELIMITS need cts to account limits */
-/*     if(cli_updatelimits(ctx, length)!=CL_CLEAN) */
-/*         return CL_CLEAN; */
+    if(cli_updatelimits(ctx, length)!=CL_CLEAN)
+        return CL_CLEAN;
 
     groot = engine->root[0]; /* generic signatures */
 

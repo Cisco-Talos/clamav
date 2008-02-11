@@ -749,7 +749,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
 		if(ctx->scanned)
 		    *ctx->scanned += data_len / CL_COUNT_PRECISION;
 
-		if(cli_scanbuff(data, data_len, ctx->virname, ctx->engine, CL_TYPE_MSOLE2) == CL_VIRUS) {
+		if(cli_scanbuff(data, data_len, ctx, CL_TYPE_MSOLE2) == CL_VIRUS) {
 		    free(data);
 		    ret = CL_VIRUS;
 		    break;
@@ -797,7 +797,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
 		} else {
 			if(ctx->scanned)
 			    *ctx->scanned += vba_project->length[i] / CL_COUNT_PRECISION;
-			if(cli_scanbuff(data, vba_project->length[i], ctx->virname, ctx->engine, CL_TYPE_MSOLE2) == CL_VIRUS) {
+			if(cli_scanbuff(data, vba_project->length[i], ctx, CL_TYPE_MSOLE2) == CL_VIRUS) {
 				free(data);
 				ret = CL_VIRUS;
 				break;
@@ -1019,7 +1019,7 @@ static int cli_scanscript(int desc, cli_ctx *ctx)
 				/* we can continue to scan in memory */
 			}
 			/* when we flush the buffer also scan */
-			if(cli_scanbuff(state.out, state.out_pos, ctx->virname, ctx->engine, CL_TYPE_TEXT_ASCII) == CL_VIRUS) {
+			if(cli_scanbuff(state.out, state.out_pos, ctx, CL_TYPE_TEXT_ASCII) == CL_VIRUS) {
 				ret = CL_VIRUS;
 				break;
 			}

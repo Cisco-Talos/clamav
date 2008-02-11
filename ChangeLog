@@ -1,3 +1,7 @@
+Mon Feb 11 22:16:10 CET 2008 (acab)
+-----------------------------------
+  * libclamav: account for scanned data in cli_scanbuff too
+
 Mon Feb 11 21:04:30 CET 2008 (acab)
 -----------------------------------
   * libclamav: more limit updates, more to come

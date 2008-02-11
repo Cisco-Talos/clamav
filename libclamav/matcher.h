@@ -92,7 +92,7 @@ struct cli_target_info {
     int8_t status; /* 0 == not initialised, 1 == initialised OK, -1 == error */
 };
 
-int cli_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cl_engine *engine, cli_file_t ftype);
+int cli_scanbuff(const unsigned char *buffer, uint32_t length, cli_ctx *ctx, cli_file_t ftype);
 
 int cli_scandesc(int desc, cli_ctx *ctx, uint8_t otfrec, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset);
 
