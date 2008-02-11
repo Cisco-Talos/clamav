@@ -58,8 +58,9 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, const char **virn
 	return CL_ENULLARG;
     }
 
-    if(cli_updatelimits(ctx, length)!=CL_CLEAN)
-        return CL_CLEAN;
+    /* FIXMELIMITS need cts to account limits */
+/*     if(cli_updatelimits(ctx, length)!=CL_CLEAN) */
+/*         return CL_CLEAN; */
 
     groot = engine->root[0]; /* generic signatures */
 

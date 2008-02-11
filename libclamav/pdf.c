@@ -429,7 +429,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 #endif
 
 		if(is_ascii85decode) {
-			unsigned char *tmpbuf; = cli_malloc(calculated_streamlen * 5);
+			unsigned char *tmpbuf;
 			int ret = cli_checklimits("cli_pdf", ctx, calculated_streamlen * 5, calculated_streamlen, 0);
 
 			if(ret != CL_CLEAN) {
