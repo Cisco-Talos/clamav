@@ -1,3 +1,7 @@
+Mon Feb 11 11:15:57 CET 2008 (tk)
+---------------------------------
+  * shared/misc.c: fix return value of daemonize() under Windows&OS/2 (thx NJH)
+
 Mon Feb 11 11:09:10 CET 2008 (tk)
 ---------------------------------
   * libclamav/filetypes.c: improve I/O error handling in cli_filetype2 (bb#818)

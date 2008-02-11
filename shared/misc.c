@@ -276,7 +276,7 @@ int daemonize(void)
 {
 #if defined(C_OS2) || defined(C_WINDOWS)
     fputs("Background mode is not supported on your operating system\n", stderr);
-    return;
+    return -1;
 #else
 	int fds[3], i;
 	pid_t pid;
