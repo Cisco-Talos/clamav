@@ -1,3 +1,7 @@
+Tue Feb 12 11:13:14 GMT 2008 (njh)
+----------------------------------
+  * libclamav/mbox.c:	Code tidy
+
 Tue Feb 12 04:05:17 CET 2008 (acab)
   * clamd: options reordered
 

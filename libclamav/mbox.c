@@ -2011,9 +2011,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 		mctx->files);
 
 	if(limits) { /* FIXMELIMITS: this should be better integrated */
-		if(limits->maxreclevel) {
-			const cli_ctx *ctx = mctx->ctx;
-
+		if(limits->maxreclevel)
 			/*
 			 * This is approximate
 			 */
@@ -2022,7 +2020,6 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				cli_warnmsg("parseEmailBody: hit maximum recursion level (%u)\n", recursion_level);
 				return MAXREC;
 			}
-		}
 		if(limits->maxfiles && (mctx->files >= limits->maxfiles)) {
 			/*
 			 * FIXME: This is only approx - it may have already
