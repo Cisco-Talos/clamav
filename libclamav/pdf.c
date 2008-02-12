@@ -56,6 +56,7 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #include "others.h"
 #include "mbox.h"
 #include "pdf.h"
+#include "scanners.h"
 
 #ifdef	CL_DEBUG
 /*#define	SAVE_TMP	/* Save the file being worked on in tmp */
@@ -81,7 +82,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx)
 	const char *xrefstart;	/* cross reference table */
 	/*size_t xreflength;*/
 	table_t *md5table;
-	int printed_predictor_message, printed_embedded_font_message, ret, rc;
+	int printed_predictor_message, printed_embedded_font_message, rc;
 	unsigned int files;
 	struct stat statb;
 
@@ -191,6 +192,8 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx)
 
 	files = 0;
 
+	rc = CL_CLEAN;
+
 	/*
 	 * The body section consists of a sequence of indirect objects
 	 */
@@ -204,7 +207,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx)
 		int is_embedded_font, predictor;
 		char fullname[NAME_MAX + 1];
 
-		rc=CL_CLEAN;
+		rc = CL_CLEAN;
 		if(q == xrefstart)
 			break;
 		if(memcmp(q, "xref", 4) == 0)
@@ -851,7 +854,7 @@ cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns)
 #include "pdf.h"
 
 int
-cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
+cli_pdf(const char *dir, int desc, cli_ctx *ctx)
 {
 	cli_dbgmsg("File not decoded - PDF decoding needs mmap() (for now)\n");
 	return CL_CLEAN;

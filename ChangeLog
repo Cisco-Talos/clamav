@@ -1,3 +1,8 @@
+Tue Feb 12 11:19:22 GMT 2008 (njh)
+----------------------------------
+  * libclamav/pdf.c:	Fix some warning messages and compilation error on
+				Cygwin
+
 Tue Feb 12 11:13:14 GMT 2008 (njh)
 ----------------------------------
   * libclamav/mbox.c:	Code tidy
