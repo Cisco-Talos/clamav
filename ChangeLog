@@ -1,3 +1,6 @@
+Tue Feb 12 04:05:17 CET 2008 (acab)
+  * clamd: options reordered
+
 Tue Feb 12 01:39:03 CET 2008 (acab)
 -----------------------------------
   * libclamav/pdf: on the fly scanning of attachments
