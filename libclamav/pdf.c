@@ -72,7 +72,7 @@ static	const	char	*cli_pmemstr(const char *haystack, size_t hs, const char *need
  * TODO: handle embedded URLs if (options&CL_SCAN_MAILURL)
  */
 int
-cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
+cli_pdf(const char *dir, int desc, cli_ctx *ctx)
 {
 	off_t size;	/* total number of bytes in the file */
 	off_t bytesleft, trailerlength;
@@ -81,7 +81,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	const char *xrefstart;	/* cross reference table */
 	/*size_t xreflength;*/
 	table_t *md5table;
-	int printed_predictor_message, printed_embedded_font_message, rc, ret;
+	int printed_predictor_message, printed_embedded_font_message, ret, rc;
 	unsigned int files;
 	struct stat statb;
 
@@ -194,16 +194,17 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 	/*
 	 * The body section consists of a sequence of indirect objects
 	 */
-	while((p < xrefstart) && ((rc=cli_checklimits("cli_pdf", ctx, 0, 0, 0))==CL_CLEAN) &&
+	while((p < xrefstart) && (cli_checklimits("cli_pdf", ctx, 0, 0, 0)==CL_CLEAN) &&
 	      ((q = pdf_nextobject(p, bytesleft)) != NULL)) {
 		int is_ascii85decode, is_flatedecode, fout, len, has_cr;
 		/*int object_number, generation_number;*/
 		const char *objstart, *objend, *streamstart, *streamend;
-		char *md5digest;
+		unsigned char *md5digest;
 		unsigned long length, objlen, real_streamlen, calculated_streamlen;
 		int is_embedded_font, predictor;
 		char fullname[NAME_MAX + 1];
 
+		rc=CL_CLEAN;
 		if(q == xrefstart)
 			break;
 		if(memcmp(q, "xref", 4) == 0)
@@ -217,13 +218,11 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 			continue;
 		if(!isdigit(*q)) {
 			cli_dbgmsg("cli_pdf: Object number missing\n");
-			rc = CL_CLEAN;
 			break;
 		}
 		q = pdf_nextobject(p, bytesleft);
 		if((q == NULL) || !isdigit(*q)) {
 			cli_dbgmsg("cli_pdf: Generation number missing\n");
-			rc = CL_CLEAN;
 			break;
 		}
 		/*generation_number = atoi(q);*/
@@ -233,7 +232,6 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		q = pdf_nextobject(p, bytesleft);
 		if((q == NULL) || (memcmp(q, "obj", 3) != 0)) {
 			cli_dbgmsg("cli_pdf: Indirect object missing \"obj\"\n");
-			rc = CL_CLEAN;
 			break;
 		}
 
@@ -430,7 +428,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 
 		if(is_ascii85decode) {
 			unsigned char *tmpbuf;
-			int ret = cli_checklimits("cli_pdf", ctx, calculated_streamlen * 5, calculated_streamlen, 0);
+			int ret = cli_checklimits("cli_pdf", ctx, calculated_streamlen * 5, calculated_streamlen, real_streamlen);
 
 			if(ret != CL_CLEAN) {
 				close(fout);
@@ -475,7 +473,7 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 				if(is_flatedecode)
 					rc = try_flatedecode((unsigned char *)tmpbuf, real_streamlen, real_streamlen, fout, ctx);
 				else
-					cli_writen(fout, (const char *)streamstart, real_streamlen);
+				       	rc = cli_writen(fout, (const char *)streamstart, real_streamlen)==real_streamlen ? CL_CLEAN : CL_EIO;
 			}
 			free(tmpbuf);
 		} else if(is_flatedecode) {
@@ -484,19 +482,33 @@ cli_pdf(const char *dir, int desc, const cli_ctx *ctx)
 		} else {
 			cli_dbgmsg("cli_pdf: writing %lu bytes from the stream\n",
 				(unsigned long)real_streamlen);
-			cli_writen(fout, (const char *)streamstart, real_streamlen);
+			if((rc = cli_checklimits("cli_pdf", ctx, real_streamlen, 0, 0))==CL_CLEAN)
+				rc = cli_writen(fout, (const char *)streamstart, real_streamlen) == real_streamlen ? CL_CLEAN : CL_EIO;
 		}
 
+		if (rc == CL_CLEAN) {
+			cli_dbgmsg("cli_pdf: extracted file %u to %s\n", ++files, fullname);
+	
+			lseek(fout, 0, SEEK_SET);
+			md5digest = cli_md5digest(fout);
+
+			if(tableFind(md5table, md5digest) >= 0) {
+				cli_dbgmsg("cli_pdf: not scanning duplicate embedded file '%s'\n", fullname);
+				free(md5digest);
+				close(fout);
+				unlink(fullname);
+				continue;
+			} else
+				tableInsert(md5table, md5digest, 1);
+
+			free(md5digest);
+
+			lseek(fout, 0, SEEK_SET);
+			rc = cli_magic_scandesc(fout, ctx);
+		}
 		close(fout);
-		md5digest = cli_md5file(fullname);
-		if(tableFind(md5table, md5digest) >= 0) {
-			cli_dbgmsg("cli_pdf: not scanning duplicate embedded file '%s'\n", fullname);
-			unlink(fullname);
-		} else
-			tableInsert(md5table, md5digest, 1);
-		free(md5digest);
-		cli_dbgmsg("cli_pdf: extracted file %u to %s\n", ++files,
-			fullname);
+		if(!cli_leavetemps_flag) unlink(fullname);
+		if(rc != CL_CLEAN) break;
 	}
 
 	munmap(buf, size);
@@ -516,7 +528,7 @@ try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fo
 	int ret = cli_checklimits("cli_pdf", ctx, real_len, 0, 0);
 
 	if (ret==CL_CLEAN && flatedecode(buf, real_len, fout, ctx) == CL_SUCCESS)
-		return CL_SUCCESS;
+		return CL_CLEAN;
 
 	if(real_len == calculated_len) {
 		/*
@@ -530,8 +542,8 @@ try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fo
 		return CL_CLEAN;
 
 	ret = flatedecode(buf, calculated_len, fout, ctx);
-	if(ret == CL_SUCCESS)
-		return CL_SUCCESS;
+	if(ret == CL_CLEAN)
+		return CL_CLEAN;
 
 	/* i.e. the PDF file is broken :-( */
 	cli_dbgmsg("cli_pdf: Bad compressed block length in flate stream\n");

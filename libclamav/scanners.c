@@ -1401,9 +1401,6 @@ static int cli_scanpdf(int desc, cli_ctx *ctx)
 
     ret = cli_pdf(dir, desc, ctx);
 
-    if(ret == CL_CLEAN)
-	ret = cli_scandir(dir, ctx, 0);
-
     if(!cli_leavetemps_flag)
 	cli_rmdirs(dir);
 
@@ -1887,7 +1884,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 		ret = cli_scanjpeg(desc, ctx->virname);
 	    break;
 
-	case CL_TYPE_PDF:
+        case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
 	    if(SCAN_PDF && (DCONF_DOC & DOC_CONF_PDF))
 		ret = cli_scanpdf(desc, ctx);
 	    break;
