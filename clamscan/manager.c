@@ -231,7 +231,7 @@ int scanmanager(const struct optstruct *opt)
 	} else
 	    limits.maxscansize = atoi(ptr) * 1024;
     } else
-	limits.maxscansize = 104857600;  /* FIXMELIMITS */
+	limits.maxscansize = 104857600;
 
     if(opt_check(opt, "max-filesize")) {
 	char *cpy, *ptr;
@@ -244,17 +244,17 @@ int scanmanager(const struct optstruct *opt)
 	} else
 	    limits.maxfilesize = atoi(ptr) * 1024;
     } else
-	limits.maxfilesize = 10485760;  /* FIXMELIMITS */
+	limits.maxfilesize = 26214400;
 
     if(opt_check(opt, "max-files"))
 	limits.maxfiles = atoi(opt_arg(opt, "max-files"));
     else
-        limits.maxfiles = 500;
+        limits.maxfiles = 10000;
 
     if(opt_check(opt, "max-recursion"))
         limits.maxreclevel = atoi(opt_arg(opt, "max-recursion"));
     else
-        limits.maxreclevel = 8;
+        limits.maxreclevel = 16;
 
     /* set options */
 
@@ -416,29 +416,27 @@ static int clamav_unpack(const char *prog, const char **args, const char *tmpdir
 {
 	pid_t pid;
 	int status, wret, fdevnull;
-	unsigned int maxfiles, maxspace;
+	unsigned int maxfiles, maxscansize;
 	struct s_du n;
 
 
     if(opt_check(opt, "max-files"))
 	maxfiles = atoi(opt_arg(opt, "max-files"));
     else
-	maxfiles = 0;
+	maxfiles = 10000;
 
-    /* FIXMELIMITS */
-    if(opt_check(opt, "max-filesize")) {
+    if(opt_check(opt, "max-scansize")) {
 	    char *cpy, *ptr;
-	ptr = opt_arg(opt, "max-filesize");
+	ptr = opt_arg(opt, "max-scansize");
 	if(tolower(ptr[strlen(ptr) - 1]) == 'm') { /* megabytes */
 	    cpy = calloc(strlen(ptr), 1);
 	    strncpy(cpy, ptr, strlen(ptr) - 1);
-	    maxspace = atoi(cpy) * 1024;
+	    maxscansize = atoi(cpy) * 1024;
 	    free(cpy);
 	} else /* default - kilobytes */
-	    maxspace = atoi(ptr);
+	    maxscansize = atoi(ptr);
     } else
-	maxspace = 0;
-
+	maxscansize = 104857600;
 
     switch(pid = fork()) {
 	case -1:
@@ -490,12 +488,12 @@ static int clamav_unpack(const char *prog, const char **args, const char *tmpdir
 	    break;
 	default:
 
-	    if(maxfiles || maxspace) {
+	    if(maxscansize || maxfiles) {
 		while(!(wret = waitpid(pid, &status, WNOHANG))) {
 		    memset(&n, 0, sizeof(struct s_du));
 
 		    if(!du(tmpdir, &n))
-			if((maxfiles && n.files > maxfiles) || (maxspace && n.space > maxspace)) {
+			if((maxfiles && n.files > maxfiles) || (maxscansize && n.space > maxscansize)) {
 			    logg("*n.files: %u, n.space: %lu\n", n.files, n.space);
 			    kill(pid, 9); /* stop it immediately */
 			}

@@ -1,3 +1,8 @@
+Wed Feb 13 02:49:38 CET 2008 (acab)
+-----------------------------------
+  * limits: Set new defaults, updated sample config files
+  	    More to come (documents update and final tweaks)
+
 Tue Feb 12 11:19:22 GMT 2008 (njh)
 ----------------------------------
   * libclamav/pdf.c:	Fix some warning messages and compilation error on

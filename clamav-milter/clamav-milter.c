@@ -1890,8 +1890,6 @@ main(int argc, char **argv)
 			options |= CL_SCAN_DISABLERAR;*/
 		if(cfgopt(copt, "ArchiveBlockEncrypted")->enabled)
 			options |= CL_SCAN_BLOCKENCRYPTED;
-		if(cfgopt(copt, "ArchiveBlockMax")->enabled)
-			options |= CL_SCAN_BLOCKMAX;
 		if(cfgopt(copt, "ScanPE")->enabled)
 			options |= CL_SCAN_PE;
 		if(cfgopt(copt, "DetectBrokenExecutables")->enabled)
@@ -1905,31 +1903,27 @@ main(int argc, char **argv)
 
 		memset(&limits, '\0', sizeof(struct cl_limits));
 
-		if(((cpt = cfgopt(copt, "MailMaxRecursion")) != NULL) && cpt->enabled)
-			limits.maxmailrec = cpt->numarg;
+		if(((cpt = cfgopt(copt, "MaxScanSize")) != NULL) && cpt->enabled)
+			limits.maxscansize = cpt->numarg;
+		else
+			limits.maxscansize = 104857600;
+		if(((cpt = cfgopt(copt, "MaxFileSize")) != NULL) && cpt->enabled)
+			limits.maxfilesize = cpt->numarg;
+		else
+			limits.maxfilesize = 10485760;
+
+		if(((cpt = cfgopt(copt, "MaxRecursion")) != NULL) && cpt->enabled)
+			limits.maxreclevel = cpt->numarg;
+		else
+			limits.maxreclevel = 8;
+
+		if(((cpt = cfgopt(copt, "MaxFiles")) != NULL) && cpt->enabled)
+			limits.maxfiles = cpt->numarg;
+		else
+			limits.maxfiles = 1000;
 
 		if(cfgopt(copt, "ScanArchive")->enabled) {
 			options |= CL_SCAN_ARCHIVE;
-			if(((cpt = cfgopt(copt, "ArchiveMaxFileSize")) != NULL) && cpt->enabled)
-				limits.maxfilesize = cpt->numarg;
-			else
-				limits.maxfilesize = 10485760;
-
-			if(((cpt = cfgopt(copt, "ArchiveMaxRecursion")) != NULL) && cpt->enabled)
-				limits.maxreclevel = cpt->numarg;
-			else
-				limits.maxreclevel = 8;
-
-			if(((cpt = cfgopt(copt, "ArchiveMaxFiles")) != NULL) && cpt->enabled)
-				limits.maxfiles = cpt->numarg;
-			else
-				limits.maxfiles = 1000;
-
-			if(((cpt = cfgopt(copt, "ArchiveMaxCompressionRatio")) != NULL) && cpt->enabled)
-				limits.maxratio = cpt->numarg;
-			else
-				limits.maxratio = 250;
-
 			if(cfgopt(copt, "ArchiveLimitMemoryUsage")->enabled)
 				limits.archivememlim = 1;
 			else

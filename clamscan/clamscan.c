@@ -321,13 +321,12 @@ void help(void)
     mprintf("    --no-archive                         Disable libclamav archive support\n");
     mprintf("    --detect-broken                      Try to detect broken executable files\n");
     mprintf("    --block-encrypted                    Block encrypted archives\n");
-    mprintf("    --block-max                          Block archives that exceed limits\n");
     mprintf("    --mail-follow-urls                   Download and scan URLs\n");
     mprintf("\n");
-    mprintf("    --max-scansize=#n                    FIXMELIMITS\n");
-    mprintf("    --max-filesize=#n                    FIXMELIMITS\n");
-    mprintf("    --max-files=#n                       FIXMELIMITS\n");
-    mprintf("    --max-recursion=#n                   Maximum archive recursion level\n");
+    mprintf("    --max-filesize=#n                    Files larger than this will be skipped and assumed clean\n");
+    mprintf("    --max-scansize=#n                    The maximum amount of data to scan for each container file (*)\n");
+    mprintf("    --max-files=#n                       The maximum number of files to scan for each container file (*)\n");
+    mprintf("    --max-recursion=#n                   Maximum archive recursion level for container file (*)\n");
     mprintf("    --max-dir-recursion=#n               Maximum directory recursion level\n");
     mprintf("    --unzip[=FULLPATH]                   Enable support for .zip files\n");
     mprintf("    --unrar[=FULLPATH]                   Enable support for .rar files\n");
@@ -338,4 +337,6 @@ void help(void)
     mprintf("    --tar[=FULLPATH]                     Enable support for .tar files\n");
     mprintf("    --deb[=FULLPATH to ar]               Enable support for .deb files\n");
     mprintf("    --tgz[=FULLPATH]                     Enable support for .tar.gz, .tgz files\n\n");
+    mprintf("(*) Certain files (e.g. documents, archives, etc.) may in turn contain other files inside.\n");
+    mprintf("    The above options ensure safe processing of this kind of data.\n\n");
 }
