@@ -1,3 +1,12 @@
+Wed Feb 13 12:43:41 EET 2008 (edwin)
+------------------------------------
+  * clamd/scanner.c, thrmgr.[ch]: use pthread_cond_* instead of usleep() in
+				  MULTISCAN (bb #758)
+  * libclamav/dconf.c: enable entconv by default
+  * libclamav/others.c: fix compiler warning
+  * libclamav/regex_list.c: remove unused code, because a better solution is scheduled
+			    for 0.94 (bb #725)
+
 Wed Feb 13 11:21:04 CET 2008 (tk)
 ---------------------------------
   * Merge security fixes:

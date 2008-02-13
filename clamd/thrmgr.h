@@ -48,6 +48,8 @@ typedef struct threadpool_tag {
 	pthread_mutex_t pool_mutex;
 	pthread_cond_t pool_cond;
 	pthread_attr_t pool_attr;
+
+	pthread_cond_t  idle_cond;
 	
 	pool_state_t state;
 	int thr_max;

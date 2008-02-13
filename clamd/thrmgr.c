@@ -128,6 +128,7 @@ void thrmgr_destroy(threadpool_t *threadpool)
   	}
 	
 	pthread_mutex_destroy(&(threadpool->pool_mutex));
+	pthread_cond_destroy(&(threadpool)->idle_cond);
 	pthread_cond_destroy(&(threadpool->pool_cond));
 	pthread_attr_destroy(&(threadpool->pool_attr));
 	free(threadpool->queue);
@@ -169,8 +170,17 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void
 		free(threadpool);
 		return NULL;
 	}
-		
+
+	if (pthread_cond_init(&(threadpool->idle_cond),NULL) != 0)  {
+		pthread_cond_destroy(&(threadpool->pool_cond));
+		pthread_mutex_destroy(&(threadpool->pool_mutex));
+		free(threadpool->queue);
+		free(threadpool);
+		return NULL;
+	}
+
 	if (pthread_attr_init(&(threadpool->pool_attr)) != 0) {
+		pthread_cond_destroy(&(threadpool->idle_cond));
 		pthread_cond_destroy(&(threadpool->pool_cond));
 		pthread_mutex_destroy(&(threadpool->pool_mutex));
 		free(threadpool->queue);
@@ -180,6 +190,7 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void
 	
 	if (pthread_attr_setdetachstate(&(threadpool->pool_attr), PTHREAD_CREATE_DETACHED) != 0) {
 		pthread_attr_destroy(&(threadpool->pool_attr));
+		pthread_cond_destroy(&(threadpool->idle_cond));
 		pthread_cond_destroy(&(threadpool->pool_cond));
 		pthread_mutex_destroy(&(threadpool->pool_mutex));
 		free(threadpool->queue);
@@ -219,6 +230,7 @@ static void *thrmgr_worker(void *arg)
 		while (((job_data=work_queue_pop(threadpool->queue)) == NULL)
 				&& (threadpool->state != POOL_EXIT)) {
 			/* Sleep, awaiting wakeup */
+			pthread_cond_signal(&threadpool->idle_cond);
 			retval = pthread_cond_timedwait(&(threadpool->pool_cond),
 				&(threadpool->pool_mutex), &timeout);
 			if (retval == ETIMEDOUT) {

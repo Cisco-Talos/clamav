@@ -98,7 +98,7 @@ static struct dconf_module modules[] = {
     { "OTHER",	    "CRYPTFF",	    OTHER_CONF_CRYPTFF,	    1 },
 
     { "PHISHING",   "ENGINE",       PHISHING_CONF_ENGINE,   1 },
-    { "PHISHING",   "ENTCONV",      PHISHING_CONF_ENTCONV,  DCONF_ENABLE_EXPERIMENTAL }, /* exp */
+    { "PHISHING",   "ENTCONV",      PHISHING_CONF_ENTCONV,  1 },
 
     { NULL,	    NULL,	    0,			    0 }
 };

@@ -327,7 +327,7 @@ static char *cli_md5buff(const unsigned char *buffer, unsigned int len, unsigned
 
 
     cli_md5_init(&ctx);
-    cli_md5_update(&ctx, (char *) buffer, len);
+    cli_md5_update(&ctx, buffer, len);
     cli_md5_final(digest, &ctx);
 
     if(dig)

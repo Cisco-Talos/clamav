@@ -202,12 +202,11 @@ static int dirscan(const char *dirname, const char **virname, unsigned long int 
 					    return 1;
 					}
 
-					while(!multi_pool->thr_idle) /* non-critical */
-#ifdef C_WINDOWS
-					    Sleep(1);
-#else
-					    usleep(200);
-#endif
+					pthread_mutex_lock(&multi_pool->pool_mutex);
+					while(!multi_pool->thr_idle) /* non-critical */ {
+						pthread_cond_wait(&multi_pool->idle_cond, &multi_pool->pool_mutex);
+					}
+					pthread_mutex_unlock(&multi_pool->pool_mutex);
 
 				    } else { /* CONTSCAN, SCAN */
 
