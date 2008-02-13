@@ -1,3 +1,7 @@
+Wed Feb 13 12:11:08 EET 2008 (edwin)
+------------------------------------
+  * libclamav/htmlnorm.c: SVN r3619 broke phishing detection, fixed it
+
 Wed Feb 13 02:49:38 CET 2008 (acab)
 -----------------------------------
   * limits: Set new defaults, updated sample config files

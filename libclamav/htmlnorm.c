@@ -546,7 +546,6 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	tag_args.tag = NULL;
 	tag_args.value = NULL;
 	tag_args.contents = NULL;
-
 	if (dirname) {
 		snprintf(filename, 1024, "%s/rfc2397", dirname);
 		if (mkdir(filename, 0700) && errno != EEXIST) {
@@ -1015,18 +1014,6 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						in_script = TRUE;
 					}
 					html_output_tag(file_buff_script, tag, &tag_args);
-				} else if (strcmp(tag, "a") == 0) {
-					arg_value = html_tag_arg_value(&tag_args, "href");
-					if(arg_value && arg_value[0]) {
-						html_output_str(file_buff_text, arg_value, strlen(arg_value));
-						html_output_c(file_buff_text, NULL, ' ');
-					}
-				} else if (strcmp(tag, "img") == 0) {
-					arg_value = html_tag_arg_value(&tag_args, "src");
-					if(arg_value && arg_value[0]) {
-						html_output_str(file_buff_text, arg_value, strlen(arg_value));
-						html_output_c(file_buff_text, NULL, ' ');
-					}
 				} else if (hrefs) {
 					if(in_ahref && !href_contents_begin)
 						href_contents_begin=ptr;
@@ -1141,6 +1128,19 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						}
 					}
 					/* TODO:imagemaps can have urls too */
+				} else if (strcmp(tag, "a") == 0) {
+					/* a/img tags for buff_text can be processed only if we're not processing hrefs */
+					arg_value = html_tag_arg_value(&tag_args, "href");
+					if(arg_value && arg_value[0]) {
+						html_output_str(file_buff_text, arg_value, strlen(arg_value));
+						html_output_c(file_buff_text, NULL, ' ');
+					}
+				} else if (strcmp(tag, "img") == 0) {
+					arg_value = html_tag_arg_value(&tag_args, "src");
+					if(arg_value && arg_value[0]) {
+						html_output_str(file_buff_text, arg_value, strlen(arg_value));
+						html_output_c(file_buff_text, NULL, ' ');
+					}
 				}
 				html_tag_arg_free(&tag_args);
 				break;
