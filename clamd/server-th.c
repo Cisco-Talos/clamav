@@ -318,7 +318,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 
     memset(&limits, 0, sizeof(struct cl_limits));
 
-    if((limits.maxfilesize = cfgopt(copt, "MaxScanSize")->numarg)) {
+    if((limits.maxscansize = cfgopt(copt, "MaxScanSize")->numarg)) {
     	logg("Limits: Global size limit set to %lu bytes.\n", limits.maxscansize);
     } else {
     	logg("^Limits: Global size limit protection disabled.\n");
