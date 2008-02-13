@@ -226,6 +226,10 @@ static int make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitle
 		count[i] = 0;
 	}
 	for (i = 0; (int)i < nchar; i++) {
+		if (bitlen[i] >= 17) {
+			cli_dbgmsg("UNARJ: bounds exceeded\n");
+			return CL_EARJ;
+		}
 		count[bitlen[i]]++;
 	}
 	
@@ -238,6 +242,10 @@ static int make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitle
 	}
 	
 	jutbits = 16 - tablebits;
+	if (tablebits >= 17) {
+		cli_dbgmsg("UNARJ: bounds exceeded\n");
+		return CL_EARJ;
+	}
 	for (i = 1; (int)i <= tablebits; i++) {
 		start[i] >>= jutbits;
 		weight[i] = 1 << (tablebits - i);
@@ -251,6 +259,10 @@ static int make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitle
 	if (i != (unsigned short) (1 << 16)) {
 		k = 1 << tablebits;
 		while (i != k) {
+			if (i >= tablesize) {
+				cli_dbgmsg("UNARJ: bounds exceeded\n");
+				return CL_EARJ;
+			}
 			table[i++] = 0;
 		}
 	}
@@ -260,6 +272,10 @@ static int make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitle
 	for (ch = 0; (int)ch < nchar; ch++) {
 		if ((len = bitlen[ch]) == 0) {
 			continue;
+		}
+		if (len >= 17) {
+			cli_dbgmsg("UNARJ: bounds exceeded\n");
+			return CL_EARJ;
 		}
 		k = start[len];
 		nextcode = k + weight[len];
@@ -275,8 +291,16 @@ static int make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitle
 			i = len - tablebits;
 			while (i != 0) {
 				if (*p == 0) {
+					if (avail >= (2 * NC - 1)) {
+						cli_dbgmsg("UNARJ: bounds exceeded\n");
+						return CL_EARJ;
+					}
 					decode_data->right[avail] = decode_data->left[avail] = 0;
 					*p = avail++;
+				}
+				if (*p >= (2 * NC - 1)) {
+					cli_dbgmsg("UNARJ: bounds exceeded\n");
+					return CL_EARJ;
 				}
 				if (k & mask) {
 					p = &decode_data->right[*p];
@@ -301,6 +325,10 @@ static void read_pt_len(arj_decode_t *decode_data, int nn, int nbit, int i_speci
 	
 	n = arj_getbits(decode_data, nbit);
 	if (n == 0) {
+		if (nn > NPT) {
+			cli_dbgmsg("UNARJ: bounds exceeded\n");
+			return;
+		}
 		c = arj_getbits(decode_data, nbit);
 		for (i = 0; i < nn; i++) {
 			decode_data->pt_len[i] = 0;
@@ -367,6 +395,10 @@ static int read_c_len(arj_decode_t *decode_data)
 					}
 					mask >>= 1;
 				} while (c >= NT);
+			}
+			if (c >= 19) {
+				cli_dbgmsg("UNARJ: bounds exceeded\n");
+				return CL_EARJ;
 			}
 			fill_buf(decode_data, (int)(decode_data->pt_len[c]));
 			if (c <= 2) {

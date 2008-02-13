@@ -1,3 +1,16 @@
+Wed Feb 13 11:21:04 CET 2008 (tk)
+---------------------------------
+  * Merge security fixes:
+  * libclamav/mew.c: fix possible heap corruption (bb#806)
+    Found by Elliot, broken module disabled via daily.cvd published on Feb 2
+  * libclamav/pe.c: fix possible integer overflow (CVE-2008-0318)
+    Found by Silvio Cesare working with the VeriSign iDefense VCP;
+    broken module disabled via daily.cvd published on Jan 11, 2008
+  * libclamav/vba_extract.c: fix extraction of embedded files (bb#760)
+  * libclamav/cab.c: improve handling of stored files (bb#771)
+  * libclamav/scanners.c: respect recursion limits in cli_scanembpe() (bb#771)
+  * libclamav/unarj.c: improve bounds checking (bb#811)
+
 Wed Feb 13 12:11:08 EET 2008 (edwin)
 ------------------------------------
   * libclamav/htmlnorm.c: SVN r3619 broke phishing detection, fixed it

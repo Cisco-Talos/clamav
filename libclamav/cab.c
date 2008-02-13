@@ -233,8 +233,10 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 
     cab->length = EC32(hdr.cbCabinet);
     cli_dbgmsg("CAB: Cabinet length: %u\n", cab->length);
-    if((off_t) cab->length > rsize)
+    if((off_t) cab->length > rsize) {
+	cab->length = (uint32_t) rsize;
 	bscore++;
+    }
 
     cab->nfolders = EC16(hdr.cFolders);
     if(!cab->nfolders) {
@@ -690,6 +692,10 @@ int cab_extract(struct cab_file *file, const char *name)
 	case 0x0000: /* STORE */
 	    cli_dbgmsg("CAB: Compression method: STORED\n");
 	    CAB_CHGFOLDER;
+	    if(file->length > file->cab->length) {
+		cli_dbgmsg("cab_extract: Stored file larger than archive itself, trimming down\n");
+		file->length = file->cab->length;
+	    }
 	    ret = cab_unstore(file, file->length);
 	    break;
 

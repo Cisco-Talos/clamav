@@ -811,6 +811,18 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    }
 	}
 
+	if (exe_sections[i].urva>>31 || exe_sections[i].uvsz>>31 || (exe_sections[i].rsz && exe_sections[i].uraw>>31) || exe_sections[i].ursz>>31) {
+	    cli_dbgmsg("Found PE values with sign bit set\n");
+	    free(section_hdr);
+	    free(exe_sections);
+	    if(DETECT_BROKEN) {
+	        if(ctx->virname)
+		    *ctx->virname = "Broken.Executable";
+		return CL_VIRUS;
+	    }
+	    return CL_CLEAN;
+	}
+
 	if(!i) {
 	    if (DETECT_BROKEN && exe_sections[i].urva!=hdr_size) { /* Bad first section RVA */
 	        cli_dbgmsg("First section is in the wrong place\n");

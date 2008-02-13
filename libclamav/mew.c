@@ -784,13 +784,15 @@ int unmew11(char *src, int off, int ssize, int dsize, uint32_t base, uint32_t va
 	entry_point  = cli_readint32(source + 4);
 	newedi = cli_readint32(source + 8);
 	ledi = src + (newedi - vma);
+	loc_ds = size_sum - (newedi - vma);
 
 	i = 0;
-	ssize -= 12;
+	loc_ss -= 12;
+	loc_ss -= off;
 	while (1)
 	{
   		cli_dbgmsg("MEW unpacking section %d (%p->%p)\n", i, lesi, ledi);
-		if (!CLI_ISCONTAINED(src, size_sum, lesi, 4) || !CLI_ISCONTAINED(src, size_sum, ledi, 4))
+		if (!CLI_ISCONTAINED(src, size_sum, lesi, loc_ss) || !CLI_ISCONTAINED(src, size_sum, ledi, loc_ds))
 		{
 			cli_dbgmsg("Possibly programmer error or hand-crafted PE file, report to clamav team\n");
 			return -1;
@@ -810,9 +812,10 @@ int unmew11(char *src, int off, int ssize, int dsize, uint32_t base, uint32_t va
 
 		/* XXX */
 		loc_ss -= (f1+4-lesi);
-		loc_ds -= (f2-ledi);
-		ledi = src + (cli_readint32(f1) - vma);
 		lesi = f1+4;
+
+		ledi = src + (cli_readint32(f1) - vma);
+		loc_ds = size_sum - (cli_readint32(f1) - vma);
 
 		if (!uselzma)
 		{

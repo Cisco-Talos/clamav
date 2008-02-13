@@ -1533,6 +1533,7 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
 	return CL_EFSYNC;
     }
 
+    ctx->recursion++;
     lseek(fd, 0, SEEK_SET);
     if((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS) {
 	cli_dbgmsg("cli_scanembpe: Infected with %s\n", *ctx->virname);
@@ -1542,6 +1543,7 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
 	free(tmpname);	
 	return CL_VIRUS;
     }
+    ctx->recursion--;
 
     close(fd);
     if(!cli_leavetemps_flag)
