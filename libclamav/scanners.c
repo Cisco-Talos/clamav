@@ -1152,10 +1152,7 @@ static int cli_scantar(int desc, cli_ctx *ctx, unsigned int posix)
 	return CL_ETMPDIR;
     }
 
-    if((ret = cli_untar(dir, desc, posix, ctx)))
-	cli_dbgmsg("Tar: %s\n", cl_strerror(ret));
-    else
-	ret = cli_scandir(dir, ctx, 0);
+    ret = cli_untar(dir, desc, posix, ctx);
 
     if(!cli_leavetemps_flag)
 	cli_rmdirs(dir);

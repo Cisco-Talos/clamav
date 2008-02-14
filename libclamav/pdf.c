@@ -58,6 +58,10 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #include "pdf.h"
 #include "scanners.h"
 
+#ifndef	O_BINARY
+#define	O_BINARY	0
+#endif
+
 #ifdef	CL_DEBUG
 /*#define	SAVE_TMP	/* Save the file being worked on in tmp */
 #endif
@@ -369,28 +373,8 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx)
 			has_cr = 1;
 		} else
 			has_cr = 0;
-		snprintf(fullname, sizeof(fullname), "%s/pdfXXXXXX", dir);
-#if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN)
-		fout = mkstemp(fullname);
-#elif	defined(C_WINDOWS)
-		if(_mktemp(fullname) == NULL) {
-			/* mktemp only allows 26 files */
-			char *name = cli_gentemp(dir);
-			if(name == NULL)
-				fout = -1;
-			else {
-				strcpy(fullname, name);
-				free(name);
-				fout = open(fullname,
-					O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
-			}
-		} else
-			fout = open(fullname, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
-#else
-		mktemp(fullname);
-		fout = open(fullname, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
-#endif
-
+		snprintf(fullname, sizeof(fullname), "%s/pdf%02u", dir, files);
+		fout = open(fullname, O_RDWR|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
 		if(fout < 0) {
 			cli_errmsg("cli_pdf: can't create temporary file %s: %s\n", fullname, strerror(errno));
 			rc = CL_ETMPFILE;
@@ -490,7 +474,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx)
 		}
 
 		if (rc == CL_CLEAN) {
-			cli_dbgmsg("cli_pdf: extracted file %u to %s\n", ++files, fullname);
+			cli_dbgmsg("cli_pdf: extracted file %u to %s\n", files++, fullname);
 	
 			lseek(fout, 0, SEEK_SET);
 			md5digest = cli_md5digest(fout);
