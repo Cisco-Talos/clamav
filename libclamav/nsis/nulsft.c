@@ -38,11 +38,19 @@
 #include "others.h"
 #include "cltypes.h"
 #include "nsis_bzlib.h"
-#include "zlib.h"
+/* #include "zlib.h" */
+#include "nsis_zlib.h"
 #include "lzma_iface.h"
 #include "matcher.h"
 #include "scanners.h"
 #include "nulsft.h" /* SHUT UP GCC -Wextra */
+
+/* NSIS zlib is not thread safe */
+#ifdef CL_THREAD_SAFE
+#  include <pthread.h>
+static pthread_mutex_t nsis_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
+/* NSIS zlib is not thread safe */
 
 #ifndef O_BINARY
 #define O_BINARY 0
@@ -74,7 +82,8 @@ struct nsis_st {
   struct stream_state nsis;
   nsis_bzstream bz;
   CLI_LZMA* lz;
-  z_stream z;
+/*   z_stream z; */
+  nsis_z_stream z;
   unsigned char *freeme;
   char ofn[1024];
 };
@@ -98,8 +107,10 @@ static int nsis_init(struct nsis_st *n) {
     break;
   case COMP_ZLIB:
     memset(&n->bz, 0, sizeof(z_stream));
-    inflateInit2(&n->z, -MAX_WBITS);
-    n->freecomp=1;
+/*     inflateInit2(&n->z, -MAX_WBITS); */
+/*     n->freecomp=1; */
+    nsis_inflateInit(&n->z);
+    n->freecomp=0;
   }
   return CL_SUCCESS;
 }
@@ -116,7 +127,7 @@ static void nsis_shutdown(struct nsis_st *n) {
     cli_LzmaShutdown(&n->lz);
     break;
   case COMP_ZLIB:
-    inflateEnd(&n->z);
+/*     inflateEnd(&n->z); */
     break;
   }
 
@@ -157,7 +168,8 @@ static int nsis_decomp(struct nsis_st *n) {
     n->z.next_in = n->nsis.next_in;
     n->z.avail_out = n->nsis.avail_out;
     n->z.next_out = n->nsis.next_out;
-    switch (inflate(&n->z, Z_NO_FLUSH)) {
+/*  switch (inflate(&n->z, Z_NO_FLUSH)) { */
+    switch (nsis_inflate(&n->z)) {
     case Z_OK:
       ret = CL_SUCCESS;
       break;
@@ -514,7 +526,13 @@ int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
     if(cli_leavetemps_flag) cli_dbgmsg("NSIS: Extracting files to %s\n", nsist.dir);
 
     do {
+#ifdef CL_THREAD_SAFE
+        pthread_mutex_lock(&nsis_mutex);
+#endif
         ret = cli_nsis_unpack(&nsist, ctx);
+#ifdef CL_THREAD_SAFE
+	pthread_mutex_unlock(&nsis_mutex);
+#endif
 	if (ret == CL_SUCCESS) {
 	  cli_dbgmsg("NSIS: Successully extracted file #%u\n", nsist.fno);
 	  lseek(nsist.ofd, 0, SEEK_SET);

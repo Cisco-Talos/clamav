@@ -86,10 +86,10 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	upack.lo line.lo untar.lo unzip.lo inflate64.lo special.lo \
 	binhex.lo is_tar.lo tnef.lo autoit.lo strlcpy.lo regcomp.lo \
 	regerror.lo regexec.lo regfree.lo unarj.lo bzlib.lo nulsft.lo \
-	pdf.lo spin.lo yc.lo elf.lo sis.lo uuencode.lo phishcheck.lo \
-	phish_domaincheck_db.lo phish_whitelist.lo regex_list.lo \
-	mspack.lo cab.lo entconv.lo hashtab.lo dconf.lo lzma_iface.lo \
-	explode.lo textnorm.lo
+	infblock.lo pdf.lo spin.lo yc.lo elf.lo sis.lo uuencode.lo \
+	phishcheck.lo phish_domaincheck_db.lo phish_whitelist.lo \
+	regex_list.lo mspack.lo cab.lo entconv.lo hashtab.lo dconf.lo \
+	lzma_iface.lo explode.lo textnorm.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 libclamav_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -377,6 +377,10 @@ libclamav_la_SOURCES = \
 	nsis/nsis_bzlib.h \
 	nsis/nulsft.c \
 	nsis/nulsft.h \
+	nsis/infblock.c \
+	nsis_zconf.h \
+	nsis_zlib.h \
+	nsis_zutil.h \
 	pdf.c \
 	pdf.h \
 	spin.c \
@@ -525,6 +529,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fsg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hashtab.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/htmlnorm.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/infblock.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/inflate64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/is_tar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-others.Plo@am__quote@
@@ -649,6 +654,13 @@ nulsft.lo: nsis/nulsft.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='nsis/nulsft.c' object='nulsft.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o nulsft.lo `test -f 'nsis/nulsft.c' || echo '$(srcdir)/'`nsis/nulsft.c
+
+infblock.lo: nsis/infblock.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT infblock.lo -MD -MP -MF $(DEPDIR)/infblock.Tpo -c -o infblock.lo `test -f 'nsis/infblock.c' || echo '$(srcdir)/'`nsis/infblock.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/infblock.Tpo $(DEPDIR)/infblock.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='nsis/infblock.c' object='infblock.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o infblock.lo `test -f 'nsis/infblock.c' || echo '$(srcdir)/'`nsis/infblock.c
 
 libclamav_internal_utils_la-str.lo: str.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_la_CFLAGS) $(CFLAGS) -MT libclamav_internal_utils_la-str.lo -MD -MP -MF $(DEPDIR)/libclamav_internal_utils_la-str.Tpo -c -o libclamav_internal_utils_la-str.lo `test -f 'str.c' || echo '$(srcdir)/'`str.c
