@@ -1,3 +1,7 @@
+Thu Feb 14 19:38:48 CET 2008 (acab)
+-----------------------------------
+  * clamscan/manager.c: another typo in setting limits - thx nitrox
+
 Thu Feb 14 19:21:03 CET 2008 (acab)
   * libclamav: limits in blobs
 
