@@ -464,20 +464,18 @@ static void ole2_read_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 
 static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir, int32_t prop_index,
 				int (*handler)(int fd, ole2_header_t *hdr, property_t *prop, const char *dir),
-				unsigned int rec_level, unsigned int *file_count, const struct cl_limits *limits)
+				    unsigned int rec_level, unsigned int *file_count, cli_ctx *ctx, unsigned long *scansize)
 {
 	property_t prop_block[4];
 	int32_t idx, current_block, i;
 	char *dirname;
+	const struct cl_limits *limits = ctx->limits;
 
 	current_block = hdr->prop_start;
 
 	if ((prop_index < 0) || (prop_index > (int32_t) hdr->max_block_no) || (rec_level > 100) || (*file_count > 100000)) {
 		return;
 	}
-	/* FIXMELIMITS
-	 * DOES recursion on virtual object make sense ?
-	 * WHY no size checking ? */
 	if (limits && limits->maxfiles && (*file_count > limits->maxfiles)) {
 		cli_dbgmsg("OLE2: File limit reached (max: %d)\n", limits->maxfiles);
 		return;
@@ -537,28 +535,37 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 			}
 			hdr->sbat_root_start = prop_block[idx].start_block;
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[idx].prev, handler, rec_level+1, file_count, limits);
+				prop_block[idx].prev, handler, rec_level+1, file_count, ctx, scansize);
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[idx].next, handler, rec_level+1, file_count, limits);
+				prop_block[idx].next, handler, rec_level+1, file_count, ctx, scansize);
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[idx].child, handler, rec_level+1, file_count, limits);
+				prop_block[idx].child, handler, rec_level+1, file_count, ctx, scansize);
 			break;
 		case 2: /* File */
-			(*file_count)++;
-			if (!handler(fd, hdr, &prop_block[idx], dir)) {
-				cli_dbgmsg("ERROR: handler failed\n");
-				/* If we don't return on this error then
-					we can sometimes pull VBA code
-					from corrupted files.
-				*/
+			if (limits && limits->maxfiles && ctx->scannedfiles + *file_count > limits->maxfiles) {
+			  cli_dbgmsg("ole2: files limit reached (max: %u)\n", ctx->limits->maxfiles);
+			  break;
+			}
+			if (!limits || !limits->maxfilesize || prop_block[idx].size <= limits->maxfilesize || *scansize == -1 || prop_block[idx].size <= *scansize) {
+				(*file_count)++;
+				*scansize-=prop_block[idx].size;
+				if (!handler(fd, hdr, &prop_block[idx], dir)) {
+					cli_dbgmsg("ERROR: handler failed\n");
+					/* If we don't return on this error then
+					   we can sometimes pull VBA code
+					   from corrupted files.
+					*/
 			
+				}
+			} else {
+				cli_dbgmsg("ole2: filesize exceeded\n");
 			}
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[idx].prev, handler, rec_level, file_count, limits);
+				prop_block[idx].prev, handler, rec_level, file_count, ctx, scansize);
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[idx].next, handler, rec_level, file_count, limits);
+				prop_block[idx].next, handler, rec_level, file_count, ctx, scansize);
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[idx].child, handler, rec_level, file_count, limits);
+				prop_block[idx].child, handler, rec_level, file_count, ctx, scansize);
 			break;
 		case 1: /* Directory */
 			dirname = (char *) cli_malloc(strlen(dir)+8);
@@ -572,11 +579,11 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 			}
 			cli_dbgmsg("OLE2 dir entry: %s\n",dirname);
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[idx].prev, handler, rec_level+1, file_count, limits);
+				prop_block[idx].prev, handler, rec_level+1, file_count, ctx, scansize);
 			ole2_walk_property_tree(fd, hdr, dir,
-				prop_block[idx].next, handler, rec_level+1, file_count, limits);
+				prop_block[idx].next, handler, rec_level+1, file_count, ctx, scansize);
 			ole2_walk_property_tree(fd, hdr, dirname,
-				prop_block[idx].child, handler, rec_level+1, file_count, limits);
+				prop_block[idx].child, handler, rec_level+1, file_count, ctx, scansize);
 			free(dirname);
 			break;
 		default:
@@ -786,8 +793,16 @@ int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx)
 	int hdr_size;
 	struct stat statbuf;
 	unsigned int file_count=0;
-	
+	unsigned long scansize;
+
 	cli_dbgmsg("in cli_ole2_extract()\n");
+
+	if (ctx->limits && ctx->limits->maxscansize) {
+	  if (ctx->limits->maxscansize > ctx->scansize)
+	    scansize = ctx->limits->maxscansize - ctx->scansize;
+	  else
+	    return CL_EMAXSIZE;
+	} else scansize = -1;
 	
 	/* size of header - size of other values in struct */
 	hdr_size = sizeof(struct ole2_header_tag) - sizeof(int32_t) -
@@ -880,7 +895,7 @@ int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx)
 	
 	/* OR */
 	
-	ole2_walk_property_tree(fd, &hdr, dirname, 0, handler_writefile, 0, &file_count, ctx->limits);
+	ole2_walk_property_tree(fd, &hdr, dirname, 0, handler_writefile, 0, &file_count, ctx, &scansize);
 
 abort:
 #ifdef HAVE_MMAP
