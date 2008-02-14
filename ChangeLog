@@ -1,3 +1,7 @@
+Thu Feb 14 22:45:03 EET 2008 (edwin)
+------------------------------------
+  * libclamav/phischeck.c: change order of checks whitelist/isURL
+
 Thu Feb 14 21:31:47 CET 2008 (tk)
 ---------------------------------
   * libclamav/matcher-ac.c: fix handling of root->ac_pattable (bb#837)

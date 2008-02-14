@@ -1138,9 +1138,6 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 	cli_dbgmsg("Phishcheck:URL after cleanup: %s->%s\n", urls->realLink.data,
 		urls->displayLink.data);
 
-	if(whitelist_check(engine, urls, 0))
-		return CL_PHISH_CLEAN;/* if url is whitelisted don't perform further checks */
-
 	if((!isURL(pchk, urls->displayLink.data) || !isRealURL(pchk, urls->realLink.data) ) &&
 			( (phishy&PHISHY_NUMERIC_IP && !isNumericURL(pchk, urls->displayLink.data)) ||
 			  !(phishy&PHISHY_NUMERIC_IP))) {
@@ -1148,12 +1145,8 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 		return CL_PHISH_CLEAN;
 	}
 
-	if(domainlist_match(engine, urls->realLink.data, urls->displayLink.data, NULL, 0, &urls->flags)) {
-		phishy |= DOMAIN_LISTED;
-	} else {
-		/* although entire url is not listed, the host might be,
-		 * so defer phishing decisions till we know if host is listed*/
-	}
+	if(whitelist_check(engine, urls, 0))
+		return CL_PHISH_CLEAN;/* if url is whitelisted don't perform further checks */
 
 	url_check_init(&host_url);
 
