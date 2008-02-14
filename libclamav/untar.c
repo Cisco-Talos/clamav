@@ -43,6 +43,7 @@ static	char	const	rcsid[] = "$Id: untar.c,v 1.35 2007/02/12 20:46:09 njh Exp $";
 #include "untar.h"
 #include "mbox.h"
 #include "blob.h"
+#include "scanners.h"
 
 #define BLOCKSIZE 512
 

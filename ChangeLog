@@ -1,3 +1,7 @@
+Thu Feb 14 16:25:11 CET 2008 (acab)
+-----------------------------------
+  * libclamav: fix warnings in pdf and untar
+
 Thu Feb 14 15:33:22 CET 2008 (acab)
 -----------------------------------
   * libclamav/untar: OTF scan

@@ -66,8 +66,8 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 /*#define	SAVE_TMP	/* Save the file being worked on in tmp */
 #endif
 
-static	int	try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fout, const cli_ctx *ctx);
-static	int	flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx);
+static	int	try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fout, cli_ctx *ctx);
+static	int	flatedecode(unsigned char *buf, off_t len, int fout, cli_ctx *ctx);
 static	int	ascii85decode(const char *buf, off_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
@@ -460,7 +460,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx)
 				if(is_flatedecode)
 					rc = try_flatedecode((unsigned char *)tmpbuf, real_streamlen, real_streamlen, fout, ctx);
 				else
-				       	rc = cli_writen(fout, (const char *)streamstart, real_streamlen)==real_streamlen ? CL_CLEAN : CL_EIO;
+				  rc = (unsigned long)cli_writen(fout, (const char *)streamstart, real_streamlen)==real_streamlen ? CL_CLEAN : CL_EIO;
 			}
 			free(tmpbuf);
 		} else if(is_flatedecode) {
@@ -470,7 +470,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx)
 			cli_dbgmsg("cli_pdf: writing %lu bytes from the stream\n",
 				(unsigned long)real_streamlen);
 			if((rc = cli_checklimits("cli_pdf", ctx, real_streamlen, 0, 0))==CL_CLEAN)
-				rc = cli_writen(fout, (const char *)streamstart, real_streamlen) == real_streamlen ? CL_CLEAN : CL_EIO;
+				rc = (unsigned long)cli_writen(fout, (const char *)streamstart, real_streamlen) == real_streamlen ? CL_CLEAN : CL_EIO;
 		}
 
 		if (rc == CL_CLEAN) {
@@ -510,7 +510,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx)
  * flate inflation - returns clamAV status, e.g CL_SUCCESS, CL_EZIP
  */
 static int
-try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fout, const cli_ctx *ctx)
+try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fout, cli_ctx *ctx)
 {
 	int ret = cli_checklimits("cli_pdf", ctx, real_len, 0, 0);
 
@@ -539,7 +539,7 @@ try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fo
 }
 
 static int
-flatedecode(unsigned char *buf, off_t len, int fout, const cli_ctx *ctx)
+flatedecode(unsigned char *buf, off_t len, int fout, cli_ctx *ctx)
 {
 	int zstat, ret;
 	off_t nbytes;
