@@ -1,3 +1,6 @@
+Thu Feb 14 19:21:03 CET 2008 (acab)
+  * libclamav: limits in blobs
+
 Thu Feb 14 16:25:11 CET 2008 (acab)
 -----------------------------------
   * libclamav: fix warnings in pdf and untar
