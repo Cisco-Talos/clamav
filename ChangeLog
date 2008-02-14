@@ -1,3 +1,7 @@
+Thu Feb 14 21:31:47 CET 2008 (tk)
+---------------------------------
+  * libclamav/matcher-ac.c: fix handling of root->ac_pattable (bb#837)
+
 Thu Feb 14 21:20:39 CET 2008 (acab)
 -----------------------------------
   * libclamav/ole2_extract.c: check limits
