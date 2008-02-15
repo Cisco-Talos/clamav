@@ -19,6 +19,10 @@
  *
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -112,6 +116,6 @@ ssize_t text_normalize_buffer(struct text_norm_state *state, const unsigned char
 		}
 	}
 	state->out_pos = p - state->out;
-	return i;
+	return (ssize_t)i;
 }
 

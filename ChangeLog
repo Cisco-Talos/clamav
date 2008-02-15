@@ -1,3 +1,7 @@
+Fri Feb 15 14:10:46 EET 2008 (edwin)
+------------------------------------
+  * libclamav/textnorm.c: need to include clamav-config.h (thanks Nigel)
+
 Fri Feb 15 13:02:09 CET 2008 (acab)
 -----------------------------------
   * docs: describe new limit options and defaults
