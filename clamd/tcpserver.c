@@ -66,7 +66,7 @@ int tcpserver(const struct cfgstruct *copt)
 
     if((taddr = cfgopt(copt, "TCPAddr"))->enabled) {
 	if(r_gethostbyname(taddr->strarg, &he, buf, sizeof(buf)) == -1) {
-	    logg("!r_gethostbyname(%s) error: %s\n", taddr->strarg, strerror(errno));
+	    logg("!TCP: r_gethostbyname(%s) error: %s\n", taddr->strarg, strerror(errno));
 	    return -1;
 	}
 	server.sin_addr = *(struct in_addr *) he.h_addr_list[0];
@@ -76,32 +76,32 @@ int tcpserver(const struct cfgstruct *copt)
 
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
 	estr = strerror(errno);
-	logg("!socket() error: %s\n", estr);
+	logg("!TCP: socket() error: %s\n", estr);
 	return -1;
     }
 
     if(setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (void *) &true, sizeof(true)) == -1) {
-	logg("!setsocktopt(SO_REUSEADDR) error: %s\n", strerror(errno));
+	logg("!TCP: setsocktopt(SO_REUSEADDR) error: %s\n", strerror(errno));
     }
 
     if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1) {
 	estr = strerror(errno);
-	logg("!bind() error: %s\n", estr);
+	logg("!TCP: bind() error: %s\n", estr);
 	close(sockfd);
 	return -1;
     } else {
 	if(taddr->enabled)
-	    logg("Bound to address %s on tcp port %d\n", taddr->strarg, cfgopt(copt, "TCPSocket")->numarg);
+	    logg("#TCP: Bound to address %s on port %u\n", taddr->strarg, cfgopt(copt, "TCPSocket")->numarg);
 	else
-	    logg("Bound to tcp port %d\n", cfgopt(copt, "TCPSocket")->numarg);
+	    logg("#TCP: Bound to port %u\n", cfgopt(copt, "TCPSocket")->numarg);
     }
 
     backlog = cfgopt(copt, "MaxConnectionQueueLength")->numarg;
-    logg("Setting connection queue length to %d\n", backlog);
+    logg("#TCP: Setting connection queue length to %d\n", backlog);
 
     if(listen(sockfd, backlog) == -1) {
 	estr = strerror(errno);
-	logg("!listen() error: %s\n", estr);
+	logg("!TCP: listen() error: %s\n", estr);
 	close(sockfd);
 	return -1;
     }

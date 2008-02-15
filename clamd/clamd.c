@@ -279,58 +279,43 @@ int main(int argc, char **argv)
     if(cfgopt(copt, "LeaveTemporaryFiles")->enabled)
 	cl_settempdir(NULL, 1);
 
-    /* fork into background */
-    if(!cfgopt(copt, "Foreground")->enabled) {
-	if(daemonize() == -1) {
-	    logg("!daemonize() failed\n");
-	    logg_close();
-	    freecfg(copt);
-	    return 1;
-	}
-	if(!debug_mode)
-	    if(chdir("/") == -1)
-		logg("^Can't change current working directory to root\n");
-
-    } else
-        foreground = 1;
-
-    logg("clamd daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
+    logg("#clamd daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
 
     if(user)
-	logg("Running as user %s (UID %u, GID %u)\n", user->pw_name, user->pw_uid, user->pw_gid);
+	logg("#Running as user %s (UID %u, GID %u)\n", user->pw_name, user->pw_uid, user->pw_gid);
 
     if(logg_size)
-	logg("Log file size limited to %d bytes.\n", logg_size);
+	logg("#Log file size limited to %d bytes.\n", logg_size);
     else
-	logg("Log file size limit disabled.\n");
+	logg("#Log file size limit disabled.\n");
 
     /* load the database(s) */
     dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
-    logg("Reading databases from %s\n", dbdir);
+    logg("#Reading databases from %s\n", dbdir);
 
     if(cfgopt(copt, "DetectPUA")->enabled)
 	dboptions |= CL_DB_PUA;
     else
-	logg("Not loading PUA signatures.\n");
+	logg("#Not loading PUA signatures.\n");
 
     if(cfgopt(copt, "PhishingSignatures")->enabled)
 	dboptions |= CL_DB_PHISHING;
     else
-	logg("Not loading phishing signatures.\n");
+	logg("#Not loading phishing signatures.\n");
 
     if(cfgopt(copt,"PhishingScanURLs")->enabled)
 	dboptions |= CL_DB_PHISHING_URLS;
     else
-	logg("Disabling URL based phishing detection.\n");
+	logg("#Disabling URL based phishing detection.\n");
 
     if(cfgopt(copt,"DevACOnly")->enabled) {
-	logg("Only using the A-C matcher.\n");
+	logg("#Only using the A-C matcher.\n");
 	dboptions |= CL_DB_ACONLY;
     }
 
     if((cpt = cfgopt(copt, "DevACDepth"))->enabled) {
 	cli_ac_setdepth(AC_DEFAULT_MIN_DEPTH, cpt->numarg);
-	logg("Max A-C depth set to %u\n", cpt->numarg);
+	logg("#Max A-C depth set to %u\n", cpt->numarg);
     }
 
     if((ret = cl_load(dbdir, &engine, &sigs, dboptions))) {
@@ -347,7 +332,7 @@ int main(int argc, char **argv)
 	return 1;
     }
 
-    logg("Loaded %d signatures.\n", sigs);
+    logg("#Loaded %u signatures.\n", sigs);
     if((ret = cl_build(engine)) != 0) {
 	logg("!Database initialization error: %s\n", cl_strerror(ret));;
 	logg_close();
@@ -386,6 +371,22 @@ int main(int argc, char **argv)
 	}
 	nlsockets++;
     }
+
+    /* fork into background */
+    if(!cfgopt(copt, "Foreground")->enabled) {
+	if(daemonize() == -1) {
+	    logg("!daemonize() failed\n");
+	    logg_close();
+	    freecfg(copt);
+	    return 1;
+	}
+	if(!debug_mode)
+	    if(chdir("/") == -1)
+		logg("^Can't change current working directory to root\n");
+
+    } else
+        foreground = 1;
+
 
     ret = acceptloop_th(lsockets, nlsockets, engine, dboptions, copt);
 
