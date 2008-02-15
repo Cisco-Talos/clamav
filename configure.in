@@ -483,7 +483,13 @@ if test "$have_milter" = "yes"; then
 
   AC_DEFINE_UNQUOTED([SENDMAIL_BIN], "$sendmailprog", [location of Sendmail binary])
 
-  sendmailver=`$sendmailprog -d0 < /dev/null | head -1 | awk '{print $2}'`
+  AC_ARG_WITH(sendmail-version,
+  [  --with-sendmail-version=VERSION    specify version of Sendmail (default=auto find)],
+  sendmailvers=$with_sendmail_version, sendmailvers=no)
+
+  if test "$sendmailvers" = "no" ; then
+    sendmailver=`$sendmailprog -d0 < /dev/null | head -1 | awk '{print $2}'`
+  fi
 
   if test -n "$sendmailver"; then
     sendmailver_a=`echo $sendmailver | awk -F. '{printf $1}'`

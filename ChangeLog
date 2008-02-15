@@ -1,3 +1,8 @@
+Fri Feb 15 13:15:42 CET 2008 (acab)
+-----------------------------------
+  * configure: provide a way to specify the version of sendmail
+  		patch from Steve Gran <steve*lobefin.net>
+
 Fri Feb 15 14:10:46 EET 2008 (edwin)
 ------------------------------------
   * libclamav/textnorm.c: need to include clamav-config.h (thanks Nigel)
