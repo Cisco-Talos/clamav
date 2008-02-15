@@ -45,7 +45,8 @@ CLAMAV_PRIVATE {
     cli_calloc;
     cli_ole2_extract;
     cli_errmsg;
-    cli_dbgmsg;
+    cli_debug_flag;
+    cli_dbgmsg_internal;
     cli_vba_readdir;
     cli_vba_inflate;
     cli_ppt_vba_read;

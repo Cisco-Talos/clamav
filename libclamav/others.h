@@ -209,10 +209,20 @@ void cli_errmsg(const char *str, ...) __attribute__((format(printf, 1, 2)));
 void cli_errmsg(const char *str, ...);
 #endif
 
-#ifdef __GNUC__
-void cli_dbgmsg(const char *str, ...) __attribute__((format(printf, 1, 2)));
+/* tell compiler about branches that are very rarely taken,
+ * such as debug paths, and error paths */
+#if (__GNUC__ >= 4) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 2)
+#define UNLIKELY(cond) __builtin_expect(!!(cond), 0)
 #else
-void cli_dbgmsg(const char *str, ...);
+#define UNLIKELY(cond) (cond)
+#endif
+
+#define cli_dbgmsg if(UNLIKELY(cli_debug_flag)) cli_dbgmsg_internal
+
+#ifdef __GNUC__
+void cli_dbgmsg_internal(const char *str, ...) __attribute__((format(printf, 1, 2)));
+#else
+void cli_dbgmsg_internal(const char *str, ...);
 #endif
 
 void *cli_malloc(size_t nmemb);

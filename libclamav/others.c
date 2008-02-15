@@ -117,11 +117,9 @@ void cli_errmsg(const char *str, ...)
     MSGCODE("LibClamAV Error: ");
 }
 
-void cli_dbgmsg(const char *str, ...)
+void cli_dbgmsg_internal(const char *str, ...)
 {
-    if(cli_debug_flag) {
-	MSGCODE("LibClamAV debug: ");
-    }
+    MSGCODE("LibClamAV debug: ");
 }
 
 #ifndef CLI_MEMFUNSONLY

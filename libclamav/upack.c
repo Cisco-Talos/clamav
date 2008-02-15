@@ -446,9 +446,10 @@ int unupack399(char *bs, uint32_t bl, uint32_t init_eax, char *init_ebx, uint32_
 	p.p2 = cli_readint32(init_ebx + 4);
 
 	cli_dbgmsg("\n\tp0: %p\n\tp1: %08x\n\tp2: %08x\n", p.p0, p.p1, p.p2);
-	for (i = 0; i<6; i++)
-		state[i] = cli_readint32(loc_ebx + (i<<2)),
+	for (i = 0; i<6; i++) {
+		state[i] = cli_readint32(loc_ebx + (i<<2));
 		cli_dbgmsg("state[%d] = %08x\n", i, state[i]);
+	}
 	do {
 		loc_eax = eax_copy;
 		loc_edx = loc_ebx + (loc_eax<<2) + 0x58;
