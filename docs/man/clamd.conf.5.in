@@ -240,10 +240,8 @@ If an email contains URLs ClamAV can download and scan them. \fBWARNING: This op
 .br 
 Default: no
 .TP
-\fBMailMaxRecursion NUMBER\fR
-Recursion level limit for the mail scanner.
-.br
-Default: 64
+\fBMailMaxRecursion NUMBER (OBSOLETE)\fR
+\fBWARNING:\fR This option is no longer accepted. See \fBMaxRecursion\fR.
 .TP 
 \fBPhishingSignatures BOOL\fR
 With this option enabled ClamAV will try to detect phishing attempts by using signatures.
@@ -270,25 +268,20 @@ Enable archive scanning.
 .br 
 Default: yes
 .TP 
-\fBArchiveMaxFileSize SIZE\fR
-Files in archives larger than this limit won't be scanned. Value of 0 disables the limit.
-.br 
-Default: 10M
+\fBArchiveMaxFileSize (OBSOLETE)\fR
+\fBWARNING:\fR This option is no longer accepted. See \fBMaxFileSize\fR and \fBMaxScanSize\fR.
 .TP 
-\fBArchiveMaxRecursion NUMBER\fR
-Limit archive recursion level. Value of 0 disables the limit.
-.br 
-Default: 8
+\fBArchiveMaxRecursion (OBSOLETE)\fR
+\fBWARNING:\fR This option is no longer accepted. See \fBMaxRecursion\fR.
 .TP 
-\fBArchiveMaxFiles NUMBER\fR
-Number of files to be scanned within an archive. Value of 0 disables the limit.
-.br 
-Default: 1000
+\fBArchiveMaxFiles (OBSOLETE)\fR
+\fBWARNING:\fR This option is no longer accepted. See \fBMaxFiles\fR.
 .TP 
-\fBArchiveMaxCompressionRatio NUMBER\fR
-Analyze compression ratio of every file in an archive and mark potential archive bombs as viruses (0 disables the limit).
-.br 
-Default: 250
+\fBArchiveMaxCompressionRatio (OBSOLETE)\fR
+\fBWARNING:\fR This option is no longer accepted.
+.TP 
+\fBArchiveBlockMax (OBSOLETE)\fR
+\fBWARNING:\fR This option is no longer accepted.
 .TP 
 \fBArchiveLimitMemoryUsage BOOL\fR
 Use slower decompression algorithm which uses less memory. This option only affects the bzip2 decompressor.
@@ -300,10 +293,25 @@ Mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).
 .br 
 Default: no
 .TP 
-\fBArchiveBlockMax BOOL\fR
-Mark archives as viruses (e.g RAR.ExceededFileSize, Zip.ExceededFilesLimit) if ArchiveMaxFiles, ArchiveMaxFileSize, or ArchiveMaxRecursion limit is reached.
+\fBMaxScanSize SIZE\fR
+Sets the maximum amount of data to be scanned for each input file. Archives and other containers are recursively extracted and scanned up to this value. \fBWarning: disabling this limit or setting it too high may result in severe damage to the system.\fR
 .br 
-Default: no
+Default: 100M
+.TP 
+\fBMaxFileSize SIZE\fR
+Files larger than this limit won't be scanned. Affects the input file itself as well as files contained inside it (when the input file is an archive, a document or some other kind of container). \fBWarning: disabling this limit or setting it too high may result in severe damage to the system.\fR
+.br 
+Default: 25M
+.TP 
+\fBMaxRecursion NUMBER\fR
+Nested archives are scanned recursively, e.g. if a Zip archive contains a RAR file, all files within it will also be scanned. This options specifies how deeply the process should be continued. \fBWarning: disabling this limit or setting it too high may result in severe damage to the system.\fR
+.br 
+Default: 16
+.TP 
+\fBMaxFiles NUMBER\fR
+Number of files to be scanned within an archive, a document, or any other kind of container. \fBWarning: disabling this limit or setting it too high may result in severe damage to the system.\fR
+.br 
+Default: 10000
 .TP 
 \fBClamukoScanOnAccess BOOL\fR
 Enable Clamuko. Dazuko (/dev/dazuko) must be configured and running.

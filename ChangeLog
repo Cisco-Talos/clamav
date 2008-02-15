@@ -1,3 +1,7 @@
+Fri Feb 15 13:02:09 CET 2008 (acab)
+-----------------------------------
+  * docs: describe new limit options and defaults
+
 Thu Feb 14 22:45:03 EET 2008 (edwin)
 ------------------------------------
   * libclamav/phischeck.c: change order of checks whitelist/isURL
