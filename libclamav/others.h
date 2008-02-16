@@ -217,7 +217,7 @@ void cli_errmsg(const char *str, ...);
 #define UNLIKELY(cond) (cond)
 #endif
 
-#define cli_dbgmsg if(UNLIKELY(cli_debug_flag)) cli_dbgmsg_internal
+#define cli_dbgmsg (!UNLIKELY(cli_debug_flag)) ? (void)0 : cli_dbgmsg_internal
 
 #ifdef __GNUC__
 void cli_dbgmsg_internal(const char *str, ...) __attribute__((format(printf, 1, 2)));

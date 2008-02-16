@@ -1,3 +1,7 @@
+Sat Feb 16 16:52:00 EET 2008 (edwin)
+------------------------------------
+  * libclamav/others.h: cannot use if in cli_dbgmsg() macro
+
 Sat Feb 16 13:45:01 EET 2008 (edwin)
 ------------------------------------
   * configure, configure.in: AC_TRY_COMPILE already wraps its args with int
