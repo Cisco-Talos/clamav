@@ -630,7 +630,7 @@ AC_TRY_COMPILE([
 #include <sys/types.h>
 #include <netinet/in.h>
 ],
-[int main(int argc, char **argv) { in_port_t pt; pt = 0; return pt; }],
+[in_port_t pt; pt = 0; return pt;],
 [
     AC_MSG_RESULT(yes)
     AC_DEFINE([HAVE_IN_PORT_T],1,[in_port_t is defined])
@@ -643,7 +643,7 @@ AC_TRY_COMPILE([
 #include <sys/types.h>
 #include <netinet/in.h>
 ],
-[int main(int argc, char **argv) { in_addr_t pt; pt = 0; return pt; }],
+[ in_addr_t pt; pt = 0; return pt; ],
 [
     AC_MSG_RESULT(yes)
     AC_DEFINE([HAVE_IN_ADDR_T],1,[in_addr_t is defined])
@@ -947,14 +947,12 @@ AC_CACHE_CHECK([for msg_accrights field in struct msghdr],
 #include <sys/uio.h>
 ],
 [
-int main(void) {
 #ifdef msg_accrights
 #error msg_accrights defined
 #endif
 struct msghdr m;
 m.msg_accrights = 0;
 return 0;
-}
 ]
 , [ac_cv_have_accrights_in_msghdr="yes"],[ac_cv_have_accrights_in_msghdr="no"])
 ])
@@ -971,14 +969,12 @@ AC_CACHE_CHECK([for msg_control field in struct msghdr],
 #include <sys/uio.h>
 ],
 [
-int main(void) {
 #ifdef msg_control
 #error msg_control defined
 #endif
 struct msghdr m;
 m.msg_control = 0;
 return 0;
-}
 ], [ ac_cv_have_control_in_msghdr="yes" ], [ ac_cv_have_control_in_msghdr="no" ])
 ])
 if test "x$ac_cv_have_control_in_msghdr" = "xyes" ; then

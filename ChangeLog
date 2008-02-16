@@ -1,3 +1,9 @@
+Sat Feb 16 13:45:01 EET 2008 (edwin)
+------------------------------------
+  * configure, configure.in: AC_TRY_COMPILE already wraps its args with int
+			     main(){}, don't do it twice
+			     This fixes a build failure on HP-UX
+
 Sat Feb 16 12:52:55 EET 2008 (edwin)
 ------------------------------------
   * libclamav/Makefile.am: fix location of nsis headers, needed for

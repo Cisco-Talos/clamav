@@ -15668,7 +15668,7 @@ cat >>conftest.$ac_ext <<_ACEOF
 int
 main ()
 {
-int main(int argc, char **argv) { in_port_t pt; pt = 0; return pt; }
+in_port_t pt; pt = 0; return pt;
   ;
   return 0;
 }
@@ -15724,7 +15724,7 @@ cat >>conftest.$ac_ext <<_ACEOF
 int
 main ()
 {
-int main(int argc, char **argv) { in_addr_t pt; pt = 0; return pt; }
+ in_addr_t pt; pt = 0; return pt;
   ;
   return 0;
 }
@@ -16816,14 +16816,12 @@ int
 main ()
 {
 
-int main(void) {
 #ifdef msg_accrights
 #error msg_accrights defined
 #endif
 struct msghdr m;
 m.msg_accrights = 0;
 return 0;
-}
 
 
   ;
@@ -16889,14 +16887,12 @@ int
 main ()
 {
 
-int main(void) {
 #ifdef msg_control
 #error msg_control defined
 #endif
 struct msghdr m;
 m.msg_control = 0;
 return 0;
-}
 
   ;
   return 0;
