@@ -1,3 +1,8 @@
+Sat Feb 16 12:52:55 EET 2008 (edwin)
+------------------------------------
+  * libclamav/Makefile.am: fix location of nsis headers, needed for
+			  'make dist' to work
+
 Fri Feb 15 22:31:57 EET 2008 (edwin)
 ------------------------------------
   * libclamav/others.[ch]: replace cli_dbgmsg with a macro that avoids calling

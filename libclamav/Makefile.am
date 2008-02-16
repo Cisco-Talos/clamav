@@ -144,9 +144,9 @@ libclamav_la_SOURCES = \
 	nsis/nulsft.c \
 	nsis/nulsft.h \
 	nsis/infblock.c \
-	nsis_zconf.h \
-	nsis_zlib.h \
-	nsis_zutil.h \
+	nsis/nsis_zconf.h \
+	nsis/nsis_zlib.h \
+	nsis/nsis_zutil.h \
 	pdf.c \
 	pdf.h \
 	spin.c \
