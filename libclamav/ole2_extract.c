@@ -469,7 +469,7 @@ static void ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir,
 	property_t prop_block[4];
 	int32_t idx, current_block, i;
 	char *dirname;
-	const struct cl_limits *limits = ctx->limits;
+	const struct cl_limits *limits = ctx ? ctx->limits : NULL;
 
 	current_block = hdr->prop_start;
 
@@ -797,7 +797,7 @@ int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx)
 
 	cli_dbgmsg("in cli_ole2_extract()\n");
 
-	if (ctx->limits && ctx->limits->maxscansize) {
+	if (ctx && ctx->limits && ctx->limits->maxscansize) {
 	  if (ctx->limits->maxscansize > ctx->scansize)
 	    scansize = ctx->limits->maxscansize - ctx->scansize;
 	  else

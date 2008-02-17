@@ -1,3 +1,7 @@
+Sun Feb 17 10:53:57 CET 2008 (tk)
+---------------------------------
+  * libclamav/ole2_extract.c: handle null ctx, required for sigtool (bb#846)
+
 Sat Feb 16 16:52:00 EET 2008 (edwin)
 ------------------------------------
   * libclamav/others.h: cannot use if in cli_dbgmsg() macro
