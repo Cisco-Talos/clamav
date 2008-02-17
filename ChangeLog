@@ -1,3 +1,7 @@
+Mon Feb 18 00:09:32 CET 2008 (acab)
+-----------------------------------
+  * libclamav/unzip: skip zip sanity checks for SFX - bb#845
+
 Sun Feb 17 10:53:57 CET 2008 (tk)
 ---------------------------------
   * libclamav/ole2_extract.c: handle null ctx, required for sigtool (bb#846)

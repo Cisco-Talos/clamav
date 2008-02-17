@@ -386,19 +386,19 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
     zsize-=csize;
   }
 
-  if(!LH_flen) {
+  if(ch && !LH_flen) {
     cli_dbgmsg("cli_unzip: found noname file\n");
     *ctx->virname = "Suspect.Zip";
     *ret = CL_VIRUS;
     return 0;
   }
-  if(!LH_usize && LH_crc32) {
+  if(ch && !LH_usize && LH_crc32) {
     cli_dbgmsg("Zip: Broken file or modified information in local header part of archive\n");
     *ctx->virname = "Exploit.Zip.ModifiedHeaders";
     * ret = CL_VIRUS;
     return 0;
   }
-  if(!LH_csize && LH_usize) {
+  if(ch && !LH_csize && LH_usize) {
     cli_dbgmsg("Zip: Malformed file (csize == 0 but usize != 0)\n");
     *ctx->virname = "Suspect.Zip";
     *ret = CL_VIRUS;
