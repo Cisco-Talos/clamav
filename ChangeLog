@@ -1,9 +1,13 @@
+Mon Feb 18 20:48:41 CET 2008 (acab)
+-----------------------------------
+  * configure: make fpu endianess manually configurable
+
 Mon Feb 18 19:45:06 EET 2008 (edwin)
 ------------------------------------
   * libclamav/textnorm.c: initialiaze each field
 	      scanners.c: decrease limit on scanscript
 
-Mon Feb 18 12:39:39 CET 2008 /acab)
+Mon Feb 18 12:39:39 CET 2008 (acab)
 -----------------------------------
   * libclamav/nsis: Use system zconf.h to allow building on HPUX
 
