@@ -993,8 +993,8 @@ static int cli_scanscript(int desc, cli_ctx *ctx)
 	}
 
 	/* don't normalize files that are too large */
-	if(sb.st_size > 10485760) {
-		cli_dbgmsg("cli_scanscript: exiting (file larger than 10 MB)\n");
+	if(sb.st_size > 409600) {
+		cli_dbgmsg("cli_scanscript: exiting (file larger than 400 kB)\n");
 		return CL_CLEAN;
 	}
 
