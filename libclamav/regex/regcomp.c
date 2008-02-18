@@ -1060,6 +1060,9 @@ allocset(struct parse *p)
 		(void) memset((char *)p->g->setbits + (nbytes - css), 0, css);
 	}
 
+	if(!p->g->sets)
+		goto nomem;
+
 	cs = &p->g->sets[no];
 	cs->ptr = p->g->setbits + css*((no)/CHAR_BIT);
 	cs->mask = 1 << ((no) % CHAR_BIT);

@@ -1,3 +1,8 @@
+Mon Feb 18 12:31:04 EET 2008 (edwin)
+------------------------------------
+  * libclamav/regex/regcomp.c: fix another out of memory condition (bb #849)
+			       thanks to Gianluigi Tiesi <sherpya*netfarm.it>
+
 Mon Feb 18 11:11:34 EET 2008 (edwin)
 ------------------------------------
   * libclamav/phishcheck.c: fix out of memory handling (bb #849).
