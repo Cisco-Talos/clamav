@@ -939,7 +939,7 @@ int phishing_init(struct cl_engine* engine)
 		return CL_EFORMAT;
 	}
 	url_regex = str_compose("^ *(("URI_CHECK_PROTOCOLS")|(",URI_fragmentaddress1,URI_fragmentaddress2")) *$");
-	if(build_regex(&pchk->preg,url_regex,1)) {
+	if(!url_regex || build_regex(&pchk->preg,url_regex,1)) {
 		free_regex(&pchk->preg_cctld);
 		free_regex(&pchk->preg_tld);
 		free(url_regex);
@@ -949,7 +949,7 @@ int phishing_init(struct cl_engine* engine)
 	}
 	free(url_regex);
 	realurl_regex = str_compose("^ *(("URI_CHECK_PROTOCOLS")|(",URI_path1,URI_fragmentaddress2")) *$");
-	if(build_regex(&pchk->preg_realurl, realurl_regex,1)) {
+	if(!realurl_regex || build_regex(&pchk->preg_realurl, realurl_regex,1)) {
 		free_regex(&pchk->preg_cctld);
 		free_regex(&pchk->preg_tld);
 		free_regex(&pchk->preg);
