@@ -885,8 +885,6 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
 	char *tempname, fullname[1024];
 	int ret=CL_CLEAN, fd;
 	struct stat sb;
-	struct stat first_stat;
-
 
     cli_dbgmsg("in cli_scanhtml()\n");
 
@@ -898,6 +896,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
     /* Because HTML detection is FP-prone and html_normalise_fd() needs to
      * mmap the file don't normalise files larger than 10 MB.
      */
+
     if(sb.st_size > 10485760) {
 	cli_dbgmsg("cli_scanhtml: exiting (file larger than 10 MB)\n");
 	return CL_CLEAN;
@@ -914,47 +913,13 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
     snprintf(fullname, 1024, "%s/nocomment.html", tempname);
     fd = open(fullname, O_RDONLY|O_BINARY);
     if (fd >= 0) {
-	if(fstat(fd, &first_stat) == -1) {
-		cli_errmsg("cli_scanhtml: fstat() failed for %s: %d\n", fullname, fd);
-		close(fd);
-		ret = CL_EIO;
-	} else {
-		ret = cli_scandesc(fd, ctx, 0, CL_TYPE_HTML, 0, NULL);
-		close(fd);
-	}
-    }
-
-    if (ret == CL_CLEAN) {
-	snprintf(fullname, 1024, "%s/comment.html", tempname);
-	fd = open(fullname, O_RDONLY|O_BINARY);
-	if (fd >= 0) {
-	    if(fstat(fd, &sb) == -1) {
-		cli_errmsg("cli_scanhtml: fstat() failed for %s: %d\n", fullname, fd);
-		close(fd);
-		ret = CL_EIO;
-	    } else {
-		    if(sb.st_size != first_stat.st_size) {
-			    /* scan only if HTML contained comments, otherwise we already scanned it
-			     * above */
-			    ret = cli_scandesc(fd, ctx, 0, CL_TYPE_HTML, 0, NULL);
-		    } else {
-			    cli_dbgmsg("Skipping comment.html because it is identical to nocomment.html\n");
-		    }
-		    close(fd);
-	    }
-	}
-    }
-
-    if (ret == CL_CLEAN) {
-	snprintf(fullname, 1024, "%s/script.html", tempname);
-	fd = open(fullname, O_RDONLY|O_BINARY);
-	if (fd >= 0) {
 	    ret = cli_scandesc(fd, ctx, 0, CL_TYPE_HTML, 0, NULL);
 	    close(fd);
-	}
     }
 
-    if(ret == CL_CLEAN) {
+    if(ret == CL_CLEAN && sb.st_size < 2097152) {
+	    /* limit to 2 MB, we're not interesting in scanning large files in notags form */
+	    /* TODO: don't even create notags if file is over 2 MB */
 	    snprintf(fullname, 1024, "%s/notags.html", tempname);
 	    fd = open(fullname, O_RDONLY|O_BINARY);
 	    if(fd >= 0) {
@@ -993,7 +958,7 @@ static int cli_scanscript(int desc, cli_ctx *ctx)
 	}
 
 	/* don't normalize files that are too large */
-	if(sb.st_size > 409600) {
+	if(sb.st_size > 524288) {
 		cli_dbgmsg("cli_scanscript: exiting (file larger than 400 kB)\n");
 		return CL_CLEAN;
 	}
@@ -1923,8 +1888,8 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	}
     }
 
-    /* CL_TYPE_HTML: raw HTML file already scanned in cli_scanhtml() */
-    if(type != CL_TYPE_IGNORED && type != CL_TYPE_HTML && ret != CL_VIRUS && !ctx->engine->sdb) {
+    /* CL_TYPE_HTML: raw HTML files are not scanned, unless safety measure activated via DCONF */
+    if(type != CL_TYPE_IGNORED && (type != CL_TYPE_HTML || !(DCONF_DOC & DOC_CONF_HTML_SKIPRAW)) && ret != CL_VIRUS && !ctx->engine->sdb) {
 	if(cli_scanraw(desc, ctx, type, typercg) == CL_VIRUS)
 	    return CL_VIRUS;
     }
