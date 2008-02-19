@@ -1,3 +1,7 @@
+Tue Feb 19 13:40:26 CET 2008 (tk)
+---------------------------------
+  * libclamav/scanners.c: only scan normalised text with type-7 sigs
+
 Tue Feb 19 00:24:01 CET 2008 (tk)
 ---------------------------------
   * sigtool/sigtool.c:	- general code cleanup

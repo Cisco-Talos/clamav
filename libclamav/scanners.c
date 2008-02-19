@@ -1575,10 +1575,11 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg)
 	return CL_EIO;
     }
 
-    ret = cli_scandesc(desc, ctx, ftrec, type, 0, &ftoffset);
+    ret = cli_scandesc(desc, ctx, ftrec, type == CL_TYPE_TEXT_ASCII ? 0 : type, 0, &ftoffset);
 
     if(ret >= CL_TYPENO) {
 
+/*
 	if(type == CL_TYPE_TEXT_ASCII) {
 	    lseek(desc, 0, SEEK_SET);
 
@@ -1586,6 +1587,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg)
 	    if(nret == CL_VIRUS)
 		cli_dbgmsg("%s found in descriptor %d when scanning file type %u\n", *ctx->virname, desc, ret);
 	}
+*/
 
 	if(nret != CL_VIRUS && (type == CL_TYPE_MSEXE || type == CL_TYPE_ZIP)) {
 	    lastzip = lastrar = 0xdeadbeef;
@@ -1819,6 +1821,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
 
 	case CL_TYPE_SCRIPT:
+	case CL_TYPE_TEXT_ASCII:
 	    if(DCONF_DOC & DOC_CONF_SCRIPT)
 	        ret = cli_scanscript(desc, ctx);
 	    break;
