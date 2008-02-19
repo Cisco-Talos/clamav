@@ -1,3 +1,9 @@
+Tue Feb 19 14:32:45 CET 2008 (tk)
+---------------------------------
+  * shared/misc.c: freshdbdir(): check freshclam.conf instead of clamd.conf;
+				 don't print any errors while checking
+				 alternative database directories
+
 Tue Feb 19 13:40:26 CET 2008 (tk)
 ---------------------------------
   * libclamav/scanners.c: only scan normalised text with type-7 sigs

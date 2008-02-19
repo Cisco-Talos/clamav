@@ -67,7 +67,7 @@ char *freshdbdir(void)
 
     /* try to find fresh directory */
     dbdir = cl_retdbdir();
-    if((copt = getcfg(CONFDIR"/clamd.conf", 0))) {
+    if((copt = getcfg(CONFDIR"/freshclam.conf", 0))) {
 	if((cpt = cfgopt(copt, "DatabaseDirectory"))->enabled || (cpt = cfgopt(copt, "DataDirectory"))->enabled) {
 	    if(strcmp(dbdir, cpt->strarg)) {
 		    char *daily = (char *) malloc(strlen(cpt->strarg) + strlen(dbdir) + 30);
@@ -75,12 +75,12 @@ char *freshdbdir(void)
 		if(access(daily, R_OK))
 		    sprintf(daily, "%s/daily.cld", cpt->strarg);
 
-		if((d1 = cl_cvdhead(daily))) {
+		if(!access(daily, R_OK) && (d1 = cl_cvdhead(daily))) {
 		    sprintf(daily, "%s/daily.cvd", dbdir);
 		    if(access(daily, R_OK))
 			sprintf(daily, "%s/daily.cld", dbdir);
 
-		    if((d2 = cl_cvdhead(daily))) {
+		    if(!access(daily, R_OK) && (d2 = cl_cvdhead(daily))) {
 			free(daily);
 			if(d1->version > d2->version)
 			    dbdir = cpt->strarg;
