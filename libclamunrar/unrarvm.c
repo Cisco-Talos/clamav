@@ -18,6 +18,7 @@
 #include "clamav-config.h"
 #endif
 
+#include <stdio.h>
 #include <string.h>
 
 #include "libclamunrar/unrar.h"
@@ -27,7 +28,7 @@
 #ifdef RAR_HIGH_DEBUG
 #define rar_dbgmsg printf
 #else
-static void rar_dbgmsg(){};
+static void rar_dbgmsg(const char* fmt,...){}
 #endif
 
 #define VMCF_OP0             0

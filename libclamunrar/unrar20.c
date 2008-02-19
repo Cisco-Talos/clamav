@@ -15,6 +15,7 @@
  *
  */
 
+#include <stdio.h>
 #include <string.h>
 
 #include "libclamunrar/unrar.h"
