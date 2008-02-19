@@ -68,7 +68,7 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_sigtool_OBJECTS = output.$(OBJEXT) getopt.$(OBJEXT) \
 	cfgparser.$(OBJEXT) misc.$(OBJEXT) options.$(OBJEXT) \
-	sha256.$(OBJEXT) cdiff.$(OBJEXT) vba.$(OBJEXT) \
+	sha256.$(OBJEXT) cdiff.$(OBJEXT) tar.$(OBJEXT) vba.$(OBJEXT) \
 	sigtool.$(OBJEXT)
 sigtool_OBJECTS = $(am_sigtool_OBJECTS)
 sigtool_LDADD = $(LDADD)
@@ -231,6 +231,8 @@ sigtool_SOURCES = \
     $(top_srcdir)/shared/sha256.c \
     $(top_srcdir)/shared/cdiff.c \
     $(top_srcdir)/shared/cdiff.h \
+    $(top_srcdir)/shared/tar.c \
+    $(top_srcdir)/shared/tar.h \
     vba.c \
     vba.h \
     sigtool.c
@@ -315,6 +317,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/output.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sha256.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sigtool.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tar.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vba.Po@am__quote@
 
 .c.o:
@@ -435,6 +438,20 @@ cdiff.obj: $(top_srcdir)/shared/cdiff.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/cdiff.c' object='cdiff.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cdiff.obj `if test -f '$(top_srcdir)/shared/cdiff.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/cdiff.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/cdiff.c'; fi`
+
+tar.o: $(top_srcdir)/shared/tar.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tar.o -MD -MP -MF $(DEPDIR)/tar.Tpo -c -o tar.o `test -f '$(top_srcdir)/shared/tar.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/tar.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/tar.Tpo $(DEPDIR)/tar.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/tar.c' object='tar.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tar.o `test -f '$(top_srcdir)/shared/tar.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/tar.c
+
+tar.obj: $(top_srcdir)/shared/tar.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT tar.obj -MD -MP -MF $(DEPDIR)/tar.Tpo -c -o tar.obj `if test -f '$(top_srcdir)/shared/tar.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/tar.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/tar.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/tar.Tpo $(DEPDIR)/tar.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/tar.c' object='tar.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o tar.obj `if test -f '$(top_srcdir)/shared/tar.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/tar.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/tar.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

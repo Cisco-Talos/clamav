@@ -1,3 +1,12 @@
+Tue Feb 19 00:24:01 CET 2008 (tk)
+---------------------------------
+  * sigtool/sigtool.c:	- general code cleanup
+			- use internal tar archiver
+			- add support for .cld files
+			- count PUA and don't count FP sigs (in CVD header)
+			- improve error handling
+			- fix main.cvd building issues and interactive mode
+
 Mon Feb 18 20:48:41 CET 2008 (acab)
 -----------------------------------
   * configure: make fpu endianess manually configurable
