@@ -1,3 +1,7 @@
+Tue Feb 19 14:50:29 CET 2008 (tk)
+---------------------------------
+  * clamscan/others.c: fix checkaccess() return value on win32 (bb#847)
+
 Tue Feb 19 14:32:45 CET 2008 (tk)
 ---------------------------------
   * shared/misc.c: freshdbdir(): check freshclam.conf instead of clamd.conf;

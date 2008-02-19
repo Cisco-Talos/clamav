@@ -77,7 +77,7 @@ int fileinfo(const char *filename, short i)
 /* FIXME: Handle users correctly */
 int checkaccess(const char *path, const char *username, int mode)
 {
-    return _access(path, mode);
+    return !_access(path, mode);
 }
 #else
 int checkaccess(const char *path, const char *username, int mode)
