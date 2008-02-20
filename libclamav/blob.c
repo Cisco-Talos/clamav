@@ -713,7 +713,7 @@ fileblobScan(const fileblob *fb)
 		ftype = cli_filetype2(fd, fb->ctx->engine);
 		if(ftype >= CL_TYPE_TEXT_ASCII && ftype <= CL_TYPE_TEXT_UTF16BE) {
 			lseek(fd, 0, SEEK_SET);
-			rc = cli_scandesc(fd, fb->ctx, 0, CL_TYPE_MAIL, 0, NULL);
+			rc = cli_scandesc(fd, fb->ctx, CL_TYPE_MAIL, 0, NULL, AC_SCAN_VIR);
 		}
 	}
 

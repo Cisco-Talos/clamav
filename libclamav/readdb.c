@@ -93,7 +93,7 @@ struct cli_ignored {
 int cl_loaddb(const char *filename, struct cl_engine **engine, unsigned int *signo);
 int cl_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo);
 
-int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, unsigned short type, const char *offset, unsigned short target)
+int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint16_t rtype, uint16_t type, const char *offset, uint8_t target)
 {
 	struct cli_bm_patt *bm_new;
 	char *pt, *hexcpy, *start, *n;
@@ -136,7 +136,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 		*pt++ = 0;
 	    }
 
-	    if((ret = cli_ac_addsig(root, virname, start, root->ac_partsigs, parts, i, type, mindist, maxdist, offset, target))) {
+	    if((ret = cli_ac_addsig(root, virname, start, root->ac_partsigs, parts, i, rtype, type, mindist, maxdist, offset, target))) {
 		cli_errmsg("cli_parse_add(): Problem adding signature (1).\n");
 		error = 1;
 		break;
@@ -216,7 +216,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 		return CL_EMALFDB;
 	    }
 
-	    if((ret = cli_ac_addsig(root, virname, pt, root->ac_partsigs, parts, i, type, 0, 0, offset, target))) {
+	    if((ret = cli_ac_addsig(root, virname, pt, root->ac_partsigs, parts, i, rtype, type, 0, 0, offset, target))) {
 		cli_errmsg("cli_parse_add(): Problem adding signature (2).\n");
 		free(pt);
 		return ret;
@@ -226,7 +226,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	}
 
     } else if(root->ac_only || strpbrk(hexsig, "?(") || type) {
-	if((ret = cli_ac_addsig(root, virname, hexsig, 0, 0, 0, type, 0, 0, offset, target))) {
+	if((ret = cli_ac_addsig(root, virname, hexsig, 0, 0, 0, rtype, type, 0, 0, offset, target))) {
 	    cli_errmsg("cli_parse_add(): Problem adding signature (3).\n");
 	    return ret;
 	}
@@ -449,7 +449,7 @@ static int cli_loaddb(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 
 	if(*pt == '=') continue;
 
-	if((ret = cli_parse_add(root, start, pt, 0, NULL, 0))) {
+	if((ret = cli_parse_add(root, start, pt, 0, 0, NULL, 0))) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -628,7 +628,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	    break;
 	}
 
-	if((ret = cli_parse_add(root, virname, sig, 0, offset, target))) {
+	if((ret = cli_parse_add(root, virname, sig, 0, 0, offset, target))) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -658,14 +658,14 @@ static int cli_loadndb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
     return CL_SUCCESS;
 }
 
-#define FT_TOKENS 4
-static int cli_loadft(FILE *fs, struct cl_engine **engine, unsigned int options, unsigned int internal, gzFile *gzs, unsigned int gzrsize)
+#define FTM_TOKENS 8	
+static int cli_loadftm(FILE *fs, struct cl_engine **engine, unsigned int options, unsigned int internal, gzFile *gzs, unsigned int gzrsize)
 {
-	const char *tokens[FT_TOKENS];
+	const char *tokens[FTM_TOKENS], *pt;
 	char buffer[FILEBUFF];
-	unsigned int line = 0;
+	unsigned int line = 0, sigs = 0;
 	struct cli_ftype *new;
-	cli_file_t type;
+	cli_file_t rtype, type;
 	int ret;
 
 
@@ -690,40 +690,60 @@ static int cli_loadft(FILE *fs, struct cl_engine **engine, unsigned int options,
 	    cli_chomp(buffer);
 	}
 	line++;
-	cli_strtokenize(buffer, ':', FT_TOKENS, tokens);
+	cli_strtokenize(buffer, ':', FTM_TOKENS, tokens);
 
-	if(!tokens[0] || !tokens[1] || !tokens[2] || !tokens[3]) {
+	if(!tokens[0] || !tokens[1] || !tokens[2] || !tokens[3] || !tokens[4] || !tokens[5]) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
 
-	type = cli_ftcode(tokens[3]);
-	if(type == CL_TYPE_ERROR) {
+	if((pt = tokens[6])) { /* min version */
+	    if(!cli_isnumber(pt)) {
+		ret = CL_EMALFDB;
+		break;
+	    }
+	    if((unsigned int) atoi(pt) > cl_retflevel()) {
+		cli_dbgmsg("cli_loadftm: File type signature for %s not loaded (required f-level: %u)\n", tokens[3], atoi(pt));
+		continue;
+	    }
+	    if((pt = tokens[7])) { /* max version */
+		if(!cli_isnumber(pt)) {
+		    ret = CL_EMALFDB;
+		    break;
+		}
+		if((unsigned int) atoi(pt) < cl_retflevel())
+		    continue;
+	    }
+	}
+
+	rtype = cli_ftcode(tokens[4]);
+	type = cli_ftcode(tokens[5]);
+	if(rtype == CL_TYPE_ERROR || type == CL_TYPE_ERROR) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
 
-	if(*tokens[0] == '*') {
-	    if((ret = cli_parse_add((*engine)->root[0], tokens[2], tokens[1], type, NULL, 0)))
+	if(atoi(tokens[0]) == 1) { /* A-C */
+	    if((ret = cli_parse_add((*engine)->root[0], tokens[3], tokens[2], rtype, type, strcmp(tokens[1], "*") ? tokens[1] : NULL, 0)))
 		break;
 
-	} else {
+	} else if(atoi(tokens[0]) == 0) { /* memcmp() */
 	    new = (struct cli_ftype *) cli_malloc(sizeof(struct cli_ftype));
 	    if(!new) {
 		ret = CL_EMEM;
 		break;
 	    }
 	    new->type = type;
-	    new->offset = atoi(tokens[0]);
-	    new->magic = (unsigned char *) cli_hex2str(tokens[1]);
+	    new->offset = atoi(tokens[1]);
+	    new->magic = (unsigned char *) cli_hex2str(tokens[2]);
 	    if(!new->magic) {
-		cli_errmsg("cli_loadft: Can't decode the hex string\n");
+		cli_errmsg("cli_loadftm: Can't decode the hex string\n");
 		ret = CL_EMALFDB;
 		free(new);
 		break;
 	    }
-	    new->length = strlen(tokens[1]) / 2;
-	    new->tname = cli_strdup(tokens[2]);
+	    new->length = strlen(tokens[2]) / 2;
+	    new->tname = cli_strdup(tokens[3]);
 	    if(!new->tname) {
 		free(new->magic);
 		free(new);
@@ -732,22 +752,27 @@ static int cli_loadft(FILE *fs, struct cl_engine **engine, unsigned int options,
 	    }
 	    new->next = (*engine)->ftypes;
 	    (*engine)->ftypes = new;
-	}
-    }
 
-    if(!line) {
-	cli_errmsg("Empty %s filetype database\n", internal ? "built-in" : ".ft");
-	cl_free(*engine);
-	return CL_EMALFDB;
+	} else {
+	    cli_dbgmsg("cli_loadftm: Unsupported mode %u\n", atoi(tokens[0]));
+	    continue;
+	}
+	sigs++;
     }
 
     if(ret) {
-	cli_errmsg("Problem parsing %s filetype database at line %u\n", internal ? "built-in" : ".ft", line);
+	cli_errmsg("Problem parsing %s filetype database at line %u\n", internal ? "built-in" : "external", line);
 	cl_free(*engine);
 	return ret;
     }
 
-    cli_dbgmsg("Loaded %u filetype definitions\n", line);
+    if(!sigs) {
+	cli_errmsg("Empty %s filetype database\n", internal ? "built-in" : "external");
+	cl_free(*engine);
+	return CL_EMALFDB;
+    }
+
+    cli_dbgmsg("Loaded %u filetype definitions\n", sigs);
     return CL_SUCCESS;
 }
 
@@ -1277,8 +1302,8 @@ int cli_load(const char *filename, struct cl_engine **engine, unsigned int *sign
 	    ret = cli_loadpdb(fs, engine, options, gzs, gzrsize);
 	} else
 	    skipped = 1;
-    } else if(cli_strbcasestr(dbname, ".ft")) {
-	ret = cli_loadft(fs, engine, options, 0, gzs, gzrsize);
+    } else if(cli_strbcasestr(dbname, ".ftm")) {
+	ret = cli_loadftm(fs, engine, options, 0, gzs, gzrsize);
 
     } else if(cli_strbcasestr(dbname, ".ign")) {
 	ret = cli_loadign(fs, engine, options, gzs, gzrsize);
@@ -1757,7 +1782,7 @@ int cl_build(struct cl_engine *engine)
 	return CL_ENULLARG;
 
     if(!engine->ftypes)
-	if((ret = cli_loadft(NULL, &engine, 0, 1, NULL, 0)))
+	if((ret = cli_loadftm(NULL, &engine, 0, 1, NULL, 0)))
 	    return ret;
 
     for(i = 0; i < CLI_MTARGETS; i++) {

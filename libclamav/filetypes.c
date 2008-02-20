@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007 Sourcefire, Inc.
+ *  Copyright (C) 2007 - 2008 Sourcefire, Inc.
  *  Author: Tomasz Kojm <tkojm@clamav.net>
  *
  *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
@@ -53,6 +53,7 @@ static const struct ftmap_s {
     { "CL_TYPE_TEXT_UTF16BE",	CL_TYPE_TEXT_UTF16BE	},
     { "CL_TYPE_BINARY_DATA",	CL_TYPE_BINARY_DATA	},
     { "CL_TYPE_IGNORED",	CL_TYPE_IGNORED		},
+    { "CL_TYPE_ANY",		0			}, /* for ft-sigs */
     { "CL_TYPE_MSEXE",		CL_TYPE_MSEXE		},
     { "CL_TYPE_ELF",		CL_TYPE_ELF		},
     { "CL_TYPE_POSIX_TAR",	CL_TYPE_POSIX_TAR	},
@@ -166,7 +167,7 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 	if(cli_ac_initdata(&mdata, root->ac_partsigs, AC_DEFAULT_TRACKLEN))
 	    return ret;
 
-	sret = cli_ac_scanbuff(smallbuff, bread, NULL, engine->root[0], &mdata, 1, 0, 0, -1, NULL);
+	sret = cli_ac_scanbuff(smallbuff, bread, NULL, engine->root[0], &mdata, 0, ret, desc, NULL, AC_SCAN_FT);
 
 	cli_ac_freedata(&mdata);
 
@@ -178,7 +179,7 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 
 	    decoded = (unsigned char *) cli_utf16toascii((char *) smallbuff, bread);
 	    if(decoded) {
-		sret = cli_ac_scanbuff(decoded, strlen((char *) decoded), NULL, engine->root[0], &mdata, 1, 0, 0, -1, NULL);
+		sret = cli_ac_scanbuff(decoded, strlen((char *) decoded), NULL, engine->root[0], &mdata, 0, CL_TYPE_TEXT_ASCII, desc, NULL, AC_SCAN_FT);
 		free(decoded);
 		if(sret == CL_TYPE_HTML)
 		    ret = CL_TYPE_HTML_UTF16;
@@ -212,7 +213,7 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 					    return ret;
 
 				    if(out_area.length > 0) {
-					    sret = cli_ac_scanbuff(decodedbuff, out_area.length, NULL, engine->root[0], &mdata, 1, 0, 0, -1, NULL);
+					    sret = cli_ac_scanbuff(decodedbuff, out_area.length, NULL, engine->root[0], &mdata, 0, 0, desc, NULL, AC_SCAN_FT); /* FIXME: can we use CL_TYPE_TEXT_ASCII instead of 0? */
 					    if(sret == CL_TYPE_HTML) {
 						    cli_dbgmsg("cli_filetype2: detected HTML signature in Unicode file\n");
 						    /* htmlnorm is able to handle any unicode now, since it skips null chars */

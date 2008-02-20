@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007 Sourcefire, Inc.
+ *  Copyright (C) 2007 - 2008 Sourcefire, Inc.
  *  Author: Tomasz Kojm <tkojm@clamav.net>
  *
  *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
@@ -28,7 +28,7 @@
 #include "clamav.h"
 #include "cltypes.h"
 
-#define MAGIC_BUFFER_SIZE 512
+#define MAGIC_BUFFER_SIZE 1024
 #define CL_TYPENO 500
 #define MAX_EMBEDDED_OBJ 10
 
@@ -39,7 +39,6 @@ typedef enum {
     CL_TYPE_TEXT_UTF16BE,
     CL_TYPE_BINARY_DATA,
     /* Please do not add any new types above this line */
-    CL_TYPE_IGNORED,
     CL_TYPE_ERROR,
     CL_TYPE_MSEXE,
     CL_TYPE_ELF,
@@ -76,7 +75,8 @@ typedef enum {
     CL_TYPE_CABSFX,
     CL_TYPE_ARJSFX,
     CL_TYPE_NULSFT, /* on the fly */
-    CL_TYPE_AUTOIT
+    CL_TYPE_AUTOIT,
+    CL_TYPE_IGNORED /* please don't add anything below */
 } cli_file_t;
 
 struct cli_ftype {

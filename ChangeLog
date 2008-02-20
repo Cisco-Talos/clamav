@@ -1,3 +1,17 @@
+Wed Feb 20 22:03:07 CET 2008 (tk)
+---------------------------------
+  * libclamav: filetype detection improvements:
+	- allow manual selection of matching method for each filetype signature
+	- A-C filetype magic sigs can be limited to specific file formats
+	- allow ndb-like offsets inside A-C filetype sigs
+	- filetype sigs can be limited to specific f-levels
+	- optimize filetype sigs handling inside cli_ac_scanbuff()
+	- MAGIC_BUFFER_SIZE increased to 1024 bytes
+	- A-C filetype sigs for CL_TYPE_IGNORED are guaranteed to work and take
+	  precedence within MAGIC_BUFFER_SIZE file space (shouldn't be used
+	  outside it)
+	- rename daily.ft to daily.ftm (to avoid problems with older snapshots)
+
 Wed Feb 20 16:49:13 EET 2008 (edwin)
 ------------------------------------
   * libclamav/htmlnorm.c: generate only nocomment.html (always contains script too) and notags.html (bb #851)

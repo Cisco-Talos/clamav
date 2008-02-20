@@ -77,7 +77,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, cli_ctx *ctx, cli
 	    return ret;
 
 	if(troot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, troot, 0, ftype, -1)) != CL_VIRUS)
-	    ret = cli_ac_scanbuff(buffer, length, virname, troot, &mdata, 0, 0, ftype, -1, NULL);
+	    ret = cli_ac_scanbuff(buffer, length, virname, troot, &mdata, 0, ftype, -1, NULL, AC_SCAN_VIR);
 
 	cli_ac_freedata(&mdata);
 
@@ -89,7 +89,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, cli_ctx *ctx, cli
 	return ret;
 
     if(groot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, groot, 0, ftype, -1)) != CL_VIRUS)
-	ret = cli_ac_scanbuff(buffer, length, virname, groot, &mdata, 0, 0, ftype, -1, NULL);
+	ret = cli_ac_scanbuff(buffer, length, virname, groot, &mdata, 0, ftype, -1, NULL, AC_SCAN_VIR);
 
     cli_ac_freedata(&mdata);
 
@@ -249,7 +249,7 @@ int cli_validatesig(cli_file_t ftype, const char *offstr, off_t fileoff, struct 
     return 1;
 }
 
-int cli_scandesc(int desc, cli_ctx *ctx, uint8_t otfrec, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset)
+int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode)
 {
  	unsigned char *buffer, *buff, *endbl, *upt;
 	int ret = CL_CLEAN, type = CL_CLEAN, i, bytes;
@@ -325,7 +325,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, uint8_t otfrec, cli_file_t ftype, uint8
 
 	if(troot) {
 	    if(troot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, troot, offset, ftype, desc)) != CL_VIRUS)
-		ret = cli_ac_scanbuff(upt, length, ctx->virname, troot, &tdata, otfrec, offset, ftype, desc, ftoffset);
+		ret = cli_ac_scanbuff(upt, length, ctx->virname, troot, &tdata, offset, ftype, desc, ftoffset, acmode);
 
 	    if(ret == CL_VIRUS) {
 		free(buffer);
@@ -343,7 +343,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, uint8_t otfrec, cli_file_t ftype, uint8
 
 	if(!ftonly) {
 	    if(groot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, groot, offset, ftype, desc)) != CL_VIRUS)
-		ret = cli_ac_scanbuff(upt, length, ctx->virname, groot, &gdata, otfrec, offset, ftype, desc, ftoffset);
+		ret = cli_ac_scanbuff(upt, length, ctx->virname, groot, &gdata, offset, ftype, desc, ftoffset, acmode);
 
 	    if(ret == CL_VIRUS) {
 		free(buffer);
@@ -356,7 +356,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, uint8_t otfrec, cli_file_t ftype, uint8
 		else
 		    return CL_VIRUS;
 
-	    } else if(otfrec && ret >= CL_TYPENO) {
+	    } else if((acmode & AC_SCAN_FT) && ret >= CL_TYPENO) {
 		if(ret > type)
 		    type = ret;
 	    }
@@ -394,5 +394,5 @@ int cli_scandesc(int desc, cli_ctx *ctx, uint8_t otfrec, cli_file_t ftype, uint8
 	    return CL_VIRUS;
     }
 
-    return otfrec ? type : CL_CLEAN;
+    return (acmode & AC_SCAN_FT) ? type : CL_CLEAN;
 }

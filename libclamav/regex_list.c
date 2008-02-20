@@ -287,7 +287,7 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 
 			for(i = 0; i < matcher->root_hosts_cnt; i++) {
 				/* doesn't need to match terminating \0*/
-				rc = cli_ac_scanbuff((unsigned char*)buffer,buffer_len,info, &matcher->root_hosts[i] ,&mdata,0,0,0,-1,NULL);
+				rc = cli_ac_scanbuff((unsigned char*)buffer,buffer_len,info, &matcher->root_hosts[i] ,&mdata,0,0,-1,NULL,AC_SCAN_VIR);
 				cli_ac_freedata(&mdata);
 				if(rc) {
 					char c;
@@ -443,6 +443,7 @@ static int add_regex_list_element(struct cli_matcher* root,const char* pattern,c
 
        len = strlen(pattern);
        /* need not to match \0 too */
+       new->rtype = 0;
        new->type = 0;
        new->sigid = 0;
        new->parts = 0;

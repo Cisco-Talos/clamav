@@ -568,7 +568,7 @@ inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, of
     return CL_SUCCESS;
 }
 
-int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, struct cli_ac_data *mdata, uint8_t otfrec, uint32_t offset, cli_file_t ftype, int fd, struct cli_matched_type **ftoffset)
+int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t offset, cli_file_t ftype, int fd, struct cli_matched_type **ftoffset, unsigned int mode)
 {
 	struct cli_ac_node *current;
 	struct cli_ac_patt *patt, *pt;
@@ -605,6 +605,12 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 		if(ac_findmatch(buffer, bp, length, patt, &matchend)) {
 		    pt = patt;
 		    while(pt) {
+
+			if((pt->type && !(mode & AC_SCAN_FT)) || (!pt->type && !(mode & AC_SCAN_VIR))) {
+			    pt = pt->next_same;
+			    continue;
+			}
+
 			realoff = offset + bp - pt->prefix_length;
 
 			if((pt->offset || pt->target) && (!pt->sigid || pt->partno == 1)) {
@@ -670,25 +676,31 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				    offmatrix[pt->parts - 1][offmatrix[pt->partno - 1][0]] = realoff;
 			    } else if(found && pt->partno == pt->parts) {
 				if(pt->type) {
-				    if(otfrec) {
-					if(pt->type > type || pt->type >= CL_TYPE_SFX || pt->type == CL_TYPE_MSEXE) {
-					    cli_dbgmsg("Matched signature for file type %s\n", pt->virname);
-					    type = pt->type;
-					    if(ftoffset && (!*ftoffset || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ) && ((ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP) && type == CL_TYPE_MSEXE)))  {
-						/* FIXME: we don't know which offset of the first part is the correct one */
-						for(j = 1; j <= AC_DEFAULT_TRACKLEN && offmatrix[0][j] != -1; j++) {
-						    if(ac_addtype(ftoffset, type, offmatrix[pt->parts - 1][j])) {
-							if(info.exeinfo.section)
-							    free(info.exeinfo.section);
-							return CL_EMEM;
-						    }
+
+				    if(pt->type == CL_TYPE_IGNORED && (!pt->rtype || ftype == pt->rtype)) {
+					if(info.exeinfo.section)
+					    free(info.exeinfo.section);
+
+					return CL_TYPE_IGNORED;
+				    }
+
+				    if((pt->type > type || pt->type >= CL_TYPE_SFX || pt->type == CL_TYPE_MSEXE) && (!pt->rtype || ftype == pt->rtype)) {
+					cli_dbgmsg("Matched signature for file type %s\n", pt->virname);
+					type = pt->type;
+					if(ftoffset && (!*ftoffset || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ) && ((ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP) && type == CL_TYPE_MSEXE)))  {
+					    /* FIXME: we don't know which offset of the first part is the correct one */
+					    for(j = 1; j <= AC_DEFAULT_TRACKLEN && offmatrix[0][j] != -1; j++) {
+						if(ac_addtype(ftoffset, type, offmatrix[pt->parts - 1][j])) {
+						    if(info.exeinfo.section)
+							free(info.exeinfo.section);
+						    return CL_EMEM;
 						}
 					    }
-
-					    memset(offmatrix[0], -1, pt->parts * (AC_DEFAULT_TRACKLEN + 1) * sizeof(int32_t));
-					    for(j = 0; j < pt->parts; j++)
-						offmatrix[j][0] = 0;
 					}
+
+					memset(offmatrix[0], -1, pt->parts * (AC_DEFAULT_TRACKLEN + 1) * sizeof(int32_t));
+					for(j = 0; j < pt->parts; j++)
+					    offmatrix[j][0] = 0;
 				    }
 
 				} else { /* !pt->type */
@@ -704,17 +716,21 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
 			} else { /* old type signature */
 			    if(pt->type) {
-				if(otfrec) {
-				    if(pt->type > type || pt->type >= CL_TYPE_SFX || pt->type == CL_TYPE_MSEXE) {
-					cli_dbgmsg("Matched signature for file type %s at %u\n", pt->virname, realoff);
-					type = pt->type;
-					if(ftoffset && (!*ftoffset || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ) && ((ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP) && type == CL_TYPE_MSEXE)))  {
+				if(pt->type == CL_TYPE_IGNORED && (!pt->rtype || ftype == pt->rtype)) {
+				    if(info.exeinfo.section)
+					free(info.exeinfo.section);
 
-					    if(ac_addtype(ftoffset, type, realoff)) {
-						if(info.exeinfo.section)
-						    free(info.exeinfo.section);
-						return CL_EMEM;
-					    }
+				    return CL_TYPE_IGNORED;
+				}
+				if((pt->type > type || pt->type >= CL_TYPE_SFX || pt->type == CL_TYPE_MSEXE) && (!pt->rtype || ftype == pt->rtype)) {
+				    cli_dbgmsg("Matched signature for file type %s at %u\n", pt->virname, realoff);
+				    type = pt->type;
+				    if(ftoffset && (!*ftoffset || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ) && ((ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP) && type == CL_TYPE_MSEXE)))  {
+
+					if(ac_addtype(ftoffset, type, realoff)) {
+					    if(info.exeinfo.section)
+						free(info.exeinfo.section);
+					    return CL_EMEM;
 					}
 				    }
 				}
@@ -738,11 +754,11 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
     if(info.exeinfo.section)
 	free(info.exeinfo.section);
 
-    return otfrec ? type : CL_CLEAN;
+    return (mode & AC_SCAN_FT) ? type : CL_CLEAN;
 }
 
 /* FIXME: clean up the code */
-int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, uint8_t target)
+int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, uint8_t target)
 {
 	struct cli_ac_patt *new;
 	char *pt, *pt2, *hex = NULL, *hexcpy = NULL;
@@ -758,6 +774,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     if((new = (struct cli_ac_patt *) cli_calloc(1, sizeof(struct cli_ac_patt))) == NULL)
 	return CL_EMEM;
 
+    new->rtype = rtype;
     new->type = type;
     new->sigid = sigid;
     new->parts = parts;

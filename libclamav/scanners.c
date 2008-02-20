@@ -165,7 +165,7 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx, cli_file_t container)
 				    ftype = cli_filetype2(fd, ctx->engine);
 				    if(ftype >= CL_TYPE_TEXT_ASCII && ftype <= CL_TYPE_TEXT_UTF16BE) {
 					lseek(fd, 0, SEEK_SET);
-					ret = cli_scandesc(fd, ctx, 0, CL_TYPE_MAIL, 0, NULL);
+					ret = cli_scandesc(fd, ctx, CL_TYPE_MAIL, 0, NULL, AC_SCAN_VIR);
 				    }
 				    close(fd);
 				    if(ret == CL_VIRUS) {
@@ -250,7 +250,7 @@ static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx 
     if(DETECT_ENCRYPTED && metadata->encrypted) {
 	cli_dbgmsg("RAR: Encrypted files found in archive.\n");
 	lseek(desc, 0, SEEK_SET);
-	ret = cli_scandesc(desc, ctx, 0, 0, 0, NULL);
+	ret = cli_scandesc(desc, ctx, 0, 0, NULL, AC_SCAN_VIR);
 	if(ret != CL_VIRUS) {
 	    *ctx->virname = "Encrypted.RAR";
 	    return CL_VIRUS;
@@ -829,7 +829,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
     if (fd >= 0) {
     	ofd = cli_decode_ole_object(fd, dirname);
 	if (ofd >= 0) {
-		ret = cli_scandesc(ofd, ctx, 0, 0, 0, NULL);
+		ret = cli_scandesc(ofd, ctx, 0, 0, NULL, AC_SCAN_VIR);
 		close(ofd);
 	}
 	close(fd);
@@ -913,7 +913,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
     snprintf(fullname, 1024, "%s/nocomment.html", tempname);
     fd = open(fullname, O_RDONLY|O_BINARY);
     if (fd >= 0) {
-	    ret = cli_scandesc(fd, ctx, 0, CL_TYPE_HTML, 0, NULL);
+	    ret = cli_scandesc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR);
 	    close(fd);
     }
 
@@ -923,7 +923,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
 	    snprintf(fullname, 1024, "%s/notags.html", tempname);
 	    fd = open(fullname, O_RDONLY|O_BINARY);
 	    if(fd >= 0) {
-		    ret = cli_scandesc(fd, ctx, 0, CL_TYPE_HTML, 0, NULL);
+		    ret = cli_scandesc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR);
 		    close(fd);
 	    }
     }
@@ -1519,20 +1519,19 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
 static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg)
 {
 	int ret = CL_CLEAN, nret = CL_CLEAN;
-	uint8_t ftrec = 0, break_loop = 0;
 	struct cli_matched_type *ftoffset = NULL, *fpt;
 	uint32_t lastzip, lastrar;
 	struct cli_exe_info peinfo;
+	unsigned int acmode = AC_SCAN_VIR, break_loop = 0;
 
 
     if(typercg) switch(type) {
 	case CL_TYPE_TEXT_ASCII:
 	case CL_TYPE_MSEXE:
 	case CL_TYPE_ZIP:
-	    ftrec = 1;
-	    break;
+	    acmode |= AC_SCAN_FT;
 	default:
-	    ftrec = 0;
+	    break;
     }
 
     if(lseek(desc, 0, SEEK_SET) < 0) {
@@ -1540,7 +1539,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg)
 	return CL_EIO;
     }
 
-    ret = cli_scandesc(desc, ctx, ftrec, type == CL_TYPE_TEXT_ASCII ? 0 : type, 0, &ftoffset);
+    ret = cli_scandesc(desc, ctx, type == CL_TYPE_TEXT_ASCII ? 0 : type, 0, &ftoffset, acmode);
 
     if(ret >= CL_TYPENO) {
 
@@ -1692,7 +1691,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
     if(!ctx->options) { /* raw mode (stdin, etc.) */
 	cli_dbgmsg("Raw mode: No support for special files\n");
-	if((ret = cli_scandesc(desc, ctx, 0, 0, 0, NULL)) == CL_VIRUS)
+	if((ret = cli_scandesc(desc, ctx, 0, 0, NULL, AC_SCAN_VIR)) == CL_VIRUS)
 	    cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, desc);
 	return ret;
     }

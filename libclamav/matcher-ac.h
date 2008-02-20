@@ -33,6 +33,9 @@
 #define AC_CH_MAXDIST 32
 extern uint8_t cli_ac_mindepth, cli_ac_maxdepth;
 
+#define AC_SCAN_VIR 1
+#define AC_SCAN_FT  2
+
 struct cli_ac_data {
     int32_t ***offmatrix;
     uint32_t partsigs;
@@ -58,7 +61,7 @@ struct cli_ac_patt {
     struct cli_ac_patt *next, *next_same;
     uint8_t depth;
     uint8_t target;
-    uint16_t type;
+    uint16_t rtype, type;
 };
 
 struct cli_ac_node {
@@ -72,11 +75,11 @@ struct cli_ac_node {
 int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern);
 int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint8_t tracklen);
 void cli_ac_freedata(struct cli_ac_data *data);
-int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, struct cli_ac_data *mdata, uint8_t otfrec, uint32_t offset, cli_file_t ftype, int fd, struct cli_matched_type **ftoffset);
+int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t offset, cli_file_t ftype, int fd, struct cli_matched_type **ftoffset, unsigned int mode);
 int cli_ac_buildtrie(struct cli_matcher *root);
 int cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth);
 void cli_ac_free(struct cli_matcher *root);
-int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, uint8_t target);
+int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, uint8_t target);
 void cli_ac_setdepth(uint8_t mindepth, uint8_t maxdepth);
 
 #endif

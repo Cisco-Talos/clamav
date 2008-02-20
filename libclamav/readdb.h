@@ -24,6 +24,7 @@
 #include "clamav.h"
 #include "matcher.h"
 #include "str.h"
+#include "cltypes.h"
 
 #define CLI_DBEXT(ext)				\
     (						\
@@ -42,14 +43,14 @@
 	cli_strbcasestr(ext, ".rmd")   ||	\
 	cli_strbcasestr(ext, ".pdb")   ||	\
 	cli_strbcasestr(ext, ".wdb")   ||	\
-	cli_strbcasestr(ext, ".ft")    ||	\
+	cli_strbcasestr(ext, ".ftm")   ||	\
 	cli_strbcasestr(ext, ".ign")   ||	\
 	cli_strbcasestr(ext, ".cvd")   ||	\
 	cli_strbcasestr(ext, ".cld")		\
     )
 
 
-int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, unsigned short type, const char *offset, unsigned short target);
+int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint16_t rtype, uint16_t type, const char *offset, uint8_t target);
 
 int cli_initengine(struct cl_engine **engine, unsigned int options);
 
