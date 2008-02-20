@@ -12,6 +12,8 @@ Wed Feb 20 22:03:07 CET 2008 (tk)
 	  outside it)
 	- rename daily.ft to daily.ftm (to avoid problems with older snapshots)
 
+   TODO: try to re-classify CL_TYPE_ANY A-C sigs in filetypes_int.h
+
 Wed Feb 20 16:49:13 EET 2008 (edwin)
 ------------------------------------
   * libclamav/htmlnorm.c: generate only nocomment.html (always contains script too) and notags.html (bb #851)
