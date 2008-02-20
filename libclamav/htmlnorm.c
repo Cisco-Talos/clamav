@@ -292,19 +292,13 @@ static void html_output_flush(file_buff_t *fbuff)
 	}
 }
 
-static void html_output_c(file_buff_t *fbuff1, file_buff_t *fbuff2, unsigned char c)
+static inline void html_output_c(file_buff_t *fbuff1, unsigned char c)
 {
 	if (fbuff1) {
 		if (fbuff1->length == HTML_FILE_BUFF_LEN) {
 			html_output_flush(fbuff1);
 		}
 		fbuff1->buffer[fbuff1->length++] = c;
-	}
-	if (fbuff2) {
-		if (fbuff2->length == HTML_FILE_BUFF_LEN) {
-			html_output_flush(fbuff2);
-		}
-		fbuff2->buffer[fbuff2->length++] = c;
 	}
 }
 
@@ -421,21 +415,21 @@ static void html_output_tag(file_buff_t *fbuff, char *tag, tag_arguments_t *tags
 {
 	int i, j, len;
 
-	html_output_c(fbuff, NULL, '<');
+	html_output_c(fbuff, '<');
 	html_output_str(fbuff, tag, strlen(tag));
 	for (i=0; i < tags->count; i++) {
-		html_output_c(fbuff, NULL, ' ');
+		html_output_c(fbuff, ' ');
 		html_output_str(fbuff, tags->tag[i], strlen(tags->tag[i]));
 		if (tags->value[i]) {
 			html_output_str(fbuff, "=\"", 2);
 			len = strlen(tags->value[i]);
 			for (j=0 ; j<len ; j++) {
-				html_output_c(fbuff, NULL, tolower(tags->value[i][j]));
+				html_output_c(fbuff, tolower(tags->value[i][j]));
 			}
-			html_output_c(fbuff, NULL, '"');
+			html_output_c(fbuff, '"');
 		}
 	}
-	html_output_c(fbuff, NULL, '>');
+	html_output_c(fbuff, '>');
 }
 
 void html_tag_arg_free(tag_arguments_t *tags)
@@ -509,7 +503,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	tag_arguments_t tag_args;
 	quoted_state quoted;
 	unsigned long length;
-	file_buff_t *file_buff_o1, *file_buff_o2, *file_buff_script, *file_buff_text;
+	file_buff_t *file_buff_o2, *file_buff_text;
 	file_buff_t *file_tmp_o1;
 	int in_ahref=0;/* index of <a> tag, whose contents we are parsing. Indexing starts from 1, 0 means outside of <a>*/
 	unsigned char* href_contents_begin=NULL;/*beginning of the next portion of <a> contents*/
@@ -549,94 +543,46 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	if (dirname) {
 		snprintf(filename, 1024, "%s/rfc2397", dirname);
 		if (mkdir(filename, 0700) && errno != EEXIST) {
-			file_buff_o1 = file_buff_o2 = file_buff_script = file_buff_text = NULL;
-			goto abort;
-		}
-		file_buff_o1 = (file_buff_t *) cli_malloc(sizeof(file_buff_t));
-		if (!file_buff_o1) {
-			file_buff_o1 = file_buff_o2 = file_buff_script = file_buff_text = NULL;
+			file_buff_o2 = file_buff_text = NULL;
 			goto abort;
 		}
 
 		file_buff_o2 = (file_buff_t *) cli_malloc(sizeof(file_buff_t));
 		if (!file_buff_o2) {
-			free(file_buff_o1);
-			file_buff_o1 = file_buff_o2 = file_buff_script = file_buff_text = NULL;
+			file_buff_o2 = file_buff_text = NULL;
 			goto abort;
 		}
 
-		file_buff_script = (file_buff_t *) cli_malloc(sizeof(file_buff_t));
-		if (!file_buff_script) {
-			free(file_buff_o1);
-			free(file_buff_o2);
-			file_buff_o1 = file_buff_o2 = file_buff_script = file_buff_text = NULL;
-			goto abort;
-		}
-
-		snprintf(filename, 1024, "%s/comment.html", dirname);
-		file_buff_o1->fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
-		if (!file_buff_o1->fd) {
-			cli_dbgmsg("open failed: %s\n", filename);
-			free(file_buff_o1);
-			free(file_buff_o2);
-			free(file_buff_script);
-			file_buff_o1 = file_buff_o2 = file_buff_script = file_buff_text = NULL;
-			goto abort;
-		}
-
+		/* this will still contains scripts that are inside comments */
 		snprintf(filename, 1024, "%s/nocomment.html", dirname);
 		file_buff_o2->fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
 		if (!file_buff_o2->fd) {
 			cli_dbgmsg("open failed: %s\n", filename);
-			close(file_buff_o1->fd);
-			free(file_buff_o1);
 			free(file_buff_o2);
-			free(file_buff_script);
-			file_buff_o1 = file_buff_o2 = file_buff_script = file_buff_text = NULL;
-			goto abort;
-		}
-
-		snprintf(filename, 1024, "%s/script.html", dirname);
-		file_buff_script->fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
-		if (!file_buff_script->fd) {
-			cli_dbgmsg("open failed: %s\n", filename);
-			close(file_buff_o1->fd);
-			close(file_buff_o2->fd);
-			free(file_buff_o1);
-			free(file_buff_o2);
-			free(file_buff_script);
-			file_buff_o1 = file_buff_o2 = file_buff_script = file_buff_text = NULL;
+			file_buff_o2 = file_buff_text = NULL;
 			goto abort;
 		}
 
 		file_buff_text = (file_buff_t *) cli_malloc(sizeof(file_buff_t));
 		if(!file_buff_text) {
-			free(file_buff_o1);
 			free(file_buff_o2);
-			free(file_buff_script);
-			file_buff_o1 = file_buff_o2 = file_buff_script = file_buff_text = NULL;
+			file_buff_o2 = file_buff_text = NULL;
 			goto abort;
 		}
+
 		snprintf(filename, 1024, "%s/notags.html", dirname);
 		file_buff_text->fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
 		if(!file_buff_text->fd) {
 			cli_dbgmsg("open failed: %s\n", filename);
-			close(file_buff_o1->fd);
 			close(file_buff_o2->fd);
-			free(file_buff_o1);
 			free(file_buff_o2);
-			free(file_buff_script);
 			free(file_buff_text);
-			file_buff_o1 = file_buff_o2 = file_buff_script = file_buff_text = NULL;
+			file_buff_o2 = file_buff_text = NULL;
 		}
-		file_buff_o1->length = 0;
 		file_buff_o2->length = 0;
-		file_buff_script->length = 0;
 		file_buff_text->length = 0;
 	} else {
-		file_buff_o1 = NULL;
 		file_buff_o2 = NULL;
-		file_buff_script = NULL;
 		file_buff_text = NULL;
 	}
 
@@ -687,7 +633,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				if (isspace(*ptr)) {
 					ptr++;
 				} else {
-					html_output_c(file_buff_o1, file_buff_o2, ' ');
+					html_output_c(file_buff_o2, ' ');
 					state = next_state;
 					next_state = HTML_BAD_STATE;
 				}
@@ -695,11 +641,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 			case HTML_NORM:
 				if (*ptr == '<') {
 					ptrend=ptr; /* for use by scanContents */
-					html_output_c(file_buff_o1, file_buff_o2, '<');
-					if (in_script) {
-						html_output_c(file_buff_script, NULL, '<');
-					} else if(!text_space_written) {
-						html_output_c(file_buff_text, NULL, ' ');
+					html_output_c(file_buff_o2, '<');
+					if (!in_script && !text_space_written) {
+						html_output_c(file_buff_text, ' ');
 						text_space_written = TRUE;
 					}
 					if(hrefs && hrefs->scanContents && in_ahref && href_contents_begin) {
@@ -713,25 +657,23 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					next_state = HTML_TAG;
 				} else if (isspace(*ptr)) {
 					if(!text_space_written && !in_script) {
-						html_output_c(file_buff_text, NULL, ' ');
+						html_output_c(file_buff_text, ' ');
 						text_space_written = TRUE;
 					}
 					state = HTML_TRIM_WS;
 					next_state = HTML_NORM;
 				} else if (*ptr == '&') {
 					if(!text_space_written && !in_script) {
-						html_output_c(file_buff_text, NULL, ' ');
+						html_output_c(file_buff_text, ' ');
 						text_space_written = TRUE;
 					}
 					state = HTML_CHAR_REF;
 					next_state = HTML_NORM;
 					ptr++;
 				} else {
-					html_output_c(file_buff_o1, file_buff_o2, tolower(*ptr));
-					if (in_script) {
-						html_output_c(file_buff_script, NULL, tolower(*ptr));
-					} else {
-						html_output_c(file_buff_text, NULL, tolower(*ptr));
+					html_output_c(file_buff_o2, tolower(*ptr));
+					if (!in_script) {
+						html_output_c(file_buff_text, tolower(*ptr));
 						text_space_written = FALSE;
 					}
 					ptr++;
@@ -740,31 +682,26 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 			case HTML_TAG:
 				if ((tag_length == 0) && (*ptr == '!')) {
 					/* Comment */
-					html_output_c(file_buff_o1, NULL, '!');
 					if (in_script) {
-						html_output_c(file_buff_script, NULL, '!');
-					}
-					/* Need to rewind in the no-comment output stream */
-					if (file_buff_o2 && (file_buff_o2->length > 0)) {
-						file_buff_o2->length--;
+						/* we still write scripts to nocomment.html */
+						html_output_c(file_buff_o2, '!');
+					} else {
+						/* Need to rewind in the no-comment output stream */
+						if (file_buff_o2 && (file_buff_o2->length > 0)) {
+							file_buff_o2->length--;
+						}
 					}
 					state = HTML_COMMENT;
 					next_state = HTML_BAD_STATE;
 					ptr++;
 				} else if (*ptr == '>') {
-					html_output_c(file_buff_o1, file_buff_o2, '>');
-					if (in_script) {
-						html_output_c(file_buff_script, NULL, '>');
-					}
+					html_output_c(file_buff_o2, '>');
 					ptr++;
 					tag[tag_length] = '\0';
 					state = HTML_SKIP_WS;
 					next_state = HTML_PROCESS_TAG;
 				} else if (!isspace(*ptr)) {
-					html_output_c(file_buff_o1, file_buff_o2, tolower(*ptr));
-					if (in_script) {
-						html_output_c(file_buff_script, NULL, tolower(*ptr));
-					}
+					html_output_c(file_buff_o2, tolower(*ptr));
 					if (tag_length < HTML_STR_LENGTH) {
 						tag[tag_length++] = tolower(*ptr);
 					}
@@ -778,7 +715,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				break;
 			case HTML_TAG_ARG:
 				if (*ptr == '=') {
-					html_output_c(file_buff_o1, file_buff_o2, '=');
+					html_output_c(file_buff_o2, '=');
 					tag_arg[tag_arg_length] = '\0';
 					ptr++;
 					state = HTML_SKIP_WS;
@@ -792,7 +729,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					state = HTML_SKIP_WS;
 					next_state = HTML_TAG_ARG_EQUAL;
 				} else if (*ptr == '>') {
-					html_output_c(file_buff_o1, file_buff_o2, '>');
+					html_output_c(file_buff_o2, '>');
 					if (tag_arg_length > 0) {
 						tag_arg[tag_arg_length] = '\0';
 						html_tag_arg_add(&tag_args, tag_arg, NULL);
@@ -803,9 +740,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				} else {
 					if (tag_arg_length == 0) {
 						/* Start of new tag - add space */
-						html_output_c(file_buff_o1, file_buff_o2,' ');
+						html_output_c(file_buff_o2,' ');
 					}
-					html_output_c(file_buff_o1, file_buff_o2, tolower(*ptr));
+					html_output_c(file_buff_o2, tolower(*ptr));
 					if (tag_arg_length < HTML_STR_LENGTH) {
 						tag_arg[tag_arg_length++] = tolower(*ptr);
 					}
@@ -814,7 +751,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				break;
 			case HTML_TAG_ARG_EQUAL:
 				if (*ptr == '=') {
-					html_output_c(file_buff_o1, file_buff_o2, '=');
+					html_output_c(file_buff_o2, '=');
 					ptr++;
 					state = HTML_SKIP_WS;
 					escape = FALSE;
@@ -836,15 +773,12 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					/* RFC2397 inline data */
 
 					/* Rewind one byte so we don't recursuive */
-					if (file_buff_o1 && (file_buff_o1->length > 0)) {
-						file_buff_o1->length--;
-					}
 					if (file_buff_o2 && (file_buff_o2->length > 0)) {
 						file_buff_o2->length--;
 					}
 
 					if (quoted != NOT_QUOTED) {
-						html_output_c(file_buff_o1, file_buff_o2, '"');
+						html_output_c(file_buff_o2, '"');
 					}
 					tag_val_length = 0;
 					state = HTML_RFC2397_TYPE;
@@ -853,15 +787,12 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					/* RFC2397 inline data */
 
 					/* Rewind one byte so we don't recursuive */
-					if (file_buff_o1 && (file_buff_o1->length > 0)) {
-						file_buff_o1->length--;
-					}
 					if (file_buff_o2 && (file_buff_o2->length > 0)) {
 						file_buff_o2->length--;
 					}
 
 					if (quoted != NOT_QUOTED) {
-						html_output_c(file_buff_o1, file_buff_o2, '"');
+						html_output_c(file_buff_o2, '"');
 					}
 
 					tag_val_length = 0;
@@ -874,14 +805,14 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				} else if (*ptr == '\'') {
 					if (tag_val_length == 0) {
 						quoted = SINGLE_QUOTED;
-						html_output_c(file_buff_o1, file_buff_o2, '"');
+						html_output_c(file_buff_o2, '"');
 						if (tag_val_length < HTML_STR_LENGTH) {
 							tag_val[tag_val_length++] = '"';
 						}
 						ptr++;
 					} else {
 						if (!escape && (quoted==SINGLE_QUOTED)) {
-							html_output_c(file_buff_o1, file_buff_o2, '"');
+							html_output_c(file_buff_o2, '"');
 							if (tag_val_length < HTML_STR_LENGTH) {
 								tag_val[tag_val_length++] = '"';
 							}
@@ -892,7 +823,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 							tag_arg_length=0;
 							next_state = HTML_TAG_ARG;
 						} else {
-							html_output_c(file_buff_o1, file_buff_o2, '"');
+							html_output_c(file_buff_o2, '"');
 							if (tag_val_length < HTML_STR_LENGTH) {
 								tag_val[tag_val_length++] = '"';
 							}
@@ -902,14 +833,14 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				} else if (*ptr == '"') {
 					if (tag_val_length == 0) {
 						quoted = DOUBLE_QUOTED;
-						html_output_c(file_buff_o1, file_buff_o2, '"');
+						html_output_c(file_buff_o2, '"');
 						if (tag_val_length < HTML_STR_LENGTH) {
 							tag_val[tag_val_length++] = '"';
 						}
 						ptr++;
 					} else {
 						if (!escape && (quoted==DOUBLE_QUOTED)) {
-							html_output_c(file_buff_o1, file_buff_o2, '"');
+							html_output_c(file_buff_o2, '"');
 							if (tag_val_length < HTML_STR_LENGTH) {
 								tag_val[tag_val_length++] = '"';
 							}
@@ -920,7 +851,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 							tag_arg_length=0;
 							next_state = HTML_TAG_ARG;
 						} else {
-							html_output_c(file_buff_o1, file_buff_o2, '"');
+							html_output_c(file_buff_o2, '"');
 							if (tag_val_length < HTML_STR_LENGTH) {
 								tag_val[tag_val_length++] = '"';
 							}
@@ -935,7 +866,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						tag_arg_length=0;
 						next_state = HTML_TAG_ARG;
 					} else {
-						html_output_c(file_buff_o1, file_buff_o2, *ptr);
+						html_output_c(file_buff_o2, *ptr);
 						if (tag_val_length < HTML_STR_LENGTH) {
 							if (isspace(*ptr)) {
 								tag_val[tag_val_length++] = ' ';
@@ -950,7 +881,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						ptr++;
 					}
 				} else {
-					html_output_c(file_buff_o1, file_buff_o2, tolower(*ptr));
+					html_output_c(file_buff_o2, tolower(*ptr));
 					if (tag_val_length < HTML_STR_LENGTH) {
 						tag_val[tag_val_length++] = *ptr;
 					}
@@ -964,13 +895,14 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				}
 				break;
 			case HTML_COMMENT:
-				html_output_c(file_buff_o1, NULL, tolower(*ptr));
 				if (in_script) {
-					html_output_c(file_buff_script, NULL, tolower(*ptr));
+					/* dump script to nocomment.html, since we no longer have
+					 * comment.html/script.html */
+					html_output_c(file_buff_o2, tolower(*ptr));
 				}
 				if (*ptr == '>') {
 					state = HTML_SKIP_WS;
-					next_state = HTML_NORM;	
+					next_state = HTML_NORM;
 				}
 				ptr++;
 				break;
@@ -985,7 +917,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					next_state = HTML_NORM;
 					if (strcmp(tag, "/script") == 0) {
 						in_script=FALSE;
-						html_output_c(file_buff_script, NULL, '\n');
+						html_output_c(file_buff_o2, '\n');
 					}
 					if (hrefs && hrefs->scanContents && in_ahref) {
 						if(strcmp(tag,"/a") == 0) {
@@ -1002,18 +934,22 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					}
 				} else if (strcmp(tag, "script") == 0) {
 					arg_value = html_tag_arg_value(&tag_args, "language");
+					/* TODO: maybe we can output all tags only via html_output_tag */
 					if (arg_value && (strcasecmp(arg_value, "jscript.encode") == 0)) {
 						html_tag_arg_set(&tag_args, "language", "javascript");
 						state = HTML_SKIP_WS;
 						next_state = HTML_JSDECODE;
+						/* we already output the old tag, output the new tag now */
+						html_output_tag(file_buff_o2, tag, &tag_args);
 					} else if (arg_value && (strcasecmp(arg_value, "vbscript.encode") == 0)) {
 						html_tag_arg_set(&tag_args, "language", "vbscript");
 						state = HTML_SKIP_WS;
 						next_state = HTML_JSDECODE;
+						/* we already output the old tag, output the new tag now */
+						html_output_tag(file_buff_o2, tag, &tag_args);
 					} else {
 						in_script = TRUE;
 					}
-					html_output_tag(file_buff_script, tag, &tag_args);
 				} else if (hrefs) {
 					if(in_ahref && !href_contents_begin)
 						href_contents_begin=ptr;
@@ -1133,13 +1069,13 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					arg_value = html_tag_arg_value(&tag_args, "href");
 					if(arg_value && arg_value[0]) {
 						html_output_str(file_buff_text, arg_value, strlen(arg_value));
-						html_output_c(file_buff_text, NULL, ' ');
+						html_output_c(file_buff_text, ' ');
 					}
 				} else if (strcmp(tag, "img") == 0) {
 					arg_value = html_tag_arg_value(&tag_args, "src");
 					if(arg_value && arg_value[0]) {
 						html_output_str(file_buff_text, arg_value, strlen(arg_value));
-						html_output_c(file_buff_text, NULL, ' ');
+						html_output_c(file_buff_text, ' ');
 					}
 				}
 				html_tag_arg_free(&tag_args);
@@ -1157,7 +1093,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						if(next_state == HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
 							tag_val[tag_val_length++] = '&';
 						}
-						html_output_c(file_buff_o1, file_buff_o2, '&');
+						html_output_c(file_buff_o2, '&');
 
 						state = next_state;
 						next_state = HTML_BAD_STATE;
@@ -1173,20 +1109,20 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					if(normalized) {
 						for(i=0; i < strlen(normalized); i++) {
 							const unsigned char c = normalized[i]&0xff;
-							html_output_c(file_buff_o1, file_buff_o2, c);
+							html_output_c(file_buff_o2, c);
 							if (next_state == HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
 								tag_val[tag_val_length++] = c;
 							}
 						}
 					}
 					else {
-						html_output_c(file_buff_o1, file_buff_o2, '&');
+						html_output_c(file_buff_o2, '&');
 						if (next_state == HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
 								tag_val[tag_val_length++] = '&';
 						}
 						for(i=0; i < entity_val_length; i++) {
 							const char c = tolower(entity_val[i]);
-							html_output_c(file_buff_o1, file_buff_o2, c);
+							html_output_c(file_buff_o2, c);
 							if (next_state == HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
 								tag_val[tag_val_length++] = c;
 							}
@@ -1194,7 +1130,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						if (next_state == HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
 							tag_val[tag_val_length++] = ';';
 						}
-						html_output_c(file_buff_o1, file_buff_o2, ';');
+						html_output_c(file_buff_o2, ';');
 					}
 					entity_val_length = 0;
 					state = next_state;
@@ -1210,10 +1146,10 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						if (next_state==HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
 								tag_val[tag_val_length++] = '&';
 						}
-						html_output_c(file_buff_o1, file_buff_o2, '&');
+						html_output_c(file_buff_o2, '&');
 						for(i=0; i < entity_val_length; i++) {
 							const char c = tolower(entity_val[i]);
-							html_output_c(file_buff_o1, file_buff_o2, c);
+							html_output_c(file_buff_o2, c);
 							if (next_state==HTML_TAG_ARG_VAL && tag_val_length < HTML_STR_LENGTH) {
 								tag_val[tag_val_length++] = c;
 							}
@@ -1235,17 +1171,16 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					if(dconf_entconv) {
 
 						if(value < 0x80)
-							html_output_c(file_buff_o1, file_buff_o2, tolower(value));
+							html_output_c(file_buff_o2, tolower(value));
 						else {
 							unsigned char buff[10];
 							unsigned char* out = u16_normalize_tobuffer(value, buff, 10);
-							if(out) {
-								html_output_str(file_buff_o1, buff, out-buff);
-								html_output_str(file_buff_o2, buff, out-buff);
+							if(out && out>buff) {
+								html_output_str(file_buff_o2, buff, out-buff-1);
 							}
 						}
 					} else
-							html_output_c(file_buff_o1, file_buff_o2, tolower(value&0xff));
+							html_output_c(file_buff_o2, tolower(value&0xff));
 					state = next_state;
 					next_state = HTML_BAD_STATE;
 					ptr++;
@@ -1262,7 +1197,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					}
 					ptr++;
 				} else {
-					html_output_c(file_buff_o1, file_buff_o2, value);
+					html_output_c(file_buff_o2, value);
 					state = next_state;
 					next_state = HTML_BAD_STATE;
 				}
@@ -1274,8 +1209,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					state = HTML_JSDECODE_LENGTH;
 					next_state = HTML_BAD_STATE;
 				} else {
-					html_output_c(file_buff_o1, file_buff_o2, tolower(*ptr));
-					html_output_c(file_buff_script, NULL, tolower(*ptr));
+					html_output_c(file_buff_o2, tolower(*ptr));
 					ptr++;
 				}
 				break;
@@ -1300,7 +1234,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				break;
 			case HTML_JSDECODE_DECRYPT:
 				if (length == 0) {
-					html_output_str(file_buff_script, "</script>\n", 10);
+					html_output_str(file_buff_o2, "</script>\n", 10);
 					length = 12;
 					state = HTML_SKIP_LENGTH;
 					next_state = HTML_NORM;
@@ -1317,29 +1251,23 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 							ptr--;
 							break;
 						case 0x21:
-							html_output_c(file_buff_o1, file_buff_o2, 0x3c);
-							html_output_c(file_buff_script, NULL, 0x3c);
+							html_output_c(file_buff_o2, 0x3c);
 							break;
 						case 0x23:
-							html_output_c(file_buff_o1, file_buff_o2, 0x0d);
-							html_output_c(file_buff_script, NULL, 0x0d);
+							html_output_c(file_buff_o2, 0x0d);
 							break;
 						case 0x24:
-							html_output_c(file_buff_o1, file_buff_o2, 0x40);
-							html_output_c(file_buff_script, NULL, 0x40);
+							html_output_c(file_buff_o2, 0x40);
 							break;
 						case 0x26:
-							html_output_c(file_buff_o1, file_buff_o2, 0x0a);
-							html_output_c(file_buff_script, NULL, 0x0a);
+							html_output_c(file_buff_o2, 0x0a);
 							break;
 						case 0x2a:
-							html_output_c(file_buff_o1, file_buff_o2, 0x3e);
-							html_output_c(file_buff_script, NULL, 0x3e);
+							html_output_c(file_buff_o2, 0x3e);
 							break;
 						}
 					} else {
-						html_output_c(file_buff_o1, file_buff_o2, value);
-						html_output_c(file_buff_script, NULL, tolower(value));
+						html_output_c(file_buff_o2, value);
 					}
 				}
 				table_pos = (table_pos + 1) % 64;
@@ -1438,11 +1366,11 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						html_output_str(file_tmp_o1, "text/plain\n", 11);
 					}
 					html_output_str(file_tmp_o1, tag_val, tag_val_length);
-					html_output_c(file_tmp_o1, NULL, '\n');
+					html_output_c(file_tmp_o1, '\n');
 					if (strstr(tag_val, ";base64") != NULL) {
 						html_output_str(file_tmp_o1, "Content-transfer-encoding: base64\n", 34);
 					}
-					html_output_c(file_tmp_o1, NULL, '\n');
+					html_output_c(file_tmp_o1, '\n');
 				} else {
 					file_tmp_o1 = NULL;
 				}
@@ -1465,7 +1393,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						state = HTML_RFC2397_FINISH;
 						ptr++;
 					} else {
-						html_output_c(file_tmp_o1, NULL, *ptr);
+						html_output_c(file_tmp_o1, *ptr);
 						ptr++;
 					}
 				} else if (*ptr == '\"') {
@@ -1473,7 +1401,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						state = HTML_RFC2397_FINISH;
 						ptr++;
 					} else {
-						html_output_c(file_tmp_o1, NULL, *ptr);
+						html_output_c(file_tmp_o1, *ptr);
 						ptr++;
 					}
 				} else if (isspace(*ptr) || (*ptr == '>')) {
@@ -1481,11 +1409,11 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						state = HTML_RFC2397_FINISH;
 						ptr++;
 					} else {
-						html_output_c(file_tmp_o1, NULL, *ptr);
+						html_output_c(file_tmp_o1, *ptr);
 						ptr++;
 					}
 				} else {
-					html_output_c(file_tmp_o1, NULL, *ptr);
+					html_output_c(file_tmp_o1, *ptr);
 					ptr++;
 				}
 				if (*ptr == '\\') {
@@ -1508,12 +1436,12 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				break;
 			case HTML_RFC2397_ESC:
 				if (length == 2) {
-					html_output_c(file_tmp_o1, NULL, value);
+					html_output_c(file_tmp_o1, value);
 				} else if (length == 1) {
-					html_output_c(file_tmp_o1, NULL, '%');
-					html_output_c(file_tmp_o1, NULL, value+'0');
+					html_output_c(file_tmp_o1, '%');
+					html_output_c(file_tmp_o1, value+'0');
 				} else {
-					html_output_c(file_tmp_o1, NULL, '%');
+					html_output_c(file_tmp_o1, '%');
 				}
 				state = HTML_RFC2397_DATA;
 				break;
@@ -1552,13 +1480,13 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 		normalized = entity_norm(&conv, entity_val);
 		if(normalized) {
 			for(i=0; i < strlen(normalized); i++)
-				html_output_c(file_buff_o1, file_buff_o2, normalized[i]&0xff);
+				html_output_c(file_buff_o2, normalized[i]&0xff);
 		}
 		else {
 			if(entity_val_length) {
-				html_output_c(file_buff_o1, file_buff_o2, '&');
+				html_output_c(file_buff_o2, '&');
 				for(i=0; i < entity_val_length; i++)
-					html_output_c(file_buff_o1, file_buff_o2, tolower(entity_val[i]));
+					html_output_c(file_buff_o2, tolower(entity_val[i]));
 			}
 		}
 	}
@@ -1573,20 +1501,10 @@ abort:
 	if (!m_area) {
 		fclose(stream_in);
 	}
-	if (file_buff_o1) {
-		html_output_flush(file_buff_o1);
-		close(file_buff_o1->fd);
-		free(file_buff_o1);
-	}
 	if (file_buff_o2) {
 		html_output_flush(file_buff_o2);
 		close(file_buff_o2->fd);
 		free(file_buff_o2);
-	}
-	if (file_buff_script) {
-		html_output_flush(file_buff_script);
-		close(file_buff_script->fd);
-		free(file_buff_script);
 	}
 	if(file_buff_text) {
 		html_output_flush(file_buff_text);
@@ -1722,19 +1640,19 @@ int html_screnc_decode(int fd, const char *dirname)
 			case HTML_SPECIAL_CHAR:
 				switch (*ptr) {
 				case 0x21:
-					html_output_c(&file_buff, NULL, 0x3c);
+					html_output_c(&file_buff, 0x3c);
 					break;
 				case 0x23:
-					html_output_c(&file_buff, NULL, 0x0d);
+					html_output_c(&file_buff, 0x0d);
 					break;
 				case 0x24:
-					html_output_c(&file_buff, NULL, 0x40);
+					html_output_c(&file_buff, 0x40);
 					break;				
 				case 0x26:
-					html_output_c(&file_buff, NULL, 0x0a);
+					html_output_c(&file_buff, 0x0a);
 					break;
 				case 0x2a:
-					html_output_c(&file_buff, NULL, 0x3e);
+					html_output_c(&file_buff, 0x3e);
 					break;
 				}
 				ptr++;
@@ -1747,7 +1665,7 @@ int html_screnc_decode(int fd, const char *dirname)
 					if (result == 0xFF) { /* special character */
 						state = HTML_SPECIAL_CHAR;
 					} else {
-						html_output_c(&file_buff, NULL, (char)result);
+						html_output_c(&file_buff, (char)result);
 					}
 				}
 				ptr++;
