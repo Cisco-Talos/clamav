@@ -1,3 +1,7 @@
+Thu Feb 21 15:29:48 CET 2008 (tk)
+---------------------------------
+  * clamd/server-th.c: fix compilation error on Tru64 (bb#829)
+
 Thu Feb 21 15:22:04 CET 2008 (tk)
 ---------------------------------
   * sigtool/sigtool.c: fix arg handling in vbadump() (bb#857)

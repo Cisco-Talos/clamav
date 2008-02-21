@@ -191,7 +191,7 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
 {
 	const char *dbdir;
 	int retval;
-	unsigned int sigs = 0, try = 1;
+	unsigned int sigs = 0, attempt = 1;
 
     *ret = 0;
     if(do_check) {
@@ -237,8 +237,8 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
     }
 
     while((retval = cl_load(dbdir, &engine, &sigs, dboptions)) == CL_ELOCKDB) {
-	logg("!reload db failed: %s (try %u)\n", cl_strerror(retval), try);
-	if(++try > 3)
+	logg("!reload db failed: %s (attempt %u/3)\n", cl_strerror(retval), attempt);
+	if(++attempt > 3)
 	    break;
     }
 
