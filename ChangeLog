@@ -1,3 +1,8 @@
+Thu Feb 21 09:42:33 GMT 2008 (njh)
+----------------------------------
+  * clamav-milter:	Fix a bug in IPv4 local addresses added by the patch
+  		applied on Tue Mar 27 22:05:28 BST 2007.
+
 Wed Feb 20 22:03:07 CET 2008 (tk)
 ---------------------------------
   * libclamav: filetype detection improvements:

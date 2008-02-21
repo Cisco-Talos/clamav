@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-20080110"
+#define	CM_VERSION	"devel-20080219"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -5287,7 +5287,7 @@ isLocal(const char *addr)
 
 #ifdef HAVE_INET_NTOP
 	if(inet_pton(AF_INET, addr, &ip) > 0)
-		return isLocalAddr (ip.s_addr);
+		return isLocalAddr(ip.s_addr);
 #ifdef AF_INET6
 	else if(inet_pton (AF_INET6, addr, &ip6) > 0) {
 		int i;
@@ -5311,11 +5311,9 @@ isLocal(const char *addr)
 			pnet6++;
 		 }
 	}
-	return 0;
-#endif /* AF_INET6 */
-#else
+#endif	/* AF_INET6 */
+#endif	/* HAVE_INET_NTOP */
 	return isLocalAddr(inet_addr(addr));
-#endif
 }
 
 /*
@@ -5932,7 +5930,8 @@ print_trace(void)
  *
  * You wouldn't believe the amount of time I used to waste chasing bug reports
  *	from people who's sendmail.cf didn't tally with the arguments given to
- *	clamav-milter before I put this check in!
+ *	clamav-milter before I put this check in, which is why bug 726 must
+ *	never be acted upon.
  *
  * FIXME: return different codes for "the value is wrong" and "sendmail.cf"
  *	hasn't been set up, though that's not so easy to work out.
