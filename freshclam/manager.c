@@ -826,7 +826,7 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
 	DIR *dir;
 	char cwd[512], info[32], buff[512], *pt;
 	struct dirent *dent;
-	int fd;
+	int fd, err = 0;
 	gzFile *gzs = NULL;
 
 
@@ -890,12 +890,39 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
 	}
     }
 
+    if(access("COPYING", R_OK)) {
+	logg("!buildcld: COPYING file not found\n");
+	err = 1;
+    } else {
+	if(tar_addfile(fd, gzs, "COPYING") == -1) {
+	    logg("!buildcld: Can't add COPYING to .cld file\n");
+	    err = 1;
+	}
+    }
+
+    if(!err && !access("daily.cfg", R_OK)) {
+	if(tar_addfile(fd, gzs, "daily.cfg") == -1) {
+	    logg("!buildcld: Can't add daily.cfg to .cld file\n");
+	    err = 1;
+	}
+    }
+
+    if(err) {
+	chdir(cwd);
+	if(gzs)
+	    gzclose(gzs);
+	else
+	    close(fd);
+	unlink(newfile);
+	return -1;
+    }
+
     while((dent = readdir(dir))) {
 #ifndef C_INTERIX
 	if(dent->d_ino)
 #endif
 	{
-	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, ".."))
+	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..") || !strcmp(dent->d_name, "COPYING") || !strcmp(dent->d_name, "daily.cfg"))
 		continue;
 
 	    if(tar_addfile(fd, gzs, dent->d_name) == -1) {
