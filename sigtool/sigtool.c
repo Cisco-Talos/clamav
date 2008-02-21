@@ -1167,18 +1167,22 @@ static int listsigs(struct optstruct *opt)
 
 static int vbadump(struct optstruct *opt)
 {
-	int fd, hex_output=0;
+	int fd, hex_output;
 	char *dir;
+	const char *pt;
 
 
-    if(opt_check(opt, "vba-hex"))
+    if(opt_check(opt, "vba-hex")) {
 	hex_output = 1;
+	pt = opt_arg(opt, "vba-hex");
+    } else {
+	hex_output = 0;
+	pt = opt_arg(opt, "vba");
+    }
  
-    if((fd = open(opt_arg(opt, "vba"), O_RDONLY)) == -1) {
-	if((fd = open(opt_arg(opt, "vba-hex"), O_RDONLY)) == -1) {
-	    mprintf("!vbadump: Can't open file %s\n", opt_arg(opt, "vba"));
-	    return -1;
-	}
+    if((fd = open(pt, O_RDONLY)) == -1) {
+	mprintf("!vbadump: Can't open file %s\n", pt);
+	return -1;
     }
 
     /* generate the temporary directory */
