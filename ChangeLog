@@ -1,3 +1,7 @@
+Fri Feb 22 11:38:41 CET 2008 (tk)
+---------------------------------
+  * libclamav/scanners.c: avoid calling cli_scanscript() for HTML files
+
 Fri Feb 22 00:24:41 CET 2008 (tk)
 ---------------------------------
   * libclamav: use limits->maxfiles instead of MAX_EMBEDDED_OBJ for ZIP-SFX

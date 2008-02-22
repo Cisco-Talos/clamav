@@ -1516,7 +1516,7 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
     return CL_CLEAN;
 }
 
-static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg)
+static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_t *dettype)
 {
 	int ret = CL_CLEAN, nret = CL_CLEAN;
 	struct cli_matched_type *ftoffset = NULL, *fpt;
@@ -1638,8 +1638,10 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg)
 
 	if(nret != CL_VIRUS) switch(ret) {
 	    case CL_TYPE_HTML:
-		if(SCAN_HTML && type == CL_TYPE_TEXT_ASCII && (DCONF_DOC & DOC_CONF_HTML))
+		if(SCAN_HTML && type == CL_TYPE_TEXT_ASCII && (DCONF_DOC & DOC_CONF_HTML)) {
+		    *dettype = CL_TYPE_HTML;
 		    nret = cli_scanhtml(desc, ctx);
+		}
 		break;
 
 	    case CL_TYPE_MAIL:
@@ -1669,7 +1671,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg)
 int cli_magic_scandesc(int desc, cli_ctx *ctx)
 {
 	int ret = CL_CLEAN;
-	cli_file_t type;
+	cli_file_t type, dettype = 0;
 	struct stat sb;
 	uint8_t typercg = 1;
 
@@ -1713,7 +1715,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     lseek(desc, 0, SEEK_SET);
 
     if(type != CL_TYPE_IGNORED && ctx->engine->sdb) {
-	if((ret = cli_scanraw(desc, ctx, type, 0)) == CL_VIRUS)
+	if((ret = cli_scanraw(desc, ctx, type, 0, &dettype)) == CL_VIRUS)
 	    return CL_VIRUS;
 	lseek(desc, 0, SEEK_SET);
     }
@@ -1785,8 +1787,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
 
 	case CL_TYPE_SCRIPT:
-	case CL_TYPE_TEXT_ASCII:
-	    if(DCONF_DOC & DOC_CONF_SCRIPT)
+	    if((DCONF_DOC & DOC_CONF_SCRIPT) && dettype != CL_TYPE_HTML)
 	        ret = cli_scanscript(desc, ctx);
 	    break;
 
@@ -1889,13 +1890,17 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
     /* CL_TYPE_HTML: raw HTML files are not scanned, unless safety measure activated via DCONF */
     if(type != CL_TYPE_IGNORED && (type != CL_TYPE_HTML || !(DCONF_DOC & DOC_CONF_HTML_SKIPRAW)) && ret != CL_VIRUS && !ctx->engine->sdb) {
-	if(cli_scanraw(desc, ctx, type, typercg) == CL_VIRUS)
+	if(cli_scanraw(desc, ctx, type, typercg, &dettype) == CL_VIRUS)
 	    return CL_VIRUS;
     }
 
     ctx->recursion++;
     lseek(desc, 0, SEEK_SET);
     switch(type) {
+	case CL_TYPE_TEXT_ASCII:
+	    if((DCONF_DOC & DOC_CONF_SCRIPT) && dettype != CL_TYPE_HTML)
+	        ret = cli_scanscript(desc, ctx);
+	    break;
 	/* Due to performance reasons all executables were first scanned
 	 * in raw mode. Now we will try to unpack them
 	 */
