@@ -539,12 +539,15 @@ void cli_ac_freedata(struct cli_ac_data *data)
     }
 }
 
-inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, off_t offset)
+inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, off_t offset, const cli_ctx *ctx)
 {
 	struct cli_matched_type *tnode, *tnode_last;
 
 
-    if(*list && (*list)->cnt >= MAX_EMBEDDED_OBJ)
+    if(type == CL_TYPE_ZIPSFX) {
+	if(*list && ctx && ctx->limits && ctx->limits->maxfiles && (*list)->cnt > ctx->limits->maxfiles)
+	    return CL_SUCCESS;
+    } else if(*list && (*list)->cnt >= MAX_EMBEDDED_OBJ)
 	return CL_SUCCESS;
 
     if(!(tnode = cli_calloc(1, sizeof(struct cli_matched_type)))) {
@@ -568,7 +571,7 @@ inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, of
     return CL_SUCCESS;
 }
 
-int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t offset, cli_file_t ftype, int fd, struct cli_matched_type **ftoffset, unsigned int mode)
+int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t offset, cli_file_t ftype, int fd, struct cli_matched_type **ftoffset, unsigned int mode, const cli_ctx *ctx)
 {
 	struct cli_ac_node *current;
 	struct cli_ac_patt *patt, *pt;
@@ -687,10 +690,10 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				    if((pt->type > type || pt->type >= CL_TYPE_SFX || pt->type == CL_TYPE_MSEXE) && (!pt->rtype || ftype == pt->rtype)) {
 					cli_dbgmsg("Matched signature for file type %s\n", pt->virname);
 					type = pt->type;
-					if(ftoffset && (!*ftoffset || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ) && ((ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP) && type == CL_TYPE_MSEXE)))  {
+					if(ftoffset && (!*ftoffset || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ || type == CL_TYPE_ZIPSFX) && ((ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP) && type == CL_TYPE_MSEXE)))  {
 					    /* FIXME: we don't know which offset of the first part is the correct one */
 					    for(j = 1; j <= AC_DEFAULT_TRACKLEN && offmatrix[0][j] != -1; j++) {
-						if(ac_addtype(ftoffset, type, offmatrix[pt->parts - 1][j])) {
+						if(ac_addtype(ftoffset, type, offmatrix[pt->parts - 1][j], ctx)) {
 						    if(info.exeinfo.section)
 							free(info.exeinfo.section);
 						    return CL_EMEM;
@@ -725,9 +728,9 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				if((pt->type > type || pt->type >= CL_TYPE_SFX || pt->type == CL_TYPE_MSEXE) && (!pt->rtype || ftype == pt->rtype)) {
 				    cli_dbgmsg("Matched signature for file type %s at %u\n", pt->virname, realoff);
 				    type = pt->type;
-				    if(ftoffset && (!*ftoffset || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ) && ((ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP) && type == CL_TYPE_MSEXE)))  {
+				    if(ftoffset && (!*ftoffset || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ || type == CL_TYPE_ZIPSFX) && ((ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP) && type == CL_TYPE_MSEXE)))  {
 
-					if(ac_addtype(ftoffset, type, realoff)) {
+					if(ac_addtype(ftoffset, type, realoff, ctx)) {
 					    if(info.exeinfo.section)
 						free(info.exeinfo.section);
 					    return CL_EMEM;

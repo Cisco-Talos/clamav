@@ -167,7 +167,7 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 	if(cli_ac_initdata(&mdata, root->ac_partsigs, AC_DEFAULT_TRACKLEN))
 	    return ret;
 
-	sret = cli_ac_scanbuff(smallbuff, bread, NULL, engine->root[0], &mdata, 0, ret, desc, NULL, AC_SCAN_FT);
+	sret = cli_ac_scanbuff(smallbuff, bread, NULL, engine->root[0], &mdata, 0, ret, desc, NULL, AC_SCAN_FT, NULL);
 
 	cli_ac_freedata(&mdata);
 
@@ -179,7 +179,7 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 
 	    decoded = (unsigned char *) cli_utf16toascii((char *) smallbuff, bread);
 	    if(decoded) {
-		sret = cli_ac_scanbuff(decoded, strlen((char *) decoded), NULL, engine->root[0], &mdata, 0, CL_TYPE_TEXT_ASCII, desc, NULL, AC_SCAN_FT);
+		sret = cli_ac_scanbuff(decoded, strlen((char *) decoded), NULL, engine->root[0], &mdata, 0, CL_TYPE_TEXT_ASCII, desc, NULL, AC_SCAN_FT, NULL);
 		free(decoded);
 		if(sret == CL_TYPE_HTML)
 		    ret = CL_TYPE_HTML_UTF16;
@@ -213,7 +213,7 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 					    return ret;
 
 				    if(out_area.length > 0) {
-					    sret = cli_ac_scanbuff(decodedbuff, out_area.length, NULL, engine->root[0], &mdata, 0, 0, desc, NULL, AC_SCAN_FT); /* FIXME: can we use CL_TYPE_TEXT_ASCII instead of 0? */
+					    sret = cli_ac_scanbuff(decodedbuff, out_area.length, NULL, engine->root[0], &mdata, 0, 0, desc, NULL, AC_SCAN_FT, NULL); /* FIXME: can we use CL_TYPE_TEXT_ASCII instead of 0? */
 					    if(sret == CL_TYPE_HTML) {
 						    cli_dbgmsg("cli_filetype2: detected HTML signature in Unicode file\n");
 						    /* htmlnorm is able to handle any unicode now, since it skips null chars */
