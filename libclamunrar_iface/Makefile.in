@@ -58,7 +58,8 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(libdir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
-@ENABLE_UNRAR_TRUE@libclamunrar_iface_la_DEPENDENCIES = $(top_builddir)/libclamunrar/libclamunrar.la
+@ENABLE_UNRAR_TRUE@libclamunrar_iface_la_DEPENDENCIES =  \
+@ENABLE_UNRAR_TRUE@	../libclamunrar/libclamunrar.la
 am__libclamunrar_iface_la_SOURCES_DIST = unrar_iface.c unrar_iface.h
 @ENABLE_UNRAR_TRUE@am_libclamunrar_iface_la_OBJECTS = unrar_iface.lo
 libclamunrar_iface_la_OBJECTS = $(am_libclamunrar_iface_la_OBJECTS)
@@ -210,7 +211,7 @@ target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 @ENABLE_UNRAR_TRUE@AM_CPPFLAGS = -I$(top_srcdir)
-@ENABLE_UNRAR_TRUE@libclamunrar_iface_la_LIBADD = $(top_builddir)/libclamunrar/libclamunrar.la
+@ENABLE_UNRAR_TRUE@libclamunrar_iface_la_LIBADD = ../libclamunrar/libclamunrar.la
 @ENABLE_UNRAR_TRUE@libclamunrar_iface_la_LDFLAGS = @TH_SAFE@ \
 @ENABLE_UNRAR_TRUE@	-version-info @LIBCLAMAV_VERSION@ \
 @ENABLE_UNRAR_TRUE@	-no-undefined $(am__append_1)

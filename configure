@@ -1526,7 +1526,6 @@ Optional Packages:
   --with-pic              try to use only PIC/non-PIC objects [default=use
                           both]
   --with-fpu-words-bigendian=(yes/no/auto)    specify FPU endianess (default=auto)
-  --with-iconv supports iconv() (default=auto)
   --with-zlib=DIR	  path to directory containing zlib library (default=
 			  /usr/local or /usr if not found in /usr/local)
   --with-gnu-ld           assume the C compiler uses GNU ld default=no
@@ -1536,6 +1535,7 @@ Optional Packages:
   --with-sendmail-version=VERSION    specify version of Sendmail (default=auto find)
   --with-libgmp-prefix[=DIR]  search for libgmp in DIR/include and DIR/lib
   --without-libgmp-prefix     don't search for libgmp in includedir and libdir
+  --with-iconv supports iconv() (default=auto)
   --with-user=uid	  name of the clamav user (default=clamav)
   --with-group=gid	  name of the clamav group (default=clamav)
   --with-dbdir=path	  path to virus database directory
@@ -12377,156 +12377,6 @@ fi
 
 
 
-# Check whether --with-iconv was given.
-if test "${with_iconv+set}" = set; then
-  withval=$with_iconv;
- case "$withval" in
-	 yes|no) wiconv="$withval";;
-	 *) { { echo "$as_me:$LINENO: error: --with-iconv does not take an argument" >&5
-echo "$as_me: error: --with-iconv does not take an argument" >&2;}
-   { (exit 1); exit 1; }; };;
- esac
-else
-   wiconv=auto
-fi
-
-if test "X$wiconv" != "Xno"; then
-	{ echo "$as_me:$LINENO: checking for libiconv_open in -liconv" >&5
-echo $ECHO_N "checking for libiconv_open in -liconv... $ECHO_C" >&6; }
-if test "${ac_cv_lib_iconv_libiconv_open+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-liconv  $LIBS"
-cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char libiconv_open ();
-int
-main ()
-{
-return libiconv_open ();
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext conftest$ac_exeext
-if { (ac_try="$ac_link"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && {
-	 test -z "$ac_c_werror_flag" ||
-	 test ! -s conftest.err
-       } && test -s conftest$ac_exeext &&
-       $as_test_x conftest$ac_exeext; then
-  ac_cv_lib_iconv_libiconv_open=yes
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-	ac_cv_lib_iconv_libiconv_open=no
-fi
-
-rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
-      conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ echo "$as_me:$LINENO: result: $ac_cv_lib_iconv_libiconv_open" >&5
-echo "${ECHO_T}$ac_cv_lib_iconv_libiconv_open" >&6; }
-if test $ac_cv_lib_iconv_libiconv_open = yes; then
-  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -liconv"
-fi
-
-	{ echo "$as_me:$LINENO: checking for iconv" >&5
-echo $ECHO_N "checking for iconv... $ECHO_C" >&6; }
-	save_LIBS="$LIBS"
-	LIBS="$LIBCLAMAV_LIBS"
-	cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-
-		     #include <iconv.h>
-
-int
-main ()
-{
-
-	char** xin,**xout;
-	unsigned il,ol;
-	int rc;
-	iconv_t iconv_struct = iconv_open("UTF-16BE","UTF-8");
-	rc = iconv(iconv_struct,xin,&il,xout,&ol);
-	iconv_close(iconv_struct);
-
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext conftest$ac_exeext
-if { (ac_try="$ac_link"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && {
-	 test -z "$ac_c_werror_flag" ||
-	 test ! -s conftest.err
-       } && test -s conftest$ac_exeext &&
-       $as_test_x conftest$ac_exeext; then
-
-   { echo "$as_me:$LINENO: result: yes" >&5
-echo "${ECHO_T}yes" >&6; }
-
-cat >>confdefs.h <<\_ACEOF
-#define HAVE_ICONV 1
-_ACEOF
-
-
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-
-	{ echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6; }
-
-fi
-
-rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
-      conftest$ac_exeext conftest.$ac_ext
-	LIBS="$save_LIBS"
-fi
-
-
 
 
 
@@ -14240,13 +14090,15 @@ echo "${ECHO_T}$ac_cv_libbz2_libs" >&6; }
 
 
 
+    save_LDFLAGS="$LDFLAGS"
+    LDFLAGS="$LIBS -L$LIBBZ2_PREFIX/lib";
     { echo "$as_me:$LINENO: checking for bzReadOpen in -lbz2" >&5
 echo $ECHO_N "checking for bzReadOpen in -lbz2... $ECHO_C" >&6; }
 if test "${ac_cv_lib_bz2_bzReadOpen+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lbz2 -L$LIBBZ2_PREFIX/lib $LIBS"
+LIBS="-lbz2  $LIBS"
 cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
@@ -14307,8 +14159,10 @@ cat >>confdefs.h <<\_ACEOF
 #define NOBZ2PREFIX 1
 _ACEOF
 
+
 fi
 
+    LDFLAGS="$save_LDFLAGS"
     if test "$HAVE_LIBBZ2" = "yes"; then
 	if test "${ac_cv_header_bzlib_h+set}" = set; then
   { echo "$as_me:$LINENO: checking for bzlib.h" >&5
@@ -15488,6 +15342,156 @@ echo "${ECHO_T}$LIBGMP" >&6; }
 echo "$as_me: WARNING: ****** GNU MP 2 or newer NOT FOUND - digital signature support will be disabled !" >&2;};
 	    want_dsig="no";
     fi
+fi
+
+
+# Check whether --with-iconv was given.
+if test "${with_iconv+set}" = set; then
+  withval=$with_iconv;
+ case "$withval" in
+	 yes|no) wiconv="$withval";;
+	 *) { { echo "$as_me:$LINENO: error: --with-iconv does not take an argument" >&5
+echo "$as_me: error: --with-iconv does not take an argument" >&2;}
+   { (exit 1); exit 1; }; };;
+ esac
+else
+   wiconv=auto
+fi
+
+if test "X$wiconv" != "Xno"; then
+	{ echo "$as_me:$LINENO: checking for libiconv_open in -liconv" >&5
+echo $ECHO_N "checking for libiconv_open in -liconv... $ECHO_C" >&6; }
+if test "${ac_cv_lib_iconv_libiconv_open+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-liconv  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char libiconv_open ();
+int
+main ()
+{
+return libiconv_open ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  ac_cv_lib_iconv_libiconv_open=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_lib_iconv_libiconv_open=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_lib_iconv_libiconv_open" >&5
+echo "${ECHO_T}$ac_cv_lib_iconv_libiconv_open" >&6; }
+if test $ac_cv_lib_iconv_libiconv_open = yes; then
+  LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -liconv"
+fi
+
+	{ echo "$as_me:$LINENO: checking for iconv" >&5
+echo $ECHO_N "checking for iconv... $ECHO_C" >&6; }
+	save_LIBS="$LIBS"
+	LIBS="$LIBCLAMAV_LIBS"
+	cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+		     #include <iconv.h>
+
+int
+main ()
+{
+
+	char** xin,**xout;
+	unsigned il,ol;
+	int rc;
+	iconv_t iconv_struct = iconv_open("UTF-16BE","UTF-8");
+	rc = iconv(iconv_struct,xin,&il,xout,&ol);
+	iconv_close(iconv_struct);
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+
+   { echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_ICONV 1
+_ACEOF
+
+
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+
+	{ echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+	LIBS="$save_LIBS"
 fi
 
 # Check whether --enable-pthreads was given.
@@ -17905,7 +17909,11 @@ cat >>conftest.$ac_ext <<_ACEOF
 int
 main ()
 {
-struct { int i __attribute__((packed)); } s;
+#ifdef __GNUC__
+		 struct { int i __attribute__((packed)); } s;
+		 #else
+		 #error Only checking for packed attribute on gcc-like compilers
+		 #endif
   ;
   return 0;
 }

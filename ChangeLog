@@ -1,3 +1,11 @@
+Mon Feb 25 12:25:03 EET 2008 (edwin)
+------------------------------------
+  * configure, configure.in:
+	* improve check for bzip2
+	* test for attribute((packed)) only on GNUC compilers, because Sun's cc ignores it
+	* move iconv check after zlib/bzip2 checks
+  * libclamav, libclamunrar_iface/Makefile*: use ../ to avoid problems with spaces in directory names
+
 Fri Feb 22 11:38:41 CET 2008 (tk)
 ---------------------------------
   * libclamav/scanners.c: avoid calling cli_scanscript() for HTML files
