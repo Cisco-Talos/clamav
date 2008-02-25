@@ -70,7 +70,7 @@
 				Name="VCLinkerTool"
 				UseUnicodeResponseFiles="false"
 				AdditionalDependencies="ws2_32.lib &quot;$(ProjectDir)pthread\pthreadVC2.lib&quot; &quot;$(TargetDir)\libclamunrar_iface.lib&quot;"
-				Version="0.92"
+				Version="0.92.1"
 				ModuleDefinitionFile="$(InputDir)/libclamav.def"
 				GenerateDebugInformation="true"
 				AssemblyDebug="1"
@@ -156,7 +156,7 @@
 				Name="VCLinkerTool"
 				UseUnicodeResponseFiles="false"
 				AdditionalDependencies="ws2_32.lib &quot;$(ProjectDir)pthread\pthreadVC2.lib&quot; &quot;$(TargetDir)\libclamunrar_iface.lib&quot;"
-				Version="0.92"
+				Version="0.92.1"
 				ModuleDefinitionFile="$(InputDir)/libclamav.def"
 				SubSystem="2"
 			/>
@@ -268,6 +268,10 @@
 			</File>
 			<File
 				RelativePath=".\entconv.c"
+				>
+			</File>
+			<File
+				RelativePath=".\explode.c"
 				>
 			</File>
 			<File
@@ -407,10 +411,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\snprintf.c"
-				>
-			</File>
-			<File
 				RelativePath=".\special.c"
 				>
 			</File>
@@ -423,15 +423,19 @@
 				>
 			</File>
 			<File
-				RelativePath=".\suecrypt.c"
-				>
-			</File>
-			<File
 				RelativePath=".\table.c"
 				>
 			</File>
 			<File
 				RelativePath=".\text.c"
+				>
+			</File>
+			<File
+				RelativePath=".\textdet.c"
+				>
+			</File>
+			<File
+				RelativePath=".\textnorm.c"
 				>
 			</File>
 			<File
@@ -661,6 +665,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\explode.h"
+				>
+			</File>
+			<File
 				RelativePath=".\filetypes.h"
 				>
 			</File>
@@ -809,10 +817,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\snprintf.h"
-				>
-			</File>
-			<File
 				RelativePath=".\special.h"
 				>
 			</File>
@@ -829,10 +833,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\suecrypt.h"
-				>
-			</File>
-			<File
 				RelativePath=".\syslog.h"
 				>
 			</File>
@@ -846,6 +846,14 @@
 			</File>
 			<File
 				RelativePath=".\text.h"
+				>
+			</File>
+			<File
+				RelativePath=".\textdet.h"
+				>
+			</File>
+			<File
+				RelativePath=".\textnorm.h"
 				>
 			</File>
 			<File
