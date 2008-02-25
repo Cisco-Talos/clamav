@@ -1,3 +1,7 @@
+Mon Feb 25 13:01:46 EET 2008 (edwin)
+------------------------------------
+  * revert the Makefile changes in r3671.
+
 Mon Feb 25 12:25:03 EET 2008 (edwin)
 ------------------------------------
   * configure, configure.in:
