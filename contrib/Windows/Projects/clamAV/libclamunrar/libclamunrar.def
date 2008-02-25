@@ -1,6 +1,7 @@
-LIBRARY libClamUnrar
-VERSION 0.92
-EXPORTS cli_unrar_open @1000
-EXPORTS cli_unrar_close @1001
-EXPORTS cli_unrar_extract_next_prepare @1002
-EXPORTS cli_unrar_extract_next @1003
+LIBRARY libClamunrar
+VERSION 0.92.1
+EXPORTS rar_unpack @1
+EXPORTS rar_init_filters @2
+EXPORTS ppm_destructor @3
+EXPORTS ppm_constructor @4
+EXPORTS rarvm_free @5
