@@ -633,7 +633,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				if (isspace(*ptr)) {
 					ptr++;
 				} else {
-					html_output_c(file_buff_o2, ' ');
+					if(!in_script)
+						html_output_c(file_buff_o2, ' ');
 					state = next_state;
 					next_state = HTML_BAD_STATE;
 				}
@@ -673,8 +674,15 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				} else {
 					html_output_c(file_buff_o2, tolower(*ptr));
 					if (!in_script) {
-						html_output_c(file_buff_text, tolower(*ptr));
-						text_space_written = FALSE;
+						if(*ptr < 0x20) {
+							if(!text_space_written) {
+								html_output_c(file_buff_text, ' ');
+								text_space_written = TRUE;
+							}
+						} else {
+							html_output_c(file_buff_text, tolower(*ptr));
+							text_space_written = FALSE;
+						}
 					}
 					ptr++;
 				}
@@ -710,7 +718,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					tag[tag_length] = '\0';
 					state = HTML_SKIP_WS;
 					tag_arg_length = 0;
-					next_state = HTML_TAG_ARG;
+					/* if we're inside a script we only care for </script>.
+					 * if we'd go to HTML_TAG_ARG whitespace would be inconsistently normalized*/
+					next_state = !in_script ? HTML_TAG_ARG : HTML_NORM;
 				}
 				break;
 			case HTML_TAG_ARG:
@@ -895,7 +905,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				}
 				break;
 			case HTML_COMMENT:
-				if (in_script) {
+				if (in_script && !isspace(*ptr)) {
 					/* dump script to nocomment.html, since we no longer have
 					 * comment.html/script.html */
 					html_output_c(file_buff_o2, tolower(*ptr));
@@ -1070,12 +1080,14 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					if(arg_value && arg_value[0]) {
 						html_output_str(file_buff_text, arg_value, strlen(arg_value));
 						html_output_c(file_buff_text, ' ');
+						text_space_written = TRUE;
 					}
 				} else if (strcmp(tag, "img") == 0) {
 					arg_value = html_tag_arg_value(&tag_args, "src");
 					if(arg_value && arg_value[0]) {
 						html_output_str(file_buff_text, arg_value, strlen(arg_value));
 						html_output_c(file_buff_text, ' ');
+						text_space_written = TRUE;
 					}
 				}
 				html_tag_arg_free(&tag_args);
@@ -1253,21 +1265,27 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						case 0x21:
 							html_output_c(file_buff_o2, 0x3c);
 							break;
+							/*
 						case 0x23:
 							html_output_c(file_buff_o2, 0x0d);
 							break;
+							we strip whitespace
+							*/
 						case 0x24:
 							html_output_c(file_buff_o2, 0x40);
 							break;
+							/*
 						case 0x26:
 							html_output_c(file_buff_o2, 0x0a);
 							break;
+							we strip whitespace 
+							*/
 						case 0x2a:
 							html_output_c(file_buff_o2, 0x3e);
 							break;
 						}
-					} else {
-						html_output_c(file_buff_o2, value);
+					} else if(!isspace(value&0xff)) {
+						html_output_c(file_buff_o2, tolower(value&0xff));
 					}
 				}
 				table_pos = (table_pos + 1) % 64;
@@ -1642,15 +1660,19 @@ int html_screnc_decode(int fd, const char *dirname)
 				case 0x21:
 					html_output_c(&file_buff, 0x3c);
 					break;
-				case 0x23:
+				/*case 0x23:
 					html_output_c(&file_buff, 0x0d);
 					break;
+					we strip whitespace
+					*/
 				case 0x24:
 					html_output_c(&file_buff, 0x40);
-					break;				
-				case 0x26:
+					break;
+				/*case 0x26:
 					html_output_c(&file_buff, 0x0a);
 					break;
+					we strip whitespace
+					*/
 				case 0x2a:
 					html_output_c(&file_buff, 0x3e);
 					break;
@@ -1664,8 +1686,8 @@ int html_screnc_decode(int fd, const char *dirname)
 					result = decrypt_tables[table_order[table_pos]][*ptr];
 					if (result == 0xFF) { /* special character */
 						state = HTML_SPECIAL_CHAR;
-					} else {
-						html_output_c(&file_buff, (char)result);
+					} else if(!isspace(result&0xff)) {
+						html_output_c(&file_buff, tolower(result&0xff));
 					}
 				}
 				ptr++;
