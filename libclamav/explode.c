@@ -225,7 +225,7 @@ int explode_init(struct xplstate *X, uint16_t flags) {
 
 int explode(struct xplstate *X) {
   unsigned int val, need;
-  int temp;
+  int temp=-1;
   
   switch(X->state) {
     /* grab compressed coded literals, if present */
