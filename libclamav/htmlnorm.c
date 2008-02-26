@@ -672,7 +672,10 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					next_state = HTML_NORM;
 					ptr++;
 				} else {
-					html_output_c(file_buff_o2, tolower(*ptr));
+					unsigned char c = tolower(*ptr);
+					/* normalize ' to " for scripts */
+					if(in_script && c == '\'') c = '"';
+					html_output_c(file_buff_o2, c);
 					if (!in_script) {
 						if(*ptr < 0x20) {
 							if(!text_space_written) {
@@ -680,7 +683,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 								text_space_written = TRUE;
 							}
 						} else {
-							html_output_c(file_buff_text, tolower(*ptr));
+							html_output_c(file_buff_text, c);
 							text_space_written = FALSE;
 						}
 					}
