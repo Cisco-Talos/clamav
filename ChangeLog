@@ -1,3 +1,7 @@
+Tue Feb 26 23:21:59 EET 2008 (edwin)
+------------------------------------
+  * libclamav/htmlnorm.c: better script end detection
+
 Tue Feb 26 22:36:38 EET 2008 (edwin)
 ------------------------------------
   * libclamav/htmlnorm.c: change ' to " inside scripts

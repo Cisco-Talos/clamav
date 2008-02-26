@@ -713,6 +713,10 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					next_state = HTML_PROCESS_TAG;
 				} else if (!isspace(*ptr)) {
 					html_output_c(file_buff_o2, tolower(*ptr));
+					/* if we're inside a script we only care for </script>.*/
+					if(in_script && tag_length==0 && *ptr != '/') {
+						state = HTML_NORM;
+					}
 					if (tag_length < HTML_STR_LENGTH) {
 						tag[tag_length++] = tolower(*ptr);
 					}
@@ -721,8 +725,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					tag[tag_length] = '\0';
 					state = HTML_SKIP_WS;
 					tag_arg_length = 0;
-					/* if we're inside a script we only care for </script>.
-					 * if we'd go to HTML_TAG_ARG whitespace would be inconsistently normalized*/
+					/* if we'd go to HTML_TAG_ARG whitespace would be inconsistently normalized for in_script*/
 					next_state = !in_script ? HTML_TAG_ARG : HTML_NORM;
 				}
 				break;
