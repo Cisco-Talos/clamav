@@ -1,3 +1,9 @@
+Tue Feb 26 14:08:13 CET 2008 (tk)
+---------------------------------
+  * libclamav/filetypes_int.h: add a generic sig to detect emails without
+			       the Content-Type: field (bb#863); the signature
+			       will be also provided in daily.cvd:6004
+
 Tue Feb 26 12:06:48 EET 2008 (edwin)
 ------------------------------------
   * libclamav/htmlnorm.c: strip spaces from scripts, normalize screnc
