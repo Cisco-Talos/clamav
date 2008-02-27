@@ -1,3 +1,7 @@
+Wed Feb 27 16:42:27 CET 2008 (tk)
+---------------------------------
+  * libclamav/cab.c: fix handling of stored files
+
 Wed Feb 27 16:59:54 EET 2008 (edwin)
 ------------------------------------
   * libclamav/htmlnorm.c: don't add newline between script tags.

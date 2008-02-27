@@ -567,7 +567,7 @@ static int cab_read(struct cab_file *file, unsigned char *buffer, int bytes)
 
 static int cab_unstore(struct cab_file *file, int bytes)
 {
-	int todo;
+	int todo, bread;
 	unsigned char buff[4096];
 
 
@@ -580,26 +580,23 @@ static int cab_unstore(struct cab_file *file, int bytes)
 
     while(1) {
 
-	if((unsigned int) todo <= sizeof(buff)) {
-	    if(cab_read(file, buff, todo) == -1) {
-		cli_dbgmsg("cab_unstore: cab_read failed for descriptor %d\n", file->fd);
-		return CL_EIO;
-	    } else if(cli_writen(file->ofd, buff, todo) == -1) {
-		cli_dbgmsg("cab_unstore: Can't write to descriptor %d\n", file->ofd);
-		return CL_EIO;
-	    }
-	    break;
+	if((unsigned int) todo <= sizeof(buff))
+	    bread = todo;
+	else
+	    bread = sizeof(buff);
 
-	} else {
-	    if(cab_read(file, buff, sizeof(buff)) == -1) {
-		cli_dbgmsg("cab_unstore: cab_read failed for descriptor %d\n", file->fd);
-		return CL_EIO;
-	    } else if(cli_writen(file->ofd, buff, sizeof(buff)) == -1) {
-		cli_dbgmsg("cab_unstore: Can't write to descriptor %d\n", file->ofd);
-		return CL_EIO;
-	    }
-	    todo -= sizeof(buff);
+	if((bread = cab_read(file, buff, bread)) == -1) {
+	    cli_dbgmsg("cab_unstore: cab_read failed for descriptor %d\n", file->fd);
+	    return file->error;
+	} else if(cli_writen(file->ofd, buff, bread) != bread) {
+	    cli_warnmsg("cab_unstore: Can't write %d bytes to descriptor %d\n", bread, file->ofd);
+	    return CL_EIO;
 	}
+
+	todo -= bread;
+
+	if(!bread || todo <= 0)
+	    break;
     }
 
     return CL_SUCCESS;
