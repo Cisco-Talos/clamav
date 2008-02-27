@@ -726,7 +726,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					state = HTML_SKIP_WS;
 					tag_arg_length = 0;
 					/* if we'd go to HTML_TAG_ARG whitespace would be inconsistently normalized for in_script*/
-					next_state = !in_script ? HTML_TAG_ARG : HTML_NORM;
+					next_state = !in_script ? HTML_TAG_ARG : HTML_PROCESS_TAG;
 				}
 				break;
 			case HTML_TAG_ARG:
