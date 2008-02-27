@@ -169,7 +169,7 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 			size = octal(osize);
 			if(size < 0) {
 				cli_errmsg("Invalid size in tar header\n");
-				if(fout)
+				if(fout>=0)
 					close(fout);
 				return CL_CLEAN;
 			}

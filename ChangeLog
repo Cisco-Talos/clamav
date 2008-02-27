@@ -1,3 +1,7 @@
+Wed Feb 27 12:17:19 CET 2008 (tk)
+---------------------------------
+  * libclamav/untar.c: fix fd check
+
 Wed Feb 27 09:29:23 GMT 2008 (njh)
 ---------------------------------
   * libclamav/vba_extract.c:	Minor code tidy
