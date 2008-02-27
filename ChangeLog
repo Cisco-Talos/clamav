@@ -1,3 +1,7 @@
+Wed Feb 27 09:29:23 GMT 2008 (njh)
+---------------------------------
+  * libclamav/vba_extract.c:	Minor code tidy
+
 Tue Feb 26 23:21:59 EET 2008 (edwin)
 ------------------------------------
   * libclamav/htmlnorm.c: better script end detection

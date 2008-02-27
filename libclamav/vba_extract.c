@@ -690,7 +690,6 @@ static int
 ppt_unlzw(const char *dir, int fd, uint32_t length)
 {
 	int ofd;
-	uint32_t bufflen;
 	z_stream stream;
 	unsigned char inbuff[PPT_LZW_BUFFSIZE], outbuff[PPT_LZW_BUFFSIZE];
 	char fullname[NAME_MAX + 1];
@@ -727,8 +726,6 @@ ppt_unlzw(const char *dir, int fd, uint32_t length)
 		return FALSE;
 	}
 
-	bufflen = stream.avail_in;
-
 	do {
 		if (stream.avail_out == 0) {
 			if (cli_writen(ofd, outbuff, PPT_LZW_BUFFSIZE)
@@ -742,7 +739,7 @@ ppt_unlzw(const char *dir, int fd, uint32_t length)
 		}
 		if (stream.avail_in == 0) {
 			stream.next_in = inbuff;
-			bufflen = stream.avail_in = MIN(length, PPT_LZW_BUFFSIZE);
+			stream.avail_in = MIN(length, PPT_LZW_BUFFSIZE);
 			if (cli_readn(fd, inbuff, stream.avail_in) != (int)stream.avail_in) {
 				close(ofd);
 				inflateEnd(&stream);
