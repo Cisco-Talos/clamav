@@ -933,7 +933,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					next_state = HTML_NORM;
 					if (strcmp(tag, "/script") == 0) {
 						in_script=FALSE;
-						html_output_c(file_buff_o2, '\n');
+						/*don't output newlines in nocomment.html
+						 * html_output_c(file_buff_o2, '\n');*/
 					}
 					if (hrefs && hrefs->scanContents && in_ahref) {
 						if(strcmp(tag,"/a") == 0) {

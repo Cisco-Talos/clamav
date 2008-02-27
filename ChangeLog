@@ -1,3 +1,7 @@
+Wed Feb 27 16:59:54 EET 2008 (edwin)
+------------------------------------
+  * libclamav/htmlnorm.c: don't add newline between script tags.
+
 Wed Feb 27 12:17:19 CET 2008 (tk)
 ---------------------------------
   * libclamav/untar.c: fix fd check
