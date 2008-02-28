@@ -1020,6 +1020,10 @@ int scanfile(const char *filename, struct cl_engine *engine, const struct passwd
      */
 
     if((cli_strbcasestr(filename, ".zip") || cli_strbcasestr(filename, ".rar")) && (options & CL_SCAN_ARCHIVE)) {
+
+#ifndef ENABLE_UNRAR
+      if(cli_strbcasestr(filename, ".zip"))
+#endif
 	/* try to use internal archivers */
 	if((ret = checkfile(filename, engine, limits, options, 1)) == CL_VIRUS) {
 	    if(opt_check(opt, "remove")) {

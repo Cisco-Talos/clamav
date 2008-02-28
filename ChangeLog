@@ -1,3 +1,7 @@
+Thu Feb 28 19:36:55 CET 2008 (tk)
+---------------------------------
+  * clamscan/manager.c: honour --unrar when libclamunrar is not compiled in
+
 Wed Feb 27 19:53:18 EET 2008 (edwin)
 -----------------------------------
   * libclamav/htmlnorm.c: more improvements to script end tag detection
