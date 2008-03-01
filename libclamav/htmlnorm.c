@@ -912,9 +912,11 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				break;
 			case HTML_COMMENT:
 				if (in_script && !isspace(*ptr)) {
+					unsigned char c = tolower(*ptr);
 					/* dump script to nocomment.html, since we no longer have
 					 * comment.html/script.html */
-					html_output_c(file_buff_o2, tolower(*ptr));
+					if(c == '\'') c = '"';
+					html_output_c(file_buff_o2, c);
 				}
 				if (*ptr == '>') {
 					state = HTML_SKIP_WS;
