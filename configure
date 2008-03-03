@@ -2783,15 +2783,15 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
-VERSION="devel-`date +%Y%m%d`"
+VERSION="0.93rc1"
 
 cat >>confdefs.h <<_ACEOF
 #define VERSION "$VERSION"
 _ACEOF
 
 
-LC_CURRENT=3
-LC_REVISION=3
+LC_CURRENT=4
+LC_REVISION=0
 LC_AGE=0
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 
