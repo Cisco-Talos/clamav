@@ -1,3 +1,8 @@
+Mon Mar  3 19:17:46 CET 2008 (tk)
+---------------------------------
+  * libclamav/others.c: bump f-level
+  * docs: update
+
 Mon Mar  3 11:19:25 CET 2008 (tk)
 ---------------------------------
   * libclamav/pdf.c: fix handling of md5 digests (bb#866)
