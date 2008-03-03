@@ -2,6 +2,59 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.93rc1
+-------
+
+This release introduces many new features and engine enhancements, please
+see the notes below for the list of major changes. The most visible one
+is the new logic in scan limits which affects some command line and config
+options of clamscan and clamd. Please see clamscan(1) and clamd.conf(5)
+and the example config file for more information on the new options.
+
+Most important changes include:
+
+  * libclamav:
+    - New logic in scan limits: provides much more efficient protection against
+      DoS attacks but also results in different command line and config options
+      to clamscan and clamd (see below)
+    - New/improved modules: unzip, SIS, cabinet, CHM, SZDD, text normalisator,
+      entity converter
+    - Improved filetype detection; filetype definitions can be remotely updated
+    - Support for .cld containers (which replace .inc directories)
+    - Improved pattern matcher and signature formats
+    - More efficient scanning of HTML files
+    - Many other improvements
+
+  * clamd:
+    - NEW CONFIG FILE OPTIONS: MaxScanSize, MaxFileSize, MaxRecursion, MaxFiles
+    - ** THE FOLLOWING OPTIONS ARE NO LONGER SUPPORTED **: MailMaxRecursion,
+      ArchiveMaxFileSize, ArchiveMaxRecursion, ArchiveMaxFiles,
+      ArchiveMaxCompressionRatio, ArchiveBlockMax
+
+  * clamscan:
+    - NEW CMDLINE OPTIONS: --max-filesize, --max-scansize
+    - REMOVED OPTIONS: --block-max, --max-space, --max-ratio
+
+  * freshclam:
+    - NEW CONFIG OPTION CompressLocalDatabase
+    - NEW CMDLINE SWITCH --no-warnings
+    - main.inc and daily.inc directories are no longer used by ClamAV; please
+      remove them manually from your database directory
+
+--
+The ClamAV team (http://www.clamav.net/team)
+
+
+0.92.1
+------
+
+This is a bugfix release, please refer to the ChangeLog for a complete
+list of changes.
+
+--
+The ClamAV team (http://www.clamav.net/team)
+
+
 0.92
 ----
 
