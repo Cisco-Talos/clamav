@@ -1,6 +1,6 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 99.2beta8 (1.46)
+<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
@@ -13,8 +13,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
-<META NAME="Generator" CONTENT="LaTeX2HTML v99.2beta8">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
@@ -26,30 +25,31 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 </HEAD>
 
 <BODY >
-<!--Navigation Panel-->
-<A NAME="tex2html506"
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html505"
   HREF="node26.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html502"
+<A NAME="tex2html501"
   HREF="node22.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html496"
+<A NAME="tex2html495"
   HREF="node24.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html504"
+<A NAME="tex2html503"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html507"
+<B> Next:</B> <A NAME="tex2html506"
   HREF="node26.html">Output format</A>
-<B> Up:</B> <A NAME="tex2html503"
+<B> Up:</B> <A NAME="tex2html502"
   HREF="node22.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html497"
+<B> Previous:</B> <A NAME="tex2html496"
   HREF="node24.html">Clamdscan</A>
- &nbsp <B>  <A NAME="tex2html505"
+ &nbsp; <B>  <A NAME="tex2html504"
   HREF="node1.html">Contents</A></B> 
 <BR>
-<BR>
+<BR></DIV>
 <!--End of Navigation Panel-->
 
 <H2><A NAME="SECTION00063000000000000000"></A><A NAME="clamuko"></A>
@@ -58,8 +58,8 @@ Clamuko
 </H2>
     Clamuko is a special thread in <code>clamd</code> that performs on-access
     scanning under Linux and FreeBSD and shares internal virus database
-    with the daemon. <B>You must follow some important rules when
-    using it:</B>
+    with the daemon. <SPAN  CLASS="textbf">You must follow some important rules when
+    using it:</SPAN>
     
 <UL>
 <LI>Always stop the daemon cleanly - using the SHUTDOWN command or
@@ -72,7 +72,7 @@ SIGTERM signal. In other case you can lose access
 	      uses for attachment unpacking. Access to all infected
 	      files will be automatically blocked and the scanner (including
 	      <code>clamd</code>!) will not be able to detect any viruses. In the
-	      result <B>all infected mails may be delivered.</B>
+	      result <SPAN  CLASS="textbf">all infected mails may be delivered.</SPAN>
     
 </LI>
 </UL>
@@ -85,14 +85,14 @@ SIGTERM signal. In other case you can lose access
 	ClamukoExcludePath /temporary/dir/of/your/mail/scanning/software
 </PRE>
     You can also use clamuko to protect files on Samba/Netatalk but a far
-    more better and safe idea is to use the <B>samba-vscan</B> module.
+    more better and safe idea is to use the <SPAN  CLASS="textbf">samba-vscan</SPAN> module.
     NFS is not supported because Dazuko doesn't intercept NFS access calls.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2007-12-12
+2008-03-03
 </ADDRESS>
 </BODY>
 </HTML>

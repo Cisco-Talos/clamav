@@ -1,6 +1,6 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<!--Converted with LaTeX2HTML 99.2beta8 (1.46)
+<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
 original version by:  Nikos Drakos, CBLU, University of Leeds
 * revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
 * with significant contributions from:
@@ -13,8 +13,7 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
 
-<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
-<META NAME="Generator" CONTENT="LaTeX2HTML v99.2beta8">
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
 <META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
@@ -26,37 +25,38 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 </HEAD>
 
 <BODY >
-<!--Navigation Panel-->
-<A NAME="tex2html482"
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html481"
   HREF="node24.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html478"
+<A NAME="tex2html477"
   HREF="node22.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html472"
+<A NAME="tex2html471"
   HREF="node22.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html480"
+<A NAME="tex2html479"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html483"
+<B> Next:</B> <A NAME="tex2html482"
   HREF="node24.html">Clamdscan</A>
-<B> Up:</B> <A NAME="tex2html479"
+<B> Up:</B> <A NAME="tex2html478"
   HREF="node22.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html473"
+<B> Previous:</B> <A NAME="tex2html472"
   HREF="node22.html">Usage</A>
- &nbsp <B>  <A NAME="tex2html481"
+ &nbsp; <B>  <A NAME="tex2html480"
   HREF="node1.html">Contents</A></B> 
 <BR>
-<BR>
+<BR></DIV>
 <!--End of Navigation Panel-->
 
 <H2><A NAME="SECTION00061000000000000000"></A><A NAME="clamd"></A>
 <BR>
 Clam daemon
 </H2>
-    <code>clamd</code> is a multi-threaded daemon that uses <I>libclamav</I>
+    <code>clamd</code> is a multi-threaded daemon that uses <SPAN  CLASS="textit">libclamav</SPAN>
     to scan files for viruses. It may work in one or both modes listening on:
     
 <UL>
@@ -68,98 +68,99 @@ Clam daemon
 </UL>
     The daemon is fully configurable via the <code>clamd.conf</code> file
     <A NAME="tex2html13"
-  HREF="footnode.html#foot210"><SUP>5</SUP></A>. <code>clamd</code> recognizes the following commands:
+  HREF="footnode.html#foot210"><SUP><SPAN CLASS="arabic">5</SPAN></SUP></A>. <code>clamd</code> recognizes the following commands:
     
 <UL>
-<LI><B>PING</B>
+<LI><SPAN  CLASS="textbf">PING</SPAN>
 <BR>
 Check the daemon's state (should reply with "PONG").
 </LI>
-<LI><B>VERSION</B>
+<LI><SPAN  CLASS="textbf">VERSION</SPAN>
 <BR>
 Print program and database versions.
 </LI>
-<LI><B>RELOAD</B>
+<LI><SPAN  CLASS="textbf">RELOAD</SPAN>
 <BR>
 Reload the databases.
 </LI>
-<LI><B>SHUTDOWN</B>
+<LI><SPAN  CLASS="textbf">SHUTDOWN</SPAN>
 <BR>
 Perform a clean exit.
 </LI>
-<LI><B>SCAN file/directory</B>
+<LI><SPAN  CLASS="textbf">SCAN file/directory</SPAN>
 <BR>
 Scan file or directory (recursively) with archive support
 	    enabled (a full path is required).
 </LI>
-<LI><B>RAWSCAN file/directory</B>
+<LI><SPAN  CLASS="textbf">RAWSCAN file/directory</SPAN>
 <BR>
 Scan file or directory (recursively) with archive and special file
 	    support disabled (a full path is required).
 </LI>
-<LI><B>CONTSCAN file/directory</B>
+<LI><SPAN  CLASS="textbf">CONTSCAN file/directory</SPAN>
 <BR>
 Scan file or directory (recursively) with archive support
 	    enabled and don't stop the scanning when a virus is found.
 </LI>
-<LI><B>MULTISCAN file/directory</B>
+<LI><SPAN  CLASS="textbf">MULTISCAN file/directory</SPAN>
 <BR>
 Scan file in a standard way or scan directory (recursively) using
 	    multiple threads (to make the scanning faster on SMP machines).
 </LI>
-<LI><B>STREAM</B>
+<LI><SPAN  CLASS="textbf">STREAM</SPAN>
 <BR>
 Scan stream: <code>clamd</code> will return a new port number you should
 	    connect to and send data to scan.
 </LI>
-<LI><B>SESSION, END</B>
+<LI><SPAN  CLASS="textbf">SESSION, END</SPAN>
 <BR>
 Start/end a <code>clamd</code> session - you can do multiple commands
 	    per TCP session (WARNING: due to the <code>clamd</code> implementation the
-	    <B>RELOAD</B> command will break the session).
+	    <SPAN  CLASS="textbf">RELOAD</SPAN> command will break the session).
     
 </LI>
 </UL>
     and reacts on the special signals:
     
 <UL>
-<LI><B>SIGTERM</B> - perform a clean exit
+<LI><SPAN  CLASS="textbf">SIGTERM</SPAN> - perform a clean exit
 </LI>
-<LI><B>SIGHUP</B> - reopen the log file
+<LI><SPAN  CLASS="textbf">SIGHUP</SPAN> - reopen the log file
 </LI>
-<LI><B>SIGUSR2</B> - reload the database
+<LI><SPAN  CLASS="textbf">SIGUSR2</SPAN> - reload the database
     
 </LI>
 </UL>
 
 <P>
-<HR>
+
+<DIV CLASS="navigation"><HR>
 <!--Navigation Panel-->
-<A NAME="tex2html482"
+<A NAME="tex2html481"
   HREF="node24.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html478"
+<A NAME="tex2html477"
   HREF="node22.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html472"
+<A NAME="tex2html471"
   HREF="node22.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html480"
+<A NAME="tex2html479"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html483"
+<B> Next:</B> <A NAME="tex2html482"
   HREF="node24.html">Clamdscan</A>
-<B> Up:</B> <A NAME="tex2html479"
+<B> Up:</B> <A NAME="tex2html478"
   HREF="node22.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html473"
+<B> Previous:</B> <A NAME="tex2html472"
   HREF="node22.html">Usage</A>
- &nbsp <B>  <A NAME="tex2html481"
-  HREF="node1.html">Contents</A></B> 
+ &nbsp; <B>  <A NAME="tex2html480"
+  HREF="node1.html">Contents</A></B> </DIV>
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2007-12-12
+2008-03-03
 </ADDRESS>
 </BODY>
 </HTML>
