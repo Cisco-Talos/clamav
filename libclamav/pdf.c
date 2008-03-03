@@ -477,18 +477,23 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx)
 			cli_dbgmsg("cli_pdf: extracted file %u to %s\n", files++, fullname);
 	
 			lseek(fout, 0, SEEK_SET);
-			md5digest = cli_md5digest(fout);
+			if((md5digest = cli_md5digest(fout))) {
+				unsigned int i;
+				char md5str[33];
 
-			if(tableFind(md5table, md5digest) >= 0) {
-				cli_dbgmsg("cli_pdf: not scanning duplicate embedded file '%s'\n", fullname);
+				for(i = 0; i < 16; i++)
+					sprintf(md5str + 2*i, "%02x", md5digest[i]);
+				md5str[32] = 0;
 				free(md5digest);
-				close(fout);
-				unlink(fullname);
-				continue;
-			} else
-				tableInsert(md5table, md5digest, 1);
 
-			free(md5digest);
+				if(tableFind(md5table, md5str) >= 0) {
+					cli_dbgmsg("cli_pdf: not scanning duplicate embedded file '%s'\n", fullname);
+					close(fout);
+					unlink(fullname);
+					continue;
+				} else
+					tableInsert(md5table, md5str, 1);
+			}
 
 			lseek(fout, 0, SEEK_SET);
 			rc = cli_magic_scandesc(fout, ctx);
