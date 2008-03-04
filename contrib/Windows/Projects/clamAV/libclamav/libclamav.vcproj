@@ -299,10 +299,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\jscript.c"
-				>
-			</File>
-			<File
 				RelativePath=".\line.c"
 				>
 			</File>
@@ -380,10 +376,6 @@
 			</File>
 			<File
 				RelativePath=".\phishcheck.c"
-				>
-			</File>
-			<File
-				RelativePath=".\pst.c"
 				>
 			</File>
 			<File
@@ -697,10 +689,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\jscript.h"
-				>
-			</File>
-			<File
 				RelativePath=".\libclamav.h"
 				>
 			</File>
@@ -782,10 +770,6 @@
 			</File>
 			<File
 				RelativePath=".\phishcheck.h"
-				>
-			</File>
-			<File
-				RelativePath=".\pst.h"
 				>
 			</File>
 			<File
