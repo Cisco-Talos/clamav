@@ -181,14 +181,15 @@ cli_tnef(const char *dir, int desc)
 				 * email that's about to be deleted
 				 */
 				if(cli_debug_flag) {
-					int fout;
+					int fout = -1;
 					char *filename = cli_gentemp(NULL);
 					char buffer[BUFSIZ];
 
+					if(filename)
 #ifdef	O_BINARY
-					fout = open(filename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
+						fout = open(filename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
 #else
-					fout = open(filename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC, 0600);
+						fout = open(filename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC, 0600);
 #endif
 
 					if(fout >= 0) {

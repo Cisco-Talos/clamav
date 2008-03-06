@@ -1,3 +1,7 @@
+Thu Mar  6 20:24:54 CET 2008 (tk)
+---------------------------------
+  * libclamav: always check return value of cli_gentemp()
+
 Mon Mar  3 19:46:41 CET 2008 (tk)
 ---------------------------------
   * V 0.93rc1

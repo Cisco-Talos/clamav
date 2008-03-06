@@ -514,7 +514,9 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short 
 
     } else {
 
-	dir = cli_gentemp(NULL);
+	if(!(dir = cli_gentemp(NULL)))
+	    return CL_EMEM;
+
 	if(mkdir(dir, 0700)) {
 	    cli_errmsg("cli_cvdload(): Can't create temporary directory %s\n", dir);
 	    free(dir);

@@ -275,7 +275,9 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    return CL_EIO;
 
     /* generate the temporary directory */
-    dir = cli_gentemp(NULL);
+    if(!(dir = cli_gentemp(NULL)))
+	return CL_EMEM;
+
     if(mkdir(dir, 0700)) {
 	cli_dbgmsg("RAR: Can't create temporary directory %s\n", dir);
 	free(dir);
@@ -374,7 +376,9 @@ static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
     cli_dbgmsg("in cli_scanarj()\n");
 
      /* generate the temporary directory */
-    dir = cli_gentemp(NULL);
+    if(!(dir = cli_gentemp(NULL)))
+	return CL_EMEM;
+
     if(mkdir(dir, 0700)) {
 	cli_dbgmsg("ARJ: Can't create temporary directory %s\n", dir);
 	free(dir);
@@ -686,7 +690,10 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
 	if(cli_checklimits("CAB", ctx, file->length, 0, 0)!=CL_CLEAN)
 	    continue;
 
-	tempname = cli_gentemp(NULL);
+	if(!(tempname = cli_gentemp(NULL))) {
+	    ret = CL_EMEM;
+	    break;
+	}
 	cli_dbgmsg("CAB: Extracting file %s to %s, size %u\n", file->name, tempname, file->length);
 	if((ret = cab_extract(file, tempname)))
 	    cli_dbgmsg("CAB: Failed to extract file: %s\n", cl_strerror(ret));
@@ -902,7 +909,9 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
 	return CL_CLEAN;
     }
 
-    tempname = cli_gentemp(NULL);
+    if(!(tempname = cli_gentemp(NULL)))
+	return CL_EMEM;
+
     if(mkdir(tempname, 0700)) {
         cli_errmsg("cli_scanhtml: Can't create temporary directory %s\n", tempname);
 	free(tempname);
@@ -1021,7 +1030,9 @@ static int cli_scanhtml_utf16(int desc, cli_ctx *ctx)
 
     cli_dbgmsg("in cli_scanhtml_utf16()\n");
 
-    tempname = cli_gentemp(NULL);
+    if(!(tempname = cli_gentemp(NULL)))
+	return CL_EMEM;
+
     if((fd = open(tempname, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
 	cli_errmsg("cli_scanhtml_utf16: Can't create file %s\n", tempname);
 	free(tempname);
@@ -1069,7 +1080,9 @@ static int cli_scanole2(int desc, cli_ctx *ctx)
         return CL_EMAXREC;
 
     /* generate the temporary directory */
-    dir = cli_gentemp(NULL);
+    if(!(dir = cli_gentemp(NULL)))
+	return CL_EMEM;
+
     if(mkdir(dir, 0700)) {
 	cli_dbgmsg("OLE2: Can't create temporary directory %s\n", dir);
 	free(dir);
@@ -1110,7 +1123,9 @@ static int cli_scantar(int desc, cli_ctx *ctx, unsigned int posix)
     cli_dbgmsg("in cli_scantar()\n");
 
     /* generate temporary directory */
-    dir = cli_gentemp(NULL);
+    if(!(dir = cli_gentemp(NULL)))
+	return CL_EMEM;
+
     if(mkdir(dir, 0700)) {
 	cli_errmsg("Tar: Can't create temporary directory %s\n", dir);
 	free(dir);
@@ -1135,7 +1150,8 @@ static int cli_scanbinhex(int desc, cli_ctx *ctx)
     cli_dbgmsg("in cli_scanbinhex()\n");
 
     /* generate temporary directory */
-    dir = cli_gentemp(NULL);
+    if(!(dir = cli_gentemp(NULL)))
+	return CL_EMEM;
 
     if(mkdir(dir, 0700)) {
 	cli_errmsg("Binhex: Can't create temporary directory %s\n", dir);
@@ -1164,7 +1180,9 @@ static int cli_scanmschm(int desc, cli_ctx *ctx)
     cli_dbgmsg("in cli_scanmschm()\n");
 
      /* generate the temporary directory */
-    dir = cli_gentemp(NULL);
+    if(!(dir = cli_gentemp(NULL)))
+	return CL_EMEM;
+
     if(mkdir(dir, 0700)) {
 	cli_dbgmsg("CHM: Can't create temporary directory %s\n", dir);
 	free(dir);
@@ -1220,7 +1238,9 @@ static int cli_scanscrenc(int desc, cli_ctx *ctx)
 
     cli_dbgmsg("in cli_scanscrenc()\n");
 
-    tempname = cli_gentemp(NULL);
+    if(!(tempname = cli_gentemp(NULL)))
+	return CL_EMEM;
+
     if(mkdir(tempname, 0700)) {
 	cli_dbgmsg("CHM: Can't create temporary directory %s\n", tempname);
 	free(tempname);
@@ -1306,7 +1326,11 @@ static int cli_scancryptff(int desc, cli_ctx *ctx)
 
     free(src);
 
-    tempfile = cli_gentemp(NULL);
+    if(!(tempfile = cli_gentemp(NULL))) {
+	free(dest);
+	return CL_EMEM;
+    }
+
     if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
 	cli_errmsg("CryptFF: Can't create file %s\n", tempfile);
 	free(dest);
@@ -1354,6 +1378,8 @@ static int cli_scanpdf(int desc, cli_ctx *ctx)
 	int ret;
 	char *dir = cli_gentemp(NULL);
 
+    if(!dir)
+	return CL_EMEM;
 
     if(mkdir(dir, 0700)) {
 	cli_dbgmsg("Can't create temporary directory for PDF file %s\n", dir);
@@ -1375,6 +1401,8 @@ static int cli_scantnef(int desc, cli_ctx *ctx)
 	int ret;
 	char *dir = cli_gentemp(NULL);
 
+    if(!dir)
+	return CL_EMEM;
 
     if(mkdir(dir, 0700)) {
 	cli_dbgmsg("Can't create temporary directory for tnef file %s\n", dir);
@@ -1398,6 +1426,9 @@ static int cli_scanuuencoded(int desc, cli_ctx *ctx)
 {
 	int ret;
 	char *dir = cli_gentemp(NULL);
+
+    if(!dir)
+	return CL_EMEM;
 
     if(mkdir(dir, 0700)) {
 	cli_dbgmsg("Can't create temporary directory for uuencoded file %s\n", dir);
@@ -1426,7 +1457,9 @@ static int cli_scanmail(int desc, cli_ctx *ctx)
     cli_dbgmsg("Starting cli_scanmail(), recursion = %u\n", ctx->recursion);
 
     /* generate the temporary directory */
-    dir = cli_gentemp(NULL);
+    if(!(dir = cli_gentemp(NULL)))
+	return CL_EMEM;
+
     if(mkdir(dir, 0700)) {
 	cli_dbgmsg("Mail: Can't create temporary directory %s\n", dir);
 	free(dir);

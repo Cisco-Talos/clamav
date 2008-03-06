@@ -533,7 +533,8 @@ int cli_scanrtf(int desc, cli_ctx *ctx)
 		return CL_EMEM;
 	}
 
-	tempname = cli_gentemp(NULL);
+	if(!(tempname = cli_gentemp(NULL)))
+	    return CL_EMEM;
 
 	if(mkdir(tempname, 0700)) {
 	    	cli_dbgmsg("ScanRTF -> Can't create temporary directory %s\n", tempname);
