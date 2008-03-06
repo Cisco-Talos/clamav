@@ -1377,6 +1377,10 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					}
 					snprintf(filename, 1024, "%s/rfc2397", dirname);
 					tmp_file = cli_gentemp(filename);
+					if(!tmp_file) {
+						free(file_tmp_o1);
+						goto abort;
+					}
 					cli_dbgmsg("RFC2397 data file: %s\n", tmp_file);
 					file_tmp_o1->fd = open(tmp_file, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
 					free(tmp_file);
