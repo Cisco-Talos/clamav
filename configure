@@ -2783,7 +2783,7 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
-VERSION="0.93rc1"
+VERSION="devel-`date +%Y%m%d`"
 
 cat >>confdefs.h <<_ACEOF
 #define VERSION "$VERSION"

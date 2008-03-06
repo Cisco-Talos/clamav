@@ -40,8 +40,8 @@ dnl the date in the version
 AC_DEFINE([PACKAGE], PACKAGE_NAME, [Name of package])
 
 dnl change this on a release
-dnl VERSION="devel-`date +%Y%m%d`"
-VERSION="0.93rc1"
+VERSION="devel-`date +%Y%m%d`"
+dnl VERSION="0.93rc1"
 AC_DEFINE_UNQUOTED([VERSION],"$VERSION",[Version number of package])
 
 LC_CURRENT=4
