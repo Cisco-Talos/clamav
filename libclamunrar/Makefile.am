@@ -32,5 +32,6 @@ libclamunrar_la_SOURCES = \
 	unrarhlp.h
 
 lib_LTLIBRARIES = libclamunrar.la
-EXTRA_DIST = libclamunrar.map
 endif
+
+EXTRA_DIST = libclamunrar.map

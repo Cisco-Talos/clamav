@@ -19,5 +19,6 @@ libclamunrar_iface_la_SOURCES = \
 	unrar_iface.h
 
 lib_LTLIBRARIES = libclamunrar_iface.la
-EXTRA_DIST = libclamunrar_iface.map
 endif
+
+EXTRA_DIST = libclamunrar_iface.map

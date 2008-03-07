@@ -1,3 +1,9 @@
+Fri Mar  7 15:10:47 CET 2008 (tk)
+---------------------------------
+  * Makefile.am,libclamav/lzma/Makefile.am: add licence texts to EXTRA_DIST
+  * libclamunrar/Makefile.am,libclamunrar_iface/Makefile.am: move EXTRA_DIST
+    outside conditional block
+
 Thu Mar  6 20:24:54 CET 2008 (tk)
 ---------------------------------
   * libclamav: always check return value of cli_gentemp()

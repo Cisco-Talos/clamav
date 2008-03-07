@@ -238,7 +238,7 @@ top_srcdir = @top_srcdir@
 @ENABLE_UNRAR_TRUE@	unrarhlp.h
 
 @ENABLE_UNRAR_TRUE@lib_LTLIBRARIES = libclamunrar.la
-@ENABLE_UNRAR_TRUE@EXTRA_DIST = libclamunrar.map
+EXTRA_DIST = libclamunrar.map
 all: all-am
 
 .SUFFIXES:

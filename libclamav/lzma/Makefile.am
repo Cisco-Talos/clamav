@@ -24,3 +24,4 @@ liblzma_la_SOURCES = LzmaStateDecode.c \
 		     LzmaStateDecode.h \
 		     LzmaTypes.h
 
+EXTRA_DIST = lzma.txt
