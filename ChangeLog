@@ -1,3 +1,7 @@
+Sun Mar  9 12:28:22 EET 2008 (edwin)
+------------------------------------
+  * libclamav/regex/regex2.h: avoid passing out-of-range values to isalnum (thanks Nigel)
+
 Fri Mar  7 15:10:47 CET 2008 (tk)
 ---------------------------------
   * Makefile.am,libclamav/lzma/Makefile.am: add licence texts to EXTRA_DIST
