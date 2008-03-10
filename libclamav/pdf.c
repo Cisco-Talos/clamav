@@ -474,7 +474,8 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx)
 		}
 
 		if (rc == CL_CLEAN) {
-			cli_dbgmsg("cli_pdf: extracted file %u to %s\n", files++, fullname);
+			cli_dbgmsg("cli_pdf: extracted file %u to %s\n", files, fullname);
+			files++;
 	
 			lseek(fout, 0, SEEK_SET);
 			if((md5digest = cli_md5digest(fout))) {
