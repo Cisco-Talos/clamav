@@ -1,3 +1,7 @@
+Mon Mar 10 19:40:25 CET 2008 (acab)
+-----------------------------------
+  * libclamav/nsis: unpack broken files too - bb#873
+
 Mon Mar 10 13:54:42 CET 2008 (tk)
 ---------------------------------
   * libclamav/pdf.c: --leave-temps didn't work without --debug (bb#874)
