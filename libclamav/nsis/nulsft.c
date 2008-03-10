@@ -136,7 +136,7 @@ static void nsis_shutdown(struct nsis_st *n) {
 
 static int nsis_decomp(struct nsis_st *n) {
   /*  int ret = CL_EFORMAT; */
-  int ret = CL_EFORMAT; /* unpack broken files too - bb#873 */
+  int ret = CL_SUCCESS; /* unpack broken files too - bb#873 */
   switch(n->comp) {
   case COMP_BZIP2:
     n->bz.avail_in = n->nsis.avail_in;
