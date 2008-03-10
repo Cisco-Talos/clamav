@@ -154,4 +154,4 @@ struct re_guts {
 
 /* misc utilities */
 #define	OUT	(CHAR_MAX+1)	/* a non-character value */
-#define	ISWORD(c)	(isalnum(c) || (c) == '_')
+#define	ISWORD(c)	(isalnum((c)&0xff) || (c) == '_')
