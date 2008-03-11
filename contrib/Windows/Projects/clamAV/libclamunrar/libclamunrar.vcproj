@@ -72,7 +72,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				UseUnicodeResponseFiles="false"
-				Version="0.92.1"
+				Version="0.93"
 				LinkIncremental="2"
 				ModuleDefinitionFile="$(InputDir)/libclamunrar.def"
 				GenerateDebugInformation="true"
@@ -159,7 +159,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				UseUnicodeResponseFiles="false"
-				Version="0.92.1"
+				Version="0.93"
 				LinkIncremental="1"
 				ModuleDefinitionFile="$(InputDir)/libclamunrar.def"
 				GenerateDebugInformation="true"

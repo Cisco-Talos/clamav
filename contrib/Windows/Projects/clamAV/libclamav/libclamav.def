@@ -1,5 +1,5 @@
 LIBRARY libClamAV
-VERSION 0.92.1
+VERSION 0.93
 EXPORTS cl_scandesc @1
 EXPORTS cl_scanfile @2
 EXPORTS cl_load @3
