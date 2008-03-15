@@ -494,3 +494,15 @@ initlog(const char *source)
 	return 1;
 }
 #endif
+
+int
+snprintf(char *str, size_t size, const char *format, ...)
+{
+	int ret;
+	
+	va_list args;
+	va_start(args, format);
+	ret = _vsnprintf_s(str, size, _TRUNCATE, format, args);
+	va_end(args);
+	return ret;
+}
