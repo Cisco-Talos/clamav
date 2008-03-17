@@ -441,7 +441,8 @@ messageAddArgument(message *m, const char *arg)
 			cli_warnmsg("Possible data corruption fixed\n");
 			p[8] = '=';
 		} else {
-			cli_warnmsg("messageAddArgument, '%s' contains no '='\n", p);
+			if(p && *p)
+				cli_warnmsg("messageAddArgument, '%s' contains no '='\n", p);
 			free(m->mimeArguments[offset]);
 			m->mimeArguments[offset] = NULL;
 			return;
@@ -2576,7 +2577,7 @@ rfc2231(const char *in)
 			break;
 		} while(*in);
 
-		cli_warnmsg("RFC2231 parameter continuations are not yet handled, returning \"%s\"\n",
+		cli_dbgmsg("RFC2231 parameter continuations are not yet handled, returning \"%s\"\n",
 			ret);
 		return ret;
 	}
