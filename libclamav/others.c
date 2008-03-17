@@ -901,33 +901,49 @@ int cli_bitset_test(bitset_t *bs, unsigned long bit_offset)
 	return (bs->bitset[char_offset] & ((unsigned char)1 << bit_offset));
 }
 
+/* returns converted timestamp, in case of error the returned string contains at least one character */
 const char* cli_ctime(const time_t *timep, char *buf, const size_t bufsize)
 {
+	const char *ret;
 	if(bufsize < 26) {
 		/* standard says we must have at least 26 bytes buffer */
 		cli_warnmsg("buffer too small for ctime\n");
-		return NULL;
+		return " ";
 	}
+	if((uint32_t)(*timep) > 0x7fffffff) {
+		/* some systems can consider these timestamps invalid */
+		strncpy(buf, "invalid timestamp", bufsize-1);
+		buf[bufsize-1] = '\0';
+		return buf;
+	}
+
 #ifdef HAVE_CTIME_R	
 # ifdef HAVE_CTIME_R_2
-	{
-	    char* y = ctime_r(timep, buf);
-	    return y;
-	}
+	ret = ctime_r(timep, buf);
 # else
-	return ctime_r(timep, buf, bufsize);
+	ret = ctime_r(timep, buf, bufsize);
 # endif
 #else /* no ctime_r */
 
 # ifdef CL_THREAD_SAFE
 	pthread_mutex_lock(&cli_ctime_mutex);
 # endif
-	strncpy(buf, ctime(timep), bufsize-1);
-	buf[bufsize-1] = '\0';
+	ret = ctime(timep);
+	if(ret) {
+		strncpy(buf, ret, bufsize-1);
+		buf[bufsize-1] = '\0';
+		ret = buf;
+	}
 # ifdef CL_THREAD_SAFE
 	pthread_mutex_unlock(&cli_ctime_mutex);
 # endif
-	return buf;
 #endif
+	/* common */
+	if(!ret) {
+		buf[0] = ' ';
+		buf[1] = '\0';
+		return buf;
+	}
+	return ret;
 }
 
