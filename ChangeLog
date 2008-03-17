@@ -1,3 +1,7 @@
+Mon Mar 17 17:25:44 EET 2008 (edwin)
+------------------------------------
+  * libclamav/message.c: degrade some warning messages to debug (bb #880).
+
 Mon Mar 17 16:43:23 EET 2008 (edwin)
 -----------------------------------
    * libclamav/others.c: check ctime return value (bb #869).
