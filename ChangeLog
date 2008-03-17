@@ -1,3 +1,7 @@
+Mon Mar 17 16:43:23 EET 2008 (edwin)
+-----------------------------------
+  * libclamav/others.c: check ctime return value (bb #869).
+
 Thu Mar 13 10:50:36 CET 2008 (tk)
 ---------------------------------
   * unit_tests: add initial support for unit tests; based on a patch by
