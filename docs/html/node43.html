@@ -65,7 +65,7 @@ Data scan functions</A>
 	long int *scanned, const struct cl_engine *engine, const
 	struct cl_limits *limits, unsigned int options);
 </PRE>
-    Both functions will save a virus name under the pointer <code>virname</code>,
+    Both functions will store a virus name under the pointer <code>virname</code>,
     the virus name is part of the engine structure and must not be released
     directly. If the third argument (<code>scanned</code>) is not NULL, the
     functions will increase its value with the size of scanned data (in
@@ -73,16 +73,17 @@ Data scan functions</A>
     limits in order to protect against Denial of Service attacks.
     <PRE>
 struct cl_limits {
-    unsigned int maxreclevel;     /* maximum recursion level for archives */
-    unsigned int maxfiles;        /* maximum number of files to be scanned
-                                   * within a single archive
-                                   */
-    unsigned int maxmailrec;	  /* maximum recursion level for mail files */
-    unsigned int maxratio;	  /* maximum compression ratio */
-    unsigned long int maxfilesize;/* compressed files larger than this limit
-                                   * will not be scanned
-                                   */
-    unsigned short archivememlim;  /* limit memory usage for some unpackers */
+    unsigned long int maxscansize;  /* during the scanning of archives this
+                                     * size will never be exceeded
+                                     */
+    unsigned long int maxfilesize;  /* compressed files will only be
+                                     * decompressed and scanned up to this size
+                                     */
+    unsigned int maxreclevel;       /* maximum recursion level for archives */
+    unsigned int maxfiles;          /* maximum number of files to be scanned
+                                     * within a single archive
+                                     */
+    unsigned short archivememlim;   /* limit memory usage for some unpackers */
 };
 </PRE>
     The last argument (<code>options</code>) configures the scan engine and supports
@@ -107,11 +108,6 @@ This flag enables transparent scanning of various archive formats.
 <BR>
 With this flag the library will mark encrypted archives as viruses
 	      (Encrypted.Zip, Encrypted.RAR).
-</LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_BLOCKMAX</SPAN>
-<BR>
-Mark archives as viruses if <code>maxfiles</code>, <code>maxfilesize</code>,
-	      or <code>maxreclevel</code> limit is reached.
 </LI>
 <LI><SPAN  CLASS="textbf">CL_SCAN_MAIL</SPAN>
 <BR>
@@ -157,11 +153,6 @@ This flag enables HTML normalisation (including ScrEnc
 <BR>
 Enable algorithmic detection of viruses.
 </LI>
-<LI><SPAN  CLASS="textbf">CL_SCAN_PHISHING_DOMAINLIST</SPAN>
-<BR>
-Phishing module: restrict URL scanning to domains from .pdf
-	      (RECOMMENDED).
-</LI>
 <LI><SPAN  CLASS="textbf">CL_SCAN_PHISHING_BLOCKSSL</SPAN>
 <BR>
 Phishing module: always block SSL mismatches in URLs.
@@ -180,14 +171,10 @@ Phishing module: always block cloaked URLs.
 	    const char *virname;
 
 	memset(&amp;limits, 0, sizeof(struct cl_limits));
-	limits.maxfiles = 1000; /* max files */
-	limits.maxfilesize = 10 * 1048576; /* maximum size of archived or
-                                    * compressed file (files exceeding
-                                    * this limit will be ignored)
-                                    */
-	limits.maxreclevel = 5; /* maximum recursion level for archives */
-	limits.maxmailrec = 64; /* maximum recursion level for mail files */
-	limits.maxratio = 200; /* maximum compression ratio */
+	limits.maxfiles = 10000;
+	limits.maxscansize = 100 * 1048576; /* 100 MB */
+	limits.maxfilesize = 10 * 1048576; /* 10 MB */
+	limits.maxreclevel = 16;
 
 	if((ret = cl_scanfile("/tmp/test.exe", &amp;virname, NULL, engine,
 	&amp;limits, CL_STDOPT)) == CL_VIRUS) {
@@ -227,7 +214,7 @@ Phishing module: always block cloaked URLs.
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2008-03-03
+2008-03-18
 </ADDRESS>
 </BODY>
 </HTML>
