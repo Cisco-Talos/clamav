@@ -1,3 +1,7 @@
+Tue Mar 18 13:35:00 EET 2008 (edwin)
+------------------------------------
+  * libclamav/entconv.c: fix memory leak (patch from TK)
+
 Tue Mar 18 11:25:00 CET 2008 (tk)
 ---------------------------------
   * libclamav/mspack.c: fix handling of MSZIP compressed folders (bb#882)
