@@ -788,6 +788,7 @@ int encoding_normalize_toascii(const m_area_t* in_m_area, const char* initial_en
 		free(encoding);
 		return -1;
 	}
+	free(encoding);
 	in_iconv_u16(in_m_area, &iconv_struct, out_m_area);
 	for(i = 0, j = 0; i < out_m_area->length ; i += 2) {
 		const unsigned char c = (out_m_area->buffer[i] << 4) + out_m_area->buffer[i+1];
