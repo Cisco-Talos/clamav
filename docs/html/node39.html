@@ -70,7 +70,7 @@ Database loading</A>
     is used for passing in the engine structure which should be previously
     initialized with NULL. A number of loaded signatures will be <SPAN  CLASS="textbf">added</SPAN>
     to <code>signo</code> <A NAME="tex2html15"
-  HREF="footnode.html#foot290"><SUP><SPAN CLASS="arabic">7</SPAN></SUP></A>. The last argument can pass the following flags:
+  HREF="footnode.html#foot291"><SUP><SPAN CLASS="arabic">7</SPAN></SUP></A>. The last argument can pass the following flags:
     
 <UL>
 <LI><SPAN  CLASS="textbf">CL_DB_STDOPT</SPAN>
@@ -84,10 +84,19 @@ Load phishing signatures.
 <LI><SPAN  CLASS="textbf">CL_DB_PHISHING_URLS</SPAN>
 <BR>
 Initialize the phishing detection module and load .wdb and .pdb files.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_DB_PUA</SPAN>
+<BR>
+Load signatures for Potentially Unwanted Applications.
+</LI>
+<LI><SPAN  CLASS="textbf">CL_DB_CVDNOTMP</SPAN>
+<BR>
+Load CVD files directly without unpacking them into a temporary
+	directory.
     
 </LI>
 </UL>
-    <code>cl_load</code> returns 0 (<code>CL_SUCCESS</code>) on success and a non-negative
+    <code>cl_load</code> returns 0 (<code>CL_SUCCESS</code>) on success and a negative
     value on failure.
     <PRE>
 	    ...
@@ -102,7 +111,7 @@ Initialize the phishing detection module and load .wdb and .pdb files.
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2008-03-03
+2008-03-18
 </ADDRESS>
 </BODY>
 </HTML>

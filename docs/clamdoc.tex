@@ -127,7 +127,7 @@
 	\item{POSIX compliant, portable}
 	\item{Fast scanning}
 	\item{Supports on-access scanning (Linux and FreeBSD only)}
-	\item{Detects over 158.000 viruses, worms and trojans, including
+	\item{Detects over 230.000 viruses, worms and trojans, including
 	      Microsoft Office macro viruses, mobile malware, and other threats}
 	\item{Scans within archives and compressed files (also protects
 	      against archive bombs), built-in support includes:
@@ -144,12 +144,15 @@
 		\item MS SZDD compression format
 		\item BinHex
 		\item SIS (SymbianOS packages)
+		\item AutoIt
 	    \end{itemize}}
 	\item{Supports Portable Executable (32/64-bit) files compressed or obfuscated with:}
 	    \begin{itemize}
+		\item AsPack
 		\item UPX
 		\item FSG
 		\item Petite
+		\item PeSpin
 		\item NsPack
 		\item wwpack32
 		\item MEW
@@ -200,7 +203,7 @@
     \section{Base package}
 
     \subsection{Supported platforms}
-    Most popular UNIX operating systems are supported. Clam AntiVirus 0.90 was
+    Most popular UNIX operating systems are supported. Clam AntiVirus 0.9x was
     tested on:
     \begin{itemize}
 	\item{GNU/Linux}
@@ -223,7 +226,13 @@
     The following elements are required to compile ClamAV:
     \begin{itemize}
 	\item zlib and zlib-devel packages
-	\item gcc compiler suite (tested with 2.9x, 3.x and 4.x series)
+	\item gcc compiler suite (tested with 2.9x, 3.x and 4.x series)\\
+	      \textbf{If you are compiling with higher optimization levels
+	      than the default one (\hbox{-O2} for gcc), be aware that there
+	      have been reports of misoptimizations. The build system of ClamAV
+	      only checks for bugs affecting the default settings, it is your
+	      responsibility to check that your compiler version doesn't
+	      have any bugs.}
     \end{itemize}
     The following packages are optional but \textbf{highly recommended}:
     \begin{itemize}
@@ -610,14 +619,15 @@ N * * * *	/usr/local/bin/freshclam --quiet
     and 32-bit ELF files. Additionally, it can handle PE files compressed or
     obfuscated with the following tools:
     \begin{itemize}
+	\item Aspack (2.12)
 	\item UPX (all versions)
 	\item FSG (1.3, 1.31, 1.33, 2.0)
 	\item Petite (2.x)
+	\item PeSpin (1.1)
 	\item NsPack
 	\item wwpack32 (1.20)
 	\item MEW
 	\item Upack
-	\item SUE
 	\item Y0da Cryptor (1.3)
     \end{itemize}
 
@@ -640,6 +650,7 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	\item MS SZDD compression format
 	\item BinHex
 	\item SIS (SymbianOS packages)
+	\item AutoIt
     \end{itemize}
 
     \subsubsection{Documents}
@@ -694,8 +705,13 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	Load phishing signatures.
 	\item \textbf{CL\_DB\_PHISHING\_URLS}\\
 	Initialize the phishing detection module and load .wdb and .pdb files.
+	\item \textbf{CL\_DB\_PUA}\\
+	Load signatures for Potentially Unwanted Applications.
+	\item \textbf{CL\_DB\_CVDNOTMP}\\
+	Load CVD files directly without unpacking them into a temporary
+	directory.
     \end{itemize}
-    \verb+cl_load+ returns 0 (\verb+CL_SUCCESS+) on success and a non-negative
+    \verb+cl_load+ returns 0 (\verb+CL_SUCCESS+) on success and a negative
     value on failure.
     \begin{verbatim}
 	    ...
@@ -751,7 +767,7 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	cl_statinidir(dbdir, &dbstat);
     \end{verbatim}
     To check for a change you just need to call \verb+cl_statchkdir+ and check
-    its return value:
+    its return value (0 - no change, 1 - some change occured):
     \begin{verbatim}
 	if(cl_statchkdir(&dbstat) == 1) {
 	    reload_database...;
@@ -772,7 +788,7 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	long int *scanned, const struct cl_engine *engine, const
 	struct cl_limits *limits, unsigned int options);
     \end{verbatim}
-    Both functions will save a virus name under the pointer \verb+virname+,
+    Both functions will store a virus name under the pointer \verb+virname+,
     the virus name is part of the engine structure and must not be released
     directly. If the third argument (\verb+scanned+) is not NULL, the
     functions will increase its value with the size of scanned data (in
@@ -780,16 +796,17 @@ N * * * *	/usr/local/bin/freshclam --quiet
     limits in order to protect against Denial of Service attacks.
     \begin{verbatim}
 struct cl_limits {
-    unsigned int maxreclevel;     /* maximum recursion level for archives */
-    unsigned int maxfiles;        /* maximum number of files to be scanned
-                                   * within a single archive
-                                   */
-    unsigned int maxmailrec;	  /* maximum recursion level for mail files */
-    unsigned int maxratio;	  /* maximum compression ratio */
-    unsigned long int maxfilesize;/* compressed files larger than this limit
-                                   * will not be scanned
-                                   */
-    unsigned short archivememlim;  /* limit memory usage for some unpackers */
+    unsigned long int maxscansize;  /* during the scanning of archives this
+                                     * size will never be exceeded
+                                     */
+    unsigned long int maxfilesize;  /* compressed files will only be
+                                     * decompressed and scanned up to this size
+                                     */
+    unsigned int maxreclevel;       /* maximum recursion level for archives */
+    unsigned int maxfiles;          /* maximum number of files to be scanned
+                                     * within a single archive
+                                     */
+    unsigned short archivememlim;   /* limit memory usage for some unpackers */
 };
     \end{verbatim}
     The last argument (\verb+options+) configures the scan engine and supports
@@ -806,9 +823,6 @@ struct cl_limits {
 	\item \textbf{CL\_SCAN\_BLOCKENCRYPTED}\\
 	      With this flag the library will mark encrypted archives as viruses
 	      (Encrypted.Zip, Encrypted.RAR).
-	\item \textbf{CL\_SCAN\_BLOCKMAX}\\
-	      Mark archives as viruses if \verb+maxfiles+, \verb+maxfilesize+,
-	      or \verb+maxreclevel+ limit is reached.
 	\item \textbf{CL\_SCAN\_MAIL}\\
 	      Enable support for mail files.
 	\item \textbf{CL\_SCAN\_MAILURL}\\
@@ -835,9 +849,6 @@ struct cl_limits {
 	      decryption).
 	\item \textbf{CL\_SCAN\_ALGORITHMIC}\\
 	      Enable algorithmic detection of viruses.
-	\item \textbf{CL\_SCAN\_PHISHING\_DOMAINLIST}\\
-	      Phishing module: restrict URL scanning to domains from .pdf
-	      (RECOMMENDED).
 	\item \textbf{CL\_SCAN\_PHISHING\_BLOCKSSL}\\
 	      Phishing module: always block SSL mismatches in URLs.
 	\item \textbf{CL\_SCAN\_PHISHING\_BLOCKCLOAK}\\
@@ -851,14 +862,10 @@ struct cl_limits {
 	    const char *virname;
 
 	memset(&limits, 0, sizeof(struct cl_limits));
-	limits.maxfiles = 1000; /* max files */
-	limits.maxfilesize = 10 * 1048576; /* maximum size of archived or
-                                    * compressed file (files exceeding
-                                    * this limit will be ignored)
-                                    */
-	limits.maxreclevel = 5; /* maximum recursion level for archives */
-	limits.maxmailrec = 64; /* maximum recursion level for mail files */
-	limits.maxratio = 200; /* maximum compression ratio */
+	limits.maxfiles = 10000;
+	limits.maxscansize = 100 * 1048576; /* 100 MB */
+	limits.maxfilesize = 10 * 1048576; /* 10 MB */
+	limits.maxreclevel = 16;
 
 	if((ret = cl_scanfile("/tmp/test.exe", &virname, NULL, engine,
 	&limits, CL_STDOPT)) == CL_VIRUS) {
@@ -871,7 +878,7 @@ struct cl_limits {
     \end{verbatim}
 
     \subsubsection{Memory}
-    Because the engine structure consumes a few megabytes of system memory, you
+    Because the engine structure occupies a few megabytes of system memory, you
     should release it with \verb+cl_free+ if you no longer need to scan files.
 
     \subsubsection{clamav-config}
@@ -902,15 +909,16 @@ level required:MD5 checksum:digital signature:builder name:build time (sec)
     \verb+sigtool --info+ displays detailed information on CVD files:
     \begin{verbatim}
 zolw@localhost:/usr/local/share/clamav$ sigtool -i daily.cvd 
-Build time: 11 Feb 2007 19-28 +0000
-Version: 2553
-# of signatures: 6063
-Functionality level: 9
+File: daily.cvd
+Build time: 10 Mar 2008 10:45 +0000
+Version: 6191
+Signatures: 59084
+Functionality level: 26
 Builder: ccordes
-MD5: 7f337b409249e11dea3effb04dd352f2
-Digital signature: 6Ybd2eeDHBAs8raaEwmayqzoa5ysGDNnQ5Cc89mS2VCm1jRXZP
-ke/itmkTyYQTc/rgJc2uQPr+NvzvUxRpsniwoyZ/gIkPniCLnqVCYOOytwtmirivbrV8j
-0kzxb9nHd+5UQqj/Z3rLbS7T5HCbRX3uE0JX1tAo642Gq9ACH9Fc
+MD5: 6e6e29dae36b4b7315932c921e568330
+Digital signature: zz9irc9irupR3z7yX6J+OR6XdFPUat4HIM9ERn3kAcOWpcMFxq
+Fs4toG5WJsHda0Jj92IUusZ7wAgYjpai1Nr+jFfXHsJxv0dBkS5/XWMntj0T1ctNgqmiF
++RLU6V0VeTl4Oej3Aya0cVpd9K4XXevEO2eTTvzWNCAq0ZzWNdjc
 Verification OK.
     \end{verbatim}
 

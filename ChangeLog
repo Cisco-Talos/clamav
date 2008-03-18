@@ -1,3 +1,8 @@
+Tue Mar 18 15:47:47 CET 2008 (tk)
+---------------------------------
+  * docs/clamdoc.*: various documentation updates
+  * examples/ex1.c: update to new limits
+
 Tue Mar 18 13:35:00 EET 2008 (edwin)
 ------------------------------------
   * libclamav/entconv.c: fix memory leak (patch from TK)

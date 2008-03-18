@@ -1,6 +1,9 @@
 /*
  *  Compilation: gcc -Wall ex1.c -o ex1 -lclamav
  *
+ *  Copyright (C) 2007 - 2008 Sourcefire, Inc.
+ *  Author: Tomasz Kojm <tkojm@clamav.net>
+ *
  *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -75,14 +78,15 @@ int main(int argc, char **argv)
 
     /* set up archive limits */
     memset(&limits, 0, sizeof(struct cl_limits));
-    limits.maxfiles = 1000; /* max files */
-    limits.maxfilesize = 10 * 1048576; /* maximum size of archived/compressed
-					* file (files exceeding this limit
-					* will be ignored)
+    limits.maxscansize = 100 * 1048576; /* during the scanning of archives this
+					 * size (100 MB) will never be exceeded
+					 */
+    limits.maxfilesize = 10 * 1048576; /* compressed files will only be
+					* decompressed and scanned up to this
+					* size (10 MB)
 					*/
-    limits.maxreclevel = 5; /* maximum recursion level for archives */
-    limits.maxmailrec = 64; /* maximum recursion level for mail files */
-    limits.maxratio = 200; /* maximum compression ratio */
+    limits.maxfiles = 10000; /* max files */
+    limits.maxreclevel = 16; /* maximum recursion level for archives */
 
     /* scan file descriptor */
     if((ret = cl_scandesc(fd, &virname, &size, engine, &limits, CL_SCAN_STDOPT)) == CL_VIRUS) {
