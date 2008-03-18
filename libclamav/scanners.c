@@ -918,6 +918,8 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
         return CL_ETMPDIR;
     }
 
+    cli_dbgmsg("cli_scanhtml: using tempdir %s\n", tempname);
+
     html_normalise_fd(desc, tempname, NULL, ctx->dconf);
     snprintf(fullname, 1024, "%s/nocomment.html", tempname);
     fd = open(fullname, O_RDONLY|O_BINARY);
@@ -1038,6 +1040,8 @@ static int cli_scanhtml_utf16(int desc, cli_ctx *ctx)
 	free(tempname);
 	return CL_EIO;
     }
+
+    cli_dbgmsg("cli_scanhtml_utf16: using tempfile %s\n", tempname);
 
     while((bytes = read(desc, buff, sizeof(buff))) > 0) {
 	decoded = cli_utf16toascii(buff, bytes);

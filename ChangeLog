@@ -1,3 +1,7 @@
+Tue Mar 18 23:55:49 EET 2008 (edwin)
+------------------------------------
+  * libclamav/scanners.c: debug message for html tempfiles
+
 Tue Mar 18 15:47:47 CET 2008 (tk)
 ---------------------------------
   * docs/clamdoc.*: various documentation updates
