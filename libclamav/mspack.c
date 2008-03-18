@@ -104,6 +104,7 @@ static const unsigned short mszip_bit_mask_tab[17] = {
       if (mszip_read_input(zip)) return zip->error;                      \
       i_ptr = zip->i_ptr;                                               \
       i_end = zip->i_end;                                               \
+      if(i_ptr == i_end) break;						\
     }                                                                   \
     bit_buffer |= *i_ptr++ << bits_left; bits_left  += 8;               \
   }                                                                     \
@@ -125,18 +126,6 @@ static const unsigned short mszip_bit_mask_tab[17] = {
 static int mszip_read_input(struct mszip_stream *zip) {
   int read = zip->read ? zip->read(zip->file, zip->inbuf, (int)zip->inbuf_size) : cli_readn(zip->fd, zip->inbuf, (int)zip->inbuf_size);
   if (read < 0) return zip->error = CL_EIO;
-
-  if (read == 0) {
-    if (zip->input_end) {
-      cli_dbgmsg("mszip_read_input: out of input bytes\n");
-      return zip->error = CL_EIO;
-    }
-    else {
-      read = 1;
-      zip->inbuf[0] = 0;
-      zip->input_end = 1;
-    }
-  }
 
   zip->i_ptr = &zip->inbuf[0];
   zip->i_end = &zip->inbuf[read];
@@ -391,9 +380,11 @@ static int mszip_inflate(struct mszip_stream *zip) {
 	  if (mszip_read_input(zip)) return zip->error;
 	  i_ptr = zip->i_ptr;
 	  i_end = zip->i_end;
+	  if(i_ptr == i_end) break;
 	}
 	lens_buf[i++] = *i_ptr++;
       }
+      if (i < 4) return INF_ERR_BITBUF;
 
       /* get the length and its complement */
       length = lens_buf[0] | (lens_buf[1] << 8);
@@ -406,6 +397,7 @@ static int mszip_inflate(struct mszip_stream *zip) {
 	  if (mszip_read_input(zip)) return zip->error;
 	  i_ptr = zip->i_ptr;
 	  i_end = zip->i_end;
+	  if(i_ptr == i_end) break;
 	}
 
 	this_run = length;
