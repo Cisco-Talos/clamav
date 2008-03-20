@@ -1,3 +1,7 @@
+Thu Mar 20 21:27:22 CET 2008 (tk)
+---------------------------------
+  * doc/signatures.[pdf,tex]: update documentation
+
 Thu Mar 20 21:06:30 CET 2008 (acab)
 -----------------------------------
  * libclamav/blob.[ch]: Fix for "bad file descriptor" under win32, properly
