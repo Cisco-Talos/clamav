@@ -494,8 +494,7 @@ fileblobDestroy(fileblob *fb)
 void
 fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 {
-	int fd;
-	char fullname[NAME_MAX + 1];
+	char *fullname;
 
 	if(fb->b.name)
 		return;
@@ -512,78 +511,17 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 	filename = blobGetFilename(&fb->b);
 
 	assert(filename != NULL);
+	
+	if (cli_gentempfd(dir, &fullname, &fb->fd)!=CL_SUCCESS) return;
 
-#ifdef	C_QNX6
-	/*
-	 * QNX6 support from mikep@kaluga.org to fix bug where mkstemp
-	 * can return ETOOLONG even when the file name isn't too long
-	 */
-	snprintf(fullname, sizeof(fullname), "%s/clamavtmpXXXXXXXXXXXXX", dir);
-#elif	defined(C_WINDOWS)
-	sprintf_s(fullname, sizeof(fullname) - 1, "%s\\%.*sXXXXXX", dir,
-		(int)(sizeof(fullname) - 9 - strlen(dir)), filename);
-#else
-	sprintf(fullname, "%s/%.*sXXXXXX", dir,
-		(int)(sizeof(fullname) - 9 - strlen(dir)), filename);
-#endif
+	cli_dbgmsg("fileblobSetFilename: file %s saved to %s\n", filename, fullname);
 
-#if	defined(C_LINUX) || defined(C_BSD) || defined(HAVE_MKSTEMP) || defined(C_SOLARIS) || defined(C_CYGWIN) || defined(C_QNX6)
-	cli_dbgmsg("fileblobSetFilename: mkstemp(%s)\n", fullname);
-	/*
-	 * On older Cygwin, mkstemp opened in O_TEXT mode, rather than
-	 *	O_BINARY. I understand this is now fixed, but I don't know in
-	 *	what version
-	 * See http://cygwin.com/ml/cygwin-patches/2006-q2/msg00014.html
-	 */
-	fd = mkstemp(fullname);
-	if((fd < 0) && (errno == EINVAL)) {
-		/*
-		 * This happens with some Linux flavours when (mis)handling
-		 * filenames with foreign characters
-		 */
-		snprintf(fullname, sizeof(fullname), "%s/clamavtmpXXXXXXXXXXXXX", dir);
-		cli_dbgmsg("fileblobSetFilename: retry as mkstemp(%s)\n", fullname);
-		fd = mkstemp(fullname);
-	}
-#elif	defined(C_WINDOWS)
-	cli_dbgmsg("fileblobSetFilename: _mktemp_s(%s)\n", fullname);
-	if(_mktemp_s(fullname, strlen(fullname) + 1) != 0) {
-		char *name;
-
-		/* _mktemp_s only allows 26 files */
-		cli_dbgmsg("fileblobSetFilename: _mktemp_s(%s) failed: %s\n", fullname, strerror(errno));
-		name = cli_gentemp(dir);
-		if(name == NULL)
-			return;
-		fd = open(name, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
-		if(fd >= 0)
-			strncpy(fullname, name, sizeof(fullname) - 1);
-		free(name);
-	} else
-		fd = open(fullname, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
-#else
-	cli_dbgmsg("fileblobSetFilename: mktemp(%s)\n", fullname);
-	(void)mktemp(fullname);
-	fd = open(fullname, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
-#endif
-
-	if(fd < 0) {
-		cli_errmsg("Can't create temporary file %s: %s\n", fullname, strerror(errno));
-		cli_dbgmsg("%lu %lu\n", (unsigned long)sizeof(fullname),
-			(unsigned long)strlen(fullname));
-		return;
-	}
-
-	cli_dbgmsg("Creating %s\n", fullname);
-
-	fb->fp = fdopen(fd, "wb");
+	fb->fp = fdopen(fb->fd, "wb");
 
 	if(fb->fp == NULL) {
-		cli_errmsg("Can't create file %s: %s\n", fullname, strerror(errno));
-		cli_dbgmsg("%lu %lu\n", (unsigned long)sizeof(fullname),
-			(unsigned long)strlen(fullname));
-		close(fd);
-
+		cli_errmsg("fileblobSetFilename: fdopen failed (%s)\n", strerror(errno));
+		close(fb->fd);
+		free(fullname);
 		return;
 	}
 	if(fb->b.data)
@@ -593,13 +531,7 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 			fb->b.len = fb->b.size = 0;
 			fb->isNotEmpty = 1;
 		}
-
-	/*
-	 * If this strdup fails, then if the file is empty it won't be removed
-	 * until later. Since this is only a trivial issue, there is no need
-	 * to error if it fails to allocate
-	 */
-	fb->fullname = cli_strdup(fullname);
+	fb->fullname = fullname;
 }
 
 int
@@ -669,14 +601,12 @@ fileblobSetCTX(fileblob *fb, cli_ctx *ctx)
 int
 fileblobScan(const fileblob *fb)
 {
-#ifndef	C_WINDOWS
-	int rc, fd;
+	int rc;
 	cli_file_t ftype;
-#endif
 
 	if(fb->isInfected)
 		return CL_VIRUS;
-	if(fb->fullname == NULL) {
+	if(fb->fp == NULL || fb->fullname == NULL) {
 		/* shouldn't happen, scan called before fileblobSetFilename */
 		cli_warnmsg("fileblobScan, fullname == NULL\n");
 		return CL_ENULLARG;	/* there is no CL_UNKNOWN */
@@ -686,38 +616,19 @@ fileblobScan(const fileblob *fb)
 		cli_dbgmsg("fileblobScan, ctx == NULL\n");
 		return CL_CLEAN;	/* there is no CL_UNKNOWN */
 	}
-#ifndef	C_WINDOWS
-	/*
-	 * FIXME: On Windows, cli_readn gives "bad file descriptor" when called
-	 * by cli_check_mydoom_log from the call to cli_magic_scandesc here
-	 * which implies that the file descriptor is getting closed somewhere,
-	 * but I can't see where.
-	 * One possible fix would be to duplicate cli_scanfile here.
-	 */
-	fflush(fb->fp);
-	fd = dup(fileno(fb->fp));
-	if(fd == -1) {
-		cli_warnmsg("%s: dup failed\n", fb->fullname);
-		return CL_CLEAN;
-	}
-	/* cli_scanfile is static :-( */
-	/*if(cli_scanfile(fb->fullname, fb->ctx) == CL_VIRUS) {
-		cli_dbgmsg("%s is infected\n", fb->fullname);
-		return CL_VIRUS;
-	}*/
 
-	rc = cli_magic_scandesc(fd, fb->ctx);
+	fflush(fb->fp);
+	lseek(fb->fd, 0, SEEK_SET);
+	rc = cli_magic_scandesc(fb->fd, fb->ctx);
 
 	if(rc == CL_CLEAN) {
-		lseek(fd, 0, SEEK_SET);
-		ftype = cli_filetype2(fd, fb->ctx->engine);
+		lseek(fb->fd, 0, SEEK_SET);
+		ftype = cli_filetype2(fb->fd, fb->ctx->engine);
 		if(ftype >= CL_TYPE_TEXT_ASCII && ftype <= CL_TYPE_TEXT_UTF16BE) {
-			lseek(fd, 0, SEEK_SET);
-			rc = cli_scandesc(fd, fb->ctx, CL_TYPE_MAIL, 0, NULL, AC_SCAN_VIR);
+			lseek(fb->fd, 0, SEEK_SET);
+			rc = cli_scandesc(fb->fd, fb->ctx, CL_TYPE_MAIL, 0, NULL, AC_SCAN_VIR);
 		}
 	}
-
-	close(fd);
 
 	if(rc == CL_VIRUS) {
 		cli_dbgmsg("%s is infected\n", fb->fullname);
@@ -725,10 +636,6 @@ fileblobScan(const fileblob *fb)
 	}
 	cli_dbgmsg("%s is clean\n", fb->fullname);
 	return CL_BREAK;
-#else	/*C_WINDOWS*/
-	/* Ensure that the file is saved and scanned */
-	return CL_CLEAN;	/* there is no CL_UNKNOWN :-( */
-#endif	/*C_WINDOWS*/
 }
 
 /*

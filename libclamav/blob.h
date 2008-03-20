@@ -51,6 +51,7 @@ int	blobGrow(blob *b, size_t len);
  */
 typedef	struct fileblob {
 	FILE	*fp;
+	int	fd;
 	blob	b;	/*
 			 * b.name is the name of the attachment as stored in the
 			 * email, not the full path name of the temporary file
