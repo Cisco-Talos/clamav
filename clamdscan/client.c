@@ -81,20 +81,18 @@ static int dsresult(int sockd, const struct optstruct *opt)
 		    *pt = 0;
 		    move_infected(buff, opt);
 		} else {
-		    mprintf("@Broken data format. File not %s.\n", opt_check(opt, "move") ? "moved" : "copied");
+		    logg("!Incorrect output from clamd. File not %s.\n", opt_check(opt, "move") ? "moved" : "copied");
 		}
 
 	    } else if(opt_check(opt, "remove")) {
 		if(!(pt = strrchr(buff, ':'))) {
-		    mprintf("@Broken data format. File not removed.\n");
+		    logg("!Incorrect output from clamd. File not removed.\n");
 		} else {
 		    *pt = 0;
 		    if(unlink(buff)) {
-			mprintf("~%s: Can't remove.\n", buff);
-			logg("~%s: Can't remove.\n", buff);
+			logg("!%s: Can't remove.\n", buff);
 			notremoved++;
 		    } else {
-			mprintf("~%s: Removed.\n", buff);
 			logg("~%s: Removed.\n", buff);
 		    }
 		}
@@ -102,7 +100,7 @@ static int dsresult(int sockd, const struct optstruct *opt)
 	}
 
 	if(strstr(buff, "ERROR\n")) {
-	    logg("%s", buff);
+	    logg("~%s", buff);
 	    waserror = 1;
 	}
     }
@@ -196,7 +194,7 @@ static int dsstream(int sockd, const struct optstruct *opt)
 	    server.sin_addr.s_addr = peer.sin_addr.s_addr;
 	    break;
 	default:
-	    mprintf("^Unexpected socket type: %d.\n", peer.sin_family);
+	    logg("^Unexpected socket type: %d.\n", peer.sin_family);
 	    return -1;
     }
 
