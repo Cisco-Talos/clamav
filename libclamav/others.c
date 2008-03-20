@@ -167,8 +167,6 @@ const char *cl_strerror(int clerror)
 	    return "Unable to create temporary file";
 	case CL_ETMPDIR:
 	    return "Unable to create temporary directory";
-	case CL_EFSYNC:
-	    return "Unable to synchronize file <-> disk";
 	case CL_EMEM:
 	    return "Unable to allocate memory";
 	case CL_EOPEN:

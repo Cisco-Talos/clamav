@@ -502,15 +502,6 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
 	return ret;
     }
 
-    if(fsync(fd) == -1) {
-	cli_dbgmsg("GZip: Can't synchronise descriptor %d\n", fd);
-	close(fd);
-	if(!cli_leavetemps_flag)
-	    unlink(tmpname);
-	free(tmpname);	
-	return CL_EFSYNC;
-    }
-
     lseek(fd, 0, SEEK_SET);
     if((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS ) {
 	cli_dbgmsg("GZip: Infected with %s\n", *ctx->virname);
@@ -609,16 +600,6 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
 	free(tmpname);	
 	fclose(fs);
 	return ret;
-    }
-
-    if(fsync(fd) == -1) {
-	cli_dbgmsg("Bzip: Synchronisation failed for descriptor %d\n", fd);
-	close(fd);
-	if(!cli_leavetemps_flag)
-	    unlink(tmpname);
-	free(tmpname);	
-	fclose(fs);
-	return CL_EFSYNC;
     }
 
     lseek(fd, 0, SEEK_SET);
@@ -1058,7 +1039,6 @@ static int cli_scanhtml_utf16(int desc, cli_ctx *ctx)
 	}
     }
 
-    fsync(fd);
     lseek(fd, 0, SEEK_SET);
     ret = cli_scanhtml(fd, ctx);
     close(fd);
@@ -1352,13 +1332,6 @@ static int cli_scancryptff(int desc, cli_ctx *ctx)
 
     free(dest);
 
-    if(fsync(ndesc) == -1) {
-	cli_errmsg("CryptFF: Can't fsync descriptor %d\n", ndesc);
-	close(ndesc);
-	free(tempfile);
-	return CL_EIO;
-    }
-
     lseek(ndesc, 0, SEEK_SET);
 
     cli_dbgmsg("CryptFF: Scanning decrypted data\n");
@@ -1521,15 +1494,6 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
 	    free(tmpname);	
 	    return CL_EIO;
 	}
-    }
-
-    if(fsync(fd) == -1) {
-	cli_dbgmsg("cli_scanembpe: Can't synchronise descriptor %d\n", fd);
-	close(fd);
-	if(!cli_leavetemps_flag)
-	    unlink(tmpname);
-	free(tmpname);	
-	return CL_EFSYNC;
     }
 
     ctx->recursion++;

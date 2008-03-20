@@ -130,7 +130,6 @@ if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) { \
 	    cli_dbgmsg(NAME": Unpacked and rebuilt executable\n"); \
 	cli_multifree FREEME; \
         free(exe_sections); \
-	fsync(ndesc); \
 	lseek(ndesc, 0, SEEK_SET); \
 	cli_dbgmsg("***** Scanning rebuilt PE file *****\n"); \
 	if(cli_magic_scandesc(ndesc, ctx) == CL_VIRUS) { \
@@ -1736,7 +1735,6 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
 
 	free(dest);
-	fsync(ndesc);
 	lseek(ndesc, 0, SEEK_SET);
 
 	if(cli_leavetemps_flag)

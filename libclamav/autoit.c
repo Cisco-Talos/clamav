@@ -371,7 +371,6 @@ static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
       cli_dbgmsg("autoit: file extracted to %s\n", tempfile);
     else 
       cli_dbgmsg("autoit: file successfully extracted\n");
-    fsync(i);
     lseek(i, 0, SEEK_SET);
     if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
       close(i);
@@ -880,7 +879,6 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
       cli_dbgmsg("autoit: %s extracted to %s\n", (script)?"script":"file", tempfile);
     else 
       cli_dbgmsg("autoit: %s successfully extracted\n", (script)?"script":"file");
-    fsync(i);
     lseek(i, 0, SEEK_SET);
     if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
       close(i);

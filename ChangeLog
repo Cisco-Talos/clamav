@@ -1,3 +1,8 @@
+Thu Mar 20 20:55:37 CET 2008 (acab)
+-----------------------------------
+  * libclamav: Remove fsync()'s. Win32 ports should greatly benefit from it
+  		Please report problems. - bb#844
+
 Thu Mar 20 12:16:13 CET 2008 (tk)
 ---------------------------------
   * clamdscan/client.c: some messages were being printed twice (bb#884)

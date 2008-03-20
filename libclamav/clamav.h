@@ -48,7 +48,7 @@ extern "C"
 #define CL_EACCES	-110 /* access denied */
 #define CL_ENULLARG	-111 /* null argument */
 #define CL_ETMPFILE	-112 /* tmpfile() failed */
-#define CL_EFSYNC	-113 /* fsync() failed */
+/* #define CL_EFSYNC	-113 *//* fsync() failed */
 #define CL_EMEM		-114 /* memory allocation error */
 #define CL_EOPEN	-115 /* file open error */
 #define CL_EMALFDB	-116 /* malformed database */
