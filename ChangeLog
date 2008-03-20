@@ -1,3 +1,7 @@
+Thu Mar 20 12:16:13 CET 2008 (tk)
+---------------------------------
+  * clamdscan/client.c: some messages were being printed twice (bb#884)
+
 Tue Mar 18 23:55:49 EET 2008 (edwin)
 ------------------------------------
   * libclamav/scanners.c: debug message for html tempfiles
