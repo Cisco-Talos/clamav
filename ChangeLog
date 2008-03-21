@@ -1,3 +1,8 @@
+Fri Mar 21 23:14:31 CET 2008 (acab)
+-----------------------------------
+  * libclamav/nsis: only insists to unpack for LZMA
+  		    partially reverts r3705 - bb#8888
+
 Fri Mar 21 03:31:16 CET 2008 (acab)
 -----------------------------------
   * libclamav/nsis/bzip2: sync to upstream 1.0.5

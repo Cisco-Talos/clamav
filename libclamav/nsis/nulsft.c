@@ -135,8 +135,7 @@ static void nsis_shutdown(struct nsis_st *n) {
 }
 
 static int nsis_decomp(struct nsis_st *n) {
-  /*  int ret = CL_EFORMAT; */
-  int ret = CL_SUCCESS; /* unpack broken files too - bb#873 */
+  int ret = CL_EFORMAT;
   switch(n->comp) {
   case COMP_BZIP2:
     n->bz.avail_in = n->nsis.avail_in;
@@ -156,6 +155,7 @@ static int nsis_decomp(struct nsis_st *n) {
     n->nsis.next_out = n->bz.next_out;
     break;
   case COMP_LZMA:
+    ret = CL_SUCCESS; /* unpack broken files too - bb#873 - only for lzma - bb#888 - if it breaks once more i'm reverting everything */
     switch (cli_LzmaDecode(&n->lz, &n->nsis)) {
     case LZMA_RESULT_OK:
       ret = CL_SUCCESS;
