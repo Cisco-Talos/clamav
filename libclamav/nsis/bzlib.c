@@ -255,6 +255,7 @@ Bool unRLE_obuf_to_output_FAST ( DState* s )
       UInt32        c_tPos               = s->tPos;
       UChar*        cs_next_out          = s->strm->next_out;
       unsigned int  cs_avail_out         = s->strm->avail_out;
+      Int32         ro_blockSize100k     = s->blockSize100k;
       /* end restore */
 
       UInt32       avail_out_INIT = cs_avail_out;

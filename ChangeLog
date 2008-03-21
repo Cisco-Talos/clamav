@@ -1,3 +1,7 @@
+Fri Mar 21 03:31:16 CET 2008 (acab)
+-----------------------------------
+  * libclamav/nsis/bzip2: sync to upstream 1.0.5
+
 Thu Mar 20 21:27:22 CET 2008 (tk)
 ---------------------------------
   * doc/signatures.[pdf,tex]: update documentation
