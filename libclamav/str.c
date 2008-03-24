@@ -206,7 +206,7 @@ char *cli_utf16toascii(const char *str, unsigned int length)
 
 
     if(length < 2) {
-	cli_warnmsg("cli_utf16toascii: length < 2\n");
+	cli_dbgmsg("cli_utf16toascii: length < 2\n");
 	return NULL;
     }
 
