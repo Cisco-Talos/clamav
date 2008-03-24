@@ -1,3 +1,8 @@
+Mon Mar 24 20:30:34 EET 2008 (edwin)
+------------------------------------
+  * libclamav/mbox.c, message.c: cli_warnmsg -> cli_dbgmsg (bb #880),
+	don't handle multipart/encrypted specially
+
 Mon Mar 24 19:31:10 CET 2008 (acab)
 -----------------------------------
   * libclamav/nsis: a cleaner approach to bb#844 and bb#888
