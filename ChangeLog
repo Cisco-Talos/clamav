@@ -1,7 +1,11 @@
+Mon Mar 24 19:31:10 CET 2008 (acab)
+-----------------------------------
+  * libclamav/nsis: a cleaner approach to bb#844 and bb#888
+
 Fri Mar 21 23:14:31 CET 2008 (acab)
 -----------------------------------
   * libclamav/nsis: only insists to unpack for LZMA
-  		    partially reverts r3705 - bb#8888
+  		    partially reverts r3705 - bb#888
 
 Fri Mar 21 03:31:16 CET 2008 (acab)
 -----------------------------------
