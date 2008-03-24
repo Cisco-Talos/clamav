@@ -135,8 +135,7 @@ static void nsis_shutdown(struct nsis_st *n) {
 }
 
 static int nsis_decomp(struct nsis_st *n) {
-  /*  int ret = CL_EFORMAT; */
-  int ret = CL_SUCCESS; /* unpack broken files too - bb#873 */
+  int ret = CL_EFORMAT;
   switch(n->comp) {
   case COMP_BZIP2:
     n->bz.avail_in = n->nsis.avail_in;
@@ -189,7 +188,7 @@ static int nsis_decomp(struct nsis_st *n) {
 static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
   unsigned char *ibuf;
   uint32_t size, loops;
-  int ret;
+  int ret, gotsome=0;
   unsigned char obuf[BUFSIZ];
 
   if (n->eof) {
@@ -275,10 +274,12 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 
       while ((ret=nsis_decomp(n))==CL_SUCCESS) {
 	if ((size = n->nsis.next_out - obuf)) {
+	  gotsome=1;
 	  if (cli_writen(n->ofd, obuf, size) != (ssize_t) size) {
 	    cli_dbgmsg("NSIS: cannot write output file"__AT__"\n");
 	    free(ibuf);
 	    close(n->ofd);
+	    nsis_shutdown(n);
 	    return CL_EIO;
 	  }
 	  n->nsis.next_out = obuf;
@@ -290,27 +291,37 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 	    nsis_shutdown(n);
 	    return ret;
 	  }
-	} else if (++loops > 10) {
+	} else if (++loops > 20) {
 	  cli_dbgmsg("NSIS: xs looping, breaking out"__AT__"\n");
-	  ret = CL_BREAK;
+	  ret = CL_EFORMAT;
 	  break;
 	}
       }
 
-      if (ret != CL_BREAK) {
-	cli_dbgmsg("NSIS: bad stream"__AT__"\n");
-	free(ibuf);
-	close(n->ofd);
-	return CL_EFORMAT;
+      nsis_shutdown(n);
+
+      if (n->nsis.next_out - obuf) {
+	gotsome=1;
+	if (cli_writen(n->ofd, obuf, n->nsis.next_out - obuf) != n->nsis.next_out - obuf) {
+	  cli_dbgmsg("NSIS: cannot write output file"__AT__"\n");
+	  free(ibuf);
+	  close(n->ofd);
+	  return CL_EIO;
+	}
       }
 
-      if (cli_writen(n->ofd, obuf, n->nsis.next_out - obuf) != n->nsis.next_out - obuf) {
-	cli_dbgmsg("NSIS: cannot write output file"__AT__"\n");
+      if (ret != CL_SUCCESS && ret != CL_BREAK) {
+	cli_dbgmsg("NSIS: bad stream"__AT__"\n");
+	if (gotsome) {
+	  ret = CL_SUCCESS;
+	} else {
+	  ret CL_EMAXSIZE;
+	  close(n->ofd);
+	}
 	free(ibuf);
-	close(n->ofd);
-	return CL_EIO;
+	return ret;
       }
-      nsis_shutdown(n);
+
     }
 
     free(ibuf);
@@ -388,32 +399,48 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
     while (size && (ret=nsis_decomp(n))==CL_SUCCESS) {
       unsigned int wsz;
       if ((wsz = n->nsis.next_out - obuf)) {
+	gotsome=1;
 	if (cli_writen(n->ofd, obuf, wsz) != (ssize_t) wsz) {
+	  cli_dbgmsg("NSIS: cannot write output file"__AT__"\n");
 	  close(n->ofd);
 	  return CL_EIO;
 	}
 	size-=wsz;
+	loops=0;
 	n->nsis.next_out = obuf;
 	n->nsis.avail_out = MIN(size,BUFSIZ);
       } else if ( ++loops > 20 ) {
 	cli_dbgmsg("NSIS: xs looping, breaking out"__AT__"\n");
-	ret = CL_BREAK;
+	ret = CL_EFORMAT;
 	break;
       }
     }
 
-    if (ret == CL_BREAK) {
+    if (n->nsis.next_out - obuf) {
+      gotsome=1;
       if (cli_writen(n->ofd, obuf, n->nsis.next_out - obuf) != n->nsis.next_out - obuf) {
+	cli_dbgmsg("NSIS: cannot write output file"__AT__"\n");
+	free(ibuf);
 	close(n->ofd);
 	return CL_EIO;
       }
+    }
+
+    if (ret == CL_EFORMAT) {
+      cli_dbgmsg("NSIS: bad stream"__AT__"\n");
+      if (!gotsome) {
+	close(n->ofd);
+	return CL_EMAXSIZE;
+      } 
+    }
+
+    if (ret == CL_EFORMAT || ret == CL_BREAK) {
       n->eof=1;
     } else if (ret != CL_SUCCESS) {
       cli_dbgmsg("NSIS: bad stream"__AT__"\n");
       close(n->ofd);
       return CL_EFORMAT;
     }
-    
     return CL_SUCCESS;
   }
 
@@ -545,7 +572,6 @@ int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
 	  if(!cli_leavetemps_flag)
 	    unlink(nsist.ofn);
 	} else if(ret == CL_EMAXSIZE) {
-	    cli_errmsg("returned %d\n", ret);
 	    ret = nsist.solid ? CL_BREAK : CL_SUCCESS;
 	}
     } while(ret == CL_SUCCESS);
