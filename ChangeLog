@@ -1,3 +1,8 @@
+ Mon Mar 24 20:30:34 EET 2008 (edwin)
+ ------------------------------------
+   * libclamav/mbox.c, message.c: cli_warnmsg -> cli_dbgmsg (bb #880),
+	don't handle multipart/encrypted specially
+
 Fri Mar 21 03:31:16 CET 2008 (acab)
 -----------------------------------
   * libclamav/nsis/bzip2: sync to upstream 1.0.5

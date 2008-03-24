@@ -223,7 +223,7 @@ messageSetMimeType(message *mess, const char *type)
 
 	assert(mess != NULL);
 	if(type == NULL) {
-		cli_warnmsg("Empty content-type field\n");
+		cli_dbgmsg("Empty content-type field\n");
 		return 0;
 	}
 
@@ -438,11 +438,11 @@ messageAddArgument(message *m, const char *arg)
 			 * FIXME: Bounce message handling is corrupting the in
 			 * core copies of headers
 			 */
-			cli_warnmsg("Possible data corruption fixed\n");
+			cli_dbgmsg("Possible data corruption fixed\n");
 			p[8] = '=';
 		} else {
 			if(p && *p)
-				cli_warnmsg("messageAddArgument, '%s' contains no '='\n", p);
+				cli_dbgmsg("messageAddArgument, '%s' contains no '='\n", p);
 			free(m->mimeArguments[offset]);
 			m->mimeArguments[offset] = NULL;
 			return;
@@ -662,7 +662,7 @@ messageFindArgument(const message *m, const char *variable)
 			while(isspace(*ptr))
 				ptr++;
 			if(*ptr != '=') {
-				cli_warnmsg("messageFindArgument: no '=' sign found in MIME header '%s' (%s)\n", variable, messageGetArgument(m, i));
+				cli_dbgmsg("messageFindArgument: no '=' sign found in MIME header '%s' (%s)\n", variable, messageGetArgument(m, i));
 				return NULL;
 			}
 			if((*++ptr == '"') && (strchr(&ptr[1], '"') != NULL)) {
@@ -733,7 +733,7 @@ messageHasArgument(const message *m, const char *variable)
 			while(isspace(*ptr))
 				ptr++;
 			if(*ptr != '=') {
-				cli_warnmsg("messageHasArgument: no '=' sign found in MIME header '%s' (%s)\n", variable, messageGetArgument(m, i));
+				cli_dbgmsg("messageHasArgument: no '=' sign found in MIME header '%s' (%s)\n", variable, messageGetArgument(m, i));
 				return 0;
 			}
 			return 1;
@@ -1278,7 +1278,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 					continue;
 
 				if((c < 0x20) || (c > 0x7f) || (hqxtbl[c] == 0xff)) {
-					cli_warnmsg("Invalid HQX7 character '%c' (0x%02x)\n", c, c);
+					cli_dbgmsg("Invalid HQX7 character '%c' (0x%02x)\n", c, c);
 					break;
 				}
 				c = hqxtbl[c];
@@ -1377,7 +1377,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 				len);
 		}
 		if(len == 0) {
-			cli_warnmsg("Discarding empty binHex attachment\n");
+			cli_dbgmsg("Discarding empty binHex attachment\n");
 			(*destroy)(ret);
 			blobDestroy(tmp);
 			return NULL;
@@ -1447,7 +1447,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		l = blobGetDataSize(tmp) - byte;
 
 		if(l < dataforklen) {
-			cli_warnmsg("Corrupt BinHex file, claims it is %lu bytes long in a message of %lu bytes\n",
+			cli_dbgmsg("Corrupt BinHex file, claims it is %lu bytes long in a message of %lu bytes\n",
 				dataforklen, l);
 			dataforklen = l;
 		}
@@ -1600,7 +1600,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		 * message
 		 */
 		if(t_line == NULL) {
-			cli_warnmsg("Empty attachment not saved\n");
+			cli_dbgmsg("Empty attachment not saved\n");
 			(*destroy)(ret);
 			return NULL;
 		}
@@ -2175,7 +2175,7 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 				 * the maximum length of a uuencoded line is
 				 * 62 characters
 				 */
-				cli_warnmsg("uudecode: buffer overflow stopped, attempting to ignore but decoding may fail\n");
+				cli_dbgmsg("uudecode: buffer overflow stopped, attempting to ignore but decoding may fail\n");
 			else {
 				(void)decode(m, line, buf, uudecode, (len & 3) == 0);
 				buf = &buf[reallen];
@@ -2668,7 +2668,7 @@ rfc2231(const char *in)
 
 	if(field != CONTENTS) {
 		free(ret);
-		cli_warnmsg("Invalid RFC2231 header: '%s'\n", in);
+		cli_dbgmsg("Invalid RFC2231 header: '%s'\n", in);
 		return cli_strdup("");
 	}
 

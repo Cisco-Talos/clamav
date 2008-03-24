@@ -464,7 +464,7 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 	struct scanlist *scanlist, *scanelem;
 
 	if(dir == NULL) {
-		cli_warnmsg("cli_mbox called with NULL dir\n");
+		cli_dbgmsg("cli_mbox called with NULL dir\n");
 		return CL_ENULLARG;
 	}
 	if(fstat(desc, &statb) < 0)
@@ -634,9 +634,9 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 			/* TODO: reduce the number of falls through here */
 			if(hasuuencode)
 				/* TODO: fast track visa */
-				cli_warnmsg("New world - fall back to old uudecoder\n");
+				cli_dbgmsg("New world - fall back to old uudecoder\n");
 			else
-				cli_warnmsg("cli_mbox: unknown encoder, type %d\n", type);
+				cli_dbgmsg("cli_mbox: unknown encoder, type %d\n", type);
 			if(type == CL_TYPE_MAIL)
 				return cli_parse_mbox(dir, desc, ctx);
 			cli_dbgmsg("Unknown filetype %d, return CLEAN\n", type);
@@ -1004,7 +1004,7 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 	if(ret != CL_EFORMAT)
 		return ret;
 
-	cli_warnmsg("New world - don't know what to do - fall back to old world\n");
+	cli_dbgmsg("New world - don't know what to do - fall back to old world\n");
 	/* Fall back for now */
 	lseek(desc, 0L, SEEK_SET);
 	return cli_parse_mbox(dir, desc, ctx);
@@ -1096,7 +1096,7 @@ create_map(const char *begin, const char *end)
 	};
 
 	if(map) {
-		cli_warnmsg("create_map called without free_map\n");
+		cli_dbgmsg("create_map called without free_map\n");
 		free_map();
 	}
 	while(begin < end) {
@@ -1159,7 +1159,7 @@ int
 cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 {
 	if(dir == NULL) {
-		cli_warnmsg("cli_mbox called with NULL dir\n");
+		cli_dbgmsg("cli_mbox called with NULL dir\n");
 		return CL_ENULLARG;
 	}
 	return cli_parse_mbox(dir, desc, ctx);
@@ -2017,7 +2017,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 			 */
 			if(recursion_level > limits->maxreclevel) {
 
-				cli_warnmsg("parseEmailBody: hit maximum recursion level (%u)\n", recursion_level);
+				cli_dbgmsg("parseEmailBody: hit maximum recursion level (%u)\n", recursion_level);
 				return MAXREC;
 			}
 		if(limits->maxfiles && (mctx->files >= limits->maxfiles)) {
@@ -2037,7 +2037,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 		mime_type mimeType;
 		int subtype, inhead, htmltextPart, inMimeHead, i;
 		const char *mimeSubtype;
-		char *protocol, *boundary;
+		char *boundary;
 		const text *t_line;
 		/*bool isAlternative;*/
 		message *aMessage;
@@ -2119,7 +2119,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
 			/* Perhaps it should assume mixed? */
 			if(mimeSubtype[0] == '\0') {
-				cli_warnmsg("Multipart has no subtype assuming alternative\n");
+				cli_dbgmsg("Multipart has no subtype assuming alternative\n");
 				mimeSubtype = "alternative";
 				messageSetMimeSubtype(mainMessage, "alternative");
 			}
@@ -2130,7 +2130,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 			t_line = messageGetBody(mainMessage);
 
 			if(t_line == NULL) {
-				cli_warnmsg("Multipart MIME message has no body\n");
+				cli_dbgmsg("Multipart MIME message has no body\n");
 				free((char *)boundary);
 				mimeType = NOMIME;
 				break;
@@ -2645,6 +2645,9 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				 * parameters, but there's no need for us to
 				 * verify that they exist
 				 */
+			case ENCRYPTED:
+				/* MUAs without encryption plugins can display as multipart/mixed,
+				 * just scan it*/
 			case MIXED:
 			case APPLEDOUBLE:	/* not really supported */
 				/*
@@ -2692,21 +2695,6 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
 				rc = parseEmailBody(messages[htmltextPart], aText, mctx, recursion_level + 1);
 				break;
-			case ENCRYPTED:
-				rc = FAIL;	/* Not yet handled */
-				protocol = (char *)messageFindArgument(mainMessage, "protocol");
-				if(protocol) {
-					if(strcasecmp(protocol, "application/pgp-encrypted") == 0) {
-						/* RFC2015 */
-						cli_warnmsg("PGP encoded attachment not scanned\n");
-						rc = OK_ATTACHMENTS_NOT_SAVED;
-					} else
-						cli_warnmsg("Unknown encryption protocol '%s' - if you believe this file contains a virus, submit it to www.clamav.net\n", protocol);
-					free(protocol);
-				} else
-					cli_dbgmsg("Encryption method missing protocol name\n");
-
-				break;
 			default:
 				assert(0);
 			}
@@ -2747,7 +2735,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				case BINARY:
 					break;
 				default:
-					cli_warnmsg("MIME type 'message' cannot be decoded\n");
+					cli_dbgmsg("MIME type 'message' cannot be decoded\n");
 					break;
 			}
 			rc = FAIL;
@@ -2796,7 +2784,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 			return rc;
 
 		default:
-			cli_warnmsg("Message received with unknown mime encoding - assume application");
+			cli_dbgmsg("Message received with unknown mime encoding - assume application");
 			/*
 			 * Some Yahoo emails attach as
 			 * Content-Type: X-unknown/unknown;
@@ -3368,7 +3356,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 				 * for the subtype because virus writers and
 				 * email client writers don't get it right
 				 */
-				 cli_warnmsg("Empty content-type received, no subtype specified, assuming text/plain; charset=us-ascii\n");
+				 cli_dbgmsg("Empty content-type received, no subtype specified, assuming text/plain; charset=us-ascii\n");
 			else if(strchr(ptr, '/') == NULL)
 				/*
 				 * Empty field, such as
@@ -3391,7 +3379,7 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 				 * put white space after the ;
 				 */
 				if(*arg == '/') {
-					cli_warnmsg("Content-type '/' received, assuming application/octet-stream\n");
+					cli_dbgmsg("Content-type '/' received, assuming application/octet-stream\n");
 					messageSetMimeType(m, "application");
 					messageSetMimeSubtype(m, "octet-stream");
 				} else {
@@ -3803,7 +3791,7 @@ rfc1341(message *m, const char *dir)
 	}
 
 	if(oldfilename) {
-		cli_warnmsg("Must reset to %s\n", oldfilename);
+		cli_dbgmsg("Must reset to %s\n", oldfilename);
 		free(oldfilename);
 	}
 
@@ -3887,7 +3875,7 @@ rfc1341(message *m, const char *dir)
 							continue;
 						if(now - statb.st_mtime > (time_t)(7 * 24 * 3600))
 							if(unlink(fullname) >= 0)
-								cli_warnmsg("removed old RFC1341 file %s\n", fullname);
+								cli_dbgmsg("removed old RFC1341 file %s\n", fullname);
 						continue;
 					}
 
@@ -4101,10 +4089,10 @@ do_checkURLs(mbox_ctx *mctx, tag_arguments_t *hrefs)
 			 * What about foreign character spoofing?
 			 */
 			if(strchr(url, '%') && strchr(url, '@'))
-				cli_warnmsg("Possible URL spoofing attempt noticed, but not blocked (%s)\n", url);
+				cli_dbgmsg("Possible URL spoofing attempt noticed, but not blocked (%s)\n", url);
 
 			if(n == FOLLOWURLS) {
-				cli_warnmsg("URL %s will not be scanned (FOLLOWURLS limit %d was reached)\n",
+				cli_dbgmsg("URL %s will not be scanned (FOLLOWURLS limit %d was reached)\n",
 					url, FOLLOWURLS);
 				break;
 			}
@@ -4280,7 +4268,7 @@ getURL(struct arg *arg)
 		cli_dbgmsg("Getting %s\n", url);
 
 		if(strncasecmp(url, "http://", 7) != 0) {
-			cli_warnmsg("Unsupported protocol\n");
+			cli_dbgmsg("Unsupported protocol\n");
 			fclose(fp);
 			return NULL;
 		}
@@ -4430,7 +4418,7 @@ getURL(struct arg *arg)
 							end++;
 						*end = '\0';
 						if(arg->depth >= FOLLOWURLS) {
-							cli_warnmsg("URL %s will not be followed to %s (FOLLOWURLS limit %d was reached)\n",
+							cli_dbgmsg("URL %s will not be followed to %s (FOLLOWURLS limit %d was reached)\n",
 								arg->url, location, FOLLOWURLS);
 							break;
 						}
@@ -4566,9 +4554,9 @@ nonblock_connect(SOCKET sock, const struct sockaddr_in *sin, const char *hostnam
 	flags = fcntl(sock, F_GETFL, 0);
 
 	if(flags == -1L)
-		cli_warnmsg("getfl: %s\n", strerror(errno));
+		cli_dbgmsg("getfl: %s\n", strerror(errno));
 	else if(fcntl(sock, F_SETFL, (long)(flags | O_NONBLOCK)) < 0)
-		cli_warnmsg("setfl: %s\n", strerror(errno));
+		cli_dbgmsg("setfl: %s\n", strerror(errno));
 #else
 	flags = -1L;
 #endif
@@ -4582,12 +4570,12 @@ nonblock_connect(SOCKET sock, const struct sockaddr_in *sin, const char *hostnam
 			case EISCONN:
 				return 0; /* connected */
 			default:
-				cli_warnmsg("%s: connect: %s\n",
+				cli_dbgmsg("%s: connect: %s\n",
 					hostname, strerror(errno));
 #ifdef	F_SETFL
 				if(flags != -1L)
 					if(fcntl(sock, F_SETFL, flags))
-						cli_warnmsg("f_setfl: %s\n", strerror(errno));
+						cli_dbgmsg("f_setfl: %s\n", strerror(errno));
 #endif
 				return -1; /* failed */
 		}
@@ -4595,7 +4583,7 @@ nonblock_connect(SOCKET sock, const struct sockaddr_in *sin, const char *hostnam
 #ifdef	F_SETFL
 		if(flags != -1L)
 			if(fcntl(sock, F_SETFL, flags))
-				cli_warnmsg("f_setfl: %s\n", strerror(errno));
+				cli_dbgmsg("f_setfl: %s\n", strerror(errno));
 #endif
 		return connect_error(sock, hostname);
 	}
@@ -4617,7 +4605,7 @@ nonblock_connect(SOCKET sock, const struct sockaddr_in *sin, const char *hostnam
 			(now.tv_sec > timeout.tv_sec);
 
 		if(t) {
-			cli_warnmsg("%s: connect timeout (%d secs)\n",
+			cli_dbgmsg("%s: connect timeout (%d secs)\n",
 				hostname, CONNECT_TIMEOUT);
 			break;
 		}
@@ -4636,7 +4624,7 @@ nonblock_connect(SOCKET sock, const struct sockaddr_in *sin, const char *hostnam
 
 		n = select(numfd, 0, &fds, 0, &waittime);
 		if(n < 0) {
-			cli_warnmsg("%s: select attempt %d %s\n",
+			cli_dbgmsg("%s: select attempt %d %s\n",
 				hostname, select_failures, strerror(errno));
 			if(--select_failures >= 0)
 				continue; /* not timed-out, try again */
@@ -4649,14 +4637,14 @@ nonblock_connect(SOCKET sock, const struct sockaddr_in *sin, const char *hostnam
 #ifdef	F_SETFL
 			if(flags != -1L)
 				if(fcntl(sock, F_SETFL, flags))
-					cli_warnmsg("f_setfl: %s\n", strerror(errno));
+					cli_dbgmsg("f_setfl: %s\n", strerror(errno));
 #endif
 			return connect_error(sock, hostname);
 		}
 
 		/* timeout */
 		if(attempts++ == NONBLOCK_MAX_ATTEMPTS) {
-			cli_warnmsg("timeout connecting to %s\n", hostname);
+			cli_dbgmsg("timeout connecting to %s\n", hostname);
 			break;
 		}
 	}
@@ -4664,7 +4652,7 @@ nonblock_connect(SOCKET sock, const struct sockaddr_in *sin, const char *hostnam
 #ifdef	F_SETFL
 	if(flags != -1L)
 		if(fcntl(sock, F_SETFL, flags))
-			cli_warnmsg("f_setfl: %s\n", strerror(errno));
+			cli_dbgmsg("f_setfl: %s\n", strerror(errno));
 #endif
 	return -1; /* failed */
 }
@@ -4679,7 +4667,7 @@ connect_error(SOCKET sock, const char *hostname)
 	getsockopt(sock, SOL_SOCKET, SO_ERROR, &optval, &optlen);
 
 	if(optval) {
-		cli_warnmsg("%s: %s\n", hostname, strerror(optval));
+		cli_dbgmsg("%s: %s\n", hostname, strerror(optval));
 		return -1;
 	}
 #endif
@@ -4802,7 +4790,7 @@ getline_from_mbox(char *buffer, size_t len, FILE *fin)
 
 	if(len == 0) {
 		/* the email probably breaks RFC821 */
-		cli_warnmsg("getline_from_mbox: buffer overflow stopped, line lost\n");
+		cli_dbgmsg("getline_from_mbox: buffer overflow stopped, line lost\n");
 		return NULL;
 	}
 	*buffer = '\0';
@@ -5153,7 +5141,7 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 			}
 			return mainMessage;
 		default:
-			cli_warnmsg("Only text and application attachments are fully supported, type = %d\n",
+			cli_dbgmsg("Only text and application attachments are fully supported, type = %d\n",
 				messageGetMimeType(aMessage));
 			/* fall through - we may be able to salvage something */
 	}
