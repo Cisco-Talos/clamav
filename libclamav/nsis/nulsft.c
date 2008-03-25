@@ -315,7 +315,7 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 	if (gotsome) {
 	  ret = CL_SUCCESS;
 	} else {
-	  ret CL_EMAXSIZE;
+	  ret = CL_EMAXSIZE;
 	  close(n->ofd);
 	}
 	free(ibuf);
@@ -420,7 +420,6 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
       gotsome=1;
       if (cli_writen(n->ofd, obuf, n->nsis.next_out - obuf) != n->nsis.next_out - obuf) {
 	cli_dbgmsg("NSIS: cannot write output file"__AT__"\n");
-	free(ibuf);
 	close(n->ofd);
 	return CL_EIO;
       }
