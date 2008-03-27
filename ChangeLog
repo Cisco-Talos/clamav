@@ -1,3 +1,7 @@
+Thu Mar 27 18:16:28 CET 2008 (tk)
+---------------------------------
+  * test: add test files for ARJ, SZDD and .tar.gz (bb#902)
+
 Tue Mar 25 01:55:19 CET 2008 (acab)
 -----------------------------------
   * libclamav/nsis: typoes - bb#894
