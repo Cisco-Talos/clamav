@@ -1,6 +1,6 @@
 SPLIT_DIR=$(top_srcdir)/test/.split
 
-all: clam-v2.rar clam-v3.rar clam.cab clam.exe.bz2 clam.exe clam.zip clam.arj clam.exe.szdd clam.tar.gz
+all: clam-v2.rar clam-v3.rar clam.cab clam.exe.bz2 clam.exe clam.zip clam.arj clam.exe.szdd clam.tar.gz clam.exe.rtf
 
 clam-v2.rar:
 	cat $(SPLIT_DIR)/split.clam-v2.raraa $(SPLIT_DIR)/split.clam-v2.rarab >clam-v2.rar
@@ -30,6 +30,9 @@ clam.tar.gz:
 	cat $(SPLIT_DIR)/split.clam.tar.gzaa $(SPLIT_DIR)/split.clam.tar.gzab > clam.tar.gz
 
 clean-local:
-	rm -f clam-v2.rar clam-v3.rar clam.cab clam.exe.bz2 clam.exe clam.zip clam.arj clam.exe.szdd clam.tar.gz
+	rm -f clam-v2.rar clam-v3.rar clam.cab clam.exe.bz2 clam.exe clam.zip clam.arj clam.exe.szdd clam.tar.gz clam.exe.rtf
+
+clam.exe.rtf:
+	cat $(SPLIT_DIR)/split.clam.exe.rtfaa $(SPLIT_DIR)/split.clam.exe.rtfab > clam.exe.rtf
 
 EXTRA_DIST = .split
