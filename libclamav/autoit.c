@@ -374,11 +374,11 @@ static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
     lseek(i, 0, SEEK_SET);
     if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
       close(i);
-      if(!cli_leavetemps_flag) unlink(tempfile);
+      if(!cli_leavetemps_flag) cli_unlink(tempfile);
       return CL_VIRUS;
     }
     close(i);
-    if(!cli_leavetemps_flag) unlink(tempfile);
+    if(!cli_leavetemps_flag) cli_unlink(tempfile);
   }
   return ret;
 }
@@ -882,11 +882,11 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
     lseek(i, 0, SEEK_SET);
     if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
       close(i);
-      if(!cli_leavetemps_flag) unlink(tempfile);
+      if(!cli_leavetemps_flag) cli_unlink(tempfile);
       return CL_VIRUS;
     }
     close(i);
-    if(!cli_leavetemps_flag) unlink(tempfile);
+    if(!cli_leavetemps_flag) cli_unlink(tempfile);
   }
   return ret;
 }

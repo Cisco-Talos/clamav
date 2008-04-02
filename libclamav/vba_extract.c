@@ -714,14 +714,14 @@ ppt_unlzw(const char *dir, int fd, uint32_t length)
 
 	if(cli_readn(fd, inbuff, stream.avail_in) != (int)stream.avail_in) {
 		close(ofd);
-		unlink(fullname);
+		cli_unlink(fullname);
 		return FALSE;
 	}
 	length -= stream.avail_in;
 
 	if(inflateInit(&stream) != Z_OK) {
 		close(ofd);
-		unlink(fullname);
+		cli_unlink(fullname);
 		cli_warnmsg("ppt_unlzw: inflateInit failed\n");
 		return FALSE;
 	}

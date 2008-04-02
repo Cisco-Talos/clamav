@@ -248,7 +248,7 @@ static int decode_and_scan(struct rtf_object_data* data, cli_ctx* ctx)
 	data->fd = -1;
 	if(data->name) {
 		if(!cli_leavetemps_flag)
-			unlink(data->name);
+			cli_unlink(data->name);
 		free(data->name);
 		data->name = NULL;
 	}

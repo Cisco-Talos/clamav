@@ -1240,7 +1240,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 		/* empty message */
 		fclose(fd);
 #ifdef	SAVE_TMP
-		unlink(tmpfilename);
+		cli_unlink(tmpfilename);
 #endif
 		return CL_CLEAN;
 	}
@@ -1258,7 +1258,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 #endif
 			fclose(fd);
 #ifdef	SAVE_TMP
-			unlink(tmpfilename);
+			cli_unlink(tmpfilename);
 #endif
 			return CL_EMEM;
 		}
@@ -1319,7 +1319,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 			signal(SIGSEGV, segv);
 #endif
 #ifdef	SAVE_TMP
-			unlink(tmpfilename);
+			cli_unlink(tmpfilename);
 #endif
 			return CL_EMEM;
 		}
@@ -1477,7 +1477,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 #endif
 
 #ifdef	SAVE_TMP
-	unlink(tmpfilename);
+	cli_unlink(tmpfilename);
 #endif
 	return retcode;
 }
@@ -3874,7 +3874,7 @@ rfc1341(message *m, const char *dir)
 						if(stat(fullname, &statb) < 0)
 							continue;
 						if(now - statb.st_mtime > (time_t)(7 * 24 * 3600))
-							if(unlink(fullname) >= 0)
+							if(cli_unlink(fullname) >= 0)
 								cli_dbgmsg("removed old RFC1341 file %s\n", fullname);
 						continue;
 					}
@@ -3883,7 +3883,7 @@ rfc1341(message *m, const char *dir)
 					if(fin == NULL) {
 						cli_errmsg("Can't open '%s' for reading", fullname);
 						fclose(fout);
-						unlink(outname);
+						cli_unlink(outname);
 						free(id);
 						free(number);
 						closedir(dd);
@@ -3906,9 +3906,9 @@ rfc1341(message *m, const char *dir)
 						}
 					fclose(fin);
 
-					/* don't unlink if leave temps */
+					/* don't cli_unlink if leave temps */
 					if(!cli_leavetemps_flag)
-						unlink(fullname);
+						cli_unlink(fullname);
 					break;
 				}
 				rewinddir(dd);
@@ -4411,7 +4411,7 @@ getURL(struct arg *arg)
 					if(location) {
 						char *end;
 
-						unlink(fout);
+						cli_unlink(fout);
 						location += 11;
 						end = location;
 						while(*end && (*end != '\n'))

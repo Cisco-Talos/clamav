@@ -560,6 +560,14 @@ int cli_gentempfd(const char *dir, char **name, int *fd)
 }
 #endif
 
+/* Function: unlink
+        unlink() with error checking
+*/
+int cli_unlink(const char *pathname)
+{
+	if (unlink(pathname)) cli_warnmsg("cli_unlink: failure - %s\n", strerror(errno));
+}
+
 #ifdef	C_WINDOWS
 /*
  * Windows doesn't allow you to delete a directory while it is still open
@@ -585,7 +593,7 @@ cli_rmdirs(const char *name)
     }
 
     if(!S_ISDIR(statb.st_mode)) {
-	if(unlink(name) < 0) {
+	if(cli_unlink(name) < 0) {
 	    cli_warnmsg("cli_rmdirs: Can't remove %s: %s\n", name, strerror(errno));
 	    return -1;
 	}
@@ -697,7 +705,7 @@ int cli_rmdirs(const char *dirname)
 				    }
 				}
 			    } else
-				if(unlink(path) < 0) {
+				if(cli_unlink(path) < 0) {
 				    cli_warnmsg("cli_rmdirs: Couldn't remove %s: %s\n", path, strerror(errno));
 				    free(path);
 				    closedir(dd);
@@ -808,6 +816,7 @@ int cli_filecopy(const char *src, const char *dest)
 
     return close(d);
 }
+
 
 /* Implement a generic bitset, trog@clamav.net */
 

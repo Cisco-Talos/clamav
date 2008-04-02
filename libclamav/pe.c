@@ -99,13 +99,13 @@ if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) { \
     return CL_EIO; \
 }
 
-#define CLI_TMPUNLK() if(!cli_leavetemps_flag) unlink(tempfile)
+#define CLI_TMPUNLK() if(!cli_leavetemps_flag) cli_unlink(tempfile)
 
 #define FSGCASE(NAME,FREESEC) \
     case 0: /* Unpacked and NOT rebuilt */ \
 	cli_dbgmsg(NAME": Successfully decompressed\n"); \
 	close(ndesc); \
-	unlink(tempfile); \
+	cli_unlink(tempfile); \
 	free(tempfile); \
 	FREESEC; \
 	found = 0; \
@@ -116,7 +116,7 @@ if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) { \
     case 2: \
 	free(spinned); \
 	close(ndesc); \
-	unlink(tempfile); \
+	cli_unlink(tempfile); \
 	cli_dbgmsg("PESpin: Size exceeded\n"); \
 	free(tempfile); \
 	break; \
@@ -148,7 +148,7 @@ FSGSTUFF; \
     default: \
 	cli_dbgmsg(NAME": Unpacking failed\n"); \
 	close(ndesc); \
-	unlink(tempfile); \
+	cli_unlink(tempfile); \
 	cli_multifree FREEME; \
         free(tempfile); \
     }
@@ -235,7 +235,7 @@ static int cli_ddump(int desc, int offset, int size, const char *file) {
 		cli_dbgmsg("Can't write to file\n");
 		lseek(desc, pos, SEEK_SET);
 		close(ndesc);
-		unlink(file);
+		cli_unlink(file);
 		return -1;
 	    }
 	    break;
@@ -244,7 +244,7 @@ static int cli_ddump(int desc, int offset, int size, const char *file) {
 		cli_dbgmsg("Can't write to file\n");
 		lseek(desc, pos, SEEK_SET);
 		close(ndesc);
-		unlink(file);
+		cli_unlink(file);
 		return -1;
 	    }
 	}
