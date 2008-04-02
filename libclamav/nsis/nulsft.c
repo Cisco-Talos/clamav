@@ -569,7 +569,7 @@ int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
 	    ret=cli_magic_scandesc(nsist.ofd, ctx);
 	  close(nsist.ofd);
 	  if(!cli_leavetemps_flag)
-	    unlink(nsist.ofn);
+	    cli_unlink(nsist.ofn);
 	} else if(ret == CL_EMAXSIZE) {
 	    ret = nsist.solid ? CL_BREAK : CL_SUCCESS;
 	}
