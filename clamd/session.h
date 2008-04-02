@@ -25,7 +25,7 @@
 #define COMMAND_SESSION 4
 
 #define CMD1 "SCAN"
-#define CMD2 "RAWSCAN"
+/* #define CMD2 "RAWSCAN" */
 #define CMD3 "QUIT" /* deprecated */
 #define CMD4 "RELOAD"
 #define CMD5 "PING"

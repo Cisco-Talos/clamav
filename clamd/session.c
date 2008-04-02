@@ -79,12 +79,6 @@ int command(int desc, const struct cl_engine *engine, const struct cl_limits *li
 	    if(cfgopt(copt, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
-    } else if(!strncmp(buff, CMD2, strlen(CMD2))) { /* RAWSCAN */
-	opt = options & ~CL_SCAN_ARCHIVE;
-	if(scan(buff + strlen(CMD2) + 1, NULL, engine, NULL, opt, copt, desc, TYPE_SCAN) == -2)
-	    if(cfgopt(copt, "ExitOnOOM")->enabled)
-		return COMMAND_SHUTDOWN;
-
     } else if(!strncmp(buff, CMD3, strlen(CMD3))) { /* QUIT */
 	return COMMAND_SHUTDOWN;
 
