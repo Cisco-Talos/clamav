@@ -1,3 +1,8 @@
+Wed Apr  2 16:34:43 CEST 2008 (tk)
+----------------------------------
+  * libclamav: update copyrights and stick more files to GPLv2; move and add
+	       more credits to the AUTHORS file; add COPYING.BSD
+
 Tue Mar 25 01:55:19 CET 2008 (acab)
 -----------------------------------
   * libclamav/nsis: typoes - bb#894

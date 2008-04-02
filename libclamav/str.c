@@ -1,7 +1,7 @@
 /*
- *  Copyright (C) 2002 - 2005 Tomasz Kojm <tkojm@clamav.net>
- *  cli_strrcpy(): Copyright (C) 2002 Nigel Horne <njh@bandsman.co.uk>
- *  cli_strtokenize(): Copyright (C) 2007 Edwin Torok <edwin@clamav.net>
+ *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *
+ *  Authors: Tomasz Kojm, Nigel Horne, Török Edvin
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -400,10 +400,6 @@ char *cli_strrcpy(char *dest, const char *source) /* by NJH */
 #ifndef HAVE_STRCASESTR
 const char* cli_strcasestr(const char* a, const char *b)
 {
-	/*
-	 * From http://unixpapa.com/incnote/string.html, which has this notice:
-	 * All of the C code on this page is public domain and may be used without concern for licenses. Some was contributed by Dan Cross.
-	 */
 	size_t l;
 	char f[3];
 	const size_t strlen_a = strlen(a);

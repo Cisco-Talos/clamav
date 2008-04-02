@@ -1,10 +1,11 @@
 /*
- *  Copyright (C) 2002-2006 Nigel Horne <njh@bandsman.co.uk>
+ *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *
+ *  Authors: Nigel Horne
  *
  *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -16,6 +17,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
+
 static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
 
 #ifdef	_MSC_VER
@@ -2174,10 +2176,6 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 			if(t_line == NULL) {
 				cli_dbgmsg("Multipart MIME message contains no boundary lines (%s)\n",
 					boundary);
-				/*
-				 * Free added by Thomas Lamy
-				 * <Thomas.Lamy@in-online.net>
-				 */
 				free((char *)boundary);
 				mimeType = NOMIME;
 				/*
@@ -2593,7 +2591,6 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				}
 
 				/*
-				 * Fixed based on an idea from Stephen White <stephen@earth.li>
 				 * The message is confused about the difference
 				 * between alternative and related. Badtrans.B
 				 * suffers from this problem.
@@ -2602,20 +2599,6 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				 * Content-Type: multipart/related;
 				 *	type="multipart/alternative"
 				 */
-				/*
-				 * Changed to always fall through based on
-				 * an idea from Michael Dankov <misha@btrc.ru>
-				 * that some viruses are completely confused
-				 * about the difference between related
-				 * and mixed
-				 */
-				/*cptr = messageFindArgument(mainMessage, "type");
-				if(cptr == NULL)
-					break;
-				isAlternative = (bool)(strcasecmp(cptr, "multipart/alternative") == 0);
-				free((char *)cptr);
-				if(!isAlternative)
-					break;*/
 			case DIGEST:
 				/*
 				 * According to section 5.1.5 RFC2046, the
@@ -3424,12 +3407,6 @@ parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Table, const c
 								int set = messageSetMimeType(m, strtok(s, "/"));
 #endif
 
-								/*
-								 * Stephen White <stephen@earth.li>
-								 * Some clients put space after
-								 * the mime type but before
-								 * the ;
-								 */
 #ifdef	CL_THREAD_SAFE
 								s = strtok_r(NULL, ";", &strptr);
 #else
@@ -4144,8 +4121,6 @@ do_checkURLs(mbox_ctx *mctx, tag_arguments_t *hrefs)
 
 #if	defined(FOLLOWURLS) && (FOLLOWURLS > 0)
 /*
- * Includes some Win32 patches by Gianluigi Tiesi <sherpya@netfarm.it>
- *
  * FIXME: Often WMF exploits work by sending people an email directing them
  *	to a page which displays a picture containing the exploit. This is not
  *	currently found, since only the HTML on the referred page is downloaded.
@@ -4532,8 +4507,6 @@ my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t l
 }
 
 /*
- * Non-blocking connect, based on an idea by Everton da Silva Marques
- *	 <everton.marques@gmail.com>
  * FIXME: There are lots of copies of this code :-(
  */
 static int

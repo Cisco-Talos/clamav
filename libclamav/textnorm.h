@@ -1,10 +1,12 @@
 /*
  *  Generic text normalizer.
  *
- *  Copyright (C) 2008 Török Edvin <edwin@clamav.net>
+ *  Copyright (C) 2008 Sourcefire, Inc.
+ *
+ *  Authors: Török Edvin
  *
  *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License version 2 as 
+ *  it under the terms of the GNU General Public License version 2 as
  *  published by the Free Software Foundation.
  *
  *  This program is distributed in the hope that it will be useful,
