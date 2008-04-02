@@ -3851,8 +3851,7 @@ rfc1341(message *m, const char *dir)
 						if(stat(fullname, &statb) < 0)
 							continue;
 						if(now - statb.st_mtime > (time_t)(7 * 24 * 3600))
-							if(cli_unlink(fullname) >= 0)
-								cli_dbgmsg("removed old RFC1341 file %s\n", fullname);
+							cli_unlink(fullname);
 						continue;
 					}
 
@@ -3876,10 +3875,18 @@ rfc1341(message *m, const char *dir)
 							nblanks++;
 						else {
 							if(nblanks)
-								do
-									putc('\n', fout);
-								while(--nblanks > 0);
-							fputs(buffer, fout);
+								do {
+									if (putc('\n', fout)==EOF) break;
+								} while(--nblanks > 0);
+							if (nblanks || fputs(buffer, fout)==EOF) {
+								fclose(fin);
+								fclose(fout);
+								cli_unlink(outname);
+								free(id);
+								free(number);
+								closedir(dd);
+								return -1;
+							}
 						}
 					fclose(fin);
 

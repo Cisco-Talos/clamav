@@ -562,7 +562,7 @@ int cli_gentempfd(const char *dir, char **name, int *fd)
 /* Function: unlink
         unlink() with error checking
 */
-int cli_unlink(const char *pathname)
+void cli_unlink(const char *pathname)
 {
 	if (unlink(pathname)) cli_warnmsg("cli_unlink: failure - %s\n", strerror(errno));
 }
@@ -704,12 +704,7 @@ int cli_rmdirs(const char *dirname)
 				    }
 				}
 			    } else
-				if(cli_unlink(path) < 0) {
-				    cli_warnmsg("cli_rmdirs: Couldn't remove %s: %s\n", path, strerror(errno));
-				    free(path);
-				    closedir(dd);
-				    return -1;
-				}
+				cli_unlink(path); 
 			}
 			free(path);
 		    }

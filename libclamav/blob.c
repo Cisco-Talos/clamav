@@ -439,8 +439,7 @@ fileblobDestructiveDestroy(fileblob *fb)
 	if(fb->fp && fb->fullname) {
 		fclose(fb->fp);
 		cli_dbgmsg("fileblobDestructiveDestroy: %s\n", fb->fullname);
-		if(cli_unlink(fb->fullname) < 0)
-			cli_warnmsg("fileblobDestructiveDestroy: Can't delete file %s\n", fb->fullname);
+		cli_unlink(fb->fullname);
 		free(fb->fullname);
 		fb->fp = NULL;
 		fb->fullname = NULL;
@@ -468,8 +467,7 @@ fileblobDestroy(fileblob *fb)
 			cli_dbgmsg("fileblobDestroy: %s\n", fb->fullname);
 			if(!fb->isNotEmpty) {
 				cli_dbgmsg("fileblobDestroy: not saving empty file\n");
-				if(cli_unlink(fb->fullname) < 0)
-					cli_warnmsg("fileblobDestroy: Can't delete empty file %s\n", fb->fullname);
+				cli_unlink(fb->fullname); 
 			}
 		}
 		free(fb->b.name);
