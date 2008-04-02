@@ -1,5 +1,7 @@
 /*
- *  Copyright (C) 2006 aCaB <acab@clamav.net>
+ *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *
+ *  Authors: Alberto Wu, Michal 'GiM' Spadlinski
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -15,7 +17,6 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"

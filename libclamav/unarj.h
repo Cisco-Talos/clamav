@@ -1,7 +1,9 @@
 /*
  *  Extract component parts of ARJ archives
  *
- *  Copyright (C) 2007 trog@uncon.org
+ *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *
+ *  Authors: Nigel Horne
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as

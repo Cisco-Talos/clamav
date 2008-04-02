@@ -1,10 +1,11 @@
 /*
- *  Copyright (C) 2002 Nigel Horne <njh@bandsman.co.uk>
+ *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *
+ *  Authors: Nigel Horne
  *
  *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -16,6 +17,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
+
 static	char	const	rcsid[] = "$Id: blob.c,v 1.64 2007/02/12 22:25:14 njh Exp $";
 
 #if HAVE_CONFIG_H
@@ -660,7 +662,6 @@ sanitiseName(char *name)
 #ifdef	C_DARWIN
 		*name &= '\177';
 #endif
-		/* Also check for tab - "Heinz Martin" <Martin@hemag.ch> */
 #if	defined(MSDOS) || defined(C_OS2)
 		/*
 		 * Don't take it from this that ClamAV supports DOS, it doesn't

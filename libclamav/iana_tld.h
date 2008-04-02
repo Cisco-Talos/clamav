@@ -1,10 +1,12 @@
 /*
  *  Phishing module: iana tld list.
  *
- *  Copyright (C) 2006 Torok Edvin <edwintorok@gmail.com>
+ *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *
+ *  Authors: Török Edvin
  *
  *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License version 2 as 
+ *  it under the terms of the GNU General Public License version 2 as
  *  published by the Free Software Foundation.
  *
  *  This program is distributed in the hope that it will be useful,
@@ -16,7 +18,6 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
- *
  */
 
 #ifndef IANA_TLD_H

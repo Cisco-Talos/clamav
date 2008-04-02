@@ -1,10 +1,11 @@
 /*
- *  Copyright (C) 2002-2006 Nigel Horne <njh@bandsman.co.uk>
+ *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *
+ *  Authors: Nigel Horne
  *
  *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -271,8 +272,6 @@ messageSetMimeType(message *mess, const char *type)
 			mess->mimeType = MEXTENSION;
 		else {
 			/*
-			 * Based on a suggestion by James Stevens
-			 *	<James@kyzo.com>
 			 * Force scanning of strange messages
 			 */
 			if(strcasecmp(type, "plain") == 0) {
@@ -674,7 +673,6 @@ messageFindArgument(const message *m, const char *variable)
 					return NULL;
 
 				/*
-				 * Thomas Lamy <Thomas.Lamy@in-online.net>:
 				 * fix un-quoting of boundary strings from
 				 * header, occurs if boundary was given as
 				 *	'boundary="_Test_";'
@@ -1188,7 +1186,6 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 		blob *tmp;
 
 		/*
-		 * Table look up by Thomas Lamy <Thomas.Lamy@in-online.net>
 		 * HQX conversion table - illegal chars are 0xff
 		 */
 		const unsigned char hqxtbl[] = {
@@ -2092,8 +2089,6 @@ decodeLine(message *m, encoding_type et, const char *line, unsigned char *buf, s
 					}
 
 					/*
-					 * Fix by Torok Edvin
-					 * <edwintorok@gmail.com>
 					 * Handle messages that use a broken
 					 * quoted-printable encoding of
 					 * href=\"http://, instead of =3D

@@ -1,10 +1,11 @@
 /*
- *  Copyright (C) 2000-2007 Nigel Horne <njh@bandsman.co.uk>
+ *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *
+ *  Authors: Nigel Horne
  *
  *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,11 +16,8 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
- *
- * Much of this code is based on minitar.c which is in the public domain.
- * Author: Charles G. Waldman (cgw@pgt.com),  Aug 4 1998
- * There are many tar files that this code cannot decode.
  */
+
 static	char	const	rcsid[] = "$Id: untar.c,v 1.35 2007/02/12 20:46:09 njh Exp $";
 
 #if HAVE_CONFIG_H
@@ -119,9 +117,6 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 
 			type = block[156];
 
-			/*
-			 * Extra types from djgardner@users.sourceforge.net
-			 */
 			switch(type) {
 				default:
 					cli_warnmsg("cli_untar: unknown type flag %c\n", type);

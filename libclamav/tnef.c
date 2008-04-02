@@ -1,10 +1,11 @@
 /*
- *  Copyright (C) 2005 Nigel Horne <njh@bandsman.co.uk>
+ *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *
+ *  Authors: Nigel Horne
  *
  *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,10 +16,6 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
- *
- * The algorithm is based on kdepim/ktnef/lib/ktnefparser.cpp from
- * KDE, rewritten in C by NJH. That algorithm is released under the GPL and is
- *	Copyright (C) 2002 Michael Goffioul <kdeprint@swing.be>
  */
 
 #if HAVE_CONFIG_H

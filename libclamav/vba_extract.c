@@ -1,13 +1,13 @@
 /*
  *  Extract VBA source code for component MS Office Documents
  *
- *  Copyright (C) 2007 SourceFIRE Inc.
- *  Maintained by trog@uncon.org and njh@clamav.net
+ *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *
+ *  Authors: Trog, Nigel Horne
  *
  *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -19,6 +19,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
+
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -70,7 +71,6 @@ typedef struct {
 	int	big_endian;	/* e.g. MAC Office */
 } vba_version_t;
 
-/* from libgsf */
 static const vba_version_t vba_versions[] = {
 	{ 0x0100005e, "97",             FALSE },
 	{ 0x0100005f, "97 SR1",         FALSE },
