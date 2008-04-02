@@ -1964,6 +1964,10 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     struct cl_limits l_limits;
     int rc;
 
+    if(!limits) {
+	cli_errmsg("cl_scandesc: limits == NULL\n");
+	return CL_ENULLARG;
+    }
     memset(&ctx, '\0', sizeof(cli_ctx));
     ctx.engine = engine;
     ctx.virname = virname;
@@ -1971,10 +1975,8 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     ctx.options = options;
     ctx.found_possibly_unwanted = 0;
     ctx.dconf = (struct cli_dconf *) engine->dconf;
-    if (limits) {
-      ctx.limits = &l_limits;
-      memcpy(&l_limits, limits, sizeof(struct cl_limits));
-    }
+    ctx.limits = &l_limits;
+    memcpy(&l_limits, limits, sizeof(struct cl_limits));
 
     rc = cli_magic_scandesc(desc, &ctx);
     if(rc == CL_CLEAN && ctx.found_possibly_unwanted)
