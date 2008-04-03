@@ -198,7 +198,7 @@ target_os = @target_os@
 target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-check_clamav_SOURCES = check_clamav.c $(top_builddir)/libclamav/libclamav.h
+check_clamav_SOURCES = check_clamav.c $(top_builddir)/libclamav/clamav.h
 check_clamav_CFLAGS = 
 check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@
 all: all-am

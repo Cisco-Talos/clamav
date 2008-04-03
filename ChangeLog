@@ -1,3 +1,7 @@
+Thu Apr  3 15:03:18 EEST 2008 (edwin)
+-------------------------------------
+  * unit_tests/Makefile.am/.in: fix typo that caused 'make tags' to fail.
+
 Thu Apr  3 13:52:19 CEST 2008 (tk)
 ----------------------------------
   * libclamav/mspack.c: fix possible infinite loop introduced in r3717 (bb#899)
