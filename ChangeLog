@@ -1,3 +1,7 @@
+Thu Apr  3 13:52:19 CEST 2008 (tk)
+----------------------------------
+  * libclamav/mspack.c: fix possible infinite loop introduced in r3717 (bb#899)
+
 Wed Apr  2 22:54:23 CEST 2008 (tk)
 ----------------------------------
   * libclamav/scanners.c: cl_scandesc: check if limits is not null (bb#907)
