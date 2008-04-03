@@ -104,7 +104,7 @@ static const unsigned short mszip_bit_mask_tab[17] = {
       if (mszip_read_input(zip)) return zip->error;                      \
       i_ptr = zip->i_ptr;                                               \
       i_end = zip->i_end;                                               \
-      if(i_ptr == i_end) break;						\
+      if(i_ptr == i_end) return CL_EFORMAT;				\
     }                                                                   \
     bit_buffer |= *i_ptr++ << bits_left; bits_left  += 8;               \
   }                                                                     \
