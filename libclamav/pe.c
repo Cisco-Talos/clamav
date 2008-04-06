@@ -1256,9 +1256,8 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    lseek(desc, 0, SEEK_SET);
 	    if(read(desc, dest, ssize) != ssize) {
 	        cli_dbgmsg("Upack: Can't read raw data of section 0\n");
-		free(exe_sections);
 		free(dest);
-		return CL_EIO;
+		break;
 	    }
 
 	    if(upack) memmove(dest + exe_sections[2].rva - exe_sections[0].rva, dest, ssize);
@@ -1267,9 +1266,8 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 	    if(read(desc, dest + exe_sections[1].rva - off, exe_sections[1].ursz) != exe_sections[1].ursz) {
 		cli_dbgmsg("Upack: Can't read raw data of section 1\n");
-		free(exe_sections);
 		free(dest);
-		return CL_EIO;
+		break;
 	    }
 
 	    CLI_UNPTEMP("Upack",(dest,exe_sections,0));
@@ -1794,7 +1792,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    if(!cli_seeksect(desc, &exe_sections[i]) || (unsigned int) cli_readn(desc, dest + exe_sections[i].rva - min, exe_sections[i].ursz) != exe_sections[i].ursz) {
 			free(exe_sections);
 			free(dest);
-			return CL_EIO;
+			return CL_CLEAN;
 		    }
 		}
 	    }
