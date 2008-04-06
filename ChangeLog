@@ -1,3 +1,7 @@
+Sun Apr  6 12:19:47 CEST 2008 (acab)
+------------------------------------
+  * libclamav/pe.c: make uspack softfail as it's really reading unaligned data
+
 Thu Apr  3 15:03:18 EEST 2008 (edwin)
 -------------------------------------
   * unit_tests/Makefile.am/.in: fix typo that caused 'make tags' to fail.
