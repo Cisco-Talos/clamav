@@ -1790,7 +1790,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    if(!cli_seeksect(desc, &exe_sections[i]) || (unsigned int) cli_readn(desc, dest + exe_sections[i].rva - min, exe_sections[i].ursz) != exe_sections[i].ursz) {
 			free(exe_sections);
 			free(dest);
-			return CL_EIO;
+			return CL_CLEAN;
 		    }
 		}
 	    }
