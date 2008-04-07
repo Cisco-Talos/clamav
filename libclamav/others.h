@@ -119,7 +119,7 @@ typedef struct {
 #if WORDS_BIGENDIAN == 0
 
 #ifndef HAVE_ATTRIB_PACKED 
-#define __attribute__((packed))
+#define __attribute__(x)
 #endif
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack(1)

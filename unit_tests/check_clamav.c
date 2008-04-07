@@ -196,8 +196,8 @@ static Suite *test_cl_suite(void)
 
 static uint8_t le_data[4] = {0x67,0x45,0x23,0x01};
 static int32_t le_expected[4] = { 0x01234567, 0x67012345, 0x45670123, 0x23456701};
-uint8_t *data;
-uint8_t *data2;
+uint8_t *data = NULL;
+uint8_t *data2 = NULL;
 #define DATA_REP 100
 
 static void data_setup(void)
@@ -205,8 +205,10 @@ static void data_setup(void)
         uint8_t *p;
         size_t i;
 
-        fail_unless(posix_memalign((void**)&data, 16, sizeof(le_data)*DATA_REP) == 0, "unable to allocate memory for fixture");
-        fail_unless(posix_memalign((void**)&data2, 16, sizeof(le_data)*DATA_REP) == 0, "unable to allocate memory for fixture");
+	data = malloc(sizeof(le_data)*DATA_REP);
+	data2 = malloc(sizeof(le_data)*DATA_REP);
+	fail_unless(!!data, "unable to allocate memory for fixture");
+        fail_unless(!!data2, "unable to allocate memory for fixture");
         p = data;
         /* make multiple copies of le_data, we need to run readint tests in a loop, so we need
          * to give it some data to run it on */
@@ -223,24 +225,42 @@ static void data_teardown(void)
 }
 
 /* test reading with different alignments, _i is parameter from tcase_add_loop_test */
-START_TEST (test_cli_readint)
+START_TEST (test_cli_readint16)
+{
+    size_t j;
+    int16_t value;
+    /* read 2 bytes apart, start is not always aligned*/
+    for(j=_i;j <= DATA_REP*sizeof(le_data)-2;j += 2) {
+        value = le_expected[j&3];
+        fail_unless(cli_readint16(&data[j]) == value, "(1) data read must be little endian");
+    }
+    /* read 2 bytes apart, always aligned*/
+    for(j=0;j <= DATA_REP*sizeof(le_data)-2;j += 2) {
+        value = le_expected[j&3];
+        fail_unless(cli_readint16(&data[j]) == value, "(2) data read must be little endian");
+    }
+}
+END_TEST
+
+/* test reading with different alignments, _i is parameter from tcase_add_loop_test */
+START_TEST (test_cli_readint32)
 {
     size_t j;
     int32_t value = le_expected[_i&3];
     /* read 4 bytes apart, start is not always aligned*/
-    for(j=_i;j < DATA_REP*sizeof(le_data) - 4;j += 4) {
+    for(j=_i;j < DATA_REP*sizeof(le_data)-4;j += 4) {
         fail_unless(cli_readint32(&data[j]) == value, "(1) data read must be little endian");
     }
     value = le_expected[0];
     /* read 4 bytes apart, always aligned*/
-    for(j=0;j < DATA_REP*sizeof(le_data) - 4;j += 4) {
+    for(j=0;j < DATA_REP*sizeof(le_data)-4;j += 4) {
         fail_unless(cli_readint32(&data[j]) == value, "(2) data read must be little endian");
     }
 }
 END_TEST
 
 /* test writing with different alignments, _i is parameter from tcase_add_loop_test */
-START_TEST (test_cli_writeint)
+START_TEST (test_cli_writeint32)
 {
     size_t j;
     /* write 4 bytes apart, start is not always aligned*/
@@ -267,8 +287,9 @@ static Suite *test_cli_suite(void)
 
     suite_add_tcase (s, tc_cli_others);
     tcase_add_checked_fixture (tc_cli_others, data_setup, data_teardown);
-    tcase_add_loop_test(tc_cli_others, test_cli_readint, 0, 15);
-    tcase_add_loop_test(tc_cli_others, test_cli_writeint, 0, 15);
+    tcase_add_loop_test(tc_cli_others, test_cli_readint32, 0, 15);
+    tcase_add_loop_test(tc_cli_others, test_cli_readint16, 0, 15);
+    tcase_add_loop_test(tc_cli_others, test_cli_writeint32, 0, 15);
 
     return s;
 }
