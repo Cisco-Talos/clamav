@@ -84,7 +84,7 @@ struct msexp_hdr {
     if(ret == -1 || (unsigned int) ret != w)	\
 	return CL_EIO;				\
     wbytes += w;				\
-    if(wbytes >= hdr.fsize)			\
+    if(wbytes >= EC32(hdr.fsize))		\
 	return CL_SUCCESS;			\
     w = 0;
 
@@ -106,9 +106,9 @@ int cli_msexpand(int fd, int ofd, cli_ctx *ctx)
 	return CL_EFORMAT;
     }
 
-    cli_dbgmsg("MSEXPAND: File size from header: %u\n", hdr.fsize);
+    cli_dbgmsg("MSEXPAND: File size from header: %u\n", EC32(hdr.fsize));
 
-    if(cli_checklimits("MSEXPAND", ctx, hdr.fsize, 0, 0)!=CL_CLEAN)
+    if(cli_checklimits("MSEXPAND", ctx, EC32(hdr.fsize), 0, 0)!=CL_CLEAN)
         return CL_SUCCESS;
 
     while(1) {
