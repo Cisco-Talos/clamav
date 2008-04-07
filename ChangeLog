@@ -1,3 +1,7 @@
+Mon Apr  7 12:51:43 CEST 2008 (tk)
+----------------------------------
+  * libclamav: scan for embedded PEs inside OLE2 files (bb#914)
+
 Mon Apr  7 11:15:49 CEST 2008 (tk)
 ----------------------------------
   * libclamav/chmunpack.c,cab.c: downgrade some error messages (bb#911, bb#798)
