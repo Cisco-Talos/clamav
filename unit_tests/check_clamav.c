@@ -165,10 +165,10 @@ END_TEST
 START_TEST (test_cl_strerror)
 END_TEST
 
-Suite *test_cl_suite(void)
+static Suite *test_cl_suite(void)
 {
-	Suite *s = suite_create("cl_api");
-	TCase *tc_cl = tcase_create("cl_dup");
+    Suite *s = suite_create("cl_api");
+    TCase *tc_cl = tcase_create("cl_dup");
 
     suite_add_tcase (s, tc_cl);
     tcase_add_test(tc_cl, test_cl_free);
@@ -194,11 +194,91 @@ Suite *test_cl_suite(void)
     return s;
 }
 
+static uint8_t le_data[4] = {0x67,0x45,0x23,0x01};
+static int32_t le_expected[4] = { 0x01234567, 0x67012345, 0x45670123, 0x23456701};
+uint8_t *data;
+uint8_t *data2;
+#define DATA_REP 100
+
+static void data_setup(void)
+{
+        uint8_t *p;
+        size_t i;
+
+        fail_unless(posix_memalign((void**)&data, 16, sizeof(le_data)*DATA_REP) == 0, "unable to allocate memory for fixture");
+        fail_unless(posix_memalign((void**)&data2, 16, sizeof(le_data)*DATA_REP) == 0, "unable to allocate memory for fixture");
+        p = data;
+        /* make multiple copies of le_data, we need to run readint tests in a loop, so we need
+         * to give it some data to run it on */
+        for(i=0; i<DATA_REP;i++) {
+                memcpy(p, le_data, sizeof(le_data));
+                p += sizeof(le_data);
+        }
+        memset(data2, 0, DATA_REP*sizeof(le_data));
+}
+
+static void data_teardown(void)
+{
+        free(data);
+}
+
+/* test reading with different alignments, _i is parameter from tcase_add_loop_test */
+START_TEST (test_cli_readint)
+{
+    size_t j;
+    int32_t value = le_expected[_i&3];
+    /* read 4 bytes apart, start is not always aligned*/
+    for(j=_i;j < DATA_REP*sizeof(le_data) - 4;j += 4) {
+        fail_unless(cli_readint32(&data[j]) == value, "(1) data read must be little endian");
+    }
+    value = le_expected[0];
+    /* read 4 bytes apart, always aligned*/
+    for(j=0;j < DATA_REP*sizeof(le_data) - 4;j += 4) {
+        fail_unless(cli_readint32(&data[j]) == value, "(2) data read must be little endian");
+    }
+}
+END_TEST
+
+/* test writing with different alignments, _i is parameter from tcase_add_loop_test */
+START_TEST (test_cli_writeint)
+{
+    size_t j;
+    /* write 4 bytes apart, start is not always aligned*/
+    for(j=_i;j < DATA_REP*sizeof(le_data) - 4;j += 4) {
+        cli_writeint32(&data2[j], 0x12345678);
+    }
+    for(j=_i;j < DATA_REP*sizeof(le_data) - 4;j += 4) {
+        fail_unless(cli_readint32(&data2[j]) == 0x12345678, "write/read mismatch");
+    }
+    /* write 4 bytes apart, always aligned*/
+    for(j=0;j < DATA_REP*sizeof(le_data) - 4;j += 4) {
+        cli_writeint32(&data2[j], 0x12345678);
+    }
+    for(j=0;j < DATA_REP*sizeof(le_data) - 4;j += 4) {
+        fail_unless(cli_readint32(&data2[j]) == 0x12345678, "write/read mismatch");
+    }
+}
+END_TEST
+
+static Suite *test_cli_suite(void)
+{
+    Suite *s = suite_create("cli");
+    TCase *tc_cli_others = tcase_create("byteorder_macros");
+
+    suite_add_tcase (s, tc_cli_others);
+    tcase_add_checked_fixture (tc_cli_others, data_setup, data_teardown);
+    tcase_add_loop_test(tc_cli_others, test_cli_readint, 0, 15);
+    tcase_add_loop_test(tc_cli_others, test_cli_writeint, 0, 15);
+
+    return s;
+}
+
 int main(int argc, char **argv)
 {
-	int nf;
-	Suite *s = test_cl_suite();
-	SRunner *sr = srunner_create(s);
+    int nf;
+    Suite *s = test_cl_suite();
+    SRunner *sr = srunner_create(s);
+    srunner_add_suite(sr, test_cli_suite());
 
     srunner_set_log(sr, "test.log");
     srunner_run_all(sr, CK_NORMAL);
