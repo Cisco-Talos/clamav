@@ -592,10 +592,7 @@ cli_rmdirs(const char *name)
     }
 
     if(!S_ISDIR(statb.st_mode)) {
-	if(cli_unlink(name) < 0) {
-	    cli_warnmsg("cli_rmdirs: Can't remove %s: %s\n", name, strerror(errno));
-	    return -1;
-	}
+	cli_unlink(name);
 	return 0;
     }
 
