@@ -128,9 +128,12 @@ typedef struct {
 #pragma pack 1
 #endif
 
-union unaligned {
+union unaligned_32 {
 	int32_t una_u32;
 	int32_t una_s32;
+} __attribute__((packed));
+
+union unaligned_16 {
 	int16_t una_s16;
 } __attribute__((packed));
 
@@ -147,9 +150,9 @@ union unaligned {
 #define	be16_to_host(v)	cbswap16(v)
 #define	be32_to_host(v)	cbswap32(v)
 #define be64_to_host(v) cbswap64(v)
-#define cli_readint32(buff) (((const union unaligned *)(buff))->una_s32)
-#define cli_readint16(buff) (((const union unaligned *)(buff))->una_s16)
-#define cli_writeint32(offset, value) (((union unaligned *)(offset))->una_u32=(uint32_t)(value))
+#define cli_readint32(buff) (((const union unaligned_32 *)(buff))->una_s32)
+#define cli_readint16(buff) (((const union unaligned_16 *)(buff))->una_s16)
+#define cli_writeint32(offset, value) (((union unaligned_32 *)(offset))->una_u32=(uint32_t)(value))
 #else
 /* Big endian */
 #define	le16_to_host(v)	cbswap16(v)
