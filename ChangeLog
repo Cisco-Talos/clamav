@@ -1,3 +1,7 @@
+Mon Apr  7 11:15:49 CEST 2008 (tk)
+----------------------------------
+  * libclamav/chmunpack.c,cab.c: downgrade some error messages (bb#911, bb#798)
+
 Sun Apr  6 12:33:25 CEST 2008 (acab)
 ------------------------------------
   * libclamav/pe.c: make petite softfail as it's really reading unaligned data
