@@ -117,6 +117,14 @@ typedef struct {
 
 
 #if WORDS_BIGENDIAN == 0
+#ifndef HAVE_ATTRIB_PACKED 
+#define __attribute__((packed))
+#endif
+union unaligned {
+	int32_t una_u32;
+	int32_t una_s32;
+	int16_t una_s16;
+} __attribute__((packed));
 /* Little endian */
 #define le16_to_host(v)	(v)
 #define le32_to_host(v)	(v)
@@ -124,9 +132,9 @@ typedef struct {
 #define	be16_to_host(v)	cbswap16(v)
 #define	be32_to_host(v)	cbswap32(v)
 #define be64_to_host(v) cbswap64(v)
-#define cli_readint32(buff) (*(const int32_t *)(buff))
-#define cli_readint16(buff) (*(const int16_t *)(buff))
-#define cli_writeint32(offset, value) (*(uint32_t *)(offset)=(uint32_t)(value))
+#define cli_readint32(buff) (((const union unaligned *)(buff))->una_s32)
+#define cli_readint16(buff) (((const union unaligned *)(buff))->una_s16)
+#define cli_writeint32(offset, value) (((union unaligned *)(offset))->una_u32=(uint32_t)(value))
 #else
 /* Big endian */
 #define	le16_to_host(v)	cbswap16(v)
