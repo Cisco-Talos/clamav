@@ -1,3 +1,7 @@
+Mon Apr  7 16:04:47 EEST 2008 (edwin)
+-------------------------------------
+  * libclamav, unit-tests: use packed attribute for unaligned access, bb #890.
+
 Mon Apr  7 12:51:43 CEST 2008 (tk)
 ----------------------------------
   * libclamav: scan for embedded PEs inside OLE2 files (bb#914)
