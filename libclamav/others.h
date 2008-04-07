@@ -117,14 +117,29 @@ typedef struct {
 
 
 #if WORDS_BIGENDIAN == 0
+
 #ifndef HAVE_ATTRIB_PACKED 
 #define __attribute__((packed))
 #endif
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1
+#endif
+
 union unaligned {
 	int32_t una_u32;
 	int32_t una_s32;
 	int16_t una_s16;
 } __attribute__((packed));
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack()
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack
+#endif
 /* Little endian */
 #define le16_to_host(v)	(v)
 #define le32_to_host(v)	(v)
