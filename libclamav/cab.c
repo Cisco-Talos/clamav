@@ -122,7 +122,8 @@ static char *cab_readstr(int fd, int *ret)
     }
 
     if(lseek(fd, (off_t) (pos + i + 1), SEEK_SET) == -1) {
-	*ret = CL_EIO;
+	/* *ret = CL_EIO; */
+	*ret = CL_EFORMAT; /* most likely a corrupted file */
 	return NULL;
     }
 
@@ -209,7 +210,8 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 
     if(cli_readn(fd, &hdr, sizeof(hdr)) != sizeof(hdr)) {
 	cli_dbgmsg("cab_open: Can't read cabinet header\n");
-	return CL_EIO;
+	/* return CL_EIO; */
+	return CL_EFORMAT; /* most likely a corrupted file */
     }
 
     if(EC32(hdr.signature) != 0x4643534d) {
@@ -268,7 +270,8 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
     if(cab->flags & 0x0004) {
 	if(cli_readn(fd, &hdr_opt, sizeof(hdr_opt)) != sizeof(hdr_opt)) {
 	    cli_dbgmsg("cab_open: Can't read file header (fake cab?)\n");
-	    return CL_EIO;
+	    /* return CL_EIO; */
+	    return CL_EFORMAT; /* most likely a corrupted file */
 	}
 
 	cab->reshdr = EC16(hdr_opt.cbCFHeader);
@@ -278,7 +281,8 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	if(cab->reshdr) {
 	    if(lseek(fd, cab->reshdr, SEEK_CUR) == -1) {
 		cli_dbgmsg("cab_open: Can't lseek to %u (fake cab?)\n", cab->reshdr);
-		return CL_EIO;
+		/* return CL_EIO; */
+		return CL_EFORMAT; /* most likely a corrupted file */
 	    }
 	}
     }
@@ -336,14 +340,16 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	if(cli_readn(fd, &folder_hdr, sizeof(folder_hdr)) != sizeof(folder_hdr)) {
 	    cli_errmsg("cab_open: Can't read header for folder %u\n", i);
 	    cab_free(cab);
-	    return CL_EIO;
+	    /* return CL_EIO; */
+	    return CL_EFORMAT; /* most likely a corrupted file */
 	}
 
 	if(resfold) {
 	    if(lseek(fd, resfold, SEEK_CUR) == -1) {
 		cli_errmsg("cab_open: Can't lseek to %u (resfold)\n", (unsigned int) resfold);
 		cab_free(cab);
-		return CL_EIO;
+		/* return CL_EIO; */
+		return CL_EFORMAT; /* most likely a corrupted file */
 	    }
 	}
 
@@ -392,7 +398,8 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	if(cli_readn(fd, &file_hdr, sizeof(file_hdr)) != sizeof(file_hdr)) {
 	    cli_errmsg("cab_open: Can't read file %u header\n", i);
 	    cab_free(cab);
-	    return CL_EIO;
+	    /* return CL_EIO; */
+	    return CL_EFORMAT; /* most likely a corrupted file */
 	}
 
 	file = (struct cab_file *) cli_calloc(1, sizeof(struct cab_file));
@@ -483,12 +490,14 @@ static int cab_read_block(int fd, struct cab_state *state, uint16_t resdata)
 
     if(cli_readn(fd, &block_hdr, sizeof(block_hdr)) != sizeof(block_hdr)) {
 	cli_dbgmsg("cab_read_block: Can't read block header\n");
-	return CL_EIO;
+	/* return CL_EIO; */
+	return CL_EFORMAT; /* most likely a corrupted file */
     }
 
     if(resdata && lseek(fd, (off_t) resdata, SEEK_CUR) == -1) {
 	cli_dbgmsg("cab_read_block: lseek failed\n");
-	return CL_EIO;
+	/* return CL_EIO; */
+	return CL_EFORMAT; /* most likely a corrupted file */
     }
 
     state->blklen = EC16(block_hdr.cbData);
@@ -506,7 +515,8 @@ static int cab_read_block(int fd, struct cab_state *state, uint16_t resdata)
 
     if(cli_readn(fd, state->block, state->blklen) != state->blklen) {
 	cli_dbgmsg("cab_read_block: Can't read block data\n");
-	return CL_EIO;
+	/* return CL_EIO; */
+	return CL_EFORMAT; /* most likely a corrupted file */
     }
 
     state->pt = state->end = state->block;
