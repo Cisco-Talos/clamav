@@ -324,7 +324,7 @@ dnl    CFLAGS="$CFLAGS -fprofile-arcs -ftest-coverage"
 dnl    LDFLAGS="$LDFLAGS -lgcov"
     AC_DEFINE([HAVE_CHECK], 1, [Enable 'check' unit tests])
     AC_CHECK_HEADERS(check.h)
-    AC_CHECK_LIB(check, srunner_create, , LCHECK="no")
+    AC_CHECK_LIB(check, srunner_create, LCHECK="yes", LCHECK="no")
 fi
 
 if test "$LCHECK" = "no"; then

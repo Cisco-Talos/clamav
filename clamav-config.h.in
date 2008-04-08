@@ -165,9 +165,6 @@
 /* in_port_t is defined */
 #undef HAVE_IN_PORT_T
 
-/* Define to 1 if you have the `check' library (-lcheck). */
-#undef HAVE_LIBCHECK
-
 /* Define if you have the gmp library. */
 #undef HAVE_LIBGMP
 

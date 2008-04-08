@@ -200,7 +200,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 check_clamav_SOURCES = check_clamav.c $(top_builddir)/libclamav/clamav.h
 check_clamav_CFLAGS = 
-check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@
+check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ -lcheck
 all: all-am
 
 .SUFFIXES:

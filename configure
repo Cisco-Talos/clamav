@@ -13194,8 +13194,7 @@ fi
 
 done
 
-
-{ echo "$as_me:$LINENO: checking for srunner_create in -lcheck" >&5
+    { echo "$as_me:$LINENO: checking for srunner_create in -lcheck" >&5
 echo $ECHO_N "checking for srunner_create in -lcheck... $ECHO_C" >&6; }
 if test "${ac_cv_lib_check_srunner_create+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
@@ -13257,12 +13256,7 @@ fi
 { echo "$as_me:$LINENO: result: $ac_cv_lib_check_srunner_create" >&5
 echo "${ECHO_T}$ac_cv_lib_check_srunner_create" >&6; }
 if test $ac_cv_lib_check_srunner_create = yes; then
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LIBCHECK 1
-_ACEOF
-
-  LIBS="-lcheck $LIBS"
-
+  LCHECK="yes"
 else
   LCHECK="no"
 fi
