@@ -129,7 +129,7 @@ typedef struct {
 #endif
 
 union unaligned_32 {
-	int32_t una_u32;
+	uint32_t una_u32;
 	int32_t una_s32;
 } __attribute__((packed));
 
