@@ -124,11 +124,11 @@ static const unsigned short mszip_bit_mask_tab[17] = {
 } while (0)
 
 static int mszip_read_input(struct mszip_stream *zip) {
-  int read = zip->read ? zip->read(zip->file, zip->inbuf, (int)zip->inbuf_size) : cli_readn(zip->fd, zip->inbuf, (int)zip->inbuf_size);
-  if (read < 0) return zip->error = CL_EIO;
+  int nread = zip->read_cb ? zip->read_cb(zip->file, zip->inbuf, (int)zip->inbuf_size) : cli_readn(zip->fd, zip->inbuf, (int)zip->inbuf_size);
+  if (nread < 0) return zip->error = CL_EIO;
 
   zip->i_ptr = &zip->inbuf[0];
-  zip->i_end = &zip->inbuf[read];
+  zip->i_end = &zip->inbuf[nread];
 
   return CL_SUCCESS;
 }
@@ -563,7 +563,7 @@ struct mszip_stream *mszip_init(int fd,
 				  int input_buffer_size,
 				  int repair_mode,
 				  struct cab_file *file,
-			          int (*read)(struct cab_file *, unsigned char *, int))
+			          int (*read_cb)(struct cab_file *, unsigned char *, int))
 {
   struct mszip_stream *zip;
 
@@ -597,7 +597,7 @@ struct mszip_stream *mszip_init(int fd,
   zip->bit_buffer = 0; zip->bits_left = 0;
 
   zip->file = file;
-  zip->read = read;
+  zip->read_cb = read_cb;
 
   return zip;
 }
@@ -748,7 +748,7 @@ void mszip_free(struct mszip_stream *zip) {
 } while (0)
 
 static int lzx_read_input(struct lzx_stream *lzx) {
-  int bread = lzx->read ? lzx->read(lzx->file, &lzx->inbuf[0], (int)lzx->inbuf_size) : cli_readn(lzx->fd, &lzx->inbuf[0], (int)lzx->inbuf_size);
+  int bread = lzx->read_cb ? lzx->read_cb(lzx->file, &lzx->inbuf[0], (int)lzx->inbuf_size) : cli_readn(lzx->fd, &lzx->inbuf[0], (int)lzx->inbuf_size);
   if (bread < 0) return lzx->error = CL_EIO;
 
   /* huff decode's ENSURE_BYTES(16) might overrun the input stream, even
@@ -985,7 +985,7 @@ struct lzx_stream *lzx_init(int fd,
 			      int input_buffer_size,
 			      off_t output_length,
 			      struct cab_file *file,
-			      int (*read)(struct cab_file *, unsigned char *, int))
+			      int (*read_cb)(struct cab_file *, unsigned char *, int))
 {
   unsigned int window_size = 1 << window_bits;
   struct lzx_stream *lzx;
@@ -1035,7 +1035,7 @@ struct lzx_stream *lzx_init(int fd,
   lzx->offset          = 0;
   lzx->length          = output_length;
   lzx->file	       = file;
-  lzx->read	       = read;
+  lzx->read_cb	       = read_cb;
 
   lzx->inbuf_size      = input_buffer_size;
   lzx->window_size     = 1 << window_bits;
@@ -1576,11 +1576,11 @@ void lzx_free(struct lzx_stream *lzx) {
 } while (0)
 
 static int qtm_read_input(struct qtm_stream *qtm) {
-  int read = qtm->read ? qtm->read(qtm->file, &qtm->inbuf[0], (int)qtm->inbuf_size) : cli_readn(qtm->fd, &qtm->inbuf[0], (int)qtm->inbuf_size);
-  if (read < 0) return qtm->error = CL_EIO;
+  int nread = qtm->read_cb ? qtm->read_cb(qtm->file, &qtm->inbuf[0], (int)qtm->inbuf_size) : cli_readn(qtm->fd, &qtm->inbuf[0], (int)qtm->inbuf_size);
+  if (nread < 0) return qtm->error = CL_EIO;
 
   qtm->i_ptr = &qtm->inbuf[0];
-  qtm->i_end = &qtm->inbuf[read];
+  qtm->i_end = &qtm->inbuf[nread];
   return CL_SUCCESS;
 }
 
@@ -1688,7 +1688,7 @@ static void qtm_init_model(struct qtm_model *model,
 struct qtm_stream *qtm_init(int fd, int ofd,
 			      int window_bits, int input_buffer_size,
 			      struct cab_file *file,
-			      int (*read)(struct cab_file *, unsigned char *, int))
+			      int (*read_cb)(struct cab_file *, unsigned char *, int))
 {
   unsigned int window_size = 1 << window_bits;
   struct qtm_stream *qtm;
@@ -1768,7 +1768,7 @@ struct qtm_stream *qtm_init(int fd, int ofd,
   qtm_init_model(&qtm->model7,    &qtm->m7sym[0],   0, 7);
 
   qtm->file = file;
-  qtm->read = read;
+  qtm->read_cb = read_cb;
 
   /* all ok */
   return qtm;

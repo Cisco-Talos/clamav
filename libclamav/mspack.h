@@ -82,7 +82,7 @@ struct mszip_stream {
 
   /* cabinet related stuff */
   struct cab_file *file;
-  int (*read)(struct cab_file *, unsigned char *, int);
+  int (*read_cb)(struct cab_file *, unsigned char *, int);
 
   unsigned char wflag;	    /* write flag */
 
@@ -93,7 +93,7 @@ struct mszip_stream *mszip_init(int fd,
 				  int input_buffer_size,
 				  int repair_mode,
 				  struct cab_file *file,
-			          int (*read)(struct cab_file *, unsigned char *, int));
+			          int (*read_cb)(struct cab_file *, unsigned char *, int));
 
 extern int mszip_decompress(struct mszip_stream *zip, off_t out_bytes);
 
@@ -167,7 +167,7 @@ struct qtm_stream {
 
   /* cabinet related stuff */
   struct cab_file *file;
-  int (*read)(struct cab_file *, unsigned char *, int);
+  int (*read_cb)(struct cab_file *, unsigned char *, int);
 
   /* I/O buffers - 2*/
   unsigned char *inbuf, *i_ptr, *i_end, *o_ptr, *o_end;
@@ -181,7 +181,7 @@ extern struct qtm_stream *qtm_init(int fd,
 				     int window_bits,
 				     int input_buffer_size,
 				     struct cab_file *file,
-				     int (*read)(struct cab_file *, unsigned char *, int));
+				     int (*read_cb)(struct cab_file *, unsigned char *, int));
 
 extern int qtm_decompress(struct qtm_stream *qtm, off_t out_bytes);
 
@@ -274,7 +274,7 @@ struct lzx_stream {
 
   /* cabinet related stuff */
   struct cab_file *file;
-  int (*read)(struct cab_file *, unsigned char *, int);
+  int (*read_cb)(struct cab_file *, unsigned char *, int);
 
   unsigned char extra_bits[51];
 
@@ -287,7 +287,7 @@ struct lzx_stream *lzx_init(int fd,
 			      int input_buffer_size,
 			      off_t output_length,
 			      struct cab_file *file,
-			      int (*read)(struct cab_file *, unsigned char *, int));
+			      int (*read_cb)(struct cab_file *, unsigned char *, int));
 
 extern void lzx_set_output_length(struct lzx_stream *lzx,
 				   off_t output_length);
