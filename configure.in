@@ -324,7 +324,7 @@ dnl    CFLAGS="$CFLAGS -fprofile-arcs -ftest-coverage"
 dnl    LDFLAGS="$LDFLAGS -lgcov"
     AC_DEFINE([HAVE_CHECK], 1, [Enable 'check' unit tests])
     AC_CHECK_HEADERS(check.h)
-    AC_CHECK_LIB(check, srunner_create, LCHECK="yes", LCHECK="no")
+    AC_CHECK_LIB(check, srunner_create, LCHECK="-lcheck", LCHECK="no")
 fi
 
 if test "$LCHECK" = "no"; then
@@ -332,6 +332,8 @@ if test "$LCHECK" = "no"; then
     echo "   ERROR!  Check was configured, but not found.  Get it from http://check.sf.net/"
     exit 1
 fi
+
+AC_SUBST(LCHECK)
 
 have_pthreads=no
 AC_CHECK_HEADER([pthread.h],[have_pthreads=yes],)

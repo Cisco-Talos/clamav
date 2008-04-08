@@ -109,6 +109,7 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+LCHECK = @LCHECK@
 LDFLAGS = @LDFLAGS@
 LIBBZ2 = @LIBBZ2@
 LIBBZ2_PREFIX = @LIBBZ2_PREFIX@
@@ -200,7 +201,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 check_clamav_SOURCES = check_clamav.c $(top_builddir)/libclamav/clamav.h
 check_clamav_CFLAGS = 
-check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ -lcheck
+check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @LCHECK@
 all: all-am
 
 .SUFFIXES:

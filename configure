@@ -867,6 +867,7 @@ LIBTOOL
 VERSIONSCRIPTFLAG
 VERSIONSCRIPT_TRUE
 VERSIONSCRIPT_FALSE
+LCHECK
 MAINTAINER_MODE_TRUE
 MAINTAINER_MODE_FALSE
 MAINT
@@ -4765,7 +4766,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 4768 "configure"' > conftest.$ac_ext
+  echo '#line 4769 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -6855,11 +6856,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:6858: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:6859: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:6862: \$? = $ac_status" >&5
+   echo "$as_me:6863: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7145,11 +7146,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7148: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7149: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7152: \$? = $ac_status" >&5
+   echo "$as_me:7153: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7249,11 +7250,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7252: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7253: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7256: \$? = $ac_status" >&5
+   echo "$as_me:7257: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -9626,7 +9627,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 9629 "configure"
+#line 9630 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -9726,7 +9727,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 9729 "configure"
+#line 9730 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13256,7 +13257,7 @@ fi
 { echo "$as_me:$LINENO: result: $ac_cv_lib_check_srunner_create" >&5
 echo "${ECHO_T}$ac_cv_lib_check_srunner_create" >&6; }
 if test $ac_cv_lib_check_srunner_create = yes; then
-  LCHECK="yes"
+  LCHECK="-lcheck"
 else
   LCHECK="no"
 fi
@@ -13268,6 +13269,8 @@ if test "$LCHECK" = "no"; then
     echo "   ERROR!  Check was configured, but not found.  Get it from http://check.sf.net/"
     exit 1
 fi
+
+
 
 have_pthreads=no
 if test "${ac_cv_header_pthread_h+set}" = set; then
@@ -19466,6 +19469,7 @@ LIBTOOL!$LIBTOOL$ac_delim
 VERSIONSCRIPTFLAG!$VERSIONSCRIPTFLAG$ac_delim
 VERSIONSCRIPT_TRUE!$VERSIONSCRIPT_TRUE$ac_delim
 VERSIONSCRIPT_FALSE!$VERSIONSCRIPT_FALSE$ac_delim
+LCHECK!$LCHECK$ac_delim
 MAINTAINER_MODE_TRUE!$MAINTAINER_MODE_TRUE$ac_delim
 MAINTAINER_MODE_FALSE!$MAINTAINER_MODE_FALSE$ac_delim
 MAINT!$MAINT$ac_delim
@@ -19498,7 +19502,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 35; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 36; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
