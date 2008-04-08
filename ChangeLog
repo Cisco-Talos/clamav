@@ -1,6 +1,6 @@
 Tue Apr  8 22:27:11 EEST 2008 (edwin)
 -------------------------------------
-  * libclamav/mspack.[ch]: fix build on NetBSD 4.0
+  * libclamav/mspack.[ch]: fix build on NetBSD 4.0 (bb #921)
 
 Tue Apr  8 19:04:50 CEST 2008 (acab)
 ------------------------------------
