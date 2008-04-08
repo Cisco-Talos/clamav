@@ -766,8 +766,10 @@ static int chm_decompress_stream(int fd, chm_metadata_t *metadata, const char *d
 	lzx_free(stream);
 	
 	/* Delete the file */
-	if(cli_unlink(filename)) retval = -1;
-	retval = tmpfd;
+	if(cli_unlink(filename))
+		retval = -1;
+	else
+		retval = tmpfd;
 	
 abort:
 	if ((retval == -1) && (tmpfd >= 0)) {
