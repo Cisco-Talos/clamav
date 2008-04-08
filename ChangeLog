@@ -1,3 +1,7 @@
+Tue Apr  8 19:04:50 CEST 2008 (acab)
+------------------------------------
+  * libclamav: hardfail on unlink failure
+
 Mon Apr  7 22:38:27 CEST 2008 (tk)
 ----------------------------------
   * libclamav/msexpand.c: fix big-endian support

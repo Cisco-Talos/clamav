@@ -325,7 +325,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    rc = cli_magic_scandesc(rar_state.ofd,ctx);
 	    close(rar_state.ofd);
 	    if(!cli_leavetemps_flag) 
-		cli_unlink(rar_state.filename);
+		if (cli_unlink(rar_state.filename)) ret = CL_EIO;
 	    if(rc == CL_VIRUS ) {
 		cli_dbgmsg("RAR: infected with %s\n",*ctx->virname);
 		ret = CL_VIRUS;
@@ -466,9 +466,12 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
 	cli_dbgmsg("GZip: Unable to malloc %u bytes.\n", FILEBUFF);
 	gzclose(gd);
 	close(fd);
-	if(!cli_leavetemps_flag)
-	    cli_unlink(tmpname);
-	free(tmpname);	
+	if(!cli_leavetemps_flag) {
+	    if(cli_unlink(tmpname)) {
+	    	free(tmpname);
+		return CL_EIO;
+	    }
+	}
 	return CL_EMEM;
     }
 
@@ -481,8 +484,14 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
 	if(cli_writen(fd, buff, bytes) != bytes) {
 	    cli_dbgmsg("GZip: Can't write to file.\n");
 	    close(fd);
-	    if(!cli_leavetemps_flag)
-		cli_unlink(tmpname);
+	    if(!cli_leavetemps_flag) {
+	    	if (cli_unlink(tmpname)) {
+		    free(tmpname);
+		    gzclose(gd);
+		    free(buff);
+		    return CL_EIO;
+		}
+	    }
 	    free(tmpname);	
 	    gzclose(gd);
 	    free(buff);
@@ -496,7 +505,7 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
     if(ret == CL_VIRUS) {
 	close(fd);
 	if(!cli_leavetemps_flag)
-	    cli_unlink(tmpname);
+	    if (cli_unlink(tmpname)) ret = CL_EIO;
 	free(tmpname);	
 	return ret;
     }
@@ -505,14 +514,18 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
     if((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS ) {
 	cli_dbgmsg("GZip: Infected with %s\n", *ctx->virname);
 	close(fd);
-	if(!cli_leavetemps_flag)
-	    cli_unlink(tmpname);
+	if(!cli_leavetemps_flag) {
+	    if (cli_unlink(tmpname)) {
+	    	free(tmpname);
+		return CL_EIO;
+	    }
+	}
 	free(tmpname);	
 	return CL_VIRUS;
     }
     close(fd);
     if(!cli_leavetemps_flag)
-	cli_unlink(tmpname);
+	if (cli_unlink(tmpname)) ret = CL_EIO;
     free(tmpname);	
 
     return ret;
@@ -562,8 +575,14 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
     if(!(buff = (char *) cli_malloc(FILEBUFF))) {
 	cli_dbgmsg("Bzip: Unable to malloc %u bytes.\n", FILEBUFF);
 	close(fd);
-	if(!cli_leavetemps_flag)
-	    cli_unlink(tmpname);
+	if(!cli_leavetemps_flag) {
+	    if (cli_unlink(tmpname)) {
+	    	free(tmpname);
+		fclose(fs);
+		BZ2_bzReadClose(&bzerror, bfd);
+		return CL_EIO;
+	    }
+	}
 	free(tmpname);	
 	fclose(fs);
 	BZ2_bzReadClose(&bzerror, bfd);
@@ -580,8 +599,14 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
 	    cli_dbgmsg("Bzip: Can't write to file.\n");
 	    BZ2_bzReadClose(&bzerror, bfd);
 	    close(fd);
-	    if(!cli_leavetemps_flag)
-		cli_unlink(tmpname);
+	    if(!cli_leavetemps_flag) {
+		if (cli_unlink(tmpname)) {
+		    free(tmpname);
+		    free(buff);
+		    fclose(fs);
+		    return CL_EIO;
+		}
+	    }
 	    free(tmpname);	
 	    free(buff);
 	    fclose(fs);
@@ -595,7 +620,7 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
     if(ret == CL_VIRUS) {
 	close(fd);
 	if(!cli_leavetemps_flag)
-	    cli_unlink(tmpname);
+	    if (cli_unlink(tmpname)) ret = CL_EIO;
 	free(tmpname);	
 	fclose(fs);
 	return ret;
@@ -607,7 +632,7 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
     }
     close(fd);
     if(!cli_leavetemps_flag)
-	cli_unlink(tmpname);
+	if (cli_unlink(tmpname)) ret = CL_EIO;
     free(tmpname);	
     fclose(fs);
 
@@ -634,7 +659,7 @@ static int cli_scanszdd(int desc, cli_ctx *ctx)
     if(ret != CL_SUCCESS) { /* CL_VIRUS or some error */
 	close(ofd);
 	if(!cli_leavetemps_flag)
-	    cli_unlink(tmpname);
+	    if (cli_unlink(tmpname)) ret = CL_EIO;
 	free(tmpname);	
 	return ret;
     }
@@ -644,7 +669,7 @@ static int cli_scanszdd(int desc, cli_ctx *ctx)
     ret = cli_magic_scandesc(ofd, ctx);
     close(ofd);
     if(!cli_leavetemps_flag)
-	cli_unlink(tmpname);
+	if (cli_unlink(tmpname)) ret = CL_EIO;
     free(tmpname);	
 
     return ret;
@@ -680,8 +705,13 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
 	else
 	    ret = cli_scanfile(tempname, ctx);
 
-	if(!cli_leavetemps_flag)
-	    cli_unlink(tempname);
+	if(!cli_leavetemps_flag) {
+	    if (cli_unlink(tempname)) {
+	    	free(tempname);
+		ret = CL_EIO;
+		break;
+	    }
+	}
 	free(tempname);
 	if(ret == CL_VIRUS)
 	    break;
@@ -1043,7 +1073,7 @@ static int cli_scanhtml_utf16(int desc, cli_ctx *ctx)
     close(fd);
 
     if(!cli_leavetemps_flag)
-	cli_unlink(tempname);
+	if (cli_unlink(tempname)) ret = CL_EIO;
     else
 	cli_dbgmsg("cli_scanhtml_utf16: Decoded HTML data saved in %s\n", tempname);
     free(tempname);
@@ -1343,7 +1373,7 @@ static int cli_scancryptff(int desc, cli_ctx *ctx)
     if(cli_leavetemps_flag)
 	cli_dbgmsg("CryptFF: Decompressed data saved in %s\n", tempfile);
     else
-	cli_unlink(tempfile);
+	if (cli_unlink(tempfile)) ret = CL_EIO;
 
     free(tempfile);
     return ret;
@@ -1488,8 +1518,12 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
 	if(cli_writen(fd, buff, bytes) != bytes) {
 	    cli_dbgmsg("cli_scanembpe: Can't write to temporary file\n");
 	    close(fd);
-	    if(!cli_leavetemps_flag)
-		cli_unlink(tmpname);
+	    if(!cli_leavetemps_flag) {
+		if (cli_unlink(tmpname)) {
+		    free(tmpname);
+		    return CL_EIO;
+		}
+	    }
 	    free(tmpname);	
 	    return CL_EIO;
 	}
@@ -1500,16 +1534,24 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
     if((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS) {
 	cli_dbgmsg("cli_scanembpe: Infected with %s\n", *ctx->virname);
 	close(fd);
-	if(!cli_leavetemps_flag)
-	    cli_unlink(tmpname);
+	if(!cli_leavetemps_flag) {
+	    if (cli_unlink(tmpname)) {
+	    	free(tmpname);
+		return CL_EIO;
+	    }
+	}
 	free(tmpname);	
 	return CL_VIRUS;
     }
     ctx->recursion--;
 
     close(fd);
-    if(!cli_leavetemps_flag)
-	cli_unlink(tmpname);
+    if(!cli_leavetemps_flag) {
+	if (cli_unlink(tmpname)) {
+	    free(tmpname);
+	    return CL_EIO;
+	}
+    }
     free(tmpname);
 
     /* intentionally ignore possible errors from cli_magic_scandesc */

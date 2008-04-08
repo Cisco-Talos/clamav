@@ -395,7 +395,10 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx)
 		if(streamend <= streamstart) {
 			close(fout);
 			cli_dbgmsg("cli_pdf: Empty stream\n");
-			cli_unlink(fullname);
+			if (cli_unlink(fullname)) {
+				rc = CL_EIO;
+				break;
+			}
 			continue;
 		}
 		calculated_streamlen = (int)(streamend - streamstart);
@@ -421,7 +424,10 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx)
 
 			if(ret != CL_CLEAN) {
 				close(fout);
-				cli_unlink(fullname);
+				if (cli_unlink(fullname)) {
+					rc = CL_EIO;
+					break;
+				}
 				continue;
 			}
 
@@ -429,7 +435,10 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx)
 
 			if(tmpbuf == NULL) {
 				close(fout);
-				cli_unlink(fullname);
+				if (cli_unlink(fullname)) {
+					rc = CL_EIO;
+					break;
+				}
 				continue;
 			}
 
@@ -438,7 +447,10 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx)
 			if(ret == -1) {
 				free(tmpbuf);
 				close(fout);
-				cli_unlink(fullname);
+				if (cli_unlink(fullname)) {
+					rc = CL_EIO;
+					break;
+				}
 				continue;
 			}
 			if(ret) {
@@ -450,7 +462,10 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx)
 				if(t == NULL) {
 					free(tmpbuf);
 					close(fout);
-					cli_unlink(fullname);
+					if (cli_unlink(fullname)) {
+						rc = CL_EIO;
+						break;
+					}
 					continue;
 				}
 				tmpbuf = t;
@@ -492,7 +507,10 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx)
 				if(tableFind(md5table, md5str) >= 0) {
 					cli_dbgmsg("cli_pdf: not scanning duplicate embedded file '%s'\n", fullname);
 					close(fout);
-					cli_unlink(fullname);
+					if (cli_unlink(fullname)) {
+						rc = CL_EIO;
+						break;
+					}
 					continue;
 				} else
 					tableInsert(md5table, md5str, 1);
@@ -502,7 +520,8 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx)
 			rc = cli_magic_scandesc(fout, ctx);
 		}
 		close(fout);
-		if(!cli_leavetemps_flag) cli_unlink(fullname);
+		if(!cli_leavetemps_flag)
+			if (cli_unlink(fullname)) rc = CL_EIO;
 		if(rc != CL_CLEAN) break;
 	}
 
@@ -652,7 +671,10 @@ flatedecode(unsigned char *buf, off_t len, int fout, cli_ctx *ctx)
 	}
 			
 #ifdef	SAVE_TMP
-	cli_unlink(tmpfilename);
+	if (cli_unlink(tmpfilename)) {
+		inflateEnd(&stream);
+		return CL_EIO;
+	}
 #endif
 	inflateEnd(&stream);
 	return CL_CLEAN;

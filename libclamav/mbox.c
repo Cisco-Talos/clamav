@@ -1242,7 +1242,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 		/* empty message */
 		fclose(fd);
 #ifdef	SAVE_TMP
-		cli_unlink(tmpfilename);
+		if (cli_unlink(tmpfilename)) return CL_EIO;
 #endif
 		return CL_CLEAN;
 	}
@@ -1260,7 +1260,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 #endif
 			fclose(fd);
 #ifdef	SAVE_TMP
-			cli_unlink(tmpfilename);
+			if (cli_unlink(tmpfilename)) return CL_EIO;
 #endif
 			return CL_EMEM;
 		}
@@ -1321,7 +1321,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 			signal(SIGSEGV, segv);
 #endif
 #ifdef	SAVE_TMP
-			cli_unlink(tmpfilename);
+			if (cli_unlink(tmpfilename)) return CL_EIO;
 #endif
 			return CL_EMEM;
 		}
@@ -1479,7 +1479,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 #endif
 
 #ifdef	SAVE_TMP
-	cli_unlink(tmpfilename);
+	if (cli_unlink(tmpfilename)) return CL_EIO;
 #endif
 	return retcode;
 }
@@ -3850,8 +3850,16 @@ rfc1341(message *m, const char *dir)
 							continue;
 						if(stat(fullname, &statb) < 0)
 							continue;
-						if(now - statb.st_mtime > (time_t)(7 * 24 * 3600))
-							cli_unlink(fullname);
+						if(now - statb.st_mtime > (time_t)(7 * 24 * 3600)) {
+							if (cli_unlink(fullname)) {
+								cli_unlink(outname);
+								fclose(fout);
+								free(id);
+								free(number);
+								closedir(dd);
+								return -1;
+							}
+						}
 						continue;
 					}
 
@@ -3890,9 +3898,17 @@ rfc1341(message *m, const char *dir)
 						}
 					fclose(fin);
 
-					/* don't cli_unlink if leave temps */
-					if(!cli_leavetemps_flag)
-						cli_unlink(fullname);
+					/* don't unlink if leave temps */
+					if(!cli_leavetemps_flag) {
+						if(cli_unlink(fullname)) {
+							fclose(fout);
+							cli_unlink(outname);
+							free(id);
+							free(number);
+							closedir(dd);
+							return -1;
+						}
+					}
 					break;
 				}
 				rewinddir(dd);
@@ -4393,7 +4409,7 @@ getURL(struct arg *arg)
 					if(location) {
 						char *end;
 
-						cli_unlink(fout);
+						if (cli_unlink(fout)) return NULL;
 						location += 11;
 						end = location;
 						while(*end && (*end != '\n'))

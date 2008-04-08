@@ -259,7 +259,7 @@ int cli_rmdirs(const char *dirname);
 unsigned char *cli_md5digest(int desc);
 char *cli_md5stream(FILE *fs, unsigned char *digcpy);
 char *cli_md5file(const char *filename);
-void cli_unlink(const char *pathname);
+int cli_unlink(const char *pathname);
 int cli_readn(int fd, void *buff, unsigned int count);
 int cli_writen(int fd, const void *buff, unsigned int count);
 char *cli_gentemp(const char *dir);

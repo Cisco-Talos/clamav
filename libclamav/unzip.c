@@ -284,13 +284,15 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
     lseek(of, 0, SEEK_SET);
     ret = cli_magic_scandesc(of, ctx);
     close(of);
-    if(!cli_leavetemps_flag) cli_unlink(tempfile);
+    if(!cli_leavetemps_flag)
+      if(cli_unlink(tempfile)) ret = CL_EIO;
     if(!tmpd) free(tempfile);
     return ret;
   }
 
   close(of);
-  if(!cli_leavetemps_flag) cli_unlink(tempfile);
+  if(!cli_leavetemps_flag)
+    if(cli_unlink(tempfile)) ret = CL_EIO;
   if(!tmpd) free(tempfile);
   cli_dbgmsg("cli_unzip: extraction failed\n");
   return ret;

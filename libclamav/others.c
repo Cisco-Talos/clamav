@@ -562,9 +562,13 @@ int cli_gentempfd(const char *dir, char **name, int *fd)
 /* Function: unlink
         unlink() with error checking
 */
-void cli_unlink(const char *pathname)
+int cli_unlink(const char *pathname)
 {
-	if (unlink(pathname)) cli_warnmsg("cli_unlink: failure - %s\n", strerror(errno));
+	if (unlink(pathname)==-1) {
+	    cli_warnmsg("cli_unlink: failure - %s\n", strerror(errno));
+	    return 1;
+	}
+	return 0;
 }
 
 #ifdef	C_WINDOWS
@@ -592,7 +596,7 @@ cli_rmdirs(const char *name)
     }
 
     if(!S_ISDIR(statb.st_mode)) {
-	cli_unlink(name);
+	if(cli_unlink(name)) return -1;
 	return 0;
     }
 
@@ -700,8 +704,13 @@ int cli_rmdirs(const char *dirname)
 					return -1;
 				    }
 				}
-			    } else
-				cli_unlink(path); 
+			    } else {
+				if(cli_unlink(path)) {
+				    free(path);
+				    closedir(dd);
+				    return -1;
+				}
+			    }
 			}
 			free(path);
 		    }

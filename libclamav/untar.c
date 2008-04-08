@@ -94,7 +94,7 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 				ret = cli_magic_scandesc(fout, ctx);
 				close(fout);
 				if (!cli_leavetemps_flag)
-					cli_unlink(fullname);
+					if (cli_unlink(fullname)) return CL_EIO;
 				if (ret==CL_VIRUS)
 					return CL_VIRUS;
 				fout = -1;
@@ -216,7 +216,7 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 		ret = cli_magic_scandesc(fout, ctx);
 		close(fout);
 		if (!cli_leavetemps_flag)
-			cli_unlink(fullname);
+			if (cli_unlink(fullname)) return CL_EIO;
 		if (ret==CL_VIRUS)
 			return CL_VIRUS;
 	}
