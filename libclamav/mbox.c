@@ -201,10 +201,13 @@ typedef	unsigned	int	in_addr_t;
  * more than one machine you must make sure that .../partial is on a shared
  * network filesystem
  */
+#ifdef CL_EXPERIMENTAL
+
 #ifndef	C_WINDOWS	/* TODO: when opendir() is done */
 #define	PARTIAL_DIR
 #endif
 
+#endif
 /*#define	NEW_WORLD*/
 
 /*#define	SCAN_UNENCODED_BOUNCES	*//*
