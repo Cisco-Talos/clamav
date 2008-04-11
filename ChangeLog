@@ -1,3 +1,7 @@
+Fri Apr 11 18:40:41 CEST 2008 (tk)
+----------------------------------
+  * test: add clam.chm and clam.sis (bb#902)
+
 Fri Apr 11 12:15:54 CEST 2008 (tk)
 ----------------------------------
   * test/Makefile.am: new Makefile
