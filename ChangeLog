@@ -1,3 +1,7 @@
+Mon Apr 14 22:46:17 EEST 2008
+-----------------------------
+  * libclamav/iana_tld.h, libclamav/phishcheck.c: update TLD list (bb #925)
+
 Mon Apr 14 21:35:11 CEST 2008 (tk)
 ----------------------------------
   * Check in 0.93 patches:
