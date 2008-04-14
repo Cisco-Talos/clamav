@@ -1,3 +1,7 @@
+Mon Apr 14 13:19:17 CEST 2008 (tk)
+----------------------------------
+  * test: add clam-aspack.exe, clam-pespin.exe and clam-upx.exe (bb#902)
+
 Fri Apr 11 18:40:41 CEST 2008 (tk)
 ----------------------------------
   * test: add clam.chm and clam.sis (bb#902)
