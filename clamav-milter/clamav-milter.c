@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-20080219"
+#define	CM_VERSION	"0.93"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"

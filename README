@@ -2,8 +2,8 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
-0.93rc1
--------
+0.93
+----
 
 This release introduces many new features and engine enhancements, please
 see the notes below for the list of major changes. The most visible one

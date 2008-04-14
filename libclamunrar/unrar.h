@@ -212,7 +212,6 @@ typedef struct unpack_data_tag
 	unsigned int last_length;
 	ppm_data_t ppm_data;
 	int ppm_esc_char;
-	int ppm_error;
 	rar_filter_array_t Filters;
 	rar_filter_array_t PrgStack;
 	int *old_filter_lengths;

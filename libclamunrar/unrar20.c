@@ -32,9 +32,11 @@ void unpack_init_data20(int solid, unpack_data_t *unpack_data)
 	if (!solid) {
 		unpack_data->unp_channel_delta = 0;
 		unpack_data->unp_cur_channel = 0;
+		unpack_data->unp_audio_block = 0;
 		unpack_data->unp_channels = 1;
 		memset(unpack_data->audv, 0, sizeof(unpack_data->audv));
 		memset(unpack_data->unp_old_table20, 0, sizeof(unpack_data->unp_old_table20));
+		memset(unpack_data->MD, 0, sizeof(unpack_data->MD));
 	}
 }
 

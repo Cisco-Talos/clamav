@@ -1,3 +1,14 @@
+Wed Apr  9 17:58:43 CEST 2008
+-----------------------------
+  V 0.93:
+
+  * libclamunrar: bb#541 (RAR - Version required to extract - Evasion)
+  * libclamav/spin.c: bb#876 (PeSpin Heap Overflow Vulnerability)
+  * libclamav/pe.c: bb#878 (Upack Buffer Overflow Vulnerability)
+  * libclamav/message.c: bb#881 (message.c: read beyond allocated region)
+  * libclamav/unarj.c: bb#897 (ARJ: Sample from CERT-FI hangs clamav)
+  * libclamunrar: bb#898 (RAR crashes on some fuzzed files from CERT-FI)
+
 Wed Apr  9 16:33:21 EEST 2008 (edwin)
 -------------------------------------
   * libclamav/mbox.c: mark PARTIAL_DIR as experimental code
