@@ -1174,7 +1174,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
     }
 
     if(rename(newfile, newdb) == -1) {
-	logg("!Can't rename %s to %s\n", newfile, newdb);
+	logg("!Can't rename %s to %s: %s\n", newfile, newdb, strerror(errno));
 	unlink(newfile);
 	free(newfile);
 	return 57;
