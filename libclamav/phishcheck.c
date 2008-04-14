@@ -495,7 +495,7 @@ static void get_domain(const struct phishcheck* pchk,struct string* dest,struct 
 			string_assign(dest,host);
 			return;
 		}
-		if(!isTLD(pchk,tld+1,countrycode-tld-1)) {
+		if(!isTLD(pchk,tld+1,countrycode-tld-2)) {
 			string_assign_ref(dest,host,tld+1);
 			return;/*it was a name like: subdomain.domain.uk, return domain.uk*/
 		}

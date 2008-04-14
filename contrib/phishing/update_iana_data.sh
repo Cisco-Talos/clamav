@@ -42,7 +42,7 @@ echo ")\"" >>$OUTFILE
 echo "Downloading updated country-code list from iana.org"
 wget $IANA_CCTLD -O $TMP || exit 2
 echo "Download complete, parsing data"
-CCTLDLIST=$(cat $TMP | egrep -oi "<a href=[^>]+>\\.([a-z]+).+</a>" | egrep -o ">.[a-z]+" | colrm 1 2 | tr \\n \\174 | sed 's/[^a-zA-Z]$//')
+CCTLDLIST=$(cat $TMP | egrep -oi "<a href=[^>]+>\\.([a-zA-Z]+).+</a>" | egrep -o ">.[a-zA-Z]+" | colrm 1 2 | tr \\n \\174 | sed 's/[^a-zA-Z]$//')
 echo "Parse complete, removing tmpfile"
 rm $TMP
 echo "Generating cctld list in $OUTFILE"

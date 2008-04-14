@@ -15,7 +15,7 @@ def getcommon_prefix(a,b):
 	else:
 		return ""
 
-fil = file("libclamav/iana_tld.h")
+fil = file("iana_tld.h")
 left = fil.read().split("(")
 out=[]
 for i in range(1,len(left)):
