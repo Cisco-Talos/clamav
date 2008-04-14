@@ -435,7 +435,7 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
     /*    len = cli_readint32(ep+0x2fc8); -- Using vsizes instead */
 
     for (j=0; j<sectcnt; j++) {
-      if (sections[j].rva <= key32 && sections[j].rva+sections[j].rsz > key32)
+      if (sections[j].rva <= key32 && key32-sections[j].rva < sections[j].vsz && CLI_ISCONTAINED(src + sections[j].raw, sections[j].rsz, src + sections[j].raw, key32 - sections[j].rva))
 	break;
     }
 

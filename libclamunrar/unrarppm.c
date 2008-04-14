@@ -604,6 +604,9 @@ NO_LOOP:
 		if ((p=pc->con_ut.u.stats)->symbol != up_state.symbol) {
 			do {
 				p++;
+				if ((void *)p > (void *) ppm_data->sub_alloc.heap_end) {
+					return NULL;
+				}
 			} while (p->symbol != up_state.symbol);
 		}
 		cf = p->freq - 1;
@@ -924,6 +927,13 @@ void ppm_constructor(ppm_data_t *ppm_data)
 void ppm_destructor(ppm_data_t *ppm_data)
 {
 	sub_allocator_stop_sub_allocator(&ppm_data->sub_alloc);
+}
+
+void ppm_cleanup(ppm_data_t *ppm_data)
+{
+	sub_allocator_stop_sub_allocator(&ppm_data->sub_alloc);
+	sub_allocator_start_sub_allocator(&ppm_data->sub_alloc, 1);
+	start_model_rare(ppm_data, 2);
 }
 
 int ppm_decode_init(ppm_data_t *ppm_data, int fd, unpack_data_t *unpack_data, int *EscChar)

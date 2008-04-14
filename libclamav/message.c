@@ -2563,6 +2563,7 @@ rfc2231(const char *in)
 						in++;
 						continue;
 					}
+					*p = '\0';
 					break;
 				case '=':
 					/*strcpy(p, in);*/

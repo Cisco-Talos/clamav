@@ -886,18 +886,23 @@ void rar_unpack_init_data(int solid, unpack_data_t *unpack_data)
 		memset(unpack_data->old_dist, 0, sizeof(unpack_data->old_dist));
 		unpack_data->old_dist_ptr= 0;
 		memset(unpack_data->unp_old_table, 0, sizeof(unpack_data->unp_old_table));
+		memset(&unpack_data->LD, 0, sizeof(unpack_data->LD));
+		memset(&unpack_data->DD, 0, sizeof(unpack_data->DD));
+		memset(&unpack_data->LDD, 0, sizeof(unpack_data->LDD));
+		memset(&unpack_data->RD, 0, sizeof(unpack_data->RD));
+		memset(&unpack_data->BD, 0, sizeof(unpack_data->BD));
 		unpack_data->last_dist= 0;
 		unpack_data->last_length=0;
 		unpack_data->ppm_esc_char = 2;
 		unpack_data->unp_ptr = 0;
 		unpack_data->wr_ptr = 0;
+		unpack_data->unp_block_type = BLOCK_LZ;
 		rar_init_filters(unpack_data);
 	}
 	unpack_data->in_bit = 0;
 	unpack_data->in_addr = 0;
 	unpack_data->read_top = 0;
-	unpack_data->ppm_error = FALSE;
-	
+	unpack_data->read_border = 0;
 	unpack_data->written_size = 0;
 	rarvm_init(&unpack_data->rarvm_data);
 	unpack_data->unp_crc = 0xffffffff;
@@ -958,8 +963,9 @@ static int rar_unpack29(int fd, int solid, unpack_data_t *unpack_data)
 			ch = ppm_decode_char(&unpack_data->ppm_data, fd, unpack_data);
 			rar_dbgmsg("PPM char: %d\n", ch);
 			if (ch == -1) {
+				ppm_cleanup(&unpack_data->ppm_data);
+				unpack_data->unp_block_type = BLOCK_LZ;
 				retval = FALSE;
-				unpack_data->ppm_error = TRUE;
 				break;
 			}
 			if (ch == unpack_data->ppm_esc_char) {
@@ -968,7 +974,6 @@ static int rar_unpack29(int fd, int solid, unpack_data_t *unpack_data)
 				rar_dbgmsg("PPM next char: %d\n", next_ch);
 				if (next_ch == -1) {
 					retval = FALSE;
-					unpack_data->ppm_error = TRUE;
 					break;
 				}
 				if (next_ch == 0) {
@@ -1158,6 +1163,12 @@ int rar_unpack(int fd, int method, int solid, unpack_data_t *unpack_data)
 		retval = rar_unpack29(fd, solid, unpack_data);
 		break;
 	default:
+		retval = rar_unpack29(fd, solid, unpack_data);
+		if(retval == FALSE) {
+		    retval = rar_unpack20(fd, solid, unpack_data);
+		    if(retval == FALSE)
+			retval = rar_unpack15(fd, solid, unpack_data);
+		}
 		break;
 	}
 	return retval;

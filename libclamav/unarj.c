@@ -162,6 +162,7 @@ typedef struct arj_decode_tag {
 	unsigned char pt_len[NPT];
 	unsigned char sub_bit_buf;
 	uint16_t pt_table[PTABLESIZE];
+	int status;
 } arj_decode_t;
 
 static int fill_buf(arj_decode_t *decode_data, int n)
@@ -172,6 +173,7 @@ static int fill_buf(arj_decode_t *decode_data, int n)
 		if (decode_data->comp_size != 0) {
 			decode_data->comp_size--;
 			if (cli_readn(decode_data->fd, &decode_data->sub_bit_buf, 1) != 1) {
+				decode_data->status = CL_EIO;
 				return CL_EIO;
 			}
 		} else {
@@ -230,6 +232,7 @@ static int make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitle
 	for (i = 0; (int)i < nchar; i++) {
 		if (bitlen[i] >= 17) {
 			cli_dbgmsg("UNARJ: bounds exceeded\n");
+			decode_data->status = CL_EARJ;
 			return CL_EARJ;
 		}
 		count[bitlen[i]]++;
@@ -240,12 +243,14 @@ static int make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitle
 		start[i+1] = start[i] + (count[i] << (16 - i));
 	}
 	if (start[17] != (unsigned short) (1 << 16)) {
+		decode_data->status = CL_EARJ;
 		return CL_EARJ;
 	}
 	
 	jutbits = 16 - tablebits;
 	if (tablebits >= 17) {
 		cli_dbgmsg("UNARJ: bounds exceeded\n");
+		decode_data->status = CL_EARJ;
 		return CL_EARJ;
 	}
 	for (i = 1; (int)i <= tablebits; i++) {
@@ -263,6 +268,7 @@ static int make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitle
 		while (i != k) {
 			if (i >= tablesize) {
 				cli_dbgmsg("UNARJ: bounds exceeded\n");
+				decode_data->status = CL_EARJ;
 				return CL_EARJ;
 			}
 			table[i++] = 0;
@@ -277,12 +283,14 @@ static int make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitle
 		}
 		if (len >= 17) {
 			cli_dbgmsg("UNARJ: bounds exceeded\n");
+			decode_data->status = CL_EARJ;
 			return CL_EARJ;
 		}
 		k = start[len];
 		nextcode = k + weight[len];
 		if ((int)len <= tablebits) {
 			if (nextcode > (unsigned int) tablesize) {
+				decode_data->status = CL_EARJ;
 				return CL_EARJ;
 			}
 			for (i = start[len]; i < nextcode; i++) {
@@ -295,6 +303,7 @@ static int make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitle
 				if (*p == 0) {
 					if (avail >= (2 * NC - 1)) {
 						cli_dbgmsg("UNARJ: bounds exceeded\n");
+						decode_data->status = CL_EARJ;
 						return CL_EARJ;
 					}
 					decode_data->right[avail] = decode_data->left[avail] = 0;
@@ -302,6 +311,7 @@ static int make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitle
 				}
 				if (*p >= (2 * NC - 1)) {
 					cli_dbgmsg("UNARJ: bounds exceeded\n");
+					decode_data->status = CL_EARJ;
 					return CL_EARJ;
 				}
 				if (k & mask) {
@@ -319,7 +329,7 @@ static int make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitle
 	return CL_SUCCESS;
 }
 
-static void read_pt_len(arj_decode_t *decode_data, int nn, int nbit, int i_special)
+static int read_pt_len(arj_decode_t *decode_data, int nn, int nbit, int i_special)
 {
 	int i, n;
 	short c;
@@ -329,7 +339,8 @@ static void read_pt_len(arj_decode_t *decode_data, int nn, int nbit, int i_speci
 	if (n == 0) {
 		if (nn > NPT) {
 			cli_dbgmsg("UNARJ: bounds exceeded\n");
-			return;
+			decode_data->status = CL_EARJ;
+			return CL_EARJ;
 		}
 		c = arj_getbits(decode_data, nbit);
 		for (i = 0; i < nn; i++) {
@@ -350,9 +361,15 @@ static void read_pt_len(arj_decode_t *decode_data, int nn, int nbit, int i_speci
 				}
 			}
 			fill_buf(decode_data, (c < 7) ? 3 : (int)(c - 3));
+			if (decode_data->status != CL_SUCCESS) {
+				return decode_data->status;
+			}
 			decode_data->pt_len[i++] = (unsigned char) c;
 			if (i == i_special) {
 				c = arj_getbits(decode_data, 2);
+				if (decode_data->status != CL_SUCCESS) {
+					return decode_data->status;
+				}
 				while ((--c >= 0) && (i < NPT)) {
 					decode_data->pt_len[i++] = 0;
 				}
@@ -361,8 +378,11 @@ static void read_pt_len(arj_decode_t *decode_data, int nn, int nbit, int i_speci
 		while ((i < nn) && (i < NPT)) {
 			decode_data->pt_len[i++] = 0;
 		}
-		make_table(decode_data, nn, decode_data->pt_len, 8, decode_data->pt_table, PTABLESIZE);
+		if (make_table(decode_data, nn, decode_data->pt_len, 8, decode_data->pt_table, PTABLESIZE) != CL_SUCCESS) {
+			return CL_EARJ;
+		}
 	}
+	return CL_SUCCESS;
 }
 
 static int read_c_len(arj_decode_t *decode_data)
@@ -371,8 +391,14 @@ static int read_c_len(arj_decode_t *decode_data)
 	unsigned short mask;
 	
 	n = arj_getbits(decode_data, CBIT);
+	if (decode_data->status != CL_SUCCESS) {
+		return decode_data->status;
+	}
 	if (n == 0) {
 		c = arj_getbits(decode_data, CBIT);
+		if (decode_data->status != CL_SUCCESS) {
+			return decode_data->status;
+		}
 		for (i = 0; i < NC; i++) {
 			decode_data->c_len[i] = 0;
 		}
@@ -388,6 +414,7 @@ static int read_c_len(arj_decode_t *decode_data)
 				do {
 					if (c >= (2 * NC - 1)) {
 						cli_warnmsg("ERROR: bounds exceeded\n");
+						decode_data->status = CL_EFORMAT;
 						return CL_EFORMAT;
 					}
 					if (decode_data->bit_buf & mask) {
@@ -400,9 +427,13 @@ static int read_c_len(arj_decode_t *decode_data)
 			}
 			if (c >= 19) {
 				cli_dbgmsg("UNARJ: bounds exceeded\n");
+				decode_data->status = CL_EARJ;
 				return CL_EARJ;
 			}
 			fill_buf(decode_data, (int)(decode_data->pt_len[c]));
+			if (decode_data->status != CL_SUCCESS) {
+				return decode_data->status;
+			}	
 			if (c <= 2) {
 				if (c == 0) {
 					c = 1;
@@ -411,9 +442,13 @@ static int read_c_len(arj_decode_t *decode_data)
 				} else {
 					c = arj_getbits(decode_data, CBIT) + 20;
 				}
+				if (decode_data->status != CL_SUCCESS) {
+					return decode_data->status;
+				}		
 				while (--c >= 0) {
 					if (i >= NC) {
 						cli_warnmsg("ERROR: bounds exceeded\n");
+						decode_data->status = CL_EFORMAT;
 						return CL_EFORMAT;
 					}
 					decode_data->c_len[i++] = 0;
@@ -421,6 +456,7 @@ static int read_c_len(arj_decode_t *decode_data)
 			} else {
 				if (i >= NC) {
 					cli_warnmsg("ERROR: bounds exceeded\n");
+					decode_data->status = CL_EFORMAT;
 					return CL_EFORMAT;
 				}
 				decode_data->c_len[i++] = (unsigned char) (c - 2);
@@ -429,7 +465,9 @@ static int read_c_len(arj_decode_t *decode_data)
 		while (i < NC) {
 			decode_data->c_len[i++] = 0;
 		}
-		make_table(decode_data, NC, decode_data->c_len, 12, decode_data->c_table, CTABLESIZE);
+		if (make_table(decode_data, NC, decode_data->c_len, 12, decode_data->c_table, CTABLESIZE) != CL_SUCCESS) {
+			return CL_EARJ;
+		}
 	}
 	return CL_SUCCESS;
 }
@@ -452,6 +490,7 @@ static uint16_t decode_c(arj_decode_t *decode_data)
 		do {
 			if (j >= (2 * NC - 1)) {
 				cli_warnmsg("ERROR: bounds exceeded\n");
+				decode_data->status = CL_EARJ;
 				return 0;
 			}
 			if (decode_data->bit_buf & mask) {
@@ -476,6 +515,7 @@ static uint16_t decode_p(arj_decode_t *decode_data)
 		do {
 			if (j >= (2 * NC - 1)) {
 				cli_warnmsg("ERROR: bounds exceeded\n");
+				decode_data->status = CL_EARJ;
 				return 0;
 			}
 			if (decode_data->bit_buf & mask) {
@@ -510,8 +550,10 @@ static int decode(int fd, arj_metadata_t *metadata)
 	decode_data.comp_size = metadata->comp_size;
 	ret = decode_start(&decode_data);
 	if (ret != CL_SUCCESS) {
+		free(decode_data.text);
 		return ret;
 	}
+	decode_data.status = CL_SUCCESS;
 
 	while (count < metadata->orig_size) {
 		if ((chr = decode_c(&decode_data)) <= UCHAR_MAX) {
@@ -519,7 +561,10 @@ static int decode(int fd, arj_metadata_t *metadata)
 			count++;
 			if (++out_ptr >= DDICSIZ) {
 				out_ptr = 0;
-				write_text(metadata->ofd, decode_data.text, DDICSIZ);
+				if (write_text(metadata->ofd, decode_data.text, DDICSIZ) != CL_SUCCESS) {
+					free(decode_data.text);
+					return CL_EIO;
+				}
 			}
 		} else {
 			j = chr - (UCHAR_MAX + 1 - THRESHOLD);
@@ -541,13 +586,20 @@ static int decode(int fd, arj_metadata_t *metadata)
 					decode_data.text[out_ptr] = decode_data.text[i];
 					if (++out_ptr >= DDICSIZ) {
 						out_ptr = 0;
-						write_text(metadata->ofd, decode_data.text, DDICSIZ);
+						if (write_text(metadata->ofd, decode_data.text, DDICSIZ) != CL_SUCCESS) {
+							free(decode_data.text);
+							return CL_EIO;
+						}
 					}
 					if (++i >= DDICSIZ) {
 						i = 0;
 					}
 				}
 			}
+		}
+		if (decode_data.status != CL_SUCCESS) {
+			free(decode_data.text);
+			return decode_data.status;
 		}
 	}
 	if (out_ptr != 0) {
@@ -625,21 +677,37 @@ static int decode_f(int fd, arj_metadata_t *metadata)
 		return ret;
 	}
     	decode_data.getlen = decode_data.getbuf = 0;
-
+	decode_data.status = CL_SUCCESS;
+	
 	while (count < metadata->orig_size) {
 		chr = decode_len(&decode_data);
+		if (decode_data.status != CL_SUCCESS) {
+			free(decode_data.text);
+			return decode_data.status;
+		}		
 		if (chr == 0) {
 			ARJ_GETBITS(dd, chr, CHAR_BIT);
+			if (decode_data.status != CL_SUCCESS) {
+				free(decode_data.text);
+				return decode_data.status;
+			}
 			decode_data.text[out_ptr] = (unsigned char) chr;
 			count++;
 			if (++out_ptr >= DDICSIZ) {
 				out_ptr = 0;
-				write_text(metadata->ofd, decode_data.text, DDICSIZ);
+				if (write_text(metadata->ofd, decode_data.text, DDICSIZ) != CL_SUCCESS) {
+					free(decode_data.text);
+					return CL_EIO;
+				}
 			}
 		} else {
 			j = chr - 1 + THRESHOLD;
 			count += j;
 			pos = decode_ptr(&decode_data);
+			if (decode_data.status != CL_SUCCESS) {
+				free(decode_data.text);
+				return decode_data.status;
+			}
 			if ((i = out_ptr - pos - 1) < 0) {
 				i += DDICSIZ;
 			}
@@ -651,7 +719,10 @@ static int decode_f(int fd, arj_metadata_t *metadata)
 				decode_data.text[out_ptr] = decode_data.text[i];
 				if (++out_ptr >= DDICSIZ) {
 					out_ptr = 0;
-					write_text(metadata->ofd, decode_data.text, DDICSIZ);
+					if (write_text(metadata->ofd, decode_data.text, DDICSIZ) != CL_SUCCESS) {
+						free(decode_data.text);
+						return CL_EIO;
+					}
 				}
 				if (++i >= DDICSIZ) {
 					i = 0;
@@ -1012,10 +1083,10 @@ int cli_unarj_extract_file(int fd, const char *dirname, arj_metadata_t *metadata
 		case 1:
 		case 2:
 		case 3:
-			decode(fd, metadata);
+			ret = decode(fd, metadata);
 			break;
 		case 4:
-			decode_f(fd, metadata);
+			ret = decode_f(fd, metadata);
 			break;
 		default:
 			ret = CL_EFORMAT;

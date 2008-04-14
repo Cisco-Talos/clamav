@@ -1,3 +1,13 @@
+Mon Apr 14 21:35:11 CEST 2008 (tk)
+----------------------------------
+  * Check in 0.93 patches:
+    - libclamunrar: bb#541 (RAR - Version required to extract - Evasion)
+    - libclamav/spin.c: bb#876 (PeSpin Heap Overflow Vulnerability)
+    - libclamav/pe.c: bb#878 (Upack Buffer Overflow Vulnerability)
+    - libclamav/message.c: bb#881 (message.c: read beyond allocated region)
+    - libclamav/unarj.c: bb#897 (ARJ: Sample from CERT-FI hangs clamav)
+    - libclamunrar: bb#898 (RAR crashes on some fuzzed files from CERT-FI)
+
 Mon Apr 14 13:19:17 CEST 2008 (tk)
 ----------------------------------
   * test: add clam-aspack.exe, clam-pespin.exe and clam-upx.exe (bb#902)

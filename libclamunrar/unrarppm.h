@@ -111,6 +111,7 @@ typedef struct ppm_data_tag
 
 } ppm_data_t;
 
+void ppm_cleanup(ppm_data_t *ppm_data);
 int ppm_decode_init(ppm_data_t *ppm_data, int fd, struct unpack_data_tag *unpack_data, int *EscChar);
 int ppm_decode_char(ppm_data_t *ppm_data, int fd, struct unpack_data_tag *unpack_data);
 void ppm_constructor(ppm_data_t *ppm_data);
