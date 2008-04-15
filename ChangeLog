@@ -1,3 +1,7 @@
+Tue Apr 15 18:34:11 CEST 2008 (acab)
+------------------------------------
+  * test: add clam-fsg.exe (bb#902)
+
 Mon Apr 14 22:46:17 EEST 2008
 -----------------------------
   * libclamav/iana_tld.h, libclamav/phishcheck.c: update TLD list (bb #925)
