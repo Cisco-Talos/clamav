@@ -101,6 +101,7 @@ typedef struct {
 #define DETECT_ENCRYPTED    (ctx->options & CL_SCAN_BLOCKENCRYPTED)
 /* #define BLOCKMAX	    (ctx->options & CL_SCAN_BLOCKMAX) */
 #define DETECT_BROKEN	    (ctx->options & CL_SCAN_BLOCKBROKEN)
+#define SCAN_STRUCTURED	    (ctx->options & CL_SCAN_STRUCTURED)
 
 /* based on macros from A. Melnikoff */
 #define cbswap16(v) (((v & 0xff) << 8) | (((v) >> 8) & 0xff))

@@ -186,7 +186,9 @@ libclamav_la_SOURCES = \
 	explode.c \
 	explode.h \
 	textnorm.c \
-	textnorm.h
+	textnorm.h \
+	dlp.c \
+	dlp.h
 
 libclamav_internal_utils_la_SOURCES=str.c \
 				    str.h \

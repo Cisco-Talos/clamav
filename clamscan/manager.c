@@ -308,6 +308,15 @@ int scanmanager(const struct optstruct *opt)
     else
 	options |= CL_SCAN_ALGORITHMIC;
 
+    if(opt_check(opt, "detect-structured")) {
+	options |= CL_SCAN_STRUCTURED;
+        limits.min_cc_count = 1;
+        limits.min_ssn_count = 1;
+        limits.structured_flags = CL_STRUCTURED_CONF_SSN_BOTH;
+    } else
+	options &= ~CL_SCAN_STRUCTURED;
+
+
 #ifdef C_LINUX
     procdev = (dev_t) 0;
     if(stat("/proc", &sb) != -1 && !sb.st_size)

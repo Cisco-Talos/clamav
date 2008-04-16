@@ -89,6 +89,7 @@
 #include "textnorm.h"
 #include <zlib.h>
 #include "unzip.h"
+#include "dlp.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -1491,6 +1492,76 @@ static int cli_scanmail(int desc, cli_ctx *ctx)
     return ret;
 }
 
+static int cli_scan_structured(int desc, cli_ctx *ctx)
+{
+	char buf[8192];
+	int result = 0;
+	unsigned int cc_count = 0;
+	unsigned int ssn_count = 0;
+	int done = 0;
+	const struct cl_limits *lim = NULL;
+	int (*ccfunc)(const unsigned char *buffer, int length);
+	int (*ssnfunc)(const unsigned char *buffer, int length);
+
+
+    if(ctx == NULL || ctx->limits == NULL)
+	return CL_ENULLARG;
+
+    lim = ctx->limits;
+
+    if(lim->min_cc_count == 1)
+	ccfunc = dlp_has_cc;
+    else
+	ccfunc = dlp_get_cc_count;
+
+    ssnfunc = dlp_get_ssn_count;;
+
+    switch(lim->structured_flags) {
+
+	case CL_STRUCTURED_CONF_SSN_BOTH:
+	    if(lim->min_ssn_count == 1)
+		ssnfunc = dlp_has_ssn;
+	    else
+		ssnfunc = dlp_get_ssn_count;
+	    break;
+
+	case CL_STRUCTURED_CONF_SSN_NORMAL:
+	    if(lim->min_ssn_count == 1)
+		ssnfunc = dlp_has_normal_ssn;
+	    else
+		ssnfunc = dlp_get_normal_ssn_count;
+	    break;
+
+	case CL_STRUCTURED_CONF_SSN_STRIPPED:
+	    if(lim->min_ssn_count == 1)
+		ssnfunc = dlp_has_stripped_ssn;
+	    else
+		ssnfunc = dlp_get_stripped_ssn_count;
+	    break;
+    }
+
+    while(((result = cli_readn(desc, buf, 8191)) > 0) && !done) {
+	if((cc_count += ccfunc((const unsigned char *)buf, result)) >= lim->min_cc_count)
+	    done = 1;
+	if((ssn_count += ssnfunc((const unsigned char *)buf, result)) >= lim->min_ssn_count)
+	    done = 1;
+    }
+
+    if(cc_count != 0 && cc_count >= lim->min_cc_count) {
+	cli_dbgmsg("cli_scan_structured: %u credit card numbers detected\n", cc_count);
+	*ctx->virname = "Structured.CreditCardNumber";
+	return CL_VIRUS;
+    }
+
+    if(ssn_count != 0 && ssn_count > lim->min_ssn_count) {
+	cli_dbgmsg("cli_scan_structured: %u social security numbers detected\n", ssn_count);
+	*ctx->virname = "Structured.SSN";
+	return CL_VIRUS;
+    }
+
+    return CL_CLEAN;
+}
+
 static int cli_scanembpe(int desc, cli_ctx *ctx)
 {
 	int fd, bytes, ret = CL_CLEAN;
@@ -1918,11 +1989,21 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    ret = cli_check_mydoom_log(desc, ctx->virname);
 	    break;
 
+	case CL_TYPE_TEXT_ASCII:
+	    if(SCAN_STRUCTURED)
+		/* TODO: consider calling this from cli_scanscript() for
+		 * a normalised text
+		 */
+		ret = cli_scan_structured(desc, ctx);
+	    break;
+
 	default:
 	    break;
     }
-
     ctx->recursion--;
+
+    if(ret == CL_VIRUS)
+	return CL_VIRUS;
 
     if(type == CL_TYPE_ZIP && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP)) {
 	if(sb.st_size > 1048576) {
@@ -1932,7 +2013,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     }
 
     /* CL_TYPE_HTML: raw HTML files are not scanned, unless safety measure activated via DCONF */
-    if(type != CL_TYPE_IGNORED && (type != CL_TYPE_HTML || !(DCONF_DOC & DOC_CONF_HTML_SKIPRAW)) && ret != CL_VIRUS && !ctx->engine->sdb) {
+    if(type != CL_TYPE_IGNORED && (type != CL_TYPE_HTML || !(DCONF_DOC & DOC_CONF_HTML_SKIPRAW)) && !ctx->engine->sdb) {
 	if(cli_scanraw(desc, ctx, type, typercg, &dettype) == CL_VIRUS)
 	    return CL_VIRUS;
     }

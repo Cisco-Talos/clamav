@@ -1,3 +1,9 @@
+Wed Apr 16 20:10:17 CEST 2008 (tk)
+----------------------------------
+  * libclamav: integrate the DLP code from Marty Roesch
+  * clamscan: new switch --detect-structured
+  * TODO: clamd, docs, dconf, fine-tuning options
+
 Wed Apr 16 19:32:12 CEST 2008 (acab)
 ------------------------------------
   * configure: check for bzip2 CVE-2008-1372 - bb#903

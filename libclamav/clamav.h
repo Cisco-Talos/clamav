@@ -92,6 +92,8 @@ extern "C"
 #define CL_SCAN_PHISHING_BLOCKCLOAK 0x1000
 #define CL_SCAN_ELF		    0x2000
 #define CL_SCAN_PDF		    0x4000
+#define CL_SCAN_STRUCTURED	    0x8000
+
 
 /* recommended scan settings */
 #define CL_SCAN_STDOPT		(CL_SCAN_ARCHIVE | CL_SCAN_MAIL | CL_SCAN_OLE2 | CL_SCAN_HTML | CL_SCAN_PE | CL_SCAN_ALGORITHMIC | CL_SCAN_ELF)
@@ -143,6 +145,11 @@ struct cl_engine {
     void *ignored;
 };
 
+/* Structured data flags */
+#define CL_STRUCTURED_CONF_SSN_BOTH        0x00
+#define CL_STRUCTURED_CONF_SSN_NORMAL      0x01
+#define CL_STRUCTURED_CONF_SSN_STRIPPED    0x02
+
 struct cl_limits {
     unsigned long int maxscansize;  /* during the scanning of archives this size
 				     * will never be exceeded
@@ -155,6 +162,14 @@ struct cl_limits {
 				     * within a single archive
 				     */
     unsigned short archivememlim;   /* limit memory usage for some unpackers */
+
+    /* This is for structured data detection.  You can set the minimum
+     * number of occurences of an CC# or SSN before the system will
+     * generate a notification.
+     */
+    unsigned long min_cc_count;
+    unsigned long min_ssn_count;
+    unsigned long structured_flags;
 };
 
 struct cl_stat {

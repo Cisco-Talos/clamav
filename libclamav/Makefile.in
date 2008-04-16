@@ -55,7 +55,7 @@ target_triplet = @target@
 @VERSIONSCRIPT_TRUE@am__append_1 = -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamav/libclamav.map
 subdir = libclamav
 DIST_COMMON = $(include_HEADERS) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in
+	$(srcdir)/Makefile.in COPYING
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/lib-link.m4 $(top_srcdir)/m4/lib-prefix.m4 \
@@ -89,7 +89,7 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	infblock.lo pdf.lo spin.lo yc.lo elf.lo sis.lo uuencode.lo \
 	phishcheck.lo phish_domaincheck_db.lo phish_whitelist.lo \
 	regex_list.lo mspack.lo cab.lo entconv.lo hashtab.lo dconf.lo \
-	lzma_iface.lo explode.lo textnorm.lo
+	lzma_iface.lo explode.lo textnorm.lo dlp.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 libclamav_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -421,7 +421,9 @@ libclamav_la_SOURCES = \
 	explode.c \
 	explode.h \
 	textnorm.c \
-	textnorm.h
+	textnorm.h \
+	dlp.c \
+	dlp.h
 
 libclamav_internal_utils_la_SOURCES = str.c \
 				    str.h \
@@ -522,6 +524,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/chmunpack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cvd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dconf.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dlp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dsig.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/elf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/entconv.Plo@am__quote@
