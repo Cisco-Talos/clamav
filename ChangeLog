@@ -1,3 +1,7 @@
+Wed Apr 16 19:32:12 CEST 2008 (acab)
+------------------------------------
+  * configure: check for bzip2 CVE-2008-1372 - bb#903
+
 Tue Apr 15 18:34:11 CEST 2008 (acab)
 ------------------------------------
   * test: add clam-fsg.exe (bb#902)

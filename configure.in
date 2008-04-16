@@ -408,9 +408,24 @@ then
     LDFLAGS="$save_LDFLAGS"
     if test "$HAVE_LIBBZ2" = "yes"; then
 	AC_CHECK_HEADER([bzlib.h],
-			[LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $LTLIBBZ2";
-			 AC_DEFINE([HAVE_BZLIB_H],1,[have bzip2])],
-			[AC_MSG_WARN([****** bzip2 support disabled])])
+			[AC_C_CVE_2008_1372],
+			[$ac_cv_c_cve_2008_1372="no"])
+	if test "$ac_cv_c_cve_2008_1372" = "bugged"; then
+		AC_MSG_WARN([****** bzip2 libraries are affected by the CVE-2008-1372 bug])
+		AC_MSG_WARN([****** We strongly suggest you to update to bzip2 1.0.5.])
+		AC_MSG_WARN([****** Please do not report stability problems to the ClamAV developers!])
+	fi
+
+	case "$ac_cv_c_cve_2008_1372" in
+	ok|bugged)
+		LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $LTLIBBZ2"
+		AC_DEFINE([HAVE_BZLIB_H],1,[have bzip2])
+		;;
+	*)
+		AC_MSG_WARN([****** bzip2 support disabled])
+		;;
+	esac
+
     else
 	AC_MSG_WARN([****** bzip2 support disabled])
     fi
