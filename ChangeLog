@@ -1,3 +1,7 @@
+Fri Apr 18 13:55:41 EEST 2008 (edwin)
+-------------------------------------
+  * libclamav/dconf.h: fix flag code assignment
+
 Wed Apr 16 20:10:17 CEST 2008 (tk)
 ----------------------------------
   * libclamav: integrate the DLP code from Marty Roesch
