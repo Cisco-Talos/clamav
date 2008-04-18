@@ -77,23 +77,24 @@ extern "C"
 #define CL_DB_STDOPT	    (CL_DB_PHISHING | CL_DB_PHISHING_URLS)
 
 /* scan options */
-#define CL_SCAN_RAW		    0x0
-#define CL_SCAN_ARCHIVE		    0x1
-#define CL_SCAN_MAIL		    0x2
-#define CL_SCAN_OLE2		    0x4
-#define CL_SCAN_BLOCKENCRYPTED	    0x8
-#define CL_SCAN_HTML		    0x10
-#define CL_SCAN_PE		    0x20
-#define CL_SCAN_BLOCKBROKEN	    0x40
-#define CL_SCAN_MAILURL		    0x80
-#define CL_SCAN_BLOCKMAX	    0x100 /* ignored */
-#define CL_SCAN_ALGORITHMIC	    0x200
-#define CL_SCAN_PHISHING_BLOCKSSL   0x800 /* ssl mismatches, not ssl by itself*/
-#define CL_SCAN_PHISHING_BLOCKCLOAK 0x1000
-#define CL_SCAN_ELF		    0x2000
-#define CL_SCAN_PDF		    0x4000
-#define CL_SCAN_STRUCTURED	    0x8000
-
+#define CL_SCAN_RAW			0x0
+#define CL_SCAN_ARCHIVE			0x1
+#define CL_SCAN_MAIL			0x2
+#define CL_SCAN_OLE2			0x4
+#define CL_SCAN_BLOCKENCRYPTED		0x8
+#define CL_SCAN_HTML			0x10
+#define CL_SCAN_PE			0x20
+#define CL_SCAN_BLOCKBROKEN		0x40
+#define CL_SCAN_MAILURL			0x80
+#define CL_SCAN_BLOCKMAX		0x100 /* ignored */
+#define CL_SCAN_ALGORITHMIC		0x200
+#define CL_SCAN_PHISHING_BLOCKSSL	0x800 /* ssl mismatches, not ssl by itself*/
+#define CL_SCAN_PHISHING_BLOCKCLOAK	0x1000
+#define CL_SCAN_ELF			0x2000
+#define CL_SCAN_PDF			0x4000
+#define CL_SCAN_STRUCTURED		0x8000
+#define CL_SCAN_STRUCTURED_SSN_NORMAL	0x10000
+#define CL_SCAN_STRUCTURED_SSN_STRIPPED	0x20000
 
 /* recommended scan settings */
 #define CL_SCAN_STDOPT		(CL_SCAN_ARCHIVE | CL_SCAN_MAIL | CL_SCAN_OLE2 | CL_SCAN_HTML | CL_SCAN_PE | CL_SCAN_ALGORITHMIC | CL_SCAN_ELF)
@@ -145,11 +146,6 @@ struct cl_engine {
     void *ignored;
 };
 
-/* Structured data flags */
-#define CL_STRUCTURED_CONF_SSN_BOTH        0x00
-#define CL_STRUCTURED_CONF_SSN_NORMAL      0x01
-#define CL_STRUCTURED_CONF_SSN_STRIPPED    0x02
-
 struct cl_limits {
     unsigned long int maxscansize;  /* during the scanning of archives this size
 				     * will never be exceeded
@@ -167,9 +163,8 @@ struct cl_limits {
      * number of occurences of an CC# or SSN before the system will
      * generate a notification.
      */
-    unsigned long min_cc_count;
-    unsigned long min_ssn_count;
-    unsigned long structured_flags;
+    unsigned int min_cc_count;
+    unsigned int min_ssn_count;
 };
 
 struct cl_stat {

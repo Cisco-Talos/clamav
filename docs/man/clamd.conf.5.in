@@ -263,6 +263,31 @@ Always block cloaked URLs, even if URL isn't in database. This can lead to false
 .br
 Default: no
 .TP
+\fBStructuredDataDetection BOOL\fR
+Enable the DLP module.
+.br 
+Default: no
+.TP
+\fBStructuredMinCreditCardCount NUMBER\fR
+This option sets the lowest number of Credit Card numbers found in a file to generate a detect.
+.br 
+Default: 1
+.TP
+\fBStructuredMinSSNCount NUMBER\fR
+This option sets the lowest number of Social Security Numbers found in a file to generate a detect.
+.br 
+Default: 1
+.TP
+\fBStructuredSSNFormatNormal BOOL\fR
+With this option enabled the DLP module will search for valid SSNs formatted as xxx-yy-zzzz.
+.br 
+Default: Yes
+.TP
+\fBStructuredSSNFormatStripped BOOL\fR
+With this option enabled the DLP module will search for valid SSNs formatted as xxxyyzzzz.
+.br 
+Default: Yes
+.TP
 \fBScanArchive BOOL\fR
 Enable archive scanning.
 .br 

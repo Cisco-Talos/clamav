@@ -89,6 +89,7 @@ struct cli_dconf {
 #define OTHER_CONF_RIFF	    0x4
 #define OTHER_CONF_JPEG	    0x8
 #define OTHER_CONF_CRYPTFF  0x10
+#define OTHER_CONF_DLP	    0x20
 
 /* Phishing flags */
 #define PHISHING_CONF_ENGINE   0x1

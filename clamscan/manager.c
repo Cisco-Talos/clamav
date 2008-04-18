@@ -310,9 +310,10 @@ int scanmanager(const struct optstruct *opt)
 
     if(opt_check(opt, "detect-structured")) {
 	options |= CL_SCAN_STRUCTURED;
+	options |= CL_SCAN_STRUCTURED_SSN_NORMAL;
+	options |= CL_SCAN_STRUCTURED_SSN_STRIPPED;
         limits.min_cc_count = 1;
         limits.min_ssn_count = 1;
-        limits.structured_flags = CL_STRUCTURED_CONF_SSN_BOTH;
     } else
 	options &= ~CL_SCAN_STRUCTURED;
 

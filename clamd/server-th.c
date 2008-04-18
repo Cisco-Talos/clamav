@@ -438,6 +438,22 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	}
     }
 
+    if(cfgopt(copt, "StructuredDataDetection")->enabled) {
+        options |= CL_SCAN_STRUCTURED;
+
+        limits.min_cc_count = cfgopt(copt, "StructuredMinCreditCardCount")->numarg;
+        logg("Structured: Minimum Credit Card Number Count set to %u\n", limits.min_cc_count);
+
+        limits.min_ssn_count = cfgopt(copt, "StructuredMinSSNCount")->numarg;
+        logg("Structured: Minimum Social Security Number Count set to %u\n", limits.min_ssn_count);
+
+        if(cfgopt(copt, "StructuredSSNFormatNormal")->enabled)
+            options |= CL_SCAN_STRUCTURED_SSN_NORMAL;
+
+        if(cfgopt(copt, "StructuredSSNFormatStripped")->enabled)
+	    options |= CL_SCAN_STRUCTURED_SSN_STRIPPED;
+    }
+
     selfchk = cfgopt(copt, "SelfCheck")->numarg;
     if(!selfchk) {
 	logg("Self checking disabled.\n");

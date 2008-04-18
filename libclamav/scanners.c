@@ -1514,36 +1514,38 @@ static int cli_scan_structured(int desc, cli_ctx *ctx)
     else
 	ccfunc = dlp_get_cc_count;
 
-    ssnfunc = dlp_get_ssn_count;;
+    switch((ctx->options & CL_SCAN_STRUCTURED_SSN_NORMAL) | (ctx->options & CL_SCAN_STRUCTURED_SSN_STRIPPED)) {
 
-    switch(lim->structured_flags) {
-
-	case CL_STRUCTURED_CONF_SSN_BOTH:
+	case (CL_SCAN_STRUCTURED_SSN_NORMAL | CL_SCAN_STRUCTURED_SSN_STRIPPED):
 	    if(lim->min_ssn_count == 1)
 		ssnfunc = dlp_has_ssn;
 	    else
 		ssnfunc = dlp_get_ssn_count;
 	    break;
 
-	case CL_STRUCTURED_CONF_SSN_NORMAL:
+	case CL_SCAN_STRUCTURED_SSN_NORMAL:
 	    if(lim->min_ssn_count == 1)
 		ssnfunc = dlp_has_normal_ssn;
 	    else
 		ssnfunc = dlp_get_normal_ssn_count;
 	    break;
 
-	case CL_STRUCTURED_CONF_SSN_STRIPPED:
+	case CL_SCAN_STRUCTURED_SSN_STRIPPED:
 	    if(lim->min_ssn_count == 1)
 		ssnfunc = dlp_has_stripped_ssn;
 	    else
 		ssnfunc = dlp_get_stripped_ssn_count;
 	    break;
+
+	default:
+	    ssnfunc = NULL;
     }
 
-    while(((result = cli_readn(desc, buf, 8191)) > 0) && !done) {
+    while(!done && ((result = cli_readn(desc, buf, 8191)) > 0)) {
 	if((cc_count += ccfunc((const unsigned char *)buf, result)) >= lim->min_cc_count)
 	    done = 1;
-	if((ssn_count += ssnfunc((const unsigned char *)buf, result)) >= lim->min_ssn_count)
+
+	if(ssnfunc && ((ssn_count += ssnfunc((const unsigned char *)buf, result)) >= lim->min_ssn_count))
 	    done = 1;
     }
 
@@ -1990,7 +1992,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
 
 	case CL_TYPE_TEXT_ASCII:
-	    if(SCAN_STRUCTURED)
+	    if(SCAN_STRUCTURED && (DCONF_OTHER & OTHER_CONF_DLP))
 		/* TODO: consider calling this from cli_scanscript() for
 		 * a normalised text
 		 */

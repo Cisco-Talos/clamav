@@ -55,6 +55,11 @@ struct cfgoption cfg_options[] = {
     {"PhishingRestrictedScan", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     /* end of FP prone options */
     {"DetectPUA", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"StructuredDataDetection", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"StructuredMinCreditCardCount", OPT_NUM, 1, NULL, 0, OPT_CLAMD},
+    {"StructuredMinSSNCount", OPT_NUM, 1, NULL, 0, OPT_CLAMD},
+    {"StructuredSSNFormatNormal", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
+    {"StructuredSSNFormatStripped", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"AlgorithmicDetection", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"ScanHTML", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"ScanOLE2", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
