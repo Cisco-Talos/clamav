@@ -1,3 +1,7 @@
+Sun Apr 20 19:09:00 CEST 2008 (tk)
+----------------------------------
+  * sigtool/sigtool.c: bb#938 (sigtool --list-sigs not working with .cld files)
+
 Fri Apr 18 13:55:41 EEST 2008 (edwin)
 -------------------------------------
   * libclamav/dconf.h: fix flag code assignment (bb #952)
