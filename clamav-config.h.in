@@ -165,6 +165,9 @@
 /* Define to 1 if you have the <libmilter/mfapi.h> header file. */
 #undef HAVE_LIBMILTER_MFAPI_H
 
+/* Define to 1 if you have the `z' library (-lz). */
+#undef HAVE_LIBZ
+
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H
 
