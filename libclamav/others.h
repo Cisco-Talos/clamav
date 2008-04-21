@@ -101,22 +101,49 @@ typedef struct {
 #define DETECT_ENCRYPTED    (ctx->options & CL_SCAN_BLOCKENCRYPTED)
 /* #define BLOCKMAX	    (ctx->options & CL_SCAN_BLOCKMAX) */
 #define DETECT_BROKEN	    (ctx->options & CL_SCAN_BLOCKBROKEN)
+#define SCAN_STRUCTURED	    (ctx->options & CL_SCAN_STRUCTURED)
 
 /* based on macros from A. Melnikoff */
 #define cbswap16(v) (((v & 0xff) << 8) | (((v) >> 8) & 0xff))
 #define cbswap32(v) ((((v) & 0x000000ff) << 24) | (((v) & 0x0000ff00) << 8) | \
 		    (((v) & 0x00ff0000) >> 8)  | (((v) & 0xff000000) >> 24))
-#define cbswap64(v) ((((v) & 0x00000000000000ff) << 56) | \
-		     (((v) & 0x000000000000ff00) << 40) | \
-		     (((v) & 0x0000000000ff0000) << 24) | \
-		     (((v) & 0x00000000ff000000) <<  8) | \
-		     (((v) & 0x000000ff00000000) >>  8) | \
-		     (((v) & 0x0000ff0000000000) >> 24) | \
-		     (((v) & 0x00ff000000000000) >> 40) | \
-		     (((v) & 0xff00000000000000) >> 56))
+#define cbswap64(v) ((((v) & 0x00000000000000ffULL) << 56) | \
+		     (((v) & 0x000000000000ff00ULL) << 40) | \
+		     (((v) & 0x0000000000ff0000ULL) << 24) | \
+		     (((v) & 0x00000000ff000000ULL) <<  8) | \
+		     (((v) & 0x000000ff00000000ULL) >>  8) | \
+		     (((v) & 0x0000ff0000000000ULL) >> 24) | \
+		     (((v) & 0x00ff000000000000ULL) >> 40) | \
+		     (((v) & 0xff00000000000000ULL) >> 56))
 
 
 #if WORDS_BIGENDIAN == 0
+
+#ifndef HAVE_ATTRIB_PACKED 
+#define __attribute__(x)
+#endif
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1
+#endif
+
+union unaligned_32 {
+	uint32_t una_u32;
+	int32_t una_s32;
+} __attribute__((packed));
+
+union unaligned_16 {
+	int16_t una_s16;
+} __attribute__((packed));
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack()
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack
+#endif
 /* Little endian */
 #define le16_to_host(v)	(v)
 #define le32_to_host(v)	(v)
@@ -124,9 +151,9 @@ typedef struct {
 #define	be16_to_host(v)	cbswap16(v)
 #define	be32_to_host(v)	cbswap32(v)
 #define be64_to_host(v) cbswap64(v)
-#define cli_readint32(buff) (*(const int32_t *)(buff))
-#define cli_readint16(buff) (*(const int16_t *)(buff))
-#define cli_writeint32(offset, value) (*(uint32_t *)(offset)=(uint32_t)(value))
+#define cli_readint32(buff) (((const union unaligned_32 *)(buff))->una_s32)
+#define cli_readint16(buff) (((const union unaligned_16 *)(buff))->una_s16)
+#define cli_writeint32(offset, value) (((union unaligned_32 *)(offset))->una_u32=(uint32_t)(value))
 #else
 /* Big endian */
 #define	le16_to_host(v)	cbswap16(v)
@@ -233,6 +260,7 @@ int cli_rmdirs(const char *dirname);
 unsigned char *cli_md5digest(int desc);
 char *cli_md5stream(FILE *fs, unsigned char *digcpy);
 char *cli_md5file(const char *filename);
+int cli_unlink(const char *pathname);
 int cli_readn(int fd, void *buff, unsigned int count);
 int cli_writen(int fd, const void *buff, unsigned int count);
 char *cli_gentemp(const char *dir);

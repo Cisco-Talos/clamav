@@ -1,3 +1,7 @@
+Mon Apr 21 11:28:38 CEST 2008 (tk)
+----------------------------------
+  * libclamav/others.h: explicitely cast some constants (bb#936)
+
 Sun Apr 20 19:09:00 CEST 2008 (tk)
 ----------------------------------
   * sigtool/sigtool.c: bb#938 (sigtool --list-sigs not working with .cld files)
