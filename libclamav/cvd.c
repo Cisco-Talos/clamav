@@ -183,24 +183,34 @@ static int cli_tgzload(int fd, struct cl_engine **engine, unsigned int *signo, u
 	char osize[13], name[101];
 	char block[TAR_BLOCKSIZE];
 	int nread, fdd, ret;
-	unsigned int type, size, pad;
+	unsigned int type, size, pad, compr = 1;
 	gzFile *infile;
 	z_off_t off;
 
 
     cli_dbgmsg("in cli_tgzload()\n");
 
+    lseek(fd, 512, SEEK_SET);
+    if(cli_readn(fd, block, 7) != 7)
+	return CL_EFORMAT; /* truncated file? */
+
+    if(!strncmp(block, "COPYING", 7))
+	compr = 0;
+
     if((fdd = dup(fd)) == -1) {
 	cli_errmsg("cli_tgzload: Can't duplicate descriptor %d\n", fd);
 	return CL_EIO;
     }
+
+    lseek(fdd, 512, SEEK_SET);
 
     if((infile = gzdopen(fdd, "rb")) == NULL) {
 	cli_errmsg("cli_tgzload: Can't gzdopen() descriptor %d, errno = %d\n", fdd, errno);
 	return CL_EIO;
     }
 
-    gzseek(infile, 512, SEEK_SET);
+    if(!compr)
+	gzseek(infile, 512, SEEK_SET);
 
     while(1) {
 
