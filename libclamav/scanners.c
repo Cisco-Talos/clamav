@@ -1073,9 +1073,9 @@ static int cli_scanhtml_utf16(int desc, cli_ctx *ctx)
     ret = cli_scanhtml(fd, ctx);
     close(fd);
 
-    if(!cli_leavetemps_flag)
+    if(!cli_leavetemps_flag) {
 	if (cli_unlink(tempname)) ret = CL_EIO;
-    else
+    } else
 	cli_dbgmsg("cli_scanhtml_utf16: Decoded HTML data saved in %s\n", tempname);
     free(tempname);
 
