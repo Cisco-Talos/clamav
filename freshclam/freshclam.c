@@ -276,15 +276,6 @@ int main(int argc, char **argv)
 	return 0;
     }
 
-#ifdef C_WINDOWS
-    if(!pthread_win32_process_attach_np()) {
-	mprintf("!Can't start the win32 pthreads layer\n");
-	opt_free(opt);
-	freecfg(copt);
-	return 63;
-    }
-#endif
-
     if(opt_check(opt, "http-proxy") || opt_check(opt, "proxy-user"))
 	logg("WARNING: Proxy settings are now only configurable in the config file.\n");
 
@@ -593,15 +584,6 @@ int main(int argc, char **argv)
 
     opt_free(opt);
     freecfg(copt);
-
-#ifdef C_WINDOWS
-    WSACleanup();
-
-    if(!pthread_win32_process_detach_np()) {
-	mprintf("!Can't stop the win32 pthreads layer\n");
-	return 63;
-    }
-#endif
 
     return(ret);
 }

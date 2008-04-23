@@ -1,3 +1,7 @@
+Wed Apr 23 03:44:28 CEST 2008 (acab)
+------------------------------------
+  * build system: do not lint pthreads where it's not needed (thanks sgran)
+
 Mon Apr 21 17:25:41 EEST 2008 (edwin)
 -------------------------------------
   * configure: explicitly link freshclam with zlib, better zlib checks (bb
