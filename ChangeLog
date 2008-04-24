@@ -1,3 +1,7 @@
+Thu Apr 24 17:44:38 MSD 2008 (tk)
+---------------------------------
+  * libclamav: scan for embedded PEs inside OLE2 files (bb#914)
+
 Mon Apr 21 16:21:56 CEST 2008 (tk)
 ----------------------------------
   * libclamav/cvd.c: add work-around for zlib issues with mixed data (bb#932)

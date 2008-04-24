@@ -1565,6 +1565,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg,
 	case CL_TYPE_TEXT_ASCII:
 	case CL_TYPE_MSEXE:
 	case CL_TYPE_ZIP:
+	case CL_TYPE_MSOLE2:
 	    acmode |= AC_SCAN_FT;
 	default:
 	    break;
@@ -1589,7 +1590,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg,
 	}
 */
 
-	if(nret != CL_VIRUS && (type == CL_TYPE_MSEXE || type == CL_TYPE_ZIP)) {
+	if(nret != CL_VIRUS && (type == CL_TYPE_MSEXE || type == CL_TYPE_ZIP || type == CL_TYPE_MSOLE2)) {
 	    lastzip = lastrar = 0xdeadbeef;
 	    fpt = ftoffset;
 	    while(fpt) {
