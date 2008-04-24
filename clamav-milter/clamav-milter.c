@@ -723,15 +723,15 @@ main(int argc, char **argv)
 		int opt_index = 0;
 #ifdef	BOUNCE
 #ifdef	CL_DEBUG
-		const char *args = "a:AbB:c:C:dDefF:I:k:K:lLm:M:nNop:PqQ:r:R:hHs:St:T:U:VwW:x:0:1:2";
+		const char *args = "a:AbB:c:C:dDefF:I:i:k:K:lLm:M:nNop:PqQ:r:R:hHs:St:T:U:VwW:x:0:1:2";
 #else
-		const char *args = "a:AbB:c:C:dDefF:I:k:K:lLm:M:nNop:PqQ:r:R:hHs:St:T:U:VwW:0:1:2";
+		const char *args = "a:AbB:c:C:dDefF:I:i:k:K:lLm:M:nNop:PqQ:r:R:hHs:St:T:U:VwW:0:1:2";
 #endif
 #else	/*!BOUNCE*/
 #ifdef	CL_DEBUG
-		const char *args = "a:AB:c:C:dDefF:I:k:K:lLm:M:nNop:PqQ:r:R:hHs:St:T:U:VwW:x:0:1:2";
+		const char *args = "a:AB:c:C:dDefF:I:i:k:K:lLm:M:nNop:PqQ:r:R:hHs:St:T:U:VwW:x:0:1:2";
 #else
-		const char *args = "a:AB:c:C:dDefF:I:k:K:lLm:M:nNop:PqQ:r:R:hHs:St:T:U:VwW:0:1:2";
+		const char *args = "a:AB:c:C:dDefF:I:i:k:K:lLm:M:nNop:PqQ:r:R:hHs:St:T:U:VwW:0:1:2";
 #endif
 #endif	/*BOUNCE*/
 

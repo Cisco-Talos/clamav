@@ -1,3 +1,7 @@
+Thu Apr 24 20:02:50 CEST 2008 (acab)
+------------------------------------
+  * clamav-milter: accept -i for --pidfile as advertised - bb#988
+
 Wed Apr 23 03:44:28 CEST 2008 (acab)
 ------------------------------------
   * build system: do not lint pthreads where it's not needed (thanks sgran)
