@@ -37,9 +37,9 @@ extern "C"
 #define CL_SUCCESS	CL_CLEAN
 #define CL_BREAK	2
 
-#define CL_EMAXREC	-100 /* recursion limit exceeded */
-#define CL_EMAXSIZE	-101 /* size limit exceeded */
-#define CL_EMAXFILES	-102 /* files limit exceeded */
+#define CL_EMAXREC	-100 /* (internal) recursion limit exceeded */
+#define CL_EMAXSIZE	-101 /* (internal) size limit exceeded */
+#define CL_EMAXFILES	-102 /* (internal) files limit exceeded */
 #define CL_ERAR		-103 /* rar handler error */
 #define CL_EZIP		-104 /* zip handler error */
 #define CL_EGZIP	-105 /* gzip handler error */
@@ -61,7 +61,7 @@ extern "C"
 #define CL_EMD5		-121 /* MD5 verification error */
 #define CL_EDSIG	-122 /* digital signature verification error */
 #define CL_EIO		-123 /* general I/O error */
-#define CL_EFORMAT	-124 /* bad format or broken file */
+#define CL_EFORMAT	-124 /* (internal) bad format or broken file */
 #define CL_ESUPPORT	-125 /* not supported data format */
 #define CL_ELOCKDB	-126 /* can't lock DB directory */
 #define CL_EARJ         -127 /* ARJ handler error */

@@ -1,3 +1,8 @@
+Mon Apr 28 16:13:33 CEST 2008 (tk)
+----------------------------------
+  * libclamav/scanners.c: don't return CL_EMAX* error codes to
+			  applications (bb#1001)
+
 Mon Apr 28 13:48:36 CEST 2008 (tk)
 ----------------------------------
   * clamscan/manager.c: print information about clean files when the RAR
