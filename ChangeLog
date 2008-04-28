@@ -1,3 +1,8 @@
+Mon Apr 28 12:37:31 CEST 2008 (tk)
+----------------------------------
+  * libclamav/unzip.c: remove detection of Suspect.Zip and
+		       Exploit.Zip.ModifiedHeaders (bb#997)
+
 Thu Apr 24 20:02:50 CEST 2008 (acab)
 ------------------------------------
   * clamav-milter: accept -i for --pidfile as advertised - bb#988
