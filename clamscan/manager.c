@@ -949,7 +949,7 @@ static int scandenied(const char *filename, struct cl_engine *engine, const stru
 
 int scanfile(const char *filename, struct cl_engine *engine, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, unsigned int options)
 {
-	int ret, included, printclean = 1;
+	int ret = 0, included, printclean = 1;
 	const struct optnode *optnode;
 	char *argument;
 #ifdef C_LINUX
@@ -1046,7 +1046,6 @@ int scanfile(const char *filename, struct cl_engine *engine, const struct passwd
 
 	/* in other case try to continue with external archivers */
 	options &= ~CL_SCAN_ARCHIVE; /* and disable decompression for the checkfile() below */
-	printclean = 0;
     }
 
     if((cli_strbcasestr(filename, ".zip") && opt_check(opt, "unzip"))
