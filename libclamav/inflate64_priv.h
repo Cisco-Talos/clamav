@@ -125,7 +125,7 @@ typedef enum {
     CHECK,      /* i: waiting for 32-bit check value */
     LENGTH,     /* i: waiting for 32-bit length (gzip) */
     DONE,       /* finished check, done -- remain here until reset */
-    BAD,        /* got a data error -- remain here until reset */
+    ACAB_BAD,        /* got a data error -- remain here until reset */
     MEM,        /* got an inflate() memory error -- remain here until reset */
     SYNC        /* looking for synchronization bytes to restart inflate() */
 } inflate_mode;

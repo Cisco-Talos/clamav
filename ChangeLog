@@ -1,3 +1,7 @@
+Mon Apr 28 16:14:39 CEST 2008 (acab)
+------------------------------------
+  * libclamav/inflate64: avoid collisions on AIX - bb#947
+
 Mon Apr 28 16:13:33 CEST 2008 (tk)
 ----------------------------------
   * libclamav/scanners.c: don't return CL_EMAX* error codes to
