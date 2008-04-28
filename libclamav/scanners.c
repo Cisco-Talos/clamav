@@ -2040,11 +2040,15 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     }
     ctx->recursion--;
 
-    if(ret == CL_EFORMAT) {
-	cli_dbgmsg("Descriptor[%d]: %s\n", desc, cl_strerror(CL_EFORMAT));
-	return CL_CLEAN;
-    } else {
-	return ret;
+    switch(ret) {
+	case CL_EFORMAT:
+	case CL_EMAXREC:
+	case CL_EMAXSIZE:
+	case CL_EMAXFILES:
+	    cli_dbgmsg("Descriptor[%d]: %s\n", desc, cl_strerror(ret));
+	    return CL_CLEAN;
+	default:
+	    return ret;
     }
 }
 
