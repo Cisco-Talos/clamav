@@ -242,6 +242,9 @@ Usually clamav\-milter waits until a child dies or the timeout value has been
 exceeded, which ever comes first, however with dont-wait enabled, clamav\-milter
 will inform the remote SMTP client to retry later.
 .TP
+\fB\-\-dont\-sanitise\fR
+Allow semicolon and pipe characters in email addresses.
+.TP
 \fB\-\-ignore net, \-I net\fR
 \fInet\fR is taken to be an extra IPv4 or IPv6 network in prefix/length notation 
 (for example 192.0.2.0/24 or 2001:db8::/32) which is treated as being on the LAN for
