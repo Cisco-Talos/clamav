@@ -1,3 +1,7 @@
+Tue Apr 29 13:31:03 CEST 2008 (acab)
+------------------------------------
+  * clamav-milter: add an option to avoid sanitising email addresses - bb#953
+
 Tue Apr 29 13:08:43 CEST 2008 (acab)
 ------------------------------------
   * clamav-milter: fix iana reserved localnet masks - bb#958

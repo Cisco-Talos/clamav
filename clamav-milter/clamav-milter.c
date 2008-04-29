@@ -475,6 +475,10 @@ static	int	dont_wait = 0;	/*
 				 * if max_chilren is exceeded, otherwise we
 				 * wait for the number to go down
 				 */
+static	int	dont_sanitise = 0; /*
+				 * Don't check for ";" and "|" chars in 
+				 * email addresses.
+				 */
 static	int	advisory = 0;	/*
 				 * Run clamav-milter in advisory mode - viruses
 				 * are flagged rather than deleted. Incompatible
@@ -607,6 +611,7 @@ help(void)
 	puts(_("\t--dont-blacklist\t-K\tDon't blacklist a given IP."));
 	puts(_("\t--dont-scan-on-error\t-d\tPass e-mails through unscanned if a system error occurs."));
 	puts(_("\t--dont-wait\t\t\tAsk remote end to resend if max-children exceeded."));
+	puts(_("\t--dont-sanitise\t\t\tAllow semicolon and pipe characters in email addresses."));
 	puts(_("\t--external\t\t-e\tUse an external scanner (usually clamd)."));
 	puts(_("\t--freshclam-monitor=SECS\t-M SECS\tHow often to check for database update."));
 	puts(_("\t--from=EMAIL\t\t-a EMAIL\tError messages come from here."));
@@ -723,15 +728,15 @@ main(int argc, char **argv)
 		int opt_index = 0;
 #ifdef	BOUNCE
 #ifdef	CL_DEBUG
-		const char *args = "a:AbB:c:C:dDefF:I:i:k:K:lLm:M:nNop:PqQ:r:R:hHs:St:T:U:VwW:x:0:1:2";
+		const char *args = "a:AbB:c:C:dDefF:I:i:k:K:lLm:M:nNop:PqQ:r:R:hHs:St:T:U:VwW:x:z0:1:2";
 #else
-		const char *args = "a:AbB:c:C:dDefF:I:i:k:K:lLm:M:nNop:PqQ:r:R:hHs:St:T:U:VwW:0:1:2";
+		const char *args = "a:AbB:c:C:dDefF:I:i:k:K:lLm:M:nNop:PqQ:r:R:hHs:St:T:U:VwW:z0:1:2";
 #endif
 #else	/*!BOUNCE*/
 #ifdef	CL_DEBUG
-		const char *args = "a:AB:c:C:dDefF:I:i:k:K:lLm:M:nNop:PqQ:r:R:hHs:St:T:U:VwW:x:0:1:2";
+		const char *args = "a:AB:c:C:dDefF:I:i:k:K:lLm:M:nNop:PqQ:r:R:hHs:St:T:U:VwW:x:z0:1:2";
 #else
-		const char *args = "a:AB:c:C:dDefF:I:i:k:K:lLm:M:nNop:PqQ:r:R:hHs:St:T:U:VwW:0:1:2";
+		const char *args = "a:AB:c:C:dDefF:I:i:k:K:lLm:M:nNop:PqQ:r:R:hHs:St:T:U:VwW:z0:1:2";
 #endif
 #endif	/*BOUNCE*/
 
@@ -767,6 +772,9 @@ main(int argc, char **argv)
 			},
 			{
 				"dont-wait", 0, NULL, 'w'
+			},
+			{
+				"dont-sanitise", 0, NULL, 'z'
 			},
 			{
 				"debug", 0, NULL, 'D'
@@ -1028,6 +1036,9 @@ main(int argc, char **argv)
 				break;
 			case 'W':
 				whitelistFile = optarg;
+				break;
+			case 'z':
+				dont_sanitise=1;
 				break;
 			case '0':
 				sendmailCF = optarg;
@@ -2998,7 +3009,7 @@ clamfi_envrcpt(SMFICTX *ctx, char **argv)
 	if(to == NULL)
 		to = argv[0];
 
-	for(ptr = to; *ptr; ptr++)
+	for(ptr = to; !dont_sanitise && *ptr; ptr++)
 		if(strchr("|;", *ptr) != NULL) {
 			smfi_setreply(ctx, "554", "5.7.1", _("Suspicious recipient address blocked"));
 			logg("^Suspicious recipient address blocked: '%s'\n", to);
