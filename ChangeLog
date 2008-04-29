@@ -1,3 +1,7 @@
+Tue Apr 29 13:08:43 CEST 2008 (acab)
+------------------------------------
+  * clamav-milter: fix iana reserved localnet masks - bb#958
+
 Mon Apr 28 16:25:08 CEST 2008 (acab)
 ------------------------------------
   * libclamav/unzip.c: check for unprefixed bz2 - bb#995

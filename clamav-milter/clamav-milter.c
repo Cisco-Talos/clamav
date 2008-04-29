@@ -233,10 +233,10 @@ static struct cidr_net {	/* don't make this const because of -I flag */
 	uint32_t	base;
 	uint32_t	mask;
 } localNets[] = {
-	/*{ PACKADDR(127,   0,   0,   0), MAKEMASK(24) },	/*   127.0.0.0/24 */
-	{ PACKADDR(192, 168,   0,   0), MAKEMASK(24) },	/* 192.168.0.0/24 - RFC3330 */
-	/*{ PACKADDR(192, 18,   0,   0), MAKEMASK(17) },	/* 192.18.0.0/17 - RFC2544 */
-	/*{ PACKADDR(192, 0,   2,   0), MAKEMASK(8) },	/* 192.0.2.0/8 - RFC3330 */
+	/*{ PACKADDR(127,   0,   0,   0), MAKEMASK(8) },	/*   127.0.0.0/8 */
+	{ PACKADDR(192, 168,   0,   0), MAKEMASK(16) },	/* 192.168.0.0/16 - RFC3330 */
+	/*{ PACKADDR(192, 18,   0,   0), MAKEMASK(15) },	/* 192.18.0.0/15 - RFC2544 */
+	/*{ PACKADDR(192, 0,   2,   0), MAKEMASK(24) },	/* 192.0.2.0/24 - RFC3330 */
 	{ PACKADDR( 10,   0,   0,   0), MAKEMASK(8) },	/*    10.0.0.0/8 */
 	{ PACKADDR(172,  16,   0,   0), MAKEMASK(12) },	/*  172.16.0.0/12 */
 	{ PACKADDR(169, 254,   0,   0), MAKEMASK(16) },	/* 169.254.0.0/16 */
