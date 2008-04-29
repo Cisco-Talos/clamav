@@ -178,9 +178,9 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
 
 #if HAVE_BZLIB_H
 #ifdef NOBZ2PREFIX
-#define BZ2_bzReadOpen bzReadOpen
-#define BZ2_bzReadClose bzReadClose
-#define BZ2_bzRead bzRead
+#define BZ2_bzDecompress bzDecompress
+#define BZ2_bzDecompressEnd bzDecompressEnd
+#define BZ2_bzDecompressInit bzDecompressInit
 #endif
 
   case ALG_BZIP2: {
