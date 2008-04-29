@@ -19,7 +19,7 @@ Output help information and exit.
 Print version number and exit.
 .TP 
 \fB\-v, \-\-verbose\fR
-Be verbose. This option causes freshclam to print many additional informations.
+Be verbose. This option causes freshclam to print much additional information.
 .TP 
 \fB\-\-quiet\fR
 Be quiet \- output only error messages.
