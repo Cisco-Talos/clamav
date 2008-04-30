@@ -1,3 +1,7 @@
+Wed Apr 30 14:15:53 CEST 2008 (tk)
+----------------------------------
+  * libclamav/mspack.c: downgrade some error messages (bb#911)
+
 Wed Apr 30 12:35:29 CEST 2008 (tk)
 ----------------------------------
   * clamav-milter: retrieve db version from daily.cld (bb#942)
