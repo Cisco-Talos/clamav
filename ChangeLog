@@ -1,3 +1,7 @@
+Wed Apr 30 14:44:18 CEST 2008 (tk)
+----------------------------------
+  * libclamav/chmunpack.c: fix unlink failure on win32 (bb#951)
+
 Wed Apr 30 14:15:53 CEST 2008 (tk)
 ----------------------------------
   * libclamav/mspack.c: downgrade some error messages (bb#911)
