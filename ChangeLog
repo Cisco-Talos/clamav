@@ -1,3 +1,7 @@
+Wed Apr 30 12:35:29 CEST 2008 (tk)
+----------------------------------
+  * clamav-milter: retrieve db version from daily.cld (bb#942)
+
 Tue Apr 29 18:53:51 CEST 2008 (acab)
 ------------------------------------
   * libclamav/unzip.c: check for unprefixed bz2 - bb#990

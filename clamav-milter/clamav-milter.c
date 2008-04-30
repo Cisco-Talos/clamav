@@ -5771,10 +5771,11 @@ loadDatabase(void)
 			dbdir = cl_retdbdir();
 	}
 
-	daily = cli_malloc(strlen(dbdir) + 22);
+	daily = cli_malloc(strlen(dbdir) + 11);
 	sprintf(daily, "%s/daily.cvd", dbdir);
 	if(access(daily, R_OK) < 0)
-		sprintf(daily, "%s/daily.inc/daily.info", dbdir);
+		sprintf(daily, "%s/daily.cld", dbdir);
+
 
 	cli_dbgmsg("loadDatabase: check %s for updates\n", daily);
 
@@ -5795,7 +5796,6 @@ loadDatabase(void)
 
 		cl_cvdfree(d);
 	} else
-		/* TODO: use dbdir/daily.inc/daily.info */
 		snprintf(clamav_version, VERSION_LENGTH,
 			"ClamAV version %s, clamav-milter version %s",
 			VERSION, CM_VERSION);
