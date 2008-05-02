@@ -4454,13 +4454,15 @@ getURL(struct arg *arg)
 static int
 my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len)
 {
-#if	defined(HAVE_GETHOSTBYNAME_R_6)
-	/* e.g. Linux */
 	struct hostent *hp2;
 	int ret = -1;
 
 	if((hostname == NULL) || (hp == NULL))
 		return -1;
+	memset(hp, 0, sizeof(struct hostent));
+#if	defined(HAVE_GETHOSTBYNAME_R_6)
+	/* e.g. Linux */
+
 	if(gethostbyname_r(hostname, hp, buf, len, &hp2, &ret) < 0)
 		return ret;
 #elif	defined(HAVE_GETHOSTBYNAME_R_5)
@@ -4470,28 +4472,17 @@ my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t l
 	 * doesn't add it, so you need to do something like
 	 *	LIBS=-lnet ./configure --enable-cache --disable-clamav
 	 */
-	int ret = -1;
-
-	if((hostname == NULL) || (hp == NULL))
-		return -1;
 	if(gethostbyname_r(hostname, hp, buf, len, &ret) == NULL)
 		return ret;
 #elif	defined(HAVE_GETHOSTBYNAME_R_3)
 	/* e.g. HP/UX, AIX */
-	if((hostname == NULL) || (hp == NULL))
-		return -1;
 	if(gethostbyname_r(hostname, &hp, (struct hostent_data *)buf) < 0)
 		return h_errno;
 #else
 	/* Single thread the code e.g. VS2005 */
-	struct hostent *hp2;
 #ifdef  CL_THREAD_SAFE
 	static pthread_mutex_t hostent_mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
 
-	if((hostname == NULL) || (hp == NULL))
-		return -1;
-#ifdef  CL_THREAD_SAFE
 	pthread_mutex_lock(&hostent_mutex);
 #endif
 	if((hp2 = gethostbyname(hostname)) == NULL) {

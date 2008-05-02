@@ -1,3 +1,8 @@
+Fri May  2 20:09:56 EEST 2008 (edwin)
+------------------------------------
+  * libclamav/mbox.c, shared/network.c: prevent uninitialized use of hostent
+  structure (bb #1003).
+
 Wed Apr 30 14:15:53 CEST 2008 (tk)
 ----------------------------------
   * libclamav/mspack.c: downgrade some error messages (bb#911)
