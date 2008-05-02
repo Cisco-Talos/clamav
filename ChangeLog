@@ -1,3 +1,8 @@
+Fri May  2 20:09:56 EEST 2008 (edwin)
+------------------------------------
+  * libclamav/mbox.c, shared/network.c: prevent uninitialized use of hostent
+  structure (bb #1003).
+
 Wed Apr 30 14:44:18 CEST 2008 (tk)
 ----------------------------------
   * libclamav/chmunpack.c: fix unlink failure on win32 (bb#951)
