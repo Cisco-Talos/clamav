@@ -1,3 +1,7 @@
+Sat May  3 14:46:41 CEST 2008 (tk)
+----------------------------------
+  * libclamav/readdb.h: read daily.cfg stored inside .cld containers (bb#1006)
+
 Fri May  2 20:09:56 EEST 2008 (edwin)
 ------------------------------------
   * libclamav/mbox.c, shared/network.c: prevent uninitialized use of hostent
