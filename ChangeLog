@@ -1,3 +1,8 @@
+Sun May  4 21:57:33 EEST 2008 (edwin)
+------------------------------------
+  * libclamav/Makefile.am: link .la files first, this
+	should avoid linking to old libclamav as in bb #931
+
 Sat May  3 14:46:41 CEST 2008 (tk)
 ----------------------------------
   * libclamav/readdb.h: read daily.cfg stored inside .cld containers (bb#1006)
