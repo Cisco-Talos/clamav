@@ -1,3 +1,7 @@
+Mon May  5 15:32:42 CEST 2008 (tk)
+----------------------------------
+  * doc/clamdoc.tex: add a note about forking daemons (bb#906)
+
 Sun May  4 21:57:33 EEST 2008 (edwin)
 ------------------------------------
   * libclamav/Makefile.am: link .la files first, this

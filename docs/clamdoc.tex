@@ -881,6 +881,13 @@ struct cl_limits {
     Because the engine structure occupies a few megabytes of system memory, you
     should release it with \verb+cl_free+ if you no longer need to scan files.
 
+    \subsubsection{Forking daemons}
+    If you're using libclamav with a forking daemon you should call
+    \verb+srand()+ inside a forked child before making any calls to the
+    libclamav functions. This will avoid possible collisions with temporary
+    filenames created by other processes of the daemon. This procedure
+    is not required for multi-threaded daemons.
+
     \subsubsection{clamav-config}
     Use \verb+clamav-config+ to check compilation information for libclamav.
     \begin{verbatim}
