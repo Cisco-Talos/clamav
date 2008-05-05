@@ -1,3 +1,7 @@
+Mon May  5 20:28:22 CEST 2008 (acab)
+------------------------------------
+  * build system: revert r3808 to allow building on *BSD - bb#1010
+
 Mon May  5 15:32:42 CEST 2008 (tk)
 ----------------------------------
   * doc/clamdoc.tex: add a note about forking daemons (bb#906)

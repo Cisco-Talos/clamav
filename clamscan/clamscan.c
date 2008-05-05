@@ -68,6 +68,13 @@ int main(int argc, char **argv)
 	struct optstruct *opt;
 	const char *pt;
 
+#if defined(C_WINDOWS) && defined(CL_THREAD_SAFE)
+    if(!pthread_win32_process_attach_np()) {
+	mprintf("!Can't start the win32 pthreads layer\n");
+	return 72;
+    }
+#endif
+
     opt = opt_parse(argc, argv, clamscan_shortopt, clamscan_longopt, NULL);
     if(!opt) {
 	mprintf("!Can't parse the command line\n");
@@ -246,6 +253,13 @@ int main(int argc, char **argv)
     }
 
     opt_free(opt);
+
+#if defined(C_WINDOWS) && defined(CL_THREAD_SAFE)
+    if(!pthread_win32_process_detach_np()) {
+	logg("!Can't stop the win32 pthreads layer\n");
+	return 72;
+    }
+#endif
 
     return ret;
 }
