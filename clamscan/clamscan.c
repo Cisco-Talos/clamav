@@ -307,6 +307,9 @@ void help(void)
     mprintf("\n");
     mprintf("    --detect-pua                         Detect Possibly Unwanted Applications\n");
     mprintf("    --detect-structured                  Detect structured data (SSN, Credit Card)\n");
+    mprintf("    --structured-ssn-format=X            SSN format (0=normal,1=stripped,2=both)\n");
+    mprintf("    --structured-ssn-count=N             Min SSN count to generate a detect\n");
+    mprintf("    --structured-cc-count=N              Min CC count to generate a detect\n");
     mprintf("    --no-mail                            Disable mail file support\n");
     mprintf("    --no-phishing-sigs                   Disable signature-based phishing detection\n");
     mprintf("    --no-phishing-scan-urls              Disable url-based phishing detection\n");

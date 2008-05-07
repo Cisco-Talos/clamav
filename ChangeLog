@@ -1,3 +1,8 @@
+Wed May  7 11:51:54 CEST 2008 (tk)
+----------------------------------
+  * clamscan: new switches --structured-ssn-format, --structured-ssn-count,
+	      --structured-cc-count (bb#959)
+
 Tue May  6 19:10:56 CEST 2008 (tk)
 ----------------------------------
   * test: add more test files: clam-mew.exe, clam-nsis.exe, clam-petite.exe,

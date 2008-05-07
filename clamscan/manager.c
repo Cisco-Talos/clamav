@@ -310,10 +310,36 @@ int scanmanager(const struct optstruct *opt)
 
     if(opt_check(opt, "detect-structured")) {
 	options |= CL_SCAN_STRUCTURED;
-	options |= CL_SCAN_STRUCTURED_SSN_NORMAL;
-	options |= CL_SCAN_STRUCTURED_SSN_STRIPPED;
-        limits.min_cc_count = 1;
-        limits.min_ssn_count = 1;
+
+	if(opt_check(opt, "structured-ssn-format")) {
+	    switch(atoi(opt_arg(opt, "structured-ssn-format"))) {
+		case 0:
+		    options |= CL_SCAN_STRUCTURED_SSN_NORMAL;
+		    break;
+		case 1:
+		    options |= CL_SCAN_STRUCTURED_SSN_STRIPPED;
+		    break;
+		case 2:
+		    options |= (CL_SCAN_STRUCTURED_SSN_NORMAL | CL_SCAN_STRUCTURED_SSN_STRIPPED);
+		    break;
+		default:
+		    logg("!Invalid argument for --structured-ssn-format\n");
+		    return 40;
+	    }
+	} else {
+	    options |= (CL_SCAN_STRUCTURED_SSN_NORMAL | CL_SCAN_STRUCTURED_SSN_STRIPPED);
+	}
+
+	if(opt_check(opt, "structured-ssn-count"))
+	    limits.min_ssn_count = atoi(opt_arg(opt, "structured-ssn-count"));
+	else
+	    limits.min_ssn_count = 1;
+
+	if(opt_check(opt, "structured-cc-count"))
+	    limits.min_cc_count = atoi(opt_arg(opt, "structured-cc-count"));
+	else
+	    limits.min_cc_count = 1;
+
     } else
 	options &= ~CL_SCAN_STRUCTURED;
 
