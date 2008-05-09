@@ -240,7 +240,7 @@ cli_regcomp(regex_t *preg, const char *pattern, int cflags)
 	preg->re_magic = MAGIC1;
 #ifndef REDEBUG
 	/* not debugging, so can't rely on the assert() in cli_regexec() */
-	if (g->iflags&BAD)
+	if (g->iflags&REGEX_BAD)
 		SETERROR(REG_ASSERT);
 #endif
 
@@ -1059,8 +1059,8 @@ allocset(struct parse *p)
 
 		(void) memset((char *)p->g->setbits + (nbytes - css), 0, css);
 	}
-
-	if(!p->g->sets || !p->g->setbits)
+	/* XXX should not happen */
+	if (p->g->sets == NULL || p->g->setbits == NULL)
 		goto nomem;
 
 	cs = &p->g->sets[no];
@@ -1177,10 +1177,7 @@ mcadd( struct parse *p, cset *cs, const char *cp)
 	void *np;
 
 	cs->smultis += strlen(cp) + 1;
-	if (cs->multis == NULL)
-		np = cli_malloc(cs->smultis);
-	else
-		np = cli_realloc(cs->multis, cs->smultis);
+	np = cli_realloc(cs->multis, cs->smultis);
 	if (np == NULL) {
 		if (cs->multis)
 			free(cs->multis);
@@ -1423,8 +1420,8 @@ static void
 findmust(struct parse *p, struct re_guts *g)
 {
 	sop *scan;
-	sop *start;
-	sop *newstart;
+	sop *start;    /* start initialized in the default case, after that */
+	sop *newstart; /* newstart was initialized in the OCHAR case */
 	sopno newlen;
 	sop s;
 	char *cp;
@@ -1458,7 +1455,7 @@ findmust(struct parse *p, struct re_guts *g)
 				/* assert() interferes w debug printouts */
 				if (OP(s) != O_QUEST && OP(s) != O_CH &&
 							OP(s) != OOR2) {
-					g->iflags |= BAD;
+					g->iflags |= REGEX_BAD;
 					return;
 				}
 			} while (OP(s) != O_QUEST && OP(s) != O_CH);
@@ -1523,6 +1520,6 @@ pluscount(struct parse *p, struct re_guts *g)
 		}
 	} while (OP(s) != OEND);
 	if (plusnest != 0)
-		g->iflags |= BAD;
+		g->iflags |= REGEX_BAD;
 	return(maxnest);
 }
