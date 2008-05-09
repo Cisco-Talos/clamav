@@ -35,7 +35,7 @@ start() {
 	fi
 	# Don't allow files larger than 20M to be created, to limit DoS
 	# Needs to be large enough to extract the signature files
-	ulimit -f 20000
+	ulimit -f 25600
         LANG= daemon clamav-milter ${CLAMAV_FLAGS}
         RETVAL=$?
         echo
