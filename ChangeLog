@@ -1,3 +1,7 @@
+Fri May  9 14:46:57 EEST 2008 (edwin)
+-------------------------------------
+  * contrib/init/RedHat: check for already running clamav-milter (bb #823)
+
 Fri May  9 13:58:27 EEST 2008 (edwin)
 -------------------------------------
   * libclamav/regex: avoid name collisions on AIX (bb #947)

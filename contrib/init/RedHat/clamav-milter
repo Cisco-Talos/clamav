@@ -29,6 +29,10 @@ RETVAL=0
 
 start() {
         echo -n "Starting clamav-milter: "
+	if test -f /var/lock/subsys/clamav-milter; then
+		echo " already running!"
+		return 1
+	fi
 	# Don't allow files larger than 20M to be created, to limit DoS
 	# Needs to be large enough to extract the signature files
 	ulimit -f 20000
