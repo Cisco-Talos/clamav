@@ -27,28 +27,45 @@ PATH=$PATH:/usr/bin:/usr/local/sbin:/usr/local/bin
 
 RETVAL=0
 
+# Clamav-milter must have write access to the pid file, /var/run is not suitable
+default_pidfile=
+[ -d /var/run/clamav-milter ] && default_pidfile=/var/run/clamav-milter/clamav-milter.pid
+[ -d /var/clamav ] && default_pidfile=/var/clamav/clamav-milter.pid
+pidfile=${PIDFILE:-$default_pidfile}
+
+lockfile=/var/lock/subsys/clamav-milter
+
 start() {
         echo -n "Starting clamav-milter: "
-	if test -f /var/lock/subsys/clamav-milter; then
-		echo " already running!"
-		return 1
-	fi
-	# Don't allow files larger than 20M to be created, to limit DoS
+	# Don't allow files larger than 25M to be created, to limit DoS
 	# Needs to be large enough to extract the signature files
-	ulimit -f 20000
-        LANG= daemon clamav-milter ${CLAMAV_FLAGS}
+	ulimit -f 25600
+	if [ ! -z $pidfile ]; then
+		CLAMAV_PID=--pidfile=${pidfile}
+		PID=`pidofproc -p ${pidfile} clamav-milter`
+	else
+		CLAMAV_PID=
+		PID=`pidofproc clamav-milter`
+	fi
+	[ -n "$PID" ] && echo " already running!" && return 1
+        LANG= daemon clamav-milter $CLAMAV_PID ${CLAMAV_FLAGS}
         RETVAL=$?
+	[ ! -z $pidfile -a -f $pidfile ] && sed -i -e 's/-//' $pidfile
         echo
-	test $RETVAL -eq 0 && touch /var/lock/subsys/clamav-milter
+	test $RETVAL -eq 0 && touch ${lockfile}
 	return $RETVAL
 }
 
 stop() {
         echo -n "Shutting down clamav-milter: "
-        killproc clamav-milter
+	if [ ! -z $pidfile ]; then
+	        killproc -p ${pidfile} clamav-milter
+	else
+		killproc clamav-milter
+	fi
         RETVAL=$?
         echo
-	test $RETVAL -eq 0 && rm -f /var/lock/subsys/clamav-milter
+	test $RETVAL -eq 0 && rm -f ${lockfile} ${pidfile}
 }
 
 restart() {
@@ -70,10 +87,14 @@ case "$1" in
 	restart
         ;;
   condrestart)
-	test -f /var/lock/subsys/clamav-milter && $0 restart || :
+	test -f ${lockfile} && $0 restart || :
         ;;
   status)
-        status clamav-milter
+	if [ ! -z $pidfile ]; then
+	        status -p ${pidfile} clamav-milter
+	else
+		status clamav-milter
+	fi
         ;;
   *)
         echo "Usage: $0 {start|stop|reload|restart|condrestart|status}"
