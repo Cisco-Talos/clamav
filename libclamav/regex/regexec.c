@@ -150,8 +150,8 @@ cli_regexec(const regex_t *preg, const char *string, size_t nmatch,
 
 	if (preg->re_magic != MAGIC1 || g->magic != MAGIC2)
 		return(REG_BADPAT);
-	assert(!(g->iflags&BAD));
-	if (g->iflags&BAD)		/* backstop for no-debug case */
+	assert(!(g->iflags&REGEX_BAD));
+	if (g->iflags&REGEX_BAD)		/* backstop for no-debug case */
 		return(REG_BADPAT);
 	eflags = GOODFLAGS(eflags);
 

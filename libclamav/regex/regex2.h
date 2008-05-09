@@ -138,7 +138,7 @@ struct re_guts {
 	int iflags;		/* internal flags */
 #		define	USEBOL	01	/* used ^ */
 #		define	USEEOL	02	/* used $ */
-#		define	BAD	04	/* something wrong */
+#		define	REGEX_BAD	04	/* something wrong */
 	int nbol;		/* number of ^ used */
 	int neol;		/* number of $ used */
 	int ncategories;	/* how many character categories */
