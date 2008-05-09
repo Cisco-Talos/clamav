@@ -132,7 +132,7 @@ AC_LIB_PROG_LD_GNU
 
 # libtool.m4 - Configure libtool for the host system. -*-Autoconf-*-
 
-# serial 52 Debian 1.5.26-3 AC_PROG_LIBTOOL
+# serial 52 Debian 1.5.26-4 AC_PROG_LIBTOOL
 
 
 # AC_PROVIDE_IFELSE(MACRO-NAME, IF-PROVIDED, IF-NOT-PROVIDED)
@@ -7630,5 +7630,6 @@ AC_SUBST([am__untar])
 ]) # _AM_PROG_TAR
 
 m4_include([m4/acinclude.m4])
+m4_include([m4/fdpassing.m4])
 m4_include([m4/lib-link.m4])
 m4_include([m4/lib-prefix.m4])

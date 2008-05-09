@@ -37,6 +37,7 @@
 #define CMD11 "SHUTDOWN"
 /* #define CMD12 "FD" */
 #define CMD13 "MULTISCAN"
+#define CMD14 "FILDES"
 
 #include "libclamav/clamav.h"
 #include "shared/cfgparser.h"

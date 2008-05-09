@@ -43,7 +43,7 @@ EXIT_FAILURE=1
 
 PROGRAM=ltmain.sh
 PACKAGE=libtool
-VERSION="1.5.26 Debian 1.5.26-3"
+VERSION="1.5.26 Debian 1.5.26-4"
 TIMESTAMP=" (1.1220.2.493 2008/02/01 16:58:18)"
 
 # Be Bourne compatible (taken from Autoconf:_AS_BOURNE_COMPATIBLE).

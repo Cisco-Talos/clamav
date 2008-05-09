@@ -1520,6 +1520,7 @@ Optional Features:
   --enable-bigstack	  increase thread stack size
   --disable-gethostbyname_r	  disable support for gethostbyname_r
   --enable-readdir_r		    enable support for readdir_r
+  --disable-fdpassing        don't build file descriptor passing support
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -4766,7 +4767,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 4769 "configure"' > conftest.$ac_ext
+  echo '#line 4770 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -6856,11 +6857,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:6859: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:6860: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:6863: \$? = $ac_status" >&5
+   echo "$as_me:6864: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7146,11 +7147,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7149: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7150: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7153: \$? = $ac_status" >&5
+   echo "$as_me:7154: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7250,11 +7251,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7253: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7254: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7257: \$? = $ac_status" >&5
+   echo "$as_me:7258: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -9627,7 +9628,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 9630 "configure"
+#line 9631 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -9727,7 +9728,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 9730 "configure"
+#line 9731 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -16329,15 +16330,6 @@ _ACEOF
 
 	fi
     fi
-    case `uname -r` in
-    1.*|2.0.*)
-
-cat >>confdefs.h <<\_ACEOF
-#define INCOMPLETE_CMSG 1
-_ACEOF
-
-       ;;
-    esac
     ;;
 kfreebsd*-gnu)
 
@@ -16507,11 +16499,9 @@ _ACEOF
     ;;
 openbsd*)
     if test "$have_pthreads" = "yes"; then
-	if test "$use_cr" = "no"; then
-	    THREAD_LIBS="-pthread"
-	else
-	    THREAD_LIBS="-pthread -lc_r"
-	fi
+	THREAD_LIBS="-pthread"
+	CLAMD_LIBS="$CLAMD_LIBS -pthread"
+	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -pthread"
 	TH_SAFE="-thread-safe"
 
 cat >>confdefs.h <<\_ACEOF
@@ -17238,241 +17228,6 @@ fi
 
 
 
-for ac_func in recvmsg sendmsg
-do
-as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
-{ echo "$as_me:$LINENO: checking for $ac_func" >&5
-echo $ECHO_N "checking for $ac_func... $ECHO_C" >&6; }
-if { as_var=$as_ac_var; eval "test \"\${$as_var+set}\" = set"; }; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-/* Define $ac_func to an innocuous variant, in case <limits.h> declares $ac_func.
-   For example, HP-UX 11i <limits.h> declares gettimeofday.  */
-#define $ac_func innocuous_$ac_func
-
-/* System header to define __stub macros and hopefully few prototypes,
-    which can conflict with char $ac_func (); below.
-    Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
-    <limits.h> exists even on freestanding compilers.  */
-
-#ifdef __STDC__
-# include <limits.h>
-#else
-# include <assert.h>
-#endif
-
-#undef $ac_func
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char $ac_func ();
-/* The GNU C library defines this for functions which it implements
-    to always fail with ENOSYS.  Some functions are actually named
-    something starting with __ and the normal name is an alias.  */
-#if defined __stub_$ac_func || defined __stub___$ac_func
-choke me
-#endif
-
-int
-main ()
-{
-return $ac_func ();
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext conftest$ac_exeext
-if { (ac_try="$ac_link"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && {
-	 test -z "$ac_c_werror_flag" ||
-	 test ! -s conftest.err
-       } && test -s conftest$ac_exeext &&
-       $as_test_x conftest$ac_exeext; then
-  eval "$as_ac_var=yes"
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-	eval "$as_ac_var=no"
-fi
-
-rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
-      conftest$ac_exeext conftest.$ac_ext
-fi
-ac_res=`eval echo '${'$as_ac_var'}'`
-	       { echo "$as_me:$LINENO: result: $ac_res" >&5
-echo "${ECHO_T}$ac_res" >&6; }
-if test `eval echo '${'$as_ac_var'}'` = yes; then
-  cat >>confdefs.h <<_ACEOF
-#define `echo "HAVE_$ac_func" | $as_tr_cpp` 1
-_ACEOF
-
-fi
-done
-
-{ echo "$as_me:$LINENO: checking for msg_accrights field in struct msghdr" >&5
-echo $ECHO_N "checking for msg_accrights field in struct msghdr... $ECHO_C" >&6; }
-if test "${ac_cv_have_accrights_in_msghdr+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-
-    cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/uio.h>
-
-int
-main ()
-{
-
-#ifdef msg_accrights
-#error msg_accrights defined
-#endif
-struct msghdr m;
-m.msg_accrights = 0;
-return 0;
-
-
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext
-if { (ac_try="$ac_compile"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_compile") 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && {
-	 test -z "$ac_c_werror_flag" ||
-	 test ! -s conftest.err
-       } && test -s conftest.$ac_objext; then
-  ac_cv_have_accrights_in_msghdr="yes"
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-	ac_cv_have_accrights_in_msghdr="no"
-fi
-
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-fi
-{ echo "$as_me:$LINENO: result: $ac_cv_have_accrights_in_msghdr" >&5
-echo "${ECHO_T}$ac_cv_have_accrights_in_msghdr" >&6; }
-if test "x$ac_cv_have_accrights_in_msghdr" = "xyes" ; then
-
-cat >>confdefs.h <<\_ACEOF
-#define HAVE_ACCRIGHTS_IN_MSGHDR 1
-_ACEOF
-
-fi
-
-{ echo "$as_me:$LINENO: checking for msg_control field in struct msghdr" >&5
-echo $ECHO_N "checking for msg_control field in struct msghdr... $ECHO_C" >&6; }
-if test "${ac_cv_have_control_in_msghdr+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-
-    cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/uio.h>
-
-int
-main ()
-{
-
-#ifdef msg_control
-#error msg_control defined
-#endif
-struct msghdr m;
-m.msg_control = 0;
-return 0;
-
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext
-if { (ac_try="$ac_compile"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_compile") 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && {
-	 test -z "$ac_c_werror_flag" ||
-	 test ! -s conftest.err
-       } && test -s conftest.$ac_objext; then
-   ac_cv_have_control_in_msghdr="yes"
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-	 ac_cv_have_control_in_msghdr="no"
-fi
-
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-
-fi
-{ echo "$as_me:$LINENO: result: $ac_cv_have_control_in_msghdr" >&5
-echo "${ECHO_T}$ac_cv_have_control_in_msghdr" >&6; }
-if test "x$ac_cv_have_control_in_msghdr" = "xyes" ; then
-
-cat >>confdefs.h <<\_ACEOF
-#define HAVE_CONTROL_IN_MSGHDR 1
-_ACEOF
-
-fi
-
-
 # Check whether --with-tcpwrappers was given.
 if test "${with_tcpwrappers+set}" = set; then
   withval=$with_tcpwrappers;  case "$withval" in
@@ -17639,6 +17394,9 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 #include <tcpd.h>
 int allow_severity = 0;
 int deny_severity  = 0;
@@ -17691,6 +17449,9 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 #include <tcpd.h>
 int allow_severity = 0;
 int deny_severity  = 0;
@@ -18899,6 +18660,565 @@ _ACEOF
 fi
 { echo "$as_me:$LINENO: result: $have_signed_rightshift_extended" >&5
 echo "${ECHO_T}$have_signed_rightshift_extended" >&6; };
+
+
+
+
+for ac_func in recvmsg sendmsg
+do
+as_ac_var=`echo "ac_cv_func_$ac_func" | $as_tr_sh`
+{ echo "$as_me:$LINENO: checking for $ac_func" >&5
+echo $ECHO_N "checking for $ac_func... $ECHO_C" >&6; }
+if { as_var=$as_ac_var; eval "test \"\${$as_var+set}\" = set"; }; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+/* Define $ac_func to an innocuous variant, in case <limits.h> declares $ac_func.
+   For example, HP-UX 11i <limits.h> declares gettimeofday.  */
+#define $ac_func innocuous_$ac_func
+
+/* System header to define __stub macros and hopefully few prototypes,
+    which can conflict with char $ac_func (); below.
+    Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
+    <limits.h> exists even on freestanding compilers.  */
+
+#ifdef __STDC__
+# include <limits.h>
+#else
+# include <assert.h>
+#endif
+
+#undef $ac_func
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char $ac_func ();
+/* The GNU C library defines this for functions which it implements
+    to always fail with ENOSYS.  Some functions are actually named
+    something starting with __ and the normal name is an alias.  */
+#if defined __stub_$ac_func || defined __stub___$ac_func
+choke me
+#endif
+
+int
+main ()
+{
+return $ac_func ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  eval "$as_ac_var=yes"
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	eval "$as_ac_var=no"
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+fi
+ac_res=`eval echo '${'$as_ac_var'}'`
+	       { echo "$as_me:$LINENO: result: $ac_res" >&5
+echo "${ECHO_T}$ac_res" >&6; }
+if test `eval echo '${'$as_ac_var'}'` = yes; then
+  cat >>confdefs.h <<_ACEOF
+#define `echo "HAVE_$ac_func" | $as_tr_cpp` 1
+_ACEOF
+
+fi
+done
+
+{ echo "$as_me:$LINENO: checking for msg_control field in struct msghdr" >&5
+echo $ECHO_N "checking for msg_control field in struct msghdr... $ECHO_C" >&6; }
+if test "${ac_cv_have_control_in_msghdr+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+
+    cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+#define _XOPEN_SOURCE 500
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/uio.h>
+
+int
+main ()
+{
+
+#ifdef msg_control
+#error msg_control defined
+#endif
+struct msghdr m;
+m.msg_control = 0;
+return 0;
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+   ac_cv_have_control_in_msghdr="yes"
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	 ac_cv_have_control_in_msghdr="no"
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_have_control_in_msghdr" >&5
+echo "${ECHO_T}$ac_cv_have_control_in_msghdr" >&6; }
+if test "x$ac_cv_have_control_in_msghdr" = "xyes" ; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_CONTROL_IN_MSGHDR 1
+_ACEOF
+
+
+        { echo "$as_me:$LINENO: checking BSD 4.4 / RFC2292 style fd passing" >&5
+echo $ECHO_N "checking BSD 4.4 / RFC2292 style fd passing... $ECHO_C" >&6; }
+    # Check whether --enable-fdpassing was given.
+if test "${enable_fdpassing+set}" = set; then
+  enableval=$enable_fdpassing; want_fdpassing=$enableval
+else
+  want_fdpassing="yes"
+fi
+
+
+    if test "x$want_fdpassing" = "xyes"; then
+                if test "$cross_compiling" = yes; then
+  have_fdpass=0
+else
+  cat >conftest.$ac_ext <<_ACEOF
+
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/uio.h>
+#include <signal.h>
+#include <sys/socket.h>
+
+
+#define TEST "test"
+
+int send_fd(int s, int fd)
+{
+    struct msghdr msg;
+    struct cmsghdr *cmsg;
+    unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
+    struct iovec iov[1];
+
+    iov[0].iov_base = "";
+    iov[0].iov_len = 1;
+
+    memset(&msg, 0, sizeof(msg));
+    msg.msg_control = fdbuf;
+    /* must send/receive at least one byte */
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+    msg.msg_controllen = CMSG_LEN(sizeof(int));
+
+    cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type = SCM_RIGHTS;
+    *(int *)CMSG_DATA(cmsg) = fd;
+
+    if (sendmsg(s, &msg, 0) == -1) {
+        perror("sendmsg");
+        close(s);
+        return -1;
+    }
+    return 0;
+}
+
+int testfd(int desc)
+{
+    char buf[256];
+    if(read(desc, buf, sizeof(buf)) != sizeof(TEST)) {
+        fprintf(stderr, "test data not received correctly!");
+        return 1;
+    }
+    return memcmp(buf, TEST, sizeof(TEST));
+}
+
+int recv_fd(int desc)
+{
+    unsigned char buf[CMSG_SPACE(sizeof(int))];
+    struct msghdr msg;
+    struct cmsghdr *cmsg;
+    struct iovec iov[1];
+    char dummy;
+    int ret=2;
+
+    memset(&msg, 0, sizeof(msg));
+    iov[0].iov_base = &dummy;
+    iov[0].iov_len = 1;
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+    msg.msg_control = buf;
+    msg.msg_controllen = sizeof(buf);
+
+    if (recvmsg(desc, &msg, 0) == -1) {
+        perror("recvmsg failed!");
+        return -1;
+    }
+    if ((msg.msg_flags & MSG_TRUNC) || (msg.msg_flags & MSG_CTRUNC)) {
+        fprintf(stderr, "control message truncated");
+        return -1;
+    }
+    for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
+        cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+        if (cmsg->cmsg_len == CMSG_LEN(sizeof(int)) &&
+            cmsg->cmsg_level == SOL_SOCKET &&
+            cmsg->cmsg_type == SCM_RIGHTS) {
+            int fd = *(int *)CMSG_DATA(cmsg);
+            ret = testfd(fd);
+            close(fd);
+        }
+    }
+    return ret;
+}
+
+int main(void)
+{
+    int fd[2];
+    int pip[2];
+    pid_t pid;
+    int status;
+
+    if(pipe(pip)) {
+        perror("pipe");
+        return 1;
+    }
+
+    if(socketpair(AF_UNIX, SOCK_STREAM, 0, fd)) {
+        perror("socketpair");
+        return 1;
+    }
+
+    if((pid=fork()) < 0) {
+        perror("fork");
+    } else if (!pid) {
+        exit( recv_fd(fd[1]) );
+    } else {
+        /* parent */
+        if(send_fd(fd[0], pip[0]) == -1) {
+            kill(pid, 9);
+            waitpid(pid, NULL, 0);
+            return 2;
+        }
+        write(pip[1], TEST, sizeof(TEST));
+        close(pip[1]);
+        waitpid(pid, &status, 0);
+    }
+    return status;
+}
+
+
+_ACEOF
+rm -f conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  have_fdpass=1; fdpass_need_xopen=0
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+have_fdpass=0
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+
+
+
+        if test $have_fdpass = 0; then
+            if test "$cross_compiling" = yes; then
+  have_fdpass=0
+else
+  cat >conftest.$ac_ext <<_ACEOF
+
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+#define _XOPEN_SOURCE 500
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/uio.h>
+#include <signal.h>
+#include <sys/socket.h>
+
+
+#define TEST "test"
+
+int send_fd(int s, int fd)
+{
+    struct msghdr msg;
+    struct cmsghdr *cmsg;
+    unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
+    struct iovec iov[1];
+
+    iov[0].iov_base = "";
+    iov[0].iov_len = 1;
+
+    memset(&msg, 0, sizeof(msg));
+    msg.msg_control = fdbuf;
+    /* must send/receive at least one byte */
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+    msg.msg_controllen = CMSG_LEN(sizeof(int));
+
+    cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type = SCM_RIGHTS;
+    *(int *)CMSG_DATA(cmsg) = fd;
+
+    if (sendmsg(s, &msg, 0) == -1) {
+        perror("sendmsg");
+        close(s);
+        return -1;
+    }
+    return 0;
+}
+
+int testfd(int desc)
+{
+    char buf[256];
+    if(read(desc, buf, sizeof(buf)) != sizeof(TEST)) {
+        fprintf(stderr, "test data not received correctly!");
+        return 1;
+    }
+    return memcmp(buf, TEST, sizeof(TEST));
+}
+
+int recv_fd(int desc)
+{
+    unsigned char buf[CMSG_SPACE(sizeof(int))];
+    struct msghdr msg;
+    struct cmsghdr *cmsg;
+    struct iovec iov[1];
+    char dummy;
+    int ret=2;
+
+    memset(&msg, 0, sizeof(msg));
+    iov[0].iov_base = &dummy;
+    iov[0].iov_len = 1;
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+    msg.msg_control = buf;
+    msg.msg_controllen = sizeof(buf);
+
+    if (recvmsg(desc, &msg, 0) == -1) {
+        perror("recvmsg failed!");
+        return -1;
+    }
+    if ((msg.msg_flags & MSG_TRUNC) || (msg.msg_flags & MSG_CTRUNC)) {
+        fprintf(stderr, "control message truncated");
+        return -1;
+    }
+    for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
+        cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+        if (cmsg->cmsg_len == CMSG_LEN(sizeof(int)) &&
+            cmsg->cmsg_level == SOL_SOCKET &&
+            cmsg->cmsg_type == SCM_RIGHTS) {
+            int fd = *(int *)CMSG_DATA(cmsg);
+            ret = testfd(fd);
+            close(fd);
+        }
+    }
+    return ret;
+}
+
+int main(void)
+{
+    int fd[2];
+    int pip[2];
+    pid_t pid;
+    int status;
+
+    if(pipe(pip)) {
+        perror("pipe");
+        return 1;
+    }
+
+    if(socketpair(AF_UNIX, SOCK_STREAM, 0, fd)) {
+        perror("socketpair");
+        return 1;
+    }
+
+    if((pid=fork()) < 0) {
+        perror("fork");
+    } else if (!pid) {
+        exit( recv_fd(fd[1]) );
+    } else {
+        /* parent */
+        if(send_fd(fd[0], pip[0]) == -1) {
+            kill(pid, 9);
+            waitpid(pid, NULL, 0);
+            return 2;
+        }
+        write(pip[1], TEST, sizeof(TEST));
+        close(pip[1]);
+        waitpid(pid, &status, 0);
+    }
+    return status;
+}
+
+
+_ACEOF
+rm -f conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  have_fdpass=1; fdpass_need_xopen=1
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+have_fdpass=0
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+
+
+        fi
+
+        if test $have_fdpass = 1; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_FD_PASSING 1
+_ACEOF
+
+            if test $fdpass_need_xopen = 1; then
+
+cat >>confdefs.h <<\_ACEOF
+#define FDPASS_NEED_XOPEN 1
+_ACEOF
+
+                { echo "$as_me:$LINENO: result: yes, by defining _XOPEN_SOURCE" >&5
+echo "${ECHO_T}yes, by defining _XOPEN_SOURCE" >&6; }
+            else
+                { echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
+            fi
+        else
+            { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+        fi
+
+    else
+        { echo "$as_me:$LINENO: result: disabled" >&5
+echo "${ECHO_T}disabled" >&6; }
+    fi
+fi
+
 
 ac_config_files="$ac_config_files libclamunrar/Makefile libclamunrar_iface/Makefile libclamav/Makefile libclamav/lzma/Makefile clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile Makefile clamav-config libclamav.pc docs/man/clamav-milter.8 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1"
 

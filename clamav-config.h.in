@@ -84,6 +84,9 @@
 /* "build unrar code" */
 #undef ENABLE_UNRAR
 
+/* whether _XOPEN_SOURCE needs to be defined for fd passing to work */
+#undef FDPASS_NEED_XOPEN
+
 /* file i/o buffer size */
 #undef FILEBUFF
 
@@ -95,9 +98,6 @@
 
 /* use "Cache-Control: no-cache" in freshclam */
 #undef FRESHCLAM_NO_CACHE
-
-/* access rights in msghdr */
-#undef HAVE_ACCRIGHTS_IN_MSGHDR
 
 /* attrib aligned */
 #undef HAVE_ATTRIB_ALIGNED
@@ -128,6 +128,9 @@
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
+
+/* have working file descriptor passing support */
+#undef HAVE_FD_PASSING
 
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #undef HAVE_FSEEKO
@@ -305,9 +308,6 @@
 
 /* zlib installed */
 #undef HAVE_ZLIB_H
-
-/* Early Linux doesn't set cmsg fields */
-#undef INCOMPLETE_CMSG
 
 /* bzip funtions do not have bz2 prefix */
 #undef NOBZ2PREFIX

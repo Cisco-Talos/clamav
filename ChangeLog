@@ -1,3 +1,13 @@
+Fri May  9 23:11:51 EEST 2008 (edwin)
+-------------------------------------
+  * build system: add configure checks for FD passing
+  * m4/fdpassing.m4: move all FD passing checks here
+  * clamd/session.[ch], scanner.[ch]:
+  * contrib/clamd_fdscan:
+	add rfc2292/bsd4.4 style file descriptor passing support
+	this code is from Marc Balmer <marc*msys.ch>, with some portability
+	fixes applied
+
 Fri May  9 14:46:57 EEST 2008 (edwin)
 -------------------------------------
   * contrib/init/RedHat: check for already running clamav-milter (bb #823)

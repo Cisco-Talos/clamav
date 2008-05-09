@@ -24,6 +24,11 @@
 #include "clamav-config.h"
 #endif
 
+#if defined HAVE_FD_PASSING && defined FDPASS_NEED_XOPEN
+/* to expose BSD 4.4/Unix98 semantics instead of BSD 4.3 semantics */
+#define _XOPEN_SOURCE 500
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,7 +38,12 @@
 #include <sys/types.h>
 #ifndef	C_WINDOWS
 #include <dirent.h>
+
 #include <sys/socket.h>
+#ifdef HAVE_FD_PASSING
+#include <sys/uio.h>
+#endif
+
 #include <sys/time.h>
 #endif
 #include <pthread.h>
@@ -54,11 +64,56 @@
 #include "server.h"
 #include "session.h"
 
+#ifdef HAVE_FD_PASSING
+static int recvfd_and_scan(int desc, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt)
+{
+	struct msghdr msg;
+	struct cmsghdr *cmsg;
+	unsigned char buf[CMSG_SPACE(sizeof(int))];
+	struct iovec iov[1];
+	char dummy;
+	int ret=-1;
+
+	memset(&msg, 0, sizeof(msg));
+	iov[0].iov_base = &dummy;
+	iov[0].iov_len = 1;
+	msg.msg_iov = iov;
+	msg.msg_iovlen = 1;
+	msg.msg_control = buf;
+	msg.msg_controllen = sizeof(buf);
+
+	if (recvmsg(desc, &msg, 0) == -1) {
+	    logg("recvmsg failed: %s!", strerror(errno));
+	    return -1;
+	}
+	if ((msg.msg_flags & MSG_TRUNC) || (msg.msg_flags & MSG_CTRUNC)) {
+	    logg("control message truncated");
+	    return -1;
+	}
+	for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
+	    cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+		if (cmsg->cmsg_len == CMSG_LEN(sizeof(int)) &&
+		    cmsg->cmsg_level == SOL_SOCKET &&
+		    cmsg->cmsg_type == SCM_RIGHTS) {
+			int fd = *(int *)CMSG_DATA(cmsg);
+			ret = scanfd(fd, NULL, engine, limits, options, copt, desc);
+			close(fd);
+		}
+	}
+	return ret;
+}
+
+#else
+static int recvfd_and_scan(int desc)
+{
+	mdprintf(desc, "ERROR: FILDES support not compiled in\n");
+}
+#endif
+
 int command(int desc, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int timeout)
 {
 	char buff[1025];
 	int bread, opt;
-
 
     bread = readsock(desc, buff, sizeof(buff)-1, '\n', timeout, 0, 1);
     if(bread == -2) /* timeout */
@@ -140,6 +195,10 @@ int command(int desc, const struct cl_engine *engine, const struct cl_limits *li
 	    if(cfgopt(copt, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
+    } else if(!strncmp(buff, CMD14, strlen(CMD14))) { /* FILDES */
+	if(recvfd_and_scan(desc, engine, limits, options, copt) == -2)
+	    if(cfgopt(copt, "ExitOnOOM")->enabled)
+		return COMMAND_SHUTDOWN;
     } else {
 	mdprintf(desc, "UNKNOWN COMMAND\n");
     }
