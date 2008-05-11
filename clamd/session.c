@@ -104,9 +104,10 @@ static int recvfd_and_scan(int desc, const struct cl_engine *engine, const struc
 }
 
 #else
-static int recvfd_and_scan(int desc)
+static int recvfd_and_scan(int desc, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt)
 {
 	mdprintf(desc, "ERROR: FILDES support not compiled in\n");
+	return -1;
 }
 #endif
 

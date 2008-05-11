@@ -1,3 +1,7 @@
+Sat May 10 10:18:41 EEST 2008 (edwin)
+-------------------------------------
+  * clamd/session.c: fix dummy prototype (bb #1019)
+
 Fri May  9 23:11:51 EEST 2008 (edwin)
 -------------------------------------
   * build system: add configure checks for FD passing
