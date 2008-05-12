@@ -65,10 +65,10 @@
 #endif
 
 int progexit = 0;
-pthread_mutex_t exit_mutex;
+pthread_mutex_t exit_mutex = PTHREAD_MUTEX_INITIALIZER;
 int reload = 0;
 time_t reloaded_time = 0;
-pthread_mutex_t reload_mutex;
+pthread_mutex_t reload_mutex = PTHREAD_MUTEX_INITIALIZER;
 int sighup = 0;
 static struct cl_stat *dbstat = NULL;
 
@@ -306,7 +306,9 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	if((fd = fopen(cpt->strarg, "w")) == NULL) {
 	    logg("!Can't save PID in file %s\n", cpt->strarg);
 	} else {
-	    fprintf(fd, "%u", (unsigned int) mainpid);
+	    if (fprintf(fd, "%u", (unsigned int) mainpid)<0) {
+	    	logg("!Can't save PID in file %s\n", cpt->strarg);
+	    }
 	    fclose(fd);
 	}
 	umask(old_umask);
@@ -512,9 +514,6 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     sigaction(SIGPIPE, &sigact, NULL);
     sigaction(SIGUSR2, &sigact, NULL);
 #endif
-
-    pthread_mutex_init(&exit_mutex, NULL);
-    pthread_mutex_init(&reload_mutex, NULL);
 
     idletimeout = cfgopt(copt, "IdleTimeout")->numarg;
 
