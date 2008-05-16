@@ -911,9 +911,12 @@ static int cli_md5db_init(struct cl_engine **engine, unsigned int mode)
     else			    \
 	db = (*engine)->md5_fp;
 
+#define MD5_TOKENS 3
 static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo, unsigned int mode, unsigned int options, gzFile *gzs, unsigned int gzrsize, const char *dbname)
 {
-	char buffer[FILEBUFF], *pt;
+	const char *tokens[MD5_TOKENS];
+	char buffer[FILEBUFF];
+	const char *pt;
 	int ret = CL_SUCCESS;
 	unsigned int size_field = 1, md5_field = 0, line = 0, sigs = 0;
 	uint32_t size;
@@ -934,13 +937,15 @@ static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	line++;
 	cli_chomp(buffer);
 
+	cli_strtokenize(buffer, ':', MD5_TOKENS, tokens);
+
 	new = (struct cli_bm_patt *) cli_calloc(1, sizeof(struct cli_bm_patt));
 	if(!new) {
 	    ret = CL_EMEM;
 	    break;
 	}
 
-	if(!(pt = cli_strtok(buffer, md5_field, ":"))) {
+	if(!(pt = tokens[md5_field])) {
 	    free(new);
 	    ret = CL_EMALFDB;
 	    break;
@@ -948,24 +953,21 @@ static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 
 	if(strlen(pt) != 32 || !(new->pattern = (unsigned char *) cli_hex2str(pt))) {
 	    cli_errmsg("cli_loadmd5: Malformed MD5 string at line %u\n", line);
-	    free(pt);
 	    free(new);
 	    ret = CL_EMALFDB;
 	    break;
 	}
-	free(pt);
 	new->length = 16;
 
-	if(!(pt = cli_strtok(buffer, size_field, ":"))) {
+	if(!(pt = tokens[size_field])) {
 	    free(new->pattern);
 	    free(new);
 	    ret = CL_EMALFDB;
 	    break;
 	}
 	size = atoi(pt);
-	free(pt);
 
-	if(!(new->virname = cli_strtok(buffer, 2, ":"))) {
+	if(!(new->virname = cli_strdup(tokens[2]))) {
 	    free(new->pattern);
 	    free(new);
 	    ret = CL_EMALFDB;
