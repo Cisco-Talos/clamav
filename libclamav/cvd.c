@@ -184,9 +184,14 @@ static int cli_tgzload(int fd, struct cl_engine **engine, unsigned int *signo, u
 	char block[TAR_BLOCKSIZE];
 	int nread, fdd, ret;
 	unsigned int type, size, pad, compr = 1;
-	gzFile *infile;
-	z_off_t off;
+	off_t off;
+	struct cli_dbio dbio;
 
+#define CLOSE_DBIO	    \
+    if(compr)		    \
+	gzclose(dbio.gzs);  \
+    else		    \
+	fclose(dbio.fs)
 
     cli_dbgmsg("in cli_tgzload()\n");
 
@@ -197,31 +202,38 @@ static int cli_tgzload(int fd, struct cl_engine **engine, unsigned int *signo, u
     if(!strncmp(block, "COPYING", 7))
 	compr = 0;
 
+    lseek(fd, 512, SEEK_SET);
+
     if((fdd = dup(fd)) == -1) {
 	cli_errmsg("cli_tgzload: Can't duplicate descriptor %d\n", fd);
 	return CL_EIO;
     }
 
-    lseek(fdd, 512, SEEK_SET);
-
-    if((infile = gzdopen(fdd, "rb")) == NULL) {
-	cli_errmsg("cli_tgzload: Can't gzdopen() descriptor %d, errno = %d\n", fdd, errno);
-	return CL_EIO;
+    if(compr) {
+	if((dbio.gzs = gzdopen(fdd, "rb")) == NULL) {
+	    cli_errmsg("cli_tgzload: Can't gzdopen() descriptor %d, errno = %d\n", fdd, errno);
+	    return CL_EIO;
+	}
+    } else {
+	if((dbio.fs = fdopen(fdd, "rb")) == NULL) {
+	    cli_errmsg("cli_tgzload: Can't fdopen() descriptor %d, errno = %d\n", fdd, errno);
+	    return CL_EIO;
+	}
     }
-
-    if(!compr)
-	gzseek(infile, 512, SEEK_SET);
 
     while(1) {
 
-	nread = gzread(infile, block, TAR_BLOCKSIZE);
+	if(compr)
+	    nread = gzread(dbio.gzs, block, TAR_BLOCKSIZE);
+	else
+	    nread = fread(block, 1, TAR_BLOCKSIZE, dbio.fs);
 
 	if(!nread)
 	    break;
 
 	if(nread != TAR_BLOCKSIZE) {
 	    cli_errmsg("cli_tgzload: Incomplete block read\n");
-	    gzclose(infile);
+	    CLOSE_DBIO;
 	    return CL_EMALFDB;
 	}
 
@@ -233,7 +245,7 @@ static int cli_tgzload(int fd, struct cl_engine **engine, unsigned int *signo, u
 
 	if(strchr(name, '/')) {
 	    cli_errmsg("cli_tgzload: Slash separators are not allowed in CVD\n");
-	    gzclose(infile);
+	    CLOSE_DBIO;
 	    return CL_EMALFDB;
 	}
 
@@ -245,11 +257,11 @@ static int cli_tgzload(int fd, struct cl_engine **engine, unsigned int *signo, u
 		break;
 	    case '5':
 		cli_errmsg("cli_tgzload: Directories are not supported in CVD\n");
-	        gzclose(infile);
+		CLOSE_DBIO;
 		return CL_EMALFDB;
 	    default:
 		cli_errmsg("cli_tgzload: Unknown type flag '%c'\n", type);
-	        gzclose(infile);
+		CLOSE_DBIO;
 		return CL_EMALFDB;
 	}
 
@@ -258,30 +270,41 @@ static int cli_tgzload(int fd, struct cl_engine **engine, unsigned int *signo, u
 
 	if((sscanf(osize, "%o", &size)) == 0) {
 	    cli_errmsg("cli_tgzload: Invalid size in header\n");
-	    gzclose(infile);
+	    CLOSE_DBIO;
 	    return CL_EMALFDB;
 	}
+	dbio.size = size;
 
 	/* cli_dbgmsg("cli_tgzload: Loading %s, size: %u\n", name, size); */
-	off = gzseek(infile, 0, SEEK_CUR);
+	if(compr)
+	    off = (off_t) gzseek(dbio.gzs, 0, SEEK_CUR);
+	else
+	    off = ftell(dbio.fs);
+
 	if(CLI_DBEXT(name)) {
-	    ret = cli_load(name, engine, signo, options, infile, size);
+	    ret = cli_load(name, engine, signo, options, &dbio);
 	    if(ret) {
 		cli_errmsg("cli_tgzload: Invalid size in header\n");
-		gzclose(infile);
+		CLOSE_DBIO;
 		return CL_EMALFDB;
 	    }
 	}
 	pad = size % TAR_BLOCKSIZE ? (TAR_BLOCKSIZE - (size % TAR_BLOCKSIZE)) : 0;
-	if(off == gzseek(infile, 0, SEEK_CUR))
-	    gzseek(infile, size + pad, SEEK_CUR);
-	else if(pad)
-	    gzseek(infile, pad, SEEK_CUR);
-
+	if(compr) {
+	    if(off == gzseek(dbio.gzs, 0, SEEK_CUR))
+		gzseek(dbio.gzs, size + pad, SEEK_CUR);
+	    else if(pad)
+		gzseek(dbio.gzs, pad, SEEK_CUR);
+	} else {
+	    if(off == ftell(dbio.fs))
+		fseek(dbio.fs, size + pad, SEEK_CUR);
+	    else if(pad)
+		fseek(dbio.fs, pad, SEEK_CUR);
+	}
     }
 
-    gzclose(infile);
-    return 0;
+    CLOSE_DBIO;
+    return CL_SUCCESS;
 }
 
 struct cl_cvd *cl_cvdparse(const char *head)
