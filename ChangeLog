@@ -1,3 +1,7 @@
+Mon May 19 17:44:32 CEST 2008 (tk)
+----------------------------------
+  * libclamav/cvd.c: fix initialization of dbio
+
 Sun May 18 22:39:00 CEST 2008 (tk)
 ----------------------------------
   * libclamav: faster loading of uncompressed .cld files

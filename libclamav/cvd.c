@@ -214,11 +214,13 @@ static int cli_tgzload(int fd, struct cl_engine **engine, unsigned int *signo, u
 	    cli_errmsg("cli_tgzload: Can't gzdopen() descriptor %d, errno = %d\n", fdd, errno);
 	    return CL_EIO;
 	}
+	dbio.fs = NULL;
     } else {
 	if((dbio.fs = fdopen(fdd, "rb")) == NULL) {
 	    cli_errmsg("cli_tgzload: Can't fdopen() descriptor %d, errno = %d\n", fdd, errno);
 	    return CL_EIO;
 	}
+	dbio.gzs = NULL;
     }
 
     while(1) {
@@ -284,7 +286,7 @@ static int cli_tgzload(int fd, struct cl_engine **engine, unsigned int *signo, u
 	if(CLI_DBEXT(name)) {
 	    ret = cli_load(name, engine, signo, options, &dbio);
 	    if(ret) {
-		cli_errmsg("cli_tgzload: Invalid size in header\n");
+		cli_errmsg("cli_tgzload: Can't load %s\n", name);
 		CLOSE_DBIO;
 		return CL_EMALFDB;
 	    }
