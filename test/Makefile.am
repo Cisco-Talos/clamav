@@ -7,8 +7,8 @@ SPLIT_DIR=$(top_srcdir)/test/.split
 
 all: $(FILES)
 
-% : $(SPLIT_DIR)/split.%aa $(SPLIT_DIR)/split.%ab
-	cat $(SPLIT_DIR)/split.$*aa $(SPLIT_DIR)/split.$*ab > $*
+$(FILES) :
+	cat $(SPLIT_DIR)/split.$@aa $(SPLIT_DIR)/split.$@ab > $@
 
 clean-local:
 	rm -f $(FILES)
