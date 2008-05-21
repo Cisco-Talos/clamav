@@ -1,3 +1,7 @@
+Wed May 21 15:51:32 CEST 2008 (tk)
+----------------------------------
+  * freshclam/fresclam.c: don't call daemonize() under w32 (bb#1002)
+
 Wed May 21 14:54:04 CEST 2008 (tk)
 ----------------------------------
   * test/Makefile.am: compatibility with pmake (bb#1018)

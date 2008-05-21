@@ -487,6 +487,7 @@ int main(int argc, char **argv)
 
 	bigsleep = 24 * 3600 / checks;
 
+#if !defined(C_OS2) && !defined(C_WINDOWS)
 	if(!cfgopt(copt, "Foreground")->enabled) {
 	    if(daemonize() == -1) {
 		logg("!daemonize() failed\n");
@@ -497,6 +498,7 @@ int main(int argc, char **argv)
             foreground = 0;
 	    mprintf_disabled = 1;
         }
+#endif
 
 	if(opt_check(opt, "pid")) {
 	    pidfile = opt_arg(opt, "pid");
