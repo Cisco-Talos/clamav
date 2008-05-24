@@ -18771,9 +18771,13 @@ cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 
 #define _XOPEN_SOURCE 500
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 #include <sys/socket.h>
+#ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
+#endif
 
 int
 main ()
@@ -18850,13 +18854,17 @@ cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 
 
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 #include <sys/wait.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
+#endif
 #include <signal.h>
 #include <sys/socket.h>
 
@@ -19026,13 +19034,17 @@ cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 
 #define _XOPEN_SOURCE 500
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 #include <sys/wait.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
+#endif
 #include <signal.h>
 #include <sys/socket.h>
 

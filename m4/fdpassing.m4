@@ -2,13 +2,17 @@
 AC_DEFUN([CONFTEST_FDPASS],[[
 AC_LANG_SOURCE([[
 $1 
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 #include <sys/wait.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
+#endif
 #include <signal.h>
 #include <sys/socket.h>
 
@@ -140,9 +144,13 @@ AC_CACHE_CHECK([for msg_control field in struct msghdr],
     AC_TRY_COMPILE(
 [
 #define _XOPEN_SOURCE 500
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 #include <sys/socket.h>
+#ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
+#endif
 ],
 [
 #ifdef msg_control

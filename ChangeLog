@@ -1,3 +1,8 @@
+Sat May 24 21:38:47 EEST 2008 (edwin)
+-------------------------------------
+  * clamd/others.c, session.c, m4/fdpassing.m4:
+	remove duplicate code, and fix build error (bb #1034)
+
 Wed May 21 15:51:32 CEST 2008 (tk)
 ----------------------------------
   * freshclam/fresclam.c: don't call daemonize() under w32 (bb#1002)

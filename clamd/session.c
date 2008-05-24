@@ -41,7 +41,9 @@
 
 #include <sys/socket.h>
 #ifdef HAVE_FD_PASSING
+#ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
+#endif
 #endif
 
 #include <sys/time.h>
