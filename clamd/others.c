@@ -55,9 +55,6 @@
 #ifdef HAVE_SYS_FILIO_H
 #include <sys/filio.h>
 #endif
-#ifdef HAVE_SYS_UIO_H
-#include <sys/uio.h>
-#endif
 
 /* submitted by breiter@wolfereiter.com: do not use poll(2) on Interix */
 #ifdef C_INTERIX
@@ -334,8 +331,6 @@ int writen(int fd, void *buff, unsigned int count)
 /*
    This procedure does timed clamd command and delimited input processing.  
    It is complex for several reasons:
-       1) FD commands are delivered on Unix domain sockets via recvnsg() on platforms which can do this.  
-          These command messages are accompanied by a single byte of data which is a NUL character.
        2) Newline delimited commands are indicated by a command which is prefixed by an 'n' character.  
           This character serves to indicate that the command will contain a newline which will cause
           command data to be read until the command input buffer is full or a newline is encountered.
@@ -351,20 +346,6 @@ int readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeou
 	ssize_t n;
 	size_t boff = 0;
 	char *pdelim;
-#ifdef HAVE_RECVMSG
-	struct msghdr msg;
-	struct iovec iov[1];
-#endif
-#ifdef HAVE_CONTROL_IN_MSGHDR
-#ifndef CMSG_SPACE
-#define CMSG_SPACE(len)	    (_CMSG_ALIGN(sizeof(struct cmsghdr)) + _CMSG_ALIGN(len))
-#endif
-#ifndef CMSG_LEN
-#define CMSG_LEN(len)	    (_CMSG_ALIGN(sizeof(struct cmsghdr)) + (len))
-#endif
-	struct cmsghdr *cmsg;
-	char tmp[CMSG_SPACE(sizeof(fd))];
-#endif
 	time_t starttime, timenow;
 
     time(&starttime);
@@ -382,51 +363,6 @@ int readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeou
     }
     n = recv(sockfd, buf, size, MSG_PEEK);
     if(read_command) {
-    	if((n >= 1) && (buf[0] == 0)) { /* FD message */
-#ifdef HAVE_RECVMSG
-	    iov[0].iov_base = buf;
-	    iov[0].iov_len = size;
-	    memset(&msg, 0, sizeof(msg));
-	    msg.msg_iov = iov;
-	    msg.msg_iovlen = 1;
-#endif
-#ifdef HAVE_ACCRIGHTS_IN_MSGHDR
-	    msg.msg_accrights = (caddr_t)&fd;
-	    msg.msg_accrightslen = sizeof(fd);
-#endif
-#ifdef HAVE_CONTROL_IN_MSGHDR
-	    msg.msg_control = tmp;
-	    msg.msg_controllen = sizeof(tmp);
-#endif
-#if defined(HAVE_RECVMSG) && !defined(C_OS2) && !defined(INCOMPLETE_CMSG)
-	    n = recvmsg(sockfd, &msg, 0);
-#else
-	    n = recv(sockfd, buf, size, 0);
-#endif
-	    if (n <= 0)
-		return n;
-	    errno = EBADF;
-#ifdef HAVE_ACCRIGHTS_IN_MSGHDR
-	    if(msg.msg_accrightslen != sizeof(fd))
-		return -1;
-#endif
-#ifdef HAVE_CONTROL_IN_MSGHDR
-	    cmsg = CMSG_FIRSTHDR(&msg);
-	    if(cmsg == NULL)
-		return -1;
-	    if(cmsg->cmsg_type != SCM_RIGHTS)
-		return -1;
-	    if(cmsg->cmsg_len != CMSG_LEN(sizeof(fd)))
-		return -1;
-	    fd = *(int *)CMSG_DATA(cmsg);
-#endif
-	    if(fd < 0)
-		return -1;
-	    n = snprintf(buf, size, "FD %d", fd);
-	    if((size_t) n >= size)
-		return -1;
-	    return n;
-	}
 	if((n >= 1) && (buf[0] == 'n')) { /* Newline delimited command */
 	    force_delim = 1;
 	    delim = '\n';
