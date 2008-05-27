@@ -4456,9 +4456,6 @@ my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t l
 {
 	struct hostent *hp2;
 	int ret = -1;
-#ifdef  CL_THREAD_SAFE
-	static pthread_mutex_t hostent_mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
 
 	if((hostname == NULL) || (hp == NULL))
 		return -1;
@@ -4483,8 +4480,9 @@ my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t l
 		return h_errno;
 #else
 	/* Single thread the code e.g. VS2005 */
-
 #ifdef  CL_THREAD_SAFE
+	static pthread_mutex_t hostent_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 	pthread_mutex_lock(&hostent_mutex);
 #endif
 	if((hp2 = gethostbyname(hostname)) == NULL) {

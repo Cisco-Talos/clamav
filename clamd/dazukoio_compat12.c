@@ -116,6 +116,7 @@ int dazukoRegister_TS_compat12(struct dazuko_id *dazuko, const char *groupName)
 
 	opt->command = REGISTER;
 	strncpy(opt->buffer, groupName, sizeof(opt->buffer) - 1);
+	opt->buffer[sizeof(opt->buffer)-1]='\0';
 	opt->buffer_length = strlen(opt->buffer) + 1;
 
 	if (ioctl(dazuko->device, _IOW(dazuko->dev_major, IOCTL_SET_OPTION, void *), opt) != 0)
@@ -186,6 +187,7 @@ int dazuko_set_path_compat12(struct dazuko_id *dazuko, const char *path, int com
 
 	opt->command = command;
 	strncpy(opt->buffer, path, sizeof(opt->buffer) - 1);
+	opt->buffer[sizeof(opt->buffer)-1]='\0';
 	opt->buffer_length = strlen(opt->buffer) + 1;
 
 	if (ioctl(dazuko->device, _IOW(dazuko->dev_major, IOCTL_SET_OPTION, void *), opt) != 0)

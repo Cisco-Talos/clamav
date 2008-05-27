@@ -87,7 +87,7 @@ static pthread_mutex_t cli_ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define       P_tmpdir        "C:\\WINDOWS\\TEMP"
 #endif
 
-#define CL_FLEVEL 29 /* don't touch it */
+#define CL_FLEVEL 30 /* don't touch it */
 
 uint8_t cli_debug_flag = 0, cli_leavetemps_flag = 0;
 
@@ -99,6 +99,7 @@ static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 
 	int len = sizeof(x) - 1;			    \
 	char buff[BUFSIZ];				    \
     strncpy(buff, x, len);				    \
+    buff[BUFSIZ-1]='\0';				    \
     va_start(args, str);				    \
     vsnprintf(buff + len, sizeof(buff) - len, str, args);   \
     buff[sizeof(buff) - 1] = '\0';			    \

@@ -258,6 +258,7 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
 
     if((pt = getenv("SIGNDPASS"))) {
 	strncpy(pass, pt, sizeof(pass));
+	pass[sizeof(pass)-1]='\0';
     } else {
 	mprintf("Password: ");
 
@@ -281,12 +282,13 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
 	    return NULL;
 	}
 	strncpy(pass, pt, sizeof(pass));
+	pass[sizeof(pass)-1]='\0';
 	free(pt);
 
 #ifdef HAVE_TERMIOS_H
 	if(tcsetattr(0, TCSAFLUSH, &old)) {
 	    mprintf("!getdsig: tcsetattr() failed\n");
-	    memset(pass, 0, strlen(pass));
+	    memset(pass, 0, sizeof(pass));
 	    return NULL;
 	}
 #endif
@@ -300,7 +302,7 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
 #endif
 	perror("socket()");
 	mprintf("!getdsig: Can't create socket\n");
-	memset(pass, 0, strlen(pass));
+	memset(pass, 0, sizeof(pass));
 	return NULL;
     }
 
@@ -312,7 +314,7 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
         close(sockd);
 	perror("connect()");
 	mprintf("!getdsig: Can't connect to ClamAV Signing Service at %s\n", host);
-	memset(pass, 0, strlen(pass));
+	memset(pass, 0, sizeof(pass));
 	return NULL;
     }
     memset(cmd, 0, sizeof(cmd));
@@ -330,13 +332,13 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
     if(write(sockd, cmd, len) < 0) {
 	mprintf("!getdsig: Can't write to socket\n");
 	close(sockd);
-	memset(cmd, 0, len);
-	memset(pass, 0, strlen(pass));
+	memset(cmd, 0, sizeof(cmd));
+	memset(pass, 0, sizeof(pass));
 	return NULL;
     }
 
-    memset(cmd, 0, len);
-    memset(pass, 0, strlen(pass));
+    memset(cmd, 0, sizeof(cmd));
+    memset(pass, 0, sizeof(pass));
     memset(buff, 0, sizeof(buff));
 
     if((bread = cli_readn(sockd, buff, sizeof(buff))) > 0) {
@@ -587,6 +589,7 @@ static int build(struct optstruct *opt)
     if(opt->filename) {
 	if(cli_strbcasestr(opt->filename, ".cvd") || cli_strbcasestr(opt->filename, ".cld")) {
 	    strncpy(olddb, opt->filename, sizeof(olddb));
+	    olddb[sizeof(olddb)-1]='\0';
 	} else {
 	    mprintf("!build: Not a CVD/CLD file\n");
 	    return -1;
@@ -655,6 +658,7 @@ static int build(struct optstruct *opt)
 
     if((pt = getenv("SIGNDUSER"))) {
 	strncpy(builder, pt, sizeof(builder));
+	builder[sizeof(builder)-1]='\0';
     } else {
 	mprintf("Builder name: ");
 	if(scanf("%as", &pt) == EOF) {
@@ -662,6 +666,7 @@ static int build(struct optstruct *opt)
 	    return -1;
 	}
 	strncpy(builder, pt, sizeof(builder));
+	builder[sizeof(builder)-1]='\0';
 	free(pt);
     }
 
@@ -816,6 +821,7 @@ static int build(struct optstruct *opt)
 	return -1;
     }
     strncpy(olddb, pt, sizeof(olddb));
+    olddb[sizeof(olddb)-1]='\0';
     free(pt);
 
     if(!(pt = cli_gentemp(NULL))) {
@@ -896,6 +902,7 @@ static int unpack(struct optstruct *opt)
 
     } else {
 	strncpy(name, opt_arg(opt, "unpack"), sizeof(name));
+	name[sizeof(name)-1]='\0';
     }
 
     if(cvd_unpack(name, ".") == -1) {
@@ -1171,6 +1178,7 @@ static int vbadump(struct optstruct *opt)
 	int fd, hex_output;
 	char *dir;
 	const char *pt;
+	struct uniq *vba;
 
 
     if(opt_check(opt, "vba-hex")) {
@@ -1200,15 +1208,15 @@ static int vbadump(struct optstruct *opt)
         return -1;
     }
 
-    if(cli_ole2_extract(fd, dir, NULL)) {
+    if(cli_ole2_extract(fd, dir, NULL, &vba)) {
 	cli_rmdirs(dir);
         free(dir);
 	close(fd);
         return -1;
     }
-
     close(fd);
-    sigtool_vba_scandir(dir, hex_output);
+    if (vba) 
+      sigtool_vba_scandir(dir, hex_output, vba);
     cli_rmdirs(dir);
     free(dir);
     return 0;
@@ -1305,6 +1313,7 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 
 		    if(found) {
 			strncpy(tbuff, obuff, sizeof(tbuff));
+			tbuff[sizeof(tbuff)-1]='\0';
 			for(i = 0; i < tline; i++) {
 			    tbuff[16] = 0;
 			    if((pt = strchr(tbuff, ' ')))

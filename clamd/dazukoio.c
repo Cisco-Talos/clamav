@@ -173,11 +173,13 @@ int dazukoRegister_TS(dazuko_id_t **dazuko_id, const char *groupName, const char
 	if (strcasecmp(mode, "r") == 0)
 	{
 		strncpy(regMode, "R", sizeof(regMode));
+		regMode[sizeof(regMode)-1]='\0';
 		write_mode = 0;
 	}
 	else if (strcasecmp(mode, "r+") == 0 || strcasecmp(mode, "rw") == 0)
 	{
 		strncpy(regMode, "RW", sizeof(regMode));
+		regMode[sizeof(regMode)-1]='\0';
 		write_mode = 1;
 	}
 	else

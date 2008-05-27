@@ -284,6 +284,7 @@ static int dconnect(const struct optstruct *opt)
 
 	server.sun_family = AF_UNIX;
 	strncpy(server.sun_path, cpt->strarg, sizeof(server.sun_path));
+	server.sun_path[sizeof(server.sun_path)-1]='\0';
 
 	if((sockd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 	    perror("socket()");

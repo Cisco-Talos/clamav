@@ -226,6 +226,7 @@ int scanmanager(const struct optstruct *opt)
 	if(tolower(ptr[strlen(ptr) - 1]) == 'm') {
 	    cpy = calloc(strlen(ptr), 1);
 	    strncpy(cpy, ptr, strlen(ptr) - 1);
+	    cpy[strlen(ptr)-1]='\0';
 	    limits.maxscansize = atoi(cpy) * 1024 * 1024;
 	    free(cpy);
 	} else
@@ -239,6 +240,7 @@ int scanmanager(const struct optstruct *opt)
 	if(tolower(ptr[strlen(ptr) - 1]) == 'm') {
 	    cpy = calloc(strlen(ptr), 1);
 	    strncpy(cpy, ptr, strlen(ptr) - 1);
+	    cpy[strlen(ptr)-1]='\0';
 	    limits.maxfilesize = atoi(cpy) * 1024 * 1024;
 	    free(cpy);
 	} else
@@ -431,6 +433,7 @@ static int clamav_unpack(const char *prog, const char **args, const char *tmpdir
 	if(tolower(ptr[strlen(ptr) - 1]) == 'm') { /* megabytes */
 	    cpy = calloc(strlen(ptr), 1);
 	    strncpy(cpy, ptr, strlen(ptr) - 1);
+	    cpy[strlen(ptr)-1]='\0';
 	    maxscansize = atoi(cpy) * 1024;
 	    free(cpy);
 	} else /* default - kilobytes */

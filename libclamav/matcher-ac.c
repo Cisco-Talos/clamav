@@ -1079,6 +1079,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	return CL_EMEM;
     }
     strncpy(new->virname, virname, namelen);
+    new->virname[namelen]='\0';
 
     if(offset) {
 	new->offset = cli_strdup(offset);

@@ -79,7 +79,7 @@ static	const	char	*cli_pmemstr(const char *haystack, size_t hs, const char *need
  * TODO: handle embedded URLs if (options&CL_SCAN_MAILURL)
  */
 int
-cli_pdf(const char *dir, int desc, cli_ctx *ctx)
+cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 {
 	off_t size;	/* total number of bytes in the file */
 	off_t bytesleft, trailerlength;
@@ -99,12 +99,12 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx)
 		return CL_EOPEN;
 	}
 
-	size = statb.st_size;
+	size = statb.st_size - offset;
 
 	if(size <= 7)	/* doesn't even include the file header */
 		return CL_CLEAN;
 
-	p = buf = mmap(NULL, size, PROT_READ, MAP_PRIVATE, desc, 0);
+	p = buf = mmap(NULL, size, PROT_READ, MAP_PRIVATE, desc, offset);
 	if(buf == MAP_FAILED) {
 		cli_errmsg("cli_pdf: mmap() failed\n");
 		return CL_EMEM;
@@ -115,28 +115,24 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx)
 	/* Lines are terminated by \r, \n or both */
 
 	/* File Header */
-	if(memcmp(p, "%PDF-1.", 7) != 0) {
-		munmap(buf, size);
-		cli_dbgmsg("cli_pdf: file header not found\n");
-		return CL_CLEAN;
+	bytesleft = size - 5;
+	for(q = p; bytesleft; bytesleft--, q++) {
+	    if(!strncasecmp(q, "%PDF-", 5)) {
+		bytesleft = size - (off_t) (q - p);
+		p = q;
+		break;
+	    }
 	}
 
-#if	0
-	q = pdf_nextlinestart(&p[6], size - 6);
-	if(q == NULL) {
-		munmap(buf, size);
-		return CL_CLEAN;
+	if(!bytesleft) {
+	    munmap(buf, size);
+	    cli_dbgmsg("cli_pdf: file header not found\n");
+	    return CL_CLEAN;
 	}
-	bytesleft = size - (long)(q - p);
-	p = q;
-#else
-	p = &p[6];
-	bytesleft = size - 6;
-#endif
 
 	/* Find the file trailer */
-	for(q = &p[bytesleft - 6]; q > p; --q)
-		if(memcmp(q, "%%EOF", 5) == 0)
+	for(q = &p[bytesleft - 5]; q > p; --q)
+		if(strncasecmp(q, "%%EOF", 5) == 0)
 			break;
 
 	if(q <= p) {
@@ -841,12 +837,13 @@ cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns)
 }
 #else	/*!HAVE_MMAP*/
 
+#include <sys/types.h>
 #include "clamav.h"
 #include "others.h"
 #include "pdf.h"
 
 int
-cli_pdf(const char *dir, int desc, cli_ctx *ctx)
+cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 {
 	cli_dbgmsg("File not decoded - PDF decoding needs mmap() (for now)\n");
 	return CL_CLEAN;

@@ -1,3 +1,7 @@
+Mon May 26 22:06:55 CEST 2008
+-----------------------------
+  * 0.93.1rc1: improve handling of PDF, CAB, RTF, OLE2 and HTML files
+
 Fri May  9 14:46:57 EEST 2008 (edwin)
 -------------------------------------
   * contrib/init/RedHat: check for already running clamav-milter (bb #823)

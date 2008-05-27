@@ -288,6 +288,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 				if(ctype == 'm' || ctype == 'k') {
 				    char *cpy = (char *) calloc(strlen(arg), 1);
 				    strncpy(cpy, arg, strlen(arg) - 1);
+				    cpy[strlen(arg)-1]='\0';
 				    if(!cli_isnumber(cpy)) {
 					if(verbose)
 					    fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires numerical (raw/K/M) argument.\n", line, name);

@@ -64,6 +64,7 @@ int localserver(const struct cfgstruct *copt)
     memset((char *) &server, 0, sizeof(server));
     server.sun_family = AF_UNIX;
     strncpy(server.sun_path, cfgopt(copt, "LocalSocket")->strarg, sizeof(server.sun_path));
+    server.sun_path[sizeof(server.sun_path)-1]='\0';
 
     if((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
 	estr = strerror(errno);

@@ -260,6 +260,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	}
 
 	strncpy(bm_new->virname, virname, virlen);
+	bm_new->virname[virlen]='\0';
 
 	if(offset) {
 	    bm_new->offset = cli_strdup(offset);
@@ -683,6 +684,7 @@ static int cli_loadftm(FILE *fs, struct cl_engine **engine, unsigned int options
 	    if(!ftypes_int[line])
 		break;
 	    strncpy(buffer, ftypes_int[line], sizeof(buffer));
+	    buffer[sizeof(buffer)-1]='\0';
 	} else {
 	    if(!cli_dbgets(buffer, FILEBUFF, fs, gzs, &gzrsize))
 		break;

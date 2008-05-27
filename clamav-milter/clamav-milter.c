@@ -33,7 +33,7 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"0.93"
+#define	CM_VERSION	"0.93.1"
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -1156,6 +1156,7 @@ main(int argc, char **argv)
 
 			memset(&ifr, '\0', sizeof(struct ifreq));
 			strncpy(ifr.ifr_name, iface, sizeof(ifr.ifr_name) - 1);
+			ifr.ifr_name[sizeof(ifr.ifr_name)-1]='\0';
 			if(setsockopt(broadcastSock, SOL_SOCKET, SO_BINDTODEVICE, &ifr, sizeof(ifr)) < 0) {
 				perror(iface);
 				return EX_CONFIG;
@@ -1504,6 +1505,7 @@ main(int argc, char **argv)
 		memset((char *)&sockun, 0, sizeof(struct sockaddr_un));
 		sockun.sun_family = AF_UNIX;
 		strncpy(sockun.sun_path, localSocket, sizeof(sockun.sun_path));
+		sockun.sun_path[sizeof(sockun.sun_path)-1]='\0';
 
 		sessions = (struct session *)cli_malloc(sizeof(struct session));
 		if((sessions[0].sock = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
@@ -2186,6 +2188,7 @@ pingServer(int serverNumber)
 		memset((char *)&server, 0, sizeof(struct sockaddr_un));
 		server.sun_family = AF_UNIX;
 		strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
+		server.sun_path[sizeof(server.sun_path)-1]='\0';
 
 		if((sock = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 			perror(localSocket);
@@ -2738,6 +2741,7 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 		}
 #else
 		strncpy(ip, (char *)inet_ntoa(*(struct in_addr *)hostent.h_addr), sizeof(ip));
+		ip[sizeof(ip)-1]='\0';
 #endif
 
 		/*
@@ -3398,6 +3402,7 @@ clamfi_eom(SMFICTX *ctx)
 		memset((char *)&server, 0, sizeof(struct sockaddr_un));
 		server.sun_family = AF_UNIX;
 		strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
+		server.sun_path[sizeof(server.sun_path)-1]='\0';
 
 		if(connect(privdata->cmdSocket, (struct sockaddr *)&server, sizeof(struct sockaddr_un)) < 0) {
 			perror(localSocket);
@@ -3519,19 +3524,20 @@ clamfi_eom(SMFICTX *ctx)
 				const char *j = smfi_getsymval(ctx, "{j}");
 
 				if(j)
-					strncpy(hostname, j,
-						sizeof(hostname) - 1);
+					strncpy(hostname, j, sizeof(hostname) - 1);
 				else
 					strcpy(hostname, _("Error determining host"));
+				hostname[sizeof(hostname)-1]='\0';
 			} else if(strchr(hostname, '.') == NULL) {
 				/*
 				 * Determine fully qualified name
 				 */
 				struct hostent hostent;
 
-				if((r_gethostbyname(hostname, &hostent, buf, sizeof(buf)) == 0) &&
-				   hostent.h_name)
+				if((r_gethostbyname(hostname, &hostent, buf, sizeof(buf)) == 0) && hostent.h_name) {
 					strncpy(hostname, hostent.h_name, sizeof(hostname));
+					hostname[sizeof(hostname)-1]='\0';
+				}
 			}
 
 #ifdef	SESSION
@@ -4546,6 +4552,7 @@ connect2clamd(struct privdata *privdata)
 			memset((char *)&server, 0, sizeof(struct sockaddr_un));
 			server.sun_family = AF_UNIX;
 			strncpy(server.sun_path, localSocket, sizeof(server.sun_path));
+			server.sun_path[sizeof(server.sun_path)-1]='\0';
 
 			if((privdata->cmdSocket = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 				perror("socket");
@@ -6393,6 +6400,7 @@ spf(struct privdata *privdata, table_t *prevhosts)
 			continue;
 		}
 		strncpy(txt, (const char *)&p[1], sizeof(txt) - 1);
+		txt[sizeof(txt)-1]='\0';
 		txt[len - 1] = '\0';
 		if((strncmp(txt, "v=spf1 ", 7) == 0) || (strncmp(txt, "spf2.0/pra ", 11) == 0)) {
 			int j;

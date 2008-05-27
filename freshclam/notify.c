@@ -73,6 +73,7 @@ int notify(const char *cfgfile)
 	socktype = "UNIX";
 	server.sun_family = AF_UNIX;
 	strncpy(server.sun_path, cpt->strarg, sizeof(server.sun_path));
+	server.sun_path[sizeof(server.sun_path)-1]='\0';
 
 	if((sockd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 	    logg("^Clamd was NOT notified: Can't create socket endpoint for %s\n", cpt->strarg);

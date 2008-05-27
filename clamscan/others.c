@@ -150,14 +150,17 @@ int match_regex(const char *filename, const char *pattern)
 #else
 	if(pattern[strlen(pattern) - 1] == '\\') {
 	    strncpy(fname, filename, 510);
+	    fname[509]='\0';
 	    len = strlen(fname);
 	    if(fname[len - 1] != '\\') {
 		fname[len] = '\\';
 		fname[len + 1] = 0;
 	    }
 #endif
-	} else
+	} else {
 	    strncpy(fname, filename, 513);
+	    fname[512]='\0';
+	}
 
 	match = (cli_regexec(&reg, fname, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
 	cli_regfree(&reg);
