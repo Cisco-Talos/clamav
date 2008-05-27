@@ -1,3 +1,7 @@
+Tue May 27 22:21:40 CEST 2008 (acab)
+------------------------------------
+  * libclamav/ole2_extract.c: revert last commit
+
 Tue May 27 21:37:39 CEST 2008 (acab)
 ------------------------------------
   * libclamav/ole2_extract.c: use cli_unlink
