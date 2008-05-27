@@ -23,22 +23,26 @@
 #ifndef __VBA_EXTRACT_H
 #define __VBA_EXTRACT_H
 
+#include "others.h"
 #include "cltypes.h"
+#include "hashtab.h"
 
 typedef struct vba_project_tag {
-	char **name;
+	uint32_t *name;
+	uint32_t *colls;
 	uint32_t *offset;
 	uint32_t *length;	/* for Word 6 macros */
 	unsigned char *key;	/* for Word 6 macros */
 	char *dir;
+	struct uniq *U;
 	int count;
 } vba_project_t;
 
-vba_project_t	*cli_vba_readdir(const char *dir);
+vba_project_t	*cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which);
+vba_project_t	*cli_wm_readdir(int fd);
 unsigned char	*cli_vba_inflate(int fd, off_t offset, int *size);
-int	cli_decode_ole_object(int fd, const char *dir);
-char	*cli_ppt_vba_read(const char *filename);
-vba_project_t	*cli_wm_readdir(const char *dir);
+int	cli_scan_ole10(int fd, cli_ctx *ctx);
+char	*cli_ppt_vba_read(int fd);
 unsigned char	*cli_wm_decrypt_macro(int fd, off_t offset, uint32_t len,
 					unsigned char key);
 

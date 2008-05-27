@@ -24,7 +24,8 @@
 #define __OLE2_EXTRACT_H
 
 #include "others.h"
+#include "hashtab.h"
 
-int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx);
+int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx, struct uniq **);
 
 #endif

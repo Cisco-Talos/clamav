@@ -20,6 +20,7 @@
 #ifndef __VBA_H
 #define __VBA_H
 
-int sigtool_vba_scandir(const char *dirname, int hex_output);
+#include "libclamav/hashtab.h"
+int sigtool_vba_scandir(const char *dirname, int hex_output, struct uniq *U);
 
 #endif

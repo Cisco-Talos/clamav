@@ -122,7 +122,6 @@ static char *cab_readstr(int fd, int *ret)
     }
 
     if(lseek(fd, (off_t) (pos + i + 1), SEEK_SET) == -1) {
-	/* *ret = CL_EIO; */
 	*ret = CL_EFORMAT; /* most likely a corrupted file */
 	return NULL;
     }
@@ -136,15 +135,17 @@ static char *cab_readstr(int fd, int *ret)
     return str;
 }
 
-static int cab_chkname(const char *name)
+static int cab_chkname(char *name, int san)
 {
 	size_t i, len = strlen(name);
 
 
     for(i = 0; i < len; i++) {
-	if(strchr("%/*?|\\\"+=<>;:\t ", name[i]) || !isascii(name[i])) {
+	if(!san && (strchr("%/*?|\\\"+=<>;:\t ", name[i]) || !isascii(name[i]))) {
 	    cli_dbgmsg("cab_chkname: File name contains disallowed characters\n");
 	    return 1;
+	} else if(san && !isalnum(name[i])) {
+	    name[i] = '*';
 	}
     }
 
@@ -189,7 +190,7 @@ void cab_free(struct cab_archive *cab)
 
 int cab_open(int fd, off_t offset, struct cab_archive *cab)
 {
-	unsigned int i, bscore = 0, badname = 0;
+	unsigned int i, folders = 0;
 	struct cab_file *file, *lfile = NULL;
 	struct cab_folder *folder, *lfolder = NULL;
 	struct cab_hdr hdr;
@@ -210,7 +211,6 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 
     if(cli_readn(fd, &hdr, sizeof(hdr)) != sizeof(hdr)) {
 	cli_dbgmsg("cab_open: Can't read cabinet header\n");
-	/* return CL_EIO; */
 	return CL_EFORMAT; /* most likely a corrupted file */
     }
 
@@ -232,8 +232,8 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
     cab->length = EC32(hdr.cbCabinet);
     cli_dbgmsg("CAB: Cabinet length: %u\n", cab->length);
     if((off_t) cab->length > rsize) {
+	cli_dbgmsg("CAB: Truncating file size from %lu to %lu\n", (unsigned long int) cab->length, (unsigned long int) rsize);
 	cab->length = (uint32_t) rsize;
-	bscore++;
     }
 
     cab->nfolders = EC16(hdr.cFolders);
@@ -245,7 +245,6 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	if(cab->nfolders > CAB_FOLDER_LIMIT) {
 	    cab->nfolders = CAB_FOLDER_LIMIT;
 	    cli_dbgmsg("CAB: *** Number of folders limited to %u ***\n", cab->nfolders);
-	    bscore++;
 	}
     }
 
@@ -258,19 +257,15 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	if(cab->nfiles > CAB_FILE_LIMIT) {
 	    cab->nfiles = CAB_FILE_LIMIT;
 	    cli_dbgmsg("CAB: *** Number of files limited to %u ***\n", cab->nfiles);
-	    bscore++;
 	}
     }
 
     cli_dbgmsg("CAB: File format version: %u.%u\n", hdr.versionMajor, hdr.versionMinor);
-    if(hdr.versionMajor != 1 || hdr.versionMinor != 3)
-	bscore++;
 
     cab->flags = EC16(hdr.flags);
     if(cab->flags & 0x0004) {
 	if(cli_readn(fd, &hdr_opt, sizeof(hdr_opt)) != sizeof(hdr_opt)) {
 	    cli_dbgmsg("cab_open: Can't read file header (fake cab?)\n");
-	    /* return CL_EIO; */
 	    return CL_EFORMAT; /* most likely a corrupted file */
 	}
 
@@ -281,7 +276,6 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	if(cab->reshdr) {
 	    if(lseek(fd, cab->reshdr, SEEK_CUR) == -1) {
 		cli_dbgmsg("cab_open: Can't lseek to %u (fake cab?)\n", cab->reshdr);
-		/* return CL_EIO; */
 		return CL_EFORMAT; /* most likely a corrupted file */
 	    }
 	}
@@ -292,8 +286,8 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	pt = cab_readstr(fd, &ret);
 	if(ret)
 	    return ret;
-	if(cab_chkname(pt))
-	    badname = 1;
+	if(cab_chkname(pt, 0))
+	    cli_dbgmsg("CAB: Invalid name of preceeding cabinet\n");
 	else
 	    cli_dbgmsg("CAB: Preceeding cabinet name: %s\n", pt);
 	free(pt);
@@ -301,8 +295,8 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	pt = cab_readstr(fd, &ret);
 	if(ret)
 	    return ret;
-	if(cab_chkname(pt))
-	    badname = 1;
+	if(cab_chkname(pt, 0))
+	    cli_dbgmsg("CAB: Invalid info for preceeding cabinet\n");
 	else
 	    cli_dbgmsg("CAB: Preceeding cabinet info: %s\n", pt);
 	free(pt);
@@ -313,8 +307,8 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	pt = cab_readstr(fd, &ret);
 	if(ret)
 	    return ret;
-	if(cab_chkname(pt))
-	    badname = 1;
+	if(cab_chkname(pt, 0))
+	    cli_dbgmsg("CAB: Invalid name of next cabinet\n");
 	else
 	    cli_dbgmsg("CAB: Next cabinet name: %s\n", pt);
 	free(pt);
@@ -322,35 +316,35 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	pt = cab_readstr(fd, &ret);
 	if(ret)
 	    return ret;
-	if(cab_chkname(pt))
-	    badname = 1;
+	if(cab_chkname(pt, 0))
+	    cli_dbgmsg("CAB: Invalid info for next cabinet\n");
 	else
 	    cli_dbgmsg("CAB: Next cabinet info: %s\n", pt);
 	free(pt);
-    }
-    bscore += badname;
-
-    if(bscore >= 4) {
-	cli_dbgmsg("CAB: bscore == %u, most likely a fake cabinet\n", bscore);
-	return CL_EFORMAT;
     }
 
     /* folders */
     for(i = 0; i < cab->nfolders; i++) {
 	if(cli_readn(fd, &folder_hdr, sizeof(folder_hdr)) != sizeof(folder_hdr)) {
-	    cli_errmsg("cab_open: Can't read header for folder %u\n", i);
-	    cab_free(cab);
-	    /* return CL_EIO; */
-	    return CL_EFORMAT; /* most likely a corrupted file */
+	    cli_dbgmsg("cab_open: Can't read header for folder %u\n", i);
+	    break;
 	}
 
 	if(resfold) {
 	    if(lseek(fd, resfold, SEEK_CUR) == -1) {
-		cli_errmsg("cab_open: Can't lseek to %u (resfold)\n", (unsigned int) resfold);
-		cab_free(cab);
-		/* return CL_EIO; */
-		return CL_EFORMAT; /* most likely a corrupted file */
+		cli_dbgmsg("cab_open: Can't lseek to %u (resfold)\n", (unsigned int) resfold);
+		break;
 	    }
+	}
+
+	if(EC32(folder_hdr.coffCabStart) + offset > rsize) {
+	    cli_dbgmsg("CAB: Folder out of file\n");
+	    continue;
+	}
+
+	if((EC16(folder_hdr.typeCompress) & 0x000f) > 3) {
+	    cli_dbgmsg("CAB: Unknown compression method\n");
+	    continue;
 	}
 
 	folder = (struct cab_folder *) cli_calloc(1, sizeof(struct cab_folder));
@@ -362,16 +356,12 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 
 	folder->cab = (struct cab_archive *) cab;
 	folder->offset = (off_t) EC32(folder_hdr.coffCabStart) + offset;
-	if(folder->offset > rsize)
-	    bscore++;
 	folder->nblocks = EC16(folder_hdr.cCFData);
 	folder->cmethod = EC16(folder_hdr.typeCompress);
 
 	cli_dbgmsg("CAB: Folder record %u\n", i);
 	cli_dbgmsg("CAB: Folder offset: %u\n", (unsigned int) folder->offset);
 	cli_dbgmsg("CAB: Folder compression method: %d\n", folder->cmethod);
-	if((folder->cmethod & 0x000f) > 3)
-	    bscore++;
 
 	if(!lfolder)
 	    cab->folders = folder;
@@ -379,27 +369,20 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	    lfolder->next = folder;
 
 	lfolder = folder;
-
-	if(bscore > 10) {
-	    cab_free(cab);
-	    cli_dbgmsg("CAB: bscore == %u, most likely a fake cabinet\n", bscore);
-	    return CL_EFORMAT;
-	}
+	folders++;
     }
+    cli_dbgmsg("CAB: Recorded folders: %u\n", folders);
 
     /* files */
+    if(cab->nfolders != folders && lseek(fd, EC16(hdr.coffFiles), SEEK_SET) == -1) {
+	cli_dbgmsg("cab_open: Can't lseek to hdr.coffFiles\n");
+	cab_free(cab);
+	return CL_EFORMAT;
+    }
     for(i = 0; i < cab->nfiles; i++) {
-	if(bscore > 10) {
-	    cab_free(cab);
-	    cli_dbgmsg("CAB: bscore == %u, most likely a fake cabinet\n", bscore);
-	    return CL_EFORMAT;
-	}
-
 	if(cli_readn(fd, &file_hdr, sizeof(file_hdr)) != sizeof(file_hdr)) {
-	    cli_errmsg("cab_open: Can't read file %u header\n", i);
-	    cab_free(cab);
-	    /* return CL_EIO; */
-	    return CL_EFORMAT; /* most likely a corrupted file */
+	    cli_dbgmsg("cab_open: Can't read file %u header\n", i);
+	    break;
 	}
 
 	file = (struct cab_file *) cli_calloc(1, sizeof(struct cab_file));
@@ -411,17 +394,18 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 
 	file->cab = cab;
 	file->fd = fd;
-	file->length = EC32(file_hdr.cbFile);
 	file->offset = EC32(file_hdr.uoffFolderStart);
+	file->length = EC32(file_hdr.cbFile);
 	file->attribs = EC32(file_hdr.attribs);
 	fidx = EC32(file_hdr.iFolder);
+	file->error = CL_SUCCESS;
 
 	file->name = cab_readstr(fd, &ret);
 	if(ret) {
 	    free(file);
-	    cab_free(cab);
-	    return ret;
+	    continue;
 	}
+	cab_chkname(file->name, 1);
 
 	cli_dbgmsg("CAB: File record %u\n", i);
 	cli_dbgmsg("CAB: File name: %s\n", file->name);
@@ -444,9 +428,7 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 	/* folder index */
 	if(fidx < 0xfffd) {
 	    if(fidx > cab->nfolders) {
-		if(bscore < 3)
-		    cli_dbgmsg("cab_open: File %s is not associated with any folder\n", file->name);
-		bscore++;
+		cli_dbgmsg("cab_open: File %s is not associated with any folder\n", file->name);
 		free(file->name);
 		free(file);
 		continue;
@@ -457,11 +439,10 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 		file->folder = file->folder->next;
 
 	    if(!file->folder) {
-		cli_errmsg("cab_open: Folder not found for file %s\n", file->name);
+		cli_dbgmsg("cab_open: Folder not found for file %s\n", file->name);
 		free(file->name);
 		free(file);
-		cab_free(cab);
-		return CL_EFORMAT;
+		continue;
 	    }
 
 	} else {
@@ -490,13 +471,11 @@ static int cab_read_block(int fd, struct cab_state *state, uint16_t resdata)
 
     if(cli_readn(fd, &block_hdr, sizeof(block_hdr)) != sizeof(block_hdr)) {
 	cli_dbgmsg("cab_read_block: Can't read block header\n");
-	/* return CL_EIO; */
 	return CL_EFORMAT; /* most likely a corrupted file */
     }
 
     if(resdata && lseek(fd, (off_t) resdata, SEEK_CUR) == -1) {
 	cli_dbgmsg("cab_read_block: lseek failed\n");
-	/* return CL_EIO; */
 	return CL_EFORMAT; /* most likely a corrupted file */
     }
 
@@ -515,7 +494,6 @@ static int cab_read_block(int fd, struct cab_state *state, uint16_t resdata)
 
     if(cli_readn(fd, state->block, state->blklen) != state->blklen) {
 	cli_dbgmsg("cab_read_block: Can't read block data\n");
-	/* return CL_EIO; */
 	return CL_EFORMAT; /* most likely a corrupted file */
     }
 
@@ -529,6 +507,11 @@ static int cab_read(struct cab_file *file, unsigned char *buffer, int bytes)
 {
 	uint16_t todo, left;
 
+
+    if((file->cab->state->blknum > file->folder->nblocks) && !file->lread) {
+	file->error = CL_BREAK;
+	return -1;
+    }
 
     todo = bytes;
     while(todo > 0) {
@@ -544,10 +527,8 @@ static int cab_read(struct cab_file *file, unsigned char *buffer, int bytes)
 	    todo -= left;
 
 	} else {
-	    if(file->cab->state->blknum++ >= file->folder->nblocks) {
-		file->error = CL_EFORMAT;
+	    if(file->cab->state->blknum++ >= file->folder->nblocks)
 		break;
-	    }
 
 	    file->error = cab_read_block(file->fd, file->cab->state, file->cab->resdata);
 	    if(file->error)
@@ -568,7 +549,7 @@ static int cab_read(struct cab_file *file, unsigned char *buffer, int bytes)
 	}
     }
 
-    return bytes - todo;
+    return file->lread = bytes - todo;
 }
 
 static int cab_unstore(struct cab_file *file, int bytes)
@@ -721,11 +702,14 @@ int cab_extract(struct cab_file *file, const char *name)
 	    break;
 
 	default:
-	    cli_warnmsg("CAB: Not supported compression method: 0x%x\n", file->folder->cmethod & 0x000f);
+	    cli_dbgmsg("CAB: Not supported compression method: 0x%x\n", file->folder->cmethod & 0x000f);
 	    ret = CL_EFORMAT;
     }
 
     close(file->ofd);
+
+    if(ret == CL_BREAK)
+	ret = CL_SUCCESS;
 
     return ret;
 }

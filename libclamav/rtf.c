@@ -137,14 +137,12 @@ static void init_rtf_state(struct rtf_state* state)
 
 static int compare_state(const struct rtf_state* a,const struct rtf_state* b)
 {
-	return (a->controlword_param == b->controlword_param && 
-			a->parse_state == b->parse_state &&
-			a->encounteredTopLevel == b->encounteredTopLevel &&
-			memcmp(a->controlword,b->controlword,33)==0 &&
-			a->cb_begin == b->cb_begin &&
-			a->cb_process == b->cb_process &&
-			a->cb_end == b->cb_end &&
-			a->cb_data == b->cb_data);
+	return (a->parse_state == b->parse_state &&
+		a->encounteredTopLevel == b->encounteredTopLevel &&
+		a->cb_begin == b->cb_begin &&
+		a->cb_process == b->cb_process &&
+		a->cb_end == b->cb_end &&
+		a->cb_data == b->cb_data);
 }
 
 
@@ -161,10 +159,12 @@ static int push_state(struct stack* stack,struct rtf_state* state)
 	}
 	if(stack->stack_cnt >= stack->stack_size) {
 		/* grow stack */
+		struct rtf_state *states;
 		stack->stack_size += 128;
-		stack->states = cli_realloc2(stack->states, stack->stack_size*sizeof(*stack->states));
-		if(!stack->states)
+		states = cli_realloc2(stack->states, stack->stack_size*sizeof(*stack->states));
+		if(!states)
 			return CL_EMEM;
+		stack->states = states;
 	}
 	stack->states[stack->stack_cnt++] = *state;
 	toplevel = state->encounteredTopLevel;
@@ -233,17 +233,12 @@ static int rtf_object_begin(struct rtf_state* state,cli_ctx* ctx,const char* tmp
 
 static int decode_and_scan(struct rtf_object_data* data, cli_ctx* ctx)
 {
-	int ofd, ret=0;
+	int ret=CL_CLEAN;
 
 	cli_dbgmsg("RTF:Scanning embedded object:%s\n",data->name);
 	if(data->bread == 1 && data->fd > 0) {
 		cli_dbgmsg("Decoding ole object\n");
-		lseek(data->fd,0,SEEK_SET);
-		ofd = cli_decode_ole_object(data->fd,data->tmpdir);
-		if (ofd >= 0) {
-			ret = cli_magic_scandesc(ofd, ctx);
-			close(ofd);
-		}
+		ret = cli_scan_ole10(data->fd, ctx);
 	}
 	else if(data->fd > 0)
 		ret = cli_magic_scandesc(data->fd,ctx);
@@ -483,6 +478,8 @@ static void rtf_action(struct rtf_state* state,long action)
 
 static void cleanup_stack(struct stack* stack,struct rtf_state* state,cli_ctx* ctx)
 {
+	if(!stack || !stack->states)
+		return;
 	while(stack && stack->stack_cnt /* && state->default_elements*/) {
 		pop_state(stack,state);
 		if(state->cb_data && state->cb_end)

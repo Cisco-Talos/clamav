@@ -555,7 +555,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 		/* this will still contains scripts that are inside comments */
 		snprintf(filename, 1024, "%s/nocomment.html", dirname);
 		file_buff_o2->fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
-		if (!file_buff_o2->fd) {
+		if (file_buff_o2->fd == -1) {
 			cli_dbgmsg("open failed: %s\n", filename);
 			free(file_buff_o2);
 			file_buff_o2 = file_buff_text = NULL;
@@ -564,6 +564,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 
 		file_buff_text = (file_buff_t *) cli_malloc(sizeof(file_buff_t));
 		if(!file_buff_text) {
+			close(file_buff_o2->fd);
 			free(file_buff_o2);
 			file_buff_o2 = file_buff_text = NULL;
 			goto abort;
@@ -571,12 +572,13 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 
 		snprintf(filename, 1024, "%s/notags.html", dirname);
 		file_buff_text->fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
-		if(!file_buff_text->fd) {
+		if(file_buff_text->fd == -1) {
 			cli_dbgmsg("open failed: %s\n", filename);
 			close(file_buff_o2->fd);
 			free(file_buff_o2);
 			free(file_buff_text);
 			file_buff_o2 = file_buff_text = NULL;
+			goto abort;
 		}
 		file_buff_o2->length = 0;
 		file_buff_text->length = 0;

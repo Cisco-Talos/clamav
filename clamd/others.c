@@ -376,6 +376,8 @@ int readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeou
 		break;
 	    } else {
 		n = recv(sockfd, buf+boff, n, 0);
+		if(n < 0)
+		    return -1;
 		if((boff+n) == size)
 		    break;
 		boff += n;

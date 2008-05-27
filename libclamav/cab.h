@@ -54,6 +54,7 @@ struct cab_file {
     char *name;
     uint32_t length;
     int error;
+    int lread;
     int fd;
     int ofd;
     struct cab_folder *folder;

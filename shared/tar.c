@@ -72,6 +72,7 @@ int tar_addfile(int fd, gzFile *gzs, const char *file)
 
     memset(&hdr, 0, TARBLK);
     strncpy(hdr.name, file, 100);
+    hdr.name[99]='\0';
     snprintf(hdr.size, 12, "%o", (unsigned int) sb.st_size);
     pt = (unsigned char *) &hdr;
     for(i = 0; i < TARBLK; i++)

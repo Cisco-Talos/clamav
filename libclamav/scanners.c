@@ -722,9 +722,9 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
     return ret;
 }
 
-static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
+static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 {
-	int ret = CL_CLEAN, i, fd, ofd, data_len;
+    int ret = CL_CLEAN, i, j, fd, ofd, data_len;
 	vba_project_t *vba_project;
 	DIR *dd;
 	struct dirent *dent;
@@ -735,84 +735,88 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
 	} result;
 #endif
 	struct stat statbuf;
-	char *fname, *fullname;
+	char *fullname, vbaname[1024];
 	unsigned char *data;
+	uint32_t hash, hashcnt;
 
 
     cli_dbgmsg("VBADir: %s\n", dirname);
-    if((vba_project = (vba_project_t *)cli_vba_readdir(dirname))) {
+    hashcnt = uniq_get(U, "_vba_project", 12, NULL);
+    while(hashcnt--) {
+	if(!(vba_project = (vba_project_t *)cli_vba_readdir(dirname, U, hashcnt))) continue;
 
 	for(i = 0; i < vba_project->count; i++) {
-	    fullname = (char *) cli_malloc(strlen(vba_project->dir) + strlen(vba_project->name[i]) + 2);
-	    if(!fullname) {
-		ret = CL_EMEM;
-		break;
-	    }
-	    sprintf(fullname, "%s/%s", vba_project->dir, vba_project->name[i]);
-	    fd = open(fullname, O_RDONLY|O_BINARY);
-	    if(fd == -1) {
-		cli_dbgmsg("VBADir: Can't open file %s\n", fullname);
-		free(fullname);
-		ret = CL_EOPEN;
-		break;
-	    }
-	    free(fullname);
-            cli_dbgmsg("VBADir: Decompress VBA project '%s'\n", vba_project->name[i]);
-	    data = (unsigned char *)cli_vba_inflate(fd, vba_project->offset[i], &data_len);
-	    close(fd);
+	    for(j = 0; j < vba_project->colls[i]; j++) {
+		snprintf(vbaname, 1024, "%s/%u_%u", vba_project->dir, vba_project->name[i], j);
+		vbaname[sizeof(vbaname)-1] = '\0';
+		fd = open(vbaname, O_RDONLY|O_BINARY);
+		if(fd == -1) continue;
+		cli_dbgmsg("VBADir: Decompress VBA project '%u_%u'\n", vba_project->name[i], j);
+		data = (unsigned char *)cli_vba_inflate(fd, vba_project->offset[i], &data_len);
+		close(fd);
 
-	    if(!data) {
-		cli_dbgmsg("VBADir: WARNING: VBA project '%s' decompressed to NULL\n", vba_project->name[i]);
-	    } else {
-		if(ctx->scanned)
-		    *ctx->scanned += data_len / CL_COUNT_PRECISION;
-
-		if(cli_scanbuff(data, data_len, ctx, CL_TYPE_MSOLE2) == CL_VIRUS) {
+		if(!data) {
+		    cli_dbgmsg("VBADir: WARNING: VBA project '%u_%u' decompressed to NULL\n", vba_project->name[i], j);
+		} else {
+		    /* cli_dbgmsg("Project content:\n%s", data); */
+		    if(ctx->scanned)
+			*ctx->scanned += data_len / CL_COUNT_PRECISION;
+		    if(cli_scanbuff(data, data_len, ctx, CL_TYPE_MSOLE2) == CL_VIRUS) {
+			free(data);
+			ret = CL_VIRUS;
+			break;
+		    }
 		    free(data);
-		    ret = CL_VIRUS;
-		    break;
 		}
-
-		free(data);
 	    }
 	}
 
-	for(i = 0; i < vba_project->count; i++)
-	    free(vba_project->name[i]);
 	free(vba_project->name);
+	free(vba_project->colls);
 	free(vba_project->dir);
 	free(vba_project->offset);
 	free(vba_project);
-    } else if ((fullname = cli_ppt_vba_read(dirname))) {
-    	if(cli_scandir(fullname, ctx, 0) == CL_VIRUS) {
-	    ret = CL_VIRUS;
-	}
-	if(!cli_leavetemps_flag)
-	    cli_rmdirs(fullname);
-    	free(fullname);
-    } else if ((vba_project = (vba_project_t *)cli_wm_readdir(dirname))) {
-    	for (i = 0; i < vba_project->count; i++) {
-		fullname = (char *) cli_malloc(strlen(vba_project->dir) + strlen(vba_project->name[i]) + 2);
-		if(!fullname) {
-		    ret = CL_EMEM;
-		    break;
+	if (ret == CL_VIRUS) break;
+    }
+
+    if(ret == CL_CLEAN && (hashcnt = uniq_get(U, "powerpoint document", 19, &hash))) {
+	while(hashcnt--) {
+	    snprintf(vbaname, 1024, "%s/%u_%u", dirname, hash, hashcnt);
+	    vbaname[sizeof(vbaname)-1] = '\0';
+	    fd = open(vbaname, O_RDONLY|O_BINARY);
+	    if (fd == -1) continue;
+	    if ((fullname = cli_ppt_vba_read(fd))) {
+		if(cli_scandir(fullname, ctx, 0) == CL_VIRUS) {
+		    ret = CL_VIRUS;
 		}
-		sprintf(fullname, "%s/%s", vba_project->dir, vba_project->name[i]);
-		fd = open(fullname, O_RDONLY|O_BINARY);
-		if(fd == -1) {
-			cli_dbgmsg("VBADir: Can't open file %s\n", fullname);
-			free(fullname);
-			ret = CL_EOPEN;
-			break;
-		}
+		if(!cli_leavetemps_flag)
+		    cli_rmdirs(fullname);
 		free(fullname);
-		cli_dbgmsg("VBADir: Decompress WM project '%s' macro:%d key:%d length:%d\n", vba_project->name[i], i, vba_project->key[i], vba_project->length[i]);
-		data = (unsigned char *)cli_wm_decrypt_macro(fd, vba_project->offset[i], vba_project->length[i], vba_project->key[i]);
+	    }
+	    close(fd);
+	}
+    }
+
+    if (ret == CL_CLEAN && (hashcnt = uniq_get(U, "worddocument", 12, &hash))) {
+	while(hashcnt--) {
+	    snprintf(vbaname, sizeof(vbaname), "%s/%u_%u", dirname, hash, hashcnt);
+	    vbaname[sizeof(vbaname)-1] = '\0';
+	    fd = open(vbaname, O_RDONLY|O_BINARY);
+	    if (fd == -1) continue;
+	    
+	    if (!(vba_project = (vba_project_t *)cli_wm_readdir(fd))) {
 		close(fd);
+		continue;
+	    }
+
+	    for (i = 0; i < vba_project->count; i++) {
+		cli_dbgmsg("VBADir: Decompress WM project macro:%d key:%d length:%d\n", i, vba_project->key[i], vba_project->length[i]);
+		data = (unsigned char *)cli_wm_decrypt_macro(fd, vba_project->offset[i], vba_project->length[i], vba_project->key[i]);
 		
 		if(!data) {
 			cli_dbgmsg("VBADir: WARNING: WM project '%s' macro %d decrypted to NULL\n", vba_project->name[i], i);
 		} else {
+			cli_dbgmsg("Project content:\n%s", data);
 			if(ctx->scanned)
 			    *ctx->scanned += vba_project->length[i] / CL_COUNT_PRECISION;
 			if(cli_scanbuff(data, vba_project->length[i], ctx, CL_TYPE_MSOLE2) == CL_VIRUS) {
@@ -822,38 +826,42 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
 			}
 			free(data);
 		}
+	    }
+
+	    close(fd);
+	    free(vba_project->name);
+	    free(vba_project->colls);
+	    free(vba_project->dir);
+	    free(vba_project->offset);
+	    free(vba_project->key);
+	    free(vba_project->length);
+	    free(vba_project);
+	    if(ret == CL_VIRUS) break;
 	}
-	for(i = 0; i < vba_project->count; i++)
-	    free(vba_project->name[i]);
-	free(vba_project->key);
-	free(vba_project->length);
-	free(vba_project->offset);
-	free(vba_project->name);
-	free(vba_project->dir);
-	free(vba_project);
     }
 
     if(ret != CL_CLEAN)
     	return ret;
 
     /* Check directory for embedded OLE objects */
-    fullname = (char *) cli_malloc(strlen(dirname) + 16);
-    if(!fullname)
-	return CL_EMEM;
+    hashcnt = uniq_get(U, "_1_ole10native", 14, &hash);
+    while(hashcnt--) {
+	snprintf(vbaname, sizeof(vbaname), "%s/%u_%u", dirname, hash, hashcnt);
+	vbaname[sizeof(vbaname)-1] = '\0';
 
-    sprintf(fullname, "%s/_1_Ole10Native", dirname);
-    fd = open(fullname, O_RDONLY|O_BINARY);
-    free(fullname);
-    if (fd >= 0) {
-    	ofd = cli_decode_ole_object(fd, dirname);
-	if (ofd >= 0) {
-		ret = cli_scandesc(ofd, ctx, 0, 0, NULL, AC_SCAN_VIR);
-		close(ofd);
+	fd = open(vbaname, O_RDONLY|O_BINARY);
+	if (fd >= 0) {
+	    ret = cli_scan_ole10(fd, ctx);
+	    close(fd);
+	    if(ret != CL_CLEAN)
+		return ret;
 	}
-	close(fd);
-	if(ret != CL_CLEAN)
-	    return ret;
     }
+
+
+    /* ACAB: since we now hash filenames and handle collisions we
+     * could avoid recursion by removing the block below and by
+     * flattening the paths in ole2_walk_property_tree (case 1) */
 
     if((dd = opendir(dirname)) != NULL) {
 #ifdef HAVE_READDIR_R_3
@@ -869,23 +877,23 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx)
 	    {
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
-		    fname = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
-		    if(!fname) {
+		    fullname = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
+		    if(!fullname) {
 			ret = CL_EMEM;
 			break;
 		    }
-		    sprintf(fname, "%s/%s", dirname, dent->d_name);
+		    sprintf(fullname, "%s/%s", dirname, dent->d_name);
 
 		    /* stat the file */
-		    if(lstat(fname, &statbuf) != -1) {
+		    if(lstat(fullname, &statbuf) != -1) {
 			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode))
-			    if (cli_vba_scandir(fname, ctx) == CL_VIRUS) {
+			  if (cli_vba_scandir(fullname, ctx, U) == CL_VIRUS) {
 			    	ret = CL_VIRUS;
-				free(fname);
+				free(fullname);
 				break;
 			    }
 		    }
-		    free(fname);
+		    free(fullname);
 		}
 	    }
 	}
@@ -1086,7 +1094,7 @@ static int cli_scanole2(int desc, cli_ctx *ctx)
 {
 	char *dir;
 	int ret = CL_CLEAN;
-
+	struct uniq *vba = NULL;
 
     cli_dbgmsg("in cli_scanole2()\n");
 
@@ -1103,24 +1111,25 @@ static int cli_scanole2(int desc, cli_ctx *ctx)
 	return CL_ETMPDIR;
     }
 
-    if((ret = cli_ole2_extract(desc, dir, ctx))) {
+    ret = cli_ole2_extract(desc, dir, ctx, &vba);
+    if(ret!=CL_CLEAN && ret!=CL_VIRUS) {
 	cli_dbgmsg("OLE2: %s\n", cl_strerror(ret));
 	if(!cli_leavetemps_flag)
 	    cli_rmdirs(dir);
 	free(dir);
-	ctx->recursion--;
 	return ret;
     }
 
-    ctx->recursion++;
+    if (vba) {
+        ctx->recursion++;
 
-    if((ret = cli_vba_scandir(dir, ctx)) != CL_VIRUS) {
-	if(cli_scandir(dir, ctx, 0) == CL_VIRUS) {
-	    ret = CL_VIRUS;
-	}
+	ret = cli_vba_scandir(dir, ctx, vba);
+	free(vba);
+	if(ret != CL_VIRUS)
+	    if(cli_scandir(dir, ctx, 0) == CL_VIRUS)
+	        ret = CL_VIRUS;
+	ctx->recursion--;
     }
-
-    ctx->recursion--;
 
     if(!cli_leavetemps_flag)
 	cli_rmdirs(dir);
@@ -1380,7 +1389,7 @@ static int cli_scancryptff(int desc, cli_ctx *ctx)
     return ret;
 }
 
-static int cli_scanpdf(int desc, cli_ctx *ctx)
+static int cli_scanpdf(int desc, cli_ctx *ctx, off_t offset)
 {
 	int ret;
 	char *dir = cli_gentemp(NULL);
@@ -1394,7 +1403,7 @@ static int cli_scanpdf(int desc, cli_ctx *ctx)
 	return CL_ETMPDIR;
     }
 
-    ret = cli_pdf(dir, desc, ctx);
+    ret = cli_pdf(dir, desc, ctx, offset);
 
     if(!cli_leavetemps_flag)
 	cli_rmdirs(dir);
@@ -1717,6 +1726,13 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg,
 			}
 			break;
 
+		    case CL_TYPE_PDF:
+			if(SCAN_PDF && (DCONF_DOC & DOC_CONF_PDF)) {
+			    cli_dbgmsg("PDF signature found at %u\n", (unsigned int) fpt->offset);
+			    nret = cli_scanpdf(desc, ctx, fpt->offset);
+			}
+			break;
+
 		    case CL_TYPE_MSEXE:
 			if(SCAN_PE && ctx->dconf->pe && fpt->offset) {
 			    cli_dbgmsg("PE signature found at %u\n", (unsigned int) fpt->offset);
@@ -1969,7 +1985,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
         case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
 	    if(SCAN_PDF && (DCONF_DOC & DOC_CONF_PDF))
-		ret = cli_scanpdf(desc, ctx);
+		ret = cli_scanpdf(desc, ctx, 0);
 	    break;
 
 	case CL_TYPE_CRYPTFF:
@@ -2105,3 +2121,9 @@ int cl_scanfile(const char *filename, const char **virname, unsigned long int *s
 
     return ret;
 }
+
+/*
+Local Variables:
+   c-basic-offset: 4
+End:
+*/

@@ -33,6 +33,10 @@
 #include "libclamav/cltypes.h"
 #include "libclamav/ole2_extract.h"
 
+#ifndef	O_BINARY
+#define	O_BINARY	0
+#endif
+
 typedef struct mac_token_tag
 {
     unsigned char token;
@@ -46,7 +50,7 @@ typedef struct mac_token2_tag
 
 } mac_token2_t;
 
-int sigtool_vba_scandir(const char *dirname, int hex_output);
+int sigtool_vba_scandir(const char *dirname, int hex_output, struct uniq *U);
 
 static char *get_unicode_name (char *name, int size)
 {
@@ -979,6 +983,7 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 			    }
 			} else {
 			    if (S_ISREG (statbuf.st_mode)) {
+			        struct uniq *vba;
 				tmpdir = getenv ("TMPDIR");
 
 				if (tmpdir == NULL)
@@ -1000,14 +1005,14 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 				    return 1;
 				}
 
-				if ((ret = cli_ole2_extract (desc, dir, NULL))) {
+				if ((ret = cli_ole2_extract (desc, dir, NULL, &vba))) {
 				    printf ("ERROR %s\n", cl_strerror (ret));
 				    cli_rmdirs (dir);
 				    free (dir);
 				    return ret;
 				}
 
-				sigtool_vba_scandir (dir, hex_output);
+				sigtool_vba_scandir (dir, hex_output, vba);
 
 				cli_rmdirs (dir);
 				free (dir);
@@ -1028,94 +1033,93 @@ static int sigtool_scandir (const char *dirname, int hex_output)
     return 0;
 }
 
-int sigtool_vba_scandir (const char *dirname, int hex_output)
+int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
 {
-    int ret = CL_CLEAN, i, fd, data_len;
+    int ret = CL_CLEAN, i, j, fd, data_len;
     vba_project_t *vba_project;
     DIR *dd;
     struct dirent *dent;
     struct stat statbuf;
-    char *fname, *fullname;
+    char *fullname, vbaname[1024];
     unsigned char *data;
+    uint32_t hashcnt, hash;
 
-    cli_dbgmsg ("VBA scan dir: %s\n", dirname);
-    if ((vba_project = (vba_project_t *)cli_vba_readdir(dirname))) {
+    hashcnt = uniq_get(U, "_vba_project", 12, NULL);
+    while(hashcnt--) {
+	if(!(vba_project = (vba_project_t *)cli_vba_readdir(dirname, U, hashcnt))) continue;
 
-	for (i = 0; i < vba_project->count; i++) {
-	    fullname = (char *) malloc (strlen (vba_project->dir) + strlen (vba_project->name[i]) + 2);
-	    sprintf (fullname, "%s/%s", vba_project->dir, vba_project->name[i]);
-	    fd = open (fullname, O_RDONLY);
-	    if (fd == -1) {
-		cli_errmsg ("Scan->OLE2 -> Can't open file %s\n", fullname);
-		free (fullname);
-		ret = CL_EOPEN;
-		break;
+	for(i = 0; i < vba_project->count; i++) {
+	    for(j = 0; j < vba_project->colls[i]; j++) {
+		snprintf(vbaname, 1024, "%s/%u_%u", vba_project->dir, vba_project->name[i], j);
+		vbaname[sizeof(vbaname)-1] = '\0';
+		fd = open(vbaname, O_RDONLY|O_BINARY);
+		if(fd == -1) continue;
+		data = (unsigned char *)cli_vba_inflate(fd, vba_project->offset[i], &data_len);
+		close(fd);
+
+		if(data) {
+		    data = (unsigned char *) realloc (data, data_len + 1);
+		    data[data_len]='\0';
+		    printf ("-------------- start of code ------------------\n%s\n-------------- end of code ------------------\n", data);
+		    free(data);
+		}
 	    }
-	    free (fullname);
-	    cli_dbgmsg ("decompress VBA project '%s'\n", vba_project->name[i]);
-	    printf ("-------------- start of %s ------------------\n", vba_project->name[i]);
-	    data = (unsigned char *)cli_vba_inflate(fd, vba_project->offset[i], &data_len);
-	    close (fd);
-
-	    if (!data) {
-		cli_dbgmsg ("WARNING: VBA project '%s' decompressed to NULL\n", vba_project->name[i]);
-	    } else {
-		data = (unsigned char *) realloc (data, data_len + 1);
-		data[data_len] = '\0';
-		printf ("%s", data);
-		free (data);
-
-	    }
-	    printf ("-------------- end of %s ------------------\n", vba_project->name[i]);
 	}
 
-	for (i = 0; i < vba_project->count; i++)
-	    free (vba_project->name[i]);
-	free (vba_project->name);
-	free (vba_project->dir);
-	free (vba_project->offset);
-	free (vba_project);
-    } else if ((fullname = cli_ppt_vba_read(dirname))) {
-	if (sigtool_scandir (fullname, hex_output) == CL_VIRUS) {
-	    ret = CL_VIRUS;
-	}
-	cli_rmdirs (fullname);
-	free (fullname);
-    } else if ((vba_project = (vba_project_t *)cli_wm_readdir(dirname))) {
-	for (i = 0; i < vba_project->count; i++) {
-	    fullname = (char *) malloc (strlen (vba_project->dir) + strlen (vba_project->name[i]) + 2);
-	    sprintf (fullname, "%s/%s", vba_project->dir, vba_project->name[i]);
-	    fd = open (fullname, O_RDONLY);
-	    if (fd == -1) {
-		cli_errmsg ("Scan->OLE2 -> Can't open file %s\n", fullname);
-		free (fullname);
-		ret = CL_EOPEN;
-		break;
-	    }
-	    free (fullname);
-	    cli_dbgmsg ("decompress WM project '%s' macro %d\n", vba_project->name[i], i);
-	    printf ("\n\n-------------- start of macro:%d key:%d length:%d ------------------\n", i,
-		    vba_project->key[i], vba_project->length[i]);
-	    data = (unsigned char *)cli_wm_decrypt_macro(fd, vba_project->offset[i], vba_project->length[i],
-						    vba_project->key[i]);
-	    close (fd);
+	free(vba_project->name);
+	free(vba_project->colls);
+	free(vba_project->dir);
+	free(vba_project->offset);
+	free(vba_project);
+    }
 
-	    if (!data) {
-		cli_dbgmsg ("WARNING: WM project '%s' macro %d decrypted to NULL\n", vba_project->name[i], i);
-	    } else {
-		wm_decode_macro (data, vba_project->length[i], hex_output);
-		free (data);
-	    }
-	    printf ("\n-------------- end of macro %d ------------------\n\n", i);
+
+    if((hashcnt = uniq_get(U, "powerpoint document", 19, &hash))) {
+	while(hashcnt--) {
+	    snprintf(vbaname, 1024, "%s/%u_%u", dirname, hash, hashcnt);
+	    vbaname[sizeof(vbaname)-1] = '\0';
+	    fd = open(vbaname, O_RDONLY|O_BINARY);
+	    if (fd == -1) continue;
+	    if ((fullname = cli_ppt_vba_read(fd)))
+	      sigtool_scandir(fullname, hex_output);
+	    cli_rmdirs(fullname);
+	    free(fullname);
+	    close(fd);
 	}
-	for (i = 0; i < vba_project->count; i++)
-	    free (vba_project->name[i]);
-	free (vba_project->key);
-	free (vba_project->length);
-	free (vba_project->offset);
-	free (vba_project->name);
-	free (vba_project->dir);
-	free (vba_project);
+    }
+
+
+    if ((hashcnt = uniq_get(U, "worddocument", 12, &hash))) {
+	while(hashcnt--) {
+	    snprintf(vbaname, sizeof(vbaname), "%s/%u_%u", dirname, hash, hashcnt);
+	    vbaname[sizeof(vbaname)-1] = '\0';
+	    fd = open(vbaname, O_RDONLY|O_BINARY);
+	    if (fd == -1) continue;
+	    
+	    if (!(vba_project = (vba_project_t *)cli_wm_readdir(fd))) {
+		close(fd);
+		continue;
+	    }
+
+	    for (i = 0; i < vba_project->count; i++) {
+		data = (unsigned char *)cli_wm_decrypt_macro(fd, vba_project->offset[i], vba_project->length[i], vba_project->key[i]);
+		if(data) {
+		    data = (unsigned char *) realloc (data, data_len + 1);
+		    data[data_len]='\0';
+		    printf ("-------------- start of code ------------------\n%s\n-------------- end of code ------------------\n", data);
+		    free(data);
+		}
+	    }
+
+	    close(fd);
+	    free(vba_project->name);
+	    free(vba_project->colls);
+	    free(vba_project->dir);
+	    free(vba_project->offset);
+	    free(vba_project->key);
+	    free(vba_project->length);
+	    free(vba_project);
+	}
     }
 
     if ((dd = opendir (dirname)) != NULL) {
@@ -1123,15 +1127,15 @@ int sigtool_vba_scandir (const char *dirname, int hex_output)
 	    if (dent->d_ino) {
 		if (strcmp (dent->d_name, ".") && strcmp (dent->d_name, "..")) {
 		    /* build the full name */
-		    fname = calloc (strlen (dirname) + strlen (dent->d_name) + 2, sizeof (char));
-		    sprintf (fname, "%s/%s", dirname, dent->d_name);
+		    fullname = calloc (strlen (dirname) + strlen (dent->d_name) + 2, sizeof (char));
+		    sprintf (fullname, "%s/%s", dirname, dent->d_name);
 
 		    /* stat the file */
-		    if (lstat (fname, &statbuf) != -1) {
+		    if (lstat (fullname, &statbuf) != -1) {
 			if (S_ISDIR (statbuf.st_mode) && !S_ISLNK (statbuf.st_mode))
-			    sigtool_vba_scandir (fname, hex_output);
+			    sigtool_vba_scandir (fullname, hex_output, U); 
 		    }
-		    free (fname);
+		    free (fullname);
 		}
 	    }
 	}

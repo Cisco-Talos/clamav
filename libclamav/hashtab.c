@@ -315,6 +315,7 @@ int hashtab_insert(struct hashtable *s, const char* key, const size_t len, const
 				if(!thekey)
 					return CL_EMEM;
 				strncpy(thekey, key, len+1);
+				thekey[len]='\0';
 				element->key = thekey;
 				element->data = data;
 				element->len = len;
@@ -557,3 +558,26 @@ ssize_t hashset_toarray(const struct hashset* hs, uint32_t** array)
 	}
 	return j;
 }
+
+struct uniq *uniq_init(uint32_t count) {
+	struct uniq *U;
+	if(!count) return NULL;
+ 	count = count <= 256 ? 256 : count + (count*20/100);
+	U = (struct uniqueid *)cli_calloc(1, sizeof(U)+sizeof(uint32_t)*count);
+	if(!U) return NULL;
+	U->count = count;
+	return U;
+}
+
+uint32_t uniq_add(struct uniq *U, const char *key, uint32_t key_len, uint32_t *rhash) {
+	uint32_t h = hash((const unsigned char *)key, key_len, U->count);
+	if(rhash) *rhash = h;
+	return U->uniques[h]++;
+}
+
+uint32_t uniq_get(struct uniq *U, const char *key, uint32_t key_len, uint32_t *rhash) {
+	uint32_t h = hash((const unsigned char *)key, key_len, U->count);
+	if(rhash) *rhash = h;
+	return U->uniques[h];
+}
+

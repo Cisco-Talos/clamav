@@ -1,3 +1,8 @@
+Tue May 27 17:39:06 CEST 2008
+-----------------------------
+  * improve handling of PDF, CAB, RTF, OLE2 and HTML files (sync with
+    branch/0.93)
+
 Sat May 24 21:38:47 EEST 2008 (edwin)
 -------------------------------------
   * clamd/others.c, session.c, m4/fdpassing.m4:
