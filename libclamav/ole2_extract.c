@@ -191,7 +191,7 @@ static char *get_property_name(char *name, int size) {
   char *newname, *cname;
   char *oname = name;
 
-	if (csize<=0) return NULL;
+  if (csize<=0) return NULL;
 
   newname = cname = (char *)cli_malloc(size);
   if (!newname) return NULL;
@@ -800,42 +800,22 @@ static int handler_otf(int fd, ole2_header_t *hdr, property_t *prop, const char 
   while((current_block >= 0) && (len > 0)) {
     if (current_block > (int32_t) hdr->max_block_no) {
       cli_dbgmsg("OLE2: Max block number for file size exceeded: %d\n", current_block);
-      close(ofd);
-      free(buff);
-      cli_bitset_free(blk_bitset);
-      unlink(tempfile);
-      free(tempfile);
-      return CL_SUCCESS;
+      break;
     }
     /* Check we aren't in a loop */
     if (cli_bitset_test(blk_bitset, (unsigned long) current_block)) {
       /* Loop in block list */
       cli_dbgmsg("OLE2: Block list loop detected\n");
-      close(ofd);
-      free(buff);
-      cli_bitset_free(blk_bitset);
-      unlink(tempfile);
-      free(tempfile);
-      return CL_BREAK;
+      break;
     }
     if (!cli_bitset_set(blk_bitset, (unsigned long) current_block)) {
-      close(ofd);
-      free(buff);
-      cli_bitset_free(blk_bitset);
-      unlink(tempfile);
-      free(tempfile);
-      return CL_BREAK;
+      break;
     }			
     if (prop->size < (int64_t)hdr->sbat_cutoff) {
       /* Small block file */
       if (!ole2_get_sbat_data_block(fd, hdr, buff, current_block)) {
 	cli_dbgmsg("ole2_get_sbat_data_block failed\n");
-	close(ofd);
-	free(buff);
-	cli_bitset_free(blk_bitset);
-	unlink(tempfile);
-	free(tempfile);
-	return CL_SUCCESS;
+	break;
       }
       /* buff now contains the block with 8 small blocks in it */
       offset = 64 * (current_block % 8);
@@ -853,12 +833,7 @@ static int handler_otf(int fd, ole2_header_t *hdr, property_t *prop, const char 
     } else {
       /* Big block file */
       if (!ole2_read_block(fd, hdr, buff, current_block)) {
-	close(ofd);
-	free(buff);
-	cli_bitset_free(blk_bitset);
-	unlink(tempfile);
-	free(tempfile);
-	return CL_SUCCESS;
+	break;
       }
       if (cli_writen(ofd, buff, MIN(len,(1 << hdr->log2_big_block_size))) !=
 	  MIN(len,(1 << hdr->log2_big_block_size))) {
@@ -867,7 +842,7 @@ static int handler_otf(int fd, ole2_header_t *hdr, property_t *prop, const char 
 	cli_bitset_free(blk_bitset);
 	unlink(tempfile);
 	free(tempfile);
-	return CL_BREAK;
+	return CL_EIO;
       }
 
       current_block = ole2_get_next_block_number(fd, hdr, current_block);
@@ -1020,8 +995,9 @@ int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx, struct uniq **vb
 	hdr.sbat_root_start = -1;
 
 	hdr.bitset = cli_bitset_init();
-	if (!hdr.bitset) { /* FIXME: mmap leaks here */
-		return CL_EOLE2;
+	if (!hdr.bitset) {
+		ret=CL_EOLE2;
+		goto abort;
 	}
 
 	if (memcmp(hdr.magic, magic_id, 8) != 0) {
@@ -1049,13 +1025,6 @@ int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx, struct uniq **vb
 	print_ole2_header(&hdr);
 	cli_dbgmsg("Max block number: %lu\n", (unsigned long int) hdr.max_block_no);
 
-	/* NOTE: Select only ONE of the following two methods */
-	
-	/* ole2_read_property_tree(fd, &hdr, dirname, handler_writefile); */
-	
-	/* OR */
-	
-
 	/* PASS 1 : Count files and check for VBA */
 	//	__asm__ __volatile__("int3");
 	hdr.has_vba = 0;
@@ -1079,7 +1048,7 @@ int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx, struct uniq **vb
 	  ret = CL_CLEAN;
 	  *vba = hdr.U;
 	} else {
-	  cli_dbgmsg("OLE2: no VBA projects found %d\n", ret);
+	  cli_dbgmsg("OLE2: no VBA projects found\n");
 	  /* PASS 2/B : OTF scan */
 	  file_count = 0;
 	  ret = ole2_walk_property_tree(fd, &hdr, NULL, 0, handler_otf, 0, &file_count, ctx, &scansize2);
