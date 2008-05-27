@@ -781,7 +781,7 @@ static int handler_otf(int fd, ole2_header_t *hdr, property_t *prop, const char 
   buff = (unsigned char *) cli_malloc(1 << hdr->log2_big_block_size);
   if (!buff) {
     close(ofd);
-    unlink(tempfile);
+    cli_unlink(tempfile);
     free(tempfile);
     return CL_EMEM;
   }
@@ -792,7 +792,10 @@ static int handler_otf(int fd, ole2_header_t *hdr, property_t *prop, const char 
     cli_errmsg("OLE2: OTF handler init bitset failed\n");
     free(buff);
     close(ofd);
-    unlink(tempfile);
+    if (cli_unlink(tempfile)) {
+        free(tempfile);
+	return CL_EIO;
+    }
     free(tempfile);
     return CL_BREAK;
   }
@@ -823,7 +826,10 @@ static int handler_otf(int fd, ole2_header_t *hdr, property_t *prop, const char 
 	close(ofd);
 	free(buff);
 	cli_bitset_free(blk_bitset);
-	unlink(tempfile);
+	if (cli_unlink(tempfile)) {
+	  free(tempfile);
+	  return CL_EIO;
+        }
 	free(tempfile);
 	return CL_BREAK;
       }
@@ -840,7 +846,10 @@ static int handler_otf(int fd, ole2_header_t *hdr, property_t *prop, const char 
 	close(ofd);
 	free(buff);
 	cli_bitset_free(blk_bitset);
-	unlink(tempfile);
+	if (cli_unlink(tempfile)) {
+	  free(tempfile);
+	  return CL_EIO;
+        }
 	free(tempfile);
 	return CL_EIO;
       }
@@ -855,8 +864,12 @@ static int handler_otf(int fd, ole2_header_t *hdr, property_t *prop, const char 
   close(ofd);
   free(buff);
   cli_bitset_free(blk_bitset);
-  if(!cli_leavetemps_flag)
-    unlink(tempfile);
+  if(!cli_leavetemps_flag) {
+    if (cli_unlink(tempfile)) {
+      free(tempfile);
+      return CL_EIO;
+    }
+  }
   free(tempfile);
   return ret==CL_VIRUS ? CL_VIRUS : CL_SUCCESS;
 
