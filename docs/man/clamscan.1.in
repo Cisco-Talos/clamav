@@ -148,7 +148,7 @@ Set archive recursion level limit. This option protects your system against DoS 
 Maximum depth directories are scanned at (default: 15).
 .TP 
 \fB\-\-unzip[=FULLPATH]\fR
-In most cases you don't need this option \- the built\-in unarchiver will extract Zip archives. Howvere, this option may be used as a backup for internal unpacker \- see the full documentation for more information. When enabled without an argument, unzip program will be searched in $PATH. If unzip cannot be found in $PATH, you must force it with =pathname. Remember about '=' between the option and the argument.
+In most cases you don't need this option \- the built\-in unarchiver will extract Zip archives. However, this option may be used as a backup for internal unpacker \- see the full documentation for more information. When enabled without an argument, unzip program will be searched in $PATH. If unzip cannot be found in $PATH, you must force it with =pathname. Remember about '=' between the option and the argument.
 .TP 
 \fB\-\-unrar[=FULLPATH]\fR
 Scan .rar files. In most cases the unpacker built into libclamav is enough.

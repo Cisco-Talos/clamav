@@ -1,3 +1,7 @@
+Wed May 28 03:49:55 CEST 2008 (acab)
+------------------------------------
+  * docs/man: typo
+
 Tue May 27 21:43:04 CEST 2008 (acab)
 ------------------------------------
   * libclamav/ole2_extract.c: allow (partial) scan of broken ole files
