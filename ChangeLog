@@ -1,3 +1,7 @@
+Thu May 29 21:22:35 CEST 2008 (acab)
+------------------------------------
+  * libclamav/unzip.c: correct the previous fix
+
 Thu May 29 17:33:37 CEST 2008 (acab)
 ------------------------------------
   * libclamav/unzip.c: check for unprefixed bz2 - bb#1038
