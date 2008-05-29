@@ -1,3 +1,7 @@
+Thu May 29 17:33:37 CEST 2008 (acab)
+------------------------------------
+  * libclamav/unzip.c: check for unprefixed bz2 - bb#1038
+
 Tue May 27 22:21:40 CEST 2008 (acab)
 ------------------------------------
   * libclamav/ole2_extract.c: revert last commit
