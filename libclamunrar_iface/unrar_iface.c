@@ -542,3 +542,23 @@ void unrar_close(unrar_state_t *state)
     free(state->unpack_data);
     free(state->comment_dir);
 }
+
+#ifdef	C_WINDOWS
+/*
+ * A copy is needed here to avoid a cyclic dependancy libclamunrar_iface<->libclamav
+ * e.g. see the comment in bug 775 about dropping the old internal snprintf
+ * which didn't have this problem and bug 785
+ */
+#include <stdarg.h>
+static int
+snprintf(char *str, size_t size, const char *format, ...)
+{
+	int ret;
+
+	va_list args;
+	va_start(args, format);
+	ret = _vsnprintf_s(str, size, _TRUNCATE, format, args);
+	va_end(args);
+	return ret;
+}
+#endif

@@ -35,7 +35,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <time.h>
-#ifndef	C_WINDOWS
+#ifdef C_WINDOWS
+#include <direct.h>	/* for chdir */
+#else
 #include <pwd.h>
 #include <grp.h>
 #endif
@@ -65,6 +67,9 @@
 #include "others.h"
 #include "shared.h"
 
+#ifndef C_WINDOWS
+#define	closesocket(s)	close(s)
+#endif
 
 short debug_mode = 0, logok = 0;
 short foreground = 0;
@@ -86,7 +91,9 @@ int main(int argc, char **argv)
 {
 	struct cfgstruct *copt;
 	const struct cfgstruct *cpt;
+#ifndef	C_WINDOWS
         struct passwd *user = NULL;
+#endif
 	time_t currtime;
 	struct cl_engine *engine = NULL;
 	const char *dbdir, *cfgfile;
@@ -281,8 +288,10 @@ int main(int argc, char **argv)
 
     logg("#clamd daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
 
+#ifndef C_WINDOWS
     if(user)
 	logg("#Running as user %s (UID %u, GID %u)\n", user->pw_name, user->pw_uid, user->pw_gid);
+#endif
 
     if(logg_size)
 	logg("#Log file size limited to %d bytes.\n", logg_size);
@@ -366,7 +375,7 @@ int main(int argc, char **argv)
 	    logg_close();
 	    freecfg(copt);
 	    if(tcpsock)
-		close(lsockets[0]);
+		closesocket(lsockets[0]);
 	    return 1;
 	}
 	nlsockets++;

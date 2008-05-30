@@ -588,7 +588,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 		client_conn->socketds = socketds;
 		client_conn->nsockets = nsockets;
 		if (!thrmgr_dispatch(thr_pool, client_conn)) {
-		    close(client_conn->sd);
+		    closesocket(client_conn->sd);
 		    free(client_conn);
 		    logg("!thread dispatch failed\n");
 		}
@@ -596,9 +596,12 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 
 	pthread_mutex_lock(&exit_mutex);
 	if(progexit) {
-	    if (new_sd >= 0) {
+#ifdef C_WINDOWS
+	    closesocket(new_sd);
+#else
+  	    if(new_sd >= 0)
 		close(new_sd);
-	    }
+#endif
 	    pthread_mutex_unlock(&exit_mutex);
 	    break;
 	}
@@ -622,8 +625,12 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	    engine = reload_db(engine, dboptions, copt, FALSE, &ret);
 	    if(ret) {
 		logg("Terminating because of a fatal error.\n");
+#ifdef C_WINDOWS
+		closesocket(new_sd);
+#else
 		if(new_sd >= 0)
 		    close(new_sd);
+#endif
 		break;
 	    }
 	    pthread_mutex_lock(&reload_mutex);

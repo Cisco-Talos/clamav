@@ -479,13 +479,13 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     if(!bound && !portscan) {
 	logg("!ScanStream: Can't find any free port.\n");
 	mdprintf(odesc, "Can't find any free port. ERROR\n");
-	close(sockfd);
+	closesocket(sockfd);
 	return -1;
     } else {
 	listen(sockfd, 1);
 	if(mdprintf(odesc, "PORT %u\n", port) <= 0) {
 	    logg("!ScanStream: error transmitting port.\n");
-	    close(sockfd);
+	    closesocket(sockfd);
 	    return -1;
 	}
     }
@@ -494,17 +494,17 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	case 0: /* timeout */
 	    mdprintf(odesc, "Accept timeout. ERROR\n");
 	    logg("!ScanStream %u: accept timeout.\n", port);
-	    close(sockfd);
+	    closesocket(sockfd);
 	    return -1;
 	case -1:
 	    mdprintf(odesc, "Accept poll. ERROR\n");
 	    logg("!ScanStream %u: accept poll failed.\n", port);
-	    close(sockfd);
+	    closesocket(sockfd);
 	    return -1;
     }
 
     if((acceptd = accept(sockfd, NULL, NULL)) == -1) {
-	close(sockfd);
+	closesocket(sockfd);
 	mdprintf(odesc, "accept() ERROR\n");
 	logg("!ScanStream %u: accept() failed.\n", port);
 	return -1;
@@ -514,8 +514,8 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 
     if(cli_gentempfd(NULL, &tmpname, &tmpd)) {
 	shutdown(sockfd, 2);
-	close(sockfd);
-	close(acceptd);
+	closesocket(sockfd);
+	closesocket(acceptd);
 	mdprintf(odesc, "cli_gentempfd() failed. ERROR\n");
 	logg("!ScanStream %u: Can't create temporary file.\n", port);
 	return -1;

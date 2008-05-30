@@ -51,6 +51,10 @@
 #include "server.h"
 #include "tcpserver.h"
 
+#ifndef	C_WINDOWS
+#define	closesocket(s)	close(s)
+#endif
+
 int tcpserver(const struct cfgstruct *copt)
 {
 	struct sockaddr_in server;
@@ -87,7 +91,7 @@ int tcpserver(const struct cfgstruct *copt)
     if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1) {
 	estr = strerror(errno);
 	logg("!TCP: bind() error: %s\n", estr);
-	close(sockfd);
+	closesocket(sockfd);
 	return -1;
     } else {
 	if(taddr->enabled)
@@ -102,7 +106,7 @@ int tcpserver(const struct cfgstruct *copt)
     if(listen(sockfd, backlog) == -1) {
 	estr = strerror(errno);
 	logg("!TCP: listen() error: %s\n", estr);
-	close(sockfd);
+	closesocket(sockfd);
 	return -1;
     }
 

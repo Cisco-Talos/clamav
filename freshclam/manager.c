@@ -32,24 +32,26 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef	HAVE_UNISTD_H
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 #include <string.h>
 #include <ctype.h>
-#ifndef	C_WINDOWS
+#ifndef C_WINDOWS
 #include <netinet/in.h>
 #include <netdb.h>
 #endif
 #include <sys/types.h>
-#ifndef	C_WINDOWS
+#ifndef C_WINDOWS
 #include <sys/socket.h>
 #include <sys/time.h>
 #endif
 #include <time.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#ifndef C_WINDOWS
 #include <dirent.h>
+#endif
 #include <errno.h>
 #include <zlib.h>
 
@@ -76,7 +78,7 @@
 #define	O_BINARY	0
 #endif
 
-#ifndef	C_WINDOWS
+#ifndef C_WINDOWS
 #define	closesocket(s)	close(s)
 #endif
 
@@ -212,7 +214,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 		break;
 	}
         logg("%cCan't get information about %s: %s\n", logerr ? '!' : '^', hostpt, herr);
-	close(socketfd);
+	closesocket(socketfd);
 	return -1;
     }
 
@@ -244,7 +246,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	if(connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in)) == -1) {
 #endif
 	    logg("Can't connect to port %d of host %s (IP: %s)\n", port, hostpt, ipaddr);
-	    close(socketfd);
+	    closesocket(socketfd);
 	    if((socketfd = getclientsock(localip)) == -1)
 		return -1;
 
@@ -255,7 +257,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	}
     }
 
-    close(socketfd);
+    closesocket(socketfd);
     return -2;
 }
 
@@ -918,7 +920,7 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
     }
 
     while((dent = readdir(dir))) {
-#ifndef C_INTERIX
+#if !defined(C_INTERIX) && !defined(C_WINDOWS)
 	if(dent->d_ino)
 #endif
 	{

@@ -1,3 +1,7 @@
+Fri May 30 11:40:56 CEST 2008 (tk)
+----------------------------------
+  * libclamunrar_iface, clamd, freshclam: merge win32 patches from NJH (bb#802)
+
 Wed May 28 03:49:55 CEST 2008 (acab)
 ------------------------------------
   * docs/man: typo
