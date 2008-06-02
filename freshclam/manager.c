@@ -1351,12 +1351,8 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	else if((cpt = cfgopt(copt, "OnUpdateExecute"))->enabled)
 	    arg = cpt->strarg;
 
-	if(arg) {
-	    if(opt_check(opt, "daemon"))
-		execute("OnUpdateExecute", arg);
-            else if(system(arg) == -1)
-		logg("!system(%s) failed\n", arg);
-	}
+	if(arg)
+	    execute("OnUpdateExecute", arg, opt);
     }
 
     if(outdated) {
@@ -1400,12 +1396,9 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 		free(buffer);
 	    }
 
-	    if(newver) {
-		if(opt_check(opt, "daemon"))
-		    execute("OnOutdatedExecute", cmd);
-		else if(system(cmd) == -1)
-		logg("!system(%s) failed\n", cmd);
-	    }
+	    if(newver)
+		execute("OnOutdatedExecute", cmd, opt);
+
 	    free(cmd);
 	}
     }
@@ -1415,4 +1408,3 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 
     return updated ? 0 : 1;
 }
-

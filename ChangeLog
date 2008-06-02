@@ -1,3 +1,8 @@
+Mon Jun  2 14:57:31 CEST 2008 (tk)
+----------------------------------
+  * freshclam: in interactive mode EXIT_n can be passed to --on-*-execute
+	       to overwrite the default return code values (bb#465)
+
 Mon Jun  2 13:09:57 CEST 2008 (tk)
 ----------------------------------
   * clamd: minimize memory fragmentation after db reload (bb#1028,

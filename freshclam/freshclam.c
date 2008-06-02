@@ -192,7 +192,7 @@ static int download(const struct cfgstruct *copt, const struct optstruct *opt, c
 int main(int argc, char **argv)
 {
 	int ret = 52;
-	const char *newdir, *cfgfile;
+	const char *newdir, *cfgfile, *arg = NULL;
 	char *pidfile = NULL;
 	struct cfgstruct *copt;
 	const struct cfgstruct *cpt;
@@ -527,15 +527,15 @@ int main(int argc, char **argv)
 	    ret = download(copt, opt, newdir);
 
             if(ret > 1) {
-		    const char *arg = NULL;
-
 	        if(opt_check(opt, "on-error-execute"))
 		    arg = opt_arg(opt, "on-error-execute");
 		else if((cpt = cfgopt(copt, "OnErrorExecute"))->enabled)
 		    arg = cpt->strarg;
 
 		if(arg)
-		    execute("OnErrorExecute", arg);
+		    execute("OnErrorExecute", arg, opt);
+
+		arg = NULL;
 	    }
 
 	    logg("#--------------------------------------\n");
@@ -578,17 +578,16 @@ int main(int argc, char **argv)
     } else
 	ret = download(copt, opt, newdir);
 
-    if(opt_check(opt, "on-error-execute")) {
-	if(ret > 1)
-	    if(system(opt_arg(opt, "on-error-execute")) == -1)
-		logg("!system(%s) failed\n", opt_arg(opt, "on-error-execute"));
+    if(ret > 1) {
+	if(opt_check(opt, "on-error-execute"))
+	    arg = opt_arg(opt, "on-error-execute");
+	else if((cpt = cfgopt(copt, "OnErrorExecute"))->enabled)
+	    arg = cpt->strarg;
 
-    } else if((cpt = cfgopt(copt, "OnErrorExecute"))->enabled) {
-	if(ret > 1)
-	    if(system(cpt->strarg) == -1)
-		logg("!system(%s) failed\n", cpt->strarg);
-
+	if(arg)
+            execute("OnErrorExecute", arg, opt);
     }
+
     if (pidfile) {
         unlink(pidfile);
     }

@@ -33,14 +33,31 @@
 #endif
 
 #include "shared/output.h"
+#include "shared/options.h"
 #include "execute.h"
 
 #define MAX_CHILDREN 5
 
 int active_children;
 
-void execute( const char *type, const char *text )
+void execute( const char *type, const char *text, const struct optstruct *opt )
 {
+	int ret;
+#ifndef C_WINDOWS
+	pid_t pid;
+#endif
+
+    if(!opt_check(opt, "daemon")) {
+	if(sscanf(text, "EXIT_%d", &ret) == 1) {
+	    logg("*%s: EXIT_%d\n", type, ret);
+	    exit(ret);
+	}
+	if(system(text) == -1) {
+	    logg("%s: system(%s) failed\n", type, text);
+	    return;
+	}
+    }
+
 #ifdef        C_WINDOWS
 	if(active_children < MAX_CHILDREN) {
 		if(spawnlp(P_DETACH, text, text, NULL) == -1) {
@@ -51,8 +68,6 @@ void execute( const char *type, const char *text )
 	} else
 		logg("^%s: already %d processes active.\n", type, active_children);
 #else
-	pid_t pid;
-
 	if ( active_children<MAX_CHILDREN )
 	switch( pid=fork() ) {
 	case 0:
