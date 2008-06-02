@@ -1,3 +1,9 @@
+Mon Jun  2 13:09:57 CEST 2008 (tk)
+----------------------------------
+  * clamd: minimize memory fragmentation after db reload (bb#1028,
+	   OPTIMIZE_MEMORY_FOOTPRINT currently defined by default)
+	   Patch from LEE, Kok-Seng <kokseng*88pobox.com>
+
 Fri May 30 11:40:56 CEST 2008 (tk)
 ----------------------------------
   * libclamunrar_iface, clamd, freshclam: merge win32 patches from NJH (bb#802)

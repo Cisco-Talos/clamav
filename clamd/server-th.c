@@ -83,6 +83,16 @@ typedef struct client_conn_tag {
     int nsockets;
 } client_conn_t;
 
+static void scanner_thread_cleanup(void *arg)
+{
+	client_conn_t *conn = (client_conn_t *) arg;
+
+    shutdown(conn->sd, 2);
+    closesocket(conn->sd);
+    cl_free(conn->engine);
+    free(conn);
+}
+
 static void scanner_thread(void *arg)
 {
 	client_conn_t *conn = (client_conn_t *) arg;
@@ -110,6 +120,9 @@ static void scanner_thread(void *arg)
     if(!timeout)
     	timeout = -1;
 
+    /* register cleanup procedure in this thread */
+    pthread_cleanup_push(scanner_thread_cleanup, arg);
+   
     do {
     	ret = command(conn->sd, conn->engine, conn->limits, conn->options, conn->copt, timeout);
 	if (ret < 0) {
@@ -155,10 +168,7 @@ static void scanner_thread(void *arg)
 	}
     } while (session);
 
-    shutdown(conn->sd, 2);
-    closesocket(conn->sd);
-    cl_free(conn->engine);
-    free(conn);
+    pthread_cleanup_pop(1);
     return;
 }
 
@@ -621,6 +631,10 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 
 	pthread_mutex_lock(&reload_mutex);
 	if(reload) {
+#ifdef OPTIMIZE_MEMORY_FOOTPRINT
+	    /* Signal all worker threads to STOP, wait till no more acive threads */
+	    thrmgr_worker_stop_wait(thr_pool);
+#endif	    
 	    pthread_mutex_unlock(&reload_mutex);
 	    engine = reload_db(engine, dboptions, copt, FALSE, &ret);
 	    if(ret) {
@@ -633,10 +647,15 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 #endif
 		break;
 	    }
+
 	    pthread_mutex_lock(&reload_mutex);
 	    reload = 0;
 	    time(&reloaded_time);
 	    pthread_mutex_unlock(&reload_mutex);
+#ifdef OPTIMIZE_MEMORY_FOOTPRINT    
+	    /* Resume thread pool worker threads */
+	    thrmgr_setstate(thr_pool, POOL_VALID);
+#endif
 #ifdef CLAMUKO
 	    if(cfgopt(copt, "ClamukoScanOnAccess")->enabled) {
 		logg("Stopping and restarting Clamuko.\n");

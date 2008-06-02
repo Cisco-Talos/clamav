@@ -1692,7 +1692,9 @@ void cl_free(struct cl_engine *engine)
     pthread_mutex_lock(&cli_ref_mutex);
 #endif
 
-    engine->refcount--;
+    if(engine->refcount)
+	engine->refcount--;
+
     if(engine->refcount) {
 #ifdef CL_THREAD_SAFE
 	pthread_mutex_unlock(&cli_ref_mutex);
