@@ -1113,7 +1113,7 @@ static int cli_scanole2(int desc, cli_ctx *ctx)
         ctx->recursion++;
 
 	ret = cli_vba_scandir(dir, ctx, vba);
-	free(vba);
+	uniq_free(vba);
 	if(ret != CL_VIRUS)
 	    if(cli_scandir(dir, ctx, 0) == CL_VIRUS)
 	        ret = CL_VIRUS;

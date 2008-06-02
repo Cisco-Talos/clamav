@@ -1,3 +1,8 @@
+Mon Jun  2 17:59:15 EEST 2008 (edwin)
+-------------------------------------
+  * libclamav/hashtab.[ch], scanners.c: avoid using C99 flexible array members
+  (bb #1039)
+
 Thu May 29 21:22:35 CEST 2008 (acab)
 ------------------------------------
   * libclamav/unzip.c: correct the previous fix

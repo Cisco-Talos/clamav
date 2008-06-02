@@ -562,9 +562,14 @@ ssize_t hashset_toarray(const struct hashset* hs, uint32_t** array)
 struct uniq *uniq_init(uint32_t count) {
 	struct uniq *U;
 	if(!count) return NULL;
- 	count = count <= 256 ? 256 : count + (count*20/100);
-	U = (struct uniqueid *)cli_calloc(1, sizeof(U)+sizeof(uint32_t)*count);
+	count = count <= 256 ? 256 : count + (count*20/100);
+	U = cli_malloc(sizeof(*U));
 	if(!U) return NULL;
+	U->uniques = cli_calloc(count, sizeof(uint32_t));
+	if(!U->uniques) {
+		free(U);
+		return NULL;
+	}
 	U->count = count;
 	return U;
 }
