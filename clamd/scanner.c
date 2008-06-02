@@ -421,7 +421,10 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	short bound = 0, rnd_port_first = 1;
 	const char *virname;
 	char buff[FILEBUFF];
+	char peer_addr[32];
 	struct sockaddr_in server;
+	struct sockaddr_in peer;
+	socklen_t addrlen;
 	struct hostent he;
 	const struct cfgstruct *cpt;
 	char *tmpname;
@@ -503,21 +506,23 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	    return -1;
     }
 
-    if((acceptd = accept(sockfd, NULL, NULL)) == -1) {
+    addrlen = sizeof(peer);
+    if((acceptd = accept(sockfd, (struct sockaddr *) &peer, &addrlen)) == -1) {
 	closesocket(sockfd);
 	mdprintf(odesc, "accept() ERROR\n");
 	logg("!ScanStream %u: accept() failed.\n", port);
 	return -1;
     }
 
-    logg("*Accepted connection on port %u, fd %d\n", port, acceptd);
+    snprintf(peer_addr, sizeof(peer_addr), "%s", inet_ntoa(peer.sin_addr));
+    logg("*Accepted connection from %s on port %u, fd %d\n", peer_addr, port, acceptd);
 
     if(cli_gentempfd(NULL, &tmpname, &tmpd)) {
 	shutdown(sockfd, 2);
 	closesocket(sockfd);
 	closesocket(acceptd);
 	mdprintf(odesc, "cli_gentempfd() failed. ERROR\n");
-	logg("!ScanStream %u: Can't create temporary file.\n", port);
+	logg("!ScanStream(%s@%u): Can't create temporary file.\n", peer_addr, port);
 	return -1;
     }
 
@@ -536,7 +541,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	    closesocket(sockfd);
 	    closesocket(acceptd);
 	    mdprintf(odesc, "Temporary file -> write ERROR\n");
-	    logg("!ScanStream %u: Can't write to temporary file.\n", port);
+	    logg("!ScanStream(%s@%u): Can't write to temporary file.\n", peer_addr, port);
 	    close(tmpd);
 	    if(!cfgopt(copt, "LeaveTemporaryFiles")->enabled)
 		unlink(tmpname);
@@ -548,7 +553,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	    btread = (maxsize - size); /* only read up to max */
 
 	    if(btread <= 0) {
-		logg("^ScanStream %u: Size limit reached (max: %lu)\n", port, maxsize);
+		logg("^ScanStream(%s@%u): Size limit reached (max: %lu)\n", peer_addr, port, maxsize);
 	    	break; /* Scan what we have */
 	    }
 	}
@@ -557,11 +562,11 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     switch(retval) {
 	case 0: /* timeout */
 	    mdprintf(odesc, "read timeout ERROR\n");
-	    logg("!ScanStream %u: read timeout.\n", port);
+	    logg("!ScanStream(%s@%u): read timeout.\n", peer_addr, port);
 	    break;
 	case -1:
 	    mdprintf(odesc, "read poll ERROR\n");
-	    logg("!ScanStream %u: read poll failed.\n", port);
+	    logg("!ScanStream(%s@%u): read poll failed.\n", peer_addr, port);
 	    break;
     }
 
@@ -581,17 +586,17 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 
     if(ret == CL_VIRUS) {
 	mdprintf(odesc, "stream: %s FOUND\n", virname);
-	logg("stream %u: %s FOUND\n", port, virname);
+	logg("stream(%s@%u): %s FOUND\n", peer_addr, port, virname);
 	virusaction("stream", virname, copt);
     } else if(ret != CL_CLEAN) {
     	if(retval == 1) {
 	    mdprintf(odesc, "stream: %s ERROR\n", cl_strerror(ret));
-	    logg("stream %u: %s ERROR\n", port, cl_strerror(ret));
+	    logg("stream(%s@%u): %s ERROR\n", peer_addr, port, cl_strerror(ret));
 	}
     } else {
 	mdprintf(odesc, "stream: OK\n");
         if(logok)
-	    logg("stream %u: OK\n", port); 
+	    logg("stream(%s@%u): OK\n", peer_addr, port); 
     }
 
     return ret;

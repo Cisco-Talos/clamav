@@ -1,3 +1,8 @@
+Mon Jun  2 18:31:53 CEST 2008 (tk)
+----------------------------------
+  * clamd/scanner.c: log IP addresses of remote clients (bb#966)
+		     Patch from Jorge Valdes <jvaldes*intercom.com.sv>
+
 Mon Jun  2 17:49:50 CEST 2008 (tk)
 ----------------------------------
   * clamdscan/clamdscan.c: don't show scan summary when clamd cannot be
