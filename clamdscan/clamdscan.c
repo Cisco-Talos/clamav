@@ -122,7 +122,7 @@ int main(int argc, char **argv)
     ret = client(opt, &infected);
 
     /* TODO: Implement STATUS in clamd */
-    if(!opt_check(opt, "disable-summary") && !opt_check(opt, "no-summary")) {
+    if((infected || ret != 2) && !opt_check(opt, "disable-summary") && !opt_check(opt, "no-summary")) {
 	gettimeofday(&t2, &tz);
 	ds = t2.tv_sec - t1.tv_sec;
 	dms = t2.tv_usec - t1.tv_usec;
