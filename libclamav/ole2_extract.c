@@ -1026,7 +1026,6 @@ int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx, struct uniq **vb
 	cli_dbgmsg("Max block number: %lu\n", (unsigned long int) hdr.max_block_no);
 
 	/* PASS 1 : Count files and check for VBA */
-	//	__asm__ __volatile__("int3");
 	hdr.has_vba = 0;
 	ret = ole2_walk_property_tree(fd, &hdr, NULL, 0, handler_enum, 0, &file_count, ctx, &scansize);
 	cli_bitset_free(hdr.bitset);
