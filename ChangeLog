@@ -1,3 +1,7 @@
+Mon Jun  2 20:50:10 CEST 2008 (acab)
+------------------------------------
+  * libclamav/ole2_extract.c: comment removed
+
 Mon Jun  2 18:31:53 CEST 2008 (tk)
 ----------------------------------
   * clamd/scanner.c: log IP addresses of remote clients (bb#966)
