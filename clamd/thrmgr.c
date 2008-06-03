@@ -232,7 +232,9 @@ void thrmgr_worker_stop_wait(threadpool_t * const threadpool)
 	
 	/* wait for threads to exit */
 	if (threadpool->thr_alive > 0) {
+#ifdef CL_DEBUG
 		logg("*%u active threads: waking them and entering wait loop\n", threadpool->thr_alive);
+#endif
 		if (pthread_cond_broadcast(&(threadpool->pool_cond)) != 0) {
 			pthread_mutex_unlock(&threadpool->pool_mutex);
 			logg("!Fatal: failed in cond broadcast 'pool_cond'\n");
@@ -241,14 +243,20 @@ void thrmgr_worker_stop_wait(threadpool_t * const threadpool)
 	}
 	/* now, wait for the threads to exit, make 'loop' number of tries,  */
 	while (threadpool->thr_alive > 0 && loop--) {		
+#ifdef CL_DEBUG
 		logg("*%u active threads. Waiting.\n", threadpool->thr_alive);
+#endif
 		timeout.tv_sec = time(NULL) + (threadpool->idle_timeout/2) + 10L;
 		timeout.tv_nsec = 0;
 		ret_cond = pthread_cond_timedwait (&threadpool->pool_cond, &threadpool->pool_mutex, &timeout);
 		if (ret_cond == ETIMEDOUT) {
+#ifdef CL_DEBUG
 			logg("*%u active threads. Continue to wait.\n", threadpool->thr_alive);
+#endif
 		} else if (ret_cond == 0) {
+#ifdef CL_DEBUG
 			logg("*Received signal. %u active threads.\n", threadpool->thr_alive);
+#endif
 		}
 	}
   	if (pthread_mutex_unlock(&threadpool->pool_mutex) != 0) {
@@ -282,7 +290,7 @@ static void *thrmgr_worker_cleanup(void *arg)
 		exit(-2);
 	}
 	(threadpool->thr_alive) && threadpool->thr_alive--;
-	logg("*Thread clean up, %u active threads.", threadpool->thr_alive);
+	/* logg("*Thread clean up, %u active threads.", threadpool->thr_alive); */
 	if (threadpool->thr_alive == 0) {
 		/* signal that all threads are finished */
 		pthread_cond_broadcast(&threadpool->pool_cond);

@@ -1,3 +1,7 @@
+Tue Jun  3 19:41:34 CEST 2008 (tk)
+----------------------------------
+  * clamd/thrmgr.c: move some msgs to debug (bb#1028)
+
 Mon Jun  2 20:50:10 CEST 2008 (acab)
 ------------------------------------
   * libclamav/ole2_extract.c: comment removed
