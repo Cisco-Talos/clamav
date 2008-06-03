@@ -1,3 +1,7 @@
+Tue Jun  3 23:37:50 CEST 2008 (tk)
+----------------------------------
+  * test: add clam.mail, clam.ppt and clam.tnef (bb#902)
+
 Tue Jun  3 19:41:34 CEST 2008 (tk)
 ----------------------------------
   * clamd/thrmgr.c: move some msgs to debug (bb#1028)

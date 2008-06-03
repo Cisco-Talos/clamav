@@ -1,0 +1,21 @@
+From: ClamAV
+To: ClamAV
+Subject: ClamAV Test File
+Message-ID: <20080603232833.1aeaf8f1@ClamAV>
+Organization: ClamAV
+Mime-Version: 1.0
+Content-Type: multipart/mixed; boundary="MP_/6OvrPH9HEPZRUCVu6uT=Fey"
+
+--MP_/6OvrPH9HEPZRUCVu6uT=Fey
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+
+This is a ClamAV test file with embedded clam.exe
+--MP_/6OvrPH9HEPZRUCVu6uT=Fey
+Content-Type: application/x-ms-dos-executable; name=clam.exe
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename=clam.exe
+
+TVpQAAIAAAAEAA8A//8AALgAAAAhAAAAQAAaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAEAALtxEEAAM8BQUIvzU1
