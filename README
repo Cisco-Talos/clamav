@@ -2,8 +2,8 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
-0.93.1rc1
----------
+0.93.1
+------
 
 This version improves handling of PDF, CAB, RTF, OLE2 and HTML files
 and includes various bugfixes for 0.93 issues.

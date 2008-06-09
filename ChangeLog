@@ -1,3 +1,12 @@
+Wed Jun  4 14:18:12 CEST 2008 (tk)
+----------------------------------
+  * 0.93.1
+
+Wed Jun  4 14:18:27 CEST 2008 (tk)
+----------------------------------
+  * libclamav/petite.c: fix possible invalid memory access (bb#1000)
+			Reported by Damian Put
+
 Mon Jun  2 17:49:50 CEST 2008 (tk)
 ----------------------------------
   * clamdscan/clamdscan.c: don't show scan summary when clamd cannot be

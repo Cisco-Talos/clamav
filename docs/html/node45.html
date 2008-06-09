@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>clamav-config</TITLE>
-<META NAME="description" CONTENT="clamav-config">
+<TITLE>Forking daemons</TITLE>
+<META NAME="description" CONTENT="Forking daemons">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -27,47 +27,45 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html774"
+<A NAME="tex2html777"
   HREF="node46.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html770"
+<A NAME="tex2html773"
   HREF="node42.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html764"
+<A NAME="tex2html767"
   HREF="node44.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html772"
+<A NAME="tex2html775"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html775"
-  HREF="node46.html">Example</A>
-<B> Up:</B> <A NAME="tex2html771"
+<B> Next:</B> <A NAME="tex2html778"
+  HREF="node46.html">clamav-config</A>
+<B> Up:</B> <A NAME="tex2html774"
   HREF="node42.html">Database reloading</A>
-<B> Previous:</B> <A NAME="tex2html765"
+<B> Previous:</B> <A NAME="tex2html768"
   HREF="node44.html">Memory</A>
- &nbsp; <B>  <A NAME="tex2html773"
+ &nbsp; <B>  <A NAME="tex2html776"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
 <H3><A NAME="SECTION00074300000000000000">
-clamav-config</A>
+Forking daemons</A>
 </H3>
-    Use <code>clamav-config</code> to check compilation information for libclamav.
-    <PRE>
-	zolw@localhost:~$ clamav-config --libs
-	-L/usr/local/lib -lz -lbz2 -lgmp -lpthread
-	zolw@localhost:~$ clamav-config --cflags
-	-I/usr/local/include -g -O2
-</PRE>
+    If you're using libclamav with a forking daemon you should call
+    <code>srand()</code> inside a forked child before making any calls to the
+    libclamav functions. This will avoid possible collisions with temporary
+    filenames created by other processes of the daemon. This procedure
+    is not required for multi-threaded daemons.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2008-04-09
+2008-06-04
 </ADDRESS>
 </BODY>
 </HTML>

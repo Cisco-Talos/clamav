@@ -21,7 +21,7 @@ dnl   MA 02110-1301, USA.
 AC_PREREQ([2.59])
 dnl For a release change [devel] to the real version [0.xy]
 dnl also change VERSION below
-AC_INIT([clamav], [0.93.1rc1], [http://bugs.clamav.net/])
+AC_INIT([clamav], [0.93.1], [http://bugs.clamav.net/])
 
 dnl put configure auxiliary into config
 AC_CONFIG_AUX_DIR([config])
@@ -41,11 +41,11 @@ AC_DEFINE([PACKAGE], PACKAGE_NAME, [Name of package])
 
 dnl change this on a release
 dnl VERSION="devel-`date +%Y%m%d`"
-VERSION="0.93.1rc1"
+VERSION="0.93.1"
 AC_DEFINE_UNQUOTED([VERSION],"$VERSION",[Version number of package])
 
 LC_CURRENT=4
-LC_REVISION=2
+LC_REVISION=3
 LC_AGE=0
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 AC_SUBST([LIBCLAMAV_VERSION])

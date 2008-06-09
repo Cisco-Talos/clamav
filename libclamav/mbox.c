@@ -2227,7 +2227,10 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				aMessage = messages[multiparts] = messageCreate();
 				if(aMessage == NULL) {
 					multiparts--;
-					continue;
+					/* if allocation failed the first time,
+					 * there's no point in retrying, just
+					 * break out */
+					break;
 				}
 				messageSetCTX(aMessage, mctx->ctx);
 
@@ -2486,6 +2489,24 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 						if(rc == VIRUS)
 							infected = TRUE;
 						break;
+
+					case RELATED:
+					case ENCRYPTED:
+					case SIGNED:
+					case PARALLEL:
+						/* all the subtypes that we handle
+						 * (all from the switch(tableFind...) below)
+						 * must be listed here */
+						break;
+					default:
+						/* this is a subtype that we 
+						 * don't handle anyway, 
+						 * don't store */
+						if(messages[multiparts]) {
+							messageDestroy(messages[multiparts]);
+							messages[multiparts] = NULL;
+						}
+						--multiparts;
 				}
 			}
 
@@ -2562,7 +2583,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
 				htmltextPart = getTextPart(messages, multiparts);
 
-				if(htmltextPart >= 0) {
+				if(htmltextPart >= 0 && messages) {
 					if(messageGetBody(messages[htmltextPart]))
 
 						aText = textAddMessage(aText, messages[htmltextPart]);
@@ -2675,11 +2696,12 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				 * message and we need to dig out the plain
 				 * text part of that alternative
 				 */
-				htmltextPart = getTextPart(messages, multiparts);
-				if(htmltextPart == -1)
-					htmltextPart = 0;
-
-				rc = parseEmailBody(messages[htmltextPart], aText, mctx, recursion_level + 1);
+				if(messages) {
+					htmltextPart = getTextPart(messages, multiparts);
+					if(htmltextPart == -1)
+						htmltextPart = 0;
+					rc = parseEmailBody(messages[htmltextPart], aText, mctx, recursion_level + 1);
+				}
 				break;
 			default:
 				assert(0);

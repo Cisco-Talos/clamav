@@ -87,7 +87,7 @@ static pthread_mutex_t cli_ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define       P_tmpdir        "C:\\WINDOWS\\TEMP"
 #endif
 
-#define CL_FLEVEL 30 /* don't touch it */
+#define CL_FLEVEL 31 /* don't touch it */
 
 uint8_t cli_debug_flag = 0, cli_leavetemps_flag = 0;
 
