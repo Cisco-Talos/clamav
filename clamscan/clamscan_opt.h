@@ -80,15 +80,6 @@ static struct option clamscan_longopt[] = {
     {"phishing-ssl", 0, 0, 0},
     {"phishing-cloak", 0, 0, 0},
     {"no-algorithmic", 0, 0, 0},
-    {"unzip", 2, 0, 0},
-    {"unrar", 2, 0, 0},
-    {"arj", 2, 0, 0},
-    {"unzoo", 2, 0, 0},
-    {"lha", 2, 0, 0},
-    {"jar", 2, 0, 0},
-    {"tar", 2, 0, 0},
-    {"tgz", 2, 0, 0},
-    {"deb", 2, 0, 0},
 
     /* developers only */
     {"dev-ac-only", 0, 0, 0},

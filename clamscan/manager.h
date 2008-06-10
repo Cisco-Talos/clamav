@@ -19,19 +19,8 @@
 #ifndef __MANAGER_H
 #define __MANAGER_H
 
-#if HAVE_CONFIG_H
-#include "clamav-config.h"
-#endif
-
-#ifdef HAVE_PWD_H
-#include <pwd.h>
-#endif
-
-#include "libclamav/clamav.h"
 #include "shared/options.h"
 
 int scanmanager(const struct optstruct *opt);
-
-int scanfile(const char *filename, struct cl_engine *engine, const struct passwd *user, const struct optstruct *opt, const struct cl_limits *limits, unsigned int options);
 
 #endif

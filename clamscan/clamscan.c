@@ -40,13 +40,13 @@
 #include "others.h"
 #include "global.h"
 #include "manager.h"
-#include "treewalk.h"
 
 #include "shared/misc.h"
 #include "shared/output.h"
 #include "shared/options.h"
 
 #include "libclamav/str.h"
+#include "libclamav/clamav.h"
 
 void help(void);
 
@@ -322,7 +322,7 @@ void help(void)
     mprintf("    --no-ole2                            Disable OLE2 support\n");
     mprintf("    --no-pdf                             Disable PDF support\n");
     mprintf("    --no-html                            Disable HTML support\n");
-    mprintf("    --no-archive                         Disable libclamav archive support\n");
+    mprintf("    --no-archive                         Disable archive support\n");
     mprintf("    --detect-broken                      Try to detect broken executable files\n");
     mprintf("    --block-encrypted                    Block encrypted archives\n");
     mprintf("    --mail-follow-urls                   Download and scan URLs\n");
@@ -332,15 +332,8 @@ void help(void)
     mprintf("    --max-files=#n                       The maximum number of files to scan for each container file (*)\n");
     mprintf("    --max-recursion=#n                   Maximum archive recursion level for container file (*)\n");
     mprintf("    --max-dir-recursion=#n               Maximum directory recursion level\n");
-    mprintf("    --unzip[=FULLPATH]                   Enable support for .zip files\n");
-    mprintf("    --unrar[=FULLPATH]                   Enable support for .rar files\n");
-    mprintf("    --arj[=FULLPATH]                     Enable support for .arj files\n");
-    mprintf("    --unzoo[=FULLPATH]                   Enable support for .zoo files\n");
-    mprintf("    --lha[=FULLPATH]                     Enable support for .lha files\n");
-    mprintf("    --jar[=FULLPATH]                     Enable support for .jar files\n");
-    mprintf("    --tar[=FULLPATH]                     Enable support for .tar files\n");
-    mprintf("    --deb[=FULLPATH to ar]               Enable support for .deb files\n");
-    mprintf("    --tgz[=FULLPATH]                     Enable support for .tar.gz, .tgz files\n\n");
-    mprintf("(*) Certain files (e.g. documents, archives, etc.) may in turn contain other files inside.\n");
-    mprintf("    The above options ensure safe processing of this kind of data.\n\n");
+
+    mprintf("\n");
+    mprintf("(*) Certain files (e.g. documents, archives, etc.) may in turn contain other\n");
+    mprintf("    files inside. The above options ensure safe processing of this kind of data.\n\n");
 }

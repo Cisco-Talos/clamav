@@ -69,8 +69,7 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_clamscan_OBJECTS = output.$(OBJEXT) getopt.$(OBJEXT) \
 	cfgparser.$(OBJEXT) misc.$(OBJEXT) options.$(OBJEXT) \
-	clamscan.$(OBJEXT) others.$(OBJEXT) manager.$(OBJEXT) \
-	treewalk.$(OBJEXT)
+	clamscan.$(OBJEXT) others.$(OBJEXT) manager.$(OBJEXT)
 clamscan_OBJECTS = $(am_clamscan_OBJECTS)
 clamscan_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -234,9 +233,7 @@ clamscan_SOURCES = \
     others.h \
     global.h \
     manager.c \
-    manager.h \
-    treewalk.c \
-    treewalk.h
+    manager.h
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 all: all-am
@@ -318,7 +315,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/options.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/others.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/output.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/treewalk.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

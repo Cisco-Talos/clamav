@@ -146,33 +146,6 @@ Set archive recursion level limit. This option protects your system against DoS 
 .TP 
 \fB\-\-max\-dir\-recursion=#n\fR
 Maximum depth directories are scanned at (default: 15).
-.TP 
-\fB\-\-unzip[=FULLPATH]\fR
-In most cases you don't need this option \- the built\-in unarchiver will extract Zip archives. However, this option may be used as a backup for internal unpacker \- see the full documentation for more information. When enabled without an argument, unzip program will be searched in $PATH. If unzip cannot be found in $PATH, you must force it with =pathname. Remember about '=' between the option and the argument.
-.TP 
-\fB\-\-unrar[=FULLPATH]\fR
-Scan .rar files. In most cases the unpacker built into libclamav is enough.
-.TP 
-\fB\-\-arj[=FULLPATH]\fR
-Scan .arj files.
-.TP 
-\fB\-\-unzoo[=FULLPATH]\fR
-Scan .zoo files.
-.TP 
-\fB\-\-lha[=FULLPATH]\fR
-Scan .lzh files.
-.TP 
-\fB\-\-jar[=FULLPATH]\fR
-clamscan uses unzip for .jar files, so in some cases you may need to pass a full path to unzip. In most cases the unpacker built into libclamav is enough.
-.TP 
-\fB\-\-deb[=FULLPATH]\fR
-This option supports debian binary packages. Implies \-\-tgz, but doesn't conflict with \-\-tgz=FULLPATH. It requires ar utility.
-.TP 
-\fB\-\-tar[=FULLPATH]\fR
-This option supports non\-compressed tar archives. In most cases the unpacker built into libclamav is enough.
-.TP 
-\fB\-\-tgz[=FULLPATH]\fR
-This option supports tar.gz and .tgz files. You need GNU tar, on non\-Linux system you probably have it installed as gtar. If it's in $PATH, please use \-\-tgz=gtar in other case please pass a full path. In most cases the unpacker built into libclamav is enough.
 .SH "EXAMPLES"
 .LP 
 .TP 
@@ -224,12 +197,6 @@ Note: some return codes may only appear in a single file mode (when clamscan is 
 57: Can't get absolute path name of current working directory.
 .TP 
 58: I/O error, please check your file system.
-.TP 
-59: Can't get information about current user from /etc/passwd.
-.TP 
-60: Can't get information about user '@CLAMAVUSER@' from /etc/passwd.
-.TP 
-61: Can't fork.
 .TP 
 62: Can't initialize logger.
 .TP 

@@ -131,7 +131,9 @@ int match_regex(const char *filename, const char *pattern)
 	regex_t reg;
 	int match, flags;
 	char fname[513];
+#if defined(C_CYGWIN) || defined(C_OS2) || defined(C_WINDOWS)
 	size_t len;
+#endif
 
 #if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_WINDOWS)
 	flags = REG_EXTENDED;
