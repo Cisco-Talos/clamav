@@ -1,3 +1,7 @@
+Fri Jun 13 02:01:15 CEST 2008 (tk)
+----------------------------------
+  * shared/cfgparser.c: handle memory errors in OPT_COMPSIZE
+
 Tue Jun 10 18:18:42 CEST 2008 (tk)
 ----------------------------------
   * clamscan: drop support for external unpackers (bb#1052)

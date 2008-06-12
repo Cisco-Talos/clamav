@@ -291,9 +291,15 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 				}
 				ctype = tolower(arg[strlen(arg) - 1]);
 				if(ctype == 'm' || ctype == 'k') {
-				    char *cpy = (char *) calloc(strlen(arg), 1);
-				    strncpy(cpy, arg, strlen(arg) - 1);
-				    cpy[strlen(arg)-1]='\0';
+				    char *cpy = strdup(arg);
+				    if(!cpy) {
+					fprintf(stderr, "ERROR: Can't register new options (not enough memory)\n");
+					fclose(fs);
+					free(name);
+					freecfg(copt);
+					return NULL;
+				    }
+				    cpy[strlen(arg) - 1] = '\0';
 				    if(!cli_isnumber(cpy)) {
 					if(verbose)
 					    fprintf(stderr, "ERROR: Parse error at line %d: Option %s requires numerical (raw/K/M) argument.\n", line, name);
