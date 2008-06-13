@@ -1,3 +1,8 @@
+Fri Jun 13 13:10:15 CEST 2008 (tk)
+----------------------------------
+  * libclamav/matcher-ac.c: fix handling of nodes which also match single
+			    bytes (bb#1054)
+
 Fri Jun 13 02:01:15 CEST 2008 (tk)
 ----------------------------------
   * shared/cfgparser.c: handle memory errors in OPT_COMPSIZE
