@@ -228,12 +228,12 @@ struct element* hashtab_find(const struct hashtable *s,const char* key,const siz
 			PROFILE_FIND_NOTFOUND(s, tries);
 			return NULL; /* element not found, place is empty*/
 		}
-		else if(element->key != DELETED_KEY && len == element->len && strncmp(key, element->key,len)==0) {
+		else if(element->key != DELETED_KEY && len == element->len && (key == element->key || strncmp(key, element->key,len)==0)) {
 			PROFILE_FIND_FOUND(s, tries);
 			return element;/* found */
 		}
 		else {
-			idx = (idx + tries++) % s->capacity;
+			idx = (idx + tries++) & (s->capacity-1);
 			element = &s->htable[idx];
 		}
 	} while (tries <= s->capacity);
