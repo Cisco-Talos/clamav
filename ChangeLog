@@ -1,3 +1,7 @@
+Mon Jun 30 21:14:03 EEST 2008 (edwin)
+------------------------------------
+  * freshclam/manager.c: add missing closesocket on error path (bb #1073).
+
 Mon Jun 16 23:43:31 EEST 2008 (edwin)
 -------------------------------------
   * libclamav/hashtab.[ch]: hashtab_insert should return pointer to newly
