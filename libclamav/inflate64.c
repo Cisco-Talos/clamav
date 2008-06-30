@@ -416,17 +416,17 @@ int flush;
             NEEDBITS(16);
             if (
                 ((BITS(8) << 8) + (hold >> 8)) % 31) {
-                state->mode = BAD;
+                state->mode = ACAB_BAD;
                 break;
             }
             if (BITS(4) != Z_DEFLATED) {
-                state->mode = BAD;
+                state->mode = ACAB_BAD;
                 break;
             }
             DROPBITS(4);
             len = BITS(4) + 8;
             if (len > state->wbits) {
-                state->mode = BAD;
+                state->mode = ACAB_BAD;
                 break;
             }
             state->dmax = 1U << len;
@@ -472,7 +472,7 @@ int flush;
                 state->mode = TABLE;
                 break;
             case 3:
-                state->mode = BAD;
+                state->mode = ACAB_BAD;
             }
             DROPBITS(2);
             break;
@@ -480,7 +480,7 @@ int flush;
             BYTEBITS();                         /* go to byte boundary */
             NEEDBITS(32);
             if ((hold & 0xffff) != ((hold >> 16) ^ 0xffff)) {
-                state->mode = BAD;
+                state->mode = ACAB_BAD;
                 break;
             }
             state->length = (unsigned)hold & 0xffff;
@@ -515,7 +515,7 @@ int flush;
             DROPBITS(4);
 #ifndef PKZIP_BUG_WORKAROUND
             if (state->nlen > 286 || state->ndist > 30) {
-                state->mode = BAD;
+                state->mode = ACAB_BAD;
                 break;
             }
 #endif
@@ -536,7 +536,7 @@ int flush;
             ret = inflate_table(CODES, state->lens, 19, &(state->next),
                                 &(state->lenbits), state->work);
             if (ret) {
-                state->mode = BAD;
+                state->mode = ACAB_BAD;
                 break;
             }
             Tracev((stderr, "inflate:       code lengths ok\n"));
@@ -559,7 +559,7 @@ int flush;
                         NEEDBITS(this.bits + 2);
                         DROPBITS(this.bits);
                         if (state->have == 0) {
-                            state->mode = BAD;
+                            state->mode = ACAB_BAD;
                             break;
                         }
                         len = state->lens[state->have - 1];
@@ -581,7 +581,7 @@ int flush;
                         DROPBITS(7);
                     }
                     if (state->have + copy > state->nlen + state->ndist) {
-                        state->mode = BAD;
+                        state->mode = ACAB_BAD;
                         break;
                     }
                     while (copy--)
@@ -590,7 +590,7 @@ int flush;
             }
 
             /* handle error breaks in while */
-            if (state->mode == BAD) break;
+            if (state->mode == ACAB_BAD) break;
 
             /* build code tables */
             state->next = state->codes;
@@ -599,7 +599,7 @@ int flush;
             ret = inflate_table(LENS, state->lens, state->nlen, &(state->next),
                                 &(state->lenbits), state->work);
             if (ret) {
-                state->mode = BAD;
+                state->mode = ACAB_BAD;
                 break;
             }
             state->distcode = (code const FAR *)(state->next);
@@ -607,7 +607,7 @@ int flush;
             ret = inflate_table(DISTS, state->lens + state->nlen, state->ndist,
                             &(state->next), &(state->distbits), state->work);
             if (ret) {
-                state->mode = BAD;
+                state->mode = ACAB_BAD;
                 break;
             }
             Tracev((stderr, "inflate:       codes ok\n"));
@@ -650,7 +650,7 @@ int flush;
                 break;
             }
             if (this.op & 64) {
-                state->mode = BAD;
+                state->mode = ACAB_BAD;
                 break;
             }
             state->extra = (unsigned)(this.op) & 31;
@@ -681,7 +681,7 @@ int flush;
             }
             DROPBITS(this.bits);
             if (this.op & 64) {
-                state->mode = BAD;
+                state->mode = ACAB_BAD;
                 break;
             }
             Tracevv((stderr, "inflate:        val %u\n", state->offset));
@@ -696,12 +696,12 @@ int flush;
             }
 #ifdef INFLATE_STRICT
             if (state->offset > state->dmax) {
-                state->mode = BAD;
+                state->mode = ACAB_BAD;
                 break;
             }
 #endif
             if (state->offset > state->whave + out - left) {
-                state->mode = BAD;
+                state->mode = ACAB_BAD;
                 break;
             }
             Tracevv((stderr, "inflate:         distance %u\n", state->offset));
@@ -749,7 +749,7 @@ int flush;
                 out = left;
                 if ((
                      REVERSE(hold)) != state->check) {
-                    state->mode = BAD;
+                    state->mode = ACAB_BAD;
                     break;
                 }
                 INITBITS();
@@ -759,7 +759,7 @@ int flush;
         case DONE:
             ret = Z_STREAM_END;
             goto inf_leave;
-        case BAD:
+        case ACAB_BAD:
             ret = Z_DATA_ERROR;
             goto inf_leave;
         case MEM:
