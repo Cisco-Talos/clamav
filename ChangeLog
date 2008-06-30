@@ -1,3 +1,7 @@
+Mon Jun 30 21:14:03 EEST 2008 (edwin)
+------------------------------------
+  * freshclam/manager.c: add missing closesocket on error path (bb #1073).
+
 Wed Jun  4 14:18:12 CEST 2008 (tk)
 ----------------------------------
   * 0.93.1

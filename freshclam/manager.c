@@ -564,6 +564,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 
     if(send(sd, cmd, strlen(cmd), 0) < 0) {
 	logg("%cgetfile: Can't write to socket\n", logerr ? '!' : '^');
+	closesocket(sd);
 	return 52;
     }
 
@@ -585,6 +586,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 #endif
 	    logg("%cgetfile: Error while reading database from %s (IP: %s)\n", logerr ? '!' : '^', hostname, ipaddr);
 	    mirman_update(mdat->currip, mdat, 1);
+	    closesocket(sd);
 	    return 52;
 	}
 
