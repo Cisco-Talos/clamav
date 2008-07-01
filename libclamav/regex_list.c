@@ -522,7 +522,7 @@ static int functionality_level_check(char* line)
 
 
 /* Load patterns/regexes from file */
-int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int options,int is_whitelist,gzFile *gzs,unsigned int gzrsize)
+int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int options,int is_whitelist,struct cli_dbio *dbio)
 {
 	int rc,line=0;
 	char buffer[FILEBUFF];
@@ -535,7 +535,7 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 		cli_warnmsg("Regex list has already been loaded, ignoring further requests for load\n");
 		return CL_SUCCESS;
 	}*/
-	if(!fd && !gzs) {
+	if(!fd && !dbio) {
 		cli_errmsg("Unable to load regex list (null file)\n");
 		return CL_EIO;
 	}
@@ -570,7 +570,7 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 	 * If a line in the file doesn't conform to this format, loading fails
 	 * 
 	 */
-	while(cli_dbgets(buffer, FILEBUFF, fd, gzs, &gzrsize)) {
+	while(cli_dbgets(buffer, FILEBUFF, fd, dbio)) {
 		char* pattern;
 		char* flags;
 		cli_chomp(buffer);

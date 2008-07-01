@@ -27,6 +27,7 @@
 
 #include "clamav.h"
 #include "cltypes.h"
+#include "cvd.h"
 
 struct cli_dconf {
     uint32_t pe;
@@ -96,5 +97,5 @@ struct cli_dconf {
 
 struct cli_dconf *cli_dconf_init(void);
 void cli_dconf_print(struct cli_dconf *dconf);
-int cli_dconf_load(FILE *fs, struct cl_engine **engine, unsigned int options, gzFile *gzs, unsigned int gzrsize);
+int cli_dconf_load(FILE *fs, struct cl_engine **engine, unsigned int options, struct cli_dbio *dbio);
 #endif

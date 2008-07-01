@@ -263,7 +263,7 @@ static int chkflevel(const char *entry, int field)
     return 1;
 }
 
-int cli_dconf_load(FILE *fs, struct cl_engine **engine, unsigned int options, gzFile *gzs, unsigned int gzrsize)
+int cli_dconf_load(FILE *fs, struct cl_engine **engine, unsigned int options, struct cli_dbio *dbio)
 {
 	char buffer[FILEBUFF];
 	unsigned int line = 0;
@@ -279,7 +279,7 @@ int cli_dconf_load(FILE *fs, struct cl_engine **engine, unsigned int options, gz
 
     dconf = (struct cli_dconf *) (*engine)->dconf;
 
-    while(cli_dbgets(buffer, FILEBUFF, fs, gzs, &gzrsize)) {
+    while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
 	cli_chomp(buffer);
 

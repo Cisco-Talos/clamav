@@ -22,7 +22,14 @@
 #define __CVD_H
 
 #include <stdio.h>
+#include <zlib.h>
 #include "clamav.h"
+
+struct cli_dbio {
+    gzFile *gzs;
+    FILE *fs;
+    unsigned int size;
+};
 
 int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short warn, unsigned int options, unsigned int cld);
 int cli_untgz(int fd, const char *destdir);

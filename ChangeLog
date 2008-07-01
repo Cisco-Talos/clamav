@@ -1,3 +1,7 @@
+Tue Jul  1 13:41:49 CEST 2008 (tk)
+----------------------------------
+  * libclamav: faster loading of uncompressed .cld files, also fixes bb#1064
+
 Mon Jun 30 21:28:23 EEST 2008 (edwin)
 ------------------------------------
   * merge r3816 from trunk (bb #947, AIX name collisions)

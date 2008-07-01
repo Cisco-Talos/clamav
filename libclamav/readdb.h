@@ -21,12 +21,11 @@
 #ifndef __READDB_H
 #define __READDB_H
 
-#include <zlib.h>
-
 #include "clamav.h"
 #include "matcher.h"
 #include "str.h"
 #include "cltypes.h"
+#include "cvd.h"
 
 #define CLI_DBEXT(ext)				\
     (						\
@@ -52,13 +51,12 @@
 	cli_strbcasestr(ext, ".cld")		\
     )
 
-
 int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint16_t rtype, uint16_t type, const char *offset, uint8_t target);
 
 int cli_initengine(struct cl_engine **engine, unsigned int options);
 
-int cli_load(const char *filename, struct cl_engine **engine, unsigned int *signo, unsigned int options, gzFile *gzs, unsigned int gzrsize);
+int cli_load(const char *filename, struct cl_engine **engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio);
 
-char *cli_dbgets(char *buff, unsigned int size, FILE *fs, gzFile *gzs, unsigned int *gzrsize);
+char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio);
 
 #endif
