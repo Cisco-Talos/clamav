@@ -1,3 +1,8 @@
+Tue Jul  1 14:13:21 CEST 2008 (tk)
+----------------------------------
+  * libclamav/matcher-ac.c: fix handling of nodes which also match single
+			    bytes (bb#1054)
+
 Tue Jul  1 13:41:49 CEST 2008 (tk)
 ----------------------------------
   * libclamav: faster loading of uncompressed .cld files, also fixes bb#1064

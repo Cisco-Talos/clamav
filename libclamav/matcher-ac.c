@@ -126,7 +126,7 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 
     ph = pt->list;
     while(ph) {
-	if((ph->length == pattern->length) && (ph->prefix_length == pattern->prefix_length)) {
+	if((ph->length == pattern->length) && (ph->prefix_length == pattern->prefix_length) && (ph->ch[0] == pattern->ch[0]) && (ph->ch[1] == pattern->ch[1])) {
 	    if(!memcmp(ph->pattern, pattern->pattern, ph->length * sizeof(uint16_t)) && !memcmp(ph->prefix, pattern->prefix, ph->prefix_length * sizeof(uint16_t))) {
 		if(!ph->alt && !pattern->alt) {
 		    match = 1;
