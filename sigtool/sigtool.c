@@ -1506,7 +1506,7 @@ static int diffdirs(const char *old, const char *new, const char *patch)
 	FILE *diff;
 	DIR *dd;
 	struct dirent *dent;
-	char cwd[512], opath[1024];
+	char cwd[512], path[1024];
 
 
     if(!getcwd(cwd, sizeof(cwd))) {
@@ -1539,8 +1539,8 @@ static int diffdirs(const char *old, const char *new, const char *patch)
 	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, ".."))
 		continue;
 
-	    snprintf(opath, sizeof(opath), "%s/%s", old, dent->d_name);
-	    if(compare(opath, dent->d_name, diff) == -1) {
+	    snprintf(path, sizeof(path), "%s/%s", old, dent->d_name);
+	    if(compare(path, dent->d_name, diff) == -1) {
 		fclose(diff);
 		unlink(patch);
 		closedir(dd);
@@ -1548,7 +1548,28 @@ static int diffdirs(const char *old, const char *new, const char *patch)
 	    }
 	}
     }
+    closedir(dd);
 
+    /* check for removed files */
+    if((dd = opendir(old)) == NULL) {
+        mprintf("!diffdirs: Can't open directory %s\n", old);
+	fclose(diff);
+	return -1;
+    }
+
+    while((dent = readdir(dd))) {
+#ifndef C_INTERIX
+	if(dent->d_ino)
+#endif
+	{
+	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, ".."))
+		continue;
+
+	    snprintf(path, sizeof(path), "%s/%s", new, dent->d_name);
+	    if(access(path, R_OK))
+		fprintf(diff, "UNLINK %s\n", dent->d_name);
+	}
+    }
     closedir(dd);
 
     fclose(diff);
