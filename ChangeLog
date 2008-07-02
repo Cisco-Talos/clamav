@@ -1,3 +1,7 @@
+Wed Jul  2 12:43:46 CEST 2008 (tk)
+----------------------------------
+  * sigtool/sigtool.c: verify MD5's in --run-cdiff
+
 Tue Jul  1 14:13:21 CEST 2008 (tk)
 ----------------------------------
   * libclamav/matcher-ac.c: fix handling of nodes which also match single

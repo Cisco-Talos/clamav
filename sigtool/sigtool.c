@@ -1222,6 +1222,56 @@ static int vbadump(struct optstruct *opt)
     return 0;
 }
 
+static int comparemd5(const char *dbname)
+{
+	char info[16], buff[256], *md5, *pt;
+	FILE *fh;
+	int ret = 0;
+
+
+    if(strstr(dbname, "main"))
+	strcpy(info, "main.info");
+    else
+	strcpy(info, "daily.info");
+
+    if(!(fh = fopen(info, "r"))) {
+	mprintf("!verifydiff: Can't open %s\n", info);
+	return -1;
+    }
+
+    if(!fgets(buff, sizeof(buff), fh) || strncmp(buff, "ClamAV-VDB", 10)) {
+	mprintf("!verifydiff: Incorrect info file %s\n", info);
+	fclose(fh);
+	return -1;
+    }
+
+    while(fgets(buff, sizeof(buff), fh)) {
+	cli_chomp(buff);
+	if(!(pt = strchr(buff, ':'))) {
+	    mprintf("!verifydiff: Incorrect format of %s\n", info);
+	    ret = -1;
+	    break;
+	}
+	*pt++ = 0;
+	if(!(md5 = cli_md5file(buff))) {
+	    mprintf("!verifydiff: Can't generate MD5 for %s\n", buff);
+	    ret = -1;
+	    break;
+	}
+	if(strcmp(pt, md5)) {
+	    mprintf("!verifydiff: %s has incorrect checksum\n", buff);
+	    ret = -1;
+	    free(md5);
+	    break;
+	}
+	free(md5);
+    }
+
+    fclose(fh);
+    return ret;
+}
+
+
 static int rundiff(struct optstruct *opt)
 {
 	int fd, ret;
@@ -1246,6 +1296,9 @@ static int rundiff(struct optstruct *opt)
 
     ret = cdiff_apply(fd, mode);
     close(fd);
+
+    if(!ret)
+	ret = comparemd5(diff);
 
     return ret;
 }
@@ -1356,8 +1409,7 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 
 static int verifydiff(const char *diff, const char *cvd, const char *incdir)
 {
-	char *tempdir, cwd[512], buff[1024], info[32], *md5, *pt;
-	FILE *fh;
+	char *tempdir, cwd[512];
 	int ret = 0, fd;
 	unsigned short mode;
 
@@ -1432,50 +1484,8 @@ static int verifydiff(const char *diff, const char *cvd, const char *incdir)
     }
     close(fd);
 
-    if(strstr(diff, "main"))
-	strcpy(info, "main.info");
-    else
-	strcpy(info, "daily.info");
+    ret = comparemd5(diff);
 
-    if(!(fh = fopen(info, "r"))) {
-	mprintf("!verifydiff: Can't open %s\n", info);
-	if(chdir(cwd) == -1)
-	    mprintf("^verifydiff: Can't chdir to %s\n", cwd);
-	cli_rmdirs(tempdir);
-	free(tempdir);
-	return -1;
-    }
-
-    if(!fgets(buff, sizeof(buff), fh) || strncmp(buff, "ClamAV-VDB", 10)) {
-	mprintf("!verifydiff: Incorrect info file %s\n", info);
-	if(chdir(cwd) == -1)
-	    mprintf("^verifydiff: Can't chdir to %s\n", cwd);
-	cli_rmdirs(tempdir);
-	free(tempdir);
-	return -1;
-    }
-
-    while(fgets(buff, sizeof(buff), fh)) {
-	cli_chomp(buff);
-	if(!(pt = strchr(buff, ':'))) {
-	    mprintf("!verifydiff: Incorrect format of %s\n", info);
-	    ret = -1;
-	    break;
-	}
-	*pt++ = 0;
-	if(!(md5 = cli_md5file(buff))) {
-	    mprintf("!verifydiff: Can't generate MD5 for %s\n", buff);
-	    ret = -1;
-	    break;
-	}
-	if(strcmp(pt, md5)) {
-	    mprintf("!verifydiff: %s has incorrect checksum\n", buff);
-	    ret = -1;
-	    break;
-	}
-    }
-
-    fclose(fh);
     if(chdir(cwd) == -1)
 	mprintf("^verifydiff: Can't chdir to %s\n", cwd);
     cli_rmdirs(tempdir);
