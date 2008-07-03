@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef	HAVE_UNISTD_H
@@ -161,6 +162,11 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx, cli_file_t container)
 
 				if(container == CL_TYPE_MAIL) {
 				    fd = open(fname, O_RDONLY|O_BINARY);
+				    if(fd == -1) {
+					    cli_warnmsg("Cannot open file %s: %s, mode: %x\n", fname, strerror(errno), statbuf.st_mode);
+					    free(fname);
+					    continue;
+				    }
 				    ftype = cli_filetype2(fd, ctx->engine);
 				    if(ftype >= CL_TYPE_TEXT_ASCII && ftype <= CL_TYPE_TEXT_UTF16BE) {
 					lseek(fd, 0, SEEK_SET);
