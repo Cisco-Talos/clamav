@@ -35,6 +35,10 @@
 #include <time.h>
 #include <stdarg.h>
 
+#include <sys/mman.h>
+#define _XOPEN_SOURCE 600
+#include <math.h>
+
 #include "cltypes.h"
 #include "clamav.h"
 #include "others.h"
@@ -75,7 +79,8 @@
 #define UPX_NRV2D "\x83\xf0\xff\x74\x78\xd1\xf8\x89\xc5\xeb\x0b\x01\xdb\x75\x07\x8b\x1e\x83\xee\xfc\x11\xdb\x11\xc9"
 #define UPX_NRV2E "\xeb\x52\x31\xc9\x83\xe8\x03\x72\x11\xc1\xe0\x08\x8a\x06\x46\x83\xf0\xff\x74\x75\xd1\xf8\x89\xc5"
 
-#define EC32(x) le32_to_host(x) /* Convert little endian to host */
+#define EC64(x) le64_to_host(x) /* Convert little endian to host */
+#define EC32(x) le32_to_host(x)
 #define EC16(x) le16_to_host(x)
 /* lower and upper bondary alignment (size vs offset) */
 #define PEALIGN(o,a) (((a))?(((o)/(a))*(a)):(o))
@@ -182,6 +187,11 @@ struct offset_list {
     struct offset_list *next;
 };
 
+struct DSTRIB {
+    uint8_t v[5][10];
+    double p[5][10];
+};
+
 static void cli_multifree(void *f, ...) {
     void *ff;
     va_list ap;
@@ -190,6 +200,83 @@ static void cli_multifree(void *f, ...) {
     while((ff=va_arg(ap, void*))) free(ff);
     va_end(ap);
 }
+
+static void qs(uint8_t *k, size_t *v, int l, int r) {
+    int ll = l;
+    int rr = r;
+    uint8_t t;
+  
+    if (r > l) {
+       unsigned int pivot = v[k[l]];
+       while (rr > ll) {
+	 while (v[k[ll]] >= pivot && ll <= r && rr > ll) ll++;
+	 while (v[k[rr]] < pivot && rr >= l && rr >= ll) rr--;
+	 if (rr > ll) {
+	    t = k[rr];
+	    k[rr] = k[ll];
+	    k[ll] = t;
+	 }
+       }
+       t = k[rr];
+       k[rr] = k[l];
+       k[l] = t;
+       qs(k, v, l, rr - 1);
+       qs(k, v, rr + 1, r);
+    }
+}
+
+static void cli_query(MYSQL *mysql, const char *q) {
+    if(mysql_query(mysql, q)) cli_errmsg("Failed to exec query:\n%s\nReason: %s\n", q, mysql_error(mysql));
+}
+
+static void cli_savedist(MYSQL *cid, my_ulonglong peid, int sect, struct DSTRIB *d) {
+    char query[4096];
+    char *en[]={"off0", "off1", "off2", "off3", "glob"};
+    int i, j;
+
+    uint8_t v[5][10];
+    double p[5][10];
+
+    for (i=0; i<5; i++) {
+	sprintf(query, "INSERT INTO dstrib10 VALUES (%llu, %d, '%s', %u, %e, %u, %e, %u, %e, %u, %e, %u, %e, %u, %e, %u, %e, %u, %e, %u, %e, %u, %e)", peid, sect, en[i], d->v[i][0], d->p[i][0], d->v[i][1], d->p[i][1], d->v[i][2], d->p[i][2], d->v[i][3], d->p[i][3], d->v[i][4], d->p[i][4], d->v[i][5], d->p[i][5], d->v[i][6], d->p[i][6], d->v[i][7], d->p[i][7], d->v[i][8], d->p[i][8], d->v[i][9], d->p[i][9]);
+	cli_query(cid, query);
+    }
+}
+
+static void cli_entropy(const unsigned char *data, size_t size, double *entropy, struct DSTRIB *d) {
+    uint8_t ord[5][256];
+    size_t bytecnt[5][256];
+    ssize_t i;
+    uint8_t j;
+
+    *entropy = 0.0f;
+    memset(bytecnt, 0, sizeof(bytecnt));
+    /* count bytes */
+    for(i=0; i<size; i++) {
+	bytecnt[4][data[i]]++;   /* global */
+	bytecnt[i&3][data[i]]++; /* aligned */
+    }
+
+    /* calc entropy */
+    for(i=0; i<256; i++)
+        if(bytecnt[4][i])
+           *entropy -= ((double)bytecnt[4][i] / size) * log2((double)bytecnt[4][i] / size);
+
+    /* sort by presence */
+    for(j=0; j<5; j++) {
+        for(i=0; i<256; i++) ord[j][i]=i;
+	qs(ord[j], bytecnt[j], 0, 255);
+    }
+
+    /* fill in the struct */
+    for(i=0; i<5; i++) {
+	for(j=0; j<10; j++) {
+	    d->v[i][j]=ord[i][j];
+	    d->p[i][j]=(double)bytecnt[i][ord[i][j]] / (size>>(2*(i!=4)));
+	}
+    }
+}
+
 
 static uint32_t cli_rawaddr(uint32_t rva, struct cli_exe_section *shp, uint16_t nos, unsigned int *err,	size_t fsize, uint32_t hdr_size)
 {
@@ -276,6 +363,67 @@ static int cli_ddump(int desc, int offset, int size, const char *file) {
 }
 */
 
+
+static void cli_parseres(uint32_t base, uint32_t rva, uint8_t *src, struct cli_exe_section *exe_sections, uint16_t nsections, size_t fsize, uint32_t hdr_size, unsigned int level, uint32_t type, uint32_t *types, unsigned int *maxres) {
+    unsigned int err = 0, i;
+    uint8_t *entry, *resdir = src + cli_rawaddr(rva, exe_sections, nsections, &err, fsize, hdr_size);
+    uint16_t named, unnamed;
+
+    if(level>2 || !*maxres) return;
+    *maxres-=1;
+    cli_errmsg("in parseres %u\n", *maxres);
+    if (err || !CLI_ISCONTAINED(src, fsize, resdir, 16)) return;
+    named = (uint16_t)cli_readint16(resdir+12);
+    unnamed = (uint16_t)cli_readint16(resdir+14);
+    entry = resdir+16;
+    for (i=0; i<named; i++) {
+	uint32_t id, offs;
+	if(!CLI_ISCONTAINED(src, fsize, entry, 8)) return;
+	id = cli_readint32(entry);
+	offs = cli_readint32(entry+4);
+	if(offs>>31)
+	    cli_parseres(base, base + (offs&0x7fffffff), src, exe_sections, nsections, fsize, hdr_size, level+1, type, types, maxres);
+	else if(level==2)
+	    types[type]++;
+	entry+=8;
+    }
+    for (i=0; i<unnamed; i++) {
+	uint32_t id, offs;
+	if(!CLI_ISCONTAINED(src, fsize, entry, 8)) return;
+	id = cli_readint32(entry)&0x7fffffff;
+	if(level==0) {
+	    switch(id) {
+	    case 1: case 2: case 3: case 4: case 5: case 6: case 7: case 8: case 9: case 10: case 11: case 12:
+		/* 1-12: cur,bmp,ico,menu,dlg,string,fontdir,font,accel,rcdata,msgtable,grp_cursor */
+		type = id;
+		break;
+	    case 14:
+		/* 13: grp_icon */
+		type = 13;
+		break;
+	    case 16:
+		/* 14: version */
+		type = 14;
+		break;
+	    case 21: case 22: case 23: case 24:
+		/* 15-18: ani_ico,ani_cur,html,manifest */
+		type = id-6;
+		break;
+	    default:
+		/* 0: others */
+		type = 0;
+	    }
+	}
+	offs = cli_readint32(entry+4);
+	if(offs>>31)
+	    cli_parseres(base, base + (offs&0x7fffffff), src, exe_sections, nsections, fsize, hdr_size, level+1, type, types, maxres);
+	else
+	    if(level==2) types[type]++;
+	entry+=8;
+    }
+}
+
+
 static off_t cli_seeksect(int fd, struct cli_exe_section *s) {
     off_t ret;
 
@@ -285,7 +433,7 @@ static off_t cli_seeksect(int fd, struct cli_exe_section *s) {
     return ret+1;
 }
 
-static unsigned int cli_md5sect(int fd, struct cli_exe_section *s, unsigned char *digest) {
+static unsigned int cli_md5sect(int fd, struct cli_exe_section *s, unsigned char *digest, double *entropy, struct DSTRIB *d) {
     void *hashme;
     cli_md5_ctx md5;
 
@@ -306,6 +454,8 @@ static unsigned int cli_md5sect(int fd, struct cli_exe_section *s, unsigned char
 	return 0;
     }
 
+    cli_entropy(hashme, s->rsz, entropy, d);
+
     cli_md5_init(&md5);
     cli_md5_update(&md5, hashme, s->rsz);
     free(hashme);
@@ -313,7 +463,7 @@ static unsigned int cli_md5sect(int fd, struct cli_exe_section *s, unsigned char
     return 1;
 }
 
-int cli_scanpe(int desc, cli_ctx *ctx)
+int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 {
 	uint16_t e_magic; /* DOS signature ("MZ") */
 	uint16_t nsections;
@@ -341,6 +491,18 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	struct cli_exe_section *exe_sections;
 	struct cli_matcher *md5_sect;
 	char timestr[32];
+
+	/* metadata stuff */
+	char query[4096];
+	char escaped[8192];
+	my_ulonglong peid;
+	uint16_t dllflags;
+	size_t overlays;
+	uint8_t epsect=255;
+	uint32_t checksum;
+	uint32_t imports=0, exports=0;
+	struct pe_image_data_dir *dirs;
+	struct DSTRIB dists;
 
 
     if(!ctx) {
@@ -594,7 +756,9 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	cli_dbgmsg("SizeOfImage: 0x%x\n", EC32(optional_hdr32.SizeOfImage));
 	cli_dbgmsg("SizeOfHeaders: 0x%x\n", hdr_size);
 	cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr32.NumberOfRvaAndSizes));
-
+	dirs = optional_hdr32.DataDirectory;
+	dllflags = EC32(optional_hdr32.DllCharacteristics);
+	checksum = EC32(optional_hdr32.CheckSum);
     } else { /* PE+ */
         /* read the remaining part of the header */
         if(cli_readn(desc, &optional_hdr32 + 1, sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32)) {
@@ -625,6 +789,9 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	cli_dbgmsg("SizeOfImage: 0x%x\n", EC32(optional_hdr64.SizeOfImage));
 	cli_dbgmsg("SizeOfHeaders: 0x%x\n", hdr_size);
 	cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr64.NumberOfRvaAndSizes));
+	dirs = optional_hdr64.DataDirectory;
+	dllflags = EC32(optional_hdr64.DllCharacteristics);
+	checksum = EC32(optional_hdr64.CheckSum);
     }
 
 
@@ -731,6 +898,194 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
     hdr_size = PESALIGN(hdr_size, valign); /* Aligned headers virtual size */
 
+    mysql_autocommit(ctx->cid, 0);
+    mysql_real_escape_string(ctx->cid, escaped, ctx->filename, strlen(ctx->filename));
+    sprintf(query, "INSERT INTO pes ("
+	    "fname,"
+	    "fsize,"
+	    "peplus,"
+	    "arch,"
+	    "sizeofopth,"
+	    "att_norelocs,"
+	    "att_executable,"
+	    "att_nolines,"
+	    "att_nosymbs,"
+	    "att_64bit,"
+	    "att_32bit,"
+	    "att_nodebug,"
+	    "att_system,"
+	    "att_dll,"
+	    "att_unicpu,"
+
+	    "symbols,"
+	    "ep,"
+	    "sections," 
+	    "valign,"
+	    "falign,"
+	    "sizeofhdr,"
+
+	    "relocs,"
+	    "have_debug,"
+	    "have_tls,"
+	    "have_bounds,"
+	    "have_iat,"
+	    "have_delay,"
+	    "have_com,"
+
+	    "dll_relocable,"
+	    "dll_integrity,"
+	    "dll_dep,"
+	    "dll_noiso,"
+	    "dll_noseh,"
+	    "dll_nobind,"
+	    "dll_wdm,"
+	    "dll_ts,"
+
+	    "scandate"
+
+	    ") VALUES ("
+
+	    "'%s'," /* fname */
+	    "%u," /* fsize */
+	    "%u," /* peplus */
+	    "%u," /* arch */
+	    "%u," /* sizeofopth */
+	    "%u," /* att_norelocs */
+	    "%u," /* att_executable */
+	    "%u," /* att_nolines */
+	    "%u," /* att_nosymbs */
+	    "%u," /* att_64bit */
+	    "%u," /* att_32bit */
+	    "%u," /* att_nodebug */
+	    "%u," /* att_system */
+	    "%u," /* att_dll */
+	    "%u," /* att_unicpu */
+
+	    "%u," /* symbols */
+	    "%u," /* ep */
+	    "%u," /* sections */
+	    "%u," /* valign */
+	    "%u," /* falign */
+	    "%u," /* sizeofhdr */
+
+	    "%u," /* relocs */ 
+	    "%u," /* have_debug */
+	    "%u," /* have_tls */
+	    "%u," /* have_bounds */
+	    "%u," /* have_iat */
+	    "%u," /* have_delay */
+	    "%u," /* have_com */
+
+	    "%u," /* dll_relocable */
+	    "%u," /* dll_integrity */
+	    "%u," /* dll_dep */
+	    "%u," /* dll_noiso */
+	    "%u," /* dll_noseh */
+	    "%u," /* dll_nobind */
+	    "%u," /* dll_wdm */
+	    "%u," /* dll_ts */
+
+	    "NOW()" /*  -- scandate */
+	    ")",
+	    escaped, /* fname */
+	    fsize, /* fsize */
+	    pe_plus, /* peplus */
+	    EC16(file_hdr.Machine), /* arch */
+	    EC16(file_hdr.SizeOfOptionalHeader), /* sizeofopth */
+	
+	    (EC16(file_hdr.Characteristics)&0x0001 != 0), /* att_norelocs */
+	    (EC16(file_hdr.Characteristics)&0x0002 != 0), /* att_executable */
+	    (EC16(file_hdr.Characteristics)&0x0004 != 0), /* att_nolines */
+	    (EC16(file_hdr.Characteristics)&0x0008 != 0), /* att_nosymbs */
+	    (EC16(file_hdr.Characteristics)&0x0020 != 0), /* att_64bit */
+	    (EC16(file_hdr.Characteristics)&0x0100 != 0), /* att_32bit */
+	    (EC16(file_hdr.Characteristics)&0x0200 != 0), /* att_nodebug */
+	    (EC16(file_hdr.Characteristics)&0x1000 != 0), /* att_system */
+	    dll, /* att_dll */
+	    (EC16(file_hdr.Characteristics)&0x4000 != 0), /* att_unicpu */
+
+	    EC32(file_hdr.NumberOfSymbols), /* symbols */
+	    vep, /* ep */
+	    nsections, /* sections */
+	    valign, /* valign */
+	    falign, /* falign */
+	    hdr_size, /* sizeofhdr */
+
+	    ((dirs[5].VirtualAddress!=0) * dirs[5].Size/10), /* FIXMECOLLECT relocs */
+	    (dirs[6].VirtualAddress && dirs[6].Size), /* have_debug */
+	    (dirs[9].VirtualAddress && dirs[9].Size), /* have_tls */
+	    (dirs[11].VirtualAddress && dirs[11].Size), /* have_bounds */
+	    (dirs[12].VirtualAddress && dirs[12].Size), /* have_iat */
+	    (dirs[13].VirtualAddress && dirs[13].Size), /* have_delay */
+	    (dirs[14].VirtualAddress && dirs[14].Size), /* have_com */
+
+	    ((dllflags&0x0040)!=0), /* dll_relocable */
+	    (dllflags&0x0080!=0), /* dll_integrity */
+	    (dllflags&0x0100!=0), /* dll_dep */
+	    (dllflags&0x0200!=0), /* dll_noiso */
+	    (dllflags&0x0400!=0), /* dll_noseh */
+	    (dllflags&0x0800!=0), /* dll_nobind */
+	    (dllflags&0x2000!=0), /* dll_wdm */
+	    (dllflags&0x8000!=0) /* dll_ts */
+	    );
+    cli_query(ctx->cid, query);
+    peid = mysql_insert_id(ctx->cid);
+
+    if(pe_plus)
+	sprintf(query,
+		"UPDATE pes set "
+		"sizeofcode=%u,"
+		"sizeofidata=%u,"
+		"sizeofudata=%u,"
+		"sizeofimg=%u,"
+		"baseofcode=%u,"
+		"baseofdata=%u,"
+		"imagebase=%lu,"
+		"subsys=%u "
+
+		"WHERE id=%llu",
+
+		EC32(optional_hdr64.SizeOfCode), /* sizeofcode */
+		EC32(optional_hdr64.SizeOfInitializedData), /* sizeofidata */
+		EC32(optional_hdr64.SizeOfUninitializedData), /* sizeofudata */
+		EC32(optional_hdr64.SizeOfImage), /* sizeofimg */
+		EC32(optional_hdr64.BaseOfCode), /* baseofcode */
+		0xffffffff, /* baseofdata */
+		EC64(optional_hdr64.ImageBase), /* imagebase */
+		EC16(optional_hdr64.Subsystem), /* subsys */
+
+		peid /* id */
+		);
+    else
+	sprintf(query,
+		"UPDATE pes set "
+		"sizeofcode=%u,"
+		"sizeofidata=%u,"
+		"sizeofudata=%u,"
+		"sizeofimg=%u,"
+		"baseofcode=%u,"
+		"baseofdata=%u,"
+		"imagebase=%u,"
+		"subsys=%u "
+
+		"WHERE id=%llu",
+
+		EC32(optional_hdr32.SizeOfCode), /* sizeofcode */
+		EC32(optional_hdr32.SizeOfInitializedData), /* sizeofidata */
+		EC32(optional_hdr32.SizeOfUninitializedData), /* sizeofudata */
+		EC32(optional_hdr32.SizeOfImage), /* sizeofimg */
+		EC32(optional_hdr32.BaseOfCode), /* baseofcode */
+		EC32(optional_hdr32.BaseOfData), /* baseofdata */
+		EC32(optional_hdr32.ImageBase), /* imagebase */
+		EC16(optional_hdr32.Subsystem), /* subsys */
+
+		peid /* id */
+		);
+    
+    cli_query(ctx->cid, query);
+    overlays=fsize;
+
+
     for(i = 0; i < nsections; i++) {
 	strncpy(sname, (char *) section_hdr[i].Name, 8);
 	sname[8] = 0;
@@ -788,9 +1143,74 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    return CL_VIRUS;
 	}
 
+	mysql_real_escape_string(ctx->cid, escaped, sname, strlen(sname));
+	sprintf(query, 
+		"INSERT INTO sections ("
+		"ref,"
+		"snum,"
+		"name,"
+		"vsz,"
+		"rva,"
+		"rsz,"
+		"raw,"
+		"att_code,"
+		"att_init,"
+		"att_uninit,"
+		"att_discard,"
+		"att_nocache,"
+		"att_nopage,"
+		"att_share,"
+		"att_x,"
+		"att_r,"
+		"att_w"
+	
+		") VALUES ("
+
+		"%llu," /* ref */
+		"%u," /* snum */
+		"'%s'," /* name */
+		"%u," /* vsz */
+		"%u," /* rva */
+		"%u," /* rsz */
+		"%u," /* raw */
+		"%u," /* att_code */
+		"%u," /* att_init */
+		"%u," /* att_uninit */
+		"%u," /* att_discard */
+		"%u," /* att_nocache */
+		"%u," /* att_nopage */
+		"%u," /* att_share */
+		"%u," /* att_x */
+		"%u," /* att_r */
+		"%u" /* att_w */
+		")",
+
+		peid, /* ref */
+		i, /* snum */
+		escaped, /* name */
+		exe_sections[i].vsz, /* vsz */
+		exe_sections[i].rva, /* rva */
+		exe_sections[i].rsz, /* rsz */
+		exe_sections[i].raw, /* raw */
+		((exe_sections[i].chr&0x00000020)!=0), /* att_code */
+		((exe_sections[i].chr&0x00000040)!=0), /* att_init */
+		((exe_sections[i].chr&0x00000080)!=0), /* att_uninit */
+		((exe_sections[i].chr&0x02000000)!=0), /* att_discard */
+		((exe_sections[i].chr&0x04000000)!=0), /* att_nocache */
+		((exe_sections[i].chr&0x08000000)!=0), /* att_nopage */
+		((exe_sections[i].chr&0x10000000)!=0), /* att_share */
+		((exe_sections[i].chr&0x20000000)!=0), /* att_x */
+		((exe_sections[i].chr&0x40000000)!=0), /* att_r */
+		((exe_sections[i].chr&0x80000000)!=0) /* att_w */
+		);
+
+	cli_query(ctx->cid, query);
+	*query='\0';
+
+	memset(&dists, 0, sizeof(dists));
 	if (exe_sections[i].rsz) { /* Don't bother with virtual only sections */
 	    if (exe_sections[i].raw >= fsize) { /* really broken */
-	      cli_dbgmsg("Broken PE file - Section %d starts beyond the end of file (Offset@ %lu, Total filesize %lu)\n", i, (unsigned long)exe_sections[i].raw, (unsigned long)fsize);
+		cli_dbgmsg("Broken PE file - Section %d starts beyond the end of file (Offset@ %lu, Total filesize %lu)\n", i, (unsigned long)exe_sections[i].raw, (unsigned long)fsize);
 		free(section_hdr);
 		free(exe_sections);
 		if(DETECT_BROKEN) {
@@ -805,29 +1225,59 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 	    /* check MD5 section sigs */
 	    md5_sect = ctx->engine->md5_mdb;
-	    if((DCONF & PE_CONF_MD5SECT) && md5_sect) {
+	    if((DCONF & PE_CONF_MD5SECT) /* force the md5 computation - && md5_sect */) {
 		found = 0;
-		for(j = 0; j < md5_sect->soff_len && md5_sect->soff[j] <= exe_sections[i].rsz; j++) {
-		    if(md5_sect->soff[j] == exe_sections[i].rsz) {
-			unsigned char md5_dig[16];
-			if(cli_md5sect(desc, &exe_sections[i], md5_dig) && cli_bm_scanbuff(md5_dig, 16, ctx->virname, ctx->engine->md5_mdb, 0, 0, -1) == CL_VIRUS) {
-			    /* Since .mdb sigs are not fp-prone, to save
-			     * performance we don't call cli_checkfp() here,
-			     * just give the possibility of whitelisting
-			     * idividual .mdb entries via daily.fp
-			     */
-			    if(cli_bm_scanbuff(md5_dig, 16, NULL, ctx->engine->md5_fp, 0, 0, -1) != CL_VIRUS) {
+		/* metadata stuff */
+	        unsigned char md5_dig[16];
+		double ent;
 
-				free(section_hdr);
-				free(exe_sections);
-				return CL_VIRUS;
+		if(cli_md5sect(desc, &exe_sections[i], md5_dig, &ent, &dists)) {
+		    char md5_hex[33];
+		    for(j=0; j<16; j++) sprintf(md5_hex+j*2,"%02x",md5_dig[j]);
+		    md5_hex[32]='\0';
+
+		    sprintf(query,
+			     "UPDATE sections SET "
+			     "md5 = '%s', "
+			     "entropy = %e "
+			     "WHERE ref=%llu AND snum=%u",
+			     md5_hex,
+			     ent,
+			     peid,
+			     i);
+
+		    if(md5_sect) {
+
+			for(j = 0; j < md5_sect->soff_len && md5_sect->soff[j] <= exe_sections[i].rsz; j++) {
+			    if(md5_sect->soff[j] == exe_sections[i].rsz) {
+				if(cli_bm_scanbuff(md5_dig, 16, ctx->virname, ctx->engine->md5_mdb, 0, 0, -1) == CL_VIRUS) {
+				    /* Since .mdb sigs are not fp-prone, to save
+				     * performance we don't call cli_checkfp() here,
+				     * just give the possibility of whitelisting
+				     * idividual .mdb entries via daily.fp
+				     */
+				    if(cli_bm_scanbuff(md5_dig, 16, NULL, ctx->engine->md5_fp, 0, 0, -1) != CL_VIRUS) {
+
+					free(section_hdr);
+					free(exe_sections);
+					return CL_VIRUS;
+				    }
+				}
+				break;
 			    }
 			}
-			break;
+
 		    }
 		}
+
 	    }
 	}
+
+	if (!*query)
+	    sprintf(query, "UPDATE sections SET md5 = 'd41d8cd98f00b204e9800998ecf8427e', entropy = 0 WHERE ref=%llu AND snum=%u", peid, i);
+	cli_query(ctx->cid, query);
+
+	cli_savedist(ctx->cid, peid, i, &dists);
 
 	if (exe_sections[i].urva>>31 || exe_sections[i].uvsz>>31 || (exe_sections[i].rsz && exe_sections[i].uraw>>31) || exe_sections[i].ursz>>31) {
 	    cli_dbgmsg("Found PE values with sign bit set\n");
@@ -867,6 +1317,8 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    if(exe_sections[i].rva + exe_sections[i].rsz > max)
 	        max = exe_sections[i].rva + exe_sections[i].rsz;
 	}
+	if(fsize-exe_sections[i].raw-exe_sections[i].rsz < overlays) overlays = fsize-exe_sections[i].raw-exe_sections[i].rsz;
+	if(vep>=exe_sections[i].rva && vep<exe_sections[i].rva+exe_sections[i].rsz) epsect = i;
     }
 
     free(section_hdr);
@@ -884,10 +1336,183 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
     cli_dbgmsg("EntryPoint offset: 0x%x (%d)\n", ep, ep);
 
+    if((src=mmap(NULL, fsize, PROT_READ, MAP_PRIVATE, desc, 0))!=MAP_FAILED) {
+        unsigned char md5_dig[16];
+	double ent;
+	cli_md5_ctx md5;
+	uint32_t csum=0;
+
+	memset(&dists, 0, sizeof(dists));
+	cli_entropy((unsigned char *)src, fsize, &ent, &dists);
+	cli_md5_init(&md5);
+	cli_md5_update(&md5, src, fsize);
+	cli_md5_final(md5_dig, &md5);
+	for(j=0; j<16; j++) sprintf(escaped+j*2,"%02x",md5_dig[j]);
+	escaped[32]='\0';
+	sprintf(query, "UPDATE pes set md5='%s', entropy=%e WHERE id=%llu", escaped, ent, peid);
+	cli_query(ctx->cid, query);
+	cli_savedist(ctx->cid, peid, -1, &dists);
+	j=0;
+	if(dirs[1].Size) {
+	    uint32_t isize=EC32(dirs[1].Size);
+	    uint8_t *itrunk = src + cli_rawaddr(EC32(dirs[1].VirtualAddress), exe_sections, nsections, &err, fsize, hdr_size);
+
+	    while(!err && isize>=5*4 && CLI_ISCONTAINED(src, fsize, (char *)itrunk, 5*4)) {
+	       char udll[256], efun[512], *dllname, *fun;
+	       uint32_t misc;
+
+	       if(!cli_readint32(itrunk+12)) break;
+	       dllname = src + cli_rawaddr(cli_readint32(itrunk+12), exe_sections, nsections, &err, fsize, hdr_size);
+	       if(err) break;
+	       misc = (fsize < (dllname - src) || (fsize - (dllname - src) >= 255)) ? 255 : (fsize - (dllname - src));
+	       strncpy(udll, dllname, misc);
+	       udll[misc]='\0';
+	       mysql_real_escape_string(ctx->cid, escaped, udll, strlen(udll));
+	       cli_dbgmsg("Imports from %s\n", udll);
+
+	       misc = cli_rawaddr(cli_readint32(itrunk), exe_sections, nsections, &err, fsize, hdr_size);
+	       if(!misc || err || !CLI_ISCONTAINED(src, fsize, src+misc, 4))
+		   misc = cli_rawaddr(cli_readint32(itrunk+16), exe_sections, nsections, &err, fsize, hdr_size);
+	       if(err) break;
+	       dllname = src + misc;
+
+	       while(CLI_ISCONTAINED(src, fsize, dllname, 4) && (misc = cli_readint32(dllname))) {
+		   if(misc&0x80000000) {
+		       sprintf(query, "INSERT INTO imports VALUES (%llu, LCASE('%s'), %u, '')", peid, escaped, misc&0xffff);
+		       cli_dbgmsg("   -%04x\n", misc&~0x80000000);
+		   } else {		   
+		       fun = src + cli_rawaddr(misc+2, exe_sections, nsections, &err, fsize, hdr_size);
+		       if(err) break;
+		       misc = (fsize < (fun - src) || (fsize - (fun - src) >= 255)) ? 255 : (fsize - (fun - src));
+		       strncpy(udll, fun, misc);
+		       udll[misc]='\0';
+		       mysql_real_escape_string(ctx->cid, efun, udll, strlen(udll));
+		       sprintf(query, "INSERT INTO imports VALUES (%llu, LCASE('%s'), 0, LCASE('%s'))", peid, escaped, efun);
+		       cli_dbgmsg("   -%s\n", udll);
+		   }
+		   cli_query(ctx->cid, query);
+		   dllname+=4;
+		   j++;
+	       }
+	       isize-=5*4;
+	       itrunk+=5*4;
+	    }
+	}
+
+	err = 0;
+	if(dirs[0].Size) {
+	    uint8_t *expdir = src + cli_rawaddr(EC32(dirs[0].VirtualAddress), exe_sections, nsections, &err, fsize, hdr_size);
+	    while (!err) {
+		uint32_t base, funcs, names;
+		uint8_t *rvas, *pnames, *pords;
+
+		if(!CLI_ISCONTAINED(src, fsize, (char *)expdir, 40)) break;
+		base = cli_readint32(expdir+16);
+		funcs = cli_readint32(expdir+20);
+		names = cli_readint32(expdir+24);
+		rvas = src + cli_rawaddr(cli_readint32(expdir+28), exe_sections, nsections, &err, fsize, hdr_size);
+		if(err || !CLI_ISCONTAINED(src, fsize, (char *)rvas, funcs*4)) break;
+		pnames = src + cli_rawaddr(cli_readint32(expdir+32), exe_sections, nsections, &err, fsize, hdr_size);
+		if(err || !CLI_ISCONTAINED(src, fsize, (char *)pnames, names*4)) break;
+		pords = src + cli_rawaddr(cli_readint32(expdir+36), exe_sections, nsections, &err, fsize, hdr_size);
+		if(err || !CLI_ISCONTAINED(src, fsize, (char *)pords, names*2)) break;
+
+		for(i=0; i<funcs; i++,rvas+=4) {
+		    *escaped='\0';
+		    if(!cli_readint32(rvas)) continue;
+		    for(j=0; j<names; j++) {
+			if(cli_readint16(pords+j*2) == i) break;
+		    }
+		    if(j!=names) {
+			char *name = src + cli_rawaddr(cli_readint32(pnames + j*4), exe_sections, nsections, &err, fsize, hdr_size);
+			if(!err && name>=src && name < src + fsize) {
+			    strncpy(query, name, 255);
+			    query[255]='\0';
+			    mysql_real_escape_string(ctx->cid, escaped, query, strlen(query));
+			}
+		    }
+		    sprintf(query, "INSERT INTO exports (ref, ord, fun) VALUES (%llu, %u, LCASE('%s'))", peid, i+base, escaped);
+		    cli_query(ctx->cid, query);
+		}
+		break;
+	    }
+	}
+
+	if(checksum) {
+	    uint32_t sum=0;
+	    for(i=0; i<fsize; i+=2) {
+		sum+=(uint16_t)cli_readint16(&src[i]);
+                sum=(sum&0xffff) + (sum>>16);
+	    }
+	    if(fsize&1) {
+		sum+=src[fsize-1];
+                sum=(sum&0xffff) + (sum>>16);
+	    }
+	    if ((sum&0xffff) >= (checksum&0xffff)) sum-=(checksum&0xffff);
+	    else sum = (((sum&0xffff) - (checksum&0xffff)) & 0xffff) - 1;
+	    if ((sum&0xffff) >= (checksum>>16)) sum -= (checksum>>16);
+	    else sum = (((sum&0xffff) - (checksum>>16))  & 0xffff) - 1;
+	    sum+=fsize;
+	    checksum=(checksum==sum);
+	} else checksum=-1;
+
+
+	if(dirs[2].Size) {
+	    uint32_t types[19], tot=0, m=10000;
+	    memset(types, 0, sizeof(types));
+	    cli_parseres(EC32(dirs[2].VirtualAddress), EC32(dirs[2].VirtualAddress), src, exe_sections, nsections, fsize, hdr_size, 0, 0, types, &m);
+	    for(i=0; i<(sizeof(types)/sizeof(types[0])); i++) {
+		tot+=types[i];
+	    }
+	    if(tot) {
+		sprintf(query,
+			"UPDATE pes set "
+			"rs_total=%u," /* tot */
+			"rs_other=%u," /* 0 */
+			"rs_cursor=%u," /* 1 */
+			"rs_bitmap=%u," /* 2 */
+			"rs_icon=%u," /* 3 */
+			"rs_menu=%u," /* 4 */
+			"rs_dialog=%u," /* 5 */
+			"rs_string=%u," /* 6 */
+			"rs_fontdir=%u," /* 7 */
+			"rs_font=%u," /* 8 */
+			"rs_accel=%u," /* 9 */
+			"rs_rc=%u," /* 10 */
+			"rs_msgtable=%u," /* 11 */
+			"rs_gcursor=%u," /* 12 */
+			"rs_gicon=%u," /* 13 */
+			"rs_version=%u," /* 14 */
+			"rs_anic=%u," /* 15 */
+			"rs_anii=%u," /* 16 */
+			"rs_html=%u," /* 17 */
+			"rs_manifest=%u " /* 18 */
+			"WHERE id=%llu", /* peid */
+			tot,
+			types[0], types[1], types[2], types[3], types[4], types[5], types[6], types[7], types[8], types[9], types[10],
+			types[11], types[12], types[13], types[14], types[15], types[16], types[17], types[18],
+			peid);
+		cli_query(ctx->cid, query);
+	    }
+	}
+
+	munmap(src, fsize);
+    } else {
+	cli_errmsg("MMAP FAILED!!!\n");
+	abort();
+    }
+    sprintf(query, "UPDATE pes set imports=(SELECT COUNT(*) FROM imports WHERE ref=%llu), exports=(SELECT COUNT(*) FROM exports WHERE ref=%llu), ep_section=%u, checksum_ok=%d, overlays=%lu WHERE id=%llu", peid, peid, epsect, checksum, overlays, peid);
+    cli_query(ctx->cid, query);
+
     if(pe_plus) { /* Do not continue for PE32+ files */
 	free(exe_sections);
+	mysql_commit(ctx->cid);
+	*rollback=0;
 	return CL_CLEAN;
     }
+
+	mysql_commit(ctx->cid);
+	*rollback=0;
 
     lseek(desc, ep, SEEK_SET);
     epsize = cli_readn(desc, epbuff, 4096);
@@ -2214,3 +2839,17 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
     free(section_hdr);
     return 0;
 }
+
+
+int cli_scanpe(int desc, cli_ctx *ctx) {
+    int rollback=1, ret;
+    ret = cli_real_scanpe(desc, ctx, &rollback);
+    if(rollback) mysql_rollback(ctx->cid);
+    return ret;
+}
+
+/*
+Local Variables:
+c-basic-offset: 4
+End:
+*/

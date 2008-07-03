@@ -188,7 +188,9 @@ libclamav_la_SOURCES = \
 	textnorm.c \
 	textnorm.h \
 	dlp.c \
-	dlp.h
+	dlp.h \
+	disasm.c \
+	disasmpriv.h
 
 libclamav_internal_utils_la_SOURCES=str.c \
 				    str.h \

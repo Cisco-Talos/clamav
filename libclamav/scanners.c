@@ -2079,7 +2079,9 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     cli_ctx ctx;
     struct cl_limits l_limits;
     int rc;
-
+    char link[2048];
+    ssize_t linksz;
+ 
     if(!limits) {
 	cli_errmsg("cl_scandesc: limits == NULL\n");
 	return CL_ENULLARG;
@@ -2094,9 +2096,30 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     ctx.limits = &l_limits;
     memcpy(&l_limits, limits, sizeof(struct cl_limits));
 
+    /* Resolve file name, in case we're called via scandesc */
+    snprintf(link, sizeof(link), "/proc/self/fd/%u", desc);
+    link[sizeof(link)-1]='\0';
+    if((linksz=readlink(link, ctx.filename, sizeof(ctx.filename)))==-1) {
+        cli_errmsg("failed to resolve filename for descriptor %d (%s)\n", desc, link);
+	abort();
+    }
+    ctx.filename[linksz]='\0';
+    /* connect to the sql server */
+    if (!(ctx.cid=mysql_init(NULL)) ||
+	mysql_options(ctx.cid, MYSQL_READ_DEFAULT_GROUP, "clamav") || 
+	!mysql_real_connect(ctx.cid, NULL, NULL, NULL, NULL, 0, NULL, 0)
+	) {
+      cli_errmsg("cannot connect to mysql\n");
+      abort();
+    }
+
     rc = cli_magic_scandesc(desc, &ctx);
     if(rc == CL_CLEAN && ctx.found_possibly_unwanted)
     	rc = CL_VIRUS;
+
+    /* shutdown the connection to the sql server */
+    mysql_close(ctx.cid);
+
     return rc;
 }
 

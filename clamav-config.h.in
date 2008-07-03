@@ -195,6 +195,12 @@
 /* Define to 1 if you have a working `mmap' system call. */
 #undef HAVE_MMAP
 
+/* mysql.h */
+#undef HAVE_MYSQL_H
+
+/* mysql/mysql.h */
+#undef HAVE_MYSQL_MYSQL_H
+
 /* Define to 1 if you have the <ndir.h> header file. */
 #undef HAVE_NDIR_H
 

@@ -25,6 +25,16 @@
 #include "clamav-config.h"
 #endif
 
+#if HAVE_MYSQL_MYSQL_H
+#include <mysql/mysql.h>
+#else
+#if HAVE_MYSQL_H
+#include <mysql.h>
+#else
+#error Please install libmysqlclient-dev
+#endif
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "cltypes.h"
@@ -88,6 +98,8 @@ typedef struct {
     unsigned int scannedfiles;
     unsigned int found_possibly_unwanted;
     struct cli_dconf *dconf;
+    MYSQL *cid;
+    char filename[2048];
 } cli_ctx;
 
 #define SCAN_ARCHIVE	    (ctx->options & CL_SCAN_ARCHIVE)

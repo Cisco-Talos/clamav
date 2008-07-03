@@ -1393,6 +1393,9 @@ AC_MSG_RESULT([$have_signed_rightshift_extended]);
 
 AC_C_FDPASSING
 
+AC_C_MYSQL
+LIBS="$LIBS -lm"
+
 AC_OUTPUT([
 libclamunrar/Makefile
 libclamunrar_iface/Makefile
