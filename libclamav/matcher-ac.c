@@ -36,6 +36,7 @@
 #include "filetypes.h"
 #include "cltypes.h"
 #include "str.h"
+#include "readdb.h"
 
 uint8_t cli_ac_mindepth = AC_DEFAULT_MIN_DEPTH;
 uint8_t cli_ac_maxdepth = AC_DEFAULT_MAX_DEPTH;
@@ -760,12 +761,12 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 }
 
 /* FIXME: clean up the code */
-int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, uint8_t target)
+int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, uint8_t target, unsigned int options)
 {
 	struct cli_ac_patt *new;
 	char *pt, *pt2, *hex = NULL, *hexcpy = NULL;
 	uint16_t i, j, ppos = 0, pend, *dec;
-	uint8_t wprefix = 0, zprefix = 1, namelen, plen = 0;
+	uint8_t wprefix = 0, zprefix = 1, plen = 0;
 	struct cli_ac_alt *newalt, *altpt, **newtable;
 	int ret, error = CL_SUCCESS;
 
@@ -1059,27 +1060,13 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     if(new->length > root->maxpatlen)
 	root->maxpatlen = new->length;
 
-    if((pt = strstr(virname, " (Clam)")))
-	namelen = strlen(virname) - strlen(pt);
-    else
-	namelen = strlen(virname);
-
-    if(!namelen) {
-	cli_errmsg("cli_ac_addsig: No virus name\n");
-	new->prefix ? free(new->prefix) : free(new->pattern);
-	ac_free_alt(new);
-	free(new);
-	return CL_EMALFDB;
-    }
-
-    if((new->virname = cli_calloc(namelen + 1, sizeof(char))) == NULL) {
+    new->virname = cli_virname((char *) virname, options & CL_DB_OFFICIAL, 0);
+    if(!new->virname) {
 	new->prefix ? free(new->prefix) : free(new->pattern);
 	ac_free_alt(new);
 	free(new);
 	return CL_EMEM;
     }
-    strncpy(new->virname, virname, namelen);
-    new->virname[namelen]='\0';
 
     if(offset) {
 	new->offset = cli_strdup(offset);

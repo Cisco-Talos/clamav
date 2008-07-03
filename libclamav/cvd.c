@@ -545,7 +545,7 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short 
 
     if(options & CL_DB_CVDNOTMP) {
 
-	return cli_tgzload(cfd, engine, signo, options);
+	return cli_tgzload(cfd, engine, signo, options | CL_DB_OFFICIAL);
 
     } else {
 
@@ -565,7 +565,7 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short 
 	}
 
 	/* load extracted directory */
-	ret = cl_load(dir, engine, signo, options);
+	ret = cl_load(dir, engine, signo, options | CL_DB_OFFICIAL);
 
 	cli_rmdirs(dir);
 	free(dir);

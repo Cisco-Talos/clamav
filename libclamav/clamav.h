@@ -72,6 +72,7 @@ extern "C"
 #define CL_DB_PHISHING_URLS 0x8
 #define CL_DB_PUA	    0x10
 #define CL_DB_CVDNOTMP	    0x20
+#define CL_DB_OFFICIAL	    0x40
 
 /* recommended db settings */
 #define CL_DB_STDOPT	    (CL_DB_PHISHING | CL_DB_PHISHING_URLS)

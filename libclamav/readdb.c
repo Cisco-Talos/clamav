@@ -92,11 +92,62 @@ struct cli_ignored {
 int cl_loaddb(const char *filename, struct cl_engine **engine, unsigned int *signo);
 int cl_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo);
 
-int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint16_t rtype, uint16_t type, const char *offset, uint8_t target)
+
+char *cli_virname(char *virname, unsigned int official, unsigned int allocated)
+{
+	unsigned int len;
+	char *newname, *pt;
+
+
+    if(!virname)
+	return NULL;
+
+    if((pt = strstr(virname, " (Clam)")))
+	len = strlen(virname) - strlen(pt);
+    else
+	len = strlen(virname);
+
+    if(!len) {
+	cli_errmsg("cli_virname: Empty virus name\n");
+	return NULL;
+    }
+
+    if(!official) {
+	newname = (char *) cli_malloc(len + 11 + 1);
+	if(!newname) {
+	    cli_errmsg("cli_virname: Can't allocate memory for newname\n");
+	    if(allocated)
+		free(virname);
+	    return NULL;
+	}
+	strncpy(newname, virname, len);
+	newname[len] = 0;
+	strcat(newname, ".UNOFFICIAL");
+	newname[len + 11] = 0;
+	if(allocated)
+	    free(virname);
+	return newname;
+    }
+
+    if(!allocated) {
+	newname = (char *) cli_malloc(len + 1);
+	if(!newname) {
+	    cli_errmsg("cli_virname: Can't allocate memory for newname\n");
+	    return NULL;
+	}
+	strncpy(newname, virname, len);
+	newname[len] = 0;
+	return newname;
+    }
+
+    return virname;
+}
+
+static int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, unsigned int options)
 {
 	struct cli_bm_patt *bm_new;
 	char *pt, *hexcpy, *start, *n;
-	int ret, virlen, asterisk = 0;
+	int ret, asterisk = 0;
 	unsigned int i, j, len, parts = 0;
 	int mindist = 0, maxdist = 0, error = 0;
 
@@ -135,7 +186,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 		*pt++ = 0;
 	    }
 
-	    if((ret = cli_ac_addsig(root, virname, start, root->ac_partsigs, parts, i, rtype, type, mindist, maxdist, offset, target))) {
+	    if((ret = cli_ac_addsig(root, virname, start, root->ac_partsigs, parts, i, rtype, type, mindist, maxdist, offset, target, options))) {
 		cli_errmsg("cli_parse_add(): Problem adding signature (1).\n");
 		error = 1;
 		break;
@@ -215,7 +266,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 		return CL_EMALFDB;
 	    }
 
-	    if((ret = cli_ac_addsig(root, virname, pt, root->ac_partsigs, parts, i, rtype, type, 0, 0, offset, target))) {
+	    if((ret = cli_ac_addsig(root, virname, pt, root->ac_partsigs, parts, i, rtype, type, 0, 0, offset, target, options))) {
 		cli_errmsg("cli_parse_add(): Problem adding signature (2).\n");
 		free(pt);
 		return ret;
@@ -225,7 +276,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	}
 
     } else if(root->ac_only || strpbrk(hexsig, "?(") || type) {
-	if((ret = cli_ac_addsig(root, virname, hexsig, 0, 0, 0, rtype, type, 0, 0, offset, target))) {
+	if((ret = cli_ac_addsig(root, virname, hexsig, 0, 0, 0, rtype, type, 0, 0, offset, target, options))) {
 	    cli_errmsg("cli_parse_add(): Problem adding signature (3).\n");
 	    return ret;
 	}
@@ -239,28 +290,14 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	    free(bm_new);
 	    return CL_EMALFDB;
 	}
-
 	bm_new->length = strlen(hexsig) / 2;
 
-	if((pt = strstr(virname, "(Clam)")))
-	    virlen = strlen(virname) - strlen(pt) - 1;
-	else
-	    virlen = strlen(virname);
-
-	if(virlen <= 0) {
-	    free(bm_new->pattern);
-	    free(bm_new);
-	    return CL_EMALFDB;
-	}
-
-	if((bm_new->virname = cli_calloc(virlen + 1, sizeof(char))) == NULL) {
+	bm_new->virname = cli_virname((char *) virname, options & CL_DB_OFFICIAL, 0);
+	if(!bm_new->virname) {
 	    free(bm_new->pattern);
 	    free(bm_new);
 	    return CL_EMEM;
 	}
-
-	strncpy(bm_new->virname, virname, virlen);
-	bm_new->virname[virlen]='\0';
 
 	if(offset) {
 	    bm_new->offset = cli_strdup(offset);
@@ -453,7 +490,7 @@ static int cli_loaddb(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 
 	if(*pt == '=') continue;
 
-	if((ret = cli_parse_add(root, start, pt, 0, 0, NULL, 0))) {
+	if((ret = cli_parse_add(root, start, pt, 0, 0, NULL, 0, options))) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -632,7 +669,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	    break;
 	}
 
-	if((ret = cli_parse_add(root, virname, sig, 0, 0, offset, target))) {
+	if((ret = cli_parse_add(root, virname, sig, 0, 0, offset, target, options))) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -729,7 +766,7 @@ static int cli_loadftm(FILE *fs, struct cl_engine **engine, unsigned int options
 	}
 
 	if(atoi(tokens[0]) == 1) { /* A-C */
-	    if((ret = cli_parse_add((*engine)->root[0], tokens[3], tokens[2], rtype, type, strcmp(tokens[1], "*") ? tokens[1] : NULL, 0)))
+	    if((ret = cli_parse_add((*engine)->root[0], tokens[3], tokens[2], rtype, type, strcmp(tokens[1], "*") ? tokens[1] : NULL, 0, options)))
 		break;
 
 	} else if(atoi(tokens[0]) == 0) { /* memcmp() */
@@ -973,7 +1010,7 @@ static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	}
 	size = atoi(pt);
 
-	if(!(new->virname = cli_strdup(tokens[2]))) {
+	if(!(new->virname = cli_virname((char *) tokens[2], options & CL_DB_OFFICIAL, 0))) {
 	    free(new->pattern);
 	    free(new);
 	    ret = CL_EMALFDB;
@@ -1059,9 +1096,9 @@ static int cli_loadmd(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 	    break;
 	}
 
-	if(!(new->virname = cli_strtok(buffer, 0, ":"))) {
+	if(!(new->virname = cli_virname(cli_strtok(buffer, 0, ":"), options & CL_DB_OFFICIAL, 1))) {
 	    free(new);
-	    ret = CL_EMALFDB;
+	    ret = CL_EMEM;
 	    break;
 	}
 

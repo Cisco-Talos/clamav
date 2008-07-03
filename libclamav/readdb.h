@@ -51,7 +51,7 @@
 	cli_strbcasestr(ext, ".cld")		\
     )
 
-int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint16_t rtype, uint16_t type, const char *offset, uint8_t target);
+char *cli_virname(char *virname, unsigned int official, unsigned int allocated);
 
 int cli_initengine(struct cl_engine **engine, unsigned int options);
 

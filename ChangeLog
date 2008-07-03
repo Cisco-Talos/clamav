@@ -1,3 +1,7 @@
+Thu Jul  3 12:47:38 CEST 2008 (tk)
+----------------------------------
+  * libclamav: add ".UNOFFICIAL" suffix to 3rd party signatures (bb#1061)
+
 Wed Jul  2 13:24:25 CEST 2008 (tk)
 ----------------------------------
   * sigtool/sigtool.c: make use of the UNLINK command in cdiffs (bb#1080)
