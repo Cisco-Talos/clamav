@@ -119,6 +119,8 @@ int dlp_is_valid_cc(const unsigned char *buffer, int length)
     int sum = 0;
     int i = 0;
     int val = 0;
+    int digits = 0;
+    char prefix[4];
     
     if(buffer == NULL || length < 13)
         return 0;
@@ -127,17 +129,21 @@ int dlp_is_valid_cc(const unsigned char *buffer, int length)
      * credit cards
      * reference => http://www.beachnet.com/~hstiles/cardtype.html
      */
-    if(buffer[0] > '6')
+    if(buffer[0] > '6' || buffer[0] == 0)
         return 0;
         
-    if(length > 16)
-        length = 16;
+    if(length > 19)
+        length = 19;
 
     for(i = length - 1; i > -1; i--)
     {
         if(isdigit(buffer[i]) == 0)
             continue;
-        
+
+	if(digits < 4)
+	    prefix[digits] = buffer[i];
+
+	digits++;
         val = buffer[i] - '0';
         
         if(even)
@@ -148,8 +154,62 @@ int dlp_is_valid_cc(const unsigned char *buffer, int length)
         even = !even;
         sum += val;
     }
-    
-    return (sum % 10 == 0);
+
+    if((sum % 10 != 0) || (digits < 13))
+	return 0;
+
+    if(digits == 13) /* VISA */
+    {
+	if(prefix[0] == '4')
+	    return 1;
+    }
+    else if(digits == 14) /* Diners Club */
+    {
+	if(prefix[0] == '3' && (prefix[1] == '6' || prefix[1] == '8'))
+	{
+	    return 1;
+	}
+	else if(prefix[0] == '3' && prefix[1] == '0')
+	{
+	    val = prefix[2] - '0';
+	    if(val >= 0 && val <= 5)
+		return 1;
+	}
+    }
+    else if(digits == 15)
+    {
+	if(prefix[0] == '3' && (prefix[1] == '4' || prefix[1] == '7')) /*AMEX*/
+	{
+	    return 1;
+	}
+	else if(!strncmp(prefix, "2131", 4) || !strncmp(prefix, "1800", 4))
+	{ /* JCB  */
+	    return 1;
+	}
+    }
+    else if(digits == 16)
+    {
+	if(prefix[0] == '3') /* JCB */
+	{
+	    return 1;
+	}
+	else if(prefix[0] == '4') /* VISA */
+	{
+	    return 1;
+	}
+	else if(prefix[0] == '5') /* MASTERCARD */
+	{
+	    val = prefix[1] - '0';
+	    if(val >= 1 && val <= 5)
+		return 1;
+	}
+	else if(!strncmp(prefix, "6011", 4)) /* Discover */
+	{
+	    return 1;
+	} 
+    }
+
+    return 0;
 }
 
 static int contains_cc(const unsigned char *buffer, int length, int detmode)

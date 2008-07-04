@@ -1,3 +1,7 @@
+Fri Jul  4 14:21:12 CEST 2008 (tk)
+----------------------------------
+  * libclamav/dlp.c: improve detection of credit card numbers (bb#941)
+
 Thu Jul  3 16:02:03 EEST 2008 (edwin)
 -------------------------------------
   * libclamav/scanners.c: add missing check for file open failure (bb #1083).
