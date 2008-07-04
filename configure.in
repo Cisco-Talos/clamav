@@ -962,6 +962,10 @@ AM_CONDITIONAL([ENABLE_UNRAR],[test "$want_unrar" = "yes"])
 
 if test "$have_pthreads" = "yes"
 then
+    save_LIBS="$LIBS"
+    LIBS="$THREAD_LIBS $LIBS"
+    AC_CHECK_FUNCS([sched_yield pthread_yield])
+    LIBS="$save_LIBS"
     AC_DEFINE([BUILD_CLAMD], 1, "build clamd")
 fi
 

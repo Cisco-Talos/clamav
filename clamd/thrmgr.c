@@ -344,8 +344,12 @@ static void *thrmgr_worker(void *arg)
 		if (job_data) threadpool->handler(job_data);
 		if (threadpool->state == POOL_STOP) break;
 	}
-	
+
+#ifdef HAVE_PTHREAD_YIELD
 	pthread_yield(); /* do not remove on premptive kernel e.g linux 2.6 */
+#elif HAVE_SCHED_YIELD
+	sched_yield();
+#endif
 	pthread_cleanup_pop(1);
 	return NULL;
 }

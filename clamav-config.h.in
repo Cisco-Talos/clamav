@@ -210,6 +210,9 @@
 /* "pragma pack hppa/hp-ux style" */
 #undef HAVE_PRAGMA_PACK_HPPA
 
+/* Define to 1 if you have the `pthread_yield' function. */
+#undef HAVE_PTHREAD_YIELD
+
 /* Define to 1 if you have the <pwd.h> header file. */
 #undef HAVE_PWD_H
 
@@ -227,6 +230,9 @@
 
 /* Define signed right shift implementation */
 #undef HAVE_SAR
+
+/* Define to 1 if you have the `sched_yield' function. */
+#undef HAVE_SCHED_YIELD
 
 /* Define to 1 if you have the `sendmsg' function. */
 #undef HAVE_SENDMSG
