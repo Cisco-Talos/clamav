@@ -38,6 +38,7 @@
 #include <sys/mman.h>
 #define _XOPEN_SOURCE 600
 #include <math.h>
+#include <gnutls/x509.h>
 
 #include "cltypes.h"
 #include "clamav.h"
@@ -371,7 +372,6 @@ static void cli_parseres(uint32_t base, uint32_t rva, uint8_t *src, struct cli_e
 
     if(level>2 || !*maxres) return;
     *maxres-=1;
-    cli_errmsg("in parseres %u\n", *maxres);
     if (err || !CLI_ISCONTAINED(src, fsize, resdir, 16)) return;
     named = (uint16_t)cli_readint16(resdir+12);
     unnamed = (uint16_t)cli_readint16(resdir+14);
@@ -1400,7 +1400,7 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 	}
 
 	err = 0;
-	if(dirs[0].Size) {
+	if(dirs[0].Size) { /* EXPORTS */
 	    uint8_t *expdir = src + cli_rawaddr(EC32(dirs[0].VirtualAddress), exe_sections, nsections, &err, fsize, hdr_size);
 	    while (!err) {
 		uint32_t base, funcs, names;
@@ -1438,7 +1438,7 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 	    }
 	}
 
-	if(checksum) {
+	if(checksum) { /* CHKSUM */
 	    uint32_t sum=0;
 	    for(i=0; i<fsize; i+=2) {
 		sum+=(uint16_t)cli_readint16(&src[i]);
@@ -1457,7 +1457,7 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 	} else checksum=-1;
 
 
-	if(dirs[2].Size) {
+	if(dirs[2].Size) { /* IMPORTS */
 	    uint32_t types[19], tot=0, m=10000;
 	    memset(types, 0, sizeof(types));
 	    cli_parseres(EC32(dirs[2].VirtualAddress), EC32(dirs[2].VirtualAddress), src, exe_sections, nsections, fsize, hdr_size, 0, 0, types, &m);
@@ -1493,6 +1493,35 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 			types[11], types[12], types[13], types[14], types[15], types[16], types[17], types[18],
 			peid);
 		cli_query(ctx->cid, query);
+	    }
+	}
+
+	err = 0;
+	cli_errmsg("SECURITY: %x\n", EC32(dirs[4].VirtualAddress));
+	if(dirs[4].Size && CLI_ISCONTAINED(src, fsize, src+EC32(dirs[4].VirtualAddress), 8)) { /* SECURITY */
+	    uint8_t *wincert = src+EC32(dirs[4].VirtualAddress);
+	    uint32_t certlen = cli_readint32(wincert);
+	    cli_errmsg("here1\n %x (%x) %x %x\n", certlen, fsize-((char *)wincert-src), cli_readint16(wincert+4), cli_readint16(wincert+6));
+	    if(certlen>8 &&
+	       cli_readint16(wincert+4)==0x0200 && /* REVISION 200 */
+	       cli_readint16(wincert+6)==2 && /* TYPE 2 */
+	       CLI_ISCONTAINED(src, fsize, (char *)wincert, certlen)
+	       ) {
+		gnutls_pkcs7_t pkcs7;
+		gnutls_datum_t rawpkcs7 = { wincert+8, certlen-8 }
+		gnutls_global_init();
+		cli_errmsg("here2\n");
+		if((err=gnutls_pkcs7_init(&pkcs7))==GNUTLS_E_SUCCESS) {
+		    cli_errmsg("here3\n");
+		    if((err = gnutls_pkcs7_import(pkcs7, &rawpkcs7, GNUTLS_X509_FMT_DER))==GNUTLS_E_SUCCESS) {
+			cli_errmsg("Found %d certs\n", gnutls_pkcs7_get_crt_count(pkcs7));
+		    } else {
+			cli_errmsg("error2 %d\n", err);
+		    }
+		} else {
+		    cli_errmsg("error1 %d\n", err);
+		}
+		write(creat("/tmp/mycert", 0600), wincert+8, certlen-8);
 	    }
 	}
 

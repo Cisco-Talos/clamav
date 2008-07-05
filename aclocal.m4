@@ -7631,6 +7631,7 @@ AC_SUBST([am__untar])
 
 m4_include([m4/acinclude.m4])
 m4_include([m4/fdpassing.m4])
+m4_include([m4/gnutls.m4])
 m4_include([m4/lib-link.m4])
 m4_include([m4/lib-prefix.m4])
 m4_include([m4/mysql.m4])

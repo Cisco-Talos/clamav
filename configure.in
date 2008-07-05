@@ -1394,6 +1394,7 @@ AC_MSG_RESULT([$have_signed_rightshift_extended]);
 AC_C_FDPASSING
 
 AC_C_MYSQL
+AC_C_GNUTLS
 LIBS="$LIBS -lm"
 
 AC_OUTPUT([
