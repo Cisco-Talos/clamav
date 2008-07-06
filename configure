@@ -19588,13 +19588,13 @@ fi
 
 
 
-		{ echo "$as_me:$LINENO: checking for gnutls_pkcs7_import in -lgnutls" >&5
-echo $ECHO_N "checking for gnutls_pkcs7_import in -lgnutls... $ECHO_C" >&6; }
-if test "${ac_cv_lib_gnutls_gnutls_pkcs7_import+set}" = set; then
+		{ echo "$as_me:$LINENO: checking for BIO_new in -lssl" >&5
+echo $ECHO_N "checking for BIO_new in -lssl... $ECHO_C" >&6; }
+if test "${ac_cv_lib_ssl_BIO_new+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lgnutls  $LIBS"
+LIBS="-lssl  $LIBS"
 cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
@@ -19608,11 +19608,11 @@ cat >>conftest.$ac_ext <<_ACEOF
 #ifdef __cplusplus
 extern "C"
 #endif
-char gnutls_pkcs7_import ();
+char BIO_new ();
 int
 main ()
 {
-return gnutls_pkcs7_import ();
+return BIO_new ();
   ;
   return 0;
 }
@@ -19635,40 +19635,40 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
 	 test ! -s conftest.err
        } && test -s conftest$ac_exeext &&
        $as_test_x conftest$ac_exeext; then
-  ac_cv_lib_gnutls_gnutls_pkcs7_import=yes
+  ac_cv_lib_ssl_BIO_new=yes
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-	ac_cv_lib_gnutls_gnutls_pkcs7_import=no
+	ac_cv_lib_ssl_BIO_new=no
 fi
 
 rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
       conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ echo "$as_me:$LINENO: result: $ac_cv_lib_gnutls_gnutls_pkcs7_import" >&5
-echo "${ECHO_T}$ac_cv_lib_gnutls_gnutls_pkcs7_import" >&6; }
-if test $ac_cv_lib_gnutls_gnutls_pkcs7_import = yes; then
-  LIBS="$LIBS -lgnutls"
+{ echo "$as_me:$LINENO: result: $ac_cv_lib_ssl_BIO_new" >&5
+echo "${ECHO_T}$ac_cv_lib_ssl_BIO_new" >&6; }
+if test $ac_cv_lib_ssl_BIO_new = yes; then
+  LIBS="$LIBS -lssl"
 else
-  { { echo "$as_me:$LINENO: error: Please install libgnutls-dev" >&5
-echo "$as_me: error: Please install libgnutls-dev" >&2;}
+  { { echo "$as_me:$LINENO: error: Please install openssl-dev" >&5
+echo "$as_me: error: Please install openssl-dev" >&2;}
    { (exit 1); exit 1; }; }
 fi
 
-	if test "${ac_cv_header_gnutls_x509_h+set}" = set; then
-  { echo "$as_me:$LINENO: checking for gnutls/x509.h" >&5
-echo $ECHO_N "checking for gnutls/x509.h... $ECHO_C" >&6; }
-if test "${ac_cv_header_gnutls_x509_h+set}" = set; then
+	if test "${ac_cv_header_openssl_x509_h+set}" = set; then
+  { echo "$as_me:$LINENO: checking for openssl/x509.h" >&5
+echo $ECHO_N "checking for openssl/x509.h... $ECHO_C" >&6; }
+if test "${ac_cv_header_openssl_x509_h+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 fi
-{ echo "$as_me:$LINENO: result: $ac_cv_header_gnutls_x509_h" >&5
-echo "${ECHO_T}$ac_cv_header_gnutls_x509_h" >&6; }
+{ echo "$as_me:$LINENO: result: $ac_cv_header_openssl_x509_h" >&5
+echo "${ECHO_T}$ac_cv_header_openssl_x509_h" >&6; }
 else
   # Is the header compilable?
-{ echo "$as_me:$LINENO: checking gnutls/x509.h usability" >&5
-echo $ECHO_N "checking gnutls/x509.h usability... $ECHO_C" >&6; }
+{ echo "$as_me:$LINENO: checking openssl/x509.h usability" >&5
+echo $ECHO_N "checking openssl/x509.h usability... $ECHO_C" >&6; }
 cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
@@ -19676,7 +19676,7 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 $ac_includes_default
-#include <gnutls/x509.h>
+#include <openssl/x509.h>
 _ACEOF
 rm -f conftest.$ac_objext
 if { (ac_try="$ac_compile"
@@ -19708,15 +19708,15 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 echo "${ECHO_T}$ac_header_compiler" >&6; }
 
 # Is the header present?
-{ echo "$as_me:$LINENO: checking gnutls/x509.h presence" >&5
-echo $ECHO_N "checking gnutls/x509.h presence... $ECHO_C" >&6; }
+{ echo "$as_me:$LINENO: checking openssl/x509.h presence" >&5
+echo $ECHO_N "checking openssl/x509.h presence... $ECHO_C" >&6; }
 cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
-#include <gnutls/x509.h>
+#include <openssl/x509.h>
 _ACEOF
 if { (ac_try="$ac_cpp conftest.$ac_ext"
 case "(($ac_try" in
@@ -19749,25 +19749,25 @@ echo "${ECHO_T}$ac_header_preproc" >&6; }
 # So?  What about this header?
 case $ac_header_compiler:$ac_header_preproc:$ac_c_preproc_warn_flag in
   yes:no: )
-    { echo "$as_me:$LINENO: WARNING: gnutls/x509.h: accepted by the compiler, rejected by the preprocessor!" >&5
-echo "$as_me: WARNING: gnutls/x509.h: accepted by the compiler, rejected by the preprocessor!" >&2;}
-    { echo "$as_me:$LINENO: WARNING: gnutls/x509.h: proceeding with the compiler's result" >&5
-echo "$as_me: WARNING: gnutls/x509.h: proceeding with the compiler's result" >&2;}
+    { echo "$as_me:$LINENO: WARNING: openssl/x509.h: accepted by the compiler, rejected by the preprocessor!" >&5
+echo "$as_me: WARNING: openssl/x509.h: accepted by the compiler, rejected by the preprocessor!" >&2;}
+    { echo "$as_me:$LINENO: WARNING: openssl/x509.h: proceeding with the compiler's result" >&5
+echo "$as_me: WARNING: openssl/x509.h: proceeding with the compiler's result" >&2;}
     ac_header_preproc=yes
     ;;
   no:yes:* )
-    { echo "$as_me:$LINENO: WARNING: gnutls/x509.h: present but cannot be compiled" >&5
-echo "$as_me: WARNING: gnutls/x509.h: present but cannot be compiled" >&2;}
-    { echo "$as_me:$LINENO: WARNING: gnutls/x509.h:     check for missing prerequisite headers?" >&5
-echo "$as_me: WARNING: gnutls/x509.h:     check for missing prerequisite headers?" >&2;}
-    { echo "$as_me:$LINENO: WARNING: gnutls/x509.h: see the Autoconf documentation" >&5
-echo "$as_me: WARNING: gnutls/x509.h: see the Autoconf documentation" >&2;}
-    { echo "$as_me:$LINENO: WARNING: gnutls/x509.h:     section \"Present But Cannot Be Compiled\"" >&5
-echo "$as_me: WARNING: gnutls/x509.h:     section \"Present But Cannot Be Compiled\"" >&2;}
-    { echo "$as_me:$LINENO: WARNING: gnutls/x509.h: proceeding with the preprocessor's result" >&5
-echo "$as_me: WARNING: gnutls/x509.h: proceeding with the preprocessor's result" >&2;}
-    { echo "$as_me:$LINENO: WARNING: gnutls/x509.h: in the future, the compiler will take precedence" >&5
-echo "$as_me: WARNING: gnutls/x509.h: in the future, the compiler will take precedence" >&2;}
+    { echo "$as_me:$LINENO: WARNING: openssl/x509.h: present but cannot be compiled" >&5
+echo "$as_me: WARNING: openssl/x509.h: present but cannot be compiled" >&2;}
+    { echo "$as_me:$LINENO: WARNING: openssl/x509.h:     check for missing prerequisite headers?" >&5
+echo "$as_me: WARNING: openssl/x509.h:     check for missing prerequisite headers?" >&2;}
+    { echo "$as_me:$LINENO: WARNING: openssl/x509.h: see the Autoconf documentation" >&5
+echo "$as_me: WARNING: openssl/x509.h: see the Autoconf documentation" >&2;}
+    { echo "$as_me:$LINENO: WARNING: openssl/x509.h:     section \"Present But Cannot Be Compiled\"" >&5
+echo "$as_me: WARNING: openssl/x509.h:     section \"Present But Cannot Be Compiled\"" >&2;}
+    { echo "$as_me:$LINENO: WARNING: openssl/x509.h: proceeding with the preprocessor's result" >&5
+echo "$as_me: WARNING: openssl/x509.h: proceeding with the preprocessor's result" >&2;}
+    { echo "$as_me:$LINENO: WARNING: openssl/x509.h: in the future, the compiler will take precedence" >&5
+echo "$as_me: WARNING: openssl/x509.h: in the future, the compiler will take precedence" >&2;}
     ( cat <<\_ASBOX
 ## -------------------------------------- ##
 ## Report this to http://bugs.clamav.net/ ##
@@ -19776,22 +19776,22 @@ _ASBOX
      ) | sed "s/^/$as_me: WARNING:     /" >&2
     ;;
 esac
-{ echo "$as_me:$LINENO: checking for gnutls/x509.h" >&5
-echo $ECHO_N "checking for gnutls/x509.h... $ECHO_C" >&6; }
-if test "${ac_cv_header_gnutls_x509_h+set}" = set; then
+{ echo "$as_me:$LINENO: checking for openssl/x509.h" >&5
+echo $ECHO_N "checking for openssl/x509.h... $ECHO_C" >&6; }
+if test "${ac_cv_header_openssl_x509_h+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  ac_cv_header_gnutls_x509_h=$ac_header_preproc
+  ac_cv_header_openssl_x509_h=$ac_header_preproc
 fi
-{ echo "$as_me:$LINENO: result: $ac_cv_header_gnutls_x509_h" >&5
-echo "${ECHO_T}$ac_cv_header_gnutls_x509_h" >&6; }
+{ echo "$as_me:$LINENO: result: $ac_cv_header_openssl_x509_h" >&5
+echo "${ECHO_T}$ac_cv_header_openssl_x509_h" >&6; }
 
 fi
-if test $ac_cv_header_gnutls_x509_h = yes; then
+if test $ac_cv_header_openssl_x509_h = yes; then
   :
 else
-  { { echo "$as_me:$LINENO: error: Please install libgnutls-dev" >&5
-echo "$as_me: error: Please install libgnutls-dev" >&2;}
+  { { echo "$as_me:$LINENO: error: Please install openssl-dev" >&5
+echo "$as_me: error: Please install openssl-dev" >&2;}
    { (exit 1); exit 1; }; }
 fi
 

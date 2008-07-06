@@ -38,7 +38,7 @@
 #include <sys/mman.h>
 #define _XOPEN_SOURCE 600
 #include <math.h>
-#include <gnutls/x509.h>
+#include <openssl/x509.h>
 
 #include "cltypes.h"
 #include "clamav.h"
@@ -1507,19 +1507,15 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 	       cli_readint16(wincert+6)==2 && /* TYPE 2 */
 	       CLI_ISCONTAINED(src, fsize, (char *)wincert, certlen)
 	       ) {
-		gnutls_pkcs7_t pkcs7;
-		gnutls_datum_t rawpkcs7 = { wincert+8, certlen-8 }
-		gnutls_global_init();
-		cli_errmsg("here2\n");
-		if((err=gnutls_pkcs7_init(&pkcs7))==GNUTLS_E_SUCCESS) {
-		    cli_errmsg("here3\n");
-		    if((err = gnutls_pkcs7_import(pkcs7, &rawpkcs7, GNUTLS_X509_FMT_DER))==GNUTLS_E_SUCCESS) {
-			cli_errmsg("Found %d certs\n", gnutls_pkcs7_get_crt_count(pkcs7));
-		    } else {
-			cli_errmsg("error2 %d\n", err);
+		BIO *bio = BIO_new_mem_buf(wincert+8, certlen-8);
+		if(bio) {
+		    PKCS7 *pkcs7 = d2i_PKCS7_bio(bio, NULL);
+		    if(pkcs7) {
+			cli_errmsg("here2: %d\n", OBJ_obj2nid(pkcs7->type));
+			if (OBJ_obj2nid(pkcs7->type) == NID_pkcs7_signed) {
+			    cli_errmsg("here3: found %d certs\n", sk_X509_num(pkcs7->d.sign->cert));
+			}
 		    }
-		} else {
-		    cli_errmsg("error1 %d\n", err);
 		}
 		write(creat("/tmp/mycert", 0600), wincert+8, certlen-8);
 	    }
