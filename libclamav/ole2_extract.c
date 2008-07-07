@@ -1050,7 +1050,8 @@ int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx, struct uniq **vb
 	  cli_dbgmsg("OLE2: no VBA projects found\n");
 	  /* PASS 2/B : OTF scan */
 	  file_count = 0;
-	  ret = ole2_walk_property_tree(fd, &hdr, NULL, 0, handler_otf, 0, &file_count, ctx, &scansize2);
+	  if(ctx)
+	    ret = ole2_walk_property_tree(fd, &hdr, NULL, 0, handler_otf, 0, &file_count, ctx, &scansize2);
 	}
 
 abort:
