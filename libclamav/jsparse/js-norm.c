@@ -1266,6 +1266,7 @@ int cli_js_init(struct parser_state *state)
 	return CL_SUCCESS;
 }
 
+#if 0
 int main(int argc,char** argv)
 {
 	int n;
@@ -1287,6 +1288,7 @@ int main(int argc,char** argv)
 	cli_js_destroy(&state);
 	return 0;
 }
+#endif
 
 /* TODO: special identifiers in global scope (document, ...) 
  *
