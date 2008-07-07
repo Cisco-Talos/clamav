@@ -983,7 +983,7 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 			    }
 			} else {
 			    if (S_ISREG (statbuf.st_mode)) {
-			        struct uniq *vba;
+			        struct uniq *vba = NULL;
 				tmpdir = getenv ("TMPDIR");
 
 				if (tmpdir == NULL)
@@ -1012,7 +1012,8 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 				    return ret;
 				}
 
-				sigtool_vba_scandir (dir, hex_output, vba);
+				if(vba)
+				    sigtool_vba_scandir (dir, hex_output, vba);
 
 				cli_rmdirs (dir);
 				free (dir);

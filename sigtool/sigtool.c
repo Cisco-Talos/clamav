@@ -1178,7 +1178,7 @@ static int vbadump(struct optstruct *opt)
 	int fd, hex_output;
 	char *dir;
 	const char *pt;
-	struct uniq *vba;
+	struct uniq *vba = NULL;
 
 
     if(opt_check(opt, "vba-hex")) {
