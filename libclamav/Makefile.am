@@ -188,7 +188,10 @@ libclamav_la_SOURCES = \
 	textnorm.c \
 	textnorm.h \
 	dlp.c \
-	dlp.h
+	dlp.h \
+	jsparse/js-norm.c \
+	jsparse/js-norm.h \
+	jsparse/lexglobal.h
 
 libclamav_internal_utils_la_SOURCES=str.c \
 				    str.h \
@@ -199,4 +202,33 @@ libclamav_internal_utils_la_LDFLAGS=-static
 libclamav_internal_utils_la_CFLAGS=-DCLI_MEMFUNSONLY
 lib_LTLIBRARIES = libclamav.la
 noinst_LTLIBRARIES = libclamav_internal_utils.la
-EXTRA_DIST = regex/engine.c libclamav.map
+EXTRA_DIST = regex/engine.c libclamav.map jsparse-keywords.gperf \
+	     jsparse-operators.h jsparse-keywords.h jsparse/future_reserved_words\
+	     jsparse/keywords jsparse/special_keywords jsparse/operators.gperf
+
+if MAINTAINER_MODE
+BUILT_SOURCES=jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
+
+GPERF_FLAGS=-E -t -L ANSI-C -C -F ', TOK_ERROR' -c
+
+jsparse-keywords.gperf: jsparse/keywords.list jsparse/future_reserved_words.list jsparse/special_keywords.list
+	echo -e "struct keyword { const char *name; int val; };\n%%" >keywords-g-tmp
+	for i in `cat @srcdir@/jsparse/keywords.list`; do j=`echo $$i |tr \[a-z\] \[A-Z\]`; echo "$$i, TOK_$$j" >>keywords-g-tmp; done
+	for i in `cat @srcdir@/jsparse/future_reserved_words.list`; do echo "$$i, TOK_FUTURE_RESERVED_WORD" >>keywords-g-tmp; done
+	cat @srcdir@/jsparse/special_keywords.list >>keywords-g-tmp
+	mv keywords-g-tmp $@
+
+jsparse/generated/operators.h: jsparse/operators.gperf
+	$(GPERF) $(GPERF_FLAGS) -H op_hash -N in_op_set -W oplist $< >operators-tmp-g
+	grep -v '^#line' <operators-tmp-g | sed -e 's/^const struct/static const struct/' -e 's/register //g' >operators-tmp
+	rm operators-tmp-g
+	mv operators-tmp @srcdir@/jsparse/generated/operators.h
+
+jsparse/generated/keywords.h: jsparse-keywords.gperf
+	$(GPERF) $(GPERF_FLAGS) $< >keywords-tmp-g
+	grep -v '^#line' <keywords-tmp-g |  sed -e 's/^const struct/static const struct/' -e 's/register //g' >keywords-tmp
+	rm keywords-tmp-g
+	mv keywords-tmp @srcdir@/jsparse/generated/keywords.h
+
+CLEANFILES=jsparse-keywords.gperf @srcdir@/jsparse/generated/operators.h @srcdir@/jsparse/generated/keywords.h
+endif

@@ -1,3 +1,7 @@
+Mon Jul  7 21:42:18 EEST 2008 (edwin)
+-------------------------------------
+  * build system, libclamav/jsparse: add Javascript normalizer (not yet enabled)
+
 Mon Jul  7 15:41:02 CEST 2008 (tk)
 ----------------------------------
   * libclamav/ole2_extract.c, sigtool: make sigtool compatible with the new
