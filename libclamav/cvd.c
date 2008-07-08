@@ -214,11 +214,13 @@ static int cli_tgzload(int fd, struct cl_engine **engine, unsigned int *signo, u
 	    cli_errmsg("cli_tgzload: Can't gzdopen() descriptor %d, errno = %d\n", fdd, errno);
 	    return CL_EIO;
 	}
+	dbio.fs = NULL;
     } else {
 	if((dbio.fs = fdopen(fdd, "rb")) == NULL) {
 	    cli_errmsg("cli_tgzload: Can't fdopen() descriptor %d, errno = %d\n", fdd, errno);
 	    return CL_EIO;
 	}
+	dbio.gzs = NULL;
     }
 
     while(1) {

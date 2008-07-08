@@ -1,8 +1,7 @@
-0.93.1
+0.93.3
 ------
 
-This version improves handling of PDF, CAB, RTF, OLE2 and HTML files
-and includes various bugfixes for 0.93 issues.
+This release fixes a problem in handling of .cld files introduced in 0.93.2.
 
 --
 The ClamAV team (http://www.clamav.net/team)

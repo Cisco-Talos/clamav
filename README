@@ -2,6 +2,26 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+
+0.93.3
+------
+
+This release fixes a problem in handling of .cld files introduced in 0.93.2.
+
+--
+The ClamAV team (http://www.clamav.net/team)
+
+
+0.93.2
+------
+
+This release fixes and re-enables the Petite unpacker, improves database
+loading and solves some other minor issues.
+
+--
+The ClamAV team (http://www.clamav.net/team)
+
+
 0.93.1
 ------
 

@@ -1,7 +1,29 @@
+Mon Jul  7 19:31:24 CEST 2008
+-----------------------------
+  * 0.93.3: fix handling of .cld files
+
+Mon Jul  7 15:48:48 CEST 2008
+-----------------------------
+  * 0.93.2
+
 Mon Jul  7 15:41:02 CEST 2008 (tk)
 ----------------------------------
   * libclamav/ole2_extract.c, sigtool: make sigtool compatible with the new
 				       OLE2 scan scheme (bb#1086)
+
+Mon Jul  7 15:41:02 CEST 2008 (tk)
+----------------------------------
+  * libclamav/ole2_extract.c, sigtool: make sigtool compatible with the new
+				       OLE2 scan scheme (bb#1086)
+
+Thu Jul  3 16:15:23 CEST 2008
+-----------------------------
+  * libclamav/petite.c: fix another out of bounds memory read (bb#1000)
+			Reported by Secunia (CVE-2008-2713)
+
+Thu Jul  3 16:04:01 CEST 2008
+-----------------------------
+  * clamd/others.c: add missing checks for recv() failures (bb#1079)
 
 Thu Jul  3 16:02:03 EEST 2008 (edwin)
 -------------------------------------
