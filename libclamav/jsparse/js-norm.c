@@ -19,7 +19,13 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
+#ifdef HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
 
+#ifndef CL_DEBUG
+#define NDEBUG
+#endif
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -1007,6 +1013,7 @@ static void run_decoders(struct parser_state *state)
 
 void cli_js_parse_done(struct parser_state* state)
 {
+	cli_dbgmsg(MODULE "in cli_js_parse_done()\n");
 	run_folders(&state->tokens);
 	run_decoders(state);
 
@@ -1015,13 +1022,27 @@ void cli_js_parse_done(struct parser_state* state)
 }
 
 
-void cli_js_output(struct parser_state *state)
+void cli_js_output(struct parser_state *state, const char *tempdir)
 {
 	unsigned i;
 	struct buf buf;
 	char lastchar = '\0';
+	char *name;
+	char filename[1024];
+
+	snprintf(filename, 1024, "%s/javascript", tempdir);
+
 	buf.pos = 0;
-	buf.outfd = STDOUT_FILENO;
+	buf.outfd = open(filename, O_CREAT | O_WRONLY, 0600);
+	if(buf.outfd < 0) {
+		cli_errmsg(MODULE "cannot open output file for writing: %s\n", filename);
+		return;
+	}
+	/* append to file */
+	if(lseek(buf.outfd, 0, SEEK_END) != 0) {
+		/* separate multiple scripts with \n */
+		buf_outc('\n', &buf);
+	}
 	state->current = state->global;
 	for(i = 0; i < state->tokens.cnt; i++) {
 		if(state_update_scope(state, &state->tokens.data[i]))
@@ -1030,6 +1051,8 @@ void cli_js_output(struct parser_state *state)
 	if(write(buf.outfd, buf.buf, buf.pos) < 0) {
 		cli_dbgmsg(MODULE "I/O error");
 	}
+	close(buf.outfd);
+	cli_dbgmsg(MODULE "dumped/appended normalized script to: %s\n",filename);
 }
 
 void cli_js_destroy(struct parser_state *state)
@@ -1040,6 +1063,10 @@ void cli_js_destroy(struct parser_state *state)
 		free_token(&state->tokens.data[i]);
 	}
 	free(state->tokens.data);
+	/* detect use after free */
+	memset(state, 0x55, sizeof(*state));
+	free(state);
+	cli_dbgmsg(MODULE "cli_js_destroy() done\n");
 }
 
 /* buffer is html-normlike "chunk", if original file is bigger than buffer,
@@ -1207,7 +1234,7 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
 				TOKEN_SET(&val, scope, state->current);
 				break;
 			case TOK_StringLiteral:
-				if(state->tokens.data[state->tokens.cnt-1].type == TOK_PLUS) {
+				if(state->tokens.cnt > 0 && state->tokens.data[state->tokens.cnt-1].type == TOK_PLUS) {
 					/* see if can fold */
 					yystype *prev_string = &state->tokens.data[state->tokens.cnt-2];
 					if(prev_string->type == TOK_StringLiteral) {
@@ -1248,22 +1275,25 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
 	yy_delete_buffer(yyb, state->scanner);
 }
 
-int cli_js_init(struct parser_state *state)
+struct parser_state *cli_js_init(void)
 {
+	struct parser_state *state = cli_calloc(1, sizeof(*state));
 	if(!state)
-		return CL_ENULLARG;
-	memset(state, 0, sizeof(*state));
+		return NULL;
 	if(!scope_new(state)) {
-		return CL_EMEM;
+		free(state);
+		return NULL;
 	}
 	state->global = state->current;
 
 	if(yylex_init(&state->scanner)) {
 		scope_done(state->global);
-		return CL_EMEM;
+		free(state);
+		return NULL;
 	}
 	yyset_debug(1, state->scanner);
-	return CL_SUCCESS;
+	cli_dbgmsg(MODULE "cli_js_init() done\n");
+	return state;
 }
 
 #if 0

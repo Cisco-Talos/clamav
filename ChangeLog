@@ -1,3 +1,8 @@
+Tue Jul  8 14:06:05 EEST 2008 (edwin)
+-------------------------------------
+  * libclamav/dconf.[ch], htmlnorm.c, jsparse/js-norm.[ch], scanners.c:
+	  enable JS normalizer 
+
 Mon Jul  7 21:42:18 EEST 2008 (edwin)
 -------------------------------------
   * build system, libclamav/jsparse: add Javascript normalizer (not yet enabled)

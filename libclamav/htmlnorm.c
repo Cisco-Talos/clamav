@@ -54,6 +54,7 @@ typedef enum {
 #include "blob.h"
 
 #include "entconv.h"
+#include "jsparse/js-norm.h"
 
 #define HTML_STR_LENGTH 1024
 #define MAX_TAG_CONTENTS_LENGTH HTML_STR_LENGTH
@@ -514,8 +515,10 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	unsigned char entity_val[HTML_STR_LENGTH+1];
 	size_t entity_val_length = 0;
 	const int dconf_entconv = dconf && dconf->phishing&PHISHING_CONF_ENTCONV;
+	const int dconf_js = dirname && dconf && dconf->doc&DOC_CONF_JSNORM; /* TODO */
 	/* dconf for phishing engine sets scanContents, so no need for a flag here */
-
+	struct parser_state *js_state = NULL;
+	const unsigned char *js_begin, *js_end = NULL;
 
 	tag_args.scanContents=0;/* do we need to store the contents of <a></a>?*/
 	if (!m_area) {
@@ -935,7 +938,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					state = HTML_SKIP_WS;
 					next_state = HTML_NORM;
 					if (strcmp(tag, "/script") == 0) {
-						in_script=FALSE;
+						in_script = FALSE;
+						js_end = ptr;
 						/*don't output newlines in nocomment.html
 						 * html_output_c(file_buff_o2, '\n');*/
 					}
@@ -969,6 +973,13 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						html_output_tag(file_buff_o2, tag, &tag_args);
 					} else {
 						in_script = TRUE;
+						if(dconf_js && !js_state) {
+							js_state = cli_js_init();
+							if(!js_state) {
+								cli_dbgmsg("htmlnorm: Failed to initialize js parser");
+							}
+							js_begin = ptr;
+						}
 					}
 				} else if (hrefs) {
 					if(in_ahref && !href_contents_begin)
@@ -1500,6 +1511,23 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 			/* end of line, append contents now, resume on next line */
 			html_tag_contents_append(hrefs,in_ahref,href_contents_begin,ptr);
 		ptrend = NULL;
+
+		if(js_state) {
+			if(!js_begin)
+				js_begin = line;
+			if(!js_end)
+				js_end = ptr;
+			if(js_end > js_begin)
+				cli_js_process_buffer(js_state, js_begin, js_end - js_begin);
+			js_begin = js_end = NULL;
+			if(!in_script) {
+				/*  we found a /script, normalize script now */
+				cli_js_parse_done(js_state);
+				cli_js_output(js_state, dirname);
+				cli_js_destroy(js_state);
+				js_state = NULL;
+			}
+		}
 		free(line);
 		ptr = line = cli_readchunk(stream_in, m_area, 8192);
 	}
@@ -1529,6 +1557,10 @@ abort:
 	if (in_ahref) /* tag not closed, force closing */
 		html_tag_contents_done(hrefs,in_ahref);
 
+	if(js_state) {
+		cli_js_destroy(js_state);
+		js_state = NULL;
+	}
 	html_tag_arg_free(&tag_args);
 	if (!m_area) {
 		fclose(stream_in);

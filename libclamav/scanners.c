@@ -964,6 +964,15 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
 	    }
     }
 
+    if(ret == CL_CLEAN) {
+	    snprintf(fullname, 1024, "%s/javascript", tempname);
+	    fd = open(fullname, O_RDONLY|O_BINARY);
+	    if(fd >= 0) {
+		    ret = cli_scandesc(fd, ctx, CL_TYPE_SCRIPT, 0, NULL, AC_SCAN_VIR);
+		    close(fd);
+	    }
+    }
+
     if (ret == CL_CLEAN) {
 	snprintf(fullname, 1024, "%s/rfc2397", tempname);
 	ret = cli_scandir(fullname, ctx, 0);
