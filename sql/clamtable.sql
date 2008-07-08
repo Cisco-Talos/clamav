@@ -1,4 +1,5 @@
 DROP TABLE IF EXISTS disasm;
+DROP TABLE IF EXISTS icons;
 DROP TABLE IF EXISTS exports;
 DROP TABLE IF EXISTS imports;
 DROP TABLE IF EXISTS sections;
@@ -163,5 +164,12 @@ CREATE TABLE `disasm` (
   PRIMARY KEY  (`did`),
   KEY `ref` (`ref`),
   CONSTRAINT `disasm` FOREIGN KEY (`ref`) REFERENCES `pes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+CREATE TABLE `icons` (
+  `ref` bigint(20) unsigned NOT NULL,
+  `hash` char(32) NOT NULL,
+  KEY `ref` (`ref`),
+  CONSTRAINT `icons` FOREIGN KEY (`ref`) REFERENCES `pes` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 

@@ -365,7 +365,7 @@ static int cli_ddump(int desc, int offset, int size, const char *file) {
 */
 
 
-static void cli_parseres(uint32_t base, uint32_t rva, uint8_t *src, struct cli_exe_section *exe_sections, uint16_t nsections, size_t fsize, uint32_t hdr_size, unsigned int level, uint32_t type, uint32_t *types, unsigned int *maxres) {
+static void cli_parseres(MYSQL *cid, my_ulonglong peid, uint32_t base, uint32_t rva, uint8_t *src, struct cli_exe_section *exe_sections, uint16_t nsections, size_t fsize, uint32_t hdr_size, unsigned int level, uint32_t type, uint32_t *types, unsigned int *maxres) {
     unsigned int err = 0, i;
     uint8_t *entry, *resdir = src + cli_rawaddr(rva, exe_sections, nsections, &err, fsize, hdr_size);
     uint16_t named, unnamed;
@@ -382,7 +382,7 @@ static void cli_parseres(uint32_t base, uint32_t rva, uint8_t *src, struct cli_e
 	id = cli_readint32(entry);
 	offs = cli_readint32(entry+4);
 	if(offs>>31)
-	    cli_parseres(base, base + (offs&0x7fffffff), src, exe_sections, nsections, fsize, hdr_size, level+1, type, types, maxres);
+	    cli_parseres(cid, peid, base, base + (offs&0x7fffffff), src, exe_sections, nsections, fsize, hdr_size, level+1, type, types, maxres);
 	else if(level==2)
 	    types[type]++;
 	entry+=8;
@@ -416,9 +416,32 @@ static void cli_parseres(uint32_t base, uint32_t rva, uint8_t *src, struct cli_e
 	}
 	offs = cli_readint32(entry+4);
 	if(offs>>31)
-	    cli_parseres(base, base + (offs&0x7fffffff), src, exe_sections, nsections, fsize, hdr_size, level+1, type, types, maxres);
-	else
-	    if(level==2) types[type]++;
+	    cli_parseres(cid, peid, base, base + (offs&0x7fffffff), src, exe_sections, nsections, fsize, hdr_size, level+1, type, types, maxres);
+	else {
+	    if(level==2) {
+		types[type]++;
+		if (type==3) {
+		    uint8_t *icon = src + cli_rawaddr(base + offs, exe_sections, nsections, &err, fsize, hdr_size);
+		    if(!err && CLI_ISCONTAINED(src, fsize, icon, 16)) {
+			uint32_t isz = cli_readint32(icon+4);
+			icon = src + cli_rawaddr(cli_readint32(icon), exe_sections, nsections, &err, fsize, hdr_size);
+			if(!err && CLI_ISCONTAINED(src, fsize, icon, isz)) {
+			    cli_md5_ctx md5;
+			    unsigned char digest[16], md5_hex[33];
+			    char query[128];
+			    
+			    cli_md5_init(&md5);
+			    cli_md5_update(&md5, icon, isz);
+			    cli_md5_final(digest, &md5);
+			    for(i=0; i<16; i++) sprintf(md5_hex+i*2,"%02x",digest[i]);
+			    md5_hex[32]='\0';
+			    sprintf(query, "INSERT INTO icons (ref, hash) VALUES ('%llu', '%s')", peid, md5_hex);
+			    cli_query(cid, query);
+			}
+		    }
+		}
+	    }
+	}
 	entry+=8;
     }
 }
@@ -1460,7 +1483,7 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 	if(dirs[2].Size) { /* IMPORTS */
 	    uint32_t types[19], tot=0, m=10000;
 	    memset(types, 0, sizeof(types));
-	    cli_parseres(EC32(dirs[2].VirtualAddress), EC32(dirs[2].VirtualAddress), src, exe_sections, nsections, fsize, hdr_size, 0, 0, types, &m);
+	    cli_parseres(ctx->cid, peid, EC32(dirs[2].VirtualAddress), EC32(dirs[2].VirtualAddress), src, exe_sections, nsections, fsize, hdr_size, 0, 0, types, &m);
 	    for(i=0; i<(sizeof(types)/sizeof(types[0])); i++) {
 		tot+=types[i];
 	    }
@@ -1508,14 +1531,24 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 	       CLI_ISCONTAINED(src, fsize, (char *)wincert, certlen)
 	       ) {
 		BIO *bio = BIO_new_mem_buf(wincert+8, certlen-8);
+		BIO *out=BIO_new(BIO_s_file());
+		BIO_set_fp(out,stdout,BIO_NOCLOSE);
 		if(bio) {
 		    PKCS7 *pkcs7 = d2i_PKCS7_bio(bio, NULL);
-		    if(pkcs7) {
+		    if(pkcs7 && pkcs7->d.sign->cert) {
 			cli_errmsg("here2: %d\n", OBJ_obj2nid(pkcs7->type));
 			if (OBJ_obj2nid(pkcs7->type) == NID_pkcs7_signed) {
-			    cli_errmsg("here3: found %d certs\n", sk_X509_num(pkcs7->d.sign->cert));
+			    int i, certs = sk_X509_num(pkcs7->d.sign->cert);
+			    cli_errmsg("here3: found %d certs\n", certs);
+			    for(i=0; i<certs; i++) {
+				X509 *c = sk_X509_value(pkcs7->d.sign->cert,i);
+				cli_errmsg("here4: -- %d --\n", i);
+				X509_print(out, c);
+			    }
 			}
 		    }
+		    if(pkcs7) PKCS7_free(pkcs7);
+		    BIO_free(bio);
 		}
 		write(creat("/tmp/mycert", 0600), wincert+8, certlen-8);
 	    }
