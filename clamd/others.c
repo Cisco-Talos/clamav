@@ -362,6 +362,8 @@ int readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeou
 	break;
     }
     n = recv(sockfd, buf, size, MSG_PEEK);
+    if(n < 0)
+	return -1;
     if(read_command) {
 	if((n >= 1) && (buf[0] == 'n')) { /* Newline delimited command */
 	    force_delim = 1;
@@ -408,6 +410,8 @@ int readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeou
 	if(n == 0)
 	    break;
     }
+    if(n < 0)
+	return -1;
     n += boff;
     if(read_command) {
 	if((n >= 1) && (buf[0] == 'n')) { /* Need to strip leading 'n' from command to attain standard command */

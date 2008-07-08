@@ -1,3 +1,12 @@
+Tue Jul  8 17:54:19 CEST 2008
+-----------------------------
+  * libclamav/petite.c: fix another out of bounds memory read (bb#1000)
+			Reported by Secunia (CVE-2008-2713)
+
+Tue Jul  8 17:54:12 CEST 2008
+-----------------------------
+  * clamd/others.c: add missing checks for recv() failures (bb#1079)
+
 Tue Jul  8 14:06:05 EEST 2008 (edwin)
 -------------------------------------
   * libclamav/dconf.[ch], htmlnorm.c, jsparse/js-norm.[ch], scanners.c:

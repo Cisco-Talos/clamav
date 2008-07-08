@@ -1286,6 +1286,8 @@ int lzx_decompress(struct lzx_stream *lzx, off_t out_bytes) {
 	    }
 	    else {
 	      runsrc = rundest - match_offset;
+	      if(i > (int) lzx->window_size - window_posn)
+	        i = lzx->window_size - window_posn;
 	      while (i-- > 0) *rundest++ = *runsrc++;
 	    }
 
@@ -1900,6 +1902,8 @@ int qtm_decompress(struct qtm_stream *qtm, off_t out_bytes) {
 	}
 	else {
 	  runsrc = rundest - match_offset;
+	  if(i > (int) qtm->window_size - window_posn)
+	    i = qtm->window_size - window_posn;
 	  while (i-- > 0) *rundest++ = *runsrc++;
 	}
 	window_posn += match_length;
