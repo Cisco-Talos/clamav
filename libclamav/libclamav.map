@@ -80,6 +80,8 @@ CLAMAV_PRIVATE {
     cli_js_parse_done;
     cli_js_destroy;
     cli_js_output;
+    cli_unescape;
+    cli_textbuffer_append_normalize;
   local:
     *;
 };

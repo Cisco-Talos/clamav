@@ -726,7 +726,7 @@ static inline size_t output_utf8(uint16_t u, unsigned char* dst)
 	return 3;
 }
 
-static void textbuffer_append_normalize(struct text_buffer *buf, const char *str, size_t len)
+void cli_textbuffer_append_normalize(struct text_buffer *buf, const char *str, size_t len)
 {
 	size_t i;
 	for(i=0;i < len;i++) {
@@ -781,7 +781,7 @@ static void textbuffer_append_normalize(struct text_buffer *buf, const char *str
 }
 
 
-static char *cli_unescape(const char *str)
+char *cli_unescape(const char *str)
 {
 	char *R;
 	size_t k, i=0;
@@ -789,6 +789,8 @@ static char *cli_unescape(const char *str)
 	/* unescaped string is at most as long as original,
 	 * it will usually be shorter */
 	R = cli_malloc(len + 1);
+	if(!R)
+		return NULL;
 	for(k=0;k < len;k++) {
 		unsigned char c = str[k];
 		if (str[k] == '%') {
@@ -807,12 +809,10 @@ static char *cli_unescape(const char *str)
 			}
 		}
 		if(!c) c = 1; /* don't add \0 */
-		/* TODO: if c >= 0x80 output UTF-8, and do the same in
-		 * normalize_string, and interpret the full %u sequence ! */
 		R[i++] = c;
 	}
 	R[i++] = '\0';
-	R = cli_realloc(R, i);
+	R = cli_realloc2(R, i);
 	return R;
 }
 
@@ -1406,7 +1406,7 @@ static inline int parseString(YYSTYPE *lvalp, yyscan_t scanner, const char q,
 		break;
 	} while (1);
 	len = (end && end > start) ? end - start : scanner->insize - scanner->pos;
-	textbuffer_append_normalize(&scanner->buf, start, len);
+	cli_textbuffer_append_normalize(&scanner->buf, start, len);
 	if(end) {
 		/* skip over end quote */
 		scanner->pos += len + 1;
