@@ -49,7 +49,8 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_check_clamav_OBJECTS = check_clamav-check_clamav.$(OBJEXT)
+am_check_clamav_OBJECTS = check_clamav-check_clamav.$(OBJEXT) \
+	check_clamav-check_jsnorm.$(OBJEXT)
 check_clamav_OBJECTS = $(am_check_clamav_OBJECTS)
 check_clamav_DEPENDENCIES = $(top_builddir)/libclamav/libclamav.la
 check_clamav_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -200,7 +201,7 @@ target_os = @target_os@
 target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-check_clamav_SOURCES = check_clamav.c $(top_builddir)/libclamav/clamav.h
+check_clamav_SOURCES = check_clamav.c check_jsnorm.c $(top_builddir)/libclamav/clamav.h
 check_clamav_CFLAGS = 
 check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @LCHECK@
 all: all-am
@@ -275,6 +276,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_clamav-check_clamav.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_clamav-check_jsnorm.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -310,6 +312,20 @@ check_clamav-check_clamav.obj: check_clamav.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_clamav.c' object='check_clamav-check_clamav.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(check_clamav_CFLAGS) $(CFLAGS) -c -o check_clamav-check_clamav.obj `if test -f 'check_clamav.c'; then $(CYGPATH_W) 'check_clamav.c'; else $(CYGPATH_W) '$(srcdir)/check_clamav.c'; fi`
+
+check_clamav-check_jsnorm.o: check_jsnorm.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(check_clamav_CFLAGS) $(CFLAGS) -MT check_clamav-check_jsnorm.o -MD -MP -MF $(DEPDIR)/check_clamav-check_jsnorm.Tpo -c -o check_clamav-check_jsnorm.o `test -f 'check_jsnorm.c' || echo '$(srcdir)/'`check_jsnorm.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/check_clamav-check_jsnorm.Tpo $(DEPDIR)/check_clamav-check_jsnorm.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_jsnorm.c' object='check_clamav-check_jsnorm.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(check_clamav_CFLAGS) $(CFLAGS) -c -o check_clamav-check_jsnorm.o `test -f 'check_jsnorm.c' || echo '$(srcdir)/'`check_jsnorm.c
+
+check_clamav-check_jsnorm.obj: check_jsnorm.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(check_clamav_CFLAGS) $(CFLAGS) -MT check_clamav-check_jsnorm.obj -MD -MP -MF $(DEPDIR)/check_clamav-check_jsnorm.Tpo -c -o check_clamav-check_jsnorm.obj `if test -f 'check_jsnorm.c'; then $(CYGPATH_W) 'check_jsnorm.c'; else $(CYGPATH_W) '$(srcdir)/check_jsnorm.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/check_clamav-check_jsnorm.Tpo $(DEPDIR)/check_clamav-check_jsnorm.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_jsnorm.c' object='check_clamav-check_jsnorm.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(check_clamav_CFLAGS) $(CFLAGS) -c -o check_clamav-check_jsnorm.obj `if test -f 'check_jsnorm.c'; then $(CYGPATH_W) 'check_jsnorm.c'; else $(CYGPATH_W) '$(srcdir)/check_jsnorm.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

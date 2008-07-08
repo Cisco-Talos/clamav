@@ -75,6 +75,11 @@ CLAMAV_PRIVATE {
     cli_strtokbuf;
     cli_leavetemps_flag;
     uniq_get;
+    cli_js_init;
+    cli_js_process_buffer;
+    cli_js_parse_done;
+    cli_js_destroy;
+    cli_js_output;
   local:
     *;
 };

@@ -1,3 +1,10 @@
+Tue Jul  8 21:33:32 EEST 2008 (edwin)
+-------------------------------------
+  * libclamav/Makefile.am, libclamav/jsparse, unit_test/:
+	add all needed files to EXTRA_DIST (to fix make distcheck)
+	create unit tests for js normalizer
+	cleanups
+
 Tue Jul  8 17:54:19 CEST 2008
 -----------------------------
   * libclamav/petite.c: fix another out of bounds memory read (bb#1000)

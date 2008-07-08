@@ -1,5 +1,5 @@
 /* ANSI-C code produced by gperf version 3.0.3 */
-/* Command-line: gperf -E -t -L ANSI-C -C -F ', TOK_ERROR' -c -H op_hash -N in_op_set -W oplist ../../../trunk/libclamav/jsparse/operators.gperf  */
+/* Command-line: gperf -E -t -L ANSI-C -C -F ', TOK_ERROR' -c -H op_hash -N in_op_set -W oplist ../../../../trunk/libclamav/jsparse/operators.gperf  */
 /* Computed positions: -k'1,$' */
 
 #if !((' ' == 32) && ('!' == 33) && ('"' == 34) && ('#' == 35) \

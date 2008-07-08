@@ -300,6 +300,7 @@ int main(int argc, char **argv)
     Suite *s = test_cl_suite();
     SRunner *sr = srunner_create(s);
     srunner_add_suite(sr, test_cli_suite());
+    srunner_add_suite(sr, test_jsnorm_suite());
 
     srunner_set_log(sr, "test.log");
     srunner_run_all(sr, CK_NORMAL);

@@ -138,7 +138,6 @@ static int vtype_compatible(enum val_type orig, enum val_type req)
 {
 	return orig == req || (orig == vtype_string && req == vtype_cstring);
 }
-#define COMPATIBLE(SRC, VTYPE) ((SRC)->vtype == vtype_##VTYPE || )
 
 #define TOKEN_GET(SRC, VTYPE) (vtype_compatible((SRC)->vtype, vtype_##VTYPE) ? (SRC)->val.VTYPE : VTYPE##_invalid)
 

@@ -43,6 +43,7 @@
 #include "js-norm.h"
 #include "jsparse/generated/operators.h"
 #include "jsparse/generated/keywords.h"
+#include "jsparse/textbuf.h"
 
 /* ----------- tokenizer ---------------- */
 enum tokenizer_state {
@@ -55,11 +56,6 @@ enum tokenizer_state {
 	Identifier
 };
 
-struct text_buffer {
-	char *data;
-	size_t pos;
-	size_t capacity;
-};
 
 typedef struct scanner {
 	enum tokenizer_state state;
@@ -510,38 +506,6 @@ static inline char *textbuffer_done(yyscan_t scanner)
 	return str;
 }
 
-static inline int textbuffer_ensure_capacity(struct text_buffer *txtbuf, size_t len)
-{
-	if (txtbuf->pos + len > txtbuf->capacity) {
-		char *d;
-		txtbuf->capacity = MAX(txtbuf->pos + len, txtbuf->capacity + 4096);
-		d = cli_realloc(txtbuf->data, txtbuf->capacity);
-		if(!d)
-			return -1;
-		txtbuf->data = d;
-	}
-	return 0;
-}
-
-static inline void textbuffer_append_len(struct text_buffer *txtbuf, const char *s, size_t len)
-{
-	textbuffer_ensure_capacity(txtbuf, len);
-	memcpy(&txtbuf->data[txtbuf->pos], s, len);
-	txtbuf->pos += len;
-}
-
-
-static inline void textbuffer_append(struct text_buffer *txtbuf, const char *s)
-{
-	size_t len = strlen(s);
-	textbuffer_append_len(txtbuf, s, len);
-}
-
-static inline void textbuffer_putc(struct text_buffer *txtbuf, const char c)
-{
-	textbuffer_ensure_capacity(txtbuf, 1);
-	txtbuf->data[txtbuf->pos++] = c;
-}
 #define MODULE "JS-Norm: "
 
 static void free_token(yystype *token)
@@ -1425,7 +1389,6 @@ static void textbuf_clean(struct text_buffer *buf)
 	}
 	buf->pos = 0;
 }
-
 
 static inline int parseString(YYSTYPE *lvalp, yyscan_t scanner, const char q,
 		enum tokenizer_state tostate)

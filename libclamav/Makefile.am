@@ -191,7 +191,8 @@ libclamav_la_SOURCES = \
 	dlp.h \
 	jsparse/js-norm.c \
 	jsparse/js-norm.h \
-	jsparse/lexglobal.h
+	jsparse/lexglobal.h \
+	jsparse/textbuf.h
 
 libclamav_internal_utils_la_SOURCES=str.c \
 				    str.h \
@@ -203,8 +204,8 @@ libclamav_internal_utils_la_CFLAGS=-DCLI_MEMFUNSONLY
 lib_LTLIBRARIES = libclamav.la
 noinst_LTLIBRARIES = libclamav_internal_utils.la
 EXTRA_DIST = regex/engine.c libclamav.map jsparse-keywords.gperf \
-	     jsparse-operators.h jsparse-keywords.h jsparse/future_reserved_words\
-	     jsparse/keywords jsparse/special_keywords jsparse/operators.gperf
+	     jsparse/generated/operators.h jsparse/generated/keywords.h jsparse/future_reserved_words.list\
+	     jsparse/keywords.list jsparse/special_keywords.list jsparse/operators.gperf
 
 if MAINTAINER_MODE
 BUILT_SOURCES=jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
