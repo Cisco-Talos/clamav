@@ -1377,47 +1377,92 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 	if(dirs[1].Size) {
 	    uint32_t isize=EC32(dirs[1].Size);
 	    uint8_t *itrunk = src + cli_rawaddr(EC32(dirs[1].VirtualAddress), exe_sections, nsections, &err, fsize, hdr_size);
+	    MYSQL_STMT *prep;
+	    MYSQL_BIND mbind[4];
+	    const char *sprep = "INSERT INTO imports VALUES (?, LCASE(?), ?, LCASE(?))";
+	    char udll[256];
+	    unsigned long dlllen, funclen;
+	    short funcord;
+
+	    if (!(prep = mysql_stmt_init(ctx->cid))) abort();
+	    if (mysql_stmt_prepare(prep, sprep, strlen(sprep))) { cli_errmsg("error %s\n", mysql_stmt_error(prep));  abort(); }
+
+	    memset(mbind, 0, sizeof(mbind));
+	    mbind[0].buffer_type = MYSQL_TYPE_LONGLONG;
+	    mbind[0].buffer = (char *)&peid;
+	    mbind[0].is_null = 0;
+
+	    mbind[1].buffer_type = MYSQL_TYPE_STRING;
+	    mbind[1].buffer = (char *)escaped;
+	    mbind[1].is_null = 0;
+	    mbind[1].length = &dlllen;
+
+	    mbind[2].buffer_type = MYSQL_TYPE_SHORT;
+	    mbind[2].buffer = (char *)&funcord;
+	    mbind[2].is_null = 0;
+
+	    mbind[3].buffer_type = MYSQL_TYPE_STRING;
+	    mbind[3].buffer = (char *)udll;
+	    mbind[3].is_null = 0;
+	    mbind[3].length = &funclen;
+	    
+	    if (mysql_stmt_bind_param(prep, mbind)) { cli_errmsg("error %s\n", mysql_stmt_error(prep));  abort(); }
 
 	    while(!err && isize>=5*4 && CLI_ISCONTAINED(src, fsize, (char *)itrunk, 5*4)) {
-	       char udll[256], efun[512], *dllname, *fun;
+	       char efun[512], *dllname, *fun;
 	       uint32_t misc;
-
+ 
 	       if(!cli_readint32(itrunk+12)) break;
 	       dllname = src + cli_rawaddr(cli_readint32(itrunk+12), exe_sections, nsections, &err, fsize, hdr_size);
 	       if(err) break;
 	       misc = (fsize < (dllname - src) || (fsize - (dllname - src) >= 255)) ? 255 : (fsize - (dllname - src));
 	       strncpy(udll, dllname, misc);
 	       udll[misc]='\0';
-	       mysql_real_escape_string(ctx->cid, escaped, udll, strlen(udll));
-	       cli_dbgmsg("Imports from %s\n", udll);
+/* 	       mysql_real_escape_string(ctx->cid, escaped, udll, strlen(udll)); */
 
+	       strcpy(escaped, udll); // removeme
+
+	       cli_dbgmsg("Imports from %s\n", udll);
 	       misc = cli_rawaddr(cli_readint32(itrunk), exe_sections, nsections, &err, fsize, hdr_size);
 	       if(!misc || err || !CLI_ISCONTAINED(src, fsize, src+misc, 4))
 		   misc = cli_rawaddr(cli_readint32(itrunk+16), exe_sections, nsections, &err, fsize, hdr_size);
 	       if(err) break;
 	       dllname = src + misc;
 
+	       dlllen = strlen(escaped);
+
 	       while(CLI_ISCONTAINED(src, fsize, dllname, 4) && (misc = cli_readint32(dllname))) {
 		   if(misc&0x80000000) {
-		       sprintf(query, "INSERT INTO imports VALUES (%llu, LCASE('%s'), %u, '')", peid, escaped, misc&0xffff);
-		       cli_dbgmsg("   -%04x\n", misc&~0x80000000);
+/* 		       sprintf(query, "INSERT INTO imports VALUES (%llu, LCASE('%s'), %u, '')", peid, escaped, misc&0xffff); */
+ 		       cli_dbgmsg("   -%04x\n", misc&~0x80000000);
+		       funcord = misc&0xffff;
+		       *udll='\0';
+		       funclen = 0;
 		   } else {		   
 		       fun = src + cli_rawaddr(misc+2, exe_sections, nsections, &err, fsize, hdr_size);
 		       if(err) break;
 		       misc = (fsize < (fun - src) || (fsize - (fun - src) >= 255)) ? 255 : (fsize - (fun - src));
 		       strncpy(udll, fun, misc);
 		       udll[misc]='\0';
-		       mysql_real_escape_string(ctx->cid, efun, udll, strlen(udll));
-		       sprintf(query, "INSERT INTO imports VALUES (%llu, LCASE('%s'), 0, LCASE('%s'))", peid, escaped, efun);
+
+/* 		       mysql_real_escape_string(ctx->cid, efun, udll, strlen(udll)); */
+/* 		       sprintf(query, "INSERT INTO imports VALUES (%llu, LCASE('%s'), 0, LCASE('%s'))", peid, escaped, efun); */
 		       cli_dbgmsg("   -%s\n", udll);
+
+		       funcord = 0;
+		       funclen = misc;
 		   }
-		   cli_query(ctx->cid, query);
+/* 		   cli_query(ctx->cid, query); */
+		   
+		   if (mysql_stmt_execute(prep)) { cli_errmsg("error %s\n", mysql_stmt_error(prep));  abort(); }
+
 		   dllname+=4;
 		   j++;
 	       }
 	       isize-=5*4;
 	       itrunk+=5*4;
 	    }
+	    mysql_stmt_close(prep);
 	}
 
 	err = 0;

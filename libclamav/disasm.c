@@ -1653,19 +1653,45 @@ void disasmbuf(uint8_t *buff, unsigned int len, cli_ctx *ctx, my_ulonglong peid)
   unsigned int counter=0;
   struct DISASMED s;
 
+  MYSQL_STMT *prep;
+  MYSQL_BIND mbind[4];
+  const char *sprep = "INSERT INTO disasm (ref, op) VALUES (?, ?)";
+  unsigned long oplen;
+  
+  if (!(prep = mysql_stmt_init(ctx->cid))) abort();
+  if (mysql_stmt_prepare(prep, sprep, strlen(sprep))) { cli_errmsg("error %s\n", mysql_stmt_error(prep));  abort(); }
+
+  memset(mbind, 0, sizeof(mbind));
+  mbind[0].buffer_type = MYSQL_TYPE_LONGLONG;
+  mbind[0].buffer = (char *)&peid;
+  mbind[0].is_null = 0;
+
+  mbind[1].buffer_type = MYSQL_TYPE_STRING;
+  mbind[1].buffer = (char *)hr;
+  mbind[1].is_null = 0;
+  mbind[1].length = &oplen;
+
+  if (mysql_stmt_bind_param(prep, mbind)) { cli_errmsg("error %s\n", mysql_stmt_error(prep));  abort(); }
+
   while(len && counter++<200) {
     if(!(next = disasm_x86(next, len, &s))) {
+      mysql_stmt_close(prep); // removeme
       snprintf(query, 200, "INSERT INTO disasm (ref, op) VALUES (%llu, 'INVALID')", peid, hr);
       query[199]='\0';
       if(mysql_query(ctx->cid, query)) cli_errmsg("Failed to exec query:\n%s\nReason: %s\n", query, mysql_error(ctx->cid));
       return;
     }
     spam_x86(&s, hr);
-    snprintf(query, 200, "INSERT INTO disasm (ref, op) VALUES (%llu, '%s')", peid, hr);
-    query[199]='\0';
-    if(mysql_query(ctx->cid, query)) cli_errmsg("Failed to exec query:\n%s\nReason: %s\n", query, mysql_error(ctx->cid));
+/*     snprintf(query, 200, "INSERT INTO disasm (ref, op) VALUES (%llu, '%s')", peid, hr); */
+/*     query[199]='\0'; */
+/*     if(mysql_query(ctx->cid, query)) cli_errmsg("Failed to exec query:\n%s\nReason: %s\n", query, mysql_error(ctx->cid)); */
+    oplen = strlen(hr);
+
+    if (mysql_stmt_execute(prep)) { cli_errmsg("error %s\n", mysql_stmt_error(prep));  abort(); }
+
     len -= next-buff;
     buff=next;
   }
 
+  mysql_stmt_close(prep); // removeme
 }

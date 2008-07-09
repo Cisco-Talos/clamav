@@ -2107,7 +2107,6 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     /* connect to the sql server */
     if (!(ctx.cid=mysql_init(NULL)) ||
 	mysql_options(ctx.cid, MYSQL_READ_DEFAULT_GROUP, "clamav") || 
-	mysql_options(ctx.cid, MYSQL_OPT_COMPRESS) ||
 	!mysql_real_connect(ctx.cid, NULL, NULL, NULL, NULL, 0, NULL, 0)
 	) {
       cli_errmsg("cannot connect to mysql\n");
