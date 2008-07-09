@@ -70,7 +70,7 @@ CREATE TABLE `pes` (
   `rs_html` int(10) unsigned NOT NULL,
   `rs_manifest` int(10) unsigned NOT NULL,
   `signature_ok` tinyint(1) unsigned NOT NULL, -- TBD
-  `relocs` int(10) unsigned NOT NULL, -- TBD
+  `relocs` int(10) unsigned NOT NULL,
   `have_debug` tinyint(1) unsigned NOT NULL,
   `have_tls` tinyint(1) unsigned NOT NULL,
   `have_bounds` tinyint(1) unsigned NOT NULL,

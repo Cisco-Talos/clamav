@@ -522,7 +522,7 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 	uint16_t dllflags;
 	size_t overlays;
 	uint8_t epsect=255;
-	uint32_t checksum, imports=0, exports=0, relocs=0;
+	uint32_t checksum, imports=0, exports=0, relocs=0, security=0;
 	struct pe_image_data_dir *dirs;
 	struct DSTRIB dists;
 
@@ -1519,8 +1519,9 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 	if(dirs[5].Size) { /* BASERELOCS */
 	    uint32_t relocsize= EC32(dirs[5].Size);
 	    uint8_t *relocsdir = src + cli_rawaddr(EC32(dirs[5].VirtualAddress), exe_sections, nsections, &err, fsize, hdr_size);
-	    while(!err && relocsize > 8 && CLI_ISCONTAINED(src, fsize, (char *)relocsdir, relocsize)) {
+	    while(!err && relocsize > 8 && CLI_ISCONTAINED(src, fsize, (char *)relocsdir, 8)) {
 		uint32_t relocnt = cli_readint32(relocsdir+4);
+		if(relocnt<8 || !CLI_ISCONTAINED(src, fsize, (char *)relocsdir, relocnt)) break;
 		relocsize-=relocnt;
 		for(i=0; i<(relocnt - 8)/2; i++) {
 		    uint32_t fixup=cli_readint16(relocsdir+8+i*2);
@@ -1533,7 +1534,6 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 	}
 
 	err = 0;
-	cli_errmsg("SECURITY: %x\n", EC32(dirs[4].VirtualAddress));
 	if(dirs[4].Size && CLI_ISCONTAINED(src, fsize, src+EC32(dirs[4].VirtualAddress), 8)) { /* SECURITY */
 	    uint8_t *wincert = src+EC32(dirs[4].VirtualAddress);
 	    uint32_t certlen = cli_readint32(wincert);
@@ -1546,7 +1546,7 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 		BIO *bio = BIO_new_mem_buf(wincert+8, certlen-8);
 		BIO *out=BIO_new(BIO_s_file());
 		BIO_set_fp(out,stdout,BIO_NOCLOSE);
-		if(bio) {
+		if(bio && out) {
 		    PKCS7 *pkcs7 = d2i_PKCS7_bio(bio, NULL);
 		    if(pkcs7 && pkcs7->d.sign->cert) {
 			cli_errmsg("here2: %d\n", OBJ_obj2nid(pkcs7->type));
@@ -1557,13 +1557,15 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 				X509 *c = sk_X509_value(pkcs7->d.sign->cert,i);
 				cli_errmsg("here4: -- %d --\n", i);
 				X509_print(out, c);
+				security=1; /* FIXMEMETA */
 			    }
 			}
 		    }
 		    if(pkcs7) PKCS7_free(pkcs7);
-		    BIO_free(bio);
-		}
-		write(creat("/tmp/mycert", 0600), wincert+8, certlen-8);
+		} //signature_ok
+		if (out) BIO_free(out);
+		if (bio) BIO_free(bio);
+		/* write(creat("/tmp/mycert", 0600), wincert+8, certlen-8); */
 	    }
 	}
 
@@ -1572,7 +1574,7 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 	cli_errmsg("MMAP FAILED!!!\n");
 	abort();
     }
-    sprintf(query, "UPDATE pes set imports=(SELECT COUNT(*) FROM imports WHERE ref=%llu), exports=(SELECT COUNT(*) FROM exports WHERE ref=%llu), ep_section=%u, checksum_ok=%d, overlays=%lu, relocs=%u WHERE id=%llu", peid, peid, epsect, checksum, overlays, relocs, peid);
+    sprintf(query, "UPDATE pes set imports=(SELECT COUNT(*) FROM imports WHERE ref=%llu), exports=(SELECT COUNT(*) FROM exports WHERE ref=%llu), ep_section=%u, checksum_ok=%d, overlays=%lu, relocs=%u, signature_ok=%d WHERE id=%llu", peid, peid, epsect, checksum, overlays, relocs, security, peid);
     cli_query(ctx->cid, query);
 
     if(pe_plus) { /* Do not continue for PE32+ files */
@@ -1582,11 +1584,14 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 	return CL_CLEAN;
     }
 
-	mysql_commit(ctx->cid);
-	*rollback=0;
 
     lseek(desc, ep, SEEK_SET);
     epsize = cli_readn(desc, epbuff, 4096);
+
+    disasmbuf(epbuff, epsize, ctx, peid);
+
+    mysql_commit(ctx->cid);
+    *rollback=0;
 
     /* Attempt to detect some popular polymorphic viruses */
 
