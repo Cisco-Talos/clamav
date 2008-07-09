@@ -522,8 +522,7 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 	uint16_t dllflags;
 	size_t overlays;
 	uint8_t epsect=255;
-	uint32_t checksum;
-	uint32_t imports=0, exports=0;
+	uint32_t checksum, imports=0, exports=0, relocs=0;
 	struct pe_image_data_dir *dirs;
 	struct DSTRIB dists;
 
@@ -947,7 +946,6 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 	    "falign,"
 	    "sizeofhdr,"
 
-	    "relocs,"
 	    "have_debug,"
 	    "have_tls,"
 	    "have_bounds,"
@@ -991,7 +989,6 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 	    "%u," /* falign */
 	    "%u," /* sizeofhdr */
 
-	    "%u," /* relocs */ 
 	    "%u," /* have_debug */
 	    "%u," /* have_tls */
 	    "%u," /* have_bounds */
@@ -1034,7 +1031,6 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 	    falign, /* falign */
 	    hdr_size, /* sizeofhdr */
 
-	    ((dirs[5].VirtualAddress!=0) * dirs[5].Size/10), /* FIXMECOLLECT relocs */
 	    (dirs[6].VirtualAddress && dirs[6].Size), /* have_debug */
 	    (dirs[9].VirtualAddress && dirs[9].Size), /* have_tls */
 	    (dirs[11].VirtualAddress && dirs[11].Size), /* have_bounds */
@@ -1520,6 +1516,23 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 	}
 
 	err = 0;
+	if(dirs[5].Size) { /* BASERELOCS */
+	    uint32_t relocsize= EC32(dirs[5].Size);
+	    uint8_t *relocsdir = src + cli_rawaddr(EC32(dirs[5].VirtualAddress), exe_sections, nsections, &err, fsize, hdr_size);
+	    while(!err && relocsize > 8 && CLI_ISCONTAINED(src, fsize, (char *)relocsdir, relocsize)) {
+		uint32_t relocnt = cli_readint32(relocsdir+4);
+		relocsize-=relocnt;
+		for(i=0; i<(relocnt - 8)/2; i++) {
+		    uint32_t fixup=cli_readint16(relocsdir+8+i*2);
+		    uint32_t higlow=fixup>>12;
+		    fixup&=0xfff;
+		    if(fixup && higlow==3) relocs++;
+		}
+		relocsdir+=relocnt;
+	    }
+	}
+
+	err = 0;
 	cli_errmsg("SECURITY: %x\n", EC32(dirs[4].VirtualAddress));
 	if(dirs[4].Size && CLI_ISCONTAINED(src, fsize, src+EC32(dirs[4].VirtualAddress), 8)) { /* SECURITY */
 	    uint8_t *wincert = src+EC32(dirs[4].VirtualAddress);
@@ -1559,7 +1572,7 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 	cli_errmsg("MMAP FAILED!!!\n");
 	abort();
     }
-    sprintf(query, "UPDATE pes set imports=(SELECT COUNT(*) FROM imports WHERE ref=%llu), exports=(SELECT COUNT(*) FROM exports WHERE ref=%llu), ep_section=%u, checksum_ok=%d, overlays=%lu WHERE id=%llu", peid, peid, epsect, checksum, overlays, peid);
+    sprintf(query, "UPDATE pes set imports=(SELECT COUNT(*) FROM imports WHERE ref=%llu), exports=(SELECT COUNT(*) FROM exports WHERE ref=%llu), ep_section=%u, checksum_ok=%d, overlays=%lu, relocs=%u WHERE id=%llu", peid, peid, epsect, checksum, overlays, relocs, peid);
     cli_query(ctx->cid, query);
 
     if(pe_plus) { /* Do not continue for PE32+ files */
