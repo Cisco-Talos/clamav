@@ -962,7 +962,8 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 	    "dll_wdm,"
 	    "dll_ts,"
 
-	    "scandate"
+	    "scandate,"
+	    "datasource"
 
 	    ") VALUES ("
 
@@ -1005,7 +1006,8 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 	    "%u," /* dll_wdm */
 	    "%u," /* dll_ts */
 
-	    "NOW()" /*  -- scandate */
+	    "NOW()," /* scandate */
+	    "USER()" /* datasource */
 	    ")",
 	    escaped, /* fname */
 	    fsize, /* fsize */
