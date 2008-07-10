@@ -1586,6 +1586,7 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
 	char buff[512];
 	char *tmpname;
 
+	return CL_CLEAN; // removeme
 
     tmpname = cli_gentemp(NULL);
     if(!tmpname)
