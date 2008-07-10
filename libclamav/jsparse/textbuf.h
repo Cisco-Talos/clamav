@@ -19,23 +19,27 @@ static inline int textbuffer_ensure_capacity(struct text_buffer *txtbuf, size_t 
 	return 0;
 }
 
-static inline void textbuffer_append_len(struct text_buffer *txtbuf, const char *s, size_t len)
+static inline int textbuffer_append_len(struct text_buffer *txtbuf, const char *s, size_t len)
 {
-	textbuffer_ensure_capacity(txtbuf, len);
+	if(textbuffer_ensure_capacity(txtbuf, len) == -1)
+		return -1;
 	memcpy(&txtbuf->data[txtbuf->pos], s, len);
 	txtbuf->pos += len;
+	return 0;
 }
 
 
-static inline void textbuffer_append(struct text_buffer *txtbuf, const char *s)
+static inline int textbuffer_append(struct text_buffer *txtbuf, const char *s)
 {
 	size_t len = strlen(s);
-	textbuffer_append_len(txtbuf, s, len);
+	return textbuffer_append_len(txtbuf, s, len);
 }
 
-static inline void textbuffer_putc(struct text_buffer *txtbuf, const char c)
+static inline int textbuffer_putc(struct text_buffer *txtbuf, const char c)
 {
-	textbuffer_ensure_capacity(txtbuf, 1);
+	if(textbuffer_ensure_capacity(txtbuf, 1) == -1)
+		return -1;
 	txtbuf->data[txtbuf->pos++] = c;
+	return 0;
 }
 #endif

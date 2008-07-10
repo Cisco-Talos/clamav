@@ -44,4 +44,8 @@ const char *cli_memstr(const char *haystack, int hs, const char *needle, int ns)
 char *cli_strrcpy(char *dest, const char *source);
 void cli_strtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens);
 int cli_isnumber(const char *str);
+char *cli_unescape(const char *str);
+struct text_buffer;
+int  cli_textbuffer_append_normalize(struct text_buffer *buf, const char *str, size_t len);
+
 #endif

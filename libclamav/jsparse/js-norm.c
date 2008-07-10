@@ -677,147 +677,6 @@ static void handle_de(yystype *tokens, size_t start, const size_t cnt, const cha
 		res->pos_end++; /* ) */
 }
 
-/* --------- this should be in str.c -------------------------------- */
-static const int hex_chars[256] = {
-    -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-     0, 1, 2, 3,  4, 5, 6, 7,  8, 9,-1,-1, -1,-1,-1,-1,
-    -1,10,11,12, 13,14,15,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    -1,10,11,12, 13,14,15,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-    -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
-};
-
-static inline int cli_hex2int(const char c)
-{
-	return hex_chars[(const unsigned char)c];
-}
-
-static inline size_t output_utf8(uint16_t u, unsigned char* dst)
-{
-	if(!u) {
-		*dst = 0x1; /* don't add \0, add \1 instead */
-		return 1;
-	}
-	if(u < 0x80) {
-		*dst = u&0xff;
-		return 1;
-	}
-	if(u < 0x800) {
-		*dst++ = 0xc0 | (u>>6);   /* 110yyyyy */
-		*dst = 0x80 | (u & 0x3f); /* 10zzzzzz */
-		return 2;
-	}
-	/* u < 0x10000 because we only handle utf-16,
-	 * values in range 0xd800 - 0xdfff aren't valid, but we don't check for
-	 * that*/
-	*dst++ = 0xe0 | (u>>12);        /* 1110xxxx */
-	*dst++ = 0x80 | ((u>>6)&0x3f); /* 10yyyyyy */
-	*dst = 0x80 | (u & 0x3f);      /* 10zzzzzz */
-	return 3;
-}
-
-void cli_textbuffer_append_normalize(struct text_buffer *buf, const char *str, size_t len)
-{
-	size_t i;
-	for(i=0;i < len;i++) {
-		char c = str[i];
-		if (c == '\\' && i+1 < len) {
-			i++;
-			switch (str[i]) {
-				case '0':
-					c = 0;
-					break;
-				case 'b':
-					c = 8;
-					break;
-				case 't':
-					c = 9;
-					break;
-				case 'n':
-					c = 10;
-					break;
-				case 'v':
-					c = 11;
-					break;
-				case 'f':
-					c = 12;
-					break;
-				case 'r':
-					c=13;
-					break;
-				case 'x':
-					if(i+2 < len)
-						c = (cli_hex2int(str[i+1])<<4)|cli_hex2int(str[i+2]);
-					i += 2;
-					break;
-				case 'u':
-					if(i+4 < len) {
-						uint16_t u = (cli_hex2int(str[i+1])<<12) | (cli_hex2int(str[i+2])<<8) |
-							(cli_hex2int(str[i+3])<<4) | cli_hex2int(str[i+4]);
-						textbuffer_ensure_capacity(buf, 4);
-						buf->pos += output_utf8(u, (unsigned char*)buf->data);
-						i += 4;
-						continue;
-					}
-					break;
-				default:
-					c = str[i];
-					break;
-			}
-		}
-		if(!c) c = 1; /* we don't insert \0 */
-		textbuffer_putc(buf, c);
-	}
-}
-
-
-char *cli_unescape(const char *str)
-{
-	char *R;
-	size_t k, i=0;
-	const size_t len = strlen(str);
-	/* unescaped string is at most as long as original,
-	 * it will usually be shorter */
-	R = cli_malloc(len + 1);
-	if(!R)
-		return NULL;
-	for(k=0;k < len;k++) {
-		unsigned char c = str[k];
-		if (str[k] == '%') {
-			if(k+5 >= len || str[k+1] != 'u' || !isxdigit(str[k+2]) || !isxdigit(str[k+3])
-						|| !isxdigit(str[k+4]) || !isxdigit(str[k+5])) {
-				if(k+2 < len && isxdigit(str[k+1]) && isxdigit(str[k+2])) {
-					c = (cli_hex2int(str[k+1])<<4) | cli_hex2int(str[k+2]);
-					k += 2;
-				}
-			} else {
-				uint16_t u = (cli_hex2int(str[k+2])<<12) | (cli_hex2int(str[k+3])<<8) |
-					(cli_hex2int(str[k+4])<<4) | cli_hex2int(str[k+5]);
-				i += output_utf8(u, (unsigned char*)&R[i]);
-				k += 5;
-				continue;
-			}
-		}
-		if(!c) c = 1; /* don't add \0 */
-		R[i++] = c;
-	}
-	R[i++] = '\0';
-	R = cli_realloc2(R, i);
-	return R;
-}
-
-/* ------------ end of str.c ----------------- */
-
 static int handle_unescape(struct tokens *tokens, size_t start, const size_t cnt)
 {
 	if(tokens->data[start].type == TOK_StringLiteral) {
@@ -991,7 +850,6 @@ void cli_js_output(struct parser_state *state, const char *tempdir)
 	unsigned i;
 	struct buf buf;
 	char lastchar = '\0';
-	char *name;
 	char filename[1024];
 
 	snprintf(filename, 1024, "%s/javascript", tempdir);
@@ -1405,7 +1263,10 @@ static inline int parseString(YYSTYPE *lvalp, yyscan_t scanner, const char q,
 		}
 		break;
 	} while (1);
-	len = (end && end > start) ? end - start : scanner->insize - scanner->pos;
+	if(end && end > start)
+		len = end - start;
+	else
+		len = scanner->insize - scanner->pos;
 	cli_textbuffer_append_normalize(&scanner->buf, start, len);
 	if(end) {
 		/* skip over end quote */
