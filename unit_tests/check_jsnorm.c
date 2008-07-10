@@ -16,6 +16,7 @@
 #include "../libclamav/jsparse/textbuf.h"
 #include "../libclamav/jsparse/generated/keywords.h"
 #include "../libclamav/jsparse/generated/operators.h"
+#include "checks.h"
 
 struct test {
 	const char *str;
@@ -150,8 +151,6 @@ START_TEST (test_init_parse_destroy)
 }
 END_TEST
 
-
-Suite *test_jsnorm_suite(void);
 Suite *test_jsnorm_suite(void)
 {
     Suite *s = suite_create("jsnorm");

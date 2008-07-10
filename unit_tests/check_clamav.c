@@ -7,8 +7,9 @@
 #ifndef HAVE_CHECK
 int main(int argc, char **argv)
 {
-    printf("Unit tests disabled in build\n");
-    return 0;
+    puts("\n*** Unit tests disabled in this build\n*** Use ./configure --enable-check to enable them\n");
+    /* tell automake the test was skipped */
+    return 77;
 }
 #else
 
@@ -19,6 +20,7 @@ int main(int argc, char **argv)
 #include "../libclamav/clamav.h"
 #include "../libclamav/others.h"
 #include "../libclamav/matcher.h"
+#include "checks.h"
 
 /* extern void cl_free(struct cl_engine *engine); */
 START_TEST (test_cl_free)
@@ -307,7 +309,6 @@ int main(int argc, char **argv)
     srunner_run_all(sr, CK_NORMAL);
     nf = srunner_ntests_failed(sr);
     srunner_free(sr);
-
     return (nf == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 

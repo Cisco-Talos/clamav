@@ -13,6 +13,7 @@
 #include "../libclamav/others.h"
 #include "../libclamav/str.h"
 #include "../libclamav/jsparse/textbuf.h"
+#include "checks.h"
 
 START_TEST (test_unescape_simple)
 {
@@ -120,7 +121,6 @@ START_TEST (test_normalize)
 }
 END_TEST
 
-Suite *test_str_suite(void);
 Suite *test_str_suite(void)
 {
     Suite *s = suite_create("str");

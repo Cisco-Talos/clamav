@@ -1,3 +1,9 @@
+Thu Jul 10 16:02:50 EEST 2008 (edwin)
+------------------------------------
+ * unit_tests/:
+	avoid misleading message when unit tests are disabled (bb #1090)
+	fix some compiler warnings
+
 Tue Jul  8 21:33:32 EEST 2008 (edwin)
 -------------------------------------
   * libclamav/Makefile.am, libclamav/jsparse, unit_test/:
