@@ -1,3 +1,10 @@
+Thu Jul 10 19:41:37 EEST 2008 (edwin)
+-------------------------------------
+ * unit_tests/: add unit tests for binaries
+ * build system: enable unit tests by default (if check is available)
+		 add --enable-coverage to run gcov/lcov
+		 add --enable-tests-install to install test files 
+
 Thu Jul 10 16:02:50 EEST 2008 (edwin)
 ------------------------------------
  * unit_tests/:

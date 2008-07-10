@@ -317,26 +317,55 @@ AC_CHECK_FUNCS([poll setsid memcpy snprintf vsnprintf strerror_r strlcpy strlcat
 AC_FUNC_MMAP
 AC_FUNC_FSEEKO
 
-enable_check_ut=no
+enable_check_ut=auto
+enable_ut_install=no
 AC_ARG_ENABLE(check,
-[  --enable-check           Enable 'check' unit tests], enable_check_ut=yes, )
+[  --enable-check           Enable 'check' unit tests (default=auto)], enable_check_ut=$enableval, enable_check_ut="auto" )
 
 LCHECK=""
 if test "$enable_check_ut" != "no" ; then
-dnl    CFLAGS="$CFLAGS -fprofile-arcs -ftest-coverage"
-dnl    LDFLAGS="$LDFLAGS -lgcov"
-    AC_DEFINE([HAVE_CHECK], 1, [Enable 'check' unit tests])
-    AC_CHECK_HEADERS(check.h)
-    AC_CHECK_LIB(check, srunner_create, LCHECK="-lcheck", LCHECK="no")
+    AC_CHECK_HEADER(check.h,
+	[
+		AC_CHECK_LIB(check, srunner_create,
+			[
+				LCHECK="-lcheck";
+				AC_DEFINE([HAVE_CHECK], 1, [Enable 'check' unit tests])
+				AC_ARG_ENABLE(tests-install,
+					      AC_HELP_STRING([--enable-tests-install],
+					      [install unit tests
+					       @<:@default=no@:>@]),
+					       [enable_ut_install=$enableval],[enable_ut_install="no"])
+			 ], LCHECK="no")
+	],[LCHECK="no"])
 fi
 
-if test "$LCHECK" = "no"; then
+if test "$LCHECK" = "no" -a "$enable_check_ut"="yes"; then
     echo
     echo "   ERROR!  Check was configured, but not found.  Get it from http://check.sf.net/"
     exit 1
 fi
 
 AC_SUBST(LCHECK)
+AC_ARG_ENABLE(coverage,
+	      AC_HELP_STRING([--enable-coverage],
+			     [turn on test coverage
+			      @<:@default=no@:>@]),
+[enable_cov=$enableval],[enable_cov="no"])
+
+if test "x$enable_coverage" = "xyes"; then
+	if test "x$ac_compiler_gnu" != "xyes"; then
+		AC_MSG_ERROR([coverage testing only works if gcc is used])
+	fi
+
+	CFLAGS="$CFLAGS -fprofile-arcs -ftest-coverage"
+	LDFLAGS="$LDFLAGS -lgcov"
+fi
+
+AM_CONDITIONAL(ENABLE_COVERAGE, test "x$enable_coverage" = "xyes")
+AM_CONDITIONAL(ENABLE_UT_INSTALL, test "x$enable_ut_install" = "xyes")
+AC_CHECK_PROGS(GCOV, gcov, false)
+AC_CHECK_PROGS(LCOV, lcov, false)
+AC_CHECK_PROGS(GENHTML, genhtml, false)
 
 have_pthreads=no
 AC_CHECK_HEADER([pthread.h],[have_pthreads=yes],)
