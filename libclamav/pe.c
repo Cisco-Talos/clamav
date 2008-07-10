@@ -1450,7 +1450,7 @@ int cli_real_scanpe(int desc, cli_ctx *ctx, int *rollback)
 		       cli_dbgmsg("   -%s\n", udll);
 
 		       funcord = 0;
-		       funclen = misc;
+		       funclen = strlen(udll);
 		   }
 /* 		   cli_query(ctx->cid, query); */
 		   
