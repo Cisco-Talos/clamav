@@ -26,17 +26,21 @@
 #ifndef CL_DEBUG
 #define NDEBUG
 #endif
+
 #include <stdio.h>
+
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+#endif
 #include <fcntl.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
 #include <ctype.h>
 #include <assert.h>
+
 #define BUFS 65536
+
+#include "cltypes.h"
 #include "lexglobal.h"
 #include "hashtab.h"
 #include "others.h"
