@@ -35,6 +35,10 @@
 #include <fcntl.h>
 #include <time.h>
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 #include "mirman.h"
 
 #include "libclamav/cltypes.h"
@@ -94,7 +98,7 @@ int mirman_read(const char *file, struct mirdat *mdat, uint8_t active)
     return 0;
 }
 
-int mirman_check(uint32_t ip, struct mirdat *mdat)
+int mirman_check(uint32_t *ip, int af, struct mirdat *mdat)
 {
 	unsigned int i, flevel = cl_retflevel();
 
@@ -103,7 +107,8 @@ int mirman_check(uint32_t ip, struct mirdat *mdat)
 	return 0;
 
     for(i = 0; i < mdat->num; i++) {
-	if(mdat->mirtab[i].atime && mdat->mirtab[i].ip == ip) {
+
+	if(mdat->mirtab[i].atime && ((af == AF_INET && mdat->mirtab[i].ip4 == *ip) || (af == AF_INET6 && !memcmp(mdat->mirtab[i].ip6, ip, 4)))) {
 
 	    if(mdat->dbflevel && (mdat->dbflevel > flevel) && (mdat->dbflevel - flevel > 3))
 		if(time(NULL) - mdat->mirtab[i].atime < 4 * 3600)
@@ -123,7 +128,7 @@ int mirman_check(uint32_t ip, struct mirdat *mdat)
     return 0;
 }
 
-int mirman_update(uint32_t ip, struct mirdat *mdat, uint8_t broken)
+int mirman_update(uint32_t *ip, int af, struct mirdat *mdat, uint8_t broken)
 {
 	unsigned int i, found = 0;
 
@@ -132,7 +137,7 @@ int mirman_update(uint32_t ip, struct mirdat *mdat, uint8_t broken)
 	return 0;
 
     for(i = 0; i < mdat->num; i++) {
-	if(mdat->mirtab[i].ip == ip) {
+	if((af == AF_INET && mdat->mirtab[i].ip4 == *ip) || (af == AF_INET6 && !memcmp(mdat->mirtab[i].ip6, ip, 4))) {
 	    found = 1;
 	    break;
 	}
@@ -160,7 +165,12 @@ int mirman_update(uint32_t ip, struct mirdat *mdat, uint8_t broken)
 	    logg("!Can't allocate memory for new element in mdat->mirtab\n");
 	    return -1;
 	}
-	mdat->mirtab[mdat->num].ip = ip;
+	if(af == AF_INET) {
+	    mdat->mirtab[mdat->num].ip4 = *ip;
+	} else {
+	    mdat->mirtab[mdat->num].ip4 = 0;
+	    memcpy(mdat->mirtab[mdat->num].ip6, ip, 4);
+	}
 	mdat->mirtab[mdat->num].atime = 0;
 	mdat->mirtab[mdat->num].succ = 0;
 	mdat->mirtab[mdat->num].fail = 0;
@@ -179,14 +189,16 @@ int mirman_update(uint32_t ip, struct mirdat *mdat, uint8_t broken)
 void mirman_list(const struct mirdat *mdat)
 {
 	unsigned int i;
-	unsigned char *ip;
 	time_t tm;
+	char ip[46];
 
 
     for(i = 0; i < mdat->num; i++) {
 	printf("Mirror #%u\n", i + 1);
-	ip = (unsigned char *) &mdat->mirtab[i].ip;
-	printf("IP: %u.%u.%u.%u\n", ip[0], ip[1], ip[2], ip[3]);
+	if(mdat->mirtab[i].ip4)
+	    printf("IP: %s\n", inet_ntop(AF_INET, &mdat->mirtab[i].ip4, ip, sizeof(ip)));
+	else
+	    printf("IP: %s\n", inet_ntop(AF_INET6, mdat->mirtab[i].ip6, ip, sizeof(ip)));
 	printf("Successes: %u\n", mdat->mirtab[i].succ);
 	printf("Failures: %u\n", mdat->mirtab[i].fail);
 	tm = mdat->mirtab[i].atime;

@@ -55,8 +55,15 @@ int notify(const char *cfgfile)
 #ifndef	C_WINDOWS
 	struct sockaddr_un server;
 #endif
+#ifdef SUPPORT_IPv6
+	struct addrinfo hints, *res;
+	char port[6];
+	const char *addr;
+	int ret;
+#else
         struct sockaddr_in server2;
 	struct hostent *he;
+#endif
 	struct cfgstruct *copt;
 	const struct cfgstruct *cpt;
 	int sockd, bread;
@@ -93,8 +100,49 @@ int notify(const char *cfgfile)
     } else
 #endif
     if((cpt = cfgopt(copt, "TCPSocket"))->enabled) {
-
 	socktype = "TCP";
+
+#if SUPPORT_IPv6
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	snprintf(port, 5, "%d", cpt->numarg);
+	port[5] = 0;
+
+	if((cpt = cfgopt(copt, "TCPAddr"))->enabled)
+	    addr = cpt->strarg;
+	else
+	    addr = NULL;
+
+	ret = getaddrinfo(addr, port, &hints, &res);
+
+	if(ret) {
+	    perror("getaddrinfo()");
+	    logg("^Clamd was NOT notified: Can't resolve hostname %s\n", addr ? addr : "");
+	    freecfg(copt);
+	    return 1;
+	}
+
+	if((sockd = socket(res->ai_family, SOCK_STREAM, 0)) < 0) {
+	    perror("socket()");
+	    logg("^Clamd was NOT notified: Can't create TCP socket\n");
+	    freecfg(copt);
+	    freeaddrinfo(res);
+	    return 1;
+	}
+
+	if(connect(sockd, res->ai_addr, res->ai_addrlen) == -1) {
+	    perror("connect()");
+	    closesocket(sockd);
+	    logg("^Clamd was NOT notified: Can't connect to clamd on %s:%s\n", addr, port);
+	    freecfg(copt);
+	    freeaddrinfo(res);
+	    return 1;
+	}
+	freeaddrinfo(res);
+
+#else /* IPv4 */
+
 #ifdef PF_INET
 	if((sockd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
 #else
@@ -110,10 +158,11 @@ int notify(const char *cfgfile)
 	server2.sin_port = htons(cpt->numarg);
 
 	if((cpt = cfgopt(copt, "TCPAddr"))->enabled) {
-	    if ((he = gethostbyname(cpt->strarg)) == 0) {
+	    if((he = gethostbyname(cpt->strarg)) == 0) {
 		perror("gethostbyname()");
 		logg("^Clamd was NOT notified: Can't resolve hostname '%s'\n", cpt->strarg);
 		freecfg(copt);
+		closesocket(sockd);
 		return 1;
 	    }
 	    server2.sin_addr = *(struct in_addr *) he->h_addr_list[0];
@@ -129,6 +178,8 @@ int notify(const char *cfgfile)
 	    freecfg(copt);
 	    return 1;
 	}
+
+#endif
 
     } else {
 	logg("^Clamd was NOT notified: No socket specified in %s\n", cfgfile);

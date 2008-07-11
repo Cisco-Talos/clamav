@@ -369,6 +369,9 @@
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
+/* Use IPv6 aware code */
+#undef SUPPORT_IPv6
+
 /* use syslog */
 #undef USE_SYSLOG
 

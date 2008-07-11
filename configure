@@ -1514,6 +1514,7 @@ Optional Features:
   --disable-bzip2	  disable bzip2 support
   --disable-rpath         do not hardcode runtime library paths
   --disable-unrar	  don't build libclamunrar and libclamunrar_iface
+  --disable-ipv6          disable IPv6 support
   --disable-dns           disable support for database verification through
                           DNS
   --disable-clamuko	  disable clamuko support (Linux, DragonFly and FreeBSD only)
@@ -4777,7 +4778,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 4780 "configure"' > conftest.$ac_ext
+  echo '#line 4781 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -6867,11 +6868,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:6870: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:6871: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:6874: \$? = $ac_status" >&5
+   echo "$as_me:6875: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7157,11 +7158,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7160: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7161: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7164: \$? = $ac_status" >&5
+   echo "$as_me:7165: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -7261,11 +7262,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7264: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7265: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:7268: \$? = $ac_status" >&5
+   echo "$as_me:7269: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -9638,7 +9639,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 9641 "configure"
+#line 9642 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -9738,7 +9739,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 9741 "configure"
+#line 9742 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -15024,6 +15025,97 @@ else
   want_unrar="yes"
 fi
 
+
+# Check whether --enable-ipv6 was given.
+if test "${enable_ipv6+set}" = set; then
+  enableval=$enable_ipv6; want_ipv6=$enableval
+else
+  want_ipv6="yes"
+fi
+
+
+if test "$want_ipv6" = "yes"
+then
+    { echo "$as_me:$LINENO: checking for getaddrinfo" >&5
+echo $ECHO_N "checking for getaddrinfo... $ECHO_C" >&6; }
+    if test "${have_gai+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+
+		if test "$cross_compiling" = yes; then
+  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&5
+echo "$as_me: error: cannot run test program while cross compiling
+See \`config.log' for more details." >&2;}
+   { (exit 1); exit 1; }; }
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+		    #include <sys/types.h>
+		    #include <sys/socket.h>
+		    #include <netdb.h>
+		    int main(int argc, char **argv)
+		    {
+			    struct addrinfo *res;
+
+			if(getaddrinfo("127.0.0.1", NULL, NULL, &res) < 0)
+			    return 1;
+			freeaddrinfo(res);
+			return 0;
+		    }
+
+_ACEOF
+rm -f conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  have_gai=yes
+else
+  echo "$as_me: program exited with status $ac_status" >&5
+echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+have_gai=no
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+
+
+
+fi
+
+    { echo "$as_me:$LINENO: result: $have_gai" >&5
+echo "${ECHO_T}$have_gai" >&6; }
+    if test "$have_gai" = yes; then
+
+cat >>confdefs.h <<\_ACEOF
+#define SUPPORT_IPv6 1
+_ACEOF
+
+    fi
+fi
 
 # Check whether --enable-dns was given.
 if test "${enable_dns+set}" = set; then

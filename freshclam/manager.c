@@ -40,6 +40,7 @@
 #ifndef C_WINDOWS
 #include <netinet/in.h>
 #include <netdb.h>
+#include <arpa/inet.h>
 #endif
 #include <sys/types.h>
 #ifndef C_WINDOWS
@@ -82,14 +83,39 @@
 #define	closesocket(s)	close(s)
 #endif
 
-static int getclientsock(const char *localip)
+#ifndef SUPPORT_IPv6
+static const char *ghbn_err(int err) /* hstrerror() */
+{
+    switch(err) {
+	case HOST_NOT_FOUND:
+	    return "Host not found";
+
+	case NO_DATA:
+	    return "No IP address";
+
+	case NO_RECOVERY:
+	    return "Unrecoverable DNS error";
+
+	case TRY_AGAIN:
+	    return "Temporary DNS error";
+
+	default:
+	    return "Unknown error";
+    }
+}
+#endif
+
+static int getclientsock(const char *localip, int prot)
 {
 	int socketfd = -1;
 
-#ifdef PF_INET
-    socketfd = socket(PF_INET, SOCK_STREAM, 0);
+#ifdef SUPPORT_IPv6
+    if(prot == PF_INET6)
+	socketfd = socket(PF_INET6, SOCK_STREAM, 0);
+    else
+	socketfd = socket(PF_INET, SOCK_STREAM, 0);
 #else
-    socketfd = socket(AF_INET, SOCK_STREAM, 0);
+    socketfd = socket(PF_INET, SOCK_STREAM, 0);
 #endif
 
     if(socketfd < 0) {
@@ -98,42 +124,49 @@ static int getclientsock(const char *localip)
     }
 
     if(localip) {
-	struct hostent *he;
+#ifdef SUPPORT_IPv6
+	    struct addrinfo *res;
+	    int ret;
 
-	if((he = gethostbyname(localip)) == NULL) {
-	    const char *herr;
-	    switch(h_errno) {
-	        case HOST_NOT_FOUND:
-		    herr = "Host not found";
-		    break;
-
-		case NO_DATA:
-		    herr = "No IP address";
-		    break;
-
-		case NO_RECOVERY:
-		    herr = "Unrecoverable DNS error";
-		    break;
-
-		case TRY_AGAIN:
-		    herr = "Temporary DNS error";
-		    break;
-
-		default:
-		    herr = "Unknown error";
-		    break;
-	    }
-	    logg("!Could not resolve local ip address '%s': %s\n", localip, herr);
+	ret = getaddrinfo(localip, NULL, NULL, &res);
+	if(ret) {
+	    logg("!Could not resolve local ip address '%s': %s\n", localip, gai_strerror(ret));
 	    logg("^Using standard local ip address and port for fetching.\n");
 	} else {
-	    struct sockaddr_in client;
-	    unsigned char *ia;
-	    char ipaddr[16];
+		char ipaddr[46];
 
-	    memset ((char *) &client, 0, sizeof(struct sockaddr_in));
+	    if(bind(socketfd, res->ai_addr, res->ai_addrlen) != 0) {
+		logg("!Could not bind to local ip address '%s': %s\n", localip, strerror(errno));
+		logg("^Using default client ip.\n");
+	    } else {
+		    void *addr;
+
+		if(res->ai_family == AF_INET6)
+		    addr = &((struct sockaddr_in6 *) res->ai_addr)->sin6_addr;
+		else
+		    addr = &((struct sockaddr_in *) res->ai_addr)->sin_addr;
+
+		if(inet_ntop(res->ai_family, addr, ipaddr, sizeof(ipaddr)))
+		    logg("*Using ip '%s' for fetching.\n", ipaddr);
+	    }
+	    freeaddrinfo(res);
+	}
+
+#else /* IPv4 */
+	    struct hostent *he;
+
+	if(!(he = gethostbyname(localip))) {
+	    logg("!Could not resolve local ip address '%s': %s\n", localip, ghbn_err(h_errno));
+	    logg("^Using standard local ip address and port for fetching.\n");
+	} else {
+		struct sockaddr_in client;
+		unsigned char *ia;
+		char ipaddr[16];
+
+	    memset((char *) &client, 0, sizeof(client));
 	    client.sin_family = AF_INET;
 	    client.sin_addr = *(struct in_addr *) he->h_addr_list[0];
-	    if (bind(socketfd, (struct sockaddr *) &client, sizeof(struct sockaddr_in)) != 0) {
+	    if(bind(socketfd, (struct sockaddr *) &client, sizeof(struct sockaddr_in)) != 0) {
 		logg("!Could not bind to local ip address '%s': %s\n", localip, strerror(errno));
 		logg("^Using default client ip.\n");
 	    } else {
@@ -142,6 +175,7 @@ static int getclientsock(const char *localip)
 		logg("*Using ip '%s' for fetching.\n", ipaddr);
 	    }
 	}
+#endif
     }
 
     return socketfd;
@@ -149,21 +183,20 @@ static int getclientsock(const char *localip)
 
 static int wwwconnect(const char *server, const char *proxy, int pport, char *ip, const char *localip, int ctimeout, struct mirdat *mdat, int logerr)
 {
-	int socketfd = -1, port, i, ret;
+	int socketfd, port, ret;
+#ifdef SUPPORT_IPv6
+	struct addrinfo hints, *res = NULL, *rp;
+#else
 	struct sockaddr_in name;
 	struct hostent *host;
-	char ipaddr[16];
 	unsigned char *ia;
+	int i;
+#endif
+	char ipaddr[46];
 	const char *hostpt;
 
     if(ip)
 	strcpy(ip, "???");
-
-    socketfd = getclientsock(localip);
-    if(socketfd < 0)
-	return -1;
-
-    name.sin_family = AF_INET;
 
     if(proxy) {
 	hostpt = proxy;
@@ -190,31 +223,74 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	port = 80;
     }
 
-    if((host = gethostbyname(hostpt)) == NULL) {
-	const char *herr;
-	switch(h_errno) {
-	    case HOST_NOT_FOUND:
-		herr = "Host not found";
-		break;
+#ifdef SUPPORT_IPv6
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    ret = getaddrinfo(hostpt, "80", &hints, &res);
+    if(ret) {
+	logg("%cCan't get information about %s: %s\n", logerr ? '!' : '^', hostpt, gai_strerror(ret));
+	return -1;
+    }
 
-	    case NO_DATA:
-		herr = "No IP address";
-		break;
+    for(rp = res; rp; rp = rp->ai_next) {
+	    void *addr;
 
-	    case NO_RECOVERY:
-		herr = "Unrecoverable DNS error";
-		break;
+	if(rp->ai_family == AF_INET6)
+	    addr = &((struct sockaddr_in6 *) rp->ai_addr)->sin6_addr;
+	else
+	    addr = &((struct sockaddr_in *) rp->ai_addr)->sin_addr;
 
-	    case TRY_AGAIN:
-		herr = "Temporary DNS error";
-		break;
-
-	    default:
-		herr = "Unknown error";
-		break;
+	if(!inet_ntop(rp->ai_family, addr, ipaddr, sizeof(ipaddr))) {
+	    logg("%cinet_ntop() failed\n", logerr ? '!' : '^');
+	    freeaddrinfo(res);
+	    return -1;
 	}
-        logg("%cCan't get information about %s: %s\n", logerr ? '!' : '^', hostpt, herr);
-	closesocket(socketfd);
+
+	if((ret = mirman_check(addr, rp->ai_family, mdat))) {
+	    if(ret == 1)
+		logg("Ignoring mirror %s (due to previous errors)\n", ipaddr);
+	    else
+		logg("Ignoring mirror %s (has connected too many times with an outdated version)\n", ipaddr);
+	    continue;
+	}
+
+	if(ip)
+	    strcpy(ip, ipaddr);
+
+	if(rp != res)
+	    logg("Trying host %s (%s)...\n", hostpt, ipaddr);
+
+	socketfd = getclientsock(localip, rp->ai_family);
+	if(socketfd < 0) {
+	    freeaddrinfo(res);
+	    return -1;
+	}
+
+#ifdef SO_ERROR
+	if(wait_connect(socketfd, rp->ai_addr, rp->ai_addrlen, ctimeout) == -1) {
+#else
+	if(connect(socketfd, rp->ai_addr, rp->ai_addrlen) == -1) {
+#endif
+	    logg("Can't connect to port %d of host %s (IP: %s)\n", port, hostpt, ipaddr);
+	    closesocket(socketfd);
+	    continue;
+	} else {
+	    if(rp->ai_family == AF_INET)
+		mdat->currip[0] = *((uint32_t *) addr);
+	    else
+		memcpy(mdat->currip, addr, 4);
+	    mdat->af = rp->ai_family;
+	    freeaddrinfo(res);
+	    return socketfd;
+	}
+    }
+    freeaddrinfo(res);
+
+#else /* IPv4 */
+
+    if((host = gethostbyname(hostpt)) == NULL) {
+        logg("%cCan't get information about %s: %s\n", logerr ? '!' : '^', hostpt, ghbn_err(h_errno));
 	return -1;
     }
 
@@ -223,7 +299,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	ia = (unsigned char *) host->h_addr_list[i];
 	sprintf(ipaddr, "%u.%u.%u.%u", ia[0], ia[1], ia[2], ia[3]);
 
-	if((ret = mirman_check(((struct in_addr *) ia)->s_addr, mdat))) {
+	if((ret = mirman_check(&((struct in_addr *) ia)->s_addr, AF_INET, mdat))) {
 	    if(ret == 1)
 		logg("Ignoring mirror %s (due to previous errors)\n", ipaddr);
 	    else
@@ -237,8 +313,14 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	if(i > 0)
 	    logg("Trying host %s (%s)...\n", hostpt, ipaddr);
 
+	memset ((char *) &name, 0, sizeof(name));
+	name.sin_family = AF_INET;
 	name.sin_addr = *((struct in_addr *) host->h_addr_list[i]);
 	name.sin_port = htons(port);
+
+	socketfd = getclientsock(localip, AF_INET);
+	if(socketfd < 0)
+	    return -1;
 
 #ifdef SO_ERROR
 	if(wait_connect(socketfd, (struct sockaddr *) &name, sizeof(struct sockaddr_in), ctimeout) == -1) {
@@ -247,17 +329,15 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 #endif
 	    logg("Can't connect to port %d of host %s (IP: %s)\n", port, hostpt, ipaddr);
 	    closesocket(socketfd);
-	    if((socketfd = getclientsock(localip)) == -1)
-		return -1;
-
 	    continue;
 	} else {
-	    mdat->currip = ((struct in_addr *) ia)->s_addr;
+	    mdat->currip[0] = ((struct in_addr *) ia)->s_addr;
+	    mdat->af = AF_INET;
 	    return socketfd;
 	}
     }
+#endif
 
-    closesocket(socketfd);
     return -2;
 }
 
@@ -339,7 +419,7 @@ static char *proxyauth(const char *user, const char *pass)
 
 static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int *ims, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr)
 {
-	char cmd[512], head[513], buffer[FILEBUFF], ipaddr[16], *ch, *tmp;
+	char cmd[512], head[513], buffer[FILEBUFF], ipaddr[46], *ch, *tmp;
 	int bread, cnt, sd;
 	unsigned int i, j;
 	char *remotename = NULL, *authorization = NULL;
@@ -437,7 +517,7 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 
     if(bread == -1) {
 	logg("%cremote_cvdhead: Error while reading CVD header from %s\n", logerr ? '!' : '^', hostname);
-	mirman_update(mdat->currip, mdat, 1);
+	mirman_update(mdat->currip, mdat->af, mdat, 1);
 	return NULL;
     }
 
@@ -451,7 +531,7 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
     if((strstr(buffer, "HTTP/1.1 304")) != NULL || (strstr(buffer, "HTTP/1.0 304")) != NULL) { 
 	*ims = 0;
 	logg("OK (IMS)\n");
-	mirman_update(mdat->currip, mdat, 0);
+	mirman_update(mdat->currip, mdat->af, mdat, 0);
 	return NULL;
     } else {
 	*ims = 1;
@@ -460,7 +540,7 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
     if(!strstr(buffer, "HTTP/1.1 200") && !strstr(buffer, "HTTP/1.0 200") &&
        !strstr(buffer, "HTTP/1.1 206") && !strstr(buffer, "HTTP/1.0 206")) {
 	logg("%cUnknown response from remote server\n", logerr ? '!' : '^');
-	mirman_update(mdat->currip, mdat, 1);
+	mirman_update(mdat->currip, mdat->af, mdat, 1);
 	return NULL;
     }
 
@@ -478,7 +558,7 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 
     if(sizeof(buffer) - i < 512) {
 	logg("%cremote_cvdhead: Malformed CVD header (too short)\n", logerr ? '!' : '^');
-	mirman_update(mdat->currip, mdat, 1);
+	mirman_update(mdat->currip, mdat->af, mdat, 1);
 	return NULL;
     }
 
@@ -487,7 +567,7 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
     for(j = 0; j < 512; j++) {
 	if(!ch || (ch && !*ch) || (ch && !isprint(ch[j]))) {
 	    logg("%cremote_cvdhead: Malformed CVD header (bad chars)\n", logerr ? '!' : '^');
-	    mirman_update(mdat->currip, mdat, 1);
+	    mirman_update(mdat->currip, mdat->af, mdat, 1);
 	    return NULL;
 	}
 	head[j] = ch[j];
@@ -495,10 +575,10 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 
     if(!(cvd = cl_cvdparse(head))) {
 	logg("%cremote_cvdhead: Malformed CVD header (can't parse)\n", logerr ? '!' : '^');
-	mirman_update(mdat->currip, mdat, 1);
+	mirman_update(mdat->currip, mdat->af, mdat, 1);
     } else {
 	logg("OK\n");
-	mirman_update(mdat->currip, mdat, 0);
+	mirman_update(mdat->currip, mdat->af, mdat, 0);
     }
 
     return cvd;
@@ -587,7 +667,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	if((i >= sizeof(buffer) - 1) || recv(sd, buffer + i, 1, 0) == -1) {
 #endif
 	    logg("%cgetfile: Error while reading database from %s (IP: %s)\n", logerr ? '!' : '^', hostname, ipaddr);
-	    mirman_update(mdat->currip, mdat, 1);
+	    mirman_update(mdat->currip, mdat->af, mdat, 1);
 	    closesocket(sd);
 	    return 52;
 	}
@@ -613,7 +693,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     if(!strstr(buffer, "HTTP/1.1 200") && !strstr(buffer, "HTTP/1.0 200") &&
        !strstr(buffer, "HTTP/1.1 206") && !strstr(buffer, "HTTP/1.0 206")) {
 	logg("%cgetfile: Unknown response from remote server (IP: %s)\n", logerr ? '!' : '^', ipaddr);
-	mirman_update(mdat->currip, mdat, 1);
+	mirman_update(mdat->currip, mdat->af, mdat, 1);
 	closesocket(sd);
 	return 58;
     }
@@ -678,7 +758,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     else
         logg("Downloading %s [*]\n", srcfile);
 
-    mirman_update(mdat->currip, mdat, 0);
+    mirman_update(mdat->currip, mdat->af, mdat, 0);
     return 0;
 }
 
@@ -1203,7 +1283,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	time_t currtime;
 	int ret, updated = 0, outdated = 0, signo = 0;
 	unsigned int ttl;
-	char ipaddr[16], *dnsreply = NULL, *pt, *localip = NULL, *newver = NULL;
+	char ipaddr[46], *dnsreply = NULL, *pt, *localip = NULL, *newver = NULL;
 	const char *arg = NULL;
 	const struct cfgstruct *cpt;
 	struct mirdat mdat;
@@ -1213,6 +1293,9 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 
     time(&currtime);
     logg("ClamAV update process started at %s", ctime(&currtime));
+#ifdef SUPPORT_IPv6
+    logg("*Using IPv6 aware code\n");
+#endif
 
 #ifndef HAVE_LIBGMP
     logg("SECURITY WARNING: NO SUPPORT FOR DIGITAL SIGNATURES\n");

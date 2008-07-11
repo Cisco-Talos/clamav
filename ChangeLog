@@ -1,3 +1,8 @@
+Fri Jul 11 20:14:14 CEST 2008 (tk)
+----------------------------------
+  * freshclam: IPv6 support (bb#715)
+  * configure: --disable-ipv6
+
 Thu Jul 10 19:41:37 EEST 2008 (edwin)
 -------------------------------------
  * unit_tests/: add unit tests for binaries
