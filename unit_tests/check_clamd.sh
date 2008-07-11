@@ -21,7 +21,7 @@ if test $? = 2; then
 fi
 NFILES=`ls -1 $FILES | wc -l`
 NINFECTED=`grep "Infected files" clamdscan.log | cut -f2 -d:`
-if test "$NFILES" != "$NINFECTED"; then
+if test "$NFILES" -ne "$NINFECTED"; then
 	echo "clamd did not detect all testfiles correctly!" >&2;
 	grep OK clamdscan.log >&2;
 	die 4;
