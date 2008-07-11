@@ -40,8 +40,6 @@ START_TEST (test_keywords)
 {
     const struct keyword *kw = in_word_set(kw_test[_i].str, strlen(kw_test[_i].str));
     if(kw_test[_i].is) {
-	    if(!kw)
-		    puts(kw_test[_i].str);
 	    fail_unless(kw && !strcmp(kw->name, kw_test[_i].str), "keyword mismatch");
     } else {
 	    fail_unless(!kw, "non-keyword detected as keyword");
