@@ -1,3 +1,8 @@
+Mon Jul 14 18:54:01 CEST 2008 (tk)
+----------------------------------
+  * freshclam: try load balance update sessions between available mirrors
+	       (only in IPv6-aware block)
+
 Mon Jul 14 17:26:03 EEST 2008 (edwin)
 ------------------------------------
   * libclamav/htmlnorm.c: improve normalization of screnc encoded files(bb #1022)

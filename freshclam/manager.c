@@ -185,8 +185,10 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 {
 	int socketfd, port, ret;
 #ifdef SUPPORT_IPv6
-	struct addrinfo hints, *res = NULL, *rp;
-	char port_s[6];
+	struct addrinfo hints, *res = NULL, *rp, *loadbal_rp = NULL;
+	char port_s[6], loadbal_ipaddr[46];
+	uint32_t loadbal = 1, minsucc = 0xffffffff, minfail = 0xffffffff;
+	struct mirdat_ip *md;
 #else
 	struct sockaddr_in name;
 	struct hostent *host;
@@ -250,11 +252,44 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	    return -1;
 	}
 
-	if((ret = mirman_check(addr, rp->ai_family, mdat))) {
+	if((ret = mirman_check(addr, rp->ai_family, mdat, &md))) {
 	    if(ret == 1)
 		logg("Ignoring mirror %s (due to previous errors)\n", ipaddr);
 	    else
 		logg("Ignoring mirror %s (has connected too many times with an outdated version)\n", ipaddr);
+
+	    if(!loadbal || rp->ai_next)
+		continue;
+	}
+
+	if(loadbal) {
+	    if(!ret) {
+		if(!md) {
+		    loadbal_rp = rp;
+		    strncpy(loadbal_ipaddr, ipaddr, sizeof(loadbal_ipaddr));
+		} else {
+		    if(md->succ < minsucc && md->fail <= minfail) {
+			minsucc = md->succ;
+			minfail = md->fail;
+			loadbal_rp = rp;
+			strncpy(loadbal_ipaddr, ipaddr, sizeof(loadbal_ipaddr));
+		    }
+		    if(rp->ai_next)
+			continue;
+		}
+	    }
+
+	    if(!loadbal_rp) {
+		if(!rp->ai_next) {
+		    loadbal = 0;
+		    rp = res;
+		}
+		continue;
+	    }
+	    rp = loadbal_rp;
+	    strncpy(ipaddr, loadbal_ipaddr, sizeof(ipaddr));
+
+	} else if(loadbal_rp == rp) {
 	    continue;
 	}
 
@@ -277,6 +312,10 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 #endif
 	    logg("Can't connect to port %d of host %s (IP: %s)\n", port, hostpt, ipaddr);
 	    closesocket(socketfd);
+	    if(loadbal) {
+		loadbal = 0;
+		rp = res;
+	    }
 	    continue;
 	} else {
 	    if(rp->ai_family == AF_INET)
@@ -302,7 +341,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	ia = (unsigned char *) host->h_addr_list[i];
 	sprintf(ipaddr, "%u.%u.%u.%u", ia[0], ia[1], ia[2], ia[3]);
 
-	if((ret = mirman_check(&((struct in_addr *) ia)->s_addr, AF_INET, mdat))) {
+	if((ret = mirman_check(&((struct in_addr *) ia)->s_addr, AF_INET, mdat, NULL))) {
 	    if(ret == 1)
 		logg("Ignoring mirror %s (due to previous errors)\n", ipaddr);
 	    else

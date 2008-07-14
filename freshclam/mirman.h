@@ -41,7 +41,7 @@ struct mirdat {
 };
 
 int mirman_read(const char *file, struct mirdat *mdat, uint8_t active);
-int mirman_check(uint32_t *ip, int af, struct mirdat *mdat);
+int mirman_check(uint32_t *ip, int af, struct mirdat *mdat, struct mirdat_ip **md);
 int mirman_update(uint32_t *ip, int af, struct mirdat *mdat, uint8_t broken);
 void mirman_list(const struct mirdat *mdat);
 int mirman_write(const char *file, struct mirdat *mdat);

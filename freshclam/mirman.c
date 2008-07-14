@@ -104,17 +104,26 @@ int mirman_read(const char *file, struct mirdat *mdat, uint8_t active)
     return 0;
 }
 
-int mirman_check(uint32_t *ip, int af, struct mirdat *mdat)
+int mirman_check(uint32_t *ip, int af, struct mirdat *mdat, struct mirdat_ip **md)
 {
 	unsigned int i, flevel = cl_retflevel();
 
+
+    if(md)
+	*md = NULL;
 
     if(!mdat->active)
 	return 0;
 
     for(i = 0; i < mdat->num; i++) {
 
-	if(mdat->mirtab[i].atime && ((af == AF_INET && mdat->mirtab[i].ip4 == *ip) || (af == AF_INET6 && !memcmp(mdat->mirtab[i].ip6, ip, 4)))) {
+	if(((af == AF_INET && mdat->mirtab[i].ip4 == *ip) || (af == AF_INET6 && !memcmp(mdat->mirtab[i].ip6, ip, 4)))) {
+
+	    if(!mdat->mirtab[i].atime) {
+		if(md)
+		    *md = &mdat->mirtab[i];
+		return 0;
+	    }
 
 	    if(mdat->dbflevel && (mdat->dbflevel > flevel) && (mdat->dbflevel - flevel > 3))
 		if(time(NULL) - mdat->mirtab[i].atime < 4 * 3600)
@@ -123,11 +132,17 @@ int mirman_check(uint32_t *ip, int af, struct mirdat *mdat)
 	    if(mdat->mirtab[i].ignore) {
 		if(time(NULL) - mdat->mirtab[i].atime > IGNTIME) {
 		    mdat->mirtab[i].ignore = 0;
+		    if(md)
+			*md = &mdat->mirtab[i];
 		    return 0;
 		} else {
 		    return 1;
 		}
 	    }
+
+	    if(md)
+		*md = &mdat->mirtab[i];
+	    return 0;
 	}
     }
 
