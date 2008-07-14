@@ -1,3 +1,10 @@
+Mon Jul 14 22:09:22 EEST 2008 (edwin)
+-------------------------------------
+  * libclamav/htmlnorm.c: fix crash in js parser (bb #1096)
+  * configure.in: fix configure test for check: if it is not available, and we didn't pass
+		  --enable-check, do not complain
+  * unit_tests/check_jsnorm.c: add unit test for jsnorm bug
+
 Mon Jul 14 18:54:01 CEST 2008 (tk)
 ----------------------------------
   * freshclam: try load balance update sessions between available mirrors
