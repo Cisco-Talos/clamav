@@ -56,6 +56,12 @@
 #define O_BINARY    0
 #endif
 
+#ifndef SUPPORT_IPv6
+#ifndef AF_INET6
+#define AF_INET6    0xbeef  /* foo */
+#endif
+#endif
+
 #define IGNTIME 3 * 86400
 
 void mirman_free(struct mirdat *mdat)
@@ -117,7 +123,7 @@ int mirman_check(uint32_t *ip, int af, struct mirdat *mdat, struct mirdat_ip **m
 
     for(i = 0; i < mdat->num; i++) {
 
-	if(((af == AF_INET && mdat->mirtab[i].ip4 == *ip) || (af == AF_INET6 && !memcmp(mdat->mirtab[i].ip6, ip, 4)))) {
+	if((af == AF_INET && mdat->mirtab[i].ip4 == *ip) || (af == AF_INET6 && !memcmp(mdat->mirtab[i].ip6, ip, 4))) {
 
 	    if(!mdat->mirtab[i].atime) {
 		if(md)
@@ -216,10 +222,15 @@ void mirman_list(const struct mirdat *mdat)
 
     for(i = 0; i < mdat->num; i++) {
 	printf("Mirror #%u\n", i + 1);
+#ifdef SUPPORT_IPv6
 	if(mdat->mirtab[i].ip4)
 	    printf("IP: %s\n", inet_ntop(AF_INET, &mdat->mirtab[i].ip4, ip, sizeof(ip)));
 	else
 	    printf("IP: %s\n", inet_ntop(AF_INET6, mdat->mirtab[i].ip6, ip, sizeof(ip)));
+#else
+	if(mdat->mirtab[i].ip4)
+	    printf("IP: %s\n", inet_ntoa(*(struct in_addr*) &mdat->mirtab[i].ip4));
+#endif
 	printf("Successes: %u\n", mdat->mirtab[i].succ);
 	printf("Failures: %u\n", mdat->mirtab[i].fail);
 	tm = mdat->mirtab[i].atime;

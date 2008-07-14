@@ -102,7 +102,7 @@ int notify(const char *cfgfile)
     if((cpt = cfgopt(copt, "TCPSocket"))->enabled) {
 	socktype = "TCP";
 
-#if SUPPORT_IPv6
+#ifdef SUPPORT_IPv6
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
