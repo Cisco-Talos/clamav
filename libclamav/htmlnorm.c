@@ -498,7 +498,7 @@ struct screnc_state {
 };
 
 /* inplace decoding, so that we can normalize it later */
-static void *screnc_decode(unsigned char *ptr, struct screnc_state *s)
+static void screnc_decode(unsigned char *ptr, struct screnc_state *s)
 {
 	uint8_t  value;
 	unsigned char *dst = ptr;
@@ -1066,8 +1066,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					}
 				} else if(strcmp(tag, "%@") == 0) {
 					arg_value = html_tag_arg_value(&tag_args, "language");
-					if(arg_value && strcasecmp(arg_value,"jscript.encode") == 0||
-							strcasecmp(arg_value, "vbscript.encode") == 0) {
+					if(arg_value && (strcasecmp(arg_value,"jscript.encode") == 0||
+							strcasecmp(arg_value, "vbscript.encode") == 0)) {
 
 						saved_next_state = next_state;
 						next_state = state;
