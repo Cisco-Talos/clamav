@@ -186,6 +186,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	int socketfd, port, ret;
 #ifdef SUPPORT_IPv6
 	struct addrinfo hints, *res = NULL, *rp;
+	char port_s[6];
 #else
 	struct sockaddr_in name;
 	struct hostent *host;
@@ -227,7 +228,9 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
-    ret = getaddrinfo(hostpt, "80", &hints, &res);
+    snprintf(port_s, sizeof(port_s), "%d", port);
+    port_s[sizeof(port_s) - 1] = 0;
+    ret = getaddrinfo(hostpt, port_s, &hints, &res);
     if(ret) {
 	logg("%cCan't get information about %s: %s\n", logerr ? '!' : '^', hostpt, gai_strerror(ret));
 	return -1;

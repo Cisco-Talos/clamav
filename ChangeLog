@@ -1,3 +1,7 @@
+Mon Jul 14 10:32:26 CEST 2008 (tk)
+----------------------------------
+  * freshclam/manager.c: respect HTTPProxyPort in new code (bb#1094)
+
 Fri Jul 11 20:14:14 CEST 2008 (tk)
 ----------------------------------
   * freshclam: IPv6 support (bb#715)
