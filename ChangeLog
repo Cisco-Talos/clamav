@@ -1,3 +1,7 @@
+Mon Jul 14 13:57:15 CEST 2008 (tk)
+----------------------------------
+  * freshclam/manager.c: fix rename() problem on w32 (bb#1084)
+
 Mon Jul 14 10:47:22 CEST 2008 (tk)
 ----------------------------------
   * freshclam/mirman.c: fix compilation error on w32 (bb#1095)

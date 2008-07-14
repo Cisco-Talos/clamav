@@ -1260,6 +1260,15 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	return 53;
     }
 
+#ifdef C_WINDOWS
+    if(!access(newdb, R_OK) && unlink(newdb)) {
+	logg("!Can't unlink %s. Please fix the problem manually and try again.\n", newdb);
+	unlink(newfile);
+	free(newfile);
+	return 53;
+    }
+#endif
+
     if(rename(newfile, newdb) == -1) {
 	logg("!Can't rename %s to %s: %s\n", newfile, newdb, strerror(errno));
 	unlink(newfile);
