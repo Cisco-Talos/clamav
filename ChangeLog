@@ -1,3 +1,7 @@
+Mon Jul 14 10:47:22 CEST 2008 (tk)
+----------------------------------
+  * freshclam/mirman.c: fix compilation error on w32 (bb#1095)
+
 Mon Jul 14 10:32:26 CEST 2008 (tk)
 ----------------------------------
   * freshclam/manager.c: respect HTTPProxyPort in new code (bb#1094)

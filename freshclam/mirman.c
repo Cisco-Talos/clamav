@@ -35,9 +35,11 @@
 #include <fcntl.h>
 #include <time.h>
 
+#ifndef C_WINDOWS
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#endif
 
 #include "mirman.h"
 
