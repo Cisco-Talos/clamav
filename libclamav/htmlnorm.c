@@ -608,7 +608,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	const int dconf_js = dirname && dconf && dconf->doc&DOC_CONF_JSNORM; /* TODO */
 	/* dconf for phishing engine sets scanContents, so no need for a flag here */
 	struct parser_state *js_state = NULL;
-	const unsigned char *js_begin, *js_end = NULL;
+	const unsigned char *js_begin = NULL, *js_end = NULL;
 
 	tag_args.scanContents=0;/* do we need to store the contents of <a></a>?*/
 	if (!m_area) {
@@ -1022,7 +1022,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					next_state = HTML_NORM;
 					if (strcmp(tag, "/script") == 0) {
 						in_script = FALSE;
-						js_end = ptr;
+						if(js_state)
+							js_end = ptr;
 						/*don't output newlines in nocomment.html
 						 * html_output_c(file_buff_o2, '\n');*/
 					}
@@ -1584,8 +1585,12 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				js_begin = line;
 			if(!js_end)
 				js_end = ptr;
-			if(js_end > js_begin)
+			if(js_end > js_begin &&
+					CLI_ISCONTAINED(line, 8192, js_begin, 1) &&
+					CLI_ISCONTAINED(line, 8192, js_end, 1)) {
+
 				cli_js_process_buffer(js_state, js_begin, js_end - js_begin);
+			}
 			js_begin = js_end = NULL;
 			if(!in_script) {
 				/*  we found a /script, normalize script now */

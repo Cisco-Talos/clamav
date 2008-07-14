@@ -339,7 +339,7 @@ if test "$enable_check_ut" != "no" ; then
 	],[LCHECK="no"])
 fi
 
-if test "$LCHECK" = "no" -a "$enable_check_ut"="yes"; then
+if test "$LCHECK" = "no" -a "$enable_check_ut" = "yes"; then
     echo
     echo "   ERROR!  Check was configured, but not found.  Get it from http://check.sf.net/"
     exit 1

@@ -11,6 +11,8 @@
 #include <check.h>
 #include "../libclamav/clamav.h"
 #include "../libclamav/others.h"
+#include "../libclamav/dconf.h"
+#include "../libclamav/htmlnorm.h"
 #include "../libclamav/jsparse/js-norm.h"
 #include "../libclamav/jsparse/lexglobal.h"
 #include "../libclamav/jsparse/textbuf.h"
@@ -149,10 +151,41 @@ START_TEST (test_init_parse_destroy)
 }
 END_TEST
 
+START_TEST (js_begin_end)
+{
+	char buf[16384] = "</script>";
+	size_t p;
+	struct cli_dconf *dconf = cli_dconf_init();
+
+	fail_unless(!!dconf, "failed to init dconf");
+	for(p=strlen(buf); p < 8191; p++) {
+		buf[p++] = 'a';
+		buf[p] = ' ';
+	}
+	strncpy(buf + 8192, " stuff stuff <script language='javascript'> function () {}", 8192);
+	fail_unless(html_normalise_mem(buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
+}
+END_TEST
+
+START_TEST (multiple_scripts)
+{
+	const char buf[] = "</script> stuff"\
+			    "<script language='Javascript'> function foo() {} </script>"\
+			    "<script language='Javascript'> function bar() {} </script>";
+	m_area_t m_area;
+	size_t p;
+	struct cli_dconf *dconf = cli_dconf_init();
+
+	fail_unless(!!dconf, "failed to init dconf");
+	fail_unless(html_normalise_mem(buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
+	/* TODO: test that both had been normalized */
+}
+END_TEST
+
 Suite *test_jsnorm_suite(void)
 {
     Suite *s = suite_create("jsnorm");
-    TCase *tc_jsnorm_gperf, *tc_jsnorm_token, *tc_jsnorm_api;
+    TCase *tc_jsnorm_gperf, *tc_jsnorm_token, *tc_jsnorm_api, *tc_jsnorm_tokenizer, *tc_jsnorm_bugs;
     tc_jsnorm_gperf = tcase_create("jsnorm gperf");
     suite_add_tcase (s, tc_jsnorm_gperf);
     tcase_add_loop_test(tc_jsnorm_gperf, test_keywords, 0, sizeof(kw_test)/sizeof(kw_test[0]));
@@ -170,6 +203,14 @@ Suite *test_jsnorm_suite(void)
     suite_add_tcase (s, tc_jsnorm_api);
     tcase_add_test(tc_jsnorm_api, test_init_destroy);
     tcase_add_test(tc_jsnorm_api, test_init_parse_destroy);
+
+    tc_jsnorm_tokenizer = tcase_create("jsnorm tokenizer");
+    suite_add_tcase (s, tc_jsnorm_tokenizer);
+
+    tc_jsnorm_bugs = tcase_create("jsnorm bugs");
+    suite_add_tcase (s, tc_jsnorm_bugs);
+    tcase_add_test(tc_jsnorm_bugs, js_begin_end);
+    tcase_add_test(tc_jsnorm_bugs, multiple_scripts);
 
     return s;
 }

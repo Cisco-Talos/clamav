@@ -82,6 +82,8 @@ CLAMAV_PRIVATE {
     cli_js_output;
     cli_unescape;
     cli_textbuffer_append_normalize;
+    cli_dconf_init;
+    html_normalise_mem;
   local:
     *;
 };
