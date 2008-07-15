@@ -10,15 +10,15 @@ check_PROGRAMS = $(programs)
 check_SCRIPTS = $(scripts)
 endif
 check_clamav_SOURCES = check_clamav.c check_jsnorm.c check_str.c checks.h $(top_builddir)/libclamav/clamav.h
-check_clamav_CFLAGS = 
-check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @LCHECK@
+check_clamav_CFLAGS = @CHECK_CFLAGS@
+check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CHECK_LIBS@
 
 if ENABLE_COVERAGE
 LCOV_OUTPUT = lcov.out
 LCOV_HTML = lcov_html
 LCOV_LCOV = @LCOV@
 LCOV_GENHTML = @GENHTML@
-CLEANFILES=lcov.out *.gcno *.gcda *.log
+CLEANFILES=lcov.out *.gcno *.gcda *.log /tmp/clamd-test.log
 EXTRA_DIST=test-clamd.conf test-freshclam.conf
 lcov: $(LCOV_HTML)
 
