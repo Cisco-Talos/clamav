@@ -224,6 +224,7 @@ static void data_setup(void)
 static void data_teardown(void)
 {
         free(data);
+	free(data2);
 }
 
 /* test reading with different alignments, _i is parameter from tcase_add_loop_test */

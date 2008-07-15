@@ -291,17 +291,18 @@ static long scope_lookup(struct scope *s, const char *token, const size_t len)
 static int tokens_ensure_capacity(struct tokens *tokens, size_t cap)
 {
 	if(tokens->capacity < cap) {
-		tokens->capacity = cap + 1024;
-		tokens->data = cli_realloc2(tokens->data, tokens->capacity * sizeof(*tokens->data));
+		cap += 1024;
+		tokens->data = cli_realloc(tokens->data, cap * sizeof(*tokens->data));
 		if(!tokens->data)
 			return CL_EMEM;
+		tokens->capacity = cap;
 	}
 	return CL_SUCCESS;
 }
 
 static int add_token(struct parser_state *state, const yystype *token)
 {
-	if(tokens_ensure_capacity(&state->tokens, state->tokens.cnt + 1) == -1)
+	if(tokens_ensure_capacity(&state->tokens, state->tokens.cnt + 1) < 0)
 		return -1;
 	state->tokens.data[state->tokens.cnt++] = *token;
 	return 0;
@@ -369,7 +370,7 @@ static char output_token(const yystype *token, struct scope *scope, struct buf *
 			return '0';
 		case TOK_NumericFloat:
 			output_space(lastchar,'0', out);
-			snprintf(sbuf, sizeof(sbuf), "%e", TOKEN_GET(token, dval));
+			snprintf(sbuf, sizeof(sbuf), "%g", TOKEN_GET(token, dval));
 			buf_outs(sbuf, out);
 			return '0';
 		case TOK_IDENTIFIER_NAME:
@@ -544,8 +545,6 @@ static int append_tokens(struct tokens *dst, const struct tokens *src)
 {
 	if(!dst || !src)
 		return CL_ENULLARG;
-	if(!dst->cnt)
-		return CL_SUCCESS;
 	if(tokens_ensure_capacity(dst, dst->cnt + src->cnt) == -1)
 		return CL_EMEM;
 	cli_dbgmsg(MODULE "Appending %lu tokens\n", src->cnt);
@@ -633,6 +632,7 @@ static void handle_de(yystype *tokens, size_t start, const size_t cnt, const cha
 	}
 	if(nesting)
 		return;
+	memset(parameters, 0, sizeof(parameters));
 	if(name) {
 		/* find call to function */
 		for(;i+2 < cnt; i++) {
@@ -671,14 +671,16 @@ static void handle_de(yystype *tokens, size_t start, const size_t cnt, const cha
 				if(j == parameters_cnt)
 					decode_de(parameters, &res->txtbuf);
 	}
-	res->pos_begin = parameters[0] - tokens;
-	res->pos_end = parameters[parameters_cnt-1] - tokens + 1;
-	if(tokens[res->pos_end].type == TOK_BRACKET_OPEN &&
-			tokens[res->pos_end+1].type == TOK_BRACKET_CLOSE &&
-			tokens[res->pos_end+2].type == TOK_PAR_CLOSE)
-		res->pos_end += 3; /* {}) */
-	else
-		res->pos_end++; /* ) */
+	if(parameters[0] && parameters[parameters_cnt-1]) {
+		res->pos_begin = parameters[0] - tokens;
+		res->pos_end = parameters[parameters_cnt-1] - tokens + 1;
+		if(tokens[res->pos_end].type == TOK_BRACKET_OPEN &&
+				tokens[res->pos_end+1].type == TOK_BRACKET_CLOSE &&
+				tokens[res->pos_end+2].type == TOK_PAR_CLOSE)
+			res->pos_end += 3; /* {}) */
+		else
+			res->pos_end++; /* ) */
+	}
 }
 
 static int handle_unescape(struct tokens *tokens, size_t start, const size_t cnt)
@@ -792,6 +794,7 @@ static void run_decoders(struct parser_state *state)
 		  name = NULL;
 		  ++i;
 		  if(tokens->data[i].type == TOK_IDENTIFIER_NAME) {
+			  cstring = TOKEN_GET(&tokens->data[i], cstring);
 			  name = cstring;
 			  ++i;
 		  }
@@ -845,6 +848,7 @@ void cli_js_parse_done(struct parser_state* state)
 	run_decoders(state);
 
 	yylex_destroy(state->scanner);
+	state->scanner = NULL;
 	state->global = NULL; /* make this state invalid for parsing */
 }
 
@@ -884,12 +888,16 @@ void cli_js_output(struct parser_state *state, const char *tempdir)
 void cli_js_destroy(struct parser_state *state)
 {
 	size_t i;
+	if(!state)
+		return;
 	scope_free_all(state->list);
 	for(i=0;i<state->tokens.cnt;i++) {
 		free_token(&state->tokens.data[i]);
 	}
 	free(state->tokens.data);
 	/* detect use after free */
+	if(state->scanner)
+		yylex_destroy(state->scanner);
 	memset(state, 0x55, sizeof(*state));
 	free(state);
 	cli_dbgmsg(MODULE "cli_js_destroy() done\n");
@@ -1075,7 +1083,7 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
 						free_token(&state->tokens.data[--state->tokens.cnt]);
 
 						str = cli_realloc(str, str_len + leng + 1);
-						strncpy(str+str_len, text+1, leng);
+						strncpy(str+str_len, text, leng);
 						str[str_len + leng] = '\0';
 						TOKEN_SET(prev_string, string, str);
 						free(val.val.string);
@@ -1267,7 +1275,7 @@ static inline int parseString(YYSTYPE *lvalp, yyscan_t scanner, const char q,
 		}
 		break;
 	} while (1);
-	if(end && end > start)
+	if(end && end >= start)
 		len = end - start;
 	else
 		len = scanner->insize - scanner->pos;
@@ -1394,6 +1402,8 @@ static int parseOperator(YYSTYPE *lvalp, yyscan_t scanner)
 		}
 		len--;
 	}
+	/* never reached */
+	assert(0);
 	scanner->pos++;
 	TOKEN_SET(lvalp, cstring, NULL);
 	return TOK_ERROR;
@@ -1505,16 +1515,19 @@ static int yylex(YYSTYPE *lvalp, yyscan_t  scanner)
 			case DoubleQString:
 				return parseString(lvalp, scanner, '"', DoubleQString);
 			case SingleQString:
-				return parseString(lvalp, scanner, '\'', DoubleQString);
+				return parseString(lvalp, scanner, '\'', SingleQString);
 			case Identifier:
 				return parseId(lvalp, scanner);
 			case MultilineComment:
 				while(scanner->pos+1 < scanner->insize) {
-					if(in[scanner->pos] == '*' && in[scanner->pos+1] == '/')
+					if(in[scanner->pos] == '*' && in[scanner->pos+1] == '/') {
+						scanner->state = Initial;
+						scanner->pos++;
 						break;
+					}
 					scanner->pos++;
 				}
-				scanner->state = Initial;
+				scanner->pos++;
 				break;
 			case Number:
 				return parseNumber(lvalp, scanner);

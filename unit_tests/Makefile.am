@@ -13,6 +13,7 @@ check_clamav_SOURCES = check_clamav.c check_jsnorm.c check_str.c checks.h $(top_
 check_clamav_CFLAGS = 
 check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @LCHECK@
 
+if ENABLE_COVERAGE
 LCOV_OUTPUT = lcov.out
 LCOV_HTML = lcov_html
 LCOV_LCOV = @LCOV@
@@ -38,3 +39,11 @@ clean-local: lcov-clean
 .PHONY: lcov-clean
 lcov-clean:
 	-$(RM) -r $(LCOV_HTML) $(LCOV_OUTPUT)
+	lcov $(DIRECTORIES) --zerocounters
+else
+
+lcov:
+	@echo "Coverage information gathering is not enabled in this build"
+	@echo "Use ./configure --enable-coverage to enable it"
+	@exit 1
+endif

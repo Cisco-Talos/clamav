@@ -220,13 +220,13 @@ scripts = check_clamd.sh check_freshclam.sh check_sigtool.sh check_clamscan.sh
 check_clamav_SOURCES = check_clamav.c check_jsnorm.c check_str.c checks.h $(top_builddir)/libclamav/clamav.h
 check_clamav_CFLAGS = 
 check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @LCHECK@
-LCOV_OUTPUT = lcov.out
-LCOV_HTML = lcov_html
-LCOV_LCOV = @LCOV@
-LCOV_GENHTML = @GENHTML@
-CLEANFILES = lcov.out *.gcno *.gcda *.log
-EXTRA_DIST = test-clamd.conf test-freshclam.conf
-DIRECTORIES = --directory . --directory ../libclamav --directory ../clamd --directory ../freshclam --directory ../sigtool --directory ../clamscan --directory ../clamdscan
+@ENABLE_COVERAGE_TRUE@LCOV_OUTPUT = lcov.out
+@ENABLE_COVERAGE_TRUE@LCOV_HTML = lcov_html
+@ENABLE_COVERAGE_TRUE@LCOV_LCOV = @LCOV@
+@ENABLE_COVERAGE_TRUE@LCOV_GENHTML = @GENHTML@
+@ENABLE_COVERAGE_TRUE@CLEANFILES = lcov.out *.gcno *.gcda *.log
+@ENABLE_COVERAGE_TRUE@EXTRA_DIST = test-clamd.conf test-freshclam.conf
+@ENABLE_COVERAGE_TRUE@DIRECTORIES = --directory . --directory ../libclamav --directory ../clamd --directory ../freshclam --directory ../sigtool --directory ../clamscan --directory ../clamdscan
 all: all-am
 
 .SUFFIXES:
@@ -577,6 +577,7 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+@ENABLE_COVERAGE_FALSE@clean-local:
 clean: clean-am
 
 clean-am: clean-binPROGRAMS clean-checkPROGRAMS clean-generic \
@@ -654,23 +655,29 @@ uninstall-am: uninstall-binPROGRAMS uninstall-dist_binSCRIPTS
 	tags uninstall uninstall-am uninstall-binPROGRAMS \
 	uninstall-dist_binSCRIPTS
 
-lcov: $(LCOV_HTML)
-.libs/check_clamav.gcda: $(TESTS)
-	lcov $(DIRECTORIES) --zerocounters
-	@$(MAKE) check
+@ENABLE_COVERAGE_TRUE@lcov: $(LCOV_HTML)
+@ENABLE_COVERAGE_TRUE@.libs/check_clamav.gcda: $(TESTS)
+@ENABLE_COVERAGE_TRUE@	lcov $(DIRECTORIES) --zerocounters
+@ENABLE_COVERAGE_TRUE@	@$(MAKE) check
 
-$(LCOV_OUTPUT): .libs/check_clamav.gcda
-	$(LCOV_LCOV) --capture $(DIRECTORIES) --base-directory . --output-file $@
+@ENABLE_COVERAGE_TRUE@$(LCOV_OUTPUT): .libs/check_clamav.gcda
+@ENABLE_COVERAGE_TRUE@	$(LCOV_LCOV) --capture $(DIRECTORIES) --base-directory . --output-file $@
 
-$(LCOV_HTML): $(LCOV_OUTPUT)
-	-$(RM) -r $@
-	LANG=C $(LCOV_GENHTML) --output-directory $@ --title "ClamAV Code Coverage" --show-details $<
-	@echo "Open `pwd`/$(LCOV_HTML)/index.html in a browser."
+@ENABLE_COVERAGE_TRUE@$(LCOV_HTML): $(LCOV_OUTPUT)
+@ENABLE_COVERAGE_TRUE@	-$(RM) -r $@
+@ENABLE_COVERAGE_TRUE@	LANG=C $(LCOV_GENHTML) --output-directory $@ --title "ClamAV Code Coverage" --show-details $<
+@ENABLE_COVERAGE_TRUE@	@echo "Open `pwd`/$(LCOV_HTML)/index.html in a browser."
 
-clean-local: lcov-clean
-.PHONY: lcov-clean
-lcov-clean:
-	-$(RM) -r $(LCOV_HTML) $(LCOV_OUTPUT)
+@ENABLE_COVERAGE_TRUE@clean-local: lcov-clean
+@ENABLE_COVERAGE_TRUE@.PHONY: lcov-clean
+@ENABLE_COVERAGE_TRUE@lcov-clean:
+@ENABLE_COVERAGE_TRUE@	-$(RM) -r $(LCOV_HTML) $(LCOV_OUTPUT)
+@ENABLE_COVERAGE_TRUE@	lcov $(DIRECTORIES) --zerocounters
+
+@ENABLE_COVERAGE_FALSE@lcov:
+@ENABLE_COVERAGE_FALSE@	@echo "Coverage information gathering is not enabled in this build"
+@ENABLE_COVERAGE_FALSE@	@echo "Use ./configure --enable-coverage to enable it"
+@ENABLE_COVERAGE_FALSE@	@exit 1
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
