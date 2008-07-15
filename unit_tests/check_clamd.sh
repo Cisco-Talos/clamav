@@ -1,5 +1,5 @@
 #!/bin/sh
-function die() {
+die() {
 	test /tmp/clamd-test.pid && kill `cat /tmp/clamd-test.pid` 
 	rm -r test-db
 	exit $1
