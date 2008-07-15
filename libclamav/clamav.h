@@ -63,7 +63,6 @@ extern "C"
 #define CL_EIO		-123 /* general I/O error */
 #define CL_EFORMAT	-124 /* (internal) bad format or broken file */
 #define CL_ESUPPORT	-125 /* not supported data format */
-#define CL_ELOCKDB	-126 /* can't lock DB directory */
 #define CL_EARJ         -127 /* ARJ handler error */
 
 /* db options */

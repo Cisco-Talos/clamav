@@ -191,8 +191,6 @@ const char *cl_strerror(int clerror)
 	    return "Bad format or broken data";
 	case CL_ESUPPORT:
 	    return "Not supported data format";
-	case CL_ELOCKDB:
-	    return "Unable to lock database directory";
 	case CL_EARJ:
 	    return "ARJ module failure";
 	default:
