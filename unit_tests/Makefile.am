@@ -1,5 +1,5 @@
 programs = check_clamav
-scripts = check_clamd_.sh check_freshclam.sh check_sigtool.sh check_clamscan.sh
+scripts = check_clamd.sh check_freshclam.sh check_sigtool.sh check_clamscan.sh
 
 TESTS = $(programs) $(scripts)
 if ENABLE_UT_INSTALL 
@@ -13,16 +13,17 @@ check_clamav_SOURCES = check_clamav.c check_jsnorm.c check_str.c checks.h $(top_
 check_clamav_CFLAGS = @CHECK_CFLAGS@
 check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CHECK_LIBS@
 
-check_clamd_.sh: check_clamd.sh
-	make -C $(top_builddir)/test
-	cp $< $@
+check_clamd.sh: $(top_builddir)/test/clam.exe
+
+$(top_builddir)/test/clam.exe:
+	(cd $(top_builddir)/test && $(MAKE))
 
 if ENABLE_COVERAGE
 LCOV_OUTPUT = lcov.out
 LCOV_HTML = lcov_html
 LCOV_LCOV = @LCOV@
 LCOV_GENHTML = @GENHTML@
-CLEANFILES=lcov.out *.gcno *.gcda *.log /tmp/clamd-test.log check_clamd_.sh
+CLEANFILES=lcov.out *.gcno *.gcda *.log /tmp/clamd-test.log check_clamd.sh
 EXTRA_DIST=test-clamd.conf test-freshclam.conf
 lcov: $(LCOV_HTML)
 
