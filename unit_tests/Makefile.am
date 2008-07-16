@@ -14,6 +14,7 @@ check_clamav_CFLAGS = @CHECK_CFLAGS@
 check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CHECK_LIBS@
 
 check_clamd.sh: $(top_builddir)/test/clam.exe
+check_clamscan.sh: $(top_builddir)/test/clam.exe
 
 $(top_builddir)/test/clam.exe:
 	(cd $(top_builddir)/test && $(MAKE))
@@ -23,7 +24,7 @@ LCOV_OUTPUT = lcov.out
 LCOV_HTML = lcov_html
 LCOV_LCOV = @LCOV@
 LCOV_GENHTML = @GENHTML@
-CLEANFILES=lcov.out *.gcno *.gcda *.log /tmp/clamd-test.log check_clamd.sh
+CLEANFILES=lcov.out *.gcno *.gcda *.log /tmp/clamd-test.log
 EXTRA_DIST=test-clamd.conf test-freshclam.conf
 lcov: $(LCOV_HTML)
 

@@ -226,7 +226,7 @@ check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CHECK
 @ENABLE_COVERAGE_TRUE@LCOV_HTML = lcov_html
 @ENABLE_COVERAGE_TRUE@LCOV_LCOV = @LCOV@
 @ENABLE_COVERAGE_TRUE@LCOV_GENHTML = @GENHTML@
-@ENABLE_COVERAGE_TRUE@CLEANFILES = lcov.out *.gcno *.gcda *.log /tmp/clamd-test.log check_clamd.sh
+@ENABLE_COVERAGE_TRUE@CLEANFILES = lcov.out *.gcno *.gcda *.log /tmp/clamd-test.log
 @ENABLE_COVERAGE_TRUE@EXTRA_DIST = test-clamd.conf test-freshclam.conf
 @ENABLE_COVERAGE_TRUE@DIRECTORIES = --directory . --directory ../libclamav --directory ../clamd --directory ../freshclam --directory ../sigtool --directory ../clamscan --directory ../clamdscan
 all: all-am
@@ -659,6 +659,7 @@ uninstall-am: uninstall-binPROGRAMS uninstall-dist_binSCRIPTS
 
 
 check_clamd.sh: $(top_builddir)/test/clam.exe
+check_clamscan.sh: $(top_builddir)/test/clam.exe
 
 $(top_builddir)/test/clam.exe:
 	(cd $(top_builddir)/test && $(MAKE))
