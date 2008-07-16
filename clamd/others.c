@@ -109,32 +109,35 @@ void virusaction(const char *filename, const char *virname, const struct cfgstru
 
 	cmd = strdup(cpt->strarg);
 
-	if((pt = strstr(cmd, "%v"))) {
+	if(cmd && (pt = strstr(cmd, "%v"))) {
 	    buffer = (char *) malloc(strlen(cmd) + strlen(virname) + 10);
-	    *pt = 0; pt += 2;
-	    strcpy(buffer, cmd);
-	    strcat(buffer, virname);
-	    strcat(buffer, pt);
-	    free(cmd);
-	    cmd = strdup(buffer);
-	    free(buffer);
+	    if(buffer) {
+		*pt = 0; pt += 2;
+		strcpy(buffer, cmd);
+		strcat(buffer, virname);
+		strcat(buffer, pt);
+		free(cmd);
+		cmd = strdup(buffer);
+		free(buffer);
+	    }
 	}
 
 	/* Allocate env vars.. to be portable env vars should not be freed */
 	buffer = (char *) malloc(strlen(ENV_FILE) + strlen(filename) + 2);
-	sprintf(buffer, "%s=%s", ENV_FILE, filename);
-	putenv(buffer);
+	if(buffer) {
+	    sprintf(buffer, "%s=%s", ENV_FILE, filename);
+	    putenv(buffer);
+	}
 
 	buffer = (char *) malloc(strlen(ENV_VIRUS) + strlen(virname) + 2);
-	sprintf(buffer, "%s=%s", ENV_VIRUS, virname);
-	putenv(buffer);
-
+	if(buffer) {
+	    sprintf(buffer, "%s=%s", ENV_VIRUS, virname);
+	    putenv(buffer);
+	}
 	/* WARNING: this is uninterruptable ! */
-	exit(system(cmd));
+	if(cmd)
+	    exit(system(cmd));
 
-	/* The below is not reached but is here for completeness to remind
-	   maintainers that this buffer is still allocated.. */
-	free(cmd);
     } else if (pid > 0) {
 	/* parent */      
 	waitpid(pid, NULL, 0);

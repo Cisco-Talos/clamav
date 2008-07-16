@@ -1,3 +1,7 @@
+Wed Jul 16 16:33:08 CEST 2008 (tk)
+----------------------------------
+  * clamd: improve handling of memory errors
+
 Wed Jul 16 13:56:21 CEST 2008 (tk)
 ----------------------------------
   * freshclam: if all mirrors get blacklisted internally and freshclam is

@@ -480,12 +480,13 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	pthread_attr_setdetachstate(&clamuko_attr, PTHREAD_CREATE_JOINABLE);
 
 	tharg = (struct thrarg *) malloc(sizeof(struct thrarg));
-	tharg->copt = copt;
-	tharg->engine = engine;
-	tharg->limits = &limits;
-	tharg->options = options;
-
-	pthread_create(&clamuko_pid, &clamuko_attr, clamukoth, tharg);
+	if(tharg) {
+	    tharg->copt = copt;
+	    tharg->engine = engine;
+	    tharg->limits = &limits;
+	    tharg->options = options;
+	    pthread_create(&clamuko_pid, &clamuko_attr, clamukoth, tharg);
+	} else logg("!Not enough memory to start Clamuko\n");
     }
 #else
 	logg("Clamuko is not available.\n");
@@ -589,18 +590,28 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 
 	if (!progexit && new_sd >= 0) {
 		client_conn = (client_conn_t *) malloc(sizeof(struct client_conn_tag));
-		client_conn->sd = new_sd;
-		client_conn->options = options;
-		client_conn->copt = copt;
-		client_conn->engine = cl_dup(engine);
-		client_conn->engine_timestamp = reloaded_time;
-		client_conn->limits = &limits;
-		client_conn->socketds = socketds;
-		client_conn->nsockets = nsockets;
-		if (!thrmgr_dispatch(thr_pool, client_conn)) {
-		    closesocket(client_conn->sd);
-		    free(client_conn);
-		    logg("!thread dispatch failed\n");
+		if(client_conn) {
+		    client_conn->sd = new_sd;
+		    client_conn->options = options;
+		    client_conn->copt = copt;
+		    client_conn->engine = cl_dup(engine);
+		    client_conn->engine_timestamp = reloaded_time;
+		    client_conn->limits = &limits;
+		    client_conn->socketds = socketds;
+		    client_conn->nsockets = nsockets;
+		    if(!thrmgr_dispatch(thr_pool, client_conn)) {
+			closesocket(client_conn->sd);
+			free(client_conn);
+			logg("!thread dispatch failed\n");
+		    }
+		} else {
+		    logg("!Can't allocate memory for client_conn\n");
+		    closesocket(new_sd);
+		    if(cfgopt(copt, "ExitOnOOM")->enabled) {
+			pthread_mutex_lock(&exit_mutex);
+			progexit = 1;
+			pthread_mutex_unlock(&exit_mutex);
+		    }
 		}
 	}
 
