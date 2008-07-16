@@ -247,6 +247,7 @@
 	A note for Solaris/SPARC users: you must set the \emph{ABI} system
 	variable to 32 (e.g. \verb+setenv ABI 32+) before running the
 	configuration script of GMP.
+	\item \verb+check+ unit testing framework \footnote{See section \ref{unit-testing} on how to run the unit tests}.
     \end{itemize}
 
     \subsection{Installing on shell account}
@@ -301,6 +302,80 @@
     \begin{verbatim}
 	$ ./configure --enable-milter
     \end{verbatim}
+
+    \subsection{Running unit tests}\label{unit-testing}
+	ClamAV includes unit tests that allow you to test that the compiled binaries work correctly on your platform.
+
+	The first step is to use your OS's package manager to install the \verb+check+ package. 
+	If your OS doesn't have that package, you can download it from \url{http://check.sourceforge.net/}, 
+	build it and install it.
+
+	To help clamav's configure script locate \verb+check+, it is recommended that you install \verb+pkg-config+, preferably
+	using your OS's package manager, or from \url{http://pkg-config.freedesktop.org}.
+
+	The recommended way to run unit-tests is the following, which ensures you will get an error if unit tests cannot be built:
+	\footnote{The configure script in ClamAV automatically enables the unit tests, if it finds the check framework, however it doesn't consider it a fatal error if unit tests cannot be enabled.}
+	\begin{verbatim}
+	 $ ./configure --enable-check
+	 $ make
+	 $ make check
+	\end{verbatim}
+
+	When \verb+make check+ is finished, you should get a message similar to this:
+	\begin{verbatim}
+==================
+All 5 tests passed
+==================
+	\end{verbatim}
+
+	If a unit test fails, you get a message similar to the following. 
+	See the next section on how to report a bug when a unit test fails.
+	\begin{verbatim}
+========================================
+1 of 5 tests failed
+Please report to http://bugs.clamav.net/
+========================================
+	\end{verbatim}
+
+	If unit tests are disabled (and you didn't use --enable-check), you will get this message:
+	\begin{verbatim}
+*** Unit tests disabled in this build
+*** Use ./configure --enable-check to enable them
+
+SKIP: check_clamav
+PASS: check_clamd.sh
+PASS: check_freshclam.sh
+PASS: check_sigtool.sh
+PASS: check_clamscan.sh
+======================
+All 4 tests passed
+(1 tests were not run)
+======================
+	\end{verbatim}
+	Running \verb+./configure --enable-check+ should tell you why.
+
+    \subsection{Reporting a unit test failure bug}
+	If \verb+make check+ says that some tests failed we encourage you to report a bug on our bugzilla: \url{http://bugs.clamav.net}.
+	The information we need is (see also \url{http://clamav.net/bugs}):
+	\begin{itemize}
+	 \item The exact output from \verb+make check+	 
+	 \item Output of \verb+uname -mrsp+ 
+	 \item your \verb+config.log+	 
+	 \item The following files from the \verb+unit-tests/+ directory:
+		\begin{itemize}
+			\item \verb+test.log+
+	 		\item \verb+clamscan.log+
+			\item \verb+clamdscan.log+
+		\end{itemize}
+	 \item \verb+/tmp/clamd-test.log+ if it exists
+         \item where and how you installed the check package
+	 \item Output of \verb+pkg-config check --cflags --libs+
+	 \item Optionally if \verb+valgrind+ is available on your platform, the output of the following:
+	 \begin{verbatim}
+$ make check
+$ CK_FORK=no ./libtool --mode=execute valgrind unit_tests/check-clamav
+	 \end{verbatim}	
+	\end{itemize}
 
     \section{Configuration}
 
