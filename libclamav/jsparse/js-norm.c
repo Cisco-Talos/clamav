@@ -39,8 +39,6 @@
 #include <ctype.h>
 #include <assert.h>
 
-#define BUFS 65536
-
 #include "cltypes.h"
 #include "lexglobal.h"
 #include "hashtab.h"
@@ -1130,30 +1128,6 @@ struct parser_state *cli_js_init(void)
 	cli_dbgmsg(MODULE "cli_js_init() done\n");
 	return state;
 }
-
-#if 0
-int main(int argc,char** argv)
-{
-	int n;
-	char buf[BUFS+2];
-	struct parser_state state;
-
-	/*cli_debug_flag=1;*/
-	printf("Enter javascript:\n");
-	printf("  Terminate with ^D\n");
-
-	cli_js_init(&state);
-	while ( ( n=read(fileno(stdin), buf, BUFS )) >  0)
-	{
-		/*buf[n] = '\0';*/
-		cli_js_process_buffer(&state, buf, n);
-	}
-	cli_js_parse_done(&state);
-	cli_js_output(&state);
-	cli_js_destroy(&state);
-	return 0;
-}
-#endif
 
 /* TODO: special identifiers in global scope (document, ...) 
  *
