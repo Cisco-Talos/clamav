@@ -506,7 +506,7 @@ static inline char *textbuffer_done(yyscan_t scanner)
 	if(!str) {
 		str = scanner->buf.data;
 	}
-	scanner->yytext = scanner->buf.data;
+	scanner->yytext = str;
 	scanner->yylen = scanner->buf.pos - 1;
 	memset(&scanner->buf, 0, sizeof(scanner->buf));
 	return str;
