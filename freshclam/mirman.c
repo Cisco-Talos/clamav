@@ -241,6 +241,15 @@ void mirman_list(const struct mirdat *mdat)
     }
 }
 
+void mirman_whitelist(struct mirdat *mdat)
+{
+	unsigned int i;
+
+    logg("Whitelisting all mirrors\n");
+    for(i = 0; i < mdat->num; i++)
+	mdat->mirtab[i].ignore = 0;
+}
+
 int mirman_write(const char *file, struct mirdat *mdat)
 {
 	int fd;

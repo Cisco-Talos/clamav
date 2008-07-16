@@ -1,3 +1,8 @@
+Wed Jul 16 13:56:21 CEST 2008 (tk)
+----------------------------------
+  * freshclam: if all mirrors get blacklisted internally and freshclam is
+	       recent enough then attempt to whitelist them (bb#965)
+
 Tue Jul 15 17:30:01 CEST 2008 (tk)
 ----------------------------------
   * libclamav, clamd: prune old lockdb code
