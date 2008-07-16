@@ -1,3 +1,7 @@
+Wed Jul 16 17:52:12 CEST 2008 (tk)
+----------------------------------
+  * clamconf: handle .cld databases (bb#1101)
+
 Wed Jul 16 16:33:08 CEST 2008 (tk)
 ----------------------------------
   * clamd: improve handling of memory errors

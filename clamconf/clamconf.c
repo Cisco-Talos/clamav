@@ -175,14 +175,14 @@ static void printdb(const char *dir, const char *db)
 {
 	struct cl_cvd *cvd;
 	char path[256];
-	unsigned int inc = 0;
+	unsigned int cld = 0;
 	time_t t;
 
 
     snprintf(path, sizeof(path), "%s/%s.cvd", dir, db);
     if(access(path, R_OK) == -1) {
-	snprintf(path, sizeof(path), "%s/%s.inc/%s.info", dir, db, db);
-	inc = 1;
+	snprintf(path, sizeof(path), "%s/%s.cld", dir, db);
+	cld = 1;
 	if(access(path, R_OK) == -1) {
 	    printf("%s db: Not found\n", db);
 	    return;
@@ -191,7 +191,7 @@ static void printdb(const char *dir, const char *db)
 
     if((cvd = cl_cvdhead(path))) {
 	t = (time_t) cvd->stime;
-	printf("%s db: Format: %s, Version: %u, Build time: %s", db, inc ? ".inc" : ".cvd", cvd->version, ctime(&t));
+	printf("%s db: Format: %s, Version: %u, Build time: %s", db, cld ? ".cld" : ".cvd", cvd->version, ctime(&t));
 	cl_cvdfree(cvd);
     }
 }
