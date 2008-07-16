@@ -1147,7 +1147,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	if((pt = cli_strtok(dnsreply, 5, ":"))) {
 	    remote_flevel = atoi(pt);
 	    free(pt);
-	    if(remote_flevel - flevel < 4)
+	    if(remote_flevel && (remote_flevel - flevel < 4))
 		can_whitelist = 1;
 	}
     }
