@@ -59,6 +59,7 @@ START_TEST (test_cl_debug)
     cli_debug_flag = 1;
     cl_debug();
     fail_unless(1 == cli_debug_flag, "cl_debug failed when flag was already set");
+    cli_debug_flag = 0;
 END_TEST
 
 /* extern const char *cl_retdbdir(void); */

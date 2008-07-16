@@ -165,7 +165,7 @@ START_TEST (js_begin_end)
 		buf[p] = ' ';
 	}
 	strncpy(buf + 8192, " stuff stuff <script language='javascript'> function () {}", 8192);
-	fail_unless(html_normalise_mem(buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
+	fail_unless(html_normalise_mem((unsigned char*)buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
 	free(dconf);
 }
 END_TEST
@@ -175,12 +175,10 @@ START_TEST (multiple_scripts)
 	char buf[] = "</script> stuff"\
 			    "<script language='Javascript'> function foo() {} </script>"\
 			    "<script language='Javascript'> function bar() {} </script>";
-	m_area_t m_area;
-	size_t p;
 	struct cli_dconf *dconf = cli_dconf_init();
 
 	fail_unless(!!dconf, "failed to init dconf");
-	fail_unless(html_normalise_mem(buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
+	fail_unless(html_normalise_mem((unsigned char*)buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
 	/* TODO: test that both had been normalized */
 	free(dconf);
 }
@@ -213,7 +211,7 @@ static void tokenizer_test(const char *in, const char *expected, int split)
 	char filename[1024];
 	char *buf;
 	int fd;
-	size_t len = strlen(expected);
+	ssize_t len = strlen(expected);
 	size_t inlen = strlen(in);
 	ssize_t p, p2;
 
