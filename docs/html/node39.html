@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Database loading</TITLE>
-<META NAME="description" CONTENT="Database loading">
+<TITLE>API</TITLE>
+<META NAME="description" CONTENT="API">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,100 +18,64 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node40.html">
-<LINK REL="previous" HREF="node38.html">
-<LINK REL="up" HREF="node37.html">
+<LINK REL="next" HREF="node44.html">
+<LINK REL="previous" HREF="node33.html">
+<LINK REL="up" HREF="node31.html">
 <LINK REL="next" HREF="node40.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html702"
+<A NAME="tex2html710"
   HREF="node40.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html698"
-  HREF="node37.html">
+<A NAME="tex2html706"
+  HREF="node31.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html692"
+<A NAME="tex2html700"
   HREF="node38.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html700"
+<A NAME="tex2html708"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html703"
-  HREF="node40.html">Error handling</A>
-<B> Up:</B> <A NAME="tex2html699"
-  HREF="node37.html">API</A>
-<B> Previous:</B> <A NAME="tex2html693"
-  HREF="node38.html">Header file</A>
- &nbsp; <B>  <A NAME="tex2html701"
+<B> Next:</B> <A NAME="tex2html711"
+  HREF="node40.html">Header file</A>
+<B> Up:</B> <A NAME="tex2html707"
+  HREF="node31.html">LibClamAV</A>
+<B> Previous:</B> <A NAME="tex2html701"
+  HREF="node38.html">Others</A>
+ &nbsp; <B>  <A NAME="tex2html709"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00073200000000000000">
-Database loading</A>
-</H3>
-    The following set of functions provides an interface for loading
-    the virus database:
-    <PRE>
-	const char *cl_retdbdir(void);
-
-	int cl_load(const char *path, struct cl_engine **engine,
-		    unsigned int *signo, unsigned int options);
-</PRE>
-    <code>cl_retdbdir</code> returns the default (hardcoded) path to the directory
-    with ClamAV databases.
-    <code>cl_load</code> loads a single database file or all databases from a
-    directory (if <code>path</code> points to a directory). The second argument
-    is used for passing in the engine structure which should be previously
-    initialized with NULL. A number of loaded signatures will be <SPAN  CLASS="textbf">added</SPAN>
-    to <code>signo</code> <A NAME="tex2html15"
-  HREF="footnode.html#foot291"><SUP><SPAN CLASS="arabic">7</SPAN></SUP></A>. The last argument can pass the following flags:
-    
-<UL>
-<LI><SPAN  CLASS="textbf">CL_DB_STDOPT</SPAN>
-<BR>
-This is an alias for a recommended set of scan options.
-</LI>
-<LI><SPAN  CLASS="textbf">CL_DB_PHISHING</SPAN>
-<BR>
-Load phishing signatures.
-</LI>
-<LI><SPAN  CLASS="textbf">CL_DB_PHISHING_URLS</SPAN>
-<BR>
-Initialize the phishing detection module and load .wdb and .pdb files.
-</LI>
-<LI><SPAN  CLASS="textbf">CL_DB_PUA</SPAN>
-<BR>
-Load signatures for Potentially Unwanted Applications.
-</LI>
-<LI><SPAN  CLASS="textbf">CL_DB_CVDNOTMP</SPAN>
-<BR>
-Load CVD files directly without unpacking them into a temporary
-	directory.
-    
-</LI>
-</UL>
-    <code>cl_load</code> returns 0 (<code>CL_SUCCESS</code>) on success and a negative
-    value on failure.
-    <PRE>
-	    ...
-	    struct cl_engine *engine = NULL;
-	    unsigned int sigs = 0;
-	    int ret;
-
-	ret = cl_load(cl_retdbdir(), &amp;engine, &amp;sigs, CL_DB_STDOPT);
-</PRE>
+<H2><A NAME="SECTION00073000000000000000">
+API</A>
+</H2>
 
 <P>
 <BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL CLASS="ChildLinks">
+<LI><A NAME="tex2html712"
+  HREF="node40.html">Header file</A>
+<LI><A NAME="tex2html713"
+  HREF="node41.html">Database loading</A>
+<LI><A NAME="tex2html714"
+  HREF="node42.html">Error handling</A>
+<LI><A NAME="tex2html715"
+  HREF="node43.html">Engine structure</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2008-07-07
+2008-07-16
 </ADDRESS>
 </BODY>
 </HTML>

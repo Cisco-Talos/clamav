@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Closest mirrors</TITLE>
-<META NAME="description" CONTENT="Closest mirrors">
+<TITLE>Testing</TITLE>
+<META NAME="description" CONTENT="Testing">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,66 +18,64 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
+<LINK REL="next" HREF="node22.html">
 <LINK REL="previous" HREF="node20.html">
-<LINK REL="up" HREF="node20.html">
+<LINK REL="up" HREF="node17.html">
 <LINK REL="next" HREF="node22.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html452"
+<A NAME="tex2html467"
   HREF="node22.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html448"
-  HREF="node20.html">
+<A NAME="tex2html463"
+  HREF="node17.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html444"
+<A NAME="tex2html457"
   HREF="node20.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html450"
+<A NAME="tex2html465"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html453"
-  HREF="node22.html">Usage</A>
-<B> Up:</B> <A NAME="tex2html449"
-  HREF="node20.html">Setting up auto-updating</A>
-<B> Previous:</B> <A NAME="tex2html445"
-  HREF="node20.html">Setting up auto-updating</A>
- &nbsp; <B>  <A NAME="tex2html451"
+<B> Next:</B> <A NAME="tex2html468"
+  HREF="node22.html">Setting up auto-updating</A>
+<B> Up:</B> <A NAME="tex2html464"
+  HREF="node17.html">Configuration</A>
+<B> Previous:</B> <A NAME="tex2html458"
+  HREF="node20.html">clamav-milter</A>
+ &nbsp; <B>  <A NAME="tex2html466"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00054100000000000000">
-Closest mirrors</A>
-</H3>
-    The <code>DatabaseMirror</code> directive in the config file specifies the
-    database server <code>freshclam</code> will attempt (up to <code>MaxAttempts</code>
-    times) to download the database from. The default database mirror
-    is <TT><A NAME="tex2html10"
-  HREF="database.clamav.net">database.clamav.net</A></TT> but multiple directives are allowed.
-    In order to download the database from the closest mirror you should  
-    configure <code>freshclam</code> to use <TT><A NAME="tex2html11"
-  HREF="db.xx.clamav.net">db.xx.clamav.net</A></TT> where xx
-    represents your country code. For example, if your server is in "Ascension
-    Island" you should have the following lines included in <code>freshclam.conf</code>:
+<H2><A NAME="SECTION00053000000000000000">
+Testing</A>
+</H2>
+    Try to scan recursively the source directory:
     <PRE>
-	DNSDatabaseInfo current.cvd.clamav.net
-	DatabaseMirror db.ac.clamav.net
-	DatabaseMirror database.clamav.net
+	$ clamscan -r -l scan.txt clamav-x.yz
 </PRE>
-    The second entry acts as a fallback in case the connection to the first
-    mirror fails for some reason. The full list of two-letters country codes
-    is available at <TT><A NAME="tex2html12"
-  HREF="http://www.iana.org/cctld/cctld-whois.htm">http://www.iana.org/cctld/cctld-whois.htm</A></TT>
+    It should find some test files in the clamav-x.yz/test directory.
+    The scan result will be saved in the <code>scan.txt</code> log file
+    <A NAME="tex2html15"
+  HREF="footnode.html#foot200"><SUP><SPAN CLASS="arabic">6</SPAN></SUP></A>.
+    To test <code>clamd</code>, start it and use <code>clamdscan</code> (or instead connect
+    directly to its socket and run the SCAN command):
+    <PRE>
+	$ clamdscan -l scan.txt clamav-x.yz
+</PRE>
+    Please note that the scanned files must be accessible by the user running
+    <code>clamd</code> or you will get an error.
+
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2008-07-07
+2008-07-16
 </ADDRESS>
 </BODY>
 </HTML>

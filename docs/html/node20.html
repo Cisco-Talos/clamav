@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Setting up auto-updating</TITLE>
-<META NAME="description" CONTENT="Setting up auto-updating">
+<TITLE>clamav-milter</TITLE>
+<META NAME="description" CONTENT="clamav-milter">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,128 +18,70 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="previous" HREF="node19.html">
-<LINK REL="up" HREF="node15.html">
+<LINK REL="next" HREF="node21.html">
+<LINK REL="previous" HREF="node18.html">
+<LINK REL="up" HREF="node17.html">
 <LINK REL="next" HREF="node21.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html441"
+<A NAME="tex2html455"
   HREF="node21.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html437"
-  HREF="node15.html">
+<A NAME="tex2html451"
+  HREF="node17.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html433"
+<A NAME="tex2html445"
   HREF="node19.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html439"
+<A NAME="tex2html453"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html442"
-  HREF="node21.html">Closest mirrors</A>
-<B> Up:</B> <A NAME="tex2html438"
-  HREF="node15.html">Configuration</A>
-<B> Previous:</B> <A NAME="tex2html434"
-  HREF="node19.html">Testing</A>
- &nbsp; <B>  <A NAME="tex2html440"
+<B> Next:</B> <A NAME="tex2html456"
+  HREF="node21.html">Testing</A>
+<B> Up:</B> <A NAME="tex2html452"
+  HREF="node17.html">Configuration</A>
+<B> Previous:</B> <A NAME="tex2html446"
+  HREF="node19.html">On-access scanning</A>
+ &nbsp; <B>  <A NAME="tex2html454"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00054000000000000000">
-Setting up auto-updating</A>
+<H2><A NAME="SECTION00052000000000000000">
+clamav-milter</A>
 </H2>
-    <code>freshclam</code> is the automatic database update tool for Clam AntiVirus.
-    It can work in two modes:
-    
-<UL>
-<LI>interactive - on demand from command line
-</LI>
-<LI>daemon - silently in the background
-    
-</LI>
-</UL>
-    <code>freshclam</code> is advanced tool: it supports scripted updates (instead
-    of transferring the whole CVD file at each update it only transfers the
-    differences between the latest and the current database via a special
-    script), database version checks through DNS, proxy servers (with
-    authentication), digital signatures and various error scenarios.
-    <SPAN  CLASS="textbf">Quick test: run freshclam (as superuser) with no parameters
-    and check the output.</SPAN> If everything is OK you may create the log file in
-    /var/log (owned by <SPAN  CLASS="textit">clamav</SPAN> or another user <code>freshclam</code> will be
-    running as):
+    Nigel Horne's <code>clamav-milter</code> is a very efficient email scanner
+    designed for Sendmail. It's written entirely in C and only depends on
+    <code>libclamav</code> or <code>clamd</code>. You can find detailed installation
+    instructions in the <code>INSTALL</code> file that comes with the clamav-milter
+    sources. Basically, to connect it with Sendmail add the following lines to
+    <code>/etc/mail/sendmail.mc</code>:
     <PRE>
-	# touch /var/log/freshclam.log
-	# chmod 600 /var/log/freshclam.log
-	# chown clamav /var/log/freshclam.log
+INPUT_MAIL_FILTER(`clmilter',`S=local:/var/run/clamav/clmilter.sock,
+F=, T=S:4m;R:4m')dnl
+define(`confINPUT_MAIL_FILTERS', `clmilter')
 </PRE>
-    Now you <SPAN  CLASS="textit">should</SPAN> edit the configuration file <code>freshclam.conf</code>
-    and point the <SPAN  CLASS="textit">UpdateLogFile</SPAN> directive to the log file. Finally, to
-    run <code>freshclam</code> in the daemon mode, execute:
+    If you're running it in <code>--external</code> mode, check entry in
+    <code>clamd.conf</code> of the form:
     <PRE>
-	# freshclam -d
+	LocalSocket /var/run/clamav/clamd.sock
 </PRE>
-    The other way is to use the <SPAN  CLASS="textit">cron</SPAN> daemon. You have to add the
-    following line to the crontab of <SPAN  CLASS="textbf">root</SPAN> or <SPAN  CLASS="textbf">clamav</SPAN> user:
-    <SMALL CLASS="SMALL">    </SMALL><PRE>
-N * * * *	/usr/local/bin/freshclam --quiet
-</PRE>
-    to check for a new database every hour. <SPAN  CLASS="textbf">N should be a
-    number between 3 and 57 of your choice. Please don't choose any multiple
-    of 10, because there are already too many clients using those time slots.</SPAN>
-    Proxy settings are only configurable via the configuration file and
-    <code>freshclam</code> will require strict permission settings for the config
-    file when <code>HTTPProxyPassword</code> is turned on.
+    Start clamav-milter
     <PRE>
-	HTTPProxyServer myproxyserver.com
-	HTTPProxyPort 1234
-	HTTPProxyUsername myusername
-	HTTPProxyPassword mypass
+	/usr/local/sbin/clamav-milter -lo /var/run/clamav/clmilter.sock
 </PRE>
+    and restart sendmail.
 
 <P>
 <BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
-
-<UL CLASS="ChildLinks">
-<LI><A NAME="tex2html443"
-  HREF="node21.html">Closest mirrors</A>
-</UL>
-<!--End of Table of Child-Links-->
-
-<DIV CLASS="navigation"><HR>
-<!--Navigation Panel-->
-<A NAME="tex2html441"
-  HREF="node21.html">
-<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html437"
-  HREF="node15.html">
-<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html433"
-  HREF="node19.html">
-<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html439"
-  HREF="node1.html">
-<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
-<BR>
-<B> Next:</B> <A NAME="tex2html442"
-  HREF="node21.html">Closest mirrors</A>
-<B> Up:</B> <A NAME="tex2html438"
-  HREF="node15.html">Configuration</A>
-<B> Previous:</B> <A NAME="tex2html434"
-  HREF="node19.html">Testing</A>
- &nbsp; <B>  <A NAME="tex2html440"
-  HREF="node1.html">Contents</A></B> </DIV>
-<!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2008-07-07
+2008-07-16
 </ADDRESS>
 </BODY>
 </HTML>

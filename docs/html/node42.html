@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Database reloading</TITLE>
-<META NAME="description" CONTENT="Database reloading">
+<TITLE>Error handling</TITLE>
+<META NAME="description" CONTENT="Error handling">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,92 +18,57 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node48.html">
-<LINK REL="previous" HREF="node37.html">
-<LINK REL="up" HREF="node29.html">
+<LINK REL="next" HREF="node43.html">
+<LINK REL="previous" HREF="node41.html">
+<LINK REL="up" HREF="node39.html">
 <LINK REL="next" HREF="node43.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html736"
+<A NAME="tex2html750"
   HREF="node43.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html732"
-  HREF="node29.html">
+<A NAME="tex2html746"
+  HREF="node39.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html726"
+<A NAME="tex2html740"
   HREF="node41.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html734"
+<A NAME="tex2html748"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html737"
-  HREF="node43.html">Data scan functions</A>
-<B> Up:</B> <A NAME="tex2html733"
-  HREF="node29.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html727"
-  HREF="node41.html">Engine structure</A>
- &nbsp; <B>  <A NAME="tex2html735"
+<B> Next:</B> <A NAME="tex2html751"
+  HREF="node43.html">Engine structure</A>
+<B> Up:</B> <A NAME="tex2html747"
+  HREF="node39.html">API</A>
+<B> Previous:</B> <A NAME="tex2html741"
+  HREF="node41.html">Database loading</A>
+ &nbsp; <B>  <A NAME="tex2html749"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00074000000000000000">
-Database reloading</A>
-</H2>
-    The most important thing is to keep the internal instance of the database
-    up to date. You can watch database changes with the <code>cl_stat</code>
-    family of functions.
+<H3><A NAME="SECTION00073300000000000000">
+Error handling</A>
+</H3>
+    Use <code>cl_strerror</code> to convert error codes into human readable messages.
+    The function returns a statically allocated string:
     <PRE>
-	int cl_statinidir(const char *dirname, struct cl_stat *dbstat);
-	int cl_statchkdir(const struct cl_stat *dbstat);
-	int cl_statfree(struct cl_stat *dbstat);
-</PRE>
-    Initialization:
-    <PRE>
-	    ...
-	    struct cl_stat dbstat;
-
-	memset(&amp;dbstat, 0, sizeof(struct cl_stat));
-	cl_statinidir(dbdir, &amp;dbstat);
-</PRE>
-    To check for a change you just need to call <code>cl_statchkdir</code> and check
-    its return value (0 - no change, 1 - some change occured):
-    <PRE>
-	if(cl_statchkdir(&amp;dbstat) == 1) {
-	    reload_database...;
-	    cl_statfree(&amp;dbstat);
-	    cl_statinidir(cl_retdbdir(), &amp;dbstat);
+	if(ret) {
+	    printf("cl_load() error: %s\n", cl_strerror(ret));
+	    exit(1);
 	}
 </PRE>
-    Remember to reset the <code>cl_stat</code> structure after reload.
 
 <P>
 <BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
-
-<UL CLASS="ChildLinks">
-<LI><A NAME="tex2html738"
-  HREF="node43.html">Data scan functions</A>
-<LI><A NAME="tex2html739"
-  HREF="node44.html">Memory</A>
-<LI><A NAME="tex2html740"
-  HREF="node45.html">Forking daemons</A>
-<LI><A NAME="tex2html741"
-  HREF="node46.html">clamav-config</A>
-<LI><A NAME="tex2html742"
-  HREF="node47.html">Example</A>
-</UL>
-<!--End of Table of Child-Links-->
-<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2008-07-07
+2008-07-16
 </ADDRESS>
 </BODY>
 </HTML>

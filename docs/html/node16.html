@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>clamd</TITLE>
-<META NAME="description" CONTENT="clamd">
+<TITLE>Reporting a unit test failure bug</TITLE>
+<META NAME="description" CONTENT="Reporting a unit test failure bug">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,68 +18,85 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node18.html">
 <LINK REL="previous" HREF="node15.html">
-<LINK REL="up" HREF="node15.html">
+<LINK REL="up" HREF="node9.html">
 <LINK REL="next" HREF="node17.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html396"
+<A NAME="tex2html402"
   HREF="node17.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html392"
-  HREF="node15.html">
+<A NAME="tex2html398"
+  HREF="node9.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html386"
+<A NAME="tex2html394"
   HREF="node15.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html394"
+<A NAME="tex2html400"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html397"
-  HREF="node17.html">On-access scanning</A>
-<B> Up:</B> <A NAME="tex2html393"
-  HREF="node15.html">Configuration</A>
-<B> Previous:</B> <A NAME="tex2html387"
-  HREF="node15.html">Configuration</A>
- &nbsp; <B>  <A NAME="tex2html395"
+<B> Next:</B> <A NAME="tex2html403"
+  HREF="node17.html">Configuration</A>
+<B> Up:</B> <A NAME="tex2html399"
+  HREF="node9.html">Installation</A>
+<B> Previous:</B> <A NAME="tex2html395"
+  HREF="node15.html">Running unit tests</A>
+ &nbsp; <B>  <A NAME="tex2html401"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00051000000000000000">
-clamd</A>
+<H2><A NAME="SECTION00047000000000000000">
+Reporting a unit test failure bug</A>
 </H2>
-    Before you start using the daemon you have to edit the configuration file
-    (in other case <code>clamd</code> won't run):
-    <PRE>
-	$ clamd
-	ERROR: Please edit the example config file /etc/clamd.conf.
+	If <code>make check</code> says that some tests failed we encourage you to report a bug on our bugzilla: <TT><A NAME="tex2html12"
+  HREF="http://bugs.clamav.net">http://bugs.clamav.net</A></TT>.
+	The information we need is (see also <TT><A NAME="tex2html13"
+  HREF="http://clamav.net/bugs">http://clamav.net/bugs</A></TT>):
+	
+<UL>
+<LI>The exact output from <code>make check</code>	 
+</LI>
+<LI>Output of <code>uname -mrsp</code> 
+</LI>
+<LI>your <code>config.log</code>	 
+</LI>
+<LI>The following files from the <code>unit-tests/</code> directory:
+		
+<UL>
+<LI><code>test.log</code>
+</LI>
+<LI><code>clamscan.log</code>
+</LI>
+<LI><code>clamdscan.log</code>
+		
+</LI>
+</UL>
+</LI>
+<LI><code>/tmp/clamd-test.log</code> if it exists
+</LI>
+<LI>where and how you installed the check package
+</LI>
+<LI>Output of <code>pkg-config check --cflags --libs</code>
+</LI>
+<LI>Optionally if <code>valgrind</code> is available on your platform, the output of the following:
+	 <PRE>
+$ make check
+$ CK_FORK=no ./libtool --mode=execute valgrind unit_tests/check-clamav
 </PRE>
-    This shows the location of the default configuration file. The format and
-    options of this file are fully described in the <SPAN  CLASS="textit">clamd.conf(5)</SPAN>
-    manual. The config file is well commented and configuration should be
-    straightforward.
+</LI>
+</UL>
 
 <P>
 <BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
-
-<UL CLASS="ChildLinks">
-<LI><A NAME="tex2html398"
-  HREF="node17.html">On-access scanning</A>
-</UL>
-<!--End of Table of Child-Links-->
-<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2008-07-07
+2008-07-16
 </ADDRESS>
 </BODY>
 </HTML>

@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Clamuko</TITLE>
-<META NAME="description" CONTENT="Clamuko">
+<TITLE>Clam daemon</TITLE>
+<META NAME="description" CONTENT="Clam daemon">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -20,79 +20,147 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="next" HREF="node26.html">
 <LINK REL="previous" HREF="node24.html">
-<LINK REL="up" HREF="node22.html">
+<LINK REL="up" HREF="node24.html">
 <LINK REL="next" HREF="node26.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html506"
+<A NAME="tex2html518"
   HREF="node26.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html502"
-  HREF="node22.html">
+<A NAME="tex2html514"
+  HREF="node24.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html496"
+<A NAME="tex2html508"
   HREF="node24.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html504"
+<A NAME="tex2html516"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html507"
-  HREF="node26.html">Output format</A>
-<B> Up:</B> <A NAME="tex2html503"
-  HREF="node22.html">Usage</A>
-<B> Previous:</B> <A NAME="tex2html497"
-  HREF="node24.html">Clamdscan</A>
- &nbsp; <B>  <A NAME="tex2html505"
+<B> Next:</B> <A NAME="tex2html519"
+  HREF="node26.html">Clamdscan</A>
+<B> Up:</B> <A NAME="tex2html515"
+  HREF="node24.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html509"
+  HREF="node24.html">Usage</A>
+ &nbsp; <B>  <A NAME="tex2html517"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00063000000000000000"></A><A NAME="clamuko"></A>
+<H2><A NAME="SECTION00061000000000000000"></A><A NAME="clamd"></A>
 <BR>
-Clamuko
+Clam daemon
 </H2>
-    Clamuko is a special thread in <code>clamd</code> that performs on-access
-    scanning under Linux and FreeBSD and shares internal virus database
-    with the daemon. <SPAN  CLASS="textbf">You must follow some important rules when
-    using it:</SPAN>
+    <code>clamd</code> is a multi-threaded daemon that uses <SPAN  CLASS="textit">libclamav</SPAN>
+    to scan files for viruses. It may work in one or both modes listening on:
     
 <UL>
-<LI>Always stop the daemon cleanly - using the SHUTDOWN command or
-	      the
-<BR>
-SIGTERM signal. In other case you can lose access
-	      to protected files until the system is restarted.
+<LI>Unix (local) socket
 </LI>
-<LI>Never protect the directory your mail-scanner software
-	      uses for attachment unpacking. Access to all infected
-	      files will be automatically blocked and the scanner (including
-	      <code>clamd</code>!) will not be able to detect any viruses. In the
-	      result <SPAN  CLASS="textbf">all infected mails may be delivered.</SPAN>
+<LI>TCP socket
     
 </LI>
 </UL>
-    For example, to protect the whole system add the following lines to
-    <code>clamd.conf</code>:
-    <PRE>
-	ClamukoScanOnAccess
-	ClamukoIncludePath /
-	ClamukoExcludePath /proc
-	ClamukoExcludePath /temporary/dir/of/your/mail/scanning/software
-</PRE>
-    You can also use clamuko to protect files on Samba/Netatalk but a far
-    more better and safe idea is to use the <SPAN  CLASS="textbf">samba-vscan</SPAN> module.
-    NFS is not supported because Dazuko doesn't intercept NFS access calls.
+    The daemon is fully configurable via the <code>clamd.conf</code> file
+    <A NAME="tex2html19"
+  HREF="footnode.html#foot234"><SUP><SPAN CLASS="arabic">7</SPAN></SUP></A>. <code>clamd</code> recognizes the following commands:
+    
+<UL>
+<LI><SPAN  CLASS="textbf">PING</SPAN>
+<BR>
+Check the daemon's state (should reply with "PONG").
+</LI>
+<LI><SPAN  CLASS="textbf">VERSION</SPAN>
+<BR>
+Print program and database versions.
+</LI>
+<LI><SPAN  CLASS="textbf">RELOAD</SPAN>
+<BR>
+Reload the databases.
+</LI>
+<LI><SPAN  CLASS="textbf">SHUTDOWN</SPAN>
+<BR>
+Perform a clean exit.
+</LI>
+<LI><SPAN  CLASS="textbf">SCAN file/directory</SPAN>
+<BR>
+Scan file or directory (recursively) with archive support
+	    enabled (a full path is required).
+</LI>
+<LI><SPAN  CLASS="textbf">RAWSCAN file/directory</SPAN>
+<BR>
+Scan file or directory (recursively) with archive and special file
+	    support disabled (a full path is required).
+</LI>
+<LI><SPAN  CLASS="textbf">CONTSCAN file/directory</SPAN>
+<BR>
+Scan file or directory (recursively) with archive support
+	    enabled and don't stop the scanning when a virus is found.
+</LI>
+<LI><SPAN  CLASS="textbf">MULTISCAN file/directory</SPAN>
+<BR>
+Scan file in a standard way or scan directory (recursively) using
+	    multiple threads (to make the scanning faster on SMP machines).
+</LI>
+<LI><SPAN  CLASS="textbf">STREAM</SPAN>
+<BR>
+Scan stream: <code>clamd</code> will return a new port number you should
+	    connect to and send data to scan.
+</LI>
+<LI><SPAN  CLASS="textbf">SESSION, END</SPAN>
+<BR>
+Start/end a <code>clamd</code> session - you can do multiple commands
+	    per TCP session (WARNING: due to the <code>clamd</code> implementation the
+	    <SPAN  CLASS="textbf">RELOAD</SPAN> command will break the session).
+    
+</LI>
+</UL>
+    and reacts on the special signals:
+    
+<UL>
+<LI><SPAN  CLASS="textbf">SIGTERM</SPAN> - perform a clean exit
+</LI>
+<LI><SPAN  CLASS="textbf">SIGHUP</SPAN> - reopen the log file
+</LI>
+<LI><SPAN  CLASS="textbf">SIGUSR2</SPAN> - reload the database
+    
+</LI>
+</UL>
 
 <P>
-<BR><HR>
+
+<DIV CLASS="navigation"><HR>
+<!--Navigation Panel-->
+<A NAME="tex2html518"
+  HREF="node26.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html514"
+  HREF="node24.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html508"
+  HREF="node24.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html516"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html519"
+  HREF="node26.html">Clamdscan</A>
+<B> Up:</B> <A NAME="tex2html515"
+  HREF="node24.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html509"
+  HREF="node24.html">Usage</A>
+ &nbsp; <B>  <A NAME="tex2html517"
+  HREF="node1.html">Contents</A></B> </DIV>
+<!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2008-07-07
+2008-07-16
 </ADDRESS>
 </BODY>
 </HTML>

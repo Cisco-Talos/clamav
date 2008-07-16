@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Configuration</TITLE>
-<META NAME="description" CONTENT="Configuration">
+<TITLE>Running unit tests</TITLE>
+<META NAME="description" CONTENT="Running unit tests">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,72 +18,131 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node22.html">
-<LINK REL="previous" HREF="node9.html">
-<LINK REL="up" HREF="clamdoc.html">
+<LINK REL="next" HREF="node16.html">
+<LINK REL="previous" HREF="node14.html">
+<LINK REL="up" HREF="node9.html">
 <LINK REL="next" HREF="node16.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html378"
+<A NAME="tex2html392"
   HREF="node16.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html374"
-  HREF="clamdoc.html">
+<A NAME="tex2html388"
+  HREF="node9.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html368"
+<A NAME="tex2html382"
   HREF="node14.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html376"
+<A NAME="tex2html390"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html379"
-  HREF="node16.html">clamd</A>
-<B> Up:</B> <A NAME="tex2html375"
-  HREF="clamdoc.html">clamdoc</A>
-<B> Previous:</B> <A NAME="tex2html369"
+<B> Next:</B> <A NAME="tex2html393"
+  HREF="node16.html">Reporting a unit test</A>
+<B> Up:</B> <A NAME="tex2html389"
+  HREF="node9.html">Installation</A>
+<B> Previous:</B> <A NAME="tex2html383"
   HREF="node14.html">Compilation with clamav-milter enabled</A>
- &nbsp; <B>  <A NAME="tex2html377"
+ &nbsp; <B>  <A NAME="tex2html391"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H1><A NAME="SECTION00050000000000000000">
-Configuration</A>
-</H1>
+<H2><A NAME="SECTION00046000000000000000"></A><A NAME="unit-testing"></A>
+<BR>
+Running unit tests
+</H2>
+	ClamAV includes unit tests that allow you to test that the compiled binaries work correctly on your platform.
 
 <P>
-<BR><HR>
-<!--Table of Child-Links-->
-<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+The first step is to use your OS's package manager to install the <code>check</code> package. 
+	If your OS doesn't have that package, you can download it from <TT><A NAME="tex2html9"
+  HREF="http://check.sourceforge.net/">http://check.sourceforge.net/</A></TT>, 
+	build it and install it.
 
-<UL CLASS="ChildLinks">
-<LI><A NAME="tex2html380"
-  HREF="node16.html">clamd</A>
-<UL>
-<LI><A NAME="tex2html381"
-  HREF="node17.html">On-access scanning</A>
-</UL>
+<P>
+To help clamav's configure script locate <code>check</code>, it is recommended that you install <code>pkg-config</code>, preferably
+	using your OS's package manager, or from <TT><A NAME="tex2html10"
+  HREF="http://pkg-config.freedesktop.org">http://pkg-config.freedesktop.org</A></TT>.
+
+<P>
+The recommended way to run unit-tests is the following, which ensures you will get an error if unit tests cannot be built:
+	<A NAME="tex2html11"
+  HREF="footnode.html#foot156"><SUP><SPAN CLASS="arabic">5</SPAN></SUP></A>	<PRE>
+	 $ ./configure --enable-check
+	 $ make
+	 $ make check
+</PRE>
+
+<P>
+When <code>make check</code> is finished, you should get a message similar to this:
+	<PRE>
+==================
+All 5 tests passed
+==================
+</PRE>
+
+<P>
+If a unit test fails, you get a message similar to the following. 
+	See the next section on how to report a bug when a unit test fails.
+	<PRE>
+========================================
+1 of 5 tests failed
+Please report to http://bugs.clamav.net/
+========================================
+</PRE>
+
+<P>
+If unit tests are disabled (and you didn't use -enable-check), you will get this message:
+	<PRE>
+*** Unit tests disabled in this build
+*** Use ./configure --enable-check to enable them
+
+SKIP: check_clamav
+PASS: check_clamd.sh
+PASS: check_freshclam.sh
+PASS: check_sigtool.sh
+PASS: check_clamscan.sh
+======================
+All 4 tests passed
+(1 tests were not run)
+======================
+</PRE>
+	Running <code>./configure --enable-check</code> should tell you why.
+
+<P>
+
+<DIV CLASS="navigation"><HR>
+<!--Navigation Panel-->
+<A NAME="tex2html392"
+  HREF="node16.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html388"
+  HREF="node9.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html382"
+  HREF="node14.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html390"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<LI><A NAME="tex2html382"
-  HREF="node18.html">clamav-milter</A>
-<LI><A NAME="tex2html383"
-  HREF="node19.html">Testing</A>
-<LI><A NAME="tex2html384"
-  HREF="node20.html">Setting up auto-updating</A>
-<UL>
-<LI><A NAME="tex2html385"
-  HREF="node21.html">Closest mirrors</A>
-</UL></UL>
-<!--End of Table of Child-Links-->
-<BR><HR>
+<B> Next:</B> <A NAME="tex2html393"
+  HREF="node16.html">Reporting a unit test</A>
+<B> Up:</B> <A NAME="tex2html389"
+  HREF="node9.html">Installation</A>
+<B> Previous:</B> <A NAME="tex2html383"
+  HREF="node14.html">Compilation with clamav-milter enabled</A>
+ &nbsp; <B>  <A NAME="tex2html391"
+  HREF="node1.html">Contents</A></B> </DIV>
+<!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2008-07-07
+2008-07-16
 </ADDRESS>
 </BODY>
 </HTML>

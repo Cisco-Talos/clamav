@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>On-access scanning</TITLE>
-<META NAME="description" CONTENT="On-access scanning">
+<TITLE>Configuration</TITLE>
+<META NAME="description" CONTENT="Configuration">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,79 +18,72 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="previous" HREF="node16.html">
-<LINK REL="up" HREF="node16.html">
+<LINK REL="next" HREF="node24.html">
+<LINK REL="previous" HREF="node9.html">
+<LINK REL="up" HREF="clamdoc.html">
 <LINK REL="next" HREF="node18.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html407"
+<A NAME="tex2html414"
   HREF="node18.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html403"
-  HREF="node16.html">
+<A NAME="tex2html410"
+  HREF="clamdoc.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html399"
+<A NAME="tex2html404"
   HREF="node16.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html405"
+<A NAME="tex2html412"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html408"
-  HREF="node18.html">clamav-milter</A>
-<B> Up:</B> <A NAME="tex2html404"
-  HREF="node16.html">clamd</A>
-<B> Previous:</B> <A NAME="tex2html400"
-  HREF="node16.html">clamd</A>
- &nbsp; <B>  <A NAME="tex2html406"
+<B> Next:</B> <A NAME="tex2html415"
+  HREF="node18.html">clamd</A>
+<B> Up:</B> <A NAME="tex2html411"
+  HREF="clamdoc.html">clamdoc</A>
+<B> Previous:</B> <A NAME="tex2html405"
+  HREF="node16.html">Reporting a unit test</A>
+ &nbsp; <B>  <A NAME="tex2html413"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00051100000000000000">
-On-access scanning</A>
-</H3>
-    One of the interesting features of <code>clamd</code> is on-access scanning
-    based on the Dazuko module, available from <TT><A NAME="tex2html8"
-  HREF="http://dazuko.org/">http://dazuko.org/</A></TT>.
-    <SPAN  CLASS="textbf">This module is not required to run clamd - furthermore, you
-    shouldn't run Dazuko on production systems</SPAN>. At the moment Dazuko is
-    avaliable for Linux and FreeBSD, but the following information only covers
-    Linux.
-    <PRE>
-	$ tar zxpvf dazuko-a.b.c.tar.gz
-	$ cd dazuko-a.b.c
-	$ make dazuko
-	or
-	$ make dazuko-smp (for smp kernels)
-	$ su
-	# insmod dazuko.o
-	# cp dazuko.o /lib/modules/`uname -r`/misc
-	# depmod -a
-</PRE>
-    Depending on your Linux distribution you may need to add a "dazuko" entry to
-    <SPAN  CLASS="textit">/etc/modules</SPAN> or run the module during system's startup by adding
-    <PRE>
-	/sbin/modprobe dazuko
-</PRE>
-    to some startup file. You must also create a new device:
-    <PRE>
-	$ cat /proc/devices | grep dazuko
-	254 dazuko
-	$ su -c "mknod -m 600 /dev/dazuko c 254 0"
-</PRE>
-    Now configure Clamuko in <code>clamd.conf</code> and read the <A HREF="node25.html#clamuko">5.3</A>
-    section.
+<H1><A NAME="SECTION00050000000000000000">
+Configuration</A>
+</H1>
 
 <P>
 <BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL CLASS="ChildLinks">
+<LI><A NAME="tex2html416"
+  HREF="node18.html">clamd</A>
+<UL>
+<LI><A NAME="tex2html417"
+  HREF="node19.html">On-access scanning</A>
+</UL>
+<BR>
+<LI><A NAME="tex2html418"
+  HREF="node20.html">clamav-milter</A>
+<LI><A NAME="tex2html419"
+  HREF="node21.html">Testing</A>
+<LI><A NAME="tex2html420"
+  HREF="node22.html">Setting up auto-updating</A>
+<UL>
+<LI><A NAME="tex2html421"
+  HREF="node23.html">Closest mirrors</A>
+</UL></UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2008-07-07
+2008-07-16
 </ADDRESS>
 </BODY>
 </HTML>

@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>CVD format</TITLE>
-<META NAME="description" CONTENT="CVD format">
+<TITLE>clamav-config</TITLE>
+<META NAME="description" CONTENT="clamav-config">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -19,70 +19,55 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
 <LINK REL="next" HREF="node49.html">
-<LINK REL="previous" HREF="node42.html">
-<LINK REL="up" HREF="node29.html">
+<LINK REL="previous" HREF="node47.html">
+<LINK REL="up" HREF="node44.html">
 <LINK REL="next" HREF="node49.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html811"
+<A NAME="tex2html825"
   HREF="node49.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html807"
-  HREF="node29.html">
+<A NAME="tex2html821"
+  HREF="node44.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html801"
+<A NAME="tex2html815"
   HREF="node47.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html809"
+<A NAME="tex2html823"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html812"
-  HREF="node49.html">Contributors</A>
-<B> Up:</B> <A NAME="tex2html808"
-  HREF="node29.html">LibClamAV</A>
-<B> Previous:</B> <A NAME="tex2html802"
-  HREF="node47.html">Example</A>
- &nbsp; <B>  <A NAME="tex2html810"
+<B> Next:</B> <A NAME="tex2html826"
+  HREF="node49.html">Example</A>
+<B> Up:</B> <A NAME="tex2html822"
+  HREF="node44.html">Database reloading</A>
+<B> Previous:</B> <A NAME="tex2html816"
+  HREF="node47.html">Forking daemons</A>
+ &nbsp; <B>  <A NAME="tex2html824"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H2><A NAME="SECTION00075000000000000000">
-CVD format</A>
-</H2>
-    CVD (ClamAV Virus Database) is a digitally signed tarball containing
-    one or more databases. The header is a 512-bytes long string with colon
-    separated fields:
+<H3><A NAME="SECTION00074400000000000000">
+clamav-config</A>
+</H3>
+    Use <code>clamav-config</code> to check compilation information for libclamav.
     <PRE>
-ClamAV-VDB:build time:version:number of signatures:functionality
-level required:MD5 checksum:digital signature:builder name:build time (sec)
-</PRE>
-    <code>sigtool --info</code> displays detailed information on CVD files:
-    <PRE>
-zolw@localhost:/usr/local/share/clamav$ sigtool -i daily.cvd 
-File: daily.cvd
-Build time: 10 Mar 2008 10:45 +0000
-Version: 6191
-Signatures: 59084
-Functionality level: 26
-Builder: ccordes
-MD5: 6e6e29dae36b4b7315932c921e568330
-Digital signature: zz9irc9irupR3z7yX6J+OR6XdFPUat4HIM9ERn3kAcOWpcMFxq
-Fs4toG5WJsHda0Jj92IUusZ7wAgYjpai1Nr+jFfXHsJxv0dBkS5/XWMntj0T1ctNgqmiF
-+RLU6V0VeTl4Oej3Aya0cVpd9K4XXevEO2eTTvzWNCAq0ZzWNdjc
-Verification OK.
+	zolw@localhost:~$ clamav-config --libs
+	-L/usr/local/lib -lz -lbz2 -lgmp -lpthread
+	zolw@localhost:~$ clamav-config --cflags
+	-I/usr/local/include -g -O2
 </PRE>
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2008-07-07
+2008-07-16
 </ADDRESS>
 </BODY>
 </HTML>
