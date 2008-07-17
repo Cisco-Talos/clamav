@@ -13255,21 +13255,25 @@ fi
 
 	{ echo "$as_me:$LINENO: result: no" >&5
 echo "${ECHO_T}no" >&6; }
-                { echo "$as_me:$LINENO: WARNING: pkg-config not found
-			   Alternatively, you may set the environment variables CHECK_CFLAGS
+                { echo "$as_me:$LINENO: WARNING: unable to find 'check' using pkg-config:
+$CHECK_PKG_ERRORS
+Alternatively, you may set the environment variables CHECK_CFLAGS
 and CHECK_LIBS to avoid the need to call pkg-config.
 See the pkg-config man page for more details." >&5
-echo "$as_me: WARNING: pkg-config not found
-			   Alternatively, you may set the environment variables CHECK_CFLAGS
+echo "$as_me: WARNING: unable to find 'check' using pkg-config:
+$CHECK_PKG_ERRORS
+Alternatively, you may set the environment variables CHECK_CFLAGS
 and CHECK_LIBS to avoid the need to call pkg-config.
 See the pkg-config man page for more details." >&2;}
 elif test $pkg_failed = untried; then
-	{ echo "$as_me:$LINENO: WARNING: pkg-config not found
-			   Alternatively, you may set the environment variables CHECK_CFLAGS
+	{ echo "$as_me:$LINENO: WARNING: unable to find 'check' using pkg-config:
+$CHECK_PKG_ERRORS
+Alternatively, you may set the environment variables CHECK_CFLAGS
 and CHECK_LIBS to avoid the need to call pkg-config.
 See the pkg-config man page for more details." >&5
-echo "$as_me: WARNING: pkg-config not found
-			   Alternatively, you may set the environment variables CHECK_CFLAGS
+echo "$as_me: WARNING: unable to find 'check' using pkg-config:
+$CHECK_PKG_ERRORS
+Alternatively, you may set the environment variables CHECK_CFLAGS
 and CHECK_LIBS to avoid the need to call pkg-config.
 See the pkg-config man page for more details." >&2;}
 else
@@ -13494,13 +13498,23 @@ fi
 
 if test "x$CHECK_LIBS" = "x" -a "$enable_check_ut" = "yes"; then
     { { echo "$as_me:$LINENO: error:
-		  $CHECK_PKG_ERRORS
-		  ERROR!  Check was configured, but not found.  Get it from http://check.sf.net/
-		 " >&5
+$CHECK_PKG_ERRORS
+
+Alternatively, you may set the environment variables CHECK_CFLAGS
+and CHECK_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details.
+
+ERROR!  Check was configured, but not found.  Get it from http://check.sf.net/
+" >&5
 echo "$as_me: error:
-		  $CHECK_PKG_ERRORS
-		  ERROR!  Check was configured, but not found.  Get it from http://check.sf.net/
-		 " >&2;}
+$CHECK_PKG_ERRORS
+
+Alternatively, you may set the environment variables CHECK_CFLAGS
+and CHECK_LIBS to avoid the need to call pkg-config.
+See the pkg-config man page for more details.
+
+ERROR!  Check was configured, but not found.  Get it from http://check.sf.net/
+" >&2;}
    { (exit 1); exit 1; }; }
 fi
 
