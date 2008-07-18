@@ -239,9 +239,7 @@ static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx 
 	if(mdata->maxdepth && ctx->recursion > mdata->maxdepth)
 	    continue;
 
-	/* TODO add support for regex */
-	/*if(mdata->filename && !strstr(zdirent.d_name, mdata->filename))*/
-	if(mdata->filename && strcmp((char *) metadata->filename, mdata->filename))
+	if(mdata->filename && !cli_matchregex(metadata->filename, mdata->filename))
 	    continue;
 
 	break; /* matched */

@@ -77,6 +77,7 @@ static pthread_mutex_t cli_ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
 #include "others.h"
 #include "md5.h"
 #include "cltypes.h"
+#include "regex/regex.h"
 
 #ifndef	O_BINARY
 #define	O_BINARY	0
@@ -953,3 +954,16 @@ const char* cli_ctime(const time_t *timep, char *buf, const size_t bufsize)
 	return ret;
 }
 
+int cli_matchregex(const char *str, const char *regex)
+{
+	regex_t reg;
+	int match;
+
+    if(cli_regcomp(&reg, regex, REG_EXTENDED) == 0) {
+	match = (cli_regexec(&reg, str, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
+	cli_regfree(&reg);
+	return match;
+    }
+
+    return 0;
+}

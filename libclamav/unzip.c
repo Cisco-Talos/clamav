@@ -347,7 +347,7 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
 	 (meta->method>0 && meta->method != LH_method) ||
 	 (meta->fileno   && meta->fileno != fc ) ||
 	 (meta->maxdepth && ctx->recursion > meta->maxdepth) ||
-	 (meta->filename && strcmp(name, meta->filename)) /* TODO: use a regex */
+	 (meta->filename && !cli_matchregex(name, meta->filename))
 	 )
 	) meta = meta->next;
   if(meta) {
