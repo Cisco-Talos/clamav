@@ -960,7 +960,7 @@ int cli_matchregex(const char *str, const char *regex)
 	regex_t reg;
 	int match;
 
-    if(cli_regcomp(&reg, regex, REG_EXTENDED) == 0) {
+    if(cli_regcomp(&reg, regex, REG_EXTENDED | REG_NOSUB) == 0) {
 	match = (cli_regexec(&reg, str, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
 	cli_regfree(&reg);
 	return match;
