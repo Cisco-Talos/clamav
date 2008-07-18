@@ -325,16 +325,12 @@ int daemonize(void)
 int match_regex(const char *filename, const char *pattern)
 {
 	regex_t reg;
-	int match, flags;
+	int match, flags = REG_EXTENDED | REG_NOSUB;
 	char fname[513];
 #if defined(C_CYGWIN) || defined(C_OS2) || defined(C_WINDOWS)
 	size_t len;
-#endif
 
-#if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_WINDOWS)
-	flags = REG_EXTENDED;
-#else
-	flags = REG_EXTENDED | REG_ICASE; /* case insensitive on Windows */
+	flags |= REG_ICASE; /* case insensitive on Windows */
 #endif
 	if(cli_regcomp(&reg, pattern, flags) != 0)
 	    return 2;
