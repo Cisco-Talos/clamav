@@ -42,6 +42,7 @@
 #include "libclamav/clamav.h"
 #include "libclamav/cvd.h"
 #include "libclamav/others.h" /* for cli_rmdirs() */
+#include "libclamav/regex/regex.h"
 #include "shared/misc.h"
 
 #ifndef	O_BINARY
@@ -319,3 +320,46 @@ int daemonize(void)
     return 0;
 #endif
 }
+
+#ifndef CL_NOLIBCLAMAV
+int match_regex(const char *filename, const char *pattern)
+{
+	regex_t reg;
+	int match, flags;
+	char fname[513];
+#if defined(C_CYGWIN) || defined(C_OS2) || defined(C_WINDOWS)
+	size_t len;
+#endif
+
+#if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_WINDOWS)
+	flags = REG_EXTENDED;
+#else
+	flags = REG_EXTENDED | REG_ICASE; /* case insensitive on Windows */
+#endif
+	if(cli_regcomp(&reg, pattern, flags) != 0)
+	    return 2;
+
+#if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_WINDOWS)
+	if(pattern[strlen(pattern) - 1] == '/') {
+	    snprintf(fname, 511, "%s/", filename);
+	    fname[512] = 0;
+#else
+	if(pattern[strlen(pattern) - 1] == '\\') {
+	    strncpy(fname, filename, 510);
+	    fname[509]='\0';
+	    len = strlen(fname);
+	    if(fname[len - 1] != '\\') {
+		fname[len] = '\\';
+		fname[len + 1] = 0;
+	    }
+#endif
+	} else {
+	    strncpy(fname, filename, 513);
+	    fname[512]='\0';
+	}
+
+	match = (cli_regexec(&reg, fname, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
+	cli_regfree(&reg);
+	return match;
+}
+#endif

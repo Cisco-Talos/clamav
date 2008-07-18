@@ -83,6 +83,7 @@ struct cfgoption cfg_options[] = {
     {"ReadTimeout", OPT_NUM, 120, NULL, 0, OPT_CLAMD},
     {"IdleTimeout", OPT_NUM, 30, NULL, 0, OPT_CLAMD},
     {"MaxDirectoryRecursion", OPT_NUM, 15, NULL, 0, OPT_CLAMD},
+    {"ExcludePath", OPT_QUOTESTR, -1, NULL, 1, OPT_CLAMD},
     {"FollowDirectorySymlinks", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"FollowFileSymlinks", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"ExitOnOOM", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},

@@ -43,8 +43,6 @@
 #include <signal.h>
 #include <target.h>
 
-#include "regex/regex.h"
-
 #include "shared/output.h"
 #include "others.h"
 
@@ -125,46 +123,3 @@ int checkaccess(const char *path, const char *username, int mode)
     return ret;
 }
 #endif
-
-int match_regex(const char *filename, const char *pattern)
-{
-	regex_t reg;
-	int match, flags;
-	char fname[513];
-#if defined(C_CYGWIN) || defined(C_OS2) || defined(C_WINDOWS)
-	size_t len;
-#endif
-
-#if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_WINDOWS)
-	flags = REG_EXTENDED;
-#else
-	flags = REG_EXTENDED | REG_ICASE; /* case insensitive on Windows */
-#endif
-	if(cli_regcomp(&reg, pattern, flags) != 0) {
-	    logg("!%s: Could not parse regular expression %s.\n", filename, pattern);
-		return 2;
-	}
-
-#if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_WINDOWS)
-	if(pattern[strlen(pattern) - 1] == '/') {
-	    snprintf(fname, 511, "%s/", filename);
-	    fname[512] = 0;
-#else
-	if(pattern[strlen(pattern) - 1] == '\\') {
-	    strncpy(fname, filename, 510);
-	    fname[509]='\0';
-	    len = strlen(fname);
-	    if(fname[len - 1] != '\\') {
-		fname[len] = '\\';
-		fname[len + 1] = 0;
-	    }
-#endif
-	} else {
-	    strncpy(fname, filename, 513);
-	    fname[512]='\0';
-	}
-
-	match = (cli_regexec(&reg, fname, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
-	cli_regfree(&reg);
-	return match;
-}

@@ -116,7 +116,18 @@ static int dirscan(const char *dirname, const char **virname, unsigned long int 
 	int ret = 0, scanret = 0;
 	unsigned int maxdirrec = 0;
 	struct multi_tag *scandata;
+	const struct cfgstruct *cpt;
 
+
+    if((cpt = cfgopt(copt, "ExcludePath"))->enabled) {
+	while(cpt) {
+	    if(match_regex(dirname, cpt->strarg) == 1) {
+		mdprintf(odesc, "%s: Excluded\n", dirname);
+		return 0;
+	    }
+	    cpt = (struct cfgstruct *) cpt->nextarg;
+	}
+    }
 
     maxdirrec = cfgopt(copt, "MaxDirectoryRecursion")->numarg;
     if(maxdirrec) {
@@ -296,6 +307,7 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_engin
 	int ret = 0;
 	unsigned int reclev = 0;
 	const char *virname;
+	const struct cfgstruct *cpt;
 	threadpool_t *multi_pool = NULL;
 
 
@@ -309,6 +321,13 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_engin
     if(access(filename, R_OK)) {
 	mdprintf(odesc, "%s: Access denied. ERROR\n", filename);
 	return -1;
+    }
+
+    if((cpt = cfgopt(copt, "ExcludePath"))->enabled) {
+	if(match_regex(filename, cpt->strarg) == 1) {
+	    mdprintf(odesc, "%s: Excluded\n", filename);
+	    return 0;
+	}
     }
 
     switch(sb.st_mode & S_IFMT) {

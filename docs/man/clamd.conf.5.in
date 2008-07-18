@@ -120,6 +120,11 @@ Default: 120
 Waiting for a new job will timeout after this time (seconds).
 .br 
 Default: 30
+.TP
+\fBExcludePath REGEX\fR
+Don't scan files and directories matching REGEX. This directive can be used multiple times.
+.br
+Default: scan all
 .TP 
 \fBMaxDirectoryRecursion NUMBER\fR
 Maximum depth directories are scanned at.
