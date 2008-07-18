@@ -954,6 +954,7 @@ const char* cli_ctime(const time_t *timep, char *buf, const size_t bufsize)
 	return ret;
 }
 
+#ifndef CLI_MEMFUNSONLY
 int cli_matchregex(const char *str, const char *regex)
 {
 	regex_t reg;
@@ -967,3 +968,4 @@ int cli_matchregex(const char *str, const char *regex)
 
     return 0;
 }
+#endif
