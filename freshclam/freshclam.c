@@ -148,7 +148,7 @@ static void help(void)
     mprintf("\n");
 }
 
-static int download(const struct cfgstruct *copt, const struct optstruct *opt, const char *datadir)
+static int download(const struct cfgstruct *copt, const struct optstruct *opt, const char *datadir, const char *cfgfile)
 {
 	int ret = 0, try = 0, maxattempts = 0;
 	const struct cfgstruct *cpt;
@@ -158,7 +158,7 @@ static int download(const struct cfgstruct *copt, const struct optstruct *opt, c
     logg("*Max retries == %d\n", maxattempts);
 
     if(!(cpt = cfgopt(copt, "DatabaseMirror"))->enabled) {
-	logg("^You must specify at least one database mirror.\n");
+	logg("^You must specify at least one database mirror in %s\n", cfgfile);
 	return 56;
     } else {
 	while(cpt) {
@@ -175,7 +175,7 @@ static int download(const struct cfgstruct *copt, const struct optstruct *opt, c
 		    logg("Giving up on %s...\n", cpt->strarg);
 		    cpt = (struct cfgstruct *) cpt->nextarg;
 		    if(!cpt) {
-			logg("Update failed. Your network may be down or none of the mirrors listed in freshclam.conf is working. Check http://www.clamav.net/support/mirror-problem for possible reasons.\n");
+			logg("Update failed. Your network may be down or none of the mirrors listed in %s is working. Check http://www.clamav.net/support/mirror-problem for possible reasons.\n", cfgfile);
 		    }
 		    try = 0;
 		}
@@ -524,7 +524,7 @@ int main(int argc, char **argv)
 #endif
 
 	while(!terminate) {
-	    ret = download(copt, opt, newdir);
+	    ret = download(copt, opt, newdir, cfgfile);
 
             if(ret > 1) {
 	        if(opt_check(opt, "on-error-execute"))
@@ -576,7 +576,7 @@ int main(int argc, char **argv)
 	}
 
     } else
-	ret = download(copt, opt, newdir);
+	ret = download(copt, opt, newdir, cfgfile);
 
     if(ret > 1) {
 	if(opt_check(opt, "on-error-execute"))

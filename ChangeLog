@@ -1,3 +1,7 @@
+Fri Jul 18 18:25:32 CEST 2008 (tk)
+----------------------------------
+  * freshclam/freshclam.c: improve some msgs (bb#1066)
+
 Fri Jul 18 18:09:11 CEST 2008 (tk)
 ----------------------------------
   * clamd: add support for ExcludePath (bb#675)
