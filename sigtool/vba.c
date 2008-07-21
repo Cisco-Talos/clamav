@@ -1081,10 +1081,11 @@ int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
 	    vbaname[sizeof(vbaname)-1] = '\0';
 	    fd = open(vbaname, O_RDONLY|O_BINARY);
 	    if (fd == -1) continue;
-	    if ((fullname = cli_ppt_vba_read(fd)))
+	    if ((fullname = cli_ppt_vba_read(fd))) {
 	      sigtool_scandir(fullname, hex_output);
-	    cli_rmdirs(fullname);
-	    free(fullname);
+	      cli_rmdirs(fullname);
+	      free(fullname);
+	    }
 	    close(fd);
 	}
     }

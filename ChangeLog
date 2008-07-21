@@ -1,3 +1,7 @@
+Mon Jul 21 12:16:44 CEST 2008 (tk)
+----------------------------------
+  * sigtool/vba.c: fix crash on error in vba code (bb#1106)
+
 Fri Jul 18 19:33:41 CEST 2008 (tk)
 ----------------------------------
   * libclamav: use a regex for the filename field in .zmd/.rmd (bb#193)
