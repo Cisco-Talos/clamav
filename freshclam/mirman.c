@@ -123,7 +123,7 @@ int mirman_check(uint32_t *ip, int af, struct mirdat *mdat, struct mirdat_ip **m
 
     for(i = 0; i < mdat->num; i++) {
 
-	if((af == AF_INET && mdat->mirtab[i].ip4 == *ip) || (af == AF_INET6 && !memcmp(mdat->mirtab[i].ip6, ip, 4))) {
+	if((af == AF_INET && mdat->mirtab[i].ip4 == *ip) || (af == AF_INET6 && !memcmp(mdat->mirtab[i].ip6, ip, 4 * sizeof(uint32_t)))) {
 
 	    if(!mdat->mirtab[i].atime) {
 		if(md)
@@ -164,7 +164,7 @@ int mirman_update(uint32_t *ip, int af, struct mirdat *mdat, uint8_t broken)
 	return 0;
 
     for(i = 0; i < mdat->num; i++) {
-	if((af == AF_INET && mdat->mirtab[i].ip4 == *ip) || (af == AF_INET6 && !memcmp(mdat->mirtab[i].ip6, ip, 4))) {
+	if((af == AF_INET && mdat->mirtab[i].ip4 == *ip) || (af == AF_INET6 && !memcmp(mdat->mirtab[i].ip6, ip, 4 * sizeof(uint32_t)))) {
 	    found = 1;
 	    break;
 	}
@@ -196,7 +196,7 @@ int mirman_update(uint32_t *ip, int af, struct mirdat *mdat, uint8_t broken)
 	    mdat->mirtab[mdat->num].ip4 = *ip;
 	} else {
 	    mdat->mirtab[mdat->num].ip4 = 0;
-	    memcpy(mdat->mirtab[mdat->num].ip6, ip, 4);
+	    memcpy(mdat->mirtab[mdat->num].ip6, ip, 4 * sizeof(uint32_t));
 	}
 	mdat->mirtab[mdat->num].atime = 0;
 	mdat->mirtab[mdat->num].succ = 0;

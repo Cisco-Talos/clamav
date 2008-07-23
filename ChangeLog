@@ -1,3 +1,7 @@
+Wed Jul 23 23:44:59 CEST 2008 (tk)
+----------------------------------
+  * freshclam/mirman.c: fix handling of IPv6 addresses
+
 Wed Jul 23 21:53:10 CEST 2008 (acab)
 ------------------------------------
   * clamav-milter: use thread safe resolv calls - bb#668 
