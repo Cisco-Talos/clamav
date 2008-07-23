@@ -853,6 +853,8 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 int cli_build_regex_list(struct regex_matcher* matcher)
 {
 	int rc;
+	if(!matcher)
+		return CL_SUCCESS;
 	if(!matcher->list_inited || !matcher->list_loaded) {
 		cli_errmsg("Regex list not loaded!\n");
 		return -1;/*TODO: better error code */
