@@ -480,7 +480,7 @@ messageAddArguments(message *m, const char *s)
 		const char *key, *cptr;
 		char *data, *field;
 
-		if(isspace(*string) || (*string == ';')) {
+		if(isspace(*string & 0xff) || (*string == ';')) {
 			string++;
 			continue;
 		}
