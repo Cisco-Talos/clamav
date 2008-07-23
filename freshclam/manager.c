@@ -324,7 +324,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	    if(rp->ai_family == AF_INET)
 		mdat->currip[0] = *((uint32_t *) addr);
 	    else
-		memcpy(mdat->currip, addr, 4);
+		memcpy(mdat->currip, addr, 4 * sizeof(uint32_t));
 	    mdat->af = rp->ai_family;
 	    freeaddrinfo(res);
 	    return socketfd;
