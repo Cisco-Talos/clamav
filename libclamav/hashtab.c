@@ -367,10 +367,18 @@ void hashtab_clear(struct hashtable *s)
 		if(s->htable[i].key && s->htable[i].key != DELETED_KEY)
 			free((void *)s->htable[i].key);
 	}
-	memset(s->htable, 0, s->capacity);
+	if(s->htable)
+		memset(s->htable, 0, s->capacity);
 	s->used = 0;
 }
 
+void hashtab_free(struct hashtable *s)
+{
+	hashtab_clear(s);
+	free(s->htable);
+	s->htable = NULL;
+	s->capacity = 0;
+}
 
 int hashtab_store(const struct hashtable *s,FILE* out)
 {

@@ -24,39 +24,37 @@
 #ifndef _REGEX_LIST_H
 #define _REGEX_LIST_H
 
-#ifdef NDEBUG
-#define massert(x) (void)(0)
-#else
-/*debug version, massert enabled*/
-
-#define __massert_fail(expr,file,line) (void)cli_errmsg("Assertion failed at %s:%d\n %s\n",file,line,expr)
-
-#define massert(expr) ((void) ((expr) ? (void)0 : (__massert_fail (#expr,__FILE__,__LINE__))))
-#endif
-
 #include "phishcheck.h"
 #include "readdb.h"
 #include "matcher.h"
 #include <zlib.h> /* for gzFile */
-struct node_stack {
-	struct tree_node** data;
-	size_t capacity;
-	size_t cnt;
+
+struct regex_list {
+	const char *pattern;
+	regex_t preg;
+	struct regex_list *nxt;
+};
+
+struct filter {
+	uint32_t B[65536];
+	uint32_t end_fast[256];
+	uint32_t end[65536];
+	unsigned long m;
 };
 
 struct regex_matcher {
-	struct cli_matcher* root_hosts;
-	struct tree_node* root_regex;
-	struct tree_node* root_regex_hostonly; 
-	struct node_stack node_stack;
-	struct node_stack node_stack_alt;
-	size_t root_hosts_cnt;
-	int list_inited;
-	int list_loaded;
-	int list_built;
+	struct hashtable suffix_hash;
+	size_t suffix_cnt;
+	struct regex_list **suffix_regexes;
+	struct cli_matcher suffixes;
+	struct filter filter;
+	int list_inited:2;
+	int list_loaded:2;
+	int list_built:2;
 };
 
-int regex_list_match(struct regex_matcher* matcher, char* real_url,const char* display_url,const struct pre_fixup_info* pre_fixup, int hostOnly,const char** info,int is_whitelist);
+int cli_build_regex_list(struct regex_matcher* matcher);
+int regex_list_match(struct regex_matcher* matcher, char* real_url,const char* display_url,const struct pre_fixup_info* pre_fixup, int hostOnly,const char **info, int is_whitelist);
 int init_regex_list(struct regex_matcher* matcher);
 int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int options,int is_whitelist,struct cli_dbio *dbio);
 void regex_list_cleanup(struct regex_matcher* matcher);

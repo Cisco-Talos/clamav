@@ -1,3 +1,12 @@
+Wed Jul 23 16:32:32 EEST 2008 (edwin)
+------------------------------------
+  * libclamav: performance improvements for URL matching (bb #725, bb #650):
+	* use a suffix AC-trie and a shift-or FSM to filter
+	* rewrite the URL regex in C
+	* use a perfect hash to lookup TLD and ccTLD, instead of a regex
+	* TODO: suffixes having a common prefix: loop over all of them
+		cli_ac_free: multiple virname pointing to same location
+
 Mon Jul 21 12:16:44 CEST 2008 (tk)
 ----------------------------------
   * sigtool/vba.c: fix crash on error in vba code (bb#1106)

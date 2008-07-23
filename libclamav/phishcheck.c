@@ -39,6 +39,7 @@
 #include <ctype.h>
 
 #include "clamav.h"
+#include "cltypes.h"
 #include "others.h"
 #include "mbox.h"
 #include "message.h"
@@ -47,6 +48,7 @@
 #include "phish_domaincheck_db.h"
 #include "phish_whitelist.h"
 #include "iana_tld.h"
+#include "iana_cctld.h"
 
 
 #define DOMAIN_REAL 1
@@ -140,8 +142,6 @@ static char empty_string[]="";
 #define CLOAKED_URL "^"ANY_CLOAK"(\\."ANY_CLOAK"){0,3}$"
 
 static const char cloaked_host_regex[] = CLOAKED_URL;
-static const char tld_regex[] = "^"iana_tld"$";
-static const char cctld_regex[] = "^"iana_cctld"$";
 static const char dotnet[] = ".net";
 static const char adonet[] = "ado.net";
 static const char aspnet[] = "asp.net";
@@ -151,7 +151,10 @@ static const char gt[]="&gt";
 static const char src_text[] = "src";
 static const char href_text[] = "href";
 static const char mailto[] = "mailto:";
+static const char mailto_proto[] = "mailto://";
 static const char https[]="https://";
+static const char http[]="http://";
+static const char ftp[] = "ftp://";
 
 static const size_t href_text_len = sizeof(href_text);
 static const size_t src_text_len = sizeof(src_text);
@@ -161,7 +164,10 @@ static const size_t aspnet_len = sizeof(aspnet)-1;
 static const size_t lt_len = sizeof(lt)-1;
 static const size_t gt_len = sizeof(gt)-1;
 static const size_t mailto_len = sizeof(mailto)-1;
+static const size_t mailto_proto_len = sizeof(mailto_proto)-1;
 static const size_t https_len  = sizeof(https)-1;
+static const size_t http_len  = sizeof(http)-1;
+static const size_t ftp_len  = sizeof(ftp)-1;
 
 /* for urls, including mailto: urls, and (broken) http:www... style urls*/
 /* refer to: http://www.w3.org/Addressing/URL/5_URI_BNF.html
@@ -169,41 +175,13 @@ static const size_t https_len  = sizeof(https)-1;
  * So the 'safe' char class has been split up
  * */
 /* character classes */
-#define URI_alpha	"a-zA-Z"
 #define URI_digit	"0-9"
-#define URI_safe_nodot  "-$_@&"
-#define URI_safe	"-$_@.&"
-#define URI_extra	"!*\"'(),"
-
-#define URI_hex		 "[0-9a-fA-f]"
-#define URI_escape      "%"URI_hex"{2}"
-#define URI_xalpha "([" URI_safe URI_alpha URI_digit  URI_extra "]|"URI_escape")" /* URI_safe has to be first, because it contains - */
-#define URI_xalpha_nodot "([" URI_safe_nodot URI_alpha URI_digit URI_extra "]|"URI_escape")"
-
-#define URI_xalphas_nodot URI_xalpha_nodot"*"
-
-#define URI_ialpha  "["URI_alpha"]"URI_xalphas_nodot""
-#define URI_xpalpha URI_xalpha"|\\+"
-#define URI_xpalpha_nodot URI_xalpha_nodot"|\\+"
-#define URI_xpalphas_nodot "("URI_xpalpha_nodot")+"
-
-#define URI_scheme URI_ialpha
-#define URI_tld iana_tld
-#define URI_path1 URI_xpalphas_nodot"\\.("URI_xpalphas_nodot"\\.)*"
-
 #define URI_IP_digits "["URI_digit"]{1,3}"
 #define URI_path_start "[/?:]?"
 #define URI_numeric_path URI_IP_digits"(\\."URI_IP_digits"){3}"URI_path_start
-#define URI_numeric_URI "("URI_scheme":(//)?)?"URI_numeric_path
+#define URI_numeric_URI "(http|https|ftp:(//)?)?"URI_numeric_path
 #define URI_numeric_fragmentaddress URI_numeric_URI
 
-#define URI_URI1 "("URI_scheme":(//)?)?"URI_path1
-#define URI_URI2 URI_tld
-
-#define URI_fragmentaddress1 URI_URI1
-#define URI_fragmentaddress2 URI_URI2""URI_path_start
-
-#define URI_CHECK_PROTOCOLS "(http|https|ftp|mailto)://.+"
 
 /*Warning: take care when modifying this regex, it has been tweaked, and tuned, just don't break it please.
  * there is fragmentaddress1, and 2  to work around the ISO limitation of 509 bytes max length for string constants*/
@@ -235,7 +213,6 @@ static int string_assign_concatenated(struct string* dest, const char* prefix, c
 static void string_assign_null(struct string* dest);
 static char *rfind(char *start, char c, size_t len);
 static char hex2int(const unsigned char* src);
-static int isTLD(const struct phishcheck* pchk,const char* str,int len);
 static enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check* urls);
 static const char* phishing_ret_toString(enum phish_status rc);
 
@@ -416,7 +393,7 @@ static int get_host(const struct phishcheck* s,const char* URL,int isReal,int* p
 			}
 
 			tld = strrchr(realhost,'.');
-			rc = tld ? isTLD(s,tld,tld-realhost-1) : 0;
+			rc = tld ? !!in_tld_set(tld,tld-realhost-1) : 0;
 			if(rc < 0)
 				return rc;
 			if(rc)
@@ -438,28 +415,6 @@ static int get_host(const struct phishcheck* s,const char* URL,int isReal,int* p
 	return 0;
 }
 
-static int isCountryCode(const struct phishcheck* s,const char* str)
-{
-	return str ? !cli_regexec(&s->preg_cctld,str,0,NULL,0) : 0;
-}
-
-static int isTLD(const struct phishcheck* pchk,const char* str,int len)
-{
-	if (!str)
-		return 0;
-	else {
-		char*	s  = cli_malloc(len+1);
-		int rc;
-
-		if(!s)
-			return CL_EMEM;
-		strncpy(s,str,len);
-		s[len]='\0';
-		rc = !cli_regexec(&pchk->preg_tld,s,0,NULL,0);
-		free(s);
-		return rc ? 1 : 0;
-	}
-}
 
 /*
  * memrchr isn't standard, so I use this
@@ -486,7 +441,7 @@ static void get_domain(const struct phishcheck* pchk,struct string* dest,struct 
 		string_assign(dest,host);
 		return;
 	}
-	if(isCountryCode(pchk,tld+1)) {
+	if(in_cctld_set(tld+1, strlen(tld+1))) {
 		const char* countrycode = tld+1;
 		tld = rfind(host->data,'.',tld-host->data-1);
 		if(!tld) {
@@ -495,7 +450,7 @@ static void get_domain(const struct phishcheck* pchk,struct string* dest,struct 
 			string_assign(dest,host);
 			return;
 		}
-		if(!isTLD(pchk,tld+1,countrycode-tld-2)) {
+		if(!in_tld_set(tld+1, countrycode-tld-2)) {
 			string_assign_ref(dest,host,tld+1);
 			return;/*it was a name like: subdomain.domain.uk, return domain.uk*/
 		}
@@ -737,11 +692,7 @@ cleanupURL(struct string *URL,struct string *pre_URL, int isReal)
 			/* @end points to last character we want to be part of the URL */
 			end = host_begin + host_len - 1;
 		}
-		/* terminate URL with a slash, except when we're at end of string */
-		if(host_begin[host_len]) {
-			host_begin[host_len] = '/';
-			end++;
-		}
+		host_begin[host_len] = '\0';
 		/* convert hostname to lowercase, but only hostname! */
 		str_make_lowercase(host_begin, host_len);
 		/* some broken MUAs put > in the href, and then
@@ -797,6 +748,40 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 
 	if(!ctx->found_possibly_unwanted)
 		*ctx->virname=NULL;
+#if 0
+	FILE *f = fopen("/home/edwin/quarantine/urls","r");
+	if(!f)
+		abort();
+	while(!feof(f)) {
+		struct url_check urls;
+		char line1[4096];
+		char line2[4096];
+		char line3[4096];
+
+		fgets(line1, sizeof(line1), f);
+		fgets(line2, sizeof(line2), f);
+		fgets(line3, sizeof(line3), f);
+		if(strcmp(line3, "\n") != 0) {
+			strcpy(line1, line2);
+			strcpy(line2, line3);
+			fgets(line3, sizeof(line3), f);
+			while(strcmp(line3, "\n") != 0) {
+				fgets(line3, sizeof(line3),f);
+			}
+		}
+		urls.flags = CL_PHISH_ALL_CHECKS;
+		urls.link_type = 0;
+		string_init_c(&urls.realLink, line1);
+		string_init_c(&urls.displayLink, line2);
+		string_init_c(&urls.pre_fixup.pre_displayLink, NULL);
+		urls.realLink.refcount=-1;
+		urls.displayLink.refcount=-1;
+		int rc = phishingCheck(ctx->engine, &urls);
+		//printf("%d\n",rc);
+	}
+	fclose(f);
+	return 0;
+#endif
 	for(i=0;i<hrefs->count;i++)
 		if(hrefs->contents[i]) {
 			struct url_check urls;
@@ -928,44 +913,7 @@ int phishing_init(struct cl_engine* engine)
 		return CL_EFORMAT;
 	}
 
-	if(build_regex(&pchk->preg_cctld,cctld_regex,1)) {
-		free(pchk);
-		engine->phishcheck = NULL;
-		return CL_EFORMAT;
-	}
-	if(build_regex(&pchk->preg_tld,tld_regex,1)) {
-		free_regex(&pchk->preg_cctld);
-		free(pchk);
-		engine->phishcheck = NULL;
-		return CL_EFORMAT;
-	}
-	url_regex = str_compose("^ *(("URI_CHECK_PROTOCOLS")|(",URI_fragmentaddress1,URI_fragmentaddress2")) *$");
-	if(!url_regex || build_regex(&pchk->preg,url_regex,1)) {
-		free_regex(&pchk->preg_cctld);
-		free_regex(&pchk->preg_tld);
-		free(url_regex);
-		free(pchk);
-		engine->phishcheck = NULL;
-		return CL_EFORMAT;
-	}
-	free(url_regex);
-	realurl_regex = str_compose("^ *(("URI_CHECK_PROTOCOLS")|(",URI_path1,URI_fragmentaddress2")) *$");
-	if(!realurl_regex || build_regex(&pchk->preg_realurl, realurl_regex,1)) {
-		free_regex(&pchk->preg_cctld);
-		free_regex(&pchk->preg_tld);
-		free_regex(&pchk->preg);
-		free(url_regex);
-		free(realurl_regex);
-		free(pchk);
-		engine->phishcheck = NULL;
-		return CL_EFORMAT;
-	}
-	free(realurl_regex);
 	if(build_regex(&pchk->preg_numeric,numeric_url_regex,1)) {
-		free_regex(&pchk->preg_cctld);
-		free_regex(&pchk->preg_tld);
-		free_regex(&pchk->preg);
-		free_regex(&pchk->preg_realurl);
 		free(pchk);
 		engine->phishcheck = NULL;
 		return CL_EFORMAT;
@@ -980,12 +928,8 @@ void phishing_done(struct cl_engine* engine)
 	struct phishcheck* pchk = engine->phishcheck;
 	cli_dbgmsg("Cleaning up phishcheck\n");
 	if(pchk && !pchk->is_disabled) {
-		free_regex(&pchk->preg);
 		free_regex(&pchk->preg_hexurl);
-		free_regex(&pchk->preg_cctld);
-		free_regex(&pchk->preg_tld);
 		free_regex(&pchk->preg_numeric);
-		free_regex(&pchk->preg_realurl);
 		pchk->is_disabled = 1;
 	}
 	whitelist_done(engine);
@@ -998,22 +942,165 @@ void phishing_done(struct cl_engine* engine)
 	cli_dbgmsg("Phishcheck cleaned up\n");
 }
 
+
+/*ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz*/
+static const uint8_t URI_alpha[256] = {
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+
+/*!"$%&'()*,-0123456789@ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz*/
+static const uint8_t URI_xalpha_nodot[256] = {
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 0,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
+        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+
+/*!"$%&'()*+,-0123456789@ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz*/
+static const uint8_t URI_xpalpha_nodot[256] = {
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
+        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+
+static inline int validate_uri_xalphas_nodot(const char *start, const char *end)
+{
+	const unsigned char *p = start;
+	for(p=start;p < (const unsigned char*)end; p++) {
+		if(!URI_xalpha_nodot[*p])
+			return 0;
+	}
+	return 1;
+}
+
+static inline int validate_uri_xpalphas_nodot(const char *start, const char *end)
+{
+	const unsigned char *p = start;
+	for(p=start;p < (const unsigned char*)end; p++) {
+		if(!URI_xpalpha_nodot[*p])
+			return 0;
+	}
+	/* must have at least on char */
+	return p > (const unsigned char*)start;
+}
+
+
+static inline int validate_uri_ialpha(const char *start, const char *end)
+{
+	const unsigned char *p = start;
+	if(start >= end || !URI_alpha[*p])
+		return 0;
+	return validate_uri_xalphas_nodot(start + 1, end);
+}
+
 /*
  * Only those URLs are identified as URLs for which phishing detection can be performed.
  */
-static int isURL(const struct phishcheck* pchk,const char* URL)
+static int isURL(const struct phishcheck* pchk,const char* URL, int accept_anyproto)
 {
-	return URL ? !cli_regexec(&pchk->preg,URL,0,NULL,0) : 0;
+	const char *start = NULL, *p, *q;
+	if(!URL)
+		return 0;
+
+	switch (URL[0]) {
+		case 'h':
+			if (strncmp(URL, https, https_len) == 0)
+				start = URL + https_len;
+			else if (strncmp(URL, http, http_len) == 0)
+				start = URL + http_len;
+			break;
+		case 'f':
+		       if (strncmp(URL, ftp, ftp_len) == 0)
+			       start = URL + ftp_len;
+		       break;
+		case 'm':
+		       if (strncmp(URL, mailto_proto, mailto_proto_len) == 0)
+			       start = URL + mailto_proto_len;
+		       break;
+	}
+	if(start) {
+		if(start[0] == '\0')
+			return 0;/* empty URL */
+		/* has a valid protocol, it is a URL */
+		return 1;
+	}
+	start = accept_anyproto ?  strchr(URL, ':') : NULL;
+	if(start) {
+		/* validate URI scheme */
+		if(validate_uri_ialpha(URL, start)) {
+			if(start[1] == '/' && start[2] == '/')
+				start += 3; /* skip :// */
+			else
+				start++;
+		}
+		else
+			start = URL; /* scheme invalid */
+	} else
+		start = URL;
+	p = start;
+	do {
+		q = strchr(p, '.');
+		if(q) {
+			if(!validate_uri_xpalphas_nodot(p, q))
+				return 0;
+			p = q+1;
+		}
+	} while(q);
+	if (p == start) /* must have at least one dot in the URL */
+		return 0;
+	return !!in_tld_set(p, strlen(p));
 }
 
 /*
  * Check if this is a real URL, which basically means to check if it has a known URL scheme (http,https,ftp).
  * This prevents false positives with outbind:// and blocked:: links.
  */
+#if 0
 static int isRealURL(const struct phishcheck* pchk,const char* URL)
 {
 	return URL ? !cli_regexec(&pchk->preg_realurl,URL,0,NULL,0) : 0;
 }
+#endif
 
 static int isNumericURL(const struct phishcheck* pchk,const char* URL)
 {
@@ -1139,7 +1226,7 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 	cli_dbgmsg("Phishcheck:URL after cleanup: %s->%s\n", urls->realLink.data,
 		urls->displayLink.data);
 
-	if((!isURL(pchk, urls->displayLink.data) || !isRealURL(pchk, urls->realLink.data) ) &&
+	if((!isURL(pchk, urls->displayLink.data, 1) || !isURL(pchk, urls->realLink.data, 0) ) &&
 			( (phishy&PHISHY_NUMERIC_IP && !isNumericURL(pchk, urls->displayLink.data)) ||
 			  !(phishy&PHISHY_NUMERIC_IP))) {
 		cli_dbgmsg("Displayed 'url' is not url:%s\n",urls->displayLink.data);

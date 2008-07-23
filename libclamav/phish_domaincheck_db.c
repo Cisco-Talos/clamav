@@ -49,16 +49,6 @@ int domainlist_match(const struct cl_engine* engine,char* real_url,const char* d
 {
 	const char* info;
 	int rc = engine->domainlist_matcher ? regex_list_match(engine->domainlist_matcher,real_url,display_url,hostOnly ? pre_fixup : NULL,hostOnly,&info,0) : 0;
-	if(rc && info && info[0] && info[0] != ':') {/*match successful, and has custom flags*/
-		if(strlen(info)==3 && isxdigit(info[0]) && isxdigit(info[1]) && isxdigit(info[2])) {
-			unsigned short notwantedflags=0;
-			sscanf(info,"%hx",&notwantedflags);
-		        *flags &= ~notwantedflags;/* filter unwanted phishcheck flags */	
-		}
-		else {
-			cli_warnmsg("Phishcheck:Unknown flag format in domain-list, 3 hex digits expected");
-		}
-	}
 	return rc;
 }
 
@@ -77,13 +67,6 @@ int init_domainlist(struct cl_engine* engine)
 int is_domainlist_ok(const struct cl_engine* engine)
 {
 	return (engine && engine->domainlist_matcher) ? is_regex_ok(engine->domainlist_matcher) : 1;
-}
-
-void domainlist_cleanup(const struct cl_engine* engine)
-{
-	if(engine && engine->domainlist_matcher) {
-		regex_list_cleanup(engine->domainlist_matcher);
-	}
 }
 
 void domainlist_done(struct cl_engine* engine)

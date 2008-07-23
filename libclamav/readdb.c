@@ -1839,6 +1839,12 @@ int cl_build(struct cl_engine *engine)
 	}
     }
 
+    if((ret = cli_build_regex_list(engine->whitelist_matcher))) {
+	    return ret;
+    }
+    if((ret = cli_build_regex_list(engine->domainlist_matcher))) {
+	    return ret;
+    }
     cli_md5db_build(engine->md5_mdb);
     cli_freeign(engine);
     cli_dconf_print(engine->dconf);

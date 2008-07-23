@@ -82,7 +82,7 @@ int hashtab_init(struct hashtable *s,size_t capacity);
 const struct element* hashtab_insert(struct hashtable *s, const char* key, const size_t len, const element_data data);
 void hashtab_delete(struct hashtable *s,const char* key,const size_t len);
 void hashtab_clear(struct hashtable *s);
-
+void hashtab_free(struct hashtable *s);
 int hashtab_load(FILE* in, struct hashtable *s);
 int hashtab_store(const struct hashtable *s,FILE* out);
 

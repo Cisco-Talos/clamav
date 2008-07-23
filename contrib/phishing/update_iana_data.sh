@@ -26,30 +26,11 @@ OUTFILE=iana_tld.h
 echo "Downloading updated tld list from iana.org"
 wget $IANA_TLD -O $TMP || exit 2
 echo "Download complete, parsing data"
-# 174 is the code for |
-TLDLIST=$(egrep -v ^# $TMP | tr \\n \\174 | sed 's/[^a-zA-Z]$//')
-echo "Parse complete, removing tmpfile"
-rm $TMP
-echo "Generating tld list in $OUTFILE"
-cat >$OUTFILE <<EOF
-#ifndef IANA_TLD_H
-#define IANA_TLD_H
-EOF
-echo -n "#define iana_tld \"(" >>$OUTFILE
-echo -n $TLDLIST >>$OUTFILE
-echo ")\"" >>$OUTFILE
+grep -Ev ^# $TMP | tr [A-Z] [a-z] | gperf -C -l -L ANSI-C -E -C -H tld_hash -N in_tld_set|grep -v '^#line' | sed -e 's/^const struct/static const struct/' -e 's/register //g' >iana_tld.h
 
 echo "Downloading updated country-code list from iana.org"
 wget $IANA_CCTLD -O $TMP || exit 2
 echo "Download complete, parsing data"
-CCTLDLIST=$(cat $TMP | egrep -oi "<a href=[^>]+>\\.([a-zA-Z]+).+</a>" | egrep -o ">.[a-zA-Z]+" | colrm 1 2 | tr \\n \\174 | sed 's/[^a-zA-Z]$//')
-echo "Parse complete, removing tmpfile"
-rm $TMP
-echo "Generating cctld list in $OUTFILE"
-echo -n "#define iana_cctld \"(" >>$OUTFILE
-echo -n $CCTLDLIST >>$OUTFILE
-echo ")\"" >>$OUTFILE
-
-
-echo "#endif" >>$OUTFILE
-echo "Finished succesfully"
+cat $TMP | grep country-code|egrep -oi "<a
+href=[^>]+>\\.([a-zA-Z]+).+</a>"|egrep -o ">.[a-zA-Z]+" | colrm 1 2 | tr [A-Z] [a-z]| gperf -C -l -L ANSI-C -E -C -H cctld_hash -N in_cctld_set |grep -v '^#line'|sed -e 's/^const struct/static const struct/' -e 's/register //g' >iana_cctld.h
+echo "Done"

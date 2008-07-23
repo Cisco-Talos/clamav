@@ -69,13 +69,6 @@ int is_whitelist_ok(const struct cl_engine* engine)
 	return (engine && engine->whitelist_matcher) ? is_regex_ok(engine->whitelist_matcher) : 1;
 }
 
-void whitelist_cleanup(const struct cl_engine* engine)
-{
-	if(engine && engine->whitelist_matcher) {
-		regex_list_cleanup(engine->whitelist_matcher);
-	}
-}
-
 void whitelist_done(struct cl_engine* engine)
 {
 	if(engine && engine->whitelist_matcher) {
