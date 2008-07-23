@@ -1,3 +1,7 @@
+Wed Jul 23 21:53:10 CEST 2008 (acab)
+------------------------------------
+  * clamav-milter: use thread safe resolv calls - bb#668 
+
 Wed Jul 23 16:32:32 EEST 2008 (edwin)
 ------------------------------------
   * libclamav: performance improvements for URL matching (bb #725, bb #650):

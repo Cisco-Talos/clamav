@@ -591,6 +591,39 @@ static	int	useful_header(const char *cmd);
 
 extern	short	logg_foreground;
 
+
+res_state res_pool;
+uint8_t *res_pool_state;
+
+pthread_cond_t res_pool_cond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t	res_pool_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+int safe_res_query(const char *d, int c, int t, u_char *a, int l) {
+	int i = -1, ret;
+
+	pthread_mutex_lock(&res_pool_mutex);
+	while(i==-1) {
+		int j;
+		for(j=0; j<max_children+1; j++) {
+			if(!res_pool_state[j]) continue;
+			i = j;
+			break;
+		}
+		if(i!=-1) break;
+		pthread_cond_wait(&res_pool_cond, &res_pool_mutex);
+	}
+	res_pool_state[i]=0;
+	pthread_mutex_unlock(&res_pool_mutex);
+
+	ret = res_nquery(&res_pool[i], d, c, t, a, l);
+  
+	pthread_mutex_lock(&res_pool_mutex);
+	res_pool_state[i]=1;
+	pthread_cond_signal(&res_pool_cond);
+	pthread_mutex_unlock(&res_pool_mutex);
+	return ret;
+} 
+
 static void
 help(void)
 {
@@ -1361,6 +1394,15 @@ main(int argc, char **argv)
 	 */
 	if((max_children == 0) && ((cpt = cfgopt(copt, "MaxThreads")) != NULL))
 		max_children = cfgopt(copt, "MaxThreads")->numarg;
+
+	/* allocate a pool of resolvers */
+	if(!(res_pool=cli_calloc(max_children+1, sizeof(*res_pool))))
+		return EX_OSERR;
+	if(!(res_pool_state=cli_malloc(max_children+1)))
+		return EX_OSERR;
+	memset(res_pool_state, 1, max_children+1);
+	for(i = 0; i < max_children+1; i++)
+		res_ninit(&res_pool[i]);
 
 	if((cpt = cfgopt(copt, "ReadTimeout")) != NULL) {
 		readTimeout = cpt->numarg;
@@ -6190,7 +6232,7 @@ mx(const char *host, table_t *t)
 			return NULL;
 	}
 
-	len = res_query(host, C_IN, T_MX, (u_char *)&q, sizeof(q));
+	len = safe_res_query(host, C_IN, T_MX, (u_char *)&q, sizeof(q));
 	if(len < 0)
 		return t;	/* Host has no MX records */
 
@@ -6259,7 +6301,7 @@ resolve(const char *host, table_t *t)
 	if((host == NULL) || (*host == '\0'))
 		return t;
 
-	len = res_query(host, C_IN, T_A, (u_char *)&q, sizeof(q));
+	len = safe_res_query(host, C_IN, T_A, (u_char *)&q, sizeof(q));
 	if(len < 0)
 		return t;	/* Host has no A records */
 
@@ -6318,7 +6360,6 @@ resolve(const char *host, table_t *t)
  *	an SPF system, we ONLY use SPF records to reduce phish false positives
  * TODO: IPv6?
  * TODO: cache queries?
- * TODO: check res_query is thread safe
  *
  * INPUT: prevhosts, a list of hosts already searched: stops include loops
  *	e.g. mercado.com includes medrcadosw.com which includes mercado.com,
@@ -6370,7 +6411,7 @@ spf(struct privdata *privdata, table_t *prevhosts)
 		*ptr = '\0';
 
 	logg("*SPF query '%s'\n", host);
-	len = res_query(host, C_IN, T_TXT, (u_char *)&q, sizeof(q));
+	len = safe_res_query(host, C_IN, T_TXT, (u_char *)&q, sizeof(q));
 	if(len < 0) {
 		free(host);
 		return 0;	/* Host has no TXT records */
