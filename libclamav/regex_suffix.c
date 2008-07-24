@@ -441,6 +441,7 @@ int cli_regex2suffix(const char *pattern, struct regex_list *regex, suffix_callb
 	n->parent = &root_node;
 
 	rc = build_suffixtree_descend(n, &buf, cb, cbdata, regex);
+	free(buf.data);
 	destroy_tree(n);
 	return rc;
 }
