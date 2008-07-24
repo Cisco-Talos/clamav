@@ -298,6 +298,11 @@ static Suite *test_cli_suite(void)
     return s;
 }
 
+void errmsg_expected(void)
+{
+	fputs("cli_errmsg() expected here\n", stderr);
+}
+
 int main(int argc, char **argv)
 {
     int nf;
@@ -306,8 +311,11 @@ int main(int argc, char **argv)
     srunner_add_suite(sr, test_cli_suite());
     srunner_add_suite(sr, test_jsnorm_suite());
     srunner_add_suite(sr, test_str_suite());
+    srunner_add_suite(sr, test_regex_suite());
 
     srunner_set_log(sr, "test.log");
+    freopen("test-stderr.log","w+",stderr);
+
     srunner_run_all(sr, CK_NORMAL);
     nf = srunner_ntests_failed(sr);
     srunner_free(sr);

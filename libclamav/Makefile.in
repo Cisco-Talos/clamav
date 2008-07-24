@@ -88,8 +88,9 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	regerror.lo regexec.lo regfree.lo unarj.lo bzlib.lo nulsft.lo \
 	infblock.lo pdf.lo spin.lo yc.lo elf.lo sis.lo uuencode.lo \
 	phishcheck.lo phish_domaincheck_db.lo phish_whitelist.lo \
-	regex_list.lo mspack.lo cab.lo entconv.lo hashtab.lo dconf.lo \
-	lzma_iface.lo explode.lo textnorm.lo dlp.lo js-norm.lo
+	regex_list.lo regex_suffix.lo mspack.lo cab.lo entconv.lo \
+	hashtab.lo dconf.lo lzma_iface.lo explode.lo textnorm.lo \
+	dlp.lo js-norm.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 libclamav_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -410,6 +411,8 @@ libclamav_la_SOURCES = \
 	iana_tld.h \
 	regex_list.c \
 	regex_list.h \
+	regex_suffix.c \
+	regex_suffix.h \
 	mspack.c \
 	mspack.h \
 	cab.c \
@@ -582,6 +585,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regcomp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regerror.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regex_list.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regex_suffix.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regexec.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regfree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rtf.Plo@am__quote@

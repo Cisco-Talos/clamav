@@ -29,12 +29,6 @@
 #include "matcher.h"
 #include <zlib.h> /* for gzFile */
 
-struct regex_list {
-	const char *pattern;
-	regex_t preg;
-	struct regex_list *nxt;
-};
-
 struct filter {
 	uint32_t B[65536];
 	uint32_t end_fast[256];
