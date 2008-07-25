@@ -24,9 +24,7 @@
 #include "regex/regex.h"
 
 struct regex_list {
-#ifdef CL_DEBUG
 	const char *pattern;
-#endif
 	regex_t preg;
 	struct regex_list *nxt;
 };

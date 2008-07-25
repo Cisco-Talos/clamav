@@ -1,3 +1,7 @@
+Fri Jul 25 02:24:53 CEST 2008 (acab)
+------------------------------------
+  * libclamav/scanners.c: warn if no bzip2 support - bb#1060
+
 Wed Jul 23 23:44:59 CEST 2008 (tk)
 ----------------------------------
   * freshclam/mirman.c: fix handling of IPv6 addresses

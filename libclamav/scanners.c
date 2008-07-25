@@ -536,7 +536,14 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
     return ret;
 }
 
-#ifdef HAVE_BZLIB_H
+
+#ifndef HAVE_BZLIB_H
+static int cli_scanbzip(int desc, cli_ctx *ctx) {
+    cli_warnmsg("cli_scanbzip: bzip2 support not compiled in\n");
+    return CL_CLEAN;
+}
+
+#else
 
 #ifdef NOBZ2PREFIX
 #define BZ2_bzReadOpen bzReadOpen
@@ -1891,10 +1898,8 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
 
 	case CL_TYPE_BZ:
-#ifdef HAVE_BZLIB_H
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_BZ))
 		ret = cli_scanbzip(desc, ctx);
-#endif
 	    break;
 	case CL_TYPE_ARJ:
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ARJ))
