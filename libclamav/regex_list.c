@@ -513,9 +513,7 @@ void regex_list_done(struct regex_matcher* matcher)
 			for(i=0;i<matcher->suffix_cnt;i++) {
 				struct regex_list *r = matcher->suffix_regexes[i];
 				while(r) {
-#ifdef CL_DEBUG
 					free(r->pattern);
-#endif
 					cli_regfree(&r->preg);
 					r = r->nxt;
 				}
