@@ -19,7 +19,7 @@ check_clamscan.sh: $(top_builddir)/test/clam.exe
 $(top_builddir)/test/clam.exe:
 	(cd $(top_builddir)/test && $(MAKE))
 
-EXTRA_DIST=test-clamd.conf test-freshclam.conf
+EXTRA_DIST=test-clamd.conf test-freshclam.conf valgrind.supp inputs/COPYING inputs/daily.pdb inputs/daily.wdb
 if ENABLE_COVERAGE
 LCOV_OUTPUT = lcov.out
 LCOV_HTML = lcov_html
