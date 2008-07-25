@@ -681,6 +681,7 @@ int regex_list_add_pattern(struct regex_matcher *matcher, char *pattern)
 		}
 	}
 	pattern[len] = '\0';
+	regex->pattern = NULL;
 
 	rc = cli_regex2suffix(pattern, regex, add_pattern_suffix, matcher);
 	if(rc) {
