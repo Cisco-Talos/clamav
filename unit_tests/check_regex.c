@@ -177,6 +177,7 @@ START_TEST (regex_list_match_test)
 
 	int rc = regex_list_add_pattern(&matcher, pattern);
 	fail_unless(rc == 0,"regex_list_add_pattern");
+	free(pattern);
 
 	matcher.list_loaded = 1;
 
@@ -264,17 +265,16 @@ START_TEST (phishingScan_test)
 	hrefs.contents[0] = blobCreate();
 	hrefs.tag = cli_malloc(sizeof(*hrefs.tag));
 	fail_unless(!!hrefs.tag, "cli_malloc");
-	hrefs.tag[0] = "href";
+	hrefs.tag[0] = cli_strdup("href");
 	blobAddData(hrefs.contents[0], rtest->displayurl, strlen(rtest->displayurl)+1);
 
 	ctx.engine = engine;
 	ctx.virname = &virname;
 	rc = phishingScan(NULL, NULL, &ctx, &hrefs);
-	blobDestroy(hrefs.contents[0]);
-	free(realurl);
 	fail_unless(rc == CL_CLEAN,"phishingScan");
 	fail_unless(!!ctx.found_possibly_unwanted == !rtest->result ,
 			"found unwanted: %d, expected: %d\n", ctx.found_possibly_unwanted, !rtest->result);
+	html_tag_arg_free(&hrefs);
 }
 END_TEST
 

@@ -101,6 +101,7 @@ CLAMAV_PRIVATE {
     phishingScan;
     blobDestroy;
     load_regex_matcher;
+    html_tag_arg_free;
   local:
     *;
 };

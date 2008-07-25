@@ -40,6 +40,8 @@ struct regex_matcher {
 	struct hashtable suffix_hash;
 	size_t suffix_cnt;
 	struct regex_list **suffix_regexes;
+	size_t regex_cnt;
+	struct regex_list **all_regexes;
 	struct cli_matcher suffixes;
 	struct filter filter;
 	int list_inited:2;

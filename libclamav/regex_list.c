@@ -239,7 +239,6 @@ static int validate_subdomain(const struct regex_list *regex, const struct pre_f
 int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* display_url,const struct pre_fixup_info* pre_fixup,int hostOnly,const char **info, int is_whitelist)
 {
 	char* orig_real_url = real_url;
-	const char *vinfo;
 	struct regex_list *regex;
 
 	assert(matcher);
@@ -288,12 +287,12 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 			return 0;
 		}
 
-		rc = cli_ac_scanbuff((unsigned char*)bufrev,buffer_len, &vinfo, &matcher->suffixes,&mdata,0,0,-1,NULL,AC_SCAN_VIR,NULL);
+		rc = cli_ac_scanbuff((const unsigned char*)bufrev,buffer_len, NULL, &regex, &matcher->suffixes,&mdata,0,0,-1,NULL,AC_SCAN_VIR,NULL);
+		free(bufrev);
 		cli_ac_freedata(&mdata);
 
 		if(rc) {
 			/* TODO loop over multiple virusnames here */
-			regex = (const struct regex_list*)vinfo;
 			do {
 				/* loop over multiple regexes corresponding to
 				 * this suffix */
@@ -504,22 +503,27 @@ void regex_list_done(struct regex_matcher* matcher)
 {
 	assert(matcher);
 
-	if(matcher->list_loaded) {
+	if(matcher->list_inited) {
 		size_t i;
-		/* TODO: call it, but be sure it won't free virname */
-		//cli_ac_free(&matcher->suffixes);
+		cli_ac_free(&matcher->suffixes);
 		if(matcher->suffix_regexes) {
 			for(i=0;i<matcher->suffix_cnt;i++) {
 				struct regex_list *r = matcher->suffix_regexes[i];
 				while(r) {
-					free(r->pattern);
-					r->pattern = NULL;
 					cli_regfree(&r->preg);
 					r = r->nxt;
 				}
 			}
 			free(matcher->suffix_regexes);
 			matcher->suffix_regexes = NULL;
+		}
+		if(matcher->all_regexes) {
+			for(i=0;i<matcher->regex_cnt;i++) {
+				struct regex_list *r = matcher->all_regexes[i];
+				free(r->pattern);
+				free(r);
+			}
+			free(matcher->all_regexes);
 		}
 		hashtab_free(&matcher->suffix_hash);
 		matcher->list_built=0;
@@ -570,7 +574,8 @@ static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info,
 	for(i=0;i<len;i++)
 		new->pattern[i] = suffix[i];/*new->pattern is short int* */
 
-	new->virname = (char*)info;
+	new->customdata = info;
+	new->virname = NULL;
 	if((ret = cli_ac_addpatt(root,new))) {
 		free(new->pattern);
 		free(new);
@@ -625,10 +630,23 @@ static size_t reverse_string(char *pattern)
 	return len;
 }
 
+static struct regex_list *new_regex(struct regex_matcher *matcher)
+{
+	struct regex_list *r;
+	matcher->all_regexes = cli_realloc(matcher->all_regexes, ++matcher->regex_cnt * sizeof(*matcher->all_regexes));
+	if(!matcher->all_regexes)
+		return NULL;
+	r = cli_malloc(sizeof(*r));
+	if(!r)
+		return NULL;
+	matcher->all_regexes[matcher->regex_cnt-1] = r;
+	return r;
+}
+
 static int add_static_pattern(struct regex_matcher *matcher, char* pattern)
 {
 	size_t len;
-	struct regex_list *regex = cli_malloc(sizeof(*regex));
+	struct regex_list *regex = new_regex(matcher);
 	if(!regex)
 		return CL_EMEM;
 	len = reverse_string(pattern);
@@ -641,7 +659,7 @@ static int add_static_pattern(struct regex_matcher *matcher, char* pattern)
 int regex_list_add_pattern(struct regex_matcher *matcher, char *pattern)
 {
 	int rc;
-	struct regex_list *regex = cli_malloc(sizeof(*regex));
+	struct regex_list *regex = new_regex(matcher);
 	size_t len;
 	/* we only match the host, so remove useless stuff */
 	const char remove_end[] = "([/?].*)?/";

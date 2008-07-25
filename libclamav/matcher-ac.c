@@ -823,7 +823,7 @@ inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, of
     return CL_SUCCESS;
 }
 
-int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t offset, cli_file_t ftype, int fd, struct cli_matched_type **ftoffset, unsigned int mode, const cli_ctx *ctx)
+int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, void **customdata, const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t offset, cli_file_t ftype, int fd, struct cli_matched_type **ftoffset, unsigned int mode, const cli_ctx *ctx)
 {
 	struct cli_ac_node *current;
 	struct cli_ac_patt *patt, *pt;
@@ -968,6 +968,8 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
 				    if(virname)
 					*virname = pt->virname;
+				    if(customdata)
+					*customdata = pt->customdata;
 
 				    if(info.exeinfo.section)
 					free(info.exeinfo.section);
@@ -1005,6 +1007,8 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
 				if(virname)
 				    *virname = pt->virname;
+				if(customdata)
+				    *customdata = pt->customdata;
 
 				if(info.exeinfo.section)
 				    free(info.exeinfo.section);
@@ -1027,6 +1031,8 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	if(cli_ac_chklsig(root->ac_lsigtable[i]->logic, root->ac_lsigtable[i]->logic + strlen(root->ac_lsigtable[i]->logic), mdata->lsigcnt[i], &evalcnt, 0) == 1) {
 	    if(virname)
 		*virname = root->ac_lsigtable[i]->virname;
+	    if(customdata)
+	        *customdata = pt->customdata;
 	    return CL_VIRUS;
 	}
     }
@@ -1064,6 +1070,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     new->mindist = mindist;
     new->maxdist = maxdist;
     new->target = target;
+    new->customdata = NULL;
     new->ch[0] |= CLI_MATCH_IGNORE;
     new->ch[1] |= CLI_MATCH_IGNORE;
     if(lsigid) {
