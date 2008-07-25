@@ -622,8 +622,8 @@ str_fixup_spaces(char **begin, const char **end)
 	/* strip spaces */
 	str_strip(&sbegin, &send, " ",1);
 	/* strip leading/trailing garbage */
-	while(!isalnum(sbegin[0]) && sbegin <= send) sbegin++;
-	while(!isalnum(send[0]) && send >= sbegin) send--;
+	while(!isalnum(sbegin[0]&0xff) && sbegin <= send) sbegin++;
+	while(!isalnum(send[0]&0xff) && send >= sbegin) send--;
 
 	/* keep terminating slash character*/
 	if(send[1] == '/') send++;
