@@ -993,6 +993,8 @@ static int cli_loadldb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 		*pt = 0;
 		sig = ++pt;
 		offset = tokens[3 + i];
+		if(!strcmp(offset, "*"))
+		    offset = NULL;
 	    } else {
 		offset = NULL;
 		sig = tokens[3 + i];

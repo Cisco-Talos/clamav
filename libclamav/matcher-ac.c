@@ -833,7 +833,6 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	uint8_t found;
 	struct cli_target_info info;
 	int type = CL_CLEAN;
-	unsigned int evalcnt;
 
 
     if(!root->ac_root)
@@ -1025,17 +1024,6 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
     if(info.exeinfo.section)
 	free(info.exeinfo.section);
-
-    for(i = 0; i < root->ac_lsigs; i++) {
-	evalcnt = 0;
-	if(cli_ac_chklsig(root->ac_lsigtable[i]->logic, root->ac_lsigtable[i]->logic + strlen(root->ac_lsigtable[i]->logic), mdata->lsigcnt[i], &evalcnt, 0) == 1) {
-	    if(virname)
-		*virname = root->ac_lsigtable[i]->virname;
-	    if(customdata)
-	        *customdata = pt->customdata;
-	    return CL_VIRUS;
-	}
-    }
 
     return (mode & AC_SCAN_FT) ? type : CL_CLEAN;
 }
