@@ -32,10 +32,10 @@ lcov: $(LCOV_HTML)
 DIRECTORIES=--directory . --directory ../libclamav --directory ../clamd --directory ../freshclam --directory ../sigtool --directory ../clamscan --directory ../clamdscan
 .libs/check_clamav.gcda: $(TESTS)
 	$(LCOV_LCOV) $(DIRECTORIES) --zerocounters
-	@$(MAKE) check
+	@$(MAKE) check VALGRIND=
 
 $(LCOV_OUTPUT): .libs/check_clamav.gcda
-	$(LCOV_LCOV) --capture $(DIRECTORIES) --base-directory . --output-file --gcov-tool $(LCOV_GCOV) $@
+	$(LCOV_LCOV) --capture $(DIRECTORIES) --base-directory . --output-file $@
 
 $(LCOV_HTML): $(LCOV_OUTPUT)
 	-$(RM) -r $@

@@ -684,10 +684,10 @@ $(top_builddir)/test/clam.exe:
 @ENABLE_COVERAGE_TRUE@lcov: $(LCOV_HTML)
 @ENABLE_COVERAGE_TRUE@.libs/check_clamav.gcda: $(TESTS)
 @ENABLE_COVERAGE_TRUE@	$(LCOV_LCOV) $(DIRECTORIES) --zerocounters
-@ENABLE_COVERAGE_TRUE@	@$(MAKE) check
+@ENABLE_COVERAGE_TRUE@	@$(MAKE) check VALGRIND=
 
 @ENABLE_COVERAGE_TRUE@$(LCOV_OUTPUT): .libs/check_clamav.gcda
-@ENABLE_COVERAGE_TRUE@	$(LCOV_LCOV) --capture $(DIRECTORIES) --base-directory . --output-file --gcov-tool $(LCOV_GCOV) $@
+@ENABLE_COVERAGE_TRUE@	$(LCOV_LCOV) --capture $(DIRECTORIES) --base-directory . --output-file $@
 
 @ENABLE_COVERAGE_TRUE@$(LCOV_HTML): $(LCOV_OUTPUT)
 @ENABLE_COVERAGE_TRUE@	-$(RM) -r $@
