@@ -871,13 +871,13 @@ GPERF
 PKG_CONFIG
 CHECK_CFLAGS
 CHECK_LIBS
+GCOV
+LCOV
+GENHTML
 ENABLE_COVERAGE_TRUE
 ENABLE_COVERAGE_FALSE
 ENABLE_UT_INSTALL_TRUE
 ENABLE_UT_INSTALL_FALSE
-GCOV
-LCOV
-GENHTML
 MAINTAINER_MODE_TRUE
 MAINTAINER_MODE_FALSE
 MAINT
@@ -13540,25 +13540,7 @@ echo "$as_me: error: coverage testing only works if gcc is used" >&2;}
 
 	CFLAGS="$CFLAGS -fprofile-arcs -ftest-coverage"
 	LDFLAGS="$LDFLAGS -lgcov"
-fi
-
- if test "x$enable_coverage" = "xyes"; then
-  ENABLE_COVERAGE_TRUE=
-  ENABLE_COVERAGE_FALSE='#'
-else
-  ENABLE_COVERAGE_TRUE='#'
-  ENABLE_COVERAGE_FALSE=
-fi
-
- if test "x$enable_ut_install" = "xyes"; then
-  ENABLE_UT_INSTALL_TRUE=
-  ENABLE_UT_INSTALL_FALSE='#'
-else
-  ENABLE_UT_INSTALL_TRUE='#'
-  ENABLE_UT_INSTALL_FALSE=
-fi
-
-for ac_prog in gcov
+	for ac_prog in gcov
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -13601,7 +13583,7 @@ fi
 done
 test -n "$GCOV" || GCOV="false"
 
-for ac_prog in lcov
+	for ac_prog in lcov
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -13644,7 +13626,7 @@ fi
 done
 test -n "$LCOV" || LCOV="false"
 
-for ac_prog in genhtml
+	for ac_prog in genhtml
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
 set dummy $ac_prog; ac_word=$2
@@ -13686,6 +13668,24 @@ fi
   test -n "$GENHTML" && break
 done
 test -n "$GENHTML" || GENHTML="false"
+
+fi
+
+ if test "x$enable_coverage" = "xyes"; then
+  ENABLE_COVERAGE_TRUE=
+  ENABLE_COVERAGE_FALSE='#'
+else
+  ENABLE_COVERAGE_TRUE='#'
+  ENABLE_COVERAGE_FALSE=
+fi
+
+ if test "x$enable_ut_install" = "xyes"; then
+  ENABLE_UT_INSTALL_TRUE=
+  ENABLE_UT_INSTALL_FALSE='#'
+else
+  ENABLE_UT_INSTALL_TRUE='#'
+  ENABLE_UT_INSTALL_FALSE=
+fi
 
 
 have_pthreads=no
@@ -20703,13 +20703,13 @@ GPERF!$GPERF$ac_delim
 PKG_CONFIG!$PKG_CONFIG$ac_delim
 CHECK_CFLAGS!$CHECK_CFLAGS$ac_delim
 CHECK_LIBS!$CHECK_LIBS$ac_delim
+GCOV!$GCOV$ac_delim
+LCOV!$LCOV$ac_delim
+GENHTML!$GENHTML$ac_delim
 ENABLE_COVERAGE_TRUE!$ENABLE_COVERAGE_TRUE$ac_delim
 ENABLE_COVERAGE_FALSE!$ENABLE_COVERAGE_FALSE$ac_delim
 ENABLE_UT_INSTALL_TRUE!$ENABLE_UT_INSTALL_TRUE$ac_delim
 ENABLE_UT_INSTALL_FALSE!$ENABLE_UT_INSTALL_FALSE$ac_delim
-GCOV!$GCOV$ac_delim
-LCOV!$LCOV$ac_delim
-GENHTML!$GENHTML$ac_delim
 MAINTAINER_MODE_TRUE!$MAINTAINER_MODE_TRUE$ac_delim
 MAINTAINER_MODE_FALSE!$MAINTAINER_MODE_FALSE$ac_delim
 MAINT!$MAINT$ac_delim

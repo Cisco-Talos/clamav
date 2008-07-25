@@ -59,7 +59,6 @@
 #include "regex_suffix.h"
 /* Prototypes */
 static size_t reverse_string(char *pattern);
-static int add_pattern(struct regex_matcher *matcher, char *pattern);
 static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_len, struct regex_list *regex);
 static int add_static_pattern(struct regex_matcher *matcher, char* pattern);
 /* ---------- */
@@ -463,7 +462,7 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 
 		if((buffer[0] == 'R' && !is_whitelist) || ((buffer[0] == 'X' || buffer[0] == 'Y') && is_whitelist)) {
 			/* regex for hostname*/
-			if (( rc = add_pattern(matcher, pattern) ))
+			if (( rc = regex_list_add_pattern(matcher, pattern) ))
 				return rc==CL_EMEM ? CL_EMEM : CL_EMALFDB;
 		}
 		else if( ( buffer[0] == 'H' && !is_whitelist) || (buffer[0] == 'M' && is_whitelist)) {
@@ -514,6 +513,7 @@ void regex_list_done(struct regex_matcher* matcher)
 				struct regex_list *r = matcher->suffix_regexes[i];
 				while(r) {
 					free(r->pattern);
+					r->pattern = NULL;
 					cli_regfree(&r->preg);
 					r = r->nxt;
 				}
@@ -638,7 +638,7 @@ static int add_static_pattern(struct regex_matcher *matcher, char* pattern)
 	return add_pattern_suffix(matcher, pattern, len, regex);
 }
 
-static int add_pattern(struct regex_matcher *matcher, char *pattern)
+int regex_list_add_pattern(struct regex_matcher *matcher, char *pattern)
 {
 	int rc;
 	struct regex_list *regex = cli_malloc(sizeof(*regex));
@@ -655,9 +655,11 @@ static int add_pattern(struct regex_matcher *matcher, char *pattern)
 	if(len > sizeof(remove_end)) {
 		if(strncmp(&pattern[len - sizeof(remove_end)+1], remove_end, sizeof(remove_end)-1) == 0) {
 			len -= sizeof(remove_end) - 1;
+			pattern[len++]='/';
 		}
 		if(strncmp(&pattern[len - sizeof(remove_end2)+1], remove_end2, sizeof(remove_end2)-1) == 0) {
 			len -= sizeof(remove_end2) - 1;
+			pattern[len++]='/';
 		}
 	}
 	pattern[len] = '\0';

@@ -375,13 +375,13 @@ if test "x$enable_coverage" = "xyes"; then
 
 	CFLAGS="$CFLAGS -fprofile-arcs -ftest-coverage"
 	LDFLAGS="$LDFLAGS -lgcov"
+	AC_CHECK_PROGS(GCOV, gcov, false)
+	AC_CHECK_PROGS(LCOV, lcov, false)
+	AC_CHECK_PROGS(GENHTML, genhtml, false)
 fi
 
 AM_CONDITIONAL(ENABLE_COVERAGE, test "x$enable_coverage" = "xyes")
 AM_CONDITIONAL(ENABLE_UT_INSTALL, test "x$enable_ut_install" = "xyes")
-AC_CHECK_PROGS(GCOV, gcov, false)
-AC_CHECK_PROGS(LCOV, lcov, false)
-AC_CHECK_PROGS(GENHTML, genhtml, false)
 
 have_pthreads=no
 AC_CHECK_HEADER([pthread.h],[have_pthreads=yes],)

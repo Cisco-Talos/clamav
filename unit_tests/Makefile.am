@@ -1,5 +1,5 @@
 programs = check_clamav
-scripts = check_clamd.sh check_freshclam.sh check_sigtool.sh check_clamscan.sh
+scripts = check_clamd.sh check_freshclam.sh check_sigtool.sh check_clamscan.sh valgrind_tests.sh
 
 TESTS = $(programs) $(scripts)
 if ENABLE_UT_INSTALL 
@@ -10,7 +10,7 @@ check_PROGRAMS = $(programs)
 check_SCRIPTS = $(scripts)
 endif
 check_clamav_SOURCES = check_clamav.c check_jsnorm.c check_str.c check_regex.c checks.h $(top_builddir)/libclamav/clamav.h
-check_clamav_CFLAGS = @CHECK_CFLAGS@
+check_clamav_CFLAGS = @CHECK_CFLAGS@ -DSRCDIR=\"$(abs_srcdir)\"
 check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CHECK_LIBS@
 
 check_clamd.sh: $(top_builddir)/test/clam.exe
@@ -24,17 +24,18 @@ if ENABLE_COVERAGE
 LCOV_OUTPUT = lcov.out
 LCOV_HTML = lcov_html
 LCOV_LCOV = @LCOV@
+LCOV_GCOV = @GCOV@
 LCOV_GENHTML = @GENHTML@
 CLEANFILES=lcov.out *.gcno *.gcda *.log /tmp/clamd-test.log
 lcov: $(LCOV_HTML)
 
 DIRECTORIES=--directory . --directory ../libclamav --directory ../clamd --directory ../freshclam --directory ../sigtool --directory ../clamscan --directory ../clamdscan
 .libs/check_clamav.gcda: $(TESTS)
-	lcov $(DIRECTORIES) --zerocounters
+	$(LCOV_LCOV) $(DIRECTORIES) --zerocounters
 	@$(MAKE) check
 
 $(LCOV_OUTPUT): .libs/check_clamav.gcda
-	$(LCOV_LCOV) --capture $(DIRECTORIES) --base-directory . --output-file $@
+	$(LCOV_LCOV) --capture $(DIRECTORIES) --base-directory . --output-file --gcov-tool $(LCOV_GCOV) $@
 
 $(LCOV_HTML): $(LCOV_OUTPUT)
 	-$(RM) -r $@
@@ -45,7 +46,7 @@ clean-local: lcov-clean
 .PHONY: lcov-clean
 lcov-clean:
 	-$(RM) -r $(LCOV_HTML) $(LCOV_OUTPUT)
-	lcov $(DIRECTORIES) --zerocounters
+	$(LCOV_LCOV) $(DIRECTORIES) --zerocounters
 else
 
 CLEANFILES=/tmp/clamd-test.log

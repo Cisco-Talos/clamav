@@ -24,7 +24,7 @@
 #include "regex/regex.h"
 
 struct regex_list {
-	const char *pattern;
+	char *pattern;
 	regex_t preg;
 	struct regex_list *nxt;
 };

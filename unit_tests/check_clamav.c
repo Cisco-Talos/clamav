@@ -15,6 +15,7 @@ int main(int argc, char **argv)
 
 #include <stdlib.h>
 #include <limits.h>
+#include <fcntl.h>
 #include <string.h>
 #include <check.h>
 #include "../libclamav/clamav.h"
@@ -301,6 +302,27 @@ static Suite *test_cli_suite(void)
 void errmsg_expected(void)
 {
 	fputs("cli_errmsg() expected here\n", stderr);
+}
+
+int open_testfile(const char *name)
+{
+	int fd;
+	const char * srcdir = getenv("srcdir");
+	char *str;
+
+	if(!srcdir) {
+		/* when run from automake srcdir is set, but if run manually then not */
+		srcdir = SRCDIR;
+	}
+
+	str = cli_malloc(strlen(name)+strlen(srcdir)+2);
+	fail_unless(!!str, "cli_malloc");
+	sprintf(str, "%s/%s", srcdir, name);
+
+	fd = open(str, O_RDONLY);
+	fail_unless(fd >= 0, "open()");
+	free(str);
+	return fd;
 }
 
 int main(int argc, char **argv)

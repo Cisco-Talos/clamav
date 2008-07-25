@@ -85,6 +85,22 @@ CLAMAV_PRIVATE {
     cli_dconf_init;
     cli_regex2suffix;
     html_normalise_mem;
+    init_regex_list;
+    is_regex_ok;
+    regex_list_done;
+    regex_list_add_pattern;
+    cli_build_regex_list;
+    regex_list_match;
+    cli_initengine;
+    phishing_init;
+    init_domainlist;
+    init_whitelist;
+    phishing_done;
+    blobCreate;
+    blobAddData;
+    phishingScan;
+    blobDestroy;
+    load_regex_matcher;
   local:
     *;
 };

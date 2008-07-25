@@ -63,7 +63,7 @@ check_clamav_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(check_clamav_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 am__dist_bin_SCRIPTS_DIST = check_clamd.sh check_freshclam.sh \
-	check_sigtool.sh check_clamscan.sh
+	check_sigtool.sh check_clamscan.sh valgrind_tests.sh
 dist_binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 SCRIPTS = $(dist_bin_SCRIPTS)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -217,16 +217,17 @@ target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 programs = check_clamav
-scripts = check_clamd.sh check_freshclam.sh check_sigtool.sh check_clamscan.sh
+scripts = check_clamd.sh check_freshclam.sh check_sigtool.sh check_clamscan.sh valgrind_tests.sh
 @ENABLE_UT_INSTALL_TRUE@dist_bin_SCRIPTS = $(scripts)
 @ENABLE_UT_INSTALL_FALSE@check_SCRIPTS = $(scripts)
 check_clamav_SOURCES = check_clamav.c check_jsnorm.c check_str.c check_regex.c checks.h $(top_builddir)/libclamav/clamav.h
-check_clamav_CFLAGS = @CHECK_CFLAGS@
+check_clamav_CFLAGS = @CHECK_CFLAGS@ -DSRCDIR=\"$(abs_srcdir)\"
 check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CHECK_LIBS@
 EXTRA_DIST = test-clamd.conf test-freshclam.conf
 @ENABLE_COVERAGE_TRUE@LCOV_OUTPUT = lcov.out
 @ENABLE_COVERAGE_TRUE@LCOV_HTML = lcov_html
 @ENABLE_COVERAGE_TRUE@LCOV_LCOV = @LCOV@
+@ENABLE_COVERAGE_TRUE@LCOV_GCOV = @GCOV@
 @ENABLE_COVERAGE_TRUE@LCOV_GENHTML = @GENHTML@
 @ENABLE_COVERAGE_FALSE@CLEANFILES = /tmp/clamd-test.log
 @ENABLE_COVERAGE_TRUE@CLEANFILES = lcov.out *.gcno *.gcda *.log /tmp/clamd-test.log
@@ -682,11 +683,11 @@ $(top_builddir)/test/clam.exe:
 	(cd $(top_builddir)/test && $(MAKE))
 @ENABLE_COVERAGE_TRUE@lcov: $(LCOV_HTML)
 @ENABLE_COVERAGE_TRUE@.libs/check_clamav.gcda: $(TESTS)
-@ENABLE_COVERAGE_TRUE@	lcov $(DIRECTORIES) --zerocounters
+@ENABLE_COVERAGE_TRUE@	$(LCOV_LCOV) $(DIRECTORIES) --zerocounters
 @ENABLE_COVERAGE_TRUE@	@$(MAKE) check
 
 @ENABLE_COVERAGE_TRUE@$(LCOV_OUTPUT): .libs/check_clamav.gcda
-@ENABLE_COVERAGE_TRUE@	$(LCOV_LCOV) --capture $(DIRECTORIES) --base-directory . --output-file $@
+@ENABLE_COVERAGE_TRUE@	$(LCOV_LCOV) --capture $(DIRECTORIES) --base-directory . --output-file --gcov-tool $(LCOV_GCOV) $@
 
 @ENABLE_COVERAGE_TRUE@$(LCOV_HTML): $(LCOV_OUTPUT)
 @ENABLE_COVERAGE_TRUE@	-$(RM) -r $@
@@ -697,7 +698,7 @@ $(top_builddir)/test/clam.exe:
 @ENABLE_COVERAGE_TRUE@.PHONY: lcov-clean
 @ENABLE_COVERAGE_TRUE@lcov-clean:
 @ENABLE_COVERAGE_TRUE@	-$(RM) -r $(LCOV_HTML) $(LCOV_OUTPUT)
-@ENABLE_COVERAGE_TRUE@	lcov $(DIRECTORIES) --zerocounters
+@ENABLE_COVERAGE_TRUE@	$(LCOV_LCOV) $(DIRECTORIES) --zerocounters
 @ENABLE_COVERAGE_FALSE@lcov:
 @ENABLE_COVERAGE_FALSE@	@echo "Coverage information gathering is not enabled in this build"
 @ENABLE_COVERAGE_FALSE@	@echo "Use ./configure --enable-coverage to enable it"
