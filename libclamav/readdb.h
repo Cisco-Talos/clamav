@@ -39,6 +39,8 @@
 	cli_strbcasestr(ext, ".mdu")   ||	\
 	cli_strbcasestr(ext, ".ndb")   ||	\
 	cli_strbcasestr(ext, ".ndu")   ||	\
+	cli_strbcasestr(ext, ".ldb")   ||	\
+	cli_strbcasestr(ext, ".ldu")   ||	\
 	cli_strbcasestr(ext, ".sdb")   ||	\
 	cli_strbcasestr(ext, ".zmd")   ||	\
 	cli_strbcasestr(ext, ".rmd")   ||	\

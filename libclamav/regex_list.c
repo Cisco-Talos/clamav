@@ -273,7 +273,7 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 		buffer[buffer_len]=0;
 		cli_dbgmsg("Looking up in regex_list: %s\n", buffer);
 
-		if((rc = cli_ac_initdata(&mdata, 0, AC_DEFAULT_TRACKLEN)))
+		if((rc = cli_ac_initdata(&mdata, 0, 0, AC_DEFAULT_TRACKLEN)))
 			return rc;
 
 		bufrev = cli_strdup(buffer);

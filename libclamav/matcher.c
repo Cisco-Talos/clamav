@@ -72,7 +72,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, cli_ctx *ctx, cli
 
     if(troot) {
 
-	if((ret = cli_ac_initdata(&mdata, troot->ac_partsigs, AC_DEFAULT_TRACKLEN)))
+	if((ret = cli_ac_initdata(&mdata, troot->ac_partsigs, troot->ac_lsigs, AC_DEFAULT_TRACKLEN)))
 	    return ret;
 
 	if(troot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, troot, 0, ftype, -1)) != CL_VIRUS)
@@ -84,7 +84,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, cli_ctx *ctx, cli
 	    return ret;
     }
 
-    if((ret = cli_ac_initdata(&mdata, groot->ac_partsigs, AC_DEFAULT_TRACKLEN)))
+    if((ret = cli_ac_initdata(&mdata, groot->ac_partsigs, groot->ac_lsigs, AC_DEFAULT_TRACKLEN)))
 	return ret;
 
     if(groot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, groot, 0, ftype, -1)) != CL_VIRUS)
@@ -295,11 +295,11 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 	return CL_EMEM;
     }
 
-    if(!ftonly && (ret = cli_ac_initdata(&gdata, groot->ac_partsigs, AC_DEFAULT_TRACKLEN)))
+    if(!ftonly && (ret = cli_ac_initdata(&gdata, groot->ac_partsigs, groot->ac_lsigs, AC_DEFAULT_TRACKLEN)))
 	return ret;
 
     if(troot) {
-	if((ret = cli_ac_initdata(&tdata, troot->ac_partsigs, AC_DEFAULT_TRACKLEN)))
+	if((ret = cli_ac_initdata(&tdata, troot->ac_partsigs, groot->ac_lsigs, AC_DEFAULT_TRACKLEN)))
 	    return ret;
     }
 

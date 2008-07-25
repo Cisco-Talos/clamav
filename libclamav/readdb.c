@@ -18,10 +18,6 @@
  *  MA 02110-1301, USA.
  */
 
-#ifdef _MSC_VER
-#include <winsock.h> /* for Sleep() */
-#endif
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -58,6 +54,7 @@
 #include "filetypes.h"
 #include "filetypes_int.h"
 #include "readdb.h"
+#include "cltypes.h"
 
 #include "phishcheck.h"
 #include "phish_whitelist.h"
@@ -143,7 +140,7 @@ char *cli_virname(char *virname, unsigned int official, unsigned int allocated)
     return virname;
 }
 
-static int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, unsigned int options)
+static int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
 {
 	struct cli_bm_patt *bm_new;
 	char *pt, *hexcpy, *start, *n;
@@ -186,7 +183,7 @@ static int cli_parse_add(struct cli_matcher *root, const char *virname, const ch
 		*pt++ = 0;
 	    }
 
-	    if((ret = cli_ac_addsig(root, virname, start, root->ac_partsigs, parts, i, rtype, type, mindist, maxdist, offset, target, options))) {
+	    if((ret = cli_ac_addsig(root, virname, start, root->ac_partsigs, parts, i, rtype, type, mindist, maxdist, offset, target, lsigid, options))) {
 		cli_errmsg("cli_parse_add(): Problem adding signature (1).\n");
 		error = 1;
 		break;
@@ -266,7 +263,7 @@ static int cli_parse_add(struct cli_matcher *root, const char *virname, const ch
 		return CL_EMALFDB;
 	    }
 
-	    if((ret = cli_ac_addsig(root, virname, pt, root->ac_partsigs, parts, i, rtype, type, 0, 0, offset, target, options))) {
+	    if((ret = cli_ac_addsig(root, virname, pt, root->ac_partsigs, parts, i, rtype, type, 0, 0, offset, target, lsigid, options))) {
 		cli_errmsg("cli_parse_add(): Problem adding signature (2).\n");
 		free(pt);
 		return ret;
@@ -275,8 +272,8 @@ static int cli_parse_add(struct cli_matcher *root, const char *virname, const ch
 	    free(pt);
 	}
 
-    } else if(root->ac_only || strpbrk(hexsig, "?(") || type) {
-	if((ret = cli_ac_addsig(root, virname, hexsig, 0, 0, 0, rtype, type, 0, 0, offset, target, options))) {
+    } else if(root->ac_only || strpbrk(hexsig, "?(") || type || lsigid) {
+	if((ret = cli_ac_addsig(root, virname, hexsig, 0, 0, 0, rtype, type, 0, 0, offset, target, lsigid, options))) {
 	    cli_errmsg("cli_parse_add(): Problem adding signature (3).\n");
 	    return ret;
 	}
@@ -490,7 +487,7 @@ static int cli_loaddb(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 
 	if(*pt == '=') continue;
 
-	if((ret = cli_parse_add(root, start, pt, 0, 0, NULL, 0, options))) {
+	if((ret = cli_parse_add(root, start, pt, 0, 0, NULL, 0, NULL, options))) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -669,7 +666,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	    break;
 	}
 
-	if((ret = cli_parse_add(root, virname, sig, 0, 0, offset, target, options))) {
+	if((ret = cli_parse_add(root, virname, sig, 0, 0, offset, target, NULL, options))) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -695,6 +692,335 @@ static int cli_loadndb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	(*engine)->sdb = 1;
 	cli_dbgmsg("*** Self protection mechanism activated.\n");
     }
+
+    return CL_SUCCESS;
+}
+
+struct lsig_attrib {
+    const char *name;
+    unsigned int type;
+    void **pt;
+};
+
+/* TODO: rework this */
+static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
+{
+	struct lsig_attrib attrtab[] = {
+#define ATTRIB_TOKENS	2
+	    { "Target",	    CLI_TDB_UINT,	(void **) &tdb->target	    },
+	    { "Engine",	    CLI_TDB_RANGE,	(void **) &tdb->engine	    },
+/*
+	    { "NoS",	    CLI_TDB_RANGE,	(void **) &tdb->nos	    },
+	    { "EP",	    CLI_TDB_RANGE,	(void **) &tdb->ep	    },
+	    { "SectOff",    CLI_TDB_RANGE2,	(void **) &tdb->sectoff	    },
+	    { "SectRVA",    CLI_TDB_RANGE2,	(void **) &tdb->sectrva	    },
+	    { "SectVSZ",    CLI_TDB_RANGE2,	(void **) &tdb->sectvsz	    },
+	    { "SectRAW",    CLI_TDB_RANGE2,	(void **) &tdb->sectraw	    },
+	    { "SectRSZ",    CLI_TDB_RANGE2,	(void **) &tdb->sectrsz	    },
+	    { "SectURVA",   CLI_TDB_RANGE2,	(void **) &tdb->secturva    },
+	    { "SectUVSZ",   CLI_TDB_RANGE2,	(void **) &tdb->sectuvsz    },
+	    { "SectURAW",   CLI_TDB_RANGE2,	(void **) &tdb->secturaw    },
+	    { "SectURSZ",   CLI_TDB_RANGE2,	(void **) &tdb->sectursz    },
+*/
+	    { NULL,	    0,			NULL,			    }
+	};
+	struct lsig_attrib *apt;
+	char *tokens[ATTRIB_TOKENS], *pt, *pt2;
+	unsigned int v1, v2, v3, i, j;
+	uint32_t cnt, off[ATTRIB_TOKENS];
+
+
+    cli_strtokenize(attribs, ',', ATTRIB_TOKENS, (const char **) tokens);
+
+    for(i = 0; tokens[i]; i++) {
+	if(!(pt = strchr(tokens[i], ':'))) {
+	    cli_errmsg("lsigattribs: Incorrect format of attribute '%s'\n", tokens[i]);
+	    return -1;
+	}
+	*pt++ = 0;
+
+	apt = NULL;
+	for(j = 0; attrtab[j].name; j++) {
+	    if(!strcmp(attrtab[j].name, tokens[i])) {
+		apt = &attrtab[j];
+		break;
+	    }
+	}
+
+	if(!apt) {
+	    cli_dbgmsg("lsigattribs: Unknown attribute name '%s'\n", tokens[i]);
+	    continue;
+	}
+
+	switch(apt->type) {
+	    case CLI_TDB_UINT:
+		off[i] = cnt = tdb->cnt[CLI_TDB_UINT]++;
+		tdb->val = (uint32_t *) cli_realloc2(tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
+		if(!tdb->val) {
+		    tdb->cnt[CLI_TDB_UINT] = 0;
+		    return -1;
+		}
+		tdb->val[cnt] = atoi(pt);
+		break;
+
+	    case CLI_TDB_RANGE:
+		if(!(pt2 = strchr(pt, '-'))) {
+		    cli_errmsg("lsigattribs: Incorrect parameters in '%s'\n", tokens[i]);
+		    return -1;
+		}
+		*pt2++ = 0;
+		off[i] = cnt = tdb->cnt[CLI_TDB_RANGE];
+		tdb->cnt[CLI_TDB_RANGE] += 2;
+		tdb->range = (uint32_t *) cli_realloc2(tdb->range, tdb->cnt[CLI_TDB_RANGE] * sizeof(uint32_t));
+		if(!tdb->range) {
+		    tdb->cnt[CLI_TDB_RANGE] = 0;
+		    return -1;
+		}
+		tdb->range[cnt] = atoi(pt);
+		tdb->range[cnt + 1] = atoi(pt2);
+		break;
+
+	    case CLI_TDB_RANGE2:
+		if(!strchr(pt, '-') || !strchr(pt, '.')) {
+		    cli_errmsg("lsigattribs: Incorrect parameters in '%s'\n", tokens[i]);
+		    return -1;
+		}
+		off[i] = cnt = tdb->cnt[CLI_TDB_RANGE];
+		tdb->cnt[CLI_TDB_RANGE] += 3;
+		tdb->range = (uint32_t *) cli_realloc2(tdb->range, tdb->cnt[CLI_TDB_RANGE] * sizeof(uint32_t));
+		if(!tdb->range) {
+		    tdb->cnt[CLI_TDB_RANGE] = 0;
+		    return -1;
+		}
+		if(sscanf(pt, "%u.%u-%u", &v1, &v2, &v3) != 3) {
+		    cli_errmsg("lsigattribs: Can't parse parameters in '%s'\n", tokens[i]);
+		    return -1;
+		}
+		tdb->range[cnt] = (uint32_t) v1;
+		tdb->range[cnt + 1] = (uint32_t) v2;
+		tdb->range[cnt + 2] = (uint32_t) v3;
+		break;
+
+	    case CLI_TDB_STR:
+		off[i] = cnt = tdb->cnt[CLI_TDB_STR];
+		tdb->cnt[CLI_TDB_STR] += strlen(pt) + 1;
+		tdb->str = (char *) cli_realloc2(tdb->str, tdb->cnt[CLI_TDB_STR] * sizeof(char));
+		if(!tdb->str) {
+		    cli_errmsg("lsigattribs: Can't allocate memory for tdb->str\n");
+		    return -1;
+		}
+		memcpy(&tdb->str[cnt], pt, strlen(pt));
+		tdb->str[tdb->cnt[CLI_TDB_STR] - 1] = 0;
+		break;
+	}
+    }
+
+    if(!i) {
+	cli_errmsg("lsigattribs: Empty TDB\n");
+	return -1;
+    }
+
+    for(i = 0; tokens[i]; i++) {
+	for(j = 0; attrtab[j].name; j++) {
+	    if(!strcmp(attrtab[j].name, tokens[i])) {
+		apt = &attrtab[j];
+		break;
+	    }
+	}
+	switch(apt->type) {
+	    case CLI_TDB_UINT:
+		*apt->pt = (uint32_t *) &tdb->val[off[i]];
+		break;
+
+	    case CLI_TDB_RANGE:
+	    case CLI_TDB_RANGE2:
+		*apt->pt = (uint32_t *) &tdb->range[off[i]];
+		break;
+
+	    case CLI_TDB_STR:
+		*apt->pt = (char *) &tdb->str[off[i]];
+		break;
+	}
+    }
+
+    return 0;
+}
+
+#define FREE_TDB(x)		\
+    if(x.cnt[CLI_TDB_UINT])	\
+	free(x.val);		\
+    if(x.cnt[CLI_TDB_RANGE])    \
+	free(x.range);		\
+    if(x.cnt[CLI_TDB_STR])	\
+	free(x.str);
+
+#define LDB_TOKENS 67
+static int cli_loadldb(FILE *fs, struct cl_engine **engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
+{
+	char *tokens[LDB_TOKENS];
+	char buffer[32768], *pt;
+	const char *sig, *virname, *offset, *logic;
+	struct cli_matcher *root;
+	unsigned int line = 0, sigs = 0;
+	unsigned short target = 0;
+	struct cli_ac_lsig **newtable, *lsig;
+	uint32_t lsigid[2];
+	int ret = CL_SUCCESS, i, subsigs;
+	struct cli_lsig_tdb tdb;
+
+
+    if((ret = cli_initengine(engine, options))) {
+	cl_free(*engine);
+	return ret;
+    }
+
+    if((ret = cli_initroots(*engine, options))) {
+	cl_free(*engine);
+	return ret;
+    }
+
+    while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
+	line++;
+	sigs++;
+	cli_chomp(buffer);
+
+	cli_strtokenize(buffer, ';', LDB_TOKENS, (const char **) tokens);
+
+	if(!(virname = tokens[0])) {
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if((*engine)->ignored && cli_chkign((*engine)->ignored, dbname, line, virname))
+	    continue;
+
+	if(!(logic = tokens[2])) {
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	subsigs = cli_ac_chklsig(logic, logic + strlen(logic), NULL, NULL, 1);
+	if(subsigs == -1) {
+	    ret = CL_EMALFDB;
+	    break;
+	}
+	subsigs++;
+
+	if(subsigs > 64) {
+	    cli_errmsg("cli_loadldb: Broken logical expression or too many subsignatures\n");
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	/* TDB */
+	memset(&tdb, 0, sizeof(tdb));
+
+	if(lsigattribs(tokens[1], &tdb) == -1) {
+	    FREE_TDB(tdb);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if(tdb.engine) {
+	    if(tdb.engine[0] > cl_retflevel()) {
+		cli_dbgmsg("cli_loadldb: Signature for %s not loaded (required f-level: %u)\n", virname, tdb.engine[0]);
+		FREE_TDB(tdb);
+		sigs--;
+		continue;
+	    } else if(tdb.engine[1] < cl_retflevel()) {
+		FREE_TDB(tdb);
+		sigs--;
+		continue;
+	    }
+	}
+
+	if(!tdb.target) {
+	    cli_errmsg("cli_loadldb: No target specified in TDB\n");
+	    FREE_TDB(tdb);
+	    ret = CL_EMALFDB;
+	    break;
+	} else if(tdb.target[0] >= CLI_MTARGETS) {
+	    cli_dbgmsg("cli_loadldb: Not supported target type in logical signature for %s\n", virname);
+	    FREE_TDB(tdb);
+	    sigs--;
+	    continue;
+	}
+
+	root = (*engine)->root[tdb.target[0]];
+
+	lsig = (struct cli_ac_lsig *) cli_calloc(1, sizeof(struct cli_ac_lsig));
+	if(!lsig) {
+	    cli_errmsg("cli_loadldb: Can't allocate memory for lsig\n");
+	    FREE_TDB(tdb);
+	    ret = CL_EMEM;
+	    break;
+	}
+	lsig->logic = cli_strdup(logic);
+	if(!lsig->logic) {
+	    cli_errmsg("cli_loadldb: Can't allocate memory for lsig->logic\n");
+	    FREE_TDB(tdb);
+	    ret = CL_EMEM;
+	    free(lsig);
+	    break;
+	}
+
+	lsigid[0] = lsig->id = root->ac_lsigs;
+	memcpy(&lsig->tdb, &tdb, sizeof(tdb));
+
+	root->ac_lsigs++;
+	newtable = (struct cli_ac_lsig **) cli_realloc(root->ac_lsigtable, root->ac_lsigs * sizeof(struct cli_ac_lsig *));
+	if(!newtable) {
+	    root->ac_lsigs--;
+	    cli_errmsg("cli_loadldb: Can't realloc root->ac_lsigtable\n");
+	    FREE_TDB(tdb);
+	    free(lsig);
+	    ret = CL_EMEM;
+	    break;
+	}
+	newtable[root->ac_lsigs - 1] = lsig;
+	root->ac_lsigtable = newtable;
+
+	for(i = 0; i < subsigs; i++) {
+	    if(!tokens[3 + i]) {
+		cli_errmsg("cli_loadldb: Missing subsignature id %u\n", i);
+		ret = CL_EMALFDB;
+		break;
+	    }
+	    lsigid[1] = i;
+	    sig = tokens[3 + i];
+
+	    if((pt = strchr(tokens[3 + i], ':'))) {
+		*pt = 0;
+		sig = ++pt;
+		offset = tokens[3 + i];
+	    } else {
+		offset = NULL;
+		sig = tokens[3 + i];
+	    }
+
+	    if((ret = cli_parse_add(root, virname, sig, 0, 0, offset, target, lsigid, options))) {
+		ret = CL_EMALFDB;
+		break;
+	    }
+	}
+	if(ret)
+	    break;
+    }
+
+    if(!line) {
+	cli_errmsg("Empty database file\n");
+	cl_free(*engine);
+	return CL_EMALFDB;
+    }
+
+    if(ret) {
+	cli_errmsg("Problem parsing database at line %u\n", line);
+	cl_free(*engine);
+	return ret;
+    }
+
+    if(signo)
+	*signo += sigs;
 
     return CL_SUCCESS;
 }
@@ -766,7 +1092,7 @@ static int cli_loadftm(FILE *fs, struct cl_engine **engine, unsigned int options
 	}
 
 	if(atoi(tokens[0]) == 1) { /* A-C */
-	    if((ret = cli_parse_add((*engine)->root[0], tokens[3], tokens[2], rtype, type, strcmp(tokens[1], "*") ? tokens[1] : NULL, 0, options)))
+	    if((ret = cli_parse_add((*engine)->root[0], tokens[3], tokens[2], rtype, type, strcmp(tokens[1], "*") ? tokens[1] : NULL, 0, NULL, options)))
 		break;
 
 	} else if(atoi(tokens[0]) == 0) { /* memcmp() */
@@ -1324,6 +1650,15 @@ int cli_load(const char *filename, struct cl_engine **engine, unsigned int *sign
 	else
 	    ret = cli_loadndb(fs, engine, signo, 0, options, dbio, dbname);
 
+    } else if(cli_strbcasestr(filename, ".ldb")) {
+       ret = cli_loadldb(fs, engine, signo, options, dbio, dbname);
+
+    } else if(cli_strbcasestr(filename, ".ldu")) {
+	if(options & CL_DB_PUA)
+	    ret = cli_loadldb(fs, engine, signo, options, dbio, dbname);
+	else
+	    skipped = 1;
+
     } else if(cli_strbcasestr(dbname, ".sdb")) {
 	ret = cli_loadndb(fs, engine, signo, 1, options, dbio, dbname);
 
@@ -1715,7 +2050,7 @@ int cl_statfree(struct cl_stat *dbstat)
 
 void cl_free(struct cl_engine *engine)
 {
-	int i;
+	unsigned int i, j;
 	struct cli_meta_node *metapt, *metah;
 	struct cli_matcher *root;
 
@@ -1749,6 +2084,14 @@ void cl_free(struct cl_engine *engine)
 		if(!root->ac_only)
 		    cli_bm_free(root);
 		cli_ac_free(root);
+		if(root->ac_lsigtable) {
+		    for(j = 0; j < root->ac_lsigs; j++) {
+			free(root->ac_lsigtable[j]->logic);
+			FREE_TDB(root->ac_lsigtable[j]->tdb);
+			free(root->ac_lsigtable[j]);
+		    }
+		    free(root->ac_lsigtable);
+		}
 		free(root);
 	    }
 	}

@@ -37,7 +37,8 @@ extern uint8_t cli_ac_mindepth, cli_ac_maxdepth;
 
 struct cli_ac_data {
     int32_t ***offmatrix;
-    uint32_t partsigs;
+    uint32_t partsigs, lsigs;
+    uint32_t **lsigcnt;
 };
 
 struct cli_ac_alt {
@@ -51,6 +52,7 @@ struct cli_ac_patt {
     uint16_t *pattern, *prefix, length, prefix_length;
     uint32_t mindist, maxdist;
     uint32_t sigid;
+    uint32_t lsigid[3];
     char *virname, *offset;
     uint16_t ch[2];
     uint16_t ch_mindist[2];
@@ -72,13 +74,14 @@ struct cli_ac_node {
 #include "matcher.h"
 
 int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern);
-int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint8_t tracklen);
+int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs, uint8_t tracklen);
+int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigned int *cnt, unsigned int parse_only);
 void cli_ac_freedata(struct cli_ac_data *data);
 int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t offset, cli_file_t ftype, int fd, struct cli_matched_type **ftoffset, unsigned int mode, const cli_ctx *ctx);
 int cli_ac_buildtrie(struct cli_matcher *root);
 int cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth);
 void cli_ac_free(struct cli_matcher *root);
-int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, uint8_t target, unsigned int options);
+int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options);
 void cli_ac_setdepth(uint8_t mindepth, uint8_t maxdepth);
 
 #endif
