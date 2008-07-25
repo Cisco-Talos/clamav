@@ -82,6 +82,9 @@ libclamav_la_SOURCES = \
 	msexpand.h \
 	pe.c \
 	pe.h \
+	disasm.c \
+	disasm.h \
+	disasmpriv.h \
 	upx.c \
 	upx.h \
 	htmlnorm.c \
