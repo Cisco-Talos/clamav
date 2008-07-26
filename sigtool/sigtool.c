@@ -84,6 +84,8 @@ static const struct dblist_s {
     { "main.mdu",   1 },    { "daily.mdu",  1 },
     { "main.ndb",   1 },    { "daily.ndb",  1 },
     { "main.ndu",   1 },    { "daily.ndu",  1 },
+    { "main.ldb",   1 },    { "daily.ldb",  1 },
+    { "main.ldu",   1 },    { "daily.ldu",  1 },
     { "main.sdb",   1 },    { "daily.sdb",  1 },
     { "main.zmd",   1 },    { "daily.zmd",  1 },
     { "main.rmd",   1 },    { "daily.rmd",  1 },
@@ -985,6 +987,8 @@ static int listdir(const char *dirname)
 	     cli_strbcasestr(dent->d_name, ".mdu") ||
 	     cli_strbcasestr(dent->d_name, ".ndb") ||
 	     cli_strbcasestr(dent->d_name, ".ndu") ||
+	     cli_strbcasestr(dent->d_name, ".ldb") ||
+	     cli_strbcasestr(dent->d_name, ".ldu") ||
 	     cli_strbcasestr(dent->d_name, ".sdb") ||
 	     cli_strbcasestr(dent->d_name, ".zmd") ||
 	     cli_strbcasestr(dent->d_name, ".rmd") ||
@@ -1127,12 +1131,16 @@ static int listdb(const char *filename)
 	    free(start);
 	}
 
-    } else if(cli_strbcasestr(filename, ".ndb") || cli_strbcasestr(filename, ".ndu") || cli_strbcasestr(filename, ".sdb") || cli_strbcasestr(filename, ".zmd") || cli_strbcasestr(filename, ".rmd")) {
+    } else if(cli_strbcasestr(filename, ".ndb") || cli_strbcasestr(filename, ".ndu") || cli_strbcasestr(filename, ".ldb") || cli_strbcasestr(filename, ".ldu") || cli_strbcasestr(filename, ".sdb") || cli_strbcasestr(filename, ".zmd") || cli_strbcasestr(filename, ".rmd")) {
 
 	while(fgets(buffer, FILEBUFF, fh)) {
 	    line++;
 	    cli_chomp(buffer);
-	    start = cli_strtok(buffer, 0, ":");
+
+	    if(cli_strbcasestr(filename, ".ldb") || cli_strbcasestr(filename, ".ldu"))
+		start = cli_strtok(buffer, 0, ";");
+	    else
+		start = cli_strtok(buffer, 0, ":");
 
 	    if(!start) {
 		mprintf("!listdb: Malformed pattern line %u (file %s)\n", line, filename);
