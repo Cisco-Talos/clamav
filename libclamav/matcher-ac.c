@@ -377,10 +377,11 @@ void cli_ac_free(struct cli_matcher *root)
 /*
  * In parse_only mode this function returns -1 on error or the max subsig id
  */
-int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigned int *cnt, unsigned int parse_only)
+int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigned int *cnt, uint64_t *ids, unsigned int parse_only)
 {
 	unsigned int i, len = end - expr, pth = 0, opoff = 0, op1off = 0, val;
-	unsigned int blkend = 0, id, modval, lcnt = 0, rcnt = 0, tcnt, modoff = 0;
+	unsigned int blkend = 0, id, modval1, modval2 = 0, lcnt = 0, rcnt = 0, tcnt, modoff = 0;
+	uint64_t lids = 0, rids = 0, tids;
 	int ret, lval, rval;
 	char op = 0, op1 = 0, mod = 0, blkmod = 0;
 	const char *lstart = expr, *lend = NULL, *rstart = NULL, *rend = end, *pt;
@@ -425,12 +426,14 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
 	    blkend = i;
 	    if(expr[i + 1] == '>' || expr[i + 1] == '<' || expr[i + 1] == '=') {
 		blkmod = expr[i + 1];
-		ret = sscanf(&expr[i + 2], "%u", &modval);
+		ret = sscanf(&expr[i + 2], "%u,%u", &modval1, &modval2);
+		if(ret != 2)
+		    ret = sscanf(&expr[i + 2], "%u", &modval1);
 		if(!ret || ret == EOF) {
 		    cli_errmsg("chklexpr: Syntax error: Missing number after '%c'\n", expr[i + 1]);
 		    return -1;
 		}
-		for(i += 2; i + 1 < len && isdigit(expr[i + 1]); i++);
+		for(i += 2; i + 1 < len && (isdigit(expr[i + 1]) || expr[i + 1] == ','); i++);
 	    }
 
 	    if(&expr[i + 1] == rend)
@@ -447,7 +450,7 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
 
     if(!op && !op1) {
 	if(expr[0] == '(')
-	    return cli_ac_chklsig(++expr, --end, lsigcnt, cnt, parse_only);
+	    return cli_ac_chklsig(++expr, --end, lsigcnt, cnt, ids, parse_only);
 
 	ret = sscanf(expr, "%u", &id);
 	if(!ret || ret == EOF) {
@@ -462,43 +465,44 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
 
 	if(mod) {
 	    pt = strchr(expr, mod) + modoff;
-	    ret = sscanf(pt, "%u", &modval);
+	    ret = sscanf(pt, "%u", &modval1);
 	    if(!ret || ret == EOF) {
 		cli_errmsg("chklexpr: Syntax error: Missing number after '%c'\n", mod);
 		return -1;
 	    }
-	    if(!parse_only) switch(mod) {
-		case '=':
-		    if(val == modval) {
-			*cnt += val;
-			return 1;
-		    } else {
+	    if(!parse_only) {
+		switch(mod) {
+		    case '=':
+			if(val != modval1)
+			    return 0;
+			break;
+		    case '<':
+			if(val >= modval1)
+			    return 0;
+			break;
+		    case '>':
+			if(val <= modval1)
+			    return 0;
+			break;
+		    default:
 			return 0;
-		    }
-		    break;
-		case '<':
-		    if(val < modval) {
-			*cnt += val;
-			return 1;
-		    } else {
-			return 0;
-		    }
-		    break;
-		case '>':
-		    if(val > modval) {
-			*cnt += val;
-			return 1;
-		    } else {
-			return 0;
-		    }
+		}
+		*cnt += val;
+		*ids |= (uint64_t) 1 << id;
+		return 1;
 	    }
 	}
 
 	if(parse_only) {
 	    return val;
 	} else {
-	    *cnt += val;
-	    return val ? 1 : 0;
+	    if(val) {
+		*cnt += val;
+		*ids |= (uint64_t) 1 << id;
+		return 1;
+	    } else {
+		return 0;
+	    }
 	}
     }
 
@@ -520,13 +524,13 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
     }
     rstart = &expr[opoff + 1];
 
-    lval = cli_ac_chklsig(lstart, lend, lsigcnt, &lcnt, parse_only);
+    lval = cli_ac_chklsig(lstart, lend, lsigcnt, &lcnt, &lids, parse_only);
     if(lval == -1) {
 	cli_errmsg("cli_ac_chklsig: Calculation of lval failed\n");
 	return -1;
     }
 
-    rval = cli_ac_chklsig(rstart, rend, lsigcnt, &rcnt, parse_only);
+    rval = cli_ac_chklsig(rstart, rend, lsigcnt, &rcnt, &rids, parse_only);
     if(rval == -1) {
 	cli_errmsg("cli_ac_chklsig: Calculation of rval failed\n");
 	return -1;
@@ -555,43 +559,48 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
 	}
 
 	if(!blkmod) {
-	    if(ret)
+	    if(ret) {
 		*cnt += lcnt + rcnt;
-
+		*ids |= lids | rids;
+	    }
 	    return ret;
 	} else {
-	    if(ret)
+	    if(ret) {
 		tcnt = lcnt + rcnt;
-	    else
+		tids = lids | rids;
+	    } else {
 		tcnt = 0;
+		tids = 0;
+	    }
 
 	    switch(blkmod) {
 		case '=':
-		    if(tcnt == modval) {
-			*cnt += tcnt;
-			return 1;
-		    } else {
+		    if(tcnt != modval1)
 			return 0;
-		    }
 		    break;
 		case '<':
-		    if(tcnt < modval) {
-			*cnt += tcnt;
-			return 1;
-		    } else {
+		    if(tcnt >= modval1)
 			return 0;
-		    }
 		    break;
 		case '>':
-		    if(tcnt > modval) {
-			*cnt += tcnt;
-			return 1;
-		    } else {
+		    if(tcnt <= modval1)
 			return 0;
-		    }
+		    break;
 		default:
 		    return 0;
 	    }
+
+	    if(modval2) {
+		val = 0;
+		while(tids) {
+		    val += tids & (uint64_t) 1;
+		    tids >>= 1;
+		}
+		if(val < modval2)
+		    return 0;
+	    }
+	    *cnt += tcnt;
+	    return 1;
 	}
     }
 }

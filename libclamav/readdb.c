@@ -899,7 +899,7 @@ static int cli_loadldb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	    break;
 	}
 
-	subsigs = cli_ac_chklsig(logic, logic + strlen(logic), NULL, NULL, 1);
+	subsigs = cli_ac_chklsig(logic, logic + strlen(logic), NULL, NULL, NULL, 1);
 	if(subsigs == -1) {
 	    ret = CL_EMALFDB;
 	    break;

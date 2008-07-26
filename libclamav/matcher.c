@@ -254,6 +254,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 	int ret = CL_CLEAN, type = CL_CLEAN, bytes;
 	unsigned int i, evalcnt;
 	uint32_t buffersize, length, maxpatlen, shift = 0, offset = 0;
+	uint64_t evalids;
 	struct cli_ac_data gdata, tdata;
 	cli_md5_ctx md5ctx;
 	unsigned char digest[16];
@@ -386,7 +387,8 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
     if(troot) {
 	for(i = 0; i < troot->ac_lsigs; i++) {
 	    evalcnt = 0;
-	    if(cli_ac_chklsig(troot->ac_lsigtable[i]->logic, troot->ac_lsigtable[i]->logic + strlen(troot->ac_lsigtable[i]->logic), tdata.lsigcnt[i], &evalcnt, 0) == 1) {
+	    evalids = 0;
+	    if(cli_ac_chklsig(troot->ac_lsigtable[i]->logic, troot->ac_lsigtable[i]->logic + strlen(troot->ac_lsigtable[i]->logic), tdata.lsigcnt[i], &evalcnt, &evalids, 0) == 1) {
 		if(ctx->virname)
 		    *ctx->virname = troot->ac_lsigtable[i]->virname;
 		ret = CL_VIRUS;
@@ -399,7 +401,8 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
     if(groot) {
 	if(ret != CL_VIRUS) for(i = 0; i < groot->ac_lsigs; i++) {
 	    evalcnt = 0;
-	    if(cli_ac_chklsig(groot->ac_lsigtable[i]->logic, groot->ac_lsigtable[i]->logic + strlen(groot->ac_lsigtable[i]->logic), gdata.lsigcnt[i], &evalcnt, 0) == 1) {
+	    evalids = 0;
+	    if(cli_ac_chklsig(groot->ac_lsigtable[i]->logic, groot->ac_lsigtable[i]->logic + strlen(groot->ac_lsigtable[i]->logic), gdata.lsigcnt[i], &evalcnt, &evalids, 0) == 1) {
 		if(ctx->virname)
 		    *ctx->virname = groot->ac_lsigtable[i]->virname;
 		ret = CL_VIRUS;
