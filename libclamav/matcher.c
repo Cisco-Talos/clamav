@@ -412,8 +412,13 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 	cli_ac_freedata(&gdata);
     }
 
-    if(ret == CL_VIRUS)
-	return ret;
+    if(ret == CL_VIRUS) {
+	lseek(desc, 0, SEEK_SET);
+	if(cli_checkfp(desc, ctx->engine))
+	    return CL_CLEAN;
+	else
+	    return CL_VIRUS;
+    }
 
     if(!ftonly && ctx->engine->md5_hdb) {
 	cli_md5_final(digest, &md5ctx);
