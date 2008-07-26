@@ -301,7 +301,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 	return ret;
 
     if(troot) {
-	if((ret = cli_ac_initdata(&tdata, troot->ac_partsigs, groot->ac_lsigs, AC_DEFAULT_TRACKLEN)))
+	if((ret = cli_ac_initdata(&tdata, troot->ac_partsigs, troot->ac_lsigs, AC_DEFAULT_TRACKLEN)))
 	    return ret;
     }
 
