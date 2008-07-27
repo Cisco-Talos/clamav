@@ -398,7 +398,6 @@ struct DISASMED {
   uint32_t segment;
   struct DIS_ARGS args[3];
   uint8_t cur;
-  uint8_t padding[40]; /* FIXME: for future versions */
 };
 
 #endif

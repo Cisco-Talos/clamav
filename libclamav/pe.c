@@ -892,6 +892,10 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     lseek(desc, ep, SEEK_SET);
     epsize = cli_readn(desc, epbuff, 4096);
 
+    CLI_UNPTEMP("DISASM",(exe_sections,0));
+    disasmbuf(epbuff, epsize, ndesc);
+    CLI_TMPUNLK();
+
     /* Attempt to detect some popular polymorphic viruses */
 
     /* W32.Parite.B */

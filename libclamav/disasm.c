@@ -1664,21 +1664,58 @@ uint8_t *disasm_x86(uint8_t *command, unsigned int len, struct DISASMED *s) {
 
 
 void disasmbuf(uint8_t *buff, unsigned int len, int fd) {
-  char hr[128];
   uint8_t *next = buff;
   unsigned int counter=0;
   struct DISASMED s;
+  struct MARIO {
+    uint16_t real_op;
+    uint8_t opsize;
+    uint8_t adsize;
+    uint8_t segment;
+
+    uint8_t arg[3][11];
+
+    uint8_t extra[26];
+  } w;
+
+  memset(&w.extra[0], 0, sizeof(w.extra));
 
   while(len && counter++<200) {
+    int i;
     if(!(next = disasm_x86(next, len, &s))) {
       /* TODO: invd opcode or buff over */
       return;
     }
-    spam_x86(&s, hr);
-    /* TODO: save stuff here */
+    if(cli_debug_flag) {
+      char hr[128];
+      spam_x86(&s, hr);
+      cli_dbgmsg("%s\n", hr);
+    }
+    
     len -= next-buff;
     buff=next;
-  }
 
+    cli_writeint32(&w.real_op, s.real_op);
+    w.opsize = s.opsize;
+    w.adsize = s.adsize;
+    w.segment = s.segment;
+
+    for (i=0; i<3; i++) {
+      w.arg[i][0] = s.args[i].access;
+      w.arg[i][1] = s.args[i].size;
+      w.arg[i][2] = s.args[i].reg;
+      if(s.args[i].access==ACCESS_MEM) {
+	w.arg[i][3]=s.args[i].arg.marg.r1;
+	w.arg[i][4]=s.args[i].arg.marg.r1;
+	w.arg[i][5]=s.args[i].arg.marg.scale;
+	cli_writeint32(&w.arg[i][6], s.args[i].arg.marg.disp);
+	w.arg[i][10]=0;
+      } else {
+	cli_writeint32(&w.arg[i][3], s.args[i].arg.d);
+	cli_writeint32(&w.arg[i][7], s.args[i].arg.q>>32);
+      }
+    }
+    cli_writen(fd, &w, sizeof(w));
+  }
 }
 
