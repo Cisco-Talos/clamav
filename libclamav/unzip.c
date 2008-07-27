@@ -24,7 +24,6 @@
 #include "clamav-config.h"
 #endif
 
-#if HAVE_MMAP
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -35,9 +34,13 @@
 #include <string.h>
 #endif
 #include <stdlib.h>
+
+#if HAVE_MMAP
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
+#endif /* HAVE_MMAP */
+
 #include <stdio.h>
 
 #include <zlib.h>
@@ -63,6 +66,15 @@
 static int wrap_inflateinit2(void *a, int b) {
   return inflateInit2(a, b);
 }
+
+static inline void destroy_map(void *map, size_t fsize) {
+#if HAVE_MMAP
+  munmap(map, fsize);
+#else
+  free(map);
+#endif
+}
+
 
 static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, uint16_t flags, unsigned int *fu, cli_ctx *ctx, char *tmpd) {
   char name[1024], obuf[BUFSIZ];
@@ -480,18 +492,33 @@ int cli_unzip(int f, cli_ctx *ctx) {
     cli_dbgmsg("cli_unzip: file too short\n");
     return CL_CLEAN;
   }
+
+#if HAVE_MMAP
   if ((map = mmap(NULL, fsize, PROT_READ, MAP_PRIVATE, f, 0))==MAP_FAILED) {
     cli_dbgmsg("cli_unzip: mmap failed\n");
     return CL_EMEM;
   }
+#else
+  if(fsize > CLI_MAX_ALLOCATION) {
+    cli_warnmsg("cli_unzip: unzip support not compiled in and file is too big\n");
+    return CL_CLEAN;
+  }
+  lseek(f, 0, SEEK_SET);
+  if(!(map = cli_malloc(fsize)))
+    return CL_EMEM;
+  if(cli_readn(f, map, fsize)!=fsize) {
+    free(map);
+    return CL_EIO;
+  }
+#endif
 
   if (!(tmpd = cli_gentemp(NULL))) {
-    munmap(map, fsize);
+    destroy_map(map, fsize);
     return CL_ETMPDIR;
   }
   if (mkdir(tmpd, 0700)) {
     cli_dbgmsg("cli_unzip: Can't create temporary directory %s\n", tmpd);
-    munmap(map, fsize);
+    destroy_map(map, fsize);
     free(tmpd);
     return CL_ETMPDIR;
   }
@@ -527,7 +554,7 @@ int cli_unzip(int f, cli_ctx *ctx) {
     }
   }
 
-  munmap(map, fsize);
+  destroy_map(map, fsize);
   if (!cli_leavetemps_flag) cli_rmdirs(tmpd);
   free(tmpd);
 
@@ -556,24 +583,26 @@ int cli_unzip_single(int f, cli_ctx *ctx, off_t lhoffl) {
     return CL_CLEAN;
   }
 
+#if HAVE_MMAP
   if ((map = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, f, 0))==MAP_FAILED) {
     cli_dbgmsg("cli_unzip: mmap() failed\n");
     return CL_EMEM;
   }
-
+#else
+  if(st.st_size > CLI_MAX_ALLOCATION) {
+    cli_warnmsg("cli_unzip: unzip support not compiled in and file is too big\n");
+    return CL_CLEAN;
+  }
+  lseek(f, 0, SEEK_SET);
+  if(!(map = cli_malloc(st.st_size)))
+    return CL_EMEM;
+  if(cli_readn(f, map, st.st_size)!=st.st_size) {
+    free(map);
+    return CL_EIO;
+  }
+#endif
   lhdr(&map[lhoffl], fsize, &fu, 0, NULL, &ret, ctx, NULL);
 
-  munmap(map, st.st_size);
+  destroy_map(map, st.st_size);
   return ret;
 }
-
-#else /* HAVE_MMAP */
-
-#include "others.h"
-#include "clamav.h"
-int cli_unzip(int f, cli_ctx *ctx) {
-  cli_warnmsg("cli_unzip: unzip support not compiled in\n");
-  return CL_CLEAN;
-}
-
-#endif /* HAVE_MMAP */

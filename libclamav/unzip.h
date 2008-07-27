@@ -27,12 +27,7 @@
 
 #include "others.h"
 int cli_unzip(int, cli_ctx *);
-
-#if HAVE_MMAP
 int cli_unzip_single(int, cli_ctx *, off_t);
-#else
-#define cli_unzip_single(a,b,c) cli_unzip((a),(b))
-#endif /* HAVE_MMAP */
 
 #ifdef UNZIP_PRIVATE
 #define F_ENCR  (1<<0)
