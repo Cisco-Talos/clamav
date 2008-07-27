@@ -1,3 +1,7 @@
+Sun Jul 27 23:18:47 CEST 2008 (acab)
+------------------------------------
+  * misc fixes: add some missing checks for pthread api calls (bb#384)
+
 Sun Jul 27 21:35:04 CEST 2008 (acab)
 ------------------------------------
   * libclamav/unzip: workaround for non-mmap builds (bb#900)

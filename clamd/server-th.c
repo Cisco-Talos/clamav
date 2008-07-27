@@ -476,17 +476,18 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     if(cfgopt(copt, "ClamukoScanOnAccess")->enabled)
 #ifdef CLAMUKO
     {
-	pthread_attr_init(&clamuko_attr);
-	pthread_attr_setdetachstate(&clamuko_attr, PTHREAD_CREATE_JOINABLE);
+        if(!pthread_attr_init(&clamuko_attr)) {
+	    pthread_attr_setdetachstate(&clamuko_attr, PTHREAD_CREATE_JOINABLE);
 
-	tharg = (struct thrarg *) malloc(sizeof(struct thrarg));
-	if(tharg) {
-	    tharg->copt = copt;
-	    tharg->engine = engine;
-	    tharg->limits = &limits;
-	    tharg->options = options;
-	    pthread_create(&clamuko_pid, &clamuko_attr, clamukoth, tharg);
-	} else logg("!Not enough memory to start Clamuko\n");
+	    tharg = (struct thrarg *) malloc(sizeof(struct thrarg));
+	    if(tharg) {
+	        tharg->copt = copt;
+		tharg->engine = engine;
+		tharg->limits = &limits;
+		tharg->options = options;
+		pthread_create(&clamuko_pid, &clamuko_attr, clamukoth, tharg);
+	    } else logg("!Not enough memory to start Clamuko\n");
+	} else logg("!attr_init failed, cannot start Clamuko\n");
     }
 #else
 	logg("Clamuko is not available.\n");

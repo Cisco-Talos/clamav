@@ -163,7 +163,12 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void
 	threadpool->idle_timeout = idle_timeout;
 	threadpool->handler = handler;
 	
-	pthread_mutex_init(&(threadpool->pool_mutex), NULL);
+	if(pthread_mutex_init(&(threadpool->pool_mutex), NULL)) {
+		free(threadpool->queue);
+		free(threadpool);
+		return NULL;
+	}
+
 	if (pthread_cond_init(&(threadpool->pool_cond), NULL) != 0) {
 		pthread_mutex_destroy(&(threadpool->pool_mutex));
 		free(threadpool->queue);

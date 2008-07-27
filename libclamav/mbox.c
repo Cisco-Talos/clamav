@@ -4133,7 +4133,12 @@ do_checkURLs(mbox_ctx *mctx, tag_arguments_t *hrefs)
 			args[n].url = cli_strdup(url);
 			args[n].filename = cli_strdup(name);
 			args[n].depth = 0;
-			pthread_create(&tid[n], NULL, getURL, &args[n]);
+			if(pthread_create(&tid[n], NULL, getURL, &args[n])) {
+				cli_warnmsg("thread creation failed\n");
+				free(arg.filename);
+				free(arg.url);
+				break;
+			}
 #else
 			arg.url = cli_strdup(url);
 			arg.dir = dir;
