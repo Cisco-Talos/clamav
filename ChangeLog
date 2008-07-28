@@ -1,3 +1,7 @@
+Mon Jul 28 15:05:01 CEST 2008 (acab)
+------------------------------------
+  * libclamav/pe.c: fix fd leak - thx sherpya
+
 Mon Jul 28 12:50:54 CEST 2008 (tk)
 ----------------------------------
   * database/Makefile.am: add check for .cld files (bb#1088)

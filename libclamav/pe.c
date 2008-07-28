@@ -55,6 +55,7 @@
 #include "upack.h"
 #include "matcher.h"
 #include "matcher-bm.h"
+#include "disasm.h"
 
 #ifndef	O_BINARY
 #define	O_BINARY	0
@@ -894,6 +895,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
     CLI_UNPTEMP("DISASM",(exe_sections,0));
     disasmbuf(epbuff, epsize, ndesc);
+    close(ndesc);
     CLI_TMPUNLK();
 
     /* Attempt to detect some popular polymorphic viruses */
