@@ -703,7 +703,7 @@ $(top_builddir)/test/clam.exe:
 @ENABLE_COVERAGE_TRUE@	@$(MAKE) check VALGRIND=
 
 @ENABLE_COVERAGE_TRUE@$(LCOV_OUTPUT): .libs/check_clamav.gcda
-@ENABLE_COVERAGE_TRUE@	$(LCOV_LCOV) --capture $(DIRECTORIES) --base-directory . --output-file $@
+@ENABLE_COVERAGE_TRUE@	$(LCOV_LCOV) --capture $(DIRECTORIES) --output-file $@
 
 @ENABLE_COVERAGE_TRUE@$(LCOV_HTML): $(LCOV_OUTPUT)
 @ENABLE_COVERAGE_TRUE@	-$(RM) -r $@

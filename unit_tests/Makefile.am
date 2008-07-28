@@ -35,7 +35,7 @@ DIRECTORIES=--directory . --directory ../libclamav --directory ../clamd --direct
 	@$(MAKE) check VALGRIND=
 
 $(LCOV_OUTPUT): .libs/check_clamav.gcda
-	$(LCOV_LCOV) --capture $(DIRECTORIES) --base-directory . --output-file $@
+	$(LCOV_LCOV) --capture $(DIRECTORIES) --output-file $@
 
 $(LCOV_HTML): $(LCOV_OUTPUT)
 	-$(RM) -r $@
