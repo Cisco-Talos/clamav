@@ -1,3 +1,7 @@
+Mon Jul 28 12:50:54 CEST 2008 (tk)
+----------------------------------
+  * database/Makefile.am: add check for .cld files (bb#1088)
+
 Sun Jul 27 23:18:47 CEST 2008 (acab)
 ------------------------------------
   * misc fixes: add some missing checks for pthread api calls (bb#384)
