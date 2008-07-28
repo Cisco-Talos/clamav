@@ -5,3 +5,10 @@
    fun:free_mem
    fun:__libc_freeres
 }
+{
+below-main-stuff
+Memcheck:Free
+fun:free
+obj:/lib/libc-2.7.so
+fun:__libc_freeres
+}
