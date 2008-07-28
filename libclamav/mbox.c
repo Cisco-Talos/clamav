@@ -4135,8 +4135,8 @@ do_checkURLs(mbox_ctx *mctx, tag_arguments_t *hrefs)
 			args[n].depth = 0;
 			if(pthread_create(&tid[n], NULL, getURL, &args[n])) {
 				cli_warnmsg("thread creation failed\n");
-				free(arg.filename);
-				free(arg.url);
+				free(args[n].filename);
+				free(args[n].url);
 				break;
 			}
 #else
