@@ -181,7 +181,9 @@ static const struct rtest {
 		"www.ebay.com/something",1},
 	{NULL,
 		"http://key.com","go to key.com",2
-	}
+	},
+	{NULL, "http://somefakeurl.example.com","someotherdomain-key.com",2},
+	{NULL, "http://somefakeurl.example.com","someotherdomain.key.com",0}
 
 };
 
