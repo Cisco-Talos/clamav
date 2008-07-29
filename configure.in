@@ -331,7 +331,7 @@ _PKG_TEXT])])
 	save_LIBS="$LIBS"
 	if test -z "$CHECK_LIBS"; then
 		# when pkg-config is not available, use defaults		
-		CHECK_LIBS = "-lcheck"
+		CHECK_LIBS="-lcheck"
 	fi
 	LIBS="$LIBS $CHECK_LIBS"
 	AC_CHECK_HEADER(check.h,
