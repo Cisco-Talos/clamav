@@ -287,7 +287,7 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 			return 0;
 		}
 
-		rc = cli_ac_scanbuff((const unsigned char*)bufrev,buffer_len, NULL, &regex, &matcher->suffixes,&mdata,0,0,-1,NULL,AC_SCAN_VIR,NULL);
+		rc = cli_ac_scanbuff((const unsigned char*)bufrev,buffer_len, NULL, &regex, NULL, &matcher->suffixes,&mdata,0,0,-1,NULL,AC_SCAN_VIR,NULL);
 		free(bufrev);
 		cli_ac_freedata(&mdata);
 

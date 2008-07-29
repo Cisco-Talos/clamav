@@ -832,7 +832,7 @@ inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, of
     return CL_SUCCESS;
 }
 
-int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, void **customdata, const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t offset, cli_file_t ftype, int fd, struct cli_matched_type **ftoffset, unsigned int mode, const cli_ctx *ctx)
+int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, void **customdata, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t offset, cli_file_t ftype, int fd, struct cli_matched_type **ftoffset, unsigned int mode, const cli_ctx *ctx)
 {
 	struct cli_ac_node *current;
 	struct cli_ac_patt *patt, *pt;
@@ -842,6 +842,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	uint8_t found;
 	struct cli_target_info info;
 	int type = CL_CLEAN;
+	struct cli_ac_result *newres;
 
 
     if(!root->ac_root)
@@ -895,6 +896,8 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				mdata->offmatrix[pt->sigid - 1] = cli_malloc(pt->parts * sizeof(int32_t *));
 				if(!mdata->offmatrix[pt->sigid - 1]) {
 				    cli_errmsg("cli_ac_scanbuff: Can't allocate memory for mdata->offmatrix[%u]\n", pt->sigid - 1);
+				    if(info.exeinfo.section)
+					free(info.exeinfo.section);
 				    return CL_EMEM;
 				}
 
@@ -903,6 +906,8 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				    cli_errmsg("cli_ac_scanbuff: Can't allocate memory for mdata->offmatrix[%u][0]\n", pt->sigid - 1);
 				    free(mdata->offmatrix[pt->sigid - 1]);
 				    mdata->offmatrix[pt->sigid - 1] = NULL;
+				    if(info.exeinfo.section)
+					free(info.exeinfo.section);
 				    return CL_EMEM;
 				}
 				memset(mdata->offmatrix[pt->sigid - 1][0], -1, pt->parts * (AC_DEFAULT_TRACKLEN + 1) * sizeof(int32_t));
@@ -974,15 +979,31 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 					continue;
 				    }
 
-				    if(virname)
-					*virname = pt->virname;
-				    if(customdata)
-					*customdata = pt->customdata;
+				    if(res) {
+					newres = (struct cli_ac_result *) malloc(sizeof(struct cli_ac_result));
+					if(!newres) {
+					    if(info.exeinfo.section)
+						free(info.exeinfo.section);
+					    return CL_EMEM;
+					}
+					newres->virname = pt->virname;
+					newres->customdata = pt->customdata;
+					newres->next = *res;
+					*res = newres;
 
-				    if(info.exeinfo.section)
-					free(info.exeinfo.section);
+					pt = pt->next;
+					continue;
+				    } else {
+					if(virname)
+					    *virname = pt->virname;
+					if(customdata)
+					    *customdata = pt->customdata;
 
-				    return CL_VIRUS;
+					if(info.exeinfo.section)
+					    free(info.exeinfo.section);
+
+					return CL_VIRUS;
+				    }
 				}
 			    }
 
@@ -1013,14 +1034,31 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				    continue;
 				}
 
-				if(virname)
-				    *virname = pt->virname;
-				if(customdata)
-				    *customdata = pt->customdata;
+				if(res) {
+				    newres = (struct cli_ac_result *) malloc(sizeof(struct cli_ac_result));
+				    if(!newres) {
+					if(info.exeinfo.section)
+					    free(info.exeinfo.section);
+					return CL_EMEM;
+				    }
+				    newres->virname = pt->virname;
+				    newres->customdata = pt->customdata;
+				    newres->next = *res;
+				    *res = newres;
 
-				if(info.exeinfo.section)
-				    free(info.exeinfo.section);
-				return CL_VIRUS;
+				    pt = pt->next;
+				    continue;
+				} else {
+				    if(virname)
+					*virname = pt->virname;
+				    if(customdata)
+					*customdata = pt->customdata;
+
+				    if(info.exeinfo.section)
+					free(info.exeinfo.section);
+
+				    return CL_VIRUS;
+				}
 			    }
 			}
 			pt = pt->next_same;
