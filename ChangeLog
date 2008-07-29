@@ -1,3 +1,7 @@
+Tue Jul 29 10:29:54 EEST 2008 (edwin)
+-------------------------------------
+  * configure.in: check for <sys/select.h> before <sys/types.h> (bb #452)
+
 Tue Jul 29 03:53:31 CEST 2008 (acab)
 ------------------------------------
   * libclamav/disasm.c: change output struct
