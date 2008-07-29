@@ -175,7 +175,14 @@ static const struct rtest {
 	{".+\\.ebayrtm\\.com([/?].*)?:.+\\.ebay\\.(de|com|co\\.uk)([/?].*)?/",
 		"http://srx.main.ebayrtm.com.evil.example.com",
 		"pages.ebay.de",
-		0}
+		0},
+	{".+\\.ebayrtm\\.com([/?].*)?:.+\\.ebay\\.(de|com|co\\.uk)([/?].*)?/",
+		"www.www.ebayrtm.com?somecgi",
+		"www.ebay.com/something",1},
+	{NULL,
+		"http://key.com","go to key.com",2
+	}
+
 };
 
 START_TEST (regex_list_match_test)
@@ -237,6 +244,7 @@ static void psetup(void)
 	f = fdopen(open_testfile("input/daily.pdb"),"r");
 	fail_unless(!!f, "fopen daily.pdb");
 
+	cl_debug();
 	rc = load_regex_matcher(engine->domainlist_matcher,  f, 0, 0, NULL);
 	fail_unless(rc == 0, "load_regex_matcher");
 	fclose(f);
@@ -266,9 +274,9 @@ static void pteardown(void)
 	engine = NULL;
 }
 
-START_TEST (phishingScan_test)
+
+static void do_phishing_test(const struct rtest *rtest)
 {
-	const struct rtest *rtest = &rtests[_i];
 	char *realurl;
 	cli_ctx ctx;
 	const char *virname;
@@ -294,14 +302,57 @@ START_TEST (phishingScan_test)
 
 	ctx.engine = engine;
 	ctx.virname = &virname;
+
 	rc = phishingScan(NULL, NULL, &ctx, &hrefs);
-	fail_unless(rc == CL_CLEAN,"phishingScan");
-	fail_unless(!!ctx.found_possibly_unwanted == !rtest->result ,
-			"found unwanted: %d, expected: %d\n", ctx.found_possibly_unwanted, !rtest->result);
+
 	html_tag_arg_free(&hrefs);
+	fail_unless(rc == CL_CLEAN,"phishingScan");
+	switch(rtest->result) {
+		case 0:
+			fail_unless(ctx.found_possibly_unwanted,
+					"this should be phishing, realURL: %s, displayURL: %s",
+					rtest->realurl, rtest->displayurl);
+			break;
+		case 1:
+			fail_unless(!ctx.found_possibly_unwanted,
+					"this should be whitelisted, realURL: %s, displayURL: %s",
+					rtest->realurl, rtest->displayurl);
+			break;
+		case 2:
+			fail_unless(!ctx.found_possibly_unwanted,
+					"this should be clean, realURL: %s, displayURL: %s",
+					rtest->realurl, rtest->displayurl);
+			break;
+	}
+}
+
+START_TEST (phishingScan_test)
+{
+	do_phishing_test(&rtests[_i]);
 }
 END_TEST
 
+
+START_TEST(phishing_fake_test)
+{
+	char buf[4096];
+	FILE *f = fdopen(open_testfile("input/daily.pdb"),"r");
+	fail_unless(!!f,"fopen daily.pdb");
+	while(fgets(buf, sizeof(buf), f)) {
+		struct rtest rtest;
+		const char *pdb = strchr(buf,':');
+		fail_unless(!!pdb, "missing : in pdb");
+		rtest.realurl = pdb;
+		rtest.displayurl = pdb;
+		rtest.result = 2;
+		do_phishing_test(&rtest);
+		rtest.realurl = "http://fake.example.com";
+		rtest.result = 0;
+		do_phishing_test(&rtest);
+	}
+	fclose(f);
+}
+END_TEST
 
 Suite *test_regex_suite(void)
 {
@@ -324,6 +375,7 @@ Suite *test_regex_suite(void)
 	suite_add_tcase(s, tc_phish);
 	tcase_add_checked_fixture(tc_phish, psetup, pteardown);
 	tcase_add_loop_test(tc_phish, phishingScan_test, 0, sizeof(rtests)/sizeof(rtests[0]));
+	tcase_add_test(tc_phish, phishing_fake_test);
 
 	return s;
 }

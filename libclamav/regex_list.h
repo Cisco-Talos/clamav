@@ -36,10 +36,15 @@ struct filter {
 	unsigned long m;
 };
 
+struct regex_list_ht {
+	struct regex_list *head;
+	struct regex_list *tail;
+};
+
 struct regex_matcher {
 	struct hashtable suffix_hash;
 	size_t suffix_cnt;
-	struct regex_list **suffix_regexes;
+	struct regex_list_ht *suffix_regexes;
 	size_t regex_cnt;
 	regex_t **all_pregs;
 	struct cli_matcher suffixes;

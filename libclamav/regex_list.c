@@ -108,7 +108,7 @@ static int SO_preprocess_add(struct filter *m, const unsigned char *pattern, siz
 	if(j) {
 		j--;
 		m->end[q] &= ~(1 << j);
-		m->end_fast[pattern[j]] &= (1<<j);
+		m->end_fast[pattern[j+1]] &= ~(1<<j);
 	}
 	return 0;
 }
@@ -126,6 +126,13 @@ static long SO_search(const struct filter *m, const unsigned char *data, unsigne
 	const uint32_t *EndFast = m->end_fast;
 
 	if(!len) return -1;
+	/* cut length, and make it modulo 2 */
+	if(len > MAXSOPATLEN) {
+		len = MAXSOPATLEN;
+	} else {
+		/* we use 2-grams, must be multiple of 2 */
+		len = len & ~1;
+	}
 	/* Shift-Or like search algorithm */
 	for(j=0;j < len-1; j++) {
 		const uint16_t q0 = cli_readint16( &data[j] );
@@ -201,6 +208,8 @@ static int validate_subdomain(const struct regex_list *regex, const struct pre_f
 			 (match_len < buffer_len &&
 			  ((c=get_char_at_pos_with_skip(pre_fixup,buffer,buffer_len-match_len))=='.' || (c==' ')) )
 			 /* subdomain matched*/)) {
+		/* we have an extra / at the end */
+		if(match_len > 0) match_len--;
 		cli_dbgmsg("Got a match: %s with %s\n", buffer, regex->pattern);
 		cli_dbgmsg("Before inserting .: %s\n", orig_real_url);
 		if(real_len >= match_len + 1) {
@@ -290,7 +299,6 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 			 * negatives */
 			return 0;
 		}
-
 		rc = cli_ac_scanbuff((const unsigned char*)bufrev,buffer_len, NULL, (void*)&regex, &res, &matcher->suffixes,&mdata,0,0,-1,NULL,AC_SCAN_VIR,NULL);
 		free(bufrev);
 		cli_ac_freedata(&mdata);
@@ -517,7 +525,7 @@ void regex_list_done(struct regex_matcher* matcher)
 		cli_ac_free(&matcher->suffixes);
 		if(matcher->suffix_regexes) {
 			for(i=0;i<matcher->suffix_cnt;i++) {
-				struct regex_list *r = matcher->suffix_regexes[i];
+				struct regex_list *r = matcher->suffix_regexes[i].head;
 				while(r) {
 					struct regex_list *q = r;
 					r = r->nxt;
@@ -599,6 +607,16 @@ static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info,
 #define MODULE "regex_list: "
 /* ------ load a regex, determine suffix, determine suffix2regexlist map ---- */
 
+static void list_add_tail(struct regex_list_ht *ht, struct regex_list *regex)
+{
+	if(!ht->head)
+		ht->head = regex;
+	if(ht->tail) {
+		ht->tail->nxt = regex;
+	}
+	ht->tail = regex;
+}
+
 /* returns 0 on success, clamav error code otherwise */
 static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_len, const struct regex_list *iregex)
 {
@@ -618,8 +636,7 @@ static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_le
 	if(el) {
 		/* existing suffix */
 		assert((size_t)el->data < matcher->suffix_cnt);
-		regex->nxt = matcher->suffix_regexes[el->data];
-		matcher->suffix_regexes[el->data] = regex;
+		list_add_tail(&matcher->suffix_regexes[el->data], regex);
 		cli_dbgmsg(MODULE "added new regex to existing suffix %s: %s\n", suffix, regex->pattern);
 	} else {
 		/* new suffix */
@@ -628,7 +645,8 @@ static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_le
 		matcher->suffix_regexes = cli_realloc(matcher->suffix_regexes, (n+1)*sizeof(*matcher->suffix_regexes));
 		if(!matcher->suffix_regexes)
 			return CL_EMEM;
-		matcher->suffix_regexes[n] = regex;
+		matcher->suffix_regexes[n].tail = regex;
+		matcher->suffix_regexes[n].head = regex;
 		add_newsuffix(matcher, regex, suffix, suffix_len);
 		cli_dbgmsg(MODULE "added new suffix %s, for regex: %s\n", suffix, regex->pattern);
 	}
