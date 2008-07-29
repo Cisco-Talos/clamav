@@ -26,13 +26,6 @@
 #include <sys/time.h>
 #endif
 
-/**
- * OPTIMIZE_MEMORY_FOOTPRINT : #ifdef, it will force all worker threads to terminate
- * before switching to new database, thereby, avoiding fragmenting memory due which
- * will cause swelling resident memory during run-time.
- */
-#define OPTIMIZE_MEMORY_FOOTPRINT
-
 typedef struct work_item_tag {
 	struct work_item_tag *next;
 	void *data;
@@ -48,7 +41,6 @@ typedef struct work_queue_tag {
 typedef enum {
 	POOL_INVALID,
 	POOL_VALID,
-	POOL_STOP,	/* All worker threads should exit */
 	POOL_EXIT
 } pool_state_t;
 
@@ -73,14 +65,5 @@ typedef struct threadpool_tag {
 threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void *));
 void thrmgr_destroy(threadpool_t *threadpool);
 int thrmgr_dispatch(threadpool_t *threadpool, void *user_data);
-
-#ifdef OPTIMIZE_MEMORY_FOOTPRINT
-/**
- * thrmgr_worker_stop_wait : set state to POOL_STOP, wake all thread worker, wait for them
- * to exit before continuing.
- */
-void thrmgr_worker_stop_wait(threadpool_t * const threadpool);
-void thrmgr_setstate(threadpool_t * const threadpool, pool_state_t state);
-#endif
 
 #endif

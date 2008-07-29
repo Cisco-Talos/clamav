@@ -1,3 +1,7 @@
+Tue Jul 29 23:18:23 CEST 2008 (tk)
+----------------------------------
+  * clamd: revert patch from bb#1028 (bb#1113)
+
 Tue Jul 29 13:18:24 EEST 2008 (edwin)
 ------------------------------------
   * libclamav/regex_*.[ch]: handle multiple matches (bb #1110)

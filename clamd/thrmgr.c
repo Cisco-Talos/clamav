@@ -215,107 +215,12 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void
 	return threadpool;
 }
 
-#ifdef OPTIMIZE_MEMORY_FOOTPRINT
-/**
- * thrmgr_worker_stop_wait : set state to POOL_STOP, wake all thread worker, wait for them
- * to exit before continuing.
- */
-void thrmgr_worker_stop_wait(threadpool_t * const threadpool)
-{
-	struct timespec timeout;
-	int ret_cond;
-	int loop = 2;
-	
-	if (!threadpool || (threadpool->state != POOL_VALID)) {
-		return;
-	}
-  	if (pthread_mutex_lock(&threadpool->pool_mutex) != 0) {
-   		logg("!Mutex lock failed\n");
-    		exit(-1);
-	}
-	threadpool->state = POOL_STOP;
-	
-	/* wait for threads to exit */
-	if (threadpool->thr_alive > 0) {
-#ifdef CL_DEBUG
-		logg("*%u active threads: waking them and entering wait loop\n", threadpool->thr_alive);
-#endif
-		if (pthread_cond_broadcast(&(threadpool->pool_cond)) != 0) {
-			pthread_mutex_unlock(&threadpool->pool_mutex);
-			logg("!Fatal: failed in cond broadcast 'pool_cond'\n");
-			return;
-		}
-	}
-	/* now, wait for the threads to exit, make 'loop' number of tries,  */
-	while (threadpool->thr_alive > 0 && loop--) {		
-#ifdef CL_DEBUG
-		logg("*%u active threads. Waiting.\n", threadpool->thr_alive);
-#endif
-		timeout.tv_sec = time(NULL) + (threadpool->idle_timeout/2) + 10L;
-		timeout.tv_nsec = 0;
-		ret_cond = pthread_cond_timedwait (&threadpool->pool_cond, &threadpool->pool_mutex, &timeout);
-		if (ret_cond == ETIMEDOUT) {
-#ifdef CL_DEBUG
-			logg("*%u active threads. Continue to wait.\n", threadpool->thr_alive);
-#endif
-		} else if (ret_cond == 0) {
-#ifdef CL_DEBUG
-			logg("*Received signal. %u active threads.\n", threadpool->thr_alive);
-#endif
-		}
-	}
-  	if (pthread_mutex_unlock(&threadpool->pool_mutex) != 0) {
-    		logg("!Mutex unlock failed\n");
-    		exit(-1);
-  	}
-}
-#endif
-#ifdef OPTIMIZE_MEMORY_FOOTPRINT
-void thrmgr_setstate(threadpool_t * const threadpool, pool_state_t state )
-{
-  	if (pthread_mutex_lock(&threadpool->pool_mutex) != 0) {
-   		logg("!Mutex lock failed\n");
-    		exit(-1);
-	}
-	threadpool->state = state;
-  	if (pthread_mutex_unlock(&threadpool->pool_mutex) != 0) {
-    		logg("!Mutex unlock failed\n");
-    		exit(-1);
-  	}
-}
-#endif
-
-static void *thrmgr_worker_cleanup(void *arg)
-{
-	threadpool_t *threadpool = (threadpool_t *) arg;
-	
-	if (pthread_mutex_lock(&(threadpool->pool_mutex)) != 0) {
-		/* Fatal error */
-		logg("!Fatal: mutex lock failed\n");
-		exit(-2);
-	}
-	(threadpool->thr_alive) && threadpool->thr_alive--;
-	/* logg("*Thread clean up, %u active threads.", threadpool->thr_alive); */
-	if (threadpool->thr_alive == 0) {
-		/* signal that all threads are finished */
-		pthread_cond_broadcast(&threadpool->pool_cond);
-	}
-	if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
-		/* Fatal error */
-		logg("!Fatal: mutex unlock failed\n");
-		exit(-2);
-	}
-}
-
 static void *thrmgr_worker(void *arg)
 {
 	threadpool_t *threadpool = (threadpool_t *) arg;
 	void *job_data;
 	int retval, must_exit = FALSE;
 	struct timespec timeout;
-	
-	/* Register cleanup procedure for worker in current thread */
-	pthread_cleanup_push(thrmgr_worker_cleanup, arg);
 	
 	/* loop looking for work */
 	for (;;) {
@@ -326,15 +231,16 @@ static void *thrmgr_worker(void *arg)
 		timeout.tv_sec = time(NULL) + threadpool->idle_timeout;
 		timeout.tv_nsec = 0;
 		threadpool->thr_idle++;
-		while ( must_exit == FALSE 
-				&& ((job_data = work_queue_pop(threadpool->queue)) == NULL)
+		while (((job_data=work_queue_pop(threadpool->queue)) == NULL)
 				&& (threadpool->state != POOL_EXIT)) {
 			/* Sleep, awaiting wakeup */
 			pthread_cond_signal(&threadpool->idle_cond);
 			retval = pthread_cond_timedwait(&(threadpool->pool_cond),
 				&(threadpool->pool_mutex), &timeout);
-			if (retval == ETIMEDOUT)
+			if (retval == ETIMEDOUT) {
 				must_exit = TRUE;
+				break;
+			}
 		}
 		threadpool->thr_idle--;
 		if (threadpool->state == POOL_EXIT) {
@@ -345,17 +251,27 @@ static void *thrmgr_worker(void *arg)
 			logg("!Fatal: mutex unlock failed\n");
 			exit(-2);
 		}
-		if (must_exit) break;
-		if (job_data) threadpool->handler(job_data);
-		if (threadpool->state == POOL_STOP) break;
+		if (job_data) {
+			threadpool->handler(job_data);
+		} else if (must_exit) {
+			break;
+		}
 	}
-
-#ifdef HAVE_PTHREAD_YIELD
-	pthread_yield(); /* do not remove on premptive kernel e.g linux 2.6 */
-#elif HAVE_SCHED_YIELD
-	sched_yield();
-#endif
-	pthread_cleanup_pop(1);
+	if (pthread_mutex_lock(&(threadpool->pool_mutex)) != 0) {
+		/* Fatal error */
+		logg("!Fatal: mutex lock failed\n");
+		exit(-2);
+	}
+	threadpool->thr_alive--;
+	if (threadpool->thr_alive == 0) {
+		/* signal that all threads are finished */
+		pthread_cond_broadcast(&threadpool->pool_cond);
+	}
+	if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
+		/* Fatal error */
+		logg("!Fatal: mutex unlock failed\n");
+		exit(-2);
+	}
 	return NULL;
 }
 
