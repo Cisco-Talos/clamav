@@ -1,3 +1,7 @@
+Tue Jul 29 02:44:53 CEST 2008 (acab)
+------------------------------------
+  * test: add clam.d64.zip
+
 Tue Jul 29 02:18:11 CEST 2008 (acab)
 ------------------------------------
   * libclamav/autoit.c: rely on generic text normalization for
