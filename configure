@@ -13286,7 +13286,7 @@ fi
 	save_CPPFLAGS="$CPPFLAGS";
 	CPPFLAGS="$CPPFLAGS $CHECK_CFLAGS"
 	save_LIBS="$LIBS"
-	if  -z "$CHECK_LIBS" ; then
+	if test -z "$CHECK_LIBS"; then
 		# when pkg-config is not available, use defaults
 		CHECK_LIBS = "-lcheck"
 	fi
