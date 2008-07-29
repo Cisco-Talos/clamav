@@ -405,22 +405,24 @@ static int build_suffixtree_descend(struct node *n, struct text_buffer *buf, suf
 	return 0;
 }
 
-int cli_regex2suffix(const char *pattern, struct regex_list *regex, suffix_callback cb, void *cbdata)
+int cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback cb, void *cbdata)
 {
+	struct regex_list regex;
 	struct text_buffer buf;
 	struct node root_node;
 	struct node *n;
 	size_t last = 0;
 	int rc;
 
-	assert(regex && pattern);
+	assert(pattern);
 
-	rc = cli_regcomp(regex->preg, pattern, REG_EXTENDED);
+	regex.preg = preg;
+	rc = cli_regcomp(regex.preg, pattern, REG_EXTENDED);
 	if(rc) {
-		size_t buflen = cli_regerror(rc, regex->preg, NULL, 0);
+		size_t buflen = cli_regerror(rc, regex.preg, NULL, 0);
 		char *errbuf = cli_malloc(buflen);
 		if(errbuf) {
-			cli_regerror(rc, regex->preg, errbuf, buflen);
+			cli_regerror(rc, regex.preg, errbuf, buflen);
 			cli_errmsg(MODULE "Error compiling regular expression %s: %s\n", pattern, errbuf);
 			free(errbuf);
 		} else {
@@ -428,8 +430,8 @@ int cli_regex2suffix(const char *pattern, struct regex_list *regex, suffix_callb
 		}
 		return rc;
 	}
-	regex->nxt = NULL;
-	regex->pattern = cli_strdup(pattern);
+	regex.nxt = NULL;
+	regex.pattern = cli_strdup(pattern);
 
 	n = parse_regex(pattern, &last);
 	if(!n)
@@ -438,8 +440,8 @@ int cli_regex2suffix(const char *pattern, struct regex_list *regex, suffix_callb
 	memset(&root_node, 0, sizeof(buf));
 	n->parent = &root_node;
 
-	rc = build_suffixtree_descend(n, &buf, cb, cbdata, regex);
-	free(regex->pattern);
+	rc = build_suffixtree_descend(n, &buf, cb, cbdata, &regex);
+	free(regex.pattern);
 	free(buf.data);
 	destroy_tree(n);
 	return rc;

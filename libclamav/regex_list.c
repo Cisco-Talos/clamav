@@ -60,7 +60,7 @@
 /* Prototypes */
 static regex_t *new_preg(struct regex_matcher *matcher);
 static size_t reverse_string(char *pattern);
-static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_len, struct regex_list *regex);
+static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_len, const struct regex_list *regex);
 static int add_static_pattern(struct regex_matcher *matcher, char* pattern);
 /* ---------- */
 
@@ -241,7 +241,6 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 {
 	char* orig_real_url = real_url;
 	struct regex_list *regex;
-	struct regex_list *last_match;
 
 	assert(matcher);
 	assert(real_url);
@@ -593,7 +592,7 @@ static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info,
 		free(new);
 		return ret;
 	}
-	SO_preprocess_add(&matcher->filter, suffix, len);
+	SO_preprocess_add(&matcher->filter, (const unsigned char*)suffix, len);
 	return CL_SUCCESS;
 }
 
@@ -601,7 +600,7 @@ static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info,
 /* ------ load a regex, determine suffix, determine suffix2regexlist map ---- */
 
 /* returns 0 on success, clamav error code otherwise */
-static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_len, struct regex_list *iregex)
+static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_len, const struct regex_list *iregex)
 {
 	struct regex_matcher *matcher = cbdata;
 	struct regex_list *regex = cli_malloc(sizeof(*regex));
@@ -618,7 +617,7 @@ static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_le
 	 * match? */
 	if(el) {
 		/* existing suffix */
-		assert(el->data < matcher->suffix_cnt);
+		assert((size_t)el->data < matcher->suffix_cnt);
 		regex->nxt = matcher->suffix_regexes[el->data];
 		matcher->suffix_regexes[el->data] = regex;
 		cli_dbgmsg(MODULE "added new regex to existing suffix %s: %s\n", suffix, regex->pattern);
@@ -679,7 +678,7 @@ static int add_static_pattern(struct regex_matcher *matcher, char* pattern)
 int regex_list_add_pattern(struct regex_matcher *matcher, char *pattern)
 {
 	int rc;
-	struct regex_list regex;
+	regex_t *preg;
 	size_t len;
 	/* we only match the host, so remove useless stuff */
 	const char remove_end[] = "([/?].*)?/";
@@ -697,15 +696,14 @@ int regex_list_add_pattern(struct regex_matcher *matcher, char *pattern)
 		}
 	}
 	pattern[len] = '\0';
-	regex.pattern = NULL;
 
-	regex.preg = new_preg(matcher);
-	if(!regex.preg)
+	preg = new_preg(matcher);
+	if(!preg)
 		return CL_EMEM;
 
-	rc = cli_regex2suffix(pattern, &regex, add_pattern_suffix, matcher);
+	rc = cli_regex2suffix(pattern, preg, add_pattern_suffix, (void*)matcher);
 	if(rc) {
-		cli_regfree(regex.preg);
+		cli_regfree(preg);
 	}
 
 	return rc;

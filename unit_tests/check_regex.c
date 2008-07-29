@@ -31,28 +31,31 @@
 #include <check.h>
 #include "../libclamav/clamav.h"
 #include "../libclamav/others.h"
-#include "../libclamav/regex_suffix.h"
-#include "../libclamav/regex_list.h"
-#include "../libclamav/htmlnorm.h"
 #include "../libclamav/mbox.h"
 #include "../libclamav/message.h"
+#include "../libclamav/htmlnorm.h"
 #include "../libclamav/phishcheck.h"
+#include "../libclamav/regex_suffix.h"
+#include "../libclamav/regex_list.h"
+#include "../libclamav/phish_domaincheck_db.h"
+#include "../libclamav/phish_whitelist.h"
 #include "checks.h"
 
-static int cb_called = 0;
+static size_t cb_called = 0;
 
-static int cb_fail(void *cbdata, const char *suffix, size_t len, struct regex_list *regex)
+static int cb_fail(void *cbdata, const char *suffix, size_t len, const struct regex_list *regex)
 {
 	fail("this pattern is not supposed to have a suffix");
 	return -1;
 }
 
-static int cb_expect_single(void *cbdata, const char *suffix, size_t len, struct regex_list *regex)
+static int cb_expect_single(void *cbdata, const char *suffix, size_t len, const struct regex_list *regex)
 {
 	const char *expected = cbdata;
 	cb_called++;
 	fail_unless(suffix && strcmp(suffix, expected) == 0,
 			"suffix mismatch, was: %s, expected: %s\n", suffix, expected);
+	return 0;
 }
 
 static struct regex_list regex;
@@ -60,11 +63,13 @@ START_TEST (empty)
 {
 	const char pattern[] = "";
 	int rc;
+	regex_t *preg;
+
 	errmsg_expected();
-	regex.preg = malloc(sizeof(*regex.preg));
-	fail_unless(!!regex.preg, "malloc");
-	rc = cli_regex2suffix(pattern, &regex, cb_fail, NULL);
-	free(regex.preg);
+	preg = malloc(sizeof(*regex.preg));
+	fail_unless(!!preg, "malloc");
+	rc = cli_regex2suffix(pattern, preg, cb_fail, NULL);
+	free(preg);
 	fail_unless(rc == REG_EMPTY, "empty pattern");
 	fail_unless(cb_called == 0, "callback shouldn't be called");
 }
@@ -72,31 +77,33 @@ END_TEST
 
 START_TEST (one)
 {
-	const char pattern[] = "a";
+	char pattern[] = "a";
 	int rc;
-	regex.preg = malloc(sizeof(*regex.preg));
-	fail_unless(!!regex.preg, "malloc");
-	rc = cli_regex2suffix(pattern, &regex, cb_expect_single, "a");
+	regex_t *preg;
+
+	preg = malloc(sizeof(*regex.preg));
+	fail_unless(!!preg, "malloc");
+	rc = cli_regex2suffix(pattern, preg, cb_expect_single, pattern);
 	fail_unless(rc == 0, "single character pattern");
-	cli_regfree(regex.preg);
-	free(regex.preg);
+	cli_regfree(preg);
+	free(preg);
 	fail_unless(cb_called == 1, "callback should be called once");
 }
 END_TEST
 
 
-static const char *exp1[] =
+static const char *ex1[] =
  {"com|de","moc","ed",NULL};
-static const char *exp2[] =
+static const char *ex2[] =
  {"xd|(a|e)bc","dx","cba","cbe",NULL};
 
 static const char **tests[] = {
-	exp1,
-	exp2
+	ex1,
+	ex2
 };
 
 
-static int cb_expect_multi(void *cbdata, const char *suffix, size_t len, struct regex_list *regex)
+static int cb_expect_multi(void *cbdata, const char *suffix, size_t len, const struct regex_list *r)
 {
 	const char **exp = cbdata;
 	fail_unless(!!exp, "expected data");
@@ -107,22 +114,24 @@ static int cb_expect_multi(void *cbdata, const char *suffix, size_t len, struct 
 			"suffix mismatch, was: %s, expected: %s\n",suffix, exp[cb_called]);
 	fail_unless(strlen(suffix) == len, "incorrect suffix len, expected: %d, got: %d\n", strlen(suffix), len);
 	cb_called++;
+	return 0;
 }
 
 START_TEST (test_suffix)
 {
 	int rc;
+	regex_t *preg;
 	const char *pattern = tests[_i][0];
 	size_t n=0;
 	const char **p=tests[_i];
 
 	fail_unless(!!pattern, "test pattern");
-	regex.preg = malloc(sizeof(*regex.preg));
-	fail_unless(!!regex.preg, "malloc");
-	rc = cli_regex2suffix(pattern, &regex, cb_expect_multi, tests[_i]);
+	preg = malloc(sizeof(*regex.preg));
+	fail_unless(!!preg, "malloc");
+	rc = cli_regex2suffix(pattern, preg, cb_expect_multi, tests[_i]);
 	fail_unless(rc == 0, "single character pattern");
-	cli_regfree(regex.preg);
-	free(regex.preg);
+	cli_regfree(preg);
+	free(preg);
 	p++;
 	while(*p++) n++;
 	fail_unless(cb_called == n,
@@ -173,7 +182,8 @@ START_TEST (regex_list_match_test)
 {
 	const char *info;
 	const struct rtest *rtest = &rtests[_i];
-	char *pattern;
+	char *pattern, *realurl;
+	int rc;
 
 	if(!rtest->pattern) {
 		fail_unless(rtest->result != 1,
@@ -187,7 +197,7 @@ START_TEST (regex_list_match_test)
 	pattern = cli_strdup(rtest->pattern);
 	fail_unless(!!pattern, "cli_strdup");
 
-	int rc = regex_list_add_pattern(&matcher, pattern);
+	rc = regex_list_add_pattern(&matcher, pattern);
 	fail_unless(rc == 0,"regex_list_add_pattern");
 	free(pattern);
 
@@ -198,9 +208,12 @@ START_TEST (regex_list_match_test)
 
 	fail_unless(is_regex_ok(&matcher),"is_regex_ok");
 
-	/* regex_list_match is not supposed to modify realurl in this case */
-	rc = regex_list_match(&matcher, (char*)rtest->realurl, rtest->displayurl, NULL, 1, &info, 1);
+	realurl = cli_strdup(rtest->realurl);
+	rc = regex_list_match(&matcher, realurl, rtest->displayurl, NULL, 1, &info, 1);
 	fail_unless(rc == rtest->result,"regex_list_match");
+	/* regex_list_match is not supposed to modify realurl in this case */
+	fail_unless(!strcmp(realurl, rtest->realurl), "realurl altered");
+	free(realurl);
 }
 END_TEST
 
@@ -255,7 +268,6 @@ static void pteardown(void)
 
 START_TEST (phishingScan_test)
 {
-	const char *info;
 	const struct rtest *rtest = &rtests[_i];
 	char *realurl;
 	cli_ctx ctx;
@@ -271,14 +283,14 @@ START_TEST (phishingScan_test)
 	hrefs.count = 1;
 	hrefs.value = cli_malloc(sizeof(*hrefs.value));
 	fail_unless(!!hrefs.value, "cli_malloc");
-	hrefs.value[0] = realurl;
+	hrefs.value[0] = (unsigned char*)realurl;
 	hrefs.contents = cli_malloc(sizeof(*hrefs.contents));
 	fail_unless(!!hrefs.contents, "cli_malloc");
 	hrefs.contents[0] = blobCreate();
 	hrefs.tag = cli_malloc(sizeof(*hrefs.tag));
 	fail_unless(!!hrefs.tag, "cli_malloc");
-	hrefs.tag[0] = cli_strdup("href");
-	blobAddData(hrefs.contents[0], rtest->displayurl, strlen(rtest->displayurl)+1);
+	hrefs.tag[0] = (unsigned char*)cli_strdup("href");
+	blobAddData(hrefs.contents[0], (const unsigned char*) rtest->displayurl, strlen(rtest->displayurl)+1);
 
 	ctx.engine = engine;
 	ctx.virname = &virname;
@@ -293,9 +305,8 @@ END_TEST
 
 Suite *test_regex_suite(void)
 {
-	cl_debug();
 	Suite *s = suite_create("regex");
-	TCase *tc_static, *tc_simple, *tc_api, *tc_matching, *tc_phish;
+	TCase *tc_api, *tc_matching, *tc_phish;
 
 	tc_api = tcase_create("cli_regex2suffix");
 	suite_add_tcase(s, tc_api);

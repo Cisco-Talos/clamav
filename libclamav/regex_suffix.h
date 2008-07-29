@@ -28,6 +28,6 @@ struct regex_list {
 	regex_t *preg;
 	struct regex_list *nxt;
 };
-typedef int (*suffix_callback)(void *cbdata, const char *suffix, size_t len, struct regex_list *regex);
-int cli_regex2suffix(const char *pattern, struct regex_list *regex, suffix_callback cb, void *cbdata);
+typedef int (*suffix_callback)(void *cbdata, const char *suffix, size_t len, const struct regex_list *regex);
+int cli_regex2suffix(const char *pattern, regex_t *preg, suffix_callback cb, void *cbdata);
 #endif

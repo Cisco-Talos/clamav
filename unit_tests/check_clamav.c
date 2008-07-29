@@ -337,7 +337,9 @@ int main(int argc, char **argv)
     srunner_add_suite(sr, test_disasm_suite());
 
     srunner_set_log(sr, "test.log");
-    freopen("test-stderr.log","w+",stderr);
+    if(freopen("test-stderr.log","w+",stderr) == NULL) {
+	    fputs("Unable to redirect stderr!\n",stderr);
+    }
 
     srunner_run_all(sr, CK_NORMAL);
     nf = srunner_ntests_failed(sr);
