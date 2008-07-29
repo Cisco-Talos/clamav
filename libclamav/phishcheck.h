@@ -45,7 +45,6 @@ struct string {
 
 struct phishcheck {
 	regex_t preg_numeric;
-	regex_t preg_hexurl;
 	int      is_disabled;
 };
 

@@ -53,6 +53,7 @@ END_TEST
 
 /* extern void cl_debug(void); */
 START_TEST (test_cl_debug)
+    int old_status = cli_debug_flag;
     cli_debug_flag = 0;
     cl_debug();
     fail_unless(1 == cli_debug_flag, "cl_debug failed to set cli_debug_flag");
@@ -60,7 +61,7 @@ START_TEST (test_cl_debug)
     cli_debug_flag = 1;
     cl_debug();
     fail_unless(1 == cli_debug_flag, "cl_debug failed when flag was already set");
-    cli_debug_flag = 0;
+    cli_debug_flag = old_status;
 END_TEST
 
 /* extern const char *cl_retdbdir(void); */
@@ -328,6 +329,7 @@ int open_testfile(const char *name)
 int main(int argc, char **argv)
 {
     int nf;
+    cl_debug();
     Suite *s = test_cl_suite();
     SRunner *sr = srunner_create(s);
     srunner_add_suite(sr, test_cli_suite());

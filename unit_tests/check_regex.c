@@ -184,7 +184,6 @@ static const struct rtest {
 	},
 	{NULL, "http://somefakeurl.example.com","someotherdomain-key.com",2},
 	{NULL, "http://somefakeurl.example.com","someotherdomain.key.com",0}
-
 };
 
 START_TEST (regex_list_match_test)
@@ -246,7 +245,6 @@ static void psetup(void)
 	f = fdopen(open_testfile("input/daily.pdb"),"r");
 	fail_unless(!!f, "fopen daily.pdb");
 
-	cl_debug();
 	rc = load_regex_matcher(engine->domainlist_matcher,  f, 0, 0, NULL);
 	fail_unless(rc == 0, "load_regex_matcher");
 	fclose(f);

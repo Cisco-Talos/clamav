@@ -137,11 +137,6 @@ For the Whitelist(.wdb)/Domainlist(.pdb) format see regex_list.c (search for Fla
 /* Constant strings and tables */ 
 static char empty_string[]="";
 
-
-#define ANY_CLOAK "(0[xX][0-9a-fA-F]+|[0-9]+)"
-#define CLOAKED_URL "^"ANY_CLOAK"(\\."ANY_CLOAK"){0,3}$"
-
-static const char cloaked_host_regex[] = CLOAKED_URL;
 static const char dotnet[] = ".net";
 static const char adonet[] = "ado.net";
 static const char aspnet[] = "asp.net";
@@ -907,12 +902,6 @@ int phishing_init(struct cl_engine* engine)
 
 	cli_dbgmsg("Initializing phishcheck module\n");
 
-	if(build_regex(&pchk->preg_hexurl,cloaked_host_regex,1)) {
-		free(pchk);
-		engine->phishcheck = NULL;
-		return CL_EFORMAT;
-	}
-
 	if(build_regex(&pchk->preg_numeric,numeric_url_regex,1)) {
 		free(pchk);
 		engine->phishcheck = NULL;
@@ -928,7 +917,6 @@ void phishing_done(struct cl_engine* engine)
 	struct phishcheck* pchk = engine->phishcheck;
 	cli_dbgmsg("Cleaning up phishcheck\n");
 	if(pchk && !pchk->is_disabled) {
-		free_regex(&pchk->preg_hexurl);
 		free_regex(&pchk->preg_numeric);
 		pchk->is_disabled = 1;
 	}
@@ -1150,10 +1138,6 @@ static int url_get_host(const struct phishcheck* pchk, struct url_check* url,str
 		 */
 		cli_dbgmsg("Phishcheck:skipping invalid host\n");
 		return CL_PHISH_CLEAN;
-	}
-	if(url->flags&CHECK_CLOAKING && !cli_regexec(&pchk->preg_hexurl,host->data,0,NULL,0)) {
-		/* uses a regex here, so that we don't accidentally block 0xacab.net style hosts */
-		return CL_PHISH_HEX_URL;
 	}
 	if(isNumeric(host->data)) {
 		*phishy |= PHISHY_NUMERIC_IP;
