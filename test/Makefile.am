@@ -2,7 +2,7 @@ FILES = clam-v2.rar clam-v3.rar clam.cab clam.exe.bz2 clam.exe clam.zip \
 	clam.arj clam.exe.rtf clam.exe.szdd clam.tar.gz clam.chm clam.sis \
 	clam-aspack.exe clam-pespin.exe clam-upx.exe clam-fsg.exe clam-mew.exe\
 	clam-nsis.exe clam-petite.exe clam-upack.exe clam-wwpack.exe clam.pdf\
-	clam.mail clam.ppt clam.tnef
+	clam.mail clam.ppt clam.tnef clam.ea05.exe clam.ea06.exe
 
 SPLIT_DIR=$(top_srcdir)/test/.split
 

@@ -1,3 +1,9 @@
+Tue Jul 29 02:18:11 CEST 2008 (acab)
+------------------------------------
+  * libclamav/autoit.c: rely on generic text normalization for
+  			unicode scripts
+  * test: add clam.ea05.exe, clam.ea06.exe
+
 Mon Jul 28 21:04:53 CEST 2008 (acab)
 ------------------------------------
   * unit_tests: preliminary disasm tests

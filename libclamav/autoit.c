@@ -349,10 +349,8 @@ static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
 
     files++;
 
-    /* FIXME: TODO send to text notmalization */
-
-    /* FIXME: ad-interim solution. ideally we should detect text and turn it to ascii */
-    UNP.usize = u2a(UNP.outputbuf, UNP.usize);
+    /* FIXME: REGRESSION NEEDED! */
+    /* UNP.usize = u2a(UNP.outputbuf, UNP.usize); */
 
     snprintf(tempfile, 1023, "%s/autoit.%.3u", tmpd, files);
     tempfile[1023]='\0';
