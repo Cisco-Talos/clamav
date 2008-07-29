@@ -61,7 +61,10 @@ START_TEST (empty)
 	const char pattern[] = "";
 	int rc;
 	errmsg_expected();
+	regex.preg = malloc(sizeof(*regex.preg));
+	fail_unless(!!regex.preg, "malloc");
 	rc = cli_regex2suffix(pattern, &regex, cb_fail, NULL);
+	free(regex.preg);
 	fail_unless(rc == REG_EMPTY, "empty pattern");
 	fail_unless(cb_called == 0, "callback shouldn't be called");
 }
@@ -71,9 +74,12 @@ START_TEST (one)
 {
 	const char pattern[] = "a";
 	int rc;
+	regex.preg = malloc(sizeof(*regex.preg));
+	fail_unless(!!regex.preg, "malloc");
 	rc = cli_regex2suffix(pattern, &regex, cb_expect_single, "a");
 	fail_unless(rc == 0, "single character pattern");
-	cli_regfree(&regex.preg);
+	cli_regfree(regex.preg);
+	free(regex.preg);
 	fail_unless(cb_called == 1, "callback should be called once");
 }
 END_TEST
@@ -111,9 +117,12 @@ START_TEST (test_suffix)
 	const char **p=tests[_i];
 
 	fail_unless(!!pattern, "test pattern");
+	regex.preg = malloc(sizeof(*regex.preg));
+	fail_unless(!!regex.preg, "malloc");
 	rc = cli_regex2suffix(pattern, &regex, cb_expect_multi, tests[_i]);
 	fail_unless(rc == 0, "single character pattern");
-	cli_regfree(&regex.preg);
+	cli_regfree(regex.preg);
+	free(regex.preg);
 	p++;
 	while(*p++) n++;
 	fail_unless(cb_called == n,
@@ -128,7 +137,6 @@ static void setup(void)
 
 static void teardown(void)
 {
-	free(regex.pattern);
 }
 
 static struct regex_matcher matcher;
@@ -154,7 +162,11 @@ static const struct rtest {
 	{".+\\.ebayrtm\\.com([/?].*)?:.+\\.ebay\\.(de|com|co\\.uk)([/?].*)?/",
 		"http://srx.main.ebayrtm.com",
 		"pages.ebay.de",
-		1 /* should be whitelisted */}
+		1 /* should be whitelisted */},
+	{".+\\.ebayrtm\\.com([/?].*)?:.+\\.ebay\\.(de|com|co\\.uk)([/?].*)?/",
+		"http://srx.main.ebayrtm.com.evil.example.com",
+		"pages.ebay.de",
+		0}
 };
 
 START_TEST (regex_list_match_test)

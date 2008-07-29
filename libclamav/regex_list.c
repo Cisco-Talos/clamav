@@ -58,6 +58,7 @@
 #include "jsparse/textbuf.h"
 #include "regex_suffix.h"
 /* Prototypes */
+static regex_t *new_preg(struct regex_matcher *matcher);
 static size_t reverse_string(char *pattern);
 static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_len, struct regex_list *regex);
 static int add_static_pattern(struct regex_matcher *matcher, char* pattern);
@@ -240,6 +241,7 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 {
 	char* orig_real_url = real_url;
 	struct regex_list *regex;
+	struct regex_list *last_match;
 
 	assert(matcher);
 	assert(real_url);
@@ -259,6 +261,7 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 		char *bufrev;
 		int rc = 0;
 		struct cli_ac_data mdata;
+		struct cli_ac_result *res = NULL;
 
 		if(!buffer)
 			return CL_EMEM;
@@ -281,30 +284,37 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 		reverse_string(bufrev);
 		rc = SO_search(&matcher->filter, (const unsigned char*)bufrev, buffer_len) != -1;
 		if(!rc) {
+			free(buffer);
+			free(bufrev);
 			/* filter says this suffix doesn't match.
 			 * The filter has false positives, but no false
 			 * negatives */
 			return 0;
 		}
 
-		rc = cli_ac_scanbuff((const unsigned char*)bufrev,buffer_len, NULL, &regex, NULL, &matcher->suffixes,&mdata,0,0,-1,NULL,AC_SCAN_VIR,NULL);
+		rc = cli_ac_scanbuff((const unsigned char*)bufrev,buffer_len, NULL, (void*)&regex, &res, &matcher->suffixes,&mdata,0,0,-1,NULL,AC_SCAN_VIR,NULL);
 		free(bufrev);
 		cli_ac_freedata(&mdata);
 
-		if(rc) {
-			/* TODO loop over multiple virusnames here */
-			do {
+		rc = 0;
+		while(res) {
+			struct cli_ac_result *q;
+			regex = res->customdata;
+			while(!rc && regex) {
 				/* loop over multiple regexes corresponding to
 				 * this suffix */
-				if (!regex->preg.re_magic) {
+				if (!regex->preg) {
 					/* we matched a static pattern */
 					rc = validate_subdomain(regex, pre_fixup, buffer, buffer_len, real_url, real_len, orig_real_url);
 				} else {
-					rc = !cli_regexec(&regex->preg, buffer, 0, NULL, 0);
+					rc = !cli_regexec(regex->preg, buffer, 0, NULL, 0);
 				}
 				if(rc) *info = regex->pattern;
 				regex = regex->nxt;
-			 } while(!rc && regex);
+			}
+			q = res;
+			res = res->next;
+			free(q);
 		}
 		free(buffer);
 		if(!rc)
@@ -510,20 +520,22 @@ void regex_list_done(struct regex_matcher* matcher)
 			for(i=0;i<matcher->suffix_cnt;i++) {
 				struct regex_list *r = matcher->suffix_regexes[i];
 				while(r) {
-					cli_regfree(&r->preg);
+					struct regex_list *q = r;
 					r = r->nxt;
+					free(q->pattern);
+					free(q);
 				}
 			}
 			free(matcher->suffix_regexes);
 			matcher->suffix_regexes = NULL;
 		}
-		if(matcher->all_regexes) {
+		if(matcher->all_pregs) {
 			for(i=0;i<matcher->regex_cnt;i++) {
-				struct regex_list *r = matcher->all_regexes[i];
-				free(r->pattern);
+				regex_t *r = matcher->all_pregs[i];
+				cli_regfree(r);
 				free(r);
 			}
-			free(matcher->all_regexes);
+			free(matcher->all_pregs);
 		}
 		hashtab_free(&matcher->suffix_hash);
 		matcher->list_built=0;
@@ -589,12 +601,18 @@ static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info,
 /* ------ load a regex, determine suffix, determine suffix2regexlist map ---- */
 
 /* returns 0 on success, clamav error code otherwise */
-static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_len, struct regex_list *regex)
+static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_len, struct regex_list *iregex)
 {
 	struct regex_matcher *matcher = cbdata;
+	struct regex_list *regex = cli_malloc(sizeof(*regex));
 	const struct element *el;
 
 	assert(matcher);
+	if(!regex)
+		return CL_EMEM;
+	regex->pattern = iregex->pattern ? cli_strdup(iregex->pattern) : NULL;
+	regex->preg = iregex->preg;
+	regex->nxt = NULL;
 	el = hashtab_find(&matcher->suffix_hash, suffix, suffix_len);
 	/* TODO: what if suffixes are prefixes of eachother and only one will
 	 * match? */
@@ -630,44 +648,42 @@ static size_t reverse_string(char *pattern)
 	return len;
 }
 
-static struct regex_list *new_regex(struct regex_matcher *matcher)
+static regex_t *new_preg(struct regex_matcher *matcher)
 {
-	struct regex_list *r;
-	matcher->all_regexes = cli_realloc(matcher->all_regexes, ++matcher->regex_cnt * sizeof(*matcher->all_regexes));
-	if(!matcher->all_regexes)
+	regex_t *r;
+	matcher->all_pregs = cli_realloc(matcher->all_pregs, ++matcher->regex_cnt * sizeof(*matcher->all_pregs));
+	if(!matcher->all_pregs)
 		return NULL;
 	r = cli_malloc(sizeof(*r));
 	if(!r)
 		return NULL;
-	matcher->all_regexes[matcher->regex_cnt-1] = r;
+	matcher->all_pregs[matcher->regex_cnt-1] = r;
 	return r;
 }
 
 static int add_static_pattern(struct regex_matcher *matcher, char* pattern)
 {
 	size_t len;
-	struct regex_list *regex = new_regex(matcher);
-	if(!regex)
-		return CL_EMEM;
+	struct regex_list regex;
+	int rc;
+
 	len = reverse_string(pattern);
-	regex->nxt = NULL;
-	regex->pattern = cli_strdup(pattern);
-	regex->preg.re_magic = 0;
-	return add_pattern_suffix(matcher, pattern, len, regex);
+	regex.nxt = NULL;
+	regex.pattern = cli_strdup(pattern);
+	regex.preg = NULL;
+	rc = add_pattern_suffix(matcher, pattern, len, &regex);
+	free(regex.pattern);
+	return rc;
 }
 
 int regex_list_add_pattern(struct regex_matcher *matcher, char *pattern)
 {
 	int rc;
-	struct regex_list *regex = new_regex(matcher);
+	struct regex_list regex;
 	size_t len;
 	/* we only match the host, so remove useless stuff */
 	const char remove_end[] = "([/?].*)?/";
 	const char remove_end2[] = "([/?].*)/";
-
-
-	if(!regex)
-		return CL_EMEM;
 
 	len = strlen(pattern);
 	if(len > sizeof(remove_end)) {
@@ -681,12 +697,15 @@ int regex_list_add_pattern(struct regex_matcher *matcher, char *pattern)
 		}
 	}
 	pattern[len] = '\0';
-	regex->pattern = NULL;
+	regex.pattern = NULL;
 
-	rc = cli_regex2suffix(pattern, regex, add_pattern_suffix, matcher);
+	regex.preg = new_preg(matcher);
+	if(!regex.preg)
+		return CL_EMEM;
+
+	rc = cli_regex2suffix(pattern, &regex, add_pattern_suffix, matcher);
 	if(rc) {
-		cli_regfree(&regex->preg);
-		free(regex);
+		cli_regfree(regex.preg);
 	}
 
 	return rc;

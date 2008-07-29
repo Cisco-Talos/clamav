@@ -41,7 +41,7 @@ struct regex_matcher {
 	size_t suffix_cnt;
 	struct regex_list **suffix_regexes;
 	size_t regex_cnt;
-	struct regex_list **all_regexes;
+	regex_t **all_pregs;
 	struct cli_matcher suffixes;
 	struct filter filter;
 	int list_inited:2;

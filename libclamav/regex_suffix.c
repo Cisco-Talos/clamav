@@ -415,12 +415,12 @@ int cli_regex2suffix(const char *pattern, struct regex_list *regex, suffix_callb
 
 	assert(regex && pattern);
 
-	rc = cli_regcomp(&regex->preg, pattern, REG_EXTENDED);
+	rc = cli_regcomp(regex->preg, pattern, REG_EXTENDED);
 	if(rc) {
-		size_t buflen = cli_regerror(rc, &regex->preg, NULL, 0);
+		size_t buflen = cli_regerror(rc, regex->preg, NULL, 0);
 		char *errbuf = cli_malloc(buflen);
 		if(errbuf) {
-			cli_regerror(rc, &regex->preg, errbuf, buflen);
+			cli_regerror(rc, regex->preg, errbuf, buflen);
 			cli_errmsg(MODULE "Error compiling regular expression %s: %s\n", pattern, errbuf);
 			free(errbuf);
 		} else {
@@ -428,10 +428,8 @@ int cli_regex2suffix(const char *pattern, struct regex_list *regex, suffix_callb
 		}
 		return rc;
 	}
-#ifdef CL_DEBUG
-	regex->pattern = cli_strdup(pattern);
-#endif
 	regex->nxt = NULL;
+	regex->pattern = cli_strdup(pattern);
 
 	n = parse_regex(pattern, &last);
 	if(!n)
@@ -441,6 +439,7 @@ int cli_regex2suffix(const char *pattern, struct regex_list *regex, suffix_callb
 	n->parent = &root_node;
 
 	rc = build_suffixtree_descend(n, &buf, cb, cbdata, regex);
+	free(regex->pattern);
 	free(buf.data);
 	destroy_tree(n);
 	return rc;

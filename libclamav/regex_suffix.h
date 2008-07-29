@@ -25,7 +25,7 @@
 
 struct regex_list {
 	char *pattern;
-	regex_t preg;
+	regex_t *preg;
 	struct regex_list *nxt;
 };
 typedef int (*suffix_callback)(void *cbdata, const char *suffix, size_t len, struct regex_list *regex);
