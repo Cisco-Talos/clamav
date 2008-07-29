@@ -111,6 +111,7 @@ struct tokens {
 struct parser_state {
 	unsigned long     var_uniq;
 	unsigned long     syntax_errors;
+	unsigned int      rec;
 	struct scope *global;
 	struct scope *current;
 	struct scope *list;
@@ -373,8 +374,6 @@ static char output_token(const yystype *token, struct scope *scope, struct buf *
 			buf_outs(sbuf, out);
 			return '0';
 		case TOK_IDENTIFIER_NAME:
-			/* TODO: lookup identifier name here, and normalize it
-			 * */
 			output_space(lastchar,'a', out);
 			if(s) {
 				long id = scope_lookup(scope, s, strlen(s));
@@ -388,7 +387,6 @@ static char output_token(const yystype *token, struct scope *scope, struct buf *
 			}
 			return 'a';
 		case TOK_FUNCTION:
-			/*TODO: output function name */
 			output_space(lastchar,'a', out);
 			buf_outs("function",out);
 			return 'a';
@@ -821,7 +819,12 @@ static void run_decoders(struct parser_state *state)
 		parent_tokens = state->tokens;/* save current tokens */
 		/* initialize embedded context */
 		memset(&state->tokens, 0, sizeof(state->tokens));
-		cli_js_process_buffer(state, res.txtbuf.data, res.txtbuf.pos);
+		if(++state->rec > 16)
+			cli_dbgmsg(MODULE "recursion limit reached");
+		else {
+			cli_js_process_buffer(state, res.txtbuf.data, res.txtbuf.pos);
+			--state->rec;
+		}
 		free(res.txtbuf.data);
 		/* state->tokens still refers to the embedded/nested context
 		 * here */
@@ -968,7 +971,6 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
 			case TOK_PAR_OPEN:
 				switch(current->fsm_state) {
 					case WaitFunctionName:
-						/* TODO: function name is null */
 						/* fallthrough */
 					case WaitParameterList:
 						current->fsm_state = InsideFunctionDecl;
@@ -994,7 +996,6 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
 			case TOK_CURLY_BRACE_OPEN:
 				switch(current->fsm_state) {
 					case WaitFunctionName:
-						/* TODO: function name is null */
 						/* fallthrough */
 					case WaitParameterList:
 					case InsideFunctionDecl:
@@ -1095,8 +1096,6 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
 		}
 		if(val.vtype == vtype_undefined) {
 			text = yyget_text(state->scanner);
-			/* TODO: tokenizer should set it to point to a constant
-			 * string, it currently doesn't do that for operators ,;:=... */
 			TOKEN_SET(&val, string, cli_strdup(text));
 			abort();
 		}
@@ -1128,22 +1127,6 @@ struct parser_state *cli_js_init(void)
 	cli_dbgmsg(MODULE "cli_js_init() done\n");
 	return state;
 }
-
-/* TODO: special identifiers in global scope (document, ...) 
- *
- * avoid extra strdup: 
- *  - when string is going to be folded
- *  - normalize_string, and hashtab_insert - avoid one
- *
- * decoded stuff should be parsed in the correct context (not a global one!)
- *
- * make unescape, packers handling more generic
- * memory leaks - manul check
- * check for allocation failure everywhere
- * limits
- * security check
- * */
-
 
 /*-------------- tokenizer ---------------------*/
 enum char_class {
@@ -1407,12 +1390,10 @@ static int yy_scan_bytes(const char *p, size_t len, yyscan_t scanner)
 
 static void yyset_debug (int debug_flag ,yyscan_t yyscanner )
 {
-	/* TODO */
 }
 
 static void yy_delete_buffer( YY_BUFFER_STATE yyb, yyscan_t scanner)
 {
-	/* TODO */
 }
 
 static const char *yyget_text(yyscan_t scanner)
