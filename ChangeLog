@@ -1,3 +1,8 @@
+Tue Jul 29 03:53:31 CEST 2008 (acab)
+------------------------------------
+  * libclamav/disasm.c: change output struct
+  * unit_tests/check_disasm.c: actually check something (more to come)
+
 Tue Jul 29 02:44:53 CEST 2008 (acab)
 ------------------------------------
   * test: add clam.d64.zip

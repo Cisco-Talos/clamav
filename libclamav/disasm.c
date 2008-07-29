@@ -1673,9 +1673,9 @@ void disasmbuf(uint8_t *buff, unsigned int len, int fd) {
     uint8_t adsize;
     uint8_t segment;
 
-    uint8_t arg[3][11];
+    uint8_t arg[3][10];
 
-    uint8_t extra[26];
+    uint8_t extra[29];
   } w;
 
   memset(&w.extra[0], 0, sizeof(w.extra));
@@ -1703,16 +1703,19 @@ void disasmbuf(uint8_t *buff, unsigned int len, int fd) {
     for (i=0; i<3; i++) {
       w.arg[i][0] = s.args[i].access;
       w.arg[i][1] = s.args[i].size;
-      w.arg[i][2] = s.args[i].reg;
-      if(s.args[i].access==ACCESS_MEM) {
+      switch(s.args[i].access) {
+      case ACCESS_MEM:
+	w.arg[i][2]=s.args[i].arg.marg.r1;
 	w.arg[i][3]=s.args[i].arg.marg.r1;
-	w.arg[i][4]=s.args[i].arg.marg.r1;
-	w.arg[i][5]=s.args[i].arg.marg.scale;
+	w.arg[i][4]=s.args[i].arg.marg.scale;
+	w.arg[i][5]=0;
 	cli_writeint32(&w.arg[i][6], s.args[i].arg.marg.disp);
-	w.arg[i][10]=0;
-      } else {
-	cli_writeint32(&w.arg[i][3], s.args[i].arg.d);
-	cli_writeint32(&w.arg[i][7], s.args[i].arg.q>>32);
+	break;
+      case ACCESS_REG:
+	w.arg[i][1] = s.args[i].reg;
+      default:
+	cli_writeint32(&w.arg[i][2], s.args[i].arg.d);
+	cli_writeint32(&w.arg[i][6], s.args[i].arg.q>>32);
       }
     }
     cli_writen(fd, &w, sizeof(w));

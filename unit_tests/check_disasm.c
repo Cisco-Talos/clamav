@@ -30,14 +30,20 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "../libclamav/clamav.h"
 #include "../libclamav/others.h"
 #include "../libclamav/disasm.h"
+#include "checks.h"
 
 START_TEST (test_disasm_basic) {
   char file[]="disasmXXXXXX";
-  char ref[]="\xc2\x00\x00\x00\x00\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x02\x00\x00";
+  char ref[]="\xc2\x00\x00\x00\x00\
+\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\
+\x03\x00\x00\x00\x00\x00\x00\x00\x00\x00\
+\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\
+\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
   int fd = mkstemp(file);
   uint8_t buf[] = {0x33, 0xc0};
   off_t *d;
@@ -45,12 +51,13 @@ START_TEST (test_disasm_basic) {
   
   disasmbuf(buf, 2, fd);
   size = lseek(fd, 0, SEEK_CUR);
-  fail_unless(size==64, "disasm size");
+  fail_unless(size==sizeof(ref)-1, "disasm size mismatch(value %u, expected: %u)", size, sizeof(ref)-1);
   lseek(fd, 0, SEEK_SET);
   d=malloc(size);
-  fail_unless(d, "disasm malloc");
-  fail_unless(read(fd, d, size)==size, "disasm read");
+  fail_unless(d!=NULL, "disasm malloc(%u) failed", size);
+  fail_unless(read(fd, d, size)==size, "disasm read failed");
   close(fd);
+  fail_unless(!memcmp(d, ref, size), "disasm read failed");
   free(d);
   unlink(file);
 }
