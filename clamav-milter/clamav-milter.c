@@ -80,6 +80,7 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 nj
 #endif
 #include <pthread.h>
 #include <sys/time.h>
+#include <sys/resource.h>
 #include <signal.h>
 #include <fcntl.h>
 #include <pwd.h>
@@ -691,6 +692,7 @@ main(int argc, char **argv)
 	const struct cfgstruct *cpt;
 	char version[VERSION_LENGTH + 1];
 	pthread_t tid;
+	struct rlimit rlim;
 #ifdef	CL_DEBUG
 	int consolefd;
 #endif
@@ -730,8 +732,6 @@ main(int argc, char **argv)
 	};
 
 #if defined(CL_DEBUG) && defined(C_LINUX)
-	struct rlimit rlim;
-
 	rlim.rlim_cur = rlim.rlim_max = RLIM_INFINITY;
 	if(setrlimit(RLIMIT_CORE, &rlim) < 0)
 		perror("setrlimit");
@@ -1967,6 +1967,13 @@ main(int argc, char **argv)
 		else
 			limits.maxfilesize = 10485760;
 
+		if(getrlimit(RLIMIT_FSIZE, &rlim) == 0) {
+			if((rlim.rlim_max < limits.maxfilesize) || (rlim.rlim_max < limits.maxscansize))
+				logg("^System limit for file size is lower than maxfilesize or maxscansize\n");
+		} else {
+			logg("^Cannot obtain resource limits for file size\n");
+		}
+
 		if(((cpt = cfgopt(copt, "MaxRecursion")) != NULL) && cpt->enabled)
 			limits.maxreclevel = cpt->numarg;
 		else
@@ -2099,6 +2106,7 @@ main(int argc, char **argv)
 #endif
 
 	signal(SIGPIPE, SIG_IGN);	/* libmilter probably does this as well */
+	signal(SIGXFSZ, SIG_IGN); /* TODO: check if it's safe to call signal() here */
 
 #ifdef	SESSION
 	pthread_mutex_lock(&version_mutex);

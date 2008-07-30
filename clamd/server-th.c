@@ -35,6 +35,8 @@
 #include <sys/types.h>
 #ifndef	C_WINDOWS
 #include <sys/socket.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 #endif
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
@@ -272,12 +274,11 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	char timestr[32];
 #ifndef	C_WINDOWS
 	struct sigaction sigact;
+	sigset_t sigset;
+	struct rlimit rlim;
 #endif
 	mode_t old_umask;
 	struct cl_limits limits;
-#ifndef	C_WINDOWS
-	sigset_t sigset;
-#endif
 	client_conn_t *client_conn;
 	const struct cfgstruct *cpt;
 #ifdef HAVE_STRERROR_R
@@ -331,6 +332,15 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     } else {
 	logg("^Limits: File size limit protection disabled.\n");
     }
+
+#ifndef C_WINDOWS
+    if(getrlimit(RLIMIT_FSIZE, &rlim) == 0) {
+	if((rlim.rlim_max < limits.maxfilesize) || (rlim.rlim_max < limits.maxscansize))
+	    logg("^System limit for file size is lower than maxfilesize or maxscansize\n");
+    } else {
+	logg("^Cannot obtain resource limits for file size\n");
+    }
+#endif
 
     if((limits.maxreclevel = cfgopt(copt, "MaxRecursion")->numarg)) {
         logg("Limits: Recursion level limit set to %u.\n", limits.maxreclevel);

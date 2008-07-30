@@ -36,6 +36,8 @@
 #endif
 #ifndef C_WINDOWS
 #include <dirent.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 #endif
 #include <fcntl.h>
 #ifdef	HAVE_UNISTD_H
@@ -343,6 +345,9 @@ int scanmanager(const struct optstruct *opt)
 	struct cl_limits limits;
 	struct stat sb;
 	char *file, cwd[1024];
+#ifndef C_WINDOWS
+	struct rlimit rlim;
+#endif
 
 
     if(!opt_check(opt, "no-phishing-sigs"))
@@ -423,6 +428,15 @@ int scanmanager(const struct optstruct *opt)
 	    limits.maxfilesize = atoi(ptr) * 1024;
     } else
 	limits.maxfilesize = 26214400;
+
+#ifndef C_WINDOWS
+    if(getrlimit(RLIMIT_FSIZE, &rlim) == 0) {
+	if((rlim.rlim_max < limits.maxfilesize) || (rlim.rlim_max < limits.maxscansize))
+	    logg("^System limit for file size is lower than maxfilesize or maxscansize\n");
+    } else {
+	logg("^Cannot obtain resource limits for file size\n");
+    }
+#endif
 
     if(opt_check(opt, "max-files"))
 	limits.maxfiles = atoi(opt_arg(opt, "max-files"));

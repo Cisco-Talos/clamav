@@ -23,6 +23,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
+
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -64,6 +66,7 @@ int main(int argc, char **argv)
 	struct timeval t1, t2;
 #ifndef C_WINDOWS
 	struct timezone tz;
+	sigset_t sigset;
 #endif
 	struct optstruct *opt;
 	const char *pt;
@@ -73,6 +76,12 @@ int main(int argc, char **argv)
 	mprintf("!Can't start the win32 pthreads layer\n");
 	return 72;
     }
+#endif
+
+#ifndef C_WINDOWS
+    sigemptyset(&sigset);
+    sigaddset(&sigset, SIGXFSZ);
+    sigprocmask(SIG_SETMASK, &sigset, NULL);
 #endif
 
     opt = opt_parse(argc, argv, clamscan_shortopt, clamscan_longopt, NULL);
