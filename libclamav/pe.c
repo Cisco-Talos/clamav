@@ -897,6 +897,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     disasmbuf(epbuff, epsize, ndesc);
     close(ndesc);
     CLI_TMPUNLK();
+    free(tempfile);
 
     /* Attempt to detect some popular polymorphic viruses */
 
