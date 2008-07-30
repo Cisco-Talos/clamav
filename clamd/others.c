@@ -90,61 +90,67 @@ void virusaction(const char *filename, const char *virname, const struct cfgstru
 }
 
 #else
-
 void virusaction(const char *filename, const char *virname, const struct cfgstruct *copt)
 {
 	pid_t pid;
 	const struct cfgstruct *cpt;
+	char *buffer, *pt, *cmd, *buffer_file, *buffer_vir;
+	size_t j;
+	char *env[4];
 
-    if(!(cpt = cfgopt(copt, "VirusEvent"))->enabled)
-	return;
+	if(!(cpt = cfgopt(copt, "VirusEvent"))->enabled)
+		return;
 
-    /* NB: we need to fork here since this function modifies the environment. 
-       (Modifications to the env. are not reentrant, but we need to be.) */
-    pid = fork();
+	env[0] = getenv("PATH");
+	j = env[0] ? 1 : 0;
+	/* Allocate env vars.. to be portable env vars should not be freed */
+	buffer_file = (char *) malloc(strlen(ENV_FILE) + strlen(filename) + 2);
+	if(buffer_file) {
+		sprintf(buffer_file, "%s=%s", ENV_FILE, filename);
+		env[j++] = buffer_file;
+	}
 
-    if ( pid == 0 ) {
-	/* child... */
-	char *buffer, *pt, *cmd;
+	buffer_vir = (char *) malloc(strlen(ENV_VIRUS) + strlen(virname) + 2);
+	if(buffer_vir) {
+		sprintf(buffer_vir, "%s=%s", ENV_VIRUS, virname);
+		env[j++] = buffer_vir;
+	}
+	env[j++] = NULL;
 
 	cmd = strdup(cpt->strarg);
 
 	if(cmd && (pt = strstr(cmd, "%v"))) {
-	    buffer = (char *) malloc(strlen(cmd) + strlen(virname) + 10);
-	    if(buffer) {
-		*pt = 0; pt += 2;
-		strcpy(buffer, cmd);
-		strcat(buffer, virname);
-		strcat(buffer, pt);
-		free(cmd);
-		cmd = strdup(buffer);
-		free(buffer);
-	    }
+		buffer = (char *) malloc(strlen(cmd) + strlen(virname) + 10);
+		if(buffer) {
+			*pt = 0; pt += 2;
+			strcpy(buffer, cmd);
+			strcat(buffer, virname);
+			strcat(buffer, pt);
+			free(cmd);
+			cmd = strdup(buffer);
+			free(buffer);
+		}
 	}
 
-	/* Allocate env vars.. to be portable env vars should not be freed */
-	buffer = (char *) malloc(strlen(ENV_FILE) + strlen(filename) + 2);
-	if(buffer) {
-	    sprintf(buffer, "%s=%s", ENV_FILE, filename);
-	    putenv(buffer);
-	}
+	if(!cmd)
+		return;
+	/* We can only call async-signal-safe functions after fork(). */
+	pid = fork();
 
-	buffer = (char *) malloc(strlen(ENV_VIRUS) + strlen(virname) + 2);
-	if(buffer) {
-	    sprintf(buffer, "%s=%s", ENV_VIRUS, virname);
-	    putenv(buffer);
+	if ( pid == 0 ) {
+		/* child... */
+		/* WARNING: this is uninterruptable ! */
+		exit(execle("/bin/sh", "sh", "-c", cmd, NULL, env));
+	} else if (pid > 0) {
+		/* parent */
+		waitpid(pid, NULL, 0);
+	} else {
+		/* error.. */
+		logg("!VirusAction: fork failed.\n");
 	}
-	/* WARNING: this is uninterruptable ! */
-	if(cmd)
-	    exit(system(cmd));
-
-    } else if (pid > 0) {
-	/* parent */      
-	waitpid(pid, NULL, 0);
-    } else {
-	/* error.. */
-	logg("!VirusAction: fork failed.\n");
-    }
+	free(cmd);
+	free(buffer_file);
+	free(buffer_vir);
 }
 #endif /* C_WINDOWS */
 
