@@ -30,7 +30,7 @@ cp $srcdir/test-clamd.conf test-clamd-viraction.conf
 echo "VirusEvent `pwd`/$srcdir/virusaction-test.sh `pwd` \"Virus found: %v\"" >>test-clamd-viraction.conf
 rm -f test-clamd.log
 test /tmp/clamd-test.pid && kill `cat /tmp/clamd-test.pid` 
-../clamd/.libs/lt-clamd -c test-clamd-viraction.conf || { echo "Failed to start clamd!" >&2; die 1;}
+../clamd/clamd -c test-clamd-viraction.conf || { echo "Failed to start clamd!" >&2; die 1;}
 ../clamdscan/clamdscan --quiet --config-file test-clamd-viraction.conf ../test/clam.exe 
 if ! grep "Virus found: ClamAV-Test-File.UNOFFICIAL" test-clamd.log >/dev/null 2>/dev/null; then
 	echo "Virusaction test failed!" >&2;
