@@ -81,6 +81,7 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
 #include "filetypes.h"
 #include "mbox.h"
 #include "dconf.h"
+#include "md5.h"
 
 #define DCONF_PHISHING mctx->ctx->dconf->phishing
 
@@ -193,7 +194,7 @@ typedef	unsigned	int	in_addr_t;
 #endif
 
 /*
- * Define this to handle messages covered by section 7.3.2 of RFC1341.
+ * Use CL_SCAN_PARTIAL_MESSAGE to handle messages covered by section 7.3.2 of RFC1341.
  *	This is experimental code so it is up to YOU to (1) ensure it's secure
  * (2) periodically trim the directory of old files
  *
@@ -201,13 +202,6 @@ typedef	unsigned	int	in_addr_t;
  * more than one machine you must make sure that .../partial is on a shared
  * network filesystem
  */
-#ifdef CL_EXPERIMENTAL
-
-#ifndef	C_WINDOWS	/* TODO: when opendir() is done */
-#define	PARTIAL_DIR
-#endif
-
-#endif
 /*#define	NEW_WORLD*/
 
 /*#define	SCAN_UNENCODED_BOUNCES	*//*
@@ -250,9 +244,7 @@ static	int	parseMimeHeader(message *m, const char *cmd, const table_t *rfc821Tab
 static	int	saveTextPart(mbox_ctx *mctx, message *m, int destroy_text);
 static	char	*rfc2047(const char *in);
 static	char	*rfc822comments(const char *in, char *out);
-#ifdef	PARTIAL_DIR
 static	int	rfc1341(message *m, const char *dir);
-#endif
 static	bool	usefulHeader(int commandNumber, const char *cmd);
 static	char	*getline_from_mbox(char *buffer, size_t len, FILE *fin);
 static	bool	isBounceStart(mbox_ctx *mctx, const char *line);
@@ -2771,13 +2763,13 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				rc = OK;
 				break;
 			} else if(strcasecmp(mimeSubtype, "partial") == 0) {
-#ifdef	PARTIAL_DIR
-				/* RFC1341 message split over many emails */
-				if(rfc1341(mainMessage, mctx->dir) >= 0)
-					rc = OK;
-#else
-				cli_warnmsg("Partial message received from MUA/MTA - message cannot be scanned\n");
-#endif
+				if(mctx->ctx->options&CL_SCAN_PARTIAL_MESSAGE) {
+					/* RFC1341 message split over many emails */
+					if(rfc1341(mainMessage, mctx->dir) >= 0)
+						rc = OK;
+				} else {
+					cli_warnmsg("Partial message received from MUA/MTA - message cannot be scanned\n");
+				}
 			} else if(strcasecmp(mimeSubtype, "external-body") == 0)
 				/* TODO */
 				cli_warnmsg("Attempt to send Content-type message/external-body trapped");
@@ -3719,7 +3711,6 @@ rfc2047(const char *in)
 	return out;
 }
 
-#ifdef	PARTIAL_DIR
 /*
  * Handle partial messages
  */
@@ -3729,7 +3720,11 @@ rfc1341(message *m, const char *dir)
 	fileblob *fb;
 	char *arg, *id, *number, *total, *oldfilename;
 	const char *tmpdir;
+	int n;
 	char pdir[NAME_MAX + 1];
+	unsigned char md5_val[16];
+	cli_md5_ctx md5;
+	char *md5_hex;
 
 	id = (char *)messageFindArgument(m, "id");
 	if(id == NULL)
@@ -3797,18 +3792,28 @@ rfc1341(message *m, const char *dir)
 		free(oldfilename);
 	}
 
-	if((fb = messageToFileblob(m, pdir, 0)) == NULL) {
+	n = atoi(number);
+	cli_md5_init(&md5);
+	cli_md5_update(&md5, id, strlen(id));
+	cli_md5_final(md5_val, &md5);
+	md5_hex = cli_str2hex((const char*)md5_val, 16);
+
+	if(!md5_hex) {
+		free(id);
+		free(number);
+		return CL_EMEM;
+	}
+
+	if(messageSavePartial(m, pdir, md5_hex, n) < 0) {
+		free(md5_hex);
 		free(id);
 		free(number);
 		return -1;
 	}
 
-	fileblobDestroy(fb);
-
 	total = (char *)messageFindArgument(m, "total");
 	cli_dbgmsg("rfc1341: %s, %s of %s\n", id, number, (total) ? total : "?");
 	if(total) {
-		int n = atoi(number);
 		int t = atoi(total);
 		DIR *dd = NULL;
 
@@ -3833,6 +3838,7 @@ rfc1341(message *m, const char *dir)
 				cli_errmsg("Can't open '%s' for writing", outname);
 				free(id);
 				free(number);
+				free(md5_hex);
 				closedir(dd);
 				return -1;
 			}
@@ -3848,7 +3854,7 @@ rfc1341(message *m, const char *dir)
 				} result;
 #endif
 
-				snprintf(filename, sizeof(filename), "%s%d", id, n);
+				snprintf(filename, sizeof(filename), "_%s-%u", md5_hex, n);
 
 #ifdef HAVE_READDIR_R_3
 				while((readdir_r(dd, &result.d, &dent) == 0) && dent) {
@@ -3861,6 +3867,7 @@ rfc1341(message *m, const char *dir)
 					char buffer[BUFSIZ], fullname[NAME_MAX + 1];
 					int nblanks;
 					struct stat statb;
+					const char *dentry_idpart;
 
 #ifndef  C_CYGWIN
 					if(dent->d_ino == 0)
@@ -3869,8 +3876,10 @@ rfc1341(message *m, const char *dir)
 
 					snprintf(fullname, sizeof(fullname) - 1,
 						"%s/%s", pdir, dent->d_name);
+					dentry_idpart = strchr(dent->d_name, '_');
 
-					if(strncmp(filename, dent->d_name, strlen(filename)) != 0) {
+					if(!dentry_idpart ||
+							strcmp(filename, dentry_idpart) != 0) {
 						if(!cli_leavetemps_flag)
 							continue;
 						if(stat(fullname, &statb) < 0)
@@ -3879,6 +3888,7 @@ rfc1341(message *m, const char *dir)
 							if (cli_unlink(fullname)) {
 								cli_unlink(outname);
 								fclose(fout);
+								free(md5_hex);
 								free(id);
 								free(number);
 								closedir(dd);
@@ -3915,6 +3925,7 @@ rfc1341(message *m, const char *dir)
 								fclose(fin);
 								fclose(fout);
 								cli_unlink(outname);
+								free(md5_hex);
 								free(id);
 								free(number);
 								closedir(dd);
@@ -3928,6 +3939,7 @@ rfc1341(message *m, const char *dir)
 						if(cli_unlink(fullname)) {
 							fclose(fout);
 							cli_unlink(outname);
+							free(md5_hex);
 							free(id);
 							free(number);
 							closedir(dd);
@@ -3944,10 +3956,10 @@ rfc1341(message *m, const char *dir)
 	}
 	free(number);
 	free(id);
+	free(md5_hex);
 
 	return 0;
 }
-#endif
 
 static void
 hrefs_done(blob *b, tag_arguments_t *hrefs)

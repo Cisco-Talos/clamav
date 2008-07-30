@@ -1707,6 +1707,30 @@ base64Flush(message *m, unsigned char *buf)
 	return NULL;
 }
 
+int messageSavePartial(message *m, const char *dir, const char *md5id, unsigned part)
+{
+	char fullname[1024];
+	fileblob *fb;
+	unsigned long time_val;
+
+	cli_dbgmsg("messageSavePartial\n");
+	time_val  = time(NULL);
+	snprintf(fullname, 1024, "%s/clamav-partial-%lu_%s-%u", dir, time_val, md5id, part);
+
+	fb = messageExport(m, fullname,
+		(void *(*)(void))fileblobCreate,
+		(void(*)(void *))fileblobDestroy,
+		(void(*)(void *, const char *, const char *))fileblobPartialSet,
+		(void(*)(void *, const unsigned char *, size_t))fileblobAddData,
+		(void *(*)(text *, void *, int))textToFileblob,
+		(void(*)(void *, cli_ctx *))fileblobSetCTX,
+		0);
+	if(!fb)
+		return CL_EFORMAT;
+	fileblobDestroy(fb);
+	return CL_SUCCESS;
+}
+
 /*
  * Decode and transfer the contents of the message into a fileblob
  * The caller must free the returned fileblob

@@ -492,6 +492,39 @@ fileblobDestroy(fileblob *fb)
 }
 
 void
+fileblobPartialSet(fileblob *fb, const char *fullname, const char *arg)
+{
+	if(fb->b.name)
+		return;
+
+	assert(fullname != NULL);
+
+	cli_dbgmsg("fileblobPartialSet: saving to %s\n", fullname);
+
+	fb->fd = open(fullname, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY|O_EXCL, 0600);
+	if(fb->fd < 0) {
+		cli_errmsg("fileblobPartialSet: unable to create file: %s\n",fullname);
+		return;
+	}
+	fb->fp = fdopen(fb->fd, "wb");
+
+	if(fb->fp == NULL) {
+		cli_errmsg("fileblobSetFilename: fdopen failed (%s)\n", strerror(errno));
+		close(fb->fd);
+		return;
+	}
+	blobSetFilename(&fb->b, NULL, fullname);
+	if(fb->b.data)
+		if(fileblobAddData(fb, fb->b.data, fb->b.len) == 0) {
+			free(fb->b.data);
+			fb->b.data = NULL;
+			fb->b.len = fb->b.size = 0;
+			fb->isNotEmpty = 1;
+		}
+	fb->fullname = cli_strdup(fullname);
+}
+
+void
 fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 {
 	char *fullname;

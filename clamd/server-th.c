@@ -402,6 +402,11 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	    options |= CL_SCAN_MAILURL;
 	}
 
+	if(cfgopt(copt, "ScanPartialMessages")->enabled) {
+	    logg("Mail: RFC1341 handling enabled.\n");
+	    options |= CL_SCAN_PARTIAL_MESSAGE;
+	}
+
     } else {
 	logg("Mail files support disabled.\n");
     }

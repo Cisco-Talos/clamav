@@ -47,6 +47,7 @@ struct cfgoption cfg_options[] = {
     {"DetectBrokenExecutables", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"ScanMail", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"MailFollowURLs", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"ScanPartialMessages", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"PhishingSignatures", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"PhishingScanURLs",OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     /* these are FP prone options, if default isn't used */

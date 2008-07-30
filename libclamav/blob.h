@@ -69,6 +69,7 @@ int	fileblobScanAndDestroy(fileblob *fb);
 void	fileblobDestructiveDestroy(fileblob *fb);
 void	fileblobDestroy(fileblob *fb);
 void	fileblobSetFilename(fileblob *fb, const char *dir, const char *filename);
+void    fileblobPartialSet(fileblob *fb, const char *fullname, const char *arg);
 const	char	*fileblobGetFilename(const fileblob *fb);
 void	fileblobSetCTX(fileblob *fb, cli_ctx *ctx);
 int	fileblobAddData(fileblob *fb, const unsigned char *data, size_t len);

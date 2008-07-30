@@ -95,6 +95,7 @@ static void *work_queue_pop(work_queue_t *work_q)
 		work_q->tail = NULL;
 	}
 	free(work_item);
+	work_q->item_count--;
 	return data;
 }
 

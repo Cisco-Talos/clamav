@@ -1,3 +1,12 @@
+Wed Jul 30 16:38:26 EEST 2008 (edwin)
+-------------------------------------
+  * clamd, libclamav, shared: (bb #913, #916)
+	* fix scan of partial messages
+	* allow for tempfiles to be cleaned up based on age
+	* new clamd.conf option ScanPartialMessages
+  * contrib/cleanup-partial.pl: sample cleanup script
+  * clamd/thrmgr.c: fix item_count
+
 Tue Jul 29 23:18:23 CEST 2008 (tk)
 ----------------------------------
   * clamd: revert patch from bb#1028 (bb#1113)
