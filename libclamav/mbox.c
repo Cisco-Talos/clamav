@@ -3868,6 +3868,10 @@ rfc1341(message *m, const char *dir)
 					int nblanks;
 					struct stat statb;
 					const char *dentry_idpart;
+#if !defined (C_CYGWIN) && !defined(C_WINDOWS)
+					if(dent->d_ino == 0)
+						continue;
+#endif
 
 					if(!strcmp(".",dent->d_name) ||
 							!strcmp("..", dent->d_name))
