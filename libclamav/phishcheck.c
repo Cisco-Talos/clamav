@@ -49,6 +49,7 @@
 #include "phish_whitelist.h"
 #include "iana_tld.h"
 #include "iana_cctld.h"
+#include "scanners.h"
 
 
 #define DOMAIN_REAL 1
