@@ -312,6 +312,22 @@ clean-sbinPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
+
+installcheck-sbinPROGRAMS: $(sbin_PROGRAMS)
+	bad=0; pid=$$$$; list="$(sbin_PROGRAMS)"; for p in $$list; do \
+	  case ' $(AM_INSTALLCHECK_STD_OPTIONS_EXEMPT) ' in \
+	   *" $$p "* | *" $(srcdir)/$$p "*) continue;; \
+	  esac; \
+	  f=`echo "$$p" | \
+	     sed 's,^.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/'`; \
+	  for opt in --help --version; do \
+	    if "$(DESTDIR)$(sbindir)/$$f" $$opt >c$${pid}_.out \
+	         2>c$${pid}_.err </dev/null \
+		 && test -n "`cat c$${pid}_.out`" \
+		 && test -z "`cat c$${pid}_.err`"; then :; \
+	    else echo "$$f does not support $$opt" 1>&2; bad=1; fi; \
+	  done; \
+	done; rm -f c$${pid}_.???; exit $$bad
 clamav-milter$(EXEEXT): $(clamav_milter_OBJECTS) $(clamav_milter_DEPENDENCIES) 
 	@rm -f clamav-milter$(EXEEXT)
 	$(LINK) $(clamav_milter_OBJECTS) $(clamav_milter_LDADD) $(LIBS)
@@ -612,7 +628,7 @@ install-pdf: install-pdf-am
 
 install-ps: install-ps-am
 
-installcheck-am:
+installcheck-am: installcheck-sbinPROGRAMS
 
 maintainer-clean: maintainer-clean-am
 	-rm -rf ./$(DEPDIR)
@@ -647,11 +663,11 @@ uninstall-man: uninstall-man8
 	install-html-am install-info install-info-am install-man \
 	install-man8 install-pdf install-pdf-am install-ps \
 	install-ps-am install-sbinPROGRAMS install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am uninstall-man uninstall-man8 \
-	uninstall-sbinPROGRAMS
+	installcheck-am installcheck-sbinPROGRAMS installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags uninstall uninstall-am uninstall-man \
+	uninstall-man8 uninstall-sbinPROGRAMS
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

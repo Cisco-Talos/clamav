@@ -279,6 +279,10 @@ top_srcdir = @top_srcdir@
 @BUILD_CLAMD_TRUE@    shared.h
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
+
+# it does support --help and --version but with the default config file
+# it outputs an error message which tells us to edit the config files
+AM_INSTALLCHECK_STD_OPTIONS_EXEMPT = clamd$(EXEEXT)
 all: all-am
 
 .SUFFIXES:
@@ -340,6 +344,22 @@ clean-sbinPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
+
+installcheck-sbinPROGRAMS: $(sbin_PROGRAMS)
+	bad=0; pid=$$$$; list="$(sbin_PROGRAMS)"; for p in $$list; do \
+	  case ' $(AM_INSTALLCHECK_STD_OPTIONS_EXEMPT) ' in \
+	   *" $$p "* | *" $(srcdir)/$$p "*) continue;; \
+	  esac; \
+	  f=`echo "$$p" | \
+	     sed 's,^.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/'`; \
+	  for opt in --help --version; do \
+	    if "$(DESTDIR)$(sbindir)/$$f" $$opt >c$${pid}_.out \
+	         2>c$${pid}_.err </dev/null \
+		 && test -n "`cat c$${pid}_.out`" \
+		 && test -z "`cat c$${pid}_.err`"; then :; \
+	    else echo "$$f does not support $$opt" 1>&2; bad=1; fi; \
+	  done; \
+	done; rm -f c$${pid}_.???; exit $$bad
 clamd$(EXEEXT): $(clamd_OBJECTS) $(clamd_DEPENDENCIES) 
 	@rm -f clamd$(EXEEXT)
 	$(LINK) $(clamd_OBJECTS) $(clamd_LDADD) $(LIBS)
@@ -620,7 +640,7 @@ install-pdf: install-pdf-am
 
 install-ps: install-ps-am
 
-installcheck-am:
+installcheck-am: installcheck-sbinPROGRAMS
 
 maintainer-clean: maintainer-clean-am
 	-rm -rf ./$(DEPDIR)
@@ -653,10 +673,11 @@ uninstall-am: uninstall-sbinPROGRAMS
 	install-html-am install-info install-info-am install-man \
 	install-pdf install-pdf-am install-ps install-ps-am \
 	install-sbinPROGRAMS install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am uninstall-sbinPROGRAMS
+	installcheck-am installcheck-sbinPROGRAMS installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags uninstall uninstall-am \
+	uninstall-sbinPROGRAMS
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

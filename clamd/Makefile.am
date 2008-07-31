@@ -62,3 +62,7 @@ endif
 
 LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMD_LIBS@ @THREAD_LIBS@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
+
+# it does support --help and --version but with the default config file
+# it outputs an error message which tells us to edit the config files
+AM_INSTALLCHECK_STD_OPTIONS_EXEMPT=clamd$(EXEEXT)
