@@ -32,7 +32,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CREATE_TARGET_H([target.h])
 
 dnl -Wall and -Werror here are NOT CFLAGS, they refer to automake warnings
-AM_INIT_AUTOMAKE([-Wall -Werror foreign dist-bzip2 no-define])
+AM_INIT_AUTOMAKE([-Wall -Wportability -Wno-override -Werror foreign dist-bzip2 no-define])
 
 dnl we told automake to not define these, since we want to include
 dnl the date in the version

@@ -37,7 +37,7 @@ if test "$NFILES" -ne "$NINFECTED"; then
 fi
 
 # Test VirusEvent feature
-cp $srcdir/test-clamd.conf test-clamd-viraction.conf
+cat <$srcdir/test-clamd.conf >test-clamd-viraction.conf
 echo "VirusEvent `pwd`/$srcdir/virusaction-test.sh `pwd` \"Virus found: %v\"" >>test-clamd-viraction.conf
 rm -f test-clamd.log
 run_clamd_test test-clamd-viraction.conf ../test/clam.exe
@@ -48,7 +48,7 @@ if ! grep "Virus found: ClamAV-Test-File.UNOFFICIAL" test-clamd.log >/dev/null 2
 fi
 
 # Test HeuristicScanPrecedence feature
-cp $srcdir/test-clamd.conf test-clamd-heur-pred.conf
+cat <$srcdir/test-clamd.conf >test-clamd-heur-pred.conf
 run_clamd_test test-clamd-heur-pred.conf clam-phish-exe
 if ! grep "ClamAV-Test-File" clamdscan.log >/dev/null 2>/dev/null; then
 	echo "HeuristicScanPrecedence off test failed!" >&2;

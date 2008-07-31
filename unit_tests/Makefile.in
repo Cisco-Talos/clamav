@@ -226,14 +226,13 @@ scripts = check_clamd.sh check_freshclam.sh check_sigtool.sh check_clamscan.sh v
 check_clamav_SOURCES = check_clamav.c check_jsnorm.c check_str.c check_regex.c checks.h $(top_builddir)/libclamav/clamav.h check_disasm.c
 check_clamav_CFLAGS = @CHECK_CFLAGS@ -DSRCDIR=\"$(abs_srcdir)\"
 check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CHECK_LIBS@
-EXTRA_DIST = .split inputs/ test-clamd.conf test-freshclam.conf valgrind.supp
+CLEANFILES = lcov.out *.gcno *.gcda *.log /tmp/clamd-test.log $(FILES) test-stderr.log clamscan.log valgrind.log clamdscan.log
+EXTRA_DIST = .split input test-clamd.conf test-freshclam.conf valgrind.supp virusaction-test.sh
 @ENABLE_COVERAGE_TRUE@LCOV_OUTPUT = lcov.out
 @ENABLE_COVERAGE_TRUE@LCOV_HTML = lcov_html
 @ENABLE_COVERAGE_TRUE@LCOV_LCOV = @LCOV@
 @ENABLE_COVERAGE_TRUE@LCOV_GCOV = @GCOV@
 @ENABLE_COVERAGE_TRUE@LCOV_GENHTML = @GENHTML@
-@ENABLE_COVERAGE_FALSE@CLEANFILES = /tmp/clamd-test.log $(FILES)
-@ENABLE_COVERAGE_TRUE@CLEANFILES = lcov.out *.gcno *.gcda *.log /tmp/clamd-test.log $(FILES)
 @ENABLE_COVERAGE_TRUE@DIRECTORIES = --directory . --directory ../libclamav --directory ../clamd --directory ../freshclam --directory ../sigtool --directory ../clamscan --directory ../clamdscan
 all: all-am
 
@@ -722,6 +721,7 @@ $(top_builddir)/test/clam.exe:
 @ENABLE_COVERAGE_TRUE@lcov-clean:
 @ENABLE_COVERAGE_TRUE@	-$(RM) -r $(LCOV_HTML) $(LCOV_OUTPUT)
 @ENABLE_COVERAGE_TRUE@	$(LCOV_LCOV) $(DIRECTORIES) --zerocounters
+
 @ENABLE_COVERAGE_FALSE@lcov:
 @ENABLE_COVERAGE_FALSE@	@echo "Coverage information gathering is not enabled in this build"
 @ENABLE_COVERAGE_FALSE@	@echo "Use ./configure --enable-coverage to enable it"

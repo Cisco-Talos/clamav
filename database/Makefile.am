@@ -38,3 +38,4 @@ install-data-local:
 	    if test -f $(DESTDIR)$(DBINST)/daily.cvd; then chown ${CLAMAVUSER} $(DESTDIR)$(DBINST)/daily.cvd; fi;\
 	    if test -f $(DESTDIR)$(DBINST)/daily.cvd; then chgrp ${CLAMAVGROUP} $(DESTDIR)$(DBINST)/daily.cvd; fi;\
 	fi
+

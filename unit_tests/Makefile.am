@@ -26,14 +26,14 @@ check_clamscan.sh: $(top_builddir)/test/clam.exe
 $(top_builddir)/test/clam.exe:
 	(cd $(top_builddir)/test && $(MAKE))
 
-EXTRA_DIST=.split inputs/ test-clamd.conf test-freshclam.conf valgrind.supp
+CLEANFILES=lcov.out *.gcno *.gcda *.log /tmp/clamd-test.log $(FILES) test-stderr.log clamscan.log valgrind.log clamdscan.log
+EXTRA_DIST=.split input test-clamd.conf test-freshclam.conf valgrind.supp virusaction-test.sh
 if ENABLE_COVERAGE
 LCOV_OUTPUT = lcov.out
 LCOV_HTML = lcov_html
 LCOV_LCOV = @LCOV@
 LCOV_GCOV = @GCOV@
 LCOV_GENHTML = @GENHTML@
-CLEANFILES=lcov.out *.gcno *.gcda *.log /tmp/clamd-test.log $(FILES)
 lcov: $(LCOV_HTML)
 
 DIRECTORIES=--directory . --directory ../libclamav --directory ../clamd --directory ../freshclam --directory ../sigtool --directory ../clamscan --directory ../clamdscan
@@ -56,7 +56,6 @@ lcov-clean:
 	$(LCOV_LCOV) $(DIRECTORIES) --zerocounters
 else
 
-CLEANFILES=/tmp/clamd-test.log $(FILES)
 lcov:
 	@echo "Coverage information gathering is not enabled in this build"
 	@echo "Use ./configure --enable-coverage to enable it"

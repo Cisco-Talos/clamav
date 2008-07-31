@@ -169,6 +169,7 @@ libclamav_la_SOURCES = \
 	phish_domaincheck_db.h \
 	phish_whitelist.c \
 	phish_whitelist.h \
+	iana_cctld.h \
 	iana_tld.h \
 	regex_list.c \
 	regex_list.h \

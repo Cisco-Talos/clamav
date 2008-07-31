@@ -24,3 +24,7 @@ bin_SCRIPTS=clamav-config
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libclamav.pc
+
+# don't complain that configuration files and databases are not removed, this is intended
+distuninstallcheck_listfiles = find . -type f ! -name clamd.conf ! -name freshclam.conf ! -name daily.cvd ! -name main.cvd -print
+DISTCLEANFILES = target.h
