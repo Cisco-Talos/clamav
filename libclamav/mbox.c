@@ -3761,7 +3761,7 @@ rfc1341(message *m, const char *dir)
 			free(id);
 			return -1;
 		}
-		if(statb.st_mode&(S_IRWXG|S_IRWXO))
+		if(statb.st_mode & 077)
 			cli_warnmsg("Insecure partial directory %s (mode 0%o)\n",
 				pdir,
 #ifdef	ACCESSPERMS
@@ -3869,11 +3869,9 @@ rfc1341(message *m, const char *dir)
 					struct stat statb;
 					const char *dentry_idpart;
 
-#ifndef  C_CYGWIN
-					if(dent->d_ino == 0)
+					if(!strcmp(".",dent->d_name) ||
+							!strcmp("..", dent->d_name))
 						continue;
-#endif
-
 					snprintf(fullname, sizeof(fullname) - 1,
 						"%s/%s", pdir, dent->d_name);
 					dentry_idpart = strchr(dent->d_name, '_');
