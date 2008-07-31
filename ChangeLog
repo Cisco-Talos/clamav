@@ -1,3 +1,7 @@
+Fri Aug  1 00:07:30 CEST 2008 (tk)
+----------------------------------
+  * libclamav: scan disasm data with type-8 sigs (bb#895)
+
 Thu Jul 31 18:09:58 CEST 2008 (tk)
 ----------------------------------
   * libclamav: add support for loading specific PUA categories (bb#939)

@@ -897,9 +897,15 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
     CLI_UNPTEMP("DISASM",(exe_sections,0));
     disasmbuf(epbuff, epsize, ndesc);
+    lseek(ndesc, 0, SEEK_SET);
+    ret = cli_scandesc(ndesc, ctx, CL_TYPE_PE_DISASM, 1, NULL, AC_SCAN_VIR);
     close(ndesc);
     CLI_TMPUNLK();
     free(tempfile);
+    if(ret == CL_VIRUS) {
+	free(exe_sections);
+	return ret;
+    }
 
     /* Attempt to detect some popular polymorphic viruses */
 
