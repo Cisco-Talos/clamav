@@ -56,6 +56,7 @@
 #include "others.h"
 #include "upx.h"
 #include "str.h"
+#include "lzma_iface.h"
 
 #define PEALIGN(o,a) (((a))?(((o)/(a))*(a)):(o))
 #define PESALIGN(o,a) (((a))?(((o)/(a)+((o)%(a)!=0))*(a)):(o))
@@ -519,4 +520,25 @@ int upx_inflate2e(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_
   }
 
   return pefromupx (src, ssize, dst, dsize, ep, upx0, upx1, magic, dcur);
+}
+
+int upx_inflatelzma(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint32_t upx0, uint32_t upx1, uint32_t ep) {
+  CLI_LZMA *lz = NULL;
+  struct stream_state s;
+  uint32_t magic[]={0xb16,0xb1e,0};
+
+  cli_LzmaInitUPX(&lz, *dsize);
+  s.avail_in = ssize;
+  s.avail_out = *dsize;
+  s.next_in = src+2;
+  s.next_out = dst;
+
+  if(cli_LzmaDecode(&lz, &s)==LZMA_RESULT_DATA_ERROR) {
+/*     __asm__ __volatile__("int3"); */
+    cli_LzmaShutdown(&lz);
+    return -1;
+  }
+  cli_LzmaShutdown(&lz);
+
+  return pefromupx (src, ssize, dst, dsize, ep, upx0, upx1, magic, *dsize);
 }

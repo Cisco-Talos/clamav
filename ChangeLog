@@ -1,3 +1,7 @@
+Thu Jul 31 04:01:02 CEST 2008 (acab)
+------------------------------------
+  * libclamav/upx: add preliminar support for upx/lzma (disabled)
+
 Wed Jul 30 20:09:03 EEST 2008 (edwin)
 -------------------------------------
   * clamd/others.c: avoid calling non-async-signal-safe functions between fork()

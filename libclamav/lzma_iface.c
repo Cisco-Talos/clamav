@@ -128,3 +128,33 @@ int cli_LzmaDecode(CLI_LZMA **Lp, struct stream_state* state) {
 
   return res;
 }
+
+int cli_LzmaInitUPX(CLI_LZMA **Lp, uint32_t dictsz) {
+  CLI_LZMA *L = *Lp;
+
+  if(!L) {
+    *Lp = L = cli_calloc(sizeof(*L), 1);
+    if(!L) {
+      return LZMA_RESULT_DATA_ERROR;
+    }
+  }
+
+  L->state.Properties.pb = 2; /* FIXME: these  */
+  L->state.Properties.lp = 0; /* values may    */
+  L->state.Properties.lc = 3; /* not be static */
+
+  L->state.Properties.DictionarySize = dictsz;
+
+  if (!(L->state.Probs = (CProb *)cli_malloc(LzmaGetNumProbs(&L->state.Properties) * sizeof(CProb))))
+    return LZMA_RESULT_DATA_ERROR;
+
+  if (!(L->state.Dictionary = (unsigned char *)cli_malloc(L->state.Properties.DictionarySize))) {
+    free(L->state.Probs);
+    return LZMA_RESULT_DATA_ERROR;
+  }
+
+  L->initted = 1;
+
+  LzmaDecoderInit(&L->state);
+  return LZMA_RESULT_OK;
+}

@@ -37,6 +37,7 @@ struct stream_state {
 int cli_LzmaInit(CLI_LZMA **, uint64_t);
 void cli_LzmaShutdown(CLI_LZMA **);
 int cli_LzmaDecode(CLI_LZMA **, struct stream_state*);
+int cli_LzmaInitUPX(CLI_LZMA **, uint32_t);
 
 #define LZMA_STREAM_END 2
 #define LZMA_RESULT_OK 0
