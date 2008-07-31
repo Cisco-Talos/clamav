@@ -1,3 +1,9 @@
+Thu Jul 31 18:09:58 CEST 2008 (tk)
+----------------------------------
+  * libclamav: add support for loading specific PUA categories (bb#939)
+  * clamd: new options ExcludePUA and IncludePUA
+  * clamscan: new switches --exclude-pua and --include-pua
+
 Thu Jul 31 13:35:11 EEST 2008 (edwin)
 -------------------------------------
   * clamd, clamscan, libclamav: new option HeuristicScanPrecedence (bb #649)

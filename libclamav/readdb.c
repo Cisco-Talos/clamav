@@ -448,6 +448,42 @@ static int cli_chkign(const struct cli_ignored *ignored, const char *dbname, uns
     return 0;
 }
 
+static int cli_chkpua(const char *signame, const char *pua_cats, unsigned int options)
+{
+	char cat[32], *pt;
+	const char *sig;
+	int ret;
+
+    if(strncmp(signame, "PUA.", 4)) {
+	cli_dbgmsg("Skipping signature %s - no PUA prefix\n", signame);
+	return 1;
+    }
+    sig = signame + 3;
+    if(!(pt = strchr(sig + 1, '.'))) {
+	cli_dbgmsg("Skipping signature %s - bad syntax\n", signame);
+	return 1;
+    }
+
+    if(pt - sig + 2 > sizeof(cat)) {
+	cli_dbgmsg("Skipping signature %s - too long category name\n", signame);
+	return 1;
+    }
+
+    strncpy(cat, sig, pt - signame + 1);
+    cat[pt - sig + 1] = 0;
+    pt = strstr(pua_cats, cat);
+
+    if(options & CL_DB_PUA_INCLUDE)
+	ret = pt ? 0 : 1;
+    else
+	ret = pt ? 1 : 0;
+
+    if(ret)
+	cli_dbgmsg("Skipping PUA signature %s - excluded category\n", signame);
+
+    return ret;
+}
+
 static int cli_loaddb(FILE *fs, struct cl_engine **engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
 	char buffer[FILEBUFF], *pt, *start;
@@ -612,6 +648,10 @@ static int cli_loadndb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	    ret = CL_EMALFDB;
 	    break;
 	}
+
+	if((*engine)->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)))
+	    if(cli_chkpua(virname, (*engine)->pua_cats, options))
+		continue;
 
 	if((*engine)->ignored && cli_chkign((*engine)->ignored, dbname, line, virname))
 	    continue;
@@ -890,6 +930,10 @@ static int cli_loadldb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	    ret = CL_EMALFDB;
 	    break;
 	}
+
+	if((*engine)->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)))
+	    if(cli_chkpua(virname, (*engine)->pua_cats, options))
+		continue;
 
 	if((*engine)->ignored && cli_chkign((*engine)->ignored, dbname, line, virname))
 	    continue;
@@ -1307,8 +1351,20 @@ static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo,
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
 	cli_chomp(buffer);
-
 	cli_strtokenize(buffer, ':', MD5_TOKENS, tokens);
+
+	if(!(pt = tokens[2])) { /* virname */
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if((*engine)->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)))
+	    if(cli_chkpua(pt, (*engine)->pua_cats, options))
+		continue;
+
+	if((*engine)->ignored && cli_chkign((*engine)->ignored, dbname, line, pt))
+	    continue;
+
 
 	new = (struct cli_bm_patt *) cli_calloc(1, sizeof(struct cli_bm_patt));
 	if(!new) {
@@ -1343,13 +1399,6 @@ static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	    free(new);
 	    ret = CL_EMALFDB;
 	    break;
-	}
-
-	if((*engine)->ignored && cli_chkign((*engine)->ignored, dbname, line, new->virname)) {
-	    free(new->virname);
-	    free(new->pattern);
-	    free(new);
-	    continue;
 	}
 
 	MD5_DB;
@@ -1627,7 +1676,7 @@ int cli_load(const char *filename, struct cl_engine **engine, unsigned int *sign
 
     } else if(cli_strbcasestr(dbname, ".hdu")) {
 	if(options & CL_DB_PUA)
-	    ret = cli_loadmd5(fs, engine, signo, MD5_HDB, options, dbio, dbname);
+	    ret = cli_loadmd5(fs, engine, signo, MD5_HDB, options | CL_DB_PUA_MODE, dbio, dbname);
 	else
 	    skipped = 1;
 
@@ -1639,7 +1688,7 @@ int cli_load(const char *filename, struct cl_engine **engine, unsigned int *sign
 
     } else if(cli_strbcasestr(dbname, ".mdu")) {
 	if(options & CL_DB_PUA)
-	    ret = cli_loadmd5(fs, engine, signo, MD5_MDB, options, dbio, dbname);
+	    ret = cli_loadmd5(fs, engine, signo, MD5_MDB, options | CL_DB_PUA_MODE, dbio, dbname);
 	else
 	    skipped = 1;
 
@@ -1650,14 +1699,14 @@ int cli_load(const char *filename, struct cl_engine **engine, unsigned int *sign
 	if(!(options & CL_DB_PUA))
 	    skipped = 1;
 	else
-	    ret = cli_loadndb(fs, engine, signo, 0, options, dbio, dbname);
+	    ret = cli_loadndb(fs, engine, signo, 0, options | CL_DB_PUA_MODE, dbio, dbname);
 
     } else if(cli_strbcasestr(filename, ".ldb")) {
        ret = cli_loadldb(fs, engine, signo, options, dbio, dbname);
 
     } else if(cli_strbcasestr(filename, ".ldu")) {
 	if(options & CL_DB_PUA)
-	    ret = cli_loadldb(fs, engine, signo, options, dbio, dbname);
+	    ret = cli_loadldb(fs, engine, signo, options | CL_DB_PUA_MODE, dbio, dbname);
 	else
 	    skipped = 1;
 
@@ -2144,6 +2193,9 @@ void cl_free(struct cl_engine *engine)
 
     if(engine->dconf)
 	free(engine->dconf);
+
+    if(engine->pua_cats)
+	free(engine->pua_cats);
 
     cli_ftfree(engine->ftypes);
     cli_freeign(engine);

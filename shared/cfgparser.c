@@ -56,6 +56,8 @@ struct cfgoption cfg_options[] = {
     {"HeuristicScanPrecedence", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     /* end of FP prone options */
     {"DetectPUA", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"ExcludePUA", OPT_QUOTESTR, -1, NULL, 1, OPT_CLAMD},
+    {"IncludePUA", OPT_QUOTESTR, -1, NULL, 1, OPT_CLAMD},
     {"StructuredDataDetection", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"StructuredMinCreditCardCount", OPT_NUM, 1, NULL, 0, OPT_CLAMD},
     {"StructuredMinSSNCount", OPT_NUM, 1, NULL, 0, OPT_CLAMD},

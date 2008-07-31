@@ -59,6 +59,8 @@ static struct option clamscan_longopt[] = {
     {"max-recursion", 1, 0, 0},
     {"max-dir-recursion", 1, 0, 0},
     {"detect-pua", 0, 0, 0},
+    {"exclude-pua", 1, 0, 0},
+    {"include-pua", 1, 0, 0},
     {"detect-structured", 0, 0, 0},
     {"structured-ssn-format", 1, 0, 0},
     {"structured-ssn-count", 1, 0, 0},

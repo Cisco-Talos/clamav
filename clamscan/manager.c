@@ -344,7 +344,8 @@ int scanmanager(const struct optstruct *opt)
 	struct cl_engine *engine = NULL;
 	struct cl_limits limits;
 	struct stat sb;
-	char *file, cwd[1024];
+	char *file, cwd[1024], *pua_cats = NULL, *argument;
+	const struct optnode *optnode;
 #ifndef C_WINDOWS
 	struct rlimit rlim;
 #endif
@@ -371,8 +372,60 @@ int scanmanager(const struct optstruct *opt)
     if(opt_check(opt, "dev-ac-depth"))
 	cli_ac_setdepth(AC_DEFAULT_MIN_DEPTH, atoi(opt_arg(opt, "dev-ac-depth")));
 
-    if(opt_check(opt, "detect-pua"))
+    if(opt_check(opt, "detect-pua")) {
 	dboptions |= CL_DB_PUA;
+
+	if(opt_check(opt, "exclude-pua")) {
+	    dboptions |= CL_DB_PUA_EXCLUDE;
+	    argument = opt_firstarg(opt, "exclude-pua", &optnode);
+	    i = 0;
+	    while(argument) {
+		if(!(pua_cats = realloc(pua_cats, i + strlen(argument) + 3))) {
+		    logg("!Can't allocate memory for pua_cats\n");
+		    return 70;
+		}
+		sprintf(pua_cats + i, ".%s", argument);
+		i += strlen(argument) + 1;
+		pua_cats[i] = 0;
+		argument = opt_nextarg(&optnode, "exclude-pua");
+	    }
+	    pua_cats[i] = '.';
+	    pua_cats[i + 1] = 0;
+	}
+
+	if(opt_check(opt, "include-pua")) {
+	    if(pua_cats) {
+		logg("!--exclude-pua and --include-pua cannot be used at the same time\n");
+		free(pua_cats);
+		return 40;
+	    }
+	    dboptions |= CL_DB_PUA_INCLUDE;
+	    argument = opt_firstarg(opt, "include-pua", &optnode);
+	    i = 0;
+	    while(argument) {
+		if(!(pua_cats = realloc(pua_cats, i + strlen(argument) + 3))) {
+		    logg("!Can't allocate memory for pua_cats\n");
+		    return 70;
+		}
+		sprintf(pua_cats + i, ".%s", argument);
+		i += strlen(argument) + 1;
+		pua_cats[i] = 0;
+		argument = opt_nextarg(&optnode, "include-pua");
+	    }
+	    pua_cats[i] = '.';
+	    pua_cats[i + 1] = 0;
+	}
+
+	if(pua_cats) {
+	    /* FIXME with the new API */
+	    if((ret = cli_initengine(&engine, dboptions))) {
+		logg("!cli_initengine() failed: %s\n", cl_strerror(ret));
+		free(pua_cats);
+		return 50;
+	    }
+	    engine->pua_cats = pua_cats;
+	}
+    }
 
     if(opt_check(opt, "database")) {
 	if((ret = cl_load(opt_arg(opt, "database"), &engine, &info.sigs, dboptions))) {

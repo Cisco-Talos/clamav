@@ -194,6 +194,7 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
 	const char *dbdir;
 	int retval;
 	unsigned int sigs = 0;
+	char *pua_cats = NULL;
 
     *ret = 0;
     if(do_check) {
@@ -209,12 +210,6 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
 	    logg("SelfCheck: Database status OK.\n");
 	    return NULL;
 	}
-    }
-
-    /* release old structure */
-    if(engine) {
-	cl_free(engine);
-	engine = NULL;
     }
 
     dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
@@ -236,6 +231,26 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
 	logg("!cl_statinidir() failed: %s\n", cl_strerror(retval));
 	*ret = 1;
 	return NULL;
+    }
+
+    /* release old structure */
+    if(engine) {
+	if(engine->pua_cats)
+	    if(!(pua_cats = strdup(engine->pua_cats)))
+		logg("^Can't make a copy of pua_cats\n");
+
+	cl_free(engine);
+	engine = NULL;
+    }
+
+    if(pua_cats) {
+	if((retval = cli_initengine(&engine, dboptions))) {
+	    logg("!cli_initengine() failed: %s\n", cl_strerror(retval));
+	    *ret = 1;
+	    free(pua_cats);
+	    return NULL;
+	}
+	engine->pua_cats = pua_cats;
     }
 
     if((retval = cl_load(dbdir, &engine, &sigs, dboptions))) {

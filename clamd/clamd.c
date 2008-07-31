@@ -97,7 +97,8 @@ int main(int argc, char **argv)
 	time_t currtime;
 	struct cl_engine *engine = NULL;
 	const char *dbdir, *cfgfile;
-	int ret, tcpsock = 0, localsock = 0;
+	char *pua_cats = NULL;
+	int ret, tcpsock = 0, localsock = 0, i;
 	unsigned int sigs = 0;
 	int lsockets[2], nlsockets = 0;
 	unsigned int dboptions = 0;
@@ -302,10 +303,74 @@ int main(int argc, char **argv)
     dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
     logg("#Reading databases from %s\n", dbdir);
 
-    if(cfgopt(copt, "DetectPUA")->enabled)
+    if(cfgopt(copt, "DetectPUA")->enabled) {
 	dboptions |= CL_DB_PUA;
-    else
+
+	if((cpt = cfgopt(copt, "ExcludePUA"))->enabled) {
+	    dboptions |= CL_DB_PUA_EXCLUDE;
+	    i = 0;
+	    logg("#Excluded PUA categories:");
+	    while(cpt) {
+		if(!(pua_cats = realloc(pua_cats, i + strlen(cpt->strarg) + 3))) {
+		    logg("!Can't allocate memory for pua_cats\n");
+		    logg_close();
+		    freecfg(copt);
+		    return 1;
+		}
+		logg("# %s", cpt->strarg);
+		sprintf(pua_cats + i, ".%s", cpt->strarg);
+		i += strlen(cpt->strarg) + 1;
+		pua_cats[i] = 0;
+		cpt = cpt->nextarg;
+	    }
+	    logg("#\n");
+	    pua_cats[i] = '.';
+	    pua_cats[i + 1] = 0;
+	}
+
+	if((cpt = cfgopt(copt, "IncludePUA"))->enabled) {
+	    if(pua_cats) {
+		logg("!ExcludePUA and IncludePUA cannot be used at the same time\n");
+		logg_close();
+		freecfg(copt);
+		free(pua_cats);
+		return 1;
+	    }
+	    dboptions |= CL_DB_PUA_INCLUDE;
+	    i = 0;
+	    logg("#Included PUA categories:");
+	    while(cpt) {
+		if(!(pua_cats = realloc(pua_cats, i + strlen(cpt->strarg) + 3))) {
+		    logg("!Can't allocate memory for pua_cats\n");
+		    logg_close();
+		    freecfg(copt);
+		    return 1;
+		}
+		logg("# %s", cpt->strarg);
+		sprintf(pua_cats + i, ".%s", cpt->strarg);
+		i += strlen(cpt->strarg) + 1;
+		pua_cats[i] = 0;
+		cpt = cpt->nextarg;
+	    }
+	    logg("#\n");
+	    pua_cats[i] = '.';
+	    pua_cats[i + 1] = 0;
+	}
+
+	if(pua_cats) {
+	    /* FIXME with the new API */
+	    if((ret = cli_initengine(&engine, dboptions))) {
+		logg("!cli_initengine() failed: %s\n", cl_strerror(ret));
+		logg_close();
+		freecfg(copt);
+		free(pua_cats);
+		return 1;
+	    }
+	    engine->pua_cats = pua_cats;
+	}
+    } else {
 	logg("#Not loading PUA signatures.\n");
+    }
 
     if(cfgopt(copt, "PhishingSignatures")->enabled)
 	dboptions |= CL_DB_PHISHING;

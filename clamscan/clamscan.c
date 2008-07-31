@@ -315,6 +315,8 @@ void help(void)
 #endif
     mprintf("\n");
     mprintf("    --detect-pua                         Detect Possibly Unwanted Applications\n");
+    mprintf("    --exclude-pua=CAT                    Skip PUA sigs of category CAT\n");
+    mprintf("    --include-pua=CAT                    Load PUA sigs of category CAT\n");
     mprintf("    --detect-structured                  Detect structured data (SSN, Credit Card)\n");
     mprintf("    --structured-ssn-format=X            SSN format (0=normal,1=stripped,2=both)\n");
     mprintf("    --structured-ssn-count=N             Min SSN count to generate a detect\n");
