@@ -76,7 +76,7 @@ static struct option clamscan_longopt[] = {
     {"mail-follow-urls", 0, 0, 0},
     {"no-phishing-sigs", 0, 0, 0},
     {"no-phishing-scan-urls", 0, 0, 0},
-    {"no-phishing-restrictedscan", 0, 0, 0},
+    {"heuristic-scan-precedence", 0, 0, 0},
     {"phishing-ssl", 0, 0, 0},
     {"phishing-cloak", 0, 0, 0},
     {"no-algorithmic", 0, 0, 0},

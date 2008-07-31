@@ -245,6 +245,11 @@ If an email contains URLs ClamAV can download and scan them. \fBWARNING: This op
 .br 
 Default: no
 .TP
+\fBScanPartialMessages BOOL\fR
+Scan RFC1341 messages split over many emails. You will need to periodically clean up $TemporaryDirectory/clamav-partial directory. \fBWARNING: This option may open your system to a DoS attack. Never use it on loaded servers.\fR
+.br
+Default: no
+.TP
 \fBMailMaxRecursion NUMBER (OBSOLETE)\fR
 \fBWARNING:\fR This option is no longer accepted. See \fBMaxRecursion\fR.
 .TP 
@@ -265,6 +270,11 @@ Default: no
 .TP
 \fBPhishingAlwaysBlockCloak BOOL\fR
 Always block cloaked URLs, even if URL isn't in database. This can lead to false positives.
+.br
+Default: no
+.TP
+\fBHeuristicScanPrecedence BOOL\fR
+Allow heuristic match to take precedence. When enabled, if a heuristic scan (such as phishingScan) detects a possible virus/phish it will stop scan immediately. Recommended, saves CPU scan-time. When disabled, virus/phish detected by heuristic scans will be reported only at the end of a scan. If an archive contains both a heuristically detected  virus/phish, and a real malware, the real malware will be reported Keep this disabled if you intend to handle "*.Heuristics.*" viruses  differently from "real" malware. If a non-heuristically-detected virus (signature-based) is found first,  the scan is interrupted immediately, regardless of this config option.
 .br
 Default: no
 .TP

@@ -53,7 +53,7 @@ struct cfgoption cfg_options[] = {
     /* these are FP prone options, if default isn't used */
     {"PhishingAlwaysBlockCloak", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"PhishingAlwaysBlockSSLMismatch", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
-    {"PhishingRestrictedScan", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
+    {"HeuristicScanPrecedence", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     /* end of FP prone options */
     {"DetectPUA", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"StructuredDataDetection", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},

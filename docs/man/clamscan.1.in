@@ -93,8 +93,8 @@ Disable signature-based phishing detection.
 \fB\-\-no\-phishing\-scan\-urls\fR
 Disable url-based heuristic phishing detection. This disables Phishing.Heuristics.Email.*
 .TP
-\fB\-\-no\-phishing\-restrictedscan\fR
-Enable url-based heuristic phishing detection for all domains (might lead to false positives!).
+\fB\-\-heuristic\-scan\-precedence\fR
+Allow heuristic match to take precedence. When enabled, if a heuristic scan (such as phishingScan) detects a possible virus/phish it will stop scan immediately. Recommended, saves CPU scan-time. When disabled, virus/phish detected by heuristic scans will be reported only at the end of a scan. If an archive contains both a heuristically detected  virus/phish, and a real malware, the real malware will be reported Keep this disabled if you intend to handle "*.Heuristics.*" viruses  differently from "real" malware. If a non-heuristically-detected virus (signature-based) is found first,  the scan is interrupted immediately, regardless of this config option.
 .TP
 \fB\-\-phishing\-ssl\fR
 Always block SSL mismatches in URLs (might lead to false positives!).

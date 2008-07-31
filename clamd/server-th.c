@@ -455,6 +455,11 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	}
     }
 
+    if(cfgopt(copt,"HeuristicScanPrecedence")->enabled) {
+	    options |= CL_SCAN_HEURISTIC_PRECEDENCE;
+	    logg("Heuristic: precedence enabled\n");
+    }
+
     if(cfgopt(copt, "StructuredDataDetection")->enabled) {
         options |= CL_SCAN_STRUCTURED;
 

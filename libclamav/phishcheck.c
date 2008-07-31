@@ -725,13 +725,6 @@ cleanupURL(struct string *URL,struct string *pre_URL, int isReal)
 
 
 /* -------end runtime disable---------*/
-static int found_possibly_unwanted(cli_ctx* ctx)
-{
-	ctx->found_possibly_unwanted = 1;
-	cli_dbgmsg("Phishcheck: found Possibly Unwanted: %s\n",*ctx->virname);
-	return CL_CLEAN;
-}
-
 int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 {
 	/* TODO: get_host and then apply regex, etc. */
@@ -817,31 +810,30 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 			free_if_needed(&urls);
 			cli_dbgmsg("Phishcheck: Phishing scan result: %s\n",phishing_ret_toString(rc));
 			switch(rc)/*TODO: support flags from ctx->options,*/
-				{
-					case CL_PHISH_CLEAN:
-						continue;
-/*						break;*/
-					case CL_PHISH_HEX_URL:
-						*ctx->virname="Phishing.Heuristics.Email.HexURL";
-						return found_possibly_unwanted(ctx);
-/*						break;*/
-					case CL_PHISH_NUMERIC_IP:
-						*ctx->virname="Phishing.Heuristics.Email.Cloaked.NumericIP";
-						return found_possibly_unwanted(ctx);
-					case CL_PHISH_CLOAKED_NULL:
-						*ctx->virname="Phishing.Heuristics.Email.Cloaked.Null";/*http://www.real.com%01%00@www.evil.com*/
-						return found_possibly_unwanted(ctx);
-					case CL_PHISH_SSL_SPOOF:
-						*ctx->virname="Phishing.Heuristics.Email.SSL-Spoof";
-						return found_possibly_unwanted(ctx);
-					case CL_PHISH_CLOAKED_UIU:
-						*ctx->virname="Phishing.Heuristics.Email.Cloaked.Username";/*http://www.ebay.com@www.evil.com*/
-						return found_possibly_unwanted(ctx);
-					case CL_PHISH_NOMATCH:
-					default:
-						*ctx->virname="Phishing.Heuristics.Email.SpoofedDomain";
-						return found_possibly_unwanted(ctx);
-				}
+			{
+				case CL_PHISH_CLEAN:
+					continue;
+				case CL_PHISH_HEX_URL:
+					*ctx->virname="Phishing.Heuristics.Email.HexURL";
+					break;
+				case CL_PHISH_NUMERIC_IP:
+					*ctx->virname="Phishing.Heuristics.Email.Cloaked.NumericIP";
+					break;
+				case CL_PHISH_CLOAKED_NULL:
+					*ctx->virname="Phishing.Heuristics.Email.Cloaked.Null";/*http://www.real.com%01%00@www.evil.com*/
+					break;
+				case CL_PHISH_SSL_SPOOF:
+					*ctx->virname="Phishing.Heuristics.Email.SSL-Spoof";
+					break;
+				case CL_PHISH_CLOAKED_UIU:
+					*ctx->virname="Phishing.Heuristics.Email.Cloaked.Username";/*http://www.ebay.com@www.evil.com*/
+					break;
+				case CL_PHISH_NOMATCH:
+				default:
+					*ctx->virname="Phishing.Heuristics.Email.SpoofedDomain";
+					break;
+			}
+			return cli_found_possibly_unwanted(ctx);
 		}
 		else
 			if(strcmp((char*)hrefs->tag[i],"href"))

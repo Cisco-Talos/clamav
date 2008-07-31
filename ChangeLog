@@ -1,3 +1,9 @@
+Thu Jul 31 13:35:11 EEST 2008 (edwin)
+-------------------------------------
+  * clamd, clamscan, libclamav: new option HeuristicScanPrecedence (bb #649)
+  * docs/: update docs for HeuristicScanPrecedence and ScanPartialMessages
+  * unit_tests/: add test for HeuristicScanPrecedence
+
 Thu Jul 31 04:01:02 CEST 2008 (acab)
 ------------------------------------
   * libclamav/upx: add preliminar support for upx/lzma (disabled)

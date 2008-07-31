@@ -1,6 +1,13 @@
+SPLIT_DIR=$(top_srcdir)/unit_tests/.split
+FILES = clam-phish-exe
+
+check_clamd.sh: $(FILES)
+
+$(FILES) :
+	cat $(SPLIT_DIR)/split.$@aa $(SPLIT_DIR)/split.$@ab > $@
+
 programs = check_clamav
 scripts = check_clamd.sh check_freshclam.sh check_sigtool.sh check_clamscan.sh valgrind_tests.sh
-
 TESTS = $(programs) $(scripts)
 if ENABLE_UT_INSTALL 
 bin_PROGRAMS = $(programs)
@@ -19,14 +26,14 @@ check_clamscan.sh: $(top_builddir)/test/clam.exe
 $(top_builddir)/test/clam.exe:
 	(cd $(top_builddir)/test && $(MAKE))
 
-EXTRA_DIST=test-clamd.conf test-freshclam.conf valgrind.supp inputs/COPYING inputs/daily.pdb inputs/daily.wdb
+EXTRA_DIST=.split inputs/ test-clamd.conf test-freshclam.conf valgrind.supp
 if ENABLE_COVERAGE
 LCOV_OUTPUT = lcov.out
 LCOV_HTML = lcov_html
 LCOV_LCOV = @LCOV@
 LCOV_GCOV = @GCOV@
 LCOV_GENHTML = @GENHTML@
-CLEANFILES=lcov.out *.gcno *.gcda *.log /tmp/clamd-test.log
+CLEANFILES=lcov.out *.gcno *.gcda *.log /tmp/clamd-test.log $(FILES)
 lcov: $(LCOV_HTML)
 
 DIRECTORIES=--directory . --directory ../libclamav --directory ../clamd --directory ../freshclam --directory ../sigtool --directory ../clamscan --directory ../clamdscan
@@ -49,7 +56,7 @@ lcov-clean:
 	$(LCOV_LCOV) $(DIRECTORIES) --zerocounters
 else
 
-CLEANFILES=/tmp/clamd-test.log
+CLEANFILES=/tmp/clamd-test.log $(FILES)
 lcov:
 	@echo "Coverage information gathering is not enabled in this build"
 	@echo "Use ./configure --enable-coverage to enable it"

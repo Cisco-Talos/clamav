@@ -361,6 +361,9 @@ int scanmanager(const struct optstruct *opt)
     if(opt_check(opt,"phishing-cloak")) {
 	options |= CL_SCAN_PHISHING_BLOCKCLOAK;
     }
+    if(opt_check(opt,"heuristic-scan-precedence")) {
+	options |= CL_SCAN_HEURISTIC_PRECEDENCE;
+    }
 
     if(opt_check(opt, "dev-ac-only"))
 	dboptions |= CL_DB_ACONLY;

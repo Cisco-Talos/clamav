@@ -25,5 +25,6 @@
 #include "others.h"
 
 int cli_magic_scandesc(int desc, cli_ctx *ctx);
+int cli_found_possibly_unwanted(cli_ctx* ctx);
 
 #endif

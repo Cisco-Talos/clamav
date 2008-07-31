@@ -2112,6 +2112,27 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     return rc;
 }
 
+int cli_found_possibly_unwanted(cli_ctx* ctx)
+{
+	if(ctx->virname) {
+		cli_dbgmsg("found Possibly Unwanted: %s\n",*ctx->virname);
+		if(ctx->options & CL_SCAN_HEURISTIC_PRECEDENCE) {
+			/* we found a heuristic match, don't scan further,
+			 * but consider it a virus. */
+			cli_dbgmsg("cli_found_possibly_unwanted: CL_VIRUS\n");
+			return CL_VIRUS;
+		}
+		/* heuristic scan isn't taking precedence, keep scanning.
+		 * If this is part of an archive, and 
+		 * we find a real malware we report that instead of the 
+		 * heuristic match */
+		ctx->found_possibly_unwanted = 1;
+	} else {
+		cli_warnmsg("cli_found_possibly_unwanted called, but virname is not set\n");
+	}
+	return CL_CLEAN;
+}
+
 static int cli_scanfile(const char *filename, cli_ctx *ctx)
 {
 	int fd, ret;
