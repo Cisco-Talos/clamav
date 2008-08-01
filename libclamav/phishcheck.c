@@ -47,9 +47,11 @@
 #include "phishcheck.h"
 #include "phish_domaincheck_db.h"
 #include "phish_whitelist.h"
+#include "regex_list.h"
 #include "iana_tld.h"
 #include "iana_cctld.h"
 #include "scanners.h"
+#include "md5.h"
 
 
 #define DOMAIN_REAL 1
@@ -737,7 +739,6 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 
 	if(!ctx->found_possibly_unwanted)
 		*ctx->virname=NULL;
-#if 0
 	FILE *f = fopen("/home/edwin/quarantine/urls","r");
 	if(!f)
 		abort();
@@ -770,7 +771,6 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 	}
 	fclose(f);
 	return 0;
-#endif
 	for(i=0;i<hrefs->count;i++)
 		if(hrefs->contents[i]) {
 			struct url_check urls;
@@ -828,6 +828,9 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 					break;
 				case CL_PHISH_CLOAKED_UIU:
 					*ctx->virname="Phishing.Heuristics.Email.Cloaked.Username";/*http://www.ebay.com@www.evil.com*/
+					break;
+				case CL_PHISH_HASH:
+					*ctx->virname="Phishing.URL.Blacklisted";
 					break;
 				case CL_PHISH_NOMATCH:
 				default:
@@ -1177,6 +1180,23 @@ static int whitelist_check(const struct cl_engine* engine,struct url_check* urls
 	return whitelist_match(engine,urls->realLink.data,urls->displayLink.data,hostOnly);
 }
 
+static int hash_match(const struct regex_matcher *rlist, const char *url, size_t len)
+{
+	unsigned char md5_dig[16];
+	cli_md5_ctx md5;
+
+	if(!rlist->hashes.bm_patterns)
+		return CL_CLEAN;
+
+	cli_md5_init(&md5);
+	cli_md5_update(&md5, url, len);
+	cli_md5_final(md5_dig, &md5);
+	if(cli_bm_scanbuff(md5_dig, 16, NULL, &rlist->hashes,0,0,-1) == CL_VIRUS) {
+		return CL_VIRUS;
+	}
+	return CL_SUCCESS;
+}
+
 /* urls can't contain null pointer, caller must ensure this */
 static enum phish_status phishingCheck(const struct cl_engine* engine,struct url_check* urls)
 {
@@ -1213,6 +1233,10 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 	if(whitelist_check(engine, urls, 0))
 		return CL_PHISH_CLEAN;/* if url is whitelisted don't perform further checks */
 
+	if(hash_match(engine->domainlist_matcher, urls->realLink.data, strlen(urls->realLink.data)) == CL_VIRUS) {
+		cli_dbgmsg("Hash matched for: %s\n", urls->realLink.data);
+		return CL_PHISH_HASH;
+	}
 	url_check_init(&host_url);
 
 	if((rc = url_get_host(pchk, urls, &host_url, DOMAIN_DISPLAY, &phishy))) {

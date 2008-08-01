@@ -350,6 +350,9 @@ int init_regex_list(struct regex_matcher* matcher)
 	if((rc = cli_ac_init(&matcher->suffixes, 2, 32))) {
 		return rc;
 	}
+	if(rc = cli_bm_init(&matcher->hashes)) {
+		return rc;
+	}
 	SO_init(&matcher->filter);
 	return CL_SUCCESS;
 }
@@ -394,7 +397,27 @@ static int functionality_level_check(char* line)
 			return CL_EMALFDB;
 		ptmin[-1]='\0';
 		return CL_SUCCESS;
-	}		
+	}
+}
+
+static int add_hash(struct regex_matcher *matcher, char* pattern)
+{
+	int rc;
+	struct cli_bm_patt *pat = cli_calloc(1, sizeof(*pat));
+	if(!pat)
+		return CL_EMEM;
+	pat->pattern = (unsigned char*)cli_hex2str(pattern);
+	if(!pat->pattern)
+		return CL_EMALFDB;
+	pat->length = 16;
+	pat->virname = NULL;
+	if(rc = cli_bm_addpatt(&matcher->hashes, pat)) {
+		cli_errmsg("add_hash: failed to add BM pattern\n");
+		free(pat->pattern);
+		free(pat);
+		return CL_EMALFDB;
+	}
+	return CL_SUCCESS;
 }
 
 
@@ -485,8 +508,13 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 			/*matches displayed host*/
 			if (( rc = add_static_pattern(matcher, pattern) ))
 				return rc==CL_EMEM ? CL_EMEM : CL_EMALFDB;
-		}
-		else {
+		} else if (buffer[0] == 'U' && !is_whitelist) {
+			pattern[pattern_len] = '\0';
+			if (( rc = add_hash(matcher, pattern) )) {
+				cli_errmsg("Error loading at line: %d\n", line);
+				return rc==CL_EMEM ? CL_EMEM : CL_EMALFDB;
+			}
+		} else {
 			return CL_EMALFDB;
 		}
 	}
@@ -545,6 +573,7 @@ void regex_list_done(struct regex_matcher* matcher)
 			free(matcher->all_pregs);
 		}
 		hashtab_free(&matcher->suffix_hash);
+		cli_bm_free(&matcher->hashes);
 		matcher->list_built=0;
 		matcher->list_loaded=0;
 	}
