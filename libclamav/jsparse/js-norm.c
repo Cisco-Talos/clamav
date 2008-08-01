@@ -328,16 +328,20 @@ static inline int buf_outc(char c, struct buf *buf)
 static inline int buf_outs(const char *s, struct buf *buf)
 {
 	const size_t buf_len = sizeof(buf->buf);
-	size_t len = strlen(s);
-	while(buf->pos + len > buf_len) {
-		memcpy(buf->buf + buf->pos, s, buf_len - buf->pos);
-		len -= (buf_len - buf->pos);
-		if(write(buf->outfd, buf->buf, buf_len) < 0)
-			return CL_EIO;
-		buf->pos = 0;
+	size_t i;
+
+	i = buf->pos;
+	while(*s) {
+		while(i < buf_len && *s) {
+			buf->buf[i++] = tolower((unsigned char)(*s++));
+		}
+		if(i == buf_len) {
+			if(write(buf->outfd, buf->buf, buf_len) < 0)
+				return CL_EIO;
+		       i = 0;
+		}
 	}
-	memcpy(buf->buf + buf->pos, s, len);
-	buf->pos += len;
+	buf->pos = i;
 	return CL_SUCCESS;
 }
 
