@@ -26,6 +26,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
+#ifdef HAVE_SYS_LIMITS_H
+#include <sys/limits.h>
+#endif
 #include <sys/un.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -230,21 +233,25 @@ static int dsstream(int sockd, const struct optstruct *opt)
     return infected;
 }
 
+#ifndef PATH_MAX
+#define PATH_MAX 1024
+#endif
+
 static char *abpath(const char *filename)
 {
 	struct stat foo;
-	char *fullpath, cwd[200];
+	char *fullpath, cwd[PATH_MAX + 1];
 
     if(stat(filename, &foo) == -1) {
 	logg("^Can't access file %s\n", filename);
 	perror(filename);
 	return NULL;
     } else {
-	fullpath = malloc(200 + strlen(filename) + 10);
+	fullpath = malloc(PATH_MAX + strlen(filename) + 10);
 #ifdef C_CYGWIN
 	sprintf(fullpath, "%s", filename);
 #else
-	if(!getcwd(cwd, 200)) {
+	if(!getcwd(cwd, PATH_MAX)) {
 	    logg("^Can't get absolute pathname of current working directory.\n");
 	    return NULL;
 	}
@@ -368,7 +375,7 @@ int get_clamd_version(const struct optstruct *opt)
 
 int client(const struct optstruct *opt, int *infected)
 {
-	char cwd[200], *fullpath;
+	char cwd[PATH_MAX+1], *fullpath;
 	int sockd, ret, errors = 0;
 	struct stat sb;
 	const char *scantype = "CONTSCAN";
@@ -382,7 +389,7 @@ int client(const struct optstruct *opt, int *infected)
     /* parse argument list */
     if(opt->filename == NULL || strlen(opt->filename) == 0) {
 	/* scan current directory */
-	if(!getcwd(cwd, 200)) {
+	if(!getcwd(cwd, PATH_MAX)) {
 	    logg("^Can't get absolute pathname of current working directory.\n");
 	    return 2;
 	}
