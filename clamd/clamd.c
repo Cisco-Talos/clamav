@@ -449,12 +449,23 @@ int main(int argc, char **argv)
 
     /* fork into background */
     if(!cfgopt(copt, "Foreground")->enabled) {
+#ifdef C_BSD	    
+	/* workaround for OpenBSD bug, see https://wwws.clamav.net/bugzilla/show_bug.cgi?id=885 */
+	for(ret=0;ret<nlsockets;ret++) {
+		fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) | O_NONBLOCK);
+	}
+#endif
 	if(daemonize() == -1) {
 	    logg("!daemonize() failed\n");
 	    logg_close();
 	    freecfg(copt);
 	    return 1;
 	}
+#ifdef C_BSD
+	for(ret=0;ret<nlsockets;ret++) {
+		fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) & ~O_NONBLOCK);
+	}
+#endif
 	if(!debug_mode)
 	    if(chdir("/") == -1)
 		logg("^Can't change current working directory to root\n");
