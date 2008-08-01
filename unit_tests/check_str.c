@@ -142,10 +142,28 @@ START_TEST (test_normalize)
 }
 END_TEST
 
+START_TEST (hex2str)
+{
+	char *r;
+	const char inp1[] = "a00026";
+	const char out1[] = "\xa0\x00\x26";
+	const char inp2[] = "ag0026";
+
+	r = cli_hex2str(inp1);
+	fail_unless(!!r, "cli_hex2str NULL");
+	fail_unless(!memcmp(r, out1, sizeof(out1)-1) ,
+			"cli_hex2str invalid output");
+	free(r);
+
+	r = cli_hex2str(inp2);
+	fail_unless(!r, "cli_hex2str on invalid input");
+}
+END_TEST
+
 Suite *test_str_suite(void)
 {
     Suite *s = suite_create("str");
-    TCase *tc_cli_unescape, *tc_tbuf;
+    TCase *tc_cli_unescape, *tc_tbuf, *tc_str;
 
     tc_cli_unescape = tcase_create("cli_unescape");
     suite_add_tcase (s, tc_cli_unescape);
@@ -160,6 +178,10 @@ Suite *test_str_suite(void)
     tcase_add_test(tc_tbuf, test_append);
     tcase_add_test(tc_tbuf, test_putc);
     tcase_add_test(tc_tbuf, test_normalize);
+
+    tc_str = tcase_create("str functions");
+    suite_add_tcase (s, tc_str);
+    tcase_add_test(tc_str, hex2str);
 
     return s;
 }

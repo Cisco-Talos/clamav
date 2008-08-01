@@ -103,6 +103,7 @@ CLAMAV_PRIVATE {
     load_regex_matcher;
     html_tag_arg_free;
     disasmbuf;
+    cli_hex2str;
   local:
     *;
 };
