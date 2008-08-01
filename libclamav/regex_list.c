@@ -117,7 +117,7 @@ static int SO_preprocess_add(struct filter *m, const unsigned char *pattern, siz
  * each bit in "state" means an active state, when a char is encountered
  * we determine what states can remain active.
  * The FSM transition rules are expressed as bit-masks */
-static long SO_search(const struct filter *m, const unsigned char *data, unsigned long len)
+long SO_search(const struct filter *m, const unsigned char *data, unsigned long len)
 {
 	size_t j;
 	uint32_t state = ~0;
@@ -291,7 +291,7 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 			return CL_EMEM;
 		reverse_string(bufrev);
 		rc = SO_search(&matcher->filter, (const unsigned char*)bufrev, buffer_len) != -1;
-		if(!rc) {
+		if(rc == -1) {
 			free(buffer);
 			free(bufrev);
 			/* filter says this suffix doesn't match.
@@ -354,6 +354,7 @@ int init_regex_list(struct regex_matcher* matcher)
 		return rc;
 	}
 	SO_init(&matcher->filter);
+	SO_init(&matcher->md5_filter);
 	return CL_SUCCESS;
 }
 
@@ -416,6 +417,7 @@ static int add_hash(struct regex_matcher *matcher, char* pattern, const char fl)
 		return CL_EMEM;
 	}
 	*pat->virname = fl;
+	SO_preprocess_add(&matcher->md5_filter, pat->pattern, pat->length);
 	if(rc = cli_bm_addpatt(&matcher->md5_hashes, pat)) {
 		cli_errmsg("add_hash: failed to add BM pattern\n");
 		free(pat->pattern);

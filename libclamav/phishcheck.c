@@ -726,7 +726,6 @@ cleanupURL(struct string *URL,struct string *pre_URL, int isReal)
 	return 0;
 }
 
-
 /* -------end runtime disable---------*/
 int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 {
@@ -768,7 +767,6 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 		urls.realLink.refcount=-1;
 		urls.displayLink.refcount=-1;
 		int rc = phishingCheck(ctx->engine, &urls);
-		//printf("%d\n",rc);
 	}
 	fclose(f);
 	return 0;
@@ -1202,7 +1200,8 @@ static int hash_match(const struct regex_matcher *rlist, const char *host, size_
 		cli_md5_update(&md5, host, hlen);
 		cli_md5_update(&md5, path, plen);
 		cli_md5_final(md5_dig, &md5);
-		if(cli_bm_scanbuff(md5_dig, 16, &virname, &rlist->md5_hashes,0,0,-1) == CL_VIRUS) {
+		if(SO_search(&rlist->md5_filter, md5_dig, 16) != -1 &&
+				cli_bm_scanbuff(md5_dig, 16, &virname, &rlist->md5_hashes,0,0,-1) == CL_VIRUS) {
 			switch(*virname) {
 				case '1':
 					return CL_PHISH_HASH1;
@@ -1243,8 +1242,9 @@ static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, 
 	str_hex_to_char(&url, &urlend);
 	len = urlend - url;
 	host_begin = strchr(url,':');
-	if(!host_begin)
+	if(!host_begin) {
 		return CL_PHISH_CLEAN;
+	}
 	++host_begin;
 	while((host_begin < urlend) && *host_begin == '/') ++host_begin;
 	while(*host_begin == '.' && host_begin < urlend) ++host_begin;
@@ -1291,8 +1291,9 @@ static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, 
 		for(ki=0;ki < k; ki++) {
 			assert(pp[ki] < path_len);
 			rc = hash_match(rlist, lp[ji], host_begin + host_len - lp[ji] + 1, path_begin, pp[ki]);
-			if(rc)
+			if(rc) {
 				return rc;
+			}
 		}
 	}
 	return CL_SUCCESS;

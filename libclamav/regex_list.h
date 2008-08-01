@@ -49,6 +49,7 @@ struct regex_matcher {
 	regex_t **all_pregs;
 	struct cli_matcher suffixes;
 	struct cli_matcher md5_hashes;
+	struct filter md5_filter;
 	struct filter filter;
 	int list_inited:2;
 	int list_loaded:2;
@@ -63,6 +64,7 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 void regex_list_cleanup(struct regex_matcher* matcher);
 void regex_list_done(struct regex_matcher* matcher);
 int is_regex_ok(struct regex_matcher* matcher);
+long SO_search(const struct filter *m, const unsigned char *data, unsigned long len);
 
 #endif
 
