@@ -1191,7 +1191,7 @@ static int hash_match(const struct regex_matcher *rlist, const char *host, size_
 	s[hlen+plen] = '\0';
 	cli_dbgmsg("hash lookup for: %s\n",s);
 #endif
-	if(rlist->hashes.bm_patterns) {
+	if(rlist->md5_hashes.bm_patterns) {
 		unsigned char md5_dig[16];
 		cli_md5_ctx md5;
 
@@ -1199,7 +1199,7 @@ static int hash_match(const struct regex_matcher *rlist, const char *host, size_
 		cli_md5_update(&md5, host, hlen);
 		cli_md5_update(&md5, path, plen);
 		cli_md5_final(md5_dig, &md5);
-		if(cli_bm_scanbuff(md5_dig, 16, NULL, &rlist->hashes,0,0,-1) == CL_VIRUS) {
+		if(cli_bm_scanbuff(md5_dig, 16, NULL, &rlist->md5_hashes,0,0,-1) == CL_VIRUS) {
 			return CL_VIRUS;
 		}
 	}
@@ -1221,6 +1221,9 @@ static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, 
 	size_t pp[COMPONENTS+2];
 	size_t j, k, ji, ki;
 
+	if(!rlist->md5_hashes.bm_patterns) {
+		return CL_SUCCESS;
+	}
 	if(!inurl)
 		return CL_EMEM;
 	strncpy(urlbuff, inurl, URL_MAX_LEN);

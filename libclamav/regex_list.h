@@ -48,7 +48,7 @@ struct regex_matcher {
 	size_t regex_cnt;
 	regex_t **all_pregs;
 	struct cli_matcher suffixes;
-	struct cli_matcher hashes;
+	struct cli_matcher md5_hashes;
 	struct filter filter;
 	int list_inited:2;
 	int list_loaded:2;

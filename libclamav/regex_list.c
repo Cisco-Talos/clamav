@@ -350,7 +350,7 @@ int init_regex_list(struct regex_matcher* matcher)
 	if((rc = cli_ac_init(&matcher->suffixes, 2, 32))) {
 		return rc;
 	}
-	if(rc = cli_bm_init(&matcher->hashes)) {
+	if(rc = cli_bm_init(&matcher->md5_hashes)) {
 		return rc;
 	}
 	SO_init(&matcher->filter);
@@ -411,7 +411,7 @@ static int add_hash(struct regex_matcher *matcher, char* pattern)
 		return CL_EMALFDB;
 	pat->length = 16;
 	pat->virname = NULL;
-	if(rc = cli_bm_addpatt(&matcher->hashes, pat)) {
+	if(rc = cli_bm_addpatt(&matcher->md5_hashes, pat)) {
 		cli_errmsg("add_hash: failed to add BM pattern\n");
 		free(pat->pattern);
 		free(pat);
@@ -573,7 +573,7 @@ void regex_list_done(struct regex_matcher* matcher)
 			free(matcher->all_pregs);
 		}
 		hashtab_free(&matcher->suffix_hash);
-		cli_bm_free(&matcher->hashes);
+		cli_bm_free(&matcher->md5_hashes);
 		matcher->list_built=0;
 		matcher->list_loaded=0;
 	}
