@@ -55,6 +55,7 @@
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
 #include "libclamav/matcher-ac.h"
+#include "libclamav/readdb.h"
 
 #include "shared/output.h"
 #include "shared/options.h"
