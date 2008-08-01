@@ -48,24 +48,27 @@ static void printopt(const struct cfgoption *opt, const struct cfgstruct *cpt, i
 	return;
     }
 
-    switch(opt->argtype) {
-	case OPT_STR:
-	case OPT_FULLSTR:
-	case OPT_QUOTESTR:
-	    if(!nondef || !opt->strarg || strcmp(opt->strarg, cpt->strarg))
-		printf("%s = \"%s\"\n", opt->name, cpt->strarg);
-	    break;
-	case OPT_NUM:
-	case OPT_COMPSIZE:
-	    if(!nondef || (opt->numarg != cpt->numarg))
-		printf("%s = %u\n", opt->name, cpt->numarg);
-	    break;
-	case OPT_BOOL:
-	    if(!nondef || (opt->numarg != cpt->numarg))
-		printf("%s = %s\n", opt->name, cpt->enabled ? "yes" : "no");
-	    break;
-	default:
-	    printf("%s: UNKNOWN ARGUMENT TYPE\n", opt->name);
+    while(cpt) {
+	switch(opt->argtype) {
+	    case OPT_STR:
+	    case OPT_FULLSTR:
+	    case OPT_QUOTESTR:
+		if(!nondef || !opt->strarg || strcmp(opt->strarg, cpt->strarg))
+		    printf("%s = \"%s\"\n", opt->name, cpt->strarg);
+		break;
+	    case OPT_NUM:
+	    case OPT_COMPSIZE:
+		if(!nondef || (opt->numarg != cpt->numarg))
+		    printf("%s = %u\n", opt->name, cpt->numarg);
+		break;
+	    case OPT_BOOL:
+		if(!nondef || (opt->numarg != cpt->numarg))
+		    printf("%s = %s\n", opt->name, cpt->enabled ? "yes" : "no");
+		break;
+	    default:
+		printf("%s: UNKNOWN ARGUMENT TYPE\n", opt->name);
+	}
+	cpt = cpt->nextarg;
     }
 }
 

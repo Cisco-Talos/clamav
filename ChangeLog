@@ -1,3 +1,7 @@
+Fri Aug  1 21:29:33 CEST 2008 (tk)
+----------------------------------
+  * clamconf: handle multiple select options
+
 Fri Aug  1 02:15:20 CEST 2008 (acab)
 ------------------------------------
   * libclamav: enable support for UPX/LZMA (bb#910)
