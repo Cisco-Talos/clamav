@@ -391,7 +391,7 @@ static int get_host(const struct phishcheck* s,const char* URL,int isReal,int* p
 			}
 
 			tld = strrchr(realhost,'.');
-			rc = tld ? !!in_tld_set(tld,tld-realhost-1) : 0;
+			rc = tld ? !!in_tld_set(tld,strlen(tld)) : 0;
 			if(rc < 0)
 				return rc;
 			if(rc)
