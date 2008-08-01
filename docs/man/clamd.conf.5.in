@@ -199,6 +199,16 @@ Default: 2048
 Detect Possibly Unwanted Applications.
 .br 
 Default: No
+.TP
+\fBExcludePUA CATEGORY\fR
+Exclude a specific PUA category. This directive can be used multiple times.
+.br
+Default: Load all categories (if DetectPUA is activated)
+.TP
+\fBIncludePUA CATEGORY\fR
+Only include a specific PUA category. This directive can be used multiple times.
+.br
+Default: Load all categories (if DetectPUA is activated)
 .TP 
 \fBAlgorithmicDetection BOOL\fR
 In some cases (eg. complex malware, exploits in graphic files, and others), ClamAV uses special algorithms to provide accurate detection. This option controls the algorithmic detection.
@@ -274,7 +284,7 @@ Always block cloaked URLs, even if URL isn't in database. This can lead to false
 Default: no
 .TP
 \fBHeuristicScanPrecedence BOOL\fR
-Allow heuristic match to take precedence. When enabled, if a heuristic scan (such as phishingScan) detects a possible virus/phish it will stop scan immediately. Recommended, saves CPU scan-time. When disabled, virus/phish detected by heuristic scans will be reported only at the end of a scan. If an archive contains both a heuristically detected  virus/phish, and a real malware, the real malware will be reported Keep this disabled if you intend to handle "*.Heuristics.*" viruses  differently from "real" malware. If a non-heuristically-detected virus (signature-based) is found first,  the scan is interrupted immediately, regardless of this config option.
+Allow heuristic match to take precedence. When enabled, if a heuristic scan (such as phishingScan) detects a possible virus/phishing it will stop scanning immediately. Recommended, saves CPU scan-time. When disabled, virus/phishing detected by heuristic scans will be reported only at the end of a scan. If an archive contains both a heuristically detected virus/phishing, and a real malware, the real malware will be reported. Keep this disabled if you intend to handle "*.Heuristics.*" viruses  differently from "real" malware. If a non-heuristically-detected virus (signature-based) is found first, the scan is interrupted immediately, regardless of this config option.
 .br
 Default: no
 .TP

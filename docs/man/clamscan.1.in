@@ -72,6 +72,12 @@ Copy infected files into DIRECTORY. Directory must be writable for the '@CLAMAVU
 \fB\-\-detect\-pua\fR
 Detect Possibly Unwanted Applications.
 .TP 
+\fB\-\-exclude\-pua=CATEGORY\fR
+Exclude a specific PUA category. This option can be used multiple times.
+.TP 
+\fB\-\-include\-pua=CATEGORY\fR
+Only include a specific PUA category. This option can be used multiple times.
+.TP 
 \fB\-\-detect\-structured\fR
 Enable the DLP (Data Loss Prevention) module which provides detection of SSN and Credit Card numbers.
 .TP 
