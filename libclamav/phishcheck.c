@@ -52,7 +52,7 @@
 #include "iana_cctld.h"
 #include "scanners.h"
 #include "md5.h"
-
+#include <assert.h>
 
 #define DOMAIN_REAL 1
 #define DOMAIN_DISPLAY 0
@@ -739,6 +739,7 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 
 	if(!ctx->found_possibly_unwanted)
 		*ctx->virname=NULL;
+#if 0
 	FILE *f = fopen("/home/edwin/quarantine/urls","r");
 	if(!f)
 		abort();
@@ -771,6 +772,7 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 	}
 	fclose(f);
 	return 0;
+#endif
 	for(i=0;i<hrefs->count;i++)
 		if(hrefs->contents[i]) {
 			struct url_check urls;
@@ -1180,19 +1182,103 @@ static int whitelist_check(const struct cl_engine* engine,struct url_check* urls
 	return whitelist_match(engine,urls->realLink.data,urls->displayLink.data,hostOnly);
 }
 
-static int hash_match(const struct regex_matcher *rlist, const char *url, size_t len)
+static int hash_match(const struct regex_matcher *rlist, const char *host, size_t hlen, const char *path, size_t plen)
 {
-	unsigned char md5_dig[16];
-	cli_md5_ctx md5;
+#if 0
+	char s[1024];
+	strncpy(s, host, hlen);
+	strncpy(s+hlen, path, plen);
+	s[hlen+plen] = '\0';
+	cli_dbgmsg("hash lookup for: %s\n",s);
+#endif
+	if(rlist->hashes.bm_patterns) {
+		unsigned char md5_dig[16];
+		cli_md5_ctx md5;
 
-	if(!rlist->hashes.bm_patterns)
-		return CL_CLEAN;
+		cli_md5_init(&md5);
+		cli_md5_update(&md5, host, hlen);
+		cli_md5_update(&md5, path, plen);
+		cli_md5_final(md5_dig, &md5);
+		if(cli_bm_scanbuff(md5_dig, 16, NULL, &rlist->hashes,0,0,-1) == CL_VIRUS) {
+			return CL_VIRUS;
+		}
+	}
+	return CL_SUCCESS;
+}
 
-	cli_md5_init(&md5);
-	cli_md5_update(&md5, url, len);
-	cli_md5_final(md5_dig, &md5);
-	if(cli_bm_scanbuff(md5_dig, 16, NULL, &rlist->hashes,0,0,-1) == CL_VIRUS) {
-		return CL_VIRUS;
+#define URL_MAX_LEN 1024
+#define COMPONENTS 4
+static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, size_t len)
+{
+	char urlbuff[URL_MAX_LEN+3];/* htmlnorm truncates at 1024 bytes + terminating null + slash + host end null */
+	char *url;
+	const char *urlend = urlbuff + len;
+	char *host_begin;
+	size_t host_len, path_len;
+	char *path_begin;
+	const char *component;
+	const char *lp[COMPONENTS+1];
+	size_t pp[COMPONENTS+2];
+	size_t j, k, ji, ki;
+
+	if(!inurl)
+		return CL_EMEM;
+	strncpy(urlbuff, inurl, URL_MAX_LEN);
+	urlbuff[URL_MAX_LEN] = urlbuff[URL_MAX_LEN+1] = urlbuff[URL_MAX_LEN+2] = '\0';
+	url = urlbuff;
+	str_hex_to_char(&url, &urlend);
+	len = urlend - url;
+	host_begin = strchr(url,':');
+	if(!host_begin)
+		return CL_PHISH_CLEAN;
+	++host_begin;
+	while((host_begin < urlend) && *host_begin == '/') ++host_begin;
+	while(*host_begin == '.' && host_begin < urlend) ++host_begin;
+	host_len = strcspn(host_begin, ":/?");
+	path_begin = host_begin + host_len;
+	if(host_len < len) {
+		memmove(path_begin + 2, path_begin + 1, len - host_len);
+		*path_begin++ = '/';
+		*path_begin++ = '\0';
+	} else path_begin = url+len;
+	if(url + len >= path_begin) {
+		path_len = url + len - path_begin + 1;
+	} else
+		path_len = 0;
+	str_make_lowercase(host_begin, host_len);
+
+	j=COMPONENTS;
+	component = strrchr(host_begin, '.');
+	while(component && j > 0) {
+		do {
+			--component;
+		} while(*component != '.' && component > host_begin);
+		if(*component != '.')
+			component = NULL;
+		if(component)
+			lp[j--] = component + 1;
+	}
+	lp[j] = host_begin;
+
+	pp[0] = path_len;
+	pp[1] = strcspn(path_begin, "?");
+	if(pp[1] != pp[0]) k = 2;
+	else k = 1;
+	pp[k++] = 0;
+	while(k < COMPONENTS+2) {
+		const char *p = strchr(path_begin + pp[k-1] + 1, '/');
+		if(p && p > path_begin) {
+			pp[k++] = p - path_begin;
+		} else
+			break;
+	}
+
+	for(ji=j;ji < COMPONENTS+1; ji++) {
+		for(ki=0;ki < k; ki++) {
+			assert(pp[ki] < path_len);
+			if(hash_match(rlist, lp[ji], host_begin + host_len - lp[ji] + 1, path_begin, pp[ki]) == CL_VIRUS)
+				return CL_VIRUS;
+		}
 	}
 	return CL_SUCCESS;
 }
@@ -1214,6 +1300,16 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 	if(!strcmp(urls->realLink.data,urls->displayLink.data))
 		return CL_PHISH_CLEAN;/* displayed and real URL are identical -> clean */
 
+	if(!isURL(pchk, urls->realLink.data, 0)) {
+		cli_dbgmsg("Real 'url' is not url:%s\n",urls->realLink.data);
+		return CL_PHISH_CLEAN;
+	}
+
+	if(url_hash_match(engine->domainlist_matcher, urls->realLink.data, strlen(urls->realLink.data)) == CL_VIRUS) {
+		cli_dbgmsg("Hash matched for: %s\n", urls->realLink.data);
+		return CL_PHISH_HASH;
+	}
+
 	if((rc = cleanupURLs(urls))) {
 		/* it can only return an error, or say its clean;
 		 * it is not allowed to decide it is phishing */
@@ -1223,7 +1319,7 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 	cli_dbgmsg("Phishcheck:URL after cleanup: %s->%s\n", urls->realLink.data,
 		urls->displayLink.data);
 
-	if((!isURL(pchk, urls->displayLink.data, 1) || !isURL(pchk, urls->realLink.data, 0) ) &&
+	if((!isURL(pchk, urls->displayLink.data, 1) ) &&
 			( (phishy&PHISHY_NUMERIC_IP && !isNumericURL(pchk, urls->displayLink.data)) ||
 			  !(phishy&PHISHY_NUMERIC_IP))) {
 		cli_dbgmsg("Displayed 'url' is not url:%s\n",urls->displayLink.data);
@@ -1233,10 +1329,6 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 	if(whitelist_check(engine, urls, 0))
 		return CL_PHISH_CLEAN;/* if url is whitelisted don't perform further checks */
 
-	if(hash_match(engine->domainlist_matcher, urls->realLink.data, strlen(urls->realLink.data)) == CL_VIRUS) {
-		cli_dbgmsg("Hash matched for: %s\n", urls->realLink.data);
-		return CL_PHISH_HASH;
-	}
 	url_check_init(&host_url);
 
 	if((rc = url_get_host(pchk, urls, &host_url, DOMAIN_DISPLAY, &phishy))) {
@@ -1324,6 +1416,8 @@ static const char* phishing_ret_toString(enum phish_status rc)
 			return "URLs are way too different";
 		case CL_PHISH_HEX_URL:
 			return "Embedded hex urls";
+		case CL_PHISH_HASH:
+			return "Blacklisted";
 		default:
 			return "Unknown return code";
 	}
