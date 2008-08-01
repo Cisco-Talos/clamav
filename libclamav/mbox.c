@@ -1590,21 +1590,7 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 					 */
 					if(isblank(line[0]))
 						continue;
-#ifdef	BUGFIX647	/* do not define, it slows it all down */
-					/*
-					 * TODO: will this be a performance hog?
-					 * Needed to handle (broken?) email headers like:
-					 * Content-
-					 * Transfer-Encoding:quoted-printable
-					 *
-					 * Content-Transfer-Enco
-					 * ding:quoted-printable
-					 *
-					 * [Otherwise we'll miss the encoding]
-					 * */
-					fullline = cli_strdup(line);
-					fulllinelength = strlen(line) + 1;
-#endif
+
 					/*
 					 * Is this a header we're interested in?
 					 */
