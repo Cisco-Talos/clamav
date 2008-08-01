@@ -1646,6 +1646,9 @@ abort:
 		html_tag_contents_done(hrefs,in_ahref);
 
 	if(js_state) {
+		/*  output script so far */
+		cli_js_parse_done(js_state);
+		cli_js_output(js_state, dirname);
 		cli_js_destroy(js_state);
 		js_state = NULL;
 	}

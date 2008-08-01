@@ -350,13 +350,13 @@ static const char jstest_buf7[] =
 "var z=\"tst" B64 "tst\";";
 
 static const char jstest_expected7[] =
-"var z=\"tst" B64 "tst\";";
+"var n000=\"tst" B64 "tst\";";
 
 static const char jstest_buf8[] =
 "var z=\'tst" B64 "tst\';";
 
 static const char jstest_expected8[] =
-"var z=\"tst" B64 "tst\";";
+"var n000=\"tst" B64 "tst\";";
 
 static const char jstest_buf9[] =
 "eval(unescape('%61%6c%65%72%74%28%27%74%65%73%74%27%29%3b'));";
@@ -374,7 +374,7 @@ static const char jstest_buf11[] =
 "var x=123456789 ;";
 
 static const char jstest_expected11[] =
-"var x=123456789;";
+"var n000=123456789;";
 
 static struct {
 	const char *in;

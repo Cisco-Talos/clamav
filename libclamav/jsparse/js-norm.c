@@ -855,7 +855,6 @@ void cli_js_parse_done(struct parser_state* state)
 
 	yylex_destroy(state->scanner);
 	state->scanner = NULL;
-	state->global = NULL; /* make this state invalid for parsing */
 }
 
 
