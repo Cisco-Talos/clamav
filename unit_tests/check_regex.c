@@ -165,7 +165,8 @@ static const struct rtest {
 	const char *pattern;/* NULL if not meant for whitelist testing */
 	const char *realurl;
 	const char *displayurl;
-	int result;/* 0 - phish, 1 - whitelisted, 2 - clean */
+	int result;/* 0 - phish, 1 - whitelisted, 2 - clean, 
+		      3 - blacklisted if 2nd db is loaded */
 } rtests[] = {
 	/* entry taken from .wdb with a / appended */
 	{".+\\.ebayrtm\\.com([/?].*)?:.+\\.ebay\\.(de|com|co\\.uk)([/?].*)?/",
@@ -183,7 +184,10 @@ static const struct rtest {
 		"http://key.com","go to key.com",2
 	},
 	{NULL, "http://somefakeurl.example.com","someotherdomain-key.com",2},
-	{NULL, "http://somefakeurl.example.com","someotherdomain.key.com",0}
+	{NULL, "http://somefakeurl.example.com","someotherdomain.key.com",0},
+	{NULL, "http://1.test.example.com/something","test",3},
+	{NULL, "http://1.test.example.com/2","test",3},
+	{NULL, "http://user@1.test.example.com/2","test",3},
 };
 
 START_TEST (regex_list_match_test)
@@ -226,7 +230,9 @@ START_TEST (regex_list_match_test)
 END_TEST
 
 static struct cl_engine *engine;
-static void psetup(void)
+static int loaded_2 = 0;
+
+static void psetup_impl(int load2)
 {
 	FILE *f;
 	struct phishcheck *pchk;
@@ -249,6 +255,16 @@ static void psetup(void)
 	fail_unless(rc == 0, "load_regex_matcher");
 	fclose(f);
 
+	if(load2) {
+		f = fdopen(open_testfile("input/daily.pdb2"),"r");
+		fail_unless(!!f, "fopen daily.pdb2");
+
+		rc = load_regex_matcher(engine->domainlist_matcher,  f, 0, 0, NULL);
+		fail_unless(rc == 0, "load_regex_matcher");
+		fclose(f);
+	}
+	loaded_2 = load2;
+
 	rc = init_whitelist(engine);
 	fail_unless(rc == 0,"init_whitelist");
 
@@ -267,10 +283,23 @@ static void psetup(void)
 	fail_unless(is_regex_ok(engine->domainlist_matcher),"is_regex_ok");
 }
 
+static void psetup(void)
+{
+	psetup_impl(0);
+}
+
+static void psetup2(void)
+{
+	psetup_impl(1);
+}
+
+
 static void pteardown(void)
 {
-	phishing_done(engine);
-	cl_free(engine);
+	if(engine) {
+		phishing_done(engine);
+		cl_free(engine);
+	}
 	engine = NULL;
 }
 
@@ -323,6 +352,19 @@ static void do_phishing_test(const struct rtest *rtest)
 					"this should be clean, realURL: %s, displayURL: %s",
 					rtest->realurl, rtest->displayurl);
 			break;
+		case 3:
+			if(!loaded_2)
+				fail_unless(!ctx.found_possibly_unwanted,
+					"this should be clean, realURL: %s, displayURL: %s",
+					rtest->realurl, rtest->displayurl);
+			else {
+				fail_unless(ctx.found_possibly_unwanted,
+					"this should be blacklisted, realURL: %s, displayURL: %s",
+					rtest->realurl, rtest->displayurl);
+				fail_unless(!strstr((const char*)ctx.virname,"Blacklisted"),
+						"should be blacklisted, but is: %s\n", ctx.virname);
+			}
+			break;
 	}
 }
 
@@ -357,7 +399,7 @@ END_TEST
 Suite *test_regex_suite(void)
 {
 	Suite *s = suite_create("regex");
-	TCase *tc_api, *tc_matching, *tc_phish;
+	TCase *tc_api, *tc_matching, *tc_phish, *tc_phish2;
 
 	tc_api = tcase_create("cli_regex2suffix");
 	suite_add_tcase(s, tc_api);
@@ -376,6 +418,13 @@ Suite *test_regex_suite(void)
 	tcase_add_checked_fixture(tc_phish, psetup, pteardown);
 	tcase_add_loop_test(tc_phish, phishingScan_test, 0, sizeof(rtests)/sizeof(rtests[0]));
 	tcase_add_test(tc_phish, phishing_fake_test);
+
+
+	tc_phish2 = tcase_create("phishingScan with 2 dbs");
+	suite_add_tcase(s, tc_phish2);
+	tcase_add_checked_fixture(tc_phish2, psetup2, pteardown);
+	tcase_add_loop_test(tc_phish2, phishingScan_test, 0, sizeof(rtests)/sizeof(rtests[0]));
+	tcase_add_test(tc_phish2, phishing_fake_test);
 
 	return s;
 }

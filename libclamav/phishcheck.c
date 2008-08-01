@@ -831,7 +831,9 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 				case CL_PHISH_CLOAKED_UIU:
 					*ctx->virname="Phishing.Heuristics.Email.Cloaked.Username";/*http://www.ebay.com@www.evil.com*/
 					break;
-				case CL_PHISH_HASH:
+				case CL_PHISH_HASH0:
+				case CL_PHISH_HASH1:
+				case CL_PHISH_HASH2:
 					*ctx->virname="Phishing.URL.Blacklisted";
 					break;
 				case CL_PHISH_NOMATCH:
@@ -1184,6 +1186,7 @@ static int whitelist_check(const struct cl_engine* engine,struct url_check* urls
 
 static int hash_match(const struct regex_matcher *rlist, const char *host, size_t hlen, const char *path, size_t plen)
 {
+	const char *virname;
 #if 0
 	char s[1024];
 	strncpy(s, host, hlen);
@@ -1199,8 +1202,15 @@ static int hash_match(const struct regex_matcher *rlist, const char *host, size_
 		cli_md5_update(&md5, host, hlen);
 		cli_md5_update(&md5, path, plen);
 		cli_md5_final(md5_dig, &md5);
-		if(cli_bm_scanbuff(md5_dig, 16, NULL, &rlist->md5_hashes,0,0,-1) == CL_VIRUS) {
-			return CL_VIRUS;
+		if(cli_bm_scanbuff(md5_dig, 16, &virname, &rlist->md5_hashes,0,0,-1) == CL_VIRUS) {
+			switch(*virname) {
+				case '1':
+					return CL_PHISH_HASH1;
+				case '2':
+					return CL_PHISH_HASH2;
+				default:
+					return CL_PHISH_HASH0;
+			}
 		}
 	}
 	return CL_SUCCESS;
@@ -1220,6 +1230,7 @@ static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, 
 	const char *lp[COMPONENTS+1];
 	size_t pp[COMPONENTS+2];
 	size_t j, k, ji, ki;
+	int rc;
 
 	if(!rlist->md5_hashes.bm_patterns) {
 		return CL_SUCCESS;
@@ -1279,8 +1290,9 @@ static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, 
 	for(ji=j;ji < COMPONENTS+1; ji++) {
 		for(ki=0;ki < k; ki++) {
 			assert(pp[ki] < path_len);
-			if(hash_match(rlist, lp[ji], host_begin + host_len - lp[ji] + 1, path_begin, pp[ki]) == CL_VIRUS)
-				return CL_VIRUS;
+			rc = hash_match(rlist, lp[ji], host_begin + host_len - lp[ji] + 1, path_begin, pp[ki]);
+			if(rc)
+				return rc;
 		}
 	}
 	return CL_SUCCESS;
@@ -1308,9 +1320,9 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 		return CL_PHISH_CLEAN;
 	}
 
-	if(url_hash_match(engine->domainlist_matcher, urls->realLink.data, strlen(urls->realLink.data)) == CL_VIRUS) {
+	if(( rc = url_hash_match(engine->domainlist_matcher, urls->realLink.data, strlen(urls->realLink.data)) )) {
 		cli_dbgmsg("Hash matched for: %s\n", urls->realLink.data);
-		return CL_PHISH_HASH;
+		return rc;
 	}
 
 	if((rc = cleanupURLs(urls))) {
@@ -1419,7 +1431,9 @@ static const char* phishing_ret_toString(enum phish_status rc)
 			return "URLs are way too different";
 		case CL_PHISH_HEX_URL:
 			return "Embedded hex urls";
-		case CL_PHISH_HASH:
+		case CL_PHISH_HASH0:
+		case CL_PHISH_HASH1:
+		case CL_PHISH_HASH2:
 			return "Blacklisted";
 		default:
 			return "Unknown return code";

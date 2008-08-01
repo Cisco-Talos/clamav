@@ -400,7 +400,7 @@ static int functionality_level_check(char* line)
 	}
 }
 
-static int add_hash(struct regex_matcher *matcher, char* pattern)
+static int add_hash(struct regex_matcher *matcher, char* pattern, const char fl)
 {
 	int rc;
 	struct cli_bm_patt *pat = cli_calloc(1, sizeof(*pat));
@@ -410,10 +410,16 @@ static int add_hash(struct regex_matcher *matcher, char* pattern)
 	if(!pat->pattern)
 		return CL_EMALFDB;
 	pat->length = 16;
-	pat->virname = NULL;
+	pat->virname = cli_malloc(1);
+	if(!pat->virname) {
+		free(pat);
+		return CL_EMEM;
+	}
+	*pat->virname = fl;
 	if(rc = cli_bm_addpatt(&matcher->md5_hashes, pat)) {
 		cli_errmsg("add_hash: failed to add BM pattern\n");
 		free(pat->pattern);
+		free(pat->virname);
 		free(pat);
 		return CL_EMALFDB;
 	}
@@ -510,7 +516,7 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 				return rc==CL_EMEM ? CL_EMEM : CL_EMALFDB;
 		} else if (buffer[0] == 'U' && !is_whitelist) {
 			pattern[pattern_len] = '\0';
-			if (( rc = add_hash(matcher, pattern) )) {
+			if (( rc = add_hash(matcher, pattern, flags[0]) )) {
 				cli_errmsg("Error loading at line: %d\n", line);
 				return rc==CL_EMEM ? CL_EMEM : CL_EMALFDB;
 			}
