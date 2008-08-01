@@ -1072,6 +1072,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 
 						saved_next_state = next_state;
 						next_state = state;
+						look_for_screnc = FALSE;
 						state = HTML_LOOKFOR_SCRENC;
 					}
 				} else if (hrefs) {
@@ -1613,10 +1614,16 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 		if (in_screnc) {
 			state = HTML_JSDECODE_DECRYPT;
 			next_state = HTML_BAD_STATE;
-		} else if(look_for_screnc && !ptr_screnc) {
+		} else if(look_for_screnc && !ptr_screnc &&
+				state != HTML_LOOKFOR_SCRENC) {
 			saved_next_state = next_state;
 			next_state = state;
 			state = HTML_LOOKFOR_SCRENC;
+		}
+		if(next_state == state) {
+			/* safeguard against infloop */
+			cli_dbgmsg("htmlnorm.c: next_state == state, changing next_state\n");
+			next_state = HTML_BAD_STATE;
 		}
 	}
 

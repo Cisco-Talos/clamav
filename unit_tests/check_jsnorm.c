@@ -424,10 +424,31 @@ START_TEST (js_buffer)
 }
 END_TEST
 
+START_TEST (screnc_infloop)
+{
+	char buf[24700] = "<%@ language='jscript.encode'>";
+	struct cli_dconf *dconf = cli_dconf_init();
+	size_t p;
+
+	fail_unless(!!dconf, "failed to init dconf");
+	for(p = strlen(buf); p < 16384; p++) {
+		buf[p] = ' ';
+	}
+	for(; p < 24625; p++) {
+		buf[p] = 'a';
+	}
+	strncpy(buf+24626,"#@~^ ", 10);
+	fail_unless(html_normalise_mem((unsigned char*)buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
+	free(dconf);
+}
+END_TEST
+
 Suite *test_jsnorm_suite(void)
 {
     Suite *s = suite_create("jsnorm");
-    TCase *tc_jsnorm_gperf, *tc_jsnorm_token, *tc_jsnorm_api, *tc_jsnorm_tokenizer, *tc_jsnorm_bugs;
+    TCase *tc_jsnorm_gperf, *tc_jsnorm_token, *tc_jsnorm_api,
+	  *tc_jsnorm_tokenizer, *tc_jsnorm_bugs, *tc_screnc_infloop;
+
     tc_jsnorm_gperf = tcase_create("jsnorm gperf");
     suite_add_tcase (s, tc_jsnorm_gperf);
     tcase_add_loop_test(tc_jsnorm_gperf, test_keywords, 0, sizeof(kw_test)/sizeof(kw_test[0]));
@@ -457,6 +478,10 @@ Suite *test_jsnorm_suite(void)
     suite_add_tcase (s, tc_jsnorm_bugs);
     tcase_add_test(tc_jsnorm_bugs, js_begin_end);
     tcase_add_test(tc_jsnorm_bugs, multiple_scripts);
+
+    tc_screnc_infloop = tcase_create("screnc infloop bug");
+    suite_add_tcase (s, tc_screnc_infloop);
+    tcase_add_test(tc_screnc_infloop, screnc_infloop);
 
     return s;
 }
