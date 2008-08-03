@@ -1041,9 +1041,9 @@ int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
     DIR *dd;
     struct dirent *dent;
     struct stat statbuf;
-    char *fullname, vbaname[1024];
+    char *fullname, vbaname[1024], *hash;
     unsigned char *data;
-    uint32_t hashcnt, hash;
+    uint32_t hashcnt;
 
     hashcnt = uniq_get(U, "_vba_project", 12, NULL);
     while(hashcnt--) {
@@ -1051,7 +1051,7 @@ int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
 
 	for(i = 0; i < vba_project->count; i++) {
 	    for(j = 0; j < vba_project->colls[i]; j++) {
-		snprintf(vbaname, 1024, "%s/%u_%u", vba_project->dir, vba_project->name[i], j);
+		snprintf(vbaname, 1024, "%s/%s_%u", vba_project->dir, vba_project->name[i], j);
 		vbaname[sizeof(vbaname)-1] = '\0';
 		fd = open(vbaname, O_RDONLY|O_BINARY);
 		if(fd == -1) continue;
@@ -1077,7 +1077,7 @@ int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
 
     if((hashcnt = uniq_get(U, "powerpoint document", 19, &hash))) {
 	while(hashcnt--) {
-	    snprintf(vbaname, 1024, "%s/%u_%u", dirname, hash, hashcnt);
+	    snprintf(vbaname, 1024, "%s/%s_%u", dirname, hash, hashcnt);
 	    vbaname[sizeof(vbaname)-1] = '\0';
 	    fd = open(vbaname, O_RDONLY|O_BINARY);
 	    if (fd == -1) continue;
@@ -1093,7 +1093,7 @@ int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
 
     if ((hashcnt = uniq_get(U, "worddocument", 12, &hash))) {
 	while(hashcnt--) {
-	    snprintf(vbaname, sizeof(vbaname), "%s/%u_%u", dirname, hash, hashcnt);
+	    snprintf(vbaname, sizeof(vbaname), "%s/%s_%u", dirname, hash, hashcnt);
 	    vbaname[sizeof(vbaname)-1] = '\0';
 	    fd = open(vbaname, O_RDONLY|O_BINARY);
 	    if (fd == -1) continue;

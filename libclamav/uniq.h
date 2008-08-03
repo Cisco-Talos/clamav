@@ -23,46 +23,25 @@
 #ifndef _UNIQ_H
 #define _UNIQ_H
 
-#include "matcher.h"
 #include "cltypes.h"
 
-#if 0
-struct UNIQCUST {
-  char name[33];
-  uint32_t count;
-};
-
 struct UNIQMD5 {
-  uint16_t md5[16];
-};
-
-/* A basic storage for unique IDs */
-struct uniq {
-  struct cli_matcher matcher;
-  struct cli_ac_patt *patts;
-  struct UNIQMD5 *md5s;
-  struct UNIQCUST *custs;
-  uint32_t entries;
-};
-
-#else
-
-struct UNIQMD5 {
+  struct UNIQMD5 *next;
   uint32_t count;
   uint8_t md5[16];
   char name[33];
 };
 
 struct uniq {
-  uint32_t items;
   struct UNIQMD5 *md5s;
+  uint32_t items;
+  uint32_t idx[256];
 };
-
-#endif
 
 struct uniq *uniq_init(uint32_t);
 void uniq_free(struct uniq *);
 uint32_t uniq_add(struct uniq *, const char *, uint32_t, char **);
 uint32_t uniq_get(struct uniq *, const char *, uint32_t, char **);
+
 
 #endif

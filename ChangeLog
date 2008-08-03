@@ -1,3 +1,8 @@
+Sun Aug  3 23:09:44 CEST 2008 (acab)
+------------------------------------
+  * libclamav/uniq: faster md5 lookup
+  * sigtool: sync
+
 Sun Aug  3 16:12:17 CEST 2008 (acab)
 ------------------------------------
   * libclamav: use md5 based lookup for ole2/vba instead of hashtab (bb#1071)
