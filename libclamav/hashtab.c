@@ -567,31 +567,3 @@ ssize_t hashset_toarray(const struct hashset* hs, uint32_t** array)
 	}
 	return j;
 }
-
-struct uniq *uniq_init(uint32_t count) {
-	struct uniq *U;
-	if(!count) return NULL;
-	count = count <= 256 ? 256 : count + (count*20/100);
-	U = cli_malloc(sizeof(*U));
-	if(!U) return NULL;
-	U->uniques = cli_calloc(count, sizeof(uint32_t));
-	if(!U->uniques) {
-		free(U);
-		return NULL;
-	}
-	U->count = count;
-	return U;
-}
-
-uint32_t uniq_add(struct uniq *U, const char *key, uint32_t key_len, uint32_t *rhash) {
-	uint32_t h = hash((const unsigned char *)key, key_len, U->count);
-	if(rhash) *rhash = h;
-	return U->uniques[h]++;
-}
-
-uint32_t uniq_get(struct uniq *U, const char *key, uint32_t key_len, uint32_t *rhash) {
-	uint32_t h = hash((const unsigned char *)key, key_len, U->count);
-	if(rhash) *rhash = h;
-	return U->uniques[h];
-}
-

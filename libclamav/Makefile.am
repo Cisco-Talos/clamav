@@ -198,7 +198,9 @@ libclamav_la_SOURCES = \
 	jsparse/js-norm.c \
 	jsparse/js-norm.h \
 	jsparse/lexglobal.h \
-	jsparse/textbuf.h
+	jsparse/textbuf.h \
+	uniq.c \
+	uniq.h
 
 libclamav_internal_utils_la_SOURCES=str.c \
 				    str.h \

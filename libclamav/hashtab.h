@@ -104,18 +104,5 @@ int hashset_contains(const struct hashset* hs, const uint32_t key);
 int hashset_clear(struct hashset* hs);
 void hashset_destroy(struct hashset* hs);
 ssize_t hashset_toarray(const struct hashset* hs, uint32_t** array);
-
-
-/* A basic storage for unique IDs */
-struct uniq {
-	uint32_t count;
-        uint32_t *uniques;
-};
-
-struct uniq *uniq_init(uint32_t);
-#define uniq_free(X) do { if(X) free(X->uniques); free(X); } while (0)
-uint32_t uniq_add(struct uniq *, const char *, uint32_t, uint32_t *);
-uint32_t uniq_get(struct uniq *, const char *, uint32_t, uint32_t *);
-
 #endif
 

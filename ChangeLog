@@ -1,3 +1,7 @@
+Sun Aug  3 16:12:17 CEST 2008 (acab)
+------------------------------------
+  * libclamav: use md5 based lookup for ole2/vba instead of hashtab (bb#1071)
+
 Fri Aug  1 21:29:33 CEST 2008 (tk)
 ----------------------------------
   * clamconf: handle multiple select options

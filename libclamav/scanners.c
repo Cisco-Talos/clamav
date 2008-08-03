@@ -735,7 +735,7 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
 
 static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 {
-    int ret = CL_CLEAN, i, j, fd, ofd, data_len;
+    int ret = CL_CLEAN, i, j, fd, data_len;
 	vba_project_t *vba_project;
 	DIR *dd;
 	struct dirent *dent;
@@ -748,7 +748,8 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 	struct stat statbuf;
 	char *fullname, vbaname[1024];
 	unsigned char *data;
-	uint32_t hash, hashcnt;
+	char *hash;
+	uint32_t hashcnt;
 
 
     cli_dbgmsg("VBADir: %s\n", dirname);
@@ -757,17 +758,17 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 	if(!(vba_project = (vba_project_t *)cli_vba_readdir(dirname, U, hashcnt))) continue;
 
 	for(i = 0; i < vba_project->count; i++) {
-	    for(j = 0; j < vba_project->colls[i]; j++) {
-		snprintf(vbaname, 1024, "%s/%u_%u", vba_project->dir, vba_project->name[i], j);
+	    for(j = 0; (unsigned int)j < vba_project->colls[i]; j++) {
+		snprintf(vbaname, 1024, "%s/%s_%u", vba_project->dir, vba_project->name[i], j);
 		vbaname[sizeof(vbaname)-1] = '\0';
 		fd = open(vbaname, O_RDONLY|O_BINARY);
 		if(fd == -1) continue;
-		cli_dbgmsg("VBADir: Decompress VBA project '%u_%u'\n", vba_project->name[i], j);
+		cli_dbgmsg("VBADir: Decompress VBA project '%s_%u'\n", vba_project->name[i], j);
 		data = (unsigned char *)cli_vba_inflate(fd, vba_project->offset[i], &data_len);
 		close(fd);
 
 		if(!data) {
-		    cli_dbgmsg("VBADir: WARNING: VBA project '%u_%u' decompressed to NULL\n", vba_project->name[i], j);
+		    cli_dbgmsg("VBADir: WARNING: VBA project '%s_%u' decompressed to NULL\n", vba_project->name[i], j);
 		} else {
 		    /* cli_dbgmsg("Project content:\n%s", data); */
 		    if(ctx->scanned)
@@ -792,7 +793,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 
     if(ret == CL_CLEAN && (hashcnt = uniq_get(U, "powerpoint document", 19, &hash))) {
 	while(hashcnt--) {
-	    snprintf(vbaname, 1024, "%s/%u_%u", dirname, hash, hashcnt);
+	    snprintf(vbaname, 1024, "%s/%s_%u", dirname, hash, hashcnt);
 	    vbaname[sizeof(vbaname)-1] = '\0';
 	    fd = open(vbaname, O_RDONLY|O_BINARY);
 	    if (fd == -1) continue;
@@ -810,7 +811,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 
     if (ret == CL_CLEAN && (hashcnt = uniq_get(U, "worddocument", 12, &hash))) {
 	while(hashcnt--) {
-	    snprintf(vbaname, sizeof(vbaname), "%s/%u_%u", dirname, hash, hashcnt);
+	    snprintf(vbaname, sizeof(vbaname), "%s/%s_%u", dirname, hash, hashcnt);
 	    vbaname[sizeof(vbaname)-1] = '\0';
 	    fd = open(vbaname, O_RDONLY|O_BINARY);
 	    if (fd == -1) continue;
@@ -857,7 +858,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
     /* Check directory for embedded OLE objects */
     hashcnt = uniq_get(U, "_1_ole10native", 14, &hash);
     while(hashcnt--) {
-	snprintf(vbaname, sizeof(vbaname), "%s/%u_%u", dirname, hash, hashcnt);
+	snprintf(vbaname, sizeof(vbaname), "%s/%s_%u", dirname, hash, hashcnt);
 	vbaname[sizeof(vbaname)-1] = '\0';
 
 	fd = open(vbaname, O_RDONLY|O_BINARY);

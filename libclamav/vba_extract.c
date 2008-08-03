@@ -251,13 +251,12 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
 	unsigned char *buf;
 	const unsigned char vba56_signature[] = { 0xcc, 0x61 };
 	uint16_t record_count, buflen, ffff, byte_count;
-	uint32_t offset, sig, hash, colls;
+	uint32_t offset;
 	int i, j, fd, big_endian = FALSE;
 	vba_project_t *vba_project;
-	const vba_version_t *v;
 	struct vba56_header v56h;
 	off_t seekback;
-	char fullname[1024];
+	char fullname[1024], *hash;
 
 	cli_dbgmsg("in cli_vba_readdir()\n");
 
@@ -270,7 +269,7 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
 	
 	if (!uniq_get(U, "_vba_project", 12, &hash))
 		return NULL;
-	snprintf(fullname, sizeof(fullname), "%s/%u_%u", dir, hash, which);
+	snprintf(fullname, sizeof(fullname), "%s/%s_%u", dir, hash, which);
 	fullname[sizeof(fullname)-1] = '\0';
 	fd = open(fullname, O_RDONLY|O_BINARY);
 
@@ -388,10 +387,10 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
 		ptr = get_unicode_name((const char *)buf, length, big_endian);
 		if(ptr == NULL) break;
 		if (!(vba_project->colls[i]=uniq_get(U, ptr, strlen(ptr), &hash))) {
-			cli_dbgmsg("vba_readdir: cannot find project %s (%u)\n", ptr, hash);
+			cli_dbgmsg("vba_readdir: cannot find project %s (%s)\n", ptr, hash);
 			break;
 		}
-		cli_dbgmsg("vba_readdir: project name: %s (%u)\n", ptr, hash);
+		cli_dbgmsg("vba_readdir: project name: %s (%s)\n", ptr, hash);
 		free(ptr);
 		vba_project->name[i] = hash;
 		if(!read_uint16(fd, &length, big_endian))
@@ -1039,9 +1038,6 @@ cli_wm_readdir(int fd)
 	macro_info_t macro_info;
 	vba_project_t *vba_project;
 	mso_fib_t fib;
-	uint32_t hash, hashcnt;
-	char fullname[1024];
-
 
 	if (!word_read_fib(fd, &fib))
 		return NULL;
@@ -1240,7 +1236,7 @@ create_vba_project(int record_count, const char *dir, struct uniq *U)
 	if(ret == NULL)
 		return NULL;
 
-	ret->name = (uint32_t *)cli_malloc(sizeof(uint32_t) * record_count);
+	ret->name = (char **)cli_malloc(sizeof(char *) * record_count);
 	ret->colls = (uint32_t *)cli_malloc(sizeof(uint32_t) * record_count);
 	ret->dir = cli_strdup(dir);
 	ret->offset = (uint32_t *)cli_malloc (sizeof(uint32_t) * record_count);

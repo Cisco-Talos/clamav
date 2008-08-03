@@ -25,10 +25,10 @@
 
 #include "others.h"
 #include "cltypes.h"
-#include "hashtab.h"
+#include "uniq.h"
 
 typedef struct vba_project_tag {
-	uint32_t *name;
+	char **name;
 	uint32_t *colls;
 	uint32_t *offset;
 	uint32_t *length;	/* for Word 6 macros */

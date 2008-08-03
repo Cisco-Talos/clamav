@@ -625,7 +625,8 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 	int32_t current_block, ofd, len, offset;
 	char *name, newname[1024];
 	bitset_t *blk_bitset;
-	uint32_t hash, cnt;
+	char *hash;
+	uint32_t cnt;
 
 	if (prop->type != 2) {
 		/* Not a file */
@@ -640,7 +641,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 	name = get_property_name2(prop->name, prop->name_size);
 	if (name) cnt = uniq_add(hdr->U, name, strlen(name), &hash);
 	else cnt = uniq_add(hdr->U, NULL, 0, &hash);
-	snprintf(newname, sizeof(newname), "%s/%u_%u", dir, hash, cnt);
+	snprintf(newname, sizeof(newname), "%s/%s_%u", dir, hash, cnt);
 	newname[sizeof(newname)-1]='\0';
 	cli_dbgmsg("OLE2 [handler_writefile]: Dumping '%s' to '%s'\n", name ? name : "<empty>", newname);
 	if (name) free(name);

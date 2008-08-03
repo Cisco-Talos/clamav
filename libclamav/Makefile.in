@@ -90,7 +90,7 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	uuencode.lo phishcheck.lo phish_domaincheck_db.lo \
 	phish_whitelist.lo regex_list.lo regex_suffix.lo mspack.lo \
 	cab.lo entconv.lo hashtab.lo dconf.lo lzma_iface.lo explode.lo \
-	textnorm.lo dlp.lo js-norm.lo
+	textnorm.lo dlp.lo js-norm.lo uniq.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 libclamav_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -440,7 +440,9 @@ libclamav_la_SOURCES = \
 	jsparse/js-norm.c \
 	jsparse/js-norm.h \
 	jsparse/lexglobal.h \
-	jsparse/textbuf.h
+	jsparse/textbuf.h \
+	uniq.c \
+	uniq.h
 
 libclamav_internal_utils_la_SOURCES = str.c \
 				    str.h \
@@ -606,6 +608,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/textnorm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tnef.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unarj.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/uniq.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unsp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/untar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unzip.Plo@am__quote@
