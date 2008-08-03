@@ -125,7 +125,6 @@ long SO_search(const struct filter *m, const unsigned char *data, unsigned long 
 	const uint32_t *End = m->end;
 	const uint32_t *EndFast = m->end_fast;
 
-	if(!len) return -1;
 	/* cut length, and make it modulo 2 */
 	if(len > MAXSOPATLEN) {
 		len = MAXSOPATLEN;
@@ -133,6 +132,7 @@ long SO_search(const struct filter *m, const unsigned char *data, unsigned long 
 		/* we use 2-grams, must be multiple of 2 */
 		len = len & ~1;
 	}
+	if(!len) return -1;
 	/* Shift-Or like search algorithm */
 	for(j=0;j < len-1; j++) {
 		const uint16_t q0 = cli_readint16( &data[j] );
@@ -250,6 +250,7 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 {
 	char* orig_real_url = real_url;
 	struct regex_list *regex;
+	size_t real_len, display_len, buffer_len;
 
 	assert(matcher);
 	assert(real_url);
@@ -261,10 +262,14 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 	/* skip initial '.' inserted by get_host */
 	if(real_url[0] == '.') real_url++;
 	if(display_url[0] == '.') display_url++;
+	real_len    = strlen(real_url);
+	display_len = strlen(display_url);
+	buffer_len  = (hostOnly && !is_whitelist) ? real_len + 1 : real_len + display_len + 1 + 1;
+	if(buffer_len < 3) {
+		/* too short, no match possible */
+		return 0;
+	}
 	{
-		size_t real_len    = strlen(real_url);
-		size_t display_len = strlen(display_url);
-		size_t buffer_len  = (hostOnly && !is_whitelist) ? real_len + 1 : real_len + display_len + 1 + 1;
 		char *buffer = cli_malloc(buffer_len+1);
 		char *bufrev;
 		int rc = 0;

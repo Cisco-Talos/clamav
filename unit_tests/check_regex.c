@@ -188,6 +188,7 @@ static const struct rtest {
 	{NULL, "http://1.test.example.com/something","test",3},
 	{NULL, "http://1.test.example.com/2","test",3},
 	{NULL, "http://user@1.test.example.com/2","test",3},
+	{NULL, "http://x.exe","http:///x.exe",2}
 };
 
 START_TEST (regex_list_match_test)
