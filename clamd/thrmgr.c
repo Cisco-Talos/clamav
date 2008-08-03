@@ -304,7 +304,7 @@ int thrmgr_dispatch(threadpool_t *threadpool, void *user_data)
 		return FALSE;
 	}
 
-	if ((threadpool->thr_idle == 0) &&
+	if ((threadpool->thr_idle < threadpool->queue->item_count) &&
 			(threadpool->thr_alive < threadpool->thr_max)) {
 		/* Start a new thread */
 		if (pthread_create(&thr_id, &(threadpool->pool_attr),
