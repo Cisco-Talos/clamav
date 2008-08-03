@@ -201,17 +201,19 @@ libclamav_la_SOURCES = \
 	jsparse/textbuf.h \
 	uniq.c \
 	uniq.h \
-	version.c
+	version.c\
+	version.h
 
 .PHONY: version.h.tmp
+version.o: version.h
 version.h: version.h.tmp
 	@if ! diff $@ $< >/dev/null 2>/dev/null; then\
-		echo 'test';\
 		cp $< $@;\
 	fi
 
 version.h.tmp:
-	@rm -f $@;\
+	@test -f version.h || touch version.h;\
+	rm -f $@;\
 	REVISION="$$(LANG=C svnversion "$(top_srcdir)" 2>/dev/null || echo exported)";\
 	if test $$REVISION = "exported"; then\
 		REVISION="$$(LANG=C cd "$(top_srcdir)"; git-svn info configure | awk '/Revision:/ { print $$2 }' || echo exported)";\
