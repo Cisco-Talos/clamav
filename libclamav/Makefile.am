@@ -205,7 +205,7 @@ libclamav_la_SOURCES = \
 	version.h
 
 .PHONY: version.h.tmp
-version.o: version.h
+version.lo: version.h
 version.h: version.h.tmp
 	@if ! diff $@ $< >/dev/null 2>/dev/null; then\
 		cp $< $@;\
