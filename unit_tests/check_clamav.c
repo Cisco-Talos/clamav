@@ -21,6 +21,7 @@ int main(int argc, char **argv)
 #include "../libclamav/clamav.h"
 #include "../libclamav/others.h"
 #include "../libclamav/matcher.h"
+#include "../libclamav/version.h"
 #include "checks.h"
 
 /* extern void cl_free(struct cl_engine *engine); */
@@ -71,7 +72,11 @@ END_TEST
 
 /* extern const char *cl_retver(void); */
 START_TEST (test_cl_retver)
-    fail_unless(!strcmp(VERSION, cl_retver()), "cl_retver");
+    const char *ver = cl_retver();
+    if(strstr(VERSION,"devel"))
+       fail_unless(!strcmp(REPO_VERSION, ver),"cl_retver");
+    else
+       fail_unless(!strcmp(VERSION, ver),"cl_retver");
 END_TEST
 
 /* extern void cl_cvdfree(struct cl_cvd *cvd); */

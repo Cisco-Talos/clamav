@@ -171,10 +171,10 @@ int command(int desc, const struct cl_engine *engine, const struct cl_limits *li
 		char timestr[32];
 		time_t t = (time_t) daily->stime;
 
-	    mdprintf(desc, "ClamAV "VERSION"/%d/%s", daily->version, cli_ctime(&t, timestr, sizeof(timestr)));
+	    mdprintf(desc, "ClamAV %s/%d/%s", cl_retver(), daily->version, cli_ctime(&t, timestr, sizeof(timestr)));
 	    cl_cvdfree(daily);
 	} else {
-	    mdprintf(desc, "ClamAV "VERSION"\n");
+	    mdprintf(desc, "ClamAV %s\n", cl_retver());
 	}
 
 	free(path);

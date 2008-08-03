@@ -90,7 +90,7 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	uuencode.lo phishcheck.lo phish_domaincheck_db.lo \
 	phish_whitelist.lo regex_list.lo regex_suffix.lo mspack.lo \
 	cab.lo entconv.lo hashtab.lo dconf.lo lzma_iface.lo explode.lo \
-	textnorm.lo dlp.lo js-norm.lo uniq.lo
+	textnorm.lo dlp.lo js-norm.lo uniq.lo version.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 libclamav_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -442,7 +442,8 @@ libclamav_la_SOURCES = \
 	jsparse/lexglobal.h \
 	jsparse/textbuf.h \
 	uniq.c \
-	uniq.h
+	uniq.h \
+	version.c
 
 libclamav_internal_utils_la_SOURCES = str.c \
 				    str.h \
@@ -459,6 +460,7 @@ EXTRA_DIST = regex/engine.c libclamav.map \
 
 @MAINTAINER_MODE_TRUE@BUILT_SOURCES = jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
 @MAINTAINER_MODE_TRUE@GPERF_FLAGS = -E -t -L ANSI-C -C -F ', TOK_ERROR' -c
+@MAINTAINER_MODE_FALSE@CLEANFILES = version.h version.h.tmp
 @MAINTAINER_MODE_TRUE@CLEANFILES = jsparse-keywords.gperf @srcdir@/jsparse/generated/operators.h @srcdir@/jsparse/generated/keywords.h
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
@@ -616,6 +618,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/upx.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/uuencode.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vba_extract.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/version.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/wwunpack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yc.Plo@am__quote@
 
@@ -1028,6 +1031,24 @@ uninstall-am: uninstall-includeHEADERS uninstall-libLTLIBRARIES
 	tags tags-recursive uninstall uninstall-am \
 	uninstall-includeHEADERS uninstall-libLTLIBRARIES
 
+
+.PHONY: version.h.tmp
+version.h: version.h.tmp
+	@if ! diff $@ $< >/dev/null 2>/dev/null; then\
+		echo 'test';\
+		cp $< $@;\
+	fi
+
+version.h.tmp:
+	@rm -f $@;\
+	REVISION="$$(LANG=C svnversion "$(top_srcdir)" 2>/dev/null || echo exported)";\
+	if test $$REVISION = "exported"; then\
+		REVISION="$$(LANG=C cd "$(top_srcdir)"; git-svn info configure | awk '/Revision:/ { print $$2 }' || echo exported)";\
+		if test ! $$REVISION  = "exported"; then\
+			REVISION="$$REVISION-$$(LANG=C cd "$(top_srcdir)"; git-describe --always)";\
+		fi;\
+	fi;\
+	echo "#define REPO_VERSION \"devel-r$$REVISION\"" >> $@
 
 @MAINTAINER_MODE_TRUE@jsparse-keywords.gperf: jsparse/keywords.list jsparse/future_reserved_words.list jsparse/special_keywords.list
 @MAINTAINER_MODE_TRUE@	echo -e "struct keyword { const char *name; int val; };\n%%" >keywords-g-tmp

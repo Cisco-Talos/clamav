@@ -50,9 +50,9 @@
 #endif
 
 #ifdef CL_EXPERIMENTAL
-#define VERSION_EXP	VERSION"-exp"
+#define EXP	"-exp"
 #else
-#define VERSION_EXP	VERSION
+#define EXP	""
 #endif
 
 /* CL_NOLIBCLAMAV means to omit functions that depends on libclamav */
@@ -119,7 +119,7 @@ void print_version(const char *dbdir)
 	pt = fdbdir = freshdbdir();
 
     if(!pt) {
-	printf("ClamAV "VERSION_EXP"\n");
+	printf("ClamAV %s"EXP"\n",cl_retver());
 	return;
     }
 
@@ -139,10 +139,10 @@ void print_version(const char *dbdir)
     if(!access(path, R_OK) && (daily = cl_cvdhead(path))) {
 	    time_t t = (time_t) daily->stime;
 
-	printf("ClamAV "VERSION_EXP"/%d/%s", daily->version, ctime(&t));
+	printf("ClamAV %s"EXP"/%d/%s", cl_retver(), daily->version, ctime(&t));
 	cl_cvdfree(daily);
     } else {
-	printf("ClamAV "VERSION_EXP"\n");
+	printf("ClamAV %s"EXP"\n",cl_retver());
     }
 
     free(path);

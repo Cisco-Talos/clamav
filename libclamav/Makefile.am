@@ -200,7 +200,26 @@ libclamav_la_SOURCES = \
 	jsparse/lexglobal.h \
 	jsparse/textbuf.h \
 	uniq.c \
-	uniq.h
+	uniq.h \
+	version.c
+
+.PHONY: version.h.tmp
+version.h: version.h.tmp
+	@if ! diff $@ $< >/dev/null 2>/dev/null; then\
+		echo 'test';\
+		cp $< $@;\
+	fi
+
+version.h.tmp:
+	@rm -f $@;\
+	REVISION="$$(LANG=C svnversion "$(top_srcdir)" 2>/dev/null || echo exported)";\
+	if test $$REVISION = "exported"; then\
+		REVISION="$$(LANG=C cd "$(top_srcdir)"; git-svn info configure | awk '/Revision:/ { print $$2 }' || echo exported)";\
+		if test ! $$REVISION  = "exported"; then\
+			REVISION="$$REVISION-$$(LANG=C cd "$(top_srcdir)"; git-describe --always)";\
+		fi;\
+	fi;\
+	echo "#define REPO_VERSION \"devel-r$$REVISION\"" >> $@
 
 libclamav_internal_utils_la_SOURCES=str.c \
 				    str.h \
@@ -240,4 +259,6 @@ jsparse/generated/keywords.h: jsparse-keywords.gperf
 	mv keywords-tmp @srcdir@/jsparse/generated/keywords.h
 
 CLEANFILES=jsparse-keywords.gperf @srcdir@/jsparse/generated/operators.h @srcdir@/jsparse/generated/keywords.h
+else
+CLEANFILES=version.h version.h.tmp
 endif

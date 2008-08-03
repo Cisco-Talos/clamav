@@ -330,9 +330,9 @@ int cli_initengine(struct cl_engine **engine, unsigned int options)
 
     if(!*engine) {
 #ifdef CL_EXPERIMENTAL
-	cli_dbgmsg("Initializing the engine ("VERSION"-exp)\n");
+	cli_dbgmsg("Initializing the engine (%s-exp)\n", cl_retver());
 #else
-	cli_dbgmsg("Initializing the engine ("VERSION")\n");
+	cli_dbgmsg("Initializing the engine (%s)\n", cl_retver());
 #endif
 
 	*engine = (struct cl_engine *) cli_calloc(1, sizeof(struct cl_engine));
