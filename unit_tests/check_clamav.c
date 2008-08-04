@@ -342,6 +342,7 @@ int main(int argc, char **argv)
     srunner_add_suite(sr, test_str_suite());
     srunner_add_suite(sr, test_regex_suite());
     srunner_add_suite(sr, test_disasm_suite());
+    srunner_add_suite(sr, test_uniq_suite());
 
     srunner_set_log(sr, "test.log");
     if(freopen("test-stderr.log","w+",stderr) == NULL) {

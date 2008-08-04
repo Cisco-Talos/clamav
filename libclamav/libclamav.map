@@ -103,6 +103,10 @@ CLAMAV_PRIVATE {
     load_regex_matcher;
     html_tag_arg_free;
     disasmbuf;
+    uniq_init;
+    uniq_free;
+    uniq_add;
+    uniq_get;
     cli_hex2str;
   local:
     *;
