@@ -117,7 +117,7 @@ static void help(void)
     mprintf_stdout = 1;
 
     mprintf("\n");
-    mprintf("                   Clam AntiVirus: freshclam  "VERSION"\n");
+    mprintf("                   Clam AntiVirus: freshclam  %s\n", get_version());
     mprintf("    (C) 2002 - 2007 ClamAV Team - http://www.clamav.net/team\n\n");
 
     mprintf("    --help               -h              show help\n");
@@ -511,7 +511,7 @@ int main(int argc, char **argv)
 
 	active_children = 0;
 
-	logg("#freshclam daemon "VERSION" (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n");
+	logg("#freshclam daemon %s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n", get_version());
 
 #ifdef	C_WINDOWS
 	signal(SIGINT, daemon_sighandler);

@@ -2,12 +2,14 @@
 #include "clamav-config.h"
 #endif
 #include "version.h"
+#include <string.h>
 
+#ifndef REPO_VERSION
+#define REPO_VERSION VERSION
+#endif
+
+/* libclamav's version is always the SVN revision (if available) */
 const char *cl_retver(void)
 {
-	if(!strncmp("devel-",VERSION,6) && strcmp("exported",REPO_VERSION)) {
-		return REPO_VERSION;
-	}
-	/* it is a release, or we have nothing better */
-	return VERSION;
+	return REPO_VERSION;
 }

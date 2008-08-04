@@ -473,7 +473,6 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 	int bread, cnt, sd;
 	unsigned int i, j;
 	char *remotename = NULL, *authorization = NULL;
-	const char *agent;
 	struct cl_cvd *cvd;
 	char last_modified[36];
 	struct stat sb;
@@ -507,23 +506,15 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 
     logg("Reading CVD header (%s): ", file);
 
-    if(uas)
-	agent = uas;
-    else
-#ifdef CL_EXPERIMENTAL
-	agent = PACKAGE"/"VERSION"-exp";
-#else
-	agent = PACKAGE"/"VERSION;
-#endif
-
     snprintf(cmd, sizeof(cmd),
 	"GET %s/%s HTTP/1.0\r\n"
 	"Host: %s\r\n%s"
-	"User-Agent: %s\r\n"
+	"User-Agent: %s%s\r\n"
 	"Connection: close\r\n"
 	"Range: bytes=0-511\r\n"
         "If-Modified-Since: %s\r\n"
-        "\r\n", (remotename != NULL) ? remotename : "", file, hostname, (authorization != NULL) ? authorization : "", agent, last_modified);
+        "\r\n", (remotename != NULL) ? remotename : "", file, hostname, (authorization != NULL) ? authorization : "", 
+	uas ? uas : PACKAGE"/",uas ? "" : get_version(), last_modified);
 
     free(remotename);
     free(authorization);
@@ -641,7 +632,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	    percentage = 0, sd;
 	unsigned int i;
 	char *remotename = NULL, *authorization = NULL, *headerline, ipaddr[16];
-	const char *rotation = "|/-\\", *agent;
+	const char *rotation = "|/-\\";
 
 
     if(proxy) {
@@ -659,24 +650,16 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	}
     }
 
-    if(uas)
-	agent = uas;
-    else
-#ifdef CL_EXPERIMENTAL
-	agent = PACKAGE"/"VERSION"-exp";
-#else
-	agent = PACKAGE"/"VERSION;
-#endif
-
     snprintf(cmd, sizeof(cmd),
 	"GET %s/%s HTTP/1.0\r\n"
 	"Host: %s\r\n%s"
-	"User-Agent: %s\r\n"
+	"User-Agent: %s%s\r\n"
 #ifdef FRESHCLAM_NO_CACHE
 	"Cache-Control: no-cache\r\n"
 #endif
 	"Connection: close\r\n"
-	"\r\n", (remotename != NULL) ? remotename : "", srcfile, hostname, (authorization != NULL) ? authorization : "", agent);
+	"\r\n", (remotename != NULL) ? remotename : "", srcfile, hostname, (authorization != NULL) ? authorization : "",
+	uas ? uas : PACKAGE"/", uas ? "" : get_version());
 
     memset(ipaddr, 0, sizeof(ipaddr));
 
@@ -1412,10 +1395,10 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 
 		    logg("*Software version from DNS: %s\n", newver);
 
-		    if(vwarning && !strstr(cl_retver(), "devel") && !strstr(cl_retver(), "rc")) {
-			if(strcmp(cl_retver(), newver)) {
+		    if(vwarning && !strstr(get_version(), "devel") && !strstr(get_version(), "rc")) {
+			if(strcmp(get_version(), newver)) {
 			    logg("^Your ClamAV installation is OUTDATED!\n");
-			    logg("^Local version: %s Recommended version: %s\n", cl_retver(), newver);
+			    logg("^Local version: %s Recommended version: %s\n", get_version(), newver);
 			    logg("DON'T PANIC! Read http://www.clamav.net/support/faq\n");
 			    outdated = 1;
 			}

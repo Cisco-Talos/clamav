@@ -43,6 +43,7 @@
 #include "libclamav/cvd.h"
 #include "libclamav/others.h" /* for cli_rmdirs() */
 #include "libclamav/regex/regex.h"
+#include "libclamav/version.h"
 #include "shared/misc.h"
 
 #ifndef	O_BINARY
@@ -55,6 +56,24 @@
 #define EXP	""
 #endif
 
+#ifndef REPO_VERSION
+#define REPO_VERSION "exported"
+#endif
+
+#ifdef CL_EXPERIMENTAL
+#define EXP_VER "-exp"
+#else
+#define EXP_VER
+#endif
+
+const char *get_version(void)
+{
+	if(!strncmp("devel-",VERSION,6) && strcmp("exported",REPO_VERSION)) {
+		return REPO_VERSION""EXP_VER;
+	}
+	/* it is a release, or we have nothing better */
+	return VERSION""EXP_VER;
+}
 /* CL_NOLIBCLAMAV means to omit functions that depends on libclamav */
 #ifndef CL_NOLIBCLAMAV
 char *freshdbdir(void)
@@ -106,6 +125,7 @@ char *freshdbdir(void)
     return retdir;
 }
 
+
 void print_version(const char *dbdir)
 {
 	char *fdbdir, *path;
@@ -119,7 +139,7 @@ void print_version(const char *dbdir)
 	pt = fdbdir = freshdbdir();
 
     if(!pt) {
-	printf("ClamAV %s"EXP"\n",cl_retver());
+	printf("ClamAV %s"EXP"\n",get_version());
 	return;
     }
 
@@ -139,10 +159,10 @@ void print_version(const char *dbdir)
     if(!access(path, R_OK) && (daily = cl_cvdhead(path))) {
 	    time_t t = (time_t) daily->stime;
 
-	printf("ClamAV %s"EXP"/%d/%s", cl_retver(), daily->version, ctime(&t));
+	printf("ClamAV %s"EXP"/%d/%s", get_version(), daily->version, ctime(&t));
 	cl_cvdfree(daily);
     } else {
-	printf("ClamAV %s"EXP"\n",cl_retver());
+	printf("ClamAV %s"EXP"\n",get_version());
     }
 
     free(path);

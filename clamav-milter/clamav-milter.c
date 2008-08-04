@@ -33,8 +33,6 @@
  */
 static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 njh Exp $";
 
-#define	CM_VERSION	"devel-20080219"
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -628,7 +626,7 @@ int safe_res_query(const char *d, int c, int t, u_char *a, int l) {
 static void
 help(void)
 {
-	printf("\n\tclamav-milter version %s\n", CM_VERSION);
+	printf("\n\tclamav-milter version %s\n", get_version());
 	puts("\tCopyright (C) 2007 Nigel Horne <njh@clamav.net>\n");
 
 	puts(_("\t--advisory\t\t-A\tFlag viruses rather than deleting them."));
@@ -743,7 +741,7 @@ main(int argc, char **argv)
 	 */
 	snprintf(version, sizeof(version) - 1,
 		"ClamAV version %s, clamav-milter version %s",
-		VERSION, CM_VERSION);
+		cl_retver(), get_version());
 
 	progname = strrchr(argv[0], '/');
 	if(progname)
@@ -2366,7 +2364,7 @@ pingServer(int serverNumber)
 	 */
 	snprintf(clamav_version, sizeof(clamav_version) - 1,
 		"%s\n\tclamav-milter version %s",
-		buf, CM_VERSION);
+		buf, get_version());
 
 	return 1;
 }
@@ -5844,7 +5842,7 @@ loadDatabase(void)
 		char buf[26];
 
 		snprintf(clamav_version, VERSION_LENGTH,
-			"ClamAV %s/%u/%s", VERSION, d->version,
+			"ClamAV %s/%u/%s", get_version(), d->version,
 			cli_ctime(&t, buf, sizeof(buf)));
 
 		/* Remove ctime's trailing \n */
@@ -5855,7 +5853,7 @@ loadDatabase(void)
 	} else
 		snprintf(clamav_version, VERSION_LENGTH,
 			"ClamAV version %s, clamav-milter version %s",
-			VERSION, CM_VERSION);
+			cl_retver(), get_version());
 
 	free(daily);
 

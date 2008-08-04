@@ -1696,7 +1696,7 @@ static int makediff(struct optstruct *opt)
 static void help(void)
 {
     mprintf("\n");
-    mprintf("             Clam AntiVirus: Signature Tool (sigtool)  "VERSION"\n");
+    mprintf("             Clam AntiVirus: Signature Tool (sigtool)  %s\n", get_version());
     mprintf("    (C) 2002 - 2007 ClamAV Team - http://www.clamav.net/team\n\n");
 
     mprintf("    --help                 -h              show help\n");

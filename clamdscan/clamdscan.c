@@ -43,17 +43,11 @@ short printinfected = 0;
 
 extern int notremoved, notmoved;
 
-#ifdef CL_EXPERIMENTAL
-#define VERSION_EXP     VERSION"-exp"
-#else
-#define VERSION_EXP     VERSION
-#endif
-
 static void print_server_version(const struct optstruct *opt)
 {
     if(get_clamd_version(opt)) {
 	/* can't get version from server, fallback */
-	printf("ClamAV "VERSION_EXP"\n");
+	printf("ClamAV %s\n", get_version());
     }
 }
 
@@ -149,7 +143,7 @@ void help(void)
     mprintf_stdout = 1;
 
     mprintf("\n");
-    mprintf("                       ClamAV Daemon Client "VERSION"\n");
+    mprintf("                       ClamAV Daemon Client %s\n", get_version());
     mprintf("     (C) 2002 - 2007 ClamAV Team - http://www.clamav.net/team\n\n");
 
     mprintf("    --help              -h             Show help\n");

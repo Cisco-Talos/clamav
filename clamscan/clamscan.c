@@ -246,7 +246,7 @@ int main(int argc, char **argv)
 	dms += (dms < 0) ? (1000000):(0);
 	logg("\n----------- SCAN SUMMARY -----------\n");
 	logg("Known viruses: %u\n", info.sigs);
-	logg("Engine version: %s\n", cl_retver());
+	logg("Engine version: %s\n", get_version());
 	logg("Scanned directories: %u\n", info.dirs);
 	logg("Scanned files: %u\n", info.files);
 	logg("Infected files: %u\n", info.ifiles);
@@ -279,7 +279,7 @@ void help(void)
     mprintf_stdout = 1;
 
     mprintf("\n");
-    mprintf("                       Clam AntiVirus Scanner "VERSION"\n");
+    mprintf("                       Clam AntiVirus Scanner %s\n", get_version());
     mprintf("      (C) 2002 - 2007 ClamAV Team - http://www.clamav.net/team\n\n");
 
     mprintf("    --help                -h             Print this help screen\n");

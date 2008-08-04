@@ -70,13 +70,16 @@ START_TEST (test_cl_retdbdir)
     fail_unless(!strcmp(DATADIR, cl_retdbdir()), "cl_retdbdir");
 END_TEST
 
+#ifndef REPO_VERSION
+#define REPO_VERSION VERSION
+#endif
+
 /* extern const char *cl_retver(void); */
 START_TEST (test_cl_retver)
     const char *ver = cl_retver();
-    if(strstr(VERSION,"devel"))
-       fail_unless(!strcmp(REPO_VERSION, ver),"cl_retver");
-    else
-       fail_unless(!strcmp(VERSION, ver),"cl_retver");
+    fail_unless(!strcmp(REPO_VERSION, ver),"cl_retver");
+    fail_unless(strcspn(ver,"012345789") < strlen(ver),
+		    "cl_retver must have a number");
 END_TEST
 
 /* extern void cl_cvdfree(struct cl_cvd *cvd); */

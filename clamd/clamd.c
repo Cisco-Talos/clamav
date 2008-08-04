@@ -78,7 +78,7 @@ short foreground = 0;
 static void help(void)
 {
     printf("\n");
-    printf("                      Clam AntiVirus Daemon %s\n", cl_retver());
+    printf("                      Clam AntiVirus Daemon %s\n", get_version());
     printf("    (C) 2002 - 2007 ClamAV Team - http://www.clamav.net/team\n\n");
 
     printf("    --help                   -h             Show this help.\n");
@@ -288,7 +288,7 @@ int main(int argc, char **argv)
     if(cfgopt(copt, "LeaveTemporaryFiles")->enabled)
 	cl_settempdir(NULL, 1);
 
-    logg("#clamd daemon %s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n", cl_retver());
+    logg("#clamd daemon %s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n", get_version());
 
 #ifndef C_WINDOWS
     if(user)

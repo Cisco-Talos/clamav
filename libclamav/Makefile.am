@@ -207,8 +207,10 @@ libclamav_la_SOURCES = \
 .PHONY: version.h.tmp
 version.lo: version.h
 version.h: version.h.tmp
-	@if ! diff $@ $< >/dev/null 2>/dev/null; then\
-		cp $< $@;\
+	@if test -f version.h.static; then\
+		cp version.h.static version.h;\
+	elif ! diff $@ version.h.tmp >/dev/null 2>/dev/null; then\
+		cp version.h.tmp $@;\
 	fi
 
 version.h.tmp:
@@ -216,12 +218,16 @@ version.h.tmp:
 	rm -f $@;\
 	REVISION="$$(LANG=C svnversion "$(top_srcdir)" 2>/dev/null || echo exported)";\
 	if test $$REVISION = "exported"; then\
-		REVISION="$$(LANG=C cd "$(top_srcdir)"; git-svn info configure | awk '/Revision:/ { print $$2 }' || echo exported)";\
-		if test ! $$REVISION  = "exported"; then\
-			REVISION="$$REVISION-$$(LANG=C cd "$(top_srcdir)"; git-describe --always)";\
+		REVISION="$$(LANG=C cd "$(top_srcdir)"; git-svn info configure 2>/dev/null| awk '/Revision:/ { print $$2 }' || echo)";\
+		if test -n "$$REVISION"; then\
+			REVISION="$$REVISION-$$(LANG=C cd "$(top_srcdir)"; git-describe --always 2>/dev/null)";\
 		fi;\
 	fi;\
-	echo "#define REPO_VERSION \"devel-r$$REVISION\"" >> $@
+	if test -n "$$REVISION"; then\
+		echo "#define REPO_VERSION \"devel-r$$REVISION\"" >> $@;\
+	else\
+		touch version.h.tmp;\
+	fi
 
 libclamav_internal_utils_la_SOURCES=str.c \
 				    str.h \

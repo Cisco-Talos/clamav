@@ -34,6 +34,7 @@
 
 #include "shared/misc.h"
 #include "libclamav/clamav.h"
+#include "libclamav/version.h"
 
 #include "cfgparser.h"
 #define _GNU_SOURCE
@@ -199,26 +200,38 @@ static void printdb(const char *dir, const char *db)
     }
 }
 
+static void version(void)
+{
+    printf("Clam AntiVirus Configuration Tool %s\n", get_version());
+}
+
 static void help(void)
 {
     printf("\n");
-    printf("             Clam AntiVirus: Configuration Tool "VERSION"\n");
+    printf("             Clam AntiVirus: Configuration Tool %s\n", get_version());
     printf("         (C) 2006 - 2007 ClamAV Team - http://www.clamav.net/team\n\n");
 
     printf("    --help                 -h              show help\n");
+    printf("    --version              -v              show version\n");
     printf("    --config-dir DIR       -c DIR          search for config files in DIR\n");
     printf("    --non-default          -n              only print non-default settings\n");
     printf("\n");
 }
+
+
+#ifndef REPO_VERSION
+#define REPO_VERSION VERSION
+#endif
 
 int main(int argc, char **argv)
 {
 	char path[1024];
 	struct stat sb;
 	int ret, opt_index, nondef = 0;
-	const char *getopt_parameters = "hc:n";
+	const char *getopt_parameters = "hVc:n";
 	static struct option long_options[] = {
 	    {"help", 0, 0, 'h'},
+	    {"version", 0, 0, 'V'},
 	    {"config-dir", 1, 0, 'c'},
 	    {"non-default", 0, 0, 'n'},
 	    {0, 0, 0, 0}
@@ -252,6 +265,11 @@ int main(int argc, char **argv)
 		nondef = 1;
 		break;
 
+	    case 'V':
+		version();
+		free(confdir);
+		exit(0);
+
     	    default:
 		printf("ERROR: Unknown option passed\n");
 		free(confdir);
@@ -283,13 +301,13 @@ int main(int argc, char **argv)
     printf("------------------------------\n");
 
 #ifdef CL_EXPERIMENTAL
-    printf("Engine version: "VERSION" (with experimental code)\n");
+    printf("Engine version: %s (with experimental code)\n", get_version());
 #else
-    printf("Engine version: "VERSION"\n");
+    printf("Engine version: %s\n", get_version());
 #endif
 
-    if(strcmp(VERSION, cl_retver()))
-	printf("WARNING: Version mismatch: clamconf: "VERSION", libclamav: %s\n", cl_retver());
+    if(strcmp(REPO_VERSION, cl_retver()))
+	printf("WARNING: Version mismatch: clamconf: "REPO_VERSION", libclamav: %s\n", cl_retver());
 
     printf("Database directory: ");
     dbdir = freshdbdir();
