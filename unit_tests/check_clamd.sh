@@ -1,6 +1,6 @@
 #!/bin/sh 
 die() {
-	test /tmp/clamd-test.pid && kill -0 `cat /tmp/clamd-test.pid` && kill `cat /tmp/clamd-test.pid`
+	test -f /tmp/clamd-test.pid && kill -0 `cat /tmp/clamd-test.pid` && kill `cat /tmp/clamd-test.pid`
 	rm -rf test-db test-clamd-viraction.conf test-clamd.log	test-clamd-heur-pred.conf clamd-test.socket
 	exit $1
 }
@@ -15,7 +15,7 @@ run_clamd_test() {
 		echo "Failed to run clamdscan!" >&2;
 		die 3;	
 	fi
-	test /tmp/clamd-test.pid && kill `cat /tmp/clamd-test.pid` 
+	test -f /tmp/clamd-test.pid && kill -0 `cat /tmp/clamd-test.pid` && kill `cat /tmp/clamd-test.pid` 
 }
 
 run_clamd_fdpass_test() {
