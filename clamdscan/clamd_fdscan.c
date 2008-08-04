@@ -21,6 +21,10 @@
 #endif
 
 #ifdef HAVE_FD_PASSING
+#ifdef FDPASS_NEED_XOPEN
+#define _XOPEN_SOURCE 500
+#endif
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -28,7 +32,6 @@
 #include <string.h>
 
 #include <stdio.h>
-#include <err.h>
 #include <unistd.h>
 
 #include "clamd_fdscan.h"

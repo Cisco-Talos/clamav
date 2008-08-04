@@ -1,6 +1,6 @@
 #!/bin/sh 
 die() {
-	test -f /tmp/clamd-test.pid && kill `cat /tmp/clamd-test.pid` 
+	test /tmp/clamd-test.pid && kill -0 `cat /tmp/clamd-test.pid` && kill `cat /tmp/clamd-test.pid`
 	rm -rf test-db test-clamd-viraction.conf test-clamd.log	test-clamd-heur-pred.conf clamd-test.socket
 	exit $1
 }
