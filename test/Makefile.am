@@ -3,7 +3,8 @@ FILES = clam-v2.rar clam-v3.rar clam.cab clam.exe.bz2 clam.exe clam.zip \
 	clam-aspack.exe clam-pespin.exe clam-upx.exe clam-fsg.exe clam-mew.exe\
 	clam-nsis.exe clam-petite.exe clam-upack.exe clam-wwpack.exe clam.pdf\
 	clam.mail clam.ppt clam.tnef clam.ea05.exe clam.ea06.exe clam.d64.zip\
-	clam.exe.mbox.base64 clam.exe.mbox.uu clam.exe.binhex clam.ole.doc
+	clam.exe.mbox.base64 clam.exe.mbox.uu clam.exe.binhex clam.ole.doc \
+	clam.impl.zip
 
 SPLIT_DIR=$(top_srcdir)/test/.split
 

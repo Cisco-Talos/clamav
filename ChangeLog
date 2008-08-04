@@ -1,3 +1,7 @@
+Mon Aug  4 02:40:33 CEST 2008 (acab)
+------------------------------------
+  * test: add clam.impl.zip
+
 Mon Aug  4 01:46:54 CEST 2008 (acab)
 ------------------------------------
   * unit_tests: add uniq checks
