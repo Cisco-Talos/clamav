@@ -64,7 +64,6 @@
  * <a href='mailto:somebody@yahoo.com'>to:somebody@yahoo.com</a>*/
 #define DOMAIN_LISTED		 8
 #define PHISHY_CLOAKED_NULL	16
-#define PHISHY_HEX_URL		32
 
 /*
 * Phishing design documentation,
@@ -814,9 +813,6 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 			{
 				case CL_PHISH_CLEAN:
 					continue;
-				case CL_PHISH_HEX_URL:
-					*ctx->virname="Phishing.Heuristics.Email.HexURL";
-					break;
 				case CL_PHISH_NUMERIC_IP:
 					*ctx->virname="Phishing.Heuristics.Email.Cloaked.NumericIP";
 					break;
@@ -969,11 +965,11 @@ static const uint8_t URI_xalpha_nodot[256] = {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-/*!"$%&'()*+,-0123456789@ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz*/
+/*!"#$%&'()*+,-0123456789@ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz*/
 static const uint8_t URI_xpalpha_nodot[256] = {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0,
+        0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0,
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
         1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1,
@@ -1164,19 +1160,6 @@ static enum phish_status phishy_map(int phishy,enum phish_status fallback)
 		return fallback;
 }
 
-static int isEncoded(const char* url)
-{
-	const char* start=url;
-	size_t cnt=0;
-	do{
-		cnt++;
-		start=strstr(start,"&#");
-		if(start)
-			start=strstr(start,";");
-	} while(start);
-	return (cnt-1 >strlen(url)*7/10);/*more than 70% made up of &#;*/
-}
-
 static int whitelist_check(const struct cl_engine* engine,struct url_check* urls,int hostOnly)
 {
 	return whitelist_match(engine,urls->realLink.data,urls->displayLink.data,hostOnly);
@@ -1220,7 +1203,7 @@ static int hash_match(const struct regex_matcher *rlist, const char *host, size_
 static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, size_t len)
 {
 	char urlbuff[URL_MAX_LEN+3];/* htmlnorm truncates at 1024 bytes + terminating null + slash + host end null */
-	char *url;
+	char *url, *p;
 	const char *urlend = urlbuff + len;
 	char *host_begin;
 	size_t host_len, path_len;
@@ -1248,6 +1231,10 @@ static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, 
 	++host_begin;
 	while((host_begin < urlend) && *host_begin == '/') ++host_begin;
 	while(*host_begin == '.' && host_begin < urlend) ++host_begin;
+	p = strchr(host_begin, '@');
+	if(p)
+		host_begin = p+1;
+
 	host_len = strcspn(host_begin, ":/?");
 	path_begin = host_begin + host_len;
 	if(host_len < len) {
@@ -1275,21 +1262,24 @@ static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, 
 	lp[j] = host_begin;
 
 	pp[0] = path_len;
-	pp[1] = strcspn(path_begin, "?");
-	if(pp[1] != pp[0]) k = 2;
-	else k = 1;
-	pp[k++] = 0;
-	while(k < COMPONENTS+2) {
-		const char *p = strchr(path_begin + pp[k-1] + 1, '/');
-		if(p && p > path_begin) {
-			pp[k++] = p - path_begin;
-		} else
-			break;
-	}
+	if(path_len) {
+		pp[1] = strcspn(path_begin, "?");
+		if(pp[1] != pp[0]) k = 2;
+		else k = 1;
+		pp[k++] = 0;
+		while(k < COMPONENTS+2) {
+			const char *p = strchr(path_begin + pp[k-1] + 1, '/');
+			if(p && p > path_begin) {
+				pp[k++] = p - path_begin;
+			} else
+				break;
+		}
+	} else
+		k = 1;
 
 	for(ji=j;ji < COMPONENTS+1; ji++) {
 		for(ki=0;ki < k; ki++) {
-			assert(pp[ki] < path_len);
+			assert(pp[ki] <= path_len);
 			rc = hash_match(rlist, lp[ji], host_begin + host_len - lp[ji] + 1, path_begin, pp[ki]);
 			if(rc) {
 				return rc;
@@ -1372,10 +1362,6 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 			free_if_needed(&host_url);
 			return CL_PHISH_CLOAKED_NULL;
 		}
-		if(isEncoded(urls->displayLink.data)) {
-			free_if_needed(&host_url);
-			return CL_PHISH_HEX_URL;
-		}
 	}
 
 	if(urls->flags&CHECK_SSL && isSSL(urls->displayLink.data) && !isSSL(urls->realLink.data)) {
@@ -1430,8 +1416,6 @@ static const char* phishing_ret_toString(enum phish_status rc)
 			return "Visible links is SSL, real link is not";
 		case CL_PHISH_NOMATCH:
 			return "URLs are way too different";
-		case CL_PHISH_HEX_URL:
-			return "Embedded hex urls";
 		case CL_PHISH_HASH0:
 		case CL_PHISH_HASH1:
 		case CL_PHISH_HASH2:

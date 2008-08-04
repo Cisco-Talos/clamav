@@ -2,7 +2,6 @@
 #include "clamav-config.h"
 #endif
 #include "version.h"
-#include <string.h>
 
 #ifndef REPO_VERSION
 #define REPO_VERSION VERSION

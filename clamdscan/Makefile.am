@@ -43,3 +43,4 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamscan -I$(top_srcdir)/shared -I
 LIBS = $(top_builddir)/libclamav/libclamav_internal_utils.la @FRESHCLAM_LIBS@
 
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT=clamdscan$(EXEEXT)
+CLEANFILES=*.gcda *.gcno

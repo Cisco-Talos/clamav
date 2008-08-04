@@ -376,6 +376,12 @@ static const char jstest_buf11[] =
 static const char jstest_expected11[] =
 "var n000=123456789;";
 
+static const char jstest_buf12[] =
+"var x='test\\u0000test';";
+
+static const char jstest_expected12[] =
+"var n000=\"test\x1test\";";
+
 static struct {
 	const char *in;
 	const char *expected;
@@ -391,7 +397,8 @@ static struct {
 	{jstest_buf8, jstest_expected8},
 	{jstest_buf9, jstest_expected9},
 	{jstest_buf10, jstest_expected10},
-	{jstest_buf11, jstest_expected11}
+	{jstest_buf11, jstest_expected11},
+	{jstest_buf12, jstest_expected12}
 };
 
 START_TEST (tokenizer_basic)

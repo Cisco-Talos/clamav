@@ -43,3 +43,4 @@ endif
 LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMAV_MILTER_LIBS@ @THREAD_LIBS@
 AM_CPPFLAGS = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_srcdir)/shared -I$(top_srcdir)
 EXTRA_DIST = clamav-milter.c INSTALL
+CLEANFILES=*.gcda *.gcno

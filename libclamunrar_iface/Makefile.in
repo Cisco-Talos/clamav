@@ -227,6 +227,7 @@ top_srcdir = @top_srcdir@
 
 @ENABLE_UNRAR_TRUE@lib_LTLIBRARIES = libclamunrar_iface.la
 EXTRA_DIST = libclamunrar_iface.map
+CLEANFILES = *.gcda *.gcno
 all: all-am
 
 .SUFFIXES:
@@ -422,6 +423,7 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)

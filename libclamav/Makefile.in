@@ -459,10 +459,11 @@ EXTRA_DIST = regex/engine.c libclamav.map \
 	     jsparse/generated/operators.h jsparse/generated/keywords.h jsparse/future_reserved_words.list\
 	     jsparse/keywords.list jsparse/special_keywords.list jsparse/operators.gperf
 
+COMMON_CLEANFILES = version.h version.h.tmp *.gcda *.gcno lzma/*.gcda lzma/*.gcno
 @MAINTAINER_MODE_TRUE@BUILT_SOURCES = jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
 @MAINTAINER_MODE_TRUE@GPERF_FLAGS = -E -t -L ANSI-C -C -F ', TOK_ERROR' -c
-@MAINTAINER_MODE_FALSE@CLEANFILES = version.h version.h.tmp
-@MAINTAINER_MODE_TRUE@CLEANFILES = jsparse-keywords.gperf @srcdir@/jsparse/generated/operators.h @srcdir@/jsparse/generated/keywords.h
+@MAINTAINER_MODE_FALSE@CLEANFILES = $(COMMON_CLEANFILES)
+@MAINTAINER_MODE_TRUE@CLEANFILES = $(COMMON_CLEANFILES) @srcdir@/jsparse/generated/operators.h @srcdir@/jsparse/generated/keywords.h
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 

@@ -110,6 +110,9 @@ START_TEST (test_append_len)
 {
 	fail_unless(textbuffer_append_len(&buf, "test",3) != -1, "tbuf append");
 	fail_unless(buf.data && !strncmp(buf.data,"tes",3), "textbuffer_append_len");
+	errmsg_expected();
+	fail_unless(textbuffer_append_len(&buf, "test",CLI_MAX_ALLOCATION) == -1, "tbuf append");
+	fail_unless(buf.data && !strncmp(buf.data,"tes",3), "textbuffer_append_len");
 }
 END_TEST
 

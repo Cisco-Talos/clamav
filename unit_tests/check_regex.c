@@ -166,8 +166,12 @@ static const struct rtest {
 	const char *realurl;
 	const char *displayurl;
 	int result;/* 0 - phish, 1 - whitelisted, 2 - clean, 
-		      3 - blacklisted if 2nd db is loaded */
+		      3 - blacklisted if 2nd db is loaded,
+		      4 - invalid regex*/
 } rtests[] = {
+	{NULL,"http://fake.example.com","&#61;&#61;&#61;&#61;&#61;key.com",0},
+	{NULL,"http://key.com","&#61;&#61;&#61;&#61;&#61;key.com",2},
+	{NULL,"http://key.com@fake.example.com","key.com",0},
 	/* entry taken from .wdb with a / appended */
 	{".+\\.ebayrtm\\.com([/?].*)?:.+\\.ebay\\.(de|com|co\\.uk)([/?].*)?/",
 		"http://srx.main.ebayrtm.com",
@@ -188,7 +192,29 @@ static const struct rtest {
 	{NULL, "http://1.test.example.com/something","test",3},
 	{NULL, "http://1.test.example.com/2","test",3},
 	{NULL, "http://user@1.test.example.com/2","test",3},
-	{NULL, "http://x.exe","http:///x.exe",2}
+	{NULL, "http://user@1.test.example.com/2/test","test",3},
+	{NULL, "http://user@1.test.example.com/","test",3},
+	{NULL, "http://x.exe","http:///x.exe",2},
+	{".+\\.ebayrtm\\.com([/?].*)?:[^.]+\\.ebay\\.(de|com|co\\.uk)/",
+		"http://srx.main.ebayrtm.com",
+		"pages.ebay.de",
+		1 /* should be whitelisted */},
+	{".+\\.ebayrtm\\.com([/?].*)?:.+[r-t]\\.ebay\\.(de|com|co\\.uk)/",
+		"http://srx.main.ebayrtm.com",
+		"pages.ebay.de",
+		1 /* should be whitelisted */},
+	{".+\\.ebayrtm\\.com([/?].*)?:.+[r-t]\\.ebay\\.(de|com|co\\.uk)/",
+		"http://srx.main.ebayrtm.com",
+		"pages.ebay.de",
+		1 /* should be whitelisted */},
+	{"[t-","","",4},
+	{NULL,"http://co.uk","http:// co.uk",2},
+	{NULL,"http://co.uk","     ",2},
+	{NULL,"127.0.0.1","pages.ebay.de",2},
+	{".+\\.ebayrtm\\.com([/?].*)?:.+\\.ebay\\.(de|com|co\\.uk)([/?].*)?/",
+		"http://pages.ebay.de@fake.example.com","pages.ebay.de",0},
+	{NULL,"http://key.com","https://key.com",0},
+	{NULL,"http://key.com%00fake.example.com","https://key.com",0},
 };
 
 START_TEST (regex_list_match_test)
@@ -205,13 +231,18 @@ START_TEST (regex_list_match_test)
 		return;
 	}
 
-	fail_unless(rtest->result == 0 || rtest->result == 1,
-			"whitelist test result must be either 0 or 1");
+	fail_unless(rtest->result == 0 || rtest->result == 1 || rtest->result==4,
+			"whitelist test result must be either 0 or 1 or 4");
 	pattern = cli_strdup(rtest->pattern);
 	fail_unless(!!pattern, "cli_strdup");
 
 	rc = regex_list_add_pattern(&matcher, pattern);
-	fail_unless(rc == 0,"regex_list_add_pattern");
+	if(rtest->result == 4) {
+		fail_unless(rc, "regex_list_add_pattern should return error");
+		free(pattern);
+		return;
+	} else
+		fail_unless(rc == 0,"regex_list_add_pattern");
 	free(pattern);
 
 	matcher.list_loaded = 1;

@@ -65,7 +65,12 @@ struct node {
 static int build_suffixtree_descend(struct node *n, struct text_buffer *buf, suffix_callback cb, void *cbdata, struct regex_list *regex);
 /* -----------------*/
 
-static uint8_t dot_bitmap[32];
+static uint8_t dot_bitmap[32] = {
+	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,
+	0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff
+};
 
 static struct node* make_node(enum node_type type, struct node *left, struct node *right)
 {
@@ -221,8 +226,8 @@ static uint8_t* parse_char_class(const char *pat, size_t *pos)
 			return dot_bitmap;
 		} else {
 			bitmap[pat[*pos]>>3] ^= 1<<(pat[*pos]&0x7);
-			++*pos;
 			range_start = pat[*pos];
+			++*pos;
 			hasprev = 1;
 		}
 	} while(pat[*pos]!=']');
@@ -286,12 +291,15 @@ static struct node* parse_regex(const char *p, size_t *last)
 				++*last;
 				break;
 			case '[':
+				++*last;
 				right = make_charclass( parse_char_class(p, last) );
 				if(!right)
 					return NULL;
 				v = make_node(concat, v, right);
 				if(!v)
 					return NULL;
+				++*last;
+				break;
 			case '\\':
 				/* next char is escaped, advance pointer
 				 * and let fall-through handle it */
@@ -312,7 +320,7 @@ static struct node* parse_regex(const char *p, size_t *last)
 
 static int build_suffixtree_ascend(struct node *n, struct text_buffer *buf, struct node *prev, suffix_callback cb, void *cbdata, struct regex_list *regex)
 {
-	size_t i;
+	size_t i, cnt;
 	while(n) {
 		struct node *q = n;
 		switch(n->type) {
@@ -326,12 +334,17 @@ static int build_suffixtree_ascend(struct node *n, struct text_buffer *buf, stru
 				n = n->parent;
 				break;
 			case leaf_class:
-				if(memcmp(n->u.leaf_class_bitmap, dot_bitmap, sizeof(dot_bitmap)) == 0) {
+				cnt = 0;
+				for(i=0;i<255;i++)
+					if (BITMAP_HASSET(n->u.leaf_class_bitmap, i))
+						cnt++;
+				if (cnt > 16) {
 					textbuffer_putc(buf, '\0');
 					if(cb(cbdata, buf->data, buf->pos-1, regex) < 0)
 						return CL_EMEM;
 					return 0;
 				}
+				/* handle small classes by expanding */
 				for(i=0;i<255;i++) {
 					if(BITMAP_HASSET(n->u.leaf_class_bitmap, i)) {
 						size_t pos;

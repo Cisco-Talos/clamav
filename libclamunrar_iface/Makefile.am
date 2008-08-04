@@ -22,3 +22,4 @@ lib_LTLIBRARIES = libclamunrar_iface.la
 endif
 
 EXTRA_DIST = libclamunrar_iface.map
+CLEANFILES=*.gcda *.gcno

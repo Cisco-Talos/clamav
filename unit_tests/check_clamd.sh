@@ -1,7 +1,7 @@
 #!/bin/sh 
 die() {
 	test -f /tmp/clamd-test.pid && kill `cat /tmp/clamd-test.pid` 
-	rm -rf test-db test-clamd-viraction.conf test-clamd.log test-clamd-heur-pred.conf
+	rm -rf test-db test-clamd-viraction.conf test-clamd.log	test-clamd-heur-pred.conf clamd-test.socket
 	exit $1
 }
 run_clamd_test() {
@@ -41,8 +41,9 @@ cat <$srcdir/test-clamd.conf >test-clamd-viraction.conf
 echo "VirusEvent `pwd`/$srcdir/virusaction-test.sh `pwd` \"Virus found: %v\"" >>test-clamd-viraction.conf
 rm -f test-clamd.log
 run_clamd_test test-clamd-viraction.conf ../test/clam.exe
-if ! grep "Virus found: ClamAV-Test-File.UNOFFICIAL" test-clamd.log >/dev/null 2>/dev/null; then
-	echo "Virusaction test failed!" >&2;
+grep "Virus found: ClamAV-Test-File.UNOFFICIAL" test-clamd.log >/dev/null 2>/dev/null; 
+if test ! $? ; then
+	echo "Virusaction test failed!" 
 	cat test-clamd.log
 	die 5;
 fi
@@ -50,14 +51,16 @@ fi
 # Test HeuristicScanPrecedence feature
 cat <$srcdir/test-clamd.conf >test-clamd-heur-pred.conf
 run_clamd_test test-clamd-heur-pred.conf clam-phish-exe
-if ! grep "ClamAV-Test-File" clamdscan.log >/dev/null 2>/dev/null; then
+grep "ClamAV-Test-File" clamdscan.log >/dev/null 2>/dev/null;
+if test ! $?; then
 	echo "HeuristicScanPrecedence off test failed!" >&2;
 	cat clamdscan.log;
 	die 6;
 fi
 echo "HeuristicScanPrecedence yes" >>test-clamd-heur-pred.conf
 run_clamd_test test-clamd-heur-pred.conf clam-phish-exe
-if ! grep "Phishing.Heuristics.Email.SpoofedDomain" clamdscan.log >/dev/null 2>/dev/null; then
+grep "Phishing.Heuristics.Email.SpoofedDomain" clamdscan.log >/dev/null 2>/dev/null;
+if test ! $?; then
 	echo "HeuristicScanPrecedence on test failed!" >&2;
 	cat clamdscan.log;
 	die 6;

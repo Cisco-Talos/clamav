@@ -26,7 +26,7 @@ check_clamscan.sh: $(top_builddir)/test/clam.exe
 $(top_builddir)/test/clam.exe:
 	(cd $(top_builddir)/test && $(MAKE))
 
-CLEANFILES=lcov.out *.gcno *.gcda *.log /tmp/clamd-test.log $(FILES) test-stderr.log clamscan.log valgrind.log clamdscan.log
+CLEANFILES=lcov.out *.gcno *.gcda *.log clamd-test.socket /tmp/clamd-test.log $(FILES) test-stderr.log clamscan.log valgrind.log clamdscan.log
 EXTRA_DIST=.split input test-clamd.conf test-freshclam.conf valgrind.supp virusaction-test.sh
 if ENABLE_COVERAGE
 LCOV_OUTPUT = lcov.out

@@ -241,7 +241,7 @@ noinst_LTLIBRARIES = libclamav_internal_utils.la
 EXTRA_DIST = regex/engine.c libclamav.map \
 	     jsparse/generated/operators.h jsparse/generated/keywords.h jsparse/future_reserved_words.list\
 	     jsparse/keywords.list jsparse/special_keywords.list jsparse/operators.gperf
-
+COMMON_CLEANFILES=version.h version.h.tmp *.gcda *.gcno lzma/*.gcda lzma/*.gcno
 if MAINTAINER_MODE
 BUILT_SOURCES=jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
 
@@ -266,7 +266,7 @@ jsparse/generated/keywords.h: jsparse-keywords.gperf
 	rm keywords-tmp-g
 	mv keywords-tmp @srcdir@/jsparse/generated/keywords.h
 
-CLEANFILES=jsparse-keywords.gperf @srcdir@/jsparse/generated/operators.h @srcdir@/jsparse/generated/keywords.h
+CLEANFILES=$(COMMON_CLEANFILES) @srcdir@/jsparse/generated/operators.h @srcdir@/jsparse/generated/keywords.h
 else
-CLEANFILES=version.h version.h.tmp
+CLEANFILES=$(COMMON_CLEANFILES)
 endif

@@ -247,6 +247,7 @@ top_srcdir = @top_srcdir@
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/clamscan -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 AM_INSTALLCHECK_STD_OPTIONS_EXEMPT = clamdscan$(EXEEXT)
+CLEANFILES = *.gcda *.gcno
 all: all-am
 
 .SUFFIXES:
@@ -536,6 +537,7 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)

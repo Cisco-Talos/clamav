@@ -35,3 +35,4 @@ lib_LTLIBRARIES = libclamunrar.la
 endif
 
 EXTRA_DIST = libclamunrar.map
+CLEANFILES=*.gcda *.gcno
