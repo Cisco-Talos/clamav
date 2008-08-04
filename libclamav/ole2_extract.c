@@ -1077,5 +1077,5 @@ abort:
 	if(hdr.bitset)
 	    cli_bitset_free(hdr.bitset);
 
-	return ret;
+	return ret == CL_BREAK ? CL_CLEAN : ret;
 }

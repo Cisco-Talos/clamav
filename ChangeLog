@@ -1,3 +1,8 @@
+Mon Aug  4 22:07:54 CEST 2008 (tk)
+----------------------------------
+  * libclamav/ole2_extract: don't return CL_BREAK in cli_ole2_extract()
+  (bb#1123)
+
 Mon Aug  4 16:46:46 EEST 2008 (edwin)
 -------------------------------------
   * clamdscan: add support for file descriptor passing (from
