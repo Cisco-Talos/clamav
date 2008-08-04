@@ -28,7 +28,7 @@ run_clamd_fdpass_test() {
 		echo "Failed to run clamdscan!" >&2;
 		die 3;
 	fi
-	test /tmp/clamd-test.pid && kill `cat /tmp/clamd-test.pid`
+	test -f /tmp/clamd-test.pid && kill -0 `cat /tmp/clamd-test.pid` && kill `cat /tmp/clamd-test.pid`
 }
 
 mkdir -p test-db
