@@ -631,7 +631,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	int bread, fd, totalsize = 0,  rot = 0, totaldownloaded = 0,
 	    percentage = 0, sd;
 	unsigned int i;
-	char *remotename = NULL, *authorization = NULL, *headerline, ipaddr[16];
+	char *remotename = NULL, *authorization = NULL, *headerline, ipaddr[46];
 	const char *rotation = "|/-\\";
 
 
@@ -662,7 +662,6 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	uas ? uas : PACKAGE"/", uas ? "" : get_version());
 
     memset(ipaddr, 0, sizeof(ipaddr));
-
     if(ip[0]) /* use ip to connect */
 	sd = wwwconnect(ip, proxy, port, ipaddr, localip, ctimeout, mdat, logerr, can_whitelist);
     else
