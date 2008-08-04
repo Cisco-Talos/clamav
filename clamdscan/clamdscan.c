@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 	struct optstruct *opt;
 	const char *clamdscan_accepted[] = { "help", "version", "verbose", "quiet",
 				  "stdout", "log", "move", "copy", "remove",
-				  "config-file", "no-summary",
+				  "config-file", "no-summary",  "fdpass",
 				  "disable-summary", "multiscan", NULL };
 
 
@@ -160,6 +160,7 @@ void help(void)
     mprintf("    --multiscan           -m           Force MULTISCAN mode\n");
     mprintf("    --infected            -i           Only print infected files\n");
     mprintf("    --no-summary                       Disable summary at end of scanning\n");
+    mprintf("    --fdpass                           pass filedescriptor to clamd (useful if clamd is running as a different user)\n");
     mprintf("\n");
 
     exit(0);

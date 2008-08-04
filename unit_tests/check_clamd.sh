@@ -18,6 +18,19 @@ run_clamd_test() {
 	test /tmp/clamd-test.pid && kill `cat /tmp/clamd-test.pid` 
 }
 
+run_clamd_fdpass_test() {
+	conf_file=$1
+	shift
+	rm -f clamdscan.log
+	../clamd/clamd -c $conf_file || { echo "Failed to start clamd!" >&2; die 1;}
+	../clamdscan/clamdscan --quiet --fdpass --config-file $conf_file - <$1 --log=clamdscan.log
+	if test $? = 2; then
+		echo "Failed to run clamdscan!" >&2;
+		die 3;
+	fi
+	test /tmp/clamd-test.pid && kill `cat /tmp/clamd-test.pid`
+}
+
 mkdir -p test-db
 cat <<EOF >test-db/test.hdb
 aa15bcf478d165efd2065190eb473bcb:544:ClamAV-Test-File
@@ -64,5 +77,17 @@ if test ! $?; then
 	echo "HeuristicScanPrecedence on test failed!" >&2;
 	cat clamdscan.log;
 	die 6;
+fi
+
+if grep "^#define HAVE_FD_PASSING 1" ../clamav-config.h >/dev/null; then
+	run_clamd_fdpass_test $srcdir/test-clamd.conf ../test/clam.exe
+	grep "ClamAV-Test-File" clamdscan.log >/dev/null 2>/dev/null;
+	if test ! $?; then
+		echo "FDpassing test failed!" >&2;
+		cat clamdscan.log;
+		die 7;
+	fi
+else
+	echo "No FD passing support, skipping test"
 fi
 die 0;

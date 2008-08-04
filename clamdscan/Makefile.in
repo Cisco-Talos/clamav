@@ -71,11 +71,13 @@ am__clamdscan_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 	$(top_srcdir)/shared/cfgparser.h $(top_srcdir)/shared/misc.c \
 	$(top_srcdir)/shared/misc.h $(top_srcdir)/shared/getopt.c \
 	$(top_srcdir)/shared/getopt.h $(top_srcdir)/shared/options.c \
-	$(top_srcdir)/shared/options.h clamdscan.c client.c client.h \
-	defaults.h
+	$(top_srcdir)/shared/options.h \
+	$(top_srcdir)/libclamav/regex/strlcpy.c clamd_fdscan.c \
+	clamd_fdscan.h clamdscan.c client.c client.h defaults.h
 @BUILD_CLAMD_TRUE@am_clamdscan_OBJECTS = output.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	cfgparser.$(OBJEXT) misc.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	getopt.$(OBJEXT) options.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	strlcpy.$(OBJEXT) clamd_fdscan.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	clamdscan.$(OBJEXT) client.$(OBJEXT)
 clamdscan_OBJECTS = $(am_clamdscan_OBJECTS)
 clamdscan_LDADD = $(LDADD)
@@ -240,6 +242,9 @@ top_srcdir = @top_srcdir@
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/getopt.h \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/options.c \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/options.h \
+@BUILD_CLAMD_TRUE@    $(top_srcdir)/libclamav/regex/strlcpy.c\
+@BUILD_CLAMD_TRUE@    clamd_fdscan.c \
+@BUILD_CLAMD_TRUE@    clamd_fdscan.h \
 @BUILD_CLAMD_TRUE@    clamdscan.c \
 @BUILD_CLAMD_TRUE@    client.c \
 @BUILD_CLAMD_TRUE@    client.h \
@@ -336,12 +341,14 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cfgparser.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamd_fdscan.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamdscan.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/client.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/options.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/output.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strlcpy.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -433,6 +440,20 @@ options.obj: $(top_srcdir)/shared/options.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/options.c' object='options.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o options.obj `if test -f '$(top_srcdir)/shared/options.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/options.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/options.c'; fi`
+
+strlcpy.o: $(top_srcdir)/libclamav/regex/strlcpy.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT strlcpy.o -MD -MP -MF $(DEPDIR)/strlcpy.Tpo -c -o strlcpy.o `test -f '$(top_srcdir)/libclamav/regex/strlcpy.c' || echo '$(srcdir)/'`$(top_srcdir)/libclamav/regex/strlcpy.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/strlcpy.Tpo $(DEPDIR)/strlcpy.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/libclamav/regex/strlcpy.c' object='strlcpy.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o strlcpy.o `test -f '$(top_srcdir)/libclamav/regex/strlcpy.c' || echo '$(srcdir)/'`$(top_srcdir)/libclamav/regex/strlcpy.c
+
+strlcpy.obj: $(top_srcdir)/libclamav/regex/strlcpy.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT strlcpy.obj -MD -MP -MF $(DEPDIR)/strlcpy.Tpo -c -o strlcpy.obj `if test -f '$(top_srcdir)/libclamav/regex/strlcpy.c'; then $(CYGPATH_W) '$(top_srcdir)/libclamav/regex/strlcpy.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/libclamav/regex/strlcpy.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/strlcpy.Tpo $(DEPDIR)/strlcpy.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/libclamav/regex/strlcpy.c' object='strlcpy.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o strlcpy.obj `if test -f '$(top_srcdir)/libclamav/regex/strlcpy.c'; then $(CYGPATH_W) '$(top_srcdir)/libclamav/regex/strlcpy.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/libclamav/regex/strlcpy.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

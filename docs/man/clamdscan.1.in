@@ -44,6 +44,10 @@ Move infected files into DIRECTORY.
 .TP 
 \fB\-\-no\-summary\fR
 Do not display summary at the end of scanning.
+.TP
+\fB\-\-fdpass\fR
+Pass the file descriptor permissions clamd. This is useful if clamd is running as a different user as it is faster than streaming the file to clamd.
+Only available if connected to clamd through local(unix) sockets and scanning stdin.
 .SH "EXAMPLES"
 .LP 
 .TP 
@@ -58,6 +62,10 @@ Do not display summary at the end of scanning.
 (2) To scan all files in /home:
 
 \fBclamdscan /home\fR
+.TP
+(3) To scan a file when clamd is running as a different user:
+
+\fBclamdscan - <file_to_scan\fR
 .SH "RETURN CODES"
 .LP 
 0 : No virus found.

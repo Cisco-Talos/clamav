@@ -1,3 +1,8 @@
+Mon Aug  4 16:46:46 EEST 2008 (edwin)
+-------------------------------------
+  * clamdscan: add support for file descriptor passing (from
+  contrib/clamd_fdscan) (bb #1117)
+
 Mon Aug  4 02:40:33 CEST 2008 (acab)
 ------------------------------------
   * test: add clam.impl.zip
