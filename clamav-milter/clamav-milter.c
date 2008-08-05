@@ -580,17 +580,16 @@ static	int	verifyIncomingSocketName(const char *sockName);
 static	int	isWhitelisted(const char *emailaddress, int to);
 static	int	isBlacklisted(const char *ip_address);
 static	table_t	*mx(const char *host, table_t *t);
-#ifdef	HAVE_RESOLV_H
-static	table_t	*resolve(const char *host, table_t *t);
-static	int	spf(struct privdata *privdata, table_t *prevhosts);
-static	void	spf_ip(char *ip, int zero, void *v);
-#endif
 static	sfsistat	black_hole(const struct privdata *privdata);
 static	int	useful_header(const char *cmd);
 
 extern	short	logg_foreground;
 
-#if HAVE_RESOLV_H
+#ifdef HAVE_RESOLV_H
+static	table_t	*resolve(const char *host, table_t *t);
+static	int	spf(struct privdata *privdata, table_t *prevhosts);
+static	void	spf_ip(char *ip, int zero, void *v);
+
 res_state res_pool;
 uint8_t *res_pool_state;
 pthread_cond_t res_pool_cond = PTHREAD_COND_INITIALIZER;
@@ -1394,7 +1393,7 @@ main(int argc, char **argv)
 	if((max_children == 0) && ((cpt = cfgopt(copt, "MaxThreads")) != NULL))
 		max_children = cfgopt(copt, "MaxThreads")->numarg;
 
-#if HAVE_RESOLV_H
+#ifdef HAVE_RESOLV_H
 	/* allocate a pool of resolvers */
 	if(!(res_pool=cli_calloc(max_children+1, sizeof(*res_pool))))
 		return EX_OSERR;
@@ -2115,6 +2114,7 @@ main(int argc, char **argv)
 	logg(_("Starting %s\n"), clamav_version);
 	logg(_("*Debugging is on\n"));
 
+#ifdef HAVE_RESOLV_H
 	if(!(_res.options&RES_INIT))
 		if(res_init() < 0) {
 			fprintf(stderr, "%s: Can't initialise the resolver\n",
@@ -2146,6 +2146,7 @@ main(int argc, char **argv)
 		}
 		tableIterate(blacklist, dump_blacklist, NULL);
 	}
+#endif /* HAVE_RESOLV_H */
 
 #ifdef	SESSION
 	pthread_mutex_unlock(&version_mutex);
@@ -6609,13 +6610,14 @@ spf_ip(char *ip, int zero, void *v)
 }
 
 #else	/*!HAVE_RESOLV_H */
-static void
-mx(void)
+static table_t *
+mx(const char *host, table_t *t)
 {
 	logg(_("^MX peers will not be immune from being blacklisted"));
 
 	if(blacklist == NULL)
 		blacklist = tableCreate();
+	return NULL;
 }
 #endif	/* HAVE_RESOLV_H */
 
