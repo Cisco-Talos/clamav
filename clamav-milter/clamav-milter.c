@@ -590,12 +590,12 @@ static	int	useful_header(const char *cmd);
 
 extern	short	logg_foreground;
 
-
+#if HAVE_RESOLV_H
 res_state res_pool;
 uint8_t *res_pool_state;
-
 pthread_cond_t res_pool_cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t	res_pool_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 
 int safe_res_query(const char *d, int c, int t, u_char *a, int l) {
 	int i = -1, ret;
@@ -622,6 +622,7 @@ int safe_res_query(const char *d, int c, int t, u_char *a, int l) {
 	pthread_mutex_unlock(&res_pool_mutex);
 	return ret;
 } 
+#endif /* HAVE_RESOLV_H */
 
 static void
 help(void)
@@ -1393,6 +1394,7 @@ main(int argc, char **argv)
 	if((max_children == 0) && ((cpt = cfgopt(copt, "MaxThreads")) != NULL))
 		max_children = cfgopt(copt, "MaxThreads")->numarg;
 
+#if HAVE_RESOLV_H
 	/* allocate a pool of resolvers */
 	if(!(res_pool=cli_calloc(max_children+1, sizeof(*res_pool))))
 		return EX_OSERR;
@@ -1401,6 +1403,7 @@ main(int argc, char **argv)
 	memset(res_pool_state, 1, max_children+1);
 	for(i = 0; i < max_children+1; i++)
 		res_ninit(&res_pool[i]);
+#endif
 
 	if((cpt = cfgopt(copt, "ReadTimeout")) != NULL) {
 		readTimeout = cpt->numarg;
