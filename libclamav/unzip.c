@@ -347,7 +347,7 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
   zip+=LH_flen;
   zsize-=LH_flen;
 
-  cli_dbgmsg("cli_unzip: lh - ZMDNAME:%d:%s:%u:%u:%u:%u:%u:%u\n", ((LH_flags & F_ENCR)==0), name, LH_usize, LH_csize, LH_crc32, LH_method, fc, ctx->recursion);
+  cli_dbgmsg("cli_unzip: lh - ZMDNAME:%d:%s:%u:%u:%x:%u:%u:%u\n", ((LH_flags & F_ENCR)!=0), name, LH_usize, LH_csize, LH_crc32, LH_method, fc, ctx->recursion);
   /* ZMDfmt virname:encrypted(0-1):filename(exact|*):usize(exact|*):csize(exact|*):crc32(exact|*):method(exact|*):fileno(exact|*):maxdepth(exact|*) */
 
   while(meta &&
