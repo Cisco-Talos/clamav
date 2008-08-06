@@ -1,3 +1,7 @@
+Wed Aug  6 02:11:12 CEST 2008 (acab)
+------------------------------------
+  * build system, clamav-milter: work around for non MT lresolv (bb#1125)
+
 Tue Aug  5 13:14:31 CEST 2008 (acab)
 ------------------------------------
   * clamav-milter: properly wrap dns stuff (again) - bb#1125

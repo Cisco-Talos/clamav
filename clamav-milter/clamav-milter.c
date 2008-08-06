@@ -590,11 +590,12 @@ static	table_t	*resolve(const char *host, table_t *t);
 static	int	spf(struct privdata *privdata, table_t *prevhosts);
 static	void	spf_ip(char *ip, int zero, void *v);
 
+pthread_mutex_t	res_pool_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+#ifdef HAVE_LRESOLV_R
 res_state res_pool;
 uint8_t *res_pool_state;
 pthread_cond_t res_pool_cond = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t	res_pool_mutex = PTHREAD_MUTEX_INITIALIZER;
-
 
 int safe_res_query(const char *d, int c, int t, u_char *a, int l) {
 	int i = -1, ret;
@@ -620,7 +621,20 @@ int safe_res_query(const char *d, int c, int t, u_char *a, int l) {
 	pthread_cond_signal(&res_pool_cond);
 	pthread_mutex_unlock(&res_pool_mutex);
 	return ret;
-} 
+}
+
+#else /* !HAVE_LRESOLV_R - non thread safe resolver (old bsd's) */
+
+int safe_res_query(const char *d, int c, int t, u_char *a, int l) {
+	int ret;
+	pthread_mutex_lock(&res_pool_mutex);
+	ret = res_query(d, c, t, a, l);
+	pthread_mutex_unlock(&res_pool_mutex);
+	return ret;
+}
+
+#endif /* HAVE_LRESOLV_R */
+
 #endif /* HAVE_RESOLV_H */
 
 static void
@@ -1393,7 +1407,7 @@ main(int argc, char **argv)
 	if((max_children == 0) && ((cpt = cfgopt(copt, "MaxThreads")) != NULL))
 		max_children = cfgopt(copt, "MaxThreads")->numarg;
 
-#ifdef HAVE_RESOLV_H
+#ifdef HAVE_LRESOLV_R
 	/* allocate a pool of resolvers */
 	if(!(res_pool=cli_calloc(max_children+1, sizeof(*res_pool))))
 		return EX_OSERR;

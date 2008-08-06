@@ -177,6 +177,9 @@
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H
 
+/* Define to 1 if -lresolv provides thread safe API's like res_nquery */
+#undef HAVE_LRESOLV_R
+
 /* Define to 1 if you have the <malloc.h> header file. */
 #undef HAVE_MALLOC_H
 
