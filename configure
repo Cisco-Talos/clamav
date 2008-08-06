@@ -17089,6 +17089,7 @@ cat >>confdefs.h <<\_ACEOF
 #define C_BEOS 1
 _ACEOF
 
+    use_gethostbyname_r="no"
     ;;
 darwin*)
 

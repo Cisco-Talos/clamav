@@ -897,6 +897,7 @@ beos*)
     AC_MSG_RESULT([BeOS detected. Disabling thread support.])
     have_pthreads="no"
     AC_DEFINE([C_BEOS],1,[os is beos])
+    use_gethostbyname_r="no"
     ;;
 darwin*)
     AC_DEFINE([C_BSD],1,[os is bsd flavor])
