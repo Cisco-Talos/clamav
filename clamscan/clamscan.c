@@ -78,7 +78,7 @@ int main(int argc, char **argv)
     }
 #endif
 
-#ifndef C_WINDOWS
+#if !defined(C_WINDOWS) && !defined(C_BEOS)
     sigemptyset(&sigset);
     sigaddset(&sigset, SIGXFSZ);
     sigprocmask(SIG_SETMASK, &sigset, NULL);
