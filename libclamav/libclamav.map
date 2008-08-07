@@ -108,6 +108,16 @@ CLAMAV_PRIVATE {
     uniq_add;
     uniq_get;
     cli_hex2str;
+    cli_ac_init;
+    cli_ac_initdata;
+    cli_ac_buildtrie;
+    cli_ac_scanbuff;
+    cli_ac_freedata;
+    cli_ac_free;
+    cli_parse_add;
+    cli_bm_init;
+    cli_bm_scanbuff;
+    cli_bm_free;
   local:
     *;
 };

@@ -16,7 +16,7 @@ else
 check_PROGRAMS = $(programs)
 check_SCRIPTS = $(scripts)
 endif
-check_clamav_SOURCES = check_clamav.c check_jsnorm.c check_str.c check_regex.c checks.h $(top_builddir)/libclamav/clamav.h check_disasm.c check_uniq.c
+check_clamav_SOURCES = check_clamav.c check_jsnorm.c check_str.c check_regex.c checks.h $(top_builddir)/libclamav/clamav.h check_disasm.c check_uniq.c check_matchers.c
 check_clamav_CFLAGS = @CHECK_CFLAGS@ -DSRCDIR=\"$(abs_srcdir)\"
 check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CHECK_LIBS@
 
