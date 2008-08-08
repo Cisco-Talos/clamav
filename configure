@@ -19067,7 +19067,7 @@ if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
 fi
 rm -f conftest*
 
-if test $have_fd_set = yes; then
+if test "$have_fd_set" = yes; then
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_SYS_SELECT_H 1
@@ -19121,7 +19121,7 @@ sed 's/^/| /' conftest.$ac_ext >&5
 fi
 
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-	if test $have_fd_set = yes; then
+	if test "$have_fd_set" = yes; then
 		{ echo "$as_me:$LINENO: result: yes, found in sys/types.h" >&5
 echo "${ECHO_T}yes, found in sys/types.h" >&6; }
 	else
