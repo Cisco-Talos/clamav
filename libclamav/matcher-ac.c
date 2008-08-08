@@ -713,7 +713,7 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
 
     if(!(pattern->ch[0] & CLI_MATCH_IGNORE)) {
 	bp = offset - pattern->prefix_length;
-	if(pattern->ch_mindist[0] + 1 > bp)
+	if(pattern->ch_mindist[0] + (uint32_t) 1 > bp)
 	    return 0;
 	bp -= pattern->ch_mindist[0] + 1;
 	for(i = pattern->ch_mindist[0]; i <= pattern->ch_maxdist[0]; i++) {

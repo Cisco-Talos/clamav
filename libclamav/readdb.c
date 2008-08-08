@@ -464,7 +464,7 @@ static int cli_chkpua(const char *signame, const char *pua_cats, unsigned int op
 	return 1;
     }
 
-    if(pt - sig + 2 > sizeof(cat)) {
+    if((unsigned int) (pt - sig + 2) > sizeof(cat)) {
 	cli_dbgmsg("Skipping signature %s - too long category name\n", signame);
 	return 1;
     }

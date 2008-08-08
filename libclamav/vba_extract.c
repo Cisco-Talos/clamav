@@ -710,7 +710,7 @@ ppt_unlzw(const char *dir, int fd, uint32_t length)
 		}
 	} while(inflate(&stream, Z_NO_FLUSH) == Z_OK);
 
-	if (cli_writen(ofd, outbuff, PPT_LZW_BUFFSIZE-stream.avail_out) != (int)PPT_LZW_BUFFSIZE-stream.avail_out) {
+	if (cli_writen(ofd, outbuff, PPT_LZW_BUFFSIZE-stream.avail_out) != (int)(PPT_LZW_BUFFSIZE-stream.avail_out)) {
 		close(ofd);
 		inflateEnd(&stream);
 		return FALSE;

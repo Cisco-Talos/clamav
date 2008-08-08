@@ -575,7 +575,7 @@ static int ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir, 
 				cli_dbgmsg("OLE2: files limit reached (max: %u)\n", ctx->limits->maxfiles);
 				return CL_BREAK;
 			}
-			if (!limits || !limits->maxfilesize || prop_block[idx].size <= limits->maxfilesize || *scansize == -1 || prop_block[idx].size <= *scansize) {
+			if (!limits || !limits->maxfilesize || prop_block[idx].size <= limits->maxfilesize || prop_block[idx].size <= *scansize) {
 				(*file_count)++;
 				*scansize-=prop_block[idx].size;
 				if ((ret=handler(fd, hdr, &prop_block[idx], dir, ctx)) != CL_SUCCESS)

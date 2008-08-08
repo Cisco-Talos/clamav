@@ -79,7 +79,7 @@ cli_tnef(const char *dir, int desc)
 	}
 	fsize = statb.st_size;
 
-	if(fsize < MIN_SIZE) {
+	if(fsize < (off_t) MIN_SIZE) {
 		cli_dbgmsg("cli_tngs: file too small, ignoring\n");
 		return CL_CLEAN;
 	}
