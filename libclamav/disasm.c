@@ -1698,7 +1698,7 @@ void disasmbuf(uint8_t *buff, unsigned int len, int fd) {
     len -= next-buff;
     buff=next;
 
-    w.real_op = s.real_op;
+    w.real_op = le16_to_host(s.real_op);
     w.opsize = s.opsize;
     w.adsize = s.adsize;
     w.segment = s.segment;
