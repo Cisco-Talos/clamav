@@ -19,6 +19,7 @@
  */
 
 #include "disasmpriv.h"
+#include "disasm.h"
 
 enum ADDRS {
   ADDR_REG_EAX,
@@ -1184,6 +1185,8 @@ static void spam_x86(struct DISASMED *s, char *hr) {
 
   for (i=0; i<3; i++) {
     switch(s->args[i].access) {
+    case ACCESS_NOARG:
+      break;
     case ACCESS_IMM:
       sprintf(hr, "%s%s %x", hr, comma, s->args[i].arg.d);
       break;
@@ -1237,7 +1240,7 @@ static void spam_x86(struct DISASMED *s, char *hr) {
 #define GETSIZE(X) (x86ops[table][s->table_op].X!=SIZE_WD?x86ops[table][s->table_op].X:((s->opsize)?SIZE_WORD:SIZE_DWORD))
 
 
-uint8_t *disasm_x86(uint8_t *command, unsigned int len, struct DISASMED *s) {
+static uint8_t *disasm_x86(uint8_t *command, unsigned int len, struct DISASMED *s) {
   unsigned int reversed=0, i;
   uint8_t b;
   unsigned int table = 0;
@@ -1277,7 +1280,7 @@ uint8_t *disasm_x86(uint8_t *command, unsigned int len, struct DISASMED *s) {
       uint8_t rop;
       uint8_t scale;
       uint8_t base;
-      uint8_t index;
+      uint8_t idx;
       
       table = s->table_op - 0xd8;
       assert(table<8);
@@ -1317,7 +1320,7 @@ uint8_t *disasm_x86(uint8_t *command, unsigned int len, struct DISASMED *s) {
 	if (rm==4) {
 	  GETBYTE(base);
 	  scale=base>>6;
-	  index=(base>>3)&7;
+	  idx=(base>>3)&7;
 	  base&=7;
 	  
 	  s->args[0].arg.marg.scale = 1<<scale;
@@ -1325,7 +1328,7 @@ uint8_t *disasm_x86(uint8_t *command, unsigned int len, struct DISASMED *s) {
 	    s->args[0].arg.marg.r2=REG_INVALID;
 	    mod=2;
 	  }
-	  if((s->args[0].arg.marg.r1=mrm_regmap[SIZED][index])==REG_ESP) {
+	  if((s->args[0].arg.marg.r1=mrm_regmap[SIZED][idx])==REG_ESP) {
 	    s->args[0].arg.marg.r1=s->args[0].arg.marg.r2;
 	    s->args[0].arg.marg.scale = (s->args[0].arg.marg.r2!=REG_INVALID);
 	    s->args[0].arg.marg.r2=REG_INVALID;
@@ -1427,7 +1430,7 @@ uint8_t *disasm_x86(uint8_t *command, unsigned int len, struct DISASMED *s) {
 	uint8_t rop;
 	uint8_t scale;
 	uint8_t base;
-	uint8_t index;
+	uint8_t idx;
 	int64_t shiftme=0;
 	const uint8_t (*p)[8];
 
@@ -1500,7 +1503,7 @@ uint8_t *disasm_x86(uint8_t *command, unsigned int len, struct DISASMED *s) {
 	  if (rm==4) {
 	    GETBYTE(base);
 	    scale=base>>6;
-	    index=(base>>3)&7;
+	    idx=(base>>3)&7;
 	    base&=7;
 
 	    s->args[reversed].arg.marg.scale = 1<<scale;
@@ -1508,7 +1511,7 @@ uint8_t *disasm_x86(uint8_t *command, unsigned int len, struct DISASMED *s) {
 	      s->args[reversed].arg.marg.r2=REG_INVALID;
 	      mod=2;
 	    }
-	    if((s->args[reversed].arg.marg.r1=mrm_regmap[SIZED][index])==REG_ESP) {
+	    if((s->args[reversed].arg.marg.r1=mrm_regmap[SIZED][idx])==REG_ESP) {
 	      s->args[reversed].arg.marg.r1=s->args[reversed].arg.marg.r2;
 	      s->args[reversed].arg.marg.scale = (s->args[reversed].arg.marg.r2!=REG_INVALID);
 	      s->args[reversed].arg.marg.r2=REG_INVALID;
@@ -1695,7 +1698,7 @@ void disasmbuf(uint8_t *buff, unsigned int len, int fd) {
     len -= next-buff;
     buff=next;
 
-    cli_writeint32(&w.real_op, s.real_op);
+    w.real_op = s.real_op;
     w.opsize = s.opsize;
     w.adsize = s.adsize;
     w.segment = s.segment;
