@@ -1,6 +1,7 @@
 #ifdef HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
+#include "clamav.h"
 #include "version.h"
 
 #ifndef REPO_VERSION
