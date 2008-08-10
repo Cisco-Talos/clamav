@@ -56,6 +56,8 @@
 #include <errno.h>
 #include <zlib.h>
 
+#include "target.h"
+
 #include "manager.h"
 #include "notify.h"
 #include "dns.h"
@@ -474,7 +476,7 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 	unsigned int i, j;
 	char *remotename = NULL, *authorization = NULL;
 	struct cl_cvd *cvd;
-	char last_modified[36];
+	char last_modified[36], uastr[128];
 	struct stat sb;
 
 
@@ -506,15 +508,20 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 
     logg("Reading CVD header (%s): ", file);
 
+    if(uas)
+	strncpy(uastr, uas, sizeof(uastr));
+    else
+	snprintf(uastr, sizeof(uastr), PACKAGE"/%s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")", get_version());
+    uastr[sizeof(uastr) - 1] = 0;
+
     snprintf(cmd, sizeof(cmd),
 	"GET %s/%s HTTP/1.0\r\n"
 	"Host: %s\r\n%s"
-	"User-Agent: %s%s\r\n"
+	"User-Agent: %s\r\n"
 	"Connection: close\r\n"
 	"Range: bytes=0-511\r\n"
         "If-Modified-Since: %s\r\n"
-        "\r\n", (remotename != NULL) ? remotename : "", file, hostname, (authorization != NULL) ? authorization : "", 
-	uas ? uas : PACKAGE"/",uas ? "" : get_version(), last_modified);
+        "\r\n", (remotename != NULL) ? remotename : "", file, hostname, (authorization != NULL) ? authorization : "", uastr, last_modified);
 
     free(remotename);
     free(authorization);
@@ -627,7 +634,7 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 
 static int getfile(const char *srcfile, const char *destfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist)
 {
-	char cmd[512], buffer[FILEBUFF], *ch;
+	char cmd[512], uastr[128], buffer[FILEBUFF], *ch;
 	int bread, fd, totalsize = 0,  rot = 0, totaldownloaded = 0,
 	    percentage = 0, sd;
 	unsigned int i;
@@ -650,16 +657,21 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	}
     }
 
+    if(uas)
+	strncpy(uastr, uas, sizeof(uastr));
+    else
+	snprintf(uastr, sizeof(uastr), PACKAGE"/%s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")", get_version());
+    uastr[sizeof(uastr) - 1] = 0;
+
     snprintf(cmd, sizeof(cmd),
 	"GET %s/%s HTTP/1.0\r\n"
 	"Host: %s\r\n%s"
-	"User-Agent: %s%s\r\n"
+	"User-Agent: %s\r\n"
 #ifdef FRESHCLAM_NO_CACHE
 	"Cache-Control: no-cache\r\n"
 #endif
 	"Connection: close\r\n"
-	"\r\n", (remotename != NULL) ? remotename : "", srcfile, hostname, (authorization != NULL) ? authorization : "",
-	uas ? uas : PACKAGE"/", uas ? "" : get_version());
+	"\r\n", (remotename != NULL) ? remotename : "", srcfile, hostname, (authorization != NULL) ? authorization : "", uastr);
 
     memset(ipaddr, 0, sizeof(ipaddr));
     if(ip[0]) /* use ip to connect */

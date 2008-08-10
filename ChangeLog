@@ -1,3 +1,7 @@
+Sun Aug 10 17:46:12 CEST 2008 (tk)
+----------------------------------
+  * freshclam/manager.c: add machine/OS info to the default user agent string
+
 Thu Aug  7 14:27:44 CEST 2008 (tk)
 ----------------------------------
   * unit_tests/check_matchers.c: add tests for cli_(ac|bm)_scanbuff
