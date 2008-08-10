@@ -117,6 +117,7 @@ static int cb_expect_multi(void *cbdata, const char *suffix, size_t len, const s
 	return 0;
 }
 
+#ifdef CHECK_HAVE_LOOPS
 START_TEST (test_suffix)
 {
 	int rc;
@@ -138,6 +139,7 @@ START_TEST (test_suffix)
 			"suffix number mismatch, expected: %d, was: %d\n", n, cb_called);
 }
 END_TEST
+#endif
 
 static void setup(void)
 {
@@ -217,6 +219,7 @@ static const struct rtest {
 	{NULL,"http://key.com%00fake.example.com","https://key.com",0},
 };
 
+#ifdef CHECK_HAVE_LOOPS
 START_TEST (regex_list_match_test)
 {
 	const char *info;
@@ -260,6 +263,7 @@ START_TEST (regex_list_match_test)
 	free(realurl);
 }
 END_TEST
+#endif
 
 static struct cl_engine *engine;
 static int loaded_2 = 0;
@@ -400,12 +404,13 @@ static void do_phishing_test(const struct rtest *rtest)
 	}
 }
 
+#ifdef CHECK_HAVE_LOOPS
 START_TEST (phishingScan_test)
 {
 	do_phishing_test(&rtests[_i]);
 }
 END_TEST
-
+#endif
 
 START_TEST(phishing_fake_test)
 {
@@ -438,24 +443,30 @@ Suite *test_regex_suite(void)
 	tcase_add_checked_fixture (tc_api, setup, teardown);
 	tcase_add_test(tc_api, empty);
 	tcase_add_test(tc_api, one);
+#ifdef CHECK_HAVE_LOOPS
 	tcase_add_loop_test(tc_api, test_suffix, 0, sizeof(tests)/sizeof(tests[0]));
-
+#endif
 	tc_matching = tcase_create("regex_list");
 	suite_add_tcase(s, tc_matching);
 	tcase_add_checked_fixture (tc_matching, rsetup, rteardown);
+#ifdef CHECK_HAVE_LOOPS
 	tcase_add_loop_test(tc_matching, regex_list_match_test, 0, sizeof(rtests)/sizeof(rtests[0]));
-
+#endif
 	tc_phish = tcase_create("phishingScan");
 	suite_add_tcase(s, tc_phish);
 	tcase_add_checked_fixture(tc_phish, psetup, pteardown);
+#ifdef CHECK_HAVE_LOOPS
 	tcase_add_loop_test(tc_phish, phishingScan_test, 0, sizeof(rtests)/sizeof(rtests[0]));
+#endif
 	tcase_add_test(tc_phish, phishing_fake_test);
 
 
 	tc_phish2 = tcase_create("phishingScan with 2 dbs");
 	suite_add_tcase(s, tc_phish2);
 	tcase_add_checked_fixture(tc_phish2, psetup2, pteardown);
+#ifdef CHECK_HAVE_LOOPS
 	tcase_add_loop_test(tc_phish2, phishingScan_test, 0, sizeof(rtests)/sizeof(rtests[0]));
+#endif
 	tcase_add_test(tc_phish2, phishing_fake_test);
 
 	return s;

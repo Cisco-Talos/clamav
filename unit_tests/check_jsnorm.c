@@ -60,6 +60,7 @@ static struct test op_test[] = {
 	{"---",0}
 };
 
+#ifdef CHECK_HAVE_LOOPS
 START_TEST (test_keywords)
 {
     const struct keyword *kw = in_word_set(kw_test[_i].str, strlen(kw_test[_i].str));
@@ -80,6 +81,7 @@ START_TEST (test_operators)
 	    fail_unless(!op, "non-operator detected as operator");
 }
 END_TEST
+#endif
 
 START_TEST (test_token_string)
 {
@@ -401,6 +403,7 @@ static struct {
 	{jstest_buf12, jstest_expected12}
 };
 
+#ifdef CHECK_HAVE_LOOPS
 START_TEST (tokenizer_basic)
 {
 	tokenizer_test(js_tests[_i].in, js_tests[_i].expected, 0);
@@ -412,6 +415,7 @@ START_TEST (tokenizer_split)
 	tokenizer_test(js_tests[_i].in, js_tests[_i].expected, 1);
 }
 END_TEST
+#endif
 
 START_TEST (js_buffer)
 {
@@ -458,9 +462,10 @@ Suite *test_jsnorm_suite(void)
 
     tc_jsnorm_gperf = tcase_create("jsnorm gperf");
     suite_add_tcase (s, tc_jsnorm_gperf);
+#ifdef CHECK_HAVE_LOOPS
     tcase_add_loop_test(tc_jsnorm_gperf, test_keywords, 0, sizeof(kw_test)/sizeof(kw_test[0]));
     tcase_add_loop_test(tc_jsnorm_gperf, test_operators, 0, sizeof(op_test)/sizeof(op_test[0]));
-
+#endif
     tc_jsnorm_token = tcase_create("jsnorm token functions");
     suite_add_tcase (s, tc_jsnorm_token);
     tcase_add_test(tc_jsnorm_token, test_token_string);
@@ -477,8 +482,10 @@ Suite *test_jsnorm_suite(void)
     tc_jsnorm_tokenizer = tcase_create("jsnorm tokenizer");
     suite_add_tcase (s, tc_jsnorm_tokenizer);
     tcase_add_checked_fixture (tc_jsnorm_tokenizer, jstest_setup, jstest_teardown);
+#ifdef CHECK_HAVE_LOOPS
     tcase_add_loop_test(tc_jsnorm_tokenizer, tokenizer_basic, 0, sizeof(js_tests)/sizeof(js_tests[0]));
     tcase_add_loop_test(tc_jsnorm_tokenizer, tokenizer_split, 0, sizeof(js_tests)/sizeof(js_tests[0]));
+#endif
     tcase_add_test(tc_jsnorm_tokenizer, js_buffer);
 
     tc_jsnorm_bugs = tcase_create("jsnorm bugs");

@@ -1,3 +1,7 @@
+Sun Aug 10 18:07:43 CEST 2008 (acab)
+------------------------------------
+  * unit_tests: check for check version
+
 Sun Aug 10 17:46:12 CEST 2008 (tk)
 ----------------------------------
   * freshclam/manager.c: add machine/OS info to the default user agent string

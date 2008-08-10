@@ -238,6 +238,7 @@ static void data_teardown(void)
 	free(data2);
 }
 
+#ifdef CHECK_HAVE_LOOPS
 /* test reading with different alignments, _i is parameter from tcase_add_loop_test */
 START_TEST (test_cli_readint16)
 {
@@ -307,6 +308,7 @@ static Suite *test_cli_suite(void)
 
     return s;
 }
+#endif
 
 void errmsg_expected(void)
 {
@@ -340,7 +342,9 @@ int main(int argc, char **argv)
     cl_debug();
     Suite *s = test_cl_suite();
     SRunner *sr = srunner_create(s);
+#ifdef CHECK_HAVE_LOOPS
     srunner_add_suite(sr, test_cli_suite());
+#endif
     srunner_add_suite(sr, test_jsnorm_suite());
     srunner_add_suite(sr, test_str_suite());
     srunner_add_suite(sr, test_regex_suite());
