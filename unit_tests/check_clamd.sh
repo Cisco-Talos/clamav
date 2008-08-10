@@ -1,19 +1,18 @@
 #!/bin/sh 
 #set -x
 killclamd() {
-	echo -n "Waiting for clamd"
+	test -f /tmp/clamd-test.pid || return
+	pid=$(cat /tmp/clamd-test.pid)
+	kill -0 $pid && kill $pid
 	pippo=0
 	while test -f /tmp/clamd-test.pid; do
-		pid=$(cat /tmp/clamd-test.pid)
-		kill -0 $pid && kill $pid
-		test $pippo -gt 0 && echo -n . && sleep 1
+		sleep 1
 		pippo=$((pippo+1))
 		if test $pippo -gt 9; then
 			kill -KILL $pid
 			rm /tmp/clamd-test.pid
 		fi
 	done
-	echo " done."
 }
 die() {
 	killclamd
