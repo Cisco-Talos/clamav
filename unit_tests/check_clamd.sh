@@ -1,6 +1,22 @@
 #!/bin/sh 
+#set -x
+killclamd() {
+	echo -n "Waiting for clamd"
+	pippo=0
+	while test -f /tmp/clamd-test.pid; do
+		pid=$(cat /tmp/clamd-test.pid)
+		kill -0 $pid && kill $pid
+		test $pippo -gt 0 && echo -n . && sleep 1
+		pippo=$((pippo+1))
+		if test $pippo -gt 9; then
+			kill -KILL $pid
+			rm /tmp/clamd-test.pid
+		fi
+	done
+	echo " done."
+}
 die() {
-	test -f /tmp/clamd-test.pid && kill -0 `cat /tmp/clamd-test.pid` && kill `cat /tmp/clamd-test.pid`
+	killclamd
 	rm -rf test-db test-clamd-viraction.conf test-clamd.log	test-clamd-heur-pred.conf clamd-test.socket
 	exit $1
 }
@@ -15,7 +31,7 @@ run_clamd_test() {
 		echo "Failed to run clamdscan!" >&2;
 		die 3;	
 	fi
-	test -f /tmp/clamd-test.pid && kill -0 `cat /tmp/clamd-test.pid` && kill `cat /tmp/clamd-test.pid` 
+	killclamd
 }
 
 run_clamd_fdpass_test() {
@@ -28,7 +44,7 @@ run_clamd_fdpass_test() {
 		echo "Failed to run clamdscan!" >&2;
 		die 3;
 	fi
-	test -f /tmp/clamd-test.pid && kill -0 `cat /tmp/clamd-test.pid` && kill `cat /tmp/clamd-test.pid`
+	killclamd
 }
 
 mkdir -p test-db
