@@ -1214,7 +1214,7 @@ static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, 
 	size_t j, k, ji, ki;
 	int rc;
 
-	if(!rlist->md5_hashes.bm_patterns) {
+	if(!rlist || !rlist->md5_hashes.bm_patterns) {
 		return CL_SUCCESS;
 	}
 	if(!inurl)
