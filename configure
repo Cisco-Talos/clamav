@@ -15361,6 +15361,7 @@ else
 fi
 
 if test $want_dns = yes; then
+    ac_cv_have_lresolv=no
     { echo "$as_me:$LINENO: checking for resolv.h" >&5
 echo $ECHO_N "checking for resolv.h... $ECHO_C" >&6; }
 if test "${ac_cv_header_resolv_h+set}" = set; then
@@ -15411,15 +15412,67 @@ fi
 echo "${ECHO_T}$ac_cv_header_resolv_h" >&6; }
 if test $ac_cv_header_resolv_h = yes; then
 
-	    bklibs=$LIBS;
-	    LIBS=-lresolv;
-	    { echo "$as_me:$LINENO: checking for dn_expand in -lresolv" >&5
-echo $ECHO_N "checking for dn_expand in -lresolv... $ECHO_C" >&6; }
-if test "${ac_cv_have_lresolv+set}" = set; then
+	    { echo "$as_me:$LINENO: checking for dn_expand in std libs" >&5
+echo $ECHO_N "checking for dn_expand in std libs... $ECHO_C" >&6; }
+if test "${ac_cv_have_lresolv_std+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
 
-	        ac_cv_have_lresolv=no;
+	    	ac_cv_have_lresolv_std='no'
+	        cat >conftest.$ac_ext <<_ACEOF
+
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/nameser.h>
+#include <resolv.h>
+int main() { return (int)dn_expand; }
+
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+
+		    ac_cv_have_lresolv_std='yes'
+		    ac_cv_have_lresolv=''
+
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_have_lresolv_std" >&5
+echo "${ECHO_T}$ac_cv_have_lresolv_std" >&6; }
+	    if test "x$ac_cv_have_lresolv" = "xno"; then
+	    bklibs=$LIBS
+	    LIBS=-lresolv
+	    { echo "$as_me:$LINENO: checking for dn_expand in -lresolv" >&5
+echo $ECHO_N "checking for dn_expand in -lresolv... $ECHO_C" >&6; }
+if test "${ac_cv_have_lresolv_lresolv+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+
+		ac_cv_have_lresolv_lresolv='yes'
 		cat >conftest.$ac_ext <<_ACEOF
 
 #include <sys/types.h>
@@ -15448,7 +15501,8 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
        } && test -s conftest$ac_exeext &&
        $as_test_x conftest$ac_exeext; then
 
-		    ac_cv_have_lresolv=yes;
+		    ac_cv_have_lresolv_lresolv='yes'
+		    ac_cv_have_lresolv=' -lresolv'
 
 else
   echo "$as_me: failed program was:" >&5
@@ -15461,18 +15515,21 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
       conftest$ac_exeext conftest.$ac_ext
 
 fi
-{ echo "$as_me:$LINENO: result: $ac_cv_have_lresolv" >&5
-echo "${ECHO_T}$ac_cv_have_lresolv" >&6; }
+{ echo "$as_me:$LINENO: result: $ac_cv_have_lresolv_lresolv" >&5
+echo "${ECHO_T}$ac_cv_have_lresolv_lresolv" >&6; }
 	    LIBS=$bklibs;
+	    fi
 
+else
+   ac_cv_have_lresolv=no
 fi
 
 
-    if test "x$ac_cv_have_lresolv" = "xyes"; then
-    	FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lresolv";
-	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lresolv";
-	bklibs=$LIBS;
-	LIBS=-lresolv;
+    if test "x$ac_cv_have_lresolv" != "xno"; then
+    	FRESHCLAM_LIBS="$FRESHCLAM_LIBS$ac_cv_have_lresolv"
+	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS$ac_cv_have_lresolv"
+	bklibs=$LIBS
+	LIBS=$ac_cv_have_lresolv;
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_RESOLV_H 1
@@ -15513,7 +15570,7 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
        } && test -s conftest$ac_exeext &&
        $as_test_x conftest$ac_exeext; then
 
-	        ac_cv_have_lresolv_r=yes;
+	        ac_cv_have_lresolv_r=yes
 
 else
   echo "$as_me: failed program was:" >&5
@@ -15528,7 +15585,7 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
 fi
 { echo "$as_me:$LINENO: result: $ac_cv_have_lresolv_r" >&5
 echo "${ECHO_T}$ac_cv_have_lresolv_r" >&6; }
-	LIBS=$bklibs;
+	LIBS=$bklibs
 	if test "x$ac_cv_have_lresolv_r" = "xyes"; then
 
 cat >>confdefs.h <<\_ACEOF
