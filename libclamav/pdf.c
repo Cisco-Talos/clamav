@@ -502,6 +502,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 
 				if(tableFind(md5table, md5str) >= 0) {
 					cli_dbgmsg("cli_pdf: not scanning duplicate embedded file '%s'\n", fullname);
+					ctx->scannedfiles++;
 					close(fout);
 					if (cli_unlink(fullname)) {
 						rc = CL_EIO;

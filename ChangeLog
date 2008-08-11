@@ -1,3 +1,7 @@
+Mon Aug 11 17:53:03 CEST 2008 (acab)
+------------------------------------
+  * libclamav/pdf.c: count skipped files too - bb#1128
+
 Sun Aug 10 18:07:43 CEST 2008 (acab)
 ------------------------------------
   * unit_tests: check for check version
