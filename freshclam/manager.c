@@ -952,7 +952,7 @@ static struct cl_cvd *currentdb(const char *dbname, char *localname)
 static int buildcld(const char *tmpdir, const char *dbname, const char *newfile, unsigned int compr)
 {
 	DIR *dir;
-	char cwd[512], info[32], buff[512], *pt;
+	char cwd[512], info[32], buff[513], *pt;
 	struct dirent *dent;
 	int fd, err = 0;
 	gzFile *gzs = NULL;
@@ -977,6 +977,7 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
 	close(fd);
 	return -1;
     }
+    buff[512] = 0;
     close(fd);
 
     if(!(pt = strchr(buff, '\n'))) {
