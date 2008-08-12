@@ -134,7 +134,7 @@ int notify(const char *cfgfile)
 	if(connect(sockd, res->ai_addr, res->ai_addrlen) == -1) {
 	    perror("connect()");
 	    closesocket(sockd);
-	    logg("^Clamd was NOT notified: Can't connect to clamd on %s:%s\n", addr, port);
+	    logg("^Clamd was NOT notified: Can't connect to clamd on %s:%s\n", addr ? addr : "localhost", port);
 	    freecfg(copt);
 	    freeaddrinfo(res);
 	    return 1;
