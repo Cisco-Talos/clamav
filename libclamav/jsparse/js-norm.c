@@ -1230,7 +1230,7 @@ static inline int parseString(YYSTYPE *lvalp, yyscan_t scanner, const char q,
 	do {
 		const size_t siz = &scanner->in[scanner->insize] - end;
 		end = memchr(end, q, siz);
-		if(end && end[-1] == '\\') {
+		if(end && end > start && end[-1] == '\\') {
 			++end;
 			continue;
 		}
