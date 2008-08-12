@@ -1,3 +1,7 @@
+Tue Aug 12 13:16:00 CEST 2008 (acab)
+------------------------------------
+  * clamscan/manager.c: add missing proto
+
 Tue Aug 12 00:08:05 CEST 2008 (acab)
 ------------------------------------
   * m4/resolv.m4: fix logic in -lresolv checks

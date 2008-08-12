@@ -59,6 +59,7 @@
 #include "libclamav/others.h"
 #include "libclamav/matcher-ac.h"
 #include "libclamav/str.h"
+#include "libclamav/readdb.h"
 
 #ifdef C_LINUX
 dev_t procdev;
