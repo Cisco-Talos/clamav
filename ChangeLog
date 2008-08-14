@@ -1,3 +1,7 @@
+Thu Aug 14 18:19:54 CEST 2008 (acab)
+------------------------------------
+  * libclamav/str.c: fix for cli_hex2str - bb#1133
+
 Tue Aug 12 13:16:00 CEST 2008 (acab)
 ------------------------------------
   * clamscan/manager.c: add missing proto

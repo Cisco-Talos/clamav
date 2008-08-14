@@ -130,8 +130,8 @@ uint16_t *cli_hex2ui(const char *hex)
 
 char *cli_hex2str(const char *hex)
 {
-	char *str, *ptr, val, c;
-	int i, len;
+	char *str, *ptr;
+	int i, len, val, c;
 
 
     len = strlen(hex);
@@ -161,7 +161,7 @@ char *cli_hex2str(const char *hex)
 	    return NULL;
 	}
 
-	*ptr++ = val;
+	*ptr++ = (char)val;
     }
 
     return str;
