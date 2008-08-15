@@ -189,11 +189,11 @@ static void huff_decode(unpack_data_t *unpack_data)
 	}
 	
 	unpack_data->window[unpack_data->unp_ptr++] = 
-			(unsigned char) (unpack_data->chset[byte_place] >>8);
+			(unsigned char) (unpack_data->chset[byte_place & 0xff] >>8);
 	--unpack_data->dest_unp_size;
 	
 	while (1) {
-		cur_byte = unpack_data->chset[byte_place];
+		cur_byte = unpack_data->chset[byte_place & 0xff];
 		new_byte_place = unpack_data->ntopl[cur_byte++ & 0xff]++;
 		if ((cur_byte & 0xff) > 0xa1) {
 			corr_huff(unpack_data, unpack_data->chset, unpack_data->ntopl);
@@ -202,8 +202,8 @@ static void huff_decode(unpack_data_t *unpack_data)
 		}
 	}
 	
-	unpack_data->chset[byte_place] = unpack_data->chset[new_byte_place];
-	unpack_data->chset[new_byte_place] = cur_byte;
+	unpack_data->chset[byte_place & 0xff] = unpack_data->chset[new_byte_place & 0xff];
+	unpack_data->chset[new_byte_place & 0xff] = cur_byte;
 }
 
 	
@@ -215,7 +215,7 @@ static void get_flag_buf(unpack_data_t *unpack_data)
 	flags_place = decode_num(unpack_data, rar_getbits(unpack_data), STARTHF2,
 				dec_hf2, pos_hf2);
 	for (;;) {
-		flags = unpack_data->chsetc[flags_place];
+		flags = unpack_data->chsetc[flags_place & 0xff];
 		unpack_data->flag_buf = flags >> 8;
 		new_flags_place = unpack_data->ntoplc[flags++ & 0xff]++;
 		if ((flags & 0xff) != 0) {
@@ -223,8 +223,8 @@ static void get_flag_buf(unpack_data_t *unpack_data)
 		}
 		corr_huff(unpack_data, unpack_data->chsetc, unpack_data->ntoplc);
 	}
-	unpack_data->chsetc[flags_place] = unpack_data->chsetc[new_flags_place];
-	unpack_data->chsetc[new_flags_place] = flags;
+	unpack_data->chsetc[flags_place & 0xff] = unpack_data->chsetc[new_flags_place & 0xff];
+	unpack_data->chsetc[new_flags_place & 0xff] = flags;
 }
 
 static void short_lz(unpack_data_t *unpack_data)
@@ -322,13 +322,13 @@ static void short_lz(unpack_data_t *unpack_data)
 	
 	distance_place = decode_num(unpack_data, rar_getbits(unpack_data),
 					STARTHF2, dec_hf2, pos_hf2) & 0xff;
-	distance = unpack_data->chseta[distance_place];
+	distance = unpack_data->chseta[distance_place & 0xff];
 	if (--distance_place != -1) {
-		unpack_data->placea[distance]--;
-		last_distance = unpack_data->chseta[distance_place];
-		unpack_data->placea[last_distance]++;
-		unpack_data->chseta[distance_place+1] = last_distance;
-		unpack_data->chseta[distance_place] = distance;
+		unpack_data->placea[distance & 0xff]--;
+		last_distance = unpack_data->chseta[distance_place & 0xff];
+		unpack_data->placea[last_distance & 0xff]++;
+		unpack_data->chseta[(distance_place+1) & 0xff] = last_distance;
+		unpack_data->chseta[distance_place & 0xff] = distance;
 	}
 	length += 2;
 	unpack_data->old_dist[unpack_data->old_dist_ptr++] = ++distance;
@@ -394,8 +394,8 @@ static void long_lz(unpack_data_t *unpack_data)
 		}
 	}
 	
-	unpack_data->chsetb[distance_place] = unpack_data->chsetb[new_distance_place];
-	unpack_data->chsetb[new_distance_place] = distance;
+	unpack_data->chsetb[distance_place & 0xff] = unpack_data->chsetb[new_distance_place & 0xff];
+	unpack_data->chsetb[new_distance_place & 0xff] = distance;
 	
 	distance = ((distance & 0xff00) | (rar_getbits(unpack_data) >> 8)) >> 1;
 	rar_addbits(unpack_data, 7);
