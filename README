@@ -2,6 +2,66 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.94rc1
+-------
+
+This is a release candidate for 0.94. The following are the key features
+and improvements of this version:
+
+  - Logical Signatures: The logical signature technology uses operators
+    such as AND, OR and NOT to allow the combination of more than one
+    signature into one entry in the signature database resulting in
+    more detailed and flexible pattern matching.
+
+  - Anti-phishing Technology: Users can now change the priority and reporting
+    of ClamAV's heuristic anti-phishing scanner within the detection engine
+    process. They can choose whether, when scanning a supicious file, ClamAV
+    should stop scanning and report the phish, or continue to scan in case the
+    file contains other malware (clamd: HeuristicScanPrecedence,
+    clamscan: --heuristic-scan-precedence)
+
+  - Disassembly Engine: The initial version of the disassembly engine improves
+    ClamAV's detection abilities.
+
+  - PUA Detection: Users can now decide which PUA signatures should be loaded
+    (clamd: ExcludePUA, IncludePUA; clamscan: --exclude-pua, --include-pua)
+
+  - Data Loss Prevention (DLP): This version includes a new module that, when
+    enabled, scans data for the inclusion of US formated Social Security
+    Numbers and credit card numbers (clamd: StructuredDataDetection,
+    clamscan: --detect-structured; additional fine-tuning options are available)
+
+  - IPv6 Support: Freshclam now supports IPv6
+
+  - Improved Scanning of Scripts: The normalization of scripts now covers
+    JavaScript
+
+  - Improved QA and Unit Testing: The improved QA process now includes
+    API testing and new library of test files in various formats that are
+    tested on a wide variety of systems.
+
+For more details, please refer to http://www.clamav.net/press/0.94-WhatsNew.pdf
+and to the ChangeLog.
+
+--
+The ClamAV team (http://www.clamav.net/team)
+
+
+0.93.3
+------
+
+This release fixes a problem in handling of .cld files introduced in 0.93.2.
+
+--
+The ClamAV team (http://www.clamav.net/team)
+
+0.93.2
+------
+
+This release fixes and re-enables the Petite unpacker, improves database
+loading and solves some other minor issues.
+
+
 0.93.1
 ------
 
