@@ -2813,8 +2813,8 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-LC_CURRENT=4
-LC_REVISION=4
+LC_CURRENT=5
+LC_REVISION=0
 LC_AGE=0
 LIBCLAMAV_VERSION="$LC_CURRENT":"$LC_REVISION":"$LC_AGE"
 
@@ -15529,7 +15529,7 @@ fi
     	FRESHCLAM_LIBS="$FRESHCLAM_LIBS$ac_cv_have_lresolv"
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS$ac_cv_have_lresolv"
 	bklibs=$LIBS
-	LIBS=$ac_cv_have_lresolv;
+	LIBS=$ac_cv_have_lresolv
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_RESOLV_H 1
@@ -15541,7 +15541,7 @@ if test "${ac_cv_have_lresolv_r+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
 
-	    ac_cv_have_lresolv_r=no;
+	    ac_cv_have_lresolv_r='no'
 	    cat >conftest.$ac_ext <<_ACEOF
 
 #include <sys/types.h>
@@ -15570,7 +15570,7 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
        } && test -s conftest$ac_exeext &&
        $as_test_x conftest$ac_exeext; then
 
-	        ac_cv_have_lresolv_r=yes
+	        ac_cv_have_lresolv_r='yes'
 
 else
   echo "$as_me: failed program was:" >&5
