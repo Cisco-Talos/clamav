@@ -34,10 +34,13 @@ and improvements of this version:
 
   - Improved QA and Unit Testing: The improved QA process now includes
     API testing and new library of test files in various formats that are
-    tested on a wide variety of systems.
+    tested on a wide variety of systems (try running 'make check' in the source
+    directory)
 
 For more details, please refer to http://www.clamav.net/press/0.94-WhatsNew.pdf
 and to the ChangeLog.
+
+You may need to run 'ldconfig' after installing this version.
 
 --
 The ClamAV team (http://www.clamav.net/team)
