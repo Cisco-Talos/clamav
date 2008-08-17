@@ -1,3 +1,7 @@
+Sun Aug 17 19:30:25 CEST 2008 (tk)
+----------------------------------
+  * clamd/server-th.c: add missing proto for cli_initengine() (bb#1136)
+
 Sat Aug 16 19:58:30 CEST 2008 (tk)
 ----------------------------------
   * V 0.94rc1

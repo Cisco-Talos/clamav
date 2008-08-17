@@ -53,6 +53,7 @@
 #include "others.h"
 #include "shared.h"
 #include "libclamav/others.h"
+#include "libclamav/readdb.h"
 
 #ifndef	C_WINDOWS
 #define	closesocket(s)	close(s)
