@@ -292,10 +292,21 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	if(!cli_leavetemps_flag)
 	    cli_rmdirs(dir);
 	free(dir);
-	if(ret == UNRAR_EMEM)
+	if(ret == UNRAR_PASSWD) {
+	    cli_dbgmsg("RAR: Encrypted main header\n");
+	    if(DETECT_ENCRYPTED) {
+		lseek(desc, 0, SEEK_SET);
+		ret = cli_scandesc(desc, ctx, 0, 0, NULL, AC_SCAN_VIR);
+		if(ret != CL_VIRUS)
+		    *ctx->virname = "Encrypted.RAR";
+		return CL_VIRUS;
+	    }
+	    return CL_CLEAN;
+	} if(ret == UNRAR_EMEM) {
 	    return CL_EMEM;
-	else
+	} else {
 	    return CL_ERAR;
+	}
     }
 
     do {

@@ -38,6 +38,7 @@
 
 #define UNRAR_OK	 0
 #define UNRAR_BREAK	 1
+#define UNRAR_PASSWD	 2
 #define UNRAR_EMEM	-1
 #define UNRAR_ERR	-2
 

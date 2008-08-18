@@ -264,8 +264,42 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
     if(!is_rar_archive(fd))
 	return UNRAR_ERR;
 
+    main_hdr = read_header(fd, MAIN_HEAD);
+    if(!main_hdr)
+	return UNRAR_ERR;
+
+    unrar_dbgmsg("UNRAR: Head CRC: %.4x\n", main_hdr->head_crc);
+    unrar_dbgmsg("UNRAR: Head Type: %.2x\n", main_hdr->head_type);
+    unrar_dbgmsg("UNRAR: Flags: %.4x\n", main_hdr->flags);
+    unrar_dbgmsg("UNRAR: Head Size: %.4x\n", main_hdr->head_size);
+
+    if(main_hdr->flags & MHD_PASSWORD) {
+	free(main_hdr);
+	return UNRAR_PASSWD;
+    }
+
+    snprintf(filename,1024,"%s/comments", dirname);
+    if(mkdir(filename,0700)) {
+	unrar_dbgmsg("UNRAR: Unable to create comment temporary directory\n");
+	free(main_hdr);
+	return UNRAR_ERR;
+    }
+    state->comment_dir = strdup(filename);
+    if(!state->comment_dir) {
+	free(main_hdr);
+	return UNRAR_EMEM;
+    }
+
+    if(main_hdr->head_size < SIZEOF_NEWMHD) {
+	free(main_hdr);
+	free(state->comment_dir);
+	return UNRAR_ERR;
+    }
+
     unpack_data = (unpack_data_t *) malloc(sizeof(unpack_data_t));
     if(!unpack_data) {
+	free(main_hdr);
+	free(state->comment_dir);
 	unrar_dbgmsg("UNRAR: malloc failed for unpack_data\n");
 	return UNRAR_EMEM;
     }
@@ -276,48 +310,6 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
     unpack_data->unp_crc = 0xffffffff;
 
     ppm_constructor(&unpack_data->ppm_data);
-    main_hdr = read_header(fd, MAIN_HEAD);
-    if(!main_hdr) {
-	ppm_destructor(&unpack_data->ppm_data);
-	rar_init_filters(unpack_data);
-	unpack_free_data(unpack_data);
-	free(unpack_data);
-	return UNRAR_ERR;
-    }
-    unrar_dbgmsg("UNRAR: Head CRC: %.4x\n", main_hdr->head_crc);
-    unrar_dbgmsg("UNRAR: Head Type: %.2x\n", main_hdr->head_type);
-    unrar_dbgmsg("UNRAR: Flags: %.4x\n", main_hdr->flags);
-    unrar_dbgmsg("UNRAR: Head Size: %.4x\n", main_hdr->head_size);
-
-    snprintf(filename,1024,"%s/comments", dirname);
-    if(mkdir(filename,0700)) {
-	unrar_dbgmsg("UNRAR: Unable to create comment temporary directory\n");
-	free(main_hdr);
-	ppm_destructor(&unpack_data->ppm_data);
-	rar_init_filters(unpack_data);
-	unpack_free_data(unpack_data);
-	free(unpack_data);
-	return UNRAR_ERR;
-    }
-    state->comment_dir = strdup(filename);
-    if(!state->comment_dir) {
-	free(main_hdr);
-	ppm_destructor(&unpack_data->ppm_data);
-	rar_init_filters(unpack_data);
-	unpack_free_data(unpack_data);
-	free(unpack_data);
-	return UNRAR_EMEM;
-    }
-
-    if(main_hdr->head_size < SIZEOF_NEWMHD) {
-	free(main_hdr);
-	ppm_destructor(&unpack_data->ppm_data);
-	rar_init_filters(unpack_data);
-	unpack_free_data(unpack_data);
-	free(unpack_data);
-	free(state->comment_dir);
-	return UNRAR_ERR;
-    }
 
     if(main_hdr->flags & MHD_COMMENT) {
 	unrar_comment_header_t *comment_header;
