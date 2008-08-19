@@ -57,8 +57,8 @@ cp $srcdir/input/daily.pdb test-db/
 FILES=../test/clam*
 run_clamd_test $srcdir/test-clamd.conf $FILES
 NFILES=`ls -1 $FILES | wc -l`
-NINFECTED=`grep "Infected files" clamdscan.log | cut -f2 -d:`
-if test "$NFILES" -ne "$NINFECTED"; then
+NINFECTED=`grep "Infected files" clamdscan.log | cut -f2 -d:|sed -e 's/ //g'`
+if test "$NFILES" -ne "0$NINFECTED"; then
 	echo "clamd did not detect all testfiles correctly!" >&2;
 	grep OK clamdscan.log >&2;
 	die 4;

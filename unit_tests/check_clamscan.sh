@@ -15,8 +15,8 @@ if test $? != 1; then
 	die 1;
 fi
 NFILES=`ls -1 ../test/clam* | wc -l`
-NINFECTED=`grep "Infected files" clamscan.log | cut -f2 -d:`
-if test "$NFILES" -ne "$NINFECTED"; then
+NINFECTED=`grep "Infected files" clamscan.log | cut -f2 -d: |sed -e 's/ //g'`
+if test "$NFILES" -ne "0$NINFECTED"; then
 	echo "clamscan did not detect all testfiles correctly!" >&2;
 	grep OK clamscan.log >&2;
 	die 2;
