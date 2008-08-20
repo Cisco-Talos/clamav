@@ -345,7 +345,7 @@ int main(int argc, char **argv)
 #ifdef CHECK_HAVE_LOOPS
     srunner_add_suite(sr, test_cli_suite());
 #else
-    printf("*** Warning ***: your check version is too old,\nseveral important test will not execute\n");
+    printf("*** Warning ***: your check version is too old,\nseveral important tests will not execute\n");
 #endif
     srunner_add_suite(sr, test_jsnorm_suite());
     srunner_add_suite(sr, test_str_suite());
