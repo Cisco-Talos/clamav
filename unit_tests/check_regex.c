@@ -139,7 +139,7 @@ START_TEST (test_suffix)
 			"suffix number mismatch, expected: %d, was: %d\n", n, cb_called);
 }
 END_TEST
-#endif
+#endif /* CHECK_HAVE_LOOPS */
 
 static void setup(void)
 {
@@ -263,7 +263,7 @@ START_TEST (regex_list_match_test)
 	free(realurl);
 }
 END_TEST
-#endif
+#endif /* CHECK_HAVE_LOOPS */
 
 static struct cl_engine *engine;
 static int loaded_2 = 0;

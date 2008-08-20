@@ -81,7 +81,7 @@ START_TEST (test_operators)
 	    fail_unless(!op, "non-operator detected as operator");
 }
 END_TEST
-#endif
+#endif /* CHECK_HAVE_LOOPS */
 
 START_TEST (test_token_string)
 {
@@ -415,7 +415,7 @@ START_TEST (tokenizer_split)
 	tokenizer_test(js_tests[_i].in, js_tests[_i].expected, 1);
 }
 END_TEST
-#endif
+#endif /* CHECK_HAVE_LOOPS */
 
 START_TEST (js_buffer)
 {

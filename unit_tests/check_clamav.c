@@ -308,7 +308,7 @@ static Suite *test_cli_suite(void)
 
     return s;
 }
-#endif
+#endif /* CHECK_HAVE_LOOPS */
 
 void errmsg_expected(void)
 {
@@ -344,6 +344,8 @@ int main(int argc, char **argv)
     SRunner *sr = srunner_create(s);
 #ifdef CHECK_HAVE_LOOPS
     srunner_add_suite(sr, test_cli_suite());
+#else
+    printf("*** Warning ***: your check version is too old,\nseveral important test will not execute\n");
 #endif
     srunner_add_suite(sr, test_jsnorm_suite());
     srunner_add_suite(sr, test_str_suite());
