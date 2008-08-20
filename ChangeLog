@@ -1,3 +1,8 @@
+Wed Aug 20 10:54:24 CEST 2008 (tk)
+----------------------------------
+  * clamd/clamd.c: return an error (instead of a warning) if
+    AllowSupplementaryGroups is enabled but initgroups() not available
+
 Mon Aug 18 12:01:10 CEST 2008 (tk)
 ----------------------------------
   * libclamunrar_iface, libclamav: improve detection of encrypted RAR archives

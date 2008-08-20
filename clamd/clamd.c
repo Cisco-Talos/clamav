@@ -188,7 +188,9 @@ int main(int argc, char **argv)
 		return 1;
 	    }
 #else
-	    mprintf("AllowSupplementaryGroups: initgroups() not supported.\n");
+	    mprintf("!AllowSupplementaryGroups: initgroups() is not available, please disable AllowSupplementaryGroups in %s\n", cfgfile);
+	    freecfg(copt);
+	    return 1;
 #endif
 	} else {
 #ifdef HAVE_SETGROUPS
