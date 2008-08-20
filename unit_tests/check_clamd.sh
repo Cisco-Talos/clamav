@@ -2,12 +2,12 @@
 #set -x
 killclamd() {
 	test -f /tmp/clamd-test.pid || return
-	pid=$(cat /tmp/clamd-test.pid)
+	pid=`cat /tmp/clamd-test.pid`
 	kill -0 $pid && kill $pid
 	pippo=0
 	while test -f /tmp/clamd-test.pid; do
 		sleep 1
-		pippo=$((pippo+1))
+		pippo=`expr $pippo + 1`
 		if test $pippo -gt 9; then
 			kill -KILL $pid
 			rm /tmp/clamd-test.pid
