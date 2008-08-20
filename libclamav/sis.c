@@ -506,6 +506,7 @@ static int real_scansis(FILE *f, cli_ctx *ctx, const char *tmpd) {
 	    return CL_EIO;
 	  }
 	  if (cli_writen(fd, decomp, olen)!=(int)olen) {
+	    close(fd);
 	    free(decomp);
 	    free(ptrs);
 	    free(alangs);

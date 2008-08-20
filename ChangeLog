@@ -1,3 +1,7 @@
+Wed Aug 20 20:09:11 CEST 2008 (acab)
+------------------------------------
+  * libclamav/sis.c: fix fd feak on error path - bb#1141
+
 Wed Aug 20 10:54:24 CEST 2008 (tk)
 ----------------------------------
   * clamd/clamd.c: return an error (instead of a warning) if
