@@ -459,6 +459,7 @@ static char *proxyauth(const char *user, const char *pass)
     buf[len] = '\0';
     auth = malloc(strlen(buf) + 30);
     if(!auth) {
+	free(buf);
 	logg("!proxyauth: Can't allocate memory for 'authorization'\n");
 	return NULL;
     }
@@ -490,8 +491,10 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 
 	if(user) {
 	    authorization = proxyauth(user, pass);
-	    if(!authorization)
+	    if(!authorization) {
+		free(remotename);
 		return NULL;
+	    }
 	}
     }
 
@@ -652,8 +655,10 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 
 	if(user) {
 	    authorization = proxyauth(user, pass);
-	    if(!authorization)
+	    if(!authorization) {
+		free(remotename);
 		return 75; /* FIXME */
+	    }
 	}
     }
 
@@ -672,6 +677,12 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 #endif
 	"Connection: close\r\n"
 	"\r\n", (remotename != NULL) ? remotename : "", srcfile, hostname, (authorization != NULL) ? authorization : "", uastr);
+
+    if(remotename)
+	free(remotename);
+
+    if(authorization)
+	free(authorization);
 
     memset(ipaddr, 0, sizeof(ipaddr));
     if(ip[0]) /* use ip to connect */
@@ -693,12 +704,6 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 	closesocket(sd);
 	return 52;
     }
-
-    if(remotename)
-	free(remotename);
-
-    if(authorization)
-	free(authorization);
 
     /* read http headers */
     ch = buffer;
