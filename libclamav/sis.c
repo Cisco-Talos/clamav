@@ -41,6 +41,7 @@
 #include "others.h"
 #include "clamav.h"
 #include "scanners.h"
+#include "sis.h"
 
 #define EC32(x) le32_to_host(x)
 #define EC16(x) le16_to_host(x)

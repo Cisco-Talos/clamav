@@ -87,20 +87,6 @@ static uint8_t vm_cmdflags[]=
 
 #define UINT32(x)  (sizeof(uint32_t)==4 ? (uint32_t)(x):((x)&0xffffffff))
 
-static unsigned int rarvm_get_value(int byte_mode, unsigned int *addr)
-{
-	if (byte_mode) {
-		return *addr;
-	} else {
-#if WORDS_BIGENDIAN == 0
-		return UINT32(*addr);
-#else
-                unsigned char *B = (unsigned char *)addr;
-                return UINT32((uint8_t)B[0]|((uint8_t)B[1]<<8)|((uint8_t)B[2]<<16)|((uint8_t)B[3]<<24));
-#endif
-	}
-}
-
 #if WORDS_BIGENDIAN == 0
 #define GET_VALUE(byte_mode,addr) ((byte_mode) ? (*(unsigned char *)(addr)) : UINT32((*(unsigned int *)(addr))))
 #else
@@ -172,7 +158,7 @@ uint32_t rar_crc(uint32_t start_crc, void *addr, uint32_t size)
 
 	data = addr;
 #if WORDS_BIGENDIAN == 0
-	while (size > 0 && ((int)data & 7))
+	while (size > 0 && ((long)data & 7))
 	{
 		start_crc = crc_tab[(unsigned char)(start_crc^data[0])]^(start_crc>>8);
 		size--;
@@ -945,7 +931,7 @@ int rarvm_execute(rarvm_data_t *rarvm_data, struct rarvm_prepared_program *prg)
 	return TRUE;
 }
 
-void rarvm_decode_arg(rarvm_data_t *rarvm_data, rarvm_input_t *rarvm_input,
+static void rarvm_decode_arg(rarvm_data_t *rarvm_data, rarvm_input_t *rarvm_input,
 		struct rarvm_prepared_operand *op, int byte_mode)
 {
 	uint16_t data;
@@ -986,7 +972,7 @@ void rarvm_decode_arg(rarvm_data_t *rarvm_data, rarvm_input_t *rarvm_input,
 	}
 }
 
-void rarvm_optimize(struct rarvm_prepared_program *prg)
+static void rarvm_optimize(struct rarvm_prepared_program *prg)
 {
 	struct rarvm_prepared_command *code, *cmd;
 	int code_size, i, flags_required, j, flags;

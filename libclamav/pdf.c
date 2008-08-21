@@ -65,7 +65,8 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #endif
 
 #ifdef	CL_DEBUG
-/*#define	SAVE_TMP	/* Save the file being worked on in tmp */
+/*#define	SAVE_TMP	
+ *Save the file being worked on in tmp */
 #endif
 
 static	int	try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fout, cli_ctx *ctx);

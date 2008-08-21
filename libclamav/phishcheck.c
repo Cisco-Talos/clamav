@@ -843,22 +843,6 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 	return CL_CLEAN;
 }
 
-static char* str_compose(const char* a,const char* b,const char* c)
-{
-	const size_t a_len = strlen(a);
-	const size_t b_len = strlen(b);
-	const size_t c_len = strlen(c);
-	const size_t r_len = a_len+b_len+c_len+1;
-	char* concated = cli_malloc(r_len);
-	if(!concated)
-		return NULL;
-	strncpy(concated,a,a_len);
-	strncpy(concated+a_len,b,b_len);
-	strncpy(concated+a_len+b_len,c,c_len);
-	concated[r_len-1]='\0';
-	return concated;
-}
-
 static char hex2int(const unsigned char* src)
 {
 	return (src[0] == '0' && src[1] == '0') ? 

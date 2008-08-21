@@ -746,7 +746,9 @@ static void move_infected(const char *filename, const struct optstruct *opt)
 
 	chmod(movefilename, ofstat.st_mode);
 #ifndef C_OS2
-	chown(movefilename, ofstat.st_uid, ofstat.st_gid);
+	if(chown(movefilename, ofstat.st_uid, ofstat.st_gid) == -1) {
+		logg("!Can't chown '%s': %s\n", movefilename, strerror(errno));
+	}
 #endif
 
 	ubuf.actime = ofstat.st_atime;

@@ -41,6 +41,7 @@
 
 #include "others.h"
 #include "scanners.h"
+#include "autoit.h"
 
 
 /* FIXME: use unicode detection and normalization from edwin */

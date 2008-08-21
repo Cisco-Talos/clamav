@@ -54,7 +54,6 @@ size_t cli_strlcpy(char *dst, const char *src, size_t siz);
 int
 clamd_fdscan(int s, int fd, char *name, size_t len)
 {
-	struct sockaddr_un addr;
 	struct msghdr msg;
 	struct cmsghdr *cmsg;
 	unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
@@ -62,8 +61,9 @@ clamd_fdscan(int s, int fd, char *name, size_t len)
 	char buf[CLAMD_BUFSIZ], *p, *q;
 	off_t pos;
 	struct iovec iov[1];
+	char dummy[]="";
 
-	iov[0].iov_base = "";
+	iov[0].iov_base = dummy;
 	iov[0].iov_len = 1;
 
 	pos = lseek(fd, 0, SEEK_CUR);
@@ -81,7 +81,11 @@ clamd_fdscan(int s, int fd, char *name, size_t len)
 	cmsg->cmsg_type = SCM_RIGHTS;
 	*(int *)CMSG_DATA(cmsg) = fd;
 
-	write(s, "FILDES\n", sizeof("FILDES\n")-1);
+	if(write(s, "FILDES\n", sizeof("FILDES\n")-1) != sizeof("FILDES\n")-1) {
+		perror("write");
+		close(s);
+		return -1;
+	}
 	if (sendmsg(s, &msg, 0) == -1) {
 		perror("sendmsg");
 		close(s);
@@ -89,7 +93,11 @@ clamd_fdscan(int s, int fd, char *name, size_t len)
 	}
 
 	sp = fdopen(s,"r");
-	fgets(buf, sizeof(buf), sp);
+	if(!fgets(buf, sizeof(buf), sp)) {
+		fclose(sp);
+		close(s);
+		return -1;
+	}
 	fclose(sp);
 	close(s);
 

@@ -348,17 +348,6 @@ const struct element* hashtab_insert(struct hashtable *s, const char* key, const
 	return NULL;
 }
 
-void hashtab_delete(struct hashtable *s, const char* key, const size_t len)
-{
-	struct element* e = hashtab_find(s,key,len);
-	if(e && e->key) {
-		PROFILE_HASH_DELETE(s);
-		free((void *)e->key);
-		e->key = DELETED_KEY;
-		s->used--;
-	}
-}
-
 void hashtab_clear(struct hashtable *s)
 {
 	size_t i;

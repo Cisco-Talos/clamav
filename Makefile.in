@@ -263,6 +263,7 @@ pkgconfig_DATA = libclamav.pc
 # don't complain that configuration files and databases are not removed, this is intended
 distuninstallcheck_listfiles = find . -type f ! -name clamd.conf ! -name freshclam.conf ! -name daily.cvd ! -name main.cvd -print
 DISTCLEANFILES = target.h
+DISTCHECK_CONFIGURE_FLAGS = --enable-milter CFLAGS="-Wno-pointer-sign -Wno-error=attributes -Werror-implicit-function-declaration -Werror -Wextra -Wall -Wbad-function-cast -Wcast-align -Wendif-labels -Wfloat-equal -Wformat=2 -Wmissing-declarations -Wmissing-prototypes -Wnested-externs -Wpointer-arith -Wstrict-prototypes -Wno-error=strict-prototypes -Wno-switch -Wundef -Wwrite-strings -Wstrict-overflow=1 -Winit-self -Wmissing-include-dirs -Wstrict-aliasing -Wdeclaration-after-statement -Waggregate-return -Wmissing-format-attribute -Wpadded -Wno-error=type-limits -Wno-error=unused-value -Wno-error=unused-variable -Wcast-qual -Wno-error=cast-qual -Wno-error=sign-compare -Wshadow -Wno-error=shadow -Wno-error=uninitialized -fdiagnostics-show-option -Wno-error=unused-parameter -Wpacked -Wno-error=packed -Wno-error=unreachable-code -Winvalid-pch -Wno-error=invalid-pch -O2 -D_FORTIFY_SOURCE=2 -fstack-protector-all -Wstack-protector -Wno-error=padded"
 all: clamav-config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
@@ -789,7 +790,6 @@ uninstall-am: uninstall-binSCRIPTS uninstall-pkgconfigDATA
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags tags-recursive uninstall uninstall-am \
 	uninstall-binSCRIPTS uninstall-pkgconfigDATA
-
 
 lcov:
 	($(MAKE); cd unit_tests; $(MAKE) lcov)

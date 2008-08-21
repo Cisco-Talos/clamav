@@ -48,6 +48,7 @@
 #include "misc.h"
 #include "str.h"
 #include "client.h"
+#include "clamd_fdscan.h"
 
 #ifdef PF_INET
 # define SOCKET_INET	PF_INET

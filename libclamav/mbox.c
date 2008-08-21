@@ -3293,7 +3293,7 @@ strstrip(char *s)
 	if(s == (char *)NULL)
 		return(0);
 
-	return(strip(s, (int)strlen(s) + 1));
+	return(strip(s, strlen(s) + 1));
 }
 
 /*

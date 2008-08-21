@@ -32,5 +32,6 @@ echo "Downloading updated country-code list from iana.org"
 wget $IANA_CCTLD -O $TMP || exit 2
 echo "Download complete, parsing data"
 cat $TMP | grep country-code|egrep -oi "<a
-href=[^>]+>\\.([a-zA-Z]+).+</a>"|egrep -o ">.[a-zA-Z]+" | colrm 1 2 | tr [A-Z] [a-z]| gperf -C -l -L ANSI-C -E -C -H cctld_hash -N in_cctld_set |grep -v '^#line'|sed -e 's/^const struct/static const struct/' -e 's/register //g' >iana_cctld.h
+href=[^>]+>\\.([a-zA-Z]+).+</a>"|egrep -o ">.[a-zA-Z]+" | colrm 1 2 | tr [A-Z]
+[a-z]| gperf -C -l -L ANSI-C -E -C -H cctld_hash -N in_cctld_set |grep -v '^#line'|sed -e 's/^const struct/static const struct/' -e 's/register //g' -e 's/^const char \*/static const char */' >iana_cctld.h
 echo "Done"

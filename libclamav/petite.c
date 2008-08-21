@@ -214,7 +214,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
       /* Let's compact data */
       for (t = 0; t < j ; t++) {
 	usects[t].raw = (t>0)?(usects[t-1].raw + usects[t-1].rsz):0;
-	if (usects[t].rsz != 0)
+	if (usects[t].rsz != 0) {
 	  if(CLI_ISCONTAINED(buf, bufsz, buf + usects[t].raw, usects[t].rsz)) {
 	    memmove(buf + usects[t].raw, adjbuf + usects[t].rva, usects[t].rsz);
 	  } else {
@@ -222,6 +222,7 @@ int petite_inflate2x_1to9(char *buf, uint32_t minrva, uint32_t bufsz, struct cli
 	    usects[t].raw = t>0 ? usects[t-1].raw : 0;
 	    usects[t].rsz = 0;
 	  }
+	}
       }
 
       /* Showtime!!! */

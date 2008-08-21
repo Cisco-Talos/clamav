@@ -355,7 +355,7 @@ int init_regex_list(struct regex_matcher* matcher)
 	if((rc = cli_ac_init(&matcher->suffixes, 2, 32))) {
 		return rc;
 	}
-	if(rc = cli_bm_init(&matcher->md5_hashes)) {
+	if((rc = cli_bm_init(&matcher->md5_hashes))) {
 		return rc;
 	}
 	SO_init(&matcher->filter);
@@ -423,7 +423,7 @@ static int add_hash(struct regex_matcher *matcher, char* pattern, const char fl)
 	}
 	*pat->virname = fl;
 	SO_preprocess_add(&matcher->md5_filter, pat->pattern, pat->length);
-	if(rc = cli_bm_addpatt(&matcher->md5_hashes, pat)) {
+	if((rc = cli_bm_addpatt(&matcher->md5_hashes, pat))) {
 		cli_errmsg("add_hash: failed to add BM pattern\n");
 		free(pat->pattern);
 		free(pat->virname);

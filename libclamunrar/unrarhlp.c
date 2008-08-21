@@ -23,7 +23,7 @@ void *rar_malloc(size_t size)
 
 
     if(!size || size > RAR_MAX_ALLOCATION) {
-	fprintf(stderr, "UNRAR: rar_malloc(): Attempt to allocate %u bytes. Please report to http://bugs.clamav.net\n", size);
+	fprintf(stderr, "UNRAR: rar_malloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", size);
 	return NULL;
     }
 
@@ -34,7 +34,7 @@ void *rar_malloc(size_t size)
 #endif
 
     if(!alloc) {
-	fprintf(stderr, "UNRAR: rar_malloc(): Can't allocate memory (%u bytes).\n", size);
+	fprintf(stderr, "UNRAR: rar_malloc(): Can't allocate memory (%lu bytes).\n", size);
 	perror("malloc_problem");
 	return NULL;
     } else return alloc;
@@ -46,14 +46,14 @@ void *rar_realloc2(void *ptr, size_t size)
 
 
     if(!size || size > RAR_MAX_ALLOCATION) {
-	fprintf(stderr, "UNRAR: rar_realloc2(): Attempt to allocate %u bytes. Please report to http://bugs.clamav.net\n", size);
+	fprintf(stderr, "UNRAR: rar_realloc2(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", size);
 	return NULL;
     }
 
     alloc = realloc(ptr, size);
 
     if(!alloc) {
-	fprintf(stderr, "UNRAR: rar_realloc2(): Can't allocate memory (%u bytes).\n", size);
+	fprintf(stderr, "UNRAR: rar_realloc2(): Can't allocate memory (%lu bytes).\n", size);
 	perror("rar_realloc2");
 	if(ptr)
 	    free(ptr);

@@ -26,7 +26,11 @@
 #include <stdlib.h>
 #include "cfgparser.h"
 
+#ifdef __GNUC__
+int mdprintf(int desc, const char *str, ...) __attribute__((format(printf, 2,3)));
+#else
 int mdprintf(int desc, const char *str, ...);
+#endif
 
 #ifdef __GNUC__
 int logg(const char *str, ...)      __attribute__((format(printf, 1, 2)));

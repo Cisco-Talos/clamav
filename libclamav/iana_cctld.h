@@ -82,7 +82,7 @@ __inline
 __attribute__ ((__gnu_inline__))
 #endif
 #endif
-const char *
+static const char *
 in_cctld_set (const char *str, unsigned int len)
 {
   enum

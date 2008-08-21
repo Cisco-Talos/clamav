@@ -25,6 +25,7 @@
 #include "cltypes.h"
 #include "others.h"
 #include "execs.h"
+#include "wwunpack.h"
 
 #if HAVE_STRING_H
 #include <string.h>

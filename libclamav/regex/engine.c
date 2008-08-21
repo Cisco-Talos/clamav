@@ -662,6 +662,7 @@ backref(struct match *m, char *start, char *stop, sopno startst, sopno stopst,
 	/* "can't happen" */
 	assert(nope);
 	/* NOTREACHED */
+	return(NULL);
 }
 
 /*

@@ -26,6 +26,7 @@
 
 #include <stdio.h>
 
+#include "dns.h"
 #ifdef HAVE_RESOLV_H
 
 #include <string.h>
@@ -37,7 +38,6 @@
 
 #include "shared/output.h"
 
-#include "dns.h"
 
 #ifndef PACKETSZ
 #define PACKETSZ 512

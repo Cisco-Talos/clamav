@@ -350,7 +350,7 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
 	    close(sockd);
 	    return NULL;
 	} else {
-	    mprintf("Signature received (length = %u)\n", strlen(buff) - 10);
+	    mprintf("Signature received (length = %lu)\n", strlen(buff) - 10);
 	}
     } else {
 	mprintf("!getdsig: Communication error with remote server\n");

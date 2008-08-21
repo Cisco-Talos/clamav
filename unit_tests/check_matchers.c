@@ -25,6 +25,7 @@
 
 #include <check.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "../libclamav/clamav.h"
 #include "../libclamav/readdb.h"

@@ -41,84 +41,6 @@
 static void rar_dbgmsg(const char* fmt,...){}
 #endif
 
-static void dump_tables(unpack_data_t *unpack_data)
-{
-	int i;
-	
-	/* Dump LD table */
-	rar_dbgmsg("LD Table MaxNum=%d\n", unpack_data->LD.MaxNum);
-	rar_dbgmsg("\tDecodeLen:");
-	for (i=0 ; i < 16; i++) {
-		rar_dbgmsg(" %.8d", unpack_data->LD.DecodeLen[i]);
-	}
-	rar_dbgmsg("\n\tDecodePos:");
-	for (i=0 ; i < 16; i++) {
-		rar_dbgmsg(" %.8d", unpack_data->LD.DecodePos[i]);
-	}
-	rar_dbgmsg("\n\tDecodeNum:");
-	for (i=0 ; i < NC; i++) {
-		rar_dbgmsg(" %.8d", unpack_data->LD.DecodeNum[i]);
-	}
-	
-	
-	rar_dbgmsg("\nDD Table MaxNum=%d\n", unpack_data->DD.MaxNum);
-	rar_dbgmsg("\tDecodeLen:");
-	for (i=0 ; i < 16; i++) {
-		rar_dbgmsg(" %.8d", unpack_data->DD.DecodeLen[i]);
-	}
-	rar_dbgmsg("\n\tDecodePos:");
-	for (i=0 ; i < 16; i++) {
-		rar_dbgmsg(" %.8d", unpack_data->DD.DecodePos[i]);
-	}
-	rar_dbgmsg("\n\tDecodeNum:");
-	for (i=0 ; i < DC; i++) {
-		rar_dbgmsg(" %.8d", unpack_data->DD.DecodeNum[i]);
-	}
-	
-	rar_dbgmsg("\nLDD Table MaxNum=%d\n", unpack_data->LDD.MaxNum);
-	rar_dbgmsg("\tDecodeLen:");
-	for (i=0 ; i < 16; i++) {
-		rar_dbgmsg(" %.8d", unpack_data->LDD.DecodeLen[i]);
-	}
-	rar_dbgmsg("\n\tDecodePos:");
-	for (i=0 ; i < 16; i++) {
-		rar_dbgmsg(" %.8d", unpack_data->LDD.DecodePos[i]);
-	}
-	rar_dbgmsg("\n\tDecodeNum:");
-	for (i=0 ; i < LDC; i++) {
-		rar_dbgmsg(" %.8d", unpack_data->LDD.DecodeNum[i]);
-	}
-	
-	rar_dbgmsg("\nRD Table MaxNum=%d\n", unpack_data->RD.MaxNum);
-	rar_dbgmsg("\tDecodeLen:");
-	for (i=0 ; i < 16; i++) {
-		rar_dbgmsg(" %.8d", unpack_data->RD.DecodeLen[i]);
-	}
-	rar_dbgmsg("\n\tDecodePos:");
-	for (i=0 ; i < 16; i++) {
-		rar_dbgmsg(" %.8d", unpack_data->RD.DecodePos[i]);
-	}
-	rar_dbgmsg("\n\tDecodeNum:");
-	for (i=0 ; i < RC; i++) {
-		rar_dbgmsg(" %.8d", unpack_data->RD.DecodeNum[i]);
-	}
-	
-	rar_dbgmsg("\nBD Table MaxNum=%d\n", unpack_data->BD.MaxNum);
-	rar_dbgmsg("\tDecodeLen:");
-	for (i=0 ; i < 16; i++) {
-		rar_dbgmsg(" %.8d", unpack_data->BD.DecodeLen[i]);
-	}
-	rar_dbgmsg("\n\tDecodePos:");
-	for (i=0 ; i < 16; i++) {
-		rar_dbgmsg(" %.8d", unpack_data->BD.DecodePos[i]);
-	}
-	rar_dbgmsg("\n\tDecodeNum:");
-	for (i=0 ; i < BC; i++) {
-		rar_dbgmsg(" %.8d", unpack_data->BD.DecodeNum[i]);
-	}
-	rar_dbgmsg("\n");
-}
-
 static void insert_old_dist(unpack_data_t *unpack_data, unsigned int distance)
 {
 	unpack_data->old_dist[3] = unpack_data->old_dist[2];
@@ -230,8 +152,7 @@ unsigned int rar_get_char(int fd, unpack_data_t *unpack_data)
 static void unp_write_data(unpack_data_t *unpack_data, uint8_t *data, int size)
 {
 	rar_dbgmsg("in unp_write_data length=%d\n", size);
-	write(unpack_data->ofd, data, size);
-	unpack_data->written_size += size;
+	unpack_data->written_size += write(unpack_data->ofd, data, size);
 	unpack_data->unp_crc = rar_crc(unpack_data->unp_crc, data, size);
 }
 

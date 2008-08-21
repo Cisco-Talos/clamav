@@ -302,7 +302,7 @@ static inline void html_output_c(file_buff_t *fbuff1, unsigned char c)
 	}
 }
 
-static void html_output_str(file_buff_t *fbuff, const unsigned char *str, int len)
+static void html_output_str(file_buff_t *fbuff, const unsigned char *str, size_t len)
 {
 	if (fbuff) {
 		if ((fbuff->length + len) >= HTML_FILE_BUFF_LEN) {
@@ -561,7 +561,7 @@ static void screnc_decode(unsigned char *ptr, struct screnc_state *s)
 			expected += (base64_chars[ptr[5]] >> 4) << 24;
 			ptr += 8;
 			if(s->sum != expected) {
-				cli_dbgmsg("screnc_decode: checksum mismatch: %lu != %lu\n", s->sum, expected);
+				cli_dbgmsg("screnc_decode: checksum mismatch: %u != %u\n", s->sum, expected);
 			} else {
 				if(strncmp(ptr, "^#~@", 4) != 0) {
 					cli_dbgmsg("screnc_decode: terminator not found\n");
@@ -1787,14 +1787,14 @@ int html_screnc_decode(int fd, const char *dirname)
 
 	while (screnc_state.length && line) {
 		screnc_decode(ptr, &screnc_state);
-		write(ofd, ptr, strlen(ptr));
+		cli_writen(ofd, ptr, strlen(ptr));
 		free(line);
 		if (screnc_state.length) {
 			ptr = line = cli_readchunk(stream_in, NULL, 8192);
 		}
 	}
 	if(screnc_state.length)
-		cli_dbgmsg("html_screnc_decode: missing %lu bytes\n",screnc_state.length);
+		cli_dbgmsg("html_screnc_decode: missing %u bytes\n",screnc_state.length);
 	retval = TRUE;
 
 abort:

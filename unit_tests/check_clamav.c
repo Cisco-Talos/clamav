@@ -54,6 +54,7 @@ END_TEST
 
 /* extern void cl_debug(void); */
 START_TEST (test_cl_debug)
+{
     int old_status = cli_debug_flag;
     cli_debug_flag = 0;
     cl_debug();
@@ -63,6 +64,7 @@ START_TEST (test_cl_debug)
     cl_debug();
     fail_unless(1 == cli_debug_flag, "cl_debug failed when flag was already set");
     cli_debug_flag = old_status;
+}
 END_TEST
 
 /* extern const char *cl_retdbdir(void); */
@@ -76,10 +78,12 @@ END_TEST
 
 /* extern const char *cl_retver(void); */
 START_TEST (test_cl_retver)
+{
     const char *ver = cl_retver();
     fail_unless(!strcmp(REPO_VERSION, ver),"cl_retver");
     fail_unless(strcspn(ver,"012345789") < strlen(ver),
 		    "cl_retver must have a number");
+}
 END_TEST
 
 /* extern void cl_cvdfree(struct cl_cvd *cvd); */
@@ -339,7 +343,6 @@ int open_testfile(const char *name)
 int main(int argc, char **argv)
 {
     int nf;
-    cl_debug();
     Suite *s = test_cl_suite();
     SRunner *sr = srunner_create(s);
 #ifdef CHECK_HAVE_LOOPS
@@ -358,6 +361,7 @@ int main(int argc, char **argv)
     if(freopen("test-stderr.log","w+",stderr) == NULL) {
 	    fputs("Unable to redirect stderr!\n",stderr);
     }
+    cl_debug();
 
     srunner_run_all(sr, CK_NORMAL);
     nf = srunner_ntests_failed(sr);

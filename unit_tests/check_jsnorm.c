@@ -135,7 +135,7 @@ START_TEST (test_token_ival)
 	fail_unless(TOKEN_GET(&tok, string) == NULL, "token ival->string");
 	fail_unless(TOKEN_GET(&tok, cstring) == NULL, "token ival->cstring");
 	fail_unless(TOKEN_GET(&tok, scope) == NULL, "token ival->scope");
-	fail_unless(TOKEN_GET(&tok, dval) == -1, "token ival->dval");
+	fail_unless(TOKEN_GET(&tok, dval) - -1 < 1e-9, "token ival->dval");
 	fail_unless(TOKEN_GET(&tok, ival) == val, "token ival->ival");
 }
 END_TEST
@@ -150,7 +150,7 @@ START_TEST (test_token_dval)
 	fail_unless(TOKEN_GET(&tok, string) == NULL, "token dval->string");
 	fail_unless(TOKEN_GET(&tok, cstring) == NULL, "token dval->cstring");
 	fail_unless(TOKEN_GET(&tok, scope) == NULL, "token dval->scope");
-	fail_unless(TOKEN_GET(&tok, dval) == val, "token dval->dval");
+	fail_unless(TOKEN_GET(&tok, dval) - val < 1e-9, "token dval->dval");
 	fail_unless(TOKEN_GET(&tok, ival) == -1, "token dval->ival");
 }
 END_TEST
