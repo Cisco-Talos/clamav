@@ -31,6 +31,5 @@ void cli_js_output(struct parser_state *state, const char *tempdir);
 void cli_js_destroy(struct parser_state *state);
 
 char *cli_unescape(const char *str);
-void cli_textbuffer_append_normalize(struct text_buffer *buf, const char *str, size_t len);
 
 #endif
