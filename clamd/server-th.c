@@ -688,7 +688,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	    time(&reloaded_time);
 	    pthread_mutex_unlock(&reload_mutex);
 #ifdef CLAMUKO
-	    if(cfgopt(copt, "ClamukoScanOnAccess")->enabled) {
+	    if(cfgopt(copt, "ClamukoScanOnAccess")->enabled && tharg) {
 		logg("Stopping and restarting Clamuko.\n");
 		pthread_kill(clamuko_pid, SIGUSR1);
 		pthread_join(clamuko_pid, NULL);

@@ -1465,7 +1465,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					cli_dbgmsg("RFC2397 data file: %s\n", tmp_file);
 					file_tmp_o1->fd = open(tmp_file, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
 					free(tmp_file);
-					if (!file_tmp_o1->fd) {
+					if (file_tmp_o1->fd < 0) {
 						cli_dbgmsg("open failed: %s\n", filename);
 						free(file_tmp_o1);
 						goto abort;
@@ -1665,12 +1665,14 @@ abort:
 	}
 	if (file_buff_o2) {
 		html_output_flush(file_buff_o2);
-		close(file_buff_o2->fd);
+		if(file_buff_o2->fd != -1)
+			close(file_buff_o2->fd);
 		free(file_buff_o2);
 	}
 	if(file_buff_text) {
 		html_output_flush(file_buff_text);
-		close(file_buff_text->fd);
+		if(file_buff_text->fd != -1)
+			close(file_buff_text->fd);
 		free(file_buff_text);
 	}
 	return retval;
@@ -1739,7 +1741,7 @@ int html_screnc_decode(int fd, const char *dirname)
 	snprintf(filename, 1024, "%s/screnc.html", dirname);
 	ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
 
-	if (!ofd) {
+	if (ofd < 0) {
 		cli_dbgmsg("open failed: %s\n", filename);
 		fclose(stream_in);
 		return FALSE;

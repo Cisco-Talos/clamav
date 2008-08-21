@@ -132,8 +132,11 @@ void virusaction(const char *filename, const char *virname, const struct cfgstru
 		}
 	}
 
-	if(!cmd)
+	if(!cmd) {
+		free(buffer_file);
+		free(buffer_vir);
 		return;
+	}
 	/* We can only call async-signal-safe functions after fork(). */
 	pid = fork();
 

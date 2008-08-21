@@ -287,8 +287,10 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
 
 	i = vba_read_project_strings(fd, TRUE);
 	seekback = lseek(fd, 0, SEEK_CUR);
-	if (lseek(fd, sizeof(struct vba56_header), SEEK_SET) == -1)
+	if (lseek(fd, sizeof(struct vba56_header), SEEK_SET) == -1) {
+		close(fd);
 		return NULL;
+	}
 	j = vba_read_project_strings(fd, FALSE);
 	if(!i && !j) {
 		close(fd);

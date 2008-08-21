@@ -510,6 +510,7 @@ static int real_scansis(FILE *f, cli_ctx *ctx, const char *tmpd) {
 	    free(decomp);
 	    free(ptrs);
 	    free(alangs);
+	    close(fd);
 	    return CL_EIO;
 	  }
 	  free(decomp);
