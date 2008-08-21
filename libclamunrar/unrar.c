@@ -151,8 +151,10 @@ unsigned int rar_get_char(int fd, unpack_data_t *unpack_data)
 
 static void unp_write_data(unpack_data_t *unpack_data, uint8_t *data, int size)
 {
+	int ret;
 	rar_dbgmsg("in unp_write_data length=%d\n", size);
-	unpack_data->written_size += write(unpack_data->ofd, data, size);
+	if((ret = write(unpack_data->ofd, data, size)) > 0)
+	    unpack_data->written_size += ret;
 	unpack_data->unp_crc = rar_crc(unpack_data->unp_crc, data, size);
 }
 
