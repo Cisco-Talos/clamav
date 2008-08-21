@@ -60,10 +60,8 @@ int tar_addfile(int fd, gzFile *gzs, const char *file)
 	unsigned int i, chksum = 0;
 
 
-    if((s = open(file, O_RDONLY|O_BINARY)) == -1) {
-	close(s);
+    if((s = open(file, O_RDONLY|O_BINARY)) == -1)
 	return -1;
-    }
 
     if(fstat(s, &sb) == -1) {
 	close(s);

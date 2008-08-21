@@ -1,3 +1,7 @@
+Thu Aug 21 13:24:17 CEST 2008 (tk)
+----------------------------------
+  * shared/tar.c: fix invalid close on error path - bb#1141
+
 Thu Aug 21 13:22:29 CEST 2008 (tk)
 ----------------------------------
   * libclamav/others.c: fix fd feak on error path - bb#1141
