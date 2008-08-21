@@ -1,3 +1,7 @@
+Thu Aug 21 13:22:29 CEST 2008 (tk)
+----------------------------------
+  * libclamav/others.c: fix fd feak on error path - bb#1141
+
 Wed Aug 20 20:09:11 CEST 2008 (acab)
 ------------------------------------
   * libclamav/sis.c: fix fd feak on error path - bb#1141

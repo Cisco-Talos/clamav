@@ -800,8 +800,11 @@ int cli_filecopy(const char *src, const char *dest)
 	return -1;
     }
 
-    if(!(buffer = cli_malloc(FILEBUFF)))
+    if(!(buffer = cli_malloc(FILEBUFF))) {
+	close(s);
+	close(d);
 	return -1;
+    }
 
     while((bytes = cli_readn(s, buffer, FILEBUFF)) > 0)
 	cli_writen(d, buffer, bytes);
