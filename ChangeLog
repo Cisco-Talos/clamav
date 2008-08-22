@@ -1,3 +1,7 @@
+Fri Aug 22 12:33:58 CEST 2008 (acab)
+------------------------------------
+  * clamav-milter/clamav-milter.c: missing proto
+
 Thu Aug 21 13:29:22 CEST 2008 (tk)
 ----------------------------------
   * freshclam/manager.c: fix error path memleaks - bb#1141
