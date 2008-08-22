@@ -1,3 +1,7 @@
+Fri Aug 22 15:20:08 CEST 2008 (tk)
+----------------------------------
+  * freshclam/manager.c: fix warnings - bb#1142
+
 Fri Aug 22 12:33:58 CEST 2008 (acab)
 ------------------------------------
   * clamav-milter/clamav-milter.c: missing proto

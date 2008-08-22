@@ -85,6 +85,10 @@
 #define	closesocket(s)	close(s)
 #endif
 
+#define CHDIR_ERR(x)				\
+	if(chdir(x) == -1)			\
+	    logg("!Can't chdir to %s\n", x);
+
 #ifndef SUPPORT_IPv6
 static const char *ghbn_err(int err) /* hstrerror() */
 {
@@ -763,8 +767,11 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     if((fd = open(destfile, O_WRONLY|O_CREAT|O_EXCL|O_BINARY, 0644)) == -1) {
 	    char currdir[512];
 
-	getcwd(currdir, sizeof(currdir));
-	logg("!getfile: Can't create new file %s in %s\n", destfile, currdir);
+	if(getcwd(currdir, sizeof(currdir)))
+	    logg("!getfile: Can't create new file %s in %s\n", destfile, currdir);
+	else
+	    logg("!getfile: Can't create new file %s in the current directory\n", destfile);
+
 	logg("Hint: The database directory must be writable for UID %d or GID %d\n", getuid(), getgid());
 	closesocket(sd);
 	return 57;
@@ -904,7 +911,7 @@ static int getpatch(const char *dbname, const char *tmpdir, int version, const c
         logg("%cgetpatch: Can't download %s from %s\n", logerr ? '!' : '^', patch, hostname);
         unlink(tempname);
         free(tempname);
-	chdir(olddir);
+	CHDIR_ERR(olddir);
         return ret;
     }
 
@@ -912,7 +919,7 @@ static int getpatch(const char *dbname, const char *tmpdir, int version, const c
 	logg("!getpatch: Can't open %s for reading\n", tempname);
         unlink(tempname);
         free(tempname);
-	chdir(olddir);
+	CHDIR_ERR(olddir);
 	return 55;
     }
 
@@ -921,14 +928,17 @@ static int getpatch(const char *dbname, const char *tmpdir, int version, const c
 	close(fd);
         unlink(tempname);
         free(tempname);
-	chdir(olddir);
+	CHDIR_ERR(olddir);
 	return 70; /* FIXME */
     }
 
     close(fd);
     unlink(tempname);
     free(tempname);
-    chdir(olddir);
+    if(chdir(olddir) == -1) {
+	logg("!getpatch: Can't chdir to %s\n", olddir);
+	return 50; /* FIXME */
+    }
     return 0;
 }
 
@@ -962,8 +972,11 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
 	int fd, err = 0;
 	gzFile *gzs = NULL;
 
+    if(!getcwd(cwd, sizeof(cwd))) {
+	logg("!buildcld: Can't get path of current working directory\n");
+	return -1;
+    }
 
-    getcwd(cwd, sizeof(cwd));
     if(chdir(tmpdir) == -1) {
 	logg("!buildcld: Can't access directory %s\n", tmpdir);
 	return -1;
@@ -972,13 +985,13 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
     snprintf(info, sizeof(info), "%s.info", dbname);
     if((fd = open(info, O_RDONLY|O_BINARY)) == -1) {
 	logg("!buildcld: Can't open %s\n", info);
-	chdir(cwd);
+	CHDIR_ERR(cwd);
 	return -1;
     }
 
     if(read(fd, buff, 512) == -1) {
 	logg("!buildcld: Can't read %s\n", info);
-	chdir(cwd);
+	CHDIR_ERR(cwd);
 	close(fd);
 	return -1;
     }
@@ -987,19 +1000,19 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
 
     if(!(pt = strchr(buff, '\n'))) {
 	logg("!buildcld: Bad format of %s\n", info);
-	chdir(cwd);
+	CHDIR_ERR(cwd);
 	return -1;
     }
     memset(pt, ' ', 512 + buff - pt);
 
     if((fd = open(newfile, O_WRONLY|O_CREAT|O_EXCL|O_BINARY, 0644)) == -1) {
 	logg("!buildcld: Can't open %s for writing\n", newfile);
-	chdir(cwd);
+	CHDIR_ERR(cwd);
 	return -1;
     }
     if(write(fd, buff, 512) != 512) {
 	logg("!buildcld: Can't write to %s\n", newfile);
-	chdir(cwd);
+	CHDIR_ERR(cwd);
 	unlink(newfile);
 	close(fd);
 	return -1;
@@ -1007,7 +1020,7 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
 
     if((dir = opendir(".")) == NULL) {
 	logg("!buildcld: Can't open directory %s\n", tmpdir);
-	chdir(cwd);
+	CHDIR_ERR(cwd);
 	unlink(newfile);
 	close(fd);
 	return -1;
@@ -1017,7 +1030,7 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
 	close(fd);
 	if(!(gzs = gzopen(newfile, "ab"))) {
 	    logg("!buildcld: gzopen() failed for %s\n", newfile);
-	    chdir(cwd);
+	    CHDIR_ERR(cwd);
 	    unlink(newfile);
 	    closedir(dir);
 	    return -1;
@@ -1042,7 +1055,7 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
     }
 
     if(err) {
-	chdir(cwd);
+	CHDIR_ERR(cwd);
 	if(gzs)
 	    gzclose(gzs);
 	else
@@ -1061,7 +1074,7 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
 
 	    if(tar_addfile(fd, gzs, dent->d_name) == -1) {
 		logg("!buildcld: Can't add %s to .cld file\n", dent->d_name);
-		chdir(cwd);
+		CHDIR_ERR(cwd);
 		if(gzs)
 		    gzclose(gzs);
 		else
@@ -1245,7 +1258,10 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
     if(!cfgopt(copt, "ScriptedUpdates")->enabled)
 	nodb = 1;
 
-    getcwd(cwd, sizeof(cwd));
+    if(!getcwd(cwd, sizeof(cwd))) {
+	logg("!updatedb: Can't get path of current working directory\n");
+	return 50; /* FIXME */
+    }
     newfile = cli_gentemp(cwd);
 
     if(nodb) {
