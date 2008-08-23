@@ -1,3 +1,7 @@
+Sat Aug 23 22:18:47 CEST 2008 (tk)
+----------------------------------
+  * shared/misc.c: fix double "-exp"
+
 Fri Aug 22 15:20:08 CEST 2008 (tk)
 ----------------------------------
   * freshclam/manager.c: fix warnings - bb#1142

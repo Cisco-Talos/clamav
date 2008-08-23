@@ -50,12 +50,6 @@
 #define	O_BINARY	0
 #endif
 
-#ifdef CL_EXPERIMENTAL
-#define EXP	"-exp"
-#else
-#define EXP	""
-#endif
-
 #ifndef REPO_VERSION
 #define REPO_VERSION "exported"
 #endif
@@ -139,7 +133,7 @@ void print_version(const char *dbdir)
 	pt = fdbdir = freshdbdir();
 
     if(!pt) {
-	printf("ClamAV %s"EXP"\n",get_version());
+	printf("ClamAV %s\n",get_version());
 	return;
     }
 
@@ -159,10 +153,10 @@ void print_version(const char *dbdir)
     if(!access(path, R_OK) && (daily = cl_cvdhead(path))) {
 	    time_t t = (time_t) daily->stime;
 
-	printf("ClamAV %s"EXP"/%d/%s", get_version(), daily->version, ctime(&t));
+	printf("ClamAV %s/%d/%s", get_version(), daily->version, ctime(&t));
 	cl_cvdfree(daily);
     } else {
-	printf("ClamAV %s"EXP"\n",get_version());
+	printf("ClamAV %s\n",get_version());
     }
 
     free(path);
