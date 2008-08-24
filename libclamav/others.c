@@ -60,7 +60,9 @@
 
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
+#ifndef CLI_MEMFUNSONLY
 static pthread_mutex_t cli_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 # ifndef HAVE_CTIME_R
 static pthread_mutex_t cli_ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -92,8 +94,9 @@ static pthread_mutex_t cli_ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 uint8_t cli_debug_flag = 0, cli_leavetemps_flag = 0;
 
+#ifndef CLI_MEMFUNSONLY
 static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
-
+#endif
 
 #define MSGCODE(x)					    \
 	va_list args;					    \
