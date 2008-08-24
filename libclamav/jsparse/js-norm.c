@@ -43,7 +43,7 @@
 #include "lexglobal.h"
 #include "hashtab.h"
 #include "others.h"
-#include "str.c"
+#include "str.h"
 #include "js-norm.h"
 #include "jsparse/generated/operators.h"
 #include "jsparse/generated/keywords.h"
