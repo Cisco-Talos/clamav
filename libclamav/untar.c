@@ -89,7 +89,6 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 			char magic[7], name[101], osize[13];
 
 			if(fout>=0) {
-				int ret;
 				lseek(fout, 0, SEEK_SET);
 				ret = cli_magic_scandesc(fout, ctx);
 				close(fout);
@@ -110,7 +109,7 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 				strncpy(magic, block+257, 5);
 				magic[5] = '\0';
 				if(strcmp(magic, "ustar") != 0) {
-					cli_dbgmsg("Incorrect magic string '%s' in tar header\n", magic);
+					cli_dbgmsg("cli_untar: Incorrect magic string '%s' in tar header\n", magic);
 					return CL_EFORMAT;
 				}
 			}
@@ -119,7 +118,7 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 
 			switch(type) {
 				default:
-					cli_warnmsg("cli_untar: unknown type flag %c\n", type);
+					cli_dbgmsg("cli_untar: unknown type flag %c\n", type);
 				case '0':	/* plain file */
 				case '\0':	/* plain file */
 				case '7':	/* contiguous file */
@@ -163,14 +162,12 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 			osize[12] = '\0';
 			size = octal(osize);
 			if(size < 0) {
-				cli_errmsg("Invalid size in tar header\n");
-				if(fout>=0)
-					close(fout);
-				return CL_CLEAN;
-			}
-			cli_dbgmsg("cli_untar: size = %d\n", size);
-			if((ret=cli_checklimits("cli_untar", ctx, size, 0, 0))!=CL_CLEAN) {
+				cli_dbgmsg("cli_untar: Invalid size in tar header\n");
 				skipEntry++;
+			} else {
+				cli_dbgmsg("cli_untar: size = %d\n", size);
+				if((ret=cli_checklimits("cli_untar", ctx, size, 0, 0))!=CL_CLEAN)
+					skipEntry++;
 			}
 
 			if(skipEntry) {
@@ -188,7 +185,7 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 			fout = open(fullname, O_RDWR|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
 
 			if(fout < 0) {
-				cli_errmsg("Can't create temporary file %s: %s\n", fullname, strerror(errno));
+				cli_errmsg("cli_untar: Can't create temporary file %s: %s\n", fullname, strerror(errno));
 				return CL_ETMPFILE;
 			}
 			
@@ -211,7 +208,6 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 			in_block = 0;
         }	
 	if(fout>=0) {
-		int ret;
 		lseek(fout, 0, SEEK_SET);
 		ret = cli_magic_scandesc(fout, ctx);
 		close(fout);
