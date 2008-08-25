@@ -1,3 +1,7 @@
+Mon Aug 25 22:17:03 CEST 2008 (tk)
+----------------------------------
+  * man/freshclam.1.in: fix typo (bb#1147)
+
 Mon Aug 25 16:03:44 CEST 2008 (tk)
 ----------------------------------
   * libclamav: drop obsolete code in matcher-ac

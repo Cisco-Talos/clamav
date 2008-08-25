@@ -66,7 +66,7 @@ Execute COMMAND after successful update.
 Execute COMMAND when freshclam reports outdated version. In the command string %v will be replaced by the new version number.
 .TP 
 \fB\-\-list\-mirrors\fR
-Pring mirror details from mirrors.dat (cache file for the mirror manager).
+Print mirror details from mirrors.dat (cache file for the mirror manager).
 .SH "EXAMPLES"
 .LP 
 .TP 
