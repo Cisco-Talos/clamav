@@ -791,6 +791,9 @@ static void print_hex_buff (unsigned char *start, unsigned char *end, int hex_ou
     printf ("]\n");
 }
 
+#ifdef __GNUC__
+static void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output) __attribute__((unused));
+#endif
 static void wm_decode_macro (unsigned char *buff, uint32_t len, int hex_output)
 {
     uint32_t i;

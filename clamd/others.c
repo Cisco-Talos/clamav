@@ -354,7 +354,6 @@ int writen(int fd, void *buff, unsigned int count)
 */
 int readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeout_sec, int force_delim, int read_command)
 {
-	int fd;
 	ssize_t n;
 	size_t boff = 0;
 	char *pdelim;

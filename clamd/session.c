@@ -116,7 +116,7 @@ static int recvfd_and_scan(int desc, const struct cl_engine *engine, const struc
 int command(int desc, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int timeout)
 {
 	char buff[1025];
-	int bread, opt;
+	int bread;
 
     bread = readsock(desc, buff, sizeof(buff)-1, '\n', timeout, 0, 1);
     if(bread == -2) /* timeout */

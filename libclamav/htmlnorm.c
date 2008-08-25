@@ -583,7 +583,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 {
 	int fd_tmp, tag_length, tag_arg_length, binary;
 	int retval=FALSE, escape, value = 0, hex, tag_val_length=0;
-	int look_for_screnc=FALSE, in_screnc=FALSE,in_script=FALSE, text_space_written=FALSE, spacew=FALSE;
+	int look_for_screnc=FALSE, in_screnc=FALSE,in_script=FALSE, text_space_written=FALSE;
 	FILE *stream_in = NULL;
 	html_state state=HTML_NORM, next_state=HTML_BAD_STATE, saved_next_state=HTML_BAD_STATE;
 	char filename[1024], tag[HTML_STR_LENGTH+1], tag_arg[HTML_STR_LENGTH+1];
@@ -601,7 +601,6 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	unsigned char* in_form_action = NULL;/* the action URL of the current <form> tag, if any*/
 
 	struct entity_conv conv;
-	int rc;
 	unsigned char entity_val[HTML_STR_LENGTH+1];
 	size_t entity_val_length = 0;
 	const int dconf_entconv = dconf && dconf->phishing&PHISHING_CONF_ENTCONV;
@@ -1720,7 +1719,7 @@ int html_normalise_fd(int fd, const char *dirname, tag_arguments_t *hrefs,const 
 
 int html_screnc_decode(int fd, const char *dirname)
 {
-	int fd_tmp, result, count, retval=FALSE;
+	int fd_tmp, count, retval=FALSE;
 	unsigned char *line, tmpstr[6];
 	unsigned char *ptr, filename[1024];
 	FILE *stream_in;

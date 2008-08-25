@@ -62,8 +62,10 @@ int r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t 
 {
 	struct hostent *hp2;
 	int ret = -1;
+#if !defined(HAVE_GETHOSTBYNAME_R_6) && !defined(HAVE_GETHOSTBYNAME_R_5) && !defined(HAVE_GETHOSTBYNAME_R_3)
 #ifdef  CL_THREAD_SAFE
 	static pthread_mutex_t hostent_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
 #endif
 
 	if((hostname == NULL) || (hp == NULL))

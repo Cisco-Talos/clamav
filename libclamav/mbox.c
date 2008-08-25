@@ -4534,7 +4534,6 @@ my_r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t l
 		return h_errno;
 #else
 	/* Single thread the code e.g. VS2005 */
-
 #ifdef  CL_THREAD_SAFE
 	pthread_mutex_lock(&hostent_mutex);
 #endif

@@ -56,7 +56,7 @@ enum { UPACK_399, UPACK_11_12, UPACK_0151477, UPACK_0297729 };
 int unupack(int upack, char *dest, uint32_t dsize, char *buff, uint32_t vma, uint32_t ep, uint32_t base, uint32_t va, int file)
 {
 	int j, searchval;
-	char *loc_esi, *loc_edi, *loc_ebx, *end_edi, *save_edi, *rpeb, *alvalue;
+	char *loc_esi, *loc_edi, *loc_ebx, *end_edi, *save_edi, *alvalue;
 	char *paddr, *pushed_esi, *save2;
 	uint32_t save1, save3, loc_ecx, count, shlsize, original_ep, ret, loc_ebx_u;
 	struct cli_exe_section section;

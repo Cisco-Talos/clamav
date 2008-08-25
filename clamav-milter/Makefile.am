@@ -34,7 +34,6 @@ clamav_milter_SOURCES = \
     $(top_srcdir)/shared/network.c \
     $(top_srcdir)/shared/network.h \
     clamav-milter.c
-
 man_MANS = $(top_builddir)/docs/man/clamav-milter.8
 
 endif
@@ -44,3 +43,6 @@ LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMAV_MILTER_LIBS@ @THREAD_LIBS@
 AM_CPPFLAGS = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_srcdir)/shared -I$(top_srcdir)
 EXTRA_DIST = clamav-milter.c INSTALL
 CLEANFILES=*.gcda *.gcno
+CFLAGS=`echo "@CFLAGS@" | sed -e 's/-Werror[^-]//'`
+
+

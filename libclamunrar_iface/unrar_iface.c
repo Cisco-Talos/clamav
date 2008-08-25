@@ -379,7 +379,6 @@ int unrar_extract_next_prepare(unrar_state_t *state, const char *dirname)
 	char filename[1024];
 	int ofd;
 	unrar_metadata_t *new_metadata;
-	unpack_data_t *unpack_data;
 
 
     state->file_header = read_block(state->fd, FILE_HEAD);

@@ -860,7 +860,6 @@ static void free_regex(regex_t* p)
 
 int phishing_init(struct cl_engine* engine)
 {
-	char *url_regex, *realurl_regex;
 	struct phishcheck* pchk;
 	if(!engine->phishcheck) {
 		pchk = engine->phishcheck = cli_malloc(sizeof(struct phishcheck));
@@ -1252,7 +1251,7 @@ static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, 
 		else k = 1;
 		pp[k++] = 0;
 		while(k < COMPONENTS+2) {
-			const char *p = strchr(path_begin + pp[k-1] + 1, '/');
+			p = strchr(path_begin + pp[k-1] + 1, '/');
 			if(p && p > path_begin) {
 				pp[k++] = p - path_begin;
 			} else

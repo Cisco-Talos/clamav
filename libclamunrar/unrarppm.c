@@ -434,7 +434,7 @@ static int restart_model_rare(ppm_data_t *ppm_data)
 	
 static int start_model_rare(ppm_data_t *ppm_data, int max_order)
 {
-	int i, k, m, step, ret;
+	int i, k, m, step;
 	
 	ppm_data->esc_count = 1;
 	ppm_data->max_order = max_order;
@@ -630,8 +630,7 @@ static int update_model(ppm_data_t *ppm_data)
 	struct state_tag fs, *p;
 	struct ppm_context *pc, *successor;
 	unsigned int ns1, ns, cf, sf, s0;
-	int ret;
-	
+
 	rar_dbgmsg("in update_model\n");
 	fs = *ppm_data->found_state;
 	p = NULL;
