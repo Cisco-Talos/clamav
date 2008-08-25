@@ -57,18 +57,21 @@ enum tokenizer_state {
 	Number,
 	DoubleQString,
 	SingleQString,
-	Identifier
+	Identifier,
+	Dummy
 };
 
 
 typedef struct scanner {
-	enum tokenizer_state state;
 	struct text_buffer buf;
 	const char *yytext;
 	size_t yylen;
 	const char *in;
 	size_t insize;
 	size_t pos;
+	size_t lastpos;
+	enum tokenizer_state state;
+	enum tokenizer_state last_state;
 } *yyscan_t;
 
 typedef int YY_BUFFER_STATE;
@@ -1328,9 +1331,13 @@ static inline int parseId(YYSTYPE *lvalp, yyscan_t scanner)
 					textbuffer_putc(&scanner->buf, c);
 					break;
 				}
+				if(scanner->pos == scanner->insize) {
+					scanner->pos++;
+				}
 				/* else fallthrough */
 			default:
 				/* character is no longer part of identifier */
+				scanner->state = Initial;
 				textbuffer_putc(&scanner->buf, '\0');
 				scanner->pos--;
 				kw = in_word_set(scanner->buf.data, scanner->buf.pos-1);
@@ -1389,6 +1396,8 @@ static int yy_scan_bytes(const char *p, size_t len, yyscan_t scanner)
 	scanner->in = p;
 	scanner->insize = len;
 	scanner->pos = 0;
+	scanner->lastpos = -1;
+	scanner->last_state = Dummy;
 	return 0;
 }
 
@@ -1421,6 +1430,16 @@ static int yylex(YYSTYPE *lvalp, yyscan_t  scanner)
 
 	scanner->yytext = NULL;
 	scanner->yylen = 0;
+	if(scanner->pos == scanner->lastpos) {
+		if(scanner->last_state == scanner->state) {
+			cli_dbgmsg(MODULE "infloop detected, skipping character\n");
+			scanner->pos++;
+		}
+		/* its not necesarely an infloop if it changed
+		 * state, and it shouldn't infloop between states */
+	}
+	scanner->lastpos = scanner->pos;
+	scanner->last_state = scanner->state;
 	while(scanner->pos < scanner->insize) {
 		switch(scanner->state) {
 			case Initial:

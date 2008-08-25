@@ -384,6 +384,13 @@ static const char jstest_buf12[] =
 static const char jstest_expected12[] =
 "var n000=\"test\x1test\";";
 
+static const char jstest_buf13[] =
+"var x\\s12345";
+
+static const char jstest_expected13[] =
+"var n000";
+
+
 static struct {
 	const char *in;
 	const char *expected;
@@ -400,7 +407,8 @@ static struct {
 	{jstest_buf9, jstest_expected9},
 	{jstest_buf10, jstest_expected10},
 	{jstest_buf11, jstest_expected11},
-	{jstest_buf12, jstest_expected12}
+	{jstest_buf12, jstest_expected12},
+	{jstest_buf13, jstest_expected13}
 };
 
 #ifdef CHECK_HAVE_LOOPS
