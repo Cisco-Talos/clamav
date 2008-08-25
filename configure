@@ -884,7 +884,6 @@ MAINT
 LIBBZ2
 LTLIBBZ2
 LIBBZ2_PREFIX
-sendmailprog
 HAVE_LIBGMP
 LIBGMP
 LTLIBGMP
@@ -897,6 +896,7 @@ CLAMAV_MILTER_LIBS
 FRESHCLAM_LIBS
 TH_SAFE
 THREAD_LIBS
+sendmailprog
 BUILD_CLAMD_TRUE
 BUILD_CLAMD_FALSE
 HAVE_MILTER_TRUE
@@ -1550,14 +1550,14 @@ Optional Packages:
   --with-gnu-ld           assume the C compiler uses GNU ld default=no
   --with-libbz2-prefix[=DIR]  search for libbz2 in DIR/include and DIR/lib
   --without-libbz2-prefix     don't search for libbz2 in includedir and libdir
-  --with-sendmail=PATH    specify location of Sendmail binary (default=auto find)
-  --with-sendmail-version=VERSION    specify version of Sendmail (default=auto find)
   --with-libgmp-prefix[=DIR]  search for libgmp in DIR/include and DIR/lib
   --without-libgmp-prefix     don't search for libgmp in includedir and libdir
   --with-iconv supports iconv() (default=auto)
   --with-user=uid	  name of the clamav user (default=clamav)
   --with-group=gid	  name of the clamav group (default=clamav)
   --with-dbdir=path	  path to virus database directory
+  --with-sendmail=PATH    specify location of Sendmail binary (default=auto find)
+  --with-sendmail-version=VERSION    specify version of Sendmail (default=auto find)
   --with-tcpwrappers      support hosts.allow / hosts.deny (default=auto)
 
 Some influential environment variables:
@@ -15425,7 +15425,7 @@ else
 #include <netinet/in.h>
 #include <arpa/nameser.h>
 #include <resolv.h>
-int main() { return (int)dn_expand; }
+int main() { return (long)dn_expand; }
 
 _ACEOF
 rm -f conftest.$ac_objext conftest$ac_exeext
@@ -15479,7 +15479,7 @@ else
 #include <netinet/in.h>
 #include <arpa/nameser.h>
 #include <resolv.h>
-int main() { return (int)dn_expand; }
+int main() { return (long)dn_expand; }
 
 _ACEOF
 rm -f conftest.$ac_objext conftest$ac_exeext
@@ -15548,7 +15548,7 @@ else
 #include <netinet/in.h>
 #include <arpa/nameser.h>
 #include <resolv.h>
-int main() { return (int)res_nquery; }
+int main() { return (long)res_nquery; }
 
 _ACEOF
 rm -f conftest.$ac_objext conftest$ac_exeext
@@ -15754,108 +15754,6 @@ else
   have_milter="no"
 fi
 
-
-if test "$have_milter" = "yes"; then
-  sendmailprog=no
-
-# Check whether --with-sendmail was given.
-if test "${with_sendmail+set}" = set; then
-  withval=$with_sendmail; sendmailprog=$with_sendmail
-else
-  sendmailprog=no
-fi
-
-
-  if test "$sendmailprog" = "no" ; then
-    # Extract the first word of "sendmail", so it can be a program name with args.
-set dummy sendmail; ac_word=$2
-{ echo "$as_me:$LINENO: checking for $ac_word" >&5
-echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
-if test "${ac_cv_path_sendmailprog+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  case $sendmailprog in
-  [\\/]* | ?:[\\/]*)
-  ac_cv_path_sendmailprog="$sendmailprog" # Let the user override the test with a path.
-  ;;
-  *)
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-as_dummy="$PATH:/sbin:/usr/sbin:/usr/lib:/usr/libexec"
-for as_dir in $as_dummy
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-  for ac_exec_ext in '' $ac_executable_extensions; do
-  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
-    ac_cv_path_sendmailprog="$as_dir/$ac_word$ac_exec_ext"
-    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
-    break 2
-  fi
-done
-done
-IFS=$as_save_IFS
-
-  test -z "$ac_cv_path_sendmailprog" && ac_cv_path_sendmailprog="no"
-  ;;
-esac
-fi
-sendmailprog=$ac_cv_path_sendmailprog
-if test -n "$sendmailprog"; then
-  { echo "$as_me:$LINENO: result: $sendmailprog" >&5
-echo "${ECHO_T}$sendmailprog" >&6; }
-else
-  { echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6; }
-fi
-
-
-  fi
-
-
-cat >>confdefs.h <<_ACEOF
-#define SENDMAIL_BIN "$sendmailprog"
-_ACEOF
-
-
-
-# Check whether --with-sendmail-version was given.
-if test "${with_sendmail_version+set}" = set; then
-  withval=$with_sendmail_version; sendmailvers=$with_sendmail_version
-else
-  sendmailvers=no
-fi
-
-
-  if test "$sendmailvers" = "no" ; then
-    sendmailver=`$sendmailprog -d0 < /dev/null | head -1 | awk '{print $2}'`
-  fi
-
-  if test -n "$sendmailver"; then
-    sendmailver_a=`echo $sendmailver | awk -F. '{printf $1}'`
-    sendmailver_b=`echo $sendmailver | awk -F. '{printf $2}'`
-    sendmailver_c=`echo $sendmailver | awk -F. '{printf $3}'`
-
-
-cat >>confdefs.h <<_ACEOF
-#define SENDMAIL_VERSION_A $sendmailver_a
-_ACEOF
-
-
-cat >>confdefs.h <<_ACEOF
-#define SENDMAIL_VERSION_B $sendmailver_b
-_ACEOF
-
-
-cat >>confdefs.h <<_ACEOF
-#define SENDMAIL_VERSION_C $sendmailver_c
-_ACEOF
-
-  fi
-  if test "x$ac_cv_have_lresolv_r" != "xyes"; then
-    { echo "$as_me:$LINENO: WARNING: ****** Your libresolv is not thread safe, SPF queries in clamav-milter will block" >&5
-echo "$as_me: WARNING: ****** Your libresolv is not thread safe, SPF queries in clamav-milter will block" >&2;}
-  fi
-fi
 
 # Check whether --enable-dsig was given.
 if test "${enable_dsig+set}" = set; then
@@ -16523,7 +16421,7 @@ main ()
 {
 
 	char** xin,**xout;
-	unsigned il,ol;
+	unsigned long il,ol;
 	int rc;
 	iconv_t iconv_struct = iconv_open("UTF-16BE","UTF-8");
 	rc = iconv(iconv_struct,xin,&il,xout,&ol);
@@ -17744,6 +17642,181 @@ fi
 
 done
 
+fi
+
+if test "$have_milter" = "yes"; then
+  sendmailprog=no
+
+# Check whether --with-sendmail was given.
+if test "${with_sendmail+set}" = set; then
+  withval=$with_sendmail; sendmailprog=$with_sendmail
+else
+  sendmailprog=no
+fi
+
+
+  if test "$sendmailprog" = "no" ; then
+    # Extract the first word of "sendmail", so it can be a program name with args.
+set dummy sendmail; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_sendmailprog+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $sendmailprog in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_sendmailprog="$sendmailprog" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+as_dummy="$PATH:/sbin:/usr/sbin:/usr/lib:/usr/libexec"
+for as_dir in $as_dummy
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_sendmailprog="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_path_sendmailprog" && ac_cv_path_sendmailprog="no"
+  ;;
+esac
+fi
+sendmailprog=$ac_cv_path_sendmailprog
+if test -n "$sendmailprog"; then
+  { echo "$as_me:$LINENO: result: $sendmailprog" >&5
+echo "${ECHO_T}$sendmailprog" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  fi
+
+
+cat >>confdefs.h <<_ACEOF
+#define SENDMAIL_BIN "$sendmailprog"
+_ACEOF
+
+
+
+# Check whether --with-sendmail-version was given.
+if test "${with_sendmail_version+set}" = set; then
+  withval=$with_sendmail_version; sendmailvers=$with_sendmail_version
+else
+  sendmailvers=no
+fi
+
+
+  if test "$sendmailvers" = "no" ; then
+    sendmailver=`$sendmailprog -d0 < /dev/null | head -1 | awk '{print $2}'`
+  fi
+
+  if test -z "$sendmailver"; then
+	# example: postfix
+	LDFLAGS="$LDFLAGS $CLAMAV_MILTER_LIBS"
+	{ echo "$as_me:$LINENO: checking for smfi_opensocket in -lmilter" >&5
+echo $ECHO_N "checking for smfi_opensocket in -lmilter... $ECHO_C" >&6; }
+if test "${ac_cv_lib_milter_smfi_opensocket+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lmilter  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char smfi_opensocket ();
+int
+main ()
+{
+return smfi_opensocket ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  ac_cv_lib_milter_smfi_opensocket=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_lib_milter_smfi_opensocket=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_lib_milter_smfi_opensocket" >&5
+echo "${ECHO_T}$ac_cv_lib_milter_smfi_opensocket" >&6; }
+if test $ac_cv_lib_milter_smfi_opensocket = yes; then
+  sendmailver="8.13.0"
+else
+  { echo "$as_me:$LINENO: WARNING: cannot determine sendmail version" >&5
+echo "$as_me: WARNING: cannot determine sendmail version" >&2;}
+fi
+
+	LDFLAGS="$save_LDFLAGS"
+  fi
+  if test -n "$sendmailver"; then
+    sendmailver_a=`echo $sendmailver | awk -F. '{printf $1}'`
+    sendmailver_b=`echo $sendmailver | awk -F. '{printf $2}'`
+    sendmailver_c=`echo $sendmailver | awk -F. '{printf $3}'`
+
+
+cat >>confdefs.h <<_ACEOF
+#define SENDMAIL_VERSION_A $sendmailver_a
+_ACEOF
+
+
+cat >>confdefs.h <<_ACEOF
+#define SENDMAIL_VERSION_B $sendmailver_b
+_ACEOF
+
+
+cat >>confdefs.h <<_ACEOF
+#define SENDMAIL_VERSION_C $sendmailver_c
+_ACEOF
+
+  fi
+  if test "x$ac_cv_have_lresolv_r" != "xyes"; then
+    { echo "$as_me:$LINENO: WARNING: ****** Your libresolv is not thread safe, SPF queries in clamav-milter will block" >&5
+echo "$as_me: WARNING: ****** Your libresolv is not thread safe, SPF queries in clamav-milter will block" >&2;}
+  fi
 fi
 
  if test "$have_pthreads" = "yes"; then
@@ -19536,14 +19609,15 @@ cat >>conftest.$ac_ext <<_ACEOF
 
 #define TEST "test"
 
-int send_fd(int s, int fd)
+static int send_fd(int s, int fd)
 {
     struct msghdr msg;
     struct cmsghdr *cmsg;
     unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
     struct iovec iov[1];
+    char dummy[] = "";
 
-    iov[0].iov_base = "";
+    iov[0].iov_base = dummy;
     iov[0].iov_len = 1;
 
     memset(&msg, 0, sizeof(msg));
@@ -19567,7 +19641,7 @@ int send_fd(int s, int fd)
     return 0;
 }
 
-int testfd(int desc)
+static int testfd(int desc)
 {
     char buf[256];
     if(read(desc, buf, sizeof(buf)) != sizeof(TEST)) {
@@ -19577,7 +19651,7 @@ int testfd(int desc)
     return memcmp(buf, TEST, sizeof(TEST));
 }
 
-int recv_fd(int desc)
+static int recv_fd(int desc)
 {
     unsigned char buf[CMSG_SPACE(sizeof(int))];
     struct msghdr msg;
@@ -19643,7 +19717,10 @@ int main(void)
             waitpid(pid, NULL, 0);
             return 2;
         }
-        write(pip[1], TEST, sizeof(TEST));
+        if(write(pip[1], TEST, sizeof(TEST)) != sizeof(TEST)) {
+		close(pip[1]);
+		return -1;
+	}
         close(pip[1]);
         waitpid(pid, &status, 0);
     }
@@ -19716,14 +19793,15 @@ cat >>conftest.$ac_ext <<_ACEOF
 
 #define TEST "test"
 
-int send_fd(int s, int fd)
+static int send_fd(int s, int fd)
 {
     struct msghdr msg;
     struct cmsghdr *cmsg;
     unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
     struct iovec iov[1];
+    char dummy[] = "";
 
-    iov[0].iov_base = "";
+    iov[0].iov_base = dummy;
     iov[0].iov_len = 1;
 
     memset(&msg, 0, sizeof(msg));
@@ -19747,7 +19825,7 @@ int send_fd(int s, int fd)
     return 0;
 }
 
-int testfd(int desc)
+static int testfd(int desc)
 {
     char buf[256];
     if(read(desc, buf, sizeof(buf)) != sizeof(TEST)) {
@@ -19757,7 +19835,7 @@ int testfd(int desc)
     return memcmp(buf, TEST, sizeof(TEST));
 }
 
-int recv_fd(int desc)
+static int recv_fd(int desc)
 {
     unsigned char buf[CMSG_SPACE(sizeof(int))];
     struct msghdr msg;
@@ -19823,7 +19901,10 @@ int main(void)
             waitpid(pid, NULL, 0);
             return 2;
         }
-        write(pip[1], TEST, sizeof(TEST));
+        if(write(pip[1], TEST, sizeof(TEST)) != sizeof(TEST)) {
+		close(pip[1]);
+		return -1;
+	}
         close(pip[1]);
         waitpid(pid, &status, 0);
     }
@@ -20777,7 +20858,6 @@ MAINT!$MAINT$ac_delim
 LIBBZ2!$LIBBZ2$ac_delim
 LTLIBBZ2!$LTLIBBZ2$ac_delim
 LIBBZ2_PREFIX!$LIBBZ2_PREFIX$ac_delim
-sendmailprog!$sendmailprog$ac_delim
 HAVE_LIBGMP!$HAVE_LIBGMP$ac_delim
 LIBGMP!$LIBGMP$ac_delim
 LTLIBGMP!$LTLIBGMP$ac_delim
@@ -20790,6 +20870,7 @@ CLAMAV_MILTER_LIBS!$CLAMAV_MILTER_LIBS$ac_delim
 FRESHCLAM_LIBS!$FRESHCLAM_LIBS$ac_delim
 TH_SAFE!$TH_SAFE$ac_delim
 THREAD_LIBS!$THREAD_LIBS$ac_delim
+sendmailprog!$sendmailprog$ac_delim
 BUILD_CLAMD_TRUE!$BUILD_CLAMD_TRUE$ac_delim
 BUILD_CLAMD_FALSE!$BUILD_CLAMD_FALSE$ac_delim
 HAVE_MILTER_TRUE!$HAVE_MILTER_TRUE$ac_delim

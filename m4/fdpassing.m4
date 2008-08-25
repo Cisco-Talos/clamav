@@ -19,14 +19,15 @@ $1
 
 #define TEST "test"
 
-int send_fd(int s, int fd)
+static int send_fd(int s, int fd)
 {
     struct msghdr msg;
     struct cmsghdr *cmsg;
     unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
     struct iovec iov[1];
+    char dummy[] = "";
 
-    iov[0].iov_base = "";
+    iov[0].iov_base = dummy;
     iov[0].iov_len = 1;
 
     memset(&msg, 0, sizeof(msg));
@@ -50,7 +51,7 @@ int send_fd(int s, int fd)
     return 0;
 }
 
-int testfd(int desc)
+static int testfd(int desc)
 {
     char buf[256];
     if(read(desc, buf, sizeof(buf)) != sizeof(TEST)) {
@@ -60,7 +61,7 @@ int testfd(int desc)
     return memcmp(buf, TEST, sizeof(TEST));
 }
 
-int recv_fd(int desc)
+static int recv_fd(int desc)
 {
     unsigned char buf[CMSG_SPACE(sizeof(int))];
     struct msghdr msg;
@@ -126,7 +127,10 @@ int main(void)
             waitpid(pid, NULL, 0);
             return 2;
         }
-        write(pip[1], TEST, sizeof(TEST));
+        if(write(pip[1], TEST, sizeof(TEST)) != sizeof(TEST)) {
+		close(pip[1]);
+		return -1;
+	}
         close(pip[1]);
         waitpid(pid, &status, 0);
     }

@@ -174,6 +174,7 @@ typedef	unsigned int	in_addr_t;
 
 #define	VERSION_LENGTH	128
 #define	DEFAULT_TIMEOUT	120
+
 #define	NTRIES	5	/* How many times we try to connect to a clamd */
 
 /*#define	SESSION*/
@@ -233,10 +234,10 @@ static struct cidr_net {	/* don't make this const because of -I flag */
 	uint32_t	base;
 	uint32_t	mask;
 } localNets[] = {
-	/*{ PACKADDR(127,   0,   0,   0), MAKEMASK(8) },	/*   127.0.0.0/8 */
+	/*{ PACKADDR(127,   0,   0,   0), MAKEMASK(8) },	*   127.0.0.0/8 */
 	{ PACKADDR(192, 168,   0,   0), MAKEMASK(16) },	/* 192.168.0.0/16 - RFC3330 */
-	/*{ PACKADDR(192, 18,   0,   0), MAKEMASK(15) },	/* 192.18.0.0/15 - RFC2544 */
-	/*{ PACKADDR(192, 0,   2,   0), MAKEMASK(24) },	/* 192.0.2.0/24 - RFC3330 */
+	/*{ PACKADDR(192, 18,   0,   0), MAKEMASK(15) },	* 192.18.0.0/15 - RFC2544 */
+	/*{ PACKADDR(192, 0,   2,   0), MAKEMASK(24) },	* 192.0.2.0/24 - RFC3330 */
 	{ PACKADDR( 10,   0,   0,   0), MAKEMASK(8) },	/*    10.0.0.0/8 */
 	{ PACKADDR(172,  16,   0,   0), MAKEMASK(12) },	/*  172.16.0.0/12 */
 	{ PACKADDR(169, 254,   0,   0), MAKEMASK(16) },	/* 169.254.0.0/16 */
@@ -325,7 +326,11 @@ static	sfsistat	clamfi_abort(SMFICTX *ctx);
 static	sfsistat	clamfi_close(SMFICTX *ctx);
 static	void		clamfi_cleanup(SMFICTX *ctx);
 static	void		clamfi_free(struct privdata *privdata, int keep);
+#ifdef __GNUC__
+static	int		clamfi_send(struct privdata *privdata, size_t len, const char *format, ...) __attribute__((format(printf, 3,4)));
+#else
 static	int		clamfi_send(struct privdata *privdata, size_t len, const char *format, ...);
+#endif
 static	long		clamd_recv(int sock, char *buf, size_t len);
 static	off_t		updateSigFile(void);
 static	header_list_t	header_list_new(void);
@@ -447,7 +452,7 @@ static	long	streamMaxLength = -1;	/* StreamMaxLength from clamd.conf */
 static	int	logok = 0;	/*
 				 * Add clean items to the log file
 				 */
-static	char	*signature = N_("-- \nScanned by ClamAv - http://www.clamav.net\n");
+static	const char	*signature = N_("-- \nScanned by ClamAv - http://www.clamav.net\n");
 static	time_t	signatureStamp;
 static	char	*templateFile;	/* e-mail to be sent when virus detected */
 static	char	*templateHeaders;	/* headers to be added to the above */
@@ -598,7 +603,7 @@ res_state res_pool;
 uint8_t *res_pool_state;
 pthread_cond_t res_pool_cond = PTHREAD_COND_INITIALIZER;
 
-int safe_res_query(const char *d, int c, int t, u_char *a, int l) {
+static int safe_res_query(const char *d, int c, int t, u_char *a, int l) {
 	int i = -1, ret;
 
 	pthread_mutex_lock(&res_pool_mutex);
@@ -626,7 +631,7 @@ int safe_res_query(const char *d, int c, int t, u_char *a, int l) {
 
 #else /* !HAVE_LRESOLV_R - non thread safe resolver (old bsd's) */
 
-int safe_res_query(const char *d, int c, int t, u_char *a, int l) {
+static int safe_res_query(const char *d, int c, int t, u_char *a, int l) {
 	int ret;
 	pthread_mutex_lock(&res_pool_mutex);
 	ret = res_query(d, c, t, a, l);
@@ -695,10 +700,10 @@ help(void)
 	puts(_("For bug reports, please refer to http://www.clamav.net/bugs"));
 }
 
+extern char *optarg;
 int
 main(int argc, char **argv)
 {
-	extern char *optarg;
 	int i, Bflag = 0, server = 0;
 	char *cfgfile = NULL;
 	const char *wont_blacklist = NULL;
@@ -1919,8 +1924,7 @@ main(int argc, char **argv)
 #endif
 		}
 
-		close(2);
-		dup(1);
+		dup2(1, 2);
 
 #ifdef	CL_DEBUG
 		if(consolefd >= 0)
@@ -2070,13 +2074,22 @@ main(int argc, char **argv)
 		umask(old_umask);
 	} else if(tmpdir) {
 		if(rootdir == NULL)
-			chdir(tmpdir);	/* safety */
+			if(chdir(tmpdir) < 0) {	/* safety */
+				perror(tmpdir);
+				logg("!chdir %s failed\n", tmpdir);
+			}
 	} else
 		if(rootdir == NULL)
 #ifdef	P_tmpdir
-			chdir(P_tmpdir);
+			if(chdir(P_tmpdir) < 0) {
+				perror(P_tmpdir);
+				logg("!chdir %s failed\n", P_tmpdir);
+			}
 #else
-			chdir("/tmp");
+			if(chdir("/tmp") < 0) {
+				perror("/tmp");
+				logg("!chdir /tmp failed\n", P_tmpdir);
+			}
 #endif
 
 	if(cfgopt(copt, "FixStaleSocket")->enabled) {
@@ -2740,11 +2753,11 @@ clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr)
 #ifdef HAVE_INET_NTOP
 		switch(hostaddr->sa_family) {
 			case AF_INET:
-				remoteIP = (char *)inet_ntop(AF_INET, &((struct sockaddr_in *)(hostaddr))->sin_addr, ip, sizeof(ip));
+				remoteIP = (const char *)inet_ntop(AF_INET, &((struct sockaddr_in *)(hostaddr))->sin_addr, ip, sizeof(ip));
 				break;
 #ifdef AF_INET6
 			case AF_INET6:
-				remoteIP = (char *)inet_ntop(AF_INET6, &((struct sockaddr_in6 *)(hostaddr))->sin6_addr, ip, sizeof(ip));
+				remoteIP = (const char *)inet_ntop(AF_INET6, &((struct sockaddr_in6 *)(hostaddr))->sin6_addr, ip, sizeof(ip));
 				break;
 #endif
 			default:
@@ -3333,7 +3346,7 @@ clamfi_body(SMFICTX *ctx, u_char *bodyp, size_t len)
 				nbytes += clamfi_send(privdata, 1, ptr++);
 				left--;
 			}
-			if(left < 6) {
+			if(left < 6 && left > 0) {
 				nbytes += clamfi_send(privdata, left, ptr);
 				break;
 			}
@@ -4030,7 +4043,7 @@ clamfi_eom(SMFICTX *ctx)
 		 * quarantine email
 		 */
 		snprintf(reject, sizeof(reject) - 1, _("virus %s detected by ClamAV - http://www.clamav.net"), virusname);
-		smfi_setreply(ctx, (char *)privdata->rejectCode, "5.7.1", reject);
+		smfi_setreply(ctx, (const char *)privdata->rejectCode, "5.7.1", reject);
 		broadcast(mess);
 
 		if(blacklist_time && privdata->ip[0]) {
@@ -4269,7 +4282,6 @@ clamfi_send(struct privdata *privdata, size_t len, const char *format, ...)
 	char output[BUFSIZ];
 	const char *ptr;
 	int ret = 0;
-
 	assert(format != NULL);
 
 	if(len > 0)
@@ -5823,7 +5835,6 @@ broadcast(const char *mess)
 static int
 loadDatabase(void)
 {
-	/*extern const char *cl_retdbdir(void);	/* FIXME: should be included */
 	int ret;
 	unsigned int signatures, dboptions;
 	char *daily;
@@ -5956,10 +5967,10 @@ sigsegv(int sig)
 	smfi_stop();
 }
 
+extern FILE *logg_fd;
 static void
 sighup(int sig)
 {
-	extern FILE *logg_fd;
 
 	signal(SIGHUP, sighup);
 
@@ -5969,8 +5980,7 @@ sighup(int sig)
 	logg("SIGHUP caught: re-opening log file\n");
 	logg_close();
 	logg("*Log file re-opened\n");
-	close(2);
-	dup(fileno(logg_fd));
+	dup2(fileno(logg_fd), 2);
 }
 
 static void
@@ -7003,6 +7013,5 @@ connect_error(int sock, const char *hostname)
 		return -1;
 	}
 #endif
-
 	return 0;
 }

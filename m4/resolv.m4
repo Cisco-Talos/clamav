@@ -23,7 +23,7 @@ if test $want_dns = yes; then
 #include <netinet/in.h>
 #include <arpa/nameser.h>
 #include <resolv.h>
-int main() { return (int)dn_expand; }
+int main() { return (long)dn_expand; }
 		],
 		[
 		    ac_cv_have_lresolv_std='yes'
@@ -40,7 +40,7 @@ int main() { return (int)dn_expand; }
 #include <netinet/in.h>
 #include <arpa/nameser.h>
 #include <resolv.h>
-int main() { return (int)dn_expand; }
+int main() { return (long)dn_expand; }
     	     	],
 		[
 		    ac_cv_have_lresolv_lresolv='yes'
@@ -69,7 +69,7 @@ int main() { return (int)dn_expand; }
 #include <netinet/in.h>
 #include <arpa/nameser.h>
 #include <resolv.h>
-int main() { return (int)res_nquery; }
+int main() { return (long)res_nquery; }
     	    ],
 	    [
 	        ac_cv_have_lresolv_r='yes'
