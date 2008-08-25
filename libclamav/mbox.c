@@ -87,7 +87,7 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
 
 #ifdef	CL_DEBUG
 
-#if	defined(C_LINUX) || defined(C_CYGWIN)
+#if	defined(C_LINUX)
 #include <features.h>
 #endif
 
@@ -3715,12 +3715,14 @@ rfc1341(message *m, const char *dir)
 	if(id == NULL)
 		return -1;
 
+/* do we need this for C_WINDOWS?
 #ifdef  C_CYGWIN
 	if((tmpdir = getenv("TEMP")) == (char *)NULL)
 		if((tmpdir = getenv("TMP")) == (char *)NULL)
 			if((tmpdir = getenv("TMPDIR")) == (char *)NULL)
 				tmpdir = "C:\\";
 #else
+*/
 	if((tmpdir = getenv("TMPDIR")) == (char *)NULL)
 		if((tmpdir = getenv("TMP")) == (char *)NULL)
 			if((tmpdir = getenv("TEMP")) == (char *)NULL)
@@ -3728,7 +3730,6 @@ rfc1341(message *m, const char *dir)
 				tmpdir = P_tmpdir;
 #else
 				tmpdir = "/tmp";
-#endif
 #endif
 
 	snprintf(pdir, sizeof(pdir) - 1, "%s/clamav-partial", tmpdir);
@@ -3853,7 +3854,7 @@ rfc1341(message *m, const char *dir)
 					int nblanks;
 					struct stat statb;
 					const char *dentry_idpart;
-#if !defined (C_CYGWIN) && !defined(C_WINDOWS)
+#ifndef C_WINDOWS
 					if(dent->d_ino == 0)
 						continue;
 #endif

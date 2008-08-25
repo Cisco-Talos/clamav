@@ -200,7 +200,7 @@ int main(int argc, char **argv)
 	struct sigaction sigact;
 	struct sigaction oldact;
 #endif
-#if !defined(C_CYGWIN)  && !defined(C_OS2) && !defined(C_WINDOWS)
+#if !defined(C_OS2) && !defined(C_WINDOWS)
 	char *unpuser;
 	struct passwd *user;
 #endif
@@ -296,7 +296,7 @@ int main(int argc, char **argv)
 	    return 56;
 	}
 
-#if !defined(C_CYGWIN) && !defined(C_WINDOWS)
+#ifndef C_WINDOWS
 	if(statbuf.st_mode & (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH)) {
 	    logg("^Insecure permissions (for HTTPProxyPassword): %s must have no more than 0700 permissions.\n", cfgfile);
 	    opt_free(opt);
@@ -306,7 +306,7 @@ int main(int argc, char **argv)
 #endif
     }
 
-#if !defined(C_CYGWIN)  && !defined(C_OS2) && !defined(C_WINDOWS)
+#if !defined(C_OS2) && !defined(C_WINDOWS)
     /* freshclam shouldn't work with root privileges */
     if(opt_check(opt, "user"))
 	unpuser = opt_arg(opt, "user");

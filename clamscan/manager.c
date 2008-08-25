@@ -235,7 +235,7 @@ static int scandirs(const char *dirname, struct cl_engine *engine, const struct 
 
     if((dd = opendir(dirname)) != NULL) {
 	while((dent = readdir(dd))) {
-#if !defined(C_INTERIX) && !defined(C_WINDOWS) && !defined(C_CYGWIN)
+#if !defined(C_INTERIX) && !defined(C_WINDOWS)
 	    if(dent->d_ino)
 #endif
 	    {

@@ -5114,7 +5114,7 @@ qfile(struct privdata *privdata, const char *sendmailId, const char *virusname)
 #ifdef	C_DARWIN
 		*ptr &= '\177';
 #endif
-#if	defined(MSDOS) || defined(C_CYGWIN) || defined(C_WINDOWS) || defined(C_OS2)
+#if	defined(MSDOS) || defined(C_WINDOWS) || defined(C_OS2)
 		if(strchr("/*?<>|\\\"+=,;:\t ", *ptr))
 #else
 		if(*ptr == '/')

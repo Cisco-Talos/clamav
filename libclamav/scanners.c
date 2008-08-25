@@ -131,7 +131,7 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx, cli_file_t container)
 #else
 	while((dent = readdir(dd))) {
 #endif
-#if	(!defined(C_CYGWIN)) && (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
+#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS))
 	    if(dent->d_ino)
 #endif
 	    {
@@ -894,7 +894,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 #else
 	while((dent = readdir(dd))) {
 #endif
-#if	(!defined(C_CYGWIN)) && (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
+#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS))
 	    if(dent->d_ino)
 #endif
 	    {

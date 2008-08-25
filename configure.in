@@ -756,21 +756,6 @@ kfreebsd*-gnu)
        fi
     fi
     ;;
-cygwin*)
-    AC_DEFINE([C_CYGWIN],1,[os is cygwin])
-    if test "$test_clamav" = "yes"; then
-	if test ! -r /etc/passwd; then
-	   test_clamav="no"
-	fi
-    fi
-    if test "$have_pthreads" = "yes"; then
-	THREAD_LIBS="-lpthread"
-	TH_SAFE="-thread-safe"
-	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
-	AC_DEFINE([_REENTRANT],1,[thread safe])
-    fi
-    use_gethostbyname_r="no"
-    ;;
 solaris*)
     FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lresolv"
     if test "$have_pthreads" = "yes"; then

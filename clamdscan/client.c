@@ -249,15 +249,11 @@ static char *abpath(const char *filename)
 	return NULL;
     } else {
 	fullpath = malloc(PATH_MAX + strlen(filename) + 10);
-#ifdef C_CYGWIN
-	sprintf(fullpath, "%s", filename);
-#else
 	if(!getcwd(cwd, PATH_MAX)) {
 	    logg("^Can't get absolute pathname of current working directory.\n");
 	    return NULL;
 	}
 	sprintf(fullpath, "%s/%s", cwd, filename);
-#endif
     }
 
     return fullpath;

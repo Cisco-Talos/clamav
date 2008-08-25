@@ -239,7 +239,7 @@ int dircopy(const char *src, const char *dest)
     }
 
     while((dent = readdir(dd))) {
-#if   (!defined(C_CYGWIN)) && (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
+#if (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
 	if(dent->d_ino)
 #endif
 	{
@@ -341,7 +341,7 @@ int match_regex(const char *filename, const char *pattern)
 	regex_t reg;
 	int match, flags = REG_EXTENDED | REG_NOSUB;
 	char fname[513];
-#if defined(C_CYGWIN) || defined(C_OS2) || defined(C_WINDOWS)
+#if defined(C_OS2) || defined(C_WINDOWS)
 	size_t len;
 
 	flags |= REG_ICASE; /* case insensitive on Windows */
@@ -349,7 +349,7 @@ int match_regex(const char *filename, const char *pattern)
 	if(cli_regcomp(&reg, pattern, flags) != 0)
 	    return 2;
 
-#if !defined(C_CYGWIN) && !defined(C_OS2) && !defined(C_WINDOWS)
+#if !defined(C_OS2) && !defined(C_WINDOWS)
 	if(pattern[strlen(pattern) - 1] == '/') {
 	    snprintf(fname, 511, "%s/", filename);
 	    fname[512] = 0;

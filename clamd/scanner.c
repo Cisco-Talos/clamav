@@ -157,7 +157,7 @@ static int dirscan(const char *dirname, const char **virname, unsigned long int 
 		return 1;
 	    }
 
-#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS)) && (!defined(C_CYGWIN))
+#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS))
 	    if(dent->d_ino)
 #endif
 	    {

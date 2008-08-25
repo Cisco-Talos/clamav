@@ -212,7 +212,6 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	hostpt = proxy;
 
 	if(!(port = pport)) {
-#ifndef C_CYGWIN
 		const struct servent *webcache = getservbyname("webcache", "TCP");
 
 		if(webcache)
@@ -222,9 +221,6 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 
 #ifndef	C_WINDOWS
 		endservent();
-#endif
-#else
-		port = 8080;
 #endif
 	}
 
