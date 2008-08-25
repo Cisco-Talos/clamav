@@ -878,7 +878,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
 			realoff = offset + bp - pt->prefix_length;
 
-			if((pt->offset || pt->target) && (!pt->sigid || pt->partno == 1)) {
+			if(pt->offset && (!pt->sigid || pt->partno == 1)) {
 			    if((fd == -1 && !ftype) || !cli_validatesig(ftype, pt->offset, realoff, &info, fd, pt->virname)) {
 				pt = pt->next_same;
 				continue;
@@ -1076,7 +1076,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 }
 
 /* FIXME: clean up the code */
-int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
+int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, const uint32_t *lsigid, unsigned int options)
 {
 	struct cli_ac_patt *new;
 	char *pt, *pt2, *hex = NULL, *hexcpy = NULL;
@@ -1104,7 +1104,6 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     new->partno = partno;
     new->mindist = mindist;
     new->maxdist = maxdist;
-    new->target = target;
     new->customdata = NULL;
     new->ch[0] |= CLI_MATCH_IGNORE;
     new->ch[1] |= CLI_MATCH_IGNORE;

@@ -620,7 +620,6 @@ static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info,
 	new->mindist = 0;
 	new->maxdist = 0;
 	new->offset = 0;
-	new->target = 0;
 	new->length = len;
 
 	new->ch[0] = new->ch[1] |= CLI_MATCH_IGNORE;

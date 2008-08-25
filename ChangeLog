@@ -1,3 +1,7 @@
+Mon Aug 25 16:03:44 CEST 2008 (tk)
+----------------------------------
+  * libclamav: drop obsolete code in matcher-ac
+
 Sun Aug 24 23:51:48 CEST 2008 (tk)
 ----------------------------------
   * libclamav/unrar.c: improve handling of currupted archives and downgrade

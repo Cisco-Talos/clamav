@@ -62,7 +62,6 @@ struct cli_ac_patt {
     struct cli_ac_alt **alttable;
     struct cli_ac_patt *next, *next_same;
     uint8_t depth;
-    uint8_t target;
     uint16_t rtype, type;
 };
 
@@ -88,7 +87,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 int cli_ac_buildtrie(struct cli_matcher *root);
 int cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth);
 void cli_ac_free(struct cli_matcher *root);
-int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options);
+int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, const uint32_t *lsigid, unsigned int options);
 void cli_ac_setdepth(uint8_t mindepth, uint8_t maxdepth);
 
 #endif

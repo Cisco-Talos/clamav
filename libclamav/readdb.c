@@ -183,7 +183,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 		*pt++ = 0;
 	    }
 
-	    if((ret = cli_ac_addsig(root, virname, start, root->ac_partsigs, parts, i, rtype, type, mindist, maxdist, offset, target, lsigid, options))) {
+	    if((ret = cli_ac_addsig(root, virname, start, root->ac_partsigs, parts, i, rtype, type, mindist, maxdist, offset, lsigid, options))) {
 		cli_errmsg("cli_parse_add(): Problem adding signature (1).\n");
 		error = 1;
 		break;
@@ -263,7 +263,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 		return CL_EMALFDB;
 	    }
 
-	    if((ret = cli_ac_addsig(root, virname, pt, root->ac_partsigs, parts, i, rtype, type, 0, 0, offset, target, lsigid, options))) {
+	    if((ret = cli_ac_addsig(root, virname, pt, root->ac_partsigs, parts, i, rtype, type, 0, 0, offset, lsigid, options))) {
 		cli_errmsg("cli_parse_add(): Problem adding signature (2).\n");
 		free(pt);
 		return ret;
@@ -273,7 +273,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	}
 
     } else if(root->ac_only || strpbrk(hexsig, "?(") || type || lsigid) {
-	if((ret = cli_ac_addsig(root, virname, hexsig, 0, 0, 0, rtype, type, 0, 0, offset, target, lsigid, options))) {
+	if((ret = cli_ac_addsig(root, virname, hexsig, 0, 0, 0, rtype, type, 0, 0, offset, lsigid, options))) {
 	    cli_errmsg("cli_parse_add(): Problem adding signature (3).\n");
 	    return ret;
 	}
