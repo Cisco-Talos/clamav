@@ -1,3 +1,7 @@
+Tue Aug 26 02:52:10 CEST 2008 (acab)
+------------------------------------
+  * libclamav/disasm*; unit_tests/check_disasm: some fixes, work in progress
+
 Mon Aug 25 23:52:04 CEST 2008 (tk)
 ----------------------------------
   * drop support for Cygwin (due to broken ClamAV builds)

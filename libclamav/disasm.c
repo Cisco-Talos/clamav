@@ -361,6 +361,7 @@ static const char *mnemonic[] = {
   "loop",
   "loope",
   "loopne",
+  "jecxz",
   "lsl",
   "lss",
   "ltr",
@@ -857,7 +858,7 @@ static const struct OPCODES x86ops[2][256] = {{
   PUSHOP(0xe0, ADDR_RELJ, SIZE_BYTE, ADDR_NOADDR, SIZE_NOSIZE, OP_LOOPNE),
   PUSHOP(0xe1, ADDR_RELJ, SIZE_BYTE, ADDR_NOADDR, SIZE_NOSIZE, OP_LOOPE),
   PUSHOP(0xe2, ADDR_RELJ, SIZE_BYTE, ADDR_NOADDR, SIZE_NOSIZE, OP_LOOP),
-  PUSHOP(0xe3, ADDR_RELJ, SIZE_BYTE, ADDR_NOADDR, SIZE_NOSIZE, OP_LOOPNE),
+  PUSHOP(0xe3, ADDR_RELJ, SIZE_BYTE, ADDR_NOADDR, SIZE_NOSIZE, OP_JECXZ),
   PUSHOP(0xe4, ADDR_REG_EAX, SIZE_BYTE, ADDR_IMMED, SIZE_BYTE, OP_IN),
   PUSHOP(0xe5, ADDR_REG_EAX, SIZE_WD, ADDR_IMMED, SIZE_BYTE, OP_IN),
   PUSHOP(0xe6, ADDR_IMMED, SIZE_BYTE, ADDR_REG_EAX, SIZE_BYTE, OP_OUT),
@@ -1709,7 +1710,7 @@ void disasmbuf(uint8_t *buff, unsigned int len, int fd) {
       switch(s.args[i].access) {
       case ACCESS_MEM:
 	w.arg[i][2]=s.args[i].arg.marg.r1;
-	w.arg[i][3]=s.args[i].arg.marg.r1;
+	w.arg[i][3]=s.args[i].arg.marg.r2;
 	w.arg[i][4]=s.args[i].arg.marg.scale;
 	w.arg[i][5]=0;
 	cli_writeint32(&w.arg[i][6], s.args[i].arg.marg.disp);

@@ -137,6 +137,7 @@ enum X86OPS {
   OP_LOOP,
   OP_LOOPE,
   OP_LOOPNE,
+  OP_JECXZ,
   OP_LSL,
   OP_LSS,
   OP_LTR,
