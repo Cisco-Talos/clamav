@@ -314,7 +314,7 @@ AC_CHECK_LIB([socket], [bind], [LIBS="$LIBS -lsocket"; CLAMAV_MILTER_LIBS="$CLAM
 AC_SEARCH_LIBS([gethostent],[nsl], [(LIBS="$LIBS -lnsl"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lnsl"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lnsl"; CLAMD_LIBS="$CLAMD_LIBS -lnsl")])
 
 AC_CHECK_FUNCS([poll setsid memcpy snprintf vsnprintf strerror_r strlcpy strlcat strcasestr inet_ntop setgroups initgroups ctime_r mkstemp])
-AC_FUNC_MMAP
+AC_C_FUNC_MMAP_PRIVATE
 AC_FUNC_FSEEKO
 
 enable_check_ut=auto
@@ -437,10 +437,12 @@ else
     if test "$ZLIB_HOME" != "/usr"; then
 	CPPFLAGS="$CPPFLAGS -I$ZLIB_HOME/include"
 	save_LDFLAGS="$LDFLAGS"
-	LDFLAGS="$LIBS -L$ZLIB_HOME/lib"
+	save_LIBS="$LIBS"
+	LDFLAGS="$LDFLAGS -L$ZLIB_HOME/lib"
 	AC_CHECK_LIB([z], [inflateEnd], [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -L$ZLIB_HOME/lib -lz";FRESHCLAM_LIBS="$FRESHCLAM_LIBS -L$ZLIB_HOME/lib -lz"; AC_DEFINE([HAVE_ZLIB_H],1,zlib installed)], AC_MSG_ERROR([Please install zlib and zlib-devel packages]))
 	AC_CHECK_LIB([z], [gzopen], [], AC_MSG_ERROR([Your zlib is missing gzopen()]))
 	LDFLAGS="$save_LDFLAGS"
+	LIBS="$save_LIBS"
     else
 	AC_CHECK_LIB([z], [inflateEnd], [LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -lz";FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lz"; AC_DEFINE([HAVE_ZLIB_H],1,zlib installed)], AC_MSG_ERROR([Please install zlib and zlib-devel packages]))
 	AC_CHECK_LIB([z], [gzopen],[], AC_MSG_ERROR([Your zlib is missing gzopen()]))
@@ -1352,7 +1354,8 @@ AC_MSG_RESULT([$have_attrib_packed])
 if test "$have_attrib_packed" = no; then
 	AC_MSG_CHECKING([for structure packing via pragma])
 	AC_CACHE_VAL([have_pragma_pack],[
-		AC_TRY_RUN([int main(int argc, char **argv) {
+		AC_TRY_RUN([
+			    int main(int argc, char **argv) {
 #pragma pack(1)			/* has to be in column 1 ! */
 			struct { char c; long l; } s;
 			return sizeof(s)==sizeof(s.c)+sizeof(s.l) ? 0:1; } ],

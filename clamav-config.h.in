@@ -39,9 +39,6 @@
 /* os is bsd flavor */
 #undef C_BSD
 
-/* os is cygwin */
-#undef C_CYGWIN
-
 /* os is darwin */
 #undef C_DARWIN
 
@@ -141,9 +138,6 @@
 /* gethostbyname_r takes 6 arguments */
 #undef HAVE_GETHOSTBYNAME_R_6
 
-/* Define to 1 if you have the `getpagesize' function. */
-#undef HAVE_GETPAGESIZE
-
 /* Define to 1 if you have the <grp.h> header file. */
 #undef HAVE_GRP_H
 
@@ -192,7 +186,8 @@
 /* Define to 1 if you have the `mkstemp' function. */
 #undef HAVE_MKSTEMP
 
-/* Define to 1 if you have a working `mmap' system call. */
+/* Define to 1 if you have a working `mmap' system call that supports
+   MAP_PRIVATE. */
 #undef HAVE_MMAP
 
 /* Define to 1 if you have the <ndir.h> header file. */

@@ -6069,7 +6069,7 @@ verifyIncomingSocketName(const char *sockName)
 		return -1;
 	}
 
-	ptr = mmap(NULL, size, PROT_READ, MAP_SHARED, fd, 0);
+	ptr = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
 	if(ptr == MAP_FAILED) {
 		perror("mmap");
 		close(fd);
