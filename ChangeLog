@@ -1,3 +1,7 @@
+Thu Aug 28 15:13:07 CEST 2008 (acab)
+------------------------------------
+  * unit_tests/check_disasm: add the remaining test cases (fpu, prefixes and more)
+
 Thu Aug 28 12:55:19 CEST 2008 (acab)
 ------------------------------------
   * unit_tests/check_disasm: test cases for most mrm (and others)

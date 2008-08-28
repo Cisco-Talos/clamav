@@ -66,6 +66,8 @@ START_TEST (test_disasm_basic) {
     0x28, 0xf4,
     /* m11/rm101 - sub ebp, edx */
     0x29, 0xd5,
+    /* addrsize, m00/rm110 - mov [1122], ebp */
+    0x67, 0x01, 0x2e, 0xab, 0xac,
     /* add al, 17 */
     0x04, 0x17,
     /* pop es */
@@ -95,7 +97,26 @@ START_TEST (test_disasm_basic) {
     /* push fs */
     0x0f, 0xa0,
     /* mov edx, 12345678 */
-    0xba, 0x78, 0x56, 0x34, 0x12
+    0xba, 0x78, 0x56, 0x34, 0x12,
+    /* jmp $ */
+    0xe9, 0xfb, 0xff, 0xff, 0xff,
+    /* mov eax, cr2 */
+    0x0f, 0x20, 0xd0,
+    /* mov cr7, edx */
+    0x0f, 0x22, 0xda,
+    /* mov ecx, dr0 */
+    0x0f, 0x21, 0xc1,
+    /* mov dr3, ebx */
+    0x0f, 0x23, 0xdb,
+    /* mov ax, ss */
+    0x66, 0x8c, 0xd0,
+    /* mov eax, [deadbeef] */
+    0xa1, 0xef, 0xbe, 0xad, 0xde,
+    /* ficom dword ptr [esi*8+ebx+7f] */
+    0xda, 0x54, 0xf3, 0x7f,
+    /* fmulp st(3), st(0) */
+    0xde, 0xcb,
+    
   };
   uint8_t *d;
   off_t size;
@@ -116,7 +137,7 @@ START_TEST (test_disasm_basic) {
   close(ref);
   fail_unless(!memcmp(d, d+size, size), "disasm data doesn't match the reference"); 
   free(d);
-  unlink(file);
+  //  unlink(file);
 }
 END_TEST
 
