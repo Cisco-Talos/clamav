@@ -1,3 +1,7 @@
+Thu Aug 28 12:55:19 CEST 2008 (acab)
+------------------------------------
+  * unit_tests/check_disasm: test cases for most mrm (and others)
+
 Tue Aug 26 02:52:10 CEST 2008 (acab)
 ------------------------------------
   * libclamav/disasm*; unit_tests/check_disasm: some fixes, work in progress
