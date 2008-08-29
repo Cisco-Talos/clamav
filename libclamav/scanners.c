@@ -1596,7 +1596,7 @@ static int cli_scan_structured(int desc, cli_ctx *ctx)
 	return CL_VIRUS;
     }
 
-    if(ssn_count != 0 && ssn_count > lim->min_ssn_count) {
+    if(ssn_count != 0 && ssn_count >= lim->min_ssn_count) {
 	cli_dbgmsg("cli_scan_structured: %u social security numbers detected\n", ssn_count);
 	*ctx->virname = "Structured.SSN";
 	return CL_VIRUS;
