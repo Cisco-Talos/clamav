@@ -542,6 +542,7 @@ static	const	char	*whitelistFile;	/*
 					 * addresses that we don't scan
 					 */
 static	const	char	*sendmailCF;	/* location of sendmail.cf to verify */
+static		int	checkCF = 1;
 static	const	char	*pidfile;
 static	int	black_hole_mode; /*
 				 * Since sendmail calls its milters before it
@@ -686,6 +687,7 @@ help(void)
 	puts(_("\t--quarantine-dir=DIR\t-U DIR\tDirectory to store infected emails."));
 	puts(_("\t--server=SERVER\t\t-s SERVER\tHostname/IP address of server(s) running clamd (when using TCPsocket)."));
 	puts(_("\t--sendmail-cf=FILE\t\tLocation of the sendmail.cf file to verify"));
+	puts(_("\t--no-check-cf\t\tSkip verification of sendmail.cf"));
 	puts(_("\t--sign\t\t\t-S\tAdd a hard-coded signature to each scanned message."));
 	puts(_("\t--signature-file=FILE\t-F FILE\tLocation of signature file."));
 	puts(_("\t--template-file=FILE\t-t FILE\tLocation of e-mail template file."));
@@ -894,6 +896,9 @@ main(int argc, char **argv)
 				"sendmail-cf", 1, NULL, '0'
 			},
 			{
+				"no-check-cf", 0, &checkCF, 0
+			},
+			{
 				"server", 1, NULL, 's'
 			},
 			{
@@ -934,8 +939,8 @@ main(int argc, char **argv)
 
 		if(ret == -1)
 			break;
-		else if(ret == 0)
-			ret = long_options[opt_index].val;
+  		else if(ret == 0)
+  			continue;
 
 		switch(ret) {
 			case 'a':	/* e-mail errors from here */
@@ -1135,7 +1140,7 @@ main(int argc, char **argv)
 	port = argv[optind];
 
 	if(rootdir == NULL)	/* FIXME: Handle CHROOT */
-		if(verifyIncomingSocketName(port) < 0) {
+		if(checkCF && verifyIncomingSocketName(port) < 0) {
 			fprintf(stderr, _("%s: socket-addr (%s) doesn't agree with sendmail.cf\n"), argv[0], port);
 			return EX_CONFIG;
 		}

@@ -1,3 +1,12 @@
+Fri Aug 29 02:46:19 CEST 2008 (acab)
+------------------------------------
+  * clamav-milter: Add option "--no-check-cf" to bypass sendmail.cf sanity
+		   checks. For use by package maintainers on fresh installs,
+		   when sendmail.cf is present for any reason although it's
+		   not used or when the milter is configured via an m4 file
+		   included in sendmail.cf. This option is intentionally
+		   not extensively documented (bb#726)
+
 Thu Aug 28 15:13:07 CEST 2008 (acab)
 ------------------------------------
   * unit_tests/check_disasm: add the remaining test cases (fpu, prefixes and more)
