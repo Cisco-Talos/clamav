@@ -1,3 +1,8 @@
+Sat Aug 30 01:29:51 CEST 2008 (tk)
+----------------------------------
+  * libclamav/dlp.c: limit number of false positive alerts
+  * clamd, clamscan: don't scan for stripped SSNs by default
+
 Fri Aug 29 12:29:32 CEST 2008 (tk)
 ----------------------------------
   * libclamav/dlp.c: credit card detection fixes

@@ -62,7 +62,7 @@ struct cfgoption cfg_options[] = {
     {"StructuredMinCreditCardCount", OPT_NUM, 3, NULL, 0, OPT_CLAMD},
     {"StructuredMinSSNCount", OPT_NUM, 3, NULL, 0, OPT_CLAMD},
     {"StructuredSSNFormatNormal", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
-    {"StructuredSSNFormatStripped", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
+    {"StructuredSSNFormatStripped", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"AlgorithmicDetection", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"ScanHTML", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"ScanOLE2", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},

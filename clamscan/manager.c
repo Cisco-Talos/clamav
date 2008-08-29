@@ -576,7 +576,7 @@ int scanmanager(const struct optstruct *opt)
 		    return 40;
 	    }
 	} else {
-	    options |= (CL_SCAN_STRUCTURED_SSN_NORMAL | CL_SCAN_STRUCTURED_SSN_STRIPPED);
+	    options |= CL_SCAN_STRUCTURED_SSN_NORMAL;
 	}
 
 	if(opt_check(opt, "structured-ssn-count"))

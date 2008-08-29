@@ -311,7 +311,7 @@ Default: Yes
 \fBStructuredSSNFormatStripped BOOL\fR
 With this option enabled the DLP module will search for valid SSNs formatted as xxxyyzzzz.
 .br 
-Default: Yes
+Default: No
 .TP
 \fBScanArchive BOOL\fR
 Enable archive scanning.

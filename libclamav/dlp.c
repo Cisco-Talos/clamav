@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include "dlp.h"
 #include "others.h"
+#include "str.h"
 
 /* detection mode macros for the contains_* functions */
 #define DETECT_MODE_DETECT  0
@@ -158,6 +159,8 @@ int dlp_is_valid_cc(const unsigned char *buffer, int length)
         sum += val;
     }
     cc_digits[digits] = 0;
+    if(i < length && isdigit(buffer[i]))
+	return 0;
 
     if((sum % 10 != 0) || (digits < 13))
 	return 0;
@@ -245,7 +248,7 @@ static int contains_cc(const unsigned char *buffer, int length, int detmode)
     {
         if(isdigit(*idx))
         {
-            if(dlp_is_valid_cc(idx, length - (idx - buffer)) == 1)
+            if((idx == buffer || !isdigit(idx[-1])) && dlp_is_valid_cc(idx, length - (idx - buffer)) == 1)
             {
                 if(detmode == DETECT_MODE_DETECT)
                     return 1;
@@ -282,6 +285,7 @@ int dlp_is_valid_ssn(const unsigned char *buffer, int length, int format)
     int serial_number;
     int minlength;
     int retval = 1;
+    char numbuf[12];
     
     if(buffer == NULL)
         return 0;
@@ -290,12 +294,21 @@ int dlp_is_valid_ssn(const unsigned char *buffer, int length, int format)
 
     if(length < minlength)
         return 0;
+
+    if((length > minlength) && isdigit(buffer[minlength]))
+	return 0;
         
+    strncpy(numbuf, buffer, minlength);
+    numbuf[minlength] = 0;
+
     /* sscanf parses and (basically) validates the string for us */
     switch(format)
     {
         case SSN_FORMAT_HYPHENS:
-            if(sscanf((const char *) buffer, 
+	    if(numbuf[3] != '-' || numbuf[6] != '-')
+		return 0;
+
+            if(sscanf((const char *) numbuf, 
                       "%3d-%2d-%4d", 
                       &area_number, 
                       &group_number, 
@@ -305,7 +318,10 @@ int dlp_is_valid_ssn(const unsigned char *buffer, int length, int format)
             }       
             break;
         case SSN_FORMAT_STRIPPED:
-             if(sscanf((const char *) buffer,  
+	    if(!cli_isnumber(numbuf))
+		return 0;
+
+            if(sscanf((const char *) numbuf,  
                        "%3d%2d%4d", 
                        &area_number, 
                        &group_number, 
@@ -338,6 +354,9 @@ int dlp_is_valid_ssn(const unsigned char *buffer, int length, int format)
     if(group_number > ssn_max_group[area_number])
         retval = 0;
    
+    if(retval)
+	cli_dbgmsg("dlp_is_valid_ssn: SSN_%s: %s\n", format == SSN_FORMAT_HYPHENS ? "HYPHENS" : "STRIPPED", numbuf);
+
     return retval;
 }
 
@@ -357,7 +376,7 @@ static int contains_ssn(const unsigned char *buffer, int length, int format, int
         if(isdigit(*idx))
         {
             /* check for area number and the first hyphen */
-            if(dlp_is_valid_ssn(idx, length - (idx - buffer), format) == 1)
+            if((idx == buffer || !isdigit(idx[-1])) && dlp_is_valid_ssn(idx, length - (idx - buffer), format) == 1)
             {
                 if(detmode == DETECT_MODE_COUNT)
                 {
