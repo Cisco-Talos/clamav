@@ -123,7 +123,7 @@ START_TEST (test_disasm_basic) {
   struct stat st;
 
   fail_unless(fd!=-1, "mkstemp failed");
-  ref = open_testfile("disasmref.bin");
+  ref = open_testfile("input/disasmref.bin");
   fail_unless(fstat(ref, &st)!=-1, "fstat failed");
   disasmbuf(buf, sizeof(buf), fd);
   size = lseek(fd, 0, SEEK_CUR);
@@ -137,7 +137,7 @@ START_TEST (test_disasm_basic) {
   close(ref);
   fail_unless(!memcmp(d, d+size, size), "disasm data doesn't match the reference"); 
   free(d);
-  //  unlink(file);
+  unlink(file);
 }
 END_TEST
 
