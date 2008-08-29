@@ -85,10 +85,10 @@ Enable the DLP (Data Loss Prevention) module which provides detection of SSN and
 X=0: search for valid SSNs formatted as xxx-yy-zzzz (normal); X=1: search for valid SSNs formatted as xxxyyzzzz (stripped); X=2: default: search for both formats.
 .TP 
 \fB\-\-structured\-ssn\-count=#n\fR
-This option sets the lowest number of Social Security Numbers found in a file to generate a detect (default: 1).
+This option sets the lowest number of Social Security Numbers found in a file to generate a detect (default: 3).
 .TP 
 \fB\-\-structured\-cc\-count=#n\fR
-This option sets the lowest number of Credit Card numbers found in a file to generate a detect (default: 1).
+This option sets the lowest number of Credit Card numbers found in a file to generate a detect (default: 3).
 .TP 
 \fB\-\-no\-mail\fR
 Disable scanning of mail files.

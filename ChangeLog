@@ -1,3 +1,8 @@
+Fri Aug 29 12:29:32 CEST 2008 (tk)
+----------------------------------
+  * libclamav/dlp.c: credit card detection fixes
+  * clamd, clamscan: minCC and minSSN counts now set by default to 3
+
 Fri Aug 29 02:46:19 CEST 2008 (acab)
 ------------------------------------
   * clamav-milter: Add option "--no-check-cf" to bypass sendmail.cf sanity

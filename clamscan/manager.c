@@ -582,12 +582,12 @@ int scanmanager(const struct optstruct *opt)
 	if(opt_check(opt, "structured-ssn-count"))
 	    limits.min_ssn_count = atoi(opt_arg(opt, "structured-ssn-count"));
 	else
-	    limits.min_ssn_count = 1;
+	    limits.min_ssn_count = 3;
 
 	if(opt_check(opt, "structured-cc-count"))
 	    limits.min_cc_count = atoi(opt_arg(opt, "structured-cc-count"));
 	else
-	    limits.min_cc_count = 1;
+	    limits.min_cc_count = 3;
 
     } else
 	options &= ~CL_SCAN_STRUCTURED;

@@ -30,6 +30,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include "dlp.h"
+#include "others.h"
 
 /* detection mode macros for the contains_* functions */
 #define DETECT_MODE_DETECT  0
@@ -115,34 +116,36 @@ static int ssn_max_group[MAX_AREA+1] = { 0,
 
 int dlp_is_valid_cc(const unsigned char *buffer, int length)
 {
-    int even = 0;
+    int even = 1;
     int sum = 0;
     int i = 0;
     int val = 0;
     int digits = 0;
-    char prefix[4];
+    char cc_digits[20];
     
     if(buffer == NULL || length < 13)
         return 0;
-
     /* if the first digit is greater than 6 it isn't one of the major
      * credit cards
      * reference => http://www.beachnet.com/~hstiles/cardtype.html
      */
-    if(buffer[0] > '6' || buffer[0] == 0)
+    if(!isdigit(buffer[0]) || buffer[0] > '6')
         return 0;
         
     if(length > 19)
         length = 19;
 
-    for(i = length - 1; i > -1; i--)
+    for(i = 0; i < length; i++)
     {
         if(isdigit(buffer[i]) == 0)
-            continue;
+	{
+	    if(isspace(buffer[i]))
+		continue;
+	    else
+		break;
+	}
 
-	if(digits < 4)
-	    prefix[digits] = buffer[i];
-
+	cc_digits[digits] = buffer[i];
 	digits++;
         val = buffer[i] - '0';
         
@@ -154,57 +157,70 @@ int dlp_is_valid_cc(const unsigned char *buffer, int length)
         even = !even;
         sum += val;
     }
+    cc_digits[digits] = 0;
 
     if((sum % 10 != 0) || (digits < 13))
 	return 0;
 
     if(digits == 13) /* VISA */
     {
-	if(prefix[0] == '4')
+	if(cc_digits[0] == '4') {
+	    cli_dbgmsg("dlp_is_valid_cc: VISA [1] (%s)\n", cc_digits);
 	    return 1;
+	}
     }
     else if(digits == 14) /* Diners Club */
     {
-	if(prefix[0] == '3' && (prefix[1] == '6' || prefix[1] == '8'))
+	if(cc_digits[0] == '3' && (cc_digits[1] == '6' || cc_digits[1] == '8'))
 	{
+	    cli_dbgmsg("dlp_is_valid_cc: Diners Club [1] (%s)\n", cc_digits);
 	    return 1;
 	}
-	else if(prefix[0] == '3' && prefix[1] == '0')
+	else if(cc_digits[0] == '3' && cc_digits[1] == '0')
 	{
-	    val = prefix[2] - '0';
-	    if(val >= 0 && val <= 5)
+	    val = cc_digits[2] - '0';
+	    if(val >= 0 && val <= 5) {
+		cli_dbgmsg("dlp_is_valid_cc: Diners Club [2] (%s)\n", cc_digits);
 		return 1;
+	    }
 	}
     }
     else if(digits == 15)
     {
-	if(prefix[0] == '3' && (prefix[1] == '4' || prefix[1] == '7')) /*AMEX*/
+	if(cc_digits[0] == '3' && (cc_digits[1] == '4' || cc_digits[1] == '7')) /*AMEX*/
 	{
+	    cli_dbgmsg("dlp_is_valid_cc: AMEX (%s)\n", cc_digits);
 	    return 1;
 	}
-	else if(!strncmp(prefix, "2131", 4) || !strncmp(prefix, "1800", 4))
+	else if(!strncmp(cc_digits, "2131", 4) || !strncmp(cc_digits, "1800", 4))
 	{ /* JCB  */
+	    cli_dbgmsg("dlp_is_valid_cc: JCB [1] (%s)\n", cc_digits);
 	    return 1;
 	}
     }
     else if(digits == 16)
     {
-	if(prefix[0] == '3') /* JCB */
+	if(cc_digits[0] == '3') /* JCB */
 	{
+	    cli_dbgmsg("dlp_is_valid_cc: JCB [2] (%s)\n", cc_digits);
 	    return 1;
 	}
-	else if(prefix[0] == '4') /* VISA */
+	else if(cc_digits[0] == '4') /* VISA */
 	{
+	    cli_dbgmsg("dlp_is_valid_cc: VISA [2] (%s)\n", cc_digits);
 	    return 1;
 	}
-	else if(prefix[0] == '5') /* MASTERCARD */
+	else if(cc_digits[0] == '5') /* MASTERCARD */
 	{
-	    val = prefix[1] - '0';
-	    if(val >= 1 && val <= 5)
+	    val = cc_digits[1] - '0';
+	    if(val >= 1 && val <= 5) {
+		cli_dbgmsg("dlp_is_valid_cc: MASTERCARD (%s)\n", cc_digits);
 		return 1;
+	    }
 	}
-	else if(!strncmp(prefix, "6011", 4)) /* Discover */
+	else if(!strncmp(cc_digits, "6011", 4)) /* Discover */
 	{
+	    cli_dbgmsg("dlp_is_valid_cc: Discover (%s)\n", cc_digits);
 	    return 1;
 	} 
     }

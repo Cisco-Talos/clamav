@@ -296,12 +296,12 @@ Default: no
 \fBStructuredMinCreditCardCount NUMBER\fR
 This option sets the lowest number of Credit Card numbers found in a file to generate a detect.
 .br 
-Default: 1
+Default: 3
 .TP
 \fBStructuredMinSSNCount NUMBER\fR
 This option sets the lowest number of Social Security Numbers found in a file to generate a detect.
 .br 
-Default: 1
+Default: 3
 .TP
 \fBStructuredSSNFormatNormal BOOL\fR
 With this option enabled the DLP module will search for valid SSNs formatted as xxx-yy-zzzz.
