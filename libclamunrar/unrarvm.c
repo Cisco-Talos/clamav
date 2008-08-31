@@ -90,7 +90,7 @@ static uint8_t vm_cmdflags[]=
 #if WORDS_BIGENDIAN == 0
 #define GET_VALUE(byte_mode,addr) ((byte_mode) ? (*(unsigned char *)(addr)) : UINT32((*(unsigned int *)(addr))))
 #else
-#define GET_VALUE(byte_mode,addr) rarvm_get_value(byte_mode, (unsigned int *)addr)
+#define GET_VALUE(byte_mode,addr) ((byte_mode) ? (*(unsigned char *)(addr)) : (((unsigned char *)addr)[0] | ((unsigned char *)addr)[1]<<8 | ((unsigned char *)addr)[2]<<16 | ((unsigned char *)addr)[3]<<24))
 #endif
 
 void rarvm_set_value(int byte_mode, unsigned int *addr, unsigned int value)

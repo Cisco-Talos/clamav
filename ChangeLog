@@ -1,3 +1,7 @@
+Sun Aug 31 04:23:12 CEST 2008 (acab)
+------------------------------------
+  * libclamunrar/unrarvm.c: big-endian fixes
+
 Sat Aug 30 01:29:51 CEST 2008 (tk)
 ----------------------------------
   * libclamav/dlp.c: limit number of false positive alerts

@@ -66,7 +66,7 @@ START_TEST (test_disasm_basic) {
     0x28, 0xf4,
     /* m11/rm101 - sub ebp, edx */
     0x29, 0xd5,
-    /* addrsize, m00/rm110 - mov [1122], ebp */
+    /* addrsize, m00/rm110 - mov [eax-5355], ebp */
     0x67, 0x01, 0x2e, 0xab, 0xac,
     /* add al, 17 */
     0x04, 0x17,
