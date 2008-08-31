@@ -1189,13 +1189,13 @@ static void spam_x86(struct DISASMED *s, char *hr) {
     case ACCESS_NOARG:
       break;
     case ACCESS_IMM:
-      sprintf(hr, "%s%s %x", hr, comma, s->args[i].arg.d);
+      sprintf(hr, "%s%s %llx", hr, comma, s->args[i].arg.q);
       break;
     case ACCESS_REL:
-      if (s->args[i].arg.rd >=0)
-	sprintf(hr, "%s%s %x", hr, comma, s->args[i].arg.d);
+      if (s->args[i].arg.rq >=0)
+	sprintf(hr, "%s%s %llx", hr, comma, s->args[i].arg.q);
       else
-	sprintf(hr, "%s%s -%x", hr, comma, -s->args[i].arg.rd);
+	sprintf(hr, "%s%s -%x", hr, comma, -s->args[i].arg.rq);
       break;
     case ACCESS_REG:
       sprintf(hr, "%s%s %s", hr, comma, x86regs[s->args[i].reg]);
@@ -1403,7 +1403,7 @@ static uint8_t *disasm_x86(uint8_t *command, unsigned int len, struct DISASMED *
 	s->args[0].size = sz>>1;	/* FIXME: size does matter - 6aff vs 666aff :( */
 	for (i=0; i<sz; i++) {
 	  GETBYTE(b);
-	  s->args[0].arg.q+=b<<(i*8);
+	  s->args[0].arg.q+=(uint64_t)b<<(i*8);
 	}
 	if (x86ops[table][s->table_op].dmethod==ADDR_RELJ) {
 	  s->args[0].arg.q<<=((8-sz)*8);
@@ -1718,7 +1718,7 @@ void disasmbuf(uint8_t *buff, unsigned int len, int fd) {
       case ACCESS_REG:
 	w.arg[i][1] = s.args[i].reg;
       default:
-	cli_writeint32(&w.arg[i][2], s.args[i].arg.d);
+	cli_writeint32(&w.arg[i][2], s.args[i].arg.q);
 	cli_writeint32(&w.arg[i][6], s.args[i].arg.q>>32);
       }
     }
