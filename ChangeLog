@@ -1,3 +1,8 @@
+Mon Sep  1 19:27:55 CEST 2008 (tk)
+----------------------------------
+  * libclamav/chmunpack.c: fix possible invalid memory access (bb#1089)
+			   Patch from Trog
+
 Mon Sep  1 10:57:56 EEST 2008 (edwin)
 ------------------------------------ 
   * libclamav/scanners.c: enable scanscript for UTF* types too

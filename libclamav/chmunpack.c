@@ -449,7 +449,7 @@ static int read_chunk(chm_metadata_t *metadata, int fd)
 	cli_dbgmsg("in read_chunk\n");
 
 	if (metadata->itsp_hdr.block_len < 8 || metadata->itsp_hdr.block_len > 33554432) {
-		return FALSE;
+		return CL_EFORMAT;
 	}
 
 	if (metadata->m_area != NULL) {
@@ -915,7 +915,9 @@ int cli_chm_open(int fd, const char *dirname, chm_metadata_t *metadata)
 			cli_dbgmsg("read_chunk failed");
 			goto abort;
 		}
-		read_control_entries(metadata);
+		if (read_control_entries(metadata) == FALSE) {
+			goto abort;
+		}
 		metadata->num_chunks--;
 		metadata->chunk_offset += metadata->itsp_hdr.block_len;
 	}
