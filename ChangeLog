@@ -1,3 +1,9 @@
+Mon Sep  1 19:31:08 CEST 2008 (tk)
+----------------------------------
+  * libclamav/message.c, mbox.c: fix out-of-memory null dereference in
+  mbox/message (bb#1141)
+  Patch from Edwin
+
 Mon Sep  1 19:27:55 CEST 2008 (tk)
 ----------------------------------
   * libclamav/chmunpack.c: fix possible invalid memory access (bb#1089)

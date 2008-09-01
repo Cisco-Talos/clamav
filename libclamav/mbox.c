@@ -1455,6 +1455,8 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 			}
 		}
 
+		if(body->isTruncated && retcode == CL_SUCCESS)
+			retcode = CL_EMEM;
 		/*
 		 * Tidy up and quit
 		 */
@@ -1617,6 +1619,11 @@ parseEmailFile(FILE *fin, const table_t *rfc821, const char *firstLine, const ch
 					}
 					fullline = cli_strdup(line);
 					fulllinelength = strlen(line) + 1;
+					if(!fullline) {
+						if(ret)
+							ret->isTruncated = TRUE;
+						break;
+					}
 				} else if(line != NULL) {
 					fulllinelength += strlen(line);
 					ptr = cli_realloc(fullline, fulllinelength);

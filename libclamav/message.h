@@ -46,6 +46,7 @@ typedef struct message {
 
 	char	base64_1, base64_2, base64_3;
 	unsigned	int	isInfected : 1;
+	unsigned        int     isTruncated  : 1;
 
 } message;
 

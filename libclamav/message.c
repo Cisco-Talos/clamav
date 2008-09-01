@@ -1843,14 +1843,13 @@ messageToText(message *m)
 				for(t_line = messageGetBody(m); t_line; t_line = t_line->t_next) {
 					if(first == NULL)
 						first = last = cli_malloc(sizeof(text));
-					else {
+					else if (last) {
 						last->t_next = cli_malloc(sizeof(text));
 						last = last->t_next;
 					}
 
 					if(last == NULL) {
 						if(first) {
-							last->t_next = NULL;
 							textDestroy(first);
 						}
 						return NULL;
@@ -1864,7 +1863,8 @@ messageToText(message *m)
 			case UUENCODE:
 				cli_errmsg("messageToText: Unexpected attempt to handle uuencoded file - report to http://bugs.clamav.net\n");
 				if(first) {
-					last->t_next = NULL;
+					if(last)
+						last->t_next = NULL;
 					textDestroy(first);
 				}
 				return NULL;
@@ -1874,7 +1874,8 @@ messageToText(message *m)
 				if(t_line == NULL) {
 					/*cli_warnmsg("YENCODED attachment is missing begin statement\n");*/
 					if(first) {
-						last->t_next = NULL;
+						if(last)
+							last->t_next = NULL;
 						textDestroy(first);
 					}
 					return NULL;
@@ -1910,7 +1911,7 @@ messageToText(message *m)
 
 			if(first == NULL)
 				first = last = cli_malloc(sizeof(text));
-			else {
+			else if (last) {
 				last->t_next = cli_malloc(sizeof(text));
 				last = last->t_next;
 			}
@@ -1948,7 +1949,7 @@ messageToText(message *m)
 			if(decode(m, NULL, data, base64, FALSE) && data[0]) {
 				if(first == NULL)
 					first = last = cli_malloc(sizeof(text));
-				else {
+				else if (last) {
 					last->t_next = cli_malloc(sizeof(text));
 					last = last->t_next;
 				}
