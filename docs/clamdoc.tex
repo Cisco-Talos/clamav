@@ -71,14 +71,14 @@
     \vspace{3cm}
     \begin{flushright}
 	\rule[-1ex]{8cm}{3pt}\\
-	\huge Clam AntiVirus 0.94rc1\\
+	\huge Clam AntiVirus 0.94\\
 	\huge \emph{User Manual}\\
     \end{flushright}
 
     \newpage
     \pagestyle{fancy}
     \tableofcontents
-    \vspace{1.5cm}
+    \vspace{1.0cm}
 
     \noindent
     \begin{boxedminipage}[b]{\textwidth}
@@ -104,7 +104,7 @@
     MA 02110-1301, USA.
     \end{boxedminipage}
 
-    \vspace{0.5cm}
+    \vspace{0.3cm}
     \noindent
     \begin{boxedminipage}[b]{\textwidth}
     ClamAV and Clam AntiVirus are trademarks of Sourcefire, Inc.
@@ -127,7 +127,7 @@
 	\item{POSIX compliant, portable}
 	\item{Fast scanning}
 	\item{Supports on-access scanning (Linux and FreeBSD only)}
-	\item{Detects over 230.000 viruses, worms and trojans, including
+	\item{Detects over 400.000 viruses, worms and trojans, including
 	      Microsoft Office macro viruses, mobile malware, and other threats}
 	\item{Scans within archives and compressed files (also protects
 	      against archive bombs), built-in support includes:
@@ -269,8 +269,7 @@
 
     \subsection{Adding new system user and group}
     If you are installing ClamAV for the first time, you have to add a new
-    user and group to your system: \footnote{Cygwin note: If you have not
-    /etc/passwd you can skip this point}
+    user and group to your system:
     \begin{verbatim}
 	# groupadd clamav
 	# useradd -g clamav -s /bin/false -c "Clam AntiVirus" clamav

@@ -1,8 +1,9 @@
-0.94rc1
--------
+0.94
+----
 
-This is a release candidate for 0.94. The following are the key features
-and improvements of this version:
+Sourcefire and the ClamAV team are pleased to announce the release of
+ClamAV 0.94. The following are the key features and improvements of this
+version:
 
   - Logical Signatures: The logical signature technology uses operators
     such as AND, OR and NOT to allow the combination of more than one
@@ -42,5 +43,11 @@ and to the ChangeLog.
 
 You may need to run 'ldconfig' after installing this version.
 
+** This version drops the special support for Cygwin. Our QA process showed
+** serious problems with ClamAV builds under Cygwin due to some low-level
+** incompatibilities in the POSIX compatibility layer, resulting in unreliable
+** ClamAV behaviour.
+
 --
 The ClamAV team (http://www.clamav.net/team)
+

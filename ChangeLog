@@ -1,3 +1,7 @@
+Mon Sep  1 20:19:57 CEST 2008 (tk)
+----------------------------------
+  * docs: update
+
 Mon Sep  1 19:31:08 CEST 2008 (tk)
 ----------------------------------
   * libclamav/message.c, mbox.c: fix out-of-memory null dereference in
