@@ -1,3 +1,7 @@
+Mon Sep  1 10:57:56 EEST 2008 (edwin)
+------------------------------------ 
+  * libclamav/scanners.c: enable scanscript for UTF* types too
+
 Sun Aug 31 15:31:04 CEST 2008 (acab)
 ------------------------------------
   * libclamav/disasm, unit_tests: more endianess issues fixed (that should eb all)

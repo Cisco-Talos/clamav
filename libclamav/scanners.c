@@ -2070,6 +2070,9 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     lseek(desc, 0, SEEK_SET);
     switch(type) {
 	case CL_TYPE_TEXT_ASCII:
+	case CL_TYPE_TEXT_UTF16BE:
+	case CL_TYPE_TEXT_UTF16LE:
+	case CL_TYPE_TEXT_UTF8:
 	    if((DCONF_DOC & DOC_CONF_SCRIPT) && dettype != CL_TYPE_HTML)
 	        ret = cli_scanscript(desc, ctx);
 	    break;
