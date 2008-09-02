@@ -330,13 +330,10 @@ _PKG_TEXT])])
 	CPPFLAGS="$CPPFLAGS $CHECK_CFLAGS"
 	save_LIBS="$LIBS"
 	if test -z "$CHECK_LIBS"; then
-		# when pkg-config is not available, use defaults
-		AC_LIB_LINKFLAGS([check])
-		LIBS="$LIBS -L$LIBCHECK_PREFIX/lib -lcheck"
-		CHECK_LIBS="$LTLIBCHECK"
-	else
-		LIBS="$LIBS $CHECK_LIBS"
+		# when pkg-config is not available, use defaults		
+		CHECK_LIBS="-lcheck"
 	fi
+	LIBS="$LIBS $CHECK_LIBS"
 	AC_CHECK_HEADER(check.h,
 			[
 				AC_MSG_CHECKING([linking with check])
@@ -351,7 +348,7 @@ _PKG_TEXT])])
 					],
 					[AC_MSG_RESULT([failed]);CHECK_LIBS=]
 				)
-			],[CHECK_LIBS=])
+			])
 	LIBS="$save_LIBS"
 	CPPFLAGS="$save_CPPFLAGS"
 fi
