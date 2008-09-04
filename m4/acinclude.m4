@@ -626,8 +626,8 @@ dnl Checks DoS in bzlib
 AC_DEFUN([AC_C_CVE_2008_1372],
 [AC_CACHE_CHECK([for CVE-2008-1372], [ac_cv_c_cve_2008_1372],
 [
-save_LDFLAGS="$LDFLAGS"
-LDFLAGS="$LIBCLAMAV_LIBS $LTLIBBZ2"
+save_LIBS="$LIBS"
+LIBS="$LIBCLAMAV_LIBS $LIBBZ2"
 AC_TRY_RUN([
 #include <string.h>
 #include <stdlib.h>
@@ -684,7 +684,7 @@ int main (int argc, char **argv) {
         return 0;
 }
 ], [ac_cv_c_cve_2008_1372=ok], [ac_cv_c_cve_2008_1372=bugged], [ac_cv_c_cve_2008_1372=ok])
-LDFLAGS="$save_LDFLAGS"
+LIBS="$save_LIBS"
 ])
 ])
 

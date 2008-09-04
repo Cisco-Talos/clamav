@@ -1,3 +1,7 @@
+Thu Sep  4 12:53:44 EEST 2008 (edwin)
+-------------------------------------
+ * configure: fix bzip2 cve test link problems (bb #1158)
+
 Tue Sep  2 15:11:53 CEST 2008 (tk)
 ----------------------------------
   * V 0.94
