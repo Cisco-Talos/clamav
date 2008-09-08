@@ -1,3 +1,8 @@
+Mon Sep  8 16:10:48 CEST 2008 (tk)
+----------------------------------
+  * clamd/server-th.c: fix handling of pthread_attr_init/pthread_create in
+		       ClamukoScanOnAccess (bb#1169)
+
 Thu Sep  4 12:53:44 EEST 2008 (edwin)
 -------------------------------------
  * configure: fix bzip2 cve test link problems (bb #1158)
