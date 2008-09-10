@@ -55,7 +55,7 @@ int notify(const char *cfgfile)
 #ifndef	C_WINDOWS
 	struct sockaddr_un server;
 #endif
-#ifdef SUPPORT_IPv6
+#ifdef HAVE_GETADDRINFO
 	struct addrinfo hints, *res;
 	char port[6];
 	const char *addr;
@@ -102,9 +102,13 @@ int notify(const char *cfgfile)
     if((cpt = cfgopt(copt, "TCPSocket"))->enabled) {
 	socktype = "TCP";
 
-#ifdef SUPPORT_IPv6
+#ifdef HAVE_GETADDRINFO
 	memset(&hints, 0, sizeof(hints));
+#ifdef SUPPORT_IPv6
 	hints.ai_family = AF_UNSPEC;
+#else
+	hints.ai_family = AF_INET;
+#endif
 	hints.ai_socktype = SOCK_STREAM;
 	snprintf(port, 5, "%d", cpt->numarg);
 	port[5] = 0;

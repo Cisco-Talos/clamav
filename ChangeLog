@@ -1,3 +1,9 @@
+Wed Sep 10 20:05:27 CEST 2008 (tk)
+----------------------------------
+  * configure: use getaddrinfo() whenever available (can be disabled
+	       with --disable-getaddrinfo); --disable-ipv6 now only
+	       disables support for IPv6 addresses in getaddrinfo() (bb#1165)
+
 Wed Sep 10 18:10:47 CEST 2008 (acab)
 ------------------------------------
   * build system: libtool updated to 2.2.6 

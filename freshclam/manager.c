@@ -89,7 +89,7 @@
 	if(chdir(x) == -1)			\
 	    logg("!Can't chdir to %s\n", x);
 
-#ifndef SUPPORT_IPv6
+#ifndef HAVE_GETADDRINFO
 static const char *ghbn_err(int err) /* hstrerror() */
 {
     switch(err) {
@@ -115,7 +115,7 @@ static int getclientsock(const char *localip, int prot)
 {
 	int socketfd = -1;
 
-#ifdef SUPPORT_IPv6
+#ifdef HAVE_GETADDRINFO
     if(prot == PF_INET6)
 	socketfd = socket(PF_INET6, SOCK_STREAM, 0);
     else
@@ -130,7 +130,7 @@ static int getclientsock(const char *localip, int prot)
     }
 
     if(localip) {
-#ifdef SUPPORT_IPv6
+#ifdef HAVE_GETADDRINFO
 	    struct addrinfo *res;
 	    int ret;
 
@@ -191,7 +191,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 {
 	int socketfd, port, ret;
 	unsigned int ips = 0, ignored = 0;
-#ifdef SUPPORT_IPv6
+#ifdef HAVE_GETADDRINFO
 	struct addrinfo hints, *res = NULL, *rp, *loadbal_rp = NULL;
 	char port_s[6], loadbal_ipaddr[46];
 	uint32_t loadbal = 1, minsucc = 0xffffffff, minfail = 0xffffffff;
@@ -229,9 +229,13 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	port = 80;
     }
 
-#ifdef SUPPORT_IPv6
+#ifdef HAVE_GETADDRINFO
     memset(&hints, 0, sizeof(hints));
+#ifdef SUPPORT_IPv6
     hints.ai_family = AF_UNSPEC;
+#else
+    hints.ai_family = AF_INET;
+#endif
     hints.ai_socktype = SOCK_STREAM;
     snprintf(port_s, sizeof(port_s), "%d", port);
     port_s[sizeof(port_s) - 1] = 0;
@@ -1374,7 +1378,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 
     time(&currtime);
     logg("ClamAV update process started at %s", ctime(&currtime));
-#ifdef SUPPORT_IPv6
+#ifdef HAVE_GETADDRINFO
     logg("*Using IPv6 aware code\n");
 #endif
 

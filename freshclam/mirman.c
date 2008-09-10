@@ -56,7 +56,7 @@
 #define O_BINARY    0
 #endif
 
-#ifndef SUPPORT_IPv6
+#ifndef HAVE_GETADDRINFO
 #ifndef AF_INET6
 #define AF_INET6    0xbeef  /* foo */
 #endif
@@ -222,7 +222,7 @@ void mirman_list(const struct mirdat *mdat)
 
     for(i = 0; i < mdat->num; i++) {
 	printf("Mirror #%u\n", i + 1);
-#ifdef SUPPORT_IPv6
+#ifdef HAVE_GETADDRINFO
 	if(mdat->mirtab[i].ip4)
 	    printf("IP: %s\n", inet_ntop(AF_INET, &mdat->mirtab[i].ip4, ip, sizeof(ip)));
 	else

@@ -129,6 +129,9 @@
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #undef HAVE_FSEEKO
 
+/* have getaddrinfo() */
+#undef HAVE_GETADDRINFO
+
 /* gethostbyname_r takes 3 arguments */
 #undef HAVE_GETHOSTBYNAME_R_3
 
@@ -371,7 +374,7 @@
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
-/* Use IPv6 aware code */
+/* Support for IPv6 */
 #undef SUPPORT_IPv6
 
 /* use syslog */
