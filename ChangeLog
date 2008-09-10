@@ -1,3 +1,8 @@
+Wed Sep 10 18:10:47 CEST 2008 (acab)
+------------------------------------
+  * build system: libtool updated to 2.2.6 
+		  re-enable building on Mac OS X 10.4.11 - bb#1162
+
 Mon Sep  8 16:10:48 CEST 2008 (tk)
 ----------------------------------
   * clamd/server-th.c: fix handling of pthread_attr_init/pthread_create in
