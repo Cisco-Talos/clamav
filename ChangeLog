@@ -1,3 +1,7 @@
+Thu Sep 11 21:46:48 CEST 2008 (tk)
+----------------------------------
+  * libclamav/pdf.c: fix write error with specific files (bb#1181)
+
 Thu Sep 11 13:16:22 EEST 2008 (edwin)
 -------------------------------------
   * build system: allow 'make check' to work even if check is not installed

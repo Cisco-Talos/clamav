@@ -401,13 +401,15 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 		calculated_streamlen = (int)(streamend - streamstart);
 		real_streamlen = length;
 
-		if(calculated_streamlen != real_streamlen)
-			cli_dbgmsg("cli_pdf: Incorrect Length field in file attempting to recover\n");
-
 		cli_dbgmsg("cli_pdf: length %lu, calculated_streamlen %lu isFlate %d isASCII85 %d\n",
 			length, calculated_streamlen,
 			is_flatedecode, is_ascii85decode);
 
+		if(calculated_streamlen != real_streamlen) {
+			cli_dbgmsg("cli_pdf: Incorrect Length field in file attempting to recover\n");
+			if(real_streamlen > calculated_streamlen)
+				real_streamlen = calculated_streamlen;
+		}
 #if	0
 		/* FIXME: this isn't right... */
 		if(length)
