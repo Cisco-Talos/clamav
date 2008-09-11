@@ -4,15 +4,6 @@
 
 #include <stdio.h>
 
-#ifndef HAVE_CHECK
-int main(int argc, char **argv)
-{
-    puts("\n*** Unit tests disabled in this build\n*** Use ./configure --enable-check to enable them\n");
-    /* tell automake the test was skipped */
-    return 77;
-}
-#else
-
 #include <stdlib.h>
 #include <limits.h>
 #include <fcntl.h>
@@ -368,5 +359,3 @@ int main(int argc, char **argv)
     srunner_free(sr);
     return (nf == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
-
-#endif /* HAVE_CHECK */

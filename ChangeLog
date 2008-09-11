@@ -1,3 +1,11 @@
+Thu Sep 11 13:16:22 EEST 2008 (edwin)
+-------------------------------------
+  * build system: allow 'make check' to work even if check is not installed
+		  by skipping checks that require it. (bb #1157)
+		  if configure is not able to find check, you can use
+		  --with-libcheck-prefix, instead of CHECK_CFLAGS and
+		  CHECK_LIBS.
+
 Wed Sep 10 20:05:27 CEST 2008 (tk)
 ----------------------------------
   * configure: use getaddrinfo() whenever available (can be disabled

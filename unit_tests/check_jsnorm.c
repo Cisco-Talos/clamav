@@ -24,7 +24,6 @@
 #endif
 
 #include <stdio.h>
-#ifdef HAVE_CHECK
 
 #include <stdlib.h>
 #include <limits.h>
@@ -508,4 +507,3 @@ Suite *test_jsnorm_suite(void)
     return s;
 }
 
-#endif

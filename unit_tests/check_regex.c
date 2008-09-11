@@ -24,7 +24,6 @@
 #endif
 
 #include <stdio.h>
-#ifdef HAVE_CHECK
 #include <stdlib.h>
 #include <limits.h>
 #include <string.h>
@@ -472,4 +471,3 @@ Suite *test_regex_suite(void)
 	return s;
 }
 
-#endif

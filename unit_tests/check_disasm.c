@@ -24,7 +24,6 @@
 #endif
 
 #include <stdio.h>
-#ifdef HAVE_CHECK
 
 #include <check.h>
 #include <stdlib.h>
@@ -152,5 +151,3 @@ Suite *test_disasm_suite(void)
     return s;
 }
 
-
-#endif

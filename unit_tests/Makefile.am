@@ -9,16 +9,16 @@ $(FILES) :
 programs = check_clamav
 scripts = check_clamd.sh check_freshclam.sh check_sigtool.sh check_clamscan.sh valgrind_tests.sh
 TESTS = $(programs) $(scripts)
-if ENABLE_UT_INSTALL 
-bin_PROGRAMS = $(programs)
-dist_bin_SCRIPTS = $(scripts)
-else
 check_PROGRAMS = $(programs)
 check_SCRIPTS = $(scripts)
-endif
+
+if HAVE_LIBCHECK
 check_clamav_SOURCES = check_clamav.c check_jsnorm.c check_str.c check_regex.c checks.h $(top_builddir)/libclamav/clamav.h check_disasm.c check_uniq.c check_matchers.c
-check_clamav_CFLAGS = @CHECK_CFLAGS@ -DSRCDIR=\"$(abs_srcdir)\"
+check_clamav_CPPFLAGS = @CHECK_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\"
 check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CHECK_LIBS@
+else
+check_clamav_SOURCES = check_clamav_skip.c
+endif
 
 check_clamd.sh: $(top_builddir)/test/clam.exe
 check_clamscan.sh: $(top_builddir)/test/clam.exe
@@ -27,7 +27,7 @@ $(top_builddir)/test/clam.exe:
 	(cd $(top_builddir)/test && $(MAKE))
 
 CLEANFILES=lcov.out *.gcno *.gcda *.log clamd-test.socket /tmp/clamd-test.log $(FILES) test-stderr.log clamscan.log valgrind.log clamdscan.log
-EXTRA_DIST=.split input test-clamd.conf test-freshclam.conf valgrind.supp virusaction-test.sh
+EXTRA_DIST=.split input test-clamd.conf test-freshclam.conf valgrind.supp virusaction-test.sh $(scripts)
 if ENABLE_COVERAGE
 LCOV_OUTPUT = lcov.out
 LCOV_HTML = lcov_html

@@ -23,8 +23,6 @@
 #include "clamav-config.h"
 #endif
 
-#ifdef HAVE_CHECK
-
 #include <check.h>
 #include <stdlib.h>
 #include <string.h>
@@ -107,5 +105,3 @@ Suite *test_uniq_suite(void)
     return s;
 }
 
-
-#endif

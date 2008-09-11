@@ -105,9 +105,6 @@
 /* have bzip2 */
 #undef HAVE_BZLIB_H
 
-/* Enable 'check' unit tests */
-#undef HAVE_CHECK
-
 /* ancillary data style fd pass */
 #undef HAVE_CONTROL_IN_MSGHDR
 
@@ -161,6 +158,9 @@
 
 /* in_port_t is defined */
 #undef HAVE_IN_PORT_T
+
+/* Define to '1' if you have the check.h library */
+#undef HAVE_LIBCHECK
 
 /* Define if you have the gmp library. */
 #undef HAVE_LIBGMP

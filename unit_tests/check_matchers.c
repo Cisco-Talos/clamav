@@ -21,8 +21,6 @@
 #include "clamav-config.h"
 #endif
 
-#ifdef HAVE_CHECK
-
 #include <check.h>
 #include <stdio.h>
 #include <string.h>
@@ -127,4 +125,3 @@ Suite *test_matchers_suite(void)
     return s;
 }
 
-#endif

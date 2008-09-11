@@ -688,3 +688,51 @@ LIBS="$save_LIBS"
 ])
 ])
 
+dnl AC_LIB_FIND(LIBNAME, HEADER, LINKTESTCODE, ACTION-IF-FOUND, ACTION-IF-NOT-FOUND)
+dnl Checks for flags needed to link with LIBNAME, for the existence of HEADER,
+dnl and the ability to link with LINKTESTCODE.
+dnl If successful sets LIB${LIBNAME}, LTLIB${LIBNAME}, INC${LIBNAME} variables,
+dnl AC_DEFINEs HAVE_LIB${LIBNAME} to 1, defines HAVE_LIB${LIBNAME} to yes,
+dnl and evaluates ACTION-IF-FOUND.
+dnl Otherwise evaluates ACTION-IF-NOT-FOUND.
+dnl --------------------------------------------------------------------------------
+AC_DEFUN([AC_LIB_FIND],
+[
+	dnl Prerequisites of AC_LIB_LINKFLAGS_BODY
+  	AC_REQUIRE([AC_LIB_PREPARE_PREFIX])
+	AC_REQUIRE([AC_LIB_RPATH])
+	m4_if($#,5,,[m4_fatal([$0: invalid number of arguments: $#])])
+  	define([NAME],[translit([$1],[abcdefghijklmnopqrstuvwxyz./-],
+                               [ABCDEFGHIJKLMNOPQRSTUVWXYZ___])])
+	AC_CACHE_CHECK([how to compile and link with $1],[ac_cv_findlib_[]NAME[]_libs],[
+		save_CPPFLAGS="$CPPFLAGS"
+		save_LIBS="$LIBS"
+		AC_LIB_LINKFLAGS_BODY([$1])
+		CPPFLAGS="$CPPFLAGS $INC[]NAME"
+		AC_CHECK_HEADER([$2], [have_header=yes],[have_header=no])
+		ac_cv_findlib_[]NAME[]_libs=
+		ac_cv_findlib_[]NAME[]_inc=
+		AS_IF([test "$have_header" = "yes"],[
+				LIBS="$LIBS $LIB[]NAME"
+				AC_MSG_CHECKING([linking with $1])
+				AC_LINK_IFELSE([$3],[
+					ac_cv_findlib_[]NAME[]_libs="$LIB[]NAME"
+					ac_cv_findlib_[]NAME[]_inc="$INC[]NAME"
+				])
+		])
+		CPPFLAGS="$save_CPPFLAGS"
+		LIBS="$save_CPPFLAGS"
+	])
+	AS_IF([test "X$ac_cv_findlib_[]NAME[]_libs" = "X"],[
+			AC_MSG_NOTICE([unable to compile/link with $1])
+			HAVE_LIB[]NAME=no
+			$5
+		],[
+			AC_MSG_NOTICE([Compiling and linking with $1 by using $ac_cv_findlib_[]NAME[]_inc $ac_cv_findlib_[]NAME[]_libs])
+			AC_DEFINE([HAVE_LIB]NAME,1,[Define to '1' if you have the $2 library])
+			HAVE_LIB[]NAME=yes
+			$4
+	])
+	undefine([NAME])	
+])
+
