@@ -14590,7 +14590,7 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
 fi
 
 		CPPFLAGS="$save_CPPFLAGS"
-		LIBS="$save_CPPFLAGS"
+		LIBS="$save_LIBS"
 
 fi
 { echo "$as_me:$LINENO: result: $ac_cv_findlib_CHECK_libs" >&5

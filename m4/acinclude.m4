@@ -721,7 +721,7 @@ AC_DEFUN([AC_LIB_FIND],
 				])
 		])
 		CPPFLAGS="$save_CPPFLAGS"
-		LIBS="$save_CPPFLAGS"
+		LIBS="$save_LIBS"
 	])
 	AS_IF([test "X$ac_cv_findlib_[]NAME[]_libs" = "X"],[
 			AC_MSG_NOTICE([unable to compile/link with $1])
