@@ -101,12 +101,19 @@ static void *work_queue_pop(work_queue_t *work_q)
 
 void thrmgr_destroy(threadpool_t *threadpool)
 {
-	if (!threadpool || (threadpool->state != POOL_VALID)) {
+	if (!threadpool) {
 		return;
 	}
   	if (pthread_mutex_lock(&threadpool->pool_mutex) != 0) {
    		logg("!Mutex lock failed\n");
     		exit(-1);
+	}
+	if(threadpool->state != POOL_VALID) {
+		if (pthread_mutex_unlock(&threadpool->pool_mutex) != 0) {
+			logg("!Mutex unlock failed\n");
+			exit(-1);
+		}
+		return;
 	}
 	threadpool->state = POOL_EXIT;
 	

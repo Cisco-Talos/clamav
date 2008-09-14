@@ -1,18 +1,15 @@
-#!/bin/sh 
-#set -x
+#!/bin/sh  
+CLAMD_WRAPPER=${CLAMD_WRAPPER-}
 killclamd() {
 	test -f /tmp/clamd-test.pid || return
 	pid=`cat /tmp/clamd-test.pid`
 	kill -0 $pid && kill $pid
-	pippo=0
-	while test -f /tmp/clamd-test.pid; do
-		sleep 1
-		pippo=`expr $pippo + 1`
-		if test $pippo -gt 9; then
-			kill -KILL $pid
-			rm /tmp/clamd-test.pid
-		fi
-	done
+	timeout=10
+	(sleep $timeout; kill -KILL $pid) &
+	sleeperpid=$!
+	wait $pid
+	kill -ALRM $sleeperpid 2>/dev/null
+	rm -f /tmp/clamd-test.pid
 }
 die() {
 	killclamd
@@ -22,10 +19,14 @@ die() {
 run_clamd_test() {
 	conf_file=$1
 	shift
-	rm -f clamdscan.log
-	../clamd/clamd -c $conf_file || { echo "Failed to start clamd!" >&2; die 1;}
+	rm -f clamdscan.log clamdscan-multiscan.log
+	../libtool --mode=execute $CLAMD_WRAPPER ../clamd/clamd -c $conf_file || { echo "Failed to start clamd!" >&2; die 1;}
 	../clamdscan/clamdscan --version --config-file $conf_file 2>&1|grep "^ClamAV" >/dev/null || { echo "clamdscan can't get version of clamd!" >&2; die 2;}
 	../clamdscan/clamdscan --quiet --config-file $conf_file $* --log=clamdscan.log
+	../clamdscan/clamdscan --quiet --config-file $conf_file $* -m --log=clamdscan-multiscan.log
+	if test -x /bin/nc; then
+		echo RELOAD | nc -q 0 -n 127.0.0.1 3311
+	fi
 	if test $? = 2; then 
 		echo "Failed to run clamdscan!" >&2;
 		die 3;	
@@ -37,7 +38,7 @@ run_clamd_fdpass_test() {
 	conf_file=$1
 	shift
 	rm -f clamdscan.log
-	../clamd/clamd -c $conf_file || { echo "Failed to start clamd!" >&2; die 1;}
+	../libtool --mode=execute $CLAMD_WRAPPER ../clamd/clamd -c $conf_file || { echo "Failed to start clamd!" >&2; die 1;}
 	../clamdscan/clamdscan --quiet --fdpass --config-file $conf_file - <$1 --log=clamdscan.log
 	if test $? = 2; then
 		echo "Failed to run clamdscan!" >&2;
@@ -58,9 +59,15 @@ FILES=../test/clam*
 run_clamd_test $srcdir/test-clamd.conf $FILES
 NFILES=`ls -1 $FILES | wc -l`
 NINFECTED=`grep "Infected files" clamdscan.log | cut -f2 -d:|sed -e 's/ //g'`
+NINFECTED_MULTI=`grep "Infected files" clamdscan-multiscan.log | cut -f2 -d:|sed -e 's/ //g'`
 if test "$NFILES" -ne "0$NINFECTED"; then
 	echo "clamd did not detect all testfiles correctly!" >&2;
 	grep OK clamdscan.log >&2;
+	die 4;
+fi
+if test "$NFILES" -ne "0$NINFECTED_MULTI"; then
+	echo "clamd did not detect all testfiles correctly in multiscan mode!" >&2;
+	grep OK clamdscan-multiscan.log >&2;
 	die 4;
 fi
 

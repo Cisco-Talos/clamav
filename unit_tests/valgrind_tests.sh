@@ -1,28 +1,79 @@
 #!/bin/sh
+# 
+# We don't look for 'still reachable' blocks, since clamd fork()s after loading
+# the DB. The parent exits without freeing the memory (but they are freed
+# anyway due to the exit).
+# To test for DB load leaks, we issue a RELOAD command, which should cause
+# leaks to be reported by valgrind if there are any.
+# 
+
 VALGRIND=`which ${VALGRIND-valgrind}`
-VALGRIND_FLAGS="--trace-children=yes --track-fds=yes --leak-check=full --show-reachable=yes --suppressions=$srcdir/valgrind.supp"
 test -n "$VALGRIND" || { echo "*** valgrind not found, skipping test"; exit 77; }
 test -x "$VALGRIND" || { echo "*** valgrind not executable, skipping test"; exit 77; }
 
-echo "Running valgrind"
-CK_FORK=no ../libtool --mode=execute $VALGRIND $VALGRIND_FLAGS ./check_clamav 2>&1 | cat >valgrind.log
-if grep "ERROR SUMMARY: 0 errors" valgrind.log >/dev/null; then
-	if grep "no leaks are possible" valgrind.log >/dev/null; then
-		echo "Valgrind tests successful"
-		exit 0;
+parse_valgrindlog()
+{
+	if test ! -f $1; then
+		echo "Logfile $1 not found. Valgrind failed to run?"
+		exit 2;
 	fi
-	echo "*** Valgrind test FAILED, memory LEAKS detected ***"
-else
-	echo "*** Valgrind test FAILED, memory ERRORS detected ****"
+	NRUNS=`grep "ERROR SUMMARY" $1 | wc -l`
+	if test $NRUNS -eq `grep "ERROR SUMMARY: 0 errors" $1 | wc -l`; then
+		if test "$1" = "valgrind-race.log" || 
+			test $NRUNS -eq `grep "no leaks are possible" $1 | wc -l` ||
+			test `grep "lost:" $1 | grep -v "0 bytes" | wc -l` -ne 0; then 
+			rm -f $1;
+			return
+		else
+			echo "*** Valgrind test FAILED, memory LEAKS detected ***"
+			grep "lost:" $1 | grep -v "0 bytes"
+		fi
+	else
+		if test "$1" = "valgrind-race.log" ; then
+			echo "*** Valgrind test FAILED, DATA RACES detected ****"
+		else
+			echo "*** Valgrind test FAILED, memory ERRORS detected ****"
+		fi
+		grep "ERROR SUMMARY" $1 | grep -v "0 errors"
+		sed -rn '
+			/^[=0-9]+ +at/ {
+				# save current line in hold buffer
+				x
+				# print hold buffer
+				p
+				# get original line back
+				x
+			}
+			# store it in hold buffer
+			h
+			/^[=0-9]+ FILE DESC/ {
+				q
+			}
+		' <$1 | grep -v "Thread.+was created"
+	fi
+	echo "***"
+	echo "*** Please submit $1 to http://bugs.clamav.net"
+	echo "***"
+}
+
+
+VALGRIND_FLAGS="-v --trace-children=yes --track-fds=yes --leak-check=full --suppressions=$srcdir/valgrind.supp"
+VALGRIND_FLAGS_RACE="-v --tool=helgrind --trace-children=yes --suppressions=$srcdir/valgrind.supp"
+
+echo "--- Running valgrind/memcheck"
+rm -f valgrind-check.log valgrind-clamd.log valgrind-race.log
+CK_FORK=no ../libtool --mode=execute $VALGRIND $VALGRIND_FLAGS ./check_clamav >valgrind-check.log 2>&1
+parse_valgrindlog valgrind-check.log
+
+echo "--- Running clamd under valgrind/memcheck"
+CLAMD_WRAPPER="$VALGRIND $VALGRIND_FLAGS" $srcdir/check_clamd.sh >valgrind-clamd.log 2>&1
+parse_valgrindlog valgrind-clamd.log
+
+echo "--- Running clamd under valgrind/helgrind"
+CLAMD_WRAPPER="$VALGRIND $VALGRIND_FLAGS_RACE" $srcdir/check_clamd.sh >valgrind-race.log 2>&1
+parse_valgrindlog valgrind-race.log
+
+if test -f valgrind-check.log -o -f valgrind-race.log -o -f valgrind-clamd.log; then
+	exit 1;
 fi
-echo 
-grep "ERROR SUMMARY" valgrind.log
-echo `grep "Invalid read" valgrind.log| wc -l` "invalid reads"
-echo `grep "Invalid write" valgrind.log| wc -l` "invalid writes"
-echo `grep "Invalid free" valgrind.log| wc -l` "invalid frees"
-echo `grep "uninitialised value" valgrind.log|wc -l` "uses of uninitialized values"
-grep " lost:" valgrind.log
-grep "still reachable:" valgrind.log
-grep "FILE DESCRIPTORS" valgrind.log
-echo 
-exit 1;
+exit 0

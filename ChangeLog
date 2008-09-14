@@ -1,3 +1,8 @@
+Sun Sep 14 17:20:14 EEST 2008 (edwin)
+-------------------------------------
+  * clamd/thrmgr.c: fix valgrind warning (bb #1184)
+  * unit_tests: add more valgrind tests, add a reload and a multiscan test (bb #1092)
+
 Thu Sep 11 21:46:48 CEST 2008 (tk)
 ----------------------------------
   * libclamav/pdf.c: fix write error with specific files (bb#1181)

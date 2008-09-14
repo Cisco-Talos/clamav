@@ -12,3 +12,114 @@
 	obj:/lib*/libc-*.so
 	fun:__libc_freeres
 }
+{
+	helgrind-glibc27-dbg01
+	Helgrind:Race
+	fun:mythread_wrapper
+	fun:start_thread
+}
+{
+	helgrind-glibc27-dbg02
+	Helgrind:Race
+	fun:pthread_mutex_*
+}
+{
+	helgrind-glibc27-dbg03
+	Helgrind:Race
+	fun:pthread_create*
+}
+{
+	helgrind-glibc27-dbg04
+	Helgrind:Race
+	fun:pthread_create*
+}
+{
+	helgrind-glibc27-dbg05
+	Helgrind:Race
+	fun:__deallocate_stack
+	fun:start_thread
+}
+{
+	helgrind-glibc27-dbg05
+	Helgrind:Race
+	fun:free_stacks
+	fun:__deallocate_stack
+	fun:start_thread
+}
+{
+	helgrind-glibc27-dbg06
+	Helgrind:Race
+	fun:*
+	obj:/usr/lib/debug/libpthread-*.so
+}
+{
+	helgrind-glibc27-dbg06
+	Helgrind:Race
+	fun:*
+	obj:/lib/libpthread-*.so
+}
+{
+	helgrind-glibc27-dbg08
+	Helgrind:Race
+	obj:/lib/ld-*.so
+}
+{
+	helgrind-glibc27-dbg09
+	Helgrind:Race
+	fun:*
+	fun:exit
+}
+{
+	helgrind-glibc27-dbg10
+	Helgrind:Race
+	fun:*
+	fun:*
+	fun:exit
+}
+{
+	helgrind-glibc27-dbg11
+	Helgrind:Race
+	fun:*
+	fun:*
+	fun:*
+	fun:exit
+}
+{
+	helgrind-glibc27-dbg12
+	Helgrind:Race
+	fun:*
+	fun:*
+	fun:*
+	fun:*
+	fun:exit
+}
+{
+	helgrind-glibc27-dbg13
+	Helgrind:Race
+	fun:*
+	fun:*
+	fun:ctime_r
+}
+{
+	helgrind-glibc27-dbg14
+	Helgrind:Race
+	fun:_IO_link_in
+	fun:_IO_file_init*
+}
+# libc has a gconv_lock, but valgrind doesn't know that because it uses lll_lock
+# instead of pthread_mutex_lock
+{
+	helgrind-glibc27-dbg15
+	Helgrind:Race
+	fun:__gconv_release_shlib
+}
+{
+	helgrind-glibc27-dbg16
+	Helgrind:Race
+	fun:__gconv_find_shlib
+}
+{
+	helgrind-glibc27-dbg17
+	Helgrind:Race
+	fun:exit
+}
