@@ -1,14 +1,20 @@
-#!/bin/sh  
+#!/bin/sh 
 CLAMD_WRAPPER=${CLAMD_WRAPPER-}
 killclamd() {
 	test -f /tmp/clamd-test.pid || return
-	pid=`cat /tmp/clamd-test.pid`
-	kill -0 $pid && kill $pid
+	pid=`cat /tmp/clamd-test.pid 2>/dev/null`
+	if test "X$pid" = "X"; then
+		# file can be removed between the 'test' and 'cat',
+		# it happened a few times for me
+		return
+	fi
+	kill -0 $pid 2>/dev/null || return
+	kill $pid
 	timeout=10
-	(sleep $timeout; kill -KILL $pid) &
+	(sleep $timeout && kill -0 $pid 2>/dev/null && kill -KILL $pid) &
 	sleeperpid=$!
 	wait $pid
-	kill -ALRM $sleeperpid 2>/dev/null
+	kill $sleeperpid 2>/dev/null
 	rm -f /tmp/clamd-test.pid
 }
 die() {
