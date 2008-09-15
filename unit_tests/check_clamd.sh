@@ -13,7 +13,7 @@ killclamd() {
 	timeout=10
 	(sleep $timeout && kill -0 $pid 2>/dev/null && kill -KILL $pid) &
 	sleeperpid=$!
-	wait $pid
+	kill -0 $pid 2>/dev/null && wait $pid
 	kill $sleeperpid 2>/dev/null
 	rm -f /tmp/clamd-test.pid
 }

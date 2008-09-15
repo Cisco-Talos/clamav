@@ -14534,6 +14534,7 @@ fi
 
 
 		ac_cv_findlib_CHECK_libs=
+		ac_cv_findlib_CHECK_ltlibs=
 		ac_cv_findlib_CHECK_inc=
 		if test "$have_header" = "yes"; then
 
@@ -14575,6 +14576,7 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
        $as_test_x conftest$ac_exeext; then
 
 					ac_cv_findlib_CHECK_libs="$LIBCHECK"
+					ac_cv_findlib_CHECK_ltlibs="$LTLIBCHECK"
 					ac_cv_findlib_CHECK_inc="$INCCHECK"
 
 else
@@ -14612,6 +14614,9 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 			HAVE_LIBCHECK=yes
+			LIBCHECK="$ac_cv_findlib_CHECK_libs"
+			LTLIBCHECK="$ac_cv_findlib_CHECK_ltlibs"
+			INCCHECK="$ac_cv_findlib_CHECK_libs"
 			CHECK_CPPFLAGS="$INCCHECK"; CHECK_LIBS="$LTLIBCHECK"
 
 fi

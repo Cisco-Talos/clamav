@@ -711,12 +711,14 @@ AC_DEFUN([AC_LIB_FIND],
 		CPPFLAGS="$CPPFLAGS $INC[]NAME"
 		AC_CHECK_HEADER([$2], [have_header=yes],[have_header=no])
 		ac_cv_findlib_[]NAME[]_libs=
+		ac_cv_findlib_[]NAME[]_ltlibs=
 		ac_cv_findlib_[]NAME[]_inc=
 		AS_IF([test "$have_header" = "yes"],[
 				LIBS="$LIBS $LIB[]NAME"
 				AC_MSG_CHECKING([linking with $1])
 				AC_LINK_IFELSE([$3],[
 					ac_cv_findlib_[]NAME[]_libs="$LIB[]NAME"
+					ac_cv_findlib_[]NAME[]_ltlibs="$LTLIB[]NAME"
 					ac_cv_findlib_[]NAME[]_inc="$INC[]NAME"
 				])
 		])
@@ -731,6 +733,9 @@ AC_DEFUN([AC_LIB_FIND],
 			AC_MSG_NOTICE([Compiling and linking with $1 by using $ac_cv_findlib_[]NAME[]_inc $ac_cv_findlib_[]NAME[]_libs])
 			AC_DEFINE([HAVE_LIB]NAME,1,[Define to '1' if you have the $2 library])
 			HAVE_LIB[]NAME=yes
+			LIB[]NAME="$ac_cv_findlib_[]NAME[]_libs"
+			LTLIB[]NAME="$ac_cv_findlib_[]NAME[]_ltlibs"
+			INC[]NAME="$ac_cv_findlib_[]NAME[]_libs"
 			$4
 	])
 	undefine([NAME])	

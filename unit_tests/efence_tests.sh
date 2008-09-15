@@ -1,16 +1,19 @@
 #!/bin/sh
 # Run under electric-fence
-for i in $LIBEFENCE /usr/lib/libefence.so /usr/local/lib/libefence.so /opt/csw/lib/libefence.so; do
-	if test -f "$i"; then
-		LIBEFENCE="$i"
-		break;
-	fi
-done
+if test -z "$LIBEFENCE"; then
+	for i in /usr/lib/libefence.so /usr/local/lib/libefence.so /opt/csw/lib/libefence.so; do
+		if test -f "$i"; then
+			LIBEFENCE="$i"
+			break;
+		fi
+	done
+fi
 test -f "$LIBEFENCE" || { echo "*** electric-fence not found, skipping test"; exit 77;}
 
+EF_DISABLE_BANNER=1
 EF_FREE_WIPES=1
 LIBPRELOAD="$LIBEFENCE"
-export EF_FREE_WIPES LIBPRELOAD
+export EF_FREE_WIPES LIBPRELOAD EF_DISABLE_BANNER
 VALGRIND=`which ${VALGRIND-valgrind}`
 if test ! -n "$VALGRIND" -o ! -x "$VALGRIND"; then
 	# run check_clamav under efence only if we don't have valgrind installed

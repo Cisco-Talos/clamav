@@ -1,11 +1,13 @@
 #!/bin/sh
 # Run under duma
-for i in $LIBDUMA /usr/lib/libduma.so /usr/local/lib/libduma.so; do
-	if test -f "$i"; then
-		LIBDUMA="$i"
-		break;
-	fi
-done
+if test -z "$LIBDUMA"; then
+	for i in /usr/lib/libduma.so /usr/local/lib/libduma.so; do
+		if test -f "$i"; then
+			LIBDUMA="$i"
+			break;
+		fi
+	done
+fi
 test -f "$LIBDUMA" || { echo "*** duma not found, skipping test"; exit 77;}
 DUMA_FILL=90
 DUMA_MALLOC_0_STRATEGY=1
