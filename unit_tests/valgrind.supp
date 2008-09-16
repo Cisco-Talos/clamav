@@ -13,6 +13,36 @@
 	fun:__libc_freeres
 }
 {
+	glibc-etch1
+	Memcheck:Free
+	fun:*
+	fun:_dl_allocate_tls
+}
+{
+	glibc-etch2
+	Memcheck:Free
+	obj:/lib*/ld-*.so
+	obj:/lib*/ld-*.so
+}
+{
+       glibc-etch1
+       Memcheck:Free
+       fun:*
+       fun:_dl_allocate_tls
+}
+{
+       glibc-etch2
+       Memcheck:Addr8
+       obj:/lib*/ld-*.so
+       obj:/lib*/ld-*.so
+}
+{
+       glibc-etch2
+       Memcheck:Addr4
+       obj:/lib*/ld-*.so
+       obj:/lib*/ld-*.so
+}
+{
 	helgrind-glibc27-dbg01
 	Helgrind:Race
 	fun:mythread_wrapper
@@ -123,3 +153,9 @@
 	Helgrind:Race
 	fun:exit
 }
+#{
+#	helgrind-glibc27-dbg18
+#	Helgrind:Race
+#	fun:__reclaim_stacks
+#	fun:fork
+#}

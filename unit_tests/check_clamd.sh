@@ -107,27 +107,30 @@ run_clamdscan_fdpass() {
 }
 
 # We run multiple clamd tests in parallel, each in its own directory
+prepare_clamd()
+{
+	cd clamdtest$1 
+	# Set up test DBdir
+	rm -rf test-db
+	mkdir -p test-db
+	cat <<EOF >test-db/test.hdb
+aa15bcf478d165efd2065190eb473bcb:544:ClamAV-Test-File
+EOF
+	cp $abs_srcdir/input/daily.ftm test-db/
+	cp $abs_srcdir/input/daily.pdb test-db/
+	awk "{ sub(/X/,\"$1\"); sub(/CWD/,\"`pwd`\"); print }" $abs_srcdir/test-clamd.conf >test-clamd.conf
+}
+
 rm -rf clamdtest$CLAMD_TEST_UNIQ1 clamdtest$CLAMD_TEST_UNIQ2
 mkdir clamdtest$CLAMD_TEST_UNIQ1 clamdtest$CLAMD_TEST_UNIQ2 || 
 	{ echo "Unable to create temporary directories!"; exit 1; }
-# Set up test DBdir
-rm -rf test-db
-mkdir -p test-db
-cat <<EOF >test-db/test.hdb
-aa15bcf478d165efd2065190eb473bcb:544:ClamAV-Test-File
-EOF
-cp $abs_srcdir/input/daily.ftm test-db/
-cp $abs_srcdir/input/daily.pdb test-db/
-
+	
 # Prepare configuration for clamd #1 and #2
-awk "{ sub(/X/,\"$CLAMD_TEST_UNIQ1\"); sub(/CWD/,\"`pwd`/clamdtest$CLAMD_TEST_UNIQ1\"); print }" $abs_srcdir/test-clamd.conf >clamdtest$CLAMD_TEST_UNIQ1/test-clamd.conf
-awk "{ sub(/X/,\"$CLAMD_TEST_UNIQ2\"); sub(/CWD/,\"`pwd`/clamdtest$CLAMD_TEST_UNIQ2\"); print }" $abs_srcdir/test-clamd.conf >clamdtest$CLAMD_TEST_UNIQ2/test-clamd.conf
+(prepare_clamd $CLAMD_TEST_UNIQ1)
+(prepare_clamd $CLAMD_TEST_UNIQ2)
 # Add clamd #2 specific configuration
 echo "VirusEvent $abs_srcdir/virusaction-test.sh `pwd`/clamdtest$CLAMD_TEST_UNIQ2 \"Virus found: %v\"" >>clamdtest$CLAMD_TEST_UNIQ2/test-clamd.conf
 echo "HeuristicScanPrecedence yes" >>clamdtest$CLAMD_TEST_UNIQ2/test-clamd.conf
-# Duplicate dbdirs
-cp -R test-db clamdtest$CLAMD_TEST_UNIQ1/
-cp -R test-db clamdtest$CLAMD_TEST_UNIQ2/
 
 # Start clamd #1 tests
 (cd clamdtest$CLAMD_TEST_UNIQ1 

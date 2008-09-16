@@ -56,6 +56,7 @@
 #include <sys/filio.h>
 #endif
 
+#include <pthread.h>
 /* submitted by breiter@wolfereiter.com: do not use poll(2) on Interix */
 #ifdef C_INTERIX
 #undef HAVE_POLL
@@ -90,6 +91,8 @@ void virusaction(const char *filename, const char *virname, const struct cfgstru
 }
 
 #else
+static pthread_mutex_t virusaction_lock = PTHREAD_MUTEX_INITIALIZER;
+
 void virusaction(const char *filename, const char *virname, const struct cfgstruct *copt)
 {
 	pid_t pid;
@@ -137,6 +140,7 @@ void virusaction(const char *filename, const char *virname, const struct cfgstru
 		free(buffer_vir);
 		return;
 	}
+	pthread_mutex_lock(&virusaction_lock);
 	/* We can only call async-signal-safe functions after fork(). */
 	pid = fork();
 
@@ -145,9 +149,11 @@ void virusaction(const char *filename, const char *virname, const struct cfgstru
 		/* WARNING: this is uninterruptable ! */
 		exit(execle("/bin/sh", "sh", "-c", cmd, NULL, env));
 	} else if (pid > 0) {
+		pthread_mutex_unlock(&virusaction_lock);
 		/* parent */
 		waitpid(pid, NULL, 0);
 	} else {
+		pthread_mutex_unlock(&virusaction_lock);
 		/* error.. */
 		logg("!VirusAction: fork failed.\n");
 	}

@@ -17,10 +17,10 @@ parse_valgrindlog()
 		echo "*** Logfile $1 not found. Valgrind failed to run?"
 	fi
 	NRUNS=`grep "ERROR SUMMARY" $1 | wc -l`
-	if test $NRUNS -eq `grep "ERROR SUMMARY: 0 errors" $1 | wc -l`; then
+	if test $NRUNS -eq `grep "ERROR SUMMARY: 0 errors" $1 | wc -l` -a `grep "FATAL:" $1|wc -l ` -eq 0; then
 		if test "$1" = "valgrind-race.log" || 
 			test $NRUNS -eq `grep "no leaks are possible" $1 | wc -l` ||
-			test `grep "lost:" $1 | grep -v "0 bytes" | wc -l` -ne 0; then 
+			test `grep "lost:" $1 | grep -v "0 bytes" | wc -l` -eq 0; then 
 			rm -f $1;
 			return
 		else
@@ -40,21 +40,18 @@ parse_valgrindlog()
 				x
 				# print hold buffer
 				p
-				# get original line back
+				# get original line back and print
 				x
+				p
 			}
 			# store it in hold buffer
 			h
-			/^[=0-9]+ FILE DESC/ {
-				q
-			}
-		' <$1 | grep -v "Thread.+was created"
+		' <$1 | grep -Ev "Thread.+was created" | grep -v "Open"
 	fi
 	echo "***"
 	echo "*** Please submit $1 to http://bugs.clamav.net"
 	echo "***"
 }
-
 
 VALGRIND_FLAGS="-v --trace-children=yes --track-fds=yes --leak-check=full --suppressions=$abs_srcdir/valgrind.supp"
 VALGRIND_FLAGS_RACE="-v --tool=helgrind --trace-children=yes --suppressions=$abs_srcdir/valgrind.supp"
