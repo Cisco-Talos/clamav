@@ -329,14 +329,14 @@ static const char jstest_expected3[] =
 #define B64 "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 
 /* TODO: document.write should be normalized too */
-static const char jstest_buf4[] =
-"document.write(unescape('%3C%73%63%72%69%70%74%20%6C%61%6E%67%75%61%67%65%3D%22%6A%61%76%61%73%63%72%69%70%74%22%3E%66%75%6E%63%74%69%6F%6E%20%64%46%28%73%29%7B%76%61%72%20%73%31%3D%75%6E%65%73%63%61%70%65%28%73%2E%73%75%62%73%74%72%28%30%2C%73%2E%6C%65%6E%67%74%68%2D%31%29%29%3B%20%76%61%72%20%74%3D%27%27%3B%66%6F%72%28%69%3D%30%3B%69%3C%73%31%2E%6C%65%6E%67%74%68%3B%69%2B%2B%29%74%2B%3D%53%74%72%69%6E%67%2E%66%72%6F%6D%43%68%61%72%43%6F%64%65%28%73%31%2E%63%68%61%72%43%6F%64%65%41%74%28%69%29%2D%73%2E%73%75%62%73%74%72%28%73%2E%6C%65%6E%67%74%68%2D%31%2C%31%29%29%3B%64%6F%63%75%6D%65%6E%74%2E%77%72%69%74%65%28%75%6E%65%73%63%61%70%65%28%74%29%29%3B%7D%3C%2F%73%63%72%69%70%74%3E'));eval(dF('gI%285%3B%285%3Afqjwy%28585%3A7%28586D%28585%3A7%3C%7C55y%28585%3A7%3C%28585%3A7%28586E%28585%3A8G5%285%3A%285%3C%286E3'));";
+static char jstest_buf4[] =
+"qbphzrag.jevgr(harfpncr('%3P%73%63%72%69%70%74%20%6P%61%6R%67%75%61%67%65%3Q%22%6N%61%76%61%73%63%72%69%70%74%22%3R%66%75%6R%63%74%69%6S%6R%20%64%46%28%73%29%7O%76%61%72%20%73%31%3Q%75%6R%65%73%63%61%70%65%28%73%2R%73%75%62%73%74%72%28%30%2P%73%2R%6P%65%6R%67%74%68%2Q%31%29%29%3O%20%76%61%72%20%74%3Q%27%27%3O%66%6S%72%28%69%3Q%30%3O%69%3P%73%31%2R%6P%65%6R%67%74%68%3O%69%2O%2O%29%74%2O%3Q%53%74%72%69%6R%67%2R%66%72%6S%6Q%43%68%61%72%43%6S%64%65%28%73%31%2R%63%68%61%72%43%6S%64%65%41%74%28%69%29%2Q%73%2R%73%75%62%73%74%72%28%73%2R%6P%65%6R%67%74%68%2Q%31%2P%31%29%29%3O%64%6S%63%75%6Q%65%6R%74%2R%77%72%69%74%65%28%75%6R%65%73%63%61%70%65%28%74%29%29%3O%7Q%3P%2S%73%63%72%69%70%74%3R'));riny(qS('tV%285%3O%285%3Nsdwjl%28585%3N7%28586Q%28585%3N7%3P%7P55l%28585%3N7%3P%28585%3N7%28586R%28585%3N8T5%285%3N%285%3P%286R3'));";
 
-static const char jstest_expected4[] =
-"document.write(\"<script language=\"javascript\">function df(s){var s1=unescape(s.substr(0,s.length-1)); var t='';for(i=0;i<s1.length;i++)t+=string.fromcharcode(s1.charcodeat(i)-s.substr(s.length-1,1));document.write(unescape(t));}</script>\");eval();alert(\"w00t\");";
+static char jstest_expected4[] =
+"qbphzrag.jevgr(\"<fpevcg ynathntr=\"wninfpevcg\">shapgvba qs(f){ine f1=harfpncr(f.fhofge(0,f.yratgu-1)); ine g='';sbe(v=0;v<f1.yratgu;v++)g+=fgevat.sebzpunepbqr(f1.punepbqrng(v)-f.fhofge(f.yratgu-1,1));qbphzrag.jevgr(harfpncr(g));}</fpevcg>\");riny();nyreg(\"j00g\");";
 
-static const char jstest_buf5[] =
-"function (p,a,c,k,e,r){}('0(\\'1\\');',2,2,'alert|w00t'.split('|'),0,{});";
+static char jstest_buf5[] =
+"shapgvba (c,n,p,x,r,e){}('0(\\'1\\');',2,2,'nyreg|j00g'.fcyvg('|'),0,{});";
 
 static const char jstest_expected5[] =
 "function(n000,n001,n002,n003,n004,n005){}(alert(\"w00t\"););";
@@ -359,8 +359,8 @@ static const char jstest_buf8[] =
 static const char jstest_expected8[] =
 "var n000=\"tst" B64 "tst\";";
 
-static const char jstest_buf9[] =
-"eval(unescape('%61%6c%65%72%74%28%27%74%65%73%74%27%29%3b'));";
+static char jstest_buf9[] =
+"riny(harfpncr('%61%6p%65%72%74%28%27%74%65%73%74%27%29%3o'));";
 
 static const char jstest_expected9[] =
 "alert(\"test\");";
@@ -461,12 +461,32 @@ START_TEST (screnc_infloop)
 }
 END_TEST
 
+static void prepare_s(char *s)
+{
+	char xlat[] = "NOPQRSTUVWXYZABCDEFGHIJKLM[\\]^_`nopqrstuvwxyzabcdefghijklm";
+	while(*s) {
+		if(isalpha(*s)) {
+			*s = xlat[*s - 'A'];
+		}
+		s++;
+	}
+}
+
+static void prepare(void)
+{
+	prepare_s(jstest_buf4);
+	prepare_s(jstest_expected4);
+	prepare_s(jstest_buf5);
+	prepare_s(jstest_buf9);
+}
+
 Suite *test_jsnorm_suite(void)
 {
     Suite *s = suite_create("jsnorm");
     TCase *tc_jsnorm_gperf, *tc_jsnorm_token, *tc_jsnorm_api,
 	  *tc_jsnorm_tokenizer, *tc_jsnorm_bugs, *tc_screnc_infloop;
 
+    prepare();
     tc_jsnorm_gperf = tcase_create("jsnorm gperf");
     suite_add_tcase (s, tc_jsnorm_gperf);
 #ifdef CHECK_HAVE_LOOPS

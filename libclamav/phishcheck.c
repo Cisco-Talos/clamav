@@ -395,7 +395,7 @@ static int get_host(const struct phishcheck* s,const char* URL,int isReal,int* p
 				return rc;
 			if(rc)
 				*phishy |= PHISHY_USERNAME_IN_URL;/* if the url contains a username that is there just to fool people,
-			     					     like http://www.ebay.com@somevilplace.someevildomain.com/ */
+			     					     like http://banksite@example.com/ */
 			start = realhost+1;/*skip the username*/
 		} while(realhost);/*skip over multiple @ characters, text following last @ character is the real host*/
 	}
@@ -592,7 +592,7 @@ static void clear_msb(char* begin)
 
 /*
  * Particularly yahoo puts links like this in mails:
- * http:/ /mail.yahoo.com
+ * http:/ /www.example.com
  * So first step: delete space between / /
  *
  * Next there could be possible links like this:
@@ -817,13 +817,13 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 					*ctx->virname="Phishing.Heuristics.Email.Cloaked.NumericIP";
 					break;
 				case CL_PHISH_CLOAKED_NULL:
-					*ctx->virname="Phishing.Heuristics.Email.Cloaked.Null";/*http://www.real.com%01%00@www.evil.com*/
+					*ctx->virname="Phishing.Heuristics.Email.Cloaked.Null";/*fakesite%01%00@fake.example.com*/
 					break;
 				case CL_PHISH_SSL_SPOOF:
 					*ctx->virname="Phishing.Heuristics.Email.SSL-Spoof";
 					break;
 				case CL_PHISH_CLOAKED_UIU:
-					*ctx->virname="Phishing.Heuristics.Email.Cloaked.Username";/*http://www.ebay.com@www.evil.com*/
+					*ctx->virname="Phishing.Heuristics.Email.Cloaked.Username";/*http://banksite@fake.example.com*/
 					break;
 				case CL_PHISH_HASH0:
 				case CL_PHISH_HASH1:
@@ -865,7 +865,7 @@ int phishing_init(struct cl_engine* engine)
 		pchk = engine->phishcheck = cli_malloc(sizeof(struct phishcheck));
 		if(!pchk)
 			return CL_EMEM;
-		pchk->is_disabled = 1;
+		pchk->is_disabled=1;
 	}
 	else {
 		pchk = engine->phishcheck;
