@@ -9,6 +9,7 @@ $(FILES) :
 programs = check_clamav
 scripts = check_clamd.sh check_freshclam.sh check_sigtool.sh check_clamscan.sh\
 	 valgrind_tests.sh efence_tests.sh duma_tests.sh
+TESTS_ENVIRONMENT=export abs_srcdir=$(abs_srcdir);
 TESTS = $(programs) $(scripts)
 check_PROGRAMS = $(programs)
 check_SCRIPTS = $(scripts)
@@ -27,7 +28,7 @@ check_clamscan.sh: $(top_builddir)/test/clam.exe
 $(top_builddir)/test/clam.exe:
 	(cd $(top_builddir)/test && $(MAKE))
 
-CLEANFILES=lcov.out *.gcno *.gcda *.log clamd-test.socket /tmp/clamd-test.log $(FILES) test-stderr.log clamscan.log valgrind-*.log clamdscan.log clamdscan-multiscan.log duma.log
+CLEANFILES=lcov.out *.gcno *.gcda *.log $(FILES) test-stderr.log clamscan.log valgrind-*.log duma.log duma2.log
 EXTRA_DIST=.split input test-clamd.conf test-freshclam.conf valgrind.supp virusaction-test.sh $(scripts)/preload_run.sh
 if ENABLE_COVERAGE
 LCOV_OUTPUT = lcov.out

@@ -56,20 +56,23 @@ parse_valgrindlog()
 }
 
 
-VALGRIND_FLAGS="-v --trace-children=yes --track-fds=yes --leak-check=full --suppressions=$srcdir/valgrind.supp"
-VALGRIND_FLAGS_RACE="-v --tool=helgrind --trace-children=yes --suppressions=$srcdir/valgrind.supp"
+VALGRIND_FLAGS="-v --trace-children=yes --track-fds=yes --leak-check=full --suppressions=$abs_srcdir/valgrind.supp"
+VALGRIND_FLAGS_RACE="-v --tool=helgrind --trace-children=yes --suppressions=$abs_srcdir/valgrind.supp"
 
 echo "--- Starting check_clamav under valgrind/memcheck"
 rm -f valgrind-check.log valgrind-clamd.log valgrind-race.log
 CK_FORK=no ../libtool --mode=execute $VALGRIND $VALGRIND_FLAGS ./check_clamav >valgrind-check.log 2>&1 &
-pid=$!
+pid1=$!
+
 echo "--- Starting clamd under valgrind/memcheck"
-CLAMD_WRAPPER="$VALGRIND $VALGRIND_FLAGS" $srcdir/check_clamd.sh >valgrind-clamd.log 2>&1
+CLAMD_WRAPPER="$VALGRIND $VALGRIND_FLAGS" $abs_srcdir/check_clamd.sh >valgrind-clamd.log 2>&1 &
+pid2=$!
 
 echo "--- Starting clamd under valgrind/helgrind"
-CLAMD_WRAPPER="$VALGRIND $VALGRIND_FLAGS_RACE" $srcdir/check_clamd.sh >valgrind-race.log 2>&1
+CLAMD_TEST_UNIQ1=3 CLAMD_TEST_UNIQ2=4 CLAMD_WRAPPER="$VALGRIND $VALGRIND_FLAGS_RACE" $abs_srcdir/check_clamd.sh >valgrind-race.log 2>&1 &
+pid3=$!
 
-wait $pid
+wait $pid1 $pid2 $pid3
 parse_valgrindlog valgrind-check.log
 parse_valgrindlog valgrind-clamd.log
 parse_valgrindlog valgrind-race.log

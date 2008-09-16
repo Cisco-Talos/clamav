@@ -16,22 +16,33 @@ DUMA_DISABLE_BANNER=1
 LIBPRELOAD="$LIBDUMA"
 rm -f duma.log
 export DUMA_FILL DUMA_MALLOC_0_STRATEGY DUMA_OUTPUT_FILE DUMA_DISABLE_BANNER LIBPRELOAD
-echo "--- running clamd under duma to detect underruns"
-CLAMD_WRAPPER=$srcdir/preload_run.sh $srcdir/check_clamd.sh
-if test ! $?; then
-	echo "*** DUMA has detected errors"
-	cat duma.log
-	exit 3
-fi
+echo "--- starting clamd under duma to detect underruns"
+CLAMD_WRAPPER=$abs_srcdir/preload_run.sh $abs_srcdir/check_clamd.sh &
+pid1=$!
+
+echo "--- starting clamd under duma to detect underruns"
+DUMA_OUTPUT_FILE=duma2.log
 DUMA_PROTECT_BELOW=1
 export DUMA_PROTECT_BELOW
-echo "--- running clamd under duma to detect underruns"
-rm -f duma.log
-CLAMD_WRAPPER=$srcdir/preload_run.sh $srcdir/check_clamd.sh
-if test ! $?; then
+rm -f duma2.log
+CLAMD_TEST_UNIQ1=3 CLAMD_TEST_UNIQ2=4 CLAMD_WRAPPER=$abs_srcdir/preload_run.sh $abs_srcdir/check_clamd.sh&
+pid2=$!
+
+wait $pid1
+exitcode1=$?
+wait $pid2
+exitcode2=$?
+if test $exitcode1 -ne 0; then
 	echo "*** DUMA has detected errors"
 	cat duma.log
-	exit 3
+	rm -f duma.log duma2.log
+	exit 1
 fi
-rm -f duma.log
+if test $exitcode2 -ne 0; then
+	echo "*** DUMA has detected errors"
+	cat duma2.log
+	rm -f duma.log duma2.log
+	exit 1
+fi
+exit 0
 
