@@ -587,11 +587,6 @@ void regex_list_done(struct regex_matcher* matcher)
 		}
 		hashtab_free(&matcher->suffix_hash);
 		cli_bm_free(&matcher->md5_hashes);
-		matcher->list_built=0;
-		matcher->list_loaded=0;
-	}
-	if(matcher->list_inited) {
-		matcher->list_inited=0;
 	}
 }
 

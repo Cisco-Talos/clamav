@@ -74,7 +74,6 @@ void domainlist_done(struct cl_engine* engine)
 	if(engine && engine->domainlist_matcher) {
 		regex_list_done(engine->domainlist_matcher);
 		free(engine->domainlist_matcher);
-		engine->domainlist_matcher = NULL;
 	}
 }
 

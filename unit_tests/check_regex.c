@@ -332,7 +332,6 @@ static void psetup2(void)
 static void pteardown(void)
 {
 	if(engine) {
-		phishing_done(engine);
 		cl_free(engine);
 	}
 	engine = NULL;
@@ -453,7 +452,7 @@ Suite *test_regex_suite(void)
 #endif
 	tc_phish = tcase_create("phishingScan");
 	suite_add_tcase(s, tc_phish);
-	tcase_add_checked_fixture(tc_phish, psetup, pteardown);
+	tcase_add_unchecked_fixture(tc_phish, psetup, pteardown);
 #ifdef CHECK_HAVE_LOOPS
 	tcase_add_loop_test(tc_phish, phishingScan_test, 0, sizeof(rtests)/sizeof(rtests[0]));
 #endif
@@ -462,7 +461,7 @@ Suite *test_regex_suite(void)
 
 	tc_phish2 = tcase_create("phishingScan with 2 dbs");
 	suite_add_tcase(s, tc_phish2);
-	tcase_add_checked_fixture(tc_phish2, psetup2, pteardown);
+	tcase_add_unchecked_fixture(tc_phish2, psetup2, pteardown);
 #ifdef CHECK_HAVE_LOOPS
 	tcase_add_loop_test(tc_phish2, phishingScan_test, 0, sizeof(rtests)/sizeof(rtests[0]));
 #endif

@@ -895,14 +895,12 @@ void phishing_done(struct cl_engine* engine)
 	cli_dbgmsg("Cleaning up phishcheck\n");
 	if(pchk && !pchk->is_disabled) {
 		free_regex(&pchk->preg_numeric);
-		pchk->is_disabled = 1;
 	}
 	whitelist_done(engine);
 	domainlist_done(engine);
 	if(pchk) {
 		cli_dbgmsg("Freeing phishcheck struct\n");
 		free(pchk);
-		engine->phishcheck = NULL;
 	}
 	cli_dbgmsg("Phishcheck cleaned up\n");
 }
