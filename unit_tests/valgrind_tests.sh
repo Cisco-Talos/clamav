@@ -14,8 +14,7 @@ test -x "$VALGRIND" || { echo "*** valgrind not executable, skipping test"; exit
 parse_valgrindlog()
 {
 	if test ! -f $1; then
-		echo "Logfile $1 not found. Valgrind failed to run?"
-		exit 2;
+		echo "*** Logfile $1 not found. Valgrind failed to run?"
 	fi
 	NRUNS=`grep "ERROR SUMMARY" $1 | wc -l`
 	if test $NRUNS -eq `grep "ERROR SUMMARY: 0 errors" $1 | wc -l`; then
@@ -60,17 +59,19 @@ parse_valgrindlog()
 VALGRIND_FLAGS="-v --trace-children=yes --track-fds=yes --leak-check=full --suppressions=$srcdir/valgrind.supp"
 VALGRIND_FLAGS_RACE="-v --tool=helgrind --trace-children=yes --suppressions=$srcdir/valgrind.supp"
 
-echo "--- Running valgrind/memcheck"
+echo "--- Starting check_clamav under valgrind/memcheck"
 rm -f valgrind-check.log valgrind-clamd.log valgrind-race.log
-CK_FORK=no ../libtool --mode=execute $VALGRIND $VALGRIND_FLAGS ./check_clamav >valgrind-check.log 2>&1
-parse_valgrindlog valgrind-check.log
-
-echo "--- Running clamd under valgrind/memcheck"
+CK_FORK=no ../libtool --mode=execute $VALGRIND $VALGRIND_FLAGS ./check_clamav >valgrind-check.log 2>&1 &
+pid=$!
+echo "--- Starting clamd under valgrind/memcheck"
 CLAMD_WRAPPER="$VALGRIND $VALGRIND_FLAGS" $srcdir/check_clamd.sh >valgrind-clamd.log 2>&1
-parse_valgrindlog valgrind-clamd.log
 
-echo "--- Running clamd under valgrind/helgrind"
+echo "--- Starting clamd under valgrind/helgrind"
 CLAMD_WRAPPER="$VALGRIND $VALGRIND_FLAGS_RACE" $srcdir/check_clamd.sh >valgrind-race.log 2>&1
+
+wait $pid
+parse_valgrindlog valgrind-check.log
+parse_valgrindlog valgrind-clamd.log
 parse_valgrindlog valgrind-race.log
 
 if test -f valgrind-check.log -o -f valgrind-race.log -o -f valgrind-clamd.log; then

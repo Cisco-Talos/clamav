@@ -117,8 +117,8 @@ cp $srcdir/input/daily.ftm test-db/
 cp $srcdir/input/daily.pdb test-db/
 
 # Prepare for clamd #1
-# Use absolute path to dbdir, so that RELOAD works
 cat <$srcdir/test-clamd.conf >test-clamd1.conf
+#  Use absolute path to dbdir, so that RELOAD works
 echo "DatabaseDirectory `pwd`/test-db" >>test-clamd1.conf
 
 # Start clamd #1
