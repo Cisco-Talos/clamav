@@ -4365,12 +4365,12 @@ getURL(struct arg *arg)
 	 */
 	if(via_proxy)
 		snprintf(buf, sizeof(buf) - 1,
-			"GET %s HTTP/1.0\r\nUser-Agent: ClamAV %s\r\n\r\n",
-				url, cl_retver());
+			"GET %s HTTP/1.0\r\nHost: %s\r\nUser-Agent: ClamAV %s\r\n\r\n",
+				url, site, cl_retver());
 	else
 		snprintf(buf, sizeof(buf) - 1,
-			"GET /%s HTTP/1.0\r\nUser-Agent: ClamAV %s\r\n\r\n",
-				url, cl_retver());
+			"GET /%s HTTP/1.0\r\nHost: %s\r\nUser-Agent: ClamAV %s\r\n\r\n",
+				url, site, cl_retver());
 
 	/*cli_dbgmsg("%s", buf);*/
 
