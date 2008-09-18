@@ -66,11 +66,6 @@ run_clamdscan() {
 
 run_reload_test()
 {
-	# TODO consider using clamdscan when it'll have a reload feature
-	if test ! -x /bin/nc; then
-		echo "*** Netcat (nc) is not installed, skipping reload test"
-		return
-	fi
 	rm -f reload-testfile
 	echo "ClamAV-RELOAD-Test" >reload-testfile
 	run_clamdscan reload-testfile
@@ -82,7 +77,7 @@ run_reload_test()
 		cat clamdscan.log
 	fi
 	echo "ClamAV-RELOAD-TestFile:0:0:436c616d41562d52454c4f41442d54657374" >test-db/new.ndb
-	echo RELOAD | nc -q 0 -n 127.0.0.1 331$CLAMD_TEST_UNIQ2
+	$TOP/clamdscan/clamdscan --reload --config-file test-clamd.conf
 	run_clamdscan reload-testfile
 	grep "ClamAV-RELOAD-TestFile" clamdscan.log >/dev/null 2>/dev/null;
 	if test $? -ne 0; then
