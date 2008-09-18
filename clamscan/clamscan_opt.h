@@ -37,6 +37,7 @@ static struct option clamscan_longopt[] = {
     {"tempdir", 1, 0, 0},
     {"leave-temps", 0, 0, 0},
     {"config-file", 1, 0, 0},	    /* clamdscan */
+    {"reload", 0, 0, 0},           /* clamdscan */
     {"multiscan", 0, 0, 'm'},
     {"database", 1, 0, 'd'},
     {"force", 0, 0, 0},

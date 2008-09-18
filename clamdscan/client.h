@@ -23,5 +23,6 @@
 
 int client(const struct optstruct *opt, int *infected);
 int get_clamd_version(const struct optstruct *opt);
+int reload_clamd_database(const struct optstruct *opt);
 
 #endif

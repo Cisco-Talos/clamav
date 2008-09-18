@@ -1,3 +1,8 @@
+Thu Sep 18 10:25:07 CEST 2008 (tk)
+----------------------------------
+  * clamdscan: add support for --reload (bb#1098)
+	       Thanks to Jeffrey Thomas Peckham
+
 Wed Sep 17 10:59:48 CEST 2008 (tk)
 ----------------------------------
   * libclamav/mbox.c: mail-follow-urls was not RFC compliant (bb#1192)

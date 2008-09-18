@@ -45,6 +45,9 @@ Move infected files into DIRECTORY.
 \fB\-\-no\-summary\fR
 Do not display summary at the end of scanning.
 .TP
+\fB\-\-reload\fR
+Request clamd to reload virus database.
+.TP
 \fB\-\-fdpass\fR
 Pass the file descriptor permissions clamd. This is useful if clamd is running as a different user as it is faster than streaming the file to clamd.
 Only available if connected to clamd through local(unix) sockets and scanning stdin.

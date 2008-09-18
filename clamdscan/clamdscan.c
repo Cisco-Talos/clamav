@@ -51,6 +51,15 @@ static void print_server_version(const struct optstruct *opt)
     }
 }
 
+static int reload_server_database(const struct optstruct *opt)
+{
+    if(reload_clamd_database(opt)) {
+	logg("!Clamd did not reload the database\n");
+	return 2;
+    }
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
 	int ds, dms, ret, infected;
@@ -61,7 +70,8 @@ int main(int argc, char **argv)
 	const char *clamdscan_accepted[] = { "help", "version", "verbose", "quiet",
 				  "stdout", "log", "move", "copy", "remove",
 				  "config-file", "no-summary",  "fdpass",
-				  "disable-summary", "multiscan", NULL };
+				  "disable-summary", "multiscan", "reload",
+				  NULL };
 
 
     opt = opt_parse(argc, argv, clamscan_shortopt, clamscan_longopt, clamdscan_accepted);
@@ -108,6 +118,13 @@ int main(int argc, char **argv)
 	logg_file = NULL;
 
 
+    if(opt_check(opt, "reload")) {
+	ret = reload_server_database(opt);
+	opt_free(opt);
+	logg_close();
+	exit(ret);
+    }
+
     time(&starttime);
     /* ctime() does \n, but I need it once more */
 
@@ -133,6 +150,7 @@ int main(int argc, char **argv)
 	logg("Time: %d.%3.3d sec (%d m %d s)\n", ds, dms/1000, ds/60, ds%60);
     }
 
+    logg_close();
     opt_free(opt);
     exit(ret);
 }
@@ -160,6 +178,7 @@ void help(void)
     mprintf("    --multiscan           -m           Force MULTISCAN mode\n");
     mprintf("    --infected            -i           Only print infected files\n");
     mprintf("    --no-summary                       Disable summary at end of scanning\n");
+    mprintf("    --reload                           Request clamd to reload virus database\n");
     mprintf("    --fdpass                           pass filedescriptor to clamd (useful if clamd is running as a different user)\n");
     mprintf("\n");
 

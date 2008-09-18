@@ -360,12 +360,40 @@ int get_clamd_version(const struct optstruct *opt)
 
     if(write(sockd, "VERSION", 7) <= 0) {
 	logg("^Can't write to the socket.\n");
+	close(sockd);
 	return 2;
     }
 
     while((bread = read(sockd, buff, sizeof(buff)-1)) > 0) {
 	buff[bread] = '\0';
 	printf("%s\n", buff);
+    }
+
+    close(sockd);
+    return 0;
+}
+
+int reload_clamd_database(const struct optstruct *opt)
+{
+	char buff[64];
+	int bread, sockd;
+
+
+    if((sockd = dconnect(opt, NULL)) < 0)
+	return 2;
+
+    if(write(sockd, "RELOAD", 6) <= 0) {
+	logg("!Can't write to the socket.\n");
+	close(sockd);
+	return 2;
+    }
+
+    bread = read(sockd, buff, sizeof(buff) - 1);
+    buff[bread] = '\0';
+    if(strncmp(buff, "RELOADING", 9)) {
+	logg("!Incorrect reply from clamd\n");
+	close(sockd);
+	return 2;
     }
 
     close(sockd);
