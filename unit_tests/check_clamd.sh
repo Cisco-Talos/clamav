@@ -75,19 +75,26 @@ run_reload_test()
 		# signature there and reload!
 		error "RELOAD test failed!"
 		cat clamdscan.log
+		die 10
 	fi
 	echo "ClamAV-RELOAD-TestFile:0:0:436c616d41562d52454c4f41442d54657374" >test-db/new.ndb
 	$TOP/clamdscan/clamdscan --reload --config-file test-clamd.conf
+	if test $? -ne 0; then
+		error "clamdscan says reload failed!"
+		die 11
+	fi
 	run_clamdscan reload-testfile
 	grep "ClamAV-RELOAD-TestFile" clamdscan.log >/dev/null 2>/dev/null;
 	if test $? -ne 0; then
 		error "RELOAD test failed! (after reload)"
 		cat clamdscan.log
+		die 12
 	fi
 	grep "ClamAV-RELOAD-TestFile" clamdscan-multiscan.log >/dev/null 2>/dev/null;
 	if test $? -ne 0; then
 		error "RELOAD test failed! (after reload, multiscan)"
 		cat clamdscan-multiscan.log
+		die 13
 	fi
 	rm -f reload-testfile
 }
@@ -98,6 +105,7 @@ run_clamdscan_fdpass() {
 	if test $? = 2; then
 		error "Failed to run clamdscan (fdpass)!"
 		cat clamdscan.log
+		die 14
 	fi
 }
 
