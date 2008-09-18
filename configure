@@ -14616,7 +14616,7 @@ _ACEOF
 			HAVE_LIBCHECK=yes
 			LIBCHECK="$ac_cv_findlib_CHECK_libs"
 			LTLIBCHECK="$ac_cv_findlib_CHECK_ltlibs"
-			INCCHECK="$ac_cv_findlib_CHECK_libs"
+			INCCHECK="$ac_cv_findlib_CHECK_inc"
 			CHECK_CPPFLAGS="$INCCHECK"; CHECK_LIBS="$LTLIBCHECK"
 
 fi
