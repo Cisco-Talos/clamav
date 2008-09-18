@@ -1,3 +1,8 @@
+Thu Sep 18 11:52:11 CEST 2008 (tk)
+----------------------------------
+  * clamd: enable ScanPDF by default (bb#1179)
+  * libclamav/clamav.h: add CL_SCAN_PDF to CL_SCAN_STDOPT
+
 Thu Sep 18 10:25:07 CEST 2008 (tk)
 ----------------------------------
   * clamdscan: add support for --reload (bb#1098)
