@@ -1183,52 +1183,55 @@ static void spam_x86(struct DISASMED *s, char *hr) {
   char comma[2]={'\0','\0'};
 
   strcpy(hr, mnemonic[s->real_op]);
+  hr += strlen(hr);
 
   for (i=0; i<3; i++) {
     switch(s->args[i].access) {
     case ACCESS_NOARG:
       break;
     case ACCESS_IMM:
-      sprintf(hr, "%s%s %llx", hr, comma, s->args[i].arg.q);
+      hr += sprintf(hr, "%s %lx", comma, (long)s->args[i].arg.q);
       break;
     case ACCESS_REL:
       if (s->args[i].arg.rq >=0)
-	sprintf(hr, "%s%s %llx", hr, comma, s->args[i].arg.q);
+	hr += sprintf(hr, "%s %lx", comma, (long)s->args[i].arg.q);
       else
-	sprintf(hr, "%s%s -%x", hr, comma, -s->args[i].arg.rq);
+	hr += sprintf(hr, "%s -%x", comma, -(int)s->args[i].arg.rq);
       break;
     case ACCESS_REG:
-      sprintf(hr, "%s%s %s", hr, comma, x86regs[s->args[i].reg]);
+      hr += sprintf(hr, "%s %s", comma, x86regs[s->args[i].reg]);
       break;
     case ACCESS_MEM: {
       const char *gotstuff="";
-      sprintf(hr, "%s%s %s ptr ", hr, comma, dis_size[s->args[i].size]);
-      if(s->segment) sprintf(hr, "%s%s:", hr, x86regs[s->segment]);
-      strcat(hr, "[");
+      hr += sprintf(hr, "%s %s ptr ", comma, dis_size[s->args[i].size]);
+      if(s->segment) hr += sprintf(hr, "%s:", x86regs[s->segment]);
+      *hr++ = '[';
+      *hr = '\0';
       if(s->args[i].arg.marg.r1!=REG_INVALID) {
 	switch(s->args[i].arg.marg.scale) {
 	case 1:
-	  sprintf(hr, "%s%s", hr, x86regs[s->args[i].arg.marg.r1]);
+	  hr += sprintf(hr, "%s", x86regs[s->args[i].arg.marg.r1]);
 	  gotstuff="+";
 	  break;
 	case 0:
 	  break;
 	default:
-	  sprintf(hr, "%s%s*%d", hr, x86regs[s->args[i].arg.marg.r1],s->args[i].arg.marg.scale);
+	  hr += sprintf(hr, "%s*%d", x86regs[s->args[i].arg.marg.r1],s->args[i].arg.marg.scale);
 	  gotstuff="+";
 	}
       }
       if(s->args[i].arg.marg.r2!=REG_INVALID) {
-	sprintf(hr, "%s%s%s", hr, gotstuff, x86regs[s->args[i].arg.marg.r2]);
+	hr += sprintf(hr, "%s%s", gotstuff, x86regs[s->args[i].arg.marg.r2]);
 	gotstuff="+";
       }
       if(s->args[i].arg.marg.disp) {
 	if(*gotstuff=='+' && s->args[i].arg.marg.disp<0)
-	  sprintf(hr, "%s-%x", hr, -s->args[i].arg.marg.disp);
+	  hr += sprintf(hr, "-%x", -s->args[i].arg.marg.disp);
 	else
-	  sprintf(hr, "%s%s%x", hr, gotstuff, s->args[i].arg.marg.disp);
+	  hr += sprintf(hr, "%s%x", gotstuff, s->args[i].arg.marg.disp);
       }
-      strcat(hr, "]");
+      *hr++ = ']';
+      *hr = '\0';
     }
     }
     comma[0]=',';

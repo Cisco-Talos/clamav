@@ -30,6 +30,7 @@
 #include <string.h>
 #include <check.h>
 #include <fcntl.h>
+#include <ctype.h>
 #include "../libclamav/clamav.h"
 #include "../libclamav/others.h"
 #include "../libclamav/dconf.h"

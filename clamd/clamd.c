@@ -88,9 +88,9 @@ static void help(void)
 
 }
 
+static struct cfgstruct *copt;
 int main(int argc, char **argv)
 {
-	struct cfgstruct *copt;
 	const struct cfgstruct *cpt;
 #ifndef	C_WINDOWS
         struct passwd *user = NULL;
