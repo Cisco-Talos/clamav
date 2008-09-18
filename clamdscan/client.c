@@ -389,8 +389,7 @@ int reload_clamd_database(const struct optstruct *opt)
     }
 
     bread = read(sockd, buff, sizeof(buff) - 1);
-    buff[bread] = '\0';
-    if(strncmp(buff, "RELOADING", 9)) {
+    if(bread == -1 || strncmp(buff, "RELOADING", 9)) {
 	logg("!Incorrect reply from clamd\n");
 	close(sockd);
 	return 2;
