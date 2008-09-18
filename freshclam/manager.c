@@ -1425,19 +1425,23 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 		}
 
 		if((newver = cli_strtok(dnsreply, 0, ":"))) {
+			char vstr[32];
 
 		    logg("*Software version from DNS: %s\n", newver);
+		    strncpy(vstr, get_version(), 32);
+		    vstr[31] = 0;
+		    if((pt = strstr(vstr, "-exp")))
+			*pt = 0;
 
-		    if(vwarning && !strstr(get_version(), "devel") && !strstr(get_version(), "rc")) {
-			if(strcmp(get_version(), newver)) {
+		    if(vwarning && !strstr(vstr, "devel") && !strstr(vstr, "rc")) {
+			if(strcmp(vstr, newver)) {
 			    logg("^Your ClamAV installation is OUTDATED!\n");
-			    logg("^Local version: %s Recommended version: %s\n", get_version(), newver);
+			    logg("^Local version: %s Recommended version: %s\n", vstr, newver);
 			    logg("DON'T PANIC! Read http://www.clamav.net/support/faq\n");
 			    outdated = 1;
 			}
 		    }
 		}
-
 	    }
 	}
 
