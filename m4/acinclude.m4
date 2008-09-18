@@ -735,7 +735,7 @@ AC_DEFUN([AC_LIB_FIND],
 			HAVE_LIB[]NAME=yes
 			LIB[]NAME="$ac_cv_findlib_[]NAME[]_libs"
 			LTLIB[]NAME="$ac_cv_findlib_[]NAME[]_ltlibs"
-			INC[]NAME="$ac_cv_findlib_[]NAME[]_libs"
+			INC[]NAME="$ac_cv_findlib_[]NAME[]_inc"
 			$4
 	])
 	undefine([NAME])	
