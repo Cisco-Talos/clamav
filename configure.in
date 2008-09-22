@@ -431,12 +431,12 @@ want_bzip2=$enableval, want_bzip2="yes")
 if test "$want_bzip2" = "yes"
 then
     AC_LIB_LINKFLAGS([bz2])
-    save_LIBS="$LIBS"
-    LIBS="$LIBS $LIBBZ2";
-    AC_LINK_IFELSE([AC_LANG_CALL([],[bzReadOpen])],
+    save_LDFLAGS="$LDFLAGS"
+    LDFLAGS="$LIBS -L$LIBBZ2_PREFIX/lib";
+    AC_CHECK_LIB([bz2], [bzReadOpen],
 		 [AC_DEFINE([NOBZ2PREFIX],1,[bzip funtions do not have bz2 prefix])]
 		)
-    LIBS="$save_LIBS"
+    LDFLAGS="$save_LDFLAGS"
     if test "$HAVE_LIBBZ2" = "yes"; then
 	AC_CHECK_HEADER([bzlib.h],
 			[AC_C_CVE_2008_1372],
