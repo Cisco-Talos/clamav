@@ -17,7 +17,7 @@ killclamd() {
 	pippo=0
 	while kill -0 $pid 2>/dev/null; do
 		sleep 1
-		pippo=$((pippo+1))
+		pippo=`expr $pippo + 1`
 		if test $pippo -gt 9; then
 			kill -KILL $pid
 		fi
@@ -121,7 +121,7 @@ aa15bcf478d165efd2065190eb473bcb:544:ClamAV-Test-File
 EOF
 	cp $abs_srcdir/input/daily.ftm test-db/
 	cp $abs_srcdir/input/daily.pdb test-db/
-	awk "{ sub(/X/,\"$1\"); sub(/CWD/,\"`pwd`\"); print }" $abs_srcdir/test-clamd.conf >test-clamd.conf
+	$AWK "{ sub(/X/,\"$1\"); sub(/CWD/,\"`pwd`\"); print }" $abs_srcdir/test-clamd.conf >test-clamd.conf
 }
 
 rm -rf clamdtest$CLAMD_TEST_UNIQ1 clamdtest$CLAMD_TEST_UNIQ2

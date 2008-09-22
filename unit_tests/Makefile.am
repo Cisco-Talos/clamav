@@ -9,7 +9,7 @@ $(FILES) :
 programs = check_clamav
 scripts = check_clamd.sh check_freshclam.sh check_sigtool.sh check_clamscan.sh\
 	 valgrind_tests.sh efence_tests.sh duma_tests.sh
-TESTS_ENVIRONMENT=export abs_srcdir=$(abs_srcdir);
+TESTS_ENVIRONMENT=export abs_srcdir=$(abs_srcdir) AWK=$(AWK);
 TESTS = $(programs) $(scripts)
 check_PROGRAMS = $(programs)
 check_SCRIPTS = $(scripts)
