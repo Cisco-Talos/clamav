@@ -15,7 +15,7 @@ EF_FREE_WIPES=1
 LIBPRELOAD="$LIBEFENCE"
 export EF_FREE_WIPES LIBPRELOAD EF_DISABLE_BANNER
 VALGRIND=`which ${VALGRIND-valgrind}`
-if test ! -n "$VALGRIND" -o ! -x "$VALGRIND"; then
+if test ! -n "$VALGRIND" || test ! -x "$VALGRIND"; then
 	# run check_clamav under efence only if we don't have valgrind installed
 	echo "--- Running check_clamav under electric-fence"
 	CK_FORK=no ../libtool --mode=execute $abs_srcdir/preload_run.sh ./check_clamav

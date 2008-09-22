@@ -17,7 +17,7 @@ parse_valgrindlog()
 		echo "*** Logfile $1 not found. Valgrind failed to run?"
 	fi
 	NRUNS=`grep "ERROR SUMMARY" $1 | wc -l`
-	if test $NRUNS -eq `grep "ERROR SUMMARY: 0 errors" $1 | wc -l` -a `grep "FATAL:" $1|wc -l ` -eq 0; then
+	if test $NRUNS -eq `grep "ERROR SUMMARY: 0 errors" $1 | wc -l` && test `grep "FATAL:" $1|wc -l ` -eq 0; then
 		if test "$1" = "valgrind-race.log" || 
 			test $NRUNS -eq `grep "no leaks are possible" $1 | wc -l` ||
 			test `grep "lost:" $1 | grep -v "0 bytes" | wc -l` -eq 0; then 
@@ -74,7 +74,7 @@ parse_valgrindlog valgrind-check.log
 parse_valgrindlog valgrind-clamd.log
 parse_valgrindlog valgrind-race.log
 
-if test -f valgrind-check.log -o -f valgrind-race.log -o -f valgrind-clamd.log; then
+if test -f valgrind-check.log || test -f valgrind-race.log || test -f valgrind-clamd.log; then
 	exit 1;
 fi
 exit 0
