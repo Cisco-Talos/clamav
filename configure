@@ -16230,12 +16230,10 @@ cat >>conftest.$ac_ext <<_ACEOF
 		    #include <unistd.h>
 		    int main(int argc, char **argv)
 		    {
-			    struct addrinfo *res, hints;
+			    struct addrinfo *res;
 			    int sd;
 
-			memset(&hints, 0, sizeof(hints));
-			hints.ai_family = AF_UNSPEC;
-			if(getaddrinfo("127.0.0.1", NULL, &hints, &res) < 0)
+			if(getaddrinfo("127.0.0.1", NULL, NULL, &res) < 0)
 			    return 1;
 			freeaddrinfo(res);
 
@@ -16322,14 +16320,22 @@ cat >>conftest.$ac_ext <<_ACEOF
 
 		    #include <sys/types.h>
 		    #include <sys/socket.h>
+		    #include <netdb.h>
 		    #include <unistd.h>
 		    int main(int argc, char **argv)
 		    {
+			    struct addrinfo *res, hints;
 			    int sd;
 
 			if((sd = socket(AF_INET6, SOCK_STREAM, 0)) < 0)
 			    return 1;
 			close(sd);
+			/* also check if getaddrinfo() handles AF_UNSPEC -- bb#1196 */
+			memset(&hints, 0, sizeof(hints));
+			hints.ai_family = AF_UNSPEC;
+			if(getaddrinfo("127.0.0.1", NULL, &hints, &res) < 0)
+			    return 1;
+			freeaddrinfo(res);
 			return 0;
 		    }
 

@@ -1,6 +1,6 @@
 Mon Sep 22 23:38:16 CEST 2008 (tk)
 ----------------------------------
-  * configure: use AF_UNSPEC when testing getaddrinfo() (bb#1196)
+  * configure: use AF_UNSPEC when testing getaddrinfo()/IPv6 support (bb#1196)
 
 Thu Sep 18 12:13:56 CEST 2008 (tk)
 ----------------------------------
