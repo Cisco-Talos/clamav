@@ -1,0 +1,3 @@
+<script>function(){var n000="htmljstestsignature";}</script>
+<script><!--</something>function(){var n000="htmljstestsignature";}--></script>
+<script>comment function(){var n000="htmljstestsignature";}</script>

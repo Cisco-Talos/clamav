@@ -337,7 +337,11 @@ static inline int buf_outs(const char *s, struct buf *buf)
 	i = buf->pos;
 	while(*s) {
 		while(i < buf_len && *s) {
-			buf->buf[i++] = tolower((unsigned char)(*s++));
+			if(isspace(*s))
+				buf->buf[i++] = ' ';
+			else
+				buf->buf[i++] = tolower((unsigned char)(*s));
+			++s;
 		}
 		if(i == buf_len) {
 			if(write(buf->outfd, buf->buf, buf_len) < 0)
@@ -882,11 +886,15 @@ void cli_js_output(struct parser_state *state, const char *tempdir)
 		/* separate multiple scripts with \n */
 		buf_outc('\n', &buf);
 	}
+	buf_outs("<script>", &buf);
 	state->current = state->global;
 	for(i = 0; i < state->tokens.cnt; i++) {
 		if(state_update_scope(state, &state->tokens.data[i]))
 			lastchar = output_token(&state->tokens.data[i], state->current, &buf, lastchar);
 	}
+	/* add /script if not already there */
+	if(buf.pos < 9 || memcmp(buf.buf + buf.pos - 9, "</script>", 9))
+		buf_outs("</script>", &buf);
 	if(write(buf.outfd, buf.buf, buf.pos) < 0) {
 		cli_dbgmsg(MODULE "I/O error");
 	}
@@ -1512,7 +1520,9 @@ static int yylex(YYSTYPE *lvalp, yyscan_t  scanner)
 				return parseNumber(lvalp, scanner);
 			case SinglelineComment:
 				while(scanner->pos < scanner->insize) {
-					if(in[scanner->pos] == '\n')
+					/* htmlnorm converts \n to space, so
+					 * stop on space too */
+					if(in[scanner->pos] == '\n' || in[scanner->pos] == ' ')
 						break;
 					scanner->pos++;
 				}

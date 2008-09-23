@@ -326,9 +326,48 @@ int open_testfile(const char *name)
 	sprintf(str, "%s/%s", srcdir, name);
 
 	fd = open(str, O_RDONLY);
-	fail_unless(fd >= 0, "open()");
+	fail_unless(fd >= 0, "open() failed: %s", str);
 	free(str);
 	return fd;
+}
+
+void diff_file_mem(int fd, const char *ref, size_t len)
+{
+	size_t p, reflen = len;
+	char *buf = cli_malloc(len);
+
+	fail_unless(!!buf, "unable to malloc buffer: %d", len);
+	fail_unless(read(fd, buf, len) == len,  "file is smaller: %lu, expected: %lu", p, len);
+	p = 0;
+	while(len > 0) {
+		char c1 = ref[p];
+		char c2 = buf[p];
+		fail_unless(c1 == c2, "file contents mismatch at byte: %lu, was: %c, expected: %c", p, c2, c1);
+		p++;
+		len--;
+	}
+	free(buf);
+	p = lseek(fd, 0, SEEK_END);
+        fail_unless(p == reflen, "trailing garbage, file size: %ld, expected: %ld", p, reflen);
+	close(fd);
+}
+
+void diff_files(int fd, int ref_fd)
+{
+	char *ref;
+	ssize_t nread;
+	off_t siz = lseek(ref_fd, 0, SEEK_END);
+	fail_unless(siz != -1, "lseek failed");
+
+	ref = cli_malloc(siz);
+	fail_unless(!!ref, "unable to malloc buffer: %d", siz);
+
+	fail_unless(lseek(ref_fd, 0, SEEK_SET) == 0,"lseek failed");
+	nread = read(ref_fd, ref, siz);
+        fail_unless(nread == siz, "short read, expected: %ld, was: %ld", siz, nread);
+	close(ref_fd);
+	diff_file_mem(fd, ref, siz);
+	free(ref);
 }
 
 int main(int argc, char **argv)
@@ -347,6 +386,7 @@ int main(int argc, char **argv)
     srunner_add_suite(sr, test_disasm_suite());
     srunner_add_suite(sr, test_uniq_suite());
     srunner_add_suite(sr, test_matchers_suite());
+    srunner_add_suite(sr, test_htmlnorm_suite());
 
     srunner_set_log(sr, "test.log");
     if(freopen("test-stderr.log","w+",stderr) == NULL) {

@@ -15,7 +15,10 @@ check_PROGRAMS = $(programs)
 check_SCRIPTS = $(scripts)
 
 if HAVE_LIBCHECK
-check_clamav_SOURCES = check_clamav.c check_jsnorm.c check_str.c check_regex.c checks.h $(top_builddir)/libclamav/clamav.h check_disasm.c check_uniq.c check_matchers.c
+check_clamav_SOURCES = check_clamav.c checks.h $(top_builddir)/libclamav/clamav.h\
+		       check_jsnorm.c check_str.c check_regex.c\
+		       check_disasm.c check_uniq.c check_matchers.c\
+		       check_htmlnorm.c
 check_clamav_CPPFLAGS = @CHECK_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\"
 check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CHECK_LIBS@
 else
@@ -41,7 +44,7 @@ lcov: $(LCOV_HTML)
 DIRECTORIES=--directory . --directory ../libclamav --directory ../clamd --directory ../freshclam --directory ../sigtool --directory ../clamscan --directory ../clamdscan
 .libs/check_clamav.gcda: $(TESTS)
 	$(LCOV_LCOV) $(DIRECTORIES) --zerocounters
-	@$(MAKE) check VALGRIND=
+	@$(MAKE) check VALGRIND= LIBDUMA=no LIBEFENCE=no
 
 $(LCOV_OUTPUT): .libs/check_clamav.gcda
 	$(LCOV_LCOV) --capture $(DIRECTORIES) --output-file $@

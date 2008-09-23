@@ -249,83 +249,50 @@ static void tokenizer_test(const char *in, const char *expected, int split)
 	cli_js_output(state, tmpdir);
 	snprintf(filename, 1023, "%s/javascript", tmpdir);
 
-	buf = cli_malloc(len + 1);
-	if(!buf) {
-		jstest_teardown();
-		fail("malloc buffer");
-	}
-
 	fd = open(filename, O_RDONLY);
 	if(fd < 0) {
 		jstest_teardown();
 		fail("failed to open output file: %s", filename);
 	}
 
-	p = read(fd, buf, len);
-	if(p != len) {
-		close(fd);
-		jstest_teardown();
-		fail("file is smaller: %lu, expected: %lu", p, len);
-	}
-	p = lseek(fd, 0, SEEK_CUR);
-	fail_unless(p == len, "lseek position incorrect: %ld != %ld", p, len);
-	p = 0;
-	while(len > 0) {
-		char c1 = expected[p];
-		char c2 = buf[p];
-		if(c1 != c2) {
-			close(fd);
-			jstest_teardown();
-			fail("file contents mismatch at byte: %lu, was: %c, expected: %c", p, c2, c1);
-		}
-		p++;
-		len--;
-	}
-	free(buf);
-	p2 = lseek(fd, 0, SEEK_END);
-	if(p != p2) {
-		close(fd);
-		jstest_teardown();
-		fail("trailing garbage, file size: %ld, expected: %ld", p2, p);
-	}
-	close(fd);
+	diff_file_mem(fd, expected, len);
 }
 
 static const char jstest_buf0[] =
 "function foo(a, b) {\n"\
 "var x = 1.9e2*2*a/ 4.;\n"\
-"var y = 'test\\'tst';//var foo=5\n"\
+"var y = 'test\\'tst';//var\n"\
 "x=b[5],/* multiline\nvar z=6;\nsome*some/other**/"\
 "z=x/y;/* multiline oneline */var t=z/a;\n"\
 "z=[test;testi];"\
-"document.writeln('something');}";
+"document.writeln('something\n');}";
 
 static const char jstest_expected0[] =
-"function n000(n001,n002){"\
+"<script>function n000(n001,n002){"\
 "var n003=190*2*n001/4;"\
 "var n004=\"test\'tst\";"\
 "n003=n002[5],"\
 "z=n003/n004;var n005=z/n001;"\
 "z=[test;testi];"\
-"document.writeln(\"something\");}";
+"document.writeln(\"something \");}</script>";
 
 static const char jstest_buf1[] =
 "function () { var id\\u1234tx;}";
 
 static const char jstest_expected1[] =
-"function(){var n000;}";
+"<script>function(){var n000;}</script>";
 
 static const char jstest_buf2[] =
 "function () { var tst=\"a\"+'bc'+     'd'; }";
 
 static const char jstest_expected2[] =
-"function(){var n000=\"abcd\";}";
+"<script>function(){var n000=\"abcd\";}</script>";
 
 static const char jstest_buf3[] =
 "dF('bmfsu%2639%2638x11u%2638%263%3A%264C1');";
 
 static const char jstest_expected3[] =
-"alert(\"w00t\");";
+"<script>alert(\"w00t\");</script>";
 
 #define B64 "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 
@@ -334,61 +301,61 @@ static char jstest_buf4[] =
 "qbphzrag.jevgr(harfpncr('%3P%73%63%72%69%70%74%20%6P%61%6R%67%75%61%67%65%3Q%22%6N%61%76%61%73%63%72%69%70%74%22%3R%66%75%6R%63%74%69%6S%6R%20%64%46%28%73%29%7O%76%61%72%20%73%31%3Q%75%6R%65%73%63%61%70%65%28%73%2R%73%75%62%73%74%72%28%30%2P%73%2R%6P%65%6R%67%74%68%2Q%31%29%29%3O%20%76%61%72%20%74%3Q%27%27%3O%66%6S%72%28%69%3Q%30%3O%69%3P%73%31%2R%6P%65%6R%67%74%68%3O%69%2O%2O%29%74%2O%3Q%53%74%72%69%6R%67%2R%66%72%6S%6Q%43%68%61%72%43%6S%64%65%28%73%31%2R%63%68%61%72%43%6S%64%65%41%74%28%69%29%2Q%73%2R%73%75%62%73%74%72%28%73%2R%6P%65%6R%67%74%68%2Q%31%2P%31%29%29%3O%64%6S%63%75%6Q%65%6R%74%2R%77%72%69%74%65%28%75%6R%65%73%63%61%70%65%28%74%29%29%3O%7Q%3P%2S%73%63%72%69%70%74%3R'));riny(qS('tV%285%3O%285%3Nsdwjl%28585%3N7%28586Q%28585%3N7%3P%7P55l%28585%3N7%3P%28585%3N7%28586R%28585%3N8T5%285%3N%285%3P%286R3'));";
 
 static char jstest_expected4[] =
-"qbphzrag.jevgr(\"<fpevcg ynathntr=\"wninfpevcg\">shapgvba qs(f){ine f1=harfpncr(f.fhofge(0,f.yratgu-1)); ine g='';sbe(v=0;v<f1.yratgu;v++)g+=fgevat.sebzpunepbqr(f1.punepbqrng(v)-f.fhofge(f.yratgu-1,1));qbphzrag.jevgr(harfpncr(g));}</fpevcg>\");riny();nyreg(\"j00g\");";
+"<fpevcg>qbphzrag.jevgr(\"<fpevcg ynathntr=\"wninfpevcg\">shapgvba qs(f){ine f1=harfpncr(f.fhofge(0,f.yratgu-1)); ine g='';sbe(v=0;v<f1.yratgu;v++)g+=fgevat.sebzpunepbqr(f1.punepbqrng(v)-f.fhofge(f.yratgu-1,1));qbphzrag.jevgr(harfpncr(g));}</fpevcg>\");riny();nyreg(\"j00g\");</fpevcg>";
 
 static char jstest_buf5[] =
 "shapgvba (c,n,p,x,r,e){}('0(\\'1\\');',2,2,'nyreg|j00g'.fcyvg('|'),0,{});";
 
 static const char jstest_expected5[] =
-"function(n000,n001,n002,n003,n004,n005){}(alert(\"w00t\"););";
+"<script>function(n000,n001,n002,n003,n004,n005){}(alert(\"w00t\"););</script>";
 
 static const char jstest_buf6[] =
 "function $(p,a,c,k,e,d){} something(); $('0(\\'1\\');',2,2,'alert|w00t'.split('|'),0,{});";
 
 static const char jstest_expected6[] =
-"function n000(n001,n002,n003,n004,n005,n006){}something();$(alert(\"w00t\"););";
+"<script>function n000(n001,n002,n003,n004,n005,n006){}something();$(alert(\"w00t\"););</script>";
 
 static const char jstest_buf7[] =
 "var z=\"tst" B64 "tst\";";
 
 static const char jstest_expected7[] =
-"var n000=\"tst" B64 "tst\";";
+"<script>var n000=\"tst" B64 "tst\";</script>";
 
 static const char jstest_buf8[] =
 "var z=\'tst" B64 "tst\';";
 
 static const char jstest_expected8[] =
-"var n000=\"tst" B64 "tst\";";
+"<script>var n000=\"tst" B64 "tst\";</script>";
 
 static char jstest_buf9[] =
 "riny(harfpncr('%61%6p%65%72%74%28%27%74%65%73%74%27%29%3o'));";
 
 static const char jstest_expected9[] =
-"alert(\"test\");";
+"<script>alert(\"test\");</script>";
 
 static const char jstest_buf10[] =
 "function $ $() dF(x); function (p,a,c,k,e,r){function $(){}";
 
 static const char jstest_expected10[] =
-"function n000 n000()n001(x);function(n002,n003,n004,n005,n006,n007){function n008(){}";
+"<script>function n000 n000()n001(x);function(n002,n003,n004,n005,n006,n007){function n008(){}</script>";
 
 static const char jstest_buf11[] =
 "var x=123456789 ;";
 
 static const char jstest_expected11[] =
-"var n000=123456789;";
+"<script>var n000=123456789;</script>";
 
 static const char jstest_buf12[] =
 "var x='test\\u0000test';";
 
 static const char jstest_expected12[] =
-"var n000=\"test\x1test\";";
+"<script>var n000=\"test\x1test\";</script>";
 
 static const char jstest_buf13[] =
 "var x\\s12345";
 
 static const char jstest_expected13[] =
-"var n000";
+"<script>var n000</script>";
 
 
 static struct {
@@ -430,7 +397,10 @@ START_TEST (js_buffer)
 	const size_t len = 512*1024;
 	const char s[] = "x=\"";
 	const char e[] = "\"";
+	const char s_exp[] = "<script>";
+	const char e_exp[] = "</script>";
 	char *tst = malloc(len);
+	char *exp = malloc(len + sizeof(s_exp) + sizeof(e_exp) - 2);
 
 	fail_unless(!!tst, "malloc");
 
@@ -438,7 +408,11 @@ START_TEST (js_buffer)
 	strncpy(tst, s, strlen(s));
 	strncpy(tst + len - sizeof(e), e, sizeof(e));
 
-	tokenizer_test(tst,tst,1);
+	strncpy(exp, s_exp, len);
+	strncpy(exp + sizeof(s_exp) - 1, tst, len-1);
+	strncpy(exp + sizeof(s_exp) + len - 2, e_exp, sizeof(e_exp));
+
+	tokenizer_test(tst,exp,1);
 	free(tst);
 }
 END_TEST
