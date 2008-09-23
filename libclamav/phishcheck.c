@@ -41,8 +41,6 @@
 #include "clamav.h"
 #include "cltypes.h"
 #include "others.h"
-#include "mbox.h"
-#include "message.h"
 #include "htmlnorm.h"
 #include "phishcheck.h"
 #include "phish_domaincheck_db.h"
@@ -726,7 +724,7 @@ cleanupURL(struct string *URL,struct string *pre_URL, int isReal)
 }
 
 /* -------end runtime disable---------*/
-int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
+int phishingScan(const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 {
 	/* TODO: get_host and then apply regex, etc. */
 	int i;
@@ -788,12 +786,8 @@ int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 				urls.always_check_flags |= CHECK_CLOAKING;
 			}
 			string_init_c(&urls.realLink,(char*)hrefs->value[i]);
-			string_init_c(&urls.displayLink,(char*)blobGetData(hrefs->contents[i]));
+			string_init_c(&urls.displayLink, hrefs->contents[i]);
 			string_init_c(&urls.pre_fixup.pre_displayLink, NULL);
-			if (urls.displayLink.data[blobGetDataSize(hrefs->contents[i])-1]) {
-				cli_warnmsg("urls.displayLink.data[...]");
-				return CL_CLEAN;
-			}
 
 			urls.realLink.refcount=-1;
 			urls.displayLink.refcount=-1;/*don't free these, caller will free*/

@@ -4038,7 +4038,7 @@ checkURLs(message *mainMessage, mbox_ctx *mctx, mbox_status *rc, int is_html)
 	b = getHrefs(mainMessage, &hrefs);
 	if(b) {
 		if(hrefs.scanContents) {
-			if(phishingScan(mainMessage, mctx->dir, mctx->ctx, &hrefs) == CL_VIRUS) {
+			if(phishingScan(mctx->dir, mctx->ctx, &hrefs) == CL_VIRUS) {
 				/*
 				 * FIXME: message objects' contents are
 				 *	encapsulated so we should not access

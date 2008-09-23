@@ -27,7 +27,7 @@ typedef struct tag_arguments_tag
 	int scanContents;
         unsigned char **tag;
         unsigned char **value;
-	struct blob   **contents; 
+	unsigned char **contents;
 } tag_arguments_t;
 
 typedef struct m_area_tag {

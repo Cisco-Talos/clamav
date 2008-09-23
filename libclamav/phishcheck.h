@@ -23,6 +23,7 @@
 #define _PHISH_CHECK_H
 
 #include "regex/regex.h"
+#include "htmlnorm.h"
 
 #define CL_PHISH_BASE 100
 enum phish_status {CL_PHISH_NODECISION=0, CL_PHISH_CLEAN=CL_PHISH_BASE,
@@ -65,9 +66,7 @@ struct url_check {
 	unsigned short       link_type;
 };
 
-#ifdef _MESSAGE_H
-int phishingScan(message* m,const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs);
-#endif
+int phishingScan(const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs);
 
 void phish_disable(struct cl_engine* engine,const char* reason);
 /* Global, non-thread-safe functions, call only once! */

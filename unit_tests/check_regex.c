@@ -357,16 +357,15 @@ static void do_phishing_test(const struct rtest *rtest)
 	hrefs.value[0] = (unsigned char*)realurl;
 	hrefs.contents = cli_malloc(sizeof(*hrefs.contents));
 	fail_unless(!!hrefs.contents, "cli_malloc");
-	hrefs.contents[0] = blobCreate();
 	hrefs.tag = cli_malloc(sizeof(*hrefs.tag));
 	fail_unless(!!hrefs.tag, "cli_malloc");
 	hrefs.tag[0] = (unsigned char*)cli_strdup("href");
-	blobAddData(hrefs.contents[0], (const unsigned char*) rtest->displayurl, strlen(rtest->displayurl)+1);
+	hrefs.contents[0] = cli_strdup(rtest->displayurl);
 
 	ctx.engine = engine;
 	ctx.virname = &virname;
 
-	rc = phishingScan(NULL, NULL, &ctx, &hrefs);
+	rc = phishingScan(NULL, &ctx, &hrefs);
 
 	html_tag_arg_free(&hrefs);
 	fail_unless(rc == CL_CLEAN,"phishingScan");
