@@ -16,7 +16,7 @@ DUMA_DISABLE_BANNER=1
 LIBPRELOAD="$LIBDUMA"
 rm -f duma.log
 export DUMA_FILL DUMA_MALLOC_0_STRATEGY DUMA_OUTPUT_FILE DUMA_DISABLE_BANNER LIBPRELOAD
-echo "--- starting clamd under duma to detect underruns"
+echo "--- starting clamd under duma to detect overruns"
 CLAMD_WRAPPER=$abs_srcdir/preload_run.sh $abs_srcdir/check_clamd.sh &
 pid1=$!
 
