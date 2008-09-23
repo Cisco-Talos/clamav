@@ -579,6 +579,26 @@ static void screnc_decode(unsigned char *ptr, struct screnc_state *s)
 	}
 }
 
+static void js_process(struct parser_state *js_state, const char *js_begin, const char *js_end,
+		const char *line, const char *ptr, int in_script, const char *dirname)
+{
+	if(!js_begin)
+		js_begin = line;
+	if(!js_end)
+		js_end = ptr;
+	if(js_end > js_begin &&
+			CLI_ISCONTAINED(line, 8192, js_begin, 1) &&
+			CLI_ISCONTAINED(line, 8192, js_end, 1)) {
+		cli_js_process_buffer(js_state, js_begin, js_end - js_begin);
+	}
+	if(!in_script) {
+		/*  we found a /script, normalize script now */
+		cli_js_parse_done(js_state);
+		cli_js_output(js_state, dirname);
+		cli_js_destroy(js_state);
+	}
+}
+
 static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag_arguments_t *hrefs,const struct cli_dconf* dconf)
 {
 	int fd_tmp, tag_length, tag_arg_length, binary;
@@ -1021,8 +1041,12 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					next_state = HTML_NORM;
 					if (strcmp(tag, "/script") == 0) {
 						in_script = FALSE;
-						if(js_state)
+						if(js_state) {
 							js_end = ptr;
+							js_process(js_state, js_begin, js_end, line, ptr, in_script, dirname);
+							js_state = NULL;
+							js_begin = js_end = NULL;
+						}
 						/*don't output newlines in nocomment.html
 						 * html_output_c(file_buff_o2, '\n');*/
 					}
@@ -1054,15 +1078,15 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						next_state = HTML_JSDECODE;
 						/* we already output the old tag, output the new tag now */
 						html_output_tag(file_buff_o2, tag, &tag_args);
-					} else if(strcmp(tag, "script") == 0) {
-						in_script = TRUE;
-						if(dconf_js && !js_state) {
-							js_state = cli_js_init();
-							if(!js_state) {
-								cli_dbgmsg("htmlnorm: Failed to initialize js parser");
-							}
-							js_begin = ptr;
+					}
+					in_script = TRUE;
+					if(dconf_js && !js_state) {
+						js_state = cli_js_init();
+						if(!js_state) {
+							cli_dbgmsg("htmlnorm: Failed to initialize js parser");
 						}
+						js_begin = ptr;
+						js_end = NULL;
 					}
 				} else if(strcmp(tag, "%@") == 0) {
 					arg_value = html_tag_arg_value(&tag_args, "language");
@@ -1332,7 +1356,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				look_for_screnc = TRUE;
 				ptr_screnc = strstr(ptr, "#@~^");
 				if(ptr_screnc) {
-					*ptr_screnc = '\0';
+					ptr_screnc[0] = '/';
+					ptr_screnc[1] = '/';
 					ptr_screnc += 4;
 				}
 				state = next_state;
@@ -1341,6 +1366,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 			case HTML_JSDECODE:
 				/* Check for start marker */
 				if (strncmp(ptr, "#@~^", 4) == 0) {
+					ptr[0] = '/';
+					ptr[1] = '/';
 					ptr += 4;
 					state = HTML_JSDECODE_LENGTH;
 					next_state = HTML_BAD_STATE;
@@ -1367,12 +1394,13 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				state = HTML_JSDECODE_DECRYPT;
 				in_screnc = TRUE;
 				next_state = HTML_BAD_STATE;
+				/* for JS normalizer */
+				ptr[7] = '\n';
 				ptr += 8;
 				break;
 			case HTML_JSDECODE_DECRYPT:
 				screnc_decode(ptr, &screnc_state);
 				if(!screnc_state.length) {
-					html_output_str(file_buff_o2, "</script>\n", 10);
 					state = HTML_NORM;
 					next_state = HTML_BAD_STATE;
 					in_screnc = FALSE;
@@ -1581,22 +1609,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 		ptrend = NULL;
 
 		if(js_state) {
-			if(!js_begin)
-				js_begin = line;
-			if(!js_end)
-				js_end = ptr;
-			if(js_end > js_begin &&
-					CLI_ISCONTAINED(line, 8192, js_begin, 1) &&
-					CLI_ISCONTAINED(line, 8192, js_end, 1)) {
-
-				cli_js_process_buffer(js_state, js_begin, js_end - js_begin);
-			}
+			js_process(js_state, js_begin, js_end, line, ptr, in_script, dirname);
 			js_begin = js_end = NULL;
 			if(!in_script) {
-				/*  we found a /script, normalize script now */
-				cli_js_parse_done(js_state);
-				cli_js_output(js_state, dirname);
-				cli_js_destroy(js_state);
 				js_state = NULL;
 			}
 		}

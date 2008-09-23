@@ -337,7 +337,8 @@ void diff_file_mem(int fd, const char *ref, size_t len)
 	char *buf = cli_malloc(len);
 
 	fail_unless(!!buf, "unable to malloc buffer: %d", len);
-	fail_unless(read(fd, buf, len) == len,  "file is smaller: %lu, expected: %lu", p, len);
+	p = read(fd, buf, len);
+	fail_unless(p == len,  "file is smaller: %lu, expected: %lu", p, len);
 	p = 0;
 	while(len > 0) {
 		char c1 = ref[p];

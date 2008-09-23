@@ -21,6 +21,7 @@
  */
 #include <check.h>
 #include <fcntl.h>
+#include <string.h>
 #include "checks.h"
 #include "../libclamav/dconf.h"
 #include "../libclamav/htmlnorm.h"

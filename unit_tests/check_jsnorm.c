@@ -413,6 +413,7 @@ START_TEST (js_buffer)
 	strncpy(exp + sizeof(s_exp) + len - 2, e_exp, sizeof(e_exp));
 
 	tokenizer_test(tst,exp,1);
+	free(exp);
 	free(tst);
 }
 END_TEST
