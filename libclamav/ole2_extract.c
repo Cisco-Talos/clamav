@@ -81,7 +81,7 @@ typedef struct ole2_header_tag
 	int16_t byte_order __attribute__ ((packed));			/* -2=intel */
 
 	uint16_t log2_big_block_size __attribute__ ((packed));		/* usually 9 (2^9 = 512) */
-	uint32_t log2_small_block_size __attribute__ ((packed));	/* usually 6 (2^6 = 128) */
+	uint32_t log2_small_block_size __attribute__ ((packed));	/* usually 6 (2^6 = 64) */
 
 	int32_t reserved[2] __attribute__ ((packed));
 	int32_t bat_count __attribute__ ((packed));
@@ -288,7 +288,7 @@ static void print_ole2_header(ole2_header_t *hdr)
 	return;
 }
 
-static int ole2_read_block(int fd, ole2_header_t *hdr, void *buff, int32_t blockno)
+static int ole2_read_block(int fd, ole2_header_t *hdr, void *buff, unsigned int size, int32_t blockno)
 {
 	off_t offset, offend;
 
@@ -297,21 +297,21 @@ static int ole2_read_block(int fd, ole2_header_t *hdr, void *buff, int32_t block
 	}
 	
 	/* other methods: (blockno+1) * 512 or (blockno * block_size) + 512; */
-	offset = (blockno << hdr->log2_big_block_size) + 512;	/* 512 is header size */
+	offset = (blockno << hdr->log2_big_block_size) + MAX(512, 1 << hdr->log2_big_block_size); /* 512 is header size */
 	
 	if (hdr->m_area == NULL) {
 		if (lseek(fd, offset, SEEK_SET) != offset) {
 			return FALSE;
 		}
-		if (cli_readn(fd, buff, (1 << hdr->log2_big_block_size)) != (1 << hdr->log2_big_block_size)) {
+		if (cli_readn(fd, buff, size) != size) {
 			return FALSE;
 		}
 	} else {
-		offend = offset + (1 << hdr->log2_big_block_size);
+		offend = offset + size;
 		if ((offend <= 0) || (offend > hdr->m_length)) {
 			return FALSE;
 		}
-		memcpy(buff, hdr->m_area+offset, (1 << hdr->log2_big_block_size));
+		memcpy(buff, hdr->m_area+offset, size);
 	}
 	return TRUE;
 }
@@ -330,7 +330,7 @@ static int32_t ole2_get_next_bat_block(int fd, ole2_header_t *hdr, int32_t curre
 		cli_dbgmsg("bat_array index error\n");
 		return -10;
 	}
-	if (!ole2_read_block(fd, hdr, &bat,
+	if (!ole2_read_block(fd, hdr, &bat, 512,
 			ole2_endian_convert_32(hdr->bat_array[bat_array_index]))) {
 		return -1;
 	}
@@ -356,20 +356,20 @@ static int32_t ole2_get_next_xbat_block(int fd, ole2_header_t *hdr, int32_t curr
 
 	bat_index = current_block % 128;
 
-	if (!ole2_read_block(fd, hdr, &xbat, hdr->xbat_start)) {
+	if (!ole2_read_block(fd, hdr, &xbat, 512, hdr->xbat_start)) {
 		return -1;
 	}
 
 	/* Follow the chain of XBAT blocks */
 	while (xbat_block_index > 0) {
-		if (!ole2_read_block(fd, hdr, &xbat,
+		if (!ole2_read_block(fd, hdr, &xbat, 512,
 				ole2_endian_convert_32(xbat[127]))) {
 			return -1;
 		}
 		xbat_block_index--;
 	}
 
-	if (!ole2_read_block(fd, hdr, &bat, ole2_endian_convert_32(xbat[bat_blockno]))) {
+	if (!ole2_read_block(fd, hdr, &bat, 512, ole2_endian_convert_32(xbat[bat_blockno]))) {
 		return -1;
 	}
 
@@ -404,7 +404,7 @@ static int32_t ole2_get_next_sbat_block(int fd, ole2_header_t *hdr, int32_t curr
 		current_bat_block = ole2_get_next_block_number(fd, hdr, current_bat_block);
 		iter--;
 	}
-	if (!ole2_read_block(fd, hdr, &sbat, current_bat_block)) {
+	if (!ole2_read_block(fd, hdr, &sbat, 512, current_bat_block)) {
 		return -1;
 	}
 	return ole2_endian_convert_32(sbat[current_block % 128]);
@@ -424,7 +424,7 @@ static int32_t ole2_get_sbat_data_block(int fd, ole2_header_t *hdr, void *buff, 
 		return FALSE;
 	}
 
-	block_count = sbat_index / 8;			/* 8 small blocks per big block */
+	block_count = sbat_index / (1 << (hdr->log2_big_block_size - hdr->log2_small_block_size));
 	current_block = hdr->sbat_root_start;
 	while (block_count > 0) {
 		current_block = ole2_get_next_block_number(fd, hdr, current_block);
@@ -433,61 +433,8 @@ static int32_t ole2_get_sbat_data_block(int fd, ole2_header_t *hdr, void *buff, 
 	/* current_block now contains the block number of the sbat array
 	   containing the entry for the required small block */
 
-	return(ole2_read_block(fd, hdr, buff, current_block));
+	return(ole2_read_block(fd, hdr, buff, 1 << hdr->log2_big_block_size, current_block));
 }
-
-/* Read the property tree.
-   It is read as just an array rather than a tree */
-/*
-static void ole2_read_property_tree(int fd, ole2_header_t *hdr, const char *dir,
-				int (*handler)(int fd, ole2_header_t *hdr, property_t *prop, const char *dir))
-{
-	property_t prop_block[4];
-	int32_t index, current_block, count=0;
-	
-	current_block = hdr->prop_start;
-
-	while(current_block >= 0) {
-		if (!ole2_read_block(fd, hdr, prop_block,
-					current_block)) {
-			return;
-		}
-		for (index=0 ; index < 4 ; index++) {
-			if (prop_block[index].type > 0) {
-				prop_block[index].name_size = ole2_endian_convert_16(prop_block[index].name_size);
-				prop_block[index].prev = ole2_endian_convert_32(prop_block[index].prev);
-				prop_block[index].next = ole2_endian_convert_32(prop_block[index].next);
-				prop_block[index].child = ole2_endian_convert_32(prop_block[index].child);
-				prop_block[index].user_flags = ole2_endian_convert_32(prop_block[index].user_flags);
-				prop_block[index].create_lowdate = ole2_endian_convert_32(prop_block[index].create_lowdate);
-				prop_block[index].create_highdate = ole2_endian_convert_32(prop_block[index].create_highdate);
-				prop_block[index].mod_lowdate = ole2_endian_convert_32(prop_block[index].mod_lowdate);
-				prop_block[index].mod_highdate = ole2_endian_convert_32(prop_block[index].mod_highdate);
-				prop_block[index].start_block = ole2_endian_convert_32(prop_block[index].start_block);
-				prop_block[index].size = ole2_endian_convert_32(prop_block[index].size);
-				if (prop_block[index].type > 5) {
-					cli_dbgmsg("ERROR: invalid property type: %d\n", prop_block[index].type);
-					return;
-				}
-				if (prop_block[index].type == 5) {
-					hdr->sbat_root_start = prop_block[index].start_block;
-				}
-				print_ole2_property(&prop_block[index]);
-				if (!handler(fd, hdr, &prop_block[index], dir)) {
-					cli_dbgmsg("ERROR: handler failed\n");
-					return;
-				}
-			}
-		}
-		current_block = ole2_get_next_block_number(fd, hdr, current_block);
-		if (++count > 100000) {
-			cli_dbgmsg("ERROR: loop detected\n");
-			return;
-		}
-	}
-	return;
-}
-*/
 
 static int ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir, int32_t prop_index,
 				   int (*handler)(int fd, ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx),
@@ -522,7 +469,7 @@ static int ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir, 
 		}
 	}
 	idx = prop_index % 4;
-	if (!ole2_read_block(fd, hdr, prop_block,
+	if (!ole2_read_block(fd, hdr, prop_block, 512,
 			current_block)) {
 		return CL_SUCCESS;
 	}	
@@ -664,6 +611,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 	if (!blk_bitset) {
 		cli_errmsg("OLE2 [handler_writefile]: init bitset failed\n");
 		close(ofd);
+		free(buff);
 		return CL_BREAK;
 	}
 	while((current_block >= 0) && (len > 0)) {
@@ -698,20 +646,21 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 				cli_bitset_free(blk_bitset);
 				return CL_SUCCESS;
 			}
-			/* buff now contains the block with 8 small blocks in it */
-			offset = 64 * (current_block % 8);
-			if (cli_writen(ofd, &buff[offset], MIN(len,64)) != MIN(len,64)) {
+			/* buff now contains the block with N small blocks in it */
+			offset = (1 << hdr->log2_small_block_size) * (current_block % (1 << (hdr->log2_big_block_size - hdr->log2_small_block_size)));
+
+			if (cli_writen(ofd, &buff[offset], MIN(len,1 << hdr->log2_small_block_size)) != MIN(len,1 << hdr->log2_small_block_size)) {
 				close(ofd);
 				free(buff);
 				cli_bitset_free(blk_bitset);
 				return CL_BREAK;
 			}
 
-			len -= MIN(len,64);
+			len -= MIN(len,1 << hdr->log2_small_block_size);
 			current_block = ole2_get_next_sbat_block(fd, hdr, current_block);
 		} else {
 			/* Big block file */
-			if (!ole2_read_block(fd, hdr, buff, current_block)) {
+			if (!ole2_read_block(fd, hdr, buff, 1 << hdr->log2_big_block_size, current_block)) {
 				close(ofd);
 				free(buff);
 				cli_bitset_free(blk_bitset);
@@ -821,9 +770,9 @@ static int handler_otf(int fd, ole2_header_t *hdr, property_t *prop, const char 
 	cli_dbgmsg("ole2_get_sbat_data_block failed\n");
 	break;
       }
-      /* buff now contains the block with 8 small blocks in it */
-      offset = 64 * (current_block % 8);
-      if (cli_writen(ofd, &buff[offset], MIN(len,64)) != MIN(len,64)) {
+      /* buff now contains the block with N small blocks in it */
+      offset = (1 << hdr->log2_small_block_size) * (current_block % (1 << (hdr->log2_big_block_size - hdr->log2_small_block_size)));
+      if (cli_writen(ofd, &buff[offset], MIN(len,1 << hdr->log2_small_block_size)) != MIN(len,1 << hdr->log2_small_block_size)) {
 	close(ofd);
 	free(buff);
 	cli_bitset_free(blk_bitset);
@@ -835,11 +784,11 @@ static int handler_otf(int fd, ole2_header_t *hdr, property_t *prop, const char 
 	return CL_BREAK;
       }
 
-      len -= MIN(len,64);
+      len -= MIN(len,1 << hdr->log2_small_block_size);
       current_block = ole2_get_next_sbat_block(fd, hdr, current_block);
     } else {
       /* Big block file */
-      if (!ole2_read_block(fd, hdr, buff, current_block)) {
+      if (!ole2_read_block(fd, hdr, buff, 1 << hdr->log2_big_block_size, current_block)) {
 	break;
       }
       if (cli_writen(ofd, buff, MIN(len,(1 << hdr->log2_big_block_size))) !=
@@ -1020,22 +969,22 @@ int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx, struct uniq **vb
 		goto abort;
 	}
 
-	if (hdr.log2_big_block_size != 9) {
-		cli_errmsg("WARNING: not scanned; untested big block size - please report\n");
+	if (hdr.log2_big_block_size < 6 || hdr.log2_big_block_size > 30) {
+		cli_dbgmsg("CAN'T PARSE: Invalid big block size (2^%u)\n", hdr.log2_big_block_size);
 		goto abort;
 	}
-	if (hdr.log2_small_block_size != 6) {
-		cli_errmsg("WARNING: not scanned; untested small block size - please report\n");
-		goto abort;
-	}
-	if (hdr.sbat_cutoff != 4096) {
-		cli_errmsg("WARNING: not scanned; untested sbat cutoff - please report\n");
+	if (!hdr.log2_small_block_size || hdr.log2_small_block_size > hdr.log2_big_block_size) {
+		cli_dbgmsg("CAN'T PARSE: Invalid small block size (2^%u)\n", hdr.log2_small_block_size);
 		goto abort;
 	}
 
+	if (hdr.sbat_cutoff != 4096) {
+		cli_dbgmsg("WARNING: Untested sbat cutoff (%u); data may not extract correctly\n", hdr.sbat_cutoff);
+	}
+
 	/* 8 SBAT blocks per file block */
-	hdr.max_block_no = ((statbuf.st_size / hdr.log2_big_block_size) + 1) * 8;
-	
+	hdr.max_block_no = (statbuf.st_size - MAX(512, 1 << hdr.log2_big_block_size)) / (1 << hdr.log2_small_block_size);
+
 	print_ole2_header(&hdr);
 	cli_dbgmsg("Max block number: %lu\n", (unsigned long int) hdr.max_block_no);
 

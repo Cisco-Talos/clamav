@@ -1,3 +1,7 @@
+Wed Sep 24 15:17:12 CEST 2008 (tk)
+----------------------------------
+  * libclamav/ole2_extract.c: handle files with unusual parameters (bb#954)
+
 Mon Sep 22 23:38:16 CEST 2008 (tk)
 ----------------------------------
   * configure: use AF_UNSPEC when testing getaddrinfo()/IPv6 support (bb#1196)
