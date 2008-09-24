@@ -333,6 +333,7 @@ int open_testfile(const char *name)
 
 void diff_file_mem(int fd, const char *ref, size_t len)
 {
+	char c1,c2;
 	size_t p, reflen = len;
 	char *buf = cli_malloc(len);
 
@@ -341,12 +342,15 @@ void diff_file_mem(int fd, const char *ref, size_t len)
 	fail_unless(p == len,  "file is smaller: %lu, expected: %lu", p, len);
 	p = 0;
 	while(len > 0) {
-		char c1 = ref[p];
-		char c2 = buf[p];
-		fail_unless(c1 == c2, "file contents mismatch at byte: %lu, was: %c, expected: %c", p, c2, c1);
+		c1 = ref[p];
+		c2 = buf[p];
+		if(c1 != c2)
+			break;
 		p++;
 		len--;
 	}
+	if (len > 0)
+		fail_unless(c1 == c2, "file contents mismatch at byte: %lu, was: %c, expected: %c", p, c2, c1);
 	free(buf);
 	p = lseek(fd, 0, SEEK_END);
         fail_unless(p == reflen, "trailing garbage, file size: %ld, expected: %ld", p, reflen);
