@@ -1,3 +1,8 @@
+Thu Sep 25 13:16:15 CEST 2008 (tk)
+----------------------------------
+  * libclamav/matcher-ac.c: improve detection and reordering of zero-only
+			    subpatterns (bb#1188)
+
 Wed Sep 24 15:17:12 CEST 2008 (tk)
 ----------------------------------
   * libclamav/ole2_extract.c: handle files with unusual parameters (bb#954)

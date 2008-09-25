@@ -1080,8 +1080,8 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 {
 	struct cli_ac_patt *new;
 	char *pt, *pt2, *hex = NULL, *hexcpy = NULL;
-	uint16_t i, j, ppos = 0, pend, *dec;
-	uint8_t wprefix = 0, zprefix = 1, plen = 0;
+	uint16_t i, j, ppos = 0, pend, *dec, nzpos = 0;
+	uint8_t wprefix = 0, zprefix = 1, plen = 0, nzplen = 0;
 	struct cli_ac_alt *newalt, *altpt, **newtable;
 	int ret, error = CL_SUCCESS;
 
@@ -1356,11 +1356,21 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 			ppos = i;
 		    }
 		}
-		if(plen >= root->ac_maxdepth && (new->pattern[ppos] || new->pattern[ppos + 1]))
-		    break;
+		if(new->pattern[ppos] || new->pattern[ppos + 1]) {
+		    if(plen >= root->ac_maxdepth) {
+			break;
+		    } else if(plen >= root->ac_mindepth && plen > nzplen) {
+			nzplen = plen;
+			nzpos = ppos;
+		    }
+		}
 	    }
 	    if(plen >= root->ac_maxdepth && (new->pattern[ppos] || new->pattern[ppos + 1]))
 		break;
+	}
+	if(!new->pattern[ppos] && !new->pattern[ppos + 1] && nzplen) {
+	    plen = nzplen;
+	    ppos = nzpos;
 	}
 
 	if(plen < root->ac_mindepth) {
