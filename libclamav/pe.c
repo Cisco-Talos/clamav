@@ -497,7 +497,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    cli_dbgmsg("Machine type: AMD64\n");
 	    break;
 	default:
-	    cli_warnmsg("Unknown machine type in PE header (0x%x)\n", EC16(file_hdr.Machine));
+	    cli_dbgmsg("Machine type: ** UNKNOWN ** (0x%x)\n", EC16(file_hdr.Machine));
     }
 
     nsections = EC16(file_hdr.NumberOfSections);
@@ -666,8 +666,17 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	case 12:
 	    cli_dbgmsg("Subsystem: EFI runtime driver\n");
 	    break;
+	case 13:
+	    cli_dbgmsg("Subsystem: EFI ROM image\n");
+	    break;
+	case 14:
+	    cli_dbgmsg("Subsystem: Xbox\n");
+	    break;
+	case 16:
+	    cli_dbgmsg("Subsystem: Boot application\n");
+	    break;
 	default:
-	    cli_warnmsg("Unknown subsystem in PE header (0x%x)\n", pe_plus ? EC16(optional_hdr64.Subsystem) : EC16(optional_hdr32.Subsystem));
+	    cli_dbgmsg("Subsystem: ** UNKNOWN ** (0x%x)\n", pe_plus ? EC16(optional_hdr64.Subsystem) : EC16(optional_hdr32.Subsystem));
     }
 
     cli_dbgmsg("------------------------------------\n");
