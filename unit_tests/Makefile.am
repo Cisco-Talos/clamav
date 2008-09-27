@@ -32,7 +32,7 @@ $(top_builddir)/test/clam.exe:
 	(cd $(top_builddir)/test && $(MAKE))
 
 CLEANFILES=lcov.out *.gcno *.gcda *.log $(FILES) test-stderr.log clamscan.log valgrind-*.log duma.log duma2.log
-EXTRA_DIST=.split input test-clamd.conf test-freshclam.conf valgrind.supp virusaction-test.sh $(scripts) preload_run.sh
+EXTRA_DIST=.split $(srcdir)/*.ref input test-clamd.conf test-freshclam.conf valgrind.supp virusaction-test.sh $(scripts) preload_run.sh
 if ENABLE_COVERAGE
 LCOV_OUTPUT = lcov.out
 LCOV_HTML = lcov_html
