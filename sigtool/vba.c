@@ -1107,7 +1107,8 @@ int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
 	    }
 
 	    for (i = 0; i < vba_project->count; i++) {
-		data = (unsigned char *)cli_wm_decrypt_macro(fd, vba_project->offset[i], vba_project->length[i], vba_project->key[i]);
+		data_len = vba_project->length[i];
+		data = (unsigned char *)cli_wm_decrypt_macro(fd, vba_project->offset[i], data_len , vba_project->key[i]);
 		if(data) {
 		    data = (unsigned char *) realloc (data, data_len + 1);
 		    data[data_len]='\0';
