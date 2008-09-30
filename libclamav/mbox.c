@@ -5174,18 +5174,15 @@ do_multipart(message *mainMessage, message **messages, int i, mbox_status *rc, m
 	}
 
 	if(*rc != VIRUS) {
-		if(addToText) {
-			cli_dbgmsg("Adding to non mime-part\n");
-			if(messageGetBody(aMessage))
-				*tptr = textMove(*tptr, messageGetBody(aMessage));
-		} else {
-			fileblob *fb = messageToFileblob(aMessage, mctx->dir, 1);
+		fileblob *fb = messageToFileblob(aMessage, mctx->dir, 1);
 
-			if(fb) {
-				if(fileblobScanAndDestroy(fb) == CL_VIRUS)
-					*rc = VIRUS;
+		if(fb) {
+			/* aMessage doesn't always have a ctx set */
+			fileblobSetCTX(fb, mctx->ctx);
+			if(fileblobScanAndDestroy(fb) == CL_VIRUS)
+				*rc = VIRUS;
+			if (!addToText)
 				mctx->files++;
-			}
 		}
 		if(messageContainsVirus(aMessage))
 			*rc = VIRUS;

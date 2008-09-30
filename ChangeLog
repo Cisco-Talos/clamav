@@ -1,3 +1,8 @@
+Tue Sep 30 18:32:50 EEST 2008 (edwin)
+-------------------------------------
+  * libclamav/mbox.c: Scan textpart attachments on the fly,
+	don't wait till we concatenate all textparts. (bb #1205)
+
 Mon Sep 29 15:20:06 CEST 2008 (tk)
 ----------------------------------
   * sigtool/vba.c: fix possible use of uninitialized value (bb#1201)
