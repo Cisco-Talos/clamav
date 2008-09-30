@@ -2148,13 +2148,14 @@ main(int argc, char **argv)
 	logg(_("*Debugging is on\n"));
 
 #ifdef HAVE_RESOLV_H
+#if ! defined(HAVE_LRESOLV_R)
 	if(!(_res.options&RES_INIT))
 		if(res_init() < 0) {
 			fprintf(stderr, "%s: Can't initialise the resolver\n",
 				argv[0]);
 			return EX_UNAVAILABLE;
 		}
-
+#endif
 	if(blacklist_time) {
 		char name[MAXHOSTNAMELEN + 1];
 

@@ -1,3 +1,8 @@
+Tue Sep 30 18:28:28 CEST 2008 (acab)
+------------------------------------
+  * clamav-milter/clamav-milter.c: do not access _res when linking to a MT
+                                   lresolv - segfaults on netbsd?
+
 Tue Sep 30 18:32:50 EEST 2008 (edwin)
 -------------------------------------
   * libclamav/mbox.c: Scan textpart attachments on the fly,
