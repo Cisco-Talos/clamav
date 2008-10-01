@@ -2538,11 +2538,10 @@ findServer(void)
 
 		if(sock < 0) {
 			perror("socket");
-			do {
-				pthread_join(tids[i], NULL);
+			while(i--) {
 				if(socks[i].sock >= 0)
 					close(socks[i].sock);
-			} while(--i >= 0);
+			}
 			free(socks);
 			free(servers);
 			free(tids);
@@ -2554,8 +2553,9 @@ findServer(void)
 
 		if(pthread_create(&tids[i], NULL, try_server, &socks[i]) != 0) {
 			perror("pthread_create");
+			j = i;
 			do {
-				pthread_join(tids[i], NULL);
+				if (j!=i) pthread_join(tids[i], NULL);
 				if(socks[i].sock >= 0)
 					close(socks[i].sock);
 			} while(--i >= 0);

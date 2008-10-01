@@ -1,3 +1,7 @@
+Wed Oct  1 19:11:30 CEST 2008 (acab)
+------------------------------------
+  * clamav-milter/clamav-milter.c: fix error path segfault
+
 Tue Sep 30 18:28:28 CEST 2008 (acab)
 ------------------------------------
   * clamav-milter/clamav-milter.c: do not access _res when linking to a MT
