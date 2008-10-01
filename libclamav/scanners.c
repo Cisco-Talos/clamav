@@ -1011,6 +1011,8 @@ static int cli_scanscript(int desc, cli_ctx *ctx)
 	char *tmpname = NULL;
 	int ofd = -1, ret;
 	ssize_t nread;
+	const struct cli_matcher *root = ctx->engine->root[7];
+	uint32_t maxpatlen = root ? root->maxpatlen : 0;
 
 	cli_dbgmsg("in cli_scanscript()\n");
 
@@ -1034,12 +1036,12 @@ static int cli_scanscript(int desc, cli_ctx *ctx)
 		}
 	}
 
-	if(!(normalized = cli_malloc(SCANBUFF))) {
+	if(!(normalized = cli_malloc(SCANBUFF + maxpatlen))) {
 		cli_dbgmsg("cli_scanscript: Unable to malloc %u bytes\n", SCANBUFF);
 		return CL_EMEM;
 	}
 
-	text_normalize_init(&state, normalized, SCANBUFF);
+	text_normalize_init(&state, normalized, SCANBUFF + maxpatlen);
 	ret = CL_CLEAN;
 
 	do {
@@ -1057,7 +1059,11 @@ static int cli_scanscript(int desc, cli_ctx *ctx)
 				ret = CL_VIRUS;
 				break;
 			}
+			/* carry over maxpatlen from previous buffer */
+			if (state.out_pos > maxpatlen)
+				memcpy(state.out, state.out + state.out_pos - maxpatlen, maxpatlen); 
 			text_normalize_reset(&state);
+			state.out_pos = maxpatlen;
 		}
 		if(nread > 0 && (text_normalize_buffer(&state, buff, nread) != nread)) {
 			cli_dbgmsg("cli_scanscript: short read during normalizing\n");
