@@ -172,7 +172,10 @@ static const struct rtest {
 } rtests[] = {
 	{NULL,"http://fake.example.com","&#61;&#61;&#61;&#61;&#61;key.com",0},
 	{NULL,"http://key.com","&#61;&#61;&#61;&#61;&#61;key.com",2},
+	{NULL," http://key.com","&#61;&#61;&#61;&#61;&#61;key.com",2},
 	{NULL,"http://key.com@fake.example.com","key.com",0},
+	{NULL," http://key.com@fake.example.com","key.com",0},
+	{NULL," http://key.com@fake.example.com ","key.com",0},
 	/* entry taken from .wdb with a / appended */
 	{".+\\.ebayrtm\\.com([/?].*)?:.+\\.ebay\\.(de|com|co\\.uk)([/?].*)?/",
 		"http://srx.main.ebayrtm.com",

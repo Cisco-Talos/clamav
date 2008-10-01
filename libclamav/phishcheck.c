@@ -995,10 +995,12 @@ static inline int validate_uri_ialpha(const char *start, const char *end)
  */
 static int isURL(const struct phishcheck* pchk,const char* URL, int accept_anyproto)
 {
+	size_t len;
 	const char *start = NULL, *p, *q;
 	if(!URL)
 		return 0;
 
+	while (*URL == ' ') URL++;
 	switch (URL[0]) {
 		case 'h':
 			if (strncmp(URL, https, https_len) == 0)
@@ -1045,7 +1047,9 @@ static int isURL(const struct phishcheck* pchk,const char* URL, int accept_anypr
 	} while(q);
 	if (p == start) /* must have at least one dot in the URL */
 		return 0;
-	return !!in_tld_set(p, strlen(p));
+	len = strlen(p);
+	while (len > 1 && p[len-1] == ' ') len--;
+	return !!in_tld_set(p, len);
 }
 
 /*
