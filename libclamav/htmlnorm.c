@@ -1793,6 +1793,7 @@ int html_screnc_decode(int fd, const char *dirname)
 	screnc_state.length += (base64_chars[tmpstr[4]] << 2) << 24;
 	screnc_state.length += (base64_chars[tmpstr[5]] >> 4) << 24;
 
+	cli_writen(ofd, "<script>",strlen("<script>"));
 	while (screnc_state.length && line) {
 		screnc_decode(ptr, &screnc_state);
 		cli_writen(ofd, ptr, strlen(ptr));
@@ -1801,6 +1802,7 @@ int html_screnc_decode(int fd, const char *dirname)
 			ptr = line = cli_readchunk(stream_in, NULL, 8192);
 		}
 	}
+	cli_writen(ofd, "</script>",strlen("</script>"));
 	if(screnc_state.length)
 		cli_dbgmsg("html_screnc_decode: missing %u bytes\n",screnc_state.length);
 	retval = TRUE;
