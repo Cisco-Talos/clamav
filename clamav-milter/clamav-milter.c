@@ -2539,6 +2539,7 @@ findServer(void)
 		if(sock < 0) {
 			perror("socket");
 			while(i--) {
+				pthread_join(tids[i], NULL);
 				if(socks[i].sock >= 0)
 					close(socks[i].sock);
 			}
