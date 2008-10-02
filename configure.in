@@ -492,6 +492,7 @@ then
 		    }
 		],
 		[have_gai=yes],
+		[have_gai=no],
 		[have_gai=no])
 		])
     AC_MSG_RESULT([$have_gai])
@@ -531,6 +532,7 @@ then
 		    }
 		],
 		[have_ipv6=yes],
+		[have_ipv6=no],
 		[have_ipv6=no])
 		])
     AC_MSG_RESULT([$have_ipv6])

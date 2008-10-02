@@ -16211,11 +16211,7 @@ echo $ECHO_N "checking for getaddrinfo... $ECHO_C" >&6; }
 else
 
 		if test "$cross_compiling" = yes; then
-  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&5
-echo "$as_me: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&2;}
-   { (exit 1); exit 1; }; }
+  have_gai=no
 else
   cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
@@ -16305,11 +16301,7 @@ echo $ECHO_N "checking for IPv6 support... $ECHO_C" >&6; }
 else
 
 		if test "$cross_compiling" = yes; then
-  { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&5
-echo "$as_me: error: cannot run test program while cross compiling
-See \`config.log' for more details." >&2;}
-   { (exit 1); exit 1; }; }
+  have_ipv6=no
 else
   cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
