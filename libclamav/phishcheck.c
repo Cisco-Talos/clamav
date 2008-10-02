@@ -779,6 +779,7 @@ int phishingScan(const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 				continue;
 				urls.link_type |= LINKTYPE_IMAGE;
 			}
+			urls.always_check_flags = 0;
 			if (ctx->options & CL_SCAN_PHISHING_BLOCKSSL) {
 				urls.always_check_flags |= CHECK_SSL;
 			}
@@ -1321,10 +1322,11 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 		return rc < 0 ? rc : CL_PHISH_CLEAN;
 	}
 
-	if(!(phishy&DOMAIN_LISTED) &&
-		!domainlist_match(engine,host_url.displayLink.data,host_url.realLink.data,&urls->pre_fixup,1,&urls->flags)) {
-		free_if_needed(&host_url);
-		return CL_PHISH_CLEAN; /* domain not listed */
+	if (domainlist_match(engine,host_url.displayLink.data,host_url.realLink.data,&urls->pre_fixup,1,&urls->flags)) {
+		phishy |= DOMAIN_LISTED;
+	} else {
+		urls->flags &= urls->always_check_flags;
+		/* don't return, we may need to check for ssl/cloaking */
 	}
 
 	/* link type filtering must occur after last domainlist_match */
@@ -1346,6 +1348,11 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 	if(urls->flags&CHECK_SSL && isSSL(urls->displayLink.data) && !isSSL(urls->realLink.data)) {
 		free_if_needed(&host_url);
 		return CL_PHISH_SSL_SPOOF;
+	}
+
+	if (!(phishy & DOMAIN_LISTED)) {
+		free_if_needed(&host_url);
+		return CL_PHISH_CLEAN;
 	}
 
 	if((rc = url_get_host(pchk, urls,&host_url,DOMAIN_REAL,&phishy)))

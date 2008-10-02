@@ -31,7 +31,7 @@ check_clamscan.sh: $(top_builddir)/test/clam.exe
 $(top_builddir)/test/clam.exe:
 	(cd $(top_builddir)/test && $(MAKE))
 
-CLEANFILES=lcov.out *.gcno *.gcda *.log $(FILES) test-stderr.log clamscan.log valgrind-*.log duma.log duma2.log
+CLEANFILES=lcov.out *.gcno *.gcda *.log $(FILES) test-stderr.log clamscan.log valgrind-*.log duma.log duma2.log clamscan2.log
 EXTRA_DIST=.split $(srcdir)/*.ref input test-clamd.conf test-freshclam.conf valgrind.supp virusaction-test.sh $(scripts) preload_run.sh
 if ENABLE_COVERAGE
 LCOV_OUTPUT = lcov.out
@@ -40,7 +40,6 @@ LCOV_LCOV = @LCOV@
 LCOV_GCOV = @GCOV@
 LCOV_GENHTML = @GENHTML@
 lcov: $(LCOV_HTML)
-
 DIRECTORIES=--directory . --directory ../libclamav --directory ../clamd --directory ../freshclam --directory ../sigtool --directory ../clamscan --directory ../clamdscan
 .libs/check_clamav.gcda: $(TESTS)
 	$(LCOV_LCOV) $(DIRECTORIES) --zerocounters
