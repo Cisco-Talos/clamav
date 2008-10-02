@@ -21,7 +21,9 @@ parse_valgrindlog()
 		if test "$1" = "valgrind-race.log" || 
 			test $NRUNS -eq `grep "no leaks are possible" $1 | wc -l` ||
 			test `grep "lost:" $1 | grep -v "0 bytes" | wc -l` -eq 0; then 
-			rm -f $1;
+			if test -z "$GENSUPP"; then
+				rm -f $1;
+			fi
 			return
 		else
 			echo "*** Valgrind test FAILED, memory LEAKS detected ***"
@@ -53,8 +55,15 @@ parse_valgrindlog()
 	echo "***"
 }
 
-VALGRIND_FLAGS="-v --trace-children=yes --track-fds=yes --leak-check=full --suppressions=$abs_srcdir/valgrind.supp"
-VALGRIND_FLAGS_RACE="-v --tool=helgrind --trace-children=yes --suppressions=$abs_srcdir/valgrind.supp"
+if test "X$VALGRIND_GENSUPP" = "X1"; then
+	GENSUPP="--gen-suppressions=all"
+else
+	GENSUPP=
+fi
+
+VALGRIND_COMMON_FLAGS="-v --trace-children=yes --suppressions=$abs_srcdir/valgrind.supp $GENSUPP"
+VALGRIND_FLAGS="$VALGRIND_COMMON_FLAGS --track-fds=yes --leak-check=full"
+VALGRIND_FLAGS_RACE="$VALGRIND_COMMON_FLAGS --tool=helgrind"
 
 echo "--- Starting check_clamav under valgrind/memcheck"
 rm -f valgrind-check.log valgrind-clamd.log valgrind-race.log

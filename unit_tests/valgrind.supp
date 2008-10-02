@@ -153,6 +153,20 @@
 	Helgrind:Race
 	fun:exit
 }
+
+{
+# suppress false positives, see bb 1189
+   chm-etch-gcc41-fp
+   Memcheck:Cond
+   fun:cli_chm_open
+   fun:cli_scanmschm
+}
+{
+   glibc-etch
+   Memcheck:Leak
+   fun:*
+   fun:_dl_allocate_tls
+}
 #{
 #	helgrind-glibc27-dbg18
 #	Helgrind:Race
