@@ -1,3 +1,8 @@
+Fri Oct  3 19:28:18 CEST 2008 (acab)
+------------------------------------
+  * clamav-milter/clamav-milter.c: properly close descriptors before
+  				   forking (bb#1137)
+
 Fri Oct  3 20:22:58 EEST 2008 (edwin)
 -------------------------------------
   * configure.in, */Makefile.am:  link to libclamunrar_iface explicitly to allow non-rpath builds to work. (bb #1203)

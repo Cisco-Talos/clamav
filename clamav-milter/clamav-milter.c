@@ -1925,7 +1925,20 @@ main(int argc, char **argv)
 			}
 			dup(consolefd);
 #else
+			int fds[3];
 			logg_file = NULL;
+			chdir("/");
+			fds[0] = open("/dev/null", O_RDONLY);
+			fds[1] = open("/dev/null", O_WRONLY);
+			fds[2] = open("/dev/null", O_WRONLY);
+			for(i = 0; i <= 2; i++) {
+				if(fds[i] == -1 || dup2(fds[i], i) == -1) {
+					fprintf(stderr, "ERROR: failed to daemonize.\n");
+					logg_close();
+					freecfg(copt);
+					return 1;
+				}
+			}
 #endif
 		}
 
