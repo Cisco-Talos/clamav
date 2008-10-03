@@ -571,7 +571,7 @@ static	pthread_mutex_t	blacklist_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 static	void	sigsegv(int sig);
-static	void	sighup(int sig);
+static	void	sigusr1(int sig);
 static	void	sigusr2(int sig);
 
 #ifdef HAVE_BACKTRACE
@@ -2188,7 +2188,7 @@ main(int argc, char **argv)
 
 	(void)signal(SIGSEGV, sigsegv);
 	if(!logg_foreground)
-		(void)signal(SIGHUP, sighup);
+		(void)signal(SIGUSR1, sigusr1);
 	if(!external)
 		(void)signal(SIGUSR2, sigusr2);
 
@@ -5976,15 +5976,15 @@ sigsegv(int sig)
 
 extern FILE *logg_fd;
 static void
-sighup(int sig)
+sigusr1(int sig)
 {
 
-	signal(SIGHUP, sighup);
+	signal(SIGUSR1, sigusr1);
 
 	if(!(cfgopt(copt, "LogFile"))->enabled)
 		return;
 
-	logg("SIGHUP caught: re-opening log file\n");
+	logg("SIGUSR1 caught: re-opening log file\n");
 	logg_close();
 	logg("*Log file re-opened\n");
 	dup2(fileno(logg_fd), 2);

@@ -1,3 +1,10 @@
+Fri Oct  3 15:49:17 CEST 2008 (acab)
+------------------------------------
+  * clamav-milter/clamav-milter.c: reopen log files on USR1 instead of HUP
+  - bb#1194. Note that this is an interim solution, as the milter should not
+  abuse other daemons' logfiles. This also doesn't need a fair amount of
+  documentantion as this feature never worked before.
+
 Wed Oct  1 19:11:30 CEST 2008 (acab)
 ------------------------------------
   * clamav-milter/clamav-milter.c: fix error path segfault
