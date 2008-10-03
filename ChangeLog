@@ -1,3 +1,8 @@
+Fri Oct  3 18:55:37 EEST 2008 (edwin)
+-------------------------------------
+  * configure.in: fix build failure when using LDFLAGS="-Wl,--as-needed" (bb  #1204)
+		  thanks to Nathan Brink <ohnobinki*ohnopublishing.net>
+
 Fri Oct  3 15:49:17 CEST 2008 (acab)
 ------------------------------------
   * clamav-milter/clamav-milter.c: reopen log files on USR1 instead of HUP

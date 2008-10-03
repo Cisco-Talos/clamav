@@ -18262,12 +18262,12 @@ esac
 
 if test "$have_milter" = "yes"; then
 
-        save_LDFLAGS="$LDFLAGS"
-	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
+        save_LIBS="$LIBS"
+    CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lpthread"
     if test -d /usr/lib/libmilter ; then
 	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -L/usr/lib/libmilter"
     fi
-    LDFLAGS="$LDFLAGS -lmilter $CLAMAV_MILTER_LIBS"
+    LIBS="$LIBS -lmilter $CLAMAV_MILTER_LIBS"
     { echo "$as_me:$LINENO: checking for mi_stop in -lmilter" >&5
 echo $ECHO_N "checking for mi_stop in -lmilter... $ECHO_C" >&6; }
 if test "${ac_cv_lib_milter_mi_stop+set}" = set; then
@@ -18416,7 +18416,7 @@ if test "$ac_res" != no; then
   test "$ac_cv_search_strlcpy" = "none required" || CLAMAV_MILTER_XLIB="$ac_cv_search_strlcpy"
 fi
 
-	LDFLAGS="$save_LDFLAGS $CLAMAV_MILTER_LIBS $CLAMAV_MILTER_XLIB"
+	LIBS="$save_LIBS $CLAMAV_MILTER_LIBS $CLAMAV_MILTER_XLIB"
 	$as_unset ac_cv_lib_milter_mi_stop
 	{ echo "$as_me:$LINENO: checking for mi_stop in -lmilter" >&5
 echo $ECHO_N "checking for mi_stop in -lmilter... $ECHO_C" >&6; }
@@ -18492,7 +18492,7 @@ fi
 
 fi
 
-    LDFLAGS="$save_LDFLAGS"
+    LIBS="$save_LIBS"
 
 for ac_header in libmilter/mfapi.h
 do
