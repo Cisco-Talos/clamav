@@ -1059,7 +1059,11 @@ fi
 if test "$want_unrar" = "yes"
 then
     AC_DEFINE([ENABLE_UNRAR], 1, "build unrar code")
+    CLAMAV_UNRAR_LIBS='$(top_builddir)/libclamunrar_iface/libclamunrar_iface.la'
+else
+    CLAMAV_UNRAR_LIBS=''
 fi
+AC_SUBST([CLAMAV_UNRAR_LIBS])
 
 
 dnl tcpwrappers support

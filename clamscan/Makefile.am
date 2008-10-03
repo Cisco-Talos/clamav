@@ -39,7 +39,7 @@ clamscan_SOURCES = \
     manager.h
 
 DEFS = @DEFS@ -DCL_NOTHREADS
-LIBS = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@
+LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMAV_UNRAR_LIBS@ @THREAD_LIBS@
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 
 CLEANFILES=*.gcda *.gcno

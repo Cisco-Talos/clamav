@@ -1,3 +1,8 @@
+Fri Oct  3 20:22:58 EEST 2008 (edwin)
+-------------------------------------
+  * configure.in, */Makefile.am:  link to libclamunrar_iface explicitly to allow non-rpath builds to work. (bb #1203)
+				  thanks to James Ralston <ralston*pobox.com>
+
 Fri Oct  3 18:55:37 EEST 2008 (edwin)
 -------------------------------------
   * configure.in: fix build failure when using LDFLAGS="-Wl,--as-needed" (bb  #1204)
