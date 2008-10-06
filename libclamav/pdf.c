@@ -278,20 +278,43 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 					 *	supported
 					 */
 					if((bytesleft > 11) && strncmp(q, " 0 R", 4) == 0) {
-						const char *r;
+						const char *r, *nq;
+						int opt_failed = 0;
+						size_t len = size;
 						char b[14];
 
 						q += 4;
 						cli_dbgmsg("cli_pdf: Length is in indirect obj %lu\n",
 							length);
 						snprintf(b, sizeof(b),
-							"\n%lu 0 obj", length);
+							"%lu 0 obj", length);
 						length = (unsigned long)strlen(b);
-						r = cli_pmemstr(buf, size, b, length);
-						if(r == NULL) {
-							b[0] = '\r';
-							r = cli_pmemstr(buf, size, b, length);
-						}
+						/* optimization: assume objects
+						 * are sequential */
+						nq = q;
+						do {
+							r = cli_pmemstr(nq, len, b, length);
+							if (r > nq) {
+								const char x = *(r-1);
+								if (x == '\n' || x=='\r') {
+									--r;
+									break;
+								}
+							}
+							if (r) {
+								len -= r+1-nq;
+								nq = r + 1;
+							} else if (!opt_failed) {
+								/* we failed optimized match,
+								 * try matching from the beginning
+								 */
+								len = q - buf;
+								r = nq = buf;
+								/* prevent
+								 * infloop */
+								opt_failed = 1;
+							}
+						} while (r);
 						if(r) {
 							r += length - 1;
 							r = pdf_nextobject(r, bytesleft - (r - q));
