@@ -1,3 +1,8 @@
+Tue Oct  7 13:21:04 CEST 2008 (acab)
+------------------------------------
+  * libclamav/unzip.c: error path fixes, handle bzip2's deflate in a special manner - bb#1220
+  * test: add clam.bz2.zip
+
 Fri Oct  3 19:28:18 CEST 2008 (acab)
 ------------------------------------
   * clamav-milter/clamav-milter.c: properly close descriptors before

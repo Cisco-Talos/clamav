@@ -4,7 +4,7 @@ FILES = clam-v2.rar clam-v3.rar clam.cab clam.exe.bz2 clam.exe clam.zip \
 	clam-nsis.exe clam-petite.exe clam-upack.exe clam-wwpack.exe clam.pdf\
 	clam.mail clam.ppt clam.tnef clam.ea05.exe clam.ea06.exe clam.d64.zip\
 	clam.exe.mbox.base64 clam.exe.mbox.uu clam.exe.binhex clam.ole.doc \
-	clam.impl.zip clam.exe.html
+	clam.impl.zip clam.exe.html clam.bz2.zip
 
 SPLIT_DIR=$(top_srcdir)/test/.split
 

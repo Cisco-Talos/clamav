@@ -174,7 +174,8 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
 	if(cli_writen(of, obuf, sizeof(obuf)-(*avail_out)) != (int)(sizeof(obuf)-(*avail_out))) {
 	  cli_warnmsg("cli_unzip: falied to write %lu inflated bytes\n", sizeof(obuf)-(*avail_out));
 	  ret = CL_EIO;
-	  res=1;
+	  res = 100;
+	  break;
 	}
 	*next_out = obuf;
 	*avail_out = sizeof(obuf);
@@ -217,18 +218,17 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
 	if(cli_writen(of, obuf, sizeof(obuf)-strm.avail_out) != (int)(sizeof(obuf)-strm.avail_out)) {
 	  cli_warnmsg("cli_unzip: falied to write %lu bunzipped bytes\n", sizeof(obuf)-strm.avail_out);
 	  ret = CL_EIO;
-	  res=1;
+	  res = 100;
+	  break;
 	}
 	strm.next_out = obuf;
 	strm.avail_out = sizeof(obuf);
-	continue;
+	if (res == BZ_OK) continue; /* after returning BZ_STREAM_END once, decompress returns an error */
       }
       break;
     }
     BZ2_bzDecompressEnd(&strm);
-    if (res == BZ_STREAM_END) {
-      res=0;
-    }
+    if (res == BZ_STREAM_END) res=0;
     break;
   }
 #endif /* HAVE_BZLIB_H */
@@ -255,7 +255,8 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
 	if(cli_writen(of, obuf, sizeof(obuf)-strm.avail_out) != (int)(sizeof(obuf)-strm.avail_out)) {
 	  cli_warnmsg("cli_unzip: falied to write %lu exploded bytes\n", sizeof(obuf)-strm.avail_out);
 	  ret = CL_EIO;
-	  res=1;
+	  res = 100;
+	  break;
 	}
 	strm.next_out = (uint8_t *)obuf;
 	strm.avail_out = sizeof(obuf);
