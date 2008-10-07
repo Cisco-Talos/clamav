@@ -32,6 +32,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+@ENABLE_UNRAR_FALSE@am__append_1 = export unrar_disabled=1;
 TESTS = $(am__EXEEXT_1) $(scripts)
 check_PROGRAMS = $(am__EXEEXT_1)
 subdir = unit_tests
@@ -233,7 +234,8 @@ programs = check_clamav
 scripts = check_clamd.sh check_freshclam.sh check_sigtool.sh check_clamscan.sh\
 	 valgrind_tests.sh efence_tests.sh duma_tests.sh
 
-TESTS_ENVIRONMENT = export abs_srcdir=$(abs_srcdir) AWK=$(AWK);
+TESTS_ENVIRONMENT = export abs_srcdir=$(abs_srcdir) AWK=$(AWK); \
+	$(am__append_1)
 check_SCRIPTS = $(scripts)
 @HAVE_LIBCHECK_FALSE@check_clamav_SOURCES = check_clamav_skip.c
 @HAVE_LIBCHECK_TRUE@check_clamav_SOURCES = check_clamav.c checks.h $(top_builddir)/libclamav/clamav.h\

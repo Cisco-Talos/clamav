@@ -1,9 +1,22 @@
-#!/bin/sh
+#!/bin/sh 
 CLAMSCAN_WRAPPER=${CLAMSCAN_WRAPPER-}
 die() {
 	rm -rf test-db
 	exit $1;
 }
+
+scan_failed() {
+	if test "X$unrar_disabled" = "X1" && test `grep -v '\.rar' $1 | grep OK | wc -l` -eq 0
+	then
+		echo "***" >&2;
+		echo "*** UNRAR is disabled, won't be able to detect unrar files!" >&2;
+		echo "***" >&2;
+	else
+		echo "clamscan did not detect all testfiles correctly!" >&2;
+		die 2;
+	fi
+}
+
 mkdir test-db
 cat <<EOF >test-db/test.hdb
 aa15bcf478d165efd2065190eb473bcb:544:ClamAV-Test-File
@@ -18,9 +31,8 @@ fi
 NFILES=`ls -1 ../test/clam* | wc -l`
 NINFECTED=`grep "Infected files" clamscan.log | cut -f2 -d: |sed -e 's/ //g'`
 if test "$NFILES" -ne "0$NINFECTED"; then
-	echo "clamscan did not detect all testfiles correctly!" >&2;
 	grep OK clamscan.log >&2;
-	die 2;
+	scan_failed clamscan.log
 fi
 
 cat <<EOF >test-db/test.pdb

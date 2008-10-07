@@ -39,6 +39,16 @@ error()
 	echo "***" >&2
 }
 
+scan_failed() {
+	if test "X$unrar_disabled" = "X1" && test `grep -v '\.rar' $1 | grep OK | wc -l` -eq 0
+	then
+		error "UNRAR is disabled, won't be able to detect unrar files!";
+	else
+		error  $2;
+		die 2;
+	fi
+}
+
 start_clamd()
 {
 	rm -f clamd-test.log
@@ -146,14 +156,12 @@ NFILES=`ls -1 $FILES | wc -l`
 NINFECTED=`grep "Infected files" clamdscan.log | cut -f2 -d:|sed -e 's/ //g'`
 NINFECTED_MULTI=`grep "Infected files" clamdscan-multiscan.log | cut -f2 -d:|sed -e 's/ //g'`
 if test "$NFILES" -ne "0$NINFECTED"; then
-	error "clamd did not detect all testfiles correctly!"
 	grep OK clamdscan.log
-	die 2
+	scan_failed clamdscan.log "clamd did not detect all testfiles correctly!"
 fi
 if test "$NFILES" -ne "0$NINFECTED_MULTI"; then
-	error "clamd did not detect all testfiles correctly in multiscan mode!"
 	grep OK clamdscan-multiscan.log
-	die 3
+	scan_failed clamdscan-multiscan.log "clamd did not detect all testfiles correctly in multiscan mode!"
 fi
 
 # Test HeuristicScanPrecedence off feature

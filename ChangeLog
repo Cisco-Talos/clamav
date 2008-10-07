@@ -1,3 +1,11 @@
+Tue Oct  7 22:52:06 EEST 2008 (edwin)
+-------------------------------------
+
+ * unit_tests/Makefile.am, unit_tests/Makefile.in,
+ unit_tests/check_clamd.sh, unit_tests/check_clamscan.sh: When RAR is
+ disabled, allow make check to succeed, and print only a warning (bb
+ #1212)
+
 Tue Oct  7 19:18:16 CEST 2008 (tk)
 ----------------------------------
   * shared/cfgparser.c, clamconf: gently deprecate obsolete options (bb#1213)
