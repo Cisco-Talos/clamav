@@ -162,7 +162,7 @@ long SO_search(const struct filter *m, const unsigned char *data, unsigned long 
 /* ----------------------------------------------------------- */
 
 
-#define MATCH_SUCCESS 0 
+#define MATCH_SUCCESS 0
 #define MATCH_FAILED  -1
 
 /*

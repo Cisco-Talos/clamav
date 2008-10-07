@@ -1,3 +1,8 @@
+Tue Oct  7 23:21:35 EEST 2008 (edwin)
+-------------------------------------
+
+ * libclamav/regex_list.c: fix whitespace
+
 Tue Oct  7 22:52:59 EEST 2008 (edwin)
 -------------------------------------
 
