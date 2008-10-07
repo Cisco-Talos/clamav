@@ -167,6 +167,20 @@
    fun:*
    fun:_dl_allocate_tls
 }
+# glibc uses IO_lock_lock, which uses lll_lock,
+# and valgrind doesn't know about it, so it thinks it is unlocked
+{
+   glibc-IOlock-fp
+   Helgrind:Race
+   fun:*
+   fun:*
+   fun:fputs
+}
+{
+   glibc-IOlock-fp
+   Helgrind:Race
+   fun:fputs
+}
 #{
 #	helgrind-glibc27-dbg18
 #	Helgrind:Race
