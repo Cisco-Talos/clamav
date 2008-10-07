@@ -31,6 +31,7 @@
 
 #define OPT_CLAMD 1
 #define OPT_FRESHCLAM 2
+#define OPT_DEPRECATED 4
 
 struct cfgoption {
     const char *name;

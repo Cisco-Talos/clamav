@@ -50,7 +50,9 @@ static void printopt(const struct cfgoption *opt, const struct cfgstruct *cpt, i
     }
 
     while(cpt) {
-	switch(opt->argtype) {
+	if(opt->owner & OPT_DEPRECATED) {
+	    printf("*** %s is DEPRECATED ***\n", opt->name);
+	} else switch(opt->argtype) {
 	    case OPT_STR:
 	    case OPT_FULLSTR:
 	    case OPT_QUOTESTR:

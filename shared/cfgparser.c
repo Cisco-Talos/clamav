@@ -129,6 +129,14 @@ struct cfgoption cfg_options[] = {
     {"DevACOnly", OPT_BOOL, -1, NULL, 0, OPT_CLAMD},
     {"DevACDepth", OPT_NUM, -1, NULL, 0, OPT_CLAMD},
 
+    /* Deprecated options */
+    {"MailMaxRecursion", OPT_NUM, 64, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
+    {"ArchiveMaxFileSize", OPT_COMPSIZE, 10485760, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
+    {"ArchiveMaxRecursion", OPT_NUM, 8, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
+    {"ArchiveMaxFiles", OPT_NUM, 1000, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
+    {"ArchiveMaxCompressionRatio", OPT_NUM, 250, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
+    {"ArchiveBlockMax", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
+
     {NULL, 0, 0, NULL, 0, 0}
 };
 
@@ -183,6 +191,10 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 		if(pt->name) {
 		    if(!strcmp(name, pt->name)) {
 			found = 1;
+			if(pt->owner & OPT_DEPRECATED) {
+			    fprintf(stderr, "WARNING: Ignoring deprecated option %s at line %u\n", pt->name, line);
+			    break;
+			}
 			switch(pt->argtype) {
 			    case OPT_STR:
 			    	/* deprecated.  Use OPT_QUOTESTR instead since it behaves like this, but supports quotes to allow values to contain whitespace */
