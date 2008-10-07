@@ -280,7 +280,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 					if((bytesleft > 11) && strncmp(q, " 0 R", 4) == 0) {
 						const char *r, *nq;
 						int opt_failed = 0;
-						size_t len = size;
+						size_t len;
 						char b[14];
 
 						q += 4;
@@ -292,6 +292,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 						/* optimization: assume objects
 						 * are sequential */
 						nq = q;
+						len = buf + size - q;
 						do {
 							r = cli_pmemstr(nq, len, b, length);
 							if (r > nq) {
