@@ -58,6 +58,7 @@
 
 void move_infected(const char *filename, const struct optstruct *opt);
 int notremoved = 0, notmoved = 0;
+int printinfected = 0;
 
 static int dsresult(int sockd, const struct optstruct *opt)
 {
@@ -135,7 +136,7 @@ static int dsfile(int sockd, const char *scantype, const char *filename, const s
 
     ret = dsresult(sockd, opt);
 
-    if(!ret)
+    if(!ret && !printinfected)
 	logg("~%s: OK\n", filename);
 
     return ret;
@@ -448,7 +449,10 @@ int client(const struct optstruct *opt, int *infected)
 			char buff[4096];
 			memset(buff, 0, sizeof(buff));
 			ret = clamd_fdscan(sockd, 0, buff, sizeof(buff));
-			logg("fd: %s%s",buff, ret == 1 ? " FOUND" : ret == -1 ? " ERROR" : "OK");
+			if(ret == 1 || ret == -1)
+			    logg("fd: %s%s\n",buff, ret == 1 ? " FOUND" : " ERROR");
+			else if(!printinfected)
+			    logg("fd: OK\n");
 		}
 #endif
 	} else

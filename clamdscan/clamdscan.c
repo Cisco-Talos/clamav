@@ -39,8 +39,7 @@
 
 void help(void);
 
-short printinfected = 0;
-
+extern int printinfected;
 extern int notremoved, notmoved;
 
 static void print_server_version(const struct optstruct *opt)
@@ -71,6 +70,7 @@ int main(int argc, char **argv)
 				  "stdout", "log", "move", "copy", "remove",
 				  "config-file", "no-summary",  "fdpass",
 				  "disable-summary", "multiscan", "reload",
+				  "infected",
 				  NULL };
 
 
