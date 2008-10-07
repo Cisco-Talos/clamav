@@ -643,7 +643,7 @@ flatedecode(unsigned char *buf, off_t len, int fout, cli_ctx *ctx)
 
 	zstat = inflateInit(&stream);
 	if(zstat != Z_OK) {
-		cli_warnmsg("cli_pdf: inflateInit failed");
+		cli_warnmsg("cli_pdf: inflateInit failed\n");
 		return CL_EMEM;
 	}
 

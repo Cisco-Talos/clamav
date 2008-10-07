@@ -313,7 +313,7 @@ static int iconv(iconv_t iconv_struct,char **inbuf, size_t *inbytesleft,
 					else if( (input[i]&0xF8) == 0xF0) {
 						if((input[i+1]&0xC0) == 0x80 && (input[i+2]&0xC0) == 0x80 && (input[i+3]&0xC0) == 0x80) {
 							/* 4 bytes long 11110www 10xxxxxx 10yyyyyy 10zzzzzz -> 000wwwxx xxxxyyyy yyzzzzzz*/
-							cli_dbgmsg(MODULE_NAME "UTF8 character out of UTF16 range encountered");
+							cli_dbgmsg(MODULE_NAME "UTF8 character out of UTF16 range encountered\n");
 							output[j++] = 0xff;
 							output[j++] = 0xff;
 

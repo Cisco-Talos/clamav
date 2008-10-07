@@ -2765,7 +2765,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 				}
 			} else if(strcasecmp(mimeSubtype, "external-body") == 0)
 				/* TODO */
-				cli_warnmsg("Attempt to send Content-type message/external-body trapped");
+				cli_warnmsg("Attempt to send Content-type message/external-body trapped\n");
 			else
 				cli_warnmsg("Unsupported message format `%s' - if you believe this file contains a virus, submit it to www.clamav.net\n", mimeSubtype);
 
@@ -2777,7 +2777,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 			return rc;
 
 		default:
-			cli_dbgmsg("Message received with unknown mime encoding - assume application");
+			cli_dbgmsg("Message received with unknown mime encoding - assume application\n");
 			/*
 			 * Some Yahoo emails attach as
 			 * Content-Type: X-unknown/unknown;

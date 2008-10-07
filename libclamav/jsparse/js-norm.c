@@ -832,7 +832,7 @@ static void run_decoders(struct parser_state *state)
 		/* initialize embedded context */
 		memset(&state->tokens, 0, sizeof(state->tokens));
 		if(++state->rec > 16)
-			cli_dbgmsg(MODULE "recursion limit reached");
+			cli_dbgmsg(MODULE "recursion limit reached\n");
 		else {
 			cli_js_process_buffer(state, res.txtbuf.data, res.txtbuf.pos);
 			--state->rec;
@@ -896,7 +896,7 @@ void cli_js_output(struct parser_state *state, const char *tempdir)
 	if(buf.pos < 9 || memcmp(buf.buf + buf.pos - 9, "</script>", 9))
 		buf_outs("</script>", &buf);
 	if(write(buf.outfd, buf.buf, buf.pos) < 0) {
-		cli_dbgmsg(MODULE "I/O error");
+		cli_dbgmsg(MODULE "I/O error\n");
 	}
 	close(buf.outfd);
 	cli_dbgmsg(MODULE "dumped/appended normalized script to: %s\n",filename);
@@ -936,7 +936,7 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
 	if(!state->global) {
 		/* this state has either not been initialized,
 		 * or cli_js_parse_done() was already called on it */
-		cli_warnmsg(MODULE "invalid state");
+		cli_warnmsg(MODULE "invalid state\n");
 		return;
 	}
 	yyb = yy_scan_bytes(buf, n, state->scanner);

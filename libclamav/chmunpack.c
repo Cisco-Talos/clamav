@@ -560,7 +560,7 @@ static int read_sys_control(int fd, chm_metadata_t *metadata, lzx_control_t *lzx
 	lzx_control->cache_size = chm_endian_convert_32(lzx_control->cache_size);
 	
 	if (strncmp((const char *) "LZXC", (const char *) lzx_control->signature, 4) != 0) {
-		cli_dbgmsg("bad sys_control signature");
+		cli_dbgmsg("bad sys_control signature\n");
 		return FALSE;
 	}
 	switch(lzx_control->version) {
@@ -912,7 +912,7 @@ int cli_chm_open(int fd, const char *dirname, chm_metadata_t *metadata)
 	
 	while (metadata->num_chunks) {
 		if (read_chunk(metadata, fd) != CL_SUCCESS) {
-			cli_dbgmsg("read_chunk failed");
+			cli_dbgmsg("read_chunk failed\n");
 			goto abort;
 		}
 		if (read_control_entries(metadata) == FALSE) {
@@ -923,7 +923,7 @@ int cli_chm_open(int fd, const char *dirname, chm_metadata_t *metadata)
 	}
 
 	if (!metadata->sys_content.length || !metadata->sys_control.length || !metadata->sys_reset.length) {
-		cli_dbgmsg("sys file missing");
+		cli_dbgmsg("sys file missing\n");
 		goto abort;
 	}
 	

@@ -1079,7 +1079,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					if(dconf_js && !js_state) {
 						js_state = cli_js_init();
 						if(!js_state) {
-							cli_dbgmsg("htmlnorm: Failed to initialize js parser");
+							cli_dbgmsg("htmlnorm: Failed to initialize js parser\n");
 						}
 						js_begin = ptr;
 						js_end = NULL;

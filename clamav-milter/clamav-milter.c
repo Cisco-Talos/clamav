@@ -4796,7 +4796,7 @@ connect2clamd(struct privdata *privdata)
 		buf[nbytes] = '\0';
 #ifdef	CL_DEBUG
 		if(debug_level >= 4)
-			cli_dbgmsg("Received: %s", buf);
+			cli_dbgmsg("Received: %s\n", buf);
 #endif
 		if(sscanf(buf, "PORT %hu\n", &p) != 1) {
 			logg(_("!Expected port information from clamd, got '%s'\n"),
@@ -4830,7 +4830,7 @@ connect2clamd(struct privdata *privdata)
 		if(connect(privdata->dataSocket, (struct sockaddr *)&reply, sizeof(struct sockaddr_in)) < 0) {
 			perror("connect");
 
-			cli_dbgmsg("Failed to connect to port %d given by clamd",
+			cli_dbgmsg("Failed to connect to port %d given by clamd\n",
 				p);
 			/* 0.4 - use better error message */
 #ifdef HAVE_STRERROR_R

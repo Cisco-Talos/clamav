@@ -516,7 +516,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     cli_dbgmsg("NumberOfSections: %d\n", nsections);
 
     timestamp = (time_t) EC32(file_hdr.TimeDateStamp);
-    cli_dbgmsg("TimeDateStamp: %s", cli_ctime(&timestamp, timestr, sizeof(timestr)));
+    cli_dbgmsg("TimeDateStamp: %s\n", cli_ctime(&timestamp, timestr, sizeof(timestr)));
 
     cli_dbgmsg("SizeOfOptionalHeader: %x\n", EC16(file_hdr.SizeOfOptionalHeader));
 

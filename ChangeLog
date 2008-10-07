@@ -1,3 +1,7 @@
+Tue Oct  7 15:52:06 CEST 2008 (acab)
+------------------------------------
+  * misc: add missing EOL to dbg/warn messages - bb#1219
+
 Tue Oct  7 13:21:04 CEST 2008 (acab)
 ------------------------------------
   * libclamav/unzip.c: error path fixes, handle bzip2's deflate in a special manner - bb#1220
