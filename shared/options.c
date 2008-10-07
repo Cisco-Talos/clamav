@@ -31,10 +31,10 @@
 #include "output.h"
 
 
-static int register_option(struct optstruct *opt, const char *optlong, char optshort, const struct option *options_long, const char * const *accepted_long)
+static int register_option(struct optstruct *opt, const char *optlong, char optshort, const struct option *options_long, const char * const *accepted_long, const char * const *deprecated_long)
 {
 	struct optnode *newnode;
-	int i, found = 0;
+	int i, found;
 	const char *longname = NULL;
 
 
@@ -54,15 +54,37 @@ static int register_option(struct optstruct *opt, const char *optlong, char opts
     }
 
     if(accepted_long) {
+	found = 0;
 	for(i = 0; accepted_long[i]; i++)
-	    if(!strcmp(accepted_long[i], longname))
+	    if(!strcmp(accepted_long[i], longname)) {
 		found = 1;
+		break;
+	    }
 
 	if(!found) {
 	    if(optshort)
 		mprintf("WARNING: Ignoring option --%s (-%c)\n", longname, optshort);
 	    else
 		mprintf("WARNING: Ignoring option --%s\n", longname);
+
+	    return 0;
+	}
+    }
+
+    if(deprecated_long) {
+	found = 0;
+	for(i = 0; deprecated_long[i]; i++) {
+	    if(!strcmp(deprecated_long[i], longname)) {
+		found = 1;
+		break;
+	    }
+	}
+
+	if(found) {
+	    if(optshort)
+		mprintf("WARNING: Ignoring deprecated option --%s (-%c)\n", longname, optshort);
+	    else
+		mprintf("WARNING: Ignoring deprecated option --%s\n", longname);
 
 	    return 0;
 	}
@@ -125,7 +147,7 @@ void opt_free(struct optstruct *opt)
     free(opt);
 }
 
-struct optstruct *opt_parse(int argc, char * const *argv, const char *getopt_short, const struct option *options_long, const char * const *accepted_long)
+struct optstruct *opt_parse(int argc, char * const *argv, const char *getopt_short, const struct option *options_long, const char * const *accepted_long, const char * const *deprecated_long)
 {
 	int ret, opt_index, i, len;
 	struct optstruct *opt;
@@ -147,7 +169,7 @@ struct optstruct *opt_parse(int argc, char * const *argv, const char *getopt_sho
 
 	switch(ret) {
 	    case 0:
-		if(register_option(opt, options_long[opt_index].name, 0, options_long, accepted_long) == -1) {
+		if(register_option(opt, options_long[opt_index].name, 0, options_long, accepted_long, deprecated_long) == -1) {
 		    opt_free(opt);
 		    return NULL;
 		}
@@ -160,7 +182,7 @@ struct optstruct *opt_parse(int argc, char * const *argv, const char *getopt_sho
 		    else
 			longname = NULL;
 
-		    if(register_option(opt, longname, ret, options_long, accepted_long) == -1) {
+		    if(register_option(opt, longname, ret, options_long, accepted_long, deprecated_long) == -1) {
 			opt_free(opt);
 			return NULL;
 		    }

@@ -84,7 +84,7 @@ int main(int argc, char **argv)
     sigprocmask(SIG_SETMASK, &sigset, NULL);
 #endif
 
-    opt = opt_parse(argc, argv, clamscan_shortopt, clamscan_longopt, NULL);
+    opt = opt_parse(argc, argv, clamscan_shortopt, clamscan_longopt, NULL, clamscan_deprecated);
     if(!opt) {
 	mprintf("!Can't parse the command line\n");
 	return 40;

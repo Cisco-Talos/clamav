@@ -88,7 +88,40 @@ static struct option clamscan_longopt[] = {
     {"dev-ac-only", 0, 0, 0},
     {"dev-ac-depth", 1, 0, 0},
     {"fdpass", 0, 0, 0},
+
+    /* deprecated (please also add to clamscan_deprecated[]) */
+    {"no-phishing-restrictedscan", 0, 0, 0},
+    {"max-ratio", 1, 0, 0},
+    {"max-space", 1, 0, 0},
+    {"block-max", 0, 0, 0},
+    {"unzip", 2, 0, 0},
+    {"unrar", 2, 0, 0},
+    {"arj", 2, 0, 0},
+    {"unzoo", 2, 0, 0},
+    {"lha", 2, 0, 0},
+    {"jar", 2, 0, 0},
+    {"tar", 2, 0, 0},
+    {"tgz", 2, 0, 0},
+    {"deb", 2, 0, 0},
+
     {0, 0, 0, 0}
+};
+
+const char *clamscan_deprecated[] = {
+    "no-phishing-restrictedscan",
+    "max-ratio",
+    "max-space",
+    "block-max",
+    "unzip",
+    "unrar",
+    "arj",
+    "unzoo",
+    "lha",
+    "jar",
+    "tar",
+    "tgz",
+    "deb",
+    NULL
 };
 
 #endif

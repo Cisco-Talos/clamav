@@ -1,3 +1,7 @@
+Tue Oct  7 22:35:22 CEST 2008 (tk)
+----------------------------------
+  * shared/options.c: handle obsolete options in cmdline parser (bb#1213)
+
 Tue Oct  7 23:21:35 EEST 2008 (edwin)
 -------------------------------------
 

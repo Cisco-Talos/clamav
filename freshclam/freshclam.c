@@ -237,7 +237,7 @@ int main(int argc, char **argv)
     	};
 
 
-    opt = opt_parse(argc, argv, short_options, long_options, NULL);
+    opt = opt_parse(argc, argv, short_options, long_options, NULL, NULL);
     if(!opt) {
 	mprintf("!Can't parse the command line\n");
 	return 40;

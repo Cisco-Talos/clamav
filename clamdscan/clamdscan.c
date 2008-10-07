@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 				  NULL };
 
 
-    opt = opt_parse(argc, argv, clamscan_shortopt, clamscan_longopt, clamdscan_accepted);
+    opt = opt_parse(argc, argv, clamscan_shortopt, clamscan_longopt, clamdscan_accepted, NULL);
     if(!opt) {
 	mprintf("!Can't parse the command line\n");
 	return 2;
