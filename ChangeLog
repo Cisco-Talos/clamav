@@ -1,3 +1,7 @@
+Wed Oct  8 11:16:34 CEST 2008 (acab)
+------------------------------------
+  * doc/signatures.*: make a note about using regexes in [zr]md's
+
 Tue Oct  7 23:47:02 CEST 2008 (tk)
 ----------------------------------
   * clamdscan: properly handle --infected (bb#1221)
