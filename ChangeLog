@@ -1,3 +1,22 @@
+Thu Oct  9 12:17:45 EEST 2008 (edwin)
+-------------------------------------
+ * ChangeLog, clamav-config.h.in, configure, configure.in,
+ freshclam/manager.c, libclamav/readdb.c, libclamav/version.c,
+ shared/misc.c, unit_tests/check_clamav.c: when --disable-gcc-vcheck
+ is set, set CFLAGS to O0 and append -broken-compiler to the VERSION
+ (bb #684) introduce VERSION_SUFFIX for easier handling, and convert
+ -exp to use it
+
+Thu Oct  9 12:07:03 EEST 2008 (edwin)
+-------------------------------------
+
+ * clamav-config.h.in, configure, configure.in, freshclam/manager.c,
+ libclamav/readdb.c, libclamav/version.c, shared/misc.c,
+ unit_tests/check_clamav.c: when --disable-gcc-vcheck is set, set
+ CFLAGS to O0 and append -broken-compiler to the VERSION (bb #684)
+ introduce VERSION_SUFFIX for easier handling, and convert -exp to
+ use it
+
 Wed Oct  8 11:16:34 CEST 2008 (acab)
 ------------------------------------
   * doc/signatures.*: make a note about using regexes in [zr]md's

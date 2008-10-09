@@ -71,7 +71,7 @@ END_TEST
 START_TEST (test_cl_retver)
 {
     const char *ver = cl_retver();
-    fail_unless(!strcmp(REPO_VERSION, ver),"cl_retver");
+    fail_unless(!strcmp(REPO_VERSION""VERSION_SUFFIX, ver),"cl_retver");
     fail_unless(strcspn(ver,"012345789") < strlen(ver),
 		    "cl_retver must have a number");
 }

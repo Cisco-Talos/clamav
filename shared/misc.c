@@ -54,19 +54,13 @@
 #define REPO_VERSION "exported"
 #endif
 
-#ifdef CL_EXPERIMENTAL
-#define EXP_VER "-exp"
-#else
-#define EXP_VER
-#endif
-
 const char *get_version(void)
 {
 	if(!strncmp("devel-",VERSION,6) && strcmp("exported",REPO_VERSION)) {
-		return REPO_VERSION""EXP_VER;
+		return REPO_VERSION""VERSION_SUFFIX;
 	}
 	/* it is a release, or we have nothing better */
-	return VERSION""EXP_VER;
+	return VERSION""VERSION_SUFFIX;
 }
 /* CL_NOLIBCLAMAV means to omit functions that depends on libclamav */
 #ifndef CL_NOLIBCLAMAV

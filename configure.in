@@ -80,7 +80,7 @@ AC_ARG_ENABLE([gcc-vcheck],
 gcc_check=$enableval, gcc_check="yes")
 
 msg_gcc_check="use --disable-gcc-vcheck to disable this check. Before reporting any bugs check with a supported version of gcc"
-
+VERSION_SUFFIX=
 dnl Check for gcc-4.1.0
 if test "$gcc_check" = "yes"; then
 	if test "x$ac_compiler_gnu" = "xyes"; then
@@ -96,7 +96,11 @@ if test "$gcc_check" = "yes"; then
 				;;
 	esac
 	fi
+else
+	CFLAGS="$CFLAGS -O0"
+	VERSION_SUFFIX="$VERSION_SUFFIX-broken-compiler"
 fi
+
 
 dnl Checks if compiler produces valid code, regardless of compiler
 dnl we do these checks here to avoid receiving endless bugreports about
@@ -308,6 +312,7 @@ enable_experimental=$enableval, enable_experimental="no")
 
 if test "$enable_experimental" = "yes"; then
   AC_DEFINE([CL_EXPERIMENTAL],1,[enable experimental code])
+  VERSION_SUFFIX="$VERSION_SUFFIX-exp"
 fi
 
 AC_CHECK_LIB([socket], [bind], [LIBS="$LIBS -lsocket"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsocket"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsocket"; CLAMD_LIBS="$CLAMD_LIBS -lsocket"])
@@ -1493,6 +1498,8 @@ AC_MSG_RESULT([$have_signed_rightshift_extended]);
 
 AC_C_FDPASSING
 
+AC_DEFINE_UNQUOTED([VERSION_SUFFIX],"$VERSION_SUFFIX",[Version suffix for package])
+
 AC_OUTPUT([
 libclamunrar/Makefile
 libclamunrar_iface/Makefile
@@ -1524,7 +1531,18 @@ docs/man/freshclam.conf.5
 docs/man/sigtool.1
 ])
 
-if test "x$cross_compiling" != "xno" || test "x$gcc_check" = "xno" || test "x$zlib_check" = "xno" ; then
+# Yep, downgrading the compiler avoids the bug too:
+# 4.0.x, and 4.1.0 are the known buggy versions
+# 3.4 doesn't have the bug
+if test "x$gcc_check" != "xyes"; then
+	AC_MSG_WARN([
+****** Optimizations disabled to avoid compiler bugs
+****** The resulting binaries will be slow!
+****** It is recommended to either upgrade or downgrade your compiler
+])
+fi
+
+if test "x$cross_compiling" != "xno" || test "x$gcc_check" != "xyes" || test "x$zlib_check" = "xno" ; then
 AC_MSG_WARN([
 ****** WARNING:
 ****** You are either cross compiling to a different host or

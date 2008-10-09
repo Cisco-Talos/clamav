@@ -383,6 +383,9 @@
 /* Version number of package */
 #undef VERSION
 
+/* Version suffix for package */
+#undef VERSION_SUFFIX
+
 /* tcpwrappers support */
 #undef WITH_TCPWRAP
 

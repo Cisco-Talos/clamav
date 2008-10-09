@@ -12178,7 +12178,7 @@ fi
 
 
 msg_gcc_check="use --disable-gcc-vcheck to disable this check. Before reporting any bugs check with a supported version of gcc"
-
+VERSION_SUFFIX=
 if test "$gcc_check" = "yes"; then
 	if test "x$ac_compiler_gnu" = "xyes"; then
 		{ echo "$as_me:$LINENO: checking for a supported version of gcc" >&5
@@ -12198,7 +12198,11 @@ echo "${ECHO_T}ok (${gcc_version})" >&6; }
 				;;
 	esac
 	fi
+else
+	CFLAGS="$CFLAGS -O0"
+	VERSION_SUFFIX="$VERSION_SUFFIX-broken-compiler"
 fi
+
 
 
 { echo "$as_me:$LINENO: checking for gcc bug PR27603" >&5
@@ -13249,6 +13253,7 @@ cat >>confdefs.h <<\_ACEOF
 #define CL_EXPERIMENTAL 1
 _ACEOF
 
+  VERSION_SUFFIX="$VERSION_SUFFIX-exp"
 fi
 
 { echo "$as_me:$LINENO: checking for bind in -lsocket" >&5
@@ -20986,6 +20991,12 @@ echo "${ECHO_T}disabled" >&6; }
 fi
 
 
+
+cat >>confdefs.h <<_ACEOF
+#define VERSION_SUFFIX "$VERSION_SUFFIX"
+_ACEOF
+
+
 ac_config_files="$ac_config_files libclamunrar/Makefile libclamunrar_iface/Makefile libclamav/Makefile libclamav/lzma/Makefile clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile Makefile clamav-config libclamav.pc docs/man/clamav-milter.8 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1"
 
 cat >confcache <<\_ACEOF
@@ -23392,7 +23403,23 @@ if test "$no_create" != yes; then
 fi
 
 
-if test "x$cross_compiling" != "xno" || test "x$gcc_check" = "xno" || test "x$zlib_check" = "xno" ; then
+# Yep, downgrading the compiler avoids the bug too:
+# 4.0.x, and 4.1.0 are the known buggy versions
+# 3.4 doesn't have the bug
+if test "x$gcc_check" != "xyes"; then
+	{ echo "$as_me:$LINENO: WARNING:
+****** Optimizations disabled to avoid compiler bugs
+****** The resulting binaries will be slow!
+****** It is recommended to either upgrade or downgrade your compiler
+" >&5
+echo "$as_me: WARNING:
+****** Optimizations disabled to avoid compiler bugs
+****** The resulting binaries will be slow!
+****** It is recommended to either upgrade or downgrade your compiler
+" >&2;}
+fi
+
+if test "x$cross_compiling" != "xno" || test "x$gcc_check" != "xyes" || test "x$zlib_check" = "xno" ; then
 { echo "$as_me:$LINENO: WARNING:
 ****** WARNING:
 ****** You are either cross compiling to a different host or

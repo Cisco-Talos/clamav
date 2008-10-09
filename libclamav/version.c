@@ -11,5 +11,5 @@
 /* libclamav's version is always the SVN revision (if available) */
 const char *cl_retver(void)
 {
-	return REPO_VERSION;
+	return REPO_VERSION""VERSION_SUFFIX;
 }

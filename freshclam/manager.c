@@ -1430,7 +1430,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 		    logg("*Software version from DNS: %s\n", newver);
 		    strncpy(vstr, get_version(), 32);
 		    vstr[31] = 0;
-		    if((pt = strstr(vstr, "-exp")))
+		    if((pt = strstr(vstr, "-exp")) || (pt = strstr(vstr,"-broken")))
 			*pt = 0;
 
 		    if(vwarning && !strstr(vstr, "devel") && !strstr(vstr, "rc")) {
