@@ -9,7 +9,6 @@ Thu Oct  9 12:17:45 EEST 2008 (edwin)
 
 Thu Oct  9 12:07:03 EEST 2008 (edwin)
 -------------------------------------
-
  * clamav-config.h.in, configure, configure.in, freshclam/manager.c,
  libclamav/readdb.c, libclamav/version.c, shared/misc.c,
  unit_tests/check_clamav.c: when --disable-gcc-vcheck is set, set
@@ -31,17 +30,14 @@ Tue Oct  7 22:35:22 CEST 2008 (tk)
 
 Tue Oct  7 23:21:35 EEST 2008 (edwin)
 -------------------------------------
-
  * libclamav/regex_list.c: fix whitespace
 
 Tue Oct  7 22:52:59 EEST 2008 (edwin)
 -------------------------------------
-
  * unit_tests/valgrind.supp: suppress a false positive race
 
 Tue Oct  7 22:52:06 EEST 2008 (edwin)
 -------------------------------------
-
  * unit_tests/Makefile.am, unit_tests/Makefile.in,
  unit_tests/check_clamd.sh, unit_tests/check_clamscan.sh: When RAR is
  disabled, allow make check to succeed, and print only a warning (bb
@@ -63,7 +59,7 @@ Tue Oct  7 13:21:04 CEST 2008 (acab)
 Fri Oct  3 19:28:18 CEST 2008 (acab)
 ------------------------------------
   * clamav-milter/clamav-milter.c: properly close descriptors before
-  				   forking (bb#1137)
+				   forking (bb#1137)
 
 Fri Oct  3 20:22:58 EEST 2008 (edwin)
 -------------------------------------
