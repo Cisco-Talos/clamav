@@ -144,6 +144,7 @@ static void help(void)
     mprintf("    --on-error-execute=COMMAND           execute COMMAND if errors occured\n");
     mprintf("    --on-outdated-execute=COMMAND        execute COMMAND when software is outdated\n");
     mprintf("    --list-mirrors                       print mirrors from mirrors.dat\n");
+    mprintf("    --submit-stats[=/path/clamd.conf]    only submit detection statistics\n");
 
     mprintf("\n");
 }
@@ -233,6 +234,7 @@ int main(int argc, char **argv)
 	    {"on-error-execute", 1, 0, 0},
 	    {"on-outdated-execute", 1, 0, 0},
 	    {"list-mirrors", 0, 0, 0},
+	    {"submit-stats", 2, 0, 0},
 	    {0, 0, 0, 0}
     	};
 
@@ -526,7 +528,10 @@ int main(int argc, char **argv)
 	while(!terminate) {
 	    ret = download(copt, opt, newdir, cfgfile);
 
-            if(ret > 1) {
+	    if(ret <= 1) {
+		if((cpt = cfgopt(copt, "SubmitDetectionStats"))->enabled)
+		    submitstats(cpt->strarg, copt);
+            } else  {
 	        if(opt_check(opt, "on-error-execute"))
 		    arg = opt_arg(opt, "on-error-execute");
 		else if((cpt = cfgopt(copt, "OnErrorExecute"))->enabled)
@@ -575,8 +580,19 @@ int main(int argc, char **argv)
 #endif	    
 	}
 
-    } else
-	ret = download(copt, opt, newdir, cfgfile);
+    } else {
+	if(opt_check(opt, "submit-stats")) {
+	    cfgfile = opt_arg(opt, "submit-stats");
+	    if(!cfgfile)
+		cfgfile = CONFDIR"/clamd.conf";
+	    ret = submitstats(cfgfile, copt);
+	} else {
+	    ret = download(copt, opt, newdir, cfgfile);
+
+	    if((cpt = cfgopt(copt, "SubmitDetectionStats"))->enabled)
+		submitstats(cpt->strarg, copt);
+	}
+    }
 
     if(ret > 1) {
 	if(opt_check(opt, "on-error-execute"))

@@ -26,6 +26,8 @@
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
 #endif
 
+#define _XOPEN_SOURCE 500
+
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -36,6 +38,7 @@
 #include <unistd.h>
 #endif
 #include <string.h>
+#include <strings.h>
 #include <ctype.h>
 #ifndef C_WINDOWS
 #include <netinet/in.h>
@@ -260,7 +263,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	    return -1;
 	}
 
-	if((ret = mirman_check(addr, rp->ai_family, mdat, &md))) {
+	if(mdat && (ret = mirman_check(addr, rp->ai_family, mdat, &md))) {
 	    if(ret == 1)
 		logg("Ignoring mirror %s (due to previous errors)\n", ipaddr);
 	    else
@@ -271,7 +274,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 		continue;
 	}
 
-	if(loadbal) {
+	if(mdat && loadbal) {
 	    if(!ret) {
 		if(!md) {
 		    loadbal_rp = rp;
@@ -327,11 +330,13 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	    }
 	    continue;
 	} else {
-	    if(rp->ai_family == AF_INET)
-		mdat->currip[0] = *((uint32_t *) addr);
-	    else
-		memcpy(mdat->currip, addr, 4 * sizeof(uint32_t));
-	    mdat->af = rp->ai_family;
+	    if(mdat) {
+		if(rp->ai_family == AF_INET)
+		    mdat->currip[0] = *((uint32_t *) addr);
+		else
+		    memcpy(mdat->currip, addr, 4 * sizeof(uint32_t));
+		mdat->af = rp->ai_family;
+	    }
 	    freeaddrinfo(res);
 	    return socketfd;
 	}
@@ -351,7 +356,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	sprintf(ipaddr, "%u.%u.%u.%u", ia[0], ia[1], ia[2], ia[3]);
 
 	ips++;
-	if((ret = mirman_check(&((struct in_addr *) ia)->s_addr, AF_INET, mdat, NULL))) {
+	if(mdat && (ret = mirman_check(&((struct in_addr *) ia)->s_addr, AF_INET, mdat, NULL))) {
 	    if(ret == 1)
 		logg("Ignoring mirror %s (due to previous errors)\n", ipaddr);
 	    else
@@ -384,17 +389,307 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	    closesocket(socketfd);
 	    continue;
 	} else {
-	    mdat->currip[0] = ((struct in_addr *) ia)->s_addr;
-	    mdat->af = AF_INET;
+	    if(mdat) {
+		mdat->currip[0] = ((struct in_addr *) ia)->s_addr;
+		mdat->af = AF_INET;
+	    }
 	    return socketfd;
 	}
     }
 #endif
 
-    if(can_whitelist && ips && (ips == ignored))
+    if(mdat && can_whitelist && ips && (ips == ignored))
 	mirman_whitelist(mdat);
 
     return -2;
+}
+
+static const char *readbline(int fd, char *buf, int bufsize, int filesize, int *bread)
+{
+	char *pt;
+	int ret, end;
+
+    if(!*bread) {
+	if(bufsize < filesize)
+	    lseek(fd, -bufsize, SEEK_END);
+	*bread = read(fd, buf, bufsize - 1);
+	if(!*bread || *bread == -1)
+	    return NULL;
+	buf[*bread] = 0;
+    }
+
+    pt = strrchr(buf, '\n');
+    if(!pt)
+	return NULL;
+    *pt = 0;
+    pt = strrchr(buf, '\n');
+    if(pt) {
+	return ++pt;
+    } else if(*bread == filesize) {
+	return buf;
+    } else {
+	*bread -= strlen(buf) + 1;
+	end = filesize - *bread;
+	if(end < bufsize) {
+	    if((ret = lseek(fd, 0, SEEK_SET)) != -1)
+		ret = read(fd, buf, end);
+	} else {
+	    if((ret = lseek(fd, end - bufsize, SEEK_SET)) != -1)
+		ret = read(fd, buf, bufsize - 1);
+	}
+	if(!ret || ret == -1)
+	    return NULL;
+	buf[ret] = 0;
+	*bread += ret;
+	pt = strrchr(buf, '\n');
+	if(!pt)
+	    return buf;
+	*pt = 0;
+	pt = strrchr(buf, '\n');
+	if(pt)
+	    return ++pt;
+	else if(strlen(buf))
+	    return buf;
+	else 
+	    return NULL;
+    }
+}
+
+/*
+ * TODO:
+ * - strptime() is most likely not portable enough
+ * - proxy support
+ */
+int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
+{
+	int fd, sd, bread, lread = 0, cnt, ret;
+	char post[SUBMIT_MIN_ENTRIES * 256 + 512];
+	char query[SUBMIT_MIN_ENTRIES * 256];
+	char buff[512], statsdat[512], newstatsdat[512], uastr[128];
+	char logfile[256], fbuff[FILEBUFF];
+	char *pt, *pt2;
+	const char *line;
+	struct cfgstruct *clamdopt;
+	const struct cfgstruct *cpt;
+	struct stat sb;
+	struct tm tms;
+	time_t epoch;
+	unsigned int qcnt, entries, submitted = 0, permfail = 0;
+
+
+    if(!(clamdopt = getcfg(clamdcfg, 1))) {
+	logg("!SubmitDetectionStats: Can't open or parse configuration file %s\n", clamdcfg);
+	return 56;
+    }
+
+    if(!(cpt = cfgopt(clamdopt, "LogFile"))->enabled) {
+	logg("!SubmitDetectionStats: LogFile needs to be enabled in %s\n", clamdcfg);
+	freecfg(clamdopt);
+	return 56;
+    }
+    strncpy(logfile, cpt->strarg, sizeof(logfile));
+    logfile[sizeof(logfile) - 1] = 0;
+
+    if(!cfgopt(clamdopt, "LogTime")->enabled) {
+	logg("!SubmitDetectionStats: LogTime needs to be enabled in %s\n", clamdcfg);
+	freecfg(clamdopt);
+	return 56;
+    }
+    freecfg(clamdopt);
+
+    if((fd = open("stats.dat", O_RDONLY)) != -1) {
+	if((bread = read(fd, statsdat, sizeof(statsdat) - 1)) == -1) {
+	    logg("^SubmitDetectionStats: Can't read stats.dat\n");
+	    bread = 0;
+	}
+	statsdat[bread] = 0;
+	close(fd);
+    } else {
+	*statsdat = 0;
+    }
+
+    if((fd = open(logfile, O_RDONLY)) == -1) {
+	logg("!SubmitDetectionStats: Can't open %s for reading\n", logfile);
+	return 56;
+    }
+
+    if(fstat(fd, &sb) == -1) {
+	logg("!SubmitDetectionStats: fstat() failed\n");
+	close(fd);
+	return 56;
+    }
+
+    while((line = readbline(fd, fbuff, FILEBUFF, sb.st_size, &lread)))
+	if(strstr(line, "FOUND"))
+	    break;
+
+    if(!line) {
+	logg("SubmitDetectionStats: No detection records found\n");
+	close(fd);
+	return 1;
+    }
+
+    if(*statsdat && !strcmp(line, statsdat)) {
+	logg("SubmitDetectionStats: No new detection records found\n");
+	close(fd);
+	return 1;
+    } else {
+	strncpy(newstatsdat, line, sizeof(newstatsdat));
+    }
+
+    if((cpt = cfgopt(copt, "HTTPUserAgent"))->enabled)
+	strncpy(uastr, cpt->strarg, sizeof(uastr));
+    else
+	snprintf(uastr, sizeof(uastr), PACKAGE"/%s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")", get_version());
+    uastr[sizeof(uastr) - 1] = 0;
+
+    ret = 0;
+    memset(query, 0, sizeof(query));
+    qcnt = 0;
+    entries = 0;
+    do {
+	if(!strstr(line, " FOUND"))
+	    continue;
+
+	if(*statsdat && !strcmp(line, statsdat))
+	    break;
+
+	strncpy(buff, line, sizeof(buff));
+	buff[sizeof(buff) - 1] = 0;
+
+	if(!(pt = strstr(buff, " -> "))) {
+	    logg("*SubmitDetectionStats: Skipping detection entry logged without time\b");
+	    continue;
+	}
+	*pt = 0;
+	pt += 4;
+
+	if(!strptime(buff, "%a %b  %d %H:%M:%S %Y", &tms) || (epoch = mktime(&tms)) == -1) {
+	    logg("!SubmitDetectionStats: Failed to convert date string\n");
+	    ret = 1;
+	    break;
+	}
+
+	pt2 = strstr(pt, " FOUND");
+	*pt2 = 0;
+
+	if(!(pt2 = strrchr(pt, ':'))) {
+	    logg("!SubmitDetectionStats: Incorrect format of the log file (1)\n");
+	    ret = 1;
+	    break;
+	}
+	*pt2 = 0;
+	pt2 += 2;
+
+#ifdef C_WINDOWS
+	if(!(pt = strrchr(pt, '\\'))) {
+#else
+	if(!(pt = strrchr(pt, '/'))) {
+#endif
+	    logg("!SubmitDetectionStats: Incorrect format of the log file (2)\n");
+	    ret = 1;
+	    break;
+	}
+	*pt++ = 0;
+
+	qcnt += snprintf(&query[qcnt], sizeof(query) - qcnt, "ts[]=%u&fname[]=%s&virus[]=%s&", (unsigned int) epoch, pt, pt2);
+	entries++;
+
+	if(entries == SUBMIT_MIN_ENTRIES) {
+	    sd = wwwconnect("stats.clamav.net", NULL, 0, NULL, cfgopt(copt, "LocalIPAddress")->strarg, cfgopt(copt, "ConnectTimeout")->numarg, NULL, 0, 0);
+	    if(sd == -1) {
+		logg("!SubmitDetectionStats: Can't connect to server\n");
+		ret = 52;
+		break;
+	    }
+
+	    query[sizeof(query) - 1] = 0;
+	    snprintf(post, sizeof(post),
+		"POST /submit.php HTTP/1.0\r\n"
+		"Host: stats.clamav.net\r\n"
+		"Content-Type: application/x-www-form-urlencoded\r\n"
+		"User-Agent: %s\r\n"
+		"Content-Length: %u\r\n\n"
+		"%s",
+	    uastr, (unsigned int) strlen(query), query);
+
+	    if(send(sd, post, strlen(post), 0) < 0) {
+		logg("!SubmitDetectionStats: Can't write to socket\n");
+		ret = 52;
+		closesocket(sd);
+		break;
+	    }
+
+	    pt = post;
+	    cnt = sizeof(post) - 1;
+#ifdef SO_ERROR
+	    while((bread = wait_recv(sd, pt, cnt, 0, cfgopt(copt, "ReceiveTimeout")->numarg)) > 0) {
+#else
+	    while((bread = recv(sd, pt, cnt, 0)) > 0) {
+#endif
+		pt += bread;
+		cnt -= bread;
+		if(cnt <= 0)
+		    break;
+	    }
+	    *pt = 0;
+	    closesocket(sd);
+
+	    if(bread < 0) {
+		logg("!SubmitDetectionStats: Can't read from socket\n");
+		ret = 52;
+		break;
+	    }
+
+	    if(strstr(post, "SUBMIT_OK")) {
+		submitted += entries;
+		if(submitted + SUBMIT_MIN_ENTRIES > SUBMIT_MAX_ENTRIES)
+		    break;
+		qcnt = 0;
+		entries = 0;
+		memset(query, 0, sizeof(query));
+		continue;
+	    }
+
+	    ret = 52;
+	    if(strstr(post, "SUBMIT_PERMANENT_FAILURE")) {
+		if(!submitted) {
+		    logg("!SubmitDetectionStats: Permanent failure\n");
+		    permfail = 1;
+		}
+	    } else if(strstr(post, "SUBMIT_TEMPORARY_FAILURE")) {
+		if(!submitted)
+		    logg("!SubmitDetectionStats: Temporary failure\n");
+	    } else {
+		if(!submitted)
+		    logg("!SubmitDetectionStats: Incorrect answer from server\n");
+	    }
+
+	    break;
+	}
+
+    } while((line = readbline(fd, fbuff, FILEBUFF, sb.st_size, &lread)));
+
+    close(fd);
+
+    if(submitted || permfail) {
+	if((fd = open("stats.dat", O_WRONLY)) == -1) {
+	    logg("^SubmitDetectionStats: Can't open stats.dat for writing\n");
+	} else {
+	    if((bread = write(fd, newstatsdat, sizeof(newstatsdat))) != sizeof(newstatsdat))
+		logg("^SubmitDetectionStats: Can't write to stats.dat\n");
+	    close(fd);
+	}
+    }
+
+    if(ret == 0) {
+	if(!submitted)
+	    logg("SubmitDetectionStats: Not enough recent data for submission\n");
+	else
+	    logg("SubmitDetectionStats: Submitted %u records\n", submitted);
+    }
+
+    return ret;
 }
 
 static int Rfc2822DateTime(char *buf, time_t mtime)

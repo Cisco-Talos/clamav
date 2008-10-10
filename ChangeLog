@@ -1,3 +1,8 @@
+Fri Oct 10 16:38:45 CEST 2008 (tk)
+----------------------------------
+  * freshclam: add support for submitting detection statistics (bb#777)
+	       New options: SubmitDetectionStats and --submit-stats
+
 Thu Oct  9 12:17:45 EEST 2008 (edwin)
 -------------------------------------
  * ChangeLog, clamav-config.h.in, configure, configure.in,

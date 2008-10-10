@@ -20,9 +20,14 @@
 #ifndef __MANAGER_H
 #define __MANAGER_H
 
+#define SUBMIT_MIN_ENTRIES    10
+#define SUBMIT_MAX_ENTRIES    50
+
 #include "shared/cfgparser.h"
 #include "shared/options.h"
 
 int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname, const char *dbdir, int logerr);
+
+int submitstats(const char *clamdcfg, const struct cfgstruct *copt);
 
 #endif
