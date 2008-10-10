@@ -586,9 +586,7 @@ int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
 #else
 	if(!(pt = strrchr(pt, '/'))) {
 #endif
-	    logg("!SubmitDetectionStats: Incorrect format of the log file (2)\n");
-	    ret = 1;
-	    break;
+	    continue;
 	}
 	*pt++ = 0;
 
