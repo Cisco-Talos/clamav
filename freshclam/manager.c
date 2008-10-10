@@ -671,7 +671,7 @@ int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
     close(fd);
 
     if(submitted || permfail) {
-	if((fd = open("stats.dat", O_WRONLY)) == -1) {
+	if((fd = open("stats.dat", O_WRONLY | O_CREAT | O_TRUNC, 0600)) == -1) {
 	    logg("^SubmitDetectionStats: Can't open stats.dat for writing\n");
 	} else {
 	    if((bread = write(fd, newstatsdat, sizeof(newstatsdat))) != sizeof(newstatsdat))
