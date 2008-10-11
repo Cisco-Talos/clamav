@@ -1192,7 +1192,7 @@ main(int argc, char **argv)
 	if(Bflag) {
 		int on;
 
-		broadcastSock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+		broadcastSock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 		/*
 		 * SO_BROADCAST doesn't sent to all NICs on Linux, it only
 		 * broadcasts on eth0, which is why there's an optional argument

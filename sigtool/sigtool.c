@@ -297,11 +297,7 @@ static char *getdsig(const char *host, const char *user, const unsigned char *da
 	mprintf("\n");
     }
 
-#ifdef PF_INET
-    if((sockd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
-#else
     if((sockd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-#endif
 	perror("socket()");
 	mprintf("!getdsig: Can't create socket\n");
 	memset(pass, 0, sizeof(pass));

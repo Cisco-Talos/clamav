@@ -50,11 +50,7 @@
 #include "client.h"
 #include "clamd_fdscan.h"
 
-#ifdef PF_INET
-# define SOCKET_INET	PF_INET
-#else
-# define SOCKET_INET	AF_INET
-#endif
+#define SOCKET_INET	AF_INET
 
 void move_infected(const char *filename, const struct optstruct *opt);
 int notremoved = 0, notmoved = 0;

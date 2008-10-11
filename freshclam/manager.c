@@ -118,15 +118,10 @@ static int getclientsock(const char *localip, int prot)
 {
 	int socketfd = -1;
 
-#ifdef HAVE_GETADDRINFO
-    if(prot == PF_INET6)
-	socketfd = socket(PF_INET6, SOCK_STREAM, 0);
+    if(prot == AF_INET6)
+	socketfd = socket(AF_INET6, SOCK_STREAM, 0);
     else
-	socketfd = socket(PF_INET, SOCK_STREAM, 0);
-#else
-    socketfd = socket(PF_INET, SOCK_STREAM, 0);
-#endif
-
+	socketfd = socket(AF_INET, SOCK_STREAM, 0);
     if(socketfd < 0) {
 	logg("!Can't create new socket\n");
 	return -1;

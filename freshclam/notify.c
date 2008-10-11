@@ -147,11 +147,7 @@ int notify(const char *cfgfile)
 
 #else /* IPv4 */
 
-#ifdef PF_INET
-	if((sockd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
-#else
 	if((sockd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-#endif
 	    logg("^Clamd was NOT notified: Can't create TCP socket\n");
 	    perror("socket()");
 	    freecfg(copt);

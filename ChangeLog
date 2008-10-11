@@ -1,3 +1,8 @@
+Sat Oct 11 11:56:10 CEST 2008 (acab)
+------------------------------------
+  * Make use of address family instead of protocol family as the
+    latter gets broken by _XOPEN_SOURCE
+
 Fri Oct 10 16:38:45 CEST 2008 (tk)
 ----------------------------------
   * freshclam: add support for submitting detection statistics (bb#777)
