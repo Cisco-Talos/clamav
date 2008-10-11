@@ -986,6 +986,10 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
 	    fd = open(fullname, O_RDONLY|O_BINARY);
 	    if(fd >= 0) {
 		    ret = cli_scandesc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR);
+		    if (ret == CL_CLEAN) {
+			    lseek(fd, 0, SEEK_SET);
+			    ret = cli_scandesc(fd, ctx, CL_TYPE_TEXT_ASCII, 0, NULL, AC_SCAN_VIR);
+		    }
 		    close(fd);
 	    }
     }

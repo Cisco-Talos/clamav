@@ -1,3 +1,8 @@
+Sat Oct 11 13:01:36 EEST 2008 (edwin)
+-------------------------------------
+ * libclamav/scanners.c: scan javascript with type 7 (and implicitly
+ with type 0) too
+
 Sat Oct 11 12:20:10 CEST 2008 (acab)
   * freshclama/manager.c: bump _XOPEN_SOURCE
 
