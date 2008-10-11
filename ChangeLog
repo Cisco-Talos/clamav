@@ -1,3 +1,6 @@
+Sat Oct 11 12:20:10 CEST 2008 (acab)
+  * freshclama/manager.c: bump _XOPEN_SOURCE
+
 Sat Oct 11 11:56:10 CEST 2008 (acab)
 ------------------------------------
   * Make use of address family instead of protocol family as the

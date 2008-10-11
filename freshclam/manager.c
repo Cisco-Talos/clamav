@@ -26,7 +26,7 @@
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
 #endif
 
-#define _XOPEN_SOURCE 500
+#define _XOPEN_SOURCE 600
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
