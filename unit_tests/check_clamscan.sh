@@ -58,7 +58,9 @@ if test $val != 1; then
 	echo "Error running clamscan: $val" >&2;
 	die 3;
 fi
-if grep "phish-test-ssl: Phishing.Heuristics.SSL-Spoof FOUND" clamscan2.log && grep "phish-test-cloak: Phishing.Heuristics.Cloaked-Null FOUND" clamscan2.log; then
-	echo "FOUND"
+grep "phish-test-ssl: Phishing.Heuristics.Email.SSL-Spoof FOUND" clamscan2.log >/dev/null && grep "phish-test-cloak: Phishing.Heuristics.Email.Cloaked.Null FOUND" clamscan2.log >/dev/null
+if test $? -ne 0; then
+	echo "Error on ssl/cloak phishing test" >&2;
+	die 4;
 fi
 die 0;

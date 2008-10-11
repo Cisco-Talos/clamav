@@ -1,3 +1,9 @@
+Sat Oct 11 13:17:29 EEST 2008 (edwin)
+-------------------------------------
+ * libclamav/phishcheck.c, unit_tests/check_clamscan.sh,
+ unit_tests/input/phish-test-ssl: fix URL parsing, since we now parse
+ the full URL
+
 Sat Oct 11 11:16:02 EEST 2008 (edwin)
 -------------------------------------
  * Makefile.am, Makefile.in, libclamav/jsparse/js-norm.c,

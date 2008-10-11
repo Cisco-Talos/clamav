@@ -997,7 +997,7 @@ static inline int validate_uri_ialpha(const char *start, const char *end)
 static int isURL(const struct phishcheck* pchk,const char* URL, int accept_anyproto)
 {
 	size_t len;
-	const char *start = NULL, *p, *q;
+	const char *start = NULL, *p, *q, *end;
 	if(!URL)
 		return 0;
 
@@ -1038,8 +1038,13 @@ static int isURL(const struct phishcheck* pchk,const char* URL, int accept_anypr
 	} else
 		start = URL;
 	p = start;
+	end = strchr(p, '/');
+	if (!end)
+		end = p + strlen(p);
 	do {
 		q = strchr(p, '.');
+		if (q > end)
+			break;
 		if(q) {
 			if(!validate_uri_xpalphas_nodot(p, q))
 				return 0;
@@ -1048,9 +1053,10 @@ static int isURL(const struct phishcheck* pchk,const char* URL, int accept_anypr
 	} while(q);
 	if (p == start) /* must have at least one dot in the URL */
 		return 0;
-	len = strlen(p);
-	while (len > 1 && p[len-1] == ' ') len--;
-	return !!in_tld_set(p, len);
+	if (end < p)
+		end = p;
+	while (*end == ' ' && end > p) --end;
+	return !!in_tld_set(p, end - p);
 }
 
 /*
