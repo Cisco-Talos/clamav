@@ -577,13 +577,13 @@ int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
 	pt2 += 2;
 
 #ifdef C_WINDOWS
-	if(!(pt = strrchr(pt, '\\'))) {
+	if((pt = strrchr(pt, '\\')))
 #else
-	if(!(pt = strrchr(pt, '/'))) {
+	if((pt = strrchr(pt, '/')))
 #endif
-	    continue;
-	}
-	*pt++ = 0;
+	    *pt++ = 0;
+	if(!pt)
+	    pt = "NOFNAME";
 
 	qcnt += snprintf(&query[qcnt], sizeof(query) - qcnt, "ts[]=%u&fname[]=%s&virus[]=%s&", (unsigned int) epoch, pt, pt2);
 	entries++;
