@@ -857,7 +857,41 @@ static void run_decoders(struct parser_state *state)
 
 void cli_js_parse_done(struct parser_state* state)
 {
+	struct tokens * tokens = &state->tokens;
+	size_t par_balance = 0, i;
+	char end = '\0';
+	YYSTYPE val;
+
 	cli_dbgmsg(MODULE "in cli_js_parse_done()\n");
+	/* close unfinished token */
+	switch (state->scanner->state) {
+		case DoubleQString:
+			end = '"';
+			break;
+		case SingleQString:
+			end = '\'';
+			break;
+	}
+	if (end != '\0')
+		cli_js_process_buffer(state, &end, 1);
+	/* close remaining paranthesis */
+	for (i=0;i<tokens->cnt;i++) {
+		if (tokens->data[i].type == TOK_PAR_OPEN)
+			par_balance++;
+		else if (tokens->data[i].type == TOK_PAR_CLOSE && par_balance > 0)
+			par_balance--;
+	}
+	if (par_balance > 0) {
+		memset(&val, 0, sizeof(val));
+		val.type = TOK_PAR_CLOSE;
+		TOKEN_SET(&val, cstring, ")");
+		while (par_balance-- > 0) {
+			add_token(state, &val);
+		}
+	}
+
+	/* we had to close unfinished strings, paranthesis,
+	 * so that the folders/decoders can run properly */
 	run_folders(&state->tokens);
 	run_decoders(state);
 

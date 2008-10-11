@@ -35,6 +35,9 @@ check_clamscan.sh: $(top_builddir)/test/clam.exe
 $(top_builddir)/test/clam.exe:
 	(cd $(top_builddir)/test && $(MAKE))
 
+quick-check:
+	VALGRIND=no LIBEFENCE=no LIBDUMA=no $(MAKE) check
+
 CLEANFILES=lcov.out *.gcno *.gcda *.log $(FILES) test-stderr.log clamscan.log valgrind-*.log duma.log duma2.log clamscan2.log
 EXTRA_DIST=.split $(srcdir)/*.ref input test-clamd.conf test-freshclam.conf valgrind.supp virusaction-test.sh $(scripts) preload_run.sh
 if ENABLE_COVERAGE

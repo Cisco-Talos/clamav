@@ -823,6 +823,8 @@ uninstall-am: uninstall-binSCRIPTS uninstall-pkgconfigDATA
 
 lcov:
 	($(MAKE); cd unit_tests; $(MAKE) lcov)
+quick-check:
+	($(MAKE); cd unit_tests; $(MAKE) quick-check)
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

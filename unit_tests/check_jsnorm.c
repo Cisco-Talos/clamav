@@ -357,6 +357,11 @@ static const char jstest_buf13[] =
 static const char jstest_expected13[] =
 "<script>var n000</script>";
 
+static const char jstest_buf14[] =
+"document.write(unescape('test%20test";
+
+static const char jstest_expected14[] =
+"<script>document.write(\"test test\")</script>";
 
 static struct {
 	const char *in;
@@ -375,7 +380,8 @@ static struct {
 	{jstest_buf10, jstest_expected10},
 	{jstest_buf11, jstest_expected11},
 	{jstest_buf12, jstest_expected12},
-	{jstest_buf13, jstest_expected13}
+	{jstest_buf13, jstest_expected13},
+	{jstest_buf14, jstest_expected14}
 };
 
 #ifdef CHECK_HAVE_LOOPS

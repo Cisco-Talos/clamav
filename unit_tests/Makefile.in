@@ -730,6 +730,9 @@ check_clamscan.sh: $(top_builddir)/test/clam.exe
 
 $(top_builddir)/test/clam.exe:
 	(cd $(top_builddir)/test && $(MAKE))
+
+quick-check:
+	VALGRIND=no LIBEFENCE=no LIBDUMA=no $(MAKE) check
 @ENABLE_COVERAGE_TRUE@lcov: $(LCOV_HTML)
 @ENABLE_COVERAGE_TRUE@.libs/check_clamav.gcda: $(TESTS)
 @ENABLE_COVERAGE_TRUE@	$(LCOV_LCOV) $(DIRECTORIES) --zerocounters
