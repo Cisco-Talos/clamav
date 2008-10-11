@@ -515,7 +515,7 @@ int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
     }
 
     while((line = readbline(fd, fbuff, FILEBUFF, sb.st_size, &lread)))
-	if(strstr(line, "FOUND"))
+	if(strlen(line) >= 32 && !strcmp(&line[strlen(line) - 6], " FOUND"))
 	    break;
 
     if(!line) {
@@ -543,7 +543,7 @@ int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
     qcnt = 0;
     entries = 0;
     do {
-	if(!strstr(line, " FOUND"))
+	if(strlen(line) < 32 || strcmp(&line[strlen(line) - 6], " FOUND"))
 	    continue;
 
 	if(*statsdat && !strcmp(line, statsdat))
@@ -565,7 +565,7 @@ int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
 	    break;
 	}
 
-	pt2 = strstr(pt, " FOUND");
+	pt2 = &pt[strlen(pt) - 6];
 	*pt2 = 0;
 
 	if(!(pt2 = strrchr(pt, ':'))) {
