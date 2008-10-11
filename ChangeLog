@@ -1,3 +1,10 @@
+Fri Oct 10 18:34:04 EEST 2008 (edwin)
+-------------------------------------
+ * libclamav/htmlnorm.c, libclamav/libclamav.map,
+ unit_tests/check_htmlnorm.c, unit_tests/efence_tests.sh,
+ unit_tests/input/screnc_test: properly null-terminate buffer (bb
+ #1223)
+
 Sat Oct 11 14:37:57 CEST 2008 (tk)
 ----------------------------------
   * docs: document bb#1185

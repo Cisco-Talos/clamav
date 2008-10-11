@@ -268,8 +268,8 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
 					chunk[chunk_len++] = c;
 				}
 			}
-			chunk[chunk_len] = '\0';
 		}
+		chunk[chunk_len] = '\0';
 		if(chunk_len == max_len - 1) {
 			/* rewind to a space (which includes newline) */
 			count = rewind_tospace(chunk, chunk_len);
@@ -537,6 +537,8 @@ static void screnc_decode(unsigned char *ptr, struct screnc_state *s)
 		} else {
 			*dst++ = *ptr++;
 			*dst++ = *ptr;
+			if (!*ptr)
+				break;
 		}
 		ptr++;
 		s->length--;

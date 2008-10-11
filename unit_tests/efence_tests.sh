@@ -19,7 +19,7 @@ if test ! -n "$VALGRIND" || test ! -x "$VALGRIND"; then
 	# run check_clamav under efence only if we don't have valgrind installed
 	echo "--- Running check_clamav under electric-fence"
 	CK_FORK=no ../libtool --mode=execute $abs_srcdir/preload_run.sh ./check_clamav
-	if test ! $?; then
+	if test $? -ne 0; then
 		echo "*** Electric-fence has detected errors"
 		exit 1
 	fi

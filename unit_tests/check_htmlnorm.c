@@ -139,6 +139,17 @@ START_TEST (test_htmlnorm_api)
 END_TEST
 #endif
 
+START_TEST(test_screnc_nullterminate)
+{
+	int fd = open_testfile("input/screnc_test");
+
+	fail_unless(mkdir(dir, 0700) == 0,"mkdir failed");
+	fail_unless(html_screnc_decode(fd, dir) == 1, "html_screnc_decode failed");
+	fail_unless(cli_rmdirs(dir) == 0, "rmdirs failed");
+	close(fd);
+}
+END_TEST
+
 Suite *test_htmlnorm_suite(void)
 {
 	Suite *s = suite_create("htmlnorm");
@@ -151,6 +162,7 @@ Suite *test_htmlnorm_suite(void)
 #endif
 	tcase_add_unchecked_fixture(tc_htmlnorm_api,
 					htmlnorm_setup, htmlnorm_teardown);
+	tcase_add_test(tc_htmlnorm_api, test_screnc_nullterminate);
 
 	return s;
 }
