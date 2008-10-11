@@ -131,6 +131,10 @@ Start/end a <code>clamd</code> session - you can do multiple commands
     
 </LI>
 </UL>
+    Clamd should not be started in the background using the shell operator
+    <code>&amp;</code> or external tools. Instead, you should run and wait for clamd
+    to load the database and daemonize itself. After that, clamd is instantly
+    ready to accept connections and perform file scanning.
 
 <P>
 
@@ -160,7 +164,7 @@ Start/end a <code>clamd</code> session - you can do multiple commands
 <!--End of Navigation Panel-->
 <ADDRESS>
 Tomasz Kojm
-2008-09-01
+2008-10-11
 </ADDRESS>
 </BODY>
 </HTML>

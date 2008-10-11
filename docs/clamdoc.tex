@@ -571,6 +571,10 @@ N * * * *	/usr/local/bin/freshclam --quiet
 	\item \textbf{SIGHUP} - reopen the log file
 	\item \textbf{SIGUSR2} - reload the database
     \end{itemize}
+    Clamd should not be started in the background using the shell operator
+    \verb+&+ or external tools. Instead, you should run and wait for clamd
+    to load the database and daemonize itself. After that, clamd is instantly
+    ready to accept connections and perform file scanning.
 
     \subsection{Clam\textbf{d}scan}
     \verb+clamdscan+ is a simple \verb+clamd+ client. In many cases you can

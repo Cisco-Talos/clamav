@@ -1,3 +1,7 @@
+Sat Oct 11 14:37:57 CEST 2008 (tk)
+----------------------------------
+  * docs: document bb#1185
+
 Sat Oct 11 13:50:12 CEST 2008 (tk)
 ----------------------------------
   * freshclam/manager.c: improve the log parser (bb#1225)
