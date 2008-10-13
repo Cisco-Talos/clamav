@@ -1,3 +1,7 @@
+Mon Oct 13 12:09:28 CEST 2008 (tk)
+----------------------------------
+  * freshclam/manager.c: use HAVE_STRINGS_H (bb#1230)
+
 Fri Oct 10 18:34:04 EEST 2008 (edwin)
 -------------------------------------
  * libclamav/htmlnorm.c, libclamav/libclamav.map,

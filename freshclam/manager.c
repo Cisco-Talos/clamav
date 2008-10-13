@@ -38,7 +38,9 @@
 #include <unistd.h>
 #endif
 #include <string.h>
+#ifdef HAVE_STRINGS_H
 #include <strings.h>
+#endif
 #include <ctype.h>
 #ifndef C_WINDOWS
 #include <netinet/in.h>
