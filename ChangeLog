@@ -1,3 +1,7 @@
+Mon Oct 13 12:22:02 CEST 2008 (tk)
+----------------------------------
+  * clamd/server.h: drop dead code (bb#1231)
+
 Mon Oct 13 12:09:28 CEST 2008 (tk)
 ----------------------------------
   * freshclam/manager.c: use HAVE_STRINGS_H (bb#1230)

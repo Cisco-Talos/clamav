@@ -34,14 +34,6 @@ struct thrarg {
     const struct cl_limits *limits;
 };
 
-struct thrsession {
-    pthread_mutex_t mutex;
-    short int active;
-    pthread_t id;
-    time_t start;
-    int desc;
-} *ths;
-
 /* thread watcher arguments */
 struct thrwarg {
     int socketd;
