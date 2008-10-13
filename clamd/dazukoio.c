@@ -42,6 +42,9 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <string.h>
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
 #include <unistd.h>
 #include "dazukoio_xp.h"
 #include "dazukoio.h"

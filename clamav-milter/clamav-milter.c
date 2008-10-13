@@ -65,6 +65,9 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 nj
 #if	HAVE_STRING_H
 #include <string.h>
 #endif
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
 #include <sys/wait.h>
 #include <assert.h>
 #include <sys/socket.h>

@@ -32,6 +32,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
 #include <string.h>
 #include <errno.h>
 #include <stdio.h>
