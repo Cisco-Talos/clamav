@@ -1,3 +1,8 @@
+Tue Oct 14 23:46:45 CEST 2008 (acab)
+------------------------------------
+  * docs/man/clamscan.1.in: drop reference to non-exsistent option --max-space
+                     (http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=502165)
+
 Tue Oct 14 21:08:10 EEST 2008 (edwin)
 -------------------------------------
  * freshclam/manager.c: fix build on Solaris, fix compiler warning (bb #1234)

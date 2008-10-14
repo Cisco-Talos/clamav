@@ -167,9 +167,9 @@ Maximum depth directories are scanned at (default: 15).
 
 \fBclamscan \-r /home\fR
 .TP 
-(3) Load database from a file and limit disk usage to 50 MB:
+(3) Load database from a file:
 
-\fBclamscan \-d /tmp/newclamdb \-\-max\-space=50m \-r /tmp\fR
+\fBclamscan \-d /tmp/newclamdb \-r /tmp\fR
 .TP 
 (4) Scan a data stream:
 
