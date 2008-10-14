@@ -1,3 +1,7 @@
+Tue Oct 14 21:08:10 EEST 2008 (edwin)
+-------------------------------------
+ * freshclam/manager.c: fix build on Solaris, fix compiler warning (bb #1234)
+
 Mon Oct 13 12:22:02 CEST 2008 (tk)
 ----------------------------------
   * clamd/server.h: drop dead code (bb#1231)

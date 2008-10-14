@@ -25,12 +25,16 @@
 #ifdef	_MSC_VER
 #include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
 #endif
-
-#define _XOPEN_SOURCE 600
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
+
+/* for strptime, it is POSIX, but defining _XOPEN_SOURCE to 600
+ * fails on Solaris because it would require a c99 compiler,
+ * 500 fails completely on Solaris, and FreeBSD, and w/o _XOPEN_SOURCE
+ * strptime is not defined on Linux */
+#define _GNU_SOURCE
+#define __EXTENSIONS
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -585,7 +589,7 @@ int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
 #endif
 	    *pt++ = 0;
 	if(!pt)
-	    pt = "NOFNAME";
+	    pt = (char*) "NOFNAME";
 
 	qcnt += snprintf(&query[qcnt], sizeof(query) - qcnt, "ts[]=%u&fname[]=%s&virus[]=%s&", (unsigned int) epoch, pt, pt2);
 	entries++;
