@@ -1,3 +1,8 @@
+Wed Oct 15 12:30:57 CEST 2008 (tk)
+----------------------------------
+  * freshclam: drop --submit-stats; please use SubmitDetectionStats instead
+	       (bb#1235)
+
 Tue Oct 14 23:46:45 CEST 2008 (acab)
 ------------------------------------
   * docs/man/clamscan.1.in: drop reference to non-exsistent option --max-space

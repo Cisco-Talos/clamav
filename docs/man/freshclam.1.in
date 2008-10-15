@@ -67,9 +67,6 @@ Execute COMMAND when freshclam reports outdated version. In the command string %
 .TP 
 \fB\-\-list\-mirrors\fR
 Print mirror details from mirrors.dat (cache file for the mirror manager).
-.TP
-\fB\-\-submit\-stats[=/path/to/clamd.conf]\fR
-Upload detection statistics to the ClamAV Project (see freshclam.conf(5):SubmitDetectionStats for more details). No database update will be performed. This option only works in the interactive mode.
 .SH "EXAMPLES"
 .LP 
 .TP 
