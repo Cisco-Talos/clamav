@@ -1,3 +1,7 @@
+Wed Oct 15 12:47:53 CEST 2008 (tk)
+----------------------------------
+  * 0.94.1rc1
+
 Wed Oct 15 12:30:57 CEST 2008 (tk)
 ----------------------------------
   * freshclam: drop --submit-stats; please use SubmitDetectionStats instead
