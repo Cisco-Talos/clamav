@@ -1,53 +1,17 @@
-0.94
-----
+0.94.1rc1
+---------
 
-Sourcefire and the ClamAV team are pleased to announce the release of
-ClamAV 0.94. The following are the key features and improvements of this
-version:
+ClamAV 0.94.1rc1 fixes some issues that were found in previous releases and
+includes one new feature, "Malware Statistics Gathering." This is an optional
+feature that allows ClamAV users optionally to submit statistics to us about
+what they detect in the field. We will then use these data to determine what
+types of malware are the most detected in the field and in what geographic
+area they are. It will also allow us to publish summary data on www.clamav.net
+where our users will be able to monitor the latest threats. You can help us
+by enabling SubmitDetectionStats in freshclam.conf.
 
-  - Logical Signatures: The logical signature technology uses operators
-    such as AND, OR and NOT to allow the combination of more than one
-    signature into one entry in the signature database resulting in
-    more detailed and flexible pattern matching.
-
-  - Anti-phishing Technology: Users can now change the priority and reporting
-    of ClamAV's heuristic anti-phishing scanner within the detection engine
-    process. They can choose whether, when scanning a supicious file, ClamAV
-    should stop scanning and report the phish, or continue to scan in case the
-    file contains other malware (clamd: HeuristicScanPrecedence,
-    clamscan: --heuristic-scan-precedence)
-
-  - Disassembly Engine: The initial version of the disassembly engine improves
-    ClamAV's detection abilities.
-
-  - PUA Detection: Users can now decide which PUA signatures should be loaded
-    (clamd: ExcludePUA, IncludePUA; clamscan: --exclude-pua, --include-pua)
-
-  - Data Loss Prevention (DLP): This version includes a new module that, when
-    enabled, scans data for the inclusion of US formated Social Security
-    Numbers and credit card numbers (clamd: StructuredDataDetection,
-    clamscan: --detect-structured; additional fine-tuning options are available)
-
-  - IPv6 Support: Freshclam now supports IPv6
-
-  - Improved Scanning of Scripts: The normalization of scripts now covers
-    JavaScript
-
-  - Improved QA and Unit Testing: The improved QA process now includes
-    API testing and new library of test files in various formats that are
-    tested on a wide variety of systems (try running 'make check' in the source
-    directory)
-
-For more details, please refer to http://www.clamav.net/press/0.94-WhatsNew.pdf
-and to the ChangeLog.
-
-You may need to run 'ldconfig' after installing this version.
-
-** This version drops the special support for Cygwin. Our QA process showed
-** serious problems with ClamAV builds under Cygwin due to some low-level
-** incompatibilities in the POSIX compatibility layer, resulting in unreliable
-** ClamAV behaviour.
+For more details, please refer to the ChangeLog and
+http://www.clamav.net/press/0.94.1-WhatsNew.pdf
 
 --
 The ClamAV team (http://www.clamav.net/team)
-
