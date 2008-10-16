@@ -1,3 +1,7 @@
+Thu Oct 16 11:02:38 CEST 2008 (tk)
+----------------------------------
+  * freshclam/manager.c: fix compilation error on systems without IPv6 (bb#1237)
+
 Wed Oct 15 12:47:53 CEST 2008 (tk)
 ----------------------------------
   * 0.94.1rc1

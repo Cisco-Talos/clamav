@@ -124,9 +124,11 @@ static int getclientsock(const char *localip, int prot)
 {
 	int socketfd = -1;
 
+#ifdef SUPPORT_IPv6
     if(prot == AF_INET6)
 	socketfd = socket(AF_INET6, SOCK_STREAM, 0);
     else
+#endif
 	socketfd = socket(AF_INET, SOCK_STREAM, 0);
     if(socketfd < 0) {
 	logg("!Can't create new socket\n");
@@ -151,9 +153,11 @@ static int getclientsock(const char *localip, int prot)
 	    } else {
 		    void *addr;
 
+#ifdef SUPPORT_IPv6
 		if(res->ai_family == AF_INET6)
 		    addr = &((struct sockaddr_in6 *) res->ai_addr)->sin6_addr;
 		else
+#endif
 		    addr = &((struct sockaddr_in *) res->ai_addr)->sin_addr;
 
 		if(inet_ntop(res->ai_family, addr, ipaddr, sizeof(ipaddr)))
@@ -253,9 +257,11 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	    void *addr;
 
 	ips++;
+#ifdef SUPPORT_IPv6
 	if(rp->ai_family == AF_INET6)
 	    addr = &((struct sockaddr_in6 *) rp->ai_addr)->sin6_addr;
 	else
+#endif
 	    addr = &((struct sockaddr_in *) rp->ai_addr)->sin_addr;
 
 	if(!inet_ntop(rp->ai_family, addr, ipaddr, sizeof(ipaddr))) {
