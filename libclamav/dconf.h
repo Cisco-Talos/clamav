@@ -29,6 +29,10 @@
 #include "cltypes.h"
 #include "cvd.h"
 
+#ifdef USE_MPOOL
+#include "mpool.h"
+#endif
+
 struct cli_dconf {
     uint32_t pe;
     uint32_t elf;
@@ -97,7 +101,11 @@ struct cli_dconf {
 #define PHISHING_CONF_ENGINE   0x1
 #define PHISHING_CONF_ENTCONV  0x2
 
+#ifdef USE_MPOOL
+struct cli_dconf *cli_dconf_init(mpool_t);
+#else
 struct cli_dconf *cli_dconf_init(void);
+#endif
 void cli_dconf_print(struct cli_dconf *dconf);
 int cli_dconf_load(FILE *fs, struct cl_engine **engine, unsigned int options, struct cli_dbio *dbio);
 #endif

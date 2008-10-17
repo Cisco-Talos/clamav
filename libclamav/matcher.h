@@ -34,6 +34,11 @@
 #include "matcher-bm.h"
 #include "hashtab.h"
 
+#ifdef USE_MPOOL
+#include "mpool.h"
+#endif
+
+
 #define CLI_MATCH_WILDCARD	0xff00
 #define CLI_MATCH_CHAR		0x0000
 #define CLI_MATCH_IGNORE	0x0100
@@ -80,6 +85,7 @@ struct cli_matcher {
 
     uint16_t maxpatlen;
     uint8_t ac_only;
+    mpool_t mempool;
 };
 
 struct cli_meta_node {

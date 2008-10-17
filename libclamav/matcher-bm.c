@@ -32,6 +32,10 @@
 #include "matcher-bm.h"
 #include "filetypes.h"
 
+#ifdef USE_MPOOL
+#include "mpool.h"
+#endif
+
 #define BM_MIN_LENGTH	3
 #define BM_BLOCK_SIZE	3
 #define HASH(a,b,c) (211 * a + 37 * b + c)
@@ -97,12 +101,19 @@ int cli_bm_init(struct cli_matcher *root)
 {
 	uint16_t i, size = HASH(255, 255, 255) + 1;
 
-
+#ifdef USE_MPOOL
+    if(!(root->bm_shift = (uint8_t *) mpool_calloc(root->mempool, size, sizeof(uint8_t), NULL)))
+#else
     if(!(root->bm_shift = (uint8_t *) cli_calloc(size, sizeof(uint8_t))))
+#endif
 	return CL_EMEM;
 
     if(!(root->bm_suffix = (struct cli_bm_patt **) cli_calloc(size, sizeof(struct cli_bm_patt *)))) {
+#ifdef USE_MPOOL
+	mpool_free(root->mempool, root->bm_shift, size * sizeof(uint8_t));
+#else
 	free(root->bm_shift);
+#endif
 	return CL_EMEM;
     }
 

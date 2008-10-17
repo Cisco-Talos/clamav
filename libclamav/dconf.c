@@ -35,6 +35,10 @@
 #include "str.h"
 #include "others.h"
 
+#ifdef USE_MPOOL
+#include "mpool.h"
+#endif
+
 struct dconf_module {
     const char	*mname;	    /* module name */
     const char	*sname;	    /* submodule name */
@@ -108,13 +112,20 @@ static struct dconf_module modules[] = {
     { NULL,	    NULL,	    0,			    0 }
 };
 
+#ifdef USE_MPOOL
+struct cli_dconf *cli_dconf_init(mpool_t mempool)
+#else
 struct cli_dconf *cli_dconf_init(void)
+#endif
 {
 	unsigned int i;
 	struct cli_dconf *dconf;
 
-
+#ifdef USE_MPOOL
+    dconf = (struct cli_dconf *) mpool_calloc(mempool, sizeof(struct cli_dconf), 1, NULL);
+#else
     dconf = (struct cli_dconf *) cli_calloc(sizeof(struct cli_dconf), 1);
+#endif
     if(!dconf)
 	return NULL;
 

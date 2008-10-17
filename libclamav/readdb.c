@@ -67,6 +67,10 @@
 #include <stddef.h>
 #endif
 
+#ifdef USE_MPOOL
+#include "mpool.h"
+#endif
+
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
 static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -339,14 +343,27 @@ int cli_initengine(struct cl_engine **engine, unsigned int options)
 
 	(*engine)->refcount = 1;
 
+#ifdef USE_MPOOL
+	if(!((*engine)->mempool = mpool_open(MPOOL_FLAG_BEST_FIT, 0, NULL, NULL))) {
+	    cli_errmsg("Can't allocate memory for memory pool!\n");
+	    return CL_EMEM;
+	}
+
+	(*engine)->root = mpool_calloc((*engine)->mempool, CLI_MTARGETS, sizeof(struct cli_matcher *), NULL);
+#else
 	(*engine)->root = cli_calloc(CLI_MTARGETS, sizeof(struct cli_matcher *));
+#endif
 	if(!(*engine)->root) {
 	    /* no need to free previously allocated memory here */
 	    cli_errmsg("Can't allocate memory for roots!\n");
 	    return CL_EMEM;
 	}
 
+#ifdef USE_MPOOL
+	(*engine)->dconf = cli_dconf_init((*engine)->mempool);
+#else
 	(*engine)->dconf = cli_dconf_init();
+#endif
 	if(!(*engine)->dconf) {
 	    cli_errmsg("Can't initialize dynamic configuration\n");
 	    return CL_EMEM;
@@ -369,7 +386,12 @@ static int cli_initroots(struct cl_engine *engine, unsigned int options)
     for(i = 0; i < CLI_MTARGETS; i++) {
 	if(!engine->root[i]) {
 	    cli_dbgmsg("Initializing engine->root[%d]\n", i);
+#ifdef USE_MPOOL
+	    root = engine->root[i] = (struct cli_matcher *) cli_calloc(engine->mempool, 1, sizeof(struct cli_matcher), NULL);
+	    root->mempool = engine->mempool;
+#else
 	    root = engine->root[i] = (struct cli_matcher *) cli_calloc(1, sizeof(struct cli_matcher));
+#endif
 	    if(!root) {
 		cli_errmsg("cli_initroots: Can't allocate memory for cli_matcher\n");
 		return CL_EMEM;
