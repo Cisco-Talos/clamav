@@ -1,0 +1,12 @@
+TBD
+- engine->root[x]->ac_lsigtable and childreen
+- engine->md5_hdb
+- engine->md5_mdb + soff + md5_sizes
+- engine->md5_fp
+- engine->zip_mlist
+- engine->rar_mlist
+- engine->phishcheck and friends (free only?)
+- engine->pua_cats
+- engine->ftypes
+- engine->ignored
+

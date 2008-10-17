@@ -283,29 +283,78 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	}
 
     } else {
+#ifdef USE_MPOOL
+        bm_new = (struct cli_bm_patt *) mpool_calloc(root->mempool, 1, sizeof(struct cli_bm_patt));
+#else
 	bm_new = (struct cli_bm_patt *) cli_calloc(1, sizeof(struct cli_bm_patt));
+#endif
 	if(!bm_new)
 	    return CL_EMEM;
 
-	if(!(bm_new->pattern = (unsigned char *) cli_hex2str(hexsig))) {
+#ifdef USE_MPOOL
+{
+    unsigned char *mpoolhexsig = (unsigned char *) cli_hex2str(hexsig);
+    if(mpoolhexsig) {
+        unsigned int mpoolhexsigsz = strlen(hexsig) / 2 + 1;
+	if((bm_new->pattern = mpool_alloc(root->mempool, mpoolhexsigsz, NULL)))
+	    memcpy(bm_new->pattern, mpoolhexsig, mpoolhexsigsz);
+	free(mpoolhexsig);
+    } else bm_new->pattern = NULL;
+}
+#else
+        bm_new->pattern = (unsigned char *) cli_hex2str(hexsig)
+#end
+	if(!bm_new->pattern) {
+#ifdef USE_MPOOL
+	    mpool_free(root->mempool, bm_new);
+#else
 	    free(bm_new);
+#endif
 	    return CL_EMALFDB;
 	}
 	bm_new->length = strlen(hexsig) / 2;
 
+#ifdef USE_MPOOL
+{
+    char *mpoolvirname = cli_virname((char *) virname, options & CL_DB_OFFICIAL, 0);
+    if(mpoolvirname) {
+        unsigned int mpoolvirnamesz = strlen(mpoolvirname) + 1;
+	if((bm_new->virname = mpool_alloc(root->mempool, mpoolvirnamesz, NULL)))
+	    memcpy(bm_new->virname, mpoolvirname, mpoolvirname);
+	free(mpoolvirname);
+    } else bm_new->virname = NULL;
+}
+#else
 	bm_new->virname = cli_virname((char *) virname, options & CL_DB_OFFICIAL, 0);
+#end
 	if(!bm_new->virname) {
+#ifdef USE_MPOOL
+	    mpool_free(root->mempool, bm_new->pattern);
+	    mpool_free(root->mempool, bm_new);
+#else
 	    free(bm_new->pattern);
 	    free(bm_new);
+#endif
 	    return CL_EMEM;
 	}
 
 	if(offset) {
+#ifdef USE_MPOOL
+	    if((bm_new->offset = mpool_alloc(root->mempool, streln(offset) + 1, NULL)))
+	        strcpy(bm_new->offset, offset);
+#else
 	    bm_new->offset = cli_strdup(offset);
+#endif
 	    if(!bm_new->offset) {
+#ifdef USE_MPOOL
+	        mpool_free(root->mempool, bm_new->pattern);
+		mpool_free(root->mempool, bm_new->virname);
+		mpool_free(root->mempool, bm_new);
+#else
 		free(bm_new->pattern);
 		free(bm_new->virname);
 		free(bm_new);
+#endif
 		return CL_EMEM;
 	    }
 	}
@@ -317,9 +366,15 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
 	if((ret = cli_bm_addpatt(root, bm_new))) {
 	    cli_errmsg("cli_parse_add(): Problem adding signature (4).\n");
+#ifdef USE_MPOOL
+	    mpool_free(root->mempool, bm_new->pattern);
+	    mpool_free(root->mempool, bm_new->virname);
+	    mpool_free(root->mempool, bm_new);
+#else
 	    free(bm_new->pattern);
 	    free(bm_new->virname);
 	    free(bm_new);
+#endif
 	    return ret;
 	}
     }
@@ -2147,6 +2202,9 @@ void cl_free(struct cl_engine *engine)
     pthread_mutex_unlock(&cli_ref_mutex);
 #endif
 
+#ifdef USE_MPOOL
+    if(engine->mempool) mpool_close(engine->mempool);
+#else
     if(engine->root) {
 	for(i = 0; i < CLI_MTARGETS; i++) {
 	    if((root = engine->root[i])) {
@@ -2217,6 +2275,7 @@ void cl_free(struct cl_engine *engine)
 
     cli_ftfree(engine->ftypes);
     cli_freeign(engine);
+#endif /* USE_MPOOL */
     free(engine);
 }
 

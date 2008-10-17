@@ -1536,6 +1536,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
         unsigned int mpoolvirnamesz = strlen(mpoolvirname) + 1;
         if((new->virname = mpool_alloc(root->mempool, mpoolvirnamesz, NULL)) != NULL)
 	    memcpy(new->virname, mpoolvirname, mpoolvirnamesz);
+	free(mpoolvirname);
     } else new->virname = NULL;
 }
 #else
@@ -1559,12 +1560,8 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
     if(offset) {
 #ifdef USE_MPOOL
-	char *mpooloffset = cli_strdup(offset);
-	if(mpooloffset) {
-	    unsigned int mpooloffsetsz = strlen(mpooloffset) + 1;
-	    if((new->offset = mpool_alloc(root->mempool, mpooloffsetsz, NULL)))
-	        memcpy(new->offset, mpooloffset, mpooloffsetsz);
-	} else new->offset = NULL;
+        if((new->offset = mpool_alloc(root->mempool, strlen(mpooloffset) + 1, NULL)))
+	    strcpy(new->offset, offset);
 #else
 	new->offset = cli_strdup(offset);
 #endif
