@@ -1,6 +1,5 @@
 TBD
 - engine->root[x]->ac_lsigtable and childreen
-- engine->md5_hdb
 - engine->md5_mdb + soff + md5_sizes
 - engine->md5_fp
 - engine->zip_mlist
@@ -10,3 +9,6 @@ TBD
 - engine->ftypes
 - engine->ignored
 
+- pchk->preg_numeric ??
+- load_regex_matcher
+- hashset_init / hashset_addkey / ??

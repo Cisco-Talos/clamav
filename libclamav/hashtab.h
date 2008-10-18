@@ -25,6 +25,11 @@
 #include <stdio.h>
 #include <stddef.h>
 #include "cltypes.h"
+
+#ifdef USE_MPOOL
+#include "mpool.h"
+#endif
+
 typedef long element_data;
 
 /* define this for debugging/profiling purposes only, NOT in production/release code */
@@ -78,7 +83,11 @@ struct hashtable {
 
 int hashtab_generate_c(const struct hashtable *s,const char* name);
 struct element* hashtab_find(const struct hashtable *s, const char* key, const size_t len);
+#ifdef USE_MPOOL
+int hashtab_init(struct hashtable *s,size_t capacity, mpool_t *mempool);
+#else
 int hashtab_init(struct hashtable *s,size_t capacity);
+#endif
 const struct element* hashtab_insert(struct hashtable *s, const char* key, const size_t len, const element_data data);
 void hashtab_delete(struct hashtable *s,const char* key,const size_t len);
 void hashtab_clear(struct hashtable *s);

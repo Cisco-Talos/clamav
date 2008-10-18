@@ -29,6 +29,10 @@
 #include "matcher.h"
 #include <zlib.h> /* for gzFile */
 
+#ifdef USE_MPOOL
+#include "mpool.h"
+#endif
+
 struct filter {
 	uint32_t B[65536];
 	uint32_t end_fast[256];
@@ -51,6 +55,9 @@ struct regex_matcher {
 	struct cli_matcher md5_hashes;
 	struct filter md5_filter;
 	struct filter filter;
+#ifdef USE_MPOOL
+	mpool_t *mempool;
+#endif
 	int list_inited:2;
 	int list_loaded:2;
 	int list_built:2;

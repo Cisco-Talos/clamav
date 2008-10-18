@@ -1445,7 +1445,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     } else new->pattern = NULL;
 }
 #else
-    new->pattern = cli_hex2ui(hex ? hex : hexsig)
+    new->pattern = cli_hex2ui(hex ? hex : hexsig);
 #endif
 
     if(new->pattern == NULL) {

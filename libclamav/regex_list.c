@@ -57,6 +57,11 @@
 #include "readdb.h"
 #include "jsparse/textbuf.h"
 #include "regex_suffix.h"
+
+#ifdef USE_MPOOL
+#include "mpool.h"
+#endif
+
 /* Prototypes */
 static regex_t *new_preg(struct regex_matcher *matcher);
 static size_t reverse_string(char *pattern);
@@ -350,8 +355,13 @@ int init_regex_list(struct regex_matcher* matcher)
 	matcher->list_inited=1;
 	matcher->list_built=0;
 	matcher->list_loaded=0;
-
+#ifdef USE_MPOOL
+	hashtab_init(&matcher->suffix_hash, 10, matcher->mempool);
+	matcher->suffixes->mempool = matcher->mempool;
+	matcher->md5_hashes->mempool = matcher->mempool;
+#else
 	hashtab_init(&matcher->suffix_hash, 10);
+#endif
 	if((rc = cli_ac_init(&matcher->suffixes, 2, 32))) {
 		return rc;
 	}
@@ -704,10 +714,18 @@ static size_t reverse_string(char *pattern)
 static regex_t *new_preg(struct regex_matcher *matcher)
 {
 	regex_t *r;
+#ifdef USE_MPOOL
+	matcher->all_pregs = mpool_realloc(matcher->mempool, matcher->all_pregs, ++matcher->regex_cnt * sizeof(*matcher->all_pregs), NULL);
+#else
 	matcher->all_pregs = cli_realloc(matcher->all_pregs, ++matcher->regex_cnt * sizeof(*matcher->all_pregs));
+#endif
 	if(!matcher->all_pregs)
 		return NULL;
+#ifdef USE_MPOOL
+	r = mpool_alloc(matcher->mempool, sizeof(*r), NULL);
+#else
 	r = cli_malloc(sizeof(*r));
+#endif
 	if(!r)
 		return NULL;
 	matcher->all_pregs[matcher->regex_cnt-1] = r;

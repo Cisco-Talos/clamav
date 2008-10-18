@@ -45,6 +45,10 @@
 #include "phish_whitelist.h"
 #include "regex_list.h"
 
+#ifdef USE_MPOOL
+#include "mpool.h"
+#endif
+
 int whitelist_match(const struct cl_engine* engine,char* real_url,const char* display_url,int hostOnly)
 {
 	const char* info;/*unused*/
@@ -55,7 +59,12 @@ int whitelist_match(const struct cl_engine* engine,char* real_url,const char* di
 int init_whitelist(struct cl_engine* engine)
 {
 	if(engine) {
+#ifdef USE_MPOOL
+		engine->whitelist_matcher = (struct regex_matcher *) mpool_malloc(engine->mempool, sizeof(struct regex_matcher), NULL);
+		engine->whitelist_matcher->mempool = engine->mempool;
+#else
 		engine->whitelist_matcher = (struct regex_matcher *) cli_malloc(sizeof(struct regex_matcher));
+#endif
 		if(!engine->whitelist_matcher)
 			return CL_EMEM;
 		return	init_regex_list(engine->whitelist_matcher);

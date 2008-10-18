@@ -85,7 +85,9 @@ struct cli_matcher {
 
     uint16_t maxpatlen;
     uint8_t ac_only;
-    mpool_t mempool;
+#ifdef USE_MPOOL
+	mpool_t *mempool;
+#endif
 };
 
 struct cli_meta_node {
