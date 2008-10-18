@@ -18,7 +18,7 @@
 
 SUBDIRS = lzma .
 
-AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis -I@srcdir@/lzma
+AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis -I@srcdir@/lzma 
 
 libclamav_la_LIBADD = lzma/liblzma.la @CLAMAV_UNRAR_LIBS@ @LIBCLAMAV_LIBS@ @THREAD_LIBS@
 
@@ -198,7 +198,10 @@ libclamav_la_SOURCES = \
 	uniq.c \
 	uniq.h \
 	version.c\
-	version.h
+	version.h\
+	mpool.c\
+	mpool.h\
+	mpool_loc.h
 
 .PHONY: version.h.tmp
 version.lo: version.h

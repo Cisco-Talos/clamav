@@ -350,7 +350,7 @@ int cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth)
     if(!root->ac_root->trans) {
 	cli_errmsg("cli_ac_init: Can't allocate memory for ac_root->trans\n");
 #ifdef USE_MPOOL
-	mpool_free(engine->mempool, root->ac_root, sizeof(struct cli_ac_node));
+	mpool_free(root->mempool, root->ac_root);
 #else
 	free(root->ac_root);
 #endif
@@ -409,9 +409,17 @@ void cli_ac_free(struct cli_matcher *root)
 	patt->prefix ? free(patt->prefix) : free(patt->pattern);
 	free(patt->virname);
 	if(patt->offset)
+#ifdef USE_MPOOL
+	    mpool_free(root->mempool, patt->offset);
+#else
 	    free(patt->offset);
+#endif
 	if(patt->alt)
+#ifdef USE_MPOOL
+	    ac_free_alt(root->mempool, patt);
+#else
 	    ac_free_alt(patt);
+#endif
 	free(patt);
     }
     if(root->ac_pattable)
@@ -1560,14 +1568,14 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
     if(offset) {
 #ifdef USE_MPOOL
-        if((new->offset = mpool_alloc(root->mempool, strlen(mpooloffset) + 1, NULL)))
+        if((new->offset = mpool_alloc(root->mempool, strlen(offset) + 1, NULL)))
 	    strcpy(new->offset, offset);
 #else
 	new->offset = cli_strdup(offset);
 #endif
 	if(!new->offset) {
 #ifdef USE_MPOOL
-	    new->prefix ? mpool_free(rool->mempool, new->prefix) : mpool_free(root->mempool, new->pattern);
+	    new->prefix ? mpool_free(root->mempool, new->prefix) : mpool_free(root->mempool, new->pattern);
 	    ac_free_alt(root->mempool, new);
 	    mpool_free(root->mempool, new->virname);
 	    mpool_free(root->mempool, new);
@@ -1583,7 +1591,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
     if((ret = cli_ac_addpatt(root, new))) {
 #ifdef USE_MPOOL
-	new->prefix ? mpool_free(rool->mempool, new->prefix) : mpool_free(root->mempool, new->pattern);
+	new->prefix ? mpool_free(root->mempool, new->prefix) : mpool_free(root->mempool, new->pattern);
 	mpool_free(root->mempool, new->virname);
 	ac_free_alt(root->mempool, new);
 	if(new->offset)

@@ -24,10 +24,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifdef USE_MPOOL
-#include mpool.h
-#endif
- 
 #ifdef __cplusplus
 extern "C"
 {
@@ -158,7 +154,7 @@ struct cl_engine {
     char *pua_cats;
 
 #ifdef USE_MPOOL
-    mpool_t *mempool;
+    void *mempool;
 #endif
 };
 

@@ -30,10 +30,6 @@
 #include "others.h"
 #include "hashtab.h"
 
-#ifdef USE_MPOOL
-#include "mpool.h"
-#endif
-
 #define MODULE_NAME "hashtab: "
 
 static const char DELETED_KEY[] = "";
@@ -172,11 +168,7 @@ static inline void PROFILE_REPORT(const struct hashtable *s)
 #define PROFILE_REPORT(s)
 #endif
 
-#ifdef USE_MPOOL
-int hashtab_init(struct hashtable *s,size_t capacity, mpool_t *mempool)
-#else
 int hashtab_init(struct hashtable *s,size_t capacity)
-#endif
 {
 	if(!s)
 		return CL_ENULLARG;
@@ -184,11 +176,9 @@ int hashtab_init(struct hashtable *s,size_t capacity)
 	PROFILE_INIT(s);
 
 	capacity = nearest_power(capacity);
-#ifdef USE_MPOOL
-	s->htable = mpool_calloc(mempool, capacity,sizeof(*s->htable), NULL);
-#else
+
 	s->htable = cli_calloc(capacity,sizeof(*s->htable));
-#endif
+
 	if(!s->htable)
 		return CL_EMEM;
 	s->capacity = capacity;

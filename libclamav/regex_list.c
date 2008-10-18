@@ -356,9 +356,9 @@ int init_regex_list(struct regex_matcher* matcher)
 	matcher->list_built=0;
 	matcher->list_loaded=0;
 #ifdef USE_MPOOL
-	hashtab_init(&matcher->suffix_hash, 10, matcher->mempool);
-	matcher->suffixes->mempool = matcher->mempool;
-	matcher->md5_hashes->mempool = matcher->mempool;
+	hashtab_init(&matcher->suffix_hash, 10);
+	matcher->suffixes.mempool = matcher->mempool;
+	matcher->md5_hashes.mempool = matcher->mempool;
 #else
 	hashtab_init(&matcher->suffix_hash, 10);
 #endif
@@ -715,7 +715,7 @@ static regex_t *new_preg(struct regex_matcher *matcher)
 {
 	regex_t *r;
 #ifdef USE_MPOOL
-	matcher->all_pregs = mpool_realloc(matcher->mempool, matcher->all_pregs, ++matcher->regex_cnt * sizeof(*matcher->all_pregs), NULL);
+	matcher->all_pregs = mpool_resize(matcher->mempool, matcher->all_pregs, ++matcher->regex_cnt * sizeof(*matcher->all_pregs), NULL);
 #else
 	matcher->all_pregs = cli_realloc(matcher->all_pregs, ++matcher->regex_cnt * sizeof(*matcher->all_pregs));
 #endif

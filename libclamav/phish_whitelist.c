@@ -60,8 +60,8 @@ int init_whitelist(struct cl_engine* engine)
 {
 	if(engine) {
 #ifdef USE_MPOOL
-		engine->whitelist_matcher = (struct regex_matcher *) mpool_malloc(engine->mempool, sizeof(struct regex_matcher), NULL);
-		engine->whitelist_matcher->mempool = engine->mempool;
+		engine->whitelist_matcher = (struct regex_matcher *) mpool_alloc(engine->mempool, sizeof(struct regex_matcher), NULL);
+		((struct regex_matcher *)(engine->whitelist_matcher))->mempool = engine->mempool;
 #else
 		engine->whitelist_matcher = (struct regex_matcher *) cli_malloc(sizeof(struct regex_matcher));
 #endif

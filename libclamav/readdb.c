@@ -284,7 +284,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
     } else {
 #ifdef USE_MPOOL
-        bm_new = (struct cli_bm_patt *) mpool_calloc(root->mempool, 1, sizeof(struct cli_bm_patt));
+	bm_new = (struct cli_bm_patt *) mpool_calloc(root->mempool, 1, sizeof(struct cli_bm_patt), NULL);
 #else
 	bm_new = (struct cli_bm_patt *) cli_calloc(1, sizeof(struct cli_bm_patt));
 #endif
@@ -318,9 +318,8 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 {
     char *mpoolvirname = cli_virname((char *) virname, options & CL_DB_OFFICIAL, 0);
     if(mpoolvirname) {
-        unsigned int mpoolvirnamesz = strlen(mpoolvirname) + 1;
-	if((bm_new->virname = mpool_alloc(root->mempool, mpoolvirnamesz, NULL)))
-	    memcpy(bm_new->virname, mpoolvirname, mpoolvirname);
+	if((bm_new->virname = mpool_alloc(root->mempool, strlen(mpoolvirname) + 1, NULL)))
+	    strcpy(bm_new->virname, mpoolvirname);
 	free(mpoolvirname);
     } else bm_new->virname = NULL;
 }
@@ -340,7 +339,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
 	if(offset) {
 #ifdef USE_MPOOL
-	    if((bm_new->offset = mpool_alloc(root->mempool, streln(offset) + 1, NULL)))
+	    if((bm_new->offset = mpool_alloc(root->mempool, strlen(offset) + 1, NULL)))
 	        strcpy(bm_new->offset, offset);
 #else
 	    bm_new->offset = cli_strdup(offset);
@@ -442,7 +441,7 @@ static int cli_initroots(struct cl_engine *engine, unsigned int options)
 	if(!engine->root[i]) {
 	    cli_dbgmsg("Initializing engine->root[%d]\n", i);
 #ifdef USE_MPOOL
-	    root = engine->root[i] = (struct cli_matcher *) cli_calloc(engine->mempool, 1, sizeof(struct cli_matcher), NULL);
+	    root = engine->root[i] = (struct cli_matcher *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_matcher), NULL);
 	    root->mempool = engine->mempool;
 #else
 	    root = engine->root[i] = (struct cli_matcher *) cli_calloc(1, sizeof(struct cli_matcher));
@@ -1098,7 +1097,7 @@ static int cli_loadldb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 
 	root->ac_lsigs++;
 #ifdef USE_MPOOL
-	newtable = (struct cli_ac_lsig **) mpool_realloc((*engine)->mempool, root->ac_lsigtable, root->ac_lsigs * sizeof(struct cli_ac_lsig *));
+	newtable = (struct cli_ac_lsig **) mpool_resize((*engine)->mempool, root->ac_lsigtable, root->ac_lsigs * sizeof(struct cli_ac_lsig *), NULL);
 #else
 	newtable = (struct cli_ac_lsig **) cli_realloc(root->ac_lsigtable, root->ac_lsigs * sizeof(struct cli_ac_lsig *));
 #endif
@@ -1711,7 +1710,7 @@ static int cli_loadmd(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 	cli_chomp(buffer);
 
 #ifdef USE_MPOOL
-	new = (struct cli_meta_node *) mpool_calloc((*engine)->mempool, 1, sizeof(struct cli_meta_node));
+	new = (struct cli_meta_node *) mpool_calloc((*engine)->mempool, 1, sizeof(struct cli_meta_node), NULL);
 #else
 	new = (struct cli_meta_node *) cli_calloc(1, sizeof(struct cli_meta_node));
 #endif

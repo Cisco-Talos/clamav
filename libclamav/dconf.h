@@ -21,7 +21,6 @@
 #ifndef __DCONF_H
 #define __DCONF_H
 
-
 #include <stdio.h>
 #include <zlib.h>
 
@@ -102,7 +101,7 @@ struct cli_dconf {
 #define PHISHING_CONF_ENTCONV  0x2
 
 #ifdef USE_MPOOL
-struct cli_dconf *cli_dconf_init(mpool_t);
+struct cli_dconf *cli_dconf_init(mpool_t *);
 #else
 struct cli_dconf *cli_dconf_init(void);
 #endif

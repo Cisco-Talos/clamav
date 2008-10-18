@@ -86,7 +86,7 @@ struct cli_matcher {
     uint16_t maxpatlen;
     uint8_t ac_only;
 #ifdef USE_MPOOL
-	mpool_t *mempool;
+    mpool_t *mempool;
 #endif
 };
 

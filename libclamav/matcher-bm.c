@@ -110,7 +110,7 @@ int cli_bm_init(struct cli_matcher *root)
 
     if(!(root->bm_suffix = (struct cli_bm_patt **) cli_calloc(size, sizeof(struct cli_bm_patt *)))) {
 #ifdef USE_MPOOL
-	mpool_free(root->mempool, root->bm_shift, size * sizeof(uint8_t));
+	mpool_free(root->mempool, root->bm_shift);
 #else
 	free(root->bm_shift);
 #endif
