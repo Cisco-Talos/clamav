@@ -355,13 +355,7 @@ int init_regex_list(struct regex_matcher* matcher)
 	matcher->list_inited=1;
 	matcher->list_built=0;
 	matcher->list_loaded=0;
-#ifdef USE_MPOOL
 	hashtab_init(&matcher->suffix_hash, 10);
-	matcher->suffixes.mempool = matcher->mempool;
-	matcher->md5_hashes.mempool = matcher->mempool;
-#else
-	hashtab_init(&matcher->suffix_hash, 10);
-#endif
 	if((rc = cli_ac_init(&matcher->suffixes, 2, 32))) {
 		return rc;
 	}

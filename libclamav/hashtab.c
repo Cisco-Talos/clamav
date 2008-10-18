@@ -176,9 +176,7 @@ int hashtab_init(struct hashtable *s,size_t capacity)
 	PROFILE_INIT(s);
 
 	capacity = nearest_power(capacity);
-
 	s->htable = cli_calloc(capacity,sizeof(*s->htable));
-
 	if(!s->htable)
 		return CL_EMEM;
 	s->capacity = capacity;

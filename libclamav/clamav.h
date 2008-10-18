@@ -153,9 +153,8 @@ struct cl_engine {
     /* PUA categories (to be included or excluded) */
     char *pua_cats;
 
-#ifdef USE_MPOOL
+    /* Used for memory pools */
     void *mempool;
-#endif
 };
 
 struct cl_limits {

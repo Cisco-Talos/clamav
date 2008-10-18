@@ -1444,11 +1444,11 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
 #ifdef USE_MPOOL
 {
-    unsigned int mpoolhexlen = (strlen(hex ? hex : hexsig) / 2 + 1) * sizeof(uint16_t);
+    unsigned int mpoolpattsz = (strlen(hex ? hex : hexsig) / 2 + 1) * sizeof(uint16_t);
     uint16_t *mpoolpatt = cli_hex2ui(hex ? hex : hexsig);
     if(mpoolpatt) {
-        if((new->pattern = mpool_alloc(root->mempool, mpoolhexlen, NULL)) != NULL)
-	    memcpy(new->pattern, mpoolpatt, mpoolhexlen);
+        if((new->pattern = mpool_alloc(root->mempool, mpoolpattsz, NULL)) != NULL)
+	    memcpy(new->pattern, mpoolpatt, mpoolpattsz);
 	free(mpoolpatt);
     } else new->pattern = NULL;
 }
@@ -1541,9 +1541,8 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 {
     char *mpoolvirname = cli_virname((char *) virname, options & CL_DB_OFFICIAL, 0);
     if(mpoolvirname) {
-        unsigned int mpoolvirnamesz = strlen(mpoolvirname) + 1;
-        if((new->virname = mpool_alloc(root->mempool, mpoolvirnamesz, NULL)) != NULL)
-	    memcpy(new->virname, mpoolvirname, mpoolvirnamesz);
+        if((new->virname = mpool_alloc(root->mempool, strlen(mpoolvirname) + 1, NULL)) != NULL)
+	    strcpy(new->virname, mpoolvirname);
 	free(mpoolvirname);
     } else new->virname = NULL;
 }

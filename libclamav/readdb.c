@@ -1249,8 +1249,9 @@ static int cli_loadftm(FILE *fs, struct cl_engine **engine, unsigned int options
 {
     unsigned char *mpoolmagic = cli_hex2str(tokens[2]);
     if(mpoolmagic) {
-        if((new->magic = mpool_alloc((*engine)->mempool, strlen(mpoolmagic) + 1, NULL)))
-	    strcpy(new->magic, mpoolmagic);
+	unsigned int mpoolmagicsz = strlen(tokens[2]) / 2 + 1;
+        if((new->magic = mpool_alloc((*engine)->mempool, mpoolmagicsz, NULL)))
+	    memcpy(new->magic, mpoolmagic, mpoolmagicsz);
 	free(mpoolmagic);
     } else new->magic = NULL;
 }
@@ -1272,8 +1273,9 @@ static int cli_loadftm(FILE *fs, struct cl_engine **engine, unsigned int options
 {
     unsigned char *mpooltname = cli_hex2str(tokens[3]);
     if(mpooltname) {
-        if((new->tname = mpool_alloc((*engine)->mempool, strlen(mpooltname) + 1, NULL)))
-	    strcpy(new->tname, mpooltname);
+	unsigned int mpooltnamesz = strlen(tokens[3]) / 2 + 1;
+        if((new->tname = mpool_alloc((*engine)->mempool, mpooltnamesz, NULL)))
+	    memcpy(new->tname, mpooltname, mpooltnamesz);
 	free(mpooltname);
     } else new->tname = NULL;
 }

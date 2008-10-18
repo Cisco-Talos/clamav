@@ -25,7 +25,6 @@
 #include <stdio.h>
 #include <stddef.h>
 #include "cltypes.h"
-
 typedef long element_data;
 
 /* define this for debugging/profiling purposes only, NOT in production/release code */

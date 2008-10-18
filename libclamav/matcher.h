@@ -38,7 +38,6 @@
 #include "mpool.h"
 #endif
 
-
 #define CLI_MATCH_WILDCARD	0xff00
 #define CLI_MATCH_CHAR		0x0000
 #define CLI_MATCH_IGNORE	0x0100

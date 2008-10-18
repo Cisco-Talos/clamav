@@ -112,7 +112,7 @@ static struct dconf_module modules[] = {
     { NULL,	    NULL,	    0,			    0 }
 };
 
-#ifdef USE_MPOOL
+#ifdef USE_MPOOL /* MPOOLFIXME : worthless? */
 struct cli_dconf *cli_dconf_init(mpool_t *mempool)
 #else
 struct cli_dconf *cli_dconf_init(void)
