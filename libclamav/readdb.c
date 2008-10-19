@@ -398,7 +398,7 @@ int cli_initengine(struct cl_engine **engine, unsigned int options)
 	(*engine)->refcount = 1;
 
 #ifdef USE_MPOOL
-	if(!((*engine)->mempool = mpool_open(MPOOL_FLAG_BEST_FIT, 0, NULL, NULL))) {
+	if(!((*engine)->mempool = mpool_open(MPOOL_FLAG_HEAVY_PACKING | MPOOL_FLAG_BEST_FIT, 0, NULL, NULL))) {
 	    cli_errmsg("Can't allocate memory for memory pool!\n");
 	    return CL_EMEM;
 	}
@@ -1057,7 +1057,7 @@ static int cli_loadldb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 
 	/* TDB */
 	memset(&tdb, 0, sizeof(tdb));
-#ifdef USE_MEMPOOL
+#ifdef USE_MPOOL
 	tdb.mempool = (*engine)->mempool;
 #endif
 
