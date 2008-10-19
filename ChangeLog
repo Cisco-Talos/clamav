@@ -1,3 +1,7 @@
+Sun Oct 19 14:13:48 EEST 2008 (edwin)
+-------------------------------------
+ * libclamav/readdb.c: strdup not hex2str for tokens[3]!
+
 Thu Oct 16 11:02:38 CEST 2008 (tk)
 ----------------------------------
   * freshclam/manager.c: fix compilation error on systems without IPv6 (bb#1237)

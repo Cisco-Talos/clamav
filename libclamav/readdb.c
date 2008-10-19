@@ -1270,15 +1270,8 @@ static int cli_loadftm(FILE *fs, struct cl_engine **engine, unsigned int options
 	    }
 	    new->length = strlen(tokens[2]) / 2;
 #ifdef USE_MPOOL
-{
-    unsigned char *mpooltname = cli_hex2str(tokens[3]);
-    if(mpooltname) {
-	unsigned int mpooltnamesz = strlen(tokens[3]) / 2 + 1;
-        if((new->tname = mpool_alloc((*engine)->mempool, mpooltnamesz, NULL)))
-	    memcpy(new->tname, mpooltname, mpooltnamesz);
-	free(mpooltname);
-    } else new->tname = NULL;
-}
+	   if((new->tname = mpool_alloc((*engine)->mempool, strlen(tokens[3])+1, NULL)))
+		strcpy(new->tname, tokens[3]);
 #else
 	    new->tname = cli_strdup(tokens[3]);
 #endif
@@ -2461,6 +2454,7 @@ void cl_free(struct cl_engine *engine)
 #endif
 
 #ifdef USE_MPOOL
+    printf("here\n");
     if(engine->mempool) mpool_close(engine->mempool);
 #else
     if(engine->root) {
