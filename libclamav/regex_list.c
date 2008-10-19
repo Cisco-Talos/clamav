@@ -356,6 +356,7 @@ int init_regex_list(struct regex_matcher* matcher)
 	matcher->list_built=0;
 	matcher->list_loaded=0;
 	hashtab_init(&matcher->suffix_hash, 10);
+	matcher->suffixes.mempool = matcher->mempool;
 	if((rc = cli_ac_init(&matcher->suffixes, 2, 32))) {
 		return rc;
 	}

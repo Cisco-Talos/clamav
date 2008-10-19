@@ -1286,13 +1286,8 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	    return CL_EMEM;
 	}
 
-#ifdef USE_MPOOL
-	if(!(hexnew = (char *) mpool_calloc(root->mempool, strlen(hexsig) + 1, 1, NULL))) {
-	    mpool_free(root->mempool, new);
-#else
 	if(!(hexnew = (char *) cli_calloc(strlen(hexsig) + 1, 1))) {
 	    free(new);
-#endif
 	    free(hexcpy);
 	    return CL_EMEM;
 	}
