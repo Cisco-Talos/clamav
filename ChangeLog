@@ -1,3 +1,7 @@
+Sun Oct 19 14:14:32 EEST 2008 (edwin)
+-------------------------------------
+ * libclamav/readdb.c: remove debug message
+
 Sun Oct 19 14:13:48 EEST 2008 (edwin)
 -------------------------------------
  * libclamav/readdb.c: strdup not hex2str for tokens[3]!

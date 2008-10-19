@@ -2454,7 +2454,6 @@ void cl_free(struct cl_engine *engine)
 #endif
 
 #ifdef USE_MPOOL
-    printf("here\n");
     if(engine->mempool) mpool_close(engine->mempool);
 #else
     if(engine->root) {
