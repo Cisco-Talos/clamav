@@ -907,7 +907,9 @@ void phishing_done(struct cl_engine* engine)
 	domainlist_done(engine);
 	if(pchk) {
 		cli_dbgmsg("Freeing phishcheck struct\n");
+#ifndef USE_MPOOL
 		free(pchk);
+#endif
 	}
 	cli_dbgmsg("Phishcheck cleaned up\n");
 }

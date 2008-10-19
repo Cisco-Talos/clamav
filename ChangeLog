@@ -1,3 +1,9 @@
+Sun Oct 19 15:51:10 EEST 2008 (edwin)
+-------------------------------------
+ * libclamav/phish_domaincheck_db.c, libclamav/phish_whitelist.c,
+ libclamav/phishcheck.c, libclamav/regex_list.c: mempool for
+ regex_list/phishcheck
+
 Sun Oct 19 15:36:32 EEST 2008 (edwin)
 -------------------------------------
  * libclamav/matcher-ac.c, libclamav/regex_list.c: fix hexnew

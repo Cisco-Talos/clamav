@@ -58,6 +58,7 @@ int init_domainlist(struct cl_engine* engine)
 		engine->domainlist_matcher = (struct regex_matcher *) cli_malloc(sizeof(struct regex_matcher));
 		if(!engine->domainlist_matcher)
 			return CL_EMEM;
+		((struct regex_matcher*)engine->domainlist_matcher)->mempool = engine->mempool;
 		return init_regex_list(engine->domainlist_matcher);
 	}
 	else

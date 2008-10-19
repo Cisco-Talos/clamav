@@ -347,6 +347,7 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 /* Initializes @matcher, allocating necesarry substructures */
 int init_regex_list(struct regex_matcher* matcher)
 {
+	mpool_t *mp = matcher->mempool;
 	int rc;
 
 	assert(matcher);
@@ -356,10 +357,12 @@ int init_regex_list(struct regex_matcher* matcher)
 	matcher->list_built=0;
 	matcher->list_loaded=0;
 	hashtab_init(&matcher->suffix_hash, 10);
-	matcher->suffixes.mempool = matcher->mempool;
+	matcher->mempool = mp;
+	matcher->suffixes.mempool = mp;
 	if((rc = cli_ac_init(&matcher->suffixes, 2, 32))) {
 		return rc;
 	}
+	matcher->md5_hashes.mempool = mp;
 	if((rc = cli_bm_init(&matcher->md5_hashes))) {
 		return rc;
 	}
@@ -568,7 +571,9 @@ void regex_list_done(struct regex_matcher* matcher)
 
 	if(matcher->list_inited) {
 		size_t i;
+#ifndef USE_MPOOL
 		cli_ac_free(&matcher->suffixes);
+#endif
 		if(matcher->suffix_regexes) {
 			for(i=0;i<matcher->suffix_cnt;i++) {
 				struct regex_list *r = matcher->suffix_regexes[i].head;
@@ -591,7 +596,9 @@ void regex_list_done(struct regex_matcher* matcher)
 			free(matcher->all_pregs);
 		}
 		hashtab_free(&matcher->suffix_hash);
+#ifndef USE_MPOOL
 		cli_bm_free(&matcher->md5_hashes);
+#endif
 	}
 }
 
