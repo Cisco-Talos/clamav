@@ -1368,8 +1368,7 @@ int	mpool_free(mpool_t *mp_p, void *addr)
  *
  * ARGUMENTS:
  *
- * mp_p <-> Pointer to the memory pool.  If NULL then it will do a
- * normal realloc.
+ * mp_p <-> Pointer to the memory pool.
  *
  * old_addr -> Previously allocated address.
  *
@@ -1391,6 +1390,11 @@ void	*mpool_resize(mpool_t *mp_p, void *old_addr,
   int		ret;
   struct FRAG *old_frag = (struct FRAG *)(old_addr - FRAG_OVERHEAD);
   unsigned long old_byte_size;
+
+  if (old_addr == NULL) {
+    /* behave like realloc */
+    return mpool_alloc(mp_p, new_byte_size, error_p);
+  }
   
   if (!mp_p || mp_p->mp_magic != MPOOL_MAGIC) {
     SET_POINTER(error_p, MPOOL_ERROR_PNT);
@@ -1401,11 +1405,6 @@ void	*mpool_resize(mpool_t *mp_p, void *old_addr,
     return NULL;
   }
   
-  if (old_addr == NULL) {
-    SET_POINTER(error_p, MPOOL_ERROR_ARG_NULL);
-    return NULL;
-  }
-
   old_byte_size = old_frag->frag_size;
   if (old_byte_size == 0) {
     SET_POINTER(error_p, MPOOL_ERROR_ARG_INVALID);
