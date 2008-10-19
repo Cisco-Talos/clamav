@@ -95,7 +95,7 @@ struct cli_matched_type {
 };
 
 cli_file_t cli_ftcode(const char *name);
-void cli_ftfree(struct cli_ftype *ftypes);
+void cli_ftfree(const struct cl_engine *engine);
 cli_file_t cli_filetype(const unsigned char *buf, size_t buflen, const struct cl_engine *engine);
 cli_file_t cli_filetype2(int desc, const struct cl_engine *engine);
 int cli_addtypesigs(struct cl_engine *engine);

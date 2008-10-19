@@ -108,7 +108,11 @@ int cli_bm_init(struct cli_matcher *root)
 #endif
 	return CL_EMEM;
 
+#ifdef USE_MPOOL
+    if(!(root->bm_suffix = (struct cli_bm_patt **) mpool_calloc(root->mempool, size, sizeof(struct cli_bm_patt *), NULL))) {
+#else
     if(!(root->bm_suffix = (struct cli_bm_patt **) cli_calloc(size, sizeof(struct cli_bm_patt *)))) {
+#endif
 #ifdef USE_MPOOL
 	mpool_free(root->mempool, root->bm_shift);
 #else
@@ -130,7 +134,11 @@ void cli_bm_free(struct cli_matcher *root)
 
 
     if(root->bm_shift)
+#ifdef USE_MPOOL
+	mpool_free(root->mempool, root->bm_shift);
+#else
 	free(root->bm_shift);
+#endif
 
     if(root->bm_suffix) {
 	for(i = 0; i < size; i++) {
@@ -139,17 +147,42 @@ void cli_bm_free(struct cli_matcher *root)
 		prev = patt;
 		patt = patt->next;
 		if(prev->prefix)
+#ifdef USE_MPOOL
+		    mpool_free(root->mempool, prev->prefix);
+#else
 		    free(prev->prefix);
+#endif
 		else
+#ifdef USE_MPOOL
+		    mpool_free(root->mempool, prev->pattern);
+#else
 		    free(prev->pattern);
+#endif
 		if(prev->virname)
+#ifdef USE_MPOOL
+		    mpool_free(root->mempool, prev->virname);
+#else
 		    free(prev->virname);
+#endif
 		if(prev->offset)
+#ifdef USE_MPOOL
+		    mpool_free(root->mempool, prev->offset);
+#else
 		    free(prev->offset);
+#endif
+#ifdef USE_MPOOL
+		mpool_free(root->mempool, prev);
+#else
 		free(prev);
+#endif
+
 	    }
 	}
+#ifdef USE_MPOOL
+	mpool_free(root->mempool, root->bm_suffix);
+#else
 	free(root->bm_suffix);
+#endif
     }
 }
 

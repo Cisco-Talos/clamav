@@ -343,6 +343,10 @@ extern
 void	*mpool_resize(mpool_t *mp_p, void *old_addr,
 		      const unsigned long new_byte_size,
 		      int *error_p);
+extern
+void	*mpool_resize2(mpool_t *mp_p, void *old_addr,
+		      const unsigned long new_byte_size,
+		      int *error_p);
 
 /*
  * int mpool_stats

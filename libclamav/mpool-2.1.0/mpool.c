@@ -789,6 +789,7 @@ static	void	*alloc_mem(mpool_t *mp_p, const unsigned long byte_size,
   }
   
   SET_POINTER(error_p, MPOOL_ERROR_NONE);
+  //  printf("^alloc'd %p::%p(%u)\n", mp_p, addr, byte_size);
   return addr;
 }
 
@@ -819,6 +820,8 @@ static	int	free_mem(mpool_t *mp_p, void *addr, const unsigned long size)
   unsigned long	old_size, fence;
   int		ret;
   mpool_block_t	*block_p;
+
+  //  printf("free'd %p::%p(%u)\n", mp_p, addr, size);  
   
   /*
    * If the size is larger than a block then the allocation must be at
@@ -862,7 +865,6 @@ static	int	free_mem(mpool_t *mp_p, void *addr, const unsigned long size)
   
   /* adjust our stats */
   mp_p->mp_alloc_c--;
-  
   return MPOOL_ERROR_NONE;
 }
 
@@ -1492,6 +1494,17 @@ void	*mpool_resize(mpool_t *mp_p, void *old_addr,
   
   SET_POINTER(error_p, MPOOL_ERROR_NONE);
   return &new_frag->frag_ptr;
+}
+
+
+void	*mpool_resize2(mpool_t *mp_p, void *old_addr,
+		      const unsigned long new_byte_size,
+		      int *error_p)
+{
+  void *alloc = mpool_resize(mp_p, old_addr, new_byte_size, error_p);
+  if(!alloc && old_addr)
+    mpool_free(mp_p, old_addr);
+  return alloc;
 }
 
 /*

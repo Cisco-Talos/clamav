@@ -867,7 +867,11 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 	switch(apt->type) {
 	    case CLI_TDB_UINT:
 		off[i] = cnt = tdb->cnt[CLI_TDB_UINT]++;
+#ifdef USE_MPOOL
+		tdb->val = (uint32_t *) mpool_resize2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t), NULL);
+#else
 		tdb->val = (uint32_t *) cli_realloc2(tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
+#endif
 		if(!tdb->val) {
 		    tdb->cnt[CLI_TDB_UINT] = 0;
 		    return -1;
@@ -883,7 +887,11 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 		*pt2++ = 0;
 		off[i] = cnt = tdb->cnt[CLI_TDB_RANGE];
 		tdb->cnt[CLI_TDB_RANGE] += 2;
+#ifdef USE_MPOOL
+		tdb->range = (uint32_t *) mpool_resize2(tdb->mempool, tdb->range, tdb->cnt[CLI_TDB_RANGE] * sizeof(uint32_t), NULL);
+#else
 		tdb->range = (uint32_t *) cli_realloc2(tdb->range, tdb->cnt[CLI_TDB_RANGE] * sizeof(uint32_t));
+#endif
 		if(!tdb->range) {
 		    tdb->cnt[CLI_TDB_RANGE] = 0;
 		    return -1;
@@ -899,7 +907,11 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 		}
 		off[i] = cnt = tdb->cnt[CLI_TDB_RANGE];
 		tdb->cnt[CLI_TDB_RANGE] += 3;
+#ifdef USE_MPOOL
+		tdb->range = (uint32_t *) mpool_resize2(tdb->mempool, tdb->range, tdb->cnt[CLI_TDB_RANGE] * sizeof(uint32_t), NULL);
+#else
 		tdb->range = (uint32_t *) cli_realloc2(tdb->range, tdb->cnt[CLI_TDB_RANGE] * sizeof(uint32_t));
+#endif
 		if(!tdb->range) {
 		    tdb->cnt[CLI_TDB_RANGE] = 0;
 		    return -1;
@@ -916,7 +928,11 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 	    case CLI_TDB_STR:
 		off[i] = cnt = tdb->cnt[CLI_TDB_STR];
 		tdb->cnt[CLI_TDB_STR] += strlen(pt) + 1;
+#ifdef USE_MPOOL
+		tdb->str = (char *) mpool_resize2(tdb->mempool, tdb->str, tdb->cnt[CLI_TDB_STR] * sizeof(char), NULL);
+#else
 		tdb->str = (char *) cli_realloc2(tdb->str, tdb->cnt[CLI_TDB_STR] * sizeof(char));
+#endif
 		if(!tdb->str) {
 		    cli_errmsg("lsigattribs: Can't allocate memory for tdb->str\n");
 		    return -1;
@@ -958,6 +974,16 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
     return 0;
 }
 
+#ifdef USE_MPOOL
+#define FREE_TDB(x) do {		\
+  if(x.cnt[CLI_TDB_UINT])		\
+    mpool_free(x.mempool, x.val);	\
+  if(x.cnt[CLI_TDB_RANGE])		\
+    mpool_free(x.mempool, x.range);	\
+  if(x.cnt[CLI_TDB_STR])		\
+    mpool_free(x.mempool, x.str);	\
+  } while(0);
+#else
 #define FREE_TDB(x)		\
     if(x.cnt[CLI_TDB_UINT])	\
 	free(x.val);		\
@@ -965,6 +991,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 	free(x.range);		\
     if(x.cnt[CLI_TDB_STR])	\
 	free(x.str);
+#endif
 
 #define LDB_TOKENS 67
 static int cli_loadldb(FILE *fs, struct cl_engine **engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
@@ -1030,6 +1057,7 @@ static int cli_loadldb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 
 	/* TDB */
 	memset(&tdb, 0, sizeof(tdb));
+	tdb.mempool = (*engine)->mempool;
 
 	if(lsigattribs(tokens[1], &tdb) == -1) {
 	    FREE_TDB(tdb);
@@ -2458,10 +2486,9 @@ void cl_free(struct cl_engine *engine)
 #ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&cli_ref_mutex);
 #endif
-
 #ifdef USE_MPOOL
-    if(engine->mempool) mpool_close(engine->mempool);
-#else
+#define free(X) mpool_free(engine->mempool, X)
+#endif
     if(engine->root) {
 	for(i = 0; i < CLI_MTARGETS; i++) {
 	    if((root = engine->root[i])) {
@@ -2523,15 +2550,17 @@ void cl_free(struct cl_engine *engine)
 
     if(((struct cli_dconf *) engine->dconf)->phishing & PHISHING_CONF_ENGINE)
 	phishing_done(engine);
-
     if(engine->dconf)
 	free(engine->dconf);
 
     if(engine->pua_cats)
 	free(engine->pua_cats);
 
-    cli_ftfree(engine->ftypes);
+    cli_ftfree(engine);
     cli_freeign(engine);
+#ifdef USE_MPOOL
+#undef free(X)
+    if(engine->mempool) mpool_close(engine->mempool);
 #endif /* USE_MPOOL */
     free(engine);
 }

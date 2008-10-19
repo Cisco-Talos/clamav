@@ -571,9 +571,7 @@ void regex_list_done(struct regex_matcher* matcher)
 
 	if(matcher->list_inited) {
 		size_t i;
-#ifndef USE_MPOOL
 		cli_ac_free(&matcher->suffixes);
-#endif
 		if(matcher->suffix_regexes) {
 			for(i=0;i<matcher->suffix_cnt;i++) {
 				struct regex_list *r = matcher->suffix_regexes[i].head;
@@ -591,14 +589,20 @@ void regex_list_done(struct regex_matcher* matcher)
 			for(i=0;i<matcher->regex_cnt;i++) {
 				regex_t *r = matcher->all_pregs[i];
 				cli_regfree(r);
+#ifdef USE_MPOOL
+				mpool_free(matcher->mempool, r);
+#else
 				free(r);
+#endif
 			}
+#ifdef USE_MPOOL
+			mpool_free(matcher->mempool, matcher->all_pregs);
+#else
 			free(matcher->all_pregs);
+#endif
 		}
 		hashtab_free(&matcher->suffix_hash);
-#ifndef USE_MPOOL
 		cli_bm_free(&matcher->md5_hashes);
-#endif
 	}
 }
 

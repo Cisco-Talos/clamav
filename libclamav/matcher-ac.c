@@ -406,8 +406,16 @@ void cli_ac_free(struct cli_matcher *root)
 
     for(i = 0; i < root->ac_patterns; i++) {
 	patt = root->ac_pattable[i];
+#ifdef USE_MPOOL
+	patt->prefix ? mpool_free(root->mempool, patt->prefix) : mpool_free(root->mempool, patt->pattern);
+#else
 	patt->prefix ? free(patt->prefix) : free(patt->pattern);
+#endif
+#ifdef USE_MPOOL
+	mpool_free(root->mempool, patt->virname);
+#else
 	free(patt->virname);
+#endif
 	if(patt->offset)
 #ifdef USE_MPOOL
 	    mpool_free(root->mempool, patt->offset);
@@ -420,23 +428,45 @@ void cli_ac_free(struct cli_matcher *root)
 #else
 	    ac_free_alt(patt);
 #endif
+#ifdef USE_MPOOL
+	mpool_free(root->mempool, patt);
+
+#else
 	free(patt);
+#endif
     }
     if(root->ac_pattable)
+#ifdef USE_MPOOL
+	mpool_free(root->mempool, root->ac_pattable);
+#else
 	free(root->ac_pattable);
+#endif
 
     for(i = 0; i < root->ac_nodes; i++) {
 	if(!root->ac_nodetable[i]->leaf)
+#ifdef USE_MPOOL
+	    mpool_free(root->mempool, root->ac_nodetable[i]->trans);
+	mpool_free(root->mempool, root->ac_nodetable[i]);
+#else
 	    free(root->ac_nodetable[i]->trans);
 	free(root->ac_nodetable[i]);
+#endif
     }
 
     if(root->ac_nodetable)
+#ifdef USE_MPOOL
+	mpool_free(root->mempool, root->ac_nodetable);
+#else
 	free(root->ac_nodetable);
-
+#endif
     if(root->ac_root) {
+#ifdef USE_MPOOL
+	mpool_free(root->mempool, root->ac_root->trans);
+	mpool_free(root->mempool, root->ac_root);
+#else
 	free(root->ac_root->trans);
 	free(root->ac_root);
+#endif
     }
 }
 

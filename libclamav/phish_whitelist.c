@@ -82,8 +82,10 @@ int is_whitelist_ok(const struct cl_engine* engine)
 void whitelist_done(struct cl_engine* engine)
 {
 	if(engine && engine->whitelist_matcher) {
-		regex_list_done(engine->whitelist_matcher);	
-#ifndef USE_MPOOL
+		regex_list_done(engine->whitelist_matcher);
+#ifdef USE_MPOOL
+		mpool_free(engine->mempool, engine->whitelist_matcher);
+#else
 		free(engine->whitelist_matcher);
 #endif
 		engine->whitelist_matcher = NULL;
