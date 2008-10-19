@@ -1057,7 +1057,9 @@ static int cli_loadldb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 
 	/* TDB */
 	memset(&tdb, 0, sizeof(tdb));
+#ifdef USE_MEMPOOL
 	tdb.mempool = (*engine)->mempool;
+#endif
 
 	if(lsigattribs(tokens[1], &tdb) == -1) {
 	    FREE_TDB(tdb);

@@ -65,7 +65,6 @@ int init_whitelist(struct cl_engine* engine)
 #else
 		engine->whitelist_matcher = (struct regex_matcher *) cli_malloc(sizeof(struct regex_matcher));
 #endif
-		((struct regex_matcher*)engine->whitelist_matcher)->mempool = engine->mempool;
 		if(!engine->whitelist_matcher)
 			return CL_EMEM;
 		return	init_regex_list(engine->whitelist_matcher);

@@ -347,7 +347,9 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 /* Initializes @matcher, allocating necesarry substructures */
 int init_regex_list(struct regex_matcher* matcher)
 {
+#ifdef USE_MPOOL
 	mpool_t *mp = matcher->mempool;
+#endif
 	int rc;
 
 	assert(matcher);
@@ -357,12 +359,16 @@ int init_regex_list(struct regex_matcher* matcher)
 	matcher->list_built=0;
 	matcher->list_loaded=0;
 	hashtab_init(&matcher->suffix_hash, 10);
+#ifdef USE_MPOOL
 	matcher->mempool = mp;
 	matcher->suffixes.mempool = mp;
+#endif
 	if((rc = cli_ac_init(&matcher->suffixes, 2, 32))) {
 		return rc;
 	}
+#ifdef USE_MPOOL
 	matcher->md5_hashes.mempool = mp;
+#endif
 	if((rc = cli_bm_init(&matcher->md5_hashes))) {
 		return rc;
 	}
