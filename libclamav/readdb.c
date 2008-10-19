@@ -1437,9 +1437,15 @@ static void cli_freeign(struct cl_engine *engine)
 	while(ignored->list) {
 	    pt = ignored->list;
 	    ignored->list = ignored->list->next;
+#ifdef USE_MPOOL
+	    mpool_free(engine->mempool, pt->dbname);
+	    mpool_free(engine->mempool, pt->signame);
+	    mpool_free(engine->mempool,pt);
+#else
 	    free(pt->dbname);
 	    free(pt->signame);
 	    free(pt);
+#endif
 	}
 	hashset_destroy(&ignored->hs);
 	free(engine->ignored);
