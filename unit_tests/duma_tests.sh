@@ -1,9 +1,10 @@
 #!/bin/sh
 # Run under duma
+LIBDIRS=`../libtool --config | grep sys_lib_search_path_spec | sed -e 's/.*"\(.*\)"/\1/'`
 if test -z "$LIBDUMA"; then
-	for i in /usr/lib/libduma.so /usr/local/lib/libduma.so; do
-		if test -f "$i"; then
-			LIBDUMA="$i"
+	for i in $LIBIRS; do
+		if test -f "$i/libduma.so"; then
+			LIBDUMA="$i/libduma.so"
 			break;
 		fi
 	done

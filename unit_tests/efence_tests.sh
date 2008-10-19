@@ -1,9 +1,10 @@
 #!/bin/sh
 # Run under electric-fence
+LIBDIRS=`../libtool --config | grep sys_lib_search_path_spec | sed -e 's/.*"\(.*\)"/\1/'`
 if test -z "$LIBEFENCE"; then
-	for i in /usr/lib/libefence.so /usr/local/lib/libefence.so /opt/csw/lib/libefence.so; do
-		if test -f "$i"; then
-			LIBEFENCE="$i"
+	for i in $LIBDIRS; do
+		if test -f "$i/libefence.so"; then
+			LIBEFENCE="$i/libefence.so"
 			break;
 		fi
 	done

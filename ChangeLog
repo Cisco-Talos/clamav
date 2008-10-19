@@ -1,3 +1,9 @@
+Sun Oct 19 14:57:26 EEST 2008 (edwin)
+-------------------------------------
+ * unit_tests/duma_tests.sh, unit_tests/efence_tests.sh: locate
+ efence/duma using libtool's search path so that it works with
+ /usr/lib64 (bb #1250)
+
 Thu Oct 16 11:02:38 CEST 2008 (tk)
 ----------------------------------
   * freshclam/manager.c: fix compilation error on systems without IPv6 (bb#1237)
