@@ -615,7 +615,11 @@ int is_regex_ok(struct regex_matcher* matcher)
 static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info, const char *suffix, size_t len)
 {
 	struct cli_matcher *root = &matcher->suffixes;
+#ifdef USE_MPOOL
+	struct cli_ac_patt *new = mpool_calloc(matcher->mempool,1,sizeof(*new),NULL);
+#else
 	struct cli_ac_patt *new = cli_calloc(1,sizeof(*new));
+#endif
 	size_t i;
 	int ret;
 
@@ -637,9 +641,17 @@ static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info,
 	if(new->length > root->maxpatlen)
 		root->maxpatlen = new->length;
 
+#ifdef USE_MPOOL
+	new->pattern = mpool_alloc(matcher->mempool, sizeof(new->pattern[0])*len, NULL);
+#else
 	new->pattern = cli_malloc(sizeof(new->pattern[0])*len);
+#endif
 	if(!new->pattern) {
+#ifdef USE_MPOOL
+		mpool_free(matcher->mempool, new);
+#else
 		free(new);
+#endif
 		return CL_EMEM;
 	}
 	for(i=0;i<len;i++)
@@ -648,8 +660,13 @@ static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info,
 	new->customdata = info;
 	new->virname = NULL;
 	if((ret = cli_ac_addpatt(root,new))) {
+#ifdef USE_MPOOL
+		mpool_free(matcher->mempool, new->pattern);
+		mpool_free(matcher->mempool, new);
+#else
 		free(new->pattern);
 		free(new);
+#endif
 		return ret;
 	}
 	SO_preprocess_add(&matcher->filter, (const unsigned char*)suffix, len);

@@ -2570,7 +2570,19 @@ static void cli_md5db_build(struct cli_matcher* root)
 	if(root && root->md5_sizes_hs.capacity) {
 		/* TODO: use hashset directly, instead of the array when matching*/
 		cli_dbgmsg("Converting hashset to array: %lu entries\n", root->md5_sizes_hs.count);
+
+#ifdef USE_MPOOL
+		{
+		uint32_t *mpoolht;
+		unsigned int mpoolhtsz = root->md5_sizes_hs.count * sizeof(*mpoolht);
+		root->soff = mpool_alloc(root->mempool, mpoolhtsz, NULL);
+		root->soff_len = hashset_toarray(&root->md5_sizes_hs, &mpoolht);
+		memcpy(root->soff, mpoolht, mpoolhtsz);
+		free(mpoolht);
+		}
+#else
 		root->soff_len = hashset_toarray(&root->md5_sizes_hs, &root->soff);
+#endif
 		hashset_destroy(&root->md5_sizes_hs);
 		qsort(root->soff, root->soff_len, sizeof(uint32_t), scomp);
 	}
