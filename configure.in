@@ -54,14 +54,12 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
-dnl libtool by default brings in check for all the languages/compilers (CXX/F77/...)
-dnl we don't need them, so avoid tagged configuration
-dnl libtool-1.6 should already do it right, but thats not stable yet
-AC_DEFUN([_LT_AC_TAGCONFIG])
 AC_PROG_LIBTOOL
 
 AC_DEFINE([SCANBUFF], 131072, [scan buffer size])
 AC_DEFINE([FILEBUFF], 8192,   [file i/o buffer size])
+
+AC_LIB_MULTILIB_GUESS
 
 AC_HEADER_STDC
 AC_C_RESTRICT
@@ -437,7 +435,7 @@ if test "$want_bzip2" = "yes"
 then
     AC_LIB_LINKFLAGS([bz2])
     save_LDFLAGS="$LDFLAGS"
-    LDFLAGS="$LIBS -L$LIBBZ2_PREFIX/lib";
+    LDFLAGS="$LIBS -L$LIBBZ2_PREFIX/$acl_libdirstem";
     AC_CHECK_LIB([bz2], [bzReadOpen],
 		 [AC_DEFINE([NOBZ2PREFIX],1,[bzip funtions do not have bz2 prefix])]
 		)

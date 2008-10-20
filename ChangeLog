@@ -1,3 +1,14 @@
+Mon Oct 20 17:23:12 EEST 2008 (edwin)
+-------------------------------------
+ * aclocal.m4, configure, configure.in, m4/acinclude.m4,
+ m4/lib-prefix.m4: use -print-multi-os-directory to set default
+ libdir (bb #1240) 
+ * WARNING: On a 64-bit multiarch OS, this will by
+ default install libclamav into /usr/local/lib64, if your system uses
+ /usr/local/lib for 32bit apps.  If the system uses /usr/local/lib
+ for 64-bit apps and lib32 for 32bit apps, there is no change (unless
+ you use -m32).
+
 Sun Oct 19 15:58:23 EEST 2008 (edwin)
 -------------------------------------
  * unit_tests/check_clamd.sh: the 2nd clamd process might already be

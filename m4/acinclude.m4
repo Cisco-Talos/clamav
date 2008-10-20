@@ -741,3 +741,28 @@ AC_DEFUN([AC_LIB_FIND],
 	undefine([NAME])	
 ])
 
+dnl Try to set a correct default libdir for multiarch systems
+AC_DEFUN([AC_LIB_MULTILIB_GUESS],
+[
+	# Only modify libdir if user has not overriden it
+	default_libdir='${exec_prefix}/lib'
+	if test "$libdir" = "$default_libdir"; then
+		AC_MSG_CHECKING([for multiarch libdir])
+		# Based on http://lists.gnu.org/archive/html/autoconf/2008-09/msg00072.html
+		if test "$GCC" = yes; then
+			ac_multilibdir=`$CC -print-multi-os-directory $CFLAGS $CPPFLAGS $LDFLAGS`
+		else
+			ac_multilibdir=.
+		fi
+		case "$ac_multilibdir" in
+			 # I don't know if the first two cases can happen, but it would be a
+			 # bad idea to override $exec_prefix
+			 /* | ../../* | .) acl_libdirstem=lib ;;
+			 ../*)             acl_libdirstem=`echo $ac_multilibdir | sed 's/^...//' ` ;;
+			*)                 acl_libdirstem=lib/$ac_multilibdir ;;
+		esac
+		libdir='${exec_prefix}/'$acl_libdirstem
+		AC_MSG_RESULT([$libdir])
+	fi
+])
+
