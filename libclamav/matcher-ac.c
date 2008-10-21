@@ -39,9 +39,7 @@
 #include "str.h"
 #include "readdb.h"
 
-#ifdef USE_MPOOL
 #include "mpool.h"
-#endif
 
 uint8_t cli_ac_mindepth = AC_DEFAULT_MIN_DEPTH;
 uint8_t cli_ac_maxdepth = AC_DEFAULT_MAX_DEPTH;
@@ -70,11 +68,7 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 
     for(i = 0; i < len; i++) {
 	if(!pt->trans) {
-#ifdef USE_MPOOL
-	    pt->trans = (struct cli_ac_node **) mpool_calloc(root->mempool, 256, sizeof(struct cli_ac_node *), NULL);
-#else
-	    pt->trans = (struct cli_ac_node **) cli_calloc(256, sizeof(struct cli_ac_node *));
-#endif
+	    pt->trans = (struct cli_ac_node **) mp_calloc(root->mempool, 256, sizeof(struct cli_ac_node *));
 	    if(!pt->trans) {
 		cli_errmsg("cli_ac_addpatt: Can't allocate memory for pt->trans\n");
 		return CL_EMEM;
@@ -84,29 +78,17 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 	next = pt->trans[(unsigned char) (pattern->pattern[i] & 0xff)]; 
 
 	if(!next) {
-#ifdef USE_MPOOL
-	    next = (struct cli_ac_node *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_node), NULL);
-#else
-	    next = (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));
-#endif
+	    next = (struct cli_ac_node *) mp_calloc(root->mempool, 1, sizeof(struct cli_ac_node));
 	    if(!next) {
 		cli_errmsg("cli_ac_addpatt: Can't allocate memory for AC node\n");
 		return CL_EMEM;
 	    }
 
 	    if(i != len - 1) {
-#ifdef USE_MPOOL
-		next->trans = (struct cli_ac_node **) mpool_calloc(root->mempool, 256, sizeof(struct cli_ac_node *), NULL);
-#else
-		next->trans = (struct cli_ac_node **) cli_calloc(256, sizeof(struct cli_ac_node *));
-#endif
+		next->trans = (struct cli_ac_node **) mp_calloc(root->mempool, 256, sizeof(struct cli_ac_node *));
 		if(!next->trans) {
 		    cli_errmsg("cli_ac_addpatt: Can't allocate memory for next->trans\n");
-#ifdef USE_MPOOL
-		    mpool_free(root->mempool, next);
-#else
-		    free(next);
-#endif
+		    mp_free(root->mempool, next);
 		    return CL_EMEM;
 		}
 	    } else {
@@ -114,22 +96,13 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 	    }
 
 	    root->ac_nodes++;
-#ifdef USE_MPOOL
-	    newtable = mpool_resize(root->mempool, root->ac_nodetable, root->ac_nodes * sizeof(struct cli_ac_node *), NULL);
-#else
-	    newtable = cli_realloc(root->ac_nodetable, root->ac_nodes * sizeof(struct cli_ac_node *));
-#endif
+	    newtable = mp_realloc(root->mempool, root->ac_nodetable, root->ac_nodes * sizeof(struct cli_ac_node *));
 	    if(!newtable) {
 		root->ac_nodes--;
 		cli_errmsg("cli_ac_addpatt: Can't realloc ac_nodetable\n");
 		if(next->trans)
-#ifdef USE_MPOOL
-		    mpool_free(root->mempool, next->trans);
-		mpool_free(root->mempool, next);
-#else
-		    free(next->trans);
-		free(next);
-#endif
+		    mp_free(root->mempool, next->trans);
+		mp_free(root->mempool, next);
 		return CL_EMEM;
 	    }
 	    root->ac_nodetable = (struct cli_ac_node **) newtable;
@@ -143,11 +116,7 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
     }
 
     root->ac_patterns++;
-#ifdef USE_MPOOL
-    newtable = mpool_resize(root->mempool, root->ac_pattable, root->ac_patterns * sizeof(struct cli_ac_patt *), NULL);
-#else
-    newtable = cli_realloc(root->ac_pattable, root->ac_patterns * sizeof(struct cli_ac_patt *));
-#endif
+    newtable = mp_realloc(root->mempool, root->ac_pattable, root->ac_patterns * sizeof(struct cli_ac_patt *));
     if(!newtable) {
 	root->ac_patterns--;
 	cli_errmsg("cli_ac_addpatt: Can't realloc ac_pattable\n");
@@ -332,28 +301,16 @@ int cli_ac_buildtrie(struct cli_matcher *root)
 int cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth)
 {
 
-#ifdef USE_MPOOL
-    root->ac_root = (struct cli_ac_node *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_node), NULL);
-#else
-    root->ac_root = (struct cli_ac_node *) cli_calloc(1, sizeof(struct cli_ac_node));
-#endif
+    root->ac_root = (struct cli_ac_node *) mp_calloc(root->mempool, 1, sizeof(struct cli_ac_node));
     if(!root->ac_root) {
 	cli_errmsg("cli_ac_init: Can't allocate memory for ac_root\n");
 	return CL_EMEM;
     }
 
-#ifdef USE_MPOOL
-    root->ac_root->trans = (struct cli_ac_node **) mpool_calloc(root->mempool, 256, sizeof(struct cli_ac_node *), NULL);
-#else
-    root->ac_root->trans = (struct cli_ac_node **) cli_calloc(256, sizeof(struct cli_ac_node *));
-#endif
+    root->ac_root->trans = (struct cli_ac_node **) mp_calloc(root->mempool, 256, sizeof(struct cli_ac_node *));
     if(!root->ac_root->trans) {
 	cli_errmsg("cli_ac_init: Can't allocate memory for ac_root->trans\n");
-#ifdef USE_MPOOL
-	mpool_free(root->mempool, root->ac_root);
-#else
-	free(root->ac_root);
-#endif
+	mp_free(root->mempool, root->ac_root);
 	return CL_EMEM;
     }
 
@@ -364,7 +321,7 @@ int cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth)
 }
 
 #ifdef USE_MPOOL
-static void ac_free_alt(mpool_t *mempool, struct cli_ac_patt *p)
+static void ac_free_alt(mp_t *mempool, struct cli_ac_patt *p)
 #else
 static void ac_free_alt(struct cli_ac_patt *p)
 #endif
@@ -382,20 +339,11 @@ static void ac_free_alt(struct cli_ac_patt *p)
 	    a2 = a1;
 	    a1 = a1->next;
 	    if(a2->str)
-#ifdef USE_MPOOL
-		mpool_free(mempool, a2->str);
-	    mpool_free(mempool, a2);
-#else
-		free(a2->str);
-	    free(a2);
-#endif
+		mp_free(mempool, a2->str);
+	    mp_free(mempool, a2);
 	}
     }
-#ifdef USE_MPOOL
-    mpool_free(mempool, p->alttable);
-#else
-    free(p->alttable);
-#endif
+    mp_free(mempool, p->alttable);
 }
 
 void cli_ac_free(struct cli_matcher *root)
@@ -406,67 +354,32 @@ void cli_ac_free(struct cli_matcher *root)
 
     for(i = 0; i < root->ac_patterns; i++) {
 	patt = root->ac_pattable[i];
-#ifdef USE_MPOOL
-	patt->prefix ? mpool_free(root->mempool, patt->prefix) : mpool_free(root->mempool, patt->pattern);
-#else
-	patt->prefix ? free(patt->prefix) : free(patt->pattern);
-#endif
-#ifdef USE_MPOOL
-	mpool_free(root->mempool, patt->virname);
-#else
-	free(patt->virname);
-#endif
+	mp_free(root->mempool, patt->prefix ? patt->prefix : patt->pattern);
+	mp_free(root->mempool, patt->virname);
 	if(patt->offset)
-#ifdef USE_MPOOL
-	    mpool_free(root->mempool, patt->offset);
-#else
-	    free(patt->offset);
-#endif
+	    mp_free(root->mempool, patt->offset);
 	if(patt->alt)
 #ifdef USE_MPOOL
 	    ac_free_alt(root->mempool, patt);
 #else
 	    ac_free_alt(patt);
 #endif
-#ifdef USE_MPOOL
-	mpool_free(root->mempool, patt);
-
-#else
-	free(patt);
-#endif
+	mp_free(root->mempool, patt);
     }
     if(root->ac_pattable)
-#ifdef USE_MPOOL
-	mpool_free(root->mempool, root->ac_pattable);
-#else
-	free(root->ac_pattable);
-#endif
+	mp_free(root->mempool, root->ac_pattable);
 
     for(i = 0; i < root->ac_nodes; i++) {
 	if(!root->ac_nodetable[i]->leaf)
-#ifdef USE_MPOOL
-	    mpool_free(root->mempool, root->ac_nodetable[i]->trans);
-	mpool_free(root->mempool, root->ac_nodetable[i]);
-#else
-	    free(root->ac_nodetable[i]->trans);
-	free(root->ac_nodetable[i]);
-#endif
+	    mp_free(root->mempool, root->ac_nodetable[i]->trans);
+	mp_free(root->mempool, root->ac_nodetable[i]);
     }
 
     if(root->ac_nodetable)
-#ifdef USE_MPOOL
-	mpool_free(root->mempool, root->ac_nodetable);
-#else
-	free(root->ac_nodetable);
-#endif
+	mp_free(root->mempool, root->ac_nodetable);
     if(root->ac_root) {
-#ifdef USE_MPOOL
-	mpool_free(root->mempool, root->ac_root->trans);
-	mpool_free(root->mempool, root->ac_root);
-#else
-	free(root->ac_root->trans);
-	free(root->ac_root);
-#endif
+	mp_free(root->mempool, root->ac_root->trans);
+	mp_free(root->mempool, root->ac_root);
     }
 }
 
@@ -1189,11 +1102,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
     if(strlen(hexsig) / 2 < root->ac_mindepth)
 	return CL_EPATSHORT;
-#ifdef USE_MPOOL
-    if((new = (struct cli_ac_patt *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_patt), NULL)) == NULL)
-#else
-    if((new = (struct cli_ac_patt *) cli_calloc(1, sizeof(struct cli_ac_patt))) == NULL)
-#endif
+    if((new = (struct cli_ac_patt *) mp_calloc(root->mempool, 1, sizeof(struct cli_ac_patt))) == NULL)
 	return CL_EMEM;
 
     new->rtype = rtype;
@@ -1213,11 +1122,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
     if(strchr(hexsig, '[')) {
 	if(!(hexcpy = cli_strdup(hexsig))) {
-#ifdef USE_MPOOL
-	    mpool_free(root->mempool, new);
-#else
-	    free(new);
-#endif
+	    mp_free(root->mempool, new);
 	    return CL_EMEM;
 	}
 
@@ -1282,22 +1187,14 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
 	if(error) {
 	    free(hexcpy);
-#ifdef USE_MPOOL
-	    mpool_free(root->mempool, new);
-#else
-	    free(new);
-#endif
+	    mp_free(root->mempool, new);
 	    return error;
 	}
 
 	hex = cli_strdup(hex);
 	free(hexcpy);
 	if(!hex) {
-#ifdef USE_MPOOL
-	    mpool_free(root->mempool, new);
-#else
-	    free(new);
-#endif
+	    mp_free(root->mempool, new);
 	    return CL_EMEM;
 	}
     }
@@ -1308,11 +1205,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	if(hex) {
 	    hexcpy = hex;
 	} else if(!(hexcpy = cli_strdup(hexsig))) {
-#ifdef USE_MPOOL
-	    mpool_free(root->mempool, new);
-#else
-	    free(new);
-#endif
+	    mp_free(root->mempool, new);
 	    return CL_EMEM;
 	}
 
@@ -1340,11 +1233,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	    }
 	    *start++ = 0;
 
-#ifdef USE_MPOOL
-	    newalt = (struct cli_ac_alt *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_alt), NULL);
-#else
-	    newalt = (struct cli_ac_alt *) cli_calloc(1, sizeof(struct cli_ac_alt));
-#endif
+	    newalt = (struct cli_ac_alt *) mp_calloc(root->mempool, 1, sizeof(struct cli_ac_alt));
 	    if(!newalt) {
 		cli_errmsg("cli_ac_addsig: Can't allocate newalt\n");
 		error = CL_EMEM;
@@ -1353,18 +1242,10 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
 	    new->alt++;
 
-#ifdef USE_MPOOL
-	    newtable = (struct cli_ac_alt **) mpool_resize(root->mempool, new->alttable, new->alt * sizeof(struct cli_ac_alt *), NULL);
-#else
-	    newtable = (struct cli_ac_alt **) cli_realloc(new->alttable, new->alt * sizeof(struct cli_ac_alt *));
-#endif
+	    newtable = (struct cli_ac_alt **) mp_realloc(root->mempool, new->alttable, new->alt * sizeof(struct cli_ac_alt *));
 	    if(!newtable) {
 		new->alt--;
-#ifdef USE_MPOOL
-		mpool_free(root->mempool, newalt);
-#else
-		free(newalt);
-#endif
+		mp_free(root->mempool, newalt);
 		cli_errmsg("cli_ac_addsig: Can't realloc new->alttable\n");
 		error = CL_EMEM;
 		break;
@@ -1384,11 +1265,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
 	    if(3 * newalt->num - 1 == (uint16_t) strlen(pt)) {
 		newalt->chmode = 1;
-#ifdef USE_MPOOL
-		newalt->str = (unsigned char *) mpool_alloc(root->mempool, newalt->num, NULL);
-#else
-		newalt->str = (unsigned char *) cli_malloc(newalt->num);
-#endif
+		newalt->str = (unsigned char *) mp_malloc(root->mempool, newalt->num);
 		if(!newalt->str) {
 		    cli_errmsg("cli_ac_addsig: Can't allocate newalt->str\n");
 		    error = CL_EMEM;
@@ -1417,11 +1294,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 			while(altpt->next)
 			    altpt = altpt->next;
 
-#ifdef USE_MPOOL
-			altpt->next = (struct cli_ac_alt *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_alt), NULL);
-#else
-			altpt->next = (struct cli_ac_alt *) cli_calloc(1, sizeof(struct cli_ac_alt));
-#endif
+			altpt->next = (struct cli_ac_alt *) mp_calloc(root->mempool, 1, sizeof(struct cli_ac_alt));
 			if(!altpt->next) {
 			    cli_errmsg("cli_ac_addsig: Can't allocate altpt->next\n");
 			    error = CL_EMEM;
@@ -1456,13 +1329,11 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 		free(hex);
 #ifdef USE_MPOOL
 		ac_free_alt(root->mempool, new);
-	    }
-	    mpool_free(root->mempool, new);
 #else
 		ac_free_alt(new);
-	    }
-	    free(new);
 #endif
+	    }
+	    mp_free(root->mempool, new);
 	    return error;
 	}
     }
@@ -1472,7 +1343,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     unsigned int mpoolpattsz = (strlen(hex ? hex : hexsig) / 2 + 1) * sizeof(uint16_t);
     uint16_t *mpoolpatt = cli_hex2ui(hex ? hex : hexsig);
     if(mpoolpatt) {
-        if((new->pattern = mpool_alloc(root->mempool, mpoolpattsz, NULL)) != NULL)
+        if((new->pattern = mp_malloc(root->mempool, mpoolpattsz)) != NULL)
 	    memcpy(new->pattern, mpoolpatt, mpoolpattsz);
 	free(mpoolpatt);
     } else new->pattern = NULL;
@@ -1485,11 +1356,10 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	if(new->alt)
 #ifdef USE_MPOOL
 	    ac_free_alt(root->mempool, new);
-	mpool_free(root->mempool, new);
 #else
 	    ac_free_alt(new);
-	free(new);
 #endif
+	mp_free(root->mempool, new);
 	free(hex);
 	return CL_EMALFDB;
     }
@@ -1539,13 +1409,11 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	    cli_errmsg("cli_ac_addsig: Can't find a static subpattern of length %u\n", root->ac_mindepth);
 #ifdef USE_MPOOL
 	    ac_free_alt(root->mempool, new);
-	    mpool_free(root->mempool, new->pattern);
-	    mpool_free(root->mempool, new);
 #else
 	    ac_free_alt(new);
-	    free(new->pattern);
-	    free(new);
 #endif
+	    mp_free(root->mempool, new->pattern);
+	    mp_free(root->mempool, new);
 	    return CL_EMALFDB;
 	}
 
@@ -1566,7 +1434,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 {
     char *mpoolvirname = cli_virname((char *) virname, options & CL_DB_OFFICIAL, 0);
     if(mpoolvirname) {
-        if((new->virname = mpool_alloc(root->mempool, strlen(mpoolvirname) + 1, NULL)) != NULL)
+        if((new->virname = mp_malloc(root->mempool, strlen(mpoolvirname) + 1)) != NULL)
 	    strcpy(new->virname, mpoolvirname);
 	free(mpoolvirname);
     } else new->virname = NULL;
@@ -1575,15 +1443,13 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     new->virname = cli_virname((char *) virname, options & CL_DB_OFFICIAL, 0);
 #endif
     if(!new->virname) {
+	mp_free(root->mempool, new->prefix ? new->prefix : new->pattern);
 #ifdef USE_MPOOL
-	new->prefix ? mpool_free(root->mempool, new->prefix) : mpool_free(root->mempool, new->pattern);
 	ac_free_alt(root->mempool, new);
-	mpool_free(root->mempool, new);
 #else
-	new->prefix ? free(new->prefix) : free(new->pattern);
 	ac_free_alt(new);
-	free(new);
 #endif
+	mp_free(root->mempool, new);
 	return CL_EMEM;
     }
 
@@ -1592,43 +1458,35 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
     if(offset) {
 #ifdef USE_MPOOL
-        if((new->offset = mpool_alloc(root->mempool, strlen(offset) + 1, NULL)))
+        if((new->offset = mp_malloc(root->mempool, strlen(offset) + 1)))
 	    strcpy(new->offset, offset);
 #else
 	new->offset = cli_strdup(offset);
 #endif
 	if(!new->offset) {
+	    mp_free(root->mempool, new->prefix ? new->prefix : new->pattern);
 #ifdef USE_MPOOL
-	    new->prefix ? mpool_free(root->mempool, new->prefix) : mpool_free(root->mempool, new->pattern);
 	    ac_free_alt(root->mempool, new);
-	    mpool_free(root->mempool, new->virname);
-	    mpool_free(root->mempool, new);
 #else
-	    new->prefix ? free(new->prefix) : free(new->pattern);
 	    ac_free_alt(new);
-	    free(new->virname);
-	    free(new);
 #endif
+	    mp_free(root->mempool, new->virname);
+	    mp_free(root->mempool, new);
 	    return CL_EMEM;
 	}
     }
 
     if((ret = cli_ac_addpatt(root, new))) {
+	mp_free(root->mempool, new->prefix ? new->prefix : new->pattern);
+	mp_free(root->mempool, new->virname);
 #ifdef USE_MPOOL
-	new->prefix ? mpool_free(root->mempool, new->prefix) : mpool_free(root->mempool, new->pattern);
-	mpool_free(root->mempool, new->virname);
 	ac_free_alt(root->mempool, new);
-	if(new->offset)
-	    mpool_free(root->mempool, new->offset);
-	mpool_free(root->mempool, new);
 #else
-	new->prefix ? free(new->prefix) : free(new->pattern);
-	free(new->virname);
 	ac_free_alt(new);
-	if(new->offset)
-	    free(new->offset);
-	free(new);
 #endif
+	if(new->offset)
+	    mp_free(root->mempool, new->offset);
+	mp_free(root->mempool, new);
 	return ret;
     }
 

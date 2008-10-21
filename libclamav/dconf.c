@@ -35,9 +35,7 @@
 #include "str.h"
 #include "others.h"
 
-#ifdef USE_MPOOL
 #include "mpool.h"
-#endif
 
 struct dconf_module {
     const char	*mname;	    /* module name */
@@ -112,8 +110,8 @@ static struct dconf_module modules[] = {
     { NULL,	    NULL,	    0,			    0 }
 };
 
-#ifdef USE_MPOOL /* MPOOLFIXME : worthless? */
-struct cli_dconf *cli_dconf_init(mpool_t *mempool)
+#ifdef USE_MPOOL 
+struct cli_dconf *cli_dconf_init(mp_t *mempool)
 #else
 struct cli_dconf *cli_dconf_init(void)
 #endif
@@ -121,11 +119,7 @@ struct cli_dconf *cli_dconf_init(void)
 	unsigned int i;
 	struct cli_dconf *dconf;
 
-#ifdef USE_MPOOL
-    dconf = (struct cli_dconf *) mpool_calloc(mempool, sizeof(struct cli_dconf), 1, NULL);
-#else
-    dconf = (struct cli_dconf *) cli_calloc(sizeof(struct cli_dconf), 1);
-#endif
+    dconf = (struct cli_dconf *) mp_calloc(mempool, sizeof(struct cli_dconf), 1);
     if(!dconf)
 	return NULL;
 

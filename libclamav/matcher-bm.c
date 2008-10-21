@@ -32,9 +32,7 @@
 #include "matcher-bm.h"
 #include "filetypes.h"
 
-#ifdef USE_MPOOL
 #include "mpool.h"
-#endif
 
 #define BM_MIN_LENGTH	3
 #define BM_BLOCK_SIZE	3
@@ -101,23 +99,11 @@ int cli_bm_init(struct cli_matcher *root)
 {
 	uint16_t i, size = HASH(255, 255, 255) + 1;
 
-#ifdef USE_MPOOL
-    if(!(root->bm_shift = (uint8_t *) mpool_calloc(root->mempool, size, sizeof(uint8_t), NULL)))
-#else
-    if(!(root->bm_shift = (uint8_t *) cli_calloc(size, sizeof(uint8_t))))
-#endif
+    if(!(root->bm_shift = (uint8_t *) mp_calloc(root->mempool, size, sizeof(uint8_t))))
 	return CL_EMEM;
 
-#ifdef USE_MPOOL
-    if(!(root->bm_suffix = (struct cli_bm_patt **) mpool_calloc(root->mempool, size, sizeof(struct cli_bm_patt *), NULL))) {
-#else
-    if(!(root->bm_suffix = (struct cli_bm_patt **) cli_calloc(size, sizeof(struct cli_bm_patt *)))) {
-#endif
-#ifdef USE_MPOOL
-	mpool_free(root->mempool, root->bm_shift);
-#else
-	free(root->bm_shift);
-#endif
+    if(!(root->bm_suffix = (struct cli_bm_patt **) mp_calloc(root->mempool, size, sizeof(struct cli_bm_patt *)))) {
+	mp_free(root->mempool, root->bm_shift);
 	return CL_EMEM;
     }
 
@@ -134,11 +120,7 @@ void cli_bm_free(struct cli_matcher *root)
 
 
     if(root->bm_shift)
-#ifdef USE_MPOOL
-	mpool_free(root->mempool, root->bm_shift);
-#else
-	free(root->bm_shift);
-#endif
+	mp_free(root->mempool, root->bm_shift);
 
     if(root->bm_suffix) {
 	for(i = 0; i < size; i++) {
@@ -147,42 +129,17 @@ void cli_bm_free(struct cli_matcher *root)
 		prev = patt;
 		patt = patt->next;
 		if(prev->prefix)
-#ifdef USE_MPOOL
-		    mpool_free(root->mempool, prev->prefix);
-#else
-		    free(prev->prefix);
-#endif
+		    mp_free(root->mempool, prev->prefix);
 		else
-#ifdef USE_MPOOL
-		    mpool_free(root->mempool, prev->pattern);
-#else
-		    free(prev->pattern);
-#endif
+		    mp_free(root->mempool, prev->pattern);
 		if(prev->virname)
-#ifdef USE_MPOOL
-		    mpool_free(root->mempool, prev->virname);
-#else
-		    free(prev->virname);
-#endif
+		    mp_free(root->mempool, prev->virname);
 		if(prev->offset)
-#ifdef USE_MPOOL
-		    mpool_free(root->mempool, prev->offset);
-#else
-		    free(prev->offset);
-#endif
-#ifdef USE_MPOOL
-		mpool_free(root->mempool, prev);
-#else
-		free(prev);
-#endif
-
+		    mp_free(root->mempool, prev->offset);
+		mp_free(root->mempool, prev);
 	    }
 	}
-#ifdef USE_MPOOL
-	mpool_free(root->mempool, root->bm_suffix);
-#else
-	free(root->bm_suffix);
-#endif
+	mp_free(root->mempool, root->bm_suffix);
     }
 }
 

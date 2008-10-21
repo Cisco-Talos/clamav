@@ -40,6 +40,7 @@
 
 #include "htmlnorm.h"
 #include "entconv.h"
+#include "mpool.h"
 
 static const struct ftmap_s {
     const char *name;
@@ -107,15 +108,9 @@ void cli_ftfree(const struct cl_engine *engine)
     while(ftypes) {
 	pt = ftypes;
 	ftypes = ftypes->next;
-#ifdef USE_MPOOL
-	mpool_free(engine->mempool, pt->magic);
-	mpool_free(engine->mempool, pt->tname);
-	mpool_free(engine->mempool, pt);
-#else
-	free(pt->magic);
-	free(pt->tname);
-	free(pt);
-#endif
+	mp_free(engine->mempool, pt->magic);
+	mp_free(engine->mempool, pt->tname);
+	mp_free(engine->mempool, pt);
     }
 }
 

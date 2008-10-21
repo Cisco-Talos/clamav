@@ -58,9 +58,7 @@
 #include "jsparse/textbuf.h"
 #include "regex_suffix.h"
 
-#ifdef USE_MPOOL
 #include "mpool.h"
-#endif
 
 /* Prototypes */
 static regex_t *new_preg(struct regex_matcher *matcher);
@@ -348,7 +346,7 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 int init_regex_list(struct regex_matcher* matcher)
 {
 #ifdef USE_MPOOL
-	mpool_t *mp = matcher->mempool;
+	mp_t *mp = matcher->mempool;
 #endif
 	int rc;
 
@@ -595,17 +593,9 @@ void regex_list_done(struct regex_matcher* matcher)
 			for(i=0;i<matcher->regex_cnt;i++) {
 				regex_t *r = matcher->all_pregs[i];
 				cli_regfree(r);
-#ifdef USE_MPOOL
-				mpool_free(matcher->mempool, r);
-#else
-				free(r);
-#endif
+				mp_free(matcher->mempool, r);
 			}
-#ifdef USE_MPOOL
-			mpool_free(matcher->mempool, matcher->all_pregs);
-#else
-			free(matcher->all_pregs);
-#endif
+			mp_free(matcher->mempool, matcher->all_pregs);
 		}
 		hashtab_free(&matcher->suffix_hash);
 		cli_bm_free(&matcher->md5_hashes);
@@ -621,11 +611,7 @@ int is_regex_ok(struct regex_matcher* matcher)
 static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info, const char *suffix, size_t len)
 {
 	struct cli_matcher *root = &matcher->suffixes;
-#ifdef USE_MPOOL
-	struct cli_ac_patt *new = mpool_calloc(matcher->mempool,1,sizeof(*new),NULL);
-#else
-	struct cli_ac_patt *new = cli_calloc(1,sizeof(*new));
-#endif
+	struct cli_ac_patt *new = mp_calloc(matcher->mempool,1,sizeof(*new));
 	size_t i;
 	int ret;
 
@@ -647,17 +633,9 @@ static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info,
 	if(new->length > root->maxpatlen)
 		root->maxpatlen = new->length;
 
-#ifdef USE_MPOOL
-	new->pattern = mpool_alloc(matcher->mempool, sizeof(new->pattern[0])*len, NULL);
-#else
-	new->pattern = cli_malloc(sizeof(new->pattern[0])*len);
-#endif
+	new->pattern = mp_malloc(matcher->mempool, sizeof(new->pattern[0])*len);
 	if(!new->pattern) {
-#ifdef USE_MPOOL
-		mpool_free(matcher->mempool, new);
-#else
-		free(new);
-#endif
+		mp_free(matcher->mempool, new);
 		return CL_EMEM;
 	}
 	for(i=0;i<len;i++)
@@ -666,13 +644,8 @@ static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info,
 	new->customdata = info;
 	new->virname = NULL;
 	if((ret = cli_ac_addpatt(root,new))) {
-#ifdef USE_MPOOL
-		mpool_free(matcher->mempool, new->pattern);
-		mpool_free(matcher->mempool, new);
-#else
-		free(new->pattern);
-		free(new);
-#endif
+		mp_free(matcher->mempool, new->pattern);
+		mp_free(matcher->mempool, new);
 		return ret;
 	}
 	SO_preprocess_add(&matcher->filter, (const unsigned char*)suffix, len);
@@ -743,18 +716,10 @@ static size_t reverse_string(char *pattern)
 static regex_t *new_preg(struct regex_matcher *matcher)
 {
 	regex_t *r;
-#ifdef USE_MPOOL
-	matcher->all_pregs = mpool_resize(matcher->mempool, matcher->all_pregs, ++matcher->regex_cnt * sizeof(*matcher->all_pregs), NULL);
-#else
-	matcher->all_pregs = cli_realloc(matcher->all_pregs, ++matcher->regex_cnt * sizeof(*matcher->all_pregs));
-#endif
+	matcher->all_pregs = mp_realloc(matcher->mempool, matcher->all_pregs, ++matcher->regex_cnt * sizeof(*matcher->all_pregs));
 	if(!matcher->all_pregs)
 		return NULL;
-#ifdef USE_MPOOL
-	r = mpool_alloc(matcher->mempool, sizeof(*r), NULL);
-#else
-	r = cli_malloc(sizeof(*r));
-#endif
+	r = mp_malloc(matcher->mempool, sizeof(*r));
 	if(!r)
 		return NULL;
 	matcher->all_pregs[matcher->regex_cnt-1] = r;
