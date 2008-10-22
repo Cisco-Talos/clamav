@@ -1,3 +1,10 @@
+Wed Oct 22 20:52:37 EEST 2008 (edwin)
+-------------------------------------
+ * unit_tests/check_clamav.c, unit_tests/check_disasm.c,
+ unit_tests/check_jsnorm.c, unit_tests/check_matchers.c,
+ unit_tests/check_regex.c, unit_tests/check_uniq.c,
+ unit_tests/checks.h: support building with older versions of check
+
 Wed Oct 22 17:45:11 EEST 2008 (edwin)
 -------------------------------------
  * configure, m4/acinclude.m4: fix typo in previous commit

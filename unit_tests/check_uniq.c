@@ -59,12 +59,12 @@ START_TEST (test_uniq_known) {
 
   for(i=0; tests[i].expected; i++) {
     u = uniq_add(U, tests[i].key, tests[i].key_len, &hash);
-    fail_unless(u==0 && strcmp(hash, tests[i].expected)==0, "uniq_add(%s) = %u - expected %s, got %s", tests[i].key, u, tests[i].expected, hash);
+    fail_unless_fmt(u==0 && strcmp(hash, tests[i].expected)==0, "uniq_add(%s) = %u - expected %s, got %s", tests[i].key, u, tests[i].expected, hash);
   }
 
   for(i=0; tests[i].expected; i++) {
     u = uniq_get(U, tests[i].key, tests[i].key_len, &hash);
-    fail_unless(u==1 && strcmp(hash, tests[i].expected)==0, "uniq_get(%s) = %u - expected %s, got %s", tests[i].key, u, tests[i].expected, hash);
+    fail_unless_fmt(u==1 && strcmp(hash, tests[i].expected)==0, "uniq_get(%s) = %u - expected %s, got %s", tests[i].key, u, tests[i].expected, hash);
   }
 
   uniq_free(U);
@@ -86,7 +86,7 @@ START_TEST (test_uniq_colls) {
   
   for (i=0; i<4; i++) {
     u = uniq_add(U, tests[i], strlen(tests[i]), NULL);
-    fail_unless(u+i==4, "uniq_get(%s) = %u - expected %u", tests[i], u, 4-i);
+    fail_unless_fmt(u+i==4, "uniq_get(%s) = %u - expected %u", tests[i], u, 4-i);
   }
 
   uniq_free(U);

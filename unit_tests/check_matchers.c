@@ -77,8 +77,8 @@ START_TEST (test_ac_scanbuff) {
 
     for(i = 0; ac_testdata[i].data; i++) {
 	ret = cli_ac_scanbuff(ac_testdata[i].data, strlen(ac_testdata[i].data), &virname, NULL, NULL, root, &mdata, 0, 0, -1, NULL, AC_SCAN_VIR, NULL);
-	fail_unless(ret == CL_VIRUS, "cli_ac_scanbuff() failed for %s", ac_testdata[i].virname);
-	fail_unless(!strncmp(virname, ac_testdata[i].virname, strlen(ac_testdata[i].virname)), "Dataset %u matched with %s", i, virname);
+	fail_unless_fmt(ret == CL_VIRUS, "cli_ac_scanbuff() failed for %s", ac_testdata[i].virname);
+	fail_unless_fmt(!strncmp(virname, ac_testdata[i].virname, strlen(ac_testdata[i].virname)), "Dataset %u matched with %s", i, virname);
     }
 
     cli_ac_freedata(&mdata);

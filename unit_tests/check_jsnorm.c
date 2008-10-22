@@ -252,7 +252,7 @@ static void tokenizer_test(const char *in, const char *expected, int split)
 	fd = open(filename, O_RDONLY);
 	if(fd < 0) {
 		jstest_teardown();
-		fail("failed to open output file: %s", filename);
+		fail_fmt("failed to open output file: %s", filename);
 	}
 
 	diff_file_mem(fd, expected, len);

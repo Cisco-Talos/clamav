@@ -326,7 +326,7 @@ int open_testfile(const char *name)
 	sprintf(str, "%s/%s", srcdir, name);
 
 	fd = open(str, O_RDONLY);
-	fail_unless(fd >= 0, "open() failed: %s", str);
+	fail_unless_fmt(fd >= 0, "open() failed: %s", str);
 	free(str);
 	return fd;
 }
@@ -337,9 +337,9 @@ void diff_file_mem(int fd, const char *ref, size_t len)
 	size_t p, reflen = len;
 	char *buf = cli_malloc(len);
 
-	fail_unless(!!buf, "unable to malloc buffer: %d", len);
+	fail_unless_fmt(!!buf, "unable to malloc buffer: %d", len);
 	p = read(fd, buf, len);
-	fail_unless(p == len,  "file is smaller: %lu, expected: %lu", p, len);
+	fail_unless_fmt(p == len,  "file is smaller: %lu, expected: %lu", p, len);
 	p = 0;
 	while(len > 0) {
 		c1 = ref[p];
@@ -350,10 +350,10 @@ void diff_file_mem(int fd, const char *ref, size_t len)
 		len--;
 	}
 	if (len > 0)
-		fail_unless(c1 == c2, "file contents mismatch at byte: %lu, was: %c, expected: %c", p, c2, c1);
+		fail_unless_fmt(c1 == c2, "file contents mismatch at byte: %lu, was: %c, expected: %c", p, c2, c1);
 	free(buf);
 	p = lseek(fd, 0, SEEK_END);
-        fail_unless(p == reflen, "trailing garbage, file size: %ld, expected: %ld", p, reflen);
+        fail_unless_fmt(p == reflen, "trailing garbage, file size: %ld, expected: %ld", p, reflen);
 	close(fd);
 }
 
@@ -362,14 +362,14 @@ void diff_files(int fd, int ref_fd)
 	char *ref;
 	ssize_t nread;
 	off_t siz = lseek(ref_fd, 0, SEEK_END);
-	fail_unless(siz != -1, "lseek failed");
+	fail_unless_fmt(siz != -1, "lseek failed");
 
 	ref = cli_malloc(siz);
-	fail_unless(!!ref, "unable to malloc buffer: %d", siz);
+	fail_unless_fmt(!!ref, "unable to malloc buffer: %d", siz);
 
-	fail_unless(lseek(ref_fd, 0, SEEK_SET) == 0,"lseek failed");
+	fail_unless_fmt(lseek(ref_fd, 0, SEEK_SET) == 0,"lseek failed");
 	nread = read(ref_fd, ref, siz);
-        fail_unless(nread == siz, "short read, expected: %ld, was: %ld", siz, nread);
+        fail_unless_fmt(nread == siz, "short read, expected: %ld, was: %ld", siz, nread);
 	close(ref_fd);
 	diff_file_mem(fd, ref, siz);
 	free(ref);

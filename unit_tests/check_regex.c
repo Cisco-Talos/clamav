@@ -52,7 +52,7 @@ static int cb_expect_single(void *cbdata, const char *suffix, size_t len, const 
 {
 	const char *expected = cbdata;
 	cb_called++;
-	fail_unless(suffix && strcmp(suffix, expected) == 0,
+	fail_unless_fmt(suffix && strcmp(suffix, expected) == 0,
 			"suffix mismatch, was: %s, expected: %s\n", suffix, expected);
 	return 0;
 }
@@ -107,11 +107,11 @@ static int cb_expect_multi(void *cbdata, const char *suffix, size_t len, const s
 	const char **exp = cbdata;
 	fail_unless(!!exp, "expected data");
 	exp++;
-	fail_unless(!!*exp, "expected no suffix, got: %s\n",suffix);
-	fail_unless(!!exp[cb_called], "expected less suffixes, but already got: %d\n", cb_called);
-	fail_unless(strcmp(exp[cb_called], suffix) == 0,
+	fail_unless_fmt(!!*exp, "expected no suffix, got: %s\n",suffix);
+	fail_unless_fmt(!!exp[cb_called], "expected less suffixes, but already got: %d\n", cb_called);
+	fail_unless_fmt(strcmp(exp[cb_called], suffix) == 0,
 			"suffix mismatch, was: %s, expected: %s\n",suffix, exp[cb_called]);
-	fail_unless(strlen(suffix) == len, "incorrect suffix len, expected: %d, got: %d\n", strlen(suffix), len);
+	fail_unless_fmt(strlen(suffix) == len, "incorrect suffix len, expected: %d, got: %d\n", strlen(suffix), len);
 	cb_called++;
 	return 0;
 }
@@ -134,7 +134,7 @@ START_TEST (test_suffix)
 	free(preg);
 	p++;
 	while(*p++) n++;
-	fail_unless(cb_called == n,
+	fail_unless_fmt(cb_called == n,
 			"suffix number mismatch, expected: %d, was: %d\n", n, cb_called);
 }
 END_TEST
@@ -374,30 +374,30 @@ static void do_phishing_test(const struct rtest *rtest)
 	fail_unless(rc == CL_CLEAN,"phishingScan");
 	switch(rtest->result) {
 		case 0:
-			fail_unless(ctx.found_possibly_unwanted,
+			fail_unless_fmt(ctx.found_possibly_unwanted,
 					"this should be phishing, realURL: %s, displayURL: %s",
 					rtest->realurl, rtest->displayurl);
 			break;
 		case 1:
-			fail_unless(!ctx.found_possibly_unwanted,
+			fail_unless_fmt(!ctx.found_possibly_unwanted,
 					"this should be whitelisted, realURL: %s, displayURL: %s",
 					rtest->realurl, rtest->displayurl);
 			break;
 		case 2:
-			fail_unless(!ctx.found_possibly_unwanted,
+			fail_unless_fmt(!ctx.found_possibly_unwanted,
 					"this should be clean, realURL: %s, displayURL: %s",
 					rtest->realurl, rtest->displayurl);
 			break;
 		case 3:
 			if(!loaded_2)
-				fail_unless(!ctx.found_possibly_unwanted,
+				fail_unless_fmt(!ctx.found_possibly_unwanted,
 					"this should be clean, realURL: %s, displayURL: %s",
 					rtest->realurl, rtest->displayurl);
 			else {
-				fail_unless(ctx.found_possibly_unwanted,
+				fail_unless_fmt(ctx.found_possibly_unwanted,
 					"this should be blacklisted, realURL: %s, displayURL: %s",
 					rtest->realurl, rtest->displayurl);
-				fail_unless(!strstr((const char*)ctx.virname,"Blacklisted"),
+				fail_unless_fmt(!strstr((const char*)ctx.virname,"Blacklisted"),
 						"should be blacklisted, but is: %s\n", ctx.virname);
 			}
 			break;
