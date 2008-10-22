@@ -1,3 +1,8 @@
+Wed Oct 22 17:43:38 EEST 2008 (edwin)
+-------------------------------------
+ * configure, m4/acinclude.m4: When user has overriden --libdir, we
+ still need to find out the correct acl_libdirstem
+
 Mon Oct 20 17:23:12 EEST 2008 (edwin)
 -------------------------------------
  * aclocal.m4, configure, configure.in, m4/acinclude.m4,

@@ -763,6 +763,17 @@ AC_DEFUN([AC_LIB_MULTILIB_GUESS],
 		esac
 		libdir='${exec_prefix}/'$acl_libdirstem
 		AC_MSG_RESULT([$libdir])
+	else
+		acl_libdirstem=lib
+		if test -d "$libdir"; then
+			case "$libdir" in
+				*/lib64/ | */lib64 ) acl_libdirstem=lib64 ;;
+				*) searchdir=`cd "$libdir" && pwd`
+				   case "$searchdir" in
+					*/lib64 ) acl_libdirstem=lib64 ;;
+				   esac
+			easc
+		fi	
 	fi
 ])
 

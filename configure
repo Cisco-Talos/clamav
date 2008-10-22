@@ -11433,6 +11433,17 @@ echo $ECHO_N "checking for multiarch libdir... $ECHO_C" >&6; }
 		libdir='${exec_prefix}/'$acl_libdirstem
 		{ echo "$as_me:$LINENO: result: $libdir" >&5
 echo "${ECHO_T}$libdir" >&6; }
+	else
+		acl_libdirstem=lib
+		if test -d "$libdir"; then
+			case "$libdir" in
+				*/lib64/ | */lib64 ) acl_libdirstem=lib64 ;;
+				*) searchdir=`cd "$libdir" && pwd`
+				   case "$searchdir" in
+					*/lib64 ) acl_libdirstem=lib64 ;;
+				   esac
+			easc
+		fi
 	fi
 
 
