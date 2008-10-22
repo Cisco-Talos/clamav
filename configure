@@ -11442,7 +11442,7 @@ echo "${ECHO_T}$libdir" >&6; }
 				   case "$searchdir" in
 					*/lib64 ) acl_libdirstem=lib64 ;;
 				   esac
-			easc
+			esac
 		fi
 	fi
 

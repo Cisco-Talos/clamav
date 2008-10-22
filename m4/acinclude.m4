@@ -772,7 +772,7 @@ AC_DEFUN([AC_LIB_MULTILIB_GUESS],
 				   case "$searchdir" in
 					*/lib64 ) acl_libdirstem=lib64 ;;
 				   esac
-			easc
+			esac
 		fi	
 	fi
 ])

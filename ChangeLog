@@ -1,3 +1,7 @@
+Wed Oct 22 17:45:11 EEST 2008 (edwin)
+-------------------------------------
+ * configure, m4/acinclude.m4: fix typo in previous commit
+
 Wed Oct 22 17:43:38 EEST 2008 (edwin)
 -------------------------------------
  * configure, m4/acinclude.m4: When user has overriden --libdir, we
