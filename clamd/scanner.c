@@ -250,9 +250,12 @@ static int dirscan(const char *dirname, const char **virname, unsigned long int 
 					free(fname);
 				    }
 				}
+			    } else {
+				    free(fname);
 			    }
 			}
 		    } else {
+			logg("^lstat failed on %s: %s\n", fname, strerror(errno)); 
 			free(fname);
 		    }
 		}

@@ -1,3 +1,7 @@
+Thu Oct 23 23:01:10 EEST 2008 (edwin)
+-------------------------------------
+ * clamd/scanner.c: fix leak on rare error path (bb #1254)
+
 Wed Oct 22 20:52:37 EEST 2008 (edwin)
 -------------------------------------
  * unit_tests/check_clamav.c, unit_tests/check_disasm.c,
