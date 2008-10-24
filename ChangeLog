@@ -1,3 +1,8 @@
+Fri Oct 24 11:45:41 CEST 2008 (tk)
+----------------------------------
+ * libclamav: fix detection of Worm.Mydoom.M.log and control it with
+	      CL_SCAN_ALGORITHMIC and dconf (bb#1241)
+
 Thu Oct 23 23:01:10 EEST 2008 (edwin)
 -------------------------------------
  * clamd/scanner.c: fix leak on rare error path (bb #1254)

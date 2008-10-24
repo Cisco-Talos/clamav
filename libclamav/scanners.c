@@ -2044,7 +2044,8 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
 
 	case CL_TYPE_BINARY_DATA:
-	    ret = cli_check_mydoom_log(desc, ctx->virname);
+	    if(SCAN_ALGO && (DCONF_OTHER & OTHER_CONF_MYDOOMLOG))
+		ret = cli_check_mydoom_log(desc, ctx->virname);
 	    break;
 
 	case CL_TYPE_TEXT_ASCII:

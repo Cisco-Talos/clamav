@@ -58,6 +58,8 @@ int cli_check_mydoom_log(int desc, const char **virname)
 	if (cli_readn(desc, &record, 32) != 32) {
 	    break;
 	}
+	if(!j && record[0] == 0xffffffff) /* bb#1241 */
+	    return CL_CLEAN;
 
 	/* Decode the key */
 	record[0] = ~ntohl(record[0]);
