@@ -1,3 +1,11 @@
+Mon Oct 27 18:07:08 EET 2008 (edwin)
+------------------------------------
+ * unit_tests/valgrind.supp: suppress valgrind warnings for old libc.
+ The warning is in __strcpy_chk, but I don't want to suppress a
+ useful warnings in recent libcs, and there is no way to specify both
+ a function and object in a suppression, so I suppressed all warnings
+ from libc-2.5 when called from mbox/message.c
+
 Mon Oct 27 16:20:02 EET 2008 (edwin)
 ------------------------------------
  * unit_tests/duma_tests.sh: fix typo in test script
