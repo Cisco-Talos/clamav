@@ -1,3 +1,8 @@
+Mon Oct 27 14:54:34 CET 2008 (tk)
+---------------------------------
+ * freshclam/execute.c: don't execute special events twice in interactive
+			mode (bb#1256)
+
 Fri Oct 24 11:45:41 CEST 2008 (tk)
 ----------------------------------
  * libclamav: fix detection of Worm.Mydoom.M.log and control it with

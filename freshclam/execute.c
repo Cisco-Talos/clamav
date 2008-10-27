@@ -52,10 +52,10 @@ void execute( const char *type, const char *text, const struct optstruct *opt )
 	    logg("*%s: EXIT_%d\n", type, ret);
 	    exit(ret);
 	}
-	if(system(text) == -1) {
+	if(system(text) == -1)
 	    logg("%s: system(%s) failed\n", type, text);
-	    return;
-	}
+
+	return;
     }
 
 #ifdef        C_WINDOWS
