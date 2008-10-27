@@ -1,3 +1,7 @@
+Mon Oct 27 16:15:36 EET 2008 (edwin)
+------------------------------------
+ * unit_tests/valgrind.supp: fix valgrind warnings on Fedora
+
 Mon Oct 27 14:54:34 CET 2008 (tk)
 ---------------------------------
  * freshclam/execute.c: don't execute special events twice in interactive

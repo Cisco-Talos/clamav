@@ -181,6 +181,16 @@
    Helgrind:Race
    fun:fputs
 }
+{
+  glibc-fork
+  Helgrind:Race
+  fun:fork
+}
+{
+  glibc-freetcb
+  Helgrind:Race
+  fun:__free_tcb
+}
 #{
 #	helgrind-glibc27-dbg18
 #	Helgrind:Race
