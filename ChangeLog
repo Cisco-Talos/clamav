@@ -1,3 +1,7 @@
+Tue Oct 28 22:08:19 EET 2008 (edwin)
+------------------------------------
+ * unit_tests/valgrind.supp: fix more valgrind warnings
+
 Tue Oct 28 21:47:34 EET 2008 (edwin)
 ------------------------------------
  * unit_tests/valgrind.supp: suppress another valgrind warning on

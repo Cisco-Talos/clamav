@@ -131,6 +131,14 @@
 	fun:ctime_r
 }
 {
+	helgrind-glibc27-dbg15
+	Helgrind:Race
+	fun:*
+	fun:*
+	fun:*
+	fun:ctime_r
+}
+{
 	helgrind-glibc27-dbg14
 	Helgrind:Race
 	fun:_IO_link_in
@@ -184,6 +192,12 @@
 {
   glibc-fork
   Helgrind:Race
+  fun:fork
+}
+{
+  glibc-fork
+  Helgrind:Race
+  fun:*
   fun:fork
 }
 {
