@@ -1,3 +1,7 @@
+Tue Oct 28 10:52:41 CET 2008 (tk)
+---------------------------------
+  * freshclam: re-enable --submit-stats (bb#1235)
+
 Mon Oct 27 18:07:08 EET 2008 (edwin)
 ------------------------------------
  * unit_tests/valgrind.supp: suppress valgrind warnings for old libc.

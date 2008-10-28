@@ -144,6 +144,7 @@ static void help(void)
     mprintf("    --on-error-execute=COMMAND           execute COMMAND if errors occured\n");
     mprintf("    --on-outdated-execute=COMMAND        execute COMMAND when software is outdated\n");
     mprintf("    --list-mirrors                       print mirrors from mirrors.dat\n");
+    mprintf("    --submit-stats[=/path/clamd.conf]    only submit detection statistics\n");
 
     mprintf("\n");
 }
@@ -233,7 +234,7 @@ int main(int argc, char **argv)
 	    {"on-error-execute", 1, 0, 0},
 	    {"on-outdated-execute", 1, 0, 0},
 	    {"list-mirrors", 0, 0, 0},
-	    /* {"submit-stats", 2, 0, 0}, */
+	    {"submit-stats", 2, 0, 0},
 	    {0, 0, 0, 0}
     	};
 
@@ -580,11 +581,12 @@ int main(int argc, char **argv)
 	}
 
     } else {
-	/*
 	if(opt_check(opt, "submit-stats")) {
 	    cfgfile = opt_arg(opt, "submit-stats");
 	    if(!cfgfile)
 		cfgfile = CONFDIR"/clamd.conf";
+	    if(!opt_check(opt, "no-warnings"))
+		logg(" *** Virus databases are not updated in this mode ***\n");
 	    ret = submitstats(cfgfile, copt);
 	} else {
 	    ret = download(copt, opt, newdir, cfgfile);
@@ -592,12 +594,6 @@ int main(int argc, char **argv)
 	    if((cpt = cfgopt(copt, "SubmitDetectionStats"))->enabled)
 		submitstats(cpt->strarg, copt);
 	}
-	*/
-	ret = download(copt, opt, newdir, cfgfile);
-
-	if((cpt = cfgopt(copt, "SubmitDetectionStats"))->enabled)
-	    submitstats(cpt->strarg, copt);
-
     }
 
     if(ret > 1) {
