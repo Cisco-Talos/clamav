@@ -371,11 +371,17 @@
 /* The number of bytes in type short */
 #undef SIZEOF_SHORT
 
+/* The number of bytes in type void * */
+#undef SIZEOF_VOID_P
+
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
 /* Support for IPv6 */
 #undef SUPPORT_IPv6
+
+/* enable memory pools */
+#undef USE_MPOOL
 
 /* use syslog */
 #undef USE_SYSLOG

@@ -305,6 +305,7 @@ AC_COMPILE_CHECK_SIZEOF([short])
 AC_COMPILE_CHECK_SIZEOF([int])
 AC_COMPILE_CHECK_SIZEOF([long])
 AC_COMPILE_CHECK_SIZEOF([long long])
+AC_COMPILE_CHECK_SIZEOF([void *])
 
 AC_ARG_ENABLE([experimental],
 [  --enable-experimental	enable experimental code],
@@ -313,6 +314,14 @@ enable_experimental=$enableval, enable_experimental="no")
 if test "$enable_experimental" = "yes"; then
   AC_DEFINE([CL_EXPERIMENTAL],1,[enable experimental code])
   VERSION_SUFFIX="$VERSION_SUFFIX-exp"
+fi
+
+AC_ARG_ENABLE([mempool],
+[  --enable-mempool	enable memory pools],
+enable_mempool=$enableval, enable_mempool="no")
+
+if test "$enable_mempool" = "yes"; then
+  AC_DEFINE([USE_MPOOL],1,[enable memory pools])
 fi
 
 AC_CHECK_LIB([socket], [bind], [LIBS="$LIBS -lsocket"; CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lsocket"; FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsocket"; CLAMD_LIBS="$CLAMD_LIBS -lsocket"])
