@@ -1,3 +1,7 @@
+Tue Oct 28 20:37:35 CET 2008 (tk)
+---------------------------------
+  * freshclam: add new config option DetectionStatsCountry
+
 Tue Oct 28 10:52:41 CET 2008 (tk)
 ---------------------------------
   * freshclam: re-enable --submit-stats (bb#1235)

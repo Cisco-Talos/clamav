@@ -148,6 +148,11 @@ Default: 30
 When enabled freshclam will submit statistics to the ClamAV Project about the latest virus detections in your environment. The ClamAV maintainers will then use this data to determine what types of malware are the most detected in the field and in what geographic area they are. This feature requires LogTime and LogFile to be enabled in clamd.conf. The path for clamd.conf file must be provided.
 .br
 Default: disabled
+.TP
+\fBDetectionStatsCountry STRING\fR
+Country of origin of malware/detection statistics (for statistical purposes only). The statistics collector at ClamAV.net will look up your IP address to determine the geographical origin of the malware reported by your installation. If this installation is mainly used to scan data which comes from a different location, please enable this option and enter a two-letter code (see http://www.iana.org/domains/root/db/) of the country of origin.
+.br
+Default: disabled
 .SH "FILES"
 .LP 
 @CFGDIR@/freshclam.conf

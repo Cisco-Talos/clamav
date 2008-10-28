@@ -475,7 +475,7 @@ int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
 	char buff[512], statsdat[512], newstatsdat[512], uastr[128];
 	char logfile[256], fbuff[FILEBUFF];
 	char *pt, *pt2;
-	const char *line;
+	const char *line, *country = NULL;
 	struct cfgstruct *clamdopt;
 	const struct cfgstruct *cpt;
 	struct stat sb;
@@ -483,6 +483,14 @@ int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
 	time_t epoch;
 	unsigned int qcnt, entries, submitted = 0, permfail = 0;
 
+
+    if((cpt = cfgopt(copt, "DetectionStatsCountry"))->enabled) {
+	if(strlen(cpt->strarg) != 2 || !isalpha(cpt->strarg[0]) || !isalpha(cpt->strarg[1])) {
+	    logg("!SubmitDetectionStats: DetectionStatsCountry requires a two-letter country code\n");
+	    return 56;
+	}
+	country = cpt->strarg;
+    }
 
     if(!(clamdopt = getcfg(clamdcfg, 1))) {
 	logg("!SubmitDetectionStats: Can't open or parse configuration file %s\n", clamdcfg);
@@ -547,7 +555,7 @@ int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
     if((cpt = cfgopt(copt, "HTTPUserAgent"))->enabled)
 	strncpy(uastr, cpt->strarg, sizeof(uastr));
     else
-	snprintf(uastr, sizeof(uastr), PACKAGE"/%s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")", get_version());
+	snprintf(uastr, sizeof(uastr), PACKAGE"/%s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")%s%s", get_version(), country ? ":" : "", country ? country : "");
     uastr[sizeof(uastr) - 1] = 0;
 
     ret = 0;
