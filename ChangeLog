@@ -1,3 +1,8 @@
+Tue Oct 28 21:47:34 EET 2008 (edwin)
+------------------------------------
+ * unit_tests/valgrind.supp: suppress another valgrind warning on
+ Fedora
+
 Tue Oct 28 20:37:35 CET 2008 (tk)
 ---------------------------------
   * freshclam: add new config option DetectionStatsCountry

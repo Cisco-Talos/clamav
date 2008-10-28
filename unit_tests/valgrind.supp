@@ -209,6 +209,11 @@
   obj:/lib64/libc-2.5.so
   fun:cli_mbox
 }
+{
+  glibc-2.8-lll
+  Helgrind:Race
+  fun:__lll_unlock_wake
+}
 #{
 #	helgrind-glibc27-dbg18
 #	Helgrind:Race
