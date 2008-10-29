@@ -1,3 +1,8 @@
+Wed Oct 29 21:34:01 EET 2008 (edwin)
+------------------------------------
+ * unit_tests/test-freshclam.conf: we need a config file for
+ freshclam just to test -V, use a minimal one.
+
 Wed Oct 29 21:22:15 EET 2008 (edwin)
 ------------------------------------
  * Makefile.am, Makefile.in, configure, configure.in: fix make
