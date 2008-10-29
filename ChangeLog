@@ -1,3 +1,8 @@
+Wed Oct 29 21:40:20 EET 2008 (edwin)
+------------------------------------
+ * configure, configure.in: fix message: it is enough to use a lower
+ optimization level
+
 Wed Oct 29 21:34:01 EET 2008 (edwin)
 ------------------------------------
  * unit_tests/test-freshclam.conf: we need a config file for

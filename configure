@@ -12694,8 +12694,8 @@ echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
 ( exit $ac_status )
-{ { echo "$as_me:$LINENO: error: your compiler has gcc PR37573 bug, use a different compiler, see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=37573" >&5
-echo "$as_me: error: your compiler has gcc PR37573 bug, use a different compiler, see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=37573" >&2;}
+{ { echo "$as_me:$LINENO: error: your compiler has gcc PR37573 bug, use a lower optimization level (-O1 or -O2), see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=37573" >&5
+echo "$as_me: error: your compiler has gcc PR37573 bug, use a lower optimization level (-O1 or -O2), see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=37573" >&2;}
    { (exit 1); exit 1; }; }
 fi
 rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext

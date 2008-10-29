@@ -336,7 +336,7 @@ main (void)
 }
 
 ], [AC_MSG_RESULT([ok, bug not present])],
-[AC_MSG_ERROR([your compiler has gcc PR37573 bug, use a different compiler, see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=37573])], [AC_MSG_RESULT([cross-compiling, assumed ok])])
+[AC_MSG_ERROR([your compiler has gcc PR37573 bug, use a lower optimization level (-O1 or -O2), see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=37573])], [AC_MSG_RESULT([cross-compiling, assumed ok])])
 
 dnl Linker feature checks
 dnl check for version script support in the linker (GNU ld, or Solaris ld style)
