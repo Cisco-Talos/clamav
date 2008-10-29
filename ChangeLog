@@ -1,3 +1,9 @@
+Wed Oct 29 21:48:03 EET 2008 (edwin)
+------------------------------------
+ * configure, configure.in, m4/acinclude.m4: Try to make a difference
+ between failing to link the bzip2 testcase and the testcase failing
+ (bb #1240)
+
 Wed Oct 29 21:40:20 EET 2008 (edwin)
 ------------------------------------
  * configure, configure.in: fix message: it is enough to use a lower

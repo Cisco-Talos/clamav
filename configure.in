@@ -544,9 +544,17 @@ then
 		AC_MSG_WARN([****** We strongly suggest you to update to bzip2 1.0.5.])
 		AC_MSG_WARN([****** Please do not report stability problems to the ClamAV developers!])
 	fi
+	if test "$ac_cv_c_cve_2008_1372" = "linkfailed"; then
+		dnl This shouldn't happen
+		dnl We failed to link but libtool may still be able to link, so don't disable bzip2 just yet
+		AC_MSG_WARN([****** Unable to link bzip2 testcase])
+		AC_MSG_WARN([****** You may be affected by CVE-2008-1372 bug, but I need to be able to link a testcase to verify])
+		AC_MSG_WARN([****** It is recommended to fix your build environment so that we can run the testcase!])
+		AC_MSG_WARN([****** Please do not report stability problems to the ClamAV developers!])
+	fi
 
 	case "$ac_cv_c_cve_2008_1372" in
-	ok|bugged)
+	ok|bugged|linkfailed)
 		LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $LTLIBBZ2"
 		AC_DEFINE([HAVE_BZLIB_H],1,[have bzip2])
 		;;

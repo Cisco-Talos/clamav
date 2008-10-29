@@ -683,7 +683,13 @@ int main (int argc, char **argv) {
         BZ2_bzDecompressEnd(&bz);
         return 0;
 }
-], [ac_cv_c_cve_2008_1372=ok], [ac_cv_c_cve_2008_1372=bugged], [ac_cv_c_cve_2008_1372=ok])
+], [ac_cv_c_cve_2008_1372=ok], [
+if test $? -gt 127; then 
+	ac_cv_c_cve_2008_1372=bugged
+else
+	ac_cv_c_cve_2008_1372=linkfailed
+fi
+], [ac_cv_c_cve_2008_1372=ok])
 LIBS="$save_LIBS"
 ])
 ])

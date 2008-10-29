@@ -16311,7 +16311,13 @@ echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
 ( exit $ac_status )
-ac_cv_c_cve_2008_1372=bugged
+
+if test $? -gt 127; then
+	ac_cv_c_cve_2008_1372=bugged
+else
+	ac_cv_c_cve_2008_1372=linkfailed
+fi
+
 fi
 rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
 fi
@@ -16336,9 +16342,19 @@ echo "$as_me: WARNING: ****** We strongly suggest you to update to bzip2 1.0.5."
 		{ echo "$as_me:$LINENO: WARNING: ****** Please do not report stability problems to the ClamAV developers!" >&5
 echo "$as_me: WARNING: ****** Please do not report stability problems to the ClamAV developers!" >&2;}
 	fi
+	if test "$ac_cv_c_cve_2008_1372" = "linkfailed"; then
+						{ echo "$as_me:$LINENO: WARNING: ****** Unable to link bzip2 testcase" >&5
+echo "$as_me: WARNING: ****** Unable to link bzip2 testcase" >&2;}
+		{ echo "$as_me:$LINENO: WARNING: ****** You may be affected by CVE-2008-1372 bug, but I need to be able to link a testcase to verify" >&5
+echo "$as_me: WARNING: ****** You may be affected by CVE-2008-1372 bug, but I need to be able to link a testcase to verify" >&2;}
+		{ echo "$as_me:$LINENO: WARNING: ****** It is recommended to fix your build environment so that we can run the testcase!" >&5
+echo "$as_me: WARNING: ****** It is recommended to fix your build environment so that we can run the testcase!" >&2;}
+		{ echo "$as_me:$LINENO: WARNING: ****** Please do not report stability problems to the ClamAV developers!" >&5
+echo "$as_me: WARNING: ****** Please do not report stability problems to the ClamAV developers!" >&2;}
+	fi
 
 	case "$ac_cv_c_cve_2008_1372" in
-	ok|bugged)
+	ok|bugged|linkfailed)
 		LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS $LTLIBBZ2"
 
 cat >>confdefs.h <<\_ACEOF
