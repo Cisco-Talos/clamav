@@ -1,3 +1,8 @@
+Wed Oct 29 21:22:15 EET 2008 (edwin)
+------------------------------------
+ * Makefile.am, Makefile.in, configure, configure.in: fix make
+ distcheck on gcc < 4.3  (bb #1259)
+
 Wed Oct 29 20:52:07 EET 2008 (edwin)
 ------------------------------------
  * configure, configure.in: add testcase for gcc bug 37573, affecting

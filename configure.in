@@ -99,6 +99,20 @@ else
 	VERSION_SUFFIX="$VERSION_SUFFIX-broken-compiler"
 fi
 
+# add distcheck warning flags
+distcheck_enable_flags=0
+if test "x$ac_compiler_gnu" = "xyes"; then
+	gcc_version=`${CC} -dumpversion`
+	case "${gcc_version}" in
+		4.[[3456789]].*)
+			distcheck_enable_flags=1
+			;;
+		[[56789]].*)
+			distcheck_enable_flags=1
+			;;
+	esac
+fi
+AM_CONDITIONAL([DISTCHECK_ENABLE_FLAGS], test "x$distcheck_enable_flags" = "x1")
 
 dnl Checks if compiler produces valid code, regardless of compiler
 dnl we do these checks here to avoid receiving endless bugreports about
