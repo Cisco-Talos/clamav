@@ -1,3 +1,8 @@
+Wed Oct 29 20:52:07 EET 2008 (edwin)
+------------------------------------
+ * configure, configure.in: add testcase for gcc bug 37573, affecting
+ gcc 4.1.2 at -O3 too (bb #1258)
+
 Tue Oct 28 22:08:19 EET 2008 (edwin)
 ------------------------------------
  * unit_tests/valgrind.supp: fix more valgrind warnings
