@@ -263,6 +263,7 @@ dnl gcc 4.1.3 is OK. This bug occurs only at -O3.
 AC_MSG_CHECKING([for gcc bug PR37573])
 AC_TRY_RUN(
 	   [
+#include <stdlib.h>
 struct S
 {
   unsigned int *a;
@@ -330,8 +331,8 @@ main (void)
   unsigned int s;
   s = 23;
   bar (p, s, s + 0xa25e);
-  if (__builtin_memcmp (p, q, s) != 0)
-    __builtin_abort ();
+  if (memcmp (p, q, s) != 0)
+	abort ();
   return 0;
 }
 

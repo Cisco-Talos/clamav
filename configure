@@ -12592,6 +12592,7 @@ cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 
+#include <stdlib.h>
 struct S
 {
   unsigned int *a;
@@ -12659,8 +12660,8 @@ main (void)
   unsigned int s;
   s = 23;
   bar (p, s, s + 0xa25e);
-  if (__builtin_memcmp (p, q, s) != 0)
-    __builtin_abort ();
+  if (memcmp (p, q, s) != 0)
+	abort ();
   return 0;
 }
 
