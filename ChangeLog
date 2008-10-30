@@ -1,3 +1,7 @@
+Thu Oct 30 13:07:53 EET 2008 (edwin)
+------------------------------------
+ * unit_tests/valgrind.supp: suppress more valgrind race warnings
+
 Thu Oct 30 11:18:24 EET 2008 (edwin)
 ------------------------------------
  * Makefile.am, Makefile.in: fix flags

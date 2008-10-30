@@ -228,6 +228,24 @@
   Helgrind:Race
   fun:__lll_unlock_wake
 }
+{ 
+   glibc-freeres
+   Helgrind:Race
+   fun: *
+   fun: __libc_thread_freeres
+}
+{
+   glibc-poll
+   Helgrind:Race
+   fun: __libc_enable_asynccancel
+   fun: poll
+}
+{
+   glibc-poll
+   Helgrind:Race
+   fun: _setjmp
+   fun: clone
+}
 #{
 #	helgrind-glibc27-dbg18
 #	Helgrind:Race
