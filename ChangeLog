@@ -1,3 +1,7 @@
+Thu Oct 30 17:18:28 CET 2008 (tk)
+---------------------------------
+ * V 0.94.1
+
 Thu Oct 30 16:47:17 CET 2008 (tk)
 ---------------------------------
  * libclamav/readdb.c: daily.ign was overwriting local.ign (bb#1265)
