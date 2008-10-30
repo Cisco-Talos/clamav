@@ -12593,6 +12593,7 @@ cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
 
 #include <stdlib.h>
+#include <string.h>
 struct S
 {
   unsigned int *a;

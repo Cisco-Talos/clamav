@@ -1,3 +1,7 @@
+Thu Oct 30 11:04:19 EET 2008 (edwin)
+------------------------------------
+ * configure, configure.in: fix test
+
 Wed Oct 29 22:53:21 EET 2008 (edwin)
 ------------------------------------
  * configure, configure.in: be nice to non-GNU compilers, and use

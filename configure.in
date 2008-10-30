@@ -264,6 +264,7 @@ AC_MSG_CHECKING([for gcc bug PR37573])
 AC_TRY_RUN(
 	   [
 #include <stdlib.h>
+#include <string.h>
 struct S
 {
   unsigned int *a;
