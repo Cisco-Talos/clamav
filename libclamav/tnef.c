@@ -155,7 +155,7 @@ cli_tnef(const char *dir, int desc)
 				}
 				fb = fileblobCreate();
 				if(tnef_message(fp, type, tag, length, fsize) != 0) {
-					cli_errmsg("Error reading TNEF message\n");
+					cli_dbgmsg("TNEF: Error reading TNEF message\n");
 					ret = CL_EFORMAT;
 					alldone = 1;
 				}
@@ -163,7 +163,7 @@ cli_tnef(const char *dir, int desc)
 			case LVL_ATTACHMENT:
 				cli_dbgmsg("TNEF - found attachment\n");
 				if(tnef_attachment(fp, type, tag, length, dir, &fb, fsize) != 0) {
-					cli_errmsg("Error reading TNEF attachment\n");
+					cli_dbgmsg("TNEF: Error reading TNEF attachment\n");
 					ret = CL_EFORMAT;
 					alldone = 1;
 				}
@@ -287,7 +287,7 @@ tnef_message(FILE *fp, uint16_t type, uint16_t tag, int32_t length, off_t fsize)
 	/*cli_dbgmsg("%lu %lu\n", (long)(offset + length), ftell(fp));*/
 
 	if(!CLI_ISCONTAINED2(0, fsize, (off_t)offset, (off_t)length)) {
-		cli_errmsg("TNEF: Incorrect length field in tnef_message\n");
+		cli_dbgmsg("TNEF: Incorrect length field in tnef_message\n");
 		return -1;
 	}
 	if(fseek(fp, offset + length, SEEK_SET) < 0)
@@ -369,7 +369,7 @@ tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, int32_t length, const cha
 	/*cli_dbgmsg("%lu %lu\n", (long)(offset + length), ftell(fp));*/
 
 	if(!CLI_ISCONTAINED2(0, fsize, (off_t)offset, (off_t)length)) {
-		cli_errmsg("TNEF: Incorrect length field in tnef_attachment\n");
+		cli_dbgmsg("TNEF: Incorrect length field in tnef_attachment\n");
 		return -1;
 	}
 	if(fseek(fp, (long)(offset + length), SEEK_SET) < 0)	/* shouldn't be needed */
