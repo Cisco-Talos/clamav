@@ -1,7 +1,7 @@
-0.94.1rc1
----------
+0.94.1
+------
 
-ClamAV 0.94.1rc1 fixes some issues that were found in previous releases and
+ClamAV 0.94.1 fixes some issues that were found in previous releases and
 includes one new feature, "Malware Statistics Gathering." This is an optional
 feature that allows ClamAV users optionally to submit statistics to us about
 what they detect in the field. We will then use these data to determine what
