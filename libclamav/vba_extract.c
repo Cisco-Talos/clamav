@@ -107,7 +107,7 @@ get_unicode_name(const char *name, int size, int big_endian)
 	if((name == NULL) || (*name == '\0') || (size <= 0))
 		return NULL;
 
-	newname = (char *)cli_malloc(size * 7);
+	newname = (char *)cli_malloc(size * 7 + 1);
 	if(newname == NULL)
 		return NULL;
 
