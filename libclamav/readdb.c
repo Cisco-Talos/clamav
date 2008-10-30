@@ -1190,7 +1190,7 @@ static int cli_loadign(FILE *fs, struct cl_engine **engine, unsigned int options
 {
 	char buffer[FILEBUFF], *pt;
 	unsigned int line = 0;
-	struct cli_ignsig *new, *last = NULL;
+	struct cli_ignsig *new;
 	struct cli_ignored *ignored;
 	int ret;
 
@@ -1244,12 +1244,8 @@ static int cli_loadign(FILE *fs, struct cl_engine **engine, unsigned int options
 	    break;
 	}
 
-	if(!last) {
-	    last = ignored->list = new;
-	} else {
-	    last->next = new;
-	    last = new;
-	}
+	new->next = ignored->list;
+	ignored->list = new;
     }
 
     if(ret) {
