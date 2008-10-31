@@ -1,0 +1,70 @@
+/*
+ *  Match a string against a list of patterns/regexes.
+ *
+ *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *
+ *  Authors: Török Edvin
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *  MA 02110-1301, USA.
+ */
+
+
+#ifndef _REGEX_LIST_H
+#define _REGEX_LIST_H
+
+#include "phishcheck.h"
+#include "readdb.h"
+#include "matcher.h"
+#include <zlib.h> /* for gzFile */
+
+struct filter {
+	uint32_t B[65536];
+	uint32_t end_fast[256];
+	uint32_t end[65536];
+	unsigned long m;
+};
+
+struct regex_list_ht {
+	struct regex_list *head;
+	struct regex_list *tail;
+};
+
+struct regex_matcher {
+	struct hashtable suffix_hash;
+	size_t suffix_cnt;
+	struct regex_list_ht *suffix_regexes;
+	size_t regex_cnt;
+	regex_t **all_pregs;
+	struct cli_matcher suffixes;
+	struct cli_matcher md5_hashes;
+	struct filter md5_filter;
+	struct filter filter;
+	int list_inited:2;
+	int list_loaded:2;
+	int list_built:2;
+};
+
+int cli_build_regex_list(struct regex_matcher* matcher);
+int regex_list_add_pattern(struct regex_matcher *matcher, char *pattern);
+int regex_list_match(struct regex_matcher* matcher, char* real_url,const char* display_url,const struct pre_fixup_info* pre_fixup, int hostOnly,const char **info, int is_whitelist);
+int init_regex_list(struct regex_matcher* matcher);
+int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int options,int is_whitelist,struct cli_dbio *dbio);
+void regex_list_cleanup(struct regex_matcher* matcher);
+void regex_list_done(struct regex_matcher* matcher);
+int is_regex_ok(struct regex_matcher* matcher);
+long SO_search(const struct filter *m, const unsigned char *data, unsigned long len);
+
+#endif
+

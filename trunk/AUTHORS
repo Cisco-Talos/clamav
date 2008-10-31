@@ -1,0 +1,57 @@
+The ClamAV Team - http://www.clamav.net/team
+
+aCaB <acab at*clamav*net>
+Aeriana <aeriana at*clamav*net>
+Mike Cathey <mike at*clamav*net>
+Christoph Cordes <ccordes at*clamav*net>
+Diego d’Ambra <diego at*clamav*net>
+Andreas Faust <afaust at*clamav*net>
+Luca Gibelli <luca at*clamav*net>
+Nigel Horne <njh at*clamav*net>
+Arnaud Jacques <arnaud at*clamav*net>
+Tomasz Kojm <tkojm at*clamav*net>
+Tomasz Papszun <tomek at*clamav*net>
+Sven Strickroth <sven at*clamav*net>
+Török Edvin <edwin at*clamav*net>
+Trog <trog at*clamav*net>
+
+Please see the ChangeLog and clamdoc.pdf for the full list of contributors.
+
+-------------------------------------------------------------------------------
+
+libclamav credits:
+
+cab.c: The code uses Stuart Caie's libmspack to handle cabinet files
+cvd.c, untar.c: The untar code is based on a public domain minitar utility
+		by Charles G. Waldman
+dsig.c: The idea of number encoding comes from yyyRSA by Erik Thiele
+elf.c: The header structures were based upon "ELF: Executable and Linkable
+       Format, Portable Formats Specification, Version 1.1"
+explode.c: Written from scratch based on specs from PKWARE:
+	   http://www.pkware.com/documents/casestudies/APPNOTE.TXT
+hashtab.c: hash32shift() is an implementation of Thomas Wang's 32-bit integer
+	   hash function: http://www.cris.com/~Ttwang/tech/inthash.htm
+htmlnorm.c: The ScrEnc decoder was initially based upon an analysis by
+	    Andreas Marx
+inflate64.*,inffixed.h: This files contain code from zlib library v.1.2.3 with
+			modifications by Alberto Wu (see COPYING.zlib)
+is_tar.*: The file contains a public domain code from John Gilmore
+lzma/*: The files contain an implementation of the LZMA algorithm from
+	Igor Pavlov (see COPYING.lzma)
+md5.*: The files contain a public domain code from Solar Designer
+msexpand.c: Decompression scheme by M. Winterhoff
+nsis/*: The nsis extractor includes the zlib code from Jean-loup Gailly and
+	Mark Adler (see COPYING.zlib) and libbzip2 code from Julian Seward
+	(see COPYING.bzip2)
+ole2_extract.c, vba_extract.c: Some ideas and algorithms were based upon
+			       OpenOffice and libgsf
+pe.h: The header structures were based upon a PE format analysis by
+      B. Luevelsmeyer
+regex/*: The files came from OpenBSD (see COPYING.BSD)
+str.c: cli_strcasestr() contains a public domain code from
+       http://unixpapa.com/incnote/string.html
+tnef.c: The algorithm was based on kdepim/ktnef/lib/ktnefparser.cpp from KDE
+mbox.c: Some ideas came from Stephen White <stephen@earth.li>,
+	Michael Dankov <misha@btrc.ru>, Gianluigi Tiesi <sherpya@netfarm.it>,
+	Everton da Silva Marques, Thomas Lamy <Thomas.Lamy@in-online.net>,
+	James Stevens <James@kyzo.com>

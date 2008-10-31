@@ -1,0 +1,104 @@
+#!/bin/sh
+#
+# clamav-milter This script starts and stops the clamav-milter daemon
+#
+# chkconfig: 2345 79 40
+#
+# description: clamav-milter is a daemon which hooks into sendmail and routes \
+#              email messages for virus scanning with ClamAV
+# processname: clamav-milter
+# pidfile: /var/lock/subsys/clamav-milter
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+# Source networking configuration.
+. /etc/sysconfig/network
+
+# Local clamav-milter config
+CLAMAV_FLAGS=
+test -f /etc/sysconfig/clamav-milter && . /etc/sysconfig/clamav-milter
+
+# Check that networking is up.
+[ ${NETWORKING} = "no" ] && exit 0
+
+[ -x /usr/local/sbin/clamav-milter ] || exit 0
+PATH=$PATH:/usr/bin:/usr/local/sbin:/usr/local/bin
+
+RETVAL=0
+
+# Clamav-milter must have write access to the pid file, /var/run is not suitable
+default_pidfile=
+[ -d /var/run/clamav-milter ] && default_pidfile=/var/run/clamav-milter/clamav-milter.pid
+[ -d /var/clamav ] && default_pidfile=/var/clamav/clamav-milter.pid
+pidfile=${PIDFILE:-$default_pidfile}
+
+lockfile=/var/lock/subsys/clamav-milter
+
+start() {
+        echo -n "Starting clamav-milter: "
+	# Don't allow files larger than 25M to be created, to limit DoS
+	# Needs to be large enough to extract the signature files
+	ulimit -f 25600
+	if [ ! -z $pidfile ]; then
+		CLAMAV_PID=--pidfile=${pidfile}
+		PID=`pidofproc -p ${pidfile} clamav-milter`
+	else
+		CLAMAV_PID=
+		PID=`pidofproc clamav-milter`
+	fi
+	[ -n "$PID" ] && echo " already running!" && return 1
+        LANG= daemon clamav-milter $CLAMAV_PID ${CLAMAV_FLAGS}
+        RETVAL=$?
+	[ ! -z $pidfile -a -f $pidfile ] && sed -i -e 's/-//' $pidfile
+        echo
+	test $RETVAL -eq 0 && touch ${lockfile}
+	return $RETVAL
+}
+
+stop() {
+        echo -n "Shutting down clamav-milter: "
+	if [ ! -z $pidfile ]; then
+	        killproc -p ${pidfile} clamav-milter
+	else
+		killproc clamav-milter
+	fi
+        RETVAL=$?
+        echo
+	test $RETVAL -eq 0 && rm -f ${lockfile} ${pidfile}
+}
+
+restart() {
+	stop
+	start
+}
+
+# See how we were called.
+case "$1" in
+  start)
+        # Start daemon.
+	start
+        ;;
+  stop)
+        # Stop daemon.
+	stop
+        ;;
+  restart|reload)
+	restart
+        ;;
+  condrestart)
+	test -f ${lockfile} && $0 restart || :
+        ;;
+  status)
+	if [ ! -z $pidfile ]; then
+	        status -p ${pidfile} clamav-milter
+	else
+		status clamav-milter
+	fi
+        ;;
+  *)
+        echo "Usage: $0 {start|stop|reload|restart|condrestart|status}"
+        exit 1
+esac
+
+exit $?

@@ -1,0 +1,197 @@
+#!/usr/bin/perl -w
+
+#   Copyright (C) 2004 Nigel Horne <njh@bandsman.co.uk>
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+#   MA 02110-1301, USA.
+
+#	clamavmon - monitor a network for virus intrusion
+# Usage "clamavmon [machines...]" where machines is an optional list of machine
+# running clamd. These will turn from green to red if clamd dies. Clicking on
+# the machine name gives the version of clamd running there.
+
+# TODO: clicking should give the data base information and date of last
+#	freshclam, and then allow remote update
+# TODO:	Resizing the program should resize the text area
+
+eval 'exec /usr/bin/perl -w -S $0 ${1+"$@"}' if 0;
+
+use strict;
+use IO::Socket::INET;
+use Tk;
+use Tk::Dialog;
+
+my $mw = MainWindow->new;
+
+# $mw->bind('<Alt-F4>' => \&exit);
+
+my $top = $mw->Frame();
+my $middle = $mw->Frame();
+my $bottom = $mw->Frame();
+
+$top->pack();
+
+my $text = $middle->Scrolled('Text', -width => 50, -scrollbars => 'ow')->pack;
+
+$middle->pack();
+
+my $b1 = $bottom->Button(-text => 'About', -command => \&about)->pack(-side => 'left');
+my $b2 = $bottom->Button(-text => 'Quit', -command => \&exit)->pack(-side => 'left');
+
+$bottom->pack();
+
+my @machines;
+
+if(@ARGV) {
+	my $offset = 0;
+	foreach(@ARGV) {
+		$machines[$offset++] = $top->Button(-text => $_, -command => [ \&drill, $_ ])->pack(-side => 'left');
+	}
+	# Every minute check each of the clamd servers are still up
+	&pinger;
+	$mw->repeat(60000, \&pinger);
+}
+
+# $t->detach();
+
+my $history = "";
+
+my $sock = IO::Socket::INET->new(
+	LocalPort => 3310,
+	Proto => 'udp',
+	Type => SOCK_DGRAM) or die "$0: socket: $!\n";
+
+$sock->shutdown(SHUT_WR);
+$mw->fileevent($sock, 'readable', [ \&packet_ready, $sock ]);
+
+MainLoop;
+
+sub packet_ready {
+	# print "packet_ready\n";
+	my $sock = shift;
+
+	# my $mess = <$sock>;
+	my $mess;
+	$sock->recv($mess, 128);
+
+	my $peeraddr = $sock->peerhost;
+
+	# print "From $peeraddr $mess\n";
+	$text->insert('end', "From $peeraddr: $mess\n");
+}
+
+sub pinger {
+	# print "pinger\n";
+	foreach(@machines) {
+		my $machine = $_->cget('-text');
+		my $sock = IO::Socket::INET->new(
+			PeerPort => 3310,
+			PeerAddr => $machine,
+			Proto => 'tcp',
+			Timeout => 5,
+			Type => SOCK_STREAM);
+
+		if($sock) {
+			$mw->fileevent($sock, 'readable', [ \&pinger_ready, $_, $sock ]);
+			print $sock "PING\n";
+
+			$sock->shutdown(SHUT_WR);
+
+			$mw->update;
+		} else {
+			my $background = $_->cget('-background');
+
+			if($background ne 'red') {
+				$_->configure(-background => 'red');
+			}
+		}
+	}
+}
+
+sub pinger_ready {
+	# print "pinger_ready\n";
+	my $machine = shift;
+	my $sock = shift;
+
+	# my $mess = <$sock>;
+	my $mess;
+	$sock->recv($mess, 6);
+
+	my $peeraddr = $sock->peerhost;
+
+	close $sock;
+
+	my $background = $machine->cget('-background');
+
+	if($mess && ($mess ne "PONG\n")) {
+		# print "$machine is down\n";
+		if($background ne 'red') {
+			$machine->configure(-background => 'red');
+		}
+	} else {
+		# print "$machine is up\n";
+		if($background ne 'green') {
+			$machine->configure(-background => 'green');
+		}
+	}
+}
+
+# TODO: this should be modeless
+sub about {
+	my $about = $mw->DialogBox(
+		-title=>"About clamAVmon",
+		-buttons=>["OK"]
+	);
+
+	$about->add('Label',
+		-anchor => 'w',
+		-justify => 'left',
+		-text => "clamAVmon\n" .
+			"Copyright (C) 2004 Nigel Horne njh\@bandsman.co.uk\n" .
+			"The GPL Licence will appear here")->pack;
+
+	$about->Show();
+}
+
+sub drill {
+	my $machine = shift;
+
+	my $sock = IO::Socket::INET->new(
+		PeerPort => 3310,
+		PeerAddr => $machine,
+		Proto => 'tcp',
+		Timeout => 5,
+		Type => SOCK_STREAM) or die "$0: socket: $!\n";
+
+	print $sock "VERSION\n";
+
+	my $mess = <$sock>;
+
+	close $sock;
+
+	print $mess;
+
+	my $state = $mw->DialogBox(
+		-title => $machine,
+		-buttons => ["OK"]
+	);
+
+	$state->add('Label',
+		-anchor => 'w',
+		-justify => 'left',
+		-text => $mess)->pack;
+
+	$state->Show();
+}

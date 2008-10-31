@@ -1,0 +1,10 @@
+CLAMAV_PRIVATE_UNRAR {
+	global:
+		ppm_constructor;
+		ppm_destructor;
+		rar_init_filters;
+                rar_unpack;
+                rarvm_free;
+	local:
+		*;
+};

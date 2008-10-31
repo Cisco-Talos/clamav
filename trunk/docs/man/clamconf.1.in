@@ -1,0 +1,30 @@
+.TH "Config tool" "1" "February 12, 2007" "ClamAV @VERSION@" "Clam AntiVirus"
+.SH "NAME"
+.LP 
+clamconf \- Clam AntiVirus configuration utility
+.SH "SYNOPSIS"
+.LP 
+clamconf [options]
+.SH "DESCRIPTION"
+.LP 
+clamconf displays the values of configuration options.
+.SH "OPTIONS"
+.LP 
+
+.TP 
+\fB\-h, \-\-help\fR
+Display help and exit.
+.TP 
+\fB\-c DIR, \-\-config\-dir DIR\fR
+Search for configuration files clamd.conf and freshclam.conf in DIR.
+.TP 
+\fB\-n, \-\-non\-default\fR
+Only print non-default settings.
+.SH "CREDITS"
+The idea of this tool is based on Postfix's postconf. clamconf was created under pressure from Tomasz Papszun ;-)
+.SH "AUTHOR"
+.LP 
+Tomasz Kojm <tkojm@clamav.net>
+.SH "SEE ALSO"
+.LP 
+clamd.conf(5), freshclam.conf(5)

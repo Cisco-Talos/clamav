@@ -1,0 +1,64 @@
+.TH "Clam Daemon" "8" "February 12, 2007" "ClamAV @VERSION@" "Clam AntiVirus"
+.SH "NAME"
+.LP 
+clamd \- an anti\-virus daemon
+.SH "SYNOPSIS"
+.LP 
+clamd [options]
+.SH "DESCRIPTION"
+.LP 
+The daemon listens for incoming connections on Unix and/or TCP socket and scans files or directories on demand. It reads the configuration from @CFGDIR@/clamd.conf
+.SH "COMMANDS"
+.LP 
+clamd recognizes the following commands:
+
+.TP 
+\fBPING\fR
+Check the server's state. It should reply with "PONG".
+.TP 
+\fBVERSION\fR
+Print program and database versions.
+.TP 
+\fBRELOAD\fR
+Reload the virus databases.
+.TP 
+\fBSHUTDOWN\fR
+Perform a clean exit.
+.TP 
+\fBSCAN file/directory\fR
+Scan a file or a directory (recursively) with archive support enabled (if not disabled in clamd.conf). A full path is required.
+.TP 
+\fBCONTSCAN file/directory\fR
+Scan file or directory (recursively) with archive support enabled and don't stop the scanning when a virus is found.
+.TP 
+\fBMULTISCAN file/directory\fR
+Scan file in a standard way or scan directory (recursively) using multiple threads (to make the scanning faster on SMP machines).
+.TP 
+\fBSTREAM\fR
+Scan stream \- on this command clamd will return "PORT number" you should connect to and send data to scan.
+.TP 
+\fBSESSION, END\fR
+Start/end a clamd session which will allow you to run multiple commands per TCP session. It's recommended to prefix clamd commands with the letter \fBn\fR (eg. nSCAN) to indicate that the command will be delimited by a newline character and that clamd should continue reading command data until a newline is read. The newline delimiter assures that the complete command and its entire argument will be processed as a single command.
+.SH "OPTIONS"
+.LP 
+
+.TP 
+\fB\-h, \-\-help\fR
+Output help information and exit.
+.TP 
+\fB\-V, \-\-version\fR
+Print the version number and exit.
+.TP 
+\fB\-c FILE, \-\-config\-file=FILE\fR
+Read configuration from FILE.
+.SH "FILES"
+.LP 
+@CFGDIR@/clamd.conf
+.SH "CREDITS"
+Please check the full documentation for credits.
+.SH "AUTHOR"
+.LP 
+Tomasz Kojm <tkojm@clamav.net>
+.SH "SEE ALSO"
+.LP 
+clamd.conf(5), clamdscan(1), clamscan(1), freshclam(1), sigtool(1), clamav\-milter(8)

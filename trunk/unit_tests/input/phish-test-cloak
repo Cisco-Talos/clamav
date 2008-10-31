@@ -1,0 +1,5 @@
+From test@example.com
+From: test@example.com
+To: test@example.com
+
+<a href='http://real-example.com%00fake.example.com/'>real-example.com</a>

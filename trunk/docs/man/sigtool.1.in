@@ -1,0 +1,87 @@
+.TH "sigtool" "1" "February 12, 2007" "ClamAV @VERSION@" "Clam AntiVirus"
+.SH "NAME"
+.LP 
+sigtool \- signature and database management tool
+.SH "SYNOPSIS"
+.LP 
+sigtool [options]
+.SH "DESCRIPTION"
+.LP 
+sigtool can be used to generate MD5 checksums, convert data into hexadecimal format, list virus signatures and build/unpack/test/verify CVD databases and update scripts.
+.SH "OPTIONS"
+.LP 
+
+.TP 
+\fB\-h, \-\-help\fR
+Output help information and exit.
+.TP 
+\fB\-V, \-\-version\fR
+Print version number and exit.
+.TP 
+\fB\-\-quiet\fR
+Be quiet \- output only error messages.
+.TP 
+\fB\-\-stdout\fR
+Write all messages to stdout.
+.TP 
+\fB\-\-hex\-dump\fR
+Read data from stdin and write hex string to stdout.
+.TP 
+\fB\-\-md5 [FILES]\fR
+Generate MD5 checksum from stdin or MD5 sigs for FILES.
+.TP 
+\fB\-\-mdb [FILES]\fR
+Generate .mdb signatures for FILES.
+.TP 
+\fB\-\-html\-normalise=FILE\fR
+Create normalised HTML files comment.html, nocomment.html, and script.html in current working directory.
+.TP 
+\fB\-\-utf16\-decode=FILE\fR
+Decode UTF16 encoded data.
+.TP 
+\fB\-\-vba=FILE\fR
+Extract VBA/Word6 macros from given MS Office document.
+.TP 
+\fB\-\-vba\-hex=FILE\fR
+Extract Word6 macros from given MS Office document and display the corresponding hex values.
+.TP 
+\fB\-i, \-\-info\fR
+Print a CVD information and verify MD5 and a digital signature.
+.TP 
+\fB\-b, \-\-build\fR
+Build a CVD file. \-s, \-\-server is required.
+.TP 
+\fB\-\-server\fR
+ClamAV Signing Service address (for virus database maintainers only).
+.TP 
+\fB\-\-unpack FILE, \-u FILE\fR
+Unpack FILE (CVD) to a current directory.
+.TP 
+\fB\-\-unpack\-current\fR
+Unpack a local CVD file (main or daily) to current directory.
+.TP 
+\fB\-\-diff=OLD NEW, \-d OLD NEW\fR
+Create a diff file for OLD and NEW CVDs/INCDIRs.
+.TP 
+\fB\-\-run\-cdiff=FILE, \-r FILE\fR
+Execute update script FILE in current directory.
+.TP 
+\fB\-\-verify\-cdiff=FILE, \-r FILE\fR
+Verify DIFF against CVD/INCDIR.
+.TP 
+\fB\-l, \-\-list\-sigs\fR
+List signature names.
+.SH "EXAMPLES"
+.LP 
+.TP 
+Generate hex string from testfile and save it to testfile.hex:
+
+\fBcat testfile | sigtool \-\-hex\-dump > testfile.hex\fR
+.SH "CREDITS"
+Please check the full documentation for credits.
+.SH "AUTHOR"
+.LP 
+Tomasz Kojm <tkojm@clamav.net>
+.SH "SEE ALSO"
+.LP 
+clamd(8), clamdscan(1), clamscan(1), freshclam(1), clamd.conf(5), clamav\-milter(8)

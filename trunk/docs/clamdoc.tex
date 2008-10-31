@@ -1,0 +1,1471 @@
+%  Clam AntiVirus: User Manual
+%
+%  Copyright (C) 2008 Sourcefire, Inc.
+%  Copyright (C) 2002 - 2007 Tomasz Kojm <tkojm*clamav.net>
+%  Version 0.2x corrected by Dennis Leeuw <dleeuw*made-it.com>
+%  Version 0.80 corrected by Tomasz Papszun <tomek*clamav.net>
+%
+%  This program is free software; you can redistribute it and/or modify
+%  it under the terms of the GNU General Public License as published by
+%  the Free Software Foundation; either version 2 of the License, or
+%  (at your option) any later version.
+%
+%  This program is distributed in the hope that it will be useful,
+%  but WITHOUT ANY WARRANTY; without even the implied warranty of
+%  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%  GNU General Public License for more details.
+%
+%  You should have received a copy of the GNU General Public License
+%  along with this program; if not, write to the Free Software
+%  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+%  MA 02110-1301, USA.
+
+\documentclass[a4paper,titlepage,12pt]{article}
+\usepackage{amssymb}
+\usepackage{pslatex}
+\usepackage[dvips]{graphicx}
+\usepackage{wrapfig}
+\usepackage{boxedminipage}
+\usepackage{url}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\addtolength{\hoffset}{-0.5cm}
+\addtolength{\textwidth}{1cm}
+\date{}
+
+\usepackage{color}
+\definecolor{grey1}{gray}{0.8}
+\definecolor{grey2}{gray}{0.3}
+
+% Based on Antonina Liedtke's article in Linux+ 6/2003
+\def\greyp{%
+    \unitlength=1mm%
+    \begin{picture}(0,0)
+	\put(0,-1.5){\textcolor{grey1}{\rule{13.9cm}{5.3mm}}\textcolor{grey2}%
+	{\rule{9mm}{5.3mm}}\hss}
+    \end{picture}
+}
+
+\pagestyle{fancy}
+\fancyhead{}
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\fancyhead[RO]{\textbf{\sffamily{{\textcolor{white}{\thepage}}~}}}
+\fancyhead[RE]{\footnotesize{\nouppercase{\rightmark~}}}
+\fancyhead[LO]{\footnotesize{\greyp{\nouppercase{\leftmark}}}}
+
+
+\newcommand{\pl}{\vspace{.3cm}}
+\newcommand{\rc}[2]{\textbf{#1: } #2\\[4pt]}
+\newcommand{\up}[2]{\textbf{--#1: } #2\\[4pt]}
+\newcommand{\email}[1]{\texttt{#1}}
+\newcommand{\vbt}[1]{\verb+#1+}
+\newcommand{\cons}[1]{\vspace{2mm} \noindent \ovalbox {\sffamily #1}
+		      \vspace{2mm}}
+
+\begin{document}
+    \setcounter{page}{0}
+
+    \pagestyle{empty}
+    \includegraphics[width=353pt]{clam.eps}
+    \vspace{3cm}
+    \begin{flushright}
+	\rule[-1ex]{8cm}{3pt}\\
+	\huge Clam AntiVirus 0.94.1\\
+	\huge \emph{User Manual}\\
+    \end{flushright}
+
+    \newpage
+    \pagestyle{fancy}
+    \tableofcontents
+    \vspace{1.0cm}
+
+    \noindent
+    \begin{boxedminipage}[b]{\textwidth}
+    ClamAV User Manual,
+    \copyright \  2007 - 2008 Sourcefire, Inc.
+    \copyright \  2002 - 2007 Tomasz Kojm\\
+    This document is distributed under the terms of the GNU General
+    Public License v2.\\
+
+    Clam AntiVirus is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.\\
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.\\
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+    MA 02110-1301, USA.
+    \end{boxedminipage}
+
+    \vspace{0.3cm}
+    \noindent
+    \begin{boxedminipage}[b]{\textwidth}
+    ClamAV and Clam AntiVirus are trademarks of Sourcefire, Inc.
+    \end{boxedminipage}
+
+    \newpage
+
+    \section{Introduction}
+    Clam AntiVirus is an open source (GPL) anti-virus toolkit for UNIX,
+    designed especially for e-mail scanning on mail gateways. It provides
+    a number of utilities including a flexible and scalable multi-threaded
+    daemon, a command line scanner and advanced tool for automatic database
+    updates. The core of the package is an anti-virus engine available in a
+    form of shared library.
+
+    \subsection{Features}
+
+    \begin{itemize}
+	\item{Licensed under the GNU General Public License, Version 2}
+	\item{POSIX compliant, portable}
+	\item{Fast scanning}
+	\item{Supports on-access scanning (Linux and FreeBSD only)}
+	\item{Detects over 450.000 viruses, worms and trojans, including
+	      Microsoft Office macro viruses, mobile malware, and other threats}
+	\item{Scans within archives and compressed files (also protects
+	      against archive bombs), built-in support includes:
+	    \begin{itemize}
+		\item Zip (including SFX)
+		\item RAR (including SFX)
+		\item ARJ (including SFX)
+		\item Tar
+		\item Gzip
+		\item Bzip2
+		\item MS OLE2
+		\item MS Cabinet Files (including SFX)
+		\item MS CHM (Compiled HTML)
+		\item MS SZDD compression format
+		\item BinHex
+		\item SIS (SymbianOS packages)
+		\item AutoIt
+	    \end{itemize}}
+	\item{Supports Portable Executable (32/64-bit) files compressed or obfuscated with:}
+	    \begin{itemize}
+		\item AsPack
+		\item UPX
+		\item FSG
+		\item Petite
+		\item PeSpin
+		\item NsPack
+		\item wwpack32
+		\item MEW
+		\item Upack
+		\item Y0da Cryptor
+	    \end{itemize}
+	\item{Supports almost all mail file formats}
+	\item{Support for other special files/formats includes:}
+	    \begin{itemize}
+		\item HTML
+		\item RTF
+		\item PDF
+		\item Files encrypted with CryptFF and ScrEnc
+		\item uuencode
+		\item TNEF (winmail.dat)
+	    \end{itemize}
+	\item{Advanced database updater with support for scripted updates,
+	      digital signatures and DNS based database version queries}
+    \end{itemize}
+
+    \subsection{Mailing lists and IRC channel}
+    If you have a trouble installing or using ClamAV try asking on our mailing
+    lists. There are four lists available:
+    \begin{itemize}
+    \item \textbf{clamav-announce*lists.clamav.net} - info about new versions,
+    moderated\footnote{Subscribers are not allowed to post to the mailing
+    list}.
+    \item \textbf{clamav-users*lists.clamav.net} - user questions
+    \item \textbf{clamav-devel*lists.clamav.net} - technical discussions
+    \item \textbf{clamav-virusdb*lists.clamav.net} - database update announcements, moderated
+    \end{itemize}
+    \noindent You can subscribe and search the mailing list archives at: 
+    \url{http://www.clamav.net/support/ml/}\\
+    Alternatively you can try asking on the \verb+#clamav+ IRC channel - launch
+    your favourite irc client and type:
+    \begin{verbatim}
+	/server irc.freenode.net
+	/join #clamav
+    \end{verbatim}
+
+    \subsection{Virus submitting}
+    If you have got a virus which is not detected by your ClamAV with the latest
+    databases, please submit the sample at our website:
+    \begin{center}
+	\url{http://www.clamav.net/sendvirus}
+    \end{center}
+
+    \section{Base package}
+
+    \subsection{Supported platforms}
+    Most popular UNIX operating systems are supported. Clam AntiVirus 0.9x was
+    tested on:
+    \begin{itemize}
+	\item{GNU/Linux}
+	\item{Solaris}
+	\item{FreeBSD}
+	\item{OpenBSD} \footnote{Installation from a port is recommended.}
+	\item{Mac OS X}
+    \end{itemize}
+    Some features may not be available on your operating system. If you
+    are successfully running Clam AntiVirus on a system not listed above
+    please let us know.
+
+    \subsection{Binary packages}
+    You can find the up-to-date list of binary packages at our website:
+    \url{http://www.clamav.net/download/packages/}
+
+    \section{Installation}
+
+    \subsection{Requirements}
+    The following elements are required to compile ClamAV:
+    \begin{itemize}
+	\item zlib and zlib-devel packages
+	\item gcc compiler suite (tested with 2.9x, 3.x and 4.x series)\\
+	      \textbf{If you are compiling with higher optimization levels
+	      than the default one (\hbox{-O2} for gcc), be aware that there
+	      have been reports of misoptimizations. The build system of ClamAV
+	      only checks for bugs affecting the default settings, it is your
+	      responsibility to check that your compiler version doesn't
+	      have any bugs.}
+    \end{itemize}
+    The following packages are optional but \textbf{highly recommended}:
+    \begin{itemize}
+	\item bzip2 and bzip2-devel library
+	\item GNU MP 3\\
+	It's very important to install the GMP package because it allows
+	\verb+freshclam+ to verify the digital signatures of the virus
+	databases and scripted updates. If freshclam was compiled without GMP
+	support it will display "SECURITY WARNING: NO SUPPORT FOR DIGITAL
+	SIGNATURES" on every update. You can download GNU MP at
+	\url{http://www.swox.com/gmp/}\\
+	A note for Solaris/SPARC users: you must set the \emph{ABI} system
+	variable to 32 (e.g. \verb+setenv ABI 32+) before running the
+	configuration script of GMP.
+	\item \verb+check+ unit testing framework \footnote{See section \ref{unit-testing} on how to run the unit tests}.
+    \end{itemize}
+
+    \subsection{Installing on shell account}
+    To install ClamAV locally on an unprivileged shell account you need not
+    create any additional users or groups. Assuming your home directory is
+    \verb+/home/gary+ you should build it as follows:
+    \begin{verbatim}
+	$ ./configure --prefix=/home/gary/clamav --disable-clamav
+	$ make; make install
+    \end{verbatim}
+    To test your installation execute:
+    \begin{verbatim}
+	$ ~/clamav/bin/freshclam
+	$ ~/clamav/bin/clamscan ~
+    \end{verbatim}
+    The \verb+--disable-clamav+ switch disables the check for existence of
+    the \emph{clamav} user and group but \verb+clamscan+ would still require an
+    unprivileged account to work in a superuser mode.
+
+    \subsection{Adding new system user and group}
+    If you are installing ClamAV for the first time, you have to add a new
+    user and group to your system:
+    \begin{verbatim}
+	# groupadd clamav
+	# useradd -g clamav -s /bin/false -c "Clam AntiVirus" clamav
+    \end{verbatim}
+    Consult a system manual if your OS has not \emph{groupadd} and
+    \emph{useradd} utilities. \textbf{Don't forget to lock access to the
+    account!}
+
+    \subsection{Compilation of base package}
+    Once you have created the clamav user and group, please extract the archive:
+    \begin{verbatim}
+	$ zcat clamav-x.yz.tar.gz | tar xvf -
+	$ cd clamav-x.yz
+    \end{verbatim}
+    Assuming you want to install the configuration files in /etc, configure
+    and build the software as follows:
+    \begin{verbatim}
+	$ ./configure --sysconfdir=/etc
+	$ make
+	$ su -c "make install"
+    \end{verbatim}
+    In the last step the software is installed into the /usr/local directory
+    and the config files into /etc. \textbf{WARNING: Never enable the SUID
+    or SGID bits for Clam AntiVirus binaries.}
+
+    \subsection{Compilation with clamav-milter enabled}
+    libmilter and its development files are required. To enable clamav-milter,
+    configure ClamAV with
+    \begin{verbatim}
+	$ ./configure --enable-milter
+    \end{verbatim}
+
+    \subsection{Running unit tests}\label{unit-testing}
+	ClamAV includes unit tests that allow you to test that the compiled binaries work correctly on your platform.
+
+	The first step is to use your OS's package manager to install the \verb+check+ package. 
+	If your OS doesn't have that package, you can download it from \url{http://check.sourceforge.net/}, 
+	build it and install it.
+
+	To help clamav's configure script locate \verb+check+, it is recommended that you install \verb+pkg-config+, preferably
+	using your OS's package manager, or from \url{http://pkg-config.freedesktop.org}.
+
+	The recommended way to run unit-tests is the following, which ensures you will get an error if unit tests cannot be built:
+	\footnote{The configure script in ClamAV automatically enables the unit tests, if it finds the check framework, however it doesn't consider it a fatal error if unit tests cannot be enabled.}
+	\begin{verbatim}
+	 $ ./configure --enable-check
+	 $ make
+	 $ make check
+	\end{verbatim}
+
+	When \verb+make check+ is finished, you should get a message similar to this:
+	\begin{verbatim}
+==================
+All 5 tests passed
+==================
+	\end{verbatim}
+
+	If a unit test fails, you get a message similar to the following. 
+	See the next section on how to report a bug when a unit test fails.
+	\begin{verbatim}
+========================================
+1 of 5 tests failed
+Please report to http://bugs.clamav.net/
+========================================
+	\end{verbatim}
+
+	If unit tests are disabled (and you didn't use --enable-check), you will get this message:
+	\begin{verbatim}
+*** Unit tests disabled in this build
+*** Use ./configure --enable-check to enable them
+
+SKIP: check_clamav
+PASS: check_clamd.sh
+PASS: check_freshclam.sh
+PASS: check_sigtool.sh
+PASS: check_clamscan.sh
+======================
+All 4 tests passed
+(1 tests were not run)
+======================
+	\end{verbatim}
+	Running \verb+./configure --enable-check+ should tell you why.
+
+    \subsection{Reporting a unit test failure bug}
+	If \verb+make check+ says that some tests failed we encourage you to report a bug on our bugzilla: \url{http://bugs.clamav.net}.
+	The information we need is (see also \url{http://clamav.net/bugs}):
+	\begin{itemize}
+	 \item The exact output from \verb+make check+	 
+	 \item Output of \verb+uname -mrsp+ 
+	 \item your \verb+config.log+	 
+	 \item The following files from the \verb+unit_tests/+ directory:
+		\begin{itemize}
+			\item \verb+test.log+
+	 		\item \verb+clamscan.log+
+			\item \verb+clamdscan.log+
+		\end{itemize}
+	 \item \verb+/tmp/clamd-test.log+ if it exists
+         \item where and how you installed the check package
+	 \item Output of \verb+pkg-config check --cflags --libs+
+	 \item Optionally if \verb+valgrind+ is available on your platform, the output of the following:
+	 \begin{verbatim}
+$ make check
+$ CK_FORK=no ./libtool --mode=execute valgrind unit_tests/check-clamav
+	 \end{verbatim}	
+	\end{itemize}
+
+    \section{Configuration}
+
+    \subsection{clamd}
+    Before you start using the daemon you have to edit the configuration file
+    (in other case \verb+clamd+ won't run):
+    \begin{verbatim}
+	$ clamd
+	ERROR: Please edit the example config file /etc/clamd.conf.
+    \end{verbatim}
+    This shows the location of the default configuration file. The format and
+    options of this file are fully described in the \emph{clamd.conf(5)}
+    manual. The config file is well commented and configuration should be
+    straightforward.
+
+    \subsubsection{On-access scanning}
+    One of the interesting features of \verb+clamd+ is on-access scanning
+    based on the Dazuko module, available from \url{http://dazuko.org/}.
+    \textbf{This module is not required to run clamd - furthermore, you
+    shouldn't run Dazuko on production systems}. At the moment Dazuko is
+    avaliable for Linux and FreeBSD, but the following information only covers
+    Linux.
+    \begin{verbatim}
+	$ tar zxpvf dazuko-a.b.c.tar.gz
+	$ cd dazuko-a.b.c
+	$ make dazuko
+	or
+	$ make dazuko-smp (for smp kernels)
+	$ su
+	# insmod dazuko.o
+	# cp dazuko.o /lib/modules/`uname -r`/misc
+	# depmod -a
+    \end{verbatim}
+    Depending on your Linux distribution you may need to add a "dazuko" entry to
+    \emph{/etc/modules} or run the module during system's startup by adding
+    \begin{verbatim}
+	/sbin/modprobe dazuko
+    \end{verbatim}
+    to some startup file. You must also create a new device:
+    \begin{verbatim}
+	$ cat /proc/devices | grep dazuko
+	254 dazuko
+	$ su -c "mknod -m 600 /dev/dazuko c 254 0"
+    \end{verbatim}
+    Now configure Clamuko in \verb+clamd.conf+ and read the \ref{clamuko}
+    section.
+
+    \subsection{clamav-milter}
+    Nigel Horne's \verb+clamav-milter+ is a very efficient email scanner
+    designed for Sendmail. It's written entirely in C and only depends on
+    \verb+libclamav+ or \verb+clamd+. You can find detailed installation
+    instructions in the \verb+INSTALL+ file that comes with the clamav-milter
+    sources. Basically, to connect it with Sendmail add the following lines to
+    \verb+/etc/mail/sendmail.mc+:
+    \begin{verbatim}
+INPUT_MAIL_FILTER(`clmilter',`S=local:/var/run/clamav/clmilter.sock,
+F=, T=S:4m;R:4m')dnl
+define(`confINPUT_MAIL_FILTERS', `clmilter')
+    \end{verbatim}
+    If you're running it in \verb+--external+ mode, check entry in
+    \verb+clamd.conf+ of the form:
+    \begin{verbatim}
+	LocalSocket /var/run/clamav/clamd.sock
+    \end{verbatim}
+    Start clamav-milter
+    \begin{verbatim}
+	/usr/local/sbin/clamav-milter -lo /var/run/clamav/clmilter.sock
+    \end{verbatim}
+    and restart sendmail.
+
+    \subsection{Testing}
+    Try to scan recursively the source directory:
+    \begin{verbatim}
+	$ clamscan -r -l scan.txt clamav-x.yz
+    \end{verbatim}
+    It should find some test files in the clamav-x.yz/test directory.
+    The scan result will be saved in the \verb+scan.txt+ log file
+    \footnote{To get more info on clamscan options run 'man clamscan'}.
+    To test \verb+clamd+, start it and use \verb+clamdscan+ (or instead connect
+    directly to its socket and run the SCAN command):
+    \begin{verbatim}
+	$ clamdscan -l scan.txt clamav-x.yz
+    \end{verbatim}
+    Please note that the scanned files must be accessible by the user running
+    \verb+clamd+ or you will get an error.
+
+    \subsection{Setting up auto-updating}
+    \verb+freshclam+ is the automatic database update tool for Clam AntiVirus.
+    It can work in two modes:
+    \begin{itemize}
+	\item interactive - on demand from command line
+	\item daemon - silently in the background
+    \end{itemize}
+    \verb+freshclam+ is advanced tool: it supports scripted updates (instead
+    of transferring the whole CVD file at each update it only transfers the
+    differences between the latest and the current database via a special
+    script), database version checks through DNS, proxy servers (with
+    authentication), digital signatures and various error scenarios.
+    \textbf{Quick test: run freshclam (as superuser) with no parameters
+    and check the output.} If everything is OK you may create the log file in
+    /var/log (owned by \emph{clamav} or another user \verb+freshclam+ will be
+    running as):
+    \begin{verbatim}
+	# touch /var/log/freshclam.log
+	# chmod 600 /var/log/freshclam.log
+	# chown clamav /var/log/freshclam.log
+    \end{verbatim}
+    Now you \emph{should} edit the configuration file \verb+freshclam.conf+
+    and point the \emph{UpdateLogFile} directive to the log file. Finally, to
+    run \verb+freshclam+ in the daemon mode, execute:
+    \begin{verbatim}
+	# freshclam -d
+    \end{verbatim}
+    The other way is to use the \emph{cron} daemon. You have to add the
+    following line to the crontab of \textbf{root} or \textbf{clamav} user:
+    {\small
+    \begin{verbatim}
+N * * * *	/usr/local/bin/freshclam --quiet
+    \end{verbatim}}
+    \noindent to check for a new database every hour. \textbf{N should be a
+    number between 3 and 57 of your choice. Please don't choose any multiple
+    of 10, because there are already too many clients using those time slots.}
+    Proxy settings are only configurable via the configuration file and
+    \verb+freshclam+ will require strict permission settings for the config
+    file when \verb+HTTPProxyPassword+ is turned on.
+    \begin{verbatim}
+	HTTPProxyServer myproxyserver.com
+	HTTPProxyPort 1234
+	HTTPProxyUsername myusername
+	HTTPProxyPassword mypass
+    \end{verbatim}
+
+    \subsubsection{Closest mirrors}
+    The \verb+DatabaseMirror+ directive in the config file specifies the
+    database server \verb+freshclam+ will attempt (up to \verb+MaxAttempts+
+    times) to download the database from. The default database mirror
+    is \url{database.clamav.net} but multiple directives are allowed.
+    In order to download the database from the closest mirror you should  
+    configure \verb+freshclam+ to use \url{db.xx.clamav.net} where xx
+    represents your country code. For example, if your server is in "Ascension
+    Island" you should have the following lines included in \verb+freshclam.conf+:
+    \begin{verbatim}
+	DNSDatabaseInfo current.cvd.clamav.net
+	DatabaseMirror db.ac.clamav.net
+	DatabaseMirror database.clamav.net
+    \end{verbatim}
+    The second entry acts as a fallback in case the connection to the first
+    mirror fails for some reason. The full list of two-letters country codes
+    is available at \url{http://www.iana.org/cctld/cctld-whois.htm}
+
+    \section{Usage}
+
+    \subsection{Clam daemon}\label{clamd}
+    \verb+clamd+ is a multi-threaded daemon that uses \emph{libclamav}
+    to scan files for viruses. It may work in one or both modes listening on:
+    \begin{itemize}
+	\item Unix (local) socket
+	\item TCP socket
+    \end{itemize}
+    The daemon is fully configurable via the \verb+clamd.conf+ file
+    \footnote{man 5 clamd.conf}. \verb+clamd+ recognizes the following commands:
+    \begin{itemize}
+	\item \textbf{PING}\\
+	    Check the daemon's state (should reply with "PONG").
+	\item \textbf{VERSION}\\
+	    Print program and database versions.
+	\item \textbf{RELOAD}\\
+	    Reload the databases.
+	\item \textbf{SHUTDOWN}\\
+	    Perform a clean exit.
+	\item \textbf{SCAN file/directory}\\
+	    Scan file or directory (recursively) with archive support
+	    enabled (a full path is required).
+	\item \textbf{RAWSCAN file/directory}\\
+	    Scan file or directory (recursively) with archive and special file
+	    support disabled (a full path is required).
+	\item \textbf{CONTSCAN file/directory}\\
+	    Scan file or directory (recursively) with archive support
+	    enabled and don't stop the scanning when a virus is found.
+	\item \textbf{MULTISCAN file/directory}\\
+	    Scan file in a standard way or scan directory (recursively) using
+	    multiple threads (to make the scanning faster on SMP machines).
+	\item \textbf{STREAM}\\
+	    Scan stream: \verb+clamd+ will return a new port number you should
+	    connect to and send data to scan.
+	\item \textbf{SESSION, END}\\
+	    Start/end a \verb+clamd+ session - you can do multiple commands
+	    per TCP session (WARNING: due to the \verb+clamd+ implementation the
+	    \textbf{RELOAD} command will break the session).
+    \end{itemize}
+    and reacts on the special signals:
+    \begin{itemize}
+	\item \textbf{SIGTERM} - perform a clean exit
+	\item \textbf{SIGHUP} - reopen the log file
+	\item \textbf{SIGUSR2} - reload the database
+    \end{itemize}
+    Clamd should not be started in the background using the shell operator
+    \verb+&+ or external tools. Instead, you should run and wait for clamd
+    to load the database and daemonize itself. After that, clamd is instantly
+    ready to accept connections and perform file scanning.
+
+    \subsection{Clam\textbf{d}scan}
+    \verb+clamdscan+ is a simple \verb+clamd+ client. In many cases you can
+    use it as a \verb+clamscan+ replacement however you must remember that:
+    \begin{itemize}
+	\item it only depends on \verb+clamd+
+	\item although it accepts the same command line options as
+	      \verb+clamscan+ most of them are ignored because they must be
+	      enabled directly in \verb+clamd+, i.e. \verb+clamd.conf+
+	\item scanned files must be accessible for \verb+clamd+
+	\item it can't use external unpackers
+    \end{itemize}
+
+    \subsection{Clamuko}\label{clamuko}
+    Clamuko is a special thread in \verb+clamd+ that performs on-access
+    scanning under Linux and FreeBSD and shares internal virus database
+    with the daemon. \textbf{You must follow some important rules when
+    using it:}
+    \begin{itemize}
+	\item Always stop the daemon cleanly - using the SHUTDOWN command or
+	      the\\ SIGTERM signal. In other case you can lose access
+	      to protected files until the system is restarted.
+	\item Never protect the directory your mail-scanner software
+	      uses for attachment unpacking. Access to all infected
+	      files will be automatically blocked and the scanner (including
+	      \verb+clamd+!) will not be able to detect any viruses. In the
+	      result \textbf{all infected mails may be delivered.}
+    \end{itemize}
+    For example, to protect the whole system add the following lines to
+    \verb+clamd.conf+:
+    \begin{verbatim}
+	ClamukoScanOnAccess
+	ClamukoIncludePath /
+	ClamukoExcludePath /proc
+	ClamukoExcludePath /temporary/dir/of/your/mail/scanning/software
+    \end{verbatim}
+    You can also use clamuko to protect files on Samba/Netatalk but a far
+    more better and safe idea is to use the \textbf{samba-vscan} module.
+    NFS is not supported because Dazuko doesn't intercept NFS access calls.
+
+    \subsection{Output format}
+
+    \subsubsection{clamscan}
+    \verb+clamscan+ writes all regular program messages to \textbf{stdout} and
+    errors/warnings to \textbf{stderr}. You can use the option \verb+--stdout+
+    to redirect all program messages to \textbf{stdout}. Warnings and error
+    messages from \verb+libclamav+ are always printed to \textbf{stderr}.
+    A typical output from \verb+clamscan+ looks like this:
+    \begin{verbatim}
+	/tmp/test/removal-tool.exe: Worm.Sober FOUND
+	/tmp/test/md5.o: OK
+	/tmp/test/blob.c: OK
+	/tmp/test/message.c: OK
+	/tmp/test/error.hta: VBS.Inor.D FOUND
+    \end{verbatim}
+    When a virus is found its name is printed between the \verb+filename:+ and
+    \verb+FOUND+ strings. In case of archives the scanner depends on libclamav
+    and only prints the first virus found within an archive:
+    \begin{verbatim}
+	zolw@localhost:/tmp$ clamscan malware.zip 
+	malware.zip: Worm.Mydoom.U FOUND
+    \end{verbatim}
+    \emph{\textbf{TIP:} You can force clamscan to list all infected
+    files in an archive using --no-archive (this option disables
+    transparent decompressors built into libclamav) and enabling external
+    decompressors: --unzip --unrar...}.\\[4pt]
+    \begin{verbatim}
+	zolw@localhost:/tmp$ clamscan --no-archive --unzip malware.zip
+	Archive:  /tmp/malware.zip
+	  inflating: test1.exe
+	  inflating: test2.exe
+	  inflating: test3.exe
+	/tmp/clamav-77e7bfdbb2d3872b/test1.exe: Worm.Mydoom.U FOUND
+	/tmp/clamav-77e7bfdbb2d3872b/test2.exe: Trojan.Taskkill.A FOUND
+	/tmp/clamav-77e7bfdbb2d3872b/test3.exe: Worm.Nyxem.D FOUND
+	/tmp/malware.zip: Infected.Archive FOUND
+    \end{verbatim}
+
+    \subsubsection{clamd}
+    The output format of \verb+clamd+ is very similar to \verb+clamscan+.
+    \begin{verbatim}
+	zolw@localhost:~$ telnet localhost 3310
+	Trying 127.0.0.1...
+	Connected to localhost.
+	Escape character is '^]'.
+	SCAN /home/zolw/test
+	/home/zolw/test/clam.exe: ClamAV-Test-File FOUND
+	Connection closed by foreign host.
+    \end{verbatim}
+    In the \textbf{SCAN} mode it closes the connection when the first virus
+    is found.
+    \begin{verbatim}
+	SCAN /home/zolw/test/clam.zip
+	/home/zolw/test/clam.zip: ClamAV-Test-File FOUND
+    \end{verbatim}
+    \textbf{CONTSCAN} and \textbf{MULTISCAN} don't stop scanning in case
+    a virus is found.\\
+    Error messages are printed in the following format:
+    \begin{verbatim}
+	SCAN /no/such/file
+	/no/such/file: Can't stat() the file. ERROR
+    \end{verbatim}
+
+    \section{LibClamAV}
+    Libclamav provides an easy and effective way to add a virus protection into
+    your software. The library is thread-safe and transparently recognizes and
+    scans within archives, mail files, MS Office document files, executables
+    and other special formats.
+
+    \subsection{Licence}
+    Libclamav is licensed under the GNU GPL v2 licence. This means you are
+    \textbf{not allowed} to link commercial, close-source applications
+    against it\footnote{You can still use clamd or clamscan instead}.
+    All software using libclamav must be GPL compliant.
+
+    \subsection{Supported formats}
+
+    \subsubsection{Executables}
+    The library has a built-in support for 32/64-bit Portable Executable files
+    and 32-bit ELF files. Additionally, it can handle PE files compressed or
+    obfuscated with the following tools:
+    \begin{itemize}
+	\item Aspack (2.12)
+	\item UPX (all versions)
+	\item FSG (1.3, 1.31, 1.33, 2.0)
+	\item Petite (2.x)
+	\item PeSpin (1.1)
+	\item NsPack
+	\item wwpack32 (1.20)
+	\item MEW
+	\item Upack
+	\item Y0da Cryptor (1.3)
+    \end{itemize}
+
+    \subsubsection{Mail files}
+    Libclamav can handle almost every mail file format including TNEF
+    (winmail.dat) attachments.
+
+    \subsubsection{Archives and compressed files}
+    The following archive and compression formats are supported by internal
+    handlers:
+    \begin{itemize}
+	\item Zip (+ SFX)
+	\item RAR (+ SFX)
+	\item Tar
+	\item Gzip
+	\item Bzip2
+	\item MS OLE2
+	\item MS Cabinet Files (+ SFX)
+	\item MS CHM (Compiled HTML)
+	\item MS SZDD compression format
+	\item BinHex
+	\item SIS (SymbianOS packages)
+	\item AutoIt
+    \end{itemize}
+
+    \subsubsection{Documents}
+    The most popular file formats are supported:
+    \begin{itemize}
+	\item MS Office and MacOffice files
+	\item RTF
+	\item PDF
+	\item HTML
+    \end{itemize}
+
+    \subsubsection{Others}
+    Libclamav can handle various obfuscators, encoders, files vulnerable to
+    security risks such as:
+    \begin{itemize}
+	\item JPEG (exploit detection)
+	\item RIFF (exploit detection)
+	\item uuencode
+	\item ScrEnc obfuscation
+	\item CryptFF
+    \end{itemize}
+
+    \subsection{API}
+
+    \subsubsection{Header file}
+    Every program using libclamav must include the header file \verb+clamav.h+:
+    \begin{verbatim}
+	#include <clamav.h>
+    \end{verbatim}
+
+    \subsubsection{Database loading}
+    The following set of functions provides an interface for loading
+    the virus database:
+    \begin{verbatim}
+	const char *cl_retdbdir(void);
+
+	int cl_load(const char *path, struct cl_engine **engine,
+		    unsigned int *signo, unsigned int options);
+    \end{verbatim}
+    \verb+cl_retdbdir+ returns the default (hardcoded) path to the directory
+    with ClamAV databases.
+    \verb+cl_load+ loads a single database file or all databases from a
+    directory (if \verb+path+ points to a directory). The second argument
+    is used for passing in the engine structure which should be previously
+    initialized with NULL. A number of loaded signatures will be \textbf{added}
+    to \verb+signo+ \footnote{Remember to initialize the virus counter
+    variable with 0.}. The last argument can pass the following flags:
+    \begin{itemize}
+	\item \textbf{CL\_DB\_STDOPT}\\
+	This is an alias for a recommended set of scan options.
+	\item \textbf{CL\_DB\_PHISHING}\\
+	Load phishing signatures.
+	\item \textbf{CL\_DB\_PHISHING\_URLS}\\
+	Initialize the phishing detection module and load .wdb and .pdb files.
+	\item \textbf{CL\_DB\_PUA}\\
+	Load signatures for Potentially Unwanted Applications.
+	\item \textbf{CL\_DB\_CVDNOTMP}\\
+	Load CVD files directly without unpacking them into a temporary
+	directory.
+    \end{itemize}
+    \verb+cl_load+ returns 0 (\verb+CL_SUCCESS+) on success and a negative
+    value on failure.
+    \begin{verbatim}
+	    ...
+	    struct cl_engine *engine = NULL;
+	    unsigned int sigs = 0;
+	    int ret;
+
+	ret = cl_load(cl_retdbdir(), &engine, &sigs, CL_DB_STDOPT);
+    \end{verbatim}
+
+    \subsubsection{Error handling}
+    Use \verb+cl_strerror+ to convert error codes into human readable messages.
+    The function returns a statically allocated string:
+    \begin{verbatim}
+	if(ret) {
+	    printf("cl_load() error: %s\n", cl_strerror(ret));
+	    exit(1);
+	}
+    \end{verbatim}
+
+    \subsubsection{Engine structure}
+    When all required databases are loaded you should prepare the detection
+    engine by calling \verb+cl_build+. In the case of failure you should
+    free the memory occupied by the engine with \verb+cl_free+:
+    \begin{verbatim}
+	int cl_build(struct cl_engine *engine);
+	void cl_free(struct cl_engine *engine);
+    \end{verbatim}
+    In our example:
+    \begin{verbatim}
+	if((ret = cl_build(engine))) {
+	    printf("cl_build() error: %s\n", cl_strerror(ret));
+	    cl_free(engine);
+	    exit(1);
+	}
+    \end{verbatim}
+
+    \subsection{Database reloading}
+    The most important thing is to keep the internal instance of the database
+    up to date. You can watch database changes with the \verb+cl_stat+
+    family of functions.
+    \begin{verbatim}
+	int cl_statinidir(const char *dirname, struct cl_stat *dbstat);
+	int cl_statchkdir(const struct cl_stat *dbstat);
+	int cl_statfree(struct cl_stat *dbstat);
+    \end{verbatim}
+    Initialization:
+    \begin{verbatim}
+	    ...
+	    struct cl_stat dbstat;
+
+	memset(&dbstat, 0, sizeof(struct cl_stat));
+	cl_statinidir(dbdir, &dbstat);
+    \end{verbatim}
+    To check for a change you just need to call \verb+cl_statchkdir+ and check
+    its return value (0 - no change, 1 - some change occured):
+    \begin{verbatim}
+	if(cl_statchkdir(&dbstat) == 1) {
+	    reload_database...;
+	    cl_statfree(&dbstat);
+	    cl_statinidir(cl_retdbdir(), &dbstat);
+	}
+    \end{verbatim}
+    Remember to reset the \verb+cl_stat+ structure after reload.
+
+    \subsubsection{Data scan functions}
+    It's possible to scan a file or descriptor using:
+    \begin{verbatim}
+	int cl_scanfile(const char *filename, const char **virname,
+	unsigned long int *scanned, const struct cl_engine *engine,
+	const struct cl_limits *limits, unsigned int options);
+
+	int cl_scandesc(int desc, const char **virname, unsigned
+	long int *scanned, const struct cl_engine *engine, const
+	struct cl_limits *limits, unsigned int options);
+    \end{verbatim}
+    Both functions will store a virus name under the pointer \verb+virname+,
+    the virus name is part of the engine structure and must not be released
+    directly. If the third argument (\verb+scanned+) is not NULL, the
+    functions will increase its value with the size of scanned data (in
+    \verb+CL_COUNT_PRECISION+ units). Both functions have support for archive
+    limits in order to protect against Denial of Service attacks.
+    \begin{verbatim}
+struct cl_limits {
+    unsigned long int maxscansize;  /* during the scanning of archives this
+                                     * size will never be exceeded
+                                     */
+    unsigned long int maxfilesize;  /* compressed files will only be
+                                     * decompressed and scanned up to this size
+                                     */
+    unsigned int maxreclevel;       /* maximum recursion level for archives */
+    unsigned int maxfiles;          /* maximum number of files to be scanned
+                                     * within a single archive
+                                     */
+    unsigned short archivememlim;   /* limit memory usage for some unpackers */
+};
+    \end{verbatim}
+    The last argument (\verb+options+) configures the scan engine and supports
+    the following flags (that can be combined using bit operators):
+    \begin{itemize}
+	\item \textbf{CL\_SCAN\_STDOPT}\\
+	      This is an alias for a recommended set of scan options. You
+	      should use it to make your software ready for new features
+	      in the future versions of libclamav.
+	\item \textbf{CL\_SCAN\_RAW}\\
+	      Use it alone if you want to disable support for special files.
+	\item \textbf{CL\_SCAN\_ARCHIVE}\\
+	      This flag enables transparent scanning of various archive formats.
+	\item \textbf{CL\_SCAN\_BLOCKENCRYPTED}\\
+	      With this flag the library will mark encrypted archives as viruses
+	      (Encrypted.Zip, Encrypted.RAR).
+	\item \textbf{CL\_SCAN\_MAIL}\\
+	      Enable support for mail files.
+	\item \textbf{CL\_SCAN\_MAILURL}\\
+	      The mail scanner will download and scan URLs listed in a mail
+	      body. This flag should not be used on loaded servers. Due to
+	      potential problems please do not enable it by default but make
+	      it optional.
+	\item \textbf{CL\_SCAN\_OLE2}\\
+	      Enables support for OLE2 containers (used by MS Office and .msi
+	      files).
+	\item \textbf{CL\_SCAN\_PDF}\\
+	      Enables scanning within PDF files.
+	\item \textbf{CL\_SCAN\_PE}\\
+	      This flag enables deep scanning of Portable Executable files and
+	      allows libclamav to unpack executables compressed with run-time
+	      unpackers.
+	\item \textbf{CL\_SCAN\_ELF}\\
+	      Enable support for ELF files.
+	\item \textbf{CL\_SCAN\_BLOCKBROKEN}\\
+	      libclamav will try to detect broken executables and mark them as
+	      Broken.Executable.
+	\item \textbf{CL\_SCAN\_HTML}\\
+	      This flag enables HTML normalisation (including ScrEnc
+	      decryption).
+	\item \textbf{CL\_SCAN\_ALGORITHMIC}\\
+	      Enable algorithmic detection of viruses.
+	\item \textbf{CL\_SCAN\_PHISHING\_BLOCKSSL}\\
+	      Phishing module: always block SSL mismatches in URLs.
+	\item \textbf{CL\_SCAN\_PHISHING\_BLOCKCLOAK}\\
+	      Phishing module: always block cloaked URLs.
+    \end{itemize}
+    All functions return 0 (\verb+CL_CLEAN+) when the file seems clean,
+    \verb+CL_VIRUS+ when a virus is detected and another value on failure.
+    \begin{verbatim}
+	    ...
+	    struct cl_limits limits;
+	    const char *virname;
+
+	memset(&limits, 0, sizeof(struct cl_limits));
+	limits.maxfiles = 10000;
+	limits.maxscansize = 100 * 1048576; /* 100 MB */
+	limits.maxfilesize = 10 * 1048576; /* 10 MB */
+	limits.maxreclevel = 16;
+
+	if((ret = cl_scanfile("/tmp/test.exe", &virname, NULL, engine,
+	&limits, CL_STDOPT)) == CL_VIRUS) {
+	    printf("Virus detected: %s\n", virname);
+	} else {
+	    printf("No virus detected.\n");
+	    if(ret != CL_CLEAN)
+	        printf("Error: %s\n", cl_strerror(ret));
+	}
+    \end{verbatim}
+
+    \subsubsection{Memory}
+    Because the engine structure occupies a few megabytes of system memory, you
+    should release it with \verb+cl_free+ if you no longer need to scan files.
+
+    \subsubsection{Forking daemons}
+    If you're using libclamav with a forking daemon you should call
+    \verb+srand()+ inside a forked child before making any calls to the
+    libclamav functions. This will avoid possible collisions with temporary
+    filenames created by other processes of the daemon. This procedure
+    is not required for multi-threaded daemons.
+
+    \subsubsection{clamav-config}
+    Use \verb+clamav-config+ to check compilation information for libclamav.
+    \begin{verbatim}
+	zolw@localhost:~$ clamav-config --libs
+	-L/usr/local/lib -lz -lbz2 -lgmp -lpthread
+	zolw@localhost:~$ clamav-config --cflags
+	-I/usr/local/include -g -O2
+    \end{verbatim}
+
+    \subsubsection{Example}
+    You will find an example scanner application in the clamav sources
+    (/example). Don't forget that all programs based on libclamav must be
+    linked against it:
+    \begin{verbatim}
+	gcc -Wall ex1.c -o ex1 -lclamav
+    \end{verbatim}
+
+    \subsection{CVD format}
+    CVD (ClamAV Virus Database) is a digitally signed tarball containing
+    one or more databases. The header is a 512-bytes long string with colon
+    separated fields:
+    \begin{verbatim}
+ClamAV-VDB:build time:version:number of signatures:functionality
+level required:MD5 checksum:digital signature:builder name:build time (sec)
+    \end{verbatim}
+    \verb+sigtool --info+ displays detailed information on CVD files:
+    \begin{verbatim}
+zolw@localhost:/usr/local/share/clamav$ sigtool -i daily.cvd 
+File: daily.cvd
+Build time: 10 Mar 2008 10:45 +0000
+Version: 6191
+Signatures: 59084
+Functionality level: 26
+Builder: ccordes
+MD5: 6e6e29dae36b4b7315932c921e568330
+Digital signature: zz9irc9irupR3z7yX6J+OR6XdFPUat4HIM9ERn3kAcOWpcMFxq
+Fs4toG5WJsHda0Jj92IUusZ7wAgYjpai1Nr+jFfXHsJxv0dBkS5/XWMntj0T1ctNgqmiF
++RLU6V0VeTl4Oej3Aya0cVpd9K4XXevEO2eTTvzWNCAq0ZzWNdjc
+Verification OK.
+    \end{verbatim}
+
+    \subsection{Contributors}
+    The following people contributed to our project in some way (providing
+    patches, bug reports, technical support, documentation, good ideas...):
+    \begin{itemize}
+	\item Ian Abbott \email{<abbotti*mev.co.uk>}
+	\item Clint Adams \email{<schizo*debian.org>}
+	\item Sergey Y. Afonin \email{<asy*kraft-s.ru>}
+	\item Robert Allerstorfer \email{<roal*anet.at>}
+	\item Claudio Alonso \email{<cfalonso*yahoo.com>}
+	\item Kevin Amorin \email{<kamorin*ccs.neu.edu>}
+	\item Kamil Andrusz \email{<wizz*mniam.net>}
+	\item Tayfun Asker \email{<tasker*metu.edu.tr>}
+	\item Jean-Edouard Babin \email{<Jeb*jeb.com.fr>}
+	\item Marc Baudoin \email{<babafou*babafou.eu.org>}
+	\item Scott Beck \email{<sbeck*gossamer-threads.com>}
+	\item Rolf Eike Beer \email{<eike*mail.math.uni-mannheim.de>}
+	\item Rene Bellora \email{<rbellora*tecnoaccion.com.ar>}
+	\item Carlo Marcelo Arenas Belon \email{<carenas*sajinet.com.pe>}
+	\item Joseph Benden \email{<joe*thrallingpenguin.com>}
+	\item Hilko Bengen \email{<bengen*vdst-ka.inka.de>}
+	\item Hank Beatty \email{<hbeatty*starband.net>}
+	\item Alexandre Biancalana \email{<ale*seudns.net>}
+	\item Patrick Bihan-Faou \email{<patrick*mindstep.com>}
+	\item Martin Blapp \email{<mb*imp.ch>}
+	\item Dale Blount \email{<dale*velocity.net>}
+	\item Serge van den Boom \email{<svdb*stack.nl>}
+	\item Oliver Brandmueller \email{<ob*e-Gitt.NET>}
+	\item Boguslaw Brandys \email{<brandys*o2.pl>}
+	\item Igor Brezac \email{<igor*ipass.net>}
+	\item Mike Brudenell \email{<pmb1*york.ac.uk>}
+	\item Brian Bruns \email{<bruns*2mbit.com>}
+	\item Len Budney \email{<lbudney*pobox.com>}
+	\item Matt Butt \email{<mattb*cre8tiv.com>}
+	\item Christopher X. Candreva \email{<chris*westnet.com>}
+	\item Eric I. Lopez Carreon \email{<elopezc*technitrade.com>}
+	\item Ales Casar \email{<casar*uni-mb.si>}
+	\item Jonathan Chen \email{<jon+clamav*spock.org>}
+	\item Andrey Cherezov \email{<andrey*cherezov.koenig.su>}
+	\item Alex Cherney \email{<alex*cher.id.au>}
+	\item Tom G. Christensen \email{<tgc*statsbiblioteket.dk>}
+	\item Nicholas Chua \email{<nicholas*ncmbox.net>}
+	\item Chris Conn \email{<cconn*abacom.com>}
+	\item Christoph Cordes \email{<ib*precompiled.de>}
+	\item Ole Craig \email{<olc*cs.umass.edu>}
+	\item Eugene Crosser \email{<crosser*rol.ru>}
+	\item Calin A. Culianu \email{<calin*ajvar.org>}
+	\item Damien Curtain \email{<damien*pagefault.org>}
+	\item Krisztian Czako \email{<slapic*linux.co.hu>}
+	\item Diego d'Ambra \email{<da*softcom.dk>}
+	\item Michael Dankov \email{<misha*btrc.ru>}
+	\item Yuri Dario \email{<mc6530*mclink.it>}
+	\item David \email{<djgardner*users.sourceforge.net>}
+	\item Maxim Dounin \email{<mdounin*rambler-co.ru>}
+	\item Alejandro Dubrovsky \email{<s328940*student.uq.edu.au>}
+	\item James P. Dugal \email{<jpd*louisiana.edu>}
+	\item Magnus Ekdahl \email{<magnus*debian.org>}
+	\item Mehmet Ekiz \email{<ekizm*tbmm.gov.tr>}
+	\item Jens Elkner \email{<elkner*linofee.org>}
+	\item Fred van Engen \email{<fred*wooha.org>}
+	\item Jason Englander \email{<jason*englanders.cc>}
+	\item Oden Eriksson \email{<oeriksson*mandrakesoft.com>}
+	\item Daniel Fahlgren \email{<fahlgren*ardendo.se>}
+	\item Andy Fiddaman \email{<af*jeamland.org>}
+	\item Edison Figueira Junior \email{<edison*brc.com.br>}
+	\item David Ford \email{<david+cert*blue-labs.org>}
+	\item Martin Forssen \email{<maf*appgate.com>}
+	\item Brian J. France \email{<list*firehawksystems.com>}
+	\item Free Oscar \email{<freeoscar*wp.pl>}
+	\item Martin Fuxa \email{<yeti*email.cz>}
+	\item Piotr Gackiewicz \email{<gacek*intertele.pl>}
+	\item Jeremy Garcia \email{<jeremy*linuxquestions.org>}
+	\item Dean Gaudet \email{<dean-clamav*arctic.org>}
+	\item Michel Gaudet \email{<Michel.Gaudet*ehess.fr>}
+	\item Philippe Gay \email{<ph.gay*free.fr>}
+	\item Nick Gazaloff \email{<nick*sbin.org>}
+	\item Geoff Gibbs \email{<ggibbs*hgmp.mrc.ac.uk>}
+	\item Luca 'NERvOus' Gibelli \email{<nervous*nervous.it>}
+	\item Scott Gifford \email{<sgifford*suspectclass.com>}
+	\item Wieslaw Glod \email{<wkg*x2.pl>}
+	\item Stephen Gran \email{<steve*lobefin.net>}
+	\item Koryn Grant \email{<koryn*endace.com>}
+	\item Matthew A. Grant \email{<grantma*anathoth.gen.nz>}
+	\item Christophe Grenier \email{<grenier*cgsecurity.org>}
+	\item Marek Gutkowski \email{<hobbit*core.segfault.pl>}
+	\item Jason Haar \email{<Jason.Haar*trimble.co.nz>}
+	\item Hrvoje Habjanic \email{<hrvoje.habjanic*zg.hinet.hr>}
+	\item Michal Hajduczenia \email{<michalis*mat.uni.torun.pl>}
+	\item Jean-Christophe Heger \email{<jcheger*acytec.com>}
+	\item Martin Heinz \email{<Martin*hemag.ch>}
+	\item Kevin Heneveld" \email{<kevin*northstar.k12.ak.us>}
+	\item Anders Herbjornsen \email{<andersh*gar.no>}
+	\item Paul Hoadley \email{<paulh*logixsquad.net>}
+	\item Robert Hogan \email{<robert*roberthogan.net>}
+	\item Przemyslaw Holowczyc \email{<doozer*skc.com.pl>}
+	\item Thomas W. Holt Jr. \email{<twh*cohesive.net>}
+	\item James F.  Hranicky \email{<jfh*cise.ufl.edu>}
+	\item Douglas J Hunley \email{<doug*hunley.homeip.net>}
+	\item Kurt Huwig \email{<kurt*iku-netz.de>}
+	\item Andy Igoshin \email{<ai*vsu.ru>}
+	\item Michal Jaegermann \email{<michal*harddata.com>}
+	\item Christophe Jaillet \email{<christophe.jaillet*wanadoo.fr>}
+	\item Jay \email{<sysop-clamav*coronastreet.net>}
+	\item Stephane Jeannenot \email{<stephane.jeannenot*wanadoo.fr>}
+	\item Per Jessen \email{<per*computer.org>}
+	\item Dave Jones \email{<dave*kalkbay.co.za>}
+	\item Jesper Juhl \email{<juhl*dif.dk>}
+	\item Kamil Kaczkowski \email{<kamil*kamil.eisp.pl>}
+	\item Alex Kah \email{<alex*narfonix.com>}
+	\item Stefan Kaltenbrunner \email{<stefan*kaltenbrunner.cc>}
+	\item Lloyd Kamara \email{<l.kamara*imperial.ac.uk>}
+	\item Stefan Kanthak \email{<stefan.kanthak*fujitsu-siemens.com>}
+	\item Kazuhiko \email{<kazuhiko*fdiary.net>}
+	\item Jeremy Kitchen \email{<kitchen*scriptkitchen.com>}
+	\item Tomasz Klim \email{<tomek*euroneto.pl>}
+	\item Robbert Kouprie \email{<robbert*exx.nl>}
+	\item Martin Kraft \email{<martin.kraft*fal.de>}
+	\item Petr Kristof \email{<Kristof.P*fce.vutbr.cz>}
+	\item Henk Kuipers \email{<henk*opensourcesolutions.nl>}
+	\item Nigel Kukard \email{<nkukard*lbsd.net>}
+	\item Eugene Kurmanin \email{<smfs*users.sourceforge.net>}
+	\item Dr Andrzej Kurpiel \email{<akurpiel*mat.uni.torun.pl>}
+	\item Mark Kushinsky \email{<mark*mdspc.com>}
+	\item Mike Lambert \email{<lambert*jeol.com>}
+	\item Thomas Lamy \email{<Thomas.Lamy*in-online.net>}
+	\item Stephane Leclerc \email{<sleclerc*aliastec.net>}
+	\item Marty Lee \email{<marty*maui.co.uk>}
+	\item Dennis Leeuw \email{<dleeuw*made-it.com>}
+	\item Martin Lesser \email{<admin-debian*bettercom.de>}
+	\item Peter N Lewis \email{<peter*stairways.com.au>}
+	\item Matt Leyda \email{<mfleyda*e-one.com>}
+	\item James Lick \email{<jlick*drivel.com>}
+	\item Jerome Limozin \email{<jerome*limozin.net>}
+	\item Mike Loewen \email{<mloewen*sturgeon.cac.psu.edu>}
+	\item Roger Lucas \email{<roger*planbit.co.uk>}
+	\item David Luyer \email{<david\_luyer*pacific.net.au>}
+	\item Richard Lyons \email{<frob-clamav*webcentral.com.au>}
+	\item David S. Madole \email{<david*madole.net>}
+	\item Thomas Madsen \email{<tm*softcom.dk>}
+	\item Bill Maidment \email{<bill*maidment.com.au>}
+	\item Joe Maimon \email{<jmaimon*ttec.com>}
+	\item David Majorel \email{<dm*lagoon.nc>}
+	\item Andrey V. Malyshev \email{<amal*krasn.ru>}
+	\item Fukuda Manabu \email{<fukuda*cri-mw.co.jp>}
+	\item Stefan Martig \email{<sm*officeco.ch>}
+	\item Alexander Marx \email{<mad-ml*madness.at>}
+	\item Andreas Marx (\url{http://www.av-test.org/})
+	\item Chris Masters \email{<cmasters*insl.co.uk>}
+	\item Fletcher Mattox \email{<fletcher*cs.utexas.edu>}
+	\item Serhiy V. Matveyev \email{<matveyev*uatele.com>}
+	\item Reinhard Max \email{<max*suse.de>}
+	\item Brian May \email{<bam*debian.org>}
+	\item Ken McKittrick \email{<klmac*usadatanet.com>}
+	\item Chris van Meerendonk \email{<cvm*castel.nl>}
+	\item Andrey J. Melnikoff \email{<temnota*kmv.ru>}
+	\item Damian Menscher \email{<menscher*uiuc.edu>}
+	\item Denis De Messemacker \email{<ddm*clamav.net>}
+	\item Jasper Metselaar \email{<jasper*formmailer.net>}
+	\item Arkadiusz Miskiewicz \email{<misiek*pld-linux.org>}
+	\item Ted Mittelstaedt \email{<tedm*toybox.placo.com>}
+	\item Mark Mielke \email{<mark*mark.mielke.cc>}
+	\item John Miller \email{<contact*glideslopesoftware.co.uk>}
+	\item Jo Mills \email{<Jonathan.Mills*frequentis.com>}
+	\item Dustin Mollo \email{<dustin.mollo*sonoma.edu>}
+	\item Remi Mommsen \email{<remigius.mommsen*cern.ch>}
+	\item Doug Monroe \email{<doug*planetconnect.com>}
+	\item Alex S Moore \email{<asmoore*edge.net>}
+	\item Tim Morgan \email{<tim*sentinelchicken.org>}
+	\item Dirk Mueller \email{<mueller*kde.org>}
+	\item Flinn Mueller\email{<flinn*activeintra.net>}
+	\item Hendrik Muhs \email{<Hendrik.Muhs*student.uni-magdeburg.de>}
+	\item Simon Munton \email{<simon*munton.demon.co.uk>}
+	\item Farit Nabiullin (\url{http://program.farit.ru/})
+	\item Nemosoft Unv. \email{<nemosoft*smcc.demon.nl>}
+	\item Wojciech Noworyta \email{<wnow*konarski.edu.pl>}
+	\item Jorgen Norgaard \email{<jnp*anneli.dk>}
+	\item Fajar A. Nugraha \email{<fajar*telkom.co.id>}
+	\item Joe Oaks \email{<joe.oaks*hp.com>}
+	\item Washington Odhiambo \email{<wash*wananchi.com>}
+	\item Masaki Ogawa \email{<proc*mac.com>}
+	\item John Ogness \email{<jogness*antivir.de>}
+	\item Phil Oleson \email{<oz*nixil.net>}
+	\item Jan Ondrej \email{<ondrejj*salstar.sk>}
+	\item Martijn van Oosterhout \email{<kleptog*svana.org>}
+	\item OpenAntiVirus Team (\url{http://www.OpenAntiVirus.org/})
+	\item Tomasz Papszun \email{<tomek*lodz.tpsa.pl>}
+	\item Eric Parsonage \email{<eric*eparsonage.com>}
+	\item Oliver Paukstadt \email{<pstadt*stud.fh-heilbronn.de>}
+	\item Christian Pelissier \email{<Christian.Pelissier*onera.fr>}
+	\item Rudolph Pereira \email{<rudolph*usyd.edu.au>}
+	\item Dennis Peterson \email{<dennispe*inetnw.com>}
+	\item Ed Phillips \email{<ed*UDel.Edu>}
+	\item Andreas Piesk \email{<Andreas.Piesk*heise.de>}
+	\item Mark Pizzolato \email{<clamav-devel*subscriptions.pizzolato.net>}
+	\item Dean Plant \email{<dean.plant*roke.co.uk>}
+	\item Alex Pleiner \email{<pleiner*zeitform.de>}
+	\item Ant La Porte \email{<ant*dvere.net>}
+	\item Jef Poskanzer \email{<jef*acme.com>}
+	\item Christophe Poujol \email{<Christophe.Poujol*atosorigin.com>}
+	\item Sergei Pronin \email{<sp*finndesign.fi>}
+	\item Thomas Quinot \email{<thomas*cuivre.fr.eu.org>}
+	\item Ed Ravin \email{<eravin*panix.com>}
+	\item Robert Rebbun \email{<robert*desertsurf.com>}
+	\item Brian A. Reiter \email{<breiter*wolfereiter.com>}
+	\item Didi Rieder \email{<adrieder*sbox.tugraz.at>}
+	\item Pavel V. Rochnyack \email{<rpv*fsf.tsu.ru>}
+	\item Rupert Roesler-Schmidt \email{<r.roesler-schmidt*uplink.at>}
+	\item David Sanchez \email{<dsanchez*veloxia.com>}
+	\item David Santinoli \email{<david*santinoli.com>}
+	\item Vijay Sarvepalli \email{<vssarvep*office.uncg.edu>}
+	\item Martin Schitter
+	\item Theo Schlossnagle \email{<jesus*omniti.com>}
+	\item Enrico Scholz \email{<enrico.scholz*informatik.tu-chemnitz.de>}
+	\item Karina Schwarz \email{<k.schwarz*uplink.at>}
+	\item Scsi \email{<scsi*softland.ru>}
+	\item Dr Matthew J Seaman \email{<m.seaman*infracaninophile.co.uk>}
+	\item Hector M. Rulot Segovia \email{<Hector.Rulot*uv.es>}
+	\item Omer Faruk Sen \email{<ofsen*enderunix.org>}
+	\item Sergey \email{<a\_s\_y*sama.ru>}
+	\item Tuomas Silen \email{<tuomas.silen*nodeta.fi>}
+	\item David F. Skoll \email{<dfs*roaringpenguin.com>}
+	\item Al Smith \email{<ajs+clamav*aeschi.ch.eu.org>}
+	\item Sergey Smitienko \email{<hunter*comsys.com.ua>}
+	\item Solar Designer \email{<solar*openwall.com>}
+	\item Joerg Sonnenberger \email{<joerg*britannica.bec.de>}
+	\item Michal 'GiM' Spadlinski (\url{http://gim.org.pl/})
+	\item Kevin Spicer \email{<kevin*kevinspicer.co.uk>}
+	\item GertJan Spoelman \email{<cav*gjs.cc>}
+	\item Ole Stanstrup \email{<ole*stanstrup.dk>}
+	\item Adam Stein \email{<adam*scan.mc.xerox.com>}
+	\item Steve \email{<steveb*webtribe.net>}
+	\item Richard Stevenson \email{<richard*endace.com>}
+	\item Sven Strickroth \email{<sstrickroth*gym-oha.de>}
+	\item Matt Sullivan \email{<matt*sullivan.gen.nz>}
+	\item Dr Zbigniew Szewczak \email{<zssz*mat.uni.torun.pl>}
+	\item Joe Talbott \email{<josepht*cstone.net>}
+	\item Gernot Tenchio \email{<g.tenchio*telco-tech.de>}
+	\item Masahiro Teramoto \email{<markun*onohara.to>}
+	\item Daniel Theodoro \email{<dtheodoro*ig.com.br>}
+	\item Ryan Thompson \email{<clamav*sasknow.com>}
+	\item Gianluigi Tiesi \email{<sherpya*netfarm.it>}
+	\item Yar Tikhiy \email{<yar*comp.chem.msu.su>}
+	\item Andrew Toller \email{<atoller*connectfree.co.uk>}
+	\item Michael L. Torrie \email{<torriem*chem.byu.edu>}
+	\item Trashware \email{<trashware*gmx.net>}
+	\item Matthew Trent \email{<mtrent*localaccess.com>}
+	\item Reini Urban \email{<rurban*x-ray.at>}
+	\item Daniel Mario Vega \email{<dv5a*dc.uba.ar>}
+	\item Denis Vlasenko \email{<vda*ilport.com.ua>}
+	\item Laurent Wacrenier \email{<lwa*teaser.fr>}
+	\item Charlie Watts \email{<cewatts*brainstorminternet.net>}
+	\item Florian Weimer \email{<fw*deneb.enyo.de>}
+	\item Paul Welsh \email{<paul*welshfamily.com>}
+	\item Nicklaus Wicker \email{<n.wicker*cnk-networks.de>}
+	\item David Woakes \email{<david*mitredata.co.uk>}
+	\item Troy Wollenslegel \email{<troy*intranet.org>}
+	\item ST Wong \email{<st-wong*cuhk.edu.hk>}
+	\item Dale Woolridge \email{<dwoolridge*drh.net>}
+	\item David Wu \email{<dyw*iohk.com>}
+	\item Takumi Yamane \email{<yamtak*b-session.com>}
+	\item Youza Youzovic \email{<youza*post.cz>}
+	\item Anton Yuzhaninov \email{<citrin*rambler-co.ru>}
+	\item Leonid Zeitlin \email{<lz*europe.com>}
+	\item ZMan Z. \email{<x86zman*go-a-way.dyndns.org>}
+	\item Andoni Zubimendi \email{<andoni*lpsat.net>}
+    \end{itemize}
+
+    \subsection{Donors}
+    We've received financial support from: (in alphabetical order)
+    \begin{itemize}
+	\item ActiveIntra.net Inc. (\url{http://www.activeintra.net/})
+	\item Advance Healthcare Group (\url{http://www.ahgl.com.au/})
+	\item Allied Quotes (\url{http://www.AlliedQuotes.com /})
+	\item American Computer \& Electronic Services Corp. (\url{http://www.acesnw.com/})
+	\item Amnesty International, Swiss Section (\url{http://www.amnesty.ch/})
+	\item Steve Anderson
+	\item Anonymous donor from Colorado, US
+	\item Arudius (\url{http://arudius.sourceforge.net/})
+	\item Peter Ashman
+	\item Atlas College (\url{http://www.atlascollege.nl/})
+	\item Australian Payday Cash Loans (\url{http://www.cashdoctors.com.au/})
+	\item AWD Online (\url{http://www.awdonline.com/})
+	\item BackupAssist Backup Software (\url{http://www.backupassist.com/})
+	\item Dave Baker
+	\item Bear and Bear Consulting, Inc. (\url{http://www.bear-consulting.com/})
+	\item Aaron Begley
+	\item Craig H. Block
+	\item Norman E. Brake, Jr.
+	\item Josh Burstyn
+	\item By Design (\url{http://www.by-design.net/})
+	\item Canadian Web Hosting (\url{http://www.canadianwebhosting.com/})
+	\item cedarcreeksoftware.com (\url{http://www.cedarcreeksoftware.com/})
+	\item Ricardo Cerqueira
+	\item Thanos Chatziathanassiou
+	\item Cheahch from Singapore
+	\item Conexim Australia - business web hosting (\url{http://www.conexim.com.au})
+	\item Alan Cook
+	\item Joe Cooper
+	\item CustomLogic LLC (\url{http://www.customlogic.com/})
+	\item Ron DeFulio
+	\item Digirati (\url{http://oss.digirati.com.br/})
+	\item Steve Donegan (\url{http://www.donegan.org/})
+	\item Dynamic Network Services, Inc (\url{http://www.dyndns.org/})
+	\item EAS Enterprises LLC
+	\item eCoupons.com (\url{http://www.ecoupons.com/})
+	\item Electric Embers (\url{http://electricembers.net})
+	\item John T. Ellis
+	\item Epublica
+	\item Bernhard Erdmann
+	\item David Eriksson (\url{http://www.2good.nu/})
+	\item Philip Ershler
+	\item Explido Software USA Inc. (\url{http://www.explido.us/})
+	\item David Farrick
+	\item Jim Feldman
+	\item Petr Ferschmann (\url{http://petr.ferschmann.cz/})
+	\item Andries Filmer (\url{http://www.netexpo.nl/})
+	\item The Free Shopping Cart people (\url{http://www.precisionweb.net/})
+	\item Paul Freeman
+	\item Jack Fung
+	\item Stephen Gageby
+	\item Paolo Galeazzi
+	\item GANDI (\url{http://www.gandi.net/})
+	\item Jeremy Garcia (\url{http://www.linuxquestions.org/})
+	\item GBC Internet Service Center GmbH (\url{http://www.gbc.net/})
+	\item GCS Tech (\url{http://www.gcstech.net/})
+	\item GHRS (\url{http://www.ghrshotels.com/})
+	\item Lyle Giese
+	\item Todd Goodman
+	\item Bill Gradwohl (\url{http://www.ycc.com/})
+	\item Grain-of-Salt Consulting
+	\item Terje Gravvold
+	\item Hart Computer (\url{http://www.hart.co.jp/})
+	\item Pen Helm
+	\item Hosting Metro LLC (\url{http://www.hostingmetro.com/})
+	\item IDEAL Software GmbH (\url{http://www.IdealSoftware.com/})
+	\item Industry Standard Computers (\url{http://www.ISCnetwork.com/})
+	\item Interact2Day (\url{http://www.interact2day.com/})
+	\item Invisik Corporation (\url{http://www.invisik.com/})
+	\item itXcel Internet - Domain Registration (\url{http://www.itxcel.com})
+	\item Craig Jackson
+	\item Stuart Jones
+	\item Jason Judge
+	\item Keith (\url{http://www.textpad.com/})
+	\item Ewald Kicker (\url{http://www.very-clever.com/})
+	\item Brad Koehn
+	\item Christina Kuratli (\url{http://www.virusprotect.ch/})
+	\item Logic Partners Inc. (\url{http://www.logicpartners.com/})
+	\item Mark Lotspaih (\url{http://www.lotcom.org/})
+	\item Michel Machado (\url{http://oss.digirati.com.br/})
+	\item Olivier Marechal
+	\item Matthew McKenzie
+	\item Durval Menezes (\url{http://www.durval.com.br/})
+	\item Micro Logic Systems (\url{http://www.mls.nc/})
+	\item Midcoast Internet Solutions
+	\item Mimecast (\url{http://www.mimecast.com/})
+	\item Kazuhiro Miyaji
+	\item Bozidar Mladenovic
+	\item Paul Morgan
+	\item Tomas Morkus
+	\item The Names Database (\url{http://static.namesdatabase.com})
+	\item Names Directory (\url{http://www.namesdir.com/})
+	\item Michael Nolan (\url{http://www.michaelnolan.co.uk/})
+	\item Jorgen Norgaard
+	\item Numedeon, Inc. creators of Whyville (\url{http://www.whyville.net/})
+	\item Oneworkspace.com (\url{http://www.oneworkspace.com/})
+	\item Online Literature (\url{http://www.couol.com/})
+	\item Origin Solutions (\url{http://www.originsolutions.com.au/})
+	\item outermedia GmbH (\url{http://www.outermedia.de/})
+	\item Kevin Pang (\url{http://www.freebsdblog.org/})
+	\item Alexander Panzhin
+	\item Passageway Communications (\url{http://www.passageway.com})
+	\item Dan Pelleg (\url{http://www.libagent.org/})
+	\item Thodoris Pitikaris
+	\item Paul Rantin
+	\item Thomas J. Raef (\url{http://www.ebasedsecurity.com})
+	\item Luke Reeves (\url{http://www.neuro-tech.net/})
+	\item RHX (\url{http://www.rhx.it/})
+	\item Stefano Rizzetto
+	\item Roaring Penguin Software Inc. (\url{http://www.roaringpenguin.com/})
+	\item Luke Rosenthal
+	\item Jenny Säfström (\url{http://PokerListings.com})
+	\item School of Engineering, University of Pennsylvania (\url{http://www.seas.upenn.edu/})
+	\item Tim Scoff
+	\item Seattle Server (\url{http://www.seattleserver.com/})
+	\item Software Workshop Inc (\url{http://www.softwareworkshop.com/})
+	\item Solutions In A Box (\url{http://www.siab.com.au/})
+	\item Stephane Rault
+	\item SearchMain (\url{http://www.searchmain.com/})
+	\item Olivier Silber
+	\item Fernando Augusto Medeiros Silva (\url{http://www.linuxplace.com.br/})
+	\item Sollentuna Fria Gymnasium, Sweden (\url{http://www.sfg.se/})
+	\item StarBand (\url{http://www.starband.com/})
+	\item Stroke of Color, Inc.
+	\item Synchro Sistemas de Informacao (\url{http://synchro.com.br/})
+	\item Sahil Tandon
+	\item The Spamex Disposable Email Address Service (\url{http://www.spamex.com})
+	\item Brad Tarver
+	\item TGT Tampermeier \& Grill Steuerberatungs- und Wirtschaftstreuhand OEG (\url{http://www.tgt.at/})
+	\item Per Reedtz Thomsen
+	\item William Tisdale
+	\item Up Time Technology (\url{http://www.uptimetech.com/})
+	\item Ulfi
+	\item Jeremy Vanderburg (\url{http://www.jeremytech.com/})
+	\item Web.arbyte - Online-Marketing (\url{http://www.webarbyte.de/})
+	\item Webzone Srl (\url{http://www.webzone.it/})
+	\item Markus Welsch (\url{http://www.linux-corner.net/})
+	\item Julia White (\url{http://www.convert-tools.com/})
+	\item Nicklaus Wicker
+	\item David Williams (\url{http://kayakero.net/})
+	\item Glenn R Williams
+	\item Kelly Williams
+	\item XRoads Networks (\url{http://xroadsnetworks.com/})
+	\item Zimbra open-source collaboration suite (\url{http://www.zimbra.com/})
+    \end{itemize}
+
+    \subsection{Graphics}
+    The ClamAV logo was created by Mia Kalenius and Sergei Pronin from
+    Finndesign (\url{http://www.finndesign.fi/}).
+
+    \subsection{OpenAntiVirus}
+    Our database includes the virus database (about 7000 signatures) from
+    OpenAntiVirus (\url{http://OpenAntiVirus.org}).
+
+    \section{Core Team}
+
+    \begin{itemize}
+	\item aCaB \email{<acab*clamav.net>}, Italy\\
+	Role: virus database maintainer, coder
+
+	\item Mike Cathey \email{<mike*clamav.net>}, USA\\
+	Role: co-sysadmin
+
+	\item Christoph Cordes \email{<ccordes*clamav.net>}, Germany\\
+	Role: virus database maintainer
+
+	\item Diego d'Ambra \email{<diego*clamav.net>}, Denmark\\
+	Role: virus database maintainer
+
+	\item Luca Gibelli \email{<luca*clamav.net>}, Italy\\
+	Role: sysadmin, mirror coordinator
+
+	\item Nigel Horne \email{<njh*clamav.net>}, United Kingdom\\
+	Role: coder
+
+	\item Arnaud Jacques \email{<arnaud*clamav.net>}, France\\
+	Role: virus database maintainer
+
+	\item Tomasz Kojm \email{<tkojm*clamav.net>}, Poland\\
+	Role: project leader, coder
+
+	\item Tomasz Papszun \email{<tomek*clamav.net>}, Poland\\
+	Role: various help
+
+	\item Sven Strickroth \email{<sven*clamav.net>}, Germany\\
+	Role: virus database maintainer, virus submission management
+
+	\item Edwin Torok \email{<edwin*clamav.net>}, Romania\\
+	Role: coder
+
+	\item Trog \email{<trog*clamav.net>}, United Kingdom\\
+	Role: coder
+    \end{itemize}
+\end{document}

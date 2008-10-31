@@ -1,0 +1,165 @@
+.TH "freshclam.conf" "5" "February 12, 2007" "ClamAV @VERSION@" "Clam AntiVirus"
+.SH "NAME"
+.LP 
+\fBfreshclam.conf\fR \- Configuration file for Clam AntiVirus database update tool
+.SH "DESCRIPTION"
+.LP 
+The file freshclam.conf configures the Clam AntiVirus Database Updater, freshclam(1).
+.SH "FILE FORMAT"
+The file consists of comments and options with arguments. Each line which starts with a hash (\fB#\fR) symbol is ignored by the parser. Options and arguments are case sensitive and of the form \fBOption Argument\fR. The arguments are of the following types:
+.TP
+\fBBOOL\fR 
+Boolean value (yes/no or true/false or 1/0).
+.TP 
+\fBSTRING\fR
+String without blank characters.
+.TP 
+\fBSIZE\fR
+Size in bytes. You can use 'M' or 'm' modifiers for megabytes and 'K' or 'k' for kilobytes.
+.TP 
+\fBNUMBER\fR
+Unsigned integer.
+.SH "DIRECTIVES"
+.LP 
+When an option is not used (hashed or doesn't exist in the configuration file) freshclam takes a default action.
+.TP 
+\fBExample\fR
+If this option is set freshclam will not run.
+.TP 
+\fBDatabaseOwner STRING\fR
+When started by root, drop privileges to a specified user. 
+.br 
+Default: @CLAMAVUSER@
+.TP 
+\fBAllowSupplementaryGroups BOOL\fR
+Initialize supplementary group access (freshclam must be started by root).
+.br 
+Default: disabled
+.TP 
+\fBDatabaseDirectory STRING\fR
+Path to a directory containing database files.
+.br 
+Default: @DBDIR@
+.TP 
+\fBChecks NUMBER\fR
+Number of database checks per day.
+.br 
+Default: 12
+.TP 
+\fBUpdateLogFile STRING\fR
+Enable logging to a specified file. Highly recommended.
+.br 
+Default: disabled.
+.TP 
+\fBLogSyslog BOOL\fR
+Enable logging to Syslog. May be used in combination with UpdateLogFile.
+.br 
+Default: disabled.
+.TP 
+\fBLogFacility STRING\fR
+Specify the type of syslog messages \- please refer to 'man syslog' for facility names.
+.br 
+Default: LOG_LOCAL6
+.TP 
+\fBPidFile STRING\fR
+This option allows you to save the process identifier of the daemon to a file specified in the argument.
+.br 
+Default: disabled
+.TP 
+\fBLogVerbose BOOL\fR
+Enable verbose logging.
+.br 
+Default: disabled
+.TP 
+\fBDNSDatabaseInfo STRING\fR
+This directive enables database and software version checks through DNS TXT records.
+.br 
+Default: enabled, pointing to current.cvd.clamav.net
+.TP 
+\fBDatabaseMirror STRING\fR
+Server name where database updates are downloaded from. In order to download the database from the closest mirror you should configure freshclam to use db.xy.clamav.net where xy represents your country code. If this option is given multiple times, freshclam(1) tries them in the order given. It's strongly recommended that you use db.xy.clamav.net as the first mirror and database.clamav.net as the second.
+.br 
+Default: database.clamav.net
+.TP 
+\fBMaxAttempts NUMBER\fR
+How many attempts (per mirror) to make before giving up.
+.br .
+Default: 3 (per mirror)
+.TP 
+\fBScriptedUpdates BOOL\fR
+With this option you can control scripted updates. It's highly recommended to keep it enabled.
+.br .
+Default: enabled
+.TP 
+\fBCompressLocalDatabase BOOL\fR
+By default freshclam will keep the local databases (.cld) uncompressed to make their handling faster. With this option you can enable the compression; the change will take effect with the next database update.
+.br 
+Default: no
+.TP 
+\fBHTTPProxyServer STR\fR, \fBHTTPProxyPort NUMBER\fR
+Use given proxy server and TCP port for database downloads.
+.TP 
+\fBHTTPProxyUsername STR\fR,\fBHTTPProxyPassword STRING\fR
+Proxy usage is authenticated through given username and password.
+.br .
+Default: no proxy authentication
+.TP 
+\fBHTTPUserAgent STRING\fR
+If your servers are behind a firewall/proxy which applies User-Agent filtering, you can use this option to force the use of a different User-Agent header.
+.br .
+Default: clamav/version_number
+.TP 
+\fBLocalIPAddress IP\fR
+Use \fBIP\fR as client address for downloading databases. Useful for multi homed systems.
+.br .
+Default: Use OS\'es default outgoing IP address.
+.TP 
+\fBNotifyClamd STRING\fR
+Notify a running clamd(8) to reload its database after a download has occurred. The path for clamd.conf file must be provided.
+.br .
+Default: The default is to not notify clamd. See clamd.conf(5)\'s option SelfCheck for how clamd(8) handles database updates in this case.
+.TP 
+\fBOnUpdateExecute STRING\fR
+Execute this command after the database has been successfully updated.
+.br 
+Default: disabled
+.TP 
+\fBOnOutdatedExecute STRING\fR
+Execute this command when freshclam reports outdated version. In the command string %v will be replaced by the new version number.
+.br 
+Default: disabled
+.TP
+\fBOnErrorExecute STRING\fR
+Execute this command after a database update has failed.
+.br 
+Default: disabled
+.TP
+\fBConnectTimeout NUMBER\fR
+Timeout in seconds when connecting to database server.
+.br 
+Default: 10
+.TP
+\fBReceiveTimeout NUMBER\fR
+Timeout in seconds when reading from database server.
+.br 
+Default: 30
+.TP
+\fBSubmitDetectionStats STRING\fR
+When enabled freshclam will submit statistics to the ClamAV Project about the latest virus detections in your environment. The ClamAV maintainers will then use this data to determine what types of malware are the most detected in the field and in what geographic area they are. This feature requires LogTime and LogFile to be enabled in clamd.conf. The path for clamd.conf file must be provided.
+.br
+Default: disabled
+.TP
+\fBDetectionStatsCountry STRING\fR
+Country of origin of malware/detection statistics (for statistical purposes only). The statistics collector at ClamAV.net will look up your IP address to determine the geographical origin of the malware reported by your installation. If this installation is mainly used to scan data which comes from a different location, please enable this option and enter a two-letter code (see http://www.iana.org/domains/root/db/) of the country of origin.
+.br
+Default: disabled
+.SH "FILES"
+.LP 
+@CFGDIR@/freshclam.conf
+.SH "AUTHOR"
+.LP 
+Thomas Lamy <thomas.lamy@netwake.de>, Tomasz Kojm <tkojm@clamav.net>
+.SH "SEE ALSO"
+.LP 
+freshclam(1), clamd.conf(5), clamd(8), clamav-milter(8), clamscan(1)
+

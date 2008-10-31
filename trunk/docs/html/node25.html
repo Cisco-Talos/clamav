@@ -1,0 +1,170 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+
+<!--Converted with LaTeX2HTML 2002-2-1 (1.71)
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Clam daemon</TITLE>
+<META NAME="description" CONTENT="Clam daemon">
+<META NAME="keywords" CONTENT="clamdoc">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META NAME="Generator" CONTENT="LaTeX2HTML v2002-2-1">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="clamdoc.css">
+
+<LINK REL="next" HREF="node26.html">
+<LINK REL="previous" HREF="node24.html">
+<LINK REL="up" HREF="node24.html">
+<LINK REL="next" HREF="node26.html">
+</HEAD>
+
+<BODY >
+
+<DIV CLASS="navigation"><!--Navigation Panel-->
+<A NAME="tex2html517"
+  HREF="node26.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html513"
+  HREF="node24.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html507"
+  HREF="node24.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html515"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html518"
+  HREF="node26.html">Clamdscan</A>
+<B> Up:</B> <A NAME="tex2html514"
+  HREF="node24.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html508"
+  HREF="node24.html">Usage</A>
+ &nbsp; <B>  <A NAME="tex2html516"
+  HREF="node1.html">Contents</A></B> 
+<BR>
+<BR></DIV>
+<!--End of Navigation Panel-->
+
+<H2><A NAME="SECTION00061000000000000000"></A><A NAME="clamd"></A>
+<BR>
+Clam daemon
+</H2>
+    <code>clamd</code> is a multi-threaded daemon that uses <SPAN  CLASS="textit">libclamav</SPAN>
+    to scan files for viruses. It may work in one or both modes listening on:
+    
+<UL>
+<LI>Unix (local) socket
+</LI>
+<LI>TCP socket
+    
+</LI>
+</UL>
+    The daemon is fully configurable via the <code>clamd.conf</code> file
+    <A NAME="tex2html18"
+  HREF="footnode.html#foot233"><SUP><SPAN CLASS="arabic">6</SPAN></SUP></A>. <code>clamd</code> recognizes the following commands:
+    
+<UL>
+<LI><SPAN  CLASS="textbf">PING</SPAN>
+<BR>
+Check the daemon's state (should reply with "PONG").
+</LI>
+<LI><SPAN  CLASS="textbf">VERSION</SPAN>
+<BR>
+Print program and database versions.
+</LI>
+<LI><SPAN  CLASS="textbf">RELOAD</SPAN>
+<BR>
+Reload the databases.
+</LI>
+<LI><SPAN  CLASS="textbf">SHUTDOWN</SPAN>
+<BR>
+Perform a clean exit.
+</LI>
+<LI><SPAN  CLASS="textbf">SCAN file/directory</SPAN>
+<BR>
+Scan file or directory (recursively) with archive support
+	    enabled (a full path is required).
+</LI>
+<LI><SPAN  CLASS="textbf">RAWSCAN file/directory</SPAN>
+<BR>
+Scan file or directory (recursively) with archive and special file
+	    support disabled (a full path is required).
+</LI>
+<LI><SPAN  CLASS="textbf">CONTSCAN file/directory</SPAN>
+<BR>
+Scan file or directory (recursively) with archive support
+	    enabled and don't stop the scanning when a virus is found.
+</LI>
+<LI><SPAN  CLASS="textbf">MULTISCAN file/directory</SPAN>
+<BR>
+Scan file in a standard way or scan directory (recursively) using
+	    multiple threads (to make the scanning faster on SMP machines).
+</LI>
+<LI><SPAN  CLASS="textbf">STREAM</SPAN>
+<BR>
+Scan stream: <code>clamd</code> will return a new port number you should
+	    connect to and send data to scan.
+</LI>
+<LI><SPAN  CLASS="textbf">SESSION, END</SPAN>
+<BR>
+Start/end a <code>clamd</code> session - you can do multiple commands
+	    per TCP session (WARNING: due to the <code>clamd</code> implementation the
+	    <SPAN  CLASS="textbf">RELOAD</SPAN> command will break the session).
+    
+</LI>
+</UL>
+    and reacts on the special signals:
+    
+<UL>
+<LI><SPAN  CLASS="textbf">SIGTERM</SPAN> - perform a clean exit
+</LI>
+<LI><SPAN  CLASS="textbf">SIGHUP</SPAN> - reopen the log file
+</LI>
+<LI><SPAN  CLASS="textbf">SIGUSR2</SPAN> - reload the database
+    
+</LI>
+</UL>
+    Clamd should not be started in the background using the shell operator
+    <code>&amp;</code> or external tools. Instead, you should run and wait for clamd
+    to load the database and daemonize itself. After that, clamd is instantly
+    ready to accept connections and perform file scanning.
+
+<P>
+
+<DIV CLASS="navigation"><HR>
+<!--Navigation Panel-->
+<A NAME="tex2html517"
+  HREF="node26.html">
+<IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
+<A NAME="tex2html513"
+  HREF="node24.html">
+<IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
+<A NAME="tex2html507"
+  HREF="node24.html">
+<IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
+<A NAME="tex2html515"
+  HREF="node1.html">
+<IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
+<BR>
+<B> Next:</B> <A NAME="tex2html518"
+  HREF="node26.html">Clamdscan</A>
+<B> Up:</B> <A NAME="tex2html514"
+  HREF="node24.html">Usage</A>
+<B> Previous:</B> <A NAME="tex2html508"
+  HREF="node24.html">Usage</A>
+ &nbsp; <B>  <A NAME="tex2html516"
+  HREF="node1.html">Contents</A></B> </DIV>
+<!--End of Navigation Panel-->
+<ADDRESS>
+Tomasz Kojm
+2008-10-30
+</ADDRESS>
+</BODY>
+</HTML>

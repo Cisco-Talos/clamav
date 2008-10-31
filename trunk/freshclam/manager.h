@@ -1,0 +1,33 @@
+/*
+ *  Copyright (C) 2002, 2003 Tomasz Kojm <tkojm@clamav.net>
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *  MA 02110-1301, USA.
+ */
+
+#ifndef __MANAGER_H
+#define __MANAGER_H
+
+#define SUBMIT_MIN_ENTRIES    10
+#define SUBMIT_MAX_ENTRIES    50
+
+#include "shared/cfgparser.h"
+#include "shared/options.h"
+
+int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname, const char *dbdir, int logerr);
+
+int submitstats(const char *clamdcfg, const struct cfgstruct *copt);
+
+#endif

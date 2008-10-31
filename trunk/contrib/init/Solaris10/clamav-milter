@@ -1,0 +1,28 @@
+#!/bin/sh
+
+CONF_FILE=/usr/local/etc/clamd.conf
+RUNDIR=/var/run/clamav
+CLAMAV_MILTER_FLAGS="-l --max-children=2 local:$RUNDIR/clmilter.sock"
+
+if [ ! -f $CONF_FILE ]; then
+	exit 0
+fi
+
+if [ ! -d $RUNDIR ]; then
+	/usr/bin/mkdir -p -m 700 $RUNDIR
+	USER=`fgrep User ${CONF_FILE} | awk '{ print $2 }'`
+	if [ x$USER != x ]; then
+		chown $USER $RUNDIR
+	fi
+fi
+
+case "$1" in
+	start)
+		/usr/local/sbin/clamav-milter $CLAMAV_MILTER_FLAGS
+		;;
+	stop)
+		kill `ps -ef | awk '$NF ~ /clamav-milter/ { print $2 }'` > /dev/null 2>&1
+		;;
+	*)
+		echo "usage: $0 {start|stop}"
+esac

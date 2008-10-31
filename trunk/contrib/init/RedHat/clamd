@@ -1,0 +1,89 @@
+#! /bin/bash
+#
+# crond   Start/Stop the clam antivirus daemon.
+#
+# chkconfig: 2345 70 41
+# description: clamd is a standard Linux/UNIX program that scans for Viruses.
+# processname: clamd
+# config: /usr/local/etc/clamd.conf
+# pidfile: /var/lock/subsys/clamd
+
+# Source function library.
+. /etc/init.d/functions
+
+RETVAL=0
+
+# See how we were called.
+
+prog="clamd"
+progdir="/usr/local/sbin"
+
+# Source configuration
+if [ -f /etc/sysconfig/$prog ] ; then
+	. /etc/sysconfig/$prog
+fi
+
+start() {
+	echo -n $"Starting $prog: "
+	# Don't allow files larger than 20M to be created, to limit DoS
+	# Needs to be large enough to extract the signature files
+	ulimit -f 20000
+        LANG= daemon $progdir/$prog
+	RETVAL=$?
+	echo
+	[ $RETVAL -eq 0 ] && touch /var/lock/subsys/clamd
+	return $RETVAL
+}
+
+stop() {
+	echo -n $"Stopping $prog: "
+	# Would be better to send QUIT first, then killproc if that fails
+	killproc $prog
+	RETVAL=$?
+	echo
+	[ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/clamd
+	return $RETVAL
+}
+
+rhstatus() {
+	status clamd
+}
+
+restart() {
+	stop
+	start
+}
+
+reload() {
+	echo -n $"Reloading clam daemon configuration: "
+	killproc clamd -HUP
+	retval=$?
+	echo
+	return $RETVAL
+}
+
+case "$1" in
+  start)
+	start
+	;;
+  stop)
+	stop
+	;;
+  restart)
+	restart
+	;;
+  reload)
+	reload
+	;;
+  status)
+	rhstatus
+	;;
+  condrestart)
+	[ -f /var/lock/subsys/clamd ] && restart || :
+	;;
+  *)
+	echo $"Usage: $0 {start|stop|status|reload|restart|condrestart}"
+	exit 1
+esac
+
+exit $?

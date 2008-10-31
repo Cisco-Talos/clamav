@@ -1,0 +1,52 @@
+#!/bin/sh
+
+# Copyright (C) 2004 Nigel Horne <njh@bandsman.co.uk>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301, USA.
+#
+# Install into /etc/rc.d as /etc/rc.d/clamav
+#	chmod 755 /etc/rc.d/clamav
+#
+# Add lines such as this to /etc/rc.conf:
+#	clamd="YES"
+#	clamav_milter="YES"
+#	clamav_milter_flags="--max-children=2 --dont-wait --timeout=0 -P local:/var/run/clamav/clamav.sock --pidfile=/var/run/clamav/clamav-milter.pid --quarantine-dir=/var/run/clamav/quarantine"
+#
+# Tested with NetBSD 2.0
+
+# PROVIDE: clamav
+# REQUIRE: NETWORKING
+# KEYWORD: NetBSD
+
+. /etc/rc.subr
+
+# Don't allow files larger than 20M to be created, to limit DoS
+# Needs to be large enough to extract the signature files
+ulimit -f 20000
+
+name="clamd"
+command="/usr/local/sbin/${name}"
+
+load_rc_config $name
+run_rc_command "$1"
+
+name="clamav_milter"
+command="/usr/local/sbin/clamav-milter"
+
+load_rc_config $name
+if [ $clamav_milter = YES ]; then
+	run_rc_command "$1"
+fi

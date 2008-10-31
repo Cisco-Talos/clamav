@@ -1,0 +1,1 @@
+<form action="fake.example.com"><img src="real.example.com"><img dynsrc="real.example.com"><a title="öreal.example.com" href="fake.example.com">real.example.com<a href="real.example.com">real.example.com</a><iframe src="fake.example.com"><area href="real.example.com"></form>

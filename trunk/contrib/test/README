@@ -1,0 +1,3 @@
+clam.exe is an extremely small (544 bytes!) MZ+PE executable that prints
+a nice message :-) You can use it to test attachment scanning in your ClamAV
+based mail scanner.

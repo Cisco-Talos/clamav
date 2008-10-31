@@ -1,0 +1,421 @@
+/* clamav-config.h.in.  Generated from configure.in by autoheader.  */
+
+/* enable bind8 compatibility */
+#undef BIND_8_COMPAT
+
+/* "build clamd" */
+#undef BUILD_CLAMD
+
+/* name of the clamav group */
+#undef CLAMAVGROUP
+
+/* name of the clamav user */
+#undef CLAMAVUSER
+
+/* enable clamuko */
+#undef CLAMUKO
+
+/* enable debugging */
+#undef CL_DEBUG
+
+/* enable experimental code */
+#undef CL_EXPERIMENTAL
+
+/* thread safe */
+#undef CL_THREAD_SAFE
+
+/* where to look for the config file */
+#undef CONFDIR
+
+/* os is aix */
+#undef C_AIX
+
+/* os is beos */
+#undef C_BEOS
+
+/* Increase thread stack size. */
+#undef C_BIGSTACK
+
+/* os is bsd flavor */
+#undef C_BSD
+
+/* os is darwin */
+#undef C_DARWIN
+
+/* target is gnu-hurd */
+#undef C_GNU_HURD
+
+/* os is hpux */
+#undef C_HPUX
+
+/* os is interix */
+#undef C_INTERIX
+
+/* os is irix */
+#undef C_IRIX
+
+/* target is kfreebsd-gnu */
+#undef C_KFREEBSD_GNU
+
+/* target is linux */
+#undef C_LINUX
+
+/* os is OS/2 */
+#undef C_OS2
+
+/* os is osf/tru64 */
+#undef C_OSF
+
+/* os is QNX 6.x.x */
+#undef C_QNX6
+
+/* os is solaris */
+#undef C_SOLARIS
+
+/* Path to virus database directory. */
+#undef DATADIR
+
+/* "default FD_SETSIZE value" */
+#undef DEFAULT_FD_SETSIZE
+
+/* "build unrar code" */
+#undef ENABLE_UNRAR
+
+/* whether _XOPEN_SOURCE needs to be defined for fd passing to work */
+#undef FDPASS_NEED_XOPEN
+
+/* file i/o buffer size */
+#undef FILEBUFF
+
+/* FPU byte ordering is little endian */
+#undef FPU_WORDS_BIGENDIAN
+
+/* enable workaround for broken DNS servers */
+#undef FRESHCLAM_DNS_FIX
+
+/* use "Cache-Control: no-cache" in freshclam */
+#undef FRESHCLAM_NO_CACHE
+
+/* attrib aligned */
+#undef HAVE_ATTRIB_ALIGNED
+
+/* attrib packed */
+#undef HAVE_ATTRIB_PACKED
+
+/* have bzip2 */
+#undef HAVE_BZLIB_H
+
+/* ancillary data style fd pass */
+#undef HAVE_CONTROL_IN_MSGHDR
+
+/* Define to 1 if you have the `ctime_r' function. */
+#undef HAVE_CTIME_R
+
+/* ctime_r takes 2 arguments */
+#undef HAVE_CTIME_R_2
+
+/* ctime_r takes 3 arguments */
+#undef HAVE_CTIME_R_3
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
+
+/* have working file descriptor passing support */
+#undef HAVE_FD_PASSING
+
+/* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
+#undef HAVE_FSEEKO
+
+/* have getaddrinfo() */
+#undef HAVE_GETADDRINFO
+
+/* gethostbyname_r takes 3 arguments */
+#undef HAVE_GETHOSTBYNAME_R_3
+
+/* gethostbyname_r takes 5 arguments */
+#undef HAVE_GETHOSTBYNAME_R_5
+
+/* gethostbyname_r takes 6 arguments */
+#undef HAVE_GETHOSTBYNAME_R_6
+
+/* Define to 1 if you have the <grp.h> header file. */
+#undef HAVE_GRP_H
+
+/* iconv() available */
+#undef HAVE_ICONV
+
+/* Define to 1 if you have the `inet_ntop' function. */
+#undef HAVE_INET_NTOP
+
+/* Define to 1 if you have the `initgroups' function. */
+#undef HAVE_INITGROUPS
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* in_addr_t is defined */
+#undef HAVE_IN_ADDR_T
+
+/* in_port_t is defined */
+#undef HAVE_IN_PORT_T
+
+/* Define to '1' if you have the check.h library */
+#undef HAVE_LIBCHECK
+
+/* Define if you have the gmp library. */
+#undef HAVE_LIBGMP
+
+/* Define to 1 if you have the <libmilter/mfapi.h> header file. */
+#undef HAVE_LIBMILTER_MFAPI_H
+
+/* Define to 1 if you have the `z' library (-lz). */
+#undef HAVE_LIBZ
+
+/* Define to 1 if you have the <limits.h> header file. */
+#undef HAVE_LIMITS_H
+
+/* Define to 1 if -lresolv provides thread safe API's like res_nquery */
+#undef HAVE_LRESOLV_R
+
+/* Define to 1 if you have the <malloc.h> header file. */
+#undef HAVE_MALLOC_H
+
+/* Define to 1 if you have the `memcpy' function. */
+#undef HAVE_MEMCPY
+
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
+/* Define to 1 if you have the `mkstemp' function. */
+#undef HAVE_MKSTEMP
+
+/* Define to 1 if you have a working `mmap' system call that supports
+   MAP_PRIVATE. */
+#undef HAVE_MMAP
+
+/* Define to 1 if you have the <ndir.h> header file. */
+#undef HAVE_NDIR_H
+
+/* Define to 1 if you have the `poll' function. */
+#undef HAVE_POLL
+
+/* Define to 1 if you have the <poll.h> header file. */
+#undef HAVE_POLL_H
+
+/* "pragma pack" */
+#undef HAVE_PRAGMA_PACK
+
+/* "pragma pack hppa/hp-ux style" */
+#undef HAVE_PRAGMA_PACK_HPPA
+
+/* Define to 1 if you have the `pthread_yield' function. */
+#undef HAVE_PTHREAD_YIELD
+
+/* Define to 1 if you have the <pwd.h> header file. */
+#undef HAVE_PWD_H
+
+/* readdir_r takes 2 arguments */
+#undef HAVE_READDIR_R_2
+
+/* readdir_r takes 3 arguments */
+#undef HAVE_READDIR_R_3
+
+/* Define to 1 if you have the `recvmsg' function. */
+#undef HAVE_RECVMSG
+
+/* have resolv.h */
+#undef HAVE_RESOLV_H
+
+/* Define signed right shift implementation */
+#undef HAVE_SAR
+
+/* Define to 1 if you have the `sched_yield' function. */
+#undef HAVE_SCHED_YIELD
+
+/* Define to 1 if you have the `sendmsg' function. */
+#undef HAVE_SENDMSG
+
+/* Define to 1 if you have the `setgroups' function. */
+#undef HAVE_SETGROUPS
+
+/* Define to 1 if you have the `setsid' function. */
+#undef HAVE_SETSID
+
+/* Define to 1 if you have the `snprintf' function. */
+#undef HAVE_SNPRINTF
+
+/* Define to 1 if you have the <stdbool.h> header file. */
+#undef HAVE_STDBOOL_H
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the `strcasestr' function. */
+#undef HAVE_STRCASESTR
+
+/* Define to 1 if you have the `strerror_r' function. */
+#undef HAVE_STRERROR_R
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if you have the `strlcat' function. */
+#undef HAVE_STRLCAT
+
+/* Define to 1 if you have the `strlcpy' function. */
+#undef HAVE_STRLCPY
+
+/* Define to 1 if you have the <sys/filio.h> header file. */
+#undef HAVE_SYS_FILIO_H
+
+/* Define to 1 if you have the <sys/inttypes.h> header file. */
+#undef HAVE_SYS_INTTYPES_H
+
+/* Define to 1 if you have the <sys/int_types.h> header file. */
+#undef HAVE_SYS_INT_TYPES_H
+
+/* Define to 1 if you have the <sys/mman.h> header file. */
+#undef HAVE_SYS_MMAN_H
+
+/* Define to 1 if you have the <sys/param.h> header file. */
+#undef HAVE_SYS_PARAM_H
+
+/* "have <sys/select.h>" */
+#undef HAVE_SYS_SELECT_H
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <sys/uio.h> header file. */
+#undef HAVE_SYS_UIO_H
+
+/* Define to 1 if you have the <tcpd.h> header file. */
+#undef HAVE_TCPD_H
+
+/* Define to 1 if you have the <termios.h> header file. */
+#undef HAVE_TERMIOS_H
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* Define to 1 if you have the `vsnprintf' function. */
+#undef HAVE_VSNPRINTF
+
+/* zlib installed */
+#undef HAVE_ZLIB_H
+
+/* Define to the sub-directory in which libtool stores uninstalled libraries.
+   */
+#undef LT_OBJDIR
+
+/* bzip funtions do not have bz2 prefix */
+#undef NOBZ2PREFIX
+
+/* "no fd_set" */
+#undef NO_FD_SET
+
+/* Name of package */
+#undef PACKAGE
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* scan buffer size */
+#undef SCANBUFF
+
+/* location of Sendmail binary */
+#undef SENDMAIL_BIN
+
+/* major version of Sendmail */
+#undef SENDMAIL_VERSION_A
+
+/* minor version of Sendmail */
+#undef SENDMAIL_VERSION_B
+
+/* subversion of Sendmail */
+#undef SENDMAIL_VERSION_C
+
+/* Define to 1 if the `setpgrp' function takes no argument. */
+#undef SETPGRP_VOID
+
+/* The number of bytes in type int */
+#undef SIZEOF_INT
+
+/* The number of bytes in type long */
+#undef SIZEOF_LONG
+
+/* The number of bytes in type long long */
+#undef SIZEOF_LONG_LONG
+
+/* The number of bytes in type short */
+#undef SIZEOF_SHORT
+
+/* Define to 1 if you have the ANSI C header files. */
+#undef STDC_HEADERS
+
+/* Support for IPv6 */
+#undef SUPPORT_IPv6
+
+/* use syslog */
+#undef USE_SYSLOG
+
+/* Version number of package */
+#undef VERSION
+
+/* Version suffix for package */
+#undef VERSION_SUFFIX
+
+/* tcpwrappers support */
+#undef WITH_TCPWRAP
+
+/* endianess */
+#undef WORDS_BIGENDIAN
+
+/* Define to 1 to make fseeko visible on some hosts (e.g. glibc 2.2). */
+#undef _LARGEFILE_SOURCE
+
+/* POSIX compatibility */
+#undef _POSIX_PII_SOCKET
+
+/* thread safe */
+#undef _REENTRANT
+
+/* Define to empty if `const' does not conform to ANSI C. */
+#undef const
+
+/* Define to `__inline__' or `__inline' if that's what the C compiler
+   calls it, or to nothing if 'inline' is not supported under any name.  */
+#ifndef __cplusplus
+#undef inline
+#endif
+
+/* Define to `long int' if <sys/types.h> does not define. */
+#undef off_t
+
+/* Define to equivalent of C99 restrict keyword, or to nothing if this is not
+   supported. Do not define if restrict is supported directly. */
+#undef restrict
+
+/* Define to "int" if <sys/socket.h> does not define. */
+#undef socklen_t

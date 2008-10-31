@@ -1,0 +1,168 @@
+/*
+ *  Unit tests for HTML normalizer;
+ *
+ *  Copyright (C) 2008 Sourcefire, Inc.
+ *
+ *  Authors: Török Edvin
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *  MA 02110-1301, USA.
+ */
+#include <check.h>
+#include <fcntl.h>
+#include <string.h>
+#include "checks.h"
+#include "../libclamav/dconf.h"
+#include "../libclamav/htmlnorm.h"
+#include "../libclamav/others.h"
+
+static char *dir;
+static struct cli_dconf *dconf;
+
+static void htmlnorm_setup(void)
+{
+	dconf = cli_dconf_init();
+	dir = cli_gentemp(NULL);
+	fail_unless(!!dconf, "failed to init dconf");
+	fail_unless(!!dir, "cli_gentemp failed");
+}
+
+static void htmlnorm_teardown(void)
+{
+	free(dconf);
+	fail_unless(cli_rmdirs(dir) == 0, "rmdirs failed");
+	free(dir);
+	dir = NULL;
+}
+
+static struct test {
+	const char *input;
+	const char *nocommentref;
+	const char *notagsref;
+	const char *jsref;
+} tests[] = {
+	/* NULL means don't test it */
+	{"input/htmlnorm_buf.html","buf.nocomment.ref","buf.notags.ref",NULL},
+	{"input/htmlnorm_encode.html","encode.nocomment.ref",NULL,"encode.js.ref"},
+	{"input/htmlnorm_js_test.html","js.nocomment.ref",NULL,"js.js.ref"},
+	{"input/htmlnorm_test.html","test.nocomment.ref","test.notags.ref",NULL},
+	{"input/htmlnorm_urls.html","urls.nocomment.ref","urls.notags.ref",NULL}
+};
+
+#ifdef CHECK_HAVE_LOOPS
+
+static void check_dir(const char *dir, const struct test *test)
+{
+	char filename[4096];
+	int fd, reffd;
+
+	if (test->nocommentref) {
+		snprintf(filename, sizeof(filename), "%s/nocomment.html", dir);
+		fd = open(filename, O_RDONLY);
+		fail_unless(fd > 0,"unable to open: %s", filename);
+		reffd = open_testfile(test->nocommentref);
+
+		diff_files(fd, reffd);
+
+		close(reffd);
+		close(fd);
+	}
+	if (test->notagsref) {
+		snprintf(filename, sizeof(filename), "%s/notags.html", dir);
+		fd = open(filename, O_RDONLY);
+		fail_unless(fd > 0,"unable to open: %s", filename);
+		reffd = open_testfile(test->notagsref);
+
+		diff_files(fd, reffd);
+
+		close(reffd);
+		close(fd);
+	}
+	if (test->jsref) {
+		snprintf(filename, sizeof(filename), "%s/javascript", dir);
+		fd = open(filename, O_RDONLY);
+		fail_unless(fd > 0,"unable to open: %s", filename);
+		reffd = open_testfile(test->jsref);
+
+		diff_files(fd, reffd);
+
+		close(reffd);
+		close(fd);
+	}
+}
+
+START_TEST (test_htmlnorm_api)
+{
+	int fd;
+	tag_arguments_t hrefs;
+
+	memset(&hrefs, 0, sizeof(hrefs));
+
+	fd = open_testfile(tests[_i].input);
+	fail_unless(fd > 0,"open_testfile failed");
+
+
+	fail_unless(mkdir(dir, 0700) == 0,"mkdir failed");
+	fail_unless(html_normalise_fd(fd, dir, NULL, dconf) == 1, "html_normalise_fd failed");
+	check_dir(dir, &tests[_i]);
+	fail_unless(cli_rmdirs(dir) == 0, "rmdirs failed");
+
+	fail_unless(mkdir(dir, 0700) == 0,"mkdir failed");
+	fail_unless(html_normalise_fd(fd, dir, NULL, NULL) == 1, "html_normalise_fd failed");
+	fail_unless(cli_rmdirs(dir) == 0, "rmdirs failed");
+
+	fail_unless(mkdir(dir, 0700) == 0,"mkdir failed");
+	fail_unless(html_normalise_fd(fd, dir, &hrefs, dconf) == 1, "html_normalise_fd failed");
+	fail_unless(cli_rmdirs(dir) == 0, "rmdirs failed");
+	html_tag_arg_free(&hrefs);
+
+	memset(&hrefs, 0, sizeof(hrefs));
+	hrefs.scanContents = 1;
+	fail_unless(mkdir(dir, 0700) == 0,"mkdir failed");
+	fail_unless(html_normalise_fd(fd, dir, &hrefs, dconf) == 1, "html_normalise_fd failed");
+	fail_unless(cli_rmdirs(dir) == 0, "rmdirs failed");
+	html_tag_arg_free(&hrefs);
+
+	close(fd);
+}
+END_TEST
+#endif
+
+START_TEST(test_screnc_nullterminate)
+{
+	int fd = open_testfile("input/screnc_test");
+
+	fail_unless(mkdir(dir, 0700) == 0,"mkdir failed");
+	fail_unless(html_screnc_decode(fd, dir) == 1, "html_screnc_decode failed");
+	fail_unless(cli_rmdirs(dir) == 0, "rmdirs failed");
+	close(fd);
+}
+END_TEST
+
+Suite *test_htmlnorm_suite(void)
+{
+	Suite *s = suite_create("htmlnorm");
+	TCase *tc_htmlnorm_api;
+
+	tc_htmlnorm_api = tcase_create("htmlnorm api");
+	suite_add_tcase (s, tc_htmlnorm_api);
+#ifdef CHECK_HAVE_LOOPS	
+	tcase_add_loop_test(tc_htmlnorm_api, test_htmlnorm_api, 0, sizeof(tests)/sizeof(tests[0]));
+#endif
+	tcase_add_unchecked_fixture(tc_htmlnorm_api,
+					htmlnorm_setup, htmlnorm_teardown);
+	tcase_add_test(tc_htmlnorm_api, test_screnc_nullterminate);
+
+	return s;
+}
