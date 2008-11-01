@@ -52,6 +52,8 @@
 #include "md5.h"
 #include <assert.h>
 
+#include "mpool.h"
+
 #define DOMAIN_REAL 1
 #define DOMAIN_DISPLAY 0
 
@@ -857,7 +859,7 @@ int phishing_init(struct cl_engine* engine)
 {
 	struct phishcheck* pchk;
 	if(!engine->phishcheck) {
-		pchk = engine->phishcheck = cli_malloc(sizeof(struct phishcheck));
+		pchk = engine->phishcheck = mp_malloc(engine->mempool, sizeof(struct phishcheck));
 		if(!pchk)
 			return CL_EMEM;
 		pchk->is_disabled=1;
@@ -875,7 +877,7 @@ int phishing_init(struct cl_engine* engine)
 	cli_dbgmsg("Initializing phishcheck module\n");
 
 	if(build_regex(&pchk->preg_numeric,numeric_url_regex,1)) {
-		free(pchk);
+		mp_free(engine->mempool, pchk);
 		engine->phishcheck = NULL;
 		return CL_EFORMAT;
 	}
@@ -895,7 +897,7 @@ void phishing_done(struct cl_engine* engine)
 	domainlist_done(engine);
 	if(pchk) {
 		cli_dbgmsg("Freeing phishcheck struct\n");
-		free(pchk);
+		mp_free(engine->mempool, pchk);
 	}
 	cli_dbgmsg("Phishcheck cleaned up\n");
 }

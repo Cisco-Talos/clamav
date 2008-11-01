@@ -1517,6 +1517,7 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --disable-gcc-vcheck	  do not check for buggy gcc version
   --enable-experimental	enable experimental code
+  --enable-mempool	enable memory pools
   --enable-check           Enable 'check' unit tests (default=auto)
   --disable-rpath         do not hardcode runtime library paths
   --enable-coverage       turn on test coverage [default=no]
@@ -4755,13 +4756,13 @@ if test "${lt_cv_nm_interface+set}" = set; then
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:4758: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:4759: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4761: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:4762: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4764: output\"" >&5)
+  (eval echo "\"\$as_me:4765: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -5972,7 +5973,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5975 "configure"' > conftest.$ac_ext
+  echo '#line 5976 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7823,11 +7824,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7826: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7827: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7830: \$? = $ac_status" >&5
+   echo "$as_me:7831: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8162,11 +8163,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8165: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8166: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8169: \$? = $ac_status" >&5
+   echo "$as_me:8170: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8267,11 +8268,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8270: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8271: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8274: \$? = $ac_status" >&5
+   echo "$as_me:8275: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -8322,11 +8323,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8325: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8326: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8329: \$? = $ac_status" >&5
+   echo "$as_me:8330: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11078,7 +11079,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11081 "configure"
+#line 11082 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11174,7 +11175,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11177 "configure"
+#line 11178 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13422,6 +13423,74 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
+{ echo "$as_me:$LINENO: checking size of void *" >&5
+echo $ECHO_N "checking size of void *... $ECHO_C" >&6; }
+if test "${ac_cv_sizeof_void_p+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  for ac_size in 4 8 1 2 16  ; do # List sizes in rough order of prevalence.
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include "confdefs.h"
+#include <sys/types.h>
+
+
+int
+main ()
+{
+switch (0) case 0: case (sizeof (void *) == $ac_size):;
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_cv_sizeof_void_p=$ac_size
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  if test x$ac_cv_sizeof_void_p != x ; then break; fi
+done
+
+fi
+
+if test x$ac_cv_sizeof_void_p = x ; then
+  { { echo "$as_me:$LINENO: error: cannot determine a size for void *" >&5
+echo "$as_me: error: cannot determine a size for void *" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_sizeof_void_p" >&5
+echo "${ECHO_T}$ac_cv_sizeof_void_p" >&6; }
+
+cat >>confdefs.h <<_ACEOF
+#define SIZEOF_VOID_P $ac_cv_sizeof_void_p
+_ACEOF
+
+
 
 # Check whether --enable-experimental was given.
 if test "${enable_experimental+set}" = set; then
@@ -13941,6 +14010,227 @@ _ACEOF
 
 fi
 
+
+# Check whether --enable-mempool was given.
+if test "${enable_mempool+set}" = set; then
+  enableval=$enable_mempool; enable_mempool=$enableval
+else
+  enable_mempool="no"
+fi
+
+if test "$enable_mempool" = "yes"; then
+	if test "$ac_cv_c_mmap_private" != "yes"; then
+		{ echo "$as_me:$LINENO: WARNING: ****** mempool support disabled (mmap not available or not usable)" >&5
+echo "$as_me: WARNING: ****** mempool support disabled (mmap not available or not usable)" >&2;}
+	else
+		{ echo "$as_me:$LINENO: checking for getpagesize" >&5
+echo $ECHO_N "checking for getpagesize... $ECHO_C" >&6; }
+if test "${ac_cv_func_getpagesize+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+/* Define getpagesize to an innocuous variant, in case <limits.h> declares getpagesize.
+   For example, HP-UX 11i <limits.h> declares gettimeofday.  */
+#define getpagesize innocuous_getpagesize
+
+/* System header to define __stub macros and hopefully few prototypes,
+    which can conflict with char getpagesize (); below.
+    Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
+    <limits.h> exists even on freestanding compilers.  */
+
+#ifdef __STDC__
+# include <limits.h>
+#else
+# include <assert.h>
+#endif
+
+#undef getpagesize
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char getpagesize ();
+/* The GNU C library defines this for functions which it implements
+    to always fail with ENOSYS.  Some functions are actually named
+    something starting with __ and the normal name is an alias.  */
+#if defined __stub_getpagesize || defined __stub___getpagesize
+choke me
+#endif
+
+int
+main ()
+{
+return getpagesize ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  ac_cv_func_getpagesize=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_func_getpagesize=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_func_getpagesize" >&5
+echo "${ECHO_T}$ac_cv_func_getpagesize" >&6; }
+if test $ac_cv_func_getpagesize = yes; then
+
+
+	{ echo "$as_me:$LINENO: checking for MAP_ANON(YMOUS)" >&5
+echo $ECHO_N "checking for MAP_ANON(YMOUS)... $ECHO_C" >&6; }
+if test "${ac_cv_c_mmap_anonymous+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+
+		ac_cv_c_mmap_anonymous='no'
+		cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <sys/mman.h>
+int
+main ()
+{
+mmap((void *)0, 0, PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  ac_cv_c_mmap_anonymous='MAP_ANONYMOUS'
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+
+				cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#include <sys/mman.h>
+int
+main ()
+{
+mmap((void *)0, 0, PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  ac_cv_c_mmap_anonymous='MAP_ANONYMOUS'
+
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+
+
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_c_mmap_anonymous" >&5
+echo "${ECHO_T}$ac_cv_c_mmap_anonymous" >&6; }
+	if test "$ac_cv_c_mmap_anonymous" != "no"; then
+
+cat >>confdefs.h <<_ACEOF
+#define ANONYMOUS_MAP $ac_cv_c_mmap_anonymous
+_ACEOF
+
+	fi
+
+			if test "$ac_cv_c_mmap_anonymous" = "no"; then
+				{ echo "$as_me:$LINENO: WARNING: ****** mempool support disabled (anonymous mmap not available)" >&5
+echo "$as_me: WARNING: ****** mempool support disabled (anonymous mmap not available)" >&2;}
+			else
+
+cat >>confdefs.h <<\_ACEOF
+#define USE_MPOOL 1
+_ACEOF
+
+			fi
+
+else
+  { echo "$as_me:$LINENO: WARNING: ****** mempool support disabled (getpagesize not available)" >&5
+echo "$as_me: WARNING: ****** mempool support disabled (getpagesize not available)" >&2;}
+fi
+
+	fi
+fi
 
 enable_check_ut=auto
 enable_ut_install=no

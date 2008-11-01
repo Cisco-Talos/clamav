@@ -21,13 +21,14 @@
 #ifndef __DCONF_H
 #define __DCONF_H
 
-
 #include <stdio.h>
 #include <zlib.h>
 
 #include "clamav.h"
 #include "cltypes.h"
 #include "cvd.h"
+
+#include "mpool.h"
 
 struct cli_dconf {
     uint32_t pe;
@@ -98,7 +99,13 @@ struct cli_dconf {
 #define PHISHING_CONF_ENGINE   0x1
 #define PHISHING_CONF_ENTCONV  0x2
 
+#ifdef USE_MPOOL
+struct cli_dconf *cli_dconf_init(mp_t *);
+#define cli_mp_dconf_init(a) cli_dconf_init(a)
+#else
 struct cli_dconf *cli_dconf_init(void);
+#define cli_mp_dconf_init(a) cli_dconf_init()
+#endif
 void cli_dconf_print(struct cli_dconf *dconf);
 int cli_dconf_load(FILE *fs, struct cl_engine **engine, unsigned int options, struct cli_dbio *dbio);
 #endif

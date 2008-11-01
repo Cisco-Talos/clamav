@@ -92,7 +92,7 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	uuencode.lo phishcheck.lo phish_domaincheck_db.lo \
 	phish_whitelist.lo regex_list.lo regex_suffix.lo mspack.lo \
 	cab.lo entconv.lo hashtab.lo dconf.lo lzma_iface.lo explode.lo \
-	textnorm.lo dlp.lo js-norm.lo uniq.lo version.lo
+	textnorm.lo dlp.lo js-norm.lo uniq.lo version.lo mpool.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 libclamav_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -281,7 +281,7 @@ target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = lzma .
-AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis -I@srcdir@/lzma
+AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis -I@srcdir@/lzma 
 libclamav_la_LIBADD = lzma/liblzma.la @CLAMAV_UNRAR_LIBS@ @LIBCLAMAV_LIBS@ @THREAD_LIBS@
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ \
 	-no-undefined $(am__append_1)
@@ -454,7 +454,9 @@ libclamav_la_SOURCES = \
 	uniq.c \
 	uniq.h \
 	version.c\
-	version.h
+	version.h\
+	mpool.c\
+	mpool.h
 
 libclamav_internal_utils_la_SOURCES = str.c \
 				    str.h \
@@ -589,6 +591,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/md5.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/message.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mew.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpool.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msexpand.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mspack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nulsft.Plo@am__quote@

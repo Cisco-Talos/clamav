@@ -34,6 +34,8 @@
 #include "matcher-bm.h"
 #include "hashtab.h"
 
+#include "mpool.h"
+
 #define CLI_MATCH_WILDCARD	0xff00
 #define CLI_MATCH_CHAR		0x0000
 #define CLI_MATCH_IGNORE	0x0100
@@ -54,6 +56,9 @@ struct cli_lsig_tdb {
     const uint32_t *engine, *nos, *ep;
     const uint32_t *sectoff, *sectrva, *sectvsz, *sectraw, *sectrsz,
 		   *secturva, *sectuvsz, *secturaw, *sectursz;
+#ifdef USE_MPOOL
+    mp_t *mempool;
+#endif
 };
 
 struct cli_ac_lsig {
@@ -80,6 +85,9 @@ struct cli_matcher {
 
     uint16_t maxpatlen;
     uint8_t ac_only;
+#ifdef USE_MPOOL
+    mp_t *mempool;
+#endif
 };
 
 struct cli_meta_node {

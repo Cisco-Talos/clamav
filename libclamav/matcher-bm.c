@@ -32,6 +32,8 @@
 #include "matcher-bm.h"
 #include "filetypes.h"
 
+#include "mpool.h"
+
 #define BM_MIN_LENGTH	3
 #define BM_BLOCK_SIZE	3
 #define HASH(a,b,c) (211 * a + 37 * b + c)
@@ -97,12 +99,11 @@ int cli_bm_init(struct cli_matcher *root)
 {
 	uint16_t i, size = HASH(255, 255, 255) + 1;
 
-
-    if(!(root->bm_shift = (uint8_t *) cli_calloc(size, sizeof(uint8_t))))
+    if(!(root->bm_shift = (uint8_t *) mp_calloc(root->mempool, size, sizeof(uint8_t))))
 	return CL_EMEM;
 
-    if(!(root->bm_suffix = (struct cli_bm_patt **) cli_calloc(size, sizeof(struct cli_bm_patt *)))) {
-	free(root->bm_shift);
+    if(!(root->bm_suffix = (struct cli_bm_patt **) mp_calloc(root->mempool, size, sizeof(struct cli_bm_patt *)))) {
+	mp_free(root->mempool, root->bm_shift);
 	return CL_EMEM;
     }
 
@@ -119,7 +120,7 @@ void cli_bm_free(struct cli_matcher *root)
 
 
     if(root->bm_shift)
-	free(root->bm_shift);
+	mp_free(root->mempool, root->bm_shift);
 
     if(root->bm_suffix) {
 	for(i = 0; i < size; i++) {
@@ -128,17 +129,17 @@ void cli_bm_free(struct cli_matcher *root)
 		prev = patt;
 		patt = patt->next;
 		if(prev->prefix)
-		    free(prev->prefix);
+		    mp_free(root->mempool, prev->prefix);
 		else
-		    free(prev->pattern);
+		    mp_free(root->mempool, prev->pattern);
 		if(prev->virname)
-		    free(prev->virname);
+		    mp_free(root->mempool, prev->virname);
 		if(prev->offset)
-		    free(prev->offset);
-		free(prev);
+		    mp_free(root->mempool, prev->offset);
+		mp_free(root->mempool, prev);
 	    }
 	}
-	free(root->bm_suffix);
+	mp_free(root->mempool, root->bm_suffix);
     }
 }
 

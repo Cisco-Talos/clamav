@@ -23,7 +23,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
- 
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -152,6 +152,9 @@ struct cl_engine {
 
     /* PUA categories (to be included or excluded) */
     char *pua_cats;
+
+    /* Used for memory pools */
+    void *mempool;
 };
 
 struct cl_limits {
