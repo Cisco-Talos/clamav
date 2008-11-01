@@ -12,6 +12,8 @@ Sat Nov  1 03:51:58 CET 2008 (acab)
 	Thanks a lot sgran for the idea and nitrox for the extensive
 	testing. Please test and report any problem (expecially on
 	non-x86 and non-Linux setups).
+	Make check doesn't currently work with --enable-mempool; this
+	will be fixed soon.
 
 Thu Oct 30 17:18:28 CET 2008 (tk)
 ---------------------------------
