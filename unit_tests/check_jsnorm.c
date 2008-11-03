@@ -180,16 +180,13 @@ START_TEST (js_begin_end)
 {
 	char buf[16384] = "</script>";
 	size_t p;
-	struct cli_dconf *dconf = cli_dconf_init();
 
-	fail_unless(!!dconf, "failed to init dconf");
 	for(p=strlen(buf); p < 8191; p++) {
 		buf[p++] = 'a';
 		buf[p] = ' ';
 	}
 	strncpy(buf + 8192, " stuff stuff <script language='javascript'> function () {}", 8192);
 	fail_unless(html_normalise_mem((unsigned char*)buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
-	free(dconf);
 }
 END_TEST
 
@@ -198,12 +195,10 @@ START_TEST (multiple_scripts)
 	char buf[] = "</script> stuff"\
 			    "<script language='Javascript'> function foo() {} </script>"\
 			    "<script language='Javascript'> function bar() {} </script>";
-	struct cli_dconf *dconf = cli_dconf_init();
 
 	fail_unless(!!dconf, "failed to init dconf");
 	fail_unless(html_normalise_mem((unsigned char*)buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
 	/* TODO: test that both had been normalized */
-	free(dconf);
 }
 END_TEST
 
@@ -427,7 +422,6 @@ END_TEST
 START_TEST (screnc_infloop)
 {
 	char buf[24700] = "<%@ language='jscript.encode'>";
-	struct cli_dconf *dconf = cli_dconf_init();
 	size_t p;
 
 	fail_unless(!!dconf, "failed to init dconf");
@@ -439,7 +433,6 @@ START_TEST (screnc_infloop)
 	}
 	strncpy(buf+24626,"#@~^ ", 10);
 	fail_unless(html_normalise_mem((unsigned char*)buf, sizeof(buf), NULL, NULL, dconf) == 1, "normalise");
-	free(dconf);
 }
 END_TEST
 
@@ -497,14 +490,12 @@ Suite *test_jsnorm_suite(void)
 #endif
     tcase_add_test(tc_jsnorm_tokenizer, js_buffer);
 
-    tc_jsnorm_bugs = tcase_create("jsnorm bugs");
+    tc_jsnorm_bugs = tcase_create("bugs");
     suite_add_tcase (s, tc_jsnorm_bugs);
+    tcase_add_checked_fixture(tc_jsnorm_bugs, dconf_setup, dconf_teardown);
     tcase_add_test(tc_jsnorm_bugs, js_begin_end);
     tcase_add_test(tc_jsnorm_bugs, multiple_scripts);
-
-    tc_screnc_infloop = tcase_create("screnc infloop bug");
-    suite_add_tcase (s, tc_screnc_infloop);
-    tcase_add_test(tc_screnc_infloop, screnc_infloop);
+    tcase_add_test(tc_jsnorm_bugs, screnc_infloop);
 
     return s;
 }

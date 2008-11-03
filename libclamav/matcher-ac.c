@@ -26,6 +26,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+
+/* TODO: this should be in a common header */
+#ifndef CL_DEBUG
+#define NDEBUG
+#endif
+
+#include <assert.h>
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -300,6 +307,9 @@ int cli_ac_buildtrie(struct cli_matcher *root)
 
 int cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth)
 {
+#ifdef USE_MPOOL
+    assert(root->mempool && "mempool must be initialized");
+#endif
 
     root->ac_root = (struct cli_ac_node *) mp_calloc(root->mempool, 1, sizeof(struct cli_ac_node));
     if(!root->ac_root) {

@@ -25,4 +25,8 @@ int open_testfile(const char *name);
 void diff_files(int fd, int reffd);
 void diff_file_mem(int fd, const char *ref, size_t len);
 
+extern struct cli_dconf *dconf;
+void dconf_setup(void);
+void dconf_teardown(void);
+
 #endif

@@ -118,6 +118,9 @@ CLAMAV_PRIVATE {
     cli_bm_scanbuff;
     cli_bm_free;
     html_screnc_decode;
+    mp_create;
+    mp_destroy;
+    mp_free;
   local:
     *;
 };

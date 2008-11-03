@@ -1,3 +1,12 @@
+Sat Nov  1 19:52:25 EET 2008 (edwin)
+------------------------------------
+ * libclamav/libclamav.map, libclamav/matcher-ac.c,
+ libclamav/matcher-bm.c, libclamav/regex_list.c,
+ unit_tests/check_clamav.c, unit_tests/check_htmlnorm.c,
+ unit_tests/check_jsnorm.c, unit_tests/check_matchers.c,
+ unit_tests/check_regex.c, unit_tests/checks.h: fix unit tests when
+ mpool is activated
+
 Sat Nov  1 03:51:58 CET 2008 (acab)
 -----------------------------------
  * mempool: New configure option --enable-mempool (requires mmap)

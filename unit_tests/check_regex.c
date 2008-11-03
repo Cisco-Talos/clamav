@@ -153,13 +153,20 @@ static struct regex_matcher matcher;
 
 static void rsetup(void)
 {
-	int rc = init_regex_list(&matcher);
+	int rc;
+#ifdef USE_MEMPOOL
+	matcher.mempool = mp_create();
+#endif
+	rc = init_regex_list(&matcher);
 	fail_unless(rc == 0, "init_regex_list");
 }
 
 static void rteardown(void)
 {
 	regex_list_done(&matcher);
+#ifdef USE_MEMPOOL
+	mp_destroy(matcher.mempool);
+#endif
 }
 
 static const struct rtest {

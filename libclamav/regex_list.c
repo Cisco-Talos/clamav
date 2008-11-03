@@ -360,6 +360,7 @@ int init_regex_list(struct regex_matcher* matcher)
 #ifdef USE_MPOOL
 	matcher->mempool = mp;
 	matcher->suffixes.mempool = mp;
+	assert(mp && "mempool must be initialized");
 #endif
 	if((rc = cli_ac_init(&matcher->suffixes, 2, 32))) {
 		return rc;

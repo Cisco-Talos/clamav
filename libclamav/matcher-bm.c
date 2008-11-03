@@ -22,8 +22,11 @@
 #include "clamav-config.h"
 #endif
 
+#ifndef CL_DEBUG
+#define NDEBUG
+#endif
 #include <stdio.h>
-
+#include <assert.h>
 #include "clamav.h"
 #include "memory.h"
 #include "others.h"
@@ -98,7 +101,9 @@ int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern)
 int cli_bm_init(struct cli_matcher *root)
 {
 	uint16_t i, size = HASH(255, 255, 255) + 1;
-
+#ifdef USE_MPOOL
+    assert (root->mempool && "mempool must be initialized");
+#endif
     if(!(root->bm_shift = (uint8_t *) mp_calloc(root->mempool, size, sizeof(uint8_t))))
 	return CL_EMEM;
 

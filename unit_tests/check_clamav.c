@@ -375,6 +375,35 @@ void diff_files(int fd, int ref_fd)
 	free(ref);
 }
 
+#ifdef USE_MEMPOOL
+static mp_t *pool;
+#else
+static void *pool;
+#endif
+struct cli_dconf *dconf;
+
+void dconf_setup(void)
+{
+	pool = NULL;
+	dconf = NULL;
+#ifdef USE_MEMPOOL
+	pool = mp_create();
+	fail_unless(!!pool, "unable to create pool");
+#endif
+	dconf = cli_mp_dconf_init(pool);
+	fail_unless(!!dconf, "failed to init dconf");
+}
+
+void dconf_teardown(void)
+{
+	mp_free(pool, dconf);
+#ifdef USE_MEMPOOL
+	if (pool)
+		mp_destroy(pool);
+#endif
+}
+
+
 int main(int argc, char **argv)
 {
     int nf;

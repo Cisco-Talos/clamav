@@ -28,19 +28,17 @@
 #include "../libclamav/others.h"
 
 static char *dir;
-static struct cli_dconf *dconf;
 
 static void htmlnorm_setup(void)
 {
-	dconf = cli_dconf_init();
+	dconf_setup();
 	dir = cli_gentemp(NULL);
-	fail_unless(!!dconf, "failed to init dconf");
 	fail_unless(!!dir, "cli_gentemp failed");
 }
 
 static void htmlnorm_teardown(void)
 {
-	free(dconf);
+	dconf_teardown();
 	fail_unless(cli_rmdirs(dir) == 0, "rmdirs failed");
 	free(dir);
 	dir = NULL;
