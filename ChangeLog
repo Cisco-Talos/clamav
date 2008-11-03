@@ -1,3 +1,14 @@
+Mon Nov  3 21:05:54 EET 2008 (edwin)
+------------------------------------
+ * clamd/scanner.c, clamd/session.c, clamd/session.h,
+ clamd/thrmgr.c, clamd/thrmgr.h, contrib/clamdtop/Makefile,
+ contrib/clamdtop/clamdtop.c: new command STATS new top-like tool
+ using ncurses: clamdtop it shows what clamd is currently scanning (and since how long),
+ including which file(s) multiscan is working on currently, how many
+ items it has in the queue (and since how long they are waiting), how
+ many active/idle threads it has, memory usage statistics, can
+ monitor local or remote clamd
+
 Sat Nov  1 19:52:25 EET 2008 (edwin)
 ------------------------------------
  * libclamav/libclamav.map, libclamav/matcher-ac.c,

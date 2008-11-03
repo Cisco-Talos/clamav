@@ -44,6 +44,14 @@ typedef enum {
 	POOL_EXIT
 } pool_state_t;
 
+struct task_desc {
+	const char *filename;
+	const char *command;
+	struct timeval tv;
+	struct task_desc *prv;
+	struct task_desc *nxt;
+};
+
 typedef struct threadpool_tag {
 	pthread_mutex_t pool_mutex;
 	pthread_cond_t pool_cond;
@@ -56,6 +64,7 @@ typedef struct threadpool_tag {
 	int thr_alive;
 	int thr_idle;
 	int idle_timeout;
+	struct task_desc *tasks;
 	
 	void (*handler)(void *);
 	
@@ -65,5 +74,7 @@ typedef struct threadpool_tag {
 threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void *));
 void thrmgr_destroy(threadpool_t *threadpool);
 int thrmgr_dispatch(threadpool_t *threadpool, void *user_data);
+int thrmgr_printstats(int outfd);
+void thrmgr_setactivetask(const char *filename, const char* command);
 
 #endif

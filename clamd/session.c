@@ -133,26 +133,32 @@ int command(int desc, const struct cl_engine *engine, const struct cl_limits *li
     cli_chomp(buff);
 
     if(!strncmp(buff, CMD1, strlen(CMD1))) { /* SCAN */
+	thrmgr_setactivetask(NULL, CMD1);
 	if(scan(buff + strlen(CMD1) + 1, NULL, engine, limits, options, copt, desc, TYPE_SCAN) == -2)
 	    if(cfgopt(copt, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD3, strlen(CMD3))) { /* QUIT */
+	thrmgr_setactivetask(NULL, CMD3);
 	return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD4, strlen(CMD4))) { /* RELOAD */
+	thrmgr_setactivetask(NULL, CMD4);
 	mdprintf(desc, "RELOADING\n");
 	return COMMAND_RELOAD;
 
     } else if(!strncmp(buff, CMD5, strlen(CMD5))) { /* PING */
+	thrmgr_setactivetask(NULL, CMD5);
 	mdprintf(desc, "PONG\n");
 
     } else if(!strncmp(buff, CMD6, strlen(CMD6))) { /* CONTSCAN */
+	thrmgr_setactivetask(NULL, CMD6);
 	if(scan(buff + strlen(CMD6) + 1, NULL, engine, limits, options, copt, desc, TYPE_CONTSCAN) == -2)
 	    if(cfgopt(copt, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD7, strlen(CMD7))) { /* VERSION */
+	thrmgr_setactivetask(NULL, CMD7);
 	    const char *dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
 	    char *path;
 	    struct cl_cvd *daily;
@@ -180,28 +186,37 @@ int command(int desc, const struct cl_engine *engine, const struct cl_limits *li
 	free(path);
 
     } else if(!strncmp(buff, CMD8, strlen(CMD8))) { /* STREAM */
+	thrmgr_setactivetask(NULL, CMD8);
 	if(scanstream(desc, NULL, engine, limits, options, copt) == CL_EMEM)
 	    if(cfgopt(copt, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD9, strlen(CMD9))) { /* SESSION */
+	thrmgr_setactivetask(NULL, CMD9);
 	return COMMAND_SESSION;
 
     } else if(!strncmp(buff, CMD10, strlen(CMD10))) { /* END */
+	thrmgr_setactivetask(NULL, CMD10);
 	return COMMAND_END;
 
     } else if(!strncmp(buff, CMD11, strlen(CMD11))) { /* SHUTDOWN */
+	thrmgr_setactivetask(NULL, CMD11);
 	return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD13, strlen(CMD13))) { /* MULTISCAN */
+	thrmgr_setactivetask(buff+strlen(CMD13)+1, CMD13);
 	if(scan(buff + strlen(CMD13) + 1, NULL, engine, limits, options, copt, desc, TYPE_MULTISCAN) == -2)
 	    if(cfgopt(copt, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD14, strlen(CMD14))) { /* FILDES */
+	thrmgr_setactivetask(NULL, CMD14);
 	if(recvfd_and_scan(desc, engine, limits, options, copt) == -2)
 	    if(cfgopt(copt, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
+    } else if(!strncmp(buff, CMD15, strlen(CMD15))) { /* STATS */
+	    thrmgr_setactivetask(NULL, CMD15);
+	    thrmgr_printstats(desc);
     } else {
 	mdprintf(desc, "UNKNOWN COMMAND\n");
     }

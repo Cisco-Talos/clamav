@@ -38,6 +38,7 @@
 /* #define CMD12 "FD" */
 #define CMD13 "MULTISCAN"
 #define CMD14 "FILDES"
+#define CMD15 "STATS"
 
 #include "libclamav/clamav.h"
 #include "shared/cfgparser.h"

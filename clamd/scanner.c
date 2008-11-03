@@ -220,8 +220,9 @@ static int dirscan(const char *dirname, const char **virname, unsigned long int 
 					pthread_mutex_unlock(&multi_pool->pool_mutex);
 
 				    } else { /* CONTSCAN, SCAN */
-
+					thrmgr_setactivetask(fname, NULL);
 					scanret = cl_scanfile(fname, virname, scanned, engine, limits, options);
+					thrmgr_setactivetask(NULL, NULL);
 
 					if(scanret == CL_VIRUS) {
 
@@ -286,7 +287,9 @@ static void multiscanfile(void *arg)
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
 #endif
 
+    thrmgr_setactivetask(tag->fname, "MULTISCANFILE");
     ret = cl_scanfile(tag->fname, &virname, NULL, tag->engine, tag->limits, tag->options);
+    thrmgr_setactivetask(NULL, NULL);
 
     if(ret == CL_VIRUS) {
 	mdprintf(tag->sd, "%s: %s FOUND\n", tag->fname, virname);
@@ -350,7 +353,11 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_engin
 		ret = CL_CLEAN;
 	    else
 #endif
+	    {
+		thrmgr_setactivetask(filename, NULL);
 		ret = cl_scanfile(filename, &virname, scanned, engine, limits, options);
+		thrmgr_setactivetask(NULL, NULL);
+	    }
 
 	    if(ret == CL_VIRUS) {
 		mdprintf(odesc, "%s: %s FOUND\n", filename, virname);
@@ -417,7 +424,9 @@ int scanfd(const int fd, unsigned long int *scanned,
 
 	snprintf(fdstr, sizeof(fdstr), "fd[%d]", fd);
 
+	thrmgr_setactivetask(fdstr, NULL);
 	ret = cl_scandesc(fd, &virname, scanned, engine, limits, options);
+	thrmgr_setactivetask(NULL, NULL);
 
 	if(ret == CL_VIRUS) {
 	mdprintf(odesc, "%s: %s FOUND\n", fdstr, virname);
@@ -594,7 +603,9 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 
     if(retval == 1) {
 	lseek(tmpd, 0, SEEK_SET);
+	thrmgr_setactivetask(peer_addr, NULL);
 	ret = cl_scandesc(tmpd, &virname, scanned, engine, limits, options);
+	thrmgr_setactivetask(NULL, NULL);
     } else {
     	ret = -1;
     }

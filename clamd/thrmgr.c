@@ -31,6 +31,10 @@
 #include "thrmgr.h"
 #include "others.h"
 
+#if defined(C_LINUX)
+#include <malloc.h>
+#endif
+
 #define FALSE (0)
 #define TRUE (1)
 
@@ -99,6 +103,151 @@ static void *work_queue_pop(work_queue_t *work_q)
 	return data;
 }
 
+static struct threadpool_list {
+	threadpool_t *pool;
+	struct threadpool_list *nxt;
+} *pools = NULL;
+static pthread_mutex_t pools_lock = PTHREAD_MUTEX_INITIALIZER;
+
+static void add_topools(threadpool_t *t)
+{
+	struct threadpool_list *new = malloc(sizeof(*new));
+	if(!new) {
+		logg("!Unable to add threadpool to list\n");
+		return;
+	}
+	new->pool = t;
+	pthread_mutex_lock(&pools_lock);
+	new->nxt = pools;
+	pools = new;
+	pthread_mutex_unlock(&pools_lock);
+}
+
+static void remove_frompools(threadpool_t *t)
+{
+	struct threadpool_list *l, *prev;
+	struct task_desc *desc;
+	pthread_mutex_lock(&pools_lock);
+	prev = NULL;
+	l = pools;
+	while(l && l->pool != t) {
+		prev = l;
+		l = l->nxt;
+	}
+	if(!l)
+		return;
+	if(prev)
+		prev->nxt = l->nxt;
+	if(l == pools)
+		pools = l->nxt;
+	free(l);
+	desc = t->tasks;
+	while(desc) {
+		struct task_desc *q = desc;
+		desc = desc->nxt;
+		free(q);
+	}
+	t->tasks = NULL;
+	pthread_mutex_unlock(&pools_lock);
+}
+
+int thrmgr_printstats(int outfd)
+{
+	FILE *f;
+	struct threadpool_list *l;
+	size_t cnt;
+	int fd = dup(outfd);
+	if(fd < 0)
+		return -1;
+	f = fdopen(fd, "w");
+	if(!f)
+		return -1;
+	pthread_mutex_lock(&pools_lock);
+	for(cnt=0,l=pools;l;l=l->nxt) cnt++;
+	fprintf(f,"POOLS: %u\n\n", cnt);
+	for(l= pools;l;l = l->nxt) {
+		threadpool_t *pool = l->pool;
+		const char *state;
+		work_item_t *q;
+		struct timeval tv_now;
+		unsigned long umin=~0UL, umax=0, usum=0;
+		size_t invalids=0, cnt=0;
+		struct task_desc *task;
+
+		if(!pool) {
+			fprintf(f,"NULL\n\n");
+			continue;
+		}
+		pthread_mutex_lock(&pool->pool_mutex);
+		switch(pool->state) {
+			case POOL_INVALID:
+				state = "INVALID";
+				break;
+			case POOL_VALID:
+				state = "VALID";
+				break;
+			case POOL_EXIT:
+				state = "EXIT";
+				break;
+		}
+		fprintf(f, "STATE: %s %s\n", state, l->nxt ? "" : "PRIMARY");
+		fprintf(f, "THREADS: live %u  idle %u max %u idle-timeout %u\n"
+				,pool->thr_alive, pool->thr_idle, pool->thr_max,
+				pool->idle_timeout);
+		fprintf(f,"QUEUE: %u items", pool->queue->item_count);
+		gettimeofday(&tv_now, NULL);
+		if(pool->queue->head) {
+			for(q=pool->queue->head;q;q=q->next) {
+				long delta;
+				delta = tv_now.tv_usec - q->time_queued.tv_usec;
+				delta += (tv_now.tv_sec - q->time_queued.tv_sec)*1000000;
+				if(delta < 0) {
+					invalids++;
+					continue;
+				}
+				if(delta > umax)
+					umax = delta;
+				if(delta < umin)
+					umin = delta;
+				usum += delta;
+				++cnt;
+			}
+			fprintf(f," min_wait: %.6f max_wait: %.6f avg_wait: %.6f",
+					umin/1e6, umax/1e6, usum /(1e6*cnt));
+			if(invalids)
+				fprintf(f," (INVALID timestamps: %u)", invalids);
+		}
+		if(cnt + invalids != pool->queue->item_count)
+			fprintf(f," (ERROR: %u != %u)", cnt + invalids,
+					pool->queue->item_count);
+		fputc('\n', f);
+		for(task = pool->tasks; task; task = task->nxt) {
+			long delta;
+			delta = tv_now.tv_usec - task->tv.tv_usec;
+			delta += (tv_now.tv_sec - task->tv.tv_sec)*1000000;
+			fprintf(f,"\t%s %f %s\n",
+					task->command ? task->command : "N/A",
+					delta/1e6,
+					task->filename ? task->filename:"");
+		}
+		fputc('\n',f);
+		pthread_mutex_unlock(&pool->pool_mutex);
+	}
+#if defined(C_LINUX)
+	{
+		struct mallinfo inf = mallinfo();
+		fprintf(f,"MEMSTATS: heap %.3fM mmap %.3fM used %.3fM free %.3fM releasable %.3fM\n",
+				inf.arena/(1024*1024.0), inf.hblkhd/(1024*1024.0),
+				inf.uordblks/(1024*1024.0), inf.fordblks/(1024*1024.0),
+				inf.keepcost/(1024*1024.0));
+	}
+#endif
+	fputs("END\n",f);
+	pthread_mutex_unlock(&pools_lock);
+	fclose(f);
+	return 0;
+}
+
 void thrmgr_destroy(threadpool_t *threadpool)
 {
 	if (!threadpool) {
@@ -130,6 +279,7 @@ void thrmgr_destroy(threadpool_t *threadpool)
 			return;
 		}
 	}
+	remove_frompools(threadpool);
   	if (pthread_mutex_unlock(&threadpool->pool_mutex) != 0) {
     		logg("!Mutex unlock failed\n");
     		exit(-1);
@@ -170,6 +320,7 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void
 	threadpool->thr_idle = 0;
 	threadpool->idle_timeout = idle_timeout;
 	threadpool->handler = handler;
+	threadpool->tasks = NULL;
 	
 	if(pthread_mutex_init(&(threadpool->pool_mutex), NULL)) {
 		free(threadpool->queue);
@@ -220,14 +371,68 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void
 #endif
 	threadpool->state = POOL_VALID;
 
+	add_topools(threadpool);
 	return threadpool;
+}
+
+static pthread_key_t stats_tls_key;
+static pthread_once_t stats_tls_key_once = PTHREAD_ONCE_INIT;
+
+static void stats_tls_key_alloc(void)
+{
+	pthread_key_create(&stats_tls_key, NULL);
+}
+
+static const char *IDLE_TASK = "IDLE";
+void thrmgr_setactivetask(const char *filename, const char* command)
+{
+	struct task_desc *desc = pthread_getspecific(stats_tls_key);
+	if(!desc)
+		return;
+	desc->filename = filename;
+	if(command) {
+		if(command == IDLE_TASK && desc->command == command)
+			return;
+		desc->command = command;
+		gettimeofday(&desc->tv, NULL);
+	}
+}
+
+static void stats_init(threadpool_t *pool)
+{
+	struct task_desc *desc = calloc(1, sizeof(*desc));
+	if(!desc)
+		return;
+	pthread_once(&stats_tls_key_once, stats_tls_key_alloc);
+	pthread_setspecific(stats_tls_key, desc);
+	if(!pool->tasks)
+		pool->tasks = desc;
+	else {
+		desc->nxt = pool->tasks;
+		pool->tasks->prv = desc;
+		pool->tasks = desc;
+	}
+}
+
+static void stats_destroy(threadpool_t *pool)
+{
+	struct task_desc *desc = pthread_getspecific(stats_tls_key);
+	if(!desc)
+		return;
+	if(desc->prv)
+		desc->prv->nxt = desc->nxt;
+	if(desc->nxt)
+		desc->nxt->prv = desc->prv;
+	if(pool->tasks == desc)
+		pool->tasks = desc->nxt;
+	free(desc);
 }
 
 static void *thrmgr_worker(void *arg)
 {
 	threadpool_t *threadpool = (threadpool_t *) arg;
 	void *job_data;
-	int retval, must_exit = FALSE;
+	int retval, must_exit = FALSE, stats_inited = FALSE;
 	struct timespec timeout;
 	
 	/* loop looking for work */
@@ -236,6 +441,11 @@ static void *thrmgr_worker(void *arg)
 			logg("!Fatal: mutex lock failed\n");
 			exit(-2);
 		}
+		if(!stats_inited) {
+			stats_init(threadpool);
+			stats_inited = TRUE;
+		}
+		thrmgr_setactivetask(NULL, IDLE_TASK);
 		timeout.tv_sec = time(NULL) + threadpool->idle_timeout;
 		timeout.tv_nsec = 0;
 		threadpool->thr_idle++;
@@ -275,6 +485,7 @@ static void *thrmgr_worker(void *arg)
 		/* signal that all threads are finished */
 		pthread_cond_broadcast(&threadpool->pool_cond);
 	}
+	stats_destroy(threadpool);
 	if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
 		/* Fatal error */
 		logg("!Fatal: mutex unlock failed\n");
