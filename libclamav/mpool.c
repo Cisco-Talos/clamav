@@ -39,6 +39,7 @@
 #include <stddef.h>
 
 #include "others.h"
+#include "str.h"
 #ifndef CL_DEBUG
 #define NDEBUG
 #endif
@@ -400,6 +401,9 @@ void *mp_malloc(struct MP *mp, size_t size) {
   if((f = mp->avail[sbits])) {
     spam("malloc %p size %u (freed)\n", f, roundup(size));
     mp->avail[sbits] = f->next;
+#ifdef CL_DEBUG
+      f->magic = MPOOLMAGIC;
+#endif
     return &f->fake;
   }
 
@@ -510,6 +514,20 @@ void *mp_realloc2(struct MP *mp, void *ptr, size_t size) {
   return new_ptr;
 }
 
+unsigned char *cli_mp_hex2str(mp_t *mp, const unsigned char *str)
+{
+	unsigned char *tmp = cli_hex2str(str);
+	if(tmp) {
+		unsigned char *res;
+		unsigned int tmpsz = strlen(str) / 2 + 1;
+		if((res = mp_malloc(mp, tmpsz)))
+			memcpy(res, tmp, tmpsz);
+		free(tmp);
+		return res;
+	}
+	return NULL;
+}
+
 #ifdef DEBUGMPOOL
 void mp_stats(struct MP *mp) {
   unsigned int i=0, ta=0, tu=0;
@@ -539,5 +557,7 @@ void check_all(struct MP *mp) {
   }
 }
 #endif /* DEBUGMPOOL */
+
+
 
 #endif /* USE_MPOOL */

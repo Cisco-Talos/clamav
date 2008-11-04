@@ -32,7 +32,7 @@ void mp_free(mp_t *mp, void *ptr);
 void *mp_calloc(mp_t *mp, size_t nmemb, size_t size);
 void *mp_realloc(mp_t *mp, void *ptr, size_t size);
 void *mp_realloc2(mp_t *mp, void *ptr, size_t size);
-
+unsigned char *cli_mp_hex2str(mp_t* mp, const unsigned char *src);
 #else /* USE_MPOOL */
 
 #define mp_malloc(a, b) cli_malloc(b)
@@ -40,6 +40,7 @@ void *mp_realloc2(mp_t *mp, void *ptr, size_t size);
 #define mp_calloc(a, b, c) cli_calloc(b, c)
 #define mp_realloc(a, b, c) cli_realloc(b, c)
 #define mp_realloc2(a, b, c) cli_realloc2(b, c)
+#define cli_mp_hex2str(mp, src) cli_hex2str(src)
 
 #endif /* USE_MPOOL */
 

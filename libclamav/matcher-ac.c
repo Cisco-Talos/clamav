@@ -1287,7 +1287,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 		    break;
 		}
 
-		if(!(c = cli_hex2str(h))) {
+		if(!(c = cli_mp_hex2str(root->mempool, h))) {
 		    free(h);
 		    error = CL_EMALFDB;
 		    break;
@@ -1295,7 +1295,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
 		if(newalt->chmode) {
 		    newalt->str[i] = *c;
-		    free(c);
+		    mp_free(root->mempool, c);
 		} else {
 		    if(i) {
 			altpt = newalt;

@@ -422,14 +422,14 @@ static int functionality_level_check(char* line)
 static int add_hash(struct regex_matcher *matcher, char* pattern, const char fl)
 {
 	int rc;
-	struct cli_bm_patt *pat = cli_calloc(1, sizeof(*pat));
+	struct cli_bm_patt *pat = mp_calloc(matcher->mempool, 1, sizeof(*pat));
 	if(!pat)
 		return CL_EMEM;
-	pat->pattern = (unsigned char*)cli_hex2str(pattern);
+	pat->pattern = (unsigned char*)cli_mp_hex2str(matcher->mempool, pattern);
 	if(!pat->pattern)
 		return CL_EMALFDB;
 	pat->length = 16;
-	pat->virname = cli_malloc(1);
+	pat->virname = mp_malloc(matcher->mempool, 1);
 	if(!pat->virname) {
 		free(pat);
 		return CL_EMEM;

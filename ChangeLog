@@ -1,3 +1,10 @@
+Tue Nov  4 12:56:46 EET 2008 (edwin)
+------------------------------------
+ * libclamav/matcher-ac.c (cli_ac_addsig): need to use mpool allocated memory for ->str
+ * libclamav/mpool.c (mp_malloc, cli_mp_hex2str, check_all): introduce hex2str wrapper
+ * libclamav/mpool.h (mp_t, cli_mp_hex2str): introduce hex2str wrapper
+ * libclamav/regex_list.c (add_hash): need to use mpool allocated memory for arg to bm_addpatt
+
 Tue Nov  4 12:36:29 EET 2008 (edwin)
 ------------------------------------
  * libclamav/mpool.c, unit_tests/check_clamav.c,
