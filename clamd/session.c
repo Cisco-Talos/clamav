@@ -158,12 +158,11 @@ int command(int desc, const struct cl_engine *engine, const struct cl_limits *li
 		return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD7, strlen(CMD7))) { /* VERSION */
-	thrmgr_setactivetask(NULL, CMD7);
 	    const char *dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
 	    char *path;
 	    struct cl_cvd *daily;
 
-
+	thrmgr_setactivetask(NULL, CMD7);
 	if(!(path = malloc(strlen(dbdir) + 30))) {
 	    mdprintf(desc, "Memory allocation error - SHUTDOWN forced\n");
 	    return COMMAND_SHUTDOWN;
