@@ -1,9 +1,0 @@
-CLAMAV_PRIVATE {
-	global:
-		unrar_open;
-		unrar_extract_next;
-		unrar_extract_next_prepare;
-		unrar_close;
-	local:
-		*;
-};
