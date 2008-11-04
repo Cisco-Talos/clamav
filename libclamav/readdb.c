@@ -92,9 +92,8 @@ int cl_loaddb(const char *filename, struct cl_engine **engine, unsigned int *sig
 int cl_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo);
 
 
-char *cli_virname(char *virname, unsigned int official, unsigned int allocated)
+char *cli_virname(char *virname, unsigned int official)
 {
-	unsigned int len;
 	char *newname, *pt;
 
 
@@ -102,44 +101,23 @@ char *cli_virname(char *virname, unsigned int official, unsigned int allocated)
 	return NULL;
 
     if((pt = strstr(virname, " (Clam)")))
-	len = strlen(virname) - strlen(pt);
-    else
-	len = strlen(virname);
+	*pt='\0';
 
-    if(!len) {
+    if(!virname[0]) {
 	cli_errmsg("cli_virname: Empty virus name\n");
 	return NULL;
     }
 
-    if(!official) {
-	newname = (char *) cli_malloc(len + 11 + 1);
-	if(!newname) {
-	    cli_errmsg("cli_virname: Can't allocate memory for newname\n");
-	    if(allocated)
-		free(virname);
-	    return NULL;
-	}
-	strncpy(newname, virname, len);
-	newname[len] = 0;
-	strcat(newname, ".UNOFFICIAL");
-	newname[len + 11] = 0;
-	if(allocated)
-	    free(virname);
-	return newname;
-    }
+    if(official)
+        return cli_strdup(virname);
 
-    if(!allocated) {
-	newname = (char *) cli_malloc(len + 1);
-	if(!newname) {
-	    cli_errmsg("cli_virname: Can't allocate memory for newname\n");
-	    return NULL;
-	}
-	strncpy(newname, virname, len);
-	newname[len] = 0;
-	return newname;
+    newname = (char *) cli_malloc(strlen(virname) + 11 + 1);
+    if(!newname) {
+      cli_errmsg("cli_virname: Can't allocate memory for newname\n");
+      return NULL;
     }
-
-    return virname;
+    sprintf(newname, "%s.UNOFFICIAL", virname);
+    return newname;
 }
 
 int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hexsig, uint16_t rtype, uint16_t type, const char *offset, uint8_t target, const uint32_t *lsigid, unsigned int options)
@@ -284,38 +262,14 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	bm_new = (struct cli_bm_patt *) mp_calloc(root->mempool, 1, sizeof(struct cli_bm_patt));
 	if(!bm_new)
 	    return CL_EMEM;
-
-#ifdef USE_MPOOL
-{
-    unsigned char *mpoolhexsig = (unsigned char *) cli_hex2str(hexsig);
-    if(mpoolhexsig) {
-        unsigned int mpoolhexsigsz = strlen(hexsig) / 2 + 1;
-	if((bm_new->pattern = mp_malloc(root->mempool, mpoolhexsigsz)))
-	    memcpy(bm_new->pattern, mpoolhexsig, mpoolhexsigsz);
-	free(mpoolhexsig);
-    } else bm_new->pattern = NULL;
-}
-#else
-        bm_new->pattern = (unsigned char *) cli_hex2str(hexsig);
-#endif
+        bm_new->pattern = (unsigned char *) cli_mp_hex2str(root->mempool, hexsig);
 	if(!bm_new->pattern) {
 	    mp_free(root->mempool, bm_new);
 	    return CL_EMALFDB;
 	}
 	bm_new->length = strlen(hexsig) / 2;
 
-#ifdef USE_MPOOL
-{
-    char *mpoolvirname = cli_virname((char *) virname, options & CL_DB_OFFICIAL, 0);
-    if(mpoolvirname) {
-	if((bm_new->virname = mp_malloc(root->mempool, strlen(mpoolvirname) + 1)))
-	    strcpy(bm_new->virname, mpoolvirname);
-	free(mpoolvirname);
-    } else bm_new->virname = NULL;
-}
-#else
-	bm_new->virname = cli_virname((char *) virname, options & CL_DB_OFFICIAL, 0);
-#endif
+	bm_new->virname = cli_mp_virname(root->mempool, (char *) virname, options & CL_DB_OFFICIAL);
 	if(!bm_new->virname) {
 	    mp_free(root->mempool, bm_new->pattern);
 	    mp_free(root->mempool, bm_new);
@@ -323,12 +277,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	}
 
 	if(offset) {
-#ifdef USE_MPOOL
-	    if((bm_new->offset = mp_malloc(root->mempool, strlen(offset) + 1)))
-	        strcpy(bm_new->offset, offset);
-#else
-	    bm_new->offset = cli_strdup(offset);
-#endif
+	    bm_new->offset = cli_mp_strdup(root->mempool, offset);
 	    if(!bm_new->offset) {
 	        mp_free(root->mempool, bm_new->pattern);
 		mp_free(root->mempool, bm_new->virname);
@@ -1014,12 +963,8 @@ static int cli_loadldb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	    ret = CL_EMEM;
 	    break;
 	}
-#ifdef USE_MPOOL
-	if((lsig->logic = mp_malloc((*engine)->mempool, strlen(logic)+1)))
-	    strcpy(lsig->logic, logic);
-#else
-	lsig->logic = cli_strdup(logic);
-#endif
+
+	lsig->logic = cli_mp_strdup((*engine)->mempool, logic);
 	if(!lsig->logic) {
 	    cli_errmsg("cli_loadldb: Can't allocate memory for lsig->logic\n");
 	    FREE_TDB(tdb);
@@ -1164,19 +1109,7 @@ static int cli_loadftm(FILE *fs, struct cl_engine **engine, unsigned int options
 	    }
 	    new->type = type;
 	    new->offset = atoi(tokens[1]);
-#ifdef USE_MPOOL
-{
-    unsigned char *mpoolmagic = cli_hex2str(tokens[2]);
-    if(mpoolmagic) {
-	unsigned int mpoolmagicsz = strlen(tokens[2]) / 2 + 1;
-        if((new->magic = mp_malloc((*engine)->mempool, mpoolmagicsz)))
-	    memcpy(new->magic, mpoolmagic, mpoolmagicsz);
-	free(mpoolmagic);
-    } else new->magic = NULL;
-}
-#else
-	    new->magic = (unsigned char *) cli_hex2str(tokens[2]);
-#endif
+	    new->magic = (unsigned char *) cli_mp_hex2str((*engine)->mempool, tokens[2]);
 	    if(!new->magic) {
 		cli_errmsg("cli_loadftm: Can't decode the hex string\n");
 		ret = CL_EMALFDB;
@@ -1184,12 +1117,7 @@ static int cli_loadftm(FILE *fs, struct cl_engine **engine, unsigned int options
 		break;
 	    }
 	    new->length = strlen(tokens[2]) / 2;
-#ifdef USE_MPOOL
-	   if((new->tname = mp_malloc((*engine)->mempool, strlen(tokens[3])+1)))
-		strcpy(new->tname, tokens[3]);
-#else
-	    new->tname = cli_strdup(tokens[3]);
-#endif
+	    new->tname = cli_mp_strdup((*engine)->mempool, tokens[3]);
 	    if(!new->tname) {
 		mp_free((*engine)->mempool, new->magic);
 		mp_free((*engine)->mempool, new);
@@ -1222,8 +1150,10 @@ static int cli_loadftm(FILE *fs, struct cl_engine **engine, unsigned int options
     return CL_SUCCESS;
 }
 
+#define IGN_TOKENS 3
 static int cli_loadign(FILE *fs, struct cl_engine **engine, unsigned int options, struct cli_dbio *dbio)
 {
+	const char *tokens[IGN_TOKENS];
 	char buffer[FILEBUFF], *pt;
 	unsigned int line = 0;
 	struct cli_ignsig *new;
@@ -1242,55 +1172,28 @@ static int cli_loadign(FILE *fs, struct cl_engine **engine, unsigned int options
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
 	cli_chomp(buffer);
+	cli_strtokenize(buffer, ':', IGN_TOKENS, tokens);
+
 	new = (struct cli_ignsig *) mp_calloc((*engine)->mempool, 1, sizeof(struct cli_ignsig));
 	if(!new) {
 	    ret = CL_EMEM;
 	    break;
 	}
 
-#ifdef USE_MPOOL
-{
-    unsigned char *mpooldbname = cli_strtok(buffer, 0, ":");
-    if(mpooldbname) {
-        if((new->dbname = mp_malloc((*engine)->mempool, strlen(mpooldbname) + 1)))
-	    strcpy(new->dbname, mpooldbname);
-	free(mpooldbname);
-    } else new->dbname = NULL;
-}
-#else
-	new->dbname = cli_strtok(buffer, 0, ":");
-#endif
+	new->dbname = cli_mp_strdup((*engine)->mempool, tokens[0]);
+
 	if(!new->dbname) {
 	    mp_free((*engine)->mempool, new);
 	    ret = CL_EMALFDB;
 	    break;
 	}
 
-	if(!(pt = cli_strtok(buffer, 1, ":"))) {
-	    mp_free((*engine)->mempool, new->dbname);
-	    mp_free((*engine)->mempool, new);
-	    ret = CL_EMALFDB;
-	    break;
-	} else {
-	    new->line = atoi(pt);
-	    free(pt);
-	}
+	new->line = atoi(tokens[1]);
 
 	if((ret = hashset_addkey(&ignored->hs, new->line)))
 	    break;
 
-#ifdef USE_MPOOL
-{
-    unsigned char *mpoolsigname = cli_strtok(buffer, 2, ":");
-    if(mpoolsigname) {
-        if((new->signame = mp_malloc((*engine)->mempool, strlen(mpoolsigname) + 1)))
-	    strcpy(new->signame, mpoolsigname);
-	free(mpoolsigname);
-    } else new->signame = NULL;
-}
-#else
-	new->signame = cli_strtok(buffer, 2, ":");
-#endif
+	new->signame = cli_mp_strdup((*engine)->mempool, tokens[2]);
 	if(!new->signame) {
 	    mp_free((*engine)->mempool, new->dbname);
 	    mp_free((*engine)->mempool, new);
@@ -1421,29 +1324,12 @@ static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	    break;
 	}
 
-#ifdef USE_MPOOL
-	if(strlen(pt) == 32) {
-	    unsigned char *mpoolhex = (unsigned char *) cli_hex2str(pt);
-	    if(mpoolhex) {
-	        if((new->pattern = mp_malloc((*engine)->mempool, 17)))
-		    memcpy(new->pattern, mpoolhex, 17);
-		free(mpoolhex);
-	    } else new->pattern = NULL;
-	} else new->pattern = NULL;
-	if(new->pattern == NULL) {
+	if(strlen(pt) != 32 || !(new->pattern = (unsigned char *) cli_mp_hex2str((*engine)->mempool, pt))) {
 	    cli_errmsg("cli_loadmd5: Malformed MD5 string at line %u\n", line);
 	    mp_free((*engine)->mempool, new);
 	    ret = CL_EMALFDB;
 	    break;
 	}
-#else
-	if(strlen(pt) != 32 || !(new->pattern = (unsigned char *) cli_hex2str(pt))) {
-	    cli_errmsg("cli_loadmd5: Malformed MD5 string at line %u\n", line);
-	    free(new);
-	    ret = CL_EMALFDB;
-	    break;
-	}
-#endif
 	new->length = 16;
 
 	if(!(pt = tokens[size_field])) {
@@ -1454,18 +1340,7 @@ static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	}
 	size = atoi(pt);
 
-#ifdef USE_MPOOL
-	{
-	  char *mpoolvname = cli_virname((char *) tokens[2], options & CL_DB_OFFICIAL, 0);
-	  if(mpoolvname) {
-	    if((new->virname = mp_malloc((*engine)->mempool, strlen(mpoolvname) + 1)))
-	      strcpy(new->virname, mpoolvname);
-	    free(mpoolvname);
-	  } else new->virname = NULL;
-	}
-#else
-	new->virname = cli_virname((char *) tokens[2], options & CL_DB_OFFICIAL, 0);
-#endif
+	new->virname = cli_mp_virname((*engine)->mempool, (char *) tokens[2], options & CL_DB_OFFICIAL);
 	if(!new->virname) {
 	    mp_free((*engine)->mempool, new->pattern);
 	    mp_free((*engine)->mempool, new);
@@ -1519,8 +1394,10 @@ static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo,
     return CL_SUCCESS;
 }
 
+#define MD_TOKENS 9
 static int cli_loadmd(FILE *fs, struct cl_engine **engine, unsigned int *signo, int type, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
+	const char *tokens[MD_TOKENS];
 	char buffer[FILEBUFF], *pt;
 	unsigned int line = 0, sigs = 0;
 	int ret = CL_SUCCESS, crc;
@@ -1533,6 +1410,7 @@ static int cli_loadmd(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 	    continue;
 
 	cli_chomp(buffer);
+	cli_strtokenize(buffer, ':', MD_TOKENS, tokens);
 
 	new = (struct cli_meta_node *) mp_calloc((*engine)->mempool, 1, sizeof(struct cli_meta_node));
 	if(!new) {
@@ -1540,20 +1418,9 @@ static int cli_loadmd(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 	    break;
 	}
 
-#ifdef USE_MPOOL
-	{
-	  char *mpoolvname = cli_virname(cli_strtok(buffer, 0, ":"), options & CL_DB_OFFICIAL, 1);
-	  if(mpoolvname) {
-	      if((new->virname = mp_malloc((*engine)->mempool, strlen(mpoolvname) + 1)))
-		  strcpy(new->virname, mpoolvname);
-	      free(mpoolvname);
-	  } else new->virname = NULL;
-	}
-#else
-	new->virname = cli_virname(cli_strtok(buffer, 0, ":"), options & CL_DB_OFFICIAL, 1);
-#endif
+	new->virname = cli_mp_virname((*engine)->mempool, (char *)tokens[0], options & CL_DB_OFFICIAL);
 	if(!new->virname) {
-	  mp_free((*engine)->mempool, new);
+	    mp_free((*engine)->mempool, new);
 	    ret = CL_EMEM;
 	    break;
 	}
@@ -1564,28 +1431,8 @@ static int cli_loadmd(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 	    continue;
 	}
 
-	if(!(pt = cli_strtok(buffer, 1, ":"))) {
-	    mp_free((*engine)->mempool, new->virname);
-	    mp_free((*engine)->mempool, new);
-	    ret = CL_EMALFDB;
-	    break;
-	} else {
-	    new->encrypted = atoi(pt);
-	    free(pt);
-	}
-
-#ifdef USE_MPOOL
-	{
-	  char *mpoolfname = cli_strtok(buffer, 2, ":");
-	  if(mpoolfname) {
-	      if((new->filename = mp_malloc((*engine)->mempool, strlen(mpoolfname) + 1)))
-		  strcpy(new->filename, mpoolfname);
-	      free(mpoolfname);
-	  } else new->filename = NULL;
-	}
-#else
-	new->filename = cli_strtok(buffer, 2, ":");
-#endif
+	new->encrypted = atoi(tokens[1]);
+	new->filename = cli_mp_strdup((*engine)->mempool, tokens[2]);
 	if(!new->filename) {
 	    mp_free((*engine)->mempool, new->virname);
 	    mp_free((*engine)->mempool, new);
@@ -1598,95 +1445,41 @@ static int cli_loadmd(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 	    }
 	}
 
-	if(!(pt = cli_strtok(buffer, 3, ":"))) {
-	    if(new->filename) mp_free((*engine)->mempool, new->filename);
-	    mp_free((*engine)->mempool, new->virname);
-	    mp_free((*engine)->mempool, new);
-	    ret = CL_EMALFDB;
-	    break;
-	} else {
-	    if(!strcmp(pt, "*"))
-		new->size = -1;
-	    else
-		new->size = atoi(pt);
-	    free(pt);
-	}
+	if(!strcmp(tokens[3], "*"))
+	    new->size = -1;
+	else
+	    new->size = atoi(tokens[3]);
 
-	if(!(pt = cli_strtok(buffer, 4, ":"))) {
-	    if(new->filename) mp_free((*engine)->mempool, new->filename);
-	    mp_free((*engine)->mempool, new->virname);
-	    mp_free((*engine)->mempool, new);
-	    ret = CL_EMALFDB;
-	    break;
-	} else {
-	    if(!strcmp(pt, "*"))
-		new->csize = -1;
-	    else
-		new->csize = atoi(pt);
-	    free(pt);
-	}
+	if(!strcmp(tokens[4], "*"))
+	    new->csize = -1;
+	else
+	    new->csize = atoi(tokens[4]);
 
-	if(!(pt = cli_strtok(buffer, 5, ":"))) {
-	    if(new->filename) mp_free((*engine)->mempool, new->filename);
-	    mp_free((*engine)->mempool, new->virname);
-	    mp_free((*engine)->mempool, new);
-	    ret = CL_EMALFDB;
-	    break;
+	if(!strcmp(tokens[5], "*")) {
+	    new->crc32 = 0;
 	} else {
-	    if(!strcmp(pt, "*")) {
-		new->crc32 = 0;
-	    } else {
-		crc = cli_hex2num(pt);
-		if(crc == -1) {
-		    ret = CL_EMALFDB;
-		    break;
-		}
-		new->crc32 = (unsigned int) crc;
+	    crc = cli_hex2num(tokens[5]);
+	    if(crc == -1) {
+	        ret = CL_EMALFDB;
+		break;
 	    }
-	    free(pt);
+	    new->crc32 = (unsigned int) crc;
 	}
 
-	if(!(pt = cli_strtok(buffer, 6, ":"))) {
-	    if(new->filename) mp_free((*engine)->mempool, new->filename);
-	    mp_free((*engine)->mempool, new->virname);
-	    mp_free((*engine)->mempool, new);
-	    ret = CL_EMALFDB;
-	    break;
-	} else {
-	    if(!strcmp(pt, "*"))
-		new->method = -1;
-	    else
-		new->method = atoi(pt);
-	    free(pt);
-	}
+	if(!strcmp(tokens[6], "*"))
+	    new->method = -1;
+	else
+	    new->method = atoi(tokens[6]);
 
-	if(!(pt = cli_strtok(buffer, 7, ":"))) {
-	    if(new->filename) mp_free((*engine)->mempool, new->filename);
-	    mp_free((*engine)->mempool, new->virname);
-	    mp_free((*engine)->mempool, new);
-	    ret = CL_EMALFDB;
-	    break;
-	} else {
-	    if(!strcmp(pt, "*"))
-		new->fileno = 0;
-	    else
-		new->fileno = atoi(pt);
-	    free(pt);
-	}
+	if(!strcmp(tokens[7], "*"))
+	    new->fileno = 0;
+	else
+	    new->fileno = atoi(tokens[7]);
 
-	if(!(pt = cli_strtok(buffer, 8, ":"))) {
-	    if(new->filename) mp_free((*engine)->mempool, new->filename);
-	    mp_free((*engine)->mempool, new->virname);
-	    mp_free((*engine)->mempool, new);
-	    ret = CL_EMALFDB;
-	    break;
-	} else {
-	    if(!strcmp(pt, "*"))
-		new->maxdepth = 0;
-	    else
-		new->maxdepth = atoi(pt);
-	    free(pt);
-	}
+	if(!strcmp(tokens[8], "*"))
+	    new->maxdepth = 0;
+	else
+	    new->maxdepth = atoi(tokens[8]);
 
 	if(type == 1) {
 	    new->next = (*engine)->zip_mlist;

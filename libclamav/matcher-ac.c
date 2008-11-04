@@ -1426,18 +1426,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     if(new->length > root->maxpatlen)
 	root->maxpatlen = new->length;
 
-#ifdef USE_MPOOL
-{
-    char *mpoolvirname = cli_virname((char *) virname, options & CL_DB_OFFICIAL, 0);
-    if(mpoolvirname) {
-        if((new->virname = mp_malloc(root->mempool, strlen(mpoolvirname) + 1)) != NULL)
-	    strcpy(new->virname, mpoolvirname);
-	free(mpoolvirname);
-    } else new->virname = NULL;
-}
-#else
-    new->virname = cli_virname((char *) virname, options & CL_DB_OFFICIAL, 0);
-#endif
+    new->virname = cli_mp_virname(root->mempool, (char *) virname, options & CL_DB_OFFICIAL);
     if(!new->virname) {
 	mp_free(root->mempool, new->prefix ? new->prefix : new->pattern);
 	mp_ac_free_alt(root->mempool, new);
@@ -1449,12 +1438,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	root->ac_lsigtable[new->lsigid[1]]->virname = new->virname;
 
     if(offset) {
-#ifdef USE_MPOOL
-        if((new->offset = mp_malloc(root->mempool, strlen(offset) + 1)))
-	    strcpy(new->offset, offset);
-#else
-	new->offset = cli_strdup(offset);
-#endif
+	new->offset = cli_mp_strdup(root->mempool, offset);
 	if(!new->offset) {
 	    mp_free(root->mempool, new->prefix ? new->prefix : new->pattern);
 	    mp_ac_free_alt(root->mempool, new);

@@ -40,6 +40,7 @@
 
 #include "others.h"
 #include "str.h"
+#include "readdb.h"
 #ifndef CL_DEBUG
 #define NDEBUG
 #endif
@@ -328,7 +329,7 @@ struct FRAG {
 #define FRAG_OVERHEAD (offsetof(struct FRAG, fake))
 
 #define align_to_voidptr(size) (((size) / sizeof(void *) + ((size) % sizeof(void *) != 0)) * sizeof(void *))
-#define roundup(size) (FRAG_OVERHEAD + align_to_voidptr(size))
+#define mp_roundup(size) (FRAG_OVERHEAD + align_to_voidptr(size))
 
 static unsigned int align_to_pagesize(struct MP *mp, unsigned int size) {
   return (size / mp->psize + (size % mp->psize != 0)) * mp->psize;
@@ -399,7 +400,7 @@ void *mp_malloc(struct MP *mp, size_t size) {
 
   /* Case 1: We have a free'd frag */
   if((f = mp->avail[sbits])) {
-    spam("malloc %p size %u (freed)\n", f, roundup(size));
+    spam("malloc %p size %u (freed)\n", f, mp_roundup(size));
     mp->avail[sbits] = f->next;
 #ifdef CL_DEBUG
       f->magic = MPOOLMAGIC;
@@ -416,7 +417,7 @@ void *mp_malloc(struct MP *mp, size_t size) {
   while(mpm) {
     if(mpm->size - mpm->usize >= needed) {
       f = (struct FRAG *)((void *)mpm + mpm->usize);
-      spam("malloc %p size %u (hole)\n", f, roundup(size));
+      spam("malloc %p size %u (hole)\n", f, mp_roundup(size));
       mpm->usize += needed;
       f->sbits = sbits;
 #ifdef CL_DEBUG
@@ -443,7 +444,7 @@ void *mp_malloc(struct MP *mp, size_t size) {
   mpm->next = mp->mpm.next;
   mp->mpm.next = mpm;
   f = (struct FRAG *)((void *)mpm + align_to_voidptr(sizeof(*mpm)));
-  spam("malloc %p size %u (new map)\n", f, roundup(size));
+  spam("malloc %p size %u (new map)\n", f, mp_roundup(size));
   f->sbits = sbits;
 #ifdef CL_DEBUG
       f->magic = MPOOLMAGIC;
@@ -527,6 +528,50 @@ unsigned char *cli_mp_hex2str(mp_t *mp, const unsigned char *str)
 	}
 	return NULL;
 }
+
+char *cli_mp_strdup(mp_t *mp, const char *s) {
+  char *alloc;
+  unsigned int strsz;
+
+  if(s == NULL) {
+    cli_errmsg("cli_mp_strdup(): s == NULL. Please report to http://bugs.clamav.net\n");
+    return NULL;
+  }
+
+  strsz = strlen(s) + 1;
+  alloc = mp_malloc(mp, strsz);
+  if(!alloc)
+    cli_errmsg("cli_mp_strdup(): Can't allocate memory (%u bytes).\n", (unsigned int) strsz);
+  else
+    memcpy(alloc, s, strsz);
+  return alloc;
+}
+
+char *cli_mp_virname(mp_t *mp, char *virname, unsigned int official) {
+  char *newname, *pt;
+  if(!virname)
+    return NULL;
+
+  if((pt = strstr(virname, " (Clam)")))
+    *pt='\0';
+
+  if(!virname[0]) {
+    cli_errmsg("cli_virname: Empty virus name\n");
+    return NULL;
+  }
+
+  if(official)
+    return cli_mp_strdup(mp, virname);
+
+  newname = (char *)mp_malloc(mp, strlen(virname) + 11 + 1);
+  if(!newname) {
+    cli_errmsg("cli_virname: Can't allocate memory for newname\n");
+    return NULL;
+  }
+  sprintf(newname, "%s.UNOFFICIAL", virname);
+  return newname;
+}
+
 
 #ifdef DEBUGMPOOL
 void mp_stats(struct MP *mp) {
