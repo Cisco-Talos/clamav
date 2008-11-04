@@ -1,3 +1,7 @@
+Tue Nov  4 11:32:16 EET 2008 (edwin)
+------------------------------------
+ * clamd/thrmgr.c: fix whitespace
+
 Tue Nov  4 11:29:23 EET 2008 (edwin)
 ------------------------------------
  * clamd/session.c: fix mixed statements (bb #1269)

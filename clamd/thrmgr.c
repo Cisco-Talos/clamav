@@ -46,12 +46,12 @@
 static work_queue_t *work_queue_new(void)
 {
 	work_queue_t *work_q;
-	
+
 	work_q = (work_queue_t *) malloc(sizeof(work_queue_t));
 	if (!work_q) {
 		return NULL;
 	}
-	
+
 	work_q->head = work_q->tail = NULL;
 	work_q->item_count = 0;
 	return work_q;
@@ -60,7 +60,7 @@ static work_queue_t *work_queue_new(void)
 static int work_queue_add(work_queue_t *work_q, void *data)
 {
 	work_item_t *work_item;
-	
+
 	if (!work_q) {
 		return FALSE;
 	}
@@ -68,11 +68,11 @@ static int work_queue_add(work_queue_t *work_q, void *data)
 	if (!work_item) {
 		return FALSE;
 	}
-	
+
 	work_item->next = NULL;
 	work_item->data = data;
 	gettimeofday(&(work_item->time_queued), NULL);
-	
+
 	if (work_q->head == NULL) {
 		work_q->head = work_q->tail = work_item;
 		work_q->item_count = 1;
@@ -88,7 +88,7 @@ static void *work_queue_pop(work_queue_t *work_q)
 {
 	work_item_t *work_item;
 	void *data;
-	
+
 	if (!work_q || !work_q->head) {
 		return NULL;
 	}
@@ -245,9 +245,9 @@ void thrmgr_destroy(threadpool_t *threadpool)
 	if (!threadpool) {
 		return;
 	}
-  	if (pthread_mutex_lock(&threadpool->pool_mutex) != 0) {
-   		logg("!Mutex lock failed\n");
-    		exit(-1);
+	if (pthread_mutex_lock(&threadpool->pool_mutex) != 0) {
+		logg("!Mutex lock failed\n");
+		exit(-1);
 	}
 	if(threadpool->state != POOL_VALID) {
 		if (pthread_mutex_unlock(&threadpool->pool_mutex) != 0) {
@@ -257,7 +257,7 @@ void thrmgr_destroy(threadpool_t *threadpool)
 		return;
 	}
 	threadpool->state = POOL_EXIT;
-	
+
 	/* wait for threads to exit */
 	if (threadpool->thr_alive > 0) {
 		if (pthread_cond_broadcast(&(threadpool->pool_cond)) != 0) {
@@ -272,11 +272,11 @@ void thrmgr_destroy(threadpool_t *threadpool)
 		}
 	}
 	remove_frompools(threadpool);
-  	if (pthread_mutex_unlock(&threadpool->pool_mutex) != 0) {
-    		logg("!Mutex unlock failed\n");
-    		exit(-1);
-  	}
-	
+	if (pthread_mutex_unlock(&threadpool->pool_mutex) != 0) {
+		logg("!Mutex unlock failed\n");
+		exit(-1);
+	}
+
 	pthread_mutex_destroy(&(threadpool->pool_mutex));
 	pthread_cond_destroy(&(threadpool)->idle_cond);
 	pthread_cond_destroy(&(threadpool->pool_cond));
@@ -292,11 +292,11 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void
 #if defined(C_BIGSTACK)
 	size_t stacksize;
 #endif
-	
+
 	if (max_threads <= 0) {
 		return NULL;
 	}
-	
+
 	threadpool = (threadpool_t *) malloc(sizeof(threadpool_t));
 	if (!threadpool) {
 		return NULL;
@@ -306,14 +306,14 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void
 	if (!threadpool->queue) {
 		free(threadpool);
 		return NULL;
-	}	
+	}
 	threadpool->thr_max = max_threads;
 	threadpool->thr_alive = 0;
 	threadpool->thr_idle = 0;
 	threadpool->idle_timeout = idle_timeout;
 	threadpool->handler = handler;
 	threadpool->tasks = NULL;
-	
+
 	if(pthread_mutex_init(&(threadpool->pool_mutex), NULL)) {
 		free(threadpool->queue);
 		free(threadpool);
@@ -343,7 +343,7 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void
 		free(threadpool);
 		return NULL;
 	}
-	
+
 	if (pthread_attr_setdetachstate(&(threadpool->pool_attr), PTHREAD_CREATE_DETACHED) != 0) {
 		pthread_attr_destroy(&(threadpool->pool_attr));
 		pthread_cond_destroy(&(threadpool->idle_cond));
@@ -426,7 +426,7 @@ static void *thrmgr_worker(void *arg)
 	void *job_data;
 	int retval, must_exit = FALSE, stats_inited = FALSE;
 	struct timespec timeout;
-	
+
 	/* loop looking for work */
 	for (;;) {
 		if (pthread_mutex_lock(&(threadpool->pool_mutex)) != 0) {
