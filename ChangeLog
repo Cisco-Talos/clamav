@@ -1,3 +1,7 @@
+Tue Nov  4 20:50:45 CET 2008 (tk)
+---------------------------------
+ * libclamav/matcher-ac.c: micro-optimization (bb#843), thanks to Edwin
+
 Tue Nov  4 20:47:14 CET 2008 (acab)
 -----------------------------------
  * libclamav: mempool de-uglify

@@ -258,8 +258,13 @@ static int ac_maketrans(struct cli_matcher *root)
     }
 
     while((node = bfs_dequeue(&bfs, &bfs_last))) {
-	if(node->leaf)
+	if(node->leaf) {
+	    struct cli_ac_node *failtarget = node->fail;
+	    while(failtarget->leaf)
+		failtarget = failtarget->fail;
+	    node->fail = failtarget;
 	    continue;
+	}
 
 	for(i = 0; i < 256; i++) {
 	    child = node->trans[i];
@@ -283,6 +288,31 @@ static int ac_maketrans(struct cli_matcher *root)
 		if(child->list)
 		    child->final = 1;
 
+		if((ret = bfs_enqueue(&bfs, &bfs_last, child)) != 0)
+		    return ret;
+	    }
+	}
+    }
+
+    bfs = bfs_last = NULL;
+    for(i = 0; i < 256; i++) {
+	node = ac_root->trans[i];
+	if(node != ac_root) {
+	    if((ret = bfs_enqueue(&bfs, &bfs_last, node)))
+		return ret;
+	}
+    }
+    while((node = bfs_dequeue(&bfs, &bfs_last))) {
+	if(node->leaf)
+	    continue;
+	for(i = 0; i < 256; i++) {
+	    child = node->trans[i];
+	    if(!child) {
+		struct cli_ac_node *failtarget = node->fail;
+		while(failtarget->leaf || !failtarget->trans[i])
+		    failtarget = failtarget->fail;
+		node->trans[i] = failtarget->trans[i];
+	    } else {
 		if((ret = bfs_enqueue(&bfs, &bfs_last, child)) != 0)
 		    return ret;
 	    }
@@ -875,7 +905,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
     for(i = 0; i < length; i++)  {
 
-	while(current->leaf || !current->trans[buffer[i]])
+	if(current->leaf)
 	    current = current->fail;
 
 	current = current->trans[buffer[i]];
