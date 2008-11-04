@@ -61,7 +61,7 @@ START_TEST (test_ac_scanbuff) {
     fail_unless(root != NULL, "root == NULL");
     root->ac_only = 1;
 
-#ifdef USE_MEMPOOL
+#ifdef USE_MPOOL
     root->mempool = mp_create();
 #endif
     ret = cli_ac_init(root, AC_DEFAULT_MIN_DEPTH, AC_DEFAULT_MAX_DEPTH);
@@ -86,7 +86,7 @@ START_TEST (test_ac_scanbuff) {
 
     cli_ac_freedata(&mdata);
     cli_ac_free(root);
-#ifdef USE_MEMPOOL
+#ifdef USE_MPOOL
     mp_destroy(root->mempool);
 #endif
     free(root);
@@ -102,7 +102,7 @@ START_TEST (test_bm_scanbuff) {
     root = (struct cli_matcher *) cli_calloc(1, sizeof(struct cli_matcher));
     fail_unless(root != NULL, "root == NULL");
 
-#ifdef USE_MEMPOOL
+#ifdef USE_MPOOL
     root->mempool = mp_create();
 #endif
     ret = cli_bm_init(root);
@@ -119,7 +119,7 @@ START_TEST (test_bm_scanbuff) {
     fail_unless(ret == CL_VIRUS, "cli_bm_scanbuff() failed");
     fail_unless(!strncmp(virname, "Sig2", 4), "Incorrect signature matched in cli_bm_scanbuff()\n");
     cli_bm_free(root);
-#ifdef USE_MEMPOOL
+#ifdef USE_MPOOL
     mp_destroy(root->mempool);
 #endif
     free(root);

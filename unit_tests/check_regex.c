@@ -154,7 +154,7 @@ static struct regex_matcher matcher;
 static void rsetup(void)
 {
 	int rc;
-#ifdef USE_MEMPOOL
+#ifdef USE_MPOOL
 	matcher.mempool = mp_create();
 #endif
 	rc = init_regex_list(&matcher);
@@ -164,7 +164,7 @@ static void rsetup(void)
 static void rteardown(void)
 {
 	regex_list_done(&matcher);
-#ifdef USE_MEMPOOL
+#ifdef USE_MPOOL
 	mp_destroy(matcher.mempool);
 #endif
 }
@@ -280,15 +280,11 @@ static int loaded_2 = 0;
 static void psetup_impl(int load2)
 {
 	FILE *f;
-	struct phishcheck *pchk;
 	int rc;
-	rc = cli_initengine(&engine, 0);
+	rc = cli_initengine(&engine, CL_DB_STDOPT);
 	fail_unless(rc == 0, "cl_initengine");
 
-	rc = phishing_init(engine);
-	fail_unless(rc == 0,"phishing_init");
-	pchk = engine->phishcheck;
-	fail_unless(!!pchk, "engine->phishcheck");
+	fail_unless(!!engine->phishcheck, "engine->phishcheck");
 
 	rc = init_domainlist(engine);
 	fail_unless(rc == 0,"init_domainlist");

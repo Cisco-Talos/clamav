@@ -375,7 +375,7 @@ void diff_files(int fd, int ref_fd)
 	free(ref);
 }
 
-#ifdef USE_MEMPOOL
+#ifdef USE_MPOOL
 static mp_t *pool;
 #else
 static void *pool;
@@ -386,7 +386,7 @@ void dconf_setup(void)
 {
 	pool = NULL;
 	dconf = NULL;
-#ifdef USE_MEMPOOL
+#ifdef USE_MPOOL
 	pool = mp_create();
 	fail_unless(!!pool, "unable to create pool");
 #endif
@@ -397,7 +397,7 @@ void dconf_setup(void)
 void dconf_teardown(void)
 {
 	mp_free(pool, dconf);
-#ifdef USE_MEMPOOL
+#ifdef USE_MPOOL
 	if (pool)
 		mp_destroy(pool);
 #endif

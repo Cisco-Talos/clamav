@@ -39,11 +39,16 @@
 #include <stddef.h>
 
 #include "others.h"
+#ifndef CL_DEBUG
+#define NDEBUG
+#endif
+#include <assert.h>
 
-/* #define DEBUGMPOOL /\* DO NOT define *\/ */
+#define MPOOLMAGIC 0x5adeada5
+/*#define DEBUGMPOOL /\* DO NOT define *\/ */
 #ifdef DEBUGMPOOL
 FILE *lfd = NULL;
-#define spam(...) cli_warnmsg(lfd, __VA_ARGS__)
+#define spam(...) cli_warnmsg( __VA_ARGS__)
 #else
 #define spam
 #endif
@@ -314,6 +319,9 @@ struct MP {
 struct FRAG {
   struct FRAG *next;
   unsigned int sbits;
+#ifdef CL_DEBUG
+  unsigned int magic;
+#endif
   void *fake;
 };
 #define FRAG_OVERHEAD (offsetof(struct FRAG, fake))
@@ -407,6 +415,9 @@ void *mp_malloc(struct MP *mp, size_t size) {
       spam("malloc %p size %u (hole)\n", f, roundup(size));
       mpm->usize += needed;
       f->sbits = sbits;
+#ifdef CL_DEBUG
+      f->magic = MPOOLMAGIC;
+#endif
       return &f->fake;
     }
     mpm = mpm->next;
@@ -430,12 +441,19 @@ void *mp_malloc(struct MP *mp, size_t size) {
   f = (struct FRAG *)((void *)mpm + align_to_voidptr(sizeof(*mpm)));
   spam("malloc %p size %u (new map)\n", f, roundup(size));
   f->sbits = sbits;
+#ifdef CL_DEBUG
+      f->magic = MPOOLMAGIC;
+#endif
   return &f->fake;
 }
 
 void mp_free(struct MP *mp, void *ptr) {
   struct FRAG *f = (struct FRAG *)(ptr - FRAG_OVERHEAD);
   if (!ptr) return;
+
+#ifdef CL_DEBUG
+  assert(f->magic == MPOOLMAGIC && "Attempt to mp_free a pointer we did not allocate!");
+#endif
 
   f->next = mp->avail[f->sbits];
   mp->avail[f->sbits] = f;

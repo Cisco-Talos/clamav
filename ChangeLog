@@ -1,3 +1,9 @@
+Tue Nov  4 12:36:29 EET 2008 (edwin)
+------------------------------------
+ * libclamav/mpool.c, unit_tests/check_clamav.c,
+ unit_tests/check_matchers.c, unit_tests/check_regex.c: mpool
+ debugging s/USE_MEMPOOL/USE_MPOOL/
+
 Tue Nov  4 11:36:38 EET 2008 (edwin)
 ------------------------------------
  * clamd/thrmgr.c (thrmgr_printstats, IDLE_TASK): add comments
