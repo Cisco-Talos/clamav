@@ -35,6 +35,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/time.h>
+#include <assert.h>
 
 enum colors {
 	header_color=1,
@@ -237,6 +238,7 @@ static void show_bar(WINDOW *win, size_t i, unsigned live, unsigned idle,
 	unsigned dim   = idle*(len - start - 2) / max;
 	unsigned rem = len - activ - dim - start-2;
 
+	assert(activ + 2 < len && activ+dim + 2 < len && activ+dim+rem + 2 < len && "Invalid values");
 	mvwaddch(win, i, start, '[' | A_BOLD);
 	wattron(win, A_BOLD | COLOR_PAIR(activ_color));
 	for(i=0;i<activ;i++)
@@ -349,7 +351,7 @@ static void output_memstats(const char* line)
 		biggest_mem = totalmem;
 		blink = 1;
 	}
-	show_bar(mem_window, 3, totalmem, ltotalf + lmmapu + lreleasable,
+	show_bar(mem_window, 3, totalmem, lmmapu + lreleasable,
 			biggest_mem, blink);
 	wrefresh(mem_window);
 }
