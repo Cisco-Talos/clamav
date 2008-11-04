@@ -1,3 +1,8 @@
+Tue Nov  4 23:02:27 EET 2008 (edwin)
+------------------------------------
+ * contrib/clamdtop/TODO: add more TODO notes, thanks nitrox for the
+ feedback!
+
 Tue Nov  4 22:44:20 EET 2008 (edwin)
 ------------------------------------
  * contrib/clamdtop/TODO: add TODO note about reconnecting

@@ -5,3 +5,8 @@ integrate into toplevel clamav, and build if ncurses is available (optional)
 figure out minimum version of ncurses required, I used 5.5 during development.
 show mempool statistics too.
 reconnect after a DB reload (we get a broken pipe)
+describe what the various fields mean, like what live/idle threads mean and why
+describe why the multiscan view is split
+explain what queue means, and why it is high with multiscan
+figure a solution to represent multiple multiscan commands (though why would
+somebody run 2 in parallel?)
