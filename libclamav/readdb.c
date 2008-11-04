@@ -388,11 +388,11 @@ int cli_initengine(struct cl_engine **engine, unsigned int options)
 	    cli_errmsg("Can't initialize dynamic configuration\n");
 	    return CL_EMEM;
 	}
-    }
 
-    if((options & CL_DB_PHISHING_URLS) && (((struct cli_dconf*) (*engine)->dconf)->phishing & PHISHING_CONF_ENGINE))
-	if((ret = phishing_init(*engine)))
-	    return ret;
+	if((options & CL_DB_PHISHING_URLS) && (((struct cli_dconf*) (*engine)->dconf)->phishing & PHISHING_CONF_ENGINE))
+	    if((ret = phishing_init(*engine)))
+		return ret;
+    }
 
     return CL_SUCCESS;
 }
@@ -528,11 +528,6 @@ static int cli_loaddb(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 	struct cli_matcher *root;
 
 
-    if((ret = cli_initengine(engine, options))) {
-	cl_free(*engine);
-	return ret;
-    }
-
     if((ret = cli_initroots(*engine, options))) {
 	cl_free(*engine);
 	return ret;
@@ -589,11 +584,6 @@ static int cli_loadwdb(FILE *fs, struct cl_engine **engine, unsigned int options
 	int ret = 0;
 
 
-    if((ret = cli_initengine(engine, options))) {
-	cl_free(*engine);
-	return ret;
-    }
-
     if(!(((struct cli_dconf *) (*engine)->dconf)->phishing & PHISHING_CONF_ENGINE))
 	return CL_SUCCESS;
 
@@ -618,11 +608,6 @@ static int cli_loadpdb(FILE *fs, struct cl_engine **engine, unsigned int options
 {
 	int ret = 0;
 
-
-    if((ret = cli_initengine(engine, options))) {
-	cl_free(*engine);
-	return ret;
-    }
 
     if(!(((struct cli_dconf *) (*engine)->dconf)->phishing & PHISHING_CONF_ENGINE))
 	return CL_SUCCESS;
@@ -655,11 +640,6 @@ static int cli_loadndb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	unsigned short target;
 	unsigned int phish = options & CL_DB_PHISHING;
 
-
-    if((ret = cli_initengine(engine, options))) {
-	cl_free(*engine);
-	return ret;
-    }
 
     if((ret = cli_initroots(*engine, options))) {
 	cl_free(*engine);
@@ -946,11 +926,6 @@ static int cli_loadldb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	struct cli_lsig_tdb tdb;
 
 
-    if((ret = cli_initengine(engine, options))) {
-	cl_free(*engine);
-	return ret;
-    }
-
     if((ret = cli_initroots(*engine, options))) {
 	cl_free(*engine);
 	return ret;
@@ -1127,11 +1102,6 @@ static int cli_loadftm(FILE *fs, struct cl_engine **engine, unsigned int options
 	int ret;
 
 
-    if((ret = cli_initengine(engine, options))) {
-	cl_free(*engine);
-	return ret;
-    }
-
     if((ret = cli_initroots(*engine, options))) {
 	cl_free(*engine);
 	return ret;
@@ -1258,13 +1228,8 @@ static int cli_loadign(FILE *fs, struct cl_engine **engine, unsigned int options
 	unsigned int line = 0;
 	struct cli_ignsig *new;
 	struct cli_ignored *ignored;
-	int ret;
+	int ret = CL_SUCCESS;
 
-
-    if((ret = cli_initengine(engine, options))) {
-	cl_free(*engine);
-	return ret;
-    }
 
     if(!(ignored = (*engine)->ignored)) {
 	ignored = (*engine)->ignored = (struct cli_ignored *) cli_calloc(sizeof(struct cli_ignored), 1);
@@ -1421,10 +1386,6 @@ static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 	struct cli_bm_patt *new;
 	struct cli_matcher *db = NULL;
 
-    if((ret = cli_initengine(engine, options))) {
-	cl_free(*engine);
-	return ret;
-    }
 
     if(mode == MD5_MDB) {
 	size_field = 0;
@@ -1562,14 +1523,9 @@ static int cli_loadmd(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 {
 	char buffer[FILEBUFF], *pt;
 	unsigned int line = 0, sigs = 0;
-	int ret, crc;
+	int ret = CL_SUCCESS, crc;
 	struct cli_meta_node *new;
 
-
-    if((ret = cli_initengine(engine, options))) {
-	cl_free(*engine);
-	return ret;
-    }
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
@@ -1791,20 +1747,10 @@ int cli_load(const char *filename, struct cl_engine **engine, unsigned int *sign
 	ret = cli_loaddb(fs, engine, signo, options, dbio, dbname);
 
     } else if(cli_strbcasestr(dbname, ".cvd")) {
-	    int warn = 0;
-
-	if(!strcmp(dbname, "daily.cvd"))
-	    warn = 1;
-
-	ret = cli_cvdload(fs, engine, signo, warn, options, 0);
+	ret = cli_cvdload(fs, engine, signo, !strcmp(dbname, "daily.cvd"), options, 0);
 
     } else if(cli_strbcasestr(dbname, ".cld")) {
-	    int warn = 0;
-
-	if(!strcmp(dbname, "daily.cld"))
-	    warn = 1;
-
-	ret = cli_cvdload(fs, engine, signo, warn, options | CL_DB_CVDNOTMP, 1);
+	ret = cli_cvdload(fs, engine, signo, !strcmp(dbname, "daily.cld"), options | CL_DB_CVDNOTMP, 1);
 
     } else if(cli_strbcasestr(dbname, ".hdb")) {
 	ret = cli_loadmd5(fs, engine, signo, MD5_HDB, options, dbio, dbname);
@@ -1894,6 +1840,12 @@ int cli_load(const char *filename, struct cl_engine **engine, unsigned int *sign
 }
 
 int cl_loaddb(const char *filename, struct cl_engine **engine, unsigned int *signo) {
+	int ret;
+
+    if((ret = cli_initengine(engine, CL_DB_STDOPT))) {
+	cl_free(*engine);
+	return ret;
+    }
     return cli_load(filename, engine, signo, CL_DB_STDOPT, NULL);
 }
 
@@ -1992,6 +1944,12 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigne
 }
 
 int cl_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo) {
+	int ret;
+
+    if((ret = cli_initengine(engine, CL_DB_STDOPT))) {
+	cl_free(*engine);
+	return ret;
+    }
     return cli_loaddbdir(dirname, engine, signo, CL_DB_STDOPT);
 }
 
@@ -2002,7 +1960,7 @@ int cl_load(const char *path, struct cl_engine **engine, unsigned int *signo, un
 
 
     if(stat(path, &sb) == -1) {
-        cli_errmsg("cl_loaddbdir(): Can't get status of %s\n", path);
+        cli_errmsg("cl_load(): Can't get status of %s\n", path);
         return CL_EIO;
     }
 

@@ -117,6 +117,7 @@ struct cl_engine {
     unsigned int refcount; /* reference counter */
     unsigned short sdb;
     unsigned int dboptions;
+    unsigned int dbversion[2];
 
     /* Roots table */
     void **root;

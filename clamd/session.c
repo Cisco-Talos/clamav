@@ -158,31 +158,15 @@ int command(int desc, const struct cl_engine *engine, const struct cl_limits *li
 		return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD7, strlen(CMD7))) { /* VERSION */
-	    const char *dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
-	    char *path;
-	    struct cl_cvd *daily;
-
 	thrmgr_setactivetask(NULL, CMD7);
-	if(!(path = malloc(strlen(dbdir) + 30))) {
-	    mdprintf(desc, "Memory allocation error - SHUTDOWN forced\n");
-	    return COMMAND_SHUTDOWN;
-	}
-
-	sprintf(path, "%s/daily.cvd", dbdir);
-	if(access(path, R_OK))
-	    sprintf(path, "%s/daily.cld", dbdir);
-
-	if(!access(path, R_OK) && (daily = cl_cvdhead(path))) {
+	if(engine->dbversion[0]) {
 		char timestr[32];
-		time_t t = (time_t) daily->stime;
+		time_t t = (time_t) engine->dbversion[1];
 
-	    mdprintf(desc, "ClamAV %s/%d/%s", get_version(), daily->version, cli_ctime(&t, timestr, sizeof(timestr)));
-	    cl_cvdfree(daily);
+	    mdprintf(desc, "ClamAV %s/%d/%s", get_version(), engine->dbversion[0], cli_ctime(&t, timestr, sizeof(timestr)));
 	} else {
 	    mdprintf(desc, "ClamAV %s\n", get_version());
 	}
-
-	free(path);
 
     } else if(!strncmp(buff, CMD8, strlen(CMD8))) { /* STREAM */
 	thrmgr_setactivetask(NULL, CMD8);

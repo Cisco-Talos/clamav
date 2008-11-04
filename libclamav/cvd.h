@@ -31,7 +31,7 @@ struct cli_dbio {
     unsigned int size;
 };
 
-int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short warn, unsigned int options, unsigned int cld);
+int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, unsigned int daily, unsigned int options, unsigned int cld);
 int cli_untgz(int fd, const char *destdir);
 
 #endif

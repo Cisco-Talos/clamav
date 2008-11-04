@@ -500,7 +500,7 @@ int cl_cvdverify(const char *file)
     return ret;
 }
 
-int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short warn, unsigned int options, unsigned int cld)
+int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, unsigned int daily, unsigned int options, unsigned int cld)
 {
         char *dir;
 	struct cl_cvd cvd;
@@ -515,7 +515,7 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short 
     if((ret = cli_cvdverify(fs, &cvd, cld)))
 	return ret;
 
-    if(cvd.stime && warn) {
+    if(cvd.stime && daily) {
 	time(&s_time);
 	if((int) s_time - cvd.stime > 604800) {
 	    cli_warnmsg("**************************************************\n");
@@ -541,6 +541,11 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, short 
     if(lseek(cfd, 512, SEEK_SET) == -1) {
 	cli_errmsg("cli_cvdload(): lseek(fs, 512, SEEK_SET) failed\n");
 	return CL_EIO;
+    }
+
+    if(daily) {
+	(*engine)->dbversion[0] = cvd.version;
+	(*engine)->dbversion[1] = cvd.stime;
     }
 
     if(options & CL_DB_CVDNOTMP) {
