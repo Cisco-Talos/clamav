@@ -151,20 +151,13 @@ static void remove_frompools(threadpool_t *t)
 	pthread_mutex_unlock(&pools_lock);
 }
 
-int thrmgr_printstats(int outfd)
+int thrmgr_printstats(int f)
 {
-	FILE *f;
 	struct threadpool_list *l;
 	size_t cnt;
-	int fd = dup(outfd);
-	if(fd < 0)
-		return -1;
-	f = fdopen(fd, "w");
-	if(!f)
-		return -1;
 	pthread_mutex_lock(&pools_lock);
 	for(cnt=0,l=pools;l;l=l->nxt) cnt++;
-	fprintf(f,"POOLS: %u\n\n", cnt);
+	mdprintf(f,"POOLS: %u\n\n", cnt);
 	for(l= pools;l;l = l->nxt) {
 		threadpool_t *pool = l->pool;
 		const char *state;
@@ -175,7 +168,7 @@ int thrmgr_printstats(int outfd)
 		struct task_desc *task;
 
 		if(!pool) {
-			fprintf(f,"NULL\n\n");
+			mdprintf(f,"NULL\n\n");
 			continue;
 		}
 		pthread_mutex_lock(&pool->pool_mutex);
@@ -190,11 +183,11 @@ int thrmgr_printstats(int outfd)
 				state = "EXIT";
 				break;
 		}
-		fprintf(f, "STATE: %s %s\n", state, l->nxt ? "" : "PRIMARY");
-		fprintf(f, "THREADS: live %u  idle %u max %u idle-timeout %u\n"
+		mdprintf(f, "STATE: %s %s\n", state, l->nxt ? "" : "PRIMARY");
+		mdprintf(f, "THREADS: live %u  idle %u max %u idle-timeout %u\n"
 				,pool->thr_alive, pool->thr_idle, pool->thr_max,
 				pool->idle_timeout);
-		fprintf(f,"QUEUE: %u items", pool->queue->item_count);
+		mdprintf(f,"QUEUE: %u items", pool->queue->item_count);
 		gettimeofday(&tv_now, NULL);
 		if(pool->queue->head) {
 			for(q=pool->queue->head;q;q=q->next) {
@@ -212,39 +205,38 @@ int thrmgr_printstats(int outfd)
 				usum += delta;
 				++cnt;
 			}
-			fprintf(f," min_wait: %.6f max_wait: %.6f avg_wait: %.6f",
+			mdprintf(f," min_wait: %.6f max_wait: %.6f avg_wait: %.6f",
 					umin/1e6, umax/1e6, usum /(1e6*cnt));
 			if(invalids)
-				fprintf(f," (INVALID timestamps: %u)", invalids);
+				mdprintf(f," (INVALID timestamps: %u)", invalids);
 		}
 		if(cnt + invalids != pool->queue->item_count)
-			fprintf(f," (ERROR: %u != %u)", cnt + invalids,
+			mdprintf(f," (ERROR: %u != %u)", cnt + invalids,
 					pool->queue->item_count);
-		fputc('\n', f);
+		mdprintf(f, "\n");
 		for(task = pool->tasks; task; task = task->nxt) {
 			long delta;
 			delta = tv_now.tv_usec - task->tv.tv_usec;
 			delta += (tv_now.tv_sec - task->tv.tv_sec)*1000000;
-			fprintf(f,"\t%s %f %s\n",
+			mdprintf(f,"\t%s %f %s\n",
 					task->command ? task->command : "N/A",
 					delta/1e6,
 					task->filename ? task->filename:"");
 		}
-		fputc('\n',f);
+		mdprintf(f,"\n");
 		pthread_mutex_unlock(&pool->pool_mutex);
 	}
 #if defined(C_LINUX)
 	{
 		struct mallinfo inf = mallinfo();
-		fprintf(f,"MEMSTATS: heap %.3fM mmap %.3fM used %.3fM free %.3fM releasable %.3fM\n",
+		mdprintf(f,"MEMSTATS: heap %.3fM mmap %.3fM used %.3fM free %.3fM releasable %.3fM\n",
 				inf.arena/(1024*1024.0), inf.hblkhd/(1024*1024.0),
 				inf.uordblks/(1024*1024.0), inf.fordblks/(1024*1024.0),
 				inf.keepcost/(1024*1024.0));
 	}
 #endif
-	fputs("END\n",f);
+	mdprintf(f,"END\n");
 	pthread_mutex_unlock(&pools_lock);
-	fclose(f);
 	return 0;
 }
 
