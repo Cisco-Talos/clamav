@@ -1,3 +1,8 @@
+Tue Nov  4 23:15:43 CET 2008 (acab)
+-----------------------------------
+ * libclamav: mempool de-uglify last ugly bit
+	please build with ./configure --enable-mempool and report memory usage
+
 Tue Nov  4 23:02:27 EET 2008 (edwin)
 ------------------------------------
  * contrib/clamdtop/TODO: add more TODO notes, thanks nitrox for the

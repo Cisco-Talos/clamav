@@ -35,6 +35,7 @@ void *mp_realloc2(mp_t *mp, void *ptr, size_t size);
 unsigned char *cli_mp_hex2str(mp_t* mp, const unsigned char *src);
 char *cli_mp_strdup(mp_t *mp, const char *s);
 char *cli_mp_virname(mp_t *mp, char *virname, unsigned int official);
+uint16_t *cli_mp_hex2ui(mp_t *mp, const char *hex);
 #else /* USE_MPOOL */
 
 #define mp_malloc(a, b) cli_malloc(b)
@@ -45,6 +46,7 @@ char *cli_mp_virname(mp_t *mp, char *virname, unsigned int official);
 #define cli_mp_hex2str(mp, src) cli_hex2str(src)
 #define cli_mp_strdup(mp, s) cli_strdup(s)
 #define cli_mp_virname(mp, a, b) cli_virname(a, b)
+#define cli_mp_hex2ui(mp, hex) cli_hex2ui(hex)
 #endif /* USE_MPOOL */
 
 #endif

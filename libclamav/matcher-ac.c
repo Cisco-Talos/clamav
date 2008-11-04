@@ -1372,20 +1372,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	}
     }
 
-#ifdef USE_MPOOL
-{
-    unsigned int mpoolpattsz = (strlen(hex ? hex : hexsig) / 2 + 1) * sizeof(uint16_t);
-    uint16_t *mpoolpatt = cli_hex2ui(hex ? hex : hexsig);
-    if(mpoolpatt) {
-        if((new->pattern = mp_malloc(root->mempool, mpoolpattsz)) != NULL)
-	    memcpy(new->pattern, mpoolpatt, mpoolpattsz);
-	free(mpoolpatt);
-    } else new->pattern = NULL;
-}
-#else
-    new->pattern = cli_hex2ui(hex ? hex : hexsig);
-#endif
-
+    new->pattern = cli_mp_hex2ui(root->mempool, hex ? hex : hexsig);
     if(new->pattern == NULL) {
 	if(new->alt)
 	    mp_ac_free_alt(root->mempool, new);

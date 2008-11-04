@@ -63,25 +63,11 @@ static inline int cli_hex2int(const char c)
 	return hex_chars[(const unsigned char)c];
 }
 
-uint16_t *cli_hex2ui(const char *hex)
-{
-	uint16_t *str, *ptr, val;
-	unsigned int i, len;
+
+int cli_realhex2ui(const char *hex, uint16_t *ptr, unsigned int len) {
+	uint16_t val;
+	unsigned int i;
 	int c;
-
-
-    len = strlen(hex);
-
-    if(len % 2 != 0) {
-	cli_errmsg("cli_hex2si(): Malformed hexstring: %s (length: %u)\n", hex, len);
-	return NULL;
-    }
-
-    str = cli_calloc((len / 2) + 1, sizeof(uint16_t));
-    if(!str)
-	return NULL;
-
-    ptr = str;
 
     for(i = 0; i < len; i += 2) {
 	val = 0;
@@ -93,8 +79,7 @@ uint16_t *cli_hex2ui(const char *hex)
 	    if((c = cli_hex2int(hex[i])) >= 0) {
 		val = c << 4;
 	    } else {
-		free(str);
-		return NULL;
+		return 0;
 	    }
 	    val |= CLI_MATCH_NIBBLE_HIGH;
 
@@ -102,8 +87,7 @@ uint16_t *cli_hex2ui(const char *hex)
 	    if((c = cli_hex2int(hex[i + 1])) >= 0) {
 		val = c;
 	    } else {
-		free(str);
-		return NULL;
+		return 0;
 	    }
 	    val |= CLI_MATCH_NIBBLE_LOW;
 
@@ -116,19 +100,39 @@ uint16_t *cli_hex2ui(const char *hex)
 		if((c = cli_hex2int(hex[i+1])) >= 0) {
 		    val = (val << 4) + c;
 		} else {
-		    free(str);
-		    return NULL;
+		    return 0;
 		}
 	    } else {
-		free(str);
-		return NULL;
+		return 0;
 	    }
 	}
 
 	*ptr++ = val;
     }
+    return 1;
+}
 
-    return str;
+uint16_t *cli_hex2ui(const char *hex)
+{
+	uint16_t *str;
+	unsigned int len;
+
+    len = strlen(hex);
+
+    if(len % 2 != 0) {
+	cli_errmsg("cli_hex2si(): Malformed hexstring: %s (length: %u)\n", hex, len);
+	return NULL;
+    }
+
+    str = cli_calloc((len / 2) + 1, sizeof(uint16_t));
+    if(!str)
+	return NULL;
+
+    if(cli_realhex2ui(hex, str, len))
+        return str;
+    
+    free(str);
+    return NULL;
 }
 
 char *cli_hex2str(const char *hex)

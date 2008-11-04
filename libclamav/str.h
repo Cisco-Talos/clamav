@@ -34,6 +34,7 @@ const char *cli_strcasestr(const char *haystack, const char *needle);
 int cli_strbcasestr(const char *haystack, const char *needle);
 int cli_chomp(char *string);
 char *cli_strtok(const char *line, int field, const char *delim);
+int cli_realhex2ui(const char *hex, uint16_t *ptr, unsigned int len);
 uint16_t *cli_hex2ui(const char *hex);
 char *cli_hex2str(const char *hex);
 int cli_hex2num(const char *hex);

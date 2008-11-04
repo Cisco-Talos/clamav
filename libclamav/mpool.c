@@ -573,6 +573,29 @@ char *cli_mp_virname(mp_t *mp, char *virname, unsigned int official) {
 }
 
 
+uint16_t *cli_mp_hex2ui(mp_t *mp, const char *hex) {
+  uint16_t *str;
+  unsigned int len;
+  
+  len = strlen(hex);
+
+  if(len % 2 != 0) {
+    cli_errmsg("cli_hex2si(): Malformed hexstring: %s (length: %u)\n", hex, len);
+    return NULL;
+  }
+
+  str = mp_calloc(mp, (len / 2) + 1, sizeof(uint16_t));
+  if(!str)
+    return NULL;
+
+  if(cli_realhex2ui(hex, str, len))
+    return str;
+    
+  free(str);
+  return NULL;
+}
+
+
 #ifdef DEBUGMPOOL
 void mp_stats(struct MP *mp) {
   unsigned int i=0, ta=0, tu=0;
