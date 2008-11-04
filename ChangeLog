@@ -1,3 +1,7 @@
+Tue Nov  4 22:44:20 EET 2008 (edwin)
+------------------------------------
+ * contrib/clamdtop/TODO: add TODO note about reconnecting
+
 Tue Nov  4 20:50:45 CET 2008 (tk)
 ---------------------------------
  * libclamav/matcher-ac.c: micro-optimization (bb#843), thanks to Edwin
