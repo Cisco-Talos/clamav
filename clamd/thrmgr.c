@@ -234,6 +234,7 @@ int thrmgr_printstats(int f)
 				inf.uordblks/(1024*1024.0), inf.fordblks/(1024*1024.0),
 				inf.keepcost/(1024*1024.0));
 	}
+	/* TODO: figure out how to print these statistics on other OSes */
 #endif
 	mdprintf(f,"END\n");
 	pthread_mutex_unlock(&pools_lock);
@@ -376,6 +377,8 @@ static void stats_tls_key_alloc(void)
 }
 
 static const char *IDLE_TASK = "IDLE";
+
+/* no mutex is needed, we are using  thread local variable */
 void thrmgr_setactivetask(const char *filename, const char* command)
 {
 	struct task_desc *desc = pthread_getspecific(stats_tls_key);
@@ -390,6 +393,7 @@ void thrmgr_setactivetask(const char *filename, const char* command)
 	}
 }
 
+/* thread pool mutex must be held on entry */
 static void stats_init(threadpool_t *pool)
 {
 	struct task_desc *desc = calloc(1, sizeof(*desc));
@@ -406,6 +410,7 @@ static void stats_init(threadpool_t *pool)
 	}
 }
 
+/* thread pool mutex must be held on entry */
 static void stats_destroy(threadpool_t *pool)
 {
 	struct task_desc *desc = pthread_getspecific(stats_tls_key);
