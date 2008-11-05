@@ -370,7 +370,7 @@ void mp_destroy(struct MP *mp) {
     mpm_next = mpm->next;
     munmap((void *)mpm, mpm->size);
   }
-  munmap((void *)mp, mp->mpm.size + align_to_voidptr(sizeof(mp)));
+  munmap((void *)mp, mp->mpm.size + align_to_voidptr(sizeof(*mp)));
   spam("Map destroyed @ %p\n", mp);
 }
 
