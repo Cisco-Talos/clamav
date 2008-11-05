@@ -67,6 +67,7 @@ FILE *lfd = NULL;
 /* #define MIN_FRAGSIZE 524288	/\* 0m2.387s *\/ */
 /* #define MIN_FRAGSIZE 1048576	/\* 0m2.392s *\/ */
 /* #define MIN_FRAGSIZE 2097152	/\* 0m2.402s *\/ */
+/* #define MIN_FRAGSIZE 99688128 */
 
 #if SIZEOF_VOID_P==8
 static const unsigned int fragsz[] = {
@@ -357,7 +358,7 @@ struct MP *mp_create() {
   sz = align_to_pagesize(&mp, MIN_FRAGSIZE);
   mp.mpm.usize = align_to_voidptr(sizeof(struct MPMAP));
   mp.mpm.size = sz - align_to_voidptr(sizeof(mp));
-  if ((mp_p = (struct MP *)mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0)) == MAP_FAILED)
+  if ((mp_p = (struct MP *)mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE|ANONYMOUS_MAP, -1, 0)) == MAP_FAILED)
     return NULL;
   memcpy(mp_p, &mp, sizeof(mp));
   spam("Map created @ %p->%p - size %u out of %u\n", mp_p, (void*)mp_p + mp.mpm.size, mp.mpm.usize, mp.mpm.size);
@@ -375,15 +376,22 @@ void mp_destroy(struct MP *mp) {
 }
 
 void mp_flush(struct MP *mp) {
+  size_t used = 0, mused;
   struct MPMAP *mpm_next = mp->mpm.next, *mpm;
   while((mpm = mpm_next)) {
     mpm_next = mpm->next;
     munmap((void *)mpm + align_to_pagesize(mp, mpm->usize), mpm->size - align_to_pagesize(mp, mpm->usize));
-    mpm->size = mpm->usize = align_to_pagesize(mp, mpm->usize);
+    mpm->size = align_to_pagesize(mp, mpm->usize);
+    used += mpm->size;
   }
-  munmap(&mp->mpm + align_to_pagesize(mp, mp->mpm.usize + align_to_voidptr(sizeof(mp))), mp->mpm.size - align_to_pagesize(mp, mp->mpm.usize + align_to_voidptr(sizeof(mp))));
-  mp->mpm.size = mp->mpm.usize;
-  spam("Map flushed @ %p\n", mp);
+  mused = align_to_pagesize(mp, mp->mpm.usize + align_to_voidptr(sizeof(*mp)));
+  if (mused < mp->mpm.size) {
+	  munmap(&mp->mpm + mused, mp->mpm.size - mused);
+	  mp->mpm.size = mused;
+  }
+  used += mp->mpm.size;
+  spam("Map flushed @ %p, in use: %lu\n", mp, used);
+  return used;
 }
 
 void *mp_malloc(struct MP *mp, size_t size) {

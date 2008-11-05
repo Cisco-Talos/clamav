@@ -2143,6 +2143,7 @@ int cl_build(struct cl_engine *engine)
     cli_md5db_build(engine->md5_mdb);
     cli_freeign(engine);
     cli_dconf_print(engine->dconf);
+    mp_flush(engine->mempool);
 
     return CL_SUCCESS;
 }

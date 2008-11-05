@@ -1,3 +1,9 @@
+Wed Nov  5 13:17:51 EET 2008 (edwin)
+------------------------------------
+ * libclamav/mpool.c, libclamav/mpool.h, libclamav/readdb.c: use
+ ANONYMOUS_MAP from clamav-config.h instead of MAP_ANONYMOUS, fix
+ mp_flush call mp_flush from readdb
+
 Wed Nov  5 10:56:28 EET 2008 (edwin)
 ------------------------------------
  * libclamav/mpool.c (mp_destroy): need to use sizeof(*mp) because mp is a pointer here!!
