@@ -1,3 +1,7 @@
+Wed Nov  5 19:54:42 CET 2008 (tk)
+---------------------------------
+ * unit_tests/virusaction-test.sh: ignore pathnames (bb#1274)
+
 Wed Nov  5 13:17:51 EET 2008 (edwin)
 ------------------------------------
  * libclamav/mpool.c, libclamav/mpool.h, libclamav/readdb.c: use
