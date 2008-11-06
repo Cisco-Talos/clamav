@@ -168,9 +168,10 @@ int thrmgr_printstats(int f)
 		const char *state;
 		work_item_t *q;
 		struct timeval tv_now;
-		unsigned long umin=~0UL, umax=0, usum=0;
-		unsigned invalids=0, cnt=0;
+		long umin=~0UL, umax=0, usum=0;
+		int invalids=0;
 		struct task_desc *task;
+		cnt = 0;
 
 		if(!pool) {
 			mdprintf(f,"NULL\n\n");

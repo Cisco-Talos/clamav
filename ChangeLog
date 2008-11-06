@@ -1,3 +1,9 @@
+Thu Nov  6 23:46:07 EET 2008 (edwin)
+------------------------------------
+ * clamav-milter/clamav-milter.c, clamd/thrmgr.c, freshclam/dns.c,
+ libclamav/mspack.c, libclamav/pe.c: fix more compiler warnings (bb
+ #273).
+
 Thu Nov  6 21:46:47 CET 2008 (tk)
 ---------------------------------
   * docs/clamdoc.tex, docs/man/clamd.8.in: document nCOMMANDS (bb#1278)

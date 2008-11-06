@@ -45,8 +45,8 @@
 
 char *txtquery(const char *domain, unsigned int *ttl)
 {
-	unsigned char answer[PACKETSZ], host[128], *pt;
-	char *txt;
+	unsigned char answer[PACKETSZ], *pt;
+	char *txt, host[128];
 	int len, exp, cttl, size, txtlen, type, qtype;
 
 

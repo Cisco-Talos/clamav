@@ -1926,7 +1926,8 @@ main(int argc, char **argv)
 #else
 			int fds[3];
 			logg_file = NULL;
-			chdir("/");
+			if(chdir("/") < 0)
+				perror("/");
 			fds[0] = open("/dev/null", O_RDONLY);
 			fds[1] = open("/dev/null", O_WRONLY);
 			fds[2] = open("/dev/null", O_WRONLY);
