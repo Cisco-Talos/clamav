@@ -36,7 +36,9 @@
 #include <sys/un.h>
 #include <sys/time.h>
 #include <assert.h>
+#include <errno.h>
 
+/* ---------------------- NCurses routines -----------------*/
 enum colors {
 	header_color=1,
 	version_color,
@@ -184,7 +186,6 @@ static void win_start(WINDOW *win, enum colors col)
 	werase(win);
 }
 
-static char *clamd_version = NULL;
 
 static void  print_colored(WINDOW *win, const char *p)
 {
@@ -199,6 +200,8 @@ static void  print_colored(WINDOW *win, const char *p)
 		wattroff(win, VALUE_ATTR);
 	}
 }
+
+static char *clamd_version = NULL;
 
 static void header(void)
 {
@@ -274,8 +277,140 @@ static int tasks_compare(const void *a, const void *b)
 	return 0;
 }
 
+/* ----------- Socket routines ----------------------- */
+typedef struct connection {
+	int sd;
+	const char *remote;
+} conn_t;
 
-static size_t parse_queue(FILE *f, size_t line, char* buf, size_t len)
+static void print_con_error(const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	if (version_window) {
+		werase(version_window);
+		wmove(version_window, 0, 0);
+		vwprintw(version_window, fmt, ap);
+		wrefresh(version_window);
+	} else
+		vfprintf(stderr, fmt, ap);
+	va_end(ap);
+}
+
+
+static int make_connection(const char *soname, conn_t *conn)
+{
+	int s;
+	if(access(soname, F_OK) == 0) {
+		struct sockaddr_un addr;
+		s = socket(AF_UNIX, SOCK_STREAM, 0);
+		if(s < 0) {
+			perror("socket");
+			return -1;
+		}
+		memset(&addr, 0, sizeof(addr));
+		addr.sun_family = AF_UNIX;
+		strncpy(addr.sun_path, soname, sizeof(addr.sun_path));
+		printf("Connecting to: %s\n", soname);
+		if (connect(s, (struct sockaddr *)&addr, sizeof(addr))) {
+			perror("connect");
+			return -1;
+		}
+	} else {
+		struct sockaddr_in server;
+		struct hostent *hp;
+		unsigned port = 0;
+		char *name = strdup(soname);
+		const char *host = name;
+		name = strchr(name, ':');
+		if(name) {
+			*name++ = '\0';
+			port = atoi(name);
+		}
+		if(!port)
+			port = 3310;
+		printf("Looking up: %s\n", host);
+		if((hp = gethostbyname(host)) == NULL) {
+			herror("Cannot find host");
+			return -1;
+		}
+		free(name);
+		s = socket(AF_INET, SOCK_STREAM, 0);
+		if(s < 0) {
+			perror("socket");
+			return -1;
+		}
+		server.sin_family = AF_INET;
+		server.sin_port = htons(port);
+		server.sin_addr.s_addr = ((struct in_addr*)(hp->h_addr))->s_addr;
+		printf("Connecting to: %s:%u\n", inet_ntoa(server.sin_addr), port);
+		if (connect(s, (struct sockaddr *)&server, sizeof(server))) {
+			perror("connect");
+			return -1;
+		}
+	}
+	conn->remote = soname;
+	conn->sd = s;
+	return 0;
+}
+
+static void reconnect(conn_t *conn)
+{
+	print_con_error("%s: %s", conn->remote, strerror(errno));
+	if (make_connection(conn->remote, conn) < 0) {
+		print_con_error("Unable to reconnect to %s: %s", conn->remote, strerror(errno));
+		exit(3);
+	}
+}
+
+static void send_string(conn_t *conn, const char *cmd)
+{
+	assert(cmd);
+	assert(conn && conn->sd > 0);
+
+	while(send(conn->sd, cmd, strlen(cmd), 0) == -1) {
+		reconnect(conn);
+	}
+}
+
+static int recv_line(conn_t *conn, char *buf, size_t len)
+{
+	assert(len > 0);
+	assert(conn && conn->sd > 0);
+	assert(buf);
+
+	len--;
+	if (!len)
+		return 0;
+	while (len > 0) {
+		ssize_t nread = recv(conn->sd, buf, len, MSG_PEEK);
+		if (nread == -1)
+			reconnect(conn);
+		else {
+			char *p = memchr(buf, '\n', nread);
+			if (p) {
+				len = p - buf + 1;
+			} else
+				len = nread;
+			assert(len > 0);
+			assert(len <= (size_t)nread);
+			nread = recv(conn->sd, buf, len, 0);
+			if (nread == -1)
+				reconnect(conn);
+			else {
+				assert(nread >0 && (size_t)nread == len);
+				buf += nread;
+			}
+			if (p)
+				break;
+		}
+	}
+	*buf = '\0';
+	return 1;
+}
+
+/* ---------------------- stats parsing routines ------------------- */
+static size_t parse_queue(conn_t *conn, size_t line, char* buf, size_t len)
 {
 	struct task *tasks = NULL;
 	size_t n = 0, i;
@@ -296,7 +431,7 @@ static size_t parse_queue(FILE *f, size_t line, char* buf, size_t len)
 		if(!tasks[n-1].line)
 			exit(1);
 		tasks[n-1].tim  = tim;
-	} while (fgets(buf, len, f) && buf[0] == '\t' && strcmp("END\n", buf) != 0);
+	} while (recv_line(conn, buf, len) && buf[0] == '\t' && strcmp("END\n", buf) != 0);
 	qsort(tasks, n, sizeof(*tasks), tasks_compare);
 	wattron(stats_window, COLOR_PAIR(queue_header_color));
 	mvwprintw(stats_window, line++, 0, queue_header);
@@ -369,7 +504,7 @@ static void output_memstats(const char* line)
 
 static struct timeval tv_conn;
 
-static void parse_stats(FILE *f)
+static void parse_stats(conn_t *conn)
 {
 	WINDOW *win = stats_head_window;
 	char buf[1024];
@@ -386,7 +521,7 @@ static void parse_stats(FILE *f)
 	conn_dt = tv.tv_sec + tv.tv_usec/1e6;
 	mvwprintw(stats_head_window, i++, 0, "Connected since: %02u:%02u:%02u",
 			conn_dt/3600, (conn_dt/60)%60, conn_dt%60);
-	while(fgets(buf, sizeof(buf), f) && strcmp("END\n",buf) != 0) {
+	while(recv_line(conn, buf, sizeof(buf)) && strcmp("END\n",buf) != 0) {
 		char *val = strchr(buf, ':');
 		if(i >= 4 && win == stats_head_window) {
 			win = stats_window;
@@ -394,7 +529,7 @@ static void parse_stats(FILE *f)
 		}
 
 		if(buf[0] == '\t') {
-			i = parse_queue(f, i, buf, sizeof(buf));
+			i = parse_queue(conn, i, buf, sizeof(buf));
 			continue;
 		} else if(val)
 			*val++ = '\0';
@@ -433,94 +568,31 @@ static void parse_stats(FILE *f)
 	wrefresh(stats_window);
 }
 
-static int make_connection(char *soname)
-{
-	int s;
-	if(access(soname, F_OK) == 0) {
-		struct sockaddr_un addr;
-		s = socket(AF_UNIX, SOCK_STREAM, 0);
-		if(s < 0) {
-			perror("socket");
-			return -1;
-		}
-		memset(&addr, 0, sizeof(addr));
-		addr.sun_family = AF_UNIX;
-		strncpy(addr.sun_path, soname, sizeof(addr.sun_path));
-		printf("Connecting to: %s\n", soname);
-		if (connect(s, (struct sockaddr *)&addr, sizeof(addr))) {
-			perror("connect");
-			return -1;
-		}
-	} else {
-		struct sockaddr_in server;
-		struct hostent *hp;
-		unsigned port = 0;
-		char *host = soname;
-		soname = strchr(soname, ':');
-		if(soname) {
-			*soname++ = '\0';
-			port = atoi(soname);
-		}
-		if(!port)
-			port = 3310;
-		printf("Looking up: %s\n", host);
-		if((hp = gethostbyname(host)) == NULL) {
-			herror("Cannot find host");
-			return -1;
-		}
-		s = socket(AF_INET, SOCK_STREAM, 0);
-		if(s < 0) {
-			perror("socket");
-			return -1;
-		}
-		server.sin_family = AF_INET;
-		server.sin_port = htons(port);
-		server.sin_addr.s_addr = ((struct in_addr*)(hp->h_addr))->s_addr;
-		printf("Connecting to: %s:%u\n", inet_ntoa(server.sin_addr), port);
-		if (connect(s, (struct sockaddr *)&server, sizeof(server))) {
-			perror("connect");
-			return -1;
-		}
-	}
-	return s;
-}
-
-static void read_version(FILE *f)
+static void read_version(conn_t *conn)
 {
 	char buf[1024];
-	if(fgets(buf, sizeof(buf), f)) {
+	if(recv_line(conn, buf, sizeof(buf))) {
 		clamd_version = strdup(buf);
 	}
 }
 
-static void sighandler(int arg)
-{
-	exit_reason = "Broken pipe";
-	exit(3);
-}
+static conn_t conn;
 
 int main(int argc, char *argv[])
 {
 	int ch = 0, need_initwin=0;
-	FILE *f;
 	fd_set rfds;
 	struct timeval tv_last, tv;
 
-	int sd = make_connection(argc > 1 ? argv[1] : "/tmp/clamd.socket");
-	if(sd < 0)
+	/* TODO: parse clamd.conf */
+	if (make_connection(argc > 1 ? argv[1] : "/tmp/clamd.socket", &conn) < 0)
 		exit(2);
 
-	signal(SIGPIPE, sighandler);
+	signal(SIGPIPE, SIG_IGN);
 
-	f = fdopen(sd,"r+");
-	if(!f) {
-		perror("fdopen");
-		exit(2);
-	}
 	gettimeofday(&tv_conn, NULL);
-	fputs("SESSION\nVERSION\n",f);
-	fflush(f);
-	read_version(f);
+	send_string(&conn, "SESSION\nVERSION\n");
+	read_version(&conn);
 	init_ncurses();
 
 	FD_ZERO(&rfds);
@@ -543,14 +615,14 @@ int main(int argc, char *argv[])
 				init_windows();
 				need_initwin = 0;
 			}
-			fputs("STATS\n",f);
+			send_string(&conn, "STATS\n");
 			header();
-			parse_stats(f);
+			parse_stats(&conn);
 			tv_last = tv;
 		}
 	} while(toupper(ch = getch()) != 'Q');
-	fputs("END\n",f);
-	fclose(f);
+	send_string(&conn, "END\n");
+	close(conn.sd);
 	free(clamd_version);
 	normal_exit = 1;
 	return 0;
