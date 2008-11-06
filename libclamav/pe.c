@@ -905,7 +905,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     epsize = cli_readn(desc, epbuff, 4096);
 
     CLI_UNPTEMP("DISASM",(exe_sections,0));
-    disasmbuf(epbuff, epsize, ndesc);
+    disasmbuf((unsigned char*)epbuff, epsize, ndesc);
     lseek(ndesc, 0, SEEK_SET);
     ret = cli_scandesc(ndesc, ctx, CL_TYPE_PE_DISASM, 1, NULL, AC_SCAN_VIR);
     close(ndesc);

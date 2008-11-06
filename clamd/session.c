@@ -65,6 +65,7 @@
 #include "scanner.h"
 #include "server.h"
 #include "session.h"
+#include "thrmgr.h"
 
 #ifdef HAVE_FD_PASSING
 static int recvfd_and_scan(int desc, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt)

@@ -785,7 +785,7 @@ int phishingScan(const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
 				urls.always_check_flags |= CHECK_CLOAKING;
 			}
 			string_init_c(&urls.realLink,(char*)hrefs->value[i]);
-			string_init_c(&urls.displayLink, hrefs->contents[i]);
+			string_init_c(&urls.displayLink, (char*)hrefs->contents[i]);
 			string_init_c(&urls.pre_fixup.pre_displayLink, NULL);
 
 			urls.realLink.refcount=-1;
@@ -961,8 +961,8 @@ static const uint8_t URI_xpalpha_nodot[256] = {
 
 static inline int validate_uri_xalphas_nodot(const char *start, const char *end)
 {
-	const unsigned char *p = start;
-	for(p=start;p < (const unsigned char*)end; p++) {
+	const unsigned char *p;
+	for(p=(const unsigned char*)start;p < (const unsigned char*)end; p++) {
 		if(!URI_xalpha_nodot[*p])
 			return 0;
 	}
@@ -971,8 +971,8 @@ static inline int validate_uri_xalphas_nodot(const char *start, const char *end)
 
 static inline int validate_uri_xpalphas_nodot(const char *start, const char *end)
 {
-	const unsigned char *p = start;
-	for(p=start;p < (const unsigned char*)end; p++) {
+	const unsigned char *p;
+	for(p=(const unsigned char*)start;p < (const unsigned char*)end; p++) {
 		if(!URI_xpalpha_nodot[*p])
 			return 0;
 	}
@@ -983,7 +983,7 @@ static inline int validate_uri_xpalphas_nodot(const char *start, const char *end
 
 static inline int validate_uri_ialpha(const char *start, const char *end)
 {
-	const unsigned char *p = start;
+	const unsigned char *p = (const unsigned char*) start;
 	if(start >= end || !URI_alpha[*p])
 		return 0;
 	return validate_uri_xalphas_nodot(start + 1, end);
@@ -994,7 +994,6 @@ static inline int validate_uri_ialpha(const char *start, const char *end)
  */
 static int isURL(const struct phishcheck* pchk,const char* URL, int accept_anyproto)
 {
-	size_t len;
 	const char *start = NULL, *p, *q, *end;
 	if(!URL)
 		return 0;

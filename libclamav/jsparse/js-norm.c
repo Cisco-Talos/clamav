@@ -866,6 +866,8 @@ void cli_js_parse_done(struct parser_state* state)
 		case SingleQString:
 			end = '\'';
 			break;
+		default: /* make gcc happy */
+			break;
 	}
 	if (end != '\0')
 		cli_js_process_buffer(state, &end, 1);
@@ -1557,6 +1559,8 @@ static int yylex(YYSTYPE *lvalp, yyscan_t  scanner)
 				}
 				scanner->state = Initial;
 				break;
+			default:
+				assert(0 && "Not reached");
 		}
 	}
 	return 0;

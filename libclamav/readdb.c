@@ -1154,7 +1154,7 @@ static int cli_loadftm(FILE *fs, struct cl_engine **engine, unsigned int options
 static int cli_loadign(FILE *fs, struct cl_engine **engine, unsigned int options, struct cli_dbio *dbio)
 {
 	const char *tokens[IGN_TOKENS];
-	char buffer[FILEBUFF], *pt;
+	char buffer[FILEBUFF];
 	unsigned int line = 0;
 	struct cli_ignsig *new;
 	struct cli_ignored *ignored;
@@ -1398,7 +1398,7 @@ static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 static int cli_loadmd(FILE *fs, struct cl_engine **engine, unsigned int *signo, int type, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
 	const char *tokens[MD_TOKENS];
-	char buffer[FILEBUFF], *pt;
+	char buffer[FILEBUFF];
 	unsigned int line = 0, sigs = 0;
 	int ret = CL_SUCCESS, crc;
 	struct cli_meta_node *new;

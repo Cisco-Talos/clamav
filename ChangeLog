@@ -1,3 +1,13 @@
+Thu Nov  6 15:24:34 EET 2008 (edwin)
+------------------------------------
+ * Makefile.am, clamd/session.c, clamd/thrmgr.c, libclamav/dlp.c,
+ libclamav/htmlnorm.c, libclamav/jsparse/js-norm.c,
+ libclamav/mpool.c, libclamav/mpool.h, libclamav/pe.c,
+ libclamav/phishcheck.c, libclamav/readdb.c, libclamav/upack.c,
+ libclamav/upx.c, libclamunrar/unrar.c, libclamunrar/unrarvm.c,
+ libclamunrar_iface/unrar_iface.c: fix compiler warnings, more to
+ come (bb #273)
+
 Thu Nov  6 12:29:26 EET 2008 (edwin)
 ------------------------------------
  * contrib/clamdtop/clamdtop.c: reconnect if connection is broken use

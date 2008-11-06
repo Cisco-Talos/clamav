@@ -326,8 +326,8 @@ static char *html_tag_arg_value(tag_arguments_t *tags, const char *tag)
 	int i;
 	
 	for (i=0; i < tags->count; i++) {
-		if (strcmp(tags->tag[i], tag) == 0) {
-			return tags->value[i];
+		if (strcmp((const char*)tags->tag[i], tag) == 0) {
+			return (char*)tags->value[i];
 		}
 	}
 	return NULL;
@@ -338,16 +338,16 @@ static void html_tag_arg_set(tag_arguments_t *tags, const char *tag, const char 
 	int i;
 	
 	for (i=0; i < tags->count; i++) {
-		if (strcmp(tags->tag[i], tag) == 0) {
+		if (strcmp((const char*)tags->tag[i], tag) == 0) {
 			free(tags->value[i]);
-			tags->value[i] = cli_strdup(value);
+			tags->value[i] = (unsigned char*)cli_strdup(value);
 			return;
 		}
 	}
 	return;
 }
 static void html_tag_arg_add(tag_arguments_t *tags,
-		const unsigned char *tag, unsigned char *value)
+		const char *tag, char *value)
 {
 	int len, i;
 	tags->count++;
@@ -369,16 +369,16 @@ static void html_tag_arg_add(tag_arguments_t *tags,
 		}
 		tags->contents[tags->count-1]=NULL;
 	}
-	tags->tag[tags->count-1] = cli_strdup(tag);
+	tags->tag[tags->count-1] = (unsigned char*)cli_strdup(tag);
 	if (value) {
 		if (*value == '"') {
-			tags->value[tags->count-1] = cli_strdup(value+1);
-			len = strlen(value+1);
+			tags->value[tags->count-1] = (unsigned char*)cli_strdup(value+1);
+			len = strlen((const char*)value+1);
 			if (len > 0) {
 				tags->value[tags->count-1][len-1] = '\0';
 			}
 		} else {
-			tags->value[tags->count-1] = cli_strdup(value);
+			tags->value[tags->count-1] = (unsigned char*)cli_strdup(value);
 		}
 	} else {
 		tags->value[tags->count-1] = NULL;
@@ -419,13 +419,13 @@ static void html_output_tag(file_buff_t *fbuff, char *tag, tag_arguments_t *tags
 	int i, j, len;
 
 	html_output_c(fbuff, '<');
-	html_output_str(fbuff, tag, strlen(tag));
+	html_output_str(fbuff, (const unsigned char*)tag, strlen(tag));
 	for (i=0; i < tags->count; i++) {
 		html_output_c(fbuff, ' ');
-		html_output_str(fbuff, tags->tag[i], strlen(tags->tag[i]));
+		html_output_str(fbuff, tags->tag[i], strlen((const char*)tags->tag[i]));
 		if (tags->value[i]) {
-			html_output_str(fbuff, "=\"", 2);
-			len = strlen(tags->value[i]);
+			html_output_str(fbuff, (const unsigned char*)"=\"", 2);
+			len = strlen((const char*)tags->value[i]);
 			for (j=0 ; j<len ; j++) {
 				html_output_c(fbuff, tolower(tags->value[i][j]));
 			}
@@ -548,7 +548,7 @@ static void screnc_decode(unsigned char *ptr, struct screnc_state *s)
 	}
 	if(!s->length) {
 		size_t remaining;
-		if(strlen(ptr) >= 12) {
+		if(strlen((const char*)ptr) >= 12) {
 			uint32_t expected;
 			expected = base64_chars[ptr[0]] << 2;
 			expected += base64_chars[ptr[1]] >> 4;
@@ -562,7 +562,7 @@ static void screnc_decode(unsigned char *ptr, struct screnc_state *s)
 			if(s->sum != expected) {
 				cli_dbgmsg("screnc_decode: checksum mismatch: %u != %u\n", s->sum, expected);
 			} else {
-				if(strncmp(ptr, "^#~@", 4) != 0) {
+				if(strncmp((const char*)ptr, "^#~@", 4) != 0) {
 					cli_dbgmsg("screnc_decode: terminator not found\n");
 				} else {
 					cli_dbgmsg("screnc_decode: OK\n");
@@ -571,15 +571,15 @@ static void screnc_decode(unsigned char *ptr, struct screnc_state *s)
 			ptr += 4;
 		}
 		/* copy remaining */
-		remaining = strlen(ptr) + 1;
+		remaining = strlen((const char*)ptr) + 1;
 		memmove(dst, ptr, remaining);
 	} else {
 		*dst = '\0';
 	}
 }
 
-static void js_process(struct parser_state *js_state, const char *js_begin, const char *js_end,
-		const char *line, const char *ptr, int in_script, const char *dirname)
+static void js_process(struct parser_state *js_state, const unsigned char *js_begin, const unsigned char *js_end,
+		const unsigned char *line, const unsigned char *ptr, int in_script, const char *dirname)
 {
 	if(!js_begin)
 		js_begin = line;
@@ -588,7 +588,7 @@ static void js_process(struct parser_state *js_state, const char *js_begin, cons
 	if(js_end > js_begin &&
 			CLI_ISCONTAINED(line, 8192, js_begin, 1) &&
 			CLI_ISCONTAINED(line, 8192, js_end, 1)) {
-		cli_js_process_buffer(js_state, js_begin, js_end - js_begin);
+		cli_js_process_buffer(js_state, (const char*)js_begin, js_end - js_begin);
 	}
 	if(!in_script) {
 		/*  we found a /script, normalize script now */
@@ -600,20 +600,20 @@ static void js_process(struct parser_state *js_state, const char *js_begin, cons
 
 static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag_arguments_t *hrefs,const struct cli_dconf* dconf)
 {
-	int fd_tmp, tag_length, tag_arg_length, binary;
-	int retval=FALSE, escape, value = 0, hex, tag_val_length=0;
+	int fd_tmp, tag_length = 0, tag_arg_length = 0, binary;
+	int retval=FALSE, escape=FALSE, value = 0, hex=FALSE, tag_val_length=0;
 	int look_for_screnc=FALSE, in_screnc=FALSE,in_script=FALSE, text_space_written=FALSE;
 	FILE *stream_in = NULL;
 	html_state state=HTML_NORM, next_state=HTML_BAD_STATE, saved_next_state=HTML_BAD_STATE;
 	char filename[1024], tag[HTML_STR_LENGTH+1], tag_arg[HTML_STR_LENGTH+1];
-	char tag_val[HTML_STR_LENGTH+1], *tmp_file;
-	unsigned char *line, *ptr, *arg_value, *ptr_screnc;
+	char tag_val[HTML_STR_LENGTH+1], *tmp_file, *arg_value;
+	unsigned char *line, *ptr, *ptr_screnc = NULL;
 	tag_arguments_t tag_args;
-	quoted_state quoted;
-	unsigned long length;
+	quoted_state quoted = NOT_QUOTED;
+	unsigned long length = 0;
 	struct screnc_state screnc_state;
 	file_buff_t *file_buff_o2, *file_buff_text;
-	file_buff_t *file_tmp_o1;
+	file_buff_t *file_tmp_o1 = NULL;
 	int in_ahref=0;/* index of <a> tag, whose contents we are parsing. Indexing starts from 1, 0 means outside of <a>*/
 	unsigned char* href_contents_begin=NULL;/*beginning of the next portion of <a> contents*/
 	unsigned char* ptrend=NULL;/*end of <a> contents*/
@@ -1067,13 +1067,13 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				} else if (strcmp(tag, "script") == 0) {
 					arg_value = html_tag_arg_value(&tag_args, "language");
 					/* TODO: maybe we can output all tags only via html_output_tag */
-					if (arg_value && (strcasecmp(arg_value, "jscript.encode") == 0)) {
+					if (arg_value && (strcasecmp((const char*)arg_value, "jscript.encode") == 0)) {
 						html_tag_arg_set(&tag_args, "language", "javascript");
 						state = HTML_SKIP_WS;
 						next_state = HTML_JSDECODE;
 						/* we already output the old tag, output the new tag now */
 						html_output_tag(file_buff_o2, tag, &tag_args);
-					} else if (arg_value && (strcasecmp(arg_value, "vbscript.encode") == 0)) {
+					} else if (arg_value && (strcasecmp((const char*)arg_value, "vbscript.encode") == 0)) {
 						html_tag_arg_set(&tag_args, "language", "vbscript");
 						state = HTML_SKIP_WS;
 						next_state = HTML_JSDECODE;
@@ -1091,8 +1091,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					}
 				} else if(strcmp(tag, "%@") == 0) {
 					arg_value = html_tag_arg_value(&tag_args, "language");
-					if(arg_value && (strcasecmp(arg_value,"jscript.encode") == 0||
-							strcasecmp(arg_value, "vbscript.encode") == 0)) {
+					if(arg_value && (strcasecmp((const char*)arg_value,"jscript.encode") == 0||
+							strcasecmp((const char*)arg_value, "vbscript.encode") == 0)) {
 
 						saved_next_state = next_state;
 						next_state = state;
@@ -1104,9 +1104,9 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 						href_contents_begin=ptr;
 					if (strcmp(tag, "a") == 0) {
 						arg_value = html_tag_arg_value(&tag_args, "href");
-						if (arg_value && strlen(arg_value) > 0) {
+						if (arg_value && strlen((const char*)arg_value) > 0) {
 							if (hrefs->scanContents) {
-								unsigned char* arg_value_title = html_tag_arg_value(&tag_args,"title");
+								char* arg_value_title = html_tag_arg_value(&tag_args,"title");
 								/*beginning of an <a> tag*/
 								if (in_ahref)
 									/*we encountered nested <a> tags, pretend previous closed*/
@@ -1119,8 +1119,8 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 								if (arg_value_title) {
 									/* title is a 'displayed link'*/
 									html_tag_arg_add(hrefs,"href_title",arg_value_title);
-									html_tag_contents_append(&contents,arg_value,
-										arg_value+strlen(arg_value));
+									html_tag_contents_append(&contents,(const unsigned char*)arg_value,
+										(const unsigned char*)arg_value+strlen(arg_value));
 									html_tag_contents_done(hrefs, hrefs->count, &contents);
 								}
 								if (in_form_action) {
@@ -1128,7 +1128,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 									html_tag_arg_add(hrefs,"form",arg_value);
 									contents.pos = 0;
 									html_tag_contents_append(&contents, in_form_action,
-											in_form_action + strlen(in_form_action));
+											in_form_action + strlen((const char*)in_form_action));
 									html_tag_contents_done(hrefs, hrefs->count, &contents);
 								}
 							}
@@ -1140,11 +1140,11 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 							}
 						}
 					} else if (strcmp(tag,"form") == 0 && hrefs->scanContents) {
-						const unsigned char* arg_action_value = html_tag_arg_value(&tag_args,"action");
+						const char* arg_action_value = html_tag_arg_value(&tag_args,"action");
 						if (arg_action_value) {
 							if(in_form_action)
 								free(in_form_action);
-							in_form_action = cli_strdup(arg_action_value);
+							in_form_action = (unsigned char*)cli_strdup(arg_action_value);
 						}
 					} else if (strcmp(tag, "img") == 0) {
 						arg_value = html_tag_arg_value(&tag_args, "src");
@@ -1152,13 +1152,13 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 							html_tag_arg_add(hrefs, "src", arg_value);
 							if(hrefs->scanContents && in_ahref)
 								/* "contents" of an img tag, is the URL of its parent <a> tag */
-								hrefs->contents[hrefs->count-1] = cli_strdup(hrefs->value[in_ahref-1]);
+								hrefs->contents[hrefs->count-1] = (unsigned char*)cli_strdup((const char*)hrefs->value[in_ahref-1]);
 							if (in_form_action) {
 								/* form action is the real URL, and href is the 'displayed' */
 								html_tag_arg_add(hrefs,"form",arg_value);
 								contents.pos = 0;
 								html_tag_contents_append(&contents, in_form_action,
-										in_form_action + strlen(in_form_action));
+										in_form_action + strlen((const char*)in_form_action));
 								html_tag_contents_done(hrefs, hrefs->count, &contents);
 							}
 						}
@@ -1167,13 +1167,13 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 							html_tag_arg_add(hrefs, "dynsrc", arg_value);
 							if(hrefs->scanContents && in_ahref)
 								/* see above */
-								hrefs->contents[hrefs->count-1] = cli_strdup(hrefs->value[in_ahref-1]);
+								hrefs->contents[hrefs->count-1] = (unsigned char*)cli_strdup((const char*)hrefs->value[in_ahref-1]);
 							if (in_form_action) {
 								/* form action is the real URL, and href is the 'displayed' */
 								html_tag_arg_add(hrefs,"form",arg_value);
 								contents.pos = 0;
 								html_tag_contents_append(&contents, in_form_action,
-										in_form_action + strlen(in_form_action));
+										in_form_action + strlen((const char*)in_form_action));
 								html_tag_contents_done(hrefs, hrefs->count, &contents);
 							}
 						}
@@ -1183,13 +1183,13 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 							html_tag_arg_add(hrefs, "iframe", arg_value);
 							if(hrefs->scanContents && in_ahref)
 								/* see above */
-								hrefs->contents[hrefs->count-1] = cli_strdup(hrefs->value[in_ahref-1]);
+								hrefs->contents[hrefs->count-1] = (unsigned char*)cli_strdup((const char*)hrefs->value[in_ahref-1]);
 							if (in_form_action) {
 								/* form action is the real URL, and href is the 'displayed' */
 								html_tag_arg_add(hrefs,"form",arg_value);
 								contents.pos = 0;
 								html_tag_contents_append(&contents, in_form_action,
-										in_form_action + strlen(in_form_action));
+										in_form_action + strlen((const char*)in_form_action));
 								html_tag_contents_done(hrefs, hrefs->count, &contents);
 							}
 						}
@@ -1199,13 +1199,13 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 							html_tag_arg_add(hrefs, "area", arg_value);
 							if(hrefs->scanContents && in_ahref)
 								/* see above */
-								hrefs->contents[hrefs->count-1] = cli_strdup(hrefs->value[in_ahref-1]);
+								hrefs->contents[hrefs->count-1] = (unsigned char*)cli_strdup((const char*)hrefs->value[in_ahref-1]);
 							if (in_form_action) {
 								/* form action is the real URL, and href is the 'displayed' */
 								html_tag_arg_add(hrefs,"form",arg_value);
 								contents.pos = 0;
 								html_tag_contents_append(&contents, in_form_action,
-									in_form_action + strlen(in_form_action));
+									in_form_action + strlen((const char*)in_form_action));
 								html_tag_contents_done(hrefs, hrefs->count, &contents);
 							}
 						}
@@ -1215,14 +1215,14 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					/* a/img tags for buff_text can be processed only if we're not processing hrefs */
 					arg_value = html_tag_arg_value(&tag_args, "href");
 					if(arg_value && arg_value[0]) {
-						html_output_str(file_buff_text, arg_value, strlen(arg_value));
+						html_output_str(file_buff_text, (const unsigned char*)arg_value, strlen((const char*)arg_value));
 						html_output_c(file_buff_text, ' ');
 						text_space_written = TRUE;
 					}
 				} else if (strcmp(tag, "img") == 0) {
 					arg_value = html_tag_arg_value(&tag_args, "src");
 					if(arg_value && arg_value[0]) {
-						html_output_str(file_buff_text, arg_value, strlen(arg_value));
+						html_output_str(file_buff_text, (const unsigned char*)arg_value, strlen((const char*)arg_value));
 						html_output_c(file_buff_text, ' ');
 						text_space_written = TRUE;
 					}
@@ -1353,7 +1353,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				break;
 			case HTML_LOOKFOR_SCRENC:
 				look_for_screnc = TRUE;
-				ptr_screnc = strstr(ptr, "#@~^");
+				ptr_screnc = (unsigned char*)strstr((char*)ptr, "#@~^");
 				if(ptr_screnc) {
 					ptr_screnc[0] = '/';
 					ptr_screnc[1] = '/';
@@ -1364,7 +1364,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				break;
 			case HTML_JSDECODE:
 				/* Check for start marker */
-				if (strncmp(ptr, "#@~^", 4) == 0) {
+				if (strncmp((const char*)ptr, "#@~^", 4) == 0) {
 					ptr[0] = '/';
 					ptr[1] = '/';
 					ptr += 4;
@@ -1376,7 +1376,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 				}
 				break;
 			case HTML_JSDECODE_LENGTH:
-				if (strlen(ptr) < 8) {
+				if (strlen((const char*)ptr) < 8) {
 					state = HTML_NORM;
 					next_state = HTML_BAD_STATE;
 					break;
@@ -1498,15 +1498,15 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					}
 					file_tmp_o1->length = 0;
 
-					html_output_str(file_tmp_o1, "From html-normalise\n", 20);
-					html_output_str(file_tmp_o1, "Content-type: ", 14);
+					html_output_str(file_tmp_o1, (const unsigned char*)"From html-normalise\n", 20);
+					html_output_str(file_tmp_o1, (const unsigned char*)"Content-type: ", 14);
 					if ((tag_val_length == 0) && (*tag_val == ';')) {
-						html_output_str(file_tmp_o1, "text/plain\n", 11);
+						html_output_str(file_tmp_o1, (const unsigned char*)"text/plain\n", 11);
 					}
-					html_output_str(file_tmp_o1, tag_val, tag_val_length);
+					html_output_str(file_tmp_o1, (const unsigned char*)tag_val, tag_val_length);
 					html_output_c(file_tmp_o1, '\n');
 					if (strstr(tag_val, ";base64") != NULL) {
-						html_output_str(file_tmp_o1, "Content-transfer-encoding: base64\n", 34);
+						html_output_str(file_tmp_o1, (const unsigned char*)"Content-transfer-encoding: base64\n", 34);
 					}
 					html_output_c(file_tmp_o1, '\n');
 				} else {
@@ -1751,8 +1751,8 @@ int html_screnc_decode(int fd, const char *dirname)
 		return FALSE;
 	}
 
-	snprintf(filename, 1024, "%s/screnc.html", dirname);
-	ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
+	snprintf((char*)filename, 1024, "%s/screnc.html", dirname);
+	ofd = open((const char*)filename, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
 
 	if (ofd < 0) {
 		cli_dbgmsg("open failed: %s\n", filename);
@@ -1761,7 +1761,7 @@ int html_screnc_decode(int fd, const char *dirname)
 	}
 
 	while ((line = cli_readchunk(stream_in, NULL, 8192)) != NULL) {
-		ptr = strstr(line, "#@~^");
+		ptr = (unsigned char*)strstr((char*)line, "#@~^");
 		if (ptr) {
 			break;
 		}
@@ -1801,7 +1801,7 @@ int html_screnc_decode(int fd, const char *dirname)
 	cli_writen(ofd, "<script>",strlen("<script>"));
 	while (screnc_state.length && line) {
 		screnc_decode(ptr, &screnc_state);
-		cli_writen(ofd, ptr, strlen(ptr));
+		cli_writen(ofd, ptr, strlen((const char*)ptr));
 		free(line);
 		if (screnc_state.length) {
 			ptr = line = cli_readchunk(stream_in, NULL, 8192);

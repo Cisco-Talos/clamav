@@ -571,7 +571,7 @@ char *cli_mp_strdup(mp_t *mp, const char *s) {
   return alloc;
 }
 
-char *cli_mp_virname(mp_t *mp, char *virname, unsigned int official) {
+char *cli_mp_virname(mp_t *mp, const char *virname, unsigned int official) {
   char *newname, *pt;
   if(!virname)
     return NULL;

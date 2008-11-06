@@ -562,6 +562,8 @@ static void execute_standard_filter(rarvm_data_t *rarvm_data, rarvm_standard_fil
 		SET_VALUE(FALSE, &rarvm_data->mem[VM_GLOBALMEMADDR+0x1c], dest_pos-data_size);
 		SET_VALUE(FALSE, &rarvm_data->mem[VM_GLOBALMEMADDR+0x20], data_size);
 		break;
+	default: /* make gcc happy */
+		break;
 	}
 }
 				
@@ -989,6 +991,8 @@ static void rarvm_optimize(struct rarvm_prepared_program *prg)
 			case VM_CMP:
 				cmd->op_code = cmd->byte_mode ? VM_CMPB:VM_CMPD;
 				continue;
+			default: /* make gcc happy */
+				break;
 		}
 		if ((vm_cmdflags[cmd->op_code] & VMCF_CHFLAGS) == 0) {
 			continue;
@@ -1023,6 +1027,8 @@ static void rarvm_optimize(struct rarvm_prepared_program *prg)
 			case VM_NEG:
 				cmd->op_code = cmd->byte_mode ? VM_NEGB:VM_NEGD;
 				continue;
+			default: /* make gcc happy */
+				break;
 		}
 	}
 }

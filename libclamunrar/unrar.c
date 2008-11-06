@@ -917,7 +917,7 @@ static int rar_unpack29(int fd, int solid, unpack_data_t *unpack_data)
 					continue;
 				}
 				if (next_ch == 4) {
-					unsigned int length;
+					unsigned int length = 0;
 					distance = 0;
 					failed = FALSE;
 					for (i=0 ; i < 4 && !failed; i++) {

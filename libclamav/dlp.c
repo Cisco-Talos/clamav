@@ -298,7 +298,7 @@ int dlp_is_valid_ssn(const unsigned char *buffer, int length, int format)
     if((length > minlength) && isdigit(buffer[minlength]))
 	return 0;
         
-    strncpy(numbuf, buffer, minlength);
+    strncpy(numbuf, (const char*)buffer, minlength);
     numbuf[minlength] = 0;
 
     /* sscanf parses and (basically) validates the string for us */

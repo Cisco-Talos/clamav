@@ -155,8 +155,8 @@ static void remove_frompools(threadpool_t *t)
 int thrmgr_printstats(int f)
 {
 	struct threadpool_list *l;
-	size_t cnt;
-	size_t pool_used = 0, pool_total = 0, pool_cnt = 0, seen_cnt = 0, error_flag = 0;
+	unsigned cnt, pool_cnt = 0;
+	size_t pool_used = 0, pool_total = 0, seen_cnt = 0, error_flag = 0;
 	float mem_heap = 0, mem_mmap = 0, mem_used = 0, mem_free = 0, mem_releasable = 0;
 	const struct cl_engine **seen = NULL;
 
@@ -169,7 +169,7 @@ int thrmgr_printstats(int f)
 		work_item_t *q;
 		struct timeval tv_now;
 		unsigned long umin=~0UL, umax=0, usum=0;
-		size_t invalids=0, cnt=0;
+		unsigned invalids=0, cnt=0;
 		struct task_desc *task;
 
 		if(!pool) {
@@ -189,6 +189,9 @@ int thrmgr_printstats(int f)
 				break;
 			case POOL_EXIT:
 				state = "EXIT";
+				break;
+			default:
+				state = "??";
 				break;
 		}
 		mdprintf(f, "STATE: %s %s\n", state, l->nxt ? "" : "PRIMARY");
@@ -220,7 +223,7 @@ int thrmgr_printstats(int f)
 		}
 		if(cnt + invalids != pool->queue->item_count)
 			mdprintf(f," (ERROR: %u != %u)", cnt + invalids,
-					pool->queue->item_count);
+					(unsigned)pool->queue->item_count);
 		mdprintf(f, "\n");
 		for(task = pool->tasks; task; task = task->nxt) {
 			long delta;

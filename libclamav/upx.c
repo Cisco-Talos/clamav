@@ -530,8 +530,8 @@ int upx_inflatelzma(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint3
   cli_LzmaInitUPX(&lz, *dsize);
   s.avail_in = ssize;
   s.avail_out = *dsize;
-  s.next_in = src+2;
-  s.next_out = dst;
+  s.next_in = (unsigned char*)src+2;
+  s.next_out = (unsigned char*)dst;
 
   if(cli_LzmaDecode(&lz, &s)==LZMA_RESULT_DATA_ERROR) {
 /*     __asm__ __volatile__("int3"); */

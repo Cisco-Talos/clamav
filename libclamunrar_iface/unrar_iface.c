@@ -185,7 +185,7 @@ static unrar_fileheader_t *read_block(int fd, header_type hdr_type)
     unrar_dbgmsg("UNRAR: Pack Size: %u\n", file_header->pack_size);
     unrar_dbgmsg("UNRAR: UnPack Version: 0x%.2x\n", file_header->unpack_ver);
     unrar_dbgmsg("UNRAR: Pack Method: 0x%.2x\n", file_header->method);
-    file_header->filename = (char *) malloc(file_header->name_size+1);
+    file_header->filename = (unsigned char *) malloc(file_header->name_size+1);
     if(!file_header->filename) {
 	free(file_header);
 	return NULL;
@@ -393,7 +393,7 @@ int unrar_extract_next_prepare(unrar_state_t *state, const char *dirname)
     new_metadata->unpack_size = state->file_header->high_unpack_size * 0x100000000ULL + state->file_header->unpack_size;
     new_metadata->crc = state->file_header->file_crc;
     new_metadata->method = state->file_header->method;
-    new_metadata->filename = strdup(state->file_header->filename);
+    new_metadata->filename = strdup((const char*)state->file_header->filename);
     if(!new_metadata->filename) {
 	free(new_metadata);
 	return UNRAR_EMEM;
