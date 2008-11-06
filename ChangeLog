@@ -1,38 +1,25 @@
 Thu Nov  6 15:24:34 EET 2008 (edwin)
 ------------------------------------
- * Makefile.am, clamd/session.c, clamd/thrmgr.c, libclamav/dlp.c,
- libclamav/htmlnorm.c, libclamav/jsparse/js-norm.c,
- libclamav/mpool.c, libclamav/mpool.h, libclamav/pe.c,
- libclamav/phishcheck.c, libclamav/readdb.c, libclamav/upack.c,
- libclamav/upx.c, libclamunrar/unrar.c, libclamunrar/unrarvm.c,
- libclamunrar_iface/unrar_iface.c: fix compiler warnings, more to
- come (bb #273)
+  * Makefile.am, clamd/, libclamav/, libclamunrar/,
+  libclamunrar_iface/: fix compiler warnings, more to come (bb #273)
 
 Thu Nov  6 12:29:26 EET 2008 (edwin)
 ------------------------------------
  * contrib/clamdtop/clamdtop.c: reconnect if connection is broken use
- recv/send instead of fdopen on socket
+  recv/send instead of fdopen on socket
 
 Thu Nov  6 11:37:08 EET 2008 (edwin)
 ------------------------------------
- * clamd/server-th.c, clamd/session.c, clamd/thrmgr.c,
- clamd/thrmgr.h, contrib/clamdtop/clamdtop.c,
- libclamav/libclamav.map, libclamav/mpool.c, libclamav/mpool.h: 
- mempool statistics support
+ * clamd/, contrib/, libclamav/: mempool statistics support
 
 Wed Nov  5 21:49:49 EET 2008 (edwin)
 ------------------------------------
- * clamav-milter/clamav-milter.c, configure.in, libclamav/binhex.c,
- libclamav/blob.c, libclamav/entconv.c, libclamav/jsparse/js-norm.c,
- libclamav/line.c, libclamav/matcher-ac.c, libclamav/matcher-bm.c,
- libclamav/mbox.c, libclamav/message.c, libclamav/mpool.c,
- libclamav/phish_domaincheck_db.c, libclamav/phish_whitelist.c,
- libclamav/phishcheck.c, libclamav/regex_list.c,
- libclamav/regex_suffix.c, libclamav/table.c, libclamav/text.c: have
- configure define NDEBUG unless we use --enable-debug, instead of
- having to #ifndef CL_DEBUG #define NDEBUG #endif in each .c file
- that uses assert.  If you want assertions enabled you'll need to use
- --enable-debug to configure, as until now, no change there.
+ * aclocal.m4, clamav-config.h.in, clamav-milter/, configure,
+  configure.in, libclamav/: have configure define NDEBUG unless we use
+  --enable-debug, instead of having to #ifndef CL_DEBUG #define NDEBUG
+  #endif in each .c file that uses assert.  If you want assertions
+  enabled you'll need to use --enable-debug to configure, as until
+  now, no change there.
 
 Wed Nov  5 21:20:56 CET 2008 (tk)
 ---------------------------------
@@ -116,23 +103,8 @@ Tue Nov  4 11:28:09 EET 2008 (edwin)
 
 Mon Nov  3 21:05:54 EET 2008 (edwin)
 ------------------------------------
- * clamd/scanner.c, clamd/session.c, clamd/session.h,
- clamd/thrmgr.c, clamd/thrmgr.h, contrib/clamdtop/Makefile,
- contrib/clamdtop/clamdtop.c: new command STATS new top-like tool
- using ncurses: clamdtop it shows what clamd is currently scanning (and since how long),
- including which file(s) multiscan is working on currently, how many
- items it has in the queue (and since how long they are waiting), how
- many active/idle threads it has, memory usage statistics, can
- monitor local or remote clamd
-
-Sat Nov  1 19:52:25 EET 2008 (edwin)
-------------------------------------
- * libclamav/libclamav.map, libclamav/matcher-ac.c,
- libclamav/matcher-bm.c, libclamav/regex_list.c,
- unit_tests/check_clamav.c, unit_tests/check_htmlnorm.c,
- unit_tests/check_jsnorm.c, unit_tests/check_matchers.c,
- unit_tests/check_regex.c, unit_tests/checks.h: fix unit tests when
- mpool is activated
+ * contrib/, libclamav/, unit_tests/: fix unit tests when mpool is
+  activated
 
 Sat Nov  1 03:51:58 CET 2008 (acab)
 -----------------------------------
