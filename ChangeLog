@@ -1,3 +1,7 @@
+Thu Nov  6 21:46:47 CET 2008 (tk)
+---------------------------------
+  * docs/clamdoc.tex, docs/man/clamd.8.in: document nCOMMANDS (bb#1278)
+
 Thu Nov  6 15:24:34 EET 2008 (edwin)
 ------------------------------------
   * Makefile.am, clamd/, libclamav/, libclamunrar/,
