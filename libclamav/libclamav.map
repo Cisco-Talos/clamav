@@ -121,6 +121,7 @@ CLAMAV_PRIVATE {
     mp_create;
     mp_destroy;
     mp_free;
+    mp_getstats;
   local:
     *;
 };

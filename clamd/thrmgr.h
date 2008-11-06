@@ -50,6 +50,7 @@ struct task_desc {
 	struct timeval tv;
 	struct task_desc *prv;
 	struct task_desc *nxt;
+	const struct cl_engine *engine;
 };
 
 typedef struct threadpool_tag {
@@ -76,5 +77,6 @@ void thrmgr_destroy(threadpool_t *threadpool);
 int thrmgr_dispatch(threadpool_t *threadpool, void *user_data);
 int thrmgr_printstats(int outfd);
 void thrmgr_setactivetask(const char *filename, const char* command);
+void thrmgr_setactiveengine(const struct cl_engine *engine);
 
 #endif

@@ -30,6 +30,7 @@
 
 #include "thrmgr.h"
 #include "others.h"
+#include "mpool.h"
 
 #if defined(C_LINUX)
 #include <malloc.h>
@@ -155,10 +156,14 @@ int thrmgr_printstats(int f)
 {
 	struct threadpool_list *l;
 	size_t cnt;
+	size_t pool_used = 0, pool_total = 0, pool_cnt = 0, seen_cnt = 0, error_flag = 0;
+	float mem_heap = 0, mem_mmap = 0, mem_used = 0, mem_free = 0, mem_releasable = 0;
+	const struct cl_engine **seen = NULL;
+
 	pthread_mutex_lock(&pools_lock);
 	for(cnt=0,l=pools;l;l=l->nxt) cnt++;
 	mdprintf(f,"POOLS: %u\n\n", cnt);
-	for(l= pools;l;l = l->nxt) {
+	for(l= pools;l && !error_flag;l = l->nxt) {
 		threadpool_t *pool = l->pool;
 		const char *state;
 		work_item_t *q;
@@ -172,6 +177,9 @@ int thrmgr_printstats(int f)
 			continue;
 		}
 		pthread_mutex_lock(&pool->pool_mutex);
+		/* now we can access desc->, knowing that they won't get freed
+		 * because the other tasks can't quit while pool_mutex is taken
+		 */
 		switch(pool->state) {
 			case POOL_INVALID:
 				state = "INVALID";
@@ -216,26 +224,66 @@ int thrmgr_printstats(int f)
 		mdprintf(f, "\n");
 		for(task = pool->tasks; task; task = task->nxt) {
 			long delta;
+			size_t used, total;
+
 			delta = tv_now.tv_usec - task->tv.tv_usec;
 			delta += (tv_now.tv_sec - task->tv.tv_sec)*1000000;
 			mdprintf(f,"\t%s %f %s\n",
 					task->command ? task->command : "N/A",
 					delta/1e6,
 					task->filename ? task->filename:"");
+			if (task->engine) {
+				/* we usually have at most 2 engines so a linear
+				 * search is good enough */
+				size_t i;
+				for (i=0;i<seen_cnt;i++) {
+					if (seen[i] == task->engine)
+						break;
+				}
+				/* we need to count the memusage from the same
+				 * engine only once */
+				if (i == seen_cnt) {
+					const struct cl_engine **s;
+					/* new engine */
+					++seen_cnt;
+					s = realloc(seen, seen_cnt * sizeof(*seen));
+					if (!s) {
+						error_flag = 1;
+						break;
+					}
+					seen = s;
+					seen[seen_cnt - 1] = task->engine;
+
+					if (mp_getstats(task->engine, &used, &total) != -1) {
+						pool_used += used;
+						pool_total += total;
+						pool_cnt++;
+					}
+				}
+			}
 		}
 		mdprintf(f,"\n");
 		pthread_mutex_unlock(&pool->pool_mutex);
 	}
+	free(seen);
 #if defined(C_LINUX)
 	{
 		struct mallinfo inf = mallinfo();
-		mdprintf(f,"MEMSTATS: heap %.3fM mmap %.3fM used %.3fM free %.3fM releasable %.3fM\n",
-				inf.arena/(1024*1024.0), inf.hblkhd/(1024*1024.0),
-				inf.uordblks/(1024*1024.0), inf.fordblks/(1024*1024.0),
-				inf.keepcost/(1024*1024.0));
+		mem_heap = inf.arena/(1024*1024.0);
+		mem_mmap = inf.hblkhd/(1024*1024.0);
+		mem_used = inf.uordblks/(1024*1024.0);
+		mem_free = inf.fordblks/(1024*1024.0);
+		mem_releasable = inf.keepcost/(1024*1024.0);
+		/* TODO: figure out how to print these statistics on other OSes */
 	}
-	/* TODO: figure out how to print these statistics on other OSes */
 #endif
+	if (error_flag) {
+		mdprintf(f, "ERROR: error encountered while formatting statistics\n");
+	} else {
+		mdprintf(f,"MEMSTATS: heap %.3fM mmap %.3fM used %.3fM free %.3fM releasable %.3fM pools %u pools_used %.3fM pools_total %.3fM\n",
+			mem_heap, mem_mmap, mem_used, mem_free, mem_releasable, pool_cnt,
+			pool_used/(1024*1024.0), pool_total/(1024*1024.0));
+	}
 	mdprintf(f,"END\n");
 	pthread_mutex_unlock(&pools_lock);
 	return 0;
@@ -391,6 +439,14 @@ void thrmgr_setactivetask(const char *filename, const char* command)
 		desc->command = command;
 		gettimeofday(&desc->tv, NULL);
 	}
+}
+
+void thrmgr_setactiveengine(const struct cl_engine *engine)
+{
+	struct task_desc *desc = pthread_getspecific(stats_tls_key);
+	if(!desc)
+		return;
+	desc->engine = engine;
 }
 
 /* thread pool mutex must be held on entry */

@@ -1,3 +1,10 @@
+Thu Nov  6 11:37:08 EET 2008 (edwin)
+------------------------------------
+ * clamd/server-th.c, clamd/session.c, clamd/thrmgr.c,
+ clamd/thrmgr.h, contrib/clamdtop/clamdtop.c,
+ libclamav/libclamav.map, libclamav/mpool.c, libclamav/mpool.h: 
+ mempool statistics support
+
 Wed Nov  5 21:49:49 EET 2008 (edwin)
 ------------------------------------
  * clamav-milter/clamav-milter.c, configure.in, libclamav/binhex.c,

@@ -388,7 +388,26 @@ void mp_flush(struct MP *mp) {
   }
   used += mp->mpm.size;
   spam("Map flushed @ %p, in use: %lu\n", mp, used);
-  return used;
+}
+
+int mp_getstats(const struct cl_engine *eng, size_t *used, size_t *total)
+{
+	size_t sum_used = 0, sum_total = 0;
+	const struct MPMAP *mpm;
+	const mp_t *mp;
+	/* checking refcount is not necessary, but safer */
+	if (!eng || !eng->refcount)
+		return -1;
+	mp = eng->mempool;
+	if (!mp)
+		return -1;
+	for(mpm = &mp->mpm; mpm; mpm = mpm->next) {
+		sum_used += mpm->usize;
+		sum_total += mpm->size;
+	}
+	*used = sum_used;
+	*total = sum_total;
+	return 0;
 }
 
 void *mp_malloc(struct MP *mp, size_t size) {

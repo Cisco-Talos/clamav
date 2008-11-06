@@ -142,7 +142,7 @@ static void init_windows(void)
 	version_window = subwin(stdscr, 1, maxx, 1, 0);
 	stats_head_window = subwin(stdscr, 5, maxx-48, 3, 0);
 	stats_window = subwin(stdscr, maxy-9, maxx, 7, 0);
-	mem_window = subwin(stdscr, 5, 48, 2, maxx-48);
+	mem_window = subwin(stdscr, 6, 48, 3, maxx-48);
 	status_bar_window = subwin(stdscr, 1i, maxx, maxy-1, 0);
 	touchwin(stdscr);
 	werase(stdscr);
@@ -325,33 +325,44 @@ static void output_memstats(const char* line)
 {
 	char buf[128];
 	int blink = 0;
-	double heapu, mmapu, totalu, totalf, releasable;
-	unsigned long lheapu, lmmapu, ltotalu, ltotalf, lreleasable, totalmem;
+	double heapu, mmapu, totalu, totalf, releasable, pools_used, pools_total;
+	unsigned pools_cnt;
+	unsigned long lheapu, lmmapu, ltotalu, ltotalf, lreleasable, totalmem, lpoolu, lpoolt;
 
-	if(sscanf(line, " heap %lfM mmap %lfM used %lfM free %lfM releasable %lfM",
-			&heapu, &mmapu, &totalu, &totalf, &releasable) != 5)
+	if(sscanf(line, " heap %lfM mmap %lfM used %lfM free %lfM releasable %lfM pools %u pools_used %lfM pools_total %lfM",
+			&heapu, &mmapu, &totalu, &totalf, &releasable, &pools_cnt, &pools_used, &pools_total) != 8)
 		return;
 	lheapu = heapu*1000;
 	lmmapu = mmapu*1000;
 	ltotalu = totalu*1000;
 	ltotalf = totalf*1000;
 	lreleasable = releasable*1000;
+	lpoolu = pools_used*1000;
+	lpoolt = pools_total*1000;
 	werase(mem_window);
 	box(mem_window, 0, 0);
+
 	snprintf(buf, sizeof(buf),"heap %4luM mmap %4luM releasable %3luM",
 			lheapu/1024, lmmapu/1024, lreleasable/1024);
 	mvwprintw(mem_window, 1, 1, "Memory: ");
 	print_colored(mem_window, buf);
+
 	mvwprintw(mem_window, 2, 1, "Malloc: ");
 	snprintf(buf, sizeof(buf),"used %4luM free %4luM total     %4luM",
 			ltotalu/1024, ltotalf/1024, (ltotalu+ltotalf)/1024);
 	print_colored(mem_window, buf);
-	totalmem = lheapu + lmmapu;
+
+	mvwprintw(mem_window, 3, 1, "Mempool: ");
+	snprintf(buf, sizeof(buf), "count  %u  used %4luM total     %4luM",
+			pools_cnt, lpoolu/1024, lpoolt/1024);
+	print_colored(mem_window, buf);
+
+	totalmem = lheapu + lmmapu + lpoolt;
 	if(totalmem > biggest_mem) {
 		biggest_mem = totalmem;
 		blink = 1;
 	}
-	show_bar(mem_window, 3, totalmem, lmmapu + lreleasable,
+	show_bar(mem_window, 4, totalmem, lmmapu + lreleasable + lpoolt - lpoolu,
 			biggest_mem, blink);
 	wrefresh(mem_window);
 }

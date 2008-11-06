@@ -131,6 +131,7 @@ int command(int desc, const struct cl_engine *engine, const struct cl_limits *li
 
     buff[bread] = 0;
     cli_chomp(buff);
+    thrmgr_setactiveengine(engine);
 
     if(!strncmp(buff, CMD1, strlen(CMD1))) { /* SCAN */
 	thrmgr_setactivetask(NULL, CMD1);
@@ -144,6 +145,10 @@ int command(int desc, const struct cl_engine *engine, const struct cl_limits *li
 
     } else if(!strncmp(buff, CMD4, strlen(CMD4))) { /* RELOAD */
 	thrmgr_setactivetask(NULL, CMD4);
+	/* we'll reload, hide the engine, if we are the last
+	 * holding a ref to the engine it'll be freed,
+	 * we don't want STATS command to access it */
+	thrmgr_setactiveengine(NULL);
 	mdprintf(desc, "RELOADING\n");
 	return COMMAND_RELOAD;
 

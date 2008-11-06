@@ -22,7 +22,7 @@
 #define MPOOL_H
 
 #ifdef USE_MPOOL
-
+#include "cltypes.h"
 typedef struct MP mp_t;
 
 mp_t *mp_create(void);
@@ -37,8 +37,10 @@ char *cli_mp_strdup(mp_t *mp, const char *s);
 char *cli_mp_virname(mp_t *mp, char *virname, unsigned int official);
 uint16_t *cli_mp_hex2ui(mp_t *mp, const char *hex);
 void mp_flush(mp_t *mp);
+int mp_getstats(const struct cl_engine *engine, size_t *used, size_t *total);
 #else /* USE_MPOOL */
 
+typedef void mp_t;
 #define mp_malloc(a, b) cli_malloc(b)
 #define mp_free(a, b) free(b)
 #define mp_calloc(a, b, c) cli_calloc(b, c)
@@ -49,6 +51,7 @@ void mp_flush(mp_t *mp);
 #define cli_mp_virname(mp, a, b) cli_virname(a, b)
 #define cli_mp_hex2ui(mp, hex) cli_hex2ui(hex)
 #define mp_flush(val)
+#define mp_getstats(mp,used,total) -1
 #endif /* USE_MPOOL */
 
 #endif

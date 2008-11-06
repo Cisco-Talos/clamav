@@ -160,6 +160,7 @@ static void scanner_thread(void *arg)
 
     shutdown(conn->sd, 2);
     closesocket(conn->sd);
+    thrmgr_setactiveengine(NULL);
     cl_free(conn->engine);
     free(conn);
     return;
@@ -240,6 +241,7 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
 	    if(!(pua_cats = strdup(engine->pua_cats)))
 		logg("^Can't make a copy of pua_cats\n");
 
+	thrmgr_setactiveengine(NULL);
 	cl_free(engine);
 	engine = NULL;
     }
@@ -279,6 +281,7 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
     }
     logg("Database correctly reloaded (%u signatures)\n", sigs);
 
+    thrmgr_setactiveengine(engine);
     return engine;
 }
 
@@ -712,8 +715,10 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	pthread_join(clamuko_pid, NULL);
     }
 #endif
-    if(engine)
+    if(engine) {
+	thrmgr_setactiveengine(NULL);
 	cl_free(engine);
+    }
 
     if(dbstat)
 	cl_statfree(dbstat);
