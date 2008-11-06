@@ -18061,6 +18061,12 @@ cat >>confdefs.h <<\_ACEOF
 #define CL_DEBUG 1
 _ACEOF
 
+else
+
+cat >>confdefs.h <<\_ACEOF
+#define NDEBUG 1
+_ACEOF
+
 fi
 
 # Check whether --enable-no-cache was given.

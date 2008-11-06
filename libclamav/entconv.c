@@ -33,10 +33,6 @@
 #include <pthread.h>
 #endif
 
-#ifndef CL_DEBUG
-#define NDEBUG
-#endif
-
 #include <assert.h>
 
 #include "clamav.h"

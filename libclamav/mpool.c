@@ -41,9 +41,6 @@
 #include "others.h"
 #include "str.h"
 #include "readdb.h"
-#ifndef CL_DEBUG
-#define NDEBUG
-#endif
 #include <assert.h>
 
 #define MPOOLMAGIC 0x5adeada5

@@ -47,10 +47,6 @@ static	char	const	rcsid[] = "$Id: clamav-milter.c,v 1.312 2007/02/12 22:24:21 nj
 #include "network.h"
 #include "misc.h"
 
-#ifndef	CL_DEBUG
-#define	NDEBUG
-#endif
-
 #include <stdio.h>
 #include <sysexits.h>
 #ifdef	HAVE_SYS_STAT_H

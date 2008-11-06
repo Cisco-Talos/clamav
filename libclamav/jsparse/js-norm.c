@@ -23,11 +23,6 @@
 #include "clamav-config.h"
 #endif
 
-/* assert() only enabled with ./configure --enable-debug */
-#ifndef CL_DEBUG
-#define NDEBUG
-#endif
-
 #include <stdio.h>
 
 #ifdef HAVE_UNISTD_H

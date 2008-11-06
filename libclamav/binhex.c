@@ -94,10 +94,6 @@ static	char	const	rcsid[] = "$Id: binhex.c,v 1.23 2007/02/12 20:46:08 njh Exp $"
 #include "clamav-config.h"
 #endif
 
-#ifndef	CL_DEBUG
-#define	NDEBUG	/* map CLAMAV debug onto standard */
-#endif
-
 #ifdef CL_THREAD_SAFE
 #ifndef	_REENTRANT
 #define	_REENTRANT	/* for Solaris 2.8 */

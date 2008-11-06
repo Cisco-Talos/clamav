@@ -24,17 +24,11 @@
 #include "clamav-config.h"
 #endif
 
-
-#ifndef CL_DEBUG
-#define NDEBUG
-#endif
-
 #ifdef CL_THREAD_SAFE
 #ifndef _REENTRANT
 #define _REENTRANT
 #endif
 #endif
-
 
 #include <stdio.h>
 #include <string.h>

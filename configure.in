@@ -788,6 +788,8 @@ enable_debug=$enableval, enable_debug="no")
 
 if test "$enable_debug" = "yes"; then
   AC_DEFINE([CL_DEBUG],1,[enable debugging])
+else
+  AC_DEFINE([NDEBUG],1,[disable assertions])
 fi
 
 AC_ARG_ENABLE([no-cache],

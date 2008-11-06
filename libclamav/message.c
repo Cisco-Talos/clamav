@@ -25,10 +25,6 @@ static	char	const	rcsid[] = "$Id: message.c,v 1.195 2007/02/12 20:46:09 njh Exp 
 #include "clamav-config.h"
 #endif
 
-#ifndef	CL_DEBUG
-#define	NDEBUG	/* map CLAMAV debug onto standard */
-#endif
-
 #ifdef CL_THREAD_SAFE
 #ifndef	_REENTRANT
 #define	_REENTRANT	/* for Solaris 2.8 */

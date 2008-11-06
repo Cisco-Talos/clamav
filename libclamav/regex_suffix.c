@@ -23,10 +23,6 @@
 #include "clamav-config.h"
 #endif
 
-#ifndef CL_DEBUG
-#define NDEBUG
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

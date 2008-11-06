@@ -320,6 +320,9 @@
    */
 #undef LT_OBJDIR
 
+/* disable assertions */
+#undef NDEBUG
+
 /* bzip funtions do not have bz2 prefix */
 #undef NOBZ2PREFIX
 

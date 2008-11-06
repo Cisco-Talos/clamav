@@ -53,10 +53,6 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.64 2007/02/12 22:25:14 njh Exp $";
 #include "scanners.h"
 #include "filetypes.h"
 
-#ifndef	CL_DEBUG
-#define	NDEBUG	/* map CLAMAV debug onto standard */
-#endif
-
 #ifndef	O_BINARY
 #define	O_BINARY	0
 #endif

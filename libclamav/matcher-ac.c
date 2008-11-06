@@ -27,11 +27,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-/* TODO: this should be in a common header */
-#ifndef CL_DEBUG
-#define NDEBUG
-#endif
-
 #include <assert.h>
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>

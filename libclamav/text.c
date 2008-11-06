@@ -92,10 +92,6 @@ static	char	const	rcsid[] = "$Id: text.c,v 1.25 2007/02/12 20:46:09 njh Exp $";
 #include "clamav-config.h"
 #endif
 
-#ifndef	CL_DEBUG
-#define	NDEBUG	/* map CLAMAV debug onto standard */
-#endif
-
 #include <stdlib.h>
 #ifdef	C_DARWIN
 #include <sys/types.h>

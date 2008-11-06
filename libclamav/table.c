@@ -26,10 +26,6 @@
 #include "clamav-config.h"
 #endif
 
-#ifndef	CL_DEBUG
-#define	NDEBUG	/* map CLAMAV debug onto standard */
-#endif
-
 #include <stdlib.h>
 #include <string.h>
 #ifdef	HAVE_STRINGS_H

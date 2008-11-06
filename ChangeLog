@@ -1,3 +1,17 @@
+Wed Nov  5 21:49:49 EET 2008 (edwin)
+------------------------------------
+ * clamav-milter/clamav-milter.c, configure.in, libclamav/binhex.c,
+ libclamav/blob.c, libclamav/entconv.c, libclamav/jsparse/js-norm.c,
+ libclamav/line.c, libclamav/matcher-ac.c, libclamav/matcher-bm.c,
+ libclamav/mbox.c, libclamav/message.c, libclamav/mpool.c,
+ libclamav/phish_domaincheck_db.c, libclamav/phish_whitelist.c,
+ libclamav/phishcheck.c, libclamav/regex_list.c,
+ libclamav/regex_suffix.c, libclamav/table.c, libclamav/text.c: have
+ configure define NDEBUG unless we use --enable-debug, instead of
+ having to #ifndef CL_DEBUG #define NDEBUG #endif in each .c file
+ that uses assert.  If you want assertions enabled you'll need to use
+ --enable-debug to configure, as until now, no change there.
+
 Wed Nov  5 21:20:56 CET 2008 (tk)
 ---------------------------------
  * clamscan/manager.c: fix double-slash when scanning the root dir (bb#1263)
