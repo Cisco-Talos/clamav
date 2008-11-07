@@ -1,3 +1,7 @@
+Fri Nov  7 13:28:49 CET 2008 (tk)
+---------------------------------
+ * freshclam/manager.c: remove unused parameter (bb#1280)
+
 Fri Nov  7 13:20:08 CET 2008 (tk)
 ---------------------------------
  * freshclam/manager.c: improve reporting of server failures (bb#777)

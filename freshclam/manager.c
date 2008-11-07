@@ -1133,7 +1133,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     return 0;
 }
 
-static int getcvd(const char *cvdfile, const char *newfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int nodb, unsigned int newver, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist)
+static int getcvd(const char *cvdfile, const char *newfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, unsigned int newver, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist)
 {
 	struct cl_cvd *cvd;
 	int ret;
@@ -1580,7 +1580,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
     newfile = cli_gentemp(cwd);
 
     if(nodb) {
-	ret = getcvd(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, nodb, newver, ctimeout, rtimeout, mdat, logerr, can_whitelist);
+	ret = getcvd(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, newver, ctimeout, rtimeout, mdat, logerr, can_whitelist);
 	if(ret) {
 	    memset(ip, 0, 16);
 	    free(newfile);
@@ -1614,7 +1614,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	    cli_rmdirs(tmpdir);
 	    free(tmpdir);
 	    logg("^Incremental update failed, trying to download %s\n", cvdfile);
-	    ret = getcvd(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, 1, newver, ctimeout, rtimeout, mdat, logerr, can_whitelist);
+	    ret = getcvd(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, newver, ctimeout, rtimeout, mdat, logerr, can_whitelist);
 	    if(ret) {
 		free(newfile);
 		return ret;
