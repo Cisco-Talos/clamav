@@ -1,3 +1,7 @@
+Fri Nov  7 13:20:08 CET 2008 (tk)
+---------------------------------
+ * freshclam/manager.c: improve reporting of server failures (bb#777)
+
 Fri Nov  7 13:28:03 EET 2008 (edwin)
 ------------------------------------
  * contrib/clamdtop/clamdtop.c: fix wrong free (thanks Nigel!)

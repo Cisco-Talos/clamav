@@ -665,14 +665,21 @@ int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
 	    }
 
 	    ret = 52;
-	    if(strstr(post, "SUBMIT_PERMANENT_FAILURE")) {
+	    if((pt = strstr(post, "SUBMIT_PERMANENT_FAILURE"))) {
 		if(!submitted) {
-		    logg("!SubmitDetectionStats: Permanent failure\n");
 		    permfail = 1;
+		    if((pt + 32 <= post + sizeof(post)) && pt[24] == ':')
+			logg("!SubmitDetectionStats: Remote server reported permanent failure: %s\n", &pt[25]);
+		    else
+			logg("!SubmitDetectionStats: Remote server reported permanent failure\n");
 		}
-	    } else if(strstr(post, "SUBMIT_TEMPORARY_FAILURE")) {
-		if(!submitted)
-		    logg("!SubmitDetectionStats: Temporary failure\n");
+	    } else if((pt = strstr(post, "SUBMIT_TEMPORARY_FAILURE"))) {
+		if(!submitted) {
+		    if((pt + 32 <= post + sizeof(post)) && pt[24] == ':')
+			logg("!SubmitDetectionStats: Remote server reported temporary failure: %s\n", &pt[25]);
+		    else
+			logg("!SubmitDetectionStats: Remote server reported temporary failure\n");
+		}
 	    } else {
 		if(!submitted)
 		    logg("!SubmitDetectionStats: Incorrect answer from server\n");
