@@ -222,7 +222,7 @@ int thrmgr_printstats(int f)
 			if(invalids)
 				mdprintf(f," (INVALID timestamps: %u)", invalids);
 		}
-		if(cnt + invalids != pool->queue->item_count)
+		if(cnt + invalids != (unsigned)pool->queue->item_count)
 			mdprintf(f," (ERROR: %u != %u)", cnt + invalids,
 					(unsigned)pool->queue->item_count);
 		mdprintf(f, "\n");

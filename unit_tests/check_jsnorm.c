@@ -227,11 +227,9 @@ static void jstest_teardown(void)
 static void tokenizer_test(const char *in, const char *expected, int split)
 {
 	char filename[1024];
-	char *buf;
 	int fd;
 	ssize_t len = strlen(expected);
 	size_t inlen = strlen(in);
-	ssize_t p, p2;
 
 	if(split) {
 		cli_js_process_buffer(state, in, inlen/2);
@@ -459,7 +457,7 @@ Suite *test_jsnorm_suite(void)
 {
     Suite *s = suite_create("jsnorm");
     TCase *tc_jsnorm_gperf, *tc_jsnorm_token, *tc_jsnorm_api,
-	  *tc_jsnorm_tokenizer, *tc_jsnorm_bugs, *tc_screnc_infloop;
+	  *tc_jsnorm_tokenizer, *tc_jsnorm_bugs;
 
     prepare();
     tc_jsnorm_gperf = tcase_create("jsnorm gperf");

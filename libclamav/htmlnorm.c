@@ -100,8 +100,8 @@ typedef struct file_buff_tag {
 } file_buff_t;
 
 struct tag_contents {
-	unsigned char contents[MAX_TAG_CONTENTS_LENGTH + 1];
 	size_t pos;
+	unsigned char contents[MAX_TAG_CONTENTS_LENGTH + 1];
 };
 
 static const int base64_chars[256] = {

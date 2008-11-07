@@ -371,7 +371,7 @@ static void do_phishing_test(const struct rtest *rtest)
 	ctx.engine = engine;
 	ctx.virname = &virname;
 
-	rc = phishingScan(NULL, &ctx, &hrefs);
+	rc = phishingScan(&ctx, &hrefs);
 
 	html_tag_arg_free(&hrefs);
 	fail_unless(rc == CL_CLEAN,"phishingScan");

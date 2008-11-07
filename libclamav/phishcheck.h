@@ -66,7 +66,7 @@ struct url_check {
 	unsigned short       link_type;
 };
 
-int phishingScan(const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs);
+int phishingScan(cli_ctx* ctx,tag_arguments_t* hrefs);
 
 void phish_disable(struct cl_engine* engine,const char* reason);
 /* Global, non-thread-safe functions, call only once! */

@@ -60,13 +60,13 @@ static struct test {
 
 #ifdef CHECK_HAVE_LOOPS
 
-static void check_dir(const char *dir, const struct test *test)
+static void check_dir(const char *dire, const struct test *test)
 {
 	char filename[4096];
 	int fd, reffd;
 
 	if (test->nocommentref) {
-		snprintf(filename, sizeof(filename), "%s/nocomment.html", dir);
+		snprintf(filename, sizeof(filename), "%s/nocomment.html", dire);
 		fd = open(filename, O_RDONLY);
 		fail_unless(fd > 0,"unable to open: %s", filename);
 		reffd = open_testfile(test->nocommentref);
@@ -77,7 +77,7 @@ static void check_dir(const char *dir, const struct test *test)
 		close(fd);
 	}
 	if (test->notagsref) {
-		snprintf(filename, sizeof(filename), "%s/notags.html", dir);
+		snprintf(filename, sizeof(filename), "%s/notags.html", dire);
 		fd = open(filename, O_RDONLY);
 		fail_unless(fd > 0,"unable to open: %s", filename);
 		reffd = open_testfile(test->notagsref);
@@ -88,7 +88,7 @@ static void check_dir(const char *dir, const struct test *test)
 		close(fd);
 	}
 	if (test->jsref) {
-		snprintf(filename, sizeof(filename), "%s/javascript", dir);
+		snprintf(filename, sizeof(filename), "%s/javascript", dire);
 		fd = open(filename, O_RDONLY);
 		fail_unless(fd > 0,"unable to open: %s", filename);
 		reffd = open_testfile(test->jsref);

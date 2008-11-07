@@ -1,3 +1,8 @@
+Fri Nov  7 19:37:38 EET 2008 (edwin)
+------------------------------------
+ * clamd/, libclamav/, libclamunrar/, unit_tests/: fix more compiler
+ warnings (bb #273)
+
 Fri Nov  7 13:28:49 CET 2008 (tk)
 ---------------------------------
  * freshclam/manager.c: remove unused parameter (bb#1280)

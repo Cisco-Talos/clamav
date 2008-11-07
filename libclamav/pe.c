@@ -1920,7 +1920,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	for(i=0 ; ; i++) {
 	    if(exe_sections[i].raw<head) 
 	        head=exe_sections[i].raw;
-	    if(i==nsections-1) break;
+	    if(i+1==nsections) break;
 	    if(ssize<exe_sections[i].rva+exe_sections[i].vsz)
 		ssize=exe_sections[i].rva+exe_sections[i].vsz;
 	}
@@ -1945,7 +1945,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
             if(!CLI_ISCONTAINED(src, ssize, src+exe_sections[i].rva, exe_sections[i].rsz)) break;
             if(cli_readn(desc, src+exe_sections[i].rva, exe_sections[i].rsz)!=exe_sections[i].rsz) break;
         }
-        if(i!=nsections-1) {
+        if(i+1!=nsections) {
             cli_dbgmsg("WWpack: Probably hacked/damaged file.\n");
             free(src);
             break;

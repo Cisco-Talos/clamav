@@ -340,7 +340,7 @@ static int build_regex(regex_t* preg,const char* regex,int nosub)
 }
 
 /* allocates memory */
-static int get_host(const struct phishcheck* s,const char* URL,int isReal,int* phishy,const char **hstart, const char **hend)
+static int get_host(const char* URL,int isReal,int* phishy,const char **hstart, const char **hend)
 {
 	int rc,ismailto = 0;
 	const char* start;
@@ -425,7 +425,7 @@ rfind(char *start, char c, size_t len)
 	return (p < start) ? NULL : p;
 }
 
-static void get_domain(const struct phishcheck* pchk,struct string* dest,struct string* host)
+static void get_domain(struct string* dest,struct string* host)
 {
 	char* domain;
 	char* tld = strrchr(host->data,'.');
@@ -722,7 +722,7 @@ cleanupURL(struct string *URL,struct string *pre_URL, int isReal)
 }
 
 /* -------end runtime disable---------*/
-int phishingScan(const char* dir,cli_ctx* ctx,tag_arguments_t* hrefs)
+int phishingScan(cli_ctx* ctx,tag_arguments_t* hrefs)
 {
 	/* TODO: get_host and then apply regex, etc. */
 	int i;
@@ -992,7 +992,7 @@ static inline int validate_uri_ialpha(const char *start, const char *end)
 /*
  * Only those URLs are identified as URLs for which phishing detection can be performed.
  */
-static int isURL(const struct phishcheck* pchk,const char* URL, int accept_anyproto)
+static int isURL(const char* URL, int accept_anyproto)
 {
 	const char *start = NULL, *p, *q, *end;
 	if(!URL)
@@ -1088,13 +1088,13 @@ static enum phish_status cleanupURLs(struct url_check* urls)
 	return CL_PHISH_NODECISION;
 }
 
-static int url_get_host(const struct phishcheck* pchk, struct url_check* url,struct url_check* host_url,int isReal,int* phishy)
+static int url_get_host(struct url_check* url,struct url_check* host_url,int isReal,int* phishy)
 {
 	const char *start, *end;
 	struct string* host = isReal ? &host_url->realLink : &host_url->displayLink;
 	const char* URL = isReal ? url->realLink.data : url->displayLink.data;
 	int rc;
-	if ((rc = get_host(pchk, URL, isReal, phishy, &start, &end))) {
+	if ((rc = get_host(URL, isReal, phishy, &start, &end))) {
 		return rc;
 	}
 	if(!start || !end) {
@@ -1126,10 +1126,10 @@ static int url_get_host(const struct phishcheck* pchk, struct url_check* url,str
 	return CL_PHISH_NODECISION;
 }
 
-static void url_get_domain(const struct phishcheck* pchk, struct url_check* url,struct url_check* domains)
+static void url_get_domain(struct url_check* url,struct url_check* domains)
 {
-	get_domain(pchk, &domains->realLink, &url->realLink);
-	get_domain(pchk, &domains->displayLink, &url->displayLink);
+	get_domain(&domains->realLink, &url->realLink);
+	get_domain(&domains->displayLink, &url->displayLink);
 	domains->flags = url->flags;
 }
 
@@ -1289,7 +1289,7 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 	if(!strcmp(urls->realLink.data,urls->displayLink.data))
 		return CL_PHISH_CLEAN;/* displayed and real URL are identical -> clean */
 
-	if(!isURL(pchk, urls->realLink.data, 0)) {
+	if(!isURL(urls->realLink.data, 0)) {
 		cli_dbgmsg("Real 'url' is not url:%s\n",urls->realLink.data);
 		return CL_PHISH_CLEAN;
 	}
@@ -1308,7 +1308,7 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 	cli_dbgmsg("Phishcheck:URL after cleanup: %s->%s\n", urls->realLink.data,
 		urls->displayLink.data);
 
-	if((!isURL(pchk, urls->displayLink.data, 1) ) &&
+	if((!isURL(urls->displayLink.data, 1) ) &&
 			( (phishy&PHISHY_NUMERIC_IP && !isNumericURL(pchk, urls->displayLink.data)) ||
 			  !(phishy&PHISHY_NUMERIC_IP))) {
 		cli_dbgmsg("Displayed 'url' is not url:%s\n",urls->displayLink.data);
@@ -1320,12 +1320,12 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 
 	url_check_init(&host_url);
 
-	if((rc = url_get_host(pchk, urls, &host_url, DOMAIN_DISPLAY, &phishy))) {
+	if((rc = url_get_host(urls, &host_url, DOMAIN_DISPLAY, &phishy))) {
 		free_if_needed(&host_url);
 		return rc < 0 ? rc : CL_PHISH_CLEAN;
 	}
 
-	if (domainlist_match(engine,host_url.displayLink.data,host_url.realLink.data,&urls->pre_fixup,1,&urls->flags)) {
+	if (domainlist_match(engine, host_url.displayLink.data,host_url.realLink.data,&urls->pre_fixup,1)) {
 		phishy |= DOMAIN_LISTED;
 	} else {
 		urls->flags &= urls->always_check_flags;
@@ -1358,7 +1358,7 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 		return CL_PHISH_CLEAN;
 	}
 
-	if((rc = url_get_host(pchk, urls,&host_url,DOMAIN_REAL,&phishy)))
+	if((rc = url_get_host(urls,&host_url,DOMAIN_REAL,&phishy)))
 	{
 		free_if_needed(&host_url);
 		return rc < 0 ? rc : CL_PHISH_CLEAN;
@@ -1377,7 +1377,7 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 	{
 		struct url_check domain_url;
 		url_check_init(&domain_url);
-		url_get_domain(pchk, &host_url,&domain_url);
+		url_get_domain(&host_url,&domain_url);
 		if(!strcmp(domain_url.realLink.data,domain_url.displayLink.data)) {
 			free_if_needed(&host_url);
 			free_if_needed(&domain_url);

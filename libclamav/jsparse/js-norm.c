@@ -72,12 +72,10 @@ typedef struct scanner {
 typedef int YY_BUFFER_STATE;
 
 static int yylex( YYSTYPE *lvalp, yyscan_t  );
-static void yy_delete_buffer( YY_BUFFER_STATE, yyscan_t);
 static YY_BUFFER_STATE yy_scan_bytes( const char *, size_t, yyscan_t scanner );
 static const char *yyget_text ( yyscan_t scanner );
 static int yyget_leng ( yyscan_t scanner );
 static int yylex_init ( yyscan_t * ptr_yy_globals ) ;
-static void yyset_debug (int debug_flag ,yyscan_t yyscanner );
 static int yylex_destroy ( yyscan_t yyscanner ) ;
 /* ----------- tokenizer end ---------------- */
 
@@ -687,7 +685,7 @@ static void handle_de(yystype *tokens, size_t start, const size_t cnt, const cha
 	}
 }
 
-static int handle_unescape(struct tokens *tokens, size_t start, const size_t cnt)
+static int handle_unescape(struct tokens *tokens, size_t start)
 {
 	if(tokens->data[start].type == TOK_StringLiteral) {
 		char *R;
@@ -707,7 +705,7 @@ static int handle_unescape(struct tokens *tokens, size_t start, const size_t cnt
 
 
 /* scriptasylum dot com's JS encoder */
-static void handle_df(const yystype *tokens, size_t start, const size_t cnt, struct decode_result *res)
+static void handle_df(const yystype *tokens, size_t start, struct decode_result *res)
 {
 	char *str, *s1;
 	size_t len, s1_len, i;
@@ -760,7 +758,7 @@ static void run_folders(struct tokens *tokens)
 		    cstring &&
 		    !strcmp("unescape", cstring) && tokens->data[i+1].type == TOK_PAR_OPEN) {
 
-		  handle_unescape(tokens, i+2, tokens->cnt);
+		  handle_unescape(tokens, i+2);
 	  }
   }
 }
@@ -813,7 +811,7 @@ static void run_decoders(struct parser_state *state)
 		  /* TODO: also match signature of dF function (possibly
 		   * declared using unescape */
 
-		  handle_df(tokens->data, i+2, tokens->cnt, &res);
+		  handle_df(tokens->data, i+2, &res);
 	  } else if(i+2 < tokens->cnt && tokens->data[i].type == TOK_IDENTIFIER_NAME &&
 			  cstring &&
 			  !strcmp("eval", cstring) && tokens->data[i+1].type == TOK_PAR_OPEN) {
@@ -1150,7 +1148,6 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
 		memset(&val, 0, sizeof(val));
 		val.vtype = vtype_undefined;
 	}
-	yy_delete_buffer(yyb, state->scanner);
 }
 
 struct parser_state *cli_js_init(void)
@@ -1169,7 +1166,6 @@ struct parser_state *cli_js_init(void)
 		free(state);
 		return NULL;
 	}
-	yyset_debug(1, state->scanner);
 	cli_dbgmsg(MODULE "cli_js_init() done\n");
 	return state;
 }
@@ -1438,14 +1434,6 @@ static int yy_scan_bytes(const char *p, size_t len, yyscan_t scanner)
 	scanner->lastpos = -1;
 	scanner->last_state = Dummy;
 	return 0;
-}
-
-static void yyset_debug (int debug_flag ,yyscan_t yyscanner )
-{
-}
-
-static void yy_delete_buffer( YY_BUFFER_STATE yyb, yyscan_t scanner)
-{
 }
 
 static const char *yyget_text(yyscan_t scanner)

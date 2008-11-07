@@ -111,7 +111,7 @@ void rarvm_set_value(int byte_mode, unsigned int *addr, unsigned int value)
 
 		
 #if WORDS_BIGENDIAN == 0
-#define SET_VALUE(byte_mode,addr,value) ((byte_mode) ? (*(unsigned char *)(addr)=(value)):(*(uint32_t *)(addr)=((uint32_t)(value))))
+#define SET_VALUE(byte_mode,addr,value) (void)(((byte_mode) ? (*(unsigned char *)(addr)=(value)):(*(uint32_t *)(addr)=((uint32_t)(value)))))
 #else
 #define SET_VALUE(byte_mode,addr,value) rarvm_set_value(byte_mode, (unsigned int *)addr, value);
 #endif

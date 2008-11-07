@@ -397,8 +397,8 @@ struct DISASMED {
   uint32_t opsize;
   uint32_t adsize;
   uint32_t segment;
-  struct DIS_ARGS args[3];
   uint8_t cur;
+  struct DIS_ARGS args[3];
 };
 
 #endif
