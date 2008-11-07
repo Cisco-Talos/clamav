@@ -320,9 +320,9 @@ static int make_connection(const char *soname, conn_t *conn)
 		struct sockaddr_in server;
 		struct hostent *hp;
 		unsigned port = 0;
-		char *name = strdup(soname);
-		const char *host = name;
-		name = strchr(name, ':');
+		char *name, *pt = strdup(soname);
+		const char *host = pt;
+		name = strchr(pt, ':');
 		if(name) {
 			*name++ = '\0';
 			port = atoi(name);
@@ -334,7 +334,7 @@ static int make_connection(const char *soname, conn_t *conn)
 			herror("Cannot find host");
 			return -1;
 		}
-		free(name);
+		free(pt);
 		s = socket(AF_INET, SOCK_STREAM, 0);
 		if(s < 0) {
 			perror("socket");
