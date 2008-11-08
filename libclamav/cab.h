@@ -57,10 +57,10 @@ struct cab_file {
     int lread;
     int fd;
     int ofd;
+    uint16_t attribs;
     struct cab_folder *folder;
     struct cab_file *next;
     struct cab_archive *cab;
-    uint16_t attribs;
 };
 
 struct cab_folder {

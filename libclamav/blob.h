@@ -52,7 +52,6 @@ int	blobGrow(blob *b, size_t len);
  */
 typedef	struct fileblob {
 	FILE	*fp;
-	int	fd;
 	blob	b;	/*
 			 * b.name is the name of the attachment as stored in the
 			 * email, not the full path name of the temporary file
@@ -60,6 +59,7 @@ typedef	struct fileblob {
 	char	*fullname;	/* full pathname of the file */
 	cli_ctx	*ctx;	/* When set we can scan the blob, otherwise NULL */
 	unsigned	long	bytes_scanned;
+	int	fd;
 	unsigned	int	isNotEmpty : 1;
 	unsigned	int	isInfected : 1;
 } fileblob;
