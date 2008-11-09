@@ -29,11 +29,18 @@
 #include <time.h>
 #include <ctype.h>
 #include <signal.h>
+#ifdef _WIN32
+#include <windows.h>
+#include <winsock2.h>
+/* this is not correct, perhaps winsock errors are not mapped on errno */
+#define herror perror
+#else
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#endif
 #include <sys/time.h>
 #include <assert.h>
 #include <errno.h>
@@ -237,8 +244,8 @@ static void show_bar(WINDOW *win, size_t i, unsigned live, unsigned idle,
 	int y,x;
 	unsigned len  = 47;
 	unsigned start = 1;
-	unsigned activ = ((live-idle)*(len - start - 2) + (max/2)) / max;
-	unsigned dim   = idle*(len - start - 2) / max;
+	unsigned activ = max ? ((live-idle)*(len - start - 2) + (max/2)) / max : 0;
+	unsigned dim   = max ? idle*(len - start - 2) / max : 0;
 	unsigned rem = len - activ - dim - start-2;
 
 	assert(activ + 2 < len && activ+dim + 2 < len && activ+dim+rem + 2 < len && "Invalid values");
@@ -301,6 +308,9 @@ static void print_con_error(const char *fmt, ...)
 static int make_connection(const char *soname, conn_t *conn)
 {
 	int s;
+#ifdef _WIN32
+    {
+#else
 	if(access(soname, F_OK) == 0) {
 		struct sockaddr_un addr;
 		s = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -317,6 +327,7 @@ static int make_connection(const char *soname, conn_t *conn)
 			return -1;
 		}
 	} else {
+#endif
 		struct sockaddr_in server;
 		struct hostent *hp;
 		unsigned port = 0;
@@ -584,11 +595,22 @@ int main(int argc, char *argv[])
 	fd_set rfds;
 	struct timeval tv_last, tv;
 
+#ifdef _WIN32
+	WSADATA wsaData;
+	if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR) {
+		fprintf(stderr, "Error at WSAStartup(): %d\n", WSAGetLastError());
+		exit(1);
+	}
+
+	if (make_connection(argc > 1 ? argv[1] : "localhost:3310", &conn) < 0)
+		exit(2);
+#else
 	/* TODO: parse clamd.conf */
 	if (make_connection(argc > 1 ? argv[1] : "/tmp/clamd.socket", &conn) < 0)
 		exit(2);
 
 	signal(SIGPIPE, SIG_IGN);
+#endif
 
 	gettimeofday(&tv_conn, NULL);
 	send_string(&conn, "SESSION\nVERSION\n");

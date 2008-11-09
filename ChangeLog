@@ -1,3 +1,8 @@
+Sun Nov  9 22:37:29 EET 2008 (edwin)
+------------------------------------
+ * contrib/clamdtop/Makefile, contrib/clamdtop/clamdtop.c: clamdtop:
+ Apply mingw32 patches from Gianluigi Tiesi <sherpya*netfarm.it>
+
 Sat Nov  8 17:24:59 EET 2008 (edwin)
 ------------------------------------
  * libclamav/blob.h, libclamav/cab.h, libclamav/jsparse/js-norm.c: 
