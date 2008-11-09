@@ -20,7 +20,7 @@ SUBDIRS = lzma .
 
 AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis -I@srcdir@/lzma 
 
-libclamav_la_LIBADD = lzma/liblzma.la @CLAMAV_UNRAR_LIBS@ @LIBCLAMAV_LIBS@ @THREAD_LIBS@
+libclamav_la_LIBADD = lzma/liblzma.la $(top_srcdir)/libclamunrar_iface/libclamunrar_iface.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@
 
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 

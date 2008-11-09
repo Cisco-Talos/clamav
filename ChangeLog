@@ -1,8 +1,3 @@
-Sat Nov  8 17:24:59 EET 2008 (edwin)
-------------------------------------
- * libclamav/blob.h, libclamav/cab.h, libclamav/jsparse/js-norm.c: 
- reorder some struct fields to avoid holes
-
 Sat Nov  8 05:27:43 CET 2008 (acab)
 -----------------------------------
  * libclamav/mpool.c: slightly optimized (we're now faster and more compact

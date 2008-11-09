@@ -17,7 +17,8 @@
 #  MA 02110-1301, USA.
 
 ACLOCAL_AMFLAGS=-I m4
-SUBDIRS = libclamunrar libclamunrar_iface libclamav clamscan clamd clamdscan freshclam sigtool clamconf database docs etc clamav-milter test unit_tests
+
+SUBDIRS = libltdl libclamunrar_iface libclamav clamscan clamd clamdscan freshclam sigtool clamconf database docs etc clamav-milter test unit_tests
 EXTRA_DIST = FAQ examples BUGS shared libclamav.pc.in UPGRADE COPYING.bzip2 COPYING.lzma COPYING.unrar COPYING.LGPL COPYING.file COPYING.zlib COPYING.BSD
 
 bin_SCRIPTS=clamav-config

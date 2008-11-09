@@ -96,9 +96,7 @@
 #include <bzlib.h>
 #endif
 
-#ifdef ENABLE_UNRAR
 #include "libclamunrar_iface/unrar_iface.h"
-#endif
 
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #include <limits.h>
@@ -196,7 +194,7 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx, cli_file_t container)
     return CL_CLEAN;
 }
 
-#ifdef ENABLE_UNRAR
+/* FIXMERAR */
 static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx *ctx, unsigned int files, uint32_t* sfx_check)
 {
 	int ret = CL_SUCCESS;
@@ -380,7 +378,6 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 
     return ret;
 }
-#endif /* ENABLE_UNRAR */
 
 static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_check)
 {
@@ -1726,12 +1723,11 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg,
 	    while(fpt) {
 		switch(fpt->type) {
 		    case CL_TYPE_RARSFX:
-#ifdef ENABLE_UNRAR
+			/* FIXMERAR */
 			if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_RAR)) {
 			    cli_dbgmsg("RAR-SFX signature found at %u\n", (unsigned int) fpt->offset);
 			    nret = cli_scanrar(desc, ctx, fpt->offset, &lastrar);
 			}
-#endif
 			break;
 
 		    case CL_TYPE_ZIPSFX:
@@ -1901,12 +1897,9 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
 
 	case CL_TYPE_RAR:
-#ifdef ENABLE_UNRAR
+	    /* FIXMERAR */
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR))
 		ret = cli_scanrar(desc, ctx, 0, NULL);
-#else
-	    cli_warnmsg("RAR code not compiled-in\n");
-#endif
 	    break;
 
 	case CL_TYPE_ZIP:

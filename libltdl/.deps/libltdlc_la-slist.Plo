@@ -1,0 +1,87 @@
+libltdlc_la-slist.lo: slist.c /usr/include/assert.h \
+  /usr/include/features.h /usr/include/sys/cdefs.h \
+  /usr/include/bits/wordsize.h /usr/include/gnu/stubs.h \
+  /usr/include/gnu/stubs-64.h libltdl/slist.h libltdl/lt__glibc.h \
+  ../clamav-config.h /usr/include/argz.h /usr/include/errno.h \
+  /usr/include/bits/errno.h /usr/include/linux/errno.h \
+  /usr/include/asm/errno.h /usr/include/asm-generic/errno.h \
+  /usr/include/asm-generic/errno-base.h /usr/include/string.h \
+  /usr/lib/gcc/x86_64-linux-gnu/4.3.2/include/stddef.h \
+  /usr/include/bits/string.h /usr/include/bits/string2.h \
+  /usr/include/endian.h /usr/include/bits/endian.h \
+  /usr/include/bits/types.h /usr/include/bits/typesizes.h \
+  /usr/include/stdlib.h libltdl/lt_system.h /usr/include/sys/types.h \
+  /usr/include/time.h /usr/include/sys/select.h \
+  /usr/include/bits/select.h /usr/include/bits/sigset.h \
+  /usr/include/bits/time.h /usr/include/sys/sysmacros.h \
+  /usr/include/bits/pthreadtypes.h /usr/include/alloca.h
+
+/usr/include/assert.h:
+
+/usr/include/features.h:
+
+/usr/include/sys/cdefs.h:
+
+/usr/include/bits/wordsize.h:
+
+/usr/include/gnu/stubs.h:
+
+/usr/include/gnu/stubs-64.h:
+
+libltdl/slist.h:
+
+libltdl/lt__glibc.h:
+
+../clamav-config.h:
+
+/usr/include/argz.h:
+
+/usr/include/errno.h:
+
+/usr/include/bits/errno.h:
+
+/usr/include/linux/errno.h:
+
+/usr/include/asm/errno.h:
+
+/usr/include/asm-generic/errno.h:
+
+/usr/include/asm-generic/errno-base.h:
+
+/usr/include/string.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/4.3.2/include/stddef.h:
+
+/usr/include/bits/string.h:
+
+/usr/include/bits/string2.h:
+
+/usr/include/endian.h:
+
+/usr/include/bits/endian.h:
+
+/usr/include/bits/types.h:
+
+/usr/include/bits/typesizes.h:
+
+/usr/include/stdlib.h:
+
+libltdl/lt_system.h:
+
+/usr/include/sys/types.h:
+
+/usr/include/time.h:
+
+/usr/include/sys/select.h:
+
+/usr/include/bits/select.h:
+
+/usr/include/bits/sigset.h:
+
+/usr/include/bits/time.h:
+
+/usr/include/sys/sysmacros.h:
+
+/usr/include/bits/pthreadtypes.h:
+
+/usr/include/alloca.h:

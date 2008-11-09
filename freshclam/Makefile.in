@@ -57,8 +57,9 @@ subdir = freshclam
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
-	$(top_srcdir)/m4/fdpassing.m4 $(top_srcdir)/m4/lib-link.m4 \
-	$(top_srcdir)/m4/lib-prefix.m4 $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/argz.m4 $(top_srcdir)/m4/fdpassing.m4 \
+	$(top_srcdir)/m4/lib-link.m4 $(top_srcdir)/m4/lib-prefix.m4 \
+	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltdl.m4 \
 	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
 	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
 	$(top_srcdir)/m4/mmap_private.m4 $(top_srcdir)/m4/resolv.m4 \
@@ -99,6 +100,7 @@ DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AR = @AR@
+ARGZ_H = @ARGZ_H@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
@@ -112,7 +114,6 @@ CHECK_LIBS = @CHECK_LIBS@
 CLAMAVGROUP = @CLAMAVGROUP@
 CLAMAVUSER = @CLAMAVUSER@
 CLAMAV_MILTER_LIBS = @CLAMAV_MILTER_LIBS@
-CLAMAV_UNRAR_LIBS = @CLAMAV_UNRAR_LIBS@
 CLAMD_LIBS = @CLAMD_LIBS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
@@ -135,6 +136,7 @@ GETENT = @GETENT@
 GPERF = @GPERF@
 GREP = @GREP@
 HAVE_LIBGMP = @HAVE_LIBGMP@
+INCLTDL = @INCLTDL@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -143,20 +145,31 @@ INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LCOV = @LCOV@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
+LIBADD_DL = @LIBADD_DL@
+LIBADD_DLD_LINK = @LIBADD_DLD_LINK@
+LIBADD_DLOPEN = @LIBADD_DLOPEN@
+LIBADD_SHL_LOAD = @LIBADD_SHL_LOAD@
 LIBBZ2 = @LIBBZ2@
 LIBBZ2_PREFIX = @LIBBZ2_PREFIX@
 LIBCLAMAV_LIBS = @LIBCLAMAV_LIBS@
 LIBCLAMAV_VERSION = @LIBCLAMAV_VERSION@
 LIBGMP = @LIBGMP@
 LIBGMP_PREFIX = @LIBGMP_PREFIX@
+LIBLTDL = @LIBLTDL@
 LIBOBJS = @LIBOBJS@
-LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMAV_UNRAR_LIBS@ @FRESHCLAM_LIBS@ @THREAD_LIBS@
+LIBS = $(top_builddir)/libclamav/libclamav.la @FRESHCLAM_LIBS@ @THREAD_LIBS@
 LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LTDLDEPS = @LTDLDEPS@
+LTDLINCL = @LTDLINCL@
+LTDLOPEN = @LTDLOPEN@
 LTLIBBZ2 = @LTLIBBZ2@
 LTLIBGMP = @LTLIBGMP@
 LTLIBOBJS = @LTLIBOBJS@
+LT_CONFIG_H = @LT_CONFIG_H@
+LT_DLLOADERS = @LT_DLLOADERS@
+LT_DLPREOPEN = @LT_DLPREOPEN@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
@@ -219,6 +232,8 @@ libexecdir = @libexecdir@
 localedir = @localedir@
 localstatedir = @localstatedir@
 lt_ECHO = @lt_ECHO@
+ltdl_LIBOBJS = @ltdl_LIBOBJS@
+ltdl_LTLIBOBJS = @ltdl_LTLIBOBJS@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
 oldincludedir = @oldincludedir@
@@ -230,6 +245,7 @@ sbindir = @sbindir@
 sendmailprog = @sendmailprog@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
+sys_symbol_underscore = @sys_symbol_underscore@
 sysconfdir = @sysconfdir@
 target = @target@
 target_alias = @target_alias@

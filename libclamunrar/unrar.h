@@ -29,6 +29,12 @@
 
 struct unpack_data_tag;
 
+#define ppm_constructor libclamunrar_LTX_ppm_constructor
+#define ppm_destructor libclamunrar_LTX_ppm_destructor
+#define rar_init_filters libclamunrar_LTX_rar_init_filters
+#define rar_unpack libclamunrar_LTX_rar_unpack
+#define rarvm_free libclamunrar_LTX_rarvm_free
+
 #include "libclamunrar/unrarhlp.h"
 #include "libclamunrar/unrarppm.h"
 #include "libclamunrar/unrarvm.h"
