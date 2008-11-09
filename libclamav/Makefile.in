@@ -80,7 +80,7 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
 libclamav_la_DEPENDENCIES = lzma/liblzma.la \
-	$(top_srcdir)/libclamunrar_iface/libclamunrar_iface.la
+	$(top_builddir)/libclamunrar_iface/libclamunrar_iface.la
 am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	md5.lo others.lo readdb.lo cvd.lo dsig.lo str.lo scanners.lo \
 	textdet.lo filetypes.lo rtf.lo blob.lo mbox.lo message.lo \
@@ -299,7 +299,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = lzma .
 AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis -I@srcdir@/lzma 
-libclamav_la_LIBADD = lzma/liblzma.la $(top_srcdir)/libclamunrar_iface/libclamunrar_iface.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@
+libclamav_la_LIBADD = lzma/liblzma.la $(top_builddir)/libclamunrar_iface/libclamunrar_iface.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ \
 	-no-undefined $(am__append_1)
 include_HEADERS = clamav.h
