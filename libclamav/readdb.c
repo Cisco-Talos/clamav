@@ -87,19 +87,29 @@ int have_rar = 0;
 
 void cli_rarload(void) {
     lt_dlhandle rhandle;
+
 #ifndef CL_THREAD_SAFE
     if(is_rar_initd) return;
     is_rar_initd = 1;
 #endif
-    if(lt_dlinit()) cli_errmsg("Cannot init ltdl\n");
+    if(lt_dlinit()) {
+        cli_warnmsg("Cannot init ltdl - unrar support unavailable\n");
+        return;
+    }
     rhandle = lt_dlopenext("libclamunrar_iface");
-    if (!rhandle) { cli_errmsg("Cannot dlopen: %s\n", lt_dlerror()); return; }
+    if (!rhandle) { 
+        cli_dbgmsg("Cannot dlopen: %s - unrar support unavailable\n", lt_dlerror());
+        return;
+    }
     if (!(cli_unrar_open = (int(*)(int, const char *, unrar_state_t *))lt_dlsym(rhandle, "unrar_open")) ||
 	!(cli_unrar_extract_next_prepare = (int(*)(unrar_state_t *, const char *))lt_dlsym(rhandle, "unrar_extract_next_prepare")) ||
 	!(cli_unrar_extract_next = (int(*)(unrar_state_t *, const char *))lt_dlsym(rhandle, "unrar_extract_next")) ||
 	!(cli_unrar_close = (void(*)(unrar_state_t *))lt_dlsym(rhandle, "unrar_close"))
-	) { cli_errmsg("Cannot resolve: %s\n", lt_dlerror()); return; }
-    cli_errmsg("RAR IS FOUND!\n");
+	) {
+	/* ideally we should never land here, we'd better warn so */
+        cli_warnmsg("Cannot resolve: %s (version mismatch?) - unrar support unavailable\n", lt_dlerror());
+        return;
+    }
     have_rar = 1;
 }
 
