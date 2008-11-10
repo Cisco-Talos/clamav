@@ -93,8 +93,6 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 		    mp_free(root->mempool, next);
 		    return CL_EMEM;
 		}
-	    } else {
-		next->leaf = 1;
 	    }
 
 	    root->ac_nodes++;
@@ -111,7 +109,6 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 	    root->ac_nodetable[root->ac_nodes - 1] = next;
 
 	    pt->trans[(unsigned char) (pattern->pattern[i] & 0xff)] = next;
-	    pt->leaf = 0;
 	}
 
 	pt = next;
@@ -127,7 +124,6 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
     root->ac_pattable = (struct cli_ac_patt **) newtable;
     root->ac_pattable[root->ac_patterns - 1] = pattern;
 
-    pt->final = 1;
     pattern->depth = i;
 
     ph = pt->list;
@@ -253,9 +249,9 @@ static int ac_maketrans(struct cli_matcher *root)
     }
 
     while((node = bfs_dequeue(&bfs, &bfs_last))) {
-	if(node->leaf) {
+	if(IS_LEAF(node)) {
 	    struct cli_ac_node *failtarget = node->fail;
-	    while(failtarget->leaf)
+	    while(IS_LEAF(failtarget))
 		failtarget = failtarget->fail;
 	    node->fail = failtarget;
 	    continue;
@@ -265,7 +261,7 @@ static int ac_maketrans(struct cli_matcher *root)
 	    child = node->trans[i];
 	    if(child) {
 		fail = node->fail;
-		while(fail->leaf || !fail->trans[i])
+		while(IS_LEAF(fail) || !fail->trans[i])
 		    fail = fail->fail;
 
 		child->fail = fail->trans[i];
@@ -279,9 +275,6 @@ static int ac_maketrans(struct cli_matcher *root)
 		} else {
 		    child->list = child->fail->list;
 		}
-
-		if(child->list)
-		    child->final = 1;
 
 		if((ret = bfs_enqueue(&bfs, &bfs_last, child)) != 0)
 		    return ret;
@@ -298,13 +291,13 @@ static int ac_maketrans(struct cli_matcher *root)
 	}
     }
     while((node = bfs_dequeue(&bfs, &bfs_last))) {
-	if(node->leaf)
+	if(IS_LEAF(node))
 	    continue;
 	for(i = 0; i < 256; i++) {
 	    child = node->trans[i];
 	    if(!child) {
 		struct cli_ac_node *failtarget = node->fail;
-		while(failtarget->leaf || !failtarget->trans[i])
+		while(IS_LEAF(failtarget) || !failtarget->trans[i])
 		    failtarget = failtarget->fail;
 		node->trans[i] = failtarget->trans[i];
 	    } else {
@@ -403,7 +396,7 @@ void cli_ac_free(struct cli_matcher *root)
 	mp_free(root->mempool, root->ac_pattable);
 
     for(i = 0; i < root->ac_nodes; i++) {
-	if(!root->ac_nodetable[i]->leaf)
+	if(!IS_LEAF(root->ac_nodetable[i]))
 	    mp_free(root->mempool, root->ac_nodetable[i]->trans);
 	mp_free(root->mempool, root->ac_nodetable[i]);
     }
@@ -900,12 +893,12 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
     for(i = 0; i < length; i++)  {
 
-	if(current->leaf)
+	if(IS_LEAF(current))
 	    current = current->fail;
 
 	current = current->trans[buffer[i]];
 
-	if(current->final) {
+	if(IS_FINAL(current)) {
 	    patt = current->list;
 	    while(patt) {
 		bp = i + 1 - patt->depth;

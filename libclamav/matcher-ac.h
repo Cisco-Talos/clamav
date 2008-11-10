@@ -68,8 +68,10 @@ struct cli_ac_patt {
 struct cli_ac_node {
     struct cli_ac_patt *list;
     struct cli_ac_node **trans, *fail;
-    uint8_t leaf, final;
 };
+
+#define IS_LEAF(node) (!node->trans)
+#define IS_FINAL(node) (!!node->list)
 
 struct cli_ac_result {
     const char *virname;
