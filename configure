@@ -2214,7 +2214,7 @@ ac_need_target_h_file_new=true
 
 
 
-ac_need_target_h_file=`echo target.h`
+ac_need_target_h_file=target.h
 ac_need_target_h_prefix=`echo target | sed -e 'y:abcdefghijklmnopqrstuvwxyz-:ABCDEFGHIJKLMNOPQRSTUVWXYZ_:' -e 's:[^A-Z0-9_]::g'`
 #
 target_os0=`echo "$target_os"  | sed -e 'y:abcdefghijklmnopqrstuvwxyz.-:ABCDEFGHIJKLMNOPQRSTUVWXYZ__:' -e 's:[^A-Z0-9_]::g'`

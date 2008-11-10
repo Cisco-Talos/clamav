@@ -117,7 +117,7 @@ AC_DEFUN([AC_CREATE_TARGET_H_UPPER],
 [AC_REQUIRE([AC_CANONICAL_CPU_ARCH])
 AC_REQUIRE([AC_CREATE_TARGET_H_FILE])
 changequote({, })dnl
-ac_need_target_h_file=`echo ifelse($1, , target.h, $1)`
+ac_need_target_h_file=ifelse($1, , target.h, $1)
 ac_need_target_h_prefix=`echo ifelse($2, , target, $2) | sed -e 'y:abcdefghijklmnopqrstuvwxyz-:ABCDEFGHIJKLMNOPQRSTUVWXYZ_:' -e 's:[^A-Z0-9_]::g'`
 #
 target_os0=`echo "$target_os"  | sed -e 'y:abcdefghijklmnopqrstuvwxyz.-:ABCDEFGHIJKLMNOPQRSTUVWXYZ__:' -e 's:[^A-Z0-9_]::g'`
