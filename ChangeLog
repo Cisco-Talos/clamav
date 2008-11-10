@@ -1,3 +1,8 @@
+Mon Nov 10 20:12:47 EET 2008 (edwin)
+------------------------------------
+ * configure, libltdl/: regenerate libltdl/ to get rid of bunch of
+ leftover files.
+
 Mon Nov 10 18:58:08 CET 2008 (acab)
 -----------------------------------
  * m4: fix typo in anonmap detection

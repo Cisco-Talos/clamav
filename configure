@@ -16248,7 +16248,7 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
 	 test ! -s conftest.err
        } && test -s conftest$ac_exeext &&
        $as_test_x conftest$ac_exeext; then
-  ac_cv_c_mmap_anonymous='MAP_ANONYMOUS'
+  ac_cv_c_mmap_anonymous='MAP_ANON'
 
 else
   echo "$as_me: failed program was:" >&5
