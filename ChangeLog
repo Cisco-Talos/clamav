@@ -1,3 +1,7 @@
+Mon Nov 10 18:58:08 CET 2008 (acab)
+-----------------------------------
+ * m4: fix typo in anonmap detection
+
 Mon Nov 10 17:45:09 CET 2008 (acab)
 -----------------------------------
  * libclamav, libclamunrar, libclamunrar_iface:
