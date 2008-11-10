@@ -1,3 +1,10 @@
+Mon Nov 10 15:15:37 EET 2008 (edwin)
+------------------------------------
+ * configure, m4/acinclude.m4: merge from trunk SVN r4365,4366 (bb
+ #1171).  fix build on AIX: for some odd reason `echo target.h` was
+ producing 'x', so don't use `echo ifelse(...`, since ifelse is expanded by aclocal
+ anyway
+
 Thu Oct 30 17:18:28 CET 2008 (tk)
 ---------------------------------
  * V 0.94.1
