@@ -1,8 +1,8 @@
 Mon Nov 10 15:09:19 EET 2008 (edwin)
 ------------------------------------
  * Makefile.in, configure, m4/acinclude.m4: fix build on AIX: for
- some odd reason target.h was producing 'x', so don't use , since
- ifelse is expanded by aclocal anyway
+ some odd reason `echo target.h` was producing 'x', so don't use `echo
+ ifelse(...`, since ifelse is expanded by aclocal anyway
 
 Mon Nov 10 11:46:14 EET 2008 (edwin)
 ------------------------------------
