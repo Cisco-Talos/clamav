@@ -18,10 +18,31 @@
 
 SUBDIRS = lzma .
 
-AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis -I@srcdir@/lzma 
+AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis -I@srcdir@/lzma $(LTDLINCL)
 
-libclamav_la_LIBADD = lzma/liblzma.la @CLAMAV_UNRAR_LIBS@ @LIBCLAMAV_LIBS@ @THREAD_LIBS@
+lib_LTLIBRARIES =
+EXTRA_DIST =
 
+
+if ENABLE_UNRAR
+libclamunrar_iface_la_LIBADD = $(top_builddir)/libclamunrar/libclamunrar.la
+libclamunrar_iface_la_LDFLAGS = -module @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
+
+if VERSIONSCRIPT
+libclamunrar_iface_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamunrar_iface/libclamunrar_iface.map
+endif
+
+libclamunrar_iface_la_SOURCES = \
+	../libclamunrar_iface/unrar_iface.c \
+	../libclamunrar_iface/unrar_iface.h
+
+lib_LTLIBRARIES += libclamunrar_iface.la
+EXTRA_DIST += @top_srcdir@/libclamunrar_iface/libclamunrar_iface.map
+endif
+
+
+libclamav_la_LIBADD = @LIBLTDL@ -dlopen libclamunrar_iface.la lzma/liblzma.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@
+libclamav_la_DEPENDENCIES =  @LIBLTDL@ libclamunrar_iface.la
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 if VERSIONSCRIPT
@@ -234,9 +255,9 @@ libclamav_internal_utils_la_SOURCES=str.c \
 
 libclamav_internal_utils_la_LDFLAGS=-static
 libclamav_internal_utils_la_CFLAGS=-DCLI_MEMFUNSONLY
-lib_LTLIBRARIES = libclamav.la
+lib_LTLIBRARIES += libclamav.la
 noinst_LTLIBRARIES = libclamav_internal_utils.la
-EXTRA_DIST = regex/engine.c libclamav.map \
+EXTRA_DIST += regex/engine.c libclamav.map \
 	     jsparse/generated/operators.h jsparse/generated/keywords.h jsparse/future_reserved_words.list\
 	     jsparse/keywords.list jsparse/special_keywords.list jsparse/operators.gperf
 COMMON_CLEANFILES=version.h version.h.tmp *.gcda *.gcno lzma/*.gcda lzma/*.gcno

@@ -1,23 +1,11 @@
-Mon Nov 10 15:09:19 EET 2008 (edwin)
-------------------------------------
- * Makefile.in, configure, m4/acinclude.m4: fix build on AIX: for
- some odd reason `echo target.h` was producing 'x', so don't use `echo
- ifelse(...`, since ifelse is expanded by aclocal anyway
+Mon Nov 10 17:45:09 CET 2008 (acab)
+-----------------------------------
+ * libclamav, libclamunrar, libclamunrar_iface:	interface via
+				 libltdl (dlopen) - bb#1153
 
-Mon Nov 10 11:46:14 EET 2008 (edwin)
+Sun Nov  9 19:29:40 EET 2008 (edwin)
 ------------------------------------
- * libclamav/matcher-ac.c, libclamav/matcher-ac.h: reduce memory
- usage of AC nodes
-
-Sun Nov  9 22:37:29 EET 2008 (edwin)
-------------------------------------
- * contrib/clamdtop/Makefile, contrib/clamdtop/clamdtop.c: clamdtop:
- Apply mingw32 patches from Gianluigi Tiesi <sherpya*netfarm.it>
-
-Sat Nov  8 17:24:59 EET 2008 (edwin)
-------------------------------------
- * libclamav/blob.h, libclamav/cab.h, libclamav/jsparse/js-norm.c: 
- reorder some struct fields to avoid holes
+ * libclamav/Makefile.am, libclamav/Makefile.in: fix VPATH build
 
 Sat Nov  8 05:27:43 CET 2008 (acab)
 -----------------------------------

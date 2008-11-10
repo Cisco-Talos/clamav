@@ -1,11 +1,9 @@
 #
-#  Copyright (C) 2007 Trog <trog@clamav.net>
+#  Copyright (C) 2007 Sourcefire, Inc.
 #
 
 if ENABLE_UNRAR
-
 AM_CPPFLAGS = -I$(top_srcdir)
-
 libclamunrar_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 if VERSIONSCRIPT
@@ -32,7 +30,5 @@ libclamunrar_la_SOURCES = \
 	unrarhlp.h
 
 lib_LTLIBRARIES = libclamunrar.la
+EXTRA_DIST = @top_srcdir@/libclamunrar/libclamunrar.map
 endif
-
-EXTRA_DIST = libclamunrar.map
-CLEANFILES=*.gcda *.gcno

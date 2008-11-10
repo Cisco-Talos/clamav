@@ -24,6 +24,11 @@
 #include "clamav-config.h"
 #endif
 
+#define unrar_open libclamunrar_iface_LTX_unrar_open
+#define unrar_extract_next_prepare libclamunrar_iface_LTX_unrar_extract_next_prepare
+#define unrar_extract_next libclamunrar_iface_LTX_unrar_extract_next
+#define unrar_close libclamunrar_iface_LTX_unrar_close
+
 #ifndef HAVE_ATTRIB_PACKED
 #define __attribute__(x)
 #endif

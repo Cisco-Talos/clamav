@@ -106,14 +106,14 @@ struct tokens {
 
 /* state for the current JS file being parsed */
 struct parser_state {
+	unsigned long     var_uniq;
+	unsigned long     syntax_errors;
+	unsigned int      rec;
 	struct scope *global;
 	struct scope *current;
 	struct scope *list;
 	yyscan_t scanner;
 	struct tokens tokens;
-	unsigned long     var_uniq;
-	unsigned long     syntax_errors;
-	unsigned int      rec;
 };
 
 static struct scope* scope_new(struct parser_state *state)

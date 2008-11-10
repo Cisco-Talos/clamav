@@ -52,14 +52,18 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@VERSIONSCRIPT_TRUE@am__append_1 = -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamav/libclamav.map
+@ENABLE_UNRAR_TRUE@@VERSIONSCRIPT_TRUE@am__append_1 = -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamunrar_iface/libclamunrar_iface.map
+@ENABLE_UNRAR_TRUE@am__append_2 = libclamunrar_iface.la
+@ENABLE_UNRAR_TRUE@am__append_3 = @top_srcdir@/libclamunrar_iface/libclamunrar_iface.map
+@VERSIONSCRIPT_TRUE@am__append_4 = -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamav/libclamav.map
 subdir = libclamav
 DIST_COMMON = $(include_HEADERS) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
-	$(top_srcdir)/m4/fdpassing.m4 $(top_srcdir)/m4/lib-link.m4 \
-	$(top_srcdir)/m4/lib-prefix.m4 $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/argz.m4 $(top_srcdir)/m4/fdpassing.m4 \
+	$(top_srcdir)/m4/lib-link.m4 $(top_srcdir)/m4/lib-prefix.m4 \
+	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltdl.m4 \
 	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
 	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
 	$(top_srcdir)/m4/mmap_private.m4 $(top_srcdir)/m4/resolv.m4 \
@@ -78,7 +82,6 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
-libclamav_la_DEPENDENCIES = lzma/liblzma.la
 am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	md5.lo others.lo readdb.lo cvd.lo dsig.lo str.lo scanners.lo \
 	textdet.lo filetypes.lo rtf.lo blob.lo mbox.lo message.lo \
@@ -107,6 +110,16 @@ libclamav_internal_utils_la_LINK = $(LIBTOOL) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(libclamav_internal_utils_la_CFLAGS) $(CFLAGS) \
 	$(libclamav_internal_utils_la_LDFLAGS) $(LDFLAGS) -o $@
+@ENABLE_UNRAR_TRUE@libclamunrar_iface_la_DEPENDENCIES = $(top_builddir)/libclamunrar/libclamunrar.la
+am__libclamunrar_iface_la_SOURCES_DIST =  \
+	../libclamunrar_iface/unrar_iface.c \
+	../libclamunrar_iface/unrar_iface.h
+@ENABLE_UNRAR_TRUE@am_libclamunrar_iface_la_OBJECTS = unrar_iface.lo
+libclamunrar_iface_la_OBJECTS = $(am_libclamunrar_iface_la_OBJECTS)
+libclamunrar_iface_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(libclamunrar_iface_la_LDFLAGS) $(LDFLAGS) -o $@
+@ENABLE_UNRAR_TRUE@am_libclamunrar_iface_la_rpath = -rpath $(libdir)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -120,9 +133,11 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(libclamav_la_SOURCES) \
-	$(libclamav_internal_utils_la_SOURCES)
+	$(libclamav_internal_utils_la_SOURCES) \
+	$(libclamunrar_iface_la_SOURCES)
 DIST_SOURCES = $(libclamav_la_SOURCES) \
-	$(libclamav_internal_utils_la_SOURCES)
+	$(libclamav_internal_utils_la_SOURCES) \
+	$(am__libclamunrar_iface_la_SOURCES_DIST)
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-dvi-recursive install-exec-recursive \
@@ -141,6 +156,7 @@ DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AR = @AR@
+ARGZ_H = @ARGZ_H@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
@@ -154,7 +170,6 @@ CHECK_LIBS = @CHECK_LIBS@
 CLAMAVGROUP = @CLAMAVGROUP@
 CLAMAVUSER = @CLAMAVUSER@
 CLAMAV_MILTER_LIBS = @CLAMAV_MILTER_LIBS@
-CLAMAV_UNRAR_LIBS = @CLAMAV_UNRAR_LIBS@
 CLAMD_LIBS = @CLAMD_LIBS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
@@ -177,6 +192,7 @@ GETENT = @GETENT@
 GPERF = @GPERF@
 GREP = @GREP@
 HAVE_LIBGMP = @HAVE_LIBGMP@
+INCLTDL = @INCLTDL@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -185,20 +201,31 @@ INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LCOV = @LCOV@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
+LIBADD_DL = @LIBADD_DL@
+LIBADD_DLD_LINK = @LIBADD_DLD_LINK@
+LIBADD_DLOPEN = @LIBADD_DLOPEN@
+LIBADD_SHL_LOAD = @LIBADD_SHL_LOAD@
 LIBBZ2 = @LIBBZ2@
 LIBBZ2_PREFIX = @LIBBZ2_PREFIX@
 LIBCLAMAV_LIBS = @LIBCLAMAV_LIBS@
 LIBCLAMAV_VERSION = @LIBCLAMAV_VERSION@
 LIBGMP = @LIBGMP@
 LIBGMP_PREFIX = @LIBGMP_PREFIX@
+LIBLTDL = @LIBLTDL@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
+LTDLDEPS = @LTDLDEPS@
+LTDLINCL = @LTDLINCL@
+LTDLOPEN = @LTDLOPEN@
 LTLIBBZ2 = @LTLIBBZ2@
 LTLIBGMP = @LTLIBGMP@
 LTLIBOBJS = @LTLIBOBJS@
+LT_CONFIG_H = @LT_CONFIG_H@
+LT_DLLOADERS = @LT_DLLOADERS@
+LT_DLPREOPEN = @LT_DLPREOPEN@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
@@ -261,6 +288,8 @@ libexecdir = @libexecdir@
 localedir = @localedir@
 localstatedir = @localstatedir@
 lt_ECHO = @lt_ECHO@
+ltdl_LIBOBJS = @ltdl_LIBOBJS@
+ltdl_LTLIBOBJS = @ltdl_LTLIBOBJS@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
 oldincludedir = @oldincludedir@
@@ -272,6 +301,7 @@ sbindir = @sbindir@
 sendmailprog = @sendmailprog@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
+sys_symbol_underscore = @sys_symbol_underscore@
 sysconfdir = @sysconfdir@
 target = @target@
 target_alias = @target_alias@
@@ -281,10 +311,24 @@ target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = lzma .
-AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis -I@srcdir@/lzma 
-libclamav_la_LIBADD = lzma/liblzma.la @CLAMAV_UNRAR_LIBS@ @LIBCLAMAV_LIBS@ @THREAD_LIBS@
+AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis -I@srcdir@/lzma $(LTDLINCL)
+lib_LTLIBRARIES = $(am__append_2) libclamav.la
+EXTRA_DIST = $(am__append_3) regex/engine.c libclamav.map \
+	jsparse/generated/operators.h jsparse/generated/keywords.h \
+	jsparse/future_reserved_words.list jsparse/keywords.list \
+	jsparse/special_keywords.list jsparse/operators.gperf
+@ENABLE_UNRAR_TRUE@libclamunrar_iface_la_LIBADD = $(top_builddir)/libclamunrar/libclamunrar.la
+@ENABLE_UNRAR_TRUE@libclamunrar_iface_la_LDFLAGS = -module @TH_SAFE@ \
+@ENABLE_UNRAR_TRUE@	-version-info @LIBCLAMAV_VERSION@ \
+@ENABLE_UNRAR_TRUE@	-no-undefined $(am__append_1)
+@ENABLE_UNRAR_TRUE@libclamunrar_iface_la_SOURCES = \
+@ENABLE_UNRAR_TRUE@	../libclamunrar_iface/unrar_iface.c \
+@ENABLE_UNRAR_TRUE@	../libclamunrar_iface/unrar_iface.h
+
+libclamav_la_LIBADD = @LIBLTDL@ -dlopen libclamunrar_iface.la lzma/liblzma.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@
+libclamav_la_DEPENDENCIES = @LIBLTDL@ libclamunrar_iface.la
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ \
-	-no-undefined $(am__append_1)
+	-no-undefined $(am__append_4)
 include_HEADERS = clamav.h
 libclamav_la_SOURCES = \
 	clamav.h \
@@ -465,12 +509,7 @@ libclamav_internal_utils_la_SOURCES = str.c \
 
 libclamav_internal_utils_la_LDFLAGS = -static
 libclamav_internal_utils_la_CFLAGS = -DCLI_MEMFUNSONLY
-lib_LTLIBRARIES = libclamav.la
 noinst_LTLIBRARIES = libclamav_internal_utils.la
-EXTRA_DIST = regex/engine.c libclamav.map \
-	     jsparse/generated/operators.h jsparse/generated/keywords.h jsparse/future_reserved_words.list\
-	     jsparse/keywords.list jsparse/special_keywords.list jsparse/operators.gperf
-
 COMMON_CLEANFILES = version.h version.h.tmp *.gcda *.gcno lzma/*.gcda lzma/*.gcno
 @MAINTAINER_MODE_TRUE@BUILT_SOURCES = jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
 @MAINTAINER_MODE_TRUE@GPERF_FLAGS = -E -t -L ANSI-C -C -F ', TOK_ERROR' -c
@@ -550,6 +589,8 @@ libclamav.la: $(libclamav_la_OBJECTS) $(libclamav_la_DEPENDENCIES)
 	$(libclamav_la_LINK) -rpath $(libdir) $(libclamav_la_OBJECTS) $(libclamav_la_LIBADD) $(LIBS)
 libclamav_internal_utils.la: $(libclamav_internal_utils_la_OBJECTS) $(libclamav_internal_utils_la_DEPENDENCIES) 
 	$(libclamav_internal_utils_la_LINK)  $(libclamav_internal_utils_la_OBJECTS) $(libclamav_internal_utils_la_LIBADD) $(LIBS)
+libclamunrar_iface.la: $(libclamunrar_iface_la_OBJECTS) $(libclamunrar_iface_la_DEPENDENCIES) 
+	$(libclamunrar_iface_la_LINK) $(am_libclamunrar_iface_la_rpath) $(libclamunrar_iface_la_OBJECTS) $(libclamunrar_iface_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -626,6 +667,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tnef.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unarj.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/uniq.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrar_iface.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unsp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/untar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unzip.Plo@am__quote@
@@ -734,6 +776,13 @@ libclamav_internal_utils_la-others.lo: others.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='others.c' object='libclamav_internal_utils_la-others.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_la_CFLAGS) $(CFLAGS) -c -o libclamav_internal_utils_la-others.lo `test -f 'others.c' || echo '$(srcdir)/'`others.c
+
+unrar_iface.lo: ../libclamunrar_iface/unrar_iface.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrar_iface.lo -MD -MP -MF $(DEPDIR)/unrar_iface.Tpo -c -o unrar_iface.lo `test -f '../libclamunrar_iface/unrar_iface.c' || echo '$(srcdir)/'`../libclamunrar_iface/unrar_iface.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/unrar_iface.Tpo $(DEPDIR)/unrar_iface.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../libclamunrar_iface/unrar_iface.c' object='unrar_iface.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrar_iface.lo `test -f '../libclamunrar_iface/unrar_iface.c' || echo '$(srcdir)/'`../libclamunrar_iface/unrar_iface.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
