@@ -1616,7 +1616,7 @@ AC_C_FDPASSING
 AC_DEFINE_UNQUOTED([VERSION_SUFFIX],"$VERSION_SUFFIX",[Version suffix for package])
 
 AC_OUTPUT([
-libclamunrar_iface/Makefile
+libclamunrar/Makefile
 libclamav/Makefile
 libclamav/lzma/Makefile
 clamscan/Makefile

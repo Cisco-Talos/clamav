@@ -1,9 +1,9 @@
 CLAMAV_PRIVATE {
 	global:
-		unrar_open;
-		unrar_extract_next;
-		unrar_extract_next_prepare;
-		unrar_close;
+		libclamunrar_iface_LTX_unrar_open;
+		libclamunrar_iface_LTX_unrar_extract_next;
+		libclamunrar_iface_LTX_unrar_extract_next_prepare;
+		libclamunrar_iface_LTX_unrar_close;
 	local:
 		*;
 };

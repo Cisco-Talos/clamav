@@ -38,10 +38,7 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 @ENABLE_UNRAR_TRUE@@VERSIONSCRIPT_TRUE@am__append_1 = -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamunrar/libclamunrar.map
-@ENABLE_UNRAR_TRUE@am__append_2 = libclamunrar.la
-@ENABLE_UNRAR_TRUE@am__append_3 = @top_srcdir@/libclamunrar/libclamunrar.map
-@VERSIONSCRIPT_TRUE@am__append_4 = -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamunrar_iface/libclamunrar_iface.map
-subdir = libclamunrar_iface
+subdir = libclamunrar
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
@@ -67,15 +64,10 @@ am__installdirs = "$(DESTDIR)$(libdir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libclamunrar_la_LIBADD =
-am__libclamunrar_la_SOURCES_DIST = ../libclamunrar/unrar15.c \
-	../libclamunrar/unrar20.h ../libclamunrar/unrar.h \
-	../libclamunrar/unrar15.h ../libclamunrar/unrar.c \
-	../libclamunrar/unrar20.c ../libclamunrar/unrarcmd.h \
-	../libclamunrar/unrarfilter.h ../libclamunrar/unrarppm.c \
-	../libclamunrar/unrarvm.c ../libclamunrar/unrarcmd.c \
-	../libclamunrar/unrarfilter.c ../libclamunrar/unrarppm.h \
-	../libclamunrar/unrarvm.h ../libclamunrar/unrarhlp.c \
-	../libclamunrar/unrarhlp.h
+am__libclamunrar_la_SOURCES_DIST = unrar15.c unrar20.h unrar.h \
+	unrar15.h unrar.c unrar20.c unrarcmd.h unrarfilter.h \
+	unrarppm.c unrarvm.c unrarcmd.c unrarfilter.c unrarppm.h \
+	unrarvm.h unrarhlp.c unrarhlp.h
 @ENABLE_UNRAR_TRUE@am_libclamunrar_la_OBJECTS = unrar15.lo unrar.lo \
 @ENABLE_UNRAR_TRUE@	unrar20.lo unrarppm.lo unrarvm.lo \
 @ENABLE_UNRAR_TRUE@	unrarcmd.lo unrarfilter.lo unrarhlp.lo
@@ -84,11 +76,6 @@ libclamunrar_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libclamunrar_la_LDFLAGS) $(LDFLAGS) -o $@
 @ENABLE_UNRAR_TRUE@am_libclamunrar_la_rpath = -rpath $(libdir)
-am_libclamunrar_iface_la_OBJECTS = unrar_iface.lo
-libclamunrar_iface_la_OBJECTS = $(am_libclamunrar_iface_la_OBJECTS)
-libclamunrar_iface_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(libclamunrar_iface_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -101,9 +88,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(libclamunrar_la_SOURCES) $(libclamunrar_iface_la_SOURCES)
-DIST_SOURCES = $(am__libclamunrar_la_SOURCES_DIST) \
-	$(libclamunrar_iface_la_SOURCES)
+SOURCES = $(libclamunrar_la_SOURCES)
+DIST_SOURCES = $(am__libclamunrar_la_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -264,40 +250,31 @@ target_os = @target_os@
 target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CPPFLAGS = -I$(top_srcdir) $(LTDLINCL)
-lib_LTLIBRARIES = $(am__append_2) libclamunrar_iface.la
-EXTRA_DIST = $(am__append_3) libclamunrar_iface.map
-@ENABLE_UNRAR_TRUE@libclamunrar_la_LDFLAGS = -module @TH_SAFE@ \
-@ENABLE_UNRAR_TRUE@	-version-info @LIBCLAMAV_VERSION@ \
-@ENABLE_UNRAR_TRUE@	-no-undefined $(am__append_1)
+@ENABLE_UNRAR_TRUE@AM_CPPFLAGS = -I$(top_srcdir)
+@ENABLE_UNRAR_TRUE@libclamunrar_la_LDFLAGS = @TH_SAFE@ -version-info \
+@ENABLE_UNRAR_TRUE@	@LIBCLAMAV_VERSION@ -no-undefined \
+@ENABLE_UNRAR_TRUE@	$(am__append_1)
 @ENABLE_UNRAR_TRUE@libclamunrar_la_SOURCES = \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrar15.c \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrar20.h \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrar.h \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrar15.h \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrar.c \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrar20.c \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrarcmd.h \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrarfilter.h \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrarppm.c \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrarvm.c \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrarcmd.c \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrarfilter.c \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrar.h \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrarppm.h \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrarvm.h \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrarhlp.c \
-@ENABLE_UNRAR_TRUE@	../libclamunrar/unrarhlp.h
+@ENABLE_UNRAR_TRUE@	unrar15.c \
+@ENABLE_UNRAR_TRUE@	unrar20.h \
+@ENABLE_UNRAR_TRUE@	unrar.h \
+@ENABLE_UNRAR_TRUE@	unrar15.h \
+@ENABLE_UNRAR_TRUE@	unrar.c \
+@ENABLE_UNRAR_TRUE@	unrar20.c \
+@ENABLE_UNRAR_TRUE@	unrarcmd.h \
+@ENABLE_UNRAR_TRUE@	unrarfilter.h \
+@ENABLE_UNRAR_TRUE@	unrarppm.c \
+@ENABLE_UNRAR_TRUE@	unrarvm.c \
+@ENABLE_UNRAR_TRUE@	unrarcmd.c \
+@ENABLE_UNRAR_TRUE@	unrarfilter.c \
+@ENABLE_UNRAR_TRUE@	unrar.h \
+@ENABLE_UNRAR_TRUE@	unrarppm.h \
+@ENABLE_UNRAR_TRUE@	unrarvm.h \
+@ENABLE_UNRAR_TRUE@	unrarhlp.c \
+@ENABLE_UNRAR_TRUE@	unrarhlp.h
 
-libclamunrar_iface_la_LIBADD = @LIBLTDL@ -dlopen libclamunrar.la
-libclamunrar_iface_la_DEPENDENCIES = @LIBLTDL@ libclamunrar.la
-libclamunrar_iface_la_LDFLAGS = @TH_SAFE@ -version-info \
-	@LIBCLAMAV_VERSION@ -no-undefined $(am__append_4)
-libclamunrar_iface_la_SOURCES = \
-	unrar_iface.c \
-	unrar_iface.h
-
-CLEANFILES = *.gcda *.gcno
+@ENABLE_UNRAR_TRUE@lib_LTLIBRARIES = libclamunrar.la
+@ENABLE_UNRAR_TRUE@EXTRA_DIST = @top_srcdir@/libclamunrar/libclamunrar.map
 all: all-am
 
 .SUFFIXES:
@@ -311,9 +288,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  libclamunrar_iface/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  libclamunrar/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  libclamunrar_iface/Makefile
+	  $(AUTOMAKE) --foreign  libclamunrar/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -360,8 +337,6 @@ clean-libLTLIBRARIES:
 	done
 libclamunrar.la: $(libclamunrar_la_OBJECTS) $(libclamunrar_la_DEPENDENCIES) 
 	$(libclamunrar_la_LINK) $(am_libclamunrar_la_rpath) $(libclamunrar_la_OBJECTS) $(libclamunrar_la_LIBADD) $(LIBS)
-libclamunrar_iface.la: $(libclamunrar_iface_la_OBJECTS) $(libclamunrar_iface_la_DEPENDENCIES) 
-	$(libclamunrar_iface_la_LINK) -rpath $(libdir) $(libclamunrar_iface_la_OBJECTS) $(libclamunrar_iface_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -372,7 +347,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrar15.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrar20.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrar_iface.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrarcmd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrarfilter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unrarhlp.Plo@am__quote@
@@ -399,62 +373,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
-
-unrar15.lo: ../libclamunrar/unrar15.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrar15.lo -MD -MP -MF $(DEPDIR)/unrar15.Tpo -c -o unrar15.lo `test -f '../libclamunrar/unrar15.c' || echo '$(srcdir)/'`../libclamunrar/unrar15.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/unrar15.Tpo $(DEPDIR)/unrar15.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../libclamunrar/unrar15.c' object='unrar15.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrar15.lo `test -f '../libclamunrar/unrar15.c' || echo '$(srcdir)/'`../libclamunrar/unrar15.c
-
-unrar.lo: ../libclamunrar/unrar.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrar.lo -MD -MP -MF $(DEPDIR)/unrar.Tpo -c -o unrar.lo `test -f '../libclamunrar/unrar.c' || echo '$(srcdir)/'`../libclamunrar/unrar.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/unrar.Tpo $(DEPDIR)/unrar.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../libclamunrar/unrar.c' object='unrar.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrar.lo `test -f '../libclamunrar/unrar.c' || echo '$(srcdir)/'`../libclamunrar/unrar.c
-
-unrar20.lo: ../libclamunrar/unrar20.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrar20.lo -MD -MP -MF $(DEPDIR)/unrar20.Tpo -c -o unrar20.lo `test -f '../libclamunrar/unrar20.c' || echo '$(srcdir)/'`../libclamunrar/unrar20.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/unrar20.Tpo $(DEPDIR)/unrar20.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../libclamunrar/unrar20.c' object='unrar20.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrar20.lo `test -f '../libclamunrar/unrar20.c' || echo '$(srcdir)/'`../libclamunrar/unrar20.c
-
-unrarppm.lo: ../libclamunrar/unrarppm.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrarppm.lo -MD -MP -MF $(DEPDIR)/unrarppm.Tpo -c -o unrarppm.lo `test -f '../libclamunrar/unrarppm.c' || echo '$(srcdir)/'`../libclamunrar/unrarppm.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/unrarppm.Tpo $(DEPDIR)/unrarppm.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../libclamunrar/unrarppm.c' object='unrarppm.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrarppm.lo `test -f '../libclamunrar/unrarppm.c' || echo '$(srcdir)/'`../libclamunrar/unrarppm.c
-
-unrarvm.lo: ../libclamunrar/unrarvm.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrarvm.lo -MD -MP -MF $(DEPDIR)/unrarvm.Tpo -c -o unrarvm.lo `test -f '../libclamunrar/unrarvm.c' || echo '$(srcdir)/'`../libclamunrar/unrarvm.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/unrarvm.Tpo $(DEPDIR)/unrarvm.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../libclamunrar/unrarvm.c' object='unrarvm.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrarvm.lo `test -f '../libclamunrar/unrarvm.c' || echo '$(srcdir)/'`../libclamunrar/unrarvm.c
-
-unrarcmd.lo: ../libclamunrar/unrarcmd.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrarcmd.lo -MD -MP -MF $(DEPDIR)/unrarcmd.Tpo -c -o unrarcmd.lo `test -f '../libclamunrar/unrarcmd.c' || echo '$(srcdir)/'`../libclamunrar/unrarcmd.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/unrarcmd.Tpo $(DEPDIR)/unrarcmd.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../libclamunrar/unrarcmd.c' object='unrarcmd.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrarcmd.lo `test -f '../libclamunrar/unrarcmd.c' || echo '$(srcdir)/'`../libclamunrar/unrarcmd.c
-
-unrarfilter.lo: ../libclamunrar/unrarfilter.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrarfilter.lo -MD -MP -MF $(DEPDIR)/unrarfilter.Tpo -c -o unrarfilter.lo `test -f '../libclamunrar/unrarfilter.c' || echo '$(srcdir)/'`../libclamunrar/unrarfilter.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/unrarfilter.Tpo $(DEPDIR)/unrarfilter.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../libclamunrar/unrarfilter.c' object='unrarfilter.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrarfilter.lo `test -f '../libclamunrar/unrarfilter.c' || echo '$(srcdir)/'`../libclamunrar/unrarfilter.c
-
-unrarhlp.lo: ../libclamunrar/unrarhlp.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT unrarhlp.lo -MD -MP -MF $(DEPDIR)/unrarhlp.Tpo -c -o unrarhlp.lo `test -f '../libclamunrar/unrarhlp.c' || echo '$(srcdir)/'`../libclamunrar/unrarhlp.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/unrarhlp.Tpo $(DEPDIR)/unrarhlp.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='../libclamunrar/unrarhlp.c' object='unrarhlp.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o unrarhlp.lo `test -f '../libclamunrar/unrarhlp.c' || echo '$(srcdir)/'`../libclamunrar/unrarhlp.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -559,7 +477,6 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
-	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)

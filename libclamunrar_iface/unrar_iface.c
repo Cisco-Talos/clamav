@@ -31,55 +31,10 @@
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include "ltdl.h"
+
 #include "libclamunrar/unrar.h"
-#include "libclamav/others.h"
 
 #include "unrar_iface.h"
-
-void (*_ppm_destructor)(ppm_data_t *);
-void (*_ppm_constructor)(ppm_data_t *);
-void (*_rar_init_filters)(unpack_data_t *);
-int (*_rar_unpack)(int, int, int, unpack_data_t *);
-void (*_rarvm_free)(rarvm_data_t *);
-
-void __attribute__ ((constructor)) my_load(void);
-void my_load(void) {
-  lt_dlhandle handle;
-
-/*  #define preloaded_symbols lt_libclamunrar_LTX_preloaded_symbols */
-
-/*   LTDL_SET_PRELOADED_SYMBOLS(); */
-
-  if(lt_dlinit())
-    cli_errmsg("FATAL: can't init\n");
-  //  handle = lt_dlopenext("/home/acab/svn/libclamunrar/libclamunrar");
-  handle = lt_dlopenext("libclamunrar");
-  if (!handle) {
-    cli_errmsg("FATAL: can't dlopen (%s)\n", lt_dlerror());
-  }
-  _ppm_destructor = (void(*)(ppm_data_t *))lt_dlsym(handle, "ppm_destructor");
-  if(!_ppm_destructor) {
-    cli_errmsg("FATAL: can't resolv ppm_destructor\n");
-  }
-  _ppm_constructor = (void(*)(ppm_data_t *))lt_dlsym(handle, "ppm_constructor");
-  if(!_ppm_constructor) {
-    cli_errmsg("FATAL: can't resolv ppm_constructor\n");
-  }
-  _rar_init_filters = (void(*)(unpack_data_t *))lt_dlsym(handle, "rar_init_filters");
-  if(!_rar_init_filters) {
-    cli_errmsg("FATAL: can't resolv rar_init_filters\n");
-  }
-  _rar_unpack = (void(*)(int, int, int, unpack_data_t *))lt_dlsym(handle, "rar_unpack");
-  if(!_rar_unpack) {
-    cli_errmsg("FATAL: can't resolv rar_unpack\n");
-  }
-  _rarvm_free = (void(*)(rarvm_data_t *))lt_dlsym(handle, "rarvm_free");
-  if(!_rarvm_free) {
-    cli_errmsg("FATAL: can't resolv rarvm_free\n");
-  }
-  
-}
 
 #if WORDS_BIGENDIAN == 0
 #define unrar_endian_convert_16(v)	(v)
@@ -271,7 +226,7 @@ static void unpack_free_data(unpack_data_t *unpack_data)
 		return;
 	}
 	/*init_filters(unpack_data);*/
-	_rarvm_free(&unpack_data->rarvm_data);
+	rarvm_free(&unpack_data->rarvm_data);
 }
 
 static unsigned int copy_file_data(int ifd, int ofd, unsigned int len)
@@ -354,7 +309,7 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
     unpack_data->PrgStack.num_items = unpack_data->Filters.num_items = 0;
     unpack_data->unp_crc = 0xffffffff;
 
-    _ppm_constructor(&unpack_data->ppm_data);
+    ppm_constructor(&unpack_data->ppm_data);
 
     if(main_hdr->flags & MHD_COMMENT) {
 	unrar_comment_header_t *comment_header;
@@ -374,8 +329,8 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
 		unrar_dbgmsg("UNRAR: ERROR: Failed to open output file\n");
 		free(comment_header);
 		free(main_hdr);
-		_ppm_destructor(&unpack_data->ppm_data);
-		_rar_init_filters(unpack_data);
+		ppm_destructor(&unpack_data->ppm_data);
+		rar_init_filters(unpack_data);
 		unpack_free_data(unpack_data);
 		free(unpack_data);
 		free(state->comment_dir);
@@ -388,7 +343,7 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
 		    unpack_data->ofd = ofd;
 		    unpack_data->dest_unp_size = comment_header->unpack_size;
 		    unpack_data->pack_size = comment_header->head_size - SIZEOF_COMMHEAD;
-                    retval = _rar_unpack(fd, comment_header->unpack_ver, FALSE, unpack_data);
+                    retval = rar_unpack(fd, comment_header->unpack_ver, FALSE, unpack_data);
 		    unpack_free_data(unpack_data);
 		}
 		close(ofd);
@@ -401,8 +356,8 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
     if(main_hdr->head_size > SIZEOF_NEWMHD) {
 	if(!lseek(fd, main_hdr->head_size - SIZEOF_NEWMHD, SEEK_CUR)) {
 	    free(main_hdr);
-	    _ppm_destructor(&unpack_data->ppm_data);
-	    _rar_init_filters(unpack_data);
+	    ppm_destructor(&unpack_data->ppm_data);
+	    rar_init_filters(unpack_data);
 	    unpack_free_data(unpack_data);
 	    free(unpack_data);
 	    free(state->comment_dir);
@@ -525,14 +480,14 @@ int unrar_extract_next(unrar_state_t *state, const char *dirname)
 	    unpack_data->dest_unp_size = state->file_header->unpack_size;
 	    unpack_data->pack_size = state->file_header->pack_size;
 	    if(state->file_header->unpack_ver <= 15) {
-		retval = _rar_unpack(state->fd, 15, (state->file_count>1) && ((state->main_hdr->flags&MHD_SOLID)!=0), unpack_data);
+		retval = rar_unpack(state->fd, 15, (state->file_count>1) && ((state->main_hdr->flags&MHD_SOLID)!=0), unpack_data);
 	    } else {
 		if((state->file_count == 1) && (state->file_header->flags & LHD_SOLID)) {
 		    unrar_dbgmsg("UNRAR: Bad header. First file can't be SOLID.\n");
 		    unrar_dbgmsg("UNRAR: Clearing flag and continuing.\n");
 		    state->file_header->flags -= LHD_SOLID;
 		}
-		retval = _rar_unpack(state->fd, state->file_header->unpack_ver, state->file_header->flags & LHD_SOLID, unpack_data);
+		retval = rar_unpack(state->fd, state->file_header->unpack_ver, state->file_header->flags & LHD_SOLID, unpack_data);
 	    }
 	    unrar_dbgmsg("UNRAR: Expected File CRC: 0x%x\n", state->file_header->file_crc);
 	    unrar_dbgmsg("UNRAR: Computed File CRC: 0x%x\n", unpack_data->unp_crc^0xffffffff);
@@ -571,9 +526,9 @@ void unrar_close(unrar_state_t *state)
 {
 	unpack_data_t *unpack_data = state->unpack_data;
 
-    _ppm_destructor(&unpack_data->ppm_data);
+    ppm_destructor(&unpack_data->ppm_data);
     free(state->main_hdr);
-    _rar_init_filters(state->unpack_data);
+    rar_init_filters(state->unpack_data);
     unpack_free_data(state->unpack_data);
     free(state->unpack_data);
     free(state->comment_dir);

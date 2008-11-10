@@ -67,12 +67,41 @@
 #include <stddef.h>
 #endif
 
+#include "ltdl.h"
 #include "mpool.h"
+#include "libclamunrar_iface/unrar_iface.h"
 
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
 static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_once_t is_rar_initd = PTHREAD_ONCE_INIT;
+#else
+static int is_rar_initd = 0;
 #endif
+
+int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
+int (*cli_unrar_extract_next_prepare)(unrar_state_t *state, const char *dirname);
+int (*cli_unrar_extract_next)(unrar_state_t *state, const char *dirname);
+void (*cli_unrar_close)(unrar_state_t *state);
+int have_rar = 0;
+
+void cli_rarload(void) {
+    lt_dlhandle rhandle;
+#ifndef CL_THREAD_SAFE
+    if(is_rar_initd) return;
+    is_rar_initd = 1;
+#endif
+    if(lt_dlinit()) cli_errmsg("Cannot init ltdl\n");
+    rhandle = lt_dlopenext("libclamunrar_iface");
+    if (!rhandle) { cli_errmsg("Cannot dlopen: %s\n", lt_dlerror()); return; }
+    if (!(cli_unrar_open = (int(*)(int, const char *, unrar_state_t *))lt_dlsym(rhandle, "unrar_open")) ||
+	!(cli_unrar_extract_next_prepare = (int(*)(unrar_state_t *, const char *))lt_dlsym(rhandle, "unrar_extract_next_prepare")) ||
+	!(cli_unrar_extract_next = (int(*)(unrar_state_t *, const char *))lt_dlsym(rhandle, "unrar_extract_next")) ||
+	!(cli_unrar_close = (void(*)(unrar_state_t *))lt_dlsym(rhandle, "unrar_close"))
+	) { cli_errmsg("Cannot resolve: %s\n", lt_dlerror()); return; }
+    cli_errmsg("RAR IS FOUND!\n");
+    have_rar = 1;
+}
 
 struct cli_ignsig {
     char *dbname, *signame;
@@ -2121,6 +2150,12 @@ int cl_build(struct cl_engine *engine)
 
     if(!engine)
 	return CL_ENULLARG;
+
+#ifdef CL_THREAD_SAFE
+    pthread_once(&is_rar_initd, cli_rarload);
+#else
+    cli_rarload();
+#endif
 
     if(!engine->ftypes)
 	if((ret = cli_loadftm(NULL, &engine, 0, 1, NULL)))

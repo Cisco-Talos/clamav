@@ -103,6 +103,12 @@
 #include <stddef.h>
 #endif
 
+extern int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
+extern int (*cli_unrar_extract_next_prepare)(unrar_state_t *state, const char *dirname);
+extern int (*cli_unrar_extract_next)(unrar_state_t *state, const char *dirname);
+extern void (*cli_unrar_close)(unrar_state_t *state);
+extern int have_rar;
+
 static int cli_scanfile(const char *filename, cli_ctx *ctx);
 
 static int cli_scandir(const char *dirname, cli_ctx *ctx, cli_file_t container)
@@ -194,7 +200,6 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx, cli_file_t container)
     return CL_CLEAN;
 }
 
-/* FIXMERAR */
 static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx *ctx, unsigned int files, uint32_t* sfx_check)
 {
 	int ret = CL_SUCCESS;
@@ -286,7 +291,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	return CL_ETMPDIR;
     }
 
-    if((ret = unrar_open(desc, dir, &rar_state)) != UNRAR_OK) {
+    if((ret = cli_unrar_open(desc, dir, &rar_state)) != UNRAR_OK) {
 	if(!cli_leavetemps_flag)
 	    cli_rmdirs(dir);
 	free(dir);
@@ -310,7 +315,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
     do {
 	int rc;
 	rar_state.ofd = -1;
-	ret = unrar_extract_next_prepare(&rar_state,dir);
+	ret = cli_unrar_extract_next_prepare(&rar_state,dir);
 	if(ret != UNRAR_OK) {
 	    if(ret == UNRAR_BREAK)
 		ret = CL_BREAK;
@@ -326,7 +331,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    ret = CL_CLEAN;
 	    continue;
 	}
-	ret = unrar_extract_next(&rar_state,dir);
+	ret = cli_unrar_extract_next(&rar_state,dir);
 	if(ret == UNRAR_OK)
 	    ret = CL_SUCCESS;
 	else if(ret == UNRAR_EMEM)
@@ -360,7 +365,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
     if(cli_scandir(rar_state.comment_dir, ctx, 0) == CL_VIRUS)
 	ret = CL_VIRUS;
 
-    unrar_close(&rar_state);
+    cli_unrar_close(&rar_state);
 
     if(!cli_leavetemps_flag)
         cli_rmdirs(dir);
@@ -1723,8 +1728,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg,
 	    while(fpt) {
 		switch(fpt->type) {
 		    case CL_TYPE_RARSFX:
-			/* FIXMERAR */
-			if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_RAR)) {
+			if(have_rar && SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_RAR)) {
 			    cli_dbgmsg("RAR-SFX signature found at %u\n", (unsigned int) fpt->offset);
 			    nret = cli_scanrar(desc, ctx, fpt->offset, &lastrar);
 			}
@@ -1897,8 +1901,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
 
 	case CL_TYPE_RAR:
-	    /* FIXMERAR */
-	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR))
+	    if(have_rar && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR))
 		ret = cli_scanrar(desc, ctx, 0, NULL);
 	    break;
 

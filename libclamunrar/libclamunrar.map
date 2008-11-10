@@ -5,11 +5,6 @@ CLAMAV_PRIVATE_UNRAR {
 		rar_init_filters;
                 rar_unpack;
                 rarvm_free;
-		libclamunrar_LTX_ppm_constructor;
-		libclamunrar_LTX_ppm_destructor;
-		libclamunrar_LTX_rar_init_filters;
-		libclamunrar_LTX_rar_unpack;
-		libclamunrar_LTX_rarvm_free;
 	local:
 		*;
 };
