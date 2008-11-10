@@ -1990,30 +1990,29 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 	message *mainMessage = messageIn;
 	fileblob *fb;
 	bool infected = FALSE;
-	const int doPhishingScan = mctx->ctx->engine->dboptions&CL_DB_PHISHING_URLS && (DCONF_PHISHING & PHISHING_CONF_ENGINE);
-	const struct cl_limits *limits = mctx->ctx->limits;
+	const struct cl_engine *engine = mctx->ctx->engine;
+	const int doPhishingScan = engine->dboptions&CL_DB_PHISHING_URLS && (DCONF_PHISHING & PHISHING_CONF_ENGINE);
 
 	cli_dbgmsg("in parseEmailBody, %u files saved so far\n",
 		mctx->files);
 
-	if(limits) { /* FIXMELIMITS: this should be better integrated */
-		if(limits->maxreclevel)
-			/*
-			 * This is approximate
-			 */
-			if(recursion_level > limits->maxreclevel) {
+	/* FIXMELIMITS: this should be better integrated */
+	if(engine->maxreclevel)
+		/*
+		 * This is approximate
+		 */
+		if(recursion_level > engine->maxreclevel) {
 
 				cli_dbgmsg("parseEmailBody: hit maximum recursion level (%u)\n", recursion_level);
 				return MAXREC;
 			}
-		if(limits->maxfiles && (mctx->files >= limits->maxfiles)) {
-			/*
-			 * FIXME: This is only approx - it may have already
-			 * been exceeded
-			 */
-			cli_dbgmsg("parseEmailBody: number of files exceeded %u\n", limits->maxfiles);
-			return MAXFILES;
-		}
+	if(engine->maxfiles && (mctx->files >= engine->maxfiles)) {
+		/*
+		 * FIXME: This is only approx - it may have already
+		 * been exceeded
+		 */
+		cli_dbgmsg("parseEmailBody: number of files exceeded %u\n", engine->maxfiles);
+		return MAXFILES;
 	}
 
 	rc = OK;

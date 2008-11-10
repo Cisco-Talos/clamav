@@ -303,49 +303,6 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     return CL_SUCCESS;
 }
 
-int cli_initengine(struct cl_engine **engine, unsigned int options)
-{
-	int ret;
-
-
-    if(!*engine) {
-	cli_dbgmsg("Initializing the engine (%s)\n", cl_retver());
-
-	*engine = (struct cl_engine *) cli_calloc(1, sizeof(struct cl_engine));
-	if(!*engine) {
-	    cli_errmsg("Can't allocate memory for the engine structure!\n");
-	    return CL_EMEM;
-	}
-
-	(*engine)->refcount = 1;
-
-#ifdef USE_MPOOL
-	if(!((*engine)->mempool = mp_create())) {
-	    cli_errmsg("Can't allocate memory for memory pool!\n");
-	    return CL_EMEM;
-	}
-#endif
-	(*engine)->root = mp_calloc((*engine)->mempool, CLI_MTARGETS, sizeof(struct cli_matcher *));
-	if(!(*engine)->root) {
-	    /* no need to free previously allocated memory here */
-	    cli_errmsg("Can't allocate memory for roots!\n");
-	    return CL_EMEM;
-	}
-
-	(*engine)->dconf = cli_mp_dconf_init((*engine)->mempool);
-	if(!(*engine)->dconf) {
-	    cli_errmsg("Can't initialize dynamic configuration\n");
-	    return CL_EMEM;
-	}
-
-	if((options & CL_DB_PHISHING_URLS) && (((struct cli_dconf*) (*engine)->dconf)->phishing & PHISHING_CONF_ENGINE))
-	    if((ret = phishing_init(*engine)))
-		return ret;
-    }
-
-    return CL_SUCCESS;
-}
-
 static int cli_initroots(struct cl_engine *engine, unsigned int options)
 {
 	int i, ret;
@@ -478,7 +435,7 @@ static int cli_loaddb(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 
 
     if((ret = cli_initroots(*engine, options))) {
-	cl_free(*engine);
+	cl_engine_free(*engine);
 	return ret;
     }
 
@@ -512,13 +469,13 @@ static int cli_loaddb(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 
     if(!line) {
 	cli_errmsg("Empty database file\n");
-	cl_free(*engine);
+	cl_engine_free(*engine);
 	return CL_EMALFDB;
     }
 
     if(ret) {
 	cli_errmsg("Problem parsing database at line %d\n", line);
-	cl_free(*engine);
+	cl_engine_free(*engine);
 	return ret;
     }
 
@@ -539,14 +496,14 @@ static int cli_loadwdb(FILE *fs, struct cl_engine **engine, unsigned int options
     if(!(*engine)->whitelist_matcher) {
 	if((ret = init_whitelist(*engine))) {
 	    phishing_done(*engine);
-	    cl_free(*engine);
+	    cl_engine_free(*engine);
 	    return ret;
 	}
     }
 
     if((ret = load_regex_matcher((*engine)->whitelist_matcher, fs, options, 1, dbio))) {
 	phishing_done(*engine);
-	cl_free(*engine);
+	cl_engine_free(*engine);
 	return ret;
     }
 
@@ -564,14 +521,14 @@ static int cli_loadpdb(FILE *fs, struct cl_engine **engine, unsigned int options
     if(!(*engine)->domainlist_matcher) {
 	if((ret = init_domainlist(*engine))) {
 	    phishing_done(*engine);
-	    cl_free(*engine);
+	    cl_engine_free(*engine);
 	    return ret;
 	}
     }
 
     if((ret = load_regex_matcher((*engine)->domainlist_matcher, fs, options, 0, dbio))) {
 	phishing_done(*engine);
-	cl_free(*engine);
+	cl_engine_free(*engine);
 	return ret;
     }
 
@@ -591,7 +548,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 
 
     if((ret = cli_initroots(*engine, options))) {
-	cl_free(*engine);
+	cl_engine_free(*engine);
 	return ret;
     }
 
@@ -680,13 +637,13 @@ static int cli_loadndb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 
     if(!line) {
 	cli_errmsg("Empty database file\n");
-	cl_free(*engine);
+	cl_engine_free(*engine);
 	return CL_EMALFDB;
     }
 
     if(ret) {
 	cli_errmsg("Problem parsing database at line %d\n", line);
-	cl_free(*engine);
+	cl_engine_free(*engine);
 	return ret;
     }
 
@@ -876,7 +833,7 @@ static int cli_loadldb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 
 
     if((ret = cli_initroots(*engine, options))) {
-	cl_free(*engine);
+	cl_engine_free(*engine);
 	return ret;
     }
 
@@ -1020,13 +977,13 @@ static int cli_loadldb(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 
     if(!line) {
 	cli_errmsg("Empty database file\n");
-	cl_free(*engine);
+	cl_engine_free(*engine);
 	return CL_EMALFDB;
     }
 
     if(ret) {
 	cli_errmsg("Problem parsing database at line %u\n", line);
-	cl_free(*engine);
+	cl_engine_free(*engine);
 	return ret;
     }
 
@@ -1048,7 +1005,7 @@ static int cli_loadftm(FILE *fs, struct cl_engine **engine, unsigned int options
 
 
     if((ret = cli_initroots(*engine, options))) {
-	cl_free(*engine);
+	cl_engine_free(*engine);
 	return ret;
     }
 
@@ -1136,13 +1093,13 @@ static int cli_loadftm(FILE *fs, struct cl_engine **engine, unsigned int options
 
     if(ret) {
 	cli_errmsg("Problem parsing %s filetype database at line %u\n", internal ? "built-in" : "external", line);
-	cl_free(*engine);
+	cl_engine_free(*engine);
 	return ret;
     }
 
     if(!sigs) {
 	cli_errmsg("Empty %s filetype database\n", internal ? "built-in" : "external");
-	cl_free(*engine);
+	cl_engine_free(*engine);
 	return CL_EMALFDB;
     }
 
@@ -1164,7 +1121,7 @@ static int cli_loadign(FILE *fs, struct cl_engine **engine, unsigned int options
     if(!(ignored = (*engine)->ignored)) {
 	ignored = (*engine)->ignored = (struct cli_ignored *) cli_calloc(sizeof(struct cli_ignored), 1);
 	if(!ignored || hashset_init(&ignored->hs, 64, 50)) {
-	    cl_free(*engine);
+	    cl_engine_free(*engine);
 	    return CL_EMEM;
 	}
     }
@@ -1207,7 +1164,7 @@ static int cli_loadign(FILE *fs, struct cl_engine **engine, unsigned int options
 
     if(ret) {
 	cli_errmsg("cli_loadign: Problem parsing database at line %u\n", line);
-	cl_free(*engine);
+	cl_engine_free(*engine);
 	return ret;
     }
 
@@ -1378,13 +1335,13 @@ static int cli_loadmd5(FILE *fs, struct cl_engine **engine, unsigned int *signo,
 
     if(!line) {
 	cli_errmsg("cli_loadmd5: Empty database file\n");
-	cl_free(*engine);
+	cl_engine_free(*engine);
 	return CL_EMALFDB;
     }
 
     if(ret) {
 	cli_errmsg("cli_loadmd5: Problem parsing database at line %u\n", line);
-	cl_free(*engine);
+	cl_engine_free(*engine);
 	return ret;
     }
 
@@ -1494,13 +1451,13 @@ static int cli_loadmd(FILE *fs, struct cl_engine **engine, unsigned int *signo, 
 
     if(!line) {
 	cli_errmsg("Empty database file\n");
-	cl_free(*engine);
+	cl_engine_free(*engine);
 	return CL_EMALFDB;
     }
 
     if(ret) {
 	cli_errmsg("Problem parsing database at line %d\n", line);
-	cl_free(*engine);
+	cl_engine_free(*engine);
 	return ret;
     }
 
@@ -1632,16 +1589,6 @@ int cli_load(const char *filename, struct cl_engine **engine, unsigned int *sign
     return ret;
 }
 
-int cl_loaddb(const char *filename, struct cl_engine **engine, unsigned int *signo) {
-	int ret;
-
-    if((ret = cli_initengine(engine, CL_DB_STDOPT))) {
-	cl_free(*engine);
-	return ret;
-    }
-    return cli_load(filename, engine, signo, CL_DB_STDOPT, NULL);
-}
-
 static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo, unsigned int options)
 {
 	DIR *dd;
@@ -1736,31 +1683,24 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine **engine, unsigne
     return ret;
 }
 
-int cl_loaddbdir(const char *dirname, struct cl_engine **engine, unsigned int *signo) {
-	int ret;
-
-    if((ret = cli_initengine(engine, CL_DB_STDOPT))) {
-	cl_free(*engine);
-	return ret;
-    }
-    return cli_loaddbdir(dirname, engine, signo, CL_DB_STDOPT);
-}
-
 int cl_load(const char *path, struct cl_engine **engine, unsigned int *signo, unsigned int options)
 {
 	struct stat sb;
 	int ret;
 
+    if(!*engine) {
+	cli_errmsg("cl_load: engine == NULL\n");
+	return CL_ENULLARG;
+    }
 
     if(stat(path, &sb) == -1) {
         cli_errmsg("cl_load(): Can't get status of %s\n", path);
         return CL_EIO;
     }
 
-    if((ret = cli_initengine(engine, options))) {
-	cl_free(*engine);
-	return ret;
-    }
+    if((options & CL_DB_PHISHING_URLS) && !(*engine)->phishcheck && (((struct cli_dconf *) (*engine)->dconf)->phishing & PHISHING_CONF_ENGINE))
+	if((ret = phishing_init(*engine)))
+	    return ret;
 
     (*engine)->dboptions = options;
 
@@ -1984,7 +1924,7 @@ int cl_statfree(struct cl_stat *dbstat)
     return CL_SUCCESS;
 }
 
-void cl_free(struct cl_engine *engine)
+int cl_engine_free(struct cl_engine *engine)
 {
 	unsigned int i, j;
 	struct cli_meta_node *metapt, *metah;
@@ -1993,7 +1933,7 @@ void cl_free(struct cl_engine *engine)
 
     if(!engine) {
 	cli_errmsg("cl_free: engine == NULL\n");
-	return;
+	return CL_ENULLARG;
     }
 
 #ifdef CL_THREAD_SAFE
@@ -2007,7 +1947,7 @@ void cl_free(struct cl_engine *engine)
 #ifdef CL_THREAD_SAFE
 	pthread_mutex_unlock(&cli_ref_mutex);
 #endif
-	return;
+	return CL_SUCCESS;
     }
 
 #ifdef CL_THREAD_SAFE
@@ -2086,6 +2026,7 @@ void cl_free(struct cl_engine *engine)
     if(engine->mempool) mp_destroy(engine->mempool);
 #endif
     free(engine);
+    return CL_SUCCESS;
 }
 
 static void cli_md5db_build(struct cli_matcher* root)
@@ -2111,8 +2052,7 @@ static void cli_md5db_build(struct cli_matcher* root)
 	}
 }
 
-
-int cl_build(struct cl_engine *engine)
+int cl_engine_compile(struct cl_engine *engine)
 {
 	unsigned int i;
 	int ret;
@@ -2148,10 +2088,10 @@ int cl_build(struct cl_engine *engine)
     return CL_SUCCESS;
 }
 
-struct cl_engine *cl_dup(struct cl_engine *engine)
+struct cl_engine *cl_engine_dup(struct cl_engine *engine)
 {
     if(!engine) {
-	cli_errmsg("cl_dup: engine == NULL\n");
+	cli_errmsg("cl_engine_dup: engine == NULL\n");
 	return NULL;
     }
 

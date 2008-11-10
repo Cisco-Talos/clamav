@@ -280,11 +280,6 @@ int cli_dconf_load(FILE *fs, struct cl_engine **engine, unsigned int options, st
 	uint32_t val;
 
 
-    if((ret = cli_initengine(engine, options))) {
-	cl_free(*engine);
-	return ret;
-    }
-
     dconf = (struct cli_dconf *) (*engine)->dconf;
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
@@ -357,7 +352,7 @@ int cli_dconf_load(FILE *fs, struct cl_engine **engine, unsigned int options, st
 
     if(ret) {
 	cli_errmsg("Problem parsing configuration file at line %u\n", line);
-	cl_free(*engine);
+	cl_engine_free(*engine);
 	return ret;
     }
 

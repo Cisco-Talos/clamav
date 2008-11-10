@@ -444,20 +444,19 @@ static int ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir, 
 	int32_t idx, current_block, i;
 	char *dirname;
 	int ret;
-	const struct cl_limits *limits = ctx ? ctx->limits : NULL;
 
 	current_block = hdr->prop_start;
 
 	if ((prop_index < 0) || (prop_index > (int32_t) hdr->max_block_no) || (rec_level > 100) || (*file_count > 100000)) {
 		return CL_SUCCESS;
 	}
-	if (limits && limits->maxfiles && (*file_count > limits->maxfiles)) {
-		cli_dbgmsg("OLE2: File limit reached (max: %d)\n", limits->maxfiles);
+	if (ctx && ctx->engine->maxfiles && (*file_count > ctx->engine->maxfiles)) {
+		cli_dbgmsg("OLE2: File limit reached (max: %d)\n", ctx->engine->maxfiles);
 		return CL_SUCCESS;
 	}
 	
-	if (limits && limits->maxreclevel && (rec_level > limits->maxreclevel)) {
-		cli_dbgmsg("OLE2: Recursion limit reached (max: %d)\n", limits->maxreclevel);
+	if (ctx && ctx->engine->maxreclevel && (rec_level > ctx->engine->maxreclevel)) {
+		cli_dbgmsg("OLE2: Recursion limit reached (max: %d)\n", ctx->engine->maxreclevel);
 		return CL_SUCCESS;
 	}
 
@@ -518,11 +517,11 @@ static int ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir, 
 			) return ret;
 			break;
 		case 2: /* File */
-			if (limits && limits->maxfiles && ctx->scannedfiles + *file_count > limits->maxfiles) {
-				cli_dbgmsg("OLE2: files limit reached (max: %u)\n", ctx->limits->maxfiles);
+			if (ctx && ctx->engine->maxfiles && ctx->scannedfiles + *file_count > ctx->engine->maxfiles) {
+				cli_dbgmsg("OLE2: files limit reached (max: %u)\n", ctx->engine->maxfiles);
 				return CL_BREAK;
 			}
-			if (!limits || !limits->maxfilesize || prop_block[idx].size <= limits->maxfilesize || prop_block[idx].size <= *scansize) {
+			if (!ctx || !ctx->engine->maxfilesize || prop_block[idx].size <= ctx->engine->maxfilesize || prop_block[idx].size <= *scansize) {
 				(*file_count)++;
 				*scansize-=prop_block[idx].size;
 				if ((ret=handler(fd, hdr, &prop_block[idx], dir, ctx)) != CL_SUCCESS)
@@ -897,9 +896,9 @@ int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx, struct uniq **vb
 
 	cli_dbgmsg("in cli_ole2_extract()\n");
 
-	if (ctx && ctx->limits && ctx->limits->maxscansize) {
-	  if (ctx->limits->maxscansize > ctx->scansize)
-	    scansize = ctx->limits->maxscansize - ctx->scansize;
+	if (ctx && ctx->engine->maxscansize) {
+	  if (ctx->engine->maxscansize > ctx->scansize)
+	    scansize = ctx->engine->maxscansize - ctx->scansize;
 	  else
 	    return CL_EMAXSIZE;
 	} else scansize = -1;

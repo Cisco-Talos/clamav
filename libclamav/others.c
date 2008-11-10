@@ -197,35 +197,95 @@ const char *cl_strerror(int clerror)
     }
 }
 
+int cl_init(unsigned int options)
+{
+    /* put dlopen() stuff here, etc. */
+    return CL_SUCCESS;
+}
+
+struct cl_engine *cl_engine_new(unsigned int options)
+{
+	struct cl_engine *new;
+
+
+    new = (struct cl_engine *) cli_calloc(1, sizeof(struct cl_engine));
+    if(!new) {
+	cli_errmsg("cl_engine_new: Can't allocate memory for cl_engine\n");
+	return NULL;
+    }
+
+    /* Setup default limits */
+    new->maxscansize = 104857600;
+    new->maxfilesize = 26214400;
+    new->maxreclevel = 16;
+    new->maxfiles = 10000;
+    new->min_cc_count = 3;
+    new->min_ssn_count = 3;
+
+    new->refcount = 1;
+
+#ifdef USE_MPOOL
+    if(!(new->mempool = mp_create())) {
+	cli_errmsg("cl_engine_new: Can't allocate memory for memory pool\n");
+	free(new);
+	return NULL;
+    }
+#endif
+
+    new->root = mp_calloc(new->mempool, CLI_MTARGETS, sizeof(struct cli_matcher *));
+    if(!new->root) {
+	cli_errmsg("cl_engine_new: Can't allocate memory for roots\n");
+#ifdef USE_MPOOL
+	mp_destroy(new->mempool);
+#endif
+	free(new);
+	return NULL;
+    }
+
+    new->dconf = cli_mp_dconf_init(new->mempool);
+    if(!new->dconf) {
+	cli_errmsg("cl_engine_new: Can't initialize dynamic configuration\n");
+	mp_free(new->mempool, new->root);
+#ifdef USE_MPOOL
+	mp_destroy(new->mempool);
+#endif
+	free(new);
+	return NULL;
+    }
+
+    cli_dbgmsg("Initialized %s engine\n", cl_retver());
+    return new;
+}
+
 int cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned long need2, unsigned long need3) {
     int ret = CL_SUCCESS;
     unsigned long needed;
 
     /* if called without limits, go on, unpack, scan */
-    if(!ctx || !ctx->limits) return CL_CLEAN;
+    if(!ctx) return CL_CLEAN;
 
     needed = (need1>need2)?need1:need2;
     needed = (needed>need3)?needed:need3;
 
     /* if we have global scan limits */
-    if(needed && ctx->limits->maxscansize) {
+    if(needed && ctx->engine->maxscansize) {
         /* if the remaining scansize is too small... */
-        if(ctx->limits->maxscansize-ctx->scansize<needed) {
+        if(ctx->engine->maxscansize-ctx->scansize<needed) {
 	    /* ... we tell the caller to skip this file */
-	    cli_dbgmsg("%s: scansize exceeded (initial: %lu, remaining: %lu, needed: %lu)\n", who, ctx->limits->maxscansize, ctx->scansize, needed);
+	    cli_dbgmsg("%s: scansize exceeded (initial: %lu, remaining: %lu, needed: %lu)\n", who, ctx->engine->maxscansize, ctx->scansize, needed);
 	    ret = CL_EMAXSIZE;
 	}
     }
 
     /* if we have per-file size limits, and we are overlimit... */
-    if(needed && ctx->limits->maxfilesize && ctx->limits->maxfilesize<needed) {
+    if(needed && ctx->engine->maxfilesize && ctx->engine->maxfilesize<needed) {
 	/* ... we tell the caller to skip this file */
-        cli_dbgmsg("%s: filesize exceeded (allowed: %lu, needed: %lu)\n", who, ctx->limits->maxfilesize, needed);
+        cli_dbgmsg("%s: filesize exceeded (allowed: %lu, needed: %lu)\n", who, ctx->engine->maxfilesize, needed);
 	ret = CL_EMAXSIZE;
     }
 
-    if(ctx->limits->maxfiles && ctx->scannedfiles>=ctx->limits->maxfiles) {
-        cli_dbgmsg("%s: files limit reached (max: %u)\n", who, ctx->limits->maxfiles);
+    if(ctx->engine->maxfiles && ctx->scannedfiles>=ctx->engine->maxfiles) {
+        cli_dbgmsg("%s: files limit reached (max: %u)\n", who, ctx->engine->maxfiles);
 	return CL_EMAXFILES;
     }
     return ret;
@@ -237,8 +297,8 @@ int cli_updatelimits(cli_ctx *ctx, unsigned long needed) {
     if (ret != CL_CLEAN) return ret;
     ctx->scannedfiles++;
     ctx->scansize+=needed;
-    if(ctx->scansize > ctx->limits->maxscansize)
-        ctx->scansize = ctx->limits->maxscansize;
+    if(ctx->scansize > ctx->engine->maxscansize)
+        ctx->scansize = ctx->engine->maxscansize;
     return CL_CLEAN;
 }
 
