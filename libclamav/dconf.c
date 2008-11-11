@@ -271,16 +271,13 @@ static int chkflevel(const char *entry, int field)
     return 1;
 }
 
-int cli_dconf_load(FILE *fs, struct cl_engine **engine, unsigned int options, struct cli_dbio *dbio)
+int cli_dconf_load(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio)
 {
 	char buffer[FILEBUFF];
 	unsigned int line = 0;
 	int ret = 0;
-	struct cli_dconf *dconf;
 	uint32_t val;
 
-
-    dconf = (struct cli_dconf *) (*engine)->dconf;
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
@@ -288,7 +285,7 @@ int cli_dconf_load(FILE *fs, struct cl_engine **engine, unsigned int options, st
 
 	if(!strncmp(buffer, "PE:", 3) && chkflevel(buffer, 2)) {
 	    if(sscanf(buffer + 3, "0x%x", &val) == 1) {
-		dconf->pe = val;
+		engine->dconf->pe = val;
 	    } else {
 		ret = CL_EMALFDB;
 		break;
@@ -297,7 +294,7 @@ int cli_dconf_load(FILE *fs, struct cl_engine **engine, unsigned int options, st
 
 	if(!strncmp(buffer, "ELF:", 4) && chkflevel(buffer, 2)) {
 	    if(sscanf(buffer + 4, "0x%x", &val) == 1) {
-		dconf->elf = val;
+		engine->dconf->elf = val;
 	    } else {
 		ret = CL_EMALFDB;
 		break;
@@ -306,7 +303,7 @@ int cli_dconf_load(FILE *fs, struct cl_engine **engine, unsigned int options, st
 
 	if(!strncmp(buffer, "ARCHIVE:", 8) && chkflevel(buffer, 2)) {
 	    if(sscanf(buffer + 8, "0x%x", &val) == 1) {
-		dconf->archive = val;
+		engine->dconf->archive = val;
 	    } else {
 		ret = CL_EMALFDB;
 		break;
@@ -315,7 +312,7 @@ int cli_dconf_load(FILE *fs, struct cl_engine **engine, unsigned int options, st
 
 	if(!strncmp(buffer, "DOCUMENT:", 9) && chkflevel(buffer, 2)) {
 	    if(sscanf(buffer + 9, "0x%x", &val) == 1) {
-		dconf->doc = val;
+		engine->dconf->doc = val;
 	    } else {
 		ret = CL_EMALFDB;
 		break;
@@ -324,7 +321,7 @@ int cli_dconf_load(FILE *fs, struct cl_engine **engine, unsigned int options, st
 
 	if(!strncmp(buffer, "MAIL:", 5) && chkflevel(buffer, 2)) {
 	    if(sscanf(buffer + 5, "0x%x", &val) == 1) {
-		dconf->mail = val;
+		engine->dconf->mail = val;
 	    } else {
 		ret = CL_EMALFDB;
 		break;
@@ -333,7 +330,7 @@ int cli_dconf_load(FILE *fs, struct cl_engine **engine, unsigned int options, st
 
 	if(!strncmp(buffer, "OTHER:", 6) && chkflevel(buffer, 2)) {
 	    if(sscanf(buffer + 6, "0x%x", &val) == 1) {
-		dconf->other = val;
+		engine->dconf->other = val;
 	    } else {
 		ret = CL_EMALFDB;
 		break;
@@ -342,7 +339,7 @@ int cli_dconf_load(FILE *fs, struct cl_engine **engine, unsigned int options, st
 
 	if(!strncmp(buffer, "PHISHING:", 9) && chkflevel(buffer, 2)) {
 	    if(sscanf(buffer + 9, "0x%x", &val) == 1) {
-		dconf->phishing = val;
+		engine->dconf->phishing = val;
 	    } else {
 		ret = CL_EMALFDB;
 		break;
@@ -352,7 +349,6 @@ int cli_dconf_load(FILE *fs, struct cl_engine **engine, unsigned int options, st
 
     if(ret) {
 	cli_errmsg("Problem parsing configuration file at line %u\n", line);
-	cl_engine_free(*engine);
 	return ret;
     }
 

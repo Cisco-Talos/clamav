@@ -160,7 +160,7 @@ extern int cl_scandesc(int desc, const char **virname, unsigned long int *scanne
 extern int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options);
 
 /* database handling */
-extern int cl_load(const char *path, struct cl_engine **engine, unsigned int *signo, unsigned int options);
+extern int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, unsigned int options);
 extern const char *cl_retdbdir(void);
 
 /* engine handling */
