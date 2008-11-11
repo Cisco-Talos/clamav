@@ -7,6 +7,8 @@ CLAMAV_PUBLIC {
     cl_debug;
     cl_init;
     cl_engine_new;
+    cl_engine_set;
+    cl_engine_get;
     cl_engine_compile;
     cl_engine_dup;
     cl_engine_free;

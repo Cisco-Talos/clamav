@@ -257,6 +257,78 @@ struct cl_engine *cl_engine_new(unsigned int options)
     return new;
 }
 
+int cl_engine_set(struct cl_engine *engine, enum cl_engine_field field, const void *val)
+{
+    if(!engine || !val)
+	return CL_ENULLARG;
+
+    switch(field) {
+	case CL_ENGINE_MAX_SCANSIZE:
+	    engine->maxscansize = *((uint64_t *) val);
+	    break;
+	case CL_ENGINE_MAX_FILESIZE:
+	    engine->maxfilesize = *((uint64_t *) val);
+	    break;
+	case CL_ENGINE_MAX_RECURSION:
+	    engine->maxreclevel = *((uint32_t *) val);
+	    break;
+	case CL_ENGINE_MAX_FILES:
+	    engine->maxfiles = *((uint32_t *) val);
+	    break;
+	case CL_ENGINE_MIN_CC_COUNT:
+	    engine->min_cc_count = *((uint32_t *) val);
+	    break;
+	case CL_ENGINE_MIN_SSN_COUNT:
+	    engine->min_ssn_count = *((uint32_t *) val);
+	    break;
+	case CL_ENGINE_PUA_CATEGORIES:
+	    engine->pua_cats = cli_mp_strdup(engine->mempool, (char *) val);
+	    if(!engine->pua_cats)
+		return CL_EMEM;
+	    break;
+	default:
+	    cli_errmsg("cl_engine_set: Incorrect field number\n");
+	    return CL_ENULLARG; /* FIXME */
+    }
+
+    return CL_SUCCESS;
+}
+
+int cl_engine_get(struct cl_engine *engine, enum cl_engine_field field, const void *val)
+{
+    if(!engine || !val)
+	return CL_ENULLARG;
+
+    switch(field) {
+	case CL_ENGINE_MAX_SCANSIZE:
+	    *((uint64_t *) val) = engine->maxscansize;
+	    break;
+	case CL_ENGINE_MAX_FILESIZE:
+	    *((uint64_t *) val) = engine->maxfilesize;
+	    break;
+	case CL_ENGINE_MAX_RECURSION:
+	    *((uint32_t *) val) = engine->maxreclevel;
+	    break;
+	case CL_ENGINE_MAX_FILES:
+	    *((uint32_t *) val) = engine->maxfiles;
+	    break;
+	case CL_ENGINE_MIN_CC_COUNT:
+	    *((uint32_t *) val) = engine->min_cc_count;
+	    break;
+	case CL_ENGINE_MIN_SSN_COUNT:
+	    *((uint32_t *) val) = engine->min_ssn_count;
+	    break;
+	case CL_ENGINE_PUA_CATEGORIES:
+	    strncpy((char *) val, engine->pua_cats, 128);
+	    break;
+	default:
+	    cli_errmsg("cl_engine_get: Incorrect field number\n");
+	    return CL_ENULLARG; /* FIXME */
+    }
+
+    return CL_SUCCESS;
+}
+
 int cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned long need2, unsigned long need3) {
     int ret = CL_SUCCESS;
     unsigned long needed;

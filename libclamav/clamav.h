@@ -115,6 +115,20 @@ extern int cl_init(unsigned int options);
 #define CL_ENGINE_DEFAULT   0x0
 extern struct cl_engine *cl_engine_new(unsigned int options);
 
+enum cl_engine_field {
+    CL_ENGINE_MAX_SCANSIZE,	    /* uint64_t */
+    CL_ENGINE_MAX_FILESIZE,	    /* uint64_t */
+    CL_ENGINE_MAX_RECURSION,	    /* uint32_t	*/
+    CL_ENGINE_MAX_FILES,	    /* uint32_t */
+    CL_ENGINE_MIN_CC_COUNT,	    /* uint32_t */
+    CL_ENGINE_MIN_SSN_COUNT,	    /* uint32_t */
+    CL_ENGINE_PUA_CATEGORIES	    /* (char *) */
+};
+
+extern int cl_engine_set(struct cl_engine *engine, enum cl_engine_field field, const void *val);
+
+extern int cl_engine_get(struct cl_engine *engine, enum cl_engine_field field, const void *val);
+
 extern int cl_engine_compile(struct cl_engine *engine);
 
 extern struct cl_engine *cl_engine_dup(struct cl_engine *engine);
