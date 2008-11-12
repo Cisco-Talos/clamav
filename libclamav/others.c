@@ -264,28 +264,32 @@ int cl_engine_set(struct cl_engine *engine, enum cl_engine_field field, const vo
 
     switch(field) {
 	case CL_ENGINE_MAX_SCANSIZE:
-	    engine->maxscansize = *((uint64_t *) val);
+	    engine->maxscansize = *((const uint64_t *) val);
 	    break;
 	case CL_ENGINE_MAX_FILESIZE:
-	    engine->maxfilesize = *((uint64_t *) val);
+	    engine->maxfilesize = *((const uint64_t *) val);
 	    break;
 	case CL_ENGINE_MAX_RECURSION:
-	    engine->maxreclevel = *((uint32_t *) val);
+	    engine->maxreclevel = *((const uint32_t *) val);
 	    break;
 	case CL_ENGINE_MAX_FILES:
-	    engine->maxfiles = *((uint32_t *) val);
+	    engine->maxfiles = *((const uint32_t *) val);
 	    break;
 	case CL_ENGINE_MIN_CC_COUNT:
-	    engine->min_cc_count = *((uint32_t *) val);
+	    engine->min_cc_count = *((const uint32_t *) val);
 	    break;
 	case CL_ENGINE_MIN_SSN_COUNT:
-	    engine->min_ssn_count = *((uint32_t *) val);
+	    engine->min_ssn_count = *((const uint32_t *) val);
 	    break;
 	case CL_ENGINE_PUA_CATEGORIES:
-	    engine->pua_cats = cli_mp_strdup(engine->mempool, (char *) val);
+	    engine->pua_cats = cli_mp_strdup(engine->mempool, (const char *) val);
 	    if(!engine->pua_cats)
 		return CL_EMEM;
 	    break;
+	case CL_ENGINE_DB_VERSION:
+	case CL_ENGINE_DB_TIME:
+	    cli_warnmsg("cl_engine_set: The field is read only\n");
+	    return CL_SUCCESS;
 	default:
 	    cli_errmsg("cl_engine_set: Incorrect field number\n");
 	    return CL_ENULLARG; /* FIXME */
@@ -294,7 +298,7 @@ int cl_engine_set(struct cl_engine *engine, enum cl_engine_field field, const vo
     return CL_SUCCESS;
 }
 
-int cl_engine_get(struct cl_engine *engine, enum cl_engine_field field, const void *val)
+int cl_engine_get(const struct cl_engine *engine, enum cl_engine_field field, void *val)
 {
     if(!engine || !val)
 	return CL_ENULLARG;
@@ -319,7 +323,14 @@ int cl_engine_get(struct cl_engine *engine, enum cl_engine_field field, const vo
 	    *((uint32_t *) val) = engine->min_ssn_count;
 	    break;
 	case CL_ENGINE_PUA_CATEGORIES:
-	    strncpy((char *) val, engine->pua_cats, 128);
+	    if(engine->pua_cats)
+		strncpy((char *) val, engine->pua_cats, 128);
+	    break;
+	case CL_ENGINE_DB_VERSION:
+	    *((uint32_t *) val) = engine->dbversion[0];
+	    break;
+	case CL_ENGINE_DB_TIME:
+	    *((uint32_t *) val) = engine->dbversion[1];
 	    break;
 	default:
 	    cli_errmsg("cl_engine_get: Incorrect field number\n");

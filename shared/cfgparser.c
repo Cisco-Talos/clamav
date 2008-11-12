@@ -71,11 +71,10 @@ struct cfgoption cfg_options[] = {
     {"ScanOLE2", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"ScanPDF", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"ScanArchive", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
-    {"MaxScanSize", OPT_COMPSIZE, 104857600, NULL, 0, OPT_CLAMD},
-    {"MaxFileSize", OPT_COMPSIZE, 26214400, NULL, 0, OPT_CLAMD},
-    {"MaxRecursion", OPT_NUM, 16, NULL, 0, OPT_CLAMD},
-    {"MaxFiles", OPT_NUM, 10000, NULL, 0, OPT_CLAMD},
-    {"ArchiveLimitMemoryUsage", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
+    {"MaxScanSize", OPT_COMPSIZE, -1, NULL, 0, OPT_CLAMD},
+    {"MaxFileSize", OPT_COMPSIZE, -1, NULL, 0, OPT_CLAMD},
+    {"MaxRecursion", OPT_NUM, -1, NULL, 0, OPT_CLAMD},
+    {"MaxFiles", OPT_NUM, -1, NULL, 0, OPT_CLAMD},
     {"ArchiveBlockEncrypted", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"DatabaseDirectory", OPT_QUOTESTR, -1, DATADIR, 0, OPT_CLAMD | OPT_FRESHCLAM},
     {"TCPAddr", OPT_QUOTESTR, -1, NULL, 0, OPT_CLAMD},
@@ -141,6 +140,7 @@ struct cfgoption cfg_options[] = {
     {"ArchiveMaxFiles", OPT_NUM, 1000, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
     {"ArchiveMaxCompressionRatio", OPT_NUM, 250, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
     {"ArchiveBlockMax", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
+    {"ArchiveLimitMemoryUsage", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_DEPRECATED },
 
     {NULL, 0, 0, NULL, 0, 0}
 };

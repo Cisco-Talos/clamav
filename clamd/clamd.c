@@ -96,7 +96,7 @@ int main(int argc, char **argv)
         struct passwd *user = NULL;
 #endif
 	time_t currtime;
-	struct cl_engine *engine = NULL;
+	struct cl_engine *engine;
 	const char *dbdir, *cfgfile;
 	char *pua_cats = NULL;
 	int ret, tcpsock = 0, localsock = 0, i;
@@ -223,9 +223,6 @@ int main(int argc, char **argv)
     logg_size = cfgopt(copt, "LogFileMaxSize")->numarg;
     logg_verbose = mprintf_verbose = cfgopt(copt, "LogVerbose")->enabled;
 
-    if(cfgopt(copt, "Debug")->enabled) /* enable debug messages in libclamav */
-	cl_debug();
-
     if((cpt = cfgopt(copt, "LogFile"))->enabled) {
 	char timestr[32];
 	logg_file = cpt->strarg;
@@ -244,6 +241,16 @@ int main(int argc, char **argv)
 	}
     } else
 	logg_file = NULL;
+
+    if((ret = cl_init(CL_INIT_DEFAULT))) {
+	logg("!Can't initialize libclamav: %s\n", cl_strerror(ret));
+	logg_close();
+	freecfg(copt);
+	return 1;
+    }
+
+    if(cfgopt(copt, "Debug")->enabled) /* enable debug messages in libclamav */
+	cl_debug();
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
     if(cfgopt(copt, "LogSyslog")->enabled) {
@@ -302,6 +309,13 @@ int main(int argc, char **argv)
     else
 	logg("#Log file size limit disabled.\n");
 
+    if(!(engine = cl_engine_new(CL_ENGINE_DEFAULT))) {
+	logg("!Can't initialize antivirus engine\n");
+	logg_close();
+	freecfg(copt);
+	return 1;
+    }
+
     /* load the database(s) */
     dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
     logg("#Reading databases from %s\n", dbdir);
@@ -318,6 +332,7 @@ int main(int argc, char **argv)
 		    logg("!Can't allocate memory for pua_cats\n");
 		    logg_close();
 		    freecfg(copt);
+		    cl_engine_free(engine);
 		    return 1;
 		}
 		logg("# %s", cpt->strarg);
@@ -337,6 +352,7 @@ int main(int argc, char **argv)
 		logg_close();
 		freecfg(copt);
 		free(pua_cats);
+		cl_engine_free(engine);
 		return 1;
 	    }
 	    dboptions |= CL_DB_PUA_INCLUDE;
@@ -361,15 +377,15 @@ int main(int argc, char **argv)
 	}
 
 	if(pua_cats) {
-	    /* FIXME with the new API */
-	    if((ret = cli_initengine(&engine, dboptions))) {
-		logg("!cli_initengine() failed: %s\n", cl_strerror(ret));
+	    if((ret = cl_engine_set(engine, CL_ENGINE_PUA_CATEGORIES, pua_cats))) {
+		logg("!cli_engine_set(CL_ENGINE_PUA_CATEGORIES) failed: %s\n", cl_strerror(ret));
 		logg_close();
 		freecfg(copt);
 		free(pua_cats);
+		cl_engine_free(engine);
 		return 1;
 	    }
-	    engine->pua_cats = pua_cats;
+	    free(pua_cats);
 	}
     } else {
 	logg("#Not loading PUA signatures.\n");
@@ -395,25 +411,20 @@ int main(int argc, char **argv)
 	logg("#Max A-C depth set to %u\n", cpt->numarg);
     }
 
-    if((ret = cl_load(dbdir, &engine, &sigs, dboptions))) {
+    if((ret = cl_load(dbdir, engine, &sigs, dboptions))) {
 	logg("!%s\n", cl_strerror(ret));
 	logg_close();
 	freecfg(copt);
-	return 1;
-    }
-
-    if(!engine) {
-	logg("!Database initialization error.\n");
-	logg_close();
-	freecfg(copt);
+	cl_engine_free(engine);
 	return 1;
     }
 
     logg("#Loaded %u signatures.\n", sigs);
-    if((ret = cl_build(engine)) != 0) {
-	logg("!Database initialization error: %s\n", cl_strerror(ret));;
+    if((ret = cl_engine_compile(engine)) != 0) {
+	logg("!Database initialization error: %s\n", cl_strerror(ret));
 	logg_close();
 	freecfg(copt);
+	cl_engine_free(engine);
 	return 1;
     }
 
@@ -425,6 +436,7 @@ int main(int argc, char **argv)
 	    logg("!Error at WSAStartup(): %d\n", WSAGetLastError());
 	    logg_close();
 	    freecfg(copt);
+	    cl_engine_free(engine);
 	    return 1;
 	}
 #endif
@@ -432,6 +444,7 @@ int main(int argc, char **argv)
 	if(lsockets[nlsockets] == -1) {
 	    logg_close();
 	    freecfg(copt);
+	    cl_engine_free(engine);
 	    return 1;
 	}
 	nlsockets++;
@@ -444,6 +457,7 @@ int main(int argc, char **argv)
 	    freecfg(copt);
 	    if(tcpsock)
 		closesocket(lsockets[0]);
+	    cl_engine_free(engine);
 	    return 1;
 	}
 	nlsockets++;
@@ -461,6 +475,7 @@ int main(int argc, char **argv)
 	    logg("!daemonize() failed\n");
 	    logg_close();
 	    freecfg(copt);
+	    cl_engine_free(engine);
 	    return 1;
 	}
 #ifdef C_BSD

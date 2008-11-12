@@ -122,12 +122,14 @@ enum cl_engine_field {
     CL_ENGINE_MAX_FILES,	    /* uint32_t */
     CL_ENGINE_MIN_CC_COUNT,	    /* uint32_t */
     CL_ENGINE_MIN_SSN_COUNT,	    /* uint32_t */
-    CL_ENGINE_PUA_CATEGORIES	    /* (char *) */
+    CL_ENGINE_PUA_CATEGORIES,	    /* (char *) */
+    CL_ENGINE_DB_VERSION,	    /* uint32_t */
+    CL_ENGINE_DB_TIME		    /* uint32_t */
 };
 
 extern int cl_engine_set(struct cl_engine *engine, enum cl_engine_field field, const void *val);
 
-extern int cl_engine_get(struct cl_engine *engine, enum cl_engine_field field, const void *val);
+extern int cl_engine_get(const struct cl_engine *engine, enum cl_engine_field field, void *val);
 
 extern int cl_engine_compile(struct cl_engine *engine);
 

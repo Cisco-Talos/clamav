@@ -43,6 +43,6 @@
 #include "libclamav/clamav.h"
 #include "shared/cfgparser.h"
 
-int command(int desc, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int timeout);
+int command(int desc, const struct cl_engine *engine, unsigned int options, const struct cfgstruct *copt, int timeout);
 
 #endif
