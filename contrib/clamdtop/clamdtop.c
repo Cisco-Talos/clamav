@@ -56,6 +56,7 @@ typedef struct connection {
 	int tcp;
 	struct timeval tv_conn;
 	char *version;
+	int line;
 } conn_t;
 
 struct global_stats {
@@ -72,6 +73,7 @@ struct stats {
 	char *db_version;
 	struct tm db_time;
 	const char *version;
+	int stats_unsupp;
 	uint8_t conn_hr, conn_min, conn_sec;
 	/* threads - primary */
 	unsigned prim_live, prim_idle, prim_max;
@@ -89,6 +91,18 @@ static int send_string_noreconn(conn_t *conn, const char *cmd);
 static void send_string(conn_t *conn, const char *cmd);
 static void read_version(conn_t *conn);
 
+enum exit_reason {
+	FAIL_INITIAL_CONN=1,
+	OUT_OF_MEMORY,
+	RECONNECT_FAIL,
+	SIGINT_REASON
+};
+
+static void exit_program(enum exit_reason reason, const char *func, unsigned line);
+#define EXIT_PROGRAM(r) exit_program(r, __PRETTY_FUNCTION__, __LINE__);
+#define OOM_CHECK(p) do { if (!p) EXIT_PROGRAM(OUT_OF_MEMORY); } while (0)
+
+
 static struct global_stats global;
 static int curses_inited = 1;
 static int maxystats=0;
@@ -96,6 +110,7 @@ static int maxystats=0;
 enum colors {
 	header_color=1,
 	version_color,
+	error_color,
 	value_color,
 	descr_color,
 	queue_header_color,
@@ -112,6 +127,7 @@ enum colors {
 
 #define VALUE_ATTR A_BOLD | COLOR_PAIR(value_color)
 #define DESCR_ATTR COLOR_PAIR(descr_color)
+#define ERROR_ATTR A_BOLD | COLOR_PAIR(error_color)
 
 static WINDOW *header_window = NULL;
 static WINDOW *stats_head_window = NULL;
@@ -125,7 +141,7 @@ static char *queue_header = NULL;
 static char *clamd_header = NULL;
 
 #define CMDHEAD " COMMAND        TIME QUEUED   FILE"
-#define CMDHEAD2 "NO COMMAND     TIME QUEUED   FILE"
+#define CMDHEAD2 " # COMMAND     TIME QUEUED   FILE"
 
 /*
  * CLAMD - which local/remote clamd this is
@@ -149,11 +165,9 @@ static void resize(void)
 	free(queue_header);
 	free(clamd_header);
 	queue_header = malloc(maxx + 1);
+	OOM_CHECK(queue_header);
 	clamd_header = malloc(maxx + 1);
-	if(!queue_header || !clamd_header) {
-		fprintf(stderr,"Out of memory\n");
-		exit(1);
-	}
+	OOM_CHECK(clamd_header);
 	strncpy(queue_header, global.num_clamd>1 ? CMDHEAD2 : CMDHEAD, maxx);
 	strncpy(clamd_header, SUMHEAD, maxx);
 	queue_header[maxx] = '\0';
@@ -203,7 +217,7 @@ static void init_windows(int num_clamd)
 	stats_window = subwin(stdscr, maxystats, maxx, num_clamd+2, 0);
 	status_bar_window = subwin(stdscr, 1, maxx, maxy-1, 0);
 	/* memwindow overlaps, used only in details mode */
-	mem_window = derwin(stats_window, 6, 48, 0, maxx-48);
+	mem_window = derwin(stats_window, 6, 41, 0, maxx-41);
 	touchwin(stdscr);
 	werase(stdscr);
 	refresh();
@@ -227,6 +241,7 @@ static void init_ncurses(int num_clamd)
 
 	init_pair(header_color, COLOR_BLACK, COLOR_WHITE);
 	init_pair(version_color, DEFAULT_COLOR, DEFAULT_COLOR);
+	init_pair(error_color, COLOR_WHITE, COLOR_RED);
 	init_pair(value_color, COLOR_GREEN, DEFAULT_COLOR);
 	init_pair(descr_color, COLOR_CYAN, DEFAULT_COLOR);
 	init_pair(queue_header_color, COLOR_BLACK, COLOR_GREEN);
@@ -297,7 +312,7 @@ static void show_bar(WINDOW *win, size_t i, unsigned live, unsigned idle,
 		unsigned max, int blink)
 {
 	int y,x;
-	unsigned len  = 47;
+	unsigned len  = 39;
 	unsigned start = 1;
 	unsigned activ = max ? ((live-idle)*(len - start - 2) + (max/2)) / max : 0;
 	unsigned dim   = max ? idle*(len - start - 2) / max : 0;
@@ -333,8 +348,10 @@ static void cleanup(void)
 {
 	unsigned i;
 	if (curses_inited) {
-		werase(status_bar_window);
-		wrefresh(status_bar_window);
+		if (status_bar_window) {
+			werase(status_bar_window);
+			wrefresh(status_bar_window);
+		}
 		rm_windows();
 		endwin();
 	}
@@ -358,11 +375,6 @@ static void cleanup(void)
 	}
 }
 
-enum exit_reason {
-	FAIL_INITIAL_CONN=1,
-	OUT_OF_MEMORY,
-	RECONNECT_FAIL
-};
 
 static void exit_program(enum exit_reason reason, const char *func, unsigned line)
 {
@@ -376,6 +388,9 @@ static void exit_program(enum exit_reason reason, const char *func, unsigned lin
 		case RECONNECT_FAIL:
 			exit_reason = "Failed to reconnect to clamd after connection was lost";
 			break;
+		case SIGINT_REASON:
+			exit_reason = "User interrupt";
+			break;
 		default:
 			exit_reason = "Unknown";
 			break;
@@ -384,9 +399,6 @@ static void exit_program(enum exit_reason reason, const char *func, unsigned lin
 	exit_line = line;
 	exit(reason);
 }
-
-#define EXIT_PROGRAM(r) exit_program(r, __PRETTY_FUNCTION__, __LINE__);
-#define OOM_CHECK(p) do { if (!p) EXIT_PROGRAM(OUT_OF_MEMORY); } while (0)
 
 struct task {
 	char *line;
@@ -406,17 +418,23 @@ static int tasks_compare(const void *a, const void *b)
 }
 
 /* ----------- Socket routines ----------------------- */
-static void print_con_error(const char *fmt, ...)
+static void print_con_info(conn_t *conn, const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
-/*	if (version_window) {
-		werase(version_window);
-		wmove(version_window, 0, 0);
-		vwprintw(version_window, fmt, ap);
-		wrefresh(version_window);
-	} else*/
-		vfprintf(stderr, fmt, ap);
+	if (stats_head_window) {
+		char *buf = malloc(maxx+1);
+		memset(buf, ' ', maxx);
+		OOM_CHECK(buf);
+		vsnprintf(buf, maxx, fmt, ap);
+		buf[strlen(buf)] = ' ';
+		buf[maxx] = '\0';
+		wattron(stats_head_window, ERROR_ATTR);
+		mvwprintw(stats_head_window, conn->line, 0, "%s", buf);
+		wattroff(stats_head_window, ERROR_ATTR);
+		wrefresh(stats_head_window);
+	} else
+		vfprintf(stdout, fmt, ap);
 	va_end(ap);
 }
 
@@ -424,6 +442,7 @@ static void print_con_error(const char *fmt, ...)
 static int make_connection(const char *soname, conn_t *conn)
 {
 	int s;
+	struct timeval tv;
 	conn->tcp = 0;
 #ifdef _WIN32
     {
@@ -438,7 +457,7 @@ static int make_connection(const char *soname, conn_t *conn)
 		memset(&addr, 0, sizeof(addr));
 		addr.sun_family = AF_UNIX;
 		strncpy(addr.sun_path, soname, sizeof(addr.sun_path));
-		printf("Connecting to: %s\n", soname);
+		print_con_info(conn, "Connecting to: %s\n", soname);
 		if (connect(s, (struct sockaddr *)&addr, sizeof(addr))) {
 			perror("connect");
 			return -1;
@@ -458,7 +477,7 @@ static int make_connection(const char *soname, conn_t *conn)
 		}
 		if(!port)
 			port = 3310;
-		printf("Looking up: %s\n", host);
+		print_con_info(conn, "Looking up: %s\n", host);
 		if((hp = gethostbyname(host)) == NULL) {
 			herror("Cannot find host");
 			return -1;
@@ -472,7 +491,7 @@ static int make_connection(const char *soname, conn_t *conn)
 		server.sin_family = AF_INET;
 		server.sin_port = htons(port);
 		server.sin_addr.s_addr = ((struct in_addr*)(hp->h_addr))->s_addr;
-		printf("Connecting to: %s:%u\n", inet_ntoa(server.sin_addr), port);
+		print_con_info(conn, "Connecting to: %s:%u\n", inet_ntoa(server.sin_addr), port);
 		if (connect(s, (struct sockaddr *)&server, sizeof(server))) {
 			perror("connect");
 			return -1;
@@ -481,6 +500,9 @@ static int make_connection(const char *soname, conn_t *conn)
 	conn->remote = soname;
 	conn->sd = s;
 	gettimeofday(&conn->tv_conn, NULL);
+	tv.tv_sec = 4;
+	tv.tv_usec = 0;
+	setsockopt(conn->sd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 	send_string(conn, "SESSION\nVERSION\n");
 	read_version(conn);
 	return 0;
@@ -508,9 +530,8 @@ static void reconnect(conn_t *conn)
 	if(++tries > 3) {
 		EXIT_PROGRAM(RECONNECT_FAIL);
 	}
-	print_con_error("%s: %s", conn->remote, strerror(errno));
 	if (make_connection(conn->remote, conn) < 0) {
-		print_con_error("Unable to reconnect to %s: %s", conn->remote, strerror(errno));
+		print_con_info(conn, "Unable to reconnect to %s: %s", conn->remote, strerror(errno));
 		exit(3);
 	}
 	free(conn->version);
@@ -520,17 +541,23 @@ static void reconnect(conn_t *conn)
 static int recv_line(conn_t *conn, char *buf, size_t len)
 {
 	assert(len > 0);
-	assert(conn && conn->sd > 0);
+	assert(conn);
 	assert(buf);
 
 	len--;
-	if (!len)
+	if (!len || conn->sd == -1)
 		return 0;
+	assert(conn->sd > 0);
 	while (len > 0) {
 		ssize_t nread = recv(conn->sd, buf, len, MSG_PEEK);
-		if (nread == -1)
-			reconnect(conn);
-		else {
+		if (nread  <= 0) {
+			print_con_info(conn, "%s: %s", conn->remote, strerror(errno));
+			/* it could be a timeout, be nice and send an END */
+			send_string_noreconn(conn, "END\n");
+			close(conn->sd);
+			conn->sd = -1;
+			return 0;
+		} else {
 			char *p = memchr(buf, '\n', nread);
 			if (p) {
 				len = p - buf + 1;
@@ -557,7 +584,6 @@ static void output_queue(size_t line, ssize_t max)
 {
 	ssize_t i;
 	struct task *tasks = global.tasks;
-	assert(tasks);
 	wattron(stats_window, COLOR_PAIR(queue_header_color));
 	mvwprintw(stats_window, line++, 0, "%s", queue_header);
 	wattroff(stats_window, COLOR_PAIR(queue_header_color));
@@ -567,6 +593,7 @@ static void output_queue(size_t line, ssize_t max)
 		--max;
 	if (max < 0) max = 0;
 	for(i=0;i<max;i++) {
+		assert(tasks);
 		char *cmde = strchr(tasks[i].line, ' ');
 		if(cmde) {
 			char cmd[16];
@@ -608,18 +635,11 @@ static void parse_queue(conn_t *conn, char* buf, size_t len, unsigned idx)
 			continue;
 		++global.n;
 		global.tasks = realloc(global.tasks, sizeof(*global.tasks)*global.n);
-		if(!global.tasks) {
-			fprintf(stderr, "Out of memory\n");
-			/* OOM */
-			exit(1);
-		}
+		OOM_CHECK(global.tasks);
 		global.tasks[global.n-1].line = strdup(buf);
-		if(!global.tasks[global.n-1].line) {
-			fprintf(stderr, "Out of memory\n");
-			exit(1);
-		}
+		OOM_CHECK(global.tasks[global.n-1].line);
 		global.tasks[global.n-1].tim  = tim;
-		global.tasks[global.n-1].clamd_no = idx;
+		global.tasks[global.n-1].clamd_no = idx + 1;
 	} while (recv_line(conn, buf, len) && buf[0] == '\t' && strcmp("END\n", buf) != 0);
 }
 
@@ -634,18 +654,18 @@ static void output_memstats(struct stats *stats)
 	werase(mem_window);
 	box(mem_window, 0, 0);
 
-	snprintf(buf, sizeof(buf),"heap %4luM mmap %4luM releasable %3luM",
+	snprintf(buf, sizeof(buf),"heap %4luM mmap %4luM unused %3luM",
 			stats->lheapu/1024, stats->lmmapu/1024, stats->lreleasable/1024);
-	mvwprintw(mem_window, 1, 1, "Memory: ");
+	mvwprintw(mem_window, 1, 1, "Mem:  ");
 	print_colored(mem_window, buf);
 
-	mvwprintw(mem_window, 2, 1, "Malloc: ");
-	snprintf(buf, sizeof(buf),"used %4luM free %4luM total     %4luM",
+	mvwprintw(mem_window, 2, 1, "Libc: ");
+	snprintf(buf, sizeof(buf),"used %4luM free %4luM total %4luM",
 			stats->ltotalu/1024, stats->ltotalf/1024, (stats->ltotalu+stats->ltotalf)/1024);
 	print_colored(mem_window, buf);
 
-	mvwprintw(mem_window, 3, 1, "Mempool: ");
-	snprintf(buf, sizeof(buf), "count  %u  used %4luM total     %4luM",
+	mvwprintw(mem_window, 3, 1, "Pool: ");
+	snprintf(buf, sizeof(buf), "count   %u  used %4luM total %4luM",
 			stats->pools_cnt, stats->lpoolu/1024, stats->lpoolt/1024);
 	print_colored(mem_window, buf);
 
@@ -699,8 +719,8 @@ static int output_stats(struct stats *stats, unsigned idx)
 	char mem[6];
 	WINDOW *win = stats_head_window;
 
-	if (stats->mem == -1)
-		strcpy(mem, "N/A");
+	if (stats->mem == -1 || stats->stats_unsupp)
+		strncpy(mem, "N/A", sizeof(mem));
 	else {
 		char c;
 		double s;
@@ -720,7 +740,7 @@ static int output_stats(struct stats *stats, unsigned idx)
 	i = idx+1;
 
 	if (!stats->db_time.tm_year)
-		strcpy(timbuf,"N/A");
+		strncpy(timbuf,"N/A",sizeof(timbuf));
 	else
 		snprintf(timbuf, sizeof(timbuf), "%04u-%02u-%02u %02uh",
 				1900 + stats->db_time.tm_year,
@@ -728,14 +748,19 @@ static int output_stats(struct stats *stats, unsigned idx)
 				stats->db_time.tm_mday,
 				stats->db_time.tm_hour);
 
-	mvwprintw(win, i++, 0,"%2u %02u:%02u:%02u %3u %3u %5u %5u %5s %-14s %-6s %5s %s", idx+1,  stats->conn_hr, stats->conn_min, stats->conn_sec,
+	if (!stats->stats_unsupp) {
+		mvwprintw(win, i++, 0,"%2u %02u:%02u:%02u %3u %3u %5u %5u %5s %-14s %-6s %5s %s", idx+1,  stats->conn_hr, stats->conn_min, stats->conn_sec,
 			stats->live, stats->idle,
 			stats->current_q, stats->biggest_queue,
 			mem,
 			stats->remote, stats->engine_version, stats->db_version, timbuf);
+	} else {
+		mvwprintw(win, i++, 0,"%2u %02u:%02u:%02u N/A N/A   N/A   N/A   N/A %-14s %-6s %5s %s", idx+1,  stats->conn_hr, stats->conn_min, stats->conn_sec,
+			stats->remote, stats->engine_version, stats->db_version, timbuf);
+	}
 	win = stats_window;
 	i = 0;
-	if (show_detail(idx)) {
+	if (show_detail(idx) && !stats->stats_unsupp) {
 		mvwprintw(win, i++, 0, "Primary threads: ");
 		snprintf(buf, sizeof(buf), "live %3u idle %3u max %3u", stats->prim_live, stats->prim_idle, stats->prim_max);
 		print_colored(win, buf);
@@ -757,7 +782,7 @@ static int output_stats(struct stats *stats, unsigned idx)
 			stats->biggest_queue = stats->current_q;
 			blink = 1;
 	}
-	if (show_detail(idx)) {
+	if (show_detail(idx) && !stats->stats_unsupp) {
 		show_bar(win, i++, stats->current_q, 0, biggest_queue, blink);
 	}
 	return i;
@@ -810,10 +835,7 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
 		p++;
 
 	stats->engine_version = malloc(p - pstart+1);
-	if (!stats->engine_version) {
-		fprintf(stderr,"Out of memory!\n");
-		exit(1);
-	}
+	OOM_CHECK(stats->engine_version);
 
 	memcpy(stats->engine_version, pstart, p-pstart);
 	stats->engine_version[p-pstart] = '\0';
@@ -827,10 +849,7 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
 		if (!p)
 			p = pstart + strlen(pstart);
 		stats->db_version = malloc(p - pstart + 1);
-		if (!stats->db_version) {
-			fprintf(stderr, "Out of memory!\n");
-			exit(1);
-		}
+		OOM_CHECK(stats->db_version);
 		memcpy(stats->db_version, pstart, p-pstart);
 		stats->db_version[p-pstart] = '\0';
 		if(*p) p++;
@@ -864,6 +883,10 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
 		if(!strcmp("MEMSTATS", buf)) {
 			parse_memstats(val, stats);
 			continue;
+		}
+		if(!strncmp("UNKNOWN COMMAND", buf, 15)) {
+			stats->stats_unsupp = 1;
+			break;
 		}
 		for(j=1;j<strlen(buf);j++)
 			buf[j] = tolower(buf[j]);
@@ -914,6 +937,11 @@ static void read_version(conn_t *conn)
 	}
 }
 
+static void sigint(int a)
+{
+	EXIT_PROGRAM(SIGINT_REASON);
+}
+
 /* -------------------------- Initialization ---------------- */
 static void setup_connections(int argc, char *argv[])
 {
@@ -941,6 +969,7 @@ static void setup_connections(int argc, char *argv[])
 	global.conn = calloc(global.num_clamd, sizeof(*global.conn));
 	OOM_CHECK(global.conn);
 	for (i=0;i<global.num_clamd;i++) {
+		global.conn[i].line = i+1;
 		if (make_connection(argv[i+1], &global.conn[i]) < 0) {
 			EXIT_PROGRAM(FAIL_INITIAL_CONN);
 		}
@@ -948,13 +977,14 @@ static void setup_connections(int argc, char *argv[])
 	}
 #ifndef _WIN32
 	signal(SIGPIPE, SIG_IGN);
+	signal(SIGINT, sigint);
 #endif
 }
 
 static void free_global_stats(void)
 {
 	unsigned i;
-	for (i=0;i<global.n;i++) {
+	for (i=0;i<(unsigned)global.n;i++) {
 		free(global.tasks[i].line);
 	}
 	for (i=0;i<global.num_clamd;i++) {
@@ -999,12 +1029,16 @@ int main(int argc, char *argv[])
 				memset(stats, 0, sizeof(*stats));
 				parse_stats(&global.conn[i], stats, i);
 			}
-			assert(global.tasks);
-			qsort(global.tasks, global.n, sizeof(*global.tasks), tasks_compare);
+			if (global.tasks)
+				qsort(global.tasks, global.n, sizeof(*global.tasks), tasks_compare);
 			tv_last = tv;
 		}
 		/* always show, so that screen resizes take effect instantly*/
 		output_all();
+		for(i=0;i<global.num_clamd;i++) {
+			if (global.conn[i].sd == -1)
+				reconnect(&global.conn[i]);
+		}
 	} while(toupper(ch = getch()) != 'Q');
 	free_global_stats();
 	normal_exit = 1;

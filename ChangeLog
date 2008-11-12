@@ -1,3 +1,7 @@
+Wed Nov 12 17:52:12 EET 2008 (edwin)
+------------------------------------
+ * contrib/clamdtop/TODO, contrib/clamdtop/clamdtop.c: refactor, minor fixes
+
 Wed Nov 12 16:31:34 CET 2008 (tk)
 ---------------------------------
  * libclamav: introduce new API calls for engine management (THIS REVISION IS

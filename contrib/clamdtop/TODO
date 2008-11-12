@@ -1,6 +1,9 @@
 select one clamd when monitoring more, and show details for that only
-better handling for connection errors (inform user within an ncurses window)
+parse pool states, and show those that are != VALID
+highlight problems in version/dbversion/dbtime (old db version, old dbtime,
+different db versions).
 write a manpage
+check that it works for clamd w/o STATS support (version should still work).
 consider writing a GUI using Tk 8.5 (version 8.5 has much nicer widgets than 8.4)
 integrate into toplevel clamav, and build if ncurses is available (optional)
 figure out minimum version of ncurses required, I used 5.5 during development.
