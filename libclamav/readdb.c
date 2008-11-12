@@ -85,7 +85,7 @@ int (*cli_unrar_extract_next)(unrar_state_t *state, const char *dirname);
 void (*cli_unrar_close)(unrar_state_t *state);
 int have_rar = 0;
 
-void cli_rarload(void) {
+static void cli_rarload(void) {
     lt_dlhandle rhandle;
 
 #ifndef CL_THREAD_SAFE

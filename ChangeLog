@@ -1,3 +1,9 @@
+Wed Nov 12 19:32:17 EET 2008 (edwin)
+------------------------------------
+ * libclamav/readdb.c, libltdl/Makefile.am, libltdl/Makefile.in: Fix
+ -Werror build: there is no libltdl directory when building with
+ VPATH,  $(srcdir)/libltdl is enough. Filter -Werror in libltdl.
+
 Wed Nov 12 19:03:36 EET 2008 (edwin)
 ------------------------------------
  * clamd/thrmgr.c, unit_tests/check_clamav.c,

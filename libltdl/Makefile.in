@@ -162,7 +162,9 @@ AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFGDIR = @CFGDIR@
-CFLAGS = @CFLAGS@
+
+# ClamAV: filter -Werror here
+CFLAGS = `echo "@CFLAGS@" | sed -e 's/-Werror[^-]//'`
 CHECK_CPPFLAGS = @CHECK_CPPFLAGS@
 CHECK_LIBS = @CHECK_LIBS@
 CLAMAVGROUP = @CLAMAVGROUP@
@@ -314,7 +316,7 @@ AUTOMAKE_OPTIONS = foreign
 # -I$(srcdir) is needed for user that built libltdl with a sub-Automake
 # (not as a sub-package!) using 'nostdinc':
 AM_CPPFLAGS = -DLT_CONFIG_H='<$(LT_CONFIG_H)>' -DLTDL -I. -I$(srcdir) \
-	-Ilibltdl -I$(srcdir)/libltdl -I$(srcdir)/libltdl
+	-I$(srcdir)/libltdl -I$(srcdir)/libltdl
 AM_LDFLAGS = -no-undefined
 BUILT_SOURCES = $(ARGZ_H)
 include_HEADERS = $(am__append_1)
