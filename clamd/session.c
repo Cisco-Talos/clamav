@@ -68,7 +68,7 @@
 #include "thrmgr.h"
 
 #ifdef HAVE_FD_PASSING
-static int recvfd_and_scan(int desc, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt)
+static int recvfd_and_scan(int desc, const struct cl_engine *engine, unsigned int options, const struct cfgstruct *copt)
 {
 	struct msghdr msg;
 	struct cmsghdr *cmsg;
@@ -99,7 +99,7 @@ static int recvfd_and_scan(int desc, const struct cl_engine *engine, const struc
 		    cmsg->cmsg_level == SOL_SOCKET &&
 		    cmsg->cmsg_type == SCM_RIGHTS) {
 			int fd = *(int *)CMSG_DATA(cmsg);
-			ret = scanfd(fd, NULL, engine, limits, options, copt, desc);
+			ret = scanfd(fd, NULL, engine, options, copt, desc);
 			close(fd);
 		}
 	}
@@ -107,14 +107,14 @@ static int recvfd_and_scan(int desc, const struct cl_engine *engine, const struc
 }
 
 #else
-static int recvfd_and_scan(int desc, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt)
+static int recvfd_and_scan(int desc, const struct cl_engine *engine, unsigned int options, const struct cfgstruct *copt)
 {
 	mdprintf(desc, "ERROR: FILDES support not compiled in\n");
 	return -1;
 }
 #endif
 
-int command(int desc, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int timeout)
+int command(int desc, const struct cl_engine *engine, unsigned int options, const struct cfgstruct *copt, int timeout)
 {
 	char buff[1025];
 	int bread;
@@ -136,7 +136,7 @@ int command(int desc, const struct cl_engine *engine, const struct cl_limits *li
 
     if(!strncmp(buff, CMD1, strlen(CMD1))) { /* SCAN */
 	thrmgr_setactivetask(NULL, CMD1);
-	if(scan(buff + strlen(CMD1) + 1, NULL, engine, limits, options, copt, desc, TYPE_SCAN) == -2)
+	if(scan(buff + strlen(CMD1) + 1, NULL, engine, options, copt, desc, TYPE_SCAN) == -2)
 	    if(cfgopt(copt, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
@@ -159,24 +159,28 @@ int command(int desc, const struct cl_engine *engine, const struct cl_limits *li
 
     } else if(!strncmp(buff, CMD6, strlen(CMD6))) { /* CONTSCAN */
 	thrmgr_setactivetask(NULL, CMD6);
-	if(scan(buff + strlen(CMD6) + 1, NULL, engine, limits, options, copt, desc, TYPE_CONTSCAN) == -2)
+	if(scan(buff + strlen(CMD6) + 1, NULL, engine, options, copt, desc, TYPE_CONTSCAN) == -2)
 	    if(cfgopt(copt, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD7, strlen(CMD7))) { /* VERSION */
-	thrmgr_setactivetask(NULL, CMD7);
-	if(engine->dbversion[0]) {
-		char timestr[32];
-		time_t t = (time_t) engine->dbversion[1];
+	    uint32_t ver;
 
-	    mdprintf(desc, "ClamAV %s/%d/%s", get_version(), engine->dbversion[0], cli_ctime(&t, timestr, sizeof(timestr)));
+	thrmgr_setactivetask(NULL, CMD7);
+	cl_engine_get(engine, CL_ENGINE_DB_VERSION, &ver);
+	if(ver) {
+		char timestr[32];
+		time_t t;
+
+	    cl_engine_get(engine, CL_ENGINE_DB_TIME, &t);
+	    mdprintf(desc, "ClamAV %s/%u/%s", get_version(), (unsigned int) ver, cli_ctime(&t, timestr, sizeof(timestr)));
 	} else {
 	    mdprintf(desc, "ClamAV %s\n", get_version());
 	}
 
     } else if(!strncmp(buff, CMD8, strlen(CMD8))) { /* STREAM */
 	thrmgr_setactivetask(NULL, CMD8);
-	if(scanstream(desc, NULL, engine, limits, options, copt) == CL_EMEM)
+	if(scanstream(desc, NULL, engine, options, copt) == CL_EMEM)
 	    if(cfgopt(copt, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
@@ -194,13 +198,13 @@ int command(int desc, const struct cl_engine *engine, const struct cl_limits *li
 
     } else if(!strncmp(buff, CMD13, strlen(CMD13))) { /* MULTISCAN */
 	thrmgr_setactivetask(buff+strlen(CMD13)+1, CMD13);
-	if(scan(buff + strlen(CMD13) + 1, NULL, engine, limits, options, copt, desc, TYPE_MULTISCAN) == -2)
+	if(scan(buff + strlen(CMD13) + 1, NULL, engine, options, copt, desc, TYPE_MULTISCAN) == -2)
 	    if(cfgopt(copt, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD14, strlen(CMD14))) { /* FILDES */
 	thrmgr_setactivetask(NULL, CMD14);
-	if(recvfd_and_scan(desc, engine, limits, options, copt) == -2)
+	if(recvfd_and_scan(desc, engine, options, copt) == -2)
 	    if(cfgopt(copt, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
     } else if(!strncmp(buff, CMD15, strlen(CMD15))) { /* STATS */

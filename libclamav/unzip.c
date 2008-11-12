@@ -105,9 +105,9 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
       else break;
     }
     if(res==1) {
-      if(ctx->limits && ctx->limits->maxfilesize && csize > ctx->limits->maxfilesize) {
-	cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->limits->maxfilesize);
-	csize = ctx->limits->maxfilesize;
+      if(ctx->engine->maxfilesize && csize > ctx->engine->maxfilesize) {
+	cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->engine->maxfilesize);
+	csize = ctx->engine->maxfilesize;
       }
       if(cli_writen(of, src, csize)!=(int)csize) ret = CL_EIO;
       else res=0;
@@ -166,8 +166,8 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
       while((res = unz_unz(&strm, Z_NO_FLUSH))==Z_OK) {};
       if(*avail_out!=sizeof(obuf)) {
 	written+=sizeof(obuf)-(*avail_out);
-	if(ctx->limits && ctx->limits->maxfilesize && written > ctx->limits->maxfilesize) {
-	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->limits->maxfilesize);
+	if(ctx->engine->maxfilesize && written > ctx->engine->maxfilesize) {
+	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->engine->maxfilesize);
 	  res = Z_STREAM_END;
 	  break;
 	}
@@ -210,8 +210,8 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
     while((res = BZ2_bzDecompress(&strm))==BZ_OK || res==BZ_STREAM_END) {
       if(strm.avail_out!=sizeof(obuf)) {
 	written+=sizeof(obuf)-strm.avail_out;
-	if(ctx->limits && ctx->limits->maxfilesize && written > ctx->limits->maxfilesize) {
-	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->limits->maxfilesize);
+	if(ctx->engine->maxfilesize && written > ctx->engine->maxfilesize) {
+	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->engine->maxfilesize);
 	  res = BZ_STREAM_END;
 	  break;
 	}
@@ -247,8 +247,8 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
     while((res = explode(&strm))==EXPLODE_OK) {
       if(strm.avail_out!=sizeof(obuf)) {
 	written+=sizeof(obuf)-strm.avail_out;
-	if(ctx->limits && ctx->limits->maxfilesize && written > ctx->limits->maxfilesize) {
-	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->limits->maxfilesize);
+	if(ctx->engine->maxfilesize && written > ctx->engine->maxfilesize) {
+	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->engine->maxfilesize);
 	  res = 0;
 	  break;
 	}
@@ -537,8 +537,8 @@ int cli_unzip(int f, cli_ctx *ctx) {
     cli_dbgmsg("cli_unzip: central @%x\n", coff);
     while(ret==CL_CLEAN && (coff=chdr(map, coff, fsize, &fu, fc+1, &ret, ctx, tmpd))) {
       fc++;
-      if (ctx->limits && ctx->limits->maxfiles && fu>=ctx->limits->maxfiles) {
-	cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->limits->maxfiles);
+      if (ctx->engine->maxfiles && fu>=ctx->engine->maxfiles) {
+	cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
 	ret=CL_EMAXFILES;
       }
     }
@@ -548,8 +548,8 @@ int cli_unzip(int f, cli_ctx *ctx) {
     while (ret==CL_CLEAN && lhoff<fsize && (coff=lhdr(&map[lhoff], fsize-lhoff, &fu, fc+1, NULL, &ret, ctx, tmpd))) {
       fc++;
       lhoff+=coff;
-      if (ctx->limits && ctx->limits->maxfiles && fu>=ctx->limits->maxfiles) {
-	cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->limits->maxfiles);
+      if (ctx->engine->maxfiles && fu>=ctx->engine->maxfiles) {
+	cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
 	ret=CL_EMAXFILES;
       }
     }

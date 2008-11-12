@@ -375,12 +375,12 @@ int unspin(char *src, int ssize, struct cli_exe_section *sections, int sectcnt, 
   bitman = bitmap;
 
   /* FIXMELIMITS: possibly rewrite to use the limits api */
-  if(ctx->limits && ctx->limits->maxfilesize) {
+  if(ctx->engine->maxfilesize) {
     unsigned long int filesize = 0;
     
     for (j=0; j<sectcnt; j++) {
       if (bitmap&1) {
-	if ( filesize > ctx->limits->maxfilesize || sections[j].vsz > ctx->limits->maxfilesize - filesize ) return 2;
+	if ( filesize > ctx->engine->maxfilesize || sections[j].vsz > ctx->engine->maxfilesize - filesize ) return 2;
 	filesize += sections[j].vsz;
       }
       bitmap>>=1;

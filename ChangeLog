@@ -1,3 +1,14 @@
+Wed Nov 12 16:31:34 CET 2008 (tk)
+---------------------------------
+ * libclamav: introduce new API calls for engine management (THIS REVISION IS
+	      NOT BACKWARD COMPATIBLE): cl_init(), cl_engine_new(),
+	      cl_engine_set/get(), cl_engine_compile(), cl_engine_dup(),
+	      cl_engine_free(); make minor modifications to other calls;
+	      move cl_engine to others.h; integrate limits into cl_engine
+ * clamd, clamscan: use new API; drop hardcoded default limits and depend on
+		    those set by libclamav
+ * clamav-milter, unit_tests: TODO, **don't compile in this rev**
+
 Wed Nov 12 13:06:33 EET 2008 (edwin)
 ------------------------------------
  * contrib/clamdtop/Makefile, contrib/clamdtop/TODO,

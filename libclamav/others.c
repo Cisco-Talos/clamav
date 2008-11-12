@@ -197,35 +197,178 @@ const char *cl_strerror(int clerror)
     }
 }
 
+int cl_init(unsigned int options)
+{
+    /* put dlopen() stuff here, etc. */
+    return CL_SUCCESS;
+}
+
+struct cl_engine *cl_engine_new(unsigned int options)
+{
+	struct cl_engine *new;
+
+
+    new = (struct cl_engine *) cli_calloc(1, sizeof(struct cl_engine));
+    if(!new) {
+	cli_errmsg("cl_engine_new: Can't allocate memory for cl_engine\n");
+	return NULL;
+    }
+
+    /* Setup default limits */
+    new->maxscansize = 104857600;
+    new->maxfilesize = 26214400;
+    new->maxreclevel = 16;
+    new->maxfiles = 10000;
+    new->min_cc_count = 3;
+    new->min_ssn_count = 3;
+
+    new->refcount = 1;
+
+#ifdef USE_MPOOL
+    if(!(new->mempool = mp_create())) {
+	cli_errmsg("cl_engine_new: Can't allocate memory for memory pool\n");
+	free(new);
+	return NULL;
+    }
+#endif
+
+    new->root = mp_calloc(new->mempool, CLI_MTARGETS, sizeof(struct cli_matcher *));
+    if(!new->root) {
+	cli_errmsg("cl_engine_new: Can't allocate memory for roots\n");
+#ifdef USE_MPOOL
+	mp_destroy(new->mempool);
+#endif
+	free(new);
+	return NULL;
+    }
+
+    new->dconf = cli_mp_dconf_init(new->mempool);
+    if(!new->dconf) {
+	cli_errmsg("cl_engine_new: Can't initialize dynamic configuration\n");
+	mp_free(new->mempool, new->root);
+#ifdef USE_MPOOL
+	mp_destroy(new->mempool);
+#endif
+	free(new);
+	return NULL;
+    }
+
+    cli_dbgmsg("Initialized %s engine\n", cl_retver());
+    return new;
+}
+
+int cl_engine_set(struct cl_engine *engine, enum cl_engine_field field, const void *val)
+{
+    if(!engine || !val)
+	return CL_ENULLARG;
+
+    switch(field) {
+	case CL_ENGINE_MAX_SCANSIZE:
+	    engine->maxscansize = *((const uint64_t *) val);
+	    break;
+	case CL_ENGINE_MAX_FILESIZE:
+	    engine->maxfilesize = *((const uint64_t *) val);
+	    break;
+	case CL_ENGINE_MAX_RECURSION:
+	    engine->maxreclevel = *((const uint32_t *) val);
+	    break;
+	case CL_ENGINE_MAX_FILES:
+	    engine->maxfiles = *((const uint32_t *) val);
+	    break;
+	case CL_ENGINE_MIN_CC_COUNT:
+	    engine->min_cc_count = *((const uint32_t *) val);
+	    break;
+	case CL_ENGINE_MIN_SSN_COUNT:
+	    engine->min_ssn_count = *((const uint32_t *) val);
+	    break;
+	case CL_ENGINE_PUA_CATEGORIES:
+	    engine->pua_cats = cli_mp_strdup(engine->mempool, (const char *) val);
+	    if(!engine->pua_cats)
+		return CL_EMEM;
+	    break;
+	case CL_ENGINE_DB_VERSION:
+	case CL_ENGINE_DB_TIME:
+	    cli_warnmsg("cl_engine_set: The field is read only\n");
+	    return CL_SUCCESS;
+	default:
+	    cli_errmsg("cl_engine_set: Incorrect field number\n");
+	    return CL_ENULLARG; /* FIXME */
+    }
+
+    return CL_SUCCESS;
+}
+
+int cl_engine_get(const struct cl_engine *engine, enum cl_engine_field field, void *val)
+{
+    if(!engine || !val)
+	return CL_ENULLARG;
+
+    switch(field) {
+	case CL_ENGINE_MAX_SCANSIZE:
+	    *((uint64_t *) val) = engine->maxscansize;
+	    break;
+	case CL_ENGINE_MAX_FILESIZE:
+	    *((uint64_t *) val) = engine->maxfilesize;
+	    break;
+	case CL_ENGINE_MAX_RECURSION:
+	    *((uint32_t *) val) = engine->maxreclevel;
+	    break;
+	case CL_ENGINE_MAX_FILES:
+	    *((uint32_t *) val) = engine->maxfiles;
+	    break;
+	case CL_ENGINE_MIN_CC_COUNT:
+	    *((uint32_t *) val) = engine->min_cc_count;
+	    break;
+	case CL_ENGINE_MIN_SSN_COUNT:
+	    *((uint32_t *) val) = engine->min_ssn_count;
+	    break;
+	case CL_ENGINE_PUA_CATEGORIES:
+	    if(engine->pua_cats)
+		strncpy((char *) val, engine->pua_cats, 128);
+	    break;
+	case CL_ENGINE_DB_VERSION:
+	    *((uint32_t *) val) = engine->dbversion[0];
+	    break;
+	case CL_ENGINE_DB_TIME:
+	    *((uint32_t *) val) = engine->dbversion[1];
+	    break;
+	default:
+	    cli_errmsg("cl_engine_get: Incorrect field number\n");
+	    return CL_ENULLARG; /* FIXME */
+    }
+
+    return CL_SUCCESS;
+}
+
 int cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned long need2, unsigned long need3) {
     int ret = CL_SUCCESS;
     unsigned long needed;
 
     /* if called without limits, go on, unpack, scan */
-    if(!ctx || !ctx->limits) return CL_CLEAN;
+    if(!ctx) return CL_CLEAN;
 
     needed = (need1>need2)?need1:need2;
     needed = (needed>need3)?needed:need3;
 
     /* if we have global scan limits */
-    if(needed && ctx->limits->maxscansize) {
+    if(needed && ctx->engine->maxscansize) {
         /* if the remaining scansize is too small... */
-        if(ctx->limits->maxscansize-ctx->scansize<needed) {
+        if(ctx->engine->maxscansize-ctx->scansize<needed) {
 	    /* ... we tell the caller to skip this file */
-	    cli_dbgmsg("%s: scansize exceeded (initial: %lu, remaining: %lu, needed: %lu)\n", who, ctx->limits->maxscansize, ctx->scansize, needed);
+	    cli_dbgmsg("%s: scansize exceeded (initial: %lu, remaining: %lu, needed: %lu)\n", who, ctx->engine->maxscansize, ctx->scansize, needed);
 	    ret = CL_EMAXSIZE;
 	}
     }
 
     /* if we have per-file size limits, and we are overlimit... */
-    if(needed && ctx->limits->maxfilesize && ctx->limits->maxfilesize<needed) {
+    if(needed && ctx->engine->maxfilesize && ctx->engine->maxfilesize<needed) {
 	/* ... we tell the caller to skip this file */
-        cli_dbgmsg("%s: filesize exceeded (allowed: %lu, needed: %lu)\n", who, ctx->limits->maxfilesize, needed);
+        cli_dbgmsg("%s: filesize exceeded (allowed: %lu, needed: %lu)\n", who, ctx->engine->maxfilesize, needed);
 	ret = CL_EMAXSIZE;
     }
 
-    if(ctx->limits->maxfiles && ctx->scannedfiles>=ctx->limits->maxfiles) {
-        cli_dbgmsg("%s: files limit reached (max: %u)\n", who, ctx->limits->maxfiles);
+    if(ctx->engine->maxfiles && ctx->scannedfiles>=ctx->engine->maxfiles) {
+        cli_dbgmsg("%s: files limit reached (max: %u)\n", who, ctx->engine->maxfiles);
 	return CL_EMAXFILES;
     }
     return ret;
@@ -237,8 +380,8 @@ int cli_updatelimits(cli_ctx *ctx, unsigned long needed) {
     if (ret != CL_CLEAN) return ret;
     ctx->scannedfiles++;
     ctx->scansize+=needed;
-    if(ctx->scansize > ctx->limits->maxscansize)
-        ctx->scansize = ctx->limits->maxscansize;
+    if(ctx->scansize > ctx->engine->maxscansize)
+        ctx->scansize = ctx->engine->maxscansize;
     return CL_CLEAN;
 }
 

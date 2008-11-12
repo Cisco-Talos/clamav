@@ -104,80 +104,36 @@ extern "C"
 /* recommended scan settings */
 #define CL_SCAN_STDOPT		(CL_SCAN_ARCHIVE | CL_SCAN_MAIL | CL_SCAN_OLE2 | CL_SCAN_PDF | CL_SCAN_HTML | CL_SCAN_PE | CL_SCAN_ALGORITHMIC | CL_SCAN_ELF)
 
-/* aliases for backward compatibility */
-#define CL_RAW		CL_SCAN_RAW
-#define CL_ARCHIVE	CL_SCAN_ARCHIVE
-#define CL_MAIL		CL_SCAN_MAIL
-#define CL_OLE2		CL_SCAN_OLE2
-#define CL_ENCRYPTED    CL_SCAN_BLOCKENCRYPTED
-#define cl_node		cl_engine
-#define cl_perror	cl_strerror
+struct cl_engine;
 
-struct cl_engine {
-    unsigned int refcount; /* reference counter */
-    unsigned short sdb;
-    unsigned int dboptions;
-    unsigned int dbversion[2];
+#define CL_INIT_DEFAULT	0x0
+extern int cl_init(unsigned int options);
 
-    /* Roots table */
-    void **root;
+#define CL_ENGINE_DEFAULT   0x0
+extern struct cl_engine *cl_engine_new(unsigned int options);
 
-    /* B-M matcher for standard MD5 sigs */
-    void *md5_hdb;
-
-    /* B-M matcher for MD5 sigs for PE sections */
-    void *md5_mdb;
-
-    /* B-M matcher for whitelist db */
-    void *md5_fp;
-
-    /* Zip metadata */
-    void *zip_mlist;
-
-    /* RAR metadata */
-    void *rar_mlist;
-
-    /* Phishing .pdb and .wdb databases*/
-    void *whitelist_matcher;
-    void *domainlist_matcher;
-    void *phishcheck;
-
-    /* Dynamic configuration */
-    void *dconf;
-
-    /* Filetype definitions */
-    void *ftypes;
-
-    /* Ignored signatures */
-    void *ignored;
-
-    /* PUA categories (to be included or excluded) */
-    char *pua_cats;
-
-    /* Used for memory pools */
-    void *mempool;
+enum cl_engine_field {
+    CL_ENGINE_MAX_SCANSIZE,	    /* uint64_t */
+    CL_ENGINE_MAX_FILESIZE,	    /* uint64_t */
+    CL_ENGINE_MAX_RECURSION,	    /* uint32_t	*/
+    CL_ENGINE_MAX_FILES,	    /* uint32_t */
+    CL_ENGINE_MIN_CC_COUNT,	    /* uint32_t */
+    CL_ENGINE_MIN_SSN_COUNT,	    /* uint32_t */
+    CL_ENGINE_PUA_CATEGORIES,	    /* (char *) */
+    CL_ENGINE_DB_VERSION,	    /* uint32_t */
+    CL_ENGINE_DB_TIME		    /* uint32_t */
 };
 
-struct cl_limits {
-    unsigned long int maxscansize;  /* during the scanning of archives this size
-				     * will never be exceeded
-				     */
-    unsigned long int maxfilesize;  /* compressed files will only be decompressed
-				     * and scanned up to this size
-				     */
-    unsigned int maxreclevel;	    /* maximum recursion level for archives */
-    unsigned int maxfiles;	    /* maximum number of files to be scanned
-				     * within a single archive
-				     */
-    unsigned short archivememlim;   /* limit memory usage for some unpackers */
+extern int cl_engine_set(struct cl_engine *engine, enum cl_engine_field field, const void *val);
 
-    /* This is for structured data detection.  You can set the minimum
-     * number of occurences of an CC# or SSN before the system will
-     * generate a notification.
-     */
-    unsigned int min_cc_count;
-    unsigned int min_ssn_count;
-};
+extern int cl_engine_get(const struct cl_engine *engine, enum cl_engine_field field, void *val);
+
+extern int cl_engine_compile(struct cl_engine *engine);
+
+extern struct cl_engine *cl_engine_dup(struct cl_engine *engine);
+
+extern int cl_engine_free(struct cl_engine *engine);
+
 
 struct cl_stat {
     char *dir;
@@ -198,18 +154,15 @@ struct cl_cvd {		    /* field no. */
 };
 
 /* file scanning */
-extern int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options);
+extern int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options);
 
-extern int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options);
+extern int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options);
 
 /* database handling */
-extern int cl_load(const char *path, struct cl_engine **engine, unsigned int *signo, unsigned int options);
+extern int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, unsigned int options);
 extern const char *cl_retdbdir(void);
 
 /* engine handling */
-extern int cl_build(struct cl_engine *engine);
-extern struct cl_engine *cl_dup(struct cl_engine *engine);
-extern void cl_free(struct cl_engine *engine);
 
 /* CVD */
 extern struct cl_cvd *cl_cvdhead(const char *file);

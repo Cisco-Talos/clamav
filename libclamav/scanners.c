@@ -567,7 +567,6 @@ static int cli_scanbzip(int desc, cli_ctx *ctx) {
 static int cli_scanbzip(int desc, cli_ctx *ctx)
 {
 	int fd, bytes, ret = CL_CLEAN, bzerror = 0;
-	short memlim = 0;
 	unsigned long int size = 0;
 	char *buff;
 	FILE *fs;
@@ -580,11 +579,7 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
 	return CL_EBZIP;
     }
 
-    if(ctx->limits)
-	if(ctx->limits->archivememlim)
-	    memlim = 1;
-
-    if((bfd = BZ2_bzReadOpen(&bzerror, fs, 0, memlim, NULL, 0)) == NULL) {
+    if((bfd = BZ2_bzReadOpen(&bzerror, fs, 0, 0, NULL, 0)) == NULL) {
 	cli_dbgmsg("Bzip: Can't initialize bzip2 library (descriptor: %d).\n", desc);
 	fclose(fs);
 	return CL_EBZIP;
@@ -1142,7 +1137,7 @@ static int cli_scanole2(int desc, cli_ctx *ctx)
 
     cli_dbgmsg("in cli_scanole2()\n");
 
-    if(ctx->limits && ctx->limits->maxreclevel && ctx->recursion >= ctx->limits->maxreclevel)
+    if(ctx->engine->maxreclevel && ctx->recursion >= ctx->engine->maxreclevel)
         return CL_EMAXREC;
 
     /* generate the temporary directory */
@@ -1552,17 +1547,14 @@ static int cli_scan_structured(int desc, cli_ctx *ctx)
 	unsigned int cc_count = 0;
 	unsigned int ssn_count = 0;
 	int done = 0;
-	const struct cl_limits *lim = NULL;
 	int (*ccfunc)(const unsigned char *buffer, int length);
 	int (*ssnfunc)(const unsigned char *buffer, int length);
 
 
-    if(ctx == NULL || ctx->limits == NULL)
+    if(ctx == NULL)
 	return CL_ENULLARG;
 
-    lim = ctx->limits;
-
-    if(lim->min_cc_count == 1)
+    if(ctx->engine->min_cc_count == 1)
 	ccfunc = dlp_has_cc;
     else
 	ccfunc = dlp_get_cc_count;
@@ -1570,21 +1562,21 @@ static int cli_scan_structured(int desc, cli_ctx *ctx)
     switch((ctx->options & CL_SCAN_STRUCTURED_SSN_NORMAL) | (ctx->options & CL_SCAN_STRUCTURED_SSN_STRIPPED)) {
 
 	case (CL_SCAN_STRUCTURED_SSN_NORMAL | CL_SCAN_STRUCTURED_SSN_STRIPPED):
-	    if(lim->min_ssn_count == 1)
+	    if(ctx->engine->min_ssn_count == 1)
 		ssnfunc = dlp_has_ssn;
 	    else
 		ssnfunc = dlp_get_ssn_count;
 	    break;
 
 	case CL_SCAN_STRUCTURED_SSN_NORMAL:
-	    if(lim->min_ssn_count == 1)
+	    if(ctx->engine->min_ssn_count == 1)
 		ssnfunc = dlp_has_normal_ssn;
 	    else
 		ssnfunc = dlp_get_normal_ssn_count;
 	    break;
 
 	case CL_SCAN_STRUCTURED_SSN_STRIPPED:
-	    if(lim->min_ssn_count == 1)
+	    if(ctx->engine->min_ssn_count == 1)
 		ssnfunc = dlp_has_stripped_ssn;
 	    else
 		ssnfunc = dlp_get_stripped_ssn_count;
@@ -1595,20 +1587,20 @@ static int cli_scan_structured(int desc, cli_ctx *ctx)
     }
 
     while(!done && ((result = cli_readn(desc, buf, 8191)) > 0)) {
-	if((cc_count += ccfunc((const unsigned char *)buf, result)) >= lim->min_cc_count)
+	if((cc_count += ccfunc((const unsigned char *)buf, result)) >= ctx->engine->min_cc_count)
 	    done = 1;
 
-	if(ssnfunc && ((ssn_count += ssnfunc((const unsigned char *)buf, result)) >= lim->min_ssn_count))
+	if(ssnfunc && ((ssn_count += ssnfunc((const unsigned char *)buf, result)) >= ctx->engine->min_ssn_count))
 	    done = 1;
     }
 
-    if(cc_count != 0 && cc_count >= lim->min_cc_count) {
+    if(cc_count != 0 && cc_count >= ctx->engine->min_cc_count) {
 	cli_dbgmsg("cli_scan_structured: %u credit card numbers detected\n", cc_count);
 	*ctx->virname = "Structured.CreditCardNumber";
 	return CL_VIRUS;
     }
 
-    if(ssn_count != 0 && ssn_count >= lim->min_ssn_count) {
+    if(ssn_count != 0 && ssn_count >= ctx->engine->min_ssn_count) {
 	cli_dbgmsg("cli_scan_structured: %u social security numbers detected\n", ssn_count);
 	*ctx->virname = "Structured.SSN";
 	return CL_VIRUS;
@@ -1875,7 +1867,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     if(cli_updatelimits(ctx, sb.st_size)!=CL_CLEAN)
         return CL_CLEAN;
 
-    if((SCAN_MAIL || SCAN_ARCHIVE) && ctx->limits && ctx->limits->maxreclevel && ctx->recursion > ctx->limits->maxreclevel) {
+    if((SCAN_MAIL || SCAN_ARCHIVE) && ctx->engine->maxreclevel && ctx->recursion > ctx->engine->maxreclevel) {
         cli_dbgmsg("Archive recursion limit exceeded (level = %u).\n", ctx->recursion);
 	return CL_CLEAN;
     }
@@ -2108,16 +2100,11 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     }
 }
 
-int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options)
+int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options)
 {
     cli_ctx ctx;
-    struct cl_limits l_limits;
     int rc;
 
-    if(!limits) {
-	cli_errmsg("cl_scandesc: limits == NULL\n");
-	return CL_ENULLARG;
-    }
     memset(&ctx, '\0', sizeof(cli_ctx));
     ctx.engine = engine;
     ctx.virname = virname;
@@ -2125,8 +2112,6 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     ctx.options = options;
     ctx.found_possibly_unwanted = 0;
     ctx.dconf = (struct cli_dconf *) engine->dconf;
-    ctx.limits = &l_limits;
-    memcpy(&l_limits, limits, sizeof(struct cl_limits));
 
     rc = cli_magic_scandesc(desc, &ctx);
     if(rc == CL_CLEAN && ctx.found_possibly_unwanted)
@@ -2169,7 +2154,7 @@ static int cli_scanfile(const char *filename, cli_ctx *ctx)
     return ret;
 }
 
-int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options)
+int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options)
 {
 	int fd, ret;
 
@@ -2177,7 +2162,7 @@ int cl_scanfile(const char *filename, const char **virname, unsigned long int *s
     if((fd = open(filename, O_RDONLY|O_BINARY)) == -1)
 	return CL_EOPEN;
 
-    ret = cl_scandesc(fd, virname, scanned, engine, limits, options);
+    ret = cl_scandesc(fd, virname, scanned, engine, options);
     close(fd);
 
     return ret;

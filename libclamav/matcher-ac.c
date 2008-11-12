@@ -841,7 +841,7 @@ inline static int ac_addtype(struct cli_matched_type **list, cli_file_t type, of
 
 
     if(type == CL_TYPE_ZIPSFX) {
-	if(*list && ctx && ctx->limits && ctx->limits->maxfiles && (*list)->cnt > ctx->limits->maxfiles)
+	if(*list && ctx && ctx->engine->maxfiles && (*list)->cnt > ctx->engine->maxfiles)
 	    return CL_SUCCESS;
     } else if(*list && (*list)->cnt >= MAX_EMBEDDED_OBJ)
 	return CL_SUCCESS;

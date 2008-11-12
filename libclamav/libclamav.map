@@ -1,16 +1,18 @@
 CLAMAV_PUBLIC {
   global:
-    cl_build;
     cl_cvdfree;
     cl_cvdhead;
     cl_cvdparse;
     cl_cvdverify;
     cl_debug;
-    cl_dup;
-    cl_free;
+    cl_init;
+    cl_engine_new;
+    cl_engine_set;
+    cl_engine_get;
+    cl_engine_compile;
+    cl_engine_dup;
+    cl_engine_free;
     cl_load;
-    cl_loaddb;
-    cl_loaddbdir;
     cl_retdbdir;
     cl_retflevel;
     cl_retver;

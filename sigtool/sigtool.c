@@ -540,7 +540,7 @@ static int build(struct optstruct *opt)
 	unsigned char buffer[FILEBUFF];
 	char *tarfile, header[513], smbuff[32], builder[32], *pt, olddb[512], patch[32], broken[32];
 	const char *dbname, *newcvd;
-        struct cl_engine *engine = NULL;
+        struct cl_engine *engine;
 	FILE *cvd, *fh;
 	gzFile *tar;
 	time_t timet;
@@ -560,12 +560,17 @@ static int build(struct optstruct *opt)
 
     dbname = strstr(opt_arg(opt, "build"), "main") ? "main" : "daily";
 
-    if((ret = cl_load(".", &engine, &sigs, CL_DB_STDOPT | CL_DB_PUA))) {
-	mprintf("!build: Can't load database: %s\n", cl_strerror(ret));
-	return -1;
-    } else {
-	cl_free(engine);
+    if(!(engine = cl_engine_new(CL_ENGINE_DEFAULT))) {
+	mprintf("!build: Can't initialize antivirus engine\n");
+	return 50;
     }
+
+    if((ret = cl_load(".", engine, &sigs, CL_DB_STDOPT | CL_DB_PUA))) {
+	mprintf("!build: Can't load database: %s\n", cl_strerror(ret));
+	cl_engine_free(engine);
+	return -1;
+    }
+    cl_engine_free(engine);
 
     if(!sigs) {
 	mprintf("!build: There are no signatures in database files\n");

@@ -54,6 +54,7 @@
 #include "shared.h"
 #include "libclamav/others.h"
 #include "libclamav/readdb.h"
+#include "libclamav/cltypes.h"
 
 #ifndef	C_WINDOWS
 #define	closesocket(s)	close(s)
@@ -81,7 +82,6 @@ typedef struct client_conn_tag {
     const struct cfgstruct *copt;
     struct cl_engine *engine;
     time_t engine_timestamp;
-    const struct cl_limits *limits;
     int *socketds;
     int nsockets;
 } client_conn_t;
@@ -114,7 +114,7 @@ static void scanner_thread(void *arg)
     	timeout = -1;
 
     do {
-    	ret = command(conn->sd, conn->engine, conn->limits, conn->options, conn->copt, timeout);
+    	ret = command(conn->sd, conn->engine, conn->options, conn->copt, timeout);
 	if (ret < 0) {
 		break;
 	}
@@ -161,7 +161,7 @@ static void scanner_thread(void *arg)
     shutdown(conn->sd, 2);
     closesocket(conn->sd);
     thrmgr_setactiveengine(NULL);
-    cl_free(conn->engine);
+    cl_engine_free(conn->engine);
     free(conn);
     return;
 }
@@ -196,8 +196,9 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
 	const char *dbdir;
 	int retval;
 	unsigned int sigs = 0;
-	char *pua_cats = NULL;
+	char pua_cats[128];
 
+    pua_cats[0] = 0;
     *ret = 0;
     if(do_check) {
 	if(dbstat == NULL) {
@@ -237,45 +238,38 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
 
     /* release old structure */
     if(engine) {
-	if(engine->pua_cats)
-	    if(!(pua_cats = strdup(engine->pua_cats)))
+	if(dboptions & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE))
+	    if(cl_engine_get(engine, CL_ENGINE_PUA_CATEGORIES, pua_cats))
 		logg("^Can't make a copy of pua_cats\n");
 
 	thrmgr_setactiveengine(NULL);
-	cl_free(engine);
-	engine = NULL;
+	cl_engine_free(engine);
     }
 
-    if(pua_cats) {
-	if((retval = cli_initengine(&engine, dboptions))) {
-	    logg("!cli_initengine() failed: %s\n", cl_strerror(retval));
-	    *ret = 1;
-	    free(pua_cats);
-	    return NULL;
-	}
-	engine->pua_cats = pua_cats;
-    }
-
-    if((retval = cl_load(dbdir, &engine, &sigs, dboptions))) {
-	logg("!reload db failed: %s\n", cl_strerror(retval));
+    if(!(engine = cl_engine_new(CL_ENGINE_DEFAULT))) {
+	logg("!Can't initialize antivirus engine\n");
 	*ret = 1;
 	return NULL;
     }
 
-    if(retval) {
-	logg("!reload db failed: %s\n", cl_strerror(retval));
+    if(strlen(pua_cats)) {
+	if((retval = cl_engine_set(engine, CL_ENGINE_PUA_CATEGORIES, pua_cats)))
+	    logg("!cl_engine_set(CL_ENGINE_PUA_CATEGORIES): %s\n", cl_strerror(retval));
+	cl_engine_free(engine);
 	*ret = 1;
 	return NULL;
     }
 
-    if(!engine) {
+    if((retval = cl_load(dbdir, engine, &sigs, dboptions))) {
 	logg("!reload db failed: %s\n", cl_strerror(retval));
+	cl_engine_free(engine);
 	*ret = 1;
 	return NULL;
     }
 
-    if((retval = cl_build(engine)) != 0) {
-	logg("!Database initialization error: can't build engine: %s\n", cl_strerror(retval));
+    if((retval = cl_engine_compile(engine)) != 0) {
+	logg("!Database initialization error: can't compile engine: %s\n", cl_strerror(retval));
+	cl_engine_free(engine);
 	*ret = 1;
 	return NULL;
     }
@@ -297,7 +291,6 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	struct rlimit rlim;
 #endif
 	mode_t old_umask;
-	struct cl_limits limits;
 	client_conn_t *client_conn;
 	const struct cfgstruct *cpt;
 #ifdef HAVE_STRERROR_R
@@ -307,6 +300,8 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	time_t start_time, current_time;
 	pid_t mainpid;
 	int idletimeout;
+	uint32_t val32;
+	uint64_t val64;
 
 #ifdef CLAMUKO
 	pthread_t clamuko_pid;
@@ -318,72 +313,80 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	memset(&sigact, 0, sizeof(struct sigaction));
 #endif
 
-    /* save the PID */
-    mainpid = getpid();
-    if((cpt = cfgopt(copt, "PidFile"))->enabled) {
-	    FILE *fd;
-	old_umask = umask(0006);
-	if((fd = fopen(cpt->strarg, "w")) == NULL) {
-	    logg("!Can't save PID in file %s\n", cpt->strarg);
-	} else {
-	    if (fprintf(fd, "%u", (unsigned int) mainpid)<0) {
-	    	logg("!Can't save PID in file %s\n", cpt->strarg);
-	    }
-	    fclose(fd);
+    /* set up limits */
+    if((cpt = cfgopt(copt, "MaxScanSize"))->enabled) {
+	val64 = cpt->numarg;
+	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_SCANSIZE, &val64))) {
+	    logg("!cli_engine_set(CL_ENGINE_MAX_SCANSIZE) failed: %s\n", cl_strerror(ret));
+	    cl_engine_free(engine);
+	    return 1;
 	}
-	umask(old_umask);
     }
-
-    logg("*Listening daemon: PID: %u\n", (unsigned int) mainpid);
-    max_threads = cfgopt(copt, "MaxThreads")->numarg;
-
-
-    memset(&limits, 0, sizeof(struct cl_limits));
-
-    if((limits.maxscansize = cfgopt(copt, "MaxScanSize")->numarg)) {
-    	logg("Limits: Global size limit set to %lu bytes.\n", limits.maxscansize);
-    } else {
+    cl_engine_get(engine, CL_ENGINE_MAX_SCANSIZE, &val64);
+    if(val64)
+    	logg("Limits: Global size limit set to %llu bytes.\n", (unsigned long long) val64);
+    else
     	logg("^Limits: Global size limit protection disabled.\n");
-    }
 
-    if((limits.maxfilesize = cfgopt(copt, "MaxFileSize")->numarg)) {
-    	logg("Limits: File size limit set to %lu bytes.\n", limits.maxfilesize);
-    } else {
-	logg("^Limits: File size limit protection disabled.\n");
+    if((cpt = cfgopt(copt, "MaxFileSize"))->enabled) {
+	val64 = cpt->numarg;
+	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_FILESIZE, &val64))) {
+	    logg("!cli_engine_set(CL_ENGINE_MAX_FILESIZE) failed: %s\n", cl_strerror(ret));
+	    cl_engine_free(engine);
+	    return 1;
+	}
     }
+    cl_engine_get(engine, CL_ENGINE_MAX_FILESIZE, &val64);
+    if(val64)
+    	logg("Limits: File size limit set to %llu bytes.\n", (unsigned long long) val64);
+    else
+    	logg("^Limits: File size limit protection disabled.\n");
 
 #ifndef C_WINDOWS
     if(getrlimit(RLIMIT_FSIZE, &rlim) == 0) {
-	if((rlim.rlim_max < limits.maxfilesize) || (rlim.rlim_max < limits.maxscansize))
-	    logg("^System limit for file size is lower than maxfilesize or maxscansize\n");
+	cl_engine_get(engine, CL_ENGINE_MAX_FILESIZE, &val64);
+	if(rlim.rlim_max < val64)
+	    logg("^System limit for file size is lower than engine->maxfilesize\n");
+	cl_engine_get(engine, CL_ENGINE_MAX_SCANSIZE, &val64);
+	if(rlim.rlim_max < val64)
+	    logg("^System limit for file size is lower than engine->maxscansize\n");
     } else {
 	logg("^Cannot obtain resource limits for file size\n");
     }
 #endif
 
-    if((limits.maxreclevel = cfgopt(copt, "MaxRecursion")->numarg)) {
-        logg("Limits: Recursion level limit set to %u.\n", limits.maxreclevel);
-    } else {
-        logg("^Limits: Recursion level limit protection disabled.\n");
+    if((cpt = cfgopt(copt, "MaxRecursion"))->enabled) {
+	val32 = cpt->numarg;
+	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_RECURSION, &val32))) {
+	    logg("!cli_engine_set(CL_ENGINE_MAX_RECURSION) failed: %s\n", cl_strerror(ret));
+	    cl_engine_free(engine);
+	    return 1;
+	}
     }
+    cl_engine_get(engine, CL_ENGINE_MAX_RECURSION, &val32);
+    if(val32)
+    	logg("Limits: Recursion level limit set to %u.\n", (unsigned int) val32);
+    else
+    	logg("^Limits: Recursion level limit protection disabled.\n");
 
-    if((limits.maxfiles = cfgopt(copt, "MaxFiles")->numarg)) {
-        logg("Limits: Files limit set to %u.\n", limits.maxfiles);
-    } else {
-        logg("^Limits: Files limit protection disabled.\n");
+    if((cpt = cfgopt(copt, "MaxFiles"))->enabled) {
+	val32 = cpt->numarg;
+	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_FILES, &val32))) {
+	    logg("!cli_engine_set(CL_ENGINE_MAX_FILES) failed: %s\n", cl_strerror(ret));
+	    cl_engine_free(engine);
+	    return 1;
+	}
     }
+    cl_engine_get(engine, CL_ENGINE_MAX_FILES, &val32);
+    if(val32)
+    	logg("Limits: Files limit set to %u.\n", (unsigned int) val32);
+    else
+    	logg("^Limits: Files limit protection disabled.\n");
+
 
     if(cfgopt(copt, "ScanArchive")->enabled) {
-
 	logg("Archive support enabled.\n");
 	options |= CL_SCAN_ARCHIVE;
-
-	if(cfgopt(copt, "ArchiveLimitMemoryUsage")->enabled) {
-	    limits.archivememlim = 1;
-	    logg("Archive: Limited memory usage.\n");
-	} else {
-	    limits.archivememlim = 0;
-	}
 
 	if(cfgopt(copt, "ArchiveBlockEncrypted")->enabled) {
 	    logg("Archive: Blocking encrypted archives.\n");
@@ -482,11 +485,27 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     if(cfgopt(copt, "StructuredDataDetection")->enabled) {
         options |= CL_SCAN_STRUCTURED;
 
-        limits.min_cc_count = cfgopt(copt, "StructuredMinCreditCardCount")->numarg;
-        logg("Structured: Minimum Credit Card Number Count set to %u\n", limits.min_cc_count);
+	if((cpt = cfgopt(copt, "StructuredMinCreditCardCount"))->enabled) {
+	    val32 = cpt->numarg;
+	    if((ret = cl_engine_set(engine, CL_ENGINE_MIN_CC_COUNT, &val32))) {
+		logg("!cli_engine_set(CL_ENGINE_MIN_CC_COUNT) failed: %s\n", cl_strerror(ret));
+		cl_engine_free(engine);
+		return 1;
+	    }
+	}
+	cl_engine_get(engine, CL_ENGINE_MIN_CC_COUNT, &val32);
+	logg("Structured: Minimum Credit Card Number Count set to %u\n", (unsigned int) val32);
 
-        limits.min_ssn_count = cfgopt(copt, "StructuredMinSSNCount")->numarg;
-        logg("Structured: Minimum Social Security Number Count set to %u\n", limits.min_ssn_count);
+	if((cpt = cfgopt(copt, "StructuredMinSSNCount"))->enabled) {
+	    val32 = cpt->numarg;
+	    if((ret = cl_engine_set(engine, CL_ENGINE_MIN_SSN_COUNT, &val32))) {
+		logg("!cli_engine_set(CL_ENGINE_MIN_SSN_COUNT) failed: %s\n", cl_strerror(ret));
+		cl_engine_free(engine);
+		return 1;
+	    }
+	}
+	cl_engine_get(engine, CL_ENGINE_MIN_SSN_COUNT, &val32);
+        logg("Structured: Minimum Social Security Number Count set to %u\n", (unsigned int) val32);
 
         if(cfgopt(copt, "StructuredSSNFormatNormal")->enabled)
             options |= CL_SCAN_STRUCTURED_SSN_NORMAL;
@@ -502,6 +521,25 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	logg("Self checking every %u seconds.\n", selfchk);
     }
 
+    /* save the PID */
+    mainpid = getpid();
+    if((cpt = cfgopt(copt, "PidFile"))->enabled) {
+	    FILE *fd;
+	old_umask = umask(0006);
+	if((fd = fopen(cpt->strarg, "w")) == NULL) {
+	    logg("!Can't save PID in file %s\n", cpt->strarg);
+	} else {
+	    if (fprintf(fd, "%u", (unsigned int) mainpid)<0) {
+	    	logg("!Can't save PID in file %s\n", cpt->strarg);
+	    }
+	    fclose(fd);
+	}
+	umask(old_umask);
+    }
+
+    logg("*Listening daemon: PID: %u\n", (unsigned int) mainpid);
+    max_threads = cfgopt(copt, "MaxThreads")->numarg;
+
     if(cfgopt(copt, "ClamukoScanOnAccess")->enabled)
 #ifdef CLAMUKO
     {
@@ -511,7 +549,6 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	    if(!(tharg = (struct thrarg *) malloc(sizeof(struct thrarg)))) break;
 	    tharg->copt = copt;
 	    tharg->engine = engine;
-	    tharg->limits = &limits;
 	    tharg->options = options;
 	    if(!pthread_create(&clamuko_pid, &clamuko_attr, clamukoth, tharg)) break;
 	    free(tharg);
@@ -625,9 +662,8 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 		    client_conn->sd = new_sd;
 		    client_conn->options = options;
 		    client_conn->copt = copt;
-		    client_conn->engine = cl_dup(engine);
+		    client_conn->engine = cl_engine_dup(engine);
 		    client_conn->engine_timestamp = reloaded_time;
-		    client_conn->limits = &limits;
 		    client_conn->socketds = socketds;
 		    client_conn->nsockets = nsockets;
 		    if(!thrmgr_dispatch(thr_pool, client_conn)) {
@@ -717,7 +753,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 #endif
     if(engine) {
 	thrmgr_setactiveengine(NULL);
-	cl_free(engine);
+	cl_engine_free(engine);
     }
 
     if(dbstat)

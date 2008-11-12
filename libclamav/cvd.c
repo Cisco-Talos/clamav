@@ -178,7 +178,7 @@ int cli_untgz(int fd, const char *destdir)
     return 0;
 }
 
-static int cli_tgzload(int fd, struct cl_engine **engine, unsigned int *signo, unsigned int options)
+static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, unsigned int options)
 {
 	char osize[13], name[101];
 	char block[TAR_BLOCKSIZE];
@@ -500,7 +500,7 @@ int cl_cvdverify(const char *file)
     return ret;
 }
 
-int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, unsigned int daily, unsigned int options, unsigned int cld)
+int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int daily, unsigned int options, unsigned int cld)
 {
         char *dir;
 	struct cl_cvd cvd;
@@ -544,8 +544,8 @@ int cli_cvdload(FILE *fs, struct cl_engine **engine, unsigned int *signo, unsign
     }
 
     if(daily) {
-	(*engine)->dbversion[0] = cvd.version;
-	(*engine)->dbversion[1] = cvd.stime;
+	engine->dbversion[0] = cvd.version;
+	engine->dbversion[1] = cvd.stime;
     }
 
     if(options & CL_DB_CVDNOTMP) {

@@ -18,6 +18,8 @@
  *  MA 02110-1301, USA.
  */
 
+#include "matcher.h"
+
 #ifndef __OTHERS_H_LC
 #define __OTHERS_H_LC
 
@@ -81,7 +83,6 @@ typedef struct {
     unsigned long int *scanned;
     const struct cli_matcher *root;
     const struct cl_engine *engine;
-    const struct cl_limits *limits;
     unsigned long scansize;
     unsigned int options;
     unsigned int recursion;
@@ -89,6 +90,69 @@ typedef struct {
     unsigned int found_possibly_unwanted;
     struct cli_dconf *dconf;
 } cli_ctx;
+
+struct cl_engine {
+    uint32_t refcount; /* reference counter */
+    uint32_t sdb;
+    uint32_t dboptions;
+    uint32_t dbversion[2];
+
+    /* Limits */
+    uint64_t maxscansize;  /* during the scanning of archives this size
+				     * will never be exceeded
+				     */
+    uint64_t maxfilesize;  /* compressed files will only be decompressed
+				     * and scanned up to this size
+				     */
+    uint32_t maxreclevel;	    /* maximum recursion level for archives */
+    uint32_t maxfiles;	    /* maximum number of files to be scanned
+				     * within a single archive
+				     */
+    /* This is for structured data detection.  You can set the minimum
+     * number of occurences of an CC# or SSN before the system will
+     * generate a notification.
+     */
+    uint32_t min_cc_count;
+    uint32_t min_ssn_count;
+
+    /* Roots table */
+    struct cli_matcher **root;
+
+    /* B-M matcher for standard MD5 sigs */
+    struct cli_matcher *md5_hdb;
+
+    /* B-M matcher for MD5 sigs for PE sections */
+    struct cli_matcher *md5_mdb;
+
+    /* B-M matcher for whitelist db */
+    struct cli_matcher *md5_fp;
+
+    /* Zip metadata */
+    struct cli_meta_node *zip_mlist;
+
+    /* RAR metadata */
+    struct cli_meta_node *rar_mlist;
+
+    /* Phishing .pdb and .wdb databases*/
+    struct regex_matcher *whitelist_matcher;
+    struct regex_matcher *domainlist_matcher;
+    struct phishcheck *phishcheck;
+
+    /* Dynamic configuration */
+    struct cli_dconf *dconf;
+
+    /* Filetype definitions */
+    struct cli_ftype *ftypes;
+
+    /* Ignored signatures */
+    struct cli_ignored *ignored;
+
+    /* PUA categories (to be included or excluded) */
+    char *pua_cats;
+
+    /* Used for memory pools */
+    mp_t *mempool;
+};
 
 #define SCAN_ARCHIVE	    (ctx->options & CL_SCAN_ARCHIVE)
 #define SCAN_MAIL	    (ctx->options & CL_SCAN_MAIL)

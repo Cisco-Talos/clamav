@@ -82,7 +82,6 @@ struct multi_tag {
     const struct cfgstruct *copt;
     char *fname;
     const struct cl_engine *engine;
-    const struct cl_limits *limits;
 };
 
 static int checksymlink(const char *path)
@@ -101,7 +100,7 @@ static int checksymlink(const char *path)
     return 0;
 }
 
-static int dirscan(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int odesc, unsigned int *reclev, unsigned int type, threadpool_t *multi_pool)
+static int dirscan(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct cfgstruct *copt, int odesc, unsigned int *reclev, unsigned int type, threadpool_t *multi_pool)
 {
 	DIR *dd;
 	struct dirent *dent;
@@ -174,7 +173,7 @@ static int dirscan(const char *dirname, const char **virname, unsigned long int 
 		    /* stat the file */
 		    if(lstat(fname, &statbuf) != -1) {
 			if((S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 1) && cfgopt(copt, "FollowDirectorySymlinks")->enabled)) {
-			    if(dirscan(fname, virname, scanned, engine, limits, options, copt, odesc, reclev, type, multi_pool) == 1) {
+			    if(dirscan(fname, virname, scanned, engine, options, copt, odesc, reclev, type, multi_pool) == 1) {
 				free(fname);
 				closedir(dd);
 				return 1;
@@ -203,7 +202,6 @@ static int dirscan(const char *dirname, const char **virname, unsigned long int 
 					scandata->copt = copt;
 					scandata->fname = fname;
 					scandata->engine = engine;
-					scandata->limits = limits;
 					if(!thrmgr_dispatch(multi_pool, scandata)) {
 					    logg("!thread dispatch failed for multi_pool (file %s)\n", fname);
 					    mdprintf(odesc, "ERROR: Can't scan file %s\n", fname);
@@ -221,7 +219,7 @@ static int dirscan(const char *dirname, const char **virname, unsigned long int 
 
 				    } else { /* CONTSCAN, SCAN */
 					thrmgr_setactivetask(fname, NULL);
-					scanret = cl_scanfile(fname, virname, scanned, engine, limits, options);
+					scanret = cl_scanfile(fname, virname, scanned, engine, options);
 					thrmgr_setactivetask(NULL, NULL);
 
 					if(scanret == CL_VIRUS) {
@@ -288,7 +286,7 @@ static void multiscanfile(void *arg)
 #endif
 
     thrmgr_setactivetask(tag->fname, "MULTISCANFILE");
-    ret = cl_scanfile(tag->fname, &virname, NULL, tag->engine, tag->limits, tag->options);
+    ret = cl_scanfile(tag->fname, &virname, NULL, tag->engine, tag->options);
     thrmgr_setactivetask(NULL, NULL);
 
     if(ret == CL_VIRUS) {
@@ -307,7 +305,7 @@ static void multiscanfile(void *arg)
     return;
 }
 
-int scan(const char *filename, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt, int odesc, unsigned int type)
+int scan(const char *filename, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct cfgstruct *copt, int odesc, unsigned int type)
 {
 	struct stat sb;
 	int ret = 0;
@@ -355,7 +353,7 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_engin
 #endif
 	    {
 		thrmgr_setactivetask(filename, NULL);
-		ret = cl_scanfile(filename, &virname, scanned, engine, limits, options);
+		ret = cl_scanfile(filename, &virname, scanned, engine, options);
 		thrmgr_setactivetask(NULL, NULL);
 	    }
 
@@ -384,7 +382,7 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_engin
 		}
 	    }
 
-	    ret = dirscan(filename, &virname, scanned, engine, limits, options, copt, odesc, &reclev, type, multi_pool);
+	    ret = dirscan(filename, &virname, scanned, engine, options, copt, odesc, &reclev, type, multi_pool);
 
 	    if(multi_pool)
 		thrmgr_destroy(multi_pool);
@@ -407,7 +405,7 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_engin
  * why it is so nicely formatted.
  */
 int scanfd(const int fd, unsigned long int *scanned,
-    const struct cl_engine *engine, const struct cl_limits *limits,
+    const struct cl_engine *engine,
     unsigned int options, const struct cfgstruct *copt, int odesc)  
 {
 	int ret;
@@ -425,7 +423,7 @@ int scanfd(const int fd, unsigned long int *scanned,
 	snprintf(fdstr, sizeof(fdstr), "fd[%d]", fd);
 
 	thrmgr_setactivetask(fdstr, NULL);
-	ret = cl_scandesc(fd, &virname, scanned, engine, limits, options);
+	ret = cl_scandesc(fd, &virname, scanned, engine, options);
 	thrmgr_setactivetask(NULL, NULL);
 
 	if(ret == CL_VIRUS) {
@@ -443,7 +441,7 @@ int scanfd(const int fd, unsigned long int *scanned,
 	return ret;
 }
 
-int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, const struct cl_limits *limits, unsigned int options, const struct cfgstruct *copt)
+int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct cfgstruct *copt)
 {
 	int ret, sockfd, acceptd;
 	int tmpd, bread, retval, timeout, btread;
@@ -604,7 +602,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     if(retval == 1) {
 	lseek(tmpd, 0, SEEK_SET);
 	thrmgr_setactivetask(peer_addr, NULL);
-	ret = cl_scandesc(tmpd, &virname, scanned, engine, limits, options);
+	ret = cl_scandesc(tmpd, &virname, scanned, engine, options);
 	thrmgr_setactivetask(NULL, NULL);
     } else {
     	ret = -1;
