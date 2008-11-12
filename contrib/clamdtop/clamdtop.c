@@ -140,8 +140,8 @@ static unsigned maxy=0, maxx=0;
 static char *queue_header = NULL;
 static char *clamd_header = NULL;
 
-#define CMDHEAD " COMMAND        TIME QUEUED   FILE"
-#define CMDHEAD2 " # COMMAND     TIME QUEUED   FILE"
+#define CMDHEAD " COMMAND        QUEUEDSINCE   FILE"
+#define CMDHEAD2 " # COMMAND     QUEUEDSINCE   FILE"
 
 /*
  * CLAMD - which local/remote clamd this is
@@ -222,8 +222,9 @@ static void init_windows(int num_clamd)
 	werase(stdscr);
 	refresh();
 	memset(status_bar_keys, 0, sizeof(status_bar_keys));
-	status_bar_keys[0] = "Q - quit";
-	status_bar_keys[1] = "R - reset bar maximums";
+	status_bar_keys[0] = "F1 - help";
+	status_bar_keys[1] = "Q - quit";
+	status_bar_keys[2] = "R - reset bar maximums";
 }
 
 static void init_ncurses(int num_clamd)
@@ -282,11 +283,6 @@ static void header(void)
 
 	win_start(header_window, header_color);
 	mvwprintw(header_window, 0, 0, "  ClamdTOP version 0.1   ");
-/*	mvwprintw(header_window, 0, 0, "      __              ____          ");
-	mvwprintw(header_window, 1, 0, " ____/ /__ ___ _  ___/ / /____  ___ ");
-	mvwprintw(header_window, 2, 0, "/ __/ / _ `/  ' \\/ _  / __/ _ \\/ _ \\");
-	mvwprintw(header_window, 3, 0, "\\__/_/\\_,_/_/_/_/\\_,_/\\__/\\___/ .__/");
-	mvwprintw(header_window, 4, 0,"                             /_/    ");*/
 	time(&t);
 	wprintw(header_window, "%s", ctime(&t));
 	wrefresh(header_window);
@@ -963,6 +959,13 @@ static void setup_connections(int argc, char *argv[])
 	}
 #endif
 
+	/* clamdtop v0.1 */
+	puts( "        __                    ____");
+	puts("  _____/ /___ _____ ___  ____/ / /_____  ____              ___   ___");
+	puts(" / ___/ / __ `/ __ `__ \\/ __  / __/ __ \\/ __ \\       _  __/ _ \\ <  /");
+	puts("/ /__/ / /_/ / / / / / / /_/ / /_/ /_/ / /_/ /      | |/ / // / / /");
+	puts("\\___/_/\\__,_/_/ /_/ /_/\\__,_/\\__/\\____/ .___/       |___/\\___(_)_/");
+	puts("                                     /_/      ");
 	memset(&global, 0, sizeof(global));
 	if (argc == 1) {
 		global.num_clamd = 1;
@@ -1005,6 +1008,60 @@ static void free_global_stats(void)
 	global.n=0;
 }
 
+static int help_line;
+static void explain(const char *abbrev, const char *msg)
+{
+	wattron(stdscr, A_BOLD);
+	mvwprintw(stdscr, help_line++, 0, "%-15s", abbrev);
+	wattroff(stdscr, A_BOLD);
+	wprintw(stdscr,"  %s", msg);
+}
+
+static int show_help(void)
+{
+	int ch;
+	werase(stdscr);
+	help_line = 0;
+
+	explain("NO","Unique clamd number");
+	explain("CONNTIME", "How long it is connected");
+	explain("LIV", "Total number of live threads");
+	explain("IDL", "Total number of idle threads");
+	explain("QUEUE", "Number of items in queue");
+	explain("MAXQ","Maximum number of items observed in queue");
+	explain("MEM", "Total memory usage (if available)");
+	explain("HOST", "Which clamd, local means unix socket");
+	explain("ENGINE", "Engine version");
+	explain("DBVER", "Database version");
+	explain("DBTIME", "Database publish time");
+	explain("Primary threads", "Threadpool used to receive commands");
+	explain("All threads","All threadpools, including multiscan");
+	explain("live","Executing commands, or scanning");
+	explain("idle","Waiting for commands, will exit after idle_timeout");
+	explain("max", "Maximum number of threads configured for this pool");
+	explain("Queue","Tasks queued for processing, but not yet picked up by a thread");
+	explain("COMMAND","Command this thread is executing");
+	explain("QUEUEDSINCE","How long this task is executing");
+	explain("FILE","Which file it is processing (if applicable)");
+	explain("Mem","Memory usage reported by libc");
+	explain("Libc","Used/free memory reported by libc");
+	explain("Pool","Memory usage reported by libclamav's pool");
+
+	wrefresh(stdscr);
+	werase(status_bar_window);
+	wattron(status_bar_window, A_REVERSE);
+	mvwprintw(status_bar_window, 0, 0, "Press any key to exit help");
+	wattroff(status_bar_window, A_REVERSE);
+	wrefresh(status_bar_window);
+	/* getch() times out after a few seconds */
+	do {
+		ch = getch();
+		/* we do need to exit on resize, because the text scroll out of
+		 * view */
+	} while (ch == -1 /*|| ch == KEY_RESIZE*/);
+	return ch == KEY_RESIZE ? KEY_RESIZE : -1;
+}
+
 int main(int argc, char *argv[])
 {
 	int ch = 0;
@@ -1018,6 +1075,9 @@ int main(int argc, char *argv[])
 
 	memset(&tv_last, 0, sizeof(tv_last));
 	do {
+		if (ch == KEY_F(1)) {
+			ch = show_help();
+		}
 		if(ch == KEY_RESIZE) {
 			resize();
 			endwin();

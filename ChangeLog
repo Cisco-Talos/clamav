@@ -1,3 +1,7 @@
+Wed Nov 12 21:33:50 EET 2008 (edwin)
+------------------------------------
+ * contrib/clamdtop/TODO, contrib/clamdtop/clamdtop.c: some docs
+
 Wed Nov 12 20:12:09 EET 2008 (edwin)
 ------------------------------------
  * contrib/clamdtop/clamdtop.c: fix some leaks and crashes
