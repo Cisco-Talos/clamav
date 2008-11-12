@@ -25,7 +25,37 @@ EXTRA_DIST =
 
 
 if ENABLE_UNRAR
-libclamunrar_iface_la_LIBADD = $(top_builddir)/libclamunrar/libclamunrar.la
+
+libclamunrar_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
+
+if VERSIONSCRIPT
+libclamunrar_la_LDFLAGS += -Wl,@VERSIONSCRIPTFLAG@,@top_srcdir@/libclamunrar/libclamunrar.map
+endif
+
+libclamunrar_la_SOURCES = \
+	../libclamunrar/unrar15.c \
+	../libclamunrar/unrar20.h \
+	../libclamunrar/unrar.h \
+	../libclamunrar/unrar15.h \
+	../libclamunrar/unrar.c \
+	../libclamunrar/unrar20.c \
+	../libclamunrar/unrarcmd.h \
+	../libclamunrar/unrarfilter.h \
+	../libclamunrar/unrarppm.c \
+	../libclamunrar/unrarvm.c \
+	../libclamunrar/unrarcmd.c \
+	../libclamunrar/unrarfilter.c \
+	../libclamunrar/unrar.h \
+	../libclamunrar/unrarppm.h \
+	../libclamunrar/unrarvm.h \
+	../libclamunrar/unrarhlp.c \
+	unrarhlp.h
+
+lib_LTLIBRARIES += libclamunrar.la
+EXTRA_DIST += @top_srcdir@/libclamunrar/libclamunrar.map
+
+
+libclamunrar_iface_la_LIBADD = libclamunrar.la
 libclamunrar_iface_la_LDFLAGS = -module @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 if VERSIONSCRIPT

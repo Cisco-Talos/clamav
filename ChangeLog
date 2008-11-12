@@ -1,3 +1,9 @@
+Wed Nov 12 00:34:20 CET 2008 (acab)
+-----------------------------------
+ * build system: build-all into /libclamav to workaround inconsistent
+	local search paths - many thanks Willy and Sherpya for the OSX
+	testing and debugging.
+
 Tue Nov 11 20:42:28 CET 2008 (acab)
 -----------------------------------
  * libclamav/nsis: improve lateny (bb#1180)
