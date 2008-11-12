@@ -363,6 +363,7 @@ int main(int argc, char **argv)
 		    logg("!Can't allocate memory for pua_cats\n");
 		    logg_close();
 		    freecfg(copt);
+		    cl_engine_free(engine);
 		    return 1;
 		}
 		logg("# %s", cpt->strarg);

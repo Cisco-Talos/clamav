@@ -215,6 +215,16 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
 	}
     }
 
+    /* release old structure */
+    if(engine) {
+	if(dboptions & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE))
+	    if(cl_engine_get(engine, CL_ENGINE_PUA_CATEGORIES, pua_cats))
+		logg("^Can't make a copy of pua_cats\n");
+
+	thrmgr_setactiveengine(NULL);
+	cl_engine_free(engine);
+    }
+
     dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
     logg("Reading databases from %s\n", dbdir);
 
@@ -236,16 +246,6 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
 	return NULL;
     }
 
-    /* release old structure */
-    if(engine) {
-	if(dboptions & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE))
-	    if(cl_engine_get(engine, CL_ENGINE_PUA_CATEGORIES, pua_cats))
-		logg("^Can't make a copy of pua_cats\n");
-
-	thrmgr_setactiveengine(NULL);
-	cl_engine_free(engine);
-    }
-
     if(!(engine = cl_engine_new(CL_ENGINE_DEFAULT))) {
 	logg("!Can't initialize antivirus engine\n");
 	*ret = 1;
@@ -253,11 +253,12 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
     }
 
     if(strlen(pua_cats)) {
-	if((retval = cl_engine_set(engine, CL_ENGINE_PUA_CATEGORIES, pua_cats)))
+	if((retval = cl_engine_set(engine, CL_ENGINE_PUA_CATEGORIES, pua_cats))) {
 	    logg("!cl_engine_set(CL_ENGINE_PUA_CATEGORIES): %s\n", cl_strerror(retval));
-	cl_engine_free(engine);
-	*ret = 1;
-	return NULL;
+	    cl_engine_free(engine);
+	    *ret = 1;
+	    return NULL;
+	}
     }
 
     if((retval = cl_load(dbdir, engine, &sigs, dboptions))) {
