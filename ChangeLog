@@ -1,3 +1,7 @@
+Wed Nov 12 11:21:45 CET 2008 (acab)
+-----------------------------------
+ * docs/man/clamav-milter.8.in: avoid hyphen-used-as-minus-sign warnings
+
 Wed Nov 12 00:34:20 CET 2008 (acab)
 -----------------------------------
  * build system: build-all into /libclamav to workaround inconsistent
