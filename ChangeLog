@@ -1,3 +1,9 @@
+Wed Nov 12 13:06:33 EET 2008 (edwin)
+------------------------------------
+ * contrib/clamdtop/Makefile, contrib/clamdtop/TODO,
+ contrib/clamdtop/clamdtop.c: refactor, multiple clamd support.
+ documentation, and detailview to come later.
+
 Wed Nov 12 11:21:45 CET 2008 (acab)
 -----------------------------------
  * docs/man/clamav-milter.8.in: avoid hyphen-used-as-minus-sign warnings

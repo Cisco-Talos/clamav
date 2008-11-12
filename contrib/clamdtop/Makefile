@@ -1,8 +1,7 @@
-CFLAGS=-O2 -g -Wall -W -Wshadow
+CFLAGS=-g -Wall -W -Wshadow -Wformat=2 -O2
 CC=gcc
 OBJS=clamdtop.o
-LDFLAGS=
-CPPFLAGS=
+CPPFLAGS=-D_FORTIFY_SOURCE=2
 
 ifeq ($(MSYSTEM),MINGW32)
 LIBS=-lpdcurses -lws2_32
@@ -11,7 +10,7 @@ LIBS=-lncurses
 endif
 
 clamdtop: $(OBJS) Makefile
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(OBJS) -o $@ $(LDFLAGS) $(LIBS)
+	$(CC) $(OBJS) -o $@ $(LDFLAGS) $(LIBS)
 
 clean:
 	rm -f clamdtop $(OBJS)
