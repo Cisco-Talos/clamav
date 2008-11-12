@@ -281,7 +281,7 @@ static void psetup_impl(int load2)
 {
 	FILE *f;
 	int rc;
-	engine = cl_engine_new(CL_DB_STDOPT);
+	engine = cl_engine_new(CL_ENGINE_DEFAULT);
 	fail_unless(!!engine , "cl_engine_new");
 
 	phishing_init(engine);
