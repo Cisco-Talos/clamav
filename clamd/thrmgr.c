@@ -433,7 +433,9 @@ static const char *IDLE_TASK = "IDLE";
 /* no mutex is needed, we are using  thread local variable */
 void thrmgr_setactivetask(const char *filename, const char* command)
 {
-	struct task_desc *desc = pthread_getspecific(stats_tls_key);
+	struct task_desc *desc;
+	pthread_once(&stats_tls_key_once, stats_tls_key_alloc);
+	desc = pthread_getspecific(stats_tls_key);
 	if(!desc)
 		return;
 	desc->filename = filename;
@@ -447,7 +449,9 @@ void thrmgr_setactivetask(const char *filename, const char* command)
 
 void thrmgr_setactiveengine(const struct cl_engine *engine)
 {
-	struct task_desc *desc = pthread_getspecific(stats_tls_key);
+	struct task_desc *desc;
+	pthread_once(&stats_tls_key_once, stats_tls_key_alloc);
+	desc = pthread_getspecific(stats_tls_key);
 	if(!desc)
 		return;
 	desc->engine = engine;
@@ -483,6 +487,7 @@ static void stats_destroy(threadpool_t *pool)
 	if(pool->tasks == desc)
 		pool->tasks = desc->nxt;
 	free(desc);
+	pthread_setspecific(stats_tls_key, NULL);
 }
 
 static void *thrmgr_worker(void *arg)
@@ -502,6 +507,7 @@ static void *thrmgr_worker(void *arg)
 			stats_init(threadpool);
 			stats_inited = TRUE;
 		}
+		thrmgr_setactiveengine(NULL);
 		thrmgr_setactivetask(NULL, IDLE_TASK);
 		timeout.tv_sec = time(NULL) + threadpool->idle_timeout;
 		timeout.tv_nsec = 0;

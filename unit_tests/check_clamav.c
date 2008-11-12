@@ -404,7 +404,7 @@ void dconf_teardown(void)
 }
 
 
-int main(int argc, char **argv)
+int main(void)
 {
     int nf;
     Suite *s = test_cl_suite();

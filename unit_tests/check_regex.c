@@ -281,10 +281,11 @@ static void psetup_impl(int load2)
 {
 	FILE *f;
 	int rc;
-	rc = cli_initengine(&engine, CL_DB_STDOPT);
-	fail_unless(rc == 0, "cl_initengine");
+	engine = cl_engine_new(CL_DB_STDOPT);
+	fail_unless(!!engine , "cl_engine_new");
 
-	fail_unless(!!engine->phishcheck, "engine->phishcheck");
+	phishing_init(engine);
+	fail_unless(!!engine->phishcheck, "phishing_init");
 
 	rc = init_domainlist(engine);
 	fail_unless(rc == 0,"init_domainlist");
@@ -338,7 +339,7 @@ static void psetup2(void)
 static void pteardown(void)
 {
 	if(engine) {
-		cl_free(engine);
+		cl_engine_free(engine);
 	}
 	engine = NULL;
 }
