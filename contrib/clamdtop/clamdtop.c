@@ -357,7 +357,7 @@ static void cleanup(void)
 	}
 	curses_inited = 0;
 	for (i=0;i<global.num_clamd;i++) {
-		if (global.conn[i].sd)
+		if (global.conn[i].sd && global.conn[i].sd != -1)
 			send_string_noreconn(&global.conn[i], "END\n");
 		close(global.conn[i].sd);
 		free(global.conn[i].version);
@@ -423,16 +423,17 @@ static void print_con_info(conn_t *conn, const char *fmt, ...)
 	va_list ap;
 	va_start(ap, fmt);
 	if (stats_head_window) {
-		char *buf = malloc(maxx+1);
+		char *buf = malloc(maxx);
 		memset(buf, ' ', maxx);
 		OOM_CHECK(buf);
-		vsnprintf(buf, maxx, fmt, ap);
+		vsnprintf(buf, maxx-1, fmt, ap);
 		buf[strlen(buf)] = ' ';
-		buf[maxx] = '\0';
+		buf[maxx-1] = '\0';
 		wattron(stats_head_window, ERROR_ATTR);
 		mvwprintw(stats_head_window, conn->line, 0, "%s", buf);
 		wattroff(stats_head_window, ERROR_ATTR);
 		wrefresh(stats_head_window);
+		free(buf);
 	} else
 		vfprintf(stdout, fmt, ap);
 	va_end(ap);
@@ -504,6 +505,8 @@ static int make_connection(const char *soname, conn_t *conn)
 	tv.tv_usec = 0;
 	setsockopt(conn->sd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 	send_string(conn, "SESSION\nVERSION\n");
+	free(conn->version);
+	conn->version = NULL;
 	read_version(conn);
 	return 0;
 }
@@ -534,7 +537,6 @@ static void reconnect(conn_t *conn)
 		print_con_info(conn, "Unable to reconnect to %s: %s", conn->remote, strerror(errno));
 		exit(3);
 	}
-	free(conn->version);
 	tries = 0;
 }
 
@@ -652,30 +654,32 @@ static void output_memstats(struct stats *stats)
 	int blink = 0;
 
 	werase(mem_window);
-	box(mem_window, 0, 0);
+	if (stats->mem != -1) {
+		box(mem_window, 0, 0);
 
-	snprintf(buf, sizeof(buf),"heap %4luM mmap %4luM unused %3luM",
-			stats->lheapu/1024, stats->lmmapu/1024, stats->lreleasable/1024);
-	mvwprintw(mem_window, 1, 1, "Mem:  ");
-	print_colored(mem_window, buf);
+		snprintf(buf, sizeof(buf),"heap %4luM mmap %4luM unused %3luM",
+				stats->lheapu/1024, stats->lmmapu/1024, stats->lreleasable/1024);
+		mvwprintw(mem_window, 1, 1, "Mem:  ");
+		print_colored(mem_window, buf);
 
-	mvwprintw(mem_window, 2, 1, "Libc: ");
-	snprintf(buf, sizeof(buf),"used %4luM free %4luM total %4luM",
-			stats->ltotalu/1024, stats->ltotalf/1024, (stats->ltotalu+stats->ltotalf)/1024);
-	print_colored(mem_window, buf);
+		mvwprintw(mem_window, 2, 1, "Libc: ");
+		snprintf(buf, sizeof(buf),"used %4luM free %4luM total %4luM",
+				stats->ltotalu/1024, stats->ltotalf/1024, (stats->ltotalu+stats->ltotalf)/1024);
+		print_colored(mem_window, buf);
 
-	mvwprintw(mem_window, 3, 1, "Pool: ");
-	snprintf(buf, sizeof(buf), "count   %u  used %4luM total %4luM",
+		mvwprintw(mem_window, 3, 1, "Pool: ");
+		snprintf(buf, sizeof(buf), "count   %u  used %4luM total %4luM",
 			stats->pools_cnt, stats->lpoolu/1024, stats->lpoolt/1024);
-	print_colored(mem_window, buf);
+		print_colored(mem_window, buf);
 
-	totalmem = stats->lheapu + stats->lmmapu + stats->lpoolt;
-	if(totalmem > biggest_mem) {
-		biggest_mem = totalmem;
-		blink = 1;
+		totalmem = stats->lheapu + stats->lmmapu + stats->lpoolt;
+		if(totalmem > biggest_mem) {
+			biggest_mem = totalmem;
+			blink = 1;
+		}
+		show_bar(mem_window, 4, totalmem, stats->lmmapu + stats->lreleasable + stats->lpoolt - stats->lpoolu,
+				biggest_mem, blink);
 	}
-	show_bar(mem_window, 4, totalmem, stats->lmmapu + stats->lreleasable + stats->lpoolt - stats->lpoolu,
-			biggest_mem, blink);
 	wrefresh(mem_window);
 }
 
@@ -694,6 +698,7 @@ static void parse_memstats(const char *line, struct stats *stats)
 	stats->lpoolu = pools_used*1000;
 	stats->lpoolt = pools_total*1000;
 	stats->mem = heapu + mmapu + pools_total;
+	if (stats->mem == 0) stats->mem = -1;
 }
 
 static int show_detail(int idx)
@@ -821,6 +826,10 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
 	else
 		stats->remote = "local";
 
+	if (!conn->version) {
+		stats->engine_version = "???";
+		return;
+	}
 	p = pstart = conn->version;
 	/* find digit in version */
 	while (*p && !isdigit(*p))
@@ -1025,7 +1034,8 @@ int main(int argc, char *argv[])
 			free_global_stats();
 			for(i=0;i<global.num_clamd;i++) {
 				struct stats *stats = &global.all_stats[i];
-				send_string(&global.conn[i], "STATS\n");
+				if (global.conn[i].sd != -1)
+					send_string(&global.conn[i], "STATS\n");
 				memset(stats, 0, sizeof(*stats));
 				parse_stats(&global.conn[i], stats, i);
 			}
