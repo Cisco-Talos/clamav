@@ -1,9 +1,12 @@
-Mon Nov 10 15:15:37 EET 2008 (edwin)
+Thu Nov 13 11:05:20 EET 2008 (edwin)
 ------------------------------------
- * configure, m4/acinclude.m4: merge from trunk SVN r4365,4366 (bb
- #1171).  fix build on AIX: for some odd reason `echo target.h` was
- producing 'x', so don't use `echo ifelse(...`, since ifelse is expanded by aclocal
- anyway
+ * libclamav/htmlnorm.c: fix memory leak (bb #1291)
+
+Mon Nov 10 15:09:19 EET 2008 (edwin)
+------------------------------------
+ * Makefile.in, configure, m4/acinclude.m4: fix build on AIX: for
+ some odd reason `echo target.h` was producing 'x', so don't use `echo
+ ifelse(...`, since ifelse is expanded by aclocal anyway
 
 Thu Oct 30 17:18:28 CET 2008 (tk)
 ---------------------------------
