@@ -28,7 +28,6 @@ CLAMAV_PUBLIC {
 };
 CLAMAV_PRIVATE {
   global:
-    cli_ac_setdepth;
     cli_strtok;
     cli_untgz;
     cli_regcomp;

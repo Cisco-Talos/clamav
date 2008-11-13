@@ -371,12 +371,6 @@ int scanmanager(const struct optstruct *opt)
 	options |= CL_SCAN_HEURISTIC_PRECEDENCE;
     }
 
-    if(opt_check(opt, "dev-ac-only"))
-	dboptions |= CL_DB_ACONLY;
-
-    if(opt_check(opt, "dev-ac-depth"))
-	cli_ac_setdepth(AC_DEFAULT_MIN_DEPTH, atoi(opt_arg(opt, "dev-ac-depth")));
-
     if((ret = cl_init(CL_INIT_DEFAULT))) {
 	logg("!Can't initialize libclamav: %s\n", cl_strerror(ret));
 	return 50;
@@ -442,6 +436,16 @@ int scanmanager(const struct optstruct *opt)
 	    }
 	    free(pua_cats);
 	}
+    }
+
+    if(opt_check(opt, "dev-ac-only")) {
+	val32 = 1;
+	cl_engine_set(engine, CL_ENGINE_AC_ONLY, &val32);
+    }
+
+    if(opt_check(opt, "dev-ac-depth")) {
+	val32 = atoi(opt_arg(opt, "dev-ac-depth"));
+	cl_engine_set(engine, CL_ENGINE_AC_MAXDEPTH, &val32);
     }
 
     if(opt_check(opt, "database")) {

@@ -67,7 +67,6 @@ extern "C"
 
 /* db options */
 #define CL_DB_PHISHING	    0x2
-#define CL_DB_ACONLY	    0x4 /* WARNING: only for developers */
 #define CL_DB_PHISHING_URLS 0x8
 #define CL_DB_PUA	    0x10
 #define CL_DB_CVDNOTMP	    0x20
@@ -120,7 +119,10 @@ enum cl_engine_field {
     CL_ENGINE_MIN_SSN_COUNT,	    /* uint32_t */
     CL_ENGINE_PUA_CATEGORIES,	    /* (char *) */
     CL_ENGINE_DB_VERSION,	    /* uint32_t */
-    CL_ENGINE_DB_TIME		    /* uint32_t */
+    CL_ENGINE_DB_TIME,		    /* uint32_t */
+    CL_ENGINE_AC_ONLY,		    /* uint32_t */
+    CL_ENGINE_AC_MINDEPTH,	    /* uint32_t */
+    CL_ENGINE_AC_MAXDEPTH	    /* uint32_t */
 };
 
 extern int cl_engine_set(struct cl_engine *engine, enum cl_engine_field field, const void *val);

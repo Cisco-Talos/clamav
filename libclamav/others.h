@@ -97,6 +97,9 @@ struct cl_engine {
     uint32_t sdb;
     uint32_t dboptions;
     uint32_t dbversion[2];
+    uint32_t ac_only;
+    uint32_t ac_mindepth;
+    uint32_t ac_maxdepth;
 
     /* Limits */
     uint64_t maxscansize;  /* during the scanning of archives this size

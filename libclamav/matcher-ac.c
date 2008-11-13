@@ -43,9 +43,6 @@
 
 #include "mpool.h"
 
-uint8_t cli_ac_mindepth = AC_DEFAULT_MIN_DEPTH;
-uint8_t cli_ac_maxdepth = AC_DEFAULT_MAX_DEPTH;
-
 int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 {
 	struct cli_ac_node *pt, *next;
@@ -1464,10 +1461,4 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     }
 
     return CL_SUCCESS;
-}
-
-void cli_ac_setdepth(uint8_t mindepth, uint8_t maxdepth)
-{
-    cli_ac_mindepth = mindepth;
-    cli_ac_maxdepth = maxdepth;
 }

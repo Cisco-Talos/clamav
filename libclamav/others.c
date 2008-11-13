@@ -81,6 +81,7 @@ static pthread_mutex_t cli_ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
 #include "cltypes.h"
 #include "regex/regex.h"
 #include "ltdl.h"
+#include "matcher-ac.h"
 
 #ifndef	O_BINARY
 #define	O_BINARY	0
@@ -257,6 +258,9 @@ struct cl_engine *cl_engine_new(void)
     new->min_ssn_count = 3;
 
     new->refcount = 1;
+    new->ac_only = 0;
+    new->ac_mindepth = AC_DEFAULT_MIN_DEPTH;
+    new->ac_maxdepth = AC_DEFAULT_MAX_DEPTH;
 
 #ifdef USE_MPOOL
     if(!(new->mempool = mp_create())) {
@@ -323,7 +327,16 @@ int cl_engine_set(struct cl_engine *engine, enum cl_engine_field field, const vo
 	case CL_ENGINE_DB_VERSION:
 	case CL_ENGINE_DB_TIME:
 	    cli_warnmsg("cl_engine_set: The field is read only\n");
-	    return CL_SUCCESS;
+	    break;
+	case CL_ENGINE_AC_ONLY:
+	    engine->ac_only = *((const uint32_t *) val);
+	    break;
+	case CL_ENGINE_AC_MINDEPTH:
+	    engine->ac_mindepth = *((const uint32_t *) val);
+	    break;
+	case CL_ENGINE_AC_MAXDEPTH:
+	    engine->ac_maxdepth = *((const uint32_t *) val);
+	    break;
 	default:
 	    cli_errmsg("cl_engine_set: Incorrect field number\n");
 	    return CL_ENULLARG; /* FIXME */
@@ -365,6 +378,15 @@ int cl_engine_get(const struct cl_engine *engine, enum cl_engine_field field, vo
 	    break;
 	case CL_ENGINE_DB_TIME:
 	    *((uint32_t *) val) = engine->dbversion[1];
+	    break;
+	case CL_ENGINE_AC_ONLY:
+	    *((uint32_t *) val) = engine->ac_only;
+	    break;
+	case CL_ENGINE_AC_MINDEPTH:
+	    *((uint32_t *) val) = engine->ac_mindepth;
+	    break;
+	case CL_ENGINE_AC_MAXDEPTH:
+	    *((uint32_t *) val) = engine->ac_maxdepth;
 	    break;
 	default:
 	    cli_errmsg("cl_engine_get: Incorrect field number\n");

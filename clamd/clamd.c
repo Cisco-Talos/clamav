@@ -105,6 +105,7 @@ int main(int argc, char **argv)
 	unsigned int sigs = 0;
 	int lsockets[2], nlsockets = 0;
 	unsigned int dboptions = 0;
+	uint32_t val32;
 #ifdef C_LINUX
 	struct stat sb;
 #endif
@@ -406,11 +407,13 @@ int main(int argc, char **argv)
 
     if(cfgopt(copt,"DevACOnly")->enabled) {
 	logg("#Only using the A-C matcher.\n");
-	dboptions |= CL_DB_ACONLY;
+        val32 = 1;
+	cl_engine_set(engine, CL_ENGINE_AC_ONLY, &val32);
     }
 
     if((cpt = cfgopt(copt, "DevACDepth"))->enabled) {
-	cli_ac_setdepth(AC_DEFAULT_MIN_DEPTH, cpt->numarg);
+	val32 = cpt->numarg;
+        cl_engine_set(engine, CL_ENGINE_AC_MAXDEPTH, &val32);
 	logg("#Max A-C depth set to %u\n", cpt->numarg);
     }
 
