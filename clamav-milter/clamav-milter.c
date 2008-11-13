@@ -294,7 +294,6 @@ struct	privdata {
 #endif
 	int	statusCount;	/* number of X-Virus-Status headers */
 	int	serverNumber;	/* Index into serverIPs */
-	struct	cl_node	*root;	/* database of viruses used to scan this one */
 };
 
 #ifdef	SESSION
@@ -375,9 +374,13 @@ static	const	char	*progname;	/* our name - usually clamav-milter */
 
 /* Variables for --external */
 static	int	external = 0;	/* scan messages ourself or use clamd? */
-static	pthread_mutex_t	root_mutex = PTHREAD_MUTEX_INITIALIZER;
-static	struct	cl_node	*root = NULL;
-static	struct	cl_limits	limits;
+static	pthread_mutex_t	engine_mutex = PTHREAD_MUTEX_INITIALIZER;
+struct  cl_engine *engine = NULL;
+uint64_t maxscansize;
+uint64_t maxfilesize;
+uint32_t maxreclevel;
+uint32_t maxfiles;
+
 static	struct	cl_stat	dbstat;
 static	int	options = CL_SCAN_STDOPT;
 
@@ -1512,6 +1515,10 @@ main(int argc, char **argv)
 			return EX_CONFIG;
 		}
 #endif
+		if (cl_init(CL_INIT_DEFAULT)!=CL_SUCCESS) {
+			fprintf(stderr, "%s: Failed to initialize libclamav, bailing out.\n", argv[0]);
+			return EX_UNAVAILABLE;
+		}
 		if(loadDatabase() != 0) {
 			/*
 			 * Handle the dont-scan-on-error option, which says
@@ -1971,8 +1978,6 @@ main(int argc, char **argv)
 	atexit(quit);
 
 	if(!external) {
-		/* TODO: read the limits from clamd.conf */
-
 		if(!cfgopt(copt, "ScanMail")->enabled)
 			printf(_("%s: ScanMail not defined in %s (needed without --external), enabling\n"),
 				argv[0], cfgfile);
@@ -1993,41 +1998,34 @@ main(int argc, char **argv)
 		if(cfgopt(copt, "ScanHTML")->enabled)
 			options |= CL_SCAN_HTML;
 
-		memset(&limits, '\0', sizeof(struct cl_limits));
-
 		if(((cpt = cfgopt(copt, "MaxScanSize")) != NULL) && cpt->enabled)
-			limits.maxscansize = cpt->numarg;
+			maxscansize = cpt->numarg;
 		else
-			limits.maxscansize = 104857600;
+			maxscansize = 104857600;
 		if(((cpt = cfgopt(copt, "MaxFileSize")) != NULL) && cpt->enabled)
-			limits.maxfilesize = cpt->numarg;
+			maxfilesize = cpt->numarg;
 		else
-			limits.maxfilesize = 10485760;
+			maxfilesize = 10485760;
 
 		if(getrlimit(RLIMIT_FSIZE, &rlim) == 0) {
-			if((rlim.rlim_max < limits.maxfilesize) || (rlim.rlim_max < limits.maxscansize))
+			if((rlim.rlim_max < maxfilesize) || (rlim.rlim_max < maxscansize))
 				logg("^System limit for file size is lower than maxfilesize or maxscansize\n");
 		} else {
 			logg("^Cannot obtain resource limits for file size\n");
 		}
 
 		if(((cpt = cfgopt(copt, "MaxRecursion")) != NULL) && cpt->enabled)
-			limits.maxreclevel = cpt->numarg;
+			maxreclevel = cpt->numarg;
 		else
-			limits.maxreclevel = 8;
+			maxreclevel = 8;
 
 		if(((cpt = cfgopt(copt, "MaxFiles")) != NULL) && cpt->enabled)
-			limits.maxfiles = cpt->numarg;
+			maxfiles = cpt->numarg;
 		else
-			limits.maxfiles = 1000;
+			maxfiles = 1000;
 
-		if(cfgopt(copt, "ScanArchive")->enabled) {
+		if(cfgopt(copt, "ScanArchive")->enabled)
 			options |= CL_SCAN_ARCHIVE;
-			if(cfgopt(copt, "ArchiveLimitMemoryUsage")->enabled)
-				limits.archivememlim = 1;
-			else
-				limits.archivememlim = 0;
-		}
 	}
 
 	pthread_create(&tid, NULL, watchdog, NULL);
@@ -3451,16 +3449,17 @@ clamfi_eom(SMFICTX *ctx)
 
 	if(!external) {
 		const char *virname;
+		struct cl_engine *tmp_engine;
 
-		pthread_mutex_lock(&root_mutex);
-		privdata->root = cl_dup(root);
-		pthread_mutex_unlock(&root_mutex);
-		if(privdata->root == NULL) {
-			logg("!privdata->root == NULL\n");
+		pthread_mutex_lock(&engine_mutex);
+		tmp_engine = cl_engine_dup(engine);
+		pthread_mutex_unlock(&engine_mutex);
+		if(!tmp_engine) {
+			logg("!cl_engine_dup failed\n");
 			clamfi_cleanup(ctx);
 			return cl_error;
 		}
-		switch(cl_scanfile(privdata->filename, &virname, NULL, privdata->root, &limits, options)) {
+		switch(cl_scanfile(privdata->filename, &virname, NULL, tmp_engine, options)) {
 			case CL_CLEAN:
 				if(logok)
 					logg("#%s: OK\n", privdata->filename);
@@ -3471,12 +3470,11 @@ clamfi_eom(SMFICTX *ctx)
 				logg("#%s\n", mess);
 				break;
 			default:
-				snprintf(mess, sizeof(mess), "%s: %s ERROR", privdata->filename, cl_strerror(rc));
+				snprintf(mess, sizeof(mess), "%s: ERROR", privdata->filename);
 				logg("!%s\n", mess);
 				break;
 		}
-		cl_free(privdata->root);
-		privdata->root = NULL;
+		cl_engine_free(tmp_engine);
 
 #ifdef	SESSION
 		session = NULL;
@@ -4260,14 +4258,7 @@ clamfi_free(struct privdata *privdata, int keep)
 				close(privdata->cmdSocket);
 			}
 #endif
-		} else if(privdata->root)
-			/*
-			 * Since only one of clamfi_abort() and clamfi_eom()
-			 * can ever be called, and the only cl_dup is in
-			 * clamfi_eom() which calls cl_free soon after, this
-			 * should be overkill, since this can "never happen"
-			 */
-			cl_free(privdata->root);
+		}
 
 		if(privdata->headers)
 			header_list_free(privdata->headers);
@@ -4489,9 +4480,9 @@ updateSigFile(void)
 
 	signatureStamp = statb.st_mtime;
 
-	signature = cli_realloc(signature, statb.st_size);
+	signature = cli_realloc((void *)signature, statb.st_size);
 	if(signature)
-		cli_readn(fd, signature, statb.st_size);
+		cli_readn(fd, (void *)signature, statb.st_size);
 	close(fd);
 
 	return statb.st_size;
@@ -5780,12 +5771,10 @@ quit(void)
 #endif
 
 	if(!external) {
-		pthread_mutex_lock(&root_mutex);
-		if(root) {
-			cl_free(root);
-			root = NULL;
-		}
-		pthread_mutex_unlock(&root_mutex);
+		pthread_mutex_lock(&engine_mutex);
+		if(engine)
+			cl_engine_free(engine);
+		pthread_mutex_unlock(&engine_mutex);
 	} else {
 #ifdef	SESSION
 		int i = 0;
@@ -5860,7 +5849,6 @@ loadDatabase(void)
 	char *daily;
 	struct cl_cvd *d;
 	const struct cfgstruct *cpt;
-	struct cl_node *newroot, *oldroot;
 	static const char *dbdir;
 
 	assert(!external);
@@ -5926,35 +5914,46 @@ loadDatabase(void)
 	pthread_mutex_unlock(&version_mutex);
 #endif
 	signatures = 0;
-	newroot = NULL;
-
+	pthread_mutex_lock(&engine_mutex);
+	if(engine) cl_engine_free(engine);
+	engine = cl_engine_new(CL_ENGINE_DEFAULT);
+	if (!engine) {
+		logg("!Can't initialize antivirus engine\n");
+		pthread_mutex_unlock(&engine_mutex);
+		return -1;
+	}
 	if(!cfgopt(copt, "PhishingSignatures")->enabled) {
 		logg("Not loading phishing signatures.\n");
 		dboptions = 0;
 	} else
 		dboptions = CL_DB_PHISHING;
-
-	ret = cl_load(dbdir, &newroot, &signatures, dboptions);
-	if(ret != 0) {
+	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_SCANSIZE, &maxscansize))) {
+		logg("!cli_engine_set(CL_ENGINE_MAX_SCANSIZE) failed: %s\n", cl_strerror(ret));
+		cl_engine_free(engine);
+		pthread_mutex_unlock(&engine_mutex);
+		return -1;
+	}
+	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_FILESIZE, &maxfilesize))) {
+		logg("!cli_engine_set(CL_ENGINE_MAX_FILESIZE) failed: %s\n", cl_strerror(ret));
+		cl_engine_free(engine);
+		pthread_mutex_unlock(&engine_mutex);
+		return -1;
+	}
+	ret = cl_load(dbdir, engine, &signatures, dboptions);
+	if(ret != CL_SUCCESS) {
 		logg("!%s\n", cl_strerror(ret));
+		cl_engine_free(engine);
+		pthread_mutex_unlock(&engine_mutex);
 		return -1;
 	}
-	if(newroot == NULL) {
-		logg("!Can't initialize the virus database.\n");
-		return -1;
-	}
-
-	ret = cl_build(newroot);
-	if(ret != 0) {
+	ret = cl_engine_compile(engine);
+	if(ret != CL_SUCCESS) {
 		logg("!Database initialization error: %s\n", cl_strerror(ret));
-		cl_free(newroot);
+		cl_engine_free(engine);
+		pthread_mutex_unlock(&engine_mutex);
 		return -1;
 	}
-	pthread_mutex_lock(&root_mutex);
-	oldroot = root;
-	root = newroot;
-	pthread_mutex_unlock(&root_mutex);
-
+	pthread_mutex_unlock(&engine_mutex);
 #ifdef	SESSION
 	pthread_mutex_lock(&version_mutex);
 #endif
@@ -5963,12 +5962,7 @@ loadDatabase(void)
 	pthread_mutex_unlock(&version_mutex);
 #endif
 	logg(_("ClamAV: Protecting against %u viruses\n"), signatures);
-	if(oldroot) {
-		cl_free(oldroot);
-		logg("#Database correctly reloaded (%u viruses)\n", signatures);
-	} else
-		logg("*Database loaded\n");
-
+	logg("#Database correctly (re)loaded (%u viruses)\n");
 	return cl_statinidir(dbdir, &dbstat);
 }
 
