@@ -33,6 +33,7 @@
 
 #include "clamav.h"
 #include "dconf.h"
+#include "libclamunrar_iface/unrar_iface.h"
 
 extern uint8_t cli_debug_flag, cli_leavetemps_flag;
 
@@ -153,6 +154,12 @@ struct cl_engine {
     /* Used for memory pools */
     mp_t *mempool;
 };
+
+extern int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
+extern int (*cli_unrar_extract_next_prepare)(unrar_state_t *state, const char *dirname);
+extern int (*cli_unrar_extract_next)(unrar_state_t *state, const char *dirname);
+extern void (*cli_unrar_close)(unrar_state_t *state);
+extern int have_rar;
 
 #define SCAN_ARCHIVE	    (ctx->options & CL_SCAN_ARCHIVE)
 #define SCAN_MAIL	    (ctx->options & CL_SCAN_MAIL)

@@ -96,18 +96,10 @@
 #include <bzlib.h>
 #endif
 
-#include "libclamunrar_iface/unrar_iface.h"
-
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #include <limits.h>
 #include <stddef.h>
 #endif
-
-extern int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
-extern int (*cli_unrar_extract_next_prepare)(unrar_state_t *state, const char *dirname);
-extern int (*cli_unrar_extract_next)(unrar_state_t *state, const char *dirname);
-extern void (*cli_unrar_close)(unrar_state_t *state);
-extern int have_rar;
 
 static int cli_scanfile(const char *filename, cli_ctx *ctx);
 

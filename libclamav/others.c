@@ -80,6 +80,7 @@ static pthread_mutex_t cli_ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
 #include "md5.h"
 #include "cltypes.h"
 #include "regex/regex.h"
+#include "ltdl.h"
 
 #ifndef	O_BINARY
 #define	O_BINARY	0
@@ -110,6 +111,38 @@ static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 
     fputs(buff, stderr);				    \
     va_end(args)
 
+int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
+int (*cli_unrar_extract_next_prepare)(unrar_state_t *state, const char *dirname);
+int (*cli_unrar_extract_next)(unrar_state_t *state, const char *dirname);
+void (*cli_unrar_close)(unrar_state_t *state);
+int have_rar = 0;
+static int is_rar_initd = 0;
+
+static void cli_rarload(void) {
+    lt_dlhandle rhandle;
+
+    if(is_rar_initd) return;
+    is_rar_initd = 1;
+    if(lt_dlinit()) {
+        cli_warnmsg("Cannot init ltdl - unrar support unavailable\n");
+        return;
+    }
+    rhandle = lt_dlopenext("libclamunrar_iface");
+    if (!rhandle) { 
+        cli_dbgmsg("Cannot dlopen: %s - unrar support unavailable\n", lt_dlerror());
+        return;
+    }
+    if (!(cli_unrar_open = (int(*)(int, const char *, unrar_state_t *))lt_dlsym(rhandle, "unrar_open")) ||
+	!(cli_unrar_extract_next_prepare = (int(*)(unrar_state_t *, const char *))lt_dlsym(rhandle, "unrar_extract_next_prepare")) ||
+	!(cli_unrar_extract_next = (int(*)(unrar_state_t *, const char *))lt_dlsym(rhandle, "unrar_extract_next")) ||
+	!(cli_unrar_close = (void(*)(unrar_state_t *))lt_dlsym(rhandle, "unrar_close"))
+	) {
+	/* ideally we should never land here, we'd better warn so */
+        cli_warnmsg("Cannot resolve: %s (version mismatch?) - unrar support unavailable\n", lt_dlerror());
+        return;
+    }
+    have_rar = 1;
+}
 
 void cli_warnmsg(const char *str, ...)
 {
@@ -200,6 +233,7 @@ const char *cl_strerror(int clerror)
 int cl_init(unsigned int options)
 {
     /* put dlopen() stuff here, etc. */
+    cli_rarload();
     return CL_SUCCESS;
 }
 

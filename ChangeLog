@@ -1,3 +1,7 @@
+Thu Nov 13 02:11:41 CET 2008 (acab)
+-----------------------------------
+ * libclamav: dlinit in cl_init
+
 Thu Nov 13 01:23:39 CET 2008 (acab)
 -----------------------------------
  * clamav-milter/clamav-milter.c: upgrade to new API
