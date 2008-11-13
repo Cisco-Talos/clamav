@@ -3450,16 +3450,18 @@ clamfi_eom(SMFICTX *ctx)
 	if(!external) {
 		const char *virname;
 		int ret;
+		struct  cl_engine *cur_engine;
 
 		pthread_mutex_lock(&engine_mutex);
 		ret = cl_engine_addref(engine);
+		cur_engine = engine; /* avoid races */
 		pthread_mutex_unlock(&engine_mutex);
 		if(ret != CL_SUCCESS) {
 			logg("!cl_engine_addref failed\n");
 			clamfi_cleanup(ctx);
 			return cl_error;
 		}
-		switch(cl_scanfile(privdata->filename, &virname, NULL, engine, options)) {
+		switch(cl_scanfile(privdata->filename, &virname, NULL, cur_engine, options)) {
 			case CL_CLEAN:
 				if(logok)
 					logg("#%s: OK\n", privdata->filename);
@@ -3474,7 +3476,7 @@ clamfi_eom(SMFICTX *ctx)
 				logg("!%s\n", mess);
 				break;
 		}
-		cl_engine_free(engine); /* drop reference or free */
+		cl_engine_free(cur_engine); /* drop reference or free */
 
 #ifdef	SESSION
 		session = NULL;

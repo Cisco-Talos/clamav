@@ -1,3 +1,7 @@
+Thu Nov 13 16:54:24 CET 2008 (acab)
+-----------------------------------
+ * clamav-milter: prevent races
+
 Thu Nov 13 17:12:40 EET 2008 (edwin)
 ------------------------------------
  * clamd/clamd.c: fix leak. It was a valgrind false-positive because
