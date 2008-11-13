@@ -106,6 +106,23 @@ static void exit_program(enum exit_reason reason, const char *func, unsigned lin
 static struct global_stats global;
 static int curses_inited = 1;
 static int maxystats=0;
+static int detail_selected = -1;
+
+static int detail_exists()
+{
+	return global.num_clamd != 1;
+}
+
+static int detail_is_selected(int idx)
+{
+	if (!detail_exists()) {
+		assert(idx == 0);
+		return 1;
+	}
+	return idx == detail_selected;
+}
+
+
 /* ---------------------- NCurses routines -----------------*/
 enum colors {
 	header_color=1,
@@ -113,6 +130,7 @@ enum colors {
 	error_color,
 	value_color,
 	descr_color,
+	selected_color,
 	queue_header_color,
 	activ_color,
 	dim_color,
@@ -217,14 +235,18 @@ static void init_windows(int num_clamd)
 	stats_window = subwin(stdscr, maxystats, maxx, num_clamd+2, 0);
 	status_bar_window = subwin(stdscr, 1, maxx, maxy-1, 0);
 	/* memwindow overlaps, used only in details mode */
-	mem_window = derwin(stats_window, 6, 41, 0, maxx-41);
+	mem_window = derwin(stats_window, 6, 41, 1, maxx-41);
 	touchwin(stdscr);
 	werase(stdscr);
 	refresh();
 	memset(status_bar_keys, 0, sizeof(status_bar_keys));
 	status_bar_keys[0] = "F1 - help";
 	status_bar_keys[1] = "Q - quit";
-	status_bar_keys[2] = "R - reset bar maximums";
+	status_bar_keys[2] = "R - reset maximums";
+	if (num_clamd > 1) {
+		status_bar_keys[3] = "^ - previous clamd";
+		status_bar_keys[4] = "v - next clamd";
+	}
 }
 
 static void init_ncurses(int num_clamd)
@@ -245,6 +267,7 @@ static void init_ncurses(int num_clamd)
 	init_pair(error_color, COLOR_WHITE, COLOR_RED);
 	init_pair(value_color, COLOR_GREEN, DEFAULT_COLOR);
 	init_pair(descr_color, COLOR_CYAN, DEFAULT_COLOR);
+	init_pair(selected_color, COLOR_BLACK, COLOR_CYAN);
 	init_pair(queue_header_color, COLOR_BLACK, COLOR_GREEN);
 	init_pair(activ_color, COLOR_MAGENTA, DEFAULT_COLOR);
 	init_pair(dim_color, COLOR_GREEN, DEFAULT_COLOR);
@@ -294,10 +317,20 @@ static void header(void)
 
 	werase(status_bar_window);
 	for(i=0;i<sizeof(status_bar_keys)/sizeof(status_bar_keys[0]);i++) {
-		if(!status_bar_keys[i])
+		const char *s = status_bar_keys[i];
+		if(!s)
 			continue;
 		wattron(status_bar_window, A_REVERSE);
-		mvwprintw(status_bar_window, 0, x,  "%s",status_bar_keys[i]);
+		if (s[0] == '^') {
+			mvwaddch(status_bar_window, 0, x, ACS_UARROW);
+			s++;
+			x++;
+		} else if (s[0] == 'v') {
+			mvwaddch(status_bar_window, 0, x, ACS_DARROW);
+			s++;
+			x++;
+		}
+		mvwprintw(status_bar_window, 0, x,  "%s",s);
 		wattroff(status_bar_window, A_REVERSE);
 		x += strlen(status_bar_keys[i]) + 1;
 	}
@@ -580,43 +613,52 @@ static int recv_line(conn_t *conn, char *buf, size_t len)
 
 static void output_queue(size_t line, ssize_t max)
 {
-	ssize_t i;
+	ssize_t i, j;
 	struct task *tasks = global.tasks;
+	struct task *filtered_tasks = calloc(global.n, sizeof(*filtered_tasks));
+	OOM_CHECK(filtered_tasks);
+	for (i=0,j=0;i<global.n;i++) {
+		if (detail_selected == -1 || detail_is_selected(tasks[i].clamd_no-1)) {
+			filtered_tasks[j++] = tasks[i];
+		}
+	}
+
 	wattron(stats_window, COLOR_PAIR(queue_header_color));
 	mvwprintw(stats_window, line++, 0, "%s", queue_header);
 	wattroff(stats_window, COLOR_PAIR(queue_header_color));
-	if (max >= global.n)
-		max = global.n;
+	if (max >= j)
+		max = j;
 	else
 		--max;
 	if (max < 0) max = 0;
 	for(i=0;i<max;i++) {
 		assert(tasks);
-		char *cmde = strchr(tasks[i].line, ' ');
+		char *cmde = strchr(filtered_tasks[i].line, ' ');
 		if(cmde) {
 			char cmd[16];
 			const char *filstart = strchr(cmde + 1, ' ');
-			strncpy(cmd, tasks[i].line, sizeof(cmd)-1);
+			strncpy(cmd, filtered_tasks[i].line, sizeof(cmd)-1);
 			cmd[15]='\0';
-			if (tasks[i].line+15 > cmde)
-				cmd[cmde - tasks[i].line] = '\0';
+			if (filtered_tasks[i].line+15 > cmde)
+				cmd[cmde - filtered_tasks[i].line] = '\0';
 			if(filstart) {
 				++filstart;
-				if (global.num_clamd>1)
-					mvwprintw(stats_window, line + i, 0, "%2u %s", tasks[i].clamd_no, cmd + 1);
+				if (detail_selected == -1 && global.num_clamd > 1)
+					mvwprintw(stats_window, line + i, 0, "%2u %s", filtered_tasks[i].clamd_no, cmd + 1);
 				else
 					mvwprintw(stats_window, line + i, 0, " %s", cmd + 1);
-				mvwprintw(stats_window, line + i, 15, "%10.03fs", tasks[i].tim);
+				mvwprintw(stats_window, line + i, 15, "%10.03fs", filtered_tasks[i].tim);
 				mvwprintw(stats_window, line + i, 30, "%s",filstart);
 			}
 		}
 	}
-	if (max < global.n) {
+	if (max < j) {
 		/* in summary mode we can only show a max amount of tasks */
 		wattron(stats_window, A_DIM | COLOR_PAIR(header_color));
-		mvwprintw(stats_window, line+i, 0, "*** %u more task(s) not shown ***", (unsigned)(global.n - max));
+		mvwprintw(stats_window, line+i, 0, "*** %u more task(s) not shown ***", (unsigned)(j - max));
 		wattroff(stats_window, A_DIM | COLOR_PAIR(header_color));
 	}
+	free(filtered_tasks);
 }
 
 /* ---------------------- stats parsing routines ------------------- */
@@ -697,20 +739,6 @@ static void parse_memstats(const char *line, struct stats *stats)
 	if (stats->mem == 0) stats->mem = -1;
 }
 
-static int show_detail(int idx)
-{
-	if (global.num_clamd == 1) {
-		assert(idx == 0);
-		return 1;
-	}
-	return 0;
-}
-
-static int has_detail()
-{
-	return global.num_clamd == 1;
-}
-
 static int output_stats(struct stats *stats, unsigned idx)
 {
 	char buf[128];
@@ -719,6 +747,10 @@ static int output_stats(struct stats *stats, unsigned idx)
 	size_t i= 0;
 	char mem[6];
 	WINDOW *win = stats_head_window;
+	int sel = detail_is_selected(idx);
+	char *line = malloc(maxx+1);
+
+	OOM_CHECK(line);
 
 	if (stats->mem == -1 || stats->stats_unsupp)
 		strncpy(mem, "N/A", sizeof(mem));
@@ -749,19 +781,36 @@ static int output_stats(struct stats *stats, unsigned idx)
 				stats->db_time.tm_mday,
 				stats->db_time.tm_hour);
 
+	memset(line, ' ', maxx+1);
 	if (!stats->stats_unsupp) {
-		mvwprintw(win, i++, 0,"%2u %02u:%02u:%02u %3u %3u %5u %5u %5s %-14s %-6s %5s %s", idx+1,  stats->conn_hr, stats->conn_min, stats->conn_sec,
+		snprintf(line, maxx-1, "%2u %02u:%02u:%02u %3u %3u %5u %5u %5s %-14s %-6s %5s %s", idx+1,  stats->conn_hr, stats->conn_min, stats->conn_sec,
 			stats->live, stats->idle,
 			stats->current_q, stats->biggest_queue,
 			mem,
 			stats->remote, stats->engine_version, stats->db_version, timbuf);
 	} else {
-		mvwprintw(win, i++, 0,"%2u %02u:%02u:%02u N/A N/A   N/A   N/A   N/A %-14s %-6s %5s %s", idx+1,  stats->conn_hr, stats->conn_min, stats->conn_sec,
+		snprintf(line, maxx-1, "%2u %02u:%02u:%02u N/A N/A   N/A   N/A   N/A %-14s %-6s %5s %s", idx+1,  stats->conn_hr, stats->conn_min, stats->conn_sec,
 			stats->remote, stats->engine_version, stats->db_version, timbuf);
+	}
+	line[maxx] = '\0';
+	line[strlen(line)] = ' ';
+	if (sel) {
+		wattron(win,  COLOR_PAIR(selected_color));
+	}
+	mvwprintw(win, i++, 0, "%s", line);
+	if (sel) {
+		wattroff(win, COLOR_PAIR(selected_color));
 	}
 	win = stats_window;
 	i = 0;
-	if (show_detail(idx) && !stats->stats_unsupp) {
+	if (sel && !stats->stats_unsupp) {
+		memset(line, ' ', maxx+1);
+		snprintf(line, maxx-1, "Details for Clamd version: %s", stats->version);
+		line[maxx] = '\0';
+		line[strlen(line)]= ' ';
+		wattron(win,  COLOR_PAIR(queue_header_color));
+		mvwprintw(win, i++, 0, "%s", line);
+		wattroff(win, COLOR_PAIR(queue_header_color));
 		mvwprintw(win, i++, 0, "Primary threads: ");
 		snprintf(buf, sizeof(buf), "live %3u idle %3u max %3u", stats->prim_live, stats->prim_idle, stats->prim_max);
 		print_colored(win, buf);
@@ -783,9 +832,10 @@ static int output_stats(struct stats *stats, unsigned idx)
 			stats->biggest_queue = stats->current_q;
 			blink = 1;
 	}
-	if (show_detail(idx) && !stats->stats_unsupp) {
+	if (sel && !stats->stats_unsupp) {
 		show_bar(win, i++, stats->current_q, 0, biggest_queue, blink);
 	}
+	free(line);
 	return i;
 }
 
@@ -797,12 +847,15 @@ static void output_all(void)
 	wattron(stats_head_window, COLOR_PAIR(queue_header_color));
 	mvwprintw(stats_head_window, 0, 0, "%s", clamd_header);
 	wattroff(stats_head_window, COLOR_PAIR(queue_header_color));
-	for (i=0;i<global.num_clamd;i++)
-		stats_line = output_stats(&global.all_stats[i], i);
+	for (i=0;i<global.num_clamd;i++) {
+		unsigned  j = output_stats(&global.all_stats[i], i);
+		if (j > stats_line)
+			stats_line = j;
+	}
 	output_queue(stats_line, maxystats - stats_line-1);
 	wrefresh(stats_head_window);
 	wrefresh(stats_window);
-	if (has_detail()) {
+	if (detail_exists()) {
 		/* overlaps, must be done at the end */
 		wrefresh(mem_window);
 	}
@@ -938,7 +991,12 @@ static void read_version(conn_t *conn)
 {
 	char buf[1024];
 	if(recv_line(conn, buf, sizeof(buf))) {
+		unsigned i;
 		conn->version = strdup(buf);
+		OOM_CHECK(conn->version);
+		for (i=0;i<strlen(conn->version);i++)
+			if (conn->version[i] == '\n')
+				conn->version[i] = ' ';
 	}
 }
 
@@ -1075,18 +1133,38 @@ int main(int argc, char *argv[])
 
 	memset(&tv_last, 0, sizeof(tv_last));
 	do {
-		if (ch == KEY_F(1)) {
-			ch = show_help();
-		}
-		if(ch == KEY_RESIZE) {
-			resize();
-			endwin();
-			refresh();
-			init_windows(global.num_clamd);
-		}
-		if(ch == 'R') {
-			biggest_queue = 1;
-			biggest_mem = 0;
+		switch(ch) {
+			case KEY_F(1):
+				ch = show_help();
+				break;
+			case KEY_RESIZE:
+				resize();
+				endwin();
+				refresh();
+				init_windows(global.num_clamd);
+				break;
+			case 'R':
+				biggest_queue = 1;
+				biggest_mem = 0;
+				break;
+			case KEY_UP:
+				if (global.num_clamd > 1) {
+					if (detail_selected == -1)
+						detail_selected = global.num_clamd-1;
+					else
+						--detail_selected;
+				}
+				break;
+			case KEY_DOWN:
+				if (global.num_clamd > 1) {
+					if (detail_selected == -1)
+						detail_selected = 0;
+					else {
+						if((unsigned)++detail_selected >= global.num_clamd)
+							detail_selected = -1;
+					}
+				}
+				break;
 		}
 		gettimeofday(&tv, NULL);
 		header();
