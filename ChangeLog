@@ -1,3 +1,8 @@
+Thu Nov 13 15:55:20 CET 2008 (tk)
+---------------------------------
+ * libclamav: drop options parameter in cl_engine_new(); replace cl_engine_dup()
+	      with cl_engine_addref()
+
 Thu Nov 13 14:59:39 CET 2008 (tk)
 ---------------------------------
  * libclamav/readdb.c: phishing_done() no longer needs to be called outside

@@ -382,7 +382,7 @@ int scanmanager(const struct optstruct *opt)
 	return 50;
     }
 
-    if(!(engine = cl_engine_new(CL_ENGINE_DEFAULT))) {
+    if(!(engine = cl_engine_new())) {
 	logg("!Can't initialize antivirus engine\n");
 	return 50;
     }

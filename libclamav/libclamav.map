@@ -10,7 +10,7 @@ CLAMAV_PUBLIC {
     cl_engine_set;
     cl_engine_get;
     cl_engine_compile;
-    cl_engine_dup;
+    cl_engine_addref;
     cl_engine_free;
     cl_load;
     cl_retdbdir;

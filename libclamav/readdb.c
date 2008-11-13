@@ -2049,11 +2049,11 @@ int cl_engine_compile(struct cl_engine *engine)
     return CL_SUCCESS;
 }
 
-struct cl_engine *cl_engine_dup(struct cl_engine *engine)
+int cl_engine_addref(struct cl_engine *engine)
 {
     if(!engine) {
-	cli_errmsg("cl_engine_dup: engine == NULL\n");
-	return NULL;
+	cli_errmsg("cl_engine_addref: engine == NULL\n");
+	return CL_ENULLARG;
     }
 
 #ifdef CL_THREAD_SAFE
@@ -2066,5 +2066,5 @@ struct cl_engine *cl_engine_dup(struct cl_engine *engine)
     pthread_mutex_unlock(&cli_ref_mutex);
 #endif
 
-    return engine;
+    return CL_SUCCESS;
 }

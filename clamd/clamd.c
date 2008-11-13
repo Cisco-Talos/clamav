@@ -309,7 +309,7 @@ int main(int argc, char **argv)
     else
 	logg("#Log file size limit disabled.\n");
 
-    if(!(engine = cl_engine_new(CL_ENGINE_DEFAULT))) {
+    if(!(engine = cl_engine_new())) {
 	logg("!Can't initialize antivirus engine\n");
 	logg_close();
 	freecfg(copt);

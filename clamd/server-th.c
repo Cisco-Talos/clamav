@@ -246,7 +246,7 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
 	return NULL;
     }
 
-    if(!(engine = cl_engine_new(CL_ENGINE_DEFAULT))) {
+    if(!(engine = cl_engine_new())) {
 	logg("!Can't initialize antivirus engine\n");
 	*ret = 1;
 	return NULL;
@@ -663,14 +663,23 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 		    client_conn->sd = new_sd;
 		    client_conn->options = options;
 		    client_conn->copt = copt;
-		    client_conn->engine = cl_engine_dup(engine);
-		    client_conn->engine_timestamp = reloaded_time;
-		    client_conn->socketds = socketds;
-		    client_conn->nsockets = nsockets;
-		    if(!thrmgr_dispatch(thr_pool, client_conn)) {
+		    if(cl_engine_addref(engine)) {
 			closesocket(client_conn->sd);
 			free(client_conn);
-			logg("!thread dispatch failed\n");
+			logg("!cl_engine_addref() failed\n");
+			pthread_mutex_lock(&exit_mutex);
+			progexit = 1;
+			pthread_mutex_unlock(&exit_mutex);
+		    } else {
+			client_conn->engine = engine;
+			client_conn->engine_timestamp = reloaded_time;
+			client_conn->socketds = socketds;
+			client_conn->nsockets = nsockets;
+			if(!thrmgr_dispatch(thr_pool, client_conn)) {
+			    closesocket(client_conn->sd);
+			    free(client_conn);
+			    logg("!thread dispatch failed\n");
+			}
 		    }
 		} else {
 		    logg("!Can't allocate memory for client_conn\n");

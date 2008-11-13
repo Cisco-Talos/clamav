@@ -560,7 +560,7 @@ static int build(struct optstruct *opt)
 
     dbname = strstr(opt_arg(opt, "build"), "main") ? "main" : "daily";
 
-    if(!(engine = cl_engine_new(CL_ENGINE_DEFAULT))) {
+    if(!(engine = cl_engine_new())) {
 	mprintf("!build: Can't initialize antivirus engine\n");
 	return 50;
     }

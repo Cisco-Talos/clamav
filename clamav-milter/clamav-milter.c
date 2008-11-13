@@ -3449,17 +3449,17 @@ clamfi_eom(SMFICTX *ctx)
 
 	if(!external) {
 		const char *virname;
-		struct cl_engine *tmp_engine;
+		int ret;
 
 		pthread_mutex_lock(&engine_mutex);
-		tmp_engine = cl_engine_dup(engine);
+		ret = cl_engine_addref(engine);
 		pthread_mutex_unlock(&engine_mutex);
-		if(!tmp_engine) {
-			logg("!cl_engine_dup failed\n");
+		if(ret != CL_SUCCESS) {
+			logg("!cl_engine_addref failed\n");
 			clamfi_cleanup(ctx);
 			return cl_error;
 		}
-		switch(cl_scanfile(privdata->filename, &virname, NULL, tmp_engine, options)) {
+		switch(cl_scanfile(privdata->filename, &virname, NULL, engine, options)) {
 			case CL_CLEAN:
 				if(logok)
 					logg("#%s: OK\n", privdata->filename);
@@ -3474,7 +3474,7 @@ clamfi_eom(SMFICTX *ctx)
 				logg("!%s\n", mess);
 				break;
 		}
-		cl_engine_free(tmp_engine);
+		cl_engine_free(engine); /* drop reference or free */
 
 #ifdef	SESSION
 		session = NULL;
@@ -5916,7 +5916,7 @@ loadDatabase(void)
 	signatures = 0;
 	pthread_mutex_lock(&engine_mutex);
 	if(engine) cl_engine_free(engine);
-	engine = cl_engine_new(CL_ENGINE_DEFAULT);
+	engine = cl_engine_new();
 	if (!engine) {
 		logg("!Can't initialize antivirus engine\n");
 		pthread_mutex_unlock(&engine_mutex);

@@ -237,7 +237,7 @@ int cl_init(unsigned int options)
     return CL_SUCCESS;
 }
 
-struct cl_engine *cl_engine_new(unsigned int options)
+struct cl_engine *cl_engine_new(void)
 {
 	struct cl_engine *new;
 

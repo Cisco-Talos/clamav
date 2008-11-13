@@ -109,8 +109,7 @@ struct cl_engine;
 #define CL_INIT_DEFAULT	0x0
 extern int cl_init(unsigned int options);
 
-#define CL_ENGINE_DEFAULT   0x0
-extern struct cl_engine *cl_engine_new(unsigned int options);
+extern struct cl_engine *cl_engine_new(void);
 
 enum cl_engine_field {
     CL_ENGINE_MAX_SCANSIZE,	    /* uint64_t */
@@ -130,7 +129,7 @@ extern int cl_engine_get(const struct cl_engine *engine, enum cl_engine_field fi
 
 extern int cl_engine_compile(struct cl_engine *engine);
 
-extern struct cl_engine *cl_engine_dup(struct cl_engine *engine);
+extern int cl_engine_addref(struct cl_engine *engine);
 
 extern int cl_engine_free(struct cl_engine *engine);
 
