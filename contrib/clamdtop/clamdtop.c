@@ -186,6 +186,7 @@ static void resize(void)
 	OOM_CHECK(queue_header);
 	clamd_header = malloc(maxx + 1);
 	OOM_CHECK(clamd_header);
+	assert(clamd_header && queue_header);
 	strncpy(queue_header, global.num_clamd>1 ? CMDHEAD2 : CMDHEAD, maxx);
 	strncpy(clamd_header, SUMHEAD, maxx);
 	queue_header[maxx] = '\0';
@@ -386,9 +387,10 @@ static void cleanup(void)
 	}
 	curses_inited = 0;
 	for (i=0;i<global.num_clamd;i++) {
-		if (global.conn[i].sd && global.conn[i].sd != -1)
+		if (global.conn[i].sd && global.conn[i].sd != -1) {
 			send_string_noreconn(&global.conn[i], "END\n");
-		close(global.conn[i].sd);
+			close(global.conn[i].sd);
+		}
 		free(global.conn[i].version);
 	}
 	free(global.all_stats);
@@ -404,8 +406,13 @@ static void cleanup(void)
 	}
 }
 
+#ifdef __GNUC__
+#define __noreturn __attribute__((noreturn))
+#else
+#define __noreturn
+#endif
 
-static void exit_program(enum exit_reason reason, const char *func, unsigned line)
+static void __noreturn exit_program(enum exit_reason reason, const char *func, unsigned line)
 {
 	switch(reason) {
 		case FAIL_INITIAL_CONN:
@@ -564,7 +571,7 @@ static void reconnect(conn_t *conn)
 	}
 	if (make_connection(conn->remote, conn) < 0) {
 		print_con_info(conn, "Unable to reconnect to %s: %s", conn->remote, strerror(errno));
-		exit(3);
+		EXIT_PROGRAM(RECONNECT_FAIL);
 	}
 	tries = 0;
 }
@@ -797,7 +804,7 @@ static int output_stats(struct stats *stats, unsigned idx)
 	if (sel) {
 		wattron(win,  COLOR_PAIR(selected_color));
 	}
-	mvwprintw(win, i++, 0, "%s", line);
+	mvwprintw(win, i, 0, "%s", line);
 	if (sel) {
 		wattroff(win, COLOR_PAIR(selected_color));
 	}
@@ -997,6 +1004,8 @@ static void read_version(conn_t *conn)
 		for (i=0;i<strlen(conn->version);i++)
 			if (conn->version[i] == '\n')
 				conn->version[i] = ' ';
+	} else {
+		reconnect(conn);
 	}
 }
 
@@ -1133,10 +1142,10 @@ int main(int argc, char *argv[])
 
 	memset(&tv_last, 0, sizeof(tv_last));
 	do {
+		if (ch == KEY_F(1)) {
+			ch = show_help();
+		}
 		switch(ch) {
-			case KEY_F(1):
-				ch = show_help();
-				break;
 			case KEY_RESIZE:
 				resize();
 				endwin();

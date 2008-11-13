@@ -1,3 +1,7 @@
+Thu Nov 13 23:00:39 EET 2008 (edwin)
+------------------------------------
+ * contrib/clamdtop/clamdtop.c: fix reconnect logic
+
 Thu Nov 13 19:06:47 CET 2008 (tk)
 ---------------------------------
  * libclamav, clamd, clamscan: use cl_engine_set() to control AC settings
