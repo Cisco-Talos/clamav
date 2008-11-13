@@ -1,3 +1,8 @@
+Thu Nov 13 14:59:39 CET 2008 (tk)
+---------------------------------
+ * libclamav/readdb.c: phishing_done() no longer needs to be called outside
+		       cl_engine_free()
+
 Thu Nov 13 11:05:20 EET 2008 (edwin)
 ------------------------------------
  * libclamav/htmlnorm.c: fix memory leak (bb #1291)

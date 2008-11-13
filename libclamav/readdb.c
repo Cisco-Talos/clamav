@@ -484,13 +484,11 @@ static int cli_loadwdb(FILE *fs, struct cl_engine *engine, unsigned int options,
 
     if(!engine->whitelist_matcher) {
 	if((ret = init_whitelist(engine))) {
-	    phishing_done(engine);
 	    return ret;
 	}
     }
 
     if((ret = load_regex_matcher(engine->whitelist_matcher, fs, options, 1, dbio))) {
-	phishing_done(engine);
 	return ret;
     }
 
@@ -507,13 +505,11 @@ static int cli_loadpdb(FILE *fs, struct cl_engine *engine, unsigned int options,
 
     if(!engine->domainlist_matcher) {
 	if((ret = init_domainlist(engine))) {
-	    phishing_done(engine);
 	    return ret;
 	}
     }
 
     if((ret = load_regex_matcher(engine->domainlist_matcher, fs, options, 0, dbio))) {
-	phishing_done(engine);
 	return ret;
     }
 
