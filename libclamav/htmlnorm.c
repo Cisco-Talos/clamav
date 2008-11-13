@@ -1485,7 +1485,6 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					snprintf(filename, 1024, "%s/rfc2397", dirname);
 					tmp_file = cli_gentemp(filename);
 					if(!tmp_file) {
-						free(file_tmp_o1);
 						goto abort;
 					}
 					cli_dbgmsg("RFC2397 data file: %s\n", tmp_file);
@@ -1493,7 +1492,6 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					free(tmp_file);
 					if (file_tmp_o1->fd < 0) {
 						cli_dbgmsg("open failed: %s\n", filename);
-						free(file_tmp_o1);
 						goto abort;
 					}
 					file_tmp_o1->length = 0;
@@ -1565,6 +1563,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					html_output_flush(file_tmp_o1);
 					close(file_tmp_o1->fd);
 					free(file_tmp_o1);
+					file_tmp_o1 = NULL;
 				}
 				state = HTML_SKIP_WS;
 				escape = FALSE;
@@ -1687,6 +1686,11 @@ abort:
 		if(file_buff_text->fd != -1)
 			close(file_buff_text->fd);
 		free(file_buff_text);
+	}
+	if(file_tmp_o1) {
+		html_output_flush(file_tmp_o1);
+		close(file_tmp_o1->fd);
+		free(file_tmp_o1);
 	}
 	return retval;
 }
