@@ -1,3 +1,7 @@
+Thu Nov 13 16:59:47 EET 2008 (edwin)
+------------------------------------
+ * unit_tests/Makefile.am, unit_tests/Makefile.in: fix paths
+
 Thu Nov 13 16:46:46 EET 2008 (edwin)
 ------------------------------------
  * libclamav/others.c: move cli_rarload.  TODO: MEMFUNSONLY should be

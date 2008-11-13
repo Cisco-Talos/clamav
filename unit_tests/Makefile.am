@@ -23,7 +23,7 @@ check_clamav_SOURCES = check_clamav.c checks.h $(top_builddir)/libclamav/clamav.
 		       check_jsnorm.c check_str.c check_regex.c\
 		       check_disasm.c check_uniq.c check_matchers.c\
 		       check_htmlnorm.c
-check_clamav_CPPFLAGS = @CHECK_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\"
+check_clamav_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\"
 check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CHECK_LIBS@
 else
 check_clamav_SOURCES = check_clamav_skip.c
