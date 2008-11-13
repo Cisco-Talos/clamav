@@ -1,3 +1,8 @@
+Thu Nov 13 17:12:40 EET 2008 (edwin)
+------------------------------------
+ * clamd/clamd.c: fix leak. It was a valgrind false-positive because
+ it couldn't see the pointer.
+
 Thu Nov 13 16:59:47 EET 2008 (edwin)
 ------------------------------------
  * unit_tests/Makefile.am, unit_tests/Makefile.in: fix paths

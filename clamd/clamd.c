@@ -89,6 +89,9 @@ static void help(void)
 }
 
 static struct cfgstruct *copt;
+/* needs to be global, so that valgrind reports it as reachable, and not
+ * as definetely/indirectly lost when daemonizing clamd */
+static struct cl_engine *engine;
 int main(int argc, char **argv)
 {
 	const struct cfgstruct *cpt;
@@ -96,7 +99,6 @@ int main(int argc, char **argv)
         struct passwd *user = NULL;
 #endif
 	time_t currtime;
-	struct cl_engine *engine;
 	const char *dbdir, *cfgfile;
 	char *pua_cats = NULL;
 	int ret, tcpsock = 0, localsock = 0, i;
