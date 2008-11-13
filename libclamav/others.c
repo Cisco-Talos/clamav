@@ -111,6 +111,22 @@ static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 
     fputs(buff, stderr);				    \
     va_end(args)
 
+void cli_warnmsg(const char *str, ...)
+{
+    MSGCODE("LibClamAV Warning: ");
+}
+
+void cli_errmsg(const char *str, ...)
+{
+    MSGCODE("LibClamAV Error: ");
+}
+
+void cli_dbgmsg_internal(const char *str, ...)
+{
+    MSGCODE("LibClamAV debug: ");
+}
+
+#ifndef CLI_MEMFUNSONLY
 int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
 int (*cli_unrar_extract_next_prepare)(unrar_state_t *state, const char *dirname);
 int (*cli_unrar_extract_next)(unrar_state_t *state, const char *dirname);
@@ -144,22 +160,6 @@ static void cli_rarload(void) {
     have_rar = 1;
 }
 
-void cli_warnmsg(const char *str, ...)
-{
-    MSGCODE("LibClamAV Warning: ");
-}
-
-void cli_errmsg(const char *str, ...)
-{
-    MSGCODE("LibClamAV Error: ");
-}
-
-void cli_dbgmsg_internal(const char *str, ...)
-{
-    MSGCODE("LibClamAV debug: ");
-}
-
-#ifndef CLI_MEMFUNSONLY
 void cl_debug(void)
 {
     cli_debug_flag = 1;
