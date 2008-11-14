@@ -544,7 +544,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 			rc = cli_magic_scandesc(fout, ctx);
 		}
 		close(fout);
-		if(!cli_leavetemps_flag)
+		if(!ctx->engine->keeptmp)
 			if (cli_unlink(fullname)) rc = CL_EIO;
 		if(rc != CL_CLEAN) break;
 	}

@@ -135,12 +135,6 @@ int main(int argc, char **argv)
     if(opt_check(opt, "bell"))
 	bell = 1;
 
-    if(opt_check(opt, "tempdir"))
-	cl_settempdir(opt_arg(opt, "tempdir"), 0);
-
-    if(opt_check(opt, "leave-temps"))
-	cl_settempdir(NULL, 1);
-
     /* initialize logger */
     if(opt_check(opt, "log")) {
 	logg_file = opt_arg(opt, "log");

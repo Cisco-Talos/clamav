@@ -1,3 +1,8 @@
+Fri Nov 14 22:24:44 CET 2008 (tk)
+---------------------------------
+ * libclamav: drop cl_settempdir(); use cl_engine_set() with CL_ENGINE_TMPDIR
+	      and CL_ENGINE_KEEPTMP instead
+
 Fri Nov 14 18:40:50 EET 2008 (edwin)
 ------------------------------------
  * libclamunrar/unrar.c: avoid rar_malloc warnings on damaged files

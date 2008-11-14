@@ -94,7 +94,7 @@ static pthread_mutex_t cli_ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define CL_FLEVEL 37 /* don't touch it */
 
-uint8_t cli_debug_flag = 0, cli_leavetemps_flag = 0;
+uint8_t cli_debug_flag = 0;
 
 #ifndef CLI_MEMFUNSONLY
 static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
@@ -337,6 +337,14 @@ int cl_engine_set(struct cl_engine *engine, enum cl_engine_field field, const vo
 	case CL_ENGINE_AC_MAXDEPTH:
 	    engine->ac_maxdepth = *((const uint32_t *) val);
 	    break;
+	case CL_ENGINE_TMPDIR:
+	    engine->tmpdir = cli_mp_strdup(engine->mempool, (const char *) val);
+	    if(!engine->tmpdir)
+		return CL_EMEM;
+	    break;
+	case CL_ENGINE_KEEPTMP:
+	    engine->keeptmp = *((const uint32_t *) val);
+	    break;
 	default:
 	    cli_errmsg("cl_engine_set: Incorrect field number\n");
 	    return CL_ENULLARG; /* FIXME */
@@ -387,6 +395,13 @@ int cl_engine_get(const struct cl_engine *engine, enum cl_engine_field field, vo
 	    break;
 	case CL_ENGINE_AC_MAXDEPTH:
 	    *((uint32_t *) val) = engine->ac_maxdepth;
+	    break;
+	case CL_ENGINE_TMPDIR:
+	    if(engine->tmpdir)
+		strncpy((char *) val, engine->tmpdir, 128);
+	    break;
+	case CL_ENGINE_KEEPTMP:
+	    *((uint32_t *) val) = engine->keeptmp;
 	    break;
 	default:
 	    cli_errmsg("cl_engine_get: Incorrect field number\n");
@@ -659,24 +674,6 @@ unsigned int cli_rndnum(unsigned int max)
     }
 
     return 1 + (unsigned int) (max * (rand() / (1.0 + RAND_MAX)));
-}
-
-void cl_settempdir(const char *dir, short leavetemps)
-{
-	char *var;
-
-    if(dir) {
-	var = (char *) cli_malloc(8 + strlen(dir));
-	sprintf(var, "TMPDIR=%s", dir);
-	if(!putenv(var))
-	    cli_dbgmsg("Setting %s as global temporary directory\n", dir);
-	else
-	    cli_warnmsg("Can't set TMPDIR variable - insufficient space in the environment.\n");
-
-	/* WARNING: var must not be released - see putenv(3) */
-    }
-
-    cli_leavetemps_flag = leavetemps;
 }
 
 char *cli_gentemp(const char *dir)

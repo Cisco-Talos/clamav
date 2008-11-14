@@ -3870,7 +3870,7 @@ rfc1341(message *m, const char *dir)
 
 					if(!dentry_idpart ||
 							strcmp(filename, dentry_idpart) != 0) {
-						if(!cli_leavetemps_flag)
+						if(!m->ctx->engine->keeptmp)
 							continue;
 						if(stat(fullname, &statb) < 0)
 							continue;
@@ -3925,7 +3925,7 @@ rfc1341(message *m, const char *dir)
 					fclose(fin);
 
 					/* don't unlink if leave temps */
-					if(!cli_leavetemps_flag) {
+					if(!m->ctx->engine->keeptmp) {
 						if(cli_unlink(fullname)) {
 							fclose(fout);
 							cli_unlink(outname);

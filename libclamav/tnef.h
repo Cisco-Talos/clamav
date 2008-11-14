@@ -21,6 +21,8 @@
 #ifndef __TNEF_H
 #define __TNEF_H
 
-int cli_tnef(const char *dir, int desc);
+#include "others.h"
+
+int cli_tnef(const char *dir, int desc, cli_ctx *ctx);
 
 #endif

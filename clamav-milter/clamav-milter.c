@@ -1815,7 +1815,13 @@ main(int argc, char **argv)
 		/* set the temporary dir */
 		if((cpt = cfgopt(copt, "TemporaryDirectory")) && cpt->enabled) {
 			tmpdir = cpt->strarg;
-			cl_settempdir(tmpdir, (short)(cfgopt(copt, "LeaveTemporaryFiles")->enabled));
+			/*
+			 * FIXME: replace this:
+			  cl_settempdir(tmpdir, (short)(cfgopt(copt, "LeaveTemporaryFiles")->enabled)); *
+			 * with:
+			 * cl_engine_set(engine, CL_ENGINE_TMPDIR, cpt->strarg);
+			 * somewhere...
+			 */
 		} else if((tmpdir = getenv("TMPDIR")) == (char *)NULL)
 			if((tmpdir = getenv("TMP")) == (char *)NULL)
 				if((tmpdir = getenv("TEMP")) == (char *)NULL)
@@ -5809,7 +5815,7 @@ quit(void)
 #endif
 	}
 
-	if(tmpdir && !cli_leavetemps_flag)
+	if(tmpdir)
 		if(rmdir(tmpdir) < 0)
 			perror(tmpdir);
 

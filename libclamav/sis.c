@@ -67,14 +67,14 @@ int cli_scansis(int desc, cli_ctx *ctx) {
 
   cli_dbgmsg("in scansis()\n");
 
-  if (!(tmpd = cli_gentemp(NULL)))    
+  if (!(tmpd = cli_gentemp(ctx->engine->tmpdir)))    
     return CL_ETMPDIR;
   if (mkdir(tmpd, 0700)) {
     cli_dbgmsg("SIS: Can't create temporary directory %s\n", tmpd);
     free(tmpd);
     return CL_ETMPDIR;
   }
-  if (cli_leavetemps_flag)
+  if (ctx->engine->keeptmp)
     cli_dbgmsg("SIS: Extracting files to %s\n", tmpd);
 
   if ((i=dup(desc))==-1) {
@@ -106,7 +106,7 @@ int cli_scansis(int desc, cli_ctx *ctx) {
     i=real_scansis9x(f, ctx, tmpd);
   }
 
-  if (!cli_leavetemps_flag)
+  if (!ctx->engine->keeptmp)
     cli_rmdirs(tmpd);
 
   free(tmpd);

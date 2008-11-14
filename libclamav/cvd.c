@@ -554,7 +554,7 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
 
     } else {
 
-	if(!(dir = cli_gentemp(NULL)))
+	if(!(dir = cli_gentemp(engine->tmpdir)))
 	    return CL_EMEM;
 
 	if(mkdir(dir, 0700)) {

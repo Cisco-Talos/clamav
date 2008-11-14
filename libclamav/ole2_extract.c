@@ -715,7 +715,7 @@ static int handler_otf(int fd, ole2_header_t *hdr, property_t *prop, const char 
 
   print_ole2_property(prop);
 
-  if(!(tempfile = cli_gentemp(NULL)))
+  if(!(tempfile = cli_gentemp(ctx ? ctx->engine->tmpdir : NULL)))
     return CL_EMEM;
 
   if((ofd = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
@@ -813,7 +813,7 @@ static int handler_otf(int fd, ole2_header_t *hdr, property_t *prop, const char 
   close(ofd);
   free(buff);
   cli_bitset_free(blk_bitset);
-  if(!cli_leavetemps_flag) {
+  if(ctx && !ctx->engine->keeptmp) {
     if (cli_unlink(tempfile)) {
       free(tempfile);
       return CL_EIO;

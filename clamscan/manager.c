@@ -278,7 +278,7 @@ static int scandirs(const char *dirname, struct cl_engine *engine, const struct 
 
 }
 
-static int scanstdin(const struct cl_engine *engine, int options)
+static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt, int options)
 {
 	int ret;
 	const char *virname, *tmpdir;
@@ -286,16 +286,19 @@ static int scanstdin(const struct cl_engine *engine, int options)
 	size_t bread;
 	FILE *fs;
 
+    if(opt_check(opt, "tempdir")) {
+	tmpdir = opt_arg(opt, "tempdir");
+    } else {
+	/* check write access */
+	tmpdir = getenv("TMPDIR");
 
-    /* check write access */
-    tmpdir = getenv("TMPDIR");
-
-    if(tmpdir == NULL)
+	if(tmpdir == NULL)
 #ifdef P_tmpdir
-	tmpdir = P_tmpdir;
+	    tmpdir = P_tmpdir;
 #else
-	tmpdir = "/tmp";
+	    tmpdir = "/tmp";
 #endif
+    }
 
     if(checkaccess(tmpdir, CLAMAVUSER, W_OK) != 1) {
 	logg("!Can't write to temporary directory\n");
@@ -349,6 +352,7 @@ int scanmanager(const struct optstruct *opt)
 	struct cl_engine *engine;
 	struct stat sb;
 	char *file, cwd[1024], *pua_cats = NULL, *argument;
+	const char *pt;
 	const struct optnode *optnode;
 #ifndef C_WINDOWS
 	struct rlimit rlim;
@@ -446,6 +450,20 @@ int scanmanager(const struct optstruct *opt)
     if(opt_check(opt, "dev-ac-depth")) {
 	val32 = atoi(opt_arg(opt, "dev-ac-depth"));
 	cl_engine_set(engine, CL_ENGINE_AC_MAXDEPTH, &val32);
+    }
+
+    if(opt_check(opt, "leave-temps")) {
+	val32 = 1;
+	cl_engine_set(engine, CL_ENGINE_KEEPTMP, &val32);
+    }
+
+    if(opt_check(opt, "tempdir")) {
+	pt = opt_arg(opt, "tempdir");
+	if((ret = cl_engine_set(engine, CL_ENGINE_TMPDIR, pt))) {
+	    logg("!cli_engine_set(CL_ENGINE_TMPDIR) failed: %s\n", cl_strerror(ret));
+	    cl_engine_free(engine);
+	    return 50;
+	}
     }
 
     if(opt_check(opt, "database")) {
@@ -656,7 +674,7 @@ int scanmanager(const struct optstruct *opt)
 	    ret = scandirs(cwd, engine, opt, options, 1);
 
     } else if(!strcmp(opt->filename, "-")) { /* read data from stdin */
-	ret = scanstdin(engine, options);
+	ret = scanstdin(engine, opt, options);
 
     } else {
 	for (x = 0; (file = cli_strtok(opt->filename, x, "\t")) != NULL; x++) {

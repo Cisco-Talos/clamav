@@ -1981,6 +1981,9 @@ int cl_engine_free(struct cl_engine *engine)
     if(engine->pua_cats)
 	mp_free(engine->mempool, engine->pua_cats);
 
+    if(engine->tmpdir)
+	mp_free(engine->mempool, engine->tmpdir);
+
     cli_ftfree(engine);
     cli_freeign(engine);
 #ifdef USE_MPOOL

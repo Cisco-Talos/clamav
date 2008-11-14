@@ -18,7 +18,6 @@ CLAMAV_PUBLIC {
     cl_retver;
     cl_scandesc;
     cl_scanfile;
-    cl_settempdir;
     cl_statchkdir;
     cl_statfree;
     cl_statinidir;

@@ -546,7 +546,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     snprintf(peer_addr, sizeof(peer_addr), "%s", inet_ntoa(peer.sin_addr));
     logg("*Accepted connection from %s on port %u, fd %d\n", peer_addr, port, acceptd);
 
-    if(cli_gentempfd(NULL, &tmpname, &tmpd)) {
+    if(cli_gentempfd(cfgopt(copt, "TemporaryDirectory")->strarg, &tmpname, &tmpd)) {
 	shutdown(sockfd, 2);
 	closesocket(sockfd);
 	closesocket(acceptd);

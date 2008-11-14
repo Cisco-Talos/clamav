@@ -61,7 +61,7 @@ static	int	tnef_header(FILE *fp, uint8_t *part, uint16_t *type, uint16_t *tag, i
 #define	MIN_SIZE	(sizeof(uint32_t) + sizeof(uint16_t))
 
 int
-cli_tnef(const char *dir, int desc)
+cli_tnef(const char *dir, int desc, cli_ctx *ctx)
 {
 	uint32_t i32;
 	uint16_t i16;
@@ -179,7 +179,7 @@ cli_tnef(const char *dir, int desc)
 				 */
 				if(cli_debug_flag) {
 					int fout = -1;
-					char *filename = cli_gentemp(NULL);
+					char *filename = cli_gentemp(ctx->engine->tmpdir);
 					char buffer[BUFSIZ];
 
 					if(filename)

@@ -91,7 +91,7 @@ if(cli_checklimits(NAME, ctx, (CHK), 0, 0)!=CL_CLEAN) {	\
 }
 
 #define CLI_UNPTEMP(NAME,FREEME) \
-if(!(tempfile = cli_gentemp(NULL))) { \
+if(!(tempfile = cli_gentemp(ctx->engine->tmpdir))) { \
     cli_multifree FREEME; \
     return CL_EMEM; \
 } \
@@ -102,7 +102,7 @@ if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) { \
     return CL_EIO; \
 }
 
-#define CLI_TMPUNLK() if(!cli_leavetemps_flag) { \
+#define CLI_TMPUNLK() if(!ctx->engine->keeptmp) { \
     if (cli_unlink(tempfile)) { \
 	free(tempfile); \
 	return CL_EIO; \
@@ -141,7 +141,7 @@ if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) { \
 #define CLI_UNPRESULTS_(NAME,FSGSTUFF,EXPR,GOOD,FREEME) \
     switch(EXPR) { \
     case GOOD: /* Unpacked and rebuilt */ \
-	if(cli_leavetemps_flag) \
+	if(ctx->engine->keeptmp) \
 	    cli_dbgmsg(NAME": Unpacked and rebuilt executable saved in %s\n", tempfile); \
 	else \
 	    cli_dbgmsg(NAME": Unpacked and rebuilt executable\n"); \
@@ -1788,7 +1788,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	free(dest);
 	lseek(ndesc, 0, SEEK_SET);
 
-	if(cli_leavetemps_flag)
+	if(ctx->engine->keeptmp)
 	    cli_dbgmsg("UPX/FSG: Decompressed data saved in %s\n", tempfile);
 
 	cli_dbgmsg("***** Scanning decompressed file *****\n");

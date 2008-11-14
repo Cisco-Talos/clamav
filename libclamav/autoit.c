@@ -367,19 +367,19 @@ static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
       return CL_EIO;
     }
     free(UNP.outputbuf);
-    if(cli_leavetemps_flag)
+    if(ctx->engine->keeptmp)
       cli_dbgmsg("autoit: file extracted to %s\n", tempfile);
     else 
       cli_dbgmsg("autoit: file successfully extracted\n");
     lseek(i, 0, SEEK_SET);
     if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
       close(i);
-      if(!cli_leavetemps_flag)
+      if(!ctx->engine->keeptmp)
         if(cli_unlink(tempfile)) return CL_EIO;
       return CL_VIRUS;
     }
     close(i);
-    if(!cli_leavetemps_flag) 
+    if(!ctx->engine->keeptmp) 
       if (cli_unlink(tempfile)) return CL_EIO;
   }
   return ret;
@@ -877,19 +877,19 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
       return CL_EIO;
     }
     free(buf);
-    if(cli_leavetemps_flag)
+    if(ctx->engine->keeptmp)
       cli_dbgmsg("autoit: %s extracted to %s\n", (script)?"script":"file", tempfile);
     else 
       cli_dbgmsg("autoit: %s successfully extracted\n", (script)?"script":"file");
     lseek(i, 0, SEEK_SET);
     if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
       close(i);
-      if(!cli_leavetemps_flag) 
+      if(!ctx->engine->keeptmp) 
         if (cli_unlink(tempfile)) return CL_EIO;
       return CL_VIRUS;
     }
     close(i);
-    if(!cli_leavetemps_flag)
+    if(!ctx->engine->keeptmp)
       if (cli_unlink(tempfile)) return CL_EIO;
   }
   return ret;
@@ -912,14 +912,14 @@ int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
 
   cli_dbgmsg("in scanautoit()\n");
 
-  if (!(tmpd = cli_gentemp(NULL)))    
+  if (!(tmpd = cli_gentemp(ctx->engine->tmpdir)))    
     return CL_ETMPDIR;
   if (mkdir(tmpd, 0700)) {
     cli_dbgmsg("autoit: Can't create temporary directory %s\n", tmpd);
     free(tmpd);
     return CL_ETMPDIR;
   }
-  if (cli_leavetemps_flag)
+  if (ctx->engine->keeptmp)
     cli_dbgmsg("autoit: Extracting files to %s\n", tmpd);
 
   switch(version) {
@@ -940,7 +940,7 @@ int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
     r = CL_CLEAN;
   }
 
-  if (!cli_leavetemps_flag)
+  if (!ctx->engine->keeptmp)
     cli_rmdirs(tmpd);
 
   free(tmpd);

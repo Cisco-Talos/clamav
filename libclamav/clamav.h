@@ -122,7 +122,9 @@ enum cl_engine_field {
     CL_ENGINE_DB_TIME,		    /* uint32_t */
     CL_ENGINE_AC_ONLY,		    /* uint32_t */
     CL_ENGINE_AC_MINDEPTH,	    /* uint32_t */
-    CL_ENGINE_AC_MAXDEPTH	    /* uint32_t */
+    CL_ENGINE_AC_MAXDEPTH,	    /* uint32_t */
+    CL_ENGINE_TMPDIR,		    /* (char *) */
+    CL_ENGINE_KEEPTMP		    /* uint32_t */
 };
 
 extern int cl_engine_set(struct cl_engine *engine, enum cl_engine_field field, const void *val);
@@ -184,7 +186,6 @@ extern unsigned int cl_retflevel(void);
 extern const char *cl_retver(void);
 
 /* others */
-extern void cl_settempdir(const char *dir, short leavetemps);
 extern const char *cl_strerror(int clerror);
 
 #ifdef __cplusplus

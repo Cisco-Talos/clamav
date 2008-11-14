@@ -86,7 +86,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
     snprintf(name, sizeof(name), "%s/zip.%03u", tmpd, *fu);
     name[sizeof(name)-1]='\0';
   } else {
-    if(!(tempfile = cli_gentemp(NULL))) return CL_EMEM;
+    if(!(tempfile = cli_gentemp(ctx->engine->tmpdir))) return CL_EMEM;
   }
   if((of = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRUSR|S_IWUSR))==-1) {
     cli_warnmsg("cli_unzip: failed to create temporary file %s\n", tempfile);
@@ -303,14 +303,14 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
     lseek(of, 0, SEEK_SET);
     ret = cli_magic_scandesc(of, ctx);
     close(of);
-    if(!cli_leavetemps_flag)
+    if(!ctx->engine->keeptmp)
       if(cli_unlink(tempfile)) ret = CL_EIO;
     if(!tmpd) free(tempfile);
     return ret;
   }
 
   close(of);
-  if(!cli_leavetemps_flag)
+  if(!ctx->engine->keeptmp)
     if(cli_unlink(tempfile)) ret = CL_EIO;
   if(!tmpd) free(tempfile);
   cli_dbgmsg("cli_unzip: extraction failed\n");
@@ -513,7 +513,7 @@ int cli_unzip(int f, cli_ctx *ctx) {
   }
 #endif
 
-  if (!(tmpd = cli_gentemp(NULL))) {
+  if (!(tmpd = cli_gentemp(ctx->engine->tmpdir))) {
     destroy_map(map, fsize);
     return CL_ETMPDIR;
   }
@@ -556,7 +556,7 @@ int cli_unzip(int f, cli_ctx *ctx) {
   }
 
   destroy_map(map, fsize);
-  if (!cli_leavetemps_flag) cli_rmdirs(tmpd);
+  if (!ctx->engine->keeptmp) cli_rmdirs(tmpd);
   free(tmpd);
 
   return ret;

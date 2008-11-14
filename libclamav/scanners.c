@@ -274,7 +274,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    return CL_EIO;
 
     /* generate the temporary directory */
-    if(!(dir = cli_gentemp(NULL)))
+    if(!(dir = cli_gentemp(ctx->engine->tmpdir)))
 	return CL_EMEM;
 
     if(mkdir(dir, 0700)) {
@@ -284,7 +284,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
     }
 
     if((ret = cli_unrar_open(desc, dir, &rar_state)) != UNRAR_OK) {
-	if(!cli_leavetemps_flag)
+	if(!ctx->engine->keeptmp)
 	    cli_rmdirs(dir);
 	free(dir);
 	if(ret == UNRAR_PASSWD) {
@@ -335,7 +335,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    lseek(rar_state.ofd,0,SEEK_SET);
 	    rc = cli_magic_scandesc(rar_state.ofd,ctx);
 	    close(rar_state.ofd);
-	    if(!cli_leavetemps_flag) 
+	    if(!ctx->engine->keeptmp) 
 		if (cli_unlink(rar_state.filename)) ret = CL_EIO;
 	    if(rc == CL_VIRUS ) {
 		cli_dbgmsg("RAR: infected with %s\n",*ctx->virname);
@@ -359,7 +359,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 
     cli_unrar_close(&rar_state);
 
-    if(!cli_leavetemps_flag)
+    if(!ctx->engine->keeptmp)
         cli_rmdirs(dir);
 
     free(dir);
@@ -385,7 +385,7 @@ static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
     cli_dbgmsg("in cli_scanarj()\n");
 
      /* generate the temporary directory */
-    if(!(dir = cli_gentemp(NULL)))
+    if(!(dir = cli_gentemp(ctx->engine->tmpdir)))
 	return CL_EMEM;
 
     if(mkdir(dir, 0700)) {
@@ -399,7 +399,7 @@ static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 
     ret = cli_unarj_open(desc, dir);
     if (ret != CL_SUCCESS) {
-	if(!cli_leavetemps_flag)
+	if(!ctx->engine->keeptmp)
 	    cli_rmdirs(dir);
 	free(dir);
 	cli_dbgmsg("ARJ: Error: %s\n", cl_strerror(ret));
@@ -435,7 +435,7 @@ static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 
     } while(ret == CL_SUCCESS);
     
-    if(!cli_leavetemps_flag)
+    if(!ctx->engine->keeptmp)
 	cli_rmdirs(dir);
 
     free(dir);
@@ -466,7 +466,7 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
 	return CL_EGZIP;
     }
 
-    if((ret = cli_gentempfd(NULL, &tmpname, &fd))) {
+    if((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd))) {
 	cli_dbgmsg("GZip: Can't generate temporary file.\n");
 	gzclose(gd);
 	return ret;
@@ -476,7 +476,7 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
 	cli_dbgmsg("GZip: Unable to malloc %u bytes.\n", FILEBUFF);
 	gzclose(gd);
 	close(fd);
-	if(!cli_leavetemps_flag) {
+	if(!ctx->engine->keeptmp) {
 	    if(cli_unlink(tmpname)) {
 	    	free(tmpname);
 		return CL_EIO;
@@ -494,7 +494,7 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
 	if(cli_writen(fd, buff, bytes) != bytes) {
 	    cli_dbgmsg("GZip: Can't write to file.\n");
 	    close(fd);
-	    if(!cli_leavetemps_flag) {
+	    if(!ctx->engine->keeptmp) {
 	    	if (cli_unlink(tmpname)) {
 		    free(tmpname);
 		    gzclose(gd);
@@ -514,7 +514,7 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
 
     if(ret == CL_VIRUS) {
 	close(fd);
-	if(!cli_leavetemps_flag)
+	if(!ctx->engine->keeptmp)
 	    if (cli_unlink(tmpname)) ret = CL_EIO;
 	free(tmpname);	
 	return ret;
@@ -524,7 +524,7 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
     if((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS ) {
 	cli_dbgmsg("GZip: Infected with %s\n", *ctx->virname);
 	close(fd);
-	if(!cli_leavetemps_flag) {
+	if(!ctx->engine->keeptmp) {
 	    if (cli_unlink(tmpname)) {
 	    	free(tmpname);
 		return CL_EIO;
@@ -534,7 +534,7 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
 	return CL_VIRUS;
     }
     close(fd);
-    if(!cli_leavetemps_flag)
+    if(!ctx->engine->keeptmp)
 	if (cli_unlink(tmpname)) ret = CL_EIO;
     free(tmpname);	
 
@@ -577,7 +577,7 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
 	return CL_EBZIP;
     }
 
-    if((ret = cli_gentempfd(NULL, &tmpname, &fd))) {
+    if((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd))) {
 	cli_dbgmsg("Bzip: Can't generate temporary file.\n");
 	BZ2_bzReadClose(&bzerror, bfd);
 	fclose(fs);
@@ -587,7 +587,7 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
     if(!(buff = (char *) cli_malloc(FILEBUFF))) {
 	cli_dbgmsg("Bzip: Unable to malloc %u bytes.\n", FILEBUFF);
 	close(fd);
-	if(!cli_leavetemps_flag) {
+	if(!ctx->engine->keeptmp) {
 	    if (cli_unlink(tmpname)) {
 	    	free(tmpname);
 		fclose(fs);
@@ -611,7 +611,7 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
 	    cli_dbgmsg("Bzip: Can't write to file.\n");
 	    BZ2_bzReadClose(&bzerror, bfd);
 	    close(fd);
-	    if(!cli_leavetemps_flag) {
+	    if(!ctx->engine->keeptmp) {
 		if (cli_unlink(tmpname)) {
 		    free(tmpname);
 		    free(buff);
@@ -631,7 +631,7 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
 
     if(ret == CL_VIRUS) {
 	close(fd);
-	if(!cli_leavetemps_flag)
+	if(!ctx->engine->keeptmp)
 	    if (cli_unlink(tmpname)) ret = CL_EIO;
 	free(tmpname);	
 	fclose(fs);
@@ -643,7 +643,7 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
 	cli_dbgmsg("Bzip: Infected with %s\n", *ctx->virname);
     }
     close(fd);
-    if(!cli_leavetemps_flag)
+    if(!ctx->engine->keeptmp)
 	if (cli_unlink(tmpname)) ret = CL_EIO;
     free(tmpname);	
     fclose(fs);
@@ -660,7 +660,7 @@ static int cli_scanszdd(int desc, cli_ctx *ctx)
 
     cli_dbgmsg("in cli_scanszdd()\n");
 
-    if((ret = cli_gentempfd(NULL, &tmpname, &ofd))) {
+    if((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &ofd))) {
 	cli_dbgmsg("MSEXPAND: Can't generate temporary file/descriptor\n");
 	return ret;
     }
@@ -670,7 +670,7 @@ static int cli_scanszdd(int desc, cli_ctx *ctx)
 
     if(ret != CL_SUCCESS) { /* CL_VIRUS or some error */
 	close(ofd);
-	if(!cli_leavetemps_flag)
+	if(!ctx->engine->keeptmp)
 	    if (cli_unlink(tmpname)) ret = CL_EIO;
 	free(tmpname);	
 	return ret;
@@ -680,7 +680,7 @@ static int cli_scanszdd(int desc, cli_ctx *ctx)
     lseek(ofd, 0, SEEK_SET);
     ret = cli_magic_scandesc(ofd, ctx);
     close(ofd);
-    if(!cli_leavetemps_flag)
+    if(!ctx->engine->keeptmp)
 	if (cli_unlink(tmpname)) ret = CL_EIO;
     free(tmpname);	
 
@@ -707,7 +707,7 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
 	if(cli_checklimits("CAB", ctx, file->length, 0, 0)!=CL_CLEAN)
 	    continue;
 
-	if(!(tempname = cli_gentemp(NULL))) {
+	if(!(tempname = cli_gentemp(ctx->engine->tmpdir))) {
 	    ret = CL_EMEM;
 	    break;
 	}
@@ -717,7 +717,7 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
 	else
 	    ret = cli_scanfile(tempname, ctx);
 
-	if(!cli_leavetemps_flag) {
+	if(!ctx->engine->keeptmp) {
 	    if (cli_unlink(tempname)) {
 	    	free(tempname);
 		ret = CL_EIO;
@@ -797,11 +797,11 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 	    vbaname[sizeof(vbaname)-1] = '\0';
 	    fd = open(vbaname, O_RDONLY|O_BINARY);
 	    if (fd == -1) continue;
-	    if ((fullname = cli_ppt_vba_read(fd))) {
+	    if ((fullname = cli_ppt_vba_read(fd, ctx))) {
 		if(cli_scandir(fullname, ctx, 0) == CL_VIRUS) {
 		    ret = CL_VIRUS;
 		}
-		if(!cli_leavetemps_flag)
+		if(!ctx->engine->keeptmp)
 		    cli_rmdirs(fullname);
 		free(fullname);
 	    }
@@ -940,7 +940,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
 	return CL_CLEAN;
     }
 
-    if(!(tempname = cli_gentemp(NULL)))
+    if(!(tempname = cli_gentemp(ctx->engine->tmpdir)))
 	return CL_EMEM;
 
     if(mkdir(tempname, 0700)) {
@@ -988,7 +988,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
 	ret = cli_scandir(fullname, ctx, 0);
     }
 
-    if(!cli_leavetemps_flag)
+    if(!ctx->engine->keeptmp)
         cli_rmdirs(tempname);
 
     free(tempname);
@@ -1022,8 +1022,8 @@ static int cli_scanscript(int desc, cli_ctx *ctx)
 
 	/* dump to disk only if explicitly asked to,
 	 * otherwise we can process just in-memory */
-	if(cli_leavetemps_flag) {
-		if((ret = cli_gentempfd(NULL, &tmpname, &ofd))) {
+	if(ctx->engine->keeptmp) {
+		if((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &ofd))) {
 			cli_dbgmsg("cli_scanscript: Can't generate temporary file/descriptor\n");
 			return ret;
 		}
@@ -1065,7 +1065,7 @@ static int cli_scanscript(int desc, cli_ctx *ctx)
 		 * and using while(){} loop would mean code duplication */
 	} while (nread > 0);
 
-	if(cli_leavetemps_flag) {
+	if(ctx->engine->keeptmp) {
 		free(tmpname);
 		close(ofd);
 	}
@@ -1082,7 +1082,7 @@ static int cli_scanhtml_utf16(int desc, cli_ctx *ctx)
 
     cli_dbgmsg("in cli_scanhtml_utf16()\n");
 
-    if(!(tempname = cli_gentemp(NULL)))
+    if(!(tempname = cli_gentemp(ctx->engine->tmpdir)))
 	return CL_EMEM;
 
     if((fd = open(tempname, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
@@ -1112,7 +1112,7 @@ static int cli_scanhtml_utf16(int desc, cli_ctx *ctx)
     ret = cli_scanhtml(fd, ctx);
     close(fd);
 
-    if(!cli_leavetemps_flag) {
+    if(!ctx->engine->keeptmp) {
 	if (cli_unlink(tempname)) ret = CL_EIO;
     } else
 	cli_dbgmsg("cli_scanhtml_utf16: Decoded HTML data saved in %s\n", tempname);
@@ -1133,7 +1133,7 @@ static int cli_scanole2(int desc, cli_ctx *ctx)
         return CL_EMAXREC;
 
     /* generate the temporary directory */
-    if(!(dir = cli_gentemp(NULL)))
+    if(!(dir = cli_gentemp(ctx->engine->tmpdir)))
 	return CL_EMEM;
 
     if(mkdir(dir, 0700)) {
@@ -1145,7 +1145,7 @@ static int cli_scanole2(int desc, cli_ctx *ctx)
     ret = cli_ole2_extract(desc, dir, ctx, &vba);
     if(ret!=CL_CLEAN && ret!=CL_VIRUS) {
 	cli_dbgmsg("OLE2: %s\n", cl_strerror(ret));
-	if(!cli_leavetemps_flag)
+	if(!ctx->engine->keeptmp)
 	    cli_rmdirs(dir);
 	free(dir);
 	return ret;
@@ -1162,7 +1162,7 @@ static int cli_scanole2(int desc, cli_ctx *ctx)
 	ctx->recursion--;
     }
 
-    if(!cli_leavetemps_flag)
+    if(!ctx->engine->keeptmp)
 	cli_rmdirs(dir);
     free(dir);
     return ret;
@@ -1177,7 +1177,7 @@ static int cli_scantar(int desc, cli_ctx *ctx, unsigned int posix)
     cli_dbgmsg("in cli_scantar()\n");
 
     /* generate temporary directory */
-    if(!(dir = cli_gentemp(NULL)))
+    if(!(dir = cli_gentemp(ctx->engine->tmpdir)))
 	return CL_EMEM;
 
     if(mkdir(dir, 0700)) {
@@ -1188,7 +1188,7 @@ static int cli_scantar(int desc, cli_ctx *ctx, unsigned int posix)
 
     ret = cli_untar(dir, desc, posix, ctx);
 
-    if(!cli_leavetemps_flag)
+    if(!ctx->engine->keeptmp)
 	cli_rmdirs(dir);
 
     free(dir);
@@ -1204,7 +1204,7 @@ static int cli_scanbinhex(int desc, cli_ctx *ctx)
     cli_dbgmsg("in cli_scanbinhex()\n");
 
     /* generate temporary directory */
-    if(!(dir = cli_gentemp(NULL)))
+    if(!(dir = cli_gentemp(ctx->engine->tmpdir)))
 	return CL_EMEM;
 
     if(mkdir(dir, 0700)) {
@@ -1218,7 +1218,7 @@ static int cli_scanbinhex(int desc, cli_ctx *ctx)
     else
 	ret = cli_scandir(dir, ctx, 0);
 
-    if(!cli_leavetemps_flag)
+    if(!ctx->engine->keeptmp)
 	cli_rmdirs(dir);
 
     free(dir);
@@ -1234,7 +1234,7 @@ static int cli_scanmschm(int desc, cli_ctx *ctx)
     cli_dbgmsg("in cli_scanmschm()\n");
 
      /* generate the temporary directory */
-    if(!(dir = cli_gentemp(NULL)))
+    if(!(dir = cli_gentemp(ctx->engine->tmpdir)))
 	return CL_EMEM;
 
     if(mkdir(dir, 0700)) {
@@ -1245,7 +1245,7 @@ static int cli_scanmschm(int desc, cli_ctx *ctx)
 
     ret = cli_chm_open(desc, dir, &metadata);
     if (ret != CL_SUCCESS) {
-	if(!cli_leavetemps_flag)
+	if(!ctx->engine->keeptmp)
 	    cli_rmdirs(dir);
 	free(dir);
 	cli_dbgmsg("CHM: Error: %s\n", cl_strerror(ret));
@@ -1273,7 +1273,7 @@ static int cli_scanmschm(int desc, cli_ctx *ctx)
 
     cli_chm_close(&metadata);
    
-    if(!cli_leavetemps_flag)
+    if(!ctx->engine->keeptmp)
 	cli_rmdirs(dir);
 
     free(dir);
@@ -1292,7 +1292,7 @@ static int cli_scanscrenc(int desc, cli_ctx *ctx)
 
     cli_dbgmsg("in cli_scanscrenc()\n");
 
-    if(!(tempname = cli_gentemp(NULL)))
+    if(!(tempname = cli_gentemp(ctx->engine->tmpdir)))
 	return CL_EMEM;
 
     if(mkdir(tempname, 0700)) {
@@ -1304,7 +1304,7 @@ static int cli_scanscrenc(int desc, cli_ctx *ctx)
     if (html_screnc_decode(desc, tempname))
 	ret = cli_scandir(tempname, ctx, 0);
 
-    if(!cli_leavetemps_flag)
+    if(!ctx->engine->keeptmp)
 	cli_rmdirs(tempname);
 
     free(tempname);
@@ -1380,7 +1380,7 @@ static int cli_scancryptff(int desc, cli_ctx *ctx)
 
     free(src);
 
-    if(!(tempfile = cli_gentemp(NULL))) {
+    if(!(tempfile = cli_gentemp(ctx->engine->tmpdir))) {
 	free(dest);
 	return CL_EMEM;
     }
@@ -1411,7 +1411,7 @@ static int cli_scancryptff(int desc, cli_ctx *ctx)
 
     close(ndesc);
 
-    if(cli_leavetemps_flag)
+    if(ctx->engine->keeptmp)
 	cli_dbgmsg("CryptFF: Decompressed data saved in %s\n", tempfile);
     else
 	if (cli_unlink(tempfile)) ret = CL_EIO;
@@ -1423,7 +1423,7 @@ static int cli_scancryptff(int desc, cli_ctx *ctx)
 static int cli_scanpdf(int desc, cli_ctx *ctx, off_t offset)
 {
 	int ret;
-	char *dir = cli_gentemp(NULL);
+	char *dir = cli_gentemp(ctx->engine->tmpdir);
 
     if(!dir)
 	return CL_EMEM;
@@ -1436,7 +1436,7 @@ static int cli_scanpdf(int desc, cli_ctx *ctx, off_t offset)
 
     ret = cli_pdf(dir, desc, ctx, offset);
 
-    if(!cli_leavetemps_flag)
+    if(!ctx->engine->keeptmp)
 	cli_rmdirs(dir);
 
     free(dir);
@@ -1446,7 +1446,7 @@ static int cli_scanpdf(int desc, cli_ctx *ctx, off_t offset)
 static int cli_scantnef(int desc, cli_ctx *ctx)
 {
 	int ret;
-	char *dir = cli_gentemp(NULL);
+	char *dir = cli_gentemp(ctx->engine->tmpdir);
 
     if(!dir)
 	return CL_EMEM;
@@ -1457,12 +1457,12 @@ static int cli_scantnef(int desc, cli_ctx *ctx)
 	return CL_ETMPDIR;
     }
 
-    ret = cli_tnef(dir, desc);
+    ret = cli_tnef(dir, desc, ctx);
 
     if(ret == CL_CLEAN)
 	ret = cli_scandir(dir, ctx, 0);
 
-    if(!cli_leavetemps_flag)
+    if(!ctx->engine->keeptmp)
 	cli_rmdirs(dir);
 
     free(dir);
@@ -1472,7 +1472,7 @@ static int cli_scantnef(int desc, cli_ctx *ctx)
 static int cli_scanuuencoded(int desc, cli_ctx *ctx)
 {
 	int ret;
-	char *dir = cli_gentemp(NULL);
+	char *dir = cli_gentemp(ctx->engine->tmpdir);
 
     if(!dir)
 	return CL_EMEM;
@@ -1488,7 +1488,7 @@ static int cli_scanuuencoded(int desc, cli_ctx *ctx)
     if(ret == CL_CLEAN)
 	ret = cli_scandir(dir, ctx, 0);
 
-    if(!cli_leavetemps_flag)
+    if(!ctx->engine->keeptmp)
 	cli_rmdirs(dir);
 
     free(dir);
@@ -1504,7 +1504,7 @@ static int cli_scanmail(int desc, cli_ctx *ctx)
     cli_dbgmsg("Starting cli_scanmail(), recursion = %u\n", ctx->recursion);
 
     /* generate the temporary directory */
-    if(!(dir = cli_gentemp(NULL)))
+    if(!(dir = cli_gentemp(ctx->engine->tmpdir)))
 	return CL_EMEM;
 
     if(mkdir(dir, 0700)) {
@@ -1517,7 +1517,7 @@ static int cli_scanmail(int desc, cli_ctx *ctx)
      * Extract the attachments into the temporary directory
      */
     if((ret = cli_mbox(dir, desc, ctx))) {
-	if(!cli_leavetemps_flag)
+	if(!ctx->engine->keeptmp)
 	    cli_rmdirs(dir);
 	free(dir);
 	return ret;
@@ -1525,7 +1525,7 @@ static int cli_scanmail(int desc, cli_ctx *ctx)
 
     ret = cli_scandir(dir, ctx, CL_TYPE_MAIL);
 
-    if(!cli_leavetemps_flag)
+    if(!ctx->engine->keeptmp)
 	cli_rmdirs(dir);
 
     free(dir);
@@ -1609,7 +1609,7 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
 	char *tmpname;
 
 
-    tmpname = cli_gentemp(NULL);
+    tmpname = cli_gentemp(ctx->engine->tmpdir);
     if(!tmpname)
 	return CL_EMEM;
 
@@ -1628,7 +1628,7 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
 	if(cli_writen(fd, buff, bytes) != bytes) {
 	    cli_dbgmsg("cli_scanembpe: Can't write to temporary file\n");
 	    close(fd);
-	    if(!cli_leavetemps_flag) {
+	    if(!ctx->engine->keeptmp) {
 		if (cli_unlink(tmpname)) {
 		    free(tmpname);
 		    return CL_EIO;
@@ -1644,7 +1644,7 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
     if((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS) {
 	cli_dbgmsg("cli_scanembpe: Infected with %s\n", *ctx->virname);
 	close(fd);
-	if(!cli_leavetemps_flag) {
+	if(!ctx->engine->keeptmp) {
 	    if (cli_unlink(tmpname)) {
 	    	free(tmpname);
 		return CL_EIO;
@@ -1656,7 +1656,7 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
     ctx->recursion--;
 
     close(fd);
-    if(!cli_leavetemps_flag) {
+    if(!ctx->engine->keeptmp) {
 	if (cli_unlink(tmpname)) {
 	    free(tmpname);
 	    return CL_EIO;

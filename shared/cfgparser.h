@@ -46,8 +46,8 @@ struct cfgstruct {
     char *optname;
     char *strarg;
     int numarg;
-    short enabled;
-    short multiple;
+    unsigned int enabled;
+    unsigned int multiple;
     struct cfgstruct *nextarg;
     struct cfgstruct *next;
 };

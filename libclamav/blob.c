@@ -407,7 +407,7 @@ fileblobCreate(void)
 int
 fileblobScanAndDestroy(fileblob *fb)
 {
-	if(cli_leavetemps_flag) {
+	if(fb->ctx && fb->ctx->engine->keeptmp) {
 		/* Can't remove the file, the caller must scan */
 		fileblobDestroy(fb);
 		return CL_CLEAN;
@@ -509,7 +509,7 @@ fileblobPartialSet(fileblob *fb, const char *fullname, const char *arg)
 		close(fb->fd);
 		return;
 	}
-	blobSetFilename(&fb->b, NULL, fullname);
+	blobSetFilename(&fb->b, fb->ctx ? fb->ctx->engine->tmpdir : NULL, fullname);
 	if(fb->b.data)
 		if(fileblobAddData(fb, fb->b.data, fb->b.len) == 0) {
 			free(fb->b.data);

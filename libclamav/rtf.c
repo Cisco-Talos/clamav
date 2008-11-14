@@ -246,7 +246,7 @@ static int decode_and_scan(struct rtf_object_data* data, cli_ctx* ctx)
 	close(data->fd);
 	data->fd = -1;
 	if(data->name) {
-		if(!cli_leavetemps_flag)
+		if(!ctx->engine->keeptmp)
 			if(cli_unlink(data->name)) ret = CL_EIO;
 		free(data->name);
 		data->name = NULL;
@@ -494,7 +494,7 @@ static void cleanup_stack(struct stack* stack,struct rtf_state* state,cli_ctx* c
 	tableDestroy(actiontable);\
 	cleanup_stack(&stack,&state,ctx);\
 	free(buff);\
-        if(!cli_leavetemps_flag)\
+        if(!ctx->engine->keeptmp)\
 		cli_rmdirs(tempname);\
 	free(tempname);\
 	free(stack.states);
@@ -534,7 +534,7 @@ int cli_scanrtf(int desc, cli_ctx *ctx)
 		return CL_EMEM;
 	}
 
-	if(!(tempname = cli_gentemp(NULL)))
+	if(!(tempname = cli_gentemp(ctx->engine->tmpdir)))
 	    return CL_EMEM;
 
 	if(mkdir(tempname, 0700)) {
@@ -550,7 +550,7 @@ int cli_scanrtf(int desc, cli_ctx *ctx)
 		cli_dbgmsg("RTF: Unable to load rtf action table\n");
 		free(stack.states);
 		free(buff);
-		if(!cli_leavetemps_flag)
+		if(!ctx->engine->keeptmp)
 			cli_rmdirs(tempname);
 		free(tempname);
 		tableDestroy(actiontable);

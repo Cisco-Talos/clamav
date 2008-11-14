@@ -35,7 +35,7 @@
 #include "dconf.h"
 #include "libclamunrar_iface/unrar_iface.h"
 
-extern uint8_t cli_debug_flag, cli_leavetemps_flag;
+extern uint8_t cli_debug_flag;
 
 /*
  * CLI_ISCONTAINED(buf1, size1, buf2, size2) checks if buf2 is contained
@@ -100,6 +100,8 @@ struct cl_engine {
     uint32_t ac_only;
     uint32_t ac_mindepth;
     uint32_t ac_maxdepth;
+    char *tmpdir;
+    uint32_t keeptmp;
 
     /* Limits */
     uint64_t maxscansize;  /* during the scanning of archives this size

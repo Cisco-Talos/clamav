@@ -537,7 +537,7 @@ int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
 
     nsist.ifd = desc;
     nsist.off = offset;
-    if (!(nsist.dir = cli_gentemp(NULL)))
+    if (!(nsist.dir = cli_gentemp(ctx->engine->tmpdir)))
         return CL_ETMPDIR;
     if(mkdir(nsist.dir, 0700)) {
 	cli_dbgmsg("NSIS: Can't create temporary directory %s\n", nsist.dir);
@@ -545,7 +545,7 @@ int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
 	return CL_ETMPDIR;
     }
 
-    if(cli_leavetemps_flag) cli_dbgmsg("NSIS: Extracting files to %s\n", nsist.dir);
+    if(ctx->engine->keeptmp) cli_dbgmsg("NSIS: Extracting files to %s\n", nsist.dir);
 
     do {
         ret = cli_nsis_unpack(&nsist, ctx);
@@ -557,7 +557,7 @@ int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
 	  else
 	    ret=cli_magic_scandesc(nsist.ofd, ctx);
 	  close(nsist.ofd);
-	  if(!cli_leavetemps_flag)
+	  if(!ctx->engine->keeptmp)
 	    if(cli_unlink(nsist.ofn)) ret = CL_EIO;
 	} else if(ret == CL_EMAXSIZE) {
 	    ret = nsist.solid ? CL_BREAK : CL_SUCCESS;
@@ -569,7 +569,7 @@ int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
 
     cli_nsis_free(&nsist);
 
-    if(!cli_leavetemps_flag)
+    if(!ctx->engine->keeptmp)
         cli_rmdirs(nsist.dir);
 
     free(nsist.dir);

@@ -293,13 +293,6 @@ int main(int argc, char **argv)
 	return 1;
     }
 
-    /* set the temporary dir */
-    if((cpt = cfgopt(copt, "TemporaryDirectory"))->enabled)
-	cl_settempdir(cpt->strarg, 0);
-
-    if(cfgopt(copt, "LeaveTemporaryFiles")->enabled)
-	cl_settempdir(NULL, 1);
-
     logg("#clamd daemon %s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n", get_version());
 
 #ifndef C_WINDOWS
@@ -393,6 +386,22 @@ int main(int argc, char **argv)
 	}
     } else {
 	logg("#Not loading PUA signatures.\n");
+    }
+
+    /* set the temporary dir */
+    if((cpt = cfgopt(copt, "TemporaryDirectory"))->enabled) {
+	if((ret = cl_engine_set(engine, CL_ENGINE_TMPDIR, cpt->strarg))) {
+	    logg("!cli_engine_set(CL_ENGINE_TMPDIR) failed: %s\n", cl_strerror(ret));
+	    logg_close();
+	    freecfg(copt);
+	    cl_engine_free(engine);
+	    return 1;
+	}
+    }
+
+    if(cfgopt(copt, "LeaveTemporaryFiles")->enabled) {
+	val32 = 1;
+	cl_engine_set(engine, CL_ENGINE_KEEPTMP, &val32);
     }
 
     if(cfgopt(copt, "PhishingSignatures")->enabled)

@@ -92,7 +92,7 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 				lseek(fout, 0, SEEK_SET);
 				ret = cli_magic_scandesc(fout, ctx);
 				close(fout);
-				if (!cli_leavetemps_flag)
+				if (!ctx->engine->keeptmp)
 					if (cli_unlink(fullname)) return CL_EIO;
 				if (ret==CL_VIRUS)
 					return CL_VIRUS;
@@ -211,7 +211,7 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 		lseek(fout, 0, SEEK_SET);
 		ret = cli_magic_scandesc(fout, ctx);
 		close(fout);
-		if (!cli_leavetemps_flag)
+		if (!ctx->engine->keeptmp)
 			if (cli_unlink(fullname)) return CL_EIO;
 		if (ret==CL_VIRUS)
 			return CL_VIRUS;
