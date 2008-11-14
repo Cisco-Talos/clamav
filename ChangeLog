@@ -1,3 +1,8 @@
+Fri Nov 14 18:40:50 EET 2008 (edwin)
+------------------------------------
+ * libclamunrar/unrar.c: avoid rar_malloc warnings on damaged files
+ (bb #1290)
+
 Thu Nov 13 11:05:20 EET 2008 (edwin)
 ------------------------------------
  * libclamav/htmlnorm.c: fix memory leak (bb #1291)

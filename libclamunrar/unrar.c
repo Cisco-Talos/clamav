@@ -637,7 +637,7 @@ static int add_vm_code(unpack_data_t *unpack_data, unsigned int first_byte,
 	}
 	if (new_filter) {
 		vm_codesize = rarvm_read_data(&rarvm_input);
-		if (vm_codesize >= 0x1000 || vm_codesize == 0 || (vm_codesize > rarvm_input.buf_size)) {
+		if (vm_codesize >= 0x1000 || vm_codesize == 0 || (vm_codesize > rarvm_input.buf_size) || vm_codesize < 0) {
 			rar_dbgmsg("ERROR: vm_codesize=0x%x buf_size=0x%x\n", vm_codesize, rarvm_input.buf_size);
 			return FALSE;
 		}
