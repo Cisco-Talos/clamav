@@ -1,3 +1,7 @@
+Fri Nov 14 18:59:11 CET 2008 (acab)
+-----------------------------------
+ * libclamav/nsis: improve lateny (bb#1180)
+
 Fri Nov 14 18:57:53 CET 2008 (acab)
 -----------------------------------
  * docs/man/clamav-milter.8.in: avoid hyphen-used-as-minus-sign warnings

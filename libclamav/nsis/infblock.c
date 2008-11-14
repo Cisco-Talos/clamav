@@ -52,16 +52,13 @@
 
 #define LAST (s->last == DRY)
 
-#define FIXEDH 544      /* number of hufts used by fixed tables */
-
-
 
 typedef struct inflate_blocks_state FAR inflate_blocks_statef;
 #define exop word.what.Exop
 #define bits word.what.Bits
 
 /* And'ing with mask[n] masks the lower n bits */
-local unsigned short inflate_mask[17] = {
+local const unsigned short inflate_mask[17] = {
     0x0000,
     0x0001, 0x0003, 0x0007, 0x000f, 0x001f, 0x003f, 0x007f, 0x00ff,
     0x01ff, 0x03ff, 0x07ff, 0x0fff, 0x1fff, 0x3fff, 0x7fff, 0xffff
@@ -87,12 +84,13 @@ local const unsigned short  cpdext[30] = { /* Extra bits for distance codes */
         12, 12, 13, 13};
 
 /* build fixed tables only once--keep them here */
-local char fixed_built = 0;
-local inflate_huft fixed_mem[FIXEDH];
-local uInt fixed_bl=9;
-local uInt fixed_bd=5;
-local inflate_huft *fixed_tl;
-local inflate_huft *fixed_td;
+/* local char fixed_built = 0; */
+/* local inflate_huft fixed_mem[FIXEDH]; */
+/* local uInt fixed_bl=9; */
+/* local uInt fixed_bd=5; */
+/* local inflate_huft *fixed_tl; */
+/* local inflate_huft *fixed_td; */
+
 
 /* copy as much as possible from the sliding window to the output area */
 local void ZEXPORT inflate_flush(nsis_z_streamp z)
@@ -380,7 +378,7 @@ int ZEXPORT nsis_inflate(nsis_z_streamp z)
           Tracev((stderr, "inflate:     fixed codes block%s\n",
                  LAST ? " (last)" : ""));
           {
-            if (!fixed_built)
+            if (!s->zs.fixed_built)
             {
               int _k;              /* temporary variable */
               uInt f = 0;         /* number of hufts used in fixed_mem */
@@ -398,22 +396,22 @@ int ZEXPORT nsis_inflate(nsis_z_streamp z)
                 lc[_k] = v;
               }
 
-              huft_build(lc, 288, 257, cplens, cplext, &fixed_tl, &fixed_bl, fixed_mem, &f);
+              huft_build(lc, 288, 257, cplens, cplext, &s->zs.fixed_tl, &s->zs.fixed_bl, s->zs.fixed_mem, &f);
 
               /* distance table */
               for (_k = 0; _k < 30; _k++) lc[_k] = 5;
 
-              huft_build(lc, 30, 0, cpdist, cpdext, &fixed_td, &fixed_bd, fixed_mem, &f);
+              huft_build(lc, 30, 0, cpdist, cpdext, &s->zs.fixed_td, &s->zs.fixed_bd, s->zs.fixed_mem, &f);
 
               /* done */
-              fixed_built++;
+              s->zs.fixed_built++;
             }
 
             /* s->sub.decode.t_codes.mode = CODES_START; */
-            s->sub.decode.t_codes.lbits = (Byte)fixed_bl;
-            s->sub.decode.t_codes.dbits = (Byte)fixed_bd;
-            s->sub.decode.t_codes.ltree = fixed_tl;
-            s->sub.decode.t_codes.dtree = fixed_td;
+            s->sub.decode.t_codes.lbits = (Byte)s->zs.fixed_bl;
+            s->sub.decode.t_codes.dbits = (Byte)s->zs.fixed_bd;
+            s->sub.decode.t_codes.ltree = s->zs.fixed_tl;
+            s->sub.decode.t_codes.dtree = s->zs.fixed_td;
           }
           s->mode = CODES_START;
           break;

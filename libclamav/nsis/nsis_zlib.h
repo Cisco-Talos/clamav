@@ -107,7 +107,20 @@ struct inflate_huft_s {
 
 typedef struct inflate_codes_state inflate_codes_statef;
 
+#define FIXEDH 544      /* number of hufts used by fixed tables */
+
+struct z_stuff {
+  char fixed_built;
+  inflate_huft fixed_mem[FIXEDH];
+  uInt fixed_bl;
+  uInt fixed_bd;
+  inflate_huft *fixed_tl;
+  inflate_huft *fixed_td;
+};
+
 struct inflate_blocks_state {
+  /* acab */
+  struct z_stuff zs;
 
   /* mode */
   inflate_mode  mode;    /* current inflate_block mode */
@@ -200,7 +213,13 @@ typedef nsis_z_stream FAR *nsis_z_streamp;
 #define Z_NULL  0  /* for initializing zalloc, zfree, opaque */
 
 
-#define nsis_inflateInit(x) inflateReset(x)
+#define nsis_inflateInit(z) \
+{ \
+ (z)->blocks.zs.fixed_built = 0; \
+ (z)->blocks.zs.fixed_bl = 9;	  \
+ (z)->blocks.zs.fixed_bd = 5;	  \
+ inflateReset(z);	  \
+}
 int ZEXPORT nsis_inflate(nsis_z_streamp z);
 #define inflateReset(z) \
 { \
