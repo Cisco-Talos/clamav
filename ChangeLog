@@ -32,7 +32,7 @@ Thu Oct 30 16:47:17 CET 2008 (tk)
 Thu Oct 30 13:52:42 CET 2008 (acab)
 -----------------------------------
  * libclamav/vba_extract.c: get_unicode_name off-by-one - bb#1239
- 			    reported by Moritz Jodeit <moritz*jodeit.org>
+			    reported by Moritz Jodeit <moritz*jodeit.org>
 
 Thu Oct 30 13:07:53 EET 2008 (edwin)
 ------------------------------------
