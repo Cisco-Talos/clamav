@@ -1,3 +1,8 @@
+Fri Nov 14 18:40:50 EET 2008 (edwin)
+------------------------------------
+ * libclamunrar/unrar.c: avoid rar_malloc warnings on damaged files
+ (bb #1290)
+
 Fri Nov 14 10:21:22 EET 2008 (edwin)
 ------------------------------------
  * Makefile.am, contrib/clamdtop/TODO, libclamav/Makefile.am,
