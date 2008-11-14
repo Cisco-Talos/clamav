@@ -25,7 +25,7 @@
 #endif
 
 #ifdef USE_MPOOL
-
+#error this is a test
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
