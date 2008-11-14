@@ -1,3 +1,8 @@
+Fri Nov 14 10:21:22 EET 2008 (edwin)
+------------------------------------
+ * Makefile.am, contrib/clamdtop/TODO, libclamav/Makefile.am,
+ libclamav/Makefile.in: fix distcheck
+
 Thu Nov 13 23:00:39 EET 2008 (edwin)
 ------------------------------------
  * contrib/clamdtop/clamdtop.c: fix reconnect logic

@@ -1,4 +1,3 @@
-select one clamd when monitoring more, and show details for that only
 parse pool states, and show those that are != VALID
 highlight problems in version/dbversion/dbtime (old db version, old dbtime,
 different db versions).

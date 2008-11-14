@@ -49,7 +49,7 @@ libclamunrar_la_SOURCES = \
 	../libclamunrar/unrarppm.h \
 	../libclamunrar/unrarvm.h \
 	../libclamunrar/unrarhlp.c \
-	unrarhlp.h
+	../libclamunrar/unrarhlp.h
 
 lib_LTLIBRARIES += libclamunrar.la
 EXTRA_DIST += @top_srcdir@/libclamunrar/libclamunrar.map

@@ -123,7 +123,7 @@ am__libclamunrar_la_SOURCES_DIST = ../libclamunrar/unrar15.c \
 	../libclamunrar/unrarvm.c ../libclamunrar/unrarcmd.c \
 	../libclamunrar/unrarfilter.c ../libclamunrar/unrarppm.h \
 	../libclamunrar/unrarvm.h ../libclamunrar/unrarhlp.c \
-	unrarhlp.h
+	../libclamunrar/unrarhlp.h
 @ENABLE_UNRAR_TRUE@am_libclamunrar_la_OBJECTS = unrar15.lo unrar.lo \
 @ENABLE_UNRAR_TRUE@	unrar20.lo unrarppm.lo unrarvm.lo \
 @ENABLE_UNRAR_TRUE@	unrarcmd.lo unrarfilter.lo unrarhlp.lo
@@ -361,7 +361,7 @@ EXTRA_DIST = $(am__append_3) regex/engine.c libclamav.map \
 @ENABLE_UNRAR_TRUE@	../libclamunrar/unrarppm.h \
 @ENABLE_UNRAR_TRUE@	../libclamunrar/unrarvm.h \
 @ENABLE_UNRAR_TRUE@	../libclamunrar/unrarhlp.c \
-@ENABLE_UNRAR_TRUE@	unrarhlp.h
+@ENABLE_UNRAR_TRUE@	../libclamunrar/unrarhlp.h
 
 @ENABLE_UNRAR_TRUE@libclamunrar_iface_la_LIBADD = libclamunrar.la
 @ENABLE_UNRAR_TRUE@libclamunrar_iface_la_LDFLAGS = -module @TH_SAFE@ \
