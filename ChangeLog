@@ -1,3 +1,8 @@
+Sun Nov 16 20:43:15 EET 2008 (edwin)
+------------------------------------
+ * unit_tests/efence_tests.sh: use dlsearch instead of search, should
+ improve search for electric-fence
+
 Sun Nov 16 17:44:39 EET 2008 (edwin)
 ------------------------------------
  * contrib/clamdtop/clamdtop.c: Instead of showing all threads show
