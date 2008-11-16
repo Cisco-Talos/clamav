@@ -823,7 +823,7 @@ static int output_stats(struct stats *stats, unsigned idx)
 		print_colored(win, buf);
 		show_bar(win, i++, stats->prim_live, stats->prim_idle, stats->prim_max, 0);
 
-		mvwprintw(win, i++, 0, "All     threads: ");
+		mvwprintw(win, i++, 0, "Multiscan pool : ");
 		snprintf(buf, sizeof(buf), "live %3u idle %3u max %3u", stats->live, stats->idle, stats->max);
 		print_colored(win, buf);
 		show_bar(win, i++, stats->live, stats->idle, stats->max, 0);
@@ -980,10 +980,11 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
 				stats->prim_idle = idle;
 				assert(!stats->prim_max && "There can be only one primary pool!");
 				stats->prim_max = max;
+			} else {
+				stats->live += live;
+				stats->idle += idle;
+				stats->max += max;
 			}
-			stats->live += live;
-			stats->idle += idle;
-			stats->max += max;
 		} else if (!strcmp("Queue",buf)) {
 			unsigned len;
 			if(sscanf(val, "%u", &len) != 1)
@@ -1101,7 +1102,7 @@ static int show_help(void)
 	explain("DBVER", "Database version");
 	explain("DBTIME", "Database publish time");
 	explain("Primary threads", "Threadpool used to receive commands");
-	explain("All threads","All threadpools, including multiscan");
+	explain("Multiscan pool","Threadpool used for multiscan");
 	explain("live","Executing commands, or scanning");
 	explain("idle","Waiting for commands, will exit after idle_timeout");
 	explain("max", "Maximum number of threads configured for this pool");
