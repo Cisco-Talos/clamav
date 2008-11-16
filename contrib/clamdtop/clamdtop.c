@@ -690,7 +690,7 @@ static void parse_queue(conn_t *conn, char* buf, size_t len, unsigned idx)
 	} while (recv_line(conn, buf, len) && buf[0] == '\t' && strcmp("END\n", buf) != 0);
 }
 
-static unsigned biggest_queue = 1, biggest_mem = 0;
+static unsigned biggest_mem = 0;
 
 static void output_memstats(struct stats *stats)
 {
@@ -828,19 +828,17 @@ static int output_stats(struct stats *stats, unsigned idx)
 		print_colored(win, buf);
 		show_bar(win, i++, stats->live, stats->idle, stats->max, 0);
 
+		blink = 0;
+		if(stats->current_q > stats->biggest_queue) {
+			stats->biggest_queue = stats->current_q;
+			blink = 1;
+		}
 		mvwprintw(win, i++, 0, "Queue:");
 		snprintf(buf, sizeof(buf), "%6u items %6u max", stats->current_q, stats->biggest_queue);
 		print_colored(win, buf);
+		show_bar(win, i++, stats->current_q, 0, stats->biggest_queue, blink);
 		werase(mem_window);
 		output_memstats(stats);
-	}
-	blink = 0;
-	if(stats->current_q > stats->biggest_queue) {
-			stats->biggest_queue = stats->current_q;
-			blink = 1;
-	}
-	if (sel && !stats->stats_unsupp) {
-		show_bar(win, i++, stats->current_q, 0, biggest_queue, blink);
 	}
 	free(line);
 	return i;
@@ -936,6 +934,7 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
 	stats->conn_hr = conn_dt/3600;
 	stats->conn_min = (conn_dt/60)%60;
 	stats->conn_sec = conn_dt%60;
+	stats->current_q = 0;
 
 	while(recv_line(conn, buf, sizeof(buf)) && strcmp("END\n",buf) != 0) {
 		char *val = strchr(buf, ':');
@@ -989,7 +988,7 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
 			unsigned len;
 			if(sscanf(val, "%u", &len) != 1)
 				continue;
-			stats->current_q = len;
+			stats->current_q += len;
 		}
 	}
 }
@@ -1153,7 +1152,8 @@ int main(int argc, char *argv[])
 				init_windows(global.num_clamd);
 				break;
 			case 'R':
-				biggest_queue = 1;
+				for (i=0;i<global.num_clamd;i++)
+					global.all_stats[i].biggest_queue = 1;
 				biggest_mem = 0;
 				break;
 			case KEY_UP:
@@ -1180,10 +1180,13 @@ int main(int argc, char *argv[])
 		if(tv.tv_sec - tv_last.tv_sec >= MIN_INTERVAL) {
 			free_global_stats();
 			for(i=0;i<global.num_clamd;i++) {
+				unsigned biggest_q;
 				struct stats *stats = &global.all_stats[i];
 				if (global.conn[i].sd != -1)
 					send_string(&global.conn[i], "STATS\n");
+				biggest_q = stats->biggest_queue;
 				memset(stats, 0, sizeof(*stats));
+				stats->biggest_queue = biggest_q;
 				parse_stats(&global.conn[i], stats, i);
 			}
 			if (global.tasks)
