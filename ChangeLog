@@ -1,3 +1,7 @@
+Mon Nov 17 22:23:51 CET 2008 (tk)
+---------------------------------
+ * docs/clamdoc.tex, docs/man/clamd.8.in: document nCOMMANDS (bb#1278)
+
 Mon Nov 17 22:20:07 CET 2008 (tk)
 ---------------------------------
  * clamscan/manager.c: fix double-slash when scanning the root dir (bb#1263)
