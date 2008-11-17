@@ -2,7 +2,7 @@
 # Run under electric-fence
 LIBDIRS=`../libtool --config | grep sys_lib_dlsearch_path_spec | sed -e 's/.*"\(.*\)"/\1/'`
 if test -z "$LIBEFENCE"; then
-	for i in $LIBDIRS; do
+	for i in $LIBDIRS /usr/local/lib; do
 		if test -f "$i/libefence.so"; then
 			LIBEFENCE="$i/libefence.so"
 			break;

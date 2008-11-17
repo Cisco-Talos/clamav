@@ -1,3 +1,7 @@
+Mon Nov 17 16:24:29 EET 2008 (edwin)
+------------------------------------
+ * unit_tests/efence_tests.sh: search in /usr/local/lib for efence
+
 Mon Nov 17 15:45:39 EET 2008 (edwin)
 ------------------------------------
  * unit_tests/valgrind.supp: add more valgrind suppressions (bb
