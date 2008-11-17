@@ -1,3 +1,7 @@
+Mon Nov 17 13:54:24 CET 2008 (acab)
+-----------------------------------
+ * etc/clamd.conf: update description of local vs network mode
+
 Fri Nov 14 18:59:11 CET 2008 (acab)
 -----------------------------------
  * libclamav/nsis: improve lateny (bb#1180)
