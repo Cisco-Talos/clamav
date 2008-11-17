@@ -242,7 +242,10 @@ static int scandirs(const char *dirname, struct cl_engine *engine, const struct 
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
 		    fname = malloc(strlen(dirname) + strlen(dent->d_name) + 2);
-		    sprintf(fname, "%s/%s", dirname, dent->d_name);
+		    if(!strcmp(dirname, "/"))
+			sprintf(fname, "/%s", dent->d_name);
+		    else
+			sprintf(fname, "%s/%s", dirname, dent->d_name);
 
 		    /* stat the file */
 		    if(lstat(fname, &statbuf) != -1) {
@@ -619,12 +622,11 @@ int scanmanager(const struct optstruct *opt)
 		perror(file);
 		ret = 56;
 	    } else {
-		int slash = 1;
-		for(i = strlen(file) - 1; i > 0 && slash; i--) {
+		for(i = strlen(file) - 1; i > 0; i--) {
 		    if(file[i] == '/')
 			file[i] = 0;
 		    else
-			slash = 0;
+			break;
 		}
 
 		fmode = (mode_t) fmodeint;
