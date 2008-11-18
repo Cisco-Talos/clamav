@@ -662,5 +662,13 @@ void check_all(struct MP *mp) {
 #endif /* DEBUGMPOOL */
 
 
+#else
+/* dummy definitions to make Solaris linker happy.
+ * these symbols are declared in libclamav.map */
+void mp_free() {}
+void mp_create() {}
+void mp_destroy() {}
+void mp_getstats() {}
 
 #endif /* USE_MPOOL */
+

@@ -73,7 +73,6 @@ CLAMAV_PRIVATE {
     tableInsert;
     cli_warnmsg;
     cli_strtokbuf;
-    cli_leavetemps_flag;
     cli_js_init;
     cli_js_process_buffer;
     cli_js_parse_done;
@@ -90,7 +89,6 @@ CLAMAV_PRIVATE {
     regex_list_add_pattern;
     cli_build_regex_list;
     regex_list_match;
-    cli_initengine;
     phishing_init;
     init_domainlist;
     init_whitelist;
