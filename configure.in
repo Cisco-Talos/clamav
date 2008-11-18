@@ -421,19 +421,19 @@ AC_CHECK_FUNCS([poll setsid memcpy snprintf vsnprintf strerror_r strlcpy strlcat
 AC_C_FUNC_MMAP_PRIVATE
 AC_FUNC_FSEEKO
 
-AC_ARG_ENABLE([mempool],[  --enable-mempool	enable memory pools], enable_mempool=$enableval, enable_mempool="no")
+AC_ARG_ENABLE([mempool],[  --disable-mempool       disable memory pools], enable_mempool=$enableval, enable_mempool="yes")
 if test "$enable_mempool" = "yes"; then
 	if test "$ac_cv_c_mmap_private" != "yes"; then
-		AC_MSG_WARN([****** mempool support disabled (mmap not available or not usable)])
+		AC_MSG_NOTICE([****** mempool support disabled (mmap not available or not usable)])
 	else
 		AC_CHECK_FUNC([getpagesize], [
 			AC_C_FUNC_MMAP_ANONYMOUS
 			if test "$ac_cv_c_mmap_anonymous" = "no"; then
-				AC_MSG_WARN([****** mempool support disabled (anonymous mmap not available)])
+				AC_MSG_NOTICE([****** mempool support disabled (anonymous mmap not available)])
 			else
 				AC_DEFINE([USE_MPOOL],1,[enable memory pools])
 			fi
-		], [AC_MSG_WARN([****** mempool support disabled (getpagesize not available)])])
+		], [AC_MSG_NOTICE([****** mempool support disabled (getpagesize not available)])])
 	fi
 fi
 

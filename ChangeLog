@@ -1,3 +1,7 @@
+Tue Nov 18 18:40:32 CET 2008 (acab)
+-----------------------------------
+ * configure: enable mempool by default (where available)
+
 Tue Nov 18 14:06:04 EET 2008 (edwin)
 ------------------------------------
  * libclamav/libclamav.map, libclamav/mpool.c: remove nonexistent

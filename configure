@@ -1539,7 +1539,7 @@ Optional Features:
   --enable-ltdl-install   install libltdl
   --disable-gcc-vcheck	  do not check for buggy gcc version
   --enable-experimental	enable experimental code
-  --enable-mempool	enable memory pools
+  --disable-mempool       disable memory pools
   --enable-check           Enable 'check' unit tests (default=auto)
   --disable-rpath         do not hardcode runtime library paths
   --enable-coverage       turn on test coverage [default=no]
@@ -16078,13 +16078,13 @@ fi
 if test "${enable_mempool+set}" = set; then
   enableval=$enable_mempool; enable_mempool=$enableval
 else
-  enable_mempool="no"
+  enable_mempool="yes"
 fi
 
 if test "$enable_mempool" = "yes"; then
 	if test "$ac_cv_c_mmap_private" != "yes"; then
-		{ echo "$as_me:$LINENO: WARNING: ****** mempool support disabled (mmap not available or not usable)" >&5
-echo "$as_me: WARNING: ****** mempool support disabled (mmap not available or not usable)" >&2;}
+		{ echo "$as_me:$LINENO: ****** mempool support disabled (mmap not available or not usable)" >&5
+echo "$as_me: ****** mempool support disabled (mmap not available or not usable)" >&6;}
 	else
 		{ echo "$as_me:$LINENO: checking for getpagesize" >&5
 echo $ECHO_N "checking for getpagesize... $ECHO_C" >&6; }
@@ -16277,8 +16277,8 @@ _ACEOF
 	fi
 
 			if test "$ac_cv_c_mmap_anonymous" = "no"; then
-				{ echo "$as_me:$LINENO: WARNING: ****** mempool support disabled (anonymous mmap not available)" >&5
-echo "$as_me: WARNING: ****** mempool support disabled (anonymous mmap not available)" >&2;}
+				{ echo "$as_me:$LINENO: ****** mempool support disabled (anonymous mmap not available)" >&5
+echo "$as_me: ****** mempool support disabled (anonymous mmap not available)" >&6;}
 			else
 
 cat >>confdefs.h <<\_ACEOF
@@ -16288,8 +16288,8 @@ _ACEOF
 			fi
 
 else
-  { echo "$as_me:$LINENO: WARNING: ****** mempool support disabled (getpagesize not available)" >&5
-echo "$as_me: WARNING: ****** mempool support disabled (getpagesize not available)" >&2;}
+  { echo "$as_me:$LINENO: ****** mempool support disabled (getpagesize not available)" >&5
+echo "$as_me: ****** mempool support disabled (getpagesize not available)" >&6;}
 fi
 
 	fi
