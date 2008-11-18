@@ -1,3 +1,7 @@
+Tue Nov 18 20:20:14 CET 2008 (tk)
+---------------------------------
+ * libclamav/readdb.c: fix handling of malformed ldb sigs (bb#1292)
+
 Fri Nov  7 13:20:08 CET 2008 (tk)
 ---------------------------------
  * freshclam/manager.c: improve reporting of server failures (bb#777)

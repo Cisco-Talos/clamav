@@ -863,6 +863,8 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 		break;
 	    }
 	}
+	if(!apt)
+	    continue;
 	switch(apt->type) {
 	    case CLI_TDB_UINT:
 		*apt->pt = (uint32_t *) &tdb->val[off[i]];
