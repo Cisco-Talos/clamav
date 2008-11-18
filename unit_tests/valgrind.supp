@@ -179,7 +179,7 @@
    glibc-suse
    Memcheck:Leak
    fun:*
-   fun:*
+   obj:*
    fun:_dl_allocate_tls
 }
 {
@@ -270,6 +270,35 @@
    glibc-ubuntu-jaunty
    Helgrind:Race
    fun:__fprintf_chk
+}
+# no symbols in opensuse's libs :(
+{	
+   glibc-suse
+   Helgrind:Race
+   obj:/lib*/ld-*.so
+   obj:/lib*/ld-*.so
+   obj:/lib*/ld-*.so
+}
+{	
+   glibc-suse2
+   Helgrind:Race
+   obj:/lib*/ld-*.so
+   obj:/lib*/ld-*.so
+   obj:/lib*/ld-*.so
+   obj:/lib*/ld-*.so
+}
+{
+   glibc-suse4
+   Helgrind:Race
+   obj:/lib*/libc-*.so
+   obj:/lib*/libc-*.so
+   obj:/lib*/libc-*.so
+}
+{
+   glibc-suse3
+   Helgrind:Race
+   obj:*
+   fun:start_thread
 }
 #{
 #	helgrind-glibc27-dbg18
