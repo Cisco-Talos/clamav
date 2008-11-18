@@ -364,7 +364,7 @@ struct MP *mp_create() {
   if ((mp_p = (struct MP *)mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE|ANONYMOUS_MAP, -1, 0)) == MAP_FAILED)
     return NULL;
   memcpy(mp_p, &mp, sizeof(mp));
-  spam("Map created @ %p->%p - size %u out of %u\n", mp_p, (void*)mp_p + mp.mpm.size, mp.mpm.usize, mp.mpm.size);
+  spam("Map created @ %p->%p - size %u out of %u\n", mp_p, (char *)mp_p + mp.mpm.size, mp.mpm.usize, mp.mpm.size);
   return mp_p;
 }
 
@@ -383,7 +383,7 @@ void mp_flush(struct MP *mp) {
   struct MPMAP *mpm_next = mp->mpm.next, *mpm;
   while((mpm = mpm_next)) {
     mpm_next = mpm->next;
-    munmap((void *)mpm + align_to_pagesize(mp, mpm->usize), mpm->size - align_to_pagesize(mp, mpm->usize));
+    munmap((char *)mpm + align_to_pagesize(mp, mpm->usize), mpm->size - align_to_pagesize(mp, mpm->usize));
     mpm->size = align_to_pagesize(mp, mpm->usize);
     used += mpm->size;
   }
@@ -447,7 +447,7 @@ void *mp_malloc(struct MP *mp, size_t size) {
   /* Case 2: We have nuff room available for this frag already */
   while(mpm) {
     if(mpm->size - mpm->usize >= needed) {
-      f = (struct FRAG *)((void *)mpm + mpm->usize);
+      f = (struct FRAG *)((char *)mpm + mpm->usize);
       spam("malloc %p size %u (hole)\n", f, mp_roundup(size));
       mpm->usize += needed;
       f->u.sbits = sbits;
@@ -474,7 +474,7 @@ void *mp_malloc(struct MP *mp, size_t size) {
   mpm->usize = needed + align_to_voidptr(sizeof(*mpm));
   mpm->next = mp->mpm.next;
   mp->mpm.next = mpm;
-  f = (struct FRAG *)((void *)mpm + align_to_voidptr(sizeof(*mpm)));
+  f = (struct FRAG *)((char *)mpm + align_to_voidptr(sizeof(*mpm)));
   spam("malloc %p size %u (new map)\n", f, mp_roundup(size));
   f->u.sbits = sbits;
 #ifdef CL_DEBUG
@@ -484,7 +484,7 @@ void *mp_malloc(struct MP *mp, size_t size) {
 }
 
 void mp_free(struct MP *mp, void *ptr) {
-  struct FRAG *f = (struct FRAG *)(ptr - FRAG_OVERHEAD);
+  struct FRAG *f = (struct FRAG *)((char *)ptr - FRAG_OVERHEAD);
   unsigned int sbits;
   if (!ptr) return;
 
@@ -509,7 +509,7 @@ void *mp_calloc(struct MP *mp, size_t nmemb, size_t size) {
 }
 
 void *mp_realloc(struct MP *mp, void *ptr, size_t size) {
-  struct FRAG *f = (struct FRAG *)(ptr - FRAG_OVERHEAD);
+  struct FRAG *f = (struct FRAG *)((char *)ptr - FRAG_OVERHEAD);
   unsigned int csize, sbits;
   void *new_ptr;
   if (!ptr) return mp_malloc(mp, size);
@@ -530,7 +530,7 @@ void *mp_realloc(struct MP *mp, void *ptr, size_t size) {
 }
 
 void *mp_realloc2(struct MP *mp, void *ptr, size_t size) {
-  struct FRAG *f = (struct FRAG *)(ptr - FRAG_OVERHEAD);
+  struct FRAG *f = (struct FRAG *)((char *)ptr - FRAG_OVERHEAD);
   unsigned int csize;
   void *new_ptr;
   if (!ptr) return mp_malloc(mp, size);

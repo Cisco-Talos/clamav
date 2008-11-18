@@ -1,3 +1,7 @@
+Tue Nov 18 19:33:07 CET 2008 (acab)
+-----------------------------------
+ * libclamav/mpool.c: a(void*) arithmetic
+
 Tue Nov 18 18:40:32 CET 2008 (acab)
 -----------------------------------
  * configure: enable mempool by default (where available)
