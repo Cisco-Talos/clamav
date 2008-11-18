@@ -1,3 +1,7 @@
+Tue Nov 18 20:20:14 CET 2008 (tk)
+---------------------------------
+ * libclamav/readdb.c: fix handling of malformed ldb sigs (bb#1292)
+
 Tue Nov 18 19:33:07 CET 2008 (acab)
 -----------------------------------
  * libclamav/mpool.c: a(void*) arithmetic
