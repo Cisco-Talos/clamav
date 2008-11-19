@@ -1847,7 +1847,7 @@ main(int argc, char **argv)
 			 * Limitation: doesn't store message in a temporary
 			 * file, so we won't be able to use mail < file
 			 */
-			fprintf(stderr, "%s: when using --external, --report-phish cannot be used without either LocalSocket or --quarantine\n",
+			fprintf(stderr, "%s: when using --external, --report-phish cannot be used without either LocalSocket or --quarantine-dir\n",
 				argv[0]);
 			return EX_USAGE;
 		}
