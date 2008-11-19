@@ -1,3 +1,7 @@
+Tue Nov 18 23:39:09 EET 2008 (edwin)
+------------------------------------
+ * unit_tests/check_clamd.sh: run reload test twice
+
 Tue Nov 18 13:54:09 EET 2008 (edwin)
 ------------------------------------
  * unit_tests/valgrind.supp: add more valgrind suppressions (bb

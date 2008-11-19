@@ -95,16 +95,21 @@ run_reload_test()
 	fi
 	run_clamdscan reload-testfile
 	grep "ClamAV-RELOAD-TestFile" clamdscan.log >/dev/null 2>/dev/null;
+	failed=0
 	if test $? -ne 0; then
 		error "RELOAD test failed! (after reload)"
 		cat clamdscan.log
-		die 12
+		failed=1
 	fi
 	grep "ClamAV-RELOAD-TestFile" clamdscan-multiscan.log >/dev/null 2>/dev/null;
 	if test $? -ne 0; then
 		error "RELOAD test failed! (after reload, multiscan)"
 		cat clamdscan-multiscan.log
-		die 13
+		failed=1
+	fi
+	if test "$failed" = "1"; then
+		echo "RELOAD tests failed!"
+		die 12
 	fi
 	rm -f reload-testfile
 }
