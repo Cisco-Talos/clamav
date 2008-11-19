@@ -613,7 +613,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	unsigned long length;
 	struct screnc_state screnc_state;
 	file_buff_t *file_buff_o2, *file_buff_text;
-	file_buff_t *file_tmp_o1;
+	file_buff_t *file_tmp_o1 = NULL;
 	int in_ahref=0;/* index of <a> tag, whose contents we are parsing. Indexing starts from 1, 0 means outside of <a>*/
 	unsigned char* href_contents_begin=NULL;/*beginning of the next portion of <a> contents*/
 	unsigned char* ptrend=NULL;/*end of <a> contents*/

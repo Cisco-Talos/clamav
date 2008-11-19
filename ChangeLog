@@ -1,3 +1,10 @@
+Wed Nov 19 20:50:13 EET 2008 (edwin)
+------------------------------------
+ * libclamav/htmlnorm.c: r4396 got merged from trunk w/o the compiler
+ warnings fixes, and this resulted in using an uninitialized variable
+ (which was not the case on trunk, where the variable was initialized
+ already)
+
 Tue Nov 18 23:39:09 EET 2008 (edwin)
 ------------------------------------
  * unit_tests/check_clamd.sh: run reload test twice
