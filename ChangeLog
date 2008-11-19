@@ -1,3 +1,7 @@
+Wed Nov 19 17:31:50 CET 2008 (acab)
+-----------------------------------
+ * clamav-milter: typo
+
 Tue Nov 18 23:39:09 EET 2008 (edwin)
 ------------------------------------
  * unit_tests/check_clamd.sh: run reload test twice
