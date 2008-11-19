@@ -175,6 +175,26 @@
    fun:*
    fun:_dl_allocate_tls
 }
+{
+   glibc-suse
+   Memcheck:Leak
+   fun:*
+   fun:*
+   fun:_dl_allocate_tls
+}
+{
+   glibc-tls3
+   Memcheck:Leak
+   fun:*
+   fun:allocate_dtv
+   fun:_dl_allocate_tls
+}
+{
+   glibc-tls4
+   Memcheck:Leak
+   fun:allocate_dtv
+   fun:_dl_allocate_tls
+}
 # glibc uses IO_lock_lock, which uses lll_lock,
 # and valgrind doesn't know about it, so it thinks it is unlocked
 {
@@ -245,6 +265,11 @@
    Helgrind:Race
    fun: _setjmp
    fun: clone
+}
+{
+   glibc-ubuntu-jaunty
+   Helgrind:Race
+   fun:__fprintf_chk
 }
 #{
 #	helgrind-glibc27-dbg18
