@@ -1,3 +1,7 @@
+Thu Nov 20 15:55:12 EET 2008 (edwin)
+------------------------------------
+ * configure, m4/lib-link.m4: search in non-multiarch dir (bb #1277)
+
 Wed Nov 19 17:31:50 CET 2008 (acab)
 -----------------------------------
  * clamav-milter: typo
