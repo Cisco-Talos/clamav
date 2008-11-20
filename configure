@@ -14264,7 +14264,11 @@ fi
             fi
           fi
           if test "X$found_dir" = "X"; then
-            for x in $LDFLAGS $LTLIBCHECK; do
+            compat_libdir=
+            if test "X$acl_libdirstem" != "Xlib"; then
+		compat_libdir=-L'${exec_prefix}'/lib
+	    fi
+            for x in $LDFLAGS $LTLIBCHECK $compat_libdir; do
 
   acl_save_prefix="$prefix"
   prefix="$acl_final_prefix"
@@ -15660,7 +15664,11 @@ fi
             fi
           fi
           if test "X$found_dir" = "X"; then
-            for x in $LDFLAGS $LTLIBBZ2; do
+            compat_libdir=
+            if test "X$acl_libdirstem" != "Xlib"; then
+		compat_libdir=-L'${exec_prefix}'/lib
+	    fi
+            for x in $LDFLAGS $LTLIBBZ2 $compat_libdir; do
 
   acl_save_prefix="$prefix"
   prefix="$acl_final_prefix"
@@ -17120,7 +17128,11 @@ fi
             fi
           fi
           if test "X$found_dir" = "X"; then
-            for x in $LDFLAGS $LTLIBGMP; do
+            compat_libdir=
+            if test "X$acl_libdirstem" != "Xlib"; then
+		compat_libdir=-L'${exec_prefix}'/lib
+	    fi
+            for x in $LDFLAGS $LTLIBGMP $compat_libdir; do
 
   acl_save_prefix="$prefix"
   prefix="$acl_final_prefix"

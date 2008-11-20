@@ -268,7 +268,11 @@ AC_DEFUN([AC_LIB_LINKFLAGS_BODY],
             fi
           fi
           if test "X$found_dir" = "X"; then
-            for x in $LDFLAGS $LTLIB[]NAME; do
+            compat_libdir=
+            if test "X$acl_libdirstem" != "Xlib"; then
+		compat_libdir=-L'${exec_prefix}'/lib
+	    fi
+            for x in $LDFLAGS $LTLIB[]NAME $compat_libdir; do
               AC_LIB_WITH_FINAL_PREFIX([eval x=\"$x\"])
               case "$x" in
                 -L*)
