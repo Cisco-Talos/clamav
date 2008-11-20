@@ -1,3 +1,7 @@
+Thu Nov 20 21:53:39 EET 2008 (edwin)
+------------------------------------
+ * configure, m4/lib-link.m4: more multiarch dir fixes (bb #1277)
+
 Thu Nov 20 15:55:12 EET 2008 (edwin)
 ------------------------------------
  * configure, m4/lib-link.m4: search in non-multiarch dir (bb #1277)
