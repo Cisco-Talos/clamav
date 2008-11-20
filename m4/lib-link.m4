@@ -161,6 +161,7 @@ AC_DEFUN([AC_LIB_LINKFLAGS_BODY],
     if test "X$withval" = "Xno"; then
       use_additional=no
     else
+      additional_compat_libdir=
       if test "X$withval" = "X"; then
         AC_LIB_WITH_FINAL_PREFIX([
           eval additional_includedir=\"$includedir\"
@@ -169,6 +170,9 @@ AC_DEFUN([AC_LIB_LINKFLAGS_BODY],
       else
         additional_includedir="$withval/include"
         additional_libdir="$withval/$acl_libdirstem"
+	if test "X$acl_libdirstem" != "Xlib"; then
+		additional_compat_libdir="-L$withval/lib"
+	fi
       fi
     fi
 ])
@@ -272,7 +276,7 @@ AC_DEFUN([AC_LIB_LINKFLAGS_BODY],
             if test "X$acl_libdirstem" != "Xlib"; then
 		compat_libdir=-L'${exec_prefix}'/lib
 	    fi
-            for x in $LDFLAGS $LTLIB[]NAME $compat_libdir; do
+            for x in $LDFLAGS $LTLIB[]NAME $compat_libdir $additional_compat_libdir; do
               AC_LIB_WITH_FINAL_PREFIX([eval x=\"$x\"])
               case "$x" in
                 -L*)
@@ -419,6 +423,11 @@ AC_DEFUN([AC_LIB_LINKFLAGS_BODY],
             case "$found_dir" in
               */$acl_libdirstem | */$acl_libdirstem/)
                 basedir=`echo "X$found_dir" | sed -e 's,^X,,' -e "s,/$acl_libdirstem/"'*$,,'`
+                LIB[]NAME[]_PREFIX="$basedir"
+                additional_includedir="$basedir/include"
+                ;;
+	     */lib | */lib/)
+                basedir=`echo "X$found_dir" | sed -e 's,^X,,' -e "s,/lib/"'*$,,'`
                 LIB[]NAME[]_PREFIX="$basedir"
                 additional_includedir="$basedir/include"
                 ;;

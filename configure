@@ -16511,6 +16511,7 @@ if test "${with_libcheck_prefix+set}" = set; then
     if test "X$withval" = "Xno"; then
       use_additional=no
     else
+      additional_compat_libdir=
       if test "X$withval" = "X"; then
 
   acl_save_prefix="$prefix"
@@ -16527,6 +16528,9 @@ if test "${with_libcheck_prefix+set}" = set; then
       else
         additional_includedir="$withval/include"
         additional_libdir="$withval/$acl_libdirstem"
+	if test "X$acl_libdirstem" != "Xlib"; then
+		additional_compat_libdir="-L$withval/lib"
+	fi
       fi
     fi
 
@@ -16621,7 +16625,7 @@ fi
             if test "X$acl_libdirstem" != "Xlib"; then
 		compat_libdir=-L'${exec_prefix}'/lib
 	    fi
-            for x in $LDFLAGS $LTLIBCHECK $compat_libdir; do
+            for x in $LDFLAGS $LTLIBCHECK $compat_libdir $additional_compat_libdir; do
 
   acl_save_prefix="$prefix"
   prefix="$acl_final_prefix"
@@ -16749,6 +16753,11 @@ fi
             case "$found_dir" in
               */$acl_libdirstem | */$acl_libdirstem/)
                 basedir=`echo "X$found_dir" | sed -e 's,^X,,' -e "s,/$acl_libdirstem/"'*$,,'`
+                LIBCHECK_PREFIX="$basedir"
+                additional_includedir="$basedir/include"
+                ;;
+	     */lib | */lib/)
+                basedir=`echo "X$found_dir" | sed -e 's,^X,,' -e "s,/lib/"'*$,,'`
                 LIBCHECK_PREFIX="$basedir"
                 additional_includedir="$basedir/include"
                 ;;
@@ -17911,6 +17920,7 @@ if test "${with_libbz2_prefix+set}" = set; then
     if test "X$withval" = "Xno"; then
       use_additional=no
     else
+      additional_compat_libdir=
       if test "X$withval" = "X"; then
 
   acl_save_prefix="$prefix"
@@ -17927,6 +17937,9 @@ if test "${with_libbz2_prefix+set}" = set; then
       else
         additional_includedir="$withval/include"
         additional_libdir="$withval/$acl_libdirstem"
+	if test "X$acl_libdirstem" != "Xlib"; then
+		additional_compat_libdir="-L$withval/lib"
+	fi
       fi
     fi
 
@@ -18021,7 +18034,7 @@ fi
             if test "X$acl_libdirstem" != "Xlib"; then
 		compat_libdir=-L'${exec_prefix}'/lib
 	    fi
-            for x in $LDFLAGS $LTLIBBZ2 $compat_libdir; do
+            for x in $LDFLAGS $LTLIBBZ2 $compat_libdir $additional_compat_libdir; do
 
   acl_save_prefix="$prefix"
   prefix="$acl_final_prefix"
@@ -18149,6 +18162,11 @@ fi
             case "$found_dir" in
               */$acl_libdirstem | */$acl_libdirstem/)
                 basedir=`echo "X$found_dir" | sed -e 's,^X,,' -e "s,/$acl_libdirstem/"'*$,,'`
+                LIBBZ2_PREFIX="$basedir"
+                additional_includedir="$basedir/include"
+                ;;
+	     */lib | */lib/)
+                basedir=`echo "X$found_dir" | sed -e 's,^X,,' -e "s,/lib/"'*$,,'`
                 LIBBZ2_PREFIX="$basedir"
                 additional_includedir="$basedir/include"
                 ;;
@@ -19383,6 +19401,7 @@ if test "${with_libgmp_prefix+set}" = set; then
     if test "X$withval" = "Xno"; then
       use_additional=no
     else
+      additional_compat_libdir=
       if test "X$withval" = "X"; then
 
   acl_save_prefix="$prefix"
@@ -19399,6 +19418,9 @@ if test "${with_libgmp_prefix+set}" = set; then
       else
         additional_includedir="$withval/include"
         additional_libdir="$withval/$acl_libdirstem"
+	if test "X$acl_libdirstem" != "Xlib"; then
+		additional_compat_libdir="-L$withval/lib"
+	fi
       fi
     fi
 
@@ -19493,7 +19515,7 @@ fi
             if test "X$acl_libdirstem" != "Xlib"; then
 		compat_libdir=-L'${exec_prefix}'/lib
 	    fi
-            for x in $LDFLAGS $LTLIBGMP $compat_libdir; do
+            for x in $LDFLAGS $LTLIBGMP $compat_libdir $additional_compat_libdir; do
 
   acl_save_prefix="$prefix"
   prefix="$acl_final_prefix"
@@ -19621,6 +19643,11 @@ fi
             case "$found_dir" in
               */$acl_libdirstem | */$acl_libdirstem/)
                 basedir=`echo "X$found_dir" | sed -e 's,^X,,' -e "s,/$acl_libdirstem/"'*$,,'`
+                LIBGMP_PREFIX="$basedir"
+                additional_includedir="$basedir/include"
+                ;;
+	     */lib | */lib/)
+                basedir=`echo "X$found_dir" | sed -e 's,^X,,' -e "s,/lib/"'*$,,'`
                 LIBGMP_PREFIX="$basedir"
                 additional_includedir="$basedir/include"
                 ;;
