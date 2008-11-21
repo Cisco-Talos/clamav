@@ -1,3 +1,8 @@
+Fri Nov 21 23:40:19 CET 2008 (tk)
+---------------------------------
+ * freshclam/manager.c: add support for http proxy in SubmitDetectionStats
+			(bb#1284)
+
 Thu Nov 20 21:53:39 EET 2008 (edwin)
 ------------------------------------
  * configure, m4/lib-link.m4: more multiarch dir fixes (bb #1277)

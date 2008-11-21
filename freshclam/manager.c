@@ -462,10 +462,78 @@ static const char *readbline(int fd, char *buf, int bufsize, int filesize, int *
     }
 }
 
+static unsigned int fmt_base64(char *dest, const char *src, unsigned int len)
+{
+	unsigned short bits = 0,temp = 0;
+	unsigned long written = 0;
+	unsigned int i;
+	const char base64[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+
+
+    for(i = 0; i < len; i++) {
+	temp <<= 8;
+	temp += src[i];
+	bits += 8;
+	while(bits > 6) {
+	    dest[written] = base64[((temp >> (bits - 6)) & 63)];
+	    written++;
+	    bits -= 6;
+	}
+    }
+
+    if(bits) {
+	temp <<= (6 - bits);
+	dest[written] = base64[temp & 63];
+	written++;
+    }
+
+    while(written & 3) {
+	dest[written] = '=';
+	written++;
+    }
+
+    return written;
+}
+
+static char *proxyauth(const char *user, const char *pass)
+{
+	int len;
+	char *buf, *userpass, *auth;
+
+
+    userpass = malloc(strlen(user) + strlen(pass) + 2);
+    if(!userpass) {
+	logg("!proxyauth: Can't allocate memory for 'userpass'\n");
+	return NULL;
+    }
+    sprintf(userpass, "%s:%s", user, pass);
+
+    buf = malloc((strlen(pass) + strlen(user)) * 2 + 4);
+    if(!buf) {
+	logg("!proxyauth: Can't allocate memory for 'buf'\n");
+	free(userpass);
+	return NULL;
+    }
+
+    len = fmt_base64(buf, userpass, strlen(userpass));
+    free(userpass);
+    buf[len] = '\0';
+    auth = malloc(strlen(buf) + 30);
+    if(!auth) {
+	free(buf);
+	logg("!proxyauth: Can't allocate memory for 'authorization'\n");
+	return NULL;
+    }
+
+    sprintf(auth, "Proxy-Authorization: Basic %s\r\n", buf);
+    free(buf);
+
+    return auth;
+}
+
 /*
  * TODO:
  * - strptime() is most likely not portable enough
- * - proxy support
  */
 int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
 {
@@ -474,14 +542,14 @@ int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
 	char query[SUBMIT_MIN_ENTRIES * 256];
 	char buff[512], statsdat[512], newstatsdat[512], uastr[128];
 	char logfile[256], fbuff[FILEBUFF];
-	char *pt, *pt2;
-	const char *line, *country = NULL;
+	char *pt, *pt2, *auth = NULL;
+	const char *line, *country = NULL, *user, *proxy = NULL;
 	struct cfgstruct *clamdopt;
 	const struct cfgstruct *cpt;
 	struct stat sb;
 	struct tm tms;
 	time_t epoch;
-	unsigned int qcnt, entries, submitted = 0, permfail = 0;
+	unsigned int qcnt, entries, submitted = 0, permfail = 0, port = 0;
 
 
     if((cpt = cfgopt(copt, "DetectionStatsCountry"))->enabled) {
@@ -558,6 +626,31 @@ int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
 	snprintf(uastr, sizeof(uastr), PACKAGE"/%s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")%s%s", get_version(), country ? ":" : "", country ? country : "");
     uastr[sizeof(uastr) - 1] = 0;
 
+    if((cpt = cfgopt(copt, "HTTPProxyServer"))->enabled) {
+	proxy = cpt->strarg;
+	if(!strncasecmp(proxy, "http://", 7))
+	    proxy += 7;
+
+	if((cpt = cfgopt(copt, "HTTPProxyUsername"))->enabled) {
+	    user = cpt->strarg;
+	    if(!(cpt = cfgopt(copt, "HTTPProxyPassword"))->enabled) {
+		logg("!SubmitDetectionStats: HTTPProxyUsername requires HTTPProxyPassword\n");
+		close(fd);
+		return 56;
+	    }
+	    auth = proxyauth(user, cpt->strarg);
+	    if(!auth) {
+		close(fd);
+		return 56;
+	    }
+	}
+
+	if((cpt = cfgopt(copt, "HTTPProxyPort"))->enabled)
+	    port = cpt->numarg;
+
+	logg("*Connecting via %s\n", proxy);
+    }
+
     ret = 0;
     memset(query, 0, sizeof(query));
     qcnt = 0;
@@ -609,7 +702,7 @@ int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
 	entries++;
 
 	if(entries == SUBMIT_MIN_ENTRIES) {
-	    sd = wwwconnect("stats.clamav.net", NULL, 0, NULL, cfgopt(copt, "LocalIPAddress")->strarg, cfgopt(copt, "ConnectTimeout")->numarg, NULL, 0, 0);
+	    sd = wwwconnect("stats.clamav.net", proxy, port, NULL, cfgopt(copt, "LocalIPAddress")->strarg, cfgopt(copt, "ConnectTimeout")->numarg, NULL, 0, 0);
 	    if(sd == -1) {
 		logg("!SubmitDetectionStats: Can't connect to server\n");
 		ret = 52;
@@ -618,13 +711,13 @@ int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
 
 	    query[sizeof(query) - 1] = 0;
 	    snprintf(post, sizeof(post),
-		"POST /submit.php HTTP/1.0\r\n"
-		"Host: stats.clamav.net\r\n"
+		"POST http://stats.clamav.net/submit.php HTTP/1.0\r\n"
+		"Host: stats.clamav.net\r\n%s"
 		"Content-Type: application/x-www-form-urlencoded\r\n"
 		"User-Agent: %s\r\n"
 		"Content-Length: %u\r\n\n"
 		"%s",
-	    uastr, (unsigned int) strlen(query), query);
+	    auth ? auth : "", uastr, (unsigned int) strlen(query), query);
 
 	    if(send(sd, post, strlen(post), 0) < 0) {
 		logg("!SubmitDetectionStats: Can't write to socket\n");
@@ -691,6 +784,8 @@ int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
     } while((line = readbline(fd, fbuff, FILEBUFF, sb.st_size, &lread)));
 
     close(fd);
+    if(auth)
+	free(auth);
 
     if(submitted || permfail) {
 	if((fd = open("stats.dat", O_WRONLY | O_CREAT | O_TRUNC, 0600)) == -1) {
@@ -718,75 +813,6 @@ static int Rfc2822DateTime(char *buf, time_t mtime)
 
     gmt = gmtime(&mtime);
     return strftime(buf, 36, "%a, %d %b %Y %X GMT", gmt);
-}
-
-static unsigned int fmt_base64(char *dest, const char *src, unsigned int len)
-{
-	unsigned short bits = 0,temp = 0;
-	unsigned long written = 0;
-	unsigned int i;
-	const char base64[]="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-
-
-    for(i = 0; i < len; i++) {
-	temp <<= 8;
-	temp += src[i];
-	bits += 8;
-	while(bits > 6) {
-	    dest[written] = base64[((temp >> (bits - 6)) & 63)];
-	    written++;
-	    bits -= 6;
-	}
-    }
-
-    if(bits) {
-	temp <<= (6 - bits);
-	dest[written] = base64[temp & 63];
-	written++;
-    }
-
-    while(written & 3) {
-	dest[written] = '=';
-	written++;
-    }
-
-    return written;
-}
-
-static char *proxyauth(const char *user, const char *pass)
-{
-	int len;
-	char *buf, *userpass, *auth;
-
-
-    userpass = malloc(strlen(user) + strlen(pass) + 2);
-    if(!userpass) {
-	logg("!proxyauth: Can't allocate memory for 'userpass'\n");
-	return NULL;
-    }
-    sprintf(userpass, "%s:%s", user, pass);
-
-    buf = malloc((strlen(pass) + strlen(user)) * 2 + 4);
-    if(!buf) {
-	logg("!proxyauth: Can't allocate memory for 'buf'\n");
-	free(userpass);
-	return NULL;
-    }
-
-    len = fmt_base64(buf, userpass, strlen(userpass));
-    free(userpass);
-    buf[len] = '\0';
-    auth = malloc(strlen(buf) + 30);
-    if(!auth) {
-	free(buf);
-	logg("!proxyauth: Can't allocate memory for 'authorization'\n");
-	return NULL;
-    }
-
-    sprintf(auth, "Proxy-Authorization: Basic %s\r\n", buf);
-    free(buf);
-
-    return auth;
 }
 
 static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int *ims, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist)
