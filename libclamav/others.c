@@ -145,8 +145,12 @@ static void cli_rarload(void) {
         return;
     }
     rhandle = lt_dlopenext("libclamunrar_iface");
-    if (!rhandle) { 
+    if (!rhandle) {
+#ifdef WARN_DLOPEN_FAIL
+        cli_warnmsg("Cannot dlopen: %s - unrar support unavailable\n", lt_dlerror());
+#else
         cli_dbgmsg("Cannot dlopen: %s - unrar support unavailable\n", lt_dlerror());
+#endif
         return;
     }
     if (!(cli_unrar_open = (int(*)(int, const char *, unrar_state_t *))lt_dlsym(rhandle, "unrar_open")) ||

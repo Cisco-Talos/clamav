@@ -26,6 +26,7 @@ EXTRA_DIST =
 
 if ENABLE_UNRAR
 
+AM_CPPFLAGS += -DWARN_DLOPEN_FAIL
 libclamunrar_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 if VERSIONSCRIPT
@@ -68,11 +69,14 @@ libclamunrar_iface_la_SOURCES = \
 
 lib_LTLIBRARIES += libclamunrar_iface.la
 EXTRA_DIST += @top_srcdir@/libclamunrar_iface/libclamunrar_iface.map
+
+IFACELIBADD = -dlopen libclamunrar_iface.la
+IFACEDEP = libclamunrar_iface.la
 endif
 
 
-libclamav_la_LIBADD = @LIBLTDL@ -dlopen libclamunrar_iface.la lzma/liblzma.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@
-libclamav_la_DEPENDENCIES =  @LIBLTDL@ libclamunrar_iface.la
+libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) lzma/liblzma.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@
+libclamav_la_DEPENDENCIES =  @LIBLTDL@ $(IFACEDEP)
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 if VERSIONSCRIPT

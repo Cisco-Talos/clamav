@@ -1,3 +1,10 @@
+Mon Nov 24 15:17:03 EET 2008 (edwin)
+------------------------------------
+ * libclamav/Makefile.am, libclamav/Makefile.in, libclamav/others.c: 
+ fix disable-unrar build: don't refer to libclamunrar_iface.la with
+ enable-unrar builds (default) warn if can't dlopen.  if unrar is
+ disabled, don't warn, just show a debug message.
+
 Thu Nov 20 21:53:39 EET 2008 (edwin)
 ------------------------------------
  * configure, m4/lib-link.m4: more multiarch dir fixes (bb #1277)
