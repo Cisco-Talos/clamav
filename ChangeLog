@@ -1,3 +1,7 @@
+Tue Nov 25 21:06:55 CET 2008 (tk)
+---------------------------------
+ * clamd: LogFileUnlock was not working correctly (bb#1304)
+
 Mon Nov 24 15:17:03 EET 2008 (edwin)
 ------------------------------------
  * libclamav/Makefile.am, libclamav/Makefile.in, libclamav/others.c: 

@@ -220,7 +220,7 @@ int main(int argc, char **argv)
 #endif
 
     /* initialize logger */
-    logg_lock = cfgopt(copt, "LogFileUnlock")->enabled;
+    logg_lock = !cfgopt(copt, "LogFileUnlock")->enabled;
     logg_time = cfgopt(copt, "LogTime")->enabled;
     logok = cfgopt(copt, "LogClean")->enabled;
     logg_size = cfgopt(copt, "LogFileMaxSize")->numarg;
@@ -237,7 +237,7 @@ int main(int argc, char **argv)
 	}
 	time(&currtime);
 	if(logg("#+++ Started at %s", cli_ctime(&currtime, timestr, sizeof(timestr)))) {
-	    fprintf(stderr, "ERROR: Problem with internal logger. Please check the permissions on the %s file.\n", logg_file);
+	    fprintf(stderr, "ERROR: Can't initialize the internal logger\n");
 	    logg_close();
 	    freecfg(copt);
 	    return 1;
