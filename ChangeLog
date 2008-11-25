@@ -1,3 +1,7 @@
+Tue Nov 25 21:06:55 CET 2008 (tk)
+---------------------------------
+ * clamd: LogFileUnlock was not working correctly (bb#1304)
+
 Fri Nov 21 23:40:19 CET 2008 (tk)
 ---------------------------------
  * freshclam/manager.c: add support for http proxy in SubmitDetectionStats

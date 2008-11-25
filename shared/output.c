@@ -167,6 +167,7 @@ int logg(const char *str, ...)
 #ifdef CL_THREAD_SAFE
 		    pthread_mutex_unlock(&logg_mutex);
 #endif
+		    printf("ERROR: %s is locked by another process\n", logg_file);
 		    return -1;
 		}
 	    }
