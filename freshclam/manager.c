@@ -815,7 +815,7 @@ static int Rfc2822DateTime(char *buf, time_t mtime)
     return strftime(buf, 36, "%a, %d %b %Y %X GMT", gmt);
 }
 
-static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int *ims, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist)
+static struct cl_cvd *remote_cvdhead(const char *cvdfile, const char *localfile, const char *hostname, char *ip, const char *localip, const char *proxy, int port, const char *user, const char *pass, const char *uas, int *ims, int ctimeout, int rtimeout, struct mirdat *mdat, int logerr, unsigned int can_whitelist)
 {
 	char cmd[512], head[513], buffer[FILEBUFF], ipaddr[46], *ch, *tmp;
 	int bread, cnt, sd;
@@ -823,7 +823,6 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 	char *remotename = NULL, *authorization = NULL;
 	struct cl_cvd *cvd;
 	char last_modified[36], uastr[128];
-	struct stat sb;
 
 
     if(proxy) {
@@ -843,8 +842,16 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 	}
     }
 
-    if(stat(file, &sb) != -1 && sb.st_mtime < time(NULL)) {
-	Rfc2822DateTime(last_modified, sb.st_mtime);
+    if(!access(localfile, R_OK)) {
+	cvd = cl_cvdhead(localfile);
+	if(!cvd) {
+	    logg("!remote_cvdhead: Can't parse file %s\n", localfile);
+	    free(remotename);
+	    free(authorization);
+	    return NULL;
+	}
+	Rfc2822DateTime(last_modified, (time_t) cvd->stime);
+	cl_cvdfree(cvd);
     } else {
 	    time_t mtime = 1104119530;
 
@@ -854,7 +861,7 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 
     logg("*If-Modified-Since: %s\n", last_modified);
 
-    logg("Reading CVD header (%s): ", file);
+    logg("Reading CVD header (%s): ", cvdfile);
 
     if(uas)
 	strncpy(uastr, uas, sizeof(uastr));
@@ -869,7 +876,7 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 	"Connection: close\r\n"
 	"Range: bytes=0-511\r\n"
         "If-Modified-Since: %s\r\n"
-        "\r\n", (remotename != NULL) ? remotename : "", file, hostname, (authorization != NULL) ? authorization : "", uastr, last_modified);
+        "\r\n", (remotename != NULL) ? remotename : "", cvdfile, hostname, (authorization != NULL) ? authorization : "", uastr, last_modified);
 
     free(remotename);
     free(authorization);
@@ -885,7 +892,7 @@ static struct cl_cvd *remote_cvdhead(const char *file, const char *hostname, cha
 	return NULL;
     } else {
 	logg("*Connected to %s (IP: %s).\n", hostname, ipaddr);
-	logg("*Trying to retrieve CVD header of http://%s/%s\n", hostname, file);
+	logg("*Trying to retrieve CVD header of http://%s/%s\n", hostname, cvdfile);
     }
 
     if(!ip[0])
@@ -1538,7 +1545,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 
     if(!nodb && !newver) {
 
-	remote = remote_cvdhead(cvdfile, hostname, ip, localip, proxy, port, user, pass, uas, &ims, ctimeout, rtimeout, mdat, logerr, can_whitelist);
+	remote = remote_cvdhead(cvdfile, localname, hostname, ip, localip, proxy, port, user, pass, uas, &ims, ctimeout, rtimeout, mdat, logerr, can_whitelist);
 
 	if(!nodb && !ims) {
 	    logg("%s is up to date (version: %d, sigs: %d, f-level: %d, builder: %s)\n", localname, current->version, current->sigs, current->fl, current->builder);
