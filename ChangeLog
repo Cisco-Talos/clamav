@@ -1,3 +1,8 @@
+Tue Nov 25 21:51:30 CET 2008 (tk)
+---------------------------------
+ * freshclam/manager.c: in non-dns mode use date from cvd header instead of
+			file's timestamp for If-Modified-Since (bb#1305)
+
 Tue Nov 25 21:06:55 CET 2008 (tk)
 ---------------------------------
  * clamd: LogFileUnlock was not working correctly (bb#1304)
