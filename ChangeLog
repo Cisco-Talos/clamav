@@ -1,3 +1,8 @@
+Wed Nov 26 14:04:33 CET 2008 (tk)
+---------------------------------
+ * libclamav/special.c: respect recursion limits in cli_check_jpeg_exploit()
+			(bb#1266)
+
 Tue Nov 25 21:51:30 CET 2008 (tk)
 ---------------------------------
  * freshclam/manager.c: in non-dns mode use date from cvd header instead of

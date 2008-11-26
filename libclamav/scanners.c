@@ -1323,13 +1323,13 @@ static int cli_scanriff(int desc, const char **virname)
     return ret;
 }
 
-static int cli_scanjpeg(int desc, const char **virname)
+static int cli_scanjpeg(int desc, cli_ctx *ctx)
 {
 	int ret = CL_CLEAN;
 
-    if(cli_check_jpeg_exploit(desc) == 1) {
+    if(cli_check_jpeg_exploit(desc, ctx) == 1) {
 	ret = CL_VIRUS;
-	*virname = "Exploit.W32.MS04-028";
+	*ctx->virname = "Exploit.W32.MS04-028";
     }
 
     return ret;
@@ -2000,7 +2000,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 	case CL_TYPE_GRAPHICS:
 	    if(SCAN_ALGO && (DCONF_OTHER & OTHER_CONF_JPEG))
-		ret = cli_scanjpeg(desc, ctx->virname);
+		ret = cli_scanjpeg(desc, ctx);
 	    break;
 
         case CL_TYPE_PDF: /* FIXMELIMITS: pdf should be an archive! */
