@@ -21,8 +21,10 @@
 #ifndef __SPECIAL_H
 #define __SPECIAL_H
 
+#include "others.h"
+
 int cli_check_mydoom_log(int desc, const char **virname);
-int cli_check_jpeg_exploit(int fd);
+int cli_check_jpeg_exploit(int fd, cli_ctx *ctx);
 int cli_check_riff_exploit(int fd);
 
 #endif

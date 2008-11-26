@@ -85,7 +85,7 @@ int cli_check_mydoom_log(int desc, const char **virname)
     return retval;
 }
 
-static int jpeg_check_photoshop_8bim(int fd)
+static int jpeg_check_photoshop_8bim(int fd, cli_ctx *ctx)
 {
 	unsigned char bim[5];
 	uint16_t id, ntmp;
@@ -140,7 +140,7 @@ static int jpeg_check_photoshop_8bim(int fd)
 	/* Jump past header */
 	lseek(fd, 28, SEEK_CUR);
 
-	retval = cli_check_jpeg_exploit(fd);
+	retval = cli_check_jpeg_exploit(fd, ctx);
 	if (retval == 1) {
 		cli_dbgmsg("Exploit found in thumbnail\n");
 	}
@@ -149,7 +149,7 @@ static int jpeg_check_photoshop_8bim(int fd)
 	return retval;
 }
 
-static int jpeg_check_photoshop(int fd)
+static int jpeg_check_photoshop(int fd, cli_ctx *ctx)
 {
 	int retval;
 	unsigned char buffer[14];
@@ -166,7 +166,7 @@ static int jpeg_check_photoshop(int fd)
 	cli_dbgmsg("Found Photoshop segment\n");
 	do {
 		old = lseek(fd, 0, SEEK_CUR);
-		retval = jpeg_check_photoshop_8bim(fd);
+		retval = jpeg_check_photoshop_8bim(fd, ctx);
 		new = lseek(fd, 0, SEEK_CUR);
 		if(new <= old)
 			break;
@@ -178,7 +178,7 @@ static int jpeg_check_photoshop(int fd)
 	return retval;
 }
 
-int cli_check_jpeg_exploit(int fd)
+int cli_check_jpeg_exploit(int fd, cli_ctx *ctx)
 {
 	unsigned char buffer[4];
 	off_t offset;
@@ -186,6 +186,8 @@ int cli_check_jpeg_exploit(int fd)
 
 
 	cli_dbgmsg("in cli_check_jpeg_exploit()\n");
+	if(ctx->recursion > ctx->limits->maxreclevel)
+	    return CL_EMAXREC;
 
 	if (cli_readn(fd, buffer, 2) != 2) {
 		return 0;
@@ -229,9 +231,11 @@ int cli_check_jpeg_exploit(int fd)
 
 		if (buffer[1] == 0xed) {
 			/* Possible Photoshop file */
-			if ((retval=jpeg_check_photoshop(fd)) != 0) {
+			ctx->recursion++;
+			retval=jpeg_check_photoshop(fd, ctx);
+			ctx->recursion--;
+			if (retval != 0)
 				return retval;
-			}
 		}
 
 		if (lseek(fd, offset, SEEK_SET) != offset) {
