@@ -1,17 +1,8 @@
-0.94.1
+0.94.2
 ------
 
-ClamAV 0.94.1 fixes some issues that were found in previous releases and
-includes one new feature, "Malware Statistics Gathering." This is an optional
-feature that allows ClamAV users optionally to submit statistics to us about
-what they detect in the field. We will then use these data to determine what
-types of malware are the most detected in the field and in what geographic
-area they are. It will also allow us to publish summary data on www.clamav.net
-where our users will be able to monitor the latest threats. You can help us
-by enabling SubmitDetectionStats in freshclam.conf.
-
-For more details, please refer to the ChangeLog and
-http://www.clamav.net/press/0.94.1-WhatsNew.pdf
+This is a bugfix release, please refer to the ChangeLog for a complete
+list of changes.
 
 --
 The ClamAV team (http://www.clamav.net/team)
