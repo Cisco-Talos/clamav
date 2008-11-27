@@ -31,8 +31,14 @@ clamav_milter_SOURCES = \
     $(top_srcdir)/shared/getopt.h \
     $(top_srcdir)/shared/misc.c \
     $(top_srcdir)/shared/misc.h \
-    $(top_srcdir)/shared/network.c \
-    $(top_srcdir)/shared/network.h \
+    $(top_srcdir)/shared/options.c \
+    $(top_srcdir)/shared/options.h \
+    connpool.c \
+    connpool.h \
+    netcode.c \
+    netcode.h \
+    clamfi.c \
+    clamfi.h \
     clamav-milter.c
 man_MANS = $(top_builddir)/docs/man/clamav-milter.8
 

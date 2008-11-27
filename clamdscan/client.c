@@ -271,7 +271,7 @@ static int dconnect(const struct optstruct *opt, int *is_unix)
     if(!clamav_conf)
 	clamav_conf = DEFAULT_CFG;
 
-    if((copt = getcfg(clamav_conf, 1)) == NULL) {
+    if((copt = getcfg(clamav_conf, 1, OPT_CLAMD)) == NULL) {
 	logg("^Can't parse the configuration file.\n");
 	return -1;
     }

@@ -253,11 +253,11 @@ int main(int argc, char **argv)
 
     /* parse the config file */
     if((cfgfile = opt_arg(opt, "config-file"))) {
-	copt = getcfg(cfgfile, 1);
+        copt = getcfg(cfgfile, 1, OPT_FRESHCLAM);
     } else {
 	/* TODO: force strict permissions on freshclam.conf */
-	if((copt = getcfg((cfgfile = CONFDIR"/freshclam.conf"), 1)) == NULL)
-	    copt = getcfg((cfgfile = CONFDIR"/clamd.conf"), 1);
+	if((copt = getcfg((cfgfile = CONFDIR"/freshclam.conf"), 1, OPT_FRESHCLAM)) == NULL)
+	    copt = getcfg((cfgfile = CONFDIR"/clamd.conf"), 1, OPT_FRESHCLAM);
     }
 
     if(!copt) {

@@ -29,9 +29,11 @@
 #define OPT_FULLSTR 5 /* string argument, but get a full line */
 #define OPT_QUOTESTR 6 /* string argument, (space delimited unless the argument starts with ' or ".  If the argument starts with a quote character, then the argument data is what appears between the starting quote character and the matching ending quote character.) */
 
+/* don't share bits! */
 #define OPT_CLAMD 1
 #define OPT_FRESHCLAM 2
-#define OPT_DEPRECATED 4
+#define OPT_MILTER 4
+#define OPT_DEPRECATED 16
 
 struct cfgoption {
     const char *name;
@@ -54,7 +56,7 @@ struct cfgstruct {
 
 extern struct cfgoption cfg_options[];
 
-struct cfgstruct *getcfg(const char *cfgfile, int verbose);
+struct cfgstruct *getcfg(const char *cfgfile, int verbose, int toolmask);
 const struct cfgstruct *cfgopt(const struct cfgstruct *copt, const char *optname);
 void freecfg(struct cfgstruct *copt);
 
