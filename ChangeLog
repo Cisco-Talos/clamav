@@ -1,3 +1,7 @@
+Fri Nov 28 18:13:40 CET 2008 (acab)
+-----------------------------------
+ * shared/cfgparser.c: reenable -Werror builds
+
 Fri Nov 28 17:42:20 CET 2008 (acab)
 -----------------------------------
  * cfgparser: backport modifications from branches/milter-v2.0
