@@ -1170,7 +1170,7 @@ main(int argc, char **argv)
 		cfgfile = cli_malloc(strlen(CONFDIR) + 12);	/* leak */
 		sprintf(cfgfile, "%s/clamd.conf", CONFDIR);
 	}
-	if((copt = getcfg(cfgfile, 1)) == NULL) {
+	if((copt = getcfg(cfgfile, 1, OPT_CLAMD)) == NULL) {
 		fprintf(stderr, _("%s: Can't parse the config file %s\n"),
 			argv[0], cfgfile);
 		return EX_CONFIG;

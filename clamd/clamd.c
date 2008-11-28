@@ -157,7 +157,7 @@ int main(int argc, char **argv)
     else
 	cfgfile = CONFDIR"/clamd.conf";
 
-    if((copt = getcfg(cfgfile, 1)) == NULL) {
+    if((copt = getcfg(cfgfile, 1, OPT_CLAMD)) == NULL) {
 	fprintf(stderr, "ERROR: Can't open/parse the config file %s\n", cfgfile);
 	opt_free(opt);
 	return 1;

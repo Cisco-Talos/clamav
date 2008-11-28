@@ -35,14 +35,14 @@
 #include "libclamav/str.h"
 
 struct cfgoption cfg_options[] = {
-    {"LogFile",	OPT_QUOTESTR, -1, NULL, 0, OPT_CLAMD},
-    {"LogFileUnlock", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
-    {"LogFileMaxSize", OPT_COMPSIZE, 1048576, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
-    {"LogTime", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
-    {"LogClean", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
-    {"LogVerbose", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
-    {"LogSyslog", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
-    {"LogFacility", OPT_QUOTESTR, -1, "LOG_LOCAL6", 0, OPT_CLAMD | OPT_FRESHCLAM},
+    {"LogFile",	OPT_QUOTESTR, -1, NULL, 0, OPT_CLAMD | OPT_MILTER},
+    {"LogFileUnlock", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_MILTER},
+    {"LogFileMaxSize", OPT_COMPSIZE, 1048576, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER},
+    {"LogTime", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER},
+    {"LogClean", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_MILTER},
+    {"LogVerbose", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER},
+    {"LogSyslog", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER},
+    {"LogFacility", OPT_QUOTESTR, -1, "LOG_LOCAL6", 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER},
     {"PidFile", OPT_QUOTESTR, -1, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
     {"TemporaryDirectory", OPT_QUOTESTR, -1, NULL, 0, OPT_CLAMD},
     {"ScanPE", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
@@ -72,7 +72,7 @@ struct cfgoption cfg_options[] = {
     {"ScanPDF", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"ScanArchive", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
     {"MaxScanSize", OPT_COMPSIZE, -1, NULL, 0, OPT_CLAMD},
-    {"MaxFileSize", OPT_COMPSIZE, -1, NULL, 0, OPT_CLAMD},
+    {"MaxFileSize", OPT_COMPSIZE, -1, NULL, 0, OPT_CLAMD | OPT_MILTER},
     {"MaxRecursion", OPT_NUM, -1, NULL, 0, OPT_CLAMD},
     {"MaxFiles", OPT_NUM, -1, NULL, 0, OPT_CLAMD},
     {"ArchiveBlockEncrypted", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
@@ -84,20 +84,20 @@ struct cfgoption cfg_options[] = {
     {"StreamMaxLength", OPT_COMPSIZE, 10485760, NULL, 0, OPT_CLAMD},
     {"StreamMinPort", OPT_NUM, 1024, NULL, 0, OPT_CLAMD},
     {"StreamMaxPort", OPT_NUM, 2048, NULL, 0, OPT_CLAMD},
-    {"MaxThreads", OPT_NUM, 10, NULL, 0, OPT_CLAMD},
-    {"ReadTimeout", OPT_NUM, 120, NULL, 0, OPT_CLAMD},
+    {"MaxThreads", OPT_NUM, 10, NULL, 0, OPT_CLAMD | OPT_MILTER},
+    {"ReadTimeout", OPT_NUM, 120, NULL, 0, OPT_CLAMD | OPT_MILTER},
     {"IdleTimeout", OPT_NUM, 30, NULL, 0, OPT_CLAMD},
     {"MaxDirectoryRecursion", OPT_NUM, 15, NULL, 0, OPT_CLAMD},
     {"ExcludePath", OPT_QUOTESTR, -1, NULL, 1, OPT_CLAMD},
     {"FollowDirectorySymlinks", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"FollowFileSymlinks", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
     {"ExitOnOOM", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
-    {"Foreground", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
+    {"Foreground", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER},
     {"Debug", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
     {"LeaveTemporaryFiles", OPT_BOOL, 0, NULL, 0, OPT_CLAMD},
-    {"FixStaleSocket", OPT_BOOL, 1, NULL, 0, OPT_CLAMD},
-    {"User", OPT_QUOTESTR, -1, NULL, 0, OPT_CLAMD},
-    {"AllowSupplementaryGroups", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM},
+    {"FixStaleSocket", OPT_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_MILTER},
+    {"User", OPT_QUOTESTR, -1, NULL, 0, OPT_CLAMD | OPT_MILTER},
+    {"AllowSupplementaryGroups", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER},
     {"SelfCheck", OPT_NUM, 1800, NULL, 0, OPT_CLAMD},
     {"VirusEvent", OPT_FULLSTR, -1, NULL, 0, OPT_CLAMD},
     {"ClamukoScanOnAccess", OPT_BOOL, -1, NULL, 0, OPT_CLAMD},
@@ -135,19 +135,46 @@ struct cfgoption cfg_options[] = {
 
     /* Deprecated options */
     {"MailMaxRecursion", OPT_NUM, 64, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
-    {"ArchiveMaxFileSize", OPT_COMPSIZE, 10485760, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
+    {"ArchiveMaxScanSize", OPT_COMPSIZE, 10485760, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
     {"ArchiveMaxRecursion", OPT_NUM, 8, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
     {"ArchiveMaxFiles", OPT_NUM, 1000, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
     {"ArchiveMaxCompressionRatio", OPT_NUM, 250, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
     {"ArchiveBlockMax", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
     {"ArchiveLimitMemoryUsage", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_DEPRECATED },
 
+
+    /* Milter specific options */
+    {"ClamdSocket", OPT_QUOTESTR, -1, NULL, 1, OPT_MILTER},
+    {"MilterSocket", OPT_QUOTESTR, -1, NULL, 1, OPT_MILTER},
+
+    /* Deprecated milter options */
+    {"ArchiveBlockEncrypted", OPT_BOOL, 0, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
+    {"DatabaseDirectory", OPT_QUOTESTR, -1, DATADIR, 0, OPT_MILTER | OPT_DEPRECATED},
+    {"Debug", OPT_BOOL, 0, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
+    {"DetectBrokenExecutables", OPT_BOOL, 0, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
+    {"LeaveTemporaryFiles", OPT_BOOL, 0, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
+    {"LocalSocket", OPT_QUOTESTR, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
+    {"MailFollowURLs", OPT_BOOL, 0, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
+    {"MaxScanSize", OPT_COMPSIZE, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
+    {"MaxFiles", OPT_NUM, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
+    {"MaxRecursion", OPT_NUM, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
+    {"PhishingSignatures", OPT_BOOL, 1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
+    {"PidFile", OPT_QUOTESTR, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
+    {"ScanArchive", OPT_BOOL, 1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
+    {"ScanHTML", OPT_BOOL, 1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
+    {"ScanMail", OPT_BOOL, 1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
+    {"ScanOLE2", OPT_BOOL, 1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
+    {"ScanPE", OPT_BOOL, 1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
+    {"StreamMaxLength", OPT_COMPSIZE, 10485760, NULL, OPT_MILTER | OPT_DEPRECATED},
+    {"TCPAddr", OPT_QUOTESTR, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
+    {"TCPSocket", OPT_NUM, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
+    {"TemporaryDirectory", OPT_QUOTESTR, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
     {NULL, 0, 0, NULL, 0, 0}
 };
 
 static int regcfg(struct cfgstruct **copt, const char *optname, char *strarg, int numarg, short multiple);
 
-struct cfgstruct *getcfg(const char *cfgfile, int verbose)
+struct cfgstruct *getcfg(const char *cfgfile, int verbose, int toolmask)
 {
 	char buff[LINE_LENGTH], *name, *arg, *c;
 	FILE *fs;
@@ -161,7 +188,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 	if(!pt->name)
 	    break;
 
-	if(regcfg(&copt, pt->name, pt->strarg ? strdup(pt->strarg) : NULL, pt->numarg, pt->multiple) < 0) {
+	if((pt->owner & toolmask) && regcfg(&copt, pt->name, pt->strarg ? strdup(pt->strarg) : NULL, pt->numarg, pt->multiple) < 0) {
 	    fprintf(stderr, "ERROR: Can't register new options (not enough memory)\n");
 	    freecfg(copt);
 	    return NULL;
@@ -194,7 +221,7 @@ struct cfgstruct *getcfg(const char *cfgfile, int verbose)
 	    for(i = 0; ; i++) {
 		pt = &cfg_options[i];
 		if(pt->name) {
-		    if(!strcmp(name, pt->name)) {
+		    if((pt->owner & toolmask) && !strcmp(name, pt->name)) {
 			found = 1;
 			if(pt->owner & OPT_DEPRECATED) {
 			    fprintf(stderr, "WARNING: Ignoring deprecated option %s at line %u\n", pt->name, line);

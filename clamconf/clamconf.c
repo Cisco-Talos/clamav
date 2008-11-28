@@ -84,7 +84,7 @@ static void printcfg(const char *cfgfile, int nondef)
 	unsigned short cfgowner = 0;
 
 
-    if(!(cfg = getcfg(cfgfile, 1))) {
+	if(!(cfg = getcfg(cfgfile, 1, OPT_FRESHCLAM|OPT_CLAMD))) {
 	printf("Can't parse %s\n", cfgfile);
 	return;
     }

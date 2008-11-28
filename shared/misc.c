@@ -75,7 +75,7 @@ char *freshdbdir(void)
 
     /* try to find fresh directory */
     dbdir = cl_retdbdir();
-    if((copt = getcfg(CONFDIR"/freshclam.conf", 0))) {
+    if((copt = getcfg(CONFDIR"/freshclam.conf", 0, OPT_FRESHCLAM))) {
 	if((cpt = cfgopt(copt, "DatabaseDirectory"))->enabled || (cpt = cfgopt(copt, "DataDirectory"))->enabled) {
 	    if(strcmp(dbdir, cpt->strarg)) {
 		    char *daily = (char *) malloc(strlen(cpt->strarg) + strlen(dbdir) + 30);

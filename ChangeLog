@@ -1,3 +1,7 @@
+Fri Nov 28 17:42:20 CET 2008 (acab)
+-----------------------------------
+ * cfgparser: backport modifications from branches/milter-v2.0
+
 Wed Nov 26 14:04:33 CET 2008 (tk)
 ---------------------------------
  * libclamav/special.c: respect recursion limits in cli_check_jpeg_exploit()

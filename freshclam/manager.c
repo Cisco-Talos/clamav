@@ -560,7 +560,7 @@ int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
 	country = cpt->strarg;
     }
 
-    if(!(clamdopt = getcfg(clamdcfg, 1))) {
+    if(!(clamdopt = getcfg(clamdcfg, 1, OPT_CLAMD))) {
 	logg("!SubmitDetectionStats: Can't open or parse configuration file %s\n", clamdcfg);
 	return 56;
     }
