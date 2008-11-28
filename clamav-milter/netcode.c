@@ -43,18 +43,26 @@
 /* for recv */
 long readtimeout;
 
-
 int nc_socket(struct CP_ENTRY *cpe) {
     int flags, s = socket(cpe->server->sa_family, SOCK_STREAM, 0);
+    char er[256];
 
-    if (s == -1) return -1;
+    if (s == -1) {
+	strerror_r(errno, er, sizeof(er));
+	logg("!Failed to create socket: %s\n", er);
+	return -1;
+    }
     flags = fcntl(s, F_GETFL, 0);
     if (flags == -1) {
+	strerror_r(errno, er, sizeof(er));
+	logg("!fcntl_get failed: %s\n", er);
 	close(s);
 	return -1;
     }
     flags |= O_NONBLOCK;
     if (fcntl(s, F_SETFL, flags) == -1) {
+	strerror_r(errno, er, sizeof(er));
+	logg("!fcntl_set failed: %s\n", er);
 	close(s);
 	return -1;
     }
@@ -66,9 +74,12 @@ int nc_connect(int s, struct CP_ENTRY *cpe) {
     time_t timeout = time(NULL) + TIMEOUT;
     int res = connect(s, cpe->server, cpe->socklen);
     struct timeval tv;
+    char er[256];
 
     if (!res) return 0;
     if (errno != EINPROGRESS) {
+	strerror_r(errno, er, sizeof(er));
+	logg("!connect failed: %s\n", er);
 	close(s);
 	return -1;
     }
@@ -85,16 +96,18 @@ int nc_connect(int s, struct CP_ENTRY *cpe) {
 	res = select(s+1, NULL, &fds, NULL, &tv);
 	if(res < 1) {
 	    time_t now;
+
 	    if (res == -1 && errno == EINTR && ((now = time(NULL)) < timeout)) {
 		tv.tv_sec = timeout - now;
 		tv.tv_usec = 0;
 		continue;
 	    }
+	    logg("!Failed to establish a connection to clamd\n");
 	    close(s);
 	    return -1;
 	}
 	if (getsockopt(s, SOL_SOCKET, SO_ERROR, &s_err, &s_len) || s_err) {
-	    logg("!getsockopt failed: %s\n", strerror(s_err));
+	    logg("!Failed to establish a connection to clamd\n");
 	    close(s);
 	    return -1;
 	}
@@ -108,6 +121,7 @@ int nc_send(int s, const void *buf, size_t len) {
 	int res = send(s, buf, len, 0);
 	time_t timeout = time(NULL) + TIMEOUT;
 	struct timeval tv;
+	char er[256];
 
 	if(res!=-1) {
 	    len-=res;
@@ -116,6 +130,8 @@ int nc_send(int s, const void *buf, size_t len) {
 	    continue;
 	}
 	if(errno != EAGAIN && errno != EWOULDBLOCK) {
+	    strerror_r(errno, er, sizeof(er));
+	    logg("!send failed: %s\n", er);
 	    close(s);
 	    return 1;
 	}
@@ -132,15 +148,13 @@ int nc_send(int s, const void *buf, size_t len) {
 	    res = select(s+1, NULL, &fds, NULL, &tv);
 	    if(res < 1) {
 		time_t now;
+
 		if (res == -1 && errno == EINTR && ((now = time(NULL)) < timeout)) {
 		    tv.tv_sec = timeout - now;
 		    tv.tv_usec = 0;
 		    continue;
 		}
-		close(s);
-		return 1;
-	    }
-	    if (getsockopt(s, SOL_SOCKET, SO_ERROR, &s_err, &s_len)) {
+		logg("!Failed stream to clamd\n");
 		close(s);
 		return 1;
 	    }
@@ -152,6 +166,37 @@ int nc_send(int s, const void *buf, size_t len) {
     return 0;
 }
 
+
+int nc_sendmsg(int s, int fd) {
+    struct iovec iov[1];
+    struct msghdr msg;
+    struct cmsghdr *cmsg;
+    int ret;
+    unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
+    char dummy[]="";
+
+    iov[0].iov_base = dummy;
+    iov[0].iov_len = 1;
+    memset(&msg, 0, sizeof(msg));
+    msg.msg_control = fdbuf;
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+    msg.msg_controllen = CMSG_LEN(sizeof(int));
+    cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type = SCM_RIGHTS;
+    *(int *)CMSG_DATA(cmsg) = fd;
+    /* FIXME: nonblock code needed (?) */
+
+    if((ret = sendmsg(s, &msg, 0)) == -1) {
+	char er[256];
+	strerror_r(errno, er, sizeof(er));
+	logg("!clamfi_eom: FD send failed (%s)\n", er);
+	close(s);
+    }
+    return ret;
+}
 
 char *nc_recv(int s) {
     char buf[BUFSIZ], *ret=NULL;
@@ -169,11 +214,13 @@ char *nc_recv(int s) {
 	res = select(s+1, &fds, NULL, NULL, &tv);
 	if(res<1) {
 	    time_t now;
+
 	    if (res == -1 && errno == EINTR && ((now = time(NULL)) < timeout)) {
 		tv.tv_sec = timeout - now;
 		tv.tv_usec = 0;
-	    continue;
+		continue;
 	    }
+	    logg("!Failed to read clamd reply\n");
 	    close(s);
 	    return NULL;
 	}
@@ -181,7 +228,15 @@ char *nc_recv(int s) {
     }
     /* FIXME: check for EOL@EObuf ? */
     res = recv(s, buf, sizeof(buf), 0);
-    if (res==-1 || !(ret = (char *)malloc(res+1))) {
+    if (res==-1) {
+	char er[256];
+	strerror_r(errno, er, sizeof(er));
+	logg("!recv failed after successful select: %s\n", er);
+	close(s);
+	return NULL;
+    }
+    if(!(ret = (char *)malloc(res+1))) {
+	logg("!malloc(%d) failed\n", res+1);
 	close(s);
 	return NULL;
     }
@@ -201,17 +256,21 @@ int nc_connect_entry(struct CP_ENTRY *cpe) {
 void nc_ping_entry(struct CP_ENTRY *cpe) {
     int s = nc_connect_entry(cpe);
     char *reply;
+
     if (s!=-1 && !nc_send(s, "nPING\n", 6) && (reply = nc_recv(s))) {
 	cpe->dead = strcmp(reply, "PONG\n")!=0;
-	free(reply);
-	close(s);
     } else cpe->dead = 1;
+    return;
 }
 
 
 int nc_connect_rand(int *main, int *alt, int *local) {
     struct CP_ENTRY *cpe = cpool_get_rand();
 
+    /* FIXME logic is broken here:
+       1- we must not fail on the 1st dead socket but keep on trying
+       2- we must not set *local unless we enforce local_cpe
+    */
     if(!cpe) return 1;
     *local = cpe->local;
     if ((*main = nc_connect_entry(cpe)) == -1) return 1; /* FIXME : this should be delayed till eom if local */
@@ -234,8 +293,10 @@ int nc_connect_rand(int *main, int *alt, int *local) {
 
 	if(nc_send(*main, "nSTREAM\n", 8) || !(reply = nc_recv(*main)) || !(port = strstr(reply, "PORT"))) {
 	    logg("!Failed to communicate with clamd\n");
-	    if(reply) free(reply);
-	    close(*main);
+	    if(reply) {
+		free(reply);
+		close(*main);
+	    }
 	    return 1;
 	}
 	port+=5;
@@ -250,7 +311,7 @@ int nc_connect_rand(int *main, int *alt, int *local) {
 	    sa.sa6.sin6_port = htons(nport);
 	    new_cpe.socklen = sizeof(struct sockaddr_in6);
 	} else {
-	    logg("!WTF WHY AM I DOING HERE???");
+	    logg("!WTF WHY AM I DOING HERE???\n");
 	    close(*main);
 	    return 1;
 	}

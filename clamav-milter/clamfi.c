@@ -43,35 +43,28 @@ struct CLAMFI {
     int local;
     int main;
     int alt;
-    unsigned int altsz;
+    unsigned int totsz;
     unsigned int bufsz;
 };
 
 
-#define FREECF freecf(ctx, cf)
-
-static void freecf(SMFICTX *ctx, struct CLAMFI *cf) {
-    close(cf->main);
-    close(cf->alt);
-    smfi_setpriv(ctx, NULL);
-    free(cf);
-}
-
-
 static sfsistat sendchunk(struct CLAMFI *cf, unsigned char *bodyp, size_t len, SMFICTX *ctx) {
-    if(cf->altsz > maxfilesize)
+    if(cf->totsz > maxfilesize)
 	return SMFIS_CONTINUE; /* FIXME: SMFIS_SKIP needs negotiation (only for _body() */
 
-    if(cf->altsz + len > maxfilesize)
-	len = maxfilesize - cf->altsz;
+    if(cf->totsz + len > maxfilesize)
+	len = maxfilesize - cf->totsz;
 
     if(cf->local) {
 	while(len) {
 	    int n = write(cf->alt, bodyp, len);
 
 	    if (n==-1) {
-		logg("!clamfi_body: Failed to write temporary file\n");
-		FREECF;
+		logg("!Failed to write temporary file\n");
+		close(cf->main);
+		close(cf->alt);
+		smfi_setpriv(ctx, NULL);
+		free(cf);
 		return SMFIS_TEMPFAIL;
 	    }
 	    len -= n;
@@ -90,35 +83,37 @@ static sfsistat sendchunk(struct CLAMFI *cf, unsigned char *bodyp, size_t len, S
 	    memcpy(cf->buffer, &bodyp[CLAMFIBUFSZ - cf->bufsz], len);
 	    cf->bufsz = len;
 	} else {
-	    sendfailed = nc_send(cf->alt, cf->buffer, cf->bufsz);
-	    sendfailed += nc_send(cf->alt, bodyp, len);
+	    if(nc_send(cf->alt, cf->buffer, cf->bufsz) || nc_send(cf->alt, bodyp, len))
+		sendfailed = 1;
 	    cf->bufsz = 0;
 	}
 	if(sendfailed) {
-	    logg("!clamfi_body: Streaming failed\n");
-	    FREECF;
+	    logg("!Streaming failed\n");
+	    close(cf->main);
+	    smfi_setpriv(ctx, NULL);
+	    free(cf);
 	    return SMFIS_TEMPFAIL;
 	}
     }
-    cf->altsz += len;
+    cf->totsz += len;
     return SMFIS_CONTINUE;
 }
 
 
-sfsistat clamfi_body(SMFICTX *ctx, unsigned char *bodyp, size_t len) {
+sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv) {
     struct CLAMFI *cf;
+    sfsistat ret;
 
     if(!(cf = (struct CLAMFI *)smfi_getpriv(ctx))) {
-	sfsistat ret;
 	cf = (struct CLAMFI *)malloc(sizeof(*cf));
 	if(!cf) {
-	    logg("!clamfi_body: Failed to allocate CLAMFI struct\n");
+	    logg("!Failed to allocate CLAMFI struct\n");
 	    return SMFIS_TEMPFAIL;
 	}
-	cf->altsz = 0;
-	cf->bufsz = 0;
+	cf->totsz = 0;
+	cf->totsz = 0;
 	if(nc_connect_rand(&cf->main, &cf->alt, &cf->local)) {
-	    logg("!clamfi_body: Failed to initiate streaming/fdpassing\n");
+	    logg("!Failed to initiate streaming/fdpassing\n");
 	    free(cf);
 	    return SMFIS_TEMPFAIL;
 	}
@@ -126,6 +121,21 @@ sfsistat clamfi_body(SMFICTX *ctx, unsigned char *bodyp, size_t len) {
 	if((ret = sendchunk(cf, (unsigned char *)"From clamav-milter\n", 19, ctx)) != SMFIS_CONTINUE)
 	    return ret;
     }
+    if((ret = sendchunk(cf, (unsigned char *)headerf, strlen(headerf), ctx)) != SMFIS_CONTINUE)
+	return ret;
+    if((ret = sendchunk(cf, (unsigned char *)": ", 2, ctx)) != SMFIS_CONTINUE)
+	return ret;
+    if((ret = sendchunk(cf, (unsigned char *)headerv, strlen(headerv), ctx)) != SMFIS_CONTINUE)
+	return ret;
+    return sendchunk(cf, (unsigned char *)"\r\n", 2, ctx);
+}
+
+
+sfsistat clamfi_body(SMFICTX *ctx, unsigned char *bodyp, size_t len) {
+    struct CLAMFI *cf;
+
+    if(!(cf = (struct CLAMFI *)smfi_getpriv(ctx)))
+	return SMFIS_CONTINUE; /* whatever */
     return sendchunk(cf, bodyp, len, ctx);
 }
 
@@ -139,41 +149,29 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 	return SMFIS_CONTINUE; /* whatever */
 
     if(cf->local) {
-	struct iovec iov[1];
-	struct msghdr msg;
-	struct cmsghdr *cmsg;
-	unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
-	char dummy[]="";
-
 	if(nc_send(cf->main, "nFILDES\n", 8)) {
-	    logg("!clamfi_eom: FD scan request failed\n");
-	    FREECF;
+	    logg("!FD scan request failed\n");
+	    close(cf->alt);
+	    smfi_setpriv(ctx, NULL);
+	    free(cf);
 	    return SMFIS_TEMPFAIL;
 	}
 
 	lseek(cf->alt, 0, SEEK_SET);
-	iov[0].iov_base = dummy;
-	iov[0].iov_len = 1;
-	memset(&msg, 0, sizeof(msg));
-	msg.msg_control = fdbuf;
-	msg.msg_iov = iov;
-	msg.msg_iovlen = 1;
-	msg.msg_controllen = CMSG_LEN(sizeof(int));
-	cmsg = CMSG_FIRSTHDR(&msg);
-	cmsg->cmsg_len = CMSG_LEN(sizeof(int));
-	cmsg->cmsg_level = SOL_SOCKET;
-	cmsg->cmsg_type = SCM_RIGHTS;
-	*(int *)CMSG_DATA(cmsg) = cf->alt;
-	if(sendmsg(cf->main, &msg, 0) == -1) {
-	    /* FIXME: nonblock code needed (?) */
-	    logg("!clamfi_eom: FD send failed\n");
-	    FREECF;
+
+	if(nc_sendmsg(cf->main, cf->alt) == -1) {
+	    logg("!FD send failed\n");
+	    close(cf->alt);
+	    smfi_setpriv(ctx, NULL);
+	    free(cf);
 	    return SMFIS_TEMPFAIL;
 	}
     } else {
 	if(cf->bufsz && nc_send(cf->alt, cf->buffer, cf->bufsz)) {
-	    logg("!clamfi_eom: Flushing failed\n");
-	    FREECF;
+	    logg("!Failed to flush STREAM\n");
+	    close(cf->main);
+	    smfi_setpriv(ctx, NULL);
+	    free(cf);
 	    return SMFIS_TEMPFAIL;
 	}
 	close(cf->alt);
@@ -181,23 +179,27 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 
     reply = nc_recv(cf->main);
 
-    if(cf->local) close(cf->alt);
+    if(cf->local)
+	close(cf->alt);
+
+    if(!reply) {
+	logg("!No reply from clamd\n");
+	smfi_setpriv(ctx, NULL);
+	free(cf);
+	return SMFIS_TEMPFAIL;
+    }
     close(cf->main);
-    close(cf->alt);
     smfi_setpriv(ctx, NULL);
     free(cf);
 
-    if(!reply) {
-	logg("!clamfi_eom: no reply to scan request\n");
-	return SMFIS_TEMPFAIL;
-    }
     len = strlen(reply);
+    logg("^reply: %s\n", reply);
     if(len>5 && !strcmp(reply + len - 5, ": OK\n"))
 	ret = SMFIS_ACCEPT;
     else if (len>7 && !strcmp(reply + len - 7, " FOUND\n"))
 	ret = SMFIS_REJECT;
     else {
-	logg("!clamfi_eom: unknown reply from clamd\n");
+	logg("!Unknown reply from clamd\n");
 	ret = SMFIS_TEMPFAIL;
     }
 
