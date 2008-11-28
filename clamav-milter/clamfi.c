@@ -49,7 +49,7 @@ struct CLAMFI {
 
 
 static sfsistat sendchunk(struct CLAMFI *cf, unsigned char *bodyp, size_t len, SMFICTX *ctx) {
-    if(cf->totsz > maxfilesize)
+    if(cf->totsz >= maxfilesize)
 	return SMFIS_CONTINUE; /* FIXME: SMFIS_SKIP needs negotiation (only for _body() */
 
     if(cf->totsz + len > maxfilesize)
@@ -111,7 +111,7 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv) {
 	    return SMFIS_TEMPFAIL;
 	}
 	cf->totsz = 0;
-	cf->totsz = 0;
+	cf->bufsz = 0;
 	if(nc_connect_rand(&cf->main, &cf->alt, &cf->local)) {
 	    logg("!Failed to initiate streaming/fdpassing\n");
 	    free(cf);
@@ -193,7 +193,6 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
     free(cf);
 
     len = strlen(reply);
-    logg("^reply: %s\n", reply);
     if(len>5 && !strcmp(reply + len - 5, ": OK\n"))
 	ret = SMFIS_ACCEPT;
     else if (len>7 && !strcmp(reply + len - 7, " FOUND\n"))
