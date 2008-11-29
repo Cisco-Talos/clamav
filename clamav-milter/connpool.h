@@ -32,7 +32,7 @@ struct CPOOL {
 
 void cpool_init(struct cfgstruct *copt);
 void cpool_free(void);
-struct CP_ENTRY *cpool_get_rand(void);
+struct CP_ENTRY *cpool_get_rand(int *s);
 
 extern struct CPOOL *cp;
 

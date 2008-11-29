@@ -25,8 +25,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -34,6 +32,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <time.h>
+#include <netdb.h>
 
 #include "shared/cfgparser.h"
 #include "shared/output.h"
@@ -45,12 +44,12 @@
 #define SETGAI(k, v) {(k)->gai = (void *)(v);} while(0)
 #define FREESRV(k) { if((k).gai) freeaddrinfo((k).gai); else if((k).server) free((k).server); } while(0)
 #else
-#include <netdb.h>
 #define SETGAI
 #define FREESRV(k) { if ((k).server) free((k).server); } while(0)
 #endif
 
 struct CPOOL *cp = NULL;
+
 
 static int cpool_addunix(char *path) {
     struct sockaddr_un *srv;
@@ -293,23 +292,27 @@ void cpool_free(void) {
 }
 
 
-struct CP_ENTRY *cpool_get_rand(void) {
+struct CP_ENTRY *cpool_get_rand(int *s) {
     unsigned int start, i;
     struct CP_ENTRY *cpe;
 
-    if(!cp->alive) {
-	logg("!No sockets are alive. Probe forced...\n");
-	/* FIXME: yeah, actually do force smthng here */
-	return NULL;
+    if(cp->alive) {
+	start = rand() % cp->entries;
+	for(i=0; i<cp->entries; i++) {
+	    cpe = &cp->pool[(i+start) % cp->entries];
+	    if(cpe->dead) continue;
+	    if(cpe->local && cp->local_cpe && !cp->local_cpe->dead)
+		cpe = cp->local_cpe;
+	    if((*s = nc_connect_entry(cpe)) == -1) {
+		cpe->dead = 1;
+		cp->alive--; /* FIXME mutex */
+		continue;
+	    }
+	    return cpe;
+	}
     }
-    start = rand() % cp->entries;
-    for(i=0; i<cp->entries; i++) {
-	cpe = &cp->pool[(i+start) % cp->entries];
-	if(cpe->dead) continue;
-	if(cpe->local && cp->local_cpe && !cp->local_cpe->dead)
-	    return cp->local_cpe;
-	return cpe;
-    }
+    logg("!No sockets are alive. Probe forced...\n");
+    /* FIXME: yeah, actually do force smthng here */
     return NULL;
 }
 

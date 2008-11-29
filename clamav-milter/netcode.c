@@ -33,6 +33,7 @@
 #include <sys/select.h>
 #include <time.h>
 #include <errno.h>
+#include <netdb.h>
 
 #include "shared/output.h"
 #include "netcode.h"
@@ -265,15 +266,10 @@ void nc_ping_entry(struct CP_ENTRY *cpe) {
 
 
 int nc_connect_rand(int *main, int *alt, int *local) {
-    struct CP_ENTRY *cpe = cpool_get_rand();
+    struct CP_ENTRY *cpe = cpool_get_rand(main);
 
-    /* FIXME logic is broken here:
-       1- we must not fail on the 1st dead socket but keep on trying
-       2- we must not set *local unless we enforce local_cpe
-    */
     if(!cpe) return 1;
-    *local = cpe->local;
-    if ((*main = nc_connect_entry(cpe)) == -1) return 1; /* FIXME : this should be delayed till eom if local */
+    *local = (cpe->server->sa_family == AF_UNIX);
     if(*local) {
 	char tmpn[] = "/tmp/clamav-milter-XXXXXX"; 
 	if((*alt = mkstemp(tmpn))==-1) { /* FIXME */
@@ -321,6 +317,134 @@ int nc_connect_rand(int *main, int *alt, int *local) {
 	    close(*main);
 	    return 1;
 	}
+    }
+    return 0;
+}
+
+
+
+enum {
+    NON_SMTP,
+    INET_HOST,
+    INET6_HOST
+};
+
+int resolve(char *name, uint32_t *family, uint32_t *host) {
+    struct addrinfo hints, *res;
+
+    if(!strcasecmp("local", name)) {
+	*family = NON_SMTP;
+	return 0;
+    }
+
+    memset(&hints, 0, sizeof(hints));
+#ifdef SUPPORT_IPv6
+    hints.ai_family = AF_UNSPEC;
+#else
+    hints.ai_family = AF_INET;
+#endif
+    hints.ai_socktype = SOCK_STREAM;
+
+    if(getaddrinfo(name, NULL, &hints, &res)) {
+	logg("!Can't resolve LocalNet hostname %s\n", name);
+	return 1;
+    }
+    if(res->ai_addrlen == sizeof(struct sockaddr_in) && res->ai_addr->sa_family == AF_INET) {
+	struct sockaddr_in *sa = (struct sockaddr_in *)res->ai_addr;
+
+	*family = INET_HOST;
+	host[0] = htonl(sa->sin_addr.s_addr);
+	host[1] = host[2] = host[3] = 0;
+    } else if(res->ai_addrlen == sizeof(struct sockaddr_in6) && res->ai_addr->sa_family == AF_INET6) {
+	struct sockaddr_in6 *sa = (struct sockaddr_in6 *)res->ai_addr;
+	unsigned int i, j;
+	uint32_t u = 0;
+
+	*family = INET6_HOST;
+	for(i=0, j=0; i<16; i++) {
+	    u += (sa->sin6_addr.s6_addr[i] << (8*j));
+	    if(++j == 4) {
+		host[3-(i>>2)] = u;
+		j = u = 0;
+	    }
+	}
+    } else {
+	logg("!Unsupported address type for LocalNet %s\n", name);
+	freeaddrinfo(res);
+	return 1;
+    }
+    freeaddrinfo(res);
+    return 0;
+}
+
+
+struct LOCALNET {
+    struct LOCALNET *next;
+    uint32_t basehost[4];
+    uint32_t mask[4];
+    uint32_t family;
+};
+
+
+void applymask(uint32_t *host, uint32_t *mask) {
+    host[0] &= mask[0];
+    host[1] &= mask[1];
+    host[2] &= mask[2];
+    host[3] &= mask[3];
+}
+
+
+struct LOCALNET* localnet(char *name, char *mask) {
+    struct LOCALNET *l = (struct LOCALNET *)malloc(sizeof(*l));
+    uint32_t nmask;
+    unsigned int i;
+
+    if(!l) {
+	logg("!Out of memory while resolving LocalNet\n");
+	return NULL;
+    }
+
+    l->next = NULL;
+    if(resolve(name, &l->family, l->basehost)) {
+	free(l);
+	return NULL;
+    }
+
+    if(l->family == NON_SMTP) {
+	l->mask[0] = l->mask[1] = l->mask[2] = l->mask[3] = 0;
+	l->basehost[0] = l->basehost[1] = l->basehost[2] = l->basehost[3] = 0;
+	return l;
+    }
+    if(!*mask) nmask = 32;
+    else nmask = atoi(mask);
+
+    if((l->family == INET6_HOST && nmask > 128) || (l->family == INET_HOST && nmask > 32)) {
+	logg("!Bad netmask '/%s' for LocalNet %s\n", mask, name);
+	free(l);
+	return NULL;
+    }
+    l->mask[0] = l->mask[1] = l->mask[2] = l->mask[3] = 0;
+    for(i=0; i<nmask; i++)
+	l->mask[i>>5] |= 1<<(i&0x1f);
+    applymask(l->basehost, l->mask);
+    return l;
+}
+
+
+int belongto(struct LOCALNET* l, char *name) {
+    uint32_t host[4], family;
+
+    if(resolve(name, &family, host)) {
+	logg("^Cannot resolv %s\n", name);
+	return 0;
+    }
+    while(l) {
+	if (
+	    (l->family == family) &&
+	    (l->basehost[0] == (host[0] & l->mask[0])) && (l->basehost[1] == (host[1] & l->mask[1])) &&
+	    (l->basehost[2] == (host[2] & l->mask[2])) && (l->basehost[3] == (host[3] & l->mask[3]))
+	    ) return 1;
+	l=l->next;
     }
     return 0;
 }
