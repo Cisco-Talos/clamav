@@ -197,6 +197,12 @@ int main(int argc, char **argv) {
     }
 #endif
 
+    if(localnets_init(copt)) {
+	logg_close();
+	freecfg(copt);
+	return 1;
+    }
+
     umask(0007);
     if(!(my_socket = cfgopt(copt, "MilterSocket")->strarg)) {
 	logg("!Please configure the MilterSocket directive\n");
@@ -258,6 +264,7 @@ int main(int argc, char **argv) {
 
     logg_close();
     cpool_free();
+    localnets_free();
     return ret;
 }
 /*
