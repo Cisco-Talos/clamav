@@ -338,10 +338,11 @@ int nc_connect_rand(int *main, int *alt, int *local) {
     return 0;
 }
 
+
 int resolve(char *name, uint32_t *family, uint32_t *host) {
     struct addrinfo hints, *res;
 
-    if(!strcasecmp("local", name)) {
+    if(!name) {
 	/* 	l->basehost[0] = l->basehost[1] = l->basehost[2] = l->basehost[3] = 0; DONT BOTHER*/
 	*family = NON_SMTP;
 	return 0;
@@ -430,15 +431,10 @@ struct LOCALNET *localnet(char *name, char *mask) {
 }
 
 
-int islocalnet(char *name) {
-    uint32_t host[4], family;
+static int islocalnet(uint32_t family, uint32_t *host) {
     struct LOCALNET* l = lnet;
 
     if(!l) return 0;
-    if(resolve(name, &family, host)) {
-	logg("^Cannot resolv %s\n", name);
-	return 0;
-    }
     while(l) {
 	if(
 	   (l->family == family) &&
@@ -450,29 +446,73 @@ int islocalnet(char *name) {
     return 0;
 }
 
+
+int islocalnet_name(char *name) {
+    uint32_t host[4], family;
+
+    if(!lnet) return 0;
+    if(resolve(name, &family, host)) {
+	logg("^Cannot resolv %s\n", name);
+	return 0;
+    }
+    return islocalnet(family, host);
+}
+
+
+int islocalnet_sock(struct sockaddr *sa) {
+    uint32_t host[4], family;
+
+    if(!lnet) return 0;
+
+    if(sa->sa_family == AF_INET) {
+	struct sockaddr_in *sa4 = (struct sockaddr_in *)sa;
+
+	family = INET_HOST;
+	host[0] = htonl(sa4->sin_addr.s_addr);
+    } else if(sa->sa_family == AF_INET6) {
+	struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *)sa;
+	unsigned int i, j;
+	uint32_t u = 0;
+
+	family = INET6_HOST;
+	for(i=0, j=0; i<16; i++) {
+	    u += (sa6->sin6_addr.s6_addr[i] << (8*j));
+	    if(++j == 4) {
+		host[i>>2] = u;
+		j = u = 0;
+	    }
+	}
+    } else return 0;
+
+    return islocalnet(family, host);
+}
+
+
 void localnets_free(void) {
     while(lnet) {
 	struct LOCALNET *l = lnet->next;
+
 	free(lnet);
 	lnet = l;
     }   
 }
+
 
 int localnets_init(struct cfgstruct *copt) {
     const struct cfgstruct *cpt;
 
     if((cpt = cfgopt(copt, "LocalNet"))->enabled) {
 	while(cpt) {
-	    char *lnet = cpt->strarg;
+	    char *lnetname = cpt->strarg;
 	    struct LOCALNET *l;
-	    char *mask = strrchr(lnet, '/');
+	    char *mask = strrchr(lnetname, '/');
 
 	    if(mask) {
 		*mask='\0';
 		mask++;
 	    }
-
-	    if((l = localnet(lnet, mask)) == NULL) {
+	    if(!strcasecmp(lnetname, "local")) lnetname = NULL;
+	    if((l = localnet(lnetname, mask)) == NULL) {
 		localnets_free();
 		return 1;
 	    }

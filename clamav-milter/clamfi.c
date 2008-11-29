@@ -104,20 +104,15 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv) {
     struct CLAMFI *cf;
     sfsistat ret;
 
-    if(!(cf = (struct CLAMFI *)smfi_getpriv(ctx))) {
-	cf = (struct CLAMFI *)malloc(sizeof(*cf));
-	if(!cf) {
-	    logg("!Failed to allocate CLAMFI struct\n");
-	    return SMFIS_TEMPFAIL;
-	}
-	cf->totsz = 0;
-	cf->bufsz = 0;
+    if(!(cf = (struct CLAMFI *)smfi_getpriv(ctx)))
+	return SMFIS_CONTINUE; /* whatever */
+
+    if(!cf->totsz) {
 	if(nc_connect_rand(&cf->main, &cf->alt, &cf->local)) {
 	    logg("!Failed to initiate streaming/fdpassing\n");
 	    free(cf);
 	    return SMFIS_TEMPFAIL;
 	}
-	smfi_setpriv(ctx, (void *)cf);
 	if((ret = sendchunk(cf, (unsigned char *)"From clamav-milter\n", 19, ctx)) != SMFIS_CONTINUE)
 	    return ret;
     }
@@ -204,6 +199,40 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 
     free(reply);
     return ret;
+}
+
+
+sfsistat clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr) {
+    struct CLAMFI *cf;
+
+    while(1) {
+	/* Postfix doesn't seem to honor passing a NULL hostaddr and hostname
+	   set to "localhost" for non-smtp messages (they still appear as SMTP
+	   messages from 127.0.0.1). Here's a small workaround. */
+	if(hostaddr) {
+	    if(islocalnet_sock(hostaddr)) {
+		logg("*Skipping scan for %s (in LocalNet)\n", hostname);
+		return SMFIS_ACCEPT;
+	    }
+	    break;
+	}
+	if(!strcasecmp(hostname, "localhost"))
+	    hostname = NULL;
+	if(islocalnet_name(hostname)) {
+	    logg("*Skipping scan for %s (in LocalNet)\n", hostname ? hostname : "local");
+	    return SMFIS_ACCEPT;
+	}
+	break;
+    }
+
+    if(!(cf = (struct CLAMFI *)malloc(sizeof(*cf)))) {
+	logg("!Failed to allocate CLAMFI struct\n");
+	return SMFIS_TEMPFAIL;
+    }
+    cf->totsz = 0;
+    cf->bufsz = 0;
+    smfi_setpriv(ctx, (void *)cf);
+    return SMFIS_CONTINUE;
 }
 
 /*

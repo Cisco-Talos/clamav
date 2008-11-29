@@ -48,7 +48,7 @@ struct smfiDesc descr = {
     "ClamAV", 		/* filter name */
     SMFI_VERSION,	/* milter version */
     SMFIF_ADDHDRS|SMFIF_ADDRCPT, /* flags */
-    NULL,		/* connection info filter */
+    clamfi_connect,	/* connection info filter */
     NULL,		/* SMTP HELO command filter */
     NULL,		/* envelope sender filter */
     NULL,		/* envelope recipient filter */
