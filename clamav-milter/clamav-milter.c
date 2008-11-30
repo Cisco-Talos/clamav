@@ -47,7 +47,7 @@
 struct smfiDesc descr = {
     "ClamAV", 		/* filter name */
     SMFI_VERSION,	/* milter version */
-    SMFIF_ADDHDRS|SMFIF_QUARANTINE, /* flags */
+    SMFIF_CHGHDRS|SMFIF_QUARANTINE, /* flags */
     clamfi_connect,	/* connection info filter */
     NULL,		/* SMTP HELO command filter */
     NULL,		/* envelope sender filter */
@@ -203,11 +203,27 @@ int main(int argc, char **argv) {
 	return 1;
     }
 
+
     /* FIXME: find a place for these:
      * maxthreads = cfgopt(copt, "MaxThreads")->numarg;
      * logclean = cfgopt(copt, "LogClean")->numarg;
      */
 
+    if(cfgopt(copt, "AddHeader")->enabled) {
+	char myname[255];
+
+	if(!gethostname(myname, sizeof(myname))) {
+	    char mydomain[255];
+
+	    myname[sizeof(myname)-1] = '\0';
+	    snprintf(xvirushdr, sizeof(xvirushdr), "clamav-milter %s at %s", get_version(), myname);
+	    xvirushdr[sizeof(xvirushdr)-1] = '\0';
+	} else {
+	    snprintf(xvirushdr, sizeof(xvirushdr), "clamav-milter %s", get_version());
+	    xvirushdr[sizeof(xvirushdr)-1] = '\0';
+	}
+	addxvirus = 1;
+    }
     
     umask(0007);
     if(!(my_socket = cfgopt(copt, "MilterSocket")->strarg)) {
