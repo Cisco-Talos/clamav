@@ -47,7 +47,7 @@
 struct smfiDesc descr = {
     "ClamAV", 		/* filter name */
     SMFI_VERSION,	/* milter version */
-    SMFIF_ADDHDRS|SMFIF_ADDRCPT, /* flags */
+    SMFIF_ADDHDRS|SMFIF_QUARANTINE, /* flags */
     clamfi_connect,	/* connection info filter */
     NULL,		/* SMTP HELO command filter */
     NULL,		/* envelope sender filter */
@@ -197,12 +197,18 @@ int main(int argc, char **argv) {
     }
 #endif
 
-    if(localnets_init(copt)) {
+    if(localnets_init(copt) || init_actions(copt)) {
 	logg_close();
 	freecfg(copt);
 	return 1;
     }
 
+    /* FIXME: find a place for these:
+     * maxthreads = cfgopt(copt, "MaxThreads")->numarg;
+     * logclean = cfgopt(copt, "LogClean")->numarg;
+     */
+
+    
     umask(0007);
     if(!(my_socket = cfgopt(copt, "MilterSocket")->strarg)) {
 	logg("!Please configure the MilterSocket directive\n");
@@ -230,11 +236,6 @@ int main(int argc, char **argv) {
 	return 1;
     }
 
-
-    /* FIXME: find a place for these:
-     * maxthreads = cfgopt(copt, "MaxThreads")->numarg;
-     * logclean = cfgopt(copt, "LogClean")->numarg;
-     */
     maxfilesize = cfgopt(copt, "MaxFileSize")->numarg;
     readtimeout = cfgopt(copt, "ReadTimeout")->numarg;
 
