@@ -285,10 +285,15 @@ void cpool_init(struct cfgstruct *copt) {
 
 void cpool_free(void) {
     unsigned int i;
-    for(i=0; i<cp->entries; i++)
-	FREESRV(cp->pool[i]);
-    free(cp->pool);
-    free(cp);
+    if(cp) {
+	if(cp->pool) {
+	    for(i=0; i<cp->entries; i++)
+		FREESRV(cp->pool[i]);
+	    free(cp->pool);
+	}
+	free(cp);
+	cp = NULL;
+    }
 }
 
 

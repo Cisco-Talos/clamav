@@ -113,6 +113,17 @@ int main(int argc, char **argv) {
 
     opt_free(opt);
 
+    if((cpt = cfgopt(copt, "Chroot"))->enabled) {
+	if(chdir(cpt->strarg) != 0) {
+	    logg("!Cannot change directory to %s\n", cpt->strarg);
+	    return 1;
+	}
+	if(chroot(cpt->strarg) != 0) {
+	    logg("!chroot to %s failed. Are you root?\n", cpt->strarg);
+	    return 1;
+	}
+    }
+
     if(geteuid() == 0 && (cpt = cfgopt(copt, "User"))->enabled) {
         struct passwd *user = NULL;
 	if((user = getpwnam(cpt->strarg)) == NULL) {
