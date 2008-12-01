@@ -496,7 +496,7 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
 	    val = lsigcnt[id];
 
 	if(mod) {
-	    pt = strchr(expr, mod) + modoff;
+	    pt = expr + modoff + 1;
 	    ret = sscanf(pt, "%u", &modval1);
 	    if(!ret || ret == EOF) {
 		cli_errmsg("chklexpr: Syntax error: Missing number after '%c'\n", mod);

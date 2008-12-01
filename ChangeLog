@@ -1,3 +1,7 @@
+Mon Dec  1 19:51:52 CET 2008 (tk)
+---------------------------------
+ * libclamav/matcher-ac.c: fix parsing of lsig modifiers
+
 Fri Nov 28 18:13:40 CET 2008 (acab)
 -----------------------------------
  * shared/cfgparser.c: reenable -Werror builds
