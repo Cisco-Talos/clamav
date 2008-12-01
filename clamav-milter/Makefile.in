@@ -77,14 +77,16 @@ am__clamav_milter_SOURCES_DIST = $(top_srcdir)/shared/cfgparser.c \
 	$(top_srcdir)/shared/output.h $(top_srcdir)/shared/getopt.c \
 	$(top_srcdir)/shared/getopt.h $(top_srcdir)/shared/misc.c \
 	$(top_srcdir)/shared/misc.h $(top_srcdir)/shared/options.c \
-	$(top_srcdir)/shared/options.h connpool.c connpool.h netcode.c \
-	netcode.h clamfi.c clamfi.h clamav-milter.c
+	$(top_srcdir)/shared/options.h whitelist.c whitelist.h \
+	connpool.c connpool.h netcode.c netcode.h clamfi.c clamfi.h \
+	clamav-milter.c
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@am_clamav_milter_OBJECTS =  \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	cfgparser.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	output.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	getopt.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	misc.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	options.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	whitelist.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	connpool.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	netcode.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	clamfi.$(OBJEXT) \
@@ -279,6 +281,8 @@ top_srcdir = @top_srcdir@
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/misc.h \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/options.c \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/options.h \
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    whitelist.c \
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    whitelist.h \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    connpool.c \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    connpool.h \
 @BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    netcode.c \
@@ -387,6 +391,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/netcode.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/options.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/output.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/whitelist.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

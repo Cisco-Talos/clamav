@@ -33,6 +33,8 @@ clamav_milter_SOURCES = \
     $(top_srcdir)/shared/misc.h \
     $(top_srcdir)/shared/options.c \
     $(top_srcdir)/shared/options.h \
+    whitelist.c \
+    whitelist.h \
     connpool.c \
     connpool.h \
     netcode.c \

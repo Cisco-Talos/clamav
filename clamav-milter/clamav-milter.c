@@ -42,7 +42,7 @@
 #include "connpool.h"
 #include "netcode.h"
 #include "clamfi.h"
-
+#include "whitelist.h"
 
 struct smfiDesc descr = {
     "ClamAV", 		/* filter name */
@@ -214,6 +214,12 @@ int main(int argc, char **argv) {
 	return 1;
     }
 
+    if((cpt = cfgopt(copt, "Whitelist"))->enabled && whitelist_init(cpt->strarg)) {
+	localnets_free();
+	logg_close();
+	freecfg(copt);
+	return 1;
+    }
 
     /* FIXME: find a place for these:
      * maxthreads = cfgopt(copt, "MaxThreads")->numarg;
@@ -239,18 +245,24 @@ int main(int argc, char **argv) {
     umask(0007);
     if(!(my_socket = cfgopt(copt, "MilterSocket")->strarg)) {
 	logg("!Please configure the MilterSocket directive\n");
+	localnets_free();
+	whitelist_free();
 	logg_close();
 	freecfg(copt);
 	return 1;
     }
     if(smfi_setconn(my_socket) == MI_FAILURE) {
 	logg("!smfi_setconn failed\n");
+	localnets_free();
+	whitelist_free();
 	logg_close();
 	freecfg(copt);
 	return 1;
     }
     if(smfi_register(descr) == MI_FAILURE) {
 	logg("!smfi_register failed\n");
+	localnets_free();
+	whitelist_free();
 	logg_close();
 	freecfg(copt);
 	return 1;
@@ -258,6 +270,8 @@ int main(int argc, char **argv) {
     cpt = cfgopt(copt, "FixStaleSocket");
     if(smfi_opensocket(cpt->enabled) == MI_FAILURE) {
 	logg("!Failed to create socket %s\n", my_socket);
+	localnets_free();
+	whitelist_free();
 	logg_close();
 	freecfg(copt);
 	return 1;
@@ -269,6 +283,8 @@ int main(int argc, char **argv) {
     cpool_init(copt);
     if (!cp) {
 	logg("!Failed to init the socket pool\n");
+	localnets_free();
+	whitelist_free();
 	logg_close();
 	freecfg(copt);
 	return 1;
@@ -277,6 +293,8 @@ int main(int argc, char **argv) {
     if(!cfgopt(copt, "Foreground")->enabled) {
 	if(daemonize() == -1) {
 	    logg("!daemonize() failed\n");
+	    localnets_free();
+	    whitelist_free();
 	    cpool_free();
 	    logg_close();
 	    return 1;
@@ -293,8 +311,11 @@ int main(int argc, char **argv) {
     logg_close();
     cpool_free();
     localnets_free();
+    whitelist_free();
+
     return ret;
 }
+
 /*
  * Local Variables:
  * mode: c
