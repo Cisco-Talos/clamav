@@ -50,7 +50,7 @@ struct smfiDesc descr = {
     SMFIF_CHGHDRS|SMFIF_QUARANTINE, /* flags */
     clamfi_connect,	/* connection info filter */
     NULL,		/* SMTP HELO command filter */
-    NULL,		/* envelope sender filter */
+    clamfi_envfrom,	/* envelope sender filter */
     NULL,		/* envelope recipient filter */
     clamfi_header,	/* header filter */
     NULL,		/* end of header */
