@@ -360,16 +360,46 @@ static inline int swizz_j48(const uint16_t n[])
 {
 	cli_dbgmsg("swizz_j48: %u, %u, %u\n",n[0],n[1],n[2]);
 	/* rules based on J48 tree */
-	if (n[0] <= 951 || n[1] == 0)
+	if (n[0] <= 924)
 		return CL_CLEAN;
-	if (n[2] == 0) {
-		if (n[0] <= 984)
-			return CL_CLEAN;
-		if (n[1] <= 15)
-			return n[0] <= 1008 ? CL_CLEAN : CL_VIRUS;
-		return CL_CLEAN;
+	if (n[0] <= 940) {
+		return (n[2] > 1 && n[2] <= 8) ? CL_VIRUS : CL_CLEAN;
 	}
-	return n[2] <= 7 ? CL_VIRUS : CL_CLEAN;
+	if (n[2] <= 14) {
+		if (n[2] <= 0) {
+			if (n[0] <= 999)
+				return CL_CLEAN;
+			if (n[0] <= 1012) {
+				if (n[1] <= 23) {
+					if (n[0] <= 1003)
+						return CL_CLEAN;
+					return (n[1] <= 19 && n[0] > 1007 && n[1] > 15) || (n[1] > 19) ? CL_VIRUS : CL_CLEAN;
+				}
+				return CL_VIRUS;
+			}
+			return n[1] == 0 ? CL_CLEAN : CL_VIRUS;
+		}
+		if (n[2] <= 8)
+			return CL_VIRUS;
+		if (n[0] <= 954)
+			return CL_CLEAN;
+		if (n[2] <= 10)
+			return CL_VIRUS;
+		if (n[2] <= 12) {
+			if (n[0] <= 1011) {
+				if (n[1] <=32)
+					return CL_VIRUS;
+				return (n[2] <= 11 || n[1] > 51) ? CL_VIRUS : CL_CLEAN;
+			}
+			return CL_CLEAN;
+		}
+		if (n[1] <= 52) {
+			return (n[1] <= 43 && n[1] > 6 &&
+					(n[2] <= 13 || n[1] <= 30 || n[1] > 40))
+				? CL_CLEAN : CL_VIRUS;
+		}
+	}
+	return CL_CLEAN;
 }
 
 void cli_detect_swizz_str(const unsigned char *str, uint32_t len, struct swizz_stats *stats, int blob)
@@ -444,7 +474,7 @@ int cli_detect_swizz(struct swizz_stats *stats)
 			(unsigned long)stats->suspicious, (unsigned long)stats->total,
 			stats->has_version, stats->has_manifest);
 	/* not all have version/manifest */
-	if (stats->total > 128 && stats->suspicious > 3*stats->total/10) {
+	if (stats->total > 128 && stats->suspicious > 2*stats->total/10) {
 		return CL_VIRUS;
 	}
 	return CL_CLEAN;

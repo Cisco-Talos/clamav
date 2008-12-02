@@ -1,3 +1,9 @@
+Wed Dec  3 00:21:43 EET 2008 (edwin)
+------------------------------------
+ * libclamav/special.c: use a more precise J48 tree (built from more
+ input data), and lower threshold for detection. This detects ~14%
+ more samples.
+
 Tue Dec  2 22:00:10 EET 2008 (edwin)
 ------------------------------------
  * libclamav/dconf.c, libclamav/dconf.h, libclamav/pe.c,
