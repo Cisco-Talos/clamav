@@ -21,7 +21,7 @@
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
-
+#define _XOPEN_SOURCE 500
 #include <stdio.h>
 #if HAVE_STRING_H
 #include <string.h>
@@ -56,6 +56,7 @@
 #include "matcher.h"
 #include "matcher-bm.h"
 #include "disasm.h"
+#include "special.h"
 
 #ifndef	O_BINARY
 #define	O_BINARY	0
@@ -316,6 +317,102 @@ static unsigned int cli_md5sect(int fd, struct cli_exe_section *s, unsigned char
     return 1;
 }
 
+static void cli_parseres_special(uint32_t base, uint32_t rva, int srcfd, struct cli_exe_section *exe_sections, uint16_t nsections, size_t fsize, uint32_t hdr_size, unsigned int level, uint32_t type, unsigned int *maxres, struct swizz_stats *stats) {
+    unsigned int err = 0, i;
+    uint8_t resdir[16];
+    uint8_t *entry, *oentry;
+    uint16_t named, unnamed;
+    uint32_t rawaddr = cli_rawaddr(rva, exe_sections, nsections, &err, fsize, hdr_size);
+    uint32_t entries;
+
+    if(level>2 || !*maxres) return;
+    *maxres-=1;
+    if(err || (pread(srcfd,resdir, sizeof(resdir), rawaddr) != sizeof(resdir)))
+	    return;
+    named = (uint16_t)cli_readint16(resdir+12);
+    unnamed = (uint16_t)cli_readint16(resdir+14);
+
+    entries = /*named+*/unnamed;
+    if (!entries)
+	    return;
+    oentry = entry = cli_malloc(entries*8);
+    rawaddr += named*8; /* skip named */
+    /* this is just used in a heuristic detection, so don't give error on failure */
+    if (!entry) {
+	    cli_dbgmsg("cli_parseres_special: failed to allocate memory for resource directory:%lu\n", (unsigned long)entries);
+	    return;
+    }
+    if (pread(srcfd, entry, entries*8, rawaddr+16) != entries*8) {
+	    cli_dbgmsg("cli_parseres_special: failed to read resource directory at:%lu\n", (unsigned long)rawaddr+16);
+	    free(oentry);
+	    return;
+    }
+    /*for (i=0; i<named; i++) {
+	uint32_t id, offs;
+	id = cli_readint32(entry);
+	offs = cli_readint32(entry+4);
+	if(offs>>31)
+	    cli_parseres( base, base + (offs&0x7fffffff), srcfd, exe_sections, nsections, fsize, hdr_size, level+1, type, maxres, stats);
+	entry+=8;
+    }*/
+    for (i=0; i<unnamed; i++) {
+	uint32_t id, offs;
+	id = cli_readint32(entry)&0x7fffffff;
+	if(level==0) {
+		switch(id) {
+			case 4: /* menu */
+			case 5: /* dialog */
+			case 6: /* string */
+			case 11:/* msgtable */
+				type = id;
+				break;
+			case 16:
+				/* 14: version */
+				stats->has_version = 1;
+				break;
+			case 24: /* manifest */
+				stats->has_manifest = 1;
+				break;
+			/* otherwise keep it 0, we don't want it */
+		}
+	} else if (!type) {
+		/* if we are not interested in this type, skip */
+		continue;
+	}
+	offs = cli_readint32(entry+4);
+	if(offs>>31)
+		cli_parseres_special(base, base + (offs&0x7fffffff), srcfd, exe_sections, nsections, fsize, hdr_size, level+1, type, maxres, stats);
+	else {
+		if (type == 4 || type == 5 || type == 6 || type ==11) {
+			offs = cli_readint32(entry+4);
+			rawaddr = cli_rawaddr(base + offs, exe_sections, nsections, &err, fsize, hdr_size);
+			if (!err && pread(srcfd, resdir, sizeof(resdir), rawaddr) == sizeof(resdir)) {
+				uint32_t isz = cli_readint32(resdir+4);
+				char *str;
+				rawaddr = cli_rawaddr(cli_readint32(resdir), exe_sections, nsections, &err, fsize, hdr_size);
+				if (err || !isz || rawaddr+isz >= fsize) {
+					cli_dbgmsg("cli_parseres_special: invalid resource table entry: %lu + %lu\n", 
+							(unsigned long)rawaddr, 
+							(unsigned long)isz);
+					continue;
+				}
+				str = cli_malloc(isz);
+				if (!str) {
+					cli_dbgmsg("cli_parseres_special: failed to allocate string mem: %lu\n", (unsigned long)isz);
+					continue;
+				}
+				if(pread(srcfd, str, isz, rawaddr) == isz) {
+					cli_detect_swizz_str(str, isz, stats, type);
+				}
+				free (str);
+			}
+		}
+	}
+	entry+=8;
+    }
+    free (oentry);
+}
+
 int cli_scanpe(int desc, cli_ctx *ctx)
 {
 	uint16_t e_magic; /* DOS signature ("MZ") */
@@ -344,6 +441,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	struct cli_exe_section *exe_sections;
 	struct cli_matcher *md5_sect;
 	char timestr[32];
+	struct pe_image_data_dir *dirs;
 
 
     if(!ctx) {
@@ -597,6 +695,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	cli_dbgmsg("SizeOfImage: 0x%x\n", EC32(optional_hdr32.SizeOfImage));
 	cli_dbgmsg("SizeOfHeaders: 0x%x\n", hdr_size);
 	cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr32.NumberOfRvaAndSizes));
+	dirs = optional_hdr32.DataDirectory;
 
     } else { /* PE+ */
         /* read the remaining part of the header */
@@ -628,6 +727,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	cli_dbgmsg("SizeOfImage: 0x%x\n", EC32(optional_hdr64.SizeOfImage));
 	cli_dbgmsg("SizeOfHeaders: 0x%x\n", hdr_size);
 	cli_dbgmsg("NumberOfRvaAndSizes: %d\n", EC32(optional_hdr64.NumberOfRvaAndSizes));
+	dirs = optional_hdr64.DataDirectory;
     }
 
 
@@ -1113,6 +1213,22 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	break;
     }
 
+    /* Trojan.Swizzor.Gen */
+    if (SCAN_ALGO && (DCONF & PE_CONF_SWIZZOR) && nsections > 1 && fsize > 64*1024 && fsize < 4*1024*1024) {
+	    int ret = CL_CLEAN;
+	    if(dirs[2].Size) {
+		    struct swizz_stats stats;
+		    unsigned int m = 10000;
+		    memset(&stats, 0, sizeof(stats));
+		    cli_parseres_special(EC32(dirs[2].VirtualAddress), EC32(dirs[2].VirtualAddress), desc, exe_sections, nsections, fsize, hdr_size, 0, 0, &m, &stats);
+		    if (cli_detect_swizz(&stats) == CL_VIRUS) {
+			    *ctx->virname = "Trojan.Swizzor.Gen";
+			    ret = CL_VIRUS;
+			    free(exe_sections);
+			    return ret;
+		    }
+	    }
+    }
 
     /* UPX, FSG, MEW support */
 

@@ -1,3 +1,9 @@
+Tue Dec  2 22:00:10 EET 2008 (edwin)
+------------------------------------
+ * libclamav/dconf.c, libclamav/dconf.h, libclamav/pe.c,
+ libclamav/special.c, libclamav/special.h: Heuristic detection of
+ Trojan.Swizzor.Gen (bb #1310)
+
 Mon Dec  1 19:51:52 CET 2008 (tk)
 ---------------------------------
  * libclamav/matcher-ac.c: fix parsing of lsig modifiers

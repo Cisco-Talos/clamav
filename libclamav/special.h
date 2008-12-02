@@ -22,9 +22,17 @@
 #define __SPECIAL_H
 
 #include "others.h"
+struct swizz_stats {
+	uint32_t total;
+	uint32_t suspicious;
+	int has_version;
+	int has_manifest;
+};
 
 int cli_check_mydoom_log(int desc, const char **virname);
 int cli_check_jpeg_exploit(int fd, cli_ctx *ctx);
 int cli_check_riff_exploit(int fd);
+void cli_detect_swizz_str(const unsigned char *str, uint32_t len, struct swizz_stats *stats, int blob);
+int cli_detect_swizz(struct swizz_stats *stats);
 
 #endif

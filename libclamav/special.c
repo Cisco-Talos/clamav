@@ -1,7 +1,7 @@
 /*
  *  Copyright (C) 2007-2008 Sourcefire, Inc.
  *
- *  Authors: Trog
+ *  Authors: Trog, Török Edvin
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -34,7 +34,7 @@
 #include <netinet/in.h>
 #endif
 #include <string.h>
-
+#include <ctype.h>
 #include "clamav.h"
 #include "others.h"
 #include "cltypes.h"
@@ -354,4 +354,98 @@ int cli_check_riff_exploit(int fd)
 		retval = 2;
 	}
 	return retval;
+}
+
+static inline int swizz_j48(const uint16_t n[])
+{
+	cli_dbgmsg("swizz_j48: %u, %u, %u\n",n[0],n[1],n[2]);
+	/* rules based on J48 tree */
+	if (n[0] <= 951 || n[1] == 0)
+		return CL_CLEAN;
+	if (n[2] == 0) {
+		if (n[0] <= 984)
+			return CL_CLEAN;
+		if (n[1] <= 15)
+			return n[0] <= 1008 ? CL_CLEAN : CL_VIRUS;
+		return CL_CLEAN;
+	}
+	return n[2] <= 7 ? CL_VIRUS : CL_CLEAN;
+}
+
+void cli_detect_swizz_str(const unsigned char *str, uint32_t len, struct swizz_stats *stats, int blob)
+{
+	unsigned char stri[4096];
+        uint32_t i, j = 0;
+	int bad = 0;
+	int lastalnum = 0;
+	uint8_t ngrams[17576];
+	uint16_t all=0;
+	uint16_t ngram_cnts[3];
+	uint16_t words = 0;
+	int ret;
+
+	for(i=0;i<len-1 && j < sizeof(stri)-2;i += 2) {
+		unsigned char c = str[i];
+		if (str[i+1] || !c) {
+			bad++;
+			continue;
+		}
+		if (!isalnum(c)) {
+			if (!lastalnum)
+				continue;
+			lastalnum = 0;
+			c = ' ';
+		} else {
+			lastalnum = 1;
+			if (isdigit(c))
+				continue;
+		}
+		stri[j++] = tolower(c);
+	}
+	stri[j++] = '\0';
+	if ((!blob && (bad >= 8)) || j < 4)
+		return;
+	memset(ngrams, 0, sizeof(ngrams));
+	memset(ngram_cnts, 0, sizeof(ngram_cnts));
+	for(i=0;i<j-2;i++) {
+		if (stri[i] != ' ' && stri[i+1] != ' ' && stri[i+2] != ' ') {
+			uint16_t idx = (stri[i] - 'a')*676 + (stri[i+1] - 'a')*26 + (stri[i+2] - 'a');
+			if (idx < sizeof(ngrams))
+				ngrams[idx]++;
+		} else if (stri[i] == ' ')
+			words++;
+	}
+	for(i=0;i<sizeof(ngrams);i++) {
+		uint8_t v = ngrams[i];
+		if (v > 3) v = 3;
+		if (v) {
+			ngram_cnts[v-1]++;
+			all++;
+		}
+	}
+	if (!all)
+		return;
+	cli_dbgmsg("cli_detect_swizz_str: %u, %u, %u\n",ngram_cnts[0],ngram_cnts[1],ngram_cnts[2]);
+	/* normalize */
+	for(i=0;i<sizeof(ngram_cnts)/sizeof(ngram_cnts[0]);i++) {
+		uint32_t v = ngram_cnts[i];
+		ngram_cnts[i] = (v<<10)/all;
+	}
+	ret = swizz_j48(ngram_cnts);
+	cli_dbgmsg("cli_detect_swizz_str: %s, %u words\n", ret == CL_VIRUS ? "suspicious" : "ok", words);
+	if (ret == CL_VIRUS)
+		stats->suspicious += j;
+	stats->total += j;
+}
+
+int cli_detect_swizz(struct swizz_stats *stats)
+{
+	cli_dbgmsg("cli_detect_swizz: %lu/%lu, version:%d, manifest: %d \n",
+			(unsigned long)stats->suspicious, (unsigned long)stats->total,
+			stats->has_version, stats->has_manifest);
+	/* not all have version/manifest */
+	if (stats->total > 128 && stats->suspicious > 3*stats->total/10) {
+		return CL_VIRUS;
+	}
+	return CL_CLEAN;
 }

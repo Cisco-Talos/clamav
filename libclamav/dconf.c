@@ -59,6 +59,7 @@ static struct dconf_module modules[] = {
     { "PE",	    "MD5SECT",	    PE_CONF_MD5SECT,	    1 },
     { "PE",	    "UPX",	    PE_CONF_UPX,	    1 },
     { "PE",	    "FSG",	    PE_CONF_FSG,	    1 },
+    { "PE",         "SWIZZOR",      PE_CONF_SWIZZOR,        1 },
 
     { "PE",	    "PETITE",	    PE_CONF_PETITE,	    1 },
     { "PE",	    "PESPIN",	    PE_CONF_PESPIN,	    1 },
