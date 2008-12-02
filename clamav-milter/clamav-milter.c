@@ -208,6 +208,9 @@ int main(int argc, char **argv) {
     }
 #endif
 
+    if((cpt = cfgopt(copt, "TemporaryDirectory"))->enabled)
+	tempdir = cpt->strarg;
+
     if(localnets_init(copt) || init_actions(copt)) {
 	logg_close();
 	freecfg(copt);
@@ -223,7 +226,6 @@ int main(int argc, char **argv) {
 
     /* FIXME: find a place for these:
      * maxthreads = cfgopt(copt, "MaxThreads")->numarg;
-     * logclean = cfgopt(copt, "LogClean")->numarg;
      */
 
     if(cfgopt(copt, "AddHeader")->enabled) {
@@ -242,7 +244,7 @@ int main(int argc, char **argv) {
 	addxvirus = 1;
     }
     
-    umask(0007);
+    umask(0007); /* FIXME */
     if(!(my_socket = cfgopt(copt, "MilterSocket")->strarg)) {
 	logg("!Please configure the MilterSocket directive\n");
 	localnets_free();
@@ -297,12 +299,27 @@ int main(int argc, char **argv) {
 	    whitelist_free();
 	    cpool_free();
 	    logg_close();
+	    freecfg(copt);
 	    return 1;
 	}
 	if(chdir("/") == -1)
 	    logg("^Can't change current working directory to root\n");
     }
 
+    if((cpt = cfgopt(copt, "PidFile"))->enabled) {
+	FILE *fd;
+	mode_t old_umask = umask(0006);
+
+	if((fd = fopen(cpt->strarg, "w")) == NULL) {
+	    logg("!Can't save PID in file %s\n", cpt->strarg);
+	} else {
+	    if (fprintf(fd, "%u", (unsigned int)getpid())<0) {
+	    	logg("!Can't save PID in file %s\n", cpt->strarg);
+	    }
+	    fclose(fd);
+	}
+	umask(old_umask);
+    }
 
     ret = smfi_main();
 

@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
+#include <pthread.h>
 
 #include "shared/cfgparser.h"
 

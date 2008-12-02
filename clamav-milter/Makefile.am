@@ -16,7 +16,6 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-# FIXME: check automake for 'and' (&&)
 if BUILD_CLAMD
 if HAVE_MILTER
 
@@ -51,6 +50,3 @@ LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMAV_MILTER_LIBS@ @THREAD_LIBS@
 AM_CPPFLAGS = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_srcdir)/shared -I$(top_srcdir)
 EXTRA_DIST = clamav-milter.c INSTALL
 CLEANFILES=*.gcda *.gcno
-CFLAGS=`echo "@CFLAGS@" | sed -e 's/-Werror[^-]//'`
-
-

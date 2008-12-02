@@ -40,13 +40,8 @@
 #include "connpool.h"
 #include "netcode.h"
 
-#ifdef HAVE_GETADDRINFO
 #define SETGAI(k, v) {(k)->gai = (void *)(v);} while(0)
 #define FREESRV(k) { if((k).gai) freeaddrinfo((k).gai); else if((k).server) free((k).server); } while(0)
-#else
-#define SETGAI
-#define FREESRV(k) { if ((k).server) free((k).server); } while(0)
-#endif
 
 struct CPOOL *cp = NULL;
 
@@ -90,17 +85,12 @@ static int islocal(struct sockaddr *sa, socklen_t addrlen) {
 }
 
 
-#ifdef HAVE_GETADDRINFO
 static int cpool_addtcp(char *addr, char *port) {
     struct addrinfo hints, *res, *res2;;
     struct CP_ENTRY *cpe = (struct CP_ENTRY *)&cp->pool[cp->entries-1];
 
     memset(&hints, 0, sizeof(hints));
-#ifdef SUPPORT_IPv6
     hints.ai_family = AF_UNSPEC;
-#else
-    hints.ai_family = AF_INET;
-#endif
     hints.ai_socktype = SOCK_STREAM;
 
     if(getaddrinfo(addr, port ? port : "3310", &hints, &res)) {
@@ -113,11 +103,7 @@ static int cpool_addtcp(char *addr, char *port) {
     memset(&hints, 0, sizeof(hints));
     hints.ai_flags = AI_PASSIVE;
     hints.ai_socktype = SOCK_STREAM;
-#ifdef SUPPORT_IPv6
     hints.ai_family = AF_UNSPEC;
-#else
-    hints.ai_family = AF_INET;
-#endif
     if(!getaddrinfo(addr, NULL, &hints, &res2)) {
 	cpe->local = islocal(res2->ai_addr, res2->ai_addrlen);
 	freeaddrinfo(res2);
@@ -129,49 +115,6 @@ static int cpool_addtcp(char *addr, char *port) {
     logg("*%s socket tcp:%s:%s added to the pool (slot %d)\n", cpe->local ? "Local" : "Remote", addr ? addr : "localhost", port ? port : "3310", cp->entries);
     return 0;
 }
-#else
-static int cpool_addtcp(char *addr, char *port) {
-    struct sockaddr_in *srv;
-    struct CP_ENTRY *cpe = (struct CP_ENTRY *)&cp->pool[cp->entries-1];
-    int nport = 3310;
-
-    if(port) {
-	nport = atoi(port);
-	if (nport<=0 || nport>65535) {
-	    logg("!Bad port for clamd socket (%d)\n", nport);
-	    return 1;
-	}
-    }
-    if(!(srv = malloc(sizeof(*srv)))) {
-	logg("!Out of memory allocating unix socket space\n");
-	return 1;
-    }
-
-    srv->sin_family = AF_INET;
-
-    if (addr) {
-	struct hostent *h;
-	if(!(h=gethostbyname(addr))) {
-	    logg("^Can't resolve tcp socket hostname %s\n", addr);
-	    free(srv);
-	    return 1;
-	}
-	memcpy(&srv->sin_addr.s_addr, h->h_addr_list[0], 4);
-    } else {
-	srv->sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    }
-    cpe->type = 1;
-    cpe->dead = 1;
-    srv->sin_port = htons(INADDR_ANY);
-    cpe->local = islocal(srv, sizeof(srv));
-    srv->sin_port = htons(nport);
-    cpe->last_poll = 0;
-    cpe->server = (struct sockaddr *)srv;
-    cpe->socklen = sizeof(*srv);
-    logg("*%s socket tcp:%s:%u added to the pool (slot %d)\n", cpe->local ? "Local" : "Remote", addr ? addr : "localhost", nport, cp->entries);
-    return 0;
-}    
-#endif
 
 
 int addslot(void) {
@@ -247,31 +190,6 @@ void cpool_init(struct cfgstruct *copt) {
 	    return;
 	}
     }
-
-#ifdef MILTER_LEGACY
-    if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
-	if(addslot()) return;
-	if(cpool_addunix(cpt->strarg)) {
-	    cpool_free();
-	    return;
-	}
-    }
-
-    if((cpt = cfgopt(copt, "TCPSocket"))->enabled) {
-	char *addr = NULL;
-	char port[5];
-
-	if(addslot()) return;
-	snprintf(port, 5, "%d", cpt->numarg);
-	port[5] = 0;
-	if((cpt = cfgopt(copt, "TCPAddr"))->enabled)
-	    addr = cpt->strarg;
-	if(cpool_addtcp(addr, port)) {
-	    cpool_free();
-	    return;
-	}
-    }
-#endif
 
     if(!cp->entries) {
 	logg("!No ClamdSocket specified\n");
