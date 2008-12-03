@@ -1,3 +1,7 @@
+Wed Dec  3 10:27:17 CET 2008 (tk)
+---------------------------------
+ * docs/man/freshclam.1.in: document EXIT_n
+
 Wed Dec  3 00:21:43 EET 2008 (edwin)
 ------------------------------------
  * libclamav/special.c: use a more precise J48 tree (built from more
