@@ -28,6 +28,7 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <sys/un.h>
 #include <netdb.h>
 #include <unistd.h>
@@ -43,8 +44,16 @@
 #define SETGAI(k, v) {(k)->gai = (void *)(v);} while(0)
 #define FREESRV(k) { if((k).gai) freeaddrinfo((k).gai); else if((k).server) free((k).server); } while(0)
 
-struct CPOOL *cp = NULL;
+#if __GNUC__ >= 3 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
+#define _UNUSED_ __attribute__ ((__unused__))
+#else
+#define _UNUSED_
+#endif
 
+struct CPOOL *cp = NULL;
+static pthread_cond_t mon_cond = PTHREAD_COND_INITIALIZER;
+static int quitting = 1;
+static pthread_t probe_th;
 
 static int cpool_addunix(char *path) {
     struct sockaddr_un *srv;
@@ -132,15 +141,22 @@ int addslot(void) {
     cp->entries++;
     return 0;
 }
-    
+
+
+/* Probe strategy:
+- wake up every minute
+- probe alive if last check > 15 min
+- probe dead if (last check > 2 min || no clamd available)
+*/
 
 void cpool_probe(void) {
     unsigned int i, dead=0;
     struct CP_ENTRY *cpe = cp->pool;
-    time_t lastpoll = time(NULL) - 5*60;
+    time_t now = time(NULL);
 
     for(i=1; i<=cp->entries; i++) {
-	if(cpe->dead && lastpoll > cpe->last_poll) {
+	if((cpe->dead && (cpe->last_poll < now - 120 || !cp->alive)) || cpe->last_poll < now - 15*60*60) {
+	    cpe->last_poll = time(NULL);
 	    nc_ping_entry(cpe);
 	    logg("*Probe for slot %u returned: %s\n", i, cpe->dead ? "failed" : "success");
 	}
@@ -148,8 +164,29 @@ void cpool_probe(void) {
 	cpe++;
     }
     cp->alive = cp->entries - dead;
+
     if(!cp->alive)
-	logg("^No clamd server appears to be available, trying again in 5 minutes.\n");
+	logg("^No clamd server appears to be available\n");
+}
+
+
+void *cpool_mon(_UNUSED_ void *v) {
+    pthread_mutex_t conv;
+
+    pthread_mutex_init(&conv, NULL);
+    pthread_mutex_lock(&conv);
+
+    while(!quitting) {
+	struct timespec t;
+
+	cpool_probe();
+	t.tv_sec = time(NULL) + 60;
+	t.tv_nsec = 0;
+	pthread_cond_timedwait(&mon_cond, &conv, &t);
+    }
+    pthread_mutex_unlock(&conv);
+    pthread_mutex_destroy(&conv);
+    return NULL;
 }
 
 
@@ -196,13 +233,21 @@ void cpool_init(struct cfgstruct *copt) {
 	cpool_free();
 	return;
     }
-    cpool_probe();
-    srand(time(NULL)); /* FIXME: naive ? */
+    quitting = 0;
+    pthread_create(&probe_th, NULL, cpool_mon, NULL);
+    srand(time(NULL));
 }
 
 
 void cpool_free(void) {
     unsigned int i;
+
+    if(!quitting) {
+	logg("*Killing the monitor and stopping\n");
+	pthread_cond_signal(&mon_cond);
+	pthread_join(probe_th, NULL);
+    }
+
     if(cp) {
 	if(cp->pool) {
 	    for(i=0; i<cp->entries; i++)
@@ -228,14 +273,12 @@ struct CP_ENTRY *cpool_get_rand(int *s) {
 		cpe = cp->local_cpe;
 	    if((*s = nc_connect_entry(cpe)) == -1) {
 		cpe->dead = 1;
-		cp->alive--; /* FIXME mutex */
 		continue;
 	    }
 	    return cpe;
 	}
     }
-    logg("!No sockets are alive. Probe forced...\n");
-    /* FIXME: yeah, actually do force smthng here */
+    pthread_cond_signal(&mon_cond);
     return NULL;
 }
 

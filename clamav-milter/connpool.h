@@ -13,15 +13,13 @@
 #include "shared/cfgparser.h"
 
 struct CP_ENTRY {
+    struct sockaddr *server;
+    void *gai;
+    socklen_t socklen;
+    time_t last_poll;
     uint8_t type;
     uint8_t dead;
     uint8_t local;
-    time_t last_poll;
-    struct sockaddr *server;
-    socklen_t socklen;
-#ifdef HAVE_GETADDRINFO
-    void *gai;
-#endif
 };
 
 struct CPOOL {

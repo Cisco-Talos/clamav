@@ -51,7 +51,7 @@ struct smfiDesc descr = {
     clamfi_connect,	/* connection info filter */
     NULL,		/* SMTP HELO command filter */
     clamfi_envfrom,	/* envelope sender filter */
-    NULL,		/* envelope recipient filter */
+    clamfi_envrcpt,	/* envelope recipient filter */
     clamfi_header,	/* header filter */
     NULL,		/* end of header */
     clamfi_body,	/* body block */
@@ -224,16 +224,10 @@ int main(int argc, char **argv) {
 	return 1;
     }
 
-    /* FIXME: find a place for these:
-     * maxthreads = cfgopt(copt, "MaxThreads")->numarg;
-     */
-
     if(cfgopt(copt, "AddHeader")->enabled) {
 	char myname[255];
 
 	if(!gethostname(myname, sizeof(myname))) {
-	    char mydomain[255];
-
 	    myname[sizeof(myname)-1] = '\0';
 	    snprintf(xvirushdr, sizeof(xvirushdr), "clamav-milter %s at %s", get_version(), myname);
 	    xvirushdr[sizeof(xvirushdr)-1] = '\0';
