@@ -36,6 +36,7 @@
 #include <netdb.h>
 
 #include "shared/output.h"
+#include "libclamav/others.h"
 #include "netcode.h"
 
 
@@ -54,9 +55,10 @@ struct LOCALNET {
 };
 
 struct LOCALNET *lnet = NULL;
+char *tempdir = NULL;
 
-/* FIXME: for connect and send */
-#define TIMEOUT 60
+/* for connect and send */
+#define TIMEOUT 30
 /* for recv */
 long readtimeout;
 
@@ -288,13 +290,13 @@ int nc_connect_rand(int *main, int *alt, int *local) {
     if(!cpe) return 1;
     *local = (cpe->server->sa_family == AF_UNIX);
     if(*local) {
-	char tmpn[] = "/tmp/clamav-milter-XXXXXX"; 
-	if((*alt = mkstemp(tmpn))==-1) { /* FIXME */
+	char *unlinkme;
+	if(cli_gentempfd(tempdir, &unlinkme, alt) != CL_SUCCESS) {
 	    logg("!Failed to create temporary file\n");
 	    close(*main);
 	    return 1;
 	}
-	unlink(tmpn);
+	unlink(unlinkme);
     } else {
 	char *reply=NULL, *port;
 	int nport;
@@ -349,11 +351,7 @@ int resolve(char *name, uint32_t *family, uint32_t *host) {
     }
 
     memset(&hints, 0, sizeof(hints));
-#ifdef SUPPORT_IPv6
     hints.ai_family = AF_UNSPEC;
-#else
-    hints.ai_family = AF_INET;
-#endif
     hints.ai_socktype = SOCK_STREAM;
 
     if(getaddrinfo(name, NULL, &hints, &res)) {

@@ -19,5 +19,6 @@ int islocalnet_name(char *name);
 int islocalnet_sock(struct sockaddr *sa);
 
 extern long readtimeout;
+extern char *tempdir;
 
 #endif
