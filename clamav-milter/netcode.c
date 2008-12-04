@@ -99,7 +99,7 @@ int nc_connect(int s, struct CP_ENTRY *cpe) {
     if (!res) return 0;
     if (errno != EINPROGRESS) {
 	strerror_r(errno, er, sizeof(er));
-	logg("!connect failed: %s\n", er);
+	logg("*connect failed: %s\n", er);
 	close(s);
 	return -1;
     }
@@ -122,12 +122,12 @@ int nc_connect(int s, struct CP_ENTRY *cpe) {
 		tv.tv_usec = 0;
 		continue;
 	    }
-	    logg("!Failed to establish a connection to clamd\n");
+	    logg("*Failed to establish a connection to clamd\n");
 	    close(s);
 	    return -1;
 	}
 	if (getsockopt(s, SOL_SOCKET, SO_ERROR, &s_err, &s_len) || s_err) {
-	    logg("!Failed to establish a connection to clamd\n");
+	    logg("*Failed to establish a connection to clamd\n");
 	    close(s);
 	    return -1;
 	}
@@ -219,49 +219,56 @@ int nc_sendmsg(int s, int fd) {
 }
 
 char *nc_recv(int s) {
-    char buf[BUFSIZ], *ret=NULL;
-    time_t timeout = time(NULL) + readtimeout;
+    char buf[128], *ret=NULL;
+    time_t now, timeout = time(NULL) + readtimeout;
     struct timeval tv;
     fd_set fds;
     int res;
+    unsigned int len = 0;
 
-    tv.tv_sec = readtimeout;
-    tv.tv_usec = 0;
-
-    FD_ZERO(&fds);
-    FD_SET(s, &fds);
     while(1) {
-	res = select(s+1, &fds, NULL, NULL, &tv);
-	if(res<1) {
-	    time_t now;
-
-	    if (res == -1 && errno == EINTR && ((now = time(NULL)) < timeout)) {
-		tv.tv_sec = timeout - now;
-		tv.tv_usec = 0;
-		continue;
-	    }
-	    logg("!Failed to read clamd reply\n");
+	now = time(NULL);
+	if(now >= timeout) {
+	    logg("!Timed out while reading clamd reply\n");
 	    close(s);
 	    return NULL;
 	}
-	break;
+	tv.tv_sec = timeout - now;
+	tv.tv_usec = 0;
+
+	FD_ZERO(&fds);
+	FD_SET(s, &fds);
+
+	res = select(s+1, &fds, NULL, NULL, &tv);
+	if(res<1) {
+	    if (res != -1 || errno != EINTR)
+		timeout = 0;
+	    continue;
+	}
+
+	res = recv(s, &buf[len], sizeof(buf) - len, 0);
+	if(res==-1) {
+	    char er[256];
+	    strerror_r(errno, er, sizeof(er));
+	    logg("!recv failed after successful select: %s\n", er);
+	    close(s);
+	    return NULL;
+	}
+	len += res;
+	if(len && buf[len-1] == '\n') break;
+	if(len >= sizeof(buf)) {
+	    logg("!Overlong reply from clamd\n");
+	    close(s);
+	    return NULL;
+	}
     }
-    /* FIXME: check for EOL@EObuf ? */
-    res = recv(s, buf, sizeof(buf), 0);
-    if (res==-1) {
-	char er[256];
-	strerror_r(errno, er, sizeof(er));
-	logg("!recv failed after successful select: %s\n", er);
+    if(!(ret = (char *)malloc(len+1))) {
+	logg("!malloc(%d) failed\n", len+1);
 	close(s);
 	return NULL;
     }
-    if(!(ret = (char *)malloc(res+1))) {
-	logg("!malloc(%d) failed\n", res+1);
-	close(s);
-	return NULL;
-    }
-    memcpy(ret, buf, res);
-    ret[res]='\0';
+    memcpy(ret, buf, len);
+    ret[len]='\0';
     return ret;
 }
 
@@ -450,7 +457,7 @@ int islocalnet_name(char *name) {
 
     if(!lnet) return 0;
     if(resolve(name, &family, host)) {
-	logg("^Cannot resolv %s\n", name);
+	logg("*Cannot resolv %s\n", name);
 	return 0;
     }
     return islocalnet(family, host);
@@ -481,7 +488,6 @@ int islocalnet_sock(struct sockaddr *sa) {
 	    }
 	}
     } else return 0;
-
     return islocalnet(family, host);
 }
 

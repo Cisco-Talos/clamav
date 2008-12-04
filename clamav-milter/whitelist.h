@@ -3,5 +3,5 @@
 
 int whitelist_init(const char *fname);
 void whitelist_free(void);
-
+int whitelisted(const char *addr, int from);
 #endif
