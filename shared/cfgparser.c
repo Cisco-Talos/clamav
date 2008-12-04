@@ -142,14 +142,14 @@ struct cfgoption cfg_options[] = {
     {"ArchiveBlockMax", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
     {"ArchiveLimitMemoryUsage", OPT_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_DEPRECATED },
 
-
     /* Milter specific options */
     {"ClamdSocket", OPT_QUOTESTR, -1, NULL, 1, OPT_MILTER},
     {"MilterSocket", OPT_QUOTESTR, -1, NULL, 1, OPT_MILTER},
     {"LocalNet", OPT_QUOTESTR, -1, NULL, 1, OPT_MILTER},
-    {"ActionClean", OPT_QUOTESTR, -1, "Accept", 1, OPT_MILTER},
-    {"ActionInfected", OPT_QUOTESTR, -1, "Quarantine", 1, OPT_MILTER},
-    {"ActionFail", OPT_QUOTESTR, -1, "Defer", 1, OPT_MILTER},
+    {"OnClean", OPT_QUOTESTR, -1, "Accept", 0, OPT_MILTER},
+    {"OnInfected", OPT_QUOTESTR, -1, "Quarantine", 0, OPT_MILTER},
+    {"OnFail", OPT_QUOTESTR, -1, "Defer", 0, OPT_MILTER},
+    {"AddHeader", OPT_BOOL, 0, NULL, 0, OPT_MILTER},
 
     /* Deprecated milter options */
     {"ArchiveBlockEncrypted", OPT_BOOL, 0, NULL, 0, OPT_MILTER | OPT_DEPRECATED},

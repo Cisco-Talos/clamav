@@ -22,6 +22,7 @@
 #include "clamav-config.h"
 #endif
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -35,11 +36,20 @@
 #include "connpool.h"
 #include "netcode.h"
 
+#if __GNUC__ >= 3 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
+#define _UNUSED_ __attribute__ ((__unused__))
+#else
+#define _UNUSED_
+#endif
+
 uint64_t maxfilesize;
 
 static sfsistat FailAction;
 static sfsistat (*CleanAction)(SMFICTX *ctx);
 static sfsistat (*InfectedAction)(SMFICTX *ctx);
+
+int addxvirus = 0;
+char xvirushdr[255];
 
 #define CLAMFIBUFSZ 1424
 
@@ -53,9 +63,15 @@ struct CLAMFI {
 };
 
 
+void add_x_header(SMFICTX *ctx, char *st) {
+    smfi_chgheader(ctx, "X-Virus-Scanned", 1, xvirushdr);
+    smfi_chgheader(ctx, "X-Virus-Status", 1, st);
+}
+
+
 static sfsistat sendchunk(struct CLAMFI *cf, unsigned char *bodyp, size_t len, SMFICTX *ctx) {
     if(cf->totsz >= maxfilesize)
-	return SMFIS_CONTINUE; /* FIXME: SMFIS_SKIP needs negotiation (only for _body() */
+	return SMFIS_CONTINUE;
 
     if(cf->totsz + len > maxfilesize)
 	len = maxfilesize - cf->totsz;
@@ -126,7 +142,9 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv) {
 	}
 	if((ret = sendchunk(cf, (unsigned char *)"From clamav-milter\n", 19, ctx)) != SMFIS_CONTINUE)
 	    return ret;
+
     }
+
     if((ret = sendchunk(cf, (unsigned char *)headerf, strlen(headerf), ctx)) != SMFIS_CONTINUE)
 	return ret;
     if((ret = sendchunk(cf, (unsigned char *)": ", 2, ctx)) != SMFIS_CONTINUE)
@@ -199,11 +217,29 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
     free(cf);
 
     len = strlen(reply);
-    if(len>5 && !strcmp(reply + len - 5, ": OK\n"))
+    if(len>5 && !strcmp(reply + len - 5, ": OK\n")) {
+	if(addxvirus) add_x_header(ctx, "Clean");
 	ret = CleanAction(ctx);
-    else if (len>7 && !strcmp(reply + len - 7, " FOUND\n"))
+    } else if (len>7 && !strcmp(reply + len - 7, " FOUND\n")) {
+	logg("^%s\n", reply);
+	if(addxvirus) {
+	    char *vir;
+
+	    reply[len-7] = '\0';
+	    vir = strrchr(reply, ' ');
+	    logg("^%s\n", reply);
+	    if(vir) {
+		char msg[255];
+
+		vir++;
+		logg("^v: >%s<\n", vir);
+		snprintf(msg, sizeof(msg), "Infected (%s)", vir);
+		msg[sizeof(msg)-1] = '\0';
+		add_x_header(ctx, msg);
+	    }
+	}
 	ret = InfectedAction(ctx);
-    else {
+    } else {
 	logg("!Unknown reply from clamd\n");
 	ret = FailAction;
     }
@@ -213,9 +249,7 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 }
 
 
-sfsistat clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr) {
-    struct CLAMFI *cf;
-
+sfsistat clamfi_connect(_UNUSED_ SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr) {
     while(1) {
 	/* Postfix doesn't seem to honor passing a NULL hostaddr and hostname
 	   set to "localhost" for non-smtp messages (they still appear as SMTP
@@ -255,16 +289,16 @@ static int parse_action(char *action) {
 }
 
 
-static sfsistat action_accept(SMFICTX *ctx) {
+static sfsistat action_accept(_UNUSED_ SMFICTX *ctx) {
     return SMFIS_ACCEPT;
 }
-static sfsistat action_defer(SMFICTX *ctx) {
+static sfsistat action_defer(_UNUSED_ SMFICTX *ctx) {
     return SMFIS_TEMPFAIL;
 }
-static sfsistat action_reject(SMFICTX *ctx) {
+static sfsistat action_reject(_UNUSED_ SMFICTX *ctx) {
     return SMFIS_REJECT;
 }
-static sfsistat action_blackhole(SMFICTX *ctx)  {
+static sfsistat action_blackhole(_UNUSED_ SMFICTX *ctx)  {
     return SMFIS_DISCARD;
 }
 static sfsistat action_quarantine(SMFICTX *ctx) {
