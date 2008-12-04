@@ -146,7 +146,6 @@ int nc_send(int s, const void *buf, size_t len) {
 	if(res!=-1) {
 	    len-=res;
 	    buf+=res;
-	    timeout = time(NULL) + TIMEOUT;
 	    continue;
 	}
 	if(errno != EAGAIN && errno != EWOULDBLOCK) {
