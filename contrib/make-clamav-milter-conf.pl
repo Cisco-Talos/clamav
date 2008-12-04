@@ -171,6 +171,8 @@ Please make use of the native Sendmail / Postfix rate limiting facilities
 
 wwarn "The option --freshclam-monitor (-M) only made sense in internal mode\nPlease configure freshclam to notify clamd about updates instead\n" if $monitor;
 
+wwarn "Your whitelist file path has been preserved, however please be aware that its syntax is changed\nInstead of a full email address you are now allowed to use regexes. See the example clamav-milter.conf file for more info.\n" if $whitelist;
+
 wwarn "Here is the auto generated config file. Please review:\n";
 
 my $mysock = tosconf('MilterSocket', $ARGV[0]);
@@ -213,12 +215,12 @@ Example
 # Run as another user (clamav-milter must be started by root for this option to work)
 #
 # Default: unset (don't drop privileges)
-#User clamav /* FIXME */
+#User clamav
 
 # Initialize supplementary group access (clamd must be started by root).
 #
 # Default: no
-#AllowSupplementaryGroups no /* FIXME */
+#AllowSupplementaryGroups no
 
 # Waiting for data from clamd will timeout after this time (seconds).
 # Value of 0 disables the timeout.
@@ -229,7 +231,7 @@ Example
 # Don't fork into background.
 #
 # Default: no
-#Foreground yes /* FIXME */
+#Foreground yes
 
 # Chroot to the specified directory.
 # Chrooting is performed just after reading the config file and before dropping privileges.
@@ -246,7 +248,7 @@ Example
 # Optional path to the global temporary directory.
 # Default: system specific (usually /tmp or /var/tmp).
 #
-#TemporaryDirectory /var/tmp /* FIXME */
+#TemporaryDirectory /var/tmp
 
 ##
 ## Clamd options
@@ -397,7 +399,7 @@ print <<BLOCK2;
 
 # Messages larger than this value won't be scanned.
 # Default: 25M
-#MaxFileSize 150M /* FIXME */
+#MaxFileSize 150M
 BLOCK2
 
 
