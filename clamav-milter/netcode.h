@@ -1,6 +1,9 @@
 #ifndef _NETCODE_H
 #define _NETCODE_H
 
+#include <sys/types.h>
+#include <sys/socket.h>
+
 #include "shared/cfgparser.h"
 #include "connpool.h"
 
@@ -12,7 +15,8 @@ int nc_sendmsg(int s, int fd);
 int nc_connect_entry(struct CP_ENTRY *cpe);
 int localnets_init(struct cfgstruct *copt);
 void localnets_free(void);
-int islocalnet(char *name);
+int islocalnet_name(char *name);
+int islocalnet_sock(struct sockaddr *sa);
 
 extern long readtimeout;
 
