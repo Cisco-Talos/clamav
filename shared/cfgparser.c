@@ -150,6 +150,9 @@ struct cfgoption cfg_options[] = {
     {"OnInfected", OPT_QUOTESTR, -1, "Quarantine", 0, OPT_MILTER},
     {"OnFail", OPT_QUOTESTR, -1, "Defer", 0, OPT_MILTER},
     {"AddHeader", OPT_BOOL, 0, NULL, 0, OPT_MILTER},
+    {"Chroot", OPT_QUOTESTR, -1, NULL, 0, OPT_MILTER},
+    {"Whitelist", OPT_QUOTESTR, -1, NULL, 0, OPT_MILTER},
+
 
     /* Deprecated milter options */
     {"ArchiveBlockEncrypted", OPT_BOOL, 0, NULL, 0, OPT_MILTER | OPT_DEPRECATED},

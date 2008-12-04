@@ -46,7 +46,7 @@ void whitelist_free(void) {
 	wfrom = w;
     }
     while(wto) {
-	w = wfrom->next;
+	w = wto->next;
 	regfree(&wto->preg);
 	free(wto);
 	wto = w;
@@ -79,8 +79,8 @@ int whitelist_init(const char *fname) {
 
 	len = strlen(ptr) - 1;
 	for(;len>=0; len--) {
-	    if(buf[len] != '\n' && buf[len] != '\r') break;
-	    buf[len] = '\0';
+	    if(ptr[len] != '\n' && ptr[len] != '\r') break;
+	    ptr[len] = '\0';
 	}
 	if(!len) continue;
 	if (!(w = (struct WHLST *)malloc(sizeof(*w)))) {
@@ -88,7 +88,7 @@ int whitelist_init(const char *fname) {
 	    whitelist_free();
 	    return 1;
 	}
-	w->next = (*addto)->next;
+	w->next = (*addto);
 	(*addto) = w;
 	if (regcomp(&w->preg, ptr, REG_ICASE|REG_NOSUB)) {
 	    logg("!Failed to compile regex '%s'\n", ptr);
@@ -100,13 +100,14 @@ int whitelist_init(const char *fname) {
 }
 
 
-int whitelisted(const char *e, int from) {
+int whitelisted(const char *addr, int from) {
     struct WHLST *w;
 
     if(from) w = wfrom;
     else w = wto;
+
     while(w) {
-	if(!regexec(&w->preg, e, 0, NULL, 0))
+	if(!regexec(&w->preg, addr, 0, NULL, 0))
 	    return 1;
 	w = w->next;
     }

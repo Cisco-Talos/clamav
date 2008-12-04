@@ -35,6 +35,7 @@
 
 #include "connpool.h"
 #include "netcode.h"
+#include "whitelist.h"
 
 #if __GNUC__ >= 3 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
 #define _UNUSED_ __attribute__ ((__unused__))
@@ -60,6 +61,7 @@ struct CLAMFI {
     int alt;
     unsigned int totsz;
     unsigned int bufsz;
+    unsigned int all_whitelisted;
 };
 
 
@@ -125,15 +127,16 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv) {
     struct CLAMFI *cf;
     sfsistat ret;
 
-    if(!(cf = (struct CLAMFI *)smfi_getpriv(ctx))) {
-	if(!(cf = (struct CLAMFI *)malloc(sizeof(*cf)))) {
-	    logg("!Failed to allocate CLAMFI struct\n");
-	    return FailAction;
-	}
-	cf->totsz = 0;
-	cf->bufsz = 0;
-	smfi_setpriv(ctx, (void *)cf);
+    if(!(cf = (struct CLAMFI *)smfi_getpriv(ctx)))
+	return SMFIS_CONTINUE; /* whatever */
 
+    if(!cf->bufsz) {
+	if(cf->all_whitelisted) {
+	    logg("*Skipping scan (all destinations whitelisted)\n");
+	    smfi_setpriv(ctx, NULL);
+	    free(cf);
+	    return SMFIS_ACCEPT;
+	}
 	if(nc_connect_rand(&cf->main, &cf->alt, &cf->local)) {
 	    logg("!Failed to initiate streaming/fdpassing\n");
 	    smfi_setpriv(ctx, NULL);
@@ -142,7 +145,6 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv) {
 	}
 	if((ret = sendchunk(cf, (unsigned char *)"From clamav-milter\n", 19, ctx)) != SMFIS_CONTINUE)
 	    return ret;
-
     }
 
     if((ret = sendchunk(cf, (unsigned char *)headerf, strlen(headerf), ctx)) != SMFIS_CONTINUE)
@@ -221,18 +223,15 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 	if(addxvirus) add_x_header(ctx, "Clean");
 	ret = CleanAction(ctx);
     } else if (len>7 && !strcmp(reply + len - 7, " FOUND\n")) {
-	logg("^%s\n", reply);
 	if(addxvirus) {
 	    char *vir;
 
 	    reply[len-7] = '\0';
 	    vir = strrchr(reply, ' ');
-	    logg("^%s\n", reply);
 	    if(vir) {
 		char msg[255];
 
 		vir++;
-		logg("^v: >%s<\n", vir);
 		snprintf(msg, sizeof(msg), "Infected (%s)", vir);
 		msg[sizeof(msg)-1] = '\0';
 		add_x_header(ctx, msg);
@@ -375,6 +374,38 @@ int init_actions(struct cfgstruct *copt) {
 	}
     } else InfectedAction = action_quarantine;
     return 0;
+}
+
+
+sfsistat clamfi_envfrom(SMFICTX *ctx, char **argv) {
+    struct CLAMFI *cf;
+
+    if(whitelisted(argv[0], 1)) {
+	logg("*Skipping scan for %s (whitelisted from)\n", argv[0]);
+	return SMFIS_ACCEPT;
+    }
+    
+    if(!(cf = (struct CLAMFI *)malloc(sizeof(*cf)))) {
+	logg("!Failed to allocate CLAMFI struct\n");
+	return FailAction;
+    }
+    cf->totsz = 0;
+    cf->bufsz = 0;
+    cf->all_whitelisted = 1;
+    smfi_setpriv(ctx, (void *)cf);
+
+    return SMFIS_CONTINUE;
+}
+
+
+sfsistat clamfi_envrcpt(SMFICTX *ctx, char **argv) {
+    struct CLAMFI *cf;
+
+    if(!(cf = (struct CLAMFI *)smfi_getpriv(ctx)))
+	return SMFIS_CONTINUE; /* whatever */
+
+    cf->all_whitelisted &= whitelisted(argv[0], 0);
+    return SMFIS_CONTINUE;
 }
 
 /*
