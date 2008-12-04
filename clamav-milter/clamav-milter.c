@@ -52,7 +52,7 @@ struct smfiDesc descr = {
     NULL,		/* SMTP HELO command filter */
     NULL,		/* envelope sender filter */
     NULL,		/* envelope recipient filter */
-    NULL,		/* header filter */
+    clamfi_header,	/* header filter */
     NULL,		/* end of header */
     clamfi_body,	/* body block */
     clamfi_eom,		/* end of message */
@@ -246,9 +246,10 @@ int main(int argc, char **argv) {
 	    logg("^Can't change current working directory to root\n");
     }
 
-    freecfg(copt);
 
     ret = smfi_main();
+
+    freecfg(copt);
 
     logg_close();
     cpool_free();
