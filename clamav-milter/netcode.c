@@ -39,10 +39,27 @@
 #include "netcode.h"
 
 
+enum {
+    NON_SMTP,
+    INET_HOST,
+    INET6_HOST
+};
+
+struct LOCALNET {
+    struct LOCALNET *next;
+    /* most significant first */
+    uint32_t basehost[4];
+    uint32_t mask[4];
+    uint32_t family;
+};
+
+struct LOCALNET *lnet = NULL;
+
 /* FIXME: for connect and send */
 #define TIMEOUT 60
 /* for recv */
 long readtimeout;
+
 
 int nc_socket(struct CP_ENTRY *cpe) {
     int flags, s = socket(cpe->server->sa_family, SOCK_STREAM, 0);
@@ -321,18 +338,11 @@ int nc_connect_rand(int *main, int *alt, int *local) {
     return 0;
 }
 
-
-
-enum {
-    NON_SMTP,
-    INET_HOST,
-    INET6_HOST
-};
-
 int resolve(char *name, uint32_t *family, uint32_t *host) {
     struct addrinfo hints, *res;
 
     if(!strcasecmp("local", name)) {
+	/* 	l->basehost[0] = l->basehost[1] = l->basehost[2] = l->basehost[3] = 0; DONT BOTHER*/
 	*family = NON_SMTP;
 	return 0;
     }
@@ -354,7 +364,7 @@ int resolve(char *name, uint32_t *family, uint32_t *host) {
 
 	*family = INET_HOST;
 	host[0] = htonl(sa->sin_addr.s_addr);
-	host[1] = host[2] = host[3] = 0;
+	/* 	host[1] = host[2] = host[3] = 0; DONT BOTHER*/
     } else if(res->ai_addrlen == sizeof(struct sockaddr_in6) && res->ai_addr->sa_family == AF_INET6) {
 	struct sockaddr_in6 *sa = (struct sockaddr_in6 *)res->ai_addr;
 	unsigned int i, j;
@@ -364,7 +374,7 @@ int resolve(char *name, uint32_t *family, uint32_t *host) {
 	for(i=0, j=0; i<16; i++) {
 	    u += (sa->sin6_addr.s6_addr[i] << (8*j));
 	    if(++j == 4) {
-		host[3-(i>>2)] = u;
+		host[i>>2] = u;
 		j = u = 0;
 	    }
 	}
@@ -378,23 +388,7 @@ int resolve(char *name, uint32_t *family, uint32_t *host) {
 }
 
 
-struct LOCALNET {
-    struct LOCALNET *next;
-    uint32_t basehost[4];
-    uint32_t mask[4];
-    uint32_t family;
-};
-
-
-void applymask(uint32_t *host, uint32_t *mask) {
-    host[0] &= mask[0];
-    host[1] &= mask[1];
-    host[2] &= mask[2];
-    host[3] &= mask[3];
-}
-
-
-struct LOCALNET* localnet(char *name, char *mask) {
+struct LOCALNET *localnet(char *name, char *mask) {
     struct LOCALNET *l = (struct LOCALNET *)malloc(sizeof(*l));
     uint32_t nmask;
     unsigned int i;
@@ -404,18 +398,17 @@ struct LOCALNET* localnet(char *name, char *mask) {
 	return NULL;
     }
 
-    l->next = NULL;
     if(resolve(name, &l->family, l->basehost)) {
 	free(l);
 	return NULL;
     }
 
     if(l->family == NON_SMTP) {
-	l->mask[0] = l->mask[1] = l->mask[2] = l->mask[3] = 0;
-	l->basehost[0] = l->basehost[1] = l->basehost[2] = l->basehost[3] = 0;
+	l->mask[0] = l->mask[1] = l->mask[2] = l->mask[3] = 0x0;
 	return l;
     }
-    if(!*mask) nmask = 32;
+
+    if(!mask || !*mask) nmask = 32 + 96*(l->family == INET6_HOST);
     else nmask = atoi(mask);
 
     if((l->family == INET6_HOST && nmask > 128) || (l->family == INET_HOST && nmask > 32)) {
@@ -423,28 +416,70 @@ struct LOCALNET* localnet(char *name, char *mask) {
 	free(l);
 	return NULL;
     }
+
     l->mask[0] = l->mask[1] = l->mask[2] = l->mask[3] = 0;
     for(i=0; i<nmask; i++)
-	l->mask[i>>5] |= 1<<(i&0x1f);
-    applymask(l->basehost, l->mask);
+	l->mask[i>>5] |= 1<<(31-(i & 31));
+
+    l->basehost[0] &= l->mask[0];
+    l->basehost[1] &= l->mask[1];
+    l->basehost[2] &= l->mask[2];
+    l->basehost[3] &= l->mask[3];
+
     return l;
 }
 
 
-int belongto(struct LOCALNET* l, char *name) {
+int islocalnet(char *name) {
     uint32_t host[4], family;
+    struct LOCALNET* l = lnet;
 
+    if(!l) return 0;
     if(resolve(name, &family, host)) {
 	logg("^Cannot resolv %s\n", name);
 	return 0;
     }
     while(l) {
-	if (
-	    (l->family == family) &&
-	    (l->basehost[0] == (host[0] & l->mask[0])) && (l->basehost[1] == (host[1] & l->mask[1])) &&
-	    (l->basehost[2] == (host[2] & l->mask[2])) && (l->basehost[3] == (host[3] & l->mask[3]))
-	    ) return 1;
+	if(
+	   (l->family == family) &&
+	   (l->basehost[0] == (host[0] & l->mask[0])) && (l->basehost[1] == (host[1] & l->mask[1])) &&
+	   (l->basehost[2] == (host[2] & l->mask[2])) && (l->basehost[3] == (host[3] & l->mask[3]))
+	   ) return 1;
 	l=l->next;
+    }
+    return 0;
+}
+
+void localnets_free(void) {
+    while(lnet) {
+	struct LOCALNET *l = lnet->next;
+	free(lnet);
+	lnet = l;
+    }   
+}
+
+int localnets_init(struct cfgstruct *copt) {
+    const struct cfgstruct *cpt;
+
+    if((cpt = cfgopt(copt, "LocalNet"))->enabled) {
+	while(cpt) {
+	    char *lnet = cpt->strarg;
+	    struct LOCALNET *l;
+	    char *mask = strrchr(lnet, '/');
+
+	    if(mask) {
+		*mask='\0';
+		mask++;
+	    }
+
+	    if((l = localnet(lnet, mask)) == NULL) {
+		localnets_free();
+		return 1;
+	    }
+	    l->next = lnet;
+	    lnet = l;
+	    cpt = (struct cfgstruct *) cpt->nextarg;
+	}
     }
     return 0;
 }

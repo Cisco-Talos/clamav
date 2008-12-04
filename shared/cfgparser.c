@@ -146,6 +146,7 @@ struct cfgoption cfg_options[] = {
     /* Milter specific options */
     {"ClamdSocket", OPT_QUOTESTR, -1, NULL, 1, OPT_MILTER},
     {"MilterSocket", OPT_QUOTESTR, -1, NULL, 1, OPT_MILTER},
+    {"LocalNet", OPT_QUOTESTR, -1, NULL, 1, OPT_MILTER},
 
     /* Deprecated milter options */
     {"ArchiveBlockEncrypted", OPT_BOOL, 0, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
