@@ -135,7 +135,7 @@ struct cfgoption cfg_options[] = {
 
     /* Deprecated options */
     {"MailMaxRecursion", OPT_NUM, 64, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
-    {"ArchiveMaxFileSize", OPT_COMPSIZE, 10485760, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
+    {"ArchiveMaxScanSize", OPT_COMPSIZE, 10485760, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
     {"ArchiveMaxRecursion", OPT_NUM, 8, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
     {"ArchiveMaxFiles", OPT_NUM, 1000, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
     {"ArchiveMaxCompressionRatio", OPT_NUM, 250, NULL, 0, OPT_CLAMD | OPT_DEPRECATED},
@@ -165,7 +165,7 @@ struct cfgoption cfg_options[] = {
     {"ScanMail", OPT_BOOL, 1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
     {"ScanOLE2", OPT_BOOL, 1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
     {"ScanPE", OPT_BOOL, 1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
-    {"StreamMaxLength", OPT_COMPSIZE, 10485760, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
+    {"StreamMaxLength", OPT_COMPSIZE, 10485760, NULL, OPT_MILTER | OPT_DEPRECATED},
     {"TCPAddr", OPT_QUOTESTR, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
     {"TCPSocket", OPT_NUM, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
     {"TemporaryDirectory", OPT_QUOTESTR, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
