@@ -29,12 +29,17 @@
 
 #include <libmilter/mfapi.h>
 
+#include "shared/cfgparser.h"
 #include "shared/output.h"
 
 #include "connpool.h"
 #include "netcode.h"
 
 uint64_t maxfilesize;
+
+static sfsistat FailAction;
+static sfsistat (*CleanAction)(SMFICTX *ctx);
+static sfsistat (*InfectedAction)(SMFICTX *ctx);
 
 #define CLAMFIBUFSZ 1424
 
@@ -65,7 +70,7 @@ static sfsistat sendchunk(struct CLAMFI *cf, unsigned char *bodyp, size_t len, S
 		close(cf->alt);
 		smfi_setpriv(ctx, NULL);
 		free(cf);
-		return SMFIS_TEMPFAIL;
+		return FailAction;
 	    }
 	    len -= n;
 	    bodyp += n;
@@ -92,7 +97,7 @@ static sfsistat sendchunk(struct CLAMFI *cf, unsigned char *bodyp, size_t len, S
 	    close(cf->main);
 	    smfi_setpriv(ctx, NULL);
 	    free(cf);
-	    return SMFIS_TEMPFAIL;
+	    return FailAction;
 	}
     }
     cf->totsz += len;
@@ -104,14 +109,20 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv) {
     struct CLAMFI *cf;
     sfsistat ret;
 
-    if(!(cf = (struct CLAMFI *)smfi_getpriv(ctx)))
-	return SMFIS_CONTINUE; /* whatever */
+    if(!(cf = (struct CLAMFI *)smfi_getpriv(ctx))) {
+	if(!(cf = (struct CLAMFI *)malloc(sizeof(*cf)))) {
+	    logg("!Failed to allocate CLAMFI struct\n");
+	    return FailAction;
+	}
+	cf->totsz = 0;
+	cf->bufsz = 0;
+	smfi_setpriv(ctx, (void *)cf);
 
-    if(!cf->totsz) {
 	if(nc_connect_rand(&cf->main, &cf->alt, &cf->local)) {
 	    logg("!Failed to initiate streaming/fdpassing\n");
+	    smfi_setpriv(ctx, NULL);
 	    free(cf);
-	    return SMFIS_TEMPFAIL;
+	    return FailAction;
 	}
 	if((ret = sendchunk(cf, (unsigned char *)"From clamav-milter\n", 19, ctx)) != SMFIS_CONTINUE)
 	    return ret;
@@ -149,7 +160,7 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 	    close(cf->alt);
 	    smfi_setpriv(ctx, NULL);
 	    free(cf);
-	    return SMFIS_TEMPFAIL;
+	    return FailAction;
 	}
 
 	lseek(cf->alt, 0, SEEK_SET);
@@ -159,7 +170,7 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 	    close(cf->alt);
 	    smfi_setpriv(ctx, NULL);
 	    free(cf);
-	    return SMFIS_TEMPFAIL;
+	    return FailAction;
 	}
     } else {
 	if(cf->bufsz && nc_send(cf->alt, cf->buffer, cf->bufsz)) {
@@ -167,7 +178,7 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 	    close(cf->main);
 	    smfi_setpriv(ctx, NULL);
 	    free(cf);
-	    return SMFIS_TEMPFAIL;
+	    return FailAction;
 	}
 	close(cf->alt);
     }
@@ -181,7 +192,7 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 	logg("!No reply from clamd\n");
 	smfi_setpriv(ctx, NULL);
 	free(cf);
-	return SMFIS_TEMPFAIL;
+	return FailAction;
     }
     close(cf->main);
     smfi_setpriv(ctx, NULL);
@@ -189,12 +200,12 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 
     len = strlen(reply);
     if(len>5 && !strcmp(reply + len - 5, ": OK\n"))
-	ret = SMFIS_ACCEPT;
+	ret = CleanAction(ctx);
     else if (len>7 && !strcmp(reply + len - 7, " FOUND\n"))
-	ret = SMFIS_REJECT;
+	ret = InfectedAction(ctx);
     else {
 	logg("!Unknown reply from clamd\n");
-	ret = SMFIS_TEMPFAIL;
+	ret = FailAction;
     }
 
     free(reply);
@@ -224,15 +235,112 @@ sfsistat clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr) {
 	}
 	break;
     }
+    return SMFIS_CONTINUE;
+}
 
-    if(!(cf = (struct CLAMFI *)malloc(sizeof(*cf)))) {
-	logg("!Failed to allocate CLAMFI struct\n");
+
+static int parse_action(char *action) {
+    if(!strcasecmp(action, "Accept"))
+	return 0;
+    if(!strcasecmp(action, "Defer"))
+	return 1;
+    if(!strcasecmp(action, "Reject"))
+	return 2;
+    if(!strcasecmp(action, "Blackhole"))
+	return 3;
+    if(!strcasecmp(action, "Quarantine"))
+	return 4;
+    logg("!Unknown action %s\n", action);
+    return -1;
+}
+
+
+static sfsistat action_accept(SMFICTX *ctx) {
+    return SMFIS_ACCEPT;
+}
+static sfsistat action_defer(SMFICTX *ctx) {
+    return SMFIS_TEMPFAIL;
+}
+static sfsistat action_reject(SMFICTX *ctx) {
+    return SMFIS_REJECT;
+}
+static sfsistat action_blackhole(SMFICTX *ctx)  {
+    return SMFIS_DISCARD;
+}
+static sfsistat action_quarantine(SMFICTX *ctx) {
+    if(smfi_quarantine(ctx, "quarantined by clamav-milter") != MI_SUCCESS) {
+	logg("^Failed to quarantine message\n");
 	return SMFIS_TEMPFAIL;
     }
-    cf->totsz = 0;
-    cf->bufsz = 0;
-    smfi_setpriv(ctx, (void *)cf);
-    return SMFIS_CONTINUE;
+    return SMFIS_ACCEPT;
+}
+
+int init_actions(struct cfgstruct *copt) {
+    const struct cfgstruct *cpt;
+
+    if((cpt = cfgopt(copt, "OnFail"))->enabled) {
+	switch(parse_action(cpt->strarg)) {
+	case 0:
+	    FailAction = SMFIS_ACCEPT;
+	    break;
+	case 1:
+	    FailAction = SMFIS_TEMPFAIL;
+	    break;
+	case 2:
+	    FailAction = SMFIS_REJECT;
+	    break;
+	default:
+	    logg("!Invalid action %s for option OnFail", cpt->strarg);
+	    return 1;
+	}
+    } else FailAction = SMFIS_TEMPFAIL;
+
+    if((cpt = cfgopt(copt, "OnClean"))->enabled) {
+	switch(parse_action(cpt->strarg)) {
+	case 0:
+	    CleanAction = action_accept;
+	    break;
+	case 1:
+	    CleanAction = action_defer;
+	    break;
+	case 2:
+	    CleanAction = action_reject;
+	    break;
+	case 3:
+	    CleanAction = action_blackhole;
+	    break;
+	case 4:
+	    CleanAction = action_quarantine;
+	    break;
+	default:
+	    logg("!Invalid action %s for option OnClean", cpt->strarg);
+	    return 1;
+	}
+    } else CleanAction = action_accept;
+
+    if((cpt = cfgopt(copt, "OnInfected"))->enabled) {
+	switch(parse_action(cpt->strarg)) {
+	case 0:
+	    InfectedAction = action_accept;
+	    break;
+	case 1:
+	    InfectedAction = action_defer;
+	    break;
+	case 2:
+	    InfectedAction = action_reject;
+	    break;
+	case 3:
+	    InfectedAction = action_blackhole;
+	    break;
+	case 4:
+	    InfectedAction = action_quarantine;
+	    break;
+	default:
+	    logg("!Invalid action %s for option OnInfected", cpt->strarg);
+	    return 1;
+	}
+    } else InfectedAction = action_quarantine;
+    return 0;
 }
 
 /*
