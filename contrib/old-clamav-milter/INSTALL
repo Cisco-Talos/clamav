@@ -1,0 +1,439 @@
+1. BUILD INSTRUCTIONS
+
+A makefile was supplied with this which should have built the program. If it
+fails please let us know, and here are some hints for building on different
+platforms. You will need to set --enable-milter when running configure for
+the automatic build to work.
+
+Tested OK on Linux/x86 with gcc3.2.
+	cc -O3 -pedantic -Wuninitialized -Wall -pipe -mcpu=pentium -march=pentium -fomit-frame-pointer -ffast-math -finline-functions -funroll-loops clamav-milter.c -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o
+
+Compiles OK on Linux/x86 with tcc 0.9.16, but fails to link errors with 'atexit'
+	tcc -g -b -lmilter -lpthread clamav-milter.c...
+
+Fails to compile on Linux/x86 with icc6.0 (complains about stdio.h...)
+	icc -O3 -tpp7 -xiMKW -ipo -parallel -i_dynamic -w2 clamav-milter.c...
+Fails to build on Linux/x86 with icc7.1 with -ipo (fails on libclamav.a - keeps saying run ranlib). Otherwise it builds and runs OK.
+	icc -O2 -tpp7 -xiMKW -parallel -i_dynamic -w2 -march=pentium4 -mcpu=pentium4 clamav-milter.c...
+
+Tested with Electric Fence 2.2.2, and the bounds checking C compiler from
+	http://sourceforge.net/projects/boundschecking/
+
+Compiles OK on Linux/ppc (YDL2.3) with gcc2.95.4. Needs -lsmutil to link.
+	cc -O3 -pedantic -Wuninitialized -Wall -pipe -fomit-frame-pointer -ffast-math -finline-functions -funroll-loop -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o -lsmutil
+I haven't tested it further on this platform yet.
+YDL3.0 should compile out of the box
+
+Linux/sparc (Gentoo 2004.2) comes with a sendmail that doesn't support MILTER,
+so *before* running "configure --enable-milter", download from
+http://www.sendmail.org/ftp, then:
+	cd .../sendmail-source-directory
+	sh Build
+	make install
+	cd libmilter
+	make install
+
+Sendmail on MacOS/X (10.1) is provided without a development package so this
+can't be run "out of the box"
+
+Solaris 8 doesn't have milter support so clamav-milter won't work unless you
+rebuild sendmail from source.
+
+FreeBSD4.7 use /usr/local/bin/gcc30. GCC3.0 is an optional extra on
+FreeBSD. It comes with getopt.h which is handy. To link you need
+-lgnugetopt
+	gcc30 -O3 -DCONFDIR=\"/usr/local/etc\" -I. -I.. -I../clamd -I../libclamav -pedantic -Wuninitialized -Wall -pipe -mcpu=pentium -march=pentium -fomit-frame-pointer -ffast-math -finline-functions -funroll-loops clamav-milter.c -pthread -lmilter ../libclamav/.libs/libclamav.a ../clamd/cfgfile.o ../clamd/others.o -lgnugetopt
+
+FreeBSD4.8: compiles out of the box with either gcc2.95 or gcc3
+
+NetBSD2.0: compiles out of the box
+
+OpenBSD3.4: the supplied sendmail does not come with Milter support.
+Do this *before* running configure (thanks for Per-Olov Sjöhol
+<peo_s@incedo.org> for these instructions).
+
+	echo WANT_LIBMILTER=1 > /etc/mk.conf
+	cd /usr/src/gnu/usr.sbin/sendmail
+	make depend
+	make
+	make install
+	kill -HUP `sed q /var/run/sendmail.pid`
+
+Then do this to make the milter headers available to clamav...
+(the libmilter.a file is already in the right place after the sendmail
+recompiles above)
+
+	cd /usr/include
+	ln -s ../src/gnu/usr.sbin/sendmail/include/libmilter libmilter
+
+Solaris 9 and FreeBSD5 have milter support in the supplied sendmail, but
+doesn't include libmilter so you can't develop milter applications on it.
+Go to sendmail.org, download the latest sendmail, cd to libmilter and
+"make install" there.
+
+Needs -lresolv on Solaris, for res_close().
+
+If, when building clamav-milter, you see the error
+	"undefined reference to smfi_opensocket",
+it means that your sendmail installation is broken. More specifically it means
+that your installed version of libmilter does not agree with your installed
+version of Sendmail. Naturally they must be the same. Check to see if you have
+more than one mfapi.h on your system; if you installed sendmail from source,
+did you remember to install libmilter at the same time? You can ensure that
+your Sendmail is correctly installed if you follow these instructions:
+	cd .../sendmail-source-directory
+	sh Build
+	make install
+	cd libmilter
+	make install
+
+2. INSTALLATION
+
+Install into /usr/local/sbin/clamav-milter.
+
+Ensure that your sendmail supports milters by running
+	/usr/lib/sendmail -d0 < /dev/null | fgrep MILTER
+or
+	/usr/sbin/sendmail -d0 < /dev/null | fgrep MILTER
+
+You should see something like:
+	MATCHGECOS MILTER MIME7TO8 MIME8TO7 NAMED_BIND NETINET NETINET6
+It doesn't matter exactly what you see, as long as the word MILTER is printed.
+
+If you see no output you MUST upgrade your sendmail.
+
+See http://www.nmt.edu/~wcolburn/sendmail-8.12.5/libmilter/docs/sample.html
+
+2.1 LINUX (RedHat, Fedora, YellowDog etc)
+
+Installations for RedHat Linux and it's derivatives such as YellowDog:
+	Ensure that you have the sendmail-devel RPM installed
+	Add to /etc/mail/sendmail.mc before the MAILER statement:
+	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clmilter.sock, F=, T=S:4m;R:4m;C:30s;E:10m')dnl
+	define(`confINPUT_MAIL_FILTERS', `clamav')
+
+	Note that the INPUT_MAIL_FILTER line must come before the
+		confINPUT_MAIL_FILTERS line.
+
+	Don't worry that the file /var/run/clamav/clmilter.sock doesn't exist,
+		clamav-milter will create it for you. However you will need
+		to create the directory /var/run/clamav (usually owned
+		by user clamav, mode 700).
+
+	Check entry in /usr/local/etc/clamd.conf of the form:
+	LocalSocket /var/run/clamav/clamd.sock
+
+	If you already have a filter (such as spamassassin-milter from
+	http://savannah.nongnu.org/projects/spamass-milt) add it thus:
+	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clmilter.sock, F=, T=S:4m;R:4m')dnl
+	INPUT_MAIL_FILTER(`spamassassin', `S=local:/var/run/spamass.sock, F=, T=C:15m;S:4m;R:4m;E:10m')
+	define(`confINPUT_MAIL_FILTERS', `spamassassin,clamav')dnl
+
+	mkdir /var/run/clamav
+	chown clamav /var/run/clamav	(if you use User clamav in clamd.conf)
+	chmod 700 /var/run/clamav
+
+	Where /var/run/spamass.sock is the location of the spamass-milt
+	socket file (on some systems it is in /var/run/sendmail/spamass.sock).
+
+2.2 LINUX (Debian)
+
+Installations for Debian Linux:
+	As above for RedHat, except that you need the libmilter-dev package:
+		apt-get install libmilter-dev
+	To use TCPwrappers you need to:
+		apt-get install libwrap0-dev
+
+2.3 FreeBSD
+
+Installations for FreeBSD5 (may be true for other BSDs)
+	Add to /etc/mail/freebsd.mc:
+	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clmilter.sock, F=, T=S:4m;R:4m')dnl
+	define(`confINPUT_MAIL_FILTERS', `clamav')
+
+	Check entry in /usr/local/etc/clamd.conf of the form:
+	LocalSocket /var/run/clamav/clamd.sock
+
+	If you already have a filter (such as spamassassin-milter from
+	http://savannah.nongnu.org/projects/spamass-milt) add it thus:
+	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clmilter.sock, F=, T=S:4m;R:4m')dnl
+	INPUT_MAIL_FILTER(`spamassassin', `S=local:/var/run/spamass.sock, F=, T=C:15m;S:4m;R:4m;E:10m')
+	define(`confINPUT_MAIL_FILTERS', `spamassassin,clamav')dnl
+
+	mkdir /var/run/clamav
+	chown clamav /var/run/clamav	(if you use User clamav in clamd.conf)
+	chmod 700 /var/run/clamav
+
+	Where /var/run/spamass.sock is the location of the spamass-milt
+	socket file (on some systems it is in /var/run/sendmail/spamass.sock).
+
+FreeBSD5.3 sendmail comes without libmilter support. You can upgrade by
+	cd /usr/ports/mail/sendmail
+	make install
+
+This may overwrite your existing sendmail configuration, so ensure
+that you back up first.
+
+You should have received a script to install into /etc/rc.d as /etc/rc.d/clamav
+with this software. Add to /etc/rc.conf:
+	clamd_enable="YES"
+	clamav_milter_enable="YES"
+	clamav_milter_flags="--max-children=2 --dont-wait --timeout=0 -P local:/var/run/clamav/clmilter.sock --pidfile=/var/run/clamav/clamav-milter.pid --quarantine-dir=/var/run/clamav/quarantine"
+
+2.4 Solaris 10
+
+Solaris 10 should install out of the box. Edit /etc/mail/cf/cf/main.mc adding
+the line:
+	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clamav-milter, F=, T=S:4m;R:4m')dnl
+Then:
+	cp /etc/mail/cf/cf/main.cf /etc/mail/main.cf
+	/usr/local/sbin/clamav-milter local:/var/run/clamav/clamav-milter
+	mkdir /var/run/clamav
+	chown clamav /var/run/clamav	(if you use User clamav in clamd.conf)
+	chmod 700 /var/run/clamav
+
+You should have received a script to install into /etc/init.d as
+/etc/init.d/clamav-milter. Then:
+
+	chmod 755 /etc/init.d/clamav-milter
+	cd /etc
+	ln init.d/clamav-milter rc2.d/S90clamav-milter
+	ln init.d/clamav-milter rc0.d/K90clamav-milter
+	/etc/init.d/clamav-milter start
+	/etc/init.d/sendmail restart
+
+2.5 OpenBSD4.1:
+
+OpenBSD4.1 should install out of the box.
+Edit <your .mc file>, or if you have none: cd into /usr/share/sendmail/cf,
+copy openbsd-proto.mc custom.mc, edit custom.mc adding:
+	INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav/clamav-milter, F=, T=S:4m;R:4m')dnl
+Then run
+	m4 ../m4/cf.m4 custom.mc >/etc/mail/localhost.cf
+and finally restart sendmail by sending it a SIGHUP
+
+2.6 General Installation Issues
+
+You may find INPUT_MAIL_FILTERS is not needed on your machine, however it
+is recommended by the Sendmail documentation and I recommend going along
+with that.
+
+If you see an unsafe socket error from sendmail, it means that the permissions
+of the /var/run/clamav directory are too open; check you have correctly run
+chown and chmod. It may also mean that clamav-milter hasn't started, run
+ps and check your logs.
+
+The above example shows clamav-milter, clamd and sendmail all on the
+same machine, however using TCP they may reside on different machines,
+indeed clamav-milter is capable of talking to multiple clamds for redundancy
+and load balancing. An alternative load balancer is PEN (http://siag.nu/pen/).
+
+I suggest putting SpamAssassin first since you're more likely to get spam
+than a virus/worm sent to you.
+
+Add to /etc/sysconfig/clamav-milter
+	CLAMAV_FLAGS="local:/var/run/clamav/clmilter.sock"
+or if clamd is on a different machine
+	CLAMAV_FLAGS="--server=192.168.1.9 local:/var/run/clamav/clmilter.sock"
+
+If you want clamav-milter to listen on TCP for communication with sendmail,
+for example if they are on different machines use inet:<port>.
+On machine A (running sendmail) you would have in sendmail.mc:
+	INPUT_MAIL_FILTER(`clamav', `S=inet:3311@machineb, F=T, T=S:4m;R:4m')dnl
+On machine B (running clamav-milter) you would start up clamav-milter thus:
+	clamav-milter inet:3311
+
+You should have received a script to put into /etc/init.d with this software.
+
+You should always start clamd before clamav-milter.
+
+You may also think about the F= entry in sendmail.mc, since it tells sendmail
+what to do with emails if clamav-milter is not running. Setting F=T will tell
+the remote end to resend later (temporary failure), setting F=R will reject
+the email (permanent failure) and setting F= will pass the email through as
+though clamav-milter were not installed, in this case you should warn your
+users that emails are not being scanned. We recommend setting F=T.
+
+You may wish to experiment with the T= entry which governs timeout options. You
+MUST set some type of timeout or a malicious client could cause a Denial of
+Service attack by keeping your clamav-milter threads alive. The types of
+timeout are C (time for clamav-milter to acknowledge to sendmail that it
+has accepted a new connection), S (timeout for sending information from sendmail
+to clamav-milter), R (timeout for sendmail reading a reply from clamav-milter
+when it has been sent some information) and E (timeout for clamav-milter to
+handle the end-of-message request, this needs to be high enough to scan the
+largest file that you will receive since it is at this stage that the file is
+scanned, but short enough to ensure that a DoS can't occur when lots of scans
+are requested). The important entries for clamav-milter are C and E (both
+default to 5 minutes).
+
+WARNING: When running on internal mode (--external is NOT used), clamav-milter
+will need to wait for all connections to stop before it can reload the database
+after running freshclam. It is therefore important that NO timeouts in
+sendmail.cf are set too high or worse still turned off, otherwise clamav-milter
+can wait a long time, perhaps indefinately, while waiting for the system to
+quieten down. The same goes for disabling StreamMaxLength, since receiving a
+very large email to be scanned may take a long time. We advise setting
+StreamMaxLength to 1M.
+
+Don't forget to rebuild sendmail.cf after modifying sendmail.mc. You will
+need to restart sendmail after rebuilding sendmail.cf and starting clamd and
+clamav-milter.
+
+As with all software it is wise to ensure that clamav-milter has the least
+privileges it needs to run. So don't run it as root and don't store the sockets in a directory that can be written by everyone. For example ensure that /var/run
+is owned and writeable only by root and add entries for 'User' and
+'FixStaleSocket' in clamd.conf.
+
+When using UNIX domain sockets via the LocalSocket option of clamd.conf,
+we recommend that you use the --quarantine-dir option since that may improve
+performance.
+
+If you wish to send a warning when a message is blocked, clamav-milter MUST be
+able to call sendmail, for example on a Fedora Linux system:
+
+	# ls -lL /usr/lib/sendmail
+	-rwxr-sr-x  1 root smmsp 732356 Sep  1 11:16 /usr/lib/sendmail
+
+To test that your clamAV system is now intercepting viruses, visit
+http://www.testvirus.org
+
+If, under heavy strain on Linux, you see the message
+	thread_create() failed: 12, abort
+appearing in a log file, you will need to increase the number of threads on
+your system (/proc/sys/kernel/threads-max), or decrease the value of
+--max-children.
+
+Clamav-milter performs DNS look ups, if you wish to tweak its timeouts
+see resolv.conf(5).
+
+2.7 Postfix
+
+Clamav-milter has only been designed to work with Sendmail. I understand that
+modern versions of Postfix have milter support, and I've heard that
+Clamav-milter runs with these versions of Postfix, however it is not supported
+with that software and I do not know how much functionality works.
+
+To start clamav-milter:
+
+	# clamav-milter --sendmail-cf= --max-children=2 \
+		--timeout=0 --pidfile=/var/run/clamav/clamav-milter \
+		local:/var/spool/postfix/clamav/clamav-milter
+	# chown clamav:postfix /var/spool/postfix/clamav/clamav-milter
+	# chmod g+w /var/spool/postfix/clamav/clmilter
+
+In /etc/postfix/main.cf set:
+	smtpd_milters = unix:clamav/clamav-milter
+	non_smtpd_milters = unix:clamav/clamav-milter
+
+3. CHANGE HISTORY
+
+See ../ChangeLog
+
+4. INTERNATIONALISATION
+
+The .po file was created with the command
+	xgettext --msgid-bugs-address=bugs@clamav.net --copyright-holder=njh@bandsman.co.uk -L c -d clamav-milter -k_ clamav-milter.c
+
+If you're interested in helping to translate this program please drop the
+author an e-mail.
+
+5. BUG REPORTS
+
+Please send bug reports and/or comments to Nigel Horne <njh@clamav.net> or
+bugs@clamav.net.
+
+Various tips will go here, for example
+	define(`confMILTER_LOG_LEVEL',`22')
+Running in the foreground, valgrind, LogSyslog, LogVerbose, LogFile etc.
+
+5.1. Patches
+
+Patches are welcome, but they must be against the latest CVS version and adhere
+to the coding style of clamav-milter. Coding style is religious, everyone
+believes theirs is great and all others are rubbish.
+
+This is my coding style, live with it. You don't want me in a bad mood because
+I can't read your code when I'm deciding if your code should be incorporated.
+
+Most of this style is based on K&R.
+
+Use the tab key, not space key, to indent.
+
+Except for functions, braces always go on the same line as the condition.
+
+Don't leave to chance, or your knowledge of precedence, use brackets to
+highten the readability.
+
+Choose variable names sensibly, don't use Hungarian style.
+
+The code is ANSI C, not C++, remember that when thinking of comment formats,
+location of declarations, etc.
+
+Patches which use 'goto' will never, ever, be accepted.
+
+Use the design of your code as comments.
+
+Test your patches and document the tests when submitting, e.g. different
+hardware, operating systems, test tools such as valgrind, compilers (gcc, icc,
+Sun's cc).
+
+Function names appear at the start of lines (I use ctags).
+
+Document your changes. If you add, remove, or change functionality you will
+need to update the manual page and possibly the usage message as well.
+
+6. CHROOT JAIL
+
+The instructions will differ for you, but these will give you an idea.
+You will have to do a lot of fiddling if you want notifications to work,
+since clamav-milter calls sendmail to handle the notifications and sendmail
+will run of out the same jail. I've not disabled the notifications, but I
+may in the future - for the moment handling notifications in the jail is an
+excercise for the reader. I've put in a symbolic link to sendmail, but I
+suspect it should be a real copy.
+
+	mkdir /var/run/clamav-root
+	chown clamav:clamav /var/run/clamav-root
+	chmod 750 /var/run/clamav-root
+	cd /var/run/clamav-root
+	mkdir var
+	mkdir var/tmp
+	ln -s var/tmp .
+	mkdir var/log
+	cd var/log
+	ln -s ../../../../../var/log/clamav .
+	cd ..
+	mkdir run
+	mkdir run/clamav
+	chown clamav:clamav run/clamav
+	cd ..
+	mkdir usr
+	mkdir usr/local
+	mkdir usr/local/share
+	ln -s ../../../../../../usr/local/share/clamav .
+	mkdir usr/lib
+	cd usr/lib
+	ln -s ../../../../../usr/lib/sendmail .
+	cd ../..
+	mkdir dev
+	cd dev
+	mknod null c 1 3
+	chown clamav:clamav null
+
+In sendmail.mc:
+INPUT_MAIL_FILTER(`clamav', `S=local:/var/run/clamav-root/var/run/clamav/clmilter.sock, F=T, T=S:4m;R:4m;C:30s;E:10m')dnl
+
+When starting clamav-milter use options such as (notice that the location
+of clmilter.sock is different in sendmail.mc than the location clamav-milter
+expects to see it)
+	--chroot=/var/run/clamav-root --max-children=3 -P --pidfile=/var/run/clamav/clamav-milter.pid --blacklist=60 --black-hole-mode local:/var/run/clamav/clmilter.sock
+
+You may need to modify your shutdown script to look for clamav-milter.pid
+in /var/run/clamav-root/var/run/clamav/clamav-milter.pid
+
+7. TODO
+
+There are several ideas marked as TODO in the source code. If anyone has
+any other suggestions please feel free to contact me. To avoid disappointment
+always contact me before undertaking any work.
