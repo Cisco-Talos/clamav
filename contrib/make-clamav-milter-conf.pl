@@ -92,6 +92,13 @@ foreach (split(/:/, $tcpclamds)) {
 	$clamds{"tcp:$_:3310"}++;
 }
 
+my $user = '';
+my $supgrp = '';
+my $syslog = '';
+my $facility = '';
+my $tempdir = '';
+my $maxsize = '';
+
 if ($config) {
 	my $port = 0;
 	my $ip = '';
@@ -102,6 +109,12 @@ if ($config) {
 		$port = $1 if /^TCPSocket\s+(.*)$/;
 		$ip = $1 if /^TCPAddr\s+(.*)$/;
 		$lsock = $1 if /^LocalSocket\s+(.*)$/;
+		$user = $1 if /^User\s+(.*)$/;
+		$supgrp = $1 if /^AllowSupplementaryGroups\s+(.*)$/;
+		$syslog = $1 if /^LogSyslog\s+(.*)$/;
+		$facility = $1 if /^LogFacility\s+(.*)$/;
+		$tempdir = $1 if /^TemporaryDirectory\s+(.*)$/;
+		$maxsize = $1 if /^MaxFileSize\s+(.*)$/;
 	}
 	close(CFG);
 	if ($lsock) {
@@ -182,6 +195,17 @@ $oninfected = tosconf('OnInfected', $oninfected);
 $onfail = tosconf('OnFail', $onfail);
 $whitelist = tosconf('Whitelist', $whitelist);
 $addheader = $addheader ? "\nAddHeader Yes" : '';
+$user = tosconf('User', $user);
+$supgrp = $supgrp ? "\nAllowSupplementaryGroups Yes" : '';
+if ($syslog =~ /yes/i) {
+	$syslog = "LogSyslog yes";
+	$facility = tosconf('LogFacility', $facility);
+} else {
+	$syslog = '';
+	$facility = '';
+}
+$tempdir = tosconf('TemporaryDirectory', $tempdir);
+$maxsize = tosconf('MaxFileSize', $maxsize);
 
 print <<BLOCK1;
 ##
@@ -215,12 +239,12 @@ Example
 # Run as another user (clamav-milter must be started by root for this option to work)
 #
 # Default: unset (don't drop privileges)
-#User clamav
+#User clamav$user
 
 # Initialize supplementary group access (clamd must be started by root).
 #
 # Default: no
-#AllowSupplementaryGroups no
+#AllowSupplementaryGroups no$supgrp
 
 # Waiting for data from clamd will timeout after this time (seconds).
 # Value of 0 disables the timeout.
@@ -248,7 +272,7 @@ Example
 # Optional path to the global temporary directory.
 # Default: system specific (usually /tmp or /var/tmp).
 #
-#TemporaryDirectory /var/tmp
+#TemporaryDirectory /var/tmp$tempdir
 
 ##
 ## Clamd options
@@ -379,13 +403,13 @@ print <<BLOCK2;
 # Use system logger (can work together with LogFile).
 #
 # Default: no
-#LogSyslog yes
+#LogSyslog yes$syslog
 
 # Specify the type of syslog messages - please refer to 'man syslog'
 # for facility names.
 #
 # Default: LOG_LOCAL6
-#LogFacility LOG_MAIL
+#LogFacility LOG_MAIL$facility
 
 # Enable verbose logging.
 #
@@ -399,7 +423,7 @@ print <<BLOCK2;
 
 # Messages larger than this value won't be scanned.
 # Default: 25M
-#MaxFileSize 150M
+#MaxFileSize 150M$maxsize
 BLOCK2
 
 
