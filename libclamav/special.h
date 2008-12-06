@@ -23,6 +23,7 @@
 
 #include "others.h"
 struct swizz_stats {
+	uint16_t gngrams[17576];
 	uint32_t total;
 	uint32_t suspicious;
 	int has_version;

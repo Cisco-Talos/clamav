@@ -360,46 +360,12 @@ static inline int swizz_j48(const uint16_t n[])
 {
 	cli_dbgmsg("swizz_j48: %u, %u, %u\n",n[0],n[1],n[2]);
 	/* rules based on J48 tree */
-	if (n[0] <= 924)
-		return CL_CLEAN;
-	if (n[0] <= 940) {
-		return (n[2] > 1 && n[2] <= 8) ? CL_VIRUS : CL_CLEAN;
-	}
-	if (n[2] <= 14) {
-		if (n[2] <= 0) {
-			if (n[0] <= 999)
-				return CL_CLEAN;
-			if (n[0] <= 1012) {
-				if (n[1] <= 23) {
-					if (n[0] <= 1003)
-						return CL_CLEAN;
-					return (n[1] <= 19 && n[0] > 1007 && n[1] > 15) || (n[1] > 19) ? CL_VIRUS : CL_CLEAN;
-				}
-				return CL_VIRUS;
-			}
-			return n[1] == 0 ? CL_CLEAN : CL_VIRUS;
-		}
-		if (n[2] <= 8)
-			return CL_VIRUS;
-		if (n[0] <= 954)
-			return CL_CLEAN;
-		if (n[2] <= 10)
-			return CL_VIRUS;
-		if (n[2] <= 12) {
-			if (n[0] <= 1011) {
-				if (n[1] <=32)
-					return CL_VIRUS;
-				return (n[2] <= 11 || n[1] > 51) ? CL_VIRUS : CL_CLEAN;
-			}
-			return CL_CLEAN;
-		}
-		if (n[1] <= 52) {
-			return (n[1] <= 43 && n[1] > 6 &&
-					(n[2] <= 13 || n[1] <= 30 || n[1] > 40))
-				? CL_CLEAN : CL_VIRUS;
-		}
-	}
-	return CL_CLEAN;
+	if (n[0] <= 945 || !n[1])
+		return 0;
+	if (n[0] <= 1006)
+		return (n[2] > 0 && n[2] <= 6);
+	else
+		return n[1] <= 10;
 }
 
 void cli_detect_swizz_str(const unsigned char *str, uint32_t len, struct swizz_stats *stats, int blob)
@@ -440,8 +406,10 @@ void cli_detect_swizz_str(const unsigned char *str, uint32_t len, struct swizz_s
 	for(i=0;i<j-2;i++) {
 		if (stri[i] != ' ' && stri[i+1] != ' ' && stri[i+2] != ' ') {
 			uint16_t idx = (stri[i] - 'a')*676 + (stri[i+1] - 'a')*26 + (stri[i+2] - 'a');
-			if (idx < sizeof(ngrams))
+			if (idx < sizeof(ngrams)) {
 				ngrams[idx]++;
+				stats->gngrams[idx]++;
+			}
 		} else if (stri[i] == ' ')
 			words++;
 	}
@@ -461,21 +429,72 @@ void cli_detect_swizz_str(const unsigned char *str, uint32_t len, struct swizz_s
 		uint32_t v = ngram_cnts[i];
 		ngram_cnts[i] = (v<<10)/all;
 	}
-	ret = swizz_j48(ngram_cnts);
+	ret = swizz_j48(ngram_cnts) ? CL_VIRUS : CL_CLEAN;
 	cli_dbgmsg("cli_detect_swizz_str: %s, %u words\n", ret == CL_VIRUS ? "suspicious" : "ok", words);
 	if (ret == CL_VIRUS)
 		stats->suspicious += j;
 	stats->total += j;
 }
 
+static inline swizz_j48_global(const uint32_t gn[])
+{
+	if (gn[0] <= 24185) {
+		return gn[0] > 22980 && gn[8] > 0 && gn[8] <= 97;
+	}
+	if (!gn[8]) {
+		if (gn[4] <= 311) {
+			if (!gn[4]) {
+				return gn[1] > 0 &&
+					((gn[0] <= 26579 && gn[3] > 0) ||
+					 (gn[0] > 28672 && gn[0] <= 30506));
+			}
+			if (gn[5] <= 616) {
+				if (gn[6] <= 104) {
+					return gn[9] <= 167;
+				}
+				return gn[6] <= 286;
+			}
+		}
+		return 0;
+	}
+	return 1;
+}
+
 int cli_detect_swizz(struct swizz_stats *stats)
 {
+	uint32_t gn[10];
+	uint32_t all = 0;
+	unsigned i;
+	int global_swizz = CL_CLEAN;
+
 	cli_dbgmsg("cli_detect_swizz: %lu/%lu, version:%d, manifest: %d \n",
 			(unsigned long)stats->suspicious, (unsigned long)stats->total,
 			stats->has_version, stats->has_manifest);
-	/* not all have version/manifest */
-	if (stats->total > 128 && stats->suspicious > 2*stats->total/10) {
-		return CL_VIRUS;
+	memset(gn, 0, sizeof(gn));
+	for(i=0;i<17576;i++) {
+		uint8_t v = stats->gngrams[i];
+		if (v > 10) v = 10;
+		if (v) {
+			gn[v-1]++;
+			all++;
+		}
 	}
-	return CL_CLEAN;
+	if (all) {
+		/* normalize */
+		cli_dbgmsg("cli_detect_swizz: gn: ");
+		for(i=0;i<sizeof(gn)/sizeof(gn[0]);i++) {
+			uint32_t v = gn[i];
+			gn[i] = (v<<15)/all;
+			if (cli_debug_flag)
+			cli_dbgmsg("%lu, ", (unsigned long)gn[i]);
+		}
+		global_swizz = swizz_j48_global(gn) ? CL_VIRUS : CL_CLEAN;
+		cli_dbgmsg("\ncli_detect_swizz: global: %s\n", global_swizz ? "suspicious" : "clean");
+	}
+
+	if (stats->total <= 337)
+		return CL_CLEAN;
+	if (stats->suspicious<<10 > 20*stats->total)
+		return CL_VIRUS;
+	return global_swizz;
 }

@@ -1,3 +1,10 @@
+Sat Dec  6 16:54:43 EET 2008 (edwin)
+------------------------------------
+ * libclamav/pe.c, libclamav/special.c, libclamav/special.h: Improve
+ Trojan.Swizzor.Gen detection: do per file statistics in addition to
+ per string. It is amazing how a much simpler rule can do the same
+ job better.
+
 Thu Dec  4 17:43:01 CET 2008 (acab)
 -----------------------------------
  * clamav-milter: r4519:r4536 merge new clamav milter

@@ -1215,15 +1215,21 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
     /* Trojan.Swizzor.Gen */
     if (SCAN_ALGO && (DCONF & PE_CONF_SWIZZOR) && nsections > 1 && fsize > 64*1024 && fsize < 4*1024*1024) {
-	    int ret = CL_CLEAN;
 	    if(dirs[2].Size) {
-		    struct swizz_stats stats;
-		    unsigned int m = 10000;
-		    memset(&stats, 0, sizeof(stats));
-		    cli_parseres_special(EC32(dirs[2].VirtualAddress), EC32(dirs[2].VirtualAddress), desc, exe_sections, nsections, fsize, hdr_size, 0, 0, &m, &stats);
-		    if (cli_detect_swizz(&stats) == CL_VIRUS) {
-			    *ctx->virname = "Trojan.Swizzor.Gen";
-			    ret = CL_VIRUS;
+		    struct swizz_stats *stats = cli_calloc(1, sizeof(*stats));
+		    unsigned int m = 1000;
+		    int ret = CL_CLEAN;
+
+		    if (!stats)
+			    ret = CL_EMEM;
+		    else {
+			    cli_parseres_special(EC32(dirs[2].VirtualAddress), EC32(dirs[2].VirtualAddress), desc, exe_sections, nsections, fsize, hdr_size, 0, 0, &m, stats);
+			    if ((ret = cli_detect_swizz(stats)) == CL_VIRUS) {
+				    *ctx->virname = "Trojan.Swizzor.Gen";
+			    }
+			    free(stats);
+		    }
+		    if (ret != CL_CLEAN) {
 			    free(exe_sections);
 			    return ret;
 		    }
