@@ -34,6 +34,8 @@
 #include <time.h>
 #include <errno.h>
 #include <netdb.h>
+#include <sys/uio.h>
+
 
 #include "shared/output.h"
 #include "libclamav/others.h"

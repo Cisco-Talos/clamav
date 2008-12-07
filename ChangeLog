@@ -1,3 +1,7 @@
+Sun Dec  7 15:28:42 CET 2008 (acab)
+-----------------------------------
+ * clamav-milter: enable building on OpenBSD...
+
 Sun Dec  7 14:53:17 CET 2008 (acab)
 -----------------------------------
  * clamav-milter: enable building on FreeBSD
