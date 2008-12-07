@@ -232,9 +232,6 @@
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H
 
-/* Define to 1 if -lresolv provides thread safe API's like res_nquery */
-#undef HAVE_LRESOLV_R
-
 /* Define this if a modern libltdl is already installed */
 #undef HAVE_LTDL
 
@@ -377,9 +374,6 @@
 /* Define to 1 if you have the <sys/uio.h> header file. */
 #undef HAVE_SYS_UIO_H
 
-/* Define to 1 if you have the <tcpd.h> header file. */
-#undef HAVE_TCPD_H
-
 /* Define to 1 if you have the <termios.h> header file. */
 #undef HAVE_TERMIOS_H
 
@@ -448,18 +442,6 @@
 /* scan buffer size */
 #undef SCANBUFF
 
-/* location of Sendmail binary */
-#undef SENDMAIL_BIN
-
-/* major version of Sendmail */
-#undef SENDMAIL_VERSION_A
-
-/* minor version of Sendmail */
-#undef SENDMAIL_VERSION_B
-
-/* subversion of Sendmail */
-#undef SENDMAIL_VERSION_C
-
 /* Define to 1 if the `setpgrp' function takes no argument. */
 #undef SETPGRP_VOID
 
@@ -495,9 +477,6 @@
 
 /* Version suffix for package */
 #undef VERSION_SUFFIX
-
-/* tcpwrappers support */
-#undef WITH_TCPWRAP
 
 /* endianess */
 #undef WORDS_BIGENDIAN

@@ -58,27 +58,7 @@ int main() { return (long)dn_expand; }
     ])
     if test "x$ac_cv_have_lresolv" != "xno"; then
     	FRESHCLAM_LIBS="$FRESHCLAM_LIBS$ac_cv_have_lresolv"
-	CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS$ac_cv_have_lresolv"
-	bklibs=$LIBS
-	LIBS=$ac_cv_have_lresolv
 	AC_DEFINE([HAVE_RESOLV_H],1,[have resolv.h])
-	AC_CACHE_CHECK([for res_nquery in -lresolv], [ac_cv_have_lresolv_r], [
-	    ac_cv_have_lresolv_r='no'
-	    AC_LINK_IFELSE([
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <arpa/nameser.h>
-#include <resolv.h>
-int main() { return (long)res_nquery; }
-    	    ],
-	    [
-	        ac_cv_have_lresolv_r='yes'
-	    ]),
-	])
-	LIBS=$bklibs
-	if test "x$ac_cv_have_lresolv_r" = "xyes"; then
-	    AC_DEFINE([HAVE_LRESOLV_R],1,[Define to 1 if -lresolv provides thread safe API's like res_nquery])
-	fi
     else
 	AC_MSG_WARN([****** DNS support disabled])
     fi

@@ -241,7 +241,6 @@ prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
 sbindir = @sbindir@
-sendmailprog = @sendmailprog@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
 sys_symbol_underscore = @sys_symbol_underscore@

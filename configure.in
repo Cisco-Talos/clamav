@@ -1133,47 +1133,6 @@ if test "$have_milter" = "yes"; then
     ])
 fi
 
-if test "$have_milter" = "yes"; then
-  sendmailprog=no
-  AC_ARG_WITH([sendmail],
-  [  --with-sendmail=PATH    specify location of Sendmail binary (default=auto find)],
-  sendmailprog=$with_sendmail, sendmailprog=no)
-
-  if test "$sendmailprog" = "no" ; then
-    AC_PATH_PROG([sendmailprog], sendmail, no, $PATH:/sbin:/usr/sbin:/usr/lib:/usr/libexec)
-  fi
-
-  AC_DEFINE_UNQUOTED([SENDMAIL_BIN], "$sendmailprog", [location of Sendmail binary])
-
-  AC_ARG_WITH(sendmail-version,
-  [  --with-sendmail-version=VERSION    specify version of Sendmail (default=auto find)],
-  sendmailvers=$with_sendmail_version, sendmailvers=no)
-
-  if test "$sendmailvers" = "no" ; then
-    sendmailver=`$sendmailprog -d0 < /dev/null | head -1 | awk '{print $2}'`
-  fi
-
-  if test -z "$sendmailver"; then
-	# example: postfix
-	LDFLAGS="$LDFLAGS $CLAMAV_MILTER_LIBS"
-	AC_CHECK_LIB([milter],[smfi_opensocket],[sendmailver="8.13.0"],
-		     [AC_MSG_WARN([cannot determine sendmail version])])
-	LDFLAGS="$save_LDFLAGS"
-  fi
-  if test -n "$sendmailver"; then
-    sendmailver_a=`echo $sendmailver | awk -F. '{printf $1}'`
-    sendmailver_b=`echo $sendmailver | awk -F. '{printf $2}'`
-    sendmailver_c=`echo $sendmailver | awk -F. '{printf $3}'`
-
-    AC_DEFINE_UNQUOTED([SENDMAIL_VERSION_A], $sendmailver_a, [major version of Sendmail])
-    AC_DEFINE_UNQUOTED([SENDMAIL_VERSION_B], $sendmailver_b, [minor version of Sendmail])
-    AC_DEFINE_UNQUOTED([SENDMAIL_VERSION_C], $sendmailver_c, [subversion of Sendmail])
-  fi
-  if test "x$ac_cv_have_lresolv_r" != "xyes"; then
-    AC_MSG_WARN([****** Your libresolv is not thread safe, SPF queries in clamav-milter will block])
-  fi
-fi
-
 AM_CONDITIONAL([BUILD_CLAMD],[test "$have_pthreads" = "yes"])
 AM_CONDITIONAL([HAVE_MILTER],[test "$have_milter" = "yes"])
 
@@ -1184,66 +1143,6 @@ then
     AC_CHECK_FUNCS([sched_yield pthread_yield])
     LIBS="$save_LIBS"
     AC_DEFINE([BUILD_CLAMD], 1, "build clamd")
-fi
-
-dnl tcpwrappers support
-dnl rules from http://ma.ph-freiburg.de/tng/tng-technical/2002-01/msg00094.html
-AC_ARG_WITH([tcpwrappers],
-[  --with-tcpwrappers      support hosts.allow / hosts.deny (default=auto)],
-[ case "$withval" in
-  yes|no) tcpw="$withval" ;;
-  *)      AC_MSG_ERROR([--with-tcpwrappers does not take an argument]) ;;
-  esac],
-[ tcpw=auto ])
-
-if test "$tcpw" != "no" && test "$have_milter" = "yes" ; then
-        AC_CHECK_HEADERS([tcpd.h],[
-                AC_MSG_CHECKING([for TCP wrappers library])
-                save_LIBS="$LIBS"
-                LIBS="$LIBS -lwrap $FRESHCLAM_LIBS"
-                AC_TRY_LINK([
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#include <tcpd.h>
-int allow_severity = 0;
-int deny_severity  = 0;
-
-struct request_info *req;
-                ],[
-hosts_access(req)
-                ],[AC_MSG_RESULT([-lwrap])
-                have_wrappers=yes
-		LIBS="$save_LIBS"
-                CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lwrap"],[
-                dnl try with -lnsl
-                LIBS="$LIBS -lnsl $FRESHCLAM_LIBS"
-                AC_TRY_LINK([
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#include <tcpd.h>
-int allow_severity = 0;
-int deny_severity  = 0;
-
-struct request_info *req;
-                ],[
-hosts_access(req)
-                ],[AC_MSG_RESULT([-lwrap -lnsl])
-                have_wrappers=yes
-                CLAMAV_MILTER_LIBS="$CLAMAV_MILTER_LIBS -lwrap"],[
-                AC_MSG_RESULT(no)
-                have_wrappers=no
-                LIBS=$save_LIBS])],[
-                have_wrappers=no])],[have_wrappers=no])
-
-        if test $have_wrappers = yes ; then
-                AC_DEFINE([WITH_TCPWRAP],1, [tcpwrappers support])
-        elif test $tcpw = yes ; then
-                AC_MSG_ERROR([could not find TCP wrappers])
-        else
-                AC_MSG_WARN([could not find TCP wrappers, support disabled])
-        fi
 fi
 
 dnl Check for gethostbyname_r and number of its arguments
