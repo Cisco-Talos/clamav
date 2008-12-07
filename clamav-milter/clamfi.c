@@ -66,8 +66,8 @@ struct CLAMFI {
 
 
 void add_x_header(SMFICTX *ctx, char *st) {
-    smfi_chgheader(ctx, "X-Virus-Scanned", 1, xvirushdr);
-    smfi_chgheader(ctx, "X-Virus-Status", 1, st);
+    smfi_chgheader(ctx, (char *)"X-Virus-Scanned", 1, xvirushdr);
+    smfi_chgheader(ctx, (char *)"X-Virus-Status", 1, st);
 }
 
 
