@@ -1,3 +1,7 @@
+Sun Dec  7 12:01:10 EET 2008 (edwin)
+------------------------------------
+ * libclamav/special.c: add missing type
+
 Sat Dec  6 16:54:43 EET 2008 (edwin)
 ------------------------------------
  * libclamav/pe.c, libclamav/special.c, libclamav/special.h: Improve

@@ -436,7 +436,7 @@ void cli_detect_swizz_str(const unsigned char *str, uint32_t len, struct swizz_s
 	stats->total += j;
 }
 
-static inline swizz_j48_global(const uint32_t gn[])
+static inline int swizz_j48_global(const uint32_t gn[])
 {
 	if (gn[0] <= 24185) {
 		return gn[0] > 22980 && gn[8] > 0 && gn[8] <= 97;
