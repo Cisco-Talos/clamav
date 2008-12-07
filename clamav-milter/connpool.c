@@ -95,7 +95,7 @@ static int islocal(struct sockaddr *sa, socklen_t addrlen) {
 
 
 static int cpool_addtcp(char *addr, char *port) {
-    struct addrinfo hints, *res, *res2;;
+    struct addrinfo hints, *res, *res2;
     struct CP_ENTRY *cpe = (struct CP_ENTRY *)&cp->pool[cp->entries-1];
 
     memset(&hints, 0, sizeof(hints));

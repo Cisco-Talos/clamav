@@ -136,7 +136,9 @@ int nc_connect(int s, struct CP_ENTRY *cpe) {
 }
 
 
-int nc_send(int s, const void *buf, size_t len) {
+int nc_send(int s, const void *buff, size_t len) {
+    char *buf = (char *)buff;
+
     while(len) {
 	int res = send(s, buf, len, 0);
 	time_t timeout = time(NULL) + TIMEOUT;
