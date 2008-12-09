@@ -84,7 +84,7 @@ static void printcfg(const char *cfgfile, int nondef)
 	unsigned short cfgowner = 0;
 
 
-	if(!(cfg = getcfg(cfgfile, 1, OPT_FRESHCLAM|OPT_CLAMD))) {
+    if(!(cfg = getcfg(cfgfile, 1, OPT_FRESHCLAM|OPT_CLAMD))) {
 	printf("Can't parse %s\n", cfgfile);
 	return;
     }
@@ -95,6 +95,9 @@ static void printcfg(const char *cfgfile, int nondef)
 
 	if(!opt->name)
 	    break;
+
+	if(!(opt->owner & (OPT_CLAMD|OPT_FRESHCLAM)))
+	    continue;
 
 	cpt = cfgopt(cfg, opt->name);
 

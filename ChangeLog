@@ -1,3 +1,7 @@
+Tue Dec  9 03:32:08 CET 2008 (acab)
+-----------------------------------
+ * clamconf: skip milter's directives
+
 Sun Dec  7 16:17:33 CET 2008 (acab)
 -----------------------------------
  * configure, m4/resolv.m4: remove stale checks
