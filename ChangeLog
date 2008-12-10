@@ -1,3 +1,7 @@
+Wed Dec 10 20:09:00 CET 2008 (tk)
+---------------------------------
+ * libclamav: add CL_FLEVEL_DCONF (bb#1313)
+
 Tue Dec  9 03:32:08 CET 2008 (acab)
 -----------------------------------
  * clamconf: skip milter's directives

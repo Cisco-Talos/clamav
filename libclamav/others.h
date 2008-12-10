@@ -35,6 +35,18 @@
 #include "dconf.h"
 #include "libclamunrar_iface/unrar_iface.h"
 
+/*
+ * CL_FLEVEL is the signature f-level specific to the current code and
+ *	     should never be modified
+ * CL_FLEVEL_DCONF is used in the dconf module and can be bumped by
+ * distribution packagers provided they fix *all* security issues found
+ * in the old versions of ClamAV. Updating CL_FLEVEL_DCONF will result
+ * in re-enabling affected modules.
+ */
+
+#define CL_FLEVEL 38
+#define CL_FLEVEL_DCONF	CL_FLEVEL
+
 extern uint8_t cli_debug_flag;
 
 /*

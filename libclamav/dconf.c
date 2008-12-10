@@ -247,7 +247,7 @@ static int chkflevel(const char *entry, int field)
 	    return 0;
 	}
 
-	if((unsigned int) atoi(pt) > cl_retflevel()) {
+	if((unsigned int) atoi(pt) > CL_FLEVEL_DCONF) {
 	    free(pt);
 	    return 0;
 	}
@@ -260,7 +260,7 @@ static int chkflevel(const char *entry, int field)
 		return 0;
 	    }
 
-	    if((unsigned int) atoi(pt) < cl_retflevel()) {
+	    if((unsigned int) atoi(pt) < CL_FLEVEL_DCONF) {
 		free(pt);
 		return 0;
 	    }
