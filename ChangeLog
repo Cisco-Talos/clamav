@@ -1,3 +1,7 @@
+Thu Dec 11 13:08:20 CET 2008 (acab)
+-----------------------------------
+ * freshclam/dns.c: add support for TXT aliases
+
 Wed Dec 10 20:09:00 CET 2008 (tk)
 ---------------------------------
  * libclamav: add CL_FLEVEL_DCONF (bb#1313)

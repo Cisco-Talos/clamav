@@ -16,9 +16,6 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-#ifdef	_MSC_VER
-#include <winsock.h>
-#endif
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -45,9 +42,10 @@
 
 char *txtquery(const char *domain, unsigned int *ttl)
 {
-	unsigned char answer[PACKETSZ], *pt;
+	unsigned char answer[PACKETSZ], *answend, *pt;
 	char *txt, host[128];
-	int len, exp, cttl, size, txtlen, type, qtype;
+	int len, type, qtype;
+	unsigned int cttl, size, txtlen = 0;
 
 
     *ttl = 0;
@@ -60,7 +58,7 @@ char *txtquery(const char *domain, unsigned int *ttl)
 
     memset(answer, 0, PACKETSZ);
     qtype = T_TXT;
-    if((len = res_query(domain, C_IN, qtype, answer, PACKETSZ)) < 0) {
+    if((len = res_query(domain, C_IN, qtype, answer, PACKETSZ)) < 0 || len > PACKETSZ) {
 #ifdef FRESHCLAM_DNS_FIX
 	/*  The DNS server in the SpeedTouch Alcatel 510 modem can't
 	 *  handle a TXT-query, but it can resolve an ANY-query to a
@@ -79,14 +77,19 @@ char *txtquery(const char *domain, unsigned int *ttl)
 #endif
     }
 
+    answend = answer + len;
     pt = answer + sizeof(HEADER);
 
-    if((exp = dn_expand(answer, answer + len, pt, host, sizeof(host))) < 0) {
+    if((len = dn_expand(answer, answend, pt, host, sizeof(host))) < 0) {
 	logg("^dn_expand failed\n");
 	return NULL;
     }
 
-    pt += exp;
+    pt += len;
+    if(pt > answend-4) {
+	logg("^Bad (too short) DNS reply\n");
+	return NULL;
+    }
 
     GETSHORT(type, pt);
     if(type != qtype) {
@@ -95,25 +98,34 @@ char *txtquery(const char *domain, unsigned int *ttl)
     }
 
     pt += INT16SZ; /* class */
+    size = 0;
+    do { /* recurse through CNAME rr's */
+	pt += size;
+    	if((len = dn_expand(answer, answend, pt, host, sizeof(host))) < 0) {
+	    logg("^second dn_expand failed\n");
+	    return NULL;
+	}
+	pt += len;
+	if(pt > answend-10) {
+	    logg("^Bad (too short) DNS reply\n");
+	    return NULL;
+	}
+	GETSHORT(type, pt);
+	pt += INT16SZ; /* class */
+	GETLONG(cttl, pt);
+	GETSHORT(size, pt);
+	if(pt + size < answer || pt + size >= answend) {
+	    logg("^DNS rr overflow\n");
+	    return NULL;
+	}
+    } while(type == T_CNAME);
 
-    if((exp = dn_expand(answer, answer + len, pt, host, sizeof(host))) < 0) {
-	logg("^second dn_expand failed\n");
-	return NULL;
-    }
-
-    pt += exp;
-    GETSHORT(type, pt);
     if(type != T_TXT) {
 	logg("^Not a TXT record\n");
 	return NULL;
     }
 
-    pt += INT16SZ; /* class */
-    GETLONG(cttl, pt);
-    GETSHORT(size, pt);
-    txtlen = *pt;
-
-    if(txtlen >= size || !txtlen) {
+    if(!size || (txtlen = *pt) >= size || !txtlen) {
 	logg("^Broken TXT record (txtlen = %d, size = %d)\n", txtlen, size);
 	return NULL;
     }
@@ -121,8 +133,7 @@ char *txtquery(const char *domain, unsigned int *ttl)
     if(!(txt = (char *) malloc(txtlen + 1)))
 	return NULL;
 
-    pt++;
-    memcpy(txt, pt, txtlen);
+    memcpy(txt, pt+1, txtlen);
     txt[txtlen] = 0;
     *ttl = cttl;
 
@@ -136,7 +147,7 @@ char *txtquery(const char *domain, unsigned int *ttl)
  * The dll behind this library is available from Windows 2000 onward.
  * Written by Mark Pizzolato
  */
-
+#include <winsock.h>
 #include <string.h>
 #include <windows.h>
 #include <windns.h>
