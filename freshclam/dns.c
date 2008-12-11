@@ -114,7 +114,7 @@ char *txtquery(const char *domain, unsigned int *ttl)
 	pt += INT16SZ; /* class */
 	GETLONG(cttl, pt);
 	GETSHORT(size, pt);
-	if(pt + size < answer || pt + size >= answend) {
+	if(pt + size < answer || pt + size > answend) {
 	    logg("^DNS rr overflow\n");
 	    return NULL;
 	}

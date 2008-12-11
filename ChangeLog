@@ -1,3 +1,7 @@
+Thu Dec 11 19:09:36 CET 2008 (acab)
+-----------------------------------
+ * freshclam/dns.c: small fix to previous commit (bb#1303)
+
 Thu Dec 11 13:08:20 CET 2008 (acab)
 -----------------------------------
  * freshclam/dns.c: add support for TXT aliases
