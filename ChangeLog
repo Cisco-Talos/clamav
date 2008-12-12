@@ -1,3 +1,10 @@
+Fri Dec 12 10:28:04 EET 2008 (edwin)
+------------------------------------
+ * libclamav/Makefile.am, libclamav/Makefile.in, libclamav/others.c,
+ libclamav/others_common.c: make regex available in
+ libclamav_internal_utils.la, split others.c instead of using #ifdef
+ CLI_MEMFUNS_ONLY.
+
 Thu Dec 11 19:09:36 CET 2008 (acab)
 -----------------------------------
  * freshclam/dns.c: small fix to previous commit (bb#1303)

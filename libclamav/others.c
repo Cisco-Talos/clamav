@@ -60,13 +60,7 @@
 
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
-#ifndef CLI_MEMFUNSONLY
 static pthread_mutex_t cli_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
-
-# ifndef HAVE_CTIME_R
-static pthread_mutex_t cli_ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
-# endif
 
 #endif
 
@@ -92,40 +86,8 @@ static pthread_mutex_t cli_ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define       P_tmpdir        "C:\\WINDOWS\\TEMP"
 #endif
 
-uint8_t cli_debug_flag = 0;
-
-#ifndef CLI_MEMFUNSONLY
 static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
-#endif
 
-#define MSGCODE(x)					    \
-	va_list args;					    \
-	int len = sizeof(x) - 1;			    \
-	char buff[BUFSIZ];				    \
-    strncpy(buff, x, len);				    \
-    buff[BUFSIZ-1]='\0';				    \
-    va_start(args, str);				    \
-    vsnprintf(buff + len, sizeof(buff) - len, str, args);   \
-    buff[sizeof(buff) - 1] = '\0';			    \
-    fputs(buff, stderr);				    \
-    va_end(args)
-
-void cli_warnmsg(const char *str, ...)
-{
-    MSGCODE("LibClamAV Warning: ");
-}
-
-void cli_errmsg(const char *str, ...)
-{
-    MSGCODE("LibClamAV Error: ");
-}
-
-void cli_dbgmsg_internal(const char *str, ...)
-{
-    MSGCODE("LibClamAV debug: ");
-}
-
-#ifndef CLI_MEMFUNSONLY
 int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
 int (*cli_unrar_extract_next_prepare)(unrar_state_t *state, const char *dirname);
 int (*cli_unrar_extract_next)(unrar_state_t *state, const char *dirname);
@@ -553,120 +515,7 @@ static char *cli_md5buff(const unsigned char *buffer, unsigned int len, unsigned
 
     return md5str;
 }
-#endif
 
-void *cli_malloc(size_t size)
-{
-	void *alloc;
-
-
-    if(!size || size > CLI_MAX_ALLOCATION) {
-	cli_errmsg("cli_malloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
-	return NULL;
-    }
-
-#if defined(_MSC_VER) && defined(_DEBUG)
-    alloc = _malloc_dbg(size, _NORMAL_BLOCK, __FILE__, __LINE__);
-#else
-    alloc = malloc(size);
-#endif
-
-    if(!alloc) {
-	cli_errmsg("cli_malloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int) size);
-	perror("malloc_problem");
-	return NULL;
-    } else return alloc;
-}
-
-void *cli_calloc(size_t nmemb, size_t size)
-{
-	void *alloc;
-
-
-    if(!size || size > CLI_MAX_ALLOCATION) {
-	cli_errmsg("cli_calloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
-	return NULL;
-    }
-
-#if defined(_MSC_VER) && defined(_DEBUG)
-    alloc = _calloc_dbg(nmemb, size, _NORMAL_BLOCK, __FILE__, __LINE__);
-#else
-    alloc = calloc(nmemb, size);
-#endif
-
-    if(!alloc) {
-	cli_errmsg("cli_calloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int) (nmemb * size));
-	perror("calloc_problem");
-	return NULL;
-    } else return alloc;
-}
-
-void *cli_realloc(void *ptr, size_t size)
-{
-	void *alloc;
-
-
-    if(!size || size > CLI_MAX_ALLOCATION) {
-	cli_errmsg("cli_realloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
-	return NULL;
-    }
-
-    alloc = realloc(ptr, size);
-
-    if(!alloc) {
-	cli_errmsg("cli_realloc(): Can't re-allocate memory to %lu bytes.\n", (unsigned long int) size);
-	perror("realloc_problem");
-	return NULL;
-    } else return alloc;
-}
-
-void *cli_realloc2(void *ptr, size_t size)
-{
-	void *alloc;
-
-
-    if(!size || size > CLI_MAX_ALLOCATION) {
-	cli_errmsg("cli_realloc2(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
-	return NULL;
-    }
-
-    alloc = realloc(ptr, size);
-
-    if(!alloc) {
-	cli_errmsg("cli_realloc2(): Can't re-allocate memory to %lu bytes.\n", (unsigned long int) size);
-	perror("realloc_problem");
-	if(ptr)
-	    free(ptr);
-	return NULL;
-    } else return alloc;
-}
-
-char *cli_strdup(const char *s)
-{
-        char *alloc;
-
-
-    if(s == NULL) {
-        cli_errmsg("cli_strdup(): s == NULL. Please report to http://bugs.clamav.net\n");
-        return NULL;
-    }
-
-#if defined(_MSC_VER) && defined(_DEBUG)
-    alloc = _strdup_dbg(s, _NORMAL_BLOCK, __FILE__, __LINE__);
-#else
-    alloc = strdup(s);
-#endif
-
-    if(!alloc) {
-        cli_errmsg("cli_strdup(): Can't allocate memory (%u bytes).\n", (unsigned int) strlen(s));
-        perror("strdup_problem");
-        return NULL;
-    }
-
-    return alloc;
-}
-
-#ifndef CLI_MEMFUNSONLY
 unsigned int cli_rndnum(unsigned int max)
 {
     if(name_salt[0] == 16) { /* minimizes re-seeding after the first call to cli_gentemp() */
@@ -753,7 +602,6 @@ int cli_gentempfd(const char *dir, char **name, int *fd)
 
     return CL_SUCCESS;
 }
-#endif
 
 /* Function: unlink
         unlink() with error checking
@@ -1107,64 +955,3 @@ int cli_bitset_test(bitset_t *bs, unsigned long bit_offset)
 	return (bs->bitset[char_offset] & ((unsigned char)1 << bit_offset));
 }
 
-/* returns converted timestamp, in case of error the returned string contains at least one character */
-const char* cli_ctime(const time_t *timep, char *buf, const size_t bufsize)
-{
-	const char *ret;
-	if(bufsize < 26) {
-		/* standard says we must have at least 26 bytes buffer */
-		cli_warnmsg("buffer too small for ctime\n");
-		return " ";
-	}
-	if((uint32_t)(*timep) > 0x7fffffff) {
-		/* some systems can consider these timestamps invalid */
-		strncpy(buf, "invalid timestamp", bufsize-1);
-		buf[bufsize-1] = '\0';
-		return buf;
-	}
-
-#ifdef HAVE_CTIME_R	
-# ifdef HAVE_CTIME_R_2
-	ret = ctime_r(timep, buf);
-# else
-	ret = ctime_r(timep, buf, bufsize);
-# endif
-#else /* no ctime_r */
-
-# ifdef CL_THREAD_SAFE
-	pthread_mutex_lock(&cli_ctime_mutex);
-# endif
-	ret = ctime(timep);
-	if(ret) {
-		strncpy(buf, ret, bufsize-1);
-		buf[bufsize-1] = '\0';
-		ret = buf;
-	}
-# ifdef CL_THREAD_SAFE
-	pthread_mutex_unlock(&cli_ctime_mutex);
-# endif
-#endif
-	/* common */
-	if(!ret) {
-		buf[0] = ' ';
-		buf[1] = '\0';
-		return buf;
-	}
-	return ret;
-}
-
-#ifndef CLI_MEMFUNSONLY
-int cli_matchregex(const char *str, const char *regex)
-{
-	regex_t reg;
-	int match;
-
-    if(cli_regcomp(&reg, regex, REG_EXTENDED | REG_NOSUB) == 0) {
-	match = (cli_regexec(&reg, str, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
-	cli_regfree(&reg);
-	return match;
-    }
-
-    return 0;
-}
-#endif

@@ -75,8 +75,8 @@ IFACEDEP = libclamunrar_iface.la
 endif
 
 
-libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) lzma/liblzma.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@
-libclamav_la_DEPENDENCIES =  @LIBLTDL@ $(IFACEDEP)
+libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) lzma/liblzma.la libclamav_internal_utils.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@
+libclamav_la_DEPENDENCIES =  @LIBLTDL@ $(IFACEDEP) libclamav_internal_utils.la
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 if VERSIONSCRIPT
@@ -103,8 +103,6 @@ libclamav_la_SOURCES = \
 	cvd.h \
 	dsig.c \
 	dsig.h \
-        str.c \
-	str.h \
 	scanners.c \
 	scanners.h \
 	textdet.c \
@@ -180,16 +178,6 @@ libclamav_la_SOURCES = \
 	tnef.h \
 	autoit.c \
 	autoit.h \
-	regex/strlcpy.c \
-	regex/regcomp.c \
-	regex/regerror.c \
-	regex/regexec.c \
-	regex/regfree.c \
-	regex/cclass.h \
-	regex/cname.h \
-	regex/regex.h \
-	regex/regex2.h \
-	regex/utils.h \
 	unarj.c \
 	unarj.h \
 	nsis/bzlib.c \
@@ -284,11 +272,21 @@ version.h.tmp:
 
 libclamav_internal_utils_la_SOURCES=str.c \
 				    str.h \
-				    others.c \
-				    others.h
+				    others_common.c \
+				    others.h \
+				    regex/strlcpy.c \
+				    regex/regcomp.c \
+				    regex/regerror.c \
+				    regex/regexec.c \
+				    regex/regfree.c \
+				    regex/cclass.h \
+				    regex/cname.h \
+				    regex/regex.h \
+				    regex/regex2.h \
+				    regex/utils.h
 
 libclamav_internal_utils_la_LDFLAGS=-static
-libclamav_internal_utils_la_CFLAGS=-DCLI_MEMFUNSONLY
+libclamav_internal_utils_la_CFLAGS=  -fPIC -DPIC
 lib_LTLIBRARIES += libclamav.la
 noinst_LTLIBRARIES = libclamav_internal_utils.la
 EXTRA_DIST += regex/engine.c libclamav.map \
