@@ -1,3 +1,7 @@
+Fri Dec 12 10:49:37 EET 2008 (edwin)
+------------------------------------
+ * libclamav/Makefile.am, libclamav/Makefile.in: fix last commit
+
 Fri Dec 12 10:28:04 EET 2008 (edwin)
 ------------------------------------
  * libclamav/Makefile.am, libclamav/Makefile.in, libclamav/others.c,

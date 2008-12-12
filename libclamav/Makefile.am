@@ -74,6 +74,23 @@ IFACELIBADD = -dlopen libclamunrar_iface.la
 IFACEDEP = libclamunrar_iface.la
 endif
 
+libclamav_internal_utils_la_SOURCES=str.c \
+				    str.h \
+				    others_common.c \
+				    others.h \
+				    regex/strlcpy.c \
+				    regex/regcomp.c \
+				    regex/regerror.c \
+				    regex/regexec.c \
+				    regex/regfree.c \
+				    regex/cclass.h \
+				    regex/cname.h \
+				    regex/regex.h \
+				    regex/regex2.h \
+				    regex/utils.h
+
+libclamav_internal_utils_la_LDFLAGS=-static
+libclamav_internal_utils_la_CFLAGS=  -fPIC -DPIC
 
 libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) lzma/liblzma.la libclamav_internal_utils.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@
 libclamav_la_DEPENDENCIES =  @LIBLTDL@ $(IFACEDEP) libclamav_internal_utils.la
@@ -270,23 +287,6 @@ version.h.tmp:
 		touch version.h.tmp;\
 	fi
 
-libclamav_internal_utils_la_SOURCES=str.c \
-				    str.h \
-				    others_common.c \
-				    others.h \
-				    regex/strlcpy.c \
-				    regex/regcomp.c \
-				    regex/regerror.c \
-				    regex/regexec.c \
-				    regex/regfree.c \
-				    regex/cclass.h \
-				    regex/cname.h \
-				    regex/regex.h \
-				    regex/regex2.h \
-				    regex/utils.h
-
-libclamav_internal_utils_la_LDFLAGS=-static
-libclamav_internal_utils_la_CFLAGS=  -fPIC -DPIC
 lib_LTLIBRARIES += libclamav.la
 noinst_LTLIBRARIES = libclamav_internal_utils.la
 EXTRA_DIST += regex/engine.c libclamav.map \
