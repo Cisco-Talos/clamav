@@ -7,6 +7,7 @@
 # leaks to be reported by valgrind if there are any.
 # 
 
+test "x$VG" = "x1" || { echo "*** valgrind tests skipped by default, use 'make check VG=1' to activate"; exit 77; }
 VALGRIND=`which ${VALGRIND-valgrind}`
 test -n "$VALGRIND" || { echo "*** valgrind not found, skipping test"; exit 77; }
 test -x "$VALGRIND" || { echo "*** valgrind not executable, skipping test"; exit 77; }

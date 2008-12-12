@@ -1,3 +1,9 @@
+Fri Dec 12 17:04:33 EET 2008 (edwin)
+------------------------------------
+ * unit_tests/valgrind_tests.sh: disable valgrind tests by default
+ due to false positives from system libraries.  They can be activated
+ by using make check VG=1. (bb #1307, bb #1308, bb #1311).
+
 Fri Dec 12 10:49:37 EET 2008 (edwin)
 ------------------------------------
  * libclamav/Makefile.am, libclamav/Makefile.in: fix last commit
