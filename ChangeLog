@@ -1,3 +1,8 @@
+Mon Dec 15 16:16:40 EET 2008 (edwin)
+------------------------------------
+ * clamav-milter/Makefile.am, clamav-milter/Makefile.in: filter
+ -Wwrite-strings in milter
+
 Fri Dec 12 17:04:33 EET 2008 (edwin)
 ------------------------------------
  * unit_tests/valgrind_tests.sh: disable valgrind tests by default
