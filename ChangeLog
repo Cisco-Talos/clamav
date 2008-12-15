@@ -1,3 +1,7 @@
+Mon Dec 15 20:25:48 EET 2008 (edwin)
+------------------------------------
+ * Makefile.am: remove -Wpacked
+
 Mon Dec 15 16:16:40 EET 2008 (edwin)
 ------------------------------------
  * clamav-milter/Makefile.am, clamav-milter/Makefile.in: filter
