@@ -496,5 +496,7 @@ int cli_detect_swizz(struct swizz_stats *stats)
 		return CL_CLEAN;
 	if (stats->suspicious<<10 > 20*stats->total)
 		return CL_VIRUS;
+  if (!stats->suspicious)
+    return CL_CLEAN;
 	return global_swizz;
 }
