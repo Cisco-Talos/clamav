@@ -1,3 +1,9 @@
+Wed Dec 17 22:43:54 CET 2008 (tk)
+---------------------------------
+ * shared/optparser.[ch]: initial version of the unified option parser (bb#1215)
+ * clamd: use the new option parser
+ * more to come
+
 Tue Dec 16 15:18:28 EET 2008 (edwin)
 ------------------------------------
  * libclamav/special.c: fix Swizzor detection: if no individual

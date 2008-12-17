@@ -56,7 +56,7 @@
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
 
-#include "shared/cfgparser.h"
+#include "shared/optparser.h"
 #include "shared/output.h"
 #include "shared/misc.h"
 
@@ -79,7 +79,7 @@ extern int progexit;
 struct multi_tag {
     int sd;
     unsigned int options;
-    const struct cfgstruct *copt;
+    const struct optstruct *opts;
     char *fname;
     const struct cl_engine *engine;
 };
@@ -100,7 +100,7 @@ static int checksymlink(const char *path)
     return 0;
 }
 
-static int dirscan(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct cfgstruct *copt, int odesc, unsigned int *reclev, unsigned int type, threadpool_t *multi_pool)
+static int dirscan(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc, unsigned int *reclev, unsigned int type, threadpool_t *multi_pool)
 {
 	DIR *dd;
 	struct dirent *dent;
@@ -115,20 +115,20 @@ static int dirscan(const char *dirname, const char **virname, unsigned long int 
 	int ret = 0, scanret = 0;
 	unsigned int maxdirrec = 0;
 	struct multi_tag *scandata;
-	const struct cfgstruct *cpt;
+	const struct optstruct *opt;
 
 
-    if((cpt = cfgopt(copt, "ExcludePath"))->enabled) {
-	while(cpt) {
-	    if(match_regex(dirname, cpt->strarg) == 1) {
+    if((opt = optget(opts, "ExcludePath"))->enabled) {
+	while(opt) {
+	    if(match_regex(dirname, opt->strarg) == 1) {
 		mdprintf(odesc, "%s: Excluded\n", dirname);
 		return 0;
 	    }
-	    cpt = (struct cfgstruct *) cpt->nextarg;
+	    opt = (struct optstruct *) opt->nextarg;
 	}
     }
 
-    maxdirrec = cfgopt(copt, "MaxDirectoryRecursion")->numarg;
+    maxdirrec = optget(opts, "MaxDirectoryRecursion")->numarg;
     if(maxdirrec) {
 	if(*reclev > maxdirrec) {
 	    logg("*Directory recursion limit exceeded at %s\n", dirname);
@@ -172,15 +172,15 @@ static int dirscan(const char *dirname, const char **virname, unsigned long int 
 
 		    /* stat the file */
 		    if(lstat(fname, &statbuf) != -1) {
-			if((S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 1) && cfgopt(copt, "FollowDirectorySymlinks")->enabled)) {
-			    if(dirscan(fname, virname, scanned, engine, options, copt, odesc, reclev, type, multi_pool) == 1) {
+			if((S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 1) && optget(opts, "FollowDirectorySymlinks")->enabled)) {
+			    if(dirscan(fname, virname, scanned, engine, options, opts, odesc, reclev, type, multi_pool) == 1) {
 				free(fname);
 				closedir(dd);
 				return 1;
 			    }
 			    free(fname);
 			} else {
-			    if(S_ISREG(statbuf.st_mode) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 2) && cfgopt(copt, "FollowFileSymlinks")->enabled)) {
+			    if(S_ISREG(statbuf.st_mode) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 2) && optget(opts, "FollowFileSymlinks")->enabled)) {
 
 #ifdef C_LINUX
 				if(procdev && (statbuf.st_dev == procdev))
@@ -199,7 +199,7 @@ static int dirscan(const char *dirname, const char **virname, unsigned long int 
 					}
 					scandata->sd = odesc;
 					scandata->options = options;
-					scandata->copt = copt;
+					scandata->opts = opts;
 					scandata->fname = fname;
 					scandata->engine = engine;
 					if(!thrmgr_dispatch(multi_pool, scandata)) {
@@ -226,7 +226,7 @@ static int dirscan(const char *dirname, const char **virname, unsigned long int 
 
 					    mdprintf(odesc, "%s: %s FOUND\n", fname, *virname);
 					    logg("~%s: %s FOUND\n", fname, *virname);
-					    virusaction(fname, *virname, copt);
+					    virusaction(fname, *virname, opts);
 					    if(type == TYPE_SCAN) {
 						closedir(dd);
 						free(fname);
@@ -292,7 +292,7 @@ static void multiscanfile(void *arg)
     if(ret == CL_VIRUS) {
 	mdprintf(tag->sd, "%s: %s FOUND\n", tag->fname, virname);
 	logg("~%s: %s FOUND\n", tag->fname, virname);
-	virusaction(tag->fname, virname, tag->copt);
+	virusaction(tag->fname, virname, tag->opts);
     } else if(ret != CL_CLEAN) {
 	mdprintf(tag->sd, "%s: %s ERROR\n", tag->fname, cl_strerror(ret));
 	logg("~%s: %s ERROR\n", tag->fname, cl_strerror(ret));
@@ -305,13 +305,13 @@ static void multiscanfile(void *arg)
     return;
 }
 
-int scan(const char *filename, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct cfgstruct *copt, int odesc, unsigned int type)
+int scan(const char *filename, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc, unsigned int type)
 {
 	struct stat sb;
 	int ret = 0;
 	unsigned int reclev = 0;
 	const char *virname;
-	const struct cfgstruct *cpt;
+	const struct optstruct *opt;
 	threadpool_t *multi_pool = NULL;
 
 
@@ -327,8 +327,8 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_engin
 	return -1;
     }
 
-    if((cpt = cfgopt(copt, "ExcludePath"))->enabled) {
-	if(match_regex(filename, cpt->strarg) == 1) {
+    if((opt = optget(opts, "ExcludePath"))->enabled) {
+	if(match_regex(filename, opt->strarg) == 1) {
 	    mdprintf(odesc, "%s: Excluded\n", filename);
 	    return 0;
 	}
@@ -337,7 +337,7 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_engin
     switch(sb.st_mode & S_IFMT) {
 #ifdef	S_IFLNK
 	case S_IFLNK:
-	    if(!cfgopt(copt, "FollowFileSymlinks")->enabled)
+	    if(!optget(opts, "FollowFileSymlinks")->enabled)
 		break;
 	    /* else go to the next case */
 #endif
@@ -360,7 +360,7 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_engin
 	    if(ret == CL_VIRUS) {
 		mdprintf(odesc, "%s: %s FOUND\n", filename, virname);
 		logg("~%s: %s FOUND\n", filename, virname);
-		virusaction(filename, virname, copt);
+		virusaction(filename, virname, opts);
 	    } else if(ret != CL_CLEAN) {
 		mdprintf(odesc, "%s: %s ERROR\n", filename, cl_strerror(ret));
 		logg("~%s: %s ERROR\n", filename, cl_strerror(ret));
@@ -372,8 +372,8 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_engin
 	    break;
 	case S_IFDIR:
 	    if(type == TYPE_MULTISCAN) {
-		    int idletimeout = cfgopt(copt, "IdleTimeout")->numarg;
-		    int max_threads = cfgopt(copt, "MaxThreads")->numarg;
+		    int idletimeout = optget(opts, "IdleTimeout")->numarg;
+		    int max_threads = optget(opts, "MaxThreads")->numarg;
 
 		if((multi_pool = thrmgr_new(max_threads, idletimeout, multiscanfile)) == NULL) {
 		    logg("!thrmgr_new failed for multi_pool\n");
@@ -382,7 +382,7 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_engin
 		}
 	    }
 
-	    ret = dirscan(filename, &virname, scanned, engine, options, copt, odesc, &reclev, type, multi_pool);
+	    ret = dirscan(filename, &virname, scanned, engine, options, opts, odesc, &reclev, type, multi_pool);
 
 	    if(multi_pool)
 		thrmgr_destroy(multi_pool);
@@ -406,7 +406,7 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_engin
  */
 int scanfd(const int fd, unsigned long int *scanned,
     const struct cl_engine *engine,
-    unsigned int options, const struct cfgstruct *copt, int odesc)  
+    unsigned int options, const struct optstruct *opts, int odesc)  
 {
 	int ret;
 	const char *virname;
@@ -429,7 +429,7 @@ int scanfd(const int fd, unsigned long int *scanned,
 	if(ret == CL_VIRUS) {
 	mdprintf(odesc, "%s: %s FOUND\n", fdstr, virname);
 		logg("%s: %s FOUND\n", fdstr, virname);
-		virusaction(fdstr, virname, copt);
+		virusaction(fdstr, virname, opts);
 	} else if(ret != CL_CLEAN) {
 		mdprintf(odesc, "%s: %s ERROR\n", fdstr, cl_strerror(ret));
 		logg("%s: %s ERROR\n", fdstr, cl_strerror(ret));
@@ -441,7 +441,7 @@ int scanfd(const int fd, unsigned long int *scanned,
 	return ret;
 }
 
-int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct cfgstruct *copt)
+int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts)
 {
 	int ret, sockfd, acceptd;
 	int tmpd, bread, retval, timeout, btread;
@@ -455,17 +455,17 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	struct sockaddr_in peer;
 	socklen_t addrlen;
 	struct hostent he;
-	const struct cfgstruct *cpt;
+	const struct optstruct *opt;
 	char *tmpname;
 
 
     /* get min port */
-    min_port = cfgopt(copt, "StreamMinPort")->numarg;
+    min_port = optget(opts, "StreamMinPort")->numarg;
     if(min_port < 1024 || min_port > 65535)
 	min_port = 1024;
 
     /* get max port */
-    max_port = cfgopt(copt, "StreamMaxPort")->numarg;
+    max_port = optget(opts, "StreamMaxPort")->numarg;
     if(max_port < min_port || max_port > 65535)
 	max_port = 65535;
 
@@ -485,10 +485,10 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	server.sin_family = AF_INET;
 	server.sin_port = htons(port);
 
-	if((cpt = cfgopt(copt, "TCPAddr"))->enabled) {
-	    if(r_gethostbyname(cpt->strarg, &he, buff, sizeof(buff)) == -1) {
-		logg("!r_gethostbyname(%s) error: %s\n", cpt->strarg, strerror(errno));
-		mdprintf(odesc, "r_gethostbyname(%s) ERROR\n", cpt->strarg);
+	if((opt = optget(opts, "TCPAddr"))->enabled) {
+	    if(r_gethostbyname(opt->strarg, &he, buff, sizeof(buff)) == -1) {
+		logg("!r_gethostbyname(%s) error: %s\n", opt->strarg, strerror(errno));
+		mdprintf(odesc, "r_gethostbyname(%s) ERROR\n", opt->strarg);
 		return -1;
 	    }
 	    server.sin_addr = *(struct in_addr *) he.h_addr_list[0];
@@ -504,7 +504,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	    bound = 1;
     }
 
-    timeout = cfgopt(copt, "ReadTimeout")->numarg;
+    timeout = optget(opts, "ReadTimeout")->numarg;
     if(timeout == 0)
     	timeout = -1;
 
@@ -546,7 +546,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     snprintf(peer_addr, sizeof(peer_addr), "%s", inet_ntoa(peer.sin_addr));
     logg("*Accepted connection from %s on port %u, fd %d\n", peer_addr, port, acceptd);
 
-    if(cli_gentempfd(cfgopt(copt, "TemporaryDirectory")->strarg, &tmpname, &tmpd)) {
+    if(cli_gentempfd(optget(opts, "TemporaryDirectory")->strarg, &tmpname, &tmpd)) {
 	shutdown(sockfd, 2);
 	closesocket(sockfd);
 	closesocket(acceptd);
@@ -555,7 +555,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	return -1;
     }
 
-    maxsize = cfgopt(copt, "StreamMaxLength")->numarg;
+    maxsize = optget(opts, "StreamMaxLength")->numarg;
 
     btread = sizeof(buff);
 
@@ -572,7 +572,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	    mdprintf(odesc, "Temporary file -> write ERROR\n");
 	    logg("!ScanStream(%s@%u): Can't write to temporary file.\n", peer_addr, port);
 	    close(tmpd);
-	    if(!cfgopt(copt, "LeaveTemporaryFiles")->enabled)
+	    if(!optget(opts, "LeaveTemporaryFiles")->enabled)
 		unlink(tmpname);
 	    free(tmpname);
 	    return -1;
@@ -608,7 +608,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     	ret = -1;
     }
     close(tmpd);
-    if(!cfgopt(copt, "LeaveTemporaryFiles")->enabled)
+    if(!optget(opts, "LeaveTemporaryFiles")->enabled)
 	unlink(tmpname);
     free(tmpname);
 
@@ -618,7 +618,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     if(ret == CL_VIRUS) {
 	mdprintf(odesc, "stream: %s FOUND\n", virname);
 	logg("stream(%s@%u): %s FOUND\n", peer_addr, port, virname);
-	virusaction("stream", virname, copt);
+	virusaction("stream", virname, opts);
     } else if(ret != CL_CLEAN) {
     	if(retval == 1) {
 	    mdprintf(odesc, "stream: %s ERROR\n", cl_strerror(ret));

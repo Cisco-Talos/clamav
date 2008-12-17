@@ -37,8 +37,7 @@
 
 #include "libclamav/clamav.h"
 
-#include "shared/options.h"
-#include "shared/cfgparser.h"
+#include "shared/optparser.h"
 
 #include "others.h"
 #include "server.h"
@@ -46,7 +45,7 @@
 #include "localserver.h"
 
 #ifdef C_WINDOWS
-int localserver(const struct cfgstruct *copt)
+int localserver(const struct optstruct *opts)
 {
     logg("!Localserver is not supported on this platform");
     return -1;
@@ -54,7 +53,7 @@ int localserver(const struct cfgstruct *copt)
 
 #else
 
-int localserver(const struct cfgstruct *copt)
+int localserver(const struct optstruct *opts)
 {
 	struct sockaddr_un server;
 	int sockfd, backlog;
@@ -63,7 +62,7 @@ int localserver(const struct cfgstruct *copt)
 
     memset((char *) &server, 0, sizeof(server));
     server.sun_family = AF_UNIX;
-    strncpy(server.sun_path, cfgopt(copt, "LocalSocket")->strarg, sizeof(server.sun_path));
+    strncpy(server.sun_path, optget(opts, "LocalSocket")->strarg, sizeof(server.sun_path));
     server.sun_path[sizeof(server.sun_path)-1]='\0';
 
     if((sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) == -1) {
@@ -79,7 +78,7 @@ int localserver(const struct cfgstruct *copt)
 		close(sockfd);
 		return -1;
 	    }
-	    if(cfgopt(copt, "FixStaleSocket")->enabled) {
+	    if(optget(opts, "FixStaleSocket")->enabled) {
 		logg("#LOCAL: Removing stale socket file %s\n", server.sun_path);
 		if(unlink(server.sun_path) == -1) {
 		    estr = strerror(errno);
@@ -108,7 +107,7 @@ int localserver(const struct cfgstruct *copt)
 
     logg("#LOCAL: Unix socket file %s\n", server.sun_path);
 
-    backlog = cfgopt(copt, "MaxConnectionQueueLength")->numarg;
+    backlog = optget(opts, "MaxConnectionQueueLength")->numarg;
     logg("#LOCAL: Setting connection queue length to %d\n", backlog);
 
     if(listen(sockfd, backlog) == -1) {

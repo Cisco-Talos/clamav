@@ -24,12 +24,12 @@
 #endif
 
 #include <stdlib.h>
-#include "shared/cfgparser.h"
+#include "shared/optparser.h"
 
 int poll_fds(int *fds, int nfds, int timeout_sec, int check_signals);
 int poll_fd(int fd, int timeout_sec, int check_signals);
 int is_fd_connected(int fd);
-void virusaction(const char *filename, const char *virname, const struct cfgstruct *copt);
+void virusaction(const char *filename, const char *virname, const struct optstruct *opts);
 int writen(int fd, void *buff, unsigned int count);
 
 int readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeout_sec, int force_delim, int read_command);

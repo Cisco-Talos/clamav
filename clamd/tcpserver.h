@@ -19,8 +19,8 @@
 #ifndef __TCPSERVER_H
 #define __TCPSERVER_H
 
-#include "shared/cfgparser.h"
+#include "shared/optparser.h"
 
-int tcpserver(const struct cfgstruct *copt);
+int tcpserver(const struct optstruct *opts);
 
 #endif

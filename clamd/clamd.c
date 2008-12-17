@@ -58,8 +58,7 @@
 #include "libclamav/readdb.h"
 
 #include "shared/output.h"
-#include "shared/options.h"
-#include "shared/cfgparser.h"
+#include "shared/optparser.h"
 #include "shared/misc.h"
 
 #include "server.h"
@@ -85,22 +84,21 @@ static void help(void)
     printf("    --version                -V             Show version number.\n");
     printf("    --debug                                 Enable debug mode.\n");
     printf("    --config-file=FILE       -c FILE        Read configuration from FILE.\n\n");
-
 }
 
-static struct cfgstruct *copt;
+static struct optstruct *opts;
 /* needs to be global, so that valgrind reports it as reachable, and not
  * as definetely/indirectly lost when daemonizing clamd */
 static struct cl_engine *engine;
 int main(int argc, char **argv)
 {
-	const struct cfgstruct *cpt;
+	const struct optstruct *opt;
 #ifndef	C_WINDOWS
         struct passwd *user = NULL;
 #endif
 	time_t currtime;
 	const char *dbdir, *cfgfile;
-	char *pua_cats = NULL;
+	char *pua_cats = NULL, *pt;
 	int ret, tcpsock = 0, localsock = 0, i;
 	unsigned int sigs = 0;
 	int lsockets[2], nlsockets = 0;
@@ -109,16 +107,6 @@ int main(int argc, char **argv)
 #ifdef C_LINUX
 	struct stat sb;
 #endif
-	struct optstruct *opt;
-	const char *short_options = "hc:V";
-
-	static struct option long_options[] = {
-	    {"help", 0, 0, 'h'},
-	    {"config-file", 1, 0, 'c'},
-	    {"version", 0, 0, 'V'},
-	    {"debug", 0, 0, 0},
-	    {0, 0, 0, 0}
-    	};
 
 #ifdef C_WINDOWS
     if(!pthread_win32_process_attach_np()) {
@@ -127,19 +115,18 @@ int main(int argc, char **argv)
     }
 #endif
 
-    opt = opt_parse(argc, argv, short_options, long_options, NULL, NULL);
-    if(!opt) {
-	mprintf("!Can't parse the command line\n");
+    if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMD, NULL)) == NULL) {
+	mprintf("!Can't parse command line options\n");
 	return 1;
     }
 
-    if(opt_check(opt, "help")) {
+    if(optget(opts, "help")->enabled) {
     	help();
-	opt_free(opt);
+	optfree(opts);
 	return 0;
     }
 
-    if(opt_check(opt, "debug")) {
+    if(optget(opts, "debug")->enabled) {
 #if defined(C_LINUX)
 	    /* njh@bandsman.co.uk: create a dump if needed */
 	    struct rlimit rlim;
@@ -152,54 +139,50 @@ int main(int argc, char **argv)
     }
 
     /* parse the config file */
-    if(opt_check(opt, "config-file"))
-	cfgfile = opt_arg(opt, "config-file");
-    else
-	cfgfile = CONFDIR"/clamd.conf";
-
-    if((copt = getcfg(cfgfile, 1, OPT_CLAMD)) == NULL) {
-	fprintf(stderr, "ERROR: Can't open/parse the config file %s\n", cfgfile);
-	opt_free(opt);
+    cfgfile = optget(opts, "config-file")->strarg;
+    pt = strdup(cfgfile);
+    if((opts = optparse(cfgfile, 0, NULL, 1, OPT_CLAMD, opts)) == NULL) {
+	fprintf(stderr, "ERROR: Can't open/parse the config file %s\n", pt);
+	optfree(opts);
+	free(pt);
 	return 1;
     }
+    free(pt);
 
-    if(opt_check(opt, "version")) {
-	print_version(cfgopt(copt, "DatabaseDirectory")->strarg);
-	opt_free(opt);
-	freecfg(copt);
+    if(optget(opts, "version")->enabled) {
+	print_version(optget(opts, "DatabaseDirectory")->strarg);
+	optfree(opts);
 	return 0;
     }
-
-    opt_free(opt);
 
     umask(0);
 
     /* drop privileges */
 #if (!defined(C_OS2)) && (!defined(C_WINDOWS))
-    if(geteuid() == 0 && (cpt = cfgopt(copt, "User"))->enabled) {
-	if((user = getpwnam(cpt->strarg)) == NULL) {
-	    fprintf(stderr, "ERROR: Can't get information about user %s.\n", cpt->strarg);
-	    freecfg(copt);
+    if(geteuid() == 0 && (opt = optget(opts, "User"))->enabled) {
+	if((user = getpwnam(opt->strarg)) == NULL) {
+	    fprintf(stderr, "ERROR: Can't get information about user %s.\n", opt->strarg);
+	    optfree(opts);
 	    return 1;
 	}
 
-	if(cfgopt(copt, "AllowSupplementaryGroups")->enabled) {
+	if(optget(opts, "AllowSupplementaryGroups")->enabled) {
 #ifdef HAVE_INITGROUPS
-	    if(initgroups(cpt->strarg, user->pw_gid)) {
+	    if(initgroups(opt->strarg, user->pw_gid)) {
 		fprintf(stderr, "ERROR: initgroups() failed.\n");
-		freecfg(copt);
+		optfree(opts);
 		return 1;
 	    }
 #else
 	    mprintf("!AllowSupplementaryGroups: initgroups() is not available, please disable AllowSupplementaryGroups in %s\n", cfgfile);
-	    freecfg(copt);
+	    optfree(opts);
 	    return 1;
 #endif
 	} else {
 #ifdef HAVE_SETGROUPS
 	    if(setgroups(1, &user->pw_gid)) {
 		fprintf(stderr, "ERROR: setgroups() failed.\n");
-		freecfg(copt);
+		optfree(opts);
 		return 1;
 	    }
 #endif
@@ -207,39 +190,39 @@ int main(int argc, char **argv)
 
 	if(setgid(user->pw_gid)) {
 	    fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int) user->pw_gid);
-	    freecfg(copt);
+	    optfree(opts);
 	    return 1;
 	}
 
 	if(setuid(user->pw_uid)) {
 	    fprintf(stderr, "ERROR: setuid(%d) failed.\n", (int) user->pw_uid);
-	    freecfg(copt);
+	    optfree(opts);
 	    return 1;
 	}
     }
 #endif
 
     /* initialize logger */
-    logg_lock = !cfgopt(copt, "LogFileUnlock")->enabled;
-    logg_time = cfgopt(copt, "LogTime")->enabled;
-    logok = cfgopt(copt, "LogClean")->enabled;
-    logg_size = cfgopt(copt, "LogFileMaxSize")->numarg;
-    logg_verbose = mprintf_verbose = cfgopt(copt, "LogVerbose")->enabled;
+    logg_lock = !optget(opts, "LogFileUnlock")->enabled;
+    logg_time = optget(opts, "LogTime")->enabled;
+    logok = optget(opts, "LogClean")->enabled;
+    logg_size = optget(opts, "LogFileMaxSize")->numarg;
+    logg_verbose = mprintf_verbose = optget(opts, "LogVerbose")->enabled;
 
-    if((cpt = cfgopt(copt, "LogFile"))->enabled) {
+    if((opt = optget(opts, "LogFile"))->enabled) {
 	char timestr[32];
-	logg_file = cpt->strarg;
+	logg_file = opt->strarg;
 	if(strlen(logg_file) < 2 || (logg_file[0] != '/' && logg_file[0] != '\\' && logg_file[1] != ':')) {
 	    fprintf(stderr, "ERROR: LogFile requires full path.\n");
 	    logg_close();
-	    freecfg(copt);
+	    optfree(opts);
 	    return 1;
 	}
 	time(&currtime);
 	if(logg("#+++ Started at %s", cli_ctime(&currtime, timestr, sizeof(timestr)))) {
 	    fprintf(stderr, "ERROR: Can't initialize the internal logger\n");
 	    logg_close();
-	    freecfg(copt);
+	    optfree(opts);
 	    return 1;
 	}
     } else
@@ -248,22 +231,22 @@ int main(int argc, char **argv)
     if((ret = cl_init(CL_INIT_DEFAULT))) {
 	logg("!Can't initialize libclamav: %s\n", cl_strerror(ret));
 	logg_close();
-	freecfg(copt);
+	optfree(opts);
 	return 1;
     }
 
-    if(cfgopt(copt, "Debug")->enabled) /* enable debug messages in libclamav */
+    if(optget(opts, "Debug")->enabled) /* enable debug messages in libclamav */
 	cl_debug();
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
-    if(cfgopt(copt, "LogSyslog")->enabled) {
+    if(optget(opts, "LogSyslog")->enabled) {
 	    int fac = LOG_LOCAL6;
 
-	cpt = cfgopt(copt, "LogFacility");
-	if((fac = logg_facility(cpt->strarg)) == -1) {
-	    logg("!LogFacility: %s: No such facility.\n", cpt->strarg);
+	opt = optget(opts, "LogFacility");
+	if((fac = logg_facility(opt->strarg)) == -1) {
+	    logg("!LogFacility: %s: No such facility.\n", opt->strarg);
 	    logg_close();
-	    freecfg(copt);
+	    optfree(opts);
 	    return 1;
 	}
 
@@ -280,16 +263,16 @@ int main(int argc, char **argv)
 
     /* check socket type */
 
-    if(cfgopt(copt, "TCPSocket")->enabled)
+    if(optget(opts, "TCPSocket")->enabled)
 	tcpsock = 1;
 
-    if(cfgopt(copt, "LocalSocket")->enabled)
+    if(optget(opts, "LocalSocket")->enabled)
 	localsock = 1;
 
     if(!tcpsock && !localsock) {
 	logg("!Please define server type (local and/or TCP).\n");
 	logg_close();
-	freecfg(copt);
+	optfree(opts);
 	return 1;
     }
 
@@ -308,45 +291,45 @@ int main(int argc, char **argv)
     if(!(engine = cl_engine_new())) {
 	logg("!Can't initialize antivirus engine\n");
 	logg_close();
-	freecfg(copt);
+	optfree(opts);
 	return 1;
     }
 
     /* load the database(s) */
-    dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
+    dbdir = optget(opts, "DatabaseDirectory")->strarg;
     logg("#Reading databases from %s\n", dbdir);
 
-    if(cfgopt(copt, "DetectPUA")->enabled) {
+    if(optget(opts, "DetectPUA")->enabled) {
 	dboptions |= CL_DB_PUA;
 
-	if((cpt = cfgopt(copt, "ExcludePUA"))->enabled) {
+	if((opt = optget(opts, "ExcludePUA"))->enabled) {
 	    dboptions |= CL_DB_PUA_EXCLUDE;
 	    i = 0;
 	    logg("#Excluded PUA categories:");
-	    while(cpt) {
-		if(!(pua_cats = realloc(pua_cats, i + strlen(cpt->strarg) + 3))) {
+	    while(opt) {
+		if(!(pua_cats = realloc(pua_cats, i + strlen(opt->strarg) + 3))) {
 		    logg("!Can't allocate memory for pua_cats\n");
 		    logg_close();
-		    freecfg(copt);
+		    optfree(opts);
 		    cl_engine_free(engine);
 		    return 1;
 		}
-		logg("# %s", cpt->strarg);
-		sprintf(pua_cats + i, ".%s", cpt->strarg);
-		i += strlen(cpt->strarg) + 1;
+		logg("# %s", opt->strarg);
+		sprintf(pua_cats + i, ".%s", opt->strarg);
+		i += strlen(opt->strarg) + 1;
 		pua_cats[i] = 0;
-		cpt = cpt->nextarg;
+		opt = opt->nextarg;
 	    }
 	    logg("#\n");
 	    pua_cats[i] = '.';
 	    pua_cats[i + 1] = 0;
 	}
 
-	if((cpt = cfgopt(copt, "IncludePUA"))->enabled) {
+	if((opt = optget(opts, "IncludePUA"))->enabled) {
 	    if(pua_cats) {
 		logg("!ExcludePUA and IncludePUA cannot be used at the same time\n");
 		logg_close();
-		freecfg(copt);
+		optfree(opts);
 		free(pua_cats);
 		cl_engine_free(engine);
 		return 1;
@@ -354,19 +337,19 @@ int main(int argc, char **argv)
 	    dboptions |= CL_DB_PUA_INCLUDE;
 	    i = 0;
 	    logg("#Included PUA categories:");
-	    while(cpt) {
-		if(!(pua_cats = realloc(pua_cats, i + strlen(cpt->strarg) + 3))) {
+	    while(opt) {
+		if(!(pua_cats = realloc(pua_cats, i + strlen(opt->strarg) + 3))) {
 		    logg("!Can't allocate memory for pua_cats\n");
 		    logg_close();
-		    freecfg(copt);
+		    optfree(opts);
 		    cl_engine_free(engine);
 		    return 1;
 		}
-		logg("# %s", cpt->strarg);
-		sprintf(pua_cats + i, ".%s", cpt->strarg);
-		i += strlen(cpt->strarg) + 1;
+		logg("# %s", opt->strarg);
+		sprintf(pua_cats + i, ".%s", opt->strarg);
+		i += strlen(opt->strarg) + 1;
 		pua_cats[i] = 0;
-		cpt = cpt->nextarg;
+		opt = opt->nextarg;
 	    }
 	    logg("#\n");
 	    pua_cats[i] = '.';
@@ -377,7 +360,7 @@ int main(int argc, char **argv)
 	    if((ret = cl_engine_set(engine, CL_ENGINE_PUA_CATEGORIES, pua_cats))) {
 		logg("!cli_engine_set(CL_ENGINE_PUA_CATEGORIES) failed: %s\n", cl_strerror(ret));
 		logg_close();
-		freecfg(copt);
+		optfree(opts);
 		free(pua_cats);
 		cl_engine_free(engine);
 		return 1;
@@ -389,47 +372,47 @@ int main(int argc, char **argv)
     }
 
     /* set the temporary dir */
-    if((cpt = cfgopt(copt, "TemporaryDirectory"))->enabled) {
-	if((ret = cl_engine_set(engine, CL_ENGINE_TMPDIR, cpt->strarg))) {
+    if((opt = optget(opts, "TemporaryDirectory"))->enabled) {
+	if((ret = cl_engine_set(engine, CL_ENGINE_TMPDIR, opt->strarg))) {
 	    logg("!cli_engine_set(CL_ENGINE_TMPDIR) failed: %s\n", cl_strerror(ret));
 	    logg_close();
-	    freecfg(copt);
+	    optfree(opts);
 	    cl_engine_free(engine);
 	    return 1;
 	}
     }
 
-    if(cfgopt(copt, "LeaveTemporaryFiles")->enabled) {
+    if(optget(opts, "LeaveTemporaryFiles")->enabled) {
 	val32 = 1;
 	cl_engine_set(engine, CL_ENGINE_KEEPTMP, &val32);
     }
 
-    if(cfgopt(copt, "PhishingSignatures")->enabled)
+    if(optget(opts, "PhishingSignatures")->enabled)
 	dboptions |= CL_DB_PHISHING;
     else
 	logg("#Not loading phishing signatures.\n");
 
-    if(cfgopt(copt,"PhishingScanURLs")->enabled)
+    if(optget(opts,"PhishingScanURLs")->enabled)
 	dboptions |= CL_DB_PHISHING_URLS;
     else
 	logg("#Disabling URL based phishing detection.\n");
 
-    if(cfgopt(copt,"DevACOnly")->enabled) {
+    if(optget(opts,"DevACOnly")->enabled) {
 	logg("#Only using the A-C matcher.\n");
         val32 = 1;
 	cl_engine_set(engine, CL_ENGINE_AC_ONLY, &val32);
     }
 
-    if((cpt = cfgopt(copt, "DevACDepth"))->enabled) {
-	val32 = cpt->numarg;
+    if((opt = optget(opts, "DevACDepth"))->enabled) {
+	val32 = opt->numarg;
         cl_engine_set(engine, CL_ENGINE_AC_MAXDEPTH, &val32);
-	logg("#Max A-C depth set to %u\n", cpt->numarg);
+	logg("#Max A-C depth set to %u\n", opt->numarg);
     }
 
     if((ret = cl_load(dbdir, engine, &sigs, dboptions))) {
 	logg("!%s\n", cl_strerror(ret));
 	logg_close();
-	freecfg(copt);
+	optfree(opts);
 	cl_engine_free(engine);
 	return 1;
     }
@@ -438,7 +421,7 @@ int main(int argc, char **argv)
     if((ret = cl_engine_compile(engine)) != 0) {
 	logg("!Database initialization error: %s\n", cl_strerror(ret));
 	logg_close();
-	freecfg(copt);
+	optfree(opts);
 	cl_engine_free(engine);
 	return 1;
     }
@@ -450,15 +433,15 @@ int main(int argc, char **argv)
 	if(WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR) {
 	    logg("!Error at WSAStartup(): %d\n", WSAGetLastError());
 	    logg_close();
-	    freecfg(copt);
+	    optfree(opts);
 	    cl_engine_free(engine);
 	    return 1;
 	}
 #endif
-	lsockets[nlsockets] = tcpserver(copt);
+	lsockets[nlsockets] = tcpserver(opts);
 	if(lsockets[nlsockets] == -1) {
 	    logg_close();
-	    freecfg(copt);
+	    optfree(opts);
 	    cl_engine_free(engine);
 	    return 1;
 	}
@@ -466,10 +449,10 @@ int main(int argc, char **argv)
     }
 
     if(localsock) {
-	lsockets[nlsockets] = localserver(copt);
+	lsockets[nlsockets] = localserver(opts);
 	if(lsockets[nlsockets] == -1) {
 	    logg_close();
-	    freecfg(copt);
+	    optfree(opts);
 	    if(tcpsock)
 		closesocket(lsockets[0]);
 	    cl_engine_free(engine);
@@ -479,7 +462,7 @@ int main(int argc, char **argv)
     }
 
     /* fork into background */
-    if(!cfgopt(copt, "Foreground")->enabled) {
+    if(!optget(opts, "Foreground")->enabled) {
 #ifdef C_BSD	    
 	/* workaround for OpenBSD bug, see https://wwws.clamav.net/bugzilla/show_bug.cgi?id=885 */
 	for(ret=0;ret<nlsockets;ret++) {
@@ -489,7 +472,7 @@ int main(int argc, char **argv)
 	if(daemonize() == -1) {
 	    logg("!daemonize() failed\n");
 	    logg_close();
-	    freecfg(copt);
+	    optfree(opts);
 	    cl_engine_free(engine);
 	    return 1;
 	}
@@ -506,7 +489,7 @@ int main(int argc, char **argv)
         foreground = 1;
 
 
-    ret = acceptloop_th(lsockets, nlsockets, engine, dboptions, copt);
+    ret = acceptloop_th(lsockets, nlsockets, engine, dboptions, opts);
 
 #ifdef C_WINDOWS
     if(tcpsock)
@@ -515,13 +498,13 @@ int main(int argc, char **argv)
     if(!pthread_win32_process_detach_np()) {
 	logg("!Can't stop the win32 pthreads layer\n");
 	logg_close();
-	freecfg(copt);
+	optfree(opts);
 	return 1;
     }
 #endif
 
     logg_close();
-    freecfg(copt);
+    optfree(opts);
 
     return ret;
 }

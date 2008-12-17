@@ -45,6 +45,7 @@
 #include "libclamav/clamav.h"
 
 #include "shared/output.h"
+#include "shared/optparser.h"
 
 #include "server.h"
 #include "thrmgr.h"
@@ -79,7 +80,7 @@ static struct cl_stat *dbstat = NULL;
 typedef struct client_conn_tag {
     int sd;
     unsigned int options;
-    const struct cfgstruct *copt;
+    const struct optstruct *opts;
     struct cl_engine *engine;
     time_t engine_timestamp;
     int *socketds;
@@ -109,12 +110,12 @@ static void scanner_thread(void *arg)
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
 #endif
 
-    timeout = cfgopt(conn->copt, "ReadTimeout")->numarg;
+    timeout = optget(conn->opts, "ReadTimeout")->numarg;
     if(!timeout)
     	timeout = -1;
 
     do {
-    	ret = command(conn->sd, conn->engine, conn->options, conn->copt, timeout);
+    	ret = command(conn->sd, conn->engine, conn->options, conn->opts, timeout);
 	if (ret < 0) {
 		break;
 	}
@@ -191,7 +192,7 @@ void sighandler_th(int sig)
     }
 }
 
-static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dboptions, const struct cfgstruct *copt, int do_check, int *ret)
+static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts, int do_check, int *ret)
 {
 	const char *dbdir;
 	int retval;
@@ -225,7 +226,7 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
 	cl_engine_free(engine);
     }
 
-    dbdir = cfgopt(copt, "DatabaseDirectory")->strarg;
+    dbdir = optget(opts, "DatabaseDirectory")->strarg;
     logg("Reading databases from %s\n", dbdir);
 
     if(dbstat == NULL) {
@@ -280,7 +281,7 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
     return engine;
 }
 
-int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigned int dboptions, const struct cfgstruct *copt)
+int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts)
 {
 	int max_threads, i, ret = 0;
 	unsigned int options = 0;
@@ -293,7 +294,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 #endif
 	mode_t old_umask;
 	client_conn_t *client_conn;
-	const struct cfgstruct *cpt;
+	const struct optstruct *opt;
 #ifdef HAVE_STRERROR_R
 	char buff[BUFFSIZE + 1];
 #endif
@@ -315,8 +316,8 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 #endif
 
     /* set up limits */
-    if((cpt = cfgopt(copt, "MaxScanSize"))->enabled) {
-	val64 = cpt->numarg;
+    if((opt = optget(opts, "MaxScanSize"))->enabled) {
+	val64 = opt->numarg;
 	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_SCANSIZE, &val64))) {
 	    logg("!cli_engine_set(CL_ENGINE_MAX_SCANSIZE) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
@@ -329,8 +330,8 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     else
     	logg("^Limits: Global size limit protection disabled.\n");
 
-    if((cpt = cfgopt(copt, "MaxFileSize"))->enabled) {
-	val64 = cpt->numarg;
+    if((opt = optget(opts, "MaxFileSize"))->enabled) {
+	val64 = opt->numarg;
 	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_FILESIZE, &val64))) {
 	    logg("!cli_engine_set(CL_ENGINE_MAX_FILESIZE) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
@@ -356,8 +357,8 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     }
 #endif
 
-    if((cpt = cfgopt(copt, "MaxRecursion"))->enabled) {
-	val32 = cpt->numarg;
+    if((opt = optget(opts, "MaxRecursion"))->enabled) {
+	val32 = opt->numarg;
 	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_RECURSION, &val32))) {
 	    logg("!cli_engine_set(CL_ENGINE_MAX_RECURSION) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
@@ -370,8 +371,8 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     else
     	logg("^Limits: Recursion level limit protection disabled.\n");
 
-    if((cpt = cfgopt(copt, "MaxFiles"))->enabled) {
-	val32 = cpt->numarg;
+    if((opt = optget(opts, "MaxFiles"))->enabled) {
+	val32 = opt->numarg;
 	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_FILES, &val32))) {
 	    logg("!cli_engine_set(CL_ENGINE_MAX_FILES) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
@@ -385,11 +386,11 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     	logg("^Limits: Files limit protection disabled.\n");
 
 
-    if(cfgopt(copt, "ScanArchive")->enabled) {
+    if(optget(opts, "ScanArchive")->enabled) {
 	logg("Archive support enabled.\n");
 	options |= CL_SCAN_ARCHIVE;
 
-	if(cfgopt(copt, "ArchiveBlockEncrypted")->enabled) {
+	if(optget(opts, "ArchiveBlockEncrypted")->enabled) {
 	    logg("Archive: Blocking encrypted archives.\n");
 	    options |= CL_SCAN_BLOCKENCRYPTED;
 	}
@@ -398,44 +399,44 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	logg("Archive support disabled.\n");
     }
 
-    if(cfgopt(copt, "AlgorithmicDetection")->enabled) {
+    if(optget(opts, "AlgorithmicDetection")->enabled) {
 	logg("Algorithmic detection enabled.\n");
 	options |= CL_SCAN_ALGORITHMIC;
     } else {
 	logg("Algorithmic detection disabled.\n");
     }
 
-    if(cfgopt(copt, "ScanPE")->enabled) {
+    if(optget(opts, "ScanPE")->enabled) {
 	logg("Portable Executable support enabled.\n");
 	options |= CL_SCAN_PE;
     } else {
 	logg("Portable Executable support disabled.\n");
     }
 
-    if(cfgopt(copt, "ScanELF")->enabled) {
+    if(optget(opts, "ScanELF")->enabled) {
 	logg("ELF support enabled.\n");
 	options |= CL_SCAN_ELF;
     } else {
 	logg("ELF support disabled.\n");
     }
 
-    if(cfgopt(copt, "ScanPE")->enabled || cfgopt(copt, "ScanELF")->enabled) {
-	if(cfgopt(copt, "DetectBrokenExecutables")->enabled) {
+    if(optget(opts, "ScanPE")->enabled || optget(opts, "ScanELF")->enabled) {
+	if(optget(opts, "DetectBrokenExecutables")->enabled) {
 	    logg("Detection of broken executables enabled.\n");
 	    options |= CL_SCAN_BLOCKBROKEN;
 	}
     }
 
-    if(cfgopt(copt, "ScanMail")->enabled) {
+    if(optget(opts, "ScanMail")->enabled) {
 	logg("Mail files support enabled.\n");
 	options |= CL_SCAN_MAIL;
 
-	if(cfgopt(copt, "MailFollowURLs")->enabled) {
+	if(optget(opts, "MailFollowURLs")->enabled) {
 	    logg("Mail: URL scanning enabled.\n");
 	    options |= CL_SCAN_MAILURL;
 	}
 
-	if(cfgopt(copt, "ScanPartialMessages")->enabled) {
+	if(optget(opts, "ScanPartialMessages")->enabled) {
 	    logg("Mail: RFC1341 handling enabled.\n");
 	    options |= CL_SCAN_PARTIAL_MESSAGE;
 	}
@@ -444,50 +445,50 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	logg("Mail files support disabled.\n");
     }
 
-    if(cfgopt(copt, "ScanOLE2")->enabled) {
+    if(optget(opts, "ScanOLE2")->enabled) {
 	logg("OLE2 support enabled.\n");
 	options |= CL_SCAN_OLE2;
     } else {
 	logg("OLE2 support disabled.\n");
     }
 
-    if(cfgopt(copt, "ScanPDF")->enabled) {
+    if(optget(opts, "ScanPDF")->enabled) {
 	logg("PDF support enabled.\n");
 	options |= CL_SCAN_PDF;
     } else {
 	logg("PDF support disabled.\n");
     }
 
-    if(cfgopt(copt, "ScanHTML")->enabled) {
+    if(optget(opts, "ScanHTML")->enabled) {
 	logg("HTML support enabled.\n");
 	options |= CL_SCAN_HTML;
     } else {
 	logg("HTML support disabled.\n");
     }
 
-    if(cfgopt(copt,"PhishingScanURLs")->enabled) {
+    if(optget(opts,"PhishingScanURLs")->enabled) {
 
-	if(cfgopt(copt,"PhishingAlwaysBlockCloak")->enabled) {
+	if(optget(opts,"PhishingAlwaysBlockCloak")->enabled) {
 	    options |= CL_SCAN_PHISHING_BLOCKCLOAK; 
 	    logg("Phishing: Always checking for cloaked urls\n");
 	}
 
-	if(cfgopt(copt,"PhishingAlwaysBlockSSLMismatch")->enabled) {
+	if(optget(opts,"PhishingAlwaysBlockSSLMismatch")->enabled) {
 	    options |= CL_SCAN_PHISHING_BLOCKSSL;
 	    logg("Phishing: Always checking for ssl mismatches\n");
 	}
     }
 
-    if(cfgopt(copt,"HeuristicScanPrecedence")->enabled) {
+    if(optget(opts,"HeuristicScanPrecedence")->enabled) {
 	    options |= CL_SCAN_HEURISTIC_PRECEDENCE;
 	    logg("Heuristic: precedence enabled\n");
     }
 
-    if(cfgopt(copt, "StructuredDataDetection")->enabled) {
+    if(optget(opts, "StructuredDataDetection")->enabled) {
         options |= CL_SCAN_STRUCTURED;
 
-	if((cpt = cfgopt(copt, "StructuredMinCreditCardCount"))->enabled) {
-	    val32 = cpt->numarg;
+	if((opt = optget(opts, "StructuredMinCreditCardCount"))->enabled) {
+	    val32 = opt->numarg;
 	    if((ret = cl_engine_set(engine, CL_ENGINE_MIN_CC_COUNT, &val32))) {
 		logg("!cli_engine_set(CL_ENGINE_MIN_CC_COUNT) failed: %s\n", cl_strerror(ret));
 		cl_engine_free(engine);
@@ -497,8 +498,8 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	cl_engine_get(engine, CL_ENGINE_MIN_CC_COUNT, &val32);
 	logg("Structured: Minimum Credit Card Number Count set to %u\n", (unsigned int) val32);
 
-	if((cpt = cfgopt(copt, "StructuredMinSSNCount"))->enabled) {
-	    val32 = cpt->numarg;
+	if((opt = optget(opts, "StructuredMinSSNCount"))->enabled) {
+	    val32 = opt->numarg;
 	    if((ret = cl_engine_set(engine, CL_ENGINE_MIN_SSN_COUNT, &val32))) {
 		logg("!cli_engine_set(CL_ENGINE_MIN_SSN_COUNT) failed: %s\n", cl_strerror(ret));
 		cl_engine_free(engine);
@@ -508,14 +509,14 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	cl_engine_get(engine, CL_ENGINE_MIN_SSN_COUNT, &val32);
         logg("Structured: Minimum Social Security Number Count set to %u\n", (unsigned int) val32);
 
-        if(cfgopt(copt, "StructuredSSNFormatNormal")->enabled)
+        if(optget(opts, "StructuredSSNFormatNormal")->enabled)
             options |= CL_SCAN_STRUCTURED_SSN_NORMAL;
 
-        if(cfgopt(copt, "StructuredSSNFormatStripped")->enabled)
+        if(optget(opts, "StructuredSSNFormatStripped")->enabled)
 	    options |= CL_SCAN_STRUCTURED_SSN_STRIPPED;
     }
 
-    selfchk = cfgopt(copt, "SelfCheck")->numarg;
+    selfchk = optget(opts, "SelfCheck")->numarg;
     if(!selfchk) {
 	logg("Self checking disabled.\n");
     } else {
@@ -524,14 +525,14 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 
     /* save the PID */
     mainpid = getpid();
-    if((cpt = cfgopt(copt, "PidFile"))->enabled) {
+    if((opt = optget(opts, "PidFile"))->enabled) {
 	    FILE *fd;
 	old_umask = umask(0006);
-	if((fd = fopen(cpt->strarg, "w")) == NULL) {
-	    logg("!Can't save PID in file %s\n", cpt->strarg);
+	if((fd = fopen(opt->strarg, "w")) == NULL) {
+	    logg("!Can't save PID in file %s\n", opt->strarg);
 	} else {
 	    if (fprintf(fd, "%u", (unsigned int) mainpid)<0) {
-	    	logg("!Can't save PID in file %s\n", cpt->strarg);
+	    	logg("!Can't save PID in file %s\n", opt->strarg);
 	    }
 	    fclose(fd);
 	}
@@ -539,16 +540,16 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     }
 
     logg("*Listening daemon: PID: %u\n", (unsigned int) mainpid);
-    max_threads = cfgopt(copt, "MaxThreads")->numarg;
+    max_threads = optget(opts, "MaxThreads")->numarg;
 
-    if(cfgopt(copt, "ClamukoScanOnAccess")->enabled)
+    if(optget(opts, "ClamukoScanOnAccess")->enabled)
 #ifdef CLAMUKO
     {
         do {
 	    if(pthread_attr_init(&clamuko_attr)) break;
 	    pthread_attr_setdetachstate(&clamuko_attr, PTHREAD_CREATE_JOINABLE);
 	    if(!(tharg = (struct thrarg *) malloc(sizeof(struct thrarg)))) break;
-	    tharg->copt = copt;
+	    tharg->opts = opts;
 	    tharg->engine = engine;
 	    tharg->options = options;
 	    if(!pthread_create(&clamuko_pid, &clamuko_attr, clamukoth, tharg)) break;
@@ -595,7 +596,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     sigaction(SIGUSR2, &sigact, NULL);
 #endif
 
-    idletimeout = cfgopt(copt, "IdleTimeout")->numarg;
+    idletimeout = optget(opts, "IdleTimeout")->numarg;
 
     if((thr_pool=thrmgr_new(max_threads, idletimeout, scanner_thread)) == NULL) {
 	logg("!thrmgr_new failed\n");
@@ -653,8 +654,8 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 		logg("SIGHUP caught: re-opening log file.\n");
 		logg_close();
 		sighup = 0;
-		if(!logg_file && (cpt = cfgopt(copt, "LogFile"))->enabled)
-		    logg_file = cpt->strarg;
+		if(!logg_file && (opt = optget(opts, "LogFile"))->enabled)
+		    logg_file = opt->strarg;
 	}
 
 	if (!progexit && new_sd >= 0) {
@@ -662,7 +663,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 		if(client_conn) {
 		    client_conn->sd = new_sd;
 		    client_conn->options = options;
-		    client_conn->copt = copt;
+		    client_conn->opts = opts;
 		    if(cl_engine_addref(engine)) {
 			closesocket(client_conn->sd);
 			free(client_conn);
@@ -684,7 +685,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 		} else {
 		    logg("!Can't allocate memory for client_conn\n");
 		    closesocket(new_sd);
-		    if(cfgopt(copt, "ExitOnOOM")->enabled) {
+		    if(optget(opts, "ExitOnOOM")->enabled) {
 			pthread_mutex_lock(&exit_mutex);
 			progexit = 1;
 			pthread_mutex_unlock(&exit_mutex);
@@ -708,7 +709,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	if(selfchk) {
 	    time(&current_time);
 	    if((current_time - start_time) > (time_t)selfchk) {
-		if(reload_db(engine, dboptions, copt, TRUE, &ret)) {
+		if(reload_db(engine, dboptions, opts, TRUE, &ret)) {
 		    pthread_mutex_lock(&reload_mutex);
 		    reload = 1;
 		    pthread_mutex_unlock(&reload_mutex);
@@ -720,7 +721,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	pthread_mutex_lock(&reload_mutex);
 	if(reload) {
 	    pthread_mutex_unlock(&reload_mutex);
-	    engine = reload_db(engine, dboptions, copt, FALSE, &ret);
+	    engine = reload_db(engine, dboptions, opts, FALSE, &ret);
 	    if(ret) {
 		logg("Terminating because of a fatal error.\n");
 #ifdef C_WINDOWS
@@ -737,7 +738,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	    time(&reloaded_time);
 	    pthread_mutex_unlock(&reload_mutex);
 #ifdef CLAMUKO
-	    if(cfgopt(copt, "ClamukoScanOnAccess")->enabled && tharg) {
+	    if(optget(opts, "ClamukoScanOnAccess")->enabled && tharg) {
 		logg("Stopping and restarting Clamuko.\n");
 		pthread_kill(clamuko_pid, SIGUSR1);
 		pthread_join(clamuko_pid, NULL);
@@ -755,7 +756,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
      */
     thrmgr_destroy(thr_pool);
 #ifdef CLAMUKO
-    if(cfgopt(copt, "ClamukoScanOnAccess")->enabled) {
+    if(optget(opts, "ClamukoScanOnAccess")->enabled) {
 	logg("Stopping Clamuko.\n");
 	pthread_kill(clamuko_pid, SIGUSR1);
 	pthread_join(clamuko_pid, NULL);
@@ -775,17 +776,17 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     for (i = 0; i < nsockets; i++)
 	closesocket(socketds[i]);
 #ifndef C_OS2
-    if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
-	if(unlink(cpt->strarg) == -1)
-	    logg("!Can't unlink the socket file %s\n", cpt->strarg);
+    if((opt = optget(opts, "LocalSocket"))->enabled) {
+	if(unlink(opt->strarg) == -1)
+	    logg("!Can't unlink the socket file %s\n", opt->strarg);
 	else
 	     logg("Socket file removed.\n");
     }
 #endif
 
-    if((cpt = cfgopt(copt, "PidFile"))->enabled) {
-	if(unlink(cpt->strarg) == -1)
-	    logg("!Can't unlink the pid file %s\n", cpt->strarg);
+    if((opt = optget(opts, "PidFile"))->enabled) {
+	if(unlink(opt->strarg) == -1)
+	    logg("!Can't unlink the pid file %s\n", opt->strarg);
 	else
 	    logg("Pid file removed.\n");
     }

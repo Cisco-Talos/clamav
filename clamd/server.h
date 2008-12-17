@@ -24,12 +24,12 @@
 #include <pthread.h>
 
 #include "libclamav/clamav.h"
-#include "shared/cfgparser.h"
+#include "shared/optparser.h"
 
 struct thrarg {
     int sid;
     int options;
-    const struct cfgstruct *copt;
+    const struct optstruct *opts;
     const struct cl_engine *engine;
     const struct cl_limits *limits;
 };
@@ -38,12 +38,12 @@ struct thrarg {
 struct thrwarg {
     int socketd;
     struct cl_engine **engine;
-    const struct cfgstruct *copt;
+    const struct optstruct *opts;
     const struct cl_limits *limits;
     unsigned int options;
 };
 
-int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigned int dboptions, const struct cfgstruct *copt);
+int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts);
 void sighandler(int sig);
 void sighandler_th(int sig);
 void sigsegv(int sig);

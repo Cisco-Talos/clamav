@@ -30,8 +30,6 @@
 # endif
 #endif
 
-#include "cfgparser.h"
-
 char *freshdbdir(void);
 void print_version(const char *dbdir);
 int filecopy(const char *src, const char *dest);

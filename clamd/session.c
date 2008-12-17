@@ -57,7 +57,7 @@
 #include "libclamav/str.h"
 #include "libclamav/others.h"
 
-#include "shared/cfgparser.h"
+#include "shared/optparser.h"
 #include "shared/output.h"
 #include "shared/misc.h"
 
@@ -68,7 +68,7 @@
 #include "thrmgr.h"
 
 #ifdef HAVE_FD_PASSING
-static int recvfd_and_scan(int desc, const struct cl_engine *engine, unsigned int options, const struct cfgstruct *copt)
+static int recvfd_and_scan(int desc, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts)
 {
 	struct msghdr msg;
 	struct cmsghdr *cmsg;
@@ -99,7 +99,7 @@ static int recvfd_and_scan(int desc, const struct cl_engine *engine, unsigned in
 		    cmsg->cmsg_level == SOL_SOCKET &&
 		    cmsg->cmsg_type == SCM_RIGHTS) {
 			int fd = *(int *)CMSG_DATA(cmsg);
-			ret = scanfd(fd, NULL, engine, options, copt, desc);
+			ret = scanfd(fd, NULL, engine, options, opts, desc);
 			close(fd);
 		}
 	}
@@ -107,14 +107,14 @@ static int recvfd_and_scan(int desc, const struct cl_engine *engine, unsigned in
 }
 
 #else
-static int recvfd_and_scan(int desc, const struct cl_engine *engine, unsigned int options, const struct cfgstruct *copt)
+static int recvfd_and_scan(int desc, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts)
 {
 	mdprintf(desc, "ERROR: FILDES support not compiled in\n");
 	return -1;
 }
 #endif
 
-int command(int desc, const struct cl_engine *engine, unsigned int options, const struct cfgstruct *copt, int timeout)
+int command(int desc, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int timeout)
 {
 	char buff[1025];
 	int bread;
@@ -136,8 +136,8 @@ int command(int desc, const struct cl_engine *engine, unsigned int options, cons
 
     if(!strncmp(buff, CMD1, strlen(CMD1))) { /* SCAN */
 	thrmgr_setactivetask(NULL, CMD1);
-	if(scan(buff + strlen(CMD1) + 1, NULL, engine, options, copt, desc, TYPE_SCAN) == -2)
-	    if(cfgopt(copt, "ExitOnOOM")->enabled)
+	if(scan(buff + strlen(CMD1) + 1, NULL, engine, options, opts, desc, TYPE_SCAN) == -2)
+	    if(optget(opts, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD3, strlen(CMD3))) { /* QUIT */
@@ -159,8 +159,8 @@ int command(int desc, const struct cl_engine *engine, unsigned int options, cons
 
     } else if(!strncmp(buff, CMD6, strlen(CMD6))) { /* CONTSCAN */
 	thrmgr_setactivetask(NULL, CMD6);
-	if(scan(buff + strlen(CMD6) + 1, NULL, engine, options, copt, desc, TYPE_CONTSCAN) == -2)
-	    if(cfgopt(copt, "ExitOnOOM")->enabled)
+	if(scan(buff + strlen(CMD6) + 1, NULL, engine, options, opts, desc, TYPE_CONTSCAN) == -2)
+	    if(optget(opts, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD7, strlen(CMD7))) { /* VERSION */
@@ -180,8 +180,8 @@ int command(int desc, const struct cl_engine *engine, unsigned int options, cons
 
     } else if(!strncmp(buff, CMD8, strlen(CMD8))) { /* STREAM */
 	thrmgr_setactivetask(NULL, CMD8);
-	if(scanstream(desc, NULL, engine, options, copt) == CL_EMEM)
-	    if(cfgopt(copt, "ExitOnOOM")->enabled)
+	if(scanstream(desc, NULL, engine, options, opts) == CL_EMEM)
+	    if(optget(opts, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD9, strlen(CMD9))) { /* SESSION */
@@ -198,14 +198,14 @@ int command(int desc, const struct cl_engine *engine, unsigned int options, cons
 
     } else if(!strncmp(buff, CMD13, strlen(CMD13))) { /* MULTISCAN */
 	thrmgr_setactivetask(buff+strlen(CMD13)+1, CMD13);
-	if(scan(buff + strlen(CMD13) + 1, NULL, engine, options, copt, desc, TYPE_MULTISCAN) == -2)
-	    if(cfgopt(copt, "ExitOnOOM")->enabled)
+	if(scan(buff + strlen(CMD13) + 1, NULL, engine, options, opts, desc, TYPE_MULTISCAN) == -2)
+	    if(optget(opts, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD14, strlen(CMD14))) { /* FILDES */
 	thrmgr_setactivetask(NULL, CMD14);
-	if(recvfd_and_scan(desc, engine, options, copt) == -2)
-	    if(cfgopt(copt, "ExitOnOOM")->enabled)
+	if(recvfd_and_scan(desc, engine, options, opts) == -2)
+	    if(optget(opts, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
     } else if(!strncmp(buff, CMD15, strlen(CMD15))) { /* STATS */
 	    thrmgr_setactivetask(NULL, CMD15);

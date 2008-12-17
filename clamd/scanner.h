@@ -24,12 +24,12 @@
 #define TYPE_MULTISCAN	2
 
 #include "libclamav/clamav.h"
-#include "shared/cfgparser.h"
+#include "shared/optparser.h"
 
-int scan(const char *filename, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct cfgstruct *copt, int odesc, unsigned int type);
+int scan(const char *filename, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc, unsigned int type);
 
-int scanfd(const int fd, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct cfgstruct *copt, int odesc);
+int scanfd(const int fd, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc);
 
-int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct cfgstruct *copt);
+int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts);
 
 #endif

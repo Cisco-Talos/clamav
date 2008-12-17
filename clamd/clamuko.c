@@ -31,7 +31,7 @@
 
 #include "libclamav/clamav.h"
 
-#include "shared/cfgparser.h"
+#include "shared/optparser.h"
 #include "shared/output.h"
 
 #include "server.h"
@@ -67,7 +67,7 @@ void *clamukoth(void *arg)
 	const char *virname;
         struct sigaction act;
 	unsigned long mask = 0;
-	const struct cfgstruct *pt;
+	const struct optstruct *pt;
 	short int scan;
 	int sizelimit = 0;
 	struct stat sb;
@@ -100,15 +100,15 @@ void *clamukoth(void *arg)
 	logg("Clamuko: Correctly registered with Dazuko.\n");
 
     /* access mask */
-    if(cfgopt(tharg->copt, "ClamukoScanOnOpen")->enabled) {
+    if(optget(tharg->opts, "ClamukoScanOnOpen")->enabled) {
 	logg("Clamuko: Scan-on-open mode activated.\n");
 	mask |= DAZUKO_ON_OPEN;
     }
-    if(cfgopt(tharg->copt, "ClamukoScanOnClose")->enabled) {
+    if(optget(tharg->opts, "ClamukoScanOnClose")->enabled) {
 	logg("Clamuko: Scan-on-close mode activated.\n");
 	mask |= DAZUKO_ON_CLOSE;
     }
-    if(cfgopt(tharg->copt, "ClamukoScanOnExec")->enabled) {
+    if(optget(tharg->opts, "ClamukoScanOnExec")->enabled) {
 	logg("Clamuko: Scan-on-exec mode activated.\n");
 	mask |= DAZUKO_ON_EXEC;
     }
@@ -125,7 +125,7 @@ void *clamukoth(void *arg)
 	return NULL;
     }
 
-    if((pt = cfgopt(tharg->copt, "ClamukoIncludePath"))->enabled) {
+    if((pt = optget(tharg->opts, "ClamukoIncludePath"))->enabled) {
 	while(pt) {
 	    if((dazukoAddIncludePath(pt->strarg))) {
 		logg("!Clamuko: Dazuko -> Can't include path %s\n", pt->strarg);
@@ -134,7 +134,7 @@ void *clamukoth(void *arg)
 	    } else
 		logg("Clamuko: Included path %s\n", pt->strarg);
 
-	    pt = (struct cfgstruct *) pt->nextarg;
+	    pt = (struct optstruct *) pt->nextarg;
 	}
     } else {
 	logg("!Clamuko: please include at least one path.\n");
@@ -142,7 +142,7 @@ void *clamukoth(void *arg)
 	return NULL;
     }
 
-    if((pt = cfgopt(tharg->copt, "ClamukoExcludePath"))->enabled) {
+    if((pt = optget(tharg->opts, "ClamukoExcludePath"))->enabled) {
 	while(pt) {
 	    if((dazukoAddExcludePath(pt->strarg))) {
 		logg("!Clamuko: Dazuko -> Can't exclude path %s\n", pt->strarg);
@@ -151,11 +151,11 @@ void *clamukoth(void *arg)
 	    } else
 		logg("Clamuko: Excluded path %s\n", pt->strarg);
 
-	    pt = (struct cfgstruct *) pt->nextarg;
+	    pt = (struct optstruct *) pt->nextarg;
 	}
     }
 
-    sizelimit = cfgopt(tharg->copt, "ClamukoMaxFileSize")->numarg;
+    sizelimit = optget(tharg->opts, "ClamukoMaxFileSize")->numarg;
     if(sizelimit)
 	logg("Clamuko: Max file size limited to %d bytes.\n", sizelimit);
     else
@@ -177,7 +177,7 @@ void *clamukoth(void *arg)
 
 	    if(scan && cl_scanfile(acc->filename, &virname, NULL, tharg->engine, tharg->options) == CL_VIRUS) {
 		logg("Clamuko: %s: %s FOUND\n", acc->filename, virname);
-		virusaction(acc->filename, virname, tharg->copt);
+		virusaction(acc->filename, virname, tharg->opts);
 		acc->deny = 1;
 	    } else
 		acc->deny = 0;

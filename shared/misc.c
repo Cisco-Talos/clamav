@@ -36,7 +36,7 @@
 #include <ctype.h>
 #include <errno.h>
 
-#include "shared/cfgparser.h"
+/* #include "shared/cfgparser.h" */
 #include "shared/output.h"
 
 #include "libclamav/clamav.h"
@@ -66,15 +66,18 @@ const char *get_version(void)
 #ifndef CL_NOLIBCLAMAV
 char *freshdbdir(void)
 {
+/* FIXME
 	struct cl_cvd *d1, *d2;
 	struct cfgstruct *copt;
 	const struct cfgstruct *cpt;
+*/
 	const char *dbdir;
 	char *retdir;
 
 
     /* try to find fresh directory */
     dbdir = cl_retdbdir();
+    /*
     if((copt = getcfg(CONFDIR"/freshclam.conf", 0, OPT_FRESHCLAM))) {
 	if((cpt = cfgopt(copt, "DatabaseDirectory"))->enabled || (cpt = cfgopt(copt, "DataDirectory"))->enabled) {
 	    if(strcmp(dbdir, cpt->strarg)) {
@@ -104,11 +107,14 @@ char *freshdbdir(void)
 	    }
 	}
     }
+    */
 
     retdir = strdup(dbdir);
 
+/*
     if(copt)
 	freecfg(copt);
+*/
 
     return retdir;
 }

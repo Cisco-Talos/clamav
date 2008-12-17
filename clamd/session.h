@@ -41,8 +41,8 @@
 #define CMD15 "STATS"
 
 #include "libclamav/clamav.h"
-#include "shared/cfgparser.h"
+#include "shared/optparser.h"
 
-int command(int desc, const struct cl_engine *engine, unsigned int options, const struct cfgstruct *copt, int timeout);
+int command(int desc, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int timeout);
 
 #endif

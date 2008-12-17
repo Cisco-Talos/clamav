@@ -23,16 +23,14 @@ sbin_PROGRAMS = clamd
 clamd_SOURCES = \
     $(top_srcdir)/shared/output.c \
     $(top_srcdir)/shared/output.h \
-    $(top_srcdir)/shared/cfgparser.c \
-    $(top_srcdir)/shared/cfgparser.h \
+    $(top_srcdir)/shared/optparser.c \
+    $(top_srcdir)/shared/optparser.h \
     $(top_srcdir)/shared/getopt.c \
     $(top_srcdir)/shared/getopt.h \
     $(top_srcdir)/shared/misc.c \
     $(top_srcdir)/shared/misc.h \
     $(top_srcdir)/shared/network.c \
     $(top_srcdir)/shared/network.h \
-    $(top_srcdir)/shared/options.c \
-    $(top_srcdir)/shared/options.h \
     clamd.c \
     tcpserver.c \
     tcpserver.h \

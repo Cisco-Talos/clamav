@@ -19,8 +19,8 @@
 #ifndef __LOCALSERVER_H
 #define __LOCALSERVER_H
 
-#include "shared/cfgparser.h"
+#include "shared/optparser.h"
 
-int localserver(const struct cfgstruct *copt);
+int localserver(const struct optstruct *opts);
 
 #endif

@@ -74,7 +74,7 @@
 #endif /* HAVE_POLL_H */
 #endif /* HAVE_POLL */
 
-#include "shared/cfgparser.h"
+#include "shared/optparser.h"
 #include "shared/output.h"
 
 #include "session.h"
@@ -84,24 +84,24 @@
 #define ENV_VIRUS "CLAM_VIRUSEVENT_VIRUSNAME"
 
 #ifdef	C_WINDOWS
-void virusaction(const char *filename, const char *virname, const struct cfgstruct *copt)
+void virusaction(const char *filename, const char *virname, const struct optstruct *opts)
 {
-    if(cfgopt(copt, "VirusEvent")->enabled)
+    if(optget(opts, "VirusEvent")->enabled)
 	logg("^VirusEvent is not supported on this platform");	/* Yet */
 }
 
 #else
 static pthread_mutex_t virusaction_lock = PTHREAD_MUTEX_INITIALIZER;
 
-void virusaction(const char *filename, const char *virname, const struct cfgstruct *copt)
+void virusaction(const char *filename, const char *virname, const struct optstruct *opts)
 {
 	pid_t pid;
-	const struct cfgstruct *cpt;
+	const struct optstruct *opt;
 	char *buffer, *pt, *cmd, *buffer_file, *buffer_vir;
 	size_t j;
 	char *env[4];
 
-	if(!(cpt = cfgopt(copt, "VirusEvent"))->enabled)
+	if(!(opt = optget(opts, "VirusEvent"))->enabled)
 		return;
 
 	env[0] = getenv("PATH");
@@ -120,7 +120,7 @@ void virusaction(const char *filename, const char *virname, const struct cfgstru
 	}
 	env[j++] = NULL;
 
-	cmd = strdup(cpt->strarg);
+	cmd = strdup(opt->strarg);
 
 	if(cmd && (pt = strstr(cmd, "%v"))) {
 		buffer = (char *) malloc(strlen(cmd) + strlen(virname) + 10);

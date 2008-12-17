@@ -294,7 +294,6 @@ DISTCLEANFILES = target.h
 @DISTCHECK_ENABLE_FLAGS_TRUE@DISTCHECK_CONFIGURE_FLAGS =  \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	--enable-milter --disable-clamav \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	CFLAGS="-Wno-pointer-sign \
-@DISTCHECK_ENABLE_FLAGS_TRUE@	-Wno-error=attributes \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Werror-implicit-function-declaration \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Werror -Wextra -Wall \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Wbad-function-cast -Wcast-align \
@@ -324,8 +323,7 @@ DISTCLEANFILES = target.h
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Wno-error=shadow \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Wno-error=uninitialized \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-fdiagnostics-show-option \
-@DISTCHECK_ENABLE_FLAGS_TRUE@	-Wno-unused-parameter -Wpacked \
-@DISTCHECK_ENABLE_FLAGS_TRUE@	-Wno-error=packed \
+@DISTCHECK_ENABLE_FLAGS_TRUE@	-Wno-unused-parameter \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Wno-error=unreachable-code \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Winvalid-pch \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Wno-error=invalid-pch -O2 \
