@@ -322,7 +322,7 @@ static const struct clam_option {
 const struct optstruct *optget(const struct optstruct *opts, const char *name)
 {
     while(opts) {
-	if((opts->name && (!strcmp(opts->name, name)) || (opts->cmd && !strcmp(opts->cmd, name))))
+	if((opts->name && !strcmp(opts->name, name)) || (opts->cmd && !strcmp(opts->cmd, name)))
 	    return opts;
 	opts = opts->next;
     }
@@ -332,7 +332,7 @@ const struct optstruct *optget(const struct optstruct *opts, const char *name)
 static struct optstruct *optget_i(struct optstruct *opts, const char *name)
 {
     while(opts) {
-	if((opts->name && (!strcmp(opts->name, name)) || (opts->cmd && !strcmp(opts->cmd, name))))
+	if((opts->name && !strcmp(opts->name, name)) || (opts->cmd && !strcmp(opts->cmd, name)))
 	    return opts;
 	opts = opts->next;
     }
