@@ -143,7 +143,6 @@ int main(int argc, char **argv)
     pt = strdup(cfgfile);
     if((opts = optparse(cfgfile, 0, NULL, 1, OPT_CLAMD, opts)) == NULL) {
 	fprintf(stderr, "ERROR: Can't open/parse the config file %s\n", pt);
-	optfree(opts);
 	free(pt);
 	return 1;
     }
