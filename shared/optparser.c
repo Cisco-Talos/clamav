@@ -66,11 +66,24 @@ static const struct clam_option {
 } clam_options[] = {
     /* name,   longopt, sopt, argtype, regex, num, str, mul, owner, description, suggested */
 
-    { NULL, "help", 'h', OPT_BOOL, NULL, 0, NULL, 0, OPT_CLAMD, "", "" },
+    /* cmdline only */
+    { NULL, "help", 'h', OPT_BOOL, NULL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM, "", "" },
     { NULL, "config-file", 'c', OPT_STRING, NULL, 0, CONFDIR"/clamd.conf", 0, OPT_CLAMD, "", "" },
-    { NULL, "version", 'V', OPT_BOOL, NULL, 0, NULL, 0, OPT_CLAMD, "", "" },
-    { NULL, "debug", 0, OPT_BOOL, NULL, 0, NULL, 0, OPT_CLAMD, "", "" },
+    { NULL, "config-file", 0, OPT_STRING, NULL, 0, CONFDIR"/freshclam.conf", 0, OPT_FRESHCLAM, "", "" },
+    { NULL, "version", 'V', OPT_BOOL, NULL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM, "", "" },
+    { NULL, "debug", 0, OPT_BOOL, NULL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM, "", "" },
+    { NULL, "verbose", 'v', OPT_BOOL, NULL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
+    { NULL, "quiet", 0, OPT_BOOL, NULL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
+    { NULL, "no-warnings", 0, OPT_BOOL, NULL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
+    { NULL, "stdout", 0, OPT_BOOL, NULL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
+    { NULL, "daemon", 'd', OPT_BOOL, NULL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
+    { NULL, "no-dns", 0, OPT_BOOL, NULL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
+    { NULL, "http-proxy", 0, OPT_STRING, NULL, 0, NULL, 0, OPT_FRESHCLAM | OPT_DEPRECATED, "", "" },
+    { NULL, "proxy-user", 0, OPT_STRING, NULL, 0, NULL, 0, OPT_FRESHCLAM | OPT_DEPRECATED, "", "" },
+    { NULL, "list-mirrors", 0, OPT_BOOL, NULL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
+    { NULL, "submit-stats", 0, OPT_STRING, NULL, 0, CONFDIR"/clamd.conf", 0, OPT_FRESHCLAM, "", "" }, /* Don't merge this one with SubmitDetectionStats */
 
+    /* config file/cmdline options */
     { "LogFile", "log", 'l', OPT_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER, "Save all reports to a log file.", "/tmp/clamav.log" },
 
     { "LogFileUnlock", NULL, 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_MILTER, "By default the log file is locked for writing and only a single\ndaemon process can write to it. This option disables the lock.", "no" },
@@ -87,11 +100,11 @@ static const struct clam_option {
 
     { "LogFacility", NULL, 0, OPT_STRING, NULL, -1, "LOG_LOCAL6", 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Type of syslog messages.\nPlease refer to 'man syslog' for the facility names.", "LOG_MAIL" },
 
-    { "PidFile", NULL, 0, OPT_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Save the process ID to a file.", "/var/run/clamd.pid" },
+    { "PidFile", "pid", 'p', OPT_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Save the process ID to a file.", "/var/run/clamd.pid" },
 
     { "TemporaryDirectory", NULL, 0, OPT_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER, "This option allows you to change the default temporary directory.", "/tmp" },
 
-    { "DatabaseDirectory", NULL, 0, OPT_STRING, NULL, -1, DATADIR, 0, OPT_CLAMD | OPT_FRESHCLAM, "This option allows you to change the default database directory.\nIf you enable it, please make sure it points to the same directory in\nboth clamd and freshclam.", "/var/lib/clamav" },
+    { "DatabaseDirectory", "datadir", 0, OPT_STRING, NULL, -1, DATADIR, 0, OPT_CLAMD | OPT_FRESHCLAM, "This option allows you to change the default database directory.\nIf you enable it, please make sure it points to the same directory in\nboth clamd and freshclam.", "/var/lib/clamav" },
 
     { "LocalSocket", NULL, 0, OPT_STRING, NULL, -1, NULL, 0, OPT_CLAMD, "Path to a local socket file the daemon will listen on.", "/tmp/clamd.socket" },
 
@@ -222,11 +235,11 @@ static const struct clam_option {
     /* Freshclam-only entries */
 
     /* FIXME: drop this entry and use LogFile */
-    { "UpdateLogFile", NULL, 0, OPT_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Save all reports to a log file.", "/var/log/freshclam.log" },
+    { "UpdateLogFile", "log", 'l', OPT_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Save all reports to a log file.", "/var/log/freshclam.log" },
 
     { "DatabaseOwner", NULL, 0, OPT_STRING, NULL, -1, CLAMAVUSER, 0, OPT_FRESHCLAM, "When started by root freshclam will drop privileges and switch to the user\ndefined in this option.", CLAMAVUSER },
 
-    { "Checks", NULL, 0, OPT_NUMBER, MATCH_NUMBER, 12, NULL, 0, OPT_FRESHCLAM, "This option defined how many times daily freshclam should check for\na database update.", "24" },
+    { "Checks", "checks", 'c', OPT_NUMBER, MATCH_NUMBER, 12, NULL, 0, OPT_FRESHCLAM, "This option defined how many times daily freshclam should check for\na database update.", "24" },
 
     { "DNSDatabaseInfo", NULL, 0, OPT_STRING, NULL, -1, "current.cvd.clamav.net", 0, OPT_FRESHCLAM, "Use DNS to verify the virus database version. Freshclam uses DNS TXT records\nto verify the versions of the database and software itself. With this\ndirective you can change the database verification domain.\nWARNING: Please don't change it unless you're configuring freshclam to use\nyour own database verification domain.", "current.cvd.clamav.net" },
 
@@ -252,16 +265,16 @@ static const struct clam_option {
 
     { "HTTPUserAgent", NULL, 0, OPT_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "If your servers are behind a firewall/proxy which does a User-Agent\nfiltering you can use this option to force the use of a different\nUser-Agent header.", "default" },
 
-    { "NotifyClamd", NULL, 0, OPT_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Send the RELOAD command to clamd after a successful update.", "yes" },
+    { "NotifyClamd", "daemon-notify", 0, OPT_STRING, NULL, -1, CONFDIR"/clamd.conf", 0, OPT_FRESHCLAM, "Send the RELOAD command to clamd after a successful update.", "yes" },
 
-    { "OnUpdateExecute", NULL, 0, OPT_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Run a command after a successful database update.", "command" },
+    { "OnUpdateExecute", "on-update-execute", 0, OPT_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Run a command after a successful database update.", "command" },
 
-    { "OnErrorExecute", NULL, 0, OPT_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Run a command when a database update error occurs.", "command" },
+    { "OnErrorExecute", "on-error-execute", 0, OPT_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Run a command when a database update error occurs.", "command" },
 
-    { "OnOutdatedExecute", NULL, 0, OPT_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Run a command when freshclam reports an outdated version.\nIn the command string %v will be replaced with the new version number.", "command" },
+    { "OnOutdatedExecute", "on-outdated-execute", 0, OPT_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Run a command when freshclam reports an outdated version.\nIn the command string %v will be replaced with the new version number.", "command" },
 
     /* FIXME: MATCH_IPADDR */
-    { "LocalIPAddress", NULL, 0, OPT_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "With this option you can provide a client address for the database downlading.\nUseful for multi-homed systems.", "aaa.bbb.ccc.ddd" },
+    { "LocalIPAddress", "local-address", 'a', OPT_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "With this option you can provide a client address for the database downlading.\nUseful for multi-homed systems.", "aaa.bbb.ccc.ddd" },
 
     { "ConnectTimeout", NULL, 0, OPT_NUMBER, MATCH_NUMBER, 30, NULL, 0, OPT_FRESHCLAM, "Timeout in seconds when connecting to database server.", "30" },
 
@@ -461,6 +474,9 @@ static int optaddarg(struct optstruct *opts, const char *name, const char *strar
 	    h->nextarg = new;
 	}
     } else {
+	if(pt->active)
+	    return 0;
+
 	if(strarg) {
 	    pt->strarg = strdup(strarg);
 	    if(!pt->strarg) {
@@ -544,7 +560,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char * const *argv, in
 			return NULL;
 		    }
 		    longopts[lc].name = optentry->longopt;
-		    if(optentry->argtype == OPT_BOOL)
+		    if(optentry->argtype == OPT_BOOL || optentry->strarg)
 			longopts[lc].has_arg = 2;
 		    else
 			longopts[lc].has_arg = 1;
@@ -738,6 +754,8 @@ struct optstruct *optparse(const char *cfgfile, int argc, char * const *argv, in
 	numarg = -1;
 	switch(optentry->argtype) {
 	    case OPT_STRING:
+		if(!arg)
+		    arg = optentry->strarg;
 		if(!cfgfile && !strlen(arg)) {
 		    if(optentry->shortopt)
 			fprintf(stderr, "ERROR: Option --%s (-%c) requires a non-empty string argument\n", optentry->longopt, optentry->shortopt);

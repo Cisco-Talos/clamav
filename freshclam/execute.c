@@ -33,21 +33,21 @@
 #endif
 
 #include "shared/output.h"
-#include "shared/options.h"
+#include "shared/optparser.h"
 #include "execute.h"
 
 #define MAX_CHILDREN 5
 
 int active_children;
 
-void execute( const char *type, const char *text, const struct optstruct *opt )
+void execute( const char *type, const char *text, const struct optstruct *opts )
 {
 	int ret;
 #ifndef C_WINDOWS
 	pid_t pid;
 #endif
 
-    if(!opt_check(opt, "daemon")) {
+    if(!optget(opts, "daemon")->enabled) {
 	if(sscanf(text, "EXIT_%d", &ret) == 1) {
 	    logg("*%s: EXIT_%d\n", type, ret);
 	    exit(ret);

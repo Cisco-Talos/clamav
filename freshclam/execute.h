@@ -21,8 +21,8 @@
 #ifndef __EXECUTE_H
 #define __EXECUTE_H
 
-#include "shared/options.h"
+#include "shared/optparser.h"
 
-void execute( const char *type, const char *text, const struct optstruct *opt );
+void execute( const char *type, const char *text, const struct optstruct *opts );
 
 #endif

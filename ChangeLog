@@ -1,3 +1,7 @@
+Thu Dec 18 20:52:00 CET 2008 (tk)
+---------------------------------
+ * shared/optparser.c, freshclam: use the new option parser (bb#1215)
+
 Wed Dec 17 22:43:54 CET 2008 (tk)
 ---------------------------------
  * shared/optparser.[ch]: initial version of the unified option parser (bb#1215)

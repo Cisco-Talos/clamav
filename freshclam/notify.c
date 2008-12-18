@@ -41,7 +41,7 @@
 #endif
 #include <string.h>
 
-#include "shared/cfgparser.h"
+#include "shared/optparser.h"
 #include "shared/output.h"
 #include "notify.h"
 
@@ -64,42 +64,42 @@ int notify(const char *cfgfile)
         struct sockaddr_in server2;
 	struct hostent *he;
 #endif
-	struct cfgstruct *copt;
-	const struct cfgstruct *cpt;
+	struct optstruct *opts;
+	const struct optstruct *opt;
 	int sockd, bread;
 	const char *socktype;
 
 
-    if((copt = getcfg(cfgfile, 1, OPT_CLAMD)) == NULL) {
+    if((opts = optparse(cfgfile, 0, NULL, 1, OPT_CLAMD, NULL)) == NULL) {
 	logg("^Clamd was NOT notified: Can't find or parse configuration file %s\n", cfgfile);
 	return 1;
     }
 
 #ifndef	C_WINDOWS
-    if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
+    if((opt = optget(opts, "LocalSocket"))->enabled) {
 	socktype = "UNIX";
 	server.sun_family = AF_UNIX;
-	strncpy(server.sun_path, cpt->strarg, sizeof(server.sun_path));
+	strncpy(server.sun_path, opt->strarg, sizeof(server.sun_path));
 	server.sun_path[sizeof(server.sun_path)-1]='\0';
 
 	if((sockd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-	    logg("^Clamd was NOT notified: Can't create socket endpoint for %s\n", cpt->strarg);
+	    logg("^Clamd was NOT notified: Can't create socket endpoint for %s\n", opt->strarg);
 	    perror("socket()");
-	    freecfg(copt);
+	    optfree(opts);
 	    return 1;
 	}
 
 	if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
 	    closesocket(sockd);
-	    logg("^Clamd was NOT notified: Can't connect to clamd through %s\n", cpt->strarg);
+	    logg("^Clamd was NOT notified: Can't connect to clamd through %s\n", opt->strarg);
 	    perror("connect()");
-	    freecfg(copt);
+	    optfree(opts);
 	    return 1;
 	}
 
     } else
 #endif
-    if((cpt = cfgopt(copt, "TCPSocket"))->enabled) {
+    if((opt = optget(opts, "TCPSocket"))->enabled) {
 	socktype = "TCP";
 
 #ifdef HAVE_GETADDRINFO
@@ -110,11 +110,11 @@ int notify(const char *cfgfile)
 	hints.ai_family = AF_INET;
 #endif
 	hints.ai_socktype = SOCK_STREAM;
-	snprintf(port, 5, "%d", cpt->numarg);
+	snprintf(port, 5, "%d", opt->numarg);
 	port[5] = 0;
 
-	if((cpt = cfgopt(copt, "TCPAddr"))->enabled)
-	    addr = cpt->strarg;
+	if((opt = optget(opts, "TCPAddr"))->enabled)
+	    addr = opt->strarg;
 	else
 	    addr = NULL;
 
@@ -123,14 +123,14 @@ int notify(const char *cfgfile)
 	if(ret) {
 	    perror("getaddrinfo()");
 	    logg("^Clamd was NOT notified: Can't resolve hostname %s\n", addr ? addr : "");
-	    freecfg(copt);
+	    optfree(opts);
 	    return 1;
 	}
 
 	if((sockd = socket(res->ai_family, SOCK_STREAM, 0)) < 0) {
 	    perror("socket()");
 	    logg("^Clamd was NOT notified: Can't create TCP socket\n");
-	    freecfg(copt);
+	    optfree(opts);
 	    freeaddrinfo(res);
 	    return 1;
 	}
@@ -139,7 +139,7 @@ int notify(const char *cfgfile)
 	    perror("connect()");
 	    closesocket(sockd);
 	    logg("^Clamd was NOT notified: Can't connect to clamd on %s:%s\n", addr ? addr : "localhost", port);
-	    freecfg(copt);
+	    optfree(opts);
 	    freeaddrinfo(res);
 	    return 1;
 	}
@@ -150,18 +150,18 @@ int notify(const char *cfgfile)
 	if((sockd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 	    logg("^Clamd was NOT notified: Can't create TCP socket\n");
 	    perror("socket()");
-	    freecfg(copt);
+	    optfree(opts);
 	    return 1;
 	}
 
 	server2.sin_family = AF_INET;
-	server2.sin_port = htons(cpt->numarg);
+	server2.sin_port = htons(opt->numarg);
 
-	if((cpt = cfgopt(copt, "TCPAddr"))->enabled) {
-	    if((he = gethostbyname(cpt->strarg)) == 0) {
+	if((opt = optget(opts, "TCPAddr"))->enabled) {
+	    if((he = gethostbyname(opt->strarg)) == 0) {
 		perror("gethostbyname()");
-		logg("^Clamd was NOT notified: Can't resolve hostname '%s'\n", cpt->strarg);
-		freecfg(copt);
+		logg("^Clamd was NOT notified: Can't resolve hostname '%s'\n", opt->strarg);
+		optfree(opts);
 		closesocket(sockd);
 		return 1;
 	    }
@@ -175,7 +175,7 @@ int notify(const char *cfgfile)
 	    logg("^Clamd was NOT notified: Can't connect to clamd on %s:%d\n",
 		    inet_ntoa(server2.sin_addr), ntohs(server2.sin_port));
 	    perror("connect()");
-	    freecfg(copt);
+	    optfree(opts);
 	    return 1;
 	}
 
@@ -183,7 +183,7 @@ int notify(const char *cfgfile)
 
     } else {
 	logg("^Clamd was NOT notified: No socket specified in %s\n", cfgfile);
-	freecfg(copt);
+	optfree(opts);
 	return 1;
     }
 
@@ -191,7 +191,7 @@ int notify(const char *cfgfile)
 	logg("^Clamd was NOT notified: Could not write to %s socket\n", socktype);
 	perror("write()");
 	closesocket(sockd);
-	freecfg(copt);
+	optfree(opts);
 	return 1;
     }
 
@@ -201,13 +201,13 @@ int notify(const char *cfgfile)
 	if(!strstr(buff, "RELOADING")) {
 	    logg("^Clamd was NOT notified: Unknown answer from clamd: '%s'\n", buff);
 	    closesocket(sockd);
-	    freecfg(copt);
+	    optfree(opts);
 	    return 1;
 	}
 
     closesocket(sockd);
     logg("Clamd successfully notified about the update.\n");
-    freecfg(copt);
+    optfree(opts);
     return 0;
 }
 

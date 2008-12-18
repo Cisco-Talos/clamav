@@ -74,8 +74,7 @@
 #include "nonblock.h"
 #include "mirman.h"
 
-#include "shared/options.h"
-#include "shared/cfgparser.h"
+#include "shared/optparser.h"
 #include "shared/output.h"
 #include "shared/misc.h"
 #include "shared/cdiff.h"
@@ -535,7 +534,7 @@ static char *proxyauth(const char *user, const char *pass)
  * TODO:
  * - strptime() is most likely not portable enough
  */
-int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
+int submitstats(const char *clamdcfg, const struct optstruct *opts)
 {
 	int fd, sd, bread, lread = 0, cnt, ret;
 	char post[SUBMIT_MIN_ENTRIES * 256 + 512];
@@ -544,41 +543,41 @@ int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
 	char logfile[256], fbuff[FILEBUFF];
 	char *pt, *pt2, *auth = NULL;
 	const char *line, *country = NULL, *user, *proxy = NULL;
-	struct cfgstruct *clamdopt;
-	const struct cfgstruct *cpt;
+	struct optstruct *clamdopt;
+	const struct optstruct *opt;
 	struct stat sb;
 	struct tm tms;
 	time_t epoch;
 	unsigned int qcnt, entries, submitted = 0, permfail = 0, port = 0;
 
 
-    if((cpt = cfgopt(copt, "DetectionStatsCountry"))->enabled) {
-	if(strlen(cpt->strarg) != 2 || !isalpha(cpt->strarg[0]) || !isalpha(cpt->strarg[1])) {
+    if((opt = optget(opts, "DetectionStatsCountry"))->enabled) {
+	if(strlen(opt->strarg) != 2 || !isalpha(opt->strarg[0]) || !isalpha(opt->strarg[1])) {
 	    logg("!SubmitDetectionStats: DetectionStatsCountry requires a two-letter country code\n");
 	    return 56;
 	}
-	country = cpt->strarg;
+	country = opt->strarg;
     }
 
-    if(!(clamdopt = getcfg(clamdcfg, 1, OPT_CLAMD))) {
+    if(!(clamdopt = optparse(clamdcfg, 0, NULL, 1, OPT_CLAMD, NULL))) {
 	logg("!SubmitDetectionStats: Can't open or parse configuration file %s\n", clamdcfg);
 	return 56;
     }
 
-    if(!(cpt = cfgopt(clamdopt, "LogFile"))->enabled) {
+    if(!(opt = optget(clamdopt, "LogFile"))->enabled) {
 	logg("!SubmitDetectionStats: LogFile needs to be enabled in %s\n", clamdcfg);
-	freecfg(clamdopt);
+	optfree(clamdopt);
 	return 56;
     }
-    strncpy(logfile, cpt->strarg, sizeof(logfile));
+    strncpy(logfile, opt->strarg, sizeof(logfile));
     logfile[sizeof(logfile) - 1] = 0;
 
-    if(!cfgopt(clamdopt, "LogTime")->enabled) {
+    if(!optget(clamdopt, "LogTime")->enabled) {
 	logg("!SubmitDetectionStats: LogTime needs to be enabled in %s\n", clamdcfg);
-	freecfg(clamdopt);
+	optfree(clamdopt);
 	return 56;
     }
-    freecfg(clamdopt);
+    optfree(clamdopt);
 
     if((fd = open("stats.dat", O_RDONLY)) != -1) {
 	if((bread = read(fd, statsdat, sizeof(statsdat) - 1)) == -1) {
@@ -620,33 +619,33 @@ int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
 	strncpy(newstatsdat, line, sizeof(newstatsdat));
     }
 
-    if((cpt = cfgopt(copt, "HTTPUserAgent"))->enabled)
-	strncpy(uastr, cpt->strarg, sizeof(uastr));
+    if((opt = optget(opts, "HTTPUserAgent"))->enabled)
+	strncpy(uastr, opt->strarg, sizeof(uastr));
     else
 	snprintf(uastr, sizeof(uastr), PACKAGE"/%s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")%s%s", get_version(), country ? ":" : "", country ? country : "");
     uastr[sizeof(uastr) - 1] = 0;
 
-    if((cpt = cfgopt(copt, "HTTPProxyServer"))->enabled) {
-	proxy = cpt->strarg;
+    if((opt = optget(opts, "HTTPProxyServer"))->enabled) {
+	proxy = opt->strarg;
 	if(!strncasecmp(proxy, "http://", 7))
 	    proxy += 7;
 
-	if((cpt = cfgopt(copt, "HTTPProxyUsername"))->enabled) {
-	    user = cpt->strarg;
-	    if(!(cpt = cfgopt(copt, "HTTPProxyPassword"))->enabled) {
+	if((opt = optget(opts, "HTTPProxyUsername"))->enabled) {
+	    user = opt->strarg;
+	    if(!(opt = optget(opts, "HTTPProxyPassword"))->enabled) {
 		logg("!SubmitDetectionStats: HTTPProxyUsername requires HTTPProxyPassword\n");
 		close(fd);
 		return 56;
 	    }
-	    auth = proxyauth(user, cpt->strarg);
+	    auth = proxyauth(user, opt->strarg);
 	    if(!auth) {
 		close(fd);
 		return 56;
 	    }
 	}
 
-	if((cpt = cfgopt(copt, "HTTPProxyPort"))->enabled)
-	    port = cpt->numarg;
+	if((opt = optget(opts, "HTTPProxyPort"))->enabled)
+	    port = opt->numarg;
 
 	logg("*Connecting via %s\n", proxy);
     }
@@ -702,7 +701,7 @@ int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
 	entries++;
 
 	if(entries == SUBMIT_MIN_ENTRIES) {
-	    sd = wwwconnect("stats.clamav.net", proxy, port, NULL, cfgopt(copt, "LocalIPAddress")->strarg, cfgopt(copt, "ConnectTimeout")->numarg, NULL, 0, 0);
+	    sd = wwwconnect("stats.clamav.net", proxy, port, NULL, optget(opts, "LocalIPAddress")->strarg, optget(opts, "ConnectTimeout")->numarg, NULL, 0, 0);
 	    if(sd == -1) {
 		logg("!SubmitDetectionStats: Can't connect to server\n");
 		ret = 52;
@@ -729,7 +728,7 @@ int submitstats(const char *clamdcfg, const struct cfgstruct *copt)
 	    pt = post;
 	    cnt = sizeof(post) - 1;
 #ifdef SO_ERROR
-	    while((bread = wait_recv(sd, pt, cnt, 0, cfgopt(copt, "ReceiveTimeout")->numarg)) > 0) {
+	    while((bread = wait_recv(sd, pt, cnt, 0, optget(opts, "ReceiveTimeout")->numarg)) > 0) {
 #else
 	    while((bread = recv(sd, pt, cnt, 0)) > 0) {
 #endif
@@ -1457,10 +1456,10 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
     return 0;
 }
 
-static int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, const struct cfgstruct *copt, const char *dnsreply, char *localip, int outdated, struct mirdat *mdat, int logerr)
+static int updatedb(const char *dbname, const char *hostname, char *ip, int *signo, const struct optstruct *opts, const char *dnsreply, char *localip, int outdated, struct mirdat *mdat, int logerr)
 {
 	struct cl_cvd *current, *remote;
-	const struct cfgstruct *cpt;
+	const struct optstruct *opt;
 	unsigned int nodb = 0, currver = 0, newver = 0, port = 0, i, j;
 	int ret, ims = -1;
 	char *pt, cvdfile[32], localname[32], *tmpdir = NULL, *newfile, newdb[32], cwd[512];
@@ -1514,15 +1513,15 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
     }
 
     /* Initialize proxy settings */
-    if((cpt = cfgopt(copt, "HTTPProxyServer"))->enabled) {
-	proxy = cpt->strarg;
+    if((opt = optget(opts, "HTTPProxyServer"))->enabled) {
+	proxy = opt->strarg;
 	if(strncasecmp(proxy, "http://", 7) == 0)
 	    proxy += 7;
 
-	if((cpt = cfgopt(copt, "HTTPProxyUsername"))->enabled) {
-	    user = cpt->strarg;
-	    if((cpt = cfgopt(copt, "HTTPProxyPassword"))->enabled) {
-		pass = cpt->strarg;
+	if((opt = optget(opts, "HTTPProxyUsername"))->enabled) {
+	    user = opt->strarg;
+	    if((opt = optget(opts, "HTTPProxyPassword"))->enabled) {
+		pass = opt->strarg;
 	    } else {
 		logg("HTTPProxyUsername requires HTTPProxyPassword\n");
 		if(current)
@@ -1531,17 +1530,17 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	    }
 	}
 
-	if((cpt = cfgopt(copt, "HTTPProxyPort"))->enabled)
-	    port = cpt->numarg;
+	if((opt = optget(opts, "HTTPProxyPort"))->enabled)
+	    port = opt->numarg;
 
 	logg("Connecting via %s\n", proxy);
     }
 
-    if((cpt = cfgopt(copt, "HTTPUserAgent"))->enabled)
-	uas = cpt->strarg;
+    if((opt = optget(opts, "HTTPUserAgent"))->enabled)
+	uas = opt->strarg;
 
-    ctimeout = cfgopt(copt, "ConnectTimeout")->numarg;
-    rtimeout = cfgopt(copt, "ReceiveTimeout")->numarg;
+    ctimeout = optget(opts, "ConnectTimeout")->numarg;
+    rtimeout = optget(opts, "ReceiveTimeout")->numarg;
 
     if(!nodb && !newver) {
 
@@ -1603,7 +1602,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
     };
     */
 
-    if(!cfgopt(copt, "ScriptedUpdates")->enabled)
+    if(!optget(opts, "ScriptedUpdates")->enabled)
 	nodb = 1;
 
     if(!getcwd(cwd, sizeof(cwd))) {
@@ -1625,7 +1624,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	ret = 0;
 
 	tmpdir = cli_gentemp(".");
-	maxattempts = cfgopt(copt, "MaxAttempts")->numarg;
+	maxattempts = optget(opts, "MaxAttempts")->numarg;
 	for(i = currver + 1; i <= newver; i++) {
 	    for(j = 0; j < maxattempts; j++) {
 		    int llogerr = logerr;
@@ -1654,7 +1653,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	    }
 	    snprintf(newdb, sizeof(newdb), "%s.cvd", dbname);
 	} else {
-	    if(buildcld(tmpdir, dbname, newfile, cfgopt(copt, "CompressLocalDatabase")->enabled) == -1) {
+	    if(buildcld(tmpdir, dbname, newfile, optget(opts, "CompressLocalDatabase")->enabled) == -1) {
 		logg("!Can't create local database\n");
 		cli_rmdirs(tmpdir);
 		free(tmpdir);
@@ -1711,14 +1710,13 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
     return 0;
 }
 
-int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, const char *hostname, const char *dbdir, int logerr)
+int downloadmanager(const struct optstruct *opts, const char *hostname, const char *dbdir, int logerr)
 {
 	time_t currtime;
 	int ret, updated = 0, outdated = 0, signo = 0;
 	unsigned int ttl;
 	char ipaddr[46], *dnsreply = NULL, *pt, *localip = NULL, *newver = NULL;
-	const char *arg = NULL;
-	const struct cfgstruct *cpt;
+	const struct optstruct *opt;
 	struct mirdat mdat;
 #ifdef HAVE_RESOLV_H
 	const char *dnsdbinfo;
@@ -1736,9 +1734,9 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 #endif
 
 #ifdef HAVE_RESOLV_H
-    dnsdbinfo = cfgopt(copt, "DNSDatabaseInfo")->strarg;
+    dnsdbinfo = optget(opts, "DNSDatabaseInfo")->strarg;
 
-    if(opt_check(opt, "no-dns")) {
+    if(optget(opts, "no-dns")->enabled) {
 	dnsreply = NULL;
     } else {
 	if((dnsreply = txtquery(dnsdbinfo, &ttl))) {
@@ -1799,20 +1797,17 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
     }
 #endif /* HAVE_RESOLV_H */
 
-    if(opt_check(opt, "local-address")) {
-        localip = opt_arg(opt, "local-address");
-    } else if((cpt = cfgopt(copt, "LocalIPAddress"))->enabled) {
-	localip = cpt->strarg;
-    }
+    if((opt = optget(opts, "LocalIPAddress"))->enabled)
+	localip = opt->strarg;
 
-    if(cfgopt(copt, "HTTPProxyServer")->enabled)
+    if(optget(opts, "HTTPProxyServer")->enabled)
 	mirman_read("mirrors.dat", &mdat, 0);
     else
 	mirman_read("mirrors.dat", &mdat, 1);
 
     memset(ipaddr, 0, sizeof(ipaddr));
 
-    if((ret = updatedb("main", hostname, ipaddr, &signo, copt, dnsreply, localip, outdated, &mdat, logerr)) > 50) {
+    if((ret = updatedb("main", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr)) > 50) {
 	if(dnsreply)
 	    free(dnsreply);
 
@@ -1826,7 +1821,7 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
 	updated = 1;
 
     /* if ipaddr[0] != 0 it will use it to connect to the web host */
-    if((ret = updatedb("daily", hostname, ipaddr, &signo, copt, dnsreply, localip, outdated, &mdat, logerr)) > 50) {
+    if((ret = updatedb("daily", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr)) > 50) {
 	if(dnsreply)
 	    free(dnsreply);
 
@@ -1845,41 +1840,24 @@ int downloadmanager(const struct cfgstruct *copt, const struct optstruct *opt, c
     mirman_write("mirrors.dat", &mdat);
 
     if(updated) {
-	if(cfgopt(copt, "HTTPProxyServer")->enabled) {
+	if(optget(opts, "HTTPProxyServer")->enabled) {
 	    logg("Database updated (%d signatures) from %s\n", signo, hostname);
 	} else {
 	    logg("Database updated (%d signatures) from %s (IP: %s)\n", signo, hostname, ipaddr);
 	}
 
 #ifdef BUILD_CLAMD
-	if(opt_check(opt, "daemon-notify")) {
-		const char *clamav_conf = opt_arg(opt, "daemon-notify");
-	    if(!clamav_conf)
-		clamav_conf = CONFDIR"/clamd.conf";
-
-	    notify(clamav_conf);
-	} else if((cpt = cfgopt(copt, "NotifyClamd"))->enabled) {
-	    notify(cpt->strarg);
-	}
+	if((opt = optget(opts, "NotifyClamd"))->active)
+	    notify(opt->strarg);
 #endif
 
-	if(opt_check(opt, "on-update-execute"))
-	    arg = opt_arg(opt, "on-update-execute");
-	else if((cpt = cfgopt(copt, "OnUpdateExecute"))->enabled)
-	    arg = cpt->strarg;
-
-	if(arg)
-	    execute("OnUpdateExecute", arg, opt);
+	if((opt = optget(opts, "OnUpdateExecute"))->enabled)
+	    execute("OnUpdateExecute", opt->strarg, opts);
     }
 
     if(outdated) {
-	if(opt_check(opt, "on-outdated-execute"))
-	    arg = opt_arg(opt, "on-outdated-execute");
-	else if((cpt = cfgopt(copt, "OnOutdatedExecute"))->enabled)
-	    arg = cpt->strarg;
-
-	if(arg) {
-		char *cmd = strdup(arg);
+	if((opt = optget(opts, "OnOutdatedExecute"))->enabled) {
+		char *cmd = strdup(opt->strarg);
 
 	    if((pt = newver)) {
 		while(*pt) {

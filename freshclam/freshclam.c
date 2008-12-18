@@ -50,7 +50,7 @@
 #include "target.h"
 #include "clamav.h"
 
-#include "shared/options.h"
+#include "shared/optparser.h"
 #include "shared/output.h"
 #include "shared/misc.h"
 
@@ -98,7 +98,7 @@ static void daemon_sighandler(int sig) {
     return;
 }
 
-static void writepid(char *pidfile)
+static void writepid(const char *pidfile)
 {
 	FILE *fd;
 	int old_umask;
@@ -149,21 +149,21 @@ static void help(void)
     mprintf("\n");
 }
 
-static int download(const struct cfgstruct *copt, const struct optstruct *opt, const char *datadir, const char *cfgfile)
+static int download(const struct optstruct *opts, const char *datadir, const char *cfgfile)
 {
 	int ret = 0, try = 0, maxattempts = 0;
-	const struct cfgstruct *cpt;
+	const struct optstruct *opt;
 
 
-    maxattempts = cfgopt(copt, "MaxAttempts")->numarg;
+    maxattempts = optget(opts, "MaxAttempts")->numarg;
     logg("*Max retries == %d\n", maxattempts);
 
-    if(!(cpt = cfgopt(copt, "DatabaseMirror"))->enabled) {
+    if(!(opt = optget(opts, "DatabaseMirror"))->enabled) {
 	logg("^You must specify at least one database mirror in %s\n", cfgfile);
 	return 56;
     } else {
-	while(cpt) {
-	    ret = downloadmanager(copt, opt, cpt->strarg, datadir, try == maxattempts - 1);
+	while(opt) {
+	    ret = downloadmanager(opts, opt->strarg, datadir, try == maxattempts - 1);
 	    alarm(0);
 
 	    if(ret == 52 || ret == 54 || ret == 58 || ret == 59) {
@@ -173,9 +173,9 @@ static int download(const struct cfgstruct *copt, const struct optstruct *opt, c
 		    sleep(5);
 		    continue;
 		} else {
-		    logg("Giving up on %s...\n", cpt->strarg);
-		    cpt = (struct cfgstruct *) cpt->nextarg;
-		    if(!cpt) {
+		    logg("Giving up on %s...\n", opt->strarg);
+		    opt = (struct optstruct *) opt->nextarg;
+		    if(!opt) {
 			logg("Update failed. Your network may be down or none of the mirrors listed in %s is working. Check http://www.clamav.net/support/mirror-problem for possible reasons.\n", cfgfile);
 		    }
 		    try = 0;
@@ -193,116 +193,70 @@ static int download(const struct cfgstruct *copt, const struct optstruct *opt, c
 int main(int argc, char **argv)
 {
 	int ret = 52;
-	const char *newdir, *cfgfile, *arg = NULL;
-	char *pidfile = NULL;
-	struct cfgstruct *copt;
-	const struct cfgstruct *cpt;
+	const char *dbdir, *cfgfile, *arg = NULL, *pidfile = NULL;
+	char *pt;
+	struct optstruct *opts;
+	const struct optstruct *opt;
 #ifndef	C_WINDOWS
 	struct sigaction sigact;
 	struct sigaction oldact;
 #endif
 #if !defined(C_OS2) && !defined(C_WINDOWS)
-	char *unpuser;
+	const char *dbowner;
 	struct passwd *user;
 #endif
 	struct stat statbuf;
 	struct mirdat mdat;
-	struct optstruct *opt;
-	const char *short_options = "hvdp:Vl:c:u:a:";
-	static struct option long_options[] = {
-	    {"help", 0, 0, 'h'},
-	    {"quiet", 0, 0, 0},
-	    {"no-warnings", 0, 0, 0},
-	    {"verbose", 0, 0, 'v'},
-	    {"debug", 0, 0, 0},
-	    {"version", 0, 0, 'V'},
-	    {"datadir", 1, 0, 0},
-	    {"log", 1, 0, 'l'},
-	    {"log-verbose", 0, 0, 0}, /* not used */
-	    {"stdout", 0, 0, 0},
-	    {"daemon", 0, 0, 'd'},
-	    {"pid", 1, 0, 'p'},
-	    {"user", 1, 0, 'u'}, /* not used */
-	    {"config-file", 1, 0, 0},
-	    {"no-dns", 0, 0, 0},
-	    {"checks", 1, 0, 'c'},
-	    {"http-proxy", 1, 0, 0},
-	    {"local-address", 1, 0, 'a'},
-	    {"proxy-user", 1, 0, 0},
-	    {"daemon-notify", 2, 0, 0},
-	    {"on-update-execute", 1, 0, 0},
-	    {"on-error-execute", 1, 0, 0},
-	    {"on-outdated-execute", 1, 0, 0},
-	    {"list-mirrors", 0, 0, 0},
-	    {"submit-stats", 2, 0, 0},
-	    {0, 0, 0, 0}
-    	};
 
 
-    opt = opt_parse(argc, argv, short_options, long_options, NULL, NULL);
-    if(!opt) {
-	mprintf("!Can't parse the command line\n");
-	return 40;
+    if((opts = optparse(NULL, argc, argv, 1, OPT_FRESHCLAM, NULL)) == NULL) {
+	mprintf("!Can't parse command line options\n");
+	return 1;
     }
 
-    if(opt_check(opt, "help")) {
+    if(optget(opts, "help")->enabled) {
     	help();
-	opt_free(opt);
+	optfree(opts);
 	return 0;
     }
 
     /* parse the config file */
-    if((cfgfile = opt_arg(opt, "config-file"))) {
-        copt = getcfg(cfgfile, 1, OPT_FRESHCLAM);
-    } else {
-	/* TODO: force strict permissions on freshclam.conf */
-	if((copt = getcfg((cfgfile = CONFDIR"/freshclam.conf"), 1, OPT_FRESHCLAM)) == NULL)
-	    copt = getcfg((cfgfile = CONFDIR"/clamd.conf"), 1, OPT_FRESHCLAM);
+    cfgfile = optget(opts, "config-file")->strarg;
+    pt = strdup(cfgfile);
+    if((opts = optparse(cfgfile, 0, NULL, 1, OPT_FRESHCLAM, opts)) == NULL) {
+	fprintf(stderr, "ERROR: Can't open/parse the config file %s\n", pt);
+	free(pt);
+	return 1;
     }
+    free(pt);
 
-    if(!copt) {
-	logg("!Can't parse the config file %s\n", cfgfile);
-	opt_free(opt);
-	return 56;
-    }
+    dbdir = optget(opts, "DatabaseDirectory")->strarg;
 
-    if(opt_check(opt, "datadir"))
-	newdir = opt_arg(opt, "datadir");
-    else
-	newdir = cfgopt(copt, "DatabaseDirectory")->strarg;
-
-    if(opt_check(opt, "version")) {
-	print_version(newdir);
-	opt_free(opt);
-	freecfg(copt);
+    if(optget(opts, "version")->enabled) {
+	print_version(dbdir);
+	optfree(opts);
 	return 0;
     }
 
 #ifdef C_WINDOWS
     if(!pthread_win32_process_attach_np()) {
 	mprintf("!Can't start the win32 pthreads layer\n");
-	opt_free(opt);
-	freecfg(copt);
+	optfree(opts);
 	return 63;
     }
 #endif
 
-    if(opt_check(opt, "http-proxy") || opt_check(opt, "proxy-user"))
-	logg("WARNING: Proxy settings are now only configurable in the config file.\n");
-
-    if(cfgopt(copt, "HTTPProxyPassword")->enabled) {
+    if(optget(opts, "HTTPProxyPassword")->enabled) {
 	if(stat(cfgfile, &statbuf) == -1) {
 	    logg("^Can't stat %s (critical error)\n", cfgfile);
-	    opt_free(opt);
-	    freecfg(copt);
+	    optfree(opts);
 	    return 56;
 	}
 
 #ifndef C_WINDOWS
 	if(statbuf.st_mode & (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH)) {
 	    logg("^Insecure permissions (for HTTPProxyPassword): %s must have no more than 0700 permissions.\n", cfgfile);
-	    opt_free(opt);
-	    freecfg(copt);
+	    optfree(opts);
 	    return 56;
 	}
 #endif
@@ -310,25 +264,20 @@ int main(int argc, char **argv)
 
 #if !defined(C_OS2) && !defined(C_WINDOWS)
     /* freshclam shouldn't work with root privileges */
-    if(opt_check(opt, "user"))
-	unpuser = opt_arg(opt, "user");
-    else
-	unpuser = cfgopt(copt, "DatabaseOwner")->strarg;
+    dbowner = optget(opts, "DatabaseOwner")->strarg;
 
     if(!geteuid()) {
-	if((user = getpwnam(unpuser)) == NULL) {
-	    logg("^Can't get information about user %s.\n", unpuser);
-	    opt_free(opt);
-	    freecfg(copt);
+	if((user = getpwnam(dbowner)) == NULL) {
+	    logg("^Can't get information about user %s.\n", dbowner);
+	    optfree(opts);
 	    return 60;
 	}
 
-	if(cfgopt(copt, "AllowSupplementaryGroups")->enabled) {
+	if(optget(opts, "AllowSupplementaryGroups")->enabled) {
 #ifdef HAVE_INITGROUPS
-	    if(initgroups(unpuser, user->pw_gid)) {
+	    if(initgroups(dbowner, user->pw_gid)) {
 		logg("^initgroups() failed.\n");
-		opt_free(opt);
-		freecfg(copt);
+		optfree(opts);
 		return 61;
 	    }
 #endif
@@ -336,8 +285,7 @@ int main(int argc, char **argv)
 #ifdef HAVE_SETGROUPS
 	    if(setgroups(1, &user->pw_gid)) {
 		logg("^setgroups() failed.\n");
-		opt_free(opt);
-		freecfg(copt);
+		optfree(opts);
 		return 61;
 	    }
 #endif
@@ -345,15 +293,13 @@ int main(int argc, char **argv)
 
 	if(setgid(user->pw_gid)) {
 	    logg("^setgid(%d) failed.\n", (int) user->pw_gid);
-	    opt_free(opt);
-	    freecfg(copt);
+	    optfree(opts);
 	    return 61;
 	}
 
 	if(setuid(user->pw_uid)) {
 	    logg("^setuid(%d) failed.\n", (int) user->pw_uid);
-	    opt_free(opt);
-	    freecfg(copt);
+	    optfree(opts);
 	    return 61;
 	}
     }
@@ -361,56 +307,46 @@ int main(int argc, char **argv)
 
     /* initialize some important variables */
 
-    if(opt_check(opt, "debug") || cfgopt(copt, "Debug")->enabled)
+    if(optget(opts, "Debug")->enabled)
 	cl_debug();
 
-    if(opt_check(opt, "verbose"))
+    if(optget(opts, "verbose")->enabled)
 	mprintf_verbose = 1;
 
-    if(opt_check(opt, "quiet"))
+    if(optget(opts, "quiet")->enabled)
 	mprintf_quiet = 1;
 
-    if(opt_check(opt, "no-warnings")) {
+    if(optget(opts, "no-warnings")->enabled) {
 	mprintf_nowarn = 1;
 	logg_nowarn = 1;
     }
 
-    if(opt_check(opt, "stdout"))
+    if(optget(opts, "stdout")->enabled)
 	mprintf_stdout = 1;
 
     /* initialize logger */
-    logg_verbose = cfgopt(copt, "LogVerbose")->enabled;
-    logg_time = cfgopt(copt, "LogTime")->enabled;
-    logg_size = cfgopt(copt, "LogFileMaxSize")->numarg;
+    logg_verbose = optget(opts, "LogVerbose")->enabled;
+    logg_time = optget(opts, "LogTime")->enabled;
+    logg_size = optget(opts, "LogFileMaxSize")->numarg;
 
-    if(opt_check(opt, "log")) {
-	logg_file = opt_arg(opt, "log");
-	if(logg("#--------------------------------------\n")) {
-	    mprintf("!Problem with internal logger (--log=%s).\n", logg_file);
-	    opt_free(opt);
-	    freecfg(copt);
-	    return 62;
-	}
-    } else if((cpt = cfgopt(copt, "UpdateLogFile"))->enabled) {
-	logg_file = cpt->strarg; 
+    if((opt = optget(opts, "UpdateLogFile"))->enabled) {
+	logg_file = opt->strarg; 
 	if(logg("#--------------------------------------\n")) {
 	    mprintf("!Problem with internal logger (UpdateLogFile = %s).\n", logg_file);
-	    opt_free(opt);
-	    freecfg(copt);
+	    optfree(opts);
 	    return 62;
 	}
     } else
 	logg_file = NULL;
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
-    if(cfgopt(copt, "LogSyslog")->enabled) {
+    if(optget(opts, "LogSyslog")->enabled) {
 	    int fac = LOG_LOCAL6;
 
-	if((cpt = cfgopt(copt, "LogFacility"))->enabled) {
-	    if((fac = logg_facility(cpt->strarg)) == -1) {
-		mprintf("!LogFacility: %s: No such facility.\n", cpt->strarg);
-		opt_free(opt);
-		freecfg(copt);
+	if((opt = optget(opts, "LogFacility"))->enabled) {
+	    if((fac = logg_facility(opt->strarg)) == -1) {
+		mprintf("!LogFacility: %s: No such facility.\n", opt->strarg);
+		optfree(opts);
 		return 62;
 	    }
 	}
@@ -421,26 +357,23 @@ int main(int argc, char **argv)
 #endif
 
     /* change the current working directory */
-    if(chdir(newdir)) {
-	logg("Can't change dir to %s\n", newdir);
-	opt_free(opt);
-	freecfg(copt);
+    if(chdir(dbdir)) {
+	logg("Can't change dir to %s\n", dbdir);
+	optfree(opts);
 	return 50;
     } else
-	logg("*Current working dir is %s\n", newdir);
+	logg("*Current working dir is %s\n", dbdir);
 
 
-    if(opt_check(opt, "list-mirrors")) {
+    if(optget(opts, "list-mirrors")->enabled) {
 	if(mirman_read("mirrors.dat", &mdat, 1) == -1) {
 	    printf("Can't read mirrors.dat\n");
-	    opt_free(opt);
-	    freecfg(copt);
+	    optfree(opts);
 	    return 55;
 	}
 	mirman_list(&mdat);
 	mirman_free(&mdat);
-	opt_free(opt);
-	freecfg(copt);
+	optfree(opts);
 	return 0;
     }
 
@@ -450,14 +383,13 @@ int main(int argc, char **argv)
 
 	if(WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR) {
 	    logg("!Error at WSAStartup(): %d\n", WSAGetLastError());
-	    opt_free(opt);
-	    freecfg(copt);
+	    optfree(opts);
 	    return 1;
 	}
     }
 #endif
 
-    if(opt_check(opt, "daemon")) {
+    if(optget(opts, "daemon")->enabled) {
 	    int bigsleep, checks;
 #ifndef	C_WINDOWS
 	    time_t now, wakeup;
@@ -466,23 +398,18 @@ int main(int argc, char **argv)
 	sigact.sa_handler = daemon_sighandler;
 #endif
 
-	if(opt_check(opt, "checks"))
-	    checks = atoi(opt_arg(opt, "checks"));
-	else
-	    checks = cfgopt(copt, "Checks")->numarg;
+	checks = optget(opts, "Checks")->numarg;
 
 	if(checks <= 0) {
 	    logg("^Number of checks must be a positive integer.\n");
-	    opt_free(opt);
-	    freecfg(copt);
+	    optfree(opts);
 	    return 41;
 	}
 
-	if(!cfgopt(copt, "DNSDatabaseInfo")->enabled || opt_check(opt, "no-dns")) {
+	if(!optget(opts, "DNSDatabaseInfo")->enabled || optget(opt, "no-dns")->enabled) {
 	    if(checks > 50) {
 		logg("^Number of checks must be between 1 and 50.\n");
-		opt_free(opt);
-		freecfg(copt);
+		optfree(opts);
 		return 41;
 	    }
 	}
@@ -490,11 +417,10 @@ int main(int argc, char **argv)
 	bigsleep = 24 * 3600 / checks;
 
 #if !defined(C_OS2) && !defined(C_WINDOWS)
-	if(!cfgopt(copt, "Foreground")->enabled) {
+	if(!optget(opts, "Foreground")->enabled) {
 	    if(daemonize() == -1) {
 		logg("!daemonize() failed\n");
-		opt_free(opt);
-		freecfg(copt);
+		optfree(opts);
 		return 70; /* FIXME */
 	    }
             foreground = 0;
@@ -502,12 +428,8 @@ int main(int argc, char **argv)
         }
 #endif
 
-	if(opt_check(opt, "pid")) {
-	    pidfile = opt_arg(opt, "pid");
-	} else if ((cpt = cfgopt(copt, "PidFile"))->enabled) {
-	    pidfile = cpt->strarg;
-	}
-	if (pidfile) {
+	if((opt = optget(opts, "PidFile"))->enabled) {
+	    pidfile = opt->strarg;
 	    writepid(pidfile);
 	}
 
@@ -526,16 +448,14 @@ int main(int argc, char **argv)
 #endif
 
 	while(!terminate) {
-	    ret = download(copt, opt, newdir, cfgfile);
+	    ret = download(opts, dbdir, cfgfile);
 
 	    if(ret <= 1) {
-		if((cpt = cfgopt(copt, "SubmitDetectionStats"))->enabled)
-		    submitstats(cpt->strarg, copt);
+		if((opt = optget(opts, "SubmitDetectionStats"))->enabled)
+		    submitstats(opt->strarg, opts);
             } else  {
-	        if(opt_check(opt, "on-error-execute"))
-		    arg = opt_arg(opt, "on-error-execute");
-		else if((cpt = cfgopt(copt, "OnErrorExecute"))->enabled)
-		    arg = cpt->strarg;
+		if((opt = optget(opts, "OnErrorExecute"))->enabled)
+		    arg = opt->strarg;
 
 		if(arg)
 		    execute("OnErrorExecute", arg, opt);
@@ -581,37 +501,28 @@ int main(int argc, char **argv)
 	}
 
     } else {
-	if(opt_check(opt, "submit-stats")) {
-	    cfgfile = opt_arg(opt, "submit-stats");
-	    if(!cfgfile)
-		cfgfile = CONFDIR"/clamd.conf";
-	    if(!opt_check(opt, "no-warnings"))
+	if((opt = optget(opts, "submit-stats"))->active) {
+	    if(!optget(opts, "no-warnings")->enabled)
 		logg(" *** Virus databases are not updated in this mode ***\n");
-	    ret = submitstats(cfgfile, copt);
+	    ret = submitstats(opt->strarg, opts);
 	} else {
-	    ret = download(copt, opt, newdir, cfgfile);
+	    ret = download(opts, dbdir, cfgfile);
 
-	    if((cpt = cfgopt(copt, "SubmitDetectionStats"))->enabled)
-		submitstats(cpt->strarg, copt);
+	    if((opt = optget(opts, "SubmitDetectionStats"))->enabled)
+		submitstats(opt->strarg, opts);
 	}
     }
 
     if(ret > 1) {
-	if(opt_check(opt, "on-error-execute"))
-	    arg = opt_arg(opt, "on-error-execute");
-	else if((cpt = cfgopt(copt, "OnErrorExecute"))->enabled)
-	    arg = cpt->strarg;
-
-	if(arg)
-            execute("OnErrorExecute", arg, opt);
+	if((opt = optget(opts, "OnErrorExecute"))->enabled)
+            execute("OnErrorExecute", opt->strarg, opts);
     }
 
     if (pidfile) {
         unlink(pidfile);
     }
 
-    opt_free(opt);
-    freecfg(copt);
+    optfree(opts);
 
 #ifdef C_WINDOWS
     WSACleanup();

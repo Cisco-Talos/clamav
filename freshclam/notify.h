@@ -19,8 +19,6 @@
 #ifndef __NOTIFY_H
 #define __NOTIFY_H
 
-#include "shared/cfgparser.h"
-
 int notify(const char *cfgfile);
 
 #endif
