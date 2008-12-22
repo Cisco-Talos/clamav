@@ -49,7 +49,7 @@
 
 #define MATCH_NUMBER "^[0-9]+$"
 #define MATCH_SIZE "^[0-9]+[kKmM]?$"
-#define MATCH_BOOL "^(yes|true|1|no|false|0)$"
+#define MATCH_BOOL "^([yY]es|[tT]rue|1|[nN]o|[fF]alse|0)$"
 
 static const struct clam_option {
     const char *name;
