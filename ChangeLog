@@ -1,3 +1,7 @@
+Mon Dec 22 16:12:27 CET 2008 (tk)
+---------------------------------
+ * shared/optparser.c: fix small memleak
+
 Thu Dec 18 20:52:00 CET 2008 (tk)
 ---------------------------------
  * shared/optparser.c, freshclam: use the new option parser (bb#1215)

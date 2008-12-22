@@ -446,6 +446,7 @@ static int optaddarg(struct optstruct *opts, const char *name, const char *strar
     if(pt->multiple) {
 	if(!pt->active) {
 	    if(strarg) {
+		free(pt->strarg);
 		pt->strarg = strdup(strarg);
 	 	if(!pt->strarg) {
 		    fprintf(stderr, "ERROR: optaddarg: strdup() failed\n");
@@ -478,6 +479,7 @@ static int optaddarg(struct optstruct *opts, const char *name, const char *strar
 	    return 0;
 
 	if(strarg) {
+	    free(pt->strarg);
 	    pt->strarg = strdup(strarg);
 	    if(!pt->strarg) {
 		fprintf(stderr, "ERROR: optaddarg: strdup() failed\n");
