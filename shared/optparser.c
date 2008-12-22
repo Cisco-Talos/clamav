@@ -237,7 +237,7 @@ static const struct clam_option {
     /* FIXME: drop this entry and use LogFile */
     { "UpdateLogFile", "log", 'l', OPT_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Save all reports to a log file.", "/var/log/freshclam.log" },
 
-    { "DatabaseOwner", NULL, 0, OPT_STRING, NULL, -1, CLAMAVUSER, 0, OPT_FRESHCLAM, "When started by root freshclam will drop privileges and switch to the user\ndefined in this option.", CLAMAVUSER },
+    { "DatabaseOwner", "user", 'u', OPT_STRING, NULL, -1, CLAMAVUSER, 0, OPT_FRESHCLAM, "When started by root freshclam will drop privileges and switch to the user\ndefined in this option.", CLAMAVUSER },
 
     { "Checks", "checks", 'c', OPT_NUMBER, MATCH_NUMBER, 12, NULL, 0, OPT_FRESHCLAM, "This option defined how many times daily freshclam should check for\na database update.", "24" },
 
