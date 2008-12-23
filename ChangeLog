@@ -1,3 +1,10 @@
+Tue Dec 23 13:03:42 EET 2008 (edwin)
+------------------------------------
+ * libclamav/pe.c, libclamav/special.c: reset resource type,
+ otherwise we parse all resources after a string resource as string
+ (including images), which is wrong, because  it feeds wrong
+ statistics to cli_detect_swizz.
+
 Mon Dec 22 22:32:59 CET 2008 (tk)
 ---------------------------------
  * shared/optparser.c: extend MATCH_BOOL regex (bb#1324)

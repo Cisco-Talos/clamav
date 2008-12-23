@@ -431,8 +431,10 @@ void cli_detect_swizz_str(const unsigned char *str, uint32_t len, struct swizz_s
 	}
 	ret = swizz_j48(ngram_cnts) ? CL_VIRUS : CL_CLEAN;
 	cli_dbgmsg("cli_detect_swizz_str: %s, %u words\n", ret == CL_VIRUS ? "suspicious" : "ok", words);
-	if (ret == CL_VIRUS)
+	if (ret == CL_VIRUS) {
 		stats->suspicious += j;
+		cli_dbgmsg("cli_detect_swizz_str: %s\n", stri);
+	}
 	stats->total += j;
 }
 

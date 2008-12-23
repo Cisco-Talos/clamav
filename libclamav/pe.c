@@ -355,10 +355,11 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, int srcfd, struct 
 	    cli_parseres( base, base + (offs&0x7fffffff), srcfd, exe_sections, nsections, fsize, hdr_size, level+1, type, maxres, stats);
 	entry+=8;
     }*/
-    for (i=0; i<unnamed; i++) {
+    for (i=0; i<unnamed; i++, entry += 8) {
 	uint32_t id, offs;
 	id = cli_readint32(entry)&0x7fffffff;
 	if(level==0) {
+		type = 0;
 		switch(id) {
 			case 4: /* menu */
 			case 5: /* dialog */
@@ -367,6 +368,7 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, int srcfd, struct 
 				type = id;
 				break;
 			case 16:
+				type = id;
 				/* 14: version */
 				stats->has_version = 1;
 				break;
@@ -375,7 +377,8 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, int srcfd, struct 
 				break;
 			/* otherwise keep it 0, we don't want it */
 		}
-	} else if (!type) {
+	}
+	if (!type) {
 		/* if we are not interested in this type, skip */
 		continue;
 	}
@@ -383,7 +386,6 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, int srcfd, struct 
 	if(offs>>31)
 		cli_parseres_special(base, base + (offs&0x7fffffff), srcfd, exe_sections, nsections, fsize, hdr_size, level+1, type, maxres, stats);
 	else {
-		if (type == 4 || type == 5 || type == 6 || type ==11) {
 			offs = cli_readint32(entry+4);
 			rawaddr = cli_rawaddr(base + offs, exe_sections, nsections, &err, fsize, hdr_size);
 			if (!err && pread(srcfd, resdir, sizeof(resdir), rawaddr) == sizeof(resdir)) {
@@ -406,9 +408,7 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, int srcfd, struct 
 				}
 				free (str);
 			}
-		}
 	}
-	entry+=8;
     }
     free (oentry);
 }
