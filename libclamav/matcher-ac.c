@@ -40,6 +40,7 @@
 #include "cltypes.h"
 #include "str.h"
 #include "readdb.h"
+#include "default.h"
 
 #include "mpool.h"
 
@@ -933,7 +934,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				    return CL_EMEM;
 				}
 
-				mdata->offmatrix[pt->sigid - 1][0] = cli_malloc(pt->parts * (AC_DEFAULT_TRACKLEN + 1) * sizeof(int32_t));
+				mdata->offmatrix[pt->sigid - 1][0] = cli_malloc(pt->parts * (CLI_DEFAULT_AC_TRACKLEN + 1) * sizeof(int32_t));
 				if(!mdata->offmatrix[pt->sigid - 1][0]) {
 				    cli_errmsg("cli_ac_scanbuff: Can't allocate memory for mdata->offmatrix[%u][0]\n", pt->sigid - 1);
 				    free(mdata->offmatrix[pt->sigid - 1]);
@@ -942,10 +943,10 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 					free(info.exeinfo.section);
 				    return CL_EMEM;
 				}
-				memset(mdata->offmatrix[pt->sigid - 1][0], -1, pt->parts * (AC_DEFAULT_TRACKLEN + 1) * sizeof(int32_t));
+				memset(mdata->offmatrix[pt->sigid - 1][0], -1, pt->parts * (CLI_DEFAULT_AC_TRACKLEN + 1) * sizeof(int32_t));
 				mdata->offmatrix[pt->sigid - 1][0][0] = 0;
 				for(j = 1; j < pt->parts; j++) {
-				    mdata->offmatrix[pt->sigid - 1][j] = mdata->offmatrix[pt->sigid - 1][0] + j * (AC_DEFAULT_TRACKLEN + 1);
+				    mdata->offmatrix[pt->sigid - 1][j] = mdata->offmatrix[pt->sigid - 1][0] + j * (CLI_DEFAULT_AC_TRACKLEN + 1);
 				    mdata->offmatrix[pt->sigid - 1][j][0] = 0;
 				}
 			    }
@@ -953,7 +954,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
 			    if(pt->partno != 1) {
 				found = 0;
-				for(j = 1; j <= AC_DEFAULT_TRACKLEN && offmatrix[pt->partno - 2][j] != -1; j++) {
+				for(j = 1; j <= CLI_DEFAULT_AC_TRACKLEN && offmatrix[pt->partno - 2][j] != -1; j++) {
 				    found = 1;
 				    if(pt->maxdist)
 					if(realoff - offmatrix[pt->partno - 2][j] > pt->maxdist)
@@ -969,7 +970,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 			    }
 
 			    if(pt->partno == 1 || (found && (pt->partno != pt->parts))) {
-				offmatrix[pt->partno - 1][0] %= AC_DEFAULT_TRACKLEN;
+				offmatrix[pt->partno - 1][0] %= CLI_DEFAULT_AC_TRACKLEN;
 				offmatrix[pt->partno - 1][0]++;
 				offmatrix[pt->partno - 1][offmatrix[pt->partno - 1][0]] = offset + matchend;
 
@@ -990,7 +991,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 					type = pt->type;
 					if(ftoffset && (!*ftoffset || (*ftoffset)->cnt < MAX_EMBEDDED_OBJ || type == CL_TYPE_ZIPSFX) && ((ftype == CL_TYPE_MSEXE && type >= CL_TYPE_SFX) || ((ftype == CL_TYPE_MSEXE || ftype == CL_TYPE_ZIP || ftype == CL_TYPE_MSOLE2) && type == CL_TYPE_MSEXE)))  {
 					    /* FIXME: we don't know which offset of the first part is the correct one */
-					    for(j = 1; j <= AC_DEFAULT_TRACKLEN && offmatrix[0][j] != -1; j++) {
+					    for(j = 1; j <= CLI_DEFAULT_AC_TRACKLEN && offmatrix[0][j] != -1; j++) {
 						if(ac_addtype(ftoffset, type, offmatrix[pt->parts - 1][j], ctx)) {
 						    if(info.exeinfo.section)
 							free(info.exeinfo.section);
@@ -999,7 +1000,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 					    }
 					}
 
-					memset(offmatrix[0], -1, pt->parts * (AC_DEFAULT_TRACKLEN + 1) * sizeof(int32_t));
+					memset(offmatrix[0], -1, pt->parts * (CLI_DEFAULT_AC_TRACKLEN + 1) * sizeof(int32_t));
 					for(j = 0; j < pt->parts; j++)
 					    offmatrix[j][0] = 0;
 				    }

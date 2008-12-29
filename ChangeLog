@@ -1,3 +1,7 @@
+Mon Dec 29 19:08:25 CET 2008 (tk)
+---------------------------------
+ * libclamav: add default.h
+
 Tue Dec 23 13:03:42 EET 2008 (edwin)
 ------------------------------------
  * libclamav/pe.c, libclamav/special.c: reset resource type,

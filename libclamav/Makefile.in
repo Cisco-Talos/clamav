@@ -559,7 +559,8 @@ libclamav_la_SOURCES = \
 	version.c\
 	version.h\
 	mpool.c\
-	mpool.h
+	mpool.h \
+	default.h
 
 noinst_LTLIBRARIES = libclamav_internal_utils.la
 COMMON_CLEANFILES = version.h version.h.tmp *.gcda *.gcno lzma/*.gcda lzma/*.gcno

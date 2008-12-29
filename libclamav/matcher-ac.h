@@ -26,9 +26,6 @@
 #include "filetypes.h"
 #include "cltypes.h"
 
-#define AC_DEFAULT_MIN_DEPTH 2
-#define AC_DEFAULT_MAX_DEPTH 3
-#define AC_DEFAULT_TRACKLEN 8
 #define AC_CH_MAXDIST 32
 
 #define AC_SCAN_VIR 1

@@ -37,6 +37,7 @@
 #include "matcher-ac.h"
 #include "str.h"
 #include "textdet.h"
+#include "default.h"
 
 #include "htmlnorm.h"
 #include "entconv.h"
@@ -164,7 +165,7 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 	if(!root)
 	    return ret;
 
-	if(cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, AC_DEFAULT_TRACKLEN))
+	if(cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN))
 	    return ret;
 
 	sret = cli_ac_scanbuff(buff, bread, NULL, NULL, NULL, engine->root[0], &mdata, 0, ret, desc, NULL, AC_SCAN_FT, NULL);
@@ -174,7 +175,7 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 	if(sret >= CL_TYPENO) {
 	    ret = sret;
 	} else {
-	    if(cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, AC_DEFAULT_TRACKLEN))
+	    if(cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN))
 		return ret;
 
 	    decoded = (unsigned char *) cli_utf16toascii((char *) buff, bread);
@@ -209,7 +210,7 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 			     * (just eliminating zeros and matching would introduce false positives */
 			    if(encoding_normalize_toascii(&in_area, encoding, &out_area) >= 0 && out_area.length > 0) {
 				    out_area.buffer[out_area.length] = '\0';
-				    if(cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, AC_DEFAULT_TRACKLEN))
+				    if(cli_ac_initdata(&mdata, root->ac_partsigs, root->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN))
 					    return ret;
 
 				    if(out_area.length > 0) {

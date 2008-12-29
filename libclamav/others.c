@@ -76,6 +76,7 @@ static pthread_mutex_t cli_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
 #include "regex/regex.h"
 #include "ltdl.h"
 #include "matcher-ac.h"
+#include "default.h"
 
 #ifndef	O_BINARY
 #define	O_BINARY	0
@@ -214,17 +215,17 @@ struct cl_engine *cl_engine_new(void)
     }
 
     /* Setup default limits */
-    new->maxscansize = 104857600;
-    new->maxfilesize = 26214400;
-    new->maxreclevel = 16;
-    new->maxfiles = 10000;
-    new->min_cc_count = 3;
-    new->min_ssn_count = 3;
+    new->maxscansize = CLI_DEFAULT_MAXSCANSIZE;
+    new->maxfilesize = CLI_DEFAULT_MAXFILESIZE;
+    new->maxreclevel = CLI_DEFAULT_MAXRECLEVEL;
+    new->maxfiles = CLI_DEFAULT_MAXFILES;
+    new->min_cc_count = CLI_DEFAULT_MIN_CC_COUNT;
+    new->min_ssn_count = CLI_DEFAULT_MIN_SSN_COUNT;
 
     new->refcount = 1;
     new->ac_only = 0;
-    new->ac_mindepth = AC_DEFAULT_MIN_DEPTH;
-    new->ac_maxdepth = AC_DEFAULT_MAX_DEPTH;
+    new->ac_mindepth = CLI_DEFAULT_AC_MINDEPTH;
+    new->ac_maxdepth = CLI_DEFAULT_AC_MAXDEPTH;
 
 #ifdef USE_MPOOL
     if(!(new->mempool = mp_create())) {

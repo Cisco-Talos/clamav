@@ -30,6 +30,7 @@
 #include "../libclamav/matcher.h"
 #include "../libclamav/matcher-ac.h"
 #include "../libclamav/matcher-bm.h"
+#include "../libclamav/default.h"
 #include "checks.h"
 
 static const struct ac_testdata_s {
@@ -64,7 +65,7 @@ START_TEST (test_ac_scanbuff) {
 #ifdef USE_MPOOL
     root->mempool = mp_create();
 #endif
-    ret = cli_ac_init(root, AC_DEFAULT_MIN_DEPTH, AC_DEFAULT_MAX_DEPTH);
+    ret = cli_ac_init(root, CLI_DEFAULT_AC_MINDEPTH, CLI_DEFAULT_AC_MAXDEPTH);
     fail_unless(ret == CL_SUCCESS, "cli_ac_init() failed");
 
     for(i = 0; ac_testdata[i].data; i++) {
@@ -75,7 +76,7 @@ START_TEST (test_ac_scanbuff) {
     ret = cli_ac_buildtrie(root);
     fail_unless(ret == CL_SUCCESS, "cli_ac_buildtrie() failed");
 
-    ret = cli_ac_initdata(&mdata, root->ac_partsigs, 0, AC_DEFAULT_TRACKLEN);
+    ret = cli_ac_initdata(&mdata, root->ac_partsigs, 0, CLI_DEFAULT_AC_TRACKLEN);
     fail_unless(ret == CL_SUCCESS, "cli_ac_initdata() failed");
 
     for(i = 0; ac_testdata[i].data; i++) {
