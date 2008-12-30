@@ -20,7 +20,7 @@
 
 /*
  * TODO:
- * - freshclam, clamscan, clamdscan, clamconf, milter
+ * - clamdscan, clamconf, milter
  * - clamconf: generation/verification/updating of config files and man page entries
  * - automatically generate --help pages (use the first line from the description)
  */
@@ -44,7 +44,7 @@
 
 #include "getopt.h"
 
-#define MAXCMDOPTS  64
+#define MAXCMDOPTS  80
 #define MAX(a,b) (a > b ? a : b)
 
 #define MATCH_NUMBER "^[0-9]+$"
@@ -67,21 +67,66 @@ static const struct clam_option {
     /* name,   longopt, sopt, argtype, regex, num, str, mul, owner, description, suggested */
 
     /* cmdline only */
-    { NULL, "help", 'h', OPT_BOOL, NULL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM, "", "" },
-    { NULL, "config-file", 'c', OPT_STRING, NULL, 0, CONFDIR"/clamd.conf", 0, OPT_CLAMD, "", "" },
+    { NULL, "help", 'h', OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN, "", "" },
+    { NULL, "config-file", 'c', OPT_STRING, NULL, 0, CONFDIR"/clamd.conf", 0, OPT_CLAMD | OPT_CLAMDSCAN, "", "" },
     { NULL, "config-file", 0, OPT_STRING, NULL, 0, CONFDIR"/freshclam.conf", 0, OPT_FRESHCLAM, "", "" },
-    { NULL, "version", 'V', OPT_BOOL, NULL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM, "", "" },
-    { NULL, "debug", 0, OPT_BOOL, NULL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM, "", "" },
-    { NULL, "verbose", 'v', OPT_BOOL, NULL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
-    { NULL, "quiet", 0, OPT_BOOL, NULL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
-    { NULL, "no-warnings", 0, OPT_BOOL, NULL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
-    { NULL, "stdout", 0, OPT_BOOL, NULL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
-    { NULL, "daemon", 'd', OPT_BOOL, NULL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
-    { NULL, "no-dns", 0, OPT_BOOL, NULL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
+    { NULL, "version", 'V', OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN, "", "" },
+    { NULL, "debug", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN, "", "" },
+    { NULL, "verbose", 'v', OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN, "", "" },
+    { NULL, "quiet", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN, "", "" },
+    { NULL, "leave-temps", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
+    { NULL, "no-warnings", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
+    { NULL, "stdout", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN, "", "" },
+    { NULL, "daemon", 'd', OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
+    { NULL, "no-dns", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
+    { NULL, "list-mirrors", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
+    { NULL, "submit-stats", 0, OPT_STRING, NULL, 0, CONFDIR"/clamd.conf", 0, OPT_FRESHCLAM, "", "" }, /* Don't merge this one with SubmitDetectionStats */
+    { NULL, "reload", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMDSCAN, "", "" },
+    { NULL, "multiscan", 'm', OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMDSCAN, "", "" },
+    { NULL, "database", 'd', OPT_STRING, NULL, -1, DATADIR, 0, OPT_CLAMSCAN, "", "" }, /* merge it with DatabaseDirectory (and fix conflict with --datadir */
+    { NULL, "recursive", 'r', OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
+    { NULL, "bell", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
+    { NULL, "no-summary", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
+    { NULL, "infected", 'i', OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
+    { NULL, "log", 'l', OPT_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN, "", "" },
+    { NULL, "move", 0, OPT_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN, "", "" },
+    { NULL, "copy", 0, OPT_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN, "", "" },
+    { NULL, "remove", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
+    { NULL, "exclude", 0, OPT_STRING, NULL, -1, NULL, 1, OPT_CLAMSCAN, "", "" },
+    { NULL, "exclude-dir", 0, OPT_STRING, NULL, -1, NULL, 1, OPT_CLAMSCAN, "", "" },
+    { NULL, "include", 0, OPT_STRING, NULL, -1, NULL, 1, OPT_CLAMSCAN, "", "" },
+    { NULL, "include-dir", 0, OPT_STRING, NULL, -1, NULL, 1, OPT_CLAMSCAN, "", "" },
+    { NULL, "structured-ssn-format", 0, OPT_NUMBER, MATCH_NUMBER, 0, NULL, 1, OPT_CLAMSCAN, "", "" },
+
+    /* cmdline only - deprecated */
     { NULL, "http-proxy", 0, OPT_STRING, NULL, 0, NULL, 0, OPT_FRESHCLAM | OPT_DEPRECATED, "", "" },
     { NULL, "proxy-user", 0, OPT_STRING, NULL, 0, NULL, 0, OPT_FRESHCLAM | OPT_DEPRECATED, "", "" },
-    { NULL, "list-mirrors", 0, OPT_BOOL, NULL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
-    { NULL, "submit-stats", 0, OPT_STRING, NULL, 0, CONFDIR"/clamd.conf", 0, OPT_FRESHCLAM, "", "" }, /* Don't merge this one with SubmitDetectionStats */
+    { NULL, "force", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "disable-summary", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "disable-archive", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "no-archive", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "no-pe", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "no-elf", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "no-ole2", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "no-pdf", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "no-html", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "no-mail", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "no-phishing-sigs", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "no-phishing-scan-urls", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "no-algorithmic", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "no-phishing-restrictedscan", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "max-ratio", 0, OPT_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "max-space", 0, OPT_SIZE, MATCH_SIZE, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "block-max", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "unzip", 0, OPT_STRING, NULL, -1, "foo", 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "unrar", 0, OPT_STRING, NULL, -1, "foo", 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "arj", 0, OPT_STRING, NULL, -1, "foo", 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "unzoo", 0, OPT_STRING, NULL, -1, "foo", 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "lha", 0, OPT_STRING, NULL, -1, "foo", 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "jar", 0, OPT_STRING, NULL, -1, "foo", 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "tar", 0, OPT_STRING, NULL, -1, "foo", 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "tgz", 0, OPT_STRING, NULL, -1, "foo", 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "deb", 0, OPT_STRING, NULL, -1, "foo", 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
 
     /* config file/cmdline options */
     { "LogFile", "log", 'l', OPT_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER, "Save all reports to a log file.", "/tmp/clamav.log" },
@@ -102,7 +147,7 @@ static const struct clam_option {
 
     { "PidFile", "pid", 'p', OPT_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Save the process ID to a file.", "/var/run/clamd.pid" },
 
-    { "TemporaryDirectory", NULL, 0, OPT_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER, "This option allows you to change the default temporary directory.", "/tmp" },
+    { "TemporaryDirectory", "tempdir", 0, OPT_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN, "This option allows you to change the default temporary directory.", "/tmp" },
 
     { "DatabaseDirectory", "datadir", 0, OPT_STRING, NULL, -1, DATADIR, 0, OPT_CLAMD | OPT_FRESHCLAM, "This option allows you to change the default database directory.\nIf you enable it, please make sure it points to the same directory in\nboth clamd and freshclam.", "/var/lib/clamav" },
 
@@ -131,7 +176,7 @@ static const struct clam_option {
 
     { "ExcludePath", NULL, 0, OPT_STRING, NULL, -1, NULL, 1, OPT_CLAMD, "Don't scan files/directories whose names match the provided\nregular expression. This option can be specified multiple times.", "^/proc/" },
 
-    { "MaxDirectoryRecursion", NULL, 0, OPT_NUMBER, MATCH_NUMBER, 15, NULL, 0, OPT_CLAMD, "Maximum depth the directories are scanned at.", "15" },
+    { "MaxDirectoryRecursion", "max-dir-recursion", 0, OPT_NUMBER, MATCH_NUMBER, 15, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Maximum depth the directories are scanned at.", "15" },
 
     { "FollowDirectorySymlinks", NULL, 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Follow directory symlinks.", "no" },
 
@@ -155,63 +200,63 @@ static const struct clam_option {
 
     /* Scan options */
 
-    { "DetectPUA", NULL, 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Detect Potentially Unwanted Applications.", "yes" },
+    { "DetectPUA", "detect-pua", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Detect Potentially Unwanted Applications.", "yes" },
 
-    { "ExcludePUA", NULL, 0, OPT_STRING, NULL, -1, NULL, 1, OPT_CLAMD, "Exclude a specific PUA category. This directive can be used multiple times.\nSee http://www.clamav.net/support/pua for the complete list of PUA\ncategories.", "NetTool" },
+    { "ExcludePUA", "exclude-pua", 0, OPT_STRING, NULL, -1, NULL, 1, OPT_CLAMD | OPT_CLAMSCAN, "Exclude a specific PUA category. This directive can be used multiple times.\nSee http://www.clamav.net/support/pua for the complete list of PUA\ncategories.", "NetTool" },
 
-    { "IncludePUA", NULL, 0, OPT_STRING, NULL, -1, NULL, 1, OPT_CLAMD, "Only include a specific PUA category. This directive can be used multiple\ntimes.", "Spy" },
+    { "IncludePUA", "include-pua", 0, OPT_STRING, NULL, -1, NULL, 1, OPT_CLAMD | OPT_CLAMSCAN, "Only include a specific PUA category. This directive can be used multiple\ntimes.", "Spy" },
 
-    { "AlgorithmicDetection", NULL, 0, OPT_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "In some cases (eg. complex malware, exploits in graphic files, and others),\nClamAV uses special algorithms to provide accurate detection. This option\ncontrols the algorithmic detection.", "yes" },
+    { "AlgorithmicDetection", "algorithmic-detection", 0, OPT_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "In some cases (eg. complex malware, exploits in graphic files, and others),\nClamAV uses special algorithms to provide accurate detection. This option\ncontrols the algorithmic detection.", "yes" },
 
-    { "ScanPE", NULL, 0, OPT_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "PE stands for Portable Executable - it's an executable file format used\nin all 32- and 64-bit versions of Windows operating systems. This option\nallows ClamAV to perform a deeper analysis of executable files and it's also\nrequired for decompression of popular executable packers such as UPX or FSG.", "yes" },
+    { "ScanPE", "scan-pe", 0, OPT_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "PE stands for Portable Executable - it's an executable file format used\nin all 32- and 64-bit versions of Windows operating systems. This option\nallows ClamAV to perform a deeper analysis of executable files and it's also\nrequired for decompression of popular executable packers such as UPX or FSG.", "yes" },
 
-    { "ScanELF", NULL, 0, OPT_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "Executable and Linking Format is a standard format for UN*X executables.\nThis option allows you to control the scanning of ELF files.", "yes" },
+    { "ScanELF", "scan-elf", 0, OPT_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Executable and Linking Format is a standard format for UN*X executables.\nThis option allows you to control the scanning of ELF files.", "yes" },
 
-    { "DetectBrokenExecutables", NULL, 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "With this option enabled clamav will try to detect broken executables\n(both PE and ELF) and mark them as Broken.Executable.", "yes" },
+    { "DetectBrokenExecutables", "detect-broken", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "With this option enabled clamav will try to detect broken executables\n(both PE and ELF) and mark them as Broken.Executable.", "yes" },
 
-    { "ScanMail", NULL, 0, OPT_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "Enable the built in email scanner.", "yes" },
+    { "ScanMail", "scan-mail", 0, OPT_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Enable the built in email scanner.", "yes" },
 
-    { "MailFollowURLs", NULL, 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "If an email contains URLs ClamAV can download and scan them.\nWARNING: This option may open your system to a DoS attack. Please don't use\nthis feature on highly loaded servers.", "no" },
+    { "MailFollowURLs", "mail-follow-urls", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "If an email contains URLs ClamAV can download and scan them.\nWARNING: This option may open your system to a DoS attack. Please don't use\nthis feature on highly loaded servers.", "no" },
 
     { "ScanPartialMessages", NULL, 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Scan RFC1341 messages split over many emails. You will need to\nperiodically clean up $TemporaryDirectory/clamav-partial directory.\nWARNING: This option may open your system to a DoS attack. Please don't use\nthis feature on highly loaded servers.", "no" },
 
-    { "PhishingSignatures", NULL, 0, OPT_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "With this option enabled ClamAV will try to detect phishing attempts by using\nsignatures.", "yes" },
+    { "PhishingSignatures", "phishing-sigs", 0, OPT_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "With this option enabled ClamAV will try to detect phishing attempts by using\nsignatures.", "yes" },
 
-    { "PhishingScanURLs", NULL, 0, OPT_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "Scan URLs found in mails for phishing attempts using heuristics.", "yes" },
+    { "PhishingScanURLs", "phishing-scan-urls", 0, OPT_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Scan URLs found in mails for phishing attempts using heuristics.", "yes" },
 
-    { "PhishingAlwaysBlockCloak", NULL, 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Always block cloaked URLs, even if they're not in the database.\nThis feature can lead to false positives.", "no" },
+    { "PhishingAlwaysBlockCloak", "phishing-cloak", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Always block cloaked URLs, even if they're not in the database.\nThis feature can lead to false positives.", "no" },
 
-    { "PhishingAlwaysBlockSSLMismatch", NULL, 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Always block SSL mismatches in URLs, even if they're not in the database.\nThis feature can lead to false positives.", "" },
+    { "PhishingAlwaysBlockSSLMismatch", "phishing-ssl", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Always block SSL mismatches in URLs, even if they're not in the database.\nThis feature can lead to false positives.", "" },
 
-    { "HeuristicScanPrecedence", NULL, 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Allow heuristic match to take precedence.\nWhen enabled, if a heuristic scan (such as phishingScan) detects\na possible virus/phish it will stop scan immediately. Recommended, saves CPU\nscan-time.\nWhen disabled, virus/phish detected by heuristic scans will be reported only\nat the end of a scan. If an archive contains both a heuristically detected\nvirus/phish, and a real malware, the real malware will be reported.\nKeep this disabled if you intend to handle \"*.Heuristics.*\" viruses\ndifferently from \"real\" malware.\nIf a non-heuristically-detected virus (signature-based) is found first,\nthe scan is interrupted immediately, regardless of this config option.", "yes" },
+    { "HeuristicScanPrecedence", "heuristic-scan-precedence", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Allow heuristic match to take precedence.\nWhen enabled, if a heuristic scan (such as phishingScan) detects\na possible virus/phish it will stop scan immediately. Recommended, saves CPU\nscan-time.\nWhen disabled, virus/phish detected by heuristic scans will be reported only\nat the end of a scan. If an archive contains both a heuristically detected\nvirus/phish, and a real malware, the real malware will be reported.\nKeep this disabled if you intend to handle \"*.Heuristics.*\" viruses\ndifferently from \"real\" malware.\nIf a non-heuristically-detected virus (signature-based) is found first,\nthe scan is interrupted immediately, regardless of this config option.", "yes" },
 
-    { "StructuredDataDetection", NULL, 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Enable the Data Loss Prevention module.", "no" },
+    { "StructuredDataDetection", "detect-structured", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Enable the Data Loss Prevention module.", "no" },
 
-    { "StructuredMinCreditCardCount", NULL, 0, OPT_NUMBER, MATCH_NUMBER, 3, NULL, 0, OPT_CLAMD, "This option sets the lowest number of Credit Card numbers found in a file\nto generate a detect.", "5" },
+    { "StructuredMinCreditCardCount", "structured-cc-count", 0, OPT_NUMBER, MATCH_NUMBER, 3, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the lowest number of Credit Card numbers found in a file\nto generate a detect.", "5" },
 
-    { "StructuredMinSSNCount", NULL, 0, OPT_NUMBER, MATCH_NUMBER, 3, NULL, 0, OPT_CLAMD, "This option sets the lowest number of Social Security Numbers found\nin a file to generate a detect.", "5" },
+    { "StructuredMinSSNCount", "structured-ssn-count", 0, OPT_NUMBER, MATCH_NUMBER, 3, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the lowest number of Social Security Numbers found\nin a file to generate a detect.", "5" },
 
     { "StructuredSSNFormatNormal", NULL, 0, OPT_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "With this option enabled the DLP module will search for valid\nSSNs formatted as xxx-yy-zzzz.", "yes" },
 
     { "StructuredSSNFormatStripped", NULL, 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "With this option enabled the DLP module will search for valid\nSSNs formatted as xxxyyzzzz", "no" },
 
-    { "ScanHTML", NULL, 0, OPT_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "Perform HTML/JavaScript/ScriptEncoder normalisation and decryption.", "yes" },
+    { "ScanHTML", "scan-html", 0, OPT_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Perform HTML/JavaScript/ScriptEncoder normalisation and decryption.", "yes" },
 
-    { "ScanOLE2", NULL, 0, OPT_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "This option enables scanning of OLE2 files, such as Microsoft Office\ndocuments and .msi files.", "yes" },
+    { "ScanOLE2", "scan-ole2", 0, OPT_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables scanning of OLE2 files, such as Microsoft Office\ndocuments and .msi files.", "yes" },
 
-    { "ScanPDF", NULL, 0, OPT_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "This option enables scanning within PDF files.", "yes" },
+    { "ScanPDF", "scan-pdf", 0, OPT_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option enables scanning within PDF files.", "yes" },
 
-    { "ScanArchive", NULL, 0, OPT_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "Scan within archives and compressed files.", "yes" },
+    { "ScanArchive", "scan-archive", 0, OPT_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Scan within archives and compressed files.", "yes" },
 
-    { "ArchiveBlockEncrypted", NULL, 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).", "no" },
+    { "ArchiveBlockEncrypted", "block-encrypted", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).", "no" },
 
-    { "MaxScanSize", NULL, 0, OPT_SIZE, MATCH_SIZE, -1, NULL, 0, OPT_CLAMD, "This option sets the maximum amount of data to be scanned for each input file.\nArchives and other containers are recursively extracted and scanned up to this\nvalue.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe damage.", "100M" },
+    { "MaxScanSize", "max-scansize", 0, OPT_SIZE, MATCH_SIZE, -1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum amount of data to be scanned for each input file.\nArchives and other containers are recursively extracted and scanned up to this\nvalue.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe damage.", "100M" },
 
-    { "MaxFileSize", NULL, 0, OPT_SIZE, MATCH_SIZE, -1, NULL, 0, OPT_CLAMD | OPT_MILTER, "Files larger than this limit won't be scanned. Affects the input file itself\nas well as files contained inside it (when the input file is an archive, a\ndocument or some other kind of container).\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe damage to the system.", "25M" },
+    { "MaxFileSize", "max-filesize", 0, OPT_SIZE, MATCH_SIZE, -1, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN, "Files larger than this limit won't be scanned. Affects the input file itself\nas well as files contained inside it (when the input file is an archive, a\ndocument or some other kind of container).\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe damage to the system.", "25M" },
 
-    { "MaxRecursion", NULL, 0, OPT_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_CLAMD, "Nested archives are scanned recursively, e.g. if a Zip archive contains a RAR\nfile, all files within it will also be scanned. This option specifies how\ndeeply the process should be continued.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe damage to the system.", "16" },
+    { "MaxRecursion", "max-recursion", 0, OPT_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Nested archives are scanned recursively, e.g. if a Zip archive contains a RAR\nfile, all files within it will also be scanned. This option specifies how\ndeeply the process should be continued.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe damage to the system.", "16" },
 
-    { "MaxFiles", NULL, 0, OPT_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_CLAMD, "Number of files to be scanned within an archive, a document, or any other\ncontainer file.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe damage to the system.", "10000" },
+    { "MaxFiles", "max-files", 0, OPT_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Number of files to be scanned within an archive, a document, or any other\ncontainer file.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe damage to the system.", "10000" },
 
     { "ClamukoScanOnAccess", NULL, 0, OPT_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "This option enables Clamuko. Dazuko needs to be already configured and\nrunning.", "no" },
 
@@ -228,9 +273,9 @@ static const struct clam_option {
     { "ClamukoMaxFileSize", NULL, 0, OPT_SIZE, MATCH_SIZE, 5242880, NULL, 0, OPT_CLAMD, "Files larger than this value will not be scanned.", "5M" },
 
     /* FIXME: mark these as private and don't output into clamd.conf/man */
-    { "DevACOnly", NULL, 0, OPT_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "", "" },
+    { "DevACOnly", "dev-ac-only", 0, OPT_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "", "" },
 
-    { "DevACDepth", NULL, 0, OPT_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_CLAMD, "", "" },
+    { "DevACDepth", "dev-ac-depth", 0, OPT_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "", "" },
 
     /* Freshclam-only entries */
 
@@ -291,8 +336,8 @@ static const struct clam_option {
     { "ArchiveMaxRecursion", NULL, 0, OPT_NUMBER, NULL, -1, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
     { "ArchiveMaxFiles", NULL, 0, OPT_NUMBER, NULL, -1, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
     { "ArchiveMaxCompressionRatio", NULL, 0, OPT_NUMBER, NULL, -1, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
-    { "ArchiveBlockMax", NULL, 0, OPT_BOOL, NULL, -1, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
-    { "ArchiveLimitMemoryUsage", NULL, 0, OPT_BOOL, NULL, -1, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
+    { "ArchiveBlockMax", NULL, 0, OPT_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
+    { "ArchiveLimitMemoryUsage", NULL, 0, OPT_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
 
     /* Milter specific options */
 /*
@@ -427,6 +472,7 @@ static int optadd(struct optstruct **opts, const char *name, const char *cmd, co
     newnode->active = 0;
     newnode->multiple = multiple;
     newnode->idx = idx;
+    newnode->filename = NULL;
 
     newnode->next = *opts;
     *opts = newnode;
@@ -499,6 +545,9 @@ static int optaddarg(struct optstruct *opts, const char *name, const char *strar
 void optfree(struct optstruct *opts)
 {
     	struct optstruct *h, *a;
+
+    if(opts && opts->filename)
+	free(opts->filename);
 
     while(opts) {
 	a = opts->nextarg;
@@ -826,6 +875,28 @@ struct optstruct *optparse(const char *cfgfile, int argc, char * const *argv, in
     if(err) {
 	optfree(opts);
 	return NULL;
+    }
+
+    if(!cfgfile && (optind < argc)) {
+        lc = 0;
+
+	/* count length of non-option arguments */
+	for(i = optind; i < argc; i++)
+	    lc += strlen(argv[i]);
+
+	lc += argc - optind + 1;
+	opts->filename = (char *) calloc(lc, sizeof(char));
+	if(!opts->filename) {
+	    fprintf(stderr, "ERROR: optparse: calloc failed\n");
+	    optfree(opt);
+	    return NULL;
+	}
+
+        for(i = optind; i < argc; i++) {
+	    strncat(opts->filename, argv[i], strlen(argv[i]));
+	    if(i != argc - 1)
+		strncat(opts->filename, "\t", 1);
+	}
     }
 
     /* optprint(opts); */

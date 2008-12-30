@@ -1,3 +1,13 @@
+Tue Dec 30 11:43:10 CET 2008 (tk)
+---------------------------------
+ * shared/optparser.c, clamscan: use the new option parser; changes in switches:
+   --no-mail -> --scan-mail, --no-phishing-sigs -> --phishing-sigs,
+   --no-phishing-scan-urls -> --phishing-scan-urls,
+   --no-algorithmic -> --algorithmic-detection, --no-pe -> --scan-pe,
+   --no-elf -> --scan-elf, --no-ole2 -> --scan-ole2, --no-pdf -> --scan-pdf,
+   --no-html -> --scan-html, --no-archive -> --scan-archive
+   See clamscan(1) for more information
+
 Mon Dec 29 19:08:25 CET 2008 (tk)
 ---------------------------------
  * libclamav: add default.h

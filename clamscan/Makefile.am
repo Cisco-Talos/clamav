@@ -24,12 +24,10 @@ clamscan_SOURCES = \
     $(top_srcdir)/shared/output.h \
     $(top_srcdir)/shared/getopt.c \
     $(top_srcdir)/shared/getopt.h \
-    $(top_srcdir)/shared/cfgparser.c \
-    $(top_srcdir)/shared/cfgparser.h \
+    $(top_srcdir)/shared/optparser.c \
+    $(top_srcdir)/shared/optparser.h \
     $(top_srcdir)/shared/misc.c \
     $(top_srcdir)/shared/misc.h \
-    $(top_srcdir)/shared/options.c \
-    $(top_srcdir)/shared/options.h \
     clamscan.c \
     clamscan_opt.h \
     others.c \

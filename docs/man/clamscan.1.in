@@ -1,4 +1,4 @@
-.TH "clamscan" "1" "February 12, 2007" "ClamAV @VERSION@" "Clam AntiVirus"
+.TH "clamscan" "1" "December 30, 2008" "ClamAV @VERSION@" "Clam AntiVirus"
 .SH "NAME"
 .LP 
 clamscan \- scan files and directories for viruses
@@ -10,7 +10,7 @@ clamscan [options] [file/directory/\-]
 clamscan is a command line anti\-virus scanner.
 .SH "OPTIONS"
 .LP 
-
+Most of the options are simple switches which enable or disable some features. Options marked with [=yes/no(*)] can be optionally followed by =yes/=no; if they get called without the boolean argument the scanner will assume 'yes'. The asterisk marks the default internal setting for a given option.
 .TP 
 \fB\-h, \-\-help\fR
 Print help information and exit.
@@ -60,7 +60,7 @@ Only scan file/directory names containing PATT. It may be used multiple times.
 \fB\-i, \-\-infected\fR
 Only print infected files.
 .TP 
-\fB\-\-remove\fR
+\fB\-\-remove[=yes/no(*)]\fR
 Remove infected files. \fBBe careful.\fR
 .TP 
 \fB\-\-move=DIRECTORY\fR
@@ -69,7 +69,7 @@ Move infected files into DIRECTORY. Directory must be writable for the '@CLAMAVU
 \fB\-\-copy=DIRECTORY\fR
 Copy infected files into DIRECTORY. Directory must be writable for the '@CLAMAVUSER@' user or unprivileged user running clamscan.
 .TP 
-\fB\-\-detect\-pua\fR
+\fB\-\-detect\-pua[=yes/no(*)]\fR
 Detect Possibly Unwanted Applications.
 .TP 
 \fB\-\-exclude\-pua=CATEGORY\fR
@@ -78,8 +78,8 @@ Exclude a specific PUA category. This option can be used multiple times. See htt
 \fB\-\-include\-pua=CATEGORY\fR
 Only include a specific PUA category. This option can be used multiple times. See http://www.clamav.net/support/pua for the complete list of PUA
 .TP 
-\fB\-\-detect\-structured\fR
-Enable the DLP (Data Loss Prevention) module which provides detection of SSN and Credit Card numbers.
+\fB\-\-detect\-structured[=yes/no(*)]\fR
+Use the DLP (Data Loss Prevention) module to detect SSN and Credit Card numbers inside documents/text files.
 .TP 
 \fB\-\-structured\-ssn\-format=X\fR
 X=0: search for valid SSNs formatted as xxx-yy-zzzz (normal); X=1: search for valid SSNs formatted as xxxyyzzzz (stripped); X=2: search for both formats. Default is 0.
@@ -90,52 +90,52 @@ This option sets the lowest number of Social Security Numbers found in a file to
 \fB\-\-structured\-cc\-count=#n\fR
 This option sets the lowest number of Credit Card numbers found in a file to generate a detect (default: 3).
 .TP 
-\fB\-\-no\-mail\fR
-Disable scanning of mail files.
+\fB\-\-scan\-mail[=yes(*)/no]\fR
+Scan mail files.
 .TP 
-\fB\-\-no\-phishing\-sigs\fR
-Disable signature-based phishing detection.
+\fB\-\-phishing\-sigs[=yes(*)/no]\fR
+Use the signature-based phishing detection.
 .TP 
-\fB\-\-no\-phishing\-scan\-urls\fR
-Disable url-based heuristic phishing detection. This disables Phishing.Heuristics.Email.*
+\fB\-\-phishing\-scan\-urls[=yes(*)/no]\fR
+Use the url-based heuristic phishing detection (Phishing.Heuristics.Email.*)
 .TP
-\fB\-\-heuristic\-scan\-precedence\fR
+\fB\-\-heuristic\-scan\-precedence[=yes/no(*)]\fR
 Allow heuristic match to take precedence. When enabled, if a heuristic scan (such as phishingScan) detects a possible virus/phish it will stop scan immediately. Recommended, saves CPU scan-time. When disabled, virus/phish detected by heuristic scans will be reported only at the end of a scan. If an archive contains both a heuristically detected  virus/phish, and a real malware, the real malware will be reported Keep this disabled if you intend to handle "*.Heuristics.*" viruses  differently from "real" malware. If a non-heuristically-detected virus (signature-based) is found first,  the scan is interrupted immediately, regardless of this config option.
 .TP
-\fB\-\-phishing\-ssl\fR
-Always block SSL mismatches in URLs (might lead to false positives!).
+\fB\-\-phishing\-ssl[=yes/no(*)]\fR
+Block SSL mismatches in URLs (might lead to false positives!).
 .TP
-\fB\-\-phishing\-cloak\fR
-Always block cloaked URLs (might lead to some false positives).
+\fB\-\-phishing\-cloak[=yes/no(*)]\fR
+Block cloaked URLs (might lead to some false positives).
 .TP
-\fB\-\-no\-algorithmic\fR
-In some cases (eg. complex malware, exploits in graphic files, and others), ClamAV uses special algorithms to provide accurate detection. This option disables the algorithmic detection.
+\fB\-\-algorithmic\-detection[=yes(*)/no]\fR
+In some cases (eg. complex malware, exploits in graphic files, and others), ClamAV uses special algorithms to provide accurate detection. This option can be used to control the algorithmic detection.
 .TP 
-\fB\-\-no\-pe\fR
-PE stands for Portable Executable \- it's an executable file format used in all 32\-bit versions of Windows operating systems. By default ClamAV performs deeper analysis of executable files and attempts to decompress popular executable packers such as UPX, Petite, and FSG. This option \fBdisables\fR PE support and should be used with care!
+\fB\-\-scan\-pe[=yes(*)/no]\fR
+PE stands for Portable Executable \- it's an executable file format used in all 32\-bit versions of Windows operating systems. By default ClamAV performs deeper analysis of executable files and attempts to decompress popular executable packers such as UPX, Petite, and FSG.
 .TP 
-\fB\-\-no\-elf\fR
-Executable and Linking Format is a standard format for UN*X executables. This option \fBdisables\fR ELF support.
+\fB\-\-scan\-elf[=yes(*)/no]\fR
+Executable and Linking Format is a standard format for UN*X executables. This option controls the ELF support.
 .TP 
-\fB\-\-no\-ole2\fR
-Disable support for Microsoft Office documents and .msi files.
+\fB\-\-scan\-ole2[=yes(*)/no]\fR
+Scan Microsoft Office documents and .msi files.
 .TP 
-\fB\-\-no\-pdf\fR
-Disable scanning within PDF files.
+\fB\-\-scan\-pdf[=yes(*)/no]\fR
+Scan within PDF files.
 .TP 
-\fB\-\-no\-html\fR
-Disable support for HTML detection and normalisation.
+\fB\-\-scan\-html[=yes(*)/no]\fR
+Detect, normalize/decrypt and scan HTML files and embedded scripts.
 .TP 
-\fB\-\-no\-archive\fR
-Disable archive support built in libclamav.
+\fB\-\-scan\-archive[=yes(*)/no]\fR
+Scan archives supported by libclamav.
 .TP 
-\fB\-\-detect\-broken\fR
+\fB\-\-detect\-broken[=yes/no(*)]\fR
 Mark broken executables as viruses (Broken.Executable).
 .TP 
-\fB\-\-block\-encrypted\fR
+\fB\-\-block\-encrypted[=yes/no(*)]\fR
 Mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).
 .TP 
-\fB\-\-mail\-follow\-urls\fR
+\fB\-\-mail\-follow\-urls[=yes/no(*)]\fR
 If an email contains URLs ClamAV can download and scan them. \fBWARNING: This option may open your system to a DoS attack. Never use it on loaded servers.\fR
 .TP 
 \fB\-\-max\-files=#n\fR

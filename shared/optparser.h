@@ -30,7 +30,9 @@
 #define OPT_CLAMD	1
 #define OPT_FRESHCLAM	2
 #define OPT_MILTER	4
-#define OPT_DEPRECATED	8
+#define OPT_CLAMSCAN	8
+#define OPT_CLAMDSCAN	16
+#define OPT_DEPRECATED	32
 
 struct optstruct {
     char *name;
@@ -43,6 +45,8 @@ struct optstruct {
     int idx;
     struct optstruct *nextarg;
     struct optstruct *next;
+
+    char *filename; /* cmdline */
 };
 
 const struct optstruct *optget(const struct optstruct *opts, const char *name);

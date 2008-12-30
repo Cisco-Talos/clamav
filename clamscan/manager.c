@@ -51,7 +51,7 @@
 #include "others.h"
 #include "global.h"
 
-#include "shared/options.h"
+#include "shared/optparser.h"
 #include "shared/output.h"
 #include "shared/misc.h"
 
@@ -75,13 +75,12 @@ dev_t procdev;
 #define	O_BINARY    0
 #endif
 
-static void move_infected(const char *filename, const struct optstruct *opt);
+static void move_infected(const char *filename, const struct optstruct *opts);
 
-static int scanfile(const char *filename, struct cl_engine *engine, const struct optstruct *opt, unsigned int options)
+static int scanfile(const char *filename, struct cl_engine *engine, const struct optstruct *opts, unsigned int options)
 {
 	int ret = 0, fd, included, printclean = 1;
-	const struct optnode *optnode;
-	char *argument;
+	const struct optstruct *opt;
 	const char *virname;
 #ifdef C_LINUX
 	struct stat sb;
@@ -96,29 +95,26 @@ static int scanfile(const char *filename, struct cl_engine *engine, const struct
 	    }
 #endif    
 
-    if(opt_check(opt, "exclude")) {
-	argument = opt_firstarg(opt, "exclude", &optnode);
-	while(argument) {
-	    if(match_regex(filename, argument) == 1) {
+    if((opt = optget(opts, "exclude"))->enabled) {
+	while(opt) {
+	    if(match_regex(filename, opt->strarg) == 1) {
 		if(!printinfected)
 		    logg("~%s: Excluded\n", filename);
 		return 0;
 	    }
-	    argument = opt_nextarg(&optnode, "exclude");
+	    opt = opt->nextarg;
 	}
     }
 
-   if(opt_check(opt, "include")) {
+    if((opt = optget(opts, "include"))->enabled) {
 	included = 0;
-	argument = opt_firstarg(opt, "include", &optnode);
-	while(argument && !included) {
-	    if(match_regex(filename, argument) == 1) {
+	while(opt) {
+	    if(match_regex(filename, opt->strarg) == 1) {
 		included = 1;
 		break;
 	    }
-	    argument = opt_nextarg(&optnode, "include");
+	    opt = opt->nextarg;
 	}
-
 	if(!included) {
 	    if(!printinfected)
 		logg("~%s: Excluded\n", filename);
@@ -167,55 +163,50 @@ static int scanfile(const char *filename, struct cl_engine *engine, const struct
     close(fd);
 
     if(ret == CL_VIRUS) {
-	if(opt_check(opt, "remove")) {
+	if(optget(opts, "remove")->enabled) {
 	    if(unlink(filename)) {
 		logg("^%s: Can't remove\n", filename);
 		info.notremoved++;
 	    } else {
 		logg("~%s: Removed\n", filename);
 	    }
-	} else if(opt_check(opt, "move") || opt_check(opt, "copy"))
-            move_infected(filename, opt);
+	} else if(optget(opts, "move")->enabled || optget(opts, "copy")->enabled)
+            move_infected(filename, opts);
     }
 
     return ret;
 }
 
-static int scandirs(const char *dirname, struct cl_engine *engine, const struct optstruct *opt, unsigned int options, unsigned int depth)
+static int scandirs(const char *dirname, struct cl_engine *engine, const struct optstruct *opts, unsigned int options, unsigned int depth)
 {
 	DIR *dd;
 	struct dirent *dent;
 	struct stat statbuf;
 	char *fname;
 	int scanret = 0, included;
-	unsigned int maxdepth;
-	const struct optnode *optnode;
-	char *argument;
+	const struct optstruct *opt;
 
 
-    if(opt_check(opt, "exclude-dir")) {
-	argument = opt_firstarg(opt, "exclude-dir", &optnode);
-	while(argument) {
-	    if(match_regex(dirname, argument) == 1) {
+    if((opt = optget(opts, "exclude-dir"))->enabled) {
+	while(opt) {
+	    if(match_regex(dirname, opt->strarg) == 1) {
 		if(!printinfected)
 		    logg("~%s: Excluded\n", dirname);
 		return 0;
 	    }
-	    argument = opt_nextarg(&optnode, "exclude-dir");
+	    opt = opt->nextarg;
 	}
     }
 
-   if(opt_check(opt, "include-dir")) {
+    if((opt = optget(opts, "include-dir"))->enabled) {
 	included = 0;
-	argument = opt_firstarg(opt, "include-dir", &optnode);
-	while(argument && !included) {
-	    if(match_regex(dirname, argument) == 1) {
+	while(opt) {
+	    if(match_regex(dirname, opt->strarg) == 1) {
 		included = 1;
 		break;
 	    }
-	    argument = opt_nextarg(&optnode, "include-dir");
+	    opt = opt->nextarg;
 	}
-
 	if(!included) {
 	    if(!printinfected)
 		logg("~%s: Excluded\n", dirname);
@@ -223,12 +214,7 @@ static int scandirs(const char *dirname, struct cl_engine *engine, const struct 
 	}
     }
 
-    if(opt_check(opt, "max-dir-recursion"))
-        maxdepth = atoi(opt_arg(opt, "max-dir-recursion"));
-    else
-        maxdepth = 15;
-
-    if(depth > maxdepth)
+    if(depth > (unsigned int) optget(opts, "max-dir-recursion")->numarg)
 	return 0;
 
     info.dirs++;
@@ -251,11 +237,11 @@ static int scandirs(const char *dirname, struct cl_engine *engine, const struct 
 		    /* stat the file */
 		    if(lstat(fname, &statbuf) != -1) {
 			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode) && recursion) {
-			    if(scandirs(fname, engine, opt, options, depth) == 1)
+			    if(scandirs(fname, engine, opts, options, depth) == 1)
 				scanret++;
 			} else {
 			    if(S_ISREG(statbuf.st_mode))
-				scanret += scanfile(fname, engine, opt, options);
+				scanret += scanfile(fname, engine, opts, options);
 			}
 		    }
 		    free(fname);
@@ -278,7 +264,7 @@ static int scandirs(const char *dirname, struct cl_engine *engine, const struct 
 
 }
 
-static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt, int options)
+static int scanstdin(const struct cl_engine *engine, const struct optstruct *opts, int options)
 {
 	int ret;
 	const char *virname, *tmpdir;
@@ -286,8 +272,8 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
 	size_t bread;
 	FILE *fs;
 
-    if(opt_check(opt, "tempdir")) {
-	tmpdir = opt_arg(opt, "tempdir");
+    if(optget(opts, "tempdir")->enabled) {
+	tmpdir = optget(opts, "tempdir")->strarg;
     } else {
 	/* check write access */
 	tmpdir = getenv("TMPDIR");
@@ -344,36 +330,26 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
     return ret;
 }
 
-int scanmanager(const struct optstruct *opt)
+int scanmanager(const struct optstruct *opts)
 {
 	mode_t fmode;
 	int ret = 0, fmodeint, i, x;
 	unsigned int options = 0, dboptions = 0;
 	struct cl_engine *engine;
 	struct stat sb;
-	char *file, cwd[1024], *pua_cats = NULL, *argument;
-	const char *pt;
-	const struct optnode *optnode;
+	char *file, cwd[1024], *pua_cats = NULL;
+	const struct optstruct *opt;
 #ifndef C_WINDOWS
 	struct rlimit rlim;
 #endif
 	uint64_t val64;
 	uint32_t val32;
 
-    if(!opt_check(opt, "no-phishing-sigs"))
+    if(optget(opts, "phishing-sigs")->enabled)
 	dboptions |= CL_DB_PHISHING;
 
-    if(!opt_check(opt,"no-phishing-scan-urls"))
+    if(optget(opts,"phishing-scan-urls")->enabled)
 	dboptions |= CL_DB_PHISHING_URLS;
-    if(opt_check(opt,"phishing-ssl")) {
-	options |= CL_SCAN_PHISHING_BLOCKSSL;
-    }
-    if(opt_check(opt,"phishing-cloak")) {
-	options |= CL_SCAN_PHISHING_BLOCKCLOAK;
-    }
-    if(opt_check(opt,"heuristic-scan-precedence")) {
-	options |= CL_SCAN_HEURISTIC_PRECEDENCE;
-    }
 
     if((ret = cl_init(CL_INIT_DEFAULT))) {
 	logg("!Can't initialize libclamav: %s\n", cl_strerror(ret));
@@ -385,29 +361,26 @@ int scanmanager(const struct optstruct *opt)
 	return 50;
     }
 
-    if(opt_check(opt, "detect-pua")) {
+    if(optget(opts, "detect-pua")->enabled) {
 	dboptions |= CL_DB_PUA;
-
-	if(opt_check(opt, "exclude-pua")) {
+	if((opt = optget(opts, "exclude-pua"))->enabled) {
 	    dboptions |= CL_DB_PUA_EXCLUDE;
-	    argument = opt_firstarg(opt, "exclude-pua", &optnode);
-	    i = 0;
-	    while(argument) {
-		if(!(pua_cats = realloc(pua_cats, i + strlen(argument) + 3))) {
+	    while(opt) {
+		if(!(pua_cats = realloc(pua_cats, i + strlen(opt->strarg) + 3))) {
 		    logg("!Can't allocate memory for pua_cats\n");
 		    cl_engine_free(engine);
 		    return 70;
 		}
-		sprintf(pua_cats + i, ".%s", argument);
-		i += strlen(argument) + 1;
+		sprintf(pua_cats + i, ".%s", opt->strarg);
+		i += strlen(opt->strarg) + 1;
 		pua_cats[i] = 0;
-		argument = opt_nextarg(&optnode, "exclude-pua");
+		opt = opt->nextarg;
 	    }
 	    pua_cats[i] = '.';
 	    pua_cats[i + 1] = 0;
 	}
 
-	if(opt_check(opt, "include-pua")) {
+	if((opt = optget(opts, "include-pua"))->enabled) {
 	    if(pua_cats) {
 		logg("!--exclude-pua and --include-pua cannot be used at the same time\n");
 		cl_engine_free(engine);
@@ -415,17 +388,16 @@ int scanmanager(const struct optstruct *opt)
 		return 40;
 	    }
 	    dboptions |= CL_DB_PUA_INCLUDE;
-	    argument = opt_firstarg(opt, "include-pua", &optnode);
 	    i = 0;
-	    while(argument) {
-		if(!(pua_cats = realloc(pua_cats, i + strlen(argument) + 3))) {
+	    while(opt) {
+		if(!(pua_cats = realloc(pua_cats, i + strlen(opt->strarg) + 3))) {
 		    logg("!Can't allocate memory for pua_cats\n");
 		    return 70;
 		}
-		sprintf(pua_cats + i, ".%s", argument);
-		i += strlen(argument) + 1;
+		sprintf(pua_cats + i, ".%s", opt->strarg);
+		i += strlen(opt->strarg) + 1;
 		pua_cats[i] = 0;
-		argument = opt_nextarg(&optnode, "include-pua");
+		opt = opt->nextarg;
 	    }
 	    pua_cats[i] = '.';
 	    pua_cats[i + 1] = 0;
@@ -442,32 +414,31 @@ int scanmanager(const struct optstruct *opt)
 	}
     }
 
-    if(opt_check(opt, "dev-ac-only")) {
+    if(optget(opts, "dev-ac-only")->enabled) {
 	val32 = 1;
 	cl_engine_set(engine, CL_ENGINE_AC_ONLY, &val32);
     }
 
-    if(opt_check(opt, "dev-ac-depth")) {
-	val32 = atoi(opt_arg(opt, "dev-ac-depth"));
+    if(optget(opts, "dev-ac-depth")->enabled) {
+	val32 = optget(opts, "dev-ac-depth")->numarg;
 	cl_engine_set(engine, CL_ENGINE_AC_MAXDEPTH, &val32);
     }
 
-    if(opt_check(opt, "leave-temps")) {
+    if(optget(opts, "leave-temps")->enabled) {
 	val32 = 1;
 	cl_engine_set(engine, CL_ENGINE_KEEPTMP, &val32);
     }
 
-    if(opt_check(opt, "tempdir")) {
-	pt = opt_arg(opt, "tempdir");
-	if((ret = cl_engine_set(engine, CL_ENGINE_TMPDIR, pt))) {
+    if((opt = optget(opts, "tempdir"))->enabled) {
+	if((ret = cl_engine_set(engine, CL_ENGINE_TMPDIR, opt->strarg))) {
 	    logg("!cli_engine_set(CL_ENGINE_TMPDIR) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
 	    return 50;
 	}
     }
 
-    if(opt_check(opt, "database")) {
-	if((ret = cl_load(opt_arg(opt, "database"), engine, &info.sigs, dboptions))) {
+    if((opt = optget(opts, "database"))->enabled) {
+	if((ret = cl_load(opt->strarg, engine, &info.sigs, dboptions))) {
 	    logg("!%s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
 	    return 50;
@@ -493,18 +464,8 @@ int scanmanager(const struct optstruct *opt)
 
     /* set limits */
 
-    if(opt_check(opt, "max-scansize")) {
-	char *cpy, *ptr;
-	ptr = opt_arg(opt, "max-scansize");
-	if(tolower(ptr[strlen(ptr) - 1]) == 'm') {
-	    cpy = calloc(strlen(ptr), 1);
-	    strncpy(cpy, ptr, strlen(ptr) - 1);
-	    cpy[strlen(ptr)-1]='\0';
-	    val64 = atoi(cpy) * 1024 * 1024;
-	    free(cpy);
-	} else
-	    val64 = atoi(ptr) * 1024;
-
+    if((opt = optget(opts, "max-scansize"))->enabled) {
+	val64 = opt->numarg;
 	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_SCANSIZE, &val64))) {
 	    logg("!cli_engine_set(CL_ENGINE_MAX_SCANSIZE) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
@@ -512,18 +473,8 @@ int scanmanager(const struct optstruct *opt)
 	}
     }
 
-    if(opt_check(opt, "max-filesize")) {
-	char *cpy, *ptr;
-	ptr = opt_arg(opt, "max-filesize");
-	if(tolower(ptr[strlen(ptr) - 1]) == 'm') {
-	    cpy = calloc(strlen(ptr), 1);
-	    strncpy(cpy, ptr, strlen(ptr) - 1);
-	    cpy[strlen(ptr)-1]='\0';
-	    val64 = atoi(cpy) * 1024 * 1024;
-	    free(cpy);
-	} else
-	    val64 = atoi(ptr) * 1024;
-
+    if((opt = optget(opts, "max-filesize"))->enabled) {
+	val64 = opt->numarg;
 	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_FILESIZE, &val64))) {
 	    logg("!cli_engine_set(CL_ENGINE_MAX_FILESIZE) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
@@ -544,8 +495,8 @@ int scanmanager(const struct optstruct *opt)
     }
 #endif
 
-    if(opt_check(opt, "max-files")) {
-	val32 = atoi(opt_arg(opt, "max-files"));
+    if((opt = optget(opts, "max-files"))->enabled) {
+	val32 = opt->numarg;
 	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_FILES, &val32))) {
 	    logg("!cli_engine_set(CL_ENGINE_MAX_FILES) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
@@ -553,8 +504,8 @@ int scanmanager(const struct optstruct *opt)
 	}
     }
 
-    if(opt_check(opt, "max-recursion")) {
-	val32 = atoi(opt_arg(opt, "max-recursion"));
+    if((opt = optget(opts, "max-recursion"))->enabled) {
+	val32 = opt->numarg;
 	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_RECURSION, &val32))) {
 	    logg("!cli_engine_set(CL_ENGINE_MAX_RECURSION) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
@@ -562,63 +513,55 @@ int scanmanager(const struct optstruct *opt)
 	}
     }
 
-    /* set options */
+    /* set scan options */
+    if(optget(opts,"phishing-ssl")->enabled)
+	options |= CL_SCAN_PHISHING_BLOCKSSL;
 
-    if(opt_check(opt, "disable-archive") || opt_check(opt, "no-archive"))
-	options &= ~CL_SCAN_ARCHIVE;
-    else
+    if(optget(opts,"phishing-cloak")->enabled)
+	options |= CL_SCAN_PHISHING_BLOCKCLOAK;
+
+    if(optget(opts,"heuristic-scan-precedence")->enabled)
+	options |= CL_SCAN_HEURISTIC_PRECEDENCE;
+
+    if(optget(opts, "scan-archive")->enabled)
 	options |= CL_SCAN_ARCHIVE;
 
-    if(opt_check(opt, "detect-broken"))
+    if(optget(opts, "detect-broken")->enabled)
 	options |= CL_SCAN_BLOCKBROKEN;
 
-    if(opt_check(opt, "block-encrypted"))
+    if(optget(opts, "block-encrypted")->enabled)
 	options |= CL_SCAN_BLOCKENCRYPTED;
 
-    if(opt_check(opt, "no-pe"))
-	options &= ~CL_SCAN_PE;
-    else
+    if(optget(opts, "scan-pe")->enabled)
 	options |= CL_SCAN_PE;
 
-    if(opt_check(opt, "no-elf"))
-	options &= ~CL_SCAN_ELF;
-    else
+    if(optget(opts, "scan-elf")->enabled)
 	options |= CL_SCAN_ELF;
 
-    if(opt_check(opt, "no-ole2"))
-	options &= ~CL_SCAN_OLE2;
-    else
+    if(optget(opts, "scan-ole2")->enabled)
 	options |= CL_SCAN_OLE2;
 
-    if(opt_check(opt, "no-pdf"))
-	options &= ~CL_SCAN_PDF;
-    else
+    if(optget(opts, "scan-pdf")->enabled)
 	options |= CL_SCAN_PDF;
 
-    if(opt_check(opt, "no-html"))
-	options &= ~CL_SCAN_HTML;
-    else
+    if(optget(opts, "scan-html")->enabled)
 	options |= CL_SCAN_HTML;
 
-    if(opt_check(opt, "no-mail")) {
-	options &= ~CL_SCAN_MAIL;
-    } else {
+    if(optget(opts, "scan-mail")->enabled) {
 	options |= CL_SCAN_MAIL;
 
-	if(opt_check(opt, "mail-follow-urls"))
+	if(optget(opts, "mail-follow-urls")->enabled)
 	    options |= CL_SCAN_MAILURL;
     }
 
-    if(opt_check(opt, "no-algorithmic"))
-	options &= ~CL_SCAN_ALGORITHMIC;
-    else
+    if(optget(opts, "algorithmic-detection")->enabled)
 	options |= CL_SCAN_ALGORITHMIC;
 
-    if(opt_check(opt, "detect-structured")) {
+    if(optget(opts, "detect-structured")->enabled) {
 	options |= CL_SCAN_STRUCTURED;
 
-	if(opt_check(opt, "structured-ssn-format")) {
-	    switch(atoi(opt_arg(opt, "structured-ssn-format"))) {
+	if((opt = optget(opts, "structured-ssn-format"))->enabled) {
+	    switch(opt->numarg) {
 		case 0:
 		    options |= CL_SCAN_STRUCTURED_SSN_NORMAL;
 		    break;
@@ -636,8 +579,8 @@ int scanmanager(const struct optstruct *opt)
 	    options |= CL_SCAN_STRUCTURED_SSN_NORMAL;
 	}
 
-	if(opt_check(opt, "structured-ssn-count")) {
-	    val32 = atoi(opt_arg(opt, "structured-ssn-count"));
+	if((opt = optget(opts, "structured-ssn-count"))->enabled) {
+	    val32 = opt->numarg;
 	    if((ret = cl_engine_set(engine, CL_ENGINE_MIN_SSN_COUNT, &val32))) {
 		logg("!cli_engine_set(CL_ENGINE_MIN_SSN_COUNT) failed: %s\n", cl_strerror(ret));
 		cl_engine_free(engine);
@@ -645,8 +588,8 @@ int scanmanager(const struct optstruct *opt)
 	    }
 	}
 
-	if(opt_check(opt, "structured-cc-count")) {
-	    val32 = atoi(opt_arg(opt, "structured-cc-count"));
+	if((opt = optget(opts, "structured-cc-count"))->enabled) {
+	    val32 = opt->numarg;
 	    if((ret = cl_engine_set(engine, CL_ENGINE_MIN_CC_COUNT, &val32))) {
 		logg("!cli_engine_set(CL_ENGINE_MIN_CC_COUNT) failed: %s\n", cl_strerror(ret));
 		cl_engine_free(engine);
@@ -654,8 +597,9 @@ int scanmanager(const struct optstruct *opt)
 	    }
 	}
 
-    } else
+    } else {
 	options &= ~CL_SCAN_STRUCTURED;
+    }
 
 #ifdef C_LINUX
     procdev = (dev_t) 0;
@@ -664,20 +608,20 @@ int scanmanager(const struct optstruct *opt)
 #endif
 
     /* check filetype */
-    if(opt->filename == NULL || strlen(opt->filename) == 0) {
+    if(opts->filename == NULL || strlen(opts->filename) == 0) {
 
 	/* we need full path for some reasons (eg. archive handling) */
 	if(!getcwd(cwd, sizeof(cwd))) {
 	    logg("!Can't get absolute pathname of current working directory\n");
 	    ret = 57;
 	} else
-	    ret = scandirs(cwd, engine, opt, options, 1);
+	    ret = scandirs(cwd, engine, opts, options, 1);
 
-    } else if(!strcmp(opt->filename, "-")) { /* read data from stdin */
-	ret = scanstdin(engine, opt, options);
+    } else if(!strcmp(opts->filename, "-")) { /* read data from stdin */
+	ret = scanstdin(engine, opts, options);
 
     } else {
-	for (x = 0; (file = cli_strtok(opt->filename, x, "\t")) != NULL; x++) {
+	for (x = 0; (file = cli_strtok(opts->filename, x, "\t")) != NULL; x++) {
 	    if((fmodeint = fileinfo(file, 2)) == -1) {
 		logg("^Can't access file %s\n", file);
 		perror(file);
@@ -694,11 +638,11 @@ int scanmanager(const struct optstruct *opt)
 
 		switch(fmode & S_IFMT) {
 		    case S_IFREG:
-			ret = scanfile(file, engine, opt, options);
+			ret = scanfile(file, engine, opts, options);
 			break;
 
 		    case S_IFDIR:
-			ret = scandirs(file, engine, opt, options, 1);
+			ret = scandirs(file, engine, opts, options, 1);
 			break;
 
 		    default:
@@ -722,18 +666,18 @@ int scanmanager(const struct optstruct *opt)
     return ret;
 }
 
-static void move_infected(const char *filename, const struct optstruct *opt)
+static void move_infected(const char *filename, const struct optstruct *opts)
 {
 	char *movedir, *movefilename, numext[4 + 1];
 	const char *tmp;
 	struct stat ofstat, mfstat;
 	int n, len, movefilename_size;
-	int moveflag = opt_check(opt, "move");
+	int moveflag = optget(opts, "move")->enabled;
 	struct utimbuf ubuf;
 
 
-    if((moveflag && !(movedir = opt_arg(opt, "move"))) ||
-	(!moveflag && !(movedir = opt_arg(opt, "copy")))) {
+    if((moveflag && !(movedir = optget(opts, "move")->strarg)) ||
+	(!moveflag && !(movedir = optget(opts, "copy")->strarg))) {
         /* Should never reach here */
         logg("!opt_arg() returned NULL\n");
         info.notmoved++;

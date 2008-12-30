@@ -19,8 +19,8 @@
 #ifndef __MANAGER_H
 #define __MANAGER_H
 
-#include "shared/options.h"
+#include "shared/optparser.h"
 
-int scanmanager(const struct optstruct *opt);
+int scanmanager(const struct optstruct *opts);
 
 #endif
