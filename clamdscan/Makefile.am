@@ -23,21 +23,18 @@ bin_PROGRAMS = clamdscan
 clamdscan_SOURCES = \
     $(top_srcdir)/shared/output.c \
     $(top_srcdir)/shared/output.h \
-    $(top_srcdir)/shared/cfgparser.c \
-    $(top_srcdir)/shared/cfgparser.h \
+    $(top_srcdir)/shared/optparser.c \
+    $(top_srcdir)/shared/optparser.h \
     $(top_srcdir)/shared/misc.c \
     $(top_srcdir)/shared/misc.h \
     $(top_srcdir)/shared/getopt.c \
     $(top_srcdir)/shared/getopt.h \
-    $(top_srcdir)/shared/options.c \
-    $(top_srcdir)/shared/options.h \
     $(top_srcdir)/libclamav/regex/strlcpy.c\
     clamd_fdscan.c \
     clamd_fdscan.h \
     clamdscan.c \
     client.c \
-    client.h \
-    defaults.h
+    client.h
 
 endif
 

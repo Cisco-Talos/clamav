@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 #endif
 
 
-    if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMSCAN, NULL)) == NULL) {
+    if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMSCAN, 0, NULL)) == NULL) {
 	mprintf("!Can't parse command line options\n");
 	return 40;
     }

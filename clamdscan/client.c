@@ -40,23 +40,21 @@
 #include <sys/uio.h>
 #endif
 
-#include "others.h"
-#include "defaults.h"
-#include "options.h"
-#include "cfgparser.h"
-#include "output.h"
-#include "misc.h"
-#include "str.h"
+#include "shared/optparser.h"
+#include "shared/output.h"
+#include "shared/misc.h"
+#include "libclamav/str.h"
+
 #include "client.h"
 #include "clamd_fdscan.h"
 
 #define SOCKET_INET	AF_INET
 
-void move_infected(const char *filename, const struct optstruct *opt);
+void move_infected(const char *filename, const struct optstruct *opts);
 int notremoved = 0, notmoved = 0;
 int printinfected = 0;
 
-static int dsresult(int sockd, const struct optstruct *opt)
+static int dsresult(int sockd, const struct optstruct *opts)
 {
 	int infected = 0, waserror = 0;
 	char buff[4096], *pt;
@@ -68,7 +66,7 @@ static int dsresult(int sockd, const struct optstruct *opt)
 #else /* FIXME: accoriding to YD OS/2 does not support dup() for sockets */
     if((fd = fdopen(sockd, "r")) == NULL) {
 #endif
-	logg("^Can't open descriptor for reading.\n");
+	logg("!Can't open descriptor for reading.\n");
 	return -1;
     }
 
@@ -76,16 +74,16 @@ static int dsresult(int sockd, const struct optstruct *opt)
 	if(strstr(buff, "FOUND\n")) {
 	    infected++;
 	    logg("%s", buff);
-	    if(opt_check(opt, "move") || opt_check(opt, "copy")) {
+	    if(optget(opts, "move")->enabled || optget(opts, "copy")->enabled) {
 		/* filename: Virus FOUND */
 		if((pt = strrchr(buff, ':'))) {
 		    *pt = 0;
-		    move_infected(buff, opt);
+		    move_infected(buff, opts);
 		} else {
-		    logg("!Incorrect output from clamd. File not %s.\n", opt_check(opt, "move") ? "moved" : "copied");
+		    logg("!Incorrect output from clamd. File not %s.\n", optget(opts, "move")->enabled ? "moved" : "copied");
 		}
 
-	    } else if(opt_check(opt, "remove")) {
+	    } else if(optget(opts, "remove")->enabled) {
 		if(!(pt = strrchr(buff, ':'))) {
 		    logg("!Incorrect output from clamd. File not removed.\n");
 		} else {
@@ -113,7 +111,7 @@ static int dsresult(int sockd, const struct optstruct *opt)
     return infected ? infected : (waserror ? -1 : 0);
 }
 
-static int dsfile(int sockd, const char *scantype, const char *filename, const struct optstruct *opt)
+static int dsfile(int sockd, const char *scantype, const char *filename, const struct optstruct *opts)
 {
 	int ret;
 	char *scancmd;
@@ -130,7 +128,7 @@ static int dsfile(int sockd, const char *scantype, const char *filename, const s
 
     free(scancmd);
 
-    ret = dsresult(sockd, opt);
+    ret = dsresult(sockd, opts);
 
     if(!ret && !printinfected)
 	logg("~%s: OK\n", filename);
@@ -138,7 +136,7 @@ static int dsfile(int sockd, const char *scantype, const char *filename, const s
     return ret;
 }
 
-static int dsstream(int sockd, const struct optstruct *opt)
+static int dsstream(int sockd, const struct optstruct *opts)
 {
 	int wsockd, loopw = 60, bread, port, infected = 0;
 	struct sockaddr_in server;
@@ -148,7 +146,7 @@ static int dsstream(int sockd, const struct optstruct *opt)
 
 
     if(write(sockd, "STREAM", 6) <= 0) {
-	logg("^Can't write to the socket.\n");
+	logg("!Can't write to the socket.\n");
 	return 2;
     }
 
@@ -165,7 +163,7 @@ static int dsstream(int sockd, const struct optstruct *opt)
     }
 
     if(!loopw) {
-	logg("^Daemon not ready for stream scanning.\n");
+	logg("!Daemon not ready for stream scanning.\n");
 	return -1;
     }
 
@@ -173,7 +171,7 @@ static int dsstream(int sockd, const struct optstruct *opt)
 
     if((wsockd = socket(SOCKET_INET, SOCK_STREAM, 0)) < 0) {
 	perror("socket()");
-	logg("^Can't create the socket.\n");
+	logg("!Can't create the socket.\n");
 	return -1;
     }
 
@@ -183,7 +181,7 @@ static int dsstream(int sockd, const struct optstruct *opt)
     peer_size = sizeof(peer);
     if(getpeername(sockd, (struct sockaddr *) &peer, &peer_size) < 0) {
 	perror("getpeername()");
-	logg("^Can't get socket peer name.\n");
+	logg("!Can't get socket peer name.\n");
 	return -1;
     }
 
@@ -195,20 +193,20 @@ static int dsstream(int sockd, const struct optstruct *opt)
 	    server.sin_addr.s_addr = peer.sin_addr.s_addr;
 	    break;
 	default:
-	    logg("^Unexpected socket type: %d.\n", peer.sin_family);
+	    logg("!Unexpected socket type: %d.\n", peer.sin_family);
 	    return -1;
     }
 
     if(connect(wsockd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) < 0) {
 	close(wsockd);
 	perror("connect()");
-	logg("^Can't connect to clamd [port: %d].\n", port);
+	logg("!Can't connect to clamd [port: %d].\n", port);
 	return -1;
     }
 
     while((bread = read(0, buff, sizeof(buff))) > 0) {
 	if(write(wsockd, buff, bread) <= 0) {
-	    logg("^Can't write to the socket.\n");
+	    logg("!Can't write to the socket.\n");
 	    close(wsockd);
 	    return -1;
 	}
@@ -256,23 +254,21 @@ static char *abpath(const char *filename)
     return fullpath;
 }
 
-static int dconnect(const struct optstruct *opt, int *is_unix)
+static int dconnect(const struct optstruct *opts, int *is_unix)
 {
 	struct sockaddr_un server;
 	struct sockaddr_in server2;
 	struct hostent *he;
-	struct cfgstruct *copt;
-	const struct cfgstruct *cpt;
-	const char *clamav_conf = opt_arg(opt, "config-file");
+	struct optstruct *clamdopts;
+	const struct optstruct *opt;
+	const char *clamd_conf = optget(opts, "config-file")->strarg;
 	int sockd;
 
     if(is_unix)
-	    *is_unix = 0;
-    if(!clamav_conf)
-	clamav_conf = DEFAULT_CFG;
+	*is_unix = 0;
 
-    if((copt = getcfg(clamav_conf, 1, OPT_CLAMD)) == NULL) {
-	logg("^Can't parse the configuration file.\n");
+    if((clamdopts = optparse(clamd_conf, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
+	logg("!Can't parse clamd configuration file %s\n", clamd_conf);
 	return -1;
     }
 
@@ -282,46 +278,46 @@ static int dconnect(const struct optstruct *opt, int *is_unix)
     /* Set default address to connect to */
     server2.sin_addr.s_addr = inet_addr("127.0.0.1");    
 
-    if((cpt = cfgopt(copt, "LocalSocket"))->enabled) {
+    if((opt = optget(clamdopts, "LocalSocket"))->enabled) {
 
 	server.sun_family = AF_UNIX;
-	strncpy(server.sun_path, cpt->strarg, sizeof(server.sun_path));
+	strncpy(server.sun_path, opt->strarg, sizeof(server.sun_path));
 	server.sun_path[sizeof(server.sun_path)-1]='\0';
 
 	if((sockd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 	    perror("socket()");
-	    logg("^Can't create the socket.\n");
-	    freecfg(copt);
+	    logg("!Can't create the socket.\n");
+	    optfree(clamdopts);
 	    return -1;
 	}
 
 	if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
 	    close(sockd);
 	    perror("connect()");
-	    logg("^Can't connect to clamd.\n");
-	    freecfg(copt);
+	    logg("!Can't connect to clamd.\n");
+	    optfree(clamdopts);
 	    return -1;
 	}
 	if(is_unix)
 		*is_unix = 1;
-    } else if((cpt = cfgopt(copt, "TCPSocket"))->enabled) {
+    } else if((opt = optget(clamdopts, "TCPSocket"))->enabled) {
 
 	if((sockd = socket(SOCKET_INET, SOCK_STREAM, 0)) < 0) {
 	    perror("socket()");
-	    logg("^Can't create the socket.\n");
-	    freecfg(copt);
+	    logg("!Can't create the socket.\n");
+	    optfree(clamdopts);
 	    return -1;
 	}
 
 	server2.sin_family = AF_INET;
-	server2.sin_port = htons(cpt->numarg);
+	server2.sin_port = htons(opt->numarg);
 
-	if((cpt = cfgopt(copt, "TCPAddr"))->enabled) {
-	    if ((he = gethostbyname(cpt->strarg)) == 0) {
+	if((opt = optget(clamdopts, "TCPAddr"))->enabled) {
+	    if ((he = gethostbyname(opt->strarg)) == 0) {
 		close(sockd);
 		perror("gethostbyname()");
-		logg("^Can't lookup clamd hostname.\n");
-		freecfg(copt);
+		logg("!Can't lookup clamd hostname.\n");
+		optfree(clamdopts);
 		return -1;
 	    }
 	    server2.sin_addr = *(struct in_addr *) he->h_addr_list[0];
@@ -330,33 +326,33 @@ static int dconnect(const struct optstruct *opt, int *is_unix)
 	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
 	    close(sockd);
 	    perror("connect()");
-	    logg("^Can't connect to clamd.\n");
-	    freecfg(copt);
+	    logg("!Can't connect to clamd.\n");
+	    optfree(clamdopts);
 	    return -1;
 	}
 
     } else {
-	logg("^Clamd is not configured properly.\n");
-	freecfg(copt);
+	logg("!Clamd is not configured properly.\n");
+	optfree(clamdopts);
 	return -1;
     }
 
-    freecfg(copt);
+    optfree(clamdopts);
 
     return sockd;
 }
 
-int get_clamd_version(const struct optstruct *opt)
+int get_clamd_version(const struct optstruct *opts)
 {
 	char buff[64];
 	int bread, sockd;
 
 
-    if((sockd = dconnect(opt, NULL)) < 0)
+    if((sockd = dconnect(opts, NULL)) < 0)
 	return 2;
 
     if(write(sockd, "VERSION", 7) <= 0) {
-	logg("^Can't write to the socket.\n");
+	logg("!Can't write to the socket.\n");
 	close(sockd);
 	return 2;
     }
@@ -370,13 +366,13 @@ int get_clamd_version(const struct optstruct *opt)
     return 0;
 }
 
-int reload_clamd_database(const struct optstruct *opt)
+int reload_clamd_database(const struct optstruct *opts)
 {
 	char buff[64];
 	int bread, sockd;
 
 
-    if((sockd = dconnect(opt, NULL)) < 0)
+    if((sockd = dconnect(opts, NULL)) < 0)
 	return 2;
 
     if(write(sockd, "RELOAD", 6) <= 0) {
@@ -396,7 +392,7 @@ int reload_clamd_database(const struct optstruct *opt)
     return 0;
 }
 
-int client(const struct optstruct *opt, int *infected)
+int client(const struct optstruct *opts, int *infected)
 {
 	char cwd[PATH_MAX+1], *fullpath;
 	int sockd, ret, errors = 0;
@@ -406,41 +402,41 @@ int client(const struct optstruct *opt, int *infected)
 
     *infected = 0;
 
-    if(opt_check(opt, "multiscan"))
+    if(optget(opts, "multiscan")->enabled)
 	scantype = "MULTISCAN";
 
     /* parse argument list */
-    if(opt->filename == NULL || strlen(opt->filename) == 0) {
+    if(opts->filename == NULL || strlen(opts->filename) == 0) {
 	/* scan current directory */
 	if(!getcwd(cwd, PATH_MAX)) {
 	    logg("^Can't get absolute pathname of current working directory.\n");
 	    return 2;
 	}
 
-	if((sockd = dconnect(opt, NULL)) < 0)
+	if((sockd = dconnect(opts, NULL)) < 0)
 	    return 2;
 
-	if((ret = dsfile(sockd, scantype, cwd, opt)) >= 0)
+	if((ret = dsfile(sockd, scantype, cwd, opts)) >= 0)
 	    *infected += ret;
 	else
 	    errors++;
 
 	close(sockd);
 
-    } else if(!strcmp(opt->filename, "-")) { /* scan data from stdin */
+    } else if(!strcmp(opts->filename, "-")) { /* scan data from stdin */
         int is_unix;
-	if((sockd = dconnect(opt, &is_unix)) < 0)
+	if((sockd = dconnect(opts, &is_unix)) < 0)
 	    return 2;
 
-	if(opt_check(opt,"fdpass")) {
+	if(optget(opts,"fdpass")->enabled) {
 #ifndef HAVE_FD_PASSING
 		logg("^File descriptor pass support not compiled in, falling back to stream scan\n");
-		ret = dsstream(sockd, opt);
+		ret = dsstream(sockd, opts);
 #else
 		if(!is_unix) {
 			logg("^File descriptor passing can only work on local (unix) sockets! Falling back to stream scan\n");
 			/* fall back to stream */
-			ret = dsstream(sockd, opt);
+			ret = dsstream(sockd, opts);
 		} else {
 			char buff[4096];
 			memset(buff, 0, sizeof(buff));
@@ -452,7 +448,7 @@ int client(const struct optstruct *opt, int *infected)
 		}
 #endif
 	} else
-		ret = dsstream(sockd, opt);
+		ret = dsstream(sockd, opts);
 	if(ret >= 0)
 	    *infected += ret;
 	else
@@ -463,7 +459,7 @@ int client(const struct optstruct *opt, int *infected)
     } else {
 	int x;
 	char *thefilename;
-	for (x = 0; (thefilename = cli_strtok(opt->filename, x, "\t")) != NULL; x++) {
+	for (x = 0; (thefilename = cli_strtok(opts->filename, x, "\t")) != NULL; x++) {
 	    fullpath = thefilename;
 
 	    if(stat(fullpath, &sb) == -1) {
@@ -484,10 +480,10 @@ int client(const struct optstruct *opt, int *infected)
 		switch(sb.st_mode & S_IFMT) {
 		    case S_IFREG:
 		    case S_IFDIR:
-			if((sockd = dconnect(opt, NULL)) < 0)
+			if((sockd = dconnect(opts, NULL)) < 0)
 			    return 2;
 
-			if((ret = dsfile(sockd, scantype, fullpath, opt)) >= 0)
+			if((ret = dsfile(sockd, scantype, fullpath, opts)) >= 0)
 			    *infected += ret;
 			else
 			    errors++;
@@ -508,26 +504,26 @@ int client(const struct optstruct *opt, int *infected)
     return *infected ? 1 : (errors ? 2 : 0);
 }
 
-void move_infected(const char *filename, const struct optstruct *opt)
+void move_infected(const char *filename, const struct optstruct *opts)
 {
 	char *movedir, *movefilename, numext[4 + 1];
 	const char *tmp;
 	struct stat ofstat, mfstat;
 	int n, len, movefilename_size;
-	int moveflag = opt_check(opt, "move");
+	int moveflag = optget(opts, "move")->enabled;
 	struct utimbuf ubuf;
 
 
-    if((moveflag && !(movedir = opt_arg(opt, "move"))) ||
-        (!moveflag && !(movedir = opt_arg(opt, "copy")))) {
+    if((moveflag && !(movedir = optget(opts, "move")->strarg)) ||
+        (!moveflag && !(movedir = optget(opts, "copy")->strarg))) {
         /* Should never reach here */
-        logg("^opt_arg() returned NULL\n");
+        logg("!optget() returned NULL\n");
         notmoved++;
         return;
     }
 
     if(access(movedir, W_OK|X_OK) == -1) {
-        logg("^error %s file '%s': cannot write to '%s': %s\n", (moveflag) ? "moving" : "copying", filename, movedir, strerror(errno));
+        logg("!problem %s file '%s': cannot write to '%s': %s\n", (moveflag) ? "moving" : "copying", filename, movedir, strerror(errno));
         notmoved++;
         return;
     }
@@ -545,12 +541,12 @@ void move_infected(const char *filename, const struct optstruct *opt)
     movefilename_size = sizeof(char) * (strlen(movedir) + strlen(tmp) + sizeof(numext) + 2);
 
     if(!(movefilename = malloc(movefilename_size))) {
-        logg("^Memory allocation error\n");
+        logg("!Memory allocation error\n");
 	exit(2);
     }
 
     if(!(cli_strrcpy(movefilename, movedir))) {
-        logg("^cli_strrcpy() returned NULL\n");
+        logg("!cli_strrcpy() returned NULL\n");
         notmoved++;
         free(movefilename);
         return;
@@ -559,7 +555,7 @@ void move_infected(const char *filename, const struct optstruct *opt)
     strcat(movefilename, "/");
 
     if(!(strcat(movefilename, tmp))) {
-        logg("^strcat() returned NULL\n");
+        logg("!strcat() returned NULL\n");
         notmoved++;
         free(movefilename);
         return;

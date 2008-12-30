@@ -28,14 +28,11 @@
 #include <time.h>
 #include <signal.h>
 
-#include "options.h"
-#include "others.h"
-#include "defaults.h"
-#include "client.h"
-#include "output.h"
-#include "misc.h"
+#include "shared/output.h"
+#include "shared/misc.h"
+#include "shared/optparser.h"
 
-#include "clamscan/clamscan_opt.h"
+#include "client.h"
 
 void help(void);
 
@@ -65,62 +62,56 @@ int main(int argc, char **argv)
 	struct timeval t1, t2;
 	struct timezone tz;
 	time_t starttime;
-	struct optstruct *opt;
-	const char *clamdscan_accepted[] = { "help", "version", "verbose", "quiet",
-				  "stdout", "log", "move", "copy", "remove",
-				  "config-file", "no-summary",  "fdpass",
-				  "disable-summary", "multiscan", "reload",
-				  "infected",
-				  NULL };
+        struct optstruct *opts;
+        const struct optstruct *opt;
 
 
-    opt = opt_parse(argc, argv, clamscan_shortopt, clamscan_longopt, clamdscan_accepted, NULL);
-    if(!opt) {
-	mprintf("!Can't parse the command line\n");
+    if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMDSCAN, OPT_CLAMSCAN, NULL)) == NULL) {
+	mprintf("!Can't parse command line options\n");
 	return 2;
     }
 
-    if(opt_check(opt, "verbose")) {
+    if(optget(opts, "verbose")->enabled) {
 	mprintf_verbose = 1;
 	logg_verbose = 1;
     }
 
-    if(opt_check(opt, "quiet"))
+    if(optget(opts, "quiet")->enabled)
 	mprintf_quiet = 1;
 
-    if(opt_check(opt, "stdout"))
+    if(optget(opts, "stdout")->enabled)
 	mprintf_stdout = 1;
 
-    if(opt_check(opt, "version")) {
-	print_server_version(opt);
-	opt_free(opt);
+    if(optget(opts, "version")->enabled) {
+	print_server_version(opts);
+	optfree(opts);
 	exit(0);
     }
 
-    if(opt_check(opt, "help")) {
-	opt_free(opt);
+    if(optget(opts, "help")->enabled) {
+	optfree(opts);
     	help();
     }
 
-    if(opt_check(opt, "infected"))
+    if(optget(opts, "infected")->enabled)
 	printinfected = 1;
 
     /* initialize logger */
 
-    if(opt_check(opt, "log")) {
-	logg_file = opt_arg(opt, "log");
+    if((opt = optget(opts, "log"))->enabled) {
+	logg_file = opt->strarg;
 	if(logg("--------------------------------------\n")) {
 	    mprintf("!Problem with internal logger.\n");
-	    opt_free(opt);
+	    optfree(opts);
 	    exit(2);
 	}
     } else 
 	logg_file = NULL;
 
 
-    if(opt_check(opt, "reload")) {
-	ret = reload_server_database(opt);
-	opt_free(opt);
+    if(optget(opts, "reload")->enabled) {
+	ret = reload_server_database(opts);
+	optfree(opts);
 	logg_close();
 	exit(ret);
     }
@@ -130,10 +121,10 @@ int main(int argc, char **argv)
 
     gettimeofday(&t1, &tz);
 
-    ret = client(opt, &infected);
+    ret = client(opts, &infected);
 
     /* TODO: Implement STATUS in clamd */
-    if((infected || ret != 2) && !opt_check(opt, "disable-summary") && !opt_check(opt, "no-summary")) {
+    if((infected || ret != 2) && !optget(opts, "no-summary")->enabled) {
 	gettimeofday(&t2, &tz);
 	ds = t2.tv_sec - t1.tv_sec;
 	dms = t2.tv_usec - t1.tv_usec;
@@ -151,7 +142,7 @@ int main(int argc, char **argv)
     }
 
     logg_close();
-    opt_free(opt);
+    optfree(opts);
     exit(ret);
 }
 

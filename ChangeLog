@@ -1,3 +1,7 @@
+Tue Dec 30 22:29:50 CET 2008 (tk)
+---------------------------------
+ * shared/optparser.c, clamdscan: use the new option parser (bb#1215)
+
 Tue Dec 30 11:43:10 CET 2008 (tk)
 ---------------------------------
  * shared/optparser.c, clamscan: use the new option parser; changes in switches:

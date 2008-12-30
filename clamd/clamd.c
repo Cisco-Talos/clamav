@@ -115,7 +115,7 @@ int main(int argc, char **argv)
     }
 #endif
 
-    if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMD, NULL)) == NULL) {
+    if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMD, 0, NULL)) == NULL) {
 	mprintf("!Can't parse command line options\n");
 	return 1;
     }
@@ -141,7 +141,7 @@ int main(int argc, char **argv)
     /* parse the config file */
     cfgfile = optget(opts, "config-file")->strarg;
     pt = strdup(cfgfile);
-    if((opts = optparse(cfgfile, 0, NULL, 1, OPT_CLAMD, opts)) == NULL) {
+    if((opts = optparse(cfgfile, 0, NULL, 1, OPT_CLAMD, 0, opts)) == NULL) {
 	fprintf(stderr, "ERROR: Can't open/parse the config file %s\n", pt);
 	free(pt);
 	return 1;

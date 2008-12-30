@@ -19,10 +19,10 @@
 #ifndef __CLIENT_H
 #define __CLIENT_H
 
-#include "options.h"
+#include "shared/optparser.h"
 
-int client(const struct optstruct *opt, int *infected);
-int get_clamd_version(const struct optstruct *opt);
-int reload_clamd_database(const struct optstruct *opt);
+int client(const struct optstruct *opts, int *infected);
+int get_clamd_version(const struct optstruct *opts);
+int reload_clamd_database(const struct optstruct *opts);
 
 #endif

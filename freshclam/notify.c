@@ -70,7 +70,7 @@ int notify(const char *cfgfile)
 	const char *socktype;
 
 
-    if((opts = optparse(cfgfile, 0, NULL, 1, OPT_CLAMD, NULL)) == NULL) {
+    if((opts = optparse(cfgfile, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
 	logg("^Clamd was NOT notified: Can't find or parse configuration file %s\n", cfgfile);
 	return 1;
     }

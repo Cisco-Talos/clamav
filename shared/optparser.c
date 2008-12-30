@@ -20,7 +20,7 @@
 
 /*
  * TODO:
- * - clamdscan, clamconf, milter
+ * - clamconf, milter
  * - clamconf: generation/verification/updating of config files and man page entries
  * - automatically generate --help pages (use the first line from the description)
  */
@@ -44,7 +44,7 @@
 
 #include "getopt.h"
 
-#define MAXCMDOPTS  80
+#define MAXCMDOPTS  100
 #define MAX(a,b) (a > b ? a : b)
 
 #define MATCH_NUMBER "^[0-9]+$"
@@ -83,15 +83,15 @@ static const struct clam_option {
     { NULL, "submit-stats", 0, OPT_STRING, NULL, 0, CONFDIR"/clamd.conf", 0, OPT_FRESHCLAM, "", "" }, /* Don't merge this one with SubmitDetectionStats */
     { NULL, "reload", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMDSCAN, "", "" },
     { NULL, "multiscan", 'm', OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMDSCAN, "", "" },
+    { NULL, "fdpass", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMDSCAN, "", "" },
     { NULL, "database", 'd', OPT_STRING, NULL, -1, DATADIR, 0, OPT_CLAMSCAN, "", "" }, /* merge it with DatabaseDirectory (and fix conflict with --datadir */
     { NULL, "recursive", 'r', OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
     { NULL, "bell", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
-    { NULL, "no-summary", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
-    { NULL, "infected", 'i', OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
-    { NULL, "log", 'l', OPT_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN, "", "" },
-    { NULL, "move", 0, OPT_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN, "", "" },
-    { NULL, "copy", 0, OPT_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN, "", "" },
-    { NULL, "remove", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
+    { NULL, "no-summary", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN, "", "" },
+    { NULL, "infected", 'i', OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN, "", "" },
+    { NULL, "move", 0, OPT_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN, "", "" },
+    { NULL, "copy", 0, OPT_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN, "", "" },
+    { NULL, "remove", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN, "", "" },
     { NULL, "exclude", 0, OPT_STRING, NULL, -1, NULL, 1, OPT_CLAMSCAN, "", "" },
     { NULL, "exclude-dir", 0, OPT_STRING, NULL, -1, NULL, 1, OPT_CLAMSCAN, "", "" },
     { NULL, "include", 0, OPT_STRING, NULL, -1, NULL, 1, OPT_CLAMSCAN, "", "" },
@@ -102,7 +102,7 @@ static const struct clam_option {
     { NULL, "http-proxy", 0, OPT_STRING, NULL, 0, NULL, 0, OPT_FRESHCLAM | OPT_DEPRECATED, "", "" },
     { NULL, "proxy-user", 0, OPT_STRING, NULL, 0, NULL, 0, OPT_FRESHCLAM | OPT_DEPRECATED, "", "" },
     { NULL, "force", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
-    { NULL, "disable-summary", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
+    { NULL, "disable-summary", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_DEPRECATED, "", "" },
     { NULL, "disable-archive", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
     { NULL, "no-archive", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
     { NULL, "no-pe", 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
@@ -129,7 +129,7 @@ static const struct clam_option {
     { NULL, "deb", 0, OPT_STRING, NULL, -1, "foo", 0, OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
 
     /* config file/cmdline options */
-    { "LogFile", "log", 'l', OPT_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER, "Save all reports to a log file.", "/tmp/clamav.log" },
+    { "LogFile", "log", 'l', OPT_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN | OPT_CLAMDSCAN, "Save all reports to a log file.", "/tmp/clamav.log" },
 
     { "LogFileUnlock", NULL, 0, OPT_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_MILTER, "By default the log file is locked for writing and only a single\ndaemon process can write to it. This option disables the lock.", "no" },
 
@@ -573,7 +573,7 @@ void optfree(struct optstruct *opts)
     return;
 }
 
-struct optstruct *optparse(const char *cfgfile, int argc, char * const *argv, int verbose, int toolmask, struct optstruct *oldopts)
+struct optstruct *optparse(const char *cfgfile, int argc, char * const *argv, int verbose, int toolmask, int ignore, struct optstruct *oldopts)
 {
 	FILE *fs = NULL;
 	const struct clam_option *optentry;
@@ -596,7 +596,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char * const *argv, in
 	if(!optentry->name && !optentry->longopt)
 	    break;
 
-	if(optentry->owner & toolmask) {
+	if((optentry->owner & toolmask) || (ignore && (optentry->owner & ignore))) {
 	    if(!oldopts && optadd(&opts, optentry->name, optentry->longopt, optentry->strarg, optentry->numarg, optentry->multiple, i) < 0) {
 		fprintf(stderr, "ERROR: optparse: Can't register new option (not enough memory)\n");
 		optfree(opts);
@@ -758,6 +758,21 @@ struct optstruct *optparse(const char *cfgfile, int argc, char * const *argv, in
 	    break;
 	}
 	optentry = &clam_options[opt->idx];
+
+	if(ignore && (optentry->owner & ignore) && !(optentry->owner & toolmask)) {
+	    if(cfgfile) {
+		if(verbose)
+		    fprintf(stderr, "WARNING: Ignoring unsupported option %s at line %u\n", opt->name, line);
+	    } else {
+		if(verbose) {
+		    if(optentry->shortopt)
+			fprintf(stderr, "WARNING: Ignoring unsupported option --%s (-%c)\n", optentry->longopt, optentry->shortopt);
+		    else
+			fprintf(stderr, "WARNING: Ignoring unsupported option --%s\n", optentry->longopt);
+		}
+	    }
+	    continue;
+	}
 
 	if(optentry->owner & OPT_DEPRECATED) {
 	    if(toolmask & OPT_DEPRECATED) {
