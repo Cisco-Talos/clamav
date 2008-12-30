@@ -58,15 +58,15 @@ start_clamd()
 
 run_clamdscan() {
 	rm -f clamdscan.log clamdscan-multiscan.log
-	$TOP/clamdscan/clamdscan --version --config-file test-clamd.conf 2>&1|grep "^ClamAV" >/dev/null || 
+	$TOP/clamdscan/clamdscan --version --config-file=test-clamd.conf 2>&1|grep "^ClamAV" >/dev/null || 
 		{ error "clamdscan can't get version of clamd!"; die 1;}
-	$TOP/clamdscan/clamdscan --quiet --config-file test-clamd.conf $* --log=clamdscan.log
+	$TOP/clamdscan/clamdscan --quiet --config-file=test-clamd.conf $* --log=clamdscan.log
 	if test $? = 2; then 
 		error "Failed to run clamdscan!"
 		cat clamdscan.log
 		die 1
 	fi
-	$TOP/clamdscan/clamdscan --quiet --config-file test-clamd.conf $* -m --log=clamdscan-multiscan.log
+	$TOP/clamdscan/clamdscan --quiet --config-file=test-clamd.conf $* -m --log=clamdscan-multiscan.log
 	if test $? = 2; then 
 		error "Failed to run clamdscan (multiscan)!"
 		cat clamdscan-multiscan.log
@@ -88,7 +88,7 @@ run_reload_test()
 		die 10
 	fi
 	echo "ClamAV-RELOAD-TestFile:0:0:436c616d41562d52454c4f41442d54657374" >test-db/new.ndb
-	$TOP/clamdscan/clamdscan --reload --config-file test-clamd.conf
+	$TOP/clamdscan/clamdscan --reload --config-file=test-clamd.conf
 	if test $? -ne 0; then
 		error "clamdscan says reload failed!"
 		die 11
@@ -116,7 +116,7 @@ run_reload_test()
 
 run_clamdscan_fdpass() {
 	rm -f clamdscan.log
-	$TOP/clamdscan/clamdscan --quiet --fdpass --config-file test-clamd.conf - <$1 --log=clamdscan.log
+	$TOP/clamdscan/clamdscan --quiet --fdpass --config-file=test-clamd.conf - <$1 --log=clamdscan.log
 	if test $? = 2; then
 		error "Failed to run clamdscan (fdpass)!"
 		cat clamdscan.log
