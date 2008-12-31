@@ -911,7 +911,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char * const *argv, in
 	opts->filename = (char *) calloc(lc, sizeof(char));
 	if(!opts->filename) {
 	    fprintf(stderr, "ERROR: optparse: calloc failed\n");
-	    optfree(opt);
+	    optfree(opts);
 	    return NULL;
 	}
 

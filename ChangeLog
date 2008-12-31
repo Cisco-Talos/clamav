@@ -1,3 +1,7 @@
+Wed Dec 31 15:42:21 CET 2008 (tk)
+---------------------------------
+ * shared/optparser.c: fix typo (bb#1336)
+
 Wed Dec 31 13:40:30 CET 2008 (tk)
 ---------------------------------
  * shared/optparser.c: cosmetics; add FLAG_REQUIRED
