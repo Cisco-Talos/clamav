@@ -1,3 +1,7 @@
+Wed Dec 31 13:40:30 CET 2008 (tk)
+---------------------------------
+ * shared/optparser.c: cosmetics; add FLAG_REQUIRED
+
 Tue Dec 30 22:29:50 CET 2008 (tk)
 ---------------------------------
  * shared/optparser.c, clamdscan: use the new option parser (bb#1215)

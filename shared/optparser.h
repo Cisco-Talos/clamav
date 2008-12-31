@@ -21,11 +21,6 @@
 #ifndef __OPTPARSER_H
 #define __OPTPARSER_H
 
-#define OPT_STRING  1	/* quoted/regular string */
-#define OPT_NUMBER  2	/* raw number */
-#define OPT_SIZE    3	/* number possibly followed by modifers (M/m or K/k) */
-#define OPT_BOOL    4	/* boolean */
-
 /* don't share bits! */
 #define OPT_CLAMD	1
 #define OPT_FRESHCLAM	2
@@ -41,7 +36,7 @@ struct optstruct {
     int numarg;
     int enabled;
     int active;
-    int multiple;
+    int flags;
     int idx;
     struct optstruct *nextarg;
     struct optstruct *next;
