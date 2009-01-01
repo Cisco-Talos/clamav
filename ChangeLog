@@ -1,3 +1,7 @@
+Thu Jan  1 21:17:47 CET 2009 (acab)
+-----------------------------------
+ * libclamav/disasm.c: table fixup
+
 Wed Dec 31 15:42:21 CET 2008 (tk)
 ---------------------------------
  * shared/optparser.c: fix typo (bb#1336)
