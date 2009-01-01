@@ -1,3 +1,8 @@
+Thu Jan  1 22:56:40 EET 2009 (edwin)
+------------------------------------
+ * Makefile.am, Makefile.in: add -Wformat-security to 'make
+ distcheck'
+
 Thu Jan  1 21:17:47 CET 2009 (acab)
 -----------------------------------
  * libclamav/disasm.c: table fixup

@@ -298,7 +298,8 @@ DISTCLEANFILES = target.h
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Werror -Wextra -Wall \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Wbad-function-cast -Wcast-align \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Wendif-labels -Wfloat-equal \
-@DISTCHECK_ENABLE_FLAGS_TRUE@	-Wformat=2 -Wmissing-declarations \
+@DISTCHECK_ENABLE_FLAGS_TRUE@	-Wformat=2 -Wformat-security \
+@DISTCHECK_ENABLE_FLAGS_TRUE@	-Wmissing-declarations \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Wmissing-prototypes \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Wno-error=missing-prototypes \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Wnested-externs \
