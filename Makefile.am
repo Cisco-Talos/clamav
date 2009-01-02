@@ -19,7 +19,7 @@
 ACLOCAL_AMFLAGS=-I m4
 
 SUBDIRS = libltdl libclamav clamscan clamd clamdscan freshclam sigtool clamconf database docs etc clamav-milter test unit_tests
-EXTRA_DIST = FAQ examples BUGS shared libclamav.pc.in UPGRADE COPYING.bzip2 COPYING.lzma COPYING.unrar COPYING.LGPL COPYING.file COPYING.zlib COPYING.BSD
+EXTRA_DIST = FAQ examples BUGS shared libclamav.pc.in UPGRADE COPYING.bzip2 COPYING.lzma COPYING.unrar COPYING.LGPL COPYING.file COPYING.zlib COPYING.BSD COPYING.getopt
 
 bin_SCRIPTS=clamav-config
 

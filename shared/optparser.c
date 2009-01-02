@@ -606,7 +606,7 @@ void optfree(struct optstruct *opts)
     return;
 }
 
-struct optstruct *optparse(const char *cfgfile, int argc, char * const *argv, int verbose, int toolmask, int ignore, struct optstruct *oldopts)
+struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbose, int toolmask, int ignore, struct optstruct *oldopts)
 {
 	FILE *fs = NULL;
 	const struct clam_option *optentry;

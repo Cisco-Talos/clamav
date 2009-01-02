@@ -16,16 +16,16 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-bin_PROGRAMS = clamconf
+#bin_PROGRAMS = clamconf
 
-clamconf_SOURCES = \
-    $(top_srcdir)/shared/cfgparser.c \
-    $(top_srcdir)/shared/cfgparser.h \
-    $(top_srcdir)/shared/misc.c \
-    $(top_srcdir)/shared/misc.h \
-    $(top_srcdir)/shared/getopt.c \
-    $(top_srcdir)/shared/getopt.h \
-    clamconf.c
+#clamconf_SOURCES = \
+#    $(top_srcdir)/shared/cfgparser.c \
+#    $(top_srcdir)/shared/cfgparser.h \
+#    $(top_srcdir)/shared/misc.c \
+#    $(top_srcdir)/shared/misc.h \
+#    $(top_srcdir)/shared/getopt.c \
+#    $(top_srcdir)/shared/getopt.h \
+#    clamconf.c
 
 DEFS = @DEFS@ -DCL_NOTHREADS
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav

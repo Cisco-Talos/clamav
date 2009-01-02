@@ -1,3 +1,7 @@
+Fri Jan  2 18:16:45 CET 2009 (tk)
+---------------------------------
+ * shared, clamconf: drop old stuff; replace getopt.[ch] with my_getopt
+
 Fri Jan  2 13:08:09 CET 2009 (tk)
 ---------------------------------
  * shared/optparser.c, clamav-milter: use the new option parser (bb#1215)
