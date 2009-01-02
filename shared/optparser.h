@@ -27,7 +27,8 @@
 #define OPT_MILTER	4
 #define OPT_CLAMSCAN	8
 #define OPT_CLAMDSCAN	16
-#define OPT_DEPRECATED	32
+#define OPT_SIGTOOL	32
+#define OPT_DEPRECATED	64
 
 struct optstruct {
     char *name;

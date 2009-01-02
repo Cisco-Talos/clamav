@@ -23,12 +23,10 @@ sigtool_SOURCES = \
     $(top_srcdir)/shared/output.h \
     $(top_srcdir)/shared/getopt.c \
     $(top_srcdir)/shared/getopt.h \
-    $(top_srcdir)/shared/cfgparser.c \
-    $(top_srcdir)/shared/cfgparser.h \
+    $(top_srcdir)/shared/optparser.c \
+    $(top_srcdir)/shared/optparser.h \
     $(top_srcdir)/shared/misc.c \
     $(top_srcdir)/shared/misc.h \
-    $(top_srcdir)/shared/options.c \
-    $(top_srcdir)/shared/options.h \
     $(top_srcdir)/shared/sha256.c \
     $(top_srcdir)/shared/cdiff.c \
     $(top_srcdir)/shared/cdiff.h \
@@ -37,8 +35,6 @@ sigtool_SOURCES = \
     vba.c \
     vba.h \
     sigtool.c
-
-#sigtool_LDADD = $(top_builddir)/clamscan/others.o 
 
 DEFS = @DEFS@ -DCL_NOTHREADS
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav

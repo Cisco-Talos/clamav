@@ -72,9 +72,8 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_sigtool_OBJECTS = output.$(OBJEXT) getopt.$(OBJEXT) \
-	cfgparser.$(OBJEXT) misc.$(OBJEXT) options.$(OBJEXT) \
-	sha256.$(OBJEXT) cdiff.$(OBJEXT) tar.$(OBJEXT) vba.$(OBJEXT) \
-	sigtool.$(OBJEXT)
+	optparser.$(OBJEXT) misc.$(OBJEXT) sha256.$(OBJEXT) \
+	cdiff.$(OBJEXT) tar.$(OBJEXT) vba.$(OBJEXT) sigtool.$(OBJEXT)
 sigtool_OBJECTS = $(am_sigtool_OBJECTS)
 sigtool_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -116,8 +115,6 @@ CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DBDIR = @DBDIR@
-
-#sigtool_LDADD = $(top_builddir)/clamscan/others.o 
 DEFS = @DEFS@ -DCL_NOTHREADS
 DEPDIR = @DEPDIR@
 DSYMUTIL = @DSYMUTIL@
@@ -257,12 +254,10 @@ sigtool_SOURCES = \
     $(top_srcdir)/shared/output.h \
     $(top_srcdir)/shared/getopt.c \
     $(top_srcdir)/shared/getopt.h \
-    $(top_srcdir)/shared/cfgparser.c \
-    $(top_srcdir)/shared/cfgparser.h \
+    $(top_srcdir)/shared/optparser.c \
+    $(top_srcdir)/shared/optparser.h \
     $(top_srcdir)/shared/misc.c \
     $(top_srcdir)/shared/misc.h \
-    $(top_srcdir)/shared/options.c \
-    $(top_srcdir)/shared/options.h \
     $(top_srcdir)/shared/sha256.c \
     $(top_srcdir)/shared/cdiff.c \
     $(top_srcdir)/shared/cdiff.h \
@@ -362,10 +357,9 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cdiff.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cfgparser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/options.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optparser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/output.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sha256.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sigtool.Po@am__quote@
@@ -421,19 +415,19 @@ getopt.obj: $(top_srcdir)/shared/getopt.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o getopt.obj `if test -f '$(top_srcdir)/shared/getopt.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/getopt.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/getopt.c'; fi`
 
-cfgparser.o: $(top_srcdir)/shared/cfgparser.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cfgparser.o -MD -MP -MF $(DEPDIR)/cfgparser.Tpo -c -o cfgparser.o `test -f '$(top_srcdir)/shared/cfgparser.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/cfgparser.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/cfgparser.Tpo $(DEPDIR)/cfgparser.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/cfgparser.c' object='cfgparser.o' libtool=no @AMDEPBACKSLASH@
+optparser.o: $(top_srcdir)/shared/optparser.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT optparser.o -MD -MP -MF $(DEPDIR)/optparser.Tpo -c -o optparser.o `test -f '$(top_srcdir)/shared/optparser.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/optparser.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/optparser.Tpo $(DEPDIR)/optparser.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/optparser.c' object='optparser.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cfgparser.o `test -f '$(top_srcdir)/shared/cfgparser.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/cfgparser.c
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o optparser.o `test -f '$(top_srcdir)/shared/optparser.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/optparser.c
 
-cfgparser.obj: $(top_srcdir)/shared/cfgparser.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT cfgparser.obj -MD -MP -MF $(DEPDIR)/cfgparser.Tpo -c -o cfgparser.obj `if test -f '$(top_srcdir)/shared/cfgparser.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/cfgparser.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/cfgparser.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/cfgparser.Tpo $(DEPDIR)/cfgparser.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/cfgparser.c' object='cfgparser.obj' libtool=no @AMDEPBACKSLASH@
+optparser.obj: $(top_srcdir)/shared/optparser.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT optparser.obj -MD -MP -MF $(DEPDIR)/optparser.Tpo -c -o optparser.obj `if test -f '$(top_srcdir)/shared/optparser.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/optparser.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/optparser.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/optparser.Tpo $(DEPDIR)/optparser.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/optparser.c' object='optparser.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o cfgparser.obj `if test -f '$(top_srcdir)/shared/cfgparser.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/cfgparser.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/cfgparser.c'; fi`
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o optparser.obj `if test -f '$(top_srcdir)/shared/optparser.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/optparser.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/optparser.c'; fi`
 
 misc.o: $(top_srcdir)/shared/misc.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT misc.o -MD -MP -MF $(DEPDIR)/misc.Tpo -c -o misc.o `test -f '$(top_srcdir)/shared/misc.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/misc.c
@@ -448,20 +442,6 @@ misc.obj: $(top_srcdir)/shared/misc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/misc.c' object='misc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o misc.obj `if test -f '$(top_srcdir)/shared/misc.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/misc.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/misc.c'; fi`
-
-options.o: $(top_srcdir)/shared/options.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT options.o -MD -MP -MF $(DEPDIR)/options.Tpo -c -o options.o `test -f '$(top_srcdir)/shared/options.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/options.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/options.Tpo $(DEPDIR)/options.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/options.c' object='options.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o options.o `test -f '$(top_srcdir)/shared/options.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/options.c
-
-options.obj: $(top_srcdir)/shared/options.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT options.obj -MD -MP -MF $(DEPDIR)/options.Tpo -c -o options.obj `if test -f '$(top_srcdir)/shared/options.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/options.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/options.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/options.Tpo $(DEPDIR)/options.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/options.c' object='options.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o options.obj `if test -f '$(top_srcdir)/shared/options.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/options.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/options.c'; fi`
 
 sha256.o: $(top_srcdir)/shared/sha256.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sha256.o -MD -MP -MF $(DEPDIR)/sha256.Tpo -c -o sha256.o `test -f '$(top_srcdir)/shared/sha256.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/sha256.c

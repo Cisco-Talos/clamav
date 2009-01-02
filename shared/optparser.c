@@ -75,16 +75,16 @@ static const struct clam_option {
     /* name,   longopt, sopt, argtype, regex, num, str, mul, owner, description, suggested */
 
     /* cmdline only */
-    { NULL, "help", 'h', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN, "", "" },
+    { NULL, "help", 'h', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL, "", "" },
     { NULL, "config-file", 'c', TYPE_STRING, NULL, 0, CONFDIR"/clamd.conf", FLAG_REQUIRED, OPT_CLAMD | OPT_CLAMDSCAN, "", "" },
     { NULL, "config-file", 0, TYPE_STRING, NULL, 0, CONFDIR"/freshclam.conf", FLAG_REQUIRED, OPT_FRESHCLAM, "", "" },
-    { NULL, "version", 'V', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN, "", "" },
-    { NULL, "debug", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN, "", "" },
-    { NULL, "verbose", 'v', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN, "", "" },
-    { NULL, "quiet", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN, "", "" },
+    { NULL, "version", 'V', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL, "", "" },
+    { NULL, "debug", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_SIGTOOL, "", "" },
+    { NULL, "verbose", 'v', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL, "", "" },
+    { NULL, "quiet", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL, "", "" },
     { NULL, "leave-temps", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
     { NULL, "no-warnings", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
-    { NULL, "stdout", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN, "", "" },
+    { NULL, "stdout", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL, "", "" },
     { NULL, "daemon", 'd', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
     { NULL, "no-dns", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
     { NULL, "list-mirrors", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
@@ -105,6 +105,22 @@ static const struct clam_option {
     { NULL, "include", 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMSCAN, "", "" },
     { NULL, "include-dir", 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMSCAN, "", "" },
     { NULL, "structured-ssn-format", 0, TYPE_NUMBER, MATCH_NUMBER, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
+    { NULL, "hex-dump", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", "" },
+    { NULL, "md5", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", "" },
+    { NULL, "mdb", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", "" },
+    { NULL, "html-normalise", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
+    { NULL, "utf16-decode", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
+    { NULL, "build", 'b', TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
+    { NULL, "server", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
+    { NULL, "unpack", 'u', TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
+    { NULL, "unpack-current", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
+    { NULL, "info", 'i', TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
+    { NULL, "list-sigs", 'l', TYPE_STRING, NULL, -1, DATADIR, 0, OPT_SIGTOOL, "", "" },
+    { NULL, "vba", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
+    { NULL, "vba-hex", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
+    { NULL, "diff", 'd', TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
+    { NULL, "run-cdiff", 'r', TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
+    { NULL, "verify-cdiff", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
 
     /* cmdline only - deprecated */
     { NULL, "http-proxy", 0, TYPE_STRING, NULL, 0, NULL, 0, OPT_FRESHCLAM | OPT_DEPRECATED, "", "" },
@@ -155,7 +171,7 @@ static const struct clam_option {
 
     { "PidFile", "pid", 'p', TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Save the process ID to a file.", "/var/run/clamd.pid" },
 
-    { "TemporaryDirectory", "tempdir", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN, "This option allows you to change the default temporary directory.", "/tmp" },
+    { "TemporaryDirectory", "tempdir", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN | OPT_SIGTOOL, "This option allows you to change the default temporary directory.", "/tmp" },
 
     { "DatabaseDirectory", "datadir", 0, TYPE_STRING, NULL, -1, DATADIR, 0, OPT_CLAMD | OPT_FRESHCLAM, "This option allows you to change the default database directory.\nIf you enable it, please make sure it points to the same directory in\nboth clamd and freshclam.", "/var/lib/clamav" },
 
@@ -627,16 +643,14 @@ struct optstruct *optparse(const char *cfgfile, int argc, char * const *argv, in
 		    longopts[lc++].val = optentry->shortopt;
 		}
 		if(optentry->shortopt) {
-		    if(sc + 1 >= MAXCMDOPTS) {
+		    if(sc + 2 >= MAXCMDOPTS) {
 			fprintf(stderr, "ERROR: optparse: shortopts[] is too small\n");
 			optfree(opts);
 			return NULL;
 		    }
 		    shortopts[sc++] = optentry->shortopt;
-		    /* FIXME: we may need to handle optional args for short
-		     * BOOL opts
-		     */
-		    if(optentry->argtype != TYPE_BOOL)
+		    shortopts[sc++] = ':';
+		    if(!(optentry->flags & FLAG_REQUIRED) && (optentry->argtype == TYPE_BOOL || optentry->strarg))
 			shortopts[sc++] = ':';
 		}
 	    }

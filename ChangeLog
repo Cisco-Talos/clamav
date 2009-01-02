@@ -1,3 +1,7 @@
+Fri Jan  2 13:08:09 CET 2009 (tk)
+---------------------------------
+ * shared/optparser.c, sigtool: use the new option parser (bb#1215)
+
 Thu Jan  1 22:56:40 EET 2009 (edwin)
 ------------------------------------
  * Makefile.am, Makefile.in: add -Wformat-security to 'make

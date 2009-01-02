@@ -47,9 +47,8 @@
 
 #include "vba.h"
 
-#include "shared/options.h"
 #include "shared/output.h"
-#include "shared/cfgparser.h"
+#include "shared/optparser.h"
 #include "shared/misc.h"
 #include "shared/cdiff.h"
 #include "shared/sha256.h"
@@ -118,15 +117,15 @@ static int hexdump(void)
     return 0;
 }
 
-static int md5sig(struct optstruct *opt, unsigned int mdb)
+static int md5sig(const struct optstruct *opts, unsigned int mdb)
 {
 	char *md5, *filename;
 	unsigned int i;
 	struct stat sb;
 
 
-    if(opt->filename) {
-	for(i = 0; (filename = cli_strtok(opt->filename, i, "\t")); i++) {
+    if(opts->filename) {
+	for(i = 0; (filename = cli_strtok(opts->filename, i, "\t")); i++) {
 	    if(stat(filename, &sb) == -1) {
 		mprintf("!md5sig: Can't access file %s\n", filename);
 		perror("md5sig");
@@ -163,13 +162,13 @@ static int md5sig(struct optstruct *opt, unsigned int mdb)
     return 0;
 }
 
-static int htmlnorm(struct optstruct *opt)
+static int htmlnorm(const struct optstruct *opts)
 {
 	int fd;
 
 
-    if((fd = open(opt_arg(opt, "html-normalise"), O_RDONLY)) == -1) {
-	mprintf("!htmlnorm: Can't open file %s\n", opt_arg(opt, "html-normalise"));
+    if((fd = open(optget(opts, "html-normalise")->strarg, O_RDONLY)) == -1) {
+	mprintf("!htmlnorm: Can't open file %s\n", optget(opts, "html-normalise")->strarg);
 	return -1;
     }
 
@@ -179,14 +178,14 @@ static int htmlnorm(struct optstruct *opt)
     return 0;
 }
 
-static int utf16decode(struct optstruct *opt)
+static int utf16decode(const struct optstruct *opts)
 {
 	const char *fname;
 	char *newname, buff[512], *decoded;
 	int fd1, fd2, bytes;
 
 
-    fname = opt_arg(opt, "utf16-decode");
+    fname = optget(opts, "utf16-decode")->strarg;
     if((fd1 = open(fname, O_RDONLY)) == -1) {
 	mprintf("!utf16decode: Can't open file %s\n", fname);
 	return -1;
@@ -411,7 +410,7 @@ static int writeinfo(const char *dbname, const char *header)
 static int diffdirs(const char *old, const char *new, const char *patch);
 static int verifydiff(const char *diff, const char *cvd, const char *incdir);
 
-static int script2cdiff(const char *script, const char *builder, struct optstruct *opt)
+static int script2cdiff(const char *script, const char *builder, const struct optstruct *opts)
 {
 	char *cdiff, *pt, buffer[FILEBUFF];
 	unsigned char digest[32];
@@ -508,7 +507,7 @@ static int script2cdiff(const char *script, const char *builder, struct optstruc
     sha256_final(&ctx);
     sha256_digest(&ctx, digest);
 
-    if(!(pt = getdsig(opt_arg(opt, "server"), builder, digest, 32, 1))) {
+    if(!(pt = getdsig(optget(opts, "server")->strarg, builder, digest, 32, 1))) {
 	mprintf("!script2cdiff: Can't get digital signature from remote server\n");
 	unlink(cdiff);
 	free(cdiff);
@@ -531,7 +530,7 @@ static int script2cdiff(const char *script, const char *builder, struct optstruc
     return 0;
 }
 
-static int build(struct optstruct *opt)
+static int build(const struct optstruct *opts)
 {
 	int ret;
 	size_t bytes;
@@ -548,7 +547,7 @@ static int build(struct optstruct *opt)
 	struct cl_cvd *oldcvd;
 
 
-    if(!opt_check(opt, "server")) {
+    if(!optget(opts, "server")->enabled) {
 	mprintf("!build: --server is required for --build\n");
 	return -1;
     }
@@ -558,7 +557,7 @@ static int build(struct optstruct *opt)
 	return -1;
     }
 
-    dbname = strstr(opt_arg(opt, "build"), "main") ? "main" : "daily";
+    dbname = strstr(optget(opts, "build")->strarg, "main") ? "main" : "daily";
 
     if(!(engine = cl_engine_new())) {
 	mprintf("!build: Can't initialize antivirus engine\n");
@@ -589,9 +588,9 @@ static int build(struct optstruct *opt)
     }
 
     /* try to read cvd header of current database */
-    if(opt->filename) {
-	if(cli_strbcasestr(opt->filename, ".cvd") || cli_strbcasestr(opt->filename, ".cld")) {
-	    strncpy(olddb, opt->filename, sizeof(olddb));
+    if(opts->filename) {
+	if(cli_strbcasestr(opts->filename, ".cvd") || cli_strbcasestr(opts->filename, ".cld")) {
+	    strncpy(olddb, opts->filename, sizeof(olddb));
 	    olddb[sizeof(olddb)-1]='\0';
 	} else {
 	    mprintf("!build: Not a CVD/CLD file\n");
@@ -736,7 +735,7 @@ static int build(struct optstruct *opt)
     sprintf(header + strlen(header), "%s:", pt);
     free(pt);
 
-    if(!(pt = getdsig(opt_arg(opt, "server"), builder, buffer, 16, 0))) {
+    if(!(pt = getdsig(optget(opts, "server")->strarg, builder, buffer, 16, 0))) {
 	mprintf("!build: Can't get digital signature from remote server\n");
 	fclose(fh);
 	unlink(tarfile);
@@ -757,7 +756,7 @@ static int build(struct optstruct *opt)
 	strcat(header, " ");
 
     /* build the final database */
-    newcvd = opt_arg(opt, "build");
+    newcvd = optget(opts, "build")->strarg;
     if(!(cvd = fopen(newcvd, "wb"))) {
 	mprintf("!build: Can't create final database %s\n", newcvd);
 	fclose(fh);
@@ -879,24 +878,24 @@ static int build(struct optstruct *opt)
 	    mprintf("!Generated file is incorrect, renamed to %s\n", broken);
 	}
     } else {
-	ret = script2cdiff(patch, builder, opt);
+	ret = script2cdiff(patch, builder, opts);
     }
 
     return ret;
 }
 
-static int unpack(struct optstruct *opt)
+static int unpack(const struct optstruct *opts)
 {
 	char name[512], *dbdir;
 
 
-    if(opt_check(opt, "unpack-current")) {
+    if(optget(opts, "unpack-current")->enabled) {
 	dbdir = freshdbdir();
-	snprintf(name, sizeof(name), "%s/%s.cvd", dbdir, opt_arg(opt, "unpack-current"));
+	snprintf(name, sizeof(name), "%s/%s.cvd", dbdir, optget(opts, "unpack-current")->strarg);
 	if(access(name, R_OK)) {
-	    snprintf(name, sizeof(name), "%s/%s.cld", dbdir, opt_arg(opt, "unpack-current"));
+	    snprintf(name, sizeof(name), "%s/%s.cld", dbdir, optget(opts, "unpack-current")->strarg);
 	    if(access(name, R_OK)) {
-		mprintf("!unpack: Couldn't find %s CLD/CVD database\n", opt_arg(opt, "unpack-current"));
+		mprintf("!unpack: Couldn't find %s CLD/CVD database\n", optget(opts, "unpack-current")->strarg);
 		free(dbdir);
 		return -1;
 	    }
@@ -904,7 +903,7 @@ static int unpack(struct optstruct *opt)
 	free(dbdir);
 
     } else {
-	strncpy(name, opt_arg(opt, "unpack"), sizeof(name));
+	strncpy(name, optget(opts, "unpack")->strarg, sizeof(name));
 	name[sizeof(name)-1]='\0';
     }
 
@@ -916,14 +915,14 @@ static int unpack(struct optstruct *opt)
     return 0;
 }
 
-static int cvdinfo(struct optstruct *opt)
+static int cvdinfo(const struct optstruct *opts)
 {
 	struct cl_cvd *cvd;
 	char *pt;
 	int ret;
 
 
-    pt = opt_arg(opt, "info");
+    pt = optget(opts, "info")->strarg;
     if((cvd = cl_cvdhead(pt)) == NULL) {
 	mprintf("!cvdinfo: Can't read/parse CVD header of %s\n", pt);
 	return -1;
@@ -938,7 +937,7 @@ static int cvdinfo(struct optstruct *opt)
     mprintf("Functionality level: %u\n", cvd->fl);
     mprintf("Builder: %s\n", cvd->builder);
 
-    pt = opt_arg(opt, "info");
+    pt = optget(opts, "info")->strarg;
     if(cli_strbcasestr(pt, ".cvd")) {
 	mprintf("MD5: %s\n", cvd->md5);
 	mprintf("Digital signature: %s\n", cvd->dsig);
@@ -1162,27 +1161,37 @@ static int listdb(const char *filename)
     return 0;
 }
 
-static int listsigs(struct optstruct *opt)
+static int listsigs(const struct optstruct *opts)
 {
 	int ret;
 	const char *name;
 	char *dbdir;
+	struct stat sb;
 
+
+    name = optget(opts, "list-sigs")->strarg;
+    if(stat(name, &sb) == -1) {
+	mprintf("--list-sigs: Can't get status of %s\n", name);
+	return -1;
+    }
 
     mprintf_stdout = 1;
-
-    if((name = opt_arg(opt, "list-sigs"))) {
-	ret = listdb(name);
+    if(S_ISDIR(sb.st_mode)) {
+	if(!strcmp(name, DATADIR)) {
+	    dbdir = freshdbdir();
+	    ret = listdir(dbdir);
+	    free(dbdir);
+	} else {
+	    ret = listdir(name);
+	}
     } else {
-	dbdir = freshdbdir();
-	ret = listdir(dbdir);
-	free(dbdir);
+	ret = listdb(name);
     }
 
     return ret;
 }
 
-static int vbadump(struct optstruct *opt)
+static int vbadump(const struct optstruct *opts)
 {
 	int fd, hex_output;
 	char *dir;
@@ -1190,12 +1199,12 @@ static int vbadump(struct optstruct *opt)
 	struct uniq *vba = NULL;
 
 
-    if(opt_check(opt, "vba-hex")) {
+    if(optget(opts, "vba-hex")->enabled) {
 	hex_output = 1;
-	pt = opt_arg(opt, "vba-hex");
+	pt = optget(opts, "vba-hex")->strarg;
     } else {
 	hex_output = 0;
-	pt = opt_arg(opt, "vba");
+	pt = optget(opts, "vba")->strarg;
     }
  
     if((fd = open(pt, O_RDONLY)) == -1) {
@@ -1281,14 +1290,14 @@ static int comparemd5(const char *dbname)
 }
 
 
-static int rundiff(struct optstruct *opt)
+static int rundiff(const struct optstruct *opts)
 {
 	int fd, ret;
 	unsigned short mode;
 	const char *diff;
 
 
-    diff = opt_arg(opt, "run-cdiff");
+    diff = optget(opts, "run-cdiff")->strarg;
     if(strstr(diff, ".cdiff")) {
 	mode = 1;
     } else if(strstr(diff, ".script")) {
@@ -1589,7 +1598,7 @@ static int diffdirs(const char *old, const char *new, const char *patch)
     return 0;
 }
 
-static int makediff(struct optstruct *opt)
+static int makediff(const struct optstruct *opts)
 {
 	char *odir, *ndir, name[32], broken[32];
 	struct cl_cvd *cvd;
@@ -1597,20 +1606,20 @@ static int makediff(struct optstruct *opt)
 	int ret;
 
 
-    if(!opt->filename) {
+    if(!opts->filename) {
 	mprintf("!makediff: --diff requires two arguments\n");
 	return -1;
     }
 
-    if(!(cvd = cl_cvdhead(opt->filename))) {
-	mprintf("!makediff: Can't read CVD header from %s\n", opt->filename);
+    if(!(cvd = cl_cvdhead(opts->filename))) {
+	mprintf("!makediff: Can't read CVD header from %s\n", opts->filename);
 	return -1;
     }
     newver = cvd->version;
     free(cvd);
 
-    if(!(cvd = cl_cvdhead(opt_arg(opt, "diff")))) {
-	mprintf("!makediff: Can't read CVD header from %s\n", opt_arg(opt, "diff"));
+    if(!(cvd = cl_cvdhead(optget(opts, "diff")->strarg))) {
+	mprintf("!makediff: Can't read CVD header from %s\n", optget(opts, "diff")->strarg);
 	return -1;
     }
     oldver = cvd->version;
@@ -1633,8 +1642,8 @@ static int makediff(struct optstruct *opt)
 	return -1;
     }
 
-    if(cvd_unpack(opt_arg(opt, "diff"), odir) == -1) {
-	mprintf("!makediff: Can't unpack CVD file %s\n", opt_arg(opt, "diff"));
+    if(cvd_unpack(optget(opts, "diff")->strarg, odir) == -1) {
+	mprintf("!makediff: Can't unpack CVD file %s\n", optget(opts, "diff")->strarg);
 	cli_rmdirs(odir);
 	free(odir);
 	return -1;
@@ -1656,8 +1665,8 @@ static int makediff(struct optstruct *opt)
 	return -1;
     }
 
-    if(cvd_unpack(opt->filename, ndir) == -1) {
-	mprintf("!makediff: Can't unpack CVD file %s\n", opt->filename);
+    if(cvd_unpack(opts->filename, ndir) == -1) {
+	mprintf("!makediff: Can't unpack CVD file %s\n", opts->filename);
 	cli_rmdirs(odir);
 	cli_rmdirs(ndir);
 	free(odir);
@@ -1665,7 +1674,7 @@ static int makediff(struct optstruct *opt)
 	return -1;
     }
 
-    if(strstr(opt->filename, "main"))
+    if(strstr(opts->filename, "main"))
 	snprintf(name, sizeof(name), "main-%u.script", newver);
     else
 	snprintf(name, sizeof(name), "daily-%u.script", newver);
@@ -1680,7 +1689,7 @@ static int makediff(struct optstruct *opt)
     if(ret == -1)
 	return -1;
 
-    if(verifydiff(name, opt_arg(opt, "diff"), NULL) == -1) {
+    if(verifydiff(name, optget(opts, "diff")->strarg, NULL) == -1) {
 	snprintf(broken, sizeof(broken), "%s.broken", name);
 	if(rename(name, broken)) {
 	    unlink(name);
@@ -1731,107 +1740,80 @@ static void help(void)
 int main(int argc, char **argv)
 {
 	int ret = 1;
-        struct optstruct *opt;
+        struct optstruct *opts;
 	struct stat sb;
-	const char *short_options = "hvVb:i:u:l::r:d:";
-	static struct option long_options[] = {
-	    {"help", 0, 0, 'h'},
-	    {"quiet", 0, 0, 0},
-	    {"debug", 0, 0, 0},
-	    {"verbose", 0, 0, 'v'},
-	    {"stdout", 0, 0, 0},
-	    {"version", 0, 0, 'V'},
-	    {"tempdir", 1, 0, 0},
-	    {"hex-dump", 0, 0, 0},
-	    {"md5", 0, 0, 0},
-	    {"mdb", 0, 0, 0},
-	    {"html-normalise", 1, 0, 0},
-	    {"utf16-decode", 1, 0, 0},
-	    {"build", 1, 0, 'b'},
-	    {"server", 1, 0, 0},
-	    {"unpack", 1, 0, 'u'},
-	    {"unpack-current", 1, 0, 0},
-	    {"info", 1, 0, 'i'},
-	    {"list-sigs", 2, 0, 'l'},
-	    {"vba", 1, 0 ,0},
-	    {"vba-hex", 1, 0, 0},
-	    {"diff", 1, 0, 'd'},
-	    {"run-cdiff", 1, 0, 'r'},
-	    {"verify-cdiff", 1, 0, 0},
-	    {0, 0, 0, 0}
-    	};
 
-    opt = opt_parse(argc, argv, short_options, long_options, NULL, NULL);
-    if(!opt) {
-	mprintf("!Can't parse the command line\n");
+    opts = optparse(NULL, argc, argv, 1, OPT_SIGTOOL, 0, NULL);
+    if(!opts) {
+	mprintf("!Can't parse command line options\n");
 	return 1;
     }
 
-    if(opt_check(opt, "quiet"))
+    if(optget(opts, "quiet")->enabled)
 	mprintf_quiet = 1;
 
-    if(opt_check(opt, "stdout"))
+    if(optget(opts, "stdout")->enabled)
 	mprintf_stdout = 1;
 
-    if(opt_check(opt, "debug"))
+    if(optget(opts, "debug")->enabled)
 	cl_debug();
 
-    if(opt_check(opt, "version")) {
+    if(optget(opts, "version")->enabled) {
 	print_version(NULL);
-	opt_free(opt);
+	optfree(opts);
 	return 0;
     }
 
-    if(opt_check(opt, "help")) {
-	opt_free(opt);
+    if(optget(opts, "help")->enabled) {
+	optfree(opts);
     	help();
 	return 0;
     }
 
-    if(opt_check(opt, "hex-dump"))
+    if(optget(opts, "hex-dump")->enabled)
 	ret = hexdump();
-    else if(opt_check(opt, "md5"))
-	ret = md5sig(opt, 0);
-    else if(opt_check(opt, "mdb"))
-	ret = md5sig(opt, 1);
-    else if(opt_check(opt, "html-normalise"))
-	ret = htmlnorm(opt);
-    else if(opt_check(opt, "utf16-decode"))
-	ret = utf16decode(opt);
-    else if(opt_check(opt, "build"))
-	ret = build(opt);
-    else if(opt_check(opt, "unpack"))
-	ret = unpack(opt);
-    else if(opt_check(opt, "unpack-current"))
-	ret = unpack(opt);
-    else if(opt_check(opt, "info"))
-	ret = cvdinfo(opt);
-    else if(opt_check(opt, "list-sigs"))
-	ret = listsigs(opt);
-    else if(opt_check(opt, "vba") || opt_check(opt, "vba-hex"))
-	ret = vbadump(opt);
-    else if(opt_check(opt, "diff"))
-	ret = makediff(opt);
-    else if(opt_check(opt, "run-cdiff"))
-	ret = rundiff(opt);
-    else if(opt_check(opt, "verify-cdiff")) {
-	if(!opt->filename) {
+    else if(optget(opts, "md5")->enabled)
+	ret = md5sig(opts, 0);
+    else if(optget(opts, "mdb")->enabled)
+	ret = md5sig(opts, 1);
+    else if(optget(opts, "html-normalise")->enabled)
+	ret = htmlnorm(opts);
+    else if(optget(opts, "utf16-decode")->enabled)
+	ret = utf16decode(opts);
+    else if(optget(opts, "build")->enabled)
+	ret = build(opts);
+    else if(optget(opts, "unpack")->enabled)
+	ret = unpack(opts);
+    else if(optget(opts, "unpack-current")->enabled)
+	ret = unpack(opts);
+    else if(optget(opts, "info")->enabled)
+	ret = cvdinfo(opts);
+    else if(optget(opts, "list-sigs")->active)
+	ret = listsigs(opts);
+    else if(optget(opts, "vba")->enabled || optget(opts, "vba-hex")->enabled)
+	ret = vbadump(opts);
+    else if(optget(opts, "diff")->enabled)
+	ret = makediff(opts);
+    else if(optget(opts, "run-cdiff")->enabled)
+	ret = rundiff(opts);
+    else if(optget(opts, "verify-cdiff")->enabled) {
+	if(!opts->filename) {
 	    mprintf("!--verify-cdiff requires two arguments\n");
 	    ret = -1;
 	} else {
-	    if(stat(opt->filename, &sb) == -1) {
-		mprintf("--verify-cdiff: Can't get status of %s\n", opt->filename);
+	    if(stat(opts->filename, &sb) == -1) {
+		mprintf("--verify-cdiff: Can't get status of %s\n", opts->filename);
 		ret = -1;
 	    } else {
 		if(S_ISDIR(sb.st_mode))
-		    ret = verifydiff(opt_arg(opt, "verify-cdiff"), NULL, opt->filename);
+		    ret = verifydiff(optget(opts, "verify-cdiff")->strarg, NULL, opts->filename);
 		else
-		    ret = verifydiff(opt_arg(opt, "verify-cdiff"), opt->filename, NULL);
+		    ret = verifydiff(optget(opts, "verify-cdiff")->strarg, opts->filename, NULL);
 	    }
 	}
     } else
 	help();
 
-    opt_free(opt);
+    optfree(opts);
     return ret ? 1 : 0;
 }
