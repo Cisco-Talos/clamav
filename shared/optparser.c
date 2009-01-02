@@ -75,10 +75,11 @@ static const struct clam_option {
     /* name,   longopt, sopt, argtype, regex, num, str, mul, owner, description, suggested */
 
     /* cmdline only */
-    { NULL, "help", 'h', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL, "", "" },
+    { NULL, "help", 'h', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_MILTER, "", "" },
     { NULL, "config-file", 'c', TYPE_STRING, NULL, 0, CONFDIR"/clamd.conf", FLAG_REQUIRED, OPT_CLAMD | OPT_CLAMDSCAN, "", "" },
     { NULL, "config-file", 0, TYPE_STRING, NULL, 0, CONFDIR"/freshclam.conf", FLAG_REQUIRED, OPT_FRESHCLAM, "", "" },
-    { NULL, "version", 'V', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL, "", "" },
+    { NULL, "config-file", 'c', TYPE_STRING, NULL, 0, CONFDIR"/clamav-milter.conf", FLAG_REQUIRED, OPT_MILTER, "", "" },
+    { NULL, "version", 'V', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_MILTER, "", "" },
     { NULL, "debug", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_SIGTOOL, "", "" },
     { NULL, "verbose", 'v', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL, "", "" },
     { NULL, "quiet", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL, "", "" },
@@ -364,40 +365,48 @@ static const struct clam_option {
     { "ArchiveLimitMemoryUsage", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
 
     /* Milter specific options */
-/*
-    {"ClamdSocket", OPT_QUOTESTR, -1, NULL, 1, OPT_MILTER},
-    {"MilterSocket", OPT_QUOTESTR, -1, NULL, 1, OPT_MILTER},
-    {"LocalNet", OPT_QUOTESTR, -1, NULL, 1, OPT_MILTER},
-    {"OnClean", OPT_QUOTESTR, -1, "Accept", 0, OPT_MILTER},
-    {"OnInfected", OPT_QUOTESTR, -1, "Quarantine", 0, OPT_MILTER},
-    {"OnFail", OPT_QUOTESTR, -1, "Defer", 0, OPT_MILTER},
-    {"AddHeader", TYPE_BOOL, 0, NULL, 0, OPT_MILTER},
-    {"Chroot", OPT_QUOTESTR, -1, NULL, 0, OPT_MILTER},
-    {"Whitelist", OPT_QUOTESTR, -1, NULL, 0, OPT_MILTER},
-*/
+
+    { "ClamdSocket", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_MILTER, "", "" },
+
+    { "MilterSocket",NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "", "" },
+
+    { "LocalNet", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_MILTER, "", "" },
+
+    { "OnClean", NULL, 0, TYPE_STRING, NULL, -1, "Accept", 0, OPT_MILTER, "", "" },
+
+    { "OnInfected", NULL, 0, TYPE_STRING, NULL, -1, "Quarantine", 0, OPT_MILTER, "", "" },
+
+    { "OnFail", NULL, 0, TYPE_STRING, NULL, -1, "Defer", 0, OPT_MILTER, "", "" },
+
+    { "AddHeader", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_MILTER, "", "" },
+
+    { "Chroot", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "", "" },
+
+    { "Whitelist", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "", "" },
+
     /* Deprecated milter options */
-/*
-    {"ArchiveBlockEncrypted", TYPE_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
-    {"DatabaseDirectory", OPT_QUOTESTR, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
-    {"Debug", TYPE_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
-    {"DetectBrokenExecutables", TYPE_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
-    {"LeaveTemporaryFiles", TYPE_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
-    {"LocalSocket", OPT_QUOTESTR, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
-    {"MailFollowURLs", TYPE_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
-    {"MaxScanSize", OPT_COMPSIZE, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
-    {"MaxFiles", OPT_NUM, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
-    {"MaxRecursion", OPT_NUM, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
-    {"PhishingSignatures", TYPE_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
-    {"ScanArchive", TYPE_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
-    {"ScanHTML", TYPE_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
-    {"ScanMail", TYPE_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
-    {"ScanOLE2", TYPE_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
-    {"ScanPE", TYPE_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
-    {"StreamMaxLength", OPT_COMPSIZE, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
-    {"TCPAddr", OPT_QUOTESTR, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
-    {"TCPSocket", OPT_NUM, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
-    {"TemporaryDirectory", OPT_QUOTESTR, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED},
-*/
+
+    { "ArchiveBlockEncrypted", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", "" },
+    { "DatabaseDirectory", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", "" },
+    { "Debug", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", "" },
+    { "DetectBrokenExecutables", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", "" },
+    { "LeaveTemporaryFiles", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", "" },
+    { "LocalSocket", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", "" },
+    { "MailFollowURLs", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", "" },
+    { "MaxScanSize", NULL, 0, TYPE_SIZE, MATCH_SIZE, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", "" },
+    { "MaxFiles", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", "" },
+    { "MaxRecursion", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", "" },
+    { "PhishingSignatures", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", "" },
+    { "ScanArchive", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", "" },
+    { "ScanHTML", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", "" },
+    { "ScanMail", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", "" },
+    { "ScanOLE2", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", "" },
+    { "ScanPE", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", "" },
+    { "StreamMaxLength", NULL, 0, TYPE_SIZE, MATCH_SIZE, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", "" },
+    { "TCPAddr", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", "" },
+    { "TCPSocket", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", "" },
+    { "TemporaryDirectory", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER | OPT_DEPRECATED, "", "" },
+
     { NULL, NULL, 0, 0, NULL, 0, NULL, 0, 0, NULL, NULL }
 };
 

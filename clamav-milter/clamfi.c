@@ -30,12 +30,13 @@
 
 #include <libmilter/mfapi.h>
 
-#include "shared/cfgparser.h"
+#include "shared/optparser.h"
 #include "shared/output.h"
 
 #include "connpool.h"
 #include "netcode.h"
 #include "whitelist.h"
+#include "clamfi.h"
 
 #if __GNUC__ >= 3 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)
 #define _UNUSED_ __attribute__ ((__unused__))
@@ -65,7 +66,7 @@ struct CLAMFI {
 };
 
 
-void add_x_header(SMFICTX *ctx, char *st) {
+static void add_x_header(SMFICTX *ctx, char *st) {
     smfi_chgheader(ctx, (char *)"X-Virus-Scanned", 1, xvirushdr);
     smfi_chgheader(ctx, (char *)"X-Virus-Status", 1, st);
 }
@@ -308,11 +309,11 @@ static sfsistat action_quarantine(SMFICTX *ctx) {
     return SMFIS_ACCEPT;
 }
 
-int init_actions(struct cfgstruct *copt) {
-    const struct cfgstruct *cpt;
+int init_actions(struct optstruct *opts) {
+    const struct optstruct *opt;
 
-    if((cpt = cfgopt(copt, "OnFail"))->enabled) {
-	switch(parse_action(cpt->strarg)) {
+    if((opt = optget(opts, "OnFail"))->enabled) {
+	switch(parse_action(opt->strarg)) {
 	case 0:
 	    FailAction = SMFIS_ACCEPT;
 	    break;
@@ -323,13 +324,13 @@ int init_actions(struct cfgstruct *copt) {
 	    FailAction = SMFIS_REJECT;
 	    break;
 	default:
-	    logg("!Invalid action %s for option OnFail", cpt->strarg);
+	    logg("!Invalid action %s for option OnFail", opt->strarg);
 	    return 1;
 	}
     } else FailAction = SMFIS_TEMPFAIL;
 
-    if((cpt = cfgopt(copt, "OnClean"))->enabled) {
-	switch(parse_action(cpt->strarg)) {
+    if((opt = optget(opts, "OnClean"))->enabled) {
+	switch(parse_action(opt->strarg)) {
 	case 0:
 	    CleanAction = action_accept;
 	    break;
@@ -346,13 +347,13 @@ int init_actions(struct cfgstruct *copt) {
 	    CleanAction = action_quarantine;
 	    break;
 	default:
-	    logg("!Invalid action %s for option OnClean", cpt->strarg);
+	    logg("!Invalid action %s for option OnClean", opt->strarg);
 	    return 1;
 	}
     } else CleanAction = action_accept;
 
-    if((cpt = cfgopt(copt, "OnInfected"))->enabled) {
-	switch(parse_action(cpt->strarg)) {
+    if((opt = optget(opts, "OnInfected"))->enabled) {
+	switch(parse_action(opt->strarg)) {
 	case 0:
 	    InfectedAction = action_accept;
 	    break;
@@ -369,7 +370,7 @@ int init_actions(struct cfgstruct *copt) {
 	    InfectedAction = action_quarantine;
 	    break;
 	default:
-	    logg("!Invalid action %s for option OnInfected", cpt->strarg);
+	    logg("!Invalid action %s for option OnInfected", opt->strarg);
 	    return 1;
 	}
     } else InfectedAction = action_quarantine;

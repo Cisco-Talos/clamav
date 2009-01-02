@@ -28,6 +28,7 @@
 #include <regex.h>
 
 #include "shared/output.h"
+#include "whitelist.h"
 
 struct WHLST {
     regex_t preg;

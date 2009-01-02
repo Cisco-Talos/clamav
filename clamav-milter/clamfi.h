@@ -1,7 +1,7 @@
 #ifndef _CLAMFI_H
 #define _CLAMFI_H
 
-#include "shared/cfgparser.h"
+#include "shared/optparser.h"
 #include <libmilter/mfapi.h>
 
 extern uint64_t maxfilesize;
@@ -15,6 +15,6 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv);
 sfsistat clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr);
 sfsistat clamfi_envfrom(SMFICTX *ctx, char **argv);
 sfsistat clamfi_envrcpt(SMFICTX *ctx, char **argv);
-int init_actions(struct cfgstruct *copt);
+int init_actions(struct optstruct *opts);
 
 #endif

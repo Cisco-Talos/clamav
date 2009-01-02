@@ -11,7 +11,7 @@
 #include <netinet/ip.h>
 #include <pthread.h>
 
-#include "shared/cfgparser.h"
+#include "shared/optparser.h"
 
 struct CP_ENTRY {
     struct sockaddr *server;
@@ -30,7 +30,7 @@ struct CPOOL {
     struct CP_ENTRY *pool;
 };
 
-void cpool_init(struct cfgstruct *copt);
+void cpool_init(struct optstruct *copt);
 void cpool_free(void);
 struct CP_ENTRY *cpool_get_rand(int *s);
 

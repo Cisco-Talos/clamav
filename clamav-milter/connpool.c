@@ -35,7 +35,7 @@
 #include <time.h>
 #include <netdb.h>
 
-#include "shared/cfgparser.h"
+#include "shared/optparser.h"
 #include "shared/output.h"
 
 #include "connpool.h"
@@ -126,7 +126,7 @@ static int cpool_addtcp(char *addr, char *port) {
 }
 
 
-int addslot(void) {
+static int addslot(void) {
     struct CP_ENTRY *cpe;
 
     if(!(cpe = realloc(cp->pool, (cp->entries + 1) * sizeof(struct CP_ENTRY)))) {
@@ -149,7 +149,7 @@ int addslot(void) {
 - probe dead if (last check > 2 min || no clamd available)
 */
 
-void cpool_probe(void) {
+static void cpool_probe(void) {
     unsigned int i, dead=0;
     struct CP_ENTRY *cpe = cp->pool;
     time_t now = time(NULL);
@@ -170,7 +170,7 @@ void cpool_probe(void) {
 }
 
 
-void *cpool_mon(_UNUSED_ void *v) {
+static void *cpool_mon(_UNUSED_ void *v) {
     pthread_mutex_t conv;
 
     pthread_mutex_init(&conv, NULL);
@@ -190,8 +190,8 @@ void *cpool_mon(_UNUSED_ void *v) {
 }
 
 
-void cpool_init(struct cfgstruct *copt) {
-    const struct cfgstruct *cpt;
+void cpool_init(struct optstruct *opts) {
+    const struct optstruct *opt;
     int failed = 0;
 
     if(!(cp=calloc(sizeof(*cp), 1))) {
@@ -201,9 +201,9 @@ void cpool_init(struct cfgstruct *copt) {
 
     cp->local_cpe = NULL;
 
-    if((cpt = cfgopt(copt, "ClamdSocket"))->enabled) {
-	while(cpt) {
-	    char *socktype = cpt->strarg;
+    if((opt = optget(opts, "ClamdSocket"))->enabled) {
+	while(opt) {
+	    char *socktype = opt->strarg;
 
 	    if(addslot()) return;
 	    if(!strncasecmp(socktype, "unix:", 5)) {
@@ -220,7 +220,7 @@ void cpool_init(struct cfgstruct *copt) {
 		failed = 1;
 	    }
 	    if(failed) break;
-	    cpt = (struct cfgstruct *) cpt->nextarg;
+	    opt = opt->nextarg;
 	}
 	if(failed) {
 	    cpool_free();

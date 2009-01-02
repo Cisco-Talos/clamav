@@ -38,6 +38,7 @@
 
 
 #include "shared/output.h"
+#include "shared/optparser.h"
 #include "libclamav/others.h"
 #include "netcode.h"
 
@@ -65,7 +66,7 @@ char *tempdir = NULL;
 long readtimeout;
 
 
-int nc_socket(struct CP_ENTRY *cpe) {
+static int nc_socket(struct CP_ENTRY *cpe) {
     int flags, s = socket(cpe->server->sa_family, SOCK_STREAM, 0);
     char er[256];
 
@@ -92,7 +93,7 @@ int nc_socket(struct CP_ENTRY *cpe) {
 }
 
 
-int nc_connect(int s, struct CP_ENTRY *cpe) {
+static int nc_connect(int s, struct CP_ENTRY *cpe) {
     time_t timeout = time(NULL) + TIMEOUT;
     int res = connect(s, cpe->server, cpe->socklen);
     struct timeval tv;
@@ -351,7 +352,7 @@ int nc_connect_rand(int *main, int *alt, int *local) {
 }
 
 
-int resolve(char *name, uint32_t *family, uint32_t *host) {
+static int resolve(char *name, uint32_t *family, uint32_t *host) {
     struct addrinfo hints, *res;
 
     if(!name) {
@@ -397,7 +398,7 @@ int resolve(char *name, uint32_t *family, uint32_t *host) {
 }
 
 
-struct LOCALNET *localnet(char *name, char *mask) {
+static struct LOCALNET *localnet(char *name, char *mask) {
     struct LOCALNET *l = (struct LOCALNET *)malloc(sizeof(*l));
     uint32_t nmask;
     unsigned int i;
@@ -505,12 +506,12 @@ void localnets_free(void) {
 }
 
 
-int localnets_init(struct cfgstruct *copt) {
-    const struct cfgstruct *cpt;
+int localnets_init(struct optstruct *opts) {
+    const struct optstruct *opt;
 
-    if((cpt = cfgopt(copt, "LocalNet"))->enabled) {
-	while(cpt) {
-	    char *lnetname = cpt->strarg;
+    if((opt = optget(opts, "LocalNet"))->enabled) {
+	while(opt) {
+	    char *lnetname = opt->strarg;
 	    struct LOCALNET *l;
 	    char *mask = strrchr(lnetname, '/');
 
@@ -525,7 +526,7 @@ int localnets_init(struct cfgstruct *copt) {
 	    }
 	    l->next = lnet;
 	    lnet = l;
-	    cpt = (struct cfgstruct *) cpt->nextarg;
+	    opt = opt->nextarg;
 	}
     }
     return 0;

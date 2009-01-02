@@ -34,9 +34,8 @@
 
 #include "clamav.h"
 
-#include "shared/options.h"
 #include "shared/output.h"
-#include "shared/cfgparser.h"
+#include "shared/optparser.h"
 #include "shared/misc.h"
 
 #include "connpool.h"
@@ -64,91 +63,79 @@ struct smfiDesc descr = {
 };
 
 int main(int argc, char **argv) {
-    static struct cfgstruct *copt;
-    char *my_socket;
-    const struct cfgstruct *cpt;
-    struct optstruct *opt;
-    const char *short_options = "c:hV";
-    static struct option long_options[] = {
-	{"config-file", required_argument, NULL, 'c'},
-	{"help", no_argument, NULL, 'h'},
-	{"version", no_argument, NULL, 'V'},
-	{NULL, 0, NULL, 0}
-    };
-    const char *my_conf = CONFDIR "/clamav-milter.conf";
+    char *my_socket, *pt;
+    const struct optstruct *opt;
+    struct optstruct *opts;
     int ret;
 
-    opt = opt_parse(argc, argv, short_options, long_options, NULL, NULL);	
-    if (!opt) {
-	mprintf("!Can't parse the command line\n");
+    opts = optparse(NULL, argc, argv, 1, OPT_MILTER, 0, NULL);
+    if (!opts) {
+	mprintf("!Can't parse command line options\n");
 	return 1;
     }
 
-    if(opt_check(opt, "help")) {
+    if(optget(opts, "help")->enabled) {
 	printf("Usage: %s [-c <config-file>]\n\n", argv[0]);
 	printf("    --help                   -h       Show this help\n");
 	printf("    --version                -V       Show version and exit\n");
 	printf("    --config-file <file>     -c       Read configuration from file\n\n");
-	opt_free(opt);
+	optfree(opts);
 	return 0;
     }
 	
-    if(opt->filename)
-	mprintf("^Ignoring option %s\n", opt->filename);
+    if(opts->filename)
+	mprintf("^Ignoring option %s\n", opts->filename);
 
-    if(opt_check(opt, "version")) {
+    if(optget(opts, "version")->enabled) {
 	printf("clamav-milter %s\n", get_version());
-	opt_free(opt);
+	optfree(opts);
 	return 0;
     }
 
-    if(opt_check(opt, "config-file"))
-	my_conf = opt_arg(opt, "config-file");
-
-    if((copt = getcfg(my_conf, 1, OPT_MILTER)) == NULL) {
-	printf("%s: cannot parse config file %s\n", argv[0], my_conf);
-	opt_free(opt);
+    pt = strdup(optget(opts, "config-file")->strarg);
+    if((opts = optparse(pt, 0, NULL, 1, OPT_MILTER, 0, opts)) == NULL) {
+	printf("%s: cannot parse config file %s\n", argv[0], pt);
+	free(pt);
 	return 1;
     }
+    free(pt);
 
-    opt_free(opt);
-
-    if((cpt = cfgopt(copt, "Chroot"))->enabled) {
-	if(chdir(cpt->strarg) != 0) {
-	    logg("!Cannot change directory to %s\n", cpt->strarg);
+    if((opt = optget(opts, "Chroot"))->enabled) {
+	if(chdir(opt->strarg) != 0) {
+	    logg("!Cannot change directory to %s\n", opt->strarg);
 	    return 1;
 	}
-	if(chroot(cpt->strarg) != 0) {
-	    logg("!chroot to %s failed. Are you root?\n", cpt->strarg);
+	if(chroot(opt->strarg) != 0) {
+	    logg("!chroot to %s failed. Are you root?\n", opt->strarg);
 	    return 1;
 	}
     }
 
-    if(geteuid() == 0 && (cpt = cfgopt(copt, "User"))->enabled) {
+    if(geteuid() == 0 && (opt = optget(opts, "User"))->enabled) {
         struct passwd *user = NULL;
-	if((user = getpwnam(cpt->strarg)) == NULL) {
-	    fprintf(stderr, "ERROR: Can't get information about user %s.\n", cpt->strarg);
-	    freecfg(copt);
+	if((user = getpwnam(opt->strarg)) == NULL) {
+	    fprintf(stderr, "ERROR: Can't get information about user %s.\n", opt->strarg);
+	    optfree(opts);
 	    return 1;
 	}
 
-	if(cfgopt(copt, "AllowSupplementaryGroups")->enabled) {
+	if(optget(opts, "AllowSupplementaryGroups")->enabled) {
 #ifdef HAVE_INITGROUPS
-	    if(initgroups(cpt->strarg, user->pw_gid)) {
+	    if(initgroups(opt->strarg, user->pw_gid)) {
 		fprintf(stderr, "ERROR: initgroups() failed.\n");
-		freecfg(copt);
+		optfree(opts);
 		return 1;
 	    }
 #else
 	    mprintf("!AllowSupplementaryGroups: initgroups() is not available, please disable AllowSupplementaryGroups\n");
-	    freecfg(copt);
+	    optfree(opts);
 	    return 1;
 #endif
 	} else {
 #ifdef HAVE_SETGROUPS
 	    if(setgroups(1, &user->pw_gid)) {
 		fprintf(stderr, "ERROR: setgroups() failed.\n");
-		freecfg(copt);
+		optfree(opts);
 		return 1;
 	    }
 #endif
@@ -156,50 +143,50 @@ int main(int argc, char **argv) {
 
 	if(setgid(user->pw_gid)) {
 	    fprintf(stderr, "ERROR: setgid(%d) failed.\n", (int) user->pw_gid);
-	    freecfg(copt);
+	    optfree(opts);
 	    return 1;
 	}
 
 	if(setuid(user->pw_uid)) {
 	    fprintf(stderr, "ERROR: setuid(%d) failed.\n", (int) user->pw_uid);
-	    freecfg(copt);
+	    optfree(opts);
 	    return 1;
 	}
     }
 
-    logg_lock = !cfgopt(copt, "LogFileUnlock")->enabled;
-    logg_time = cfgopt(copt, "LogTime")->enabled;
-    logg_size = cfgopt(copt, "LogFileMaxSize")->numarg;
-    logg_verbose = mprintf_verbose = cfgopt(copt, "LogVerbose")->enabled;
+    logg_lock = !optget(opts, "LogFileUnlock")->enabled;
+    logg_time = optget(opts, "LogTime")->enabled;
+    logg_size = optget(opts, "LogFileMaxSize")->numarg;
+    logg_verbose = mprintf_verbose = optget(opts, "LogVerbose")->enabled;
 
-    if((cpt = cfgopt(copt, "LogFile"))->enabled) {
+    if((opt = optget(opts, "LogFile"))->enabled) {
 	time_t currtime;
-	logg_file = cpt->strarg;
+	logg_file = opt->strarg;
 	if(strlen(logg_file) < 2 || logg_file[0] != '/') {
 	    fprintf(stderr, "ERROR: LogFile requires full path.\n");
 	    logg_close();
-	    freecfg(copt);
+	    optfree(opts);
 	    return 1;
 	}
 	time(&currtime);
 	if(logg("#+++ Started at %s", ctime(&currtime))) {
 	    fprintf(stderr, "ERROR: Can't initialize the internal logger\n");
 	    logg_close();
-	    freecfg(copt);
+	    optfree(opts);
 	    return 1;
 	}
     } else
 	logg_file = NULL;
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
-    if(cfgopt(copt, "LogSyslog")->enabled) {
+    if(optget(opts, "LogSyslog")->enabled) {
 	int fac;
 
-	cpt = cfgopt(copt, "LogFacility");
-	if((fac = logg_facility(cpt->strarg)) == -1) {
-	    logg("!LogFacility: %s: No such facility.\n", cpt->strarg);
+	opt = optget(opts, "LogFacility");
+	if((fac = logg_facility(opt->strarg)) == -1) {
+	    logg("!LogFacility: %s: No such facility.\n", opt->strarg);
 	    logg_close();
-	    freecfg(copt);
+	    optfree(opts);
 	    return 1;
 	}
 
@@ -208,23 +195,23 @@ int main(int argc, char **argv) {
     }
 #endif
 
-    if((cpt = cfgopt(copt, "TemporaryDirectory"))->enabled)
-	tempdir = cpt->strarg;
+    if((opt = optget(opts, "TemporaryDirectory"))->enabled)
+	tempdir = opt->strarg;
 
-    if(localnets_init(copt) || init_actions(copt)) {
+    if(localnets_init(opts) || init_actions(opts)) {
 	logg_close();
-	freecfg(copt);
+	optfree(opts);
 	return 1;
     }
 
-    if((cpt = cfgopt(copt, "Whitelist"))->enabled && whitelist_init(cpt->strarg)) {
+    if((opt = optget(opts, "Whitelist"))->enabled && whitelist_init(opt->strarg)) {
 	localnets_free();
 	logg_close();
-	freecfg(copt);
+	optfree(opts);
 	return 1;
     }
 
-    if(cfgopt(copt, "AddHeader")->enabled) {
+    if(optget(opts, "AddHeader")->enabled) {
 	char myname[255];
 
 	if(!gethostname(myname, sizeof(myname))) {
@@ -239,12 +226,12 @@ int main(int argc, char **argv) {
     }
     
     umask(0007); /* FIXME */
-    if(!(my_socket = cfgopt(copt, "MilterSocket")->strarg)) {
+    if(!(my_socket = optget(opts, "MilterSocket")->strarg)) {
 	logg("!Please configure the MilterSocket directive\n");
 	localnets_free();
 	whitelist_free();
 	logg_close();
-	freecfg(copt);
+	optfree(opts);
 	return 1;
     }
     if(smfi_setconn(my_socket) == MI_FAILURE) {
@@ -252,7 +239,7 @@ int main(int argc, char **argv) {
 	localnets_free();
 	whitelist_free();
 	logg_close();
-	freecfg(copt);
+	optfree(opts);
 	return 1;
     }
     if(smfi_register(descr) == MI_FAILURE) {
@@ -260,55 +247,55 @@ int main(int argc, char **argv) {
 	localnets_free();
 	whitelist_free();
 	logg_close();
-	freecfg(copt);
+	optfree(opts);
 	return 1;
     }
-    cpt = cfgopt(copt, "FixStaleSocket");
-    if(smfi_opensocket(cpt->enabled) == MI_FAILURE) {
+    opt = optget(opts, "FixStaleSocket");
+    if(smfi_opensocket(opt->enabled) == MI_FAILURE) {
 	logg("!Failed to create socket %s\n", my_socket);
 	localnets_free();
 	whitelist_free();
 	logg_close();
-	freecfg(copt);
+	optfree(opts);
 	return 1;
     }
 
-    maxfilesize = cfgopt(copt, "MaxFileSize")->numarg;
-    readtimeout = cfgopt(copt, "ReadTimeout")->numarg;
+    maxfilesize = optget(opts, "MaxFileSize")->numarg;
+    readtimeout = optget(opts, "ReadTimeout")->numarg;
 
-    cpool_init(copt);
+    cpool_init(opts);
     if (!cp) {
 	logg("!Failed to init the socket pool\n");
 	localnets_free();
 	whitelist_free();
 	logg_close();
-	freecfg(copt);
+	optfree(opts);
 	return 1;
     }	
 
-    if(!cfgopt(copt, "Foreground")->enabled) {
+    if(!optget(opts, "Foreground")->enabled) {
 	if(daemonize() == -1) {
 	    logg("!daemonize() failed\n");
 	    localnets_free();
 	    whitelist_free();
 	    cpool_free();
 	    logg_close();
-	    freecfg(copt);
+	    optfree(opts);
 	    return 1;
 	}
 	if(chdir("/") == -1)
 	    logg("^Can't change current working directory to root\n");
     }
 
-    if((cpt = cfgopt(copt, "PidFile"))->enabled) {
+    if((opt = optget(opts, "PidFile"))->enabled) {
 	FILE *fd;
 	mode_t old_umask = umask(0006);
 
-	if((fd = fopen(cpt->strarg, "w")) == NULL) {
-	    logg("!Can't save PID in file %s\n", cpt->strarg);
+	if((fd = fopen(opt->strarg, "w")) == NULL) {
+	    logg("!Can't save PID in file %s\n", opt->strarg);
 	} else {
 	    if (fprintf(fd, "%u", (unsigned int)getpid())<0) {
-	    	logg("!Can't save PID in file %s\n", cpt->strarg);
+	    	logg("!Can't save PID in file %s\n", opt->strarg);
 	    }
 	    fclose(fd);
 	}
@@ -317,7 +304,7 @@ int main(int argc, char **argv) {
 
     ret = smfi_main();
 
-    freecfg(copt);
+    optfree(opts);
 
     logg_close();
     cpool_free();
