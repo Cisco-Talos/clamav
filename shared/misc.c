@@ -36,7 +36,7 @@
 #include <ctype.h>
 #include <errno.h>
 
-/* #include "shared/cfgparser.h" */
+#include "shared/optparser.h"
 #include "shared/output.h"
 
 #include "libclamav/clamav.h"
@@ -66,25 +66,22 @@ const char *get_version(void)
 #ifndef CL_NOLIBCLAMAV
 char *freshdbdir(void)
 {
-/* FIXME
 	struct cl_cvd *d1, *d2;
-	struct cfgstruct *copt;
-	const struct cfgstruct *cpt;
-*/
+	struct optstruct *opts;
+	const struct optstruct *opt;
 	const char *dbdir;
 	char *retdir;
 
 
-    /* try to find fresh directory */
+    /* try to find the most up-to-date db directory */
     dbdir = cl_retdbdir();
-    /*
-    if((copt = getcfg(CONFDIR"/freshclam.conf", 0, OPT_FRESHCLAM))) {
-	if((cpt = cfgopt(copt, "DatabaseDirectory"))->enabled || (cpt = cfgopt(copt, "DataDirectory"))->enabled) {
-	    if(strcmp(dbdir, cpt->strarg)) {
-		    char *daily = (char *) malloc(strlen(cpt->strarg) + strlen(dbdir) + 30);
-		sprintf(daily, "%s/daily.cvd", cpt->strarg);
+    if((opts = optparse(CONFDIR"/freshclam.conf", 0, NULL, 0, OPT_FRESHCLAM, 0, NULL))) {
+	if((opt = optget(opts, "DatabaseDirectory"))->enabled) {
+	    if(strcmp(dbdir, opt->strarg)) {
+		    char *daily = (char *) malloc(strlen(opt->strarg) + strlen(dbdir) + 30);
+		sprintf(daily, "%s/daily.cvd", opt->strarg);
 		if(access(daily, R_OK))
-		    sprintf(daily, "%s/daily.cld", cpt->strarg);
+		    sprintf(daily, "%s/daily.cld", opt->strarg);
 
 		if(!access(daily, R_OK) && (d1 = cl_cvdhead(daily))) {
 		    sprintf(daily, "%s/daily.cvd", dbdir);
@@ -94,11 +91,11 @@ char *freshdbdir(void)
 		    if(!access(daily, R_OK) && (d2 = cl_cvdhead(daily))) {
 			free(daily);
 			if(d1->version > d2->version)
-			    dbdir = cpt->strarg;
+			    dbdir = opt->strarg;
 			cl_cvdfree(d2);
 		    } else {
 			free(daily);
-			dbdir = cpt->strarg;
+			dbdir = opt->strarg;
 		    }
 		    cl_cvdfree(d1);
 		} else {
@@ -107,14 +104,11 @@ char *freshdbdir(void)
 	    }
 	}
     }
-    */
 
     retdir = strdup(dbdir);
 
-/*
-    if(copt)
-	freecfg(copt);
-*/
+    if(opts)
+	optfree(opts);
 
     return retdir;
 }

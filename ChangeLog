@@ -1,3 +1,7 @@
+Fri Jan  2 23:00:52 CET 2009 (tk)
+---------------------------------
+ * shared/misc.c: re-enable freshdbdir()
+
 Fri Jan  2 18:16:45 CET 2009 (tk)
 ---------------------------------
  * shared, clamconf: drop old stuff; replace getopt.[ch] with my_getopt
