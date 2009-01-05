@@ -1,3 +1,7 @@
+Mon Jan  5 12:56:59 EET 2009 (edwin)
+------------------------------------
+ * libclamav/regex_list.c: fix malformed .pdb handling (bb #1338)
+
 Fri Jan  2 23:00:52 CET 2009 (tk)
 ---------------------------------
  * shared/misc.c: re-enable freshdbdir()

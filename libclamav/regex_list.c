@@ -571,7 +571,7 @@ void regex_list_done(struct regex_matcher* matcher)
 {
 	assert(matcher);
 
-	if(matcher->list_inited) {
+	if(matcher->list_inited == 1) {
 		size_t i;
 		cli_ac_free(&matcher->suffixes);
 		if(matcher->suffix_regexes) {
