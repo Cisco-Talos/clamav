@@ -470,7 +470,7 @@ static void scope_free_all(struct scope *p)
 	} while(p);
 }
 
-void cli_strtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens);
+size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens);
 static int match_parameters(const yystype *tokens, const char ** param_names, size_t count)
 {
 	size_t i,j=0;

@@ -519,11 +519,11 @@ static int cli_loadpdb(FILE *fs, struct cl_engine *engine, unsigned int options,
 #define NDB_TOKENS 6
 static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned short sdb, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
-	const char *tokens[NDB_TOKENS];
+	const char *tokens[NDB_TOKENS + 1];
 	char buffer[FILEBUFF];
 	const char *sig, *virname, *offset, *pt;
 	struct cli_matcher *root;
-	int line = 0, sigs = 0, ret = 0;
+	int line = 0, sigs = 0, ret = 0, tokens_count;
 	unsigned short target;
 	unsigned int phish = options & CL_DB_PHISHING;
 
@@ -543,12 +543,14 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
 	cli_chomp(buffer);
 
-	cli_strtokenize(buffer, ':', NDB_TOKENS, tokens);
-
-	if(!(virname = tokens[0])) {
+	tokens_count = cli_strtokenize(buffer, ':', NDB_TOKENS + 1, tokens);
+	/* FIXME: re-enable after fixing invalid sig @ main.ndb:53467 */
+	if(tokens_count < 4 /*|| tokens_count > 6*/) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
+
+	virname = tokens[0];
 
 	if(engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)))
 	    if(cli_chkpua(virname, engine->pua_cats, options))
@@ -557,7 +559,8 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	if(engine->ignored && cli_chkign(engine->ignored, dbname, line, virname))
 	    continue;
 
-	if((pt = tokens[4])) { /* min version */
+	if(tokens_count > 4) { /* min version */
+	    pt = tokens[4];
 	    if(!isdigit(*pt)) {
 		ret = CL_EMALFDB;
 		break;
@@ -568,8 +571,8 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 		continue;
 	    }
 
-
-	    if((pt = tokens[5])) { /* max version */
+	    if(tokens_count == 6) { /* max version */
+		pt = tokens[5];
 		if(!isdigit(*pt)) {
 		    ret = CL_EMALFDB;
 		    break;
@@ -578,7 +581,6 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 		if((unsigned int) atoi(pt) < cl_retflevel()) {
 		    continue;
 		}
-
 	    }
 	}
 
@@ -595,17 +597,11 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
 	root = engine->root[target];
 
-	if(!(offset = tokens[2])) {
-	    ret = CL_EMALFDB;
-	    break;
-	} else if(!strcmp(offset, "*")) {
+	offset = tokens[2];
+	if(!strcmp(offset, "*"))
 	    offset = NULL;
-	}
 
-	if(!(sig = tokens[3])) {
-	    ret = CL_EMALFDB;
-	    break;
-	}
+	sig = tokens[3];
 
 	if((ret = cli_parse_add(root, virname, sig, 0, 0, offset, target, NULL, options))) {
 	    ret = CL_EMALFDB;
@@ -665,13 +661,13 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 	};
 	struct lsig_attrib *apt;
 	char *tokens[ATTRIB_TOKENS], *pt, *pt2;
-	unsigned int v1, v2, v3, i, j;
+	unsigned int v1, v2, v3, i, j, tokens_count;
 	uint32_t cnt, off[ATTRIB_TOKENS];
 
 
-    cli_strtokenize(attribs, ',', ATTRIB_TOKENS, (const char **) tokens);
+    tokens_count = cli_strtokenize(attribs, ',', ATTRIB_TOKENS, (const char **) tokens);
 
-    for(i = 0; tokens[i]; i++) {
+    for(i = 0; i < tokens_count; i++) {
 	if(!(pt = strchr(tokens[i], ':'))) {
 	    cli_errmsg("lsigattribs: Incorrect format of attribute '%s'\n", tokens[i]);
 	    return -1;
@@ -759,7 +755,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 	return -1;
     }
 
-    for(i = 0; tokens[i]; i++) {
+    for(i = 0; i < tokens_count; i++) {
 	for(j = 0; attrtab[j].name; j++) {
 	    if(!strcmp(attrtab[j].name, tokens[i])) {
 		apt = &attrtab[j];
@@ -807,7 +803,7 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	unsigned short target = 0;
 	struct cli_ac_lsig **newtable, *lsig;
 	uint32_t lsigid[2];
-	int ret = CL_SUCCESS, i, subsigs;
+	int ret = CL_SUCCESS, i, subsigs, tokens_count;
 	struct cli_lsig_tdb tdb;
 
 
@@ -819,12 +815,14 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	sigs++;
 	cli_chomp(buffer);
 
-	cli_strtokenize(buffer, ';', LDB_TOKENS, (const char **) tokens);
-
-	if(!(virname = tokens[0])) {
+	tokens_count = cli_strtokenize(buffer, ';', LDB_TOKENS, (const char **) tokens);
+	if(tokens_count < 4) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
+
+	virname = tokens[0];
+	logic = tokens[2];
 
 	if(engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)))
 	    if(cli_chkpua(virname, engine->pua_cats, options))
@@ -832,11 +830,6 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
 	if(engine->ignored && cli_chkign(engine->ignored, dbname, line, virname))
 	    continue;
-
-	if(!(logic = tokens[2])) {
-	    ret = CL_EMALFDB;
-	    break;
-	}
 
 	subsigs = cli_ac_chklsig(logic, logic + strlen(logic), NULL, NULL, NULL, 1);
 	if(subsigs == -1) {
@@ -924,7 +917,7 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	root->ac_lsigtable = newtable;
 
 	for(i = 0; i < subsigs; i++) {
-	    if(!tokens[3 + i]) {
+	    if(i >= tokens_count) {
 		cli_errmsg("cli_loadldb: Missing subsignature id %u\n", i);
 		ret = CL_EMALFDB;
 		break;
@@ -968,12 +961,12 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     return CL_SUCCESS;
 }
 
-#define FTM_TOKENS 8	
+#define FTM_TOKENS 8
 static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options, unsigned int internal, struct cli_dbio *dbio)
 {
-	const char *tokens[FTM_TOKENS], *pt;
+	const char *tokens[FTM_TOKENS + 1], *pt;
 	char buffer[FILEBUFF];
-	unsigned int line = 0, sigs = 0;
+	unsigned int line = 0, sigs = 0, tokens_count;
 	struct cli_ftype *new;
 	cli_file_t rtype, type;
 	int ret;
@@ -994,14 +987,15 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 	    cli_chomp(buffer);
 	}
 	line++;
-	cli_strtokenize(buffer, ':', FTM_TOKENS, tokens);
+	tokens_count = cli_strtokenize(buffer, ':', FTM_TOKENS + 1, tokens);
 
-	if(!tokens[0] || !tokens[1] || !tokens[2] || !tokens[3] || !tokens[4] || !tokens[5]) {
+	if(tokens_count < 6 || tokens_count > 8) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
 
-	if((pt = tokens[6])) { /* min version */
+	if(tokens_count > 6) { /* min version */
+	    pt = tokens[6];
 	    if(!cli_isnumber(pt)) {
 		ret = CL_EMALFDB;
 		break;
@@ -1010,7 +1004,8 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 		cli_dbgmsg("cli_loadftm: File type signature for %s not loaded (required f-level: %u)\n", tokens[3], atoi(pt));
 		continue;
 	    }
-	    if((pt = tokens[7])) { /* max version */
+	    if(tokens_count == 8) { /* max version */
+		pt = tokens[7];
 		if(!cli_isnumber(pt)) {
 		    ret = CL_EMALFDB;
 		    break;
@@ -1081,9 +1076,9 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 #define IGN_TOKENS 3
 static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio)
 {
-	const char *tokens[IGN_TOKENS];
+	const char *tokens[IGN_TOKENS + 1];
 	char buffer[FILEBUFF];
-	unsigned int line = 0;
+	unsigned int line = 0, tokens_count;
 	struct cli_ignsig *new;
 	int ret = CL_SUCCESS;
 
@@ -1097,7 +1092,11 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
 	cli_chomp(buffer);
-	cli_strtokenize(buffer, ':', IGN_TOKENS, tokens);
+	tokens_count = cli_strtokenize(buffer, ':', IGN_TOKENS + 1, tokens);
+	if(tokens_count != IGN_TOKENS) {
+	    ret = CL_EMALFDB;
+	    break;
+	}
 
 	new = (struct cli_ignsig *) mp_calloc(engine->mempool, 1, sizeof(struct cli_ignsig));
 	if(!new) {
@@ -1204,11 +1203,11 @@ static int cli_md5db_init(struct cl_engine *engine, unsigned int mode)
 #define MD5_TOKENS 3
 static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int mode, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
-	const char *tokens[MD5_TOKENS];
+	const char *tokens[MD5_TOKENS + 1];
 	char buffer[FILEBUFF];
 	const char *pt;
 	int ret = CL_SUCCESS;
-	unsigned int size_field = 1, md5_field = 0, line = 0, sigs = 0;
+	unsigned int size_field = 1, md5_field = 0, line = 0, sigs = 0, tokens_count;
 	uint32_t size;
 	struct cli_bm_patt *new;
 	struct cli_matcher *db = NULL;
@@ -1222,13 +1221,13 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
 	cli_chomp(buffer);
-	cli_strtokenize(buffer, ':', MD5_TOKENS, tokens);
-
-	if(!(pt = tokens[2])) { /* virname */
+	tokens_count = cli_strtokenize(buffer, ':', MD5_TOKENS + 1, tokens);
+	if(tokens_count != MD5_TOKENS) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
 
+	pt = tokens[2]; /* virname */
 	if(engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)))
 	    if(cli_chkpua(pt, engine->pua_cats, options))
 		continue;
@@ -1242,12 +1241,7 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    break;
 	}
 
-	if(!(pt = tokens[md5_field])) {
-	    mp_free(engine->mempool, new);
-	    ret = CL_EMALFDB;
-	    break;
-	}
-
+	pt = tokens[md5_field]; /* md5 */
 	if(strlen(pt) != 32 || !(new->pattern = (unsigned char *) cli_mp_hex2str(engine->mempool, pt))) {
 	    cli_errmsg("cli_loadmd5: Malformed MD5 string at line %u\n", line);
 	    mp_free(engine->mempool, new);
@@ -1256,13 +1250,7 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	}
 	new->length = 16;
 
-	if(!(pt = tokens[size_field])) {
-	    mp_free(engine->mempool, new->pattern);
-	    mp_free(engine->mempool, new);
-	    ret = CL_EMALFDB;
-	    break;
-	}
-	size = atoi(pt);
+	size = atoi(tokens[size_field]);
 
 	new->virname = cli_mp_virname(engine->mempool, (char *) tokens[2], options & CL_DB_OFFICIAL);
 	if(!new->virname) {
@@ -1319,9 +1307,9 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 #define MD_TOKENS 9
 static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, int type, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
-	const char *tokens[MD_TOKENS];
+	const char *tokens[MD_TOKENS + 1];
 	char buffer[FILEBUFF];
-	unsigned int line = 0, sigs = 0;
+	unsigned int line = 0, sigs = 0, tokens_count;
 	int ret = CL_SUCCESS, crc;
 	struct cli_meta_node *new;
 
@@ -1332,7 +1320,11 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 	    continue;
 
 	cli_chomp(buffer);
-	cli_strtokenize(buffer, ':', MD_TOKENS, tokens);
+	tokens_count = cli_strtokenize(buffer, ':', MD_TOKENS + 1, tokens);
+	if(tokens_count != MD_TOKENS) {
+	    ret = CL_EMALFDB;
+	    break;
+	}
 
 	new = (struct cli_meta_node *) mp_calloc(engine->mempool, 1, sizeof(struct cli_meta_node));
 	if(!new) {

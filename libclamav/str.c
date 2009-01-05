@@ -429,9 +429,9 @@ const char* cli_strcasestr(const char* a, const char *b)
 }
 #endif
 
-void cli_strtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens)
+size_t cli_strtokenize(char *buffer, const char delim, const size_t token_count, const char **tokens)
 {
-	size_t tokens_found;
+	size_t tokens_found, i;
 
 
     for(tokens_found = 0; tokens_found < token_count; ) {
@@ -440,12 +440,14 @@ void cli_strtokenize(char *buffer, const char delim, const size_t token_count, c
 	if(buffer) {
 	    *buffer++ = '\0';
 	} else {
-	    while(tokens_found < token_count)
-		tokens[tokens_found++] = NULL;
+	    i = tokens_found;
+	    while(i < token_count)
+		tokens[i++] = NULL;
 
-	    return;
+	    return tokens_found;
 	}
     }
+    return tokens_found;
 }
 
 int cli_isnumber(const char *str)

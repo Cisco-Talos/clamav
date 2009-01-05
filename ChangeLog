@@ -1,3 +1,9 @@
+Mon Jan  5 20:33:04 CET 2009 (tk)
+---------------------------------
+ * libclamav/str.c: return token count in cli_strtokenize()
+ * libclamav/readdb.c: use tokens_count (bb#1331); make the parser more
+		       strict
+
 Mon Jan  5 19:54:13 CET 2009 (tk)
 ---------------------------------
  * libclamav/mpool.c: fix old free() call in cli_mp_hex2ui()
