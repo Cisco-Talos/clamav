@@ -1,3 +1,7 @@
+Mon Jan  5 19:54:13 CET 2009 (tk)
+---------------------------------
+ * libclamav/mpool.c: fix old free() call in cli_mp_hex2ui()
+
 Mon Jan  5 12:56:59 EET 2009 (edwin)
 ------------------------------------
  * libclamav/regex_list.c: fix malformed .pdb handling (bb #1338)

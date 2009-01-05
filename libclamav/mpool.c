@@ -626,7 +626,7 @@ uint16_t *cli_mp_hex2ui(mp_t *mp, const char *hex) {
   if(cli_realhex2ui(hex, str, len))
     return str;
     
-  free(str);
+  mp_free(mp, str);
   return NULL;
 }
 
