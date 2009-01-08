@@ -1,3 +1,7 @@
+Wed Jan  7 19:40:11 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c: first version of poll_recv_fds
+
 Mon Jan  5 20:33:04 CET 2009 (tk)
 ---------------------------------
  * libclamav/str.c: return token count in cli_strtokenize()

@@ -440,3 +440,221 @@ int readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeou
     }
     return n;
 }
+
+struct fd_buf {
+    unsigned char *buffer;
+    size_t bufsize;
+    size_t off;
+    int fd;
+    int got_newdata;
+};
+
+struct fd_data {
+    struct fd_buf *buf;
+    size_t nfds;
+#ifdef HAVE_POLL
+    struct pollfd *poll_data;
+#endif
+};
+
+static int realloc_polldata(struct fd_data *data)
+{
+#ifdef HAVE_POLL
+    if (data->poll_data)
+	free(data->poll_data);
+    data->poll_data = malloc(data->nfds*sizeof(*data->poll_data));
+    if (!data->poll_data) {
+	logg("!add_fd: Memory allocation failed for poll_data\n");
+	return -1;
+    }
+#endif
+    return 0;
+}
+
+static void cleanup_fds(struct fd_data *data)
+{
+    struct fd_buf *newbuf;
+    unsigned i,j, ok = 0;
+    for (i=0,j=0;i < data->nfds; i++) {
+	if (data->buf[i].fd < 0)
+	    continue;
+	if (i != j)
+	    data->buf[j++] = data->buf[i];
+	ok++;
+    }
+    while (j < data->nfds)
+	data->buf[j++].fd = -1;
+    /* Shrink buffer */
+    newbuf = realloc(data->buf, ok*sizeof(*newbuf));
+    if (newbuf)
+	data->buf = newbuf;/* non-fatal if shrink fails */
+}
+
+static int read_fd_data(struct fd_buf *buf)
+{
+   /* Read the pending packet, it may contain more than one command, but
+    * that is to the cmdparser to handle. 
+    * It will handle 1st command, and then move leftover to beginning of buffer
+    */
+   ssize_t n = recv(buf->fd, buf->buffer + buf->off, buf->bufsize - buf->off,0);
+   if (n < 0)
+       return -1;
+   buf->off += n;
+   buf->got_newdata=1;
+}
+
+int add_fd_to_poll(struct fd_data *data, int fd)
+{
+    struct fd_buf *buf;
+    unsigned  n = data->nfds + 1;
+    if (fd < 0) {
+	logg("!add_fd: invalid fd passed to add_fd\n");
+	return -1;
+    }
+    buf = realloc(data->buf, n*sizeof(*buf));
+    if (!buf) {
+	logg("!add_fd: Memory allocation failed for fd_buf\n");
+	return -1;
+    }
+    data->buf = buf;
+    data->nfds = n;
+    data->buf[n-1].fd = -1;
+    data->buf[n-1].bufsize = PATH_MAX+8;
+    if (!(data->buf[n-1].buffer = malloc(data->buf[n-1].bufsize))) {
+	logg("!add_fd: Memory allocation failed for command buffer\n");
+	return -1;
+    }
+    data->buf[n-1].fd = fd;
+    data->buf[n-1].off = 0;
+    data->buf[n-1].got_newdata = 0;
+    return realloc_polldata(data);
+}
+
+/* Wait till data is available to be read on any of the fds,
+ * read available data on all fds, and mark them as appropriate.
+ * One of the fds should be a pipe, used by the accept thread to wake us.
+ * timeout is specified in seconds, if check_signals is non-zero, then
+ * poll_recv_fds() will return upon receipt of a signal, even if no data
+ * is received on any of the sockets.
+ */
+int poll_recv_fds(struct fd_data *data, int timeout, int check_signals)
+{
+    unsigned fdsok = data->nfds;
+    size_t i;
+    int retval;
+
+    /* we must have at least one fd, the control fd! */
+    if (!data->nfds)
+	return 0;
+    for (i=0;i < data->nfds;i++)
+	data->buf[i].got_newdata = 0;
+#ifdef HAVE_POLL
+    /* Use poll() if available, preferred because:
+     *  - can poll any number of FDs
+     *  - can notify of both data available / socket disconnected events
+     *  - when it says POLLIN it is guaranteed that a following recv() won't
+     *  block (select may say that data is available to read, but a following 
+     *  recv() may still block according to the manpage
+     */
+
+    if (!data->poll_data) {
+	data->poll_data = malloc(data->nfds*sizeof(*data->poll_data));
+    }
+    if (timeout > 0) {
+	/* seconds to ms */
+	timeout *= 1000;
+    }
+    for (i=0;i < data->nfds;i++) {
+	data->poll_data[i].fd = data->buf[i].fd;
+	data->poll_data[i].events = POLLIN;
+	data->poll_data[i].revents = 0;
+    }
+    do {
+	retval = poll(data->poll_data, data->nfds, timeout);
+	if (retval > 0) {
+	    fdsok = 0;
+	    for (i=0;i < data->nfds; i++) {
+		short revents;
+		if (data->buf[i].fd < 0)
+		    continue;
+		revents = data->poll_data[i].revents;
+		if (revents & POLLIN) {
+		    /* Data available to be read */
+		    if (read_fd_data(&data->buf[i]) == -1)
+			revents |= POLLERR;
+		}
+
+		if (revents & (POLLHUP | POLLERR)) {
+		    if (revents & POLLHUP) {
+			/* remote disconnected */
+			logg("!poll_recv_fds: Client disconnected\n");
+		    } else {
+			/* error on file descriptor */
+			logg("!poll_recv_fds: Error condition on fd %d\n",
+			     data->poll_data[i].fd);
+		    }
+		    data->buf[i].fd = -1;
+		} else {
+		    fdsok++;
+		}
+	    }
+	}
+    } while (retval == -1 && !check_signals && errno == EINTR);
+#else
+    fd_set rfds;
+    struct timeval tv;
+    int maxfd = -1;
+
+    for (i=0;i < data->nfds; i++) {
+	int fd = data->buf[i].fd;
+	if (fd >= FD_SETSIZE) {
+	    logg ("!poll_recv_fds: file descriptor is not valid for FD_SET\n");
+	    return -1;
+	}
+
+	maxfd = max(maxfd, fd);
+    }
+
+    do {
+	FD_ZERO(&rfds);
+	for(i=0;i < data->nfds;i++) {
+	    int fd = data->buf[i].fd;
+	    if (fd >= 0)
+		FD_SET(fd, &rfds);
+	}
+	tv.tv_sec = timeout;
+	tv.tv_usec = 0;
+
+	retval = select(maxfd+1, &rfds, NULL, NULL, timeout > 0 ? &tv : NULL);
+	if (retval > 0) {
+	    fdsok = data->nfds;
+	    for (i=0; i < data->nfds; i++) {
+		if (data->buf[i].fd < 0)
+		    continue;
+		if (FD_ISSET(data->buf[i].fd, &rfds))
+		    if (read_fd_data(&data->buf[i] == -1)) {
+			logg("!poll_recv_fds: Error condition on fd %d\n",
+			     data->buf[i].fd);
+			data->buf[i].fd = -1;
+			fdsok--;
+		    }
+	    }
+	}
+    } while (retval == -1 && !check_signals && errno == EINTR);
+#endif
+
+    if (retval == -1) {
+#ifdef HAVE_POLL
+	logg("!poll_recv_fds: poll failed\n");
+#else
+	logg("!poll_recv_fds: select failed\n");
+#endif
+    }
+
+    /* Remove closed / error fds */
+    if (fdsok != data->nfds)
+	cleanup_fds(data);
+    return retval;
+}
+
+
