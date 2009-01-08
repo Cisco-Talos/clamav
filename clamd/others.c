@@ -644,10 +644,16 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 #endif
 
     if (retval == -1) {
-#ifdef HAVE_POLL
-	logg("!poll_recv_fds: poll failed\n");
+	char buff[BUFFSIZE + 1];
+#ifdef HAVE_STRERROR_R
+	strerror_r(errno, buff, BUFFSIZE);
 #else
-	logg("!poll_recv_fds: select failed\n");
+	buff[0] = '\0';
+#endif
+#ifdef HAVE_POLL
+	logg("!poll_recv_fds: poll failed: %s\n", buff);
+#else
+	logg("!poll_recv_fds: select failed: %s\n", buff);
 #endif
     }
 

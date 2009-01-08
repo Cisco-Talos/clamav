@@ -51,7 +51,7 @@ int writen(int fd, void *buff, unsigned int count);
 
 int readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeout_sec, int force_delim, int read_command);
 int fds_add(struct fd_data *data, int fd, int listen_only);
-int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
+int fds_poll_recv(struct fd_data *data, int timeout, int check_signals);
 void fds_free(struct fd_data *data);
 
 #endif

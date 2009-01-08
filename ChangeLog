@@ -1,3 +1,11 @@
+Thu Jan  8 23:57:00 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, clamd/others.h, clamd/server-th.c: recvloop. This
+ doesn't compile yet.  But perhaps it is more portable to use a
+ single select for accept/recv, then do accept on listen sockets, and
+ recv on open sockets.  This  should be more portable than select on
+ a pipe.  We can also do the operation with one mutex less.
+
 Thu Jan  8 22:48:43 EET 2009 (edwin)
 ------------------------------------
  * clamd/server-th.c: accept thread continued
