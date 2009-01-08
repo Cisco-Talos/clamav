@@ -602,7 +602,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     memset(&fds, 0, sizeof(fds));
     for (i=0;i < nsockets;i++)
 	if (add_fd_to_poll(&fds, socketds[i], 1) == -1) {
-	    logg("!cli_engine_set(CL_ENGINE_MAX_RECURSION) failed: %s\n", cl_strerror(ret));
+	    logg("!add_fd_to_poll failed failed\n");
 	    cl_engine_free(engine);
 	    return 1;
 	}
@@ -615,44 +615,30 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     time(&start_time);
 
     for(;;) {
-	int status = fds_poll_recv(&fds, -1, 1);
+	int new_sd = fds_poll_recv(&fds, -1, 1);
 	/* TODO: what about sockets that get rm-ed? */
 	if (!fds.nfds) {
 	    /* no more sockets to poll, all gave an error */
 	    logg("!Main socket gone: fatal\n");
 	    break;
 	}
-	for (i=0;i < nsockets && i < fds.nfds && status > 0; i++) {
-	    status = accept(
-	}
-	if (new_sd != -1)
-	    new_sd = accept(socketd, NULL, NULL);
-	if((new_sd == -1) && (errno != EINTR)) {
+
+	for (i=0;i < fds.nfds && new_sd >= 0; i++) {
+	    new_sd = accept(fds.buf[i].fd, NULL, NULL);
 	    pthread_mutex_lock(&exit_mutex);
-	    if(progexit) {
+	    if (prog_exit) {
 		pthread_mutex_unlock(&exit_mutex);
-	    	break;
+#ifdef C_WINDOWS
+		closesocket(new_sd);
+#else
+		if(new_sd >= 0)
+		    close(new_sd);
+#endif
+		break;
 	    }
 	    pthread_mutex_unlock(&exit_mutex);
-	    /* very bad - need to exit or restart */
-#ifdef HAVE_STRERROR_R
-	    strerror_r(errno, buff, BUFFSIZE);
-	    logg("!accept() failed: %s\n", buff);
-#else
-	    logg("!accept() failed\n");
-#endif
-	    continue;
-	}
 
-	if (sighup) {
-		logg("SIGHUP caught: re-opening log file.\n");
-		logg_close();
-		sighup = 0;
-		if(!logg_file && (opt = optget(opts, "LogFile"))->enabled)
-		    logg_file = opt->strarg;
-	}
-
-	if (!progexit && new_sd >= 0) {
+	    if (new_sd >= 0) {
 		client_conn = (client_conn_t *) malloc(sizeof(struct client_conn_tag));
 		if(client_conn) {
 		    client_conn->sd = new_sd;
@@ -685,20 +671,33 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 			pthread_mutex_unlock(&exit_mutex);
 		    }
 		}
+	    }
 	}
 
-	pthread_mutex_lock(&exit_mutex);
-	if(progexit) {
-#ifdef C_WINDOWS
-	    closesocket(new_sd);
-#else
-  	    if(new_sd >= 0)
-		close(new_sd);
-#endif
+	if((new_sd == -1) && (errno != EINTR)) {
+	    pthread_mutex_lock(&exit_mutex);
+	    if(progexit) {
+		pthread_mutex_unlock(&exit_mutex);
+		break;
+	    }
 	    pthread_mutex_unlock(&exit_mutex);
-	    break;
+	    /* very bad - need to exit or restart */
+#ifdef HAVE_STRERROR_R
+	    strerror_r(errno, buff, BUFFSIZE);
+	    logg("!accept() failed: %s\n", buff);
+#else
+	    logg("!accept() failed\n");
+#endif
+	    continue;
 	}
-	pthread_mutex_unlock(&exit_mutex);
+
+	if (sighup) {
+		logg("SIGHUP caught: re-opening log file.\n");
+		logg_close();
+		sighup = 0;
+		if(!logg_file && (opt = optget(opts, "LogFile"))->enabled)
+		    logg_file = opt->strarg;
+	}
 
 	if(selfchk) {
 	    time(&current_time);
