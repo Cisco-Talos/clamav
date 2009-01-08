@@ -1,3 +1,8 @@
+Thu Jan  8 22:13:25 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, clamd/others.h, clamd/server-th.c: new poll
+ implementation start
+
 Wed Jan  7 19:40:11 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c: first version of poll_recv_fds

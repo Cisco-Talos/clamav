@@ -441,21 +441,6 @@ int readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeou
     return n;
 }
 
-struct fd_buf {
-    unsigned char *buffer;
-    size_t bufsize;
-    size_t off;
-    int fd;
-    int got_newdata;
-};
-
-struct fd_data {
-    struct fd_buf *buf;
-    size_t nfds;
-#ifdef HAVE_POLL
-    struct pollfd *poll_data;
-#endif
-};
 
 static int realloc_polldata(struct fd_data *data)
 {
@@ -464,7 +449,7 @@ static int realloc_polldata(struct fd_data *data)
 	free(data->poll_data);
     data->poll_data = malloc(data->nfds*sizeof(*data->poll_data));
     if (!data->poll_data) {
-	logg("!add_fd: Memory allocation failed for poll_data\n");
+	logg("!realloc_polldata: Memory allocation failed for poll_data\n");
 	return -1;
     }
 #endif
@@ -492,6 +477,8 @@ static void cleanup_fds(struct fd_data *data)
 
 static int read_fd_data(struct fd_buf *buf)
 {
+    if (!buf->buffer) /* listen-only socket */
+	return 0;
    /* Read the pending packet, it may contain more than one command, but
     * that is to the cmdparser to handle. 
     * It will handle 1st command, and then move leftover to beginning of buffer
@@ -503,7 +490,7 @@ static int read_fd_data(struct fd_buf *buf)
    buf->got_newdata=1;
 }
 
-int add_fd_to_poll(struct fd_data *data, int fd)
+int fds_add(struct fd_data *data, int fd, int listen_only)
 {
     struct fd_buf *buf;
     unsigned  n = data->nfds + 1;
@@ -519,10 +506,15 @@ int add_fd_to_poll(struct fd_data *data, int fd)
     data->buf = buf;
     data->nfds = n;
     data->buf[n-1].fd = -1;
-    data->buf[n-1].bufsize = PATH_MAX+8;
-    if (!(data->buf[n-1].buffer = malloc(data->buf[n-1].bufsize))) {
-	logg("!add_fd: Memory allocation failed for command buffer\n");
-	return -1;
+    if (!listen_only) {
+	data->buf[n-1].bufsize = PATH_MAX+8;
+	if (!(data->buf[n-1].buffer = malloc(data->buf[n-1].bufsize))) {
+	    logg("!add_fd: Memory allocation failed for command buffer\n");
+	    return -1;
+	}
+    } else {
+	data->buf[n-1].bufsize = 0;
+	data->buf[n-1].buf = NULL;
     }
     data->buf[n-1].fd = fd;
     data->buf[n-1].off = 0;
@@ -536,8 +528,9 @@ int add_fd_to_poll(struct fd_data *data, int fd)
  * timeout is specified in seconds, if check_signals is non-zero, then
  * poll_recv_fds() will return upon receipt of a signal, even if no data
  * is received on any of the sockets.
+ * Must be called with buf_mutex held.
  */
-int poll_recv_fds(struct fd_data *data, int timeout, int check_signals)
+int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 {
     unsigned fdsok = data->nfds;
     size_t i;
@@ -570,7 +563,12 @@ int poll_recv_fds(struct fd_data *data, int timeout, int check_signals)
 	data->poll_data[i].revents = 0;
     }
     do {
-	retval = poll(data->poll_data, data->nfds, timeout);
+	int n = data->nfds;
+
+	pthread_mutex_unlock(&data->buf_mutex);
+	retval = poll(data->poll_data, n, timeout);
+	pthread_mutex_lock(&data->buf_mutex);
+
 	if (retval > 0) {
 	    fdsok = 0;
 	    for (i=0;i < data->nfds; i++) {
@@ -612,7 +610,7 @@ int poll_recv_fds(struct fd_data *data, int timeout, int check_signals)
 	    return -1;
 	}
 
-	maxfd = max(maxfd, fd);
+	maxfd = MAX(maxfd, fd);
     }
 
     do {
@@ -625,7 +623,9 @@ int poll_recv_fds(struct fd_data *data, int timeout, int check_signals)
 	tv.tv_sec = timeout;
 	tv.tv_usec = 0;
 
+	pthread_mutex_unlock(&data->buf_mutex);
 	retval = select(maxfd+1, &rfds, NULL, NULL, timeout > 0 ? &tv : NULL);
+	pthread_mutex_lock(&data->buf_mutex);
 	if (retval > 0) {
 	    fdsok = data->nfds;
 	    for (i=0; i < data->nfds; i++) {
@@ -657,4 +657,12 @@ int poll_recv_fds(struct fd_data *data, int timeout, int check_signals)
     return retval;
 }
 
-
+void fds_free(struct fd_data *data)
+{
+    if (data->buf)
+	free(data->buf);
+#ifdef HAVE_POLL
+    if (data->poll_data)
+	free(data->poll_data);
+#endif
+}

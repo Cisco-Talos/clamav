@@ -304,6 +304,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	int idletimeout;
 	uint32_t val32;
 	uint64_t val64;
+	struct fd_data fds;
 
 #ifdef CLAMUKO
 	pthread_t clamuko_pid;
@@ -598,6 +599,14 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 
     idletimeout = optget(opts, "IdleTimeout")->numarg;
 
+    memset(&fds, 0, sizeof(fds));
+    for (i=0;i < nsockets;i++)
+	if (add_fd_to_poll(&fds, socketds[i], 1) == -1) {
+	    logg("!cli_engine_set(CL_ENGINE_MAX_RECURSION) failed: %s\n", cl_strerror(ret));
+	    cl_engine_free(engine);
+	    return 1;
+	}
+
     if((thr_pool=thrmgr_new(max_threads, idletimeout, scanner_thread)) == NULL) {
 	logg("!thrmgr_new failed\n");
 	exit(-1);
@@ -605,32 +614,17 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 
     time(&start_time);
 
-    for(;;) {				
-#if !defined(C_WINDOWS) && !defined(C_BEOS)
-	    struct stat st_buf;
-#endif
-    	int socketd = socketds[0];
-	int new_sd = 0;
-
-    	if(nsockets > 1) {
-	    int pollret = poll_fds(socketds, nsockets, -1, 1);
-    	    if(pollret > 0) {
-    		socketd = socketds[pollret - 1];
-    	    } else {
-		new_sd = -1;
-    	    }
-    	}
-#if !defined(C_WINDOWS) && !defined(C_BEOS)
-	if(new_sd != -1 && fstat(socketd, &st_buf) == -1) {
-	    logg("!fstat(): socket descriptor gone\n");
-	    memmove(socketds, socketds + 1, sizeof(socketds[0]) * nsockets);
-	    nsockets--;
-	    if(!nsockets) {
-		logg("!Main socket gone: fatal\n");
-		break;
-	    }
+    for(;;) {
+	int status = fds_poll_recv(&fds, -1, 1);
+	/* TODO: what about sockets that get rm-ed? */
+	if (!fds.nfds) {
+	    /* no more sockets to poll, all gave an error */
+	    logg("!Main socket gone: fatal\n");
+	    break;
 	}
-#endif
+	for (i=0;i < nsockets && i < fds.nfds && status > 0; i++) {
+	    status = accept(
+	}
 	if (new_sd != -1)
 	    new_sd = accept(socketd, NULL, NULL);
 	if((new_sd == -1) && (errno != EINTR)) {
@@ -751,6 +745,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	}
     }
 
+    fds_free(&fds);
     /* Destroy the thread manager.
      * This waits for all current tasks to end
      */
