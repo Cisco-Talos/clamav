@@ -43,7 +43,7 @@ struct thrwarg {
     unsigned int options;
 };
 
-int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts);
+int acceptloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts);
 void sighandler(int sig);
 void sighandler_th(int sig);
 void sigsegv(int sig);

@@ -1,3 +1,8 @@
+Fri Jan  9 21:04:57 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, clamd/server-th.c, clamd/server.h,
+ clamd/session.c, clamd/session.h: implement common accept+recv loop
+
 Thu Jan  8 23:57:00 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c, clamd/others.h, clamd/server-th.c: recvloop. This

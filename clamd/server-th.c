@@ -78,7 +78,8 @@ int sighup = 0;
 static struct cl_stat *dbstat = NULL;
 
 typedef struct client_conn_tag {
-    const char *cmd;
+    char *cmd;
+    size_t cmdlen;
     int sd;
     unsigned int options;
     const struct optstruct *opts;
@@ -92,7 +93,7 @@ static void scanner_thread(void *arg)
 #ifndef	C_WINDOWS
 	sigset_t sigset;
 #endif
-	int ret, timeout, i, session=FALSE;
+	int ret, timeout, session=FALSE;
 
 
 #ifndef	C_WINDOWS
@@ -114,7 +115,7 @@ static void scanner_thread(void *arg)
     	timeout = -1;
 
     do {
-    	ret = command(conn->sd, conn->engine, conn->options, conn->opts, timeout);
+    	ret = command(conn->sd, conn->cmd, conn->cmdlen, conn->engine, conn->options, conn->opts, timeout);
 	if (ret < 0) {
 		break;
 	}
@@ -123,10 +124,6 @@ static void scanner_thread(void *arg)
 	    case COMMAND_SHUTDOWN:
 		pthread_mutex_lock(&exit_mutex);
 		progexit = 1;
-		for(i = 0; i < conn->nsockets; i++) {
-		    shutdown(conn->socketds[i], 2);
-		    closesocket(conn->socketds[i]);
-		}
 		pthread_mutex_unlock(&exit_mutex);
 		break;
 
@@ -158,10 +155,11 @@ static void scanner_thread(void *arg)
 	}
     } while (session);
 
+    thrmgr_setactiveengine(NULL);
     shutdown(conn->sd, 2);
     closesocket(conn->sd);
-    thrmgr_setactiveengine(NULL);
     cl_engine_free(conn->engine);
+    free(conn->cmd);
     free(conn);
     return;
 }
@@ -285,149 +283,36 @@ struct rcvloop {
     struct fd_data *fds;
 };
 
-static const char *get_cmd(struct fd_buf *buf)
+static const char *get_cmd(struct fd_buf *buf, size_t off, size_t *len)
 {
     unsigned char *pos;
-    if (!buf->off)
+    if (!buf->off || off >= buf->off) {
+	*len = 0;
 	return NULL;
+    }
     switch (buf->buffer[0]) {
 	/* commands terminated by delimiters */
 	case 'n':
 	case 'z':
-	    pos = memchr(buf->buffer, buf->buffer[0], buf->off);
-	    if (!pos)
+	    pos = memchr(buf->buffer + off, buf->buffer[0] == 'n' ? '\n' : '\0', buf->off);
+	    if (!pos) {
 		/* we don't have another full command yet */
+		*len = 0;
 		return NULL;
+	    }
 	    *pos = '\0';
+	    *len = pos - buf->buffer;
 	    return buf->buffer + 1;
 	default:
 	    /* one packet = one command */
+	    *len = buf->off;
 	    return buf->buffer;
     }
 }
 
-void* recvloop_th(void *arg)
+int acceptloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts)
 {
-    struct rcvloop *rcvloop = (struct rcvloop*)arg;
-    struct fd_data *fds = rcvloop->fds;
-    pthread_mutex_lock(fds->buf_mutex);
-    for (;;) {
-	size_t i;
-	int status = fds_poll_recv(fds, -1, 1);
-	if (status == -1) {
-	    /* very bad, already logged */
-	    continue;
-	}
-
-	/* Loop over all sockets, checking which have a new command
-	 * available */
-	for (i=0;i < fds->nfds; i++) {
-	    client_conn_t *client_conn;
-	    struct fd_buf *buf = &fds->buf[i];
-	    const char *cmd;
-
-	    if (buf->fd == -1 || !buf->got_newdata ||
-		!has_fullcmd(buf))
-		continue;
-
-	    /* Parse commands */
-	    while ((cmd = get_cmd(buf) != NULL)) {
-		client_conn = (client_conn_t *) malloc(sizeof(struct client_conn_tag));
-		if(client_conn) {
-		    client_conn->sd = fds->buf[i].fd;
-		    client_conn->fds = fds;
-		    client_conn->cmd = cmd;
-		    client_conn->options = options;
-		    client_conn->opts = opts;
-		    if(cl_engine_addref(engine)) {
-			closesocket(client_conn->sd);
-			free(client_conn);
-			logg("!cl_engine_addref() failed\n");
-			pthread_mutex_lock(&exit_mutex);
-			progexit = 1;
-			pthread_mutex_unlock(&exit_mutex);
-		    } else {
-			client_conn->engine = engine;
-			client_conn->engine_timestamp = reloaded_time;
-			client_conn->socketds = socketds;
-			client_conn->nsockets = nsockets;
-			if(!thrmgr_dispatch(thr_pool, client_conn)) {
-			    closesocket(client_conn->sd);
-			    free(client_conn);
-			    logg("!thread dispatch failed\n");
-			}
-		    }
-		} else {
-		    logg("!Can't allocate memory for client_conn\n");
-		    closesocket(new_sd);
-		    if(optget(opts, "ExitOnOOM")->enabled) {
-			pthread_mutex_lock(&exit_mutex);
-			progexit = 1;
-			pthread_mutex_unlock(&exit_mutex);
-		    }
-		}
-	    }
-
-	    /* SIGHUP */
-	    if (sighup) {
-		logg("SIGHUP caught: re-opening log file.\n");
-		logg_close();
-		sighup = 0;
-		if(!logg_file && (opt = optget(opts, "LogFile"))->enabled)
-		    logg_file = opt->strarg;
-	    }
-
-	    /* SelfCheck */
-	    if(selfchk) {
-		time(&current_time);
-		if((current_time - start_time) > (time_t)selfchk) {
-		    if(reload_db(engine, dboptions, opts, TRUE, &ret)) {
-			pthread_mutex_lock(&reload_mutex);
-			reload = 1;
-			pthread_mutex_unlock(&reload_mutex);
-		    }
-		    time(&start_time);
-		}
-	    }
-
-	    /* DB reload */
-	    pthread_mutex_lock(&reload_mutex);
-	    if(reload) {
-		pthread_mutex_unlock(&reload_mutex);
-		engine = reload_db(engine, dboptions, opts, FALSE, &ret);
-		if(ret) {
-		    logg("Terminating because of a fatal error.\n");
-		    if(new_sd >= 0)
-			closesocket(new_sd);
-		    break;
-		}
-
-		pthread_mutex_lock(&reload_mutex);
-		reload = 0;
-		time(&reloaded_time);
-		pthread_mutex_unlock(&reload_mutex);
-#ifdef CLAMUKO
-		if(optget(opts, "ClamukoScanOnAccess")->enabled && tharg) {
-		    logg("Stopping and restarting Clamuko.\n");
-		    pthread_kill(clamuko_pid, SIGUSR1);
-		    pthread_join(clamuko_pid, NULL);
-		    tharg->engine = engine;
-		    pthread_create(&clamuko_pid, &clamuko_attr, clamukoth, tharg);
-		}
-#endif
-	    } else {
-		pthread_mutex_unlock(&reload_mutex);
-	    }
-
-	}
-    }
-    pthread_mutex_unlock(fds->buf_mutex);
-    return NULL
-}
-
-int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts)
-{
-	int max_threads, i, ret = 0;
+	int max_threads, ret = 0;
 	unsigned int options = 0;
 	threadpool_t *thr_pool;
 	char timestr[32];
@@ -449,9 +334,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	uint32_t val32;
 	uint64_t val64;
 	struct fd_data fds;
-	pthread_t rcvth;
-	struct rcvloop rcvloop;
-	int notifypip[2]; /* notify recvloop that it has a new fd */
+	size_t i;
 
 #ifdef CLAMUKO
 	pthread_t clamuko_pid;
@@ -747,42 +630,19 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     idletimeout = optget(opts, "IdleTimeout")->numarg;
 
     memset(&fds, 0, sizeof(fds));
-    if (pipe(notifypip, 0) == -1) {
-	logg("!pipe failed\n");
-	cl_engine_free(engine);
-	return 1;
-    }
-
-    if (add_fd_to_poll(&fds, notifypip[0]) == -1) {
-	logg("!add_fd_to_poll failed failed\n");
-	cl_engine_free(engine);
-	return 1;
-    }
 
     for (i=0;i < nsockets;i++)
-	if (add_fd_to_poll(&fds, socketds[i], 1) == -1) {
-	    logg("!add_fd_to_poll failed failed\n");
+	if (fds_add(&fds, socketds[i], 1) == -1) {
+	    logg("!fds_add failed\n");
 	    cl_engine_free(engine);
 	    return 1;
 	}
-
-
 
     if ((thr_pool=thrmgr_new(max_threads, idletimeout, scanner_thread)) == NULL) {
 	logg("!thrmgr_new failed\n");
 	exit(-1);
     }
 
-    rcvloop.thr_pool = &thr_pool;
-    rcvloop.fds = &fds;
-    if (pthread_create(&rcvth, NULL, recvloop_th, &rcvloop)) {
-	logg("!pthread_create failed\n");
-	exit(-1);
-    }
-    if (pthread_detach(&rcvth)) {
-	logg("!pthread_detach failed\n");
-	exit(-1);
-    }
     time(&start_time);
 
     pthread_mutex_lock(&fds.buf_mutex);
@@ -799,43 +659,160 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	}
 
 	for (i=0;i < fds.nfds && new_sd >= 0; i++) {
-	    new_sd = accept(fds.buf[i].fd, NULL, NULL);
+	    struct fd_buf *buf = &fds.buf[i];
+	    if (!buf->buffer) {
+		/* listen only socket */
+		new_sd = accept(fds.buf[i].fd, NULL, NULL);
+
+		if (new_sd >= 0) {
+		    if (fds_add(&fds, new_sd, 0) == -1) {
+			logg("!fds_add failed\n");
+			closesocket(new_sd);
+			continue;
+		    }
+		} else if (errno != EINTR) {
+		    pthread_mutex_lock(&exit_mutex);
+		    if(progexit) {
+			pthread_mutex_unlock(&exit_mutex);
+			break;
+		    }
+		    pthread_mutex_unlock(&exit_mutex);
+		    /* very bad - need to exit or restart */
+#ifdef HAVE_STRERROR_R
+		    strerror_r(errno, buff, BUFFSIZE);
+		    logg("!accept() failed: %s\n", buff);
+#else
+		    logg("!accept() failed\n");
+#endif
+		    continue;
+		}
+	    } else if (buf->fd != -1 && buf->got_newdata) {
+		const char *cmd;
+		size_t cmdlen = 0;
+		size_t pos = 0;
+		int error = 0;
+		/* New data available to read on socket. */
+
+		/* Parse & dispatch commands */
+		while ((cmd = get_cmd(buf, pos, &cmdlen)) != NULL) {
+		    client_conn = (client_conn_t *) malloc(sizeof(struct client_conn_tag));
+		    if(client_conn) {
+			client_conn->sd = buf->fd;
+			client_conn->cmdlen = cmdlen;
+			client_conn->cmd = malloc(cmdlen+1);
+			if (!client_conn->cmd) {
+			    logg("!acceptloop_th: failed to allocate memory for command\n");
+			    error = 1;
+			    break;
+			}
+			memcpy(client_conn->cmd, cmd, cmdlen);
+			client_conn->cmd[cmdlen] = '\0';
+			client_conn->options = options;
+			client_conn->opts = opts;
+			if(cl_engine_addref(engine)) {
+			    logg("!cl_engine_addref() failed\n");
+			    error = 1;
+			    pthread_mutex_lock(&exit_mutex);
+			    progexit = 1;
+			    pthread_mutex_unlock(&exit_mutex);
+			} else {
+			    client_conn->engine = engine;
+			    client_conn->engine_timestamp = reloaded_time;
+			    if(!thrmgr_dispatch(thr_pool, client_conn)) {
+				logg("!thread dispatch failed\n");
+				error = 1;
+			    }
+			}
+		    } else {
+			logg("!Can't allocate memory for client_conn\n");
+			if(optget(opts, "ExitOnOOM")->enabled) {
+			    pthread_mutex_lock(&exit_mutex);
+			    progexit = 1;
+			    pthread_mutex_unlock(&exit_mutex);
+			}
+			error = 1;
+		    }
+		    pos += cmdlen+1;
+		}
+		if (error) {
+		    mdprintf(buf->fd, "ERROR\n");
+		    shutdown(buf->fd, 2);
+		    closesocket(buf->fd);
+		    buf->fd = -1;
+		} else {
+		    /* move partial command to beginning of buffer */
+		    if (pos < buf->off) {
+			memmove (buf->buffer, &buf->buffer[pos], buf->off - pos);
+			buf->off -= pos;
+		    }
+		}
+	    }
+
+	    /* handle progexit */
 	    pthread_mutex_lock(&exit_mutex);
-	    if (prog_exit) {
+	    if (progexit) {
 		pthread_mutex_unlock(&exit_mutex);
+		for (i=0;i < fds.nfds; i++) {
+		    if (fds.buf[i].fd == -1)
+			continue;
+		    shutdown(fds.buf[i].fd, 2);
+		    closesocket(fds.buf[i].fd);
+		}
+		break;
+	    }
+	    pthread_mutex_unlock(&exit_mutex);
+	}
+
+	/* SIGHUP */
+	if (sighup) {
+	    logg("SIGHUP caught: re-opening log file.\n");
+	    logg_close();
+	    sighup = 0;
+	    if(!logg_file && (opt = optget(opts, "LogFile"))->enabled)
+		logg_file = opt->strarg;
+	}
+
+	/* SelfCheck */
+	if(selfchk) {
+	    time(&current_time);
+	    if((current_time - start_time) > (time_t)selfchk) {
+		if(reload_db(engine, dboptions, opts, TRUE, &ret)) {
+		    pthread_mutex_lock(&reload_mutex);
+		    reload = 1;
+		    pthread_mutex_unlock(&reload_mutex);
+		}
+		time(&start_time);
+	    }
+	}
+
+	/* DB reload */
+	pthread_mutex_lock(&reload_mutex);
+	if(reload) {
+	    pthread_mutex_unlock(&reload_mutex);
+	    engine = reload_db(engine, dboptions, opts, FALSE, &ret);
+	    if(ret) {
+		logg("Terminating because of a fatal error.\n");
 		if(new_sd >= 0)
 		    closesocket(new_sd);
 		break;
 	    }
-	    pthread_mutex_unlock(&exit_mutex);
 
-	    if (new_sd >= 0) {
-		char dummy = 'x';
-		fds_add(&fds, new_sd, 0);
-		if (write(notifypip[1], &dummy, 1) == -1) {
-		    /* failed to notify */
-		    logg("!acceptloop_th: failed to notify recvloop\n");
-		}
+	    pthread_mutex_lock(&reload_mutex);
+	    reload = 0;
+	    time(&reloaded_time);
+	    pthread_mutex_unlock(&reload_mutex);
+#ifdef CLAMUKO
+	    if(optget(opts, "ClamukoScanOnAccess")->enabled && tharg) {
+		logg("Stopping and restarting Clamuko.\n");
+		pthread_kill(clamuko_pid, SIGUSR1);
+		pthread_join(clamuko_pid, NULL);
+		tharg->engine = engine;
+		pthread_create(&clamuko_pid, &clamuko_attr, clamukoth, tharg);
 	    }
-	}
-
-	if((new_sd == -1) && (errno != EINTR)) {
-	    pthread_mutex_lock(&exit_mutex);
-	    if(progexit) {
-		pthread_mutex_unlock(&exit_mutex);
-		break;
-	    }
-	    pthread_mutex_unlock(&exit_mutex);
-	    /* very bad - need to exit or restart */
-#ifdef HAVE_STRERROR_R
-	    strerror_r(errno, buff, BUFFSIZE);
-	    logg("!accept() failed: %s\n", buff);
-#else
-	    logg("!accept() failed\n");
 #endif
-	    continue;
+	} else {
+	    pthread_mutex_unlock(&reload_mutex);
 	}
-
     }
     pthread_mutex_unlock(&fds.buf_mutex);
 

@@ -477,17 +477,19 @@ static void cleanup_fds(struct fd_data *data)
 
 static int read_fd_data(struct fd_buf *buf)
 {
+    ssize_t n;
     if (!buf->buffer) /* listen-only socket */
 	return 0;
    /* Read the pending packet, it may contain more than one command, but
     * that is to the cmdparser to handle. 
     * It will handle 1st command, and then move leftover to beginning of buffer
     */
-   ssize_t n = recv(buf->fd, buf->buffer + buf->off, buf->bufsize - buf->off,0);
+   n = recv(buf->fd, buf->buffer + buf->off, buf->bufsize - buf->off,0);
    if (n < 0)
        return -1;
    buf->off += n;
    buf->got_newdata=1;
+   return n;
 }
 
 int fds_add(struct fd_data *data, int fd, int listen_only)
@@ -514,7 +516,7 @@ int fds_add(struct fd_data *data, int fd, int listen_only)
 	}
     } else {
 	data->buf[n-1].bufsize = 0;
-	data->buf[n-1].buf = NULL;
+	data->buf[n-1].buffer = NULL;
     }
     data->buf[n-1].fd = fd;
     data->buf[n-1].off = 0;
@@ -522,6 +524,7 @@ int fds_add(struct fd_data *data, int fd, int listen_only)
     return realloc_polldata(data);
 }
 
+#define BUFFSIZE 1024
 /* Wait till data is available to be read on any of the fds,
  * read available data on all fds, and mark them as appropriate.
  * One of the fds should be a pipe, used by the accept thread to wake us.

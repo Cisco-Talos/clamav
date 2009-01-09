@@ -114,23 +114,8 @@ static int recvfd_and_scan(int desc, const struct cl_engine *engine, unsigned in
 }
 #endif
 
-int command(int desc, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int timeout)
+int command(int desc, char *buff, size_t cmdlen, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int timeout)
 {
-	char buff[1025];
-	int bread;
-
-    bread = readsock(desc, buff, sizeof(buff)-1, '\n', timeout, 0, 1);
-    if(bread == -2) /* timeout */
-	return -2;
-    if(bread == 0) /* Connection closed */
-	return -1;
-    if(bread < 0) {
-	mdprintf(desc, "ERROR\n");
-	logg("!Command: readsock() failed.\n");
-	return -1;
-    }
-
-    buff[bread] = 0;
     cli_chomp(buff);
     thrmgr_setactiveengine(engine);
 
