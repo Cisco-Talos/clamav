@@ -660,6 +660,8 @@ int acceptloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, un
 
 	for (i=0;i < fds.nfds && new_sd >= 0; i++) {
 	    struct fd_buf *buf = &fds.buf[i];
+	    if (!buf->got_newdata)
+		continue;
 	    if (!buf->buffer) {
 		/* listen only socket */
 		new_sd = accept(fds.buf[i].fd, NULL, NULL);
@@ -686,7 +688,7 @@ int acceptloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, un
 #endif
 		    continue;
 		}
-	    } else if (buf->fd != -1 && buf->got_newdata) {
+	    } else if (buf->fd != -1) {
 		const char *cmd;
 		size_t cmdlen = 0;
 		size_t pos = 0;
@@ -695,6 +697,7 @@ int acceptloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, un
 
 		/* Parse & dispatch commands */
 		while ((cmd = get_cmd(buf, pos, &cmdlen)) != NULL) {
+		    printf("%s\n",cmd);
 		    client_conn = (client_conn_t *) malloc(sizeof(struct client_conn_tag));
 		    if(client_conn) {
 			client_conn->sd = buf->fd;
@@ -744,7 +747,8 @@ int acceptloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, un
 		    if (pos < buf->off) {
 			memmove (buf->buffer, &buf->buffer[pos], buf->off - pos);
 			buf->off -= pos;
-		    }
+		    } else
+			buf->off = 0;
 		}
 	    }
 

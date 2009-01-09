@@ -478,6 +478,8 @@ static void cleanup_fds(struct fd_data *data)
 static int read_fd_data(struct fd_buf *buf)
 {
     ssize_t n;
+
+    buf->got_newdata=1;
     if (!buf->buffer) /* listen-only socket */
 	return 0;
    /* Read the pending packet, it may contain more than one command, but
@@ -488,7 +490,6 @@ static int read_fd_data(struct fd_buf *buf)
    if (n < 0)
        return -1;
    buf->off += n;
-   buf->got_newdata=1;
    return n;
 }
 
