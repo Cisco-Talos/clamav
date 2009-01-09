@@ -649,7 +649,7 @@ int acceptloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, un
     for(;;) {
 	/* Block waiting for connection on any of the sockets,
 	 * doesn't wake on signals, that is what recvloop does! */
-	int new_sd = fds_poll_recv(&fds, -1, 0);
+	int new_sd = fds_poll_recv(&fds, -1, 1);
 
 	/* TODO: what about sockets that get rm-ed? */
 	if (!fds.nfds) {
@@ -697,7 +697,6 @@ int acceptloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, un
 
 		/* Parse & dispatch commands */
 		while ((cmd = get_cmd(buf, pos, &cmdlen)) != NULL) {
-		    printf("%s\n",cmd);
 		    client_conn = (client_conn_t *) malloc(sizeof(struct client_conn_tag));
 		    if(client_conn) {
 			client_conn->sd = buf->fd;
@@ -756,16 +755,24 @@ int acceptloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, un
 	    pthread_mutex_lock(&exit_mutex);
 	    if (progexit) {
 		pthread_mutex_unlock(&exit_mutex);
-		for (i=0;i < fds.nfds; i++) {
-		    if (fds.buf[i].fd == -1)
-			continue;
-		    shutdown(fds.buf[i].fd, 2);
-		    closesocket(fds.buf[i].fd);
-		}
 		break;
 	    }
 	    pthread_mutex_unlock(&exit_mutex);
 	}
+
+	/* handle progexit */
+	pthread_mutex_lock(&exit_mutex);
+	if (progexit) {
+	    pthread_mutex_unlock(&exit_mutex);
+	    for (i=0;i < fds.nfds; i++) {
+		if (fds.buf[i].fd == -1)
+		    continue;
+		shutdown(fds.buf[i].fd, 2);
+		closesocket(fds.buf[i].fd);
+	    }
+	    break;
+	}
+	pthread_mutex_unlock(&exit_mutex);
 
 	/* SIGHUP */
 	if (sighup) {

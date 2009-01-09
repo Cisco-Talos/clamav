@@ -647,7 +647,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
     } while (retval == -1 && !check_signals && errno == EINTR);
 #endif
 
-    if (retval == -1) {
+    if (retval == -1 && errno != EINTR) {
 	char buff[BUFFSIZE + 1];
 #ifdef HAVE_STRERROR_R
 	strerror_r(errno, buff, BUFFSIZE);
