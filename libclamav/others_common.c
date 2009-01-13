@@ -273,3 +273,204 @@ const char* cli_ctime(const time_t *timep, char *buf, const size_t bufsize)
 	return ret;
 }
 
+struct dirent_data {
+    char *filename;
+    struct stat *statbuf;
+    int   is_dir;/* 0 - no, 1 - yes */
+    long  ino; /* -1: inode not available */
+};
+
+/* sort files before directories, and lower inodes before higher inodes */
+int ftw_compare(const void *a, const void *b)
+{
+    const struct dirent_data *da = a;
+    const struct dirent_data *db = b;
+    long diff = da->is_dir - db->is_dir;
+    if (!diff) {
+	diff = da->ino - db->ino;
+    }
+    return diff;
+}
+
+#define FOLLOW_SYMLINK_MASK (CLI_FTW_FOLLOW_FILE_SYMLINK | CLI_FTW_FOLLOW_DIR_SYMLINK)
+int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
+{
+    DIR *dd;
+    struct dirent *dent;
+#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
+    union {
+	struct dirent d;
+	char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
+    } result;
+#endif
+    struct stat statbuf;
+    struct stat *statbufp;
+    struct dirent_data *entries = NULL;
+    size_t i, entries_cnt = 0;
+    char *fname;
+    int ret;
+
+    if (maxdepth < 0)
+	return continue_traversal;
+
+    if((dd = opendir(dirname)) != NULL) {
+	errno = 0;
+#ifdef HAVE_READDIR_R_3
+	while(!readdir_r(dd, &result.d, &dent) && dent) {
+#elif defined(HAVE_READDIR_R_2)
+	while((dent = (struct dirent *) readdir_r(dd, &result.d))) {
+#else
+	while((dent = readdir(dd))) {
+#endif
+	    int is_dir, stated = 0;
+
+#ifdef _DIRENT_HAVE_D_TYPE
+	    switch (dent->d_type) {
+		case DT_DIR:
+		    is_dir = 1;
+		    break;
+		case DT_LNK:
+		    if (!(flags & FOLLOW_SYMLINK_MASK)) {
+			/* we don't follow symlinks, don't bother
+			 * stating it */
+			errno = 0;
+			continue;
+		    }
+		    is_dir = -2;
+		    break;
+		case DT_REG:
+		    is_dir = 0;
+		    break;
+		case DT_UNKNOWN:
+		    is_dir = -1;
+		    break;
+		default:
+		    errno = 0;
+		    continue;
+	    }
+#else
+	    is_dir = -1;
+#endif
+	    fname = (char *) cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
+	    if(!fname) {
+		ret = callback(NULL, NULL, error_mem, data);
+		if (ret != CL_SUCCESS)
+		    break;
+	    }
+	    sprintf(fname, "%s/%s", dirname, dent->d_name);
+	    if (is_dir == -1) {
+		int check_symlink = 0;
+		is_dir = -2; /* skip */
+		if ((flags & FOLLOW_SYMLINK_MASK) == FOLLOW_SYMLINK_MASK) {
+		    /* Following both directory and file symlink.
+		     * No need to lstat the link */
+		    if (stat(fname, &statbuf) == -1)
+			stated = -1;
+		    else
+			stated = 1;
+		} else if (flags & FOLLOW_SYMLINK_MASK) {
+		    /* Following only one of directory/file symlinks, need to
+		     * lstat */
+		    if (lstat(fname, &statbuf) == -1)
+			stated = -1;
+		    else {
+			stated = 1;
+			if (S_ISLNK(statbuf.st_mode)) {
+			    check_symlink = 1;
+			    if (stat(fname, &statbuf) == -1)
+				stated = -1;
+			    else
+				stated = 1;
+			}
+		    }
+		}
+
+		if (stated == 1) {
+		    if (S_ISDIR(statbuf.st_mode)) {
+			is_dir = 1;
+		    } else if (S_ISREG(statbuf.st_mode)) {
+			is_dir = 0;
+		    } else
+			is_dir = -2; /* skip */
+		}
+	    }
+
+	    if (!stated && (flags & CLI_FTW_NEED_STAT)) {
+		if (stat(fname, &statbuf) == -1)
+		    stated = -1;
+	    }
+
+	    if (stated == -1) {
+		/*  we failed a stat() or lstat() */
+		ret = callback(NULL, fname, error_stat, data);
+		if (ret != CL_SUCCESS)
+		    break;
+		is_dir = -2; /* skip on stat failure */
+	    }
+
+	    if (is_dir == -2) { /* skip */
+		free(fname);
+		errno = 0;
+		continue;
+	    }
+
+	    if (stated && (flags & CLI_FTW_NEED_STAT)) {
+		statbufp = cli_malloc(sizeof(*entry->statbuf));
+		if (!statbufp) {
+		    ret = callback(stated ? &statbuf : NULL, fname, error_mem, data);
+		    free(fname);
+		    if (ret != CL_SUCCESS)
+			break;
+		    else {
+			errno = 0;
+			continue;
+		    }
+		}
+	    } else {
+		statbufp = 0;
+	    }
+
+	    entries_cnt++;
+	    entries = cli_realloc(entries, entries_cnt*sizeof(*entries));
+	    if (!entries) {
+		ret = callback(stated ? &statbuf : NULL, fname, error_mem, data);
+		free(fname);
+		if (statbufp)
+		    free(statbufp);
+		break;
+	    } else {
+		struct dirent_data *entry = &entries[entries_cnt-1];
+		entry->filename = fname;
+		entry->stat = statbufp;
+		entry->is_dir = is_dir;
+#ifdef _XOPEN_UNIX
+		entry->ino = dent->d_ino;
+#else
+		entry->ino = -1;
+#endif
+	    }
+	    errno = 0;
+	}
+	closedir(dd);
+
+	if (entries) {
+	    qsort(entries, entries_cnt, sizeof(*entries), ftw_compare);
+	    for (i = 0; i < entries_cnt; i++) {
+		ret = callback(entry->stat, entry->filename,
+			       entry->is_dir ? visit_directory : visit_file,
+			       data);
+		if (ret != CL_SUCCESS)
+		    break;
+		if (is_dir) {
+		    ret = cli_ftw(fname, flags, maxdepth-1, callback, data);
+		    if (ret != CL_SUCCESS)
+			break;
+		}
+	    }
+	    free(entries);
+	}
+    }
+    return ret;
+}
+
+

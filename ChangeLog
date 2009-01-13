@@ -1,3 +1,7 @@
+Tue Jan 13 15:23:33 EET 2009 (edwin)
+------------------------------------
+ * libclamav/others.h, libclamav/others_common.c: cli_ftw draft
+
 Fri Jan  9 23:21:05 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c, clamd/others.h: drop some unused code
