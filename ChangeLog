@@ -1,3 +1,8 @@
+Wed Jan 14 00:08:18 EET 2009 (edwin)
+------------------------------------
+ * libclamav/others.h, libclamav/others_common.c: finish traversal
+ logic
+
 Tue Jan 13 23:38:42 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c, libclamav/others.h, libclamav/others_common.c: fix

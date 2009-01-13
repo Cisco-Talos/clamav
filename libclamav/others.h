@@ -378,7 +378,8 @@ enum cli_ftw_reason {
     visit_file,
     visit_directory,
     /* must not free its args in the below cases! */
-    error_mem,
+    error_mem, /* recommended to return CL_EMEM */
+    /* recommended to return CL_SUCCESS below */
     error_stat,
     warning_skipped
 };

@@ -296,18 +296,14 @@ static int ftw_compare(const void *a, const void *b)
 int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
 {
     DIR *dd;
-    struct dirent *dent;
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
     union {
 	struct dirent d;
 	char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
     } result;
 #endif
-    struct stat statbuf;
-    struct stat *statbufp;
     struct dirent_data *entries = NULL;
     size_t i, entries_cnt = 0;
-    char *fname;
     int ret;
 
     if (maxdepth < 0) {
@@ -317,6 +313,7 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
     }
 
     if((dd = opendir(dirname)) != NULL) {
+	struct dirent *dent;
 	errno = 0;
 #ifdef HAVE_READDIR_R_3
 	while(!readdir_r(dd, &result.d, &dent) && dent) {
@@ -326,7 +323,12 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 	while((dent = readdir(dd))) {
 #endif
 	    int is_dir, stated = 0;
+	    char *fname;
+	    struct stat statbuf;
+	    struct stat *statbufp;
 
+	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, ".."))
+		continue;
 #ifdef _DIRENT_HAVE_D_TYPE
 	    switch (dent->d_type) {
 		case DT_DIR:
@@ -371,27 +373,32 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 			stated = -1;
 		    else
 			stated = 1;
-		} else if (flags & FOLLOW_SYMLINK_MASK) {
-		    /* Following only one of directory/file symlinks, need to
-		     * lstat */
+		} else 	{
+		    /* Following only one of directory/file symlinks, or none:
+		     * need to lstat */
 		    if (lstat(fname, &statbuf) == -1)
 			stated = -1;
 		    else {
 			stated = 1;
 			if (S_ISLNK(statbuf.st_mode)) {
-			    check_symlink = 1;
-			    if (stat(fname, &statbuf) == -1)
-				stated = -1;
-			    else
-				stated = 1;
+			    if (flags & FOLLOW_SYMLINK_MASK) {
+				check_symlink = 1;
+				if (stat(fname, &statbuf) == -1)
+				    stated = -1;
+				else
+				    stated = 1;
+			    }
+			    /* default: skip */
 			}
 		    }
 		}
 
 		if (stated == 1) {
-		    if (S_ISDIR(statbuf.st_mode)) {
+		    if (S_ISDIR(statbuf.st_mode) &&
+			(!check_symlink || (flags & CLI_FTW_FOLLOW_DIR_SYMLINK))) {
 			is_dir = 1;
-		    } else if (S_ISREG(statbuf.st_mode)) {
+		    } else if (S_ISREG(statbuf.st_mode) &&
+			       (!check_symlink || (flags & CLI_FTW_FOLLOW_FILE_SYMLINK))) {
 			is_dir = 0;
 		    } else
 			is_dir = -2; /* skip */
@@ -466,7 +473,7 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 		if (ret != CL_SUCCESS)
 		    break;
 		if (entry->is_dir) {
-		    ret = cli_ftw(fname, flags, maxdepth-1, callback, data);
+		    ret = cli_ftw(entry->filename, flags, maxdepth-1, callback, data);
 		    if (ret != CL_SUCCESS)
 			break;
 		}
@@ -477,4 +484,51 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
     return ret;
 }
 
+#if 0
+static int tst_cb(struct stat *stat_buf, char *filename, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data)
+{
+    char buf[8192];
+    int fd;
+    switch (reason) {
+	case error_mem:
+	    perror("memory allocation failed!");
+	    return CL_EMEM;
+	case error_stat:
+	    if (filename) fprintf(stderr,"%s ",filename);
+	    perror("stat failed");
+	    return CL_SUCCESS;
+	case warning_skipped:
+	    if (filename) fprintf(stderr,"%s skipped due to recursion limit\n", filename);
+	    return CL_SUCCESS;
+	case visit_directory:
+	    printf("%s\n", filename);
+	    return CL_SUCCESS;
+	case visit_file:
+	    if (!filename) {
+		fprintf(stderr, "Error got no filename!!\n");
+		return CL_SUCCESS;
+	    }
+	    fd = open(filename, O_RDONLY);
+	    if (fd >= 0) {
+		while (read(fd, buf, sizeof(buf)) > 0) {}
+		close(fd);
+		printf("%s\n",filename);
+	    } else {
+		fprintf(stderr,"%s ", filename);
+		perror("open failed");
+	    }
+	    return CL_SUCCESS;
+    }
+}
 
+int main(int argc, char *argv[])
+{
+    int files = 0;
+    struct cli_ftw_cbdata data;
+    if (argc != 2)
+	return 1;
+    data.data = &files;
+    cli_ftw(argv[1], CLI_FTW_STD, 16, tst_cb, &data);
+    return 0;
+}
+#endif
