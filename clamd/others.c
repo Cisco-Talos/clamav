@@ -257,11 +257,6 @@ int poll_fds(int *fds, int nfds, int timeout_sec, int check_signals)
     return -1;
 }
 
-int poll_fd(int fd, int timeout_sec, int check_signals)
-{
-    return poll_fds(&fd, 1, timeout_sec, check_signals);
-}
-
 int is_fd_connected(int fd)
 {
 #ifdef HAVE_POLL
@@ -454,6 +449,20 @@ static int realloc_polldata(struct fd_data *data)
     }
 #endif
     return 0;
+}
+
+int poll_fd(int fd, int timeout_sec, int check_signals)
+{
+    int ret;
+    struct fd_data fds;
+
+    memset(&fds, 0, sizeof(fds));
+    fds.nfds = 1;
+    if (fds_add(&fds, fd, 1) == -1)
+	return -1;
+    ret = poll_fds(&fd, 1, timeout_sec, check_signals);
+    fds_free(&fds);
+    return ret;
 }
 
 static void cleanup_fds(struct fd_data *data)
