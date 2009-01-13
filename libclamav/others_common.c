@@ -281,7 +281,7 @@ struct dirent_data {
 };
 
 /* sort files before directories, and lower inodes before higher inodes */
-int ftw_compare(const void *a, const void *b)
+static int ftw_compare(const void *a, const void *b)
 {
     const struct dirent_data *da = a;
     const struct dirent_data *db = b;
@@ -310,8 +310,11 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
     char *fname;
     int ret;
 
-    if (maxdepth < 0)
-	return continue_traversal;
+    if (maxdepth < 0) {
+	/* exceeded recursion limit */
+	ret = callback(NULL, (char*)dirname, warning_skipped, data);
+	return ret;
+    }
 
     if((dd = opendir(dirname)) != NULL) {
 	errno = 0;
@@ -415,7 +418,7 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 	    }
 
 	    if (stated && (flags & CLI_FTW_NEED_STAT)) {
-		statbufp = cli_malloc(sizeof(*entry->statbuf));
+		statbufp = cli_malloc(sizeof(*statbufp));
 		if (!statbufp) {
 		    ret = callback(stated ? &statbuf : NULL, fname, error_mem, data);
 		    free(fname);
@@ -441,7 +444,7 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 	    } else {
 		struct dirent_data *entry = &entries[entries_cnt-1];
 		entry->filename = fname;
-		entry->stat = statbufp;
+		entry->statbuf = statbufp;
 		entry->is_dir = is_dir;
 #ifdef _XOPEN_UNIX
 		entry->ino = dent->d_ino;
@@ -456,12 +459,13 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 	if (entries) {
 	    qsort(entries, entries_cnt, sizeof(*entries), ftw_compare);
 	    for (i = 0; i < entries_cnt; i++) {
-		ret = callback(entry->stat, entry->filename,
+		struct dirent_data *entry = &entries[i];
+		ret = callback(entry->statbuf, entry->filename,
 			       entry->is_dir ? visit_directory : visit_file,
 			       data);
 		if (ret != CL_SUCCESS)
 		    break;
-		if (is_dir) {
+		if (entry->is_dir) {
 		    ret = cli_ftw(fname, flags, maxdepth-1, callback, data);
 		    if (ret != CL_SUCCESS)
 			break;

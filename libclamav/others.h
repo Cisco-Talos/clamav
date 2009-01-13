@@ -377,10 +377,16 @@ int cli_matchregex(const char *str, const char *regex);
 enum cli_ftw_reason {
     visit_file,
     visit_directory,
+    /* must not free its args in the below cases! */
     error_mem,
-    error_stat
+    error_stat,
+    warning_skipped
 };
 
+/* wrap void*, so that we don't mix it with some other pointer */
+struct cli_ftw_cbdata {
+    void *data;
+};
 
 /* 
  * return CL_BREAK to break out without an error, CL_SUCCESS to continue,

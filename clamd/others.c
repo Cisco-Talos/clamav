@@ -270,7 +270,7 @@ int poll_fd(int fd, int timeout_sec, int check_signals)
     fds.nfds = 1;
     if (fds_add(&fds, fd, 1) == -1)
 	return -1;
-    ret = poll_fds(&fd, 1, timeout_sec, check_signals);
+    ret = fds_poll_recv(&fds, timeout_sec, check_signals);
     fds_free(&fds);
     return ret;
 }
