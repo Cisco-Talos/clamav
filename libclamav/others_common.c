@@ -408,6 +408,8 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 	    if (!stated && (flags & CLI_FTW_NEED_STAT)) {
 		if (stat(fname, &statbuf) == -1)
 		    stated = -1;
+		else
+		    stated = 1;
 	    }
 
 	    if (stated == -1) {
@@ -484,7 +486,7 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
     return ret;
 }
 
-#if 0
+#if 0 
 static int tst_cb(struct stat *stat_buf, char *filename, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data)
 {
     char buf[8192];
