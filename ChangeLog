@@ -1,3 +1,7 @@
+Fri Jan  9 23:21:05 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, clamd/others.h: drop some unused code
+
 Fri Jan  9 22:12:56 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c, clamd/server-th.c: fix progexit handling. Now
