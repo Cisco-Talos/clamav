@@ -54,89 +54,86 @@ void move_infected(const char *filename, const struct optstruct *opts);
 int notremoved = 0, notmoved = 0;
 int printinfected = 0;
 
-static int dsresult(int sockd, const struct optstruct *opts)
+static int dsresult(int sockd, const char *scantype, const char *filename, const struct optstruct *opts)
 {
 	int infected = 0, waserror = 0;
-	char buff[4096], *pt;
-	FILE *fd;
+	unsigned int len;
+	char buff[PATH_MAX+24], *pt, *bol, *eol;
 
-
-#ifndef C_OS2
-    if((fd = fdopen(dup(sockd), "r")) == NULL) {
-#else /* FIXME: accoriding to YD OS/2 does not support dup() for sockets */
-    if((fd = fdopen(sockd, "r")) == NULL) {
-#endif
-	logg("!Can't open descriptor for reading.\n");
+    len = strlen(filename) + strlen(scantype) + 3;
+    if (!(bol = malloc(len))) {
+	logg("!Cannot allocate a command buffer\n");
 	return -1;
     }
+    pt = bol;
+    sprintf(pt, "z%s %s", scantype, filename);
+    while(len) {
+	int sent = send(sockd, pt, len, 0);
+	if(sent <= 0) {
+	    logg("!Can't send request to clamd\n");
+	    return -1;
+	}
+	pt += sent;
+	len -= sent;
+    }
+    free(bol);
 
-    while(fgets(buff, sizeof(buff), fd)) {
-	if(strstr(buff, "FOUND\n")) {
-	    infected++;
-	    logg("%s", buff);
-	    if(optget(opts, "move")->enabled || optget(opts, "copy")->enabled) {
-		/* filename: Virus FOUND */
-		if((pt = strrchr(buff, ':'))) {
-		    *pt = 0;
-		    move_infected(buff, opts);
-		} else {
-		    logg("!Incorrect output from clamd. File not %s.\n", optget(opts, "move")->enabled ? "moved" : "copied");
-		}
-
-	    } else if(optget(opts, "remove")->enabled) {
-		if(!(pt = strrchr(buff, ':'))) {
-		    logg("!Incorrect output from clamd. File not removed.\n");
-		} else {
-		    *pt = 0;
-		    if(unlink(buff)) {
-			logg("!%s: Can't remove.\n", buff);
-			notremoved++;
-		    } else {
-			logg("~%s: Removed.\n", buff);
+    len = sizeof(buff);
+    bol = pt = buff;
+    while(1) {
+	int r = recv(sockd, pt, len, 0);
+	if(r<=0) {
+	    if(r || pt!=buff) {
+		logg("!Communication error\n");
+		waserror = 1;
+	    }
+	    break;
+	}
+	while(r && (eol = memchr(pt, 0, r))) {
+	    if(bol-eol > 7) {
+		eol[-7] = '\0';
+		if(!memcmp(eol - 7, ": FOUND", 7)) {
+		    infected++;
+		    logg("%s", bol);
+		    if(optget(opts, "move")->enabled || optget(opts, "copy")->enabled) {
+			move_infected(bol, opts);
+		    } else if(optget(opts, "remove")->enabled) {
+			if(unlink(bol)) {
+			    logg("!%s: Can't remove.\n", bol);
+			    notremoved++;
+			} else {
+			    logg("~%s: Removed.\n", bol);
+			}
 		    }
+		} else if(memcmp(eol-7, ": ERROR", 7)) {
+		    logg("~%s", bol);
+		    waserror = 1;
 		}
 	    }
+	    eol++;
+	    r -= eol - pt;
+	    bol = pt = eol;
 	}
 
-	if(strstr(buff, "ERROR\n")) {
-	    logg("~%s", buff);
+	r = &pt[r]-bol;
+	len = sizeof(buff) - r;
+	if(!len) {
+	    logg("!Overlong reply from clamd\n");
 	    waserror = 1;
+	    break;
 	}
+	if(r && bol!=buff) /* memmove is stupid in older glibc's */
+	    memmove(buff, bol, r);
+	pt = &buff[r];
     }
 
-#ifndef C_OS2 /* Small memory leak under OS/2 (see above) */
-    fclose(fd);
-#endif
+    if(!infected && !printinfected)
+	logg("~%s: OK\n", filename);
 
     return infected ? infected : (waserror ? -1 : 0);
 }
 
-static int dsfile(int sockd, const char *scantype, const char *filename, const struct optstruct *opts)
-{
-	int ret;
-	char *scancmd;
-
-
-    scancmd = malloc(strlen(filename) + 20);
-    sprintf(scancmd, "%s %s", scantype, filename);
-
-    if(write(sockd, scancmd, strlen(scancmd)) <= 0) {
-	logg("^Can't write to the socket.\n");
-	free(scancmd);
-	return -1;
-    }
-
-    free(scancmd);
-
-    ret = dsresult(sockd, opts);
-
-    if(!ret && !printinfected)
-	logg("~%s: OK\n", filename);
-
-    return ret;
-}
-
-static int dsstream(int sockd, const struct optstruct *opts)
+static int dsstream(int sockd)
 {
 	int wsockd, loopw = 60, bread, port, infected = 0;
 	struct sockaddr_in server;
@@ -416,7 +413,7 @@ int client(const struct optstruct *opts, int *infected)
 	if((sockd = dconnect(opts, NULL)) < 0)
 	    return 2;
 
-	if((ret = dsfile(sockd, scantype, cwd, opts)) >= 0)
+	if((ret = dsresult(sockd, scantype, cwd, opts)) >= 0)
 	    *infected += ret;
 	else
 	    errors++;
@@ -431,12 +428,12 @@ int client(const struct optstruct *opts, int *infected)
 	if(optget(opts,"fdpass")->enabled) {
 #ifndef HAVE_FD_PASSING
 		logg("^File descriptor pass support not compiled in, falling back to stream scan\n");
-		ret = dsstream(sockd, opts);
+		ret = dsstream(sockd);
 #else
 		if(!is_unix) {
 			logg("^File descriptor passing can only work on local (unix) sockets! Falling back to stream scan\n");
 			/* fall back to stream */
-			ret = dsstream(sockd, opts);
+			ret = dsstream(sockd);
 		} else {
 			char buff[4096];
 			memset(buff, 0, sizeof(buff));
@@ -448,7 +445,7 @@ int client(const struct optstruct *opts, int *infected)
 		}
 #endif
 	} else
-		ret = dsstream(sockd, opts);
+		ret = dsstream(sockd);
 	if(ret >= 0)
 	    *infected += ret;
 	else
@@ -483,7 +480,7 @@ int client(const struct optstruct *opts, int *infected)
 			if((sockd = dconnect(opts, NULL)) < 0)
 			    return 2;
 
-			if((ret = dsfile(sockd, scantype, fullpath, opts)) >= 0)
+			if((ret = dsresult(sockd, scantype, fullpath, opts)) >= 0)
 			    *infected += ret;
 			else
 			    errors++;
