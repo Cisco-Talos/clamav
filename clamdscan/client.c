@@ -90,10 +90,10 @@ static int dsresult(int sockd, const char *scantype, const char *filename, const
 	    break;
 	}
 	while(r && (eol = memchr(pt, 0, r))) {
+	    logg("~%s\n", bol);
 	    if(eol-bol > 7) {
 		if(!memcmp(eol - 6, " FOUND", 6)) {
 		    infected++;
-		    logg("%s\n", bol);
 		    if(optget(opts, "move")->enabled || optget(opts, "copy")->enabled) {
 			char *com = strrchr(bol, ':');
 			if(com) {
@@ -112,8 +112,7 @@ static int dsresult(int sockd, const char *scantype, const char *filename, const
 			    }
 			}
 		    }
-		} else if(memcmp(eol-7, ": ERROR", 7)) {
-		    logg("~%s\n", bol);
+		} else if(!memcmp(eol-6, " ERROR", 6)) {
 		    waserror = 1;
 		}
 	    }
@@ -134,8 +133,7 @@ static int dsresult(int sockd, const char *scantype, const char *filename, const
 	bol = buff;
     }
 
-    if(!infected && !printinfected)
-	logg("~%s: OK\n", filename);
+    if(!infected && !printinfected && !waserror)
 
     return infected ? infected : (waserror ? -1 : 0);
 }
