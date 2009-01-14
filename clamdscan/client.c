@@ -90,23 +90,30 @@ static int dsresult(int sockd, const char *scantype, const char *filename, const
 	    break;
 	}
 	while(r && (eol = memchr(pt, 0, r))) {
-	    if(bol-eol > 7) {
-		eol[-7] = '\0';
-		if(!memcmp(eol - 7, ": FOUND", 7)) {
+	    if(eol-bol > 7) {
+		if(!memcmp(eol - 6, " FOUND", 7)) {
 		    infected++;
-		    logg("%s", bol);
+		    logg("%s\n", bol);
 		    if(optget(opts, "move")->enabled || optget(opts, "copy")->enabled) {
-			move_infected(bol, opts);
+			char *com = strrchr(bol, ':');
+			if(com) {
+			    *com = '\0';
+			    move_infected(bol, opts);
+			}
 		    } else if(optget(opts, "remove")->enabled) {
-			if(unlink(bol)) {
-			    logg("!%s: Can't remove.\n", bol);
-			    notremoved++;
-			} else {
-			    logg("~%s: Removed.\n", bol);
+			char *com = strrchr(bol, ':');
+			if(com) {
+			    *com = '\0';
+			    if(unlink(bol)) {
+				logg("!%s: Can't remove.\n", bol);
+				notremoved++;
+			    } else {
+				logg("~%s: Removed.\n", bol);
+			    }
 			}
 		    }
 		} else if(memcmp(eol-7, ": ERROR", 7)) {
-		    logg("~%s", bol);
+		    logg("~%s\n", bol);
 		    waserror = 1;
 		}
 	    }
