@@ -133,8 +133,6 @@ static int dsresult(int sockd, const char *scantype, const char *filename, const
 	bol = buff;
     }
 
-    if(!infected && !printinfected && !waserror)
-
     return infected ? infected : (waserror ? -1 : 0);
 }
 
