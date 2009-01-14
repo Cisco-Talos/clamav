@@ -1,3 +1,8 @@
+Wed Jan 14 18:28:16 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c: if FD got reused, clear stale buffered data for
+ old FD
+
 Wed Jan 14 18:20:56 EET 2009 (edwin)
 ------------------------------------
  * clamd/scanner.c, libclamav/others_common.c: fix build

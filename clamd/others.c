@@ -321,8 +321,15 @@ int fds_add(struct fd_data *data, int fd, int listen_only)
 	logg("!add_fd: invalid fd passed to add_fd\n");
 	return -1;
     }
+    /* we may already have this fd, if
+     * the old FD got closed, and the kernel reused the FD */
     for (n = 0; n < data->nfds; n++)
-	if (data->buf[n].fd == fd) return 0;
+	if (data->buf[n].fd == fd) {
+	    /* clear stale data in buffer */
+	    data->buf[n].off = 0;
+	    data->buf[n].got_newdata = 0;
+	    return 0;
+	}
 
     n++;
     buf = realloc(data->buf, n*sizeof(*buf));
