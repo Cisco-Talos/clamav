@@ -305,7 +305,115 @@ static void multiscanfile(void *arg)
     return;
 }
 
- int scan(const char *filename, const char term, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc, unsigned int type)
+struct scan_cb_data {
+    int scantype;
+    int odesc;
+    int type;
+    int infected;
+    int errors;
+    unsigned long scanned;
+    const struct cl_engine *engine;
+    unsigned int options;
+};
+
+#define BUFFSIZE 1024
+static int scan_callback(struct stat *sb, char *filename, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data)
+{
+    struct scan_cb_data *scandata = data->data;
+    const char *virname;
+    char buf[BUFFSIZE];
+    int ret;
+    int type = scandata->type;
+
+#ifdef HAVE_STRERROR_R
+    if (reason == error_mem || reason == error_stat) {
+	buf[0]=':';
+	buf[1]=' ';
+	strerror_r(errno, buf+2, BUFFSIZE-2);
+    } else
+#else
+	buf[0] = '\0';
+#endif
+
+    switch (reason) {
+	case error_mem:
+	    logg("!Memory allocation failed during cli_ftw()%s\n", buf);
+	    scandata->errors++;
+	    return CL_EMEM;
+	case error_stat:
+	    if (type != TYPE_MULTISCAN)
+		mdprintf(scandata->odesc, "%s: lstat() failed %s. ERROR\n",
+		     filename, buf);
+	    scandata->errors++;
+	    return CL_SUCCESS;
+	case warning_skipped_dir:
+	    if (type != TYPE_MULTISCAN)
+		logg("^Directory recursion limit reached, skipping %s%s\n",
+		     filename, buf);
+	    return CL_SUCCESS;
+	case warning_skipped_special:
+	    if (type != TYPE_MULTISCAN)
+		mdprintf(scandata->odesc, "%s: Not supported file type. ERROR\n", filename);
+	    return CL_SUCCESSu;
+	case visit_directory:
+	    return CL_SUCCESS;
+	case visit_file:
+	    break;
+    }
+
+    /* check whether the file is excluded */
+#ifdef C_LINUX
+    if(procdev && (sb.st_dev == procdev))
+	return CL_SUCCESS;
+#endif
+    if((opt = optget(opts, "ExcludePath"))->enabled) {
+	/* TODO: perhaps multiscan should skip this check? 
+	 * This should work unless the user is doing something stupid like
+	 * MULTISCAN / */
+	if(match_regex(filename, opt->strarg) == 1) {
+	    if (type != TYPE_MULTISCAN)
+		mdprintf(scandata->odesc, "%s: Excluded\n", filename);
+	    return CL_SUCCESS;
+	}
+    }
+    
+    if(sb->st_size == 0) { /* empty file */
+	if (type != TYPE_MULTISCAN)
+	    mdprintf(odesc, "%s: Empty file\n", filename);
+	return CL_SUCCESS;
+    }
+
+    /* TODO: if multiscan we should dispatch this to an async scanner thread */
+    /* prepare to scan file */
+    if (access(filename, R_OK)) {
+	mdprintf(scandata->odesc, "%s: Access denied. ERROR\n",
+		 filename);
+	scandata->errors++;
+	return CL_SUCCESS;
+    }
+
+    thrmgr_setactivetask(filename,
+			 type == TYPE_MULTISCAN ? "MULTISCANFILE" : NULL);
+    ret = cl_scanfile(filename, &virname, &scandata->scanned, scandata->engine, scandata->options);
+    thrmgr_setactivetask(NULL, NULL);
+
+    if (ret == CL_VIRUS) {
+	scandata->infected++;
+	mdprintf(scandata->odesc, "%s: %s FOUND\n", filename, virname);
+	logg("~%s: %s FOUND\n", filename, virname);
+	virusaction(filename, virname, options);
+    } else if (ret != CL_CLEAN) {
+	mdprintf(scandata->odesc, "%s: %s ERROR\n", filename, cl_strerror(ret));
+	logg("~%s: %s ERROR\n", filename, cl_strerror(ret));
+	if(ret == CL_EMEM) /* stop scanning */
+	    return ret;
+    } else if (logok) {
+	logg("~%s: OK\n", filename);
+    }
+    return CL_SUCCESS;
+}
+
+int scan(const char *filename, const char term, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc, unsigned int type)
 {
 	struct stat sb;
 	int ret = 0;

@@ -381,7 +381,8 @@ enum cli_ftw_reason {
     error_mem, /* recommended to return CL_EMEM */
     /* recommended to return CL_SUCCESS below */
     error_stat,
-    warning_skipped
+    warning_skipped_special,
+    warning_skipped_dir
 };
 
 /* wrap void*, so that we don't mix it with some other pointer */

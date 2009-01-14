@@ -308,7 +308,7 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 
     if (maxdepth < 0) {
 	/* exceeded recursion limit */
-	ret = callback(NULL, (char*)dirname, warning_skipped, data);
+	ret = callback(NULL, (char*)dirname, warning_skipped_dir, data);
 	return ret;
     }
 
@@ -350,20 +350,21 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 		    is_dir = -1;
 		    break;
 		default:
-		    errno = 0;
-		    continue;
+		    is_dir = -2;
+		    break;
 	    }
 #else
 	    is_dir = -1;
 #endif
 	    fname = (char *) cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
 	    if(!fname) {
-		ret = callback(NULL, NULL, error_mem, data);
+		ret = callback(NULL, (char*)dirname, error_mem, data);
 		if (ret != CL_SUCCESS)
 		    break;
 	    }
 	    sprintf(fname, "%s/%s", dirname, dent->d_name);
 	    if (is_dir == -1) {
+		/* TODO: factor this out into another function */
 		int check_symlink = 0;
 		is_dir = -2; /* skip */
 		if ((flags & FOLLOW_SYMLINK_MASK) == FOLLOW_SYMLINK_MASK) {
@@ -410,6 +411,13 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 		    stated = -1;
 		else
 		    stated = 1;
+	    }
+
+	    if (is_dir == -2) {
+		/* skipped filetype */
+		ret = callback(stated ? &statbuf : NULL, fname, warning_skipped_special, data);
+		if (ret != CL_SUCCESS)
+		    break;
 	    }
 
 	    if (stated == -1) {
