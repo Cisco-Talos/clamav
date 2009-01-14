@@ -1,3 +1,7 @@
+Wed Jan 14 18:20:56 EET 2009 (edwin)
+------------------------------------
+ * clamd/scanner.c, libclamav/others_common.c: fix build
+
 Wed Jan 14 00:08:18 EET 2009 (edwin)
 ------------------------------------
  * libclamav/others.h, libclamav/others_common.c: finish traversal

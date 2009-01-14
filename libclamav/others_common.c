@@ -363,6 +363,7 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 		    break;
 	    }
 	    sprintf(fname, "%s/%s", dirname, dent->d_name);
+	    /* TODO: make is_dir an enum, it is getting ugly with -1 and -2 */
 	    if (is_dir == -1) {
 		/* TODO: factor this out into another function */
 		int check_symlink = 0;

@@ -312,8 +312,9 @@ struct scan_cb_data {
     int infected;
     int errors;
     unsigned long scanned;
-    const struct cl_engine *engine;
     unsigned int options;
+    const struct cl_engine *engine;
+    const struct optstruct *opts;
 };
 
 #define BUFFSIZE 1024
@@ -324,6 +325,7 @@ static int scan_callback(struct stat *sb, char *filename, enum cli_ftw_reason re
     char buf[BUFFSIZE];
     int ret;
     int type = scandata->type;
+    const struct optstruct *opt;
 
 #ifdef HAVE_STRERROR_R
     if (reason == error_mem || reason == error_stat) {
@@ -354,7 +356,7 @@ static int scan_callback(struct stat *sb, char *filename, enum cli_ftw_reason re
 	case warning_skipped_special:
 	    if (type != TYPE_MULTISCAN)
 		mdprintf(scandata->odesc, "%s: Not supported file type. ERROR\n", filename);
-	    return CL_SUCCESSu;
+	    return CL_SUCCESS;
 	case visit_directory:
 	    return CL_SUCCESS;
 	case visit_file:
@@ -363,10 +365,10 @@ static int scan_callback(struct stat *sb, char *filename, enum cli_ftw_reason re
 
     /* check whether the file is excluded */
 #ifdef C_LINUX
-    if(procdev && (sb.st_dev == procdev))
+    if(procdev && (sb->st_dev == procdev))
 	return CL_SUCCESS;
 #endif
-    if((opt = optget(opts, "ExcludePath"))->enabled) {
+    if((opt = optget(scandata->opts, "ExcludePath"))->enabled) {
 	/* TODO: perhaps multiscan should skip this check? 
 	 * This should work unless the user is doing something stupid like
 	 * MULTISCAN / */
@@ -379,11 +381,11 @@ static int scan_callback(struct stat *sb, char *filename, enum cli_ftw_reason re
     
     if(sb->st_size == 0) { /* empty file */
 	if (type != TYPE_MULTISCAN)
-	    mdprintf(odesc, "%s: Empty file\n", filename);
+	    mdprintf(scandata->odesc, "%s: Empty file\n", filename);
 	return CL_SUCCESS;
     }
 
-    /* TODO: if multiscan we should dispatch this to an async scanner thread */
+    /* TODO: if multiscan we should dispatch this to an async scanner thread!! */
     /* prepare to scan file */
     if (access(filename, R_OK)) {
 	mdprintf(scandata->odesc, "%s: Access denied. ERROR\n",
@@ -401,7 +403,7 @@ static int scan_callback(struct stat *sb, char *filename, enum cli_ftw_reason re
 	scandata->infected++;
 	mdprintf(scandata->odesc, "%s: %s FOUND\n", filename, virname);
 	logg("~%s: %s FOUND\n", filename, virname);
-	virusaction(filename, virname, options);
+	virusaction(filename, virname, scandata->opts);
     } else if (ret != CL_CLEAN) {
 	mdprintf(scandata->odesc, "%s: %s ERROR\n", filename, cl_strerror(ret));
 	logg("~%s: %s ERROR\n", filename, cl_strerror(ret));
