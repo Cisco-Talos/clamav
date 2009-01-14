@@ -26,7 +26,7 @@
 #include "libclamav/clamav.h"
 #include "shared/optparser.h"
 
-int scan(const char *filename, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc, unsigned int type);
+int scan(const char *filename, const char term, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc, unsigned int type);
 
 int scanfd(const int fd, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc);
 

@@ -77,16 +77,6 @@ pthread_mutex_t reload_mutex = PTHREAD_MUTEX_INITIALIZER;
 int sighup = 0;
 static struct cl_stat *dbstat = NULL;
 
-typedef struct client_conn_tag {
-    char *cmd;
-    size_t cmdlen;
-    int sd;
-    unsigned int options;
-    const struct optstruct *opts;
-    struct cl_engine *engine;
-    time_t engine_timestamp;
-} client_conn_t;
-
 static void scanner_thread(void *arg)
 {
 	client_conn_t *conn = (client_conn_t *) arg;
@@ -115,7 +105,7 @@ static void scanner_thread(void *arg)
     	timeout = -1;
 
     do {
-    	ret = command(conn->sd, conn->cmd, conn->cmdlen, conn->engine, conn->options, conn->opts, timeout);
+	ret = command(conn, timeout);
 	if (ret < 0) {
 		break;
 	}
@@ -283,18 +273,21 @@ struct rcvloop {
     struct fd_data *fds;
 };
 
-static const char *get_cmd(struct fd_buf *buf, size_t off, size_t *len)
+static const char *get_cmd(struct fd_buf *buf, size_t off, size_t *len, char *term)
 {
     unsigned char *pos;
     if (!buf->off || off >= buf->off) {
 	*len = 0;
 	return NULL;
     }
+
+    *term = '\n';
     switch (buf->buffer[0]) {
 	/* commands terminated by delimiters */
-	case 'n':
 	case 'z':
-	    pos = memchr(buf->buffer + off, buf->buffer[0] == 'n' ? '\n' : '\0', buf->off);
+	    *term = '\0';
+	case 'n':
+	    pos = memchr(buf->buffer + off, *term, buf->off);
 	    if (!pos) {
 		/* we don't have another full command yet */
 		*len = 0;
@@ -665,7 +658,6 @@ int acceptloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, un
 	    if (!buf->buffer) {
 		/* listen only socket */
 		new_sd = accept(fds.buf[i].fd, NULL, NULL);
-
 		if (new_sd >= 0) {
 		    if (fds_add(&fds, new_sd, 0) == -1) {
 			logg("!fds_add failed\n");
@@ -693,15 +685,17 @@ int acceptloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, un
 		size_t cmdlen = 0;
 		size_t pos = 0;
 		int error = 0;
+		char term;
 		/* New data available to read on socket. */
 
 		/* Parse & dispatch commands */
-		while ((cmd = get_cmd(buf, pos, &cmdlen)) != NULL) {
+		while ((cmd = get_cmd(buf, pos, &cmdlen, &term)) != NULL) {
 		    client_conn = (client_conn_t *) malloc(sizeof(struct client_conn_tag));
 		    if(client_conn) {
 			client_conn->sd = buf->fd;
 			client_conn->cmdlen = cmdlen;
 			client_conn->cmd = malloc(cmdlen+1);
+			client_conn->term = term;
 			if (!client_conn->cmd) {
 			    logg("!acceptloop_th: failed to allocate memory for command\n");
 			    error = 1;

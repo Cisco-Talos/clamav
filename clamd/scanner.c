@@ -100,7 +100,7 @@ static int checksymlink(const char *path)
     return 0;
 }
 
-static int dirscan(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc, unsigned int *reclev, unsigned int type, threadpool_t *multi_pool)
+static int dirscan(const char *dirname, const char *term, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc, unsigned int *reclev, unsigned int type, threadpool_t *multi_pool)
 {
 	DIR *dd;
 	struct dirent *dent;
@@ -121,7 +121,7 @@ static int dirscan(const char *dirname, const char **virname, unsigned long int 
     if((opt = optget(opts, "ExcludePath"))->enabled) {
 	while(opt) {
 	    if(match_regex(dirname, opt->strarg) == 1) {
-		mdprintf(odesc, "%s: Excluded\n", dirname);
+		mdprintf(odesc, "%s: Excluded%c", dirname, term);
 		return 0;
 	    }
 	    opt = (struct optstruct *) opt->nextarg;
@@ -173,7 +173,7 @@ static int dirscan(const char *dirname, const char **virname, unsigned long int 
 		    /* stat the file */
 		    if(lstat(fname, &statbuf) != -1) {
 			if((S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 1) && optget(opts, "FollowDirectorySymlinks")->enabled)) {
-			    if(dirscan(fname, virname, scanned, engine, options, opts, odesc, reclev, type, multi_pool) == 1) {
+			    if(dirscan(fname, term, virname, scanned, engine, options, opts, odesc, reclev, type, multi_pool) == 1) {
 				free(fname);
 				closedir(dd);
 				return 1;
@@ -204,7 +204,7 @@ static int dirscan(const char *dirname, const char **virname, unsigned long int 
 					scandata->engine = engine;
 					if(!thrmgr_dispatch(multi_pool, scandata)) {
 					    logg("!thread dispatch failed for multi_pool (file %s)\n", fname);
-					    mdprintf(odesc, "ERROR: Can't scan file %s\n", fname);
+					    mdprintf(odesc, "ERROR: Can't scan file %s%c", fname, term);
 					    free(fname);
 					    free(scandata);
 					    closedir(dd);
@@ -224,7 +224,7 @@ static int dirscan(const char *dirname, const char **virname, unsigned long int 
 
 					if(scanret == CL_VIRUS) {
 
-					    mdprintf(odesc, "%s: %s FOUND\n", fname, *virname);
+					    mdprintf(odesc, "%s: %s FOUND%c", fname, *virname, term);
 					    logg("~%s: %s FOUND\n", fname, *virname);
 					    virusaction(fname, *virname, opts);
 					    if(type == TYPE_SCAN) {
@@ -235,7 +235,7 @@ static int dirscan(const char *dirname, const char **virname, unsigned long int 
 						ret = 2;
 
 					} else if(scanret != CL_CLEAN) {
-					    mdprintf(odesc, "%s: %s ERROR\n", fname, cl_strerror(scanret));
+					    mdprintf(odesc, "%s: %s ERROR%c", fname, cl_strerror(scanret), term);
 					    logg("~%s: %s ERROR\n", fname, cl_strerror(scanret));
 					    if(scanret == CL_EMEM) {
 						closedir(dd);
@@ -305,7 +305,7 @@ static void multiscanfile(void *arg)
     return;
 }
 
-int scan(const char *filename, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc, unsigned int type)
+ int scan(const char *filename, const char term, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc, unsigned int type)
 {
 	struct stat sb;
 	int ret = 0;
@@ -317,19 +317,19 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_engin
 
     /* stat file */
     if(lstat(filename, &sb) == -1) {
-	mdprintf(odesc, "%s: lstat() failed. ERROR\n", filename);
+	mdprintf(odesc, "%s: lstat() failed. ERROR%c", filename, term);
 	return -1;
     }
 
     /* check permissions  */
     if(access(filename, R_OK)) {
-	mdprintf(odesc, "%s: Access denied. ERROR\n", filename);
+	mdprintf(odesc, "%s: Access denied. ERROR%c", filename, term);
 	return -1;
     }
 
     if((opt = optget(opts, "ExcludePath"))->enabled) {
 	if(match_regex(filename, opt->strarg) == 1) {
-	    mdprintf(odesc, "%s: Excluded\n", filename);
+	    mdprintf(odesc, "%s: Excluded%c", filename, term);
 	    return 0;
 	}
     }
@@ -343,7 +343,7 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_engin
 #endif
 	case S_IFREG: 
 	    if(sb.st_size == 0) { /* empty file */
-		mdprintf(odesc, "%s: Empty file\n", filename);
+		mdprintf(odesc, "%s: Empty file%c", filename, term);
 		return 0;
 	    }
 #ifdef C_LINUX
@@ -358,11 +358,11 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_engin
 	    }
 
 	    if(ret == CL_VIRUS) {
-		mdprintf(odesc, "%s: %s FOUND\n", filename, virname);
+		mdprintf(odesc, "%s: %s FOUND%c", filename, virname, term);
 		logg("~%s: %s FOUND\n", filename, virname);
 		virusaction(filename, virname, opts);
 	    } else if(ret != CL_CLEAN) {
-		mdprintf(odesc, "%s: %s ERROR\n", filename, cl_strerror(ret));
+		mdprintf(odesc, "%s: %s ERROR%c", filename, cl_strerror(ret), term);
 		logg("~%s: %s ERROR\n", filename, cl_strerror(ret));
 		if(ret == CL_EMEM)
 		    return -2;
@@ -377,26 +377,25 @@ int scan(const char *filename, unsigned long int *scanned, const struct cl_engin
 
 		if((multi_pool = thrmgr_new(max_threads, idletimeout, multiscanfile)) == NULL) {
 		    logg("!thrmgr_new failed for multi_pool\n");
-		    mdprintf(odesc, "thrmgr_new failed for multi_pool ERROR\n");
+		    mdprintf(odesc, "thrmgr_new failed for multi_pool ERROR%c", term);
 		    return -1;
 		}
 	    }
 
-	    ret = dirscan(filename, &virname, scanned, engine, options, opts, odesc, &reclev, type, multi_pool);
+	    ret = dirscan(filename, term, &virname, scanned, engine, options, opts, odesc, &reclev, type, multi_pool);
 
 	    if(multi_pool)
 		thrmgr_destroy(multi_pool);
 
 	    break;
 	default:
-	    mdprintf(odesc, "%s: Not supported file type. ERROR\n", filename);
+	    mdprintf(odesc, "%s: Not supported file type. ERROR%c", filename, term);
 	    return -1;
     }
 
     if(!ret)
-	mdprintf(odesc, "%s: OK\n", filename);
+	mdprintf(odesc, "%s: OK%c", filename, term);
 
-    /* mdprintf(odesc, "\n"); */ /* Terminate response with a blank line boundary */
     return ret;
 }
 

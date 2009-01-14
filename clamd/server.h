@@ -43,6 +43,17 @@ struct thrwarg {
     unsigned int options;
 };
 
+typedef struct client_conn_tag {
+    char *cmd;
+    size_t cmdlen;
+    int sd;
+    unsigned int options;
+    const struct optstruct *opts;
+    struct cl_engine *engine;
+    time_t engine_timestamp;
+    char term;
+} client_conn_t;
+
 int acceptloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts);
 void sighandler(int sig);
 void sighandler_th(int sig);

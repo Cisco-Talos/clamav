@@ -315,11 +315,15 @@ static int read_fd_data(struct fd_buf *buf)
 int fds_add(struct fd_data *data, int fd, int listen_only)
 {
     struct fd_buf *buf;
-    unsigned  n = data->nfds + 1;
+    unsigned n;
     if (fd < 0) {
 	logg("!add_fd: invalid fd passed to add_fd\n");
 	return -1;
     }
+    for (n = 0; n < data->nfds; n++)
+	if (data->buf[n].fd == fd) return 0;
+
+    n++;
     buf = realloc(data->buf, n*sizeof(*buf));
     if (!buf) {
 	logg("!add_fd: Memory allocation failed for fd_buf\n");

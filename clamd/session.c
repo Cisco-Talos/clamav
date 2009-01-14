@@ -114,14 +114,23 @@ static int recvfd_and_scan(int desc, const struct cl_engine *engine, unsigned in
 }
 #endif
 
-int command(int desc, char *buff, size_t cmdlen, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int timeout)
+int command(client_conn_t *conn, int timeout)
 {
+
+    int desc = conn->sd;
+    char *buff = conn->cmd;
+    size_t cmdlen = conn->cmdlen;
+    const struct cl_engine *engine = conn->engine;
+    unsigned int options = conn->options;
+    const struct optstruct *opts = conn->opts;
+    const char term = conn->term;
+
     cli_chomp(buff);
     thrmgr_setactiveengine(engine);
 
     if(!strncmp(buff, CMD1, strlen(CMD1))) { /* SCAN */
 	thrmgr_setactivetask(NULL, CMD1);
-	if(scan(buff + strlen(CMD1) + 1, NULL, engine, options, opts, desc, TYPE_SCAN) == -2)
+	if(scan(buff + strlen(CMD1) + 1, term, NULL, engine, options, opts, desc, TYPE_SCAN) == -2)
 	    if(optget(opts, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
@@ -144,7 +153,7 @@ int command(int desc, char *buff, size_t cmdlen, const struct cl_engine *engine,
 
     } else if(!strncmp(buff, CMD6, strlen(CMD6))) { /* CONTSCAN */
 	thrmgr_setactivetask(NULL, CMD6);
-	if(scan(buff + strlen(CMD6) + 1, NULL, engine, options, opts, desc, TYPE_CONTSCAN) == -2)
+	if(scan(buff + strlen(CMD6) + 1, term, NULL, engine, options, opts, desc, TYPE_CONTSCAN) == -2)
 	    if(optget(opts, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
@@ -183,7 +192,7 @@ int command(int desc, char *buff, size_t cmdlen, const struct cl_engine *engine,
 
     } else if(!strncmp(buff, CMD13, strlen(CMD13))) { /* MULTISCAN */
 	thrmgr_setactivetask(buff+strlen(CMD13)+1, CMD13);
-	if(scan(buff + strlen(CMD13) + 1, NULL, engine, options, opts, desc, TYPE_MULTISCAN) == -2)
+	if(scan(buff + strlen(CMD13) + 1, term, NULL, engine, options, opts, desc, TYPE_MULTISCAN) == -2)
 	    if(optget(opts, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
