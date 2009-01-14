@@ -398,18 +398,21 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 
 	if (retval > 0) {
 	    fdsok = 0;
+	    printf("%d ready on poll\n", retval);
 	    for (i=0;i < data->nfds; i++) {
 		short revents;
 		if (data->buf[i].fd < 0)
 		    continue;
 		revents = data->poll_data[i].revents;
 		if (revents & POLLIN) {
+		    printf("got data on slot %d (fd %d)\n", i, data->buf[i].fd);
 		    /* Data available to be read */
 		    if (read_fd_data(&data->buf[i]) == -1)
 			revents |= POLLERR;
 		}
 
 		if (revents & (POLLHUP | POLLERR)) {
+		    printf("got hangup on slot %d (fd %d)\n", i, data->buf[i].fd);
 		    if (revents & POLLHUP) {
 			/* remote disconnected */
 			logg("!poll_recv_fds: Client disconnected\n");

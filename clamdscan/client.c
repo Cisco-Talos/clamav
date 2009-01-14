@@ -91,7 +91,7 @@ static int dsresult(int sockd, const char *scantype, const char *filename, const
 	}
 	while(r && (eol = memchr(pt, 0, r))) {
 	    if(eol-bol > 7) {
-		if(!memcmp(eol - 6, " FOUND", 7)) {
+		if(!memcmp(eol - 6, " FOUND", 6)) {
 		    infected++;
 		    logg("%s\n", bol);
 		    if(optget(opts, "move")->enabled || optget(opts, "copy")->enabled) {
@@ -121,7 +121,6 @@ static int dsresult(int sockd, const char *scantype, const char *filename, const
 	    r -= eol - pt;
 	    bol = pt = eol;
 	}
-
 	r = &pt[r]-bol;
 	len = sizeof(buff) - r;
 	if(!len) {
@@ -132,6 +131,7 @@ static int dsresult(int sockd, const char *scantype, const char *filename, const
 	if(r && bol!=buff) /* memmove is stupid in older glibc's */
 	    memmove(buff, bol, r);
 	pt = &buff[r];
+	bol = buff;
     }
 
     if(!infected && !printinfected)
