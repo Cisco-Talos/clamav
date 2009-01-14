@@ -278,18 +278,19 @@ int poll_fd(int fd, int timeout_sec, int check_signals)
 static void cleanup_fds(struct fd_data *data)
 {
     struct fd_buf *newbuf;
-    unsigned i,j, ok = 0;
+    unsigned i,j;
     for (i=0,j=0;i < data->nfds; i++) {
 	if (data->buf[i].fd < 0)
 	    continue;
 	if (i != j)
-	    data->buf[j++] = data->buf[i];
-	ok++;
+	    data->buf[j] = data->buf[i];
+	j++;
     }
-    while (j < data->nfds)
-	data->buf[j++].fd = -1;
+    for (i = j ; i < data->nfds; i++)
+	data->buf[i].fd = -1;
+    data->nfds = j;
     /* Shrink buffer */
-    newbuf = realloc(data->buf, ok*sizeof(*newbuf));
+    newbuf = realloc(data->buf, j*sizeof(*newbuf));
     if (newbuf)
 	data->buf = newbuf;/* non-fatal if shrink fails */
 }
@@ -398,22 +399,19 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 
 	if (retval > 0) {
 	    fdsok = 0;
-	    printf("%d ready on poll\n", retval);
 	    for (i=0;i < data->nfds; i++) {
 		short revents;
 		if (data->buf[i].fd < 0)
 		    continue;
 		revents = data->poll_data[i].revents;
 		if (revents & POLLIN) {
-		    printf("got data on slot %d (fd %d)\n", i, data->buf[i].fd);
 		    /* Data available to be read */
 		    if (read_fd_data(&data->buf[i]) == -1)
 			revents |= POLLERR;
 		}
 
-		if (revents & (POLLHUP | POLLERR)) {
-		    printf("got hangup on slot %d (fd %d)\n", i, data->buf[i].fd);
-		    if (revents & POLLHUP) {
+		if (revents & (POLLHUP | POLLERR | POLLNVAL)) {
+		    if (revents & (POLLHUP| POLLNVAL)) {
 			/* remote disconnected */
 			logg("!poll_recv_fds: Client disconnected\n");
 		    } else {
