@@ -116,6 +116,8 @@ int main(int argc, char **argv)
 	exit(ret);
     }
 
+    actsetup(opts);
+
     time(&starttime);
     /* ctime() does \n, but I need it once more */
 

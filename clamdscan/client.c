@@ -50,11 +50,40 @@
 
 #define SOCKET_INET	AF_INET
 
-void move_infected(const char *filename, const struct optstruct *opts);
 int notremoved = 0, notmoved = 0;
 int printinfected = 0;
 
-static int dsresult(int sockd, const char *scantype, const char *filename, const struct optstruct *opts)
+static void (*action)(const char *) = NULL;
+static char *actarget;
+static void move_infected(const char *filename, int move);
+static void action_move(const char *filename) {
+    move_infected(filename, 1);
+}
+static void action_copy(const char *filename) {
+    move_infected(filename, 0);
+}
+static void action_remove(const char *filename) {
+    if(unlink(filename)) {
+	logg("!%s: Can't remove.\n", filename);
+	notremoved++;
+    } else {
+	logg("~%s: Removed.\n", filename);
+    }
+}
+
+void actsetup(const struct optstruct *opts) {
+    if(optget(opts, "move")->enabled) {
+	actarget = optget(opts, "move")->strarg;
+	action = action_move;
+    } else if (optget(opts, "copy")->enabled) {
+	actarget = optget(opts, "copy")->strarg;
+	action = action_copy;
+    } else if(optget(opts, "remove")->enabled) {
+	action = action_remove;
+    }
+}
+
+static int dsresult(int sockd, const char *scantype, const char *filename)
 {
 	int infected = 0, waserror = 0;
 	unsigned int len;
@@ -94,22 +123,11 @@ static int dsresult(int sockd, const char *scantype, const char *filename, const
 	    if(eol-bol > 7) {
 		if(!memcmp(eol - 6, " FOUND", 6)) {
 		    infected++;
-		    if(optget(opts, "move")->enabled || optget(opts, "copy")->enabled) {
-			char *com = strrchr(bol, ':');
-			if(com) {
-			    *com = '\0';
-			    move_infected(bol, opts);
-			}
-		    } else if(optget(opts, "remove")->enabled) {
-			char *com = strrchr(bol, ':');
-			if(com) {
-			    *com = '\0';
-			    if(unlink(bol)) {
-				logg("!%s: Can't remove.\n", bol);
-				notremoved++;
-			    } else {
-				logg("~%s: Removed.\n", bol);
-			    }
+		    if(action) {
+			char *comma = strrchr(bol, ':');
+			if(comma) {
+			    *comma = '\0';
+			    action(bol);
 			}
 		    }
 		} else if(!memcmp(eol-6, " ERROR", 6)) {
@@ -416,7 +434,7 @@ int client(const struct optstruct *opts, int *infected)
 	if((sockd = dconnect(opts, NULL)) < 0)
 	    return 2;
 
-	if((ret = dsresult(sockd, scantype, cwd, opts)) >= 0)
+	if((ret = dsresult(sockd, scantype, cwd)) >= 0)
 	    *infected += ret;
 	else
 	    errors++;
@@ -483,7 +501,7 @@ int client(const struct optstruct *opts, int *infected)
 			if((sockd = dconnect(opts, NULL)) < 0)
 			    return 2;
 
-			if((ret = dsresult(sockd, scantype, fullpath, opts)) >= 0)
+			if((ret = dsresult(sockd, scantype, fullpath)) >= 0)
 			    *infected += ret;
 			else
 			    errors++;
@@ -504,26 +522,16 @@ int client(const struct optstruct *opts, int *infected)
     return *infected ? 1 : (errors ? 2 : 0);
 }
 
-void move_infected(const char *filename, const struct optstruct *opts)
+void move_infected(const char *filename, int move)
 {
-	char *movedir, *movefilename, numext[4 + 1];
+	char *movefilename, numext[4 + 1];
 	const char *tmp;
 	struct stat ofstat, mfstat;
 	int n, len, movefilename_size;
-	int moveflag = optget(opts, "move")->enabled;
 	struct utimbuf ubuf;
 
-
-    if((moveflag && !(movedir = optget(opts, "move")->strarg)) ||
-        (!moveflag && !(movedir = optget(opts, "copy")->strarg))) {
-        /* Should never reach here */
-        logg("!optget() returned NULL\n");
-        notmoved++;
-        return;
-    }
-
-    if(access(movedir, W_OK|X_OK) == -1) {
-        logg("!problem %s file '%s': cannot write to '%s': %s\n", (moveflag) ? "moving" : "copying", filename, movedir, strerror(errno));
+    if(access(actarget, W_OK|X_OK) == -1) {
+        logg("!problem %s file '%s': cannot write to '%s': %s\n", (move) ? "moving" : "copying", filename, actarget, strerror(errno));
         notmoved++;
         return;
     }
@@ -538,14 +546,14 @@ void move_infected(const char *filename, const struct optstruct *opts)
     if(!(tmp = strrchr(filename, '/')))
 	tmp = filename;
 
-    movefilename_size = sizeof(char) * (strlen(movedir) + strlen(tmp) + sizeof(numext) + 2);
+    movefilename_size = sizeof(char) * (strlen(actarget) + strlen(tmp) + sizeof(numext) + 2);
 
     if(!(movefilename = malloc(movefilename_size))) {
         logg("!Memory allocation error\n");
 	exit(2);
     }
 
-    if(!(cli_strrcpy(movefilename, movedir))) {
+    if(!(cli_strrcpy(movefilename, actarget))) {
         logg("!cli_strrcpy() returned NULL\n");
         notmoved++;
         free(movefilename);
@@ -562,7 +570,7 @@ void move_infected(const char *filename, const struct optstruct *opts)
     }
 
     if(!stat(movefilename, &mfstat)) {
-        if((ofstat.st_dev == mfstat.st_dev) && (ofstat.st_ino == mfstat.st_ino)) { /* It's the same file*/
+        if((ofstat.st_dev == mfstat.st_dev) && (ofstat.st_ino == mfstat.st_ino)) { /* It's the same file */
             logg("File excluded '%s'\n", filename);
             notmoved++;
             free(movefilename);
@@ -586,9 +594,9 @@ void move_infected(const char *filename, const struct optstruct *opts)
        }
     }
 
-    if(!moveflag || rename(filename, movefilename) == -1) {
+    if(!move || rename(filename, movefilename) == -1) {
 	if(filecopy(filename, movefilename) == -1) {
-	    logg("^cannot %s '%s' to '%s': %s\n", (moveflag) ? "move" : "copy", filename, movefilename, strerror(errno));
+	    logg("^cannot %s '%s' to '%s': %s\n", (move) ? "move" : "copy", filename, movefilename, strerror(errno));
 	    notmoved++;
 	    free(movefilename);
 	    return;
@@ -602,15 +610,15 @@ void move_infected(const char *filename, const struct optstruct *opts)
 	ubuf.modtime = ofstat.st_mtime;
 	utime(movefilename, &ubuf);
 
-	if(moveflag && unlink(filename)) {
+	if(move && unlink(filename)) {
 	    logg("^cannot unlink '%s': %s\n", filename, strerror(errno));
-	    notremoved++;            
+	    notremoved++;
 	    free(movefilename);
 	    return;
 	}
     }
 
-    logg("%s: %s to '%s'\n", (moveflag)?"moved":"copied", filename, movefilename);
+    logg("%s: %s to '%s'\n", (move)?"moved":"copied", filename, movefilename);
 
     free(movefilename);
 }
