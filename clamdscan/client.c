@@ -83,74 +83,113 @@ void actsetup(const struct optstruct *opts) {
     }
 }
 
+static int sendln(int sockd, const char *line, unsigned int len) {
+    while(len) {
+	int sent = send(sockd, line, len, 0);
+	if(sent <= 0) {
+	    if(sent && errno == EINTR) continue;
+	    logg("!Can't send request to clamd\n");
+	    return 1;
+	}
+	line += sent;
+	len -= sent;
+    }
+    return 0;
+}
+
+struct RCVLN {
+    char buf[PATH_MAX+1024]; /* FIXME must match that in clamd - bb1349 */
+    int sockd;
+    int r;
+    char *cur;
+    char *bol;
+};
+
+static void recvlninit(struct RCVLN *s, int sockd) {
+    s->sockd = sockd;
+    s->bol = s->cur = s->buf;
+    s->r = 0;
+}
+
+static int recvln(struct RCVLN *s, char **rbol, char **reol) {
+    char *eol;
+    int ret = 0;
+
+    while(!ret) {
+	if(!s->r) {
+	    s->r = recv(s->sockd, s->cur, sizeof(s->buf) - (s->cur - s->buf), 0);
+	    if(s->r<=0) {
+		if(s->r && errno == EINTR) {
+		    s->r = 0;
+		    continue;
+		}
+		if(s->r || s->cur!=s->buf) {
+		    logg("!Communication error\n");
+		    ret = -1;
+		}
+	        break;
+	    }
+	}
+	if(s->r && (eol = memchr(s->cur, 0, s->r))) {
+	    eol++;
+	    s->r -= eol - s->cur;
+	    *rbol = s->bol;
+	    if(reol) *reol = eol;
+	    ret = eol - s->bol;
+	    s->bol = s->cur = eol;
+	}
+	s->r += s->cur - s->bol;
+	if(s->r==sizeof(s->buf)) {
+	    logg("!Overlong reply from clamd\n");
+	    ret = -1;
+	    break;
+	}
+	if(s->r && s->bol!=s->buf) /* memmove is stupid in older glibc's */
+	    memmove(s->buf, s->bol, s->r);
+	s->cur = &s->buf[s->r];
+	s->bol = s->buf;
+    }
+    return ret;
+}
+
 static int dsresult(int sockd, const char *scantype, const char *filename)
 {
 	int infected = 0, waserror = 0;
-	unsigned int len;
-	char buff[PATH_MAX+24], *pt, *bol, *eol;
+	int len;
+	char *bol, *eol;
+	struct RCVLN rcv;
 
     len = strlen(filename) + strlen(scantype) + 3;
     if (!(bol = malloc(len))) {
 	logg("!Cannot allocate a command buffer\n");
 	return -1;
     }
-    pt = bol;
-    sprintf(pt, "z%s %s", scantype, filename);
-    while(len) {
-	int sent = send(sockd, pt, len, 0);
-	if(sent <= 0) {
-	    logg("!Can't send request to clamd\n");
-	    return -1;
-	}
-	pt += sent;
-	len -= sent;
-    }
+    sprintf(bol, "z%s %s", scantype, filename);
+    if(sendln(sockd, bol, len)) return -1;
     free(bol);
 
-    len = sizeof(buff);
-    bol = pt = buff;
-    while(1) {
-	int r = recv(sockd, pt, len, 0);
-	if(r<=0) {
-	    if(r || pt!=buff) {
-		logg("!Communication error\n");
-		waserror = 1;
-	    }
-	    break;
-	}
-	while(r && (eol = memchr(pt, 0, r))) {
-	    logg("~%s\n", bol);
-	    if(eol-bol > 7) {
-		if(!memcmp(eol - 6, " FOUND", 6)) {
-		    infected++;
-		    if(action) {
-			char *comma = strrchr(bol, ':');
-			if(comma) {
-			    *comma = '\0';
-			    action(bol);
-			}
-		    }
-		} else if(!memcmp(eol-6, " ERROR", 6)) {
-		    waserror = 1;
-		}
-	    }
-	    eol++;
-	    r -= eol - pt;
-	    bol = pt = eol;
-	}
-	r = &pt[r]-bol;
-	len = sizeof(buff) - r;
-	if(!len) {
-	    logg("!Overlong reply from clamd\n");
+    recvlninit(&rcv, sockd);
+    while((len = recvln(&rcv, &bol, &eol))) {
+	if(len == -1) {
 	    waserror = 1;
 	    break;
 	}
-	if(r && bol!=buff) /* memmove is stupid in older glibc's */
-	    memmove(buff, bol, r);
-	pt = &buff[r];
-	bol = buff;
+	logg("~%s\n", bol);
+	if(len > 7) {
+	    if(!memcmp(eol - 7, " FOUND", 6)) {
+		infected++;
+		if(action) {
+		    char *comma = strrchr(bol, ':');
+		    if(comma) {
+			*comma = '\0';
+			action(bol);
+		    }
+		}
+	    } else if(!memcmp(eol-7, " ERROR", 6)) {
+		waserror = 1;
+	    }
+	}
     }
-
     return infected ? infected : (waserror ? -1 : 0);
 }
 
