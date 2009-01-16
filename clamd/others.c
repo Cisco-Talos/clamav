@@ -467,7 +467,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 		if (data->buf[i].fd < 0)
 		    continue;
 		if (FD_ISSET(data->buf[i].fd, &rfds))
-		    if (read_fd_data(&data->buf[i] == -1)) {
+		    if (read_fd_data(&data->buf[i]) == -1) {
 			logg("!poll_recv_fds: Error condition on fd %d\n",
 			     data->buf[i].fd);
 			data->buf[i].fd = -1;
