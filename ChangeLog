@@ -1,3 +1,7 @@
+Fri Jan 16 15:26:50 CET 2009 (tk)
+---------------------------------
+ * libclamav/dlp.c: fix detection of single stripped SSNs (bb#1354)
+
 Mon Jan  5 20:33:04 CET 2009 (tk)
 ---------------------------------
  * libclamav/str.c: return token count in cli_strtokenize()

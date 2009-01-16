@@ -366,7 +366,7 @@ static int contains_ssn(const unsigned char *buffer, int length, int format, int
     const unsigned char *end;
     int count = 0;
     
-    if(buffer == NULL || length < 11)
+    if(buffer == NULL || length < 9)
         return 0; 
 
     end = buffer + length;
