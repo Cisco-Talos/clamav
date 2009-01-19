@@ -42,7 +42,7 @@ struct optstruct {
     struct optstruct *nextarg;
     struct optstruct *next;
 
-    char *filename; /* cmdline */
+    char **filename; /* cmdline */
 };
 
 const struct optstruct *optget(const struct optstruct *opts, const char *name);

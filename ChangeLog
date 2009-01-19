@@ -1,3 +1,7 @@
+Mon Jan 19 21:01:33 CET 2009 (tk)
+---------------------------------
+ * shared/optparser.c: improve cmdline args handling
+
 Mon Jan 19 15:38:39 CET 2009 (tk)
 ---------------------------------
  * libclamav/dlp.c: fix CC detection and chksumming (bb#1264)

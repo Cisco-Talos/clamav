@@ -578,9 +578,13 @@ static int optaddarg(struct optstruct *opts, const char *name, const char *strar
 void optfree(struct optstruct *opts)
 {
     	struct optstruct *h, *a;
+	int i;
 
-    if(opts && opts->filename)
+    if(opts && opts->filename) {
+	for(i = 0; opts->filename[i]; i++)
+	    free(opts->filename[i]);
 	free(opts->filename);
+    }
 
     while(opts) {
 	a = opts->nextarg;
@@ -924,24 +928,19 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
     }
 
     if(!cfgfile && (optind < argc)) {
-        lc = 0;
-
-	/* count length of non-option arguments */
-	for(i = optind; i < argc; i++)
-	    lc += strlen(argv[i]);
-
-	lc += argc - optind + 1;
-	opts->filename = (char *) calloc(lc, sizeof(char));
+	opts->filename = (char **) calloc(argc - optind + 1, sizeof(char *));
 	if(!opts->filename) {
 	    fprintf(stderr, "ERROR: optparse: calloc failed\n");
 	    optfree(opts);
 	    return NULL;
 	}
-
         for(i = optind; i < argc; i++) {
-	    strncat(opts->filename, argv[i], strlen(argv[i]));
-	    if(i != argc - 1)
-		strncat(opts->filename, "\t", 1);
+	    opts->filename[i - optind] = strdup(argv[i]);
+	    if(!opts->filename[i - optind]) {
+		fprintf(stderr, "ERROR: optparse: strdup failed\n");
+		optfree(opts);
+		return NULL;
+	    }
 	}
     }
 
