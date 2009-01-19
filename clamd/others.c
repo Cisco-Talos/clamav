@@ -302,6 +302,10 @@ static int read_fd_data(struct fd_buf *buf)
     buf->got_newdata=1;
     if (!buf->buffer) /* listen-only socket */
 	return 0;
+
+    if (buf->off >= buf->bufsize)
+	return -1;
+
    /* Read the pending packet, it may contain more than one command, but
     * that is to the cmdparser to handle. 
     * It will handle 1st command, and then move leftover to beginning of buffer

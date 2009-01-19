@@ -55,7 +55,7 @@ typedef struct client_conn_tag {
     char term;
 } client_conn_t;
 
-int acceptloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts);
+int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts);
 void sighandler(int sig);
 void sighandler_th(int sig);
 void sigsegv(int sig);

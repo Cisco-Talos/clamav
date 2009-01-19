@@ -1,3 +1,8 @@
+Mon Jan 19 20:23:29 EET 2009 (edwin)
+------------------------------------
+ * clamd/clamd.c, clamd/others.c, clamd/server-th.c, clamd/server.h: 
+ acceptloop/recvloop as in bb #1339
+
 Fri Jan 16 18:11:39 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c, clamd/others.h, clamd/server-th.c, clamd/server.h: 

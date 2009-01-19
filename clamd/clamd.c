@@ -488,7 +488,7 @@ int main(int argc, char **argv)
         foreground = 1;
 
 
-    ret = acceptloop_th(lsockets, nlsockets, engine, dboptions, opts);
+    ret = recvloop_th(lsockets, nlsockets, engine, dboptions, opts);
 
 #ifdef C_WINDOWS
     if(tcpsock)
