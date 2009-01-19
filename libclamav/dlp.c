@@ -117,7 +117,7 @@ static int ssn_max_group[MAX_AREA+1] = { 0,
 
 int dlp_is_valid_cc(const unsigned char *buffer, int length)
 {
-    int even = 1;
+    int mult = 0;
     int sum = 0;
     int i = 0;
     int val = 0;
@@ -138,31 +138,33 @@ int dlp_is_valid_cc(const unsigned char *buffer, int length)
 
     for(i = 0; i < length; i++)
     {
-        if(isdigit(buffer[i]) == 0)
+	if(isdigit(buffer[i]) == 0)
 	{
-	    if(isspace(buffer[i]))
+	    if(buffer[i] == ' ' || buffer[i] == '-')
 		continue;
 	    else
 		break;
 	}
-
 	cc_digits[digits] = buffer[i];
 	digits++;
-        val = buffer[i] - '0';
-        
-        if(even)
-        {
-            if((val *= 2) > 9) val = (val - 10) + 1;
-        }
-        
-        even = !even;
-        sum += val;
     }
     cc_digits[digits] = 0;
-    if(i < length && isdigit(buffer[i]))
+
+    if(digits < 13 || (i < length && isdigit(buffer[i])))
 	return 0;
 
-    if((sum % 10 != 0) || (digits < 13))
+    for(i = digits - 1; i >= 0; i--)
+    {
+	val = cc_digits[i] - '0';
+        if(mult)
+        {
+            if((val *= 2) > 9) val -= 9;
+        }
+	mult = !mult;
+	sum += val;
+    }
+
+    if(sum % 10)
 	return 0;
 
     if(digits == 13) /* VISA */

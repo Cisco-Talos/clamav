@@ -1,3 +1,7 @@
+Mon Jan 19 15:38:39 CET 2009 (tk)
+---------------------------------
+ * libclamav/dlp.c: fix CC detection and chksumming (bb#1264)
+
 Fri Jan 16 15:26:50 CET 2009 (tk)
 ---------------------------------
  * libclamav/dlp.c: fix detection of single stripped SSNs (bb#1354)
