@@ -1,3 +1,10 @@
+Fri Jan 16 18:11:39 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, clamd/others.h, clamd/server-th.c, clamd/server.h: 
+ remove fd from poll list, before closing it, handle EBADF in select.
+ If select/poll fails for reason other than EINTR, make that error
+ fatal.
+
 Fri Jan 16 17:18:04 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c: typo -> segfault -> fix

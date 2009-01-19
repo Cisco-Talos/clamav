@@ -48,6 +48,7 @@ int is_fd_connected(int fd);
 void virusaction(const char *filename, const char *virname, const struct optstruct *opts);
 int writen(int fd, void *buff, unsigned int count);
 int fds_add(struct fd_data *data, int fd, int listen_only);
+void fds_remove(struct fd_data *data, int fd);
 int fds_poll_recv(struct fd_data *data, int timeout, int check_signals);
 void fds_free(struct fd_data *data);
 

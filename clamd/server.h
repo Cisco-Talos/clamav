@@ -47,6 +47,7 @@ typedef struct client_conn_tag {
     char *cmd;
     size_t cmdlen;
     int sd;
+    struct fd_data *fds;
     unsigned int options;
     const struct optstruct *opts;
     struct cl_engine *engine;

@@ -356,6 +356,19 @@ int fds_add(struct fd_data *data, int fd, int listen_only)
     return realloc_polldata(data);
 }
 
+void fds_remove(struct fd_data *data, int fd)
+{
+    size_t i;
+    pthread_mutex_lock(&data->buf_mutex);
+    for (i=0;i<data->nfds;i++) {
+	if (data->buf[i].fd == fd) {
+	    data->buf[i].fd = -1;
+	    break;
+	}
+    }
+    pthread_mutex_unlock(&data->buf_mutex);
+}
+
 #define BUFFSIZE 1024
 /* Wait till data is available to be read on any of the fds,
  * read available data on all fds, and mark them as appropriate.
@@ -474,6 +487,30 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 			fdsok--;
 		    }
 	    }
+	}
+	if (retval < 0 && errno == EBADF) {
+	    /* unlike poll(),  select() won't tell us which FD is bad, so
+	     * we have to check them one by one. */
+	    tv.tv_sec = 0;
+	    tv.tv_usec = 0;
+	    /* with tv == 0 it doesn't check for EBADF */
+	    FD_ZERO(&rfds);
+	    for (i=0; i< data->nfds; i++) {
+		if (data->buf[i].fd == -1)
+		    continue;
+		FD_SET(data->buf[i].fd, &rfds);
+		do {
+		    retval = select(data->buf[i].fd+1, &rfds, NULL, NULL, &tv);
+		} while (retval == -1 && errno == EINTR);
+		if (retval == -1) {
+		    data->buf[i].fd = -1;
+		} else {
+		    FD_CLR(data->buf[i].fd, &rfds);
+		}
+	    }
+	    retval = -1;
+	    errno = EINTR;
+	    continue;
 	}
     } while (retval == -1 && !check_signals && errno == EINTR);
 #endif

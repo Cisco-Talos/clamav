@@ -146,6 +146,7 @@ static void scanner_thread(void *arg)
     } while (session);
 
     thrmgr_setactiveengine(NULL);
+    fds_remove(conn->fds, conn->sd);
     shutdown(conn->sd, 2);
     closesocket(conn->sd);
     cl_engine_free(conn->engine);
@@ -643,12 +644,18 @@ int acceptloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, un
 	/* Block waiting for connection on any of the sockets,
 	 * doesn't wake on signals, that is what recvloop does! */
 	int new_sd = fds_poll_recv(&fds, -1, 1);
-
 	/* TODO: what about sockets that get rm-ed? */
 	if (!fds.nfds) {
 	    /* no more sockets to poll, all gave an error */
 	    logg("!Main socket gone: fatal\n");
 	    break;
+	}
+
+	if (new_sd == -1 && errno != EINTR) {
+	    logg("!Failed to poll sockets, fatal\n");
+	    pthread_mutex_lock(&exit_mutex);
+	    progexit = 1;
+	    pthread_mutex_unlock(&exit_mutex);
 	}
 
 	for (i=0;i < fds.nfds && new_sd >= 0; i++) {
@@ -693,6 +700,7 @@ int acceptloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, un
 		    client_conn = (client_conn_t *) malloc(sizeof(struct client_conn_tag));
 		    if(client_conn) {
 			client_conn->sd = buf->fd;
+			client_conn->fds = &fds;
 			client_conn->cmdlen = cmdlen;
 			client_conn->cmd = malloc(cmdlen+1);
 			client_conn->term = term;
@@ -764,6 +772,7 @@ int acceptloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, un
 		shutdown(fds.buf[i].fd, 2);
 		closesocket(fds.buf[i].fd);
 	    }
+	    fds.nfds = 0;
 	    break;
 	}
 	pthread_mutex_unlock(&exit_mutex);
