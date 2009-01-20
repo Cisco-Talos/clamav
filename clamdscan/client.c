@@ -21,6 +21,7 @@
 #endif
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
@@ -35,6 +36,8 @@
 #include <netdb.h>
 #include <utime.h>
 #include <errno.h>
+#include <dirent.h>
+
 
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
@@ -195,31 +198,18 @@ static int dsresult(int sockd, const char *scantype, const char *filename)
 
 static int dsstream(int sockd)
 {
-	int wsockd, loopw = 60, bread, port, infected = 0;
+	int wsockd, bread, port, infected = 0;
 	struct sockaddr_in server;
 	struct sockaddr_in peer;
 	socklen_t peer_size;
+	struct RCVLN rcv;
 	char buff[4096], *pt;
 
 
-    if(write(sockd, "STREAM", 6) <= 0) {
-	logg("!Can't write to the socket.\n");
-	return 2;
-    }
-
-    while(loopw) {
-	memset(buff, 0, sizeof(buff));
-	if(read(sockd, buff, sizeof(buff)) > 0) {
-	    if((pt = strstr(buff, "PORT"))) {
-		pt += 5;
-		sscanf(pt, "%d", &port);
-		break;
-	    }
-	}
-	loopw--;
-    }
-
-    if(!loopw) {
+    if(sendln(sockd, "zSTREAM", 8)) return 2;
+    recvlninit(&rcv, sockd);
+    bread = recvln(&rcv, &pt, NULL);
+    if(bread < 7 || memcmp(pt, "PORT ", 5) || (port = atoi(&pt[5])) == 0) {
 	logg("!Daemon not ready for stream scanning.\n");
 	return -1;
     }
@@ -261,8 +251,9 @@ static int dsstream(int sockd)
 	return -1;
     }
 
-    while((bread = read(0, buff, sizeof(buff))) > 0) {
-	if(write(wsockd, buff, bread) <= 0) {
+    while((bread = read(0, buff, sizeof(buff))) > 0) { /* FIXME: this is stdin only, not nice */
+	if(sendln(wsockd, buff, bread)) {
+	    /* FIXME: we may just be overlimit here */
 	    logg("!Can't write to the socket.\n");
 	    close(wsockd);
 	    return -1;
@@ -270,7 +261,13 @@ static int dsstream(int sockd)
     }
     close(wsockd);
 
+    bread = recvln(&rcv, &pt, NULL);
+    /*    logg("~%s\n", bol); *//* FIXME: btw this is useless spam */
+
+    /* HERE */
+
     memset(buff, 0, sizeof(buff));
+
     while((bread = read(sockd, buff, sizeof(buff))) > 0) {
 	logg("%s", buff);
 	if(strstr(buff, "FOUND\n")) {
@@ -449,6 +446,84 @@ int reload_clamd_database(const struct optstruct *opts)
     return 0;
 }
 
+static int client_scan(const char *file, const char *scantype, int *infected, int *errors, const struct optstruct *opts) {
+    struct stat sb;
+    char *fullpath;
+    DIR *dir;
+    struct dirent *dent;
+    int ret, sockd;
+
+    /* BUF 
+       basename/thisname/child */
+
+    if(stat(file, &sb) == -1) {
+	logg("^Can't access file %s\n", file);
+	perror(file);
+	(*errors)++;
+	return 0;
+    }
+    if(!(fullpath = malloc(PATH_MAX + 1))) {
+	logg("^Can't make room for fullpath.\n");
+	(*errors)++;
+	return 0;
+    }
+
+    if(*file != '/') { /* FIXME: to be unified */
+	int namelen;
+	if(!getcwd(fullpath, PATH_MAX)) {
+	    logg("^Can't get absolute pathname of current working directory.\n");
+	    free(fullpath);
+	    (*errors)++;
+	    return 0;
+	}
+	namelen = strlen(fullpath);
+	snprintf(&fullpath[namelen], PATH_MAX - namelen, "/%s", file);
+    } else {
+	strncpy(fullpath, file, PATH_MAX);
+    }
+    fullpath[PATH_MAX] = '\0';
+
+    /* FIXME: i should break out ASAP here for SCAN, continue for MULTISCAN, CONTSCAN */
+    switch(sb.st_mode & S_IFMT) {
+    case S_IFDIR:
+	/* FIXME: if (remote) { */
+	if(!(dir = opendir(file)))
+	    break;
+	ret = strlen(fullpath);
+	while((dent = readdir(dir))) {
+	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..")) continue;
+	    snprintf(&fullpath[ret], PATH_MAX - ret, "/%s", dent->d_name);
+	    fullpath[PATH_MAX] = '\0';
+	    if(client_scan(fullpath, scantype, infected, errors, opts)) {
+		closedir(dir);
+		free(fullpath);
+		return 1;
+	    }
+	}
+	closedir(dir);
+	break;
+	/* } else fallback to S_IFREG for external recursion */
+
+    case S_IFREG:
+	if((sockd = dconnect(opts, NULL)) < 0)
+	    return 1;
+
+	if((ret = dsresult(sockd, scantype, fullpath)) >= 0)
+	    *infected += ret;
+	else
+	    (*errors)++;
+	close(sockd);
+	break;
+
+    default:
+	logg("^Not supported file type (%s)\n", fullpath);
+	errors++;
+    }
+
+    free(fullpath);
+    return 0;
+}
+
 int client(const struct optstruct *opts, int *infected)
 {
 	char cwd[PATH_MAX+1], *fullpath;
@@ -461,6 +536,9 @@ int client(const struct optstruct *opts, int *infected)
 
     if(optget(opts, "multiscan")->enabled)
 	scantype = "MULTISCAN";
+    client_scan(opts->filename, scantype, infected, &errors, opts);
+    return 0; /* FIXME */
+
 
     /* parse argument list */
     if(opts->filename == NULL || strlen(opts->filename) == 0) {
