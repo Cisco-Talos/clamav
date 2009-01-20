@@ -119,34 +119,31 @@ static int hexdump(void)
 
 static int md5sig(const struct optstruct *opts, unsigned int mdb)
 {
-	char *md5, *filename;
+	char *md5;
 	unsigned int i;
 	struct stat sb;
 
 
     if(opts->filename) {
-	for(i = 0; (filename = cli_strtok(opts->filename, i, "\t")); i++) {
-	    if(stat(filename, &sb) == -1) {
-		mprintf("!md5sig: Can't access file %s\n", filename);
+	for(i = 0; opts->filename[i]; i++) {
+	    if(stat(opts->filename[i], &sb) == -1) {
+		mprintf("!md5sig: Can't access file %s\n", opts->filename[i]);
 		perror("md5sig");
-		free(filename);
 		return -1;
 	    } else {
 		if((sb.st_mode & S_IFMT) == S_IFREG) {
-		    if((md5 = cli_md5file(filename))) {
+		    if((md5 = cli_md5file(opts->filename[i]))) {
 			if(mdb)
-			    mprintf("%u:%s:%s\n", (unsigned int) sb.st_size, md5, filename);
+			    mprintf("%u:%s:%s\n", (unsigned int) sb.st_size, md5, opts->filename[i]);
 			else
-			    mprintf("%s:%u:%s\n", md5, (unsigned int) sb.st_size, filename);
+			    mprintf("%s:%u:%s\n", md5, (unsigned int) sb.st_size, opts->filename[i]);
 			free(md5);
 		    } else {
-			mprintf("!md5sig: Can't generate MD5 checksum for %s\n", filename);
-			free(filename);
+			mprintf("!md5sig: Can't generate MD5 checksum for %s\n", opts->filename[i]);
 			return -1;
 		    }
 		}
 	    }
-	    free(filename);
 	}
 
     } else { /* stream */
@@ -589,8 +586,8 @@ static int build(const struct optstruct *opts)
 
     /* try to read cvd header of current database */
     if(opts->filename) {
-	if(cli_strbcasestr(opts->filename, ".cvd") || cli_strbcasestr(opts->filename, ".cld")) {
-	    strncpy(olddb, opts->filename, sizeof(olddb));
+	if(cli_strbcasestr(opts->filename[0], ".cvd") || cli_strbcasestr(opts->filename[0], ".cld")) {
+	    strncpy(olddb, opts->filename[0], sizeof(olddb));
 	    olddb[sizeof(olddb)-1]='\0';
 	} else {
 	    mprintf("!build: Not a CVD/CLD file\n");
@@ -1611,8 +1608,8 @@ static int makediff(const struct optstruct *opts)
 	return -1;
     }
 
-    if(!(cvd = cl_cvdhead(opts->filename))) {
-	mprintf("!makediff: Can't read CVD header from %s\n", opts->filename);
+    if(!(cvd = cl_cvdhead(opts->filename[0]))) {
+	mprintf("!makediff: Can't read CVD header from %s\n", opts->filename[0]);
 	return -1;
     }
     newver = cvd->version;
@@ -1665,8 +1662,8 @@ static int makediff(const struct optstruct *opts)
 	return -1;
     }
 
-    if(cvd_unpack(opts->filename, ndir) == -1) {
-	mprintf("!makediff: Can't unpack CVD file %s\n", opts->filename);
+    if(cvd_unpack(opts->filename[0], ndir) == -1) {
+	mprintf("!makediff: Can't unpack CVD file %s\n", opts->filename[0]);
 	cli_rmdirs(odir);
 	cli_rmdirs(ndir);
 	free(odir);
@@ -1674,7 +1671,7 @@ static int makediff(const struct optstruct *opts)
 	return -1;
     }
 
-    if(strstr(opts->filename, "main"))
+    if(strstr(opts->filename[0], "main"))
 	snprintf(name, sizeof(name), "main-%u.script", newver);
     else
 	snprintf(name, sizeof(name), "daily-%u.script", newver);
@@ -1801,14 +1798,14 @@ int main(int argc, char **argv)
 	    mprintf("!--verify-cdiff requires two arguments\n");
 	    ret = -1;
 	} else {
-	    if(stat(opts->filename, &sb) == -1) {
-		mprintf("--verify-cdiff: Can't get status of %s\n", opts->filename);
+	    if(stat(opts->filename[0], &sb) == -1) {
+		mprintf("--verify-cdiff: Can't get status of %s\n", opts->filename[0]);
 		ret = -1;
 	    } else {
 		if(S_ISDIR(sb.st_mode))
-		    ret = verifydiff(optget(opts, "verify-cdiff")->strarg, NULL, opts->filename);
+		    ret = verifydiff(optget(opts, "verify-cdiff")->strarg, NULL, opts->filename[0]);
 		else
-		    ret = verifydiff(optget(opts, "verify-cdiff")->strarg, opts->filename, NULL);
+		    ret = verifydiff(optget(opts, "verify-cdiff")->strarg, opts->filename[0], NULL);
 	    }
 	}
     } else

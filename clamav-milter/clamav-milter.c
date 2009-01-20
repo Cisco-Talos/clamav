@@ -82,9 +82,12 @@ int main(int argc, char **argv) {
 	optfree(opts);
 	return 0;
     }
-	
-    if(opts->filename)
-	mprintf("^Ignoring option %s\n", opts->filename);
+
+    if(opts->filename) {
+	int x;
+	for(x = 0; opts->filename[x]; x++)
+	    mprintf("^Ignoring option %s\n", opts->filename[x]);
+    }
 
     if(optget(opts, "version")->enabled) {
 	printf("clamav-milter %s\n", get_version());

@@ -1,3 +1,7 @@
+Mon Jan 19 21:01:33 CET 2009 (tk)
+---------------------------------
+ * shared/optparser.c: improve cmdline args handling
+
 Mon Jan 19 20:23:29 EET 2009 (edwin)
 ------------------------------------
  * clamd/clamd.c, clamd/others.c, clamd/server-th.c, clamd/server.h: 

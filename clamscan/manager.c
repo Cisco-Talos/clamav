@@ -608,8 +608,7 @@ int scanmanager(const struct optstruct *opts)
 #endif
 
     /* check filetype */
-    if(opts->filename == NULL || strlen(opts->filename) == 0) {
-
+    if(opts->filename == NULL) {
 	/* we need full path for some reasons (eg. archive handling) */
 	if(!getcwd(cwd, sizeof(cwd))) {
 	    logg("!Can't get absolute pathname of current working directory\n");
@@ -617,11 +616,11 @@ int scanmanager(const struct optstruct *opts)
 	} else
 	    ret = scandirs(cwd, engine, opts, options, 1);
 
-    } else if(!strcmp(opts->filename, "-")) { /* read data from stdin */
+    } else if(!strcmp(opts->filename[0], "-")) { /* read data from stdin */
 	ret = scanstdin(engine, opts, options);
 
     } else {
-	for (x = 0; (file = cli_strtok(opts->filename, x, "\t")) != NULL; x++) {
+	for (x = 0; opts->filename[x] && (file = strdup(opts->filename[x])); x++) {
 	    if((fmodeint = fileinfo(file, 2)) == -1) {
 		logg("^Can't access file %s\n", file);
 		perror(file);

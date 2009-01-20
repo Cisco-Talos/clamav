@@ -541,7 +541,7 @@ int client(const struct optstruct *opts, int *infected)
 
 
     /* parse argument list */
-    if(opts->filename == NULL || strlen(opts->filename) == 0) {
+    if(opts->filename == NULL) {
 	/* scan current directory */
 	if(!getcwd(cwd, PATH_MAX)) {
 	    logg("^Can't get absolute pathname of current working directory.\n");
@@ -558,7 +558,7 @@ int client(const struct optstruct *opts, int *infected)
 
 	close(sockd);
 
-    } else if(!strcmp(opts->filename, "-")) { /* scan data from stdin */
+    } else if(!strcmp(opts->filename[0], "-")) { /* scan data from stdin */
         int is_unix;
 	if((sockd = dconnect(opts, &is_unix)) < 0)
 	    return 2;
@@ -593,19 +593,16 @@ int client(const struct optstruct *opts, int *infected)
 
     } else {
 	int x;
-	char *thefilename;
-	for (x = 0; (thefilename = cli_strtok(opts->filename, x, "\t")) != NULL; x++) {
-	    fullpath = thefilename;
-
+	for (x = 0; opts->filename[x] && (fullpath = strdup(opts->filename[x])); x++) {
 	    if(stat(fullpath, &sb) == -1) {
 		logg("^Can't access file %s\n", fullpath);
 		perror(fullpath);
 		errors++;
 	    } else {
 		if(strcmp(fullpath, "/") && (strlen(fullpath) < 2 || (fullpath[0] != '/' && fullpath[0] != '\\' && fullpath[1] != ':'))) {
-		    fullpath = abpath(thefilename);
-		    free(thefilename);
-
+		    char *pt = abpath(fullpath);
+		    free(fullpath);
+		    fullpath = pt;
 		    if(!fullpath) {
 			logg("^Can't determine absolute path.\n");
 			return 2;
@@ -631,7 +628,6 @@ int client(const struct optstruct *opts, int *infected)
 			errors++;
 		}
 	    }
-
 	    free(fullpath);
 	}
     }
