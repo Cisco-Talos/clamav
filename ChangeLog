@@ -1,3 +1,7 @@
+Thu Jan 22 15:59:43 CET 2009 (tk)
+---------------------------------
+ * clamconf: handle --version/-V
+
 Thu Jan 22 15:52:14 CET 2009 (tk)
 ---------------------------------
  * libclamav/dlp.c: disable the test for ssn_max_group (bb#1355)

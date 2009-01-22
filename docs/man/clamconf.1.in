@@ -15,6 +15,9 @@ clamconf displays the values of configuration options.
 \fB\-h, \-\-help\fR
 Display help and exit.
 .TP 
+\fB\-V, \-\-version\fR
+Display software version and exit.
+.TP 
 \fB\-c DIR, \-\-config\-dir DIR\fR
 Search for configuration files clamd.conf and freshclam.conf in DIR.
 .TP 

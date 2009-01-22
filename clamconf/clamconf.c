@@ -95,6 +95,7 @@ static void help(void)
     printf("           (C) 2009 Sourcefire, Inc.\n\n");
 
     printf("    --help               -h         Show help\n");
+    printf("    --version            -V         Show version\n");
     printf("    --config-dir=DIR     -c DIR     Read configuration files from DIR\n");
     printf("    --non-default        -n         Only display non-default settings\n");
     printf("\n");
@@ -117,6 +118,12 @@ int main(int argc, char **argv)
 
     if(optget(opts, "help")->enabled) {
 	help();
+	optfree(opts);
+	return 0;
+    }
+
+    if(optget(opts, "version")->enabled) {
+	printf("Clam AntiVirus Configuration Tool %s\n", get_version());
 	optfree(opts);
 	return 0;
     }
