@@ -406,7 +406,7 @@ int main(int argc, char **argv)
 	    return 41;
 	}
 
-	if(!optget(opts, "DNSDatabaseInfo")->enabled || optget(opt, "no-dns")->enabled) {
+	if(!optget(opts, "DNSDatabaseInfo")->enabled || optget(opts, "no-dns")->enabled) {
 	    if(checks > 50) {
 		logg("^Number of checks must be between 1 and 50.\n");
 		optfree(opts);
