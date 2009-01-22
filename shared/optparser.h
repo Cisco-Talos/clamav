@@ -28,7 +28,13 @@
 #define OPT_CLAMSCAN	8
 #define OPT_CLAMDSCAN	16
 #define OPT_SIGTOOL	32
-#define OPT_DEPRECATED	64
+#define OPT_CLAMCONF	64
+#define OPT_DEPRECATED	128
+
+#define TYPE_STRING  1	/* quoted/regular string */
+#define TYPE_NUMBER  2	/* raw number */
+#define TYPE_SIZE    3	/* number possibly followed by modifers (M/m or K/k) */
+#define TYPE_BOOL    4	/* boolean */
 
 struct optstruct {
     char *name;
@@ -44,6 +50,22 @@ struct optstruct {
 
     char **filename; /* cmdline */
 };
+
+struct clam_option {
+    const char *name;
+    const char *longopt;
+    char shortopt;
+    int argtype;
+    const char *regex;
+    int numarg;
+    const char *strarg;
+    int flags;
+    int owner;
+    const char *description;
+    const char *suggested;
+};
+
+extern const struct clam_option clam_options[];
 
 const struct optstruct *optget(const struct optstruct *opts, const char *name);
 

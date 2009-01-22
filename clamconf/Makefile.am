@@ -16,19 +16,18 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-#bin_PROGRAMS = clamconf
+bin_PROGRAMS = clamconf
 
-#clamconf_SOURCES = \
-#    $(top_srcdir)/shared/cfgparser.c \
-#    $(top_srcdir)/shared/cfgparser.h \
-#    $(top_srcdir)/shared/misc.c \
-#    $(top_srcdir)/shared/misc.h \
-#    $(top_srcdir)/shared/getopt.c \
-#    $(top_srcdir)/shared/getopt.h \
-#    clamconf.c
+clamconf_SOURCES = \
+    $(top_srcdir)/shared/optparser.c \
+    $(top_srcdir)/shared/optparser.h \
+    $(top_srcdir)/shared/getopt.c \
+    $(top_srcdir)/shared/getopt.h \
+    $(top_srcdir)/shared/misc.c \
+    $(top_srcdir)/shared/misc.h \
+    clamconf.c
 
-DEFS = @DEFS@ -DCL_NOTHREADS
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
-LIBS = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@
-
+DEFS = @DEFS@ -DCL_NOTHREADS -DCL_NOLIBCLAMAV
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared
+LIBS = $(top_builddir)/libclamav/libclamav_internal_utils.la
 CLEANFILES=*.gcda *.gcno
