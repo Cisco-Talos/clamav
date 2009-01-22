@@ -70,6 +70,7 @@ while ($i =~ s/(\d{3}) (\d{2})//) {
 #define MAX_AREA 772
  
 /* array of max group numbers for a given area number */
+/*
 static int ssn_max_group[MAX_AREA+1] = { 0,
     6, 6, 4, 8, 8, 8, 6, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 
     90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 90, 88, 88, 88, 88, 72, 72, 72, 72, 
@@ -112,6 +113,7 @@ static int ssn_max_group[MAX_AREA+1] = { 0,
     28, 18, 18, 10, 14, 10, 10, 10, 10, 10, 9, 9, 3, 1, 5, 5, 5, 5, 5, 
     5, 3, 3, 82, 82, 66, 66, 64, 64, 64, 64, 64
 };
+*/
 
 
 
@@ -353,9 +355,10 @@ int dlp_is_valid_ssn(const unsigned char *buffer, int length, int format)
             retval = 0;
     }
     
+    /*
     if(group_number > ssn_max_group[area_number])
         retval = 0;
-   
+    */
     if(retval)
 	cli_dbgmsg("dlp_is_valid_ssn: SSN_%s: %s\n", format == SSN_FORMAT_HYPHENS ? "HYPHENS" : "STRIPPED", numbuf);
 
