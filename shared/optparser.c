@@ -41,6 +41,7 @@
 #include "shared/misc.h"
 
 #include "libclamav/regex/regex.h"
+#include "libclamav/default.h"
 
 #include "getopt.h"
 
@@ -51,31 +52,14 @@
 #define MATCH_SIZE "^[0-9]+[kKmM]?$"
 #define MATCH_BOOL "^([yY]es|[tT]rue|1|[nN]o|[fF]alse|0)$"
 
-#define TYPE_STRING  1	/* quoted/regular string */
-#define TYPE_NUMBER  2	/* raw number */
-#define TYPE_SIZE    3	/* number possibly followed by modifers (M/m or K/k) */
-#define TYPE_BOOL    4	/* boolean */
-
 #define FLAG_MULTIPLE	1 /* option can be used multiple times */
 #define FLAG_REQUIRED	2 /* arg is required, even if there's a default value */
 
-static const struct clam_option {
-    const char *name;
-    const char *longopt;
-    char shortopt;
-    int argtype;
-    const char *regex;
-    int numarg;
-    const char *strarg;
-    int flags;
-    int owner;
-    const char *description;
-    const char *suggested;
-} clam_options[] = {
+const struct clam_option clam_options[] = {
     /* name,   longopt, sopt, argtype, regex, num, str, mul, owner, description, suggested */
 
     /* cmdline only */
-    { NULL, "help", 'h', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_MILTER, "", "" },
+    { NULL, "help", 'h', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_MILTER | OPT_CLAMCONF, "", "" },
     { NULL, "config-file", 'c', TYPE_STRING, NULL, 0, CONFDIR"/clamd.conf", FLAG_REQUIRED, OPT_CLAMD | OPT_CLAMDSCAN, "", "" },
     { NULL, "config-file", 0, TYPE_STRING, NULL, 0, CONFDIR"/freshclam.conf", FLAG_REQUIRED, OPT_FRESHCLAM, "", "" },
     { NULL, "config-file", 'c', TYPE_STRING, NULL, 0, CONFDIR"/clamav-milter.conf", FLAG_REQUIRED, OPT_MILTER, "", "" },
@@ -122,6 +106,9 @@ static const struct clam_option {
     { NULL, "diff", 'd', TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "run-cdiff", 'r', TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "verify-cdiff", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
+
+    { NULL, "config-dir", 'c', TYPE_STRING, NULL, 0, CONFDIR, FLAG_REQUIRED, OPT_CLAMCONF, "", "" },
+    { NULL, "non-default", 'n', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMCONF, "", "" },
 
     /* cmdline only - deprecated */
     { NULL, "http-proxy", 0, TYPE_STRING, NULL, 0, NULL, 0, OPT_FRESHCLAM | OPT_DEPRECATED, "", "" },
@@ -257,9 +244,9 @@ static const struct clam_option {
 
     { "StructuredDataDetection", "detect-structured", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Enable the Data Loss Prevention module.", "no" },
 
-    { "StructuredMinCreditCardCount", "structured-cc-count", 0, TYPE_NUMBER, MATCH_NUMBER, 3, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the lowest number of Credit Card numbers found in a file\nto generate a detect.", "5" },
+    { "StructuredMinCreditCardCount", "structured-cc-count", 0, TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MIN_CC_COUNT, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the lowest number of Credit Card numbers found in a file\nto generate a detect.", "5" },
 
-    { "StructuredMinSSNCount", "structured-ssn-count", 0, TYPE_NUMBER, MATCH_NUMBER, 3, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the lowest number of Social Security Numbers found\nin a file to generate a detect.", "5" },
+    { "StructuredMinSSNCount", "structured-ssn-count", 0, TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MIN_SSN_COUNT, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the lowest number of Social Security Numbers found\nin a file to generate a detect.", "5" },
 
     { "StructuredSSNFormatNormal", NULL, 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD, "With this option enabled the DLP module will search for valid\nSSNs formatted as xxx-yy-zzzz.", "yes" },
 
@@ -275,13 +262,13 @@ static const struct clam_option {
 
     { "ArchiveBlockEncrypted", "block-encrypted", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).", "no" },
 
-    { "MaxScanSize", "max-scansize", 0, TYPE_SIZE, MATCH_SIZE, -1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum amount of data to be scanned for each input file.\nArchives and other containers are recursively extracted and scanned up to this\nvalue.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe damage.", "100M" },
+    { "MaxScanSize", "max-scansize", 0, TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_MAXSCANSIZE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum amount of data to be scanned for each input file.\nArchives and other containers are recursively extracted and scanned up to this\nvalue.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe damage.", "100M" },
 
-    { "MaxFileSize", "max-filesize", 0, TYPE_SIZE, MATCH_SIZE, -1, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN, "Files larger than this limit won't be scanned. Affects the input file itself\nas well as files contained inside it (when the input file is an archive, a\ndocument or some other kind of container).\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe damage to the system.", "25M" },
+    { "MaxFileSize", "max-filesize", 0, TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_MAXFILESIZE, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN, "Files larger than this limit won't be scanned. Affects the input file itself\nas well as files contained inside it (when the input file is an archive, a\ndocument or some other kind of container).\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe damage to the system.", "25M" },
 
-    { "MaxRecursion", "max-recursion", 0, TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Nested archives are scanned recursively, e.g. if a Zip archive contains a RAR\nfile, all files within it will also be scanned. This option specifies how\ndeeply the process should be continued.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe damage to the system.", "16" },
+    { "MaxRecursion", "max-recursion", 0, TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MAXRECLEVEL, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Nested archives are scanned recursively, e.g. if a Zip archive contains a RAR\nfile, all files within it will also be scanned. This option specifies how\ndeeply the process should be continued.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe damage to the system.", "16" },
 
-    { "MaxFiles", "max-files", 0, TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Number of files to be scanned within an archive, a document, or any other\ncontainer file.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe damage to the system.", "10000" },
+    { "MaxFiles", "max-files", 0, TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MAXFILES, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Number of files to be scanned within an archive, a document, or any other\ncontainer file.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe damage to the system.", "10000" },
 
     { "ClamukoScanOnAccess", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "This option enables Clamuko. Dazuko needs to be already configured and\nrunning.", "no" },
 
@@ -453,7 +440,7 @@ static void optprint(const struct optstruct *opts)
 }
 */
 
-static int optadd(struct optstruct **opts, const char *name, const char *cmd, const char *strarg, int numarg, int flags, int idx)
+static int optadd(struct optstruct **opts, struct optstruct **opts_last, const char *name, const char *cmd, const char *strarg, int numarg, int flags, int idx)
 {
 	struct optstruct *newnode;
 
@@ -507,8 +494,14 @@ static int optadd(struct optstruct **opts, const char *name, const char *cmd, co
     newnode->idx = idx;
     newnode->filename = NULL;
 
-    newnode->next = *opts;
-    *opts = newnode;
+    if(!*opts_last) {
+	newnode->next = *opts;
+	*opts = newnode;
+	*opts_last = *opts;
+    } else {
+	(*opts_last)->next = newnode;
+	*opts_last = newnode;
+    }
     return 0;
 }
 
@@ -617,7 +610,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 	char *pt;
 	const char *name = NULL, *arg;
 	int i, err = 0, lc = 0, sc = 0, opt_index, line = 0, ret, numarg;
-	struct optstruct *opts = NULL, *opt;
+	struct optstruct *opts = NULL, *opts_last = NULL, *opt;
 	char buff[512];
 	struct option longopts[MAXCMDOPTS];
 	char shortopts[MAXCMDOPTS];
@@ -633,8 +626,8 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 	if(!optentry->name && !optentry->longopt)
 	    break;
 
-	if((optentry->owner & toolmask) || (ignore && (optentry->owner & ignore))) {
-	    if(!oldopts && optadd(&opts, optentry->name, optentry->longopt, optentry->strarg, optentry->numarg, optentry->flags, i) < 0) {
+	if(((optentry->owner & toolmask) && ((optentry->owner & toolmask) != OPT_DEPRECATED)) || (ignore && (optentry->owner & ignore))) {
+	    if(!oldopts && optadd(&opts, &opts_last, optentry->name, optentry->longopt, optentry->strarg, optentry->numarg, optentry->flags, i) < 0) {
 		fprintf(stderr, "ERROR: optparse: Can't register new option (not enough memory)\n");
 		optfree(opts);
 		return NULL;
@@ -811,7 +804,14 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 
 	if(optentry->owner & OPT_DEPRECATED) {
 	    if(toolmask & OPT_DEPRECATED) {
-		/* FIXME: optadd() -- needed for clamconf */
+		if(optaddarg(opts, name, "foo", 1) < 0) {
+		    if(cfgfile)
+			fprintf(stderr, "ERROR: Can't register argument for option %s\n", name);
+		    else
+			fprintf(stderr, "ERROR: Can't register argument for option --%s\n", optentry->longopt);
+		    err = 1;
+		    break;
+		}
 	    } else {
 		if(cfgfile) {
 		    if(verbose)
@@ -824,8 +824,8 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 			    fprintf(stderr, "WARNING: Ignoring deprecated option --%s\n", optentry->longopt);
 		    }
 		}
-		continue;
 	    }
+	    continue;
 	}
 
 	if(!cfgfile && !arg && optentry->argtype == TYPE_BOOL) {
