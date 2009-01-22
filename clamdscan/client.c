@@ -37,7 +37,7 @@
 #include <utime.h>
 #include <errno.h>
 #include <dirent.h>
-
+#include <fcntl.h>
 
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>
@@ -49,12 +49,25 @@
 #include "libclamav/str.h"
 
 #include "client.h"
-#include "clamd_fdscan.h"
 
 #define SOCKET_INET	AF_INET
 
 int notremoved = 0, notmoved = 0;
 int printinfected = 0;
+
+struct sockaddr *mainsa = NULL;
+int mainsasz;
+struct sockaddr_un nixsock;
+struct sockaddr_in tcpsock;
+struct sockaddr_in strmsock;
+enum {
+    CONT,
+    MULTI,
+    STREAM,
+    FILDES
+};
+
+static const char *scancmd[] = { "CONTSCAN", "MULTISCAN", "STREAM", "FILDES" };
 
 static void (*action)(const char *) = NULL;
 static char *actarget;
@@ -155,37 +168,124 @@ static int recvln(struct RCVLN *s, char **rbol, char **reol) {
     return ret;
 }
 
-static int dsresult(int sockd, const char *scantype, const char *filename)
+static int dsresult(int sockd, int scantype, const char *filename)
 {
-	int infected = 0, waserror = 0;
+    int infected = 0, waserror = 0, fd;
 	int len;
 	char *bol, *eol;
 	struct RCVLN rcv;
+	char buf[BUFSIZ];    
 
-    len = strlen(filename) + strlen(scantype) + 3;
+    recvlninit(&rcv, sockd);
+
+    switch(scantype) {
+    case MULTI:
+    case CONT:
+    len = strlen(filename) + strlen(scancmd[scantype]) + 3;
     if (!(bol = malloc(len))) {
 	logg("!Cannot allocate a command buffer\n");
 	return -1;
     }
-    sprintf(bol, "z%s %s", scantype, filename);
+    sprintf(bol, "z%s %s", scancmd[scantype], filename);
     if(sendln(sockd, bol, len)) return -1;
     free(bol);
+    break;
 
-    recvlninit(&rcv, sockd);
+    case STREAM:
+	{
+	    int wsockd;
+
+	    if(!(fd = open(filename, O_RDONLY))) {
+		logg("!Open failed on %s.\n", filename);
+		return -1; /* FIXME: grave ? */
+	    }
+	    if(sendln(sockd, "zSTREAM", 8)) return -1;
+	    if(!(len = recvln(&rcv, &bol, &eol)) || len < 7 || memcmp(bol, "PORT ", 5) || !(len = atoi(bol + 5))) return -1;
+	    strmsock.sin_port = htons(len);
+	    if((wsockd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+		perror("socket()");
+		logg("!Can't create the stream socket.\n");
+		close(fd);
+		return -1;
+	    }
+	    if(connect(wsockd, (struct sockaddr *)&strmsock, sizeof(strmsock)) < 0) {
+		perror("connect()");
+		logg("!Can't connect to clamd for streaming.\n");
+		close(wsockd);
+		close(fd);
+		return -1;
+	    }
+	    while((len = read(fd, buf, sizeof(buf))) > 0) {
+		if(sendln(wsockd, buf, len)) { /* FIXME: conn might be closed unexpectedly due to limits */
+		    logg("!Can't write to the socket.\n");
+		    close(wsockd);
+		    close(fd);
+		    return -1;
+		}
+	    }
+	    close(wsockd);
+	    close(fd);
+	    if(len) {
+		logg("!Failed to read from %s.\n", filename);
+		return -1;
+	    }
+	    break;
+	}
+#ifdef HAVE_FD_PASSING
+    case FILDES:
+	{
+	    struct iovec iov[1];
+	    struct msghdr msg;
+	    struct cmsghdr *cmsg;
+	    unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
+	    char dummy[]="";
+
+	    if(!(fd = open(filename, O_RDONLY))) {
+		logg("!Open failed on %s.\n", filename);
+		return -1; /* FIXME: grave ? */
+
+	    }
+	    if(sendln(sockd, "zFILDES", 8)) return -1;
+
+	    iov[0].iov_base = dummy;
+	    iov[0].iov_len = 1;
+	    memset(&msg, 0, sizeof(msg));
+	    msg.msg_control = fdbuf;
+	    msg.msg_iov = iov;
+	    msg.msg_iovlen = 1;
+	    msg.msg_controllen = CMSG_LEN(sizeof(int));
+	    cmsg = CMSG_FIRSTHDR(&msg);
+	    cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+	    cmsg->cmsg_level = SOL_SOCKET;
+	    cmsg->cmsg_type = SCM_RIGHTS;
+	    *(int *)CMSG_DATA(cmsg) = fd;
+	    if(sendmsg(sockd, &msg, 0) == -1) {
+		logg("!FD send failed\n");
+		return -1;
+	    }
+	    break;
+	}
+#endif
+    }
+
     while((len = recvln(&rcv, &bol, &eol))) {
 	if(len == -1) {
 	    waserror = 1;
 	    break;
 	}
-	logg("~%s\n", bol);
+	logg("~%s\n", bol); /* FIXME: only good for CONT/MULTI */
 	if(len > 7) {
 	    if(!memcmp(eol - 7, " FOUND", 6)) {
 		infected++;
 		if(action) {
-		    char *comma = strrchr(bol, ':');
-		    if(comma) {
-			*comma = '\0';
-			action(bol);
+		    if(scantype >= STREAM) {
+			action(filename);
+		    } else {
+			char *comma = strrchr(bol, ':');
+			if(comma) {
+			    *comma = '\0';
+			    action(bol);
+			}
 		    }
 		}
 	    } else if(!memcmp(eol-7, " ERROR", 6)) {
@@ -196,202 +296,27 @@ static int dsresult(int sockd, const char *scantype, const char *filename)
     return infected ? infected : (waserror ? -1 : 0);
 }
 
-static int dsstream(int sockd)
-{
-	int wsockd, bread, port, infected = 0;
-	struct sockaddr_in server;
-	struct sockaddr_in peer;
-	socklen_t peer_size;
-	struct RCVLN rcv;
-	char buff[4096], *pt;
-
-
-    if(sendln(sockd, "zSTREAM", 8)) return 2;
-    recvlninit(&rcv, sockd);
-    bread = recvln(&rcv, &pt, NULL);
-    if(bread < 7 || memcmp(pt, "PORT ", 5) || (port = atoi(&pt[5])) == 0) {
-	logg("!Daemon not ready for stream scanning.\n");
-	return -1;
-    }
-
-    /* connect to clamd */
-
-    if((wsockd = socket(SOCKET_INET, SOCK_STREAM, 0)) < 0) {
-	perror("socket()");
-	logg("!Can't create the socket.\n");
-	return -1;
-    }
-
-    server.sin_family = AF_INET;
-    server.sin_port = htons(port);
-
-    peer_size = sizeof(peer);
-    if(getpeername(sockd, (struct sockaddr *) &peer, &peer_size) < 0) {
-	perror("getpeername()");
-	logg("!Can't get socket peer name.\n");
-	return -1;
-    }
-
-    switch (peer.sin_family) {
-	case AF_UNIX:
-	    server.sin_addr.s_addr = inet_addr("127.0.0.1");
-	    break;
-	case AF_INET:
-	    server.sin_addr.s_addr = peer.sin_addr.s_addr;
-	    break;
-	default:
-	    logg("!Unexpected socket type: %d.\n", peer.sin_family);
-	    return -1;
-    }
-
-    if(connect(wsockd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) < 0) {
-	close(wsockd);
-	perror("connect()");
-	logg("!Can't connect to clamd [port: %d].\n", port);
-	return -1;
-    }
-
-    while((bread = read(0, buff, sizeof(buff))) > 0) { /* FIXME: this is stdin only, not nice */
-	if(sendln(wsockd, buff, bread)) {
-	    /* FIXME: we may just be overlimit here */
-	    logg("!Can't write to the socket.\n");
-	    close(wsockd);
-	    return -1;
-	}
-    }
-    close(wsockd);
-
-    bread = recvln(&rcv, &pt, NULL);
-    /*    logg("~%s\n", bol); *//* FIXME: btw this is useless spam */
-
-    /* HERE */
-
-    memset(buff, 0, sizeof(buff));
-
-    while((bread = read(sockd, buff, sizeof(buff))) > 0) {
-	logg("%s", buff);
-	if(strstr(buff, "FOUND\n")) {
-	    infected++;
-
-	} else if(strstr(buff, "ERROR\n")) {
-	    logg("%s", buff);
-	    return -1;
-	}
-	memset(buff, 0, sizeof(buff));
-    }
-
-    return infected;
-}
 
 #ifndef PATH_MAX
 #define PATH_MAX 1024
 #endif
 
-static char *abpath(const char *filename)
+static int dconnect()
 {
-	struct stat foo;
-	char *fullpath, cwd[PATH_MAX + 1];
-
-    if(stat(filename, &foo) == -1) {
-	logg("^Can't access file %s\n", filename);
-	perror(filename);
-	return NULL;
-    } else {
-	fullpath = malloc(PATH_MAX + strlen(filename) + 10);
-	if(!getcwd(cwd, PATH_MAX)) {
-	    logg("^Can't get absolute pathname of current working directory.\n");
-	    return NULL;
-	}
-	sprintf(fullpath, "%s/%s", cwd, filename);
-    }
-
-    return fullpath;
-}
-
-static int dconnect(const struct optstruct *opts, int *is_unix)
-{
-	struct sockaddr_un server;
-	struct sockaddr_in server2;
-	struct hostent *he;
-	struct optstruct *clamdopts;
-	const struct optstruct *opt;
-	const char *clamd_conf = optget(opts, "config-file")->strarg;
 	int sockd;
 
-    if(is_unix)
-	*is_unix = 0;
-
-    if((clamdopts = optparse(clamd_conf, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
-	logg("!Can't parse clamd configuration file %s\n", clamd_conf);
+    if((sockd = socket(mainsa->sa_family, SOCK_STREAM, 0)) < 0) {
+	perror("socket()");
+	logg("!Can't create the socket.\n");
 	return -1;
     }
 
-    memset((char *) &server, 0, sizeof(server));
-    memset((char *) &server2, 0, sizeof(server2));
-
-    /* Set default address to connect to */
-    server2.sin_addr.s_addr = inet_addr("127.0.0.1");    
-
-    if((opt = optget(clamdopts, "LocalSocket"))->enabled) {
-
-	server.sun_family = AF_UNIX;
-	strncpy(server.sun_path, opt->strarg, sizeof(server.sun_path));
-	server.sun_path[sizeof(server.sun_path)-1]='\0';
-
-	if((sockd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-	    perror("socket()");
-	    logg("!Can't create the socket.\n");
-	    optfree(clamdopts);
-	    return -1;
-	}
-
-	if(connect(sockd, (struct sockaddr *) &server, sizeof(struct sockaddr_un)) < 0) {
-	    close(sockd);
-	    perror("connect()");
-	    logg("!Can't connect to clamd.\n");
-	    optfree(clamdopts);
-	    return -1;
-	}
-	if(is_unix)
-		*is_unix = 1;
-    } else if((opt = optget(clamdopts, "TCPSocket"))->enabled) {
-
-	if((sockd = socket(SOCKET_INET, SOCK_STREAM, 0)) < 0) {
-	    perror("socket()");
-	    logg("!Can't create the socket.\n");
-	    optfree(clamdopts);
-	    return -1;
-	}
-
-	server2.sin_family = AF_INET;
-	server2.sin_port = htons(opt->numarg);
-
-	if((opt = optget(clamdopts, "TCPAddr"))->enabled) {
-	    if ((he = gethostbyname(opt->strarg)) == 0) {
-		close(sockd);
-		perror("gethostbyname()");
-		logg("!Can't lookup clamd hostname.\n");
-		optfree(clamdopts);
-		return -1;
-	    }
-	    server2.sin_addr = *(struct in_addr *) he->h_addr_list[0];
-	}
-
-	if(connect(sockd, (struct sockaddr *) &server2, sizeof(struct sockaddr_in)) < 0) {
-	    close(sockd);
-	    perror("connect()");
-	    logg("!Can't connect to clamd.\n");
-	    optfree(clamdopts);
-	    return -1;
-	}
-
-    } else {
-	logg("!Clamd is not configured properly.\n");
-	optfree(clamdopts);
+    if(connect(sockd, (struct sockaddr *)mainsa, mainsasz) < 0) {
+	close(sockd);
+	perror("connect()");
+	logg("!Can't connect to clamd.\n");
 	return -1;
     }
-
-    optfree(clamdopts);
 
     return sockd;
 }
@@ -402,7 +327,8 @@ int get_clamd_version(const struct optstruct *opts)
 	int bread, sockd;
 
 
-    if((sockd = dconnect(opts, NULL)) < 0)
+    /* FIXME: call isremote */
+    if((sockd = dconnect()) < 0)
 	return 2;
 
     if(write(sockd, "VERSION", 7) <= 0) {
@@ -426,7 +352,8 @@ int reload_clamd_database(const struct optstruct *opts)
 	int bread, sockd;
 
 
-    if((sockd = dconnect(opts, NULL)) < 0)
+    /* FIXME: call isremote */
+    if((sockd = dconnect()) < 0)
 	return 2;
 
     if(write(sockd, "RELOAD", 6) <= 0) {
@@ -446,15 +373,12 @@ int reload_clamd_database(const struct optstruct *opts)
     return 0;
 }
 
-static int client_scan(const char *file, const char *scantype, int *infected, int *errors, const struct optstruct *opts) {
+static int client_scan(const char *file, int scantype, int *infected, int *errors) {
     struct stat sb;
     char *fullpath;
     DIR *dir;
     struct dirent *dent;
     int ret, sockd;
-
-    /* BUF 
-       basename/thisname/child */
 
     if(stat(file, &sb) == -1) {
 	logg("^Can't access file %s\n", file);
@@ -483,29 +407,28 @@ static int client_scan(const char *file, const char *scantype, int *infected, in
     }
     fullpath[PATH_MAX] = '\0';
 
-    /* FIXME: i should break out ASAP here for SCAN, continue for MULTISCAN, CONTSCAN */
     switch(sb.st_mode & S_IFMT) {
     case S_IFDIR:
-	/* FIXME: if (remote) { */
-	if(!(dir = opendir(file)))
-	    break;
-	ret = strlen(fullpath);
-	while((dent = readdir(dir))) {
-	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..")) continue;
-	    snprintf(&fullpath[ret], PATH_MAX - ret, "/%s", dent->d_name);
-	    fullpath[PATH_MAX] = '\0';
-	    if(client_scan(fullpath, scantype, infected, errors, opts)) {
-		closedir(dir);
-		free(fullpath);
-		return 1;
+	if(scantype >= STREAM) {
+	    if(!(dir = opendir(file)))
+		break;
+	    ret = strlen(fullpath);
+	    while((dent = readdir(dir))) {
+		if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..")) continue;
+		snprintf(&fullpath[ret], PATH_MAX - ret, "/%s", dent->d_name);
+		fullpath[PATH_MAX] = '\0';
+		if(client_scan(fullpath, scantype, infected, errors)) {
+		    closedir(dir);
+		    free(fullpath);
+		    return 1;
+		}
 	    }
+	    closedir(dir);
+	    break;
 	}
-	closedir(dir);
-	break;
-	/* } else fallback to S_IFREG for external recursion */
 
     case S_IFREG:
-	if((sockd = dconnect(opts, NULL)) < 0)
+	if((sockd = dconnect()) < 0)
 	    return 1;
 
 	if((ret = dsresult(sockd, scantype, fullpath)) >= 0)
@@ -524,114 +447,91 @@ static int client_scan(const char *file, const char *scantype, int *infected, in
     return 0;
 }
 
+static int isremote(struct optstruct *clamdopts) {
+    int s, ret;
+    const struct optstruct *opt;
+    struct hostent *he;
+
+    if(optget(clamdopts, "LocalSocket")->enabled) {
+	memset((void *)&nixsock, 0, sizeof(nixsock));
+	nixsock.sun_family = AF_UNIX;
+	strncpy(nixsock.sun_path, opt->strarg, sizeof(nixsock.sun_path));
+	nixsock.sun_path[sizeof(nixsock.sun_path)-1]='\0';
+	mainsa = (struct sockaddr *)&nixsock;
+	mainsasz = sizeof(nixsock);
+	return 0;
+    }
+    if(!(opt = optget(clamdopts, "TCPSocket"))->enabled) return 0;
+    mainsa = (struct sockaddr *)&tcpsock;
+    mainsasz = sizeof(tcpsock);
+    memset((void *)&tcpsock, 0, sizeof(tcpsock));
+    memset((void *)&strmsock, 0, sizeof(strmsock));
+    tcpsock.sin_family = strmsock.sin_family = AF_INET;
+    tcpsock.sin_port = htons(opt->numarg);
+    if(!(opt = optget(clamdopts, "TCPAddr"))->enabled) {
+	tcpsock.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	return 0;
+    }
+    if(!(he = gethostbyname(opt->strarg))) {
+	perror("gethostbyname()");
+	logg("!Can't lookup clamd hostname.\n");
+	mainsa = NULL;
+	return 0;
+    }
+    strmsock.sin_port = htons(INADDR_ANY);
+    tcpsock.sin_addr = strmsock.sin_addr = *(struct in_addr *) he->h_addr_list[0];
+    if(!(s = socket(tcpsock.sin_family, SOCK_STREAM, 0))) return 0;
+    ret = (bind(s, (struct sockaddr *)&strmsock, sizeof(strmsock)) != 0);
+    close(s);
+    return ret;
+}
+
 int client(const struct optstruct *opts, int *infected)
 {
-	char cwd[PATH_MAX+1], *fullpath;
-	int sockd, ret, errors = 0;
-	struct stat sb;
-	const char *scantype = "CONTSCAN";
+	int errors = 0;
+	const char *clamd_conf = optget(opts, "config-file")->strarg;
+	struct optstruct *clamdopts;
+	int scantype, session = 0;
 
+    if((clamdopts = optparse(clamd_conf, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
+	logg("!Can't parse clamd configuration file %s\n", clamd_conf);
+	return 2;
+    }
+
+    /* FIXME: save the connection method once for all */
+    if(isremote(clamdopts)) {
+	scantype = STREAM;
+	session = optget(opts, "multiscan")->enabled;
+#ifdef HAVE_FD_PASSING
+    } else if(optget(clamdopts, "LocalSocket")->enabled && optget(opts, "fdpass")->enabled) {
+	scantype = FILDES;
+	session = optget(opts, "multiscan")->enabled;
+#endif
+    } else if(optget(opts, "multiscan")->enabled) scantype = MULTI;
+    else scantype = CONT;
+
+    optfree(clamdopts);
+
+    if(!mainsa) {
+	logg("!Clamd is not configured properly.\n");
+	return 2;
+    }
 
     *infected = 0;
 
-    if(optget(opts, "multiscan")->enabled)
-	scantype = "MULTISCAN";
-    client_scan(opts->filename, scantype, infected, &errors, opts);
-    return 0; /* FIXME */
-
-
-    /* parse argument list */
-    if(opts->filename == NULL) {
-	/* scan current directory */
+    if(opts->filename) {
+	unsigned int i;
+	for (i = 0; opts->filename[i]; i++) {
+	    client_scan(opts->filename[i], scantype, infected, &errors);
+	}
+    } else {
+	char cwd[PATH_MAX+1];
 	if(!getcwd(cwd, PATH_MAX)) {
 	    logg("^Can't get absolute pathname of current working directory.\n");
 	    return 2;
 	}
-
-	if((sockd = dconnect(opts, NULL)) < 0)
-	    return 2;
-
-	if((ret = dsresult(sockd, scantype, cwd)) >= 0)
-	    *infected += ret;
-	else
-	    errors++;
-
-	close(sockd);
-
-    } else if(!strcmp(opts->filename[0], "-")) { /* scan data from stdin */
-        int is_unix;
-	if((sockd = dconnect(opts, &is_unix)) < 0)
-	    return 2;
-
-	if(optget(opts,"fdpass")->enabled) {
-#ifndef HAVE_FD_PASSING
-		logg("^File descriptor pass support not compiled in, falling back to stream scan\n");
-		ret = dsstream(sockd);
-#else
-		if(!is_unix) {
-			logg("^File descriptor passing can only work on local (unix) sockets! Falling back to stream scan\n");
-			/* fall back to stream */
-			ret = dsstream(sockd);
-		} else {
-			char buff[4096];
-			memset(buff, 0, sizeof(buff));
-			ret = clamd_fdscan(sockd, 0, buff, sizeof(buff));
-			if(ret == 1 || ret == -1)
-			    logg("fd: %s%s\n",buff, ret == 1 ? " FOUND" : " ERROR");
-			else if(!printinfected)
-			    logg("fd: OK\n");
-		}
-#endif
-	} else
-		ret = dsstream(sockd);
-	if(ret >= 0)
-	    *infected += ret;
-	else
-	    errors++;
-
-	close(sockd);
-
-    } else {
-	int x;
-	for (x = 0; opts->filename[x] && (fullpath = strdup(opts->filename[x])); x++) {
-	    if(stat(fullpath, &sb) == -1) {
-		logg("^Can't access file %s\n", fullpath);
-		perror(fullpath);
-		errors++;
-	    } else {
-		if(strcmp(fullpath, "/") && (strlen(fullpath) < 2 || (fullpath[0] != '/' && fullpath[0] != '\\' && fullpath[1] != ':'))) {
-		    char *pt = abpath(fullpath);
-		    free(fullpath);
-		    fullpath = pt;
-		    if(!fullpath) {
-			logg("^Can't determine absolute path.\n");
-			return 2;
-		    }
-		}
-
-		switch(sb.st_mode & S_IFMT) {
-		    case S_IFREG:
-		    case S_IFDIR:
-			if((sockd = dconnect(opts, NULL)) < 0)
-			    return 2;
-
-			if((ret = dsresult(sockd, scantype, fullpath)) >= 0)
-			    *infected += ret;
-			else
-			    errors++;
-
-			close(sockd);
-			break;
-
-		    default:
-			logg("^Not supported file type (%s)\n", fullpath);
-			errors++;
-		}
-	    }
-	    free(fullpath);
-	}
+	client_scan(cwd, scantype, infected, &errors);
     }
-
     return *infected ? 1 : (errors ? 2 : 0);
 }
 

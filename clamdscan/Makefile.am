@@ -30,8 +30,6 @@ clamdscan_SOURCES = \
     $(top_srcdir)/shared/getopt.c \
     $(top_srcdir)/shared/getopt.h \
     $(top_srcdir)/libclamav/regex/strlcpy.c\
-    clamd_fdscan.c \
-    clamd_fdscan.h \
     clamdscan.c \
     client.c \
     client.h
