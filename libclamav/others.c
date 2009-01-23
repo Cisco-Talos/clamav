@@ -350,7 +350,8 @@ int cl_engine_get(const struct cl_engine *engine, enum cl_engine_field field, vo
 	    *((uint32_t *) val) = engine->dbversion[0];
 	    break;
 	case CL_ENGINE_DB_TIME:
-	    *((uint32_t *) val) = engine->dbversion[1];
+	    /* time_t may be 64-bit! */
+	    *((time_t *) val) = engine->dbversion[1];
 	    break;
 	case CL_ENGINE_AC_ONLY:
 	    *((uint32_t *) val) = engine->ac_only;
