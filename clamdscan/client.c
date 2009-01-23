@@ -164,6 +164,7 @@ static int recvln(struct RCVLN *s, char **rbol, char **reol) {
 	    memmove(s->buf, s->bol, s->r);
 	s->cur = &s->buf[s->r];
 	s->bol = s->buf;
+	s->r = 0;
     }
     return ret;
 }
@@ -455,10 +456,10 @@ int get_clamd_version(const struct optstruct *opts)
 	int len, sockd;
 	struct RCVLN rcv;
 
-    recvlninit(&rcv, sockd);
     isremote(opts);
     if(!mainsa) return 2;
     if((sockd = dconnect()) < 0) return 2;
+    recvlninit(&rcv, sockd);
 
     if(sendln(sockd, "zVERSION", 9)) {
 	logg("!Can't write to the socket.\n");
@@ -484,10 +485,10 @@ int reload_clamd_database(const struct optstruct *opts)
 	int len, sockd;
 	struct RCVLN rcv;
 
-    recvlninit(&rcv, sockd);
     isremote(opts);
     if(!mainsa) return 2;
     if((sockd = dconnect()) < 0) return 2;
+    recvlninit(&rcv, sockd);
 
     if(sendln(sockd, "zRELOAD", 8)) {
 	logg("!Can't write to the socket.\n");
