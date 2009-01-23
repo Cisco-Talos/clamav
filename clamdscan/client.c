@@ -166,7 +166,6 @@ static int recvln(struct RCVLN *s, char **rbol, char **reol) {
 	    memmove(s->buf, s->bol, s->r);
 	s->cur = &s->buf[s->r];
 	s->bol = s->buf;
-	s->r = 0;
     }
     return ret;
 }
@@ -338,7 +337,7 @@ static int isremote(const struct optstruct *opts) {
 	logg("!Can't parse clamd configuration file %s\n", clamd_conf);
 	return 0;
     }
-    if(optget(clamdopts, "LocalSocket")->enabled) {
+    if((opt = optget(clamdopts, "LocalSocket"))->enabled) {
 	memset((void *)&nixsock, 0, sizeof(nixsock));
 	nixsock.sun_family = AF_UNIX;
 	strncpy(nixsock.sun_path, opt->strarg, sizeof(nixsock.sun_path));
