@@ -292,7 +292,130 @@ static int ftw_compare(const void *a, const void *b)
     return diff;
 }
 
+enum filetype {
+    ft_unknown,
+    ft_link,
+    ft_directory,
+    ft_regular,
+    ft_skipped
+};
+
 #define FOLLOW_SYMLINK_MASK (CLI_FTW_FOLLOW_FILE_SYMLINK | CLI_FTW_FOLLOW_DIR_SYMLINK)
+static int get_filetype(const char *fname, int flags, int need_stat,
+			 struct stat *statbuf, enum filetype *ft)
+{
+    int stated = 0;
+
+    if (*ft == ft_unknown || *ft == ft_link) {
+	need_stat = 1;
+
+	if ((flags & FOLLOW_SYMLINK_MASK) != FOLLOW_SYMLINK_MASK) {
+	    /* Following only one of directory/file symlinks, or none, may
+	     * need to lstat.
+	     * If we're following both file and directory symlinks, we don't need
+	     * to lstat(), we can just stat() directly.*/
+	    if (*ft != ft_link) {
+		/* need to lstat to determine if it is a symlink */
+		if (lstat(fname, statbuf) == -1)
+		    return -1;
+		if (S_ISLNK(statbuf->st_mode)) {
+		    *ft = ft_link;
+		} else {
+		    /* It was not a symlink, stat() not needed */
+		    need_stat = 0;
+		    stated = 1;
+		}
+	    }
+	    if (*ft == ft_link && !(flags & FOLLOW_SYMLINK_MASK)) {
+		/* This is a symlink, but we don't follow any symlinks */
+		*ft = ft_skipped;
+		return 0;
+	    }
+	}
+    }
+
+    if (need_stat) {
+	if (stat(fname, statbuf) == -1)
+	    return -1;
+	stated = 1;
+    }
+
+    if (*ft == ft_unknown || *ft == ft_link) {
+	if (S_ISDIR(statbuf->st_mode) &&
+	    (*ft != ft_link || (flags & CLI_FTW_FOLLOW_DIR_SYMLINK))) {
+	    /* A directory, or (a symlink to a directory and we're following dir
+	     * symlinks) */
+	    *ft = ft_directory;
+	} else if (S_ISREG(statbuf->st_mode) &&
+		   (*ft != ft_link || (flags & CLI_FTW_FOLLOW_FILE_SYMLINK))) {
+	    /* A file, or (a symlink to a file and we're following file symlinks) */
+	    *ft = ft_regular;
+	} else {
+	    /* default: skipped */
+	    *ft = ft_skipped;
+	}
+    }
+    return stated;
+}
+
+static int handle_filetype(char *fname, int flags,
+			   struct stat *statbuf, int *stated, enum filetype *ft,
+			   cli_ftw_cb callback, struct cli_ftw_cbdata *data)
+{
+    int ret;
+
+    *stated = get_filetype(fname, flags, flags & CLI_FTW_NEED_STAT , statbuf, ft);
+
+    if (*stated == -1) {
+	/*  we failed a stat() or lstat() */
+	ret = callback(NULL, fname, error_stat, data);
+	if (ret != CL_SUCCESS)
+	    return ret;
+	*ft = ft_skipped; /* skip on stat failure */
+    }
+
+    if (*ft == ft_skipped) {
+	/* skipped filetype */
+	ret = callback(stated ? statbuf : NULL, fname, warning_skipped_special, data);
+	if (ret != CL_SUCCESS)
+	    return ret;
+    }
+    return CL_SUCCESS;
+}
+
+static int handle_entry(struct dirent_data *entry, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
+{
+    int ret = callback(entry->statbuf, entry->filename,
+		       entry->is_dir ? visit_directory : visit_file,
+		       data);
+    if (ret != CL_SUCCESS)
+	return ret;
+    if (entry->is_dir) {
+	ret = cli_ftw(entry->filename, flags, maxdepth, callback, data);
+	free(entry->filename);
+	if (ret != CL_SUCCESS)
+	    return ret;
+    }
+    return CL_SUCCESS;
+}
+
+int cli_sftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
+{
+    struct stat statbuf;
+    enum filetype ft;
+    struct dirent_data entry;
+    int stated;
+
+    int ret = handle_filetype(path, flags, &statbuf, &stated, &ft, callback, data);
+    if (ret != CL_SUCCESS)
+	return ret;
+
+    entry.statbuf = stated ? &statbuf : NULL;
+    entry.filename = path;
+    entry.is_dir = ft == ft_directory;
+    return handle_entry(&entry, flags, maxdepth, callback, data);
+}
+
 int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
 {
     DIR *dd;
@@ -322,7 +445,8 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 #else
 	while((dent = readdir(dd))) {
 #endif
-	    int is_dir, stated = 0;
+	    int stated = 0;
+	    enum filetype ft;
 	    char *fname;
 	    struct stat statbuf;
 	    struct stat *statbufp;
@@ -332,7 +456,7 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 #ifdef _DIRENT_HAVE_D_TYPE
 	    switch (dent->d_type) {
 		case DT_DIR:
-		    is_dir = 1;
+		    ft = ft_directory;
 		    break;
 		case DT_LNK:
 		    if (!(flags & FOLLOW_SYMLINK_MASK)) {
@@ -341,20 +465,20 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 			errno = 0;
 			continue;
 		    }
-		    is_dir = -2;
+		    ft = ft_link;
 		    break;
 		case DT_REG:
-		    is_dir = 0;
+		    ft = ft_regular;
 		    break;
 		case DT_UNKNOWN:
-		    is_dir = -1;
+		    ft = ft_unknown;
 		    break;
 		default:
-		    is_dir = -2;
+		    ft = ft_skipped;
 		    break;
 	    }
 #else
-	    is_dir = -1;
+	    ft = ft_unknown;
 #endif
 	    fname = (char *) cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
 	    if(!fname) {
@@ -363,73 +487,12 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 		    break;
 	    }
 	    sprintf(fname, "%s/%s", dirname, dent->d_name);
-	    /* TODO: make is_dir an enum, it is getting ugly with -1 and -2 */
-	    if (is_dir == -1) {
-		/* TODO: factor this out into another function */
-		int check_symlink = 0;
-		is_dir = -2; /* skip */
-		if ((flags & FOLLOW_SYMLINK_MASK) == FOLLOW_SYMLINK_MASK) {
-		    /* Following both directory and file symlink.
-		     * No need to lstat the link */
-		    if (stat(fname, &statbuf) == -1)
-			stated = -1;
-		    else
-			stated = 1;
-		} else 	{
-		    /* Following only one of directory/file symlinks, or none:
-		     * need to lstat */
-		    if (lstat(fname, &statbuf) == -1)
-			stated = -1;
-		    else {
-			stated = 1;
-			if (S_ISLNK(statbuf.st_mode)) {
-			    if (flags & FOLLOW_SYMLINK_MASK) {
-				check_symlink = 1;
-				if (stat(fname, &statbuf) == -1)
-				    stated = -1;
-				else
-				    stated = 1;
-			    }
-			    /* default: skip */
-			}
-		    }
-		}
 
-		if (stated == 1) {
-		    if (S_ISDIR(statbuf.st_mode) &&
-			(!check_symlink || (flags & CLI_FTW_FOLLOW_DIR_SYMLINK))) {
-			is_dir = 1;
-		    } else if (S_ISREG(statbuf.st_mode) &&
-			       (!check_symlink || (flags & CLI_FTW_FOLLOW_FILE_SYMLINK))) {
-			is_dir = 0;
-		    } else
-			is_dir = -2; /* skip */
-		}
-	    }
+	    ret = handle_filetype(fname, flags, &statbuf, &stated, &ft, callback, data);
+	    if (ret != CL_SUCCESS)
+		break;
 
-	    if (!stated && (flags & CLI_FTW_NEED_STAT)) {
-		if (stat(fname, &statbuf) == -1)
-		    stated = -1;
-		else
-		    stated = 1;
-	    }
-
-	    if (is_dir == -2) {
-		/* skipped filetype */
-		ret = callback(stated ? &statbuf : NULL, fname, warning_skipped_special, data);
-		if (ret != CL_SUCCESS)
-		    break;
-	    }
-
-	    if (stated == -1) {
-		/*  we failed a stat() or lstat() */
-		ret = callback(NULL, fname, error_stat, data);
-		if (ret != CL_SUCCESS)
-		    break;
-		is_dir = -2; /* skip on stat failure */
-	    }
-
-	    if (is_dir == -2) { /* skip */
+	    if (ft == ft_skipped) { /* skip */
 		free(fname);
 		errno = 0;
 		continue;
@@ -463,7 +526,7 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 		struct dirent_data *entry = &entries[entries_cnt-1];
 		entry->filename = fname;
 		entry->statbuf = statbufp;
-		entry->is_dir = is_dir;
+		entry->is_dir = ft == ft_directory;
 #ifdef _XOPEN_UNIX
 		entry->ino = dent->d_ino;
 #else
@@ -478,19 +541,14 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 	    qsort(entries, entries_cnt, sizeof(*entries), ftw_compare);
 	    for (i = 0; i < entries_cnt; i++) {
 		struct dirent_data *entry = &entries[i];
-		ret = callback(entry->statbuf, entry->filename,
-			       entry->is_dir ? visit_directory : visit_file,
-			       data);
+		ret = handle_entry(entry, flags, maxdepth-1, callback, data);
 		if (ret != CL_SUCCESS)
 		    break;
-		if (entry->is_dir) {
-		    ret = cli_ftw(entry->filename, flags, maxdepth-1, callback, data);
-		    if (ret != CL_SUCCESS)
-			break;
-		}
 	    }
 	    free(entries);
 	}
+    } else {
+	ret = callback(NULL, (char*)dirname, error_stat, data);
     }
     return ret;
 }

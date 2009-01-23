@@ -412,6 +412,7 @@ static int scan_callback(struct stat *sb, char *filename, enum cli_ftw_reason re
     } else if (logok) {
 	logg("~%s: OK\n", filename);
     }
+    /* TODO: CONTSCAN/SCAN logic of interpreting virus -> break/cont */
     return CL_SUCCESS;
 }
 

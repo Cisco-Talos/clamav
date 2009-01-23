@@ -250,6 +250,8 @@ int writen(int fd, void *buff, unsigned int count)
 static int realloc_polldata(struct fd_data *data)
 {
 #ifdef HAVE_POLL
+    if (data->poll_data_nfds == data->nfds)
+	return 0;
     if (data->poll_data)
 	free(data->poll_data);
     data->poll_data = malloc(data->nfds*sizeof(*data->poll_data));
@@ -257,6 +259,7 @@ static int realloc_polldata(struct fd_data *data)
 	logg("!realloc_polldata: Memory allocation failed for poll_data\n");
 	return -1;
     }
+    data->poll_data_nfds = data->nfds;
 #endif
     return 0;
 }
@@ -357,7 +360,7 @@ int fds_add(struct fd_data *data, int fd, int listen_only)
     data->buf[n-1].fd = fd;
     data->buf[n-1].off = 0;
     data->buf[n-1].got_newdata = 0;
-    return realloc_polldata(data);
+    return 0;
 }
 
 void fds_remove(struct fd_data *data, int fd)
@@ -382,6 +385,7 @@ void fds_remove(struct fd_data *data, int fd)
  * is received on any of the sockets.
  * Must be called with buf_mutex held.
  */
+/* TODO: handle ReadTimeout */
 int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 {
     unsigned fdsok = data->nfds;
@@ -402,9 +406,8 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
      *  recv() may still block according to the manpage
      */
 
-    if (!data->poll_data) {
-	data->poll_data = malloc(data->nfds*sizeof(*data->poll_data));
-    }
+    if (realloc_polldata(data) == -1)
+	return -1;
     if (timeout > 0) {
 	/* seconds to ms */
 	timeout *= 1000;
@@ -423,10 +426,17 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 
 	if (retval > 0) {
 	    fdsok = 0;
-	    for (i=0;i < data->nfds; i++) {
+	    /* nfds may change during poll, but not
+	     * poll_data_nfds */
+	    for (i=0;i < data->poll_data_nfds; i++) {
 		short revents;
 		if (data->buf[i].fd < 0)
 		    continue;
+		if (data->buf[i].fd != data->poll_data[i].fd) {
+		    /* should never happen */
+		    logg("!poll_recv_fds FD mismatch\n");
+		    continue;
+		}
 		revents = data->poll_data[i].revents;
 		if (revents & POLLIN) {
 		    /* Data available to be read */
@@ -534,7 +544,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
     }
 
     /* Remove closed / error fds */
-    if (fdsok != data->nfds)
+    if (fdsok != data->poll_data_nfds)
 	cleanup_fds(data);
     return retval;
 }

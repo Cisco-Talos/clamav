@@ -1,3 +1,11 @@
+Fri Jan 23 13:32:32 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, clamd/others.h, clamd/scanner.c,
+ clamd/server-th.c, clamd/server.h, clamd/session.h,
+ libclamav/others_common.c: fix poll, we add a new fd so we need to
+ iterate on old nfds.  Various other work on recursion, unified scan,
+ etc.
+
 Thu Jan 22 15:39:06 CET 2009 (tk)
 ---------------------------------
  * shared/optparser.c, clamconf: new clamconf (bb#1215, bb#1316)

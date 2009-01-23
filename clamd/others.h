@@ -40,6 +40,7 @@ struct fd_data {
     size_t nfds;
 #ifdef HAVE_POLL
     struct pollfd *poll_data;
+    size_t poll_data_nfds;
 #endif
 };
 

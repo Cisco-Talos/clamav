@@ -343,7 +343,7 @@ static void *acceptloop_th(void *arg)
 		continue;
 	    if (buf->fd == data->syncpipe_wake_accept[0]) {
 		/* dummy sync pipe, just to wake us */
-		recv(buf->fd, buff, sizeof(buff), 0);
+		read(buf->fd, buff, sizeof(buff));
 		continue;
 	    }
 	    /* listen only socket */
@@ -766,6 +766,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	/* Block waiting for connection on any of the sockets */
 	pthread_mutex_lock(&fds->buf_mutex);
 	int new_sd = fds_poll_recv(fds, -1, 1);
+
 	if (!fds->nfds) {
 	    /* at least the dummy/sync pipe should have remained */
 	    logg("!All recv() descriptors gone: fatal\n");
@@ -790,7 +791,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 
 	    if (buf->fd == acceptdata.syncpipe_wake_recv[0]) {
 		/* dummy sync pipe, just to wake us */
-		recv(buf->fd, buff, sizeof(buff), 0);
+		read(buf->fd, buff, sizeof(buff));
 		continue;
 	    }
 

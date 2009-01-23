@@ -26,6 +26,22 @@
 #include "libclamav/clamav.h"
 #include "shared/optparser.h"
 
+/* TODO: these don't belong here */
+enum commands {
+    COMMAND_SHUTDOWN = 1,
+    COMMAND_RELOAD,
+    COMMAND_END,
+    COMMAND_SESSION,
+    COMMAND_SCAN,
+    COMMAND_PING,
+    COMMAND_CONTSCAN,
+    COMMAND_VERSION,
+    COMMAND_STREAM,
+    COMMAND_MULTISCAN,
+    COMMAND_FILDES,
+    COMMAND_STATS,
+    COMMAND_MULTISCANFILE /* internal */
+};
 struct thrarg {
     int sid;
     int options;
@@ -46,6 +62,8 @@ struct thrwarg {
 typedef struct client_conn_tag {
     char *cmd;
     size_t cmdlen;
+    enum commands cmdtype;
+    char *filename;
     int sd;
     struct fd_data *fds;
     unsigned int options;
