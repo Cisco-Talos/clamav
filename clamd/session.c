@@ -125,6 +125,8 @@ int command(client_conn_t *conn, int timeout)
     const struct optstruct *opts = conn->opts;
     const char term = conn->term;
 
+    /* TODO: we shouldn't chomp, but do it depending on command type,
+     * regular and nCMDs need chomp, zCMDs dont' */
     cli_chomp(buff);
     thrmgr_setactiveengine(engine);
 

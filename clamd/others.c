@@ -270,7 +270,6 @@ int poll_fd(int fd, int timeout_sec, int check_signals)
     struct fd_data fds;
 
     memset(&fds, 0, sizeof(fds));
-    fds.nfds = 1;
     if (fds_add(&fds, fd, 1) == -1)
 	return -1;
     ret = fds_poll_recv(&fds, timeout_sec, check_signals);

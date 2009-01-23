@@ -1,3 +1,7 @@
+Fri Jan 23 17:15:18 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, clamd/session.c, clamdscan/client.c: fix poll_fd
+
 Fri Jan 23 15:16:15 EET 2009 (edwin)
 ------------------------------------
  * clamd/scanner.c, clamd/scanner.h, clamd/server-th.c,
