@@ -144,12 +144,12 @@ int command(client_conn_t *conn, int timeout)
 	 * holding a ref to the engine it'll be freed,
 	 * we don't want STATS command to access it */
 	thrmgr_setactiveengine(NULL);
-	mdprintf(desc, "RELOADING\n");
+	mdprintf(desc, "RELOADING%c", conn->term);
 	return COMMAND_RELOAD;
 
     } else if(!strncmp(buff, CMD5, strlen(CMD5))) { /* PING */
 	thrmgr_setactivetask(NULL, CMD5);
-	mdprintf(desc, "PONG\n");
+	mdprintf(desc, "PONG%c", conn->term);
 
     } else if(!strncmp(buff, CMD6, strlen(CMD6))) { /* CONTSCAN */
 	thrmgr_setactivetask(NULL, CMD6);
@@ -158,23 +158,26 @@ int command(client_conn_t *conn, int timeout)
 		return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD7, strlen(CMD7))) { /* VERSION */
-	    uint32_t ver;
+	uint32_t ver;
 
 	thrmgr_setactivetask(NULL, CMD7);
 	cl_engine_get(engine, CL_ENGINE_DB_VERSION, &ver);
 	if(ver) {
-		char timestr[32];
-		time_t t;
-
+	    char timestr[32];
+	    const char *tstr;
+	    time_t t;
 	    cl_engine_get(engine, CL_ENGINE_DB_TIME, &t);
-	    mdprintf(desc, "ClamAV %s/%u/%s", get_version(), (unsigned int) ver, cli_ctime(&t, timestr, sizeof(timestr)));
+	    tstr = cli_ctime(&t, timestr, sizeof(timestr));
+	    /* cut trailing \n */
+	    timestr[strlen(tstr)-1] = '\0';
+	    mdprintf(desc, "ClamAV %s/%u/%s%c", get_version(), (unsigned int) ver, tstr, conn->term);
 	} else {
-	    mdprintf(desc, "ClamAV %s\n", get_version());
+	    mdprintf(desc, "ClamAV %s%c", get_version(), conn->term);
 	}
 
     } else if(!strncmp(buff, CMD8, strlen(CMD8))) { /* STREAM */
 	thrmgr_setactivetask(NULL, CMD8);
-	if(scanstream(desc, NULL, engine, options, opts) == CL_EMEM)
+	if(scanstream(desc, NULL, engine, options, opts, conn->term) == CL_EMEM)
 	    if(optget(opts, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 
@@ -205,7 +208,7 @@ int command(client_conn_t *conn, int timeout)
 	    thrmgr_setactivetask(NULL, CMD15);
 	    thrmgr_printstats(desc);
     } else {
-	mdprintf(desc, "UNKNOWN COMMAND\n");
+	mdprintf(desc, "UNKNOWN COMMAND%c", conn->term);
     }
 
     return 0; /* no error and no 'special' command executed */

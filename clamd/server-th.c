@@ -843,12 +843,13 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			    pthread_mutex_unlock(&exit_mutex);
 			}
 			error = 1;
+			break;
 		    }
 		    pos += cmdlen+1;
 		}
 
 		if (error) {
-		    mdprintf(buf->fd, "ERROR\n");
+		    mdprintf(buf->fd, "ERROR%c", term);
 		    shutdown(buf->fd, 2);
 		    closesocket(buf->fd);
 		    buf->fd = -1;
