@@ -55,11 +55,11 @@
 int notremoved = 0, notmoved = 0;
 int printinfected = 0;
 
-struct sockaddr *mainsa = NULL;
-int mainsasz;
-struct sockaddr_un nixsock;
-struct sockaddr_in tcpsock;
-struct sockaddr_in strmsock;
+static struct sockaddr *mainsa = NULL;
+static int mainsasz;
+static struct sockaddr_un nixsock;
+static struct sockaddr_in tcpsock;
+static struct sockaddr_in strmsock;
 enum {
     CONT,
     MULTI,
@@ -170,11 +170,11 @@ static int recvln(struct RCVLN *s, char **rbol, char **reol) {
 
 static int dsresult(int sockd, int scantype, const char *filename)
 {
-    int infected = 0, waserror = 0, fd;
+	int infected = 0, waserror = 0, fd;
 	int len;
 	char *bol, *eol;
-	struct RCVLN rcv;
 	char buf[BUFSIZ];    
+	struct RCVLN rcv;
 
     recvlninit(&rcv, sockd);
 
@@ -197,7 +197,7 @@ static int dsresult(int sockd, int scantype, const char *filename)
 
 	    if(!(fd = open(filename, O_RDONLY))) {
 		logg("!Open failed on %s.\n", filename);
-		return -1; /* FIXME: grave ? */
+		return -1;
 	    }
 	    if(sendln(sockd, "zSTREAM", 8)) return -1;
 	    if(!(len = recvln(&rcv, &bol, &eol)) || len < 7 || memcmp(bol, "PORT ", 5) || !(len = atoi(bol + 5))) return -1;
@@ -240,10 +240,13 @@ static int dsresult(int sockd, int scantype, const char *filename)
 	    unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
 	    char dummy[]="";
 
-	    if(!(fd = open(filename, O_RDONLY))) {
-		logg("!Open failed on %s.\n", filename);
-		return -1; /* FIXME: grave ? */
-
+	    if(filename) {
+		if(!(fd = open(filename, O_RDONLY))) {
+		    logg("!Open failed on %s.\n", filename);
+		    return -1;
+		}
+	    } else {
+		fd = 0;
 	    }
 	    if(sendln(sockd, "zFILDES", 8)) return -1;
 
@@ -321,56 +324,56 @@ static int dconnect()
     return sockd;
 }
 
-int get_clamd_version(const struct optstruct *opts)
-{
-	char buff[64];
-	int bread, sockd;
+static int isremote(const struct optstruct *opts) {
+    int s, ret;
+    const struct optstruct *opt;
+    struct hostent *he;
+    struct optstruct *clamdopts;
+    const char *clamd_conf = optget(opts, "config-file")->strarg;
 
-
-    /* FIXME: call isremote */
-    if((sockd = dconnect()) < 0)
-	return 2;
-
-    if(write(sockd, "VERSION", 7) <= 0) {
-	logg("!Can't write to the socket.\n");
-	close(sockd);
-	return 2;
+    if((clamdopts = optparse(clamd_conf, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
+	logg("!Can't parse clamd configuration file %s\n", clamd_conf);
+	return 0;
     }
-
-    while((bread = read(sockd, buff, sizeof(buff)-1)) > 0) {
-	buff[bread] = '\0';
-	printf("%s\n", buff);
+    if(optget(clamdopts, "LocalSocket")->enabled) {
+	memset((void *)&nixsock, 0, sizeof(nixsock));
+	nixsock.sun_family = AF_UNIX;
+	strncpy(nixsock.sun_path, opt->strarg, sizeof(nixsock.sun_path));
+	nixsock.sun_path[sizeof(nixsock.sun_path)-1]='\0';
+	mainsa = (struct sockaddr *)&nixsock;
+	mainsasz = sizeof(nixsock);
+	optfree(clamdopts);
+	return 0;
     }
-
-    close(sockd);
-    return 0;
-}
-
-int reload_clamd_database(const struct optstruct *opts)
-{
-	char buff[64];
-	int bread, sockd;
-
-
-    /* FIXME: call isremote */
-    if((sockd = dconnect()) < 0)
-	return 2;
-
-    if(write(sockd, "RELOAD", 6) <= 0) {
-	logg("!Can't write to the socket.\n");
-	close(sockd);
-	return 2;
+    if(!(opt = optget(clamdopts, "TCPSocket"))->enabled) {
+	optfree(clamdopts);
+	return 0;
     }
-
-    bread = read(sockd, buff, sizeof(buff) - 1);
-    if(bread == -1 || strncmp(buff, "RELOADING", 9)) {
-	logg("!Incorrect reply from clamd\n");
-	close(sockd);
-	return 2;
+    mainsa = (struct sockaddr *)&tcpsock;
+    mainsasz = sizeof(tcpsock);
+    memset((void *)&tcpsock, 0, sizeof(tcpsock));
+    memset((void *)&strmsock, 0, sizeof(strmsock));
+    tcpsock.sin_family = strmsock.sin_family = AF_INET;
+    tcpsock.sin_port = htons(opt->numarg);
+    if(!(opt = optget(clamdopts, "TCPAddr"))->enabled) {
+	tcpsock.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	optfree(clamdopts);
+	return 0;
     }
-
-    close(sockd);
-    return 0;
+    he = gethostbyname(opt->strarg);
+    optfree(clamdopts);
+    if(!he) {
+	perror("gethostbyname()");
+	logg("!Can't lookup clamd hostname.\n");
+	mainsa = NULL;
+	return 0;
+    }
+    strmsock.sin_port = htons(INADDR_ANY);
+    tcpsock.sin_addr = strmsock.sin_addr = *(struct in_addr *) he->h_addr_list[0];
+    if(!(s = socket(tcpsock.sin_family, SOCK_STREAM, 0))) return 0;
+    ret = (bind(s, (struct sockaddr *)&strmsock, sizeof(strmsock)) != 0);
+    close(s);
+    return ret;
 }
 
 static int client_scan(const char *file, int scantype, int *infected, int *errors) {
@@ -430,7 +433,6 @@ static int client_scan(const char *file, int scantype, int *infected, int *error
     case S_IFREG:
 	if((sockd = dconnect()) < 0)
 	    return 1;
-
 	if((ret = dsresult(sockd, scantype, fullpath)) >= 0)
 	    *infected += ret;
 	else
@@ -447,65 +449,82 @@ static int client_scan(const char *file, int scantype, int *infected, int *error
     return 0;
 }
 
-static int isremote(struct optstruct *clamdopts) {
-    int s, ret;
-    const struct optstruct *opt;
-    struct hostent *he;
+int get_clamd_version(const struct optstruct *opts)
+{
+	char *buff;
+	int len, sockd;
+	struct RCVLN rcv;
 
-    if(optget(clamdopts, "LocalSocket")->enabled) {
-	memset((void *)&nixsock, 0, sizeof(nixsock));
-	nixsock.sun_family = AF_UNIX;
-	strncpy(nixsock.sun_path, opt->strarg, sizeof(nixsock.sun_path));
-	nixsock.sun_path[sizeof(nixsock.sun_path)-1]='\0';
-	mainsa = (struct sockaddr *)&nixsock;
-	mainsasz = sizeof(nixsock);
-	return 0;
+    recvlninit(&rcv, sockd);
+    isremote(opts);
+    if(!mainsa) return 2;
+    if((sockd = dconnect()) < 0) return 2;
+
+    if(sendln(sockd, "zVERSION", 9)) {
+	logg("!Can't write to the socket.\n");
+	close(sockd);
+	return 2;
     }
-    if(!(opt = optget(clamdopts, "TCPSocket"))->enabled) return 0;
-    mainsa = (struct sockaddr *)&tcpsock;
-    mainsasz = sizeof(tcpsock);
-    memset((void *)&tcpsock, 0, sizeof(tcpsock));
-    memset((void *)&strmsock, 0, sizeof(strmsock));
-    tcpsock.sin_family = strmsock.sin_family = AF_INET;
-    tcpsock.sin_port = htons(opt->numarg);
-    if(!(opt = optget(clamdopts, "TCPAddr"))->enabled) {
-	tcpsock.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-	return 0;
+
+    while((len = recvln(&rcv, &buff, NULL))) {
+	if(len == -1) {
+	    logg("!Error occoured while receiving version information.\n");
+	    break;
+	}
+	printf("%s\n", buff);
     }
-    if(!(he = gethostbyname(opt->strarg))) {
-	perror("gethostbyname()");
-	logg("!Can't lookup clamd hostname.\n");
-	mainsa = NULL;
-	return 0;
+
+    close(sockd);
+    return 0;
+}
+
+int reload_clamd_database(const struct optstruct *opts)
+{
+	char *buff;
+	int len, sockd;
+	struct RCVLN rcv;
+
+    recvlninit(&rcv, sockd);
+    isremote(opts);
+    if(!mainsa) return 2;
+    if((sockd = dconnect()) < 0) return 2;
+
+    if(sendln(sockd, "zRELOAD", 8)) {
+	logg("!Can't write to the socket.\n");
+	close(sockd);
+	return 2;
     }
-    strmsock.sin_port = htons(INADDR_ANY);
-    tcpsock.sin_addr = strmsock.sin_addr = *(struct in_addr *) he->h_addr_list[0];
-    if(!(s = socket(tcpsock.sin_family, SOCK_STREAM, 0))) return 0;
-    ret = (bind(s, (struct sockaddr *)&strmsock, sizeof(strmsock)) != 0);
-    close(s);
-    return ret;
+
+    if(!(len = recvln(&rcv, &buff, NULL)) || len < 10 || memcmp(buff, "RELOADING", 9)) {
+	logg("!Incorrect reply from clamd\n");
+	close(sockd);
+	return 2;
+    }
+
+    close(sockd);
+    return 0;
 }
 
 int client(const struct optstruct *opts, int *infected)
 {
-	int errors = 0;
 	const char *clamd_conf = optget(opts, "config-file")->strarg;
 	struct optstruct *clamdopts;
-	int scantype, session = 0;
+	int scantype, session = 0, errors = 0, scandash = 0;
 
     if((clamdopts = optparse(clamd_conf, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
 	logg("!Can't parse clamd configuration file %s\n", clamd_conf);
 	return 2;
     }
 
-    /* FIXME: save the connection method once for all */
-    if(isremote(clamdopts)) {
+    scandash = (opts->filename && opts->filename[0] && !strcmp(opts->filename[0], "-") && !opts->filename[1]);
+    if(isremote(opts)) {
 	scantype = STREAM;
 	session = optget(opts, "multiscan")->enabled;
 #ifdef HAVE_FD_PASSING
-    } else if(optget(clamdopts, "LocalSocket")->enabled && optget(opts, "fdpass")->enabled) {
+    } else if(optget(clamdopts, "LocalSocket")->enabled && (optget(opts, "fdpass")->enabled || scandash)) {
 	scantype = FILDES;
 	session = optget(opts, "multiscan")->enabled;
+	scandash <<= 1;
 #endif
     } else if(optget(opts, "multiscan")->enabled) scantype = MULTI;
     else scantype = CONT;
@@ -519,9 +538,20 @@ int client(const struct optstruct *opts, int *infected)
 
     *infected = 0;
 
-    if(opts->filename) {
+    if(scandash == 2) {
+	int sockd, ret;
+	if((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, FILDES, NULL)) >= 0)
+	    *infected += ret;
+	else
+	    errors++;
+	close(sockd);
+    } else if(opts->filename) {
 	unsigned int i;
 	for (i = 0; opts->filename[i]; i++) {
+	    if(!strcmp(opts->filename[i], "-")) {
+		logg("!Standard input scan requires FD passing support and \"-\" must be the only file argument\n");
+		continue;
+	    }
 	    client_scan(opts->filename[i], scantype, infected, &errors);
 	}
     } else {
