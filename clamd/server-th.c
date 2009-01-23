@@ -145,6 +145,8 @@ static void scanner_thread(void *arg)
 	}
     } while (session);
 
+    if (conn->scanfd)
+	close(conn->scanfd);
     thrmgr_setactiveengine(NULL);
     fds_remove(conn->fds, conn->sd);
     shutdown(conn->sd, 2);
@@ -796,7 +798,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    }
 
 	    if (buf->fd != -1 && buf->buffer) {
-		const char *cmd;
+		const unsigned char *cmd;
 		size_t cmdlen = 0;
 		size_t pos = 0;
 		int error = 0;
@@ -805,8 +807,22 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 
 		/* Parse & dispatch commands */
 		while ((cmd = get_cmd(buf, pos, &cmdlen, &term)) != NULL) {
+
+		    /* TODO: when we'll parse commands here, move this out into another
+		     * function */
+		    if (!strncmp(cmd, CMD14, strlen(CMD14))) {/* FILDES */
+			if ((buf->buffer + buf->off) - (cmd + cmdlen) < 1) {
+			    /* we need the extra byte from recvmsg */
+			    cmdlen = 0;
+			    break;
+			}
+			/* eat extra \0 for controlmsg */
+			cmdlen++;
+		    }
 		    client_conn_t *client_conn = (client_conn_t *) malloc(sizeof(struct client_conn_tag));
 		    if(client_conn) {
+			client_conn->scanfd = buf->recvfd;
+			buf->recvfd = -1;
 			client_conn->sd = buf->fd;
 			client_conn->fds = fds;
 			client_conn->cmdlen = cmdlen;

@@ -99,7 +99,7 @@ static int recvfd_and_scan(int desc, const struct cl_engine *engine, unsigned in
 		    cmsg->cmsg_level == SOL_SOCKET &&
 		    cmsg->cmsg_type == SCM_RIGHTS) {
 			int fd = *(int *)CMSG_DATA(cmsg);
-			ret = scanfd(fd, NULL, engine, options, opts, desc);
+			ret = scanfd(fd, '\n', NULL, engine, options, opts, desc);
 			close(fd);
 		}
 	}
@@ -203,9 +203,16 @@ int command(client_conn_t *conn, int timeout)
 
     } else if(!strncmp(buff, CMD14, strlen(CMD14))) { /* FILDES */
 	thrmgr_setactivetask(NULL, CMD14);
-	if(recvfd_and_scan(desc, engine, options, opts) == -2)
+#ifdef HAVE_FD_PASSING
+	if (conn->scanfd == -1)
+	    mdprintf(desc, "FILDES: didn't receive file descriptor %c", conn->term);
+	else if (scanfd(conn->scanfd, conn->term, NULL, engine, options, opts, desc) == -2)
 	    if(optget(opts, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
+#else
+	mdprintf(desc, "FILDES support not compiled inERROR%c",conn->term);
+	return -1;
+#endif
     } else if(!strncmp(buff, CMD15, strlen(CMD15))) { /* STATS */
 	    thrmgr_setactivetask(NULL, CMD15);
 	    thrmgr_printstats(desc);

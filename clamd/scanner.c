@@ -517,9 +517,9 @@ int scan(const char *filename, const char term, unsigned long int *scanned, cons
  * This function was readded by mbalmer@openbsd.org.  That is the reason
  * why it is so nicely formatted.
  */
-int scanfd(const int fd, unsigned long int *scanned,
+int scanfd(const int fd, char term, unsigned long int *scanned,
     const struct cl_engine *engine,
-    unsigned int options, const struct optstruct *opts, int odesc)  
+    unsigned int options, const struct optstruct *opts, int odesc)
 {
 	int ret;
 	const char *virname;
@@ -540,14 +540,14 @@ int scanfd(const int fd, unsigned long int *scanned,
 	thrmgr_setactivetask(NULL, NULL);
 
 	if(ret == CL_VIRUS) {
-	mdprintf(odesc, "%s: %s FOUND\n", fdstr, virname);
+		mdprintf(odesc, "%s: %s FOUND%c", fdstr, virname, term);
 		logg("%s: %s FOUND\n", fdstr, virname);
 		virusaction(fdstr, virname, opts);
 	} else if(ret != CL_CLEAN) {
-		mdprintf(odesc, "%s: %s ERROR\n", fdstr, cl_strerror(ret));
+		mdprintf(odesc, "%s: %s ERROR%c", fdstr, cl_strerror(ret), term);
 		logg("%s: %s ERROR\n", fdstr, cl_strerror(ret));
 	} else {
-		mdprintf(odesc, "%s: OK\n", fdstr);
+		mdprintf(odesc, "%s: OK%c", fdstr, term);
 		if(logok)
 			logg("%s: OK\n", fdstr);
 	}

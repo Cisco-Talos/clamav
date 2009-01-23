@@ -32,6 +32,7 @@ struct fd_buf {
     size_t off;
     int fd;
     int got_newdata;
+    int recvfd;
 };
 
 struct fd_data {

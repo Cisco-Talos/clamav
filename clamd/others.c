@@ -312,9 +312,46 @@ static int read_fd_data(struct fd_buf *buf)
     * that is to the cmdparser to handle. 
     * It will handle 1st command, and then move leftover to beginning of buffer
     */
+#ifdef HAVE_FD_PASSING
+  {
+      struct msghdr msg;
+      struct cmsghdr *cmsg;
+      unsigned char buff[CMSG_SPACE(sizeof(int))];
+      struct iovec iov[1];
+
+      if (buf->recvfd != -1) {
+	  close(buf->recvfd);
+	  buf->recvfd = -1;
+      }
+      memset(&msg, 0, sizeof(msg));
+      iov[0].iov_base = buf->buffer + buf->off;
+      iov[0].iov_len = buf->bufsize - buf->off;
+      msg.msg_iov = iov;
+      msg.msg_iovlen = 1;
+      msg.msg_control = buff;
+      msg.msg_controllen = sizeof(buff);
+
+      n = recvmsg(buf->fd, &msg, 0);
+      if (n < 0)
+	  return -1;
+      if ((msg.msg_flags & MSG_TRUNC) || (msg.msg_flags & MSG_CTRUNC)) {
+	  logg("!control message truncated");
+	  return -1;
+      }
+      for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
+	   cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+	  if (cmsg->cmsg_len == CMSG_LEN(sizeof(int)) &&
+	      cmsg->cmsg_level == SOL_SOCKET &&
+	      cmsg->cmsg_type == SCM_RIGHTS) {
+	      buf->recvfd = *(int *)CMSG_DATA(cmsg);
+	  }
+      }
+  }
+#else
    n = recv(buf->fd, buf->buffer + buf->off, buf->bufsize - buf->off,0);
    if (n < 0)
        return -1;
+#endif
    buf->off += n;
    return n;
 }
@@ -346,6 +383,7 @@ int fds_add(struct fd_data *data, int fd, int listen_only)
     data->buf = buf;
     data->nfds = n;
     data->buf[n-1].fd = -1;
+    data->buf[n-1].recvfd = -1;
     if (!listen_only) {
 	data->buf[n-1].bufsize = PATH_MAX+8;
 	if (!(data->buf[n-1].buffer = malloc(data->buf[n-1].bufsize))) {

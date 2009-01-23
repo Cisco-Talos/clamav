@@ -64,6 +64,7 @@ typedef struct client_conn_tag {
     size_t cmdlen;
     enum commands cmdtype;
     char *filename;
+    int scanfd;
     int sd;
     struct fd_data *fds;
     unsigned int options;
