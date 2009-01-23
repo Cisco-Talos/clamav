@@ -345,6 +345,7 @@ static int isremote(const struct optstruct *opts) {
 	nixsock.sun_path[sizeof(nixsock.sun_path)-1]='\0';
 	mainsa = (struct sockaddr *)&nixsock;
 	mainsasz = sizeof(nixsock);
+	memset((void *)&strmsock, 0, sizeof(strmsock));
 	strmsock.sin_family = AF_INET;
 	strmsock.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 	optfree(clamdopts);
@@ -527,13 +528,11 @@ int client(const struct optstruct *opts, int *infected)
     if(!remote && optget(clamdopts, "LocalSocket")->enabled && (optget(opts, "fdpass")->enabled || scandash)) {
 	scantype = FILDES;
 	session = optget(opts, "multiscan")->enabled;
-	scandash <<= 1;
     } else 
 #endif
     if(remote || scandash) {
 	scantype = STREAM;
 	session = optget(opts, "multiscan")->enabled;
-	scandash <<=1;
     } else if(optget(opts, "multiscan")->enabled) scantype = MULTI;
     else scantype = CONT;
 
