@@ -50,7 +50,9 @@
 
 #include "client.h"
 
-#define SOCKET_INET	AF_INET
+#ifndef INADDR_LOOPBACK
+#define INADDR_LOOPBACK 0x7f000001
+#endif
 
 int notremoved = 0, notmoved = 0;
 int printinfected = 0;
@@ -195,11 +197,13 @@ static int dsresult(int sockd, int scantype, const char *filename)
     case STREAM:
 	{
 	    int wsockd;
-
-	    if(!(fd = open(filename, O_RDONLY))) {
-		logg("!Open failed on %s.\n", filename);
+	    
+	    if(filename) {
+		if(!(fd = open(filename, O_RDONLY))) {
+		    logg("!Open failed on %s.\n", filename);
 		return -1;
-	    }
+		}
+	    } else fd = 0;
 	    if(sendln(sockd, "zSTREAM", 8)) return -1;
 	    if(!(len = recvln(&rcv, &bol, &eol)) || len < 7 || memcmp(bol, "PORT ", 5) || !(len = atoi(bol + 5))) return -1;
 	    strmsock.sin_port = htons(len);
@@ -246,9 +250,7 @@ static int dsresult(int sockd, int scantype, const char *filename)
 		    logg("!Open failed on %s.\n", filename);
 		    return -1;
 		}
-	    } else {
-		fd = 0;
-	    }
+	    } else fd = 0;
 	    if(sendln(sockd, "zFILDES", 8)) return -1;
 
 	    iov[0].iov_base = dummy;
@@ -343,6 +345,8 @@ static int isremote(const struct optstruct *opts) {
 	nixsock.sun_path[sizeof(nixsock.sun_path)-1]='\0';
 	mainsa = (struct sockaddr *)&nixsock;
 	mainsasz = sizeof(nixsock);
+	strmsock.sin_family = AF_INET;
+	strmsock.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 	optfree(clamdopts);
 	return 0;
     }
@@ -510,7 +514,7 @@ int client(const struct optstruct *opts, int *infected)
 {
 	const char *clamd_conf = optget(opts, "config-file")->strarg;
 	struct optstruct *clamdopts;
-	int scantype, session = 0, errors = 0, scandash = 0;
+	int remote, scantype, session = 0, errors = 0, scandash = 0;
 
     if((clamdopts = optparse(clamd_conf, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
 	logg("!Can't parse clamd configuration file %s\n", clamd_conf);
@@ -518,15 +522,18 @@ int client(const struct optstruct *opts, int *infected)
     }
 
     scandash = (opts->filename && opts->filename[0] && !strcmp(opts->filename[0], "-") && !opts->filename[1]);
-    if(isremote(opts)) {
-	scantype = STREAM;
-	session = optget(opts, "multiscan")->enabled;
+    remote = isremote(opts);
 #ifdef HAVE_FD_PASSING
-    } else if(optget(clamdopts, "LocalSocket")->enabled && (optget(opts, "fdpass")->enabled || scandash)) {
+    if(!remote && optget(clamdopts, "LocalSocket")->enabled && (optget(opts, "fdpass")->enabled || scandash)) {
 	scantype = FILDES;
 	session = optget(opts, "multiscan")->enabled;
 	scandash <<= 1;
+    } else 
 #endif
+    if(remote || scandash) {
+	scantype = STREAM;
+	session = optget(opts, "multiscan")->enabled;
+	scandash <<=1;
     } else if(optget(opts, "multiscan")->enabled) scantype = MULTI;
     else scantype = CONT;
 
@@ -539,9 +546,9 @@ int client(const struct optstruct *opts, int *infected)
 
     *infected = 0;
 
-    if(scandash == 2) {
+    if(scandash) {
 	int sockd, ret;
-	if((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, FILDES, NULL)) >= 0)
+	if((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, scantype, NULL)) >= 0)
 	    *infected += ret;
 	else
 	    errors++;
@@ -550,7 +557,7 @@ int client(const struct optstruct *opts, int *infected)
 	unsigned int i;
 	for (i = 0; opts->filename[i]; i++) {
 	    if(!strcmp(opts->filename[i], "-")) {
-		logg("!Standard input scan requires FD passing support and \"-\" must be the only file argument\n");
+		logg("!Scanning from standard input requires \"-\" to be the only file argument\n");
 		continue;
 	    }
 	    client_scan(opts->filename[i], scantype, infected, &errors);
