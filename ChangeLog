@@ -1,3 +1,11 @@
+Fri Jan 23 13:33:18 EET 2009 (edwin)
+------------------------------------
+ * libclamav/clamav.h, libclamav/others.c, libclamav/others.h: fix
+ CL_ENGINE_DB_TIME, time_t may well be 64-bits, so writing only
+ 32-bits will leave upper 32-bits undefined and lead to funny
+ results, such as VERSION command working first time, but 2nd time
+ not showing the DB timestamp.
+
 Fri Jan 23 13:32:32 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c, clamd/others.h, clamd/scanner.c,

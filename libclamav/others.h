@@ -376,8 +376,8 @@ int cli_matchregex(const char *str, const char *regex);
 
 enum cli_ftw_reason {
     visit_file,
-    visit_directory,
     /* must not free its args in the below cases! */
+    visit_directory,
     error_mem, /* recommended to return CL_EMEM */
     /* recommended to return CL_SUCCESS below */
     error_stat,
@@ -412,5 +412,10 @@ typedef int (*cli_ftw_cb)(struct stat *stat_buf, char *filename, enum cli_ftw_re
  * status in its cbdata.
  */
 int cli_ftw(const char *base, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data);
+
+/* Like cli_ftw() but works both for files and directories.
+ * If it is a file, it simply calls the callback once, otherwise recurses.
+ * Path must point to malloced memory, that will be freed. */
+int cli_sftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data);
 
 #endif
