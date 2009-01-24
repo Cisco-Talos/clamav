@@ -526,14 +526,12 @@ int scanfd(const int fd, char term, unsigned long int *scanned,
 	struct stat statbuf;
 	char fdstr[32];
 
-
-	if(fstat(fd, &statbuf) == -1)
-		return -1;
-
-	if(!S_ISREG(statbuf.st_mode))
-		return -1;
-
 	snprintf(fdstr, sizeof(fdstr), "fd[%d]", fd);
+	if(fstat(fd, &statbuf) == -1 || !S_ISREG(statbuf.st_mode)) {
+		mdprintf(odesc, "%s: Not a regular file. ERROR%c", fdstr, term);
+		logg("%s: Not a regular file. ERROR\n", fdstr);
+		return -1;
+	}
 
 	thrmgr_setactivetask(fdstr, NULL);
 	ret = cl_scandesc(fd, &virname, scanned, engine, options);

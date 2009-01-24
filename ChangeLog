@@ -1,3 +1,7 @@
+Sat Jan 24 18:09:37 EET 2009 (edwin)
+------------------------------------
+ * clamd/scanner.c: complain when we don't receive a file
+
 Fri Jan 23 22:33:40 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c, clamd/others.h, clamd/scanner.c, clamd/scanner.h,
