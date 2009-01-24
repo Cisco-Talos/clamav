@@ -131,9 +131,8 @@ static void recvlninit(struct RCVLN *s, int sockd) {
 
 static int recvln(struct RCVLN *s, char **rbol, char **reol) {
     char *eol;
-    int ret = 0;
 
-    while(!ret) {
+    while(1) {
 	if(!s->r) {
 	    s->r = recv(s->sockd, s->cur, sizeof(s->buf) - (s->cur - s->buf), 0);
 	    if(s->r<=0) {
@@ -143,31 +142,38 @@ static int recvln(struct RCVLN *s, char **rbol, char **reol) {
 		}
 		if(s->r || s->cur!=s->buf) {
 		    logg("!Communication error\n");
-		    ret = -1;
+		    return -1;
 		}
-	        break;
+	        return 0;
 	    }
 	}
-	if(s->r && (eol = memchr(s->cur, 0, s->r))) {
+	if((eol = memchr(s->cur, 0, s->r))) {
+	    int ret = 0;
 	    eol++;
 	    s->r -= eol - s->cur;
 	    *rbol = s->bol;
 	    if(reol) *reol = eol;
 	    ret = eol - s->bol;
-	    s->bol = s->cur = eol;
+	    if(s->r)
+		s->bol = s->cur = eol;
+	    else
+		s->bol = s->cur = s->buf;
+	    return ret;
 	}
 	s->r += s->cur - s->bol;
-	if(s->r==sizeof(s->buf)) {
+	if(!eol && s->r==sizeof(s->buf)) {
 	    logg("!Overlong reply from clamd\n");
-	    ret = -1;
-	    break;
+	    return -1;
 	}
-	if(s->r && s->bol!=s->buf) /* memmove is stupid in older glibc's */
-	    memmove(s->buf, s->bol, s->r);
-	s->cur = &s->buf[s->r];
-	s->bol = s->buf;
+	if(!eol) {
+	    if(s->buf != s->bol) { /* old memmove sux */
+		memmove(s->buf, s->bol, s->r);
+		s->bol = s->buf;
+	    }
+	    s->cur = &s->bol[s->r];
+	    s->r = 0;
+	}
     }
-    return ret;
 }
 
 static int dsresult(int sockd, int scantype, const char *filename)
@@ -278,22 +284,27 @@ static int dsresult(int sockd, int scantype, const char *filename)
 	    waserror = 1;
 	    break;
 	}
-	logg("~%s\n", bol); /* FIXME: only good for CONT/MULTI */
 	if(len > 7) {
-	    if(!memcmp(eol - 7, " FOUND", 6)) {
+	    char *colon = colon = strrchr(bol, ':');
+	    if(!colon) {
+		logg("Failed to parse reply\n");
+		waserror = 1;
+	    } else if(!memcmp(eol - 7, " FOUND", 6)) {
 		infected++;
-		if(action) {
-		    if(scantype >= STREAM) {
-			action(filename);
-		    } else {
-			char *comma = strrchr(bol, ':');
-			if(comma) {
-			    *comma = '\0';
-			    action(bol);
-			}
-		    }
+		if(scantype >= STREAM) {
+		    logg("~%s%s\n", filename, colon);
+		    if(action) action(filename);
+		} else {
+		    logg("~%s\n", bol);
+		    *colon = '\0';
+		    if(action)
+			action(bol);
 		}
 	    } else if(!memcmp(eol-7, " ERROR", 6)) {
+		if(scantype >= STREAM)
+		    logg("~%s%s\n", filename, colon);
+		else
+		    logg("~%s\n", bol);
 		waserror = 1;
 	    }
 	}
@@ -381,13 +392,14 @@ static int isremote(const struct optstruct *opts) {
     return ret;
 }
 
-static int client_scan(const char *file, int scantype, int *infected, int *errors) {
+static int client_scan(const char *file, int scantype, int *infected, int *errors, int level) {
     struct stat sb;
     char *fullpath;
     DIR *dir;
     struct dirent *dent;
     int ret, sockd;
 
+    level++;
     if(stat(file, &sb) == -1) {
 	logg("^Can't access file %s\n", file);
 	perror(file);
@@ -418,20 +430,22 @@ static int client_scan(const char *file, int scantype, int *infected, int *error
     switch(sb.st_mode & S_IFMT) {
     case S_IFDIR:
 	if(scantype >= STREAM) {
-	    if(!(dir = opendir(file)))
+	    if(!(dir = opendir(fullpath)))
 		break;
 	    ret = strlen(fullpath);
 	    while((dent = readdir(dir))) {
 		if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..")) continue;
 		snprintf(&fullpath[ret], PATH_MAX - ret, "/%s", dent->d_name);
 		fullpath[PATH_MAX] = '\0';
-		if(client_scan(fullpath, scantype, infected, errors)) {
+		if(client_scan(fullpath, scantype, infected, errors, level)) {
 		    closedir(dir);
 		    free(fullpath);
 		    return 1;
 		}
+
 	    }
 	    closedir(dir);
+	    if(level == 1) fullpath[ret] = '\0';
 	    break;
 	}
 
@@ -449,6 +463,8 @@ static int client_scan(const char *file, int scantype, int *infected, int *error
 	logg("^Not supported file type (%s)\n", fullpath);
 	errors++;
     }
+
+    if(level == 1 && !*infected && ((sb.st_mode & S_IFMT) == S_IFDIR || !*errors)) logg("~%s: OK\n", fullpath);
 
     free(fullpath);
     return 0;
@@ -546,10 +562,11 @@ int client(const struct optstruct *opts, int *infected)
 
     if(scandash) {
 	int sockd, ret;
-	if((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, scantype, NULL)) >= 0)
+	if((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, scantype, NULL)) >= 0) {
 	    *infected += ret;
-	else
+	} else {
 	    errors++;
+	}
 	close(sockd);
     } else if(opts->filename) {
 	unsigned int i;
@@ -558,7 +575,7 @@ int client(const struct optstruct *opts, int *infected)
 		logg("!Scanning from standard input requires \"-\" to be the only file argument\n");
 		continue;
 	    }
-	    client_scan(opts->filename[i], scantype, infected, &errors);
+	    client_scan(opts->filename[i], scantype, infected, &errors, 0);
 	}
     } else {
 	char cwd[PATH_MAX+1];
@@ -566,7 +583,7 @@ int client(const struct optstruct *opts, int *infected)
 	    logg("^Can't get absolute pathname of current working directory.\n");
 	    return 2;
 	}
-	client_scan(cwd, scantype, infected, &errors);
+	client_scan(cwd, scantype, infected, &errors, 0);
     }
     return *infected ? 1 : (errors ? 2 : 0);
 }
