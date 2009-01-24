@@ -69,7 +69,7 @@ enum {
     FILDES
 };
 
-static const char *scancmd[] = { "CONTSCAN", "MULTISCAN", "STREAM", "FILDES" };
+static const char *scancmd[] = { "CONTSCAN", "MULTISCAN" };
 
 static void (*action)(const char *) = NULL;
 static char *actarget;
@@ -284,6 +284,7 @@ static int dsresult(int sockd, int scantype, const char *filename)
 	    waserror = 1;
 	    break;
 	}
+	if(!filename) logg("~%s\n", bol);
 	if(len > 7) {
 	    char *colon = colon = strrchr(bol, ':');
 	    if(!colon) {
@@ -291,20 +292,24 @@ static int dsresult(int sockd, int scantype, const char *filename)
 		waserror = 1;
 	    } else if(!memcmp(eol - 7, " FOUND", 6)) {
 		infected++;
-		if(scantype >= STREAM) {
-		    logg("~%s%s\n", filename, colon);
-		    if(action) action(filename);
-		} else {
-		    logg("~%s\n", bol);
-		    *colon = '\0';
-		    if(action)
-			action(bol);
+		if(filename) {
+		    if(scantype >= STREAM) {
+			logg("~%s%s\n", filename, colon);
+			if(action) action(filename);
+		    } else {
+			logg("~%s\n", bol);
+			*colon = '\0';
+			if(action)
+			    action(bol);
+		    }
 		}
 	    } else if(!memcmp(eol-7, " ERROR", 6)) {
-		if(scantype >= STREAM)
-		    logg("~%s%s\n", filename, colon);
-		else
-		    logg("~%s\n", bol);
+		if(filename) {
+		    if(scantype >= STREAM)
+			logg("~%s%s\n", filename, colon);
+		    else
+			logg("~%s\n", bol);
+		}
 		waserror = 1;
 	    }
 	}
@@ -562,11 +567,10 @@ int client(const struct optstruct *opts, int *infected)
 
     if(scandash) {
 	int sockd, ret;
-	if((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, scantype, NULL)) >= 0) {
-	    *infected += ret;
-	} else {
+	if((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, scantype, NULL)) >= 0)
+	    *infected = ret;
+	else
 	    errors++;
-	}
 	close(sockd);
     } else if(opts->filename) {
 	unsigned int i;
