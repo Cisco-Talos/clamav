@@ -949,9 +949,11 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     }
 
     fds_free(fds);
+    write(acceptdata.syncpipe_wake_accept[1], "", 1);
     /* Destroy the thread manager.
      * This waits for all current tasks to end
      */
+    logg("*Waiting for all threads to finish\n");
     thrmgr_destroy(thr_pool);
 #ifdef CLAMUKO
     if(optget(opts, "ClamukoScanOnAccess")->enabled) {
@@ -964,8 +966,6 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	thrmgr_setactiveengine(NULL);
 	cl_engine_free(engine);
     }
-
-    write(acceptdata.syncpipe_wake_accept[1], "", 1);
 
     pthread_join(accept_th, NULL);
     close(acceptdata.syncpipe_wake_accept[1]);

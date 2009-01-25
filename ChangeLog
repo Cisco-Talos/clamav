@@ -1,3 +1,9 @@
+Sun Jan 25 18:05:46 EET 2009 (edwin)
+------------------------------------
+ * clamd/server-th.c: tell accept to quit before we start waiting for
+ threads to quit.  Show a verbose message that we are waiting for
+ threads to quit.
+
 Sat Jan 24 18:09:37 EET 2009 (edwin)
 ------------------------------------
  * clamd/scanner.c: complain when we don't receive a file
