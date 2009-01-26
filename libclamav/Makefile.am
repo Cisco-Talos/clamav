@@ -87,7 +87,10 @@ libclamav_internal_utils_la_SOURCES=str.c \
 				    regex/cname.h \
 				    regex/regex.h \
 				    regex/regex2.h \
-				    regex/utils.h
+				    regex/utils.h \
+				    bignum.c \
+				    bignum.h \
+				    bignum_class.h
 
 libclamav_internal_utils_la_LDFLAGS=-static
 libclamav_internal_utils_la_CFLAGS=  -fPIC -DPIC

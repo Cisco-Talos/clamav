@@ -113,7 +113,7 @@ static struct dconf_module modules[] = {
 };
 
 #ifdef USE_MPOOL 
-struct cli_dconf *cli_dconf_init(mp_t *mempool)
+struct cli_dconf *cli_dconf_init(mpool_t *mempool)
 #else
 struct cli_dconf *cli_dconf_init(void)
 #endif
@@ -121,7 +121,7 @@ struct cli_dconf *cli_dconf_init(void)
 	unsigned int i;
 	struct cli_dconf *dconf;
 
-    dconf = (struct cli_dconf *) mp_calloc(mempool, sizeof(struct cli_dconf), 1);
+    dconf = (struct cli_dconf *) mpool_calloc(mempool, sizeof(struct cli_dconf), 1);
     if(!dconf)
 	return NULL;
 

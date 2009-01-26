@@ -228,29 +228,29 @@ struct cl_engine *cl_engine_new(void)
     new->ac_maxdepth = CLI_DEFAULT_AC_MAXDEPTH;
 
 #ifdef USE_MPOOL
-    if(!(new->mempool = mp_create())) {
+    if(!(new->mempool = mpool_create())) {
 	cli_errmsg("cl_engine_new: Can't allocate memory for memory pool\n");
 	free(new);
 	return NULL;
     }
 #endif
 
-    new->root = mp_calloc(new->mempool, CLI_MTARGETS, sizeof(struct cli_matcher *));
+    new->root = mpool_calloc(new->mempool, CLI_MTARGETS, sizeof(struct cli_matcher *));
     if(!new->root) {
 	cli_errmsg("cl_engine_new: Can't allocate memory for roots\n");
 #ifdef USE_MPOOL
-	mp_destroy(new->mempool);
+	mpool_destroy(new->mempool);
 #endif
 	free(new);
 	return NULL;
     }
 
-    new->dconf = cli_mp_dconf_init(new->mempool);
+    new->dconf = cli_mpool_dconf_init(new->mempool);
     if(!new->dconf) {
 	cli_errmsg("cl_engine_new: Can't initialize dynamic configuration\n");
-	mp_free(new->mempool, new->root);
+	mpool_free(new->mempool, new->root);
 #ifdef USE_MPOOL
-	mp_destroy(new->mempool);
+	mpool_destroy(new->mempool);
 #endif
 	free(new);
 	return NULL;
@@ -285,7 +285,7 @@ int cl_engine_set(struct cl_engine *engine, enum cl_engine_field field, const vo
 	    engine->min_ssn_count = *((const uint32_t *) val);
 	    break;
 	case CL_ENGINE_PUA_CATEGORIES:
-	    engine->pua_cats = cli_mp_strdup(engine->mempool, (const char *) val);
+	    engine->pua_cats = cli_mpool_strdup(engine->mempool, (const char *) val);
 	    if(!engine->pua_cats)
 		return CL_EMEM;
 	    break;
@@ -303,7 +303,7 @@ int cl_engine_set(struct cl_engine *engine, enum cl_engine_field field, const vo
 	    engine->ac_maxdepth = *((const uint32_t *) val);
 	    break;
 	case CL_ENGINE_TMPDIR:
-	    engine->tmpdir = cli_mp_strdup(engine->mempool, (const char *) val);
+	    engine->tmpdir = cli_mpool_strdup(engine->mempool, (const char *) val);
 	    if(!engine->tmpdir)
 		return CL_EMEM;
 	    break;

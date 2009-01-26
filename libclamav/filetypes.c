@@ -109,9 +109,9 @@ void cli_ftfree(const struct cl_engine *engine)
     while(ftypes) {
 	pt = ftypes;
 	ftypes = ftypes->next;
-	mp_free(engine->mempool, pt->magic);
-	mp_free(engine->mempool, pt->tname);
-	mp_free(engine->mempool, pt);
+	mpool_free(engine->mempool, pt->magic);
+	mpool_free(engine->mempool, pt->tname);
+	mpool_free(engine->mempool, pt);
     }
 }
 

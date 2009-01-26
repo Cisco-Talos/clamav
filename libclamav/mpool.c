@@ -336,7 +336,7 @@ struct FRAG {
 #define FRAG_OVERHEAD (offsetof(struct FRAG, fake))
 
 #define align_to_voidptr(size) (((size) / sizeof(void *) + ((size) % sizeof(void *) != 0)) * sizeof(void *))
-#define mp_roundup(size) (FRAG_OVERHEAD + align_to_voidptr(size))
+#define mpool_roundup(size) (FRAG_OVERHEAD + align_to_voidptr(size))
 
 static unsigned int align_to_pagesize(struct MP *mp, unsigned int size) {
   return (size / mp->psize + (size % mp->psize != 0)) * mp->psize;
@@ -353,22 +353,22 @@ static unsigned int from_bits(unsigned int bits) {
   return fragsz[bits];
 }
 
-struct MP *mp_create() {
-  struct MP mp, *mp_p;
+struct MP *mpool_create() {
+  struct MP mp, *mpool_p;
   unsigned int sz;
   memset(&mp, 0, sizeof(mp));
   mp.psize = getpagesize();
   sz = align_to_pagesize(&mp, MIN_FRAGSIZE);
   mp.mpm.usize = align_to_voidptr(sizeof(struct MPMAP));
   mp.mpm.size = sz - align_to_voidptr(sizeof(mp));
-  if ((mp_p = (struct MP *)mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE|ANONYMOUS_MAP, -1, 0)) == MAP_FAILED)
+  if ((mpool_p = (struct MP *)mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE|ANONYMOUS_MAP, -1, 0)) == MAP_FAILED)
     return NULL;
-  memcpy(mp_p, &mp, sizeof(mp));
-  spam("Map created @ %p->%p - size %u out of %u\n", mp_p, (char *)mp_p + mp.mpm.size, mp.mpm.usize, mp.mpm.size);
-  return mp_p;
+  memcpy(mpool_p, &mp, sizeof(mp));
+  spam("Map created @ %p->%p - size %u out of %u\n", mpool_p, (char *)mpool_p + mp.mpm.size, mp.mpm.usize, mp.mpm.size);
+  return mpool_p;
 }
 
-void mp_destroy(struct MP *mp) {
+void mpool_destroy(struct MP *mp) {
   struct MPMAP *mpm_next = mp->mpm.next, *mpm;
   while((mpm = mpm_next)) {
     mpm_next = mpm->next;
@@ -378,7 +378,7 @@ void mp_destroy(struct MP *mp) {
   spam("Map destroyed @ %p\n", mp);
 }
 
-void mp_flush(struct MP *mp) {
+void mpool_flush(struct MP *mp) {
   size_t used = 0, mused;
   struct MPMAP *mpm_next = mp->mpm.next, *mpm;
   while((mpm = mpm_next)) {
@@ -396,11 +396,11 @@ void mp_flush(struct MP *mp) {
   spam("Map flushed @ %p, in use: %lu\n", mp, used);
 }
 
-int mp_getstats(const struct cl_engine *eng, size_t *used, size_t *total)
+int mpool_getstats(const struct cl_engine *eng, size_t *used, size_t *total)
 {
 	size_t sum_used = 0, sum_total = 0;
 	const struct MPMAP *mpm;
-	const mp_t *mp;
+	const mpool_t *mp;
 	/* checking refcount is not necessary, but safer */
 	if (!eng || !eng->refcount)
 		return -1;
@@ -416,7 +416,7 @@ int mp_getstats(const struct cl_engine *eng, size_t *used, size_t *total)
 	return 0;
 }
 
-void *mp_malloc(struct MP *mp, size_t size) {
+void *mpool_malloc(struct MP *mp, size_t size) {
   unsigned int i, j, needed = align_to_voidptr(size + FRAG_OVERHEAD);
   const unsigned int sbits = to_bits(needed);
   struct FRAG *f = NULL;
@@ -424,13 +424,13 @@ void *mp_malloc(struct MP *mp, size_t size) {
 
   /*  check_all(mp); */
   if (!size || sbits == FRAGSBITS) {
-    cli_errmsg("mp_malloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
+    cli_errmsg("mpool_malloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
     return NULL;
   }
 
   /* Case 1: We have a free'd frag */
   if((f = mp->avail[sbits])) {
-    spam("malloc %p size %u (freed)\n", f, mp_roundup(size));
+    spam("malloc %p size %u (freed)\n", f, mpool_roundup(size));
     mp->avail[sbits] = f->u.next;
     f->u.sbits = sbits;
 #ifdef CL_DEBUG
@@ -440,7 +440,7 @@ void *mp_malloc(struct MP *mp, size_t size) {
   }
 
   if (!(needed = from_bits(sbits))) {
-    cli_errmsg("mp_malloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
+    cli_errmsg("mpool_malloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
     return NULL;
   }
 
@@ -448,7 +448,7 @@ void *mp_malloc(struct MP *mp, size_t size) {
   while(mpm) {
     if(mpm->size - mpm->usize >= needed) {
       f = (struct FRAG *)((char *)mpm + mpm->usize);
-      spam("malloc %p size %u (hole)\n", f, mp_roundup(size));
+      spam("malloc %p size %u (hole)\n", f, mpool_roundup(size));
       mpm->usize += needed;
       f->u.sbits = sbits;
 #ifdef CL_DEBUG
@@ -466,7 +466,7 @@ void *mp_malloc(struct MP *mp, size_t size) {
   i = align_to_pagesize(mp, MIN_FRAGSIZE);
   
   if ((mpm = (struct MPMAP *)mmap(NULL, i, PROT_READ | PROT_WRITE, MAP_PRIVATE|ANONYMOUS_MAP, -1, 0)) == MAP_FAILED) {
-    cli_errmsg("mp_malloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int)i);
+    cli_errmsg("mpool_malloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int)i);
     spam("failed to alloc %u bytes (%u requested)\n", i, size);
     return NULL;
   }
@@ -475,7 +475,7 @@ void *mp_malloc(struct MP *mp, size_t size) {
   mpm->next = mp->mpm.next;
   mp->mpm.next = mpm;
   f = (struct FRAG *)((char *)mpm + align_to_voidptr(sizeof(*mpm)));
-  spam("malloc %p size %u (new map)\n", f, mp_roundup(size));
+  spam("malloc %p size %u (new map)\n", f, mpool_roundup(size));
   f->u.sbits = sbits;
 #ifdef CL_DEBUG
       f->magic = MPOOLMAGIC;
@@ -483,13 +483,13 @@ void *mp_malloc(struct MP *mp, size_t size) {
   return &f->fake;
 }
 
-void mp_free(struct MP *mp, void *ptr) {
+void mpool_free(struct MP *mp, void *ptr) {
   struct FRAG *f = (struct FRAG *)((char *)ptr - FRAG_OVERHEAD);
   unsigned int sbits;
   if (!ptr) return;
 
 #ifdef CL_DEBUG
-  assert(f->magic == MPOOLMAGIC && "Attempt to mp_free a pointer we did not allocate!");
+  assert(f->magic == MPOOLMAGIC && "Attempt to mpool_free a pointer we did not allocate!");
 #endif
 
   sbits = f->u.sbits;
@@ -498,65 +498,65 @@ void mp_free(struct MP *mp, void *ptr) {
   spam("free @ %p\n", f);
 }
 
-void *mp_calloc(struct MP *mp, size_t nmemb, size_t size) {
+void *mpool_calloc(struct MP *mp, size_t nmemb, size_t size) {
   unsigned int needed = nmemb*size;
   void *ptr;
 
   if(!needed) return NULL;
-  if((ptr = mp_malloc(mp, needed)))
+  if((ptr = mpool_malloc(mp, needed)))
     memset(ptr, 0, needed);
   return ptr;
 }
 
-void *mp_realloc(struct MP *mp, void *ptr, size_t size) {
+void *mpool_realloc(struct MP *mp, void *ptr, size_t size) {
   struct FRAG *f = (struct FRAG *)((char *)ptr - FRAG_OVERHEAD);
   unsigned int csize, sbits;
   void *new_ptr;
-  if (!ptr) return mp_malloc(mp, size);
+  if (!ptr) return mpool_malloc(mp, size);
 
   spam("realloc @ %p (size %u -> %u))\n", f, from_bits(f->u.sbits), size);
   if(!size || !(csize = from_bits(f->u.sbits))) {
-    cli_errmsg("mp_realloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
+    cli_errmsg("mpool_realloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
     return NULL;
   }
   csize -= FRAG_OVERHEAD;
   if (csize >= size && (!f->u.sbits || from_bits(f->u.sbits-1)-FRAG_OVERHEAD < size))
     return ptr;
-  if (!(new_ptr = mp_malloc(mp, size)))
+  if (!(new_ptr = mpool_malloc(mp, size)))
     return NULL;
   memcpy(new_ptr, ptr, csize);
-  mp_free(mp, ptr);
+  mpool_free(mp, ptr);
   return new_ptr;
 }
 
-void *mp_realloc2(struct MP *mp, void *ptr, size_t size) {
+void *mpool_realloc2(struct MP *mp, void *ptr, size_t size) {
   struct FRAG *f = (struct FRAG *)((char *)ptr - FRAG_OVERHEAD);
   unsigned int csize;
   void *new_ptr;
-  if (!ptr) return mp_malloc(mp, size);
+  if (!ptr) return mpool_malloc(mp, size);
 
   spam("realloc @ %p (size %u -> %u))\n", f, from_bits(f->u.sbits), size);
   if(!size || !(csize = from_bits(f->u.sbits))) {
-    cli_errmsg("mp_realloc2(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
-    mp_free(mp, ptr);
+    cli_errmsg("mpool_realloc2(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
+    mpool_free(mp, ptr);
     return NULL;
   }
   csize -= FRAG_OVERHEAD;
   if (csize >= size && (!f->u.sbits || from_bits(f->u.sbits-1)-FRAG_OVERHEAD < size))
     return ptr;
-  if ((new_ptr = mp_malloc(mp, size)))
+  if ((new_ptr = mpool_malloc(mp, size)))
     memcpy(new_ptr, ptr, csize);
-  mp_free(mp, ptr);
+  mpool_free(mp, ptr);
   return new_ptr;
 }
 
-unsigned char *cli_mp_hex2str(mp_t *mp, const unsigned char *str)
+unsigned char *cli_mpool_hex2str(mpool_t *mp, const unsigned char *str)
 {
 	unsigned char *tmp = cli_hex2str(str);
 	if(tmp) {
 		unsigned char *res;
 		unsigned int tmpsz = strlen(str) / 2 + 1;
-		if((res = mp_malloc(mp, tmpsz)))
+		if((res = mpool_malloc(mp, tmpsz)))
 			memcpy(res, tmp, tmpsz);
 		free(tmp);
 		return res;
@@ -564,25 +564,25 @@ unsigned char *cli_mp_hex2str(mp_t *mp, const unsigned char *str)
 	return NULL;
 }
 
-char *cli_mp_strdup(mp_t *mp, const char *s) {
+char *cli_mpool_strdup(mpool_t *mp, const char *s) {
   char *alloc;
   unsigned int strsz;
 
   if(s == NULL) {
-    cli_errmsg("cli_mp_strdup(): s == NULL. Please report to http://bugs.clamav.net\n");
+    cli_errmsg("cli_mpool_strdup(): s == NULL. Please report to http://bugs.clamav.net\n");
     return NULL;
   }
 
   strsz = strlen(s) + 1;
-  alloc = mp_malloc(mp, strsz);
+  alloc = mpool_malloc(mp, strsz);
   if(!alloc)
-    cli_errmsg("cli_mp_strdup(): Can't allocate memory (%u bytes).\n", (unsigned int) strsz);
+    cli_errmsg("cli_mpool_strdup(): Can't allocate memory (%u bytes).\n", (unsigned int) strsz);
   else
     memcpy(alloc, s, strsz);
   return alloc;
 }
 
-char *cli_mp_virname(mp_t *mp, const char *virname, unsigned int official) {
+char *cli_mpool_virname(mpool_t *mp, const char *virname, unsigned int official) {
   char *newname, *pt;
   if(!virname)
     return NULL;
@@ -596,9 +596,9 @@ char *cli_mp_virname(mp_t *mp, const char *virname, unsigned int official) {
   }
 
   if(official)
-    return cli_mp_strdup(mp, virname);
+    return cli_mpool_strdup(mp, virname);
 
-  newname = (char *)mp_malloc(mp, strlen(virname) + 11 + 1);
+  newname = (char *)mpool_malloc(mp, strlen(virname) + 11 + 1);
   if(!newname) {
     cli_errmsg("cli_virname: Can't allocate memory for newname\n");
     return NULL;
@@ -608,7 +608,7 @@ char *cli_mp_virname(mp_t *mp, const char *virname, unsigned int official) {
 }
 
 
-uint16_t *cli_mp_hex2ui(mp_t *mp, const char *hex) {
+uint16_t *cli_mpool_hex2ui(mpool_t *mp, const char *hex) {
   uint16_t *str;
   unsigned int len;
   
@@ -619,20 +619,20 @@ uint16_t *cli_mp_hex2ui(mp_t *mp, const char *hex) {
     return NULL;
   }
 
-  str = mp_calloc(mp, (len / 2) + 1, sizeof(uint16_t));
+  str = mpool_calloc(mp, (len / 2) + 1, sizeof(uint16_t));
   if(!str)
     return NULL;
 
   if(cli_realhex2ui(hex, str, len))
     return str;
     
-  mp_free(mp, str);
+  mpool_free(mp, str);
   return NULL;
 }
 
 
 #ifdef DEBUGMPOOL
-void mp_stats(struct MP *mp) {
+void mpool_stats(struct MP *mp) {
   unsigned int i=0, ta=0, tu=0;
   struct MPMAP *mpm = &mp->mpm;
 
@@ -665,10 +665,10 @@ void check_all(struct MP *mp) {
 #else
 /* dummy definitions to make Solaris linker happy.
  * these symbols are declared in libclamav.map */
-void mp_free() {}
-void mp_create() {}
-void mp_destroy() {}
-void mp_getstats() {}
+void mpool_free() {}
+void mpool_create() {}
+void mpool_destroy() {}
+void mpool_getstats() {}
 
 #endif /* USE_MPOOL */
 

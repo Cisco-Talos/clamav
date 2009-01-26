@@ -1728,11 +1728,6 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
     logg("*Using IPv6 aware code\n");
 #endif
 
-#ifndef HAVE_LIBGMP
-    logg("SECURITY WARNING: NO SUPPORT FOR DIGITAL SIGNATURES\n");
-    logg("See the FAQ at http://www.clamav.net/support/faq for an explanation.\n");
-#endif
-
 #ifdef HAVE_RESOLV_H
     dnsdbinfo = optget(opts, "DNSDatabaseInfo")->strarg;
 

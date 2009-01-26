@@ -51,7 +51,7 @@ int whitelist_match(const struct cl_engine* engine,char* real_url,const char* di
 int init_whitelist(struct cl_engine* engine)
 {
 	if(engine) {
-		engine->whitelist_matcher = (struct regex_matcher *) mp_malloc(engine->mempool, sizeof(struct regex_matcher));
+		engine->whitelist_matcher = (struct regex_matcher *) mpool_malloc(engine->mempool, sizeof(struct regex_matcher));
 #ifdef USE_MPOOL
 		((struct regex_matcher *)(engine->whitelist_matcher))->mempool = engine->mempool;
 #endif
@@ -72,7 +72,7 @@ void whitelist_done(struct cl_engine* engine)
 {
 	if(engine && engine->whitelist_matcher) {
 		regex_list_done(engine->whitelist_matcher);
-		mp_free(engine->mempool, engine->whitelist_matcher);
+		mpool_free(engine->mempool, engine->whitelist_matcher);
 		engine->whitelist_matcher = NULL;
 	}
 }

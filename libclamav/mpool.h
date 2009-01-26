@@ -23,35 +23,35 @@
 
 #ifdef USE_MPOOL
 #include "cltypes.h"
-typedef struct MP mp_t;
+typedef struct MP mpool_t;
 
-mp_t *mp_create(void);
-void mp_destroy(mp_t *mp);
-void *mp_malloc(mp_t *mp, size_t size);
-void mp_free(mp_t *mp, void *ptr);
-void *mp_calloc(mp_t *mp, size_t nmemb, size_t size);
-void *mp_realloc(mp_t *mp, void *ptr, size_t size);
-void *mp_realloc2(mp_t *mp, void *ptr, size_t size);
-unsigned char *cli_mp_hex2str(mp_t* mp, const unsigned char *src);
-char *cli_mp_strdup(mp_t *mp, const char *s);
-char *cli_mp_virname(mp_t *mp, const char *virname, unsigned int official);
-uint16_t *cli_mp_hex2ui(mp_t *mp, const char *hex);
-void mp_flush(mp_t *mp);
-int mp_getstats(const struct cl_engine *engine, size_t *used, size_t *total);
+mpool_t *mpool_create(void);
+void mpool_destroy(mpool_t *mpool);
+void *mpool_malloc(mpool_t *mpool, size_t size);
+void mpool_free(mpool_t *mpool, void *ptr);
+void *mpool_calloc(mpool_t *mpool, size_t nmemb, size_t size);
+void *mpool_realloc(mpool_t *mpool, void *ptr, size_t size);
+void *mpool_realloc2(mpool_t *mpool, void *ptr, size_t size);
+unsigned char *cli_mpool_hex2str(mpool_t* mpool, const unsigned char *src);
+char *cli_mpool_strdup(mpool_t *mpool, const char *s);
+char *cli_mpool_virname(mpool_t *mpool, const char *virname, unsigned int official);
+uint16_t *cli_mpool_hex2ui(mpool_t *mpool, const char *hex);
+void mpool_flush(mpool_t *mpool);
+int mpool_getstats(const struct cl_engine *engine, size_t *used, size_t *total);
 #else /* USE_MPOOL */
 
-typedef void mp_t;
-#define mp_malloc(a, b) cli_malloc(b)
-#define mp_free(a, b) free(b)
-#define mp_calloc(a, b, c) cli_calloc(b, c)
-#define mp_realloc(a, b, c) cli_realloc(b, c)
-#define mp_realloc2(a, b, c) cli_realloc2(b, c)
-#define cli_mp_hex2str(mp, src) cli_hex2str(src)
-#define cli_mp_strdup(mp, s) cli_strdup(s)
-#define cli_mp_virname(mp, a, b) cli_virname(a, b)
-#define cli_mp_hex2ui(mp, hex) cli_hex2ui(hex)
-#define mp_flush(val)
-#define mp_getstats(mp,used,total) -1
+typedef void mpool_t;
+#define mpool_malloc(a, b) cli_malloc(b)
+#define mpool_free(a, b) free(b)
+#define mpool_calloc(a, b, c) cli_calloc(b, c)
+#define mpool_realloc(a, b, c) cli_realloc(b, c)
+#define mpool_realloc2(a, b, c) cli_realloc2(b, c)
+#define cli_mpool_hex2str(mpool, src) cli_hex2str(src)
+#define cli_mpool_strdup(mpool, s) cli_strdup(s)
+#define cli_mpool_virname(mpool, a, b) cli_virname(a, b)
+#define cli_mpool_hex2ui(mpool, hex) cli_hex2ui(hex)
+#define mpool_flush(val)
+#define mpool_getstats(mpool,used,total) -1
 #endif /* USE_MPOOL */
 
 #endif

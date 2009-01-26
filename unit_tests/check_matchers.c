@@ -63,7 +63,7 @@ START_TEST (test_ac_scanbuff) {
     root->ac_only = 1;
 
 #ifdef USE_MPOOL
-    root->mempool = mp_create();
+    root->mempool = mpool_create();
 #endif
     ret = cli_ac_init(root, CLI_DEFAULT_AC_MINDEPTH, CLI_DEFAULT_AC_MAXDEPTH);
     fail_unless(ret == CL_SUCCESS, "cli_ac_init() failed");
@@ -88,7 +88,7 @@ START_TEST (test_ac_scanbuff) {
     cli_ac_freedata(&mdata);
     cli_ac_free(root);
 #ifdef USE_MPOOL
-    mp_destroy(root->mempool);
+    mpool_destroy(root->mempool);
 #endif
     free(root);
 }
@@ -104,7 +104,7 @@ START_TEST (test_bm_scanbuff) {
     fail_unless(root != NULL, "root == NULL");
 
 #ifdef USE_MPOOL
-    root->mempool = mp_create();
+    root->mempool = mpool_create();
 #endif
     ret = cli_bm_init(root);
     fail_unless(ret == CL_SUCCESS, "cli_bm_init() failed");
@@ -121,7 +121,7 @@ START_TEST (test_bm_scanbuff) {
     fail_unless(!strncmp(virname, "Sig2", 4), "Incorrect signature matched in cli_bm_scanbuff()\n");
     cli_bm_free(root);
 #ifdef USE_MPOOL
-    mp_destroy(root->mempool);
+    mpool_destroy(root->mempool);
 #endif
     free(root);
 }

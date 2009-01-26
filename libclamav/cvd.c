@@ -469,14 +469,12 @@ static int cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt, unsigned int cld)
 	return CL_EMD5;
     }
 
-#ifdef HAVE_LIBGMP
     if(cli_versig(md5, cvd->dsig)) {
 	cli_dbgmsg("cli_cvdverify: Digital signature verification error\n");
 	free(md5);
 	cl_cvdfree(cvd);
 	return CL_EDSIG;
     }
-#endif
 
     free(md5);
     cl_cvdfree(cvd);

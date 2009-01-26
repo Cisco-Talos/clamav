@@ -100,11 +100,11 @@ struct cli_dconf {
 #define PHISHING_CONF_ENTCONV  0x2
 
 #ifdef USE_MPOOL
-struct cli_dconf *cli_dconf_init(mp_t *);
-#define cli_mp_dconf_init(a) cli_dconf_init(a)
+struct cli_dconf *cli_dconf_init(mpool_t *);
+#define cli_mpool_dconf_init(a) cli_dconf_init(a)
 #else
 struct cli_dconf *cli_dconf_init(void);
-#define cli_mp_dconf_init(a) cli_dconf_init()
+#define cli_mpool_dconf_init(a) cli_dconf_init()
 #endif
 void cli_dconf_print(struct cli_dconf *dconf);
 int cli_dconf_load(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio);

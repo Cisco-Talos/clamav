@@ -252,29 +252,29 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	}
 
     } else {
-	bm_new = (struct cli_bm_patt *) mp_calloc(root->mempool, 1, sizeof(struct cli_bm_patt));
+	bm_new = (struct cli_bm_patt *) mpool_calloc(root->mempool, 1, sizeof(struct cli_bm_patt));
 	if(!bm_new)
 	    return CL_EMEM;
-        bm_new->pattern = (unsigned char *) cli_mp_hex2str(root->mempool, hexsig);
+        bm_new->pattern = (unsigned char *) cli_mpool_hex2str(root->mempool, hexsig);
 	if(!bm_new->pattern) {
-	    mp_free(root->mempool, bm_new);
+	    mpool_free(root->mempool, bm_new);
 	    return CL_EMALFDB;
 	}
 	bm_new->length = strlen(hexsig) / 2;
 
-	bm_new->virname = cli_mp_virname(root->mempool, (char *) virname, options & CL_DB_OFFICIAL);
+	bm_new->virname = cli_mpool_virname(root->mempool, (char *) virname, options & CL_DB_OFFICIAL);
 	if(!bm_new->virname) {
-	    mp_free(root->mempool, bm_new->pattern);
-	    mp_free(root->mempool, bm_new);
+	    mpool_free(root->mempool, bm_new->pattern);
+	    mpool_free(root->mempool, bm_new);
 	    return CL_EMEM;
 	}
 
 	if(offset) {
-	    bm_new->offset = cli_mp_strdup(root->mempool, offset);
+	    bm_new->offset = cli_mpool_strdup(root->mempool, offset);
 	    if(!bm_new->offset) {
-	        mp_free(root->mempool, bm_new->pattern);
-		mp_free(root->mempool, bm_new->virname);
-		mp_free(root->mempool, bm_new);
+	        mpool_free(root->mempool, bm_new->pattern);
+		mpool_free(root->mempool, bm_new->virname);
+		mpool_free(root->mempool, bm_new);
 		return CL_EMEM;
 	    }
 	}
@@ -286,9 +286,9 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 
 	if((ret = cli_bm_addpatt(root, bm_new))) {
 	    cli_errmsg("cli_parse_add(): Problem adding signature (4).\n");
-	    mp_free(root->mempool, bm_new->pattern);
-	    mp_free(root->mempool, bm_new->virname);
-	    mp_free(root->mempool, bm_new);
+	    mpool_free(root->mempool, bm_new->pattern);
+	    mpool_free(root->mempool, bm_new->virname);
+	    mpool_free(root->mempool, bm_new);
 	    return ret;
 	}
     }
@@ -305,7 +305,7 @@ static int cli_initroots(struct cl_engine *engine, unsigned int options)
     for(i = 0; i < CLI_MTARGETS; i++) {
 	if(!engine->root[i]) {
 	    cli_dbgmsg("Initializing engine->root[%d]\n", i);
-	    root = engine->root[i] = (struct cli_matcher *) mp_calloc(engine->mempool, 1, sizeof(struct cli_matcher));
+	    root = engine->root[i] = (struct cli_matcher *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_matcher));
 #ifdef USE_MPOOL
 	    root->mempool = engine->mempool;
 #endif
@@ -690,7 +690,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 	switch(apt->type) {
 	    case CLI_TDB_UINT:
 		off[i] = cnt = tdb->cnt[CLI_TDB_UINT]++;
-		tdb->val = (uint32_t *) mp_realloc2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
+		tdb->val = (uint32_t *) mpool_realloc2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
 		if(!tdb->val) {
 		    tdb->cnt[CLI_TDB_UINT] = 0;
 		    return -1;
@@ -706,7 +706,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 		*pt2++ = 0;
 		off[i] = cnt = tdb->cnt[CLI_TDB_RANGE];
 		tdb->cnt[CLI_TDB_RANGE] += 2;
-		tdb->range = (uint32_t *) mp_realloc2(tdb->mempool, tdb->range, tdb->cnt[CLI_TDB_RANGE] * sizeof(uint32_t));
+		tdb->range = (uint32_t *) mpool_realloc2(tdb->mempool, tdb->range, tdb->cnt[CLI_TDB_RANGE] * sizeof(uint32_t));
 		if(!tdb->range) {
 		    tdb->cnt[CLI_TDB_RANGE] = 0;
 		    return -1;
@@ -722,7 +722,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 		}
 		off[i] = cnt = tdb->cnt[CLI_TDB_RANGE];
 		tdb->cnt[CLI_TDB_RANGE] += 3;
-		tdb->range = (uint32_t *) mp_realloc2(tdb->mempool, tdb->range, tdb->cnt[CLI_TDB_RANGE] * sizeof(uint32_t));
+		tdb->range = (uint32_t *) mpool_realloc2(tdb->mempool, tdb->range, tdb->cnt[CLI_TDB_RANGE] * sizeof(uint32_t));
 		if(!tdb->range) {
 		    tdb->cnt[CLI_TDB_RANGE] = 0;
 		    return -1;
@@ -739,7 +739,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 	    case CLI_TDB_STR:
 		off[i] = cnt = tdb->cnt[CLI_TDB_STR];
 		tdb->cnt[CLI_TDB_STR] += strlen(pt) + 1;
-		tdb->str = (char *) mp_realloc2(tdb->mempool, tdb->str, tdb->cnt[CLI_TDB_STR] * sizeof(char));
+		tdb->str = (char *) mpool_realloc2(tdb->mempool, tdb->str, tdb->cnt[CLI_TDB_STR] * sizeof(char));
 		if(!tdb->str) {
 		    cli_errmsg("lsigattribs: Can't allocate memory for tdb->str\n");
 		    return -1;
@@ -785,11 +785,11 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 
 #define FREE_TDB(x) do {		\
   if(x.cnt[CLI_TDB_UINT])		\
-    mp_free(x.mempool, x.val);		\
+    mpool_free(x.mempool, x.val);		\
   if(x.cnt[CLI_TDB_RANGE])		\
-    mp_free(x.mempool, x.range);	\
+    mpool_free(x.mempool, x.range);	\
   if(x.cnt[CLI_TDB_STR])		\
-    mp_free(x.mempool, x.str);		\
+    mpool_free(x.mempool, x.str);		\
   } while(0);
 
 #define LDB_TOKENS 67
@@ -883,7 +883,7 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
 	root = engine->root[tdb.target[0]];
 
-	lsig = (struct cli_ac_lsig *) mp_calloc(engine->mempool, 1, sizeof(struct cli_ac_lsig));
+	lsig = (struct cli_ac_lsig *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_ac_lsig));
 	if(!lsig) {
 	    cli_errmsg("cli_loadldb: Can't allocate memory for lsig\n");
 	    FREE_TDB(tdb);
@@ -891,12 +891,12 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    break;
 	}
 
-	lsig->logic = cli_mp_strdup(engine->mempool, logic);
+	lsig->logic = cli_mpool_strdup(engine->mempool, logic);
 	if(!lsig->logic) {
 	    cli_errmsg("cli_loadldb: Can't allocate memory for lsig->logic\n");
 	    FREE_TDB(tdb);
 	    ret = CL_EMEM;
-	    mp_free(engine->mempool, lsig);
+	    mpool_free(engine->mempool, lsig);
 	    break;
 	}
 
@@ -904,12 +904,12 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	memcpy(&lsig->tdb, &tdb, sizeof(tdb));
 
 	root->ac_lsigs++;
-	newtable = (struct cli_ac_lsig **) mp_realloc(engine->mempool, root->ac_lsigtable, root->ac_lsigs * sizeof(struct cli_ac_lsig *));
+	newtable = (struct cli_ac_lsig **) mpool_realloc(engine->mempool, root->ac_lsigtable, root->ac_lsigs * sizeof(struct cli_ac_lsig *));
 	if(!newtable) {
 	    root->ac_lsigs--;
 	    cli_errmsg("cli_loadldb: Can't realloc root->ac_lsigtable\n");
 	    FREE_TDB(tdb);
-	    mp_free(engine->mempool, lsig);
+	    mpool_free(engine->mempool, lsig);
 	    ret = CL_EMEM;
 	    break;
 	}
@@ -1027,25 +1027,25 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 		break;
 
 	} else if(atoi(tokens[0]) == 0) { /* memcmp() */
-	    new = (struct cli_ftype *) mp_malloc(engine->mempool, sizeof(struct cli_ftype));
+	    new = (struct cli_ftype *) mpool_malloc(engine->mempool, sizeof(struct cli_ftype));
 	    if(!new) {
 		ret = CL_EMEM;
 		break;
 	    }
 	    new->type = type;
 	    new->offset = atoi(tokens[1]);
-	    new->magic = (unsigned char *) cli_mp_hex2str(engine->mempool, tokens[2]);
+	    new->magic = (unsigned char *) cli_mpool_hex2str(engine->mempool, tokens[2]);
 	    if(!new->magic) {
 		cli_errmsg("cli_loadftm: Can't decode the hex string\n");
 		ret = CL_EMALFDB;
-		mp_free(engine->mempool, new);
+		mpool_free(engine->mempool, new);
 		break;
 	    }
 	    new->length = strlen(tokens[2]) / 2;
-	    new->tname = cli_mp_strdup(engine->mempool, tokens[3]);
+	    new->tname = cli_mpool_strdup(engine->mempool, tokens[3]);
 	    if(!new->tname) {
-		mp_free(engine->mempool, new->magic);
-		mp_free(engine->mempool, new);
+		mpool_free(engine->mempool, new->magic);
+		mpool_free(engine->mempool, new);
 		ret = CL_EMEM;
 		break;
 	    }
@@ -1098,16 +1098,16 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
 	    break;
 	}
 
-	new = (struct cli_ignsig *) mp_calloc(engine->mempool, 1, sizeof(struct cli_ignsig));
+	new = (struct cli_ignsig *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_ignsig));
 	if(!new) {
 	    ret = CL_EMEM;
 	    break;
 	}
 
-	new->dbname = cli_mp_strdup(engine->mempool, tokens[0]);
+	new->dbname = cli_mpool_strdup(engine->mempool, tokens[0]);
 
 	if(!new->dbname) {
-	    mp_free(engine->mempool, new);
+	    mpool_free(engine->mempool, new);
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -1117,10 +1117,10 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
 	if((ret = hashset_addkey(&engine->ignored->hs, new->line)))
 	    break;
 
-	new->signame = cli_mp_strdup(engine->mempool, tokens[2]);
+	new->signame = cli_mpool_strdup(engine->mempool, tokens[2]);
 	if(!new->signame) {
-	    mp_free(engine->mempool, new->dbname);
-	    mp_free(engine->mempool, new);
+	    mpool_free(engine->mempool, new->dbname);
+	    mpool_free(engine->mempool, new);
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -1146,9 +1146,9 @@ static void cli_freeign(struct cl_engine *engine)
 	while(ignored->list) {
 	    pt = ignored->list;
 	    ignored->list = ignored->list->next;
-	    mp_free(engine->mempool, pt->dbname);
-	    mp_free(engine->mempool, pt->signame);
-	    mp_free(engine->mempool,pt);
+	    mpool_free(engine->mempool, pt->dbname);
+	    mpool_free(engine->mempool, pt->signame);
+	    mpool_free(engine->mempool,pt);
 	}
 	hashset_destroy(&ignored->hs);
 	free(engine->ignored);
@@ -1172,11 +1172,11 @@ static int cli_md5db_init(struct cl_engine *engine, unsigned int mode)
 
 
     if(mode == MD5_HDB) {
-	bm = engine->md5_hdb = (struct cli_matcher *) mp_calloc(engine->mempool, sizeof(struct cli_matcher), 1);
+	bm = engine->md5_hdb = (struct cli_matcher *) mpool_calloc(engine->mempool, sizeof(struct cli_matcher), 1);
     } else if(mode == MD5_MDB) {
-	bm = engine->md5_mdb = (struct cli_matcher *) mp_calloc(engine->mempool, sizeof(struct cli_matcher), 1);
+	bm = engine->md5_mdb = (struct cli_matcher *) mpool_calloc(engine->mempool, sizeof(struct cli_matcher), 1);
     } else {
-	bm = engine->md5_fp = (struct cli_matcher *) mp_calloc(engine->mempool, sizeof(struct cli_matcher), 1);
+	bm = engine->md5_fp = (struct cli_matcher *) mpool_calloc(engine->mempool, sizeof(struct cli_matcher), 1);
     }
 
     if(!bm)
@@ -1235,16 +1235,16 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	if(engine->ignored && cli_chkign(engine->ignored, dbname, line, pt))
 	    continue;
 
-	new = (struct cli_bm_patt *) mp_calloc(engine->mempool, 1, sizeof(struct cli_bm_patt));
+	new = (struct cli_bm_patt *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_bm_patt));
 	if(!new) {
 	    ret = CL_EMEM;
 	    break;
 	}
 
 	pt = tokens[md5_field]; /* md5 */
-	if(strlen(pt) != 32 || !(new->pattern = (unsigned char *) cli_mp_hex2str(engine->mempool, pt))) {
+	if(strlen(pt) != 32 || !(new->pattern = (unsigned char *) cli_mpool_hex2str(engine->mempool, pt))) {
 	    cli_errmsg("cli_loadmd5: Malformed MD5 string at line %u\n", line);
-	    mp_free(engine->mempool, new);
+	    mpool_free(engine->mempool, new);
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -1252,19 +1252,19 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
 	size = atoi(tokens[size_field]);
 
-	new->virname = cli_mp_virname(engine->mempool, (char *) tokens[2], options & CL_DB_OFFICIAL);
+	new->virname = cli_mpool_virname(engine->mempool, (char *) tokens[2], options & CL_DB_OFFICIAL);
 	if(!new->virname) {
-	    mp_free(engine->mempool, new->pattern);
-	    mp_free(engine->mempool, new);
+	    mpool_free(engine->mempool, new->pattern);
+	    mpool_free(engine->mempool, new);
 	    ret = CL_EMALFDB;
 	    break;
 	}
 
 	MD5_DB;
 	if(!db && (ret = cli_md5db_init(engine, mode))) {
-	    mp_free(engine->mempool, new->pattern);
-	    mp_free(engine->mempool, new->virname);
-	    mp_free(engine->mempool, new);
+	    mpool_free(engine->mempool, new->pattern);
+	    mpool_free(engine->mempool, new->virname);
+	    mpool_free(engine->mempool, new);
 	    break;
 	} else {
 	    MD5_DB;
@@ -1272,9 +1272,9 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
 	if((ret = cli_bm_addpatt(db, new))) {
 	    cli_errmsg("cli_loadmd5: Error adding BM pattern\n");
-	    mp_free(engine->mempool, new->pattern);
-	    mp_free(engine->mempool, new->virname);
-	    mp_free(engine->mempool, new);
+	    mpool_free(engine->mempool, new->pattern);
+	    mpool_free(engine->mempool, new->virname);
+	    mpool_free(engine->mempool, new);
 	    break;
 	}
 
@@ -1326,35 +1326,35 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 	    break;
 	}
 
-	new = (struct cli_meta_node *) mp_calloc(engine->mempool, 1, sizeof(struct cli_meta_node));
+	new = (struct cli_meta_node *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_meta_node));
 	if(!new) {
 	    ret = CL_EMEM;
 	    break;
 	}
 
-	new->virname = cli_mp_virname(engine->mempool, (char *)tokens[0], options & CL_DB_OFFICIAL);
+	new->virname = cli_mpool_virname(engine->mempool, (char *)tokens[0], options & CL_DB_OFFICIAL);
 	if(!new->virname) {
-	    mp_free(engine->mempool, new);
+	    mpool_free(engine->mempool, new);
 	    ret = CL_EMEM;
 	    break;
 	}
 
 	if(engine->ignored && cli_chkign(engine->ignored, dbname, line, new->virname)) {
-	    mp_free(engine->mempool, new->virname);
-	    mp_free(engine->mempool, new);
+	    mpool_free(engine->mempool, new->virname);
+	    mpool_free(engine->mempool, new);
 	    continue;
 	}
 
 	new->encrypted = atoi(tokens[1]);
-	new->filename = cli_mp_strdup(engine->mempool, tokens[2]);
+	new->filename = cli_mpool_strdup(engine->mempool, tokens[2]);
 	if(!new->filename) {
-	    mp_free(engine->mempool, new->virname);
-	    mp_free(engine->mempool, new);
+	    mpool_free(engine->mempool, new->virname);
+	    mpool_free(engine->mempool, new);
 	    ret = CL_EMALFDB;
 	    break;
 	} else {
 	    if(!strcmp(new->filename, "*")) {
-	        mp_free(engine->mempool, new->filename);
+	        mpool_free(engine->mempool, new->filename);
 		new->filename = NULL;
 	    }
 	}
@@ -1916,72 +1916,72 @@ int cl_engine_free(struct cl_engine *engine)
 		cli_ac_free(root);
 		if(root->ac_lsigtable) {
 		    for(j = 0; j < root->ac_lsigs; j++) {
-			mp_free(engine->mempool, root->ac_lsigtable[j]->logic);
+			mpool_free(engine->mempool, root->ac_lsigtable[j]->logic);
 			FREE_TDB(root->ac_lsigtable[j]->tdb);
-			mp_free(engine->mempool, root->ac_lsigtable[j]);
+			mpool_free(engine->mempool, root->ac_lsigtable[j]);
 		    }
-		    mp_free(engine->mempool, root->ac_lsigtable);
+		    mpool_free(engine->mempool, root->ac_lsigtable);
 		}
-		mp_free(engine->mempool, root);
+		mpool_free(engine->mempool, root);
 	    }
 	}
-	mp_free(engine->mempool, engine->root);
+	mpool_free(engine->mempool, engine->root);
     }
 
     if((root = engine->md5_hdb)) {
 	cli_bm_free(root);
-	mp_free(engine->mempool, root);
+	mpool_free(engine->mempool, root);
     }
 
     if((root = engine->md5_mdb)) {
 	cli_bm_free(root);
-	mp_free(engine->mempool, root->soff);
+	mpool_free(engine->mempool, root->soff);
 	if(root->md5_sizes_hs.capacity) {
 		hashset_destroy(&root->md5_sizes_hs);
 	}
-	mp_free(engine->mempool, root);
+	mpool_free(engine->mempool, root);
     }
 
     if((root = engine->md5_fp)) {
 	cli_bm_free(root);
-	mp_free(engine->mempool, root);
+	mpool_free(engine->mempool, root);
     }
 
     metapt = engine->zip_mlist;
     while(metapt) {
 	metah = metapt;
 	metapt = metapt->next;
-	mp_free(engine->mempool, metah->virname);
+	mpool_free(engine->mempool, metah->virname);
 	if(metah->filename)
-	    mp_free(engine->mempool, metah->filename);
-	mp_free(engine->mempool, metah);
+	    mpool_free(engine->mempool, metah->filename);
+	mpool_free(engine->mempool, metah);
     }
 
     metapt = engine->rar_mlist;
     while(metapt) {
 	metah = metapt;
 	metapt = metapt->next;
-	mp_free(engine->mempool, metah->virname);
+	mpool_free(engine->mempool, metah->virname);
 	if(metah->filename)
-	    mp_free(engine->mempool, metah->filename);
-	mp_free(engine->mempool, metah);
+	    mpool_free(engine->mempool, metah->filename);
+	mpool_free(engine->mempool, metah);
     }
 
     if(engine->dconf->phishing & PHISHING_CONF_ENGINE)
 	phishing_done(engine);
     if(engine->dconf)
-	mp_free(engine->mempool, engine->dconf);
+	mpool_free(engine->mempool, engine->dconf);
 
     if(engine->pua_cats)
-	mp_free(engine->mempool, engine->pua_cats);
+	mpool_free(engine->mempool, engine->pua_cats);
 
     if(engine->tmpdir)
-	mp_free(engine->mempool, engine->tmpdir);
+	mpool_free(engine->mempool, engine->tmpdir);
 
     cli_ftfree(engine);
     cli_freeign(engine);
 #ifdef USE_MPOOL
-    if(engine->mempool) mp_destroy(engine->mempool);
+    if(engine->mempool) mpool_destroy(engine->mempool);
 #endif
     free(engine);
     return CL_SUCCESS;
@@ -1997,7 +1997,7 @@ static void cli_md5db_build(struct cli_matcher* root)
 		{
 		uint32_t *mpoolht;
 		unsigned int mpoolhtsz = root->md5_sizes_hs.count * sizeof(*mpoolht);
-		root->soff = mp_malloc(root->mempool, mpoolhtsz);
+		root->soff = mpool_malloc(root->mempool, mpoolhtsz);
 		root->soff_len = hashset_toarray(&root->md5_sizes_hs, &mpoolht);
 		memcpy(root->soff, mpoolht, mpoolhtsz);
 		free(mpoolht);
@@ -2041,7 +2041,7 @@ int cl_engine_compile(struct cl_engine *engine)
     cli_md5db_build(engine->md5_mdb);
     cli_freeign(engine);
     cli_dconf_print(engine->dconf);
-    mp_flush(engine->mempool);
+    mpool_flush(engine->mempool);
 
     return CL_SUCCESS;
 }

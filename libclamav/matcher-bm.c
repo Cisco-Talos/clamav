@@ -101,11 +101,11 @@ int cli_bm_init(struct cli_matcher *root)
 #ifdef USE_MPOOL
     assert (root->mempool && "mempool must be initialized");
 #endif
-    if(!(root->bm_shift = (uint8_t *) mp_calloc(root->mempool, size, sizeof(uint8_t))))
+    if(!(root->bm_shift = (uint8_t *) mpool_calloc(root->mempool, size, sizeof(uint8_t))))
 	return CL_EMEM;
 
-    if(!(root->bm_suffix = (struct cli_bm_patt **) mp_calloc(root->mempool, size, sizeof(struct cli_bm_patt *)))) {
-	mp_free(root->mempool, root->bm_shift);
+    if(!(root->bm_suffix = (struct cli_bm_patt **) mpool_calloc(root->mempool, size, sizeof(struct cli_bm_patt *)))) {
+	mpool_free(root->mempool, root->bm_shift);
 	return CL_EMEM;
     }
 
@@ -122,7 +122,7 @@ void cli_bm_free(struct cli_matcher *root)
 
 
     if(root->bm_shift)
-	mp_free(root->mempool, root->bm_shift);
+	mpool_free(root->mempool, root->bm_shift);
 
     if(root->bm_suffix) {
 	for(i = 0; i < size; i++) {
@@ -131,17 +131,17 @@ void cli_bm_free(struct cli_matcher *root)
 		prev = patt;
 		patt = patt->next;
 		if(prev->prefix)
-		    mp_free(root->mempool, prev->prefix);
+		    mpool_free(root->mempool, prev->prefix);
 		else
-		    mp_free(root->mempool, prev->pattern);
+		    mpool_free(root->mempool, prev->pattern);
 		if(prev->virname)
-		    mp_free(root->mempool, prev->virname);
+		    mpool_free(root->mempool, prev->virname);
 		if(prev->offset)
-		    mp_free(root->mempool, prev->offset);
-		mp_free(root->mempool, prev);
+		    mpool_free(root->mempool, prev->offset);
+		mpool_free(root->mempool, prev);
 	    }
 	}
-	mp_free(root->mempool, root->bm_suffix);
+	mpool_free(root->mempool, root->bm_suffix);
     }
 }
 

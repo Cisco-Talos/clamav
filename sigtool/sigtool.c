@@ -939,11 +939,6 @@ static int cvdinfo(const struct optstruct *opts)
 	mprintf("MD5: %s\n", cvd->md5);
 	mprintf("Digital signature: %s\n", cvd->dsig);
 	cl_cvdfree(cvd);
-
-#ifndef HAVE_LIBGMP
-	mprintf("^Digital signature support not compiled in.\n");
-#endif
-
 	if((ret = cl_cvdverify(pt))) {
 	    mprintf("!cvdinfo: Verification: %s\n", cl_strerror(ret));
 	    return -1;

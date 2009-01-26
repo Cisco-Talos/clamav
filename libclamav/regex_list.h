@@ -54,7 +54,7 @@ struct regex_matcher {
 	struct filter md5_filter;
 	struct filter filter;
 #ifdef USE_MPOOL
-	mp_t *mempool;
+	mpool_t *mempool;
 #endif
 	int list_inited:2;
 	int list_loaded:2;

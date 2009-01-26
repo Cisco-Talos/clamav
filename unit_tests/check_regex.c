@@ -155,7 +155,7 @@ static void rsetup(void)
 {
 	int rc;
 #ifdef USE_MPOOL
-	matcher.mempool = mp_create();
+	matcher.mempool = mpool_create();
 #endif
 	rc = init_regex_list(&matcher);
 	fail_unless(rc == 0, "init_regex_list");
@@ -165,7 +165,7 @@ static void rteardown(void)
 {
 	regex_list_done(&matcher);
 #ifdef USE_MPOOL
-	mp_destroy(matcher.mempool);
+	mpool_destroy(matcher.mempool);
 #endif
 }
 

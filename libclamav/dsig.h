@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -25,11 +25,9 @@
 #include "clamav-config.h"
 #endif
 
-#ifdef HAVE_LIBGMP
-#include <gmp.h>
+#include "bignum.h"
 
 int cli_versig(const char *md5, const char *dsig);
-unsigned char *cli_decodesig(const char *sig, unsigned int plen, mpz_t e, mpz_t n);
+unsigned char *cli_decodesig(const char *sig, unsigned int plen, mp_int e, mp_int n);
 
-#endif /* HAVE_LIBGMP */
 #endif

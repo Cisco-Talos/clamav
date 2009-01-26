@@ -220,9 +220,6 @@
 /* Define if libdlloader will be built on this platform */
 #undef HAVE_LIBDLLOADER
 
-/* Define if you have the gmp library. */
-#undef HAVE_LIBGMP
-
 /* Define to 1 if you have the <libmilter/mfapi.h> header file. */
 #undef HAVE_LIBMILTER_MFAPI_H
 

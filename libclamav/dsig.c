@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -22,18 +22,16 @@
 #include "clamav-config.h"
 #endif
 
-#ifdef HAVE_LIBGMP
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <gmp.h>
 
 #include "clamav.h"
 #include "others.h"
 #include "dsig.h"
 #include "str.h"
+#include "bignum.h"
 
 #define CLI_NSTR "118640995551645342603070001658453189751527774412027743746599405743243142607464144767361060640655844749760788890022283424922762488917565551002467771109669598189410434699034532232228621591089508178591428456220796841621637175567590476666928698770143328137383952820383197532047771780196576957695822641224262693037"
 
@@ -62,54 +60,51 @@ static unsigned char cli_ndecode(unsigned char value)
     return -1;
 }
 
-unsigned char *cli_decodesig(const char *sig, unsigned int plen, mpz_t e, mpz_t n)
+unsigned char *cli_decodesig(const char *sig, unsigned int plen, mp_int e, mp_int n)
 {
 	int i, slen = strlen(sig), dec;
 	unsigned char *plain;
-	mpz_t r, p, c;
+	mp_int r, p, c;
 
 
-    mpz_init(r);
-    mpz_init(c);
-
+    mp_init(&r);
+    mp_init(&c);
     for(i = 0; i < slen; i++) {
 	if((dec = cli_ndecode(sig[i])) < 0) {
-	    mpz_clear(r);
-	    mpz_clear(c);
+	    mp_clear(&r);
+	    mp_clear(&c);
 	    return NULL;
 	}
-
-	mpz_set_ui(r, dec);
-	mpz_mul_2exp(r, r, 6 * i);
-	mpz_add(c, c, r);
+	mp_set_int(&r, dec);
+	mp_mul_2d(&r, 6 * i, &r);
+	mp_add(&r, &c, &c);
     }
 
     plain = (unsigned char *) cli_calloc(plen + 1, sizeof(unsigned char));
     if(!plain) {
 	cli_errmsg("cli_decodesig: Can't allocate memory for 'plain'\n");
-	mpz_clear(r);
-	mpz_clear(c);
+	mp_clear(&r);
+	mp_clear(&c);
 	return NULL;
     }
-
-    mpz_init(p);
-    mpz_powm(p, c, e, n); /* plain = cipher^e mod n */
-    mpz_clear(c);
-
+    mp_init(&p);
+    mp_exptmod(&c, &e, &n, &p); /* plain = cipher^e mod n */
+    mp_clear(&c);
+    mp_set_int(&c, 256);
     for(i = plen - 1; i >= 0; i--) { /* reverse */
-	mpz_tdiv_qr_ui(p, r, p, 256);
-	plain[i] = mpz_get_ui(r);
+	mp_div(&p, &c, &p, &r);
+	plain[i] = mp_get_int(&r);
     }
-
-    mpz_clear(p);
-    mpz_clear(r);
+    mp_clear(&c);
+    mp_clear(&p);
+    mp_clear(&r);
 
     return plain;
 }
 
 int cli_versig(const char *md5, const char *dsig)
 {
-	mpz_t n, e;
+	mp_int n, e;
 	char *pt, *pt2;
 
 
@@ -119,12 +114,14 @@ int cli_versig(const char *md5, const char *dsig)
 	return CL_EMD5;
     }
 
-    mpz_init_set_str(n, CLI_NSTR, 10);
-    mpz_init_set_str(e, CLI_ESTR, 10);
+    mp_init(&n);
+    mp_read_radix(&n, CLI_NSTR, 10);
+    mp_init(&e);
+    mp_read_radix(&e, CLI_ESTR, 10);
 
     if(!(pt = (char *) cli_decodesig(dsig, 16, e, n))) {
-	mpz_clear(n);
-	mpz_clear(e);
+	mp_clear(&n);
+	mp_clear(&e);
 	return CL_EDSIG;
     }
 
@@ -136,21 +133,15 @@ int cli_versig(const char *md5, const char *dsig)
     if(strncmp(md5, pt2, 32)) {
 	cli_dbgmsg("cli_versig: Signature doesn't match.\n");
 	free(pt2);
-	mpz_clear(n);
-	mpz_clear(e);
+	mp_clear(&n);
+	mp_clear(&e);
 	return CL_EDSIG;
     }
 
     free(pt2);
-    mpz_clear(n);
-    mpz_clear(e);
+    mp_clear(&n);
+    mp_clear(&e);
 
     cli_dbgmsg("cli_versig: Digital signature is correct.\n");
     return CL_SUCCESS;
 }
-#else
-/* since we are using linker version scripts, we must define all symbols listed in the .map,
- * otherwise linking will fail (at least on Solaris).
- * So here is a dummy definition for cli_decodesig.*/
-unsigned char *cli_decodesig() {}
-#endif

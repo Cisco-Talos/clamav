@@ -169,7 +169,7 @@ struct cl_engine {
     char *pua_cats;
 
     /* Used for memory pools */
-    mp_t *mempool;
+    mpool_t *mempool;
 };
 
 extern int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
