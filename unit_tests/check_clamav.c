@@ -290,16 +290,56 @@ START_TEST (test_cli_writeint32)
 }
 END_TEST
 
+static struct dsig_test {
+    const char *md5;
+    const char *dsig;
+    int result;
+} dsig_tests [] = {
+    {"ae307614434715274c60854c931a26de", "60uhCFmiN48J8r6c7coBv9Q1mehAWEGh6GPYA+60VhQcuXfb0iV1O+sCEyMiRXt/iYF6vXtPXHVd6DiuZ4Gfrry7sVQqNTt3o1/KwU1rc0l5FHgX/nC99fdr/fjaFtinMtRnUXHLeu0j8e6HK+7JLBpD37fZ60GC9YY86EclYGe", 
+	CL_SUCCESS},
+    {"96b7feb3b2a863846438809fe481906f", "Zh5gmf09Zfj6V4gmRKu/NURzhFiE9VloI7w1G33BgDdGSs0Xhscx6sjPUpFSCPsjOalyS4L8q7RS+NdGvNCsLymiIH6RYItlOZsygFhcGuH4jt15KAaAkvEg2TwmqR8z41nUaMlZ0c8q1MXYCLvQJyFARsfzIxS3PAoN2Y3HPoe",
+	CL_SUCCESS},
+    {"ae307614434715274c60854c931a26de", "Zh5gmf09Zfj6V4gmRKu/NURzhFiE9VloI7w1G33BgDdGSs0Xhscx6sjPUpFSCPsjOalyS4L8q7RS+NdGvNCsLymiIH6RYItlOZsygFhcGuH4jt15KAaAkvEg2TwmqR8z41nUaMlZ0c8q1MXYCLvQJyFARsfzIxS3PAoN2Y3HPoe",
+	CL_EDSIG},
+    {"96b7feb3b2a863846438809fe481906f", "60uhCFmiN48J8r6c7coBv9Q1mehAWEGh6GPYA+60VhQcuXfb0iV1O+sCEyMiRXt/iYF6vXtPXHVd6DiuZ4Gfrry7sVQqNTt3o1/KwU1rc0l5FHgX/nC99fdr/fjaFtinMtRnUXHLeu0j8e6HK+7JLBpD37fZ60GC9YY86EclYGe",
+	CL_EDSIG},
+    {"ae307614434715274060854c931a26de", "60uhCFmiN48J8r6c7coBv9Q1mehAWEGh6GPYA+60VhQcuXfb0iV1O+sCEyMiRXt/iYF6vXtPXHVd6DiuZ4Gfrry7sVQqNTt3o1/KwU1rc0l5FHgX/nC99fdr/fjaFtinMtRnUXHLeu0j8e6HK+7JLBpD37fZ60GC9YY86EclYGe",
+	CL_EDSIG},
+    {"ae307614434715274c60854c931a26de", "60uhCFmiN48J8r6c7coBv9Q1mehAWEGh6GPYA+60VhQcuXfb0iV1O+sCEyMiRXt/iYF6vXtPXHVd6DiuZ4Gfrry7sVQqNTt3o1/KwU1rc0l5FHgX/nC99fdr/fjaatinMtRnUXHLeu0j8e6HK+7JLBpD37fZ60GC9YY86EclYGe",
+	CL_EDSIG},
+    {"96b7feb3b2a863846438809fe481906f", "Zh5gmf09Zfj6V4gmRKu/NURzhFiE9VloI7w1G33BgDdGSs0Xhscx6sjPUpFSCPsjOalyS4L8q7RS+NdGvNCsLymiIH6RYItlOZsygFhcGuH4jt15KAaAkvEg2TwmqR8z41nUaMlZ0c8q1MYYCLvQJyFARsfzIxS3PAoN2Y3HPoe",
+	CL_EDSIG},
+    {"ge307614434715274c60854c931a26dee","60uhCFmiN48J8r6c7coBv9Q1mehAWEGh6GPYA+60VhQcuXfb0iV1O+sCEyMiRXt/iYF6vXtPXHVd6DiuZ4Gfrry7sVQqNTt3o1/KwU1rc0l5FHgX/nC99fdr/fjaFtinMtRnUXHLeu0j8e6HK+7JLBpD37fZ60GC9YY86EclYGe",
+	CL_EMD5},
+    {"ae307614434715274c60854c931a26de", "60uhCFmiN48J8r6c7coBv9Q1mehAWEGh6GPYA+60VhQcuXfb0iV1O+sCEyMiRXt/iYF6vXtPXHVd6DiuZ4Gfrry7sVQqNTt3o1/KwU1rc0l5FHgX/nC99fdr/fjaFtinMtRnUXHLeu0j8e6HK+7JLBpD37fZ60GC9YY86EclYGee", 
+	CL_EDSIG},
+    {"ae307614434715274c60854c931a26de", "60uhCFmiN48J8r6c7coBv9Q1mehAWEGh6GPYA+", 
+	CL_EDSIG}
+};
+
+static const size_t dsig_tests_cnt = sizeof(dsig_tests)/sizeof(dsig_tests[0]);
+
+START_TEST (test_cli_dsig)
+{
+    fail_unless(cli_versig(dsig_tests[_i].md5, dsig_tests[_i].dsig) == dsig_tests[_i].result,
+		"digital signature verification test failed");
+}
+END_TEST
+
 static Suite *test_cli_suite(void)
 {
     Suite *s = suite_create("cli");
     TCase *tc_cli_others = tcase_create("byteorder_macros");
+    TCase *tc_cli_dsig = tcase_create("digital signatures");
 
     suite_add_tcase (s, tc_cli_others);
     tcase_add_checked_fixture (tc_cli_others, data_setup, data_teardown);
-    tcase_add_loop_test(tc_cli_others, test_cli_readint32, 0, 15);
-    tcase_add_loop_test(tc_cli_others, test_cli_readint16, 0, 15);
-    tcase_add_loop_test(tc_cli_others, test_cli_writeint32, 0, 15);
+    tcase_add_loop_test(tc_cli_others, test_cli_readint32, 0, 16);
+    tcase_add_loop_test(tc_cli_others, test_cli_readint16, 0, 16);
+    tcase_add_loop_test(tc_cli_others, test_cli_writeint32, 0, 16);
+
+    suite_add_tcase (s, tc_cli_dsig);
+    tcase_add_loop_test(tc_cli_dsig, test_cli_dsig, 0, dsig_tests_cnt);
 
     return s;
 }

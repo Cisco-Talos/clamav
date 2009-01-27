@@ -1,3 +1,8 @@
+Tue Jan 27 13:12:50 EET 2009 (edwin)
+------------------------------------
+ * libclamav/libclamav.map, unit_tests/check_clamav.c: add dsig unit
+ test
+
 Tue Jan 27 11:46:17 CET 2009 (tk)
 ---------------------------------
  * clamscan/manager.c: fix use of uninitialized value in exclude-pua (bb#1373)
