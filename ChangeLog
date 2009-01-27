@@ -1,3 +1,7 @@
+Tue Jan 27 11:46:17 CET 2009 (tk)
+---------------------------------
+ * clamscan/manager.c: fix use of uninitialized value in exclude-pua (bb#1373)
+
 Mon Jan 26 21:06:36 CET 2009 (tk)
 ---------------------------------
  * libclamav: use LibTomMath by Tom St Denis instead of libgmp for multiple

@@ -365,6 +365,7 @@ int scanmanager(const struct optstruct *opts)
 	dboptions |= CL_DB_PUA;
 	if((opt = optget(opts, "exclude-pua"))->enabled) {
 	    dboptions |= CL_DB_PUA_EXCLUDE;
+	    i = 0;
 	    while(opt) {
 		if(!(pua_cats = realloc(pua_cats, i + strlen(opt->strarg) + 3))) {
 		    logg("!Can't allocate memory for pua_cats\n");
