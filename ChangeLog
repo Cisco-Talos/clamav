@@ -1,3 +1,7 @@
+Tue Jan 27 14:55:46 EET 2009 (edwin)
+------------------------------------
+ * unit_tests/check_clamav.c: add missing include
+
 Tue Jan 27 13:12:50 EET 2009 (edwin)
 ------------------------------------
  * libclamav/libclamav.map, unit_tests/check_clamav.c: add dsig unit

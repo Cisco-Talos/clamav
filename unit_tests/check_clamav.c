@@ -13,6 +13,7 @@
 #include "../libclamav/others.h"
 #include "../libclamav/matcher.h"
 #include "../libclamav/version.h"
+#include "../libclamav/dsig.h"
 #include "checks.h"
 
 /* extern void cl_free(struct cl_engine *engine); */
