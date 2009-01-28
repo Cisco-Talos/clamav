@@ -196,10 +196,32 @@ int command(client_conn_t *conn, int timeout)
 	return COMMAND_SHUTDOWN;
 
     } else if(!strncmp(buff, CMD13, strlen(CMD13))) { /* MULTISCAN */
+	struct scan_cb_data scandata;
+	struct cli_ftw_cbdata data;
+	unsigned ok, error, total;
+	const char *path = buff + strlen(CMD13) + 1;
+	jobgroup_t group = JOBGROUP_INITIALIZER;
+	data.data = &scandata;
+
+	memset(&scandata, 0, sizeof(scandata));
+	scandata.type = TYPE_MULTISCAN;
+	scandata.odesc = desc;
+	scandata.term = term;
+	scandata.options = options;
+	scandata.engine = engine;
+	scandata.opts = opts;
+	scandata.thr_pool = conn->thrpool;
+	scandata.group = &group;
 	thrmgr_setactivetask(buff+strlen(CMD13)+1, CMD13);
-	if(scan(buff + strlen(CMD13) + 1, term, NULL, engine, options, opts, desc, TYPE_MULTISCAN) == -2)
+	int maxdirrec = optget(opts, "MaxDirectoryRecursion")->numarg;
+
+	if (cli_sftw(strdup(path), CLI_FTW_STD,  maxdirrec ? maxdirrec : INT_MAX, scan_callback, &data) == CL_EMEM) 
 	    if(optget(opts, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
+	thrmgr_group_waitforall(&group, &ok, &error, &total);
+	if (ok + error == total) {
+	    mdprintf(desc, "%s: OK%c", path, conn->term);
+	}
 
     } else if(!strncmp(buff, CMD14, strlen(CMD14))) { /* FILDES */
 	thrmgr_setactivetask(NULL, CMD14);

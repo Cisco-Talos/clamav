@@ -603,3 +603,47 @@ int thrmgr_dispatch(threadpool_t *threadpool, void *user_data)
 	}
 	return TRUE;
 }
+
+int thrmgr_group_dispatch(threadpool_t *threadpool, jobgroup_t *group, void *user_data)
+{
+    int ret;
+    pthread_mutex_lock(&group->mutex);
+    group->jobs++;
+    if (!(ret = thrmgr_dispatch(threadpool, user_data))) {
+	group->jobs--;
+    }
+    pthread_mutex_unlock(&group->mutex);
+    return ret;
+}
+
+void thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc)
+{
+    pthread_mutex_lock(&group->mutex);
+    group->exit_total++;
+    switch (exitc) {
+	case EXIT_OK:
+	    group->exit_ok++;
+	    break;
+	case EXIT_ERROR:
+	    group->exit_error++;
+	    break;
+    }
+    if (group->jobs) {
+	if (!--group->jobs)
+	    pthread_cond_signal(&group->empty);
+    }
+    pthread_mutex_unlock(&group->mutex);
+}
+
+void thrmgr_group_waitforall(jobgroup_t *group, unsigned *ok, unsigned *error, unsigned *total)
+{
+    pthread_mutex_lock(&group->mutex);
+    /* TODO: should check progexit here */
+    while (group->jobs) {
+	pthread_cond_wait(&group->empty, &group->mutex);
+    }
+    *ok = group->exit_ok;
+    *error = group->exit_error;
+    *total = group->exit_total;
+    pthread_mutex_unlock(&group->mutex);
+}

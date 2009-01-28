@@ -282,8 +282,11 @@ static void cleanup_fds(struct fd_data *data)
     struct fd_buf *newbuf;
     unsigned i,j;
     for (i=0,j=0;i < data->nfds; i++) {
-	if (data->buf[i].fd < 0)
+	if (data->buf[i].fd < 0) {
+	    if (data->buf[i].buffer)
+		free(data->buf[i].buffer);
 	    continue;
+	}
 	if (i != j)
 	    data->buf[j] = data->buf[i];
 	j++;
@@ -588,6 +591,11 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 
 void fds_free(struct fd_data *data)
 {
+    unsigned i;
+    for (i=0;i < data->nfds;i++) {
+	if (data->buf[i].buffer)
+	    free(data->buf[i].buffer);
+    }
     if (data->buf)
 	free(data->buf);
 #ifdef HAVE_POLL

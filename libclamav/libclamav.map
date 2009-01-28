@@ -120,6 +120,8 @@ CLAMAV_PRIVATE {
     mp_destroy;
     mp_free;
     mp_getstats;
+    cli_sftw;
+    cli_ftw;
   local:
     *;
 };

@@ -72,9 +72,29 @@ typedef struct threadpool_tag {
 	work_queue_t *queue;
 } threadpool_t;
 
+typedef struct jobgroup {
+    pthread_mutex_t mutex;
+    pthread_cond_t empty;
+    unsigned jobs;
+    unsigned exit_ok;
+    unsigned exit_error;
+    unsigned exit_total;
+} jobgroup_t;
+
+#define JOBGROUP_INITIALIZER  { PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER, 0, 0, 0, 0 };
+
+enum thrmgr_exit {
+    EXIT_OK,
+    EXIT_ERROR,
+    EXIT_OTHER
+};
+
 threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void *));
 void thrmgr_destroy(threadpool_t *threadpool);
 int thrmgr_dispatch(threadpool_t *threadpool, void *user_data);
+int thrmgr_group_dispatch(threadpool_t *threadpool, jobgroup_t *group, void *user_data);
+void thrmgr_group_waitforall(jobgroup_t *group, unsigned *ok, unsigned *error, unsigned *total);
+void thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc);
 int thrmgr_printstats(int outfd);
 void thrmgr_setactivetask(const char *filename, const char* command);
 void thrmgr_setactiveengine(const struct cl_engine *engine);

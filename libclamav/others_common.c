@@ -334,6 +334,7 @@ static int get_filetype(const char *fname, int flags, int need_stat,
 	}
     }
 
+    /* TODO: ft_skipped shouldn't be stated */
     if (need_stat) {
 	if (stat(fname, statbuf) == -1)
 	    return -1;
@@ -373,7 +374,6 @@ static int handle_filetype(char *fname, int flags,
 	    return ret;
 	*ft = ft_skipped; /* skip on stat failure */
     }
-
     if (*ft == ft_skipped) {
 	/* skipped filetype */
 	ret = callback(stated ? statbuf : NULL, fname, warning_skipped_special, data);
@@ -392,7 +392,6 @@ static int handle_entry(struct dirent_data *entry, int flags, int maxdepth, cli_
 	return ret;
     if (entry->is_dir) {
 	ret = cli_ftw(entry->filename, flags, maxdepth, callback, data);
-	free(entry->filename);
 	if (ret != CL_SUCCESS)
 	    return ret;
     }
@@ -402,9 +401,9 @@ static int handle_entry(struct dirent_data *entry, int flags, int maxdepth, cli_
 int cli_sftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
 {
     struct stat statbuf;
-    enum filetype ft;
+    enum filetype ft = ft_unknown;
     struct dirent_data entry;
-    int stated;
+    int stated = 0;
 
     int ret = handle_filetype(path, flags, &statbuf, &stated, &ft, callback, data);
     if (ret != CL_SUCCESS)
@@ -438,6 +437,7 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
     if((dd = opendir(dirname)) != NULL) {
 	struct dirent *dent;
 	errno = 0;
+	ret = CL_SUCCESS;
 #ifdef HAVE_READDIR_R_3
 	while(!readdir_r(dd, &result.d, &dent) && dent) {
 #elif defined(HAVE_READDIR_R_2)
@@ -510,6 +510,7 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 			continue;
 		    }
 		}
+		memcpy(statbufp, &statbuf, sizeof(statbuf));
 	    } else {
 		statbufp = 0;
 	    }
@@ -542,6 +543,10 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 	    for (i = 0; i < entries_cnt; i++) {
 		struct dirent_data *entry = &entries[i];
 		ret = handle_entry(entry, flags, maxdepth-1, callback, data);
+		if (entry->is_dir)
+		    free(entry->filename);
+		if (entry->statbuf)
+		    free(entry->statbuf);
 		if (ret != CL_SUCCESS)
 		    break;
 	    }

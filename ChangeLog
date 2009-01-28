@@ -1,3 +1,16 @@
+Wed Jan 28 18:12:06 EET 2009 (edwin)
+------------------------------------
+Wed Jan 28 17:52:21 EET 2009 (edwin)
+------------------------------------
+Wed Jan 28 14:47:33 EET 2009 (edwin)
+------------------------------------
+ * clamd/scanner.c, clamd/scanner.h, clamd/session.c,
+ clamd/thrmgr.c, clamd/thrmgr.h: another temp commit
+
+Tue Jan 27 10:39:28 EET 2009 (edwin)
+------------------------------------
+ * clamd/, libclamav/: temp commit
+
 Sun Jan 25 18:05:46 EET 2009 (edwin)
 ------------------------------------
  * clamd/server-th.c: tell accept to quit before we start waiting for

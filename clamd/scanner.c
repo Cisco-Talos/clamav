@@ -65,6 +65,7 @@
 #include "shared.h"
 #include "network.h"
 #include "thrmgr.h"
+#include "server.h"
 
 #ifdef C_LINUX
 dev_t procdev; /* /proc device */
@@ -305,21 +306,9 @@ static void multiscanfile(void *arg)
     return;
 }
 
-struct scan_cb_data {
-    int scantype;
-    int odesc;
-    int type;
-    int infected;
-    int errors;
-    char term;
-    unsigned long scanned;
-    unsigned int options;
-    const struct cl_engine *engine;
-    const struct optstruct *opts;
-};
-
+extern time_t reloaded_time;
 #define BUFFSIZE 1024
-static int scan_callback(struct stat *sb, char *filename, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data)
+int scan_callback(struct stat *sb, char *filename, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data)
 {
     struct scan_cb_data *scandata = data->data;
     const char *virname;
@@ -328,14 +317,13 @@ static int scan_callback(struct stat *sb, char *filename, enum cli_ftw_reason re
     int type = scandata->type;
     const struct optstruct *opt;
 
+    buf[0] = '\0';
 #ifdef HAVE_STRERROR_R
     if (reason == error_mem || reason == error_stat) {
 	buf[0]=':';
 	buf[1]=' ';
 	strerror_r(errno, buf+2, BUFFSIZE-2);
-    } else
-#else
-	buf[0] = '\0';
+    }
 #endif
 
     switch (reason) {
@@ -388,8 +376,38 @@ static int scan_callback(struct stat *sb, char *filename, enum cli_ftw_reason re
 	return CL_SUCCESS;
     }
 
-    /* TODO: if multiscan we should dispatch this to an async scanner thread!! */
-    /* prepare to scan file */
+    if (type == TYPE_MULTISCAN) {
+	client_conn_t *client_conn = (client_conn_t *) malloc(sizeof(struct client_conn_tag));
+	if(client_conn) {
+	    client_conn->scanfd = -1;
+	    client_conn->sd = scandata->odesc;
+	    client_conn->fds = NULL;
+	    client_conn->cmdlen = 0;
+	    client_conn->cmd = "MULTISCANFILE";
+	    client_conn->filename = filename;
+	    client_conn->term = scandata->term;
+	    client_conn->options = scandata->options;
+	    client_conn->opts = scandata->opts;
+	    client_conn->group = scandata->group;
+	    if(cl_engine_addref(scandata->engine)) {
+		logg("!cl_engine_addref() failed\n");
+		return CL_EMEM;
+	    } else {
+		client_conn->engine = scandata->engine;
+		client_conn->engine_timestamp = reloaded_time;
+		if(!thrmgr_group_dispatch(scandata->thr_pool, scandata->group, client_conn)) {
+		    logg("!thread dispatch failed\n");
+		    return CL_EMEM;
+		}
+	    }
+	} else {
+	    logg("!Can't allocate memory for client_conn\n");
+	    scandata->errors++;
+	    return CL_EMEM;
+	}
+	return CL_SUCCESS;
+    }
+
     if (access(filename, R_OK)) {
 	mdprintf(scandata->odesc, "%s: Access denied. ERROR%c",
 		 filename, scandata->term);

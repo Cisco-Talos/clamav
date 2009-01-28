@@ -25,6 +25,7 @@
 
 #include "libclamav/clamav.h"
 #include "shared/optparser.h"
+#include "thrmgr.h"
 
 /* TODO: these don't belong here */
 enum commands {
@@ -72,6 +73,8 @@ typedef struct client_conn_tag {
     struct cl_engine *engine;
     time_t engine_timestamp;
     char term;
+    threadpool_t *thrpool;
+    jobgroup_t *group;
 } client_conn_t;
 
 int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts);

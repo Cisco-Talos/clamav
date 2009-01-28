@@ -84,7 +84,7 @@ static void scanner_thread(void *arg)
 	sigset_t sigset;
 #endif
 	int ret, timeout, session=FALSE;
-
+	unsigned virus=0, errors=0;
 
 #ifndef	C_WINDOWS
     /* ignore all signals */
@@ -104,8 +104,45 @@ static void scanner_thread(void *arg)
     if(!timeout)
     	timeout = -1;
 
+    if (conn->filename) {
+	/* TODO: this is the bad place for this */
+	ret = 0;
+	if (access(conn->filename, R_OK)) {
+	    mdprintf(conn->sd, "%s: Access denied. ERROR%c",
+		     conn->filename, conn->term);
+	    errors++;
+	} else {
+	    const char *virname;
+	    thrmgr_setactivetask(conn->filename,
+				 "MULTISCANFILE");
+	    ret = cl_scanfile(conn->filename, &virname, NULL, conn->engine, conn->options);
+	    thrmgr_setactivetask(NULL, NULL);
+	    if (ret == CL_EMEM) {
+		if(optget(conn->opts, "ExitOnOOM")->enabled)
+		    ret = COMMAND_SHUTDOWN;
+		errors++;
+	    } else {
+		if(ret == CL_VIRUS) {
+		    mdprintf(conn->sd, "%s: %s FOUND%c", conn->filename, virname, conn->term);
+		    logg("~%s: %s FOUND\n", conn->filename, virname);
+		    virusaction(conn->filename, virname, conn->opts);
+		    virus++;
+		} else if(ret != CL_CLEAN) {
+		    errors++;
+		    mdprintf(conn->sd, "%s: %s ERROR%c", conn->filename, cl_strerror(ret), conn->term);
+		    logg("~%s: %s ERROR\n", conn->filename, cl_strerror(ret));
+		} else if(logok) {
+		    logg("~%s: OK\n", conn->filename);
+		}
+		ret = 0;
+	    }
+	}
+
+    }
+
     do {
-	ret = command(conn, timeout);
+	if (!conn->filename)  /* TODO: */
+	    ret = command(conn, timeout);
 	if (ret < 0) {
 		break;
 	}
@@ -145,14 +182,21 @@ static void scanner_thread(void *arg)
 	}
     } while (session);
 
-    if (conn->scanfd)
+    if (conn->scanfd != -1)
 	close(conn->scanfd);
     thrmgr_setactiveengine(NULL);
-    fds_remove(conn->fds, conn->sd);
-    shutdown(conn->sd, 2);
-    closesocket(conn->sd);
+
+    if (!conn->filename) {
+	fds_remove(conn->fds, conn->sd);
+	shutdown(conn->sd, 2);
+	closesocket(conn->sd);
+    } else
+	free(conn->filename);
+    if (conn->group)
+	thrmgr_group_finished(conn->group, virus ? EXIT_OTHER : errors ? EXIT_ERROR : EXIT_OK);
     cl_engine_free(conn->engine);
-    free(conn->cmd);
+    if (conn->cmdlen)
+	free(conn->cmd);
     free(conn);
     return;
 }
@@ -823,6 +867,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    if(client_conn) {
 			client_conn->scanfd = buf->recvfd;
 			buf->recvfd = -1;
+			client_conn->filename = NULL;
+			client_conn->group = NULL;
 			client_conn->sd = buf->fd;
 			client_conn->fds = fds;
 			client_conn->cmdlen = cmdlen;
@@ -837,6 +883,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			client_conn->cmd[cmdlen] = '\0';
 			client_conn->options = options;
 			client_conn->opts = opts;
+			client_conn->thrpool = thr_pool;
 			if(cl_engine_addref(engine)) {
 			    logg("!cl_engine_addref() failed\n");
 			    error = 1;
