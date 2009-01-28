@@ -377,7 +377,8 @@ int cli_matchregex(const char *str, const char *regex);
 enum cli_ftw_reason {
     visit_file,
     /* must not free its args in the below cases! */
-    visit_directory,
+    visit_directory_begin,
+    visit_directory_end,
     error_mem, /* recommended to return CL_EMEM */
     /* recommended to return CL_SUCCESS below */
     error_stat,

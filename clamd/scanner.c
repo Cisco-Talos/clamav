@@ -348,7 +348,8 @@ int scan_callback(struct stat *sb, char *filename, enum cli_ftw_reason reason, s
 			 "%s: Not supported file type. ERROR%c", filename,
 			 scandata->term);
 	    return CL_SUCCESS;
-	case visit_directory:
+	case visit_directory_begin:
+	case visit_directory_end:
 	    return CL_SUCCESS;
 	case visit_file:
 	    break;

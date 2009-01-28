@@ -386,7 +386,7 @@ static int handle_filetype(char *fname, int flags,
 static int handle_entry(struct dirent_data *entry, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
 {
     int ret = callback(entry->statbuf, entry->filename,
-		       entry->is_dir ? visit_directory : visit_file,
+		       entry->is_dir ? visit_directory_begin : visit_file,
 		       data);
     if (ret != CL_SUCCESS)
 	return ret;
@@ -394,8 +394,9 @@ static int handle_entry(struct dirent_data *entry, int flags, int maxdepth, cli_
 	ret = cli_ftw(entry->filename, flags, maxdepth, callback, data);
 	if (ret != CL_SUCCESS)
 	    return ret;
+	ret = callback(entry->statbuf, entry->filename, visit_directory_end, data);
     }
-    return CL_SUCCESS;
+    return ret;
 }
 
 int cli_sftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
