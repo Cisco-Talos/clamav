@@ -409,12 +409,10 @@ typedef int (*cli_ftw_cb)(struct stat *stat_buf, char *filename, const char *msg
  * returns we don't know the infected/notinfected status of the directory yet!
  * Due to this if the callback scans synchronously it should store the infected
  * status in its cbdata.
+ * This works for both files and directories. It stats the path to determine
+ * which one it is.
+ * If it is a file, it simply calls the callback once, otherwise recurses.
  */
 int cli_ftw(const char *base, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data);
-
-/* Like cli_ftw() but works both for files and directories.
- * If it is a file, it simply calls the callback once, otherwise recurses.
- * Path must point to malloced memory, that will be freed. */
-int cli_sftw(const char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data);
 
 #endif

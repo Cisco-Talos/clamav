@@ -384,16 +384,17 @@ static int handle_filetype(const char *fname, int flags,
     return CL_SUCCESS;
 }
 
+static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data);
 static int handle_entry(struct dirent_data *entry, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
 {
     if (!entry->is_dir) {
 	return callback(entry->statbuf, entry->filename, NULL, visit_file, data);
     } else {
-	return cli_ftw(entry->dirname, flags, maxdepth, callback, data);
+	return cli_ftw_dir(entry->dirname, flags, maxdepth, callback, data);
     }
 }
 
-int cli_sftw(const char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
+int cli_ftw(const char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
 {
     struct stat statbuf;
     enum filetype ft = ft_unknown;
@@ -411,7 +412,7 @@ int cli_sftw(const char *path, int flags, int maxdepth, cli_ftw_cb callback, str
     return handle_entry(&entry, flags, maxdepth, callback, data);
 }
 
-int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
+static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
 {
     DIR *dd;
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
@@ -601,7 +602,7 @@ int main(int argc, char *argv[])
     if (argc != 2)
 	return 1;
     data.data = &files;
-    cli_ftw(argv[1], CLI_FTW_STD, 16, tst_cb, &data);
+    cli_ftw_dir(argv[1], CLI_FTW_STD, 16, tst_cb, &data);
     return 0;
 }
 #endif

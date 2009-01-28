@@ -1,3 +1,8 @@
+Wed Jan 28 19:31:56 EET 2009 (edwin)
+------------------------------------
+ * clamd/session.c, libclamav/others.h, libclamav/others_common.c: 
+ cli_sftw -> cli_ftw, and hide old cli_ftw
+
 Wed Jan 28 19:25:28 EET 2009 (edwin)
 ------------------------------------
  * clamd/scanner.c, clamd/scanner.h, clamd/session.c,

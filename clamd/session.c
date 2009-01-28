@@ -214,7 +214,7 @@ int command(client_conn_t *conn, int timeout)
 	thrmgr_setactivetask(buff+strlen(CMD13)+1, CMD13);
 	int maxdirrec = optget(opts, "MaxDirectoryRecursion")->numarg;
 
-	if (cli_sftw(path, CLI_FTW_STD,  maxdirrec ? maxdirrec : INT_MAX, scan_callback, &data) == CL_EMEM) 
+	if (cli_ftw(path, CLI_FTW_STD,  maxdirrec ? maxdirrec : INT_MAX, scan_callback, &data) == CL_EMEM) 
 	    if(optget(opts, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 	thrmgr_group_waitforall(&group, &ok, &error, &total);
