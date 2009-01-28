@@ -595,16 +595,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	memset((char *) &server, 0, sizeof(server));
 	server.sin_family = AF_INET;
 	server.sin_port = htons(port);
-
-	if((opt = optget(opts, "TCPAddr"))->enabled) {
-	    if(r_gethostbyname(opt->strarg, &he, buff, sizeof(buff)) == -1) {
-		logg("!r_gethostbyname(%s) error: %s\n", opt->strarg, strerror(errno));
-		mdprintf(odesc, "r_gethostbyname(%s) ERROR%c", opt->strarg, term);
-		return -1;
-	    }
-	    server.sin_addr = *(struct in_addr *) he.h_addr_list[0];
-	} else
-	    server.sin_addr.s_addr = INADDR_ANY;
+	server.sin_addr.s_addr = htonl(INADDR_ANY);
 
 	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	    continue;

@@ -516,7 +516,6 @@ int reload_clamd_database(const struct optstruct *opts)
     recvlninit(&rcv, sockd);
 
     if(sendln(sockd, "zRELOAD", 8)) {
-	logg("!Can't write to the socket.\n");
 	close(sockd);
 	return 2;
     }
