@@ -120,14 +120,13 @@ int command(client_conn_t *conn, int timeout)
     int desc = conn->sd;
     char *buff = conn->cmd;
     size_t cmdlen = conn->cmdlen;
-    const struct cl_engine *engine = conn->engine;
+    struct cl_engine *engine = conn->engine;
     unsigned int options = conn->options;
     const struct optstruct *opts = conn->opts;
     const char term = conn->term;
 
-    /* TODO: we shouldn't chomp, but do it depending on command type,
-     * regular and nCMDs need chomp, zCMDs dont' */
-    cli_chomp(buff);
+    if (conn->term)
+	cli_chomp(buff);
     thrmgr_setactiveengine(engine);
 
     if(!strncmp(buff, CMD1, strlen(CMD1))) { /* SCAN */
@@ -215,7 +214,7 @@ int command(client_conn_t *conn, int timeout)
 	thrmgr_setactivetask(buff+strlen(CMD13)+1, CMD13);
 	int maxdirrec = optget(opts, "MaxDirectoryRecursion")->numarg;
 
-	if (cli_sftw(strdup(path), CLI_FTW_STD,  maxdirrec ? maxdirrec : INT_MAX, scan_callback, &data) == CL_EMEM) 
+	if (cli_sftw(path, CLI_FTW_STD,  maxdirrec ? maxdirrec : INT_MAX, scan_callback, &data) == CL_EMEM) 
 	    if(optget(opts, "ExitOnOOM")->enabled)
 		return COMMAND_SHUTDOWN;
 	thrmgr_group_waitforall(&group, &ok, &error, &total);

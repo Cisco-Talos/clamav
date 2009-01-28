@@ -308,7 +308,7 @@ static void multiscanfile(void *arg)
 
 extern time_t reloaded_time;
 #define BUFFSIZE 1024
-int scan_callback(struct stat *sb, char *filename, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data)
+int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data)
 {
     struct scan_cb_data *scandata = data->data;
     const char *virname;
@@ -328,28 +328,26 @@ int scan_callback(struct stat *sb, char *filename, enum cli_ftw_reason reason, s
 
     switch (reason) {
 	case error_mem:
-	    logg("!Memory allocation failed during cli_ftw()%s\n", buf);
+	    logg("!Memory allocation failed during cli_ftw()%s%s\n",
+		 msg ? msg : "", buf);
 	    scandata->errors++;
 	    return CL_EMEM;
 	case error_stat:
 	    if (type != TYPE_MULTISCAN)
 		mdprintf(scandata->odesc, "%s: lstat() failed %s. ERROR%c",
-		     filename, buf, scandata->term);
+		     msg, buf, scandata->term);
 	    scandata->errors++;
 	    return CL_SUCCESS;
 	case warning_skipped_dir:
 	    if (type != TYPE_MULTISCAN)
 		logg("^Directory recursion limit reached, skipping %s%s\n",
-		     filename, buf);
+		     msg, buf);
 	    return CL_SUCCESS;
 	case warning_skipped_special:
 	    if (type != TYPE_MULTISCAN)
 		mdprintf(scandata->odesc,
-			 "%s: Not supported file type. ERROR%c", filename,
+			 "%s: Not supported file type. ERROR%c", msg,
 			 scandata->term);
-	    return CL_SUCCESS;
-	case visit_directory_begin:
-	case visit_directory_end:
 	    return CL_SUCCESS;
 	case visit_file:
 	    break;

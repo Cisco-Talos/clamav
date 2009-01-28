@@ -275,6 +275,7 @@ const char* cli_ctime(const time_t *timep, char *buf, const size_t bufsize)
 
 struct dirent_data {
     char *filename;
+    const char *dirname;
     struct stat *statbuf;
     int   is_dir;/* 0 - no, 1 - yes */
     long  ino; /* -1: inode not available */
@@ -359,7 +360,7 @@ static int get_filetype(const char *fname, int flags, int need_stat,
     return stated;
 }
 
-static int handle_filetype(char *fname, int flags,
+static int handle_filetype(const char *fname, int flags,
 			   struct stat *statbuf, int *stated, enum filetype *ft,
 			   cli_ftw_cb callback, struct cli_ftw_cbdata *data)
 {
@@ -369,14 +370,14 @@ static int handle_filetype(char *fname, int flags,
 
     if (*stated == -1) {
 	/*  we failed a stat() or lstat() */
-	ret = callback(NULL, fname, error_stat, data);
+	ret = callback(NULL, NULL, fname, error_stat, data);
 	if (ret != CL_SUCCESS)
 	    return ret;
 	*ft = ft_skipped; /* skip on stat failure */
     }
     if (*ft == ft_skipped) {
 	/* skipped filetype */
-	ret = callback(stated ? statbuf : NULL, fname, warning_skipped_special, data);
+	ret = callback(stated ? statbuf : NULL, NULL, fname, warning_skipped_special, data);
 	if (ret != CL_SUCCESS)
 	    return ret;
     }
@@ -385,21 +386,14 @@ static int handle_filetype(char *fname, int flags,
 
 static int handle_entry(struct dirent_data *entry, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
 {
-    int ret = callback(entry->statbuf, entry->filename,
-		       entry->is_dir ? visit_directory_begin : visit_file,
-		       data);
-    if (ret != CL_SUCCESS)
-	return ret;
-    if (entry->is_dir) {
-	ret = cli_ftw(entry->filename, flags, maxdepth, callback, data);
-	if (ret != CL_SUCCESS)
-	    return ret;
-	ret = callback(entry->statbuf, entry->filename, visit_directory_end, data);
+    if (!entry->is_dir) {
+	return callback(entry->statbuf, entry->filename, NULL, visit_file, data);
+    } else {
+	return cli_ftw(entry->dirname, flags, maxdepth, callback, data);
     }
-    return ret;
 }
 
-int cli_sftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
+int cli_sftw(const char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
 {
     struct stat statbuf;
     enum filetype ft = ft_unknown;
@@ -411,8 +405,9 @@ int cli_sftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cl
 	return ret;
 
     entry.statbuf = stated ? &statbuf : NULL;
-    entry.filename = path;
     entry.is_dir = ft == ft_directory;
+    entry.filename = entry.is_dir ? NULL : strdup(path);
+    entry.dirname = entry.is_dir ? path : NULL;
     return handle_entry(&entry, flags, maxdepth, callback, data);
 }
 
@@ -431,7 +426,7 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 
     if (maxdepth < 0) {
 	/* exceeded recursion limit */
-	ret = callback(NULL, (char*)dirname, warning_skipped_dir, data);
+	ret = callback(NULL, NULL, dirname, warning_skipped_dir, data);
 	return ret;
     }
 
@@ -483,15 +478,17 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 #endif
 	    fname = (char *) cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
 	    if(!fname) {
-		ret = callback(NULL, (char*)dirname, error_mem, data);
+		ret = callback(NULL, NULL, dirname, error_mem, data);
 		if (ret != CL_SUCCESS)
 		    break;
 	    }
 	    sprintf(fname, "%s/%s", dirname, dent->d_name);
 
 	    ret = handle_filetype(fname, flags, &statbuf, &stated, &ft, callback, data);
-	    if (ret != CL_SUCCESS)
+	    if (ret != CL_SUCCESS) {
+		free(fname);
 		break;
+	    }
 
 	    if (ft == ft_skipped) { /* skip */
 		free(fname);
@@ -502,7 +499,7 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 	    if (stated && (flags & CLI_FTW_NEED_STAT)) {
 		statbufp = cli_malloc(sizeof(*statbufp));
 		if (!statbufp) {
-		    ret = callback(stated ? &statbuf : NULL, fname, error_mem, data);
+		    ret = callback(stated ? &statbuf : NULL, NULL, fname, error_mem, data);
 		    free(fname);
 		    if (ret != CL_SUCCESS)
 			break;
@@ -519,7 +516,7 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 	    entries_cnt++;
 	    entries = cli_realloc(entries, entries_cnt*sizeof(*entries));
 	    if (!entries) {
-		ret = callback(stated ? &statbuf : NULL, fname, error_mem, data);
+		ret = callback(stated ? &statbuf : NULL, NULL, fname, error_mem, data);
 		free(fname);
 		if (statbufp)
 		    free(statbufp);
@@ -529,6 +526,7 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 		entry->filename = fname;
 		entry->statbuf = statbufp;
 		entry->is_dir = ft == ft_directory;
+		entry->dirname = entry->is_dir ? fname : NULL;
 #ifdef _XOPEN_UNIX
 		entry->ino = dent->d_ino;
 #else
@@ -554,7 +552,7 @@ int cli_ftw(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, s
 	    free(entries);
 	}
     } else {
-	ret = callback(NULL, (char*)dirname, error_stat, data);
+	ret = callback(NULL, NULL, dirname, error_stat, data);
     }
     return ret;
 }

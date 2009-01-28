@@ -1,3 +1,9 @@
+Wed Jan 28 19:25:28 EET 2009 (edwin)
+------------------------------------
+ * clamd/scanner.c, clamd/scanner.h, clamd/session.c,
+ libclamav/others.h, libclamav/others_common.c: cli_ftw/cli_sftw
+ cleanup
+
 Wed Jan 28 18:32:53 EET 2009 (edwin)
 ------------------------------------
  * clamd/scanner.c, libclamav/others.h, libclamav/others_common.c: 
