@@ -376,6 +376,7 @@ int cli_matchregex(const char *str, const char *regex);
 
 enum cli_ftw_reason {
     visit_file,
+    visit_directory_toplev, /* this is a directory at toplevel of recursion */
     /* must not free its args in the below cases! */
     error_mem, /* recommended to return CL_EMEM */
     /* recommended to return CL_SUCCESS below */
