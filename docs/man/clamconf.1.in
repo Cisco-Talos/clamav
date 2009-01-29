@@ -23,6 +23,9 @@ Search for configuration files clamd.conf and freshclam.conf in DIR.
 .TP 
 \fB\-n, \-\-non\-default\fR
 Only print non-default settings.
+.TP 
+\fB\-g CONFIG_NAME, \-\-generate\-config=CONFIG_NAME\fR
+Generate example configuration file.
 .SH "CREDITS"
 The idea of this tool is based on Postfix's postconf. clamconf was created under pressure from Tomasz Papszun ;-)
 .SH "AUTHOR"

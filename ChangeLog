@@ -1,3 +1,7 @@
+Thu Jan 29 20:27:45 CET 2009 (tk)
+---------------------------------
+ * shared/optparser.c, clamconf/clamconf.c: add --generate-config
+
 Thu Jan 29 18:36:51 EET 2009 (edwin)
 ------------------------------------
  * libclamav/scanners.c: raise scanscript limit

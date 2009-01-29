@@ -54,6 +54,7 @@
 
 #define FLAG_MULTIPLE	1 /* option can be used multiple times */
 #define FLAG_REQUIRED	2 /* arg is required, even if there's a default value */
+#define FLAG_HIDDEN	4 /* don't print in clamconf --generate-config */
 
 const struct clam_option clam_options[] = {
     /* name,   longopt, sopt, argtype, regex, num, str, mul, owner, description, suggested */
@@ -109,6 +110,7 @@ const struct clam_option clam_options[] = {
 
     { NULL, "config-dir", 'c', TYPE_STRING, NULL, 0, CONFDIR, FLAG_REQUIRED, OPT_CLAMCONF, "", "" },
     { NULL, "non-default", 'n', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMCONF, "", "" },
+    { NULL, "generate-config", 'g', TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMCONF, "", "" },
 
     /* cmdline only - deprecated */
     { NULL, "http-proxy", 0, TYPE_STRING, NULL, 0, NULL, 0, OPT_FRESHCLAM | OPT_DEPRECATED, "", "" },
@@ -184,9 +186,9 @@ const struct clam_option clam_options[] = {
 
     { "ReadTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 120, NULL, 0, OPT_CLAMD | OPT_MILTER, "This option specifies the time (in seconds) after which clamd should\ntimeout if a client doesn't provide any data.", "120" },
 
-    { "IdleTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 30, NULL, 0, OPT_CLAMD, "This option specifies how long (in seconds) the process should wait for a new job.", "60" },
+    { "IdleTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 30, NULL, 0, OPT_CLAMD, "This option specifies how long (in seconds) the process should wait\nfor a new job.", "60" },
 
-    { "ExcludePath", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "Don't scan files/directories whose names match the provided\nregular expression. This option can be specified multiple times.", "^/proc/" },
+    { "ExcludePath", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "Don't scan files/directories whose names match the provided\nregular expression. This option can be specified multiple times.", "^/proc/\n^/sys/" },
 
     { "MaxDirectoryRecursion", "max-dir-recursion", 0, TYPE_NUMBER, MATCH_NUMBER, 15, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Maximum depth the directories are scanned at.", "15" },
 
@@ -214,9 +216,9 @@ const struct clam_option clam_options[] = {
 
     { "DetectPUA", "detect-pua", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Detect Potentially Unwanted Applications.", "yes" },
 
-    { "ExcludePUA", "exclude-pua", 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD | OPT_CLAMSCAN, "Exclude a specific PUA category. This directive can be used multiple times.\nSee http://www.clamav.net/support/pua for the complete list of PUA\ncategories.", "NetTool" },
+    { "ExcludePUA", "exclude-pua", 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD | OPT_CLAMSCAN, "Exclude a specific PUA category. This directive can be used multiple times.\nSee http://www.clamav.net/support/pua for the complete list of PUA\ncategories.", "NetTool\nPWTool" },
 
-    { "IncludePUA", "include-pua", 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD | OPT_CLAMSCAN, "Only include a specific PUA category. This directive can be used multiple\ntimes.", "Spy" },
+    { "IncludePUA", "include-pua", 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD | OPT_CLAMSCAN, "Only include a specific PUA category. This directive can be used multiple\ntimes.", "Spy\nScanner\nRAT" },
 
     { "AlgorithmicDetection", "algorithmic-detection", 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "In some cases (eg. complex malware, exploits in graphic files, and others),\nClamAV uses special algorithms to provide accurate detection. This option\ncontrols the algorithmic detection.", "yes" },
 
@@ -262,13 +264,13 @@ const struct clam_option clam_options[] = {
 
     { "ArchiveBlockEncrypted", "block-encrypted", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Mark encrypted archives as viruses (Encrypted.Zip, Encrypted.RAR).", "no" },
 
-    { "MaxScanSize", "max-scansize", 0, TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_MAXSCANSIZE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum amount of data to be scanned for each input file.\nArchives and other containers are recursively extracted and scanned up to this\nvalue.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe damage.", "100M" },
+    { "MaxScanSize", "max-scansize", 0, TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_MAXSCANSIZE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum amount of data to be scanned for each input file.\nArchives and other containers are recursively extracted and scanned up to this\nvalue.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe\ndamage.", "100M" },
 
-    { "MaxFileSize", "max-filesize", 0, TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_MAXFILESIZE, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN, "Files larger than this limit won't be scanned. Affects the input file itself\nas well as files contained inside it (when the input file is an archive, a\ndocument or some other kind of container).\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe damage to the system.", "25M" },
+    { "MaxFileSize", "max-filesize", 0, TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_MAXFILESIZE, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN, "Files larger than this limit won't be scanned. Affects the input file itself\nas well as files contained inside it (when the input file is an archive, a\ndocument or some other kind of container).\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe\ndamage to the system.", "25M" },
 
-    { "MaxRecursion", "max-recursion", 0, TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MAXRECLEVEL, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Nested archives are scanned recursively, e.g. if a Zip archive contains a RAR\nfile, all files within it will also be scanned. This option specifies how\ndeeply the process should be continued.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe damage to the system.", "16" },
+    { "MaxRecursion", "max-recursion", 0, TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MAXRECLEVEL, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Nested archives are scanned recursively, e.g. if a Zip archive contains a RAR\nfile, all files within it will also be scanned. This option specifies how\ndeeply the process should be continued.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe\ndamage to the system.", "16" },
 
-    { "MaxFiles", "max-files", 0, TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MAXFILES, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Number of files to be scanned within an archive, a document, or any other\ncontainer file.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe damage to the system.", "10000" },
+    { "MaxFiles", "max-files", 0, TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MAXFILES, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Number of files to be scanned within an archive, a document, or any other\ncontainer file.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe\ndamage to the system.", "10000" },
 
     { "ClamukoScanOnAccess", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "This option enables Clamuko. Dazuko needs to be already configured and\nrunning.", "no" },
 
@@ -278,16 +280,16 @@ const struct clam_option clam_options[] = {
 
     { "ClamukoScanOnExec", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "Scan files when they get executed by the system.", "yes" },
 
-    { "ClamukoIncludePath", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option specifies a directory (together will all files and directories\ninside this directory) which should be scanned on-access. This option can\nbe used multiple times.", "/home" },
+    { "ClamukoIncludePath", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option specifies a directory (together will all files and directories\ninside this directory) which should be scanned on-access. This option can\nbe used multiple times.", "/home\n/students" },
 
-    { "ClamukoExcludePath", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option allows excluding directories from on-access scanning. It can be used multiple times.", "/home/bofh" },
+    { "ClamukoExcludePath", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_CLAMD, "This option allows excluding directories from on-access scanning. It can\nbe used multiple times.", "/home/bofh\n/root" },
 
     { "ClamukoMaxFileSize", NULL, 0, TYPE_SIZE, MATCH_SIZE, 5242880, NULL, 0, OPT_CLAMD, "Files larger than this value will not be scanned.", "5M" },
 
     /* FIXME: mark these as private and don't output into clamd.conf/man */
-    { "DevACOnly", "dev-ac-only", 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "", "" },
+    { "DevACOnly", "dev-ac-only", 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, FLAG_HIDDEN, OPT_CLAMD | OPT_CLAMSCAN, "", "" },
 
-    { "DevACDepth", "dev-ac-depth", 0, TYPE_NUMBER, MATCH_NUMBER, -1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "", "" },
+    { "DevACDepth", "dev-ac-depth", 0, TYPE_NUMBER, MATCH_NUMBER, -1, NULL, FLAG_HIDDEN, OPT_CLAMD | OPT_CLAMSCAN, "", "" },
 
     /* Freshclam-only entries */
 
@@ -300,11 +302,7 @@ const struct clam_option clam_options[] = {
 
     { "DNSDatabaseInfo", NULL, 0, TYPE_STRING, NULL, -1, "current.cvd.clamav.net", FLAG_REQUIRED, OPT_FRESHCLAM, "Use DNS to verify the virus database version. Freshclam uses DNS TXT records\nto verify the versions of the database and software itself. With this\ndirective you can change the database verification domain.\nWARNING: Please don't change it unless you're configuring freshclam to use\nyour own database verification domain.", "current.cvd.clamav.net" },
 
-    /* FIXME: - add an inactive entry for db.XY.clamav.net for freshclam.conf
-     * purposes
-     * - 
-     */
-    { "DatabaseMirror", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "FIXME", "" },
+    { "DatabaseMirror", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_FRESHCLAM, "DatabaseMirror specifies to which mirror(s) freshclam should connect.\nYou should have at least two entries: db.XY.clamav.net and\ndatabase.clamav.net (in this order). Please replace XY with your country\ncode (see http://www.iana.org/cctld/cctld-whois.htm). database.clamav.net\nis a round-robin record which points to our most reliable mirrors. It's used\nas a fall back in case db.XY.clamav.net is not working.", "db.XY.clamav.net\ndatabase.clamav.net" },
 
     { "MaxAttempts", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 3, NULL, 0, OPT_FRESHCLAM, "This option defines how many attempts freshclam should make before giving up.", "5" },
 
@@ -337,9 +335,9 @@ const struct clam_option clam_options[] = {
 
     { "ReceiveTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 30, NULL, 0, OPT_FRESHCLAM, "Timeout in seconds when reading from database server.", "30" },
 
-    { "SubmitDetectionStats", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "", "" },
+    { "SubmitDetectionStats", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "When enabled freshclam will submit statistics to the ClamAV Project about\nthe latest virus detections in your environment. The ClamAV maintainers\nwill then use this data to determine what types of malware are the most\ndetected in the field and in what geographic area they are.\nThis feature requires LogTime and LogFile to be enabled in clamd.conf.", "/path/to/clamd.conf" },
 
-    { "DetectionStatsCountry", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "When enabled freshclam will submit statistics to the ClamAV Project about\nthe latest virus detections in your environment. The ClamAV maintainers\nwill then use this data to determine what types of malware are the most\ndetected in the field and in what geographic area they are.\nThis feature requires LogTime and LogFile to be enabled in clamd.conf.", "/path/to/clamd.conf" },
+    { "DetectionStatsCountry", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Country of origin of malware/detection statistics (for statistical\npurposes only). The statistics collector at ClamAV.net will look up\nyour IP address to determine the geographical origin of the malware\nreported by your installation. If this installation is mainly used to\nscan data which comes from a different location, please enable this\noption and enter a two-letter code (see http://www.iana.org/domains/root/db/)\nof the country of origin.", "country-code" },
 
     /* Deprecated options */
 
