@@ -47,6 +47,7 @@
 #include "shared/output.h"
 #include "shared/misc.h"
 #include "libclamav/str.h"
+#include "libclamav/others.h"
 
 #include "client.h"
 
@@ -206,7 +207,7 @@ static int dsresult(int sockd, int scantype, const char *filename)
 	    if(filename) {
 		if(!(fd = open(filename, O_RDONLY))) {
 		    logg("!Open failed on %s.\n", filename);
-		return -1;
+		    return -1;
 		}
 	    } else fd = 0;
 	    if(sendln(sockd, "zSTREAM", 8)) return -1;
@@ -397,81 +398,75 @@ static int isremote(const struct optstruct *opts) {
     return ret;
 }
 
-static int client_scan(const char *file, int scantype, int *infected, int *errors, int level) {
-    struct stat sb;
-    char *fullpath;
-    DIR *dir;
-    struct dirent *dent;
-    int ret, sockd;
+struct client_cb_data {
+    int infected;
+    int errors;
+    int scantype;
+    int spam;
+};
 
-    level++;
-    if(stat(file, &sb) == -1) {
-	logg("^Can't access file %s\n", file);
-	perror(file);
-	(*errors)++;
-	return 0;
-    }
-    if(!(fullpath = malloc(PATH_MAX + 1))) {
-	logg("^Can't make room for fullpath.\n");
-	(*errors)++;
-	return 0;
-    }
+int callback(struct stat *sb, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data) {
+    struct client_cb_data *c = (struct client_cb_data *)data->data;
+    int sockd, ret;
+    const char *f = filename;
 
-    if(*file != '/') { /* FIXME: to be unified */
-	int namelen;
-	if(!getcwd(fullpath, PATH_MAX)) {
-	    logg("^Can't get absolute pathname of current working directory.\n");
-	    free(fullpath);
-	    (*errors)++;
-	    return 0;
-	}
-	namelen = strlen(fullpath);
-	snprintf(&fullpath[namelen], PATH_MAX - namelen, "/%s", file);
-    } else {
-	strncpy(fullpath, file, PATH_MAX);
-    }
-    fullpath[PATH_MAX] = '\0';
-
-    switch(sb.st_mode & S_IFMT) {
-    case S_IFDIR:
-	if(scantype >= STREAM) {
-	    if(!(dir = opendir(fullpath)))
-		break;
-	    ret = strlen(fullpath);
-	    while((dent = readdir(dir))) {
-		if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..")) continue;
-		snprintf(&fullpath[ret], PATH_MAX - ret, "/%s", dent->d_name);
-		fullpath[PATH_MAX] = '\0';
-		if(client_scan(fullpath, scantype, infected, errors, level)) {
-		    closedir(dir);
-		    free(fullpath);
-		    return 1;
-		}
-
-	    }
-	    closedir(dir);
-	    if(level == 1) fullpath[ret] = '\0';
-	    break;
-	}
-
-    case S_IFREG:
-	if((sockd = dconnect()) < 0)
-	    return 1;
-	if((ret = dsresult(sockd, scantype, fullpath)) >= 0)
-	    *infected += ret;
-	else
-	    (*errors)++;
-	close(sockd);
-	break;
-
+    switch(reason) {
+    case error_stat:
+	logg("^Can't access file %s\n", filename);
+	return CL_SUCCESS;
+    case error_mem:
+	logg("^Memory allocation failed in ftw\n");
+	return CL_EMEM;
+    case warning_skipped_dir:
+	logg("^Directory recursion limit reached\n");
+	return CL_SUCCESS;
+    case warning_skipped_special:
+	logg("~%s: Not supported file type. ERROR\n", filename);
+	c->errors++;
+	return CL_SUCCESS;
     default:
-	logg("^Not supported file type (%s)\n", fullpath);
-	errors++;
+	break;
     }
 
-    if(level == 1 && !*infected && ((sb.st_mode & S_IFMT) == S_IFDIR || !*errors)) logg("~%s: OK\n", fullpath);
+    if(reason == visit_directory_toplev) {
+	c->spam = 1;
+	if(c->scantype >= STREAM) {
+	    free(filename);
+	    return CL_SUCCESS;
+	}
+	f = path;
+    }
+    if((sockd = dconnect()) < 0) {
+	free(filename);
+	return CL_BREAK;
+    }
+    if((ret = dsresult(sockd, c->scantype, f)) >= 0)
+	c->infected += ret;
+    else
+	c->errors++;
+    close(sockd);
+    free(filename);
+    if(reason == visit_directory_toplev)
+	return CL_BREAK;
+    return CL_SUCCESS;
+}
 
-    free(fullpath);
+static int client_scan(const char *file, int scantype, int *infected, int *errors, int level) {
+    struct cli_ftw_cbdata data;
+    struct client_cb_data cdata;
+
+    cdata.infected = 0;
+    cdata.errors = 0;
+    cdata.scantype = scantype;
+    cdata.spam = 0;
+    data.data = &cdata;
+
+    cli_ftw(file, CLI_FTW_STD, 10, callback, &data);
+
+    if(!cdata.errors) logg("~%s: OK\n", file);
+
+    *infected += cdata.infected;
+    *errors += cdata.errors;
     return 0;
 }
 
@@ -487,7 +482,6 @@ int get_clamd_version(const struct optstruct *opts)
     recvlninit(&rcv, sockd);
 
     if(sendln(sockd, "zVERSION", 9)) {
-	logg("!Can't write to the socket.\n");
 	close(sockd);
 	return 2;
     }
@@ -577,11 +571,32 @@ int client(const struct optstruct *opts, int *infected)
     } else if(opts->filename) {
 	unsigned int i;
 	for (i = 0; opts->filename[i]; i++) {
+	    char *fullpath;
 	    if(!strcmp(opts->filename[i], "-")) {
 		logg("!Scanning from standard input requires \"-\" to be the only file argument\n");
 		continue;
 	    }
+	    if(!(fullpath = malloc(PATH_MAX + 1))) {
+		logg("^Can't make room for fullpath.\n");
+		errors++;
+		continue;
+	    }
+	    if(*opts->filename[i] != '/') { /* FIXME: to be unified */
+		int namelen;
+		if(!getcwd(fullpath, PATH_MAX)) {
+		    logg("^Can't get absolute pathname of current working directory.\n");
+		    free(fullpath);
+		    errors++;
+		    break;
+		}
+		namelen = strlen(fullpath);
+		snprintf(&fullpath[namelen], PATH_MAX - namelen, "/%s", opts->filename[i]);
+	    } else {
+		strncpy(fullpath, opts->filename[i], PATH_MAX);
+	    }
+	    fullpath[PATH_MAX] = '\0';
 	    client_scan(opts->filename[i], scantype, infected, &errors, 0);
+	    free(fullpath);
 	}
     } else {
 	char cwd[PATH_MAX+1];
