@@ -388,7 +388,7 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 static int handle_entry(struct dirent_data *entry, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
 {
     if (!entry->is_dir) {
-	return callback(entry->statbuf, entry->filename, NULL, visit_file, data);
+	return callback(entry->statbuf, entry->filename, entry->filename, visit_file, data);
     } else {
 	return cli_ftw_dir(entry->dirname, flags, maxdepth, callback, data);
     }
