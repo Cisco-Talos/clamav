@@ -451,9 +451,11 @@ int callback(struct stat *sb, char *filename, const char *path, enum cli_ftw_rea
     return CL_SUCCESS;
 }
 
-static int client_scan(const char *file, int scantype, int *infected, int *errors, int level) {
+static int client_scan(const char *file, int scantype, int *infected, int *errors, int maxlevel) {
     struct cli_ftw_cbdata data;
     struct client_cb_data cdata;
+    char *fullpath;
+    int namelen;
 
     cdata.infected = 0;
     cdata.errors = 0;
@@ -461,9 +463,28 @@ static int client_scan(const char *file, int scantype, int *infected, int *error
     cdata.spam = 0;
     data.data = &cdata;
 
-    cli_ftw(file, CLI_FTW_STD, 10, callback, &data);
+    if(!(fullpath = malloc(PATH_MAX + 1))) {
+	logg("^Can't make room for fullpath.\n");
+	(*errors)++;
+	return 1;
+    }
+    if(*file != '/') { /* FIXME: to be unified */
+	if(!getcwd(fullpath, PATH_MAX)) {
+	    logg("^Can't get absolute pathname of current working directory.\n");
+	    free(fullpath);
+	    (*errors)++;
+	    return 1;
+	}
+	namelen = strlen(fullpath);
+	snprintf(&fullpath[namelen], PATH_MAX - namelen, "/%s", file);
+    } else {
+	strncpy(fullpath, file, PATH_MAX);
+    }
+    fullpath[PATH_MAX] = '\0';
 
-    if(!cdata.errors) logg("~%s: OK\n", file);
+    cli_ftw(fullpath, CLI_FTW_STD, maxlevel ? maxlevel : INT_MAX, callback, &data);
+    if(!cdata.infected && (!cdata.errors || cdata.spam)) logg("~%s: OK\n", fullpath);
+    free(fullpath);
 
     *infected += cdata.infected;
     *errors += cdata.errors;
@@ -528,7 +549,7 @@ int client(const struct optstruct *opts, int *infected)
 {
 	const char *clamd_conf = optget(opts, "config-file")->strarg;
 	struct optstruct *clamdopts;
-	int remote, scantype, session = 0, errors = 0, scandash = 0;
+	int remote, scantype, session = 0, errors = 0, scandash = 0, maxrec;
 
     if((clamdopts = optparse(clamd_conf, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
 	logg("!Can't parse clamd configuration file %s\n", clamd_conf);
@@ -549,6 +570,7 @@ int client(const struct optstruct *opts, int *infected)
     } else if(optget(opts, "multiscan")->enabled) scantype = MULTI;
     else scantype = CONT;
 
+    maxrec = optget(clamdopts, "MaxDirectoryRecursion")->numarg;
     optfree(clamdopts);
 
     if(!mainsa) {
@@ -571,40 +593,14 @@ int client(const struct optstruct *opts, int *infected)
     } else if(opts->filename) {
 	unsigned int i;
 	for (i = 0; opts->filename[i]; i++) {
-	    char *fullpath;
 	    if(!strcmp(opts->filename[i], "-")) {
 		logg("!Scanning from standard input requires \"-\" to be the only file argument\n");
 		continue;
 	    }
-	    if(!(fullpath = malloc(PATH_MAX + 1))) {
-		logg("^Can't make room for fullpath.\n");
-		errors++;
-		continue;
-	    }
-	    if(*opts->filename[i] != '/') { /* FIXME: to be unified */
-		int namelen;
-		if(!getcwd(fullpath, PATH_MAX)) {
-		    logg("^Can't get absolute pathname of current working directory.\n");
-		    free(fullpath);
-		    errors++;
-		    break;
-		}
-		namelen = strlen(fullpath);
-		snprintf(&fullpath[namelen], PATH_MAX - namelen, "/%s", opts->filename[i]);
-	    } else {
-		strncpy(fullpath, opts->filename[i], PATH_MAX);
-	    }
-	    fullpath[PATH_MAX] = '\0';
-	    client_scan(opts->filename[i], scantype, infected, &errors, 0);
-	    free(fullpath);
+	    if(client_scan(opts->filename[i], scantype, infected, &errors, maxrec)) break;
 	}
     } else {
-	char cwd[PATH_MAX+1];
-	if(!getcwd(cwd, PATH_MAX)) {
-	    logg("^Can't get absolute pathname of current working directory.\n");
-	    return 2;
-	}
-	client_scan(cwd, scantype, infected, &errors, 0);
+	client_scan("", scantype, infected, &errors, maxrec);
     }
     return *infected ? 1 : (errors ? 2 : 0);
 }
