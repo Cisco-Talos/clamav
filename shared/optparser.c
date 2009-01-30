@@ -653,9 +653,11 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 			return NULL;
 		    }
 		    shortopts[sc++] = optentry->shortopt;
-		    shortopts[sc++] = ':';
-		    if(!(optentry->flags & FLAG_REQUIRED) && (optentry->argtype == TYPE_BOOL || optentry->strarg))
+		    if(optentry->argtype != TYPE_BOOL) {
 			shortopts[sc++] = ':';
+			if(!(optentry->flags & FLAG_REQUIRED) && optentry->strarg)
+			    shortopts[sc++] = ':';
+		    }
 		}
 	    }
 	}

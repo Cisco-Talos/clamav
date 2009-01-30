@@ -1,3 +1,7 @@
+Fri Jan 30 09:13:15 CET 2009 (tk)
+---------------------------------
+ * shared/optparser.c: improve handling of short switches (bb#1374)
+
 Thu Jan 29 20:27:45 CET 2009 (tk)
 ---------------------------------
  * shared/optparser.c, clamconf/clamconf.c: add --generate-config
