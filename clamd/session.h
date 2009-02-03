@@ -28,18 +28,57 @@
 #define CMD6 "CONTSCAN"
 #define CMD7 "VERSION"
 #define CMD8 "STREAM"
-#define CMD9 "SESSION"
+/*#define CMD9 "SESSION"*/
 #define CMD10 "END"
 #define CMD11 "SHUTDOWN"
 /* #define CMD12 "FD" */
 #define CMD13 "MULTISCAN"
 #define CMD14 "FILDES"
 #define CMD15 "STATS"
+#define CMD16 "IDSESSION"
 
 #include "libclamav/clamav.h"
 #include "shared/optparser.h"
 #include "server.h"
 
-int command(client_conn_t *conn, int timeout);
+enum commands {
+    COMMAND_UNKNOWN = 0,
+    COMMAND_SHUTDOWN = 1,
+    COMMAND_RELOAD,
+    COMMAND_END,
+    COMMAND_SESSION,
+    COMMAND_SCAN,
+    COMMAND_PING,
+    COMMAND_CONTSCAN,
+    COMMAND_VERSION,
+    COMMAND_STREAM,
+    COMMAND_MULTISCAN,
+    COMMAND_FILDES,
+    COMMAND_STATS,
+    /* new proto commands */
+    COMMAND_IDSESSION,
+    COMMAND_INSTREAM,
+    /* internal commands */
+    COMMAND_MULTISCANFILE
+};
+
+typedef struct client_conn_tag {
+    enum commands cmdtype;
+    char *filename;
+    int scanfd;
+    int sd;
+    struct fd_data *fds;
+    unsigned int options;
+    const struct optstruct *opts;
+    struct cl_engine *engine;
+    time_t engine_timestamp;
+    char term;
+    threadpool_t *thrpool;
+    jobgroup_t *group;
+} client_conn_t;
+
+int command(client_conn_t *conn);
+enum commands parse_command(const char *cmd, const char **argument);
+int execute_or_dispatch_command(client_conn_t *conn, enum commands command, const char *argument);
 
 #endif

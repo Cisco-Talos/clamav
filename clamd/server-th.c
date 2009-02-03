@@ -102,85 +102,14 @@ static void scanner_thread(void *arg)
 
     timeout = optget(conn->opts, "ReadTimeout")->numarg;
     if(!timeout)
-    	timeout = -1;
+	timeout = -1;
 
-    if (conn->filename) {
-	/* TODO: this is the bad place for this */
-	ret = 0;
-	if (access(conn->filename, R_OK)) {
-	    mdprintf(conn->sd, "%s: Access denied. ERROR%c",
-		     conn->filename, conn->term);
-	    errors++;
-	} else {
-	    const char *virname;
-	    thrmgr_setactivetask(conn->filename,
-				 "MULTISCANFILE");
-	    ret = cl_scanfile(conn->filename, &virname, NULL, conn->engine, conn->options);
-	    thrmgr_setactivetask(NULL, NULL);
-	    if (ret == CL_EMEM) {
-		if(optget(conn->opts, "ExitOnOOM")->enabled)
-		    ret = COMMAND_SHUTDOWN;
-		errors++;
-	    } else {
-		if(ret == CL_VIRUS) {
-		    mdprintf(conn->sd, "%s: %s FOUND%c", conn->filename, virname, conn->term);
-		    logg("~%s: %s FOUND\n", conn->filename, virname);
-		    virusaction(conn->filename, virname, conn->opts);
-		    virus++;
-		} else if(ret != CL_CLEAN) {
-		    errors++;
-		    mdprintf(conn->sd, "%s: %s ERROR%c", conn->filename, cl_strerror(ret), conn->term);
-		    logg("~%s: %s ERROR\n", conn->filename, cl_strerror(ret));
-		} else if(logok) {
-		    logg("~%s: OK\n", conn->filename);
-		}
-		ret = 0;
-	    }
-	}
-
+    command(conn);
+    if (ret == COMMAND_SHUTDOWN) {
+	pthread_mutex_lock(&exit_mutex);
+	progexit = 1;
+	pthread_mutex_unlock(&exit_mutex);
     }
-
-    do {
-	if (!conn->filename)  /* TODO: */
-	    ret = command(conn, timeout);
-	if (ret < 0) {
-		break;
-	}
-
-	switch(ret) {
-	    case COMMAND_SHUTDOWN:
-		pthread_mutex_lock(&exit_mutex);
-		progexit = 1;
-		pthread_mutex_unlock(&exit_mutex);
-		break;
-
-	    case COMMAND_RELOAD:
-		pthread_mutex_lock(&reload_mutex);
-		reload = 1;
-		pthread_mutex_unlock(&reload_mutex);
-		break;
-
-	    case COMMAND_SESSION:
-		session = TRUE;
-		break;
-
-	    case COMMAND_END:
-		session = FALSE;
-		break;
-	}
-	if (session) {
-	    pthread_mutex_lock(&exit_mutex);
-	    if(progexit) {
-		session = FALSE;
-	    }
-	    pthread_mutex_unlock(&exit_mutex);
-	    pthread_mutex_lock(&reload_mutex);
-	    if (conn->engine_timestamp != reloaded_time) {
-		session = FALSE;
-	    }
-	    pthread_mutex_unlock(&reload_mutex);
-	}
-    } while (session);
 
     if (conn->scanfd != -1)
 	close(conn->scanfd);
@@ -195,8 +124,6 @@ static void scanner_thread(void *arg)
     if (conn->group)
 	thrmgr_group_finished(conn->group, virus ? EXIT_OTHER : errors ? EXIT_ERROR : EXIT_OK);
     cl_engine_free(conn->engine);
-    if (conn->cmdlen)
-	free(conn->cmd);
     free(conn);
     return;
 }
@@ -336,12 +263,18 @@ static const char *get_cmd(struct fd_buf *buf, size_t off, size_t *len, char *te
 		return NULL;
 	    }
 	    *pos = '\0';
-	    *len = pos - buf->buffer;
-	    return buf->buffer + 1;
+	    if (*term) {
+		*len = cli_chomp(buf->buffer + off);
+	    } else {
+		*len = pos - buf->buffer - off;
+	    }
+	    return buf->buffer + off + 1;
 	default:
 	    /* one packet = one command */
-	    *len = buf->off;
-	    return buf->buffer;
+	    *len = buf->off - off;
+	    buf->buffer[buf->off] = '\0';
+	    cli_chomp(buf->buffer + off);
+	    return buf->buffer + off;
     }
 }
 
@@ -842,6 +775,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    }
 
 	    if (buf->fd != -1 && buf->buffer) {
+		client_conn_t conn;
 		const unsigned char *cmd;
 		size_t cmdlen = 0;
 		size_t pos = 0;
@@ -849,12 +783,21 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		char term;
 		/* New data available to read on socket. */
 
+		memset(&conn, 0, sizeof(conn));
+		conn.scanfd = buf->recvfd;
+		buf->recvfd = -1;
+		conn.sd = buf->fd;
+		conn.options = options;
+		conn.opts = opts;
+		conn.thrpool = thr_pool;
+		conn.engine = engine;
 		/* Parse & dispatch commands */
 		while ((cmd = get_cmd(buf, pos, &cmdlen, &term)) != NULL) {
+		    int rc;
+		    const char *argument;
+		    enum commands command = parse_command(cmd, &argument);
 
-		    /* TODO: when we'll parse commands here, move this out into another
-		     * function */
-		    if (!strncmp(cmd, CMD14, strlen(CMD14))) {/* FILDES */
+		    if (command = COMMAND_FILDES) {
 			if ((buf->buffer + buf->off) - (cmd + cmdlen) < 1) {
 			    /* we need the extra byte from recvmsg */
 			    cmdlen = 0;
@@ -863,51 +806,18 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			/* eat extra \0 for controlmsg */
 			cmdlen++;
 		    }
-		    client_conn_t *client_conn = (client_conn_t *) malloc(sizeof(struct client_conn_tag));
-		    if(client_conn) {
-			client_conn->scanfd = buf->recvfd;
-			buf->recvfd = -1;
-			client_conn->filename = NULL;
-			client_conn->group = NULL;
-			client_conn->sd = buf->fd;
-			client_conn->fds = fds;
-			client_conn->cmdlen = cmdlen;
-			client_conn->cmd = malloc(cmdlen+1);
-			client_conn->term = term;
-			if (!client_conn->cmd) {
-			    logg("!acceptloop_th: failed to allocate memory for command\n");
-			    error = 1;
-			    break;
-			}
-			memcpy(client_conn->cmd, cmd, cmdlen);
-			client_conn->cmd[cmdlen] = '\0';
-			client_conn->options = options;
-			client_conn->opts = opts;
-			client_conn->thrpool = thr_pool;
-			if(cl_engine_addref(engine)) {
-			    logg("!cl_engine_addref() failed\n");
-			    error = 1;
-			    pthread_mutex_lock(&exit_mutex);
-			    progexit = 1;
-			    pthread_mutex_unlock(&exit_mutex);
-			} else {
-			    client_conn->engine = engine;
-			    client_conn->engine_timestamp = reloaded_time;
-			    if(!thrmgr_dispatch(thr_pool, client_conn)) {
-				logg("!thread dispatch failed\n");
-				error = 1;
-			    }
-			}
-		    } else {
-			logg("!Can't allocate memory for client_conn\n");
-			if(optget(opts, "ExitOnOOM")->enabled) {
+
+		    conn.term = term;
+
+		    if ((rc = execute_or_dispatch_command(&conn, command, argument)) < 0) {
+			if(rc == -1 && optget(opts, "ExitOnOOM")->enabled) {
 			    pthread_mutex_lock(&exit_mutex);
 			    progexit = 1;
 			    pthread_mutex_unlock(&exit_mutex);
 			}
 			error = 1;
-			break;
 		    }
+		    conn.scanfd = -1;
 		    pos += cmdlen+1;
 		}
 

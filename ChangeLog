@@ -1,3 +1,8 @@
+Mon Feb  2 12:56:21 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, clamd/server-th.c, clamd/server.h,
+ clamd/session.c, clamd/session.h: temp commit
+
 Thu Jan 29 11:47:16 EET 2009 (edwin)
 ------------------------------------
  * libclamav/others.h, libclamav/others_common.c: s/msg/path/

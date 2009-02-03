@@ -389,7 +389,9 @@ int fds_add(struct fd_data *data, int fd, int listen_only)
     data->buf[n-1].recvfd = -1;
     if (!listen_only) {
 	data->buf[n-1].bufsize = PATH_MAX+8;
-	if (!(data->buf[n-1].buffer = malloc(data->buf[n-1].bufsize))) {
+	/* plus extra space for a \0 so we can make sure every command is \0
+	 * terminated */
+	if (!(data->buf[n-1].buffer = malloc(data->buf[n-1].bufsize + 1))) {
 	    logg("!add_fd: Memory allocation failed for command buffer\n");
 	    return -1;
 	}

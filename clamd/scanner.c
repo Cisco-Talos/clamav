@@ -383,9 +383,8 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 	    client_conn->scanfd = -1;
 	    client_conn->sd = scandata->odesc;
 	    client_conn->fds = NULL;
-	    client_conn->cmdlen = 0;
-	    client_conn->cmd = "MULTISCANFILE";
 	    client_conn->filename = filename;
+	    client_conn->cmdtype = COMMAND_MULTISCANFILE;
 	    client_conn->term = scandata->term;
 	    client_conn->options = scandata->options;
 	    client_conn->opts = scandata->opts;

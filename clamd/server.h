@@ -26,23 +26,7 @@
 #include "libclamav/clamav.h"
 #include "shared/optparser.h"
 #include "thrmgr.h"
-
-/* TODO: these don't belong here */
-enum commands {
-    COMMAND_SHUTDOWN = 1,
-    COMMAND_RELOAD,
-    COMMAND_END,
-    COMMAND_SESSION,
-    COMMAND_SCAN,
-    COMMAND_PING,
-    COMMAND_CONTSCAN,
-    COMMAND_VERSION,
-    COMMAND_STREAM,
-    COMMAND_MULTISCAN,
-    COMMAND_FILDES,
-    COMMAND_STATS,
-    COMMAND_MULTISCANFILE /* internal */
-};
+#include "session.h"
 struct thrarg {
     int sid;
     int options;
@@ -60,26 +44,12 @@ struct thrwarg {
     unsigned int options;
 };
 
-typedef struct client_conn_tag {
-    char *cmd;
-    size_t cmdlen;
-    enum commands cmdtype;
-    char *filename;
-    int scanfd;
-    int sd;
-    struct fd_data *fds;
-    unsigned int options;
-    const struct optstruct *opts;
-    struct cl_engine *engine;
-    time_t engine_timestamp;
-    char term;
-    threadpool_t *thrpool;
-    jobgroup_t *group;
-} client_conn_t;
-
 int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts);
 void sighandler(int sig);
 void sighandler_th(int sig);
 void sigsegv(int sig);
+
+extern pthread_mutex_t exit_mutex, reload_mutex;
+extern int progexit, reload;
 
 #endif
