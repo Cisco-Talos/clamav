@@ -113,7 +113,6 @@ char *freshdbdir(void)
     return retdir;
 }
 
-
 void print_version(const char *dbdir)
 {
 	char *fdbdir, *path;
@@ -156,9 +155,9 @@ void print_version(const char *dbdir)
     free(path);
 }
 #endif
+
 int filecopy(const char *src, const char *dest)
 {
-
 #ifdef C_DARWIN
 	pid_t pid;
 
@@ -177,109 +176,10 @@ int filecopy(const char *src, const char *dest)
 
     return -1;
 
-#else
-	char buffer[FILEBUFF];
-	int s, d, bytes, ret;
-	struct stat sb;
-
-
-    if((s = open(src, O_RDONLY|O_BINARY)) == -1)
-	return -1;
-
-    if((d = open(dest, O_CREAT|O_WRONLY|O_TRUNC|O_BINARY, 0644)) == -1) {
-	close(s);
-	return -1;
-    }
-
-    while((bytes = read(s, buffer, FILEBUFF)) > 0)
-	if(write(d, buffer, bytes) < bytes) {
-	    close(s);
-	    close(d);
-	    return -1;
-	}
-
-    close(s);
-    /* njh@bandsman.co.uk: check result of close for NFS file */
-    ret = close(d);
-
-    stat(src, &sb);
-    chmod(dest, sb.st_mode);
-
-    return ret;
-
+#else /* C_DARWIN */
+    return cli_filecopy(src, dest);
 #endif
-
 }
-
-#ifndef CL_NOLIBCLAMAV
-int dircopy(const char *src, const char *dest)
-{
-	DIR *dd;
-	struct dirent *dent;
-	struct stat sb;
-	char spath[512], dpath[512];
-
-
-    if(stat(dest, &sb) == -1) {
-	if(mkdir(dest, 0755)) {
-	    /* mprintf("!dircopy: Can't create temporary directory %s\n", dest); */
-	    return -1;
-	}
-    }
-
-    if((dd = opendir(src)) == NULL) {
-        /* mprintf("!dircopy: Can't open directory %s\n", src); */
-        return -1;
-    }
-
-    while((dent = readdir(dd))) {
-#if (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
-	if(dent->d_ino)
-#endif
-	{
-	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, ".."))
-		continue;
-
-	    snprintf(spath, sizeof(spath), "%s/%s", src, dent->d_name);
-	    snprintf(dpath, sizeof(dpath), "%s/%s", dest, dent->d_name);
-
-	    if(filecopy(spath, dpath) == -1) {
-		/* mprintf("!dircopy: Can't copy %s to %s\n", spath, dpath); */
-		cli_rmdirs(dest);
-		closedir(dd);
-		return -1;
-	    }
-	}
-    }
-
-    closedir(dd);
-    return 0;
-}
-#endif
-
-#ifndef CL_NOLIBCLAMAV
-int cvd_unpack(const char *cvd, const char *destdir)
-{
-	int fd;
-
-
-    if((fd = open(cvd, O_RDONLY|O_BINARY)) == -1)
-	return -1;
-
-    if(lseek(fd, 512, SEEK_SET) == -1) {
-	close(fd);
-	return -1;
-    }
-
-    if(cli_untgz(fd, destdir) == -1) {
-	close(fd);
-	return -1;
-    }
-    close(fd);
-
-    return 0;
-}
-#endif
 
 int daemonize(void)
 {

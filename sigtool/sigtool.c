@@ -812,7 +812,7 @@ static int build(const struct optstruct *opts)
 	return -1;
     }
 
-    if(cvd_unpack(olddb, pt) == -1) {
+    if(cli_cvdunpack(olddb, pt) == -1) {
 	mprintf("!build: Can't unpack CVD file %s\n", olddb);
 	cli_rmdirs(pt);
 	free(pt);
@@ -838,7 +838,7 @@ static int build(const struct optstruct *opts)
 	return -1;
     }
 
-    if(cvd_unpack(newcvd, pt) == -1) {
+    if(cli_cvdunpack(newcvd, pt) == -1) {
 	mprintf("!build: Can't unpack CVD file %s\n", newcvd);
 	cli_rmdirs(pt);
 	free(pt);
@@ -904,7 +904,7 @@ static int unpack(const struct optstruct *opts)
 	name[sizeof(name)-1]='\0';
     }
 
-    if(cvd_unpack(name, ".") == -1) {
+    if(cli_cvdunpack(name, ".") == -1) {
 	mprintf("!unpack: Can't unpack file %s\n", name);
 	return -1;
     }
@@ -1060,7 +1060,7 @@ static int listdb(const char *filename)
 	    return -1;
 	}
 
-	if(cvd_unpack(filename, dir) == -1) {
+	if(cli_cvdunpack(filename, dir) == -1) {
 	    mprintf("!listdb: Can't unpack CVD file %s\n", filename);
 	    cli_rmdirs(dir);
 	    free(dir);
@@ -1417,6 +1417,50 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
     return 0;
 }
 
+static int dircopy(const char *src, const char *dest)
+{
+	DIR *dd;
+	struct dirent *dent;
+	struct stat sb;
+	char spath[512], dpath[512];
+
+
+    if(stat(dest, &sb) == -1) {
+	if(mkdir(dest, 0755)) {
+	    /* mprintf("!dircopy: Can't create temporary directory %s\n", dest); */
+	    return -1;
+	}
+    }
+
+    if((dd = opendir(src)) == NULL) {
+        /* mprintf("!dircopy: Can't open directory %s\n", src); */
+        return -1;
+    }
+
+    while((dent = readdir(dd))) {
+#if (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
+	if(dent->d_ino)
+#endif
+	{
+	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, ".."))
+		continue;
+
+	    snprintf(spath, sizeof(spath), "%s/%s", src, dent->d_name);
+	    snprintf(dpath, sizeof(dpath), "%s/%s", dest, dent->d_name);
+
+	    if(filecopy(spath, dpath) == -1) {
+		/* mprintf("!dircopy: Can't copy %s to %s\n", spath, dpath); */
+		cli_rmdirs(dest);
+		closedir(dd);
+		return -1;
+	    }
+	}
+    }
+
+    closedir(dd);
+    return 0;
+}
+
 static int verifydiff(const char *diff, const char *cvd, const char *incdir)
 {
 	char *tempdir, cwd[512];
@@ -1446,7 +1490,7 @@ static int verifydiff(const char *diff, const char *cvd, const char *incdir)
     }
 
     if(cvd) {
-	if(cvd_unpack(cvd, tempdir) == -1) {
+	if(cli_cvdunpack(cvd, tempdir) == -1) {
 	    mprintf("!verifydiff: Can't unpack CVD file %s\n", cvd);
 	    cli_rmdirs(tempdir);
 	    free(tempdir);
@@ -1634,7 +1678,7 @@ static int makediff(const struct optstruct *opts)
 	return -1;
     }
 
-    if(cvd_unpack(optget(opts, "diff")->strarg, odir) == -1) {
+    if(cli_cvdunpack(optget(opts, "diff")->strarg, odir) == -1) {
 	mprintf("!makediff: Can't unpack CVD file %s\n", optget(opts, "diff")->strarg);
 	cli_rmdirs(odir);
 	free(odir);
@@ -1657,7 +1701,7 @@ static int makediff(const struct optstruct *opts)
 	return -1;
     }
 
-    if(cvd_unpack(opts->filename[0], ndir) == -1) {
+    if(cli_cvdunpack(opts->filename[0], ndir) == -1) {
 	mprintf("!makediff: Can't unpack CVD file %s\n", opts->filename[0]);
 	cli_rmdirs(odir);
 	cli_rmdirs(ndir);

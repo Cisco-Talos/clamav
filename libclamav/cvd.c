@@ -44,7 +44,11 @@
 
 #define TAR_BLOCKSIZE 512
 
-int cli_untgz(int fd, const char *destdir)
+#ifndef	O_BINARY
+#define	O_BINARY	0
+#endif
+
+static int cli_untgz(int fd, const char *destdir)
 {
 	char *path, osize[13], name[101], type;
 	char block[TAR_BLOCKSIZE];
@@ -575,4 +579,23 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
 
 	return ret;
     }
+}
+
+int cli_cvdunpack(const char *file, const char *dir)
+{
+	int fd, ret;
+
+
+    fd = open(file, O_RDONLY|O_BINARY);
+    if(fd == -1)
+	return -1;
+
+    if(lseek(fd, 512, SEEK_SET) < 0) {
+	close(fd);
+	return -1;
+    }
+
+    ret = cli_untgz(fd, dir);
+    close(fd);
+    return ret;
 }

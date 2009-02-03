@@ -28,7 +28,7 @@ CLAMAV_PUBLIC {
 CLAMAV_PRIVATE {
   global:
     cli_strtok;
-    cli_untgz;
+    cli_cvdunpack;
     cli_regcomp;
     cli_regexec;
     cli_regfree;
@@ -124,6 +124,7 @@ CLAMAV_PRIVATE {
     mp_read_radix;
     mp_clear;
     cli_versig;
+    cli_filecopy;
   local:
     *;
 };

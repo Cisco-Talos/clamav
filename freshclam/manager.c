@@ -1221,7 +1221,7 @@ static int chdir_tmp(const char *dbname, const char *tmpdir)
 	    return -1;
 	}
 
-	if(cvd_unpack(cvdfile, tmpdir) == -1) {
+	if(cli_cvdunpack(cvdfile, tmpdir) == -1) {
 	    logg("!chdir_tmp: Can't unpack %s into %s\n", cvdfile, tmpdir);
 	    cli_rmdirs(tmpdir);
 	    return -1;

@@ -1,3 +1,7 @@
+Tue Feb  3 20:11:07 CET 2009 (tk)
+---------------------------------
+ * libclamav, shared: minor cleanups; fix handling of long file names (bb#1349)
+
 Fri Jan 30 09:13:15 CET 2009 (tk)
 ---------------------------------
  * shared/optparser.c: improve handling of short switches (bb#1374)
