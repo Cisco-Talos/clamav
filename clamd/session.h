@@ -67,6 +67,7 @@ typedef struct client_conn_tag {
     char *filename;
     int scanfd;
     int sd;
+    int id;
     struct fd_data *fds;
     unsigned int options;
     const struct optstruct *opts;

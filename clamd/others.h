@@ -25,6 +25,7 @@
 
 #include <stdlib.h>
 #include "shared/optparser.h"
+#include "thrmgr.h"
 
 struct fd_buf {
     unsigned char *buffer;
@@ -33,6 +34,7 @@ struct fd_buf {
     int fd;
     int got_newdata;
     int recvfd;
+    jobgroup_t *group;
 };
 
 struct fd_data {

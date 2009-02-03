@@ -647,3 +647,13 @@ void thrmgr_group_waitforall(jobgroup_t *group, unsigned *ok, unsigned *error, u
     *total = group->exit_total;
     pthread_mutex_unlock(&group->mutex);
 }
+
+jobgroup_t *thrmgr_group_new(void)
+{
+    jobgroup_t dummy = JOBGROUP_INITIALIZER;
+    jobgroup_t *group = malloc(sizeof(*group));
+    if (!group)
+	return NULL;
+    memcpy(group, &dummy, sizeof(dummy));
+    return group;
+}

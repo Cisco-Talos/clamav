@@ -194,7 +194,7 @@ int command(client_conn_t *conn)
     if (cli_ftw(conn->filename, CLI_FTW_STD,  maxdirrec ? maxdirrec : INT_MAX, scan_callback, &data) == CL_EMEM) 
 	if(optget(opts, "ExitOnOOM")->enabled)
 	    return COMMAND_SHUTDOWN;
-    if (scandata.group)
+    if (scandata.group && conn->cmdtype == COMMAND_MULTISCAN)
 	thrmgr_group_waitforall(&group, &ok, &error, &total);
     else {
 	error = scandata.errors;
@@ -300,12 +300,18 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 		}
 		return 1;
 	    }
+	case COMMAND_STREAM:
+	case COMMAND_MULTISCAN:
+	    if (conn->group) {
+		/* these commands are not recognized inside an IDSESSION */
+		mdprintf(desc, "UNKNOWN COMMAND%c", term);
+		return 1;
+	    }
+	    /* fall-through */
+	case COMMAND_STATS:
 	case COMMAND_FILDES:
 	case COMMAND_SCAN:
 	case COMMAND_CONTSCAN:
-	case COMMAND_STREAM:
-	case COMMAND_MULTISCAN:
-	case COMMAND_STATS:
 	    return dispatch_command(conn, cmd, argument);
 	case COMMAND_IDSESSION:
 	    if (conn->group) {
@@ -313,7 +319,7 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 		mdprintf(desc, "UNKNOWN COMMAND%c", term);
 		return 1;
 	    }
-	    conn->group = calloc(1, sizeof(*conn->group));
+	    conn->group = thrmgr_group_new();
 	    if (!conn->group)
 		return CL_EMEM;
 	    return 0;
@@ -323,6 +329,8 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 		mdprintf(desc, "UNKNOWN COMMAND%c", term);
 		return 1;
 	    }
+	    /* TODO: notify group to free itself on exit */
+	    conn->group = NULL;
 	    return 1;
 	/*case COMMAND_UNKNOWN:*/
 	default:

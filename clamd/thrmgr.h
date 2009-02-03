@@ -95,6 +95,7 @@ int thrmgr_dispatch(threadpool_t *threadpool, void *user_data);
 int thrmgr_group_dispatch(threadpool_t *threadpool, jobgroup_t *group, void *user_data);
 void thrmgr_group_waitforall(jobgroup_t *group, unsigned *ok, unsigned *error, unsigned *total);
 void thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc);
+jobgroup_t *thrmgr_group_new(void);
 int thrmgr_printstats(int outfd);
 void thrmgr_setactivetask(const char *filename, const char* command);
 void thrmgr_setactiveengine(const struct cl_engine *engine);

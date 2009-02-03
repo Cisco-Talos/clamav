@@ -1,3 +1,9 @@
+Tue Feb  3 23:02:49 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, clamd/others.h, clamd/server-th.c,
+ clamd/session.c, clamd/session.h, clamd/thrmgr.c, clamd/thrmgr.h: 
+ preliminary IDSESSION support, no IDs yet
+
 Tue Feb  3 19:36:07 EET 2009 (edwin)
 ------------------------------------
  * clamd/scanner.c, clamd/server-th.c, clamd/session.c,
