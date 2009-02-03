@@ -67,53 +67,6 @@
 #include "session.h"
 #include "thrmgr.h"
 
-#ifdef HAVE_FD_PASSING
-static int recvfd_and_scan(int desc, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts)
-{
-	struct msghdr msg;
-	struct cmsghdr *cmsg;
-	unsigned char buf[CMSG_SPACE(sizeof(int))];
-	struct iovec iov[1];
-	char dummy;
-	int ret=-1;
-
-	memset(&msg, 0, sizeof(msg));
-	iov[0].iov_base = &dummy;
-	iov[0].iov_len = 1;
-	msg.msg_iov = iov;
-	msg.msg_iovlen = 1;
-	msg.msg_control = buf;
-	msg.msg_controllen = sizeof(buf);
-
-	if (recvmsg(desc, &msg, 0) == -1) {
-	    logg("recvmsg failed: %s!", strerror(errno));
-	    return -1;
-	}
-	if ((msg.msg_flags & MSG_TRUNC) || (msg.msg_flags & MSG_CTRUNC)) {
-	    logg("control message truncated");
-	    return -1;
-	}
-	for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
-	    cmsg = CMSG_NXTHDR(&msg, cmsg)) {
-		if (cmsg->cmsg_len == CMSG_LEN(sizeof(int)) &&
-		    cmsg->cmsg_level == SOL_SOCKET &&
-		    cmsg->cmsg_type == SCM_RIGHTS) {
-			int fd = *(int *)CMSG_DATA(cmsg);
-			ret = scanfd(fd, '\n', NULL, engine, options, opts, desc);
-			close(fd);
-		}
-	}
-	return ret;
-}
-
-#else
-static int recvfd_and_scan(int desc, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts)
-{
-	mdprintf(desc, "ERROR: FILDES support not compiled in\n");
-	return -1;
-}
-#endif
-
 enum commands parse_command(const char *cmd, const char **argument)
 {
     *argument = NULL;
@@ -165,8 +118,9 @@ int command(client_conn_t *conn)
     unsigned int options = conn->options;
     const struct optstruct *opts = conn->opts;
     const char term = conn->term;
-    int type; /* TODO: make this enum */
+    int type = -1; /* TODO: make this enum */
     int keepopen = conn->group ? 1 : 0;
+    int maxdirrec;
 
     struct scan_cb_data scandata;
     struct cli_ftw_cbdata data;
@@ -207,8 +161,7 @@ int command(client_conn_t *conn)
 	    scandata.type = TYPE_MULTISCAN;
 	    /* TODO: check ret value */
 	    scan_callback(NULL, conn->filename, conn->filename, visit_file, &data);
-	    keepopen = 1;
-	    break;
+	    return 1;
 	case COMMAND_FILDES:
 	    thrmgr_setactivetask(NULL, "FILDES");
 #ifdef HAVE_FD_PASSING
@@ -236,7 +189,7 @@ int command(client_conn_t *conn)
     }
 
     scandata.type = type;
-    int maxdirrec = optget(opts, "MaxDirectoryRecursion")->numarg;
+    maxdirrec = optget(opts, "MaxDirectoryRecursion")->numarg;
     // TODO: flags symlink from opt
     if (cli_ftw(conn->filename, CLI_FTW_STD,  maxdirrec ? maxdirrec : INT_MAX, scan_callback, &data) == CL_EMEM) 
 	if(optget(opts, "ExitOnOOM")->enabled)
@@ -255,7 +208,7 @@ int command(client_conn_t *conn)
     return keepopen; /* no error and no 'special' command executed */
 }
 
-static int dispatch_command(const client_conn_t *conn, enum commands command, const char *argument)
+static int dispatch_command(const client_conn_t *conn, enum commands cmd, const char *argument)
 {
     client_conn_t *dup_conn = (client_conn_t *) malloc(sizeof(struct client_conn_tag));
     if(!dup_conn) {
@@ -263,13 +216,13 @@ static int dispatch_command(const client_conn_t *conn, enum commands command, co
 	return -1;
     }
     memcpy(dup_conn, conn, sizeof(*conn));
-    dup_conn->cmdtype = command;
+    dup_conn->cmdtype = cmd;
     if(cl_engine_addref(dup_conn->engine)) {
 	logg("!cl_engine_addref() failed\n");
 	return -1;
     }
     dup_conn->scanfd = -1;
-    switch (command) {
+    switch (cmd) {
 	case COMMAND_FILDES:
 	    dup_conn->scanfd = conn->scanfd;
 	    break;
@@ -301,7 +254,7 @@ static int dispatch_command(const client_conn_t *conn, enum commands command, co
  *   0 for async dispatched
  *   1 for command completed (connection can be closed)
  */
-int execute_or_dispatch_command(client_conn_t *conn, enum commands command, const char *argument)
+int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const char *argument)
 {
     int desc = conn->sd;
     char term = conn->term;
@@ -312,7 +265,7 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands command, cons
      *  I/O
      *  - send of atomic message is allowed.
      * Dispatch other commands */
-    switch (command) {
+    switch (cmd) {
 	case COMMAND_SHUTDOWN:
 	    pthread_mutex_lock(&exit_mutex);
 	    progexit = 1;
@@ -353,7 +306,7 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands command, cons
 	case COMMAND_STREAM:
 	case COMMAND_MULTISCAN:
 	case COMMAND_STATS:
-	    return dispatch_command(conn, command, argument);
+	    return dispatch_command(conn, cmd, argument);
 	case COMMAND_IDSESSION:
 	    if (conn->group) {
 		/* we are already inside an idsession/multiscan */

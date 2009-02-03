@@ -269,8 +269,6 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	struct sockaddr_in server;
 	struct sockaddr_in peer;
 	socklen_t addrlen;
-	struct hostent he;
-	const struct optstruct *opt;
 	char *tmpname;
 
 

@@ -418,7 +418,7 @@ int cli_ftw(const char *path, int flags, int maxdepth, cli_ftw_cb callback, stru
     entry.filename = entry.is_dir ? NULL : strdup(path);
     entry.dirname = entry.is_dir ? path : NULL;
     if (entry.is_dir) {
-	int ret = callback(entry.statbuf, NULL, path, visit_directory_toplev, data);
+	ret = callback(entry.statbuf, NULL, path, visit_directory_toplev, data);
 	if (ret != CL_SUCCESS)
 	    return ret;
     }

@@ -83,7 +83,7 @@ static void scanner_thread(void *arg)
 #ifndef	C_WINDOWS
 	sigset_t sigset;
 #endif
-	int ret, timeout, session=FALSE;
+	int ret, timeout;
 	unsigned virus=0, errors=0;
 
 #ifndef	C_WINDOWS
@@ -324,7 +324,9 @@ static void *acceptloop_th(void *arg)
 		continue;
 	    if (buf->fd == data->syncpipe_wake_accept[0]) {
 		/* dummy sync pipe, just to wake us */
-		read(buf->fd, buff, sizeof(buff));
+		if (read(buf->fd, buff, sizeof(buff)) < 0) {
+		    logg("^Syncpipe read failed\n");
+		}
 		continue;
 	    }
 	    /* listen only socket */
@@ -386,7 +388,9 @@ static void *acceptloop_th(void *arg)
     pthread_mutex_lock(&exit_mutex);
     progexit = 1;
     pthread_mutex_unlock(&exit_mutex);
-    write(data->syncpipe_wake_recv[1], "", 1);
+    if (write(data->syncpipe_wake_recv[1], "", 1) < 0) {
+	logg("^Syncpipe write failed\n");
+    }
 
     return NULL;
 }
@@ -402,7 +406,6 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	struct rlimit rlim;
 #endif
 	mode_t old_umask;
-	client_conn_t *client_conn;
 	const struct optstruct *opt;
 	char buff[BUFFSIZE + 1];
 	pid_t mainpid;
@@ -744,9 +747,10 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 
     time(&start_time);
     for(;;) {
+	int new_sd;
 	/* Block waiting for connection on any of the sockets */
 	pthread_mutex_lock(&fds->buf_mutex);
-	int new_sd = fds_poll_recv(fds, -1, 1);
+	new_sd = fds_poll_recv(fds, -1, 1);
 
 	if (!fds->nfds) {
 	    /* at least the dummy/sync pipe should have remained */
@@ -772,7 +776,9 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 
 	    if (buf->fd == acceptdata.syncpipe_wake_recv[0]) {
 		/* dummy sync pipe, just to wake us */
-		read(buf->fd, buff, sizeof(buff));
+		if (read(buf->fd, buff, sizeof(buff)) < 0) {
+		    logg("^Syncpipe read failed\n");
+		}
 		continue;
 	    }
 
@@ -782,7 +788,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		size_t cmdlen = 0;
 		size_t pos = 0;
 		int error = 0;
-		char term;
+		char term = '\n';
 		/* New data available to read on socket. */
 
 		memset(&conn, 0, sizeof(conn));
@@ -797,9 +803,9 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		while ((cmd = get_cmd(buf, pos, &cmdlen, &term)) != NULL) {
 		    int rc;
 		    const char *argument;
-		    enum commands command = parse_command(cmd, &argument);
+		    enum commands cmdtype = parse_command(cmd, &argument);
 
-		    if (command == COMMAND_FILDES) {
+		    if (cmdtype == COMMAND_FILDES) {
 			if ((buf->buffer + buf->off) - (cmd + cmdlen) < 1) {
 			    /* we need the extra byte from recvmsg */
 			    cmdlen = 0;
@@ -811,7 +817,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 
 		    conn.term = term;
 
-		    if ((rc = execute_or_dispatch_command(&conn, command, argument)) < 0) {
+		    if ((rc = execute_or_dispatch_command(&conn, cmdtype, argument)) < 0) {
 			if(rc == -1 && optget(opts, "ExitOnOOM")->enabled) {
 			    pthread_mutex_lock(&exit_mutex);
 			    progexit = 1;
@@ -914,7 +920,9 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     }
 
     fds_free(fds);
-    write(acceptdata.syncpipe_wake_accept[1], "", 1);
+    if (write(acceptdata.syncpipe_wake_accept[1], "", 1) < 0) {
+	logg("^Write to syncpipe failed\n");
+    }
     /* Destroy the thread manager.
      * This waits for all current tasks to end
      */
