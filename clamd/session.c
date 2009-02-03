@@ -154,6 +154,10 @@ enum commands parse_command(const char *cmd, const char **argument)
     return COMMAND_UNKNOWN;
 }
 
+/* returns
+ *  -1 on fatal error (shutdown)
+ *  0 on ok, close connection
+ *  1 on ok, keep connection open */
 int command(client_conn_t *conn)
 {
     int desc = conn->sd;
@@ -162,6 +166,7 @@ int command(client_conn_t *conn)
     const struct optstruct *opts = conn->opts;
     const char term = conn->term;
     int type; /* TODO: make this enum */
+    int keepopen = conn->group ? 1 : 0;
 
     struct scan_cb_data scandata;
     struct cli_ftw_cbdata data;
@@ -173,13 +178,13 @@ int command(client_conn_t *conn)
     data.data = &scandata;
     memset(&scandata, 0, sizeof(scandata));
     scandata.group = conn->group;
-    scandata.type = type;
     scandata.odesc = desc;
     scandata.term = term;
     scandata.options = options;
     scandata.engine = engine;
     scandata.opts = opts;
     scandata.thr_pool = conn->thrpool;
+    scandata.toplevel_path = conn->filename;
 
     switch (conn->cmdtype) {
 	case COMMAND_SCAN:
@@ -194,12 +199,15 @@ int command(client_conn_t *conn)
 	    thrmgr_setactivetask(NULL, "MULTISCAN");
 	    type = TYPE_MULTISCAN;
 	    scandata.group = &group;
+	    keepopen = 0;
 	    break;
 	case COMMAND_MULTISCANFILE:
 	    thrmgr_setactivetask(NULL, "MULTISCANFILE");
 	    scandata.group = NULL;
+	    scandata.type = TYPE_MULTISCAN;
 	    /* TODO: check ret value */
 	    scan_callback(NULL, conn->filename, conn->filename, visit_file, &data);
+	    keepopen = 1;
 	    break;
 	case COMMAND_FILDES:
 	    thrmgr_setactivetask(NULL, "FILDES");
@@ -209,23 +217,25 @@ int command(client_conn_t *conn)
 	    else if (scanfd(conn->scanfd, conn->term, NULL, engine, options, opts, desc) == -2)
 		if(optget(opts, "ExitOnOOM")->enabled)
 		    return COMMAND_SHUTDOWN;
-	    return 0;
+	    return keepopen;
 #else
-	    mdprintf(desc, "FILDES support not compiled inERROR%c",conn->term);
-	    return -1;
+	    mdprintf(desc, "FILDES support not compiled in. ERROR%c",conn->term);
+	    return 0;
 #endif
 	case COMMAND_STATS:
 	    thrmgr_setactivetask(NULL, "STATS");
 	    thrmgr_printstats(desc);
-	    return 0;
+	    return keepopen;
 	case COMMAND_STREAM:
 	    thrmgr_setactivetask(NULL, "STREAM");
 	    if(scanstream(desc, NULL, engine, options, opts, conn->term) == CL_EMEM)
 		if(optget(opts, "ExitOnOOM")->enabled)
 		    return COMMAND_SHUTDOWN;
+	    /* STREAM not valid in IDSESSION */
 	    return 0;
     }
 
+    scandata.type = type;
     int maxdirrec = optget(opts, "MaxDirectoryRecursion")->numarg;
     // TODO: flags symlink from opt
     if (cli_ftw(conn->filename, CLI_FTW_STD,  maxdirrec ? maxdirrec : INT_MAX, scan_callback, &data) == CL_EMEM) 
@@ -233,10 +243,16 @@ int command(client_conn_t *conn)
 	    return COMMAND_SHUTDOWN;
     if (scandata.group)
 	thrmgr_group_waitforall(&group, &ok, &error, &total);
-    if (ok + error == total) {
+    else {
+	error = scandata.errors;
+	total = scandata.total;
+	ok = total - error - scandata.infected;
+    }
+
+    if (ok + error == total && (error != total)) {
 	mdprintf(desc, "%s: OK%c", conn->filename, conn->term);
     }
-    return 0; /* no error and no 'special' command executed */
+    return keepopen; /* no error and no 'special' command executed */
 }
 
 static int dispatch_command(const client_conn_t *conn, enum commands command, const char *argument)

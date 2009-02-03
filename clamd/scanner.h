@@ -33,7 +33,9 @@ struct scan_cb_data {
     int type;
     int infected;
     int errors;
+    int total;
     char term;
+    const char *toplevel_path;
     unsigned long scanned;
     unsigned int options;
     struct cl_engine *engine;
@@ -42,10 +44,7 @@ struct scan_cb_data {
     jobgroup_t *group;
 };
 
-int scan(const char *filename, const char term, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc, unsigned int type);
-
 int scanfd(const int fd, char term, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc);
-
 int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, char term);
 int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data);
 

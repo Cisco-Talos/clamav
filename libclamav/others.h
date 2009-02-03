@@ -380,6 +380,7 @@ enum cli_ftw_reason {
     error_mem, /* recommended to return CL_EMEM */
     /* recommended to return CL_SUCCESS below */
     error_stat,
+    warning_skipped_link,
     warning_skipped_special,
     warning_skipped_dir
 };

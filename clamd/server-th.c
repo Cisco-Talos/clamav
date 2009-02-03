@@ -104,7 +104,7 @@ static void scanner_thread(void *arg)
     if(!timeout)
 	timeout = -1;
 
-    command(conn);
+    ret = command(conn);
     if (ret == COMMAND_SHUTDOWN) {
 	pthread_mutex_lock(&exit_mutex);
 	progexit = 1;
@@ -115,11 +115,13 @@ static void scanner_thread(void *arg)
 	close(conn->scanfd);
     thrmgr_setactiveengine(NULL);
 
-    if (!conn->filename) {
-	fds_remove(conn->fds, conn->sd);
+    if (ret != 1) {	/* close connection unless asked not to */
+	if (conn->fds)
+	    fds_remove(conn->fds, conn->sd);
 	shutdown(conn->sd, 2);
 	closesocket(conn->sd);
-    } else
+    }
+    if (conn->filename)
 	free(conn->filename);
     if (conn->group)
 	thrmgr_group_finished(conn->group, virus ? EXIT_OTHER : errors ? EXIT_ERROR : EXIT_OK);
@@ -797,7 +799,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    const char *argument;
 		    enum commands command = parse_command(cmd, &argument);
 
-		    if (command = COMMAND_FILDES) {
+		    if (command == COMMAND_FILDES) {
 			if ((buf->buffer + buf->off) - (cmd + cmdlen) < 1) {
 			    /* we need the extra byte from recvmsg */
 			    cmdlen = 0;
@@ -816,6 +818,12 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			    pthread_mutex_unlock(&exit_mutex);
 			}
 			error = 1;
+		    }
+		    if (rc && !conn.group) {
+			shutdown(conn.sd, 2);
+			closesocket(conn.sd);
+			buf->fd = -1;
+			break;
 		    }
 		    conn.scanfd = -1;
 		    pos += cmdlen+1;

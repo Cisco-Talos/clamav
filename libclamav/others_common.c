@@ -298,8 +298,14 @@ enum filetype {
     ft_link,
     ft_directory,
     ft_regular,
-    ft_skipped
+    ft_skipped_special,
+    ft_skipped_link
 };
+
+static inline int ft_skipped(enum filetype ft)
+{
+    return ft != ft_regular && ft != ft_directory;
+}
 
 #define FOLLOW_SYMLINK_MASK (CLI_FTW_FOLLOW_FILE_SYMLINK | CLI_FTW_FOLLOW_DIR_SYMLINK)
 static int get_filetype(const char *fname, int flags, int need_stat,
@@ -329,13 +335,12 @@ static int get_filetype(const char *fname, int flags, int need_stat,
 	    }
 	    if (*ft == ft_link && !(flags & FOLLOW_SYMLINK_MASK)) {
 		/* This is a symlink, but we don't follow any symlinks */
-		*ft = ft_skipped;
+		*ft = ft_skipped_link;
 		return 0;
 	    }
 	}
     }
 
-    /* TODO: ft_skipped shouldn't be stated */
     if (need_stat) {
 	if (stat(fname, statbuf) == -1)
 	    return -1;
@@ -354,7 +359,8 @@ static int get_filetype(const char *fname, int flags, int need_stat,
 	    *ft = ft_regular;
 	} else {
 	    /* default: skipped */
-	    *ft = ft_skipped;
+	    *ft = S_ISLNK(statbuf->st_mode) ?
+		ft_skipped_link : ft_skipped_special;
 	}
     }
     return stated;
@@ -373,11 +379,12 @@ static int handle_filetype(const char *fname, int flags,
 	ret = callback(NULL, NULL, fname, error_stat, data);
 	if (ret != CL_SUCCESS)
 	    return ret;
-	*ft = ft_skipped; /* skip on stat failure */
-    }
-    if (*ft == ft_skipped) {
+	*ft = ft_unknown;
+    } else if (*ft == ft_skipped_link || *ft == ft_skipped_special) {
 	/* skipped filetype */
-	ret = callback(stated ? statbuf : NULL, NULL, fname, warning_skipped_special, data);
+	ret = callback(stated ? statbuf : NULL, NULL, fname,
+		       *ft == ft_skipped_link ?
+		       warning_skipped_link : warning_skipped_special, data);
 	if (ret != CL_SUCCESS)
 	    return ret;
     }
@@ -404,7 +411,8 @@ int cli_ftw(const char *path, int flags, int maxdepth, cli_ftw_cb callback, stru
     int ret = handle_filetype(path, flags, &statbuf, &stated, &ft, callback, data);
     if (ret != CL_SUCCESS)
 	return ret;
-
+    if (ft_skipped(ft))
+	return CL_SUCCESS;
     entry.statbuf = stated ? &statbuf : NULL;
     entry.is_dir = ft == ft_directory;
     entry.filename = entry.is_dir ? NULL : strdup(path);
@@ -476,7 +484,7 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 		    ft = ft_unknown;
 		    break;
 		default:
-		    ft = ft_skipped;
+		    ft = ft_skipped_special;
 		    break;
 	    }
 #else
@@ -496,7 +504,7 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 		break;
 	    }
 
-	    if (ft == ft_skipped) { /* skip */
+	    if (ft_skipped(ft)) { /* skip */
 		free(fname);
 		errno = 0;
 		continue;
