@@ -1,3 +1,9 @@
+Tue Feb  3 23:09:19 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, clamd/others.h, clamd/scanner.c, clamd/scanner.h,
+ clamd/server-th.c, clamd/session.c: preliminary ID support, only on
+ engine messages, not clamd messages
+
 Tue Feb  3 23:02:49 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c, clamd/others.h, clamd/server-th.c,

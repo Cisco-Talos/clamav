@@ -387,6 +387,7 @@ int fds_add(struct fd_data *data, int fd, int listen_only)
     data->nfds = n;
     data->buf[n-1].fd = -1;
     data->buf[n-1].recvfd = -1;
+    data->buf[n-1].id = 0;
     data->buf[n-1].group = NULL;
     if (!listen_only) {
 	data->buf[n-1].bufsize = PATH_MAX+8;

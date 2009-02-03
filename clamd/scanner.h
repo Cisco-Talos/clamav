@@ -34,6 +34,7 @@ struct scan_cb_data {
     int infected;
     int errors;
     int total;
+    int id;
     char term;
     const char *toplevel_path;
     unsigned long scanned;

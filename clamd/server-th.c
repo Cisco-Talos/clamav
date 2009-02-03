@@ -800,7 +800,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		conn.thrpool = thr_pool;
 		conn.engine = engine;
 		conn.group = buf->group;
-		conn.id = 0;
+		conn.id = buf->id;
 		/* Parse & dispatch commands */
 		while ((cmd = get_cmd(buf, pos, &cmdlen, &term)) != NULL) {
 		    int rc;
@@ -837,6 +837,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    pos += cmdlen+1;
 		    conn.id++;
 		}
+		buf->id = conn.id;
 		buf->group = conn.group;
 		if (error) {
 		    mdprintf(buf->fd, "ERROR%c", term);

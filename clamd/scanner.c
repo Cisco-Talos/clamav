@@ -199,12 +199,18 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 
     if (ret == CL_VIRUS) {
 	scandata->infected++;
-	mdprintf(scandata->odesc, "%s: %s FOUND%c", filename, virname, scandata->term);
+	if (scandata->id)
+	    mdprintf(scandata->odesc, "%u: %s: %s FOUND%c", scandata->id, filename, virname, scandata->term);
+	else
+	    mdprintf(scandata->odesc, "%s: %s FOUND%c", filename, virname, scandata->term);
 	logg("~%s: %s FOUND\n", filename, virname);
 	virusaction(filename, virname, scandata->opts);
     } else if (ret != CL_CLEAN) {
 	scandata->errors++;
-	mdprintf(scandata->odesc, "%s: %s ERROR%c", filename, cl_strerror(ret), scandata->term);
+	if (scandata->id)
+	    mdprintf(scandata->odesc, "%u: %s: %s ERROR%c", scandata->id, filename, cl_strerror(ret), scandata->term);
+	else
+	    mdprintf(scandata->odesc, "%s: %s ERROR%c", filename, cl_strerror(ret), scandata->term);
 	logg("~%s: %s ERROR\n", filename, cl_strerror(ret));
 	if(ret == CL_EMEM) /* stop scanning */
 	    return ret;

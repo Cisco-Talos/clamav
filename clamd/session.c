@@ -131,6 +131,7 @@ int command(client_conn_t *conn)
 
     data.data = &scandata;
     memset(&scandata, 0, sizeof(scandata));
+    scandata.id = conn->id;
     scandata.group = conn->group;
     scandata.odesc = desc;
     scandata.term = term;
@@ -203,7 +204,10 @@ int command(client_conn_t *conn)
     }
 
     if (ok + error == total && (error != total)) {
-	mdprintf(desc, "%s: OK%c", conn->filename, conn->term);
+	if (conn->id)
+	    mdprintf(desc, "%u: %s: OK%c", conn->id, conn->filename, conn->term);
+	else
+	    mdprintf(desc, "%s: OK%c", conn->filename, conn->term);
     }
     return keepopen; /* no error and no 'special' command executed */
 }
