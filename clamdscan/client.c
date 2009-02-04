@@ -30,6 +30,7 @@
 #ifdef HAVE_SYS_LIMITS_H
 #include <sys/limits.h>
 #endif
+#include <sys/select.h>
 #include <sys/un.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -62,7 +63,6 @@ static struct sockaddr *mainsa = NULL;
 static int mainsasz;
 static struct sockaddr_un nixsock;
 static struct sockaddr_in tcpsock;
-static struct sockaddr_in strmsock;
 enum {
     CONT,
     MULTI,
@@ -177,12 +177,75 @@ static int recvln(struct RCVLN *s, char **rbol, char **reol) {
     }
 }
 
+static int send_stream(int sockd, const char *filename) {
+    uint32_t buf[BUFSIZ/sizeof(uint32_t)];
+    int fd, len;
+
+    if(filename) {
+	if(!(fd = open(filename, O_RDONLY))) {
+	    logg("!Open failed on %s.\n", filename);
+	    return 1;
+	}
+    } else fd = 0;
+
+    if(sendln(sockd, "zINSTREAM", 10)) return 1;
+
+    while((len = read(fd, &buf[1], sizeof(buf) - sizeof(uint32_t))) > 0) {
+	buf[0] = htonl(len);
+	if(sendln(sockd, (const char *)buf, len+sizeof(uint32_t))) { /* FIXME: conn might be closed unexpectedly due to limits */
+	    logg("!Can't write to the socket.\n");
+	    close(fd);
+	    return 1;
+	}
+    }
+    close(fd);
+    if(len) {
+	logg("!Failed to read from %s.\n", filename);
+	return 1;
+    }
+    return 0;
+}
+
+static int send_fdpass(int sockd, const char *filename) {
+    struct iovec iov[1];
+    struct msghdr msg;
+    struct cmsghdr *cmsg;
+    unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
+    char dummy[]="";
+    int fd;
+
+    if(filename) {
+	if(!(fd = open(filename, O_RDONLY))) {
+	    logg("!Open failed on %s.\n", filename);
+	    return 1;
+	}
+    } else fd = 0;
+    if(sendln(sockd, "zFILDES", 8)) return 1;
+
+    iov[0].iov_base = dummy;
+    iov[0].iov_len = 1;
+    memset(&msg, 0, sizeof(msg));
+    msg.msg_control = fdbuf;
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+    msg.msg_controllen = CMSG_LEN(sizeof(int));
+    cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type = SCM_RIGHTS;
+    *(int *)CMSG_DATA(cmsg) = fd;
+    if(sendmsg(sockd, &msg, 0) == -1) {
+	logg("!FD send failed\n");
+	return 1;
+    }
+    return 0;
+}
+
 static int dsresult(int sockd, int scantype, const char *filename)
 {
-	int infected = 0, waserror = 0, fd;
+	int infected = 0, waserror = 0;
 	int len;
 	char *bol, *eol;
-	char buf[BUFSIZ];    
 	struct RCVLN rcv;
 
     recvlninit(&rcv, sockd);
@@ -201,82 +264,14 @@ static int dsresult(int sockd, int scantype, const char *filename)
     break;
 
     case STREAM:
-	{
-	    int wsockd;
-	    
-	    if(filename) {
-		if(!(fd = open(filename, O_RDONLY))) {
-		    logg("!Open failed on %s.\n", filename);
-		    return -1;
-		}
-	    } else fd = 0;
-	    if(sendln(sockd, "zSTREAM", 8)) return -1;
-	    if(!(len = recvln(&rcv, &bol, &eol)) || len < 7 || memcmp(bol, "PORT ", 5) || !(len = atoi(bol + 5))) return -1;
-	    strmsock.sin_port = htons(len);
-	    if((wsockd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		perror("socket()");
-		logg("!Can't create the stream socket.\n");
-		close(fd);
-		return -1;
-	    }
-	    if(connect(wsockd, (struct sockaddr *)&strmsock, sizeof(strmsock)) < 0) {
-		perror("connect()");
-		logg("!Can't connect to clamd for streaming.\n");
-		close(wsockd);
-		close(fd);
-		return -1;
-	    }
-	    while((len = read(fd, buf, sizeof(buf))) > 0) {
-		if(sendln(wsockd, buf, len)) { /* FIXME: conn might be closed unexpectedly due to limits */
-		    logg("!Can't write to the socket.\n");
-		    close(wsockd);
-		    close(fd);
-		    return -1;
-		}
-	    }
-	    close(wsockd);
-	    close(fd);
-	    if(len) {
-		logg("!Failed to read from %s.\n", filename);
-		return -1;
-	    }
-	    break;
-	}
+	if(send_stream(sockd, filename))
+	    return -1;
+
 #ifdef HAVE_FD_PASSING
     case FILDES:
-	{
-	    struct iovec iov[1];
-	    struct msghdr msg;
-	    struct cmsghdr *cmsg;
-	    unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
-	    char dummy[]="";
-
-	    if(filename) {
-		if(!(fd = open(filename, O_RDONLY))) {
-		    logg("!Open failed on %s.\n", filename);
-		    return -1;
-		}
-	    } else fd = 0;
-	    if(sendln(sockd, "zFILDES", 8)) return -1;
-
-	    iov[0].iov_base = dummy;
-	    iov[0].iov_len = 1;
-	    memset(&msg, 0, sizeof(msg));
-	    msg.msg_control = fdbuf;
-	    msg.msg_iov = iov;
-	    msg.msg_iovlen = 1;
-	    msg.msg_controllen = CMSG_LEN(sizeof(int));
-	    cmsg = CMSG_FIRSTHDR(&msg);
-	    cmsg->cmsg_len = CMSG_LEN(sizeof(int));
-	    cmsg->cmsg_level = SOL_SOCKET;
-	    cmsg->cmsg_type = SCM_RIGHTS;
-	    *(int *)CMSG_DATA(cmsg) = fd;
-	    if(sendmsg(sockd, &msg, 0) == -1) {
-		logg("!FD send failed\n");
-		return -1;
-	    }
-	    break;
-	}
+	if(send_fdpass(sockd, filename))
+	    return -1;
+	break;
 #endif
     }
 
@@ -349,6 +344,7 @@ static int isremote(const struct optstruct *opts) {
     struct hostent *he;
     struct optstruct *clamdopts;
     const char *clamd_conf = optget(opts, "config-file")->strarg;
+    static struct sockaddr_in testsock;
 
     if((clamdopts = optparse(clamd_conf, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
 	logg("!Can't parse clamd configuration file %s\n", clamd_conf);
@@ -361,9 +357,6 @@ static int isremote(const struct optstruct *opts) {
 	nixsock.sun_path[sizeof(nixsock.sun_path)-1]='\0';
 	mainsa = (struct sockaddr *)&nixsock;
 	mainsasz = sizeof(nixsock);
-	memset((void *)&strmsock, 0, sizeof(strmsock));
-	strmsock.sin_family = AF_INET;
-	strmsock.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 	optfree(clamdopts);
 	return 0;
     }
@@ -374,8 +367,7 @@ static int isremote(const struct optstruct *opts) {
     mainsa = (struct sockaddr *)&tcpsock;
     mainsasz = sizeof(tcpsock);
     memset((void *)&tcpsock, 0, sizeof(tcpsock));
-    memset((void *)&strmsock, 0, sizeof(strmsock));
-    tcpsock.sin_family = strmsock.sin_family = AF_INET;
+    tcpsock.sin_family = AF_INET;
     tcpsock.sin_port = htons(opt->numarg);
     if(!(opt = optget(clamdopts, "TCPAddr"))->enabled) {
 	tcpsock.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
@@ -390,23 +382,24 @@ static int isremote(const struct optstruct *opts) {
 	mainsa = NULL;
 	return 0;
     }
-    strmsock.sin_port = htons(INADDR_ANY);
-    tcpsock.sin_addr = strmsock.sin_addr = *(struct in_addr *) he->h_addr_list[0];
-    if(!(s = socket(tcpsock.sin_family, SOCK_STREAM, 0))) return 0;
-    ret = (bind(s, (struct sockaddr *)&strmsock, sizeof(strmsock)) != 0);
+    tcpsock.sin_addr = *(struct in_addr *) he->h_addr_list[0];
+    memcpy((void *)&testsock, (void *)&tcpsock, sizeof(testsock));
+    testsock.sin_port = htons(INADDR_ANY);
+    if(!(s = socket(testsock.sin_family, SOCK_STREAM, 0))) return 0;
+    ret = (bind(s, (struct sockaddr *)&testsock, sizeof(testsock)) != 0);
     close(s);
     return ret;
 }
 
-struct client_cb_data {
+struct client_serial_data {
     int infected;
     int errors;
     int scantype;
     int spam;
 };
 
-static int callback(struct stat *sb, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data) {
-    struct client_cb_data *c = (struct client_cb_data *)data->data;
+static int serial_callback(struct stat *sb, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data) {
+    struct client_serial_data *c = (struct client_serial_data *)data->data;
     int sockd, ret;
     const char *f = filename;
 
@@ -451,11 +444,32 @@ static int callback(struct stat *sb, char *filename, const char *path, enum cli_
     return CL_SUCCESS;
 }
 
-static int client_scan(const char *file, int scantype, int *infected, int *errors, int maxlevel) {
-    struct cli_ftw_cbdata data;
-    struct client_cb_data cdata;
-    char *fullpath;
+static char *makeabs(const char *basepath) {
     int namelen;
+    char *ret;
+
+    if(!(ret = malloc(PATH_MAX + 1))) {
+	logg("^Can't make room for fullpath.\n");
+	return NULL;
+    }
+    if(*basepath != '/') { /* FIXME: to be unified */
+	if(!getcwd(ret, PATH_MAX)) {
+	    logg("^Can't get absolute pathname of current working directory.\n");
+	    free(ret);
+	    return NULL;
+	}
+	namelen = strlen(ret);
+	snprintf(&ret[namelen], PATH_MAX - namelen, "/%s", basepath);
+    } else {
+	strncpy(ret, basepath, PATH_MAX);
+    }
+    ret[PATH_MAX] = '\0';
+    return ret;
+}
+
+static int serial_client_scan(const char *file, int scantype, int *infected, int *errors, int maxlevel) {
+    struct cli_ftw_cbdata data;
+    struct client_serial_data cdata;
 
     cdata.infected = 0;
     cdata.errors = 0;
@@ -463,31 +477,131 @@ static int client_scan(const char *file, int scantype, int *infected, int *error
     cdata.spam = 0;
     data.data = &cdata;
 
-    if(!(fullpath = malloc(PATH_MAX + 1))) {
-	logg("^Can't make room for fullpath.\n");
-	(*errors)++;
-	return 1;
-    }
-    if(*file != '/') { /* FIXME: to be unified */
-	if(!getcwd(fullpath, PATH_MAX)) {
-	    logg("^Can't get absolute pathname of current working directory.\n");
-	    free(fullpath);
-	    (*errors)++;
-	    return 1;
-	}
-	namelen = strlen(fullpath);
-	snprintf(&fullpath[namelen], PATH_MAX - namelen, "/%s", file);
-    } else {
-	strncpy(fullpath, file, PATH_MAX);
-    }
-    fullpath[PATH_MAX] = '\0';
-
-    cli_ftw(fullpath, CLI_FTW_STD, maxlevel ? maxlevel : INT_MAX, callback, &data);
-    if(!cdata.infected && (!cdata.errors || cdata.spam)) logg("~%s: OK\n", fullpath);
-    free(fullpath);
+    cli_ftw(file, CLI_FTW_STD, maxlevel ? maxlevel : INT_MAX, serial_callback, &data);
+    if(!cdata.infected && (!cdata.errors || cdata.spam)) logg("~%s: OK\n", file);
 
     *infected += cdata.infected;
     *errors += cdata.errors;
+    return 0;
+}
+
+struct client_parallel_data {
+    int infected;
+    int errors;
+    int scantype;
+    int spam;
+    int sockd;
+    int lastid;
+    struct SCANID {
+	unsigned int id;
+	const char *file;
+	struct SCANID *next;
+    } *ids;
+};
+
+static int parallel_callback(struct stat *sb, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data) {
+    struct client_parallel_data *c = (struct client_parallel_data *)data->data;
+    struct SCANID **id = &c->ids, *cid;
+    fd_set fds;
+    struct timeval tv = { 0, 0 };
+
+    switch(reason) {
+    case error_stat:
+	logg("^Can't access file %s\n", filename);
+	return CL_SUCCESS;
+    case error_mem:
+	logg("^Memory allocation failed in ftw\n");
+	return CL_EMEM;
+    case warning_skipped_dir:
+	logg("^Directory recursion limit reached\n");
+	return CL_SUCCESS;
+    case warning_skipped_special:
+	logg("~%s: Not supported file type. ERROR\n", filename);
+	c->errors++;
+	return CL_SUCCESS;
+    case visit_directory_toplev:
+	c->spam = 1;
+	free(filename);
+	return CL_SUCCESS;
+    default:
+	break;
+    }
+
+    while (*id)
+	id = &((*id)->next);
+    cid = (struct SCANID *)malloc(sizeof(struct SCANID *));
+    *id = cid;
+    cid->id = ++c->lastid;
+    cid->file = filename;
+    cid->next = NULL;
+
+    switch(c->scantype) {
+    case FILDES:
+	send_fdpass(c->sockd, filename); /* FIXME: check return */
+	break;
+    case STREAM:
+	send_stream(c->sockd, filename); /* FIXME: check return */
+	break;
+    }
+/*     if((ret = dsresult(sockd, c->scantype, f)) >= 0) */
+/* 	c->infected += ret; */
+/*     else */
+/* 	c->errors++; */
+    
+    FD_ZERO(&fds);
+    FD_SET(c->sockd, &fds);
+    switch (select(1, &fds, NULL, NULL, &tv)) {
+    case -1:
+	logg("!select failed during session\n");
+	return CL_BREAK; /* this is an hard failure */
+    case 0:
+	return CL_SUCCESS;
+    }
+    
+    /* FIXME: recv / parse line here, possibly unify with dsresult */
+    return CL_SUCCESS;
+}
+
+static int parallel_client_scan(const char *file, int scantype, int *infected, int *errors, int maxlevel) {
+    struct cli_ftw_cbdata data;
+    struct client_parallel_data cdata;
+
+    if((cdata.sockd = dconnect()) < 0)
+	return 1;
+
+    if(sendln(cdata.sockd, "zIDSESSION", 11)) {
+	close(cdata.sockd);
+	return 1;
+    }
+
+    cdata.infected = 0;
+    cdata.errors = 0;
+    cdata.scantype = scantype;
+    cdata.spam = 0;
+    cdata.lastid = 0;
+    data.data = &cdata;
+
+    cli_ftw(file, CLI_FTW_STD, maxlevel ? maxlevel : INT_MAX, parallel_callback, &data);
+    if(!cdata.infected && (!cdata.errors || cdata.spam)) logg("~%s: OK\n", file);
+
+    *infected += cdata.infected;
+    *errors += cdata.errors;
+    return 0;
+}
+
+static int client_scan(const char *file, int scantype, int *infected, int *errors, int maxlevel, int session) {
+    int ret;
+    char *fullpath = makeabs(file);
+
+    if(!fullpath) {
+	(*errors)++;
+	return 1;
+    }
+    if (!session)
+	ret = serial_client_scan(fullpath, scantype, infected, errors, maxlevel);
+    else
+	ret = parallel_client_scan(fullpath, scantype, infected, errors, maxlevel);
+    free(fullpath);
     return 0;
 }
 
@@ -596,10 +710,10 @@ int client(const struct optstruct *opts, int *infected)
 		logg("!Scanning from standard input requires \"-\" to be the only file argument\n");
 		continue;
 	    }
-	    if(client_scan(opts->filename[i], scantype, infected, &errors, maxrec)) break;
+	    if(client_scan(opts->filename[i], scantype, infected, &errors, maxrec, session)) break;
 	}
     } else {
-	client_scan("", scantype, infected, &errors, maxrec);
+	client_scan("", scantype, infected, &errors, maxrec, session);
     }
     return *infected ? 1 : (errors ? 2 : 0);
 }
