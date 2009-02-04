@@ -258,7 +258,7 @@ static const char *get_cmd(struct fd_buf *buf, size_t off, size_t *len, char *te
 	case 'z':
 	    *term = '\0';
 	case 'n':
-	    pos = memchr(buf->buffer + off, *term, buf->off);
+	    pos = memchr(buf->buffer + off, *term, buf->off - off);
 	    if (!pos) {
 		/* we don't have another full command yet */
 		*len = 0;
@@ -805,10 +805,11 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		while ((cmd = get_cmd(buf, pos, &cmdlen, &term)) != NULL) {
 		    int rc;
 		    const char *argument;
+		    int has_more = (buf->buffer + buf->off) > (cmd + cmdlen);
 		    enum commands cmdtype = parse_command(cmd, &argument);
 
 		    if (cmdtype == COMMAND_FILDES) {
-			if ((buf->buffer + buf->off) - (cmd + cmdlen) < 1) {
+			if (buf->buffer + buf->off <= cmd + strlen("FILDES\n")) {
 			    /* we need the extra byte from recvmsg */
 			    cmdlen = 0;
 			    break;
@@ -827,9 +828,13 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			}
 			error = 1;
 		    }
-		    if (rc && !conn.group) {
-			shutdown(conn.sd, 2);
-			closesocket(conn.sd);
+		    if (error || !conn.group) {
+			if (rc) {
+			    shutdown(conn.sd, 2);
+			    closesocket(conn.sd);
+			}
+			/* remove fd from fds monitored for reading,
+			 * no more commands are accepted */
 			buf->fd = -1;
 			break;
 		    }

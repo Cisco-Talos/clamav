@@ -67,42 +67,51 @@
 #include "session.h"
 #include "thrmgr.h"
 
+static struct {
+    const char *cmd;
+    const size_t len;
+    enum commands cmdtype;
+    int need_arg;
+} commands[] = {
+    {CMD1,  sizeof(CMD1)-1,	COMMAND_SCAN,	    1},
+    {CMD3,  sizeof(CMD3)-1,	COMMAND_SHUTDOWN,   0},
+    {CMD4,  sizeof(CMD4)-1,	COMMAND_RELOAD,	    0},
+    {CMD5,  sizeof(CMD5)-1,	COMMAND_PING,	    0},
+    {CMD6,  sizeof(CMD6)-1,	COMMAND_CONTSCAN,   1},
+    {CMD7,  sizeof(CMD7)-1,	COMMAND_VERSION,    0},
+    {CMD8,  sizeof(CMD8)-1,	COMMAND_STREAM,	    0},
+    {CMD10, sizeof(CMD10)-1,	COMMAND_END,	    0},
+    {CMD11, sizeof(CMD11)-1,	COMMAND_SHUTDOWN,   0},
+    {CMD13, sizeof(CMD13)-1,	COMMAND_MULTISCAN,  0},
+    {CMD14, sizeof(CMD14)-1,	COMMAND_FILDES,	    0},
+    {CMD15, sizeof(CMD15)-1,	COMMAND_STATS,	    0},
+    {CMD16, sizeof(CMD16)-1,	COMMAND_IDSESSION,  0}
+};
+
+
 enum commands parse_command(const char *cmd, const char **argument)
 {
+    size_t i;
     *argument = NULL;
-    if (!strncmp(cmd, CMD1, strlen(CMD1))) { /* SCAN */
-	*argument = cmd + strlen(CMD1) + 1;
-	return COMMAND_SCAN;
-    } else if (!strncmp(cmd, CMD3, strlen(CMD3))) { /* QUIT */
-	return COMMAND_SHUTDOWN;
-    } else if (!strncmp(cmd, CMD4, strlen(CMD4))) { /* RELOAD */
-	return COMMAND_RELOAD;
-    } else if (!strncmp(cmd, CMD5, strlen(CMD5))) { /* PING */
-	return COMMAND_PING;
-    } else if (!strncmp(cmd, CMD6, strlen(CMD6))) { /* CONTSCAN */
-	*argument = cmd + strlen(CMD6) + 1;
-	return COMMAND_CONTSCAN;
-    } else if (!strncmp(cmd, CMD7, strlen(CMD7))) { /* VERSION */
-	return COMMAND_VERSION;
-    } else if (!strncmp(cmd, CMD8, strlen(CMD8))) { /* STREAM */
-	return COMMAND_STREAM;
-#if 0
-    } else if (!strncmp(cmd, CMD9, strlen(CMD9))) { /* SESSION */
-	return COMMAND_SESSION;
-#endif
-    } else if (!strncmp(cmd, CMD10, strlen(CMD10))) { /* END */
-	return COMMAND_END;
-    } else if (!strncmp(cmd, CMD11, strlen(CMD11))) { /* SHUTDOWN */
-	return COMMAND_SHUTDOWN;
-    } else if (!strncmp(cmd, CMD13, strlen(CMD13))) { /* MULTISCAN */
-	*argument = cmd + strlen(CMD13) + 1;
-	return COMMAND_MULTISCAN;
-    } else if (!strncmp(cmd, CMD14, strlen(CMD14))) { /* FILDES */
-	return COMMAND_FILDES;
-    } else if (!strncmp(cmd, CMD15, strlen(CMD15))) { /* STATS */
-	return COMMAND_STATS;
-    } else if (!strncmp(cmd, CMD16, strlen(CMD16))) { /* IDSESSION */
-	return COMMAND_IDSESSION;
+    for (i=0; i < sizeof(commands)/sizeof(commands[0]); i++) {
+	const size_t len = commands[i].len;
+	if (!strncmp(cmd, commands[i].cmd, len)) {
+	    const char *arg = cmd + len;
+	    if (commands[i].need_arg) {
+		if (!*arg) {/* missing argument */
+		    logg("*Command %s missing argument!\n", commands[i].cmd);
+		    return COMMAND_UNKNOWN;
+		}
+		*argument = arg+1;
+	    } else {
+		if (*arg) {/* extra stuff after command */
+		    logg("*Command %s has trailing garbage!\n", commands[i].cmd);
+		    return COMMAND_UNKNOWN;
+		}
+		*argument = NULL;
+	    }
+	    return commands[i].cmdtype;
+	}
     }
     return COMMAND_UNKNOWN;
 }
@@ -214,6 +223,7 @@ int command(client_conn_t *conn)
 
 static int dispatch_command(const client_conn_t *conn, enum commands cmd, const char *argument)
 {
+    int ret = 0;
     client_conn_t *dup_conn = (client_conn_t *) malloc(sizeof(struct client_conn_tag));
     if(!dup_conn) {
 	logg("!Can't allocate memory for client_conn\n");
@@ -223,11 +233,16 @@ static int dispatch_command(const client_conn_t *conn, enum commands cmd, const 
     dup_conn->cmdtype = cmd;
     if(cl_engine_addref(dup_conn->engine)) {
 	logg("!cl_engine_addref() failed\n");
+	free(dup_conn);
 	return -1;
     }
     dup_conn->scanfd = -1;
     switch (cmd) {
 	case COMMAND_FILDES:
+	    if (conn->scanfd == -1) {
+		mdprintf(dup_conn->sd, "No file descriptor received. ERROR%c", dup_conn->term);
+		ret = 1;
+	    }
 	    dup_conn->scanfd = conn->scanfd;
 	    break;
 	case COMMAND_SCAN:
@@ -236,7 +251,7 @@ static int dispatch_command(const client_conn_t *conn, enum commands cmd, const 
 	    dup_conn->filename = strdup(argument);
 	    if (!dup_conn->filename) {
 		logg("!Failed to allocate memory for filename\n");
-		return -1;
+		ret = -1;
 	    }
 	    break;
 	case COMMAND_STREAM:
@@ -244,11 +259,15 @@ static int dispatch_command(const client_conn_t *conn, enum commands cmd, const 
 	    /* just dispatch the command */
 	    break;
     }
-    if(!thrmgr_dispatch(dup_conn->thrpool, dup_conn)) {
+    if(!ret && !thrmgr_dispatch(dup_conn->thrpool, dup_conn)) {
 	logg("!thread dispatch failed\n");
-	return -2;
+	ret = -2;
     }
-    return 0;
+    if (ret) {
+	cl_engine_free(dup_conn->engine);
+	free(dup_conn);
+    }
+    return ret;
 }
 
 /* returns:
@@ -306,6 +325,7 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 	    }
 	case COMMAND_STREAM:
 	case COMMAND_MULTISCAN:
+	case COMMAND_CONTSCAN:
 	    if (conn->group) {
 		/* these commands are not recognized inside an IDSESSION */
 		mdprintf(desc, "UNKNOWN COMMAND%c", term);
@@ -315,7 +335,6 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 	case COMMAND_STATS:
 	case COMMAND_FILDES:
 	case COMMAND_SCAN:
-	case COMMAND_CONTSCAN:
 	    return dispatch_command(conn, cmd, argument);
 	case COMMAND_IDSESSION:
 	    if (conn->group) {

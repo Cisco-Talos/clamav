@@ -1,3 +1,8 @@
+Wed Feb  4 15:25:43 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.h, clamd/server-th.c, clamd/session.c: reject invalid
+ commands
+
 Tue Feb  3 23:09:19 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c, clamd/others.h, clamd/scanner.c, clamd/scanner.h,

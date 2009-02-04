@@ -34,6 +34,7 @@ struct fd_buf {
     int fd;
     int got_newdata;
     int recvfd;
+    /* TODO: these fields don't belong here */
     int id;
     jobgroup_t *group;
 };
