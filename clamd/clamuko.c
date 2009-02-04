@@ -40,7 +40,7 @@
 #include "clamuko.h"
 
 struct dazuko_access *acc;
-
+short int clamuko_scanning;
 static void clamuko_exit(int sig)
 {
 
