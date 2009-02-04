@@ -405,7 +405,7 @@ struct client_cb_data {
     int spam;
 };
 
-int callback(struct stat *sb, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data) {
+static int callback(struct stat *sb, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data) {
     struct client_cb_data *c = (struct client_cb_data *)data->data;
     int sockd, ret;
     const char *f = filename;
@@ -536,11 +536,10 @@ int reload_clamd_database(const struct optstruct *opts)
     }
 
     if(!(len = recvln(&rcv, &buff, NULL)) || len < 10 || memcmp(buff, "RELOADING", 9)) {
-	logg("!Incorrect reply from clamd\n");
+	logg("!Clamd did not reload the database\n");
 	close(sockd);
 	return 2;
     }
-
     close(sockd);
     return 0;
 }

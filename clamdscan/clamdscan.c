@@ -47,15 +47,6 @@ static void print_server_version(const struct optstruct *opt)
     }
 }
 
-static int reload_server_database(const struct optstruct *opt)
-{
-    if(reload_clamd_database(opt)) {
-	logg("!Clamd did not reload the database\n");
-	return 2;
-    }
-    return 0;
-}
-
 int main(int argc, char **argv)
 {
 	int ds, dms, ret, infected;
@@ -110,7 +101,7 @@ int main(int argc, char **argv)
 
 
     if(optget(opts, "reload")->enabled) {
-	ret = reload_server_database(opts);
+	ret = reload_clamd_database(opts);
 	optfree(opts);
 	logg_close();
 	exit(ret);
