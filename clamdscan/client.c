@@ -589,7 +589,7 @@ int client(const struct optstruct *opts, int *infected)
 	    *infected = ret;
 	else
 	    errors++;
-	close(sockd);
+	if(sockd >= 0) close(sockd);
     } else if(opts->filename) {
 	unsigned int i;
 	for (i = 0; opts->filename[i]; i++) {
