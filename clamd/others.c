@@ -306,7 +306,7 @@ static int read_fd_data(struct fd_buf *buf)
 
     buf->got_newdata=1;
     if (!buf->buffer) /* listen-only socket */
-	return 0;
+	return 1;
 
     if (buf->off >= buf->bufsize)
 	return -1;
@@ -420,6 +420,9 @@ void fds_remove(struct fd_data *data, int fd)
     pthread_mutex_unlock(&data->buf_mutex);
 }
 
+#ifndef	C_WINDOWS
+#define	closesocket(s)	close(s)
+#endif
 #define BUFFSIZE 1024
 /* Wait till data is available to be read on any of the fds,
  * read available data on all fds, and mark them as appropriate.
@@ -483,9 +486,12 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 		}
 		revents = data->poll_data[i].revents;
 		if (revents & POLLIN) {
+		    int ret = read_fd_data(&data->buf[i]);
 		    /* Data available to be read */
-		    if (read_fd_data(&data->buf[i]) == -1)
+		    if (ret == -1)
 			revents |= POLLERR;
+		    else if (!ret)
+			revents = POLLHUP;
 		}
 
 		if (revents & (POLLHUP | POLLERR | POLLNVAL)) {
@@ -497,7 +503,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 			logg("!poll_recv_fds: Error condition on fd %d\n",
 			     data->poll_data[i].fd);
 		    }
-		    data->buf[i].fd = -1;
+		    data->buf[i].got_newdata = -1;
 		} else {
 		    fdsok++;
 		}
@@ -535,15 +541,21 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 	if (retval > 0) {
 	    fdsok = data->nfds;
 	    for (i=0; i < data->nfds; i++) {
-		if (data->buf[i].fd < 0)
+		if (data->buf[i].fd < 0) {
+		    fdsok--;
 		    continue;
-		if (FD_ISSET(data->buf[i].fd, &rfds))
-		    if (read_fd_data(&data->buf[i]) == -1) {
-			logg("!poll_recv_fds: Error condition on fd %d\n",
-			     data->buf[i].fd);
-			data->buf[i].fd = -1;
-			fdsok--;
+		}
+		if (FD_ISSET(data->buf[i].fd, &rfds)) {
+		    int ret = read_fd_data(&data->buf[i]);
+		    if (ret == -1 || !ret) {
+			if (ret == -1)
+			    logg("!poll_recv_fds: Error condition on fd %d\n",
+				 data->buf[i].fd);
+			else
+			    logg("!poll_recv_fds: Client disconnected\n");
+			data->buf[i].got_newdata = -1;
 		    }
+		}
 	    }
 	}
 	if (retval < 0 && errno == EBADF) {

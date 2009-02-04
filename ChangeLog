@@ -1,3 +1,8 @@
+Wed Feb  4 16:12:27 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, clamd/others.h, clamd/server-th.c: properly close
+ disconnected sockets
+
 Wed Feb  4 15:25:43 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.h, clamd/server-th.c, clamd/session.c: reject invalid

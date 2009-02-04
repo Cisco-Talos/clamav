@@ -329,6 +329,12 @@ static void *acceptloop_th(void *arg)
 		}
 		continue;
 	    }
+	    if (buf->got_newdata == -1) {
+		shutdown(buf->fd, 2);
+		closesocket(buf->fd);
+		buf->fd = -1;
+		continue;
+	    }
 	    /* listen only socket */
 	    new_sd = accept(fds->buf[i].fd, NULL, NULL);
 	    if (new_sd >= 0) {
@@ -362,7 +368,8 @@ static void *acceptloop_th(void *arg)
 #else
 		logg("!accept() failed\n");
 #endif
-		continue;
+		/* give the poll loop a chance to close disconnected FDs */
+		break;
 	    }
 
 	}
@@ -779,6 +786,13 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		if (read(buf->fd, buff, sizeof(buff)) < 0) {
 		    logg("^Syncpipe read failed\n");
 		}
+		continue;
+	    }
+
+	    if (buf->got_newdata == -1) {
+		shutdown(buf->fd, 2);
+		closesocket(buf->fd);
+		buf->fd = -1;
 		continue;
 	    }
 
