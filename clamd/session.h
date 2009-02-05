@@ -36,6 +36,7 @@
 #define CMD14 "FILDES"
 #define CMD15 "STATS"
 #define CMD16 "IDSESSION"
+#define CMD17 "INSTREAM"
 
 #include "libclamav/clamav.h"
 #include "shared/optparser.h"
@@ -59,7 +60,8 @@ enum commands {
     COMMAND_IDSESSION,
     COMMAND_INSTREAM,
     /* internal commands */
-    COMMAND_MULTISCANFILE
+    COMMAND_MULTISCANFILE,
+    COMMAND_INSTREAMSCAN
 };
 
 typedef struct client_conn_tag {
@@ -67,7 +69,6 @@ typedef struct client_conn_tag {
     char *filename;
     int scanfd;
     int sd;
-    int id;
     struct fd_data *fds;
     unsigned int options;
     const struct optstruct *opts;
@@ -75,6 +76,10 @@ typedef struct client_conn_tag {
     time_t engine_timestamp;
     char term;
     threadpool_t *thrpool;
+    int id;
+    int dumpfd;
+    char *dumpname;
+    long quota;
     jobgroup_t *group;
 } client_conn_t;
 

@@ -42,6 +42,7 @@
 #include <unistd.h>
 #endif
 
+#include <arpa/inet.h>
 #include "libclamav/clamav.h"
 
 #include "shared/output.h"
@@ -777,6 +778,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	}
 
 	for (i=0;i < fds->nfds && new_sd >= 0; i++) {
+	    size_t pos = 0;
 	    struct fd_buf *buf = &fds->buf[i];
 	    if (!buf->got_newdata)
 		continue;
@@ -796,13 +798,13 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		continue;
 	    }
 
-	    if (buf->fd != -1 && buf->buffer) {
+	    while (buf->fd != -1 && buf->buffer && pos < buf->off) {
 		client_conn_t conn;
 		const unsigned char *cmd;
 		size_t cmdlen = 0;
-		size_t pos = 0;
 		int error = 0;
 		char term = '\n';
+		int rc;
 		/* New data available to read on socket. */
 
 		memset(&conn, 0, sizeof(conn));
@@ -815,9 +817,12 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		conn.engine = engine;
 		conn.group = buf->group;
 		conn.id = buf->id;
+		conn.dumpfd = buf->dumpfd;
+		conn.quota = buf->quota;
+		conn.dumpname = buf->dumpname;
 		/* Parse & dispatch commands */
-		while ((cmd = get_cmd(buf, pos, &cmdlen, &term)) != NULL) {
-		    int rc;
+		while ((conn.dumpfd == -1) &&
+		       (cmd = get_cmd(buf, pos, &cmdlen, &term)) != NULL) {
 		    const char *argument;
 		    int has_more = (buf->buffer + buf->off) > (cmd + cmdlen);
 		    enum commands cmdtype = parse_command(cmd, &argument);
@@ -856,20 +861,70 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    pos += cmdlen+1;
 		    conn.id++;
 		}
+		buf->dumpfd = conn.dumpfd;
 		buf->id = conn.id;
 		buf->group = conn.group;
-		if (error) {
-		    conn_reply_error(&conn, "Error processing command. ERROR");
-		    shutdown(buf->fd, 2);
-		    closesocket(buf->fd);
-		    buf->fd = -1;
-		} else {
+		buf->quota = conn.quota;
+		buf->dumpname = conn.dumpname;
+		if (!error) {
 		    /* move partial command to beginning of buffer */
 		    if (pos < buf->off) {
 			memmove (buf->buffer, &buf->buffer[pos], buf->off - pos);
 			buf->off -= pos;
 		    } else
 			buf->off = 0;
+		}
+		if (!error && buf->dumpfd != -1) {
+		    if (!buf->chunksize) {
+			/* read chunksize */
+			if (buf->off >= 4) {
+			    uint32_t cs = *(uint32_t*)buf->buffer;
+			    buf->chunksize = ntohl(cs);
+			    if (!buf->chunksize) {
+				/* chunksize 0 marks end of stream */
+				conn.scanfd = buf->dumpfd;
+				buf->dumpfd = -1;
+				if ((rc = execute_or_dispatch_command(&conn, COMMAND_INSTREAMSCAN, NULL)) < 0) {
+				    if(rc == -1 && optget(opts, "ExitOnOOM")->enabled) {
+					pthread_mutex_lock(&exit_mutex);
+					progexit = 1;
+					pthread_mutex_unlock(&exit_mutex);
+				    }
+				    error = 1;
+				} else {
+				    pos = 4;
+				    continue;
+				}
+			    }
+			    if (buf->chunksize > buf->quota) {
+				logg("^INSTREAM: Size limit reached, (requested: %lu, max: %lu)\n", buf->chunksize, buf->quota);
+				conn_reply_error(&conn, "INSTREAM size limit exceeded. ERROR");
+				error = 1;
+			    } else {
+				buf->quota -= buf->chunksize;
+			    }
+			    pos = 4;
+			} else
+			    continue;
+		    } else
+			pos = 0;
+		    if (pos + buf->chunksize < buf->off)
+			cmdlen = buf->chunksize;
+		    else
+			cmdlen = buf->off - pos;
+		    buf->chunksize -= cmdlen;
+		    if (cli_writen(buf->dumpfd, buf->buffer + pos, cmdlen) < 0) {
+			conn_reply_error(&conn, "Error writing to temporary file. ERROR");
+			logg("!INSTREAM: Can't write to temporary file.\n");
+			error = 1;
+		    }
+		    pos += cmdlen;
+		}
+		if (error) {
+		    conn_reply_error(&conn, "Error processing command. ERROR");
+		    shutdown(buf->fd, 2);
+		    closesocket(buf->fd);
+		    buf->fd = -1;
 		}
 	    }
 	}

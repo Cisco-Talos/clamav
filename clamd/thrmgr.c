@@ -25,6 +25,7 @@
 #include <pthread.h>
 #include <time.h>
 #include <errno.h>
+#include <string.h>
 
 #include "shared/output.h"
 

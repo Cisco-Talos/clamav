@@ -1,3 +1,11 @@
+Thu Feb  5 23:10:50 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, clamd/others.h, clamd/server-th.c,
+ clamd/session.c, clamd/session.h, clamd/thrmgr.c,
+ libclamav/libclamav.map: preliminary INSTREAM support.  TODO: the
+       code starts to look ugly, clean up the code.  INSTREAM shouldn't
+       reply fd[] make jobgroup own the resources (sockets, tempfiles)       allow to notify jobgroup to terminate when remote disconnects
+
 Thu Feb  5 17:21:00 EET 2009 (edwin)
 ------------------------------------
  * clamd/session.c: close connection when we see invalid command in

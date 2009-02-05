@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include "shared/optparser.h"
 #include "thrmgr.h"
+#include "cltypes.h"
 
 struct fd_buf {
     unsigned char *buffer;
@@ -34,8 +35,13 @@ struct fd_buf {
     int fd;
     int got_newdata; /* 0: no, 1: yes, -1: error */
     int recvfd;
-    /* TODO: these fields don't belong here */
+    /* TODO: these fields don't belong here, there are identical fields in conn
+     * too that don't belong there either. */
     int id;
+    int dumpfd;
+    uint32_t chunksize;
+    long quota;
+    char *dumpname;
     jobgroup_t *group;
 };
 

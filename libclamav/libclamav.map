@@ -122,6 +122,8 @@ CLAMAV_PRIVATE {
     mp_getstats;
     cli_sftw;
     cli_ftw;
+    cli_unlink;
+    cli_writen;
   local:
     *;
 };

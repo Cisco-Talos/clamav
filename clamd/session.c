@@ -85,7 +85,8 @@ static struct {
     {CMD13, sizeof(CMD13)-1,	COMMAND_MULTISCAN,  0},
     {CMD14, sizeof(CMD14)-1,	COMMAND_FILDES,	    0},
     {CMD15, sizeof(CMD15)-1,	COMMAND_STATS,	    0},
-    {CMD16, sizeof(CMD16)-1,	COMMAND_IDSESSION,  0}
+    {CMD16, sizeof(CMD16)-1,	COMMAND_IDSESSION,  0},
+    {CMD17, sizeof(CMD17)-1,	COMMAND_INSTREAM,   0}
 };
 
 
@@ -225,7 +226,8 @@ int command(client_conn_t *conn)
 		conn_reply_error(conn, "FILDES: didn't receive file descriptor.");
 	    else if (scanfd(conn->scanfd, conn, NULL, engine, options, opts, desc) == -2)
 		if(optget(opts, "ExitOnOOM")->enabled)
-		    return COMMAND_SHUTDOWN;
+		    return -1;
+	    close(conn->scanfd);
 	    return keepopen;
 #else
 	    conn_reply_error(conn, "FILDES support not compiled in.");
@@ -239,9 +241,18 @@ int command(client_conn_t *conn)
 	    thrmgr_setactivetask(NULL, "STREAM");
 	    if(scanstream(desc, NULL, engine, options, opts, conn->term) == CL_EMEM)
 		if(optget(opts, "ExitOnOOM")->enabled)
-		    return COMMAND_SHUTDOWN;
+		    return -1;
 	    /* STREAM not valid in IDSESSION */
 	    return 0;
+	case COMMAND_INSTREAMSCAN:
+	    if (scanfd(conn->dumpfd, conn, NULL, engine, options, opts, desc) == -2)
+		if(optget(opts, "ExitOnOOM")->enabled)
+		    return -1;
+	    close(conn->dumpfd);
+	    cli_unlink(conn->dumpname);
+	    conn->dumpfd = -1;
+	    free(conn->dumpname);
+	    return 1;
     }
 
     scandata.type = type;
@@ -249,7 +260,7 @@ int command(client_conn_t *conn)
     // TODO: flags symlink from opt
     if (cli_ftw(conn->filename, CLI_FTW_STD,  maxdirrec ? maxdirrec : INT_MAX, scan_callback, &data) == CL_EMEM) 
 	if(optget(opts, "ExitOnOOM")->enabled)
-	    return COMMAND_SHUTDOWN;
+	    return -1;
     if (scandata.group && conn->cmdtype == COMMAND_MULTISCAN)
 	thrmgr_group_waitforall(&group, &ok, &error, &total);
     else {
@@ -298,6 +309,9 @@ static int dispatch_command(const client_conn_t *conn, enum commands cmd, const 
 		ret = -1;
 	    }
 	    break;
+	case COMMAND_INSTREAMSCAN:
+	    dup_conn->id--; /* same ID as the INSTREAM command */
+	    break;
 	case COMMAND_STREAM:
 	case COMMAND_STATS:
 	    /* just dispatch the command */
@@ -337,6 +351,8 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 	    case COMMAND_FILDES:
 	    case COMMAND_SCAN:
 	    case COMMAND_END:
+	    case COMMAND_INSTREAM:
+	    case COMMAND_INSTREAMSCAN:
 		/* These commands are accepted inside IDSESSION */
 		break;
 	    default:
@@ -382,12 +398,26 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 		}
 		return 1;
 	    }
+	case COMMAND_INSTREAM:
+	    {
+		if (!conn->group) {
+		    /* only valid inside IDSESSION */
+		    conn_reply_single(conn, NULL, "UNKNOWN COMMAND");
+		    return 1;
+		}
+		int rc = cli_gentempfd(NULL, &conn->dumpname, &conn->dumpfd);
+		if (rc != CL_SUCCESS)
+		    return rc;
+		conn->quota = optget(conn->opts, "StreamMaxLength")->numarg;
+		return 0;
+	    }
 	case COMMAND_STREAM:
 	case COMMAND_MULTISCAN:
 	case COMMAND_CONTSCAN:
 	case COMMAND_STATS:
 	case COMMAND_FILDES:
 	case COMMAND_SCAN:
+	case COMMAND_INSTREAMSCAN:
 	    return dispatch_command(conn, cmd, argument);
 	case COMMAND_IDSESSION:
 	    conn->group = thrmgr_group_new();
