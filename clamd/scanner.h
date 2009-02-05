@@ -26,6 +26,7 @@
 #include "libclamav/clamav.h"
 #include "shared/optparser.h"
 #include "thrmgr.h"
+#include "session.h"
 
 struct scan_cb_data {
     int scantype;
@@ -35,7 +36,7 @@ struct scan_cb_data {
     int errors;
     int total;
     int id;
-    char term;
+    const client_conn_t *conn;
     const char *toplevel_path;
     unsigned long scanned;
     unsigned int options;
@@ -45,7 +46,7 @@ struct scan_cb_data {
     jobgroup_t *group;
 };
 
-int scanfd(const int fd, char term, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc);
+int scanfd(const int fd, const client_conn_t *conn, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc);
 int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, char term);
 int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data);
 

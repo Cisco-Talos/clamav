@@ -82,4 +82,8 @@ int command(client_conn_t *conn);
 enum commands parse_command(const char *cmd, const char **argument);
 int execute_or_dispatch_command(client_conn_t *conn, enum commands command, const char *argument);
 
+int conn_reply(const client_conn_t *conn, const char *path, const char *msg, const char *status);
+int conn_reply_single(const client_conn_t *conn, const char *path, const char *status);
+int conn_reply_error(const client_conn_t *conn, const char *msg);
+int conn_reply_errno(const client_conn_t *conn, const char *path, const char *msg);
 #endif

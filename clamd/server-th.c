@@ -859,7 +859,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		buf->id = conn.id;
 		buf->group = conn.group;
 		if (error) {
-		    mdprintf(buf->fd, "ERROR%c", term);
+		    conn_reply_error(&conn, "Error processing command. ERROR");
 		    shutdown(buf->fd, 2);
 		    closesocket(buf->fd);
 		    buf->fd = -1;

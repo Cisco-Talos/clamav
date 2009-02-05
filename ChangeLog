@@ -1,3 +1,9 @@
+Thu Feb  5 16:48:32 EET 2009 (edwin)
+------------------------------------
+ * clamd/scanner.c, clamd/scanner.h, clamd/server-th.c,
+ clamd/session.c, clamd/session.h: unify replies: add ids on all
+ replies from IDSESSION.
+
 Wed Feb  4 21:05:23 EET 2009 (edwin)
 ------------------------------------
  * clamd/clamuko.c, clamd/clamuko.h: fix duplicate symbol error when

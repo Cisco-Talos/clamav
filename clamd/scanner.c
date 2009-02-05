@@ -83,46 +83,36 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 {
     struct scan_cb_data *scandata = data->data;
     const char *virname;
-    char buf[BUFFSIZE];
     int ret;
     int type = scandata->type;
     const struct optstruct *opt;
 
-    buf[0] = '\0';
-#ifdef HAVE_STRERROR_R
-    if (reason == error_mem || reason == error_stat) {
-	buf[0]=':';
-	buf[1]=' ';
-	strerror_r(errno, buf+2, BUFFSIZE-2);
-    }
-#endif
-
     scandata->total++;
     switch (reason) {
 	case error_mem:
-	    logg("!Memory allocation failed during cli_ftw()%s%s\n",
-		 msg ? msg : "", buf);
+	    if (msg)
+		logg("!Memory allocation failed during cli_ftw() on %s\n",
+		     msg);
+	    else
+		logg("!Memory allocation failed during cli_ftw()\n");
 	    scandata->errors++;
 	    return CL_EMEM;
 	case error_stat:
 	    if (msg == scandata->toplevel_path)
-		mdprintf(scandata->odesc, "%s: lstat() failed %s. ERROR%c",
-		     msg, buf, scandata->term);
+		conn_reply_errno(scandata->conn, msg, "lstat() failed:");
 	    logg("^lstat() failed on: %s\n", msg);
 	    scandata->errors++;
 	    return CL_SUCCESS;
 	case warning_skipped_dir:
-	    logg("^Directory recursion limit reached, skipping %s%s\n",
-		     msg, buf);
+	    logg("^Directory recursion limit reached, skipping %s\n",
+		     msg);
 	    return CL_SUCCESS;
 	case warning_skipped_link:
 	    logg("*Skipping symlink: %s\n", msg);
 	    return CL_SUCCESS;
 	case warning_skipped_special:
 	    if (msg == scandata->toplevel_path)
-		mdprintf(scandata->odesc,
-			 "%s: Not supported file type. ERROR%c", msg,
-			 scandata->term);
+		conn_reply(scandata->conn, msg, "Not supported file type", "ERROR");
 	    logg("*Not supported file type: %s\n", msg);
 	    return CL_SUCCESS;
 	case visit_directory_toplev:
@@ -142,14 +132,14 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 	 * MULTISCAN / */
 	if(match_regex(filename, opt->strarg) == 1) {
 	    if (type != TYPE_MULTISCAN)
-		mdprintf(scandata->odesc, "%s: Excluded%c", filename, scandata->term);
+		conn_reply_single(scandata->conn, filename, "Excluded");
 	    return CL_SUCCESS;
 	}
     }
 
     if(sb->st_size == 0) { /* empty file */
 	if (msg == scandata->toplevel_path)
-	    mdprintf(scandata->odesc, "%s: Empty file%c", filename, scandata->term);
+	    conn_reply_single(scandata->conn, filename, "Empty file");
 	return CL_SUCCESS;
     }
 
@@ -161,7 +151,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 	    client_conn->fds = NULL;
 	    client_conn->filename = filename;
 	    client_conn->cmdtype = COMMAND_MULTISCANFILE;
-	    client_conn->term = scandata->term;
+	    client_conn->term = scandata->conn->term;
 	    client_conn->options = scandata->options;
 	    client_conn->opts = scandata->opts;
 	    client_conn->group = scandata->group;
@@ -185,8 +175,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     }
 
     if (access(filename, R_OK)) {
-	mdprintf(scandata->odesc, "%s: Access denied. ERROR%c",
-		 filename, scandata->term);
+	conn_reply(scandata->conn, filename, "Access denied.", "ERROR");
 	logg("*Access denied: %s\n", filename);
 	scandata->errors++;
 	return CL_SUCCESS;
@@ -199,18 +188,12 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 
     if (ret == CL_VIRUS) {
 	scandata->infected++;
-	if (scandata->id)
-	    mdprintf(scandata->odesc, "%u: %s: %s FOUND%c", scandata->id, filename, virname, scandata->term);
-	else
-	    mdprintf(scandata->odesc, "%s: %s FOUND%c", filename, virname, scandata->term);
+	conn_reply(scandata->conn, filename, virname, "FOUND");
 	logg("~%s: %s FOUND\n", filename, virname);
 	virusaction(filename, virname, scandata->opts);
     } else if (ret != CL_CLEAN) {
 	scandata->errors++;
-	if (scandata->id)
-	    mdprintf(scandata->odesc, "%u: %s: %s ERROR%c", scandata->id, filename, cl_strerror(ret), scandata->term);
-	else
-	    mdprintf(scandata->odesc, "%s: %s ERROR%c", filename, cl_strerror(ret), scandata->term);
+	conn_reply(scandata->conn, filename, cl_strerror(ret), "ERROR");
 	logg("~%s: %s ERROR\n", filename, cl_strerror(ret));
 	if(ret == CL_EMEM) /* stop scanning */
 	    return ret;
@@ -227,9 +210,9 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     return CL_SUCCESS;
 }
 
-int scanfd(const int fd, char term, unsigned long int *scanned,
-    const struct cl_engine *engine,
-    unsigned int options, const struct optstruct *opts, int odesc)
+int scanfd(const int fd, const client_conn_t *conn, unsigned long int *scanned,
+	   const struct cl_engine *engine,
+	   unsigned int options, const struct optstruct *opts, int odesc)
 {
 	int ret;
 	const char *virname;
@@ -238,7 +221,7 @@ int scanfd(const int fd, char term, unsigned long int *scanned,
 
 	snprintf(fdstr, sizeof(fdstr), "fd[%d]", fd);
 	if(fstat(fd, &statbuf) == -1 || !S_ISREG(statbuf.st_mode)) {
-		mdprintf(odesc, "%s: Not a regular file. ERROR%c", fdstr, term);
+		conn_reply(conn, fdstr, "Not a regular file", "ERROR");
 		logg("%s: Not a regular file. ERROR\n", fdstr);
 		return -1;
 	}
@@ -248,14 +231,14 @@ int scanfd(const int fd, char term, unsigned long int *scanned,
 	thrmgr_setactivetask(NULL, NULL);
 
 	if(ret == CL_VIRUS) {
-		mdprintf(odesc, "%s: %s FOUND%c", fdstr, virname, term);
+		conn_reply(conn, fdstr, virname, "FOUND");
 		logg("%s: %s FOUND\n", fdstr, virname);
 		virusaction(fdstr, virname, opts);
 	} else if(ret != CL_CLEAN) {
-		mdprintf(odesc, "%s: %s ERROR%c", fdstr, cl_strerror(ret), term);
+		conn_reply(conn, fdstr, cl_strerror(ret), "ERROR");
 		logg("%s: %s ERROR\n", fdstr, cl_strerror(ret));
 	} else {
-		mdprintf(odesc, "%s: OK%c", fdstr, term);
+		conn_reply_single(conn, fdstr, "OK");
 		if(logok)
 			logg("%s: OK\n", fdstr);
 	}

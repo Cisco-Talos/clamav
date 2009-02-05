@@ -116,6 +116,52 @@ enum commands parse_command(const char *cmd, const char **argument)
     return COMMAND_UNKNOWN;
 }
 
+int conn_reply_single(const client_conn_t *conn, const char *path, const char *status)
+{
+    if (conn->id) {
+	if (path)
+	    return mdprintf(conn->sd, "%u: %s: %s%c", conn->id, path, status, conn->term);
+	return mdprintf(conn->sd, "%u: %s%c", conn->id, status, conn->term);
+    }
+    if (path)
+	return mdprintf(conn->sd, "%s: %s%c", path, status, conn->term);
+    return mdprintf(conn->sd, "%s%c", status, conn->term);
+}
+
+int conn_reply(const client_conn_t *conn, const char *path,
+	       const char *msg, const char *status)
+{
+    if (conn->id) {
+	if (path)
+	    return mdprintf(conn->sd, "%u: %s: %s %s%c", conn->id, path, msg,
+			    status, conn->term);
+	return mdprintf(conn->sd, "%u: %s %s%c", conn->id, msg, status,
+			conn->term);
+    }
+    if (path)
+	return mdprintf(conn->sd, "%s: %s %s%c", path, msg, status, conn->term);
+    return mdprintf(conn->sd, "%s %s%c", msg, status, conn->term);
+}
+
+int conn_reply_error(const client_conn_t *conn, const char *msg)
+{
+    return conn_reply(conn, NULL, msg, "ERROR");
+}
+
+#define BUFFSIZE 1024
+int conn_reply_errno(const client_conn_t *conn, const char *path,
+		     const char *msg)
+{
+    char buf[BUFFSIZE + sizeof(". ERROR")];
+#ifdef HAVE_STRERROR_R
+    strerror_r(errno, buf, BUFFSIZE-1);
+    strcat(buf, ". ERROR");
+#else
+    snprintf(buf, sizeof(buf), "%u. ERROR", errno);
+#endif
+    return conn_reply(conn, path, msg, buf);
+}
+
 /* returns
  *  -1 on fatal error (shutdown)
  *  0 on ok, close connection
@@ -143,7 +189,7 @@ int command(client_conn_t *conn)
     scandata.id = conn->id;
     scandata.group = conn->group;
     scandata.odesc = desc;
-    scandata.term = term;
+    scandata.conn = conn;
     scandata.options = options;
     scandata.engine = engine;
     scandata.opts = opts;
@@ -176,13 +222,13 @@ int command(client_conn_t *conn)
 	    thrmgr_setactivetask(NULL, "FILDES");
 #ifdef HAVE_FD_PASSING
 	    if (conn->scanfd == -1)
-		mdprintf(desc, "FILDES: didn't receive file descriptor %c", conn->term);
-	    else if (scanfd(conn->scanfd, conn->term, NULL, engine, options, opts, desc) == -2)
+		conn_reply_error(conn, "FILDES: didn't receive file descriptor.");
+	    else if (scanfd(conn->scanfd, conn, NULL, engine, options, opts, desc) == -2)
 		if(optget(opts, "ExitOnOOM")->enabled)
 		    return COMMAND_SHUTDOWN;
 	    return keepopen;
 #else
-	    mdprintf(desc, "FILDES support not compiled in. ERROR%c",conn->term);
+	    conn_reply_error(conn, "FILDES support not compiled in.");
 	    return 0;
 #endif
 	case COMMAND_STATS:
@@ -213,10 +259,7 @@ int command(client_conn_t *conn)
     }
 
     if (ok + error == total && (error != total)) {
-	if (conn->id)
-	    mdprintf(desc, "%u: %s: OK%c", conn->id, conn->filename, conn->term);
-	else
-	    mdprintf(desc, "%s: OK%c", conn->filename, conn->term);
+	conn_reply_single(conn, conn->filename, "OK");
     }
     return keepopen; /* no error and no 'special' command executed */
 }
@@ -225,6 +268,7 @@ static int dispatch_command(const client_conn_t *conn, enum commands cmd, const 
 {
     int ret = 0;
     client_conn_t *dup_conn = (client_conn_t *) malloc(sizeof(struct client_conn_tag));
+
     if(!dup_conn) {
 	logg("!Can't allocate memory for client_conn\n");
 	return -1;
@@ -240,7 +284,7 @@ static int dispatch_command(const client_conn_t *conn, enum commands cmd, const 
     switch (cmd) {
 	case COMMAND_FILDES:
 	    if (conn->scanfd == -1) {
-		mdprintf(dup_conn->sd, "No file descriptor received. ERROR%c", dup_conn->term);
+		conn_reply_error(dup_conn, "No file descriptor received.");
 		ret = 1;
 	    }
 	    dup_conn->scanfd = conn->scanfd;
@@ -288,6 +332,20 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
      *  I/O
      *  - send of atomic message is allowed.
      * Dispatch other commands */
+    if (conn->group) {
+	switch (cmd) {
+	    case COMMAND_FILDES:
+	    case COMMAND_SCAN:
+	    case COMMAND_END:
+		/* These commands are accepted inside IDSESSION */
+		break;
+	    default:
+		/* these commands are not recognized inside an IDSESSION */
+		conn_reply_error(conn, "Command invalid inside IDSESSION.");
+		return 1;
+	}
+    }
+
     switch (cmd) {
 	case COMMAND_SHUTDOWN:
 	    pthread_mutex_lock(&exit_mutex);
@@ -326,22 +384,11 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 	case COMMAND_STREAM:
 	case COMMAND_MULTISCAN:
 	case COMMAND_CONTSCAN:
-	    if (conn->group) {
-		/* these commands are not recognized inside an IDSESSION */
-		mdprintf(desc, "UNKNOWN COMMAND%c", term);
-		return 1;
-	    }
-	    /* fall-through */
 	case COMMAND_STATS:
 	case COMMAND_FILDES:
 	case COMMAND_SCAN:
 	    return dispatch_command(conn, cmd, argument);
 	case COMMAND_IDSESSION:
-	    if (conn->group) {
-		/* we are already inside an idsession/multiscan */
-		mdprintf(desc, "UNKNOWN COMMAND%c", term);
-		return 1;
-	    }
 	    conn->group = thrmgr_group_new();
 	    if (!conn->group)
 		return CL_EMEM;
@@ -349,7 +396,7 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 	case COMMAND_END:
 	    if (!conn->group) {
 		/* end without idsession? */
-		mdprintf(desc, "UNKNOWN COMMAND%c", term);
+		conn_reply_single(conn, NULL, "UNKNOWN COMMAND");
 		return 1;
 	    }
 	    /* TODO: notify group to free itself on exit */
@@ -357,7 +404,7 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 	    return 1;
 	/*case COMMAND_UNKNOWN:*/
 	default:
-	    mdprintf(desc, "UNKNOWN COMMAND%c", term);
+	    conn_reply_single(conn, NULL, "UNKNOWN COMMAND");
 	    return 1;
     }
 }
