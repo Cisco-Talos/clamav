@@ -342,6 +342,7 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 	    default:
 		/* these commands are not recognized inside an IDSESSION */
 		conn_reply_error(conn, "Command invalid inside IDSESSION.");
+		conn->group = NULL;
 		return 1;
 	}
     }

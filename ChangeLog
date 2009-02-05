@@ -1,3 +1,8 @@
+Thu Feb  5 17:21:00 EET 2009 (edwin)
+------------------------------------
+ * clamd/session.c: close connection when we see invalid command in
+ IDSESSIOn
+
 Thu Feb  5 16:48:32 EET 2009 (edwin)
 ------------------------------------
  * clamd/scanner.c, clamd/scanner.h, clamd/server-th.c,
