@@ -499,7 +499,7 @@ struct client_parallel_data {
 };
 
 int dspresult(struct client_parallel_data *c) {
-    int rid, infected = 0, waserror = 0, len;
+    int rid, len;
     char *bol, *eol, *filename;
     fd_set fds;
     struct SCANID **id = NULL;
@@ -512,15 +512,18 @@ int dspresult(struct client_parallel_data *c) {
 	FD_SET(c->sockd, &fds);
 	switch (select(1, &fds, NULL, NULL, &tv)) {
 	case -1:
-	  logg("!select failed during session\n");
+	    c->errors++;
+	    logg("!select failed during session\n");
 	    return CL_BREAK; /* this is an hard failure */
 	case 0:
+	    c->errors++;
 	    return CL_SUCCESS;
 	}
 
+	/* FIXME: repeat till i have stuff in the buff */
 	len = recvln(&rcv, &bol, &eol);
 	if(len == -1) {
-	    waserror = 1;
+	    c->errors++;
 	    break;
 	}
 	if((rid = atoi(bol))) {
@@ -532,6 +535,7 @@ int dspresult(struct client_parallel_data *c) {
 	    if(!*id) id = NULL;
 	}
 	if(!id) {
+	    c->errors++;
 	    logg("!Bogus session id from clamd\n");
 	    return CL_BREAK; /* this is an hard failure */
 	}
@@ -539,21 +543,20 @@ int dspresult(struct client_parallel_data *c) {
 	if(len > 7) {
 	    char *colon = colon = strrchr(bol, ':');
 	    if(!colon) {
+		c->errors++;
 		logg("Failed to parse reply\n");
-		waserror = 1;
 	    } else if(!memcmp(eol - 7, " FOUND", 6)) {
-		infected++;
+		c->infected++;
 		logg("~%s%s\n", filename, colon);
 		if(action) action(filename);
 	    } else if(!memcmp(eol-7, " ERROR", 6)) {
-		if(filename) {
-			logg("~%s%s\n", filename, colon);
-		}
-		waserror = 1;
+		c->errors++;
+		if(filename)
+		    logg("~%s%s\n", filename, colon);
 	    }
 	}
     }
-    return infected ? infected : (waserror ? -1 : 0); /* FIXME: handle errors/infs via ptrs, only return brk or cont here */
+    return CL_SUCCESS;
 }
 
 
@@ -599,13 +602,8 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
 	send_stream(c->sockd, filename); /* FIXME: check return */
 	break;
     }
-/*     if((ret = dsresult(sockd, c->scantype, f)) >= 0) */
-/* 	c->infected += ret; */
-/*     else */
-/* 	c->errors++; */
-    
-    /* FIXME: recv / parse line here, possibly unify with dsresult */
-    return CL_SUCCESS;
+
+    return dspresult(c);
 }
 
 static int parallel_client_scan(const char *file, int scantype, int *infected, int *errors, int maxlevel) {
@@ -628,6 +626,7 @@ static int parallel_client_scan(const char *file, int scantype, int *infected, i
     data.data = &cdata;
 
     cli_ftw(file, CLI_FTW_STD, maxlevel ? maxlevel : INT_MAX, parallel_callback, &data);
+    /* FIXME: check return */
     if(!cdata.infected && (!cdata.errors || cdata.spam)) logg("~%s: OK\n", file);
 
     *infected += cdata.infected;
