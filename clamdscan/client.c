@@ -192,7 +192,7 @@ static int send_stream(int sockd, const char *filename) {
 
     while((len = read(fd, &buf[1], sizeof(buf) - sizeof(uint32_t))) > 0) {
 	buf[0] = htonl(len);
-	if(sendln(sockd, (const char *)buf, len+sizeof(uint32_t))) { /* FIXME: conn might be closed unexpectedly due to limits */
+	if(sendln(sockd, (const char *)buf, len+sizeof(uint32_t))) { /* FIXME: need to handle limits */
 	    logg("!Can't write to the socket.\n");
 	    close(fd);
 	    return 1;
@@ -243,8 +243,7 @@ static int send_fdpass(int sockd, const char *filename) {
 
 static int dsresult(int sockd, int scantype, const char *filename)
 {
-	int infected = 0, waserror = 0;
-	int len;
+	int infected = 0, waserror = 0, len;
 	char *bol, *eol;
 	struct RCVLN rcv;
 
@@ -499,11 +498,68 @@ struct client_parallel_data {
     } *ids;
 };
 
+int dspresult(struct client_parallel_data *c) {
+    int rid, infected = 0, waserror = 0, len;
+    char *bol, *eol, *filename;
+    fd_set fds;
+    struct SCANID **id = NULL;
+    struct timeval tv = { 0, 0 };
+    struct RCVLN rcv;
+
+    recvlninit(&rcv, c->sockd);
+    while(1) {
+	FD_ZERO(&fds);
+	FD_SET(c->sockd, &fds);
+	switch (select(1, &fds, NULL, NULL, &tv)) {
+	case -1:
+	  logg("!select failed during session\n");
+	    return CL_BREAK; /* this is an hard failure */
+	case 0:
+	    return CL_SUCCESS;
+	}
+
+	len = recvln(&rcv, &bol, &eol);
+	if(len == -1) {
+	    waserror = 1;
+	    break;
+	}
+	if((rid = atoi(bol))) {
+	    id = &c->ids;
+	    while(*id) {
+		if((*id)->id == rid) break;
+		id = &((*id)->next);
+	    }
+	    if(!*id) id = NULL;
+	}
+	if(!id) {
+	    logg("!Bogus session id from clamd\n");
+	    return CL_BREAK; /* this is an hard failure */
+	}
+	filename = (*id)->file;
+	if(len > 7) {
+	    char *colon = colon = strrchr(bol, ':');
+	    if(!colon) {
+		logg("Failed to parse reply\n");
+		waserror = 1;
+	    } else if(!memcmp(eol - 7, " FOUND", 6)) {
+		infected++;
+		logg("~%s%s\n", filename, colon);
+		if(action) action(filename);
+	    } else if(!memcmp(eol-7, " ERROR", 6)) {
+		if(filename) {
+			logg("~%s%s\n", filename, colon);
+		}
+		waserror = 1;
+	    }
+	}
+    }
+    return infected ? infected : (waserror ? -1 : 0); /* FIXME: handle errors/infs via ptrs, only return brk or cont here */
+}
+
+
 static int parallel_callback(struct stat *sb, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data) {
     struct client_parallel_data *c = (struct client_parallel_data *)data->data;
     struct SCANID **id = &c->ids, *cid;
-    fd_set fds;
-    struct timeval tv = { 0, 0 };
 
     switch(reason) {
     case error_stat:
@@ -547,16 +603,6 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
 /* 	c->infected += ret; */
 /*     else */
 /* 	c->errors++; */
-    
-    FD_ZERO(&fds);
-    FD_SET(c->sockd, &fds);
-    switch (select(1, &fds, NULL, NULL, &tv)) {
-    case -1:
-	logg("!select failed during session\n");
-	return CL_BREAK; /* this is an hard failure */
-    case 0:
-	return CL_SUCCESS;
-    }
     
     /* FIXME: recv / parse line here, possibly unify with dsresult */
     return CL_SUCCESS;
