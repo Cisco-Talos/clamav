@@ -85,7 +85,7 @@ static void scanner_thread(void *arg)
 	sigset_t sigset;
 #endif
 	int ret, timeout;
-	unsigned virus=0, errors=0;
+	unsigned virus=0, errors = 0;
 
 #ifndef	C_WINDOWS
     /* ignore all signals */
@@ -105,27 +105,25 @@ static void scanner_thread(void *arg)
     if(!timeout)
 	timeout = -1;
 
-    ret = command(conn);
+    ret = command(conn, &virus);
     if (ret == -1) {
 	pthread_mutex_lock(&exit_mutex);
 	progexit = 1;
 	pthread_mutex_unlock(&exit_mutex);
-    }
+	errors = 1;
+    } else
+	errors = ret;
 
-    if (conn->scanfd != -1)
-	close(conn->scanfd);
     thrmgr_setactiveengine(NULL);
 
-    if (ret != 1) {	/* close connection unless asked not to */
-	if (conn->fds)
-	    fds_remove(conn->fds, conn->sd);
+    if (conn->filename)
+	free(conn->filename);
+    if (thrmgr_group_finished(conn->group, virus ? EXIT_OTHER :
+			      errors ? EXIT_ERROR : EXIT_OK)) {
+	/* close connection if we were last in group */
 	shutdown(conn->sd, 2);
 	closesocket(conn->sd);
     }
-    if (conn->filename)
-	free(conn->filename);
-    if (conn->group)
-	thrmgr_group_finished(conn->group, virus ? EXIT_OTHER : errors ? EXIT_ERROR : EXIT_OK);
     cl_engine_free(conn->engine);
     free(conn);
     return;
@@ -779,6 +777,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 
 	for (i=0;i < fds->nfds && new_sd >= 0; i++) {
 	    size_t pos = 0;
+	    int error = 0;
 	    struct fd_buf *buf = &fds->buf[i];
 	    if (!buf->got_newdata)
 		continue;
@@ -792,17 +791,13 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    }
 
 	    if (buf->got_newdata == -1) {
-		shutdown(buf->fd, 2);
-		closesocket(buf->fd);
-		buf->fd = -1;
-		continue;
+		error = 1;
 	    }
 
-	    while (buf->fd != -1 && buf->buffer && pos < buf->off) {
+	    while (!error && buf->fd != -1 && buf->buffer && pos < buf->off) {
 		client_conn_t conn;
 		const unsigned char *cmd;
 		size_t cmdlen = 0;
-		int error = 0;
 		char term = '\n';
 		int rc;
 		/* New data available to read on socket. */
@@ -817,11 +812,11 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		conn.engine = engine;
 		conn.group = buf->group;
 		conn.id = buf->id;
-		conn.dumpfd = buf->dumpfd;
 		conn.quota = buf->quota;
-		conn.dumpname = buf->dumpname;
+		conn.filename = buf->dumpname;
+		conn.mode = buf->mode;
 		/* Parse & dispatch commands */
-		while ((conn.dumpfd == -1) &&
+		while ((conn.mode == MODE_COMMAND) &&
 		       (cmd = get_cmd(buf, pos, &cmdlen, &term)) != NULL) {
 		    const char *argument;
 		    int has_more = (buf->buffer + buf->off) > (cmd + cmdlen);
@@ -848,7 +843,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			error = 1;
 		    }
 		    if (error || !conn.group) {
-			if (rc) {
+			if (rc && thrmgr_group_finished(conn.group, EXIT_OK)) {
+			    /* if there are no more active jobs */
 			    shutdown(conn.sd, 2);
 			    closesocket(conn.sd);
 			}
@@ -857,15 +853,25 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			buf->fd = -1;
 			break;
 		    }
-		    conn.scanfd = -1;
 		    pos += cmdlen+1;
+		    if (conn.mode == MODE_STREAM) {
+			/* TODO: this doesn't belong here */
+			buf->dumpname = conn.filename;
+			buf->dumpfd = conn.scanfd;
+			break;
+		    }
 		    conn.id++;
+		    if (conn.scanfd != -1) {
+			logg("^Unclaimed file descriptor received. closing\n");
+			close(conn.scanfd);
+			conn.scanfd = -1;
+			error = 1;
+		    }
 		}
-		buf->dumpfd = conn.dumpfd;
+		buf->mode = conn.mode;
 		buf->id = conn.id;
 		buf->group = conn.group;
 		buf->quota = conn.quota;
-		buf->dumpname = conn.dumpname;
 		if (!error) {
 		    /* move partial command to beginning of buffer */
 		    if (pos < buf->off) {
@@ -874,7 +880,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    } else
 			buf->off = 0;
 		}
-		if (!error && buf->dumpfd != -1) {
+		if (!error && buf->mode == MODE_STREAM) {
 		    if (!buf->chunksize) {
 			/* read chunksize */
 			if (buf->off >= 4) {
@@ -884,6 +890,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 				/* chunksize 0 marks end of stream */
 				conn.scanfd = buf->dumpfd;
 				buf->dumpfd = -1;
+				buf->mode = MODE_COMMAND;
 				if ((rc = execute_or_dispatch_command(&conn, COMMAND_INSTREAMSCAN, NULL)) < 0) {
 				    if(rc == -1 && optget(opts, "ExitOnOOM")->enabled) {
 					pthread_mutex_lock(&exit_mutex);
@@ -914,18 +921,22 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			cmdlen = buf->off - pos;
 		    buf->chunksize -= cmdlen;
 		    if (cli_writen(buf->dumpfd, buf->buffer + pos, cmdlen) < 0) {
-			conn_reply_error(&conn, "Error writing to temporary file. ERROR");
+			conn_reply_error(&conn, "Error writing to temporary file");
 			logg("!INSTREAM: Can't write to temporary file.\n");
 			error = 1;
 		    }
 		    pos += cmdlen;
 		}
 		if (error) {
-		    conn_reply_error(&conn, "Error processing command. ERROR");
+		    conn_reply_error(&conn, "Error processing command.");
+		}
+	    }
+	    if (error) {
+		if (thrmgr_group_terminate(buf->group)) {
 		    shutdown(buf->fd, 2);
 		    closesocket(buf->fd);
-		    buf->fd = -1;
 		}
+		buf->fd = -1;
 	    }
 	}
 	pthread_mutex_unlock(&fds->buf_mutex);
@@ -937,8 +948,10 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    for (i=0;i < fds->nfds; i++) {
 		if (fds->buf[i].fd == -1)
 		    continue;
-		shutdown(fds->buf[i].fd, 2);
-		closesocket(fds->buf[i].fd);
+		if (thrmgr_group_terminate(fds->buf[i].group)) {
+		    shutdown(fds->buf[i].fd, 2);
+		    closesocket(fds->buf[i].fd);
+		}
 	    }
 	    fds->nfds = 0;
 	    break;

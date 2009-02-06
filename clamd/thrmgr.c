@@ -32,6 +32,7 @@
 #include "thrmgr.h"
 #include "others.h"
 #include "mpool.h"
+#include "server.h"
 
 #if defined(C_LINUX)
 #include <malloc.h>
@@ -608,17 +609,30 @@ int thrmgr_dispatch(threadpool_t *threadpool, void *user_data)
 int thrmgr_group_dispatch(threadpool_t *threadpool, jobgroup_t *group, void *user_data)
 {
     int ret;
-    pthread_mutex_lock(&group->mutex);
-    group->jobs++;
-    if (!(ret = thrmgr_dispatch(threadpool, user_data))) {
+    if (group) {
+	pthread_mutex_lock(&group->mutex);
+	group->jobs++;
+    }
+    if (!(ret = thrmgr_dispatch(threadpool, user_data)) && group) {
 	group->jobs--;
     }
-    pthread_mutex_unlock(&group->mutex);
+    if (group) {
+	pthread_mutex_unlock(&group->mutex);
+    }
     return ret;
 }
 
-void thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc)
+/* returns
+ *   0 - this was not the last thread in the group
+ *   1 - this was last thread in group, group freed
+ */
+int thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc)
 {
+    int ret = 0;
+    if (!group) {
+	/* there is no group, we are obviously the last one */
+	return 1;
+    }
     pthread_mutex_lock(&group->mutex);
     group->exit_total++;
     switch (exitc) {
@@ -630,17 +644,23 @@ void thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc)
 	    break;
     }
     if (group->jobs) {
-	if (!--group->jobs)
+	if (!--group->jobs) {
 	    pthread_cond_signal(&group->empty);
+	    ret = 1;
+	}
     }
     pthread_mutex_unlock(&group->mutex);
+    if (ret) {
+	free(group);
+    }
+    return ret;
 }
 
 void thrmgr_group_waitforall(jobgroup_t *group, unsigned *ok, unsigned *error, unsigned *total)
 {
     pthread_mutex_lock(&group->mutex);
     /* TODO: should check progexit here */
-    while (group->jobs) {
+    while (group->jobs > 1) {
 	pthread_cond_wait(&group->empty, &group->mutex);
     }
     *ok = group->exit_ok;
@@ -657,4 +677,35 @@ jobgroup_t *thrmgr_group_new(void)
 	return NULL;
     memcpy(group, &dummy, sizeof(dummy));
     return group;
+}
+
+int thrmgr_group_need_terminate(jobgroup_t *group)
+{
+    int ret;
+    if (group) {
+	pthread_mutex_lock(&group->mutex);
+	ret = group->force_exit;
+	pthread_mutex_unlock(&group->mutex);
+    } else
+	ret = 0;
+    pthread_mutex_lock(&exit_mutex);
+    ret |= progexit;
+    pthread_mutex_unlock(&exit_mutex);
+    return ret;
+}
+
+/* returns
+ *  0 - flag set, jobs still active
+ *  1 - last job exited */
+int thrmgr_group_terminate(jobgroup_t *group)
+{
+    if (thrmgr_group_finished(group, EXIT_ERROR))
+	return 1;
+    /* we are not last active job, now
+     * the last active job will free resources */
+    pthread_mutex_lock(&group->mutex);
+    group->force_exit = 1;
+    pthread_mutex_unlock(&group->mutex);
+
+    return 0;
 }

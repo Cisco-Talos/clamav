@@ -79,9 +79,10 @@ typedef struct jobgroup {
     unsigned exit_ok;
     unsigned exit_error;
     unsigned exit_total;
+    int	     force_exit;
 } jobgroup_t;
 
-#define JOBGROUP_INITIALIZER  { PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER, 0, 0, 0, 0 };
+#define JOBGROUP_INITIALIZER  { PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER, 1, 0, 0, 0, 0 };
 
 enum thrmgr_exit {
     EXIT_OK,
@@ -94,7 +95,9 @@ void thrmgr_destroy(threadpool_t *threadpool);
 int thrmgr_dispatch(threadpool_t *threadpool, void *user_data);
 int thrmgr_group_dispatch(threadpool_t *threadpool, jobgroup_t *group, void *user_data);
 void thrmgr_group_waitforall(jobgroup_t *group, unsigned *ok, unsigned *error, unsigned *total);
-void thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc);
+int thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc);
+int thrmgr_group_need_terminate(jobgroup_t *group);
+int thrmgr_group_terminate(jobgroup_t *group);
 jobgroup_t *thrmgr_group_new(void);
 int thrmgr_printstats(int outfd);
 void thrmgr_setactivetask(const char *filename, const char* command);

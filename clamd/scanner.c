@@ -87,6 +87,10 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     int type = scandata->type;
     const struct optstruct *opt;
 
+    if (thrmgr_group_need_terminate(scandata->conn->group)) {
+	logg("^Client disconnected while scanjob was active\n");
+	return CL_BREAK;
+    }
     scandata->total++;
     switch (reason) {
 	case error_mem:
@@ -123,7 +127,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 
     /* check whether the file is excluded */
 #ifdef C_LINUX
-    if(procdev && (sb->st_dev == procdev))
+    if(procdev && sb && (sb->st_dev == procdev))
 	return CL_SUCCESS;
 #endif
     if((opt = optget(scandata->opts, "ExcludePath"))->enabled) {
@@ -137,7 +141,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 	}
     }
 
-    if(sb->st_size == 0) { /* empty file */
+    if(sb && sb->st_size == 0) { /* empty file */
 	if (msg == scandata->toplevel_path)
 	    conn_reply_single(scandata->conn, filename, "Empty file");
 	return CL_SUCCESS;
@@ -148,7 +152,6 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 	if(client_conn) {
 	    client_conn->scanfd = -1;
 	    client_conn->sd = scandata->odesc;
-	    client_conn->fds = NULL;
 	    client_conn->filename = filename;
 	    client_conn->cmdtype = COMMAND_MULTISCANFILE;
 	    client_conn->term = scandata->conn->term;
@@ -201,6 +204,10 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 	logg("~%s: OK\n", filename);
     }
 
+    if (thrmgr_group_need_terminate(scandata->conn->group)) {
+	logg("^Client disconnected while scanjob was active\n");
+	return CL_BREAK;
+    }
     if (type == TYPE_SCAN) {
 	/* virus -> break */
 	return ret;

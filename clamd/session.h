@@ -41,6 +41,7 @@
 #include "libclamav/clamav.h"
 #include "shared/optparser.h"
 #include "server.h"
+#include "others.h"
 
 enum commands {
     COMMAND_UNKNOWN = 0,
@@ -69,7 +70,6 @@ typedef struct client_conn_tag {
     char *filename;
     int scanfd;
     int sd;
-    struct fd_data *fds;
     unsigned int options;
     const struct optstruct *opts;
     struct cl_engine *engine;
@@ -77,13 +77,12 @@ typedef struct client_conn_tag {
     char term;
     threadpool_t *thrpool;
     int id;
-    int dumpfd;
-    char *dumpname;
     long quota;
     jobgroup_t *group;
+    enum mode mode;
 } client_conn_t;
 
-int command(client_conn_t *conn);
+int command(client_conn_t *conn, int *virus);
 enum commands parse_command(const char *cmd, const char **argument);
 int execute_or_dispatch_command(client_conn_t *conn, enum commands command, const char *argument);
 

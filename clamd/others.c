@@ -392,6 +392,8 @@ int fds_add(struct fd_data *data, int fd, int listen_only)
     data->buf[n-1].dumpfd = -1;
     data->buf[n-1].quota = 0;
     data->buf[n-1].chunksize = 0;
+    data->buf[n-1].mode = MODE_COMMAND;
+    data->buf[n-1].dumpname = NULL;
     if (!listen_only) {
 	data->buf[n-1].bufsize = PATH_MAX+8;
 	/* plus extra space for a \0 so we can make sure every command is \0

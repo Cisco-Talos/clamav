@@ -1,3 +1,8 @@
+Fri Feb  6 13:29:16 EET 2009 (edwin)
+------------------------------------
+ * clamd/: don't execute commands if client disconnected.  fix
+ MULTISCAN
+
 Thu Feb  5 23:10:50 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c, clamd/others.h, clamd/server-th.c,

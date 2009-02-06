@@ -28,6 +28,11 @@
 #include "thrmgr.h"
 #include "cltypes.h"
 
+enum mode {
+    MODE_COMMAND,
+    MODE_STREAM
+};
+
 struct fd_buf {
     unsigned char *buffer;
     size_t bufsize;
@@ -37,6 +42,7 @@ struct fd_buf {
     int recvfd;
     /* TODO: these fields don't belong here, there are identical fields in conn
      * too that don't belong there either. */
+    enum mode mode;
     int id;
     int dumpfd;
     uint32_t chunksize;

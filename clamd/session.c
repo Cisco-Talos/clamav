@@ -82,7 +82,7 @@ static struct {
     {CMD8,  sizeof(CMD8)-1,	COMMAND_STREAM,	    0},
     {CMD10, sizeof(CMD10)-1,	COMMAND_END,	    0},
     {CMD11, sizeof(CMD11)-1,	COMMAND_SHUTDOWN,   0},
-    {CMD13, sizeof(CMD13)-1,	COMMAND_MULTISCAN,  0},
+    {CMD13, sizeof(CMD13)-1,	COMMAND_MULTISCAN,  1},
     {CMD14, sizeof(CMD14)-1,	COMMAND_FILDES,	    0},
     {CMD15, sizeof(CMD15)-1,	COMMAND_STATS,	    0},
     {CMD16, sizeof(CMD16)-1,	COMMAND_IDSESSION,  0},
@@ -165,9 +165,10 @@ int conn_reply_errno(const client_conn_t *conn, const char *path,
 
 /* returns
  *  -1 on fatal error (shutdown)
- *  0 on ok, close connection
- *  1 on ok, keep connection open */
-int command(client_conn_t *conn)
+ *  0 on ok
+ *  >0 errors encountered
+ */
+int command(client_conn_t *conn, int *virus)
 {
     int desc = conn->sd;
     struct cl_engine *engine = conn->engine;
@@ -175,14 +176,18 @@ int command(client_conn_t *conn)
     const struct optstruct *opts = conn->opts;
     const char term = conn->term;
     int type = -1; /* TODO: make this enum */
-    int keepopen = conn->group ? 1 : 0;
     int maxdirrec;
+    int ret = 0;
 
     struct scan_cb_data scandata;
     struct cli_ftw_cbdata data;
     unsigned ok, error, total;
     jobgroup_t group = JOBGROUP_INITIALIZER;
 
+    if (thrmgr_group_need_terminate(conn->group)) {
+	logg("^Client disconnected while command was active\n");
+	return 1;
+    }
     thrmgr_setactiveengine(engine);
 
     data.data = &scandata;
@@ -210,49 +215,66 @@ int command(client_conn_t *conn)
 	    thrmgr_setactivetask(NULL, "MULTISCAN");
 	    type = TYPE_MULTISCAN;
 	    scandata.group = &group;
-	    keepopen = 0;
 	    break;
 	case COMMAND_MULTISCANFILE:
 	    thrmgr_setactivetask(NULL, "MULTISCANFILE");
 	    scandata.group = NULL;
-	    scandata.type = TYPE_MULTISCAN;
+	    scandata.type = TYPE_SCAN;
+	    scandata.thr_pool = NULL;
 	    /* TODO: check ret value */
 	    scan_callback(NULL, conn->filename, conn->filename, visit_file, &data);
-	    return 1;
+	    *virus = scandata.infected;
+	    return 0;
 	case COMMAND_FILDES:
 	    thrmgr_setactivetask(NULL, "FILDES");
 #ifdef HAVE_FD_PASSING
 	    if (conn->scanfd == -1)
 		conn_reply_error(conn, "FILDES: didn't receive file descriptor.");
-	    else if (scanfd(conn->scanfd, conn, NULL, engine, options, opts, desc) == -2)
-		if(optget(opts, "ExitOnOOM")->enabled)
-		    return -1;
+	    else {
+		ret = scanfd(conn->scanfd, conn, NULL, engine, options, opts, desc);
+		if (ret == CL_VIRUS)
+		    *virus = 1;
+		if (ret == CL_EMEM) {
+		    if(optget(opts, "ExitOnOOM")->enabled)
+			ret = -1;
+		} else
+		    ret = 0;
+	    }
 	    close(conn->scanfd);
-	    return keepopen;
+	    return ret;
 #else
 	    conn_reply_error(conn, "FILDES support not compiled in.");
+	    close(conn->scanfd);
 	    return 0;
 #endif
 	case COMMAND_STATS:
 	    thrmgr_setactivetask(NULL, "STATS");
 	    thrmgr_printstats(desc);
-	    return keepopen;
+	    return 0;
 	case COMMAND_STREAM:
 	    thrmgr_setactivetask(NULL, "STREAM");
-	    if(scanstream(desc, NULL, engine, options, opts, conn->term) == CL_EMEM)
+	    ret = scanstream(desc, NULL, engine, options, opts, conn->term);
+	    if (ret == CL_VIRUS)
+		*virus = 1;
+	    if (ret == CL_EMEM) {
 		if(optget(opts, "ExitOnOOM")->enabled)
 		    return -1;
-	    /* STREAM not valid in IDSESSION */
+	    }
 	    return 0;
 	case COMMAND_INSTREAMSCAN:
-	    if (scanfd(conn->dumpfd, conn, NULL, engine, options, opts, desc) == -2)
+	    ret = scanfd(conn->scanfd, conn, NULL, engine, options, opts, desc);
+	    if (ret == CL_VIRUS)
+		*virus = 1;
+	    if (ret == CL_EMEM) {
 		if(optget(opts, "ExitOnOOM")->enabled)
-		    return -1;
-	    close(conn->dumpfd);
-	    cli_unlink(conn->dumpname);
-	    conn->dumpfd = -1;
-	    free(conn->dumpname);
-	    return 1;
+		    ret = -1;
+	    } else
+		ret = 0;
+	    ftruncate(conn->scanfd, 0);
+	    close(conn->scanfd);
+	    conn->scanfd = -1;
+	    cli_unlink(conn->filename);
+	    return ret;
     }
 
     scandata.type = type;
@@ -261,9 +283,9 @@ int command(client_conn_t *conn)
     if (cli_ftw(conn->filename, CLI_FTW_STD,  maxdirrec ? maxdirrec : INT_MAX, scan_callback, &data) == CL_EMEM) 
 	if(optget(opts, "ExitOnOOM")->enabled)
 	    return -1;
-    if (scandata.group && conn->cmdtype == COMMAND_MULTISCAN)
+    if (scandata.group && conn->cmdtype == COMMAND_MULTISCAN) {
 	thrmgr_group_waitforall(&group, &ok, &error, &total);
-    else {
+    } else {
 	error = scandata.errors;
 	total = scandata.total;
 	ok = total - error - scandata.infected;
@@ -272,10 +294,11 @@ int command(client_conn_t *conn)
     if (ok + error == total && (error != total)) {
 	conn_reply_single(conn, conn->filename, "OK");
     }
-    return keepopen; /* no error and no 'special' command executed */
+    *virus = total - (ok + error);
+    return error;
 }
 
-static int dispatch_command(const client_conn_t *conn, enum commands cmd, const char *argument)
+static int dispatch_command(client_conn_t *conn, enum commands cmd, const char *argument)
 {
     int ret = 0;
     client_conn_t *dup_conn = (client_conn_t *) malloc(sizeof(struct client_conn_tag));
@@ -299,6 +322,8 @@ static int dispatch_command(const client_conn_t *conn, enum commands cmd, const 
 		ret = 1;
 	    }
 	    dup_conn->scanfd = conn->scanfd;
+	    /* consume FD */
+	    conn->scanfd = -1;
 	    break;
 	case COMMAND_SCAN:
 	case COMMAND_CONTSCAN:
@@ -310,14 +335,15 @@ static int dispatch_command(const client_conn_t *conn, enum commands cmd, const 
 	    }
 	    break;
 	case COMMAND_INSTREAMSCAN:
-	    dup_conn->id--; /* same ID as the INSTREAM command */
+	    dup_conn->scanfd = conn->scanfd;
+	    conn->scanfd = -1;
 	    break;
 	case COMMAND_STREAM:
 	case COMMAND_STATS:
 	    /* just dispatch the command */
 	    break;
     }
-    if(!ret && !thrmgr_dispatch(dup_conn->thrpool, dup_conn)) {
+    if(!ret && !thrmgr_group_dispatch(dup_conn->thrpool, dup_conn->group, dup_conn)) {
 	logg("!thread dispatch failed\n");
 	ret = -2;
     }
@@ -405,10 +431,11 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 		    conn_reply_single(conn, NULL, "UNKNOWN COMMAND");
 		    return 1;
 		}
-		int rc = cli_gentempfd(NULL, &conn->dumpname, &conn->dumpfd);
+		int rc = cli_gentempfd(NULL, &conn->filename, &conn->scanfd);
 		if (rc != CL_SUCCESS)
 		    return rc;
 		conn->quota = optget(conn->opts, "StreamMaxLength")->numarg;
+		conn->mode = MODE_STREAM;
 		return 0;
 	    }
 	case COMMAND_STREAM:
@@ -430,9 +457,11 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 		conn_reply_single(conn, NULL, "UNKNOWN COMMAND");
 		return 1;
 	    }
-	    /* TODO: notify group to free itself on exit */
-	    conn->group = NULL;
-	    return 1;
+	    if (thrmgr_group_finished(conn->group, EXIT_OK)) {
+		/* need to close connection  if we were last in group */
+		return 1;
+	    }
+	    return 0;
 	/*case COMMAND_UNKNOWN:*/
 	default:
 	    conn_reply_single(conn, NULL, "UNKNOWN COMMAND");
