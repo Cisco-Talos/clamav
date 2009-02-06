@@ -1,3 +1,7 @@
+Fri Feb  6 20:42:00 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.h, clamd/server-th.c: fix FILDES infloop
+
 Fri Feb  6 15:25:36 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c, clamd/others.h, clamd/server-th.c: introduce

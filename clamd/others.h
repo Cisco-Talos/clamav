@@ -31,7 +31,8 @@
 enum mode {
     MODE_COMMAND,
     MODE_STREAM,
-    MODE_WAITREPLY
+    MODE_WAITREPLY,
+    MODE_WAITANCILL
 };
 
 struct fd_buf {

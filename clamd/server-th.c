@@ -794,7 +794,10 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		error = 1;
 	    }
 
-	    while (!error && buf->fd != -1 && buf->buffer && pos < buf->off) {
+	    if (buf->mode == MODE_WAITANCILL)
+		buf->mode = MODE_COMMAND;
+	    while (!error && buf->fd != -1 && buf->buffer && pos < buf->off &&
+		   buf->mode != MODE_WAITANCILL) {
 		client_conn_t conn;
 		const unsigned char *cmd;
 		size_t cmdlen = 0;
@@ -825,6 +828,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    if (cmdtype == COMMAND_FILDES) {
 			if (buf->buffer + buf->off <= cmd + strlen("FILDES\n")) {
 			    /* we need the extra byte from recvmsg */
+			    conn.mode = MODE_WAITANCILL;
+			    buf->mode = MODE_WAITANCILL;
 			    cmdlen = 0;
 			    break;
 			}
