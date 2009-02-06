@@ -1,3 +1,8 @@
+Fri Feb  6 21:51:21 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, clamd/server-th.c: handle multiple commands and
+ ancillary data in one packet
+
 Fri Feb  6 21:03:28 EET 2009 (edwin)
 ------------------------------------
  * clamd/scanner.c: initialize all fields

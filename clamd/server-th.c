@@ -866,12 +866,6 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    if (conn.mode != MODE_COMMAND)
 			break;
 		    conn.id++;
-		    if (conn.scanfd != -1) {
-			logg("^Unclaimed file descriptor received. closing\n");
-			close(conn.scanfd);
-			conn.scanfd = -1;
-			error = 1;
-		    }
 		}
 		buf->mode = conn.mode;
 		buf->id = conn.id;
