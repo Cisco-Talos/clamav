@@ -148,7 +148,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     }
 
     if (type == TYPE_MULTISCAN) {
-	client_conn_t *client_conn = (client_conn_t *) malloc(sizeof(struct client_conn_tag));
+	client_conn_t *client_conn = (client_conn_t *) calloc(1, sizeof(struct client_conn_tag));
 	if(client_conn) {
 	    client_conn->scanfd = -1;
 	    client_conn->sd = scandata->odesc;
