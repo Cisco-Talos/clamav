@@ -30,7 +30,8 @@
 
 enum mode {
     MODE_COMMAND,
-    MODE_STREAM
+    MODE_STREAM,
+    MODE_WAITREPLY
 };
 
 struct fd_buf {
@@ -62,7 +63,6 @@ struct fd_data {
 };
 
 int poll_fd(int fd, int timeout_sec, int check_signals);
-int is_fd_connected(int fd);
 void virusaction(const char *filename, const char *virname, const struct optstruct *opts);
 int writen(int fd, void *buff, unsigned int count);
 int fds_add(struct fd_data *data, int fd, int listen_only);

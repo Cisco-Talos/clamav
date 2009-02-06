@@ -163,63 +163,6 @@ void virusaction(const char *filename, const char *virname, const struct optstru
 }
 #endif /* C_WINDOWS */
 
-
-int is_fd_connected(int fd)
-{
-#ifdef HAVE_POLL
-	struct pollfd poll_data[1];
-	int count;
-
-    poll_data[0].fd = fd;
-    poll_data[0].events = POLLIN;
-    poll_data[0].revents = 0;
-
-    if ((count=poll(poll_data, 1, 0)) == -1) {
-    	if (errno == EINTR) {
-		return 1;
-	}
-	return 0;
-    }
-    if (count == 0) {
-    	return 1;
-    }
-    if (poll_data[0].revents & POLLHUP) {
-	return 0;
-    }
-    if ((poll_data[0].revents & POLLIN) && (ioctl(fd, FIONREAD, &count) == 0)) {
-    	if (count == 0) {
-		return 0;
-	}
-    }
-    return 1;
-
-#else
-	fd_set rfds;
-	struct timeval tv;
-	char buff[1];
-
-#ifndef	C_WINDOWS
-    if (fd >= DEFAULT_FD_SETSIZE) {
-        return 1;
-    }
-#endif
-
-    FD_ZERO(&rfds);
-    FD_SET(fd, &rfds);
-    tv.tv_sec = 0;
-    tv.tv_usec = 0;
-    if (select(fd+1, &rfds, NULL, NULL, &tv) <= 0) {
-	return 1;
-    }
-    if (FD_ISSET(fd, &rfds)) {
-	if (recv(fd, buff, 1, MSG_PEEK) != 1) {
-	    return 0;
-	}
-    }
-    return 1;
-#endif
-}
-
 /* Function: writen
 	Try hard to write the specified number of bytes
 */

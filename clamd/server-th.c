@@ -847,19 +847,19 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			    /* if there are no more active jobs */
 			    shutdown(conn.sd, 2);
 			    closesocket(conn.sd);
+			    buf->fd = -1;
 			}
-			/* remove fd from fds monitored for reading,
-			 * no more commands are accepted */
-			buf->fd = -1;
-			break;
+			/* no more commands are accepted */
+			conn.mode = MODE_WAITREPLY;
 		    }
 		    pos += cmdlen+1;
 		    if (conn.mode == MODE_STREAM) {
 			/* TODO: this doesn't belong here */
 			buf->dumpname = conn.filename;
 			buf->dumpfd = conn.scanfd;
-			break;
 		    }
+		    if (conn.mode != MODE_COMMAND)
+			break;
 		    conn.id++;
 		    if (conn.scanfd != -1) {
 			logg("^Unclaimed file descriptor received. closing\n");
@@ -879,6 +879,11 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			buf->off -= pos;
 		    } else
 			buf->off = 0;
+		}
+		if (!error && buf->mode == MODE_WAITREPLY && buf->off) {
+		    /* Client is not supposed to send anything more */
+		    logg("^Client sent garbage after last command\n");
+		    error = 1;
 		}
 		if (!error && buf->mode == MODE_STREAM) {
 		    if (!buf->chunksize) {

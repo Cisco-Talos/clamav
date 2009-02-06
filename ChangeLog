@@ -1,3 +1,9 @@
+Fri Feb  6 15:25:36 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, clamd/others.h, clamd/server-th.c: introduce
+ MODE_WAITREPLY.  MULTISCAN now quits if client quits (TODO:
+ CONTSCAN/SCAN should have a group too!)
+
 Fri Feb  6 13:58:48 EET 2009 (edwin)
 ------------------------------------
  * clamd/thrmgr.c, clamd/thrmgr.h: really fix multiscan
