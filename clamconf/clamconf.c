@@ -36,7 +36,7 @@ static struct _cfgfile {
 } cfgfile[] = {
     { "clamd.conf",	    OPT_CLAMD	    },
     { "freshclam.conf",	    OPT_FRESHCLAM   },
-    /* TODO: { "clamav-milter.conf", OPT_MILTER	    }, */
+    { "clamav-milter.conf", OPT_MILTER	    },
     { NULL,		    0		    }
 };
 

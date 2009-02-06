@@ -184,7 +184,9 @@ const struct clam_option clam_options[] = {
 
     { "MaxThreads", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 10, NULL, 0, OPT_CLAMD | OPT_MILTER, "Maximum number of threads running at the same time.", "20" },
 
-    { "ReadTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 120, NULL, 0, OPT_CLAMD | OPT_MILTER, "This option specifies the time (in seconds) after which clamd should\ntimeout if a client doesn't provide any data.", "120" },
+    { "ReadTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 120, NULL, 0, OPT_CLAMD, "This option specifies the time (in seconds) after which clamd should\ntimeout if a client doesn't provide any data.", "120" },
+
+    { "ReadTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 120, NULL, 0, OPT_MILTER, "Waiting for data from clamd will timeout after this time (seconds).\nValue of 0 disables the timeout.", "300" },
 
     { "IdleTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 30, NULL, 0, OPT_CLAMD, "This option specifies how long (in seconds) the process should wait\nfor a new job.", "60" },
 
@@ -266,7 +268,7 @@ const struct clam_option clam_options[] = {
 
     { "MaxScanSize", "max-scansize", 0, TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_MAXSCANSIZE, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "This option sets the maximum amount of data to be scanned for each input file.\nArchives and other containers are recursively extracted and scanned up to this\nvalue.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe\ndamage.", "100M" },
 
-    { "MaxFileSize", "max-filesize", 0, TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_MAXFILESIZE, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN, "Files larger than this limit won't be scanned. Affects the input file itself\nas well as files contained inside it (when the input file is an archive, a\ndocument or some other kind of container).\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe\ndamage to the system.", "25M" },
+    { "MaxFileSize", "max-filesize", 0, TYPE_SIZE, MATCH_SIZE, CLI_DEFAULT_MAXFILESIZE, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN, "Files/messages larger than this limit won't be scanned. Affects the input\nfile itself as well as files contained inside it (when the input file is\nan archive, a document or some other kind of container).\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe\ndamage to the system.", "25M" },
 
     { "MaxRecursion", "max-recursion", 0, TYPE_NUMBER, MATCH_NUMBER, CLI_DEFAULT_MAXRECLEVEL, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Nested archives are scanned recursively, e.g. if a Zip archive contains a RAR\nfile, all files within it will also be scanned. This option specifies how\ndeeply the process should be continued.\nThe value of 0 disables the limit.\nWARNING: disabling this limit or setting it too high may result in severe\ndamage to the system.", "16" },
 
@@ -351,23 +353,23 @@ const struct clam_option clam_options[] = {
 
     /* Milter specific options */
 
-    { "ClamdSocket", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_MILTER, "", "" },
+    { "ClamdSocket", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_MILTER, "Define the clamd socket to connect to for scanning.\nThis option is mandatory! Syntax:\n  ClamdSocket unix:path\n  ClamdSocket tcp:host:port\nThe first syntax specifies a local unix socket (needs an bsolute path) e.g.:\n  ClamdSocket unix:/var/run/clamd/clamd.socket\nThe second syntax specifies a tcp local or remote tcp socket: the\nhost can be a hostname or an ip address; the \":port\" field is only required\nfor IPv6 addresses, otherwise it defaults to 3310\n  ClamdSocket tcp:192.168.0.1\nThis option can be repeated several times with different sockets or even\nwith the same socket: clamd servers will be selected in a round-robin fashion.", "tcp:scanner.mydomain:7357" },
 
-    { "MilterSocket",NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "", "" },
+    { "MilterSocket",NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Define the interface through which we communicate with sendmail.\nThis option is mandatory! Possible formats are:\n[[unix|local]:]/path/to/file - to specify a unix domain socket;\ninet:port@[hostname|ip-address] - to specify an ipv4 socket;\ninet6:port@[hostname|ip-address] - to specify an ipv6 socket.", "/tmp/clamav-milter.socket\ninet:7357" },
 
-    { "LocalNet", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_MILTER, "", "" },
+    { "LocalNet", NULL, 0, TYPE_STRING, NULL, -1, NULL, FLAG_MULTIPLE, OPT_MILTER, "Messages originating from these hosts/networks will not be scanned\nThis option takes a host(name)/mask pair in CIRD notation and can be\nrepeated several times. If \"/mask\" is omitted, a host is assumed.\nTo specify a locally orignated, non-smtp, email use the keyword \"local\".", "local\n192.168.0.0/24\n1111:2222:3333::/48" },
 
-    { "OnClean", NULL, 0, TYPE_STRING, NULL, -1, "Accept", 0, OPT_MILTER, "", "" },
+    { "OnClean", NULL, 0, TYPE_STRING, "^(Accept|Reject|Defer|Blackhole|Quarantine)$", -1, "Accept", 0, OPT_MILTER, "Action to be performed on clean messages (mostly useful for testing).\nThe following actions are available:\nAccept: the message is accepted for delievery;\nReject: immediately refuse delievery (a 5xx error is returned to the peer);\nDefer: return a temporary failure message (4xx) to the peer;\nBlackhole: like accept but the message is sent to oblivion;\nQuarantine: like accept but message is quarantined instead of being delivered,\n    in sendmail the quarantine queue can be examined via mailq -qQ,\n    for Postfix this causes the message to be accepted but placed on hold.", "Accept" },
 
-    { "OnInfected", NULL, 0, TYPE_STRING, NULL, -1, "Quarantine", 0, OPT_MILTER, "", "" },
+    { "OnInfected", NULL, 0, TYPE_STRING, "^(Accept|Reject|Defer|Blackhole|Quarantine)$", -1, "Quarantine", 0, OPT_MILTER, "Action to be performed on infected messages.\nThe following actions are available:\nAccept: the message is accepted for delievery;\nReject: immediately refuse delievery (a 5xx error is returned to the peer);\nDefer: return a temporary failure message (4xx) to the peer;\nBlackhole: like accept but the message is sent to oblivion;\nQuarantine: like accept but message is quarantined instead of being delivered,\n    in sendmail the quarantine queue can be examined via mailq -qQ,\n    for Postfix this causes the message to be accepted but placed on hold.", "Quarantine" },
 
-    { "OnFail", NULL, 0, TYPE_STRING, NULL, -1, "Defer", 0, OPT_MILTER, "", "" },
+    { "OnFail", NULL, 0, TYPE_STRING, "^(Accept|Reject|Defer)$", -1, "Defer", 0, OPT_MILTER, "Action to be performed on error conditions (this includes failure to\nallocate data structures, no scanners available, network timeouts, unknown\nscanner replies and the like).\nThe following actions are available:\nAccept: the message is accepted for delievery;\nReject: immediately refuse delievery (a 5xx error is returned to the peer);\nDefer: return a temporary failure message (4xx) to the peer.", "Defer" },
 
-    { "AddHeader", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_MILTER, "", "" },
+    { "AddHeader", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_MILTER, "If this option is set to Yes, an \"X-Virus-Scanned\" and an \"X-Virus-Status\"\nheaders will be attached to each processed message, possibly replacing\nexisting headers.", "Yes" },
 
-    { "Chroot", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "", "" },
+    { "Chroot", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Chroot to the specified directory.\nChrooting is performed just after reading the config file and before\ndropping privileges.", "/newroot" },
 
-    { "Whitelist", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "", "" },
+    { "Whitelist", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option specifies a file which contains a list of POSIX regular\nexpressions. Addresses (sent to or from - see below) matching these regexes\nwill not be scanned.  Optionally each line can start with the string \"From:\"\nor \"To:\" (note: no whitespace after the colon) indicating if it is,\nrespectively, the sender or recipient that is to be whitelisted.\nIf the field is missing, \"To:\" is assumed.\nLines starting with #, : or ! are ignored.", "/etc/whitelisted_addresses" },
 
     /* Deprecated milter options */
 
