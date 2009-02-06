@@ -645,12 +645,13 @@ int thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc)
     }
     if (group->jobs) {
 	if (!--group->jobs) {
-	    pthread_cond_signal(&group->empty);
 	    ret = 1;
 	}
+	if (group->jobs == 1)
+	    pthread_cond_signal(&group->only);
     }
     pthread_mutex_unlock(&group->mutex);
-    if (ret) {
+    if (ret && group->allocated) {
 	free(group);
     }
     return ret;
@@ -658,14 +659,24 @@ int thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc)
 
 void thrmgr_group_waitforall(jobgroup_t *group, unsigned *ok, unsigned *error, unsigned *total)
 {
+    int needexit = 0;
+    struct timespec timeout;
     pthread_mutex_lock(&group->mutex);
-    /* TODO: should check progexit here */
     while (group->jobs > 1) {
-	pthread_cond_wait(&group->empty, &group->mutex);
+	pthread_mutex_lock(&exit_mutex);
+	needexit = progexit;
+	pthread_mutex_unlock(&exit_mutex);
+	if (needexit)
+	    break;
+	/* wake to check progexit */
+	timeout.tv_sec = time(NULL) + 5;
+	timeout.tv_nsec = 0;
+	pthread_cond_timedwait(&group->only, &group->mutex, &timeout);
     }
     *ok = group->exit_ok;
-    *error = group->exit_error;
+    *error = group->exit_error + needexit;
     *total = group->exit_total;
+    group->jobs--;
     pthread_mutex_unlock(&group->mutex);
 }
 
@@ -676,6 +687,7 @@ jobgroup_t *thrmgr_group_new(void)
     if (!group)
 	return NULL;
     memcpy(group, &dummy, sizeof(dummy));
+    group->allocated = 1;
     return group;
 }
 

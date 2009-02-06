@@ -74,15 +74,16 @@ typedef struct threadpool_tag {
 
 typedef struct jobgroup {
     pthread_mutex_t mutex;
-    pthread_cond_t empty;
-    unsigned jobs;
-    unsigned exit_ok;
-    unsigned exit_error;
-    unsigned exit_total;
-    int	     force_exit;
+    pthread_cond_t only;
+    unsigned	jobs;
+    unsigned	exit_ok;
+    unsigned	exit_error;
+    unsigned	exit_total;
+    int		force_exit;
+    int		allocated;
 } jobgroup_t;
 
-#define JOBGROUP_INITIALIZER  { PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER, 1, 0, 0, 0, 0 };
+#define JOBGROUP_INITIALIZER  { PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER, 1, 0, 0, 0, 0, 0 };
 
 enum thrmgr_exit {
     EXIT_OK,

@@ -1,3 +1,7 @@
+Fri Feb  6 13:58:48 EET 2009 (edwin)
+------------------------------------
+ * clamd/thrmgr.c, clamd/thrmgr.h: really fix multiscan
+
 Fri Feb  6 13:32:06 EET 2009 (edwin)
 ------------------------------------
  * clamd/session.c: symlink flags for cli_ftw
