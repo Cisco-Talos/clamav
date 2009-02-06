@@ -1,3 +1,7 @@
+Fri Feb  6 13:32:06 EET 2009 (edwin)
+------------------------------------
+ * clamd/session.c: symlink flags for cli_ftw
+
 Fri Feb  6 13:29:16 EET 2009 (edwin)
 ------------------------------------
  * clamd/: don't execute commands if client disconnected.  fix

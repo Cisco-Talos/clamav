@@ -178,6 +178,7 @@ int command(client_conn_t *conn, int *virus)
     int type = -1; /* TODO: make this enum */
     int maxdirrec;
     int ret = 0;
+    int flags = CLI_FTW_STD;
 
     struct scan_cb_data scandata;
     struct cli_ftw_cbdata data;
@@ -212,6 +213,7 @@ int command(client_conn_t *conn, int *virus)
 	    type = TYPE_CONTSCAN;
 	    break;
 	case COMMAND_MULTISCAN:
+	    flags &= ~CLI_FTW_NEED_STAT;
 	    thrmgr_setactivetask(NULL, "MULTISCAN");
 	    type = TYPE_MULTISCAN;
 	    scandata.group = &group;
@@ -279,7 +281,10 @@ int command(client_conn_t *conn, int *virus)
 
     scandata.type = type;
     maxdirrec = optget(opts, "MaxDirectoryRecursion")->numarg;
-    // TODO: flags symlink from opt
+    if (optget(opts, "FollowDirectorySymlinks")->enabled)
+	flags |= CLI_FTW_FOLLOW_DIR_SYMLINK;
+    if (optget(opts, "FollowFileSymlinks")->enabled)
+	flags |= CLI_FTW_FOLLOW_FILE_SYMLINK;
     if (cli_ftw(conn->filename, CLI_FTW_STD,  maxdirrec ? maxdirrec : INT_MAX, scan_callback, &data) == CL_EMEM) 
 	if(optget(opts, "ExitOnOOM")->enabled)
 	    return -1;
