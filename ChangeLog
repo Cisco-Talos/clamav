@@ -1,3 +1,8 @@
+Sat Feb  7 18:54:54 EET 2009 (edwin)
+------------------------------------
+ * clamd/server-th.c: add proto debug messages to LogVerbose
+ temporarely
+
 Sat Feb  7 18:31:09 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c: properly initalize fd_buf slot, even when reusing

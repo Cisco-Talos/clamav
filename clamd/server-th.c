@@ -118,8 +118,10 @@ static void scanner_thread(void *arg)
 
     if (conn->filename)
 	free(conn->filename);
+    logg("*SCANTH: finished\n");
     if (thrmgr_group_finished(conn->group, virus ? EXIT_OTHER :
 			      errors ? EXIT_ERROR : EXIT_OK)) {
+	logg("*SCANTH: connection shut down\n");
 	/* close connection if we were last in group */
 	shutdown(conn->sd, 2);
 	closesocket(conn->sd);
@@ -791,11 +793,14 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    }
 
 	    if (buf->got_newdata == -1) {
+		logg("*RECVTH: client read error or EOF on read\n");
 		error = 1;
 	    }
 
-	    if (buf->mode == MODE_WAITANCILL)
+	    if (buf->mode == MODE_WAITANCILL) {
 		buf->mode = MODE_COMMAND;
+		logg("*RECVTH: mode -> MODE_COMMAND\n");
+	    }
 	    while (!error && buf->fd != -1 && buf->buffer && pos < buf->off &&
 		   buf->mode != MODE_WAITANCILL) {
 		client_conn_t conn;
@@ -824,22 +829,26 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    const char *argument;
 		    int has_more = (buf->buffer + buf->off) > (cmd + cmdlen);
 		    enum commands cmdtype = parse_command(cmd, &argument);
-
+		    logg("*RECVTH: got command %s (%u), argument: %s\n",
+			 cmd, cmdtype, argument ? argument : "");
 		    if (cmdtype == COMMAND_FILDES) {
 			if (buf->buffer + buf->off <= cmd + strlen("FILDES\n")) {
 			    /* we need the extra byte from recvmsg */
 			    conn.mode = MODE_WAITANCILL;
 			    buf->mode = MODE_WAITANCILL;
 			    cmdlen = 0;
+			    logg("*RECVTH: mode -> MODE_WAITANCILL\n");
 			    break;
 			}
 			/* eat extra \0 for controlmsg */
 			cmdlen++;
+			logg("*RECVTH: FILDES command complete\n");
 		    }
 
 		    conn.term = term;
 
 		    if ((rc = execute_or_dispatch_command(&conn, cmdtype, argument)) < 0) {
+			logg("!Command dispatch failed\n");
 			if(rc == -1 && optget(opts, "ExitOnOOM")->enabled) {
 			    pthread_mutex_lock(&exit_mutex);
 			    progexit = 1;
@@ -849,22 +858,28 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    }
 		    if (error || !conn.group) {
 			if (rc && thrmgr_group_finished(conn.group, EXIT_OK)) {
+			    logg("*RECVTH: closing conn, group finished\n");
 			    /* if there are no more active jobs */
 			    shutdown(conn.sd, 2);
 			    closesocket(conn.sd);
 			    buf->fd = -1;
+			} else {
+			    logg("*RECVTH: mode -> MODE_WAITREPLY\n");
+			    /* no more commands are accepted */
+			    conn.mode = MODE_WAITREPLY;
 			}
-			/* no more commands are accepted */
-			conn.mode = MODE_WAITREPLY;
 		    }
 		    pos += cmdlen+1;
 		    if (conn.mode == MODE_STREAM) {
 			/* TODO: this doesn't belong here */
 			buf->dumpname = conn.filename;
 			buf->dumpfd = conn.scanfd;
+			logg("*RECVTH: STREAM: %s fd %u\n", buf->dumpname, buf->dumpfd);
 		    }
-		    if (conn.mode != MODE_COMMAND)
+		    if (conn.mode != MODE_COMMAND) {
+			logg("*RECVTH: breaking command loop, mode is no longer MODE_COMMAND\n");
 			break;
+		    }
 		    conn.id++;
 		}
 		buf->mode = conn.mode;
@@ -878,24 +893,34 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			buf->off -= pos;
 		    } else
 			buf->off = 0;
+		    if (buf->off)
+			logg("*RECVTH: moved partial command: %u\n", buf->off);
+		    else
+			logg("*RECVTH: consumed entire command\n");
 		}
 		if (!error && buf->mode == MODE_WAITREPLY && buf->off) {
 		    /* Client is not supposed to send anything more */
-		    logg("^Client sent garbage after last command\n");
+		    logg("^Client sent garbage after last command: %u bytes\n", buf->off);
+		    buf->buffer[buf->off] = '\0';
+		    logg("*RECVTH: garbage: %s\n", buf->buffer);
 		    error = 1;
 		}
 		if (!error && buf->mode == MODE_STREAM) {
+		    logg("*RECVTH: mode == MODE_STREAM\n");
 		    if (!buf->chunksize) {
 			/* read chunksize */
 			if (buf->off >= 4) {
 			    uint32_t cs = *(uint32_t*)buf->buffer;
 			    buf->chunksize = ntohl(cs);
+			    logg("*RECVTH: chunksize: %u\n", buf->chunksize);
 			    if (!buf->chunksize) {
 				/* chunksize 0 marks end of stream */
 				conn.scanfd = buf->dumpfd;
 				buf->dumpfd = -1;
 				buf->mode = MODE_COMMAND;
+				logg("*RECVTH: chunks complete\n");
 				if ((rc = execute_or_dispatch_command(&conn, COMMAND_INSTREAMSCAN, NULL)) < 0) {
+				    logg("!Command dispatch failed\n");
 				    if(rc == -1 && optget(opts, "ExitOnOOM")->enabled) {
 					pthread_mutex_lock(&exit_mutex);
 					progexit = 1;
@@ -914,6 +939,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			    } else {
 				buf->quota -= buf->chunksize;
 			    }
+			    logg("*RECVTH: quota: %lu\n", buf->quota);
 			    pos = 4;
 			} else
 			    continue;
@@ -929,6 +955,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			logg("!INSTREAM: Can't write to temporary file.\n");
 			error = 1;
 		    }
+		    logg("*RECVTH: processed %lu bytes of chunkdata\n", cmdlen);
 		    pos += cmdlen;
 		}
 		if (error) {
@@ -937,9 +964,11 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    }
 	    if (error) {
 		if (thrmgr_group_terminate(buf->group)) {
+		    logg("*RECVTH: shutting down socket after error\n");
 		    shutdown(buf->fd, 2);
 		    closesocket(buf->fd);
-		}
+		} else
+		    logg("*RECVTH: socket not shut down due to active tasks\n");
 		buf->fd = -1;
 	    }
 	}
