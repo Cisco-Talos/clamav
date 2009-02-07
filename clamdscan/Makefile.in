@@ -76,12 +76,13 @@ am__clamdscan_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 	$(top_srcdir)/shared/optparser.h $(top_srcdir)/shared/misc.c \
 	$(top_srcdir)/shared/misc.h $(top_srcdir)/shared/getopt.c \
 	$(top_srcdir)/shared/getopt.h \
-	$(top_srcdir)/libclamav/regex/strlcpy.c clamdscan.c client.c \
-	client.h
+	$(top_srcdir)/libclamav/regex/strlcpy.c clamdscan.c proto.c \
+	proto.h client.c client.h
 @BUILD_CLAMD_TRUE@am_clamdscan_OBJECTS = output.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	optparser.$(OBJEXT) misc.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	getopt.$(OBJEXT) strlcpy.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	clamdscan.$(OBJEXT) client.$(OBJEXT)
+@BUILD_CLAMD_TRUE@	clamdscan.$(OBJEXT) proto.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	client.$(OBJEXT)
 clamdscan_OBJECTS = $(am_clamdscan_OBJECTS)
 clamdscan_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -268,6 +269,8 @@ top_srcdir = @top_srcdir@
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/getopt.h \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/libclamav/regex/strlcpy.c\
 @BUILD_CLAMD_TRUE@    clamdscan.c \
+@BUILD_CLAMD_TRUE@    proto.c \
+@BUILD_CLAMD_TRUE@    proto.h \
 @BUILD_CLAMD_TRUE@    client.c \
 @BUILD_CLAMD_TRUE@    client.h
 
@@ -367,6 +370,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optparser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/output.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proto.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strlcpy.Po@am__quote@
 
 .c.o:

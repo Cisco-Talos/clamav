@@ -31,9 +31,10 @@ clamdscan_SOURCES = \
     $(top_srcdir)/shared/getopt.h \
     $(top_srcdir)/libclamav/regex/strlcpy.c\
     clamdscan.c \
+    proto.c \
+    proto.h \
     client.c \
     client.h
-
 endif
 
 DEFS = @DEFS@ -DCL_NOTHREADS -DCL_NOLIBCLAMAV
