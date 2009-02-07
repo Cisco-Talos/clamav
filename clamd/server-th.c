@@ -793,8 +793,14 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    }
 
 	    if (buf->got_newdata == -1) {
-		logg("*RECVTH: client read error or EOF on read\n");
-		error = 1;
+		if (buf->mode == MODE_WAITREPLY) {
+		    logg("*RECVTH: mode WAIT_REPLY -> closed\n");
+		    buf->fd = -1;
+		    continue;
+		} else {
+		    logg("*RECVTH: client read error or EOF on read\n");
+		    error = 1;
+		}
 	    }
 
 	    if (buf->mode == MODE_WAITANCILL) {
@@ -862,12 +868,12 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			    /* if there are no more active jobs */
 			    shutdown(conn.sd, 2);
 			    closesocket(conn.sd);
+			    buf->fd = -1;
 			} else {
 			    logg("*RECVTH: mode -> MODE_WAITREPLY\n");
 			    /* no more commands are accepted */
 			    conn.mode = MODE_WAITREPLY;
 			}
-			buf->fd = -1;
 		    }
 		    pos += cmdlen+1;
 		    if (conn.mode == MODE_STREAM) {

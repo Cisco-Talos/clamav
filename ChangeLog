@@ -1,3 +1,10 @@
+Sat Feb  7 19:06:19 EET 2009 (edwin)
+------------------------------------
+ * clamd/server-th.c: keep MODE_WAITREPLY in select still, so if
+ garbage is sent we can close.  Though when poll says that socket is
+ closed, we shouldn't try closing again if we're in WAIT_REPLY mode
+ (since we alraedy closed it from another thread).
+
 Sat Feb  7 19:00:48 EET 2009 (edwin)
 ------------------------------------
  * clamd/server-th.c, clamd/session.c: also remove socket from
