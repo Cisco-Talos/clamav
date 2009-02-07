@@ -256,10 +256,9 @@ int dsresult(int sockd, int scantype, const char *filename) {
 	    waserror = 1;
 	    break;
 	}
-	printf(">%s<\n", bol);
 	if(!filename) logg("~%s\n", bol);
 	if(len > 7) {
-	    char *colon = colon = strrchr(bol, ':');
+	    char *colon = strrchr(bol, ':');
 	    if(!colon) {
 		logg("Failed to parse reply\n");
 		waserror = 1;
@@ -413,7 +412,7 @@ int dspresult(struct client_parallel_data *c) {
 	}
 	filename = (*id)->file;
 	if(len > 7) {
-	    char *colon = colon = strrchr(bol, ':');
+	    char *colon = strrchr(bol, ':');
 	    if(!colon) {
 		c->errors++;
 		logg("Failed to parse reply\n");
@@ -457,7 +456,6 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
 	return CL_SUCCESS;
     case visit_directory_toplev:
 	c->spam = 1;
-	free(filename);
 	return CL_SUCCESS;
     default:
 	break;
@@ -527,13 +525,17 @@ int parallel_client_scan(const char *file, int scantype, int *infected, int *err
     cdata.scantype = scantype;
     cdata.spam = 0;
     cdata.lastid = 0;
+    cdata.ids = NULL;
     data.data = &cdata;
 
     cli_ftw(file, CLI_FTW_STD, maxlevel ? maxlevel : INT_MAX, parallel_callback, &data);
     /* FIXME: check return */
-    if(!cdata.infected && (!cdata.errors || cdata.spam)) logg("~%s: OK\n", file);
 
-    /* FIXME: call dspresult in a loop here */
+    while(cdata.ids) {
+	if(dspresult(&cdata)) { /* FIXME: return something */ }
+    };
+
+    if(!cdata.infected && (!cdata.errors || cdata.spam)) logg("~%s: OK\n", file);
 
     *infected += cdata.infected;
     *errors += cdata.errors;
