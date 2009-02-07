@@ -27,6 +27,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/select.h>
 #include <arpa/inet.h>
 
 #include "libclamav/others.h"
@@ -171,6 +172,7 @@ static int send_stream(int sockd, const char *filename) {
     return 0;
 }
 
+#ifdef HAVE_FD_PASSING
 /* Issues a FILDES command and pass a FD to clamd
  * Returns 0 on success */
 static int send_fdpass(int sockd, const char *filename) {
@@ -187,7 +189,10 @@ static int send_fdpass(int sockd, const char *filename) {
 	    return 1;
 	}
     } else fd = 0;
-    if(sendln(sockd, "zFILDES", 8)) return 1;
+    if(sendln(sockd, "zFILDES", 8)) {
+      close(fd);
+      return 1;
+    }
 
     iov[0].iov_base = dummy;
     iov[0].iov_len = 1;
@@ -203,10 +208,13 @@ static int send_fdpass(int sockd, const char *filename) {
     *(int *)CMSG_DATA(cmsg) = fd;
     if(sendmsg(sockd, &msg, 0) == -1) {
 	logg("!FD send failed\n");
+	close(fd);
 	return 1;
     }
+    close(fd);
     return 0;
 }
+#endif
 
 /* Sends a proper scan request to clamd and parses its replies
  * This is used only in non IDSESSION mode
@@ -312,18 +320,15 @@ static int serial_callback(struct stat *sb, char *filename, const char *path, en
 	logg("~%s: Not supported file type. ERROR\n", filename);
 	c->errors++;
 	return CL_SUCCESS;
+    case visit_directory_toplev:
+	c->spam = 1;
+	if(c->scantype >= STREAM)
+	    return CL_SUCCESS;
+	f = path;
     default:
 	break;
     }
 
-    if(reason == visit_directory_toplev) {
-	c->spam = 1;
-	if(c->scantype >= STREAM) {
-	    free(filename);
-	    return CL_SUCCESS;
-	}
-	f = path;
-    }
     if((sockd = dconnect()) < 0) {
 	free(filename);
 	return CL_BREAK;
