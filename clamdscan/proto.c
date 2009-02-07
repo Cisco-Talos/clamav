@@ -109,6 +109,8 @@ int recvln(struct RCVLN *s, char **rbol, char **reol) {
 		    logg("!Communication error\n");
 		    return -1;
 		}
+		*rbol = NULL;
+		if(reol) *reol = eol;
 	        return 0;
 	    }
 	}
@@ -397,6 +399,7 @@ int dspresult(struct client_parallel_data *c) {
 	    c->errors++;
 	    break;
 	}
+	if(!bol) return 0;
 	if((rid = atoi(bol))) {
 	    id = &c->ids;
 	    while(*id) {
@@ -534,6 +537,9 @@ int parallel_client_scan(const char *file, int scantype, int *infected, int *err
     while(cdata.ids) {
 	if(dspresult(&cdata)) { /* FIXME: return something */ }
     };
+
+    sendln(cdata.sockd, "zEND", 5);
+    close(cdata.sockd);
 
     if(!cdata.infected && (!cdata.errors || cdata.spam)) logg("~%s: OK\n", file);
 
