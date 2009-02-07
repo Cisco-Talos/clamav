@@ -462,11 +462,8 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 		conn_reply_single(conn, NULL, "UNKNOWN COMMAND");
 		return 1;
 	    }
-	    if (thrmgr_group_finished(conn->group, EXIT_OK)) {
-		/* need to close connection  if we were last in group */
-		return 1;
-	    }
-	    return 0;
+	    /* need to close connection  if we were last in group */
+	    return 1;
 	/*case COMMAND_UNKNOWN:*/
 	default:
 	    conn_reply_single(conn, NULL, "UNKNOWN COMMAND");
