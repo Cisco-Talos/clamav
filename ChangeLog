@@ -1,3 +1,8 @@
+Sat Feb  7 18:31:09 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c: properly initalize fd_buf slot, even when reusing
+ slot.
+
 Fri Feb  6 21:51:21 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c, clamd/server-th.c: handle multiple commands and

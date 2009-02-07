@@ -306,6 +306,36 @@ static int read_fd_data(struct fd_buf *buf)
    return n;
 }
 
+static int buf_init(struct fd_buf *buf, int listen_only)
+{
+    buf->recvfd = -1;
+    buf->id = 0;
+    buf->group = NULL;
+    buf->dumpfd = -1;
+    buf->quota = 0;
+    buf->mode = MODE_COMMAND;
+    buf->dumpname = NULL;
+    buf->off = 0;
+    buf->got_newdata = 0;
+    if (!listen_only) {
+	if (!buf->buffer) {
+	    buf->bufsize = PATH_MAX+8;
+	    /* plus extra space for a \0 so we can make sure every command is \0
+	     * terminated */
+	    if (!(buf->buffer = malloc(buf->bufsize + 1))) {
+		logg("!add_fd: Memory allocation failed for command buffer\n");
+		return -1;
+	    }
+	}
+    } else {
+	if (buf->buffer)
+	    free(buf->buffer);
+	buf->bufsize = 0;
+	buf->buffer = NULL;
+    }
+    return 0;
+}
+
 int fds_add(struct fd_data *data, int fd, int listen_only)
 {
     struct fd_buf *buf;
@@ -319,8 +349,8 @@ int fds_add(struct fd_data *data, int fd, int listen_only)
     for (n = 0; n < data->nfds; n++)
 	if (data->buf[n].fd == fd) {
 	    /* clear stale data in buffer */
-	    data->buf[n].off = 0;
-	    data->buf[n].got_newdata = 0;
+	    if (buf_init(&data->buf[n], listen_only) < 0)
+		return -1;
 	    return 0;
 	}
 
@@ -332,30 +362,10 @@ int fds_add(struct fd_data *data, int fd, int listen_only)
     }
     data->buf = buf;
     data->nfds = n;
-    data->buf[n-1].fd = -1;
-    data->buf[n-1].recvfd = -1;
-    data->buf[n-1].id = 0;
-    data->buf[n-1].group = NULL;
-    data->buf[n-1].dumpfd = -1;
-    data->buf[n-1].quota = 0;
-    data->buf[n-1].chunksize = 0;
-    data->buf[n-1].mode = MODE_COMMAND;
-    data->buf[n-1].dumpname = NULL;
-    if (!listen_only) {
-	data->buf[n-1].bufsize = PATH_MAX+8;
-	/* plus extra space for a \0 so we can make sure every command is \0
-	 * terminated */
-	if (!(data->buf[n-1].buffer = malloc(data->buf[n-1].bufsize + 1))) {
-	    logg("!add_fd: Memory allocation failed for command buffer\n");
-	    return -1;
-	}
-    } else {
-	data->buf[n-1].bufsize = 0;
-	data->buf[n-1].buffer = NULL;
-    }
+    data->buf[n-1].buffer = NULL;
+    if (buf_init(&data->buf[n-1], listen_only) < 0)
+	return -1;
     data->buf[n-1].fd = fd;
-    data->buf[n-1].off = 0;
-    data->buf[n-1].got_newdata = 0;
     return 0;
 }
 
