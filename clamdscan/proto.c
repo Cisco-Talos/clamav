@@ -405,9 +405,9 @@ int dspresult(struct client_parallel_data *c) {
     recvlninit(&rcv, c->sockd);
     do {
 	len = recvln(&rcv, &bol, &eol);
-	if(len == -1) {
+	if(!bol || len == -1) {
 	    c->errors++;
-	    break;
+	    return 1;
 	}
 	if(!bol) return 0;
 	if((rid = atoi(bol))) {
@@ -544,17 +544,18 @@ int parallel_client_scan(const char *file, int scantype, int *infected, int *err
     cli_ftw(file, CLI_FTW_STD, maxlevel ? maxlevel : INT_MAX, parallel_callback, &data);
     /* FIXME: check return */
 
-    while(cdata.ids) {
-	if(dspresult(&cdata)) { /* FIXME: return something */ }
-    };
-
     sendln(cdata.sockd, "zEND", 5);
+    while(cdata.ids && !dspresult(&cdata));
     close(cdata.sockd);
 
-    if(!printinfected && !cdata.infected && (!cdata.errors || cdata.spam))
-	logg("~%s: OK\n", file);
-
+    if(cdata.ids) {
+	logg("!Clamd closed connection before scannign all files. ERROR\n");
+    } else {
+	if(!printinfected && !cdata.infected && (!cdata.errors || cdata.spam))
+	    logg("~%s: OK\n", file);
+    }
+    
     *infected += cdata.infected;
     *errors += cdata.errors;
-    return 0;
+    return (!!cdata.ids);
 }

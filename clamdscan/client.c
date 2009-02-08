@@ -266,6 +266,7 @@ int client(const struct optstruct *opts, int *infected)
 
     scandash = (opts->filename && opts->filename[0] && !strcmp(opts->filename[0], "-") && !opts->filename[1]);
     remote = isremote(opts);
+    //    remote = 1; /* FIXME : get rid of me */
 #ifdef HAVE_FD_PASSING
     if(!remote && optget(clamdopts, "LocalSocket")->enabled && (optget(opts, "fdpass")->enabled || scandash)) {
 	scantype = FILDES;
