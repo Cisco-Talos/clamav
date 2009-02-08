@@ -256,7 +256,7 @@ int client(const struct optstruct *opts, int *infected)
 {
 	const char *clamd_conf = optget(opts, "config-file")->strarg;
 	struct optstruct *clamdopts;
-	int remote, scantype, session = 0, errors = 0, scandash = 0, maxrec;
+	int remote, scantype, session = 0, errors = 0, scandash = 0, maxrec, maxstream;
 
     if((clamdopts = optparse(clamd_conf, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
 	logg("!Can't parse clamd configuration file %s\n", clamd_conf);
@@ -278,6 +278,7 @@ int client(const struct optstruct *opts, int *infected)
     else scantype = CONT;
 
     maxrec = optget(clamdopts, "MaxDirectoryRecursion")->numarg;
+    maxstream = optget(opts, "StreamMaxLength")->numarg; /* FIXME: propagate */
     optfree(clamdopts);
 
     if(!mainsa) {

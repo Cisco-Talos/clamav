@@ -151,7 +151,7 @@ static int send_stream(int sockd, const char *filename) {
     int fd, len;
 
     if(filename) {
-	if(!(fd = open(filename, O_RDONLY))) {
+	if((fd = open(filename, O_RDONLY))<0) {
 	    logg("!Open failed on %s.\n", filename);
 	    return 1;
 	}
