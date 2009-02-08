@@ -420,7 +420,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	int idletimeout;
 	uint32_t val32;
 	uint64_t val64;
-	size_t i;
+	size_t i, j, rr_last = 0;
 	pthread_t accept_th;
 	struct acceptdata acceptdata;
 	struct fd_data *fds = &acceptdata.recv_fds;
@@ -778,7 +778,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    pthread_mutex_unlock(&exit_mutex);
 	}
 
-	for (i=0;i < fds->nfds && new_sd >= 0; i++) {
+	i = (rr_last + 1) % fds->nfds;
+	for (j = 0;  j < fds->nfds && new_sd >= 0; j++, i = (i+1) % fds->nfds) {
 	    size_t pos = 0;
 	    int error = 0;
 	    struct fd_buf *buf = &fds->buf[i];
@@ -804,6 +805,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		}
 	    }
 
+	    rr_last = i;
 	    if (buf->mode == MODE_WAITANCILL) {
 		buf->mode = MODE_COMMAND;
 		logg("*RECVTH: mode -> MODE_COMMAND\n");

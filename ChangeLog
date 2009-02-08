@@ -1,3 +1,7 @@
+Sun Feb  8 23:34:24 EET 2009 (edwin)
+------------------------------------
+ * clamd/server-th.c: introduce RR of connections.
+
 Sun Feb  8 23:34:15 EET 2009 (edwin)
 ------------------------------------
  * clamd/session.c, clamd/thrmgr.c, clamd/thrmgr.h: always allocate a
