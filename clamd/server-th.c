@@ -405,7 +405,7 @@ static void *acceptloop_th(void *arg)
 
 int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts)
 {
-	int max_threads, ret = 0;
+	int max_threads, max_queue, ret = 0;
 	unsigned int options = 0;
 	char timestr[32];
 #ifndef	C_WINDOWS
@@ -664,6 +664,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 
     logg("*Listening daemon: PID: %u\n", (unsigned int) mainpid);
     max_threads = optget(opts, "MaxThreads")->numarg;
+    max_queue = optget(opts, "MaxQueue")->numarg;
 
     if(optget(opts, "ClamukoScanOnAccess")->enabled)
 #ifdef CLAMUKO
@@ -743,7 +744,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	exit(-1);
     }
 
-    if ((thr_pool = thrmgr_new(max_threads, idletimeout, scanner_thread)) == NULL) {
+    if ((thr_pool = thrmgr_new(max_threads, idletimeout, max_queue, scanner_thread)) == NULL) {
 	logg("!thrmgr_new failed\n");
 	exit(-1);
     }

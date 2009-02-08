@@ -36,6 +36,7 @@ typedef struct work_queue_tag {
 	work_item_t *head;
 	work_item_t *tail;
 	int item_count;
+	int popped;
 } work_queue_t;
 
 typedef enum {
@@ -59,17 +60,20 @@ typedef struct threadpool_tag {
 	pthread_attr_t pool_attr;
 
 	pthread_cond_t  idle_cond;
+	pthread_cond_t  queueable_cond;
 	
 	pool_state_t state;
 	int thr_max;
+	int queue_max;
 	int thr_alive;
 	int thr_idle;
 	int idle_timeout;
 	struct task_desc *tasks;
 	
 	void (*handler)(void *);
-	
-	work_queue_t *queue;
+
+	work_queue_t *bulk_queue;
+	work_queue_t *single_queue;
 } threadpool_t;
 
 typedef struct jobgroup {
@@ -91,7 +95,7 @@ enum thrmgr_exit {
     EXIT_OTHER
 };
 
-threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void *));
+threadpool_t *thrmgr_new(int max_threads, int idle_timeout, int max_queue, void (*handler)(void *));
 void thrmgr_destroy(threadpool_t *threadpool);
 int thrmgr_dispatch(threadpool_t *threadpool, void *user_data);
 int thrmgr_group_dispatch(threadpool_t *threadpool, jobgroup_t *group, void *user_data);

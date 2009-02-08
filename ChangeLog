@@ -1,3 +1,10 @@
+Sun Feb  8 23:03:55 EET 2009 (edwin)
+------------------------------------
+ * clamd/server-th.c, clamd/thrmgr.c, clamd/thrmgr.h,
+ shared/optparser.c: Use 2 queues: one for single, one for bulk
+ messages.  Also introduce MaxQueue, this will prevent clamdscan from
+ flooding clamd with too many FILDES requests.
+
 Sun Feb  8 19:33:10 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c: init chunksize

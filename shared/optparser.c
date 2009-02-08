@@ -182,6 +182,8 @@ const struct clam_option clam_options[] = {
 
     { "MaxThreads", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 10, NULL, 0, OPT_CLAMD | OPT_MILTER, "Maximum number of threads running at the same time.", "20" },
 
+    { "MaxQueue", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 100, NULL, 0, OPT_CLAMD, "Maximum number of queued items (including those being processed)\nWARNING: you shouldn't increase this beyond 512, since you may run out of File Descriptors (usual max is 1024)\n", "200" },
+
     { "ReadTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 120, NULL, 0, OPT_CLAMD | OPT_MILTER, "This option specifies the time (in seconds) after which clamd should\ntimeout if a client doesn't provide any data.", "120" },
 
     { "IdleTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 30, NULL, 0, OPT_CLAMD, "This option specifies how long (in seconds) the process should wait for a new job.", "60" },
