@@ -278,7 +278,7 @@ int client(const struct optstruct *opts, int *infected)
     else scantype = CONT;
 
     maxrec = optget(clamdopts, "MaxDirectoryRecursion")->numarg;
-    maxstream = optget(opts, "StreamMaxLength")->numarg; /* FIXME: propagate */
+    maxstream = optget(clamdopts, "StreamMaxLength")->numarg; /* FIXME: propagate */
     optfree(clamdopts);
 
     if(!mainsa) {
