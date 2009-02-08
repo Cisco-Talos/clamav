@@ -55,6 +55,7 @@ int main(int argc, char **argv)
 	time_t starttime;
         struct optstruct *opts;
         const struct optstruct *opt;
+	struct sigaction sigact;
 
 
     if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMDSCAN, OPT_CLAMSCAN, NULL)) == NULL) {
@@ -108,6 +109,11 @@ int main(int argc, char **argv)
     }
 
     actsetup(opts);
+    memset(&sigact, 0, sizeof(struct sigaction));
+    sigact.sa_handler = SIG_IGN;
+    sigemptyset(&sigact.sa_mask);
+    sigaddset(&sigact.sa_mask, SIGPIPE);
+    sigaction(SIGPIPE, &sigact, NULL);
 
     time(&starttime);
     /* ctime() does \n, but I need it once more */

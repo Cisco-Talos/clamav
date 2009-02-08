@@ -549,7 +549,7 @@ int parallel_client_scan(const char *file, int scantype, int *infected, int *err
     close(cdata.sockd);
 
     if(cdata.ids) {
-	logg("!Clamd closed connection before scannign all files. ERROR\n");
+	logg("!Clamd closed connection before scanning all files.\n");
     } else {
 	if(!printinfected && !cdata.infected && (!cdata.errors || cdata.spam))
 	    logg("~%s: OK\n", file);
