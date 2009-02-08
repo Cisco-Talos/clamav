@@ -1,3 +1,9 @@
+Sun Feb  8 23:34:15 EET 2009 (edwin)
+------------------------------------
+ * clamd/session.c, clamd/thrmgr.c, clamd/thrmgr.h: always allocate a
+ jobgroup, that way on shutdown we are sure that it doesn't
+ dissappear.
+
 Sun Feb  8 23:14:28 EET 2009 (edwin)
 ------------------------------------
  * clamd/thrmgr.c: unify thresholds

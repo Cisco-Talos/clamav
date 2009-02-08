@@ -762,7 +762,7 @@ int thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc)
 	    pthread_cond_signal(&group->only);
     }
     pthread_mutex_unlock(&group->mutex);
-    if (ret && group->allocated) {
+    if (ret) {
 	free(group);
     }
     return ret;
@@ -787,10 +787,12 @@ void thrmgr_group_waitforall(jobgroup_t *group, unsigned *ok, unsigned *error, u
     *ok = group->exit_ok;
     *error = group->exit_error + needexit;
     *total = group->exit_total;
-    group->jobs--;
+    if(!--group->jobs)
+	free(group);
     pthread_mutex_unlock(&group->mutex);
 }
 
+#define JOBGROUP_INITIALIZER  { PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER, 1, 0, 0, 0, 0 };
 jobgroup_t *thrmgr_group_new(void)
 {
     jobgroup_t dummy = JOBGROUP_INITIALIZER;
@@ -798,7 +800,6 @@ jobgroup_t *thrmgr_group_new(void)
     if (!group)
 	return NULL;
     memcpy(group, &dummy, sizeof(dummy));
-    group->allocated = 1;
     return group;
 }
 

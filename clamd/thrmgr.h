@@ -84,10 +84,7 @@ typedef struct jobgroup {
     unsigned	exit_error;
     unsigned	exit_total;
     int		force_exit;
-    int		allocated;
 } jobgroup_t;
-
-#define JOBGROUP_INITIALIZER  { PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER, 1, 0, 0, 0, 0, 0 };
 
 enum thrmgr_exit {
     EXIT_OK,

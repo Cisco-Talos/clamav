@@ -183,7 +183,7 @@ int command(client_conn_t *conn, int *virus)
     struct scan_cb_data scandata;
     struct cli_ftw_cbdata data;
     unsigned ok, error, total;
-    jobgroup_t group = JOBGROUP_INITIALIZER;
+    jobgroup_t *group = NULL;
 
     if (thrmgr_group_need_terminate(conn->group)) {
 	logg("^Client disconnected while command was active\n");
@@ -218,7 +218,7 @@ int command(client_conn_t *conn, int *virus)
 	    flags &= ~CLI_FTW_NEED_STAT;
 	    thrmgr_setactivetask(NULL, "MULTISCAN");
 	    type = TYPE_MULTISCAN;
-	    scandata.group = &group;
+	    scandata.group = group = thrmgr_group_new();
 	    break;
 	case COMMAND_MULTISCANFILE:
 	    thrmgr_setactivetask(NULL, "MULTISCANFILE");
@@ -292,7 +292,7 @@ int command(client_conn_t *conn, int *virus)
 	if(optget(opts, "ExitOnOOM")->enabled)
 	    return -1;
     if (scandata.group && conn->cmdtype == COMMAND_MULTISCAN) {
-	thrmgr_group_waitforall(&group, &ok, &error, &total);
+	thrmgr_group_waitforall(group, &ok, &error, &total);
     } else {
 	error = scandata.errors;
 	total = scandata.total;
