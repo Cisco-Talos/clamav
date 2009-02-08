@@ -64,13 +64,12 @@
 #endif
 
 int notremoved = 0, notmoved = 0;
-int printinfected = 0;
-
 struct sockaddr *mainsa = NULL;
 int mainsasz;
 static struct sockaddr_un nixsock;
 static struct sockaddr_in tcpsock;
 
+/* OnInfected action handlers/wrappers */
 void (*action)(const char *) = NULL;
 static char *actarget;
 static void move_infected(const char *filename, int move);
@@ -89,6 +88,7 @@ static void action_remove(const char *filename) {
     }
 }
 
+/* Inits the OnInfected action */
 void actsetup(const struct optstruct *opts) {
     if(optget(opts, "move")->enabled) {
 	actarget = optget(opts, "move")->strarg;
@@ -101,6 +101,8 @@ void actsetup(const struct optstruct *opts) {
     }
 }
 
+/* Inits the communication layer
+ * Returns 0 if clamd is local, non zero if clamd is remote */
 static int isremote(const struct optstruct *opts) {
     int s, ret;
     const struct optstruct *opt;
@@ -155,6 +157,9 @@ static int isremote(const struct optstruct *opts) {
 }
 
 
+/* Turns a relative path into an absolute one
+ * Returns a pointer to the path (which must be 
+ * freed by the caller) or NULL on error */
 static char *makeabs(const char *basepath) {
     int namelen;
     char *ret;
@@ -178,22 +183,20 @@ static char *makeabs(const char *basepath) {
     return ret;
 }
 
-
-
+/* Recursively scans a path with the given scantype
+ * Returns non zero for serious errors, zero otherwise */
 static int client_scan(const char *file, int scantype, int *infected, int *errors, int maxlevel, int session) {
     int ret;
     char *fullpath = makeabs(file);
 
-    if(!fullpath) {
-	(*errors)++;
-	return 1;
-    }
+    if(!fullpath)
+	return 0;
     if (!session)
 	ret = serial_client_scan(fullpath, scantype, infected, errors, maxlevel);
     else
 	ret = parallel_client_scan(fullpath, scantype, infected, errors, maxlevel);
     free(fullpath);
-    return 0;
+    return ret;
 }
 
 int get_clamd_version(const struct optstruct *opts)

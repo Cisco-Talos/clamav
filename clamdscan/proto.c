@@ -38,6 +38,7 @@
 
 extern struct sockaddr *mainsa;
 extern int mainsasz;
+int printinfected;
 extern void (*action)(const char *);
 
 static const char *scancmd[] = { "CONTSCAN", "MULTISCAN" };
@@ -332,7 +333,7 @@ static int serial_callback(struct stat *sb, char *filename, const char *path, en
 
     if((sockd = dconnect()) < 0) {
 	free(filename);
-	return CL_BREAK;
+	return CL_EIO;
     }
     if((ret = dsresult(sockd, c->scantype, f)) >= 0)
 	c->infected += ret;
@@ -358,8 +359,9 @@ int serial_client_scan(const char *file, int scantype, int *infected, int *error
     data.data = &cdata;
 
     cli_ftw(file, CLI_FTW_STD, maxlevel ? maxlevel : INT_MAX, serial_callback, &data);
-    /* FIXME: care about return ? */
-    if(!cdata.infected && (!cdata.errors || cdata.spam)) logg("~%s: OK\n", file);
+    /* FIXME: return SUCCESS or BREAK is ok, anything else is bad */
+    if(!printinfected && !cdata.infected && (!cdata.errors || cdata.spam))
+	logg("~%s: OK\n", file);
 
     *infected += cdata.infected;
     *errors += cdata.errors;
@@ -445,7 +447,7 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
 
     switch(reason) {
     case error_stat:
-	logg("^Can't access file %s\n", filename);
+	logg("^Can't access file %s\n", path);
 	return CL_SUCCESS;
     case error_mem:
 	logg("^Memory allocation failed in ftw\n");
@@ -454,7 +456,7 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
 	logg("^Directory recursion limit reached\n");
 	return CL_SUCCESS;
     case warning_skipped_special:
-	logg("~%s: Not supported file type. ERROR\n", filename);
+	logg("~%s: Not supported file type. ERROR\n", path);
 	c->errors++;
 	return CL_SUCCESS;
     case visit_directory_toplev:
@@ -491,7 +493,7 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
 
     while (*id)
 	id = &((*id)->next);
-    cid = (struct SCANID *)malloc(sizeof(struct SCANID *));
+    cid = (struct SCANID *)malloc(sizeof(struct SCANID));
     *id = cid;
     cid->id = ++c->lastid;
     cid->file = filename;
@@ -541,7 +543,8 @@ int parallel_client_scan(const char *file, int scantype, int *infected, int *err
     sendln(cdata.sockd, "zEND", 5);
     close(cdata.sockd);
 
-    if(!cdata.infected && (!cdata.errors || cdata.spam)) logg("~%s: OK\n", file);
+    if(!printinfected && !cdata.infected && (!cdata.errors || cdata.spam))
+	logg("~%s: OK\n", file);
 
     *infected += cdata.infected;
     *errors += cdata.errors;
