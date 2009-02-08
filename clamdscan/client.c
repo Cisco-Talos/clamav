@@ -66,6 +66,7 @@
 int notremoved = 0, notmoved = 0;
 struct sockaddr *mainsa = NULL;
 int mainsasz;
+unsigned long int maxstream;
 static struct sockaddr_un nixsock;
 static struct sockaddr_in tcpsock;
 
@@ -256,7 +257,7 @@ int client(const struct optstruct *opts, int *infected)
 {
 	const char *clamd_conf = optget(opts, "config-file")->strarg;
 	struct optstruct *clamdopts;
-	int remote, scantype, session = 0, errors = 0, scandash = 0, maxrec, maxstream;
+	int remote, scantype, session = 0, errors = 0, scandash = 0, maxrec;
 
     if((clamdopts = optparse(clamd_conf, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
 	logg("!Can't parse clamd configuration file %s\n", clamd_conf);

@@ -38,6 +38,7 @@
 
 extern struct sockaddr *mainsa;
 extern int mainsasz;
+extern unsigned long int maxstream;
 int printinfected;
 extern void (*action)(const char *);
 
@@ -149,6 +150,7 @@ int recvln(struct RCVLN *s, char **rbol, char **reol) {
 static int send_stream(int sockd, const char *filename) {
     uint32_t buf[BUFSIZ/sizeof(uint32_t)];
     int fd, len;
+    unsigned int todo = maxstream;
 
     if(filename) {
 	if((fd = open(filename, O_RDONLY))<0) {
@@ -160,11 +162,17 @@ static int send_stream(int sockd, const char *filename) {
     if(sendln(sockd, "zINSTREAM", 10)) return 1;
 
     while((len = read(fd, &buf[1], sizeof(buf) - sizeof(uint32_t))) > 0) {
+	if((unsigned int)len > todo) len = todo;
 	buf[0] = htonl(len);
 	if(sendln(sockd, (const char *)buf, len+sizeof(uint32_t))) { /* FIXME: need to handle limits */
 	    logg("!Can't write to the socket.\n");
 	    close(fd);
 	    return 1;
+	}
+	todo -= len;
+	if(!todo) {
+	    len = 0;
+	    break;
 	}
     }
     close(fd);
