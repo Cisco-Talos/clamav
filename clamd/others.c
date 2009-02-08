@@ -309,15 +309,16 @@ static int read_fd_data(struct fd_buf *buf)
 
 static int buf_init(struct fd_buf *buf, int listen_only)
 {
-    buf->recvfd = -1;
-    buf->id = 0;
-    buf->group = NULL;
-    buf->dumpfd = -1;
-    buf->quota = 0;
-    buf->mode = MODE_COMMAND;
-    buf->dumpname = NULL;
     buf->off = 0;
     buf->got_newdata = 0;
+    buf->recvfd = -1;
+    buf->mode = MODE_COMMAND;
+    buf->id = 0;
+    buf->dumpfd = -1;
+    buf->chunksize = 0;
+    buf->quota = 0;
+    buf->dumpname = NULL;
+    buf->group = NULL;
     if (!listen_only) {
 	if (!buf->buffer) {
 	    buf->bufsize = PATH_MAX+8;
