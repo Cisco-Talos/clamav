@@ -534,18 +534,10 @@ static void stats_destroy(threadpool_t *pool)
 	pthread_setspecific(stats_tls_key, NULL);
 }
 
-/* high threshold */
-static inline int thrmgr_contended_high(threadpool_t *pool)
+static inline int thrmgr_contended(threadpool_t *pool)
 {
     return pool->bulk_queue->item_count + pool->single_queue->item_count
 	+ pool->thr_alive - pool->thr_idle >= pool->queue_max;
-}
-
-/* low threshold */
-static inline int thrmgr_contended_low(threadpool_t *pool)
-{
-    return pool->bulk_queue->item_count + pool->single_queue->item_count
-	+ pool->thr_alive - pool->thr_idle >= (pool->queue_max - pool->thr_max);
 }
 
 /* when both queues have tasks, it will pick 4 items from the single queue,
@@ -582,7 +574,7 @@ static void *thrmgr_pop(threadpool_t *pool)
 	}
     }
 
-    if (!thrmgr_contended_low(pool)) {
+    if (!thrmgr_contended(pool)) {
 	logg("*THRMGR: queue crossed low threshold -> signaling\n");
 	pthread_cond_signal(&pool->queueable_cond);
     }
@@ -687,7 +679,7 @@ static int thrmgr_dispatch_internal(threadpool_t *threadpool, void *user_data, i
 	    else
 		queue = threadpool->single_queue;
 
-	    while (thrmgr_contended_high(threadpool)) {
+	    while (thrmgr_contended(threadpool)) {
 		logg("*THRMGR: contended, sleeping\n");
 		pthread_cond_wait(&threadpool->queueable_cond, &threadpool->pool_mutex);
 		logg("*THRMGR: contended, woken\n");

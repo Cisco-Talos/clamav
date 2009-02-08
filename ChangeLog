@@ -1,3 +1,7 @@
+Sun Feb  8 23:14:28 EET 2009 (edwin)
+------------------------------------
+ * clamd/thrmgr.c: unify thresholds
+
 Sun Feb  8 23:03:55 EET 2009 (edwin)
 ------------------------------------
  * clamd/server-th.c, clamd/thrmgr.c, clamd/thrmgr.h,
