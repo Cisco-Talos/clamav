@@ -1,3 +1,8 @@
+Sun Feb  8 17:35:31 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, clamd/session.c, clamdscan/proto.c: close FD when
+ we refuse to process command.  Print errno in clamdscan.
+
 Sat Feb  7 19:06:19 EET 2009 (edwin)
 ------------------------------------
  * clamd/server-th.c: keep MODE_WAITREPLY in select still, so if

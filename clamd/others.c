@@ -294,6 +294,7 @@ static int read_fd_data(struct fd_buf *buf)
 		  close(buf->recvfd);
 	      }
 	      buf->recvfd = *(int *)CMSG_DATA(cmsg);
+	      logg("*RECVMSG: got FD %d\n", buf->recvfd);
 	  }
       }
   }

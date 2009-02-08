@@ -218,7 +218,7 @@ static int send_fdpass(int sockd, const char *filename) {
     cmsg->cmsg_type = SCM_RIGHTS;
     *(int *)CMSG_DATA(cmsg) = fd;
     if(sendmsg(sockd, &msg, 0) == -1) {
-	logg("!FD send failed\n");
+	logg("!FD send failed: %s\n", strerror(errno));
 	close(fd);
 	return 1;
     }
@@ -318,7 +318,7 @@ static int serial_callback(struct stat *sb, char *filename, const char *path, en
 
     switch(reason) {
     case error_stat:
-	logg("^Can't access file %s\n", filename);
+	logg("^Can't access file %s\n", path);
 	return CL_SUCCESS;
     case error_mem:
 	logg("^Memory allocation failed in ftw\n");
@@ -327,7 +327,7 @@ static int serial_callback(struct stat *sb, char *filename, const char *path, en
 	logg("^Directory recursion limit reached\n");
 	return CL_SUCCESS;
     case warning_skipped_special:
-	logg("~%s: Not supported file type. ERROR\n", filename);
+	logg("~%s: Not supported file type. ERROR\n", path);
 	c->errors++;
 	return CL_SUCCESS;
     case visit_directory_toplev:

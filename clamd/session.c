@@ -187,6 +187,8 @@ int command(client_conn_t *conn, int *virus)
 
     if (thrmgr_group_need_terminate(conn->group)) {
 	logg("^Client disconnected while command was active\n");
+	if (conn->scanfd != -1)
+	    close(conn->scanfd);
 	return 1;
     }
     thrmgr_setactiveengine(engine);
@@ -242,6 +244,7 @@ int command(client_conn_t *conn, int *virus)
 		} else
 		    ret = 0;
 	    }
+	    logg("*SESSION: closed fd %d\n", conn->scanfd);
 	    close(conn->scanfd);
 	    return ret;
 #else
