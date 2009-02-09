@@ -161,7 +161,7 @@ static int send_stream(int sockd, const char *filename) {
 
     if(sendln(sockd, "zINSTREAM", 10)) return 1;
 
-    while((len = read(fd, &buf[2], sizeof(buf) - 2*sizeof(uint32_t))) > 0) {
+    while((len = read(fd, &buf[1], sizeof(buf) - sizeof(uint32_t))) > 0) {
 	if((unsigned int)len > todo) len = todo;
 	buf[0] = htonl(len);
 	if(sendln(sockd, (const char *)buf, len+sizeof(uint32_t))) {
