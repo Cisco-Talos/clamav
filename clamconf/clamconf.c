@@ -23,7 +23,9 @@
 
 #include <stdio.h>
 #include <string.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 #include "shared/optparser.h"
 #include "shared/misc.h"
