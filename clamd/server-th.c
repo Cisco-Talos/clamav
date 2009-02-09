@@ -872,7 +872,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			    shutdown(conn.sd, 2);
 			    closesocket(conn.sd);
 			    buf->fd = -1;
-			} else {
+			} else if (conn.mode != MODE_STREAM) {
 			    logg("*RECVTH: mode -> MODE_WAITREPLY\n");
 			    /* no more commands are accepted */
 			    conn.mode = MODE_WAITREPLY;
@@ -931,7 +931,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 				/* chunksize 0 marks end of stream */
 				conn.scanfd = buf->dumpfd;
 				buf->dumpfd = -1;
-				buf->mode = MODE_COMMAND;
+				buf->mode = buf->group ? MODE_COMMAND : MODE_WAITREPLY;
 				logg("*RECVTH: chunks complete\n");
 				if ((rc = execute_or_dispatch_command(&conn, COMMAND_INSTREAMSCAN, NULL)) < 0) {
 				    logg("!Command dispatch failed\n");
@@ -984,6 +984,14 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		}
 	    }
 	    if (error) {
+		if (buf->dumpfd) {
+		    close(buf->dumpfd);
+		    if (buf->filename) {
+			cli_unlink(buf->filename);
+			free(buf->filename);
+		    }
+		    buf->dumpfd = -1;
+		}
 		if (thrmgr_group_terminate(buf->group)) {
 		    logg("*RECVTH: shutting down socket after error\n");
 		    shutdown(buf->fd, 2);

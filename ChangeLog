@@ -1,3 +1,8 @@
+Mon Feb  9 17:51:49 EET 2009 (edwin)
+------------------------------------
+ * clamd/server-th.c, clamdscan/client.c: fix INSTREAM when not in
+ IDSESSION mode
+
 Mon Feb  9 14:14:28 EET 2009 (edwin)
 ------------------------------------
  * clamd/server-th.c, clamd/session.c, clamdscan/proto.c: fix
