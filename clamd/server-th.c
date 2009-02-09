@@ -76,7 +76,7 @@ int reload = 0;
 time_t reloaded_time = 0;
 pthread_mutex_t reload_mutex = PTHREAD_MUTEX_INITIALIZER;
 int sighup = 0;
-static struct cl_stat *dbstat = NULL;
+static struct cl_stat dbstat;
 
 static void scanner_thread(void *arg)
 {
@@ -168,12 +168,12 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
     pua_cats[0] = 0;
     *ret = 0;
     if(do_check) {
-	if(dbstat == NULL) {
+	if(!dbstat.entries) {
 	    logg("No stats for Database check - forcing reload\n");
 	    return engine;
 	}
 
-	if(cl_statchkdir(dbstat) == 1) {
+	if(cl_statchkdir(&dbstat) == 1) {
 	    logg("SelfCheck: Database modification detected. Forcing reload.\n");
 	    return engine;
 	} else {
@@ -195,19 +195,11 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
     dbdir = optget(opts, "DatabaseDirectory")->strarg;
     logg("Reading databases from %s\n", dbdir);
 
-    if(dbstat == NULL) {
-	dbstat = (struct cl_stat *) malloc(sizeof(struct cl_stat));
-	if(!dbstat) {
-	    logg("!Can't allocate memory for dbstat\n");
-	    *ret = 1;
-	    return NULL;
-	}
-    } else {
-	cl_statfree(dbstat);
-    }
+    if(dbstat.entries)
+	cl_statfree(&dbstat);
 
-    memset(dbstat, 0, sizeof(struct cl_stat));
-    if((retval = cl_statinidir(dbdir, dbstat))) {
+    memset(&dbstat, 0, sizeof(struct cl_stat));
+    if((retval = cl_statinidir(dbdir, &dbstat))) {
 	logg("!cl_statinidir() failed: %s\n", cl_strerror(retval));
 	*ret = 1;
 	return NULL;
@@ -647,6 +639,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     } else {
 	logg("Self checking every %u seconds.\n", selfchk);
     }
+    memset(&dbstat, 0, sizeof(dbstat));
 
     /* save the PID */
     mainpid = getpid();
@@ -1100,8 +1093,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     pthread_join(accept_th, NULL);
     close(acceptdata.syncpipe_wake_accept[1]);
     close(acceptdata.syncpipe_wake_recv[1]);
-    if(dbstat)
-	cl_statfree(dbstat);
+    if(dbstat.entries)
+	cl_statfree(&dbstat);
     logg("*Shutting down the main socket%s.\n", (nsockets > 1) ? "s" : "");
     for (i = 0; i < nsockets; i++)
 	shutdown(socketds[i], 2);

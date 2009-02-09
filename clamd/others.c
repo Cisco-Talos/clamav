@@ -80,9 +80,6 @@
 #include "session.h"
 #include "others.h"
 
-#define ENV_FILE  "CLAM_VIRUSEVENT_FILENAME"
-#define ENV_VIRUS "CLAM_VIRUSEVENT_VIRUSNAME"
-
 #ifdef	C_WINDOWS
 void virusaction(const char *filename, const char *virname, const struct optstruct *opts)
 {
@@ -91,14 +88,19 @@ void virusaction(const char *filename, const char *virname, const struct optstru
 }
 
 #else
+
+#define VE_FILENAME  "CLAM_VIRUSEVENT_FILENAME"
+#define VE_VIRUSNAME "CLAM_VIRUSEVENT_VIRUSNAME"
+
 static pthread_mutex_t virusaction_lock = PTHREAD_MUTEX_INITIALIZER;
 
 void virusaction(const char *filename, const char *virname, const struct optstruct *opts)
 {
 	pid_t pid;
 	const struct optstruct *opt;
-	char *buffer, *pt, *cmd, *buffer_file, *buffer_vir;
-	size_t j;
+	char *buffer_file, *buffer_vir, *buffer_cmd;
+	const char *pt;
+	size_t i, j, v = 0, len;
 	char *env[4];
 
 	if(!(opt = optget(opts, "VirusEvent"))->enabled)
@@ -107,57 +109,53 @@ void virusaction(const char *filename, const char *virname, const struct optstru
 	env[0] = getenv("PATH");
 	j = env[0] ? 1 : 0;
 	/* Allocate env vars.. to be portable env vars should not be freed */
-	buffer_file = (char *) malloc(strlen(ENV_FILE) + strlen(filename) + 2);
+	buffer_file = (char *) malloc(strlen(VE_FILENAME) + strlen(filename) + 2);
 	if(buffer_file) {
-		sprintf(buffer_file, "%s=%s", ENV_FILE, filename);
+		sprintf(buffer_file, "%s=%s", VE_FILENAME, filename);
 		env[j++] = buffer_file;
 	}
 
-	buffer_vir = (char *) malloc(strlen(ENV_VIRUS) + strlen(virname) + 2);
+	buffer_vir = (char *) malloc(strlen(VE_VIRUSNAME) + strlen(virname) + 2);
 	if(buffer_vir) {
-		sprintf(buffer_vir, "%s=%s", ENV_VIRUS, virname);
+		sprintf(buffer_vir, "%s=%s", VE_VIRUSNAME, virname);
 		env[j++] = buffer_vir;
 	}
 	env[j++] = NULL;
 
-	cmd = strdup(opt->strarg);
-
-	if(cmd && (pt = strstr(cmd, "%v"))) {
-		buffer = (char *) malloc(strlen(cmd) + strlen(virname) + 10);
-		if(buffer) {
-			*pt = 0; pt += 2;
-			strcpy(buffer, cmd);
-			strcat(buffer, virname);
-			strcat(buffer, pt);
-			free(cmd);
-			cmd = strdup(buffer);
-			free(buffer);
-		}
+	pt = opt->strarg;
+	while((pt = strstr(pt, "%v"))) {
+	    pt += 2;
+	    v++;
+	}
+	len = strlen(opt->strarg);
+	buffer_cmd = (char *) calloc(len + v * strlen(virname) + 1, sizeof(char));
+	if(!buffer_cmd) {
+	    free(buffer_file);
+	    free(buffer_vir);
+	    return;
+	}
+	for(i = 0, j = 0; i < len; i++) {
+	    if(i + 1 < len && opt->strarg[i] == '%' && opt->strarg[i + 1] == 'v') {
+		strcat(buffer_cmd, virname);
+		j += strlen(virname);
+		i++;
+	    } else {
+		buffer_cmd[j++] = opt->strarg[i];
+	    }
 	}
 
-	if(!cmd) {
-		free(buffer_file);
-		free(buffer_vir);
-		return;
-	}
 	pthread_mutex_lock(&virusaction_lock);
 	/* We can only call async-signal-safe functions after fork(). */
 	pid = fork();
-
-	if ( pid == 0 ) {
-		/* child... */
-		/* WARNING: this is uninterruptable ! */
-		exit(execle("/bin/sh", "sh", "-c", cmd, NULL, env));
-	} else if (pid > 0) {
-		pthread_mutex_unlock(&virusaction_lock);
-		/* parent */
-		waitpid(pid, NULL, 0);
+	if(!pid) { /* child */
+	    exit(execle("/bin/sh", "sh", "-c", buffer_cmd, NULL, env));
+	} else if(pid > 0) { /* parent */
+	    pthread_mutex_unlock(&virusaction_lock);
+	    waitpid(pid, NULL, 0);
 	} else {
-		pthread_mutex_unlock(&virusaction_lock);
-		/* error.. */
-		logg("!VirusAction: fork failed.\n");
+	    logg("!VirusEvent: fork failed.\n");
 	}
-	free(cmd);
+	free(buffer_cmd);
 	free(buffer_file);
 	free(buffer_vir);
 }
