@@ -838,8 +838,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    const char *argument;
 		    int has_more = (buf->buffer + buf->off) > (cmd + cmdlen);
 		    enum commands cmdtype = parse_command(cmd, &argument);
-		    logg("*RECVTH: got command %s (%u), argument: %s\n",
-			 cmd, cmdtype, argument ? argument : "");
+		    logg("*RECVTH: got command %s (%u, %u), argument: %s\n",
+			 cmd, cmdlen, cmdtype, argument ? argument : "");
 		    if (cmdtype == COMMAND_FILDES) {
 			if (buf->buffer + buf->off <= cmd + strlen("FILDES\n")) {
 			    /* we need the extra byte from recvmsg */
@@ -938,6 +938,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 				    error = 1;
 				} else {
 				    pos = 4;
+				    memmove (buf->buffer, &buf->buffer[pos], buf->off - pos);
+				    buf->off -= pos;
 				    continue;
 				}
 			    }
