@@ -1,3 +1,7 @@
+Mon Feb  9 22:14:03 EET 2009 (edwin)
+------------------------------------
+ * clamd/server-th.c: break loop
+
 Mon Feb  9 21:27:55 EET 2009 (edwin)
 ------------------------------------
  * clamdscan/proto.c: deadbeef code was not completely reverted from

@@ -888,6 +888,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    }
 		    conn.id++;
 		}
+		if (conn.mode == MODE_COMMAND && !cmd)
+		    break;
 		buf->mode = conn.mode;
 		buf->id = conn.id;
 		buf->group = conn.group;
