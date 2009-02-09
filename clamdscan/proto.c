@@ -71,7 +71,7 @@ int sendln(int sockd, const char *line, unsigned int len) {
 	int sent = send(sockd, line, len, 0);
 	if(sent <= 0) {
 	    if(sent && errno == EINTR) continue;
-	    logg("!Can't send request to clamd\n");
+	    logg("!Can't send request to clamd: %s\n", strerror(errno));
 	    return 1;
 	}
 	line += sent;
@@ -161,10 +161,11 @@ static int send_stream(int sockd, const char *filename) {
 
     if(sendln(sockd, "zINSTREAM", 10)) return 1;
 
-    while((len = read(fd, &buf[1], sizeof(buf) - sizeof(uint32_t))) > 0) {
+    while((len = read(fd, &buf[2], sizeof(buf) - 2*sizeof(uint32_t))) > 0) {
 	if((unsigned int)len > todo) len = todo;
 	buf[0] = htonl(len);
-	if(sendln(sockd, (const char *)buf, len+sizeof(uint32_t))) { /* FIXME: need to handle limits */
+	buf[1] = 0xdeadbeef;
+	if(sendln(sockd, (const char *)buf, len+2*sizeof(uint32_t))) { /* FIXME: need to handle limits */
 	    logg("!Can't write to the socket.\n");
 	    close(fd);
 	    return 1;
@@ -180,6 +181,9 @@ static int send_stream(int sockd, const char *filename) {
 	logg("!Failed to read from %s.\n", filename);
 	return 1;
     }
+    buf[0] = 0;
+    buf[1] = 0xdeadbeef;
+    sendln(sockd, (const char*)buf, 8);
     return 0;
 }
 

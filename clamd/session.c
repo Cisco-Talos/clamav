@@ -434,11 +434,13 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 	    }
 	case COMMAND_INSTREAM:
 	    {
+#if 0
 		if (!conn->group) {
 		    /* only valid inside IDSESSION */
 		    conn_reply_single(conn, NULL, "UNKNOWN COMMAND");
 		    return 1;
 		}
+#endif
 		int rc = cli_gentempfd(NULL, &conn->filename, &conn->scanfd);
 		if (rc != CL_SUCCESS)
 		    return rc;

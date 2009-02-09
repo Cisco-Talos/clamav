@@ -918,9 +918,14 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    logg("*RECVTH: mode == MODE_STREAM\n");
 		    if (!buf->chunksize) {
 			/* read chunksize */
-			if (buf->off >= 4) {
+			if (buf->off >= 8) {
 			    uint32_t cs = *(uint32_t*)buf->buffer;
 			    buf->chunksize = ntohl(cs);
+			    cs = *(uint32_t*)&buf->buffer[4];
+			    if (cs != 0xdeadbeef) {
+				logg("*RECVTH: no beef: %04x\n", cs);
+				error = 1;
+			    }
 			    logg("*RECVTH: chunksize: %u\n", buf->chunksize);
 			    if (!buf->chunksize) {
 				/* chunksize 0 marks end of stream */
@@ -937,9 +942,11 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 				    }
 				    error = 1;
 				} else {
-				    pos = 4;
+				    pos = 8;
 				    memmove (buf->buffer, &buf->buffer[pos], buf->off - pos);
 				    buf->off -= pos;
+				    pos = 0;
+				    buf->id++;
 				    continue;
 				}
 			    }
@@ -951,9 +958,9 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 				buf->quota -= buf->chunksize;
 			    }
 			    logg("*RECVTH: quota: %lu\n", buf->quota);
-			    pos = 4;
+			    pos = 8;
 			} else
-			    continue;
+			    break;
 		    } else
 			pos = 0;
 		    if (pos + buf->chunksize < buf->off)
@@ -968,6 +975,9 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    }
 		    logg("*RECVTH: processed %lu bytes of chunkdata\n", cmdlen);
 		    pos += cmdlen;
+		    if (pos == buf->off) {
+			buf->off = 0;
+		    }
 		}
 		if (error) {
 		    conn_reply_error(&conn, "Error processing command.");

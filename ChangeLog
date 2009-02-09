@@ -1,3 +1,8 @@
+Mon Feb  9 14:14:28 EET 2009 (edwin)
+------------------------------------
+ * clamd/server-th.c, clamd/session.c, clamdscan/proto.c: fix
+ INSTREAM/IDSESSION.  Introduced a chunksize marker.
+
 Mon Feb  9 13:02:14 EET 2009 (edwin)
 ------------------------------------
  * clamd/server-th.c: fix INSTREAM end handling
