@@ -98,6 +98,8 @@ static void scanner_thread(void *arg)
 #ifdef SIGBUS
     sigdelset(&sigset, SIGBUS);
 #endif
+    sigdelset(&sigset, SIGTSTP);
+    sigdelset(&sigset, SIGCONT);
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
 #endif
 
@@ -703,6 +705,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 #ifdef SIGBUS    
     sigdelset(&sigset, SIGBUS);
 #endif
+    sigdelset(&sigset, SIGTSTP);
+    sigdelset(&sigset, SIGCONT);
     sigprocmask(SIG_SETMASK, &sigset, NULL);
 
     /* SIGINT, SIGTERM, SIGSEGV */
