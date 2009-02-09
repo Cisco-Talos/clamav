@@ -256,8 +256,8 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 {
 	int ret, sockfd, acceptd;
 	int tmpd, bread, retval, timeout, btread;
-	unsigned int port = 0, portscan = 1000, min_port, max_port;
-	unsigned long int size = 0, maxsize = 0;
+	unsigned int port = 0, portscan, min_port, max_port;
+	unsigned long int quota = 0, maxsize = 0;
 	short bound = 0, rnd_port_first = 1;
 	const char *virname;
 	char buff[FILEBUFF];
@@ -268,31 +268,18 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	char *tmpname;
 
 
-    /* get min port */
     min_port = optget(opts, "StreamMinPort")->numarg;
-    if(min_port < 1024 || min_port > 65535)
-	min_port = 1024;
-
-    /* get max port */
     max_port = optget(opts, "StreamMaxPort")->numarg;
-    if(max_port < min_port || max_port > 65535)
-	max_port = 65535;
 
-    /* bind to a free port */
-    while(!bound && --portscan) {
-	if(rnd_port_first) {
-	    /* try a random port first */
-	    port = min_port + cli_rndnum(max_port - min_port);
-	    rnd_port_first = 0;
-	} else {
-	    /* try the neighbor ports */
-	    if(--port < min_port)
-		port=max_port;
-	}
+    /* search for a free port to bind to */
+    port = cli_rndnum(max_port - min_port);
+    bound = 0;
+    for (portscan = 0; portscan < 1000; portscan++) {
+	port = (port - 1) % (max_port - min_port + 1);
 
 	memset((char *) &server, 0, sizeof(server));
 	server.sin_family = AF_INET;
-	server.sin_port = htons(port);
+	server.sin_port = htons(min_port + port);
 	server.sin_addr.s_addr = htonl(INADDR_ANY);
 
 	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -300,9 +287,12 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 
 	if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1)
 	    closesocket(sockfd);
-	else
+	else {
 	    bound = 1;
+	    break;
+	}
     }
+    port += min_port;
 
     timeout = optget(opts, "ReadTimeout")->numarg;
     if(timeout == 0)
@@ -322,17 +312,13 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	}
     }
 
-    switch(retval = poll_fd(sockfd, timeout, 0)) {
-	case 0: /* timeout */
-	    mdprintf(odesc, "Accept timeout. ERROR%c", term);
-	    logg("!ScanStream %u: accept timeout.\n", port);
-	    closesocket(sockfd);
-	    return -1;
-	case -1:
-	    mdprintf(odesc, "Accept poll. ERROR%c", term);
-	    logg("!ScanStream %u: accept poll failed.\n", port);
-	    closesocket(sockfd);
-	    return -1;
+    retval = poll_fd(sockfd, timeout, 0);
+    if (!retval || retval == -1) {
+	const char *reason = !retval ? "timeout" : "poll";
+	mdprintf(odesc, "Accept %s. ERROR%c", reason, term);
+	logg("!ScanStream %u: accept %s.\n", reason, port);
+	closesocket(sockfd);
+	return -1;
     }
 
     addrlen = sizeof(peer);
@@ -355,15 +341,20 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	return -1;
     }
 
-    maxsize = optget(opts, "StreamMaxLength")->numarg;
-
-    btread = sizeof(buff);
+    quota = maxsize = optget(opts, "StreamMaxLength")->numarg;
 
     while((retval = poll_fd(acceptd, timeout, 0)) == 1) {
+	/* only read up to max */
+	btread = (maxsize && (quota < sizeof(buff))) ? quota : sizeof(buff);
+	if (!btread) {
+		logg("^ScanStream(%s@%u): Size limit reached (max: %lu)\n", peer_addr, port, maxsize);
+		break; /* Scan what we have */
+	}
 	bread = recv(acceptd, buff, btread, 0);
 	if(bread <= 0)
 	    break;
-	size += bread;
+
+	quota -= bread;
 
 	if(writen(tmpd, buff, bread) != bread) {
 	    shutdown(sockfd, 2);
@@ -376,15 +367,6 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 		unlink(tmpname);
 	    free(tmpname);
 	    return -1;
-	}
-
-	if(maxsize && (size + btread >= maxsize)) {
-	    btread = (maxsize - size); /* only read up to max */
-
-	    if(btread <= 0) {
-		logg("^ScanStream(%s@%u): Size limit reached (max: %lu)\n", peer_addr, port, maxsize);
-	    	break; /* Scan what we have */
-	    }
 	}
     }
 
