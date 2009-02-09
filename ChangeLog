@@ -1,3 +1,7 @@
+Mon Feb  9 19:12:57 EET 2009 (edwin)
+------------------------------------
+ * clamd/server-th.c: fix build
+
 Mon Feb  9 17:51:49 EET 2009 (edwin)
 ------------------------------------
  * clamd/server-th.c, clamdscan/client.c: fix INSTREAM when not in

@@ -986,9 +986,9 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    if (error) {
 		if (buf->dumpfd) {
 		    close(buf->dumpfd);
-		    if (buf->filename) {
-			cli_unlink(buf->filename);
-			free(buf->filename);
+		    if (buf->dumpname) {
+			cli_unlink(buf->dumpname);
+			free(buf->dumpname);
 		    }
 		    buf->dumpfd = -1;
 		}
