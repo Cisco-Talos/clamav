@@ -1,3 +1,7 @@
+Mon Feb  9 12:11:36 EET 2009 (edwin)
+------------------------------------
+ * clamd/thrmgr.c: fix use-after-free
+
 Sun Feb  8 23:34:24 EET 2009 (edwin)
 ------------------------------------
  * clamd/server-th.c: introduce RR of connections.

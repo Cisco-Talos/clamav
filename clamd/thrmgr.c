@@ -770,7 +770,7 @@ int thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc)
 
 void thrmgr_group_waitforall(jobgroup_t *group, unsigned *ok, unsigned *error, unsigned *total)
 {
-    int needexit = 0;
+    int needexit = 0, needfree = 0;
     struct timespec timeout;
     pthread_mutex_lock(&group->mutex);
     while (group->jobs > 1) {
@@ -788,8 +788,10 @@ void thrmgr_group_waitforall(jobgroup_t *group, unsigned *ok, unsigned *error, u
     *error = group->exit_error + needexit;
     *total = group->exit_total;
     if(!--group->jobs)
-	free(group);
+	needfree = 1;
     pthread_mutex_unlock(&group->mutex);
+    if (needfree)
+	free(group);
 }
 
 #define JOBGROUP_INITIALIZER  { PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER, 1, 0, 0, 0, 0 };
