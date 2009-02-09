@@ -927,6 +927,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 				buf->dumpfd = -1;
 				buf->mode = buf->group ? MODE_COMMAND : MODE_WAITREPLY;
 				logg("*RECVTH: chunks complete\n");
+				buf->dumpname = NULL;
 				if ((rc = execute_or_dispatch_command(&conn, COMMAND_INSTREAMSCAN, NULL)) < 0) {
 				    logg("!Command dispatch failed\n");
 				    if(rc == -1 && optget(opts, "ExitOnOOM")->enabled) {

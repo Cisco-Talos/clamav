@@ -1,3 +1,8 @@
+Mon Feb  9 22:35:09 EET 2009 (edwin)
+------------------------------------
+ * clamd/server-th.c: dumpname(filename) is going to be dispatched,
+ don't allow a later error path to free it.
+
 Mon Feb  9 22:14:03 EET 2009 (edwin)
 ------------------------------------
  * clamd/server-th.c: break loop
