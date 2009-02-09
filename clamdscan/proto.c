@@ -255,7 +255,7 @@ int dsresult(int sockd, int scantype, const char *filename) {
     case STREAM:
 	if(send_stream(sockd, filename))
 	    return -1;
-
+	break;
 #ifdef HAVE_FD_PASSING
     case FILDES:
 	if(send_fdpass(sockd, filename))
