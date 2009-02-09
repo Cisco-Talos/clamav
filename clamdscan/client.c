@@ -266,7 +266,7 @@ int client(const struct optstruct *opts, int *infected)
 
     scandash = (opts->filename && opts->filename[0] && !strcmp(opts->filename[0], "-") && !opts->filename[1]);
     remote = isremote(opts);
-    //    remote = 1; /* FIXME : get rid of me */
+    /* remote = 1; */
 #ifdef HAVE_FD_PASSING
     if(!remote && optget(clamdopts, "LocalSocket")->enabled && (optget(opts, "fdpass")->enabled || scandash)) {
 	scantype = FILDES;
@@ -280,7 +280,7 @@ int client(const struct optstruct *opts, int *infected)
     else scantype = CONT;
 
     maxrec = optget(clamdopts, "MaxDirectoryRecursion")->numarg;
-    maxstream = optget(clamdopts, "StreamMaxLength")->numarg; /* FIXME: propagate */
+    maxstream = optget(clamdopts, "StreamMaxLength")->numarg;
     optfree(clamdopts);
 
     if(!mainsa) {
