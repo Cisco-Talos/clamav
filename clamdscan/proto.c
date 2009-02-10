@@ -556,10 +556,10 @@ int parallel_client_scan(const char *file, int scantype, int *infected, int *err
     data.data = &cdata;
 
     ftw = cli_ftw(file, CLI_FTW_STD, maxlevel ? maxlevel : INT_MAX, parallel_callback, &data);
-    *infected += cdata.infected;
-    *errors += cdata.errors;
 
     if(ftw != CL_SUCCESS && ftw != CL_BREAK) {
+	*infected += cdata.infected;
+	*errors += cdata.errors;
 	close(cdata.sockd);
 	return 1;
     }
@@ -567,6 +567,9 @@ int parallel_client_scan(const char *file, int scantype, int *infected, int *err
     sendln(cdata.sockd, "zEND", 5);
     while(cdata.ids && !dspresult(&cdata));
     close(cdata.sockd);
+
+    *infected += cdata.infected;
+    *errors += cdata.errors;
 
     if(cdata.ids) {
 	logg("!Clamd closed connection before scanning all files.\n");
