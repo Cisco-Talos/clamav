@@ -1,3 +1,7 @@
+Wed Feb 11 13:54:58 EET 2009 (edwin)
+------------------------------------
+ * clamd/session.c: inv cmd
+
 Wed Feb 11 13:52:08 EET 2009 (edwin)
 ------------------------------------
  * clamd/server-th.c, clamd/thrmgr.c: fix use-after-free
