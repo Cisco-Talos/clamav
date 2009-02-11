@@ -1,3 +1,8 @@
+Wed Feb 11 14:08:06 EET 2009 (edwin)
+------------------------------------
+ * clamd/server-th.c: move the break to the proper place, so we don't
+ parse same command twice!
+
 Wed Feb 11 13:54:58 EET 2009 (edwin)
 ------------------------------------
  * clamd/session.c: inv cmd

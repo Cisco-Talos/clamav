@@ -893,8 +893,6 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		buf->id = conn.id;
 		buf->group = conn.group;
 		buf->quota = conn.quota;
-		if (conn.mode == MODE_COMMAND && !cmd)
-		    break;
 		if (!error) {
 		    /* move partial command to beginning of buffer */
 		    if (pos < buf->off) {
@@ -907,6 +905,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    else
 			logg("*RECVTH: consumed entire command\n");
 		}
+		if (conn.mode == MODE_COMMAND && !cmd)
+		    break;
 		if (!error && buf->mode == MODE_WAITREPLY && buf->off) {
 		    /* Client is not supposed to send anything more */
 		    logg("^Client sent garbage after last command: %u bytes\n", buf->off);
