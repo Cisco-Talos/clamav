@@ -233,7 +233,7 @@ static int send_fdpass(int sockd, const char *filename) {
  * This is used only in non IDSESSION mode
  * Returns the number of infected files or -1 on error */
 int dsresult(int sockd, int scantype, const char *filename) {
-  int infected = 0, waserror = 0, len, beenthere = 0;
+	int infected = 0, waserror = 0, len, beenthere = 0;
 	char *bol, *eol;
 	struct RCVLN rcv;
 
