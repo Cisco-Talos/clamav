@@ -77,6 +77,7 @@ dev_t procdev; /* /proc device */
 
 extern int progexit;
 extern time_t reloaded_time;
+extern pthread_mutex_t reload_mutex;
 
 #define BUFFSIZE 1024
 int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data)
@@ -163,7 +164,9 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 		return CL_EMEM;
 	    } else {
 		client_conn->engine = scandata->engine;
+		pthread_mutex_lock(&reload_mutex);
 		client_conn->engine_timestamp = reloaded_time;
+		pthread_mutex_unlock(&reload_mutex);
 		if(!thrmgr_group_dispatch(scandata->thr_pool, scandata->group, client_conn)) {
 		    logg("!thread dispatch failed\n");
 		    return CL_EMEM;

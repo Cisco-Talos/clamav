@@ -332,6 +332,14 @@ static void *acceptloop_th(void *arg)
 	    }
 	    /* listen only socket */
 	    new_sd = accept(fds->buf[i].fd, NULL, NULL);
+
+	    pthread_mutex_lock(&exit_mutex);
+	    if(progexit) {
+		pthread_mutex_unlock(&exit_mutex);
+		break;
+	    }
+	    pthread_mutex_unlock(&exit_mutex);
+
 	    if (new_sd >= 0) {
 		int ret;
 		pthread_mutex_lock(&recv_fds->buf_mutex);
@@ -350,12 +358,6 @@ static void *acceptloop_th(void *arg)
 		    continue;
 		}
 	    } else if (errno != EINTR) {
-		pthread_mutex_lock(&exit_mutex);
-		if(progexit) {
-		    pthread_mutex_unlock(&exit_mutex);
-		    break;
-		}
-		pthread_mutex_unlock(&exit_mutex);
 		/* very bad - need to exit or restart */
 #ifdef HAVE_STRERROR_R
 		strerror_r(errno, buff, BUFFSIZE);
@@ -980,7 +982,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		}
 	    }
 	    if (error) {
-		if (buf->dumpfd) {
+		if (buf->dumpfd != -1) {
 		    close(buf->dumpfd);
 		    if (buf->dumpname) {
 			cli_unlink(buf->dumpname);
@@ -1003,6 +1005,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	pthread_mutex_lock(&exit_mutex);
 	if (progexit) {
 	    pthread_mutex_unlock(&exit_mutex);
+	    pthread_mutex_lock(&fds->buf_mutex);
 	    for (i=0;i < fds->nfds; i++) {
 		if (fds->buf[i].fd == -1)
 		    continue;
@@ -1012,6 +1015,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		}
 	    }
 	    fds->nfds = 0;
+	    pthread_mutex_unlock(&fds->buf_mutex);
 	    break;
 	}
 	pthread_mutex_unlock(&exit_mutex);
@@ -1069,6 +1073,9 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     }
 
     fds_free(fds);
+    pthread_mutex_lock(&exit_mutex);
+    progexit = 1;
+    pthread_mutex_unlock(&exit_mutex);
     if (write(acceptdata.syncpipe_wake_accept[1], "", 1) < 0) {
 	logg("^Write to syncpipe failed\n");
     }

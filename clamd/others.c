@@ -373,10 +373,12 @@ void fds_remove(struct fd_data *data, int fd)
 {
     size_t i;
     pthread_mutex_lock(&data->buf_mutex);
-    for (i=0;i<data->nfds;i++) {
-	if (data->buf[i].fd == fd) {
-	    data->buf[i].fd = -1;
-	    break;
+    if (data->buf) {
+	for (i=0;i<data->nfds;i++) {
+	    if (data->buf[i].fd == fd) {
+		data->buf[i].fd = -1;
+		break;
+	    }
 	}
     }
     pthread_mutex_unlock(&data->buf_mutex);
@@ -570,6 +572,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 void fds_free(struct fd_data *data)
 {
     unsigned i;
+    pthread_mutex_lock(&data->buf_mutex);
     for (i=0;i < data->nfds;i++) {
 	if (data->buf[i].buffer)
 	    free(data->buf[i].buffer);
@@ -580,4 +583,7 @@ void fds_free(struct fd_data *data)
     if (data->poll_data)
 	free(data->poll_data);
 #endif
+    data->buf = NULL;
+    data->nfds = 0;
+    pthread_mutex_unlock(&data->buf_mutex);
 }

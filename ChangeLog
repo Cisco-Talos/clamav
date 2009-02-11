@@ -1,3 +1,8 @@
+Wed Feb 11 17:05:08 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, clamd/scanner.c, clamd/server-th.c: fix some races
+ reported by valgrind
+
 Wed Feb 11 14:57:46 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c: downgrade message
