@@ -1,3 +1,7 @@
+Wed Feb 11 14:57:46 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c: downgrade message
+
 Wed Feb 11 14:08:06 EET 2009 (edwin)
 ------------------------------------
  * clamd/server-th.c: move the break to the proper place, so we don't
