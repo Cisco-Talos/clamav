@@ -370,7 +370,7 @@ int serial_client_scan(const char *file, int scantype, int *infected, int *error
     cdata.spam = 0;
     data.data = &cdata;
 
-    ftw = cli_ftw(file, CLI_FTW_STD, maxlevel ? maxlevel : INT_MAX, serial_callback, &data);
+    ftw = cli_ftw(file, 0, maxlevel ? maxlevel : INT_MAX, serial_callback, &data);
     *infected += cdata.infected;
     *errors += cdata.errors;
 
@@ -520,10 +520,12 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
     cid->next = NULL;
 
     switch(c->scantype) {
+#ifdef HAVE_FD_PASSING
     case FILDES:
 	if(send_fdpass(c->sockd, filename))
 	    return CL_BREAK;
 	break;
+#endif
     case STREAM:
 	if(send_stream(c->sockd, filename))
 	    return CL_BREAK;
@@ -532,7 +534,7 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
     return CL_SUCCESS;
 }
 
-/* Non-IDSESSION handler
+/* IDSESSION handler
  * Returns non zero for serious errors, zero otherwise */
 int parallel_client_scan(const char *file, int scantype, int *infected, int *errors, int maxlevel) {
     struct cli_ftw_cbdata data;
@@ -555,7 +557,7 @@ int parallel_client_scan(const char *file, int scantype, int *infected, int *err
     cdata.ids = NULL;
     data.data = &cdata;
 
-    ftw = cli_ftw(file, CLI_FTW_STD, maxlevel ? maxlevel : INT_MAX, parallel_callback, &data);
+    ftw = cli_ftw(file, 0, maxlevel ? maxlevel : INT_MAX, parallel_callback, &data);
 
     if(ftw != CL_SUCCESS && ftw != CL_BREAK) {
 	*infected += cdata.infected;
