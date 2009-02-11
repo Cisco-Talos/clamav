@@ -1,3 +1,7 @@
+Wed Feb 11 11:08:55 CET 2009 (tk)
+---------------------------------
+ * libclamav/cvd.c: fix warning when cvd timestamp is in the future (bb#1381)
+
 Wed Feb 11 09:38:19 CET 2009 (tk)
 ---------------------------------
  * libclamav/filetypes_int.h: sync with daily.ftm

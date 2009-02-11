@@ -519,7 +519,14 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
 
     if(cvd.stime && daily) {
 	time(&s_time);
-	if((int) s_time - cvd.stime > 604800) {
+	if(cvd.stime > s_time) {
+	    if(cvd.stime - (unsigned int ) s_time > 3600) {
+		cli_warnmsg("******************************************************\n");
+		cli_warnmsg("***      Virus database timestamp in the future!   ***\n");
+		cli_warnmsg("***  Please check the timezone and clock settings  ***\n");
+		cli_warnmsg("******************************************************\n");
+	    }
+	} else if((unsigned int) s_time - cvd.stime > 604800) {
 	    cli_warnmsg("**************************************************\n");
 	    cli_warnmsg("***  The virus database is older than 7 days!  ***\n");
 	    cli_warnmsg("***   Please update it as soon as possible.    ***\n");
