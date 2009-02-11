@@ -869,6 +869,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			    shutdown(conn.sd, 2);
 			    closesocket(conn.sd);
 			    buf->fd = -1;
+			    conn.group = NULL;
 			} else if (conn.mode != MODE_STREAM) {
 			    logg("*RECVTH: mode -> MODE_WAITREPLY\n");
 			    /* no more commands are accepted */
@@ -888,12 +889,12 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    }
 		    conn.id++;
 		}
-		if (conn.mode == MODE_COMMAND && !cmd)
-		    break;
 		buf->mode = conn.mode;
 		buf->id = conn.id;
 		buf->group = conn.group;
 		buf->quota = conn.quota;
+		if (conn.mode == MODE_COMMAND && !cmd)
+		    break;
 		if (!error) {
 		    /* move partial command to beginning of buffer */
 		    if (pos < buf->off) {

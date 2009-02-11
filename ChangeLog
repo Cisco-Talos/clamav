@@ -1,3 +1,7 @@
+Wed Feb 11 13:52:08 EET 2009 (edwin)
+------------------------------------
+ * clamd/server-th.c, clamd/thrmgr.c: fix use-after-free
+
 Mon Feb  9 22:35:09 EET 2009 (edwin)
 ------------------------------------
  * clamd/server-th.c: dumpname(filename) is going to be dispatched,

@@ -745,6 +745,7 @@ int thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc)
 	return 1;
     }
     pthread_mutex_lock(&group->mutex);
+    logg("*THRMGR: group_finished: %p, %d\n", group, group->jobs);
     group->exit_total++;
     switch (exitc) {
 	case EXIT_OK:
@@ -763,6 +764,7 @@ int thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc)
     }
     pthread_mutex_unlock(&group->mutex);
     if (ret) {
+	logg("*THRMGR: group_finished: freeing %p\n", group);
 	free(group);
     }
     return ret;
@@ -790,8 +792,10 @@ void thrmgr_group_waitforall(jobgroup_t *group, unsigned *ok, unsigned *error, u
     if(!--group->jobs)
 	needfree = 1;
     pthread_mutex_unlock(&group->mutex);
-    if (needfree)
+    if (needfree) {
+	logg("*THRMGR: freeing %p\n", group);
 	free(group);
+    }
 }
 
 #define JOBGROUP_INITIALIZER  { PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER, 1, 0, 0, 0, 0 };
