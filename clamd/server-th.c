@@ -853,6 +853,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    }
 
 		    conn.term = term;
+		    buf->term = term;
 
 		    if ((rc = execute_or_dispatch_command(&conn, cmdtype, argument)) < 0) {
 			logg("!Command dispatch failed\n");
@@ -951,6 +952,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			    if (!buf->chunksize) {
 				/* chunksize 0 marks end of stream */
 				conn.scanfd = buf->dumpfd;
+				conn.term = buf->term;
 				buf->dumpfd = -1;
 				buf->mode = buf->group ? MODE_COMMAND : MODE_WAITREPLY;
 				logg("*RECVTH: chunks complete\n");

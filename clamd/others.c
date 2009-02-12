@@ -317,6 +317,7 @@ static int buf_init(struct fd_buf *buf, int listen_only)
     buf->quota = 0;
     buf->dumpname = NULL;
     buf->group = NULL;
+    buf->term = '\0';
     if (!listen_only) {
 	if (!buf->buffer) {
 	    buf->bufsize = PATH_MAX+8;

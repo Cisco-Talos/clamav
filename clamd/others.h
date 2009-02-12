@@ -40,6 +40,7 @@ struct fd_buf {
     size_t bufsize;
     size_t off;
     int fd;
+    char term;
     int got_newdata; /* 0: no, 1: yes, -1: error */
     int recvfd;
     /* TODO: these fields don't belong here, there are identical fields in conn

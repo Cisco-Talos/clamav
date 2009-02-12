@@ -1,3 +1,8 @@
+Thu Feb 12 18:19:28 EET 2009 (edwin)
+------------------------------------
+ * clamd/, unit_tests/: output stream instead of fd[] for INSTREAM.
+ Add INSTREAM command test.
+
 Thu Feb 12 17:11:16 EET 2009 (edwin)
 ------------------------------------
  * Makefile.in, unit_tests/Makefile.am, unit_tests/Makefile.in,

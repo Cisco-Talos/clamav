@@ -234,14 +234,17 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 
 int scanfd(const int fd, const client_conn_t *conn, unsigned long int *scanned,
 	   const struct cl_engine *engine,
-	   unsigned int options, const struct optstruct *opts, int odesc)
+	   unsigned int options, const struct optstruct *opts, int odesc, int stream)
 {
 	int ret;
 	const char *virname;
 	struct stat statbuf;
 	char fdstr[32];
 
-	snprintf(fdstr, sizeof(fdstr), "fd[%d]", fd);
+	if (stream)
+	    strncpy(fdstr, "stream", sizeof(fdstr));
+	else
+	    snprintf(fdstr, sizeof(fdstr), "fd[%d]", fd);
 	if(fstat(fd, &statbuf) == -1 || !S_ISREG(statbuf.st_mode)) {
 		conn_reply(conn, fdstr, "Not a regular file", "ERROR");
 		logg("%s: Not a regular file. ERROR\n", fdstr);

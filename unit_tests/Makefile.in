@@ -271,7 +271,7 @@ check_SCRIPTS = $(scripts)
 @HAVE_LIBCHECK_TRUE@check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CHECK_LIBS@
 @HAVE_LIBCHECK_FALSE@check_clamd_SOURCES = check_clamav_skip.c
 @HAVE_LIBCHECK_TRUE@check_clamd_SOURCES = check_clamd.c checks_common.h
-@HAVE_LIBCHECK_TRUE@check_clamd_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\"
+@HAVE_LIBCHECK_TRUE@check_clamd_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DBUILDDIR=\"$(abs_builddir)\"
 @HAVE_LIBCHECK_TRUE@check_clamd_LDADD = @CHECK_LIBS@ @CLAMD_LIBS@
 CLEANFILES = lcov.out *.gcno *.gcda *.log $(FILES) test-stderr.log clamscan.log valgrind-*.log duma.log duma2.log clamscan2.log
 EXTRA_DIST = .split $(srcdir)/*.ref input test-clamd.conf test-freshclam.conf valgrind.supp virusaction-test.sh $(scripts) preload_run.sh

@@ -89,12 +89,6 @@ run_clamdscan() {
 		cat clamdscan-multiscan.log
 		die 1
 	fi
-	$TOP/unit_tests/check_clamd
-	ecode=$?
-	if test $ecode -ne 77 && test $ecode -ne 0; then
-	    error "Failed clamd protocol test!"
-	    die 1
-	fi
 }
 
 run_reload_test()
@@ -202,6 +196,12 @@ if test "$NFILES" -ne "0$NINFECTED_MULTI_FDPASS"; then
 	scan_failed clamdscan-multiscan.log "clamd did not detect all testfiles correctly in fdpass+multiscan mode!"
 fi
 
+$TOP/unit_tests/check_clamd
+ecode=$?
+if test $ecode -ne 77 && test $ecode -ne 0; then
+    error "Failed clamd protocol test!"
+    die 1
+fi
 # Test HeuristicScanPrecedence off feature
 run_clamdscan ../clam-phish-exe
 grep "ClamAV-Test-File" clamdscan.log >/dev/null 2>/dev/null;

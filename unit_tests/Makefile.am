@@ -26,7 +26,7 @@ check_clamav_SOURCES = check_clamav.c checks.h checks_common.h $(top_builddir)/l
 check_clamav_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\"
 check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CHECK_LIBS@
 check_clamd_SOURCES = check_clamd.c checks_common.h
-check_clamd_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\"
+check_clamd_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DBUILDDIR=\"$(abs_builddir)\"
 check_clamd_LDADD = @CHECK_LIBS@ @CLAMD_LIBS@
 else
 check_clamd_SOURCES = check_clamav_skip.c
