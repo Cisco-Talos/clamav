@@ -1,3 +1,7 @@
+Thu Feb 12 12:20:05 EET 2009 (edwin)
+------------------------------------
+ * unit_tests/valgrind.supp: add some more suppressions
+
 Thu Feb 12 12:07:52 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c, clamd/scanner.c, clamd/server-th.c,
