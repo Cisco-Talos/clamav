@@ -1054,7 +1054,7 @@ static int cli_scanscript(int desc, cli_ctx *ctx)
 			}
 			/* carry over maxpatlen from previous buffer */
 			if (state.out_pos > maxpatlen)
-				memcpy(state.out, state.out + state.out_pos - maxpatlen, maxpatlen); 
+				memmove(state.out, state.out + state.out_pos - maxpatlen, maxpatlen); 
 			text_normalize_reset(&state);
 			state.out_pos = maxpatlen;
 		}

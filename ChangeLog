@@ -1,3 +1,7 @@
+Thu Feb 12 21:34:54 EET 2009 (edwin)
+------------------------------------
+ * libclamav/scanners.c: fix valgrind warning (bb #1371)
+
 Thu Feb 12 20:54:09 EET 2009 (edwin)
 ------------------------------------
  * unit_tests/check_clamd.c: fix distcheck errors
