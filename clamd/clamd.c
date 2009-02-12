@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 	time_t currtime;
 	const char *dbdir, *cfgfile;
 	char *pua_cats = NULL, *pt;
-	int ret, tcpsock = 0, localsock = 0, i;
+	int ret, tcpsock = 0, localsock = 0, i, min_port, max_port;
 	unsigned int sigs = 0;
 	int lsockets[2], nlsockets = 0;
 	unsigned int dboptions = 0;
@@ -286,6 +286,15 @@ int main(int argc, char **argv)
 	logg("#Log file size limited to %d bytes.\n", logg_size);
     else
 	logg("#Log file size limit disabled.\n");
+
+    min_port = optget(opts, "StreamMinPort")->numarg;
+    max_port = optget(opts, "StreamMaxPort")->numarg;
+    if (min_port < 1024 || min_port > max_port || max_port > 65535) {
+	logg("!Invalid StreaMinPort/StreamMaxPort: %d, %d\n", min_port, max_port);
+	logg_close();
+	optfree(opts);
+	return 1;
+    }
 
     if(!(engine = cl_engine_new())) {
 	logg("!Can't initialize antivirus engine\n");
@@ -488,7 +497,7 @@ int main(int argc, char **argv)
         foreground = 1;
 
 
-    ret = acceptloop_th(lsockets, nlsockets, engine, dboptions, opts);
+    ret = recvloop_th(lsockets, nlsockets, engine, dboptions, opts);
 
 #ifdef C_WINDOWS
     if(tcpsock)

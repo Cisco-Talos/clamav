@@ -65,444 +65,252 @@
 #include "shared.h"
 #include "network.h"
 #include "thrmgr.h"
+#include "server.h"
 
 #ifdef C_LINUX
 dev_t procdev; /* /proc device */
 #endif
 
-extern int progexit;
-
 #ifndef	C_WINDOWS
 #define	closesocket(s)	close(s)
 #endif
 
-struct multi_tag {
-    int sd;
-    unsigned int options;
-    const struct optstruct *opts;
-    char *fname;
-    const struct cl_engine *engine;
-};
+extern int progexit;
+extern time_t reloaded_time;
+extern pthread_mutex_t reload_mutex;
 
-static int checksymlink(const char *path)
+#define BUFFSIZE 1024
+int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data)
 {
-	struct stat statbuf;
+    struct scan_cb_data *scandata = data->data;
+    const char *virname;
+    int ret;
+    int type = scandata->type;
+    const struct optstruct *opt;
 
-    if(stat(path, &statbuf) == -1)
-	return -1;
-
-    if(S_ISDIR(statbuf.st_mode))
-	return 1;
-
-    if(S_ISREG(statbuf.st_mode))
-	return 2;
-
-    return 0;
-}
-
-static int dirscan(const char *dirname, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc, unsigned int *reclev, unsigned int type, threadpool_t *multi_pool)
-{
-	DIR *dd;
-	struct dirent *dent;
-#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
-	union {
-	    struct dirent d;
-	    char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
-	} result;
-#endif
-	struct stat statbuf;
-	char *fname;
-	int ret = 0, scanret = 0;
-	unsigned int maxdirrec = 0;
-	struct multi_tag *scandata;
-	const struct optstruct *opt;
-
-
-    if((opt = optget(opts, "ExcludePath"))->enabled) {
-	while(opt) {
-	    if(match_regex(dirname, opt->strarg) == 1) {
-		mdprintf(odesc, "%s: Excluded\n", dirname);
-		return 0;
-	    }
-	    opt = (struct optstruct *) opt->nextarg;
-	}
+    if (thrmgr_group_need_terminate(scandata->conn->group)) {
+	logg("^Client disconnected while scanjob was active\n");
+	if (reason == visit_file)
+	    free(filename);
+	return CL_BREAK;
+    }
+    scandata->total++;
+    switch (reason) {
+	case error_mem:
+	    if (msg)
+		logg("!Memory allocation failed during cli_ftw() on %s\n",
+		     msg);
+	    else
+		logg("!Memory allocation failed during cli_ftw()\n");
+	    scandata->errors++;
+	    return CL_EMEM;
+	case error_stat:
+	    if (msg == scandata->toplevel_path)
+		conn_reply_errno(scandata->conn, msg, "lstat() failed:");
+	    logg("^lstat() failed on: %s\n", msg);
+	    scandata->errors++;
+	    return CL_SUCCESS;
+	case warning_skipped_dir:
+	    logg("^Directory recursion limit reached, skipping %s\n",
+		     msg);
+	    return CL_SUCCESS;
+	case warning_skipped_link:
+	    logg("*Skipping symlink: %s\n", msg);
+	    return CL_SUCCESS;
+	case warning_skipped_special:
+	    if (msg == scandata->toplevel_path)
+		conn_reply(scandata->conn, msg, "Not supported file type", "ERROR");
+	    logg("*Not supported file type: %s\n", msg);
+	    return CL_SUCCESS;
+	case visit_directory_toplev:
+	    return CL_SUCCESS;
+	case visit_file:
+	    break;
     }
 
-    maxdirrec = optget(opts, "MaxDirectoryRecursion")->numarg;
-    if(maxdirrec) {
-	if(*reclev > maxdirrec) {
-	    logg("*Directory recursion limit exceeded at %s\n", dirname);
-	    return 0;
-	}
-	(*reclev)++;
-    }
-
-    if((dd = opendir(dirname)) != NULL) {
-#ifdef HAVE_READDIR_R_3
-	while(!readdir_r(dd, &result.d, &dent) && dent) {
-#elif defined(HAVE_READDIR_R_2)
-	while((dent = (struct dirent *) readdir_r(dd, &result.d))) {
-#else
-	while((dent = readdir(dd))) {
-#endif
-	    if (!is_fd_connected(odesc)) {
-		logg("Client disconnected\n");
-		closedir(dd);
-		return 1;
-	    }
-
-            if(progexit) {
-		closedir(dd);
-		return 1;
-	    }
-
-#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS))
-	    if(dent->d_ino)
-#endif
-	    {
-		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
-		    /* build the full name */
-		    fname = (char *) malloc(strlen(dirname) + strlen(dent->d_name) + 2);
-                    if(!fname) {
-			logg("!Can't allocate memory for fname\n");
-			closedir(dd);
-			return -2;
-		    }
-		    sprintf(fname, "%s/%s", dirname, dent->d_name);
-
-		    /* stat the file */
-		    if(lstat(fname, &statbuf) != -1) {
-			if((S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 1) && optget(opts, "FollowDirectorySymlinks")->enabled)) {
-			    if(dirscan(fname, virname, scanned, engine, options, opts, odesc, reclev, type, multi_pool) == 1) {
-				free(fname);
-				closedir(dd);
-				return 1;
-			    }
-			    free(fname);
-			} else {
-			    if(S_ISREG(statbuf.st_mode) || (S_ISLNK(statbuf.st_mode) && (checksymlink(fname) == 2) && optget(opts, "FollowFileSymlinks")->enabled)) {
-
+    /* check whether the file is excluded */
 #ifdef C_LINUX
-				if(procdev && (statbuf.st_dev == procdev))
-				    free(fname);
-				else
+    if(procdev && sb && (sb->st_dev == procdev)) {
+	free(filename);
+	return CL_SUCCESS;
+    }
 #endif
-				{
-				    if(type == TYPE_MULTISCAN) {
+    if((opt = optget(scandata->opts, "ExcludePath"))->enabled) {
+	/* TODO: perhaps multiscan should skip this check? 
+	 * This should work unless the user is doing something stupid like
+	 * MULTISCAN / */
+	if(match_regex(filename, opt->strarg) == 1) {
+	    if (type != TYPE_MULTISCAN)
+		conn_reply_single(scandata->conn, filename, "Excluded");
+	    free(filename);
+	    return CL_SUCCESS;
+	}
+    }
 
-					scandata = (struct multi_tag *) malloc(sizeof(struct multi_tag));
-					if(!scandata) {
-					    logg("!Can't allocate memory for scandata\n");
-					    free(fname);
-					    closedir(dd);
-					    return -2;
-					}
-					scandata->sd = odesc;
-					scandata->options = options;
-					scandata->opts = opts;
-					scandata->fname = fname;
-					scandata->engine = engine;
-					if(!thrmgr_dispatch(multi_pool, scandata)) {
-					    logg("!thread dispatch failed for multi_pool (file %s)\n", fname);
-					    mdprintf(odesc, "ERROR: Can't scan file %s\n", fname);
-					    free(fname);
-					    free(scandata);
-					    closedir(dd);
-					    return 1;
-					}
+    if(sb && sb->st_size == 0) { /* empty file */
+	if (msg == scandata->toplevel_path)
+	    conn_reply_single(scandata->conn, filename, "Empty file");
+	free(filename);
+	return CL_SUCCESS;
+    }
 
-					pthread_mutex_lock(&multi_pool->pool_mutex);
-					while(!multi_pool->thr_idle) /* non-critical */ {
-						pthread_cond_wait(&multi_pool->idle_cond, &multi_pool->pool_mutex);
-					}
-					pthread_mutex_unlock(&multi_pool->pool_mutex);
-
-				    } else { /* CONTSCAN, SCAN */
-					thrmgr_setactivetask(fname, NULL);
-					scanret = cl_scanfile(fname, virname, scanned, engine, options);
-					thrmgr_setactivetask(NULL, NULL);
-
-					if(scanret == CL_VIRUS) {
-
-					    mdprintf(odesc, "%s: %s FOUND\n", fname, *virname);
-					    logg("~%s: %s FOUND\n", fname, *virname);
-					    virusaction(fname, *virname, opts);
-					    if(type == TYPE_SCAN) {
-						closedir(dd);
-						free(fname);
-						return 1;
-					    } else /* CONTSCAN */
-						ret = 2;
-
-					} else if(scanret != CL_CLEAN) {
-					    mdprintf(odesc, "%s: %s ERROR\n", fname, cl_strerror(scanret));
-					    logg("~%s: %s ERROR\n", fname, cl_strerror(scanret));
-					    if(scanret == CL_EMEM) {
-						closedir(dd);
-						free(fname);
-						return -2;
-					    }
-
-					} else if(logok) {
-					    logg("~%s: OK\n", fname);
-					}
-					free(fname);
-				    }
-				}
-			    } else {
-				    free(fname);
-			    }
-			}
-		    } else {
-			logg("^lstat failed on %s: %s\n", fname, strerror(errno)); 
-			free(fname);
-		    }
+    if (type == TYPE_MULTISCAN) {
+	client_conn_t *client_conn = (client_conn_t *) calloc(1, sizeof(struct client_conn_tag));
+	if(client_conn) {
+	    client_conn->scanfd = -1;
+	    client_conn->sd = scandata->odesc;
+	    client_conn->filename = filename;
+	    client_conn->cmdtype = COMMAND_MULTISCANFILE;
+	    client_conn->term = scandata->conn->term;
+	    client_conn->options = scandata->options;
+	    client_conn->opts = scandata->opts;
+	    client_conn->group = scandata->group;
+	    if(cl_engine_addref(scandata->engine)) {
+		logg("!cl_engine_addref() failed\n");
+		free(filename);
+		return CL_EMEM;
+	    } else {
+		client_conn->engine = scandata->engine;
+		pthread_mutex_lock(&reload_mutex);
+		client_conn->engine_timestamp = reloaded_time;
+		pthread_mutex_unlock(&reload_mutex);
+		if(!thrmgr_group_dispatch(scandata->thr_pool, scandata->group, client_conn)) {
+		    logg("!thread dispatch failed\n");
+		    free(filename);
+		    return CL_EMEM;
 		}
 	    }
+	} else {
+	    logg("!Can't allocate memory for client_conn\n");
+	    scandata->errors++;
+	    free(filename);
+	    return CL_EMEM;
 	}
-	closedir(dd);
-    } else {
-	return -1;
+	return CL_SUCCESS;
     }
 
-    (*reclev)--;
-    return ret;
-}
+    if (access(filename, R_OK)) {
+	conn_reply(scandata->conn, filename, "Access denied.", "ERROR");
+	logg("*Access denied: %s\n", filename);
+	scandata->errors++;
+	free(filename);
+	return CL_SUCCESS;
+    }
 
-static void multiscanfile(void *arg)
-{
-	struct multi_tag *tag = (struct multi_tag *) arg;
-	const char *virname;
-#ifndef	C_WINDOWS
-        sigset_t sigset;
-#endif
-	int ret;
-
-
-#ifndef	C_WINDOWS
-    /* ignore all signals */
-    sigfillset(&sigset);
-    pthread_sigmask(SIG_SETMASK, &sigset, NULL);
-#endif
-
-    thrmgr_setactivetask(tag->fname, "MULTISCANFILE");
-    ret = cl_scanfile(tag->fname, &virname, NULL, tag->engine, tag->options);
+    thrmgr_setactivetask(filename,
+			 type == TYPE_MULTISCAN ? "MULTISCANFILE" : NULL);
+    ret = cl_scanfile(filename, &virname, &scandata->scanned, scandata->engine, scandata->options);
     thrmgr_setactivetask(NULL, NULL);
 
-    if(ret == CL_VIRUS) {
-	mdprintf(tag->sd, "%s: %s FOUND\n", tag->fname, virname);
-	logg("~%s: %s FOUND\n", tag->fname, virname);
-	virusaction(tag->fname, virname, tag->opts);
-    } else if(ret != CL_CLEAN) {
-	mdprintf(tag->sd, "%s: %s ERROR\n", tag->fname, cl_strerror(ret));
-	logg("~%s: %s ERROR\n", tag->fname, cl_strerror(ret));
-    } else if(logok) {
-	logg("~%s: OK\n", tag->fname);
+    if (ret == CL_VIRUS) {
+	scandata->infected++;
+	conn_reply(scandata->conn, filename, virname, "FOUND");
+	logg("~%s: %s FOUND\n", filename, virname);
+	virusaction(filename, virname, scandata->opts);
+    } else if (ret != CL_CLEAN) {
+	scandata->errors++;
+	conn_reply(scandata->conn, filename, cl_strerror(ret), "ERROR");
+	logg("~%s: %s ERROR\n", filename, cl_strerror(ret));
+    } else if (logok) {
+	logg("~%s: OK\n", filename);
     }
 
-    free(tag->fname);
-    free(tag);
-    return;
+    free(filename);
+    if(ret == CL_EMEM) /* stop scanning */
+	return ret;
+
+    if (thrmgr_group_need_terminate(scandata->conn->group)) {
+	logg("^Client disconnected while scanjob was active\n");
+	return CL_BREAK;
+    }
+    if (type == TYPE_SCAN) {
+	/* virus -> break */
+	return ret;
+    }
+
+    /* keep scanning always */
+    return CL_SUCCESS;
 }
 
-int scan(const char *filename, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc, unsigned int type)
-{
-	struct stat sb;
-	int ret = 0;
-	unsigned int reclev = 0;
-	const char *virname;
-	const struct optstruct *opt;
-	threadpool_t *multi_pool = NULL;
-
-
-    /* stat file */
-    if(lstat(filename, &sb) == -1) {
-	mdprintf(odesc, "%s: lstat() failed. ERROR\n", filename);
-	return -1;
-    }
-
-    /* check permissions  */
-    if(access(filename, R_OK)) {
-	mdprintf(odesc, "%s: Access denied. ERROR\n", filename);
-	return -1;
-    }
-
-    if((opt = optget(opts, "ExcludePath"))->enabled) {
-	if(match_regex(filename, opt->strarg) == 1) {
-	    mdprintf(odesc, "%s: Excluded\n", filename);
-	    return 0;
-	}
-    }
-
-    switch(sb.st_mode & S_IFMT) {
-#ifdef	S_IFLNK
-	case S_IFLNK:
-	    if(!optget(opts, "FollowFileSymlinks")->enabled)
-		break;
-	    /* else go to the next case */
-#endif
-	case S_IFREG: 
-	    if(sb.st_size == 0) { /* empty file */
-		mdprintf(odesc, "%s: Empty file\n", filename);
-		return 0;
-	    }
-#ifdef C_LINUX
-	    if(procdev && (sb.st_dev == procdev))
-		ret = CL_CLEAN;
-	    else
-#endif
-	    {
-		thrmgr_setactivetask(filename, NULL);
-		ret = cl_scanfile(filename, &virname, scanned, engine, options);
-		thrmgr_setactivetask(NULL, NULL);
-	    }
-
-	    if(ret == CL_VIRUS) {
-		mdprintf(odesc, "%s: %s FOUND\n", filename, virname);
-		logg("~%s: %s FOUND\n", filename, virname);
-		virusaction(filename, virname, opts);
-	    } else if(ret != CL_CLEAN) {
-		mdprintf(odesc, "%s: %s ERROR\n", filename, cl_strerror(ret));
-		logg("~%s: %s ERROR\n", filename, cl_strerror(ret));
-		if(ret == CL_EMEM)
-		    return -2;
-	    } else if (logok) {
-		logg("~%s: OK\n", filename);
-	    }
-	    break;
-	case S_IFDIR:
-	    if(type == TYPE_MULTISCAN) {
-		    int idletimeout = optget(opts, "IdleTimeout")->numarg;
-		    int max_threads = optget(opts, "MaxThreads")->numarg;
-
-		if((multi_pool = thrmgr_new(max_threads, idletimeout, multiscanfile)) == NULL) {
-		    logg("!thrmgr_new failed for multi_pool\n");
-		    mdprintf(odesc, "thrmgr_new failed for multi_pool ERROR\n");
-		    return -1;
-		}
-	    }
-
-	    ret = dirscan(filename, &virname, scanned, engine, options, opts, odesc, &reclev, type, multi_pool);
-
-	    if(multi_pool)
-		thrmgr_destroy(multi_pool);
-
-	    break;
-	default:
-	    mdprintf(odesc, "%s: Not supported file type. ERROR\n", filename);
-	    return -1;
-    }
-
-    if(!ret)
-	mdprintf(odesc, "%s: OK\n", filename);
-
-    /* mdprintf(odesc, "\n"); */ /* Terminate response with a blank line boundary */
-    return ret;
-}
-
-/*
- * This function was readded by mbalmer@openbsd.org.  That is the reason
- * why it is so nicely formatted.
- */
-int scanfd(const int fd, unsigned long int *scanned,
-    const struct cl_engine *engine,
-    unsigned int options, const struct optstruct *opts, int odesc)  
+int scanfd(const int fd, const client_conn_t *conn, unsigned long int *scanned,
+	   const struct cl_engine *engine,
+	   unsigned int options, const struct optstruct *opts, int odesc, int stream)
 {
 	int ret;
 	const char *virname;
 	struct stat statbuf;
 	char fdstr[32];
 
-
-	if(fstat(fd, &statbuf) == -1)
+	if (stream)
+	    strncpy(fdstr, "stream", sizeof(fdstr));
+	else
+	    snprintf(fdstr, sizeof(fdstr), "fd[%d]", fd);
+	if(fstat(fd, &statbuf) == -1 || !S_ISREG(statbuf.st_mode)) {
+		conn_reply(conn, fdstr, "Not a regular file", "ERROR");
+		logg("%s: Not a regular file. ERROR\n", fdstr);
 		return -1;
-
-	if(!S_ISREG(statbuf.st_mode))
-		return -1;
-
-	snprintf(fdstr, sizeof(fdstr), "fd[%d]", fd);
+	}
 
 	thrmgr_setactivetask(fdstr, NULL);
 	ret = cl_scandesc(fd, &virname, scanned, engine, options);
 	thrmgr_setactivetask(NULL, NULL);
 
 	if(ret == CL_VIRUS) {
-	mdprintf(odesc, "%s: %s FOUND\n", fdstr, virname);
+		conn_reply(conn, fdstr, virname, "FOUND");
 		logg("%s: %s FOUND\n", fdstr, virname);
 		virusaction(fdstr, virname, opts);
 	} else if(ret != CL_CLEAN) {
-		mdprintf(odesc, "%s: %s ERROR\n", fdstr, cl_strerror(ret));
+		conn_reply(conn, fdstr, cl_strerror(ret), "ERROR");
 		logg("%s: %s ERROR\n", fdstr, cl_strerror(ret));
 	} else {
-		mdprintf(odesc, "%s: OK\n", fdstr);
+		conn_reply_single(conn, fdstr, "OK");
 		if(logok)
 			logg("%s: OK\n", fdstr);
 	}
 	return ret;
 }
 
-int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts)
+int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, char term)
 {
 	int ret, sockfd, acceptd;
 	int tmpd, bread, retval, timeout, btread;
-	unsigned int port = 0, portscan = 1000, min_port, max_port;
-	unsigned long int size = 0, maxsize = 0;
-	short bound = 0, rnd_port_first = 1;
+	unsigned int port = 0, portscan, min_port, max_port;
+	unsigned long int quota = 0, maxsize = 0;
+	short bound = 0;
 	const char *virname;
 	char buff[FILEBUFF];
 	char peer_addr[32];
 	struct sockaddr_in server;
 	struct sockaddr_in peer;
 	socklen_t addrlen;
-	struct hostent he;
-	const struct optstruct *opt;
 	char *tmpname;
 
 
-    /* get min port */
     min_port = optget(opts, "StreamMinPort")->numarg;
-    if(min_port < 1024 || min_port > 65535)
-	min_port = 1024;
-
-    /* get max port */
     max_port = optget(opts, "StreamMaxPort")->numarg;
-    if(max_port < min_port || max_port > 65535)
-	max_port = 65535;
 
-    /* bind to a free port */
-    while(!bound && --portscan) {
-	if(rnd_port_first) {
-	    /* try a random port first */
-	    port = min_port + cli_rndnum(max_port - min_port);
-	    rnd_port_first = 0;
-	} else {
-	    /* try the neighbor ports */
-	    if(--port < min_port)
-		port=max_port;
-	}
+    /* search for a free port to bind to */
+    port = cli_rndnum(max_port - min_port);
+    bound = 0;
+    for (portscan = 0; portscan < 1000; portscan++) {
+	port = (port - 1) % (max_port - min_port + 1);
 
 	memset((char *) &server, 0, sizeof(server));
 	server.sin_family = AF_INET;
-	server.sin_port = htons(port);
-
-	if((opt = optget(opts, "TCPAddr"))->enabled) {
-	    if(r_gethostbyname(opt->strarg, &he, buff, sizeof(buff)) == -1) {
-		logg("!r_gethostbyname(%s) error: %s\n", opt->strarg, strerror(errno));
-		mdprintf(odesc, "r_gethostbyname(%s) ERROR\n", opt->strarg);
-		return -1;
-	    }
-	    server.sin_addr = *(struct in_addr *) he.h_addr_list[0];
-	} else
-	    server.sin_addr.s_addr = INADDR_ANY;
+	server.sin_port = htons(min_port + port);
+	server.sin_addr.s_addr = htonl(INADDR_ANY);
 
 	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 	    continue;
 
 	if(bind(sockfd, (struct sockaddr *) &server, sizeof(struct sockaddr_in)) == -1)
 	    closesocket(sockfd);
-	else
+	else {
 	    bound = 1;
+	    break;
+	}
     }
+    port += min_port;
 
     timeout = optget(opts, "ReadTimeout")->numarg;
     if(timeout == 0)
@@ -510,35 +318,31 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 
     if(!bound && !portscan) {
 	logg("!ScanStream: Can't find any free port.\n");
-	mdprintf(odesc, "Can't find any free port. ERROR\n");
+	mdprintf(odesc, "Can't find any free port. ERROR%c", term);
 	closesocket(sockfd);
 	return -1;
     } else {
 	listen(sockfd, 1);
-	if(mdprintf(odesc, "PORT %u\n", port) <= 0) {
+	if(mdprintf(odesc, "PORT %u%c", port, term) <= 0) {
 	    logg("!ScanStream: error transmitting port.\n");
 	    closesocket(sockfd);
 	    return -1;
 	}
     }
 
-    switch(retval = poll_fd(sockfd, timeout, 0)) {
-	case 0: /* timeout */
-	    mdprintf(odesc, "Accept timeout. ERROR\n");
-	    logg("!ScanStream %u: accept timeout.\n", port);
-	    closesocket(sockfd);
-	    return -1;
-	case -1:
-	    mdprintf(odesc, "Accept poll. ERROR\n");
-	    logg("!ScanStream %u: accept poll failed.\n", port);
-	    closesocket(sockfd);
-	    return -1;
+    retval = poll_fd(sockfd, timeout, 0);
+    if (!retval || retval == -1) {
+	const char *reason = !retval ? "timeout" : "poll";
+	mdprintf(odesc, "Accept %s. ERROR%c", reason, term);
+	logg("!ScanStream %u: accept %s.\n", port, reason);
+	closesocket(sockfd);
+	return -1;
     }
 
     addrlen = sizeof(peer);
     if((acceptd = accept(sockfd, (struct sockaddr *) &peer, &addrlen)) == -1) {
 	closesocket(sockfd);
-	mdprintf(odesc, "accept() ERROR\n");
+	mdprintf(odesc, "accept() ERROR%c", term);
 	logg("!ScanStream %u: accept() failed.\n", port);
 	return -1;
     }
@@ -550,26 +354,31 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	shutdown(sockfd, 2);
 	closesocket(sockfd);
 	closesocket(acceptd);
-	mdprintf(odesc, "cli_gentempfd() failed. ERROR\n");
+	mdprintf(odesc, "cli_gentempfd() failed. ERROR%c", term);
 	logg("!ScanStream(%s@%u): Can't create temporary file.\n", peer_addr, port);
 	return -1;
     }
 
-    maxsize = optget(opts, "StreamMaxLength")->numarg;
-
-    btread = sizeof(buff);
+    quota = maxsize = optget(opts, "StreamMaxLength")->numarg;
 
     while((retval = poll_fd(acceptd, timeout, 0)) == 1) {
+	/* only read up to max */
+	btread = (maxsize && (quota < sizeof(buff))) ? quota : sizeof(buff);
+	if (!btread) {
+		logg("^ScanStream(%s@%u): Size limit reached (max: %lu)\n", peer_addr, port, maxsize);
+		break; /* Scan what we have */
+	}
 	bread = recv(acceptd, buff, btread, 0);
 	if(bread <= 0)
 	    break;
-	size += bread;
+
+	quota -= bread;
 
 	if(writen(tmpd, buff, bread) != bread) {
 	    shutdown(sockfd, 2);
 	    closesocket(sockfd);
 	    closesocket(acceptd);
-	    mdprintf(odesc, "Temporary file -> write ERROR\n");
+	    mdprintf(odesc, "Temporary file -> write ERROR%c", term);
 	    logg("!ScanStream(%s@%u): Can't write to temporary file.\n", peer_addr, port);
 	    close(tmpd);
 	    if(!optget(opts, "LeaveTemporaryFiles")->enabled)
@@ -577,24 +386,15 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	    free(tmpname);
 	    return -1;
 	}
-
-	if(maxsize && (size + btread >= maxsize)) {
-	    btread = (maxsize - size); /* only read up to max */
-
-	    if(btread <= 0) {
-		logg("^ScanStream(%s@%u): Size limit reached (max: %lu)\n", peer_addr, port, maxsize);
-	    	break; /* Scan what we have */
-	    }
-	}
     }
 
     switch(retval) {
 	case 0: /* timeout */
-	    mdprintf(odesc, "read timeout ERROR\n");
+	    mdprintf(odesc, "read timeout ERROR%c", term);
 	    logg("!ScanStream(%s@%u): read timeout.\n", peer_addr, port);
 	    break;
 	case -1:
-	    mdprintf(odesc, "read poll ERROR\n");
+	    mdprintf(odesc, "read poll ERROR%c", term);
 	    logg("!ScanStream(%s@%u): read poll failed.\n", peer_addr, port);
 	    break;
     }
@@ -616,16 +416,16 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     closesocket(sockfd);
 
     if(ret == CL_VIRUS) {
-	mdprintf(odesc, "stream: %s FOUND\n", virname);
+	mdprintf(odesc, "stream: %s FOUND%c", virname, term);
 	logg("stream(%s@%u): %s FOUND\n", peer_addr, port, virname);
 	virusaction("stream", virname, opts);
     } else if(ret != CL_CLEAN) {
     	if(retval == 1) {
-	    mdprintf(odesc, "stream: %s ERROR\n", cl_strerror(ret));
+	    mdprintf(odesc, "stream: %s ERROR%c", cl_strerror(ret), term);
 	    logg("stream(%s@%u): %s ERROR\n", peer_addr, port, cl_strerror(ret));
 	}
     } else {
-	mdprintf(odesc, "stream: OK\n");
+	mdprintf(odesc, "stream: OK%c", term);
         if(logok)
 	    logg("stream(%s@%u): OK\n", peer_addr, port); 
     }

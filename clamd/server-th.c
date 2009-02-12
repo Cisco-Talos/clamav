@@ -42,6 +42,7 @@
 #include <unistd.h>
 #endif
 
+#include <arpa/inet.h>
 #include "libclamav/clamav.h"
 
 #include "shared/output.h"
@@ -75,17 +76,7 @@ int reload = 0;
 time_t reloaded_time = 0;
 pthread_mutex_t reload_mutex = PTHREAD_MUTEX_INITIALIZER;
 int sighup = 0;
-static struct cl_stat *dbstat = NULL;
-
-typedef struct client_conn_tag {
-    int sd;
-    unsigned int options;
-    const struct optstruct *opts;
-    struct cl_engine *engine;
-    time_t engine_timestamp;
-    int *socketds;
-    int nsockets;
-} client_conn_t;
+static struct cl_stat dbstat;
 
 static void scanner_thread(void *arg)
 {
@@ -93,8 +84,8 @@ static void scanner_thread(void *arg)
 #ifndef	C_WINDOWS
 	sigset_t sigset;
 #endif
-	int ret, timeout, i, session=FALSE;
-
+	int ret, timeout;
+	unsigned virus=0, errors = 0;
 
 #ifndef	C_WINDOWS
     /* ignore all signals */
@@ -107,61 +98,36 @@ static void scanner_thread(void *arg)
 #ifdef SIGBUS
     sigdelset(&sigset, SIGBUS);
 #endif
+    sigdelset(&sigset, SIGTSTP);
+    sigdelset(&sigset, SIGCONT);
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
 #endif
 
     timeout = optget(conn->opts, "ReadTimeout")->numarg;
     if(!timeout)
-    	timeout = -1;
+	timeout = -1;
 
-    do {
-    	ret = command(conn->sd, conn->engine, conn->options, conn->opts, timeout);
-	if (ret < 0) {
-		break;
-	}
+    ret = command(conn, &virus);
+    if (ret == -1) {
+	pthread_mutex_lock(&exit_mutex);
+	progexit = 1;
+	pthread_mutex_unlock(&exit_mutex);
+	errors = 1;
+    } else
+	errors = ret;
 
-	switch(ret) {
-	    case COMMAND_SHUTDOWN:
-		pthread_mutex_lock(&exit_mutex);
-		progexit = 1;
-		for(i = 0; i < conn->nsockets; i++) {
-		    shutdown(conn->socketds[i], 2);
-		    closesocket(conn->socketds[i]);
-		}
-		pthread_mutex_unlock(&exit_mutex);
-		break;
-
-	    case COMMAND_RELOAD:
-		pthread_mutex_lock(&reload_mutex);
-		reload = 1;
-		pthread_mutex_unlock(&reload_mutex);
-		break;
-
-	    case COMMAND_SESSION:
-		session = TRUE;
-		break;
-
-	    case COMMAND_END:
-		session = FALSE;
-		break;
-	}
-	if (session) {
-	    pthread_mutex_lock(&exit_mutex);
-	    if(progexit) {
-		session = FALSE;
-	    }
-	    pthread_mutex_unlock(&exit_mutex);
-	    pthread_mutex_lock(&reload_mutex);
-	    if (conn->engine_timestamp != reloaded_time) {
-		session = FALSE;
-	    }
-	    pthread_mutex_unlock(&reload_mutex);
-	}
-    } while (session);
-
-    shutdown(conn->sd, 2);
-    closesocket(conn->sd);
     thrmgr_setactiveengine(NULL);
+
+    if (conn->filename)
+	free(conn->filename);
+    logg("*SCANTH: finished\n");
+    if (thrmgr_group_finished(conn->group, virus ? EXIT_OTHER :
+			      errors ? EXIT_ERROR : EXIT_OK)) {
+	logg("*SCANTH: connection shut down\n");
+	/* close connection if we were last in group */
+	shutdown(conn->sd, 2);
+	closesocket(conn->sd);
+    }
     cl_engine_free(conn->engine);
     free(conn);
     return;
@@ -202,12 +168,12 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
     pua_cats[0] = 0;
     *ret = 0;
     if(do_check) {
-	if(dbstat == NULL) {
+	if(!dbstat.entries) {
 	    logg("No stats for Database check - forcing reload\n");
 	    return engine;
 	}
 
-	if(cl_statchkdir(dbstat) == 1) {
+	if(cl_statchkdir(&dbstat) == 1) {
 	    logg("SelfCheck: Database modification detected. Forcing reload.\n");
 	    return engine;
 	} else {
@@ -229,19 +195,11 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
     dbdir = optget(opts, "DatabaseDirectory")->strarg;
     logg("Reading databases from %s\n", dbdir);
 
-    if(dbstat == NULL) {
-	dbstat = (struct cl_stat *) malloc(sizeof(struct cl_stat));
-	if(!dbstat) {
-	    logg("!Can't allocate memory for dbstat\n");
-	    *ret = 1;
-	    return NULL;
-	}
-    } else {
-	cl_statfree(dbstat);
-    }
+    if(dbstat.entries)
+	cl_statfree(&dbstat);
 
-    memset(dbstat, 0, sizeof(struct cl_stat));
-    if((retval = cl_statinidir(dbdir, dbstat))) {
+    memset(&dbstat, 0, sizeof(struct cl_stat));
+    if((retval = cl_statinidir(dbdir, &dbstat))) {
 	logg("!cl_statinidir() failed: %s\n", cl_strerror(retval));
 	*ret = 1;
 	return NULL;
@@ -281,11 +239,170 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
     return engine;
 }
 
-int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts)
+static const char *get_cmd(struct fd_buf *buf, size_t off, size_t *len, char *term)
 {
-	int max_threads, i, ret = 0;
+    unsigned char *pos;
+    if (!buf->off || off >= buf->off) {
+	*len = 0;
+	return NULL;
+    }
+
+    *term = '\n';
+    switch (buf->buffer[0]) {
+	/* commands terminated by delimiters */
+	case 'z':
+	    *term = '\0';
+	case 'n':
+	    pos = memchr(buf->buffer + off, *term, buf->off - off);
+	    if (!pos) {
+		/* we don't have another full command yet */
+		*len = 0;
+		return NULL;
+	    }
+	    *pos = '\0';
+	    if (*term) {
+		*len = cli_chomp(buf->buffer + off);
+	    } else {
+		*len = pos - buf->buffer - off;
+	    }
+	    return buf->buffer + off + 1;
+	default:
+	    /* one packet = one command */
+	    *len = buf->off - off;
+	    buf->buffer[buf->off] = '\0';
+	    cli_chomp(buf->buffer + off);
+	    return buf->buffer + off;
+    }
+}
+
+struct acceptdata {
+    struct fd_data fds;
+    struct fd_data recv_fds;
+    int syncpipe_wake_recv[2];
+    int syncpipe_wake_accept[2];
+};
+
+static void *acceptloop_th(void *arg)
+{
+#ifdef HAVE_STRERROR_R
+    char buff[BUFFSIZE + 1];
+#endif
+    size_t i;
+    struct acceptdata *data = (struct acceptdata*)arg;
+    struct fd_data *fds = &data->fds;
+    struct fd_data *recv_fds = &data->recv_fds;
+
+    pthread_mutex_lock(&fds->buf_mutex);
+    for (;;) {
+	/* Block waiting for data to become available for reading */
+	int new_sd = fds_poll_recv(fds, -1, 0);
+
+	/* TODO: what about sockets that get rm-ed? */
+	if (!fds->nfds) {
+	    /* no more sockets to poll, all gave an error */
+	    logg("!Main socket gone: fatal\n");
+	    break;
+	}
+
+	if (new_sd == -1 && errno != EINTR) {
+	    logg("!Failed to poll sockets, fatal\n");
+	    pthread_mutex_lock(&exit_mutex);
+	    progexit = 1;
+	    pthread_mutex_unlock(&exit_mutex);
+	    break;
+	}
+
+	/* accept() loop */
+	for (i=0;i < fds->nfds && new_sd >= 0; i++) {
+	    struct fd_buf *buf = &fds->buf[i];
+	    if (!buf->got_newdata)
+		continue;
+	    if (buf->fd == data->syncpipe_wake_accept[0]) {
+		/* dummy sync pipe, just to wake us */
+		if (read(buf->fd, buff, sizeof(buff)) < 0) {
+		    logg("^Syncpipe read failed\n");
+		}
+		continue;
+	    }
+	    if (buf->got_newdata == -1) {
+		shutdown(buf->fd, 2);
+		closesocket(buf->fd);
+		buf->fd = -1;
+		continue;
+	    }
+	    /* listen only socket */
+	    new_sd = accept(fds->buf[i].fd, NULL, NULL);
+
+	    pthread_mutex_lock(&exit_mutex);
+	    if(progexit) {
+		pthread_mutex_unlock(&exit_mutex);
+		break;
+	    }
+	    pthread_mutex_unlock(&exit_mutex);
+
+	    if (new_sd >= 0) {
+		int ret;
+		pthread_mutex_lock(&recv_fds->buf_mutex);
+		ret = fds_add(recv_fds, new_sd, 0);
+		pthread_mutex_unlock(&recv_fds->buf_mutex);
+
+		if (ret == -1) {
+		    logg("!fds_add failed\n");
+		    closesocket(new_sd);
+		    continue;
+		}
+
+		/* notify recvloop */
+		if (write(data->syncpipe_wake_recv[1], "", 1) == -1) {
+		    logg("!write syncpipe failed\n");
+		    continue;
+		}
+	    } else if (errno != EINTR) {
+		/* very bad - need to exit or restart */
+#ifdef HAVE_STRERROR_R
+		strerror_r(errno, buff, BUFFSIZE);
+		logg("!accept() failed: %s\n", buff);
+#else
+		logg("!accept() failed\n");
+#endif
+		/* give the poll loop a chance to close disconnected FDs */
+		break;
+	    }
+
+	}
+
+	/* handle progexit */
+	pthread_mutex_lock(&exit_mutex);
+	if (progexit) {
+	    pthread_mutex_unlock(&exit_mutex);
+	    break;
+	}
+	pthread_mutex_unlock(&exit_mutex);
+    }
+    pthread_mutex_unlock(&fds->buf_mutex);
+
+    for (i=0;i < fds->nfds; i++) {
+	if (fds->buf[i].fd == -1)
+	    continue;
+	shutdown(fds->buf[i].fd, 2);
+	closesocket(fds->buf[i].fd);
+    }
+    fds_free(fds);
+
+    pthread_mutex_lock(&exit_mutex);
+    progexit = 1;
+    pthread_mutex_unlock(&exit_mutex);
+    if (write(data->syncpipe_wake_recv[1], "", 1) < 0) {
+	logg("^Syncpipe write failed\n");
+    }
+
+    return NULL;
+}
+
+int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts)
+{
+	int max_threads, max_queue, ret = 0;
 	unsigned int options = 0;
-	threadpool_t *thr_pool;
 	char timestr[32];
 #ifndef	C_WINDOWS
 	struct sigaction sigact;
@@ -293,17 +410,19 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	struct rlimit rlim;
 #endif
 	mode_t old_umask;
-	client_conn_t *client_conn;
 	const struct optstruct *opt;
-#ifdef HAVE_STRERROR_R
 	char buff[BUFFSIZE + 1];
-#endif
-	unsigned int selfchk;
-	time_t start_time, current_time;
 	pid_t mainpid;
 	int idletimeout;
 	uint32_t val32;
 	uint64_t val64;
+	size_t i, j, rr_last = 0;
+	pthread_t accept_th;
+	struct acceptdata acceptdata;
+	struct fd_data *fds = &acceptdata.recv_fds;
+	time_t start_time, current_time;
+	unsigned int selfchk;
+	threadpool_t *thr_pool;
 
 #ifdef CLAMUKO
 	pthread_t clamuko_pid;
@@ -522,6 +641,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
     } else {
 	logg("Self checking every %u seconds.\n", selfchk);
     }
+    memset(&dbstat, 0, sizeof(dbstat));
 
     /* save the PID */
     mainpid = getpid();
@@ -541,6 +661,7 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 
     logg("*Listening daemon: PID: %u\n", (unsigned int) mainpid);
     max_threads = optget(opts, "MaxThreads")->numarg;
+    max_queue = optget(opts, "MaxQueue")->numarg;
 
     if(optget(opts, "ClamukoScanOnAccess")->enabled)
 #ifdef CLAMUKO
@@ -579,6 +700,8 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 #ifdef SIGBUS    
     sigdelset(&sigset, SIGBUS);
 #endif
+    sigdelset(&sigset, SIGTSTP);
+    sigdelset(&sigset, SIGCONT);
     sigprocmask(SIG_SETMASK, &sigset, NULL);
 
     /* SIGINT, SIGTERM, SIGSEGV */
@@ -598,114 +721,342 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 
     idletimeout = optget(opts, "IdleTimeout")->numarg;
 
-    if((thr_pool=thrmgr_new(max_threads, idletimeout, scanner_thread)) == NULL) {
+    memset(&acceptdata, 0, sizeof(acceptdata));
+
+    for (i=0;i < nsockets;i++)
+	if (fds_add(&acceptdata.fds, socketds[i], 1) == -1) {
+	    logg("!fds_add failed\n");
+	    cl_engine_free(engine);
+	    return 1;
+	}
+
+    if (pipe(acceptdata.syncpipe_wake_recv) == -1 ||
+	(pipe(acceptdata.syncpipe_wake_accept) == -1)) {
+
+	logg("!pipe failed\n");
+	exit(-1);
+    }
+
+    if (fds_add(fds, acceptdata.syncpipe_wake_recv[0], 1) == -1 ||
+	fds_add(&acceptdata.fds, acceptdata.syncpipe_wake_accept[0], 1)) {
+	logg("!failed to add pipe fd\n");
+	exit(-1);
+    }
+
+    if ((thr_pool = thrmgr_new(max_threads, idletimeout, max_queue, scanner_thread)) == NULL) {
 	logg("!thrmgr_new failed\n");
 	exit(-1);
     }
 
+    if (pthread_create(&accept_th, NULL, acceptloop_th, &acceptdata)) {
+	logg("!pthread_create failed\n");
+	exit(-1);
+    }
+
     time(&start_time);
+    for(;;) {
+	int new_sd;
+	/* Block waiting for connection on any of the sockets */
+	pthread_mutex_lock(&fds->buf_mutex);
+	new_sd = fds_poll_recv(fds, -1, 1);
 
-    for(;;) {				
-#if !defined(C_WINDOWS) && !defined(C_BEOS)
-	    struct stat st_buf;
-#endif
-    	int socketd = socketds[0];
-	int new_sd = 0;
-
-    	if(nsockets > 1) {
-	    int pollret = poll_fds(socketds, nsockets, -1, 1);
-    	    if(pollret > 0) {
-    		socketd = socketds[pollret - 1];
-    	    } else {
-		new_sd = -1;
-    	    }
-    	}
-#if !defined(C_WINDOWS) && !defined(C_BEOS)
-	if(new_sd != -1 && fstat(socketd, &st_buf) == -1) {
-	    logg("!fstat(): socket descriptor gone\n");
-	    memmove(socketds, socketds + 1, sizeof(socketds[0]) * nsockets);
-	    nsockets--;
-	    if(!nsockets) {
-		logg("!Main socket gone: fatal\n");
-		break;
-	    }
-	}
-#endif
-	if (new_sd != -1)
-	    new_sd = accept(socketd, NULL, NULL);
-	if((new_sd == -1) && (errno != EINTR)) {
+	if (!fds->nfds) {
+	    /* at least the dummy/sync pipe should have remained */
+	    logg("!All recv() descriptors gone: fatal\n");
 	    pthread_mutex_lock(&exit_mutex);
-	    if(progexit) {
-		pthread_mutex_unlock(&exit_mutex);
-	    	break;
-	    }
+	    progexit = 1;
 	    pthread_mutex_unlock(&exit_mutex);
-	    /* very bad - need to exit or restart */
-#ifdef HAVE_STRERROR_R
-	    strerror_r(errno, buff, BUFFSIZE);
-	    logg("!accept() failed: %s\n", buff);
-#else
-	    logg("!accept() failed\n");
-#endif
-	    continue;
+	    pthread_mutex_unlock(&fds->buf_mutex);
+	    break;
 	}
 
-	if (sighup) {
-		logg("SIGHUP caught: re-opening log file.\n");
-		logg_close();
-		sighup = 0;
-		if(!logg_file && (opt = optget(opts, "LogFile"))->enabled)
-		    logg_file = opt->strarg;
+	if (new_sd == -1 && errno != EINTR) {
+	    logg("!Failed to poll sockets, fatal\n");
+	    pthread_mutex_lock(&exit_mutex);
+	    progexit = 1;
+	    pthread_mutex_unlock(&exit_mutex);
 	}
 
-	if (!progexit && new_sd >= 0) {
-		client_conn = (client_conn_t *) malloc(sizeof(struct client_conn_tag));
-		if(client_conn) {
-		    client_conn->sd = new_sd;
-		    client_conn->options = options;
-		    client_conn->opts = opts;
-		    if(cl_engine_addref(engine)) {
-			closesocket(client_conn->sd);
-			free(client_conn);
-			logg("!cl_engine_addref() failed\n");
-			pthread_mutex_lock(&exit_mutex);
-			progexit = 1;
-			pthread_mutex_unlock(&exit_mutex);
-		    } else {
-			client_conn->engine = engine;
-			client_conn->engine_timestamp = reloaded_time;
-			client_conn->socketds = socketds;
-			client_conn->nsockets = nsockets;
-			if(!thrmgr_dispatch(thr_pool, client_conn)) {
-			    closesocket(client_conn->sd);
-			    free(client_conn);
-			    logg("!thread dispatch failed\n");
+	i = (rr_last + 1) % fds->nfds;
+	for (j = 0;  j < fds->nfds && new_sd >= 0; j++, i = (i+1) % fds->nfds) {
+	    size_t pos = 0;
+	    int error = 0;
+	    struct fd_buf *buf = &fds->buf[i];
+	    if (!buf->got_newdata)
+		continue;
+
+	    if (buf->fd == acceptdata.syncpipe_wake_recv[0]) {
+		/* dummy sync pipe, just to wake us */
+		if (read(buf->fd, buff, sizeof(buff)) < 0) {
+		    logg("^Syncpipe read failed\n");
+		}
+		continue;
+	    }
+
+	    if (buf->got_newdata == -1) {
+		if (buf->mode == MODE_WAITREPLY) {
+		    logg("*RECVTH: mode WAIT_REPLY -> closed\n");
+		    buf->fd = -1;
+		    continue;
+		} else {
+		    logg("*RECVTH: client read error or EOF on read\n");
+		    error = 1;
+		}
+	    }
+
+	    rr_last = i;
+	    if (buf->mode == MODE_WAITANCILL) {
+		buf->mode = MODE_COMMAND;
+		logg("*RECVTH: mode -> MODE_COMMAND\n");
+	    }
+	    while (!error && buf->fd != -1 && buf->buffer && pos < buf->off &&
+		   buf->mode != MODE_WAITANCILL) {
+		client_conn_t conn;
+		const unsigned char *cmd = NULL;
+		size_t cmdlen = 0;
+		char term = '\n';
+		int rc;
+		/* New data available to read on socket. */
+
+		memset(&conn, 0, sizeof(conn));
+		conn.scanfd = buf->recvfd;
+		buf->recvfd = -1;
+		conn.sd = buf->fd;
+		conn.options = options;
+		conn.opts = opts;
+		conn.thrpool = thr_pool;
+		conn.engine = engine;
+		conn.group = buf->group;
+		conn.id = buf->id;
+		conn.quota = buf->quota;
+		conn.filename = buf->dumpname;
+		conn.mode = buf->mode;
+		/* Parse & dispatch commands */
+		while ((conn.mode == MODE_COMMAND) &&
+		       (cmd = get_cmd(buf, pos, &cmdlen, &term)) != NULL) {
+		    const char *argument;
+		    enum commands cmdtype = parse_command(cmd, &argument);
+		    logg("*RECVTH: got command %s (%u, %u), argument: %s\n",
+			 cmd, (unsigned)cmdlen, (unsigned)cmdtype, argument ? argument : "");
+		    if (cmdtype == COMMAND_FILDES) {
+			if (buf->buffer + buf->off <= cmd + strlen("FILDES\n")) {
+			    /* we need the extra byte from recvmsg */
+			    conn.mode = MODE_WAITANCILL;
+			    buf->mode = MODE_WAITANCILL;
+			    cmdlen = 0;
+			    logg("*RECVTH: mode -> MODE_WAITANCILL\n");
+			    break;
+			}
+			/* eat extra \0 for controlmsg */
+			cmdlen++;
+			logg("*RECVTH: FILDES command complete\n");
+		    }
+
+		    conn.term = term;
+		    buf->term = term;
+
+		    if ((rc = execute_or_dispatch_command(&conn, cmdtype, argument)) < 0) {
+			logg("!Command dispatch failed\n");
+			if(rc == -1 && optget(opts, "ExitOnOOM")->enabled) {
+			    pthread_mutex_lock(&exit_mutex);
+			    progexit = 1;
+			    pthread_mutex_unlock(&exit_mutex);
+			}
+			error = 1;
+		    }
+		    if (error || !conn.group || rc) {
+			if (rc && thrmgr_group_finished(conn.group, EXIT_OK)) {
+			    logg("*RECVTH: closing conn, group finished\n");
+			    /* if there are no more active jobs */
+			    shutdown(conn.sd, 2);
+			    closesocket(conn.sd);
+			    buf->fd = -1;
+			    conn.group = NULL;
+			} else if (conn.mode != MODE_STREAM) {
+			    logg("*RECVTH: mode -> MODE_WAITREPLY\n");
+			    /* no more commands are accepted */
+			    conn.mode = MODE_WAITREPLY;
+			    /* Stop monitoring this FD, it will be closed either
+			     * by us, or by the scanner thread. 
+			     * Never close a file descriptor that is being
+			     * monitored by poll()/select() from another thread,
+			     * because this can lead to subtle bugs such as:
+			     * Other thread closes file descriptor -> POLLHUP is
+			     * set, but the poller thread doesn't wake up yet.
+			     * Another client opens a connection and sends some
+			     * data. If the socket reuses the previous file descriptor,
+			     * then POLLIN is set on the file descriptor too.
+			     * When poll() wakes up it sees POLLIN | POLLHUP
+			     * and thinks that the client has sent some data,
+			     * and closed the connection, so clamd closes the
+			     * connection in turn resulting in a bug.
+			     *
+			     * If we wouldn't have poll()-ed the file descriptor
+			     * we closed in another thread, but rather made sure
+			     * that we don't put a FD that we're about to close
+			     * into poll()'s list of watched fds; then POLLHUP
+			     * would be set, but the file descriptor would stay
+			     * open, until we wake up from poll() and close it.
+			     * Thus a new connection won't be able to reuse the
+			     * same FD, and there is no bug.
+			     * */
+			    buf->fd = -1;
 			}
 		    }
-		} else {
-		    logg("!Can't allocate memory for client_conn\n");
-		    closesocket(new_sd);
-		    if(optget(opts, "ExitOnOOM")->enabled) {
-			pthread_mutex_lock(&exit_mutex);
-			progexit = 1;
-			pthread_mutex_unlock(&exit_mutex);
+		    pos += cmdlen+1;
+		    if (conn.mode == MODE_STREAM) {
+			/* TODO: this doesn't belong here */
+			buf->dumpname = conn.filename;
+			buf->dumpfd = conn.scanfd;
+			logg("*RECVTH: STREAM: %s fd %u\n", buf->dumpname, buf->dumpfd);
+		    }
+		    if (conn.mode != MODE_COMMAND) {
+			logg("*RECVTH: breaking command loop, mode is no longer MODE_COMMAND\n");
+			break;
+		    }
+		    conn.id++;
+		}
+		buf->mode = conn.mode;
+		buf->id = conn.id;
+		buf->group = conn.group;
+		buf->quota = conn.quota;
+		if (!error) {
+		    /* move partial command to beginning of buffer */
+		    if (pos < buf->off) {
+			memmove (buf->buffer, &buf->buffer[pos], buf->off - pos);
+			buf->off -= pos;
+		    } else
+			buf->off = 0;
+		    if (buf->off)
+			logg("*RECVTH: moved partial command: %lu\n", (unsigned long)buf->off);
+		    else
+			logg("*RECVTH: consumed entire command\n");
+		}
+		if (conn.mode == MODE_COMMAND && !cmd)
+		    break;
+		if (!error && buf->mode == MODE_WAITREPLY && buf->off) {
+		    /* Client is not supposed to send anything more */
+		    logg("^Client sent garbage after last command: %lu bytes\n", (unsigned long)buf->off);
+		    buf->buffer[buf->off] = '\0';
+		    logg("*RECVTH: garbage: %s\n", buf->buffer);
+		    error = 1;
+		}
+		if (!error && buf->mode == MODE_STREAM) {
+		    logg("*RECVTH: mode == MODE_STREAM\n");
+		    if (!buf->chunksize) {
+			/* read chunksize */
+			if (buf->off >= 4) {
+			    uint32_t cs = *(uint32_t*)buf->buffer;
+			    buf->chunksize = ntohl(cs);
+			    logg("*RECVTH: chunksize: %u\n", buf->chunksize);
+			    if (!buf->chunksize) {
+				/* chunksize 0 marks end of stream */
+				conn.scanfd = buf->dumpfd;
+				conn.term = buf->term;
+				buf->dumpfd = -1;
+				buf->mode = buf->group ? MODE_COMMAND : MODE_WAITREPLY;
+				logg("*RECVTH: chunks complete\n");
+				buf->dumpname = NULL;
+				if ((rc = execute_or_dispatch_command(&conn, COMMAND_INSTREAMSCAN, NULL)) < 0) {
+				    logg("!Command dispatch failed\n");
+				    if(rc == -1 && optget(opts, "ExitOnOOM")->enabled) {
+					pthread_mutex_lock(&exit_mutex);
+					progexit = 1;
+					pthread_mutex_unlock(&exit_mutex);
+				    }
+				    error = 1;
+				} else {
+				    pos = 4;
+				    memmove (buf->buffer, &buf->buffer[pos], buf->off - pos);
+				    buf->off -= pos;
+				    pos = 0;
+				    buf->id++;
+				    continue;
+				}
+			    }
+			    if (buf->chunksize > buf->quota) {
+				logg("^INSTREAM: Size limit reached, (requested: %lu, max: %lu)\n", 
+				     (unsigned long)buf->chunksize, (unsigned long)buf->quota);
+				conn_reply_error(&conn, "INSTREAM size limit exceeded. ERROR");
+				error = 1;
+			    } else {
+				buf->quota -= buf->chunksize;
+			    }
+			    logg("*RECVTH: quota: %lu\n", buf->quota);
+			    pos = 4;
+			} else
+			    break;
+		    } else
+			pos = 0;
+		    if (pos + buf->chunksize < buf->off)
+			cmdlen = buf->chunksize;
+		    else
+			cmdlen = buf->off - pos;
+		    buf->chunksize -= cmdlen;
+		    if (cli_writen(buf->dumpfd, buf->buffer + pos, cmdlen) < 0) {
+			conn_reply_error(&conn, "Error writing to temporary file");
+			logg("!INSTREAM: Can't write to temporary file.\n");
+			error = 1;
+		    }
+		    logg("*RECVTH: processed %lu bytes of chunkdata\n", cmdlen);
+		    pos += cmdlen;
+		    if (pos == buf->off) {
+			buf->off = 0;
 		    }
 		}
+		if (error) {
+		    conn_reply_error(&conn, "Error processing command.");
+		}
+	    }
+	    if (error) {
+		if (buf->dumpfd != -1) {
+		    close(buf->dumpfd);
+		    if (buf->dumpname) {
+			cli_unlink(buf->dumpname);
+			free(buf->dumpname);
+		    }
+		    buf->dumpfd = -1;
+		}
+		if (thrmgr_group_terminate(buf->group)) {
+		    logg("*RECVTH: shutting down socket after error\n");
+		    shutdown(buf->fd, 2);
+		    closesocket(buf->fd);
+		} else
+		    logg("*RECVTH: socket not shut down due to active tasks\n");
+		buf->fd = -1;
+	    }
 	}
+	pthread_mutex_unlock(&fds->buf_mutex);
 
+	/* handle progexit */
 	pthread_mutex_lock(&exit_mutex);
-	if(progexit) {
-#ifdef C_WINDOWS
-	    closesocket(new_sd);
-#else
-  	    if(new_sd >= 0)
-		close(new_sd);
-#endif
+	if (progexit) {
 	    pthread_mutex_unlock(&exit_mutex);
+	    pthread_mutex_lock(&fds->buf_mutex);
+	    for (i=0;i < fds->nfds; i++) {
+		if (fds->buf[i].fd == -1)
+		    continue;
+		if (thrmgr_group_terminate(fds->buf[i].group)) {
+		    shutdown(fds->buf[i].fd, 2);
+		    closesocket(fds->buf[i].fd);
+		    fds->buf[i].fd = -1;
+		}
+	    }
+	    pthread_mutex_unlock(&fds->buf_mutex);
 	    break;
 	}
 	pthread_mutex_unlock(&exit_mutex);
 
+	/* SIGHUP */
+	if (sighup) {
+	    logg("SIGHUP caught: re-opening log file.\n");
+	    logg_close();
+	    sighup = 0;
+	    if(!logg_file && (opt = optget(opts, "LogFile"))->enabled)
+		logg_file = opt->strarg;
+	}
+
+	/* SelfCheck */
 	if(selfchk) {
 	    time(&current_time);
 	    if((current_time - start_time) > (time_t)selfchk) {
@@ -718,18 +1069,15 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	    }
 	}
 
+	/* DB reload */
 	pthread_mutex_lock(&reload_mutex);
 	if(reload) {
 	    pthread_mutex_unlock(&reload_mutex);
 	    engine = reload_db(engine, dboptions, opts, FALSE, &ret);
 	    if(ret) {
 		logg("Terminating because of a fatal error.\n");
-#ifdef C_WINDOWS
-		closesocket(new_sd);
-#else
 		if(new_sd >= 0)
-		    close(new_sd);
-#endif
+		    closesocket(new_sd);
 		break;
 	    }
 
@@ -751,9 +1099,16 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	}
     }
 
+    pthread_mutex_lock(&exit_mutex);
+    progexit = 1;
+    pthread_mutex_unlock(&exit_mutex);
+    if (write(acceptdata.syncpipe_wake_accept[1], "", 1) < 0) {
+	logg("^Write to syncpipe failed\n");
+    }
     /* Destroy the thread manager.
      * This waits for all current tasks to end
      */
+    logg("*Waiting for all threads to finish\n");
     thrmgr_destroy(thr_pool);
 #ifdef CLAMUKO
     if(optget(opts, "ClamukoScanOnAccess")->enabled) {
@@ -767,8 +1122,12 @@ int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigne
 	cl_engine_free(engine);
     }
 
-    if(dbstat)
-	cl_statfree(dbstat);
+    pthread_join(accept_th, NULL);
+    fds_free(fds);
+    close(acceptdata.syncpipe_wake_accept[1]);
+    close(acceptdata.syncpipe_wake_recv[1]);
+    if(dbstat.entries)
+	cl_statfree(&dbstat);
     logg("*Shutting down the main socket%s.\n", (nsockets > 1) ? "s" : "");
     for (i = 0; i < nsockets; i++)
 	shutdown(socketds[i], 2);

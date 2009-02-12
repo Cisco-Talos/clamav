@@ -25,11 +25,29 @@
 
 #include "libclamav/clamav.h"
 #include "shared/optparser.h"
+#include "thrmgr.h"
+#include "session.h"
 
-int scan(const char *filename, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc, unsigned int type);
+struct scan_cb_data {
+    int scantype;
+    int odesc;
+    int type;
+    int infected;
+    int errors;
+    int total;
+    int id;
+    const client_conn_t *conn;
+    const char *toplevel_path;
+    unsigned long scanned;
+    unsigned int options;
+    struct cl_engine *engine;
+    const struct optstruct *opts;
+    threadpool_t *thr_pool;
+    jobgroup_t *group;
+};
 
-int scanfd(const int fd, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc);
-
-int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts);
+int scanfd(const int fd, const client_conn_t *conn, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc, int stream);
+int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, char term);
+int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data);
 
 #endif

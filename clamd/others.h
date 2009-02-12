@@ -25,13 +25,51 @@
 
 #include <stdlib.h>
 #include "shared/optparser.h"
+#include "thrmgr.h"
+#include "cltypes.h"
 
-int poll_fds(int *fds, int nfds, int timeout_sec, int check_signals);
+enum mode {
+    MODE_COMMAND,
+    MODE_STREAM,
+    MODE_WAITREPLY,
+    MODE_WAITANCILL
+};
+
+struct fd_buf {
+    unsigned char *buffer;
+    size_t bufsize;
+    size_t off;
+    int fd;
+    char term;
+    int got_newdata; /* 0: no, 1: yes, -1: error */
+    int recvfd;
+    /* TODO: these fields don't belong here, there are identical fields in conn
+     * too that don't belong there either. */
+    enum mode mode;
+    int id;
+    int dumpfd;
+    uint32_t chunksize;
+    long quota;
+    char *dumpname;
+    jobgroup_t *group;
+};
+
+struct fd_data {
+    pthread_mutex_t buf_mutex; /* protects buf and nfds */
+    struct fd_buf *buf;
+    size_t nfds;
+#ifdef HAVE_POLL
+    struct pollfd *poll_data;
+    size_t poll_data_nfds;
+#endif
+};
+
 int poll_fd(int fd, int timeout_sec, int check_signals);
-int is_fd_connected(int fd);
 void virusaction(const char *filename, const char *virname, const struct optstruct *opts);
 int writen(int fd, void *buff, unsigned int count);
-
-int readsock(int sockfd, char *buf, size_t size, unsigned char delim, int timeout_sec, int force_delim, int read_command);
+int fds_add(struct fd_data *data, int fd, int listen_only);
+void fds_remove(struct fd_data *data, int fd);
+int fds_poll_recv(struct fd_data *data, int timeout, int check_signals);
+void fds_free(struct fd_data *data);
 
 #endif

@@ -25,12 +25,14 @@
 #include <pthread.h>
 #include <time.h>
 #include <errno.h>
+#include <string.h>
 
 #include "shared/output.h"
 
 #include "thrmgr.h"
 #include "others.h"
 #include "mpool.h"
+#include "server.h"
 
 #if defined(C_LINUX)
 #include <malloc.h>
@@ -55,6 +57,7 @@ static work_queue_t *work_queue_new(void)
 
 	work_q->head = work_q->tail = NULL;
 	work_q->item_count = 0;
+	work_q->popped = 0;
 	return work_q;
 }
 
@@ -152,6 +155,38 @@ static void remove_frompools(threadpool_t *t)
 	pthread_mutex_unlock(&pools_lock);
 }
 
+static void print_queue(int f, work_queue_t *queue, struct timeval *tv_now)
+{
+    long umin=~0UL, umax=0, usum=0;
+    unsigned invalids = 0, cnt = 0;
+    work_item_t *q;
+
+    if(!queue->head)
+	return;
+    for(q=queue->head;q;q=q->next) {
+	long delta;
+	delta = tv_now->tv_usec - q->time_queued.tv_usec;
+	delta += (tv_now->tv_sec - q->time_queued.tv_sec)*1000000;
+	if(delta < 0) {
+	    invalids++;
+	    continue;
+	}
+	if(delta > umax)
+	    umax = delta;
+	if(delta < umin)
+	    umin = delta;
+	usum += delta;
+	++cnt;
+    }
+    mdprintf(f," min_wait: %.6f max_wait: %.6f avg_wait: %.6f",
+	     umin/1e6, umax/1e6, usum /(1e6*cnt));
+    if(invalids)
+	mdprintf(f," (INVALID timestamps: %u)", invalids);
+    if(cnt + invalids != (unsigned)queue->item_count)
+	mdprintf(f," (ERROR: %u != %u)", cnt + invalids,
+		 (unsigned)queue->item_count);
+}
+
 int thrmgr_printstats(int f)
 {
 	struct threadpool_list *l;
@@ -166,10 +201,7 @@ int thrmgr_printstats(int f)
 	for(l= pools;l && !error_flag;l = l->nxt) {
 		threadpool_t *pool = l->pool;
 		const char *state;
-		work_item_t *q;
 		struct timeval tv_now;
-		long umin=~0UL, umax=0, usum=0;
-		int invalids=0;
 		struct task_desc *task;
 		cnt = 0;
 
@@ -199,32 +231,11 @@ int thrmgr_printstats(int f)
 		mdprintf(f, "THREADS: live %u  idle %u max %u idle-timeout %u\n"
 				,pool->thr_alive, pool->thr_idle, pool->thr_max,
 				pool->idle_timeout);
-		mdprintf(f,"QUEUE: %u items", pool->queue->item_count);
+		/* TODO: show both queues */
+		mdprintf(f,"QUEUE: %u items", pool->single_queue->item_count + pool->bulk_queue->item_count);
 		gettimeofday(&tv_now, NULL);
-		if(pool->queue->head) {
-			for(q=pool->queue->head;q;q=q->next) {
-				long delta;
-				delta = tv_now.tv_usec - q->time_queued.tv_usec;
-				delta += (tv_now.tv_sec - q->time_queued.tv_sec)*1000000;
-				if(delta < 0) {
-					invalids++;
-					continue;
-				}
-				if(delta > umax)
-					umax = delta;
-				if(delta < umin)
-					umin = delta;
-				usum += delta;
-				++cnt;
-			}
-			mdprintf(f," min_wait: %.6f max_wait: %.6f avg_wait: %.6f",
-					umin/1e6, umax/1e6, usum /(1e6*cnt));
-			if(invalids)
-				mdprintf(f," (INVALID timestamps: %u)", invalids);
-		}
-		if(cnt + invalids != (unsigned)pool->queue->item_count)
-			mdprintf(f," (ERROR: %u != %u)", cnt + invalids,
-					(unsigned)pool->queue->item_count);
+		print_queue(f, pool->bulk_queue, &tv_now);
+		print_queue(f, pool->single_queue, &tv_now);
 		mdprintf(f, "\n");
 		for(task = pool->tasks; task; task = task->nxt) {
 			long delta;
@@ -331,15 +342,17 @@ void thrmgr_destroy(threadpool_t *threadpool)
 	}
 
 	pthread_mutex_destroy(&(threadpool->pool_mutex));
-	pthread_cond_destroy(&(threadpool)->idle_cond);
+	pthread_cond_destroy(&(threadpool->idle_cond));
+	pthread_cond_destroy(&(threadpool->queueable_cond));
 	pthread_cond_destroy(&(threadpool->pool_cond));
 	pthread_attr_destroy(&(threadpool->pool_attr));
-	free(threadpool->queue);
+	free(threadpool->single_queue);
+	free(threadpool->bulk_queue);
 	free(threadpool);
 	return;
 }
 
-threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void *))
+threadpool_t *thrmgr_new(int max_threads, int idle_timeout, int max_queue, void (*handler)(void *))
 {
 	threadpool_t *threadpool;
 #if defined(C_BIGSTACK)
@@ -350,16 +363,30 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void
 		return NULL;
 	}
 
+	if (2*max_threads > max_queue) {
+	    logg("!Configuration error: MaxQueue should be at least twice MaxThreads\n");
+	    return NULL;
+	}
+
 	threadpool = (threadpool_t *) malloc(sizeof(threadpool_t));
 	if (!threadpool) {
 		return NULL;
 	}
 
-	threadpool->queue = work_queue_new();
-	if (!threadpool->queue) {
+	threadpool->single_queue = work_queue_new();
+	if (!threadpool->single_queue) {
 		free(threadpool);
 		return NULL;
 	}
+	threadpool->bulk_queue = work_queue_new();
+	if (!threadpool->bulk_queue) {
+		free(threadpool->single_queue);
+		free(threadpool);
+		return NULL;
+	}
+
+	threadpool->queue_max = max_queue;
+
 	threadpool->thr_max = max_threads;
 	threadpool->thr_alive = 0;
 	threadpool->thr_idle = 0;
@@ -368,41 +395,58 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, void (*handler)(void
 	threadpool->tasks = NULL;
 
 	if(pthread_mutex_init(&(threadpool->pool_mutex), NULL)) {
-		free(threadpool->queue);
+		free(threadpool->single_queue);
+		free(threadpool->bulk_queue);
 		free(threadpool);
 		return NULL;
 	}
 
 	if (pthread_cond_init(&(threadpool->pool_cond), NULL) != 0) {
 		pthread_mutex_destroy(&(threadpool->pool_mutex));
-		free(threadpool->queue);
+		free(threadpool->single_queue);
+		free(threadpool->bulk_queue);
+		free(threadpool);
+		return NULL;
+	}
+
+	if (pthread_cond_init(&(threadpool->queueable_cond), NULL) != 0) {
+		pthread_cond_destroy(&(threadpool->pool_cond));
+		pthread_mutex_destroy(&(threadpool->pool_mutex));
+		free(threadpool->single_queue);
+		free(threadpool->bulk_queue);
 		free(threadpool);
 		return NULL;
 	}
 
 	if (pthread_cond_init(&(threadpool->idle_cond),NULL) != 0)  {
+		pthread_cond_destroy(&(threadpool->queueable_cond));
 		pthread_cond_destroy(&(threadpool->pool_cond));
 		pthread_mutex_destroy(&(threadpool->pool_mutex));
-		free(threadpool->queue);
+		free(threadpool->single_queue);
+		free(threadpool->bulk_queue);
 		free(threadpool);
 		return NULL;
 	}
 
 	if (pthread_attr_init(&(threadpool->pool_attr)) != 0) {
+		pthread_cond_destroy(&(threadpool->queueable_cond));
 		pthread_cond_destroy(&(threadpool->idle_cond));
 		pthread_cond_destroy(&(threadpool->pool_cond));
 		pthread_mutex_destroy(&(threadpool->pool_mutex));
-		free(threadpool->queue);
+		free(threadpool->single_queue);
+		free(threadpool->bulk_queue);
 		free(threadpool);
 		return NULL;
 	}
 
 	if (pthread_attr_setdetachstate(&(threadpool->pool_attr), PTHREAD_CREATE_DETACHED) != 0) {
+		pthread_cond_destroy(&(threadpool->queueable_cond));
 		pthread_attr_destroy(&(threadpool->pool_attr));
 		pthread_cond_destroy(&(threadpool->idle_cond));
 		pthread_cond_destroy(&(threadpool->pool_cond));
 		pthread_mutex_destroy(&(threadpool->pool_mutex));
-		free(threadpool->queue);
+		free(threadpool->single_queue);
+		free(threadpool->bulk_queue);
 		free(threadpool);
 		return NULL;
 	}
@@ -431,7 +475,7 @@ static void stats_tls_key_alloc(void)
 static const char *IDLE_TASK = "IDLE";
 
 /* no mutex is needed, we are using  thread local variable */
-void thrmgr_setactivetask(const char *filename, const char* command)
+void thrmgr_setactivetask(const char *filename, const char* cmd)
 {
 	struct task_desc *desc;
 	pthread_once(&stats_tls_key_once, stats_tls_key_alloc);
@@ -439,10 +483,10 @@ void thrmgr_setactivetask(const char *filename, const char* command)
 	if(!desc)
 		return;
 	desc->filename = filename;
-	if(command) {
-		if(command == IDLE_TASK && desc->command == command)
+	if(cmd) {
+		if(cmd == IDLE_TASK && desc->command == cmd)
 			return;
-		desc->command = command;
+		desc->command = cmd;
 		gettimeofday(&desc->tv, NULL);
 	}
 }
@@ -490,6 +534,55 @@ static void stats_destroy(threadpool_t *pool)
 	pthread_setspecific(stats_tls_key, NULL);
 }
 
+static inline int thrmgr_contended(threadpool_t *pool)
+{
+    return pool->bulk_queue->item_count + pool->single_queue->item_count
+	+ pool->thr_alive - pool->thr_idle >= pool->queue_max;
+}
+
+/* when both queues have tasks, it will pick 4 items from the single queue,
+ * and 1 from the bulk */
+#define SINGLE_BULK_RATIO 4
+#define SINGLE_BULK_SUM (SINGLE_BULK_RATIO + 1)
+
+/* must be called with pool_mutex held */
+static void *thrmgr_pop(threadpool_t *pool)
+{
+    void *task;
+    work_queue_t *first, *second;
+    int ratio;
+
+    if (pool->single_queue->popped < SINGLE_BULK_RATIO) {
+	first = pool->single_queue;
+	second = pool->bulk_queue;
+	ratio = SINGLE_BULK_RATIO;
+    } else {
+	second = pool->single_queue;
+	first = pool->bulk_queue;
+	ratio = SINGLE_BULK_SUM - SINGLE_BULK_RATIO;
+    }
+
+    task = work_queue_pop(first);
+    if (task) {
+	if (++first->popped == ratio)
+	    second->popped = 0;
+    } else {
+	task = work_queue_pop(second);
+	if (task) {
+	    if (++second->popped == ratio)
+		first->popped = 0;
+	}
+    }
+
+    if (!thrmgr_contended(pool)) {
+	logg("*THRMGR: queue crossed low threshold -> signaling\n");
+	pthread_cond_signal(&pool->queueable_cond);
+    }
+
+    return task;
+}
+
+
 static void *thrmgr_worker(void *arg)
 {
 	threadpool_t *threadpool = (threadpool_t *) arg;
@@ -512,7 +605,7 @@ static void *thrmgr_worker(void *arg)
 		timeout.tv_sec = time(NULL) + threadpool->idle_timeout;
 		timeout.tv_nsec = 0;
 		threadpool->thr_idle++;
-		while (((job_data=work_queue_pop(threadpool->queue)) == NULL)
+		while (((job_data=thrmgr_pop(threadpool)) == NULL)
 				&& (threadpool->state != POOL_EXIT)) {
 			/* Sleep, awaiting wakeup */
 			pthread_cond_signal(&threadpool->idle_cond);
@@ -557,8 +650,9 @@ static void *thrmgr_worker(void *arg)
 	return NULL;
 }
 
-int thrmgr_dispatch(threadpool_t *threadpool, void *user_data)
+static int thrmgr_dispatch_internal(threadpool_t *threadpool, void *user_data, int bulk)
 {
+	int ret = TRUE;
 	pthread_t thr_id;
 
 	if (!threadpool) {
@@ -571,35 +665,179 @@ int thrmgr_dispatch(threadpool_t *threadpool, void *user_data)
 		return FALSE;
 	}
 
-	if (threadpool->state != POOL_VALID) {
-		if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
-			logg("!Mutex unlock failed\n");
-		}
-		return FALSE;
-	}
-	if (!work_queue_add(threadpool->queue, user_data)) {
-		if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
-			logg("!Mutex unlock failed\n");
-			return FALSE;
-		}
-		return FALSE;
-	}
+	do {
+	    work_queue_t *queue;
+	    int items;
 
-	if ((threadpool->thr_idle < threadpool->queue->item_count) &&
-			(threadpool->thr_alive < threadpool->thr_max)) {
+	    if (threadpool->state != POOL_VALID) {
+		ret = FALSE;
+		break;
+	    }
+
+	    if (bulk)
+		queue = threadpool->bulk_queue;
+	    else
+		queue = threadpool->single_queue;
+
+	    while (thrmgr_contended(threadpool)) {
+		logg("*THRMGR: contended, sleeping\n");
+		pthread_cond_wait(&threadpool->queueable_cond, &threadpool->pool_mutex);
+		logg("*THRMGR: contended, woken\n");
+	    }
+
+	    if (!work_queue_add(queue, user_data)) {
+		ret = FALSE;
+		break;
+	    }
+
+	    items = threadpool->single_queue->item_count + threadpool->bulk_queue->item_count;
+	    if ((threadpool->thr_idle < items) &&
+		(threadpool->thr_alive < threadpool->thr_max)) {
 		/* Start a new thread */
 		if (pthread_create(&thr_id, &(threadpool->pool_attr),
-				thrmgr_worker, threadpool) != 0) {
-			logg("!pthread_create failed\n");
+				   thrmgr_worker, threadpool) != 0) {
+		    logg("!pthread_create failed\n");
 		} else {
-			threadpool->thr_alive++;
+		    threadpool->thr_alive++;
 		}
-	}
-	pthread_cond_signal(&(threadpool->pool_cond));
+	    }
+	    pthread_cond_signal(&(threadpool->pool_cond));
+
+	} while (0);
 
 	if (pthread_mutex_unlock(&(threadpool->pool_mutex)) != 0) {
-		logg("!Mutex unlock failed\n");
-		return FALSE;
+	    logg("!Mutex unlock failed\n");
+	    return FALSE;
 	}
-	return TRUE;
+	return ret;
+}
+
+int thrmgr_dispatch(threadpool_t *threadpool, void *user_data)
+{
+    return thrmgr_dispatch_internal(threadpool, user_data, 0);
+}
+
+int thrmgr_group_dispatch(threadpool_t *threadpool, jobgroup_t *group, void *user_data)
+{
+    int ret;
+    if (group) {
+	pthread_mutex_lock(&group->mutex);
+	group->jobs++;
+	pthread_mutex_unlock(&group->mutex);
+    }
+    if (!(ret = thrmgr_dispatch_internal(threadpool, user_data, 1)) && group) {
+	pthread_mutex_lock(&group->mutex);
+	group->jobs--;
+	pthread_mutex_unlock(&group->mutex);
+    }
+    return ret;
+}
+
+/* returns
+ *   0 - this was not the last thread in the group
+ *   1 - this was last thread in group, group freed
+ */
+int thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc)
+{
+    int ret = 0;
+    if (!group) {
+	/* there is no group, we are obviously the last one */
+	return 1;
+    }
+    pthread_mutex_lock(&group->mutex);
+    logg("*THRMGR: group_finished: %p, %d\n", group, group->jobs);
+    group->exit_total++;
+    switch (exitc) {
+	case EXIT_OK:
+	    group->exit_ok++;
+	    break;
+	case EXIT_ERROR:
+	    group->exit_error++;
+	    break;
+    }
+    if (group->jobs) {
+	if (!--group->jobs) {
+	    ret = 1;
+	}
+	if (group->jobs == 1)
+	    pthread_cond_signal(&group->only);
+    }
+    pthread_mutex_unlock(&group->mutex);
+    if (ret) {
+	logg("*THRMGR: group_finished: freeing %p\n", group);
+	free(group);
+    }
+    return ret;
+}
+
+void thrmgr_group_waitforall(jobgroup_t *group, unsigned *ok, unsigned *error, unsigned *total)
+{
+    int needexit = 0, needfree = 0;
+    struct timespec timeout;
+    pthread_mutex_lock(&group->mutex);
+    while (group->jobs > 1) {
+	pthread_mutex_lock(&exit_mutex);
+	needexit = progexit;
+	pthread_mutex_unlock(&exit_mutex);
+	if (needexit)
+	    break;
+	/* wake to check progexit */
+	timeout.tv_sec = time(NULL) + 5;
+	timeout.tv_nsec = 0;
+	pthread_cond_timedwait(&group->only, &group->mutex, &timeout);
+    }
+    *ok = group->exit_ok;
+    *error = group->exit_error + needexit;
+    *total = group->exit_total;
+    if(!--group->jobs)
+	needfree = 1;
+    pthread_mutex_unlock(&group->mutex);
+    if (needfree) {
+	logg("*THRMGR: freeing %p\n", group);
+	free(group);
+    }
+}
+
+#define JOBGROUP_INITIALIZER  { PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER, 1, 0, 0, 0, 0 };
+jobgroup_t *thrmgr_group_new(void)
+{
+    jobgroup_t *group;
+    jobgroup_t dummy = JOBGROUP_INITIALIZER;
+
+    group = malloc(sizeof(*group));
+    if (!group)
+	return NULL;
+    memcpy(group, &dummy, sizeof(dummy));
+    return group;
+}
+
+int thrmgr_group_need_terminate(jobgroup_t *group)
+{
+    int ret;
+    if (group) {
+	pthread_mutex_lock(&group->mutex);
+	ret = group->force_exit;
+	pthread_mutex_unlock(&group->mutex);
+    } else
+	ret = 0;
+    pthread_mutex_lock(&exit_mutex);
+    ret |= progexit;
+    pthread_mutex_unlock(&exit_mutex);
+    return ret;
+}
+
+/* returns
+ *  0 - flag set, jobs still active
+ *  1 - last job exited */
+int thrmgr_group_terminate(jobgroup_t *group)
+{
+    if (thrmgr_group_finished(group, EXIT_ERROR))
+	return 1;
+    /* we are not last active job, now
+     * the last active job will free resources */
+    pthread_mutex_lock(&group->mutex);
+    group->force_exit = 1;
+    pthread_mutex_unlock(&group->mutex);
+
+    return 0;
 }

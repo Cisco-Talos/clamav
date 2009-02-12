@@ -25,7 +25,8 @@
 
 #include "libclamav/clamav.h"
 #include "shared/optparser.h"
-
+#include "thrmgr.h"
+#include "session.h"
 struct thrarg {
     int sid;
     int options;
@@ -43,9 +44,12 @@ struct thrwarg {
     unsigned int options;
 };
 
-int acceptloop_th(int *socketds, int nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts);
+int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts);
 void sighandler(int sig);
 void sighandler_th(int sig);
 void sigsegv(int sig);
+
+extern pthread_mutex_t exit_mutex, reload_mutex;
+extern int progexit, reload;
 
 #endif
