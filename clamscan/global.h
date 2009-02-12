@@ -24,8 +24,6 @@ struct s_info {
     unsigned int dirs;		/* number of scanned directories */
     unsigned int files;		/* number of scanned files */
     unsigned int ifiles;	/* number of infected files */
-    unsigned int notremoved;	/* number of not removed files (if --remove) */
-    unsigned int notmoved;	/* number of not moved files (if --move) */
     unsigned long int blocks;	/* number of read 16kb blocks */
 };
 

@@ -49,6 +49,7 @@
 #include "shared/optparser.h"
 #include "shared/output.h"
 #include "shared/misc.h"
+#include "shared/actions.h"
 #include "libclamav/str.h"
 #include "libclamav/others.h"
 
@@ -63,44 +64,12 @@
 #define PATH_MAX 1024
 #endif
 
-int notremoved = 0, notmoved = 0;
 struct sockaddr *mainsa = NULL;
 int mainsasz;
 unsigned long int maxstream;
 static struct sockaddr_un nixsock;
 static struct sockaddr_in tcpsock;
 
-/* OnInfected action handlers/wrappers */
-void (*action)(const char *) = NULL;
-static char *actarget;
-static void move_infected(const char *filename, int move);
-static void action_move(const char *filename) {
-    move_infected(filename, 1);
-}
-static void action_copy(const char *filename) {
-    move_infected(filename, 0);
-}
-static void action_remove(const char *filename) {
-    if(unlink(filename)) {
-	logg("!%s: Can't remove.\n", filename);
-	notremoved++;
-    } else {
-	logg("~%s: Removed.\n", filename);
-    }
-}
-
-/* Inits the OnInfected action */
-void actsetup(const struct optstruct *opts) {
-    if(optget(opts, "move")->enabled) {
-	actarget = optget(opts, "move")->strarg;
-	action = action_move;
-    } else if (optget(opts, "copy")->enabled) {
-	actarget = optget(opts, "copy")->strarg;
-	action = action_copy;
-    } else if(optget(opts, "remove")->enabled) {
-	action = action_remove;
-    }
-}
 
 /* Inits the communication layer
  * Returns 0 if clamd is local, non zero if clamd is remote */
@@ -186,16 +155,16 @@ static char *makeabs(const char *basepath) {
 
 /* Recursively scans a path with the given scantype
  * Returns non zero for serious errors, zero otherwise */
-static int client_scan(const char *file, int scantype, int *infected, int *errors, int maxlevel, int session) {
+static int client_scan(const char *file, int scantype, int *infected, int *errors, int maxlevel, int session, int flags) {
     int ret;
     char *fullpath = makeabs(file);
 
     if(!fullpath)
 	return 0;
     if (!session)
-	ret = serial_client_scan(fullpath, scantype, infected, errors, maxlevel);
+	ret = serial_client_scan(fullpath, scantype, infected, errors, maxlevel, flags);
     else
-	ret = parallel_client_scan(fullpath, scantype, infected, errors, maxlevel);
+	ret = parallel_client_scan(fullpath, scantype, infected, errors, maxlevel, flags);
     free(fullpath);
     return ret;
 }
@@ -257,7 +226,7 @@ int client(const struct optstruct *opts, int *infected)
 {
 	const char *clamd_conf = optget(opts, "config-file")->strarg;
 	struct optstruct *clamdopts;
-	int remote, scantype, session = 0, errors = 0, scandash = 0, maxrec;
+	int remote, scantype, session = 0, errors = 0, scandash = 0, maxrec, flags = 0;
 
     if((clamdopts = optparse(clamd_conf, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
 	logg("!Can't parse clamd configuration file %s\n", clamd_conf);
@@ -281,6 +250,10 @@ int client(const struct optstruct *opts, int *infected)
 
     maxrec = optget(clamdopts, "MaxDirectoryRecursion")->numarg;
     maxstream = optget(clamdopts, "StreamMaxLength")->numarg;
+    if (optget(clamdopts, "FollowDirectorySymlinks")->enabled)
+	flags |= CLI_FTW_FOLLOW_DIR_SYMLINK;
+    if (optget(clamdopts, "FollowFileSymlinks")->enabled)
+	flags |= CLI_FTW_FOLLOW_FILE_SYMLINK;
     optfree(clamdopts);
 
     if(!mainsa) {
@@ -307,111 +280,10 @@ int client(const struct optstruct *opts, int *infected)
 		logg("!Scanning from standard input requires \"-\" to be the only file argument\n");
 		continue;
 	    }
-	    if(client_scan(opts->filename[i], scantype, infected, &errors, maxrec, session)) break;
+	    if(client_scan(opts->filename[i], scantype, infected, &errors, maxrec, session, flags)) break;
 	}
     } else {
-	client_scan("", scantype, infected, &errors, maxrec, session);
+	client_scan("", scantype, infected, &errors, maxrec, session, flags);
     }
     return *infected ? 1 : (errors ? 2 : 0);
-}
-
-void move_infected(const char *filename, int move)
-{
-	char *movefilename, numext[4 + 1];
-	const char *tmp;
-	struct stat ofstat, mfstat;
-	int n, len, movefilename_size;
-	struct utimbuf ubuf;
-
-    if(access(actarget, W_OK|X_OK) == -1) {
-        logg("!problem %s file '%s': cannot write to '%s': %s\n", (move) ? "moving" : "copying", filename, actarget, strerror(errno));
-        notmoved++;
-        return;
-    }
-
-    if(stat(filename, &ofstat) == -1) {
-        logg("^Can't stat file %s\n", filename);
-	logg("Try to run clamdscan with clamd privileges\n");
-        notmoved++;
-	return;
-    }
-
-    if(!(tmp = strrchr(filename, '/')))
-	tmp = filename;
-
-    movefilename_size = sizeof(char) * (strlen(actarget) + strlen(tmp) + sizeof(numext) + 2);
-
-    if(!(movefilename = malloc(movefilename_size))) {
-        logg("!Memory allocation error\n");
-	exit(2);
-    }
-
-    if(!(cli_strrcpy(movefilename, actarget))) {
-        logg("!cli_strrcpy() returned NULL\n");
-        notmoved++;
-        free(movefilename);
-        return;
-    }
-
-    strcat(movefilename, "/");
-
-    if(!(strcat(movefilename, tmp))) {
-        logg("!strcat() returned NULL\n");
-        notmoved++;
-        free(movefilename);
-        return;
-    }
-
-    if(!stat(movefilename, &mfstat)) {
-        if((ofstat.st_dev == mfstat.st_dev) && (ofstat.st_ino == mfstat.st_ino)) { /* It's the same file */
-            logg("File excluded '%s'\n", filename);
-            notmoved++;
-            free(movefilename);
-            return;
-        } else {
-            /* file exists - try to append an ordinal number to the
-	     * quranatined file in an attempt not to overwrite existing
-	     * files in quarantine  
-	     */
-            len = strlen(movefilename);
-            n = 0;        		        		
-            do {
-                /* reset the movefilename to it's initial value by
-		 * truncating to the original filename length
-		 */
-                movefilename[len] = 0;
-                /* append .XXX */
-                sprintf(numext, ".%03d", n++);
-                strcat(movefilename, numext);            	
-            } while(!stat(movefilename, &mfstat) && (n < 1000));
-       }
-    }
-
-    if(!move || rename(filename, movefilename) == -1) {
-	if(filecopy(filename, movefilename) == -1) {
-	    logg("^cannot %s '%s' to '%s': %s\n", (move) ? "move" : "copy", filename, movefilename, strerror(errno));
-	    notmoved++;
-	    free(movefilename);
-	    return;
-	}
-
-	chmod(movefilename, ofstat.st_mode);
-	if(chown(movefilename, ofstat.st_uid, ofstat.st_gid) == -1)
-	    logg("^chown() failed for %s: %s\n", movefilename, strerror(errno));
-
-	ubuf.actime = ofstat.st_atime;
-	ubuf.modtime = ofstat.st_mtime;
-	utime(movefilename, &ubuf);
-
-	if(move && unlink(filename)) {
-	    logg("^cannot unlink '%s': %s\n", filename, strerror(errno));
-	    notremoved++;
-	    free(movefilename);
-	    return;
-	}
-    }
-
-    logg("%s: %s to '%s'\n", (move)?"moved":"copied", filename, movefilename);
-
-    free(movefilename);
 }

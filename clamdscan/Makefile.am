@@ -29,6 +29,8 @@ clamdscan_SOURCES = \
     $(top_srcdir)/shared/misc.h \
     $(top_srcdir)/shared/getopt.c \
     $(top_srcdir)/shared/getopt.h \
+    $(top_srcdir)/shared/actions.c \
+    $(top_srcdir)/shared/actions.h \
     $(top_srcdir)/libclamav/regex/strlcpy.c\
     clamdscan.c \
     proto.c \

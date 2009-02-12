@@ -31,13 +31,13 @@
 #include "shared/output.h"
 #include "shared/misc.h"
 #include "shared/optparser.h"
+#include "shared/actions.h"
 
 #include "client.h"
 
 void help(void);
 
 extern int printinfected;
-extern int notremoved, notmoved;
 
 static void print_server_version(const struct optstruct *opt)
 {
@@ -108,7 +108,12 @@ int main(int argc, char **argv)
 	exit(ret);
     }
 
-    actsetup(opts);
+    if(actsetup(opts)) {
+	optfree(opts);
+	logg_close();
+	exit(2);
+    }
+
     memset(&sigact, 0, sizeof(struct sigaction));
     sigact.sa_handler = SIG_IGN;
     sigemptyset(&sigact.sa_mask);

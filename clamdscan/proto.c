@@ -31,6 +31,7 @@
 #include <arpa/inet.h>
 
 #include "libclamav/others.h"
+#include "shared/actions.h"
 #include "shared/output.h"
 
 #include "proto.h"
@@ -40,7 +41,6 @@ extern struct sockaddr *mainsa;
 extern int mainsasz;
 extern unsigned long int maxstream;
 int printinfected;
-extern void (*action)(const char *);
 
 static const char *scancmd[] = { "CONTSCAN", "MULTISCAN" };
 
@@ -112,7 +112,6 @@ int recvln(struct RCVLN *s, char **rbol, char **reol) {
 		    return -1;
 		}
 		*rbol = NULL;
-		if(reol) *reol = eol;
 	        return 0;
 	    }
 	}
@@ -364,7 +363,7 @@ static int serial_callback(struct stat *sb, char *filename, const char *path, en
 
 /* Non-IDSESSION handler
  * Returns non zero for serious errors, zero otherwise */
-int serial_client_scan(const char *file, int scantype, int *infected, int *errors, int maxlevel) {
+int serial_client_scan(const char *file, int scantype, int *infected, int *errors, int maxlevel, int flags) {
     struct cli_ftw_cbdata data;
     struct client_serial_data cdata;
     int ftw;
@@ -375,7 +374,7 @@ int serial_client_scan(const char *file, int scantype, int *infected, int *error
     cdata.spam = 0;
     data.data = &cdata;
 
-    ftw = cli_ftw(file, 0, maxlevel ? maxlevel : INT_MAX, serial_callback, &data);
+    ftw = cli_ftw(file, flags, maxlevel ? maxlevel : INT_MAX, serial_callback, &data);
     *infected += cdata.infected;
     *errors += cdata.errors;
 
@@ -541,7 +540,7 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
 
 /* IDSESSION handler
  * Returns non zero for serious errors, zero otherwise */
-int parallel_client_scan(const char *file, int scantype, int *infected, int *errors, int maxlevel) {
+int parallel_client_scan(const char *file, int scantype, int *infected, int *errors, int maxlevel, int flags) {
     struct cli_ftw_cbdata data;
     struct client_parallel_data cdata;
     int ftw;
@@ -562,7 +561,7 @@ int parallel_client_scan(const char *file, int scantype, int *infected, int *err
     cdata.ids = NULL;
     data.data = &cdata;
 
-    ftw = cli_ftw(file, 0, maxlevel ? maxlevel : INT_MAX, parallel_callback, &data);
+    ftw = cli_ftw(file, flags, maxlevel ? maxlevel : INT_MAX, parallel_callback, &data);
 
     if(ftw != CL_SUCCESS && ftw != CL_BREAK) {
 	*infected += cdata.infected;
