@@ -1,3 +1,10 @@
+Thu Feb 12 17:11:16 EET 2009 (edwin)
+------------------------------------
+ * Makefile.in, unit_tests/Makefile.am, unit_tests/Makefile.in,
+ unit_tests/check_clamd.c, unit_tests/check_clamd.sh,
+ unit_tests/checks.h, unit_tests/checks_common.h: initial version of
+ clamd proto tests
+
 Thu Feb 12 14:15:14 EET 2009 (edwin)
 ------------------------------------
  * clamd/session.c: actually use the flags we calculated!

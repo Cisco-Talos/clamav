@@ -89,6 +89,12 @@ run_clamdscan() {
 		cat clamdscan-multiscan.log
 		die 1
 	fi
+	$TOP/unit_tests/check_clamd
+	ecode=$?
+	if test $ecode -ne 77 && test $ecode -ne 0; then
+	    error "Failed clamd protocol test!"
+	    die 1
+	fi
 }
 
 run_reload_test()
