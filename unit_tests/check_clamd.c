@@ -2,6 +2,7 @@
 #include "clamav-config.h"
 #endif
 
+#include <arpa/inet.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -93,9 +94,9 @@ static void *recvfull(int sd, size_t *len)
 static void test_command(const char *cmd, size_t len, const char *expect, size_t expect_len)
 {
     void *recvdata;
-    int rc;
+    ssize_t rc;
     rc = send(sockd, cmd, len, 0);
-    fail_unless_fmt(rc == len, "Unable to send(): %s\n", strerror(errno));
+    fail_unless_fmt((size_t)rc == len, "Unable to send(): %s\n", strerror(errno));
 
     recvdata = recvfull(sockd, &len);
 
@@ -109,9 +110,7 @@ static void test_command(const char *cmd, size_t len, const char *expect, size_t
 
 START_TEST (test_basic_commands)
 {
-    int rc;
     struct basic_test *test = &basic_tests[_i];
-    size_t len;
     char nsend[BUFSIZ], nreply[BUFSIZ];
     /* send the command the "old way" */
     conn_setup();
@@ -127,7 +126,7 @@ START_TEST (test_basic_commands)
 
     /* send zCOMMAND */
     conn_setup();
-    snprintf(nsend, sizeof(nsend), "z%s\0", test->command);
+    snprintf(nsend, sizeof(nsend), "z%s", test->command);
     test_command(nsend, strlen(nsend)+1, test->reply, strlen(test->reply)+1);
     conn_teardown();
 }
@@ -163,7 +162,7 @@ START_TEST (tc_instream)
     close(fd);
 
     conn_setup();
-    fail_unless(send(sockd, buf, off, 0) == off, "send() failed: %s\n", strerror(errno));
+    fail_unless((size_t)send(sockd, buf, off, 0) == off, "send() failed: %s\n", strerror(errno));
 
     recvdata = recvfull(sockd, &len);
 

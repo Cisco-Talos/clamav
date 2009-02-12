@@ -1,3 +1,7 @@
+Thu Feb 12 20:54:09 EET 2009 (edwin)
+------------------------------------
+ * unit_tests/check_clamd.c: fix distcheck errors
+
 Thu Feb 12 20:51:04 EET 2009 (edwin)
 ------------------------------------
  * unit_tests/check_clamd.c: add another missing file
