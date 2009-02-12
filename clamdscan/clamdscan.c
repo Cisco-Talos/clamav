@@ -31,13 +31,13 @@
 #include "shared/output.h"
 #include "shared/misc.h"
 #include "shared/optparser.h"
+#include "shared/actions.h"
 
 #include "client.h"
 
 void help(void);
 
 extern int printinfected;
-extern int notremoved, notmoved;
 
 static void print_server_version(const struct optstruct *opt)
 {
@@ -45,15 +45,6 @@ static void print_server_version(const struct optstruct *opt)
 	/* can't get version from server, fallback */
 	printf("ClamAV %s\n", get_version());
     }
-}
-
-static int reload_server_database(const struct optstruct *opt)
-{
-    if(reload_clamd_database(opt)) {
-	logg("!Clamd did not reload the database\n");
-	return 2;
-    }
-    return 0;
 }
 
 int main(int argc, char **argv)
@@ -64,6 +55,7 @@ int main(int argc, char **argv)
 	time_t starttime;
         struct optstruct *opts;
         const struct optstruct *opt;
+	struct sigaction sigact;
 
 
     if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMDSCAN, OPT_CLAMSCAN, NULL)) == NULL) {
@@ -110,11 +102,23 @@ int main(int argc, char **argv)
 
 
     if(optget(opts, "reload")->enabled) {
-	ret = reload_server_database(opts);
+	ret = reload_clamd_database(opts);
 	optfree(opts);
 	logg_close();
 	exit(ret);
     }
+
+    if(actsetup(opts)) {
+	optfree(opts);
+	logg_close();
+	exit(2);
+    }
+
+    memset(&sigact, 0, sizeof(struct sigaction));
+    sigact.sa_handler = SIG_IGN;
+    sigemptyset(&sigact.sa_mask);
+    sigaddset(&sigact.sa_mask, SIGPIPE);
+    sigaction(SIGPIPE, &sigact, NULL);
 
     time(&starttime);
     /* ctime() does \n, but I need it once more */

@@ -73,8 +73,8 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_clamscan_OBJECTS = output.$(OBJEXT) getopt.$(OBJEXT) \
-	optparser.$(OBJEXT) misc.$(OBJEXT) clamscan.$(OBJEXT) \
-	others.$(OBJEXT) manager.$(OBJEXT)
+	optparser.$(OBJEXT) actions.$(OBJEXT) misc.$(OBJEXT) \
+	clamscan.$(OBJEXT) others.$(OBJEXT) manager.$(OBJEXT)
 clamscan_OBJECTS = $(am_clamscan_OBJECTS)
 clamscan_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -253,6 +253,8 @@ clamscan_SOURCES = \
     $(top_srcdir)/shared/getopt.h \
     $(top_srcdir)/shared/optparser.c \
     $(top_srcdir)/shared/optparser.h \
+    $(top_srcdir)/shared/actions.c \
+    $(top_srcdir)/shared/actions.h \
     $(top_srcdir)/shared/misc.c \
     $(top_srcdir)/shared/misc.h \
     clamscan.c \
@@ -351,6 +353,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/actions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamscan.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/manager.Po@am__quote@
@@ -421,6 +424,20 @@ optparser.obj: $(top_srcdir)/shared/optparser.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/optparser.c' object='optparser.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o optparser.obj `if test -f '$(top_srcdir)/shared/optparser.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/optparser.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/optparser.c'; fi`
+
+actions.o: $(top_srcdir)/shared/actions.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT actions.o -MD -MP -MF $(DEPDIR)/actions.Tpo -c -o actions.o `test -f '$(top_srcdir)/shared/actions.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/actions.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/actions.Tpo $(DEPDIR)/actions.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/actions.c' object='actions.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o actions.o `test -f '$(top_srcdir)/shared/actions.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/actions.c
+
+actions.obj: $(top_srcdir)/shared/actions.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT actions.obj -MD -MP -MF $(DEPDIR)/actions.Tpo -c -o actions.obj `if test -f '$(top_srcdir)/shared/actions.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/actions.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/actions.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/actions.Tpo $(DEPDIR)/actions.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/actions.c' object='actions.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o actions.obj `if test -f '$(top_srcdir)/shared/actions.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/actions.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/actions.c'; fi`
 
 misc.o: $(top_srcdir)/shared/misc.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT misc.o -MD -MP -MF $(DEPDIR)/misc.Tpo -c -o misc.o `test -f '$(top_srcdir)/shared/misc.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/misc.c

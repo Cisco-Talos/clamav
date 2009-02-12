@@ -52,6 +52,7 @@
 #include "global.h"
 
 #include "shared/optparser.h"
+#include "shared/actions.h"
 #include "shared/output.h"
 #include "shared/misc.h"
 
@@ -74,8 +75,6 @@ dev_t procdev;
 #ifndef	O_BINARY
 #define	O_BINARY    0
 #endif
-
-static void move_infected(const char *filename, const struct optstruct *opts);
 
 static int scanfile(const char *filename, struct cl_engine *engine, const struct optstruct *opts, unsigned int options)
 {
@@ -162,17 +161,8 @@ static int scanfile(const char *filename, struct cl_engine *engine, const struct
 
     close(fd);
 
-    if(ret == CL_VIRUS) {
-	if(optget(opts, "remove")->enabled) {
-	    if(unlink(filename)) {
-		logg("^%s: Can't remove\n", filename);
-		info.notremoved++;
-	    } else {
-		logg("~%s: Removed\n", filename);
-	    }
-	} else if(optget(opts, "move")->enabled || optget(opts, "copy")->enabled)
-            move_infected(filename, opts);
-    }
+    if(ret == CL_VIRUS && action)
+	action(filename);
 
     return ret;
 }
@@ -664,114 +654,5 @@ int scanmanager(const struct optstruct *opts)
 	ret = 0; /* just make sure it's 0 */
 
     return ret;
-}
-
-static void move_infected(const char *filename, const struct optstruct *opts)
-{
-	char *movedir, *movefilename, numext[4 + 1];
-	const char *tmp;
-	struct stat ofstat, mfstat;
-	int n, len, movefilename_size;
-	int moveflag = optget(opts, "move")->enabled;
-	struct utimbuf ubuf;
-
-
-    if((moveflag && !(movedir = optget(opts, "move")->strarg)) ||
-	(!moveflag && !(movedir = optget(opts, "copy")->strarg))) {
-        /* Should never reach here */
-        logg("!opt_arg() returned NULL\n");
-        info.notmoved++;
-        return;
-    }
-
-    if(access(movedir, W_OK|X_OK) == -1) {
-	logg("!Can't %s file '%s': cannot write to '%s': %s\n", (moveflag) ? "move" : "copy", filename, movedir, strerror(errno));
-        info.notmoved++;
-        return;
-    }
-
-    if(!(tmp = strrchr(filename, '/')))
-	tmp = filename;
-
-    movefilename_size = sizeof(char) * (strlen(movedir) + strlen(tmp) + sizeof(numext) + 2);
-
-    if(!(movefilename = malloc(movefilename_size))) {
-        logg("!malloc() failed\n");
-	exit(71);
-    }
-
-    if(!(cli_strrcpy(movefilename, movedir))) {
-        logg("!cli_strrcpy() returned NULL\n");
-        info.notmoved++;
-        free(movefilename);
-        return;
-    }
-
-    strcat(movefilename, "/");
-
-    if(!(strcat(movefilename, tmp))) {
-        logg("!strcat() returned NULL\n");
-        info.notmoved++;
-        free(movefilename);
-        return;
-    }
-
-    stat(filename, &ofstat);
-
-    if(!stat(movefilename, &mfstat)) {
-        if((ofstat.st_dev == mfstat.st_dev) && (ofstat.st_ino == mfstat.st_ino)) { /* It's the same file*/
-            logg("File excluded '%s'\n", filename);
-            info.notmoved++;
-            free(movefilename);
-            return;
-        } else {
-            /* file exists - try to append an ordinal number to the
-	     * quranatined file in an attempt not to overwrite existing
-	     * files in quarantine  
-	     */
-            len = strlen(movefilename);
-            n = 0;        		        		
-            do {
-                /* reset the movefilename to it's initial value by
-		 * truncating to the original filename length
-		 */
-                movefilename[len] = 0;
-                /* append .XXX */
-                sprintf(numext, ".%03d", n++);
-                strcat(movefilename, numext);            	
-            } while(!stat(movefilename, &mfstat) && (n < 1000));
-       }
-    }
-
-    if(!moveflag || rename(filename, movefilename) == -1) {
-	if(filecopy(filename, movefilename) == -1) {
-	    logg("!Can't %s '%s' to '%s': %s\n", (moveflag) ? "move" : "copy", filename, movefilename, strerror(errno));
-	    info.notmoved++;
-	    free(movefilename);
-	    return;
-	}
-
-	chmod(movefilename, ofstat.st_mode);
-#ifndef C_OS2
-	if(chown(movefilename, ofstat.st_uid, ofstat.st_gid) == -1) {
-		logg("!Can't chown '%s': %s\n", movefilename, strerror(errno));
-	}
-#endif
-
-	ubuf.actime = ofstat.st_atime;
-	ubuf.modtime = ofstat.st_mtime;
-	utime(movefilename, &ubuf);
-
-	if(moveflag && unlink(filename)) {
-	    logg("!Can't unlink '%s': %s\n", filename, strerror(errno));
-	    info.notremoved++;            
-	    free(movefilename);
-	    return;
-	}
-    }
-
-    logg("~%s: %s to '%s'\n", filename, (moveflag) ? "moved" : "copied", movefilename);
-
-    free(movefilename);
 }
 

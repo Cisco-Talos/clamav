@@ -1,5 +1,7 @@
 /*
- *  Copyright (C) 2002 - 2004 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2009 Sourcefire, Inc.
+ *
+ *  Authors: aCaB
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -16,18 +18,13 @@
  *  MA 02110-1301, USA.
  */
 
-#ifndef __GLOBAL_H
-#define __GLOBAL_H
+#ifndef ACTIONS_H
+#define ACTIONS_H
 
-struct s_info {
-    unsigned int sigs;		/* number of signatures */
-    unsigned int dirs;		/* number of scanned directories */
-    unsigned int files;		/* number of scanned files */
-    unsigned int ifiles;	/* number of infected files */
-    unsigned long int blocks;	/* number of read 16kb blocks */
-};
+#include "shared/optparser.h"
 
-extern struct s_info info;
-extern short recursion, printinfected, bell;
+extern void (*action)(const char *);
+int actsetup(const struct optstruct *opts);
+extern unsigned int notremoved, notmoved;
 
 #endif

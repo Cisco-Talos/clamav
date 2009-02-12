@@ -44,6 +44,7 @@
 
 #include "shared/misc.h"
 #include "shared/output.h"
+#include "shared/actions.h"
 #include "shared/optparser.h"
 
 #include "libclamav/str.h"
@@ -145,6 +146,11 @@ int main(int argc, char **argv)
     } else 
 	logg_file = NULL;
 
+    if(actsetup(opts)) {
+	optfree(opts);
+	logg_close();
+	exit(2);
+    }
 
     memset(&info, 0, sizeof(struct s_info));
 
@@ -179,11 +185,11 @@ int main(int argc, char **argv)
 	logg("Scanned directories: %u\n", info.dirs);
 	logg("Scanned files: %u\n", info.files);
 	logg("Infected files: %u\n", info.ifiles);
-	if(info.notremoved) {
-	    logg("Not removed: %u\n", info.notremoved);
+	if(notremoved) {
+	    logg("Not removed: %u\n", notremoved);
 	}
-	if(info.notmoved) {
-	    logg("Not %s: %u\n", optget(opts, "copy")->enabled ? "moved" : "copied", info.notmoved);
+	if(notmoved) {
+	    logg("Not %s: %u\n", optget(opts, "copy")->enabled ? "moved" : "copied", notmoved);
 	}
 	mb = info.blocks * (CL_COUNT_PRECISION / 1024) / 1024.0;
 	logg("Data scanned: %2.2lf MB\n", mb);
