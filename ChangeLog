@@ -1,3 +1,7 @@
+Thu Feb 12 14:15:14 EET 2009 (edwin)
+------------------------------------
+ * clamd/session.c: actually use the flags we calculated!
+
 Thu Feb 12 12:44:55 EET 2009 (edwin)
 ------------------------------------
  * unit_tests/check_clamd.sh: add some minimal tests for new
