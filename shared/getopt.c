@@ -48,7 +48,7 @@ int getopt_reset(void)
 
 int getopt(int argc, char * const argvc[], const char *opts)
 {
-  char **argv = (char*)argvc;
+  char **argv = (char**)argvc;
   static int charind=0;
   const char *s;
   char mode, colon_mode;

@@ -1,3 +1,7 @@
+Thu Feb 12 21:47:27 EET 2009 (edwin)
+------------------------------------
+ * shared/getopt.c: fix
+
 Thu Feb 12 21:35:15 EET 2009 (edwin)
 ------------------------------------
  * shared/getopt.c, shared/getopt.h: make prototype compatible with
