@@ -1131,17 +1131,6 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     logg("*Shutting down the main socket%s.\n", (nsockets > 1) ? "s" : "");
     for (i = 0; i < nsockets; i++)
 	shutdown(socketds[i], 2);
-    logg("*Closing the main socket%s.\n", (nsockets > 1) ? "s" : "");
-    for (i = 0; i < nsockets; i++)
-	closesocket(socketds[i]);
-#ifndef C_OS2
-    if((opt = optget(opts, "LocalSocket"))->enabled) {
-	if(unlink(opt->strarg) == -1)
-	    logg("!Can't unlink the socket file %s\n", opt->strarg);
-	else
-	     logg("Socket file removed.\n");
-    }
-#endif
 
     if((opt = optget(opts, "PidFile"))->enabled) {
 	if(unlink(opt->strarg) == -1)

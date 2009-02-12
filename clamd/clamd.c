@@ -89,7 +89,7 @@ static void help(void)
 static struct optstruct *opts;
 /* needs to be global, so that valgrind reports it as reachable, and not
  * as definetely/indirectly lost when daemonizing clamd */
-static struct cl_engine *engine;
+static struct cl_engine *engine = NULL;
 int main(int argc, char **argv)
 {
 	const struct optstruct *opt;
@@ -208,30 +208,29 @@ int main(int argc, char **argv)
     logg_size = optget(opts, "LogFileMaxSize")->numarg;
     logg_verbose = mprintf_verbose = optget(opts, "LogVerbose")->enabled;
 
+    do { /* logger initialized */
+
     if((opt = optget(opts, "LogFile"))->enabled) {
 	char timestr[32];
 	logg_file = opt->strarg;
 	if(strlen(logg_file) < 2 || (logg_file[0] != '/' && logg_file[0] != '\\' && logg_file[1] != ':')) {
 	    fprintf(stderr, "ERROR: LogFile requires full path.\n");
-	    logg_close();
-	    optfree(opts);
-	    return 1;
+	    ret = 1;
+	    break;
 	}
 	time(&currtime);
 	if(logg("#+++ Started at %s", cli_ctime(&currtime, timestr, sizeof(timestr)))) {
 	    fprintf(stderr, "ERROR: Can't initialize the internal logger\n");
-	    logg_close();
-	    optfree(opts);
-	    return 1;
+	    ret = 1;
+	    break;
 	}
     } else
 	logg_file = NULL;
 
     if((ret = cl_init(CL_INIT_DEFAULT))) {
 	logg("!Can't initialize libclamav: %s\n", cl_strerror(ret));
-	logg_close();
-	optfree(opts);
-	return 1;
+	ret = 1;
+	break;
     }
 
     if(optget(opts, "Debug")->enabled) /* enable debug messages in libclamav */
@@ -244,9 +243,8 @@ int main(int argc, char **argv)
 	opt = optget(opts, "LogFacility");
 	if((fac = logg_facility(opt->strarg)) == -1) {
 	    logg("!LogFacility: %s: No such facility.\n", opt->strarg);
-	    logg_close();
-	    optfree(opts);
-	    return 1;
+	    ret = 1;
+	    break;
 	}
 
 	openlog("clamd", LOG_PID, fac);
@@ -270,9 +268,8 @@ int main(int argc, char **argv)
 
     if(!tcpsock && !localsock) {
 	logg("!Please define server type (local and/or TCP).\n");
-	logg_close();
-	optfree(opts);
-	return 1;
+	ret = 1;
+	break;
     }
 
     logg("#clamd daemon %s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n", get_version());
@@ -291,16 +288,14 @@ int main(int argc, char **argv)
     max_port = optget(opts, "StreamMaxPort")->numarg;
     if (min_port < 1024 || min_port > max_port || max_port > 65535) {
 	logg("!Invalid StreaMinPort/StreamMaxPort: %d, %d\n", min_port, max_port);
-	logg_close();
-	optfree(opts);
-	return 1;
+	ret = 1;
+	break;
     }
 
     if(!(engine = cl_engine_new())) {
 	logg("!Can't initialize antivirus engine\n");
-	logg_close();
-	optfree(opts);
-	return 1;
+	ret = 1;
+	break;
     }
 
     /* load the database(s) */
@@ -317,10 +312,9 @@ int main(int argc, char **argv)
 	    while(opt) {
 		if(!(pua_cats = realloc(pua_cats, i + strlen(opt->strarg) + 3))) {
 		    logg("!Can't allocate memory for pua_cats\n");
-		    logg_close();
-		    optfree(opts);
 		    cl_engine_free(engine);
-		    return 1;
+		    ret = 1;
+		    break;
 		}
 		logg("# %s", opt->strarg);
 		sprintf(pua_cats + i, ".%s", opt->strarg);
@@ -328,6 +322,8 @@ int main(int argc, char **argv)
 		pua_cats[i] = 0;
 		opt = opt->nextarg;
 	    }
+	    if (ret)
+		break;
 	    logg("#\n");
 	    pua_cats[i] = '.';
 	    pua_cats[i + 1] = 0;
@@ -336,11 +332,9 @@ int main(int argc, char **argv)
 	if((opt = optget(opts, "IncludePUA"))->enabled) {
 	    if(pua_cats) {
 		logg("!ExcludePUA and IncludePUA cannot be used at the same time\n");
-		logg_close();
-		optfree(opts);
 		free(pua_cats);
-		cl_engine_free(engine);
-		return 1;
+		ret = 1;
+		break;
 	    }
 	    dboptions |= CL_DB_PUA_INCLUDE;
 	    i = 0;
@@ -348,10 +342,8 @@ int main(int argc, char **argv)
 	    while(opt) {
 		if(!(pua_cats = realloc(pua_cats, i + strlen(opt->strarg) + 3))) {
 		    logg("!Can't allocate memory for pua_cats\n");
-		    logg_close();
-		    optfree(opts);
-		    cl_engine_free(engine);
-		    return 1;
+		    ret = 1;
+		    break;
 		}
 		logg("# %s", opt->strarg);
 		sprintf(pua_cats + i, ".%s", opt->strarg);
@@ -359,6 +351,8 @@ int main(int argc, char **argv)
 		pua_cats[i] = 0;
 		opt = opt->nextarg;
 	    }
+	    if (ret)
+		break;
 	    logg("#\n");
 	    pua_cats[i] = '.';
 	    pua_cats[i + 1] = 0;
@@ -367,11 +361,9 @@ int main(int argc, char **argv)
 	if(pua_cats) {
 	    if((ret = cl_engine_set(engine, CL_ENGINE_PUA_CATEGORIES, pua_cats))) {
 		logg("!cli_engine_set(CL_ENGINE_PUA_CATEGORIES) failed: %s\n", cl_strerror(ret));
-		logg_close();
-		optfree(opts);
 		free(pua_cats);
-		cl_engine_free(engine);
-		return 1;
+		ret = 1;
+		break;
 	    }
 	    free(pua_cats);
 	}
@@ -383,10 +375,8 @@ int main(int argc, char **argv)
     if((opt = optget(opts, "TemporaryDirectory"))->enabled) {
 	if((ret = cl_engine_set(engine, CL_ENGINE_TMPDIR, opt->strarg))) {
 	    logg("!cli_engine_set(CL_ENGINE_TMPDIR) failed: %s\n", cl_strerror(ret));
-	    logg_close();
-	    optfree(opts);
-	    cl_engine_free(engine);
-	    return 1;
+	    ret = 1;
+	    break;
 	}
     }
 
@@ -419,19 +409,15 @@ int main(int argc, char **argv)
 
     if((ret = cl_load(dbdir, engine, &sigs, dboptions))) {
 	logg("!%s\n", cl_strerror(ret));
-	logg_close();
-	optfree(opts);
-	cl_engine_free(engine);
-	return 1;
+	ret = 1;
+	break;
     }
 
     logg("#Loaded %u signatures.\n", sigs);
     if((ret = cl_engine_compile(engine)) != 0) {
 	logg("!Database initialization error: %s\n", cl_strerror(ret));
-	logg_close();
-	optfree(opts);
-	cl_engine_free(engine);
-	return 1;
+	ret = 1;
+	break;
     }
 
     if(tcpsock) {
@@ -440,31 +426,21 @@ int main(int argc, char **argv)
 
 	if(WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR) {
 	    logg("!Error at WSAStartup(): %d\n", WSAGetLastError());
-	    logg_close();
-	    optfree(opts);
-	    cl_engine_free(engine);
-	    return 1;
+	    ret = 1;
+	    break;
 	}
 #endif
-	lsockets[nlsockets] = tcpserver(opts);
-	if(lsockets[nlsockets] == -1) {
-	    logg_close();
-	    optfree(opts);
-	    cl_engine_free(engine);
-	    return 1;
+	if ((lsockets[nlsockets] = tcpserver(opts)) == -1) {
+	    ret = 1;
+	    break;
 	}
 	nlsockets++;
     }
 
     if(localsock) {
-	lsockets[nlsockets] = localserver(opts);
-	if(lsockets[nlsockets] == -1) {
-	    logg_close();
-	    optfree(opts);
-	    if(tcpsock)
-		closesocket(lsockets[0]);
-	    cl_engine_free(engine);
-	    return 1;
+	if ((lsockets[nlsockets] = localserver(opts)) == -1) {
+	    ret = 1;
+	    break;
 	}
 	nlsockets++;
     }
@@ -479,10 +455,8 @@ int main(int argc, char **argv)
 #endif
 	if(daemonize() == -1) {
 	    logg("!daemonize() failed\n");
-	    logg_close();
-	    optfree(opts);
-	    cl_engine_free(engine);
-	    return 1;
+	    ret = 1;
+	    break;
 	}
 #ifdef C_BSD
 	for(ret=0;ret<nlsockets;ret++) {
@@ -496,8 +470,24 @@ int main(int argc, char **argv)
     } else
         foreground = 1;
 
-
     ret = recvloop_th(lsockets, nlsockets, engine, dboptions, opts);
+
+    } while (0);
+
+    logg("*Closing the main socket%s.\n", (nlsockets > 1) ? "s" : "");
+
+    for (i = 0; i < nlsockets; i++) {
+	closesocket(socketds[i]);
+    }
+
+#ifndef C_OS2
+    if(localsock && nlsockets) {
+	if(unlink(opt->strarg) == -1)
+	    logg("!Can't unlink the socket file %s\n", opt->strarg);
+	else
+	     logg("Socket file removed.\n");
+    }
+#endif
 
 #ifdef C_WINDOWS
     if(tcpsock)
