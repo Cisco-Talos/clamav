@@ -1,3 +1,8 @@
+Thu Feb 12 20:16:25 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c: add check for msg.controllen, apparently Mac OS X
+     sets it to 0, but CMSG_FIRSTHDR is not NULL!
+
 Thu Feb 12 20:09:17 EET 2009 (edwin)
 ------------------------------------
  * unit_tests/checks_common.h: add missing file

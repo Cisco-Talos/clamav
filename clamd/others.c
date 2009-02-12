@@ -282,17 +282,19 @@ static int read_fd_data(struct fd_buf *buf)
 	  logg("!control message truncated");
 	  return -1;
       }
-      for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
-	   cmsg = CMSG_NXTHDR(&msg, cmsg)) {
-	  if (cmsg->cmsg_len == CMSG_LEN(sizeof(int)) &&
-	      cmsg->cmsg_level == SOL_SOCKET &&
-	      cmsg->cmsg_type == SCM_RIGHTS) {
-	      if (buf->recvfd != -1) {
-		  logg("^Unclaimed file descriptor received. closing\n");
-		  close(buf->recvfd);
+      if (msg.msg_controllen) {
+	  for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL;
+	       cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+	      if (cmsg->cmsg_len == CMSG_LEN(sizeof(int)) &&
+		  cmsg->cmsg_level == SOL_SOCKET &&
+		  cmsg->cmsg_type == SCM_RIGHTS) {
+		  if (buf->recvfd != -1) {
+		      logg("^Unclaimed file descriptor received. closing\n");
+		      close(buf->recvfd);
+		  }
+		  buf->recvfd = *(int *)CMSG_DATA(cmsg);
+		  logg("*RECVMSG: got FD %d\n", buf->recvfd);
 	      }
-	      buf->recvfd = *(int *)CMSG_DATA(cmsg);
-	      logg("*RECVMSG: got FD %d\n", buf->recvfd);
 	  }
       }
   }
