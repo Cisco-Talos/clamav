@@ -449,6 +449,9 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 		    continue;
 		}
 		revents = data->poll_data[i].revents;
+		if (revents & (POLLIN|POLLHUP)) {
+		    logg("*POLL: POLLIN|POLLHUP on fd %d\n",data->poll_data[i].fd);
+		}
 		if (revents & POLLIN) {
 		    int ret = read_fd_data(&data->buf[i]);
 		    /* Data available to be read */
@@ -461,7 +464,8 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 		if (revents & (POLLHUP | POLLERR | POLLNVAL)) {
 		    if (revents & (POLLHUP| POLLNVAL)) {
 			/* remote disconnected */
-			logg("^poll_recv_fds: Client disconnected\n");
+			logg("^poll_recv_fds: Client disconnected (FD %d)\n",
+			     data->poll_data[i].fd);
 		    } else {
 			/* error on file descriptor */
 			logg("!poll_recv_fds: Error condition on fd %d\n",

@@ -876,6 +876,31 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			    logg("*RECVTH: mode -> MODE_WAITREPLY\n");
 			    /* no more commands are accepted */
 			    conn.mode = MODE_WAITREPLY;
+			    /* Stop monitoring this FD, it will be closed either
+			     * by us, or by the scanner thread. 
+			     * Never close a file descriptor that is being
+			     * monitored by poll()/select() from another thread,
+			     * because this can lead to subtle bugs such as:
+			     * Other thread closes file descriptor -> POLLHUP is
+			     * set, but the poller thread doesn't wake up yet.
+			     * Another client opens a connection and sends some
+			     * data. If the socket reuses the previous file descriptor,
+			     * then POLLIN is set on the file descriptor too.
+			     * When poll() wakes up it sees POLLIN | POLLHUP
+			     * and thinks that the client has sent some data,
+			     * and closed the connection, so clamd closes the
+			     * connection in turn resulting in a bug.
+			     *
+			     * If we wouldn't have poll()-ed the file descriptor
+			     * we closed in another thread, but rather made sure
+			     * that we don't put a FD that we're about to close
+			     * into poll()'s list of watched fds; then POLLHUP
+			     * would be set, but the file descriptor would stay
+			     * open, until we wake up from poll() and close it.
+			     * Thus a new connection won't be able to reuse the
+			     * same FD, and there is no bug.
+			     * */
+			    buf->fd = -1;
 			}
 		    }
 		    pos += cmdlen+1;

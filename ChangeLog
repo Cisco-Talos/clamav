@@ -1,3 +1,9 @@
+Thu Feb 12 11:37:29 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, clamd/server-th.c: Never close a file descriptor
+ that is monitored using poll()/select() from another thread.  It
+ introduces subtle bugs.
+
 Wed Feb 11 17:05:08 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c, clamd/scanner.c, clamd/server-th.c: fix some races
