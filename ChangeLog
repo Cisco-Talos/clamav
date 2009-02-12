@@ -1,3 +1,7 @@
+Thu Feb 12 20:09:17 EET 2009 (edwin)
+------------------------------------
+ * unit_tests/checks_common.h: add missing file
+
 Thu Feb 12 20:00:01 EET 2009 (edwin)
 ------------------------------------
  * clamdscan/client.c: fix merge mistake
