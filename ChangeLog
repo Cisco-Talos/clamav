@@ -1,3 +1,8 @@
+Thu Feb 12 12:44:55 EET 2009 (edwin)
+------------------------------------
+ * unit_tests/check_clamd.sh: add some minimal tests for new
+ clamd/clamdscan features
+
 Thu Feb 12 12:35:19 EET 2009 (edwin)
 ------------------------------------
  * clamd/scanner.c, clamd/server-th.c, clamd/session.c,
