@@ -477,15 +477,16 @@ int main(int argc, char **argv)
     logg("*Closing the main socket%s.\n", (nlsockets > 1) ? "s" : "");
 
     for (i = 0; i < nlsockets; i++) {
-	closesocket(socketds[i]);
+	closesocket(lsockets[i]);
     }
 
 #ifndef C_OS2
-    if(localsock && nlsockets) {
+    if(nlsockets && localsock) {
+	opt = optget(opts, "LocalSocket");
 	if(unlink(opt->strarg) == -1)
 	    logg("!Can't unlink the socket file %s\n", opt->strarg);
 	else
-	     logg("Socket file removed.\n");
+	    logg("Socket file removed.\n");
     }
 #endif
 

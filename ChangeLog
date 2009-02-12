@@ -1,3 +1,8 @@
+Thu Feb 12 23:07:51 EET 2009 (edwin)
+------------------------------------
+ * clamd/clamd.c, clamd/tcpserver.c, clamdscan/client.c,
+ shared/misc.c, shared/misc.h: move TCP socket creation to shared/
+
 Thu Feb 12 22:33:30 EET 2009 (edwin)
 ------------------------------------
  * clamd/clamd.c, clamd/server-th.c: Unify error paths.  Remove unix

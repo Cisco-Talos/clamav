@@ -56,26 +56,15 @@
 
 int tcpserver(const struct optstruct *opts)
 {
-	struct sockaddr_in server;
-	int sockfd, backlog;
-	const struct optstruct *taddr;
-	struct hostent he;
-	char *estr, buf[1024];
-	int true = 1;
+    struct sockaddr_in server;
+    int sockfd, backlog;
+    struct hostent he;
+    char *estr, buf[1024];
+    int true = 1;
 
-    memset((char *) &server, 0, sizeof(server));
-    server.sin_family = AF_INET;
-    server.sin_port = htons(optget(opts, "TCPSocket")->numarg);
-
-    if((taddr = optget(opts, "TCPAddr"))->enabled) {
-	if(r_gethostbyname(taddr->strarg, &he, buf, sizeof(buf)) == -1) {
-	    logg("!TCP: r_gethostbyname(%s) error: %s\n", taddr->strarg, strerror(errno));
-	    return -1;
-	}
-	server.sin_addr = *(struct in_addr *) he.h_addr_list[0];
-    } else
-	server.sin_addr.s_addr = INADDR_ANY;
-
+    if (cfg_tcpsock(opts, &server, INADDR_ANY) == -1) {
+	return -1;
+    }
 
     if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
 	estr = strerror(errno);
@@ -93,6 +82,7 @@ int tcpserver(const struct optstruct *opts)
 	closesocket(sockfd);
 	return -1;
     } else {
+	const struct optstruct *taddr = optget(opts, "TCPSocket");
 	if(taddr->enabled)
 	    logg("#TCP: Bound to address %s on port %u\n", taddr->strarg, optget(opts, "TCPSocket")->numarg);
 	else

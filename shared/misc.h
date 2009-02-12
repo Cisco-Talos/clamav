@@ -18,7 +18,8 @@
 
 #ifndef __MISC_H
 #define __MISC_H
-
+#include <netdb.h>
+#include <netinet/in.h>
 /* Maximum filenames under various systems - njh */
 #ifndef	NAME_MAX	/* e.g. Linux */
 # ifdef	MAXNAMELEN	/* e.g. Solaris */
@@ -36,4 +37,5 @@ int filecopy(const char *src, const char *dest);
 int daemonize(void);
 const char *get_version(void);
 int match_regex(const char *filename, const char *pattern);
+int cfg_tcpsock(const struct optstruct *opts, struct sockaddr_in *server, in_addr_t defaultbind);
 #endif

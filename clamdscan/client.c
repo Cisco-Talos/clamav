@@ -103,23 +103,14 @@ static int isremote(const struct optstruct *opts) {
     }
     mainsa = (struct sockaddr *)&tcpsock;
     mainsasz = sizeof(tcpsock);
-    memset((void *)&tcpsock, 0, sizeof(tcpsock));
-    tcpsock.sin_family = AF_INET;
-    tcpsock.sin_port = htons(opt->numarg);
-    if(!(opt = optget(clamdopts, "TCPAddr"))->enabled) {
-	tcpsock.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+    if (cfg_tcpsock(clamdopts, &tcpsock, INADDR_LOOPBACK) == -1) {
+	logg("!Can't lookup clamd hostname: %s.\n", strerror(errno));
 	optfree(clamdopts);
-	return 0;
-    }
-    he = gethostbyname(opt->strarg);
-    optfree(clamdopts);
-    if(!he) {
-	perror("gethostbyname()");
-	logg("!Can't lookup clamd hostname.\n");
 	mainsa = NULL;
 	return 0;
     }
-    tcpsock.sin_addr = *(struct in_addr *) he->h_addr_list[0];
+    optfree(clamdopts);
     memcpy((void *)&testsock, (void *)&tcpsock, sizeof(testsock));
     testsock.sin_port = htons(INADDR_ANY);
     if(!(s = socket(testsock.sin_family, SOCK_STREAM, 0))) return 0;
