@@ -46,8 +46,9 @@ int getopt_reset(void)
 /* if you're porting some piece of UNIX software, this is all you need. */
 /* this supports GNU-style permution and optional arguments */
 
-int getopt(int argc, char * argv[], const char *opts)
+int getopt(int argc, char * const argvc[], const char *opts)
 {
+  char **argv = (char*)argvc;
   static int charind=0;
   const char *s;
   char mode, colon_mode;
