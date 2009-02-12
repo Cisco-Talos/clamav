@@ -1,3 +1,7 @@
+Thu Feb 12 20:00:01 EET 2009 (edwin)
+------------------------------------
+ * clamdscan/client.c: fix merge mistake
+
 Thu Feb 12 19:55:31 EET 2009 (edwin)
 ------------------------------------
  * Makefile.in: revert accidental makefile change
