@@ -56,7 +56,7 @@ start_clamd()
 		{ error "Failed to start clamd!"; die 1; }
 }
 
-run_clamdscan() {
+run_clamdscan_fileonly() {
 	rm -f clamdscan.log clamdscan-multiscan.log
 	$TOP/clamdscan/clamdscan --version --config-file=test-clamd.conf 2>&1|grep "^ClamAV" >/dev/null || 
 		{ error "clamdscan can't get version of clamd!"; die 1;}
@@ -69,6 +69,23 @@ run_clamdscan() {
 	$TOP/clamdscan/clamdscan --quiet --config-file=test-clamd.conf $* -m --log=clamdscan-multiscan.log
 	if test $? = 2; then 
 		error "Failed to run clamdscan (multiscan)!"
+		cat clamdscan-multiscan.log
+		die 1
+	fi
+}
+
+run_clamdscan() {
+	run_clamdscan_fileonly $*
+	rm -f clamdscan-fdpass.log clamdscan-multiscan-fdpass.log
+	$TOP/clamdscan/clamdscan --quiet --config-file=test-clamd.conf $* --fdpass --log=clamdscan-fdpass.log
+	if test $? = 2; then 
+		error "Failed to run clamdscan (fdpass)!"
+		cat clamdscan-multiscan.log
+		die 1
+	fi
+	$TOP/clamdscan/clamdscan --quiet --config-file=test-clamd.conf $* -m --fdpass --log=clamdscan-multiscan-fdpass.log
+	if test $? = 2; then 
+		error "Failed to run clamdscan (fdpass + multiscan)!"
 		cat clamdscan-multiscan.log
 		die 1
 	fi
@@ -160,6 +177,8 @@ run_clamdscan $FILES
 NFILES=`ls -1 $FILES | wc -l`
 NINFECTED=`grep "Infected files" clamdscan.log | cut -f2 -d:|sed -e 's/ //g'`
 NINFECTED_MULTI=`grep "Infected files" clamdscan-multiscan.log | cut -f2 -d:|sed -e 's/ //g'`
+NINFECTED_FDPASS=`grep "Infected files" clamdscan-fdpass.log | cut -f2 -d:|sed -e 's/ //g'`
+NINFECTED_MULTI_FDPASS=`grep "Infected files" clamdscan-multiscan-fdpass.log | cut -f2 -d:|sed -e 's/ //g'`
 if test "$NFILES" -ne "0$NINFECTED"; then
 	grep OK clamdscan.log
 	scan_failed clamdscan.log "clamd did not detect all testfiles correctly!"
@@ -168,7 +187,21 @@ if test "$NFILES" -ne "0$NINFECTED_MULTI"; then
 	grep OK clamdscan-multiscan.log
 	scan_failed clamdscan-multiscan.log "clamd did not detect all testfiles correctly in multiscan mode!"
 fi
+if test "$NFILES" -ne "0$NINFECTED_FDPASS"; then
+	grep OK clamdscan-fdpass.log
+	scan_failed clamdscan-multiscan.log "clamd did not detect all testfiles correctly in fdpass mode!"
+fi
+if test "$NFILES" -ne "0$NINFECTED_MULTI_FDPASS"; then
+	grep OK clamdscan-multiscan-fdpass.log
+	scan_failed clamdscan-multiscan.log "clamd did not detect all testfiles correctly in fdpass+multiscan mode!"
+fi
 
+$TOP/unit_tests/check_clamd
+ecode=$?
+if test $ecode -ne 77 && test $ecode -ne 0; then
+    error "Failed clamd protocol test!"
+    die 1
+fi
 # Test HeuristicScanPrecedence off feature
 run_clamdscan ../clam-phish-exe
 grep "ClamAV-Test-File" clamdscan.log >/dev/null 2>/dev/null;
@@ -186,7 +219,7 @@ pid1=$!
 start_clamd test-clamd.conf
 
 # Test VirusEvent feature
-run_clamdscan $TOP/test/clam.exe
+run_clamdscan_fileonly $TOP/test/clam.exe
 grep "Virus found: ClamAV-Test-File.UNOFFICIAL" test-clamd.log >/dev/null 2>/dev/null; 
 if test $? -ne 0; then
 	error "Virusaction test failed!" 

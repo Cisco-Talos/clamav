@@ -1,3 +1,9 @@
+Thu Feb 12 19:49:06 EET 2009 (edwin)
+------------------------------------
+ * unit_tests/Makefile.am, unit_tests/Makefile.in,
+ unit_tests/check_clamd.sh, unit_tests/checks.h: add some unit tests
+ for the new clamd protocol
+
 Thu Feb 12 18:30:29 CET 2009 (acab)
 -----------------------------------
  * shared, clamdscan, clamscan, doc, build system:

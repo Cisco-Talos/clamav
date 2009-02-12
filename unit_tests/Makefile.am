@@ -15,21 +15,25 @@ else
 TESTS_ENVIRONMENT += export unrar_disabled=1;
 endif
 TESTS = $(programs) $(scripts)
-check_PROGRAMS = $(programs)
+check_PROGRAMS = $(programs) check_clamd
 check_SCRIPTS = $(scripts)
 
 if HAVE_LIBCHECK
-check_clamav_SOURCES = check_clamav.c checks.h $(top_builddir)/libclamav/clamav.h\
+check_clamav_SOURCES = check_clamav.c checks.h checks_common.h $(top_builddir)/libclamav/clamav.h\
 		       check_jsnorm.c check_str.c check_regex.c\
 		       check_disasm.c check_uniq.c check_matchers.c\
 		       check_htmlnorm.c
 check_clamav_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\"
 check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CHECK_LIBS@
+check_clamd_SOURCES = check_clamd.c checks_common.h
+check_clamd_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\" -DBUILDDIR=\"$(abs_builddir)\"
+check_clamd_LDADD = @CHECK_LIBS@ @CLAMD_LIBS@
 else
+check_clamd_SOURCES = check_clamav_skip.c
 check_clamav_SOURCES = check_clamav_skip.c
 endif
 
-check_clamd.sh: $(top_builddir)/test/clam.exe
+check_clamd.sh: $(top_builddir)/test/clam.exe check_clamd
 check_clamscan.sh: $(top_builddir)/test/clam.exe
 
 $(top_builddir)/test/clam.exe:
