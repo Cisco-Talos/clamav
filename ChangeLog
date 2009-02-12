@@ -1,3 +1,7 @@
+Thu Feb 12 20:51:04 EET 2009 (edwin)
+------------------------------------
+ * unit_tests/check_clamd.c: add another missing file
+
 Thu Feb 12 19:22:23 CET 2009 (acab)
 -----------------------------------
  * shared/actions.c: fix message
