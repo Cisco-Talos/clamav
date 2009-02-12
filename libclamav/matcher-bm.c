@@ -46,8 +46,8 @@ int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern)
 
 
     if(pattern->length < BM_MIN_LENGTH) {
-	cli_errmsg("Signature for %s is too short\n", pattern->virname);
-	return CL_EPATSHORT;
+	cli_errmsg("cli_bm_addpatt: Signature for %s is too short\n", pattern->virname);
+	return CL_EMALFDB;
     }
 
 #if BM_MIN_LENGTH == BM_BLOCK_SIZE

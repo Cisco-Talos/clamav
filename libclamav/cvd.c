@@ -210,19 +210,19 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 
     if((fdd = dup(fd)) == -1) {
 	cli_errmsg("cli_tgzload: Can't duplicate descriptor %d\n", fd);
-	return CL_EIO;
+	return CL_EDUP;
     }
 
     if(compr) {
 	if((dbio.gzs = gzdopen(fdd, "rb")) == NULL) {
 	    cli_errmsg("cli_tgzload: Can't gzdopen() descriptor %d, errno = %d\n", fdd, errno);
-	    return CL_EIO;
+	    return CL_EOPEN;
 	}
 	dbio.fs = NULL;
     } else {
 	if((dbio.fs = fdopen(fdd, "rb")) == NULL) {
 	    cli_errmsg("cli_tgzload: Can't fdopen() descriptor %d, errno = %d\n", fdd, errno);
-	    return CL_EIO;
+	    return CL_EOPEN;
 	}
 	dbio.gzs = NULL;
     }
@@ -470,14 +470,14 @@ static int cli_cvdverify(FILE *fs, struct cl_cvd *cvdpt, unsigned int cld)
 	cli_dbgmsg("cli_cvdverify: MD5 verification error\n");
 	free(md5);
 	cl_cvdfree(cvd);
-	return CL_EMD5;
+	return CL_EVERIFY;
     }
 
     if(cli_versig(md5, cvd->dsig)) {
 	cli_dbgmsg("cli_cvdverify: Digital signature verification error\n");
 	free(md5);
 	cl_cvdfree(cvd);
-	return CL_EDSIG;
+	return CL_EVERIFY;
     }
 
     free(md5);
@@ -549,7 +549,7 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
      */ 
     if(lseek(cfd, 512, SEEK_SET) == -1) {
 	cli_errmsg("cli_cvdload(): lseek(fs, 512, SEEK_SET) failed\n");
-	return CL_EIO;
+	return CL_ESEEK;
     }
 
     if(daily) {
@@ -575,7 +575,7 @@ int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigne
 	if(cli_untgz(cfd, dir)) {
 	    cli_errmsg("cli_cvdload(): Can't unpack CVD file.\n");
 	    free(dir);
-	    return CL_ECVDEXTR;
+	    return CL_ECVD;
 	}
 
 	/* load extracted directory */

@@ -456,7 +456,7 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 		return CL_EMALFDB; /* already failed to load */
 	if(!fd && !dbio) {
 		cli_errmsg("Unable to load regex list (null file)\n");
-		return CL_EIO;
+		return CL_ENULLARG;
 	}
 
 	cli_dbgmsg("Loading regex_list\n");

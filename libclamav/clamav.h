@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -32,38 +32,39 @@ extern "C"
 #define CL_COUNT_PRECISION 4096
 
 /* return codes */
-#define CL_CLEAN	0   /* no virus found */
-#define CL_VIRUS	1   /* virus(es) found */
-#define CL_SUCCESS	CL_CLEAN
-#define CL_BREAK	2
+typedef enum {
+    /* libclamav specific */
+    CL_CLEAN = 0,
+    CL_SUCCESS = 0,
+    CL_VIRUS,
+    CL_ENULLARG,
+    CL_EMALFDB,
+    CL_ECVD,
+    CL_EVERIFY,
+    CL_EUNPACK,
 
-#define CL_EMAXREC	-100 /* (internal) recursion limit exceeded */
-#define CL_EMAXSIZE	-101 /* (internal) size limit exceeded */
-#define CL_EMAXFILES	-102 /* (internal) files limit exceeded */
-#define CL_ERAR		-103 /* rar handler error */
-#define CL_EZIP		-104 /* zip handler error */
-#define CL_EGZIP	-105 /* gzip handler error */
-#define CL_EBZIP	-106 /* bzip2 handler error */
-#define CL_EOLE2	-107 /* OLE2 handler error */
-#define CL_EMSCOMP	-108 /* MS Expand handler error */
-#define CL_EMSCAB	-109 /* MS CAB module error */
-#define CL_EACCES	-110 /* access denied */
-#define CL_ENULLARG	-111 /* null argument */
-#define CL_ETMPFILE	-112 /* tmpfile() failed */
-/* #define CL_EFSYNC	-113 *//* fsync() failed */
-#define CL_EMEM		-114 /* memory allocation error */
-#define CL_EOPEN	-115 /* file open error */
-#define CL_EMALFDB	-116 /* malformed database */
-#define CL_EPATSHORT	-117 /* pattern too short */
-#define CL_ETMPDIR	-118 /* mkdir() failed */
-#define CL_ECVD		-119 /* not a CVD file (or broken) */
-#define CL_ECVDEXTR	-120 /* CVD extraction failure */
-#define CL_EMD5		-121 /* MD5 verification error */
-#define CL_EDSIG	-122 /* digital signature verification error */
-#define CL_EIO		-123 /* general I/O error */
-#define CL_EFORMAT	-124 /* (internal) bad format or broken file */
-#define CL_ESUPPORT	-125 /* not supported data format */
-#define CL_EARJ         -127 /* ARJ handler error */
+    /* I/O and memory errors */
+    CL_EOPEN,
+    CL_ECREAT,
+    CL_EUNLINK,
+    CL_ESTAT,
+    CL_EREAD,
+    CL_ESEEK,
+    CL_EWRITE,
+    CL_EDUP,
+    CL_EACCES,
+    CL_ETMPFILE,
+    CL_ETMPDIR,
+    CL_EMAP,
+    CL_EMEM,
+
+    /* internal (not reported outside libclamav) */
+    CL_BREAK,
+    CL_EMAXREC,
+    CL_EMAXSIZE,
+    CL_EMAXFILES,
+    CL_EFORMAT
+} cl_error_t;
 
 /* db options */
 #define CL_DB_PHISHING	    0x2

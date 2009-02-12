@@ -480,7 +480,7 @@ cli_mbox(const char *dir, int desc, cli_ctx *ctx)
 
 	start = mmap(NULL, size, PROT_READ, MAP_PRIVATE, desc, 0);
 	if(start == MAP_FAILED)
-		return CL_EMEM;
+		return CL_EMAP;
 
 	cli_dbgmsg("mmap'ed mbox\n");
 
@@ -1233,7 +1233,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 		/* empty message */
 		fclose(fd);
 #ifdef	SAVE_TMP
-		if (cli_unlink(tmpfilename)) return CL_EIO;
+		if (cli_unlink(tmpfilename)) return CL_EUNLINK;
 #endif
 		return CL_CLEAN;
 	}
@@ -1251,7 +1251,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 #endif
 			fclose(fd);
 #ifdef	SAVE_TMP
-			if (cli_unlink(tmpfilename)) return CL_EIO;
+			if (cli_unlink(tmpfilename)) return CL_EUNLINK;
 #endif
 			return CL_EMEM;
 		}
@@ -1312,7 +1312,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 			signal(SIGSEGV, segv);
 #endif
 #ifdef	SAVE_TMP
-			if (cli_unlink(tmpfilename)) return CL_EIO;
+			if (cli_unlink(tmpfilename)) return CL_EUNLINK;
 #endif
 			return CL_EMEM;
 		}
@@ -1472,7 +1472,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 #endif
 
 #ifdef	SAVE_TMP
-	if (cli_unlink(tmpfilename)) return CL_EIO;
+	if (cli_unlink(tmpfilename)) return CL_EUNLINK;
 #endif
 	return retcode;
 }

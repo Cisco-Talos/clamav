@@ -145,7 +145,7 @@ cli_binhex(const char *dir, int desc)
 	start = buf = mmap(NULL, size, PROT_READ, MAP_PRIVATE, desc, 0);
 	if(buf == MAP_FAILED) {
 		messageDestroy(m);
-		return CL_EMEM;
+		return CL_EMAP;
 	}
 
 	cli_dbgmsg("mmap'ed binhex file\n");
@@ -211,6 +211,7 @@ cli_binhex(const char *dir, int desc)
 
 	if(fb)
 		return CL_CLEAN;	/* a lie - but it gets things going */
-	return CL_EIO;	/* probably CL_EMEM, but we can't tell at this layer */
+	/* return CL_EIO; */	/* probably CL_EMEM, but we can't tell at this layer */
+	return CL_EMEM;
 #endif
 }

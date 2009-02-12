@@ -91,7 +91,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
   if((of = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRUSR|S_IWUSR))==-1) {
     cli_warnmsg("cli_unzip: failed to create temporary file %s\n", tempfile);
     if(!tmpd) free(tempfile);
-    return CL_EIO;
+    return CL_ECREAT;
   }
   switch (method) {
   case ALG_STORED:
@@ -109,7 +109,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
 	cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->engine->maxfilesize);
 	csize = ctx->engine->maxfilesize;
       }
-      if(cli_writen(of, src, csize)!=(int)csize) ret = CL_EIO;
+      if(cli_writen(of, src, csize)!=(int)csize) ret = CL_EWRITE;
       else res=0;
     }
     break;
@@ -173,7 +173,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
 	}
 	if(cli_writen(of, obuf, sizeof(obuf)-(*avail_out)) != (int)(sizeof(obuf)-(*avail_out))) {
 	  cli_warnmsg("cli_unzip: falied to write %lu inflated bytes\n", sizeof(obuf)-(*avail_out));
-	  ret = CL_EIO;
+	  ret = CL_EWRITE;
 	  res = 100;
 	  break;
 	}
@@ -217,7 +217,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
 	}
 	if(cli_writen(of, obuf, sizeof(obuf)-strm.avail_out) != (int)(sizeof(obuf)-strm.avail_out)) {
 	  cli_warnmsg("cli_unzip: falied to write %lu bunzipped bytes\n", sizeof(obuf)-strm.avail_out);
-	  ret = CL_EIO;
+	  ret = CL_EWRITE;
 	  res = 100;
 	  break;
 	}
@@ -254,7 +254,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
 	}
 	if(cli_writen(of, obuf, sizeof(obuf)-strm.avail_out) != (int)(sizeof(obuf)-strm.avail_out)) {
 	  cli_warnmsg("cli_unzip: falied to write %lu exploded bytes\n", sizeof(obuf)-strm.avail_out);
-	  ret = CL_EIO;
+	  ret = CL_EWRITE;
 	  res = 100;
 	  break;
 	}
@@ -304,14 +304,14 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
     ret = cli_magic_scandesc(of, ctx);
     close(of);
     if(!ctx->engine->keeptmp)
-      if(cli_unlink(tempfile)) ret = CL_EIO;
+      if(cli_unlink(tempfile)) ret = CL_EUNLINK;
     if(!tmpd) free(tempfile);
     return ret;
   }
 
   close(of);
   if(!ctx->engine->keeptmp)
-    if(cli_unlink(tempfile)) ret = CL_EIO;
+    if(cli_unlink(tempfile)) ret = CL_EUNLINK;
   if(!tmpd) free(tempfile);
   cli_dbgmsg("cli_unzip: extraction failed\n");
   return ret;
@@ -482,7 +482,7 @@ int cli_unzip(int f, cli_ctx *ctx) {
   cli_dbgmsg("in cli_unzip\n");
   if (fstat(f, &st)==-1) {
     cli_warnmsg("cli_unzip: fstat() failed\n");
-    return CL_EIO;
+    return CL_ESTAT;
   }
   fsize = (uint32_t)st.st_size;
   if(sizeof(off_t)!=sizeof(uint32_t) && (off_t)fsize!=st.st_size) {
@@ -497,7 +497,7 @@ int cli_unzip(int f, cli_ctx *ctx) {
 #if HAVE_MMAP
   if ((map = mmap(NULL, fsize, PROT_READ, MAP_PRIVATE, f, 0))==MAP_FAILED) {
     cli_dbgmsg("cli_unzip: mmap failed\n");
-    return CL_EMEM;
+    return CL_EMAP;
   }
 #else
   if(fsize > CLI_MAX_ALLOCATION) {
@@ -509,7 +509,7 @@ int cli_unzip(int f, cli_ctx *ctx) {
     return CL_EMEM;
   if(cli_readn(f, map, fsize)!=fsize) {
     free(map);
-    return CL_EIO;
+    return CL_EREAD;
   }
 #endif
 
@@ -572,7 +572,7 @@ int cli_unzip_single(int f, cli_ctx *ctx, off_t lhoffl) {
   cli_dbgmsg("in cli_unzip_single\n");
   if (fstat(f, &st)==-1) {
     cli_warnmsg("cli_unzip: fstat() failed\n");
-    return CL_EIO;
+    return CL_ESTAT;
   }
   fsize = (uint32_t)(st.st_size - lhoffl);
   if (lhoffl<0 || lhoffl>st.st_size || (sizeof(off_t)!=sizeof(uint32_t) && (off_t)fsize!=st.st_size - lhoffl)) {
@@ -587,7 +587,7 @@ int cli_unzip_single(int f, cli_ctx *ctx, off_t lhoffl) {
 #if HAVE_MMAP
   if ((map = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, f, 0))==MAP_FAILED) {
     cli_dbgmsg("cli_unzip: mmap() failed\n");
-    return CL_EMEM;
+    return CL_EMAP;
   }
 #else
   if(st.st_size > CLI_MAX_ALLOCATION) {
@@ -599,7 +599,7 @@ int cli_unzip_single(int f, cli_ctx *ctx, off_t lhoffl) {
     return CL_EMEM;
   if(cli_readn(f, map, st.st_size)!=st.st_size) {
     free(map);
-    return CL_EIO;
+    return CL_EREAD;
   }
 #endif
   lhdr(&map[lhoffl], fsize, &fu, 0, NULL, &ret, ctx, NULL);

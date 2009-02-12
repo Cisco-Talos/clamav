@@ -173,8 +173,8 @@ static int fill_buf(arj_decode_t *decode_data, int n)
 		if (decode_data->comp_size != 0) {
 			decode_data->comp_size--;
 			if (cli_readn(decode_data->fd, &decode_data->sub_bit_buf, 1) != 1) {
-				decode_data->status = CL_EIO;
-				return CL_EIO;
+				decode_data->status = CL_EREAD;
+				return CL_EREAD;
 			}
 		} else {
 			decode_data->sub_bit_buf = 0;
@@ -214,7 +214,7 @@ static int write_text(int ofd, unsigned char *data, int length)
 	
 	count = cli_writen(ofd, data, length);
 	if (count != length) {
-		return CL_EIO;
+		return CL_EWRITE;
 	} else {
 		return CL_SUCCESS;
 	}
@@ -232,8 +232,8 @@ static int make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitle
 	for (i = 0; (int)i < nchar; i++) {
 		if (bitlen[i] >= 17) {
 			cli_dbgmsg("UNARJ: bounds exceeded\n");
-			decode_data->status = CL_EARJ;
-			return CL_EARJ;
+			decode_data->status = CL_EUNPACK;
+			return CL_EUNPACK;
 		}
 		count[bitlen[i]]++;
 	}
@@ -243,15 +243,15 @@ static int make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitle
 		start[i+1] = start[i] + (count[i] << (16 - i));
 	}
 	if (start[17] != (unsigned short) (1 << 16)) {
-		decode_data->status = CL_EARJ;
-		return CL_EARJ;
+		decode_data->status = CL_EUNPACK;
+		return CL_EUNPACK;
 	}
 	
 	jutbits = 16 - tablebits;
 	if (tablebits >= 17) {
 		cli_dbgmsg("UNARJ: bounds exceeded\n");
-		decode_data->status = CL_EARJ;
-		return CL_EARJ;
+		decode_data->status = CL_EUNPACK;
+		return CL_EUNPACK;
 	}
 	for (i = 1; (int)i <= tablebits; i++) {
 		start[i] >>= jutbits;
@@ -268,8 +268,8 @@ static int make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitle
 		while (i != k) {
 			if (i >= tablesize) {
 				cli_dbgmsg("UNARJ: bounds exceeded\n");
-				decode_data->status = CL_EARJ;
-				return CL_EARJ;
+				decode_data->status = CL_EUNPACK;
+				return CL_EUNPACK;
 			}
 			table[i++] = 0;
 		}
@@ -283,15 +283,15 @@ static int make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitle
 		}
 		if (len >= 17) {
 			cli_dbgmsg("UNARJ: bounds exceeded\n");
-			decode_data->status = CL_EARJ;
-			return CL_EARJ;
+			decode_data->status = CL_EUNPACK;
+			return CL_EUNPACK;
 		}
 		k = start[len];
 		nextcode = k + weight[len];
 		if ((int)len <= tablebits) {
 			if (nextcode > (unsigned int) tablesize) {
-				decode_data->status = CL_EARJ;
-				return CL_EARJ;
+				decode_data->status = CL_EUNPACK;
+				return CL_EUNPACK;
 			}
 			for (i = start[len]; i < nextcode; i++) {
 				table[i] = ch;
@@ -303,16 +303,16 @@ static int make_table(arj_decode_t *decode_data, int nchar, unsigned char *bitle
 				if (*p == 0) {
 					if (avail >= (2 * NC - 1)) {
 						cli_dbgmsg("UNARJ: bounds exceeded\n");
-						decode_data->status = CL_EARJ;
-						return CL_EARJ;
+						decode_data->status = CL_EUNPACK;
+						return CL_EUNPACK;
 					}
 					decode_data->right[avail] = decode_data->left[avail] = 0;
 					*p = avail++;
 				}
 				if (*p >= (2 * NC - 1)) {
 					cli_dbgmsg("UNARJ: bounds exceeded\n");
-					decode_data->status = CL_EARJ;
-					return CL_EARJ;
+					decode_data->status = CL_EUNPACK;
+					return CL_EUNPACK;
 				}
 				if (k & mask) {
 					p = &decode_data->right[*p];
@@ -339,8 +339,8 @@ static int read_pt_len(arj_decode_t *decode_data, int nn, int nbit, int i_specia
 	if (n == 0) {
 		if (nn > NPT) {
 			cli_dbgmsg("UNARJ: bounds exceeded\n");
-			decode_data->status = CL_EARJ;
-			return CL_EARJ;
+			decode_data->status = CL_EUNPACK;
+			return CL_EUNPACK;
 		}
 		c = arj_getbits(decode_data, nbit);
 		for (i = 0; i < nn; i++) {
@@ -379,7 +379,7 @@ static int read_pt_len(arj_decode_t *decode_data, int nn, int nbit, int i_specia
 			decode_data->pt_len[i++] = 0;
 		}
 		if (make_table(decode_data, nn, decode_data->pt_len, 8, decode_data->pt_table, PTABLESIZE) != CL_SUCCESS) {
-			return CL_EARJ;
+			return CL_EUNPACK;
 		}
 	}
 	return CL_SUCCESS;
@@ -427,8 +427,8 @@ static int read_c_len(arj_decode_t *decode_data)
 			}
 			if (c >= 19) {
 				cli_dbgmsg("UNARJ: bounds exceeded\n");
-				decode_data->status = CL_EARJ;
-				return CL_EARJ;
+				decode_data->status = CL_EUNPACK;
+				return CL_EUNPACK;
 			}
 			fill_buf(decode_data, (int)(decode_data->pt_len[c]));
 			if (decode_data->status != CL_SUCCESS) {
@@ -466,7 +466,7 @@ static int read_c_len(arj_decode_t *decode_data)
 			decode_data->c_len[i++] = 0;
 		}
 		if (make_table(decode_data, NC, decode_data->c_len, 12, decode_data->c_table, CTABLESIZE) != CL_SUCCESS) {
-			return CL_EARJ;
+			return CL_EUNPACK;
 		}
 	}
 	return CL_SUCCESS;
@@ -490,7 +490,7 @@ static uint16_t decode_c(arj_decode_t *decode_data)
 		do {
 			if (j >= (2 * NC - 1)) {
 				cli_warnmsg("ERROR: bounds exceeded\n");
-				decode_data->status = CL_EARJ;
+				decode_data->status = CL_EUNPACK;
 				return 0;
 			}
 			if (decode_data->bit_buf & mask) {
@@ -515,7 +515,7 @@ static uint16_t decode_p(arj_decode_t *decode_data)
 		do {
 			if (j >= (2 * NC - 1)) {
 				cli_warnmsg("ERROR: bounds exceeded\n");
-				decode_data->status = CL_EARJ;
+				decode_data->status = CL_EUNPACK;
 				return 0;
 			}
 			if (decode_data->bit_buf & mask) {
@@ -563,7 +563,7 @@ static int decode(int fd, arj_metadata_t *metadata)
 				out_ptr = 0;
 				if (write_text(metadata->ofd, decode_data.text, DDICSIZ) != CL_SUCCESS) {
 					free(decode_data.text);
-					return CL_EIO;
+					return CL_EWRITE;
 				}
 			}
 		} else {
@@ -588,7 +588,7 @@ static int decode(int fd, arj_metadata_t *metadata)
 						out_ptr = 0;
 						if (write_text(metadata->ofd, decode_data.text, DDICSIZ) != CL_SUCCESS) {
 							free(decode_data.text);
-							return CL_EIO;
+							return CL_EWRITE;
 						}
 					}
 					if (++i >= DDICSIZ) {
@@ -697,7 +697,7 @@ static int decode_f(int fd, arj_metadata_t *metadata)
 				out_ptr = 0;
 				if (write_text(metadata->ofd, decode_data.text, DDICSIZ) != CL_SUCCESS) {
 					free(decode_data.text);
-					return CL_EIO;
+					return CL_EWRITE;
 				}
 			}
 		} else {
@@ -721,7 +721,7 @@ static int decode_f(int fd, arj_metadata_t *metadata)
 					out_ptr = 0;
 					if (write_text(metadata->ofd, decode_data.text, DDICSIZ) != CL_SUCCESS) {
 						free(decode_data.text);
-						return CL_EIO;
+						return CL_EWRITE;
 					}
 				}
 				if (++i >= DDICSIZ) {
@@ -1060,7 +1060,7 @@ int cli_unarj_extract_file(int fd, const char *dirname, arj_metadata_t *metadata
 		offset = lseek(fd, 0, SEEK_CUR) + metadata->comp_size;
 		cli_dbgmsg("Target offset: %ld\n", offset);
 		if (lseek(fd, offset, SEEK_SET) != offset) {
-			return CL_EARJ;
+			return CL_ESEEK;
 		}
 		return CL_SUCCESS;
 	}
@@ -1075,7 +1075,7 @@ int cli_unarj_extract_file(int fd, const char *dirname, arj_metadata_t *metadata
 		case 0:
 			ret = arj_unstore(fd, metadata->ofd, metadata->comp_size);
 			if (ret != metadata->comp_size) {
-				ret = CL_EIO;
+				ret = CL_EWRITE;
 			} else {
 				ret = CL_SUCCESS;
 			}

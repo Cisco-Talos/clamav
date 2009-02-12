@@ -271,7 +271,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 
     if(sfx_offset)
 	if(lseek(desc, sfx_offset, SEEK_SET) == -1)
-	    return CL_EIO;
+	    return CL_ESEEK;
 
     /* generate the temporary directory */
     if(!(dir = cli_gentemp(ctx->engine->tmpdir)))
@@ -300,7 +300,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	} if(ret == UNRAR_EMEM) {
 	    return CL_EMEM;
 	} else {
-	    return CL_ERAR;
+	    return CL_EUNPACK;
 	}
     }
 
@@ -314,7 +314,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    else if(ret == UNRAR_EMEM)
 		ret = CL_EMEM;
 	    else
-		ret = CL_ERAR;
+		ret = CL_EUNPACK;
 	    break;
 	}
 	if((ret=cli_checklimits("RAR", ctx, rar_state.metadata_tail->unpack_size, rar_state.metadata_tail->pack_size, 0)!=CL_CLEAN)) {
@@ -329,14 +329,14 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	else if(ret == UNRAR_EMEM)
 	    ret = CL_EMEM;
 	else
-	    ret = CL_ERAR;
+	    ret = CL_EFORMAT;
 
 	if(rar_state.ofd > 0) {
 	    lseek(rar_state.ofd,0,SEEK_SET);
 	    rc = cli_magic_scandesc(rar_state.ofd,ctx);
 	    close(rar_state.ofd);
 	    if(!ctx->engine->keeptmp) 
-		if (cli_unlink(rar_state.filename)) ret = CL_EIO;
+		if (cli_unlink(rar_state.filename)) ret = CL_EUNLINK;
 	    if(rc == CL_VIRUS ) {
 		cli_dbgmsg("RAR: infected with %s\n",*ctx->virname);
 		ret = CL_VIRUS;
@@ -463,7 +463,7 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
 
     if((gd = gzdopen(dup(desc), "rb")) == NULL) {
 	cli_dbgmsg("GZip: Can't open descriptor %d\n", desc);
-	return CL_EGZIP;
+	return CL_EOPEN;
     }
 
     if((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd))) {
@@ -479,7 +479,7 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
 	if(!ctx->engine->keeptmp) {
 	    if(cli_unlink(tmpname)) {
 	    	free(tmpname);
-		return CL_EIO;
+		return CL_EUNLINK;
 	    }
 	}
 	return CL_EMEM;
@@ -499,13 +499,13 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
 		    free(tmpname);
 		    gzclose(gd);
 		    free(buff);
-		    return CL_EIO;
+		    return CL_EUNLINK;
 		}
 	    }
 	    free(tmpname);	
 	    gzclose(gd);
 	    free(buff);
-	    return CL_EGZIP;
+	    return CL_EWRITE;
 	}
     }
 
@@ -515,7 +515,7 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
     if(ret == CL_VIRUS) {
 	close(fd);
 	if(!ctx->engine->keeptmp)
-	    if (cli_unlink(tmpname)) ret = CL_EIO;
+	    if (cli_unlink(tmpname)) ret = CL_EUNLINK;
 	free(tmpname);	
 	return ret;
     }
@@ -527,7 +527,7 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
 	if(!ctx->engine->keeptmp) {
 	    if (cli_unlink(tmpname)) {
 	    	free(tmpname);
-		return CL_EIO;
+		return CL_EUNLINK;
 	    }
 	}
 	free(tmpname);	
@@ -535,7 +535,7 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
     }
     close(fd);
     if(!ctx->engine->keeptmp)
-	if (cli_unlink(tmpname)) ret = CL_EIO;
+	if (cli_unlink(tmpname)) ret = CL_EUNLINK;
     free(tmpname);	
 
     return ret;
@@ -568,13 +568,13 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
 
     if((fs = fdopen(dup(desc), "rb")) == NULL) {
 	cli_dbgmsg("Bzip: Can't open descriptor %d.\n", desc);
-	return CL_EBZIP;
+	return CL_EOPEN;
     }
 
     if((bfd = BZ2_bzReadOpen(&bzerror, fs, 0, 0, NULL, 0)) == NULL) {
 	cli_dbgmsg("Bzip: Can't initialize bzip2 library (descriptor: %d).\n", desc);
 	fclose(fs);
-	return CL_EBZIP;
+	return CL_EOPEN;
     }
 
     if((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd))) {
@@ -592,7 +592,7 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
 	    	free(tmpname);
 		fclose(fs);
 		BZ2_bzReadClose(&bzerror, bfd);
-		return CL_EIO;
+		return CL_EUNLINK;
 	    }
 	}
 	free(tmpname);	
@@ -616,13 +616,13 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
 		    free(tmpname);
 		    free(buff);
 		    fclose(fs);
-		    return CL_EIO;
+		    return CL_EUNLINK;
 		}
 	    }
 	    free(tmpname);	
 	    free(buff);
 	    fclose(fs);
-	    return CL_EGZIP;
+	    return CL_EWRITE;
 	}
     }
 
@@ -632,7 +632,7 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
     if(ret == CL_VIRUS) {
 	close(fd);
 	if(!ctx->engine->keeptmp)
-	    if (cli_unlink(tmpname)) ret = CL_EIO;
+	    if (cli_unlink(tmpname)) ret = CL_EUNLINK;
 	free(tmpname);	
 	fclose(fs);
 	return ret;
@@ -644,7 +644,7 @@ static int cli_scanbzip(int desc, cli_ctx *ctx)
     }
     close(fd);
     if(!ctx->engine->keeptmp)
-	if (cli_unlink(tmpname)) ret = CL_EIO;
+	if (cli_unlink(tmpname)) ret = CL_EUNLINK;
     free(tmpname);	
     fclose(fs);
 
@@ -671,7 +671,7 @@ static int cli_scanszdd(int desc, cli_ctx *ctx)
     if(ret != CL_SUCCESS) { /* CL_VIRUS or some error */
 	close(ofd);
 	if(!ctx->engine->keeptmp)
-	    if (cli_unlink(tmpname)) ret = CL_EIO;
+	    if (cli_unlink(tmpname)) ret = CL_EUNLINK;
 	free(tmpname);	
 	return ret;
     }
@@ -681,7 +681,7 @@ static int cli_scanszdd(int desc, cli_ctx *ctx)
     ret = cli_magic_scandesc(ofd, ctx);
     close(ofd);
     if(!ctx->engine->keeptmp)
-	if (cli_unlink(tmpname)) ret = CL_EIO;
+	if (cli_unlink(tmpname)) ret = CL_EUNLINK;
     free(tmpname);	
 
     return ret;
@@ -720,7 +720,7 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
 	if(!ctx->engine->keeptmp) {
 	    if (cli_unlink(tempname)) {
 	    	free(tempname);
-		ret = CL_EIO;
+		ret = CL_EUNLINK;
 		break;
 	    }
 	}
@@ -928,7 +928,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
 
     if(fstat(desc, &sb) == -1) {
         cli_errmsg("cli_scanhtml: fstat() failed for descriptor %d\n", desc);
-	return CL_EIO;
+	return CL_ESTAT;
     }
 
     /* Because HTML detection is FP-prone and html_normalise_fd() needs to
@@ -1011,7 +1011,7 @@ static int cli_scanscript(int desc, cli_ctx *ctx)
 
 	if(fstat(desc, &sb) == -1) {
 		cli_errmsg("cli_scanscript: fstat() failed for descriptor %d\n", desc);
-		return CL_EIO;
+		return CL_ESTAT;
 	}
 
 	/* don't normalize files that are too large */
@@ -1088,7 +1088,7 @@ static int cli_scanhtml_utf16(int desc, cli_ctx *ctx)
     if((fd = open(tempname, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
 	cli_errmsg("cli_scanhtml_utf16: Can't create file %s\n", tempname);
 	free(tempname);
-	return CL_EIO;
+	return CL_EOPEN;
     }
 
     cli_dbgmsg("cli_scanhtml_utf16: using tempfile %s\n", tempname);
@@ -1102,7 +1102,7 @@ static int cli_scanhtml_utf16(int desc, cli_ctx *ctx)
 		cli_unlink(tempname);
 		free(tempname);
 		close(fd);
-		return CL_EIO;
+		return CL_EWRITE;
 	    }
 	    free(decoded);
 	}
@@ -1113,7 +1113,7 @@ static int cli_scanhtml_utf16(int desc, cli_ctx *ctx)
     close(fd);
 
     if(!ctx->engine->keeptmp) {
-	if (cli_unlink(tempname)) ret = CL_EIO;
+	if (cli_unlink(tempname)) ret = CL_EUNLINK;
     } else
 	cli_dbgmsg("cli_scanhtml_utf16: Decoded HTML data saved in %s\n", tempname);
     free(tempname);
@@ -1346,7 +1346,7 @@ static int cli_scancryptff(int desc, cli_ctx *ctx)
 
     if(fstat(desc, &sb) == -1) {
 	cli_errmsg("CryptFF: Can't fstat descriptor %d\n", desc);
-	return CL_EIO;
+	return CL_ESTAT;
     }
 
     /* Skip the CryptFF file header */
@@ -1372,7 +1372,7 @@ static int cli_scancryptff(int desc, cli_ctx *ctx)
 	cli_dbgmsg("CryptFF: Can't read from descriptor %d\n", desc);
 	free(dest);
 	free(src);
-	return CL_EIO;
+	return CL_EREAD;
     }
 
     for(i = 0; i < length; i++)
@@ -1389,7 +1389,7 @@ static int cli_scancryptff(int desc, cli_ctx *ctx)
 	cli_errmsg("CryptFF: Can't create file %s\n", tempfile);
 	free(dest);
 	free(tempfile);
-	return CL_EIO;
+	return CL_ECREAT;
     }
 
     if(write(ndesc, dest, length) == -1) {
@@ -1397,7 +1397,7 @@ static int cli_scancryptff(int desc, cli_ctx *ctx)
 	free(dest);
 	close(ndesc);
 	free(tempfile);
-	return CL_EIO;
+	return CL_EWRITE;
     }
 
     free(dest);
@@ -1414,7 +1414,7 @@ static int cli_scancryptff(int desc, cli_ctx *ctx)
     if(ctx->engine->keeptmp)
 	cli_dbgmsg("CryptFF: Decompressed data saved in %s\n", tempfile);
     else
-	if (cli_unlink(tempfile)) ret = CL_EIO;
+	if (cli_unlink(tempfile)) ret = CL_EUNLINK;
 
     free(tempfile);
     return ret;
@@ -1616,7 +1616,7 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
     if((fd = open(tmpname, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
 	cli_errmsg("cli_scanembpe: Can't create file %s\n", tmpname);
 	free(tmpname);
-	return CL_EIO;
+	return CL_ECREAT;
     }
 
     while((bytes = read(desc, buff, sizeof(buff))) > 0) {
@@ -1631,11 +1631,11 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
 	    if(!ctx->engine->keeptmp) {
 		if (cli_unlink(tmpname)) {
 		    free(tmpname);
-		    return CL_EIO;
+		    return CL_EUNLINK;
 		}
 	    }
 	    free(tmpname);	
-	    return CL_EIO;
+	    return CL_EWRITE;
 	}
     }
 
@@ -1647,7 +1647,7 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
 	if(!ctx->engine->keeptmp) {
 	    if (cli_unlink(tmpname)) {
 	    	free(tmpname);
-		return CL_EIO;
+		return CL_EUNLINK;
 	    }
 	}
 	free(tmpname);	
@@ -1659,7 +1659,7 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
     if(!ctx->engine->keeptmp) {
 	if (cli_unlink(tmpname)) {
 	    free(tmpname);
-	    return CL_EIO;
+	    return CL_EUNLINK;
 	}
     }
     free(tmpname);
@@ -1689,7 +1689,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg,
 
     if(lseek(desc, 0, SEEK_SET) < 0) {
 	cli_errmsg("cli_scanraw: lseek() failed\n");
-	return CL_EIO;
+	return CL_ESEEK;
     }
 
     ret = cli_scandesc(desc, ctx, type == CL_TYPE_TEXT_ASCII ? 0 : type, 0, &ftoffset, acmode);
@@ -1836,7 +1836,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
     if(fstat(desc, &sb) == -1) {
 	cli_errmsg("magic_scandesc: Can't fstat descriptor %d\n", desc);
-	return CL_EIO;
+	return CL_ESTAT;
     }
 
     if(sb.st_size <= 5) {
@@ -1868,7 +1868,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     type = cli_filetype2(desc, ctx->engine);
     if(type == CL_TYPE_ERROR) {
 	cli_dbgmsg("cli_magic_scandesc: cli_filetype2 returned CL_TYPE_ERROR\n");
-	return CL_EIO;
+	return CL_EREAD;
     }
     lseek(desc, 0, SEEK_SET);
 

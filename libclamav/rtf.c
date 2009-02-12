@@ -247,7 +247,7 @@ static int decode_and_scan(struct rtf_object_data* data, cli_ctx* ctx)
 	data->fd = -1;
 	if(data->name) {
 		if(!ctx->engine->keeptmp)
-			if(cli_unlink(data->name)) ret = CL_EIO;
+			if(cli_unlink(data->name)) ret = CL_EUNLINK;
 		free(data->name);
 		data->name = NULL;
 	}
@@ -409,7 +409,7 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
 							    data->bread = 1;/* flag to indicate this needs to be scanned with cli_decode_ole_object*/
 							    cli_writeint32(out,data->desc_len);
 							    if(cli_writen(data->fd,out,4)!=4)
-								    return CL_EIO; 
+								    return CL_EWRITE; 
 							}
 							else
 								data->bread = 2;
@@ -417,7 +417,7 @@ static int rtf_object_process(struct rtf_state* state, const unsigned char* inpu
 
 						data->desc_len -= out_want;
 						if(cli_writen(data->fd,out_data,out_want) != out_want) {
-							return CL_EIO;
+							return CL_EWRITE;
 						}
 						out_data += out_want;
 						out_cnt  -= out_want;

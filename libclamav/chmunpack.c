@@ -824,12 +824,11 @@ int cli_chm_extract_file(int fd, char *dirname, chm_metadata_t *metadata)
 	snprintf(filename, 1024, "%s/%lu.chm", dirname, (unsigned long int) metadata->file_offset);
 	metadata->ofd = open(filename, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
 	if (metadata->ofd < 0) {
-		return CL_EIO;
+		return CL_ECREAT;
 	}
 	if (chm_copy_file_data(metadata->ufd, metadata->ofd, metadata->file_length) != metadata->file_length) {
 		cli_dbgmsg("failed to copy %lu bytes\n", (unsigned long int) metadata->file_length);
 		close(metadata->ofd);
-		/* return CL_EIO; */
 		return CL_EFORMAT; /* most likely a corrupted file */
 	}
 		

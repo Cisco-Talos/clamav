@@ -358,13 +358,13 @@ static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
     if((i = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
       cli_dbgmsg("autoit: Can't create file %s\n", tempfile);
       free(UNP.outputbuf);
-      return CL_EIO;
+      return CL_ECREAT;
     }
     if(cli_writen(i, UNP.outputbuf, UNP.usize) != (int32_t)UNP.usize) {
       cli_dbgmsg("autoit: cannot write %d bytes\n", UNP.usize);
       close(i);
       free(UNP.outputbuf);
-      return CL_EIO;
+      return CL_EWRITE;
     }
     free(UNP.outputbuf);
     if(ctx->engine->keeptmp)
@@ -375,12 +375,12 @@ static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
     if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
       close(i);
       if(!ctx->engine->keeptmp)
-        if(cli_unlink(tempfile)) return CL_EIO;
+        if(cli_unlink(tempfile)) return CL_EUNLINK;
       return CL_VIRUS;
     }
     close(i);
     if(!ctx->engine->keeptmp) 
-      if (cli_unlink(tempfile)) return CL_EIO;
+      if (cli_unlink(tempfile)) return CL_EUNLINK;
   }
   return ret;
 }
@@ -868,13 +868,13 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
     if((i = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
       cli_dbgmsg("autoit: Can't create file %s\n", tempfile);
       free(buf);
-      return CL_EIO;
+      return CL_ECREAT;
     }
     if(cli_writen(i, buf, UNP.cur_output) != (int32_t)UNP.cur_output) {
       cli_dbgmsg("autoit: cannot write %d bytes\n", UNP.usize);
       close(i);
       free(buf);
-      return CL_EIO;
+      return CL_EWRITE;
     }
     free(buf);
     if(ctx->engine->keeptmp)
@@ -885,12 +885,12 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
     if(cli_magic_scandesc(i, ctx) == CL_VIRUS) {
       close(i);
       if(!ctx->engine->keeptmp) 
-        if (cli_unlink(tempfile)) return CL_EIO;
+        if (cli_unlink(tempfile)) return CL_EUNLINK;
       return CL_VIRUS;
     }
     close(i);
     if(!ctx->engine->keeptmp)
-      if (cli_unlink(tempfile)) return CL_EIO;
+      if (cli_unlink(tempfile)) return CL_EUNLINK;
   }
   return ret;
 }
@@ -908,7 +908,7 @@ int cli_scanautoit(int desc, cli_ctx *ctx, off_t offset) {
 
   lseek(desc, offset, SEEK_SET);
   if (cli_readn(desc, &version, 1)!=1)
-    return CL_EIO;
+    return CL_EREAD;
 
   cli_dbgmsg("in scanautoit()\n");
 

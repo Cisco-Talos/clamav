@@ -624,7 +624,7 @@ int mszip_decompress(struct mszip_stream *zip, off_t out_bytes) {
   if ((off_t) i > out_bytes) i = (int) out_bytes;
   if (i) {
     if (zip->wflag && cli_writen(zip->ofd, zip->o_ptr, i) != i) {
-      return zip->error = CL_EIO;
+      return zip->error = CL_EWRITE;
     }
     zip->o_ptr  += i;
     out_bytes   -= i;
@@ -670,7 +670,7 @@ int mszip_decompress(struct mszip_stream *zip, off_t out_bytes) {
     i = (out_bytes < (off_t)zip->bytes_output) ?
       (int)out_bytes : zip->bytes_output;
     if (zip->wflag && cli_writen(zip->ofd, zip->o_ptr, i) != i) {
-      return zip->error = CL_EIO;
+      return zip->error = CL_EWRITE;
     }
 
     /* mspack errors (i.e. read errors) are fatal and can't be recovered */
@@ -766,7 +766,7 @@ static int lzx_read_input(struct lzx_stream *lzx) {
   if (bread == 0) {
     if (lzx->input_end) {
       cli_dbgmsg("lzx_read_input: out of input bytes\n");
-      return lzx->error = CL_EIO;
+      return lzx->error = CL_EREAD;
     }
     else {
       bread = 2;
@@ -1099,7 +1099,7 @@ int lzx_decompress(struct lzx_stream *lzx, off_t out_bytes) {
   if ((off_t) i > out_bytes) i = (int) out_bytes;
   if (i) {
     if (lzx->wflag && cli_writen(lzx->ofd, lzx->o_ptr, i) != i) {
-      return lzx->error = CL_EIO;
+      return lzx->error = CL_EWRITE;
     }
     lzx->o_ptr  += i;
     lzx->offset += i;
@@ -1475,7 +1475,7 @@ int lzx_decompress(struct lzx_stream *lzx, off_t out_bytes) {
     /* write a frame */
     i = (out_bytes < (off_t)frame_size) ? (unsigned int)out_bytes : frame_size;
     if (lzx->wflag && cli_writen(lzx->ofd, lzx->o_ptr, i) != i) {
-      return lzx->error = CL_EIO;
+      return lzx->error = CL_EWRITE;
     }
     lzx->o_ptr  += i;
     lzx->offset += i;
@@ -1810,7 +1810,7 @@ int qtm_decompress(struct qtm_stream *qtm, off_t out_bytes) {
   if ((off_t) i > out_bytes) i = (int) out_bytes;
   if (i) {
     if (qtm->wflag && cli_writen(qtm->ofd, qtm->o_ptr, i) != i) {
-      return qtm->error = CL_EIO;
+      return qtm->error = CL_EWRITE;
     }
     qtm->o_ptr  += i;
     out_bytes   -= i;
@@ -1929,7 +1929,7 @@ int qtm_decompress(struct qtm_stream *qtm, off_t out_bytes) {
 	/* flush all currently stored data */
 	i = (qtm->o_end - qtm->o_ptr);
 	if (qtm->wflag && cli_writen(qtm->ofd, qtm->o_ptr, i) != i) {
-	  return qtm->error = CL_EIO;
+	  return qtm->error = CL_EWRITE;
 	}
 	out_bytes -= i;
 	qtm->o_ptr = &window[0];
@@ -1945,7 +1945,7 @@ int qtm_decompress(struct qtm_stream *qtm, off_t out_bytes) {
   if (out_bytes) {
     i = (int) out_bytes;
     if (qtm->wflag && cli_writen(qtm->ofd, qtm->o_ptr, i) != i) {
-      return qtm->error = CL_EIO;
+      return qtm->error = CL_EWRITE;
     }
     qtm->o_ptr += i;
   }

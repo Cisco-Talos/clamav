@@ -104,7 +104,7 @@ static char *cab_readstr(int fd, int *ret)
 
 
     if((pos = lseek(fd, 0, SEEK_CUR)) == -1) {
-	*ret = CL_EIO;
+	*ret = CL_ESEEK;
 	return NULL;
     }
 
@@ -206,7 +206,7 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 
     if(lseek(fd, offset, SEEK_SET) == -1) {
 	cli_errmsg("cab_open: Can't lseek to %u (offset)\n", (unsigned int) offset);
-	return CL_EIO;
+	return CL_ESEEK;
     }
 
     if(cli_readn(fd, &hdr, sizeof(hdr)) != sizeof(hdr)) {
@@ -223,7 +223,7 @@ int cab_open(int fd, off_t offset, struct cab_archive *cab)
 
     if(fstat(fd, &sb) == -1) {
 	cli_errmsg("cab_open: Can't fstat descriptor %d\n", fd);
-	return CL_EIO;
+	return CL_ESTAT;
     }
     rsize = sb.st_size;
 
@@ -577,7 +577,7 @@ static int cab_unstore(struct cab_file *file, int bytes)
 	    return file->error;
 	} else if(cli_writen(file->ofd, buff, bread) != bread) {
 	    cli_warnmsg("cab_unstore: Can't write %d bytes to descriptor %d\n", bread, file->ofd);
-	    return CL_EIO;
+	    return CL_EWRITE;
 	}
 
 	todo -= bread;
@@ -631,7 +631,7 @@ static int cab_unstore(struct cab_file *file, int bytes)
 	}								\
 	if((file->folder->cmethod & 0x000f) && !file->cab->state->stream) { \
 	    close(file->ofd);						\
-	    return CL_EMSCAB;						\
+	    return CL_EUNPACK;						\
 	}								\
 	file->cab->actfol = file->folder;				\
     } else {								\
@@ -669,7 +669,7 @@ int cab_extract(struct cab_file *file, const char *name)
     file->ofd = open(name, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
     if(file->ofd == -1) {
 	cli_errmsg("cab_extract: Can't open file %s in write mode\n", name);
-	return CL_EIO;
+	return CL_ECREAT;
     }
 
     switch(file->folder->cmethod & 0x000f) {

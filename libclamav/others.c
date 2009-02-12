@@ -139,58 +139,49 @@ unsigned int cl_retflevel(void)
 const char *cl_strerror(int clerror)
 {
     switch(clerror) {
+	/* libclamav specific codes */
 	case CL_CLEAN:
 	    return "No viruses detected";
 	case CL_VIRUS:
 	    return "Virus(es) detected";
-	case CL_EMAXREC:
-	    return "Recursion limit exceeded";
-	case CL_EMAXSIZE:
-	    return "File size limit exceeded";
-	case CL_EMAXFILES:
-	    return "Files number limit exceeded";
-	case CL_ERAR:
-	    return "RAR module failure";
-	case CL_EZIP:
-	    return "Zip module failure";
-	case CL_EGZIP:
-	    return "GZip module failure";
-	case CL_EMSCOMP:
-	    return "MS Expand module failure";
-	case CL_EMSCAB:
-	    return "MS CAB module failure";
-	case CL_EOLE2:
-	    return "OLE2 module failure";
-	case CL_ETMPFILE:
-	    return "Unable to create temporary file";
-	case CL_ETMPDIR:
-	    return "Unable to create temporary directory";
-	case CL_EMEM:
-	    return "Unable to allocate memory";
-	case CL_EOPEN:
-	    return "Unable to open file or directory";
+	case CL_ENULLARG:
+	    return "Null argument passed to function";
 	case CL_EMALFDB:
 	    return "Malformed database";
-	case CL_EPATSHORT:
-	    return "Too short pattern detected";
 	case CL_ECVD:
 	    return "Broken or not a CVD file";
-	case CL_ECVDEXTR:
-	    return "CVD extraction failure";
-	case CL_EMD5:
-	    return "MD5 verification error";
-	case CL_EDSIG:
-	    return "Digital signature verification error";
-	case CL_ENULLARG:
-	    return "Null argument passed while initialized is required";
-	case CL_EIO:
-	    return "Input/Output error";
-	case CL_EFORMAT:
-	    return "Bad format or broken data";
-	case CL_ESUPPORT:
-	    return "Not supported data format";
-	case CL_EARJ:
-	    return "ARJ module failure";
+	case CL_EVERIFY:
+	    return "Can't verify database integrity";
+	case CL_EUNPACK:
+	    return "Can't unpack some data";
+
+	/* I/O and memory errors */
+	case CL_EOPEN:
+	    return "Can't open file or directory";
+	case CL_ECREAT:
+	    return "Can't create new file";
+	case CL_EUNLINK:
+	    return "Can't unlink file";
+	case CL_ESTAT:
+	    return "Can't get file status";
+	case CL_EREAD:
+	    return "Can't read file";
+	case CL_ESEEK:
+	    return "Can't set file offset";
+	case CL_EWRITE:
+	    return "Can't write to file";
+	case CL_EDUP:
+	    return "Can't duplicate file descriptor";
+	case CL_EACCES:
+	    return "Can't access file";
+	case CL_ETMPFILE:
+	    return "Can't create temporary file";
+	case CL_ETMPDIR:
+	    return "Can't create temporary directory";
+	case CL_EMAP:
+	    return "Can't map file into memory";
+	case CL_EMEM:
+	    return "Can't allocate memory";
 	default:
 	    return "Unknown error code";
     }
@@ -599,7 +590,7 @@ int cli_gentempfd(const char *dir, char **name, int *fd)
    if(*fd == -1) {
 	cli_errmsg("cli_gentempfd: Can't create temporary file %s: %s\n", *name, strerror(errno));
 	free(*name);
-	return CL_EIO;
+	return CL_ECREAT;
     }
 
     return CL_SUCCESS;

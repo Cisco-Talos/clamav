@@ -61,8 +61,10 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 	}
     }
 
-    if(len < root->ac_mindepth)
-	return CL_EPATSHORT;
+    if(len < root->ac_mindepth) {
+	/* cli_errmsg("cli_ac_addpatt: Signature for %s is too short\n", pattern->virname); */
+	return CL_EMALFDB;
+    }
 
     pt = root->ac_root;
 
@@ -1124,8 +1126,11 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	return CL_ENULLARG;
     }
 
-    if(strlen(hexsig) / 2 < root->ac_mindepth)
-	return CL_EPATSHORT;
+    if(strlen(hexsig) / 2 < root->ac_mindepth) {
+	cli_errmsg("cli_ac_addsig: Signature for %s is too short\n", virname);
+	return CL_EMALFDB;
+    }
+
     if((new = (struct cli_ac_patt *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_patt))) == NULL)
 	return CL_EMEM;
 

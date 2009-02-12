@@ -315,7 +315,7 @@ static inline int buf_outc(char c, struct buf *buf)
 {
 	if(buf->pos >= sizeof(buf->buf)) {
 		if(write(buf->outfd, buf->buf, sizeof(buf->buf)) != sizeof(buf->buf))
-			return CL_EIO;
+			return CL_EWRITE;
 		buf->pos = 0;
 	}
 	buf->buf[buf->pos++] = c;
@@ -338,7 +338,7 @@ static inline int buf_outs(const char *s, struct buf *buf)
 		}
 		if(i == buf_len) {
 			if(write(buf->outfd, buf->buf, buf_len) < 0)
-				return CL_EIO;
+				return CL_EWRITE;
 		       i = 0;
 		}
 	}

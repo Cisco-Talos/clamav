@@ -73,7 +73,7 @@ struct msexp_hdr {
 #define READBYTES				\
     ret = cli_readn(fd, rbuff, RWBUFF);		\
     if(ret == -1)				\
-	return CL_EIO;				\
+	return CL_EREAD;			\
     if(!ret)					\
 	break;					\
     rbytes = (unsigned int) ret;		\
@@ -82,7 +82,7 @@ struct msexp_hdr {
 #define WRITEBYTES				\
     ret = cli_writen(ofd, wbuff, w);		\
     if(ret == -1 || (unsigned int) ret != w)	\
-	return CL_EIO;				\
+	return CL_EWRITE;			\
     wbytes += w;				\
     if(wbytes >= EC32(hdr.fsize))		\
 	return CL_SUCCESS;			\
@@ -99,7 +99,7 @@ int cli_msexpand(int fd, int ofd, cli_ctx *ctx)
 
 
     if(cli_readn(fd, &hdr, sizeof(hdr)) == -1)
-	return CL_EIO;
+	return CL_EREAD;
 
     if(EC32(hdr.magic1) != MAGIC1 || EC32(hdr.magic2) != MAGIC2 || EC16(hdr.magic3) != MAGIC3) {
 	cli_dbgmsg("MSEXPAND: Not supported file format\n");

@@ -1555,7 +1555,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 	} result;
 #endif
 	char *dbfile;
-	int ret = CL_ESUPPORT;
+	int ret = CL_EOPEN;
 
 
     cli_dbgmsg("Loading databases from %s\n", dirname);
@@ -1632,7 +1632,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
     }
 
     closedir(dd);
-    if(ret == CL_ESUPPORT)
+    if(ret == CL_EOPEN)
 	cli_errmsg("cli_loaddb(): No supported database files found in %s\n", dirname);
 
     return ret;
@@ -1650,7 +1650,7 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
 
     if(stat(path, &sb) == -1) {
         cli_errmsg("cl_load(): Can't get status of %s\n", path);
-        return CL_EIO;
+        return CL_ESTAT;
     }
 
     if((options & CL_DB_PHISHING_URLS) && !engine->phishcheck && (engine->dconf->phishing & PHISHING_CONF_ENGINE))

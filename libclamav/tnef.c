@@ -75,7 +75,7 @@ cli_tnef(const char *dir, int desc, cli_ctx *ctx)
 
 	if(fstat(desc, &statb) < 0) {
 		cli_errmsg("Can't fstat descriptor %d\n", desc);
-		return CL_EIO;
+		return CL_ESTAT;
 	}
 	fsize = statb.st_size;
 
@@ -94,7 +94,7 @@ cli_tnef(const char *dir, int desc, cli_ctx *ctx)
 	if(fread(&i32, sizeof(uint32_t), 1, fp) != 1) {
 		fclose(fp);
 		/* The file is at least MIN_SIZE bytes, so it "can't" fail */
-		return CL_EIO;
+		return CL_EREAD;
 	}
 	if(host32(i32) != TNEF_SIGNATURE) {
 		fclose(fp);
@@ -104,7 +104,7 @@ cli_tnef(const char *dir, int desc, cli_ctx *ctx)
 	if(fread(&i16, sizeof(uint16_t), 1, fp) != 1) {
 		fclose(fp);
 		/* The file is at least MIN_SIZE bytes, so it "can't" fail */
-		return CL_EIO;
+		return CL_EREAD;
 	}
 
 	fb = NULL;
@@ -120,7 +120,7 @@ cli_tnef(const char *dir, int desc, cli_ctx *ctx)
 			case 0:
 				if(ferror(fp)) {
 					perror("read");
-					ret = CL_EIO;
+					ret = CL_EREAD;
 				}
 				alldone = 1;
 				break;
@@ -130,7 +130,6 @@ cli_tnef(const char *dir, int desc, cli_ctx *ctx)
 				/*
 				 * Assume truncation, not file I/O error
 				 */
-				/*ret = CL_EIO;*/
 				cli_warnmsg("cli_tnef: file truncated, returning CLEAN\n");
 				ret = CL_CLEAN;
 				alldone = 1;

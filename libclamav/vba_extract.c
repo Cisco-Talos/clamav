@@ -561,7 +561,7 @@ cli_scan_ole10(int fd, cli_ctx *ctx)
 		return CL_CLEAN;
 
 	if(fstat(fd, &statbuf) == -1)
-		return CL_EIO;
+		return CL_ESTAT;
 
 	if ((statbuf.st_size - object_size) >= 4) {
 		/* Probably the OLE type id */
@@ -596,7 +596,7 @@ cli_scan_ole10(int fd, cli_ctx *ctx)
 	if (ofd < 0) {
 		cli_warnmsg("cli_decode_ole_object: can't create %s\n",	fullname);
 		free(fullname);
-		return CL_EIO;
+		return CL_ECREAT;
 	}
 	cli_dbgmsg("cli_decode_ole_object: decoding to %s\n", fullname);
 	ole_copy_file_data(fd, ofd, object_size);
@@ -605,7 +605,7 @@ cli_scan_ole10(int fd, cli_ctx *ctx)
 	close(ofd);
 	if(ctx && !ctx->engine->keeptmp)
 	  if (cli_unlink(fullname))
-	    ret = CL_EIO;
+	    ret = CL_EUNLINK;
 	free(fullname);
 	return ret;
 }

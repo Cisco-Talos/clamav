@@ -81,14 +81,14 @@ int cli_scansis(int desc, cli_ctx *ctx) {
     cli_dbgmsg("SIS: dup() failed\n");
     cli_rmdirs(tmpd);
     free(tmpd);
-    return CL_EIO;
+    return CL_EDUP;
   }
   if (!(f=fdopen(i, "rb"))) {
     cli_dbgmsg("SIS: fdopen() failed\n");
     close(i);
     cli_rmdirs(tmpd);
     free(tmpd);
-    return CL_EIO;
+    return CL_EOPEN;
   }
   rewind(f);
   if (fread(uid, 16, 1, f)!=1) {
@@ -96,7 +96,7 @@ int cli_scansis(int desc, cli_ctx *ctx) {
     cli_rmdirs(tmpd);
     free(tmpd);
     fclose(f);
-    return CL_EIO;
+    return CL_EREAD;
   }
 
   cli_dbgmsg("SIS: UIDS %x %x %x - %x\n", EC32(uid[0]), EC32(uid[1]), EC32(uid[2]), EC32(uid[3]));
@@ -504,7 +504,7 @@ static int real_scansis(FILE *f, cli_ctx *ctx, const char *tmpd) {
 	    free(decomp);
 	    free(ptrs);
 	    free(alangs);
-	    return CL_EIO;
+	    return CL_ECREAT;
 	  }
 	  if (cli_writen(fd, decomp, olen)!=(int)olen) {
 	    close(fd);
@@ -512,7 +512,7 @@ static int real_scansis(FILE *f, cli_ctx *ctx, const char *tmpd) {
 	    free(ptrs);
 	    free(alangs);
 	    close(fd);
-	    return CL_EIO;
+	    return CL_EWRITE;
 	  }
 	  free(decomp);
 	  if (cli_magic_scandesc(fd, ctx) == CL_VIRUS) {

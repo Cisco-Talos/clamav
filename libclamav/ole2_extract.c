@@ -721,7 +721,7 @@ static int handler_otf(int fd, ole2_header_t *hdr, property_t *prop, const char 
   if((ofd = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
     cli_dbgmsg("OLE2: Can't create file %s\n", tempfile);
     free(tempfile);
-    return CL_EIO;
+    return CL_ECREAT;
   }
 
   current_block = prop->start_block;
@@ -743,7 +743,7 @@ static int handler_otf(int fd, ole2_header_t *hdr, property_t *prop, const char 
     close(ofd);
     if (cli_unlink(tempfile)) {
         free(tempfile);
-	return CL_EIO;
+	return CL_EUNLINK;
     }
     free(tempfile);
     return CL_BREAK;
@@ -777,7 +777,7 @@ static int handler_otf(int fd, ole2_header_t *hdr, property_t *prop, const char 
 	cli_bitset_free(blk_bitset);
 	if (cli_unlink(tempfile)) {
 	  free(tempfile);
-	  return CL_EIO;
+	  return CL_EUNLINK;
         }
 	free(tempfile);
 	return CL_BREAK;
@@ -797,10 +797,10 @@ static int handler_otf(int fd, ole2_header_t *hdr, property_t *prop, const char 
 	cli_bitset_free(blk_bitset);
 	if (cli_unlink(tempfile)) {
 	  free(tempfile);
-	  return CL_EIO;
+	  return CL_EUNLINK;
         }
 	free(tempfile);
-	return CL_EIO;
+	return CL_EWRITE;
       }
 
       current_block = ole2_get_next_block_number(fd, hdr, current_block);
@@ -816,7 +816,7 @@ static int handler_otf(int fd, ole2_header_t *hdr, property_t *prop, const char 
   if(ctx && !ctx->engine->keeptmp) {
     if (cli_unlink(tempfile)) {
       free(tempfile);
-      return CL_EIO;
+      return CL_EUNLINK;
     }
   }
   free(tempfile);
@@ -958,13 +958,13 @@ int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx, struct uniq **vb
 
 	hdr.bitset = cli_bitset_init();
 	if (!hdr.bitset) {
-		ret=CL_EOLE2;
+		ret=CL_EMEM;
 		goto abort;
 	}
 
 	if (memcmp(hdr.magic, magic_id, 8) != 0) {
 		cli_dbgmsg("OLE2 magic failed!\n");
-		ret=CL_EOLE2;
+		ret=CL_EFORMAT;
 		goto abort;
 	}
 

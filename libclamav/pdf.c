@@ -108,7 +108,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 	p = buf = mmap(NULL, size, PROT_READ, MAP_PRIVATE, desc, offset);
 	if(buf == MAP_FAILED) {
 		cli_errmsg("cli_pdf: mmap() failed\n");
-		return CL_EMEM;
+		return CL_EMAP;
 	}
 
 	cli_dbgmsg("cli_pdf: scanning %lu bytes\n", (unsigned long)size);
@@ -417,7 +417,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 			close(fout);
 			cli_dbgmsg("cli_pdf: Empty stream\n");
 			if (cli_unlink(fullname)) {
-				rc = CL_EIO;
+				rc = CL_EUNLINK;
 				break;
 			}
 			continue;
@@ -448,7 +448,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 			if(ret != CL_CLEAN) {
 				close(fout);
 				if (cli_unlink(fullname)) {
-					rc = CL_EIO;
+					rc = CL_EUNLINK;
 					break;
 				}
 				continue;
@@ -459,7 +459,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 			if(tmpbuf == NULL) {
 				close(fout);
 				if (cli_unlink(fullname)) {
-					rc = CL_EIO;
+					rc = CL_EUNLINK;
 					break;
 				}
 				continue;
@@ -471,7 +471,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 				free(tmpbuf);
 				close(fout);
 				if (cli_unlink(fullname)) {
-					rc = CL_EIO;
+					rc = CL_EUNLINK;
 					break;
 				}
 				continue;
@@ -486,7 +486,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 					free(tmpbuf);
 					close(fout);
 					if (cli_unlink(fullname)) {
-						rc = CL_EIO;
+						rc = CL_EUNLINK;
 						break;
 					}
 					continue;
@@ -500,7 +500,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 				if(is_flatedecode)
 					rc = try_flatedecode((unsigned char *)tmpbuf, real_streamlen, real_streamlen, fout, ctx);
 				else
-				  rc = (unsigned long)cli_writen(fout, (const char *)streamstart, real_streamlen)==real_streamlen ? CL_CLEAN : CL_EIO;
+				  rc = (unsigned long)cli_writen(fout, (const char *)streamstart, real_streamlen)==real_streamlen ? CL_CLEAN : CL_EWRITE;
 			}
 			free(tmpbuf);
 		} else if(is_flatedecode) {
@@ -510,7 +510,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 			cli_dbgmsg("cli_pdf: writing %lu bytes from the stream\n",
 				(unsigned long)real_streamlen);
 			if((rc = cli_checklimits("cli_pdf", ctx, real_streamlen, 0, 0))==CL_CLEAN)
-				rc = (unsigned long)cli_writen(fout, (const char *)streamstart, real_streamlen) == real_streamlen ? CL_CLEAN : CL_EIO;
+				rc = (unsigned long)cli_writen(fout, (const char *)streamstart, real_streamlen) == real_streamlen ? CL_CLEAN : CL_EWRITE;
 		}
 
 		if (rc == CL_CLEAN) {
@@ -532,7 +532,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 					ctx->scannedfiles++;
 					close(fout);
 					if (cli_unlink(fullname)) {
-						rc = CL_EIO;
+						rc = CL_EUNLINK;
 						break;
 					}
 					continue;
@@ -545,7 +545,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 		}
 		close(fout);
 		if(!ctx->engine->keeptmp)
-			if (cli_unlink(fullname)) rc = CL_EIO;
+			if (cli_unlink(fullname)) rc = CL_EUNLINK;
 		if(rc != CL_CLEAN) break;
 	}
 
@@ -558,7 +558,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 }
 
 /*
- * flate inflation - returns clamAV status, e.g CL_SUCCESS, CL_EZIP
+ * flate inflation
  */
 static int
 try_flatedecode(unsigned char *buf, off_t real_len, off_t calculated_len, int fout, cli_ctx *ctx)
@@ -658,7 +658,7 @@ flatedecode(unsigned char *buf, off_t len, int fout, cli_ctx *ctx)
 					if ((written=cli_writen(fout, output, sizeof(output)))!=sizeof(output)) {
 						cli_errmsg("cli_pdf: failed to write output file\n");
 						inflateEnd(&stream);
-						return CL_EIO;
+						return CL_EWRITE;
 					}
 					nbytes += written;
 
@@ -690,14 +690,14 @@ flatedecode(unsigned char *buf, off_t len, int fout, cli_ctx *ctx)
 		if(cli_writen(fout, output, sizeof(output) - stream.avail_out) < 0) {
 			cli_errmsg("cli_pdf: failed to write output file\n");
 			inflateEnd(&stream);
-			return CL_EIO;
+			return CL_EWRITE;
 		}
 	}
 			
 #ifdef	SAVE_TMP
 	if (cli_unlink(tmpfilename)) {
 		inflateEnd(&stream);
-		return CL_EIO;
+		return CL_EUNLINK;
 	}
 #endif
 	inflateEnd(&stream);

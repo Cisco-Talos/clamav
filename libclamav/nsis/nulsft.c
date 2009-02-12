@@ -93,7 +93,7 @@ static int nsis_init(struct nsis_st *n) {
   case COMP_BZIP2:
     memset(&n->bz, 0, sizeof(nsis_bzstream));
     if (nsis_BZ2_bzDecompressInit(&n->bz, 0, 0)!=BZ_OK)
-      return CL_EBZIP;
+      return CL_EUNPACK;
     n->freecomp=1;
     break;
   case COMP_LZMA:
@@ -203,7 +203,7 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 
   if ((n->ofd=open(n->ofn, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, 0600))==-1) {
     cli_errmsg("NSIS: unable to create output file %s - aborting.", n->ofn);
-    return CL_EIO;
+    return CL_ECREAT;
   }
 
   if (!n->solid) {
@@ -232,7 +232,7 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 
     if ((ret=cli_checklimits("NSIS", ctx, size, 0, 0))!=CL_CLEAN) {
       close(n->ofd);
-      if (lseek(n->ifd, size, SEEK_CUR)==-1) return CL_EIO;
+      if (lseek(n->ifd, size, SEEK_CUR)==-1) return CL_ESEEK;
       return ret;
     }
     if (!(ibuf= (unsigned char *) cli_malloc(size))) {
@@ -244,14 +244,14 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
       cli_dbgmsg("NSIS: cannot read %u bytes"__AT__"\n", size);
       free(ibuf);
       close(n->ofd);
-      return CL_EIO;
+      return CL_EREAD;
     }
     if (loops==size) {
       if (cli_writen(n->ofd, ibuf, size) != (ssize_t) size) {
 	cli_dbgmsg("NSIS: cannot write output file"__AT__"\n");
 	free(ibuf);
 	close(n->ofd);
-	return CL_EIO;
+	return CL_EWRITE;
       }
     } else {
       if ((ret=nsis_init(n))!=CL_SUCCESS) {
@@ -275,7 +275,7 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 	    free(ibuf);
 	    close(n->ofd);
 	    nsis_shutdown(n);
-	    return CL_EIO;
+	    return CL_EWRITE;
 	  }
 	  n->nsis.next_out = obuf;
 	  n->nsis.avail_out = BUFSIZ;
@@ -301,7 +301,7 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 	  cli_dbgmsg("NSIS: cannot write output file"__AT__"\n");
 	  free(ibuf);
 	  close(n->ofd);
-	  return CL_EIO;
+	  return CL_EWRITE;
 	}
       }
 
@@ -333,7 +333,7 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
       if((n->freeme= (unsigned char *)mmap(NULL, n->fullsz, PROT_READ, MAP_PRIVATE, n->ifd, 0))==MAP_FAILED) {
 	cli_dbgmsg("NSIS: mmap() failed"__AT__"\n");
 	close(n->ofd);
-	return CL_EIO;
+	return CL_EMAP;
       }
       n->nsis.next_in = n->freeme+n->off+0x1c;
 #else /* HAVE_MMAP */
@@ -350,7 +350,7 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
       if (cli_readn(n->ifd, n->freeme, n->asz) != (ssize_t) n->asz) {
 	cli_dbgmsg("NSIS: cannot read %u bytes"__AT__"\n", n->asz);
 	close(n->ofd);
-	return CL_EIO;
+	return CL_EREAD;
       }
       n->nsis.next_in = n->freeme;
 #endif /* HAVE_MMAP */
@@ -398,7 +398,7 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 	if (cli_writen(n->ofd, obuf, wsz) != (ssize_t) wsz) {
 	  cli_dbgmsg("NSIS: cannot write output file"__AT__"\n");
 	  close(n->ofd);
-	  return CL_EIO;
+	  return CL_EWRITE;
 	}
 	size-=wsz;
 	loops=0;
@@ -416,7 +416,7 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
       if (cli_writen(n->ofd, obuf, n->nsis.next_out - obuf) != n->nsis.next_out - obuf) {
 	cli_dbgmsg("NSIS: cannot write output file"__AT__"\n");
 	close(n->ofd);
-	return CL_EIO;
+	return CL_EWRITE;
       }
     }
 
@@ -456,7 +456,7 @@ static int nsis_headers(struct nsis_st *n, cli_ctx *ctx) {
   if (fstat(n->ifd, &st)==-1 ||
       lseek(n->ifd, n->off, SEEK_SET)==-1 ||
       cli_readn(n->ifd, buf, 28) != 28)
-    return CL_EIO;
+    return CL_EREAD;
 
   n->hsz = (uint32_t)cli_readint32(buf+0x14);
   n->asz = (uint32_t)cli_readint32(buf+0x18);
@@ -477,12 +477,12 @@ static int nsis_headers(struct nsis_st *n, cli_ctx *ctx) {
   /* Guess if solid */
   for (i=0, pos=0;pos < n->asz-4;i++) {
     int32_t nextsz;
-    if (cli_readn(n->ifd, buf+4, 4)!=4) return CL_EIO;
+    if (cli_readn(n->ifd, buf+4, 4)!=4) return CL_EREAD;
     nextsz=cli_readint32(buf+4);
     if (!i) n->comp = nsis_detcomp(buf+4);
     if (nextsz&0x80000000) {
       nextsz&=~0x80000000;
-      if (cli_readn(n->ifd, buf+4, 4)!=4) return CL_EIO;
+      if (cli_readn(n->ifd, buf+4, 4)!=4) return CL_EREAD;
       comps[nsis_detcomp(buf+4)]++;
       nextsz-=4;
       pos+=4;
@@ -492,7 +492,7 @@ static int nsis_headers(struct nsis_st *n, cli_ctx *ctx) {
       break;
     }
 
-    if (lseek(n->ifd, nextsz, SEEK_CUR)==-1) return CL_EIO;
+    if (lseek(n->ifd, nextsz, SEEK_CUR)==-1) return CL_ESEEK;
   }
   
   if (trunc && i>=2) n->solid=0;
@@ -505,7 +505,7 @@ static int nsis_headers(struct nsis_st *n, cli_ctx *ctx) {
     n->comp = (comps[1]<comps[2]) ? (comps[2]<comps[3] ? COMP_ZLIB : COMP_LZMA) : (comps[1]<comps[3] ? COMP_ZLIB : COMP_BZIP2);
   }
 
-  if (lseek(n->ifd, n->off+0x1c, SEEK_SET)==-1) return CL_EIO;
+  if (lseek(n->ifd, n->off+0x1c, SEEK_SET)==-1) return CL_ESEEK;
 
   return nsis_unpack_next(n, ctx);
 }
@@ -558,7 +558,7 @@ int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
 	    ret=cli_magic_scandesc(nsist.ofd, ctx);
 	  close(nsist.ofd);
 	  if(!ctx->engine->keeptmp)
-	    if(cli_unlink(nsist.ofn)) ret = CL_EIO;
+	    if(cli_unlink(nsist.ofn)) ret = CL_EUNLINK;
 	} else if(ret == CL_EMAXSIZE) {
 	    ret = nsist.solid ? CL_BREAK : CL_SUCCESS;
 	}

@@ -111,7 +111,7 @@ int cli_versig(const char *md5, const char *dsig)
     if(strlen(md5) != 32 || !isalnum(md5[0])) {
 	/* someone is trying to fool us with empty/malformed MD5 ? */
 	cli_errmsg("SECURITY WARNING: MD5 basic test failure.\n");
-	return CL_EMD5;
+	return CL_EVERIFY;
     }
 
     mp_init(&n);
@@ -122,7 +122,7 @@ int cli_versig(const char *md5, const char *dsig)
     if(!(pt = (char *) cli_decodesig(dsig, 16, e, n))) {
 	mp_clear(&n);
 	mp_clear(&e);
-	return CL_EDSIG;
+	return CL_EVERIFY;
     }
 
     pt2 = cli_str2hex(pt, 16);
@@ -135,7 +135,7 @@ int cli_versig(const char *md5, const char *dsig)
 	free(pt2);
 	mp_clear(&n);
 	mp_clear(&e);
-	return CL_EDSIG;
+	return CL_EVERIFY;
     }
 
     free(pt2);

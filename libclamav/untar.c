@@ -80,7 +80,7 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 			if(fout>=0)
 				close(fout);
 			cli_errmsg("cli_untar: block read error\n");
-			return CL_EIO;
+			return CL_EREAD;
 		}
 
 		if(!in_block) {
@@ -93,7 +93,7 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 				ret = cli_magic_scandesc(fout, ctx);
 				close(fout);
 				if (!ctx->engine->keeptmp)
-					if (cli_unlink(fullname)) return CL_EIO;
+					if (cli_unlink(fullname)) return CL_EUNLINK;
 				if (ret==CL_VIRUS)
 					return CL_VIRUS;
 				fout = -1;
@@ -200,7 +200,7 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 				cli_errmsg("cli_untar: only wrote %d bytes to file %s (out of disc space?)\n",
 					nwritten, fullname);
 				close(fout);
-				return CL_EIO;
+				return CL_EWRITE;
 			}
 			size -= nbytes;
 		}
@@ -212,7 +212,7 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 		ret = cli_magic_scandesc(fout, ctx);
 		close(fout);
 		if (!ctx->engine->keeptmp)
-			if (cli_unlink(fullname)) return CL_EIO;
+			if (cli_unlink(fullname)) return CL_EUNLINK;
 		if (ret==CL_VIRUS)
 			return CL_VIRUS;
 	}

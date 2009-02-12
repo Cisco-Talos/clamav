@@ -100,13 +100,13 @@ if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) { \
     cli_dbgmsg(NAME": Can't create file %s\n", tempfile); \
     free(tempfile); \
     cli_multifree FREEME; \
-    return CL_EIO; \
+    return CL_ECREAT; \
 }
 
 #define CLI_TMPUNLK() if(!ctx->engine->keeptmp) { \
     if (cli_unlink(tempfile)) { \
 	free(tempfile); \
-	return CL_EIO; \
+	return CL_EUNLINK; \
     } \
 }
 
@@ -118,7 +118,7 @@ if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) { \
 	    free(exe_sections); \
 	    free(tempfile); \
 	    FREESEC; \
-	    return CL_EIO; \
+	    return CL_EUNLINK; \
 	} \
 	free(tempfile); \
 	FREESEC; \
@@ -133,7 +133,7 @@ if((ndesc = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) { \
 	if (cli_unlink(tempfile)) { \
 	    free(exe_sections); \
 	    free(tempfile); \
-	    return CL_EIO; \
+	    return CL_EUNLINK; \
 	} \
 	cli_dbgmsg("PESpin: Size exceeded\n"); \
 	free(tempfile); \
@@ -170,7 +170,7 @@ FSGSTUFF; \
 	    free(exe_sections); \
 	    free(tempfile); \
 	    cli_multifree FREEME; \
-	    return CL_EIO; \
+	    return CL_EUNLINK; \
 	} \
 	cli_multifree FREEME; \
         free(tempfile); \
@@ -797,7 +797,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
     if(fstat(desc, &sb) == -1) {
 	cli_dbgmsg("fstat failed\n");
-	return CL_EIO;
+	return CL_ESTAT;
     }
 
     fsize = sb.st_size;
@@ -1168,7 +1168,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
 	if(cli_readn(desc, code, exe_sections[0].rsz)!=exe_sections[0].rsz) {
 	    free(exe_sections);
-	    return CL_EIO;
+	    return CL_EREAD;
 	}
 	for(i=0; i<exe_sections[0].rsz - 5; i++) {
 	    if((uint8_t)(code[i]-0xe8) > 1) continue;
@@ -1264,7 +1264,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    if(lseek(desc, fileoffset, SEEK_SET) == -1) {
 	        cli_dbgmsg("MEW: lseek() failed\n");
 		free(exe_sections);
-		return CL_EIO;
+		return CL_ESEEK;
 	    }
 
 	    if((bytes = read(desc, buff, 0xb0)) != 0xb0) {
@@ -1283,7 +1283,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 	    if(!cli_seeksect(desc, &exe_sections[i + 1])) {
 		free(exe_sections);
-		return CL_EIO;
+		return CL_ESEEK;
 	    }
 	    ssize = exe_sections[i + 1].vsz;
 	    dsize = exe_sections[i].vsz;
@@ -1309,7 +1309,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	      cli_dbgmsg("MEW: Can't read %d bytes [read: %lu]\n", exe_sections[i + 1].rsz, (unsigned long)bytes);
 		free(exe_sections);
 		free(src);
-		return CL_EIO;
+		return CL_EREAD;
 	    }
 	    cli_dbgmsg("MEW: %u (%08x) bytes read\n", (unsigned int)bytes, (unsigned int)bytes);
 
@@ -1473,7 +1473,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    cli_dbgmsg("Can't read raw data of section %d\n", i + 1);
 	    free(exe_sections);
 	    free(src);
-	    return CL_EIO;
+	    return CL_ESEEK;
 	}
 
 	dest = src + newedx - exe_sections[i + 1].rva;
@@ -1574,7 +1574,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    cli_dbgmsg("Can't read %d bytes from padding area\n", gp); 
 	    free(exe_sections);
 	    free(support);
-	    return CL_EIO;
+	    return CL_EREAD;
 	}
 
 	/* newebx = cli_readint32(support) - EC32(optional_hdr32.ImageBase);  Unused */
@@ -1639,7 +1639,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    free(exe_sections);
 	    free(sections);
 	    free(src);
-	    return CL_EIO;
+	    return CL_EREAD;
 	}
 
 	if((dest = (char *) cli_calloc(dsize, sizeof(char))) == NULL) {
@@ -1712,7 +1712,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    cli_dbgmsg("Can't read %d bytes from padding area\n", gp); 
 	    free(exe_sections);
 	    free(support);
-	    return CL_EIO;
+	    return CL_EREAD;
 	}
 
 	/* Counting original sections */
@@ -1760,7 +1760,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    free(exe_sections);
 	    free(sections);
 	    free(src);
-	    return CL_EIO;
+	    return CL_EREAD;
 	}
 
 	if((dest = (char *) cli_calloc(dsize, sizeof(char))) == NULL) {
@@ -1812,7 +1812,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    free(exe_sections);
 	    free(src);
 	    free(dest);
-	    return CL_EIO;
+	    return CL_EREAD;
 	}
 
 	/* try to detect UPX code */
@@ -1904,7 +1904,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    free(tempfile);
 	    free(dest);
 	    close(ndesc);
-	    return CL_EIO;
+	    return CL_EWRITE;
 	}
 
 	free(dest);
@@ -1996,7 +1996,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    cli_dbgmsg("PESpin: Can't read %lu bytes\n", (unsigned long)fsize);
 	    free(spinned);
 	    free(exe_sections);
-	    return CL_EIO;
+	    return CL_EREAD;
 	}
 
 	CLI_UNPTEMP("PESpin",(spinned,exe_sections,0));
@@ -2022,7 +2022,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    cli_dbgmsg("yC: Can't read %lu bytes\n", (unsigned long)fsize);
 	    free(spinned);
 	    free(exe_sections);
-	    return CL_EIO;
+	    return CL_EREAD;
 	}
 
 	CLI_UNPTEMP("yC",(spinned,exe_sections,0));
@@ -2059,7 +2059,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    cli_dbgmsg("WWPack: Can't read %d bytes from headers\n", head);
 	    free(src);
 	    free(exe_sections);
-	    return CL_EIO;
+	    return CL_EREAD;
 	}
         for(i = 0 ; i < (unsigned int)nsections-1; i++) {
 	    if(!exe_sections[i].rsz) continue;
@@ -2082,7 +2082,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    free(src);
 	    free(packer);
 	    free(exe_sections);
-	    return CL_EIO;
+	    return CL_EREAD;
 	}
 
 	CLI_UNPTEMP("WWPack",(src,packer,exe_sections,0));
