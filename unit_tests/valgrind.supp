@@ -300,6 +300,31 @@
    obj:*
    fun:start_thread
 }
+{
+   helgrind-glibc2X-005-valgrind-3.4.0
+   Helgrind:Race
+   obj:/lib*/libpthread-2.*so*
+}
+{
+   debian-libc-dbg
+   Helgrind:Race
+   fun:__pthread_mutex_*
+}
+{
+    debian-libc-dbg
+    Helgrind:Race
+    fun:pthread_create@*
+}
+{
+    debian-libc-dbg
+    Helgrind:Race
+    fun:close
+}
+{
+    debian-libc-dbg
+    Helgrind:Race
+    obj:/usr/lib*/debug/libpthread-2.*so*
+}
 #{
 #	helgrind-glibc27-dbg18
 #	Helgrind:Race
