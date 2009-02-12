@@ -277,7 +277,10 @@ int command(client_conn_t *conn, int *virus)
 		    ret = -1;
 	    } else
 		ret = 0;
-	    ftruncate(conn->scanfd, 0);
+	    if (ftruncate(conn->scanfd, 0) == -1) {
+		/* not serious, we're going to close it and unlink it anyway */
+		logg("*ftruncate failed: %d\n", errno);
+	    }
 	    close(conn->scanfd);
 	    conn->scanfd = -1;
 	    cli_unlink(conn->filename);

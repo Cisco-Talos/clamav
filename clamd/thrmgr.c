@@ -801,8 +801,10 @@ void thrmgr_group_waitforall(jobgroup_t *group, unsigned *ok, unsigned *error, u
 #define JOBGROUP_INITIALIZER  { PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER, 1, 0, 0, 0, 0 };
 jobgroup_t *thrmgr_group_new(void)
 {
+    jobgroup_t *group;
     jobgroup_t dummy = JOBGROUP_INITIALIZER;
-    jobgroup_t *group = malloc(sizeof(*group));
+
+    group = malloc(sizeof(*group));
     if (!group)
 	return NULL;
     memcpy(group, &dummy, sizeof(dummy));

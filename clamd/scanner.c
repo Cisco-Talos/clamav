@@ -331,7 +331,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
     if (!retval || retval == -1) {
 	const char *reason = !retval ? "timeout" : "poll";
 	mdprintf(odesc, "Accept %s. ERROR%c", reason, term);
-	logg("!ScanStream %u: accept %s.\n", reason, port);
+	logg("!ScanStream %u: accept %s.\n", port, reason);
 	closesocket(sockfd);
 	return -1;
     }

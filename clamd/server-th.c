@@ -838,7 +838,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    int has_more = (buf->buffer + buf->off) > (cmd + cmdlen);
 		    enum commands cmdtype = parse_command(cmd, &argument);
 		    logg("*RECVTH: got command %s (%u, %u), argument: %s\n",
-			 cmd, cmdlen, cmdtype, argument ? argument : "");
+			 cmd, (unsigned)cmdlen, (unsigned)cmdtype, argument ? argument : "");
 		    if (cmdtype == COMMAND_FILDES) {
 			if (buf->buffer + buf->off <= cmd + strlen("FILDES\n")) {
 			    /* we need the extra byte from recvmsg */
@@ -928,7 +928,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    } else
 			buf->off = 0;
 		    if (buf->off)
-			logg("*RECVTH: moved partial command: %u\n", buf->off);
+			logg("*RECVTH: moved partial command: %lu\n", (unsigned long)buf->off);
 		    else
 			logg("*RECVTH: consumed entire command\n");
 		}
@@ -936,7 +936,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    break;
 		if (!error && buf->mode == MODE_WAITREPLY && buf->off) {
 		    /* Client is not supposed to send anything more */
-		    logg("^Client sent garbage after last command: %u bytes\n", buf->off);
+		    logg("^Client sent garbage after last command: %lu bytes\n", (unsigned long)buf->off);
 		    buf->buffer[buf->off] = '\0';
 		    logg("*RECVTH: garbage: %s\n", buf->buffer);
 		    error = 1;
@@ -974,7 +974,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 				}
 			    }
 			    if (buf->chunksize > buf->quota) {
-				logg("^INSTREAM: Size limit reached, (requested: %lu, max: %lu)\n", buf->chunksize, buf->quota);
+				logg("^INSTREAM: Size limit reached, (requested: %lu, max: %lu)\n", 
+				     (unsigned long)buf->chunksize, (unsigned long)buf->quota);
 				conn_reply_error(&conn, "INSTREAM size limit exceeded. ERROR");
 				error = 1;
 			    } else {
