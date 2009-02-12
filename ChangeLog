@@ -1,3 +1,7 @@
+Thu Feb 12 23:56:36 EET 2009 (edwin)
+------------------------------------
+ * clamd/tcpserver.c: fix distcheck
+
 Thu Feb 12 23:43:32 EET 2009 (edwin)
 ------------------------------------
  * libclamav/libclamav.map: remove nonexistent symbol to make Solaris
