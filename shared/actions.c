@@ -108,7 +108,7 @@ static void action_copy(const char *filename) {
 
 static void action_remove(const char *filename) {
     if(unlink(filename)) {
-	logg("!Can't remove.\n", filename);
+	logg("!Can't remove file '%s'.\n", filename);
 	notremoved++;
     } else {
 	logg("~%s: Removed.\n", filename);
