@@ -1,3 +1,8 @@
+Thu Feb 12 23:43:32 EET 2009 (edwin)
+------------------------------------
+ * libclamav/libclamav.map: remove nonexistent symbol to make Solaris
+ linker happy.
+
 Thu Feb 12 23:07:51 EET 2009 (edwin)
 ------------------------------------
  * clamd/clamd.c, clamd/tcpserver.c, clamdscan/client.c,

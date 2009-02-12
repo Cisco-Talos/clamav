@@ -125,7 +125,6 @@ CLAMAV_PRIVATE {
     mp_clear;
     cli_versig;
     cli_filecopy;
-    cli_sftw;
     cli_ftw;
     cli_unlink;
     cli_writen;
