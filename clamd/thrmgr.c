@@ -158,7 +158,7 @@ static void remove_frompools(threadpool_t *t)
 static void print_queue(int f, work_queue_t *queue, struct timeval *tv_now)
 {
     long umin=~0UL, umax=0, usum=0;
-    int invalids = 0, cnt = 0;
+    unsigned invalids = 0, cnt = 0;
     work_item_t *q;
 
     if(!queue->head)
@@ -475,7 +475,7 @@ static void stats_tls_key_alloc(void)
 static const char *IDLE_TASK = "IDLE";
 
 /* no mutex is needed, we are using  thread local variable */
-void thrmgr_setactivetask(const char *filename, const char* command)
+void thrmgr_setactivetask(const char *filename, const char* cmd)
 {
 	struct task_desc *desc;
 	pthread_once(&stats_tls_key_once, stats_tls_key_alloc);
@@ -483,10 +483,10 @@ void thrmgr_setactivetask(const char *filename, const char* command)
 	if(!desc)
 		return;
 	desc->filename = filename;
-	if(command) {
-		if(command == IDLE_TASK && desc->command == command)
+	if(cmd) {
+		if(cmd == IDLE_TASK && desc->command == cmd)
 			return;
-		desc->command = command;
+		desc->command = cmd;
 		gettimeofday(&desc->tv, NULL);
 	}
 }

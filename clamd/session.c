@@ -174,7 +174,6 @@ int command(client_conn_t *conn, int *virus)
     struct cl_engine *engine = conn->engine;
     unsigned int options = conn->options;
     const struct optstruct *opts = conn->opts;
-    const char term = conn->term;
     int type = -1; /* TODO: make this enum */
     int maxdirrec;
     int ret = 0;

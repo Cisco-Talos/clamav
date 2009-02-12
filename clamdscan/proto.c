@@ -405,7 +405,7 @@ struct client_parallel_data {
 /* Sends a proper scan request to clamd and parses its replies
  * This is used only in IDSESSION mode
  * Returns 0 on success, 1 on hard failures */
-int dspresult(struct client_parallel_data *c) {
+static int dspresult(struct client_parallel_data *c) {
     const char *filename;
     char *bol, *eol;
     unsigned int rid;

@@ -812,7 +812,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    while (!error && buf->fd != -1 && buf->buffer && pos < buf->off &&
 		   buf->mode != MODE_WAITANCILL) {
 		client_conn_t conn;
-		const unsigned char *cmd;
+		const unsigned char *cmd = NULL;
 		size_t cmdlen = 0;
 		char term = '\n';
 		int rc;
@@ -835,7 +835,6 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		while ((conn.mode == MODE_COMMAND) &&
 		       (cmd = get_cmd(buf, pos, &cmdlen, &term)) != NULL) {
 		    const char *argument;
-		    int has_more = (buf->buffer + buf->off) > (cmd + cmdlen);
 		    enum commands cmdtype = parse_command(cmd, &argument);
 		    logg("*RECVTH: got command %s (%u, %u), argument: %s\n",
 			 cmd, (unsigned)cmdlen, (unsigned)cmdtype, argument ? argument : "");

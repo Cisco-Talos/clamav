@@ -273,7 +273,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	int tmpd, bread, retval, timeout, btread;
 	unsigned int port = 0, portscan, min_port, max_port;
 	unsigned long int quota = 0, maxsize = 0;
-	short bound = 0, rnd_port_first = 1;
+	short bound = 0;
 	const char *virname;
 	char buff[FILEBUFF];
 	char peer_addr[32];
