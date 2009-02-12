@@ -20,6 +20,7 @@
 #define __MISC_H
 #include <netdb.h>
 #include <netinet/in.h>
+#include "optparser.h"
 /* Maximum filenames under various systems - njh */
 #ifndef	NAME_MAX	/* e.g. Linux */
 # ifdef	MAXNAMELEN	/* e.g. Solaris */

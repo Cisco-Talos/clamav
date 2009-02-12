@@ -1,3 +1,7 @@
+Thu Feb 12 23:58:14 EET 2009 (edwin)
+------------------------------------
+ * shared/misc.h: add missing include
+
 Thu Feb 12 23:56:36 EET 2009 (edwin)
 ------------------------------------
  * clamd/tcpserver.c: fix distcheck
