@@ -364,4 +364,56 @@ int cli_checklimits(const char *, cli_ctx *, unsigned long, unsigned long, unsig
 int cli_updatelimits(cli_ctx *, unsigned long);
 unsigned long cli_getsizelimit(cli_ctx *, unsigned long);
 int cli_matchregex(const char *str, const char *regex);
+
+/* symlink behaviour */
+#define CLI_FTW_FOLLOW_FILE_SYMLINK 0x01
+#define CLI_FTW_FOLLOW_DIR_SYMLINK  0x02
+
+/* if the callback needs the stat */
+#define CLI_FTW_NEED_STAT	    0x04
+
+#define CLI_FTW_STD (CLI_FTW_NEED_STAT)
+
+enum cli_ftw_reason {
+    visit_file,
+    visit_directory_toplev, /* this is a directory at toplevel of recursion */
+    error_mem, /* recommended to return CL_EMEM */
+    /* recommended to return CL_SUCCESS below */
+    error_stat,
+    warning_skipped_link,
+    warning_skipped_special,
+    warning_skipped_dir
+};
+
+/* wrap void*, so that we don't mix it with some other pointer */
+struct cli_ftw_cbdata {
+    void *data;
+};
+
+/* 
+ * return CL_BREAK to break out without an error, CL_SUCCESS to continue,
+ * or any CL_E* to break out due to error.
+ * The callback is responsible for freeing filename when it is done using it.
+ * Note that callback decides if directory traversal should continue 
+ * after an error, we call the callback with reason == error,
+ * and if it returns CL_BREAK we break.
+ */
+typedef int (*cli_ftw_cb)(struct stat *stat_buf, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data);
+
+/*
+ * returns 
+ *  CL_SUCCESS if it traversed all files and subdirs
+ *  CL_BREAK if traversal has stopped at some point
+ *  CL_E* if error encountered during traversal and we had to break out
+ * This is regardless of virus found/not, that is the callback's job to store.
+ * Note that the callback may dispatch async the scan, so that when cli_ftw
+ * returns we don't know the infected/notinfected status of the directory yet!
+ * Due to this if the callback scans synchronously it should store the infected
+ * status in its cbdata.
+ * This works for both files and directories. It stats the path to determine
+ * which one it is.
+ * If it is a file, it simply calls the callback once, otherwise recurses.
+ */
+int cli_ftw(const char *base, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data);
+
 #endif

@@ -368,3 +368,300 @@ int cli_filecopy(const char *src, const char *dest)
 
     return close(d);
 }
+struct dirent_data {
+    char *filename;
+    const char *dirname;
+    struct stat *statbuf;
+    int   is_dir;/* 0 - no, 1 - yes */
+    long  ino; /* -1: inode not available */
+};
+
+/* sort files before directories, and lower inodes before higher inodes */
+static int ftw_compare(const void *a, const void *b)
+{
+    const struct dirent_data *da = a;
+    const struct dirent_data *db = b;
+    long diff = da->is_dir - db->is_dir;
+    if (!diff) {
+	diff = da->ino - db->ino;
+    }
+    return diff;
+}
+
+enum filetype {
+    ft_unknown,
+    ft_link,
+    ft_directory,
+    ft_regular,
+    ft_skipped_special,
+    ft_skipped_link
+};
+
+static inline int ft_skipped(enum filetype ft)
+{
+    return ft != ft_regular && ft != ft_directory;
+}
+
+#define FOLLOW_SYMLINK_MASK (CLI_FTW_FOLLOW_FILE_SYMLINK | CLI_FTW_FOLLOW_DIR_SYMLINK)
+static int get_filetype(const char *fname, int flags, int need_stat,
+			 struct stat *statbuf, enum filetype *ft)
+{
+    int stated = 0;
+
+    if (*ft == ft_unknown || *ft == ft_link) {
+	need_stat = 1;
+
+	if ((flags & FOLLOW_SYMLINK_MASK) != FOLLOW_SYMLINK_MASK) {
+	    /* Following only one of directory/file symlinks, or none, may
+	     * need to lstat.
+	     * If we're following both file and directory symlinks, we don't need
+	     * to lstat(), we can just stat() directly.*/
+	    if (*ft != ft_link) {
+		/* need to lstat to determine if it is a symlink */
+		if (lstat(fname, statbuf) == -1)
+		    return -1;
+		if (S_ISLNK(statbuf->st_mode)) {
+		    *ft = ft_link;
+		} else {
+		    /* It was not a symlink, stat() not needed */
+		    need_stat = 0;
+		    stated = 1;
+		}
+	    }
+	    if (*ft == ft_link && !(flags & FOLLOW_SYMLINK_MASK)) {
+		/* This is a symlink, but we don't follow any symlinks */
+		*ft = ft_skipped_link;
+		return 0;
+	    }
+	}
+    }
+
+    if (need_stat) {
+	if (stat(fname, statbuf) == -1)
+	    return -1;
+	stated = 1;
+    }
+
+    if (*ft == ft_unknown || *ft == ft_link) {
+	if (S_ISDIR(statbuf->st_mode) &&
+	    (*ft != ft_link || (flags & CLI_FTW_FOLLOW_DIR_SYMLINK))) {
+	    /* A directory, or (a symlink to a directory and we're following dir
+	     * symlinks) */
+	    *ft = ft_directory;
+	} else if (S_ISREG(statbuf->st_mode) &&
+		   (*ft != ft_link || (flags & CLI_FTW_FOLLOW_FILE_SYMLINK))) {
+	    /* A file, or (a symlink to a file and we're following file symlinks) */
+	    *ft = ft_regular;
+	} else {
+	    /* default: skipped */
+	    *ft = S_ISLNK(statbuf->st_mode) ?
+		ft_skipped_link : ft_skipped_special;
+	}
+    }
+    return stated;
+}
+
+static int handle_filetype(const char *fname, int flags,
+			   struct stat *statbuf, int *stated, enum filetype *ft,
+			   cli_ftw_cb callback, struct cli_ftw_cbdata *data)
+{
+    int ret;
+
+    *stated = get_filetype(fname, flags, flags & CLI_FTW_NEED_STAT , statbuf, ft);
+
+    if (*stated == -1) {
+	/*  we failed a stat() or lstat() */
+	ret = callback(NULL, NULL, fname, error_stat, data);
+	if (ret != CL_SUCCESS)
+	    return ret;
+	*ft = ft_unknown;
+    } else if (*ft == ft_skipped_link || *ft == ft_skipped_special) {
+	/* skipped filetype */
+	ret = callback(stated ? statbuf : NULL, NULL, fname,
+		       *ft == ft_skipped_link ?
+		       warning_skipped_link : warning_skipped_special, data);
+	if (ret != CL_SUCCESS)
+	    return ret;
+    }
+    return CL_SUCCESS;
+}
+
+static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data);
+static int handle_entry(struct dirent_data *entry, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
+{
+    if (!entry->is_dir) {
+	return callback(entry->statbuf, entry->filename, entry->filename, visit_file, data);
+    } else {
+	return cli_ftw_dir(entry->dirname, flags, maxdepth, callback, data);
+    }
+}
+
+int cli_ftw(const char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
+{
+    struct stat statbuf;
+    enum filetype ft = ft_unknown;
+    struct dirent_data entry;
+    int stated = 0;
+
+    int ret = handle_filetype(path, flags, &statbuf, &stated, &ft, callback, data);
+    if (ret != CL_SUCCESS)
+	return ret;
+    if (ft_skipped(ft))
+	return CL_SUCCESS;
+    entry.statbuf = stated ? &statbuf : NULL;
+    entry.is_dir = ft == ft_directory;
+    entry.filename = entry.is_dir ? NULL : strdup(path);
+    entry.dirname = entry.is_dir ? path : NULL;
+    if (entry.is_dir) {
+	ret = callback(entry.statbuf, NULL, path, visit_directory_toplev, data);
+	if (ret != CL_SUCCESS)
+	    return ret;
+    }
+    return handle_entry(&entry, flags, maxdepth, callback, data);
+}
+
+static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
+{
+    DIR *dd;
+#if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
+    union {
+	struct dirent d;
+	char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
+    } result;
+#endif
+    struct dirent_data *entries = NULL;
+    size_t i, entries_cnt = 0;
+    int ret;
+
+    if (maxdepth < 0) {
+	/* exceeded recursion limit */
+	ret = callback(NULL, NULL, dirname, warning_skipped_dir, data);
+	return ret;
+    }
+
+    if((dd = opendir(dirname)) != NULL) {
+	struct dirent *dent;
+	errno = 0;
+	ret = CL_SUCCESS;
+#ifdef HAVE_READDIR_R_3
+	while(!readdir_r(dd, &result.d, &dent) && dent) {
+#elif defined(HAVE_READDIR_R_2)
+	while((dent = (struct dirent *) readdir_r(dd, &result.d))) {
+#else
+	while((dent = readdir(dd))) {
+#endif
+	    int stated = 0;
+	    enum filetype ft;
+	    char *fname;
+	    struct stat statbuf;
+	    struct stat *statbufp;
+
+	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, ".."))
+		continue;
+#ifdef _DIRENT_HAVE_D_TYPE
+	    switch (dent->d_type) {
+		case DT_DIR:
+		    ft = ft_directory;
+		    break;
+		case DT_LNK:
+		    if (!(flags & FOLLOW_SYMLINK_MASK)) {
+			/* we don't follow symlinks, don't bother
+			 * stating it */
+			errno = 0;
+			continue;
+		    }
+		    ft = ft_link;
+		    break;
+		case DT_REG:
+		    ft = ft_regular;
+		    break;
+		case DT_UNKNOWN:
+		    ft = ft_unknown;
+		    break;
+		default:
+		    ft = ft_skipped_special;
+		    break;
+	    }
+#else
+	    ft = ft_unknown;
+#endif
+	    fname = (char *) cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
+	    if(!fname) {
+		ret = callback(NULL, NULL, dirname, error_mem, data);
+		if (ret != CL_SUCCESS)
+		    break;
+	    }
+	    sprintf(fname, "%s/%s", dirname, dent->d_name);
+
+	    ret = handle_filetype(fname, flags, &statbuf, &stated, &ft, callback, data);
+	    if (ret != CL_SUCCESS) {
+		free(fname);
+		break;
+	    }
+
+	    if (ft_skipped(ft)) { /* skip */
+		free(fname);
+		errno = 0;
+		continue;
+	    }
+
+	    if (stated && (flags & CLI_FTW_NEED_STAT)) {
+		statbufp = cli_malloc(sizeof(*statbufp));
+		if (!statbufp) {
+		    ret = callback(stated ? &statbuf : NULL, NULL, fname, error_mem, data);
+		    free(fname);
+		    if (ret != CL_SUCCESS)
+			break;
+		    else {
+			errno = 0;
+			continue;
+		    }
+		}
+		memcpy(statbufp, &statbuf, sizeof(statbuf));
+	    } else {
+		statbufp = 0;
+	    }
+
+	    entries_cnt++;
+	    entries = cli_realloc(entries, entries_cnt*sizeof(*entries));
+	    if (!entries) {
+		ret = callback(stated ? &statbuf : NULL, NULL, fname, error_mem, data);
+		free(fname);
+		if (statbufp)
+		    free(statbufp);
+		break;
+	    } else {
+		struct dirent_data *entry = &entries[entries_cnt-1];
+		entry->filename = fname;
+		entry->statbuf = statbufp;
+		entry->is_dir = ft == ft_directory;
+		entry->dirname = entry->is_dir ? fname : NULL;
+#ifdef _XOPEN_UNIX
+		entry->ino = dent->d_ino;
+#else
+		entry->ino = -1;
+#endif
+	    }
+	    errno = 0;
+	}
+	closedir(dd);
+
+	if (entries) {
+	    qsort(entries, entries_cnt, sizeof(*entries), ftw_compare);
+	    for (i = 0; i < entries_cnt; i++) {
+		struct dirent_data *entry = &entries[i];
+		ret = handle_entry(entry, flags, maxdepth-1, callback, data);
+		if (entry->is_dir)
+		    free(entry->filename);
+		if (entry->statbuf)
+		    free(entry->statbuf);
+		if (ret != CL_SUCCESS)
+		    break;
+	    }
+	    free(entries);
+	}
+    } else {
+	ret = callback(NULL, NULL, dirname, error_stat, data);
+    }
+    return ret;
+}

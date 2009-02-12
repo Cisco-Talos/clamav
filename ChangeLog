@@ -1,3 +1,9 @@
+Thu Feb 12 19:08:28 EET 2009 (edwin)
+------------------------------------
+ * libclamav/libclamav.map, libclamav/others.h,
+ libclamav/others_common.c: merge from clamd-proto branch: introduce
+ cli_ftw
+
 Thu Feb 12 12:20:05 EET 2009 (edwin)
 ------------------------------------
  * unit_tests/valgrind.supp: add some more suppressions
