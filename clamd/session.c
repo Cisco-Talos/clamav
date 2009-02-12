@@ -227,6 +227,8 @@ int command(client_conn_t *conn, int *virus)
 	    scandata.thr_pool = NULL;
 	    /* TODO: check ret value */
 	    scan_callback(NULL, conn->filename, conn->filename, visit_file, &data);
+	    /* callback freed it */
+	    conn->filename = NULL;
 	    *virus = scandata.infected;
 	    return 0;
 	case COMMAND_FILDES:

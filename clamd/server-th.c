@@ -1037,9 +1037,9 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		if (thrmgr_group_terminate(fds->buf[i].group)) {
 		    shutdown(fds->buf[i].fd, 2);
 		    closesocket(fds->buf[i].fd);
+		    fds->buf[i].fd = -1;
 		}
 	    }
-	    fds->nfds = 0;
 	    pthread_mutex_unlock(&fds->buf_mutex);
 	    break;
 	}
@@ -1097,7 +1097,6 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	}
     }
 
-    fds_free(fds);
     pthread_mutex_lock(&exit_mutex);
     progexit = 1;
     pthread_mutex_unlock(&exit_mutex);
@@ -1122,6 +1121,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     }
 
     pthread_join(accept_th, NULL);
+    fds_free(fds);
     close(acceptdata.syncpipe_wake_accept[1]);
     close(acceptdata.syncpipe_wake_recv[1]);
     if(dbstat.entries)

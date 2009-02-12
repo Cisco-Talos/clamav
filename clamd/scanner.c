@@ -90,6 +90,8 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 
     if (thrmgr_group_need_terminate(scandata->conn->group)) {
 	logg("^Client disconnected while scanjob was active\n");
+	if (reason == visit_file)
+	    free(filename);
 	return CL_BREAK;
     }
     scandata->total++;
@@ -128,8 +130,10 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 
     /* check whether the file is excluded */
 #ifdef C_LINUX
-    if(procdev && sb && (sb->st_dev == procdev))
+    if(procdev && sb && (sb->st_dev == procdev)) {
+	free(filename);
 	return CL_SUCCESS;
+    }
 #endif
     if((opt = optget(scandata->opts, "ExcludePath"))->enabled) {
 	/* TODO: perhaps multiscan should skip this check? 
@@ -138,6 +142,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 	if(match_regex(filename, opt->strarg) == 1) {
 	    if (type != TYPE_MULTISCAN)
 		conn_reply_single(scandata->conn, filename, "Excluded");
+	    free(filename);
 	    return CL_SUCCESS;
 	}
     }
@@ -145,6 +150,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     if(sb && sb->st_size == 0) { /* empty file */
 	if (msg == scandata->toplevel_path)
 	    conn_reply_single(scandata->conn, filename, "Empty file");
+	free(filename);
 	return CL_SUCCESS;
     }
 
@@ -161,6 +167,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 	    client_conn->group = scandata->group;
 	    if(cl_engine_addref(scandata->engine)) {
 		logg("!cl_engine_addref() failed\n");
+		free(filename);
 		return CL_EMEM;
 	    } else {
 		client_conn->engine = scandata->engine;
@@ -169,12 +176,14 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 		pthread_mutex_unlock(&reload_mutex);
 		if(!thrmgr_group_dispatch(scandata->thr_pool, scandata->group, client_conn)) {
 		    logg("!thread dispatch failed\n");
+		    free(filename);
 		    return CL_EMEM;
 		}
 	    }
 	} else {
 	    logg("!Can't allocate memory for client_conn\n");
 	    scandata->errors++;
+	    free(filename);
 	    return CL_EMEM;
 	}
 	return CL_SUCCESS;
@@ -184,6 +193,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 	conn_reply(scandata->conn, filename, "Access denied.", "ERROR");
 	logg("*Access denied: %s\n", filename);
 	scandata->errors++;
+	free(filename);
 	return CL_SUCCESS;
     }
 
@@ -201,11 +211,13 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 	scandata->errors++;
 	conn_reply(scandata->conn, filename, cl_strerror(ret), "ERROR");
 	logg("~%s: %s ERROR\n", filename, cl_strerror(ret));
-	if(ret == CL_EMEM) /* stop scanning */
-	    return ret;
     } else if (logok) {
 	logg("~%s: OK\n", filename);
     }
+
+    free(filename);
+    if(ret == CL_EMEM) /* stop scanning */
+	return ret;
 
     if (thrmgr_group_need_terminate(scandata->conn->group)) {
 	logg("^Client disconnected while scanjob was active\n");

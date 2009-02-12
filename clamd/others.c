@@ -578,8 +578,9 @@ void fds_free(struct fd_data *data)
     unsigned i;
     pthread_mutex_lock(&data->buf_mutex);
     for (i=0;i < data->nfds;i++) {
-	if (data->buf[i].buffer)
+	if (data->buf[i].buffer) {
 	    free(data->buf[i].buffer);
+	}
     }
     if (data->buf)
 	free(data->buf);
