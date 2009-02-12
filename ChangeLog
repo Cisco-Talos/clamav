@@ -1,3 +1,7 @@
+Thu Feb 12 19:55:31 EET 2009 (edwin)
+------------------------------------
+ * Makefile.in: revert accidental makefile change
+
 Thu Feb 12 19:49:06 EET 2009 (edwin)
 ------------------------------------
  * unit_tests/Makefile.am, unit_tests/Makefile.in,
