@@ -1,5 +1,7 @@
 /*
- *  Copyright (C) 2004 Trog <trog@clamav.net>
+ *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *
+ *  Authors: Trog, Török Edvin
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by

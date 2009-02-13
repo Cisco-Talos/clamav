@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2008 Sourcefire, Inc.
+ *  Copyright (C) 2008-2009 Sourcefire, Inc.
  *
  *  Author: Tomasz Kojm <tkojm@clamav.net>
  *

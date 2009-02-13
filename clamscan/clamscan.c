@@ -1,5 +1,7 @@
 /*
- *  Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
+ *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *
+ *  Authors: Tomasz Kojm
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
