@@ -62,10 +62,6 @@
 #define INADDR_LOOPBACK 0x7f000001
 #endif
 
-#ifndef PATH_MAX
-#define PATH_MAX 1024
-#endif
-
 struct sockaddr *mainsa = NULL;
 int mainsasz;
 unsigned long int maxstream;

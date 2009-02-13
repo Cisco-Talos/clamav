@@ -84,7 +84,7 @@ int tcpserver(const struct optstruct *opts)
 	closesocket(sockfd);
 	return -1;
     } else {
-	const struct optstruct *taddr = optget(opts, "TCPSocket");
+	const struct optstruct *taddr = optget(opts, "TCPAddr");
 	if(taddr->enabled)
 	    logg("#TCP: Bound to address %s on port %u\n", taddr->strarg, optget(opts, "TCPSocket")->numarg);
 	else

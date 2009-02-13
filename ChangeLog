@@ -1,3 +1,7 @@
+Fri Feb 13 13:34:21 EET 2009 (edwin)
+------------------------------------
+ * clamav-milter/, clamd/, clamdscan/, shared/: fix Solaris build
+
 Fri Feb 13 11:11:03 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c, clamd/session.c: fdpassing is now in others.c

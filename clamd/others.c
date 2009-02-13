@@ -26,11 +26,8 @@
 #include "clamav-config.h"
 #endif
 
-#if defined HAVE_FD_PASSING && defined FDPASS_NEED_XOPEN
-/* to expose BSD 4.4/Unix98 semantics instead of BSD 4.3 semantics */
-#define _XOPEN_SOURCE 500
-#endif
-
+/* must be first because it may define _XOPEN_SOURCE */
+#include "shared/fdpassing.h"
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -87,10 +84,7 @@
 
 #include "session.h"
 #include "others.h"
-
-#ifndef PATH_MAX
-#define PATH_MAX 1024
-#endif
+#include "misc.h"
 
 #ifdef	C_WINDOWS
 void virusaction(const char *filename, const char *virname, const struct optstruct *opts)

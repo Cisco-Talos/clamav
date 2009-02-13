@@ -34,6 +34,12 @@
 # endif
 #endif
 
+#include <limits.h>
+
+#ifndef PATH_MAX
+#define PATH_MAX 1024
+#endif
+
 char *freshdbdir(void);
 void print_version(const char *dbdir);
 int filecopy(const char *src, const char *dest);

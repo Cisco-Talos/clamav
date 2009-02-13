@@ -18,6 +18,12 @@
  *  MA 02110-1301, USA.
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+/* must be first because it may define _XOPEN_SOURCE */
+#include "shared/fdpassing.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
