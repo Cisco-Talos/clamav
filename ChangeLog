@@ -1,3 +1,8 @@
+Fri Feb 13 13:49:55 EET 2009 (edwin)
+------------------------------------
+ * unit_tests/valgrind.supp: add suppression for progexit set in
+ signal handler
+
 Fri Feb 13 13:48:54 EET 2009 (edwin)
 ------------------------------------
  * clamav-milter/netcode.c: Solaris build fix

@@ -325,6 +325,11 @@
     Helgrind:Race
     obj:/usr/lib*/debug/libpthread-2.*so*
 }
+{
+    sighandler-no-mutex
+    Helgrind:Race
+    fun:sighandler_th
+}
 #{
 #	helgrind-glibc27-dbg18
 #	Helgrind:Race
