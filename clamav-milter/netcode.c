@@ -22,6 +22,8 @@
 #include "clamav-config.h"
 #endif
 
+/* for Solaris, so that both FDPassing and IPV6 work */
+#define __EXTENSIONS__
 /* must be first because it may define _XOPEN_SOURCE */
 #include "shared/fdpassing.h"
 #include <stdio.h>
