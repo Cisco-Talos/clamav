@@ -52,6 +52,7 @@
 #include <time.h>
 #include <errno.h>
 #include <stddef.h>
+#include <limits.h>
 
 #include "libclamav/clamav.h"
 #include "libclamav/str.h"
