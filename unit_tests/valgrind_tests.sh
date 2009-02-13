@@ -65,7 +65,7 @@ fi
 VALGRIND_COMMON_FLAGS="-v --trace-children=yes --suppressions=$abs_srcdir/valgrind.supp $GENSUPP"
 VALGRIND_FLAGS="$VALGRIND_COMMON_FLAGS --track-fds=yes --leak-check=full"
 VALGRIND_FLAGS_RACE="$VALGRIND_COMMON_FLAGS --tool=helgrind"
-
+export CK_DEFAULT_TIMEOUT=40
 echo "--- Starting check_clamav under valgrind/memcheck"
 rm -f valgrind-check.log valgrind-clamd.log valgrind-race.log
 CK_FORK=no ../libtool --mode=execute $VALGRIND $VALGRIND_FLAGS ./check_clamav >valgrind-check.log 2>&1 &

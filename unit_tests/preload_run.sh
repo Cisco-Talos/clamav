@@ -5,4 +5,5 @@
 ulimit -c 0
 LD_PRELOAD=$LIBPRELOAD
 export LD_PRELOAD
+export CK_DEFAULT_TIMEOUT=40
 exec $@
