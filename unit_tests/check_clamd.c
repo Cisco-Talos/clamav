@@ -134,6 +134,32 @@ END_TEST
 
 #define EXPECT_INSTREAM "stream: ClamAV-Test-File.UNOFFICIAL FOUND\n"
 
+#define STATS_REPLY "POOLS: 1\n\nSTATE: VALID PRIMARY\n"
+START_TEST (tc_stats)
+{
+    char *recvdata;
+    size_t len = strlen("nSTATS\n");
+    int rc;
+
+    conn_setup();
+    rc = send(sockd, "nSTATS\n", len, 0);
+    fail_unless_fmt((size_t)rc == len, "Unable to send(): %s\n", strerror(errno));
+
+    recvdata = recvfull(sockd, &len);
+
+    fail_unless_fmt(len > strlen(STATS_REPLY), "Reply has wrong size: %lu, minimum %lu, reply: %s\n",
+		    len, strlen(STATS_REPLY), recvdata);
+
+    if (len > strlen(STATS_REPLY))
+	len = strlen(STATS_REPLY);
+    rc = strncmp(recvdata, STATS_REPLY, len);
+
+    fail_unless_fmt(rc == 0, "Wrong reply: %s\n", recvdata);
+    free(recvdata);
+    conn_teardown();
+}
+END_TEST
+
 START_TEST (tc_instream)
 {
     int fd, nread, rc;
@@ -185,7 +211,7 @@ static Suite *test_clamd_suite(void)
     suite_add_tcase(s, tc_commands);
     tcase_add_loop_test(tc_commands, test_basic_commands, 0, sizeof(basic_tests)/sizeof(basic_tests[0]));
     tcase_add_test(tc_commands, tc_instream);
-
+    tcase_add_test(tc_commands, tc_stats);
     return s;
 }
 

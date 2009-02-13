@@ -104,6 +104,14 @@ short int mprintf_disabled = 0, mprintf_verbose = 0, mprintf_quiet = 0,
 		    if(pt)			    \
 			arglen += strlen(pt);	    \
 		    break;			    \
+		case 'f':			    \
+		    va_arg(args, double);	    \
+		    arglen += 25;		    \
+		    break;			    \
+		case 'l':			    \
+		    va_arg(args, long);		    \
+		    arglen += 20;		    \
+		    break;			    \
 		default:			    \
 		    va_arg(args, int);		    \
 		    arglen += 10;		    \
