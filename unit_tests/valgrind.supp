@@ -330,6 +330,11 @@
     Helgrind:Race
     fun:sighandler_th
 }
+{
+    sighandler-no-mutex
+    Helgrind:Race
+    fun:recvloop_th
+}
 #{
 #	helgrind-glibc27-dbg18
 #	Helgrind:Race
