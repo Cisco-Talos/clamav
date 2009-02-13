@@ -1,3 +1,8 @@
+Fri Feb 13 11:11:03 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, clamd/session.c: fdpassing is now in others.c
+ instead of session.c, move the defines.
+
 Fri Feb 13 10:30:16 EET 2009 (edwin)
 ------------------------------------
  * clamd/session.c: add missing include

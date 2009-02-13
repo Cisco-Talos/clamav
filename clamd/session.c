@@ -24,11 +24,6 @@
 #include "clamav-config.h"
 #endif
 
-#if defined HAVE_FD_PASSING && defined FDPASS_NEED_XOPEN
-/* to expose BSD 4.4/Unix98 semantics instead of BSD 4.3 semantics */
-#define _XOPEN_SOURCE 500
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
