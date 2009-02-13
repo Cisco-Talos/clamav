@@ -46,7 +46,7 @@
 #include "default.h"
 
 
-int cli_scanbuff(const unsigned char *buffer, uint32_t length, cli_ctx *ctx, cli_file_t ftype)
+int cli_scanbuff(const unsigned char *buffer, uint32_t length, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata)
 {
 	int ret = CL_CLEAN;
 	unsigned int i;
@@ -73,25 +73,27 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, cli_ctx *ctx, cli
 
     if(troot) {
 
-	if((ret = cli_ac_initdata(&mdata, troot->ac_partsigs, troot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN)))
+	if(!acdata && (ret = cli_ac_initdata(&mdata, troot->ac_partsigs, troot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN)))
 	    return ret;
 
 	if(troot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, troot, 0, ftype, -1)) != CL_VIRUS)
-	    ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, troot, &mdata, 0, ftype, -1, NULL, AC_SCAN_VIR, NULL);
+	    ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, troot, acdata ? (acdata[0]) : (&mdata), 0, ftype, -1, NULL, AC_SCAN_VIR, NULL);
 
-	cli_ac_freedata(&mdata);
+	if(!acdata)
+	    cli_ac_freedata(&mdata);
 
 	if(ret == CL_VIRUS)
 	    return ret;
     }
 
-    if((ret = cli_ac_initdata(&mdata, groot->ac_partsigs, groot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN)))
+    if(!acdata && (ret = cli_ac_initdata(&mdata, groot->ac_partsigs, groot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN)))
 	return ret;
 
     if(groot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, groot, 0, ftype, -1)) != CL_VIRUS)
-	ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, groot, &mdata, 0, ftype, -1, NULL, AC_SCAN_VIR, NULL);
+	ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, groot, acdata ? (acdata[1]) : (&mdata), 0, ftype, -1, NULL, AC_SCAN_VIR, NULL);
 
-    cli_ac_freedata(&mdata);
+    if(!acdata)
+	cli_ac_freedata(&mdata);
 
     return ret;
 }
