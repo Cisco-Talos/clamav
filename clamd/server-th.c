@@ -844,6 +844,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			    /* we need the extra byte from recvmsg */
 			    conn.mode = MODE_WAITANCILL;
 			    buf->mode = MODE_WAITANCILL;
+			    /* put term back */
+			    buf->buffer[pos + cmdlen] = term;
 			    cmdlen = 0;
 			    logg("*RECVTH: mode -> MODE_WAITANCILL\n");
 			    break;
