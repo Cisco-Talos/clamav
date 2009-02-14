@@ -1,3 +1,7 @@
+Sat Feb 14 10:17:37 CET 2009 (acab)
+-----------------------------------
+ * clamav-milter/clamfi.c: Revert previous and add a better fix
+
 Sat Feb 14 09:34:18 CET 2009 (acab)
 -----------------------------------
  * clamav-milter/clamfi.c: Correctly scan in FILDES mode

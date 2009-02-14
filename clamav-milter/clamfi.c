@@ -79,8 +79,8 @@ static sfsistat sendchunk(struct CLAMFI *cf, unsigned char *bodyp, size_t len, S
     if(cf->totsz + len > maxfilesize)
 	len = maxfilesize - cf->totsz;
 
+    cf->totsz += len;
     if(cf->local) {
-	cf->bufsz += len;
 	while(len) {
 	    int n = write(cf->alt, bodyp, len);
 
@@ -120,7 +120,6 @@ static sfsistat sendchunk(struct CLAMFI *cf, unsigned char *bodyp, size_t len, S
 	    return FailAction;
 	}
     }
-    cf->totsz += len;
     return SMFIS_CONTINUE;
 }
 
@@ -132,7 +131,7 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv) {
     if(!(cf = (struct CLAMFI *)smfi_getpriv(ctx)))
 	return SMFIS_CONTINUE; /* whatever */
 
-    if(!cf->bufsz) {
+    if(!cf->totsz) {
 	if(cf->all_whitelisted) {
 	    logg("*Skipping scan (all destinations whitelisted)\n");
 	    smfi_setpriv(ctx, NULL);
