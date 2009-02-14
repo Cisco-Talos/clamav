@@ -1,4 +1,4 @@
-CFLAGS=-g -Wall -W -Wshadow -Wformat=2 -O2 
+CFLAGS=-g -Wall -W -Wshadow -Wformat=2 
 CC=gcc
 OBJS=clamdtop.o
 CPPFLAGS=-D_FORTIFY_SOURCE=2

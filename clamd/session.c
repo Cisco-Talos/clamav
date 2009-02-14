@@ -253,6 +253,8 @@ int command(client_conn_t *conn, int *virus)
 #endif
 	case COMMAND_STATS:
 	    thrmgr_setactivetask(NULL, "STATS");
+	    if (conn->group)
+		mdprintf(desc, "%u: ", conn->id);
 	    thrmgr_printstats(desc);
 	    return 0;
 	case COMMAND_STREAM:
@@ -389,6 +391,8 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 	    case COMMAND_END:
 	    case COMMAND_INSTREAM:
 	    case COMMAND_INSTREAMSCAN:
+	    case COMMAND_VERSION:
+	    case COMMAND_STATS:
 		/* These commands are accepted inside IDSESSION */
 		break;
 	    default:
@@ -421,6 +425,8 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 	    {
 		uint32_t ver;
 		cl_engine_get(engine, CL_ENGINE_DB_VERSION, &ver);
+		if (conn->group)
+		    mdprintf(desc, "%u: ", conn->id);
 		if(ver) {
 		    char timestr[32];
 		    const char *tstr;
@@ -433,17 +439,10 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 		} else {
 		    mdprintf(desc, "ClamAV %s%c", get_version(), conn->term);
 		}
-		return 1;
+		return conn->group ? 0 : 1;
 	    }
 	case COMMAND_INSTREAM:
 	    {
-#if 0
-		if (!conn->group) {
-		    /* only valid inside IDSESSION */
-		    conn_reply_single(conn, NULL, "UNKNOWN COMMAND");
-		    return 1;
-		}
-#endif
 		int rc = cli_gentempfd(NULL, &conn->filename, &conn->scanfd);
 		if (rc != CL_SUCCESS)
 		    return rc;

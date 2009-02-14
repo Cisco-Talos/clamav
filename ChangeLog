@@ -1,3 +1,9 @@
+Sat Feb 14 18:43:10 EET 2009 (edwin)
+------------------------------------
+ * clamd/session.c, contrib/clamdtop/Makefile,
+ contrib/clamdtop/clamdtop.c: make clamdtop use IDSESSION, and enable
+ VERSION/STATS inside IDSESSION.
+
 Sat Feb 14 18:04:55 EET 2009 (edwin)
 ------------------------------------
  * libclamav/scanners.c: fix type 7 signature matching (bb #1368).

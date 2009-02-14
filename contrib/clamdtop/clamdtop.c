@@ -388,7 +388,7 @@ static void cleanup(void)
 	curses_inited = 0;
 	for (i=0;i<global.num_clamd;i++) {
 		if (global.conn[i].sd && global.conn[i].sd != -1) {
-			send_string_noreconn(&global.conn[i], "END\n");
+			send_string_noreconn(&global.conn[i], "nEND\n");
 			close(global.conn[i].sd);
 		}
 		free(global.conn[i].version);
@@ -540,7 +540,7 @@ static int make_connection(const char *soname, conn_t *conn)
 	tv.tv_sec = 4;
 	tv.tv_usec = 0;
 	setsockopt(conn->sd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-	send_string(conn, "SESSION\nVERSION\n");
+	send_string(conn, "nIDSESSION\nnVERSION\n");
 	free(conn->version);
 	conn->version = NULL;
 	read_version(conn);
@@ -591,7 +591,7 @@ static int recv_line(conn_t *conn, char *buf, size_t len)
 		if (nread  <= 0) {
 			print_con_info(conn, "%s: %s", conn->remote, strerror(errno));
 			/* it could be a timeout, be nice and send an END */
-			send_string_noreconn(conn, "END\n");
+			send_string_noreconn(conn, "nEND\n");
 			close(conn->sd);
 			conn->sd = -1;
 			return 0;
@@ -873,7 +873,7 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
 	struct timeval tv;
 	unsigned conn_dt;
 	int primary = 0;
-	const char *pstart, *p;
+	const char *pstart, *p, *vstart;
 
 	if (conn->tcp)
 		stats->remote = conn->remote;
@@ -884,7 +884,11 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
 		stats->engine_version = "???";
 		return;
 	}
-	p = pstart = conn->version;
+	p = pstart = vstart = strchr(conn->version, ' ');
+	if (!vstart) {
+	    stats->engine_version = "???";
+	    return;
+	}
 	/* find digit in version */
 	while (*p && !isdigit(*p))
 		p++;
@@ -924,7 +928,7 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
 		stats->db_version[maxx-61] = '\0';
 	}
 
-	stats->version = conn->version; /* for details view */
+	stats->version = vstart; /* for details view */
 	gettimeofday(&tv, NULL);
 	tv.tv_sec -= conn->tv_conn.tv_sec;
 	tv.tv_usec -= conn->tv_conn.tv_usec;
@@ -1184,7 +1188,7 @@ int main(int argc, char *argv[])
 				unsigned biggest_q;
 				struct stats *stats = &global.all_stats[i];
 				if (global.conn[i].sd != -1)
-					send_string(&global.conn[i], "STATS\n");
+					send_string(&global.conn[i], "nSTATS\n");
 				biggest_q = stats->biggest_queue;
 				memset(stats, 0, sizeof(*stats));
 				stats->biggest_queue = biggest_q;
