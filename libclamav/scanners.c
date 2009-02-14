@@ -91,6 +91,7 @@
 #include <zlib.h>
 #include "unzip.h"
 #include "dlp.h"
+#include "default.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -1004,8 +1005,11 @@ static int cli_scanscript(int desc, cli_ctx *ctx)
 	char *tmpname = NULL;
 	int ofd = -1, ret;
 	ssize_t nread;
-	const struct cli_matcher *root = ctx->engine->root[7];
-	uint32_t maxpatlen = root ? root->maxpatlen : 0;
+	const struct cli_matcher *troot = ctx->engine->root[7];
+	uint32_t maxpatlen = troot ? troot->maxpatlen : 0;
+	struct cli_matcher *groot = ctx->engine->root[0];
+	struct cli_ac_data gmdata, tmdata;
+	struct cli_ac_data *mdata[2];
 
 	cli_dbgmsg("in cli_scanscript()\n");
 
@@ -1037,6 +1041,16 @@ static int cli_scanscript(int desc, cli_ctx *ctx)
 	text_normalize_init(&state, normalized, SCANBUFF + maxpatlen);
 	ret = CL_CLEAN;
 
+	if ((ret = cli_ac_initdata(&tmdata, troot->ac_partsigs, troot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN)))
+	    return ret;
+
+	if ((ret = cli_ac_initdata(&gmdata, groot->ac_partsigs, groot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN))) {
+	    cli_ac_freedata(&tmdata);
+	    return ret;
+	}
+	mdata[0] = &tmdata;
+	mdata[1] = &gmdata;
+
 	do {
 		nread = cli_readn(desc, buff, sizeof(buff));
 		if(nread <= 0 || state.out_pos + nread > state.out_len) {
@@ -1048,7 +1062,7 @@ static int cli_scanscript(int desc, cli_ctx *ctx)
 				/* we can continue to scan in memory */
 			}
 			/* when we flush the buffer also scan */
-			if(cli_scanbuff(state.out, state.out_pos, ctx, CL_TYPE_TEXT_ASCII, NULL) == CL_VIRUS) {
+			if(cli_scanbuff(state.out, state.out_pos, ctx, CL_TYPE_TEXT_ASCII, mdata) == CL_VIRUS) {
 				ret = CL_VIRUS;
 				break;
 			}
@@ -1065,6 +1079,8 @@ static int cli_scanscript(int desc, cli_ctx *ctx)
 		 * and using while(){} loop would mean code duplication */
 	} while (nread > 0);
 
+	cli_ac_freedata(&tmdata);
+	cli_ac_freedata(&gmdata);
 	if(ctx->engine->keeptmp) {
 		free(tmpname);
 		close(ofd);

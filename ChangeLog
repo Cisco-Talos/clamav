@@ -1,3 +1,7 @@
+Sat Feb 14 18:04:55 EET 2009 (edwin)
+------------------------------------
+ * libclamav/scanners.c: fix type 7 signature matching (bb #1368).
+
 Sat Feb 14 11:43:10 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c, clamd/others.h, clamd/server-th.c: Initialize
