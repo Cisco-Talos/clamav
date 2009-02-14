@@ -80,6 +80,7 @@ static sfsistat sendchunk(struct CLAMFI *cf, unsigned char *bodyp, size_t len, S
 	len = maxfilesize - cf->totsz;
 
     if(cf->local) {
+	cf->bufsz += len;
 	while(len) {
 	    int n = write(cf->alt, bodyp, len);
 

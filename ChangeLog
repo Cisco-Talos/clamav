@@ -1,3 +1,7 @@
+Sat Feb 14 09:34:18 CET 2009 (acab)
+-----------------------------------
+ * clamav-milter/clamfi.c: Correctly scan in FILDES mode
+
 Fri Feb 13 19:21:24 EET 2009 (edwin)
 ------------------------------------
  * shared/output.c, unit_tests/check_clamd.c: mdprintf was also
