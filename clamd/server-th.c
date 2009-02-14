@@ -283,6 +283,8 @@ struct acceptdata {
     int syncpipe_wake_accept[2];
 };
 
+#define ACCEPTDATA_INIT { FDS_INIT, FDS_INIT, {-1, -1}, {-1, -1} }
+
 static void *acceptloop_th(void *arg)
 {
 #ifdef HAVE_STRERROR_R
@@ -419,7 +421,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	uint64_t val64;
 	size_t i, j, rr_last = 0;
 	pthread_t accept_th;
-	struct acceptdata acceptdata;
+	struct acceptdata acceptdata = ACCEPTDATA_INIT;
 	struct fd_data *fds = &acceptdata.recv_fds;
 	time_t start_time, current_time;
 	unsigned int selfchk;
@@ -721,8 +723,6 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 #endif
 
     idletimeout = optget(opts, "IdleTimeout")->numarg;
-
-    memset(&acceptdata, 0, sizeof(acceptdata));
 
     for (i=0;i < nsockets;i++)
 	if (fds_add(&acceptdata.fds, socketds[i], 1) == -1) {

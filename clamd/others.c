@@ -214,12 +214,13 @@ static int realloc_polldata(struct fd_data *data)
 int poll_fd(int fd, int timeout_sec, int check_signals)
 {
     int ret;
-    struct fd_data fds;
+    struct fd_data fds = FDS_INIT;
 
-    memset(&fds, 0, sizeof(fds));
     if (fds_add(&fds, fd, 1) == -1)
 	return -1;
+    pthread_mutex_lock(&fds.buf_mutex);
     ret = fds_poll_recv(&fds, timeout_sec, check_signals);
+    pthread_mutex_unlock(&fds.buf_mutex);
     fds_free(&fds);
     return ret;
 }

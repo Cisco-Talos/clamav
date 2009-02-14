@@ -66,6 +66,12 @@ struct fd_data {
 #endif
 };
 
+#ifdef HAVE_POLL
+#define FDS_INIT { PTHREAD_MUTEX_INITIALIZER, NULL, 0, NULL, 0}
+#else
+#define FDS_INIT { PTHREAD_MUTEX_INITIALIZER, NULL, 0}
+#endif
+
 int poll_fd(int fd, int timeout_sec, int check_signals);
 void virusaction(const char *filename, const char *virname, const struct optstruct *opts);
 int writen(int fd, void *buff, unsigned int count);
