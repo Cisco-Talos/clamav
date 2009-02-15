@@ -71,6 +71,24 @@ static void add_x_header(SMFICTX *ctx, char *st) {
     smfi_chgheader(ctx, (char *)"X-Virus-Status", 1, st);
 }
 
+enum CFWHAT {
+    CF_NONE, /* 0 */
+    CF_MAIN, /* 1 */
+    CF_ALT,  /* 2 */
+    CF_BOTH, /* 3 */
+    CF_ANY   /* 4 */
+};
+
+
+static void nullify(SMFICTX *ctx, struct CLAMFI *cf, enum CFWHAT closewhat) {
+    if(closewhat & CF_MAIN || ((closewhat & CF_ANY) && cf->main >= 0))
+	close(cf->main);
+    if(closewhat & CF_ALT || ((closewhat & CF_ANY) && cf->alt >= 0))
+	close(cf->alt);
+    smfi_setpriv(ctx, NULL);
+    free(cf);
+}
+
 
 static sfsistat sendchunk(struct CLAMFI *cf, unsigned char *bodyp, size_t len, SMFICTX *ctx) {
     if(cf->totsz >= maxfilesize)
@@ -86,10 +104,7 @@ static sfsistat sendchunk(struct CLAMFI *cf, unsigned char *bodyp, size_t len, S
 
 	    if (n==-1) {
 		logg("!Failed to write temporary file\n");
-		close(cf->main);
-		close(cf->alt);
-		smfi_setpriv(ctx, NULL);
-		free(cf);
+		nullify(ctx, cf, CF_BOTH);
 		return FailAction;
 	    }
 	    len -= n;
@@ -114,9 +129,7 @@ static sfsistat sendchunk(struct CLAMFI *cf, unsigned char *bodyp, size_t len, S
 	}
 	if(sendfailed) {
 	    logg("!Streaming failed\n");
-	    close(cf->main);
-	    smfi_setpriv(ctx, NULL);
-	    free(cf);
+	    nullify(ctx, cf, CF_MAIN);
 	    return FailAction;
 	}
     }
@@ -134,14 +147,12 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv) {
     if(!cf->totsz) {
 	if(cf->all_whitelisted) {
 	    logg("*Skipping scan (all destinations whitelisted)\n");
-	    smfi_setpriv(ctx, NULL);
-	    free(cf);
+	    nullify(ctx, cf, CF_NONE);
 	    return SMFIS_ACCEPT;
 	}
 	if(nc_connect_rand(&cf->main, &cf->alt, &cf->local)) {
 	    logg("!Failed to initiate streaming/fdpassing\n");
-	    smfi_setpriv(ctx, NULL);
-	    free(cf);
+	    nullify(ctx, cf, CF_NONE);
 	    return FailAction;
 	}
 	if((ret = sendchunk(cf, (unsigned char *)"From clamav-milter\n", 19, ctx)) != SMFIS_CONTINUE)
@@ -167,6 +178,14 @@ sfsistat clamfi_body(SMFICTX *ctx, unsigned char *bodyp, size_t len) {
 }
 
 
+sfsistat clamfi_abort(SMFICTX *ctx) {
+    struct CLAMFI *cf;
+
+    if((cf = (struct CLAMFI *)smfi_getpriv(ctx)))
+	nullify(ctx, cf, CF_ANY);
+    return SMFIS_CONTINUE;
+}
+
 sfsistat clamfi_eom(SMFICTX *ctx) {
     struct CLAMFI *cf;
     char *reply;
@@ -178,9 +197,7 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
     if(cf->local) {
 	if(nc_send(cf->main, "nFILDES\n", 8)) {
 	    logg("!FD scan request failed\n");
-	    close(cf->alt);
-	    smfi_setpriv(ctx, NULL);
-	    free(cf);
+	    nullify(ctx, cf, CF_ALT);
 	    return FailAction;
 	}
 
@@ -188,17 +205,13 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 
 	if(nc_sendmsg(cf->main, cf->alt) == -1) {
 	    logg("!FD send failed\n");
-	    close(cf->alt);
-	    smfi_setpriv(ctx, NULL);
-	    free(cf);
+	    nullify(ctx, cf, CF_ALT);
 	    return FailAction;
 	}
     } else {
 	if(cf->bufsz && nc_send(cf->alt, cf->buffer, cf->bufsz)) {
 	    logg("!Failed to flush STREAM\n");
-	    close(cf->main);
-	    smfi_setpriv(ctx, NULL);
-	    free(cf);
+	    nullify(ctx, cf, CF_MAIN);
 	    return FailAction;
 	}
 	close(cf->alt);
@@ -209,15 +222,14 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
     if(cf->local)
 	close(cf->alt);
 
+    cf->alt = -1;
+
     if(!reply) {
 	logg("!No reply from clamd\n");
-	smfi_setpriv(ctx, NULL);
-	free(cf);
+	nullify(ctx, cf, CF_NONE);
 	return FailAction;
     }
-    close(cf->main);
-    smfi_setpriv(ctx, NULL);
-    free(cf);
+    nullify(ctx, cf, CF_MAIN);
 
     len = strlen(reply);
     if(len>5 && !strcmp(reply + len - 5, ": OK\n")) {
@@ -392,6 +404,7 @@ sfsistat clamfi_envfrom(SMFICTX *ctx, char **argv) {
     }
     cf->totsz = 0;
     cf->bufsz = 0;
+    cf->main = cf->alt = -1;
     cf->all_whitelisted = 1;
     smfi_setpriv(ctx, (void *)cf);
 

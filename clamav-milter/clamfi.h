@@ -30,6 +30,7 @@ extern char xvirushdr[255];
 
 
 sfsistat clamfi_body(SMFICTX *ctx, unsigned char *bodyp, size_t len);
+sfsistat clamfi_abort(SMFICTX *ctx);
 sfsistat clamfi_eom(SMFICTX *ctx);
 sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv);
 sfsistat clamfi_connect(SMFICTX *ctx, char *hostname, _SOCK_ADDR *hostaddr);

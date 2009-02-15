@@ -55,7 +55,7 @@ struct smfiDesc descr = {
     NULL,		/* end of header */
     clamfi_body,	/* body block */
     clamfi_eom,		/* end of message */
-    NULL,		/* message aborted */
+    clamfi_abort,	/* message aborted */
     NULL,		/* connection cleanup */
     NULL,		/* any unrecognized or unimplemented command filter */
     NULL,		/* SMTP DATA command filter */

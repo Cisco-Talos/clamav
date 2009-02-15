@@ -1,3 +1,7 @@
+Sun Feb 15 16:24:07 CET 2009 (acab)
+-----------------------------------
+ * clamav-milter: handle aborts
+
 Sat Feb 14 18:43:10 EET 2009 (edwin)
 ------------------------------------
  * clamd/session.c, contrib/clamdtop/Makefile,
