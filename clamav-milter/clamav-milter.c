@@ -228,7 +228,6 @@ int main(int argc, char **argv) {
 	addxvirus = 1;
     }
     
-    umask(0007); /* FIXME */
     if(!(my_socket = optget(opts, "MilterSocket")->strarg)) {
 	logg("!Please configure the MilterSocket directive\n");
 	localnets_free();

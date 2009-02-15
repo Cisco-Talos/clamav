@@ -1,3 +1,7 @@
+Sun Feb 15 19:14:00 CET 2009 (acab)
+-----------------------------------
+ * clamav-milter/clamav-milter.c: don't umask()
+
 Sun Feb 15 19:10:59 CET 2009 (acab)
 -----------------------------------
  * clamav-milter/clamav-milter.c: create threads after forking
