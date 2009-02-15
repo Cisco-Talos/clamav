@@ -237,6 +237,21 @@ int main(int argc, char **argv) {
 	optfree(opts);
 	return 1;
     }
+
+    if(!optget(opts, "Foreground")->enabled) {
+	if(daemonize() == -1) {
+	    logg("!daemonize() failed\n");
+	    localnets_free();
+	    whitelist_free();
+	    cpool_free();
+	    logg_close();
+	    optfree(opts);
+	    return 1;
+	}
+	if(chdir("/") == -1)
+	    logg("^Can't change current working directory to root\n");
+    }
+
     if(smfi_setconn(my_socket) == MI_FAILURE) {
 	logg("!smfi_setconn failed\n");
 	localnets_free();
@@ -275,20 +290,6 @@ int main(int argc, char **argv) {
 	optfree(opts);
 	return 1;
     }	
-
-    if(!optget(opts, "Foreground")->enabled) {
-	if(daemonize() == -1) {
-	    logg("!daemonize() failed\n");
-	    localnets_free();
-	    whitelist_free();
-	    cpool_free();
-	    logg_close();
-	    optfree(opts);
-	    return 1;
-	}
-	if(chdir("/") == -1)
-	    logg("^Can't change current working directory to root\n");
-    }
 
     if((opt = optget(opts, "PidFile"))->enabled) {
 	FILE *fd;

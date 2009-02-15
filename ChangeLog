@@ -1,3 +1,7 @@
+Sun Feb 15 19:10:59 CET 2009 (acab)
+-----------------------------------
+ * clamav-milter/clamav-milter.c: create threads after forking
+
 Sun Feb 15 18:20:40 CET 2009 (acab)
 -----------------------------------
  * clamav-milter:clamav-milter/netcode.c: fix leaks
