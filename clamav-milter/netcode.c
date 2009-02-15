@@ -292,8 +292,10 @@ void nc_ping_entry(struct CP_ENTRY *cpe) {
     int s = nc_connect_entry(cpe);
     char *reply;
 
-    if (s!=-1 && !nc_send(s, "nPING\n", 6) && (reply = nc_recv(s))) {
+    if(s>=0 && !nc_send(s, "nPING\n", 6) && (reply = nc_recv(s))) {
 	cpe->dead = strcmp(reply, "PONG\n")!=0;
+	free(reply);
+	close(s);
     } else cpe->dead = 1;
     return;
 }
@@ -312,6 +314,7 @@ int nc_connect_rand(int *main, int *alt, int *local) {
 	    return 1;
 	}
 	unlink(unlinkme);
+	free(unlinkme);
     } else {
 	char *reply=NULL, *port;
 	int nport;

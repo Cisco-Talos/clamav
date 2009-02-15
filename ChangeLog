@@ -1,3 +1,7 @@
+Sun Feb 15 18:20:40 CET 2009 (acab)
+-----------------------------------
+ * clamav-milter:clamav-milter/netcode.c: fix leaks
+
 Sun Feb 15 16:24:07 CET 2009 (acab)
 -----------------------------------
  * clamav-milter: handle aborts
