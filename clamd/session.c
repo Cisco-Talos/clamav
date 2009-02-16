@@ -183,7 +183,7 @@ int command(client_conn_t *conn, int *virus)
     jobgroup_t *group = NULL;
 
     if (thrmgr_group_need_terminate(conn->group)) {
-	logg("^Client disconnected while command was active\n");
+	logg("*Client disconnected while command was active\n");
 	if (conn->scanfd != -1)
 	    close(conn->scanfd);
 	return 1;
@@ -235,11 +235,14 @@ int command(client_conn_t *conn, int *virus)
 		conn_reply_error(conn, "FILDES: didn't receive file descriptor.");
 	    else {
 		ret = scanfd(conn->scanfd, conn, NULL, engine, options, opts, desc, 0);
-		if (ret == CL_VIRUS)
+		if (ret == CL_VIRUS) {
 		    *virus = 1;
-		if (ret == CL_EMEM) {
+		} else if (ret == CL_EMEM) {
 		    if(optget(opts, "ExitOnOOM")->enabled)
 			ret = -1;
+		} else if (ret == CL_ETIMEOUT) {
+			thrmgr_group_terminate(conn->group);
+			ret = 1;
 		} else
 		    ret = 0;
 	    }
@@ -269,11 +272,14 @@ int command(client_conn_t *conn, int *virus)
 	    return 0;
 	case COMMAND_INSTREAMSCAN:
 	    ret = scanfd(conn->scanfd, conn, NULL, engine, options, opts, desc, 1);
-	    if (ret == CL_VIRUS)
+	    if (ret == CL_VIRUS) {
 		*virus = 1;
-	    if (ret == CL_EMEM) {
+	    } else if (ret == CL_EMEM) {
 		if(optget(opts, "ExitOnOOM")->enabled)
 		    ret = -1;
+	    } else if (ret == CL_ETIMEOUT) {
+		thrmgr_group_terminate(conn->group);
+		ret = 1;
 	    } else
 		ret = 0;
 	    if (ftruncate(conn->scanfd, 0) == -1) {
@@ -292,7 +298,8 @@ int command(client_conn_t *conn, int *virus)
 	flags |= CLI_FTW_FOLLOW_DIR_SYMLINK;
     if (optget(opts, "FollowFileSymlinks")->enabled)
 	flags |= CLI_FTW_FOLLOW_FILE_SYMLINK;
-    if (cli_ftw(conn->filename, flags,  maxdirrec ? maxdirrec : INT_MAX, scan_callback, &data) == CL_EMEM) 
+    ret = cli_ftw(conn->filename, flags,  maxdirrec ? maxdirrec : INT_MAX, scan_callback, &data);
+    if (ret == CL_EMEM)
 	if(optget(opts, "ExitOnOOM")->enabled)
 	    return -1;
     if (scandata.group && conn->cmdtype == COMMAND_MULTISCAN) {
@@ -304,9 +311,13 @@ int command(client_conn_t *conn, int *virus)
     }
 
     if (ok + error == total && (error != total)) {
-	conn_reply_single(conn, conn->filename, "OK");
+	if (conn_reply_single(conn, conn->filename, "OK") == -1)
+	    ret = CL_ETIMEOUT;
     }
     *virus = total - (ok + error);
+
+    if (ret == CL_ETIMEOUT)
+	thrmgr_group_terminate(conn->group);
     return error;
 }
 

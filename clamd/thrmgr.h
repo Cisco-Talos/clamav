@@ -101,7 +101,7 @@ int thrmgr_group_dispatch(threadpool_t *threadpool, jobgroup_t *group, void *use
 void thrmgr_group_waitforall(jobgroup_t *group, unsigned *ok, unsigned *error, unsigned *total);
 int thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc);
 int thrmgr_group_need_terminate(jobgroup_t *group);
-int thrmgr_group_terminate(jobgroup_t *group);
+void thrmgr_group_terminate(jobgroup_t *group);
 jobgroup_t *thrmgr_group_new(void);
 int thrmgr_printstats(int outfd);
 void thrmgr_setactivetask(const char *filename, const char* command);

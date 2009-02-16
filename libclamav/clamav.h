@@ -57,6 +57,7 @@ typedef enum {
     CL_ETMPDIR,
     CL_EMAP,
     CL_EMEM,
+    CL_ETIMEOUT,
 
     /* internal (not reported outside libclamav) */
     CL_BREAK,

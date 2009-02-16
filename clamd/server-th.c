@@ -43,6 +43,7 @@
 #include <unistd.h>
 #endif
 
+#include <fcntl.h>
 #include <arpa/inet.h>
 #include "libclamav/clamav.h"
 
@@ -358,7 +359,20 @@ static void *acceptloop_th(void *arg)
 	    pthread_mutex_unlock(&exit_mutex);
 
 	    if (new_sd >= 0) {
-		int ret;
+		int ret, flags;
+
+#ifdef F_GETFL
+		flags = fcntl(new_sd, F_GETFL, 0);
+		if (flags != -1) {
+		    if (fcntl(new_sd, F_SETFL, flags | O_NONBLOCK) == -1) {
+			logg("^Can't set socket to nonblocking mode, errno %d\n",
+			     errno);
+		    }
+		} else {
+			logg("^Can't get socket flags, errno %d\n", errno);
+		}
+#endif
+
 		pthread_mutex_lock(&recv_fds->buf_mutex);
 		ret = fds_add(recv_fds, new_sd, 0);
 		pthread_mutex_unlock(&recv_fds->buf_mutex);
@@ -882,6 +896,11 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			}
 			error = 1;
 		    }
+		    if (thrmgr_group_need_terminate(conn.group)) {
+			logg("*RECVTH: have to terminate group\n");
+			error = CL_ETIMEOUT;
+			break;
+		    }
 		    if (error || !conn.group || rc) {
 			if (rc && thrmgr_group_finished(conn.group, EXIT_OK)) {
 			    logg("*RECVTH: closing conn, group finished\n");
@@ -1023,7 +1042,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			buf->off = 0;
 		    }
 		}
-		if (error) {
+		if (error && error != CL_ETIMEOUT) {
 		    conn_reply_error(&conn, "Error processing command.");
 		}
 	    }
@@ -1036,7 +1055,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    }
 		    buf->dumpfd = -1;
 		}
-		if (thrmgr_group_terminate(buf->group)) {
+		thrmgr_group_terminate(buf->group);
+		if (thrmgr_group_finished(buf->group, EXIT_ERROR)) {
 		    logg("*RECVTH: shutting down socket after error\n");
 		    shutdown(buf->fd, 2);
 		    closesocket(buf->fd);
@@ -1055,7 +1075,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    for (i=0;i < fds->nfds; i++) {
 		if (fds->buf[i].fd == -1)
 		    continue;
-		if (thrmgr_group_terminate(fds->buf[i].group)) {
+		thrmgr_group_terminate(fds->buf[i].group);
+		if (thrmgr_group_finished(fds->buf[i].group, EXIT_ERROR)) {
 		    shutdown(fds->buf[i].fd, 2);
 		    closesocket(fds->buf[i].fd);
 		    fds->buf[i].fd = -1;

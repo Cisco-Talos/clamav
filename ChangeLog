@@ -1,3 +1,12 @@
+Mon Feb 16 20:36:01 EET 2009 (edwin)
+------------------------------------
+ * clamd/, libclamav/, shared/, unit_tests/: introduce timeouts for
+ send(), this is needed for IDSESSION to work reliably, since a buggy
+ client implementation may get stuck in send(), and then clamd gets
+ stuck in send() -> deadlock. To avoid this we need nonblocking
+ sockets, and (low) timeouts on send.  Add more tests for clamd protocol,
+ including a stress test for IDSESSION.
+
 Mon Feb 16 16:15:21 EET 2009 (edwin)
 ------------------------------------
  * unit_tests/check_clamd.c: test for FILDES

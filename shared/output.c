@@ -47,6 +47,10 @@
 #include <sys/types.h>
 #endif
 
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
+
 #if defined(USE_SYSLOG) && !defined(C_AIX)
 #include <syslog.h>
 #endif
@@ -88,7 +92,7 @@ short logg_syslog;
 #endif
 
 short int mprintf_disabled = 0, mprintf_verbose = 0, mprintf_quiet = 0,
-	  mprintf_stdout = 0, mprintf_nowarn = 0;
+	  mprintf_stdout = 0, mprintf_nowarn = 0, mprintf_send_timeout = 100;
 
 #define ARGLEN(args, str, len)			    \
 {						    \
@@ -127,7 +131,7 @@ int mdprintf(int desc, const char *str, ...)
 {
 	va_list args;
 	char buffer[512], *abuffer = NULL, *buff;
-	int bytes, len, ret;
+	int bytes, todo, len, ret;
 
 
     ARGLEN(args, str, len);
@@ -156,12 +160,36 @@ int mdprintf(int desc, const char *str, ...)
     if((size_t) bytes >= len)
 	bytes = len - 1;
 
-    ret = send(desc, buff, bytes, 0);
+    todo = bytes;
+    while (todo > 0) {
+	ret = send(desc, buff, bytes, 0);
+	if (ret < 0) {
+	    struct timeval tv;
+	    if (errno != EWOULDBLOCK)
+		break;
+	    tv.tv_sec = 0;
+	    tv.tv_usec = mprintf_send_timeout*1000;
+	    do {
+		fd_set wfds;
+		FD_ZERO(&wfds);
+		FD_SET(desc, &wfds);
+		ret = select(desc+1, NULL, &wfds, NULL, &tv);
+	    } while (ret < 0 && errno == EINTR);
+	    if (!ret) {
+		/* timed out */
+		ret = -1;
+		break;
+	    }
+	} else {
+	    todo -= ret;
+	    buff += ret;
+	}
+    }
 
     if(len > sizeof(buffer))
 	free(abuffer);
 
-    return bytes;
+    return ret < 0 ? -1 : bytes;
 }
 
 void logg_close(void)

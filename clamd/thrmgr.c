@@ -828,18 +828,13 @@ int thrmgr_group_need_terminate(jobgroup_t *group)
     return ret;
 }
 
-/* returns
- *  0 - flag set, jobs still active
- *  1 - last job exited */
-int thrmgr_group_terminate(jobgroup_t *group)
+void thrmgr_group_terminate(jobgroup_t *group)
 {
-    if (thrmgr_group_finished(group, EXIT_ERROR))
-	return 1;
-    /* we are not last active job, now
-     * the last active job will free resources */
-    pthread_mutex_lock(&group->mutex);
-    group->force_exit = 1;
-    pthread_mutex_unlock(&group->mutex);
-
-    return 0;
+    if (group) {
+	/* we may not be the last active job, now
+	 * the last active job will free resources */
+	pthread_mutex_lock(&group->mutex);
+	group->force_exit = 1;
+	pthread_mutex_unlock(&group->mutex);
+    }
 }

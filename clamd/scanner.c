@@ -190,7 +190,8 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     }
 
     if (access(filename, R_OK)) {
-	conn_reply(scandata->conn, filename, "Access denied.", "ERROR");
+	if (conn_reply(scandata->conn, filename, "Access denied.", "ERROR") == -1)
+	    return CL_ETIMEOUT;
 	logg("*Access denied: %s\n", filename);
 	scandata->errors++;
 	free(filename);
@@ -202,14 +203,21 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     ret = cl_scanfile(filename, &virname, &scandata->scanned, scandata->engine, scandata->options);
     thrmgr_setactivetask(NULL, NULL);
 
+    if (thrmgr_group_need_terminate(scandata->conn->group)) {
+	logg("*Client disconnected while scanjob was active\n");
+	return ret == CL_ETIMEOUT ? ret : CL_BREAK;
+    }
+
     if (ret == CL_VIRUS) {
 	scandata->infected++;
-	conn_reply(scandata->conn, filename, virname, "FOUND");
+	if (conn_reply(scandata->conn, filename, virname, "FOUND") == -1)
+	    return CL_ETIMEOUT;
 	logg("~%s: %s FOUND\n", filename, virname);
 	virusaction(filename, virname, scandata->opts);
     } else if (ret != CL_CLEAN) {
 	scandata->errors++;
-	conn_reply(scandata->conn, filename, cl_strerror(ret), "ERROR");
+	if (conn_reply(scandata->conn, filename, cl_strerror(ret), "ERROR") == -1)
+	    return CL_ETIMEOUT;
 	logg("~%s: %s ERROR\n", filename, cl_strerror(ret));
     } else if (logok) {
 	logg("~%s: OK\n", filename);
@@ -219,10 +227,6 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     if(ret == CL_EMEM) /* stop scanning */
 	return ret;
 
-    if (thrmgr_group_need_terminate(scandata->conn->group)) {
-	logg("^Client disconnected while scanjob was active\n");
-	return CL_BREAK;
-    }
     if (type == TYPE_SCAN) {
 	/* virus -> break */
 	return ret;
@@ -246,8 +250,9 @@ int scanfd(const int fd, const client_conn_t *conn, unsigned long int *scanned,
 	else
 	    snprintf(fdstr, sizeof(fdstr), "fd[%d]", fd);
 	if(fstat(fd, &statbuf) == -1 || !S_ISREG(statbuf.st_mode)) {
-		conn_reply(conn, fdstr, "Not a regular file", "ERROR");
 		logg("%s: Not a regular file. ERROR\n", fdstr);
+		if (conn_reply(conn, fdstr, "Not a regular file", "ERROR") == -1)
+		    return CL_ETIMEOUT;
 		return -1;
 	}
 
@@ -255,15 +260,23 @@ int scanfd(const int fd, const client_conn_t *conn, unsigned long int *scanned,
 	ret = cl_scandesc(fd, &virname, scanned, engine, options);
 	thrmgr_setactivetask(NULL, NULL);
 
+	if (thrmgr_group_need_terminate(conn->group)) {
+	    logg("*Client disconnected while scanjob was active\n");
+	    return ret == CL_ETIMEOUT ? ret : CL_BREAK;
+	}
+
 	if(ret == CL_VIRUS) {
-		conn_reply(conn, fdstr, virname, "FOUND");
+		if (conn_reply(conn, fdstr, virname, "FOUND") == -1)
+		    ret = CL_ETIMEOUT;
 		logg("%s: %s FOUND\n", fdstr, virname);
 		virusaction(fdstr, virname, opts);
 	} else if(ret != CL_CLEAN) {
-		conn_reply(conn, fdstr, cl_strerror(ret), "ERROR");
+		if (conn_reply(conn, fdstr, cl_strerror(ret), "ERROR") == -1)
+		    ret = CL_ETIMEOUT;
 		logg("%s: %s ERROR\n", fdstr, cl_strerror(ret));
 	} else {
-		conn_reply_single(conn, fdstr, "OK");
+		if (conn_reply_single(conn, fdstr, "OK") == CL_ETIMEOUT)
+		    ret = CL_ETIMEOUT;
 		if(logok)
 			logg("%s: OK\n", fdstr);
 	}

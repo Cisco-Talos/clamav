@@ -162,7 +162,7 @@ static void test_command(const char *cmd, size_t len, const char *extra, const c
 
     if (extra) {
 	rc = send(sockd, extra, strlen(extra), 0);
-	fail_unless_fmt((size_t)rc == strlen(extra), "Unable to send(): %s\n", strerror(errno));
+	fail_unless_fmt((size_t)rc == strlen(extra), "Unable to send() extra for %s: %s\n", cmd, strerror(errno));
     }
 
     recvdata = recvfull(sockd, &len);
@@ -215,11 +215,15 @@ START_TEST (test_compat_commands)
     test_command(nsend, strlen(nsend), test->extra, nreply, strlen(nreply));
     conn_teardown();
 
-    /* one packet, \r\n delimited command, followed by "extra" if needed */
-    snprintf(nsend, sizeof(nsend), "%s\r\n", test->command);
-    conn_setup();
-    test_command(nsend, strlen(nsend), test->extra, nreply, strlen(nreply));
-    conn_teardown();
+    if (!test->extra) {
+	/* FILDES won't support this, because it expects
+	 * strlen("FILDES\n") characters, then 1 character and the FD. */
+	/* one packet, \r\n delimited command, followed by "extra" if needed */
+	snprintf(nsend, sizeof(nsend), "%s\r\n", test->command);
+	conn_setup();
+	test_command(nsend, strlen(nsend), test->extra, nreply, strlen(nreply));
+	conn_teardown();
+    }
 }
 END_TEST
 
@@ -295,22 +299,28 @@ START_TEST (test_instream)
 }
 END_TEST
 
-static void tst_fildes(const char *cmd, size_t len, int fd,
-			const char *expect, size_t expect_len, int closefd)
+static int sendmsg_fd(int sockd, const char *mesg, size_t msg_len, int fd, int singlemsg)
 {
     struct msghdr msg;
     struct cmsghdr *cmsg;
     unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
-    char dummy[] = "";
-    off_t pos;
+    char dummy[BUFSIZ];
     struct iovec iov[1];
-    char *recvdata, *p;
     int rc;
 
-    conn_setup();
-
-    iov[0].iov_base = dummy;
-    iov[0].iov_len = 1;
+    if (!singlemsg) {
+	/* send FILDES\n and then a single character + ancillary data */
+	dummy[0] = '\0';
+	iov[0].iov_base = dummy;
+	iov[0].iov_len = 1;
+    } else {
+	/* send single message with ancillary data */
+	fail_unless(msg_len < sizeof(dummy)-1);
+	memcpy(dummy, mesg, msg_len);
+	dummy[msg_len] = '\0';
+	iov[0].iov_base = dummy;
+	iov[0].iov_len = msg_len + 1;
+    }
 
     memset(&msg, 0, sizeof(msg));
     msg.msg_control = fdbuf;
@@ -324,10 +334,25 @@ static void tst_fildes(const char *cmd, size_t len, int fd,
     cmsg->cmsg_type = SCM_RIGHTS;
     *(int *)CMSG_DATA(cmsg) = fd;
 
-    fail_unless_fmt(write(sockd, cmd, len) == len, "Failed to write: %s\n", strerror(errno));
+    if (!singlemsg) {
+	rc = send(sockd, mesg, msg_len, 0);
+	if (rc == -1)
+	    return rc;
+    }
 
-    rc = sendmsg(sockd, &msg, 0);
-    fail_unless_fmt(rc != -1, "Failed to sendmsg: %s\n", strerror(errno));
+    return sendmsg(sockd, &msg, 0);
+}
+
+static void tst_fildes(const char *cmd, size_t len, int fd,
+			const char *expect, size_t expect_len, int closefd, int singlemsg)
+{
+    off_t pos;
+    char *recvdata, *p;
+    int rc;
+
+    conn_setup();
+    fail_unless_fmt(sendmsg_fd(sockd, cmd, len, fd, singlemsg) != -1,
+		     "Failed to sendmsg: %s\n", strerror(errno));
 
     if (closefd)
 	close(fd);
@@ -353,48 +378,110 @@ static void tst_fildes(const char *cmd, size_t len, int fd,
 #define FOUNDFDREPLY " ClamAV-Test-File.UNOFFICIAL FOUND"
 #define CLEANFDREPLY " OK"
 
+static struct cmds {
+    const char *cmd;
+    const char term;
+    const char *file;
+    const char *reply;
+} fildes_cmds[] =
+{
+    {"FILDES", '\n', SCANFILE, FOUNDFDREPLY},
+    {"nFILDES", '\n', SCANFILE, FOUNDFDREPLY},
+    {"zFILDES", '\0', SCANFILE, FOUNDFDREPLY},
+    {"FILDES", '\n', CLEANFILE, CLEANFDREPLY},
+    {"nFILDES", '\n', CLEANFILE, CLEANFDREPLY},
+    {"zFILDES", '\0', CLEANFILE, CLEANFDREPLY}
+};
+
 START_TEST (test_fildes)
 {
-    char nreply[BUFSIZ];
+    char nreply[BUFSIZ], nsend[BUFSIZ];
     int fd = open(SCANFILE, O_RDONLY);
+    int closefd;
+    int singlemsg;
+    size_t i;
+    const struct cmds *cmd;
+    size_t nreply_len, nsend_len;
 
-    snprintf(nreply, sizeof(nreply), "%s\n", FOUNDFDREPLY);
+    switch (_i&3) {
+	case 0:
+	    closefd = 0;
+	    singlemsg = 0;
+	    break;
+	case 1:
+	    closefd = 1;
+	    singlemsg = 0;
+	    break;
+	case 2:
+	    closefd = 0;
+	    singlemsg = 1;
+	    break;
+	case 3:
+	    closefd = 1;
+	    singlemsg = 1;
+	    break;
+    }
 
+    cmd = &fildes_cmds[_i/4];
+    nreply_len = snprintf(nreply, sizeof(nreply), "%s%c", cmd->reply, cmd->term);
+    nsend_len = snprintf(nsend, sizeof(nsend), "%s%c", cmd->cmd, cmd->term);
+
+    fd = open(cmd->file, O_RDONLY);
     fail_unless_fmt(fd != -1, "Failed to open: %s\n", strerror(errno));
 
-    tst_fildes("FILDES\n", strlen("FILDES\n"), fd, nreply, strlen(nreply), 0);
-    tst_fildes("nFILDES\n", strlen("nFILDES\n"), fd, nreply, strlen(nreply), 0);
-    tst_fildes("zFILDES", sizeof("zFILDES"), fd, FOUNDFDREPLY, sizeof(FOUNDFDREPLY), 0);
+    tst_fildes(nsend, nsend_len, fd, nreply, nreply_len, closefd, singlemsg);
 
-    close(fd);
+    if (!closefd) {
+	/* closefd: 
+	 *  1 - close fd right after sending
+	 *  0 - close fd after receiving reply */
+	close(fd);
+    }
+}
+END_TEST
 
-    snprintf(nreply, sizeof(nreply), "%s\n", CLEANFDREPLY);
+START_TEST (test_fildes_many)
+{
+    const char idsession[] = "zIDSESSION";
+    int dummyfd, dummycleanfd, i, killed = 0;
 
-    fd = open(CLEANFILE, O_RDONLY);
-    fail_unless_fmt(fd != -1, "Failed to open: %s\n", strerror(errno));
+    conn_setup();
+    dummyfd = open(SCANFILE, O_RDONLY);
+    fail_unless_fmt(dummyfd != -1, "failed to open %s: %s\n", SCANFILE, strerror(errno));
 
-    tst_fildes("FILDES\n", strlen("FILDES\n"), fd, nreply, strlen(nreply), 0);
-    tst_fildes("nFILDES\n", strlen("nFILDES\n"), fd, nreply, strlen(nreply), 0);
-    tst_fildes("zFILDES", sizeof("zFILDES"), fd, CLEANFDREPLY, sizeof(CLEANFDREPLY), 0);
+    fail_unless_fmt(send(sockd, idsession, sizeof(idsession), 0) == sizeof(idsession), "send IDSESSION failed\n");
+    for (i=0; i < 2048; i++) {
+	if (sendmsg_fd(sockd, "zFILDES", sizeof("zFILDES"), dummyfd, 1) == -1) {
+	    killed = 1;
+	    break;
+	}
+    }
 
-    snprintf(nreply, sizeof(nreply), "%s\n", FOUNDFDREPLY);
-    fd = open(SCANFILE, O_RDONLY);
-    fail_unless_fmt(fd != -1, "Failed to open: %s\n", strerror(errno));
-    tst_fildes("FILDES\n", strlen("FILDES\n"), fd, nreply, strlen(nreply), 1);
+    fail_unless(killed, "Clamd did not kill connection when overloaded!\n");
+
+    close(dummyfd);
+    conn_teardown();
 }
 END_TEST
 
 static Suite *test_clamd_suite(void)
 {
     Suite *s = suite_create("clamd");
-    TCase *tc_commands = tcase_create("clamd commands");
+    TCase *tc_commands, *tc_stress;
+
+    tc_commands = tcase_create("clamd commands");
     suite_add_tcase(s, tc_commands);
     tcase_add_unchecked_fixture(tc_commands, commands_setup, commands_teardown);
     tcase_add_loop_test(tc_commands, test_basic_commands, 0, sizeof(basic_tests)/sizeof(basic_tests[0]));
     tcase_add_loop_test(tc_commands, test_compat_commands, 0, sizeof(basic_tests)/sizeof(basic_tests[0]));
-    tcase_add_test(tc_commands, test_fildes);
+    tcase_add_loop_test(tc_commands, test_fildes, 0, 4*sizeof(fildes_cmds)/sizeof(fildes_cmds[0]));
     tcase_add_test(tc_commands, test_stats);
     tcase_add_test(tc_commands, test_instream);
+
+    tc_stress = tcase_create("clamd stress test");
+    suite_add_tcase(s, tc_stress);
+    tcase_add_test(tc_stress, test_fildes_many);
+
     return s;
 }
 
