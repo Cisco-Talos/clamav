@@ -591,7 +591,10 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 		if (ret != CL_SUCCESS)
 		    break;
 	    }
-	    sprintf(fname, "%s/%s", dirname, dent->d_name);
+            if(!strcmp(dirname, "/"))
+		sprintf(fname, "/%s", dent->d_name);
+	    else
+		sprintf(fname, "%s/%s", dirname, dent->d_name);
 
 	    ret = handle_filetype(fname, flags, &statbuf, &stated, &ft, callback, data);
 	    if (ret != CL_SUCCESS) {
