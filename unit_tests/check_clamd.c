@@ -21,6 +21,7 @@
 #include "checks_common.h"
 #include "libclamav/version.h"
 #include "libclamav/cltypes.h"
+#include "shared/fdpassing.h"
 
 #ifdef CHECK_HAVE_LOOPS
 
@@ -147,8 +148,8 @@ static void *recvfull(int sd, size_t *len)
 	fail_unless_fmt(rc != -1, "recv() failed: %s\n", strerror(errno));
 	off += rc;
     } while (rc);
-    buf[*len] = '\0';
     *len = off;
+    buf[*len] = '\0';
     return buf;
 }
 
@@ -166,8 +167,8 @@ static void test_command(const char *cmd, size_t len, const char *extra, const c
 
     recvdata = recvfull(sockd, &len);
 
-    fail_unless_fmt(len == expect_len, "Reply has wrong size: %lu, expected %lu, reply: %s\n",
-		    len, expect_len, recvdata);
+    fail_unless_fmt(len == expect_len, "Reply has wrong size: %lu, expected %lu, reply: %s, expected: %s\n",
+		    len, expect_len, recvdata, expect);
 
     rc = memcmp(recvdata, expect, expect_len);
     fail_unless_fmt(!rc, "Wrong reply for command %s: |%s|, expected: |%s|\n", cmd, recvdata, expect);
@@ -225,7 +226,7 @@ END_TEST
 #define EXPECT_INSTREAM "stream: ClamAV-Test-File.UNOFFICIAL FOUND\n"
 
 #define STATS_REPLY "POOLS: 1\n\nSTATE: VALID PRIMARY\n"
-START_TEST (tc_stats)
+START_TEST (test_stats)
 {
     char *recvdata;
     size_t len = strlen("nSTATS\n");
@@ -250,7 +251,7 @@ START_TEST (tc_stats)
 }
 END_TEST
 
-START_TEST (tc_instream)
+START_TEST (test_instream)
 {
     int fd, nread, rc;
     struct stat stbuf;
@@ -294,6 +295,94 @@ START_TEST (tc_instream)
 }
 END_TEST
 
+static void tst_fildes(const char *cmd, size_t len, int fd,
+			const char *expect, size_t expect_len, int closefd)
+{
+    struct msghdr msg;
+    struct cmsghdr *cmsg;
+    unsigned char fdbuf[CMSG_SPACE(sizeof(int))];
+    char dummy[] = "";
+    off_t pos;
+    struct iovec iov[1];
+    char *recvdata, *p;
+    int rc;
+
+    conn_setup();
+
+    iov[0].iov_base = dummy;
+    iov[0].iov_len = 1;
+
+    memset(&msg, 0, sizeof(msg));
+    msg.msg_control = fdbuf;
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+    msg.msg_controllen = CMSG_LEN(sizeof(int));
+
+    cmsg = CMSG_FIRSTHDR(&msg);
+    cmsg->cmsg_len = CMSG_LEN(sizeof(int));
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type = SCM_RIGHTS;
+    *(int *)CMSG_DATA(cmsg) = fd;
+
+    fail_unless_fmt(write(sockd, cmd, len) == len, "Failed to write: %s\n", strerror(errno));
+
+    rc = sendmsg(sockd, &msg, 0);
+    fail_unless_fmt(rc != -1, "Failed to sendmsg: %s\n", strerror(errno));
+
+    if (closefd)
+	close(fd);
+
+    recvdata = recvfull(sockd, &len);
+    p = strchr(recvdata, ':');
+
+    fail_unless_fmt(!!p, "Reply doesn't contain ':' : %s\n", recvdata);
+    *p++ = '\0';
+
+    fail_unless_fmt(sscanf(recvdata, "fd[%u]", &rc) == 1, "Reply doesn't contain fd: %s\n", recvdata);
+
+    len -= p - recvdata;
+    fail_unless_fmt(len == expect_len, "Reply has wrong size: %lu, expected %lu, reply: %s, expected: %s\n",
+		    len, expect_len, p, expect);
+
+    rc = memcmp(p, expect, expect_len);
+    fail_unless_fmt(!rc, "Wrong reply for command %s: |%s|, expected: |%s|\n", cmd, p, expect);
+    free(recvdata);
+    conn_teardown();
+}
+
+#define FOUNDFDREPLY " ClamAV-Test-File.UNOFFICIAL FOUND"
+#define CLEANFDREPLY " OK"
+
+START_TEST (test_fildes)
+{
+    char nreply[BUFSIZ];
+    int fd = open(SCANFILE, O_RDONLY);
+
+    snprintf(nreply, sizeof(nreply), "%s\n", FOUNDFDREPLY);
+
+    fail_unless_fmt(fd != -1, "Failed to open: %s\n", strerror(errno));
+
+    tst_fildes("FILDES\n", strlen("FILDES\n"), fd, nreply, strlen(nreply), 0);
+    tst_fildes("nFILDES\n", strlen("nFILDES\n"), fd, nreply, strlen(nreply), 0);
+    tst_fildes("zFILDES", sizeof("zFILDES"), fd, FOUNDFDREPLY, sizeof(FOUNDFDREPLY), 0);
+
+    close(fd);
+
+    snprintf(nreply, sizeof(nreply), "%s\n", CLEANFDREPLY);
+
+    fd = open(CLEANFILE, O_RDONLY);
+    fail_unless_fmt(fd != -1, "Failed to open: %s\n", strerror(errno));
+
+    tst_fildes("FILDES\n", strlen("FILDES\n"), fd, nreply, strlen(nreply), 0);
+    tst_fildes("nFILDES\n", strlen("nFILDES\n"), fd, nreply, strlen(nreply), 0);
+    tst_fildes("zFILDES", sizeof("zFILDES"), fd, CLEANFDREPLY, sizeof(CLEANFDREPLY), 0);
+
+    snprintf(nreply, sizeof(nreply), "%s\n", FOUNDFDREPLY);
+    fd = open(SCANFILE, O_RDONLY);
+    fail_unless_fmt(fd != -1, "Failed to open: %s\n", strerror(errno));
+    tst_fildes("FILDES\n", strlen("FILDES\n"), fd, nreply, strlen(nreply), 1);
+}
+END_TEST
 
 static Suite *test_clamd_suite(void)
 {
@@ -303,8 +392,9 @@ static Suite *test_clamd_suite(void)
     tcase_add_unchecked_fixture(tc_commands, commands_setup, commands_teardown);
     tcase_add_loop_test(tc_commands, test_basic_commands, 0, sizeof(basic_tests)/sizeof(basic_tests[0]));
     tcase_add_loop_test(tc_commands, test_compat_commands, 0, sizeof(basic_tests)/sizeof(basic_tests[0]));
-    tcase_add_test(tc_commands, tc_instream);
-    tcase_add_test(tc_commands, tc_stats);
+    tcase_add_test(tc_commands, test_fildes);
+    tcase_add_test(tc_commands, test_stats);
+    tcase_add_test(tc_commands, test_instream);
     return s;
 }
 

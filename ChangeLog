@@ -1,3 +1,7 @@
+Mon Feb 16 16:15:21 EET 2009 (edwin)
+------------------------------------
+ * unit_tests/check_clamd.c: test for FILDES
+
 Mon Feb 16 14:08:50 EET 2009 (edwin)
 ------------------------------------
  * clamd/server-th.c, clamd/session.c, unit_tests/check_clamd.c: add
