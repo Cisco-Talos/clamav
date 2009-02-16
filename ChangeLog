@@ -1,3 +1,7 @@
+Mon Feb 16 17:59:57 CET 2009 (tk)
+---------------------------------
+ * libclamav, sigtool: fix handling of long signatures (bb#1395)
+
 Mon Feb 16 13:16:53 CET 2009 (tk)
 ---------------------------------
  * libclamav/clamd: fix double-slash when scanning the root dir (bb#1394)

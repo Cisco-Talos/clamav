@@ -55,6 +55,7 @@
 #include "filetypes_int.h"
 #include "readdb.h"
 #include "cltypes.h"
+#include "default.h"
 
 #include "phishcheck.h"
 #include "phish_whitelist.h"
@@ -796,7 +797,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
 	char *tokens[LDB_TOKENS];
-	char buffer[32768], *pt;
+	char buffer[CLI_DEFAULT_LSIG_BUFSIZE + 1], *pt;
 	const char *sig, *virname, *offset, *logic;
 	struct cli_matcher *root;
 	unsigned int line = 0, sigs = 0;
@@ -810,7 +811,7 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     if((ret = cli_initroots(engine, options)))
 	return ret;
 
-    while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
+    while(cli_dbgets(buffer, sizeof(buffer), fs, dbio)) {
 	line++;
 	sigs++;
 	cli_chomp(buffer);

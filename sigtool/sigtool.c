@@ -60,8 +60,14 @@
 #include "libclamav/str.h"
 #include "libclamav/ole2_extract.h"
 #include "libclamav/htmlnorm.h"
+#include "libclamav/default.h"
 
 #define MAX_DEL_LOOKAHEAD   200
+
+/*
+ * Force backward compatibility with the cdiff interpreter of clamav < 0.95
+ */
+#define COMPATIBILITY_LIMIT 896
 
 static const struct dblist_s {
     const char *name;
@@ -1316,7 +1322,7 @@ static int rundiff(const struct optstruct *opts)
 static int compare(const char *oldpath, const char *newpath, FILE *diff)
 {
 	FILE *old, *new;
-	char obuff[1024], nbuff[1024], tbuff[1024], *pt, *omd5, *nmd5;
+	char obuff[CLI_DEFAULT_LSIG_BUFSIZE + 1], nbuff[CLI_DEFAULT_LSIG_BUFSIZE + 1], tbuff[CLI_DEFAULT_LSIG_BUFSIZE + 1], *pt, *omd5, *nmd5;
 	unsigned int oline = 0, tline, found, i;
 	long opos;
 
@@ -1347,7 +1353,14 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 
     while(fgets(nbuff, sizeof(nbuff), new)) {
 	cli_chomp(nbuff);
-
+#ifdef COMPATIBILITY_LIMIT
+	if(strlen(nbuff) > COMPATIBILITY_LIMIT) {
+	    mprintf("!compare: COMPATIBILITY_LIMIT: Line too long\n");
+	    if(old)
+		fclose(old);
+	    return -1;
+	}
+#endif
 	if(!old) {
 	    fprintf(diff, "ADD %s\n", nbuff);
 	} else {

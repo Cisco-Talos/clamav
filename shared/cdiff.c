@@ -40,6 +40,7 @@
 #include "libclamav/str.h"
 #include "libclamav/others.h"
 #include "libclamav/cvd.h"
+#include "libclamav/default.h"
 
 #include "zlib.h"
 
@@ -353,7 +354,7 @@ static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx)
 {
 	struct cdiff_node *add, *del, *xchg;
 	unsigned int lines = 0;
-	char *tmp, line[1024];
+	char *tmp, line[CLI_DEFAULT_LSIG_BUFSIZE + 32];
 	FILE *fh, *tmpfh;
 
 
@@ -489,7 +490,7 @@ static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx)
 static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx)
 {
 	unsigned int lines = 0, start_line, end_line;
-	char *arg, *srcdb, *dstdb, *tmpdb, line[1024], *start_str, *end_str;
+	char *arg, *srcdb, *dstdb, *tmpdb, line[CLI_DEFAULT_LSIG_BUFSIZE + 32], *start_str, *end_str;
 	FILE *src, *dst, *tmp;
 
 
@@ -867,7 +868,7 @@ int cdiff_apply(int fd, unsigned short mode)
 	struct cdiff_ctx ctx;
 	FILE *fh;
 	gzFile *gzh;
-	char line[1024], buff[FILEBUFF], *dsig = NULL;
+	char line[CLI_DEFAULT_LSIG_BUFSIZE + 32], buff[FILEBUFF], *dsig = NULL;
 	unsigned int lines = 0, cmds = 0;
 	unsigned int difflen, diffremain;
 	int end, i, n;
