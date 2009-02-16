@@ -1,3 +1,7 @@
+Mon Feb 16 20:53:45 EET 2009 (edwin)
+------------------------------------
+ * clamd/thrmgr.c: fix valgrind warning about locking order
+
 Mon Feb 16 20:36:01 EET 2009 (edwin)
 ------------------------------------
  * clamd/, libclamav/, shared/, unit_tests/: introduce timeouts for

@@ -211,7 +211,6 @@ int thrmgr_printstats(int f)
 			mdprintf(f,"NULL\n\n");
 			continue;
 		}
-		pthread_mutex_lock(&pool->pool_mutex);
 		/* now we can access desc->, knowing that they won't get freed
 		 * because the other tasks can't quit while pool_mutex is taken
 		 */
@@ -280,7 +279,6 @@ int thrmgr_printstats(int f)
 			}
 		}
 		mdprintf(f,"\n");
-		pthread_mutex_unlock(&pool->pool_mutex);
 	}
 	free(seen);
 #if defined(C_LINUX)
@@ -526,6 +524,7 @@ static void stats_destroy(threadpool_t *pool)
 	struct task_desc *desc = pthread_getspecific(stats_tls_key);
 	if(!desc)
 		return;
+	pthread_mutex_lock(&pools_lock);
 	if(desc->prv)
 		desc->prv->nxt = desc->nxt;
 	if(desc->nxt)
@@ -534,6 +533,7 @@ static void stats_destroy(threadpool_t *pool)
 		pool->tasks = desc->nxt;
 	free(desc);
 	pthread_setspecific(stats_tls_key, NULL);
+	pthread_mutex_unlock(&pools_lock);
 }
 
 static inline int thrmgr_contended(threadpool_t *pool)
