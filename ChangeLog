@@ -1,3 +1,9 @@
+Mon Feb 16 14:08:50 EET 2009 (edwin)
+------------------------------------
+ * clamd/server-th.c, clamd/session.c, unit_tests/check_clamd.c: add
+ more unit tests.  Make handling of old-style commands compatible
+ with old clamd: if they have a \n that will delimit the command.
+
 Mon Feb 16 17:59:57 CET 2009 (tk)
 ---------------------------------
  * libclamav, sigtool: fix handling of long signatures (bb#1395)

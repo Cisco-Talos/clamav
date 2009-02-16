@@ -227,7 +227,7 @@ int command(client_conn_t *conn, int *virus)
 	    /* callback freed it */
 	    conn->filename = NULL;
 	    *virus = scandata.infected;
-	    return 0;
+	    return scandata.errors > 0 ? scandata.errors : 0;
 	case COMMAND_FILDES:
 	    thrmgr_setactivetask(NULL, "FILDES");
 #ifdef HAVE_FD_PASSING

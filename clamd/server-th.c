@@ -240,6 +240,12 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
     return engine;
 }
 
+/*
+ * zCOMMANDS are delimited by \0
+ * nCOMMANDS are delimited by \n
+ * Old-style non-prefixed commands are one packet, optionally delimited by \n,
+ * with trailing \r|\n ignored
+ */
 static const char *get_cmd(struct fd_buf *buf, size_t off, size_t *len, char *term)
 {
     unsigned char *pos;
@@ -269,10 +275,18 @@ static const char *get_cmd(struct fd_buf *buf, size_t off, size_t *len, char *te
 	    return buf->buffer + off + 1;
 	default:
 	    /* one packet = one command */
-	    *len = buf->off - off;
-	    buf->buffer[buf->off] = '\0';
-	    cli_chomp(buf->buffer + off);
-	    return buf->buffer + off;
+	    if (off)
+		return NULL;
+	    pos = memchr(buf->buffer, '\n', buf->off);
+	    if (pos) {
+		*len = pos - buf->buffer;
+		*pos = '\0';
+	    } else {
+		*len = buf->off;
+		buf->buffer[buf->off] = '\0';
+	    }
+	    cli_chomp(buf->buffer);
+	    return buf->buffer;
     }
 }
 
@@ -832,6 +846,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		conn.quota = buf->quota;
 		conn.filename = buf->dumpname;
 		conn.mode = buf->mode;
+		conn.term = buf->term;
 		/* Parse & dispatch commands */
 		while ((conn.mode == MODE_COMMAND) &&
 		       (cmd = get_cmd(buf, pos, &cmdlen, &term)) != NULL) {
@@ -980,8 +995,9 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			    if (buf->chunksize > buf->quota) {
 				logg("^INSTREAM: Size limit reached, (requested: %lu, max: %lu)\n", 
 				     (unsigned long)buf->chunksize, (unsigned long)buf->quota);
-				conn_reply_error(&conn, "INSTREAM size limit exceeded. ERROR");
+				conn_reply_error(&conn, "INSTREAM size limit exceeded.");
 				error = 1;
+				break;
 			    } else {
 				buf->quota -= buf->chunksize;
 			    }

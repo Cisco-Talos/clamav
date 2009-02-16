@@ -56,16 +56,77 @@ static void conn_teardown(void)
 #define SCANFILE BUILDDIR"/../test/clam.exe"
 #define FOUNDREPLY SCANFILE": ClamAV-Test-File.UNOFFICIAL FOUND"
 
+/* some clean file */
+#define CLEANFILE SRCDIR"/Makefile.am"
+#define CLEANREPLY CLEANFILE": OK"
+#define UNKNOWN_REPLY "UNKNOWN COMMAND"
+
+#define NONEXISTENT "/nonexistent\vfilename"
+#define NONEXISTENT_REPLY NONEXISTENT": lstat() failed: No such file or directory. ERROR"
+
+#define ACCDENIED BUILDDIR"/accdenied"
+#define ACCDENIED_REPLY ACCDENIED": Access denied. ERROR"
+
+static void commands_setup(void)
+{
+    const char *nonempty = "NONEMPTYFILE";
+    int fd = open(NONEXISTENT, O_RDONLY);
+    int rc;
+    if (fd != -1) close(fd);
+    fail_unless(fd == -1, "Nonexistent file exists!\n");
+
+    fd = open(ACCDENIED, O_CREAT | O_WRONLY, S_IWUSR);
+    fail_unless_fmt(fd != -1,
+		    "Failed to create file for access denied tests: %s\n", strerror(errno));
+
+
+    fail_unless_fmt(fchmod(fd,  S_IWUSR) != -1,
+		    "Failed to chmod: %s\n", strerror(errno));
+    /* must not be empty file */
+    fail_unless_fmt(write(fd, nonempty, strlen(nonempty)) == strlen(nonempty),
+		    "Failed to write into testfile: %s\n", strerror(errno));
+    close(fd);
+}
+
+static void commands_teardown(void)
+{
+    int rc = unlink(ACCDENIED);
+    fail_unless_fmt(rc != -1, "Failed to unlink access denied testfile: %s\n", strerror(errno));
+}
+
 static struct basic_test {
     const char *command;
+    const char *extra;
     const char *reply;
 } basic_tests[] = {
-    {"PING", "PONG"},
-    {"RELOAD","RELOADING"},
-    {"VERSION", "ClamAV "REPO_VERSION""VERSION_SUFFIX},
-    {"SCAN "SCANFILE, FOUNDREPLY},
-    {"CONTSCAN "SCANFILE, FOUNDREPLY},
-    {"MULTISCAN "SCANFILE, FOUNDREPLY},
+    {"PING", NULL, "PONG"},
+    {"RELOAD", NULL, "RELOADING"},
+    {"VERSION", NULL, "ClamAV "REPO_VERSION""VERSION_SUFFIX},
+    {"SCAN "SCANFILE, NULL, FOUNDREPLY},
+    {"SCAN "CLEANFILE, NULL, CLEANREPLY},
+    {"CONTSCAN "SCANFILE, NULL, FOUNDREPLY},
+    {"CONTSCAN "CLEANFILE, NULL, CLEANREPLY},
+    {"MULTISCAN "SCANFILE, NULL, FOUNDREPLY},
+    {"MULTISCAN "CLEANFILE, NULL, CLEANREPLY},
+    /* unknown commnads */
+    {"RANDOM", NULL, UNKNOWN_REPLY},
+    /* commands invalid as first */
+    {"END", NULL, UNKNOWN_REPLY},
+    /* commands for nonexistent files */
+    {"SCAN "NONEXISTENT, NULL, NONEXISTENT_REPLY},
+    {"CONTSCAN "NONEXISTENT, NULL, NONEXISTENT_REPLY},
+    {"MULTISCAN "NONEXISTENT, NULL, NONEXISTENT_REPLY},
+    /* commands for access denied files */
+    {"SCAN "ACCDENIED, NULL, ACCDENIED_REPLY},
+    {"CONTSCAN "ACCDENIED, NULL, ACCDENIED_REPLY},
+    {"MULTISCAN "ACCDENIED, NULL, ACCDENIED_REPLY},
+    /* commands with invalid/missing arguments */
+    {"SCAN", NULL, UNKNOWN_REPLY},
+    {"CONTSCAN", NULL, UNKNOWN_REPLY},
+    {"MULTISCAN", NULL, UNKNOWN_REPLY},
+    /* commands with invalid data */
+    {"INSTREAM", "\xff\xff\xff\xff", "INSTREAM size limit exceeded. ERROR"}, /* too big chunksize */
+    {"FILDES", "X", "No file descriptor received. ERROR"}, /* FILDES w/o ancillary data */
 };
 
 static void *recvfull(int sd, size_t *len)
@@ -91,12 +152,17 @@ static void *recvfull(int sd, size_t *len)
     return buf;
 }
 
-static void test_command(const char *cmd, size_t len, const char *expect, size_t expect_len)
+static void test_command(const char *cmd, size_t len, const char *extra, const char *expect, size_t expect_len)
 {
     void *recvdata;
     ssize_t rc;
     rc = send(sockd, cmd, len, 0);
     fail_unless_fmt((size_t)rc == len, "Unable to send(): %s\n", strerror(errno));
+
+    if (extra) {
+	rc = send(sockd, extra, strlen(extra), 0);
+	fail_unless_fmt((size_t)rc == strlen(extra), "Unable to send(): %s\n", strerror(errno));
+    }
 
     recvdata = recvfull(sockd, &len);
 
@@ -112,22 +178,46 @@ START_TEST (test_basic_commands)
 {
     struct basic_test *test = &basic_tests[_i];
     char nsend[BUFSIZ], nreply[BUFSIZ];
-    /* send the command the "old way" */
-    conn_setup();
-    snprintf(nreply, sizeof(nreply), "%s\n", test->reply);
-    test_command(test->command, strlen(test->command), nreply, strlen(nreply));
-    conn_teardown();
 
     /* send nCOMMAND */
-    conn_setup();
+    snprintf(nreply, sizeof(nreply), "%s\n", test->reply);
     snprintf(nsend, sizeof(nsend), "n%s\n", test->command);
-    test_command(nsend, strlen(nsend), nreply, strlen(nreply));
+    conn_setup();
+    test_command(nsend, strlen(nsend), test->extra, nreply, strlen(nreply));
     conn_teardown();
 
     /* send zCOMMAND */
-    conn_setup();
     snprintf(nsend, sizeof(nsend), "z%s", test->command);
-    test_command(nsend, strlen(nsend)+1, test->reply, strlen(test->reply)+1);
+    conn_setup();
+    test_command(nsend, strlen(nsend)+1, test->extra, test->reply, strlen(test->reply)+1);
+    conn_teardown();
+}
+END_TEST
+
+START_TEST (test_compat_commands)
+{
+    /* test sending the command the "old way" */
+    struct basic_test *test = &basic_tests[_i];
+    char nsend[BUFSIZ], nreply[BUFSIZ];
+
+    snprintf(nreply, sizeof(nreply), "%s\n", test->reply);
+    if (!test->extra) {
+	/* one command = one packet, no delimiter */
+	conn_setup();
+	test_command(test->command, strlen(test->command), test->extra, nreply, strlen(nreply));
+	conn_teardown();
+    }
+
+    /* one packet, \n delimited command, followed by "extra" if needed */
+    snprintf(nsend, sizeof(nsend), "%s\n", test->command);
+    conn_setup();
+    test_command(nsend, strlen(nsend), test->extra, nreply, strlen(nreply));
+    conn_teardown();
+
+    /* one packet, \r\n delimited command, followed by "extra" if needed */
+    snprintf(nsend, sizeof(nsend), "%s\r\n", test->command);
+    conn_setup();
+    test_command(nsend, strlen(nsend), test->extra, nreply, strlen(nreply));
     conn_teardown();
 }
 END_TEST
@@ -204,12 +294,15 @@ START_TEST (tc_instream)
 }
 END_TEST
 
+
 static Suite *test_clamd_suite(void)
 {
     Suite *s = suite_create("clamd");
     TCase *tc_commands = tcase_create("clamd commands");
     suite_add_tcase(s, tc_commands);
+    tcase_add_unchecked_fixture(tc_commands, commands_setup, commands_teardown);
     tcase_add_loop_test(tc_commands, test_basic_commands, 0, sizeof(basic_tests)/sizeof(basic_tests[0]));
+    tcase_add_loop_test(tc_commands, test_compat_commands, 0, sizeof(basic_tests)/sizeof(basic_tests[0]));
     tcase_add_test(tc_commands, tc_instream);
     tcase_add_test(tc_commands, tc_stats);
     return s;
