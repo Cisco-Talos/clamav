@@ -95,6 +95,8 @@ static void commands_teardown(void)
     fail_unless_fmt(rc != -1, "Failed to unlink access denied testfile: %s\n", strerror(errno));
 }
 
+#define VERSION_REPLY "ClamAV "REPO_VERSION""VERSION_SUFFIX
+
 static struct basic_test {
     const char *command;
     const char *extra;
@@ -102,7 +104,7 @@ static struct basic_test {
 } basic_tests[] = {
     {"PING", NULL, "PONG"},
     {"RELOAD", NULL, "RELOADING"},
-    {"VERSION", NULL, "ClamAV "REPO_VERSION""VERSION_SUFFIX},
+    {"VERSION", NULL, VERSION_REPLY},
     {"SCAN "SCANFILE, NULL, FOUNDREPLY},
     {"SCAN "CLEANFILE, NULL, CLEANREPLY},
     {"CONTSCAN "SCANFILE, NULL, FOUNDREPLY},
@@ -130,7 +132,7 @@ static struct basic_test {
     {"FILDES", "X", "No file descriptor received. ERROR"}, /* FILDES w/o ancillary data */
 };
 
-static void *recvfull(int sd, size_t *len)
+static void *recvpartial(int sd, size_t *len, int partial)
 {
     char *buf = NULL;
     size_t off = 0;
@@ -147,10 +149,15 @@ static void *recvfull(int sd, size_t *len)
 	rc = recv(sd, buf + off, BUFSIZ, 0);
 	fail_unless_fmt(rc != -1, "recv() failed: %s\n", strerror(errno));
 	off += rc;
-    } while (rc);
+    } while (rc && (!partial || !memchr(buf, '\0', off)));
     *len = off;
     buf[*len] = '\0';
     return buf;
+}
+
+static void *recvfull(int sd, size_t *len)
+{
+    return recvpartial(sd, len, 0);
 }
 
 static void test_command(const char *cmd, size_t len, const char *extra, const char *expect, size_t expect_len)
@@ -464,6 +471,45 @@ START_TEST (test_fildes_many)
 }
 END_TEST
 
+START_TEST (test_fildes_unwanted)
+{
+    char buf[BUFSIZ];
+    size_t i;
+    int dummyfd;
+    char *data, *p;
+    size_t len;
+
+    conn_setup();
+    dummyfd = open(SCANFILE, O_RDONLY);
+
+    fail_unless_fmt(send(sockd, "zIDSESSION", sizeof("zIDSESSION"), 0) == sizeof("zIDSESSION"),
+		    "send() failed: %s\n", strerror(errno));
+    for (i=0;i < 1024; i++) {
+	snprintf(buf, sizeof(buf), "%u", i+1);
+	/* send a 'zVERSION\0' including the ancillary data.
+	 * The \0 is from the extra char needed when sending ancillary data */
+	fail_unless_fmt(sendmsg_fd(sockd, "zVERSION", sizeof("zVERSION")-1, dummyfd, 1) != -1,
+			"sendmsg (%u) failed: %s\n", i, strerror(errno));
+/*	fail_unless(send(sockd, "zVERSION", sizeof("zVERSION"), 0) == sizeof("zVERSION"),
+		    "send failed: %s\n",strerror(errno));*/
+	data = recvpartial(sockd, &len, 1);
+	p = strchr(data, ':');
+	fail_unless_fmt(!!p, "wrong VERSION reply (%u): %s\n", i, data);
+	*p++ = '\0';
+	fail_unless_fmt(*p == ' ', "wrong VERSION reply (%u): %s\n", i, p);
+	*p++  = '\0';
+
+	fail_unless_fmt(!strcmp(p, VERSION_REPLY), "wrong VERSION reply: %s\n", data);
+	fail_unless_fmt(!strcmp(data, buf), "wrong IDSESSION id: %s\n", data);
+
+	free(data);
+    }
+
+    close(dummyfd);
+    conn_teardown();
+}
+END_TEST
+
 static Suite *test_clamd_suite(void)
 {
     Suite *s = suite_create("clamd");
@@ -481,6 +527,7 @@ static Suite *test_clamd_suite(void)
     tc_stress = tcase_create("clamd stress test");
     suite_add_tcase(s, tc_stress);
     tcase_add_test(tc_stress, test_fildes_many);
+    tcase_add_test(tc_stress, test_fildes_unwanted);
 
     return s;
 }

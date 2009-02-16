@@ -1,3 +1,9 @@
+Mon Feb 16 23:56:34 EET 2009 (edwin)
+------------------------------------
+ * clamd/clamd.c, clamd/server-th.c, unit_tests/check_clamd.c,
+ unit_tests/check_clamd.sh: fix typo.  add another stress test.
+ Don't leak file descriptors.  Fix IDSESSION delimiter handling.
+
 Mon Feb 16 20:53:45 EET 2009 (edwin)
 ------------------------------------
  * clamd/thrmgr.c: fix valgrind warning about locking order

@@ -256,7 +256,7 @@ static const char *get_cmd(struct fd_buf *buf, size_t off, size_t *len, char *te
     }
 
     *term = '\n';
-    switch (buf->buffer[0]) {
+    switch (buf->buffer[off]) {
 	/* commands terminated by delimiters */
 	case 'z':
 	    *term = '\0';
@@ -952,6 +952,10 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			break;
 		    }
 		    conn.id++;
+		}
+		if (conn.scanfd != -1 && conn.scanfd != buf->dumpfd) {
+		    logg("*Unclaimed file descriptor received, closing: %d\n", conn.scanfd);
+		    close(conn.scanfd);
 		}
 		buf->mode = conn.mode;
 		buf->id = conn.id;

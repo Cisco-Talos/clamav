@@ -289,7 +289,7 @@ int main(int argc, char **argv)
     min_port = optget(opts, "StreamMinPort")->numarg;
     max_port = optget(opts, "StreamMaxPort")->numarg;
     if (min_port < 1024 || min_port > max_port || max_port > 65535) {
-	logg("!Invalid StreaMinPort/StreamMaxPort: %d, %d\n", min_port, max_port);
+	logg("!Invalid StreamMinPort/StreamMaxPort: %d, %d\n", min_port, max_port);
 	ret = 1;
 	break;
     }

@@ -52,6 +52,10 @@ scan_failed() {
 start_clamd()
 {
 	rm -f clamd-test.log
+	$LTEXEC $CLAMD_WRAPPER $TOP/clamd/clamd -c $1 --help >clamd-test.log || 
+		{ error "Failed to start clamd --help!"; die 1; }
+	grep "Clam AntiVirus Daemon" clamd-test.log >/dev/null ||
+		{ error "Wrong --help reply from clamd!"; die 1; }
 	$LTEXEC $CLAMD_WRAPPER $TOP/clamd/clamd -c $1 || 
 		{ error "Failed to start clamd!"; die 1; }
 }
@@ -159,13 +163,15 @@ EOF
 rm -rf clamdtest$CLAMD_TEST_UNIQ1 clamdtest$CLAMD_TEST_UNIQ2
 mkdir clamdtest$CLAMD_TEST_UNIQ1 clamdtest$CLAMD_TEST_UNIQ2 || 
 	{ echo "Unable to create temporary directories!"; exit 1; }
-	
+
 # Prepare configuration for clamd #1 and #2
 (prepare_clamd $CLAMD_TEST_UNIQ1)
 (prepare_clamd $CLAMD_TEST_UNIQ2)
 # Add clamd #2 specific configuration
 echo "VirusEvent $abs_srcdir/virusaction-test.sh `pwd`/clamdtest$CLAMD_TEST_UNIQ2 \"Virus found: %v\"" >>clamdtest$CLAMD_TEST_UNIQ2/test-clamd.conf
 echo "HeuristicScanPrecedence yes" >>clamdtest$CLAMD_TEST_UNIQ2/test-clamd.conf
+grep -v LogFile clamdtest$CLAMD_TEST_UNIQ2/test-clamd.conf >tmp__
+mv tmp__ clamdtest$CLAMD_TEST_UNIQ2/test-clamd.conf
 
 # Start clamd #1 tests
 (cd clamdtest$CLAMD_TEST_UNIQ1 
