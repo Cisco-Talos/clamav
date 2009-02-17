@@ -115,7 +115,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 		     msg);
 	    return CL_SUCCESS;
 	case warning_skipped_link:
-	    logg("*Skipping symlink: %s\n", msg);
+	    logg("$Skipping symlink: %s\n", msg);
 	    return CL_SUCCESS;
 	case warning_skipped_special:
 	    if (msg == scandata->toplevel_path)

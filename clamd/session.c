@@ -98,13 +98,13 @@ enum commands parse_command(const char *cmd, const char **argument)
 	    const char *arg = cmd + len;
 	    if (commands[i].need_arg) {
 		if (!*arg) {/* missing argument */
-		    logg("*Command %s missing argument!\n", commands[i].cmd);
+		    logg("$Command %s missing argument!\n", commands[i].cmd);
 		    return COMMAND_UNKNOWN;
 		}
 		*argument = arg+1;
 	    } else {
 		if (*arg) {/* extra stuff after command */
-		    logg("*Command %s has trailing garbage!\n", commands[i].cmd);
+		    logg("$Command %s has trailing garbage!\n", commands[i].cmd);
 		    return COMMAND_UNKNOWN;
 		}
 		*argument = NULL;
@@ -183,7 +183,7 @@ int command(client_conn_t *conn, int *virus)
     jobgroup_t *group = NULL;
 
     if (thrmgr_group_need_terminate(conn->group)) {
-	logg("*Client disconnected while command was active\n");
+	logg("$Client disconnected while command was active\n");
 	if (conn->scanfd != -1)
 	    close(conn->scanfd);
 	return 1;
@@ -246,7 +246,7 @@ int command(client_conn_t *conn, int *virus)
 		} else
 		    ret = 0;
 	    }
-	    logg("*SESSION: closed fd %d\n", conn->scanfd);
+	    logg("$Closed fd %d\n", conn->scanfd);
 	    close(conn->scanfd);
 	    return ret;
 #else
@@ -409,7 +409,7 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 	    default:
 		/* these commands are not recognized inside an IDSESSION */
 		conn_reply_error(conn, "Command invalid inside IDSESSION.");
-		logg("*SESSION: command is not valid inside IDSESSION: %d\n", cmd);
+		logg("$SESSION: command is not valid inside IDSESSION: %d\n", cmd);
 		conn->group = NULL;
 		return 1;
 	}

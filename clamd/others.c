@@ -247,7 +247,7 @@ void fds_cleanup(struct fd_data *data)
     for (i = j ; i < data->nfds; i++)
 	data->buf[i].fd = -1;
     data->nfds = j;
-    logg("*CLEANUP_FDS: %u fds\n", data->nfds);
+    logg("$Number of file descriptors polled: %u fds\n", data->nfds);
     /* Shrink buffer */
     newbuf = realloc(data->buf, j*sizeof(*newbuf));
     if (newbuf)
@@ -277,6 +277,7 @@ static int read_fd_data(struct fd_buf *buf)
       struct iovec iov[1];
 
       if (buf->recvfd != -1) {
+	  logg("$Closing unclaimed FD: %d\n", buf->recvfd);
 	  close(buf->recvfd);
 	  buf->recvfd = -1;
       }
@@ -292,7 +293,7 @@ static int read_fd_data(struct fd_buf *buf)
       if (n < 0)
 	  return -1;
       if ((msg.msg_flags & MSG_TRUNC) || (msg.msg_flags & MSG_CTRUNC)) {
-	  logg("!control message truncated");
+	  logg("^Control message truncated");
 	  return -1;
       }
       if (msg.msg_controllen) {
@@ -302,11 +303,11 @@ static int read_fd_data(struct fd_buf *buf)
 		  cmsg->cmsg_level == SOL_SOCKET &&
 		  cmsg->cmsg_type == SCM_RIGHTS) {
 		  if (buf->recvfd != -1) {
-		      logg("^Unclaimed file descriptor received. closing\n");
+		      logg("$Unclaimed file descriptor received. closing: %d\n");
 		      close(buf->recvfd);
 		  }
 		  buf->recvfd = *(int *)CMSG_DATA(cmsg);
-		  logg("*RECVMSG: got FD %d\n", buf->recvfd);
+		  logg("$Receveived a file descriptor: %d\n", buf->recvfd);
 	      }
 	  }
       }
@@ -458,6 +459,8 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 	timeout = closest_timeout - now;
     else
 	timeout = -1;
+    if (timeout > 0)
+	logg("$fds_poll_recv: timeout after %d seconds\n", timeout);
 #ifdef HAVE_POLL
     /* Use poll() if available, preferred because:
      *  - can poll any number of FDs
@@ -500,7 +503,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 		}
 		revents = data->poll_data[i].revents;
 		if (revents & (POLLIN|POLLHUP)) {
-		    logg("*POLL: POLLIN|POLLHUP on fd %d\n",data->poll_data[i].fd);
+		    logg("$Received POLLIN|POLLHUP on fd %d\n",data->poll_data[i].fd);
 		}
 		if (revents & POLLIN) {
 		    int ret = read_fd_data(&data->buf[i]);
@@ -514,11 +517,11 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 		if (revents & (POLLHUP | POLLERR | POLLNVAL)) {
 		    if (revents & (POLLHUP| POLLNVAL)) {
 			/* remote disconnected */
-			logg("^poll_recv_fds: Client disconnected (FD %d)\n",
+			logg("*Client disconnected (FD %d)\n",
 			     data->poll_data[i].fd);
 		    } else {
 			/* error on file descriptor */
-			logg("!poll_recv_fds: Error condition on fd %d\n",
+			logg("^Error condition on fd %d\n",
 			     data->poll_data[i].fd);
 		    }
 		    data->buf[i].got_newdata = -1;
@@ -536,7 +539,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
     for (i=0;i < data->nfds; i++) {
 	int fd = data->buf[i].fd;
 	if (fd >= FD_SETSIZE) {
-	    logg ("!poll_recv_fds: file descriptor is not valid for FD_SET\n");
+	    logg ("!File descriptor is too high for FD_SET\n");
 	    return -1;
 	}
 
@@ -567,10 +570,10 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 		    int ret = read_fd_data(&data->buf[i]);
 		    if (ret == -1 || !ret) {
 			if (ret == -1)
-			    logg("!poll_recv_fds: Error condition on fd %d\n",
+			    logg("!Error condition on fd %d\n",
 				 data->buf[i].fd);
 			else
-			    logg("^poll_recv_fds: Client disconnected\n");
+			    logg("*Client disconnected\n");
 			data->buf[i].got_newdata = -1;
 		    }
 		}

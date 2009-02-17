@@ -118,10 +118,10 @@ static void scanner_thread(void *arg)
 
     if (conn->filename)
 	free(conn->filename);
-    logg("*SCANTH: finished\n");
+    logg("$Finished scanthread\n");
     if (thrmgr_group_finished(conn->group, virus ? EXIT_OTHER :
 			      errors ? EXIT_ERROR : EXIT_OK)) {
-	logg("*SCANTH: connection shut down\n");
+	logg("$Scanthread: connection shut down\n");
 	/* close connection if we were last in group */
 	shutdown(conn->sd, 2);
 	closesocket(conn->sd);
@@ -848,17 +848,19 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 
 	    if (buf->got_newdata == -1) {
 		if (buf->mode == MODE_WAITREPLY) {
-		    logg("*RECVTH: mode WAIT_REPLY -> closed\n");
+		    logg("$mode WAIT_REPLY -> closed\n");
 		    buf->fd = -1;
+		    thrmgr_group_terminate(buf->group);
+		    thrmgr_group_finished(buf->group, EXIT_ERROR);
 		    continue;
 		} else {
-		    logg("*RECVTH: client read error or EOF on read\n");
+		    logg("$client read error or EOF on read\n");
 		    error = 1;
 		}
 	    }
 
 	    if (buf->fd != -1 && buf->got_newdata == -2) {
-		logg("*RECVTH: client read timed out\n");
+		logg("$Client read timed out\n");
 		mdprintf(buf->fd, "COMMAND READ TIMED OUT\n");
 		error = 1;
 	    }
@@ -866,7 +868,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    rr_last = i;
 	    if (buf->mode == MODE_WAITANCILL) {
 		buf->mode = MODE_COMMAND;
-		logg("*RECVTH: mode -> MODE_COMMAND\n");
+		logg("$mode -> MODE_COMMAND\n");
 	    }
 	    while (!error && buf->fd != -1 && buf->buffer && pos < buf->off &&
 		   buf->mode != MODE_WAITANCILL) {
@@ -896,7 +898,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		       (cmd = get_cmd(buf, pos, &cmdlen, &term)) != NULL) {
 		    const char *argument;
 		    enum commands cmdtype = parse_command(cmd, &argument);
-		    logg("*RECVTH: got command %s (%u, %u), argument: %s\n",
+		    logg("$got command %s (%u, %u), argument: %s\n",
 			 cmd, (unsigned)cmdlen, (unsigned)cmdtype, argument ? argument : "");
 		    if (cmdtype == COMMAND_FILDES) {
 			if (buf->buffer + buf->off <= cmd + strlen("FILDES\n")) {
@@ -906,12 +908,12 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			    /* put term back */
 			    buf->buffer[pos + cmdlen] = term;
 			    cmdlen = 0;
-			    logg("*RECVTH: mode -> MODE_WAITANCILL\n");
+			    logg("$RECVTH: mode -> MODE_WAITANCILL\n");
 			    break;
 			}
 			/* eat extra \0 for controlmsg */
 			cmdlen++;
-			logg("*RECVTH: FILDES command complete\n");
+			logg("$RECVTH: FILDES command complete\n");
 		    }
 
 		    conn.term = term;
@@ -927,20 +929,20 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			error = 1;
 		    }
 		    if (thrmgr_group_need_terminate(conn.group)) {
-			logg("*RECVTH: have to terminate group\n");
+			logg("$Receive thread: have to terminate group\n");
 			error = CL_ETIMEOUT;
 			break;
 		    }
 		    if (error || !conn.group || rc) {
 			if (rc && thrmgr_group_finished(conn.group, EXIT_OK)) {
-			    logg("*RECVTH: closing conn, group finished\n");
+			    logg("$Receive thread: closing conn, group finished\n");
 			    /* if there are no more active jobs */
 			    shutdown(conn.sd, 2);
 			    closesocket(conn.sd);
 			    buf->fd = -1;
 			    conn.group = NULL;
 			} else if (conn.mode != MODE_STREAM) {
-			    logg("*RECVTH: mode -> MODE_WAITREPLY\n");
+			    logg("$mode -> MODE_WAITREPLY\n");
 			    /* no more commands are accepted */
 			    conn.mode = MODE_WAITREPLY;
 			    /* Stop monitoring this FD, it will be closed either
@@ -978,26 +980,26 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			/* TODO: this doesn't belong here */
 			buf->dumpname = conn.filename;
 			buf->dumpfd = conn.scanfd;
-			logg("*RECVTH: STREAM: %s fd %u\n", buf->dumpname, buf->dumpfd);
+			logg("$Receive thread: INSTREAM: %s fd %u\n", buf->dumpname, buf->dumpfd);
 		    }
 		    if (conn.mode != MODE_COMMAND) {
-			logg("*RECVTH: breaking command loop, mode is no longer MODE_COMMAND\n");
+			logg("$Breaking command loop, mode is no longer MODE_COMMAND\n");
 			break;
 		    }
 		    conn.id++;
 		}
+		buf->mode = conn.mode;
+		buf->id = conn.id;
+		buf->group = conn.group;
+		buf->quota = conn.quota;
 		if (conn.scanfd != -1 && conn.scanfd != buf->dumpfd) {
-		    logg("*Unclaimed file descriptor received, closing: %d\n", conn.scanfd);
+		    logg("$Unclaimed file descriptor received, closing: %d\n", conn.scanfd);
 		    close(conn.scanfd);
 		    /* protocol error */
 		    conn_reply_error(&conn, "PROTOCOL ERROR: ancillary data sent without FILDES.");
 		    error = 1;
 		    break;
 		}
-		buf->mode = conn.mode;
-		buf->id = conn.id;
-		buf->group = conn.group;
-		buf->quota = conn.quota;
 		if (!error) {
 		    /* move partial command to beginning of buffer */
 		    if (pos < buf->off) {
@@ -1006,9 +1008,9 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    } else
 			buf->off = 0;
 		    if (buf->off)
-			logg("*RECVTH: moved partial command: %lu\n", (unsigned long)buf->off);
+			logg("$Moved partial command: %lu\n", (unsigned long)buf->off);
 		    else
-			logg("*RECVTH: consumed entire command\n");
+			logg("$Consumed entire command\n");
 		}
 		if (conn.mode == MODE_COMMAND && !cmd)
 		    break;
@@ -1016,24 +1018,24 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    /* Client is not supposed to send anything more */
 		    logg("^Client sent garbage after last command: %lu bytes\n", (unsigned long)buf->off);
 		    buf->buffer[buf->off] = '\0';
-		    logg("*RECVTH: garbage: %s\n", buf->buffer);
+		    logg("$Garbage: %s\n", buf->buffer);
 		    error = 1;
 		}
 		if (!error && buf->mode == MODE_STREAM) {
-		    logg("*RECVTH: mode == MODE_STREAM\n");
+		    logg("$mode == MODE_STREAM\n");
 		    if (!buf->chunksize) {
 			/* read chunksize */
 			if (buf->off >= 4) {
 			    uint32_t cs = *(uint32_t*)buf->buffer;
 			    buf->chunksize = ntohl(cs);
-			    logg("*RECVTH: chunksize: %u\n", buf->chunksize);
+			    logg("$Got chunksize: %u\n", buf->chunksize);
 			    if (!buf->chunksize) {
 				/* chunksize 0 marks end of stream */
 				conn.scanfd = buf->dumpfd;
 				conn.term = buf->term;
 				buf->dumpfd = -1;
 				buf->mode = buf->group ? MODE_COMMAND : MODE_WAITREPLY;
-				logg("*RECVTH: chunks complete\n");
+				logg("$Chunks complete\n");
 				buf->dumpname = NULL;
 				if ((rc = execute_or_dispatch_command(&conn, COMMAND_INSTREAMSCAN, NULL)) < 0) {
 				    logg("!Command dispatch failed\n");
@@ -1061,7 +1063,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			    } else {
 				buf->quota -= buf->chunksize;
 			    }
-			    logg("*RECVTH: quota: %lu\n", buf->quota);
+			    logg("$Quota: %lu\n", buf->quota);
 			    pos = 4;
 			} else
 			    break;
@@ -1077,7 +1079,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			logg("!INSTREAM: Can't write to temporary file.\n");
 			error = 1;
 		    }
-		    logg("*RECVTH: processed %lu bytes of chunkdata\n", cmdlen);
+		    logg("$Processed %lu bytes of chunkdata\n", cmdlen);
 		    pos += cmdlen;
 		    if (pos == buf->off) {
 			buf->off = 0;
@@ -1098,11 +1100,11 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		}
 		thrmgr_group_terminate(buf->group);
 		if (thrmgr_group_finished(buf->group, EXIT_ERROR)) {
-		    logg("*RECVTH: shutting down socket after error\n");
+		    logg("$Shutting down socket after error\n");
 		    shutdown(buf->fd, 2);
 		    closesocket(buf->fd);
 		} else
-		    logg("*RECVTH: socket not shut down due to active tasks\n");
+		    logg("$Socket not shut down due to active tasks\n");
 		buf->fd = -1;
 	    }
 	}

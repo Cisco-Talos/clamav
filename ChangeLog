@@ -1,3 +1,9 @@
+Tue Feb 17 18:29:27 EET 2009 (edwin)
+------------------------------------
+ * clamd/, shared/, unit_tests/: Introduce '$' in logg, it is active
+ when logg_verbose=2, i.e. when Debug yes.  Fix leak reported by
+ valgrind.
+
 Tue Feb 17 17:33:06 EET 2009 (edwin)
 ------------------------------------
  * clamd/server-th.c, unit_tests/check_clamd.c: make sending

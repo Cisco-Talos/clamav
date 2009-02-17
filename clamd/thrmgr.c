@@ -577,7 +577,7 @@ static void *thrmgr_pop(threadpool_t *pool)
     }
 
     if (!thrmgr_contended(pool)) {
-	logg("*THRMGR: queue crossed low threshold -> signaling\n");
+	logg("$THRMGR: queue crossed low threshold -> signaling\n");
 	pthread_cond_signal(&pool->queueable_cond);
     }
 
@@ -682,9 +682,9 @@ static int thrmgr_dispatch_internal(threadpool_t *threadpool, void *user_data, i
 		queue = threadpool->single_queue;
 
 	    while (thrmgr_contended(threadpool)) {
-		logg("*THRMGR: contended, sleeping\n");
+		logg("$THRMGR: contended, sleeping\n");
 		pthread_cond_wait(&threadpool->queueable_cond, &threadpool->pool_mutex);
-		logg("*THRMGR: contended, woken\n");
+		logg("$THRMGR: contended, woken\n");
 	    }
 
 	    if (!work_queue_add(queue, user_data)) {
@@ -725,11 +725,13 @@ int thrmgr_group_dispatch(threadpool_t *threadpool, jobgroup_t *group, void *use
     if (group) {
 	pthread_mutex_lock(&group->mutex);
 	group->jobs++;
+	logg("$THRMGR: active jobs for %p: %d\n", group, group->jobs);
 	pthread_mutex_unlock(&group->mutex);
     }
     if (!(ret = thrmgr_dispatch_internal(threadpool, user_data, 1)) && group) {
 	pthread_mutex_lock(&group->mutex);
 	group->jobs--;
+	logg("$THRMGR: active jobs for %p: %d\n", group, group->jobs);
 	pthread_mutex_unlock(&group->mutex);
     }
     return ret;
@@ -747,7 +749,7 @@ int thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc)
 	return 1;
     }
     pthread_mutex_lock(&group->mutex);
-    logg("*THRMGR: group_finished: %p, %d\n", group, group->jobs);
+    logg("$THRMGR: group_finished: %p, %d\n", group, group->jobs);
     group->exit_total++;
     switch (exitc) {
 	case EXIT_OK:
@@ -760,13 +762,14 @@ int thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc)
     if (group->jobs) {
 	if (!--group->jobs) {
 	    ret = 1;
-	}
+	} else
+	    logg("$THRMGR: active jobs for %p: %d\n", group, group->jobs);
 	if (group->jobs == 1)
 	    pthread_cond_signal(&group->only);
     }
     pthread_mutex_unlock(&group->mutex);
     if (ret) {
-	logg("*THRMGR: group_finished: freeing %p\n", group);
+	logg("$THRMGR: group_finished: freeing %p\n", group);
 	free(group);
     }
     return ret;
@@ -793,9 +796,11 @@ void thrmgr_group_waitforall(jobgroup_t *group, unsigned *ok, unsigned *error, u
     *total = group->exit_total;
     if(!--group->jobs)
 	needfree = 1;
+    else
+	logg("$THRMGR: active jobs for %p: %d\n", group, group->jobs);
     pthread_mutex_unlock(&group->mutex);
     if (needfree) {
-	logg("*THRMGR: freeing %p\n", group);
+	logg("$THRMGR: group finished freeing %p\n", group);
 	free(group);
     }
 }
@@ -810,6 +815,7 @@ jobgroup_t *thrmgr_group_new(void)
     if (!group)
 	return NULL;
     memcpy(group, &dummy, sizeof(dummy));
+    logg("$THRMGR: new group: %p\n", group);
     return group;
 }
 

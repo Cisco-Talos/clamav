@@ -236,8 +236,10 @@ int main(int argc, char **argv)
 	break;
     }
 
-    if(optget(opts, "Debug")->enabled) /* enable debug messages in libclamav */
+    if(optget(opts, "Debug")->enabled) /* enable debug messages in libclamav */ {
 	cl_debug();
+	logg_verbose = 2;
+    }
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
     if(optget(opts, "LogSyslog")->enabled) {

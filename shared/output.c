@@ -223,6 +223,9 @@ int logg(const char *str, ...)
 	mode_t old_umask;
 	int len;
 
+    if ((*str == '$' && logg_verbose < 2) ||
+	(*str == '*' && !logg_verbose))
+	return 0;
 
     ARGLEN(args, str, len);
     if(len <= sizeof(buffer)) {
@@ -306,8 +309,7 @@ int logg(const char *str, ...)
 	    } else if(*buff == '^') {
 		if(!logg_nowarn)
 		    fprintf(logg_fp, "WARNING: %s", buff + 1);
-	    } else if(*buff == '*') {
-		if(logg_verbose)
+	    } else if(*buff == '*' || *buff == '$') {
 		    fprintf(logg_fp, "%s", buff + 1);
 	    } else if(*buff == '#' || *buff == '~') {
 		fprintf(logg_fp, "%s", buff + 1);
@@ -325,10 +327,8 @@ int logg(const char *str, ...)
 	} else if(buff[0] == '^') {
 	    if(!logg_nowarn)
 		syslog(LOG_WARNING, "%s", buff + 1);
-	} else if(buff[0] == '*') {
-	    if(logg_verbose) {
-		syslog(LOG_DEBUG, "%s", buff + 1);
-	    }
+	} else if(buff[0] == '*' || buff[0] == '$') {
+	    syslog(LOG_DEBUG, "%s", buff + 1);
 	} else if(buff[0] == '#' || buff[0] == '~') {
 	    syslog(LOG_INFO, "%s", buff + 1);
 	} else syslog(LOG_INFO, "%s", buff);

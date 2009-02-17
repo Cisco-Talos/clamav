@@ -51,13 +51,13 @@ scan_failed() {
 
 start_clamd()
 {
-	rm -f clamd-test.log
-	$LTEXEC $CLAMD_WRAPPER $TOP/clamd/clamd -c $1 --help >clamd-test.log || 
-		{ error "Failed to start clamd --help!"; die 1; }
+	rm -f clamd-test.log clamd-test1.log clamd-test2.log
+	$LTEXEC $CLAMD_WRAPPER $TOP/clamd/clamd -c $1 --help >clamd-test.log 2>&1 || 
+		{ error "Failed to start clamd --help!"; cat clamd-test.log; die 1; }
 	grep "Clam AntiVirus Daemon" clamd-test.log >/dev/null ||
 		{ error "Wrong --help reply from clamd!"; die 1; }
-	$LTEXEC $CLAMD_WRAPPER $TOP/clamd/clamd -c $1 || 
-		{ error "Failed to start clamd!"; die 1; }
+	$LTEXEC $CLAMD_WRAPPER $TOP/clamd/clamd -c $1 >clamd-test.log 2>&1 || 
+		{ error "Failed to start clamd!"; cat clamd-test.log; die 1; }
 }
 
 run_clamdscan_fileonly() {
