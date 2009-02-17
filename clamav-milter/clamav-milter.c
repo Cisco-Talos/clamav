@@ -43,30 +43,25 @@
 #include "clamfi.h"
 #include "whitelist.h"
 
-struct smfiDesc descr = {
-    "ClamAV", 		/* filter name */
-    SMFI_VERSION,	/* milter version */
-    SMFIF_CHGHDRS|SMFIF_QUARANTINE, /* flags */
-    clamfi_connect,	/* connection info filter */
-    NULL,		/* SMTP HELO command filter */
-    clamfi_envfrom,	/* envelope sender filter */
-    clamfi_envrcpt,	/* envelope recipient filter */
-    clamfi_header,	/* header filter */
-    NULL,		/* end of header */
-    clamfi_body,	/* body block */
-    clamfi_eom,		/* end of message */
-    clamfi_abort,	/* message aborted */
-    NULL,		/* connection cleanup */
-    NULL,		/* any unrecognized or unimplemented command filter */
-    NULL,		/* SMTP DATA command filter */
-    NULL		/* negotiation callback */
-};
+struct smfiDesc descr;
 
 int main(int argc, char **argv) {
     char *my_socket, *pt;
     const struct optstruct *opt;
     struct optstruct *opts;
     int ret;
+
+    memset(&descr, 0, sizeof(struct smfiDesc));
+    descr.xxfi_name = "ClamAV";			/* filter name */
+    descr.xxfi_version = SMFI_VERSION;		/* milter version */
+    descr.xxfi_flags = SMFIF_CHGHDRS|SMFIF_QUARANTINE; /* flags */
+    descr.xxfi_connect = clamfi_connect;	/* connection info filter */
+    descr.xxfi_envfrom = clamfi_envfrom;	/* envelope sender filter */
+    descr.xxfi_envrcpt = clamfi_envrcpt;	/* envelope recipient filter */
+    descr.xxfi_header = clamfi_header;		/* header filter */
+    descr.xxfi_body = clamfi_body;		/* body block */
+    descr.xxfi_eom = clamfi_eom;		/* end of message */
+    descr.xxfi_abort = clamfi_abort;		/* message aborted */
 
     opts = optparse(NULL, argc, argv, 1, OPT_MILTER, 0, NULL);
     if (!opts) {
