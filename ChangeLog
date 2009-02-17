@@ -1,3 +1,7 @@
+Tue Feb 17 22:10:48 EET 2009 (edwin)
+------------------------------------
+ * unit_tests/check_clamd.c: add missing header
+
 Tue Feb 17 22:10:10 EET 2009 (edwin)
 ------------------------------------
  * libclamav/Makefile.am, libclamav/Makefile.in,
