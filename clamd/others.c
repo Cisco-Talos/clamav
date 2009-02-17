@@ -303,7 +303,7 @@ static int read_fd_data(struct fd_buf *buf)
 		  cmsg->cmsg_level == SOL_SOCKET &&
 		  cmsg->cmsg_type == SCM_RIGHTS) {
 		  if (buf->recvfd != -1) {
-		      logg("$Unclaimed file descriptor received. closing: %d\n");
+		      logg("$Unclaimed file descriptor received. closing: %d\n", buf->recvfd);
 		      close(buf->recvfd);
 		  }
 		  buf->recvfd = *(int *)CMSG_DATA(cmsg);

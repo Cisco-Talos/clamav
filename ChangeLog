@@ -1,3 +1,7 @@
+Tue Feb 17 18:32:59 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c: add missing parameter
+
 Tue Feb 17 18:29:27 EET 2009 (edwin)
 ------------------------------------
  * clamd/, shared/, unit_tests/: Introduce '$' in logg, it is active
