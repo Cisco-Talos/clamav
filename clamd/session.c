@@ -70,25 +70,26 @@ static struct {
     const size_t len;
     enum commands cmdtype;
     int need_arg;
+    int support_old;
 } commands[] = {
-    {CMD1,  sizeof(CMD1)-1,	COMMAND_SCAN,	    1},
-    {CMD3,  sizeof(CMD3)-1,	COMMAND_SHUTDOWN,   0},
-    {CMD4,  sizeof(CMD4)-1,	COMMAND_RELOAD,	    0},
-    {CMD5,  sizeof(CMD5)-1,	COMMAND_PING,	    0},
-    {CMD6,  sizeof(CMD6)-1,	COMMAND_CONTSCAN,   1},
-    {CMD7,  sizeof(CMD7)-1,	COMMAND_VERSION,    0},
-    {CMD8,  sizeof(CMD8)-1,	COMMAND_STREAM,	    0},
-    {CMD10, sizeof(CMD10)-1,	COMMAND_END,	    0},
-    {CMD11, sizeof(CMD11)-1,	COMMAND_SHUTDOWN,   0},
-    {CMD13, sizeof(CMD13)-1,	COMMAND_MULTISCAN,  1},
-    {CMD14, sizeof(CMD14)-1,	COMMAND_FILDES,	    0},
-    {CMD15, sizeof(CMD15)-1,	COMMAND_STATS,	    0},
-    {CMD16, sizeof(CMD16)-1,	COMMAND_IDSESSION,  0},
-    {CMD17, sizeof(CMD17)-1,	COMMAND_INSTREAM,   0}
+    {CMD1,  sizeof(CMD1)-1,	COMMAND_SCAN,	    1,	1},
+    {CMD3,  sizeof(CMD3)-1,	COMMAND_SHUTDOWN,   0,	1},
+    {CMD4,  sizeof(CMD4)-1,	COMMAND_RELOAD,	    0,	1},
+    {CMD5,  sizeof(CMD5)-1,	COMMAND_PING,	    0,	1},
+    {CMD6,  sizeof(CMD6)-1,	COMMAND_CONTSCAN,   1,	1},
+    {CMD7,  sizeof(CMD7)-1,	COMMAND_VERSION,    0,	1},
+    {CMD8,  sizeof(CMD8)-1,	COMMAND_STREAM,	    0,	1},
+    {CMD10, sizeof(CMD10)-1,	COMMAND_END,	    0,	0},
+    {CMD11, sizeof(CMD11)-1,	COMMAND_SHUTDOWN,   0,	1},
+    {CMD13, sizeof(CMD13)-1,	COMMAND_MULTISCAN,  1,	1},
+    {CMD14, sizeof(CMD14)-1,	COMMAND_FILDES,	    0,	1},
+    {CMD15, sizeof(CMD15)-1,	COMMAND_STATS,	    0,	0},
+    {CMD16, sizeof(CMD16)-1,	COMMAND_IDSESSION,  0,	0},
+    {CMD17, sizeof(CMD17)-1,	COMMAND_INSTREAM,   0,	0}
 };
 
 
-enum commands parse_command(const char *cmd, const char **argument)
+enum commands parse_command(const char *cmd, const char **argument, int oldstyle)
 {
     size_t i;
     *argument = NULL;
@@ -108,6 +109,10 @@ enum commands parse_command(const char *cmd, const char **argument)
 		    return COMMAND_UNKNOWN;
 		}
 		*argument = NULL;
+	    }
+	    if (oldstyle && !commands[i].support_old) {
+		logg("$Command sent as old-style when not supported: %s\n", commands[i].cmd);
+		return COMMAND_UNKNOWN;
 	    }
 	    return commands[i].cmdtype;
 	}

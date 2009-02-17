@@ -243,7 +243,7 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
  * Old-style non-prefixed commands are one packet, optionally delimited by \n,
  * with trailing \r|\n ignored
  */
-static const char *get_cmd(struct fd_buf *buf, size_t off, size_t *len, char *term)
+static const char *get_cmd(struct fd_buf *buf, size_t off, size_t *len, char *term, int *oldstyle)
 {
     unsigned char *pos;
     if (!buf->off || off >= buf->off) {
@@ -269,6 +269,7 @@ static const char *get_cmd(struct fd_buf *buf, size_t off, size_t *len, char *te
 	    } else {
 		*len = pos - buf->buffer - off;
 	    }
+	    *oldstyle = 0;
 	    return buf->buffer + off + 1;
 	default:
 	    /* one packet = one command */
@@ -283,6 +284,7 @@ static const char *get_cmd(struct fd_buf *buf, size_t off, size_t *len, char *te
 		buf->buffer[buf->off] = '\0';
 	    }
 	    cli_chomp(buf->buffer);
+	    *oldstyle = 1;
 	    return buf->buffer;
     }
 }
@@ -876,6 +878,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		const unsigned char *cmd = NULL;
 		size_t cmdlen = 0;
 		char term = '\n';
+		int oldstyle = 0;
 		int rc;
 		/* New data available to read on socket. */
 
@@ -895,9 +898,16 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		conn.term = buf->term;
 		/* Parse & dispatch commands */
 		while ((conn.mode == MODE_COMMAND) &&
-		       (cmd = get_cmd(buf, pos, &cmdlen, &term)) != NULL) {
+		       (cmd = get_cmd(buf, pos, &cmdlen, &term, &oldstyle)) != NULL) {
 		    const char *argument;
-		    enum commands cmdtype = parse_command(cmd, &argument);
+		    enum commands cmdtype;
+		    if (conn.group && oldstyle) {
+			logg("$Received oldstyle command inside IDSESSION: %s\n", cmd);
+			conn_reply_error(&conn, "Only nCMDS\\n and zCMDS\\0 are accepted inside IDSESSION.");
+			error = 1;
+			break;
+		    }
+		    cmdtype = parse_command(cmd, &argument, oldstyle);
 		    logg("$got command %s (%u, %u), argument: %s\n",
 			 cmd, (unsigned)cmdlen, (unsigned)cmdtype, argument ? argument : "");
 		    if (cmdtype == COMMAND_FILDES) {

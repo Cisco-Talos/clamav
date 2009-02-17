@@ -85,7 +85,7 @@ typedef struct client_conn_tag {
 } client_conn_t;
 
 int command(client_conn_t *conn, int *virus);
-enum commands parse_command(const char *cmd, const char **argument);
+enum commands parse_command(const char *cmd, const char **argument, int oldstyle);
 int execute_or_dispatch_command(client_conn_t *conn, enum commands command, const char *argument);
 
 int conn_reply(const client_conn_t *conn, const char *path, const char *msg, const char *status);

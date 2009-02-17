@@ -1,3 +1,12 @@
+Tue Feb 17 20:35:21 EET 2009 (edwin)
+------------------------------------
+ * clamd/server-th.c, clamd/session.c, clamd/session.h,
+ unit_tests/check_clamd.c: Reject new commands sent as new-style
+ commands to avoid confusion.  This means that IDSESSION/INSTREAM
+ must be sent as nIDSESSION\n or zIDSESSION\0, ditto for INSTREAM.
+ Adjust testcases accordingly.  Old commands are still accepted when
+ sent without delimiter.
+
 Tue Feb 17 20:06:02 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c, libclamunrar_iface/unrar_iface.h, shared/misc.c,

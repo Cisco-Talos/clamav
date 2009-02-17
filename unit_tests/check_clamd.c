@@ -124,35 +124,36 @@ static struct basic_test {
     const char *command;
     const char *extra;
     const char *reply;
+    int support_old;
 } basic_tests[] = {
-    {"PING", NULL, "PONG"},
-    {"RELOAD", NULL, "RELOADING"},
-    {"VERSION", NULL, VERSION_REPLY},
-    {"SCAN "SCANFILE, NULL, FOUNDREPLY},
-    {"SCAN "CLEANFILE, NULL, CLEANREPLY},
-    {"CONTSCAN "SCANFILE, NULL, FOUNDREPLY},
-    {"CONTSCAN "CLEANFILE, NULL, CLEANREPLY},
-    {"MULTISCAN "SCANFILE, NULL, FOUNDREPLY},
-    {"MULTISCAN "CLEANFILE, NULL, CLEANREPLY},
+    {"PING", NULL, "PONG", 1},
+    {"RELOAD", NULL, "RELOADING", 1},
+    {"VERSION", NULL, VERSION_REPLY, 1},
+    {"SCAN "SCANFILE, NULL, FOUNDREPLY, 1},
+    {"SCAN "CLEANFILE, NULL, CLEANREPLY, 1},
+    {"CONTSCAN "SCANFILE, NULL, FOUNDREPLY, 1},
+    {"CONTSCAN "CLEANFILE, NULL, CLEANREPLY, 1},
+    {"MULTISCAN "SCANFILE, NULL, FOUNDREPLY, 1},
+    {"MULTISCAN "CLEANFILE, NULL, CLEANREPLY, 1},
     /* unknown commnads */
-    {"RANDOM", NULL, UNKNOWN_REPLY},
+    {"RANDOM", NULL, UNKNOWN_REPLY, 1},
     /* commands invalid as first */
-    {"END", NULL, UNKNOWN_REPLY},
+    {"END", NULL, UNKNOWN_REPLY, 1},
     /* commands for nonexistent files */
-    {"SCAN "NONEXISTENT, NULL, NONEXISTENT_REPLY},
-    {"CONTSCAN "NONEXISTENT, NULL, NONEXISTENT_REPLY},
-    {"MULTISCAN "NONEXISTENT, NULL, NONEXISTENT_REPLY},
+    {"SCAN "NONEXISTENT, NULL, NONEXISTENT_REPLY, 1},
+    {"CONTSCAN "NONEXISTENT, NULL, NONEXISTENT_REPLY, 1},
+    {"MULTISCAN "NONEXISTENT, NULL, NONEXISTENT_REPLY, 1},
     /* commands for access denied files */
-    {"SCAN "ACCDENIED, NULL, ACCDENIED_REPLY},
-    {"CONTSCAN "ACCDENIED, NULL, ACCDENIED_REPLY},
-    {"MULTISCAN "ACCDENIED, NULL, ACCDENIED_REPLY},
+    {"SCAN "ACCDENIED, NULL, ACCDENIED_REPLY, 1},
+    {"CONTSCAN "ACCDENIED, NULL, ACCDENIED_REPLY, 1},
+    {"MULTISCAN "ACCDENIED, NULL, ACCDENIED_REPLY, 1},
     /* commands with invalid/missing arguments */
-    {"SCAN", NULL, UNKNOWN_REPLY},
-    {"CONTSCAN", NULL, UNKNOWN_REPLY},
-    {"MULTISCAN", NULL, UNKNOWN_REPLY},
+    {"SCAN", NULL, UNKNOWN_REPLY, 1},
+    {"CONTSCAN", NULL, UNKNOWN_REPLY, 1},
+    {"MULTISCAN", NULL, UNKNOWN_REPLY, 1},
     /* commands with invalid data */
-    {"INSTREAM", "\xff\xff\xff\xff", "INSTREAM size limit exceeded. ERROR"}, /* too big chunksize */
-    {"FILDES", "X", "No file descriptor received. ERROR"}, /* FILDES w/o ancillary data */
+    {"INSTREAM", "\xff\xff\xff\xff", "INSTREAM size limit exceeded. ERROR", 0}, /* too big chunksize */
+    {"FILDES", "X", "No file descriptor received. ERROR", 1}, /* FILDES w/o ancillary data */
 };
 
 static void *recvpartial(int sd, size_t *len, int partial)
@@ -231,9 +232,13 @@ START_TEST (test_compat_commands)
     struct basic_test *test = &basic_tests[_i];
     char nsend[BUFSIZ], nreply[BUFSIZ];
 
-    snprintf(nreply, sizeof(nreply), "%s\n", test->reply);
+    if (!test->support_old) {
+	snprintf(nreply, sizeof(nreply), "UNKNOWN COMMAND\n");
+    } else {
+	snprintf(nreply, sizeof(nreply), "%s\n", test->reply);
+    }
+    /* one command = one packet, no delimiter */
     if (!test->extra) {
-	/* one command = one packet, no delimiter */
 	conn_setup();
 	test_command(test->command, strlen(test->command), test->extra, nreply, strlen(nreply));
 	conn_teardown();
