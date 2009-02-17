@@ -513,7 +513,7 @@ START_TEST (test_idsession_stress)
     fail_unless_fmt(send(sockd, "zIDSESSION", sizeof("zIDSESSION"), 0) == sizeof("zIDSESSION"),
 		    "send() failed: %s\n", strerror(errno));
     for (i=0;i < 1024; i++) {
-	snprintf(buf, sizeof(buf), "%u", i+1);
+	snprintf(buf, sizeof(buf), "%u", (unsigned)(i+1));
 	fail_unless(send(sockd, "zVERSION", sizeof("zVERSION"), 0) == sizeof("zVERSION"),
 		    "send failed: %s\n",strerror(errno));
 	data = recvpartial(sockd, &len, 1);
