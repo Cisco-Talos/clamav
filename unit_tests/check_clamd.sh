@@ -84,13 +84,25 @@ run_clamdscan() {
 	$TOP/clamdscan/clamdscan --quiet --config-file=test-clamd.conf $* --fdpass --log=clamdscan-fdpass.log
 	if test $? = 2; then 
 		error "Failed to run clamdscan (fdpass)!"
-		cat clamdscan-multiscan.log
+		cat clamdscan-fdpass.log
 		die 1
 	fi
 	$TOP/clamdscan/clamdscan --quiet --config-file=test-clamd.conf $* -m --fdpass --log=clamdscan-multiscan-fdpass.log
 	if test $? = 2; then 
 		error "Failed to run clamdscan (fdpass + multiscan)!"
-		cat clamdscan-multiscan.log
+		cat clamdscan-multiscan-fdpass.log
+		die 1
+	fi
+	$TOP/clamdscan/clamdscan --quiet --config-file=test-clamd.conf $* --stream --log=clamdscan-stream.log
+	if test $? = 2; then 
+		error "Failed to run clamdscan (instream)!"
+		cat clamdscan-stream.log
+		die 1
+	fi
+	$TOP/clamdscan/clamdscan --quiet --config-file=test-clamd.conf $* -m --stream --log=clamdscan-multiscan-stream.log
+	if test $? = 2; then 
+		error "Failed to run clamdscan (instream + multiscan)!"
+		cat clamdscan-multiscan-stream.log
 		die 1
 	fi
 }
@@ -185,6 +197,8 @@ NINFECTED=`grep "Infected files" clamdscan.log | cut -f2 -d:|sed -e 's/ //g'`
 NINFECTED_MULTI=`grep "Infected files" clamdscan-multiscan.log | cut -f2 -d:|sed -e 's/ //g'`
 NINFECTED_FDPASS=`grep "Infected files" clamdscan-fdpass.log | cut -f2 -d:|sed -e 's/ //g'`
 NINFECTED_MULTI_FDPASS=`grep "Infected files" clamdscan-multiscan-fdpass.log | cut -f2 -d:|sed -e 's/ //g'`
+NINFECTED_STREAM=`grep "Infected files" clamdscan-stream.log | cut -f2 -d:|sed -e 's/ //g'`
+NINFECTED_MULTI_STREAM=`grep "Infected files" clamdscan-multiscan-stream.log | cut -f2 -d:|sed -e 's/ //g'`
 if test "$NFILES" -ne "0$NINFECTED"; then
 	grep OK clamdscan.log
 	scan_failed clamdscan.log "clamd did not detect all testfiles correctly!"

@@ -50,6 +50,23 @@ static void conn_setup(void)
     signal(SIGPIPE, SIG_IGN);
 }
 
+static int conn_tcp(int port)
+{
+    struct sockaddr_in server;
+    int rc;
+    int sd = socket(AF_INET, SOCK_STREAM, 0);
+    fail_unless_fmt(sd != -1, "Unable to create socket: %s\n", strerror(errno));
+
+    memset(&server, 0, sizeof(server));
+    server.sin_family = AF_INET;
+    server.sin_port = htons(port);
+    server.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+    rc = connect(sd, (struct sockaddr *)&server, sizeof(server));
+    fail_unless_fmt(rc != -1, "Unable to connect(): %s\n", strerror(errno));
+    return sd;
+}
+
 static void conn_teardown(void)
 {
     if (sockd != -1)
@@ -579,7 +596,6 @@ START_TEST (test_connections)
 		}
 	    }
 	}
-	printf("exited\n");
 	free(sock);
 	exit(0);
     } else {
@@ -597,6 +613,47 @@ START_TEST (test_connections)
 }
 END_TEST
 
+START_TEST (test_stream)
+{
+    char buf[BUFSIZ];
+    char *recvdata;
+    size_t len;
+    unsigned port;
+    int streamsd, infd, nread;
+
+    infd = open(SCANFILE, O_RDONLY);
+
+    fail_unless_fmt(infd != -1, "open failed: %s\n", strerror(errno));
+    conn_setup();
+    fail_unless_fmt(
+	send(sockd, "zSTREAM", sizeof("zSTREAM"), 0) == sizeof("zSTREAM"),
+	"send failed: %s\n", strerror(errno));
+    recvdata = recvpartial(sockd, &len, 1);
+    fail_unless_fmt (sscanf(recvdata, "PORT %u\n", &port) == 1,
+		     "Wrong stream reply: %s\n", recvdata);
+
+    free(recvdata);
+    streamsd = conn_tcp(port);
+
+    do {
+	nread = read(infd, buf, sizeof(buf));
+	if (nread > 0)
+	    fail_unless_fmt(send(streamsd, buf, nread, 0) == nread,
+			    "send failed: %s\n", strerror(errno));
+    } while (nread > 0 || (nread == -1 && errno == EINTR));
+    fail_unless_fmt(nread != -1, "read failed: %s\n", strerror(errno));
+    close(infd);
+    close(streamsd);
+
+    recvdata = recvfull(sockd, &len);
+    fail_unless_fmt(!strcmp(recvdata,"stream: ClamAV-Test-File.UNOFFICIAL FOUND"),
+		    "Wrong reply: %s\n", recvdata);
+    free(recvdata);
+
+    conn_teardown();
+}
+END_TEST
+
 static Suite *test_clamd_suite(void)
 {
     Suite *s = suite_create("clamd");
@@ -609,13 +666,13 @@ static Suite *test_clamd_suite(void)
     tcase_add_loop_test(tc_commands, test_fildes, 0, 4*sizeof(fildes_cmds)/sizeof(fildes_cmds[0]));
     tcase_add_test(tc_commands, test_stats);
     tcase_add_test(tc_commands, test_instream);
+    tcase_add_test(tc_commands, test_stream);
     tc_stress = tcase_create("clamd stress test");
     suite_add_tcase(s, tc_stress);
     tcase_add_test(tc_stress, test_fildes_many);
     tcase_add_test(tc_stress, test_idsession_stress);
     tcase_add_test(tc_stress, test_connections);
     tcase_add_test(tc_stress, test_fildes_unwanted);
-
     return s;
 }
 

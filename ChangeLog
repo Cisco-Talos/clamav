@@ -1,3 +1,10 @@
+Tue Feb 17 20:06:02 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, libclamunrar_iface/unrar_iface.h, shared/misc.c,
+ unit_tests/check_clamd.c, unit_tests/check_clamd.sh: fix use of
+ uninitialized value.  add test for STREAM.  fix missing closing
+ pragmas.
+
 Tue Feb 17 18:38:30 EET 2009 (edwin)
 ------------------------------------
  * unit_tests/check_clamd.c: another warning

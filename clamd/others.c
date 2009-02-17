@@ -436,11 +436,11 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 	data->buf[i].got_newdata = 0;
     }
 
+    time(&now);
     if (timeout > 0)
 	closest_timeout = now + timeout;
     else
 	closest_timeout = 0;
-    time(&now);
     for (i=0;i < data->nfds; i++) {
 	time_t timeout_at = data->buf[i].timeout_at;
 	if (timeout_at && timeout_at < now) {

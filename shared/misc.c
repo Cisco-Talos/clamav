@@ -31,6 +31,7 @@
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
 #ifndef	C_WINDOWS
 #include <dirent.h>
 #endif

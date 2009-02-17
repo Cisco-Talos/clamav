@@ -114,6 +114,14 @@ typedef struct unrar_state_tag {
     char filename[1024];
 } unrar_state_t;
 
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack()
+#endif
+
+#ifdef HAVE_PRAGMA_PATCH_HPPA
+#pragma pack
+#endif
+
 int unrar_open(int fd, const char *dirname, unrar_state_t *state);
 int unrar_extract_next_prepare(unrar_state_t *state, const char *dirname);
 int unrar_extract_next(unrar_state_t *state, const char *dirname);
