@@ -1,3 +1,9 @@
+Tue Feb 17 17:33:06 EET 2009 (edwin)
+------------------------------------
+ * clamd/server-th.c, unit_tests/check_clamd.c: make sending
+ ancillary data at wrong time a protocol error.  change testcase
+ accordingly.
+
 Tue Feb 17 17:11:17 EET 2009 (edwin)
 ------------------------------------
  * clamd/clamd.c, shared/optparser.c, shared/output.h: sendtimeout

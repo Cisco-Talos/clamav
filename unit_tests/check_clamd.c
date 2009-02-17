@@ -479,25 +479,43 @@ END_TEST
 
 START_TEST (test_fildes_unwanted)
 {
+    char *recvdata;
+    size_t len;
+    int dummyfd;
+    conn_setup();
+    dummyfd = open(SCANFILE, O_RDONLY);
+
+    /* send a 'zVERSION\0' including the ancillary data.
+     * The \0 is from the extra char needed when sending ancillary data */
+    fail_unless_fmt(sendmsg_fd(sockd, "zIDSESSION", strlen("zIDSESSION"), dummyfd, 1) != -1,
+		    "sendmsg failed: %s\n", strerror(errno));
+
+    recvdata = recvfull(sockd, &len);
+
+    fail_unless_fmt(!strcmp(recvdata,"1: PROTOCOL ERROR: ancillary data sent without FILDES. ERROR"),
+		    "Wrong reply: %s\n", recvdata);
+
+    free(recvdata);
+    close(dummyfd);
+    conn_teardown();
+}
+END_TEST
+
+START_TEST (test_idsession_stress)
+{
     char buf[BUFSIZ];
     size_t i;
-    int dummyfd;
     char *data, *p;
     size_t len;
 
     conn_setup();
-    dummyfd = open(SCANFILE, O_RDONLY);
 
     fail_unless_fmt(send(sockd, "zIDSESSION", sizeof("zIDSESSION"), 0) == sizeof("zIDSESSION"),
 		    "send() failed: %s\n", strerror(errno));
     for (i=0;i < 1024; i++) {
 	snprintf(buf, sizeof(buf), "%u", i+1);
-	/* send a 'zVERSION\0' including the ancillary data.
-	 * The \0 is from the extra char needed when sending ancillary data */
-	fail_unless_fmt(sendmsg_fd(sockd, "zVERSION", sizeof("zVERSION")-1, dummyfd, 1) != -1,
-			"sendmsg (%u) failed: %s\n", i, strerror(errno));
-/*	fail_unless(send(sockd, "zVERSION", sizeof("zVERSION"), 0) == sizeof("zVERSION"),
-		    "send failed: %s\n",strerror(errno));*/
+	fail_unless(send(sockd, "zVERSION", sizeof("zVERSION"), 0) == sizeof("zVERSION"),
+		    "send failed: %s\n",strerror(errno));
 	data = recvpartial(sockd, &len, 1);
 	p = strchr(data, ':');
 	fail_unless_fmt(!!p, "wrong VERSION reply (%u): %s\n", i, data);
@@ -511,7 +529,6 @@ START_TEST (test_fildes_unwanted)
 	free(data);
     }
 
-    close(dummyfd);
     conn_teardown();
 }
 END_TEST
@@ -584,7 +601,6 @@ static Suite *test_clamd_suite(void)
 {
     Suite *s = suite_create("clamd");
     TCase *tc_commands, *tc_stress;
-
     tc_commands = tcase_create("clamd commands");
     suite_add_tcase(s, tc_commands);
     tcase_add_unchecked_fixture(tc_commands, commands_setup, commands_teardown);
@@ -593,12 +609,12 @@ static Suite *test_clamd_suite(void)
     tcase_add_loop_test(tc_commands, test_fildes, 0, 4*sizeof(fildes_cmds)/sizeof(fildes_cmds[0]));
     tcase_add_test(tc_commands, test_stats);
     tcase_add_test(tc_commands, test_instream);
-
     tc_stress = tcase_create("clamd stress test");
     suite_add_tcase(s, tc_stress);
     tcase_add_test(tc_stress, test_fildes_many);
-    tcase_add_test(tc_stress, test_fildes_unwanted);
+    tcase_add_test(tc_stress, test_idsession_stress);
     tcase_add_test(tc_stress, test_connections);
+    tcase_add_test(tc_stress, test_fildes_unwanted);
 
     return s;
 }

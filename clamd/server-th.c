@@ -989,6 +989,10 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		if (conn.scanfd != -1 && conn.scanfd != buf->dumpfd) {
 		    logg("*Unclaimed file descriptor received, closing: %d\n", conn.scanfd);
 		    close(conn.scanfd);
+		    /* protocol error */
+		    conn_reply_error(&conn, "PROTOCOL ERROR: ancillary data sent without FILDES.");
+		    error = 1;
+		    break;
 		}
 		buf->mode = conn.mode;
 		buf->id = conn.id;
