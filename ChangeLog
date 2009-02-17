@@ -1,3 +1,7 @@
+Tue Feb 17 17:11:17 EET 2009 (edwin)
+------------------------------------
+ * clamd/clamd.c, shared/optparser.c, shared/output.h: sendtimeout
+
 Tue Feb 17 17:08:18 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c, clamd/others.h, clamd/scanner.c,

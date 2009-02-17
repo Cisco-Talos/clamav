@@ -55,6 +55,6 @@ void mprintf(const char *str, ...) __attribute__((format(printf, 1, 2)));
 void mprintf(const char *str, ...);
 #endif
 
-extern short int mprintf_disabled, mprintf_verbose, mprintf_quiet, mprintf_nowarn, mprintf_stdout;
+extern short int mprintf_disabled, mprintf_verbose, mprintf_quiet, mprintf_nowarn, mprintf_stdout, mprintf_send_timeout;
 
 #endif
