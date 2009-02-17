@@ -182,6 +182,15 @@ const char *cl_strerror(int clerror)
 	    return "Can't map file into memory";
 	case CL_EMEM:
 	    return "Can't allocate memory";
+	/* internal (needed for debug messages) */
+	case CL_EMAXREC:
+	    return "CL_EMAXREC";
+	case CL_EMAXSIZE:
+	    return "CL_EMAXSIZE";
+	case CL_EMAXFILES:
+	    return "CL_EMAXFILES";
+	case CL_EFORMAT:
+	    return "CL_EFORMAT: Bad format or broken data";
 	default:
 	    return "Unknown error code";
     }
