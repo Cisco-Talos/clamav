@@ -286,7 +286,7 @@ int scanfd(const int fd, const client_conn_t *conn, unsigned long int *scanned,
 int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, char term)
 {
 	int ret, sockfd, acceptd;
-	int tmpd, bread, retval, timeout, btread;
+	int tmpd, bread, retval, firsttimeout, timeout, btread;
 	unsigned int port = 0, portscan, min_port, max_port;
 	unsigned long int quota = 0, maxsize = 0;
 	short bound = 0;
@@ -327,7 +327,11 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 
     timeout = optget(opts, "ReadTimeout")->numarg;
     if(timeout == 0)
-    	timeout = -1;
+	timeout = -1;
+
+    firsttimeout = optget(opts, "CommandReadTimeout")->numarg;
+    if (firsttimeout == 0)
+	firsttimeout = -1;
 
     if(!bound && !portscan) {
 	logg("!ScanStream: Can't find any free port.\n");
@@ -343,7 +347,7 @@ int scanstream(int odesc, unsigned long int *scanned, const struct cl_engine *en
 	}
     }
 
-    retval = poll_fd(sockfd, timeout, 0);
+    retval = poll_fd(sockfd, firsttimeout, 0);
     if (!retval || retval == -1) {
 	const char *reason = !retval ? "timeout" : "poll";
 	mdprintf(odesc, "Accept %s. ERROR%c", reason, term);

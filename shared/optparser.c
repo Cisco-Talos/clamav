@@ -187,6 +187,8 @@ const struct clam_option clam_options[] = {
 
     { "ReadTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 120, NULL, 0, OPT_CLAMD, "This option specifies the time (in seconds) after which clamd should\ntimeout if a client doesn't provide any data.", "120" },
 
+    { "CommandReadTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 5, NULL, 0, OPT_CLAMD, "This option specifies the time (in seconds) after which clamd should\ntimeout if a client doesn't provide any initial command after connecting.", "5" },
+
     { "ReadTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 120, NULL, 0, OPT_MILTER, "Waiting for data from clamd will timeout after this time (seconds).\nValue of 0 disables the timeout.", "300" },
 
     { "MaxQueue", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 100, NULL, 0, OPT_CLAMD, "Maximum number of queued items (including those being processed)\nWARNING: you shouldn't increase this beyond 512, since you may run out of File Descriptors (usual max is 1024)\n", "200" },

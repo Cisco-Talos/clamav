@@ -17,6 +17,12 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <sys/select.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <check.h>
 #include "checks_common.h"
 #include "libclamav/version.h"
@@ -510,6 +516,70 @@ START_TEST (test_fildes_unwanted)
 }
 END_TEST
 
+#define TIMEOUT_REPLY "TIMED OUT WAITING FOR COMMAND\n"
+
+START_TEST (test_connections)
+{
+    int rc;
+    size_t i;
+    struct rlimit rlim;
+    int *sock;
+    int nf, maxfd=0;
+    fail_unless_fmt(getrlimit(RLIMIT_NOFILE, &rlim) != -1,
+		    "Failed to get RLIMIT_NOFILE: %s\n", strerror(errno));
+    nf = rlim.rlim_cur - 5;
+    sock = malloc(sizeof(int)*nf);
+
+    fail_unless(!!sock, "malloc failed\n");
+
+    for (i=0;i<nf;i++) {
+	/* just open connections, and let them time out */
+	conn_setup();
+	sock[i] = sockd;
+	if (sockd > maxfd)
+	    maxfd = sockd;
+    }
+    rc = fork();
+    fail_unless(rc != -1, "fork() failed: %s\n", strerror(errno));
+    if (rc == 0) {
+	char dummy;
+	int ret;
+	fd_set rfds;
+	FD_ZERO(&rfds);
+	for (i=0;i<nf;i++) {
+	    FD_SET(sock[i], &rfds);
+	}
+	while (1) {
+	    ret = select(maxfd+1, &rfds, NULL, NULL, NULL);
+	    if (ret < 0)
+		break;
+	    for (i=0;i<nf;i++) {
+		if (FD_ISSET(sock[i], &rfds)) {
+		    if (recv(sock[i], &dummy, 1, 0) == 0) {
+			close(sock[i]);
+			FD_CLR(sock[i], &rfds);
+		    }
+		}
+	    }
+	}
+	printf("exited\n");
+	free(sock);
+	exit(0);
+    } else {
+	for (i=0;i<nf;i++) {
+	    close(sock[i]);
+	}
+	free(sock);
+	/* now see if clamd is able to do anything else */
+	for (i=0;i<10;i++) {
+	    conn_setup();
+	    test_command("RELOAD", sizeof("RELOAD")-1, NULL, "RELOADING\n", sizeof("RELOADING\n")-1);
+	    conn_teardown();
+	}
+    }
+}
+END_TEST
+
 static Suite *test_clamd_suite(void)
 {
     Suite *s = suite_create("clamd");
@@ -528,6 +598,7 @@ static Suite *test_clamd_suite(void)
     suite_add_tcase(s, tc_stress);
     tcase_add_test(tc_stress, test_fildes_many);
     tcase_add_test(tc_stress, test_fildes_unwanted);
+    tcase_add_test(tc_stress, test_connections);
 
     return s;
 }

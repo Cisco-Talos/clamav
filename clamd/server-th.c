@@ -86,7 +86,7 @@ static void scanner_thread(void *arg)
 #ifndef	C_WINDOWS
 	sigset_t sigset;
 #endif
-	int ret, timeout;
+	int ret;
 	unsigned virus=0, errors = 0;
 
 #ifndef	C_WINDOWS
@@ -104,10 +104,6 @@ static void scanner_thread(void *arg)
     sigdelset(&sigset, SIGCONT);
     pthread_sigmask(SIG_SETMASK, &sigset, NULL);
 #endif
-
-    timeout = optget(conn->opts, "ReadTimeout")->numarg;
-    if(!timeout)
-	timeout = -1;
 
     ret = command(conn, &virus);
     if (ret == -1) {
@@ -294,11 +290,14 @@ static const char *get_cmd(struct fd_buf *buf, size_t off, size_t *len, char *te
 struct acceptdata {
     struct fd_data fds;
     struct fd_data recv_fds;
+    pthread_cond_t cond_nfds;
+    int max_queue;
+    int commandtimeout;
     int syncpipe_wake_recv[2];
     int syncpipe_wake_accept[2];
 };
 
-#define ACCEPTDATA_INIT { FDS_INIT, FDS_INIT, {-1, -1}, {-1, -1} }
+#define ACCEPTDATA_INIT { FDS_INIT, FDS_INIT, PTHREAD_COND_INITIALIZER, 0, 0, {-1, -1}, {-1, -1}}
 
 static void *acceptloop_th(void *arg)
 {
@@ -309,6 +308,8 @@ static void *acceptloop_th(void *arg)
     struct acceptdata *data = (struct acceptdata*)arg;
     struct fd_data *fds = &data->fds;
     struct fd_data *recv_fds = &data->recv_fds;
+    int max_queue = data->max_queue;
+    int commandtimeout = data->commandtimeout;
 
     pthread_mutex_lock(&fds->buf_mutex);
     for (;;) {
@@ -348,8 +349,20 @@ static void *acceptloop_th(void *arg)
 		buf->fd = -1;
 		continue;
 	    }
-	    /* listen only socket */
-	    new_sd = accept(fds->buf[i].fd, NULL, NULL);
+
+	    /* don't accept unlimited number of connections, or
+	     * we'll run out of file descriptors */
+	    pthread_mutex_lock(&recv_fds->buf_mutex);
+	    while (recv_fds->nfds > max_queue) {
+		pthread_mutex_lock(&exit_mutex);
+		if(progexit) {
+		    pthread_mutex_unlock(&exit_mutex);
+		    break;
+		}
+		pthread_mutex_unlock(&exit_mutex);
+		pthread_cond_wait(&data->cond_nfds, &recv_fds->buf_mutex);
+	    }
+	    pthread_mutex_unlock(&recv_fds->buf_mutex);
 
 	    pthread_mutex_lock(&exit_mutex);
 	    if(progexit) {
@@ -357,6 +370,10 @@ static void *acceptloop_th(void *arg)
 		break;
 	    }
 	    pthread_mutex_unlock(&exit_mutex);
+
+	    /* listen only socket */
+	    new_sd = accept(fds->buf[i].fd, NULL, NULL);
+
 
 	    if (new_sd >= 0) {
 		int ret, flags;
@@ -374,7 +391,7 @@ static void *acceptloop_th(void *arg)
 #endif
 
 		pthread_mutex_lock(&recv_fds->buf_mutex);
-		ret = fds_add(recv_fds, new_sd, 0);
+		ret = fds_add(recv_fds, new_sd, 0, commandtimeout);
 		pthread_mutex_unlock(&recv_fds->buf_mutex);
 
 		if (ret == -1) {
@@ -432,7 +449,7 @@ static void *acceptloop_th(void *arg)
 
 int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts)
 {
-	int max_threads, max_queue, ret = 0;
+	int max_threads, max_queue, readtimeout, ret = 0;
 	unsigned int options = 0;
 	char timestr[32];
 #ifndef	C_WINDOWS
@@ -692,7 +709,9 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 
     logg("*Listening daemon: PID: %u\n", (unsigned int) mainpid);
     max_threads = optget(opts, "MaxThreads")->numarg;
-    max_queue = optget(opts, "MaxQueue")->numarg;
+    acceptdata.max_queue = max_queue = optget(opts, "MaxQueue")->numarg;
+    acceptdata.commandtimeout = optget(opts, "CommandReadTimeout")->numarg;
+    readtimeout = optget(opts, "ReadTimeout")->numarg;
 
     if(optget(opts, "ClamukoScanOnAccess")->enabled)
 #ifdef CLAMUKO
@@ -753,7 +772,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     idletimeout = optget(opts, "IdleTimeout")->numarg;
 
     for (i=0;i < nsockets;i++)
-	if (fds_add(&acceptdata.fds, socketds[i], 1) == -1) {
+	if (fds_add(&acceptdata.fds, socketds[i], 1, 0) == -1) {
 	    logg("!fds_add failed\n");
 	    cl_engine_free(engine);
 	    return 1;
@@ -766,8 +785,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	exit(-1);
     }
 
-    if (fds_add(fds, acceptdata.syncpipe_wake_recv[0], 1) == -1 ||
-	fds_add(&acceptdata.fds, acceptdata.syncpipe_wake_accept[0], 1)) {
+    if (fds_add(fds, acceptdata.syncpipe_wake_recv[0], 1, 0) == -1 ||
+	fds_add(&acceptdata.fds, acceptdata.syncpipe_wake_accept[0], 1, 0)) {
 	logg("!failed to add pipe fd\n");
 	exit(-1);
     }
@@ -787,6 +806,10 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	int new_sd;
 	/* Block waiting for connection on any of the sockets */
 	pthread_mutex_lock(&fds->buf_mutex);
+	fds_cleanup(fds);
+	/* signal that we can accept more connections */
+	if (fds->nfds <= max_queue)
+	    pthread_cond_signal(&acceptdata.cond_nfds);
 	new_sd = fds_poll_recv(fds, -1, 1);
 
 	if (!fds->nfds) {
@@ -805,6 +828,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    progexit = 1;
 	    pthread_mutex_unlock(&exit_mutex);
 	}
+
 
 	i = (rr_last + 1) % fds->nfds;
 	for (j = 0;  j < fds->nfds && new_sd >= 0; j++, i = (i+1) % fds->nfds) {
@@ -831,6 +855,12 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    logg("*RECVTH: client read error or EOF on read\n");
 		    error = 1;
 		}
+	    }
+
+	    if (buf->fd != -1 && buf->got_newdata == -2) {
+		logg("*RECVTH: client read timed out\n");
+		mdprintf(buf->fd, "COMMAND READ TIMED OUT\n");
+		error = 1;
 	    }
 
 	    rr_last = i;
@@ -940,6 +970,9 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			    buf->fd = -1;
 			}
 		    }
+		    /* we received a command, set readtimeout */
+		    time(&buf->timeout_at);
+		    buf->timeout_at += readtimeout;
 		    pos += cmdlen+1;
 		    if (conn.mode == MODE_STREAM) {
 			/* TODO: this doesn't belong here */

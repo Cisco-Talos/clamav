@@ -1,3 +1,10 @@
+Tue Feb 17 17:08:18 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, clamd/others.h, clamd/scanner.c,
+ clamd/server-th.c, shared/optparser.c, unit_tests/check_clamd.c,
+ unit_tests/test-clamd.conf: ReadTimeout handling, and introduce
+ CommandReadTimeout.
+
 Tue Feb 17 12:07:37 CET 2009 (tk)
 ---------------------------------
  * sigtool/sigtool.c: better error messages (bb#1396)

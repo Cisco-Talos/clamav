@@ -216,19 +216,22 @@ int poll_fd(int fd, int timeout_sec, int check_signals)
     int ret;
     struct fd_data fds = FDS_INIT;
 
-    if (fds_add(&fds, fd, 1) == -1)
+    if (fds_add(&fds, fd, 1, timeout_sec) == -1)
 	return -1;
     pthread_mutex_lock(&fds.buf_mutex);
-    ret = fds_poll_recv(&fds, timeout_sec, check_signals);
+    do {
+	ret = fds_poll_recv(&fds, timeout_sec, check_signals);
+    } while (ret == -1 && errno == EINTR);
     pthread_mutex_unlock(&fds.buf_mutex);
     fds_free(&fds);
     return ret;
 }
 
-static void cleanup_fds(struct fd_data *data)
+void fds_cleanup(struct fd_data *data)
 {
     struct fd_buf *newbuf;
     unsigned i,j;
+
     for (i=0,j=0;i < data->nfds; i++) {
 	if (data->buf[i].fd < 0) {
 	    if (data->buf[i].buffer)
@@ -239,9 +242,12 @@ static void cleanup_fds(struct fd_data *data)
 	    data->buf[j] = data->buf[i];
 	j++;
     }
+    if (j == data->nfds)
+	return;
     for (i = j ; i < data->nfds; i++)
 	data->buf[i].fd = -1;
     data->nfds = j;
+    logg("*CLEANUP_FDS: %u fds\n", data->nfds);
     /* Shrink buffer */
     newbuf = realloc(data->buf, j*sizeof(*newbuf));
     if (newbuf)
@@ -314,7 +320,7 @@ static int read_fd_data(struct fd_buf *buf)
    return n;
 }
 
-static int buf_init(struct fd_buf *buf, int listen_only)
+static int buf_init(struct fd_buf *buf, int listen_only, int timeout)
 {
     buf->off = 0;
     buf->got_newdata = 0;
@@ -343,10 +349,16 @@ static int buf_init(struct fd_buf *buf, int listen_only)
 	buf->bufsize = 0;
 	buf->buffer = NULL;
     }
+    if (timeout) {
+	time(&buf->timeout_at);
+	buf->timeout_at += timeout;
+    } else {
+	buf->timeout_at = 0;
+    }
     return 0;
 }
 
-int fds_add(struct fd_data *data, int fd, int listen_only)
+int fds_add(struct fd_data *data, int fd, int listen_only, int timeout)
 {
     struct fd_buf *buf;
     unsigned n;
@@ -359,7 +371,7 @@ int fds_add(struct fd_data *data, int fd, int listen_only)
     for (n = 0; n < data->nfds; n++)
 	if (data->buf[n].fd == fd) {
 	    /* clear stale data in buffer */
-	    if (buf_init(&data->buf[n], listen_only) < 0)
+	    if (buf_init(&data->buf[n], listen_only, timeout) < 0)
 		return -1;
 	    return 0;
 	}
@@ -373,7 +385,7 @@ int fds_add(struct fd_data *data, int fd, int listen_only)
     data->buf = buf;
     data->nfds = n;
     data->buf[n-1].buffer = NULL;
-    if (buf_init(&data->buf[n-1], listen_only) < 0)
+    if (buf_init(&data->buf[n-1], listen_only, timeout) < 0)
 	return -1;
     data->buf[n-1].fd = fd;
     return 0;
@@ -412,12 +424,40 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
     unsigned fdsok = data->nfds;
     size_t i;
     int retval;
+    time_t now, closest_timeout;
 
     /* we must have at least one fd, the control fd! */
+    fds_cleanup(data);
     if (!data->nfds)
 	return 0;
-    for (i=0;i < data->nfds;i++)
+
+    for (i=0;i < data->nfds;i++) {
 	data->buf[i].got_newdata = 0;
+    }
+
+    if (timeout > 0)
+	closest_timeout = now + timeout;
+    else
+	closest_timeout = 0;
+    time(&now);
+    for (i=0;i < data->nfds; i++) {
+	time_t timeout_at = data->buf[i].timeout_at;
+	if (timeout_at && timeout_at < now) {
+	    /* timed out */
+	    data->buf[i].got_newdata = -2;
+	    /* we must return immediately from poll/select, we have a timeout! */
+	    closest_timeout = now;
+	} else {
+	    if (!closest_timeout)
+		closest_timeout = timeout_at;
+	    else if (timeout_at < closest_timeout)
+		closest_timeout = timeout_at;
+	}
+    }
+    if (closest_timeout)
+	timeout = closest_timeout - now;
+    else
+	timeout = -1;
 #ifdef HAVE_POLL
     /* Use poll() if available, preferred because:
      *  - can poll any number of FDs
@@ -577,9 +617,6 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 #endif
     }
 
-    /* Remove closed / error fds */
-    if (fdsok != data->poll_data_nfds)
-	cleanup_fds(data);
     return retval;
 }
 

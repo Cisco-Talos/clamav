@@ -53,6 +53,7 @@ struct fd_buf {
     uint32_t chunksize;
     long quota;
     char *dumpname;
+    time_t timeout_at; /* 0 - no timeout */
     jobgroup_t *group;
 };
 
@@ -75,8 +76,9 @@ struct fd_data {
 int poll_fd(int fd, int timeout_sec, int check_signals);
 void virusaction(const char *filename, const char *virname, const struct optstruct *opts);
 int writen(int fd, void *buff, unsigned int count);
-int fds_add(struct fd_data *data, int fd, int listen_only);
+int fds_add(struct fd_data *data, int fd, int listen_only, int timeout);
 void fds_remove(struct fd_data *data, int fd);
+void fds_cleanup(struct fd_data *data);
 int fds_poll_recv(struct fd_data *data, int timeout, int check_signals);
 void fds_free(struct fd_data *data);
 
