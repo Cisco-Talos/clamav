@@ -1,3 +1,9 @@
+Tue Feb 17 22:10:10 EET 2009 (edwin)
+------------------------------------
+ * libclamav/Makefile.am, libclamav/Makefile.in,
+ unit_tests/check_clamd.c: git-* commands are gone, use 'git svn'.
+ correct include position for fdpassing.h
+
 Tue Feb 17 20:35:21 EET 2009 (edwin)
 ------------------------------------
  * clamd/server-th.c, clamd/session.c, clamd/session.h,

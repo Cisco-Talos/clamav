@@ -2,6 +2,7 @@
 #include "clamav-config.h"
 #endif
 
+#include "shared/fdpassing.h"
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -27,7 +28,6 @@
 #include "checks_common.h"
 #include "libclamav/version.h"
 #include "libclamav/cltypes.h"
-#include "shared/fdpassing.h"
 
 #ifdef CHECK_HAVE_LOOPS
 
