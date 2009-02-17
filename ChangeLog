@@ -1,3 +1,8 @@
+Tue Feb 17 22:35:53 EET 2009 (edwin)
+------------------------------------
+ * clamd/server-th.c, unit_tests/check_clamd.sh: signals may not wake
+ a poll(), so make sure thread wakes up (BB #1400).
+
 Tue Feb 17 22:10:48 EET 2009 (edwin)
 ------------------------------------
  * unit_tests/check_clamd.c: add missing header

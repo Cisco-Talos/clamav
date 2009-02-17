@@ -131,29 +131,38 @@ static void scanner_thread(void *arg)
     return;
 }
 
+static int syncpipe_wake_recv_w = -1;
+
 void sighandler_th(int sig)
 {
+    int action = 0;
     switch(sig) {
 	case SIGINT:
 	case SIGTERM:
 	    progexit = 1;
+	    action = 1;
 	    break;
 
 #ifdef	SIGHUP
 	case SIGHUP:
 	    sighup = 1;
+	    action = 1;
 	    break;
 #endif
 
 #ifdef	SIGUSR2
 	case SIGUSR2:
 	    reload = 1;
+	    action = 1;
 	    break;
 #endif
 
 	default:
 	    break; /* Take no action on other signals - e.g. SIGPIPE */
     }
+    /* a signal doesn't always wake poll(), for example on FreeBSD */
+    if (action && syncpipe_wake_recv_w != -1)
+	write(syncpipe_wake_recv_w, "", 1);
 }
 
 static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts, int do_check, int *ret)
@@ -786,6 +795,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	logg("!pipe failed\n");
 	exit(-1);
     }
+
+    syncpipe_wake_recv_w = acceptdata.syncpipe_wake_recv[1];
 
     if (fds_add(fds, acceptdata.syncpipe_wake_recv[0], 1, 0) == -1 ||
 	fds_add(&acceptdata.fds, acceptdata.syncpipe_wake_accept[0], 1, 0)) {

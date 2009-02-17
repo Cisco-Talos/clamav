@@ -20,6 +20,9 @@ killclamd() {
 		pippo=`expr $pippo + 1`
 		if test $pippo -gt 9; then
 			kill -KILL $pid
+			echo "Clamd didn't quit";
+			rm -f clamd-test.pid
+			exit 4;
 		fi
 	done
 	rm -f clamd-test.pid
