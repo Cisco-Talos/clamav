@@ -1352,10 +1352,17 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
     old = fopen(oldpath, "r");
 
     while(fgets(nbuff, sizeof(nbuff), new)) {
+	i = strlen(nbuff);
+	if(i >= 2 && (nbuff[i - 1] == '\r' || (nbuff[i - 1] == '\n' && nbuff[i - 2] == '\r'))) {
+	    mprintf("!compare: New %s file contains lines terminated with CRLF or CR\n", newpath);
+	    if(old)
+		fclose(old);
+	    return -1;
+	}
 	cli_chomp(nbuff);
 #ifdef COMPATIBILITY_LIMIT
 	if(strlen(nbuff) > COMPATIBILITY_LIMIT) {
-	    mprintf("!compare: COMPATIBILITY_LIMIT: Line too long\n");
+	    mprintf("!compare: COMPATIBILITY_LIMIT: Found too long line in new %s\n", newpath);
 	    if(old)
 		fclose(old);
 	    return -1;
@@ -1608,6 +1615,8 @@ static int diffdirs(const char *old, const char *new, const char *patch)
 
 	    snprintf(path, sizeof(path), "%s/%s", old, dent->d_name);
 	    if(compare(path, dent->d_name, diff) == -1) {
+		if(chdir(cwd) == -1)
+		    mprintf("^diffdirs: Can't chdir to %s\n", cwd);
 		fclose(diff);
 		unlink(patch);
 		closedir(dd);
