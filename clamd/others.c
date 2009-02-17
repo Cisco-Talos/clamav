@@ -247,7 +247,7 @@ void fds_cleanup(struct fd_data *data)
     for (i = j ; i < data->nfds; i++)
 	data->buf[i].fd = -1;
     data->nfds = j;
-    logg("$Number of file descriptors polled: %u fds\n", data->nfds);
+    logg("$Number of file descriptors polled: %u fds\n", (unsigned) data->nfds);
     /* Shrink buffer */
     newbuf = realloc(data->buf, j*sizeof(*newbuf));
     if (newbuf)

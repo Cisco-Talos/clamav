@@ -1,3 +1,7 @@
+Tue Feb 17 18:36:22 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c: fix compiler warning
+
 Tue Feb 17 18:32:59 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c: add missing parameter
