@@ -1,3 +1,8 @@
+Tue Feb 17 01:36:36 CET 2009 (acab)
+-----------------------------------
+ * clamd: add --stream option to force streaming even to the localhost
+	  via unix socket
+
 Mon Feb 16 23:56:34 EET 2009 (edwin)
 ------------------------------------
  * clamd/clamd.c, clamd/server-th.c, unit_tests/check_clamd.c,

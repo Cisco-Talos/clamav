@@ -176,7 +176,8 @@ void help(void)
     mprintf("    --infected            -i           Only print infected files\n");
     mprintf("    --no-summary                       Disable summary at end of scanning\n");
     mprintf("    --reload                           Request clamd to reload virus database\n");
-    mprintf("    --fdpass                           pass filedescriptor to clamd (useful if clamd is running as a different user)\n");
+    mprintf("    --fdpass                           Pass filedescriptor to clamd (useful if clamd is running as a different user)\n");
+    mprintf("    --stream                           Force streaming files to clamd (for debugging and unit testing)\n");
     mprintf("\n");
 
     exit(0);
