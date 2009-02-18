@@ -18377,9 +18377,11 @@ echo "${ECHO_T}$ac_cv_libbz2_libs" >&6; }
 
     save_LDFLAGS="$LDFLAGS"
     LDFLAGS="$LIBS -L$LIBBZ2_PREFIX/$acl_libdirstem";
-    { echo "$as_me:$LINENO: checking for bzReadOpen in -lbz2" >&5
-echo $ECHO_N "checking for bzReadOpen in -lbz2... $ECHO_C" >&6; }
-if test "${ac_cv_lib_bz2_bzReadOpen+set}" = set; then
+
+    have_bzprefix="no"
+    { echo "$as_me:$LINENO: checking for BZ2_bzReadOpen in -lbz2" >&5
+echo $ECHO_N "checking for BZ2_bzReadOpen in -lbz2... $ECHO_C" >&6; }
+if test "${ac_cv_lib_bz2_BZ2_bzReadOpen+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
   ac_check_lib_save_LIBS=$LIBS
@@ -18397,11 +18399,11 @@ cat >>conftest.$ac_ext <<_ACEOF
 #ifdef __cplusplus
 extern "C"
 #endif
-char bzReadOpen ();
+char BZ2_bzReadOpen ();
 int
 main ()
 {
-return bzReadOpen ();
+return BZ2_bzReadOpen ();
   ;
   return 0;
 }
@@ -18424,29 +18426,31 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
 	 test ! -s conftest.err
        } && test -s conftest$ac_exeext &&
        $as_test_x conftest$ac_exeext; then
-  ac_cv_lib_bz2_bzReadOpen=yes
+  ac_cv_lib_bz2_BZ2_bzReadOpen=yes
 else
   echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-	ac_cv_lib_bz2_bzReadOpen=no
+	ac_cv_lib_bz2_BZ2_bzReadOpen=no
 fi
 
 rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
       conftest$ac_exeext conftest.$ac_ext
 LIBS=$ac_check_lib_save_LIBS
 fi
-{ echo "$as_me:$LINENO: result: $ac_cv_lib_bz2_bzReadOpen" >&5
-echo "${ECHO_T}$ac_cv_lib_bz2_bzReadOpen" >&6; }
-if test $ac_cv_lib_bz2_bzReadOpen = yes; then
+{ echo "$as_me:$LINENO: result: $ac_cv_lib_bz2_BZ2_bzReadOpen" >&5
+echo "${ECHO_T}$ac_cv_lib_bz2_BZ2_bzReadOpen" >&6; }
+if test $ac_cv_lib_bz2_BZ2_bzReadOpen = yes; then
+  have_bzprefix="yes"
+fi
+
+    if test "x$have_bzprefix" = "xno"; then
 
 cat >>confdefs.h <<\_ACEOF
 #define NOBZ2PREFIX 1
 _ACEOF
 
-
-fi
-
+    fi
     LDFLAGS="$save_LDFLAGS"
     if test "$HAVE_LIBBZ2" = "yes"; then
 	if test "${ac_cv_header_bzlib_h+set}" = set; then

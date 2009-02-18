@@ -553,9 +553,12 @@ then
     AC_LIB_LINKFLAGS([bz2])
     save_LDFLAGS="$LDFLAGS"
     LDFLAGS="$LIBS -L$LIBBZ2_PREFIX/$acl_libdirstem";
-    AC_CHECK_LIB([bz2], [bzReadOpen],
-		 [AC_DEFINE([NOBZ2PREFIX],1,[bzip funtions do not have bz2 prefix])]
-		)
+
+    have_bzprefix="no"
+    AC_CHECK_LIB([bz2], [BZ2_bzReadOpen], [have_bzprefix="yes"])
+    if test "x$have_bzprefix" = "xno"; then
+        AC_DEFINE([NOBZ2PREFIX],1,[bzip funtions do not have bz2 prefix])
+    fi
     LDFLAGS="$save_LDFLAGS"
     if test "$HAVE_LIBBZ2" = "yes"; then
 	AC_CHECK_HEADER([bzlib.h],
