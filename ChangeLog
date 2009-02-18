@@ -1,3 +1,7 @@
+Wed Feb 18 20:35:16 EET 2009 (edwin)
+------------------------------------
+ * libclamav/bignum.h: disable __mode__(TI) code (bb #1409)
+
 Wed Feb 18 19:10:38 CET 2009 (acab)
 -----------------------------------
  * Build system: work around mpool check for openbsd
