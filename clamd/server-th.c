@@ -121,7 +121,7 @@ static void scanner_thread(void *arg)
     logg("$Finished scanthread\n");
     if (thrmgr_group_finished(conn->group, virus ? EXIT_OTHER :
 			      errors ? EXIT_ERROR : EXIT_OK)) {
-	logg("$Scanthread: connection shut down\n");
+	logg("$Scanthread: connection shut down (FD %d)\n", conn->sd);
 	/* close connection if we were last in group */
 	shutdown(conn->sd, 2);
 	closesocket(conn->sd);
@@ -355,6 +355,7 @@ static void *acceptloop_th(void *arg)
 		continue;
 	    }
 	    if (buf->got_newdata == -1) {
+		logg("$Acceptloop closed FD: %d\n", buf->fd);
 		shutdown(buf->fd, 2);
 		closesocket(buf->fd);
 		buf->fd = -1;
@@ -385,7 +386,6 @@ static void *acceptloop_th(void *arg)
 	    /* listen only socket */
 	    new_sd = accept(fds->buf[i].fd, NULL, NULL);
 
-
 	    if (new_sd >= 0) {
 		int ret, flags;
 
@@ -399,8 +399,10 @@ static void *acceptloop_th(void *arg)
 		} else {
 			logg("^Can't get socket flags, errno %d\n", errno);
 		}
+#else
+		logg("^Nonblocking sockets not available!\n");
 #endif
-
+		logg("$Got new connection, FD %d\n", new_sd);
 		pthread_mutex_lock(&recv_fds->buf_mutex);
 		ret = fds_add(recv_fds, new_sd, 0, commandtimeout);
 		pthread_mutex_unlock(&recv_fds->buf_mutex);
@@ -443,6 +445,7 @@ static void *acceptloop_th(void *arg)
     for (i=0;i < fds->nfds; i++) {
 	if (fds->buf[i].fd == -1)
 	    continue;
+	logg("$Shutdown: closed fd %d\n", fds->buf[i].fd);
 	shutdown(fds->buf[i].fd, 2);
 	closesocket(fds->buf[i].fd);
     }
@@ -956,7 +959,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    }
 		    if (error || !conn.group || rc) {
 			if (rc && thrmgr_group_finished(conn.group, EXIT_OK)) {
-			    logg("$Receive thread: closing conn, group finished\n");
+			    logg("$Receive thread: closing conn (FD %d), group finished\n", conn.sd);
 			    /* if there are no more active jobs */
 			    shutdown(conn.sd, 2);
 			    closesocket(conn.sd);
@@ -1056,6 +1059,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 				conn.term = buf->term;
 				buf->dumpfd = -1;
 				buf->mode = buf->group ? MODE_COMMAND : MODE_WAITREPLY;
+				if (buf->mode == MODE_WAITREPLY)
+				    buf->fd = -1;
 				logg("$Chunks complete\n");
 				buf->dumpname = NULL;
 				if ((rc = execute_or_dispatch_command(&conn, COMMAND_INSTREAMSCAN, NULL)) < 0) {
@@ -1121,7 +1126,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		}
 		thrmgr_group_terminate(buf->group);
 		if (thrmgr_group_finished(buf->group, EXIT_ERROR)) {
-		    logg("$Shutting down socket after error\n");
+		    logg("$Shutting down socket after error (FD %d)\n", buf->fd);
 		    shutdown(buf->fd, 2);
 		    closesocket(buf->fd);
 		} else
@@ -1141,6 +1146,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    continue;
 		thrmgr_group_terminate(fds->buf[i].group);
 		if (thrmgr_group_finished(fds->buf[i].group, EXIT_ERROR)) {
+		    logg("$Shutdown closed fd %d\n", fds->buf[i].fd);
 		    shutdown(fds->buf[i].fd, 2);
 		    closesocket(fds->buf[i].fd);
 		    fds->buf[i].fd = -1;

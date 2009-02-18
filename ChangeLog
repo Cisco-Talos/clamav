@@ -1,3 +1,11 @@
+Wed Feb 18 21:08:50 EET 2009 (edwin)
+------------------------------------
+ * clamd/server-th.c, unit_tests/check_clamd.c,
+ unit_tests/test-clamd.conf: In single INSTREAM mode, remove FD from
+ polled set (BB #1410) Fix testcase, INSTREAM should say UNKNOWN
+ COMMAND in old mode and close conn, sending anything after it will
+ likely result in a broken pipe.(BB #1407)
+
 Wed Feb 18 20:35:16 EET 2009 (edwin)
 ------------------------------------
  * libclamav/bignum.h: disable __mode__(TI) code (bb #1409)

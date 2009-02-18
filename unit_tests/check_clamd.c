@@ -256,6 +256,7 @@ START_TEST (test_compat_commands)
 
     if (!test->support_old) {
 	snprintf(nreply, sizeof(nreply), "UNKNOWN COMMAND\n");
+	test->extra = NULL;
     } else {
 	snprintf(nreply, sizeof(nreply), "%s\n", test->reply);
     }
