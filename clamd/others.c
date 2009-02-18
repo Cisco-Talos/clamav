@@ -608,16 +608,15 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 
     if (retval == -1 && errno != EINTR) {
 	char buff[BUFFSIZE + 1];
-	char *p;
 #ifdef HAVE_STRERROR_R
-	p = strerror_r(errno, buff, BUFFSIZE);
+	strerror_r(errno, buff, BUFFSIZE);
 #else
-	p = "";
+	buff[0] = '\0';
 #endif
 #ifdef HAVE_POLL
-	logg("!poll_recv_fds: poll failed: %s\n", p);
+	logg("!poll_recv_fds: poll failed: %s\n", buff);
 #else
-	logg("!poll_recv_fds: select failed: %s\n", p);
+	logg("!poll_recv_fds: select failed: %s\n", buff);
 #endif
     }
 
