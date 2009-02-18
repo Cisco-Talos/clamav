@@ -157,9 +157,9 @@ int conn_reply_errno(const client_conn_t *conn, const char *path,
 		     const char *msg)
 {
     char buf[BUFFSIZE + sizeof(". ERROR")];
+    char buf2[BUFFSIZE + sizeof(". ERROR")];
 #ifdef HAVE_STRERROR_R
-    strerror_r(errno, buf, BUFFSIZE-1);
-    strcat(buf, ". ERROR");
+    snprintf(buf, sizeof(buf), "%s. ERROR",  strerror_r(errno, buf2, BUFFSIZE-1));
 #else
     snprintf(buf, sizeof(buf), "%u. ERROR", errno);
 #endif

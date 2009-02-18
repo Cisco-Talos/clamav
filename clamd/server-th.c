@@ -421,8 +421,7 @@ static void *acceptloop_th(void *arg)
 	    } else if (errno != EINTR) {
 		/* very bad - need to exit or restart */
 #ifdef HAVE_STRERROR_R
-		strerror_r(errno, buff, BUFFSIZE);
-		logg("!accept() failed: %s\n", buff);
+		logg("!accept() failed: %s\n", strerror_r(errno, buff, BUFFSIZE));
 #else
 		logg("!accept() failed\n");
 #endif

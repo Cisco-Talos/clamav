@@ -1,3 +1,12 @@
+Wed Feb 18 21:39:08 EET 2009 (edwin)
+------------------------------------
+ * clamav-milter/netcode.c, clamd/others.c, clamd/server-th.c,
+ clamd/session.c: Fix wrong use of strerror_r: it doesn't have to
+ use/fill the buffer, it can return a pointer to a static location,
+ as described in the manpage.  This can happen on a Linux system with
+ a foreign locale, where the LANG=C messages are returned this way.
+ (BB #1403)
+
 Wed Feb 18 21:08:50 EET 2009 (edwin)
 ------------------------------------
  * clamd/server-th.c, unit_tests/check_clamd.c,
