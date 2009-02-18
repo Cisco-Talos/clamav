@@ -85,7 +85,12 @@ AC_DEFUN([AC_C_FUNC_MMAP_ANONYMOUS],
 			[ac_cv_c_mmap_anonymous='MAP_ANONYMOUS'],
 			[
 				AC_LINK_IFELSE(
-					[AC_LANG_PROGRAM([[#include <sys/mman.h>]], [[mmap((void *)0, 0, PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);]])],
+					[AC_LANG_PROGRAM([[
+/* OPENBSD WORKAROUND - DND*/
+#include <sys/types.h>
+/* OPENBSD WORKAROUND - END*/
+#include <sys/mman.h>
+]], [[mmap((void *)0, 0, PROT_READ | PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);]])],
 					[ac_cv_c_mmap_anonymous='MAP_ANON']
 				)
 			]

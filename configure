@@ -16210,7 +16210,12 @@ _ACEOF
 cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
+
+/* OPENBSD WORKAROUND - DND*/
+#include <sys/types.h>
+/* OPENBSD WORKAROUND - END*/
 #include <sys/mman.h>
+
 int
 main ()
 {
