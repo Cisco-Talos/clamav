@@ -26,6 +26,11 @@
 #include "clamav-config.h"
 #endif
 
+#ifdef C_LINUX
+/* We want XSI compliant strerror_r, not GNU one.*/
+#define _XOPEN_SOURCE 600
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

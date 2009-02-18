@@ -1,3 +1,7 @@
+Wed Feb 18 21:57:22 EET 2009 (edwin)
+------------------------------------
+ * clamd/session.c: real fix for BB #1403.
+
 Wed Feb 18 21:08:50 EET 2009 (edwin)
 ------------------------------------
  * clamd/server-th.c, unit_tests/check_clamd.c,
