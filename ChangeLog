@@ -1,3 +1,8 @@
+Thu Feb 19 00:05:03 EET 2009 (edwin)
+------------------------------------
+ * libclamav/regex_suffix.c: n->type has to be first field (revert
+ bug introduced in field reorder commit).
+
 Wed Feb 18 23:25:15 EET 2009 (edwin)
 ------------------------------------
  * clamd/server-th.c: fix NetBSD build
