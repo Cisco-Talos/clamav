@@ -1,3 +1,7 @@
+Wed Feb 18 12:41:17 CET 2009 (tk)
+---------------------------------
+ * etc/clamav-milter.conf: fix PidFile example (bb#1408)
+
 Wed Feb 18 03:12:12 CET 2009 (acab)
 -----------------------------------
  * clamav-milter: die on TERM (bb#1400)
