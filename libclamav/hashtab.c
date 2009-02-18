@@ -426,7 +426,6 @@ int hashset_init(struct hashset* hs, size_t initial_capacity, uint8_t load_facto
 		load_factor = 80;
 	}
 	initial_capacity = nearest_power(initial_capacity);
-	hs->load_factor = load_factor;
 	hs->limit = initial_capacity * load_factor / 100;
 	hs->capacity = initial_capacity;
 	hs->mask = initial_capacity - 1;
@@ -500,7 +499,7 @@ static int hashset_grow(struct hashset *hs)
 	 * will hash to different locations. */
 	cli_dbgmsg(MODULE_NAME "Growing hashset, used: %lu, capacity: %lu\n", hs->count, hs->capacity);
 	/* create a bigger hashset */
-	if((rc = hashset_init(&new_hs, hs->capacity << 1, hs->load_factor)) < 0) {
+	if((rc = hashset_init(&new_hs, hs->capacity << 1, hs->limit*100/hs->capacity)) < 0) {
 		return rc;
 	}
 	/* and copy keys */

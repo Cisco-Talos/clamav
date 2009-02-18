@@ -142,9 +142,9 @@ extern int cl_engine_free(struct cl_engine *engine);
 
 struct cl_stat {
     char *dir;
-    unsigned int entries;
     struct stat *stattab;
     char **statdname;
+    unsigned int entries;
 };
 
 struct cl_cvd {		    /* field no. */
@@ -152,6 +152,7 @@ struct cl_cvd {		    /* field no. */
     unsigned int version;   /* 3 */
     unsigned int sigs;	    /* 4 */
     unsigned int fl;	    /* 5 */
+			    /* padding */
     char *md5;		    /* 6 */
     char *dsig;		    /* 7 */
     char *builder;	    /* 8 */

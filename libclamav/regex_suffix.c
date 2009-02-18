@@ -45,7 +45,6 @@ enum node_type {
 };
 
 struct node {
-	enum node_type type;
 	struct node *parent;
 	union {
 		struct {
@@ -55,6 +54,7 @@ struct node {
 		uint8_t*    leaf_class_bitmap;
 		uint8_t     leaf_char;
 	} u;
+	enum node_type type;
 };
 
 /* --- Prototypes --*/

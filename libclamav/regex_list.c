@@ -353,7 +353,7 @@ int init_regex_list(struct regex_matcher* matcher)
 	matcher->list_inited=1;
 	matcher->list_built=0;
 	matcher->list_loaded=0;
-	hashtab_init(&matcher->suffix_hash, 10);
+	hashtab_init(&matcher->suffix_hash, 512);
 #ifdef USE_MPOOL
 	matcher->mempool = mp;
 	matcher->suffixes.mempool = mp;

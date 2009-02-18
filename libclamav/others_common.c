@@ -372,8 +372,8 @@ struct dirent_data {
     char *filename;
     const char *dirname;
     struct stat *statbuf;
-    int   is_dir;/* 0 - no, 1 - yes */
     long  ino; /* -1: inode not available */
+    int   is_dir;/* 0 - no, 1 - yes */
 };
 
 /* sort files before directories, and lower inodes before higher inodes */

@@ -1,3 +1,7 @@
+Wed Feb 18 22:24:22 EET 2009 (edwin)
+------------------------------------
+ * libclamav/: reorder fields (bb #1144)
+
 Wed Feb 18 21:57:22 EET 2009 (edwin)
 ------------------------------------
  * clamd/session.c: real fix for BB #1403.

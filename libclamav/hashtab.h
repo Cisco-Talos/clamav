@@ -90,11 +90,10 @@ int hashtab_store(const struct hashtable *s,FILE* out);
 struct hashset {
 	uint32_t* keys;
 	uint32_t* bitmap;
-	size_t capacity;
-	size_t mask;
-	size_t count;
-	size_t limit;
-	uint8_t load_factor;
+	uint32_t capacity;
+	uint32_t mask;
+	uint32_t count;
+	uint32_t limit;
 };
 
 int hashset_init(struct hashset* hs, size_t initial_capacity, uint8_t load_factor);
