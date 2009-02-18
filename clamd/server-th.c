@@ -312,9 +312,7 @@ struct acceptdata {
 
 static void *acceptloop_th(void *arg)
 {
-#ifdef HAVE_STRERROR_R
     char buff[BUFFSIZE + 1];
-#endif
     size_t i;
     struct acceptdata *data = (struct acceptdata*)arg;
     struct fd_data *fds = &data->fds;

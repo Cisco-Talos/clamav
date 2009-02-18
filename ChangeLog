@@ -1,3 +1,7 @@
+Wed Feb 18 23:25:15 EET 2009 (edwin)
+------------------------------------
+ * clamd/server-th.c: fix NetBSD build
+
 Wed Feb 18 22:58:14 EET 2009 (edwin)
 ------------------------------------
  * libclamav/phishcheck.c, unit_tests/check_regex.c: improve URL
