@@ -1002,9 +1002,10 @@ static inline int validate_uri_ialpha(const char *start, const char *end)
 /*
  * Only those URLs are identified as URLs for which phishing detection can be performed.
  */
-static int isURL(const char* URL, int accept_anyproto)
+static int isURL(char* URL, int accept_anyproto)
 {
-	const char *start = NULL, *p, *q, *end;
+	char *last_tld_end = NULL, *q;
+	const char *start = NULL, *p, *end;
 	if(!URL)
 		return 0;
 
@@ -1055,6 +1056,8 @@ static int isURL(const char* URL, int accept_anyproto)
 		if(q) {
 			if(!validate_uri_xpalphas_nodot(p, q))
 				return 0;
+			if (accept_anyproto && in_tld_set(p, q-p))
+			    last_tld_end = q;
 			p = q+1;
 		}
 	} while(q);
@@ -1063,7 +1066,16 @@ static int isURL(const char* URL, int accept_anyproto)
 	if (end < p)
 		end = p;
 	while (*end == ' ' && end > p) --end;
-	return !!in_tld_set(p, end - p);
+
+	if (in_tld_set(p, end - p))
+	    return 1;
+	if (!accept_anyproto)
+	    return 0;
+	if (last_tld_end) {
+	    *last_tld_end = '\0';
+	    return 1;
+	}
+	return 0;
 }
 
 /*
@@ -1132,6 +1144,7 @@ static int url_get_host(struct url_check* url,struct url_check* host_url,int isR
 	if(!isReal) {
 		url->pre_fixup.host_start = start - URL;
 		url->pre_fixup.host_end = end - URL;
+		url->pre_fixup.pre_displayLink.data[url->pre_fixup.host_end] = '\0';
 	}
 	return CL_PHISH_NODECISION;
 }

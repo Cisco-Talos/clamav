@@ -1,3 +1,8 @@
+Wed Feb 18 22:58:14 EET 2009 (edwin)
+------------------------------------
+ * libclamav/phishcheck.c, unit_tests/check_regex.c: improve URL
+ handling
+
 Wed Feb 18 22:24:22 EET 2009 (edwin)
 ------------------------------------
  * libclamav/: reorder fields (bb #1144)
