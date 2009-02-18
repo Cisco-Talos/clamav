@@ -1,3 +1,8 @@
+Thu Feb 19 00:05:28 EET 2009 (edwin)
+------------------------------------
+ * clamd/server-th.c: move the command parsing, and stream handling
+ code into their own functions.  No functionality change.
+
 Thu Feb 19 00:05:03 EET 2009 (edwin)
 ------------------------------------
  * libclamav/regex_suffix.c: n->type has to be first field (revert

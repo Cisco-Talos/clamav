@@ -459,6 +459,219 @@ static void *acceptloop_th(void *arg)
     return NULL;
 }
 
+static const unsigned char* parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, size_t *ppos, int *error, const struct optstruct *opts, int readtimeout)
+{
+    const unsigned char *cmd = NULL;
+    int rc;
+    size_t cmdlen;
+    char term;
+    int oldstyle;
+    size_t pos = *ppos;
+    /* Parse & dispatch commands */
+    while ((conn->mode == MODE_COMMAND) &&
+	   (cmd = get_cmd(buf, pos, &cmdlen, &term, &oldstyle)) != NULL) {
+	const char *argument;
+	enum commands cmdtype;
+	if (conn->group && oldstyle) {
+	    logg("$Received oldstyle command inside IDSESSION: %s\n", cmd);
+	    conn_reply_error(conn, "Only nCMDS\\n and zCMDS\\0 are accepted inside IDSESSION.");
+	    *error = 1;
+	    break;
+	}
+	cmdtype = parse_command(cmd, &argument, oldstyle);
+	logg("$got command %s (%u, %u), argument: %s\n",
+	     cmd, (unsigned)cmdlen, (unsigned)cmdtype, argument ? argument : "");
+	if (cmdtype == COMMAND_FILDES) {
+	    if (buf->buffer + buf->off <= cmd + strlen("FILDES\n")) {
+		/* we need the extra byte from recvmsg */
+		conn->mode = MODE_WAITANCILL;
+		buf->mode = MODE_WAITANCILL;
+		/* put term back */
+		buf->buffer[pos + cmdlen] = term;
+		cmdlen = 0;
+		logg("$RECVTH: mode -> MODE_WAITANCILL\n");
+		break;
+	    }
+	    /* eat extra \0 for controlmsg */
+	    cmdlen++;
+	    logg("$RECVTH: FILDES command complete\n");
+	}
+	conn->term = term;
+	buf->term = term;
+
+	if ((rc = execute_or_dispatch_command(conn, cmdtype, argument)) < 0) {
+	    logg("!Command dispatch failed\n");
+	    if(rc == -1 && optget(opts, "ExitOnOOM")->enabled) {
+		pthread_mutex_lock(&exit_mutex);
+		progexit = 1;
+		pthread_mutex_unlock(&exit_mutex);
+	    }
+	    *error = 1;
+	}
+	if (thrmgr_group_need_terminate(conn->group)) {
+	    logg("$Receive thread: have to terminate group\n");
+	    *error = CL_ETIMEOUT;
+	    break;
+	}
+	if (*error || !conn->group || rc) {
+	    if (rc && thrmgr_group_finished(conn->group, EXIT_OK)) {
+		logg("$Receive thread: closing conn (FD %d), group finished\n", conn->sd);
+		/* if there are no more active jobs */
+		shutdown(conn->sd, 2);
+		closesocket(conn->sd);
+		buf->fd = -1;
+		conn->group = NULL;
+	    } else if (conn->mode != MODE_STREAM) {
+		logg("$mode -> MODE_WAITREPLY\n");
+		/* no more commands are accepted */
+		conn->mode = MODE_WAITREPLY;
+		/* Stop monitoring this FD, it will be closed either
+		 * by us, or by the scanner thread. 
+		 * Never close a file descriptor that is being
+		 * monitored by poll()/select() from another thread,
+		 * because this can lead to subtle bugs such as:
+		 * Other thread closes file descriptor -> POLLHUP is
+		 * set, but the poller thread doesn't wake up yet.
+		 * Another client opens a connection and sends some
+		 * data. If the socket reuses the previous file descriptor,
+		 * then POLLIN is set on the file descriptor too.
+		 * When poll() wakes up it sees POLLIN | POLLHUP
+		 * and thinks that the client has sent some data,
+		 * and closed the connection, so clamd closes the
+		 * connection in turn resulting in a bug.
+		 *
+		 * If we wouldn't have poll()-ed the file descriptor
+		 * we closed in another thread, but rather made sure
+		 * that we don't put a FD that we're about to close
+		 * into poll()'s list of watched fds; then POLLHUP
+		 * would be set, but the file descriptor would stay
+		 * open, until we wake up from poll() and close it.
+		 * Thus a new connection won't be able to reuse the
+		 * same FD, and there is no bug.
+		 * */
+		buf->fd = -1;
+	    }
+	}
+	/* we received a command, set readtimeout */
+	time(&buf->timeout_at);
+	buf->timeout_at += readtimeout;
+	pos += cmdlen+1;
+	if (conn->mode == MODE_STREAM) {
+	    /* TODO: this doesn't belong here */
+	    buf->dumpname = conn->filename;
+	    buf->dumpfd = conn->scanfd;
+	    logg("$Receive thread: INSTREAM: %s fd %u\n", buf->dumpname, buf->dumpfd);
+	}
+	if (conn->mode != MODE_COMMAND) {
+	    logg("$Breaking command loop, mode is no longer MODE_COMMAND\n");
+	    break;
+	}
+	conn->id++;
+    }
+    *ppos = pos;
+    buf->mode = conn->mode;
+    buf->id = conn->id;
+    buf->group = conn->group;
+    buf->quota = conn->quota;
+    if (conn->scanfd != -1 && conn->scanfd != buf->dumpfd) {
+	logg("$Unclaimed file descriptor received, closing: %d\n", conn->scanfd);
+	close(conn->scanfd);
+	/* protocol error */
+	conn_reply_error(conn, "PROTOCOL ERROR: ancillary data sent without FILDES.");
+	*error = 1;
+	return NULL;
+    }
+    if (!*error) {
+	/* move partial command to beginning of buffer */
+	if (pos < buf->off) {
+	    memmove (buf->buffer, &buf->buffer[pos], buf->off - pos);
+	    buf->off -= pos;
+	} else
+	    buf->off = 0;
+	if (buf->off)
+	    logg("$Moved partial command: %lu\n", (unsigned long)buf->off);
+	else
+	    logg("$Consumed entire command\n");
+    }
+    *ppos = pos;
+    return cmd;
+}
+
+//static const unsigned char* parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, size_t *ppos, int *error, const struct optstruct *opts, int readtimeout)
+static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct optstruct *opts, int *error, size_t *ppos)
+{
+    int rc;
+    size_t pos = *ppos;
+    size_t cmdlen;
+
+    logg("$mode == MODE_STREAM\n");
+    if (!buf->chunksize) {
+	/* read chunksize */
+	if (buf->off >= 4) {
+	    uint32_t cs = *(uint32_t*)buf->buffer;
+	    buf->chunksize = ntohl(cs);
+	    logg("$Got chunksize: %u\n", buf->chunksize);
+	    if (!buf->chunksize) {
+		/* chunksize 0 marks end of stream */
+		conn->scanfd = buf->dumpfd;
+		conn->term = buf->term;
+		buf->dumpfd = -1;
+		buf->mode = buf->group ? MODE_COMMAND : MODE_WAITREPLY;
+		if (buf->mode == MODE_WAITREPLY)
+		    buf->fd = -1;
+		logg("$Chunks complete\n");
+		buf->dumpname = NULL;
+		if ((rc = execute_or_dispatch_command(conn, COMMAND_INSTREAMSCAN, NULL)) < 0) {
+		    logg("!Command dispatch failed\n");
+		    if(rc == -1 && optget(opts, "ExitOnOOM")->enabled) {
+			pthread_mutex_lock(&exit_mutex);
+			progexit = 1;
+			pthread_mutex_unlock(&exit_mutex);
+		    }
+		    *error = 1;
+		} else {
+		    pos = 4;
+		    memmove (buf->buffer, &buf->buffer[pos], buf->off - pos);
+		    buf->off -= pos;
+		    pos = 0;
+		    buf->id++;
+		    return 0;
+		}
+	    }
+	    if (buf->chunksize > buf->quota) {
+		logg("^INSTREAM: Size limit reached, (requested: %lu, max: %lu)\n", 
+		     (unsigned long)buf->chunksize, (unsigned long)buf->quota);
+		conn_reply_error(conn, "INSTREAM size limit exceeded.");
+		*error = 1;
+		return -1;
+	    } else {
+		buf->quota -= buf->chunksize;
+	    }
+	    logg("$Quota: %lu\n", buf->quota);
+	    pos = 4;
+	} else
+	    return -1;
+    } else
+	pos = 0;
+    if (pos + buf->chunksize < buf->off)
+	cmdlen = buf->chunksize;
+    else
+	cmdlen = buf->off - pos;
+    buf->chunksize -= cmdlen;
+    if (cli_writen(buf->dumpfd, buf->buffer + pos, cmdlen) < 0) {
+	conn_reply_error(conn, "Error writing to temporary file");
+	logg("!INSTREAM: Can't write to temporary file.\n");
+	*error = 1;
+    }
+    logg("$Processed %lu bytes of chunkdata\n", cmdlen);
+    pos += cmdlen;
+    if (pos == buf->off) {
+	buf->off = 0;
+    }
+    *ppos = pos;
+    return 0;
+}
+
 int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts)
 {
 	int max_threads, max_queue, readtimeout, ret = 0;
@@ -908,205 +1121,25 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		conn.filename = buf->dumpname;
 		conn.mode = buf->mode;
 		conn.term = buf->term;
-		/* Parse & dispatch commands */
-		while ((conn.mode == MODE_COMMAND) &&
-		       (cmd = get_cmd(buf, pos, &cmdlen, &term, &oldstyle)) != NULL) {
-		    const char *argument;
-		    enum commands cmdtype;
-		    if (conn.group && oldstyle) {
-			logg("$Received oldstyle command inside IDSESSION: %s\n", cmd);
-			conn_reply_error(&conn, "Only nCMDS\\n and zCMDS\\0 are accepted inside IDSESSION.");
-			error = 1;
-			break;
-		    }
-		    cmdtype = parse_command(cmd, &argument, oldstyle);
-		    logg("$got command %s (%u, %u), argument: %s\n",
-			 cmd, (unsigned)cmdlen, (unsigned)cmdtype, argument ? argument : "");
-		    if (cmdtype == COMMAND_FILDES) {
-			if (buf->buffer + buf->off <= cmd + strlen("FILDES\n")) {
-			    /* we need the extra byte from recvmsg */
-			    conn.mode = MODE_WAITANCILL;
-			    buf->mode = MODE_WAITANCILL;
-			    /* put term back */
-			    buf->buffer[pos + cmdlen] = term;
-			    cmdlen = 0;
-			    logg("$RECVTH: mode -> MODE_WAITANCILL\n");
-			    break;
-			}
-			/* eat extra \0 for controlmsg */
-			cmdlen++;
-			logg("$RECVTH: FILDES command complete\n");
-		    }
 
-		    conn.term = term;
-		    buf->term = term;
+		/* Parse & dispatch command */
+		cmd = parse_dispatch_cmd(&conn, buf, &pos, &error, opts, readtimeout);
 
-		    if ((rc = execute_or_dispatch_command(&conn, cmdtype, argument)) < 0) {
-			logg("!Command dispatch failed\n");
-			if(rc == -1 && optget(opts, "ExitOnOOM")->enabled) {
-			    pthread_mutex_lock(&exit_mutex);
-			    progexit = 1;
-			    pthread_mutex_unlock(&exit_mutex);
-			}
-			error = 1;
-		    }
-		    if (thrmgr_group_need_terminate(conn.group)) {
-			logg("$Receive thread: have to terminate group\n");
-			error = CL_ETIMEOUT;
-			break;
-		    }
-		    if (error || !conn.group || rc) {
-			if (rc && thrmgr_group_finished(conn.group, EXIT_OK)) {
-			    logg("$Receive thread: closing conn (FD %d), group finished\n", conn.sd);
-			    /* if there are no more active jobs */
-			    shutdown(conn.sd, 2);
-			    closesocket(conn.sd);
-			    buf->fd = -1;
-			    conn.group = NULL;
-			} else if (conn.mode != MODE_STREAM) {
-			    logg("$mode -> MODE_WAITREPLY\n");
-			    /* no more commands are accepted */
-			    conn.mode = MODE_WAITREPLY;
-			    /* Stop monitoring this FD, it will be closed either
-			     * by us, or by the scanner thread. 
-			     * Never close a file descriptor that is being
-			     * monitored by poll()/select() from another thread,
-			     * because this can lead to subtle bugs such as:
-			     * Other thread closes file descriptor -> POLLHUP is
-			     * set, but the poller thread doesn't wake up yet.
-			     * Another client opens a connection and sends some
-			     * data. If the socket reuses the previous file descriptor,
-			     * then POLLIN is set on the file descriptor too.
-			     * When poll() wakes up it sees POLLIN | POLLHUP
-			     * and thinks that the client has sent some data,
-			     * and closed the connection, so clamd closes the
-			     * connection in turn resulting in a bug.
-			     *
-			     * If we wouldn't have poll()-ed the file descriptor
-			     * we closed in another thread, but rather made sure
-			     * that we don't put a FD that we're about to close
-			     * into poll()'s list of watched fds; then POLLHUP
-			     * would be set, but the file descriptor would stay
-			     * open, until we wake up from poll() and close it.
-			     * Thus a new connection won't be able to reuse the
-			     * same FD, and there is no bug.
-			     * */
-			    buf->fd = -1;
-			}
-		    }
-		    /* we received a command, set readtimeout */
-		    time(&buf->timeout_at);
-		    buf->timeout_at += readtimeout;
-		    pos += cmdlen+1;
-		    if (conn.mode == MODE_STREAM) {
-			/* TODO: this doesn't belong here */
-			buf->dumpname = conn.filename;
-			buf->dumpfd = conn.scanfd;
-			logg("$Receive thread: INSTREAM: %s fd %u\n", buf->dumpname, buf->dumpfd);
-		    }
-		    if (conn.mode != MODE_COMMAND) {
-			logg("$Breaking command loop, mode is no longer MODE_COMMAND\n");
-			break;
-		    }
-		    conn.id++;
-		}
-		buf->mode = conn.mode;
-		buf->id = conn.id;
-		buf->group = conn.group;
-		buf->quota = conn.quota;
-		if (conn.scanfd != -1 && conn.scanfd != buf->dumpfd) {
-		    logg("$Unclaimed file descriptor received, closing: %d\n", conn.scanfd);
-		    close(conn.scanfd);
-		    /* protocol error */
-		    conn_reply_error(&conn, "PROTOCOL ERROR: ancillary data sent without FILDES.");
-		    error = 1;
-		    break;
-		}
-		if (!error) {
-		    /* move partial command to beginning of buffer */
-		    if (pos < buf->off) {
-			memmove (buf->buffer, &buf->buffer[pos], buf->off - pos);
-			buf->off -= pos;
-		    } else
-			buf->off = 0;
-		    if (buf->off)
-			logg("$Moved partial command: %lu\n", (unsigned long)buf->off);
-		    else
-			logg("$Consumed entire command\n");
-		}
 		if (conn.mode == MODE_COMMAND && !cmd)
 		    break;
-		if (!error && buf->mode == MODE_WAITREPLY && buf->off) {
-		    /* Client is not supposed to send anything more */
-		    logg("^Client sent garbage after last command: %lu bytes\n", (unsigned long)buf->off);
-		    buf->buffer[buf->off] = '\0';
-		    logg("$Garbage: %s\n", buf->buffer);
-		    error = 1;
-		}
-		if (!error && buf->mode == MODE_STREAM) {
-		    logg("$mode == MODE_STREAM\n");
-		    if (!buf->chunksize) {
-			/* read chunksize */
-			if (buf->off >= 4) {
-			    uint32_t cs = *(uint32_t*)buf->buffer;
-			    buf->chunksize = ntohl(cs);
-			    logg("$Got chunksize: %u\n", buf->chunksize);
-			    if (!buf->chunksize) {
-				/* chunksize 0 marks end of stream */
-				conn.scanfd = buf->dumpfd;
-				conn.term = buf->term;
-				buf->dumpfd = -1;
-				buf->mode = buf->group ? MODE_COMMAND : MODE_WAITREPLY;
-				if (buf->mode == MODE_WAITREPLY)
-				    buf->fd = -1;
-				logg("$Chunks complete\n");
-				buf->dumpname = NULL;
-				if ((rc = execute_or_dispatch_command(&conn, COMMAND_INSTREAMSCAN, NULL)) < 0) {
-				    logg("!Command dispatch failed\n");
-				    if(rc == -1 && optget(opts, "ExitOnOOM")->enabled) {
-					pthread_mutex_lock(&exit_mutex);
-					progexit = 1;
-					pthread_mutex_unlock(&exit_mutex);
-				    }
-				    error = 1;
-				} else {
-				    pos = 4;
-				    memmove (buf->buffer, &buf->buffer[pos], buf->off - pos);
-				    buf->off -= pos;
-				    pos = 0;
-				    buf->id++;
-				    continue;
-				}
-			    }
-			    if (buf->chunksize > buf->quota) {
-				logg("^INSTREAM: Size limit reached, (requested: %lu, max: %lu)\n", 
-				     (unsigned long)buf->chunksize, (unsigned long)buf->quota);
-				conn_reply_error(&conn, "INSTREAM size limit exceeded.");
-				error = 1;
-				break;
-			    } else {
-				buf->quota -= buf->chunksize;
-			    }
-			    logg("$Quota: %lu\n", buf->quota);
-			    pos = 4;
-			} else
-			    break;
-		    } else
-			pos = 0;
-		    if (pos + buf->chunksize < buf->off)
-			cmdlen = buf->chunksize;
-		    else
-			cmdlen = buf->off - pos;
-		    buf->chunksize -= cmdlen;
-		    if (cli_writen(buf->dumpfd, buf->buffer + pos, cmdlen) < 0) {
-			conn_reply_error(&conn, "Error writing to temporary file");
-			logg("!INSTREAM: Can't write to temporary file.\n");
+		if (!error) {
+		    if (buf->mode == MODE_WAITREPLY && buf->off) {
+			/* Client is not supposed to send anything more */
+			logg("^Client sent garbage after last command: %lu bytes\n", (unsigned long)buf->off);
+			buf->buffer[buf->off] = '\0';
+			logg("$Garbage: %s\n", buf->buffer);
 			error = 1;
-		    }
-		    logg("$Processed %lu bytes of chunkdata\n", cmdlen);
-		    pos += cmdlen;
-		    if (pos == buf->off) {
-			buf->off = 0;
+		    } else if (buf->mode == MODE_STREAM) {
+			rc = handle_stream(&conn, buf, opts, &error, &pos);
+			if (rc == -1)
+			    break;
+			else
+			    continue;
 		    }
 		}
 		if (error && error != CL_ETIMEOUT) {
