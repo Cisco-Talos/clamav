@@ -51,7 +51,7 @@
 #include "shared/optparser.h"
 #include "shared/misc.h"
 #include "shared/cdiff.h"
-#include "shared/sha256.h"
+#include "libclamav/sha256.h"
 #include "shared/tar.h"
 
 #include "libclamav/clamav.h"
@@ -507,8 +507,7 @@ static int script2cdiff(const char *script, const char *builder, const struct op
 	sha256_update(&ctx, (unsigned char *) buffer, bytes);
 
     fclose(cdiffh);
-    sha256_final(&ctx);
-    sha256_digest(&ctx, digest);
+    sha256_final(&ctx, digest);
 
     if(!(pt = getdsig(optget(opts, "server")->strarg, builder, digest, 32, 1))) {
 	mprintf("!script2cdiff: Can't get digital signature from remote server\n");

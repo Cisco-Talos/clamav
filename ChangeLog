@@ -1,3 +1,9 @@
+Wed Feb 18 17:24:48 EET 2009 (edwin)
+------------------------------------
+ * freshclam/, libclamav/, shared/, sigtool/, unit_tests/: use sha256
+ instead of md5 in phishcheck.  move sha256 to libclamav.  add more
+ tests.
+
 Wed Feb 18 12:41:17 CET 2009 (tk)
 ---------------------------------
  * etc/clamav-milter.conf: fix PidFile example (bb#1408)

@@ -35,7 +35,7 @@
 #include "shared/misc.h"
 #include "shared/output.h"
 #include "shared/cdiff.h"
-#include "shared/sha256.h"
+#include "libclamav/sha256.h"
 
 #include "libclamav/str.h"
 #include "libclamav/others.h"
@@ -783,8 +783,7 @@ static void pss_mgf(unsigned char *in, unsigned int inlen, unsigned char *out, u
 	sha256_init(&ctx);
 	sha256_update(&ctx, in, inlen);
 	sha256_update(&ctx, cnt, sizeof(cnt));
-	sha256_final(&ctx);
-	sha256_digest(&ctx, digest);
+	sha256_final(&ctx, digest);
 
 	if(i != laps - 1)
 	    memcpy(&out[i * PSS_DIGEST_LENGTH], digest, PSS_DIGEST_LENGTH);
@@ -852,8 +851,7 @@ static int pss_versig(const unsigned char *sha256, const char *dsig)
 
     sha256_init(&ctx);
     sha256_update(&ctx, fblock, sizeof(fblock));
-    sha256_final(&ctx);
-    sha256_digest(&ctx, digest1);
+    sha256_final(&ctx, digest1);
 
     if(memcmp(digest1, digest2, hlen)) {
 	/* cli_dbgmsg("cli_versigpss: Signature doesn't match.\n"); */
@@ -944,8 +942,7 @@ int cdiff_apply(int fd, unsigned short mode)
 	    }
 	    sum += bread;
 	}
-	sha256_final(&sha256ctx);
-	sha256_digest(&sha256ctx, digest);
+	sha256_final(&sha256ctx, digest);
 
 	if(pss_versig(digest, dsig)) {
 	    logg("!cdiff_apply: Incorrect digital signature\n");

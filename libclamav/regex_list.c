@@ -363,13 +363,13 @@ int init_regex_list(struct regex_matcher* matcher)
 		return rc;
 	}
 #ifdef USE_MPOOL
-	matcher->md5_hashes.mempool = mp;
+	matcher->sha256_hashes.mempool = mp;
 #endif
-	if((rc = cli_bm_init(&matcher->md5_hashes))) {
+	if((rc = cli_bm_init(&matcher->sha256_hashes))) {
 		return rc;
 	}
 	SO_init(&matcher->filter);
-	SO_init(&matcher->md5_filter);
+	SO_init(&matcher->sha256_filter);
 	return CL_SUCCESS;
 }
 
@@ -425,15 +425,15 @@ static int add_hash(struct regex_matcher *matcher, char* pattern, const char fl)
 	pat->pattern = (unsigned char*)cli_mpool_hex2str(matcher->mempool, pattern);
 	if(!pat->pattern)
 		return CL_EMALFDB;
-	pat->length = 16;
+	pat->length = 32;
 	pat->virname = mpool_malloc(matcher->mempool, 1);
 	if(!pat->virname) {
 		free(pat);
 		return CL_EMEM;
 	}
 	*pat->virname = fl;
-	SO_preprocess_add(&matcher->md5_filter, pat->pattern, pat->length);
-	if((rc = cli_bm_addpatt(&matcher->md5_hashes, pat))) {
+	SO_preprocess_add(&matcher->sha256_filter, pat->pattern, pat->length);
+	if((rc = cli_bm_addpatt(&matcher->sha256_hashes, pat))) {
 		cli_errmsg("add_hash: failed to add BM pattern\n");
 		free(pat->pattern);
 		free(pat->virname);
@@ -596,7 +596,7 @@ void regex_list_done(struct regex_matcher* matcher)
 			mpool_free(matcher->mempool, matcher->all_pregs);
 		}
 		hashtab_free(&matcher->suffix_hash);
-		cli_bm_free(&matcher->md5_hashes);
+		cli_bm_free(&matcher->sha256_hashes);
 	}
 }
 

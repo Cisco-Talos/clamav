@@ -416,6 +416,41 @@ START_TEST (phishingScan_test)
 END_TEST
 #endif
 
+static struct uc {
+    const char *in;
+    const char *host;
+    const char *path;
+} uc[] = {
+    {":example/%25%32%35", "example/", "%25"},
+    {":example/%25%32%35%25%32%35", "example/", "%25%25"},
+    {":example/abc%25%32%35asd", "example/", "abc%25asd"},
+    {":www.example.com/","www.example.com/",""},
+    {":%31%32%37%2e%30%2e%30%2e%31/%2E%73%65%63%75%72%65/%77%77%77%2e%65%78%61%6d%70%6c%65%2e%63%6f%6d/", 
+	"127.0.0.1/",".secure/www.example.com/"},
+    {":127.0.0.1/uploads/%20%20%20%20/.verify/.blah=abcd-ef=gh/",
+	"127.0.0.1/","uploads/%20%20%20%20/.verify/.blah=abcd-ef=gh/"},
+    {"http://example%23.com/%61%40%62%252B",
+	"example%23.com/", "a@b+"},
+    {"http://example.com/blah/..","example.com/",""},
+    {"http://example.com/blah/../x","example.com/","x"},
+    {"http://example.com/./a","example.com/","a"}
+
+};
+
+START_TEST (test_url_canon)
+{
+    char urlbuff[1024+3];
+    char *host = NULL, *path = NULL;
+    size_t host_len, path_len;
+    struct uc *u = &uc[_i];
+
+    cli_url_canon(u->in, strlen(u->in), urlbuff, sizeof(urlbuff), &host, &host_len, &path, &path_len);
+    fail_unless(!!host && !!path, "null results\n");
+    fail_unless_fmt(!strcmp(u->host, host), "host incorrect: %s\n", host);
+    fail_unless_fmt(!strcmp(u->path, path), "path incorrect: %s\n", path);
+}
+END_TEST
+
 START_TEST(phishing_fake_test)
 {
 	char buf[4096];
@@ -464,7 +499,6 @@ Suite *test_regex_suite(void)
 #endif
 	tcase_add_test(tc_phish, phishing_fake_test);
 
-
 	tc_phish2 = tcase_create("phishingScan with 2 dbs");
 	suite_add_tcase(s, tc_phish2);
 	tcase_add_unchecked_fixture(tc_phish2, psetup2, pteardown);
@@ -472,6 +506,7 @@ Suite *test_regex_suite(void)
 	tcase_add_loop_test(tc_phish2, phishingScan_test, 0, sizeof(rtests)/sizeof(rtests[0]));
 #endif
 	tcase_add_test(tc_phish2, phishing_fake_test);
+	tcase_add_loop_test(tc_phish, test_url_canon, 0, sizeof(uc)/sizeof(uc[0]));
 
 	return s;
 }

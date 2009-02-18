@@ -50,8 +50,8 @@ struct regex_matcher {
 	size_t regex_cnt;
 	regex_t **all_pregs;
 	struct cli_matcher suffixes;
-	struct cli_matcher md5_hashes;
-	struct filter md5_filter;
+	struct cli_matcher sha256_hashes;
+	struct filter sha256_filter;
 	struct filter filter;
 #ifdef USE_MPOOL
 	mpool_t *mempool;

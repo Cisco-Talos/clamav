@@ -100,7 +100,8 @@ am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
 	sis.lo uuencode.lo phishcheck.lo phish_domaincheck_db.lo \
 	phish_whitelist.lo regex_list.lo regex_suffix.lo mspack.lo \
 	cab.lo entconv.lo hashtab.lo dconf.lo lzma_iface.lo explode.lo \
-	textnorm.lo dlp.lo js-norm.lo uniq.lo version.lo mpool.lo
+	textnorm.lo dlp.lo js-norm.lo uniq.lo version.lo mpool.lo \
+	sha256.lo
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 libclamav_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -560,7 +561,9 @@ libclamav_la_SOURCES = \
 	version.h\
 	mpool.c\
 	mpool.h \
-	default.h
+	default.h\
+	sha256.c\
+	sha256.h
 
 noinst_LTLIBRARIES = libclamav_internal_utils.la
 COMMON_CLEANFILES = version.h version.h.tmp *.gcda *.gcno lzma/*.gcda lzma/*.gcno
@@ -712,6 +715,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/regex_suffix.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rtf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/scanners.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sha256.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sis.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/special.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spin.Plo@am__quote@

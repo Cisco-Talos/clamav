@@ -45,7 +45,7 @@
 #include "iana_tld.h"
 #include "iana_cctld.h"
 #include "scanners.h"
-#include "md5.h"
+#include "sha256.h"
 #include <assert.h>
 
 #include "mpool.h"
@@ -482,6 +482,7 @@ static int isSSL(const char* URL)
 static void
 str_hex_to_char(char **begin, const char **end)
 {
+	char *firsthex, *sbegin_;
 	char *sbegin = *begin;
 	const char *str_end = *end;
 
@@ -497,16 +498,25 @@ str_hex_to_char(char **begin, const char **end)
 		sbegin += 2;
 	}
 	*begin = sbegin++;
-	while(sbegin+3 < str_end) {
-		while(sbegin+3<str_end && sbegin[0]=='%') {
-			const char* src = sbegin+3;
+	do {
+	    sbegin_ = sbegin;
+	    firsthex = NULL;
+	    while(sbegin+3 <= str_end) {
+		if (sbegin+3<=str_end && sbegin[0]=='%') {
+		    const char* src = sbegin+3;
+		    if (isxdigit(sbegin[1]) && isxdigit(sbegin[2])) {
 			*sbegin = hex2int((unsigned char*)sbegin+1);
+			if (*sbegin == '%' && !firsthex)
+			    firsthex = sbegin;
 			/* move string */
 			memmove(sbegin+1,src,str_end-src+1);
 			str_end -= 2;
+		    }
 		}
 		sbegin++;
-	}
+	    }
+	    sbegin = sbegin_;
+	} while (firsthex);
 	*end = str_end;
 }
 
@@ -1158,66 +1168,96 @@ static int hash_match(const struct regex_matcher *rlist, const char *host, size_
 	s[hlen+plen] = '\0';
 	cli_dbgmsg("hash lookup for: %s\n",s);
 #endif
-	if(rlist->md5_hashes.bm_patterns) {
-		unsigned char md5_dig[16];
-		cli_md5_ctx md5;
+	if(rlist->sha256_hashes.bm_patterns) {
+	    unsigned char sha256_dig[32];
+	    SHA256_CTX sha256;
 
-		cli_md5_init(&md5);
-		cli_md5_update(&md5, host, hlen);
-		cli_md5_update(&md5, path, plen);
-		cli_md5_final(md5_dig, &md5);
-		if(SO_search(&rlist->md5_filter, md5_dig, 16) != -1 &&
-				cli_bm_scanbuff(md5_dig, 16, &virname, &rlist->md5_hashes,0,0,-1) == CL_VIRUS) {
-			switch(*virname) {
-				case '1':
-					return CL_PHISH_HASH1;
-				case '2':
-					return CL_PHISH_HASH2;
-				default:
-					return CL_PHISH_HASH0;
-			}
+	    sha256_init(&sha256);
+	    sha256_update(&sha256, host, hlen);
+	    sha256_update(&sha256, path, plen);
+	    sha256_final(&sha256, sha256_dig);
+	    if(SO_search(&rlist->sha256_filter, sha256_dig, 32) != -1 &&
+	       cli_bm_scanbuff(sha256_dig, 32, &virname, &rlist->sha256_hashes,0,0,-1) == CL_VIRUS) {
+		switch(*virname) {
+		    case '1':
+			return CL_PHISH_HASH1;
+		    case '2':
+			return CL_PHISH_HASH2;
+		    default:
+			return CL_PHISH_HASH0;
 		}
+	    }
 	}
 	return CL_SUCCESS;
 }
 
 #define URL_MAX_LEN 1024
 #define COMPONENTS 4
-static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, size_t len)
+int cli_url_canon(const char *inurl, size_t len, char *urlbuff, size_t dest_len, char **host, size_t *hostlen, char **path, size_t *pathlen)
 {
-	char urlbuff[URL_MAX_LEN+3];/* htmlnorm truncates at 1024 bytes + terminating null + slash + host end null */
-	char *url, *p;
+	char *url, *p, *last;
+	char *host_begin, *path_begin;
 	const char *urlend = urlbuff + len;
-	char *host_begin;
 	size_t host_len, path_len;
-	char *path_begin;
-	const char *component;
-	const char *lp[COMPONENTS+1];
-	size_t pp[COMPONENTS+2];
-	size_t j, k, ji, ki;
-	int rc;
 
-	if(!rlist || !rlist->md5_hashes.bm_patterns) {
-		return CL_SUCCESS;
-	}
-	if(!inurl)
-		return CL_EMEM;
-	strncpy(urlbuff, inurl, URL_MAX_LEN);
-	urlbuff[URL_MAX_LEN] = urlbuff[URL_MAX_LEN+1] = urlbuff[URL_MAX_LEN+2] = '\0';
+	dest_len -= 3;
+	strncpy(urlbuff, inurl, dest_len);
+	urlbuff[dest_len] = urlbuff[dest_len+1] = urlbuff[dest_len+2] = '\0';
 	url = urlbuff;
-	str_hex_to_char(&url, &urlend);
-	len = urlend - url;
-	host_begin = strchr(url,':');
-	if(!host_begin) {
+
+	host_begin = strchr(url, ':');
+	if(!host_begin)
 		return CL_PHISH_CLEAN;
-	}
 	++host_begin;
+
+	p = strchr(host_begin, '@');
+	if (p)
+	    host_begin = p+1;
+	url = host_begin;
+	str_hex_to_char(&url, &urlend);
+	host_begin = url;
+	len = urlend - url;
 	while((host_begin < urlend) && *host_begin == '/') ++host_begin;
 	while(*host_begin == '.' && host_begin < urlend) ++host_begin;
-	p = strchr(host_begin, '@');
-	if(p)
-		host_begin = p+1;
 
+	last = strchr(host_begin, '/');
+	p = host_begin;
+	while (p < urlend) {
+	    if (p+2 < urlend && *p == '/' && p[1] == '.' ) {
+		if (p[2] == '/') {
+		    if (p + 3 < urlend)
+			memmove(p+1, p+3, urlend - p - 3);
+		    urlend -= 2;
+		}
+		else if (p[2] == '.' && (p[3] == '/' || p[3] == '\0') && last) {
+		    if (p+4 < urlend)
+			memmove(last+1, p+4, urlend - p - 4);
+		    urlend -= 3 + (p - last);
+		}
+	    }
+	    if (*p == '/')
+		last = p;
+	    p++;
+	}
+	p = &url[urlend - url];
+	*p = '\0';
+
+	p = host_begin;
+	while (p < urlend && p+2 < url + dest_len) {
+	    unsigned char c = *p;
+	    if (c <= 32 || c >= 127 || c == '%' || c == '#') {
+		char hexchars[] = "0123456789ABCDEF";
+		memmove(p+3, p+1, urlend - p - 1);
+		*p++ = '%';
+		*p++ = hexchars[c>>4];
+		*p = hexchars[c&0xf];
+		urlend += 2;
+	    }
+	    p++;
+	}
+	*p = '\0';
+	urlend = p;
+	len = urlend - url;
 	host_len = strcspn(host_begin, ":/?");
 	path_begin = host_begin + host_len;
 	if(host_len < len) {
@@ -1227,10 +1267,45 @@ static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, 
 	} else path_begin = url+len;
 	if(url + len >= path_begin) {
 		path_len = url + len - path_begin + 1;
-	} else
+		p = strchr(path_begin, '#');
+		if (p) {
+		    *p = '\0';
+		    path_len = p - path_begin;
+		}
+	} else {
 		path_len = 0;
+		path_begin = "";
+	}
 	str_make_lowercase(host_begin, host_len);
+	*host = host_begin;
+	*path = path_begin;
+	*hostlen = host_len;
+	*pathlen = path_len;
+	return CL_PHISH_NODECISION;
+}
 
+static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, size_t len)
+{
+	size_t j, k, ji, ki;
+	char *host_begin, *path_begin;
+	const char *component;
+	size_t path_len;
+	size_t host_len;
+	char *p;
+	int rc;
+	const char *lp[COMPONENTS+1];
+	size_t pp[COMPONENTS+2];
+	char urlbuff[URL_MAX_LEN+3];/* htmlnorm truncates at 1024 bytes + terminating null + slash + host end null */
+
+	if(!rlist || !rlist->sha256_hashes.bm_patterns) {
+		return CL_SUCCESS;
+	}
+	if(!inurl)
+		return CL_EMEM;
+
+	rc = cli_url_canon(inurl, len, urlbuff, sizeof(urlbuff), &host_begin, &host_len, &path_begin, &path_len);
+	if (rc == CL_PHISH_CLEAN)
+	    return rc;
 	j=COMPONENTS;
 	component = strrchr(host_begin, '.');
 	while(component && j > 0) {

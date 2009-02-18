@@ -264,7 +264,9 @@ libclamav_la_SOURCES = \
 	version.h\
 	mpool.c\
 	mpool.h \
-	default.h
+	default.h\
+	sha256.c\
+	sha256.h
 
 .PHONY: version.h.tmp
 version.lo: version.h

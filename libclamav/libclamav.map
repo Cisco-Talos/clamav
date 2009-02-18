@@ -128,6 +128,10 @@ CLAMAV_PRIVATE {
     cli_ftw;
     cli_unlink;
     cli_writen;
+    sha256_init;
+    sha256_update;
+    sha256_final;
+    cli_url_canon;
   local:
     *;
 };
