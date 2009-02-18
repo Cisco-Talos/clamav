@@ -244,6 +244,7 @@ void cpool_free(void) {
 
     if(!quitting) {
 	logg("*Killing the monitor and stopping\n");
+	quitting = 1;
 	pthread_cond_signal(&mon_cond);
 	pthread_join(probe_th, NULL);
     }

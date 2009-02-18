@@ -25,3 +25,9 @@ install-data-local:
 	$(INSTALL_DATA) $(srcdir)/clamd.conf $(DESTDIR)$(CFGINST)
 	@test -f $(DESTDIR)$(CFGINST)/freshclam.conf || \
 	$(INSTALL_DATA) $(srcdir)/freshclam.conf $(DESTDIR)$(CFGINST)
+if BUILD_CLAMD
+if HAVE_MILTER
+	@test -f $(DESTDIR)$(CFGINST)/clamav-milter.conf || \
+	$(INSTALL_DATA) $(srcdir)/clamav-milter.conf $(DESTDIR)$(CFGINST)
+endif
+endif

@@ -1,3 +1,8 @@
+Wed Feb 18 03:12:12 CET 2009 (acab)
+-----------------------------------
+ * clamav-milter: die on TERM (bb#1400)
+		  install conf file on make install
+
 Tue Feb 17 23:12:19 EET 2009 (edwin)
 ------------------------------------
  * unit_tests/check_clamd.c: disable test on BSD

@@ -397,6 +397,8 @@ install-data-local:
 	$(INSTALL_DATA) $(srcdir)/clamd.conf $(DESTDIR)$(CFGINST)
 	@test -f $(DESTDIR)$(CFGINST)/freshclam.conf || \
 	$(INSTALL_DATA) $(srcdir)/freshclam.conf $(DESTDIR)$(CFGINST)
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	@test -f $(DESTDIR)$(CFGINST)/clamav-milter.conf || \
+@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	$(INSTALL_DATA) $(srcdir)/clamav-milter.conf $(DESTDIR)$(CFGINST)
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
