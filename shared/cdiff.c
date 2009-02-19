@@ -51,6 +51,9 @@
 #define PSS_NBITS 2048
 #define PSS_DIGEST_LENGTH 32
 
+/* the line size can be changed from within .cdiff */
+#define CDIFF_LINE_SIZE CLI_DEFAULT_LSIG_BUFSIZE + 32
+
 struct cdiff_node {
     unsigned int lineno;
     char *str, *str2;
@@ -67,16 +70,16 @@ struct cdiff_ctx {
 struct cdiff_cmd {
     const char *name;
     unsigned short argc;
-    int (*handler)(const char *, struct cdiff_ctx *);
+    int (*handler)(const char *, struct cdiff_ctx *, char *, unsigned int);
 };
 
-static int cdiff_cmd_open(const char *cmdstr, struct cdiff_ctx *ctx);
-static int cdiff_cmd_add(const char *cmdstr, struct cdiff_ctx *ctx);
-static int cdiff_cmd_del(const char *cmdstr, struct cdiff_ctx *ctx);
-static int cdiff_cmd_xchg(const char *cmdstr, struct cdiff_ctx *ctx);
-static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx);
-static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx);
-static int cdiff_cmd_unlink(const char *cmdstr, struct cdiff_ctx *ctx);
+static int cdiff_cmd_open(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, unsigned int lbuflen);
+static int cdiff_cmd_add(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, unsigned int lbuflen);
+static int cdiff_cmd_del(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, unsigned int lbuflen);
+static int cdiff_cmd_xchg(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, unsigned int lbuflen);
+static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, unsigned int lbuflen);
+static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, unsigned int lbuflen);
+static int cdiff_cmd_unlink(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, unsigned int lbuflen);
 
 static struct cdiff_cmd commands[] = {
     /* OPEN db_name */
@@ -170,7 +173,7 @@ static char *cdiff_token(const char *line, unsigned int token, unsigned int last
     return buffer;
 }
 
-static int cdiff_cmd_open(const char *cmdstr, struct cdiff_ctx *ctx)
+static int cdiff_cmd_open(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, unsigned int lbuflen)
 {
 	char *db;
 	unsigned int i;
@@ -199,7 +202,7 @@ static int cdiff_cmd_open(const char *cmdstr, struct cdiff_ctx *ctx)
     return 0;
 }
 
-static int cdiff_cmd_add(const char *cmdstr, struct cdiff_ctx *ctx)
+static int cdiff_cmd_add(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, unsigned int lbuflen)
 {
 	char *sig;
 	struct cdiff_node *new;
@@ -228,7 +231,7 @@ static int cdiff_cmd_add(const char *cmdstr, struct cdiff_ctx *ctx)
     return 0;
 }
 
-static int cdiff_cmd_del(const char *cmdstr, struct cdiff_ctx *ctx)
+static int cdiff_cmd_del(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, unsigned int lbuflen)
 {
 	char *arg;
 	struct cdiff_node *pt, *last, *new;
@@ -285,7 +288,7 @@ static int cdiff_cmd_del(const char *cmdstr, struct cdiff_ctx *ctx)
     return 0;
 }
 
-static int cdiff_cmd_xchg(const char *cmdstr, struct cdiff_ctx *ctx)
+static int cdiff_cmd_xchg(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, unsigned int lbuflen)
 {
 	char *arg, *arg2;
 	struct cdiff_node *pt, *last, *new;
@@ -350,11 +353,11 @@ static int cdiff_cmd_xchg(const char *cmdstr, struct cdiff_ctx *ctx)
     return 0;
 }
 
-static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx)
+static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, unsigned int lbuflen)
 {
 	struct cdiff_node *add, *del, *xchg;
 	unsigned int lines = 0;
-	char *tmp, line[CLI_DEFAULT_LSIG_BUFSIZE + 32];
+	char *tmp;
 	FILE *fh, *tmpfh;
 
 
@@ -387,11 +390,11 @@ static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx)
 	    return -1;
 	}
 
-	while(fgets(line, sizeof(line), fh)) {
+	while(fgets(lbuf, lbuflen, fh)) {
 	    lines++;
 
 	    if(del && del->lineno == lines) {
-		if(strncmp(line, del->str, strlen(del->str))) {
+		if(strncmp(lbuf, del->str, strlen(del->str))) {
 		    fclose(fh);
 		    fclose(tmpfh);
 		    unlink(tmp);
@@ -399,13 +402,12 @@ static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx)
 		    logg("!cdiff_cmd_close: Can't apply DEL at line %d of %s\n", lines, ctx->open_db);
 		    return -1;
 		}
-
 		del = del->next;
 		continue;
 	    }
 
 	    if(xchg && xchg->lineno == lines) {
-		if(strncmp(line, xchg->str, strlen(xchg->str))) {
+		if(strncmp(lbuf, xchg->str, strlen(xchg->str))) {
 		    fclose(fh);
 		    fclose(tmpfh);
 		    unlink(tmp);
@@ -426,7 +428,7 @@ static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx)
 		continue;
 	    }
 
-	    if(fputs(line, tmpfh) == EOF) {
+	    if(fputs(lbuf, tmpfh) == EOF) {
 		fclose(fh);
 		fclose(tmpfh);
 		unlink(tmp);
@@ -487,10 +489,10 @@ static int cdiff_cmd_close(const char *cmdstr, struct cdiff_ctx *ctx)
     return 0;
 }
 
-static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx)
+static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, unsigned int lbuflen)
 {
 	unsigned int lines = 0, start_line, end_line;
-	char *arg, *srcdb, *dstdb, *tmpdb, line[CLI_DEFAULT_LSIG_BUFSIZE + 32], *start_str, *end_str;
+	char *arg, *srcdb, *dstdb, *tmpdb, *start_str, *end_str;
 	FILE *src, *dst, *tmp;
 
 
@@ -586,11 +588,11 @@ static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx)
 	return -1;
     }
 
-    while(fgets(line, sizeof(line), src)) {
+    while(fgets(lbuf, lbuflen, src)) {
 	lines++;
 
 	if(lines == start_line) {
-	    if(strncmp(line, start_str, strlen(start_str))) {
+	    if(strncmp(lbuf, start_str, strlen(start_str))) {
 		free(start_str);
 		free(end_str);
 		free(srcdb);
@@ -605,7 +607,7 @@ static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx)
 	    }
 
 	    do {
-		if(fputs(line, dst) == EOF) {
+		if(fputs(lbuf, dst) == EOF) {
 		    free(start_str);
 		    free(end_str);
 		    free(srcdb);
@@ -618,14 +620,14 @@ static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx)
 		    free(dstdb);
 		    return -1;
 		}
-	    } while((lines < end_line) && fgets(line, sizeof(line), src) && lines++);
+	    } while((lines < end_line) && fgets(lbuf, lbuflen, src) && lines++);
 
 	    fclose(dst);
 	    free(dstdb);
 	    dstdb = NULL;
 	    free(start_str);
 
-	    if(strncmp(line, end_str, strlen(end_str))) {
+	    if(strncmp(lbuf, end_str, strlen(end_str))) {
 		free(end_str);
 		free(srcdb);
 		fclose(src);
@@ -640,7 +642,7 @@ static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx)
 	    continue;
 	}
 
-	if(fputs(line, tmp) == EOF) {
+	if(fputs(lbuf, tmp) == EOF) {
 	    free(srcdb);
 	    fclose(src);
 	    fclose(tmp);
@@ -688,7 +690,7 @@ static int cdiff_cmd_move(const char *cmdstr, struct cdiff_ctx *ctx)
     return 0;
 }
 
-static int cdiff_cmd_unlink(const char *cmdstr, struct cdiff_ctx *ctx)
+static int cdiff_cmd_unlink(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, unsigned int lbuflen)
 {
 	char *db;
 	unsigned int i;
@@ -722,10 +724,10 @@ static int cdiff_cmd_unlink(const char *cmdstr, struct cdiff_ctx *ctx)
     return 0;
 }
 
-static int cdiff_execute(const char *cmdstr, struct cdiff_ctx *ctx)
+static int cdiff_execute(const char *cmdstr, struct cdiff_ctx *ctx, char *lbuf, unsigned int lbuflen)
 {
 	char *cmd_name, *tmp;
-	int (*cmd_handler)(const char *, struct cdiff_ctx *) = NULL;
+	int (*cmd_handler)(const char *, struct cdiff_ctx *, char *, unsigned int) = NULL;
 	unsigned int i;
 
 
@@ -755,7 +757,7 @@ static int cdiff_execute(const char *cmdstr, struct cdiff_ctx *ctx)
     }
     free(tmp);
 
-    if(cmd_handler(cmdstr, ctx)) {
+    if(cmd_handler(cmdstr, ctx, lbuf, lbuflen)) {
 	logg("!cdiff_apply: Can't execute command %s\n", cmd_name);
 	free(cmd_name);
 	return -1;
@@ -866,9 +868,9 @@ int cdiff_apply(int fd, unsigned short mode)
 	struct cdiff_ctx ctx;
 	FILE *fh;
 	gzFile *gzh;
-	char line[CLI_DEFAULT_LSIG_BUFSIZE + 32], buff[FILEBUFF], *dsig = NULL;
+	char *line, *lbuf, buff[FILEBUFF], *dsig = NULL;
 	unsigned int lines = 0, cmds = 0;
-	unsigned int difflen, diffremain;
+	unsigned int difflen, diffremain, line_size = CDIFF_LINE_SIZE;
 	int end, i, n;
 	struct stat sb;
 	int desc;
@@ -884,18 +886,35 @@ int cdiff_apply(int fd, unsigned short mode)
 	return -1;
     }
 
+    if(!(line = malloc(line_size))) {
+	logg("!cdiff_apply: Can't allocate memory for 'line'\n");
+	close(desc);
+	return -1;
+    }
+
+    if(!(lbuf = malloc(line_size))) {
+	logg("!cdiff_apply: Can't allocate memory for 'lbuf'\n");
+	close(desc);
+	free(line);
+	return -1;
+    }
+
     if(mode == 1) { /* .cdiff */
 
 	if(lseek(desc, -DSIGBUFF, SEEK_END) == -1) {
 	    logg("!cdiff_apply: lseek(desc, %d, SEEK_END) failed\n", -DSIGBUFF);
 	    close(desc);
+	    free(line);
+	    free(lbuf);
 	    return -1;
 	}
 
-	memset(line, 0, sizeof(line));
+	memset(line, 0, line_size);
 	if(read(desc, line, DSIGBUFF) != DSIGBUFF) {
 	    logg("!cdiff_apply: Can't read %d bytes\n", DSIGBUFF);
 	    close(desc);
+	    free(line);
+	    free(lbuf);
 	    return -1;
 	}
 
@@ -909,12 +928,16 @@ int cdiff_apply(int fd, unsigned short mode)
 	if(!dsig) {
 	    logg("!cdiff_apply: No digital signature in cdiff file\n");
 	    close(desc);
+	    free(line);
+	    free(lbuf);
 	    return -1;
 	}
 
 	if(fstat(desc, &sb) == -1) {
 	    logg("!cdiff_apply: Can't fstat file\n");
 	    close(desc);
+	    free(line);
+	    free(lbuf);
 	    return -1;
 	}
 
@@ -922,12 +945,16 @@ int cdiff_apply(int fd, unsigned short mode)
 	if(end < 0) {
 	    logg("!cdiff_apply: compressed data end offset < 0\n");
 	    close(desc);
+	    free(line);
+	    free(lbuf);
 	    return -1;
 	}
 
 	if(lseek(desc, 0, SEEK_SET) == -1) {
 	    logg("!cdiff_apply: lseek(desc, 0, SEEK_SET) failed\n");
 	    close(desc);
+	    free(line);
+	    free(lbuf);
 	    return -1;
 	}
 
@@ -947,12 +974,16 @@ int cdiff_apply(int fd, unsigned short mode)
 	if(pss_versig(digest, dsig)) {
 	    logg("!cdiff_apply: Incorrect digital signature\n");
 	    close(desc);
+	    free(line);
+	    free(lbuf);
 	    return -1;
 	}
 
 	if(lseek(desc, 0, SEEK_SET) == -1) {
 	    logg("!cdiff_apply: lseek(desc, 0, SEEK_SET) failed\n");
 	    close(desc);
+	    free(line);
+	    free(lbuf);
 	    return -1;
 	}
 
@@ -968,36 +999,67 @@ int cdiff_apply(int fd, unsigned short mode)
 	if(sscanf(buff, "ClamAV-Diff:%*u:%u:", &difflen) != 1) {
 	    logg("!cdiff_apply: Incorrect file format\n");
 	    close(desc);
+	    free(line);
+	    free(lbuf);
 	    return -1;
 	}
 
 	if(!(gzh = gzdopen(desc, "rb"))) {
 	    logg("!cdiff_apply: Can't gzdopen descriptor %d\n", desc);
 	    close(desc);
+	    free(line);
+	    free(lbuf);
 	    return -1;
 	}
 
 	diffremain = difflen;
 	while(diffremain) {
-	    unsigned int bufsize = diffremain < sizeof(line) ? diffremain + 1 : sizeof(line);
+	    unsigned int bufsize = diffremain < line_size ? diffremain + 1 : line_size;
 
 	    if(!gzgets(gzh, line, bufsize)) {
 		logg("!cdiff_apply: Premature EOF at line %d\n", lines + 1);
 		cdiff_ctx_free(&ctx);
 		gzclose(gzh);
+		free(line);
+		free(lbuf);
 		return -1;
 	    }
 	    diffremain -= strlen(line);
 	    lines++;
 	    cli_chomp(line);
 
-	    if(line[0] == '#' || !strlen(line))
+	    if(!strlen(line))
 		continue;
+	    if(line[0] == '#') {
+		if(!strncmp(line, "#LSIZE", 6) && sscanf(line, "#LSIZE %u", &line_size) == 1) {
+			char *r1, *r2;
+		    if(line_size < CDIFF_LINE_SIZE || line_size > 10485760) {
+			logg("^cdiff_apply: Ignoring new buffer size request - invalid size %d\n", line_size);
+			line_size = CDIFF_LINE_SIZE;
+			continue;
+		    }
+		    r1 = realloc(line, line_size);
+		    r2 = realloc(lbuf, line_size);
+		    if(!r1 || !r2) {
+			logg("!cdiff_apply: Can't resize line buffer to %d bytes\n", line_size);
+			cdiff_ctx_free(&ctx);
+			fclose(fh);
+			free(line);
+			free(lbuf);
+			return -1;
+		    }
+		    line = r1;
+		    lbuf = r2;
+		}
+		continue;
+	    }
 
-	    if(cdiff_execute(line, &ctx) == -1) {
+	    if(cdiff_execute(line, &ctx, lbuf, line_size) == -1) {
 		logg("!cdiff_apply: Error executing command at line %d\n", lines);
 		cdiff_ctx_free(&ctx);
 		gzclose(gzh);
+		free(line);
+		free(lbuf);
 		return -1;
 	    } else {
 		cmds++;
@@ -1010,20 +1072,47 @@ int cdiff_apply(int fd, unsigned short mode)
 	if(!(fh = fdopen(desc, "r"))) {
 	    logg("!cdiff_apply: fdopen() failed for descriptor %d\n", desc);
 	    close(desc);
+	    free(line);
+	    free(lbuf);
 	    return -1;
 	}
 
-	while(fgets(line, sizeof(line), fh)) {
+	while(fgets(line, line_size, fh)) {
 	    lines++;
 	    cli_chomp(line);
 
-	    if(line[0] == '#' || !strlen(line))
+	    if(!strlen(line))
 		continue;
+	    if(line[0] == '#') {
+		if(!strncmp(line, "#LSIZE", 6) && sscanf(line, "#LSIZE %u", &line_size) == 1) {
+			char *r1, *r2;
+		    if(line_size < CDIFF_LINE_SIZE || line_size > 10485760) {
+			logg("^cdiff_apply: Ignoring new buffer size request - invalid size %d\n", line_size);
+			line_size = CDIFF_LINE_SIZE;
+			continue;
+		    }
+		    r1 = realloc(line, line_size);
+		    r2 = realloc(lbuf, line_size);
+		    if(!r1 || !r2) {
+			logg("!cdiff_apply: Can't resize line buffer to %d bytes\n", line_size);
+			cdiff_ctx_free(&ctx);
+			fclose(fh);
+			free(line);
+			free(lbuf);
+			return -1;
+		    }
+		    line = r1;
+		    lbuf = r2;
+		}
+		continue;
+	    }
 
-	    if(cdiff_execute(line, &ctx) == -1) {
+	    if(cdiff_execute(line, &ctx, lbuf, line_size) == -1) {
 		logg("!cdiff_apply: Error executing command at line %d\n", lines);
 		cdiff_ctx_free(&ctx);
 		fclose(fh);
+		free(line);
+		free(lbuf);
 		return -1;
 	    } else {
 		cmds++;
@@ -1032,6 +1121,9 @@ int cdiff_apply(int fd, unsigned short mode)
 
 	fclose(fh);
     }
+
+    free(line);
+    free(lbuf);
 
     if(ctx.open_db) {
 	logg("*cdiff_apply: File %s was not properly closed\n", ctx.open_db);

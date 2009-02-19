@@ -1,3 +1,7 @@
+Thu Feb 19 13:28:04 CET 2009 (tk)
+---------------------------------
+ * shared/cdiff.c: scripts can now control size of input buffer (bb#1395)
+
 Thu Feb 19 11:20:58 EET 2009 (edwin)
 ------------------------------------
  * clamd/, etc/, libclamav/, unit_tests/: fix distcheck.
