@@ -1992,7 +1992,7 @@ static void cli_md5db_build(struct cli_matcher* root)
 {
 	if(root && root->md5_sizes_hs.capacity) {
 		/* TODO: use hashset directly, instead of the array when matching*/
-		cli_dbgmsg("Converting hashset to array: %lu entries\n", root->md5_sizes_hs.count);
+		cli_dbgmsg("Converting hashset to array: %u entries\n", root->md5_sizes_hs.count);
 
 #ifdef USE_MPOOL
 		{

@@ -162,7 +162,8 @@ void sighandler_th(int sig)
     }
     /* a signal doesn't always wake poll(), for example on FreeBSD */
     if (action && syncpipe_wake_recv_w != -1)
-	write(syncpipe_wake_recv_w, "", 1);
+	if (write(syncpipe_wake_recv_w, "", 1) != 1)
+	    logg("$Failed to write to syncpipe\n");
 }
 
 static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dboptions, const struct optstruct *opts, int do_check, int *ret)

@@ -226,7 +226,7 @@ static const struct rtest {
 		"http://pages.ebay.de@fake.example.com","pages.ebay.de",0},
 	{NULL,"http://key.com","https://key.com",0},
 	{NULL,"http://key.com%00fake.example.com","https://key.com",0},
-	{NULL,"http://key.com.example.com","key.com.invalid"}
+	{NULL,"http://key.com.example.com","key.com.invalid",0}
 };
 
 #ifdef CHECK_HAVE_LOOPS
@@ -440,7 +440,8 @@ static struct uc {
 START_TEST (test_url_canon)
 {
     char urlbuff[1024+3];
-    char *host = NULL, *path = NULL;
+    char *host = NULL;
+    const char *path = NULL;
     size_t host_len, path_len;
     struct uc *u = &uc[_i];
 

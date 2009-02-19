@@ -1206,7 +1206,7 @@ static int hash_match(const struct regex_matcher *rlist, const char *host, size_
 
 #define URL_MAX_LEN 1024
 #define COMPONENTS 4
-int cli_url_canon(const char *inurl, size_t len, char *urlbuff, size_t dest_len, char **host, size_t *hostlen, char **path, size_t *pathlen)
+int cli_url_canon(const char *inurl, size_t len, char *urlbuff, size_t dest_len, char **host, size_t *hostlen, const char **path, size_t *pathlen)
 {
 	char *url, *p, *last;
 	char *host_begin, *path_begin;
@@ -1285,13 +1285,13 @@ int cli_url_canon(const char *inurl, size_t len, char *urlbuff, size_t dest_len,
 		    *p = '\0';
 		    path_len = p - path_begin;
 		}
+		*path = path_begin;
 	} else {
 		path_len = 0;
-		path_begin = "";
+		*path = "";
 	}
 	str_make_lowercase(host_begin, host_len);
 	*host = host_begin;
-	*path = path_begin;
 	*hostlen = host_len;
 	*pathlen = path_len;
 	return CL_PHISH_NODECISION;
@@ -1300,7 +1300,8 @@ int cli_url_canon(const char *inurl, size_t len, char *urlbuff, size_t dest_len,
 static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, size_t len)
 {
 	size_t j, k, ji, ki;
-	char *host_begin, *path_begin;
+	char *host_begin;
+	const char *path_begin;
 	const char *component;
 	size_t path_len;
 	size_t host_len;

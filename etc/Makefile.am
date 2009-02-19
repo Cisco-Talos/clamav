@@ -16,7 +16,7 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-EXTRA_DIST = clamd.conf freshclam.conf
+EXTRA_DIST = clamd.conf freshclam.conf clamav-milter.conf
 CFGINST = @CFGDIR@
  
 install-data-local:

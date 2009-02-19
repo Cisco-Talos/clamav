@@ -1,3 +1,7 @@
+Thu Feb 19 11:20:58 EET 2009 (edwin)
+------------------------------------
+ * clamd/, etc/, libclamav/, unit_tests/: fix distcheck.
+
 Wed Feb 18 23:12:36 CET 2009 (tk)
 ---------------------------------
  * libclamav/textdet.c: improve UTF-16 detection (bb#1209)

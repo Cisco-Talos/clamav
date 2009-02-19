@@ -444,7 +444,7 @@ int hashset_init(struct hashset* hs, size_t initial_capacity, uint8_t load_facto
 
 void hashset_destroy(struct hashset* hs)
 {
-	cli_dbgmsg(MODULE_NAME "Freeing hashset, elements: %lu, capacity: %lu\n", hs->count, hs->capacity);
+	cli_dbgmsg(MODULE_NAME "Freeing hashset, elements: %u, capacity: %u\n", hs->count, hs->capacity);
 	free(hs->keys);
 	free(hs->bitmap);
 	hs->keys = hs->bitmap = NULL;
@@ -497,7 +497,7 @@ static int hashset_grow(struct hashset *hs)
 
 	/* in-place growing is not possible, since the new keys
 	 * will hash to different locations. */
-	cli_dbgmsg(MODULE_NAME "Growing hashset, used: %lu, capacity: %lu\n", hs->count, hs->capacity);
+	cli_dbgmsg(MODULE_NAME "Growing hashset, used: %u, capacity: %u\n", hs->count, hs->capacity);
 	/* create a bigger hashset */
 	if((rc = hashset_init(&new_hs, hs->capacity << 1, hs->limit*100/hs->capacity)) < 0) {
 		return rc;

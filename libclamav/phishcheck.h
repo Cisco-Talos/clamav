@@ -72,7 +72,7 @@ void phish_disable(struct cl_engine* engine,const char* reason);
 /* Global, non-thread-safe functions, call only once! */
 int phishing_init(struct cl_engine* engine);
 void phishing_done(struct cl_engine* engine);
-int cli_url_canon(const char *inurl, size_t len, char *urlbuff, size_t dest_len, char **host, size_t *hostlen, char **path, size_t *pathlen);
+int cli_url_canon(const char *inurl, size_t len, char *urlbuff, size_t dest_len, char **host, size_t *hostlen, const char **path, size_t *pathlen);
 /* end of non-thread-safe functions */
 
 
