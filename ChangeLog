@@ -1,3 +1,7 @@
+Fri Feb 20 15:57:11 CET 2009 (tk)
+---------------------------------
+ * examples/ex1.c: use new API
+
 Fri Feb 20 15:53:18 EET 2009 (edwin)
 ------------------------------------
  * unit_tests/check_clamd.c, unit_tests/check_clamd.sh: Fix
