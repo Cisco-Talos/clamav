@@ -55,7 +55,7 @@
 
 static int sockd;
 #define SOCKET "clamd-test.socket"
-static void conn_setup(void)
+static void conn_setup_mayfail(int may)
 {
     int rc;
     struct sockaddr_un nixsock;
@@ -64,12 +64,19 @@ static void conn_setup(void)
     strncpy(nixsock.sun_path, SOCKET, sizeof(nixsock.sun_path));
 
     sockd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (sockd == -1 && (may && (errno == EMFILE || errno == ENFILE)))
+	return;
     fail_unless_fmt(sockd != -1, "Unable to create socket: %s\n", strerror(errno));
 
     rc = connect(sockd, (struct sockaddr *)&nixsock, sizeof(nixsock));
     fail_unless_fmt(rc != -1, "Unable to connect(): %s\n", strerror(errno));
 
     signal(SIGPIPE, SIG_IGN);
+}
+
+static void conn_setup(void)
+{
+    conn_setup_mayfail(0);
 }
 
 static int conn_tcp(int port)
@@ -136,8 +143,6 @@ static void commands_setup(void)
 
 static void commands_teardown(void)
 {
-    int rc = unlink(ACCDENIED);
-    fail_unless_fmt(rc != -1, "Failed to unlink access denied testfile: %s\n", strerror(errno));
 }
 
 #define VERSION_REPLY "ClamAV "REPO_VERSION""VERSION_SUFFIX
@@ -502,22 +507,25 @@ START_TEST (test_fildes_many)
 {
     const char idsession[] = "zIDSESSION";
     int dummyfd, dummycleanfd, i, killed = 0;
-
     conn_setup();
     dummyfd = open(SCANFILE, O_RDONLY);
     fail_unless_fmt(dummyfd != -1, "failed to open %s: %s\n", SCANFILE, strerror(errno));
 
     fail_unless_fmt(send(sockd, idsession, sizeof(idsession), 0) == sizeof(idsession), "send IDSESSION failed\n");
-    for (i=0; i < 2048; i++) {
+    for (i=0;i<1024;i++) {
 	if (sendmsg_fd(sockd, "zFILDES", sizeof("zFILDES"), dummyfd, 1) == -1) {
 	    killed = 1;
 	    break;
 	}
     }
-
-    fail_unless(killed, "Clamd did not kill connection when overloaded!\n");
-
     close(dummyfd);
+    if (send(sockd, "zEND", sizeof("zEND"), 0) == -1) {
+	killed = 1;
+    }
+    conn_teardown();
+
+    conn_setup();
+    test_command("zPING", sizeof("zPING"), NULL, "PONG", 5);
     conn_teardown();
 }
 END_TEST
@@ -596,7 +604,11 @@ START_TEST (test_connections)
 
     for (i=0;i<nf;i++) {
 	/* just open connections, and let them time out */
-	conn_setup();
+	conn_setup_mayfail(1);
+	if (sockd == -1) {
+	    nf = i;
+	    break;
+	}
 	sock[i] = sockd;
 	if (sockd > maxfd)
 	    maxfd = sockd;
@@ -697,6 +709,7 @@ static Suite *test_clamd_suite(void)
     tcase_add_test(tc_commands, test_stream);
     tc_stress = tcase_create("clamd stress test");
     suite_add_tcase(s, tc_stress);
+    tcase_set_timeout(tc_stress, 20);
     tcase_add_test(tc_stress, test_fildes_many);
     tcase_add_test(tc_stress, test_idsession_stress);
     tcase_add_test(tc_stress, test_fildes_unwanted);
@@ -714,7 +727,7 @@ int main(void)
     int nf;
     Suite *s = test_clamd_suite();
     SRunner *sr = srunner_create(s);
-    srunner_set_log(sr, "test-clamd.log");
+    srunner_set_log(sr, BUILDDIR"/test-clamd.log");
     srunner_run_all(sr, CK_NORMAL);
     nf = srunner_ntests_failed(sr);
     srunner_free(sr);

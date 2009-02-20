@@ -276,13 +276,14 @@ run_reload_test
 
 die 0
 )&
+
 pid2=$!
 
 wait $pid1
 exitcode1=$?
 wait $pid2
 exitcode2=$?
-rm -rf clamdtest$CLAMD_TEST_UNIQ1 clamdtest$CLAMD_TEST_UNIQ2 test-db
+rm -rf clamdtest$CLAMD_TEST_UNIQ1 clamdtest$CLAMD_TEST_UNIQ2 test-db accdenied
 if (test $exitcode1 -ne 0 && test $exitcode1 -ne 127) || (test $exitcode2 -ne 0	&& test $exitcode2 -ne 127); then
 	exit 1
 fi

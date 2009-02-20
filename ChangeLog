@@ -1,3 +1,8 @@
+Fri Feb 20 15:53:18 EET 2009 (edwin)
+------------------------------------
+ * unit_tests/check_clamd.c, unit_tests/check_clamd.sh: Fix
+ timeout/run-out-of-fd bug in unit-tests (bb #1412)
+
 Fri Feb 20 13:54:53 EET 2009 (edwin)
 ------------------------------------
  * docs/man/clamd.8.in: more documentation on IDSESSION/INSTREEAM (bb
