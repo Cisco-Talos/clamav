@@ -1,3 +1,8 @@
+Fri Feb 20 13:54:53 EET 2009 (edwin)
+------------------------------------
+ * docs/man/clamd.8.in: more documentation on IDSESSION/INSTREEAM (bb
+ #1401).
+
 Thu Feb 19 13:28:04 CET 2009 (tk)
 ---------------------------------
  * shared/cdiff.c: scripts can now control size of input buffer (bb#1395)
