@@ -143,9 +143,9 @@ const unsigned short *e,         /* list of extra bits for non-simple codes */
 inflate_huft * FAR *t,  /* result: starting table */
 uIntf *m,               /* maximum lookup bits, returns actual */
 inflate_huft *hp,       /* space for trees */
-uInt *hn)               /* working area: values in order of bit length */
+uInt *hn,               /* working area: values in order of bit length */
+uIntf *v)             /* work area for huft_build */
 {
-  static uIntf v[288];             /* work area for huft_build */
   uInt a;                       /* counter for codes of length k */
   uInt c[BMAX+1];               /* bit length count table */
   uInt f;                       /* i repeats in table every f entries */
@@ -382,8 +382,7 @@ int ZEXPORT nsis_inflate(nsis_z_streamp z)
             {
               int _k;              /* temporary variable */
               uInt f = 0;         /* number of hufts used in fixed_mem */
-              static uIntf lc[288];           /* length list for huft_build */
-
+              
               /* literal table */
               for (_k = 0; _k < 288; _k++)
               {
@@ -393,15 +392,15 @@ int ZEXPORT nsis_inflate(nsis_z_streamp z)
                   if (_k < 256) v++;
                   else if (_k < 280) v--;
                 }
-                lc[_k] = v;
+                s->zs.lc[_k] = v;
               }
 
-              huft_build(lc, 288, 257, cplens, cplext, &s->zs.fixed_tl, &s->zs.fixed_bl, s->zs.fixed_mem, &f);
+              huft_build(s->zs.lc, 288, 257, cplens, cplext, &s->zs.fixed_tl, &s->zs.fixed_bl, s->zs.fixed_mem, &f, s->zs.v);
 
               /* distance table */
-              for (_k = 0; _k < 30; _k++) lc[_k] = 5;
+              for (_k = 0; _k < 30; _k++) s->zs.lc[_k] = 5;
 
-              huft_build(lc, 30, 0, cpdist, cpdext, &s->zs.fixed_td, &s->zs.fixed_bd, s->zs.fixed_mem, &f);
+              huft_build(s->zs.lc, 30, 0, cpdist, cpdext, &s->zs.fixed_td, &s->zs.fixed_bd, s->zs.fixed_mem, &f, s->zs.v);
 
               /* done */
               s->zs.fixed_built++;
@@ -476,7 +475,7 @@ int ZEXPORT nsis_inflate(nsis_z_streamp z)
         uInt hn = 0;          /* hufts used in space */
 
         t = huft_build(s->sub.trees.t_blens, 19, 19, Z_NULL, Z_NULL,
-		       &s->sub.trees.tb, &s->sub.trees.bb, s->hufts, &hn);
+		       &s->sub.trees.tb, &s->sub.trees.bb, s->hufts, &hn, s->zs.v);
         if (t != Z_OK || !s->sub.trees.bb)
         {
           s->mode = NZ_BAD;
@@ -548,12 +547,12 @@ int ZEXPORT nsis_inflate(nsis_z_streamp z)
         bl = 9;         /* must be <= 9 for lookahead assumptions */
         bd = 6;         /* must be <= 9 for lookahead assumptions */
 
-        t = huft_build(s->sub.trees.t_blens, nl, 257, cplens, cplext, &tl, &bl, s->hufts, &hn);
+        t = huft_build(s->sub.trees.t_blens, nl, 257, cplens, cplext, &tl, &bl, s->hufts, &hn, s->zs.v);
         if (bl == 0) t = Z_DATA_ERROR;
         if (t == Z_OK)
         {
           /* build distance tree */
-          t = huft_build(s->sub.trees.t_blens + nl, nd, 0, cpdist, cpdext, &td, &bd, s->hufts, &hn);
+          t = huft_build(s->sub.trees.t_blens + nl, nd, 0, cpdist, cpdext, &td, &bd, s->hufts, &hn, s->zs.v);
         }
         if (t != Z_OK || (bd == 0 && nl > 257))
         {

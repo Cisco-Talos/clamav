@@ -116,6 +116,8 @@ struct z_stuff {
   uInt fixed_bd;
   inflate_huft *fixed_tl;
   inflate_huft *fixed_td;
+  uIntf v[288];
+  uIntf lc[288];
 };
 
 struct inflate_blocks_state {

@@ -1,3 +1,7 @@
+Sat Feb 21 11:22:15 CET 2009 (acab)
+-----------------------------------
+ * libclamav/nsis: fix race introduced in r4379
+
 Sat Feb 21 10:55:30 CET 2009 (acab)
 -----------------------------------
  * build system: Allow to link to system libtommath.
