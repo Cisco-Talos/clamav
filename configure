@@ -915,6 +915,8 @@ LTLIBBZ2
 LIBBZ2_PREFIX
 ENABLE_UNRAR_TRUE
 ENABLE_UNRAR_FALSE
+LINK_TOMMATH_TRUE
+LINK_TOMMATH_FALSE
 DBDIR
 CFGDIR
 LIBCLAMAV_LIBS
@@ -1579,6 +1581,7 @@ Optional Packages:
 			  /usr/local or /usr if not found in /usr/local)
   --with-libbz2-prefix[=DIR]  search for libbz2 in DIR/include and DIR/lib
   --without-libbz2-prefix     don't search for libbz2 in includedir and libdir
+  --with-system-tommath	link against system libtommath (default = no, use bundled)
   --with-iconv supports iconv() (default=auto)
   --with-user=uid	  name of the clamav user (default=clamav)
   --with-group=gid	  name of the clamav group (default=clamav)
@@ -4778,13 +4781,13 @@ if test "${lt_cv_nm_interface+set}" = set; then
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:4781: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:4784: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4784: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:4787: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:4787: output\"" >&5)
+  (eval echo "\"\$as_me:4790: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -5995,7 +5998,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5998 "configure"' > conftest.$ac_ext
+  echo '#line 6001 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7845,11 +7848,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7848: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7851: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7852: \$? = $ac_status" >&5
+   echo "$as_me:7855: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8184,11 +8187,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8187: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8190: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8191: \$? = $ac_status" >&5
+   echo "$as_me:8194: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8289,11 +8292,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8292: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8295: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8296: \$? = $ac_status" >&5
+   echo "$as_me:8299: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -8344,11 +8347,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8347: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8350: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8351: \$? = $ac_status" >&5
+   echo "$as_me:8354: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11100,7 +11103,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11103 "configure"
+#line 11106 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11196,7 +11199,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11199 "configure"
+#line 11202 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12311,7 +12314,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 12314 "configure"
+#line 12317 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -19298,6 +19301,109 @@ else
 fi
 
 
+have_system_tommath=no
+
+# Check whether --with-system-tommath was given.
+if test "${with_system_tommath+set}" = set; then
+  withval=$with_system_tommath;
+	case "$withval" in
+	yes)
+		{ echo "$as_me:$LINENO: checking for mp_mul_2d in -ltommath" >&5
+echo $ECHO_N "checking for mp_mul_2d in -ltommath... $ECHO_C" >&6; }
+if test "${ac_cv_lib_tommath_mp_mul_2d+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-ltommath  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char mp_mul_2d ();
+int
+main ()
+{
+return mp_mul_2d ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
+  ac_cv_lib_tommath_mp_mul_2d=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_lib_tommath_mp_mul_2d=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_lib_tommath_mp_mul_2d" >&5
+echo "${ECHO_T}$ac_cv_lib_tommath_mp_mul_2d" >&6; }
+if test $ac_cv_lib_tommath_mp_mul_2d = yes; then
+
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_SYSTEM_TOMMATH 1
+_ACEOF
+
+				LIBCLAMAV_LIBS="$LIBCLAMAV_LIBS -ltommath"
+				have_system_tommath=yes
+
+else
+  { echo "$as_me:$LINENO: WARNING: ****** Option --with-system-tommath was given but libtommath does not seem to be available, using bundled files instead" >&5
+echo "$as_me: WARNING: ****** Option --with-system-tommath was given but libtommath does not seem to be available, using bundled files instead" >&2;}
+
+fi
+
+	;;
+	no) ;;
+	*) { { echo "$as_me:$LINENO: error: --with-system-tommath does not take an argument" >&5
+echo "$as_me: error: --with-system-tommath does not take an argument" >&2;}
+   { (exit 1); exit 1; }; } ;;
+	esac
+
+fi
+
+ if test "x$have_system_tommath" = "xyes"; then
+  LINK_TOMMATH_TRUE=
+  LINK_TOMMATH_FALSE='#'
+else
+  LINK_TOMMATH_TRUE='#'
+  LINK_TOMMATH_FALSE=
+fi
+
+
+
 
 # Check whether --with-iconv was given.
 if test "${with_iconv+set}" = set; then
@@ -22628,6 +22734,13 @@ echo "$as_me: error: conditional \"ENABLE_UNRAR\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
+if test -z "${LINK_TOMMATH_TRUE}" && test -z "${LINK_TOMMATH_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"LINK_TOMMATH\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"LINK_TOMMATH\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
 if test -z "${BUILD_CLAMD_TRUE}" && test -z "${BUILD_CLAMD_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"BUILD_CLAMD\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
@@ -23646,6 +23759,8 @@ LTLIBBZ2!$LTLIBBZ2$ac_delim
 LIBBZ2_PREFIX!$LIBBZ2_PREFIX$ac_delim
 ENABLE_UNRAR_TRUE!$ENABLE_UNRAR_TRUE$ac_delim
 ENABLE_UNRAR_FALSE!$ENABLE_UNRAR_FALSE$ac_delim
+LINK_TOMMATH_TRUE!$LINK_TOMMATH_TRUE$ac_delim
+LINK_TOMMATH_FALSE!$LINK_TOMMATH_FALSE$ac_delim
 DBDIR!$DBDIR$ac_delim
 CFGDIR!$CFGDIR$ac_delim
 LIBCLAMAV_LIBS!$LIBCLAMAV_LIBS$ac_delim
@@ -23667,7 +23782,7 @@ ltdl_LIBOBJS!$ltdl_LIBOBJS$ac_delim
 ltdl_LTLIBOBJS!$ltdl_LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 71; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 73; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

@@ -15,6 +15,9 @@
 #ifndef __BIGNUM_H
 #define __BIGNUM_H
 
+#ifdef HAVE_SYSTEM_TOMMATH
+#include <tommath.h>
+#else
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -579,6 +582,8 @@ extern const char *mp_s_rmap;
 #ifdef __cplusplus
    }
 #endif
+
+#endif /* HAVE_SYSTEM_TOMMATH */
 
 #endif
 

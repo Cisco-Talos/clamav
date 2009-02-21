@@ -1,3 +1,8 @@
+Sat Feb 21 10:55:30 CET 2009 (acab)
+-----------------------------------
+ * build system: Allow to link to system libtommath.
+		 Based on an idea from Steve Gran.
+
 Fri Feb 20 15:57:11 CET 2009 (tk)
 ---------------------------------
  * examples/ex1.c: use new API
