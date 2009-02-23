@@ -40,7 +40,9 @@
 #include <sys/types.h>
 #ifndef	C_WINDOWS
 #include <dirent.h>
-
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
 #include <sys/socket.h>
 #ifdef HAVE_FD_PASSING
 #ifdef HAVE_SYS_UIO_H
@@ -228,6 +230,20 @@ int command(client_conn_t *conn, int *virus)
 	    scandata.group = group = thrmgr_group_new();
 	    break;
 	case COMMAND_MULTISCANFILE:
+	    {
+		fd_set rfds;
+		struct timeval tv;
+
+		FD_ZERO(&rfds);
+		FD_SET(conn->sd, &rfds);
+		tv.tv_sec = tv.tv_usec = 0;
+		if (select(conn->sd+1, &rfds, NULL, NULL, &tv) > 0 &&
+		    FD_ISSET(conn->sd, &rfds)) {
+		    logg("$Client disconnected while multiscan was active!\n");
+		    thrmgr_group_terminate(conn->group);
+		    return CL_BREAK;
+		}
+	    }
 	    thrmgr_setactivetask(NULL, "MULTISCANFILE");
 	    scandata.group = NULL;
 	    scandata.type = TYPE_SCAN;

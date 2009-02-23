@@ -1,3 +1,8 @@
+Mon Feb 23 14:10:01 EET 2009 (edwin)
+------------------------------------
+ * clamd/session.c: stop scanning when client disconnects in
+ multiscan mode (bb #1417).
+
 Sat Feb 21 21:48:43 EET 2009 (edwin)
 ------------------------------------
  * Makefile.in, clamav-config.h.in, clamav-milter/, clamconf/,
