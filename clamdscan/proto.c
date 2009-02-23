@@ -338,6 +338,7 @@ static int serial_callback(struct stat *sb, char *filename, const char *path, en
 	return CL_EMEM;
     case warning_skipped_dir:
 	logg("^Directory recursion limit reached\n");
+    case warning_skipped_link:
 	return CL_SUCCESS;
     case warning_skipped_special:
 	logg("~%s: Not supported file type. ERROR\n", path);

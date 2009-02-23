@@ -1,3 +1,7 @@
+Mon Feb 23 19:58:08 CET 2009 (acab)
+-----------------------------------
+ * clamdscan/proto.c: handle warning_skipped_link in switch
+
 Mon Feb 23 14:53:39 EET 2009 (edwin)
 ------------------------------------
  * libclamav/regex_list.c, libclamav/regex_list.h,
