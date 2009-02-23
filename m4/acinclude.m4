@@ -710,7 +710,6 @@ AC_DEFUN([AC_LIB_FIND],
 	m4_if($#,5,,[m4_fatal([$0: invalid number of arguments: $#])])
   	define([NAME],[translit([$1],[abcdefghijklmnopqrstuvwxyz./-],
                                [ABCDEFGHIJKLMNOPQRSTUVWXYZ___])])
-	AC_CACHE_CHECK([how to compile and link with $1],[ac_cv_findlib_[]NAME[]_libs],[
 		save_CPPFLAGS="$CPPFLAGS"
 		save_LIBS="$LIBS"
 		AC_LIB_LINKFLAGS_BODY([$1])
@@ -730,7 +729,6 @@ AC_DEFUN([AC_LIB_FIND],
 		])
 		CPPFLAGS="$save_CPPFLAGS"
 		LIBS="$save_LIBS"
-	])
 	AS_IF([test "X$ac_cv_findlib_[]NAME[]_libs" = "X"],[
 			AC_MSG_NOTICE([unable to compile/link with $1])
 			HAVE_LIB[]NAME=no

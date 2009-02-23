@@ -1,7 +1,7 @@
 /*
- *  ClamdTOP version 0.1
+ *  ClamdTOP
  *
- *  Copyright (C) 2008 Sourcefire, Inc.
+ *  Copyright (C) 2008 - 2009 Sourcefire, Inc.
  *
  *  Authors: Török Edvin
  *
@@ -23,13 +23,18 @@
 #define __EXTENSIONS
 #define GCC_PRINTF
 #define GCC_SCANF
+
+#ifdef HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 #include <sys/types.h>
-#include <curses.h>
+#include CURSES_INCLUDE
 #include <time.h>
 #include <ctype.h>
 #include <signal.h>
@@ -48,6 +53,9 @@
 #include <sys/time.h>
 #include <assert.h>
 #include <errno.h>
+
+#include "shared/optparser.h"
+#include "shared/misc.h"
 
 /* Types, prototypes and globals*/
 typedef struct connection {
@@ -92,7 +100,8 @@ static void send_string(conn_t *conn, const char *cmd);
 static void read_version(conn_t *conn);
 
 enum exit_reason {
-	FAIL_INITIAL_CONN=1,
+        FAIL_CMDLINE=1,
+	FAIL_INITIAL_CONN,
 	OUT_OF_MEMORY,
 	RECONNECT_FAIL,
 	SIGINT_REASON
@@ -108,7 +117,7 @@ static int curses_inited = 1;
 static int maxystats=0;
 static int detail_selected = -1;
 
-static int detail_exists()
+static int detail_exists(void)
 {
 	return global.num_clamd != 1;
 }
@@ -306,7 +315,7 @@ static void header(void)
 
 
 	win_start(header_window, header_color);
-	mvwprintw(header_window, 0, 0, "  ClamdTOP version 0.1   ");
+	mvwprintw(header_window, 0, 0, "  ClamdTOP version %s   ", get_version());
 	time(&t);
 	wprintw(header_window, "%s", ctime(&t));
 	wrefresh(header_window);
@@ -415,6 +424,9 @@ static void cleanup(void)
 static void __noreturn exit_program(enum exit_reason reason, const char *func, unsigned line)
 {
 	switch(reason) {
+		case FAIL_CMDLINE:
+			exit_reason = "Invalid command-line arguments";
+			break;
 		case FAIL_INITIAL_CONN:
 			exit_reason = "Unable to connect to all clamds";
 			break;
@@ -454,6 +466,9 @@ static int tasks_compare(const void *a, const void *b)
 }
 
 /* ----------- Socket routines ----------------------- */
+#ifdef __GNUC__
+static void print_con_info(conn_t *conn, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+#endif
 static void print_con_info(conn_t *conn, const char *fmt, ...)
 {
 	va_list ap;
@@ -484,7 +499,7 @@ static int make_connection(const char *soname, conn_t *conn)
 #ifdef _WIN32
     {
 #else
-	if(access(soname, F_OK) == 0) {
+	if(soname[0] == '/' || (access(soname, F_OK) == 0)) {
 		struct sockaddr_un addr;
 		s = socket(AF_UNIX, SOCK_STREAM, 0);
 		if(s < 0) {
@@ -516,7 +531,7 @@ static int make_connection(const char *soname, conn_t *conn)
 			port = 3310;
 		print_con_info(conn, "Looking up: %s\n", host);
 		if((hp = gethostbyname(host)) == NULL) {
-			herror("Cannot find host");
+			fprintf(stderr, "Cannot find host");
 			return -1;
 		}
 		free(pt);
@@ -639,8 +654,9 @@ static void output_queue(size_t line, ssize_t max)
 		--max;
 	if (max < 0) max = 0;
 	for(i=0;i<max;i++) {
+		char *cmde;
 		assert(tasks);
-		char *cmde = strchr(filtered_tasks[i].line, ' ');
+		cmde = strchr(filtered_tasks[i].line, ' ');
 		if(cmde) {
 			char cmd[16];
 			const char *filstart = strchr(cmde + 1, ' ');
@@ -699,7 +715,7 @@ static void output_memstats(struct stats *stats)
 	int blink = 0;
 
 	werase(mem_window);
-	if (stats->mem != -1) {
+	if (stats->mem > 0) {
 		box(mem_window, 0, 0);
 
 		snprintf(buf, sizeof(buf),"heap %4luM mmap %4luM unused %3luM",
@@ -743,7 +759,6 @@ static void parse_memstats(const char *line, struct stats *stats)
 	stats->lpoolu = pools_used*1000;
 	stats->lpoolt = pools_total*1000;
 	stats->mem = heapu + mmapu + pools_total;
-	if (stats->mem == 0) stats->mem = -1;
 }
 
 static int output_stats(struct stats *stats, unsigned idx)
@@ -759,7 +774,7 @@ static int output_stats(struct stats *stats, unsigned idx)
 
 	OOM_CHECK(line);
 
-	if (stats->mem == -1 || stats->stats_unsupp)
+	if (stats->mem >= 0 || stats->stats_unsupp)
 		strncpy(mem, "N/A", sizeof(mem));
 	else {
 		char c;
@@ -823,10 +838,10 @@ static int output_stats(struct stats *stats, unsigned idx)
 		print_colored(win, buf);
 		show_bar(win, i++, stats->prim_live, stats->prim_idle, stats->prim_max, 0);
 
-		mvwprintw(win, i++, 0, "Multiscan pool : ");
+/*		mvwprintw(win, i++, 0, "Multiscan pool : ");
 		snprintf(buf, sizeof(buf), "live %3u idle %3u max %3u", stats->live, stats->idle, stats->max);
 		print_colored(win, buf);
-		show_bar(win, i++, stats->live, stats->idle, stats->max, 0);
+		show_bar(win, i++, stats->live, stats->idle, stats->max, 0);*/
 
 		blink = 0;
 		if(stats->current_q > stats->biggest_queue) {
@@ -881,12 +896,12 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
 		stats->remote = "local";
 
 	if (!conn->version) {
-		stats->engine_version = "???";
+		stats->engine_version = strdup("???");
 		return;
 	}
 	p = pstart = vstart = strchr(conn->version, ' ');
 	if (!vstart) {
-	    stats->engine_version = "???";
+	    stats->engine_version = strdup("???");
 	    return;
 	}
 	/* find digit in version */
@@ -984,11 +999,10 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
 				stats->prim_idle = idle;
 				assert(!stats->prim_max && "There can be only one primary pool!");
 				stats->prim_max = max;
-			} else {
-				stats->live += live;
-				stats->idle += idle;
-				stats->max += max;
 			}
+			stats->live += live;
+			stats->idle += idle;
+			stats->max += max;
 		} else if (!strcmp("Queue",buf)) {
 			unsigned len;
 			if(sscanf(val, "%u", &len) != 1)
@@ -1018,10 +1032,83 @@ static void sigint(int a)
 	EXIT_PROGRAM(SIGINT_REASON);
 }
 
+static void help(void)
+{
+    printf("\n");
+    printf("           Clam AntiVirus: Monitoring Tool %s\n", get_version());
+    printf("    (C) 2008 - 2009 ClamAV Team - http://www.clamav.net/team\n\n");
+    printf("clamdtop [-hVc] [host[:port] /path/to/clamd.socket ...]\n\n");
+    printf("    --help                 -h         Show help\n");
+    printf("    --version              -V         Show version\n");
+    printf("    --config-file=FILE     -c FILE    Read clamd's configuration files from FILE\n");
+    printf("	host[:port]			  Connect to clamd on host at port (default 3310)\n");
+    printf("    /path/to/clamd.socket		  Connect to clamd over a local socket\n");
+    printf("\n");
+    return;
+}
+
 /* -------------------------- Initialization ---------------- */
 static void setup_connections(int argc, char *argv[])
 {
+	struct optstruct *opts;
+	struct optstruct *clamd_opts;
 	unsigned i;
+	char *conn = NULL;
+
+	opts = optparse(NULL, argc, argv, 1, OPT_CLAMDTOP, 0, NULL);
+	if (!opts) {
+	    fprintf(stderr, "ERROR: Can't parse command line options\n");
+	    EXIT_PROGRAM(FAIL_CMDLINE);
+	}
+
+	if(optget(opts, "help")->enabled) {
+	    optfree(opts);
+	    help();
+	    normal_exit = 1;
+	    exit(0);
+	}
+
+	if(optget(opts, "version")->enabled) {
+	    printf("Clam AntiVirus Monitoring Tool %s\n", get_version());
+	    optfree(opts);
+	    normal_exit = 1;
+	    exit(0);
+	}
+
+	memset(&global, 0, sizeof(global));
+	if (!opts->filename || !opts->filename[0]) {
+	    char *aargv[2];
+	    const struct optstruct *opt;
+	    const char *clamd_conf = optget(opts, "config-file")->strarg;
+
+	    if ((clamd_opts = optparse(clamd_conf, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
+		fprintf(stderr, "Can't parse clamd configuration file %s\n", clamd_conf);
+		EXIT_PROGRAM(FAIL_CMDLINE);
+	    }
+
+	    if((opt = optget(clamd_opts, "LocalSocket"))->enabled) {
+		conn = strdup(opt->strarg);
+	    } else if ((opt = optget(clamd_opts, "TCPSocket"))->enabled) {
+		char buf[512];
+		const struct optstruct *opt_addr;
+		const char *host = "localhost";
+		if ((opt_addr = optget(clamd_opts, "TCPAddr"))->enabled) {
+		    host = opt_addr->strarg;
+		}
+		snprintf(buf, sizeof(buf), "%s:%u", host, opt->numarg);
+		conn = strdup(buf);
+	    } else {
+		fprintf(stderr, "Can't find how to connect to clamd\n");
+		EXIT_PROGRAM(FAIL_INITIAL_CONN);
+	    }
+	    optfree(clamd_opts);
+	    global.num_clamd = 1;
+	} else {
+	    unsigned i = 0;
+	    while (opts->filename[i]) { i++; }
+	    global.num_clamd = i;
+	}
+
 #ifdef _WIN32
 	WSADATA wsaData;
 	if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR) {
@@ -1029,35 +1116,25 @@ static void setup_connections(int argc, char *argv[])
 		EXIT_PROGRAM(FAIL_INITIAL_CONN);
 	}
 #endif
-
-	/* clamdtop v0.1 */
+	/* clamdtop */
 	puts( "        __                    ____");
-	puts("  _____/ /___ _____ ___  ____/ / /_____  ____              ___   ___");
-	puts(" / ___/ / __ `/ __ `__ \\/ __  / __/ __ \\/ __ \\       _  __/ _ \\ <  /");
-	puts("/ /__/ / /_/ / / / / / / /_/ / /_/ /_/ / /_/ /      | |/ / // / / /");
-	puts("\\___/_/\\__,_/_/ /_/ /_/\\__,_/\\__/\\____/ .___/       |___/\\___(_)_/");
-	puts("                                     /_/      ");
-	memset(&global, 0, sizeof(global));
-	if (argc == 1) {
-		global.num_clamd = 1;
-#ifdef _WIN32
-		argv[1] = "localhost:3310";
-#else
-		argv[1] = "/tmp/clamd.socket";
-#endif
-	} else
-		global.num_clamd = argc-1;
+	puts("  _____/ /___ _____ ___  ____/ / /_____  ____");
+	puts(" / ___/ / __ `/ __ `__ \\/ __  / __/ __ \\/ __ \\");
+	puts("/ /__/ / /_/ / / / / / / /_/ / /_/ /_/ / /_/ /");
+	puts("\\___/_/\\__,_/_/ /_/ /_/\\__,_/\\__/\\____/ .___/");
+	puts("                                     /_/");
 	global.all_stats = calloc(global.num_clamd, sizeof(*global.all_stats));
 	OOM_CHECK(global.all_stats);
 	global.conn = calloc(global.num_clamd, sizeof(*global.conn));
 	OOM_CHECK(global.conn);
-	for (i=0;i<global.num_clamd;i++) {
+	for (i=0;i < global.num_clamd;i++) {
+		const char *soname = conn ? conn : opts->filename[i];
 		global.conn[i].line = i+1;
-		if (make_connection(argv[i+1], &global.conn[i]) < 0) {
+		if (make_connection(soname, &global.conn[i]) < 0) {
 			EXIT_PROGRAM(FAIL_INITIAL_CONN);
 		}
-
 	}
+	optfree(opts);
 #ifndef _WIN32
 	signal(SIGPIPE, SIG_IGN);
 	signal(SIGINT, sigint);
@@ -1141,7 +1218,6 @@ int main(int argc, char *argv[])
 
 	atexit(cleanup);
 	setup_connections(argc, argv);
-
 	init_ncurses(global.num_clamd);
 
 	memset(&tv_last, 0, sizeof(tv_last));

@@ -62,6 +62,7 @@ DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(top_srcdir)/docs/man/clamd.8.in \
 	$(top_srcdir)/docs/man/clamd.conf.5.in \
 	$(top_srcdir)/docs/man/clamdscan.1.in \
+	$(top_srcdir)/docs/man/clamdtop.1.in \
 	$(top_srcdir)/docs/man/clamscan.1.in \
 	$(top_srcdir)/docs/man/freshclam.1.in \
 	$(top_srcdir)/docs/man/freshclam.conf.5.in \
@@ -88,7 +89,7 @@ CONFIG_CLEAN_FILES = clamav-config libclamav.pc \
 	docs/man/clamav-milter.8 docs/man/clamconf.1 docs/man/clamd.8 \
 	docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 \
 	docs/man/freshclam.1 docs/man/freshclam.conf.5 \
-	docs/man/sigtool.1
+	docs/man/sigtool.1 docs/man/clamdtop.1
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pkgconfigdir)"
 binSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 SCRIPTS = $(bin_SCRIPTS)
@@ -144,6 +145,8 @@ CLAMAV_MILTER_LIBS = @CLAMAV_MILTER_LIBS@
 CLAMD_LIBS = @CLAMD_LIBS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
+CURSES_CPPFLAGS = @CURSES_CPPFLAGS@
+CURSES_LIBS = @CURSES_LIBS@
 CYGPATH_W = @CYGPATH_W@
 DBDIR = @DBDIR@
 DEFS = @DEFS@
@@ -277,7 +280,7 @@ target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = libltdl libclamav clamscan clamd clamdscan freshclam sigtool clamconf database docs etc clamav-milter test unit_tests
+SUBDIRS = libltdl libclamav clamscan clamd clamdscan freshclam sigtool clamconf database docs etc clamav-milter test unit_tests clamdtop
 EXTRA_DIST = FAQ examples BUGS shared libclamav.pc.in UPGRADE COPYING.bzip2 COPYING.lzma COPYING.unrar COPYING.LGPL COPYING.file COPYING.zlib COPYING.BSD COPYING.getopt
 bin_SCRIPTS = clamav-config
 pkgconfigdir = $(libdir)/pkgconfig
@@ -403,6 +406,8 @@ docs/man/freshclam.1: $(top_builddir)/config.status $(top_srcdir)/docs/man/fresh
 docs/man/freshclam.conf.5: $(top_builddir)/config.status $(top_srcdir)/docs/man/freshclam.conf.5.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 docs/man/sigtool.1: $(top_builddir)/config.status $(top_srcdir)/docs/man/sigtool.1.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+docs/man/clamdtop.1: $(top_builddir)/config.status $(top_srcdir)/docs/man/clamdtop.1.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 install-binSCRIPTS: $(bin_SCRIPTS)
 	@$(NORMAL_INSTALL)

@@ -29,7 +29,8 @@
 #define OPT_CLAMDSCAN	16
 #define OPT_SIGTOOL	32
 #define OPT_CLAMCONF	64
-#define OPT_DEPRECATED	128
+#define OPT_CLAMDTOP	128
+#define OPT_DEPRECATED	256
 
 #define TYPE_STRING  1	/* quoted/regular string */
 #define TYPE_NUMBER  2	/* raw number */

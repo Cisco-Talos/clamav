@@ -1,8 +1,0 @@
-parse pool states, and show those that are != VALID
-highlight problems in version/dbversion/dbtime (old db version, old dbtime,
-different db versions).
-write a manpage
-consider writing a GUI using Tk 8.5 (version 8.5 has much nicer widgets than 8.4)
-integrate into toplevel clamav, and build if ncurses is available (optional)
-figure out minimum version of ncurses required, I used 5.5 during development.
-explain why queued items are high during multiscan.

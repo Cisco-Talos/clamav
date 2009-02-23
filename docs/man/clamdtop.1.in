@@ -1,0 +1,191 @@
+.TH "Clamdtop" "1" "February 22, 2009" "ClamAV @VERSION@" "Clam AntiVirus"
+.SH "NAME"
+.LP 
+clamdtop \- monitor the Clam AntiVirus Daemon
+.SH "SYNOPSIS"
+.LP 
+clamdtop [options] [clamdspec ...]
+.SH "DESCRIPTION"
+.LP 
+clamdtop is a tool to monitor one or multiple clamd(s).
+It has a (color) ncurses interface, that shows the jobs in clamd's queue, memory usage, and information about the loaded signature database.
+You can specify on the command-line to which clamd(s) it should connect to. By
+default it will attempt to connect to the local clamd as defined in clamd.conf.
+
+.SH "OPTIONS"
+.LP 
+
+.TP 
+\fB\-h, \-\-help\fR
+Display help information and exit.
+.TP 
+\fB\-V, \-\-version\fR
+Print version number and exit.
+\fB\-\-config\-file=FILE\fR
+Read clamd settings from FILE, to determine how to connect to it.
+.TP 
+\fBclamdspec\fR
+Specifies the clamd to connect to: either a path to the local (unix domain) socket of clamd,
+or an IP address and an port number (that defaults to 3310) to connect to a
+local or remote clamd using TCP/IP.
+
+.SH "OVERVIEW"
+.SS KEYS:
+.TP
+\fBF1\fR
+
+Displays a short helpscreen, describing the meaning of various elements on the
+display.
+.TP
+\fBQ\fR
+
+Quits clamdtop
+.TP
+\fBR\fR
+
+Resets the maximum values.
+.TP
+\fBup arrow, down arrow\fR
+
+If you are monitoring multiple clamds then clamdtop will show an overview screen by default. You can use the \fBup arrow\fR and \fB down arrow\fR keys to cycle through each clamd individually, and the overview screen.
+A blue bar will highlight the clamd that is currently shown in detail. On the overview screen none of the clamds is selected (hence no blue bar), and you can see the items from the queue of all clamds.
+
+.SS The top bar
+Shows the version of clamdtop and the current time. Clamdtop updates the display once every 2 seconds.
+
+.SS The list of clamds
+
+Shows the clamds that clamdtop is connected to, and statistics about them.
+
+.TP
+\fBNO\fR
+Unique clamd number
+.TP
+\fBCONNTIME\fR
+How long clamdtop has been connected (reset upon a reconnect)
+.TP
+\fBLIV\fR
+Total number of live threads
+.TP
+\fBIDL\fR
+Total number of idle threads
+.TP
+\fBQUEUE\fR
+Number of items in queue
+.TP
+\fBMAXQ\fR
+Maximum number of items observed in the queue
+.TP
+\fBMEM\fR
+Total memory usage (if available)
+.TP
+\fBHOST\fR
+Which clamd, local means unix socket
+.TP
+\fBENGINE\fR
+Engine version
+.TP
+\fBDBVER\fR
+Database version
+.TP
+\fBDBTIME\fR
+Database publish time
+.SS Clamd detailed view
+.TP
+Primary threads \fBlive\fR
+The number of threads that are executing commands or scanning.
+.TP
+Primary threads \fBidle\fR
+The number of threads that are idle, waiting for commands. They will exit after IdleTimeout (30 seconds).
+.TP
+Primary threads \fBmax\fR
+The maximum number of threads configured.
+.TP
+Queue \fbitems\fR
+The number of items (scanjobs) in clamd's queue that are waiting for a free thread to be processed.
+.TP
+Queue \fbmax\fR
+The maximum number of items observed in clamd's queue.
+.SS The memory usage view
+If available, it will show details on clamd's memory usage:
+.TP
+\fBMem heap\fR
+The amount of memory used by libc from the heap in MegaBytes.
+.TP
+\fBMem mmap\fR
+The amount of memory used by libc from mmap-allocated memory in MegaBytes.
+.TP 
+\fBMem unused\fR
+The amount of memory that can be reclaimed by libc.
+.TP
+\fBLibc used\fR
+The amount of useful memory allocated by libc.
+.TP
+\fBLibc free\fR
+The amount of memory allocated by libc, that can't be freed due to fragmentation.
+.TP
+\fBLibc total\fR
+The amount of memory allocated by libc from the system in total.
+.TP
+\fBPool count\fR
+The number of mmap regions allocated by clamd' memory pool allocator (for the signature database).
+.TP
+\fBPool used\fR
+The amount of memory used by clamd's memory pool allocator (for the signature database).
+.TP
+\fBTotal\fR
+The total amount of memory allocated by clamd's memory pool allocator.
+.SS The clamd job queue
+.TP
+\fBCOMMAND\fR
+Kind of command being executed, STATS is clamdtop, SCAN/CONTSCAN/FILDES/MULTISCAN is scan of a file/directory, MULTISCANFILE is scan of one item by a MULTISCAN job.
+.TP
+\fBQUEUEDSINCE\fR
+The time since the command got queued, until now.
+.TP
+\fBFILE\fR
+The name of the file being processed (if applicable).
+.SH "EXAMPLES"
+.LP 
+.TP 
+(1) To connect to the clamd configured in the default clamd.conf:
+
+\fBclamdtop\fR
+.TP
+(2) To connect to the clamd configured in another clamd.conf:
+
+\fBclamdtop --config-file=/path/to/clamd.conf
+
+.TP
+(3) To connect to a clamd running on another machine (192.168.0.3) on the LAN:
+
+\fBclamdtop 192.168.0.3\fR
+
+.TP
+(4) To connect to a clamd running on another machine (192.168.0.3) on a non-default port (3410):
+
+\fBclamdtop 192.168.0.3:3410\fR
+.TP
+(5) To monitor the local clamd and 2 other remote clamds over TCP/IP:
+
+\fBclamdtop localhost 192.168.0.3 192.168.0.4
+.SH "NOTES"
+.LP
+clamdtop uses colors if the terminal is capable of colors.
+If you know your terminal is capable of colors, yet you aren't seeing any, then check
+that your \fBTERM\fR environment variable is set correctly.
+For example try setting it to TERM=xterm-color if you are in an xterm-like
+environment.
+.SH "RETURN CODES"
+.LP 
+0 : Normal terminator
+.TP 
+>0: Error occured.
+.SH "CREDITS"
+Please check the full documentation for credits.
+.SH "AUTHOR"
+.LP 
+Török Edvin <edwin@clamav.net>
+.SH "SEE ALSO"
+.LP 
+clamd(8), clamd.conf(5)

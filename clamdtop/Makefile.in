@@ -14,24 +14,6 @@
 
 @SET_MAKE@
 
-#
-#  Copyright (C) 2003 - 2005 Tomasz Kojm <tkojm@clamav.net>
-#
-#  This program is free software; you can redistribute it and/or modify
-#  it under the terms of the GNU General Public License as published by
-#  the Free Software Foundation; either version 2 of the License, or
-#  (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-#
-#  You should have received a copy of the GNU General Public License
-#  along with this program; if not, write to the Free Software
-#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-#  MA 02110-1301, USA.
-
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
@@ -51,10 +33,9 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@sbin_PROGRAMS =  \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	clamav-milter$(EXEEXT)
-subdir = clamav-milter
-DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in INSTALL
+@HAVE_CURSES_TRUE@bin_PROGRAMS = clamdtop$(EXEEXT)
+subdir = clamdtop
+DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acinclude.m4 \
 	$(top_srcdir)/m4/argz.m4 $(top_srcdir)/m4/fdpassing.m4 \
@@ -69,28 +50,18 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/clamav-config.h
 CONFIG_CLEAN_FILES =
-am__installdirs = "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(man8dir)"
-sbinPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
-PROGRAMS = $(sbin_PROGRAMS)
-am__clamav_milter_SOURCES_DIST = $(top_srcdir)/shared/optparser.c \
-	$(top_srcdir)/shared/optparser.h $(top_srcdir)/shared/output.c \
-	$(top_srcdir)/shared/output.h $(top_srcdir)/shared/getopt.c \
+am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)"
+binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
+PROGRAMS = $(bin_PROGRAMS)
+am__clamdtop_SOURCES_DIST = $(top_srcdir)/shared/optparser.c \
+	$(top_srcdir)/shared/optparser.h $(top_srcdir)/shared/getopt.c \
 	$(top_srcdir)/shared/getopt.h $(top_srcdir)/shared/misc.c \
-	$(top_srcdir)/shared/misc.h whitelist.c whitelist.h connpool.c \
-	connpool.h netcode.c netcode.h clamfi.c clamfi.h \
-	clamav-milter.c
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@am_clamav_milter_OBJECTS =  \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	optparser.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	output.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	getopt.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	misc.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	whitelist.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	connpool.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	netcode.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	clamfi.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@	clamav-milter.$(OBJEXT)
-clamav_milter_OBJECTS = $(am_clamav_milter_OBJECTS)
-clamav_milter_LDADD = $(LDADD)
+	$(top_srcdir)/shared/misc.h clamdtop.c
+@HAVE_CURSES_TRUE@am_clamdtop_OBJECTS = optparser.$(OBJEXT) \
+@HAVE_CURSES_TRUE@	getopt.$(OBJEXT) misc.$(OBJEXT) \
+@HAVE_CURSES_TRUE@	clamdtop.$(OBJEXT)
+clamdtop_OBJECTS = $(am_clamdtop_OBJECTS)
+@HAVE_CURSES_TRUE@clamdtop_DEPENDENCIES = $(top_builddir)/libclamav/libclamav_internal_utils.la
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -103,9 +74,9 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(clamav_milter_SOURCES)
-DIST_SOURCES = $(am__clamav_milter_SOURCES_DIST)
-man8dir = $(mandir)/man8
+SOURCES = $(clamdtop_SOURCES)
+DIST_SOURCES = $(am__clamdtop_SOURCES_DIST)
+man1dir = $(mandir)/man1
 NROFF = nroff
 MANS = $(man_MANS)
 ETAGS = etags
@@ -122,7 +93,7 @@ AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFGDIR = @CFGDIR@
-CFLAGS = `echo "@CFLAGS@" | sed -e 's/-Wwrite-strings//'`
+CFLAGS = @CFLAGS@
 CHECK_CPPFLAGS = @CHECK_CPPFLAGS@
 CHECK_LIBS = @CHECK_LIBS@
 CLAMAVGROUP = @CLAMAVGROUP@
@@ -135,7 +106,7 @@ CURSES_CPPFLAGS = @CURSES_CPPFLAGS@
 CURSES_LIBS = @CURSES_LIBS@
 CYGPATH_W = @CYGPATH_W@
 DBDIR = @DBDIR@
-DEFS = @DEFS@
+DEFS = @DEFS@ -DCL_NOTHREADS -DCL_NOLIBCLAMAV
 DEPDIR = @DEPDIR@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
@@ -170,7 +141,7 @@ LIBCLAMAV_LIBS = @LIBCLAMAV_LIBS@
 LIBCLAMAV_VERSION = @LIBCLAMAV_VERSION@
 LIBLTDL = @LIBLTDL@
 LIBOBJS = @LIBOBJS@
-LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMAV_MILTER_LIBS@ @THREAD_LIBS@
+LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
@@ -265,29 +236,19 @@ target_os = @target_os@
 target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@clamav_milter_SOURCES = \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/optparser.c \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/optparser.h \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/output.c \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/output.h \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/getopt.c \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/getopt.h \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/misc.c \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    $(top_srcdir)/shared/misc.h \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    whitelist.c \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    whitelist.h \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    connpool.c \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    connpool.h \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    netcode.c \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    netcode.h \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    clamfi.c \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    clamfi.h \
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@    clamav-milter.c
+@HAVE_CURSES_TRUE@man_MANS = $(top_builddir)/docs/man/clamdtop.1
+@HAVE_CURSES_TRUE@clamdtop_SOURCES = \
+@HAVE_CURSES_TRUE@    $(top_srcdir)/shared/optparser.c \
+@HAVE_CURSES_TRUE@    $(top_srcdir)/shared/optparser.h \
+@HAVE_CURSES_TRUE@    $(top_srcdir)/shared/getopt.c \
+@HAVE_CURSES_TRUE@    $(top_srcdir)/shared/getopt.h \
+@HAVE_CURSES_TRUE@    $(top_srcdir)/shared/misc.c \
+@HAVE_CURSES_TRUE@    $(top_srcdir)/shared/misc.h \
+@HAVE_CURSES_TRUE@    clamdtop.c
 
-@BUILD_CLAMD_TRUE@@HAVE_MILTER_TRUE@man_MANS = $(top_builddir)/docs/man/clamav-milter.8
-AM_CPPFLAGS = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_srcdir)/shared -I$(top_srcdir)
-EXTRA_DIST = clamav-milter.c INSTALL
-CLEANFILES = *.gcda *.gcno
+@HAVE_CURSES_TRUE@AM_CPPFLAGS = -I$(top_srcdir) @CURSES_CPPFLAGS@
+@HAVE_CURSES_TRUE@clamdtop_LDADD = @CURSES_LIBS@ $(top_builddir)/libclamav/libclamav_internal_utils.la
+EXTRA_DIST = clamdtop.c
 all: all-am
 
 .SUFFIXES:
@@ -301,9 +262,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  clamav-milter/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  clamdtop/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  clamav-milter/Makefile
+	  $(AUTOMAKE) --foreign  clamdtop/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -321,53 +282,53 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
-install-sbinPROGRAMS: $(sbin_PROGRAMS)
+install-binPROGRAMS: $(bin_PROGRAMS)
 	@$(NORMAL_INSTALL)
-	test -z "$(sbindir)" || $(MKDIR_P) "$(DESTDIR)$(sbindir)"
-	@list='$(sbin_PROGRAMS)'; for p in $$list; do \
+	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
+	@list='$(bin_PROGRAMS)'; for p in $$list; do \
 	  p1=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
 	  if test -f $$p \
 	     || test -f $$p1 \
 	  ; then \
 	    f=`echo "$$p1" | sed 's,^.*/,,;$(transform);s/$$/$(EXEEXT)/'`; \
-	   echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(sbinPROGRAMS_INSTALL) '$$p' '$(DESTDIR)$(sbindir)/$$f'"; \
-	   $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(sbinPROGRAMS_INSTALL) "$$p" "$(DESTDIR)$(sbindir)/$$f" || exit 1; \
+	   echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(binPROGRAMS_INSTALL) '$$p' '$(DESTDIR)$(bindir)/$$f'"; \
+	   $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(binPROGRAMS_INSTALL) "$$p" "$(DESTDIR)$(bindir)/$$f" || exit 1; \
 	  else :; fi; \
 	done
 
-uninstall-sbinPROGRAMS:
+uninstall-binPROGRAMS:
 	@$(NORMAL_UNINSTALL)
-	@list='$(sbin_PROGRAMS)'; for p in $$list; do \
+	@list='$(bin_PROGRAMS)'; for p in $$list; do \
 	  f=`echo "$$p" | sed 's,^.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/'`; \
-	  echo " rm -f '$(DESTDIR)$(sbindir)/$$f'"; \
-	  rm -f "$(DESTDIR)$(sbindir)/$$f"; \
+	  echo " rm -f '$(DESTDIR)$(bindir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(bindir)/$$f"; \
 	done
 
-clean-sbinPROGRAMS:
-	@list='$(sbin_PROGRAMS)'; for p in $$list; do \
+clean-binPROGRAMS:
+	@list='$(bin_PROGRAMS)'; for p in $$list; do \
 	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
 
-installcheck-sbinPROGRAMS: $(sbin_PROGRAMS)
-	bad=0; pid=$$$$; list="$(sbin_PROGRAMS)"; for p in $$list; do \
+installcheck-binPROGRAMS: $(bin_PROGRAMS)
+	bad=0; pid=$$$$; list="$(bin_PROGRAMS)"; for p in $$list; do \
 	  case ' $(AM_INSTALLCHECK_STD_OPTIONS_EXEMPT) ' in \
 	   *" $$p "* | *" $(srcdir)/$$p "*) continue;; \
 	  esac; \
 	  f=`echo "$$p" | \
 	     sed 's,^.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/'`; \
 	  for opt in --help --version; do \
-	    if "$(DESTDIR)$(sbindir)/$$f" $$opt >c$${pid}_.out \
+	    if "$(DESTDIR)$(bindir)/$$f" $$opt >c$${pid}_.out \
 	         2>c$${pid}_.err </dev/null \
 		 && test -n "`cat c$${pid}_.out`" \
 		 && test -z "`cat c$${pid}_.err`"; then :; \
 	    else echo "$$f does not support $$opt" 1>&2; bad=1; fi; \
 	  done; \
 	done; rm -f c$${pid}_.???; exit $$bad
-clamav-milter$(EXEEXT): $(clamav_milter_OBJECTS) $(clamav_milter_DEPENDENCIES) 
-	@rm -f clamav-milter$(EXEEXT)
-	$(LINK) $(clamav_milter_OBJECTS) $(clamav_milter_LDADD) $(LIBS)
+clamdtop$(EXEEXT): $(clamdtop_OBJECTS) $(clamdtop_DEPENDENCIES) 
+	@rm -f clamdtop$(EXEEXT)
+	$(LINK) $(clamdtop_OBJECTS) $(clamdtop_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -375,15 +336,10 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamav-milter.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamfi.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/connpool.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamdtop.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/netcode.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optparser.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/output.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/whitelist.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -420,20 +376,6 @@ optparser.obj: $(top_srcdir)/shared/optparser.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o optparser.obj `if test -f '$(top_srcdir)/shared/optparser.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/optparser.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/optparser.c'; fi`
 
-output.o: $(top_srcdir)/shared/output.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT output.o -MD -MP -MF $(DEPDIR)/output.Tpo -c -o output.o `test -f '$(top_srcdir)/shared/output.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/output.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/output.Tpo $(DEPDIR)/output.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/output.c' object='output.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o output.o `test -f '$(top_srcdir)/shared/output.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/output.c
-
-output.obj: $(top_srcdir)/shared/output.c
-@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT output.obj -MD -MP -MF $(DEPDIR)/output.Tpo -c -o output.obj `if test -f '$(top_srcdir)/shared/output.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/output.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/output.c'; fi`
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/output.Tpo $(DEPDIR)/output.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/output.c' object='output.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o output.obj `if test -f '$(top_srcdir)/shared/output.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/output.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/output.c'; fi`
-
 getopt.o: $(top_srcdir)/shared/getopt.c
 @am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT getopt.o -MD -MP -MF $(DEPDIR)/getopt.Tpo -c -o getopt.o `test -f '$(top_srcdir)/shared/getopt.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/getopt.c
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/getopt.Tpo $(DEPDIR)/getopt.Po
@@ -467,14 +409,14 @@ mostlyclean-libtool:
 
 clean-libtool:
 	-rm -rf .libs _libs
-install-man8: $(man8_MANS) $(man_MANS)
+install-man1: $(man1_MANS) $(man_MANS)
 	@$(NORMAL_INSTALL)
-	test -z "$(man8dir)" || $(MKDIR_P) "$(DESTDIR)$(man8dir)"
-	@list='$(man8_MANS) $(dist_man8_MANS) $(nodist_man8_MANS)'; \
+	test -z "$(man1dir)" || $(MKDIR_P) "$(DESTDIR)$(man1dir)"
+	@list='$(man1_MANS) $(dist_man1_MANS) $(nodist_man1_MANS)'; \
 	l2='$(man_MANS) $(dist_man_MANS) $(nodist_man_MANS)'; \
 	for i in $$l2; do \
 	  case "$$i" in \
-	    *.8*) list="$$list $$i" ;; \
+	    *.1*) list="$$list $$i" ;; \
 	  esac; \
 	done; \
 	for i in $$list; do \
@@ -482,35 +424,35 @@ install-man8: $(man8_MANS) $(man_MANS)
 	  else file=$$i; fi; \
 	  ext=`echo $$i | sed -e 's/^.*\\.//'`; \
 	  case "$$ext" in \
-	    8*) ;; \
-	    *) ext='8' ;; \
+	    1*) ;; \
+	    *) ext='1' ;; \
 	  esac; \
 	  inst=`echo $$i | sed -e 's/\\.[0-9a-z]*$$//'`; \
 	  inst=`echo $$inst | sed -e 's/^.*\///'`; \
 	  inst=`echo $$inst | sed '$(transform)'`.$$ext; \
-	  echo " $(INSTALL_DATA) '$$file' '$(DESTDIR)$(man8dir)/$$inst'"; \
-	  $(INSTALL_DATA) "$$file" "$(DESTDIR)$(man8dir)/$$inst"; \
+	  echo " $(INSTALL_DATA) '$$file' '$(DESTDIR)$(man1dir)/$$inst'"; \
+	  $(INSTALL_DATA) "$$file" "$(DESTDIR)$(man1dir)/$$inst"; \
 	done
-uninstall-man8:
+uninstall-man1:
 	@$(NORMAL_UNINSTALL)
-	@list='$(man8_MANS) $(dist_man8_MANS) $(nodist_man8_MANS)'; \
+	@list='$(man1_MANS) $(dist_man1_MANS) $(nodist_man1_MANS)'; \
 	l2='$(man_MANS) $(dist_man_MANS) $(nodist_man_MANS)'; \
 	for i in $$l2; do \
 	  case "$$i" in \
-	    *.8*) list="$$list $$i" ;; \
+	    *.1*) list="$$list $$i" ;; \
 	  esac; \
 	done; \
 	for i in $$list; do \
 	  ext=`echo $$i | sed -e 's/^.*\\.//'`; \
 	  case "$$ext" in \
-	    8*) ;; \
-	    *) ext='8' ;; \
+	    1*) ;; \
+	    *) ext='1' ;; \
 	  esac; \
 	  inst=`echo $$i | sed -e 's/\\.[0-9a-z]*$$//'`; \
 	  inst=`echo $$inst | sed -e 's/^.*\///'`; \
 	  inst=`echo $$inst | sed '$(transform)'`.$$ext; \
-	  echo " rm -f '$(DESTDIR)$(man8dir)/$$inst'"; \
-	  rm -f "$(DESTDIR)$(man8dir)/$$inst"; \
+	  echo " rm -f '$(DESTDIR)$(man1dir)/$$inst'"; \
+	  rm -f "$(DESTDIR)$(man1dir)/$$inst"; \
 	done
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
@@ -590,7 +532,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(PROGRAMS) $(MANS)
 installdirs:
-	for dir in "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(man8dir)"; do \
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -610,7 +552,6 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
-	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -620,8 +561,7 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-generic clean-libtool clean-sbinPROGRAMS \
-	mostlyclean-am
+clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -643,19 +583,19 @@ install-data-am: install-man
 
 install-dvi: install-dvi-am
 
-install-exec-am: install-sbinPROGRAMS
+install-exec-am: install-binPROGRAMS
 
 install-html: install-html-am
 
 install-info: install-info-am
 
-install-man: install-man8
+install-man: install-man1
 
 install-pdf: install-pdf-am
 
 install-ps: install-ps-am
 
-installcheck-am: installcheck-sbinPROGRAMS
+installcheck-am: installcheck-binPROGRAMS
 
 maintainer-clean: maintainer-clean-am
 	-rm -rf ./$(DEPDIR)
@@ -675,26 +615,26 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-man uninstall-sbinPROGRAMS
+uninstall-am: uninstall-binPROGRAMS uninstall-man
 
-uninstall-man: uninstall-man8
+uninstall-man: uninstall-man1
 
 .MAKE: install-am install-strip
 
-.PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-libtool clean-sbinPROGRAMS ctags distclean \
-	distclean-compile distclean-generic distclean-libtool \
-	distclean-tags distdir dvi dvi-am html html-am info info-am \
-	install install-am install-data install-data-am install-dvi \
+.PHONY: CTAGS GTAGS all all-am check check-am clean clean-binPROGRAMS \
+	clean-generic clean-libtool ctags distclean distclean-compile \
+	distclean-generic distclean-libtool distclean-tags distdir dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-binPROGRAMS install-data install-data-am install-dvi \
 	install-dvi-am install-exec install-exec-am install-html \
 	install-html-am install-info install-info-am install-man \
-	install-man8 install-pdf install-pdf-am install-ps \
-	install-ps-am install-sbinPROGRAMS install-strip installcheck \
-	installcheck-am installcheck-sbinPROGRAMS installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	pdf pdf-am ps ps-am tags uninstall uninstall-am uninstall-man \
-	uninstall-man8 uninstall-sbinPROGRAMS
+	install-man1 install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installcheck-binPROGRAMS installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags uninstall uninstall-am uninstall-binPROGRAMS \
+	uninstall-man uninstall-man1
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

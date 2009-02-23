@@ -30,6 +30,9 @@
 /* where to look for the config file */
 #undef CONFDIR
 
+/* curses header location */
+#undef CURSES_INCLUDE
+
 /* os is aix */
 #undef C_AIX
 
@@ -222,6 +225,12 @@
 
 /* Define to 1 if you have the <libmilter/mfapi.h> header file. */
 #undef HAVE_LIBMILTER_MFAPI_H
+
+/* Define to '1' if you have the ncurses.h library */
+#undef HAVE_LIBNCURSES
+
+/* Define to '1' if you have the curses.h library */
+#undef HAVE_LIBPDCURSES
 
 /* Define to 1 if you have the `z' library (-lz). */
 #undef HAVE_LIBZ
