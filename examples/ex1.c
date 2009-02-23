@@ -56,13 +56,18 @@ int main(int argc, char **argv)
 	return 2;
     }
 
+    if((ret = cl_init(CL_INIT_DEFAULT)) != CL_SUCCESS) {
+	printf("Can't initialize libclamav: %s\n", cl_strerror(ret));
+	return 2;
+    }
+
     if(!(engine = cl_engine_new())) {
-	printf("Can't initialize antivirus engine\n");
+	printf("Can't create new engine\n");
 	return 2;
     }
 
     /* load all available databases from default directory */
-    if((ret = cl_load(cl_retdbdir(), engine, &sigs, CL_DB_STDOPT))) {
+    if((ret = cl_load(cl_retdbdir(), engine, &sigs, CL_DB_STDOPT)) != CL_SUCCESS) {
 	printf("cl_load: %s\n", cl_strerror(ret));
 	close(fd);
         cl_engine_free(engine);
@@ -72,7 +77,7 @@ int main(int argc, char **argv)
     printf("Loaded %u signatures.\n", sigs);
 
     /* build engine */
-    if((ret = cl_engine_compile(engine)) != 0) {
+    if((ret = cl_engine_compile(engine)) != CL_SUCCESS) {
 	printf("Database initialization error: %s\n", cl_strerror(ret));;
         cl_engine_free(engine);
 	close(fd);
