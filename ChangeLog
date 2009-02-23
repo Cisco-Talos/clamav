@@ -1,3 +1,7 @@
+Mon Feb 23 20:32:43 CET 2009 (tk)
+---------------------------------
+ * docs/clamdoc.(tex|pdf): update documentation
+
 Mon Feb 23 19:58:08 CET 2009 (acab)
 -----------------------------------
  * clamdscan/proto.c: handle warning_skipped_link in switch
