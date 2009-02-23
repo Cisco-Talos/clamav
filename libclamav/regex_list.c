@@ -272,7 +272,7 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 	{
 		char *buffer = cli_malloc(buffer_len+1);
 		char *bufrev;
-		int rc = 0;
+		int rc = 0, root;
 		struct cli_ac_data mdata;
 		struct cli_ac_result *res = NULL;
 
@@ -309,9 +309,15 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 		cli_ac_freedata(&mdata);
 
 		rc = 0;
-		while(res) {
+		root = matcher->root_regex_idx;
+		while(res || root) {
 			struct cli_ac_result *q;
-			regex = res->customdata;
+			if (!res) {
+			    regex = matcher->suffix_regexes[root].head;
+			    root = 0;
+			} else {
+			    regex = res->customdata;
+			}
 			while(!rc && regex) {
 				/* loop over multiple regexes corresponding to
 				 * this suffix */
@@ -324,9 +330,11 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 				if(rc) *info = regex->pattern;
 				regex = regex->nxt;
 			}
-			q = res;
-			res = res->next;
-			free(q);
+			if (res) {
+			    q = res;
+			    res = res->next;
+			    free(q);
+			}
 		}
 		free(buffer);
 		if(!rc)
@@ -693,6 +701,8 @@ static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_le
 			return CL_EMEM;
 		matcher->suffix_regexes[n].tail = regex;
 		matcher->suffix_regexes[n].head = regex;
+		if (suffix[0] == '/' && suffix[1] == '\0')
+		    matcher->root_regex_idx = n;
 		add_newsuffix(matcher, regex, suffix, suffix_len);
 		cli_dbgmsg(MODULE "added new suffix %s, for regex: %s\n", suffix, regex->pattern);
 	}

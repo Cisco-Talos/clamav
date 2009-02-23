@@ -198,6 +198,8 @@ static const struct rtest {
 	{NULL,
 		"http://key.com","go to key.com",2
 	},
+	{":.+\\.paypal\\.(com|de|fr|it)([/?].*)?:.+\\.ebay\\.(at|be|ca|ch|co\\.uk|de|es|fr|ie|in|it|nl|ph|pl|com(\\.(au|cn|hk|my|sg))?)([/?].*)?/",
+	    "http://www.paypal.com", "pics.ebay.com", 1},
 	{NULL, "http://somefakeurl.example.com","someotherdomain-key.com",2},
 	{NULL, "http://somefakeurl.example.com","someotherdomain.key.com",0},
 	{NULL, "http://1.test.example.com/something","test",3},

@@ -1,3 +1,9 @@
+Mon Feb 23 14:53:39 EET 2009 (edwin)
+------------------------------------
+ * libclamav/regex_list.c, libclamav/regex_list.h,
+ unit_tests/check_regex.c, unit_tests/input/daily.wdb: fix match with
+ root regex (bb #1421).
+
 Mon Feb 23 14:10:01 EET 2009 (edwin)
 ------------------------------------
  * clamd/session.c: stop scanning when client disconnects in

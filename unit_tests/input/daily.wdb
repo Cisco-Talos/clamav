@@ -28,4 +28,4 @@ X:.+:.+rcm\.amazon\.com([/?].*)?:17-
 X:.+\.ebay\.com([/?].*)?:.+\.ebay\.(at|be|ca|ch|co\.uk|de|es|fr|ie|in|it|nl|ph|pl|com\.(au|cn|hk|my|sg))([/?].*)?:17-
 M:www.paypal.com%a0:www.paypal.com
 M:www.monster.fr:media.monster.com
-X:.+\.paypal\.(com|de|fr|it)([/?].*)?:.+\.ebay\.(at|be|ca|ch|co\.uk|de|es|fr|ie|in|it|nl|ph|pl|com(\.(au|cn|hk|my|sg))?)([/?].*)?:17-
+X:.+\.paypal\.com:.+\.ebay\.com
