@@ -1036,7 +1036,8 @@ static void help(void)
 {
     printf("\n");
     printf("           Clam AntiVirus: Monitoring Tool %s\n", get_version());
-    printf("    (C) 2008 - 2009 ClamAV Team - http://www.clamav.net/team\n\n");
+    printf("           By The ClamAV Team: http://www.clamav.net/team\n");
+    printf("           (C) 2008-2009 Sourcefire, Inc.\n\n");
     printf("clamdtop [-hVc] [host[:port] /path/to/clamd.socket ...]\n\n");
     printf("    --help                 -h         Show help\n");
     printf("    --version              -V         Show version\n");
