@@ -1,3 +1,8 @@
+Tue Feb 24 15:57:43 EET 2009 (edwin)
+------------------------------------
+ * libclamav/others_common.c: only when there are at least 2 chars in
+ pathname.
+
 Tue Feb 24 15:54:17 EET 2009 (edwin)
 ------------------------------------
  * clamdscan/client.c, clamdscan/proto.c, clamdscan/proto.h,

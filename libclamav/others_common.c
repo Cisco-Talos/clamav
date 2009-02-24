@@ -505,10 +505,10 @@ int cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli
 
     int ret;
 
-    if (flags & CLI_FTW_TRIM_SLASHES) {
+    if ((flags & CLI_FTW_TRIM_SLASHES) && path[0] && path[1]) {
+	char *pathend;
 	/* trim slashes so that dir and dir/ behave the same when
 	 * they are symlinks, and we are not following symlinks */
-	char *pathend;
 	while (path[0] == '/' && path[1] == '/') path++;
 	pathend = path + strlen(path);
 	while (pathend > path && pathend[-1] == '/') --pathend;
