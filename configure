@@ -17118,6 +17118,8 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
 					ac_cv_findlib_CHECK_libs="$LIBCHECK"
 					ac_cv_findlib_CHECK_ltlibs="$LTLIBCHECK"
 					ac_cv_findlib_CHECK_inc="$INCCHECK"
+					{ echo "$as_me:$LINENO: result: ok" >&5
+echo "${ECHO_T}ok" >&6; }
 
 else
   echo "$as_me: failed program was:" >&5
@@ -23196,6 +23198,8 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
 					ac_cv_findlib_NCURSES_libs="$LIBNCURSES"
 					ac_cv_findlib_NCURSES_ltlibs="$LTLIBNCURSES"
 					ac_cv_findlib_NCURSES_inc="$INCNCURSES"
+					{ echo "$as_me:$LINENO: result: ok" >&5
+echo "${ECHO_T}ok" >&6; }
 
 else
   echo "$as_me: failed program was:" >&5
@@ -23879,6 +23883,8 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
 					ac_cv_findlib_NCURSES_libs="$LIBNCURSES"
 					ac_cv_findlib_NCURSES_ltlibs="$LTLIBNCURSES"
 					ac_cv_findlib_NCURSES_inc="$INCNCURSES"
+					{ echo "$as_me:$LINENO: result: ok" >&5
+echo "${ECHO_T}ok" >&6; }
 
 else
   echo "$as_me: failed program was:" >&5
@@ -24562,6 +24568,8 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
 					ac_cv_findlib_PDCURSES_libs="$LIBPDCURSES"
 					ac_cv_findlib_PDCURSES_ltlibs="$LTLIBPDCURSES"
 					ac_cv_findlib_PDCURSES_inc="$INCPDCURSES"
+					{ echo "$as_me:$LINENO: result: ok" >&5
+echo "${ECHO_T}ok" >&6; }
 
 else
   echo "$as_me: failed program was:" >&5

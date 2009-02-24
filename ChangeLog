@@ -1,3 +1,7 @@
+Tue Feb 24 22:48:48 EET 2009 (edwin)
+------------------------------------
+ * configure, m4/acinclude.m4: add missing AC_RESULT.
+
 Tue Feb 24 15:57:43 EET 2009 (edwin)
 ------------------------------------
  * libclamav/others_common.c: only when there are at least 2 chars in

@@ -725,6 +725,7 @@ AC_DEFUN([AC_LIB_FIND],
 					ac_cv_findlib_[]NAME[]_libs="$LIB[]NAME"
 					ac_cv_findlib_[]NAME[]_ltlibs="$LTLIB[]NAME"
 					ac_cv_findlib_[]NAME[]_inc="$INC[]NAME"
+					AC_MSG_RESULT([ok])
 				])
 		])
 		CPPFLAGS="$save_CPPFLAGS"
