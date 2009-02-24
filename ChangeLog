@@ -1,3 +1,8 @@
+Tue Feb 24 22:50:21 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c: force alignment of ancillary data buffer (bb
+ #1425).
+
 Tue Feb 24 22:48:48 EET 2009 (edwin)
 ------------------------------------
  * configure, m4/acinclude.m4: add missing AC_RESULT.

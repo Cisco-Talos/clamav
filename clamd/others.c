@@ -273,7 +273,10 @@ static int read_fd_data(struct fd_buf *buf)
   {
       struct msghdr msg;
       struct cmsghdr *cmsg;
-      unsigned char buff[CMSG_SPACE(sizeof(int))];
+      union {
+       unsigned char buff[CMSG_SPACE(sizeof(int))];
+       struct cmsghdr hdr;
+      } b;
       struct iovec iov[1];
 
       if (buf->recvfd != -1) {
@@ -286,8 +289,8 @@ static int read_fd_data(struct fd_buf *buf)
       iov[0].iov_len = buf->bufsize - buf->off;
       msg.msg_iov = iov;
       msg.msg_iovlen = 1;
-      msg.msg_control = buff;
-      msg.msg_controllen = sizeof(buff);
+      msg.msg_control = b.buff;
+      msg.msg_controllen = CMSG_LEN(sizeof(int));
 
       n = recvmsg(buf->fd, &msg, 0);
       if (n < 0)
