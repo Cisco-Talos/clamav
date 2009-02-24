@@ -1,3 +1,9 @@
+Tue Feb 24 15:54:17 EET 2009 (edwin)
+------------------------------------
+ * clamdscan/client.c, clamdscan/proto.c, clamdscan/proto.h,
+ libclamav/others.h, libclamav/others_common.c: trim extra leading
+ and trailing slashes (bb #1423).
+
 Tue Feb 24 12:32:03 EET 2009 (edwin)
 ------------------------------------
  * unit_tests/efence_tests.sh: fix electric-fence return code

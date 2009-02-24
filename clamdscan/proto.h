@@ -34,7 +34,7 @@ int dconnect(void);
 int sendln(int sockd, const char *line, unsigned int len);
 void recvlninit(struct RCVLN *s, int sockd);
 int recvln(struct RCVLN *s, char **rbol, char **reol);
-int serial_client_scan(const char *file, int scantype, int *infected, int *errors, int maxlevel, int flags);
-int parallel_client_scan(const char *file, int scantype, int *infected, int *errors, int maxlevel, int flags);
+int serial_client_scan(char *file, int scantype, int *infected, int *errors, int maxlevel, int flags);
+int parallel_client_scan(char *file, int scantype, int *infected, int *errors, int maxlevel, int flags);
 int dsresult(int sockd, int scantype, const char *filename);
 #endif

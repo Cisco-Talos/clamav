@@ -496,14 +496,25 @@ static int handle_entry(struct dirent_data *entry, int flags, int maxdepth, cli_
     }
 }
 
-int cli_ftw(const char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
+int cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
 {
     struct stat statbuf;
     enum filetype ft = ft_unknown;
     struct dirent_data entry;
     int stated = 0;
 
-    int ret = handle_filetype(path, flags, &statbuf, &stated, &ft, callback, data);
+    int ret;
+
+    if (flags & CLI_FTW_TRIM_SLASHES) {
+	/* trim slashes so that dir and dir/ behave the same when
+	 * they are symlinks, and we are not following symlinks */
+	char *pathend;
+	while (path[0] == '/' && path[1] == '/') path++;
+	pathend = path + strlen(path);
+	while (pathend > path && pathend[-1] == '/') --pathend;
+	*pathend = '\0';
+    }
+    ret = handle_filetype(path, flags, &statbuf, &stated, &ft, callback, data);
     if (ret != CL_SUCCESS)
 	return ret;
     if (ft_skipped(ft))

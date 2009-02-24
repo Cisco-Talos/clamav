@@ -372,7 +372,9 @@ int cli_matchregex(const char *str, const char *regex);
 /* if the callback needs the stat */
 #define CLI_FTW_NEED_STAT	    0x04
 
-#define CLI_FTW_STD (CLI_FTW_NEED_STAT)
+/* remove leading/trailing slashes */
+#define CLI_FTW_TRIM_SLASHES	    0x08
+#define CLI_FTW_STD (CLI_FTW_NEED_STAT | CLI_FTW_TRIM_SLASHES)
 
 enum cli_ftw_reason {
     visit_file,
@@ -414,6 +416,6 @@ typedef int (*cli_ftw_cb)(struct stat *stat_buf, char *filename, const char *pat
  * which one it is.
  * If it is a file, it simply calls the callback once, otherwise recurses.
  */
-int cli_ftw(const char *base, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data);
+int cli_ftw(char *base, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data);
 
 #endif

@@ -242,6 +242,7 @@ int client(const struct optstruct *opts, int *infected)
 	flags |= CLI_FTW_FOLLOW_DIR_SYMLINK;
     if (optget(clamdopts, "FollowFileSymlinks")->enabled)
 	flags |= CLI_FTW_FOLLOW_FILE_SYMLINK;
+    flags |= CLI_FTW_TRIM_SLASHES;
     optfree(clamdopts);
 
     if(!mainsa) {

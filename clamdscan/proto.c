@@ -370,7 +370,7 @@ static int serial_callback(struct stat *sb, char *filename, const char *path, en
 
 /* Non-IDSESSION handler
  * Returns non zero for serious errors, zero otherwise */
-int serial_client_scan(const char *file, int scantype, int *infected, int *errors, int maxlevel, int flags) {
+int serial_client_scan(char *file, int scantype, int *infected, int *errors, int maxlevel, int flags) {
     struct cli_ftw_cbdata data;
     struct client_serial_data cdata;
     int ftw;
@@ -547,7 +547,7 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
 
 /* IDSESSION handler
  * Returns non zero for serious errors, zero otherwise */
-int parallel_client_scan(const char *file, int scantype, int *infected, int *errors, int maxlevel, int flags) {
+int parallel_client_scan(char *file, int scantype, int *infected, int *errors, int maxlevel, int flags) {
     struct cli_ftw_cbdata data;
     struct client_parallel_data cdata;
     int ftw;
