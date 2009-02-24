@@ -1,3 +1,7 @@
+Wed Feb 25 00:00:25 EET 2009 (edwin)
+------------------------------------
+ * unit_tests/duma_tests.sh: fix duma timeouts (thanks Nigel!).
+
 Tue Feb 24 22:50:21 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c: force alignment of ancillary data buffer (bb
