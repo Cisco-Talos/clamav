@@ -1,3 +1,8 @@
+Tue Feb 24 12:32:03 EET 2009 (edwin)
+------------------------------------
+ * unit_tests/efence_tests.sh: fix electric-fence return code
+ checking (bb #1385).
+
 Mon Feb 23 20:32:43 CET 2009 (tk)
 ---------------------------------
  * docs/clamdoc.(tex|pdf): update documentation

@@ -29,7 +29,7 @@ fi
 # probably doesn't work well with libpthread.
 echo "--- running clamscan under electric-fence to detect overruns"
 CLAMSCAN_WRAPPER=$abs_srcdir/preload_run.sh $abs_srcdir/check_clamscan.sh
-if test ! $?; then
+if test $? -ne 0; then
 	echo "*** Electric-fence has detected errors"
 	exit 2
 fi
@@ -37,7 +37,7 @@ EF_PROTECT_BELOW=1
 export EF_PROTECT_BELOW
 echo "--- running clamscan under electric-fence to detect underruns"
 CLAMSCAN_WRAPPER=$abs_srcdir/preload_run.sh $abs_srcdir/check_clamscan.sh
-if test ! $?; then
+if test $? -ne 0; then
 	echo "*** Electric-fence has detected errors"
 	exit 3
 fi
