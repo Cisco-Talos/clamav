@@ -44,7 +44,7 @@
  * in re-enabling affected modules.
  */
 
-#define CL_FLEVEL 38
+#define CL_FLEVEL 39
 #define CL_FLEVEL_DCONF	CL_FLEVEL
 
 extern uint8_t cli_debug_flag;
