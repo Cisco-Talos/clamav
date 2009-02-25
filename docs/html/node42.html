@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Error handling</TITLE>
-<META NAME="description" CONTENT="Error handling">
+<TITLE>Header file</TITLE>
+<META NAME="description" CONTENT="Header file">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,57 +18,52 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node43.html">
 <LINK REL="previous" HREF="node41.html">
-<LINK REL="up" HREF="node39.html">
+<LINK REL="up" HREF="node41.html">
 <LINK REL="next" HREF="node43.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html749"
+<A NAME="tex2html756"
   HREF="node43.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html745"
-  HREF="node39.html">
+<A NAME="tex2html752"
+  HREF="node41.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html739"
+<A NAME="tex2html748"
   HREF="node41.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html747"
+<A NAME="tex2html754"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html750"
-  HREF="node43.html">Engine structure</A>
-<B> Up:</B> <A NAME="tex2html746"
-  HREF="node39.html">API</A>
-<B> Previous:</B> <A NAME="tex2html740"
-  HREF="node41.html">Database loading</A>
- &nbsp; <B>  <A NAME="tex2html748"
+<B> Next:</B> <A NAME="tex2html757"
+  HREF="node43.html">Initialization</A>
+<B> Up:</B> <A NAME="tex2html753"
+  HREF="node41.html">API</A>
+<B> Previous:</B> <A NAME="tex2html749"
+  HREF="node41.html">API</A>
+ &nbsp; <B>  <A NAME="tex2html755"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00073300000000000000">
-Error handling</A>
+<H3><A NAME="SECTION00073100000000000000">
+Header file</A>
 </H3>
-    Use <code>cl_strerror</code> to convert error codes into human readable messages.
-    The function returns a statically allocated string:
+    Every program using libclamav must include the header file <code>clamav.h</code>:
     <PRE>
-	if(ret) {
-	    printf("cl_load() error: %s\n", cl_strerror(ret));
-	    exit(1);
-	}
+	#include &lt;clamav.h&gt;
 </PRE>
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2008-11-26
+2009-02-25
 </ADDRESS>
 </BODY>
 </HTML>

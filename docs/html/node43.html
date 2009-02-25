@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>Engine structure</TITLE>
-<META NAME="description" CONTENT="Engine structure">
+<TITLE>Initialization</TITLE>
+<META NAME="description" CONTENT="Initialization">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,63 +18,75 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="previous" HREF="node42.html">
-<LINK REL="up" HREF="node39.html">
+<LINK REL="next" HREF="node47.html">
+<LINK REL="previous" HREF="node41.html">
+<LINK REL="up" HREF="node32.html">
 <LINK REL="next" HREF="node44.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html759"
+<A NAME="tex2html768"
   HREF="node44.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html755"
-  HREF="node39.html">
+<A NAME="tex2html764"
+  HREF="node32.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html751"
+<A NAME="tex2html758"
   HREF="node42.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html757"
+<A NAME="tex2html766"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html760"
-  HREF="node44.html">Database reloading</A>
-<B> Up:</B> <A NAME="tex2html756"
-  HREF="node39.html">API</A>
-<B> Previous:</B> <A NAME="tex2html752"
-  HREF="node42.html">Error handling</A>
- &nbsp; <B>  <A NAME="tex2html758"
+<B> Next:</B> <A NAME="tex2html769"
+  HREF="node44.html">Database loading</A>
+<B> Up:</B> <A NAME="tex2html765"
+  HREF="node32.html">LibClamAV</A>
+<B> Previous:</B> <A NAME="tex2html759"
+  HREF="node42.html">Header file</A>
+ &nbsp; <B>  <A NAME="tex2html767"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00073400000000000000">
-Engine structure</A>
-</H3>
-    When all required databases are loaded you should prepare the detection
-    engine by calling <code>cl_build</code>. In the case of failure you should
-    free the memory occupied by the engine with <code>cl_free</code>:
+<H2><A NAME="SECTION00074000000000000000">
+Initialization</A>
+</H2>
+    Before using libclamav, you should call <code>cl_init()</code> to initialize
+    it. When it's done, you're ready to create a new scan engine by calling
+    <code>cl_engine_new()</code>. To free resources allocated by the engine use
+    <code>cl_engine_free()</code>. Function prototypes:
     <PRE>
-	int cl_build(struct cl_engine *engine);
-	void cl_free(struct cl_engine *engine);
+	int cl_init(unsigned int options);
+	struct cl_engine *cl_engine_new(void);
+	int cl_engine_free(struct cl_engine *engine);
 </PRE>
-    In our example:
-    <PRE>
-	if((ret = cl_build(engine))) {
-	    printf("cl_build() error: %s\n", cl_strerror(ret));
-	    cl_free(engine);
-	    exit(1);
-	}
-</PRE>
+    <code>cl_init()</code> and <code>cl_engine_free()</code> return <code>CL_SUCCESS</code>
+    on success or another code on error. <code>cl_engine_new()</code> return
+    a pointer or NULL if there's not enough memory to allocate a new
+    engine structure.
 
 <P>
 <BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL CLASS="ChildLinks">
+<LI><A NAME="tex2html770"
+  HREF="node44.html">Database loading</A>
+<LI><A NAME="tex2html771"
+  HREF="node45.html">Error handling</A>
+<LI><A NAME="tex2html772"
+  HREF="node46.html">Engine structure</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2008-11-26
+2009-02-25
 </ADDRESS>
 </BODY>
 </HTML>

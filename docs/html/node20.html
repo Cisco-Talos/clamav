@@ -27,26 +27,26 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html454"
+<A NAME="tex2html462"
   HREF="node21.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html450"
+<A NAME="tex2html458"
   HREF="node17.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html444"
+<A NAME="tex2html452"
   HREF="node19.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html452"
+<A NAME="tex2html460"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html455"
+<B> Next:</B> <A NAME="tex2html463"
   HREF="node21.html">Testing</A>
-<B> Up:</B> <A NAME="tex2html451"
+<B> Up:</B> <A NAME="tex2html459"
   HREF="node17.html">Configuration</A>
-<B> Previous:</B> <A NAME="tex2html445"
+<B> Previous:</B> <A NAME="tex2html453"
   HREF="node19.html">On-access scanning</A>
- &nbsp; <B>  <A NAME="tex2html453"
+ &nbsp; <B>  <A NAME="tex2html461"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
@@ -55,33 +55,19 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 <H2><A NAME="SECTION00052000000000000000">
 clamav-milter</A>
 </H2>
-    Nigel Horne's <code>clamav-milter</code> is a very efficient email scanner
-    designed for Sendmail. It's written entirely in C and only depends on
-    <code>libclamav</code> or <code>clamd</code>. You can find detailed installation
-    instructions in the <code>INSTALL</code> file that comes with the clamav-milter
-    sources. Basically, to connect it with Sendmail add the following lines to
-    <code>/etc/mail/sendmail.mc</code>:
-    <PRE>
-INPUT_MAIL_FILTER(`clmilter',`S=local:/var/run/clamav/clmilter.sock,
-F=, T=S:4m;R:4m')dnl
-define(`confINPUT_MAIL_FILTERS', `clmilter')
-</PRE>
-    If you're running it in <code>--external</code> mode, check entry in
-    <code>clamd.conf</code> of the form:
-    <PRE>
-	LocalSocket /var/run/clamav/clamd.sock
-</PRE>
-    Start clamav-milter
-    <PRE>
-	/usr/local/sbin/clamav-milter -lo /var/run/clamav/clmilter.sock
-</PRE>
-    and restart sendmail.
+    ClamAV 0.95 includes a new, redesigned clamav-milter. The most notable
+    difference is that the internal mode has been dropped and now a working
+    clamd companion is required. The second important difference is that now
+    the milter has got its own configuration and log files. To compile ClamAV
+    with the clamav-milter just run <code>./configure</code> <code>--enable-milter</code>
+    and make as usual. Please consult your MTA's manual on how to connect it
+    with the milter.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2008-11-26
+2009-02-25
 </ADDRESS>
 </BODY>
 </HTML>

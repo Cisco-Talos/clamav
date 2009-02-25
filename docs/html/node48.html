@@ -7,8 +7,8 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
   Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
 <HTML>
 <HEAD>
-<TITLE>clamav-config</TITLE>
-<META NAME="description" CONTENT="clamav-config">
+<TITLE>Database reloading</TITLE>
+<META NAME="description" CONTENT="Database reloading">
 <META NAME="keywords" CONTENT="clamdoc">
 <META NAME="resource-type" CONTENT="document">
 <META NAME="distribution" CONTENT="global">
@@ -18,56 +18,92 @@ original version by:  Nikos Drakos, CBLU, University of Leeds
 
 <LINK REL="STYLESHEET" HREF="clamdoc.css">
 
-<LINK REL="next" HREF="node49.html">
+<LINK REL="next" HREF="node54.html">
 <LINK REL="previous" HREF="node47.html">
-<LINK REL="up" HREF="node44.html">
+<LINK REL="up" HREF="node32.html">
 <LINK REL="next" HREF="node49.html">
 </HEAD>
 
 <BODY >
 
 <DIV CLASS="navigation"><!--Navigation Panel-->
-<A NAME="tex2html824"
+<A NAME="tex2html829"
   HREF="node49.html">
 <IMG WIDTH="37" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="next" SRC="next.png"></A> 
-<A NAME="tex2html820"
-  HREF="node44.html">
+<A NAME="tex2html825"
+  HREF="node32.html">
 <IMG WIDTH="26" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="up" SRC="up.png"></A> 
-<A NAME="tex2html814"
+<A NAME="tex2html819"
   HREF="node47.html">
 <IMG WIDTH="63" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="previous" SRC="prev.png"></A> 
-<A NAME="tex2html822"
+<A NAME="tex2html827"
   HREF="node1.html">
 <IMG WIDTH="65" HEIGHT="24" ALIGN="BOTTOM" BORDER="0" ALT="contents" SRC="contents.png"></A>  
 <BR>
-<B> Next:</B> <A NAME="tex2html825"
-  HREF="node49.html">Example</A>
-<B> Up:</B> <A NAME="tex2html821"
-  HREF="node44.html">Database reloading</A>
-<B> Previous:</B> <A NAME="tex2html815"
-  HREF="node47.html">Forking daemons</A>
- &nbsp; <B>  <A NAME="tex2html823"
+<B> Next:</B> <A NAME="tex2html830"
+  HREF="node49.html">Data scan functions</A>
+<B> Up:</B> <A NAME="tex2html826"
+  HREF="node32.html">LibClamAV</A>
+<B> Previous:</B> <A NAME="tex2html820"
+  HREF="node47.html">Limits</A>
+ &nbsp; <B>  <A NAME="tex2html828"
   HREF="node1.html">Contents</A></B> 
 <BR>
 <BR></DIV>
 <!--End of Navigation Panel-->
 
-<H3><A NAME="SECTION00074400000000000000">
-clamav-config</A>
-</H3>
-    Use <code>clamav-config</code> to check compilation information for libclamav.
+<H2><A NAME="SECTION00076000000000000000">
+Database reloading</A>
+</H2>
+    It's very important  to keep the internal instance of the database up to
+    date. You can watch database changes with the <code>cl_stat..()</code> family
+    of functions.
     <PRE>
-	zolw@localhost:~$ clamav-config --libs
-	-L/usr/local/lib -lz -lbz2 -lgmp -lpthread
-	zolw@localhost:~$ clamav-config --cflags
-	-I/usr/local/include -g -O2
+	int cl_statinidir(const char *dirname, struct cl_stat *dbstat);
+	int cl_statchkdir(const struct cl_stat *dbstat);
+	int cl_statfree(struct cl_stat *dbstat);
 </PRE>
+    Initialization:
+    <PRE>
+	    ...
+	    struct cl_stat dbstat;
+
+	memset(&amp;dbstat, 0, sizeof(struct cl_stat));
+	cl_statinidir(dbdir, &amp;dbstat);
+</PRE>
+    To check for a change you just need to call <code>cl_statchkdir</code> and check
+    its return value (0 - no change, 1 - some change occured):
+    <PRE>
+	if(cl_statchkdir(&amp;dbstat) == 1) {
+	    reload_database...;
+	    cl_statfree(&amp;dbstat);
+	    cl_statinidir(cl_retdbdir(), &amp;dbstat);
+	}
+</PRE>
+    Remember to reset the <code>cl_stat</code> structure after each reload.
 
 <P>
 <BR><HR>
+<!--Table of Child-Links-->
+<A NAME="CHILD_LINKS"><STRONG>Subsections</STRONG></A>
+
+<UL CLASS="ChildLinks">
+<LI><A NAME="tex2html831"
+  HREF="node49.html">Data scan functions</A>
+<LI><A NAME="tex2html832"
+  HREF="node50.html">Memory</A>
+<LI><A NAME="tex2html833"
+  HREF="node51.html">Forking daemons</A>
+<LI><A NAME="tex2html834"
+  HREF="node52.html">clamav-config</A>
+<LI><A NAME="tex2html835"
+  HREF="node53.html">Example</A>
+</UL>
+<!--End of Table of Child-Links-->
+<BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2008-11-26
+2009-02-25
 </ADDRESS>
 </BODY>
 </HTML>
