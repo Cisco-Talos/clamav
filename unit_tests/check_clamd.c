@@ -22,7 +22,6 @@
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
-
 #include "shared/fdpassing.h"
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -233,6 +232,7 @@ static void test_command(const char *cmd, size_t len, const char *extra, const c
     free(recvdata);
 }
 
+#ifdef CHECK_HAVE_LOOPS
 START_TEST (test_basic_commands)
 {
     struct basic_test *test = &basic_tests[_i];
@@ -289,6 +289,7 @@ START_TEST (test_compat_commands)
     }
 }
 END_TEST
+#endif
 
 #define EXPECT_INSTREAM "stream: ClamAV-Test-File.UNOFFICIAL FOUND\n"
 
@@ -456,6 +457,7 @@ static struct cmds {
     {"zFILDES", '\0', CLEANFILE, CLEANFDREPLY}
 };
 
+#ifdef CHECK_HAVE_LOOPS
 START_TEST (test_fildes)
 {
     char nreply[BUFSIZ], nsend[BUFSIZ];
@@ -502,6 +504,7 @@ START_TEST (test_fildes)
     }
 }
 END_TEST
+#endif
 
 START_TEST (test_fildes_many)
 {
@@ -701,9 +704,11 @@ static Suite *test_clamd_suite(void)
     tc_commands = tcase_create("clamd commands");
     suite_add_tcase(s, tc_commands);
     tcase_add_unchecked_fixture(tc_commands, commands_setup, commands_teardown);
+#ifdef CHECK_HAVE_LOOPS
     tcase_add_loop_test(tc_commands, test_basic_commands, 0, sizeof(basic_tests)/sizeof(basic_tests[0]));
     tcase_add_loop_test(tc_commands, test_compat_commands, 0, sizeof(basic_tests)/sizeof(basic_tests[0]));
     tcase_add_loop_test(tc_commands, test_fildes, 0, 4*sizeof(fildes_cmds)/sizeof(fildes_cmds[0]));
+#endif
     tcase_add_test(tc_commands, test_stats);
     tcase_add_test(tc_commands, test_instream);
     tcase_add_test(tc_commands, test_stream);

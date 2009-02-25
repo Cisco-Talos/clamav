@@ -1,3 +1,7 @@
+Wed Feb 25 22:01:53 EET 2009 (edwin)
+------------------------------------
+ * unit_tests/check_clamd.c: fix build with old versions of check
+
 Wed Feb 25 18:17:03 CET 2009 (acab)
 -----------------------------------
  * clamd, clamav-milter: unify default max stream sizes
