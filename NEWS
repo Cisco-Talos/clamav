@@ -14,7 +14,7 @@ The following are the key features of this release:
 
     - Clamd extensions: The protocol has been extended to lighten the load
       that clamd puts on the system, solve limitations of the old protocol,
-      and reduce latency when signature updates are received. Fore more
+      and reduce latency when signature updates are received. For more
       information about the new extensions please see the official
       documentation and the upgrade notes.
 
