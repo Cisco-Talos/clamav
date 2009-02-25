@@ -1,3 +1,8 @@
+Wed Feb 25 23:14:33 EET 2009 (edwin)
+------------------------------------
+ * unit_tests/duma_tests.sh: disable duma tests by default, they time
+ out even on fast machines.
+
 Wed Feb 25 22:01:53 EET 2009 (edwin)
 ------------------------------------
  * unit_tests/check_clamd.c: fix build with old versions of check

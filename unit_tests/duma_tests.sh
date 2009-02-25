@@ -1,5 +1,6 @@
 #!/bin/sh
 # Run under duma
+test "x$RUNDUMA" = "x1" || { echo "*** duma tests skipped by default, use 'make check RUNDUMA=1' to activate (but don't report bugs about timeouts!)"; exit 77; }
 LIBDIRS=`../libtool --config | grep sys_lib_search_path_spec | sed -e 's/.*"\(.*\)"/\1/'`
 if test -z "$LIBDUMA"; then
 	for i in $LIBDIRS; do
