@@ -1,3 +1,7 @@
+Wed Feb 25 14:08:14 CET 2009 (acab)
+-----------------------------------
+ * docs/man/clamav-milter.8.in: update documentation
+
 Wed Feb 25 00:00:25 EET 2009 (edwin)
 ------------------------------------
  * unit_tests/duma_tests.sh: fix duma timeouts (thanks Nigel!).
