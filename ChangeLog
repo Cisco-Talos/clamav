@@ -1,3 +1,7 @@
+Sat Feb 28 10:47:44 EET 2009 (edwin)
+------------------------------------
+ * clamdtop/clamdtop.c: remove unneeded include (bb #1436).
+
 Sat Feb 28 09:04:22 CET 2009 (acab)
 -----------------------------------
  * clamdscan/proto.c: bail out if the command is rejected (bb#1429)
