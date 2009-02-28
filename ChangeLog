@@ -1,3 +1,7 @@
+Sat Feb 28 09:04:22 CET 2009 (acab)
+-----------------------------------
+ * clamdscan/proto.c: bail out if the command is rejected (bb#1429)
+
 Thu Feb 26 10:09:21 CET 2009 (acab)
 -----------------------------------
  * shared/misc.h: check for in_addr_t (bb#1426)

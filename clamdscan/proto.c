@@ -28,6 +28,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -114,7 +115,13 @@ int recvln(struct RCVLN *s, char **rbol, char **reol) {
 		    continue;
 		}
 		if(s->r || s->cur!=s->buf) {
-		    logg("!Communication error\n");
+		    *s->cur = '\0';
+		    if(strcmp(s->buf, "UNKNOWN COMMAND\n"))
+			logg("!Communication error\n");
+		    else {
+			logg("!Command rejected by clamd (wrong clamd version?)\n");
+			exit(2);
+		    }
 		    return -1;
 		}
 		*rbol = NULL;
