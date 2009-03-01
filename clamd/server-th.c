@@ -454,7 +454,7 @@ static void *acceptloop_th(void *arg)
     progexit = 1;
     pthread_mutex_unlock(&exit_mutex);
     if (write(data->syncpipe_wake_recv[1], "", 1) < 0) {
-	logg("^Syncpipe write failed\n");
+	logg("$Syncpipe write failed\n");
     }
 
     return NULL;
