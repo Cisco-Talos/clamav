@@ -118,7 +118,7 @@ static void conn_teardown(void)
 
 #define ACCDENIED BUILDDIR"/accdenied"
 #define ACCDENIED_REPLY ACCDENIED": Access denied. ERROR"
-
+static int isroot = 0;
 static void commands_setup(void)
 {
     const char *nonempty = "NONEMPTYFILE";
@@ -138,6 +138,11 @@ static void commands_setup(void)
     fail_unless_fmt(write(fd, nonempty, strlen(nonempty)) == strlen(nonempty),
 		    "Failed to write into testfile: %s\n", strerror(errno));
     close(fd);
+
+    /* skip access denied tests when run as root, as root will ignore
+     * permissions */
+    if (!geteuid())
+	isroot = 1;
 }
 
 static void commands_teardown(void)
@@ -151,35 +156,36 @@ static struct basic_test {
     const char *extra;
     const char *reply;
     int support_old;
+    int skiproot;
 } basic_tests[] = {
-    {"PING", NULL, "PONG", 1},
-    {"RELOAD", NULL, "RELOADING", 1},
-    {"VERSION", NULL, VERSION_REPLY, 1},
-    {"SCAN "SCANFILE, NULL, FOUNDREPLY, 1},
-    {"SCAN "CLEANFILE, NULL, CLEANREPLY, 1},
-    {"CONTSCAN "SCANFILE, NULL, FOUNDREPLY, 1},
-    {"CONTSCAN "CLEANFILE, NULL, CLEANREPLY, 1},
-    {"MULTISCAN "SCANFILE, NULL, FOUNDREPLY, 1},
-    {"MULTISCAN "CLEANFILE, NULL, CLEANREPLY, 1},
+    {"PING", NULL, "PONG", 1, 0},
+    {"RELOAD", NULL, "RELOADING", 1, 0},
+    {"VERSION", NULL, VERSION_REPLY, 1, 0},
+    {"SCAN "SCANFILE, NULL, FOUNDREPLY, 1, 0},
+    {"SCAN "CLEANFILE, NULL, CLEANREPLY, 1, 0},
+    {"CONTSCAN "SCANFILE, NULL, FOUNDREPLY, 1, 0},
+    {"CONTSCAN "CLEANFILE, NULL, CLEANREPLY, 1, 0},
+    {"MULTISCAN "SCANFILE, NULL, FOUNDREPLY, 1, 0},
+    {"MULTISCAN "CLEANFILE, NULL, CLEANREPLY, 1, 0},
     /* unknown commnads */
-    {"RANDOM", NULL, UNKNOWN_REPLY, 1},
+    {"RANDOM", NULL, UNKNOWN_REPLY, 1, 0},
     /* commands invalid as first */
-    {"END", NULL, UNKNOWN_REPLY, 1},
+    {"END", NULL, UNKNOWN_REPLY, 1, 0},
     /* commands for nonexistent files */
-    {"SCAN "NONEXISTENT, NULL, NONEXISTENT_REPLY, 1},
-    {"CONTSCAN "NONEXISTENT, NULL, NONEXISTENT_REPLY, 1},
-    {"MULTISCAN "NONEXISTENT, NULL, NONEXISTENT_REPLY, 1},
+    {"SCAN "NONEXISTENT, NULL, NONEXISTENT_REPLY, 1, 0},
+    {"CONTSCAN "NONEXISTENT, NULL, NONEXISTENT_REPLY, 1, 0},
+    {"MULTISCAN "NONEXISTENT, NULL, NONEXISTENT_REPLY, 1, 0},
     /* commands for access denied files */
-    {"SCAN "ACCDENIED, NULL, ACCDENIED_REPLY, 1},
-    {"CONTSCAN "ACCDENIED, NULL, ACCDENIED_REPLY, 1},
-    {"MULTISCAN "ACCDENIED, NULL, ACCDENIED_REPLY, 1},
+    {"SCAN "ACCDENIED, NULL, ACCDENIED_REPLY, 1, 1},
+    {"CONTSCAN "ACCDENIED, NULL, ACCDENIED_REPLY, 1, 1},
+    {"MULTISCAN "ACCDENIED, NULL, ACCDENIED_REPLY, 1, 1},
     /* commands with invalid/missing arguments */
-    {"SCAN", NULL, UNKNOWN_REPLY, 1},
-    {"CONTSCAN", NULL, UNKNOWN_REPLY, 1},
-    {"MULTISCAN", NULL, UNKNOWN_REPLY, 1},
+    {"SCAN", NULL, UNKNOWN_REPLY, 1, 0},
+    {"CONTSCAN", NULL, UNKNOWN_REPLY, 1, 0},
+    {"MULTISCAN", NULL, UNKNOWN_REPLY, 1, 0},
     /* commands with invalid data */
-    {"INSTREAM", "\xff\xff\xff\xff", "INSTREAM size limit exceeded. ERROR", 0}, /* too big chunksize */
-    {"FILDES", "X", "No file descriptor received. ERROR", 1}, /* FILDES w/o ancillary data */
+    {"INSTREAM", "\xff\xff\xff\xff", "INSTREAM size limit exceeded. ERROR", 0, 0}, /* too big chunksize */
+    {"FILDES", "X", "No file descriptor received. ERROR", 1, 0}, /* FILDES w/o ancillary data */
 };
 
 static void *recvpartial(int sd, size_t *len, int partial)
@@ -214,6 +220,7 @@ static void test_command(const char *cmd, size_t len, const char *extra, const c
 {
     void *recvdata;
     ssize_t rc;
+
     rc = send(sockd, cmd, len, 0);
     fail_unless_fmt((size_t)rc == len, "Unable to send(): %s\n", strerror(errno));
 
@@ -238,6 +245,8 @@ START_TEST (test_basic_commands)
     struct basic_test *test = &basic_tests[_i];
     char nsend[BUFSIZ], nreply[BUFSIZ];
 
+    if (test->skiproot && isroot)
+	return;
     /* send nCOMMAND */
     snprintf(nreply, sizeof(nreply), "%s\n", test->reply);
     snprintf(nsend, sizeof(nsend), "n%s\n", test->command);
@@ -258,6 +267,9 @@ START_TEST (test_compat_commands)
     /* test sending the command the "old way" */
     struct basic_test *test = &basic_tests[_i];
     char nsend[BUFSIZ], nreply[BUFSIZ];
+
+    if (test->skiproot && isroot)
+	return;
 
     if (!test->support_old) {
 	snprintf(nreply, sizeof(nreply), "UNKNOWN COMMAND\n");

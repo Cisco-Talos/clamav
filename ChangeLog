@@ -1,3 +1,8 @@
+Sun Mar  1 12:39:52 EET 2009 (edwin)
+------------------------------------
+ * unit_tests/check_clamd.c: Fix make check when run as root. (bb
+ #1431).
+
 Sun Mar  1 12:33:44 EET 2009 (edwin)
 ------------------------------------
  * clamd/server-th.c: downgrade warning message (bb #1433).
