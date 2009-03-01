@@ -107,7 +107,11 @@ enum exit_reason {
 };
 
 static void exit_program(enum exit_reason reason, const char *func, unsigned line);
+#if __GNUC__ >= 3
 #define EXIT_PROGRAM(r) exit_program(r, __PRETTY_FUNCTION__, __LINE__);
+#else
+#define EXIT_PROGRAM(r) exit_program(r, "<unknown>", __LINE__);
+#endif
 #define OOM_CHECK(p) do { if (!p) EXIT_PROGRAM(OUT_OF_MEMORY); } while (0)
 
 

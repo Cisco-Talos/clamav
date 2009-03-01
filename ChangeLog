@@ -1,6 +1,11 @@
+Sun Mar  1 11:03:40 EET 2009 (edwin)
+------------------------------------
+ * clamdtop/clamdtop.c: Fix gccism, thanks Ed <lunytun*gmail.com>.
+ (bb #1428)
+
 Sun Mar  1 10:54:56 EET 2009 (edwin)
 ------------------------------------
- * config/ltmain.sh: Apply upstream libtool patch, fixes build under
+ * config/ltmain.sh: Apply upstream libtool patch (thanks Ralf Wildenhues), fixes build under
  zsh. (bb #1434).
 
 Sat Feb 28 10:47:44 EET 2009 (edwin)
