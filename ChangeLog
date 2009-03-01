@@ -1,3 +1,7 @@
+Sun Mar  1 17:21:15 CET 2009 (tk)
+---------------------------------
+ * COPYING.BSD -> COPYING.regex; add COPYING.sha256
+
 Sun Mar  1 12:39:52 EET 2009 (edwin)
 ------------------------------------
  * unit_tests/check_clamd.c: Fix make check when run as root. (bb
