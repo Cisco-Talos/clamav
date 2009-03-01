@@ -1,3 +1,8 @@
+Sun Mar  1 10:54:56 EET 2009 (edwin)
+------------------------------------
+ * config/ltmain.sh: Apply upstream libtool patch, fixes build under
+ zsh. (bb #1434).
+
 Sat Feb 28 10:47:44 EET 2009 (edwin)
 ------------------------------------
  * clamdtop/clamdtop.c: remove unneeded include (bb #1436).
