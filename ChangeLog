@@ -1,3 +1,9 @@
+Sun Mar  1 12:15:17 EET 2009 (edwin)
+------------------------------------
+ * clamdtop/clamdtop.c, shared/optparser.c: Fix colors when terminal
+ background color is not black.  (bb #1438, reported by Dennis
+ Peterson <dennispe*inetnw.com>)
+
 Sun Mar  1 11:29:32 EET 2009 (edwin)
 ------------------------------------
  * clamdtop/clamdtop.c: Use 'H' instead of 'F1', add support for

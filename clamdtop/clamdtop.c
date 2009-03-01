@@ -262,8 +262,10 @@ static void init_windows(int num_clamd)
 	}
 }
 
-static void init_ncurses(int num_clamd)
+static void init_ncurses(int num_clamd, int use_default)
 {
+	int default_bg = use_default ? DEFAULT_COLOR : COLOR_BLACK;
+	int default_fg = use_default ? DEFAULT_COLOR : COLOR_WHITE;
 	initscr();
 	curses_inited = 1;
 
@@ -273,18 +275,19 @@ static void init_ncurses(int num_clamd)
 	halfdelay(UPDATE_INTERVAL*10); /* timeout of 2s when waiting for input*/
 	noecho();		/* dont echo input */
 	curs_set(0);		/* turn off cursor */
-	use_default_colors();
+	if (use_default)
+	    use_default_colors();
 
 	init_pair(header_color, COLOR_BLACK, COLOR_WHITE);
-	init_pair(version_color, DEFAULT_COLOR, DEFAULT_COLOR);
+	init_pair(version_color, default_fg, default_bg);
 	init_pair(error_color, COLOR_WHITE, COLOR_RED);
-	init_pair(value_color, COLOR_GREEN, DEFAULT_COLOR);
-	init_pair(descr_color, COLOR_CYAN, DEFAULT_COLOR);
+	init_pair(value_color, COLOR_GREEN, default_bg);
+	init_pair(descr_color, COLOR_CYAN, default_bg);
 	init_pair(selected_color, COLOR_BLACK, COLOR_CYAN);
 	init_pair(queue_header_color, COLOR_BLACK, COLOR_GREEN);
-	init_pair(activ_color, COLOR_MAGENTA, DEFAULT_COLOR);
-	init_pair(dim_color, COLOR_GREEN, DEFAULT_COLOR);
-	init_pair(red_color, COLOR_RED, DEFAULT_COLOR);
+	init_pair(activ_color, COLOR_MAGENTA, default_bg);
+	init_pair(dim_color, COLOR_GREEN, default_bg);
+	init_pair(red_color, COLOR_RED, default_bg);
 
 	init_windows(num_clamd);
 }
@@ -1067,12 +1070,13 @@ static void help(void)
     printf("    --help                 -h         Show help\n");
     printf("    --version              -V         Show version\n");
     printf("    --config-file=FILE     -c FILE    Read clamd's configuration files from FILE\n");
+    printf("    --defaultcolors	       -d	  Use default terminal colors\n");
     printf("	host[:port]			  Connect to clamd on host at port (default 3310)\n");
     printf("    /path/to/clamd.socket		  Connect to clamd over a local socket\n");
     printf("\n");
     return;
 }
-
+static int default_colors=0;
 /* -------------------------- Initialization ---------------- */
 static void setup_connections(int argc, char *argv[])
 {
@@ -1101,6 +1105,8 @@ static void setup_connections(int argc, char *argv[])
 	    exit(0);
 	}
 
+	if(optget(opts, "defaultcolors")->enabled)
+	    default_colors = 1;
 	memset(&global, 0, sizeof(global));
 	if (!opts->filename || !opts->filename[0]) {
 	    char *aargv[2];
@@ -1244,7 +1250,7 @@ int main(int argc, char *argv[])
 
 	atexit(cleanup);
 	setup_connections(argc, argv);
-	init_ncurses(global.num_clamd);
+	init_ncurses(global.num_clamd, default_colors);
 
 	memset(&tv_last, 0, sizeof(tv_last));
 	do {
