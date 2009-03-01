@@ -1,3 +1,9 @@
+Sun Mar  1 11:29:32 EET 2009 (edwin)
+------------------------------------
+ * clamdtop/clamdtop.c: Use 'H' instead of 'F1', add support for
+ older clamds (bb #1429, thanks for the suggestion to Fabrio Pedretti
+ <pedretti*eco.unibs.it>).
+
 Sun Mar  1 11:03:40 EET 2009 (edwin)
 ------------------------------------
  * clamdtop/clamdtop.c: Fix gccism, thanks Ed <lunytun*gmail.com>.

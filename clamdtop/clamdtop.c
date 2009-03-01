@@ -96,7 +96,7 @@ struct stats {
 static void cleanup(void);
 static int send_string_noreconn(conn_t *conn, const char *cmd);
 static void send_string(conn_t *conn, const char *cmd);
-static void read_version(conn_t *conn);
+static int read_version(conn_t *conn);
 
 enum exit_reason {
         FAIL_CMDLINE=1,
@@ -253,7 +253,7 @@ static void init_windows(int num_clamd)
 	werase(stdscr);
 	refresh();
 	memset(status_bar_keys, 0, sizeof(status_bar_keys));
-	status_bar_keys[0] = "F1 - help";
+	status_bar_keys[0] = "H - help";
 	status_bar_keys[1] = "Q - quit";
 	status_bar_keys[2] = "R - reset maximums";
 	if (num_clamd > 1) {
@@ -494,7 +494,7 @@ static void print_con_info(conn_t *conn, const char *fmt, ...)
 }
 
 
-static int make_connection(const char *soname, conn_t *conn)
+static int make_connection_real(const char *soname, conn_t *conn)
 {
 	int s;
 	struct timeval tv;
@@ -558,11 +558,29 @@ static int make_connection(const char *soname, conn_t *conn)
 	tv.tv_sec = 4;
 	tv.tv_usec = 0;
 	setsockopt(conn->sd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-	send_string(conn, "nIDSESSION\nnVERSION\n");
-	free(conn->version);
-	conn->version = NULL;
-	read_version(conn);
 	return 0;
+}
+
+static int make_connection(const char *soname, conn_t *conn)
+{
+    int rc;
+
+    if ((rc = make_connection_real(soname, conn)))
+	return rc;
+    send_string(conn, "nIDSESSION\nnVERSION\n");
+    free(conn->version);
+    conn->version = NULL;
+    if (!read_version(conn))
+	return 0;
+
+    /* clamd < 0.95 */
+    if ((rc = make_connection_real(soname, conn)))
+	return rc;
+    send_string(conn, "nSESSION\nnVERSION\n");
+    conn->version = NULL;
+    if (!read_version(conn))
+	return 0;
+    return -1;
 }
 
 static void reconnect(conn_t *conn);
@@ -587,6 +605,8 @@ static void reconnect(conn_t *conn)
 	if(++tries > 3) {
 		EXIT_PROGRAM(RECONNECT_FAIL);
 	}
+	if (conn->sd != -1)
+	    close(conn->sd);
 	if (make_connection(conn->remote, conn) < 0) {
 		print_con_info(conn, "Unable to reconnect to %s: %s", conn->remote, strerror(errno));
 		EXIT_PROGRAM(RECONNECT_FAIL);
@@ -777,7 +797,7 @@ static int output_stats(struct stats *stats, unsigned idx)
 
 	OOM_CHECK(line);
 
-	if (stats->mem >= 0 || stats->stats_unsupp)
+	if (stats->mem <= 0 || stats->stats_unsupp)
 		strncpy(mem, "N/A", sizeof(mem));
 	else {
 		char c;
@@ -802,7 +822,7 @@ static int output_stats(struct stats *stats, unsigned idx)
 	else
 		snprintf(timbuf, sizeof(timbuf), "%04u-%02u-%02u %02uh",
 				1900 + stats->db_time.tm_year,
-				stats->db_time.tm_mon,
+				stats->db_time.tm_mon+1,
 				stats->db_time.tm_mday,
 				stats->db_time.tm_hour);
 
@@ -840,7 +860,6 @@ static int output_stats(struct stats *stats, unsigned idx)
 		snprintf(buf, sizeof(buf), "live %3u idle %3u max %3u", stats->prim_live, stats->prim_idle, stats->prim_max);
 		print_colored(win, buf);
 		show_bar(win, i++, stats->prim_live, stats->prim_idle, stats->prim_max, 0);
-
 /*		mvwprintw(win, i++, 0, "Multiscan pool : ");
 		snprintf(buf, sizeof(buf), "live %3u idle %3u max %3u", stats->live, stats->idle, stats->max);
 		print_colored(win, buf);
@@ -855,6 +874,7 @@ static int output_stats(struct stats *stats, unsigned idx)
 		snprintf(buf, sizeof(buf), "%6u items %6u max", stats->current_q, stats->biggest_queue);
 		print_colored(win, buf);
 		show_bar(win, i++, stats->current_q, 0, stats->biggest_queue, blink);
+		i += 2;
 		werase(mem_window);
 		output_memstats(stats);
 	}
@@ -1015,19 +1035,21 @@ static void parse_stats(conn_t *conn, struct stats *stats, unsigned idx)
 	}
 }
 
-static void read_version(conn_t *conn)
+static int read_version(conn_t *conn)
 {
 	char buf[1024];
-	if(recv_line(conn, buf, sizeof(buf))) {
-		unsigned i;
-		conn->version = strdup(buf);
-		OOM_CHECK(conn->version);
-		for (i=0;i<strlen(conn->version);i++)
-			if (conn->version[i] == '\n')
-				conn->version[i] = ' ';
-	} else {
-		reconnect(conn);
-	}
+	unsigned i;
+	if(!recv_line(conn, buf, sizeof(buf)))
+	    return -1;
+	if (!strcmp(buf, "UNKNOWN COMMAND\n"))
+	    return -2;
+
+	conn->version = strdup(buf);
+	OOM_CHECK(conn->version);
+	for (i=0;i<strlen(conn->version);i++)
+		    if (conn->version[i] == '\n')
+			conn->version[i] = ' ';
+	return 0;
 }
 
 static void sigint(int a)
@@ -1226,7 +1248,7 @@ int main(int argc, char *argv[])
 
 	memset(&tv_last, 0, sizeof(tv_last));
 	do {
-		if (ch == KEY_F(1)) {
+		if (toupper(ch) == 'H') {
 			ch = show_help();
 		}
 		switch(ch) {
@@ -1237,6 +1259,7 @@ int main(int argc, char *argv[])
 				init_windows(global.num_clamd);
 				break;
 			case 'R':
+			case 'r':
 				for (i=0;i<global.num_clamd;i++)
 					global.all_stats[i].biggest_queue = 1;
 				biggest_mem = 0;
