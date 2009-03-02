@@ -605,7 +605,7 @@ want_getaddrinfo=$enableval, want_getaddrinfo="yes")
 if test "$want_getaddrinfo" = "yes"
 then
     AC_MSG_CHECKING([for getaddrinfo])
-    AC_CACHE_VAL([have_gai],[
+    AC_CACHE_VAL([have_cv_gai],[
 		AC_TRY_RUN([
 		    #include <sys/types.h>
 		    #include <sys/socket.h>
@@ -623,12 +623,12 @@ then
 			return 0;
 		    }
 		],
-		[have_gai=yes],
-		[have_gai=no],
-		[have_gai=no])
+		[have_cv_gai=yes],
+		[have_cv_gai=no],
+		[have_cv_gai=no])
 		])
-    AC_MSG_RESULT([$have_gai])
-    if test "$have_gai" = yes; then
+    AC_MSG_RESULT([$have_cv_gai])
+    if test "$have_cv_gai" = yes; then
 	AC_DEFINE(HAVE_GETADDRINFO, 1, [have getaddrinfo()])
     fi
 fi
@@ -640,7 +640,7 @@ want_ipv6=$enableval, want_ipv6="yes")
 if test "$want_ipv6" = "yes"
 then
     AC_MSG_CHECKING([for IPv6 support])
-    AC_CACHE_VAL([have_ipv6],[
+    AC_CACHE_VAL([have_cv_ipv6],[
 		AC_TRY_RUN([
 		    #include <sys/types.h>
 		    #include <sys/socket.h>
@@ -663,12 +663,12 @@ then
 			return 0;
 		    }
 		],
-		[have_ipv6=yes],
-		[have_ipv6=no],
-		[have_ipv6=no])
+		[have_cv_ipv6=yes],
+		[have_cv_ipv6=no],
+		[have_cv_ipv6=no])
 		])
-    AC_MSG_RESULT([$have_ipv6])
-    if test "$have_ipv6" = yes; then
+    AC_MSG_RESULT([$have_cv_ipv6])
+    if test "$have_cv_ipv6" = yes; then
 	AC_DEFINE(SUPPORT_IPv6, 1, [Support for IPv6])
     fi
 fi
@@ -1384,68 +1384,68 @@ dnl check for __attribute__((packed))
 dnl but only on compilers claiming to be gcc compatible
 dnl because for example Sun's compiler silently ignores the packed attribute.
 AC_MSG_CHECKING([for structure packing via __attribute__((packed))])
-AC_CACHE_VAL([have_attrib_packed],[
+AC_CACHE_VAL([have_cv_attrib_packed],[
 	AC_TRY_COMPILE(,
 		[#ifdef __GNUC__
 		 struct { int i __attribute__((packed)); } s;
 		 #else
 		 #error Only checking for packed attribute on gcc-like compilers
 		 #endif],
-		[have_attrib_packed=yes],
-		[have_attrib_packed=no])
+		[have_cv_attrib_packed=yes],
+		[have_cv_attrib_packed=no])
 	])
-AC_MSG_RESULT([$have_attrib_packed])
+AC_MSG_RESULT([$have_cv_attrib_packed])
 
-if test "$have_attrib_packed" = no; then
+if test "$have_cv_attrib_packed" = no; then
 	AC_MSG_CHECKING([for structure packing via pragma])
-	AC_CACHE_VAL([have_pragma_pack],[
+	AC_CACHE_VAL([have_cv_pragma_pack],[
 		AC_TRY_RUN([
 			    int main(int argc, char **argv) {
 #pragma pack(1)			/* has to be in column 1 ! */
 			struct { char c; long l; } s;
 			return sizeof(s)==sizeof(s.c)+sizeof(s.l) ? 0:1; } ],
-			[have_pragma_pack=yes],
-			[have_pragma_pack=no])
+			[have_cv_pragma_pack=yes],
+			[have_cv_pragma_pack=no])
 		])
-	AC_MSG_RESULT([$have_pragma_pack])
-	if test "$have_pragma_pack" = yes; then
+	AC_MSG_RESULT([$have_cv_pragma_pack])
+	if test "$have_cv_pragma_pack" = yes; then
 		AC_DEFINE([HAVE_PRAGMA_PACK], 1, "pragma pack")
 	else
 		AC_MSG_CHECKING([for structure packing via hppa/hp-ux pragma])
-		AC_CACHE_VAL([have_pragma_pack_hpux],[
+		AC_CACHE_VAL([have_cv_pragma_pack_hpux],[
 			AC_TRY_RUN([
 			/* hppa/hp-ux wants pragma outside of function */
 #pragma pack 1 /* has to be in column 1 ! */
 			struct { char c; long l; } s;
 			    int main(int argc, char **argv) {
 			return sizeof(s)==sizeof(s.c)+sizeof(s.l) ? 0:1; } ],
-			[have_pragma_pack_hpux=yes],
-			[have_pragma_pack_hpux=no])
+			[have_cv_pragma_pack_hpux=yes],
+			[have_cv_pragma_pack_hpux=no])
 		])
-		AC_MSG_RESULT([$have_pragma_pack_hpux])
+		AC_MSG_RESULT([$have_cv_pragma_pack_hpux])
 		AC_DEFINE([HAVE_PRAGMA_PACK_HPPA], 1, "pragma pack hppa/hp-ux style")
 	fi
 fi
 
 dnl check for __attribute__((aligned))
 AC_MSG_CHECKING([for type aligning via __attribute__((aligned))])
-AC_CACHE_VAL([have_attrib_aligned],[
+AC_CACHE_VAL([have_cv_attrib_aligned],[
 	AC_TRY_COMPILE(,
 		[typedef int cl_aligned_int __attribute__((aligned));],
-		[have_attrib_aligned=yes],
-		[have_attrib_aligned=no])
+		[have_cv_attrib_aligned=yes],
+		[have_cv_attrib_aligned=no])
 	])
-AC_MSG_RESULT([$have_attrib_aligned])
+AC_MSG_RESULT([$have_cv_attrib_aligned])
 
-if test "$have_attrib_packed" = no -a "$have_pragma_pack" = no -a "$have_pragma_pack_hpux" = no; then
+if test "$have_cv_attrib_packed" = no -a "$have_cv_pragma_pack" = no -a "$have_cv_pragma_pack_hpux" = no; then
 	AC_MSG_ERROR(Need to know how to pack structures with this compiler)
 fi
 
-if test "$have_attrib_packed" = yes; then
+if test "$have_cv_attrib_packed" = yes; then
 	AC_DEFINE([HAVE_ATTRIB_PACKED], 1, [attrib packed])
 fi
 
-if test "$have_attrib_aligned" = yes; then
+if test "$have_cv_attrib_aligned" = yes; then
 	AC_DEFINE([HAVE_ATTRIB_ALIGNED], 1, [attrib aligned])
 fi
 

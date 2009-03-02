@@ -1,3 +1,7 @@
+Mon Mar  2 17:37:15 CET 2009 (acab)
+-----------------------------------
+ * build system: update to autoconf 2.63 (bb#1443)
+
 Mon Mar  2 17:41:12 CET 2009 (tk)
 ---------------------------------
  * clamscan/manager.c: make error reporting compatible with clamd and previous
