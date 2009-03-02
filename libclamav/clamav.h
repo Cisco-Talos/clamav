@@ -107,6 +107,7 @@ typedef enum {
 #define CL_SCAN_STDOPT		(CL_SCAN_ARCHIVE | CL_SCAN_MAIL | CL_SCAN_OLE2 | CL_SCAN_PDF | CL_SCAN_HTML | CL_SCAN_PE | CL_SCAN_ALGORITHMIC | CL_SCAN_ELF)
 
 struct cl_engine;
+struct cl_settings;
 
 #define CL_INIT_DEFAULT	0x0
 extern int cl_init(unsigned int options);
@@ -133,6 +134,12 @@ enum cl_engine_field {
 extern int cl_engine_set(struct cl_engine *engine, enum cl_engine_field field, const void *val);
 
 extern int cl_engine_get(const struct cl_engine *engine, enum cl_engine_field field, void *val);
+
+extern struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine);
+
+extern int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings *settings);
+
+extern int cl_engine_settings_free(struct cl_settings *settings);
 
 extern int cl_engine_compile(struct cl_engine *engine);
 

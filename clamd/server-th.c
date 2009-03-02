@@ -171,9 +171,8 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
 	const char *dbdir;
 	int retval;
 	unsigned int sigs = 0;
-	char pua_cats[128];
+	struct cl_settings *settings = NULL;
 
-    pua_cats[0] = 0;
     *ret = 0;
     if(do_check) {
 	if(!dbstat.entries) {
@@ -192,9 +191,10 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
 
     /* release old structure */
     if(engine) {
-	if(dboptions & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE))
-	    if(cl_engine_get(engine, CL_ENGINE_PUA_CATEGORIES, pua_cats))
-		logg("^Can't make a copy of pua_cats\n");
+	/* copy current settings */
+	settings = cl_engine_settings_copy(engine);
+	if(!settings)
+	    logg("^Can't make a copy of the current engine settings\n");
 
 	thrmgr_setactiveengine(NULL);
 	cl_engine_free(engine);
@@ -210,22 +210,26 @@ static struct cl_engine *reload_db(struct cl_engine *engine, unsigned int dbopti
     if((retval = cl_statinidir(dbdir, &dbstat))) {
 	logg("!cl_statinidir() failed: %s\n", cl_strerror(retval));
 	*ret = 1;
+	if(settings)
+	    cl_engine_settings_free(settings);
 	return NULL;
     }
 
     if(!(engine = cl_engine_new())) {
 	logg("!Can't initialize antivirus engine\n");
 	*ret = 1;
+	if(settings)
+	    cl_engine_settings_free(settings);
 	return NULL;
     }
 
-    if(strlen(pua_cats)) {
-	if((retval = cl_engine_set(engine, CL_ENGINE_PUA_CATEGORIES, pua_cats))) {
-	    logg("!cl_engine_set(CL_ENGINE_PUA_CATEGORIES): %s\n", cl_strerror(retval));
-	    cl_engine_free(engine);
-	    *ret = 1;
-	    return NULL;
+    if(settings) {
+	retval = cl_engine_settings_apply(engine, settings);
+	if(retval != CL_SUCCESS) {
+	    logg("^Can't apply previous engine settings: %s\n", cl_strerror(retval));
+	    logg("^Using default engine settings\n");
 	}
+	cl_engine_settings_free(settings);
     }
 
     if((retval = cl_load(dbdir, engine, &sigs, dboptions))) {

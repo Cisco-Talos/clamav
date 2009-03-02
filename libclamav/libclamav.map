@@ -9,6 +9,9 @@ CLAMAV_PUBLIC {
     cl_engine_new;
     cl_engine_set;
     cl_engine_get;
+    cl_engine_settings_copy;
+    cl_engine_settings_apply;
+    cl_engine_settings_free;
     cl_engine_compile;
     cl_engine_addref;
     cl_engine_free;

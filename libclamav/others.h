@@ -172,6 +172,25 @@ struct cl_engine {
     mpool_t *mempool;
 };
 
+struct cl_settings {
+    /* don't store dboptions here; it needs to be provided to cl_load() and
+     * can be optionally obtained with cl_engine_get() or from the original
+     * settings stored by the application
+     */
+    uint32_t ac_only;
+    uint32_t ac_mindepth;
+    uint32_t ac_maxdepth;
+    char *tmpdir;
+    uint32_t keeptmp;
+    uint64_t maxscansize;
+    uint64_t maxfilesize;
+    uint32_t maxreclevel;
+    uint32_t maxfiles;
+    uint32_t min_cc_count;
+    uint32_t min_ssn_count;
+    char *pua_cats;
+};
+
 extern int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
 extern int (*cli_unrar_extract_next_prepare)(unrar_state_t *state, const char *dirname);
 extern int (*cli_unrar_extract_next)(unrar_state_t *state, const char *dirname);

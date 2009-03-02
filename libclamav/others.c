@@ -377,6 +377,77 @@ int cl_engine_get(const struct cl_engine *engine, enum cl_engine_field field, vo
     return CL_SUCCESS;
 }
 
+struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)
+{
+	struct cl_settings *settings;
+
+    settings = (struct cl_settings *) malloc(sizeof(struct cl_settings));
+    if(!settings)
+	return NULL;
+
+    settings->ac_only = engine->ac_only;
+    settings->ac_mindepth = engine->ac_mindepth;
+    settings->ac_maxdepth = engine->ac_maxdepth;
+    settings->tmpdir = engine->tmpdir ? strdup(engine->tmpdir) : NULL;
+    settings->keeptmp = engine->keeptmp;
+    settings->maxscansize = engine->maxscansize;
+    settings->maxfilesize = engine->maxfilesize;
+    settings->maxreclevel = engine->maxreclevel;
+    settings->maxfiles = engine->maxfiles;
+    settings->min_cc_count = engine->min_cc_count;
+    settings->min_ssn_count = engine->min_ssn_count;
+    settings->pua_cats = engine->pua_cats ? strdup(engine->pua_cats) : NULL;
+
+    return settings;
+}
+
+int cl_engine_settings_apply(struct cl_engine *engine, const struct cl_settings *settings)
+{
+    engine->ac_only = settings->ac_only;
+    engine->ac_mindepth = settings->ac_mindepth;
+    engine->ac_maxdepth = settings->ac_maxdepth;
+    engine->keeptmp = settings->keeptmp;
+    engine->maxscansize = settings->maxscansize;
+    engine->maxfilesize = settings->maxfilesize;
+    engine->maxreclevel = settings->maxreclevel;
+    engine->maxfiles = settings->maxfiles;
+    engine->min_cc_count = settings->min_cc_count;
+    engine->min_ssn_count = settings->min_ssn_count;
+
+    if(engine->tmpdir)
+	mpool_free(engine->mempool, engine->tmpdir);
+    if(settings->tmpdir) {
+	engine->tmpdir = cli_mpool_strdup(engine->mempool, settings->tmpdir);
+	if(!engine->tmpdir)
+	    return CL_EMEM;
+    } else {
+	engine->tmpdir = NULL;
+    }
+
+    if(engine->pua_cats)
+	mpool_free(engine->mempool, engine->pua_cats);
+    if(settings->pua_cats) {
+	engine->pua_cats = cli_mpool_strdup(engine->mempool, settings->pua_cats);
+	if(!engine->pua_cats)
+	    return CL_EMEM;
+    } else {
+	engine->pua_cats = NULL;
+    }
+
+    return CL_SUCCESS;
+}
+
+int cl_engine_settings_free(struct cl_settings *settings)
+{
+    if(!settings)
+	return CL_ENULLARG;
+
+    free(settings->tmpdir);
+    free(settings->pua_cats);
+    free(settings);
+    return CL_SUCCESS;
+}
+
 int cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned long need2, unsigned long need3) {
     int ret = CL_SUCCESS;
     unsigned long needed;
