@@ -1,3 +1,9 @@
+Mon Mar  2 22:11:48 EET 2009 (edwin)
+------------------------------------
+ * clamav-config.h.in, config/ltmain.sh, configure, configure.in,
+ m4/libtool.m4, m4/ltdl.m4: attempt to fix AC_C_BIGENDIAN
+ action-if-universal, regenerate files.
+
 Mon Mar  2 17:57:50 EET 2009 (edwin)
 ------------------------------------
  * clamdtop/clamdtop.c: fix use-after-free.
