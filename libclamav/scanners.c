@@ -1862,6 +1862,11 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
     if(!ctx->engine) {
 	cli_errmsg("CRITICAL: engine == NULL\n");
+	return CL_ENULLARG;
+    }
+
+    if(!(ctx->engine->dboptions & CL_DB_COMPILED)) {
+	cli_errmsg("CRITICAL: engine not compiled\n");
 	return CL_EMALFDB;
     }
 

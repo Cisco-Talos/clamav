@@ -2044,6 +2044,7 @@ int cl_engine_compile(struct cl_engine *engine)
     cli_dconf_print(engine->dconf);
     mpool_flush(engine->mempool);
 
+    engine->dboptions |= CL_DB_COMPILED;
     return CL_SUCCESS;
 }
 

@@ -72,10 +72,11 @@ typedef enum {
 #define CL_DB_PHISHING_URLS 0x8
 #define CL_DB_PUA	    0x10
 #define CL_DB_CVDNOTMP	    0x20
-#define CL_DB_OFFICIAL	    0x40
+#define CL_DB_OFFICIAL	    0x40    /* internal */
 #define CL_DB_PUA_MODE	    0x80
 #define CL_DB_PUA_INCLUDE   0x100
 #define CL_DB_PUA_EXCLUDE   0x200
+#define CL_DB_COMPILED	    0x400   /* internal */
 
 /* recommended db settings */
 #define CL_DB_STDOPT	    (CL_DB_PHISHING | CL_DB_PHISHING_URLS)
