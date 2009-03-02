@@ -1,3 +1,8 @@
+Mon Mar  2 17:41:12 CET 2009 (tk)
+---------------------------------
+ * clamscan/manager.c: make error reporting compatible with clamd and previous
+		       versions of clamscan
+
 Mon Mar  2 17:37:50 CET 2009 (tk)
 ---------------------------------
  * libclamav: report error instead of crashing when engine is not compiled

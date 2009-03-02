@@ -158,7 +158,7 @@ static int scanfile(const char *filename, struct cl_engine *engine, const struct
 	    mprintf("~%s: OK\n", filename);
     } else
 	if(!printinfected)
-	    logg("~%s: %s\n", filename, cl_strerror(ret));
+	    logg("~%s: %s ERROR\n", filename, cl_strerror(ret));
 
     close(fd);
 
@@ -314,7 +314,7 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
 	    mprintf("stdin: OK\n");
     } else
 	if(!printinfected)
-	    logg("stdin: %s\n", cl_strerror(ret));
+	    logg("stdin: %s ERROR\n", cl_strerror(ret));
 
     unlink(file);
     free(file);
