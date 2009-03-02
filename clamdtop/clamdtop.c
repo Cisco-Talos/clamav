@@ -59,7 +59,7 @@
 /* Types, prototypes and globals*/
 typedef struct connection {
 	int sd;
-	const char *remote;
+	char *remote;
 	int tcp;
 	struct timeval tv_conn;
 	char *version;
@@ -407,6 +407,7 @@ static void cleanup(void)
 			close(global.conn[i].sd);
 		}
 		free(global.conn[i].version);
+		free(global.conn[i].remote);
 	}
 	free(global.all_stats);
 	free(global.conn);
@@ -555,7 +556,11 @@ static int make_connection_real(const char *soname, conn_t *conn)
 			return -1;
 		}
 	}
-	conn->remote = soname;
+	if (conn->remote != soname) {
+	    /* when we reconnect, they are the same */
+	    if (conn->remote) free(conn->remote);
+	    conn->remote = strdup(soname);
+	}
 	conn->sd = s;
 	gettimeofday(&conn->tv_conn, NULL);
 	tv.tv_sec = 4;

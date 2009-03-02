@@ -1,3 +1,7 @@
+Mon Mar  2 17:57:50 EET 2009 (edwin)
+------------------------------------
+ * clamdtop/clamdtop.c: fix use-after-free.
+
 Mon Mar  2 19:54:41 CET 2009 (tk)
 ---------------------------------
  * libclamav: introduce cl_engine_settings_* API calls for copying settings
