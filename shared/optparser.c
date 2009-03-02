@@ -572,6 +572,8 @@ static int optaddarg(struct optstruct *opts, const char *name, const char *strar
     pt->active = 1;
     if(pt->strarg || (pt->numarg && pt->numarg != -1))
 	pt->enabled = 1;
+    else
+	pt->enabled = 0;
 
     return 0;
 }

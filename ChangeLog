@@ -1,3 +1,8 @@
+Mon Mar  2 17:09:33 CET 2009 (tk)
+---------------------------------
+ * shared/optparser.c: fix handling of options which are enabled by default
+		       (bb#1442)
+
 Sun Mar  1 17:21:15 CET 2009 (tk)
 ---------------------------------
  * COPYING.BSD -> COPYING.regex; add COPYING.sha256
