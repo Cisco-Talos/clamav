@@ -1,3 +1,7 @@
+Mon Mar  2 22:38:05 EET 2009 (edwin)
+------------------------------------
+ * configure, configure.in: fix previous commit
+
 Mon Mar  2 22:11:48 EET 2009 (edwin)
 ------------------------------------
  * clamav-config.h.in, config/ltmain.sh, configure, configure.in,

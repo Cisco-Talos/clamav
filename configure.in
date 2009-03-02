@@ -70,8 +70,9 @@ AC_C_CONST
 AC_C_INLINE
 AC_C_FPU_BIGENDIAN
 AC_C_BIGENDIAN
-dnl don't define WORDS_BIGENDIAN ourselves, AC_C_BIGENDIAN's default action is
-dnl to define it appropriately. If we do define it we break universal builds.
+if test $ac_cv_c_bigendian = no; then
+    m4_default([], [AC_DEFINE([WORDS_BIGENDIAN], 0)])
+fi
 
 AC_ARG_ENABLE([gcc-vcheck],
 [  --disable-gcc-vcheck	  do not check for buggy gcc version ],
