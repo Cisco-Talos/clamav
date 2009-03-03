@@ -1,3 +1,8 @@
+Tue Mar  3 03:26:08 CET 2009 (acab)
+-----------------------------------
+ * clamav-milter/clamav-milter.c: Fix syslog ident typo and include wrapage.
+	Reported by Jakub Jankowski <shasta * toxcorp.com>
+	
 Mon Mar  2 22:38:05 EET 2009 (edwin)
 ------------------------------------
  * configure, configure.in: fix previous commit

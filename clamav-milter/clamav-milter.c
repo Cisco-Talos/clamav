@@ -29,6 +29,9 @@
 #include <grp.h>
 #include <string.h>
 #include <syslog.h>
+#ifdef USE_SYSLOG
+#include <syslog.h>
+#endif
 #include <time.h>
 #include <libmilter/mfapi.h>
 
@@ -188,7 +191,7 @@ int main(int argc, char **argv) {
 	    return 1;
 	}
 
-	openlog("clamd", LOG_PID, fac);
+	openlog("clamav-milter", LOG_PID, fac);
 	logg_syslog = 1;
     }
 #endif
