@@ -40,12 +40,18 @@
 #include <netdb.h>
 #include <sys/uio.h>
 
-
 #include "shared/output.h"
 #include "shared/optparser.h"
 #include "libclamav/others.h"
 #include "netcode.h"
 
+#ifdef HAVE_STRERROR_R
+#define strerror_print(msg) \
+	strerror_r(errno, er, sizeof(er)); \
+	logg(msg": %s\n", er);
+#else
+	logg(msg"\n");
+#endif
 
 enum {
     NON_SMTP,
@@ -75,21 +81,18 @@ static int nc_socket(struct CP_ENTRY *cpe) {
     char er[256];
 
     if (s == -1) {
-	strerror_r(errno, er, sizeof(er));
-	logg("!Failed to create socket: %s\n", er);
+	strerror_print("!Failed to create socket");
 	return -1;
     }
     flags = fcntl(s, F_GETFL, 0);
     if (flags == -1) {
-	strerror_r(errno, er, sizeof(er));
-	logg("!fcntl_get failed: %s\n", er);
+	strerror_print("!fcntl_get failed");
 	close(s);
 	return -1;
     }
     flags |= O_NONBLOCK;
     if (fcntl(s, F_SETFL, flags) == -1) {
-	strerror_r(errno, er, sizeof(er));
-	logg("!fcntl_set failed: %s\n", er);
+	strerror_print("!fcntl_set failed");
 	close(s);
 	return -1;
     }
@@ -105,8 +108,7 @@ static int nc_connect(int s, struct CP_ENTRY *cpe) {
 
     if (!res) return 0;
     if (errno != EINPROGRESS) {
-	strerror_r(errno, er, sizeof(er));
-	logg("*connect failed: %s\n", er);
+	strerror_print("*connect failed");
 	close(s);
 	return -1;
     }
@@ -158,8 +160,7 @@ int nc_send(int s, const void *buff, size_t len) {
 	    continue;
 	}
 	if(errno != EAGAIN && errno != EWOULDBLOCK) {
-	    strerror_r(errno, er, sizeof(er));
-	    logg("!send failed: %s\n", er);
+	    strerror_print("!send failed");
 	    close(s);
 	    return 1;
 	}
@@ -219,8 +220,7 @@ int nc_sendmsg(int s, int fd) {
 
     if((ret = sendmsg(s, &msg, 0)) == -1) {
 	char er[256];
-	strerror_r(errno, er, sizeof(er));
-	logg("!clamfi_eom: FD send failed (%s)\n", er);
+	strerror_print("!clamfi_eom: FD send failed");
 	close(s);
     }
     return ret;
@@ -257,8 +257,7 @@ char *nc_recv(int s) {
 	res = recv(s, &buf[len], sizeof(buf) - len, 0);
 	if(res==-1) {
 	    char er[256];
-	    strerror_r(errno, er, sizeof(er));
-	    logg("!recv failed after successful select: %s\n", er);
+	    strerror_print("!recv failed after successful select");
 	    close(s);
 	    return NULL;
 	}

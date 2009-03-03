@@ -373,6 +373,8 @@ const struct clam_option clam_options[] = {
 
     { "OnFail", NULL, 0, TYPE_STRING, "^(Accept|Reject|Defer)$", -1, "Defer", 0, OPT_MILTER, "Action to be performed on error conditions (this includes failure to\nallocate data structures, no scanners available, network timeouts, unknown\nscanner replies and the like).\nThe following actions are available:\nAccept: the message is accepted for delievery;\nReject: immediately refuse delievery (a 5xx error is returned to the peer);\nDefer: return a temporary failure message (4xx) to the peer.", "Defer" },
 
+    { "RejectMsg", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option allows to set a specific rejection reason for infected messages\nand it's therefore only useful together with \"OnInfected Reject\"\nThe string \"%v\", if present, will be replaced with the virus name.", "MTA specific" },
+
     { "AddHeader", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_MILTER, "If this option is set to Yes, an \"X-Virus-Scanned\" and an \"X-Virus-Status\"\nheaders will be attached to each processed message, possibly replacing\nexisting headers.", "Yes" },
 
     { "Chroot", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Chroot to the specified directory.\nChrooting is performed just after reading the config file and before\ndropping privileges.", "/newroot" },

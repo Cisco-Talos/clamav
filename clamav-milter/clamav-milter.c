@@ -28,7 +28,6 @@
 #include <pwd.h>
 #include <grp.h>
 #include <string.h>
-#include <syslog.h>
 #ifdef USE_SYSLOG
 #include <syslog.h>
 #endif

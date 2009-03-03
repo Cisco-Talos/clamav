@@ -27,6 +27,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include <libmilter/mfapi.h>
 
@@ -49,6 +50,7 @@ uint64_t maxfilesize;
 static sfsistat FailAction;
 static sfsistat (*CleanAction)(SMFICTX *ctx);
 static sfsistat (*InfectedAction)(SMFICTX *ctx);
+static char *rejectfmt = NULL;
 
 int addxvirus = 0;
 char xvirushdr[255];
@@ -57,6 +59,7 @@ char xvirushdr[255];
 
 struct CLAMFI {
     char buffer[CLAMFIBUFSZ];
+    const char *virusname;
     int local;
     int main;
     int alt;
@@ -236,18 +239,23 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 	if(addxvirus) add_x_header(ctx, "Clean");
 	ret = CleanAction(ctx);
     } else if (len>7 && !strcmp(reply + len - 7, " FOUND\n")) {
-	if(addxvirus) {
+	cf->virusname = NULL;
+	if(addxvirus || rejectfmt) {
 	    char *vir;
 
 	    reply[len-7] = '\0';
 	    vir = strrchr(reply, ' ');
 	    if(vir) {
-		char msg[255];
-
 		vir++;
-		snprintf(msg, sizeof(msg), "Infected (%s)", vir);
-		msg[sizeof(msg)-1] = '\0';
-		add_x_header(ctx, msg);
+
+		if(rejectfmt) {
+		    cf->virusname = vir;
+		} else {
+		    char msg[255];
+		    snprintf(msg, sizeof(msg), "Infected (%s)", vir);
+		    msg[sizeof(msg)-1] = '\0';
+		    add_x_header(ctx, msg);
+		}
 	    }
 	}
 	ret = InfectedAction(ctx);
@@ -320,6 +328,18 @@ static sfsistat action_quarantine(SMFICTX *ctx) {
     }
     return SMFIS_ACCEPT;
 }
+static sfsistat action_reject_msg(SMFICTX *ctx) {
+    struct CLAMFI *cf;
+    char buf[1024];
+
+    if(!rejectfmt || !(cf = (struct CLAMFI *)smfi_getpriv(ctx)))
+	return SMFIS_REJECT;
+
+    snprintf(buf, sizeof(buf), rejectfmt, cf->virusname);
+    buf[sizeof(buf)-1] = '\0';
+    smfi_setreply(ctx, "550", NULL, buf);
+    return SMFIS_REJECT;
+}
 
 int init_actions(struct optstruct *opts) {
     const struct optstruct *opt;
@@ -336,7 +356,7 @@ int init_actions(struct optstruct *opts) {
 	    FailAction = SMFIS_REJECT;
 	    break;
 	default:
-	    logg("!Invalid action %s for option OnFail", opt->strarg);
+	    logg("!Invalid action %s for option OnFail\n", opt->strarg);
 	    return 1;
 	}
     } else FailAction = SMFIS_TEMPFAIL;
@@ -359,7 +379,7 @@ int init_actions(struct optstruct *opts) {
 	    CleanAction = action_quarantine;
 	    break;
 	default:
-	    logg("!Invalid action %s for option OnClean", opt->strarg);
+	    logg("!Invalid action %s for option OnClean\n", opt->strarg);
 	    return 1;
 	}
     } else CleanAction = action_accept;
@@ -372,15 +392,49 @@ int init_actions(struct optstruct *opts) {
 	case 1:
 	    InfectedAction = action_defer;
 	    break;
-	case 2:
-	    InfectedAction = action_reject;
-	    break;
 	case 3:
 	    InfectedAction = action_blackhole;
 	    break;
 	case 4:
 	    InfectedAction = action_quarantine;
 	    break;
+	case 2:
+	    InfectedAction = action_reject_msg;
+	    if((opt = optget(opts, "RejectMsg"))->enabled) {
+		const char *src = opt->strarg;
+		char *dst, c;
+		int gotpctv = 0;
+
+		rejectfmt = dst = malloc(strlen(src) * 4 + 1);
+		if(!dst) {
+		    logg("!Failed to allocate memory for RejectMsg\n");
+		    return 1;
+		}
+		while ((c = *src++)) {
+		    if(!isprint(c)) {
+			logg("!RejectMsg contains non printable characters\n");
+			free(rejectfmt);
+			return 1;
+		    }
+		    *dst++ = c;
+		    if(c == '%') {
+			if(*src == 'v') {
+			    if(gotpctv) {
+				logg("!%%v may appear at most once in RejectMsg\n");
+				free(rejectfmt);
+				return 1;
+			    }
+			    gotpctv |= 1;
+			    src++;
+			    *dst++ = 's';
+			} else {
+			    dst[0] = dst[1] = dst[2] = '%';
+			    dst += 3;
+			}
+		    }
+		}
+		*dst = '\0';
+	    }
 	default:
 	    logg("!Invalid action %s for option OnInfected", opt->strarg);
 	    return 1;

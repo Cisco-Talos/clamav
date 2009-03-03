@@ -1,3 +1,8 @@
+Tue Mar  3 20:40:07 CET 2009 (acab)
+-----------------------------------
+ * clamav-milter: Allow custom rejection messages, workaround ancient
+	systems without strerror_r (bb#1439), remove double syslog include
+
 Tue Mar  3 18:58:06 CET 2009 (tk)
 ---------------------------------
  * libclamav/unarj.c: downgrade error message (bb#1444)
