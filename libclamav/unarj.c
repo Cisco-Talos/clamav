@@ -173,8 +173,11 @@ static int fill_buf(arj_decode_t *decode_data, int n)
 		if (decode_data->comp_size != 0) {
 			decode_data->comp_size--;
 			if (cli_readn(decode_data->fd, &decode_data->sub_bit_buf, 1) != 1) {
-				decode_data->status = CL_EREAD;
-				return CL_EREAD;
+				/* the file is most likely corrupted, so
+				 * we return CL_EFORMAT instead of CL_EREAD
+				 */
+				decode_data->status = CL_EFORMAT;
+				return CL_EFORMAT;
 			}
 		} else {
 			decode_data->sub_bit_buf = 0;
