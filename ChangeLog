@@ -1,3 +1,8 @@
+Wed Mar  4 21:05:57 EET 2009 (edwin)
+------------------------------------
+ * configure, configure.in: LDFLAGS is LDFLAGS, not LIBS. This fixes
+ build with mudflap.
+
 Wed Mar  4 17:51:16 EET 2009 (edwin)
 ------------------------------------
  * configure, m4/fdpassing.m4, shared/fdpassing.h: 

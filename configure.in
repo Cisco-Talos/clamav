@@ -550,7 +550,7 @@ if test "$want_bzip2" = "yes"
 then
     AC_LIB_LINKFLAGS([bz2])
     save_LDFLAGS="$LDFLAGS"
-    LDFLAGS="$LIBS -L$LIBBZ2_PREFIX/$acl_libdirstem";
+    LDFLAGS="$LDFLAGS -L$LIBBZ2_PREFIX/$acl_libdirstem";
 
     have_bzprefix="no"
     AC_CHECK_LIB([bz2], [BZ2_bzReadOpen], [have_bzprefix="yes"])
