@@ -32,6 +32,22 @@
 #include <sys/un.h>
 #include <sys/uio.h>
 
+/* Solaris 8 */
+#if !defined CMSG_SPACE || !defined CMSG_LEN
+#ifndef ALIGN
+#define ALIGN(len) len
+#endif
+
+#ifndef CMSG_SPACE
+#define CMSG_SPACE(len) (ALIGN(sizeof(struct cmsghdr)) + ALIGN(len))
+#endif
+
+#ifndef CMSG_LEN
+#define CMSG_LEN(len) (ALIGN(sizeof(struct cmsghdr)) + len)
+#endif
+#endif
+
+
 #endif
 #endif
 

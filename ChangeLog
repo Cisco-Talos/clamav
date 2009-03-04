@@ -1,3 +1,8 @@
+Wed Mar  4 17:51:16 EET 2009 (edwin)
+------------------------------------
+ * configure, m4/fdpassing.m4, shared/fdpassing.h: 
+ CMSG_SPACE/CMSG_LEN compat macros for Solaris 8 (bb #1439).
+
 Wed Mar  4 16:42:57 CET 2009 (acab)
 -----------------------------------
  * clamav-milter: fix the logic for RejectMsg
