@@ -435,8 +435,9 @@ int init_actions(struct optstruct *opts) {
 		}
 		*dst = '\0';
 	    }
+	    break;
 	default:
-	    logg("!Invalid action %s for option OnInfected", opt->strarg);
+	    logg("!Invalid action %s for option OnInfected\n", opt->strarg);
 	    return 1;
 	}
     } else InfectedAction = action_quarantine;

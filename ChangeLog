@@ -1,3 +1,8 @@
+Wed Mar  4 15:20:47 CET 2009 (acab)
+-----------------------------------
+ * clamav-milter: fix few typoes - thx Jakub Jankowski <shasta*toxcorp.com>
+	and Peter Bonivart <bonivart*opencsw.org> for the testing
+
 Wed Mar  4 09:12:59 CET 2009 (tk)
 ---------------------------------
  * shared/cdiff.c: add missing gzclose() (bb#1450)

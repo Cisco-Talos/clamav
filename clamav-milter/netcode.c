@@ -50,6 +50,7 @@
 	strerror_r(errno, er, sizeof(er)); \
 	logg(msg": %s\n", er);
 #else
+#define strerror_print(msg) \
 	logg(msg"\n");
 #endif
 
