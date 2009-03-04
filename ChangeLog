@@ -1,3 +1,8 @@
+Wed Mar  4 02:54:39 CET 2009 (acab)
+-----------------------------------
+ * shared/actions.c: fix inverted logic
+	Reported by Gianluigi Tiesi <sherpya*netfarm.it>
+
 Wed Mar  4 01:59:31 CET 2009 (acab)
 -----------------------------------
  * shared/cdiff.c: remove spurious fclose (bb#1450)

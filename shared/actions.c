@@ -119,9 +119,9 @@ int isdir() {
     struct stat sb;
     if(stat(actarget, &sb) || !S_ISDIR(sb.st_mode)) {
 	logg("!'%s' doesn't exist or is not a directory\n", actarget);
-	return 1;
+	return 0;
     }
-    return 0;
+    return 1;
 }
 
 int actsetup(const struct optstruct *opts) {
