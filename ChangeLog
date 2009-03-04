@@ -1,3 +1,7 @@
+Wed Mar  4 09:12:59 CET 2009 (tk)
+---------------------------------
+ * shared/cdiff.c: add missing gzclose() (bb#1450)
+
 Wed Mar  4 02:54:39 CET 2009 (acab)
 -----------------------------------
  * shared/actions.c: fix inverted logic
