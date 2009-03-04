@@ -1043,7 +1043,6 @@ int cdiff_apply(int fd, unsigned short mode)
 		    if(!r1 || !r2) {
 			logg("!cdiff_apply: Can't resize line buffer to %d bytes\n", line_size);
 			cdiff_ctx_free(&ctx);
-			fclose(fh);
 			free(line);
 			free(lbuf);
 			return -1;

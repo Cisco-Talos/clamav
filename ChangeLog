@@ -1,3 +1,7 @@
+Wed Mar  4 01:59:31 CET 2009 (acab)
+-----------------------------------
+ * shared/cdiff.c: remove spurious fclose (bb#1450)
+
 Tue Mar  3 20:40:07 CET 2009 (acab)
 -----------------------------------
  * clamav-milter: Allow custom rejection messages, workaround ancient
