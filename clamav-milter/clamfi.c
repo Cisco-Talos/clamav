@@ -232,7 +232,6 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 	nullify(ctx, cf, CF_NONE);
 	return FailAction;
     }
-    nullify(ctx, cf, CF_MAIN);
 
     len = strlen(reply);
     if(len>5 && !strcmp(reply + len - 5, ": OK\n")) {
@@ -263,6 +262,8 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 	logg("!Unknown reply from clamd\n");
 	ret = FailAction;
     }
+
+    nullify(ctx, cf, CF_MAIN);
 
     free(reply);
     return ret;
@@ -337,7 +338,7 @@ static sfsistat action_reject_msg(SMFICTX *ctx) {
 
     snprintf(buf, sizeof(buf), rejectfmt, cf->virusname);
     buf[sizeof(buf)-1] = '\0';
-    smfi_setreply(ctx, "550", NULL, buf);
+    smfi_setreply(ctx, "550", "5.7.1", buf);
     return SMFIS_REJECT;
 }
 

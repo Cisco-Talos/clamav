@@ -1,3 +1,7 @@
+Wed Mar  4 16:42:57 CET 2009 (acab)
+-----------------------------------
+ * clamav-milter: fix the logic for RejectMsg
+
 Wed Mar  4 15:20:47 CET 2009 (acab)
 -----------------------------------
  * clamav-milter: fix few typoes - thx Jakub Jankowski <shasta*toxcorp.com>
