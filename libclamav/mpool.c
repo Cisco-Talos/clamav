@@ -41,14 +41,19 @@
 #include "others.h"
 #include "str.h"
 #include "readdb.h"
-#include <assert.h>
 
+#ifdef CL_DEBUG
+#include <assert.h>
 #define MPOOLMAGIC 0x5adeada5
+#define ALLOCPOISON 0x5a
+#define FREEPOISON 0xde
+#endif
+
 /* #define DEBUGMPOOL /\* DO NOT define *\/ */
 #ifdef DEBUGMPOOL
 #define spam(...) cli_warnmsg( __VA_ARGS__)
 #else
-#define spam
+static inline void spam(const char *fmt, ...) { fmt = fmt; } /* gcc STFU */
 #endif
 
 #include "mpool.h"
@@ -363,6 +368,9 @@ struct MP *mpool_create() {
   mp.mpm.size = sz - align_to_voidptr(sizeof(mp));
   if ((mpool_p = (struct MP *)mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE|ANONYMOUS_MAP, -1, 0)) == MAP_FAILED)
     return NULL;
+#ifdef CL_DEBUG
+  memset(mpool_p, ALLOCPOISON, sz);
+#endif
   memcpy(mpool_p, &mp, sizeof(mp));
   spam("Map created @ %p->%p - size %u out of %u\n", mpool_p, (char *)mpool_p + mp.mpm.size, mp.mpm.usize, mp.mpm.size);
   return mpool_p;
@@ -370,27 +378,44 @@ struct MP *mpool_create() {
 
 void mpool_destroy(struct MP *mp) {
   struct MPMAP *mpm_next = mp->mpm.next, *mpm;
+  unsigned int mpmsize;
+
   while((mpm = mpm_next)) {
+    mpmsize = mpm->size;
     mpm_next = mpm->next;
-    munmap((void *)mpm, mpm->size);
+#ifdef CL_DEBUG
+    memset(mpm, FREEPOISON, mpmsize);
+#endif
+    munmap((void *)mpm, mpmsize);
   }
-  munmap((void *)mp, mp->mpm.size + align_to_voidptr(sizeof(*mp)));
+  mpmsize = mp->mpm.size;
+#ifdef CL_DEBUG
+  memset(mp, FREEPOISON, mpmsize + align_to_voidptr(sizeof(*mp)));
+#endif
+  munmap((void *)mp, mpmsize + align_to_voidptr(sizeof(*mp)));
   spam("Map destroyed @ %p\n", mp);
 }
 
 void mpool_flush(struct MP *mp) {
   size_t used = 0, mused;
   struct MPMAP *mpm_next = mp->mpm.next, *mpm;
+
   while((mpm = mpm_next)) {
     mpm_next = mpm->next;
+#ifdef CL_DEBUG
+    memset((char *)mpm + align_to_pagesize(mp, mpm->usize), FREEPOISON, mpm->size - align_to_pagesize(mp, mpm->usize));
+#endif
     munmap((char *)mpm + align_to_pagesize(mp, mpm->usize), mpm->size - align_to_pagesize(mp, mpm->usize));
     mpm->size = align_to_pagesize(mp, mpm->usize);
     used += mpm->size;
   }
   mused = align_to_pagesize(mp, mp->mpm.usize + align_to_voidptr(sizeof(*mp)));
   if (mused < mp->mpm.size) {
-	  munmap(&mp->mpm + mused, mp->mpm.size - mused);
-	  mp->mpm.size = mused;
+#ifdef CL_DEBUG
+    memset((char *)&mp->mpm + mused, FREEPOISON, mp->mpm.size - mused);
+#endif
+    munmap((char *)&mp->mpm + mused, mp->mpm.size - mused);
+    mp->mpm.size = mused;
   }
   used += mp->mpm.size;
   spam("Map flushed @ %p, in use: %lu\n", mp, used);
@@ -398,26 +423,27 @@ void mpool_flush(struct MP *mp) {
 
 int mpool_getstats(const struct cl_engine *eng, size_t *used, size_t *total)
 {
-	size_t sum_used = 0, sum_total = 0;
-	const struct MPMAP *mpm;
-	const mpool_t *mp;
-	/* checking refcount is not necessary, but safer */
-	if (!eng || !eng->refcount)
-		return -1;
-	mp = eng->mempool;
-	if (!mp)
-		return -1;
-	for(mpm = &mp->mpm; mpm; mpm = mpm->next) {
-		sum_used += mpm->usize;
-		sum_total += mpm->size;
-	}
-	*used = sum_used;
-	*total = sum_total;
-	return 0;
+  size_t sum_used = 0, sum_total = 0;
+  const struct MPMAP *mpm;
+  const mpool_t *mp;
+  
+  /* checking refcount is not necessary, but safer */
+  if (!eng || !eng->refcount)
+    return -1;
+  mp = eng->mempool;
+  if (!mp)
+    return -1;
+  for(mpm = &mp->mpm; mpm; mpm = mpm->next) {
+    sum_used += mpm->usize;
+    sum_total += mpm->size;
+  }
+  *used = sum_used;
+  *total = sum_total;
+  return 0;
 }
 
 void *mpool_malloc(struct MP *mp, size_t size) {
-  unsigned int i, j, needed = align_to_voidptr(size + FRAG_OVERHEAD);
+  unsigned int i, needed = align_to_voidptr(size + FRAG_OVERHEAD);
   const unsigned int sbits = to_bits(needed);
   struct FRAG *f = NULL;
   struct MPMAP *mpm = &mp->mpm;
@@ -435,6 +461,7 @@ void *mpool_malloc(struct MP *mp, size_t size) {
     f->u.sbits = sbits;
 #ifdef CL_DEBUG
       f->magic = MPOOLMAGIC;
+      memset(&f->fake, ALLOCPOISON, size);
 #endif
     return &f->fake;
   }
@@ -453,6 +480,7 @@ void *mpool_malloc(struct MP *mp, size_t size) {
       f->u.sbits = sbits;
 #ifdef CL_DEBUG
       f->magic = MPOOLMAGIC;
+      memset(&f->fake, ALLOCPOISON, size);
 #endif
       return &f->fake;
     }
@@ -470,6 +498,9 @@ void *mpool_malloc(struct MP *mp, size_t size) {
     spam("failed to alloc %u bytes (%u requested)\n", i, size);
     return NULL;
   }
+#ifdef CL_DEBUG
+  memset(mpm, ALLOCPOISON, i);
+#endif
   mpm->size = i;
   mpm->usize = needed + align_to_voidptr(sizeof(*mpm));
   mpm->next = mp->mpm.next;
@@ -478,7 +509,7 @@ void *mpool_malloc(struct MP *mp, size_t size) {
   spam("malloc %p size %u (new map)\n", f, mpool_roundup(size));
   f->u.sbits = sbits;
 #ifdef CL_DEBUG
-      f->magic = MPOOLMAGIC;
+  f->magic = MPOOLMAGIC;
 #endif
   return &f->fake;
 }
@@ -490,6 +521,8 @@ void mpool_free(struct MP *mp, void *ptr) {
 
 #ifdef CL_DEBUG
   assert(f->magic == MPOOLMAGIC && "Attempt to mpool_free a pointer we did not allocate!");
+  /* FIXME: this fux it up */
+  /* memset(&f->fake, FREEPOISON, from_bits(f->u.sbits)); */
 #endif
 
   sbits = f->u.sbits;
@@ -510,7 +543,7 @@ void *mpool_calloc(struct MP *mp, size_t nmemb, size_t size) {
 
 void *mpool_realloc(struct MP *mp, void *ptr, size_t size) {
   struct FRAG *f = (struct FRAG *)((char *)ptr - FRAG_OVERHEAD);
-  unsigned int csize, sbits;
+  unsigned int csize;
   void *new_ptr;
   if (!ptr) return mpool_malloc(mp, size);
 
@@ -533,6 +566,7 @@ void *mpool_realloc2(struct MP *mp, void *ptr, size_t size) {
   struct FRAG *f = (struct FRAG *)((char *)ptr - FRAG_OVERHEAD);
   unsigned int csize;
   void *new_ptr;
+
   if (!ptr) return mpool_malloc(mp, size);
 
   spam("realloc @ %p (size %u -> %u))\n", f, from_bits(f->u.sbits), size);
@@ -550,18 +584,18 @@ void *mpool_realloc2(struct MP *mp, void *ptr, size_t size) {
   return new_ptr;
 }
 
-unsigned char *cli_mpool_hex2str(mpool_t *mp, const unsigned char *str)
-{
-	unsigned char *tmp = cli_hex2str(str);
-	if(tmp) {
-		unsigned char *res;
-		unsigned int tmpsz = strlen(str) / 2 + 1;
-		if((res = mpool_malloc(mp, tmpsz)))
-			memcpy(res, tmp, tmpsz);
-		free(tmp);
-		return res;
-	}
-	return NULL;
+unsigned char *cli_mpool_hex2str(mpool_t *mp, const unsigned char *str) {
+  unsigned char *tmp = (unsigned char *)cli_hex2str((char *)str);
+
+  if(tmp) {
+    unsigned char *res;
+    unsigned int tmpsz = strlen((char *)str) / 2 + 1;
+    if((res = mpool_malloc(mp, tmpsz)))
+      memcpy(res, tmp, tmpsz);
+    free(tmp);
+    return res;
+  }
+  return NULL;
 }
 
 char *cli_mpool_strdup(mpool_t *mp, const char *s) {
