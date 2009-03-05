@@ -1,3 +1,7 @@
+Thu Mar  5 16:43:46 CET 2009 (acab)
+-----------------------------------
+ * libclamav/mpool.c: enable mmap poisoning (compile with --enable-debug)
+
 Wed Mar  4 21:05:57 EET 2009 (edwin)
 ------------------------------------
  * configure, configure.in: LDFLAGS is LDFLAGS, not LIBS. This fixes

@@ -521,8 +521,7 @@ void mpool_free(struct MP *mp, void *ptr) {
 
 #ifdef CL_DEBUG
   assert(f->magic == MPOOLMAGIC && "Attempt to mpool_free a pointer we did not allocate!");
-  /* FIXME: this fux it up */
-  /* memset(&f->fake, FREEPOISON, from_bits(f->u.sbits)); */
+  memset(ptr, FREEPOISON, from_bits(f->u.sbits) - FRAG_OVERHEAD);
 #endif
 
   sbits = f->u.sbits;
