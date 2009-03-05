@@ -95,11 +95,25 @@ static const struct dblist_s {
     { "main.zmd",   1 },    { "daily.zmd",  1 },
     { "main.rmd",   1 },    { "daily.rmd",  1 },
     { "main.fp",    0 },    { "daily.fp",   0 },
-    { "main.pdb",   0 },    { "daily.pdb",  0 },
-    { "main.wdb",   0 },    { "daily.wdb",  0 },
+    { "main.pdb",   1 },    { "daily.pdb",  1 },    { "safebrowsing.pdb", 1 },
+    { "main.wdb",   0 },    { "daily.wdb",  0 },    { "safebrowsing.wdb", 0 },
 
     { NULL,	    0 }
 };
+
+static const char *getdbname(const char *str)
+{
+    if(strstr(str, "main"))
+	return "main";
+    else if(strstr(str, "daily"))
+	return "daily";
+    else if(strstr(str, "safebrowsing"))
+	return "safebrowsing";
+    else {
+	mprintf("!getdbname: Can't extract db name\n");
+	return "UNKNOWN";
+    }
+}
 
 static int hexdump(void)
 {
@@ -559,7 +573,7 @@ static int build(const struct optstruct *opts)
 	return -1;
     }
 
-    dbname = strstr(optget(opts, "build")->strarg, "main") ? "main" : "daily";
+    dbname = getdbname(optget(opts, "build")->strarg);
 
     if(!(engine = cl_engine_new())) {
 	mprintf("!build: Can't initialize antivirus engine\n");
@@ -803,6 +817,11 @@ static int build(const struct optstruct *opts)
 
     mprintf("Created %s\n", newcvd);
 
+    if(optget(opts, "no-cdiff")->enabled) {
+	mprintf("Skipping .cdiff creation\n");
+	return 0;
+    }
+
     /* generate patch */
     if(!(pt = cli_gentemp(NULL))) {
 	mprintf("!build: Can't generate temporary name\n");
@@ -852,11 +871,7 @@ static int build(const struct optstruct *opts)
 	return -1;
     }
 
-    if(!strcmp(dbname, "main"))
-	snprintf(patch, sizeof(patch), "main-%u.script", version);
-    else
-	snprintf(patch, sizeof(patch), "daily-%u.script", version);
-
+    snprintf(patch, sizeof(patch), "%s-%u.script", dbname, version);
     ret = diffdirs(olddb, pt, patch);
 
     cli_rmdirs(pt);
@@ -1239,15 +1254,12 @@ static int vbadump(const struct optstruct *opts)
 
 static int comparemd5(const char *dbname)
 {
-	char info[16], buff[256], *md5, *pt;
+	char info[32], buff[256], *md5, *pt;
 	FILE *fh;
 	int ret = 0;
 
 
-    if(strstr(dbname, "main"))
-	strcpy(info, "main.info");
-    else
-	strcpy(info, "daily.info");
+    snprintf(info, sizeof(info), "%s.info", getdbname(dbname));
 
     if(!(fh = fopen(info, "r"))) {
 	mprintf("!verifydiff: Can't open %s\n", info);
@@ -1731,11 +1743,7 @@ static int makediff(const struct optstruct *opts)
 	return -1;
     }
 
-    if(strstr(opts->filename[0], "main"))
-	snprintf(name, sizeof(name), "main-%u.script", newver);
-    else
-	snprintf(name, sizeof(name), "daily-%u.script", newver);
-
+    snprintf(name, sizeof(name), "%s-%u.script", getdbname(opts->filename[0]), newver);
     ret = diffdirs(odir, ndir, name);
 
     cli_rmdirs(odir);
@@ -1781,6 +1789,7 @@ static void help(void)
     mprintf("    --utf16-decode=FILE                    decode UTF16 encoded files\n");
     mprintf("    --info=FILE            -i FILE         print database information\n");
     mprintf("    --build=NAME [cvd] -b NAME             build a CVD file\n");
+    mprintf("    --no-cdiff                             Don't generate .cdiff file\n");
     mprintf("    --server=ADDR                          ClamAV Signing Service address\n");
     mprintf("    --unpack=FILE          -u FILE         Unpack a CVD/CLD file\n");
     mprintf("    --unpack-current=SHORTNAME             Unpack local CVD/CLD into cwd\n");

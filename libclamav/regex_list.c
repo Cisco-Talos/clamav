@@ -453,9 +453,9 @@ static int add_hash(struct regex_matcher *matcher, char* pattern, const char fl)
 
 
 /* Load patterns/regexes from file */
-int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int options,int is_whitelist,struct cli_dbio *dbio)
+int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int *signo,unsigned int options,int is_whitelist,struct cli_dbio *dbio)
 {
-	int rc,line=0;
+	int rc,line=0,entry=0;
 	char buffer[FILEBUFF];
 
 	assert(matcher);
@@ -502,13 +502,14 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 		size_t pattern_len;
 
 		cli_chomp(buffer);
+		line++;
 		if(!*buffer)
 			continue;/* skip empty lines */
 
 		if(functionality_level_check(buffer))
 			continue;
 
-		line++;
+		entry++;
 		pattern = strchr(buffer,':');
 		if(!pattern) {
 			cli_errmsg("Malformed regex list line %d\n",line);
@@ -550,6 +551,8 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int optio
 		}
 	}
 	matcher->list_loaded = 1;
+	if(signo)
+	    *signo += entry;
 
 	return CL_SUCCESS;
 }

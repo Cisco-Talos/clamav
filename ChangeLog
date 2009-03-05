@@ -1,3 +1,8 @@
+Thu Mar  5 20:10:00 CET 2009 (tk)
+---------------------------------
+ * libclamav: count .pdb entries as signatures
+ * freshclam, sigtool: add support for safebrowsing.cvd (bb#1056)
+
 Thu Mar  5 16:43:46 CET 2009 (acab)
 -----------------------------------
  * libclamav/mpool.c: enable mmap poisoning (compile with --enable-debug)

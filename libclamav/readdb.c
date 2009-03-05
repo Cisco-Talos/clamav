@@ -489,14 +489,14 @@ static int cli_loadwdb(FILE *fs, struct cl_engine *engine, unsigned int options,
 	}
     }
 
-    if((ret = load_regex_matcher(engine->whitelist_matcher, fs, options, 1, dbio))) {
+    if((ret = load_regex_matcher(engine->whitelist_matcher, fs, NULL, options, 1, dbio))) {
 	return ret;
     }
 
     return CL_SUCCESS;
 }
 
-static int cli_loadpdb(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio)
+static int cli_loadpdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio)
 {
 	int ret = 0;
 
@@ -510,7 +510,7 @@ static int cli_loadpdb(FILE *fs, struct cl_engine *engine, unsigned int options,
 	}
     }
 
-    if((ret = load_regex_matcher(engine->domainlist_matcher, fs, options, 0, dbio))) {
+    if((ret = load_regex_matcher(engine->domainlist_matcher, fs, signo, options, 0, dbio))) {
 	return ret;
     }
 
@@ -1516,7 +1516,7 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 	    skipped = 1;
     } else if(cli_strbcasestr(dbname, ".pdb")) {
 	if(options & CL_DB_PHISHING_URLS) {
-	    ret = cli_loadpdb(fs, engine, options, dbio);
+	    ret = cli_loadpdb(fs, engine, signo, options, dbio);
 	} else
 	    skipped = 1;
     } else if(cli_strbcasestr(dbname, ".ftm")) {

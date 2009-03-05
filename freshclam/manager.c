@@ -1484,6 +1484,8 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	    field = 1;
 	} else if(!strcmp(dbname, "daily")) {
 	    field = 2;
+	} else if(!strcmp(dbname, "safebrowsing")) {
+	    field = 6;
 	} else {
 	    logg("!updatedb: Unknown database name (%s) passed.\n", dbname);
 	    cl_cvdfree(current);
@@ -1826,6 +1828,19 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
 	mirman_write("mirrors.dat", &mdat);
 	return ret;
 
+    } else if(ret == 0)
+	updated = 1;
+
+    /* if ipaddr[0] != 0 it will use it to connect to the web host */
+    if(optget(opts, "SafeBrowsing")->enabled && (ret = updatedb("safebrowsing", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr)) > 50) {
+	if(dnsreply)
+	    free(dnsreply);
+
+	if(newver)
+	    free(newver);
+
+	mirman_write("mirrors.dat", &mdat);
+	return ret;
     } else if(ret == 0)
 	updated = 1;
 

@@ -98,6 +98,7 @@ const struct clam_option clam_options[] = {
     { NULL, "html-normalise", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "utf16-decode", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "build", 'b', TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
+    { NULL, "no-cdiff", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "server", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "unpack", 'u', TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
     { NULL, "unpack-current", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_SIGTOOL, "", "" },
@@ -348,6 +349,8 @@ const struct clam_option clam_options[] = {
     { "SubmitDetectionStats", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "When enabled freshclam will submit statistics to the ClamAV Project about\nthe latest virus detections in your environment. The ClamAV maintainers\nwill then use this data to determine what types of malware are the most\ndetected in the field and in what geographic area they are.\nThis feature requires LogTime and LogFile to be enabled in clamd.conf.", "/path/to/clamd.conf" },
 
     { "DetectionStatsCountry", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Country of origin of malware/detection statistics (for statistical\npurposes only). The statistics collector at ClamAV.net will look up\nyour IP address to determine the geographical origin of the malware\nreported by your installation. If this installation is mainly used to\nscan data which comes from a different location, please enable this\noption and enter a two-letter code (see http://www.iana.org/domains/root/db/)\nof the country of origin.", "country-code" },
+
+    { "SafeBrowsing", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "FIXME", "yes" },
 
     /* Deprecated options */
 
