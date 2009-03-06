@@ -290,7 +290,7 @@ static int read_fd_data(struct fd_buf *buf)
       msg.msg_iov = iov;
       msg.msg_iovlen = 1;
       msg.msg_control = b.buff;
-      msg.msg_controllen = CMSG_LEN(sizeof(int));
+      msg.msg_controllen = sizeof(b.buff);
 
       n = recvmsg(buf->fd, &msg, 0);
       if (n < 0)

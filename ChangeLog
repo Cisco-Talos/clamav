@@ -1,3 +1,8 @@
+Fri Mar  6 17:19:53 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, unit_tests/check_clamd.c: fix FILDES and make
+ check on NetBSD. (bb #1411).
+
 Fri Mar  6 14:21:52 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c, clamd/server-th.c: wake recvloopth after SelfCheck
