@@ -45,6 +45,7 @@
 	cli_strbcasestr(ext, ".zmd")   ||	\
 	cli_strbcasestr(ext, ".rmd")   ||	\
 	cli_strbcasestr(ext, ".pdb")   ||	\
+	cli_strbcasestr(ext, ".gdb")   ||	\
 	cli_strbcasestr(ext, ".wdb")   ||	\
 	cli_strbcasestr(ext, ".ftm")   ||	\
 	cli_strbcasestr(ext, ".ign")   ||	\

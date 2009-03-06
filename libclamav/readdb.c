@@ -1514,7 +1514,7 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 	    ret = cli_loadwdb(fs, engine, options, dbio);
 	} else
 	    skipped = 1;
-    } else if(cli_strbcasestr(dbname, ".pdb")) {
+    } else if(cli_strbcasestr(dbname, ".pdb") || cli_strbcasestr(dbname, ".gdb")) {
 	if(options & CL_DB_PHISHING_URLS) {
 	    ret = cli_loadpdb(fs, engine, signo, options, dbio);
 	} else
