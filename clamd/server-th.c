@@ -1042,7 +1042,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	/* signal that we can accept more connections */
 	if (fds->nfds <= max_queue)
 	    pthread_cond_signal(&acceptdata.cond_nfds);
-	new_sd = fds_poll_recv(fds, -1, 1);
+	new_sd = fds_poll_recv(fds, selfchk ? selfchk : -1, 1);
 
 	if (!fds->nfds) {
 	    /* at least the dummy/sync pipe should have remained */
@@ -1205,7 +1205,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	/* SelfCheck */
 	if(selfchk) {
 	    time(&current_time);
-	    if((current_time - start_time) > (time_t)selfchk) {
+	    if((current_time - start_time) >= (time_t)selfchk) {
 		if(reload_db(engine, dboptions, opts, TRUE, &ret)) {
 		    pthread_mutex_lock(&reload_mutex);
 		    reload = 1;

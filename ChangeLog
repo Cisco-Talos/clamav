@@ -1,3 +1,8 @@
+Fri Mar  6 14:21:52 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, clamd/server-th.c: wake recvloopth after SelfCheck
+ (if set), to avoid reloading the DB just before next scan request.
+
 Fri Mar  6 11:19:32 EET 2009 (edwin)
 ------------------------------------
  * clamav-milter/Makefile.am, clamav-milter/Makefile.in: fix make

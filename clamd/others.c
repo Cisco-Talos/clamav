@@ -454,7 +454,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 	} else {
 	    if (!closest_timeout)
 		closest_timeout = timeout_at;
-	    else if (timeout_at < closest_timeout)
+	    else if (timeout_at && timeout_at < closest_timeout)
 		closest_timeout = timeout_at;
 	}
     }
