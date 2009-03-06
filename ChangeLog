@@ -1,3 +1,8 @@
+Fri Mar  6 11:09:01 EET 2009 (edwin)
+------------------------------------
+ * unit_tests/check_regex.c: fix make check. Buildbot didn't detect
+ compile failure in make check.
+
 Thu Mar  5 20:10:00 CET 2009 (tk)
 ---------------------------------
  * libclamav: count .pdb entries as signatures

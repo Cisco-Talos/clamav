@@ -284,6 +284,8 @@ static void psetup_impl(int load2)
 {
 	FILE *f;
 	int rc;
+	unsigned signo=0;
+
 	engine = cl_engine_new();
 	fail_unless(!!engine , "cl_engine_new");
 
@@ -296,17 +298,22 @@ static void psetup_impl(int load2)
 	f = fdopen(open_testfile("input/daily.pdb"),"r");
 	fail_unless(!!f, "fopen daily.pdb");
 
-	rc = load_regex_matcher(engine->domainlist_matcher,  f, 0, 0, NULL);
+	rc = load_regex_matcher(engine->domainlist_matcher,  f, &signo, 0, 0, NULL);
 	fail_unless(rc == 0, "load_regex_matcher");
 	fclose(f);
+
+	fail_unless_fmt(signo == 201, "Incorrect number of signatures: %u, expected %u", signo, 201);
 
 	if(load2) {
 		f = fdopen(open_testfile("input/daily.pdb2"),"r");
 		fail_unless(!!f, "fopen daily.pdb2");
 
-		rc = load_regex_matcher(engine->domainlist_matcher,  f, 0, 0, NULL);
+		signo = 0;
+		rc = load_regex_matcher(engine->domainlist_matcher,  f, &signo, 0, 0, NULL);
 		fail_unless(rc == 0, "load_regex_matcher");
 		fclose(f);
+
+		fail_unless_fmt(signo == 2, "Incorrect number of signatures: %u, expected %u", signo, 2);
 	}
 	loaded_2 = load2;
 
@@ -314,9 +321,12 @@ static void psetup_impl(int load2)
 	fail_unless(rc == 0,"init_whitelist");
 
 	f = fdopen(open_testfile("input/daily.wdb"),"r");
-	rc = load_regex_matcher(engine->whitelist_matcher, f, 0, 1, NULL);
+	signo = 0;
+	rc = load_regex_matcher(engine->whitelist_matcher, f, &signo, 0, 1, NULL);
 	fail_unless(rc == 0,"load_regex_matcher");
 	fclose(f);
+
+	fail_unless_fmt(signo == 31, "Incorrect number of signatures: %u, expected %u", signo, 31);
 
 	rc = cli_build_regex_list(engine->whitelist_matcher);
 	fail_unless(rc == 0,"cli_build_regex_list");
