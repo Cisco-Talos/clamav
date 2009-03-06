@@ -44,7 +44,7 @@ man_MANS = $(top_builddir)/docs/man/clamav-milter.8
 endif
 endif
 
-CFLAGS=`echo "@CFLAGS@" | sed -e 's/-Wwrite-strings//'`
+CFLAGS=`echo "@CFLAGS@" | sed -e 's/-Wwrite-strings//' -e 's/-Werror /-Werror -Wno-error=format-nonliteral /'`
 LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMAV_MILTER_LIBS@ @THREAD_LIBS@
 AM_CPPFLAGS = -I$(top_srcdir)/clamd -I$(top_srcdir)/libclamav -I$(top_srcdir)/shared -I$(top_srcdir)
 CLEANFILES=*.gcda *.gcno

@@ -1,3 +1,8 @@
+Fri Mar  6 11:19:32 EET 2009 (edwin)
+------------------------------------
+ * clamav-milter/Makefile.am, clamav-milter/Makefile.in: fix make
+ distcheck
+
 Fri Mar  6 11:09:01 EET 2009 (edwin)
 ------------------------------------
  * unit_tests/check_regex.c: fix make check. Buildbot didn't detect

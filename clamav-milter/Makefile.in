@@ -122,7 +122,7 @@ AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFGDIR = @CFGDIR@
-CFLAGS = `echo "@CFLAGS@" | sed -e 's/-Wwrite-strings//'`
+CFLAGS = `echo "@CFLAGS@" | sed -e 's/-Wwrite-strings//' -e 's/-Werror /-Werror -Wno-error=format-nonliteral /'`
 CHECK_CPPFLAGS = @CHECK_CPPFLAGS@
 CHECK_LIBS = @CHECK_LIBS@
 CLAMAVGROUP = @CLAMAVGROUP@
