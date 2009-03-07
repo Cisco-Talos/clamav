@@ -74,7 +74,6 @@ static struct sockaddr_in tcpsock;
 static int isremote(const struct optstruct *opts) {
     int s, ret;
     const struct optstruct *opt;
-    struct hostent *he;
     struct optstruct *clamdopts;
     const char *clamd_conf = optget(opts, "config-file")->strarg;
     static struct sockaddr_in testsock;
@@ -257,7 +256,7 @@ int client(const struct optstruct *opts, int *infected)
 	struct stat sb;
 	fstat(0, &sb);
 	if((sb.st_mode & S_IFMT) != S_IFREG) scantype = STREAM;
-	if((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, scantype, NULL)) >= 0)
+	if((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, scantype, NULL, &ret)) >= 0)
 	    *infected = ret;
 	else
 	    errors = 1;

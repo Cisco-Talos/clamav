@@ -1,3 +1,7 @@
+Sat Mar  7 16:31:17 CET 2009 (acab)
+-----------------------------------
+ * clamdscan: unify error messages
+
 Sat Mar  7 02:52:32 CET 2009 (acab)
 -----------------------------------
  * clamdscan: refactor error handling

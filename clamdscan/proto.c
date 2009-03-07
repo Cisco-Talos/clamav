@@ -238,7 +238,7 @@ static int send_fdpass(int sockd, const char *filename) {
 /* Sends a proper scan request to clamd and parses its replies
  * This is used only in non IDSESSION mode
  * Returns the number of infected files or -1 on error */
-int dsresult(int sockd, int scantype, const char *filename) {
+int dsresult(int sockd, int scantype, const char *filename, int *printok) {
     int infected = 0, len, beenthere = 0;
     char *bol, *eol;
     struct RCVLN rcv;
@@ -268,7 +268,10 @@ int dsresult(int sockd, int scantype, const char *filename) {
 #endif
     }
 
-    if(len <=0) return len;
+    if(len <=0) {
+	*printok = 0;
+	return len;
+    }
 
     while((len = recvln(&rcv, &bol, &eol))) {
 	if(len == -1) return -1;
@@ -280,6 +283,7 @@ int dsresult(int sockd, int scantype, const char *filename) {
 		logg("Failed to parse reply\n");
 		return -1;
 	    } else if(!memcmp(eol - 7, " FOUND", 6)) {
+		*printok = 0;
 		infected++;
 		if(filename) {
 		    if(scantype >= STREAM) {
@@ -293,6 +297,7 @@ int dsresult(int sockd, int scantype, const char *filename) {
 		    }
 		}
 	    } else if(!memcmp(eol-7, " ERROR", 6)) {
+		*printok = 0;
 		if(filename) {
 		    if(scantype >= STREAM)
 			logg("~%s%s\n", filename, colon);
@@ -315,6 +320,7 @@ int dsresult(int sockd, int scantype, const char *filename) {
 struct client_serial_data {
     int infected;
     int scantype;
+    int printok;
 };
 
 /* FTW callback for scanning in non IDSESSION mode
@@ -351,7 +357,7 @@ static int serial_callback(struct stat *sb, char *filename, const char *path, en
 	if(filename) free(filename);
 	return CL_EOPEN;
     }
-    ret = dsresult(sockd, c->scantype, f);
+    ret = dsresult(sockd, c->scantype, f, &c->printok);
     if(filename) free(filename);
     close(sockd);
     if(ret < 0) return CL_EOPEN;
@@ -369,6 +375,7 @@ int serial_client_scan(char *file, int scantype, int *infected, int maxlevel, in
     int ftw;
 
     cdata.infected = 0;
+    cdata.printok = printinfected^1;
     cdata.scantype = scantype;
     data.data = &cdata;
 
@@ -376,7 +383,7 @@ int serial_client_scan(char *file, int scantype, int *infected, int maxlevel, in
     *infected += cdata.infected;
 
     if(ftw == CL_SUCCESS || ftw == CL_BREAK) {
-	if(!printinfected && !cdata.infected)
+	if(cdata.printok)
 	    logg("~%s: OK\n", file);
 	return 0;
     }
@@ -389,6 +396,7 @@ struct client_parallel_data {
     int scantype;
     int sockd;
     int lastid;
+    int printok;
     struct SCANID {
 	unsigned int id;
 	const char *file;
@@ -433,9 +441,11 @@ static int dspresult(struct client_parallel_data *c) {
 		return 1;
 	    } else if(!memcmp(eol - 7, " FOUND", 6)) {
 		c->infected++;
+		c->printok = 0;
 		logg("~%s%s\n", filename, colon);
 		if(action) action(filename);
 	    } else if(!memcmp(eol-7, " ERROR", 6)) {
+		c->printok = 0;
 		logg("~%s%s\n", filename, colon);
 	    }
 	}
@@ -501,7 +511,7 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
     cid = (struct SCANID *)malloc(sizeof(struct SCANID));
     if(!cid) {
 	free(filename);
-	logg("!Failed to allocate scanid entry: %x\n", strerror(errno));
+	logg("!Failed to allocate scanid entry: %s\n", strerror(errno));
 	return CL_BREAK;
     }
     cid->id = ++c->lastid;
@@ -520,6 +530,7 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
 	break;
     }
     if(res <= 0) {
+	c->printok = 0;
 	c->ids = cid->next;
 	c->lastid--;
 	free(cid);
@@ -548,6 +559,7 @@ int parallel_client_scan(char *file, int scantype, int *infected, int maxlevel, 
     cdata.scantype = scantype;
     cdata.lastid = 0;
     cdata.ids = NULL;
+    cdata.printok = printinfected^1;
     data.data = &cdata;
 
     ftw = cli_ftw(file, flags, maxlevel ? maxlevel : INT_MAX, parallel_callback, &data);
@@ -568,7 +580,7 @@ int parallel_client_scan(char *file, int scantype, int *infected, int maxlevel, 
 	logg("!Clamd closed the connection before scanning all files.\n");
 	return 1;
     }
-    if(!printinfected && !cdata.infected)
+    if(cdata.printok)
 	logg("~%s: OK\n", file);
     return 0;
 }
