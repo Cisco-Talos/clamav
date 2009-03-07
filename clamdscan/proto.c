@@ -57,15 +57,13 @@ int dconnect() {
     int sockd;
 
     if((sockd = socket(mainsa->sa_family, SOCK_STREAM, 0)) < 0) {
-	perror("socket()");
-	logg("!Can't create the socket.\n");
+	logg("!Can't create the socket: %s\n", strerror(errno));
 	return -1;
     }
 
     if(connect(sockd, (struct sockaddr *)mainsa, mainsasz) < 0) {
 	close(sockd);
-	perror("connect()");
-	logg("!Can't connect to clamd.\n");
+	logg("!Can't connect to clamd: %s\n", strerror(errno));
 	return -1;
     }
     return sockd;
@@ -155,7 +153,7 @@ int recvln(struct RCVLN *s, char **rbol, char **reol) {
 }
 
 /* Issues an INSTREAM command to clamd and streams the given file
- * Returns 0 on success */
+ * Returns >0 on success, 0 soft fail, -1 hard fail */
 static int send_stream(int sockd, const char *filename) {
     uint32_t buf[BUFSIZ/sizeof(uint32_t)];
     int fd, len;
@@ -163,19 +161,19 @@ static int send_stream(int sockd, const char *filename) {
 
     if(filename) {
 	if((fd = open(filename, O_RDONLY))<0) {
-	    logg("!Open failed on %s.\n", filename);
-	    return 1;
+	    logg("~%s: Access denied. ERROR\n", filename);
+	    return 0;
 	}
     } else fd = 0;
 
-    if(sendln(sockd, "zINSTREAM", 10)) return 1;
+    if(sendln(sockd, "zINSTREAM", 10)) return -1;
 
     while((len = read(fd, &buf[1], sizeof(buf) - sizeof(uint32_t))) > 0) {
 	if((unsigned int)len > todo) len = todo;
 	buf[0] = htonl(len);
 	if(sendln(sockd, (const char *)buf, len+sizeof(uint32_t))) {
 	    close(fd);
-	    return 1;
+	    return -1;
 	}
 	todo -= len;
 	if(!todo) {
@@ -186,16 +184,16 @@ static int send_stream(int sockd, const char *filename) {
     close(fd);
     if(len) {
 	logg("!Failed to read from %s.\n", filename ? filename : "STDIN");
-	return 1;
+	return 0;
     }
     *buf=0;
     sendln(sockd, (const char *)buf, 4);
-    return 0;
+    return 1;
 }
 
 #ifdef HAVE_FD_PASSING
 /* Issues a FILDES command and pass a FD to clamd
- * Returns 0 on success */
+ * Returns >0 on success, 0 soft fail, -1 hard fail */
 static int send_fdpass(int sockd, const char *filename) {
     struct iovec iov[1];
     struct msghdr msg;
@@ -206,13 +204,13 @@ static int send_fdpass(int sockd, const char *filename) {
 
     if(filename) {
 	if((fd = open(filename, O_RDONLY))<0) {
-	    logg("!Open failed on %s.\n", filename);
-	    return 1;
+	    logg("~%s: Access denied. ERROR\n", filename);
+	    return 0;
 	}
     } else fd = 0;
     if(sendln(sockd, "zFILDES", 8)) {
       close(fd);
-      return 1;
+      return -1;
     }
 
     iov[0].iov_base = dummy;
@@ -230,10 +228,10 @@ static int send_fdpass(int sockd, const char *filename) {
     if(sendmsg(sockd, &msg, 0) == -1) {
 	logg("!FD send failed: %s\n", strerror(errno));
 	close(fd);
-	return 1;
+	return -1;
     }
     close(fd);
-    return 0;
+    return 1;
 }
 #endif
 
@@ -252,7 +250,7 @@ int dsresult(int sockd, int scantype, const char *filename) {
     case CONT:
     len = strlen(filename) + strlen(scancmd[scantype]) + 3;
     if (!(bol = malloc(len))) {
-	logg("!Cannot allocate a command buffer\n");
+	logg("!Cannot allocate a command buffer: %s\n", strerror(errno));
 	return -1;
     }
     sprintf(bol, "z%s %s", scancmd[scantype], filename);
@@ -261,16 +259,16 @@ int dsresult(int sockd, int scantype, const char *filename) {
     break;
 
     case STREAM:
-	if(send_stream(sockd, filename))
-	    return -1;
+	len = send_stream(sockd, filename);
 	break;
 #ifdef HAVE_FD_PASSING
     case FILDES:
-	if(send_fdpass(sockd, filename))
-	    return -1;
+	len = send_fdpass(sockd, filename);
 	break;
 #endif
     }
+
+    if(len <=0) return len;
 
     while((len = recvln(&rcv, &bol, &eol))) {
 	if(len == -1) return -1;
@@ -356,7 +354,7 @@ static int serial_callback(struct stat *sb, char *filename, const char *path, en
     ret = dsresult(sockd, c->scantype, f);
     if(filename) free(filename);
     close(sockd);
-    if(ret < 0) return CL_VIRUS;
+    if(ret < 0) return CL_EOPEN;
     c->infected += ret;
     if(reason == visit_directory_toplev)
 	return CL_BREAK;
@@ -454,7 +452,8 @@ static int dspresult(struct client_parallel_data *c) {
  * Returns SUCCESS on success, CL_EXXX or BREAK on error */
 static int parallel_callback(struct stat *sb, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data) {
     struct client_parallel_data *c = (struct client_parallel_data *)data->data;
-    struct SCANID **id = &c->ids, *cid;
+    struct SCANID *cid;
+    int res;
 
     switch(reason) {
     case error_stat:
@@ -487,7 +486,7 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
 	if(select(c->sockd + 1, &rfds, &wfds, NULL, NULL) < 0) {
 	    if(errno == EINTR) continue;
 	    free(filename);
-	    logg("!select() failed during session\n");
+	    logg("!select() failed during session: %s\n", strerror(errno));
 	    return CL_BREAK;
 	}
 	if(FD_ISSET(c->sockd, &rfds)) {
@@ -499,30 +498,33 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
 	if(FD_ISSET(c->sockd, &wfds)) break;
     }
 
-    while (*id)
-	id = &((*id)->next);
     cid = (struct SCANID *)malloc(sizeof(struct SCANID));
     if(!cid) {
 	free(filename);
-	logg("!Failed to allocate scanid entry\n");
+	logg("!Failed to allocate scanid entry: %x\n", strerror(errno));
 	return CL_BREAK;
     }
-    *id = cid;
     cid->id = ++c->lastid;
     cid->file = filename;
-    cid->next = NULL;
+    cid->next = c->ids;
+    c->ids = cid;
 
     switch(c->scantype) {
 #ifdef HAVE_FD_PASSING
     case FILDES:
-	if(send_fdpass(c->sockd, filename))
-	    return CL_BREAK;
+	res = send_fdpass(c->sockd, filename);
 	break;
 #endif
     case STREAM:
-	if(send_stream(c->sockd, filename))
-	    return CL_BREAK;
+	res = send_stream(c->sockd, filename);
 	break;
+    }
+    if(res <= 0) {
+	c->ids = cid->next;
+	c->lastid--;
+	free(cid);
+	free(filename);
+	return res ? CL_BREAK : CL_SUCCESS;
     }
     return CL_SUCCESS;
 }
