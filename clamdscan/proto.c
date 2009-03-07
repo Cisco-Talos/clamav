@@ -78,7 +78,7 @@ int sendln(int sockd, const char *line, unsigned int len) {
 	int sent = send(sockd, line, len, 0);
 	if(sent <= 0) {
 	    if(sent && errno == EINTR) continue;
-	    logg("!Can't send request to clamd: %s\n", strerror(errno));
+	    logg("!Can't send to clamd: %s\n", strerror(errno));
 	    return 1;
 	}
 	line += sent;
@@ -118,13 +118,10 @@ int recvln(struct RCVLN *s, char **rbol, char **reol) {
 		    *s->cur = '\0';
 		    if(strcmp(s->buf, "UNKNOWN COMMAND\n"))
 			logg("!Communication error\n");
-		    else {
+		    else
 			logg("!Command rejected by clamd (wrong clamd version?)\n");
-			exit(2);
-		    }
 		    return -1;
 		}
-		*rbol = NULL;
 	        return 0;
 	    }
 	}
@@ -177,7 +174,6 @@ static int send_stream(int sockd, const char *filename) {
 	if((unsigned int)len > todo) len = todo;
 	buf[0] = htonl(len);
 	if(sendln(sockd, (const char *)buf, len+sizeof(uint32_t))) {
-	    logg("!Can't write to the socket.\n");
 	    close(fd);
 	    return 1;
 	}
@@ -189,7 +185,7 @@ static int send_stream(int sockd, const char *filename) {
     }
     close(fd);
     if(len) {
-	logg("!Failed to read from %s.\n", filename);
+	logg("!Failed to read from %s.\n", filename ? filename : "STDIN");
 	return 1;
     }
     *buf=0;
@@ -245,9 +241,9 @@ static int send_fdpass(int sockd, const char *filename) {
  * This is used only in non IDSESSION mode
  * Returns the number of infected files or -1 on error */
 int dsresult(int sockd, int scantype, const char *filename) {
-	int infected = 0, waserror = 0, len, beenthere = 0;
-	char *bol, *eol;
-	struct RCVLN rcv;
+    int infected = 0, len, beenthere = 0;
+    char *bol, *eol;
+    struct RCVLN rcv;
 
     recvlninit(&rcv, sockd);
 
@@ -277,17 +273,14 @@ int dsresult(int sockd, int scantype, const char *filename) {
     }
 
     while((len = recvln(&rcv, &bol, &eol))) {
-	if(len == -1) {
-	    waserror = 1;
-	    break;
-	}
+	if(len == -1) return -1;
 	beenthere = 1;
 	if(!filename) logg("~%s\n", bol);
 	if(len > 7) {
 	    char *colon = strrchr(bol, ':');
 	    if(!colon) {
 		logg("Failed to parse reply\n");
-		waserror = 1;
+		return -1;
 	    } else if(!memcmp(eol - 7, " FOUND", 6)) {
 		infected++;
 		if(filename) {
@@ -308,15 +301,14 @@ int dsresult(int sockd, int scantype, const char *filename) {
 		    else
 			logg("~%s\n", bol);
 		}
-		waserror = 1;
 	    }
 	}
     }
     if(!beenthere) {
 	logg("~%s: no reply from clamd\n", filename ? filename : "STDIN");
-	waserror = 1;
+	return -1;
     }
-    return infected ? infected : (waserror ? -1 : 0);
+    return infected;
 }
 
 
@@ -324,9 +316,7 @@ int dsresult(int sockd, int scantype, const char *filename) {
 /* Used by serial_callback() */
 struct client_serial_data {
     int infected;
-    int errors;
     int scantype;
-    int spam;
 };
 
 /* FTW callback for scanning in non IDSESSION mode
@@ -349,27 +339,25 @@ static int serial_callback(struct stat *sb, char *filename, const char *path, en
 	return CL_SUCCESS;
     case warning_skipped_special:
 	logg("~%s: Not supported file type. ERROR\n", path);
-	c->errors++;
 	return CL_SUCCESS;
     case visit_directory_toplev:
-	c->spam = 1;
 	if(c->scantype >= STREAM)
 	    return CL_SUCCESS;
 	f = path;
-    default:
+	filename = NULL;
+    case visit_file:
 	break;
     }
 
     if((sockd = dconnect()) < 0) {
-	free(filename);
+	if(filename) free(filename);
 	return CL_EOPEN;
     }
-    if((ret = dsresult(sockd, c->scantype, f)) >= 0)
-	c->infected += ret;
-    else
-	c->errors++;
+    ret = dsresult(sockd, c->scantype, f);
+    if(filename) free(filename);
     close(sockd);
-    free(filename);
+    if(ret < 0) return CL_VIRUS;
+    c->infected += ret;
     if(reason == visit_directory_toplev)
 	return CL_BREAK;
     return CL_SUCCESS;
@@ -377,23 +365,20 @@ static int serial_callback(struct stat *sb, char *filename, const char *path, en
 
 /* Non-IDSESSION handler
  * Returns non zero for serious errors, zero otherwise */
-int serial_client_scan(char *file, int scantype, int *infected, int *errors, int maxlevel, int flags) {
+int serial_client_scan(char *file, int scantype, int *infected, int maxlevel, int flags) {
     struct cli_ftw_cbdata data;
     struct client_serial_data cdata;
     int ftw;
 
     cdata.infected = 0;
-    cdata.errors = 0;
     cdata.scantype = scantype;
-    cdata.spam = 0;
     data.data = &cdata;
 
     ftw = cli_ftw(file, flags, maxlevel ? maxlevel : INT_MAX, serial_callback, &data);
     *infected += cdata.infected;
-    *errors += cdata.errors;
 
     if(ftw == CL_SUCCESS || ftw == CL_BREAK) {
-	if(!printinfected && !cdata.infected && (!cdata.errors || cdata.spam))
+	if(!printinfected && !cdata.infected)
 	    logg("~%s: OK\n", file);
 	return 0;
     }
@@ -403,9 +388,7 @@ int serial_client_scan(char *file, int scantype, int *infected, int *errors, int
 /* Used in IDSESSION mode */
 struct client_parallel_data {
     int infected;
-    int errors;
     int scantype;
-    int spam;
     int sockd;
     int lastid;
     struct SCANID {
@@ -429,11 +412,8 @@ static int dspresult(struct client_parallel_data *c) {
     recvlninit(&rcv, c->sockd);
     do {
 	len = recvln(&rcv, &bol, &eol);
-	if(!bol || len == -1) {
-	    c->errors++;
-	    return 1;
-	}
-	if(!bol) return 0;
+	if(len < 0) return 1;
+	if(!len) return 0;
 	if((rid = atoi(bol))) {
 	    id = &c->ids;
 	    while(*id) {
@@ -443,7 +423,6 @@ static int dspresult(struct client_parallel_data *c) {
 	    if(!*id) id = NULL;
 	}
 	if(!id) {
-	    c->errors++;
 	    logg("!Bogus session id from clamd\n");
 	    return 1;
 	}
@@ -451,16 +430,15 @@ static int dspresult(struct client_parallel_data *c) {
 	if(len > 7) {
 	    char *colon = strrchr(bol, ':');
 	    if(!colon) {
-		c->errors++;
-		logg("Failed to parse reply\n");
+		logg("!Failed to parse reply\n");
+		free((void *)filename);
+		return 1;
 	    } else if(!memcmp(eol - 7, " FOUND", 6)) {
 		c->infected++;
 		logg("~%s%s\n", filename, colon);
 		if(action) action(filename);
 	    } else if(!memcmp(eol-7, " ERROR", 6)) {
-		c->errors++;
-		if(filename)
-		    logg("~%s%s\n", filename, colon);
+		logg("~%s%s\n", filename, colon);
 	    }
 	}
 	free((void *)filename);
@@ -473,7 +451,7 @@ static int dspresult(struct client_parallel_data *c) {
 }
 
 /* FTW callback for scanning in IDSESSION mode
- * Returns SUCCESS or BREAK on success, CL_EXXX on error */
+ * Returns SUCCESS on success, CL_EXXX or BREAK on error */
 static int parallel_callback(struct stat *sb, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data) {
     struct client_parallel_data *c = (struct client_parallel_data *)data->data;
     struct SCANID **id = &c->ids, *cid;
@@ -490,12 +468,10 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
 	return CL_SUCCESS;
     case warning_skipped_special:
 	logg("~%s: Not supported file type. ERROR\n", path);
-	c->errors++;
-	return CL_SUCCESS;
+    case warning_skipped_link:
     case visit_directory_toplev:
-	c->spam = 1;
 	return CL_SUCCESS;
-    default:
+    case visit_file:
 	break;
     }
 
@@ -510,9 +486,8 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
 	FD_SET(c->sockd, &wfds);
 	if(select(c->sockd + 1, &rfds, &wfds, NULL, NULL) < 0) {
 	    if(errno == EINTR) continue;
-	    c->errors++;
 	    free(filename);
-	    logg("!select failed during session\n");
+	    logg("!select() failed during session\n");
 	    return CL_BREAK;
 	}
 	if(FD_ISSET(c->sockd, &rfds)) {
@@ -554,7 +529,7 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
 
 /* IDSESSION handler
  * Returns non zero for serious errors, zero otherwise */
-int parallel_client_scan(char *file, int scantype, int *infected, int *errors, int maxlevel, int flags) {
+int parallel_client_scan(char *file, int scantype, int *infected, int maxlevel, int flags) {
     struct cli_ftw_cbdata data;
     struct client_parallel_data cdata;
     int ftw;
@@ -568,18 +543,15 @@ int parallel_client_scan(char *file, int scantype, int *infected, int *errors, i
     }
 
     cdata.infected = 0;
-    cdata.errors = 0;
     cdata.scantype = scantype;
-    cdata.spam = 0;
     cdata.lastid = 0;
     cdata.ids = NULL;
     data.data = &cdata;
 
     ftw = cli_ftw(file, flags, maxlevel ? maxlevel : INT_MAX, parallel_callback, &data);
 
-    if(ftw != CL_SUCCESS && ftw != CL_BREAK) {
+    if(ftw != CL_SUCCESS) {
 	*infected += cdata.infected;
-	*errors += cdata.errors;
 	close(cdata.sockd);
 	return 1;
     }
@@ -589,13 +561,12 @@ int parallel_client_scan(char *file, int scantype, int *infected, int *errors, i
     close(cdata.sockd);
 
     *infected += cdata.infected;
-    *errors += cdata.errors;
 
     if(cdata.ids) {
-	logg("!Clamd closed connection before scanning all files.\n");
+	logg("!Clamd closed the connection before scanning all files.\n");
 	return 1;
     }
-    if(!printinfected && !cdata.infected && (!cdata.errors || cdata.spam))
+    if(!printinfected && !cdata.infected)
 	logg("~%s: OK\n", file);
     return 0;
 }

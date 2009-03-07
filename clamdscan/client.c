@@ -144,16 +144,16 @@ static char *makeabs(const char *basepath) {
 
 /* Recursively scans a path with the given scantype
  * Returns non zero for serious errors, zero otherwise */
-static int client_scan(const char *file, int scantype, int *infected, int *errors, int maxlevel, int session, int flags) {
+static int client_scan(const char *file, int scantype, int *infected, int maxlevel, int session, int flags) {
     int ret;
     char *fullpath = makeabs(file);
 
     if(!fullpath)
 	return 0;
     if (!session)
-	ret = serial_client_scan(fullpath, scantype, infected, errors, maxlevel, flags);
+	ret = serial_client_scan(fullpath, scantype, infected, maxlevel, flags);
     else
-	ret = parallel_client_scan(fullpath, scantype, infected, errors, maxlevel, flags);
+	ret = parallel_client_scan(fullpath, scantype, infected, maxlevel, flags);
     free(fullpath);
     return ret;
 }
@@ -260,19 +260,19 @@ int client(const struct optstruct *opts, int *infected)
 	if((sockd = dconnect()) >= 0 && (ret = dsresult(sockd, scantype, NULL)) >= 0)
 	    *infected = ret;
 	else
-	    errors++;
+	    errors = 1;
 	if(sockd >= 0) close(sockd);
     } else if(opts->filename) {
 	unsigned int i;
-	for (i = 0; opts->filename[i]; i++) {
+	for (i = 0; !errors && opts->filename[i]; i++) {
 	    if(!strcmp(opts->filename[i], "-")) {
 		logg("!Scanning from standard input requires \"-\" to be the only file argument\n");
 		continue;
 	    }
-	    if(client_scan(opts->filename[i], scantype, infected, &errors, maxrec, session, flags)) break;
+	    errors = client_scan(opts->filename[i], scantype, infected, maxrec, session, flags);
 	}
     } else {
-	client_scan("", scantype, infected, &errors, maxrec, session, flags);
+	errors = client_scan("", scantype, infected, maxrec, session, flags);
     }
     return *infected ? 1 : (errors ? 2 : 0);
 }
