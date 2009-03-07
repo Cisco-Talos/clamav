@@ -1,3 +1,7 @@
+Sat Mar  7 19:15:14 CET 2009 (acab)
+-----------------------------------
+ * clamscan: extend clamscan summary (bb#1206)
+
 Sat Mar  7 16:31:17 CET 2009 (acab)
 -----------------------------------
  * clamdscan: unify error messages

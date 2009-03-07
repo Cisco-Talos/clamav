@@ -79,7 +79,7 @@ dev_t procdev;
 
 static int scanfile(const char *filename, struct cl_engine *engine, const struct optstruct *opts, unsigned int options)
 {
-	int ret = 0, fd, included, printclean = 1;
+  int ret = 0, fd, included, printclean = 1, fsize;
 	const struct optstruct *opt;
 	const char *virname;
 #ifdef C_LINUX
@@ -122,12 +122,13 @@ static int scanfile(const char *filename, struct cl_engine *engine, const struct
 	}
     }
 
-    if(fileinfo(filename, 1) == 0) {
+    fsize = fileinfo(filename, 1);
+    if(fsize == 0) {
 	if(!printinfected)
 	    logg("~%s: Empty file\n", filename);
 	return 0;
     }
-
+    info.rblocks += fsize / CL_COUNT_PRECISION;
 #ifndef C_WINDOWS
     if(geteuid())
 	if(checkaccess(filename, NULL, R_OK) != 1) {
@@ -258,6 +259,7 @@ static int scandirs(const char *dirname, struct cl_engine *engine, const struct 
 static int scanstdin(const struct cl_engine *engine, const struct optstruct *opts, int options)
 {
 	int ret;
+	unsigned int fsize = 0;
 	const char *virname, *tmpdir;
 	char *file, buff[FILEBUFF];
 	size_t bread;
@@ -290,17 +292,19 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
 	return 63;
     }
 
-    while((bread = fread(buff, 1, FILEBUFF, stdin)))
+    while((bread = fread(buff, 1, FILEBUFF, stdin))) {
+	fsize += bread;
 	if(fwrite(buff, 1, bread, fs) < bread) {
 	    logg("!Can't write to %s\n", file);
 	    free(file);
 	    return 58;
 	}
-
+    }
     fclose(fs);
 
     logg("*Checking %s\n", file);
     info.files++;
+    info.rblocks += fsize / CL_COUNT_PRECISION;
 
     if((ret = cl_scanfile(file, &virname, &info.blocks, engine, options)) == CL_VIRUS) {
 	logg("stdin: %s FOUND\n", virname);

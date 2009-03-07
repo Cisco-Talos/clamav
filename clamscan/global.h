@@ -26,7 +26,8 @@ struct s_info {
     unsigned int dirs;		/* number of scanned directories */
     unsigned int files;		/* number of scanned files */
     unsigned int ifiles;	/* number of infected files */
-    unsigned long int blocks;	/* number of read 16kb blocks */
+    unsigned long int blocks;	/* number of *scanned* 16kb blocks */
+    unsigned long int rblocks;	/* number of *read* 16kb blocks */
 };
 
 extern struct s_info info;

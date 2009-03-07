@@ -64,7 +64,7 @@ short recursion = 0, printinfected = 0, bell = 0;
 int main(int argc, char **argv)
 {
 	int ds, dms, ret;
-	double mb;
+	double mb, rmb;
 	struct timeval t1, t2;
 #ifndef C_WINDOWS
 	struct timezone tz;
@@ -195,6 +195,8 @@ int main(int argc, char **argv)
 	}
 	mb = info.blocks * (CL_COUNT_PRECISION / 1024) / 1024.0;
 	logg("Data scanned: %2.2lf MB\n", mb);
+	rmb = info.rblocks * (CL_COUNT_PRECISION / 1024) / 1024.0;
+	logg("Data read: %2.2lf MB (ratio %.2f:1)\n", rmb, info.rblocks ? (double)info.blocks/(double)info.rblocks : 0);
 	logg("Time: %u.%3.3u sec (%u m %u s)\n", ds, dms/1000, ds/60, ds%60);
     }
 
