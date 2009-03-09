@@ -486,10 +486,7 @@ str_hex_to_char(char **begin, const char **end)
 	char *sbegin = *begin;
 	const char *str_end = *end;
 
-	if(str_end <= sbegin)
-		return;
-
-	if(strlen(sbegin) <= 2)
+	if(str_end <= &sbegin[1])
 		return;
 
 	/* convert leading %xx*/
@@ -1272,7 +1269,7 @@ int cli_url_canon(const char *inurl, size_t len, char *urlbuff, size_t dest_len,
 	while (p < urlend && p+2 < url + dest_len) {
 	    unsigned char c = *p;
 	    if (c <= 32 || c >= 127 || c == '%' || c == '#') {
-		char hexchars[] = "0123456789ABCDEF";
+		const char hexchars[] = "0123456789ABCDEF";
 		memmove(p+3, p+1, urlend - p - 1);
 		*p++ = '%';
 		*p++ = hexchars[c>>4];
