@@ -1,3 +1,7 @@
+Mon Mar  9 13:40:32 EET 2009 (edwin)
+------------------------------------
+ * libclamav/mpool.c, libclamav/str.c: fix distcheck
+
 Mon Mar  9 13:22:35 EET 2009 (edwin)
 ------------------------------------
  * libclamav/phishcheck.c, libclamav/regex_list.c,

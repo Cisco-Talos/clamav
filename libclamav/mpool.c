@@ -588,7 +588,7 @@ unsigned char *cli_mpool_hex2str(mpool_t *mp, const unsigned char *hex) {
     size_t len = strlen((const char*)hex);
 
     if (len&1) {
-	cli_errmsg("cli_hex2str(): Malformed hexstring: %s (length: %d)\n", str, len);
+	cli_errmsg("cli_hex2str(): Malformed hexstring: %s (length: %u)\n", str, (unsigned)len);
 	return NULL;
     }
 

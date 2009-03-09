@@ -143,7 +143,7 @@ char *cli_hex2str(const char *hex)
     len = strlen(hex);
 
     if(len % 2 != 0) {
-	cli_errmsg("cli_hex2str(): Malformed hexstring: %s (length: %d)\n", hex, len);
+	cli_errmsg("cli_hex2str(): Malformed hexstring: %s (length: %u)\n", hex, (unsigned)len);
 	return NULL;
     }
 
