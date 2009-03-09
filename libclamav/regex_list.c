@@ -542,9 +542,18 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int *sign
 				return rc==CL_EMEM ? CL_EMEM : CL_EMALFDB;
 		} else if (buffer[0] == 'S' && !is_whitelist) {
 			pattern[pattern_len] = '\0';
-			if (( rc = add_hash(matcher, pattern, flags[0]) )) {
+			if(*pattern=='F' && pattern[1]==':') {
+			    pattern += 2;
+			    if (( rc = add_hash(matcher, pattern, flags[0]) )) {
 				cli_errmsg("Error loading at line: %d\n", line);
 				return rc==CL_EMEM ? CL_EMEM : CL_EMALFDB;
+			    }
+			} else if (*pattern=='P' && pattern[1]==':') {
+			    pattern += 2;
+			    /* TODO: hostkey prefix */
+			} else {
+			    cli_errmsg("Error loading line: %d, %c\n", line, *pattern);
+			    return CL_EMALFDB;
 			}
 		} else {
 			return CL_EMALFDB;

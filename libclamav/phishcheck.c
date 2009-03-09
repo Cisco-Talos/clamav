@@ -1186,13 +1186,22 @@ static int hash_match(const struct regex_matcher *rlist, const char *host, size_
 	cli_dbgmsg("hash lookup for: %s\n",s);
 #endif
 	if(rlist->sha256_hashes.bm_patterns) {
+	    const char hexchars[] = "0123456789ABCDEF";
+	    unsigned char h[65];
 	    unsigned char sha256_dig[32];
+	    unsigned i;
 	    SHA256_CTX sha256;
 
 	    sha256_init(&sha256);
 	    sha256_update(&sha256, host, hlen);
 	    sha256_update(&sha256, path, plen);
 	    sha256_final(&sha256, sha256_dig);
+	    for(i=0;i<32;i++) {
+		h[2*i] = hexchars[sha256_dig[i]>>4];
+		h[2*i+1] = hexchars[sha256_dig[i]&0xf];
+	    }
+	    h[64]='\0';
+	    cli_dbgmsg("Looking up hash %s for %s%s\n", h, host, path);
 	    if(SO_search(&rlist->sha256_filter, sha256_dig, 32) != -1 &&
 	       cli_bm_scanbuff(sha256_dig, 32, &virname, &rlist->sha256_hashes,0,0,-1) == CL_VIRUS) {
 		switch(*virname) {

@@ -1,3 +1,8 @@
+Mon Mar  9 13:22:35 EET 2009 (edwin)
+------------------------------------
+ * libclamav/phishcheck.c, libclamav/regex_list.c,
+ unit_tests/input/daily.gdb: allow for hash prefixes.
+
 Fri Mar  6 19:22:27 EET 2009 (edwin)
 ------------------------------------
  * libclamav/phishcheck.c: update name
