@@ -583,18 +583,22 @@ void *mpool_realloc2(struct MP *mp, void *ptr, size_t size) {
   return new_ptr;
 }
 
-unsigned char *cli_mpool_hex2str(mpool_t *mp, const unsigned char *str) {
-  unsigned char *tmp = (unsigned char *)cli_hex2str((char *)str);
+unsigned char *cli_mpool_hex2str(mpool_t *mp, const unsigned char *hex) {
+    unsigned char *str;
+    size_t len = strlen((const char*)hex);
 
-  if(tmp) {
-    unsigned char *res;
-    unsigned int tmpsz = strlen((char *)str) / 2 + 1;
-    if((res = mpool_malloc(mp, tmpsz)))
-      memcpy(res, tmp, tmpsz);
-    free(tmp);
-    return res;
-  }
-  return NULL;
+    if (len&1) {
+	cli_errmsg("cli_hex2str(): Malformed hexstring: %s (length: %d)\n", str, len);
+	return NULL;
+    }
+
+    str = mpool_malloc(mp, (len/2) + 1);
+    if (cli_hex2str_to(hex, str, len) == -1) {
+	mpool_free(mp, str);
+	return NULL;
+    }
+    str[len/2] = '\0';
+    return str;
 }
 
 char *cli_mpool_strdup(mpool_t *mp, const char *s) {
@@ -620,8 +624,9 @@ char *cli_mpool_virname(mpool_t *mp, const char *virname, unsigned int official)
   if(!virname)
     return NULL;
 
-  if((pt = strstr(virname, " (Clam)")))
-    *pt='\0';
+  if((pt = strchr(virname, ' ')))
+      if((pt = strstr(pt, " (Clam)")))
+	  *pt='\0';
 
   if(!virname[0]) {
     cli_errmsg("cli_virname: Empty virus name\n");

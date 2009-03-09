@@ -137,9 +137,8 @@ uint16_t *cli_hex2ui(const char *hex)
 
 char *cli_hex2str(const char *hex)
 {
-	char *str, *ptr;
-	int i, len, val, c;
-
+    unsigned char *str;
+    size_t len;
 
     len = strlen(hex);
 
@@ -152,7 +151,18 @@ char *cli_hex2str(const char *hex)
     if(!str)
 	return NULL;
 
-    ptr = str;
+    if (cli_hex2str_to(hex, str, len) == -1) {
+	free(str);
+	return NULL;
+    }
+    return str;
+}
+
+int cli_hex2str_to(const char *hex, unsigned char *ptr, size_t len)
+{
+    size_t i;
+    int c;
+    unsigned char val;
 
     for(i = 0; i < len; i += 2) {
 	if((c = cli_hex2int(hex[i])) >= 0) {
@@ -160,18 +170,16 @@ char *cli_hex2str(const char *hex)
 	    if((c = cli_hex2int(hex[i+1])) >= 0) {
 		val = (val << 4) + c;
 	    } else {
-		free(str);
-		return NULL;
+		return -1;
 	    }
 	} else {
-	    free(str);
-	    return NULL;
+	    return -1;
 	}
 
-	*ptr++ = (char)val;
+	*ptr++ = val;
     }
 
-    return str;
+    return 0;
 }
 
 int cli_hex2num(const char *hex)

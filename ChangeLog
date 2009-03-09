@@ -1,3 +1,8 @@
+Fri Mar  6 16:15:19 EET 2009 (edwin)
+------------------------------------
+ * libclamav/mpool.c, libclamav/str.c, libclamav/str.h: avoid
+ unneeded calloc + memcpy.
+
 Sat Mar  7 19:15:14 CET 2009 (acab)
 -----------------------------------
  * clamscan: extend clamscan summary (bb#1206)
