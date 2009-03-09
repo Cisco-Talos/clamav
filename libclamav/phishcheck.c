@@ -829,13 +829,13 @@ int phishingScan(cli_ctx* ctx,tag_arguments_t* hrefs)
 					*ctx->virname="Phishing.Heuristics.Email.Cloaked.Username";/*http://banksite@fake.example.com*/
 					break;
 				case CL_PHISH_HASH0:
-					*ctx->virname="Suspected-malware_safebrowsing.clamav.net";
+					*ctx->virname="Safebrowsing.Suspected-malware_safebrowsing.clamav.net";
 					break;
 				case CL_PHISH_HASH1:
 					*ctx->virname="Phishing.URL.Blacklisted";
 					break;
 				case CL_PHISH_HASH2:
-					*ctx->virname="Suspected-phishing_safebrowsing.clamav.net";
+					*ctx->virname="Safebrowsing.Suspected-phishing_safebrowsing.clamav.net";
 					break;
 				case CL_PHISH_NOMATCH:
 				default:

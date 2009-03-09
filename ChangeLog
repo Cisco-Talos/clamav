@@ -1,3 +1,7 @@
+Fri Mar  6 19:22:27 EET 2009 (edwin)
+------------------------------------
+ * libclamav/phishcheck.c: update name
+
 Fri Mar  6 18:42:50 EET 2009 (edwin)
 ------------------------------------
  * unit_tests/check_regex.c, unit_tests/input/daily.gdb,
