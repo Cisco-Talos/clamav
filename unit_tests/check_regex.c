@@ -305,8 +305,8 @@ static void psetup_impl(int load2)
 	fail_unless_fmt(signo == 201, "Incorrect number of signatures: %u, expected %u", signo, 201);
 
 	if(load2) {
-		f = fdopen(open_testfile("input/daily.pdb2"),"r");
-		fail_unless(!!f, "fopen daily.pdb2");
+		f = fdopen(open_testfile("input/daily.gdb"),"r");
+		fail_unless(!!f, "fopen daily.gdb");
 
 		signo = 0;
 		rc = load_regex_matcher(engine->domainlist_matcher,  f, &signo, 0, 0, NULL);

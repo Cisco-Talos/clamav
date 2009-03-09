@@ -1,3 +1,8 @@
+Fri Mar  6 18:42:50 EET 2009 (edwin)
+------------------------------------
+ * unit_tests/check_regex.c, unit_tests/input/daily.gdb,
+ unit_tests/input/daily.pdb2: fix unit-test
+
 Fri Mar  6 18:40:03 EET 2009 (edwin)
 ------------------------------------
  * docs/man/clamdtop.1.in: F1->H
