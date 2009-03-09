@@ -32,7 +32,7 @@ local or remote clamd using TCP/IP.
 .SH "OVERVIEW"
 .SS KEYS:
 .TP
-\fBF1\fR
+\fBH\fR
 
 Displays a short helpscreen, describing the meaning of various elements on the
 display.
