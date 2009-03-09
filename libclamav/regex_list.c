@@ -540,7 +540,7 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int *sign
 			/*matches displayed host*/
 			if (( rc = add_static_pattern(matcher, pattern) ))
 				return rc==CL_EMEM ? CL_EMEM : CL_EMALFDB;
-		} else if (buffer[0] == 'U' && !is_whitelist) {
+		} else if (buffer[0] == 'S' && !is_whitelist) {
 			pattern[pattern_len] = '\0';
 			if (( rc = add_hash(matcher, pattern, flags[0]) )) {
 				cli_errmsg("Error loading at line: %d\n", line);

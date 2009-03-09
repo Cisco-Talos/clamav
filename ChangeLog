@@ -1,3 +1,8 @@
+Fri Mar  6 16:33:49 EET 2009 (edwin)
+------------------------------------
+ * libclamav/phishcheck.c: comply with safebrowsing naming
+ guidelines.
+
 Fri Mar  6 16:15:19 EET 2009 (edwin)
 ------------------------------------
  * libclamav/mpool.c, libclamav/str.c, libclamav/str.h: avoid
