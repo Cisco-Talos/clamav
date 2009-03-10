@@ -67,6 +67,18 @@ Clamd requires clients to read all the replies it sent, before sending more comm
 \fINote that using non-blocking sockets without the select/poll loop and alternating recv()/send() doesn't comply with clamd's requirements.\fR
 
 If clamd detects that a client has deadlocked,  it will close the connection. Note that clamd may close an IDSESSION connection too if you don't follow the protocol's requirements.
+.TP
+\fBVERSIONCOMMANDS\fR
+It is mandatory to prefix this command with either \fBn\fR or \fBz\fR.
+It is recommended to use \fBnVERSIONCOMMANDS\fR.
+
+Print program and database versions, followed by "| COMMANDS:" and a
+space-delimited list of supported commands.
+Clamd <0.95 will recognize this as the VERSION command, and reply only with
+their version, without the commands list.
+
+This command can be used as an easy way to check for IDSESSION support for
+example.
 .LP
 .TP 
 \fBDEPRECATED COMMANDS\fR

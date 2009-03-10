@@ -1,3 +1,7 @@
+Tue Mar 10 19:59:29 EET 2009 (edwin)
+------------------------------------
+ * docs/man/clamd.8.in: add VERSIONCOMMANDS to manpage.
+
 Tue Mar 10 19:50:59 EET 2009 (edwin)
 ------------------------------------
  * clamd/session.c, clamd/session.h, unit_tests/check_clamd.c: new
