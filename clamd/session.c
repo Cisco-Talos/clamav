@@ -72,27 +72,36 @@
 #include "session.h"
 #include "thrmgr.h"
 
+#ifndef HAVE_FDPASSING
+#define FEATURE_FDPASSING 0
+#else
+#define FEATURE_FDPASSING 1
+#endif
+
 static struct {
     const char *cmd;
     const size_t len;
     enum commands cmdtype;
     int need_arg;
     int support_old;
+    int enabled;
 } commands[] = {
-    {CMD1,  sizeof(CMD1)-1,	COMMAND_SCAN,	    1,	1},
-    {CMD3,  sizeof(CMD3)-1,	COMMAND_SHUTDOWN,   0,	1},
-    {CMD4,  sizeof(CMD4)-1,	COMMAND_RELOAD,	    0,	1},
-    {CMD5,  sizeof(CMD5)-1,	COMMAND_PING,	    0,	1},
-    {CMD6,  sizeof(CMD6)-1,	COMMAND_CONTSCAN,   1,	1},
-    {CMD7,  sizeof(CMD7)-1,	COMMAND_VERSION,    0,	1},
-    {CMD8,  sizeof(CMD8)-1,	COMMAND_STREAM,	    0,	1},
-    {CMD10, sizeof(CMD10)-1,	COMMAND_END,	    0,	0},
-    {CMD11, sizeof(CMD11)-1,	COMMAND_SHUTDOWN,   0,	1},
-    {CMD13, sizeof(CMD13)-1,	COMMAND_MULTISCAN,  1,	1},
-    {CMD14, sizeof(CMD14)-1,	COMMAND_FILDES,	    0,	1},
-    {CMD15, sizeof(CMD15)-1,	COMMAND_STATS,	    0,	0},
-    {CMD16, sizeof(CMD16)-1,	COMMAND_IDSESSION,  0,	0},
-    {CMD17, sizeof(CMD17)-1,	COMMAND_INSTREAM,   0,	0}
+    {CMD1,  sizeof(CMD1)-1,	COMMAND_SCAN,	    1,	1, 0},
+    {CMD3,  sizeof(CMD3)-1,	COMMAND_SHUTDOWN,   0,	1, 0},
+    {CMD4,  sizeof(CMD4)-1,	COMMAND_RELOAD,	    0,	1, 0},
+    {CMD5,  sizeof(CMD5)-1,	COMMAND_PING,	    0,	1, 0},
+    {CMD6,  sizeof(CMD6)-1,	COMMAND_CONTSCAN,   1,	1, 0},
+    /* must be before VERSION, because they share common prefix! */
+    {CMD18, sizeof(CMD18)-1,	COMMAND_COMMANDS,   0,	0, 1},
+    {CMD7,  sizeof(CMD7)-1,	COMMAND_VERSION,    0,	1, 1},
+    {CMD8,  sizeof(CMD8)-1,	COMMAND_STREAM,	    0,	1, 1},
+    {CMD10, sizeof(CMD10)-1,	COMMAND_END,	    0,	0, 1},
+    {CMD11, sizeof(CMD11)-1,	COMMAND_SHUTDOWN,   0,	1, 1},
+    {CMD13, sizeof(CMD13)-1,	COMMAND_MULTISCAN,  1,	1, 1},
+    {CMD14, sizeof(CMD14)-1,	COMMAND_FILDES,	    0,	1, FEATURE_FDPASSING},
+    {CMD15, sizeof(CMD15)-1,	COMMAND_STATS,	    0,	0, 1},
+    {CMD16, sizeof(CMD16)-1,	COMMAND_IDSESSION,  0,	0, 1},
+    {CMD17, sizeof(CMD17)-1,	COMMAND_INSTREAM,   0,	0, 1}
 };
 
 
@@ -403,6 +412,43 @@ static int dispatch_command(client_conn_t *conn, enum commands cmd, const char *
     return ret;
 }
 
+static int print_ver(int desc, char term, const struct cl_engine *engine)
+{
+    uint32_t ver;
+
+    cl_engine_get(engine, CL_ENGINE_DB_VERSION, &ver);
+    if(ver) {
+	char timestr[32];
+	const char *tstr;
+	time_t t;
+	cl_engine_get(engine, CL_ENGINE_DB_TIME, &t);
+	tstr = cli_ctime(&t, timestr, sizeof(timestr));
+	/* cut trailing \n */
+	timestr[strlen(tstr)-1] = '\0';
+	return mdprintf(desc, "ClamAV %s/%u/%s%c", get_version(), (unsigned int) ver, tstr, term);
+    }
+    return mdprintf(desc, "ClamAV %s%c", get_version(), term);
+}
+
+static void print_commands(int desc, char term, const struct cl_engine *engine)
+{
+    unsigned i, n;
+    const char *engine_ver = cl_retver();
+    const char *clamd_ver = get_version();
+    if (strcmp(engine_ver, clamd_ver)) {
+	mdprintf(desc, "ENGINE VERSION MISMATCH: %s != %s. ERROR%c",
+		 engine_ver, clamd_ver, term);
+	return;
+    }
+    print_ver(desc, '|', engine);
+    mdprintf(desc, " COMMANDS:");
+    n = sizeof(commands)/sizeof(commands[0]);
+    for (i=0;i<n;i++) {
+	mdprintf(desc, " %s", commands[i].cmd);
+    }
+    mdprintf(desc, "%c", term);
+}
+
 /* returns:
  *  <0 for error
  *     -1 out of memory
@@ -429,7 +475,9 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 	    case COMMAND_INSTREAM:
 	    case COMMAND_INSTREAMSCAN:
 	    case COMMAND_VERSION:
+	    case COMMAND_PING:
 	    case COMMAND_STATS:
+	    case COMMAND_COMMANDS:
 		/* These commands are accepted inside IDSESSION */
 		break;
 	    default:
@@ -456,26 +504,23 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 	     * connection */
 	    return 1;
 	case COMMAND_PING:
-	    mdprintf(desc, "PONG%c", term);
-	    return 1;
+	    if (conn->group)
+		mdprintf(desc, "%u: PONG%c", conn->id, term);
+	    else
+		mdprintf(desc, "PONG%c", term);
+	    return conn->group ? 0 : 1;
 	case COMMAND_VERSION:
 	    {
-		uint32_t ver;
-		cl_engine_get(engine, CL_ENGINE_DB_VERSION, &ver);
 		if (conn->group)
 		    mdprintf(desc, "%u: ", conn->id);
-		if(ver) {
-		    char timestr[32];
-		    const char *tstr;
-		    time_t t;
-		    cl_engine_get(engine, CL_ENGINE_DB_TIME, &t);
-		    tstr = cli_ctime(&t, timestr, sizeof(timestr));
-		    /* cut trailing \n */
-		    timestr[strlen(tstr)-1] = '\0';
-		    mdprintf(desc, "ClamAV %s/%u/%s%c", get_version(), (unsigned int) ver, tstr, term);
-		} else {
-		    mdprintf(desc, "ClamAV %s%c", get_version(), conn->term);
-		}
+		print_ver(desc, conn->term, engine);
+		return conn->group ? 0 : 1;
+	    }
+	case COMMAND_COMMANDS:
+	    {
+		if (conn->group)
+		    mdprintf(desc, "%u: ", conn->id);
+		print_commands(desc, conn->term, engine);
 		return conn->group ? 0 : 1;
 	    }
 	case COMMAND_INSTREAM:

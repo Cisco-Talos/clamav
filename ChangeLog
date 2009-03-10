@@ -1,3 +1,8 @@
+Tue Mar 10 19:50:59 EET 2009 (edwin)
+------------------------------------
+ * clamd/session.c, clamd/session.h, unit_tests/check_clamd.c: new
+ clamd command: nVERSIONCOMMANDS (bb #1437).
+
 Tue Mar 10 16:14:30 EET 2009 (edwin)
 ------------------------------------
  * libclamav/mpool.c, shared/output.c: fix uninitialized value

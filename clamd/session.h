@@ -39,6 +39,7 @@
 #define CMD15 "STATS"
 #define CMD16 "IDSESSION"
 #define CMD17 "INSTREAM"
+#define CMD18 "VERSIONCOMMANDS"
 
 #include "libclamav/clamav.h"
 #include "shared/optparser.h"
@@ -62,6 +63,7 @@ enum commands {
     /* new proto commands */
     COMMAND_IDSESSION,
     COMMAND_INSTREAM,
+    COMMAND_COMMANDS,
     /* internal commands */
     COMMAND_MULTISCANFILE,
     COMMAND_INSTREAMSCAN
