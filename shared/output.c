@@ -131,7 +131,7 @@ int mdprintf(int desc, const char *str, ...)
 {
 	va_list args;
 	char buffer[512], *abuffer = NULL, *buff;
-	int bytes, todo, len, ret;
+	int bytes, todo, len, ret=0;
 
 
     ARGLEN(args, str, len);

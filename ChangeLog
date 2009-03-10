@@ -1,3 +1,8 @@
+Tue Mar 10 16:14:30 EET 2009 (edwin)
+------------------------------------
+ * libclamav/mpool.c, shared/output.c: fix uninitialized value
+ warning.
+
 Tue Mar 10 11:51:15 CET 2009 (tk)
 ---------------------------------
  * sigtool/sigtool.c: add missing entry for safebrowsing.info
