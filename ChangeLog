@@ -1,3 +1,7 @@
+Tue Mar 10 11:51:15 CET 2009 (tk)
+---------------------------------
+ * sigtool/sigtool.c: add missing entry for safebrowsing.info
+
 Mon Mar  9 20:23:48 EET 2009 (edwin)
 ------------------------------------
  * libclamav/phishcheck.c: micro-optimization. (thanks Nigel!)

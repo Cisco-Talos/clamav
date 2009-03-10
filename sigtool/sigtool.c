@@ -79,7 +79,7 @@ static const struct dblist_s {
     { "daily.cfg",  0 },
     { "daily.ign",  0 },
     { "daily.ftm",  0 },
-    { "main.info",  0 },    { "daily.info", 0 },
+    { "main.info",  0 },    { "daily.info", 0 },    { "safebrowsing.info" },
 
     /* databases */
     { "main.db",    1 },    { "daily.db",   1 },
