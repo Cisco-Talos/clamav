@@ -1,3 +1,7 @@
+Tue Mar 10 20:53:28 EET 2009 (edwin)
+------------------------------------
+ * unit_tests/check_regex.c: add more ifdefs for old check version.
+
 Tue Mar 10 19:59:29 EET 2009 (edwin)
 ------------------------------------
  * docs/man/clamd.8.in: add VERSIONCOMMANDS to manpage.

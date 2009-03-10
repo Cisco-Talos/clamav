@@ -429,6 +429,7 @@ START_TEST (phishingScan_test)
 END_TEST
 #endif
 
+#ifdef CHECK_HAVE_LOOPS
 static struct uc {
     const char *in;
     const char *host;
@@ -463,6 +464,7 @@ START_TEST (test_url_canon)
     fail_unless_fmt(!strcmp(u->path, path), "path incorrect: %s\n", path);
 }
 END_TEST
+#endif
 
 START_TEST(phishing_fake_test)
 {
@@ -519,7 +521,9 @@ Suite *test_regex_suite(void)
 	tcase_add_loop_test(tc_phish2, phishingScan_test, 0, sizeof(rtests)/sizeof(rtests[0]));
 #endif
 	tcase_add_test(tc_phish2, phishing_fake_test);
+#ifdef CHECK_HAVE_LOOPS
 	tcase_add_loop_test(tc_phish, test_url_canon, 0, sizeof(uc)/sizeof(uc[0]));
+#endif
 
 	return s;
 }
