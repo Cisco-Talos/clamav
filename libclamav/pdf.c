@@ -399,7 +399,8 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 		snprintf(fullname, sizeof(fullname), "%s/pdf%02u", dir, files);
 		fout = open(fullname, O_RDWR|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
 		if(fout < 0) {
-			cli_errmsg("cli_pdf: can't create temporary file %s: %s\n", fullname, strerror(errno));
+			char err[128];
+			cli_errmsg("cli_pdf: can't create temporary file %s: %s\n", fullname, cli_strerror(errno, err, sizeof(err)));
 			rc = CL_ETMPFILE;
 			break;
 		}

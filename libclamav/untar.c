@@ -185,10 +185,11 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 			fout = open(fullname, O_RDWR|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
 
 			if(fout < 0) {
-				cli_errmsg("cli_untar: Can't create temporary file %s: %s\n", fullname, strerror(errno));
+				char err[128];
+				cli_errmsg("cli_untar: Can't create temporary file %s: %s\n", fullname, cli_strerror(errno, err, sizeof(err)));
 				return CL_ETMPFILE;
 			}
-			
+
 			cli_dbgmsg("cli_untar: extracting to %s\n", fullname);
 
 			in_block = 1;

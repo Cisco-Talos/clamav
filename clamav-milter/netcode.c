@@ -45,14 +45,7 @@
 #include "libclamav/others.h"
 #include "netcode.h"
 
-#ifdef HAVE_STRERROR_R
-#define strerror_print(msg) \
-	strerror_r(errno, er, sizeof(er)); \
-	logg(msg": %s\n", er);
-#else
-#define strerror_print(msg) \
-	logg(msg"\n");
-#endif
+#define strerror_print(msg) logg(msg": %s\n", cli_strerror(errno, er, sizeof(er)))
 
 enum {
     NON_SMTP,

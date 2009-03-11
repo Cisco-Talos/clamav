@@ -706,6 +706,7 @@ static int in_iconv_u16(const m_area_t* in_m_area, iconv_t* iconv_struct, m_area
 	char*  input   = (char*)in_m_area->buffer + in_m_area->offset;
 	size_t outleft = out_m_area->length > 0 ? out_m_area->length : 0;
 	char* out      = (char*)out_m_area->buffer;
+	char err[128];
 
 	out_m_area->offset = 0;
 	if(!inleft) {
@@ -734,7 +735,7 @@ static int in_iconv_u16(const m_area_t* in_m_area, iconv_t* iconv_struct, m_area
 				/* not enough space in output buffer */
 				break;
 			}
-			cli_dbgmsg(MODULE_NAME "iconv error:%s\n", strerror(errno));
+			cli_dbgmsg(MODULE_NAME "iconv error:%s\n", cli_strerror(errno, err, sizeof(err)));
 		} else if(outleft == outleft_last) {
 			cli_dbgmsg(MODULE_NAME "iconv stall (no output)\n");
 		} else {

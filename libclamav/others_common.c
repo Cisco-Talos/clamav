@@ -76,7 +76,9 @@
 # ifndef HAVE_CTIME_R
 static pthread_mutex_t cli_ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
 # endif
-
+#ifndef HAVE_STRERROR_R
+static pthread_mutex_t cli_strerror_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
 #endif
 uint8_t cli_debug_flag = 0;
 
@@ -296,10 +298,11 @@ int cli_readn(int fd, void *buff, unsigned int count)
                         return (count - todo);
                 }
                 if (retval < 0) {
+			char err[128];
 			if (errno == EINTR) {
 				continue;
 			}
-			cli_errmsg("cli_readn: read error: %s\n", strerror(errno));
+			cli_errmsg("cli_readn: read error: %s\n", cli_strerror(errno, err, sizeof(err)));
                         return -1;
                 }
                 todo -= retval;
@@ -326,10 +329,11 @@ int cli_writen(int fd, const void *buff, unsigned int count)
         do {
                 retval = write(fd, current, todo);
                 if (retval < 0) {
+			char err[128];
 			if (errno == EINTR) {
 				continue;
 			}
-			cli_errmsg("cli_writen: write error: %s\n", strerror(errno));
+			cli_errmsg("cli_writen: write error: %s\n", cli_strerror(errno, err, sizeof(err)));
                         return -1;
                 }
                 todo -= retval;
@@ -679,3 +683,25 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
     }
     return ret;
 }
+
+/* strerror_r is not available everywhere, (and when it is there are two variants,
+ * the XSI, and the GNU one, so provide a wrapper to make sure correct one is
+ * used */
+const char* cli_strerror(int errnum, char *buf, size_t len)
+{
+#ifdef HAVE_STRERROR_R
+    if (strerror_r(errnum, buf, len) == -1)
+	return "strerror_r failed";
+    return buf;
+#else
+    {
+	char *err;
+	pthread_mutex_lock(&cli_strerror_mutex);
+	err = strerror(errnum);
+	strncpy(buf, err, len);
+	pthread_mutex_unlock(&cli_strerror_mutex);
+	return buf;
+    }
+#endif
+}
+

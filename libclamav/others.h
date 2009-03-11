@@ -437,4 +437,5 @@ typedef int (*cli_ftw_cb)(struct stat *stat_buf, char *filename, const char *pat
  */
 int cli_ftw(char *base, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data);
 
+const char *cli_strerror(int errnum, char* buf, size_t len);
 #endif

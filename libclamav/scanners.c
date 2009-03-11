@@ -161,7 +161,8 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx, cli_file_t container)
 				if(container == CL_TYPE_MAIL) {
 				    fd = open(fname, O_RDONLY|O_BINARY);
 				    if(fd == -1) {
-					    cli_warnmsg("Cannot open file %s: %s, mode: %x\n", fname, strerror(errno), statbuf.st_mode);
+					    char err[128];
+					    cli_warnmsg("Cannot open file %s: %s, mode: %x\n", fname, cli_strerror(errno, err, sizeof(err)), statbuf.st_mode);
 					    free(fname);
 					    continue;
 				    }

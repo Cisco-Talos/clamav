@@ -1,3 +1,8 @@
+Wed Mar 11 21:11:03 EET 2009 (edwin)
+------------------------------------
+ * clamav-milter/, clamd/, libclamav/, sigtool/, unit_tests/: 
+ strerror/strerror_r->cli_strerror which is always thread safe.
+
 Wed Mar 11 19:18:15 CET 2009 (acab)
 -----------------------------------
  * libclamav: changed some warning texts (bb#1456)

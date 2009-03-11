@@ -3744,8 +3744,9 @@ rfc1341(message *m, const char *dir)
 		struct stat statb;
 
 		if(stat(pdir, &statb) < 0) {
+			char err[128];
 			cli_errmsg("Partial directory %s: %s\n", pdir,
-				strerror(errno));
+				cli_strerror(errno, err, sizeof(err)));
 			free(id);
 			return -1;
 		}
@@ -4566,6 +4567,7 @@ nonblock_connect(SOCKET sock, const struct sockaddr_in *sin, const char *hostnam
 	struct timeval timeout;	/* When we should time out */
 	int numfd;		/* Highest fdset fd plus 1 */
 	long flags;
+	char err[128];
 
 	gettimeofday(&timeout, 0);	/* store when we started to connect */
 
@@ -4576,9 +4578,9 @@ nonblock_connect(SOCKET sock, const struct sockaddr_in *sin, const char *hostnam
 	flags = fcntl(sock, F_GETFL, 0);
 
 	if(flags == -1L)
-		cli_dbgmsg("getfl: %s\n", strerror(errno));
+		cli_dbgmsg("getfl: %s\n", cli_strerror(errno, err, sizeof(err)));
 	else if(fcntl(sock, F_SETFL, (long)(flags | O_NONBLOCK)) < 0)
-		cli_dbgmsg("setfl: %s\n", strerror(errno));
+		cli_dbgmsg("setfl: %s\n", cli_strerror(errno, err, sizeof(err)));
 #else
 	flags = -1L;
 #endif
@@ -4587,17 +4589,17 @@ nonblock_connect(SOCKET sock, const struct sockaddr_in *sin, const char *hostnam
 			case EALREADY:
 			case EINPROGRESS:
 				cli_dbgmsg("%s: connect: %s\n", hostname,
-					strerror(errno));
+					cli_strerror(errno, err, sizeof(err)));
 				break; /* wait for connection */
 			case EISCONN:
 				return 0; /* connected */
 			default:
 				cli_dbgmsg("%s: connect: %s\n",
-					hostname, strerror(errno));
+					hostname, cli_strerror(errno, err, sizeof(err)));
 #ifdef	F_SETFL
 				if(flags != -1L)
 					if(fcntl(sock, F_SETFL, flags))
-						cli_dbgmsg("f_setfl: %s\n", strerror(errno));
+						cli_dbgmsg("f_setfl: %s\n", cli_strerror(errno, err, sizeof(err)));
 #endif
 				return -1; /* failed */
 		}
@@ -4605,7 +4607,7 @@ nonblock_connect(SOCKET sock, const struct sockaddr_in *sin, const char *hostnam
 #ifdef	F_SETFL
 		if(flags != -1L)
 			if(fcntl(sock, F_SETFL, flags))
-				cli_dbgmsg("f_setfl: %s\n", strerror(errno));
+				cli_dbgmsg("f_setfl: %s\n", cli_strerror(errno, err, sizeof(err)));
 #endif
 		return connect_error(sock, hostname);
 	}
@@ -4647,7 +4649,7 @@ nonblock_connect(SOCKET sock, const struct sockaddr_in *sin, const char *hostnam
 		n = select(numfd, 0, &fds, 0, &waittime);
 		if(n < 0) {
 			cli_dbgmsg("%s: select attempt %d %s\n",
-				hostname, select_failures, strerror(errno));
+				hostname, select_failures, cli_strerror(errno, err, sizeof(err)));
 			if(--select_failures >= 0)
 				continue; /* not timed-out, try again */
 			break; /* failed */
@@ -4659,7 +4661,7 @@ nonblock_connect(SOCKET sock, const struct sockaddr_in *sin, const char *hostnam
 #ifdef	F_SETFL
 			if(flags != -1L)
 				if(fcntl(sock, F_SETFL, flags))
-					cli_dbgmsg("f_setfl: %s\n", strerror(errno));
+					cli_dbgmsg("f_setfl: %s\n", cli_strerror(errno, err, sizeof(err)));
 #endif
 			return connect_error(sock, hostname);
 		}
@@ -4674,7 +4676,7 @@ nonblock_connect(SOCKET sock, const struct sockaddr_in *sin, const char *hostnam
 #ifdef	F_SETFL
 	if(flags != -1L)
 		if(fcntl(sock, F_SETFL, flags))
-			cli_dbgmsg("f_setfl: %s\n", strerror(errno));
+			cli_dbgmsg("f_setfl: %s\n", cli_strerror(errno, err, sizeof(err)));
 #endif
 	return -1; /* failed */
 }
@@ -4682,6 +4684,7 @@ nonblock_connect(SOCKET sock, const struct sockaddr_in *sin, const char *hostnam
 static int
 connect_error(SOCKET sock, const char *hostname)
 {
+        char err[128];
 #ifdef	SO_ERROR
 	int optval;
 	socklen_t optlen = sizeof(optval);
@@ -4689,7 +4692,7 @@ connect_error(SOCKET sock, const char *hostname)
 	getsockopt(sock, SOL_SOCKET, SO_ERROR, &optval, &optlen);
 
 	if(optval) {
-		cli_dbgmsg("%s: %s\n", hostname, strerror(optval));
+		cli_dbgmsg("%s: %s\n", hostname, cli_strerror(optval, err, sizeof(err)));
 		return -1;
 	}
 #endif

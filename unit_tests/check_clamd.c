@@ -115,11 +115,7 @@ static void conn_teardown(void)
 
 #define NONEXISTENT "/nonexistent\vfilename"
 
-#ifdef HAVE_STRERROR_R
 #define NONEXISTENT_REPLY NONEXISTENT": lstat() failed: No such file or directory. ERROR"
-#else
-#define NONEXISTENT_REPLY NONEXISTENT": lstat() failed: 2. ERROR"
-#endif
 
 #define ACCDENIED BUILDDIR"/accdenied"
 #define ACCDENIED_REPLY ACCDENIED": Access denied. ERROR"

@@ -668,7 +668,8 @@ int cli_gentempfd(const char *dir, char **name, int *fd)
      * errors
      */
    if(*fd == -1) {
-	cli_errmsg("cli_gentempfd: Can't create temporary file %s: %s\n", *name, strerror(errno));
+        char err[128];
+	cli_errmsg("cli_gentempfd: Can't create temporary file %s: %s\n", *name, cli_strerror(errno, err, sizeof(err)));
 	free(*name);
 	return CL_ECREAT;
     }
@@ -682,7 +683,8 @@ int cli_gentempfd(const char *dir, char **name, int *fd)
 int cli_unlink(const char *pathname)
 {
 	if (unlink(pathname)==-1) {
-	    cli_warnmsg("cli_unlink: failure - %s\n", strerror(errno));
+	    char err[128];
+	    cli_warnmsg("cli_unlink: failure - %s\n", cli_strerror(errno, err, sizeof(err)));
 	    return 1;
 	}
 	return 0;
@@ -705,10 +707,11 @@ cli_rmdirs(const char *name)
 	    char b[offsetof(struct dirent, d_name) + NAME_MAX + 1];
 	} result;
 #endif
+	char err[128];
 
 
     if(stat(name, &statb) < 0) {
-	cli_warnmsg("cli_rmdirs: Can't locate %s: %s\n", name, strerror(errno));
+	cli_warnmsg("cli_rmdirs: Can't locate %s: %s\n", name, cli_strerror(errno, err, sizeof(err)));
 	return -1;
     }
 
@@ -753,7 +756,7 @@ cli_rmdirs(const char *name)
     closedir(dd);
 
     if(rmdir(name) < 0) {
-	cli_errmsg("cli_rmdirs: Can't remove temporary directory %s: %s\n", name, strerror(errno));
+	cli_errmsg("cli_rmdirs: Can't remove temporary directory %s: %s\n", name, cli_strerror(errno, err, sizeof(err)));
 	return -1;
     }
 
@@ -772,6 +775,7 @@ int cli_rmdirs(const char *dirname)
 #endif
 	struct stat maind, statbuf;
 	char *path;
+	char err[128];
 
 
     chmod(dirname, 0700);
@@ -779,7 +783,7 @@ int cli_rmdirs(const char *dirname)
 	while(stat(dirname, &maind) != -1) {
 	    if(!rmdir(dirname)) break;
 	    if(errno != ENOTEMPTY && errno != EEXIST && errno != EBADF) {
-		cli_errmsg("cli_rmdirs: Can't remove temporary directory %s: %s\n", dirname, strerror(errno));
+		cli_errmsg("cli_rmdirs: Can't remove temporary directory %s: %s\n", dirname, cli_strerror(errno, err, sizeof(err)));
 		closedir(dd);
 		return -1;
 	    }

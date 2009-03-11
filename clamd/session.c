@@ -26,11 +26,6 @@
 #include "clamav-config.h"
 #endif
 
-#ifdef C_LINUX
-/* We want XSI compliant strerror_r, not GNU one.*/
-#define _XOPEN_SOURCE 600
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -172,14 +167,10 @@ int conn_reply_error(const client_conn_t *conn, const char *msg)
 int conn_reply_errno(const client_conn_t *conn, const char *path,
 		     const char *msg)
 {
-    char buf[BUFFSIZE + sizeof(". ERROR")];
-#ifdef HAVE_STRERROR_R
-    strerror_r(errno, buf, BUFFSIZE-1);
-    strcat(buf, ". ERROR");
-#else
-    snprintf(buf, sizeof(buf), "%u. ERROR", errno);
-#endif
-    return conn_reply(conn, path, msg, buf);
+    char err[BUFFSIZE + sizeof(". ERROR")];
+    cli_strerror(errno, err, BUFFSIZE-1);
+    strcat(err, ". ERROR");
+    return conn_reply(conn, path, msg, err);
 }
 
 /* returns

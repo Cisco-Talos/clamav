@@ -135,6 +135,7 @@ CLAMAV_PRIVATE {
     sha256_update;
     sha256_final;
     cli_url_canon;
+    cli_strerror;
   local:
     *;
 };
