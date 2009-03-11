@@ -505,7 +505,7 @@ fileblobPartialSet(fileblob *fb, const char *fullname, const char *arg)
 	fb->fp = fdopen(fb->fd, "wb");
 
 	if(fb->fp == NULL) {
-		cli_errmsg("fileblobSetFilename: fdopen failed (%s)\n", strerror(errno));
+		cli_errmsg("fileblobSetFilename: fdopen failed\n");
 		close(fb->fd);
 		return;
 	}
@@ -548,7 +548,7 @@ fileblobSetFilename(fileblob *fb, const char *dir, const char *filename)
 	fb->fp = fdopen(fb->fd, "wb");
 
 	if(fb->fp == NULL) {
-		cli_errmsg("fileblobSetFilename: fdopen failed (%s)\n", strerror(errno));
+		cli_errmsg("fileblobSetFilename: fdopen failed\n");
 		close(fb->fd);
 		free(fullname);
 		return;
@@ -599,8 +599,8 @@ fileblobAddData(fileblob *fb, const unsigned char *data, size_t len)
 #endif
 
 		if(fwrite(data, len, 1, fb->fp) != 1) {
-			cli_errmsg("fileblobAddData: Can't write %lu bytes to temporary file %s: %s\n",
-				(unsigned long)len, fb->b.name, strerror(errno));
+			cli_errmsg("fileblobAddData: Can't write %lu bytes to temporary file %s\n",
+				(unsigned long)len, fb->b.name);
 			return -1;
 		}
 		fb->isNotEmpty = 1;

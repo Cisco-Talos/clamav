@@ -420,7 +420,7 @@ static int32_t ole2_get_sbat_data_block(int fd, ole2_header_t *hdr, void *buff, 
 	}
 	
 	if (hdr->sbat_root_start < 0) {
-		cli_errmsg("No root start block\n");
+		cli_dbgmsg("No root start block\n");
 		return FALSE;
 	}
 

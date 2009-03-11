@@ -70,7 +70,7 @@ cli_uuencode(const char *dir, int desc)
 	}
 	if(!isuuencodebegin(buffer)) {
 		fclose(fin);
-		cli_errmsg("Message is not in uuencoded format\n");
+		cli_dbgmsg("Message is not in uuencoded format\n");
 		return CL_EFORMAT;
 	}
 
@@ -85,7 +85,7 @@ cli_uuencode(const char *dir, int desc)
 	if(uudecodeFile(m, buffer, dir, fin) < 0) {
 		messageDestroy(m);
 		fclose(fin);
-		cli_errmsg("Message is not in uuencoded format\n");
+		cli_dbgmsg("Message is not in uuencoded format\n");
 		return CL_EFORMAT;
 	}
 	messageDestroy(m);

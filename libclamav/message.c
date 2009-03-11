@@ -1054,7 +1054,7 @@ messageMoveText(message *m, text *t, message *old_message)
 				u = next;
 
 				if(u == NULL) {
-					cli_errmsg("messageMoveText sanity check: t not within old_message\n");
+					cli_dbgmsg("messageMoveText sanity check: t not within old_message\n");
 					return -1;
 				}
 			}
@@ -1517,7 +1517,7 @@ messageExport(message *m, const char *dir, void *(*create)(void), void (*destroy
 
 			newret = (*create)();
 			if(newret == NULL) {
-				cli_errmsg("Not all decoding algorithms were run\n");
+				cli_dbgmsg("Not all decoding algorithms were run\n");
 				return ret;
 			}
 			(*destroy)(ret);
@@ -1857,7 +1857,7 @@ messageToText(message *m)
 				}
 				continue;
 			case UUENCODE:
-				cli_errmsg("messageToText: Unexpected attempt to handle uuencoded file - report to http://bugs.clamav.net\n");
+				cli_warnmsg("messageToText: Unexpected attempt to handle uuencoded file - report to http://bugs.clamav.net\n");
 				if(first) {
 					if(last)
 						last->t_next = NULL;

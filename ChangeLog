@@ -1,3 +1,7 @@
+Wed Mar 11 19:02:27 CET 2009 (acab)
+-----------------------------------
+ * libclamav: downgrade (bb#1456)
+
 Tue Mar 10 20:53:28 EET 2009 (edwin)
 ------------------------------------
  * unit_tests/check_regex.c: add more ifdefs for old check version.

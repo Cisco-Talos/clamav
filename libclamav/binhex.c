@@ -194,7 +194,7 @@ cli_binhex(const char *dir, int desc)
 
 	if(binhexBegin(m) == NULL) {
 		messageDestroy(m);
-		cli_errmsg("No binhex line found\n");
+		cli_dbgmsg("No binhex line found\n");
 		return CL_EFORMAT;
 	}
 
