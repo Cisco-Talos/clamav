@@ -1172,7 +1172,7 @@ static int whitelist_check(const struct cl_engine* engine,struct url_check* urls
 	return whitelist_match(engine,urls->realLink.data,urls->displayLink.data,hostOnly);
 }
 
-static int hash_match(const struct regex_matcher *rlist, const char *host, size_t hlen, const char *path, size_t plen)
+static int hash_match(const struct regex_matcher *rlist, const char *host, size_t hlen, const char *path, size_t plen, int *prefix_matched)
 {
 	const char *virname;
 #if 0
@@ -1198,9 +1198,15 @@ static int hash_match(const struct regex_matcher *rlist, const char *host, size_
 		h[2*i+1] = hexchars[sha256_dig[i]&0xf];
 	    }
 	    h[64]='\0';
-	    cli_dbgmsg("Looking up hash %s for %s%s\n", h, host, path);
-	    if(SO_search(&rlist->sha256_filter, sha256_dig, 32) != -1 &&
-	       cli_bm_scanbuff(sha256_dig, 32, &virname, &rlist->sha256_hashes,0,0,-1) == CL_VIRUS) {
+	    cli_dbgmsg("Looking up hash %s for %s(%u)%s(%u)\n", h, host, hlen, path, plen);
+	    if (prefix_matched) {
+		if (cli_bm_scanbuff(sha256_dig, 4, &virname, &rlist->hostkey_prefix,0,0,-1) == CL_VIRUS) {
+		    cli_dbgmsg("prefix matched\n", virname);
+		    *prefix_matched = 1;
+		} else
+		    return CL_SUCCESS;
+	    }
+	    if (cli_bm_scanbuff(sha256_dig, 32, &virname, &rlist->sha256_hashes,0,0,-1) == CL_VIRUS) {
 		switch(*virname) {
 		    case '1':
 			return CL_PHISH_HASH1;
@@ -1316,10 +1322,11 @@ static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, 
 	size_t path_len;
 	size_t host_len;
 	char *p;
-	int rc;
+	int rc, prefix_matched=0;
 	const char *lp[COMPONENTS+1];
 	size_t pp[COMPONENTS+2];
 	char urlbuff[URL_MAX_LEN+3];/* htmlnorm truncates at 1024 bytes + terminating null + slash + host end null */
+	unsigned count;
 
 	if(!rlist || !rlist->sha256_hashes.bm_patterns) {
 		return CL_SUCCESS;
@@ -1358,15 +1365,27 @@ static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, 
 		}
 	} else
 		k = 1;
-
-	for(ji=j;ji < COMPONENTS+1; ji++) {
-		for(ki=0;ki < k; ki++) {
-			assert(pp[ki] <= path_len);
-			rc = hash_match(rlist, lp[ji], host_begin + host_len - lp[ji] + 1, path_begin, pp[ki]);
-			if(rc) {
-				return rc;
-			}
+	count = 0;
+	for(ki=k;ki > 0;) {
+	    --ki;
+	    for(ji=COMPONENTS+1;ji > j;) {
+		/* lookup last 2 and 3 components of host, as hostkey prefix,
+		 * if not matched, shortcircuit lookups */
+		int need_prefixmatch = (count<2 && !prefix_matched) &&
+				       rlist->hostkey_prefix.bm_patterns;
+		--ji;
+		assert(pp[ki] <= path_len);
+		rc = hash_match(rlist, lp[ji], host_begin + host_len - lp[ji] + 1, path_begin, pp[ki], 
+				need_prefixmatch ? &prefix_matched : NULL);
+		if(rc) {
+		    return rc;
 		}
+		count++;
+		if (count == 2 && !prefix_matched && rlist->hostkey_prefix.bm_patterns) {
+		    cli_dbgmsg("hostkey prefix not matched, short-circuiting lookups\n");
+		    return CL_SUCCESS;
+		}
+	    }
 	}
 	return CL_SUCCESS;
 }
@@ -1394,8 +1413,11 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 	}
 
 	if(( rc = url_hash_match(engine->domainlist_matcher, urls->realLink.data, strlen(urls->realLink.data)) )) {
+	    if (rc == CL_PHISH_CLEAN)
+		cli_dbgmsg("not analyzing, not a real url: %s\n", urls->realLink.data);
+	    else
 		cli_dbgmsg("Hash matched for: %s\n", urls->realLink.data);
-		return rc;
+	    return rc;
 	}
 
 	if((rc = cleanupURLs(urls))) {

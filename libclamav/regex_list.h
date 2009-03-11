@@ -52,7 +52,7 @@ struct regex_matcher {
 	regex_t **all_pregs;
 	struct cli_matcher suffixes;
 	struct cli_matcher sha256_hashes;
-	struct filter sha256_filter;
+	struct cli_matcher hostkey_prefix;
 	struct filter filter;
 #ifdef USE_MPOOL
 	mpool_t *mempool;

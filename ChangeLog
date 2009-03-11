@@ -1,3 +1,9 @@
+Wed Mar 11 22:06:30 EET 2009 (edwin)
+------------------------------------
+ * libclamav/phishcheck.c, libclamav/regex_list.c,
+ libclamav/regex_list.h, unit_tests/check_regex.c,
+ unit_tests/input/daily.gdb: make use of hostkey prefix entries
+
 Wed Mar 11 21:27:32 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c, sigtool/Makefile.in: fix previous commit

@@ -372,12 +372,15 @@ int init_regex_list(struct regex_matcher* matcher)
 	}
 #ifdef USE_MPOOL
 	matcher->sha256_hashes.mempool = mp;
+	matcher->hostkey_prefix.mempool = mp;
 #endif
 	if((rc = cli_bm_init(&matcher->sha256_hashes))) {
 		return rc;
 	}
+	if((rc = cli_bm_init(&matcher->hostkey_prefix))) {
+		return rc;
+	}
 	SO_init(&matcher->filter);
-	SO_init(&matcher->sha256_filter);
 	return CL_SUCCESS;
 }
 
@@ -424,10 +427,11 @@ static int functionality_level_check(char* line)
 	}
 }
 
-static int add_hash(struct regex_matcher *matcher, char* pattern, const char fl)
+static int add_hash(struct regex_matcher *matcher, char* pattern, const char fl, int is_prefix)
 {
 	int rc;
 	struct cli_bm_patt *pat = mpool_calloc(matcher->mempool, 1, sizeof(*pat));
+	struct cli_matcher *bm;
 	if(!pat)
 		return CL_EMEM;
 	pat->pattern = (unsigned char*)cli_mpool_hex2str(matcher->mempool, pattern);
@@ -440,8 +444,14 @@ static int add_hash(struct regex_matcher *matcher, char* pattern, const char fl)
 		return CL_EMEM;
 	}
 	*pat->virname = fl;
-	SO_preprocess_add(&matcher->sha256_filter, pat->pattern, pat->length);
-	if((rc = cli_bm_addpatt(&matcher->sha256_hashes, pat))) {
+	if (is_prefix) {
+	    pat->length=4;
+	    bm = &matcher->hostkey_prefix;
+	} else {
+	    bm = &matcher->sha256_hashes;
+	}
+
+	if((rc = cli_bm_addpatt(bm, pat))) {
 		cli_errmsg("add_hash: failed to add BM pattern\n");
 		free(pat->pattern);
 		free(pat->virname);
@@ -542,15 +552,12 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int *sign
 				return rc==CL_EMEM ? CL_EMEM : CL_EMALFDB;
 		} else if (buffer[0] == 'S' && !is_whitelist) {
 			pattern[pattern_len] = '\0';
-			if(*pattern=='F' && pattern[1]==':') {
+			if((pattern[0]=='F' || pattern[0]=='P') && pattern[1]==':') {
 			    pattern += 2;
-			    if (( rc = add_hash(matcher, pattern, flags[0]) )) {
+			    if (( rc = add_hash(matcher, pattern, flags[0], pattern[-2] == 'P') )) {
 				cli_errmsg("Error loading at line: %d\n", line);
 				return rc==CL_EMEM ? CL_EMEM : CL_EMALFDB;
 			    }
-			} else if (*pattern=='P' && pattern[1]==':') {
-			    pattern += 2;
-			    /* TODO: hostkey prefix */
 			} else {
 			    cli_errmsg("Error loading line: %d, %c\n", line, *pattern);
 			    return CL_EMALFDB;
@@ -617,6 +624,7 @@ void regex_list_done(struct regex_matcher* matcher)
 		}
 		hashtab_free(&matcher->suffix_hash);
 		cli_bm_free(&matcher->sha256_hashes);
+		cli_bm_free(&matcher->hostkey_prefix);
 	}
 }
 

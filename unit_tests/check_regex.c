@@ -313,7 +313,7 @@ static void psetup_impl(int load2)
 		fail_unless(rc == 0, "load_regex_matcher");
 		fclose(f);
 
-		fail_unless_fmt(signo == 2, "Incorrect number of signatures: %u, expected %u", signo, 2);
+		fail_unless_fmt(signo == 4, "Incorrect number of signatures: %u, expected %u", signo, 4);
 	}
 	loaded_2 = load2;
 
