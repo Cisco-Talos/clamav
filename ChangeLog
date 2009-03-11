@@ -1,3 +1,7 @@
+Wed Mar 11 21:27:32 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c, sigtool/Makefile.in: fix previous commit
+
 Wed Mar 11 21:11:03 EET 2009 (edwin)
 ------------------------------------
  * clamav-milter/, clamd/, libclamav/, sigtool/, unit_tests/: 

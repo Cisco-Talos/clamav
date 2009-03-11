@@ -81,6 +81,7 @@
 #include <limits.h>
 #include "shared/optparser.h"
 #include "shared/output.h"
+#include "libclamav/others.h"
 
 #include "session.h"
 #include "others.h"
