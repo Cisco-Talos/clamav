@@ -1857,7 +1857,7 @@ messageToText(message *m)
 				}
 				continue;
 			case UUENCODE:
-				cli_warnmsg("messageToText: Unexpected attempt to handle uuencoded file - report to http://bugs.clamav.net\n");
+				cli_warnmsg("messageToText: Unexpected attempt to handle uuencoded file\n");
 				if(first) {
 					if(last)
 						last->t_next = NULL;

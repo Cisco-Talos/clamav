@@ -2811,7 +2811,7 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 
 		if(messages) {
 			/* "can't happen" */
-			cli_warnmsg("messages != NULL, report to http://bugs.clamav.net\n");
+			cli_warnmsg("messages != NULL\n");
 			free(messages);
 		}
 	}
