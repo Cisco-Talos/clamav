@@ -1,3 +1,7 @@
+Wed Mar 11 22:10:22 EET 2009 (edwin)
+------------------------------------
+ * libclamav/phishcheck.c: fix warnings
+
 Wed Mar 11 22:06:30 EET 2009 (edwin)
 ------------------------------------
  * libclamav/phishcheck.c, libclamav/regex_list.c,

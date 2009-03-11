@@ -1198,10 +1198,10 @@ static int hash_match(const struct regex_matcher *rlist, const char *host, size_
 		h[2*i+1] = hexchars[sha256_dig[i]&0xf];
 	    }
 	    h[64]='\0';
-	    cli_dbgmsg("Looking up hash %s for %s(%u)%s(%u)\n", h, host, hlen, path, plen);
+	    cli_dbgmsg("Looking up hash %s for %s(%u)%s(%u)\n", h, host, (unsigned)hlen, path, (unsigned)plen);
 	    if (prefix_matched) {
 		if (cli_bm_scanbuff(sha256_dig, 4, &virname, &rlist->hostkey_prefix,0,0,-1) == CL_VIRUS) {
-		    cli_dbgmsg("prefix matched\n", virname);
+		    cli_dbgmsg("prefix matched\n");
 		    *prefix_matched = 1;
 		} else
 		    return CL_SUCCESS;
