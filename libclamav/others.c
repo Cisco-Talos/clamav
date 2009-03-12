@@ -146,6 +146,8 @@ const char *cl_strerror(int clerror)
 	    return "Virus(es) detected";
 	case CL_ENULLARG:
 	    return "Null argument passed to function";
+	case CL_EARG:
+	    return "Invalid argument passed to function";
 	case CL_EMALFDB:
 	    return "Malformed database";
 	case CL_ECVD:
@@ -196,7 +198,7 @@ const char *cl_strerror(int clerror)
     }
 }
 
-int cl_init(unsigned int options)
+int cl_init(unsigned int initoptions)
 {
     /* put dlopen() stuff here, etc. */
     cli_rarload();
@@ -260,121 +262,149 @@ struct cl_engine *cl_engine_new(void)
     return new;
 }
 
-int cl_engine_set(struct cl_engine *engine, enum cl_engine_field field, const void *val)
+int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long long num)
 {
-    if(!engine || !val)
+    if(!engine)
 	return CL_ENULLARG;
 
+    /* TODO: consider adding checks and warn/errs when num overflows the
+     * destination type
+     */
     switch(field) {
 	case CL_ENGINE_MAX_SCANSIZE:
-	    engine->maxscansize = *((const uint64_t *) val);
+	    engine->maxscansize = num;
 	    break;
 	case CL_ENGINE_MAX_FILESIZE:
-	    engine->maxfilesize = *((const uint64_t *) val);
+	    engine->maxfilesize = num;
 	    break;
 	case CL_ENGINE_MAX_RECURSION:
-	    engine->maxreclevel = *((const uint32_t *) val);
+	    engine->maxreclevel = num;
 	    break;
 	case CL_ENGINE_MAX_FILES:
-	    engine->maxfiles = *((const uint32_t *) val);
+	    engine->maxfiles = num;
 	    break;
 	case CL_ENGINE_MIN_CC_COUNT:
-	    engine->min_cc_count = *((const uint32_t *) val);
+	    engine->min_cc_count = num;
 	    break;
 	case CL_ENGINE_MIN_SSN_COUNT:
-	    engine->min_ssn_count = *((const uint32_t *) val);
-	    break;
-	case CL_ENGINE_PUA_CATEGORIES:
-	    engine->pua_cats = cli_mpool_strdup(engine->mempool, (const char *) val);
-	    if(!engine->pua_cats)
-		return CL_EMEM;
+	    engine->min_ssn_count = num;
 	    break;
 	case CL_ENGINE_DB_VERSION:
 	case CL_ENGINE_DB_TIME:
-	    cli_warnmsg("cl_engine_set: The field is read only\n");
-	    break;
+	    cli_warnmsg("cl_engine_set_num: The field is read only\n");
+	    return CL_EARG;
 	case CL_ENGINE_AC_ONLY:
-	    engine->ac_only = *((const uint32_t *) val);
+	    engine->ac_only = num;
 	    break;
 	case CL_ENGINE_AC_MINDEPTH:
-	    engine->ac_mindepth = *((const uint32_t *) val);
+	    engine->ac_mindepth = num;
 	    break;
 	case CL_ENGINE_AC_MAXDEPTH:
-	    engine->ac_maxdepth = *((const uint32_t *) val);
-	    break;
-	case CL_ENGINE_TMPDIR:
-	    engine->tmpdir = cli_mpool_strdup(engine->mempool, (const char *) val);
-	    if(!engine->tmpdir)
-		return CL_EMEM;
+	    engine->ac_maxdepth = num;
 	    break;
 	case CL_ENGINE_KEEPTMP:
-	    engine->keeptmp = *((const uint32_t *) val);
+	    engine->keeptmp = num;
 	    break;
 	default:
-	    cli_errmsg("cl_engine_set: Incorrect field number\n");
-	    return CL_ENULLARG; /* FIXME */
+	    cli_errmsg("cl_engine_set_num: Incorrect field number\n");
+	    return CL_EARG;
     }
 
     return CL_SUCCESS;
 }
 
-int cl_engine_get(const struct cl_engine *engine, enum cl_engine_field field, void *val)
+long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field field, int *err)
 {
-    if(!engine || !val)
-	return CL_ENULLARG;
+    if(!engine) {
+	cli_errmsg("cl_engine_get_num: engine == NULL\n");
+	if(err)
+	    *err = CL_ENULLARG;
+	return -1;
+    }
+
+    if(err)
+	*err = CL_SUCCESS;
 
     switch(field) {
 	case CL_ENGINE_MAX_SCANSIZE:
-	    *((uint64_t *) val) = engine->maxscansize;
-	    break;
+	    return engine->maxscansize;
 	case CL_ENGINE_MAX_FILESIZE:
-	    *((uint64_t *) val) = engine->maxfilesize;
-	    break;
+	    return engine->maxfilesize;
 	case CL_ENGINE_MAX_RECURSION:
-	    *((uint32_t *) val) = engine->maxreclevel;
-	    break;
+	    return engine->maxreclevel;
 	case CL_ENGINE_MAX_FILES:
-	    *((uint32_t *) val) = engine->maxfiles;
-	    break;
+	    return engine->maxfiles;
 	case CL_ENGINE_MIN_CC_COUNT:
-	    *((uint32_t *) val) = engine->min_cc_count;
-	    break;
+	    return engine->min_cc_count;
 	case CL_ENGINE_MIN_SSN_COUNT:
-	    *((uint32_t *) val) = engine->min_ssn_count;
-	    break;
-	case CL_ENGINE_PUA_CATEGORIES:
-	    if(engine->pua_cats)
-		strncpy((char *) val, engine->pua_cats, 128);
-	    break;
+	    return engine->min_ssn_count;
 	case CL_ENGINE_DB_VERSION:
-	    *((uint32_t *) val) = engine->dbversion[0];
-	    break;
+	    return engine->dbversion[0];
 	case CL_ENGINE_DB_TIME:
-	    /* time_t may be 64-bit! */
-	    *((time_t *) val) = engine->dbversion[1];
-	    break;
+	    return engine->dbversion[1];
 	case CL_ENGINE_AC_ONLY:
-	    *((uint32_t *) val) = engine->ac_only;
-	    break;
+	    return engine->ac_only;
 	case CL_ENGINE_AC_MINDEPTH:
-	    *((uint32_t *) val) = engine->ac_mindepth;
-	    break;
+	    return engine->ac_mindepth;
 	case CL_ENGINE_AC_MAXDEPTH:
-	    *((uint32_t *) val) = engine->ac_maxdepth;
-	    break;
-	case CL_ENGINE_TMPDIR:
-	    if(engine->tmpdir)
-		strncpy((char *) val, engine->tmpdir, 128);
-	    break;
+	    return engine->ac_maxdepth;
 	case CL_ENGINE_KEEPTMP:
-	    *((uint32_t *) val) = engine->keeptmp;
-	    break;
+	    return engine->keeptmp;
 	default:
 	    cli_errmsg("cl_engine_get: Incorrect field number\n");
-	    return CL_ENULLARG; /* FIXME */
+	    if(err)
+		*err = CL_EARG;
+	    return -1;
+    }
+}
+
+int cl_engine_set_str(struct cl_engine *engine, enum cl_engine_field field, const char *str)
+{
+    if(!engine)
+	return CL_ENULLARG;
+
+    switch(field) {
+	case CL_ENGINE_PUA_CATEGORIES:
+	    engine->pua_cats = cli_mpool_strdup(engine->mempool, str);
+	    if(!engine->pua_cats)
+		return CL_EMEM;
+	    break;
+	case CL_ENGINE_TMPDIR:
+	    engine->tmpdir = cli_mpool_strdup(engine->mempool, str);
+	    if(!engine->tmpdir)
+		return CL_EMEM;
+	    break;
+	default:
+	    cli_errmsg("cl_engine_set_num: Incorrect field number\n");
+	    return CL_EARG;
     }
 
     return CL_SUCCESS;
+}
+
+const char *cl_engine_get_str(const struct cl_engine *engine, enum cl_engine_field field, int *err)
+{
+    if(!engine) {
+	cli_errmsg("cl_engine_get_str: engine == NULL\n");
+	if(err)
+	    *err = CL_ENULLARG;
+	return NULL;
+    }
+
+    if(err)
+	*err = CL_SUCCESS;
+
+    switch(field) {
+	case CL_ENGINE_PUA_CATEGORIES:
+	    return engine->pua_cats;
+	case CL_ENGINE_TMPDIR:
+	    return engine->tmpdir;
+	default:
+	    cli_errmsg("cl_engine_get: Incorrect field number\n");
+	    if(err)
+		*err = CL_EARG;
+	    return NULL;
+    }
 }
 
 struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine)

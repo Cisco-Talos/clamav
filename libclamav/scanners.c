@@ -2114,7 +2114,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     }
 }
 
-int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options)
+int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions)
 {
     cli_ctx ctx;
     int rc;
@@ -2123,7 +2123,7 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     ctx.engine = engine;
     ctx.virname = virname;
     ctx.scanned = scanned;
-    ctx.options = options;
+    ctx.options = scanoptions;
     ctx.found_possibly_unwanted = 0;
     ctx.dconf = (struct cli_dconf *) engine->dconf;
 
@@ -2168,7 +2168,7 @@ static int cli_scanfile(const char *filename, cli_ctx *ctx)
     return ret;
 }
 
-int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options)
+int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions)
 {
 	int fd, ret;
 
@@ -2176,7 +2176,7 @@ int cl_scanfile(const char *filename, const char **virname, unsigned long int *s
     if((fd = open(filename, O_RDONLY|O_BINARY)) == -1)
 	return CL_EOPEN;
 
-    ret = cl_scandesc(fd, virname, scanned, engine, options);
+    ret = cl_scandesc(fd, virname, scanned, engine, scanoptions);
     close(fd);
 
     return ret;

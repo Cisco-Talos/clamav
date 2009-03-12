@@ -1,3 +1,8 @@
+Thu Mar 12 16:22:36 CET 2009 (tk)
+---------------------------------
+ * libclamav, clamd, clamscan: replace cl_engine_(set|get) with
+   cl_engine_set_(num|str) and cl_engine_get_(num|str)
+
 Thu Mar 12 16:57:45 EET 2009 (edwin)
 ------------------------------------
  * libclamav/others_common.c: typo

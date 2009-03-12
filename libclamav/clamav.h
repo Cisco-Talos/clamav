@@ -38,6 +38,7 @@ typedef enum {
     CL_SUCCESS = 0,
     CL_VIRUS,
     CL_ENULLARG,
+    CL_EARG,
     CL_EMALFDB,
     CL_ECVD,
     CL_EVERIFY,
@@ -110,7 +111,7 @@ struct cl_engine;
 struct cl_settings;
 
 #define CL_INIT_DEFAULT	0x0
-extern int cl_init(unsigned int options);
+extern int cl_init(unsigned int initoptions);
 
 extern struct cl_engine *cl_engine_new(void);
 
@@ -131,9 +132,13 @@ enum cl_engine_field {
     CL_ENGINE_KEEPTMP		    /* uint32_t */
 };
 
-extern int cl_engine_set(struct cl_engine *engine, enum cl_engine_field field, const void *val);
+extern int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long long num);
 
-extern int cl_engine_get(const struct cl_engine *engine, enum cl_engine_field field, void *val);
+long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field field, int *err);
+
+int cl_engine_set_str(struct cl_engine *engine, enum cl_engine_field field, const char *str);
+
+const char *cl_engine_get_str(const struct cl_engine *engine, enum cl_engine_field field, int *err);
 
 extern struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine);
 
@@ -168,12 +173,12 @@ struct cl_cvd {		    /* field no. */
 };
 
 /* file scanning */
-extern int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options);
+extern int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions);
 
-extern int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options);
+extern int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions);
 
 /* database handling */
-extern int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, unsigned int options);
+extern int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, unsigned int dboptions);
 extern const char *cl_retdbdir(void);
 
 /* engine handling */

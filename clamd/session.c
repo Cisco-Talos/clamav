@@ -407,12 +407,12 @@ static int print_ver(int desc, char term, const struct cl_engine *engine)
 {
     uint32_t ver;
 
-    cl_engine_get(engine, CL_ENGINE_DB_VERSION, &ver);
+    ver = cl_engine_get_num(engine, CL_ENGINE_DB_VERSION, NULL);
     if(ver) {
 	char timestr[32];
 	const char *tstr;
 	time_t t;
-	cl_engine_get(engine, CL_ENGINE_DB_TIME, &t);
+	t = cl_engine_get_num(engine, CL_ENGINE_DB_TIME, NULL);
 	tstr = cli_ctime(&t, timestr, sizeof(timestr));
 	/* cut trailing \n */
 	timestr[strlen(tstr)-1] = '\0';

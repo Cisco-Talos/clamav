@@ -106,7 +106,6 @@ int main(int argc, char **argv)
 	unsigned int sigs = 0;
 	int lsockets[2], nlsockets = 0;
 	unsigned int dboptions = 0;
-	uint32_t val32;
 #ifdef C_LINUX
 	struct stat sb;
 #endif
@@ -365,8 +364,8 @@ int main(int argc, char **argv)
 	}
 
 	if(pua_cats) {
-	    if((ret = cl_engine_set(engine, CL_ENGINE_PUA_CATEGORIES, pua_cats))) {
-		logg("!cli_engine_set(CL_ENGINE_PUA_CATEGORIES) failed: %s\n", cl_strerror(ret));
+	    if((ret = cl_engine_set_str(engine, CL_ENGINE_PUA_CATEGORIES, pua_cats))) {
+		logg("!cli_engine_set_str(CL_ENGINE_PUA_CATEGORIES) failed: %s\n", cl_strerror(ret));
 		free(pua_cats);
 		ret = 1;
 		break;
@@ -379,17 +378,15 @@ int main(int argc, char **argv)
 
     /* set the temporary dir */
     if((opt = optget(opts, "TemporaryDirectory"))->enabled) {
-	if((ret = cl_engine_set(engine, CL_ENGINE_TMPDIR, opt->strarg))) {
-	    logg("!cli_engine_set(CL_ENGINE_TMPDIR) failed: %s\n", cl_strerror(ret));
+	if((ret = cl_engine_set_str(engine, CL_ENGINE_TMPDIR, opt->strarg))) {
+	    logg("!cli_engine_set_str(CL_ENGINE_TMPDIR) failed: %s\n", cl_strerror(ret));
 	    ret = 1;
 	    break;
 	}
     }
 
-    if(optget(opts, "LeaveTemporaryFiles")->enabled) {
-	val32 = 1;
-	cl_engine_set(engine, CL_ENGINE_KEEPTMP, &val32);
-    }
+    if(optget(opts, "LeaveTemporaryFiles")->enabled)
+	cl_engine_set_num(engine, CL_ENGINE_KEEPTMP, 1);
 
     if(optget(opts, "PhishingSignatures")->enabled)
 	dboptions |= CL_DB_PHISHING;
@@ -403,13 +400,11 @@ int main(int argc, char **argv)
 
     if(optget(opts,"DevACOnly")->enabled) {
 	logg("#Only using the A-C matcher.\n");
-        val32 = 1;
-	cl_engine_set(engine, CL_ENGINE_AC_ONLY, &val32);
+	cl_engine_set_num(engine, CL_ENGINE_AC_ONLY, 1);
     }
 
     if((opt = optget(opts, "DevACDepth"))->enabled) {
-	val32 = opt->numarg;
-        cl_engine_set(engine, CL_ENGINE_AC_MAXDEPTH, &val32);
+        cl_engine_set_num(engine, CL_ENGINE_AC_MAXDEPTH, opt->numarg);
 	logg("#Max A-C depth set to %u\n", opt->numarg);
     }
 

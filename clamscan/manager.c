@@ -337,8 +337,6 @@ int scanmanager(const struct optstruct *opts)
 #ifndef C_WINDOWS
 	struct rlimit rlim;
 #endif
-	uint64_t val64;
-	uint32_t val32;
 
     if(optget(opts, "phishing-sigs")->enabled)
 	dboptions |= CL_DB_PHISHING;
@@ -400,8 +398,8 @@ int scanmanager(const struct optstruct *opts)
 	}
 
 	if(pua_cats) {
-	    if((ret = cl_engine_set(engine, CL_ENGINE_PUA_CATEGORIES, pua_cats))) {
-		logg("!cli_engine_set(CL_ENGINE_PUA_CATEGORIES) failed: %s\n", cl_strerror(ret));
+	    if((ret = cl_engine_set_str(engine, CL_ENGINE_PUA_CATEGORIES, pua_cats))) {
+		logg("!cli_engine_set_str(CL_ENGINE_PUA_CATEGORIES) failed: %s\n", cl_strerror(ret));
 		free(pua_cats);
 		cl_engine_free(engine);
 		return 50;
@@ -410,24 +408,18 @@ int scanmanager(const struct optstruct *opts)
 	}
     }
 
-    if(optget(opts, "dev-ac-only")->enabled) {
-	val32 = 1;
-	cl_engine_set(engine, CL_ENGINE_AC_ONLY, &val32);
-    }
+    if(optget(opts, "dev-ac-only")->enabled)
+	cl_engine_set_num(engine, CL_ENGINE_AC_ONLY, 1);
 
-    if(optget(opts, "dev-ac-depth")->enabled) {
-	val32 = optget(opts, "dev-ac-depth")->numarg;
-	cl_engine_set(engine, CL_ENGINE_AC_MAXDEPTH, &val32);
-    }
+    if(optget(opts, "dev-ac-depth")->enabled)
+	cl_engine_set_num(engine, CL_ENGINE_AC_MAXDEPTH, optget(opts, "dev-ac-depth")->numarg);
 
-    if(optget(opts, "leave-temps")->enabled) {
-	val32 = 1;
-	cl_engine_set(engine, CL_ENGINE_KEEPTMP, &val32);
-    }
+    if(optget(opts, "leave-temps")->enabled)
+	cl_engine_set_num(engine, CL_ENGINE_KEEPTMP, 1);
 
     if((opt = optget(opts, "tempdir"))->enabled) {
-	if((ret = cl_engine_set(engine, CL_ENGINE_TMPDIR, opt->strarg))) {
-	    logg("!cli_engine_set(CL_ENGINE_TMPDIR) failed: %s\n", cl_strerror(ret));
+	if((ret = cl_engine_set_str(engine, CL_ENGINE_TMPDIR, opt->strarg))) {
+	    logg("!cli_engine_set_str(CL_ENGINE_TMPDIR) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
 	    return 50;
 	}
@@ -461,18 +453,16 @@ int scanmanager(const struct optstruct *opts)
     /* set limits */
 
     if((opt = optget(opts, "max-scansize"))->enabled) {
-	val64 = opt->numarg;
-	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_SCANSIZE, &val64))) {
-	    logg("!cli_engine_set(CL_ENGINE_MAX_SCANSIZE) failed: %s\n", cl_strerror(ret));
+	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANSIZE, opt->numarg))) {
+	    logg("!cli_engine_set_num(CL_ENGINE_MAX_SCANSIZE) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
 	    return 50;
 	}
     }
 
     if((opt = optget(opts, "max-filesize"))->enabled) {
-	val64 = opt->numarg;
-	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_FILESIZE, &val64))) {
-	    logg("!cli_engine_set(CL_ENGINE_MAX_FILESIZE) failed: %s\n", cl_strerror(ret));
+	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_FILESIZE, opt->numarg))) {
+	    logg("!cli_engine_set_num(CL_ENGINE_MAX_FILESIZE) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
 	    return 50;
 	}
@@ -480,11 +470,9 @@ int scanmanager(const struct optstruct *opts)
 
 #ifndef C_WINDOWS
     if(getrlimit(RLIMIT_FSIZE, &rlim) == 0) {
-	cl_engine_get(engine, CL_ENGINE_MAX_FILESIZE, &val64);
-	if(rlim.rlim_max < val64)
+	if(rlim.rlim_max < (rlim_t) cl_engine_get_num(engine, CL_ENGINE_MAX_FILESIZE, NULL))
 	    logg("^System limit for file size is lower than engine->maxfilesize\n");
-	cl_engine_get(engine, CL_ENGINE_MAX_SCANSIZE, &val64);
-	if(rlim.rlim_max < val64)
+	if(rlim.rlim_max < (rlim_t) cl_engine_get_num(engine, CL_ENGINE_MAX_SCANSIZE, NULL))
 	    logg("^System limit for file size is lower than engine->maxscansize\n");
     } else {
 	logg("^Cannot obtain resource limits for file size\n");
@@ -492,18 +480,16 @@ int scanmanager(const struct optstruct *opts)
 #endif
 
     if((opt = optget(opts, "max-files"))->enabled) {
-	val32 = opt->numarg;
-	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_FILES, &val32))) {
-	    logg("!cli_engine_set(CL_ENGINE_MAX_FILES) failed: %s\n", cl_strerror(ret));
+	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_FILES, opt->numarg))) {
+	    logg("!cli_engine_set_num(CL_ENGINE_MAX_FILES) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
 	    return 50;
 	}
     }
 
     if((opt = optget(opts, "max-recursion"))->enabled) {
-	val32 = opt->numarg;
-	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_RECURSION, &val32))) {
-	    logg("!cli_engine_set(CL_ENGINE_MAX_RECURSION) failed: %s\n", cl_strerror(ret));
+	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_RECURSION, opt->numarg))) {
+	    logg("!cli_engine_set_num(CL_ENGINE_MAX_RECURSION) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
 	    return 50;
 	}
@@ -576,18 +562,16 @@ int scanmanager(const struct optstruct *opts)
 	}
 
 	if((opt = optget(opts, "structured-ssn-count"))->enabled) {
-	    val32 = opt->numarg;
-	    if((ret = cl_engine_set(engine, CL_ENGINE_MIN_SSN_COUNT, &val32))) {
-		logg("!cli_engine_set(CL_ENGINE_MIN_SSN_COUNT) failed: %s\n", cl_strerror(ret));
+	    if((ret = cl_engine_set_num(engine, CL_ENGINE_MIN_SSN_COUNT, opt->numarg))) {
+		logg("!cli_engine_set_num(CL_ENGINE_MIN_SSN_COUNT) failed: %s\n", cl_strerror(ret));
 		cl_engine_free(engine);
 		return 50;
 	    }
 	}
 
 	if((opt = optget(opts, "structured-cc-count"))->enabled) {
-	    val32 = opt->numarg;
-	    if((ret = cl_engine_set(engine, CL_ENGINE_MIN_CC_COUNT, &val32))) {
-		logg("!cli_engine_set(CL_ENGINE_MIN_CC_COUNT) failed: %s\n", cl_strerror(ret));
+	    if((ret = cl_engine_set_num(engine, CL_ENGINE_MIN_CC_COUNT, opt->numarg))) {
+		logg("!cli_engine_set_num(CL_ENGINE_MIN_CC_COUNT) failed: %s\n", cl_strerror(ret));
 		cl_engine_free(engine);
 		return 50;
 	    }

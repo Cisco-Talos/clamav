@@ -692,8 +692,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	char buff[BUFFSIZE + 1];
 	pid_t mainpid;
 	int idletimeout;
-	uint32_t val32;
-	uint64_t val64;
+	unsigned long long val;
 	size_t i, j, rr_last = 0;
 	pthread_t accept_th;
 	struct acceptdata acceptdata = ACCEPTDATA_INIT;
@@ -714,40 +713,36 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 
     /* set up limits */
     if((opt = optget(opts, "MaxScanSize"))->enabled) {
-	val64 = opt->numarg;
-	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_SCANSIZE, &val64))) {
-	    logg("!cli_engine_set(CL_ENGINE_MAX_SCANSIZE) failed: %s\n", cl_strerror(ret));
+	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANSIZE, opt->numarg))) {
+	    logg("!cl_engine_set_num(CL_ENGINE_MAX_SCANSIZE) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
 	    return 1;
 	}
     }
-    cl_engine_get(engine, CL_ENGINE_MAX_SCANSIZE, &val64);
-    if(val64)
-    	logg("Limits: Global size limit set to %llu bytes.\n", (unsigned long long) val64);
+    val = cl_engine_get_num(engine, CL_ENGINE_MAX_SCANSIZE, NULL);
+    if(val)
+    	logg("Limits: Global size limit set to %llu bytes.\n", val);
     else
     	logg("^Limits: Global size limit protection disabled.\n");
 
     if((opt = optget(opts, "MaxFileSize"))->enabled) {
-	val64 = opt->numarg;
-	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_FILESIZE, &val64))) {
-	    logg("!cli_engine_set(CL_ENGINE_MAX_FILESIZE) failed: %s\n", cl_strerror(ret));
+	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_FILESIZE, opt->numarg))) {
+	    logg("!cl_engine_set_num(CL_ENGINE_MAX_FILESIZE) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
 	    return 1;
 	}
     }
-    cl_engine_get(engine, CL_ENGINE_MAX_FILESIZE, &val64);
-    if(val64)
-    	logg("Limits: File size limit set to %llu bytes.\n", (unsigned long long) val64);
+    val = cl_engine_get_num(engine, CL_ENGINE_MAX_FILESIZE, NULL);
+    if(val)
+    	logg("Limits: File size limit set to %llu bytes.\n", val);
     else
     	logg("^Limits: File size limit protection disabled.\n");
 
 #ifndef C_WINDOWS
     if(getrlimit(RLIMIT_FSIZE, &rlim) == 0) {
-	cl_engine_get(engine, CL_ENGINE_MAX_FILESIZE, &val64);
-	if(rlim.rlim_max < val64)
+	if(rlim.rlim_max < (rlim_t) cl_engine_get_num(engine, CL_ENGINE_MAX_FILESIZE, NULL))
 	    logg("^System limit for file size is lower than engine->maxfilesize\n");
-	cl_engine_get(engine, CL_ENGINE_MAX_SCANSIZE, &val64);
-	if(rlim.rlim_max < val64)
+	if(rlim.rlim_max < (rlim_t) cl_engine_get_num(engine, CL_ENGINE_MAX_SCANSIZE, NULL))
 	    logg("^System limit for file size is lower than engine->maxscansize\n");
     } else {
 	logg("^Cannot obtain resource limits for file size\n");
@@ -755,30 +750,28 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 #endif
 
     if((opt = optget(opts, "MaxRecursion"))->enabled) {
-	val32 = opt->numarg;
-	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_RECURSION, &val32))) {
-	    logg("!cli_engine_set(CL_ENGINE_MAX_RECURSION) failed: %s\n", cl_strerror(ret));
+	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_RECURSION, opt->numarg))) {
+	    logg("!cl_engine_set_num(CL_ENGINE_MAX_RECURSION) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
 	    return 1;
 	}
     }
-    cl_engine_get(engine, CL_ENGINE_MAX_RECURSION, &val32);
-    if(val32)
-    	logg("Limits: Recursion level limit set to %u.\n", (unsigned int) val32);
+    val = cl_engine_get_num(engine, CL_ENGINE_MAX_RECURSION, NULL);
+    if(val)
+    	logg("Limits: Recursion level limit set to %u.\n", (unsigned int) val);
     else
     	logg("^Limits: Recursion level limit protection disabled.\n");
 
     if((opt = optget(opts, "MaxFiles"))->enabled) {
-	val32 = opt->numarg;
-	if((ret = cl_engine_set(engine, CL_ENGINE_MAX_FILES, &val32))) {
-	    logg("!cli_engine_set(CL_ENGINE_MAX_FILES) failed: %s\n", cl_strerror(ret));
+	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_FILES, opt->numarg))) {
+	    logg("!cl_engine_set_num(CL_ENGINE_MAX_FILES) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
 	    return 1;
 	}
     }
-    cl_engine_get(engine, CL_ENGINE_MAX_FILES, &val32);
-    if(val32)
-    	logg("Limits: Files limit set to %u.\n", (unsigned int) val32);
+    val = cl_engine_get_num(engine, CL_ENGINE_MAX_FILES, NULL);
+    if(val)
+    	logg("Limits: Files limit set to %u.\n", (unsigned int) val);
     else
     	logg("^Limits: Files limit protection disabled.\n");
 
@@ -885,26 +878,24 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
         options |= CL_SCAN_STRUCTURED;
 
 	if((opt = optget(opts, "StructuredMinCreditCardCount"))->enabled) {
-	    val32 = opt->numarg;
-	    if((ret = cl_engine_set(engine, CL_ENGINE_MIN_CC_COUNT, &val32))) {
-		logg("!cli_engine_set(CL_ENGINE_MIN_CC_COUNT) failed: %s\n", cl_strerror(ret));
+	    if((ret = cl_engine_set_num(engine, CL_ENGINE_MIN_CC_COUNT, opt->numarg))) {
+		logg("!cl_engine_set_num(CL_ENGINE_MIN_CC_COUNT) failed: %s\n", cl_strerror(ret));
 		cl_engine_free(engine);
 		return 1;
 	    }
 	}
-	cl_engine_get(engine, CL_ENGINE_MIN_CC_COUNT, &val32);
-	logg("Structured: Minimum Credit Card Number Count set to %u\n", (unsigned int) val32);
+	val = cl_engine_get_num(engine, CL_ENGINE_MIN_CC_COUNT, NULL);
+	logg("Structured: Minimum Credit Card Number Count set to %u\n", (unsigned int) val);
 
 	if((opt = optget(opts, "StructuredMinSSNCount"))->enabled) {
-	    val32 = opt->numarg;
-	    if((ret = cl_engine_set(engine, CL_ENGINE_MIN_SSN_COUNT, &val32))) {
-		logg("!cli_engine_set(CL_ENGINE_MIN_SSN_COUNT) failed: %s\n", cl_strerror(ret));
+	    if((ret = cl_engine_set_num(engine, CL_ENGINE_MIN_SSN_COUNT, opt->numarg))) {
+		logg("!cl_engine_set_num(CL_ENGINE_MIN_SSN_COUNT) failed: %s\n", cl_strerror(ret));
 		cl_engine_free(engine);
 		return 1;
 	    }
 	}
-	cl_engine_get(engine, CL_ENGINE_MIN_SSN_COUNT, &val32);
-        logg("Structured: Minimum Social Security Number Count set to %u\n", (unsigned int) val32);
+	val = cl_engine_get_num(engine, CL_ENGINE_MIN_SSN_COUNT, NULL);
+        logg("Structured: Minimum Social Security Number Count set to %u\n", (unsigned int) val);
 
         if(optget(opts, "StructuredSSNFormatNormal")->enabled)
             options |= CL_SCAN_STRUCTURED_SSN_NORMAL;

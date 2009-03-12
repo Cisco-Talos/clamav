@@ -1639,7 +1639,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
     return ret;
 }
 
-int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, unsigned int options)
+int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, unsigned int dboptions)
 {
 	struct stat sb;
 	int ret;
@@ -1654,19 +1654,19 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
         return CL_ESTAT;
     }
 
-    if((options & CL_DB_PHISHING_URLS) && !engine->phishcheck && (engine->dconf->phishing & PHISHING_CONF_ENGINE))
+    if((dboptions & CL_DB_PHISHING_URLS) && !engine->phishcheck && (engine->dconf->phishing & PHISHING_CONF_ENGINE))
 	if((ret = phishing_init(engine)))
 	    return ret;
 
-    engine->dboptions = options;
+    engine->dboptions = dboptions;
 
     switch(sb.st_mode & S_IFMT) {
 	case S_IFREG: 
-	    ret = cli_load(path, engine, signo, options, NULL);
+	    ret = cli_load(path, engine, signo, dboptions, NULL);
 	    break;
 
 	case S_IFDIR:
-	    ret = cli_loaddbdir(path, engine, signo, options);
+	    ret = cli_loaddbdir(path, engine, signo, dboptions);
 	    break;
 
 	default:
