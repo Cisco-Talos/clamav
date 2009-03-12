@@ -134,11 +134,11 @@ enum cl_engine_field {
 
 extern int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long long num);
 
-long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field field, int *err);
+extern long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field field, int *err);
 
-int cl_engine_set_str(struct cl_engine *engine, enum cl_engine_field field, const char *str);
+extern int cl_engine_set_str(struct cl_engine *engine, enum cl_engine_field field, const char *str);
 
-const char *cl_engine_get_str(const struct cl_engine *engine, enum cl_engine_field field, int *err);
+extern const char *cl_engine_get_str(const struct cl_engine *engine, enum cl_engine_field field, int *err);
 
 extern struct cl_settings *cl_engine_settings_copy(const struct cl_engine *engine);
 
