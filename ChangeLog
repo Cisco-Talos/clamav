@@ -1,3 +1,7 @@
+Thu Mar 12 17:55:13 EET 2009 (edwin)
+------------------------------------
+ * libclamav/others_common.c: fix
+
 Thu Mar 12 17:52:31 EET 2009 (edwin)
 ------------------------------------
  * libclamav/others_common.c: use just mutex+strerror

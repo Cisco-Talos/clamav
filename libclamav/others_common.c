@@ -76,9 +76,7 @@
 # ifndef HAVE_CTIME_R
 static pthread_mutex_t cli_ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
 # endif
-#ifndef HAVE_STRERROR_R
 static pthread_mutex_t cli_strerror_mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
 #endif
 uint8_t cli_debug_flag = 0;
 
