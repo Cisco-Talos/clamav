@@ -688,10 +688,14 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 const char* cli_strerror(int errnum, char *buf, size_t len)
 {
     char *err;
+# ifdef CL_THREAD_SAFE
     pthread_mutex_lock(&cli_strerror_mutex);
+#endif
     err = strerror(errnum);
     strncpy(buf, err, len);
+# ifdef CL_THREAD_SAFE
     pthread_mutex_unlock(&cli_strerror_mutex);
+#endif
     return buf;
 }
 
