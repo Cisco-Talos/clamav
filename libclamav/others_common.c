@@ -23,6 +23,10 @@
 #include "clamav-config.h"
 #endif
 
+#ifdef C_LINUX
+#define _X_OPEN_SOURCE 600
+#endif
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
