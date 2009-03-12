@@ -1,3 +1,7 @@
+Thu Mar 12 16:57:45 EET 2009 (edwin)
+------------------------------------
+ * libclamav/others_common.c: typo
+
 Thu Mar 12 16:24:48 EET 2009 (edwin)
 ------------------------------------
  * libclamav/others_common.c: make sure XSI strerror_r is used.

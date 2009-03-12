@@ -24,7 +24,7 @@
 #endif
 
 #ifdef C_LINUX
-#define _X_OPEN_SOURCE 600
+#define _XOPEN_SOURCE 600
 #endif
 
 #include <stdio.h>
