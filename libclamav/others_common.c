@@ -23,10 +23,6 @@
 #include "clamav-config.h"
 #endif
 
-#ifdef C_LINUX
-#define _XOPEN_SOURCE 600
-#endif
-
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
@@ -693,19 +689,11 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
  * used */
 const char* cli_strerror(int errnum, char *buf, size_t len)
 {
-#ifdef HAVE_STRERROR_R
-    if (strerror_r(errnum, buf, len) == -1)
-	return "strerror_r failed";
+    char *err;
+    pthread_mutex_lock(&cli_strerror_mutex);
+    err = strerror(errnum);
+    strncpy(buf, err, len);
+    pthread_mutex_unlock(&cli_strerror_mutex);
     return buf;
-#else
-    {
-	char *err;
-	pthread_mutex_lock(&cli_strerror_mutex);
-	err = strerror(errnum);
-	strncpy(buf, err, len);
-	pthread_mutex_unlock(&cli_strerror_mutex);
-	return buf;
-    }
-#endif
 }
 
