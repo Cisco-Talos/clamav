@@ -1,3 +1,7 @@
+Fri Mar 13 20:10:39 EET 2009 (edwin)
+------------------------------------
+ * clamd/scanner.c: typo
+
 Fri Mar 13 19:52:07 EET 2009 (edwin)
 ------------------------------------
  * clamd/scanner.c: fix handling of multiple ExcludePath entries.

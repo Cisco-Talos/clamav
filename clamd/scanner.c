@@ -159,7 +159,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 	    free(filename);
 	    return CL_SUCCESS;
 	}
-	opt = (struct opstruct *) opt->nextarg;
+	opt = (const struct optstruct *) opt->nextarg;
       }
     }
 
