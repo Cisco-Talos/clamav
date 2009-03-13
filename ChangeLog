@@ -1,3 +1,8 @@
+Fri Mar 13 15:59:42 EET 2009 (edwin)
+------------------------------------
+ * libclamav/Makefile.am, libclamav/Makefile.in: DEPENDENCIES should
+ use LTDLDEPS (bb #1469).
+
 Fri Mar 13 15:50:51 EET 2009 (edwin)
 ------------------------------------
  * clamd/scanner.c, clamd/session.c: stop scanning when client
