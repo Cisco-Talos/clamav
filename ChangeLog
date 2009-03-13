@@ -1,3 +1,8 @@
+Fri Mar 13 11:58:38 CET 2009 (tk)
+---------------------------------
+ * libclamav/others.c: move cli_gentemp*() to others_common.c
+ * clamav-milter: don't link to libclamav (bb#1463)
+
 Thu Mar 12 18:00:35 EET 2009 (edwin)
 ------------------------------------
  * libclamav/others_common.c: add missing ifdefs

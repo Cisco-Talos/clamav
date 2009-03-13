@@ -92,10 +92,10 @@ libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
 @ENABLE_UNRAR_TRUE@am__DEPENDENCIES_1 = libclamunrar_iface.la
 am_libclamav_la_OBJECTS = matcher-ac.lo matcher-bm.lo matcher.lo \
-	md5.lo others.lo readdb.lo cvd.lo dsig.lo scanners.lo \
-	textdet.lo filetypes.lo rtf.lo blob.lo mbox.lo message.lo \
-	table.lo text.lo ole2_extract.lo vba_extract.lo msexpand.lo \
-	pe.lo disasm.lo upx.lo htmlnorm.lo chmunpack.lo rebuildpe.lo \
+	others.lo readdb.lo cvd.lo dsig.lo scanners.lo textdet.lo \
+	filetypes.lo rtf.lo blob.lo mbox.lo message.lo table.lo \
+	text.lo ole2_extract.lo vba_extract.lo msexpand.lo pe.lo \
+	disasm.lo upx.lo htmlnorm.lo chmunpack.lo rebuildpe.lo \
 	petite.lo wwunpack.lo unsp.lo aspack.lo packlibs.lo fsg.lo \
 	mew.lo upack.lo line.lo untar.lo unzip.lo inflate64.lo \
 	special.lo binhex.lo is_tar.lo tnef.lo autoit.lo unarj.lo \
@@ -110,7 +110,7 @@ libclamav_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(libclamav_la_LDFLAGS) $(LDFLAGS) -o $@
 libclamav_internal_utils_la_LIBADD =
-am__libclamav_internal_utils_la_SOURCES_DIST = str.c str.h \
+am__libclamav_internal_utils_la_SOURCES_DIST = str.c str.h md5.c md5.h \
 	others_common.c others.h regex/strlcpy.c regex/regcomp.c \
 	regex/regerror.c regex/regexec.c regex/regfree.c \
 	regex/cclass.h regex/cname.h regex/regex.h regex/regex2.h \
@@ -119,6 +119,7 @@ am__libclamav_internal_utils_la_SOURCES_DIST = str.c str.h \
 @LINK_TOMMATH_FALSE@	libclamav_internal_utils_la-bignum.lo
 am_libclamav_internal_utils_la_OBJECTS =  \
 	libclamav_internal_utils_la-str.lo \
+	libclamav_internal_utils_la-md5.lo \
 	libclamav_internal_utils_la-others_common.lo \
 	libclamav_internal_utils_la-strlcpy.lo \
 	libclamav_internal_utils_la-regcomp.lo \
@@ -389,11 +390,11 @@ EXTRA_DIST = $(am__append_4) regex/engine.c libclamav.map \
 
 @ENABLE_UNRAR_TRUE@IFACELIBADD = -dlopen libclamunrar_iface.la
 @ENABLE_UNRAR_TRUE@IFACEDEP = libclamunrar_iface.la
-libclamav_internal_utils_la_SOURCES = str.c str.h others_common.c \
-	others.h regex/strlcpy.c regex/regcomp.c regex/regerror.c \
-	regex/regexec.c regex/regfree.c regex/cclass.h regex/cname.h \
-	regex/regex.h regex/regex2.h regex/utils.h bignum.h \
-	$(am__append_6)
+libclamav_internal_utils_la_SOURCES = str.c str.h md5.c md5.h \
+	others_common.c others.h regex/strlcpy.c regex/regcomp.c \
+	regex/regerror.c regex/regexec.c regex/regfree.c \
+	regex/cclass.h regex/cname.h regex/regex.h regex/regex2.h \
+	regex/utils.h bignum.h $(am__append_6)
 libclamav_internal_utils_la_LDFLAGS = -static
 libclamav_internal_utils_la_CFLAGS = -fPIC -DPIC
 libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) lzma/liblzma.la libclamav_internal_utils.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@
@@ -409,8 +410,6 @@ libclamav_la_SOURCES = \
         matcher-bm.h \
         matcher.c \
         matcher.h \
-        md5.c \
-        md5.h \
         others.c \
         others.h \
         readdb.c \
@@ -679,6 +678,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/is_tar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/js-norm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-bignum.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-md5.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-others_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-regcomp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_internal_utils_la-regerror.Plo@am__quote@
@@ -692,7 +692,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/matcher-bm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/matcher.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mbox.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/md5.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/message.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mew.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpool.Plo@am__quote@
@@ -800,6 +799,13 @@ libclamav_internal_utils_la-str.lo: str.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='str.c' object='libclamav_internal_utils_la-str.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_la_CFLAGS) $(CFLAGS) -c -o libclamav_internal_utils_la-str.lo `test -f 'str.c' || echo '$(srcdir)/'`str.c
+
+libclamav_internal_utils_la-md5.lo: md5.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_la_CFLAGS) $(CFLAGS) -MT libclamav_internal_utils_la-md5.lo -MD -MP -MF $(DEPDIR)/libclamav_internal_utils_la-md5.Tpo -c -o libclamav_internal_utils_la-md5.lo `test -f 'md5.c' || echo '$(srcdir)/'`md5.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libclamav_internal_utils_la-md5.Tpo $(DEPDIR)/libclamav_internal_utils_la-md5.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='md5.c' object='libclamav_internal_utils_la-md5.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_la_CFLAGS) $(CFLAGS) -c -o libclamav_internal_utils_la-md5.lo `test -f 'md5.c' || echo '$(srcdir)/'`md5.c
 
 libclamav_internal_utils_la-others_common.lo: others_common.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_internal_utils_la_CFLAGS) $(CFLAGS) -MT libclamav_internal_utils_la-others_common.lo -MD -MP -MF $(DEPDIR)/libclamav_internal_utils_la-others_common.Tpo -c -o libclamav_internal_utils_la-others_common.lo `test -f 'others_common.c' || echo '$(srcdir)/'`others_common.c

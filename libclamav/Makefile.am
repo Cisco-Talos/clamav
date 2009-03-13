@@ -76,6 +76,8 @@ endif
 
 libclamav_internal_utils_la_SOURCES=str.c \
 				    str.h \
+				    md5.c \
+				    md5.h \
 				    others_common.c \
 				    others.h \
 				    regex/strlcpy.c \
@@ -116,8 +118,6 @@ libclamav_la_SOURCES = \
         matcher-bm.h \
         matcher.c \
         matcher.h \
-        md5.c \
-        md5.h \
         others.c \
         others.h \
         readdb.c \

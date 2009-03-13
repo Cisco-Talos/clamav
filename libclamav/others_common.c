@@ -65,14 +65,18 @@
 #include "regex/regex.h"
 #include "ltdl.h"
 #include "matcher-ac.h"
+#include "md5.h"
 
 #ifndef	O_BINARY
 #define	O_BINARY	0
 #endif
 
+static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
+
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
 
+static pthread_mutex_t cli_gentemp_mutex = PTHREAD_MUTEX_INITIALIZER;
 # ifndef HAVE_CTIME_R
 static pthread_mutex_t cli_ctime_mutex = PTHREAD_MUTEX_INITIALIZER;
 # endif
@@ -699,3 +703,116 @@ const char* cli_strerror(int errnum, char *buf, size_t len)
     return buf;
 }
 
+static char *cli_md5buff(const unsigned char *buffer, unsigned int len, unsigned char *dig)
+{
+	unsigned char digest[16];
+	char *md5str, *pt;
+	cli_md5_ctx ctx;
+	int i;
+
+
+    cli_md5_init(&ctx);
+    cli_md5_update(&ctx, buffer, len);
+    cli_md5_final(digest, &ctx);
+
+    if(dig)
+	memcpy(dig, digest, 16);
+
+    if(!(md5str = (char *) cli_calloc(32 + 1, sizeof(char))))
+	return NULL;
+
+    pt = md5str;
+    for(i = 0; i < 16; i++) {
+	sprintf(pt, "%02x", digest[i]);
+	pt += 2;
+    }
+
+    return md5str;
+}
+
+unsigned int cli_rndnum(unsigned int max)
+{
+    if(name_salt[0] == 16) { /* minimizes re-seeding after the first call to cli_gentemp() */
+	    struct timeval tv;
+	gettimeofday(&tv, (struct timezone *) 0);
+	srand(tv.tv_usec+clock());
+    }
+
+    return 1 + (unsigned int) (max * (rand() / (1.0 + RAND_MAX)));
+}
+
+char *cli_gentemp(const char *dir)
+{
+	char *name, *tmp;
+        const char *mdir;
+	unsigned char salt[16 + 32];
+	int i;
+
+    if(!dir) {
+	if((mdir = getenv("TMPDIR")) == NULL)
+#ifdef P_tmpdir
+	    mdir = P_tmpdir;
+#else
+	    mdir = "/tmp";
+#endif
+    } else
+	mdir = dir;
+
+    name = (char *) cli_calloc(strlen(mdir) + 1 + 32 + 1 + 7, sizeof(char));
+    if(!name) {
+	cli_dbgmsg("cli_gentemp('%s'): out of memory\n", mdir);
+	return NULL;
+    }
+
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_lock(&cli_gentemp_mutex);
+#endif
+
+    memcpy(salt, name_salt, 16);
+
+    for(i = 16; i < 48; i++)
+	salt[i] = cli_rndnum(255);
+
+    tmp = cli_md5buff(salt, 48, name_salt);
+
+#ifdef CL_THREAD_SAFE
+    pthread_mutex_unlock(&cli_gentemp_mutex);
+#endif
+
+    if(!tmp) {
+	free(name);
+	cli_dbgmsg("cli_gentemp('%s'): out of memory\n", mdir);
+	return NULL;
+    }
+
+#ifdef	C_WINDOWS
+	sprintf(name, "%s\\clamav-", mdir);
+#else
+	sprintf(name, "%s/clamav-", mdir);
+#endif
+    strncat(name, tmp, 32);
+    free(tmp);
+
+    return(name);
+}
+
+int cli_gentempfd(const char *dir, char **name, int *fd)
+{
+
+    *name = cli_gentemp(dir);
+    if(!*name)
+	return CL_EMEM;
+
+    *fd = open(*name, O_RDWR|O_CREAT|O_TRUNC|O_BINARY|O_EXCL, S_IRWXU);
+    /*
+     * EEXIST is almost impossible to occur, so we just treat it as other
+     * errors
+     */
+   if(*fd == -1) {
+	cli_errmsg("cli_gentempfd: Can't create temporary file %s: %s\n", *name, strerror(errno));
+	free(*name);
+	return CL_ECREAT;
+    }
+
+    return CL_SUCCESS;
+}
