@@ -88,6 +88,19 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     int type = scandata->type;
     const struct optstruct *opt;
 
+    fd_set rfds;
+    struct timeval tv;
+
+    FD_ZERO(&rfds);
+    FD_SET(scandata->conn->sd, &rfds);
+    tv.tv_sec = tv.tv_usec = 0;
+    if (select(scandata->conn->sd+1, &rfds, NULL, NULL, &tv) > 0 &&
+	FD_ISSET(scandata->conn->sd, &rfds)) {
+	logg("$Client disconnected while command was active!\n");
+	thrmgr_group_terminate(scandata->conn->group);
+	return CL_BREAK;
+    }
+
     if (thrmgr_group_need_terminate(scandata->conn->group)) {
 	logg("^Client disconnected while scanjob was active\n");
 	if (reason == visit_file)

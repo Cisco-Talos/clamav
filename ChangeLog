@@ -1,3 +1,8 @@
+Fri Mar 13 15:50:51 EET 2009 (edwin)
+------------------------------------
+ * clamd/scanner.c, clamd/session.c: stop scanning when client
+ disconnects (bb #1446).
+
 Fri Mar 13 13:21:36 CET 2009 (tk)
 ---------------------------------
  * sigtool/sigtool.c: fix quirks with .cdiff generation (bb#1395)
