@@ -154,7 +154,7 @@ The name of the file being processed (if applicable).
 .TP
 (2) To connect to the clamd configured in another clamd.conf:
 
-\fBclamdtop --config-file=/path/to/clamd.conf
+\fBclamdtop \-\-config\-file=/path/to/clamd.conf
 
 .TP
 (3) To connect to a clamd running on another machine (192.168.0.3) on the LAN:
@@ -174,7 +174,7 @@ The name of the file being processed (if applicable).
 clamdtop uses colors if the terminal is capable of colors.
 If you know your terminal is capable of colors, yet you aren't seeing any, then check
 that your \fBTERM\fR environment variable is set correctly.
-For example try setting it to TERM=xterm-color if you are in an xterm-like
+For example try setting it to TERM=xterm\-color if you are in an xterm-like
 environment.
 .SH "RETURN CODES"
 .LP 
