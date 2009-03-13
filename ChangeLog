@@ -1,3 +1,7 @@
+Fri Mar 13 13:21:36 CET 2009 (tk)
+---------------------------------
+ * sigtool/sigtool.c: fix quirks with .cdiff generation (bb#1395)
+
 Fri Mar 13 11:58:38 CET 2009 (tk)
 ---------------------------------
  * libclamav/others.c: move cli_gentemp*() to others_common.c

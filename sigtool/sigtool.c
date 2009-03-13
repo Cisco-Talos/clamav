@@ -67,7 +67,7 @@
 /*
  * Force backward compatibility with the cdiff interpreter of clamav < 0.95
  */
-#define COMPATIBILITY_LIMIT 896
+#define COMPATIBILITY_LIMIT 980
 
 static const struct dblist_s {
     const char *name;
@@ -1371,14 +1371,6 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 	    return -1;
 	}
 	cli_chomp(nbuff);
-#ifdef COMPATIBILITY_LIMIT
-	if(strlen(nbuff) > COMPATIBILITY_LIMIT) {
-	    mprintf("!compare: COMPATIBILITY_LIMIT: Found too long line in new %s\n", newpath);
-	    if(old)
-		fclose(old);
-	    return -1;
-	}
-#endif
 	if(!old) {
 	    fprintf(diff, "ADD %s\n", nbuff);
 	} else {
@@ -1431,6 +1423,14 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 		fprintf(diff, "ADD %s\n", nbuff);
 	    }
 	}
+#ifdef COMPATIBILITY_LIMIT
+       if(strlen(nbuff) > COMPATIBILITY_LIMIT) {
+           mprintf("!compare: COMPATIBILITY_LIMIT: Found too long line in new %s\n", newpath);
+           if(old)
+               fclose(old);
+           return -1;
+       }
+#endif
     }
 
     if(old) {
