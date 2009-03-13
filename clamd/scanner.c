@@ -149,6 +149,7 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     }
 #endif
     if((opt = optget(scandata->opts, "ExcludePath"))->enabled) {
+      while (opt) {
 	/* TODO: perhaps multiscan should skip this check? 
 	 * This should work unless the user is doing something stupid like
 	 * MULTISCAN / */
@@ -158,6 +159,8 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 	    free(filename);
 	    return CL_SUCCESS;
 	}
+	opt = (struct opstruct *) opt->nextarg;
+      }
     }
 
     if(sb && sb->st_size == 0) { /* empty file */

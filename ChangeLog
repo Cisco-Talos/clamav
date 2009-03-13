@@ -1,3 +1,7 @@
+Fri Mar 13 19:52:07 EET 2009 (edwin)
+------------------------------------
+ * clamd/scanner.c: fix handling of multiple ExcludePath entries.
+
 Fri Mar 13 17:44:48 EET 2009 (edwin)
 ------------------------------------
  * docs/man/clamdscan.1.in, docs/man/clamdtop.1.in: escape some more
