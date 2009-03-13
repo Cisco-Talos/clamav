@@ -1,3 +1,9 @@
+Fri Mar 13 17:36:23 EET 2009 (edwin)
+------------------------------------
+ * docs/man/clamdscan.1.in, docs/man/freshclam.1.in: fix
+ hyphen-used-as-minus-sign (bb #1471, thanks Michael Tautschnig
+ <mt*debian.org>)
+
 Fri Mar 13 15:59:42 EET 2009 (edwin)
 ------------------------------------
  * libclamav/Makefile.am, libclamav/Makefile.in: DEPENDENCIES should

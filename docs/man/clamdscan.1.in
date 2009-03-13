@@ -36,7 +36,7 @@ Save the scan report to FILE.
 \fB\-m, \-\-multiscan\fR
 In multiscan mode several files are scanned in parallel, one for each available scan thread in clamd.
 This is achieved either via MULTISCAN or IDSESSION requests, depending on the configuration and other options.
-Can be combined with --fdpass (see below)
+Can be combined with \-\-fdpass (see below)
 .TP 
 \fB\-\-remove\fR
 Remove infected files. \fBBe careful.\fR
@@ -73,7 +73,7 @@ Forces file streaming to clamd. This is generally not needed as clamdscan detect
 .TP
 (3) To scan a file when clamd is running as a different user:
 
-\fBclamdscan --fdpass ~/downloads\fR
+\fBclamdscan \-\-fdpass ~/downloads\fR
 .TP
 (4) To scan from standard input:
 
