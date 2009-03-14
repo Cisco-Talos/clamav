@@ -734,12 +734,10 @@ static Suite *test_clamd_suite(void)
     tcase_add_test(tc_stress, test_fildes_many);
     tcase_add_test(tc_stress, test_idsession_stress);
     tcase_add_test(tc_stress, test_fildes_unwanted);
-#ifndef C_BSD
     /* FreeBSD has a weirdness: connect() says connection refused on both
      * tcp/unix sockets, if I too quickly connect ~193 times.
      * Don't run this test on BSD for now */
     tcase_add_test(tc_stress, test_connections);
-#endif
     return s;
 }
 

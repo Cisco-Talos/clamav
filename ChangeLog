@@ -1,3 +1,8 @@
+Sat Mar 14 21:22:55 EET 2009 (edwin)
+------------------------------------
+ * unit_tests/check_clamd.c, unit_tests/test-clamd.conf: have to set
+ conn queue length in test.
+
 Sat Mar 14 18:43:42 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c: better detect half-shut vs. full-shutdown sockets
