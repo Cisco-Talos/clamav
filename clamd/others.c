@@ -509,6 +509,13 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 		if (revents & (POLLIN|POLLHUP)) {
 		    logg("$Received POLLIN|POLLHUP on fd %d\n",data->poll_data[i].fd);
 		}
+		if (revents & POLLHUP) {
+                       /* avoid SHUT_WR problem on Mac OS X */
+                       int ret = send(data->poll_data[i].fd, &n, 0, 0);
+                       if (!ret || (ret == -1 && errno == EINTR))
+                               revents &= ~POLLHUP;
+		}
+
 		if (revents & POLLIN) {
 		    int ret = read_fd_data(&data->buf[i]);
 		    /* Data available to be read */
@@ -576,8 +583,13 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 			if (ret == -1)
 			    logg("!Error condition on fd %d\n",
 				 data->buf[i].fd);
-			else
+			else {
+			    /* avoid SHUT_WR problem on Mac OS X */
+			    int ret = send(data->poll_data[i].fd, &n, 0, 0);
+			    if (!ret || (ret == -1 && errno == EINTR))
+				continue;
 			    logg("*Client disconnected\n");
+			}
 			data->buf[i].got_newdata = -1;
 		    }
 		}

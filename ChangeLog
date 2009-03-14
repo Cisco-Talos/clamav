@@ -1,3 +1,8 @@
+Sat Mar 14 18:43:42 EET 2009 (edwin)
+------------------------------------
+ * clamd/others.c: better detect half-shut vs. full-shutdown sockets
+ (bb #1441)
+
 Sat Mar 14 17:03:08 EET 2009 (edwin)
 ------------------------------------
  * clamd/scanner.c, unit_tests/check_clamd.c: better fix for bb
