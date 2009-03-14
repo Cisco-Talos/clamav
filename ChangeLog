@@ -1,3 +1,8 @@
+Sat Mar 14 17:03:08 EET 2009 (edwin)
+------------------------------------
+ * clamd/scanner.c, unit_tests/check_clamd.c: better fix for bb
+ #1446, try not to get confused by half-shut sockets (bb #1441).
+
 Sat Mar 14 16:18:00 EET 2009 (edwin)
 ------------------------------------
  * clamconf/, clamdscan/, clamdtop/, libclamav/: fix build on

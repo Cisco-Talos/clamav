@@ -231,7 +231,7 @@ static void test_command(const char *cmd, size_t len, const char *extra, const c
 	rc = send(sockd, extra, strlen(extra), 0);
 	fail_unless_fmt((size_t)rc == strlen(extra), "Unable to send() extra for %s: %s\n", cmd, strerror(errno));
     }
-
+    shutdown(sockd, SHUT_WR);
     recvdata = recvfull(sockd, &len);
 
     fail_unless_fmt(len == expect_len, "Reply has wrong size: %lu, expected %lu, reply: %s, expected: %s\n",
@@ -240,6 +240,7 @@ static void test_command(const char *cmd, size_t len, const char *extra, const c
     rc = memcmp(recvdata, expect, expect_len);
     fail_unless_fmt(!rc, "Wrong reply for command %s: |%s|, expected: |%s|\n", cmd, recvdata, expect);
     free(recvdata);
+
 }
 
 #ifdef CHECK_HAVE_LOOPS
