@@ -61,7 +61,7 @@ am__clamdtop_SOURCES_DIST = $(top_srcdir)/shared/optparser.c \
 @HAVE_CURSES_TRUE@	getopt.$(OBJEXT) misc.$(OBJEXT) \
 @HAVE_CURSES_TRUE@	clamdtop.$(OBJEXT)
 clamdtop_OBJECTS = $(am_clamdtop_OBJECTS)
-@HAVE_CURSES_TRUE@clamdtop_DEPENDENCIES = $(top_builddir)/libclamav/libclamav_internal_utils.la
+@HAVE_CURSES_TRUE@clamdtop_DEPENDENCIES = $(top_builddir)/libclamav/libclamav_internal_utils_nothreads.la
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -248,7 +248,7 @@ top_srcdir = @top_srcdir@
 @HAVE_CURSES_TRUE@    clamdtop.c
 
 @HAVE_CURSES_TRUE@AM_CPPFLAGS = -I$(top_srcdir) @CURSES_CPPFLAGS@
-@HAVE_CURSES_TRUE@clamdtop_LDADD = @CURSES_LIBS@ $(top_builddir)/libclamav/libclamav_internal_utils.la
+@HAVE_CURSES_TRUE@clamdtop_LDADD = @CURSES_LIBS@ $(top_builddir)/libclamav/libclamav_internal_utils_nothreads.la
 EXTRA_DIST = clamdtop.c
 all: all-am
 

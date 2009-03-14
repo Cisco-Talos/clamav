@@ -29,5 +29,5 @@ clamconf_SOURCES = \
 
 DEFS = @DEFS@ -DCL_NOTHREADS -DCL_NOLIBCLAMAV
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared
-LIBS = $(top_builddir)/libclamav/libclamav_internal_utils.la
+LIBS = $(top_builddir)/libclamav/libclamav_internal_utils_nothreads.la
 CLEANFILES=*.gcda *.gcno

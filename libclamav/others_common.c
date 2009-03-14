@@ -73,6 +73,10 @@
 
 static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
 
+#ifdef CL_NOTHREADS
+#undef CL_THREAD_SAFE
+#endif
+
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
 

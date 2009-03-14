@@ -74,10 +74,10 @@ IFACELIBADD = -dlopen libclamunrar_iface.la
 IFACEDEP = libclamunrar_iface.la
 endif
 
-libclamav_internal_utils_la_SOURCES=str.c \
-				    str.h \
-				    md5.c \
-				    md5.h \
+libclamav_internal_utils_la_SOURCES=str.c\
+				    str.h\
+				    md5.c\
+				    md5.h\
 				    others_common.c \
 				    others.h \
 				    regex/strlcpy.c \
@@ -89,16 +89,30 @@ libclamav_internal_utils_la_SOURCES=str.c \
 				    regex/cname.h \
 				    regex/regex.h \
 				    regex/regex2.h \
-				    regex/utils.h \
-				    bignum.h
-
-if !LINK_TOMMATH
-libclamav_internal_utils_la_SOURCES += bignum.c \
-				    bignum_class.h
-endif
+				    regex/utils.h
 
 libclamav_internal_utils_la_LDFLAGS=-static
 libclamav_internal_utils_la_CFLAGS=  -fPIC -DPIC
+
+libclamav_internal_utils_nothreads_la_SOURCES=str.c\
+				    str.h\
+				    md5.c\
+				    md5.h\
+				    others_common.c \
+				    others.h \
+				    regex/strlcpy.c \
+				    regex/regcomp.c \
+				    regex/regerror.c \
+				    regex/regexec.c \
+				    regex/regfree.c \
+				    regex/cclass.h \
+				    regex/cname.h \
+				    regex/regex.h \
+				    regex/regex2.h \
+				    regex/utils.h
+
+libclamav_internal_utils_nothreads_la_LDFLAGS=-static
+libclamav_internal_utils_nothreads_la_CFLAGS=-DCL_NOTHREADS
 
 libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) lzma/liblzma.la libclamav_internal_utils.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@
 libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) libclamav_internal_utils.la
@@ -269,7 +283,13 @@ libclamav_la_SOURCES = \
 	mpool.h \
 	default.h\
 	sha256.c\
-	sha256.h
+	sha256.h\
+	bignum.h
+
+if !LINK_TOMMATH
+libclamav_la_SOURCES += bignum.c \
+		     bignum_class.h
+endif
 
 .PHONY: version.h.tmp
 version.lo: version.h
@@ -297,7 +317,7 @@ version.h.tmp:
 	fi
 
 lib_LTLIBRARIES += libclamav.la
-noinst_LTLIBRARIES = libclamav_internal_utils.la
+noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la
 EXTRA_DIST += regex/engine.c libclamav.map \
 	     jsparse/generated/operators.h jsparse/generated/keywords.h jsparse/future_reserved_words.list\
 	     jsparse/keywords.list jsparse/special_keywords.list jsparse/operators.gperf
