@@ -6,7 +6,7 @@ here may not be available in binary packages.
 --------
 
 This is a second release candidate for ClamAV 0.95. It fixes a number of
-problems that were found in 0.95rc1 and activates support for Google Safe
+problems that were found in 0.95rc1 and provides support for Google Safe
 Browsing, which can be enabled by turning on the SafeBrowsing option in
 freshclam.conf. Please see 'man 5 freshclam.conf' and
 http://safebrowsing.clamav.net for more information.
