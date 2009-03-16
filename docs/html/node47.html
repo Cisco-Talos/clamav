@@ -57,23 +57,29 @@ Limits</A>
 </H2>
     When you create a new engine with <code>cl_engine_new()</code>, it will have
     all internal settings set to default values as recommended by the
-    ClamAV authors. It's possible to check and modify the values using
-    this couple of functions:
+    ClamAV authors. It's possible to check and modify the values (numerical
+    and strings) using the following set of functions:
     <PRE>
-	int cl_engine_set(struct cl_engine *engine,
-	enum cl_engine_field field, const void *val);
+int cl_engine_set_num(struct cl_engine *engine,
+  enum cl_engine_field field, long long num);
 
-	int cl_engine_get(const struct cl_engine *engine,
-	enum cl_engine_field fi eld, void *val);
+long long cl_engine_get_num(const struct cl_engine *engine,
+  enum cl_engine_field field, int *err);
+
+int cl_engine_set_str(struct cl_engine *engine,
+  enum cl_engine_field field, const char *str);
+
+const char *cl_engine_get_str(const struct cl_engine *engine,
+  enum cl_engine_field field, int *err);
 </PRE>
     Please don't modify the default values unless you know what you're doing.
-    Refer to ClamAV sources (clamscan, clamd) for examples.
+    Refer to the ClamAV sources (clamscan, clamd) for examples.
 
 <P>
 <BR><HR>
 <ADDRESS>
 Tomasz Kojm
-2009-02-25
+2009-03-16
 </ADDRESS>
 </BODY>
 </HTML>

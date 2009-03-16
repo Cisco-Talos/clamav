@@ -71,7 +71,7 @@
     \vspace{3cm}
     \begin{flushright}
 	\rule[-1ex]{8cm}{3pt}\\
-	\huge Clam AntiVirus 0.95rc1\\
+	\huge Clam AntiVirus 0.95rc2\\
 	\huge \emph{User Manual}\\
     \end{flushright}
 
@@ -907,17 +907,23 @@ N * * * *	/usr/local/bin/freshclam --quiet
     \subsection{Limits}
     When you create a new engine with \verb+cl_engine_new()+, it will have
     all internal settings set to default values as recommended by the
-    ClamAV authors. It's possible to check and modify the values using
-    this couple of functions:
+    ClamAV authors. It's possible to check and modify the values (numerical
+    and strings) using the following set of functions:
     \begin{verbatim}
-	int cl_engine_set(struct cl_engine *engine,
-	enum cl_engine_field field, const void *val);
+int cl_engine_set_num(struct cl_engine *engine,
+  enum cl_engine_field field, long long num);
 
-	int cl_engine_get(const struct cl_engine *engine,
-	enum cl_engine_field fi eld, void *val);
+long long cl_engine_get_num(const struct cl_engine *engine,
+  enum cl_engine_field field, int *err);
+
+int cl_engine_set_str(struct cl_engine *engine,
+  enum cl_engine_field field, const char *str);
+
+const char *cl_engine_get_str(const struct cl_engine *engine,
+  enum cl_engine_field field, int *err);
     \end{verbatim}
     Please don't modify the default values unless you know what you're doing.
-    Refer to ClamAV sources (clamscan, clamd) for examples.
+    Refer to the ClamAV sources (clamscan, clamd) for examples.
 
     \subsection{Database reloading}
     It's very important  to keep the internal instance of the database up to
