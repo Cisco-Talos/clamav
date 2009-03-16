@@ -1,3 +1,8 @@
+Mon Mar 16 17:23:07 CET 2009 (tk)
+---------------------------------
+ * freshclam/manager.c: automatically remove safebrowsing.cvd when SafeBrowsing
+			gets turned off
+
 Mon Mar 16 15:53:52 EET 2009 (edwin)
 ------------------------------------
  * libclamav/phishcheck.c: add comments, no functionality change.
