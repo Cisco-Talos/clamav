@@ -37,12 +37,7 @@ H[Filter]:DisplayedHostname[:FuncLevelSpec]
  		\item or a subdomain of the specified hostname
  		\item to avoid false matches in case of subdomain matches, the engine checks that there  is a dot(\verb+.+) or a space(\verb+ +) before the matched portion
 	\end{itemize}
- \item [{Filter}] an (optional) 3-digit hexadecimal number representing flags that should be filtered.
-	\begin{itemize}
- 		\item flag filtering only makes sense in .pdb files. (however clamav won't complain if you put flags in .wdb files, it will just skip them)
- 		\item for details on how to construct a flag number see section \prettyref{sec:Flags}
-	\end{itemize}
-
+ \item [{Filter}] is ignored for R and H for compatibility reasons
  \item [{\textsc{RealURL}}] is the URL the user is sent to, example: \emph{href} attribute of an html anchor (\emph{<a> tag})
  \item [{\textsc{DisplayedURL}}] is the URL description displayed to the user, where its \emph{claimed} they are sent, example: contents of an html anchor (\emph{<a> tag})
  \item [{DisplayedHostname}] is the hostname portion of the \textsc{DisplayedURL}
@@ -52,6 +47,36 @@ H[Filter]:DisplayedHostname[:FuncLevelSpec]
  		\item \verb+minlevel-maxlevel+ engines with functionality level $>= $ \verb+minlevel+, and $< $ \verb+maxlevel+ will load this line
 	\end{itemize}
 \end{description}
+
+\subsection{GDB format}
+This file contains URL hashes in the following format:
+\begin{verbatim}
+S:P:HostPrefix[:FuncLevelSpec]
+S:F:Sha256hash[:FuncLevelSpec]
+S1:P:HostPrefix[:FuncLevelSpec]
+S1:F:Sha256hash[:FuncLevelSpec]
+S2:P:HostPrefix[:FuncLevelSpec]
+S2:F:Sha256hash[:FuncLevelSpec]
+\end{verbatim}
+
+\begin{description}
+ \item [{S:}]
+  	These are hashes for Google Safe Browsing - malware sites, and should not be used for other purposes.
+ \item [{S2:}]
+	These are hashes for Google Safe Browsing - phishing sites, and should not be used for other purposes.
+ \item [{S1:}]
+	Hashes for blacklisting phishing sites.
+	Virus name: Phishing.URL.Blacklisted
+ \item [{HostPrefix}]
+	4-byte prefix of the sha256 hash of the last 2 or 3 components of the hostname.
+If prefix doesn't match, no further lookups are performed.
+ \item [{Sha256hash}]
+	sha256 hash of the canonicalized URL, or a sha256 hash of its prefix/suffix according to the Google Safe Browsing ``Performing Lookups'' rules. There should be a corresponding \verb+:P:HostkeyPrefix+ entry for the hash to be taken into consideration.
+\end{description}
+
+To see which hash/URL matched, look at the \verb+clamscan --debug+ output, and look for the following strings:
+\verb+Looking up hash+, \verb+prefix matched+, and \verb+Hash matched+.
+Local whitelisting of .gdb entries can be done by creating .wdb entries.
 
 \subsection{WDB format}
 This file contains whitelisted url pairs

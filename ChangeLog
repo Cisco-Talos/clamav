@@ -1,3 +1,8 @@
+Mon Mar 16 15:41:17 EET 2009 (edwin)
+------------------------------------
+ * docs/phishsigs_howto.tex, libclamav/phishcheck.c: document URL
+ blacklisting, and whitelisting (bb #1458).
+
 Mon Mar 16 14:44:25 EET 2009 (edwin)
 ------------------------------------
  * clamdtop/clamdtop.c: fix warning

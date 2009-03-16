@@ -61,6 +61,7 @@
 #define DOMAIN_LISTED		 8
 #define PHISHY_CLOAKED_NULL	16
 
+
 /*
 * Phishing design documentation,
 (initially written at http://wiki.clamav.net/index.php/phishing_design as discussed with aCaB)
@@ -1395,7 +1396,7 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 {
 	struct url_check host_url;
 	int rc = CL_PHISH_NODECISION;
-	int phishy=0;
+	int phishy=0, blacklisted=0;
 	const struct phishcheck* pchk = (const struct phishcheck*) engine->phishcheck;
 
 	if(!urls->realLink.data || urls->displayLink.data[0]=='\0')
@@ -1413,11 +1414,13 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 	}
 
 	if(( rc = url_hash_match(engine->domainlist_matcher, urls->realLink.data, strlen(urls->realLink.data)) )) {
-	    if (rc == CL_PHISH_CLEAN)
+	    if (rc == CL_PHISH_CLEAN) {
 		cli_dbgmsg("not analyzing, not a real url: %s\n", urls->realLink.data);
-	    else
+		return CL_PHISH_CLEAN;
+	    } else {
 		cli_dbgmsg("Hash matched for: %s\n", urls->realLink.data);
-	    return rc;
+		blacklisted = rc;
+	    }
 	}
 
 	if((rc = cleanupURLs(urls))) {
@@ -1433,11 +1436,15 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 			( (phishy&PHISHY_NUMERIC_IP && !isNumericURL(pchk, urls->displayLink.data)) ||
 			  !(phishy&PHISHY_NUMERIC_IP))) {
 		cli_dbgmsg("Displayed 'url' is not url:%s\n",urls->displayLink.data);
-		return CL_PHISH_CLEAN;
+		if (!blacklisted)
+		    return CL_PHISH_CLEAN;
 	}
 
 	if(whitelist_check(engine, urls, 0))
 		return CL_PHISH_CLEAN;/* if url is whitelisted don't perform further checks */
+
+	if (blacklisted)
+	    return blacklisted;
 
 	url_check_init(&host_url);
 
