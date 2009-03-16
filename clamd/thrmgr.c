@@ -196,6 +196,7 @@ int thrmgr_printstats(int f)
 	size_t pool_used = 0, pool_total = 0, seen_cnt = 0, error_flag = 0;
 	float mem_heap = 0, mem_mmap = 0, mem_used = 0, mem_free = 0, mem_releasable = 0;
 	const struct cl_engine **seen = NULL;
+	int has_libc_memstats = 0;
 
 	pthread_mutex_lock(&pools_lock);
 	for(cnt=0,l=pools;l;l=l->nxt) cnt++;
@@ -289,15 +290,20 @@ int thrmgr_printstats(int f)
 		mem_used = inf.uordblks/(1024*1024.0);
 		mem_free = inf.fordblks/(1024*1024.0);
 		mem_releasable = inf.keepcost/(1024*1024.0);
+		has_libc_memstats=1;
 		/* TODO: figure out how to print these statistics on other OSes */
 	}
 #endif
 	if (error_flag) {
 		mdprintf(f, "ERROR: error encountered while formatting statistics\n");
 	} else {
+	    if (has_libc_memstats)
 		mdprintf(f,"MEMSTATS: heap %.3fM mmap %.3fM used %.3fM free %.3fM releasable %.3fM pools %u pools_used %.3fM pools_total %.3fM\n",
 			mem_heap, mem_mmap, mem_used, mem_free, mem_releasable, pool_cnt,
 			pool_used/(1024*1024.0), pool_total/(1024*1024.0));
+	    else
+		mdprintf(f,"MEMSTATS: heap N/A mmap N/A used N/A free N/A releasable N/A pools %u pools_used %.3fM pools_total %.3fM\n",
+			 pool_cnt, pool_used/(1024*1024.0), pool_total/(1024*1024.0));
 	}
 	mdprintf(f,"END\n");
 	pthread_mutex_unlock(&pools_lock);

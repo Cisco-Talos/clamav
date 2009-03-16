@@ -1,3 +1,8 @@
+Mon Mar 16 14:29:19 EET 2009 (edwin)
+------------------------------------
+ * clamd/thrmgr.c, clamdtop/clamdtop.c: print N/A if libc memory
+ usage is not available (bb #1445).
+
 Sat Mar 14 22:45:28 EET 2009 (edwin)
 ------------------------------------
  * unit_tests/check_clamd.c: put back ifndef C_BSD in unit test
