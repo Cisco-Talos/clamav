@@ -1833,11 +1833,18 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
 
     /* if ipaddr[0] != 0 it will use it to connect to the web host */
     if(!optget(opts, "SafeBrowsing")->enabled) {
-	if(!access("safebrowsing.cvd", R_OK)) {
-	    if(unlink("safebrowsing.cvd"))
-		logg("^SafeBrowsing is disabled but can't remove old safebrowsing.cvd\n");
+	    const char *safedb = NULL;
+
+	if(!access("safebrowsing.cvd", R_OK))
+	    safedb = "safebrowsing.cvd";
+	else if(!access("safebrowsing.cld", R_OK))
+            safedb = "safebrowsing.cld";
+
+	if(safedb) {
+	    if(unlink(safedb))
+		logg("^SafeBrowsing is disabled but can't remove old %s\n", safedb);
 	    else
-		logg("*safebrowsing.cvd removed\n");
+		logg("*%s removed\n", safedb);
 	}
     } else if((ret = updatedb("safebrowsing", hostname, ipaddr, &signo, opts, dnsreply, localip, outdated, &mdat, logerr)) > 50) {
 	if(dnsreply)
