@@ -1,3 +1,7 @@
+Mon Mar 16 14:44:25 EET 2009 (edwin)
+------------------------------------
+ * clamdtop/clamdtop.c: fix warning
+
 Mon Mar 16 14:29:19 EET 2009 (edwin)
 ------------------------------------
  * clamd/thrmgr.c, clamdtop/clamdtop.c: print N/A if libc memory

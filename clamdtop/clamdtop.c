@@ -746,10 +746,10 @@ static void output_memstats(struct stats *stats)
 	int blink = 0;
 
 	werase(mem_window);
-	if (stats->mem > 0 || (!stats->mem && (stats->lpoolt > 0))) {
+	if (stats->mem > 0 || (stats->mem >=0 && (stats->lpoolt > 0))) {
 		box(mem_window, 0, 0);
 
-		if (stats->mem)
+		if (stats->mem > 0)
 		    snprintf(buf, sizeof(buf),"heap %4luM mmap %4luM unused %3luM",
 			     stats->lheapu/1024, stats->lmmapu/1024, stats->lreleasable/1024);
 		else
@@ -758,7 +758,7 @@ static void output_memstats(struct stats *stats)
 		print_colored(mem_window, buf);
 
 		mvwprintw(mem_window, 2, 1, "Libc: ");
-		if (stats->mem)
+		if (stats->mem > 0)
 		    snprintf(buf, sizeof(buf),"used %4luM free %4luM total %4luM",
 			     stats->ltotalu/1024, stats->ltotalf/1024, (stats->ltotalu+stats->ltotalf)/1024);
 		else
