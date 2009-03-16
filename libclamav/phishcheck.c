@@ -1235,18 +1235,22 @@ int cli_url_canon(const char *inurl, size_t len, char *urlbuff, size_t dest_len,
 	urlbuff[dest_len] = urlbuff[dest_len+1] = urlbuff[dest_len+2] = '\0';
 	url = urlbuff;
 
+	/* canonicalize only real URLs, with a protocol */
 	host_begin = strchr(url, ':');
 	if(!host_begin)
 		return CL_PHISH_CLEAN;
 	++host_begin;
 
+	/* ignore username in URL */
 	p = strchr(host_begin, '@');
 	if (p)
 	    host_begin = p+1;
 	url = host_begin;
+	/* repeatedly % unescape characters */
 	str_hex_to_char(&url, &urlend);
 	host_begin = url;
 	len = urlend - url;
+	/* skip to beginning of hostname */
 	while((host_begin < urlend) && *host_begin == '/') ++host_begin;
 	while(*host_begin == '.' && host_begin < urlend) ++host_begin;
 
@@ -1255,11 +1259,13 @@ int cli_url_canon(const char *inurl, size_t len, char *urlbuff, size_t dest_len,
 	while (p < urlend) {
 	    if (p+2 < urlend && *p == '/' && p[1] == '.' ) {
 		if (p[2] == '/') {
+		    /* remove /./ */
 		    if (p + 3 < urlend)
 			memmove(p+1, p+3, urlend - p - 3);
 		    urlend -= 2;
 		}
 		else if (p[2] == '.' && (p[3] == '/' || p[3] == '\0') && last) {
+		    /* remove /component/../ */
 		    if (p+4 < urlend)
 			memmove(last+1, p+4, urlend - p - 4);
 		    urlend -= 3 + (p - last);
@@ -1276,6 +1282,7 @@ int cli_url_canon(const char *inurl, size_t len, char *urlbuff, size_t dest_len,
 	while (p < urlend && p+2 < url + dest_len) {
 	    unsigned char c = *p;
 	    if (c <= 32 || c >= 127 || c == '%' || c == '#') {
+		/* convert non-ascii characters back to % escaped */
 		const char hexchars[] = "0123456789ABCDEF";
 		memmove(p+3, p+1, urlend - p - 1);
 		*p++ = '%';
@@ -1288,9 +1295,11 @@ int cli_url_canon(const char *inurl, size_t len, char *urlbuff, size_t dest_len,
 	*p = '\0';
 	urlend = p;
 	len = urlend - url;
+	/* determine end of hostname */
 	host_len = strcspn(host_begin, ":/?");
 	path_begin = host_begin + host_len;
 	if(host_len < len) {
+		/* url without path, use a single / */
 		memmove(path_begin + 2, path_begin + 1, len - host_len);
 		*path_begin++ = '/';
 		*path_begin++ = '\0';
@@ -1299,6 +1308,7 @@ int cli_url_canon(const char *inurl, size_t len, char *urlbuff, size_t dest_len,
 		path_len = url + len - path_begin + 1;
 		p = strchr(path_begin, '#');
 		if (p) {
+		    /* ignore anchor */
 		    *p = '\0';
 		    path_len = p - path_begin;
 		}
@@ -1307,6 +1317,7 @@ int cli_url_canon(const char *inurl, size_t len, char *urlbuff, size_t dest_len,
 		path_len = 0;
 		*path = "";
 	}
+	/* lowercase entire URL */
 	str_make_lowercase(host_begin, host_len);
 	*host = host_begin;
 	*hostlen = host_len;
@@ -1330,6 +1341,8 @@ static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, 
 	unsigned count;
 
 	if(!rlist || !rlist->sha256_hashes.bm_patterns) {
+		/* no hashes loaded -> don't waste time canonicalizing and
+		 * looking up */
 		return CL_SUCCESS;
 	}
 	if(!inurl)
@@ -1338,6 +1351,8 @@ static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, 
 	rc = cli_url_canon(inurl, len, urlbuff, sizeof(urlbuff), &host_begin, &host_len, &path_begin, &path_len);
 	if (rc == CL_PHISH_CLEAN)
 	    return rc;
+
+	/* get last 5 components of hostname */
 	j=COMPONENTS;
 	component = strrchr(host_begin, '.');
 	while(component && j > 0) {
@@ -1351,6 +1366,7 @@ static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, 
 	}
 	lp[j] = host_begin;
 
+	/* get first 5 components of path */
 	pp[0] = path_len;
 	if(path_len) {
 		pp[1] = strcspn(path_begin, "?");
@@ -1376,6 +1392,7 @@ static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, 
 				       rlist->hostkey_prefix.bm_patterns;
 		--ji;
 		assert(pp[ki] <= path_len);
+		/* lookup prefix/suffix hashes of URL */
 		rc = hash_match(rlist, lp[ji], host_begin + host_len - lp[ji] + 1, path_begin, pp[ki], 
 				need_prefixmatch ? &prefix_matched : NULL);
 		if(rc) {
@@ -1383,6 +1400,9 @@ static int url_hash_match(const struct regex_matcher *rlist, const char *inurl, 
 		}
 		count++;
 		if (count == 2 && !prefix_matched && rlist->hostkey_prefix.bm_patterns) {
+		    /* if hostkey is not matched, don't bother calculating
+		     * hashes for other parts of the URL, they are not in the DB
+		     */
 		    cli_dbgmsg("hostkey prefix not matched, short-circuiting lookups\n");
 		    return CL_SUCCESS;
 		}

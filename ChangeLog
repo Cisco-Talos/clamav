@@ -1,3 +1,7 @@
+Mon Mar 16 15:53:52 EET 2009 (edwin)
+------------------------------------
+ * libclamav/phishcheck.c: add comments, no functionality change.
+
 Mon Mar 16 15:41:17 EET 2009 (edwin)
 ------------------------------------
  * docs/phishsigs_howto.tex, libclamav/phishcheck.c: document URL
