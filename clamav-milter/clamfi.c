@@ -54,12 +54,20 @@ static char *rejectfmt = NULL;
 
 int addxvirus = 0;
 char xvirushdr[255];
+enum {
+    LOGINF_NONE,
+    LOGINF_BASIC,
+    LOGINF_FULL
+} loginfected;
 
 #define CLAMFIBUFSZ 1424
 
 struct CLAMFI {
     char buffer[CLAMFIBUFSZ];
     const char *virusname;
+    char *msg_subj;
+    char *msg_date;
+    char *msg_id;
     int local;
     int main;
     int alt;
@@ -83,11 +91,22 @@ enum CFWHAT {
 };
 
 
+void makesanehdr(char *hdr) {
+    while(*hdr) {
+	if(*hdr=='\'' || *hdr=='\t' || *hdr=='\r' || *hdr=='\n' || !isprint(*hdr))
+	    *hdr = ' ';
+	hdr++;
+    }
+}
+
 static void nullify(SMFICTX *ctx, struct CLAMFI *cf, enum CFWHAT closewhat) {
     if(closewhat & CF_MAIN || ((closewhat & CF_ANY) && cf->main >= 0))
 	close(cf->main);
     if(closewhat & CF_ALT || ((closewhat & CF_ANY) && cf->alt >= 0))
 	close(cf->alt);
+    if(cf->msg_subj) free(cf->msg_subj);
+    if(cf->msg_date) free(cf->msg_date);
+    if(cf->msg_id) free(cf->msg_id);
     smfi_setpriv(ctx, NULL);
     free(cf);
 }
@@ -146,6 +165,15 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv) {
 
     if(!(cf = (struct CLAMFI *)smfi_getpriv(ctx)))
 	return SMFIS_CONTINUE; /* whatever */
+
+    if(loginfected == LOGINF_FULL) {
+	if(headerf && !strcasecmp(headerf, "Subject") && !cf->msg_subj)
+	    cf->msg_subj = strdup(headerv);
+	if(headerf && !strcasecmp(headerf, "Date") && !cf->msg_date)
+	    cf->msg_date = strdup(headerv);
+	if(headerf && !strcasecmp(headerf, "Message-ID") && !cf->msg_id)
+	    cf->msg_id = strdup(headerv);
+    }
 
     if(!cf->totsz) {
 	if(cf->all_whitelisted) {
@@ -239,7 +267,7 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 	ret = CleanAction(ctx);
     } else if (len>7 && !strcmp(reply + len - 7, " FOUND\n")) {
 	cf->virusname = NULL;
-	if(addxvirus || rejectfmt) {
+	if(loginfected || addxvirus || rejectfmt) {
 	    char *vir;
 
 	    reply[len-7] = '\0';
@@ -247,13 +275,30 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 	    if(vir) {
 		vir++;
 
-		if(rejectfmt) {
+		if(rejectfmt)
 		    cf->virusname = vir;
-		} else {
+
+		if(addxvirus) {
 		    char msg[255];
 		    snprintf(msg, sizeof(msg), "Infected (%s)", vir);
 		    msg[sizeof(msg)-1] = '\0';
 		    add_x_header(ctx, msg);
+		}
+
+		if(loginfected) {
+		    const char *from = smfi_getsymval(ctx, "{mail_addr}"), *to = smfi_getsymval(ctx, "{rcpt_addr}");
+		    
+		    if(!from) from = "UNKNOWN";
+		    if(!to) to = "UNKNOWN";
+		    
+		    if(loginfected == LOGINF_FULL) {
+			const char *id = smfi_getsymval(ctx, "{i}");
+
+			makesanehdr(cf->msg_subj);
+			makesanehdr(cf->msg_date);
+			makesanehdr(cf->msg_id);
+			logg("~Message %s from <%s> to <%s> with subject '%s' message-id '%s' date '%s' infected by %s\n", id ? id : "UNKNOWN", from, to, cf->msg_subj, cf->msg_id, cf->msg_date, vir);
+		    } else logg("~Message from <%s> to <%s> infected by %s\n", from, to, vir);
 		}
 	    }
 	}
@@ -344,6 +389,17 @@ static sfsistat action_reject_msg(SMFICTX *ctx) {
 
 int init_actions(struct optstruct *opts) {
     const struct optstruct *opt;
+
+    if(!(opt = optget(opts, "LogInfected"))->enabled || !strcasecmp(opt->strarg, "Off"))
+	loginfected = LOGINF_NONE;
+    else if(!strcasecmp(opt->strarg, "Basic"))
+	loginfected = LOGINF_BASIC;
+    else if(!strcasecmp(opt->strarg, "Full"))
+	loginfected = LOGINF_FULL;
+    else {
+	logg("!Invalid setting %s for option LogInfected\n", opt->strarg);
+	return 1;
+    }
 
     if((opt = optget(opts, "OnFail"))->enabled) {
 	switch(parse_action(opt->strarg)) {
@@ -462,6 +518,7 @@ sfsistat clamfi_envfrom(SMFICTX *ctx, char **argv) {
     cf->bufsz = 0;
     cf->main = cf->alt = -1;
     cf->all_whitelisted = 1;
+    cf->msg_subj = cf->msg_date = cf->msg_id = NULL;
     smfi_setpriv(ctx, (void *)cf);
 
     return SMFIS_CONTINUE;
@@ -474,7 +531,8 @@ sfsistat clamfi_envrcpt(SMFICTX *ctx, char **argv) {
     if(!(cf = (struct CLAMFI *)smfi_getpriv(ctx)))
 	return SMFIS_CONTINUE; /* whatever */
 
-    cf->all_whitelisted &= whitelisted(argv[0], 0);
+    if(cf->all_whitelisted)
+	cf->all_whitelisted &= whitelisted(argv[0], 0);
     return SMFIS_CONTINUE;
 }
 
