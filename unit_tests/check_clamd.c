@@ -395,7 +395,7 @@ static int sendmsg_fd(int sockd, const char *mesg, size_t msg_len, int fd, int s
 	iov[0].iov_len = 1;
     } else {
 	/* send single message with ancillary data */
-	fail_unless(msg_len < sizeof(dummy)-1);
+	fail_unless(msg_len < sizeof(dummy)-1, "message too large");
 	memcpy(dummy, mesg, msg_len);
 	dummy[msg_len] = '\0';
 	iov[0].iov_base = dummy;
