@@ -1,3 +1,8 @@
+Sun Mar 22 17:19:10 CET 2009 (tk)
+---------------------------------
+ * libclamav/special.c: fix possible false positive MS04-028 for files with
+			corrupted headers (bb#1422)
+
 Sun Mar 22 15:15:22 CET 2009 (tk)
 ---------------------------------
  * libclamav/readdb.c: return error instead of crashing when cl_load() gets

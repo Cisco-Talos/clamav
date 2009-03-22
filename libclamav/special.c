@@ -224,7 +224,7 @@ int cli_check_jpeg_exploit(int fd, cli_ctx *ctx)
 
 		offset = ((unsigned int) buffer[2] << 8) + buffer[3];
 		if (offset < 2) {
-			return 1;
+			return -1;
 		}
 		offset -= 2;
 		offset += lseek(fd, 0, SEEK_CUR);
