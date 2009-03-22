@@ -1649,6 +1649,11 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
 	return CL_ENULLARG;
     }
 
+    if(engine->dboptions & CL_DB_COMPILED) {
+	cli_errmsg("cl_load(): can't load new databases when engine is already compiled\n");
+	return CL_EARG;
+    }
+
     if(stat(path, &sb) == -1) {
         cli_errmsg("cl_load(): Can't get status of %s\n", path);
         return CL_ESTAT;
@@ -1658,7 +1663,7 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
 	if((ret = phishing_init(engine)))
 	    return ret;
 
-    engine->dboptions = dboptions;
+    engine->dboptions |= dboptions;
 
     switch(sb.st_mode & S_IFMT) {
 	case S_IFREG: 

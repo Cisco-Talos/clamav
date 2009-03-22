@@ -1,3 +1,9 @@
+Sun Mar 22 15:15:22 CET 2009 (tk)
+---------------------------------
+ * libclamav/readdb.c: return error instead of crashing when cl_load() gets
+		       called for already compiled engine (bb#1488);
+		       don't overwrite dboptions with new calls to cl_load()
+
 Sun Mar 22 15:01:24 CET 2009 (acab)
 -----------------------------------
  * libclamav: add cl_engine_get_num(CL_ENGINE_DB_OPTIONS)
