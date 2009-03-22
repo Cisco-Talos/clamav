@@ -568,7 +568,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 	tv.tv_usec = 0;
 
 	pthread_mutex_unlock(&data->buf_mutex);
-	retval = select(maxfd+1, &rfds, NULL, NULL, timeout > 0 ? &tv : NULL);
+	retval = select(maxfd+1, &rfds, NULL, NULL, timeout >= 0 ? &tv : NULL);
 	pthread_mutex_lock(&data->buf_mutex);
 	if (retval > 0) {
 	    fdsok = data->nfds;
@@ -585,7 +585,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 				 data->buf[i].fd);
 			else {
 			    /* avoid SHUT_WR problem on Mac OS X */
-			    int ret = send(data->poll_data[i].fd, &n, 0, 0);
+			    int ret = send(data->buf[i].fd, &i, 0, 0);
 			    if (!ret || (ret == -1 && errno == EINTR))
 				continue;
 			    logg("*Client disconnected\n");
