@@ -32,6 +32,8 @@
 #include "../libclamav/clamav.h"
 #include "../libclamav/others.h"
 #include "../libclamav/str.h"
+#include "../libclamav/mbox.h"
+#include "../libclamav/message.h"
 #include "../libclamav/jsparse/textbuf.h"
 #include "checks.h"
 
@@ -162,10 +164,56 @@ START_TEST (hex2str)
 }
 END_TEST
 
+#ifdef CHECK_HAVE_LOOPS
+static struct base64lines {
+    const char *line;
+    unsigned char *decoded;
+    unsigned int   len;
+} base64tests[] = {
+    {"", "", 0},
+    {"Zg==", "f", 1},
+    {"Zm8=", "fo", 2},
+    {"Zm9v", "foo", 3},
+    {"Zm9vYg==", "foob", 4},
+    {"Zm9vYmFy", "foobar", 6},
+    /* with missing padding */
+    {"Zg","f", 1},
+    {"Zm8", "fo", 2},
+    {"Zm9vYg", "foob", 4}
+};
+
+START_TEST (test_base64)
+{
+    unsigned char *ret, *ret2;
+    unsigned len;
+    unsigned char buf[1024];
+    const struct base64lines *test = &base64tests[_i];
+    message *m = messageCreate();
+    fail_unless(!!m, "Unable to create message");
+
+    ret = decodeLine(m, BASE64, test->line, buf, sizeof(buf));
+    fail_unless(!!ret, "unable to decode line");
+
+    ret2 = base64Flush(m, ret);
+
+    if (!ret2)
+	ret2 = ret;
+    *ret2 = '\0';
+    len = ret2 - buf;
+    fail_unless_fmt(len == test->len, "invalid base64 decoded length: %u expected %u (%s)\n",
+		    len, test->len, buf);
+    fail_unless_fmt(!memcmp(buf, test->decoded, test->len),
+		    "invalid base64 decoded data: %s, expected:%s\n",
+		    buf, test->decoded);
+    messageDestroy(m);
+}
+END_TEST
+#endif
+
 Suite *test_str_suite(void)
 {
     Suite *s = suite_create("str");
-    TCase *tc_cli_unescape, *tc_tbuf, *tc_str;
+    TCase *tc_cli_unescape, *tc_tbuf, *tc_str, *tc_decodeline;
 
     tc_cli_unescape = tcase_create("cli_unescape");
     suite_add_tcase (s, tc_cli_unescape);
@@ -185,6 +233,11 @@ Suite *test_str_suite(void)
     suite_add_tcase (s, tc_str);
     tcase_add_test(tc_str, hex2str);
 
+    tc_decodeline = tcase_create("decodeline");
+    suite_add_tcase (s, tc_decodeline);
+#ifdef CHECK_HAVE_LOOPS
+    tcase_add_loop_test(tc_decodeline, test_base64, 0, sizeof(base64tests)/sizeof(base64tests[0]));
+#endif
     return s;
 }
 

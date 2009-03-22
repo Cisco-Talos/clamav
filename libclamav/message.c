@@ -2326,7 +2326,7 @@ decode(message *m, const char *in, unsigned char *out, unsigned char (*decoder)(
 			case 4:
 				*out++ = (b1 << 2) | ((b2 >> 4) & 0x3);
 				*out++ = (b2 << 4) | ((b3 >> 2) & 0xF);
-				if((nbytes == 4) || b3)
+				if((nbytes == 4) || (b3&0x3))
 					*out++ = (b3 << 6) | (b4 & 0x3F);
 				break;
 			case 2:

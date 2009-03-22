@@ -1,3 +1,9 @@
+Sun Mar 22 18:15:01 EET 2009 (edwin)
+------------------------------------
+ * libclamav/libclamav.map, libclamav/message.c,
+ unit_tests/check_str.c: fix trailing bytes in base64 decoding (bb #1388,
+			 thanks Thiyaga <mthiyaga*corp.untd.com>).
+
 Sun Mar 22 17:35:31 CET 2009 (acab)
 -----------------------------------
  * contrib/init: removed

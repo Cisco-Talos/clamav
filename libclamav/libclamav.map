@@ -138,6 +138,10 @@ CLAMAV_PRIVATE {
     sha256_final;
     cli_url_canon;
     cli_strerror;
+    decodeLine;
+    messageCreate;
+    messageDestroy;
+    base64Flush;
   local:
     *;
 };
