@@ -1,0 +1,827 @@
+diff -ur clamav-orig/clamdtop/clamdtop.c clamav-new/clamdtop/clamdtop.c
+--- clamav-orig/clamdtop/clamdtop.c	2009-03-16 11:37:28.000000000 +1100
++++ clamav-new/clamdtop/clamdtop.c	2009-03-16 16:30:26.000000000 +1100
+@@ -47,8 +47,10 @@
+ #include <arpa/inet.h>
+ #include <netinet/in.h>
+ #include <sys/socket.h>
++#ifndef __DJGPP__
+ #include <sys/un.h>
+ #endif
++#endif
+ #include <sys/time.h>
+ #include <assert.h>
+ #include <errno.h>
+@@ -503,7 +505,7 @@
+ 	int s;
+ 	struct timeval tv;
+ 	conn->tcp = 0;
+-#ifdef _WIN32
++#if defined(_WIN32) || defined(__DJGPP__)
+     {
+ #else
+ 	if(soname[0] == '/' || (access(soname, F_OK) == 0)) {
+diff -ur clamav-orig/clamscan/clamscan.c clamav-new/clamscan/clamscan.c
+--- clamav-orig/clamscan/clamscan.c	2009-03-16 11:37:26.000000000 +1100
++++ clamav-new/clamscan/clamscan.c	2009-03-16 16:30:26.000000000 +1100
+@@ -80,7 +80,7 @@
+     }
+ #endif
+ 
+-#if !defined(C_WINDOWS) && !defined(C_BEOS)
++#if !defined(C_WINDOWS) && !defined(C_BEOS) && !defined(__DJGPP__)
+     sigemptyset(&sigset);
+     sigaddset(&sigset, SIGXFSZ);
+     sigprocmask(SIG_SETMASK, &sigset, NULL);
+diff -ur clamav-orig/clamscan/manager.c clamav-new/clamscan/manager.c
+--- clamav-orig/clamscan/manager.c	2009-03-16 11:37:26.000000000 +1100
++++ clamav-new/clamscan/manager.c	2009-03-16 17:15:46.000000000 +1100
+@@ -73,6 +73,11 @@
+ #define P_tmpdir    "C:\\WINDOWS\\TEMP"
+ #endif
+ 
++#ifdef __DJGPP__
++#undef P_tmpdir
++#define P_tmpdir    "/dev/env/TEMP"
++#endif
++
+ #ifndef	O_BINARY
+ #define	O_BINARY    0
+ #endif
+@@ -129,7 +134,7 @@
+ 	return 0;
+     }
+     info.rblocks += fsize / CL_COUNT_PRECISION;
+-#ifndef C_WINDOWS
++#if !defined(C_WINDOWS) && !defined(__DJGPP__)
+     if(geteuid())
+ 	if(checkaccess(filename, NULL, R_OK) != 1) {
+ 	    if(!printinfected)
+@@ -214,7 +219,7 @@
+ 
+     if((dd = opendir(dirname)) != NULL) {
+ 	while((dent = readdir(dd))) {
+-#if !defined(C_INTERIX) && !defined(C_WINDOWS)
++#if !defined(C_INTERIX) && !defined(C_WINDOWS) && !defined(__DJGPP__)
+ 	    if(dent->d_ino)
+ #endif
+ 	    {
+@@ -334,7 +339,7 @@
+ 	struct stat sb;
+ 	char *file, cwd[1024], *pua_cats = NULL;
+ 	const struct optstruct *opt;
+-#ifndef C_WINDOWS
++#if !defined(C_WINDOWS) && !defined(__DJGPP__)
+ 	struct rlimit rlim;
+ #endif
+ 
+@@ -468,7 +473,7 @@
+ 	}
+     }
+ 
+-#ifndef C_WINDOWS
++#if !defined(C_WINDOWS) && !defined(__DJGPP__)
+     if(getrlimit(RLIMIT_FSIZE, &rlim) == 0) {
+ 	if(rlim.rlim_max < (rlim_t) cl_engine_get_num(engine, CL_ENGINE_MAX_FILESIZE, NULL))
+ 	    logg("^System limit for file size is lower than engine->maxfilesize\n");
+diff -ur clamav-orig/freshclam/freshclam.c clamav-new/freshclam/freshclam.c
+--- clamav-orig/freshclam/freshclam.c	2009-03-16 11:37:26.000000000 +1100
++++ clamav-new/freshclam/freshclam.c	2009-03-16 16:30:26.000000000 +1100
+@@ -438,7 +438,7 @@
+ 
+ 	logg("#freshclam daemon %s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n", get_version());
+ 
+-#ifdef	C_WINDOWS
++#if	defined(C_WINDOWS) || defined(__DJGPP__)
+ 	signal(SIGINT, daemon_sighandler);
+ 	terminate = 0;
+ #else
+diff -ur clamav-orig/freshclam/manager.c clamav-new/freshclam/manager.c
+--- clamav-orig/freshclam/manager.c	2009-03-16 11:37:26.000000000 +1100
++++ clamav-new/freshclam/manager.c	2009-03-16 16:30:26.000000000 +1100
+@@ -1412,7 +1412,7 @@
+     }
+ 
+     while((dent = readdir(dir))) {
+-#if !defined(C_INTERIX) && !defined(C_WINDOWS)
++#if !defined(C_INTERIX) && !defined(C_WINDOWS) && !defined(__DJGPP__)
+ 	if(dent->d_ino)
+ #endif
+ 	{
+diff -ur clamav-orig/libclamav/binhex.c clamav-new/libclamav/binhex.c
+--- clamav-orig/libclamav/binhex.c	2009-03-16 11:37:28.000000000 +1100
++++ clamav-new/libclamav/binhex.c	2009-03-16 16:31:12.000000000 +1100
+@@ -119,10 +119,6 @@
+ int
+ cli_binhex(const char *dir, int desc)
+ {
+-#ifndef HAVE_MMAP
+-	cli_warnmsg("File not decoded - binhex decoding needs mmap() (for now)\n");
+-	return CL_CLEAN;
+-#else
+ 	struct stat statb;
+ 	char *buf, *start, *line;
+ 	size_t size;
+@@ -142,7 +138,11 @@
+ 	if(m == NULL)
+ 		return CL_EMEM;
+ 
++#ifndef HAVE_MMAP
++	start = buf = cli_copy_file_to_mem(desc, size, 0);
++#else
+ 	start = buf = mmap(NULL, size, PROT_READ, MAP_PRIVATE, desc, 0);
++#endif
+ 	if(buf == MAP_FAILED) {
+ 		messageDestroy(m);
+ 		return CL_EMAP;
+@@ -187,7 +187,11 @@
+ 		buf = ++ptr;
+ 		bytesleft--;
+ 	}
++#ifndef HAVE_MMAP
++	free(start);
++#else
+ 	munmap(start, size);
++#endif
+ 
+ 	if(line)
+ 		free(line);
+@@ -213,5 +217,4 @@
+ 		return CL_CLEAN;	/* a lie - but it gets things going */
+ 	/* return CL_EIO; */	/* probably CL_EMEM, but we can't tell at this layer */
+ 	return CL_EMEM;
+-#endif
+ }
+diff -ur clamav-orig/libclamav/mbox.c clamav-new/libclamav/mbox.c
+--- clamav-orig/libclamav/mbox.c	2009-03-16 11:37:28.000000000 +1100
++++ clamav-new/libclamav/mbox.c	2009-03-16 16:30:26.000000000 +1100
+@@ -3857,7 +3857,7 @@
+ 					int nblanks;
+ 					struct stat statb;
+ 					const char *dentry_idpart;
+-#ifndef C_WINDOWS
++#if (!defined(C_WINDOWS)) && (!defined(__DJGPP__))
+ 					if(dent->d_ino == 0)
+ 						continue;
+ #endif
+diff -ur clamav-orig/libclamav/others.c clamav-new/libclamav/others.c
+--- clamav-orig/libclamav/others.c	2009-03-16 11:37:28.000000000 +1100
++++ clamav-new/libclamav/others.c	2009-03-16 16:37:12.000000000 +1100
+@@ -81,6 +81,47 @@
+ #define       P_tmpdir        "C:\\WINDOWS\\TEMP"
+ #endif
+ 
++#ifdef 	      __DJGPP__
++#undef	      P_tmpdir
++#define       P_tmpdir	      "/dev/env/TEMP"
++
++/* DJGPP is missing pread/pwrite */
++ssize_t pread(int fd, void *data, size_t length, off_t offset )
++{
++        ssize_t result;
++        off_t save_offset;
++        int save_errno;
++
++        save_offset  = lseek(fd,offset,SEEK_SET);
++        if(save_offset==-1) return -1;
++
++        result = read(fd,data,length);
++
++        save_errno = errno;
++        lseek(fd, save_offset, SEEK_SET);
++        errno = save_errno;
++
++        return result;
++}
++
++#endif
++
++#ifndef HAVE_MMAP
++/* A partial mmap replacement for binhex and pdf scanning */
++void *cli_copy_file_to_mem( int fildes, size_t size, off_t offset )
++{
++	char *buf = malloc( size );
++
++	if( buf == NULL ) return( NULL );
++	if( pread( fildes, buf, size, offset ) == -1 ) {
++        	free( buf );
++        	return( NULL );
++	};
++
++	return( buf );
++}
++#endif
++
+ int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
+ int (*cli_unrar_extract_next_prepare)(unrar_state_t *state, const char *dirname);
+ int (*cli_unrar_extract_next)(unrar_state_t *state, const char *dirname);
+@@ -99,11 +140,19 @@
+     }
+     rhandle = lt_dlopenext("libclamunrar_iface");
+     if (!rhandle) {
++#ifdef __DJGPP__
++    cli_unrar_open = unrar_open;
++    cli_unrar_extract_next_prepare = unrar_extract_next_prepare;
++    cli_unrar_extract_next = unrar_extract_next;
++    cli_unrar_close = unrar_close;
++    have_rar = 1;
++#else
+ #ifdef WARN_DLOPEN_FAIL
+         cli_warnmsg("Cannot dlopen: %s - unrar support unavailable\n", lt_dlerror());
+ #else
+         cli_dbgmsg("Cannot dlopen: %s - unrar support unavailable\n", lt_dlerror());
+ #endif
++#endif
+         return;
+     }
+     if (!(cli_unrar_open = (int(*)(int, const char *, unrar_state_t *))lt_dlsym(rhandle, "unrar_open")) ||
+@@ -597,7 +646,7 @@
+ 	return 0;
+ }
+ 
+-#ifdef	C_WINDOWS
++#if defined(C_WINDOWS) || defined(__DJGPP__)
+ /*
+  * Windows doesn't allow you to delete a directory while it is still open
+  */
+@@ -702,7 +751,7 @@
+ #else
+ 	    while((dent = readdir(dd))) {
+ #endif
+-#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS))
++#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS)) && (!defined(__DJGPP__))
+ 		if(dent->d_ino)
+ #endif
+ 		{
+diff -ur clamav-orig/libclamav/others.h clamav-new/libclamav/others.h
+--- clamav-orig/libclamav/others.h	2009-03-16 11:03:10.000000000 +1100
++++ clamav-new/libclamav/others.h	2009-03-16 16:31:12.000000000 +1100
+@@ -358,6 +358,11 @@
+ void cli_dbgmsg_internal(const char *str, ...);
+ #endif
+ 
++#ifndef HAVE_MMAP
++void *cli_copy_file_to_mem(int fildes, size_t size, off_t offset);
++#define MAP_FAILED NULL
++#endif
++
+ void *cli_malloc(size_t nmemb);
+ void *cli_calloc(size_t nmemb, size_t size);
+ void *cli_realloc(void *ptr, size_t size);
+diff -ur clamav-orig/libclamav/others_common.c clamav-new/libclamav/others_common.c
+--- clamav-orig/libclamav/others_common.c	2009-03-16 11:37:28.000000000 +1100
++++ clamav-new/libclamav/others_common.c	2009-03-16 16:44:08.000000000 +1100
+@@ -100,6 +100,221 @@
+     fputs(buff, stderr);				    \
+     va_end(args)
+ 
++#ifdef __DJGPP__
++/* 
++ * DJGPP is missing strptime (needed by freshclam)
++ * This is my own implementation
++ */
++
++
++static char *__day[] = {
++    "Sunday", "Monday", "Tuesday", "Wednesday",
++    "Thursday", "Friday", "Saturday"
++};
++
++static char *__month[] = {
++    "January", "February", "March", "April", "May", "June",
++    "July", "August", "September", "October", "November", "December"
++};
++
++static char *__ampm[] = {
++    "AM", "PM"
++};
++
++static int _strton( const char *nptr, const char * restrict *endptr, int max )
++{
++    int x = 0;
++
++    for( ;; ) {
++        if( !max ) break;
++        if( *nptr == '0' && !x ) {
++            nptr++;
++            continue;
++        }
++        if( isdigit( *nptr ) ) {
++            x = x * 10 + ( *nptr - '0' );
++            nptr++;
++            max--;
++        } else {
++            break;
++        }
++    }
++    *endptr = ( char * )nptr;
++
++    return( x );
++}
++
++char *strptime( const char * restrict buf, const char * restrict format,
++                struct tm * restrict tm )
++{
++    int w;
++    char *p;
++    int stri, len;
++
++    while( *format ) {
++        if( *format == '%' ) {
++            format++;
++            if( *format == 'E' || *format == 'O' ) format++;
++            switch( *format ) {
++                case '%':
++                    buf++;
++                    break;
++                case 'a':
++                case 'A':   /* Day of week full or abbreviated */
++                    for( w = 0; w < 7; w++ ) {
++                        p = __day[ w ];
++                        stri = 0;
++                        len = strlen( p );
++                        if( strnicmp( buf, p, len ) == 0 ) stri = len;
++                        else if( strnicmp( buf, p, 3 ) == 0 ) stri = 3;
++                        if( stri != 0 ) {
++                            tm->tm_wday = w;
++                            buf += stri;
++                            break;
++                        }
++                    }
++                    if( w == 7 ) return( NULL );
++                    break;
++                case 'b':
++                case 'B':
++                case 'h':
++                    for( w = 0; w < 12; w++ ) {
++                        p = __month[ w ];
++                        stri = 0;
++                        len = strlen( p );
++                        if( strnicmp( buf, p, len ) == 0 ) stri = len;
++                        else if( strnicmp( buf, p, 3 ) == 0 ) stri = 3;
++                        if( stri != 0 ) {
++                            tm->tm_mon = w;
++                            buf += stri;
++                            break;
++                        }
++                    }
++                    if( w == 12 ) return( NULL );
++                    break;
++                case 'c':
++                    buf = strptime( buf, "%a %b %d %R:%S %Y", tm );
++                    if( buf == NULL ) return( NULL );
++                    break;
++                case 'd':
++                case 'e':
++                    stri = _strton( buf, &buf, 2 );
++                    if( stri == 0 || stri > 31 ) return( NULL );
++                    tm->tm_mday = stri;
++                    break;
++                case 'D':
++                    if( ( buf = strptime( buf, "%m/%d/%y", tm ) ) == NULL )
++                        return( NULL );
++                    break;
++                case 'H':
++                    if( !isdigit( *buf ) ||
++                        ( stri = _strton( buf, &buf, 2 ) ) > 23 )
++                        return( NULL );
++                    tm->tm_hour = stri;
++                    break;
++                case 'I':
++                    stri = _strton( buf, &buf, 2 );
++                    if( stri < 1 || stri > 12 ) return( NULL );
++                    tm->tm_hour = stri - 1;
++                    break;
++                case 'j':
++                    stri = _strton( buf, &buf, 3 );
++                    if( stri < 1 || stri > 366 ) return( NULL );
++                    tm->tm_yday = stri;
++                    break;
++                case 'm':
++                    stri = _strton( buf, &buf, 2 );
++                    if( stri < 1 || stri > 12 ) return( NULL );
++                    tm->tm_mon = stri - 1;
++                    break;
++                case 'M':
++                    if( !isdigit( *buf ) ||
++                        ( stri = _strton( buf, &buf, 2 ) ) > 59 ) {
++                        return( NULL );
++                    }
++                    tm->tm_min = stri;
++                    break;
++                case 'n':
++                case 't':
++                    if( !isspace( *buf ) ) return( NULL );
++                    buf++;
++                    break;
++                case 'p':
++                    for( w = 0; w < 2; w++ ) {
++                        if( strnicmp( buf, __ampm[ w ], 2 ) == 0 ) break;
++                    }
++                    if( w == 2 ) return( NULL );
++                    if( w == 0 && tm->tm_hour > 11 ) tm->tm_hour -= 12;
++                    if( w == 1 && tm->tm_hour < 12 ) tm->tm_hour += 12;
++                    buf += 2;
++                    break;
++                case 'r':
++                    if( ( buf = strptime( buf, "%I:%M:%S%p", tm ) ) == NULL )
++                        return( NULL );
++                    break;
++                case 'R':
++                    if( ( buf = strptime( buf, "%H:%M", tm ) ) == NULL )
++                        return( NULL );
++                    break;
++                case 'S':
++                    if( !isdigit( *buf ) ||
++                        ( stri = _strton( buf, &buf, 2 ) ) > 60 )
++                        return( NULL );
++                    tm->tm_sec = stri;
++                    break;
++                case 'U':
++                    if( !isdigit( *buf ) ||
++                        ( stri = _strton( buf, &buf, 2 ) ) > 53 )
++                        return( NULL );
++                    w = stri * 7;
++                    if( stri % 7 > tm->tm_wday ) w++;
++                    tm->tm_yday = w;
++                    break;
++                case 'w':
++                    if( !isdigit( *buf ) ||
++                        ( stri = _strton( buf, &buf, 2 ) ) > 6 ) return( NULL );
++                    tm->tm_wday = stri;
++                    break;
++                case 'W':
++                    if( !isdigit( *buf ) ||
++                        ( stri = _strton( buf, &buf, 2 ) ) > 53 )
++                        return( NULL );
++                    w = stri * 7;
++                    if( stri % 7 > ( tm->tm_wday + 6 ) % 7 ) w++;
++                    tm->tm_yday = w;
++                    break;
++                case 'x':
++                    if( ( buf = strptime( buf, "%a %b %d %Y", tm ) ) == NULL )
++                        return( NULL );
++                    break;
++                case 'X':
++                    if( ( buf = strptime( buf, "%H:%M:%S", tm ) ) == NULL )
++                        return( NULL );
++                    break;
++                case 'y':
++                    stri = _strton( buf, &buf, 2 );
++                    if( stri > 99 ) return( NULL );
++                    tm->tm_year = ( stri < 69 ) ? 100 + stri : stri;
++                    break;
++                case 'Y':
++                    stri = _strton( buf, &buf, 4 );
++                    if( stri < 1969 || stri > 2068 ) return( NULL );
++                    tm->tm_year = stri - 1900;
++                    break;
++                default:
++                    buf++;
++            }
++        } else {
++            if( isspace( *format ) ) while( isspace( *buf ) ) buf++;
++            else if( *buf++ != *format ) return( NULL );
++        }
++        format++;
++    }
++    
++    return( ( char * )buf );
++}
++#endif
++
+ void cli_warnmsg(const char *str, ...)
+ {
+     MSGCODE("LibClamAV Warning: ");
+@@ -753,7 +968,12 @@
+ 	int i;
+ 
+     if(!dir) {
+-	if((mdir = getenv("TMPDIR")) == NULL)
++	mdir = getenv("TMPDIR");
++#ifdef __DJGPP__
++	if( mdir == NULL ) mdir = getenv("TEMP");
++	if( mdir == NULL ) mdir = getenv("TMP");
++#endif
++	if(mdir == NULL)
+ #ifdef P_tmpdir
+ 	    mdir = P_tmpdir;
+ #else
+@@ -789,12 +1009,17 @@
+ 	return NULL;
+     }
+ 
++#ifdef __DJGPP__ /* Support systems that don't have an lfn driver/interface */
++	sprintf(name, "%s/c", mdir);
++	strncat(name, tmp, 7);
++#else
+ #ifdef	C_WINDOWS
+ 	sprintf(name, "%s\\clamav-", mdir);
+ #else
+ 	sprintf(name, "%s/clamav-", mdir);
+ #endif
+     strncat(name, tmp, 32);
++#endif
+     free(tmp);
+ 
+     return(name);
+diff -ur clamav-orig/libclamav/pdf.c clamav-new/libclamav/pdf.c
+--- clamav-orig/libclamav/pdf.c	2009-03-16 11:37:28.000000000 +1100
++++ clamav-new/libclamav/pdf.c	2009-03-16 16:31:12.000000000 +1100
+@@ -26,7 +26,6 @@
+ #include "clamav-config.h"
+ #endif
+ 
+-#ifdef	HAVE_MMAP
+ #include <stdio.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+@@ -105,7 +104,11 @@
+ 	if(size <= 7)	/* doesn't even include the file header */
+ 		return CL_CLEAN;
+ 
++#ifndef HAVE_MMAP
++	p = buf = cli_copy_file_to_mem(desc, size, offset);
++#else
+ 	p = buf = mmap(NULL, size, PROT_READ, MAP_PRIVATE, desc, offset);
++#endif
+ 	if(buf == MAP_FAILED) {
+ 		cli_errmsg("cli_pdf: mmap() failed\n");
+ 		return CL_EMAP;
+@@ -126,7 +129,11 @@
+ 	}
+ 
+ 	if(!bytesleft) {
++#ifndef HAVE_MMAP
++	    free(buf);
++#else
+ 	    munmap(buf, size);
++#endif
+ 	    cli_dbgmsg("cli_pdf: file header not found\n");
+ 	    return CL_CLEAN;
+ 	}
+@@ -137,7 +144,11 @@
+ 			break;
+ 
+ 	if(q <= p) {
++#ifndef HAVE_MMAP
++		free(buf);
++#else
+ 		munmap(buf, size);
++#endif
+ 		cli_dbgmsg("cli_pdf: trailer not found\n");
+ 		return CL_CLEAN;
+ 	}
+@@ -156,7 +167,11 @@
+ 		 * http://www.cs.cmu.edu/~dst/Adobe/Gallery/anon21jul01-pdf-encryption.txt
+ 		 * http://www.adobe.com/devnet/pdf/
+ 		 */
++#ifndef HAVE_MMAP
++		free(buf);
++#else
+ 		munmap(buf, size);
++#endif
+ 		cli_dbgmsg("cli_pdf: Encrypted PDF files not yet supported\n");
+ 		return CL_CLEAN;
+ 	}
+@@ -179,7 +194,11 @@
+ 				break;
+ 
+ 	if(xrefstart == p) {
++#ifndef HAVE_MMAP
++		free(buf);
++#else
+ 		munmap(buf, size);
++#endif
+ 		cli_dbgmsg("cli_pdf: xref not found\n");
+ 		return CL_CLEAN;
+ 	}
+@@ -550,7 +569,11 @@
+ 		if(rc != CL_CLEAN) break;
+ 	}
+ 
++#ifndef HAVE_MMAP
++	free(buf);
++#else
+ 	munmap(buf, size);
++#endif
+ 
+ 	tableDestroy(md5table);
+ 
+@@ -886,16 +909,4 @@
+ 
+ 	return NULL;
+ }
+-#else	/*!HAVE_MMAP*/
+-
+-#include "clamav.h"
+-#include "others.h"
+-#include "pdf.h"
+ 
+-int
+-cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
+-{
+-	cli_dbgmsg("File not decoded - PDF decoding needs mmap() (for now)\n");
+-	return CL_CLEAN;
+-}
+-#endif
+diff -ur clamav-orig/libclamav/readdb.c clamav-new/libclamav/readdb.c
+--- clamav-orig/libclamav/readdb.c	2009-03-16 11:37:28.000000000 +1100
++++ clamav-new/libclamav/readdb.c	2009-03-16 16:30:26.000000000 +1100
+@@ -1605,7 +1605,7 @@
+ #else
+     while((dent = readdir(dd))) {
+ #endif
+-#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS))
++#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS)) && (!defined(__DJGPP__))
+ 	if(dent->d_ino)
+ #endif
+ 	{
+@@ -1719,7 +1719,7 @@
+ #else
+     while((dent = readdir(dd))) {
+ #endif
+-#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS))
++#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS)) && (!defined(__DJGPP__))
+ 	if(dent->d_ino)
+ #endif
+ 	{
+@@ -1802,7 +1802,7 @@
+ #else
+     while((dent = readdir(dd))) {
+ #endif
+-#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS))
++#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS)) && (!defined(__DJGPP__))
+ 	if(dent->d_ino)
+ #endif
+ 	{
+@@ -1909,6 +1909,16 @@
+ #ifdef CL_THREAD_SAFE
+     pthread_mutex_unlock(&cli_ref_mutex);
+ #endif
++/*
++ * I know that disabling this for DJGPP causes a GIANT memory leak if an app
++ * were to free the database and load it again, but if we let if free each
++ * tiny memory block, it literally takes at least 5-10min if not more to
++ * finish.  And in DOS all of the memory will automatically be freed when
++ * the app terminates, so the leak isn't permanent.  If mempool were to be
++ * available for systems without mmap, this would likely be a much better
++ * solution
++ */
++#ifndef __DJGPP__
+     if(engine->root) {
+ 	for(i = 0; i < CLI_MTARGETS; i++) {
+ 	    if((root = engine->root[i])) {
+@@ -1981,6 +1991,7 @@
+ 
+     cli_ftfree(engine);
+     cli_freeign(engine);
++#endif
+ #ifdef USE_MPOOL
+     if(engine->mempool) mpool_destroy(engine->mempool);
+ #endif
+diff -ur clamav-orig/libclamav/scanners.c clamav-new/libclamav/scanners.c
+--- clamav-orig/libclamav/scanners.c	2009-03-16 11:37:28.000000000 +1100
++++ clamav-new/libclamav/scanners.c	2009-03-16 16:30:26.000000000 +1100
+@@ -128,7 +128,7 @@
+ #else
+ 	while((dent = readdir(dd))) {
+ #endif
+-#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS))
++#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS)) && (!defined(__DJGPP__))
+ 	    if(dent->d_ino)
+ #endif
+ 	    {
+@@ -885,7 +885,7 @@
+ #else
+ 	while((dent = readdir(dd))) {
+ #endif
+-#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS))
++#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS)) && (!defined(__DJGPP__))
+ 	    if(dent->d_ino)
+ #endif
+ 	    {
+diff -ur clamav-orig/shared/actions.c clamav-new/shared/actions.c
+--- clamav-orig/shared/actions.c	2009-03-16 11:37:26.000000000 +1100
++++ clamav-new/shared/actions.c	2009-03-16 16:30:26.000000000 +1100
+@@ -30,7 +30,9 @@
+ #include <fcntl.h>
+ #include <utime.h>
+ #include <errno.h>
++#ifndef __DJGPP__
+ #include <libgen.h>
++#endif
+ 
+ #include "shared/optparser.h"
+ #include "shared/output.h"
+diff -ur clamav-orig/shared/misc.h clamav-new/shared/misc.h
+--- clamav-orig/shared/misc.h	2009-03-16 11:37:26.000000000 +1100
++++ clamav-new/shared/misc.h	2009-03-16 17:13:22.000000000 +1100
+@@ -23,6 +23,7 @@
+ #include <netdb.h>
+ #include <netinet/in.h>
+ #include "optparser.h"
++
+ /* Maximum filenames under various systems - njh */
+ #ifndef	NAME_MAX	/* e.g. Linux */
+ # ifdef	MAXNAMELEN	/* e.g. Solaris */
+diff -ur clamav-orig/shared/optparser.c clamav-new/shared/optparser.c
+--- clamav-orig/shared/optparser.c	2009-03-16 11:48:00.000000000 +1100
++++ clamav-new/shared/optparser.c	2009-03-16 17:21:28.000000000 +1100
+@@ -56,13 +56,19 @@
+ #define FLAG_REQUIRED	2 /* arg is required, even if there's a default value */
+ #define FLAG_HIDDEN	4 /* don't print in clamconf --generate-config */
+ 
++#ifdef __DJGPP__
++#define FRESHCLAM_CONF CONFDIR"/clamav.cnf"
++#else
++#define FRESHCLAM_CONF CONFDIR"/freshclam.conf"
++#endif
++
+ const struct clam_option clam_options[] = {
+     /* name,   longopt, sopt, argtype, regex, num, str, mul, owner, description, suggested */
+ 
+     /* cmdline only */
+     { NULL, "help", 'h', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_MILTER | OPT_CLAMCONF | OPT_CLAMDTOP, "", "" },
+     { NULL, "config-file", 'c', TYPE_STRING, NULL, 0, CONFDIR"/clamd.conf", FLAG_REQUIRED, OPT_CLAMD | OPT_CLAMDSCAN | OPT_CLAMDTOP, "", "" },
+-    { NULL, "config-file", 0, TYPE_STRING, NULL, 0, CONFDIR"/freshclam.conf", FLAG_REQUIRED, OPT_FRESHCLAM, "", "" },
++    { NULL, "config-file", 0, TYPE_STRING, NULL, 0, FRESHCLAM_CONF, FLAG_REQUIRED, OPT_FRESHCLAM, "", "" },
+     { NULL, "config-file", 'c', TYPE_STRING, NULL, 0, CONFDIR"/clamav-milter.conf", FLAG_REQUIRED, OPT_MILTER, "", "" },
+     { NULL, "version", 'V', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_MILTER | OPT_CLAMCONF | OPT_CLAMDTOP, "", "" },
+     { NULL, "debug", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_SIGTOOL, "", "" },
+diff -ur clamav-orig/sigtool/sigtool.c clamav-new/sigtool/sigtool.c
+--- clamav-orig/sigtool/sigtool.c	2009-03-16 11:37:26.000000000 +1100
++++ clamav-new/sigtool/sigtool.c	2009-03-16 16:30:26.000000000 +1100
+@@ -35,7 +35,9 @@
+ #include <sys/stat.h>
+ #include <fcntl.h>
+ #include <sys/socket.h>
++#ifndef __DJGPP__
+ #include <sys/un.h>
++#endif
+ #include <netinet/in.h>
+ #include <arpa/inet.h>
+ #include <sys/wait.h>
+@@ -987,7 +989,7 @@
+     }
+ 
+     while((dent = readdir(dd))) {
+-#ifndef C_INTERIX
++#if !defined(C_INTERIX) && !defined(__DJGPP__)
+ 	if(dent->d_ino)
+ #endif
+ 	{
+@@ -1469,7 +1471,7 @@
+     }
+ 
+     while((dent = readdir(dd))) {
+-#if (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
++#if (!defined(C_INTERIX)) && (!defined(C_WINDOWS)) && (!defined(__DJGPP__))
+ 	if(dent->d_ino)
+ #endif
+ 	{
+@@ -1617,7 +1619,7 @@
+     }
+ 
+     while((dent = readdir(dd))) {
+-#ifndef C_INTERIX
++#if !defined(C_INTERIX) && !defined(__DJGPP__)
+ 	if(dent->d_ino)
+ #endif
+ 	{
+@@ -1645,7 +1647,7 @@
+     }
+ 
+     while((dent = readdir(dd))) {
+-#ifndef C_INTERIX
++#if !defined(C_INTERIX) && !defined(__DJGPP__)
+ 	if(dent->d_ino)
+ #endif
+ 	{
+diff -ur clamav-orig/sigtool/vba.c clamav-new/sigtool/vba.c
+--- clamav-orig/sigtool/vba.c	2009-03-16 11:37:26.000000000 +1100
++++ clamav-new/sigtool/vba.c	2009-03-16 16:30:26.000000000 +1100
+@@ -970,7 +970,10 @@
+ 
+     if ((dd = opendir (dirname)) != NULL) {
+ 	while ((dent = readdir (dd))) {
+-	    if (dent->d_ino) {
++#ifndef __DJGPP__
++	    if (dent->d_ino)
++#endif
++        {
+ 		if (strcmp (dent->d_name, ".") && strcmp (dent->d_name, "..")) {
+ 		    /* build the full name */
+ 		    fname = (char *) cli_calloc (strlen (dirname) + strlen (dent->d_name) + 2, sizeof (char));
+@@ -1130,7 +1133,10 @@
+ 
+     if ((dd = opendir (dirname)) != NULL) {
+ 	while ((dent = readdir (dd))) {
+-	    if (dent->d_ino) {
++#ifndef __DJGPP__
++	    if (dent->d_ino)
++#endif
++        {
+ 		if (strcmp (dent->d_name, ".") && strcmp (dent->d_name, "..")) {
+ 		    /* build the full name */
+ 		    fullname = calloc (strlen (dirname) + strlen (dent->d_name) + 2, sizeof (char));
