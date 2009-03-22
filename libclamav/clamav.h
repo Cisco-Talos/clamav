@@ -123,6 +123,7 @@ enum cl_engine_field {
     CL_ENGINE_MIN_CC_COUNT,	    /* uint32_t */
     CL_ENGINE_MIN_SSN_COUNT,	    /* uint32_t */
     CL_ENGINE_PUA_CATEGORIES,	    /* (char *) */
+    CL_ENGINE_DB_OPTIONS,	    /* uint32_t */
     CL_ENGINE_DB_VERSION,	    /* uint32_t */
     CL_ENGINE_DB_TIME,		    /* time_t */
     CL_ENGINE_AC_ONLY,		    /* uint32_t */

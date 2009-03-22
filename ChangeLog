@@ -1,3 +1,7 @@
+Sun Mar 22 15:01:24 CET 2009 (acab)
+-----------------------------------
+ * libclamav: add cl_engine_get_num(CL_ENGINE_DB_OPTIONS)
+
 Sun Mar 22 15:25:13 EET 2009 (edwin)
 ------------------------------------
  * clamd/others.c: fix build when poll is not available.

@@ -281,6 +281,7 @@ int cl_engine_set_num(struct cl_engine *engine, enum cl_engine_field field, long
 	case CL_ENGINE_MIN_SSN_COUNT:
 	    engine->min_ssn_count = num;
 	    break;
+	case CL_ENGINE_DB_OPTIONS:
 	case CL_ENGINE_DB_VERSION:
 	case CL_ENGINE_DB_TIME:
 	    cli_warnmsg("cl_engine_set_num: The field is read only\n");
@@ -318,6 +319,8 @@ long long cl_engine_get_num(const struct cl_engine *engine, enum cl_engine_field
 	*err = CL_SUCCESS;
 
     switch(field) {
+	case CL_ENGINE_DB_OPTIONS:
+	    return engine->dboptions;
 	case CL_ENGINE_MAX_SCANSIZE:
 	    return engine->maxscansize;
 	case CL_ENGINE_MAX_FILESIZE:
