@@ -167,7 +167,7 @@ END_TEST
 #ifdef CHECK_HAVE_LOOPS
 static struct base64lines {
     const char *line;
-    unsigned char *decoded;
+    const unsigned char *decoded;
     unsigned int   len;
 } base64tests[] = {
     {"", "", 0},

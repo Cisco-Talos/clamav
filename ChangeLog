@@ -1,3 +1,7 @@
+Sun Mar 22 19:18:53 EET 2009 (edwin)
+------------------------------------
+ * unit_tests/check_str.c: fix warning
+
 Sun Mar 22 18:15:01 EET 2009 (edwin)
 ------------------------------------
  * libclamav/libclamav.map, libclamav/message.c,
