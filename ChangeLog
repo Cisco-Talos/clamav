@@ -1,3 +1,7 @@
+Sun Mar 22 17:35:31 CET 2009 (acab)
+-----------------------------------
+ * contrib/init: removed
+
 Sun Mar 22 17:30:03 CET 2009 (tk)
 ---------------------------------
  * contrib/DJGPP: add DJGPP patch from Blair <Blairdude*gmail.com> (bb#1317)
