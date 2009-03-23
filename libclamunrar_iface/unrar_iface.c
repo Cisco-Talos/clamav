@@ -392,7 +392,6 @@ int unrar_extract_next_prepare(unrar_state_t *state, const char *dirname)
 
     new_metadata->pack_size = state->file_header->high_pack_size * 0x100000000ULL + state->file_header->pack_size;
     new_metadata->unpack_size = state->file_header->high_unpack_size * 0x100000000ULL + state->file_header->unpack_size;
-    new_metadata->unpack_size = state->file_header->unpack_size;
     new_metadata->crc = state->file_header->file_crc;
     new_metadata->method = state->file_header->method;
     new_metadata->filename = strdup((const char*)state->file_header->filename);
