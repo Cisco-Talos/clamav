@@ -891,7 +891,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 	cli_dbgmsg("------------------------------------\n");
 
-	if (DETECT_BROKEN && (exe_sections[i].urva % valign)) { /* Bad virtual alignment */
+	if (DETECT_BROKEN && (!valign || (exe_sections[i].urva % valign))) { /* Bad virtual alignment */
 	    cli_dbgmsg("VirtualAddress is misaligned\n");
 	    if(ctx->virname)
 	        *ctx->virname = "Broken.Executable";

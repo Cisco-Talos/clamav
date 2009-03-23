@@ -1,3 +1,7 @@
+Mon Mar 23 15:12:30 CET 2009 (acab)
+-----------------------------------
+ * libclamav/pe.c: division by zero with --detect-broken
+
 Mon Mar 23 13:59:28 CET 2009 (tk)
 ---------------------------------
  * libclamav/cab.c: handle MSZIP compressed files with large block sizes
