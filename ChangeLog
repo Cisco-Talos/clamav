@@ -1,3 +1,8 @@
+Mon Mar 23 13:59:28 CET 2009 (tk)
+---------------------------------
+ * libclamav/cab.c: handle MSZIP compressed files with large block sizes
+		    (bb#1085)
+
 Mon Mar 23 13:52:31 CET 2009 (tk)
 ---------------------------------
  * libclamunrar, libclamav: don't depend on the uncompressed size field

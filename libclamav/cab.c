@@ -539,10 +539,10 @@ static int cab_read(struct cab_file *file, unsigned char *buffer, int bytes)
 
 	    if(file->cab->state->blknum >= file->folder->nblocks) {
 		if((file->folder->cmethod & 0x000f) == 0x0003) { /* LZX hack */
-		    lzx_set_output_length(file->cab->state->stream, (off_t) ((file->cab->state->blknum - 1) * CAB_BLOCKMAX + file->cab->state->outlen));
+		    lzx_set_output_length(file->cab->state->stream, (off_t) ((file->cab->state->blknum - 1) * 32768 + file->cab->state->outlen));
 		}
 	    } else {
-		if(file->cab->state->outlen != CAB_BLOCKMAX) {
+		if(file->cab->state->outlen != 32768) {
 		    cli_dbgmsg("cab_read: WARNING: partial data block\n");
 		}
 	    }

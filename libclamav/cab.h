@@ -24,7 +24,7 @@
 #include <sys/types.h>
 #include "cltypes.h"
 
-#define CAB_BLOCKMAX 32768
+#define CAB_BLOCKMAX 65535
 #define CAB_INPUTMAX (CAB_BLOCKMAX + 6144)
 
 struct cab_archive {
