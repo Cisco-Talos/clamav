@@ -153,9 +153,18 @@ static void unp_write_data(unpack_data_t *unpack_data, uint8_t *data, int size)
 {
 	int ret;
 	rar_dbgmsg("in unp_write_data length=%d\n", size);
+
+	unpack_data->true_size += size;
+	unpack_data->unp_crc = rar_crc(unpack_data->unp_crc, data, size);
+	if(unpack_data->max_size) {
+	    if(unpack_data->written_size >= unpack_data->max_size)
+		return;
+
+	    if(unpack_data->written_size + size > unpack_data->max_size)
+		size = unpack_data->max_size - unpack_data->written_size;
+	}
 	if((ret = write(unpack_data->ofd, data, size)) > 0)
 	    unpack_data->written_size += ret;
-	unpack_data->unp_crc = rar_crc(unpack_data->unp_crc, data, size);
 }
 
 static void unp_write_area(unpack_data_t *unpack_data, unsigned int start_ptr, unsigned int end_ptr)
@@ -827,6 +836,7 @@ void rar_unpack_init_data(int solid, unpack_data_t *unpack_data)
 	unpack_data->read_top = 0;
 	unpack_data->read_border = 0;
 	unpack_data->written_size = 0;
+	unpack_data->true_size = 0;
 	rarvm_init(&unpack_data->rarvm_data);
 	unpack_data->unp_crc = 0xffffffff;
 	
@@ -1067,7 +1077,6 @@ static int rar_unpack29(int fd, int solid, unpack_data_t *unpack_data)
 	if (retval) {
 		unp_write_buf(unpack_data);
 	}
-	rar_dbgmsg("Finished length: %ld\n", unpack_data->written_size);
 	return retval;
 }
 
@@ -1094,5 +1103,8 @@ int rar_unpack(int fd, int method, int solid, unpack_data_t *unpack_data)
 		}
 		break;
 	}
+	rar_dbgmsg("Written size: %ld\n", unpack_data->written_size);
+	rar_dbgmsg("True size: %ld\n", unpack_data->true_size);
+
 	return retval;
 }

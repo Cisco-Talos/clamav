@@ -217,6 +217,8 @@ typedef struct unpack_data_tag
 	int *old_filter_lengths;
 	int last_filter, old_filter_lengths_size;
 	int64_t written_size;
+	int64_t true_size;
+	int64_t max_size;
 	int64_t dest_unp_size;
 	rarvm_data_t rarvm_data;
 	unsigned int unp_crc;

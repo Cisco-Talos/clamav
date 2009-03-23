@@ -319,12 +319,17 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 		ret = CL_EUNPACK;
 	    break;
 	}
-	if((ret=cli_checklimits("RAR", ctx, rar_state.metadata_tail->unpack_size, rar_state.metadata_tail->pack_size, 0)!=CL_CLEAN)) {
+	if(ctx->engine->maxscansize && ctx->scansize >= ctx->engine->maxscansize) {
 	    free(rar_state.file_header->filename);
 	    free(rar_state.file_header);
 	    ret = CL_CLEAN;
-	    continue;
+	    break;
 	}
+	if(ctx->engine->maxscansize && ctx->scansize + ctx->engine->maxfilesize >= ctx->engine->maxscansize)
+	    rar_state.maxfilesize = ctx->engine->maxscansize - ctx->scansize;
+	else
+	    rar_state.maxfilesize = ctx->engine->maxfilesize;
+
 	ret = cli_unrar_extract_next(&rar_state,dir);
 	if(ret == UNRAR_OK)
 	    ret = CL_SUCCESS;

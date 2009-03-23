@@ -308,6 +308,7 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
     unpack_data->PrgStack.array = unpack_data->Filters.array = NULL;
     unpack_data->PrgStack.num_items = unpack_data->Filters.num_items = 0;
     unpack_data->unp_crc = 0xffffffff;
+    unpack_data->max_size = 0;
 
     ppm_constructor(&unpack_data->ppm_data);
 
@@ -391,6 +392,7 @@ int unrar_extract_next_prepare(unrar_state_t *state, const char *dirname)
 
     new_metadata->pack_size = state->file_header->high_pack_size * 0x100000000ULL + state->file_header->pack_size;
     new_metadata->unpack_size = state->file_header->high_unpack_size * 0x100000000ULL + state->file_header->unpack_size;
+    new_metadata->unpack_size = state->file_header->unpack_size;
     new_metadata->crc = state->file_header->file_crc;
     new_metadata->method = state->file_header->method;
     new_metadata->filename = strdup((const char*)state->file_header->filename);
@@ -473,6 +475,7 @@ int unrar_extract_next(unrar_state_t *state, const char *dirname)
 	}
 	unpack_data = (unpack_data_t *) state->unpack_data;
 	state->ofd = unpack_data->ofd = ofd;
+	unpack_data->max_size = state->maxfilesize;
 	if(state->file_header->method == 0x30) {
 	    unrar_dbgmsg("UNRAR: Copying stored file (not packed)\n");
 	    copy_file_data(state->fd, ofd, state->file_header->pack_size);
