@@ -2,27 +2,24 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
-0.95rc2
---------
 
-This is a second release candidate for ClamAV 0.95. It fixes a number of
-problems that were found in 0.95rc1 and provides support for Google Safe
-Browsing, which can be enabled by turning on the SafeBrowsing option in
-freshclam.conf. Please see 'man 5 freshclam.conf' and
-http://safebrowsing.clamav.net for more information.
+0.95
+----
 
---
-The ClamAV team (http://www.clamav.net/team)
-
-
-0.95rc1
--------
-
-ClamAV 0.95rc1 introduces many bugfixes, improvements and additions. To make
+ClamAV 0.95 introduces many bugfixes, improvements and additions. To make
 the transition easier, we put various tips and upgrade notes on this page:
-https://wiki.clamav.net/Main/UpgradeNotes095
+https://wiki.clamav.net/Main/UpgradeNotes095. For detailed list of changes
+and bugfixes, please see the ChangeLog.
 
 The following are the key features of this release:
+
+    - Google Safe Browsing support: in addition to the heuristic and signature
+      based phishing detection mechanisms already available in ClamAV, the
+      scanner can now make use of the Google's blacklists of suspected
+      phishing and malware sites. The ClamAV Project distributes a constantly
+      updated Safe Browsing database, which can be automatically fetched by
+      freshclam. For more information, please see freshclam.conf(5) and
+      http://safebrowsing.clamav.net.
 
     - New clamav-milter: The program has been redesigned and rewritten from
       scratch. The most notable difference is that the internal mode has been

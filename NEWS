@@ -1,11 +1,57 @@
-0.95rc2
---------
+0.95
+----
 
-This is a second release candidate for ClamAV 0.95. It fixes a number of
-problems that were found in 0.95rc1 and provides support for Google Safe
-Browsing, which can be enabled by turning on the SafeBrowsing option in
-freshclam.conf. Please see 'man 5 freshclam.conf' and
-http://safebrowsing.clamav.net for more information.
+ClamAV 0.95 introduces many bugfixes, improvements and additions. To make
+the transition easier, we put various tips and upgrade notes on this page:
+https://wiki.clamav.net/Main/UpgradeNotes095. For detailed list of changes
+and bugfixes, please see the ChangeLog.
+
+The following are the key features of this release:
+
+    - Google Safe Browsing support: in addition to the heuristic and signature
+      based phishing detection mechanisms already available in ClamAV, the
+      scanner can now make use of the Google's blacklists of suspected
+      phishing and malware sites. The ClamAV Project distributes a constantly
+      updated Safe Browsing database, which can be automatically fetched by
+      freshclam. For more information, please see freshclam.conf(5) and
+      http://safebrowsing.clamav.net.
+
+    - New clamav-milter: The program has been redesigned and rewritten from
+      scratch. The most notable difference is that the internal mode has been
+      dropped which means that now a working clamd companion is required.
+      The milter now also has its own configuration file.
+
+    - Clamd extensions: The protocol has been extended to lighten the load
+      that clamd puts on the system, solve limitations of the old protocol,
+      and reduce latency when signature updates are received. For more
+      information about the new extensions please see the official
+      documentation and the upgrade notes.
+
+    - Improved API: The API used to program ClamAV's engine (libclamav) has
+      been redesigned to use modern object-oriented techniques and solves
+      various API/ABI compatibility issues between old and new releases.
+      You can find more information in Section 6 of clamdoc.pdf and in
+      the upgrade notes.
+
+    - ClamdTOP: This is a new program that allows system administrators to
+      monitor clamd. It provides information about the items in the clamd's
+      queue, clamd's memory usage, and the version of the signature database,
+      all in real-time and in nice curses-based interface.
+
+    - Memory Pool Allocator: Libclamav now includes its own memory pool
+      allocator based on memory mapping. This new solution replaces the
+      traditional malloc/free system for the copy of the signatures that
+      is kept in memory. As a result, clamd requires much less memory,
+      particularly when signature updates are received and the database is
+      loaded into memory.
+
+    - Unified Option Parser: Prior to version 0.95 each program in ClamAV's
+      suite of programs had its own set of runtime options. The new general
+      parser brings consistency of use and validation to these options across
+      the suite. Some command line switches of clamscan have been renamed
+      (the old ones will still be accepted but will have no effect and will
+      result in warnings), please see clamscan(1) and clamscan --help for
+      the details.
 
 --
 The ClamAV team (http://www.clamav.net/team)
