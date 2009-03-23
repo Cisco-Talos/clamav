@@ -1,6 +1,10 @@
+Mon Mar 23 15:14:30 CET 2009 (acab)
+-----------------------------------
+ * libclamav/untar.c: infloop in tar.c (bb#1462)
+
 Mon Mar 23 15:12:30 CET 2009 (acab)
 -----------------------------------
- * libclamav/pe.c: division by zero with --detect-broken
+ * libclamav/pe.c: division by zero with --detect-broken (bb#1335)
 
 Mon Mar 23 13:59:28 CET 2009 (tk)
 ---------------------------------

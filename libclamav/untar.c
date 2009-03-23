@@ -172,7 +172,11 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 
 			if(skipEntry) {
 				const int nskip = (size % BLOCKSIZE || !size) ? size + BLOCKSIZE - (size % BLOCKSIZE) : size;
-
+				
+				if(nskip < 0) {
+					cli_dbgmsg("cli_untar: got nagative skip size, giving up\n");
+					return CL_CLEAN;
+				}
 				cli_dbgmsg("cli_untar: skipping entry\n");
 				lseek(desc, nskip, SEEK_CUR);
 				continue;
