@@ -2662,6 +2662,8 @@ parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int re
 					}
 					if(rc == MAXREC)
 						break;
+					if (rc == OK_ATTACHMENTS_NOT_SAVED)
+					    rc = OK;
 				}
 
 				/* rc = parseEmailBody(NULL, NULL, mctx, recursion_level + 1); */

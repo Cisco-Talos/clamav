@@ -1,3 +1,7 @@
+Mon Mar 23 13:12:08 EET 2009 (edwin)
+------------------------------------
+ * libclamav/mbox.c: fix extraction of embedded images (bb #1384).
+
 Sun Mar 22 19:18:53 EET 2009 (edwin)
 ------------------------------------
  * unit_tests/check_str.c: fix warning
