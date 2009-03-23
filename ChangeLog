@@ -1,3 +1,7 @@
+Mon Mar 23 17:53:50 CET 2009 (tk)
+---------------------------------
+ * libclamav/others.h, configure: bump f-level and LC_REVISION
+
 Mon Mar 23 15:14:30 CET 2009 (acab)
 -----------------------------------
  * libclamav/untar.c: infloop in tar.c (bb#1462)
