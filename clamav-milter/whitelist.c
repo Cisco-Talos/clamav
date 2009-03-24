@@ -25,8 +25,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-#include <regex.h>
 
+#include "libclamav/regex/regex.h"
 #include "shared/output.h"
 #include "whitelist.h"
 
@@ -38,17 +38,20 @@ struct WHLST {
 struct WHLST *wfrom = NULL;
 struct WHLST *wto = NULL;
 
+int skipauth = 0;
+regex_t authreg;
+
 void whitelist_free(void) {
     struct WHLST *w;
     while(wfrom) {
 	w = wfrom->next;
-	regfree(&wfrom->preg);
+	cli_regfree(&wfrom->preg);
 	free(wfrom);
 	wfrom = w;
     }
     while(wto) {
 	w = wto->next;
-	regfree(&wto->preg);
+	cli_regfree(&wto->preg);
 	free(wto);
 	wto = w;
     }
@@ -85,14 +88,14 @@ int whitelist_init(const char *fname) {
 	}
 	if(!len) continue;
 	if (!(w = (struct WHLST *)malloc(sizeof(*w)))) {
-	    logg("!Out of memory loading whitelist\n");
+	    logg("!Out of memory loading whitelist file\n");
 	    whitelist_free();
 	    return 1;
 	}
 	w->next = (*addto);
 	(*addto) = w;
-	if (regcomp(&w->preg, ptr, REG_ICASE|REG_NOSUB)) {
-	    logg("!Failed to compile regex '%s'\n", ptr);
+	if (cli_regcomp(&w->preg, ptr, REG_ICASE|REG_NOSUB)) {
+	    logg("!Failed to compile regex '%s' in whitelist file\n", ptr);
 	    whitelist_free();
 	    return 1;
 	}
@@ -108,10 +111,27 @@ int whitelisted(const char *addr, int from) {
     else w = wto;
 
     while(w) {
-	if(!regexec(&w->preg, addr, 0, NULL, 0))
+	if(!cli_regexec(&w->preg, addr, 0, NULL, 0))
 	    return 1;
 	w = w->next;
     }
+    return 0;
+}
+
+
+int smtpauth_init(const char *r) {
+    if (cli_regcomp(&authreg, r, REG_ICASE|REG_NOSUB|REG_EXTENDED)) {
+	logg("!Failed to compile regex '%s' for SkipAuthSenders\n", r);
+	return 1;
+    }
+    skipauth = 1;
+    return 0;
+}
+
+
+int smtpauthed(const char *login) {
+    if(skipauth && !cli_regexec(&authreg, login, 0, NULL, 0))
+	return 1;
     return 0;
 }
 

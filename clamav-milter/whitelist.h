@@ -24,4 +24,6 @@
 int whitelist_init(const char *fname);
 void whitelist_free(void);
 int whitelisted(const char *addr, int from);
+int smtpauth_init(const char *r);
+int smtpauthed(const char *login);
 #endif

@@ -211,6 +211,14 @@ int main(int argc, char **argv) {
 	return 1;
     }
 
+    if((opt = optget(opts, "SkipAuthenticated"))->enabled && smtpauth_init(opt->strarg)) {
+	localnets_free();
+	whitelist_free();
+	logg_close();
+	optfree(opts);
+	return 1;
+    }
+
     if(optget(opts, "AddHeader")->enabled) {
 	char myname[255];
 

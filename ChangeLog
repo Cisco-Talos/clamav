@@ -1,3 +1,8 @@
+Tue Mar 24 12:43:14 CET 2009 (acab)
+-----------------------------------
+ * clamav-milter: allow whitelisting based on the smtpauth login,
+		  use cli_regXXX functions
+
 Mon Mar 23 18:15:21 CET 2009 (tk)
 ---------------------------------
  * V 0.95

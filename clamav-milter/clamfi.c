@@ -91,7 +91,7 @@ enum CFWHAT {
 };
 
 
-void makesanehdr(char *hdr) {
+static void makesanehdr(char *hdr) {
     while(*hdr) {
 	if(*hdr=='\'' || *hdr=='\t' || *hdr=='\r' || *hdr=='\n' || !isprint(*hdr))
 	    *hdr = ' ';
@@ -504,12 +504,18 @@ int init_actions(struct optstruct *opts) {
 
 sfsistat clamfi_envfrom(SMFICTX *ctx, char **argv) {
     struct CLAMFI *cf;
+    const char *login = smfi_getsymval(ctx, "{auth_authen}");
+
+    if(login && smtpauthed(login)) {
+	logg("*Skipping scan for authenticated user %s\n", login);
+	return SMFIS_ACCEPT;
+    }
 
     if(whitelisted(argv[0], 1)) {
 	logg("*Skipping scan for %s (whitelisted from)\n", argv[0]);
 	return SMFIS_ACCEPT;
     }
-    
+
     if(!(cf = (struct CLAMFI *)malloc(sizeof(*cf)))) {
 	logg("!Failed to allocate CLAMFI struct\n");
 	return FailAction;

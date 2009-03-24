@@ -382,7 +382,9 @@ const struct clam_option clam_options[] = {
 
     { "Chroot", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Chroot to the specified directory.\nChrooting is performed just after reading the config file and before\ndropping privileges.", "/newroot" },
 
-    { "Whitelist", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option specifies a file which contains a list of POSIX regular\nexpressions. Addresses (sent to or from - see below) matching these regexes\nwill not be scanned.  Optionally each line can start with the string \"From:\"\nor \"To:\" (note: no whitespace after the colon) indicating if it is,\nrespectively, the sender or recipient that is to be whitelisted.\nIf the field is missing, \"To:\" is assumed.\nLines starting with #, : or ! are ignored.", "/etc/whitelisted_addresses" },
+    { "Whitelist", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option specifies a file which contains a list of basic POSIX regular\nexpressions. Addresses (sent to or from - see below) matching these regexes\nwill not be scanned.  Optionally each line can start with the string \"From:\"\nor \"To:\" (note: no whitespace after the colon) indicating if it is,\nrespectively, the sender or recipient that is to be whitelisted.\nIf the field is missing, \"To:\" is assumed.\nLines starting with #, : or ! are ignored.", "/etc/whitelisted_addresses" },
+
+    { "SkipAuthenticated", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Messages from authenticated SMTP users matching this extended POSIX\nregular expression (egrep-like) will not be scanned.\nNote: this is the AUTH login name!", "SkipAuthenticated ^(tom|dick|henry)$" },
 
     { "LogInfected", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option allows to tune what is logged when a message is infected.\nPossible values are Off (the default - nothing is logged),\nBasic (minimal info logged), Full (verbose info logged)", "Basic" },
 
