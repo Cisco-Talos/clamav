@@ -1,3 +1,7 @@
+Tue Mar 24 19:41:25 CET 2009 (tk)
+---------------------------------
+ * configure: don't define HAVE_ZLIB_H
+
 Tue Mar 24 12:43:14 CET 2009 (acab)
 -----------------------------------
  * clamav-milter: allow whitelisting based on the smtpauth login,

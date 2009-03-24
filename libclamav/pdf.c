@@ -46,9 +46,7 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #include <sys/mman.h>
 #endif
 
-#ifdef HAVE_ZLIB_H
 #include <zlib.h>
-#endif
 
 #ifdef	C_WINDOWS
 #include <io.h>
