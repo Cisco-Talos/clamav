@@ -116,6 +116,12 @@ static sfsistat sendchunk(struct CLAMFI *cf, unsigned char *bodyp, size_t len, S
     if(cf->totsz >= maxfilesize)
 	return SMFIS_CONTINUE;
 
+    if(!cf->totsz && nc_connect_rand(&cf->main, &cf->alt, &cf->local)) {
+	logg("!Failed to initiate streaming/fdpassing\n");
+	nullify(ctx, cf, CF_NONE);
+	return FailAction;
+    }
+
     if(cf->totsz + len > maxfilesize)
 	len = maxfilesize - cf->totsz;
 
@@ -180,11 +186,6 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv) {
 	    logg("*Skipping scan (all destinations whitelisted)\n");
 	    nullify(ctx, cf, CF_NONE);
 	    return SMFIS_ACCEPT;
-	}
-	if(nc_connect_rand(&cf->main, &cf->alt, &cf->local)) {
-	    logg("!Failed to initiate streaming/fdpassing\n");
-	    nullify(ctx, cf, CF_NONE);
-	    return FailAction;
 	}
 	if((ret = sendchunk(cf, (unsigned char *)"From clamav-milter\n", 19, ctx)) != SMFIS_CONTINUE)
 	    return ret;
