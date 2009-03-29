@@ -79,7 +79,7 @@ static void action_move(const char *filename) {
     char *nuname;
     int fd = getdest(filename, &nuname), copied = 0;
 
-    if(fd<0 || (rename(filename, nuname) && (copied=1) && filecopy(filename, nuname)) {
+    if(fd<0 || (rename(filename, nuname) && (copied=1) && filecopy(filename, nuname))) {
 	logg("!Can't move file %s\n", filename);
 	notmoved++;
 	if(nuname) unlink(nuname);
