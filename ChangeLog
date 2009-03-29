@@ -1,3 +1,7 @@
+Sun Mar 29 13:38:43 CEST 2009 (acab)
+------------------------------------
+ * shared/actions.c: fix logic in --move (bb#1517)
+
 Fri Mar 27 13:19:05 CET 2009 (acab)
 -----------------------------------
  * clamav-milter/clamfi.c: Make sure connect/gentemp is called even

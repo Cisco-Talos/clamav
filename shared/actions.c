@@ -49,7 +49,10 @@ int getdest(const char *fullpath, char **newname) {
     int fd, i;
 
     tmps = strdup(fullpath);
-    if(!tmps) return -1;
+    if(!tmps) {
+        *newname=NULL;
+        return -1;
+    }
     filename = basename(tmps);
 
     if(!(*newname = (char *)malloc(targlen + strlen(filename) + 6))) {
@@ -74,14 +77,14 @@ int getdest(const char *fullpath, char **newname) {
 
 static void action_move(const char *filename) {
     char *nuname;
-    int fd = getdest(filename, &nuname);
+    int fd = getdest(filename, &nuname), copied = 0;
 
-    if(fd<0 || rename(filename, nuname) || filecopy(filename, nuname)) {
+    if(fd<0 || (rename(filename, nuname) && (copied=1) && filecopy(filename, nuname)) {
 	logg("!Can't move file %s\n", filename);
 	notmoved++;
 	if(nuname) unlink(nuname);
     } else {
-	if(unlink(filename))
+	if(copied && unlink(filename))
 	    logg("!Can't unlink '%s': %s\n", filename, strerror(errno));
 	else
 	    logg("~%s: moved to '%s'\n", filename, nuname);
