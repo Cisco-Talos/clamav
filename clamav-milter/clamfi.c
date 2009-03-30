@@ -61,6 +61,7 @@ enum {
 } loginfected;
 
 #define CLAMFIBUFSZ 1424
+static const char *HDR_UNAVAIL = "UNKNOWN";
 
 struct CLAMFI {
     char buffer[CLAMFIBUFSZ];
@@ -91,12 +92,15 @@ enum CFWHAT {
 };
 
 
-static void makesanehdr(char *hdr) {
+static const char *makesanehdr(char *hdr) {
+    char *ret = hdr;
+    if(!hdr) return HDR_UNAVAIL;
     while(*hdr) {
 	if(*hdr=='\'' || *hdr=='\t' || *hdr=='\r' || *hdr=='\n' || !isprint(*hdr))
 	    *hdr = ' ';
 	hdr++;
     }
+    return ret;
 }
 
 static void nullify(SMFICTX *ctx, struct CLAMFI *cf, enum CFWHAT closewhat) {
@@ -287,18 +291,19 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 		}
 
 		if(loginfected) {
-		    const char *from = smfi_getsymval(ctx, "{mail_addr}"), *to = smfi_getsymval(ctx, "{rcpt_addr}");
-		    
-		    if(!from) from = "UNKNOWN";
-		    if(!to) to = "UNKNOWN";
-		    
+		    const char *from = smfi_getsymval(ctx, "{mail_addr}");
+		    const char *to = smfi_getsymval(ctx, "{rcpt_addr}");
+
+		    if(!from) from = HDR_UNAVAIL;
+		    if(!to) to = HDR_UNAVAIL;
 		    if(loginfected == LOGINF_FULL) {
 			const char *id = smfi_getsymval(ctx, "{i}");
+			const char *msg_subj = makesanehdr(cf->msg_subj);
+			const char *msg_date = makesanehdr(cf->msg_date);
+			const char *msg_id = makesanehdr(cf->msg_id);
 
-			makesanehdr(cf->msg_subj);
-			makesanehdr(cf->msg_date);
-			makesanehdr(cf->msg_id);
-			logg("~Message %s from <%s> to <%s> with subject '%s' message-id '%s' date '%s' infected by %s\n", id ? id : "UNKNOWN", from, to, cf->msg_subj, cf->msg_id, cf->msg_date, vir);
+			if(!id) id = HDR_UNAVAIL;
+			logg("~Message %s from <%s> to <%s> with subject '%s' message-id '%s' date '%s' infected by %s\n", id, from, to, msg_subj, msg_id, msg_date, vir);
 		    } else logg("~Message from <%s> to <%s> infected by %s\n", from, to, vir);
 		}
 	    }

@@ -1,3 +1,7 @@
+Mon Mar 30 14:02:03 CEST 2009 (acab)
+------------------------------------
+ * clamav-milter/clamfi.c: fix null dereference when LogInfected=Full (bb#1522)
+
 Sun Mar 29 13:38:43 CEST 2009 (acab)
 ------------------------------------
  * shared/actions.c: fix logic in --move (bb#1517)
