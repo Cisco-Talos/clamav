@@ -116,6 +116,7 @@ libclamav_internal_utils_nothreads_la_CFLAGS=-DCL_NOTHREADS
 
 libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) lzma/liblzma.la libclamav_internal_utils.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@
 libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) libclamav_internal_utils.la
+libclamav_la_CFLAGS = -DSEARCH_LIBDIR=\"$(libdir)\"
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
 if VERSIONSCRIPT

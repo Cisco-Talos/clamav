@@ -88,24 +88,92 @@ void (*cli_unrar_close)(unrar_state_t *state);
 int have_rar = 0;
 static int is_rar_initd = 0;
 
+static int warn_dlerror(const char *msg)
+{
+    const char *err = lt_dlerror();
+    if (err)
+	cli_warnmsg("%s: %s\n", msg, err);
+    else
+	cli_warnmsg("%s\n", err);
+    return 0;
+}
+
+/* dummy to prevent link errors, main program will override */
+#define lt_preload_symbols lt_libclamav_LTX_preloaded_symbols
+extern const lt_dlsymlist lt_preload_symbols[];
+
+static int lt_init(void) {
+    if (lt_dlpreload_default(lt_preload_symbols)) {
+        warn_dlerror("Cannot init ltdl preloaded symbols");
+	/* not fatal */
+    }
+    if(lt_dlinit()) {
+        warn_dlerror("Cannot init ltdl - unrar support unavailable");
+        return -1;
+    }
+    return 0;
+}
+
+static lt_dlhandle lt_dlfind(const char *name, const char *featurename)
+{
+    static const char *suffixes[] = {
+	LT_MODULE_EXT"."LIBCLAMAV_FULLVER,
+	LT_MODULE_EXT"."LIBCLAMAV_MAJORVER,
+	LT_MODULE_EXT,
+	"."LT_LIBEXT
+    };
+
+    const char *searchpath;
+    const lt_dlinfo *info;
+    char modulename[128];
+    lt_dlhandle rhandle;
+    int canretry=1;
+    unsigned i;
+
+    if (lt_dladdsearchdir(SEARCH_LIBDIR)) {
+	cli_dbgmsg("lt_dladdsearchdir failed for %s\n", SEARCH_LIBDIR);
+    }
+
+    searchpath = lt_dlgetsearchpath();
+    if (!searchpath)
+	searchpath = "";
+
+    cli_dbgmsg("searching for %s, user-searchpath: %s\n", featurename, searchpath);
+    for (i = 0; i < sizeof(suffixes)/sizeof(suffixes[0]); i++) {
+	snprintf(modulename, sizeof(modulename), "%s%s", name, suffixes[i]);
+	rhandle = lt_dlopen(modulename);
+	if (rhandle)
+	    break;
+	cli_dbgmsg("searching for %s: %s not found\n", featurename, modulename);
+    }
+
+    if (!rhandle) {
+	const char *err = lt_dlerror();
+	if (!err) err = "";
+#ifdef WARN_DLOPEN_FAIL
+        cli_warnmsg("Cannot dlopen %s: %s - %s support unavailable\n", name, err, featurename);
+#else
+        cli_dbgmsg("Cannot dlopen %s: %s - %s support unavailable\n", name, err, featurename);
+#endif
+        return rhandle;
+    }
+
+    info = lt_dlgetinfo(rhandle);
+    if (info)
+	cli_dbgmsg("%s support loaded from %s %s\n", featurename, info->filename ? info->filename : "?", info->name ? info->name : "");
+    return rhandle;
+}
+
 static void cli_rarload(void) {
     lt_dlhandle rhandle;
 
     if(is_rar_initd) return;
     is_rar_initd = 1;
-    if(lt_dlinit()) {
-        cli_warnmsg("Cannot init ltdl - unrar support unavailable\n");
-        return;
-    }
-    rhandle = lt_dlopenext("libclamunrar_iface");
-    if (!rhandle) {
-#ifdef WARN_DLOPEN_FAIL
-        cli_warnmsg("Cannot dlopen: %s - unrar support unavailable\n", lt_dlerror());
-#else
-        cli_dbgmsg("Cannot dlopen: %s - unrar support unavailable\n", lt_dlerror());
-#endif
-        return;
-    }
+
+    rhandle = lt_dlfind("libclamunrar_iface", "unrar");
+    if (!rhandle)
+	return;
+
     if (!(cli_unrar_open = (int(*)(int, const char *, unrar_state_t *))lt_dlsym(rhandle, "unrar_open")) ||
 	!(cli_unrar_extract_next_prepare = (int(*)(unrar_state_t *, const char *))lt_dlsym(rhandle, "unrar_extract_next_prepare")) ||
 	!(cli_unrar_extract_next = (int(*)(unrar_state_t *, const char *))lt_dlsym(rhandle, "unrar_extract_next")) ||
@@ -193,7 +261,9 @@ const char *cl_strerror(int clerror)
 int cl_init(unsigned int initoptions)
 {
     /* put dlopen() stuff here, etc. */
-    cli_rarload();
+    if (lt_init() == 0) {
+	cli_rarload();
+    }
     return CL_SUCCESS;
 }
 

@@ -398,6 +398,12 @@
 /* This value is set to 1 to indicate that the system argz facility works */
 #undef HAVE_WORKING_ARGZ
 
+/* "Full library version number" */
+#undef LIBCLAMAV_FULLVER
+
+/* "Major library version number" */
+#undef LIBCLAMAV_MAJORVER
+
 /* Define if the OS needs help to load dependent libraries for dlopen(). */
 #undef LTDL_DLOPEN_DEPLIBS
 

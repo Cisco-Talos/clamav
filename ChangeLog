@@ -1,3 +1,9 @@
+Tue Mar 31 12:41:32 EEST 2009 (edwin)
+-------------------------------------
+ * clamav-config.h.in, configure, configure.in, libclamav/,
+ libclamunrar_iface/: Prefer libclamunrar_iface that matches version
+ (bb #1491).  Add  to ltdl searchpath (bb #1476).
+
 Mon Mar 30 14:02:03 CEST 2009 (acab)
 ------------------------------------
  * clamav-milter/clamfi.c: fix null dereference when LogInfected=Full (bb#1522)
