@@ -1569,7 +1569,6 @@ AM_CONDITIONAL([HAVE_CURSES],
 	       [test "X$HAVE_LIBNCURSES" = "Xyes" || test "X$HAVE_LIBPDCURSES" = "Xyes"])
 
 AC_OUTPUT([
-libclamunrar_iface/Makefile
 libclamav/Makefile
 libclamav/lzma/Makefile
 clamscan/Makefile

@@ -38,7 +38,7 @@ cd $UNRARDIR &&
 echo "Preparing unrar package" &&
 sed -ie '/AC_OUTPUT/,/])/ {
 /^AC_OUTPUT/p
-/^libclamunrar/p
+s/^libclamav\/Makefile/libclamunrar_iface\/Makefile/p
 /^Makefile/p
 /^])/p
 d

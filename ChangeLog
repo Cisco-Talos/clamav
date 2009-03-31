@@ -1,3 +1,7 @@
+Tue Mar 31 15:42:47 EEST 2009 (edwin)
+-------------------------------------
+ * configure, configure.in, contrib/split-tarball.sh: fix warning
+
 Tue Mar 31 15:28:11 EEST 2009 (edwin)
 -------------------------------------
  * Makefile.am, Makefile.in, configure, configure.in, contrib/,
