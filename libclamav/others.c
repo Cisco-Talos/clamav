@@ -98,15 +98,19 @@ static int warn_dlerror(const char *msg)
     return 0;
 }
 
-/* dummy to prevent link errors, main program will override */
+#if 0
 #define lt_preload_symbols lt_libclamav_LTX_preloaded_symbols
 extern const lt_dlsymlist lt_preload_symbols[];
+#endif
 
 static int lt_init(void) {
+#if 0
+    /* doesn't work yet */
     if (lt_dlpreload_default(lt_preload_symbols)) {
         warn_dlerror("Cannot init ltdl preloaded symbols");
 	/* not fatal */
     }
+#endif
     if(lt_dlinit()) {
         warn_dlerror("Cannot init ltdl - unrar support unavailable");
         return -1;
