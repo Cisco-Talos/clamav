@@ -392,7 +392,7 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, int srcfd, struct 
 				uint32_t isz = cli_readint32(resdir+4);
 				char *str;
 				rawaddr = cli_rawaddr(cli_readint32(resdir), exe_sections, nsections, &err, fsize, hdr_size);
-				if (err || !isz || rawaddr+isz >= fsize) {
+				if (err || !isz || isz >= fsize || rawaddr+isz >= fsize) {
 					cli_dbgmsg("cli_parseres_special: invalid resource table entry: %lu + %lu\n", 
 							(unsigned long)rawaddr, 
 							(unsigned long)isz);

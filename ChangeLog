@@ -1,3 +1,8 @@
+Wed Apr  1 19:39:12 EEST 2009 (edwin)
+-------------------------------------
+ * libclamav/pe.c: cli_parseres_special: check size before attempting
+ to allocate. (bb #1506)
+
 Wed Apr  1 14:00:35 CEST 2009 (tk)
 ----------------------------------
  * clamd/session.c: respect TemporaryDirectory in cli_gentempfd()
