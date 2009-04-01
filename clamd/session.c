@@ -505,7 +505,7 @@ int execute_or_dispatch_command(client_conn_t *conn, enum commands cmd, const ch
 	    }
 	case COMMAND_INSTREAM:
 	    {
-		int rc = cli_gentempfd(NULL, &conn->filename, &conn->scanfd);
+		int rc = cli_gentempfd(optget(conn->opts, "TemporaryDirectory")->strarg, &conn->filename, &conn->scanfd);
 		if (rc != CL_SUCCESS)
 		    return rc;
 		conn->quota = optget(conn->opts, "StreamMaxLength")->numarg;
