@@ -164,7 +164,7 @@ CCDEPMODE = @CCDEPMODE@
 CFGDIR = @CFGDIR@
 
 # ClamAV: filter -Werror here
-CFLAGS = `echo "@CFLAGS@" | sed -e 's/-Werror[^-]//'`
+CFLAGS = `echo "@CFLAGS@" | sed -e 's/-Werror[^=-]//'`
 CHECK_CPPFLAGS = @CHECK_CPPFLAGS@
 CHECK_LIBS = @CHECK_LIBS@
 CLAMAVGROUP = @CLAMAVGROUP@

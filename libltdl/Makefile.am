@@ -29,7 +29,7 @@
 #####
 
 # ClamAV: filter -Werror here
-CFLAGS=`echo "@CFLAGS@" | sed -e 's/-Werror[^-]//'`
+CFLAGS=`echo "@CFLAGS@" | sed -e 's/-Werror[^=-]//'`
 
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = foreign

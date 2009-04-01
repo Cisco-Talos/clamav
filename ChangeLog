@@ -1,3 +1,8 @@
+Wed Apr  1 11:51:28 EEST 2009 (edwin)
+-------------------------------------
+ * libltdl/Makefile.am, libltdl/Makefile.in: fix -Werror filtering
+ (bb #1500).
+
 Tue Mar 31 15:42:47 EEST 2009 (edwin)
 -------------------------------------
  * configure, configure.in, contrib/split-tarball.sh: fix warning
