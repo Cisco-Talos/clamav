@@ -1568,6 +1568,11 @@ AC_SUBST([CURSES_LIBS])
 AM_CONDITIONAL([HAVE_CURSES],
 	       [test "X$HAVE_LIBNCURSES" = "Xyes" || test "X$HAVE_LIBPDCURSES" = "Xyes"])
 
+AC_SEARCH_LIBS([mallinfo],[malloc],
+	       [AC_DEFINE([HAVE_MALLINFO],1,[have mallinfo])
+	        test "$ac_cv_search_mallinfo" = "none required" ||
+		CLAMD_LIBS="$CLAMD_LIBS $ac_cv_search_mallinfo"])
+
 AC_OUTPUT([
 libclamav/Makefile
 libclamav/lzma/Makefile

@@ -1,3 +1,11 @@
+Wed Apr  1 20:51:37 EEST 2009 (edwin)
+-------------------------------------
+ * Makefile.in, aclocal.m4, clamav-config.h.in, clamav-milter/,
+ clamconf/, clamd/, clamdscan/, clamdtop/, clamscan/, configure,
+ configure.in, database/, docs/, etc/, freshclam/, libclamav/,
+ libltdl/, sigtool/, test/, unit_tests/: check for mallinfo
+ availability (bb #1445).
+
 Wed Apr  1 20:19:00 EEST 2009 (edwin)
 -------------------------------------
  * clamd/server-th.c, clamd/thrmgr.c: Automatically fix MaxQueue

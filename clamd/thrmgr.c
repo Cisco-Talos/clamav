@@ -36,7 +36,7 @@
 #include "mpool.h"
 #include "server.h"
 
-#if defined(C_LINUX)
+#ifdef HAVE_MALLINFO
 #include <malloc.h>
 #endif
 
@@ -282,16 +282,15 @@ int thrmgr_printstats(int f)
 		mdprintf(f,"\n");
 	}
 	free(seen);
-#if defined(C_LINUX)
+#ifdef HAVE_MALLINFO
 	{
 		struct mallinfo inf = mallinfo();
 		mem_heap = inf.arena/(1024*1024.0);
 		mem_mmap = inf.hblkhd/(1024*1024.0);
-		mem_used = inf.uordblks/(1024*1024.0);
-		mem_free = inf.fordblks/(1024*1024.0);
+		mem_used = (inf.usmblks + inf.uordblks)/(1024*1024.0);
+		mem_free = (inf.fsmblks + inf.fordblks)/(1024*1024.0);
 		mem_releasable = inf.keepcost/(1024*1024.0);
 		has_libc_memstats=1;
-		/* TODO: figure out how to print these statistics on other OSes */
 	}
 #endif
 	if (error_flag) {
