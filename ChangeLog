@@ -1,3 +1,9 @@
+Wed Apr  1 20:19:00 EEST 2009 (edwin)
+-------------------------------------
+ * clamd/server-th.c, clamd/thrmgr.c: Automatically fix MaxQueue
+ settings (bb #1521).  Also use rlim_cur instead of rlim_max, because
+ that is what the kernel enforces.
+
 Wed Apr  1 19:39:12 EEST 2009 (edwin)
 -------------------------------------
  * libclamav/pe.c: cli_parseres_special: check size before attempting

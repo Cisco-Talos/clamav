@@ -369,11 +369,6 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, int max_queue, void 
 		return NULL;
 	}
 
-	if (2*max_threads > max_queue) {
-	    logg("!Configuration error: MaxQueue should be at least twice MaxThreads\n");
-	    return NULL;
-	}
-
 	threadpool = (threadpool_t *) malloc(sizeof(threadpool_t));
 	if (!threadpool) {
 		return NULL;

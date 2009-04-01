@@ -740,9 +740,9 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 
 #ifndef C_WINDOWS
     if(getrlimit(RLIMIT_FSIZE, &rlim) == 0) {
-	if(rlim.rlim_max < (rlim_t) cl_engine_get_num(engine, CL_ENGINE_MAX_FILESIZE, NULL))
+	if(rlim.rlim_cur < (rlim_t) cl_engine_get_num(engine, CL_ENGINE_MAX_FILESIZE, NULL))
 	    logg("^System limit for file size is lower than engine->maxfilesize\n");
-	if(rlim.rlim_max < (rlim_t) cl_engine_get_num(engine, CL_ENGINE_MAX_SCANSIZE, NULL))
+	if(rlim.rlim_cur < (rlim_t) cl_engine_get_num(engine, CL_ENGINE_MAX_SCANSIZE, NULL))
 	    logg("^System limit for file size is lower than engine->maxscansize\n");
     } else {
 	logg("^Cannot obtain resource limits for file size\n");
@@ -775,6 +775,11 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     else
     	logg("^Limits: Files limit protection disabled.\n");
 
+#if !defined(C_WINDOWS)
+    if (getrlimit(RLIMIT_CORE, &rlim) == 0) {
+	logg("*Limits: Core-dump limit is %lu.\n", (unsigned long)rlim.rlim_cur);
+    }
+#endif
 
     if(optget(opts, "ScanArchive")->enabled) {
 	logg("Archive support enabled.\n");
@@ -930,9 +935,29 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 
     logg("*Listening daemon: PID: %u\n", (unsigned int) mainpid);
     max_threads = optget(opts, "MaxThreads")->numarg;
-    acceptdata.max_queue = max_queue = optget(opts, "MaxQueue")->numarg;
+    max_queue = optget(opts, "MaxQueue")->numarg;
     acceptdata.commandtimeout = optget(opts, "CommandReadTimeout")->numarg;
     readtimeout = optget(opts, "ReadTimeout")->numarg;
+
+#if !defined(C_WINDOWS) && defined(RLIMIT_NOFILE)
+    if (getrlimit(RLIMIT_NOFILE, &rlim) == 0) {
+	if (max_queue*4 > rlim.rlim_cur) {
+	    max_queue = rlim.rlim_cur / 4;
+	    logg("^MaxQueue value too high, lowering to: %d\n", max_queue);
+	} else if (max_queue < 2*max_threads) {
+	    /* increase it but only if it doesn't exceed limit otherwise */
+	    int newmax = 2*max_threads;
+	    if (newmax*4 > rlim.rlim_cur)
+		newmax = rlim.rlim_cur/4;
+	    if (max_queue < newmax) {
+		max_queue = newmax;
+		logg("^MaxQueue is lower than twice MaxThreads, increasing to: %d\n", max_queue);
+	    }
+	}
+    }
+#endif
+
+    acceptdata.max_queue = max_queue;
 
     if(optget(opts, "ClamukoScanOnAccess")->enabled)
 #ifdef CLAMUKO
