@@ -1,3 +1,7 @@
+Wed Apr  1 21:05:59 CEST 2009 (tk)
+----------------------------------
+ * shared/optparser.c: fix some descriptions (bb#1526)
+
 Wed Apr  1 21:36:13 EEST 2009 (edwin)
 -------------------------------------
  * m4/lib-ld.m4: add missing file
