@@ -1,3 +1,7 @@
+Wed Apr  1 23:02:59 CEST 2009 (tk)
+----------------------------------
+ * freshclam/freshclam.c: fix verbose mode (bb#1510)
+
 Wed Apr  1 21:59:56 CEST 2009 (tk)
 ----------------------------------
  * clamscan/manager.c: freshdbdir() was never called (bb#1511)

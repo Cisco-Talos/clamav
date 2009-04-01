@@ -326,7 +326,7 @@ int main(int argc, char **argv)
 	mprintf_stdout = 1;
 
     /* initialize logger */
-    logg_verbose = optget(opts, "LogVerbose")->enabled;
+    logg_verbose = mprintf_verbose ? 1 : optget(opts, "LogVerbose")->enabled;
     logg_time = optget(opts, "LogTime")->enabled;
     logg_size = optget(opts, "LogFileMaxSize")->numarg;
 
