@@ -1,6 +1,6 @@
 Wed Apr  1 14:00:35 CEST 2009 (tk)
 ----------------------------------
- * clamd/session.c: respect TemporaryDirector in cli_gentempfd()
+ * clamd/session.c: respect TemporaryDirectory in cli_gentempfd()
 
 Wed Apr  1 13:14:32 EEST 2009 (edwin)
 -------------------------------------
