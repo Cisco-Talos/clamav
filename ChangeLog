@@ -1,3 +1,7 @@
+Wed Apr  1 21:36:13 EEST 2009 (edwin)
+-------------------------------------
+ * m4/lib-ld.m4: add missing file
+
 Wed Apr  1 20:51:37 EEST 2009 (edwin)
 -------------------------------------
  * Makefile.in, aclocal.m4, clamav-config.h.in, clamav-milter/,
