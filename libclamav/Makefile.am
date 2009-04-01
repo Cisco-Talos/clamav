@@ -293,7 +293,7 @@ libclamav_la_SOURCES += bignum.c \
 endif
 
 .PHONY: version.h.tmp
-version.lo: version.h
+version.c: version.h
 version.h: version.h.tmp
 	@if test -f version.h.static; then\
 		cp version.h.static version.h;\

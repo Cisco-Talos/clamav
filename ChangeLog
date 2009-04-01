@@ -1,3 +1,8 @@
+Wed Apr  1 13:14:32 EEST 2009 (edwin)
+-------------------------------------
+ * libclamav/Makefile.am, libclamav/Makefile.in: fix dependency bug
+ introduced in r4992 (bb #1530)
+
 Wed Apr  1 11:51:28 EEST 2009 (edwin)
 -------------------------------------
  * libltdl/Makefile.am, libltdl/Makefile.in: fix -Werror filtering
