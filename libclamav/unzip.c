@@ -501,7 +501,7 @@ int cli_unzip(int f, cli_ctx *ctx) {
   }
 #else
   if(fsize > CLI_MAX_ALLOCATION) {
-    cli_warnmsg("cli_unzip: unzip support not compiled in and file is too big\n");
+    cli_warnmsg("cli_unzip: mmap not available and file is too big\n");
     return CL_CLEAN;
   }
   lseek(f, 0, SEEK_SET);
@@ -591,7 +591,7 @@ int cli_unzip_single(int f, cli_ctx *ctx, off_t lhoffl) {
   }
 #else
   if(st.st_size > CLI_MAX_ALLOCATION) {
-    cli_warnmsg("cli_unzip: unzip support not compiled in and file is too big\n");
+    cli_warnmsg("cli_unzip: mmap not available and file is too big\n");
     return CL_CLEAN;
   }
   lseek(f, 0, SEEK_SET);
