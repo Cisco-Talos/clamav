@@ -1,3 +1,7 @@
+Thu Apr  2 18:48:58 CEST 2009 (tk)
+----------------------------------
+ * shared/optparser.c: handle deprecated freshclam's option --log-verbose
+
 Thu Apr  2 18:36:58 CEST 2009 (tk)
 ----------------------------------
  * shared/optparser.c: make the parser even more tolerant to whitespace
