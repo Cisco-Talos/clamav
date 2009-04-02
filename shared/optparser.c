@@ -630,7 +630,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 	const char *name = NULL, *arg;
 	int i, err = 0, lc = 0, sc = 0, opt_index, line = 0, ret, numarg;
 	struct optstruct *opts = NULL, *opts_last = NULL, *opt;
-	char buff[512];
+	char buffer[512], *buff;
 	struct option longopts[MAXCMDOPTS];
 	char shortopts[MAXCMDOPTS];
 	regex_t regex;
@@ -705,9 +705,12 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
     while(1) {
 
 	if(cfgfile) {
-	    if(!fgets(buff, sizeof(buff), fs))
+	    if(!fgets(buffer, sizeof(buffer), fs))
 		break;
 
+	    buff = buffer;
+	    for(i = 0; i < (int) strlen(buff) - 1 && (buff[i] == ' ' || buff[i] == '\t'); i++);
+	    buff += i;
 	    line++;
 	    if(strlen(buff) <= 2 || buff[0] == '#')
 		continue;
@@ -729,14 +732,14 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 	    *pt++ = 0;
 	    for(i = 0; i < (int) strlen(pt) - 1 && (pt[i] == ' ' || pt[i] == '\t'); i++);
 	    pt += i;
-	    if((i = strlen(pt)) && pt[i - 1] == '\n')
-		pt[i-- - 1] = 0;
+	    for(i = strlen(pt); i >= 1 && (pt[i - 1] == ' ' || pt[i - 1] == '\t' || pt[i - 1] == '\n'); i--);
 	    if(!i) {
 		if(verbose)
 		    fprintf(stderr, "ERROR: Missing argument for option at line %d\n", line);
 		err = 1;
 		break;
 	    }
+	    pt[i] = 0;
 	    arg = pt;
 	    if(*arg == '"') {
 		arg++; pt++;
@@ -754,15 +757,6 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 		    err = 1;
 		    break;
 		}
-	    } else {
-		for(i = strlen(pt); i >= 1 && (pt[i - 1] == ' ' || pt[i - 1] == '\t'); i--);
-		if(!i) {
-		    if(verbose)
-			fprintf(stderr, "ERROR: Missing argument for option at line %u\n", line);
-		    err = 1;
-		    break;
-		}
-		pt[i] = 0;
 	    }
 
 	} else {
