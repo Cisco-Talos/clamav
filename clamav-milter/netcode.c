@@ -129,7 +129,7 @@ static int nc_connect(int s, struct CP_ENTRY *cpe) {
 	    close(s);
 	    return -1;
 	}
-	if (getsockopt(s, SOL_SOCKET, SO_ERROR, &s_err, &s_len) || s_err) {
+	if(getsockopt(s, SOL_SOCKET, SO_ERROR, &s_err, &s_len) || s_err) {
 	    logg("*Failed to establish a connection to clamd\n");
 	    close(s);
 	    return -1;
@@ -163,8 +163,6 @@ int nc_send(int s, const void *buff, size_t len) {
 	tv.tv_usec = 0;
 	while(1) {
 	    fd_set fds;
-	    int s_err;
-	    socklen_t s_len = sizeof(s_err);
 
 	    FD_ZERO(&fds);
 	    FD_SET(s, &fds);
@@ -177,12 +175,10 @@ int nc_send(int s, const void *buff, size_t len) {
 		    tv.tv_usec = 0;
 		    continue;
 		}
-		logg("!Failed stream to clamd\n");
+		logg("!Failed to stream to clamd\n");
 		close(s);
 		return 1;
 	    }
-	    len-=s_len;
-	    buf+=s_len;
 	    break;
 	}
     }
