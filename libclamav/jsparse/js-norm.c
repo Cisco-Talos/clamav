@@ -330,7 +330,7 @@ static inline int buf_outs(const char *s, struct buf *buf)
 	i = buf->pos;
 	while(*s) {
 		while(i < buf_len && *s) {
-			if(isspace(*s))
+			if(isspace(*s & 0xff))
 				buf->buf[i++] = ' ';
 			else
 				buf->buf[i++] = tolower((unsigned char)(*s));
