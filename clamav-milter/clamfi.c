@@ -75,6 +75,7 @@ struct CLAMFI {
     unsigned int totsz;
     unsigned int bufsz;
     unsigned int all_whitelisted;
+    unsigned int gotbody;
 };
 
 
@@ -117,13 +118,20 @@ static void nullify(SMFICTX *ctx, struct CLAMFI *cf, enum CFWHAT closewhat) {
 
 
 static sfsistat sendchunk(struct CLAMFI *cf, unsigned char *bodyp, size_t len, SMFICTX *ctx) {
-    if(cf->totsz >= maxfilesize)
+    if(cf->totsz >= maxfilesize || len == 0)
 	return SMFIS_CONTINUE;
 
-    if(!cf->totsz && nc_connect_rand(&cf->main, &cf->alt, &cf->local)) {
-	logg("!Failed to initiate streaming/fdpassing\n");
-	nullify(ctx, cf, CF_NONE);
-	return FailAction;
+    if(!cf->totsz) {
+	sfsistat ret;
+	if(nc_connect_rand(&cf->main, &cf->alt, &cf->local)) {
+	    logg("!Failed to initiate streaming/fdpassing\n");
+	    nullify(ctx, cf, CF_NONE);
+	    return FailAction;
+	}
+	cf->totsz = 1; /* do not infloop */
+	if((ret = sendchunk(cf, (unsigned char *)"From clamav-milter\n", 19, ctx)) != SMFIS_CONTINUE)
+	    return ret;
+	cf->totsz -= 1;
     }
 
     if(cf->totsz + len > maxfilesize)
@@ -176,30 +184,28 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv) {
     if(!(cf = (struct CLAMFI *)smfi_getpriv(ctx)))
 	return SMFIS_CONTINUE; /* whatever */
 
-    if(loginfected == LOGINF_FULL) {
-	if(headerf && !strcasecmp(headerf, "Subject") && !cf->msg_subj)
-	    cf->msg_subj = strdup(headerv);
-	if(headerf && !strcasecmp(headerf, "Date") && !cf->msg_date)
-	    cf->msg_date = strdup(headerv);
-	if(headerf && !strcasecmp(headerf, "Message-ID") && !cf->msg_id)
-	    cf->msg_id = strdup(headerv);
+    if(!cf->totsz && cf->all_whitelisted) {
+	logg("*Skipping scan (all destinations whitelisted)\n");
+	nullify(ctx, cf, CF_NONE);
+	return SMFIS_ACCEPT;
     }
 
-    if(!cf->totsz) {
-	if(cf->all_whitelisted) {
-	    logg("*Skipping scan (all destinations whitelisted)\n");
-	    nullify(ctx, cf, CF_NONE);
-	    return SMFIS_ACCEPT;
-	}
-	if((ret = sendchunk(cf, (unsigned char *)"From clamav-milter\n", 19, ctx)) != SMFIS_CONTINUE)
-	    return ret;
+    if(!headerf) return SMFIS_CONTINUE; /* just in case */
+
+    if(loginfected == LOGINF_FULL) {
+	if(!cf->msg_subj && !strcasecmp(headerf, "Subject"))
+	    cf->msg_subj = strdup(headerv ? headerv : "");
+	if(!cf->msg_date && !strcasecmp(headerf, "Date"))
+	    cf->msg_date = strdup(headerv ? headerv : "");
+	if(!cf->msg_id && !strcasecmp(headerf, "Message-ID"))
+	    cf->msg_id = strdup(headerv ? headerv : "");
     }
 
     if((ret = sendchunk(cf, (unsigned char *)headerf, strlen(headerf), ctx)) != SMFIS_CONTINUE)
 	return ret;
     if((ret = sendchunk(cf, (unsigned char *)": ", 2, ctx)) != SMFIS_CONTINUE)
 	return ret;
-    if((ret = sendchunk(cf, (unsigned char *)headerv, strlen(headerv), ctx)) != SMFIS_CONTINUE)
+    if(headerv && (ret = sendchunk(cf, (unsigned char *)headerv, strlen(headerv), ctx)) != SMFIS_CONTINUE)
 	return ret;
     return sendchunk(cf, (unsigned char *)"\r\n", 2, ctx);
 }
@@ -210,6 +216,14 @@ sfsistat clamfi_body(SMFICTX *ctx, unsigned char *bodyp, size_t len) {
 
     if(!(cf = (struct CLAMFI *)smfi_getpriv(ctx)))
 	return SMFIS_CONTINUE; /* whatever */
+
+    if(!cf->gotbody) {
+	sfsistat ret = sendchunk(cf, (unsigned char *)"\r\n", 2, ctx);
+	if(ret != SMFIS_CONTINUE)
+	    return ret;
+	cf->gotbody = 1;
+    }
+
     return sendchunk(cf, bodyp, len, ctx);
 }
 
@@ -229,6 +243,14 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 
     if(!(cf = (struct CLAMFI *)smfi_getpriv(ctx)))
 	return SMFIS_CONTINUE; /* whatever */
+
+    if(!cf->totsz) {
+	/* got no headers and no body */
+	logg("*Not scanning an empty message\n");
+	ret = CleanAction(ctx);
+	nullify(ctx, cf, CF_NONE);
+	return ret;
+    }
 
     if(cf->local) {
 	if(nc_send(cf->main, "nFILDES\n", 8)) {
@@ -530,6 +552,7 @@ sfsistat clamfi_envfrom(SMFICTX *ctx, char **argv) {
     cf->bufsz = 0;
     cf->main = cf->alt = -1;
     cf->all_whitelisted = 1;
+    cf->gotbody = 0;
     cf->msg_subj = cf->msg_date = cf->msg_id = NULL;
     smfi_setpriv(ctx, (void *)cf);
 
