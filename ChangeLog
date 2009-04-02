@@ -1,3 +1,8 @@
+Thu Apr  2 23:50:36 EEST 2009 (edwin)
+-------------------------------------
+ * contrib/phishing/gdbwhitelist.sh, libclamav/phishcheck.c: add
+ script to whitelist gdb entries (bb #1482).
+
 Thu Apr  2 23:35:36 EEST 2009 (edwin)
 -------------------------------------
  * docs/phishsigs_howto.tex, libclamav/phishcheck.c,

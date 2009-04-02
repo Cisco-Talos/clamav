@@ -1205,6 +1205,7 @@ static int hash_match(const struct regex_matcher *rlist, const char *host, size_
 		    return CL_SUCCESS;
 	    }
 	    if (cli_bm_scanbuff(sha256_dig, 32, &virname, &rlist->sha256_hashes,0,0,-1) == CL_VIRUS) {
+		cli_dbgmsg("This hash matched: %s\n", h);
 		switch(*virname) {
 		    case 'W':
 			cli_dbgmsg("Hash is whitelisted, skipping\n");
