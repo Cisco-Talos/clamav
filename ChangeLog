@@ -1,3 +1,7 @@
+Thu Apr  2 19:30:19 CEST 2009 (tk)
+----------------------------------
+ * libclamav/cab.c: fix compiler warnings (bb#1494)
+
 Thu Apr  2 18:48:58 CEST 2009 (tk)
 ----------------------------------
  * shared/optparser.c: handle deprecated freshclam's option --log-verbose

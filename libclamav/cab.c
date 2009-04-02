@@ -480,17 +480,7 @@ static int cab_read_block(int fd, struct cab_state *state, uint16_t resdata)
     }
 
     state->blklen = EC16(block_hdr.cbData);
-    if(state->blklen > CAB_INPUTMAX) {
-	cli_dbgmsg("cab_read_block: block size > CAB_INPUTMAX\n");
-	return CL_EFORMAT;
-    }
-
     state->outlen = EC16(block_hdr.cbUncomp);
-
-    if(state->outlen > CAB_BLOCKMAX) {
-	cli_dbgmsg("cab_read_block: output size > CAB_BLOCKMAX\n");
-	return CL_EFORMAT;
-    }
 
     if(cli_readn(fd, state->block, state->blklen) != state->blklen) {
 	cli_dbgmsg("cab_read_block: Can't read block data\n");
