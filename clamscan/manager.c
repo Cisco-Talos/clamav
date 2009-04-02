@@ -470,9 +470,9 @@ int scanmanager(const struct optstruct *opts)
 
 #ifndef C_WINDOWS
     if(getrlimit(RLIMIT_FSIZE, &rlim) == 0) {
-	if(rlim.rlim_max < (rlim_t) cl_engine_get_num(engine, CL_ENGINE_MAX_FILESIZE, NULL))
+	if(rlim.rlim_cur < (rlim_t) cl_engine_get_num(engine, CL_ENGINE_MAX_FILESIZE, NULL))
 	    logg("^System limit for file size is lower than engine->maxfilesize\n");
-	if(rlim.rlim_max < (rlim_t) cl_engine_get_num(engine, CL_ENGINE_MAX_SCANSIZE, NULL))
+	if(rlim.rlim_cur < (rlim_t) cl_engine_get_num(engine, CL_ENGINE_MAX_SCANSIZE, NULL))
 	    logg("^System limit for file size is lower than engine->maxscansize\n");
     } else {
 	logg("^Cannot obtain resource limits for file size\n");
