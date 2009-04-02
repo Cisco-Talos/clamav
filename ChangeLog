@@ -1,3 +1,8 @@
+Thu Apr  2 14:02:33 CEST 2009 (tk)
+----------------------------------
+ * shared/optparser.c: remove surrounding whitespace in non-quoted strings
+		       (bb#1518)
+
 Thu Apr  2 12:45:52 CEST 2009 (tk)
 ----------------------------------
  * clamscan/manager.c: check rlim_cur instead of rlim_max

@@ -719,7 +719,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 		break;
 	    }
 
-	    if(!(pt = strchr(buff, ' '))) {
+	    if(!(pt = strpbrk(buff, " \t"))) {
 		if(verbose)
 		    fprintf(stderr, "ERROR: Missing argument for option at line %d\n", line);
 		err = 1;
@@ -727,7 +727,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 	    }
 	    name = buff;
 	    *pt++ = 0;
-	    for(i = 0; i < (int) strlen(pt) - 1 && pt[i] == ' '; i++);
+	    for(i = 0; i < (int) strlen(pt) - 1 && (pt[i] == ' ' || pt[i] == '\t'); i++);
 	    pt += i;
 	    if((i = strlen(pt)) && pt[i - 1] == '\n')
 		pt[i-- - 1] = 0;
@@ -754,6 +754,15 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 		    err = 1;
 		    break;
 		}
+	    } else {
+		for(i = strlen(pt); i >= 1 && (pt[i - 1] == ' ' || pt[i - 1] == '\t'); i--);
+		if(!i) {
+		    if(verbose)
+			fprintf(stderr, "ERROR: Missing argument for option at line %u\n", line);
+		    err = 1;
+		    break;
+		}
+		pt[i] = 0;
 	    }
 
 	} else {
