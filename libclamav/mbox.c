@@ -3962,6 +3962,36 @@ hrefs_done(blob *b, tag_arguments_t *hrefs)
 	html_tag_arg_free(hrefs);
 }
 
+/* extract URLs from static text */
+static void extract_text_urls(const unsigned char *mem, size_t len, tag_arguments_t *hrefs)
+{
+    char url[1024];
+    size_t off;
+    for (off=0;off + 10 < len;off++) {
+	/* check whether this is the start of a URL */
+	int32_t proto = cli_readint32(mem + off);
+	/* convert to lowercase */
+	proto |= 0x20202020;
+	/* 'http:', 'https:', or 'ftp:' in little-endian */
+	if ((proto == 0x70747468 &&
+	     (mem[off+4] == ':' || (mem[off+5] == 's' && mem[off+6] == ':')))
+	    || proto == 0x3a707466) {
+	    size_t url_len;
+	    for (url_len=4; off + url_len < len && url_len < (sizeof(url)-1); url_len++) {
+		unsigned char c = mem[off + url_len];
+		/* smart compilers will compile this if into
+		 * a single bt + jb instruction */
+		if (c == ' ' || c == '\n' || c == '\t')
+		    break;
+	    }
+	    memcpy(url, mem + off, url_len);
+	    url[url_len] = '\0';
+	    html_tag_arg_add(hrefs, "href", url);
+	    off += url_len;
+	}
+    }
+}
+
 /*
  * This used to be part of checkURLs, split out, because phishingScan needs it
  * too, and phishingScan might be used in situations where checkURLs is
@@ -3970,6 +4000,7 @@ hrefs_done(blob *b, tag_arguments_t *hrefs)
 static blob *
 getHrefs(message *m, tag_arguments_t *hrefs)
 {
+	unsigned char *mem;
 	blob *b = messageToBlob(m, 0);
 	size_t len;
 
@@ -3995,11 +4026,15 @@ getHrefs(message *m, tag_arguments_t *hrefs)
 	hrefs->contents = NULL;
 
 	cli_dbgmsg("getHrefs: calling html_normalise_mem\n");
-	if(!html_normalise_mem(blobGetData(b), (off_t)len, NULL, hrefs,m->ctx->dconf)) {
+	mem = blobGetData(b);
+	if(!html_normalise_mem(mem, (off_t)len, NULL, hrefs,m->ctx->dconf)) {
 		blobDestroy(b);
 		return NULL;
 	}
 	cli_dbgmsg("getHrefs: html_normalise_mem returned\n");
+	if (!hrefs->count && hrefs->scanContents) {
+	    extract_text_urls(mem, len, hrefs);
+	}
 
 	/* TODO: Do we need to call remove_html_comments? */
 	return b;

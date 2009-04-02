@@ -146,9 +146,9 @@ static const char src_text[] = "src";
 static const char href_text[] = "href";
 static const char mailto[] = "mailto:";
 static const char mailto_proto[] = "mailto://";
-static const char https[]="https://";
-static const char http[]="http://";
-static const char ftp[] = "ftp://";
+static const char https[]="https:";
+static const char http[]="http:";
+static const char ftp[] = "ftp:";
 
 static const size_t href_text_len = sizeof(href_text);
 static const size_t src_text_len = sizeof(src_text);
@@ -774,8 +774,7 @@ int phishingScan(cli_ctx* ctx,tag_arguments_t* hrefs)
 	fclose(f);
 	return 0;
 #endif
-	for(i=0;i<hrefs->count;i++)
-		if(hrefs->contents[i]) {
+	for(i=0;i<hrefs->count;i++) {
 			struct url_check urls;
 			enum phish_status rc;
 			urls.flags	 = strncmp((char*)hrefs->tag[i],href_text,href_text_len)? (CL_PHISH_ALL_CHECKS&~CHECK_SSL): CL_PHISH_ALL_CHECKS;
@@ -841,10 +840,7 @@ int phishingScan(cli_ctx* ctx,tag_arguments_t* hrefs)
 					break;
 			}
 			return cli_found_possibly_unwanted(ctx);
-		}
-		else
-			if(strcmp((char*)hrefs->tag[i],"href"))
-					cli_dbgmsg("Phishcheck: href with no contents?\n");
+	}
 	return CL_CLEAN;
 }
 
@@ -1015,33 +1011,34 @@ static int isURL(char* URL, int accept_anyproto)
 	switch (URL[0]) {
 		case 'h':
 			if (strncmp(URL, https, https_len) == 0)
-				start = URL + https_len;
+				start = URL + https_len - 1;
 			else if (strncmp(URL, http, http_len) == 0)
-				start = URL + http_len;
+				start = URL + http_len - 1;
 			break;
 		case 'f':
 		       if (strncmp(URL, ftp, ftp_len) == 0)
-			       start = URL + ftp_len;
+			       start = URL + ftp_len - 1;
 		       break;
 		case 'm':
 		       if (strncmp(URL, mailto_proto, mailto_proto_len) == 0)
-			       start = URL + mailto_proto_len;
+			       start = URL + mailto_proto_len - 1;
 		       break;
 	}
-	if(start) {
-		if(start[0] == '\0')
-			return 0;/* empty URL */
+	if(start && start[1] == '/' && start[2] == '/') {
 		/* has a valid protocol, it is a URL */
 		return 1;
 	}
-	start = accept_anyproto ?  strchr(URL, ':') : NULL;
+	start = accept_anyproto ?  strchr(URL, ':') : start;
 	if(start) {
 		/* validate URI scheme */
 		if(validate_uri_ialpha(URL, start)) {
-			if(start[1] == '/' && start[2] == '/')
-				start += 3; /* skip :// */
-			else
+			/* skip :// */
+			if (start[1] == '/') {
+			    start += 2;
+			    if (*start == '/')
 				start++;
+			} else
+			    start++;
 		}
 		else
 			start = URL; /* scheme invalid */
@@ -1298,7 +1295,7 @@ int cli_url_canon(const char *inurl, size_t len, char *urlbuff, size_t dest_len,
 	/* determine end of hostname */
 	host_len = strcspn(host_begin, ":/?");
 	path_begin = host_begin + host_len;
-	if(host_len < len) {
+	if(host_len <= len) {
 		/* url without path, use a single / */
 		memmove(path_begin + 2, path_begin + 1, len - host_len);
 		*path_begin++ = '/';
@@ -1419,7 +1416,7 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 	int phishy=0, blacklisted=0;
 	const struct phishcheck* pchk = (const struct phishcheck*) engine->phishcheck;
 
-	if(!urls->realLink.data || urls->displayLink.data[0]=='\0')
+	if(!urls->realLink.data)
 		return CL_PHISH_CLEAN;
 
 	cli_dbgmsg("Phishcheck:Checking url %s->%s\n", urls->realLink.data,
@@ -1465,6 +1462,10 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 
 	if (blacklisted)
 	    return blacklisted;
+
+	if (urls->displayLink.data[0] == '\0') {
+	    return CL_PHISH_CLEAN;
+	}
 
 	url_check_init(&host_url);
 

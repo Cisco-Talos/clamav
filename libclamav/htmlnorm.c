@@ -346,7 +346,7 @@ static void html_tag_arg_set(tag_arguments_t *tags, const char *tag, const char 
 	}
 	return;
 }
-static void html_tag_arg_add(tag_arguments_t *tags,
+void html_tag_arg_add(tag_arguments_t *tags,
 		const char *tag, char *value)
 {
 	int len, i;
