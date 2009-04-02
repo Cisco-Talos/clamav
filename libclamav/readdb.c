@@ -1585,6 +1585,13 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 	return ret;
     }
 
+    /* try to load local.gdb next */
+    sprintf(dbfile, "%s/local.gdb", dirname);
+    if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL))) {
+	free(dbfile);
+	return ret;
+    }
+
     /* check for and load daily.cfg */
     sprintf(dbfile, "%s/daily.cfg", dirname);
     if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL))) {

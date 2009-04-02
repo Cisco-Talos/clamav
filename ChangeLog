@@ -1,3 +1,9 @@
+Thu Apr  2 23:35:36 EEST 2009 (edwin)
+-------------------------------------
+ * docs/phishsigs_howto.tex, libclamav/phishcheck.c,
+ libclamav/readdb.c, libclamav/regex_list.c: local.gdb whitelisting
+ of safebrowsing entries (bb #1482).
+
 Thu Apr  2 22:59:30 EEST 2009 (edwin)
 -------------------------------------
  * libclamav/htmlnorm.c, libclamav/htmlnorm.h, libclamav/mbox.c,

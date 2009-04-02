@@ -57,6 +57,7 @@ S1:P:HostPrefix[:FuncLevelSpec]
 S1:F:Sha256hash[:FuncLevelSpec]
 S2:P:HostPrefix[:FuncLevelSpec]
 S2:F:Sha256hash[:FuncLevelSpec]
+S:W:Sha256hash[:FuncLevelSpec]
 \end{verbatim}
 
 \begin{description}
@@ -67,6 +68,8 @@ S2:F:Sha256hash[:FuncLevelSpec]
  \item [{S1:}]
 	Hashes for blacklisting phishing sites.
 	Virus name: Phishing.URL.Blacklisted
+ \item [{S:W}]
+	Locally whitelisted hashes.
  \item [{HostPrefix}]
 	4-byte prefix of the sha256 hash of the last 2 or 3 components of the hostname.
 If prefix doesn't match, no further lookups are performed.
@@ -76,7 +79,8 @@ If prefix doesn't match, no further lookups are performed.
 
 To see which hash/URL matched, look at the \verb+clamscan --debug+ output, and look for the following strings:
 \verb+Looking up hash+, \verb+prefix matched+, and \verb+Hash matched+.
-Local whitelisting of .gdb entries can be done by creating .wdb entries.
+Local whitelisting of .gdb entries can be done by creating a local.gdb file, and
+adding a line \verb+S:W:<HASH>+.
 
 \subsection{WDB format}
 This file contains whitelisted url pairs

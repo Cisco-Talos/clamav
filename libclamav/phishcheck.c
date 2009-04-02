@@ -1206,6 +1206,9 @@ static int hash_match(const struct regex_matcher *rlist, const char *host, size_
 	    }
 	    if (cli_bm_scanbuff(sha256_dig, 32, &virname, &rlist->sha256_hashes,0,0,-1) == CL_VIRUS) {
 		switch(*virname) {
+		    case 'W':
+			cli_dbgmsg("Hash is whitelisted, skipping\n");
+			break;
 		    case '1':
 			return CL_PHISH_HASH1;
 		    case '2':
@@ -1413,7 +1416,7 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 {
 	struct url_check host_url;
 	int rc = CL_PHISH_NODECISION;
-	int phishy=0, blacklisted=0;
+	int phishy=0;
 	const struct phishcheck* pchk = (const struct phishcheck*) engine->phishcheck;
 
 	if(!urls->realLink.data)
@@ -1436,8 +1439,12 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 		return CL_PHISH_CLEAN;
 	    } else {
 		cli_dbgmsg("Hash matched for: %s\n", urls->realLink.data);
-		blacklisted = rc;
+		return rc;
 	    }
+	}
+
+	if (urls->displayLink.data[0] == '\0') {
+	    return CL_PHISH_CLEAN;
 	}
 
 	if((rc = cleanupURLs(urls))) {
@@ -1453,19 +1460,11 @@ static enum phish_status phishingCheck(const struct cl_engine* engine,struct url
 			( (phishy&PHISHY_NUMERIC_IP && !isNumericURL(pchk, urls->displayLink.data)) ||
 			  !(phishy&PHISHY_NUMERIC_IP))) {
 		cli_dbgmsg("Displayed 'url' is not url:%s\n",urls->displayLink.data);
-		if (!blacklisted)
-		    return CL_PHISH_CLEAN;
+		return CL_PHISH_CLEAN;
 	}
 
 	if(whitelist_check(engine, urls, 0))
 		return CL_PHISH_CLEAN;/* if url is whitelisted don't perform further checks */
-
-	if (blacklisted)
-	    return blacklisted;
-
-	if (urls->displayLink.data[0] == '\0') {
-	    return CL_PHISH_CLEAN;
-	}
 
 	url_check_init(&host_url);
 

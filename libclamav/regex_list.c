@@ -432,24 +432,36 @@ static int add_hash(struct regex_matcher *matcher, char* pattern, const char fl,
 	int rc;
 	struct cli_bm_patt *pat = mpool_calloc(matcher->mempool, 1, sizeof(*pat));
 	struct cli_matcher *bm;
+	const char *vname = NULL;
 	if(!pat)
 		return CL_EMEM;
 	pat->pattern = (unsigned char*)cli_mpool_hex2str(matcher->mempool, pattern);
 	if(!pat->pattern)
 		return CL_EMALFDB;
 	pat->length = 32;
-	pat->virname = mpool_malloc(matcher->mempool, 1);
-	if(!pat->virname) {
-		free(pat);
-		return CL_EMEM;
-	}
-	*pat->virname = fl;
 	if (is_prefix) {
 	    pat->length=4;
 	    bm = &matcher->hostkey_prefix;
 	} else {
 	    bm = &matcher->sha256_hashes;
 	}
+
+	if (fl != 'W' && pat->length == 32 &&
+	    cli_bm_scanbuff(pat->pattern, 32, &vname, &matcher->sha256_hashes,0,0,-1) == CL_VIRUS) {
+	    if (*vname == 'W') {
+		/* hash is whitelisted in local.gdb */
+		cli_dbgmsg("Skipping hash %s\n", pattern);
+		mpool_free(matcher->mempool, pat->pattern);
+		mpool_free(matcher->mempool, pat);
+		return CL_SUCCESS;
+	    }
+	}
+	pat->virname = mpool_malloc(matcher->mempool, 1);
+	if(!pat->virname) {
+		free(pat);
+		return CL_EMEM;
+	}
+	*pat->virname = fl;
 
 	if((rc = cli_bm_addpatt(bm, pat))) {
 		cli_errmsg("add_hash: failed to add BM pattern\n");
@@ -550,9 +562,11 @@ int load_regex_matcher(struct regex_matcher* matcher,FILE* fd,unsigned int *sign
 			/*matches displayed host*/
 			if (( rc = add_static_pattern(matcher, pattern) ))
 				return rc==CL_EMEM ? CL_EMEM : CL_EMALFDB;
-		} else if (buffer[0] == 'S' && !is_whitelist) {
+		} else if (buffer[0] == 'S' && (!is_whitelist || pattern[0]=='W')) {
 			pattern[pattern_len] = '\0';
-			if((pattern[0]=='F' || pattern[0]=='P') && pattern[1]==':') {
+			if (pattern[0]=='W')
+			    flags[0]='W';
+			if((pattern[0]=='W' || pattern[0]=='F' || pattern[0]=='P') && pattern[1]==':') {
 			    pattern += 2;
 			    if (( rc = add_hash(matcher, pattern, flags[0], pattern[-2] == 'P') )) {
 				cli_errmsg("Error loading at line: %d\n", line);
