@@ -118,11 +118,13 @@ static int lt_init(void) {
     return 0;
 }
 
+#define PASTE(a,b) a#b
+
 static lt_dlhandle lt_dlfind(const char *name, const char *featurename)
 {
     static const char *suffixes[] = {
 	LT_MODULE_EXT"."LIBCLAMAV_FULLVER,
-	LT_MODULE_EXT"."LIBCLAMAV_MAJORVER,
+	PASTE(LT_MODULE_EXT".", LIBCLAMAV_MAJORVER),
 	LT_MODULE_EXT,
 	"."LT_LIBEXT
     };
@@ -178,10 +180,10 @@ static void cli_rarload(void) {
     if (!rhandle)
 	return;
 
-    if (!(cli_unrar_open = (int(*)(int, const char *, unrar_state_t *))lt_dlsym(rhandle, "unrar_open")) ||
-	!(cli_unrar_extract_next_prepare = (int(*)(unrar_state_t *, const char *))lt_dlsym(rhandle, "unrar_extract_next_prepare")) ||
-	!(cli_unrar_extract_next = (int(*)(unrar_state_t *, const char *))lt_dlsym(rhandle, "unrar_extract_next")) ||
-	!(cli_unrar_close = (void(*)(unrar_state_t *))lt_dlsym(rhandle, "unrar_close"))
+    if (!(cli_unrar_open = (int(*)(int, const char *, unrar_state_t *))lt_dlsym(rhandle, "libclamunrar_iface_LTX_unrar_open")) ||
+	!(cli_unrar_extract_next_prepare = (int(*)(unrar_state_t *, const char *))lt_dlsym(rhandle, "libclamunrar_iface_LTX_unrar_extract_next_prepare")) ||
+	!(cli_unrar_extract_next = (int(*)(unrar_state_t *, const char *))lt_dlsym(rhandle, "libclamunrar_iface_LTX_unrar_extract_next")) ||
+	!(cli_unrar_close = (void(*)(unrar_state_t *))lt_dlsym(rhandle, "libclamunrar_iface_LTX_unrar_close"))
 	) {
 	/* ideally we should never land here, we'd better warn so */
         cli_warnmsg("Cannot resolve: %s (version mismatch?) - unrar support unavailable\n", lt_dlerror());
