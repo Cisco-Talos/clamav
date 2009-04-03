@@ -62,7 +62,8 @@
 #endif
 #endif
 
-#define IGNTIME 3 * 86400
+#define IGNORE_LONG	3 * 86400
+#define IGNORE_SHORT	1800
 
 void mirman_free(struct mirdat *mdat)
 {
@@ -125,7 +126,7 @@ int mirman_check(uint32_t *ip, int af, struct mirdat *mdat, struct mirdat_ip **m
 
 	if((af == AF_INET && mdat->mirtab[i].ip4 == *ip) || (af == AF_INET6 && !memcmp(mdat->mirtab[i].ip6, ip, 4 * sizeof(uint32_t)))) {
 
-	    if(!mdat->mirtab[i].atime) {
+	    if(!mdat->mirtab[i].atime && !mdat->mirtab[i].ignore) {
 		if(md)
 		    *md = &mdat->mirtab[i];
 		return 0;
@@ -136,12 +137,20 @@ int mirman_check(uint32_t *ip, int af, struct mirdat *mdat, struct mirdat_ip **m
 		    return 2;
 
 	    if(mdat->mirtab[i].ignore) {
-		if(time(NULL) - mdat->mirtab[i].atime > IGNTIME) {
+		if(!mdat->mirtab[i].atime)
+		    return 1;
+
+		if(time(NULL) - mdat->mirtab[i].atime > IGNORE_LONG) {
 		    mdat->mirtab[i].ignore = 0;
 		    if(md)
 			*md = &mdat->mirtab[i];
 		    return 0;
 		} else {
+		    if(mdat->mirtab[i].ignore == 2 && (time(NULL) - mdat->mirtab[i].atime > IGNORE_SHORT)) {
+			if(md)
+			    *md = &mdat->mirtab[i];
+			return 0;
+		    }
 		    return 1;
 		}
 	    }
@@ -177,14 +186,18 @@ int mirman_update(uint32_t *ip, int af, struct mirdat *mdat, uint8_t broken)
 	else
 	    mdat->mirtab[i].succ++;
 
-	/*
-	 * If the total number of failures is less than 3 then never
-	 * enable the ignore flag, in other case use the real status.
-	 */
-	if(mdat->mirtab[i].fail < 3)
-	    mdat->mirtab[i].ignore = 0;
-	else
-	    mdat->mirtab[i].ignore = broken;
+	if(broken == 2) {
+	    mdat->mirtab[i].ignore = 2;
+	} else {
+	    /*
+	     * If the total number of failures is less than 3 then never
+	     * mark a permanent failure, in other case use the real status.
+	     */
+	    if(mdat->mirtab[i].fail < 3)
+		mdat->mirtab[i].ignore = 0;
+	    else
+		mdat->mirtab[i].ignore = broken;
+	}
 
     } else {
 	mdat->mirtab = (struct mirdat_ip *) realloc(mdat->mirtab, (mdat->num + 1) * sizeof(struct mirdat_ip));
@@ -201,7 +214,7 @@ int mirman_update(uint32_t *ip, int af, struct mirdat *mdat, uint8_t broken)
 	mdat->mirtab[mdat->num].atime = 0;
 	mdat->mirtab[mdat->num].succ = 0;
 	mdat->mirtab[mdat->num].fail = 0;
-	mdat->mirtab[mdat->num].ignore = 0;
+	mdat->mirtab[mdat->num].ignore = (broken == 2) ? 2 : 0;
 	memset(&mdat->mirtab[mdat->num].res, 0xff, sizeof(mdat->mirtab[mdat->num].res));
 	if(broken)
 	    mdat->mirtab[mdat->num].fail++;
@@ -241,13 +254,14 @@ void mirman_list(const struct mirdat *mdat)
     }
 }
 
-void mirman_whitelist(struct mirdat *mdat)
+void mirman_whitelist(struct mirdat *mdat, unsigned int mode)
 {
 	unsigned int i;
 
-    logg("Whitelisting all mirrors\n");
+    logg("*Whitelisting %s blacklisted mirrors\n", mode == 1 ? "all" : "short-term");
     for(i = 0; i < mdat->num; i++)
-	mdat->mirtab[i].ignore = 0;
+	if(mode == 1 || (mode == 2 && mdat->mirtab[i].ignore == 2))
+	    mdat->mirtab[i].ignore = 0;
 }
 
 int mirman_write(const char *file, struct mirdat *mdat)

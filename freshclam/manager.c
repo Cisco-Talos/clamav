@@ -271,9 +271,9 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 
 	if(mdat && (ret = mirman_check(addr, rp->ai_family, mdat, &md))) {
 	    if(ret == 1)
-		logg("Ignoring mirror %s (due to previous errors)\n", ipaddr);
+		logg("*Ignoring mirror %s (due to previous errors)\n", ipaddr);
 	    else
-		logg("Ignoring mirror %s (has connected too many times with an outdated version)\n", ipaddr);
+		logg("*Ignoring mirror %s (has connected too many times with an outdated version)\n", ipaddr);
 
 	    ignored++;
 	    if(!loadbal || rp->ai_next)
@@ -364,9 +364,9 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 	ips++;
 	if(mdat && (ret = mirman_check(&((struct in_addr *) ia)->s_addr, AF_INET, mdat, NULL))) {
 	    if(ret == 1)
-		logg("Ignoring mirror %s (due to previous errors)\n", ipaddr);
+		logg("*Ignoring mirror %s (due to previous errors)\n", ipaddr);
 	    else
-		logg("Ignoring mirror %s (has connected too many times with an outdated version)\n", ipaddr);
+		logg("*Ignoring mirror %s (has connected too many times with an outdated version)\n", ipaddr);
 	    ignored++;
 	    continue;
 	}
@@ -405,7 +405,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 #endif
 
     if(mdat && can_whitelist && ips && (ips == ignored))
-	mirman_whitelist(mdat);
+	mirman_whitelist(mdat, 1);
 
     return -2;
 }
@@ -925,7 +925,7 @@ static struct cl_cvd *remote_cvdhead(const char *cvdfile, const char *localfile,
 
     if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
 	logg("%cCVD file not found on remote server\n", logerr ? '!' : '^');
-	/* mirman_update(mdat->currip, mdat, 1); */
+	mirman_update(mdat->currip, mdat->af, mdat, 2);
 	return NULL;
     }
 
@@ -1085,7 +1085,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     /* check whether the resource actually existed or not */
     if((strstr(buffer, "HTTP/1.1 404")) != NULL || (strstr(buffer, "HTTP/1.0 404")) != NULL) { 
 	logg("^getfile: %s not found on remote server (IP: %s)\n", srcfile, ipaddr);
-	/* mirman_update(mdat->currip, mdat, 1); */
+	mirman_update(mdat->currip, mdat->af, mdat, 2);
 	closesocket(sd);
 	return 58;
     }
@@ -1192,6 +1192,7 @@ static int getcvd(const char *cvdfile, const char *newfile, const char *hostname
 
     if(cvd->version < newver) {
 	logg("^Mirror %s is not synchronized.\n", ip);
+	mirman_update(mdat->currip, mdat->af, mdat, 2);
     	cl_cvdfree(cvd);
 	unlink(newfile);
 	return 59;
@@ -1648,6 +1649,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	    cli_rmdirs(tmpdir);
 	    free(tmpdir);
 	    logg("^Incremental update failed, trying to download %s\n", cvdfile);
+	    mirman_whitelist(mdat, 2);
 	    ret = getcvd(cvdfile, newfile, hostname, ip, localip, proxy, port, user, pass, uas, newver, ctimeout, rtimeout, mdat, logerr, can_whitelist);
 	    if(ret) {
 		free(newfile);

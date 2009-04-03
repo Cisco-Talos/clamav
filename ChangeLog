@@ -1,3 +1,8 @@
+Fri Apr  3 15:30:34 CEST 2009 (tk)
+----------------------------------
+ * freshclam: short-term blacklisting of faulty mirrors;
+	      better handling of 404 errors (bb#1516)
+
 Fri Apr  3 13:05:44 CEST 2009 (acab)
 ------------------------------------
  * shared/optparser.c, docs: limit options expressing sizes to
