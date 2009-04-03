@@ -906,7 +906,6 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 		    switch(*buff) {
 		    case 'M':
 		    case 'm':
-			printf("%u\n", UINT_MAX/(1024*1024));
 			if(lnumarg <= UINT_MAX/(1024*1024)) lnumarg *= 1024*1024;
 			else errno = ERANGE;
 			break;
