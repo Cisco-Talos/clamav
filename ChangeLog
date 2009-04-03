@@ -1,3 +1,8 @@
+Fri Apr  3 11:32:33 EEST 2009 (edwin)
+-------------------------------------
+ * unit_tests/check_clamd.sh: properly remove old logfiles during
+ make check.
+
 Fri Apr  3 11:25:08 EEST 2009 (edwin)
 -------------------------------------
  * configure, configure.in, libclamav/others.c,
