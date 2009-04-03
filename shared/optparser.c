@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
 #endif
@@ -635,6 +636,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 	struct option longopts[MAXCMDOPTS];
 	char shortopts[MAXCMDOPTS];
 	regex_t regex;
+	unsigned long int lnumarg;
 
 
     if(oldopts)
@@ -898,27 +900,55 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 		break;
 
 	    case TYPE_SIZE:
-		if(sscanf(arg, "%d", &numarg) != 1) {
-		    if(cfgfile) {
-			fprintf(stderr, "ERROR: Can't parse numerical argument for option %s\n", name);
-		    } else {
-			if(optentry->shortopt)
-			    fprintf(stderr, "ERROR: Can't parse numerical argument for option --%s (-%c)\n", optentry->longopt, optentry->shortopt);
-			else
-			    fprintf(stderr, "ERROR: Can't parse numerical argument for option --%s\n", optentry->longopt);
+		errno = 0;
+		lnumarg = strtoul(arg, &buff, 0);
+		if(errno != ERANGE) {
+		    switch(*buff) {
+		    case 'M':
+		    case 'm':
+			printf("%u\n", UINT_MAX/(1024*1024));
+			if(lnumarg <= UINT_MAX/(1024*1024)) lnumarg *= 1024*1024;
+			else errno = ERANGE;
+			break;
+		    case 'K':
+		    case 'k':
+			if(lnumarg <= UINT_MAX/1024) lnumarg *= 1024;
+			else errno = ERANGE;
+			break;
+		    case '\0':
+			break;
+		    default:
+			if(cfgfile) {
+			    fprintf(stderr, "ERROR: Can't parse numerical argument for option %s\n", name);
+			} else {
+			    if(optentry->shortopt)
+				fprintf(stderr, "ERROR: Can't parse numerical argument for option --%s (-%c)\n", optentry->longopt, optentry->shortopt);
+			    else
+				fprintf(stderr, "ERROR: Can't parse numerical argument for option --%s\n", optentry->longopt);
+			}
+			err = 1;
 		    }
-		    err = 1;
-		    break;
 		}
-		i = strlen(arg) - 1;
-		if(arg[i] == 'M' || arg[i] == 'm')
-		    numarg *= 1048576;
-		else if(arg[i] == 'K' || arg[i] == 'k')
-		    numarg *= 1024;
-		else
-		    numarg = atoi(arg);
 
 		arg = NULL;
+		if(err) break;
+
+		if(sizeof(lnumarg) > sizeof(numarg) && (lnumarg >> (sizeof(numarg)<<3)) )
+		    errno = ERANGE;
+
+		if(errno == ERANGE) {
+		    if(cfgfile) {
+			fprintf(stderr, "WARNING: Numerical value for option %s too high, resetting to 4G\n", name);
+		    } else {
+			if(optentry->shortopt)
+			    fprintf(stderr, "WARNING: Numerical value for option --%s (-%c) too high, resetting to 4G\n", optentry->longopt, optentry->shortopt);
+			else
+			    fprintf(stderr, "WARNING: Numerical value for option %s too high, resetting to 4G\n", optentry->longopt);
+		    }
+		    lnumarg = UINT_MAX;
+		}
+
+		numarg = (unsigned int)lnumarg;
 		break;
 
 	    case TYPE_BOOL:

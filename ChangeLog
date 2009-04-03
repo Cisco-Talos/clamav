@@ -1,3 +1,8 @@
+Fri Apr  3 13:05:44 CEST 2009 (acab)
+------------------------------------
+ * shared/optparser.c, docs: limit options expressing sizes to
+			     32bit (bb#1508)
+
 Fri Apr  3 11:32:33 EEST 2009 (edwin)
 -------------------------------------
  * unit_tests/check_clamd.sh: properly remove old logfiles during

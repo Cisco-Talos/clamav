@@ -142,10 +142,10 @@ If an email contains URLs ClamAV can download and scan them. \fBWARNING: This op
 Extract at most #n files from each scanned file (when this is an archive, a document or another kind of container). This option protects your system against DoS attacks (default: 10000)
 .TP 
 \fB\-\-max\-filesize=#n\fR
-Extract and scan at most #n kilobytes from each archive. You may pass the value in megabytes in format xM or xm, where x is a number. This option protects your system against DoS attacks (default: 25 MB)
+Extract and scan at most #n kilobytes from each archive. You may pass the value in megabytes in format xM or xm, where x is a number. This option protects your system against DoS attacks (default: 25 MB, max: <4 GB)
 .TP 
 \fB\-\-max\-scansize=#n\fR
-Extract and scan at most #n kilobytes from each scanned file. You may pass the value in megabytes in format xM or xm, where x is a number. This option protects your system against DoS attacks (default: 100 MB)
+Extract and scan at most #n kilobytes from each scanned file. You may pass the value in megabytes in format xM or xm, where x is a number. This option protects your system against DoS attacks (default: 100 MB, max: <4 GB)
 .TP 
 \fB\-\-max\-recursion=#n\fR
 Set archive recursion level limit. This option protects your system against DoS attacks (default: 16).
