@@ -914,7 +914,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 			realoff = offset + bp - pt->prefix_length;
 
 			if(pt->offset && (!pt->sigid || pt->partno == 1)) {
-			    if((fd == -1 && !ftype) || !cli_validatesig(ftype, pt->offset, realoff, &info, fd, pt->virname)) {
+			    if(!cli_validatesig(ftype, pt->offset, realoff, &info, fd, pt->virname)) {
 				pt = pt->next_same;
 				continue;
 			    }

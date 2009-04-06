@@ -214,9 +214,9 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
 		if(found && p->length + p->prefix_length == j) {
 
-		    if(p->target || p->offset) {
+		    if(p->offset) {
 			off = offset + i - p->prefix_length - BM_MIN_LENGTH + BM_BLOCK_SIZE;
-			if((fd == -1 && !ftype) || !cli_validatesig(ftype, p->offset, off, &info, fd, p->virname)) {
+			if(!cli_validatesig(ftype, p->offset, off, &info, fd, p->virname)) {
 			    p = p->next;
 			    continue;
 			}
