@@ -150,19 +150,19 @@ const struct clam_option clam_options[] = {
     /* config file/cmdline options */
     { "LogFile", "log", 'l', TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_MILTER | OPT_CLAMSCAN | OPT_CLAMDSCAN, "Save all reports to a log file.", "/tmp/clamav.log" },
 
-    { "LogFileUnlock", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_MILTER, "By default the log file is locked for writing and only a single\ndaemon process can write to it. This option disables the lock.", "no" },
+    { "LogFileUnlock", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_MILTER, "By default the log file is locked for writing and only a single\ndaemon process can write to it. This option disables the lock.", "yes" },
 
     { "LogFileMaxSize", NULL, 0, TYPE_SIZE, MATCH_SIZE, 1048576, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Maximum size of the log file.\nValue of 0 disables the limit.", "5M" },
 
     { "LogTime", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Log time with each message.", "yes" },
 
-    { "LogClean", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Log all clean files.\nUseful in debugging but drastically increases the log size.", "no" },
-
-    { "LogVerbose", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Enable verbose logging.", "no" },
+    { "LogClean", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Log all clean files.\nUseful in debugging but drastically increases the log size.", "yes" },
 
     { "LogSyslog", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Use the system logger (can work together with LogFile).", "yes" },
 
     { "LogFacility", NULL, 0, TYPE_STRING, NULL, -1, "LOG_LOCAL6", FLAG_REQUIRED, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Type of syslog messages.\nPlease refer to 'man syslog' for the facility names.", "LOG_MAIL" },
+
+    { "LogVerbose", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Enable verbose logging.", "yes" },
 
     { "PidFile", "pid", 'p', TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_MILTER, "Save the process ID to a file.", "/var/run/clam.pid" },
 
@@ -193,11 +193,11 @@ const struct clam_option clam_options[] = {
 
     { "CommandReadTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 5, NULL, 0, OPT_CLAMD, "This option specifies the time (in seconds) after which clamd should\ntimeout if a client doesn't provide any initial command after connecting.", "5" },
 
-    { "SendBufTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 500, NULL, 0, OPT_CLAMD, "This option specifies how long to wait (in miliseconds) if the send buffer is full. Keep this value to prevent clamd hanging\n", "200"},
+    { "SendBufTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 500, NULL, 0, OPT_CLAMD, "This option specifies how long to wait (in miliseconds) if the send buffer is full. Keep this value low to prevent clamd hanging\n", "200"},
 
     { "ReadTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 120, NULL, 0, OPT_MILTER, "Waiting for data from clamd will timeout after this time (seconds).\nValue of 0 disables the timeout.", "300" },
 
-    { "MaxQueue", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 100, NULL, 0, OPT_CLAMD, "Maximum number of queued items (including those being processed by MaxThreads threads)\nIt is recommended to have this value at least twice MaxThreads if possible.\nWARNING: you shouldn't increase this too much to avoid running out  of file descriptors, the following condition should hold: MaxThreads*MaxRecursion + MaxQueue < RLIMIT_NOFILE (usual max is 1024)\n", "200" },
+    { "MaxQueue", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 100, NULL, 0, OPT_CLAMD, "Maximum number of queued items (including those being processed by MaxThreads threads)\nIt is recommended to have this value at least twice MaxThreads if possible.\nWARNING: you shouldn't increase this too much to avoid running out  of file descriptors,\n the following condition should hold:\n MaxThreads*MaxRecursion + MaxQueue < RLIMIT_NOFILE (usual max is 1024)\n", "200" },
 
     { "IdleTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 30, NULL, 0, OPT_CLAMD, "This option specifies how long (in seconds) the process should wait\nfor a new job.", "60" },
 

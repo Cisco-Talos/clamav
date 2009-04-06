@@ -115,6 +115,32 @@ Default: 10
 Waiting for data from a client socket will timeout after this time (seconds).
 .br 
 Default: 120
+.TP
+\fBCommandReadTimeout NUMBER\fR
+This option specifies the time (in seconds) after which clamd should
+timeout if a client doesn't provide any initial command after connecting.
+Note: the timeout for subsequents commands, and/or data chunks is specified by
+ReadTimeout.
+.br
+Default: 5
+.TP
+\fBSendBufTimeout NUMBER\fR
+This option specifies how long to wait (in miliseconds) if the send buffer is full.
+Keep this value low to prevent clamd hanging.
+.br
+Default: 500
+.TP
+\fBMaxQueue NUMBER\fR
+Maximum number of queued items (including those being processed by MaxThreads threads).
+It is recommended to have this value at least twice MaxThreads if possible.
+.br
+\fBWARNING: you shouldn't increase this too much to avoid running out of file descriptors,
+the following condition should hold:
+MaxThreads*MaxRecursion + MaxQueue < RLIMIT_NOFILE.\fR
+RLIMIT_NOFILE is the maximum number of open file descriptors (usually 1024), set
+by \fBulimit -n\fR.
+.br
+Default: 100
 .TP 
 \fBIdleTimeout NUMBER\fR
 Waiting for a new job will timeout after this time (seconds).

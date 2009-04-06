@@ -142,6 +142,7 @@ static int printconf(const char *name)
 		    break;
 
 		case TYPE_SIZE:
+		    printf("# You may use 'M' or 'm' for megabytes (1M = 1m = 1048576 bytes)\n# and 'K' or 'k' for kilobytes (1K = 1k = 1024 bytes). To specify the size\n# in bytes just don't use modifiers.\n");
 		    if(cpt->numarg != -1)
 			printf("# Default: %d\n", cpt->numarg);
 		    else

@@ -1,3 +1,10 @@
+Mon Apr  6 12:26:04 EEST 2009 (edwin)
+-------------------------------------
+ * clamconf/clamconf.c, docs/man/clamd.conf.5.in, etc/clamd.conf,
+ shared/optparser.c: add documentation for MaxQueue (and other
+ missing options) to clamd.conf (bb #1521).  Make clamconf generated
+ config file a bit more like the one in etc/clamd.conf.
+
 Mon Apr  6 12:02:38 EEST 2009 (edwin)
 -------------------------------------
  * clamd/server-th.c, shared/optparser.c: set timeout to readtimeout
