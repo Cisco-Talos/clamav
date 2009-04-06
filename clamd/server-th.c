@@ -603,13 +603,16 @@ static const unsigned char* parse_dispatch_cmd(client_conn_t *conn, struct fd_bu
 }
 
 //static const unsigned char* parse_dispatch_cmd(client_conn_t *conn, struct fd_buf *buf, size_t *ppos, int *error, const struct optstruct *opts, int readtimeout)
-static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct optstruct *opts, int *error, size_t *ppos)
+static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct optstruct *opts, int *error, size_t *ppos, int readtimeout)
 {
     int rc;
     size_t pos = *ppos;
     size_t cmdlen;
 
     logg("$mode == MODE_STREAM\n");
+    /* we received a chunk, set readtimeout */
+    time(&buf->timeout_at);
+    buf->timeout_at += readtimeout;
     if (!buf->chunksize) {
 	/* read chunksize */
 	if (buf->off >= 4) {
@@ -941,22 +944,40 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 
 #if !defined(C_WINDOWS) && defined(RLIMIT_NOFILE)
     if (getrlimit(RLIMIT_NOFILE, &rlim) == 0) {
-	if (max_queue*4 > rlim.rlim_cur) {
-	    max_queue = rlim.rlim_cur / 4;
-	    logg("^MaxQueue value too high, lowering to: %d\n", max_queue);
-	} else if (max_queue < 2*max_threads) {
-	    /* increase it but only if it doesn't exceed limit otherwise */
-	    int newmax = 2*max_threads;
-	    if (newmax*4 > rlim.rlim_cur)
-		newmax = rlim.rlim_cur/4;
-	    if (max_queue < newmax) {
-		max_queue = newmax;
-		logg("^MaxQueue is lower than twice MaxThreads, increasing to: %d\n", max_queue);
-	    }
+	/* don't warn if default value is too high, silently fix it */
+	unsigned warn = optget(opts, "MaxQueue")->active;
+	const unsigned clamdfiles = 6;
+	/* Condition to not run out of file descriptors:
+	 * MaxThreads * MaxRecursion + (MaxQueue - MaxThreads) + CLAMDFILES < RLIMIT_NOFILE 
+	 * CLAMDFILES is 6: 3 standard FD + logfile + 2 FD for reloading the DB
+	 * */
+	opt = optget(opts,"MaxRecursion");
+	unsigned maxrec = opt->numarg;
+	int max_max_queue = rlim.rlim_cur - maxrec * max_threads - clamdfiles + max_threads;
+	if (max_queue < max_threads) {
+	    max_queue = max_threads;
+	    if (warn)
+		logg("^MaxQueue value too low, increasing to: %d\n", max_queue);
+	}
+	if (max_max_queue < max_threads) {
+	    logg("^MaxThreads * MaxRecursion is too high: %d, open file descriptor limit is: %d\n",
+		 maxrec*max_threads, rlim.rlim_cur);
+	    max_max_queue = max_threads;
+	}
+	if (max_queue > max_max_queue) {
+	    max_queue = max_max_queue;
+	    if (warn)
+		logg("^MaxQueue value too high, lowering to: %d\n", max_queue);
+	} else if (max_queue < 2*max_threads && max_queue < max_max_queue) {
+	    max_queue = 2*max_threads;
+	    if (max_queue > max_max_queue)
+		max_queue = max_max_queue;
+	    /* always warn here */
+	    logg("^MaxQueue is lower than twice MaxThreads, increasing to: %d\n", max_queue);
 	}
     }
 #endif
-
+    logg("*MaxQueue set to: %d\n", max_queue);
     acceptdata.max_queue = max_queue;
 
     if(optget(opts, "ClamukoScanOnAccess")->enabled)
@@ -1156,7 +1177,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 			logg("$Garbage: %s\n", buf->buffer);
 			error = 1;
 		    } else if (buf->mode == MODE_STREAM) {
-			rc = handle_stream(&conn, buf, opts, &error, &pos);
+			rc = handle_stream(&conn, buf, opts, &error, &pos, readtimeout);
 			if (rc == -1)
 			    break;
 			else

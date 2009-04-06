@@ -197,7 +197,7 @@ const struct clam_option clam_options[] = {
 
     { "ReadTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 120, NULL, 0, OPT_MILTER, "Waiting for data from clamd will timeout after this time (seconds).\nValue of 0 disables the timeout.", "300" },
 
-    { "MaxQueue", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 100, NULL, 0, OPT_CLAMD, "Maximum number of queued items (including those being processed)\nWARNING: you shouldn't increase this beyond 512, since you may run out of\nfile descriptors (usual max is 1024)\n", "200" },
+    { "MaxQueue", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 100, NULL, 0, OPT_CLAMD, "Maximum number of queued items (including those being processed by MaxThreads threads)\nIt is recommended to have this value at least twice MaxThreads if possible.\nWARNING: you shouldn't increase this too much to avoid running out  of file descriptors, the following condition should hold: MaxThreads*MaxRecursion + MaxQueue < RLIMIT_NOFILE (usual max is 1024)\n", "200" },
 
     { "IdleTimeout", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 30, NULL, 0, OPT_CLAMD, "This option specifies how long (in seconds) the process should wait\nfor a new job.", "60" },
 

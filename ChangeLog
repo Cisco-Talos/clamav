@@ -1,3 +1,9 @@
+Mon Apr  6 12:02:38 EEST 2009 (edwin)
+-------------------------------------
+ * clamd/server-th.c, shared/optparser.c: set timeout to readtimeout
+ after receiving a chunk (bb #1540).  better checks and documentation
+ for MaxQueue (bb #1521).
+
 Fri Apr  3 15:30:34 CEST 2009 (tk)
 ----------------------------------
  * freshclam: short-term blacklisting of faulty mirrors;
