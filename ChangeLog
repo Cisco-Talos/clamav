@@ -1,3 +1,8 @@
+Mon Apr  6 12:32:44 EEST 2009 (edwin)
+-------------------------------------
+ * docs/man/clamd.conf.5.in, etc/clamd.conf, shared/optparser.c: fix
+ documentation of formula to reflect reality.
+
 Mon Apr  6 12:26:04 EEST 2009 (edwin)
 -------------------------------------
  * clamconf/clamconf.c, docs/man/clamd.conf.5.in, etc/clamd.conf,

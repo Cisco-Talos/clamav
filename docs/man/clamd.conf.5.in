@@ -136,7 +136,7 @@ It is recommended to have this value at least twice MaxThreads if possible.
 .br
 \fBWARNING: you shouldn't increase this too much to avoid running out of file descriptors,
 the following condition should hold:
-MaxThreads*MaxRecursion + MaxQueue < RLIMIT_NOFILE.\fR
+MaxThreads*MaxRecursion + MaxQueue - MaxThreads + 6 < RLIMIT_NOFILE.\fR
 RLIMIT_NOFILE is the maximum number of open file descriptors (usually 1024), set
 by \fBulimit -n\fR.
 .br

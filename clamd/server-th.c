@@ -945,6 +945,8 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 #if !defined(C_WINDOWS) && defined(RLIMIT_NOFILE)
     if (getrlimit(RLIMIT_NOFILE, &rlim) == 0) {
 	/* don't warn if default value is too high, silently fix it */
+	unsigned maxrec;
+	int max_max_queue;
 	unsigned warn = optget(opts, "MaxQueue")->active;
 	const unsigned clamdfiles = 6;
 	/* Condition to not run out of file descriptors:
@@ -952,16 +954,16 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	 * CLAMDFILES is 6: 3 standard FD + logfile + 2 FD for reloading the DB
 	 * */
 	opt = optget(opts,"MaxRecursion");
-	unsigned maxrec = opt->numarg;
-	int max_max_queue = rlim.rlim_cur - maxrec * max_threads - clamdfiles + max_threads;
+	maxrec = opt->numarg;
+	max_max_queue = rlim.rlim_cur - maxrec * max_threads - clamdfiles + max_threads;
 	if (max_queue < max_threads) {
 	    max_queue = max_threads;
 	    if (warn)
 		logg("^MaxQueue value too low, increasing to: %d\n", max_queue);
 	}
 	if (max_max_queue < max_threads) {
-	    logg("^MaxThreads * MaxRecursion is too high: %d, open file descriptor limit is: %d\n",
-		 maxrec*max_threads, rlim.rlim_cur);
+	    logg("^MaxThreads * MaxRecursion is too high: %d, open file descriptor limit is: %lu\n",
+		 maxrec*max_threads, (unsigned long)rlim.rlim_cur);
 	    max_max_queue = max_threads;
 	}
 	if (max_queue > max_max_queue) {
