@@ -46,7 +46,7 @@
 #include "default.h"
 
 
-int cli_scanbuff(const unsigned char *buffer, uint32_t length, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata)
+int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata)
 {
 	int ret = CL_CLEAN;
 	unsigned int i;
@@ -76,8 +76,8 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, cli_ctx *ctx, cli
 	if(!acdata && (ret = cli_ac_initdata(&mdata, troot->ac_partsigs, troot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN)))
 	    return ret;
 
-	if(troot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, troot, 0, ftype, -1)) != CL_VIRUS)
-	    ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, troot, acdata ? (acdata[0]) : (&mdata), 0, ftype, -1, NULL, AC_SCAN_VIR, NULL);
+	if(troot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, troot, offset, ftype, -1)) != CL_VIRUS)
+	    ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, troot, acdata ? (acdata[0]) : (&mdata), offset, ftype, -1, NULL, AC_SCAN_VIR, NULL);
 
 	if(!acdata)
 	    cli_ac_freedata(&mdata);
@@ -89,8 +89,8 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, cli_ctx *ctx, cli
     if(!acdata && (ret = cli_ac_initdata(&mdata, groot->ac_partsigs, groot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN)))
 	return ret;
 
-    if(groot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, groot, 0, ftype, -1)) != CL_VIRUS)
-	ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, groot, acdata ? (acdata[1]) : (&mdata), 0, ftype, -1, NULL, AC_SCAN_VIR, NULL);
+    if(groot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, groot, offset, ftype, -1)) != CL_VIRUS)
+	ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, groot, acdata ? (acdata[1]) : (&mdata), offset, ftype, -1, NULL, AC_SCAN_VIR, NULL);
 
     if(!acdata)
 	cli_ac_freedata(&mdata);
@@ -107,6 +107,17 @@ off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, cli_f
 
 
     *ret = 0;
+
+    if((pt = strchr(offstr, ',')))
+	*maxshift = atoi(++pt);
+
+    if(isdigit(offstr[0]))
+	return atoi(offstr);
+
+    if(fd == -1) {
+	*ret = -1;
+	return 0;
+    }
 
     if(!strncmp(offstr, "EP", 2) || offstr[0] == 'S') {
 
@@ -140,13 +151,7 @@ off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, cli_f
 	}
     }
 
-    if((pt = strchr(offstr, ',')))
-	*maxshift = atoi(++pt);
-
-    if(isdigit(offstr[0])) {
-	return atoi(offstr);
-
-    } else if(info->status == 1 && (!strncmp(offstr, "EP+", 3) || !strncmp(offstr, "EP-", 3))) {
+    if(info->status == 1 && (!strncmp(offstr, "EP+", 3) || !strncmp(offstr, "EP-", 3))) {
 
 	if(offstr[2] == '+')
 	    return info->exeinfo.ep + atoi(offstr + 3);
@@ -229,13 +234,11 @@ int cli_validatesig(cli_file_t ftype, const char *offstr, off_t fileoff, struct 
 	unsigned int maxshift = 0;
 
 
-    if(offstr && desc != -1) {
+    if(offstr) {
 	offset = cli_caloff(offstr, info, desc, ftype, &ret, &maxshift);
 
-	if(ret == -1) {
-	    cli_dbgmsg("cli_validatesig: Can't calculate offset for signature %s\n", virname);
+	if(ret == -1)
 	    return 0;
-	}
 
 	if(maxshift) {
 	    if((fileoff < offset) || (fileoff > offset + (off_t) maxshift)) {

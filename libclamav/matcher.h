@@ -123,7 +123,7 @@ struct cli_target_info {
     int8_t status; /* 0 == not initialised, 1 == initialised OK, -1 == error */
 };
 
-int cli_scanbuff(const unsigned char *buffer, uint32_t length, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata);
+int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata);
 
 int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode);
 

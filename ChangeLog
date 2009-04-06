@@ -1,3 +1,8 @@
+Mon Apr  6 21:58:45 CEST 2009 (tk)
+----------------------------------
+ * libclamav: fix handling of signature offsets in cli_scanbuff() (bb#1546)
+	      Reported by Christoph
+
 Mon Apr  6 12:32:44 EEST 2009 (edwin)
 -------------------------------------
  * docs/man/clamd.conf.5.in, etc/clamd.conf, shared/optparser.c: fix

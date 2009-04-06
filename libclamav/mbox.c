@@ -1043,7 +1043,7 @@ save_text(cli_ctx *ctx, const char *dir, const char *start, size_t len)
 		 *	in this way. It gets the "filetype" wrong and then
 		 *	doesn't scan correctly
 		 */
-		if(cli_scanbuff((char *)p, len, ctx, CL_TYPE_BINARY_DATA, NULL) == CL_VIRUS) {
+		if(cli_scanbuff((char *)p, len, 0, ctx, CL_TYPE_BINARY_DATA, NULL) == CL_VIRUS) {
 			cli_dbgmsg("save_text: found %s\n", *ctx->virname);
 			return CL_VIRUS;
 		}
