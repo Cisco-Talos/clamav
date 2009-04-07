@@ -1,3 +1,7 @@
+Tue Apr  7 16:53:18 CEST 2009 (acab)
+------------------------------------
+ * clamav-milter/netcode.c: honour ReadTimeout=0
+
 Tue Apr  7 12:32:14 CEST 2009 (tk)
 ----------------------------------
  * etc/clamd.conf: remove deprecated ArchiveLimitMemoryUsage (bb#1551)

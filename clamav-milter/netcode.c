@@ -237,7 +237,7 @@ char *nc_recv(int s) {
 	FD_ZERO(&fds);
 	FD_SET(s, &fds);
 
-	res = select(s+1, &fds, NULL, NULL, &tv);
+	res = select(s+1, &fds, NULL, NULL, readtimeout ? &tv : NULL);
 	if(res<1) {
 	    if (res != -1 || errno != EINTR)
 		timeout = 0;
