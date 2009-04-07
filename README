@@ -2,6 +2,13 @@ Note: This README/NEWS file refers to the source tarball. Some things described
 here may not be available in binary packages.
 --
 
+0.95.1
+------
+
+This is a bugfix release only, please see the ChangeLog for details.
+
+--
+The ClamAV team (http://www.clamav.net/team)
 
 0.95
 ----
