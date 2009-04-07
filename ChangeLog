@@ -1,3 +1,7 @@
+Tue Apr  7 12:32:14 CEST 2009 (tk)
+----------------------------------
+ * etc/clamd.conf: remove deprecated ArchiveLimitMemoryUsage (bb#1551)
+
 Mon Apr  6 21:58:45 CEST 2009 (tk)
 ----------------------------------
  * libclamav: fix handling of signature offsets in cli_scanbuff() (bb#1546)
