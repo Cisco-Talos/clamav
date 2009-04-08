@@ -59,12 +59,12 @@ extern uint8_t cli_debug_flag;
  * The macro can be used to protect against wraps.
  */
 #define CLI_ISCONTAINED(bb, bb_size, sb, sb_size)	\
-    (bb_size > 0 && sb_size > 0 && (size_t)sb_size <= (size_t)bb_size	\
-     && sb >= bb && sb + sb_size <= bb + bb_size && sb + sb_size > bb)
+  ((bb_size) > 0 && (sb_size) > 0 && (size_t)(sb_size) <= (size_t)(bb_size) \
+   && (sb) >= (bb) && ((sb) + (sb_size)) <= ((bb) + (bb_size)) && ((sb) + (sb_size)) > (bb) && (sb) < ((bb) + (bb_size)))
 
 #define CLI_ISCONTAINED2(bb, bb_size, sb, sb_size)	\
-    (bb_size > 0 && sb_size >= 0 && (size_t)sb_size <= (size_t)bb_size	\
-     && sb >= bb && sb + sb_size <= bb + bb_size && sb + sb_size >= bb)
+  ((bb_size) > 0 && (sb_size) >= 0 && (size_t)(sb_size) <= (size_t)(bb_size) \
+   && (sb) >= (bb) && ((sb) + (sb_size)) <= ((bb) + (bb_size)) && ((sb) + (sb_size)) >= (bb) && (sb) < ((bb) + (bb_size)))
 
 #define CLI_MAX_ALLOCATION 184549376
 

@@ -1,3 +1,19 @@
+Wed Apr  8 16:49:32 CEST 2009 (tk)
+----------------------------------
+ * V 0.95.1
+
+Wed Apr  8 16:40:19 CEST 2009 (tk)
+----------------------------------
+ * libclamav/phishcheck.c: fix possible crash in cli_url_canon() (bb#1553)
+			   Patch by Edwin, reported by Nigel Horne
+			    <njh*bandsman.co.uk>
+
+Wed Apr  8 16:35:23 CEST 2009 (tk)
+----------------------------------
+ * libclamav/others.h: harden CLI_ISCONTAINED macro (bb#1552)
+		       Patch by aCaB, reported by Martin Olsen
+		       <marty*lightspeedsystems.com> 
+
 Tue Apr  7 16:53:18 CEST 2009 (acab)
 ------------------------------------
  * clamav-milter/netcode.c: honour ReadTimeout=0

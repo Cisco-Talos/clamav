@@ -1280,7 +1280,7 @@ int cli_url_canon(const char *inurl, size_t len, char *urlbuff, size_t dest_len,
 	*p = '\0';
 
 	p = host_begin;
-	while (p < urlend && p+2 < url + dest_len) {
+	while (p < urlend && p+2 < url + dest_len && urlend < urlbuff+dest_len) {
 	    unsigned char c = *p;
 	    if (c <= 32 || c >= 127 || c == '%' || c == '#') {
 		/* convert non-ascii characters back to % escaped */
