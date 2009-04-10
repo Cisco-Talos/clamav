@@ -357,6 +357,10 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, int srcfd, struct 
     }*/
     for (i=0; i<unnamed; i++, entry += 8) {
 	uint32_t id, offs;
+	if (stats->errors >= SWIZZ_MAXERRORS) {
+	    cli_dbgmsg("cli_parseres_special: resources broken, ignoring\n");
+	    return;
+	}
 	id = cli_readint32(entry)&0x7fffffff;
 	if(level==0) {
 		type = 0;
@@ -396,6 +400,7 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, int srcfd, struct 
 					cli_dbgmsg("cli_parseres_special: invalid resource table entry: %lu + %lu\n", 
 							(unsigned long)rawaddr, 
 							(unsigned long)isz);
+					stats->errors++;
 					continue;
 				}
 				str = cli_malloc(isz);

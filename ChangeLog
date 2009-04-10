@@ -1,3 +1,8 @@
+Fri Apr 10 16:23:00 EEST 2009 (edwin)
+-------------------------------------
+ * libclamav/pe.c, libclamav/special.c, libclamav/special.h: Fix some
+ Trojan.Swizzor.Gen false positives (bb #1558).
+
 Fri Apr 10 15:06:43 EEST 2009 (edwin)
 -------------------------------------
  * shared/output.c: logg flags documentation

@@ -380,6 +380,7 @@ void cli_detect_swizz_str(const unsigned char *str, uint32_t len, struct swizz_s
 	uint16_t words = 0;
 	int ret;
 
+	stats->entries++;
 	for(i=0;i<len-1 && j < sizeof(stri)-2;i += 2) {
 		unsigned char c = str[i];
 		if (str[i+1] || !c) {
@@ -430,6 +431,7 @@ void cli_detect_swizz_str(const unsigned char *str, uint32_t len, struct swizz_s
 		ngram_cnts[i] = (v<<10)/all;
 	}
 	ret = swizz_j48(ngram_cnts) ? CL_VIRUS : CL_CLEAN;
+	if (!words) ret = CL_CLEAN;
 	cli_dbgmsg("cli_detect_swizz_str: %s, %u words\n", ret == CL_VIRUS ? "suspicious" : "ok", words);
 	if (ret == CL_VIRUS) {
 		stats->suspicious += j;
@@ -494,11 +496,15 @@ int cli_detect_swizz(struct swizz_stats *stats)
 		cli_dbgmsg("\ncli_detect_swizz: global: %s\n", global_swizz ? "suspicious" : "clean");
 	}
 
+	if (stats->errors > stats->entries || stats->errors >= SWIZZ_MAXERRORS) {
+	    cli_dbgmsg("cli_detect_swizz: resources broken, ignoring\n");
+	    return CL_CLEAN;
+	}
 	if (stats->total <= 337)
-		return CL_CLEAN;
+	    return CL_CLEAN;
 	if (stats->suspicious<<10 > 20*stats->total)
-		return CL_VIRUS;
-  if (!stats->suspicious)
-    return CL_CLEAN;
+	    return CL_VIRUS;
+	if (!stats->suspicious)
+	    return CL_CLEAN;
 	return global_swizz;
 }
