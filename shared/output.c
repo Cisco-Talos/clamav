@@ -211,6 +211,25 @@ void logg_close(void)
 #endif
 }
 
+/*
+ * legend:
+ *  ! - ERROR:
+ *  ^ - WARNING:
+ *  ~ - normal
+ *  # - normal, not foreground (logfile and syslog only)
+ *  * - verbose
+ *  $ - debug
+ *  none - normal
+ *
+ *	Default  Foreground LogVerbose Debug  Syslog
+ *  !	  yes	   mprintf     yes      yes   LOG_ERR
+ *  ^	  yes	   mprintf     yes	yes   LOG_WARNING
+ *  ~	  yes	   mprintf     yes	yes   LOG_INFO
+ *  #	  yes	     no	       yes	yes   LOG_INFO
+ *  *	  no	   mprintf     yes	yes   LOG_DEBUG
+ *  $	  no	   mprintf     no	yes   LOG_DEBUG
+ *  none  yes	   mprintf     yes	yes   LOG_INFO
+ */
 int logg(const char *str, ...)
 {
 	va_list args;

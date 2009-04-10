@@ -1,3 +1,7 @@
+Fri Apr 10 15:06:43 EEST 2009 (edwin)
+-------------------------------------
+ * shared/output.c: logg flags documentation
+
 Fri Apr 10 14:01:01 CEST 2009 (tk)
 ----------------------------------
  * libclamav/matcher-bm.c: minor performance improvement (bb#1539)
