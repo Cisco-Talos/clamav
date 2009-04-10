@@ -74,7 +74,7 @@ int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern)
 
     prev = next = root->bm_suffix[idx];
     while(next) {
-	if(pt[0] >= next->pattern[0])
+	if(pt[0] >= next->pattern0)
 	    break;
 	prev = next;
 	next = next->next;
@@ -89,6 +89,7 @@ int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern)
 	pattern->next = prev->next;
 	prev->next = pattern;
     }
+    pattern->pattern0 = pattern->pattern[0];
     root->bm_suffix[idx]->cnt++;
 
     root->bm_patterns++;
@@ -173,7 +174,7 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	    p = root->bm_suffix[idx];
 	    pchain = 0;
 	    while(p) {
-		if(p->pattern[0] != prefix) {
+		if(p->pattern0 != prefix) {
 		    if(pchain)
 			break;
 		    p = p->next;

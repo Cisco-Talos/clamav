@@ -31,6 +31,7 @@ struct cli_bm_patt {
     struct cli_bm_patt *next;
     uint16_t length, prefix_length;
     uint16_t cnt;
+    unsigned char pattern0;
     uint8_t target;
 };
 
