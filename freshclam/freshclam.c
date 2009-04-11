@@ -459,7 +459,7 @@ int main(int argc, char **argv)
 		    arg = opt->strarg;
 
 		if(arg)
-		    execute("OnErrorExecute", arg, opt);
+		    execute("OnErrorExecute", arg, opts);
 
 		arg = NULL;
 	    }

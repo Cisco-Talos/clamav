@@ -1918,7 +1918,7 @@ int downloadmanager(const struct optstruct *opts, const char *hostname, const ch
 	    }
 
 	    if(newver)
-		execute("OnOutdatedExecute", cmd, opt);
+		execute("OnOutdatedExecute", cmd, opts);
 
 	    free(cmd);
 	}
