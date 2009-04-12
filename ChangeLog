@@ -1,3 +1,8 @@
+Sun Apr 12 12:07:36 CEST 2009 (tk)
+----------------------------------
+ * shared/optparser.c: regexes are now case insensitive by default (this can
+		       be changed with FLAG_REG_CASE)
+
 Sat Apr 11 11:40:38 CEST 2009 (tk)
 ----------------------------------
  * freshclam: fix calls to execute() (bb#1560)

@@ -50,15 +50,16 @@
 #define MAX(a,b) (a > b ? a : b)
 
 #define MATCH_NUMBER "^[0-9]+$"
-#define MATCH_SIZE "^[0-9]+[kKmM]?$"
-#define MATCH_BOOL "^([yY]es|[tT]rue|1|[nN]o|[fF]alse|0)$"
+#define MATCH_SIZE "^[0-9]+[KM]?$"
+#define MATCH_BOOL "^(yes|true|1|no|false|0)$"
 
 #define FLAG_MULTIPLE	1 /* option can be used multiple times */
 #define FLAG_REQUIRED	2 /* arg is required, even if there's a default value */
 #define FLAG_HIDDEN	4 /* don't print in clamconf --generate-config */
+#define FLAG_REG_CASE	8 /* case-sensitive regex matching */
 
 const struct clam_option clam_options[] = {
-    /* name,   longopt, sopt, argtype, regex, num, str, mul, owner, description, suggested */
+    /* name,   longopt, sopt, argtype, regex, num, str, flags, owner, description, suggested */
 
     /* cmdline only */
     { NULL, "help", 'h', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_MILTER | OPT_CLAMCONF | OPT_CLAMDTOP, "", "" },
@@ -637,6 +638,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 	char shortopts[MAXCMDOPTS];
 	regex_t regex;
 	unsigned long int lnumarg;
+	int regflags = REG_EXTENDED | REG_NOSUB;
 
 
     if(oldopts)
@@ -858,7 +860,10 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 	if(!cfgfile && !arg && optentry->argtype == TYPE_BOOL) {
 	    arg = "yes"; /* default to yes */
 	} else if(optentry->regex) {
-	    if(cli_regcomp(&regex, optentry->regex, REG_EXTENDED | REG_NOSUB)) {
+	    if(!(optentry->flags & FLAG_REG_CASE))
+		regflags |= REG_ICASE;
+
+	    if(cli_regcomp(&regex, optentry->regex, regflags)) {
 		fprintf(stderr, "ERROR: optparse: Can't compile regular expression %s for option %s\n", optentry->regex, name);
 		err = 1;
 		break;
