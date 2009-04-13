@@ -1,3 +1,9 @@
+Mon Apr 13 11:48:33 EEST 2009 (edwin)
+-------------------------------------
+ * contrib/split-tarball.sh: Apply modifications by Michael
+ Tautschnig <mt*debian.org>, with some minor fixes to show location
+ of prepared tarballs.
+
 Sun Apr 12 12:07:36 CEST 2009 (tk)
 ----------------------------------
  * shared/optparser.c: regexes are now case insensitive by default (this can
