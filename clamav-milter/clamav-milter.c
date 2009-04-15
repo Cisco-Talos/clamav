@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
     memset(&descr, 0, sizeof(struct smfiDesc));
     descr.xxfi_name = "ClamAV";			/* filter name */
     descr.xxfi_version = SMFI_VERSION;		/* milter version */
-    descr.xxfi_flags = SMFIF_CHGHDRS|SMFIF_QUARANTINE; /* flags */
+    descr.xxfi_flags = SMFIF_QUARANTINE;	/* flags */
     descr.xxfi_connect = clamfi_connect;	/* connection info filter */
     descr.xxfi_envfrom = clamfi_envfrom;	/* envelope sender filter */
     descr.xxfi_envrcpt = clamfi_envrcpt;	/* envelope recipient filter */
@@ -219,7 +219,8 @@ int main(int argc, char **argv) {
 	return 1;
     }
 
-    if(optget(opts, "AddHeader")->enabled) {
+    pt = optget(opts, "AddHeader")->strarg;
+    if(strcasecmp(pt, "No")) {
 	char myname[255];
 
 	if(!gethostname(myname, sizeof(myname))) {
@@ -230,7 +231,15 @@ int main(int argc, char **argv) {
 	    snprintf(xvirushdr, sizeof(xvirushdr), "clamav-milter %s", get_version());
 	    xvirushdr[sizeof(xvirushdr)-1] = '\0';
 	}
-	addxvirus = 1;
+
+	descr.xxfi_flags |= SMFIF_ADDHDRS;
+
+	if(strcasecmp(pt, "Add")) { /* Replace or Yes */
+	    descr.xxfi_flags |= SMFIF_CHGHDRS;
+	    addxvirus = 1;
+	} else { /* Add */
+	    addxvirus = 2;
+	}
     }
     
     if(!(my_socket = optget(opts, "MilterSocket")->strarg)) {

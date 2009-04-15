@@ -1,3 +1,12 @@
+Tue Apr 15 18:47:22 CEST 2009 (acab)
+------------------------------------
+ * clamav-milter: add support for action QuarantineReject (bb#1549)
+
+Tue Apr 15 17:03:30 CEST 2009 (acab)
+------------------------------------
+ * clamav-milter: add support for AddHeader=Add, properly remove
+		  existing headers (bb#1549)
+
 Mon Apr 13 11:48:33 EEST 2009 (edwin)
 -------------------------------------
  * contrib/split-tarball.sh: Apply modifications by Michael

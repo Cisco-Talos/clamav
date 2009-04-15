@@ -52,7 +52,7 @@ static sfsistat (*CleanAction)(SMFICTX *ctx);
 static sfsistat (*InfectedAction)(SMFICTX *ctx);
 static char *rejectfmt = NULL;
 
-int addxvirus = 0;
+int addxvirus = 0; /* 0 - don't add | 1 - replace | 2 - add */
 char xvirushdr[255];
 enum {
     LOGINF_NONE,
@@ -76,12 +76,24 @@ struct CLAMFI {
     unsigned int bufsz;
     unsigned int all_whitelisted;
     unsigned int gotbody;
+    unsigned int scanned_count;
+    unsigned int status_count;
 };
 
 
-static void add_x_header(SMFICTX *ctx, char *st) {
-    smfi_chgheader(ctx, (char *)"X-Virus-Scanned", 1, xvirushdr);
-    smfi_chgheader(ctx, (char *)"X-Virus-Status", 1, st);
+static void add_x_header(SMFICTX *ctx, char *st, unsigned int scanned, unsigned int status) {
+    if(addxvirus == 1) {
+	while(scanned)
+	    if(smfi_chgheader(ctx, (char *)"X-Virus-Scanned", scanned--, NULL) != MI_SUCCESS)
+		logg("^Failed to remove existing X-Virus-Scanned header\n");
+	while(status)
+	    if(smfi_chgheader(ctx, (char *)"X-Virus-Status", status--, NULL) != MI_SUCCESS)
+		logg("^Failed to remove existing X-Virus-Status header\n");
+    }
+    if(smfi_addheader(ctx, (char *)"X-Virus-Scanned", xvirushdr) != MI_SUCCESS)
+	logg("^Failed to add X-Virus-Scanned header\n");
+    if(smfi_addheader(ctx, (char *)"X-Virus-Status", st) != MI_SUCCESS)
+	logg("^Failed to add X-Virus-Status header\n");
 }
 
 enum CFWHAT {
@@ -201,6 +213,11 @@ sfsistat clamfi_header(SMFICTX *ctx, char *headerf, char *headerv) {
 	    cf->msg_id = strdup(headerv ? headerv : "");
     }
 
+    if(addxvirus==1) {
+	if(!strcasecmp(headerf, "X-Virus-Scanned")) cf->scanned_count++;
+	if(!strcasecmp(headerf, "X-Virus-Status")) cf->status_count++;
+    }
+
     if((ret = sendchunk(cf, (unsigned char *)headerf, strlen(headerf), ctx)) != SMFIS_CONTINUE)
 	return ret;
     if((ret = sendchunk(cf, (unsigned char *)": ", 2, ctx)) != SMFIS_CONTINUE)
@@ -290,7 +307,7 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 
     len = strlen(reply);
     if(len>5 && !strcmp(reply + len - 5, ": OK\n")) {
-	if(addxvirus) add_x_header(ctx, "Clean");
+	if(addxvirus) add_x_header(ctx, "Clean", cf->scanned_count, cf->status_count);
 	ret = CleanAction(ctx);
     } else if (len>7 && !strcmp(reply + len - 7, " FOUND\n")) {
 	cf->virusname = NULL;
@@ -309,7 +326,7 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 		    char msg[255];
 		    snprintf(msg, sizeof(msg), "Infected (%s)", vir);
 		    msg[sizeof(msg)-1] = '\0';
-		    add_x_header(ctx, msg);
+		    add_x_header(ctx, msg, cf->scanned_count, cf->status_count);
 		}
 
 		if(loginfected) {
@@ -378,6 +395,8 @@ static int parse_action(char *action) {
 	return 3;
     if(!strcasecmp(action, "Quarantine"))
 	return 4;
+    if(!strcasecmp(action, "QuarantineReject"))
+	return 5;
     logg("!Unknown action %s\n", action);
     return -1;
 }
@@ -395,12 +414,18 @@ static sfsistat action_reject(_UNUSED_ SMFICTX *ctx) {
 static sfsistat action_blackhole(_UNUSED_ SMFICTX *ctx)  {
     return SMFIS_DISCARD;
 }
-static sfsistat action_quarantine(SMFICTX *ctx) {
+static sfsistat quarantine_common(SMFICTX *ctx, sfsistat ret) {
     if(smfi_quarantine(ctx, "quarantined by clamav-milter") != MI_SUCCESS) {
 	logg("^Failed to quarantine message\n");
 	return SMFIS_TEMPFAIL;
     }
-    return SMFIS_ACCEPT;
+    return ret;
+}
+static sfsistat action_quarantine(SMFICTX *ctx) {
+    return quarantine_common(ctx, SMFIS_ACCEPT);
+}
+static sfsistat action_quarantine_reject(SMFICTX *ctx) {
+    return quarantine_common(ctx, SMFIS_REJECT);
 }
 static sfsistat action_reject_msg(SMFICTX *ctx) {
     struct CLAMFI *cf;
@@ -463,6 +488,9 @@ int init_actions(struct optstruct *opts) {
 	case 4:
 	    CleanAction = action_quarantine;
 	    break;
+	case 5:
+	    CleanAction = action_quarantine_reject;
+	    break;
 	default:
 	    logg("!Invalid action %s for option OnClean\n", opt->strarg);
 	    return 1;
@@ -482,6 +510,9 @@ int init_actions(struct optstruct *opts) {
 	    break;
 	case 4:
 	    InfectedAction = action_quarantine;
+	    break;
+	case 5:
+	    InfectedAction = action_quarantine_reject;
 	    break;
 	case 2:
 	    InfectedAction = action_reject_msg;
@@ -554,6 +585,10 @@ sfsistat clamfi_envfrom(SMFICTX *ctx, char **argv) {
     cf->all_whitelisted = 1;
     cf->gotbody = 0;
     cf->msg_subj = cf->msg_date = cf->msg_id = NULL;
+    if(addxvirus==1) {
+	cf->scanned_count = 0;
+	cf->status_count = 0;
+    }
     smfi_setpriv(ctx, (void *)cf);
 
     return SMFIS_CONTINUE;
