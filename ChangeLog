@@ -1,3 +1,8 @@
+Fri Apr 17 00:59:48 CEST 2009 (acab)
+------------------------------------
+ * clamav-milter/clamfi.c: try harder not to break DKIM when AddHeader=Add
+			   Many thanks to Dick St.Peters
+
 Thu Apr 16 16:17:23 CEST 2009 (acab)
 ------------------------------------
  * shared/optparser.c, etc/clamav-milter.conf: document how to make

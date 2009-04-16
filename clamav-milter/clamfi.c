@@ -82,18 +82,23 @@ struct CLAMFI {
 
 
 static void add_x_header(SMFICTX *ctx, char *st, unsigned int scanned, unsigned int status) {
-    if(addxvirus == 1) {
+    if(addxvirus == 1) { /* Replace/Yes */
 	while(scanned)
 	    if(smfi_chgheader(ctx, (char *)"X-Virus-Scanned", scanned--, NULL) != MI_SUCCESS)
 		logg("^Failed to remove existing X-Virus-Scanned header\n");
 	while(status)
 	    if(smfi_chgheader(ctx, (char *)"X-Virus-Status", status--, NULL) != MI_SUCCESS)
 		logg("^Failed to remove existing X-Virus-Status header\n");
+	if(smfi_addheader(ctx, (char *)"X-Virus-Scanned", xvirushdr) != MI_SUCCESS)
+	    logg("^Failed to add X-Virus-Scanned header\n");
+	if(smfi_addheader(ctx, (char *)"X-Virus-Status", st) != MI_SUCCESS)
+	    logg("^Failed to add X-Virus-Status header\n");
+    } else { /* Add */
+	if(smfi_insheader(ctx, 0, (char *)"X-Virus-Scanned", xvirushdr) != MI_SUCCESS)
+	    logg("^Failed to insert X-Virus-Scanned header\n");
+	if(smfi_insheader(ctx, 0, (char *)"X-Virus-Status", st) != MI_SUCCESS)
+	    logg("^Failed to insert X-Virus-Status header\n");
     }
-    if(smfi_addheader(ctx, (char *)"X-Virus-Scanned", xvirushdr) != MI_SUCCESS)
-	logg("^Failed to add X-Virus-Scanned header\n");
-    if(smfi_addheader(ctx, (char *)"X-Virus-Status", st) != MI_SUCCESS)
-	logg("^Failed to add X-Virus-Status header\n");
 }
 
 enum CFWHAT {
