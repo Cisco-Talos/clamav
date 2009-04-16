@@ -94,9 +94,9 @@ static void add_x_header(SMFICTX *ctx, char *st, unsigned int scanned, unsigned 
 	if(smfi_addheader(ctx, (char *)"X-Virus-Status", st) != MI_SUCCESS)
 	    logg("^Failed to add X-Virus-Status header\n");
     } else { /* Add */
-	if(smfi_insheader(ctx, 0, (char *)"X-Virus-Scanned", xvirushdr) != MI_SUCCESS)
+	if(smfi_insheader(ctx, 1, (char *)"X-Virus-Scanned", xvirushdr) != MI_SUCCESS)
 	    logg("^Failed to insert X-Virus-Scanned header\n");
-	if(smfi_insheader(ctx, 0, (char *)"X-Virus-Status", st) != MI_SUCCESS)
+	if(smfi_insheader(ctx, 1, (char *)"X-Virus-Status", st) != MI_SUCCESS)
 	    logg("^Failed to insert X-Virus-Status header\n");
     }
 }
