@@ -1,3 +1,9 @@
+Thu Apr 16 16:17:23 CEST 2009 (acab)
+------------------------------------
+ * shared/optparser.c, etc/clamav-milter.conf: document how to make
+   macroes available in oem for LogInfected to work properly
+   Many thanks to Dick St.Peters <stpeters*netheaven.com>
+
 Tue Apr 15 18:47:22 CEST 2009 (acab)
 ------------------------------------
  * clamav-milter: add support for action QuarantineReject (bb#1549)
