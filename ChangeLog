@@ -1,3 +1,7 @@
+Fri Apr 17 16:44:50 EEST 2009 (edwin)
+-------------------------------------
+ * libclamav/mpool.c: update mpool frag sizes.
+
 Fri Apr 17 16:44:33 EEST 2009 (edwin)
 -------------------------------------
  * libclamav/mpool.c: fix mpool_realloc to work with shrinked sizes.
