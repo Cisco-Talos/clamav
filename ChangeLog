@@ -1,3 +1,7 @@
+Fri Apr 17 18:23:44 CEST 2009 (acab)
+------------------------------------
+ * clamav-milter/clamav-milter.c: spam syslog with start events (bb#1557)
+
 Fri Apr 17 16:47:44 EEST 2009 (edwin)
 -------------------------------------
  * contrib/mpoolparse/mpoolparse.pl, contrib/mpoolparse/process.pl: 

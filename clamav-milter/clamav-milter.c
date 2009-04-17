@@ -51,6 +51,7 @@ int main(int argc, char **argv) {
     char *my_socket, *pt;
     const struct optstruct *opt;
     struct optstruct *opts;
+    time_t currtime;
     int ret;
 
     memset(&descr, 0, sizeof(struct smfiDesc));
@@ -160,17 +161,9 @@ int main(int argc, char **argv) {
     logg_verbose = mprintf_verbose = optget(opts, "LogVerbose")->enabled;
 
     if((opt = optget(opts, "LogFile"))->enabled) {
-	time_t currtime;
 	logg_file = opt->strarg;
 	if(strlen(logg_file) < 2 || logg_file[0] != '/') {
 	    fprintf(stderr, "ERROR: LogFile requires full path.\n");
-	    logg_close();
-	    optfree(opts);
-	    return 1;
-	}
-	time(&currtime);
-	if(logg("#+++ Started at %s", ctime(&currtime))) {
-	    fprintf(stderr, "ERROR: Can't initialize the internal logger\n");
 	    logg_close();
 	    optfree(opts);
 	    return 1;
@@ -195,6 +188,13 @@ int main(int argc, char **argv) {
     }
 #endif
 
+    time(&currtime);
+    if(logg("#+++ Started at %s", ctime(&currtime))) {
+	fprintf(stderr, "ERROR: Can't initialize the internal logger\n");
+	logg_close();
+	optfree(opts);
+	return 1;
+    }
     if((opt = optget(opts, "TemporaryDirectory"))->enabled)
 	tempdir = opt->strarg;
 
