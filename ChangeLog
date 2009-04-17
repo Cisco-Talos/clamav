@@ -1,3 +1,8 @@
+Fri Apr 17 16:47:44 EEST 2009 (edwin)
+-------------------------------------
+ * contrib/mpoolparse/mpoolparse.pl, contrib/mpoolparse/process.pl: 
+ add new mpool debug output parsing
+
 Fri Apr 17 16:44:50 EEST 2009 (edwin)
 -------------------------------------
  * libclamav/mpool.c: update mpool frag sizes.
