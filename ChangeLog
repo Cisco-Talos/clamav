@@ -1,3 +1,8 @@
+Fri Apr 17 16:44:33 EEST 2009 (edwin)
+-------------------------------------
+ * libclamav/mpool.c: fix mpool_realloc to work with shrinked sizes.
+ This is not yet used anywhere.
+
 Fri Apr 17 00:59:48 CEST 2009 (acab)
 ------------------------------------
  * clamav-milter/clamfi.c: try harder not to break DKIM when AddHeader=Add

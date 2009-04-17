@@ -556,7 +556,7 @@ void *mpool_realloc(struct MP *mp, void *ptr, size_t size) {
     return ptr;
   if (!(new_ptr = mpool_malloc(mp, size)))
     return NULL;
-  memcpy(new_ptr, ptr, csize);
+  memcpy(new_ptr, ptr, csize <= size ? csize : size);
   mpool_free(mp, ptr);
   return new_ptr;
 }
