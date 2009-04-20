@@ -286,6 +286,7 @@ int command(client_conn_t *conn, int *virus)
 	    }
 	    return 0;
 	case COMMAND_INSTREAMSCAN:
+	    thrmgr_setactivetask(NULL, "INSTREAM");
 	    ret = scanfd(conn->scanfd, conn, NULL, engine, options, opts, desc, 1);
 	    if (ret == CL_VIRUS) {
 		*virus = 1;
