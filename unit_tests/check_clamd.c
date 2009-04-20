@@ -124,7 +124,6 @@ static void commands_setup(void)
 {
     const char *nonempty = "NONEMPTYFILE";
     int fd = open(NONEXISTENT, O_RDONLY);
-    int rc;
     if (fd != -1) close(fd);
     fail_unless(fd == -1, "Nonexistent file exists!\n");
 
@@ -136,7 +135,7 @@ static void commands_setup(void)
     fail_unless_fmt(fchmod(fd,  S_IWUSR) != -1,
 		    "Failed to chmod: %s\n", strerror(errno));
     /* must not be empty file */
-    fail_unless_fmt(write(fd, nonempty, strlen(nonempty)) == strlen(nonempty),
+    fail_unless_fmt((size_t)write(fd, nonempty, strlen(nonempty)) == strlen(nonempty),
 		    "Failed to write into testfile: %s\n", strerror(errno));
     close(fd);
 
@@ -443,7 +442,6 @@ static int sendmsg_fd(int sockd, const char *mesg, size_t msg_len, int fd, int s
 static void tst_fildes(const char *cmd, size_t len, int fd,
 			const char *expect, size_t expect_len, int closefd, int singlemsg)
 {
-    off_t pos;
     char *recvdata, *p;
     int rc;
 
@@ -495,9 +493,8 @@ START_TEST (test_fildes)
 {
     char nreply[BUFSIZ], nsend[BUFSIZ];
     int fd = open(SCANFILE, O_RDONLY);
-    int closefd;
-    int singlemsg;
-    size_t i;
+    int closefd=0;
+    int singlemsg=0;
     const struct cmds *cmd;
     size_t nreply_len, nsend_len;
 
@@ -542,7 +539,7 @@ END_TEST
 START_TEST (test_fildes_many)
 {
     const char idsession[] = "zIDSESSION";
-    int dummyfd, dummycleanfd, i, killed = 0;
+    int dummyfd, i, killed = 0;
     conn_setup();
     dummyfd = open(SCANFILE, O_RDONLY);
     fail_unless_fmt(dummyfd != -1, "failed to open %s: %s\n", SCANFILE, strerror(errno));
@@ -627,7 +624,7 @@ END_TEST
 START_TEST (test_connections)
 {
     int rc;
-    size_t i;
+    int i;
     struct rlimit rlim;
     int *sock;
     int nf, maxfd=0;
@@ -758,7 +755,6 @@ static void test_idsession_commands(int split, int instream)
 	}
 	if (instream && test->ids == IDS_END) {
 	    uint32_t chunk;
-	    int fd;
 	    /* IDS_END - in middle of other commands, perfect for inserting
 	     * INSTREAM */
 	    fail_unless(p+sizeof(INSTREAM_CMD)+544< buf+sizeof(buf), "Buffer too small");
@@ -787,10 +783,10 @@ static void test_idsession_commands(int split, int instream)
 
     if (split) {
 	/* test corner-cases: 1-byte sends */
-	for (i=0;i<p-buf;i++)
+	for (i=0;i<(size_t)(p-buf);i++)
 	    fail_unless((size_t)send(sockd, &buf[i], 1, 0) == 1, "send() failed: %u, %s\n", i, strerror(errno));
     } else {
-	fail_unless((size_t)send(sockd, buf, p-buf, 0) == p-buf,"send() failed: %s\n", strerror(errno));
+	fail_unless(send(sockd, buf, p-buf, 0) == p-buf,"send() failed: %s\n", strerror(errno));
     }
     recvdata = recvfull(sockd, &len);
     p = recvdata;
