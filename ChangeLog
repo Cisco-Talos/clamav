@@ -1,3 +1,8 @@
+Mon Apr 20 17:20:27 EEST 2009 (edwin)
+-------------------------------------
+ * clamd/server-th.c, unit_tests/check_clamd.c: Fix clamd INSTREAM
+ handling inside IDSESSION (bb #1564).
+
 Fri Apr 17 18:23:44 CEST 2009 (acab)
 ------------------------------------
  * clamav-milter/clamav-milter.c: spam syslog with start events (bb#1557)

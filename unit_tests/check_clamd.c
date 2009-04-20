@@ -153,42 +153,52 @@ static void commands_teardown(void)
 #define VERSION_REPLY "ClamAV "REPO_VERSION""VERSION_SUFFIX
 
 #define VCMDS_REPLY VERSION_REPLY"| COMMANDS: SCAN QUIT RELOAD PING CONTSCAN VERSIONCOMMANDS VERSION STREAM END SHUTDOWN MULTISCAN FILDES STATS IDSESSION INSTREAM"
+
+enum idsession_support {
+    IDS_OK, /* accepted */
+    IDS_REJECT,
+    /* after sending this message, clamd will reply,  then accept 
+     * no further commands, but still reply to all active commands */
+    IDS_END /* the END command */
+};
+
 static struct basic_test {
     const char *command;
     const char *extra;
     const char *reply;
     int support_old;
     int skiproot;
+    enum idsession_support ids;
 } basic_tests[] = {
-    {"PING", NULL, "PONG", 1, 0},
-    {"RELOAD", NULL, "RELOADING", 1, 0},
-    {"VERSION", NULL, VERSION_REPLY, 1, 0},
-    {"VERSIONCOMMANDS", NULL, VCMDS_REPLY, 0, 0},
-    {"SCAN "SCANFILE, NULL, FOUNDREPLY, 1, 0},
-    {"SCAN "CLEANFILE, NULL, CLEANREPLY, 1, 0},
-    {"CONTSCAN "SCANFILE, NULL, FOUNDREPLY, 1, 0},
-    {"CONTSCAN "CLEANFILE, NULL, CLEANREPLY, 1, 0},
-    {"MULTISCAN "SCANFILE, NULL, FOUNDREPLY, 1, 0},
-    {"MULTISCAN "CLEANFILE, NULL, CLEANREPLY, 1, 0},
+    {"PING", NULL, "PONG", 1, 0, IDS_OK},
+    {"RELOAD", NULL, "RELOADING", 1, 0, IDS_REJECT},
+    {"VERSION", NULL, VERSION_REPLY, 1, 0, IDS_OK},
+    {"VERSIONCOMMANDS", NULL, VCMDS_REPLY, 0, 0, IDS_REJECT},
+    {"SCAN "SCANFILE, NULL, FOUNDREPLY, 1, 0, IDS_OK},
+    {"SCAN "CLEANFILE, NULL, CLEANREPLY, 1, 0, IDS_OK},
+    {"CONTSCAN "SCANFILE, NULL, FOUNDREPLY, 1, 0, IDS_REJECT},
+    {"CONTSCAN "CLEANFILE, NULL, CLEANREPLY, 1, 0, IDS_REJECT},
+    {"MULTISCAN "SCANFILE, NULL, FOUNDREPLY, 1, 0, IDS_REJECT},
+    {"MULTISCAN "CLEANFILE, NULL, CLEANREPLY, 1, 0, IDS_REJECT},
     /* unknown commnads */
-    {"RANDOM", NULL, UNKNOWN_REPLY, 1, 0},
+    {"RANDOM", NULL, UNKNOWN_REPLY, 1, 0, IDS_REJECT},
     /* commands invalid as first */
-    {"END", NULL, UNKNOWN_REPLY, 1, 0},
+    {"END", NULL, UNKNOWN_REPLY, 1, 0, IDS_END},
     /* commands for nonexistent files */
-    {"SCAN "NONEXISTENT, NULL, NONEXISTENT_REPLY, 1, 0},
-    {"CONTSCAN "NONEXISTENT, NULL, NONEXISTENT_REPLY, 1, 0},
-    {"MULTISCAN "NONEXISTENT, NULL, NONEXISTENT_REPLY, 1, 0},
+    {"SCAN "NONEXISTENT, NULL, NONEXISTENT_REPLY, 1, 0, IDS_OK},
+    {"CONTSCAN "NONEXISTENT, NULL, NONEXISTENT_REPLY, 1, 0, IDS_REJECT},
+    {"MULTISCAN "NONEXISTENT, NULL, NONEXISTENT_REPLY, 1, 0, IDS_REJECT},
     /* commands for access denied files */
-    {"SCAN "ACCDENIED, NULL, ACCDENIED_REPLY, 1, 1},
-    {"CONTSCAN "ACCDENIED, NULL, ACCDENIED_REPLY, 1, 1},
-    {"MULTISCAN "ACCDENIED, NULL, ACCDENIED_REPLY, 1, 1},
+    {"SCAN "ACCDENIED, NULL, ACCDENIED_REPLY, 1, 1, IDS_OK},
+    {"CONTSCAN "ACCDENIED, NULL, ACCDENIED_REPLY, 1, 1, IDS_REJECT},
+    {"MULTISCAN "ACCDENIED, NULL, ACCDENIED_REPLY, 1, 1, IDS_REJECT},
     /* commands with invalid/missing arguments */
-    {"SCAN", NULL, UNKNOWN_REPLY, 1, 0},
-    {"CONTSCAN", NULL, UNKNOWN_REPLY, 1, 0},
-    {"MULTISCAN", NULL, UNKNOWN_REPLY, 1, 0},
+    {"SCAN", NULL, UNKNOWN_REPLY, 1, 0, IDS_REJECT},
+    {"CONTSCAN", NULL, UNKNOWN_REPLY, 1, 0, IDS_REJECT},
+    {"MULTISCAN", NULL, UNKNOWN_REPLY, 1, 0, IDS_REJECT},
     /* commands with invalid data */
-    {"INSTREAM", "\xff\xff\xff\xff", "INSTREAM size limit exceeded. ERROR", 0, 0}, /* too big chunksize */
-    {"FILDES", "X", "No file descriptor received. ERROR", 1, 0}, /* FILDES w/o ancillary data */
+    {"INSTREAM", "\xff\xff\xff\xff", "INSTREAM size limit exceeded. ERROR", 0, 0, IDS_REJECT}, /* too big chunksize */
+    {"FILDES", "X", "No file descriptor received. ERROR", 1, 0, IDS_REJECT}, /* FILDES w/o ancillary data */
 };
 
 static void *recvpartial(int sd, size_t *len, int partial)
@@ -204,7 +214,6 @@ static void *recvpartial(int sd, size_t *len, int partial)
 	    buf = realloc(buf, *len);
 	    fail_unless(!!buf, "Cannot realloc buffer\n");
 	}
-
 	rc = recv(sd, buf + off, BUFSIZ, 0);
 	fail_unless_fmt(rc != -1, "recv() failed: %s\n", strerror(errno));
 	off += rc;
@@ -308,6 +317,7 @@ END_TEST
 #endif
 
 #define EXPECT_INSTREAM "stream: ClamAV-Test-File.UNOFFICIAL FOUND\n"
+#define EXPECT_INSTREAM0 "stream: ClamAV-Test-File.UNOFFICIAL FOUND"
 
 #define STATS_REPLY "POOLS: 1\n\nSTATE: VALID PRIMARY\n"
 START_TEST (test_stats)
@@ -335,16 +345,11 @@ START_TEST (test_stats)
 }
 END_TEST
 
-START_TEST (test_instream)
+static size_t prepare_instream(char *buf, size_t off, size_t buflen)
 {
-    int fd, nread, rc;
     struct stat stbuf;
+    int fd, nread;
     uint32_t chunk;
-    void *recvdata;
-    size_t len, expect_len;
-    char buf[4096] = "nINSTREAM\n";
-    size_t off = strlen(buf);
-
     fail_unless_fmt(stat(SCANFILE, &stbuf) != -1, "stat failed for %s: %s", SCANFILE, strerror(errno));
 
     fd = open(SCANFILE, O_RDONLY);
@@ -353,14 +358,26 @@ START_TEST (test_instream)
     chunk = htonl(stbuf.st_size);
     memcpy(&buf[off], &chunk, sizeof(chunk));
     off += 4;
-    nread = read(fd, &buf[off], sizeof(buf)-off-4);
-    fail_unless_fmt(nread == stbuf.st_size, "read failed: %s\n", strerror(errno));
+    nread = read(fd, &buf[off], buflen-off-4);
+    fail_unless_fmt(nread == stbuf.st_size, "read failed: %d != %d, %s\n", nread, stbuf.st_size, strerror(errno));
     off += nread;
     buf[off++]=0;
     buf[off++]=0;
     buf[off++]=0;
     buf[off++]=0;
     close(fd);
+    return off;
+}
+
+START_TEST (test_instream)
+{
+    void *recvdata;
+    size_t len, expect_len;
+    char buf[4096] = "nINSTREAM\n";
+    size_t off = strlen(buf);
+    int rc;
+
+    off = prepare_instream(buf, off, sizeof(buf));
 
     conn_setup();
     fail_unless((size_t)send(sockd, buf, off, 0) == off, "send() failed: %s\n", strerror(errno));
@@ -713,6 +730,110 @@ START_TEST (test_stream)
 }
 END_TEST
 
+#define END_CMD "zEND"
+#define INSTREAM_CMD "zINSTREAM"
+static void test_idsession_commands(int split, int instream)
+{
+    char buf[20480];
+    size_t i, len=0, j=0;
+    char *recvdata;
+    char *p = buf;
+    const char *replies[2 + sizeof(basic_tests)/sizeof(basic_tests[0])];
+
+    /* test all commands that must be accepted inside an IDSESSION */
+    for (i=0;i < sizeof(basic_tests)/sizeof(basic_tests[0]); i++) {
+	const struct basic_test *test = &basic_tests[i];
+	if (test->ids == IDS_OK) {
+	    fail_unless(p+strlen(test->command)+2 < buf+sizeof(buf), "Buffer too small");
+	    *p++ = 'z';
+	    strcpy(p, test->command);
+	    p += strlen(test->command);
+	    *p++ = '\0';
+	    if (test->extra) {
+		fail_unless(p+strlen(test->extra) < buf+sizeof(buf), "Buffer too small");
+		strcpy(p, test->extra);
+		p += strlen(test->extra);
+	    }
+	    replies[j++] = test->reply;
+	}
+	if (instream && test->ids == IDS_END) {
+	    uint32_t chunk;
+	    int fd;
+	    /* IDS_END - in middle of other commands, perfect for inserting
+	     * INSTREAM */
+	    fail_unless(p+sizeof(INSTREAM_CMD)+544< buf+sizeof(buf), "Buffer too small");
+	    memcpy(p, INSTREAM_CMD, sizeof(INSTREAM_CMD));
+	    p += sizeof(INSTREAM_CMD);
+	    p += prepare_instream(p, 0, 552);
+	    replies[j++] = EXPECT_INSTREAM0;
+	    fail_unless(p+sizeof(INSTREAM_CMD)+16388< buf+sizeof(buf), "Buffer too small");
+	    memcpy(p, INSTREAM_CMD, sizeof(INSTREAM_CMD));
+	    p += sizeof(INSTREAM_CMD);
+	    chunk=htonl(16384);
+	    memcpy(p, &chunk, 4);
+	    p+=4;
+	    memset(p, 0x5a, 16384);
+	    p += 16384;
+	    *p++='\0';
+	    *p++='\0';
+	    *p++='\0';
+	    *p++='\0';
+	    replies[j++] = "stream: OK";
+	}
+    }
+    fail_unless(p+sizeof(END_CMD) < buf+sizeof(buf), "Buffer too small");
+    memcpy(p, END_CMD, sizeof(END_CMD));
+    p += sizeof(END_CMD);
+
+    if (split) {
+	/* test corner-cases: 1-byte sends */
+	for (i=0;i<p-buf;i++)
+	    fail_unless((size_t)send(sockd, &buf[i], 1, 0) == 1, "send() failed: %u, %s\n", i, strerror(errno));
+    } else {
+	fail_unless((size_t)send(sockd, buf, p-buf, 0) == p-buf,"send() failed: %s\n", strerror(errno));
+    }
+    recvdata = recvfull(sockd, &len);
+    p = recvdata;
+    for (i=0;i < sizeof(basic_tests)/sizeof(basic_tests[0]); i++) {
+	const struct basic_test *test = &basic_tests[i];
+	if (test->ids == IDS_OK) {
+	    unsigned id;
+	    char *q = strchr(p, ':');
+	    fail_unless_fmt(!!q, "No ID in reply: %s\n", p);
+	    *q = '\0';
+	    fail_unless_fmt(sscanf(p, "%u", &id) == 1,"Wrong ID in reply: %s\n", p);
+	    fail_unless(id > 0, "ID cannot be zero");
+	    fail_unless_fmt(id <= j, "ID too big: %u, max: %u\n", id, j);
+	    q += 2;
+	    fail_unless_fmt(!strcmp(q, replies[id-1]),
+			    "Wrong ID reply for ID %u: %s, expected %s\n",
+			    id,
+			    q, replies[id-1]);
+	    p = q + strlen(q)+1;
+	}
+    }
+    free(recvdata);
+    conn_teardown();
+}
+
+#define ID_CMD "zIDSESSION"
+START_TEST(test_idsession)
+{
+    conn_setup();
+    fail_unless_fmt((size_t)send(sockd, ID_CMD, sizeof(ID_CMD), 0) == sizeof(ID_CMD),
+		    "send() failed: %s\n", strerror(errno));
+    test_idsession_commands(0, 0);
+    conn_setup();
+    fail_unless_fmt((size_t)send(sockd, ID_CMD, sizeof(ID_CMD), 0) == sizeof(ID_CMD),
+		    "send() failed: %s\n", strerror(errno));
+    test_idsession_commands(1, 0);
+    conn_setup();
+    fail_unless_fmt((size_t)send(sockd, ID_CMD, sizeof(ID_CMD), 0) == sizeof(ID_CMD),
+		    "send() failed: %s\n", strerror(errno));
+    test_idsession_commands(0, 1);
+}
+END_TEST
+
 static Suite *test_clamd_suite(void)
 {
     Suite *s = suite_create("clamd");
@@ -728,6 +849,7 @@ static Suite *test_clamd_suite(void)
     tcase_add_test(tc_commands, test_stats);
     tcase_add_test(tc_commands, test_instream);
     tcase_add_test(tc_commands, test_stream);
+    tcase_add_test(tc_commands, test_idsession);
     tc_stress = tcase_create("clamd stress test");
     suite_add_tcase(s, tc_stress);
     tcase_set_timeout(tc_stress, 20);

@@ -641,7 +641,7 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
 		    pos = 4;
 		    memmove (buf->buffer, &buf->buffer[pos], buf->off - pos);
 		    buf->off -= pos;
-		    pos = 0;
+		    *ppos = 0;
 		    buf->id++;
 		    return 0;
 		}
@@ -651,6 +651,7 @@ static int handle_stream(client_conn_t *conn, struct fd_buf *buf, const struct o
 		     (unsigned long)buf->chunksize, (unsigned long)buf->quota);
 		conn_reply_error(conn, "INSTREAM size limit exceeded.");
 		*error = 1;
+		*ppos = pos;
 		return -1;
 	    } else {
 		buf->quota -= buf->chunksize;
