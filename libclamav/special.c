@@ -502,7 +502,7 @@ int cli_detect_swizz(struct swizz_stats *stats)
 	}
 	if (stats->total <= 337)
 	    return CL_CLEAN;
-	if (stats->suspicious<<10 > 20*stats->total)
+	if (stats->suspicious<<10 > 40*stats->total)
 	    return CL_VIRUS;
 	if (!stats->suspicious)
 	    return CL_CLEAN;
