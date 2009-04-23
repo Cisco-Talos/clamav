@@ -245,7 +245,7 @@ static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx 
 
     if(mdata) {
 	*ctx->virname = mdata->virname;
-	return CL_VIRUS;	   
+	return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
     }
 
     if(DETECT_ENCRYPTED && metadata->encrypted) {
@@ -1336,13 +1336,15 @@ static int cli_scanscrenc(int desc, cli_ctx *ctx)
     return ret;
 }
 
-static int cli_scanriff(int desc, const char **virname)
+static int cli_scanriff(int desc, cli_ctx *ctx)
 {
 	int ret = CL_CLEAN;
 
     if(cli_check_riff_exploit(desc) == 2) {
-	ret = CL_VIRUS;
-	*virname = "Exploit.W32.MS05-002";
+	if(!cli_checkfp(desc, ctx)) {
+	    ret = CL_VIRUS;
+	    *ctx->virname = "Exploit.W32.MS05-002";
+	}
     }
 
     return ret;
@@ -1353,8 +1355,10 @@ static int cli_scanjpeg(int desc, cli_ctx *ctx)
 	int ret = CL_CLEAN;
 
     if(cli_check_jpeg_exploit(desc, ctx) == 1) {
-	ret = CL_VIRUS;
-	*ctx->virname = "Exploit.W32.MS04-028";
+	if(!cli_checkfp(desc, ctx)) {
+	    ret = CL_VIRUS;
+	    *ctx->virname = "Exploit.W32.MS04-028";
+	}
     }
 
     return ret;
@@ -1614,13 +1618,13 @@ static int cli_scan_structured(int desc, cli_ctx *ctx)
     if(cc_count != 0 && cc_count >= ctx->engine->min_cc_count) {
 	cli_dbgmsg("cli_scan_structured: %u credit card numbers detected\n", cc_count);
 	*ctx->virname = "Structured.CreditCardNumber";
-	return CL_VIRUS;
+	return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
     }
 
     if(ssn_count != 0 && ssn_count >= ctx->engine->min_ssn_count) {
 	cli_dbgmsg("cli_scan_structured: %u social security numbers detected\n", ssn_count);
 	*ctx->virname = "Structured.SSN";
-	return CL_VIRUS;
+	return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
     }
 
     return CL_CLEAN;
@@ -2025,7 +2029,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 	case CL_TYPE_RIFF:
 	    if(SCAN_ALGO && (DCONF_OTHER & OTHER_CONF_RIFF))
-		ret = cli_scanriff(desc, ctx->virname);
+		ret = cli_scanriff(desc, ctx);
 	    break;
 
 	case CL_TYPE_GRAPHICS:
@@ -2055,7 +2059,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 	case CL_TYPE_BINARY_DATA:
 	    if(SCAN_ALGO && (DCONF_OTHER & OTHER_CONF_MYDOOMLOG))
-		ret = cli_check_mydoom_log(desc, ctx->virname);
+		ret = cli_check_mydoom_log(desc, ctx);
 	    break;
 
 	case CL_TYPE_TEXT_ASCII:

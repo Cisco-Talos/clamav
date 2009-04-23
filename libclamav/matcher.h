@@ -131,4 +131,6 @@ int cli_validatesig(cli_file_t ftype, const char *offstr, off_t fileoff, struct 
 
 off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, cli_file_t ftype, int *ret, unsigned int *maxshift);
 
+int cli_checkfp(int fd, cli_ctx *ctx);
+
 #endif

@@ -204,26 +204,37 @@ off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, cli_f
     return 0;
 }
 
-static int cli_checkfp(int fd, const struct cl_engine *engine)
+int cli_checkfp(int fd, cli_ctx *ctx)
 {
 	unsigned char *digest;
 	const char *virname;
+	off_t pos;
 
 
-    if(engine->md5_fp) {
+    if((pos = lseek(fd, 0, SEEK_CUR)) == -1) {
+	cli_errmsg("cli_checkfp(): lseek() failed\n");
+	return 0;
+    }
+
+    lseek(fd, 0, SEEK_SET);
+
+    if(ctx->engine->md5_fp) {
 	if(!(digest = cli_md5digest(fd))) {
 	    cli_errmsg("cli_checkfp(): Can't generate MD5 checksum\n");
+	    lseek(fd, pos, SEEK_SET);
 	    return 0;
 	}
 
-	if(cli_bm_scanbuff(digest, 16, &virname, engine->md5_fp, 0, 0, -1) == CL_VIRUS) {
-	    cli_dbgmsg("Eliminated false positive match (fp sig: %s)\n", virname);
+	if(cli_bm_scanbuff(digest, 16, &virname, ctx->engine->md5_fp, 0, 0, -1) == CL_VIRUS) {
+	    cli_dbgmsg("cli_checkfp(): Found false positive detection (fp sig: %s)\n", virname);
 	    free(digest);
+	    lseek(fd, pos, SEEK_SET);
 	    return 1;
 	}
 	free(digest);
     }
 
+    lseek(fd, pos, SEEK_SET);
     return 0;
 }
 
@@ -340,8 +351,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 		    cli_ac_freedata(&gdata);
 		cli_ac_freedata(&tdata);
 
-		lseek(desc, 0, SEEK_SET);
-		if(cli_checkfp(desc, ctx->engine))
+		if(cli_checkfp(desc, ctx))
 		    return CL_CLEAN;
 		else
 		    return CL_VIRUS;
@@ -357,8 +367,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 		cli_ac_freedata(&gdata);
 		if(troot)
 		    cli_ac_freedata(&tdata);
-		lseek(desc, 0, SEEK_SET);
-		if(cli_checkfp(desc, ctx->engine))
+		if(cli_checkfp(desc, ctx))
 		    return CL_CLEAN;
 		else
 		    return CL_VIRUS;
@@ -420,7 +429,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 
     if(ret == CL_VIRUS) {
 	lseek(desc, 0, SEEK_SET);
-	if(cli_checkfp(desc, ctx->engine))
+	if(cli_checkfp(desc, ctx))
 	    return CL_CLEAN;
 	else
 	    return CL_VIRUS;

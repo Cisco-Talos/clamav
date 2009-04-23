@@ -39,6 +39,7 @@
 #include "others.h"
 #include "cltypes.h"
 #include "special.h"
+#include "matcher.h"
 
 /* NOTE: Photoshop stores data in BIG ENDIAN format, this is the opposite
 	to virtually everything else */
@@ -46,7 +47,7 @@
 #define special_endian_convert_16(v) be16_to_host(v)
 #define special_endian_convert_32(v) be32_to_host(v)
 
-int cli_check_mydoom_log(int desc, const char **virname)
+int cli_check_mydoom_log(int desc, cli_ctx *ctx)
 {
 	int32_t record[8], check;
 	int i, retval=CL_VIRUS, j;
@@ -78,8 +79,9 @@ int cli_check_mydoom_log(int desc, const char **virname)
     if (j < 2) {
 	retval = CL_CLEAN;
     } else if (retval==CL_VIRUS) {
-	if(virname)
-	    *virname = "Worm.Mydoom.M.log";
+	if(cli_checkfp(desc, ctx))
+	    return CL_CLEAN;
+	*ctx->virname = "Worm.Mydoom.M.log";
     }
 
     return retval;

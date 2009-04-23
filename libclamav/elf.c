@@ -37,6 +37,7 @@
 #include "elf.h"
 #include "clamav.h"
 #include "execs.h"
+#include "matcher.h"
 
 static inline uint16_t EC16(uint16_t v, uint8_t c)
 {
@@ -195,7 +196,7 @@ int cli_scanelf(int desc, cli_ctx *ctx)
         if(DETECT_BROKEN) {
 	    if(ctx->virname)
 		*ctx->virname = "Broken.Executable";
-            return CL_VIRUS;
+	    return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
         }
 	return CL_EFORMAT;
     }
@@ -208,7 +209,7 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 	    if(DETECT_BROKEN) {
 		if(ctx->virname)
 		    *ctx->virname = "Broken.Executable";
-		return CL_VIRUS;
+		return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	    }
 	    return CL_EFORMAT;
 	}
@@ -219,7 +220,7 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 	    if(DETECT_BROKEN) {
 		if(ctx->virname)
 		    *ctx->virname = "Broken.Executable";
-		return CL_VIRUS;
+		return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	    }
 	    return CL_CLEAN;
 	}
@@ -241,7 +242,7 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 		if(DETECT_BROKEN) {
 		    if(ctx->virname)
 			*ctx->virname = "Broken.Executable";
-		    return CL_VIRUS;
+		    return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 		}
 		return CL_CLEAN;
 	    }
@@ -262,7 +263,7 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 	    if(DETECT_BROKEN) {
 		if(ctx->virname)
 		    *ctx->virname = "Broken.Executable";
-		return CL_VIRUS;
+		return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	    }
 	    return CL_EFORMAT;
 	}
@@ -279,7 +280,7 @@ int cli_scanelf(int desc, cli_ctx *ctx)
         if(DETECT_BROKEN) {
 	    if(ctx->virname)
 		*ctx->virname = "Broken.Executable";
-            return CL_VIRUS;
+	    return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
         }
 	return CL_EFORMAT;
     }
@@ -290,7 +291,7 @@ int cli_scanelf(int desc, cli_ctx *ctx)
         if(DETECT_BROKEN) {
 	    if(ctx->virname)
 		*ctx->virname = "Broken.Executable";
-            return CL_VIRUS;
+	    return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
         }
 	return CL_EFORMAT;
     }
@@ -302,7 +303,7 @@ int cli_scanelf(int desc, cli_ctx *ctx)
         if(DETECT_BROKEN) {
 	    if(ctx->virname)
 		*ctx->virname = "Broken.Executable";
-            return CL_VIRUS;
+	    return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
         }
 	return CL_CLEAN;
     }
@@ -324,7 +325,7 @@ int cli_scanelf(int desc, cli_ctx *ctx)
             if(DETECT_BROKEN) {
                 if(ctx->virname)
                     *ctx->virname = "Broken.Executable";
-                return CL_VIRUS;
+		return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
             }
             return CL_CLEAN;
         }

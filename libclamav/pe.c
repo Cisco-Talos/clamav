@@ -472,7 +472,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	if(DETECT_BROKEN) {
 	    if(ctx->virname)
 		*ctx->virname = "Broken.Executable";
-	    return CL_VIRUS;
+	    return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	}
 	return CL_CLEAN;
     }
@@ -608,7 +608,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	if(DETECT_BROKEN) {
 	    if(ctx->virname)
 		*ctx->virname = "Broken.Executable";
-	    return CL_VIRUS;
+	    return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	}
 	if(nsections)
 	    cli_warnmsg("PE file contains %d sections\n", nsections);
@@ -628,7 +628,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	if(DETECT_BROKEN) {
 	    if(ctx->virname)
 	        *ctx->virname = "Broken.Executable";
-	    return CL_VIRUS;
+	    return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	}
 	return CL_CLEAN;
     }
@@ -638,7 +638,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	if(DETECT_BROKEN) {
 	    if(ctx->virname)
 	        *ctx->virname = "Broken.Executable";
-	    return CL_VIRUS;
+	    return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	}
 	return CL_CLEAN;
     }
@@ -651,7 +651,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    if(DETECT_BROKEN) {
 	        if(ctx->virname)
 		    *ctx->virname = "Broken.Executable";
-		return CL_VIRUS;
+		return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	    }
 	    return CL_CLEAN;
 	}
@@ -667,7 +667,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    if(DETECT_BROKEN) {
 	        if(ctx->virname)
 		    *ctx->virname = "Broken.Executable";
-		return CL_VIRUS;
+		return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	    }
 	    cli_dbgmsg("9x compatibility mode\n");
 	}
@@ -709,7 +709,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    if(DETECT_BROKEN) {
 	        if(ctx->virname)
 		    *ctx->virname = "Broken.Executable";
-		return CL_VIRUS;
+		return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	    }
 	    return CL_CLEAN;
 	}
@@ -790,14 +790,14 @@ int cli_scanpe(int desc, cli_ctx *ctx)
         cli_dbgmsg("Bad virtual alignemnt\n");
         if(ctx->virname)
 	    *ctx->virname = "Broken.Executable";
-	return CL_VIRUS;
+	return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
     }
 
     if (DETECT_BROKEN && !native && (!(pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment)) || (pe_plus?EC32(optional_hdr64.FileAlignment):EC32(optional_hdr32.FileAlignment))%0x200)) {
         cli_dbgmsg("Bad file alignemnt\n");
 	if(ctx->virname)
 	    *ctx->virname = "Broken.Executable";
-	return CL_VIRUS;
+	return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
     }
 
     if(fstat(desc, &sb) == -1) {
@@ -833,7 +833,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	if(DETECT_BROKEN) {
 	    if(ctx->virname)
 		*ctx->virname = "Broken.Executable";
-	    return CL_VIRUS;
+	    return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	}
 	return CL_CLEAN;
     }
@@ -902,7 +902,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	        *ctx->virname = "Broken.Executable";
 	    free(section_hdr);
 	    free(exe_sections);
-	    return CL_VIRUS;
+	    return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	}
 
 	if (exe_sections[i].rsz) { /* Don't bother with virtual only sections */
@@ -913,7 +913,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		if(DETECT_BROKEN) {
 		    if(ctx->virname)
 		        *ctx->virname = "Broken.Executable";
-		    return CL_VIRUS;
+		    return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 		}
 		return CL_CLEAN; /* no ninjas to see here! move along! */
 	    }
@@ -928,16 +928,11 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    if(md5_sect->soff[j] == exe_sections[i].rsz) {
 			unsigned char md5_dig[16];
 			if(cli_md5sect(desc, &exe_sections[i], md5_dig) && cli_bm_scanbuff(md5_dig, 16, ctx->virname, ctx->engine->md5_mdb, 0, 0, -1) == CL_VIRUS) {
-			    /* Since .mdb sigs are not fp-prone, to save
-			     * performance we don't call cli_checkfp() here,
-			     * just give the possibility of whitelisting
-			     * idividual .mdb entries via daily.fp
-			     */
 			    if(cli_bm_scanbuff(md5_dig, 16, NULL, ctx->engine->md5_fp, 0, 0, -1) != CL_VIRUS) {
 
 				free(section_hdr);
 				free(exe_sections);
-				return CL_VIRUS;
+				return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 			    }
 			}
 			break;
@@ -953,7 +948,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    if(DETECT_BROKEN) {
 	        if(ctx->virname)
 		    *ctx->virname = "Broken.Executable";
-		return CL_VIRUS;
+		return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	    }
 	    return CL_CLEAN;
 	}
@@ -965,7 +960,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    *ctx->virname = "Broken.Executable";
 		free(section_hdr);
 		free(exe_sections);
-		return CL_VIRUS;
+		return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	    }
 	    min = exe_sections[i].rva;
 	    max = exe_sections[i].rva + exe_sections[i].rsz;
@@ -976,7 +971,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    *ctx->virname = "Broken.Executable";
 		free(section_hdr);
 		free(exe_sections);
-		return CL_VIRUS;
+		return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	    }
 	    if(exe_sections[i].rva < min)
 	        min = exe_sections[i].rva;
@@ -994,7 +989,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	if(DETECT_BROKEN) {
 	    if(ctx->virname)
 		*ctx->virname = "Broken.Executable";
-	    return CL_VIRUS;
+	    return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	}
 	return CL_CLEAN;
     }
@@ -1031,7 +1026,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    if((((uint32_t)cli_readint32(pt) ^ (uint32_t)cli_readint32(pt + 4)) == 0x505a4f) && (((uint32_t)cli_readint32(pt + 8) ^ (uint32_t)cli_readint32(pt + 12)) == 0xffffb) && (((uint32_t)cli_readint32(pt + 16) ^ (uint32_t)cli_readint32(pt + 20)) == 0xb8)) {
 	        *ctx->virname = "W32.Parite.B";
 		free(exe_sections);
-		return CL_VIRUS;
+		return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	    }
 	}
     }
@@ -1114,7 +1109,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		if (op==kzdsize+0x48 && *kzcode==0x75 && kzlen-(int8_t)kzcode[1]-3<=kzinitlen && kzlen-(int8_t)kzcode[1]>=kzxorlen) {
 		    *ctx->virname = "W32.Kriz";
 		    free(exe_sections);
-		    return CL_VIRUS;
+		    return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 		}
 		cli_dbgmsg("kriz: loop out of bounds, corrupted sample?\n");
 		kzstate++;
@@ -1141,7 +1136,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		if(cli_memstr(buff, 4091, "\xe8\x2c\x61\x00\x00", 5)) {
 		    *ctx->virname = dam ? "W32.Magistr.A.dam" : "W32.Magistr.A";
 		    free(exe_sections);
-		    return CL_VIRUS;
+		    return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 		} 
 	    }
 
@@ -1153,7 +1148,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		if(cli_memstr(buff, 4091, "\xe8\x04\x72\x00\x00", 5)) {
 		    *ctx->virname = dam ? "W32.Magistr.B.dam" : "W32.Magistr.B";
 		    free(exe_sections);
-		    return CL_VIRUS;
+		    return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 		} 
 	    }
 	}
@@ -1211,7 +1206,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		*ctx->virname = "W32.Polipos.A";
 		free(jumps);
 		free(exe_sections);
-		return CL_VIRUS;
+		return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	    }
 	}
 	free(jumps);
@@ -1236,6 +1231,8 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		    }
 		    if (ret != CL_CLEAN) {
 			    free(exe_sections);
+			    if(ret == CL_VIRUS)
+				return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 			    return ret;
 		    }
 	    }
