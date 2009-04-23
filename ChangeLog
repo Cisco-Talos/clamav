@@ -1,3 +1,10 @@
+Thu Apr 23 16:54:54 EEST 2009 (edwin)
+-------------------------------------
+ * clamav-config.h.in, clamd/thrmgr.c, configure, configure.in: errno
+ is not thread-safe on AIX by default, ask for thread-safe version.
+ (bb #1480) Default stack size on AIX is too small, define BIGSTACK
+ by default. (bb #1481).
+
 Thu Apr 23 15:23:02 CEST 2009 (tk)
 ----------------------------------
  * libclamav: call cli_checkfp() whenever possible/makes sense (bb#1558)

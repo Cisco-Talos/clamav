@@ -1049,6 +1049,7 @@ aix*)
 	TH_SAFE="-thread-safe"
 	AC_DEFINE([CL_THREAD_SAFE],1,[thread safe])
 	AC_DEFINE([_REENTRANT],1,[thread safe])
+	AC_DEFINE([_THREAD_SAFE],1,[thread safe])
     fi
     AC_DEFINE([C_AIX],1,[os is aix])
     ;;

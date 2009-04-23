@@ -517,6 +517,9 @@
 /* thread safe */
 #undef _REENTRANT
 
+/* thread safe */
+#undef _THREAD_SAFE
+
 /* Define so that glibc/gnulib argp.h does not typedef error_t. */
 #undef __error_t_defined
 

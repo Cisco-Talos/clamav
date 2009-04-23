@@ -20814,6 +20814,11 @@ cat >>confdefs.h <<\_ACEOF
 #define _REENTRANT 1
 _ACEOF
 
+
+cat >>confdefs.h <<\_ACEOF
+#define _THREAD_SAFE 1
+_ACEOF
+
     fi
 
 cat >>confdefs.h <<\_ACEOF
