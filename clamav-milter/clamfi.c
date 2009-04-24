@@ -400,8 +400,6 @@ static int parse_action(char *action) {
 	return 3;
     if(!strcasecmp(action, "Quarantine"))
 	return 4;
-    if(!strcasecmp(action, "QuarantineReject"))
-	return 5;
     logg("!Unknown action %s\n", action);
     return -1;
 }
@@ -419,19 +417,14 @@ static sfsistat action_reject(_UNUSED_ SMFICTX *ctx) {
 static sfsistat action_blackhole(_UNUSED_ SMFICTX *ctx)  {
     return SMFIS_DISCARD;
 }
-static sfsistat quarantine_common(SMFICTX *ctx, sfsistat ret) {
+static sfsistat action_quarantine(SMFICTX *ctx) {
     if(smfi_quarantine(ctx, "quarantined by clamav-milter") != MI_SUCCESS) {
 	logg("^Failed to quarantine message\n");
 	return SMFIS_TEMPFAIL;
     }
-    return ret;
+    return SMFIS_ACCEPT;
 }
-static sfsistat action_quarantine(SMFICTX *ctx) {
-    return quarantine_common(ctx, SMFIS_ACCEPT);
-}
-static sfsistat action_quarantine_reject(SMFICTX *ctx) {
-    return quarantine_common(ctx, SMFIS_REJECT);
-}
+
 static sfsistat action_reject_msg(SMFICTX *ctx) {
     struct CLAMFI *cf;
     char buf[1024];
@@ -493,9 +486,6 @@ int init_actions(struct optstruct *opts) {
 	case 4:
 	    CleanAction = action_quarantine;
 	    break;
-	case 5:
-	    CleanAction = action_quarantine_reject;
-	    break;
 	default:
 	    logg("!Invalid action %s for option OnClean\n", opt->strarg);
 	    return 1;
@@ -515,9 +505,6 @@ int init_actions(struct optstruct *opts) {
 	    break;
 	case 4:
 	    InfectedAction = action_quarantine;
-	    break;
-	case 5:
-	    InfectedAction = action_quarantine_reject;
 	    break;
 	case 2:
 	    InfectedAction = action_reject_msg;
