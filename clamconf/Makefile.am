@@ -27,7 +27,7 @@ clamconf_SOURCES = \
     $(top_srcdir)/shared/misc.h \
     clamconf.c
 
-DEFS = @DEFS@ -DCL_NOTHREADS -DCL_NOLIBCLAMAV
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared
-LIBS = $(top_builddir)/libclamav/libclamav_internal_utils_nothreads.la
+DEFS = @DEFS@ -DCL_NOTHREADS
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
+LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMD_LIBS@ @THREAD_LIBS@
 CLEANFILES=*.gcda *.gcno

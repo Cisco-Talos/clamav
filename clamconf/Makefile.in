@@ -117,7 +117,7 @@ CURSES_CPPFLAGS = @CURSES_CPPFLAGS@
 CURSES_LIBS = @CURSES_LIBS@
 CYGPATH_W = @CYGPATH_W@
 DBDIR = @DBDIR@
-DEFS = @DEFS@ -DCL_NOTHREADS -DCL_NOLIBCLAMAV
+DEFS = @DEFS@ -DCL_NOTHREADS
 DEPDIR = @DEPDIR@
 DSYMUTIL = @DSYMUTIL@
 DUMPBIN = @DUMPBIN@
@@ -152,7 +152,7 @@ LIBCLAMAV_LIBS = @LIBCLAMAV_LIBS@
 LIBCLAMAV_VERSION = @LIBCLAMAV_VERSION@
 LIBLTDL = @LIBLTDL@
 LIBOBJS = @LIBOBJS@
-LIBS = $(top_builddir)/libclamav/libclamav_internal_utils_nothreads.la
+LIBS = $(top_builddir)/libclamav/libclamav.la @CLAMD_LIBS@ @THREAD_LIBS@
 LIBTOOL = @LIBTOOL@
 LIPO = @LIPO@
 LN_S = @LN_S@
@@ -257,7 +257,7 @@ clamconf_SOURCES = \
     $(top_srcdir)/shared/misc.h \
     clamconf.c
 
-AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared
+AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
 CLEANFILES = *.gcda *.gcno
 all: all-am
 

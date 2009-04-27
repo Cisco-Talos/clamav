@@ -26,11 +26,14 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <time.h>
 
 #include "shared/optparser.h"
 #include "shared/misc.h"
 
 #include "libclamav/str.h"
+#include "libclamav/clamav.h"
+#include "libclamav/others.h"
 
 static struct _cfgfile {
     const char *name;
@@ -41,6 +44,10 @@ static struct _cfgfile {
     { "clamav-milter.conf", OPT_MILTER	    },
     { NULL,		    0		    }
 };
+
+static const char *dbnames[] = { "main.cvd", "main.cld", "daily.cvd",
+				 "daily.cld", "safebrowsing.cvd",
+				 "safebrowsing.cld", NULL };
 
 static void printopts(struct optstruct *opts, int nondef)
 {
@@ -194,10 +201,12 @@ static void help(void)
 int main(int argc, char **argv)
 {
 	const char *dir;
-	char path[512];
+	char path[512], dbdir[512], *pt;
 	struct optstruct *opts, *toolopts;
 	const struct optstruct *opt;
 	unsigned int i, j;
+	struct cl_cvd *cvd;
+	unsigned int flevel;
 
 
     opts = optparse(NULL, argc, argv, 1, OPT_CLAMCONF, 0, NULL);
@@ -224,9 +233,7 @@ int main(int argc, char **argv)
 	return 0;
     }
 
-    printf("ClamAV engine version: %s\n", get_version());
-    /* TODO: db information */
-
+    dbdir[0] = 0;
     dir = optget(opts, "config-dir")->strarg;
     printf("Checking configuration files in %s\n", dir);
     for(i = 0; cfgfile[i].name; i++) {
@@ -244,8 +251,72 @@ int main(int argc, char **argv)
 	if(!toolopts)
 	    continue;
 	printopts(toolopts, optget(opts, "non-default")->enabled);
+	if(cfgfile[i].tool == OPT_FRESHCLAM) {
+	    opt = optget(toolopts, "DatabaseDirectory");
+	    strncpy(dbdir, opt->strarg, sizeof(dbdir));
+	    dbdir[sizeof(dbdir) - 1] = 0;
+	}
 	optfree(toolopts);
     }
     optfree(opts);
+
+    printf("\nSoftware settings\n-----------------\n");
+    printf("Version: %s\n", cl_retver());
+    if(strcmp(cl_retver(), get_version()))
+	printf("WARNING: Version mismatch: libclamav=%s, clamconf=%s\n", cl_retver(), get_version());
+    cl_init(CL_INIT_DEFAULT);
+    printf("Optional features supported: ");
+#ifdef USE_MPOOL
+	printf("MEMPOOL ");
+#endif
+#ifdef SUPPORT_IPv6
+	printf("IPv6 ");
+#endif
+#ifdef CLAMUKO
+	printf("CLAMUKO ");
+#endif
+#ifdef C_BIGSTACK
+	printf("BIGSTACK ");
+#endif
+#ifdef FRESHCLAM_DNS_FIX
+	printf("FRESHCLAM_DNS_FIX ");
+#endif
+#ifdef FPU_WORDS_BIGENDIAN
+	printf("AUTOIT_EA06 ");
+#endif
+#ifdef HAVE_BZLIB_H
+	printf("BZIP2 ");
+#endif
+    if(have_rar)
+	printf("RAR");
+    printf("\n");
+
+    if(!strlen(dbdir)) {
+	pt = freshdbdir();
+	if(pt) {
+	    strncpy(dbdir, pt, sizeof(dbdir));
+	    free(pt);
+	} else {
+	    strncpy(dbdir, DATADIR, sizeof(dbdir));
+	}
+	dbdir[sizeof(dbdir) - 1] = 0;
+    }
+    printf("Database directory: %s\n", dbdir);
+    flevel = cl_retflevel();
+    for(i = 0; dbnames[i]; i++) {
+	snprintf(path, sizeof(path), "%s/%s", dbdir, dbnames[i]);
+	path[511] = 0;
+	if(!access(path, R_OK)) {
+	    cvd = cl_cvdhead(path);
+	    if(!cvd) {
+		printf("%s: Can't get information about the database\n", dbnames[i]);
+	    } else {
+		printf("%s: version %u, sigs: %u, built on %s", dbnames[i], cvd->version, cvd->sigs, ctime((const time_t *) &cvd->stime));
+		if(cvd->fl > flevel)
+		    printf("%s: WARNING: This database requires f-level %u (current f-level: %u)\n", dbnames[i], cvd->fl, flevel);
+		cl_cvdfree(cvd);
+	    }
+	}
+    }
     return 0;
 }

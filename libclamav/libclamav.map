@@ -33,6 +33,7 @@ CLAMAV_PUBLIC {
 CLAMAV_PRIVATE {
   global:
     cli_strtok;
+    cli_strtokenize;
     cli_cvdunpack;
     cli_regcomp;
     cli_regexec;
@@ -142,6 +143,7 @@ CLAMAV_PRIVATE {
     messageCreate;
     messageDestroy;
     base64Flush;
+    have_rar;
   local:
     *;
 };

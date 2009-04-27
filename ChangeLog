@@ -1,3 +1,7 @@
+Mon Apr 27 17:41:08 CEST 2009 (tk)
+----------------------------------
+ * clamconf: display info on software & dbs (bb#1461)
+
 Fri Apr 24 15:20:48 CEST 2009 (acab)
 ....................................
  * clamav-milter: drop support for QuarantineReject: it's a bad idea and
