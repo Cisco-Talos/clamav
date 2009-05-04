@@ -308,7 +308,7 @@ int main(int argc, char **argv)
 
     /* initialize some important variables */
 
-    if(optget(opts, "Debug")->enabled)
+    if(optget(opts, "Debug")->enabled || optget(opts, "debug")->enabled)
 	cl_debug();
 
     if(optget(opts, "verbose")->enabled)
