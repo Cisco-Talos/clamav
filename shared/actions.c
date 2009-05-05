@@ -35,6 +35,7 @@
 #include "shared/optparser.h"
 #include "shared/output.h"
 #include "shared/misc.h"
+#include "shared/actions.h"
 
 void (*action)(const char *) = NULL;
 unsigned int notmoved = 0, notremoved = 0;
@@ -44,7 +45,7 @@ static int targlen;
 
 
 
-int getdest(const char *fullpath, char **newname) {
+static int getdest(const char *fullpath, char **newname) {
     char *tmps, *filename;
     int fd, i;
 
@@ -118,7 +119,7 @@ static void action_remove(const char *filename) {
     }
 }
 
-int isdir() {
+static int isdir(void) {
     struct stat sb;
     if(stat(actarget, &sb) || !S_ISDIR(sb.st_mode)) {
 	logg("!'%s' doesn't exist or is not a directory\n", actarget);

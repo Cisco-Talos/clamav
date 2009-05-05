@@ -96,7 +96,7 @@ short int mprintf_disabled = 0, mprintf_verbose = 0, mprintf_quiet = 0,
 
 #define ARGLEN(args, str, len)			    \
 {						    \
-	int arglen = 0, i;			    \
+	size_t arglen = 0, i;			    \
 	char *pt;				    \
     va_start(args, str);			    \
     len = strlen(str);				    \
@@ -131,7 +131,8 @@ int mdprintf(int desc, const char *str, ...)
 {
 	va_list args;
 	char buffer[512], *abuffer = NULL, *buff;
-	int bytes, todo, len, ret=0;
+	int bytes, todo, ret=0;
+	size_t len;
 
 
     ARGLEN(args, str, len);
@@ -240,7 +241,7 @@ int logg(const char *str, ...)
 	time_t currtime;
 	struct stat sb;
 	mode_t old_umask;
-	int len;
+	size_t len;
 
     if ((*str == '$' && logg_verbose < 2) ||
 	(*str == '*' && !logg_verbose))
@@ -374,7 +375,7 @@ void mprintf(const char *str, ...)
 	va_list args;
 	FILE *fd;
 	char buffer[512], *abuffer = NULL, *buff;
-	int len;
+	size_t len;
 
 
     if(mprintf_disabled) 

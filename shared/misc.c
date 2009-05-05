@@ -118,7 +118,7 @@ char *freshdbdir(void)
 
 void print_version(const char *dbdir)
 {
-	char *fdbdir, *path;
+	char *fdbdir = NULL, *path;
 	const char *pt;
 	struct cl_cvd *daily;
 

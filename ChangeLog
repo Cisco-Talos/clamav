@@ -1,3 +1,7 @@
+Tue May  5 16:31:14 CEST 2009 (tk)
+----------------------------------
+ * shared: fix compiler warnings
+
 Tue May  5 15:30:26 CEST 2009 (tk)
 ----------------------------------
  * shared/optparser.[ch]: properly handle large size values (bb#1583)
