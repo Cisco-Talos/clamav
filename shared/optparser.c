@@ -460,7 +460,7 @@ static void optprint(const struct optstruct *opts)
 }
 */
 
-static int optadd(struct optstruct **opts, struct optstruct **opts_last, const char *name, const char *cmd, const char *strarg, int numarg, int flags, int idx)
+static int optadd(struct optstruct **opts, struct optstruct **opts_last, const char *name, const char *cmd, const char *strarg, long long numarg, int flags, int idx)
 {
 	struct optstruct *newnode;
 
@@ -525,7 +525,7 @@ static int optadd(struct optstruct **opts, struct optstruct **opts_last, const c
     return 0;
 }
 
-static int optaddarg(struct optstruct *opts, const char *name, const char *strarg, int numarg)
+static int optaddarg(struct optstruct *opts, const char *name, const char *strarg, long long numarg)
 {
 	struct optstruct *pt, *h, *new;
 
@@ -631,13 +631,13 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 	const struct clam_option *optentry;
 	char *pt;
 	const char *name = NULL, *arg;
-	int i, err = 0, lc = 0, sc = 0, opt_index, line = 0, ret, numarg;
+	int i, err = 0, lc = 0, sc = 0, opt_index, line = 0, ret;
 	struct optstruct *opts = NULL, *opts_last = NULL, *opt;
 	char buffer[512], *buff;
 	struct option longopts[MAXCMDOPTS];
 	char shortopts[MAXCMDOPTS];
 	regex_t regex;
-	unsigned long int lnumarg;
+	long long numarg, lnumarg;
 	int regflags = REG_EXTENDED | REG_NOSUB;
 
 
@@ -952,7 +952,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 		    lnumarg = UINT_MAX;
 		}
 
-		numarg = (unsigned int)lnumarg;
+		numarg = lnumarg;
 		break;
 
 	    case TYPE_BOOL:

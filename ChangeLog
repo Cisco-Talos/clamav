@@ -1,3 +1,7 @@
+Tue May  5 15:30:26 CEST 2009 (tk)
+----------------------------------
+ * shared/optparser.[ch]: properly handle large size values (bb#1583)
+
 Mon May  4 10:47:10 CEST 2009 (tk)
 ----------------------------------
  * freshclam/freshclam.c: handle --debug (bb#1590)

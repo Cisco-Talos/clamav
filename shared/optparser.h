@@ -41,7 +41,7 @@ struct optstruct {
     char *name;
     char *cmd;
     char *strarg;
-    int numarg;
+    long long numarg;
     int enabled;
     int active;
     int flags;
@@ -58,7 +58,7 @@ struct clam_option {
     char shortopt;
     int argtype;
     const char *regex;
-    int numarg;
+    long long numarg;
     const char *strarg;
     int flags;
     int owner;
