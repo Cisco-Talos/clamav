@@ -81,10 +81,10 @@ static void printopts(struct optstruct *opts, int nondef)
 
 	    case TYPE_NUMBER:
 	    case TYPE_SIZE:
-		printf("%s = \"%d\"", opts->name, opts->numarg);
+		printf("%s = \"%lld\"", opts->name, opts->numarg);
 		opt = opts;
 		while((opt = opt->nextarg))
-		    printf(", \"%d\"", opt->numarg);
+		    printf(", \"%lld\"", opt->numarg);
 		printf("\n");
 		break;
 
@@ -143,7 +143,7 @@ static int printconf(const char *name)
 
 		case TYPE_NUMBER:
 		    if(cpt->numarg != -1)
-			printf("# Default: %d\n", cpt->numarg);
+			printf("# Default: %lld\n", cpt->numarg);
 		    else
 			printf("# Default: disabled\n");
 		    break;
@@ -151,7 +151,7 @@ static int printconf(const char *name)
 		case TYPE_SIZE:
 		    printf("# You may use 'M' or 'm' for megabytes (1M = 1m = 1048576 bytes)\n# and 'K' or 'k' for kilobytes (1K = 1k = 1024 bytes). To specify the size\n# in bytes just don't use modifiers.\n");
 		    if(cpt->numarg != -1)
-			printf("# Default: %d\n", cpt->numarg);
+			printf("# Default: %lld\n", cpt->numarg);
 		    else
 			printf("# Default: disabled\n");
 		    break;

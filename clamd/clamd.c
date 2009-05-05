@@ -405,7 +405,7 @@ int main(int argc, char **argv)
 
     if((opt = optget(opts, "DevACDepth"))->enabled) {
         cl_engine_set_num(engine, CL_ENGINE_AC_MAXDEPTH, opt->numarg);
-	logg("#Max A-C depth set to %u\n", opt->numarg);
+	logg("#Max A-C depth set to %u\n", (unsigned int) opt->numarg);
     }
 
     if((ret = cl_load(dbdir, engine, &sigs, dboptions))) {

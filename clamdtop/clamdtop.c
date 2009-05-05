@@ -1147,7 +1147,7 @@ static void setup_connections(int argc, char *argv[])
 		if ((opt_addr = optget(clamd_opts, "TCPAddr"))->enabled) {
 		    host = opt_addr->strarg;
 		}
-		snprintf(buf, sizeof(buf), "%s:%u", host, opt->numarg);
+		snprintf(buf, sizeof(buf), "%s:%llu", host, opt->numarg);
 		conn = strdup(buf);
 	    } else {
 		fprintf(stderr, "Can't find how to connect to clamd\n");

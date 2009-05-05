@@ -60,8 +60,7 @@ int tcpserver(const struct optstruct *opts)
 {
     struct sockaddr_in server;
     int sockfd, backlog;
-    struct hostent he;
-    char *estr, buf[1024];
+    char *estr;
     int true = 1;
 
     if (cfg_tcpsock(opts, &server, INADDR_ANY) == -1) {
@@ -86,9 +85,9 @@ int tcpserver(const struct optstruct *opts)
     } else {
 	const struct optstruct *taddr = optget(opts, "TCPAddr");
 	if(taddr->enabled)
-	    logg("#TCP: Bound to address %s on port %u\n", taddr->strarg, optget(opts, "TCPSocket")->numarg);
+	    logg("#TCP: Bound to address %s on port %u\n", taddr->strarg, (unsigned int) optget(opts, "TCPSocket")->numarg);
 	else
-	    logg("#TCP: Bound to port %u\n", optget(opts, "TCPSocket")->numarg);
+	    logg("#TCP: Bound to port %u\n", (unsigned int) optget(opts, "TCPSocket")->numarg);
     }
 
     backlog = optget(opts, "MaxConnectionQueueLength")->numarg;
