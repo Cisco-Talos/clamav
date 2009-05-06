@@ -1,3 +1,9 @@
+Wed May  6 10:45:55 EEST 2009 (edwin)
+-------------------------------------
+ * configure, configure.in: Fix Solaris memory usage: don't link with
+ -lmalloc on Solaris (bb #1595, thanks to David Schweikert
+ <david*schweikert.ch> for tracking down the problem).
+
 Wed May  6 10:40:19 EEST 2009 (edwin)
 -------------------------------------
  * clamd/others.c, clamd/others.h, clamd/server-th.c,
