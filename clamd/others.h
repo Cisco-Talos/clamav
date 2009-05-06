@@ -58,7 +58,7 @@ struct fd_buf {
 };
 
 struct fd_data {
-    pthread_mutex_t buf_mutex; /* protects buf and nfds */
+    pthread_mutex_t *buf_mutex; /* protects buf and nfds */
     struct fd_buf *buf;
     size_t nfds;
 #ifdef HAVE_POLL
@@ -68,9 +68,9 @@ struct fd_data {
 };
 
 #ifdef HAVE_POLL
-#define FDS_INIT { PTHREAD_MUTEX_INITIALIZER, NULL, 0, NULL, 0}
+#define FDS_INIT(mutex) { (mutex), NULL, 0, NULL, 0}
 #else
-#define FDS_INIT { PTHREAD_MUTEX_INITIALIZER, NULL, 0}
+#define FDS_INIT(mutex) { (mutex), NULL, 0}
 #endif
 
 int poll_fd(int fd, int timeout_sec, int check_signals);

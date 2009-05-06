@@ -1,3 +1,11 @@
+Wed May  6 10:40:19 EEST 2009 (edwin)
+-------------------------------------
+ * clamd/others.c, clamd/others.h, clamd/server-th.c,
+ clamd/session.c, clamd/thrmgr.c: Fix 60 byte/STREAM command memory
+ leak on FreeBSD. (bb #1567, thanks to Jay Deiman
+ <jay*splitstreams.com> and Chris Mikkelson <cmikk*qwest.net> for
+ tracking down the leak!).
+
 Tue May  5 16:31:14 CEST 2009 (tk)
 ----------------------------------
  * shared: fix compiler warnings

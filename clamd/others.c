@@ -215,15 +215,13 @@ static int realloc_polldata(struct fd_data *data)
 int poll_fd(int fd, int timeout_sec, int check_signals)
 {
     int ret;
-    struct fd_data fds = FDS_INIT;
+    struct fd_data fds = FDS_INIT(NULL);
 
     if (fds_add(&fds, fd, 1, timeout_sec) == -1)
 	return -1;
-    pthread_mutex_lock(&fds.buf_mutex);
     do {
 	ret = fds_poll_recv(&fds, timeout_sec, check_signals);
     } while (ret == -1 && errno == EINTR);
-    pthread_mutex_unlock(&fds.buf_mutex);
     fds_free(&fds);
     return ret;
 }
@@ -396,10 +394,22 @@ int fds_add(struct fd_data *data, int fd, int listen_only, int timeout)
     return 0;
 }
 
+static inline void fds_lock(struct fd_data *data)
+{
+    if (data->buf_mutex)
+	pthread_mutex_lock(data->buf_mutex);
+}
+
+static inline void fds_unlock(struct fd_data *data)
+{
+    if (data->buf_mutex)
+	pthread_mutex_unlock(data->buf_mutex);
+}
+
 void fds_remove(struct fd_data *data, int fd)
 {
     size_t i;
-    pthread_mutex_lock(&data->buf_mutex);
+    fds_lock(data);
     if (data->buf) {
 	for (i=0;i<data->nfds;i++) {
 	    if (data->buf[i].fd == fd) {
@@ -408,7 +418,7 @@ void fds_remove(struct fd_data *data, int fd)
 	    }
 	}
     }
-    pthread_mutex_unlock(&data->buf_mutex);
+    fds_unlock(data);
 }
 
 #ifndef	C_WINDOWS
@@ -421,7 +431,7 @@ void fds_remove(struct fd_data *data, int fd)
  * timeout is specified in seconds, if check_signals is non-zero, then
  * poll_recv_fds() will return upon receipt of a signal, even if no data
  * is received on any of the sockets.
- * Must be called with buf_mutex held.
+ * Must be called with buf_mutex lock held.
  */
 /* TODO: handle ReadTimeout */
 int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
@@ -488,9 +498,9 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
     do {
 	int n = data->nfds;
 
-	pthread_mutex_unlock(&data->buf_mutex);
+	fds_unlock(data);
 	retval = poll(data->poll_data, n, timeout);
-	pthread_mutex_lock(&data->buf_mutex);
+	fds_lock(data);
 
 	if (retval > 0) {
 	    fdsok = 0;
@@ -567,9 +577,9 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 	tv.tv_sec = timeout;
 	tv.tv_usec = 0;
 
-	pthread_mutex_unlock(&data->buf_mutex);
+	fds_unlock(data);
 	retval = select(maxfd+1, &rfds, NULL, NULL, timeout >= 0 ? &tv : NULL);
-	pthread_mutex_lock(&data->buf_mutex);
+	fds_lock(data);
 	if (retval > 0) {
 	    fdsok = data->nfds;
 	    for (i=0; i < data->nfds; i++) {
@@ -637,7 +647,7 @@ int fds_poll_recv(struct fd_data *data, int timeout, int check_signals)
 void fds_free(struct fd_data *data)
 {
     unsigned i;
-    pthread_mutex_lock(&data->buf_mutex);
+    fds_lock(data);
     for (i=0;i < data->nfds;i++) {
 	if (data->buf[i].buffer) {
 	    free(data->buf[i].buffer);
@@ -651,5 +661,5 @@ void fds_free(struct fd_data *data)
 #endif
     data->buf = NULL;
     data->nfds = 0;
-    pthread_mutex_unlock(&data->buf_mutex);
+    fds_unlock(data);
 }

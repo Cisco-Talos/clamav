@@ -313,7 +313,7 @@ struct acceptdata {
     int syncpipe_wake_accept[2];
 };
 
-#define ACCEPTDATA_INIT { FDS_INIT, FDS_INIT, PTHREAD_COND_INITIALIZER, 0, 0, {-1, -1}, {-1, -1}}
+#define ACCEPTDATA_INIT(mutex1, mutex2) { FDS_INIT(mutex1), FDS_INIT(mutex2), PTHREAD_COND_INITIALIZER, 0, 0, {-1, -1}, {-1, -1}}
 
 static void *acceptloop_th(void *arg)
 {
@@ -325,7 +325,7 @@ static void *acceptloop_th(void *arg)
     int max_queue = data->max_queue;
     int commandtimeout = data->commandtimeout;
 
-    pthread_mutex_lock(&fds->buf_mutex);
+    pthread_mutex_lock(fds->buf_mutex);
     for (;;) {
 	/* Block waiting for data to become available for reading */
 	int new_sd = fds_poll_recv(fds, -1, 0);
@@ -367,17 +367,17 @@ static void *acceptloop_th(void *arg)
 
 	    /* don't accept unlimited number of connections, or
 	     * we'll run out of file descriptors */
-	    pthread_mutex_lock(&recv_fds->buf_mutex);
-	    while (recv_fds->nfds > max_queue) {
+	    pthread_mutex_lock(recv_fds->buf_mutex);
+	    while (recv_fds->nfds > (unsigned)max_queue) {
 		pthread_mutex_lock(&exit_mutex);
 		if(progexit) {
 		    pthread_mutex_unlock(&exit_mutex);
 		    break;
 		}
 		pthread_mutex_unlock(&exit_mutex);
-		pthread_cond_wait(&data->cond_nfds, &recv_fds->buf_mutex);
+		pthread_cond_wait(&data->cond_nfds, recv_fds->buf_mutex);
 	    }
-	    pthread_mutex_unlock(&recv_fds->buf_mutex);
+	    pthread_mutex_unlock(recv_fds->buf_mutex);
 
 	    pthread_mutex_lock(&exit_mutex);
 	    if(progexit) {
@@ -406,9 +406,9 @@ static void *acceptloop_th(void *arg)
 		logg("^Nonblocking sockets not available!\n");
 #endif
 		logg("$Got new connection, FD %d\n", new_sd);
-		pthread_mutex_lock(&recv_fds->buf_mutex);
+		pthread_mutex_lock(recv_fds->buf_mutex);
 		ret = fds_add(recv_fds, new_sd, 0, commandtimeout);
-		pthread_mutex_unlock(&recv_fds->buf_mutex);
+		pthread_mutex_unlock(recv_fds->buf_mutex);
 
 		if (ret == -1) {
 		    logg("!fds_add failed\n");
@@ -443,7 +443,7 @@ static void *acceptloop_th(void *arg)
 	}
 	pthread_mutex_unlock(&exit_mutex);
     }
-    pthread_mutex_unlock(&fds->buf_mutex);
+    pthread_mutex_unlock(fds->buf_mutex);
 
     for (i=0;i < fds->nfds; i++) {
 	if (fds->buf[i].fd == -1)
@@ -699,7 +699,9 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	unsigned long long val;
 	size_t i, j, rr_last = 0;
 	pthread_t accept_th;
-	struct acceptdata acceptdata = ACCEPTDATA_INIT;
+	pthread_mutex_t fds_mutex = PTHREAD_MUTEX_INITIALIZER;
+	pthread_mutex_t recvfds_mutex = PTHREAD_MUTEX_INITIALIZER;
+	struct acceptdata acceptdata = ACCEPTDATA_INIT(&fds_mutex, &recvfds_mutex);
 	struct fd_data *fds = &acceptdata.recv_fds;
 	time_t start_time, current_time;
 	unsigned int selfchk;
@@ -1077,12 +1079,12 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     for(;;) {
 	int new_sd;
 	/* Block waiting for connection on any of the sockets */
-	pthread_mutex_lock(&fds->buf_mutex);
+	pthread_mutex_lock(fds->buf_mutex);
 	fds_cleanup(fds);
 	/* signal that we can accept more connections */
-	if (fds->nfds <= max_queue)
+	if (fds->nfds <= (unsigned)max_queue)
 	    pthread_cond_signal(&acceptdata.cond_nfds);
-	new_sd = fds_poll_recv(fds, selfchk ? selfchk : -1, 1);
+	new_sd = fds_poll_recv(fds, selfchk ? (int)selfchk : -1, 1);
 
 	if (!fds->nfds) {
 	    /* at least the dummy/sync pipe should have remained */
@@ -1090,7 +1092,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    pthread_mutex_lock(&exit_mutex);
 	    progexit = 1;
 	    pthread_mutex_unlock(&exit_mutex);
-	    pthread_mutex_unlock(&fds->buf_mutex);
+	    pthread_mutex_unlock(fds->buf_mutex);
 	    break;
 	}
 
@@ -1146,9 +1148,6 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		   buf->mode != MODE_WAITANCILL) {
 		client_conn_t conn;
 		const unsigned char *cmd = NULL;
-		size_t cmdlen = 0;
-		char term = '\n';
-		int oldstyle = 0;
 		int rc;
 		/* New data available to read on socket. */
 
@@ -1210,13 +1209,13 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		buf->fd = -1;
 	    }
 	}
-	pthread_mutex_unlock(&fds->buf_mutex);
+	pthread_mutex_unlock(fds->buf_mutex);
 
 	/* handle progexit */
 	pthread_mutex_lock(&exit_mutex);
 	if (progexit) {
 	    pthread_mutex_unlock(&exit_mutex);
-	    pthread_mutex_lock(&fds->buf_mutex);
+	    pthread_mutex_lock(fds->buf_mutex);
 	    for (i=0;i < fds->nfds; i++) {
 		if (fds->buf[i].fd == -1)
 		    continue;
@@ -1228,7 +1227,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 		    fds->buf[i].fd = -1;
 		}
 	    }
-	    pthread_mutex_unlock(&fds->buf_mutex);
+	    pthread_mutex_unlock(fds->buf_mutex);
 	    break;
 	}
 	pthread_mutex_unlock(&exit_mutex);

@@ -770,6 +770,8 @@ int thrmgr_group_finished(jobgroup_t *group, enum thrmgr_exit exitc)
     pthread_mutex_unlock(&group->mutex);
     if (ret) {
 	logg("$THRMGR: group_finished: freeing %p\n", group);
+	pthread_mutex_destroy(&group->mutex);
+	pthread_cond_destroy(&group->only);
 	free(group);
     }
     return ret;
@@ -805,16 +807,26 @@ void thrmgr_group_waitforall(jobgroup_t *group, unsigned *ok, unsigned *error, u
     }
 }
 
-#define JOBGROUP_INITIALIZER  { PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER, 1, 0, 0, 0, 0 };
 jobgroup_t *thrmgr_group_new(void)
 {
     jobgroup_t *group;
-    jobgroup_t dummy = JOBGROUP_INITIALIZER;
 
     group = malloc(sizeof(*group));
     if (!group)
 	return NULL;
-    memcpy(group, &dummy, sizeof(dummy));
+    group->jobs = 1;
+    group->exit_ok = group->exit_error = group->exit_total = group->force_exit = 0;
+    if (pthread_mutex_init(&group->mutex, NULL)) {
+	logg("^Failed to initialize group mutex");
+	free(group);
+	return NULL;
+    }
+    if (pthread_cond_init(&group->only, NULL)) {
+	logg("^Failed to initialize group cond");
+	pthread_mutex_destroy(&group->mutex);
+	free(group);
+	return NULL;
+    }
     logg("$THRMGR: new group: %p\n", group);
     return group;
 }

@@ -228,6 +228,8 @@ int command(client_conn_t *conn, int *virus)
 	    thrmgr_setactivetask(NULL, "MULTISCAN");
 	    type = TYPE_MULTISCAN;
 	    scandata.group = group = thrmgr_group_new();
+	    if (!group)
+		return CL_EMEM;
 	    break;
 	case COMMAND_MULTISCANFILE:
 	    thrmgr_setactivetask(NULL, "MULTISCANFILE");
