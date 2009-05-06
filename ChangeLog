@@ -1,3 +1,7 @@
+Wed May  6 10:37:51 CEST 2009 (tk)
+----------------------------------
+ * shared/getopt.[ch]: fix type conflict on Solaris (introduced in r5060)
+
 Wed May  6 10:55:25 EEST 2009 (edwin)
 -------------------------------------
  * unit_tests/efence_tests.sh: set EF_ALIGNMENT=8 for non-x86

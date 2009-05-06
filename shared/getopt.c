@@ -33,6 +33,7 @@ int optind=1, opterr=1, optopt=0;
 char *optarg=0;
 
 /* reset argument parser to start-up values */
+/*
 int getopt_reset(void)
 {
     optind = 1;
@@ -41,12 +42,13 @@ int getopt_reset(void)
     optarg = 0;
     return 0;
 }
+*/
 
 /* this is the plain old UNIX getopt, with GNU-style extensions. */
 /* if you're porting some piece of UNIX software, this is all you need. */
 /* this supports GNU-style permution and optional arguments */
 
-int getopt(int argc, char *argvc[], const char *opts)
+int my_getopt(int argc, char *argvc[], const char *opts)
 {
   char **argv = (char**)argvc;
   static int charind=0;
@@ -120,7 +122,7 @@ int getopt(int argc, char *argvc[], const char *opts)
       for(i=j=optind; i<argc; i++) if((argv[i][0] == '-') &&
                                         (argv[i][1] != '\0')) {
         optind=i;
-        opt=getopt(argc, argv, opts);
+        opt=my_getopt(argc, argv, opts);
         while(i > j) {
           tmp=argv[--i];
           for(k=i; k+1<optind; k++) argv[k]=argv[k+1];
@@ -132,7 +134,7 @@ int getopt(int argc, char *argvc[], const char *opts)
     }
   } else {
     charind++;
-    opt = getopt(argc, argv, opts);
+    opt = my_getopt(argc, argv, opts);
   }
   if (optind > argc) optind = argc;
   return opt;
@@ -143,7 +145,7 @@ int getopt(int argc, char *argvc[], const char *opts)
  * expecting GNU libc getopt call it.
  */
 
-int _getopt_internal(int argc, char * argv[], const char *shortopts,
+static int _getopt_internal(int argc, char * argv[], const char *shortopts,
                      const struct option *longopts, int *longind,
                      int long_only)
 {
@@ -192,7 +194,7 @@ int _getopt_internal(int argc, char * argv[], const char *shortopts,
       break;
     }
   } else if((!long_only) && (argv[optind][1] != '-'))
-    opt = getopt(argc, argv, shortopts);
+    opt = my_getopt(argc, argv, shortopts);
   else {
     int charind, offset;
     int found = 0, ind, hits = 0;
@@ -206,7 +208,7 @@ int _getopt_internal(int argc, char * argv[], const char *shortopts,
             ((c == 'W') && (shortopts[ind] == ';'))) &&
            (shortopts[++ind] == ':'))
           ind ++;
-        if(optopt == c) return getopt(argc, argv, shortopts);
+        if(optopt == c) return my_getopt(argc, argv, shortopts);
       }
     }
     offset = 2 - (argv[optind][1] != '-');
@@ -251,7 +253,7 @@ int _getopt_internal(int argc, char * argv[], const char *shortopts,
       }
       optind++;
     } else if(!hits) {
-      if(offset == 1) opt = getopt(argc, argv, shortopts);
+      if(offset == 1) opt = my_getopt(argc, argv, shortopts);
       else {
         opt = '?';
         if(opterr) fprintf(stderr,
@@ -269,13 +271,13 @@ int _getopt_internal(int argc, char * argv[], const char *shortopts,
   return opt;
 }
 
-int getopt_long(int argc, char * argv[], const char *shortopts,
+int my_getopt_long(int argc, char * argv[], const char *shortopts,
                 const struct option *longopts, int *longind)
 {
   return _getopt_internal(argc, argv, shortopts, longopts, longind, 0);
 }
 
-int getopt_long_only(int argc, char * argv[], const char *shortopts,
+int my_getopt_long_only(int argc, char * argv[], const char *shortopts,
                 const struct option *longopts, int *longind)
 {
   return _getopt_internal(argc, argv, shortopts, longopts, longind, 1);

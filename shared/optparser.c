@@ -766,7 +766,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 
 	} else {
 	    opt_index = 0;
-	    ret = getopt_long(argc, argv, shortopts, longopts, &opt_index);
+	    ret = my_getopt_long(argc, argv, shortopts, longopts, &opt_index);
 	    if(ret == -1)
 		break;
 
