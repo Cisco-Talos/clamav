@@ -102,7 +102,7 @@ How do I look in hex?
 	\item \verb+??+\\
 	Match any byte.
 	\item \verb+a?+\\
-	Match a high nibble (the four high bits). \textbf{IMPORTANT NOTE:}
+	Match a high nibble (the four high bits).\\ \textbf{IMPORTANT NOTE:}
 	The nibble matching is only available in libclamav with the
 	functionality level 17 and higher therefore please only use it with
 	.ndb signatures followed by ":17" (MinEngineFunctionalityLevel,
@@ -112,11 +112,13 @@ How do I look in hex?
 	\item \verb+*+\\
 	Match any number of bytes.
 	\item \verb+{n}+\\
-	Match n bytes.
+	Match $n$ bytes.
 	\item \verb+{-n}+\\
-	Match n or less bytes.
+	Match $n$ or less bytes.
 	\item \verb+{n-}+\\
-	Match n or more bytes.
+	Match $n$ or more bytes.
+	\item \verb+{n-m}+\\
+	Match between $n$ and $m$ bytes ($m > n$).
 	\item \verb+(aa|bb|cc|..)+\\
 	Match aa or bb or cc..
 	\item \verb+HEXSIG[x-y]aa+ or \verb+aa[x-y]HEXSIG+\\
@@ -149,13 +151,21 @@ MalwareName:TargetType:Offset:HexSignature[:MinEngineFunctionalityLevel:[Max]]
     the type of the target file:
     \begin{itemize}
 	\item 0 = any file
-	\item 1 = Portable Executable
-	\item 2 = OLE2 component (e.g. a VBA script)
-	\item 3 = HTML (normalised)
+	\item 1 = Portable Executable, both 32- and 64-bit.
+	\item 2 = file inside OLE2 container (e.g. image, embedded executable,
+	VBA script). The OLE2 format is primarily used by MS Office and MSI
+	installation files.
+	\item 3 = HTML (normalized: whitespace transformed to spaces, tags/tag
+	attributes normalized, all lowercase), Javascript is normalized too:
+	all strings are normalized (hex encoding is decoded), numbers are
+	parsed and normalized, local variables/function names are normalized
+	to 'n001' format, argument to eval() is parsed as JS again,
+	unescape() is handled, some simple JS packers are handled,
+	output is whitespace normalized.
 	\item 4 = Mail file
 	\item 5 = Graphics
 	\item 6 = ELF
-	\item 7 = ASCII text file (normalised)
+	\item 7 = ASCII text file (normalized)
     \end{itemize}
     And	\verb+Offset+ is an asterisk or a decimal number \verb+n+ possibly
     combined with a special modifier:
@@ -185,6 +195,72 @@ MalwareName:TargetType:Offset:HexSignature[:MinEngineFunctionalityLevel:[Max]]
 
     \noindent
     All signatures in the extended format must be placed inside \verb+*.ndb+ files.
+
+    \subsubsection{Logical signatures}\label{ndb}
+    Logical signatures allow combining of multiple signatures in extended
+    format using logical operators. They can provide both more detailed and
+    flexible pattern matching. The logical sigs are stored inside \verb+*.ldb+
+    files in the following format:
+    \begin{verbatim}
+SignatureName;TargetDescriptionBlock;LogicalExpression;Subsig0;
+Subsig1;Subsig2;...
+    \end{verbatim}
+    where:
+    \begin{itemize}
+	\item \verb+TargetDescriptionBlock+ provides information about the
+	engine and target file with comma separated \verb+Arg:Val+ pairs,
+	currently (as of 0.95.1) only \verb+Target:X+ and \verb+Engine:X-Y+
+	are supported.
+	\item \verb+LogicalExpression+ specifies the logical expression
+	describing the relationship between \verb+Subsig0...SubsigN+.\\
+	\textbf{Basis clause:} 0,1,...,N decimal indexes are SUB-EXPRESSIONS
+	representing \verb+Subsig0, Subsig1,...,SubsigN+ respectively.\\
+	\textbf{Inductive clause:} if \verb+A+ and \verb+B+ are
+	SUB-EXPRESSIONS and \verb+X, Y+ are decimal numbers then
+	\verb+(A&B)+, \verb+(A|B)+, \verb+A=X+, \verb+A=X,Y+, \verb+A>X+,
+	\verb+A>X,Y+, \verb+A<X+ and \verb+A<X,Y+ are SUB-EXPRESSIONS
+	\item \verb+SubsigN+ is n-th subsignature in extended format possibly
+	preceded with an offset. There can be specified up to 64 subsigs.
+    \end{itemize}
+    Modifiers for subexpressions:
+    \begin{itemize}
+	\item \verb+A=X+: If the SUB-EXPRESSION A refers to a single signature
+	then this signature must get matched exactly X times; if it refers to
+	a (logical) block of signatures then this block must generate exactly
+	X matches (with any of its sigs).
+	\item \verb+A=0+ specifies negation (signature or block of signatures
+	cannot be matched)
+	\item \verb+A=X,Y+: If the SUB-EXPRESSION A refers to a single signature
+	then this signature must be matched exactly X times; if it refers to
+	a (logical) block of signatures then this block must generate X matches
+	and at least Y different signatures must get matched.
+	\item \verb+A>X+: If the SUB-EXPRESSION A refers to a single signature
+	then this signature must get matched more than X times; if it refers to
+	a (logical) block of signatures then this block must generate more
+	than X matches (with any of its sigs).
+	\item \verb+A>X,Y+: If the SUB-EXPRESSION A refers to a single signature
+	then this signature must get matched more than X times; if it refers to
+	a (logical) block of signatures then this block must generate more than
+	X matches and at least Y different signatures must be matched.
+	\item \verb+A<X+ and \verb+A<X,Y+ as above with the change of "more"
+	to "less".
+    \end{itemize}
+    Examples:
+    \begin{verbatim}
+Sig1;Target:0;(0&1&2&3)&(4|1);6b6f74656b;616c61;7a6f6c77;7374656
+6616e;deadbeef
+
+Sig2;Target:0;((0|1|2)>5,2)&(3|1);6b6f74656b;616c61;7a6f6c77;737
+46566616e  
+
+Sig3;Target:0;((0|1|2|3)=2)&(4|1);6b6f74656b;616c61;7a6f6c77;737
+46566616e;deadbeef
+
+Sig4;Target:1,Engine:18-20;((0|1)&(2|3))&4;EP+123:33c06834f04100
+f2aef7d14951684cf04100e8110a00;S2+78:22??232c2d252229{-15}6e6573
+(63|64)61706528;S+50:68efa311c3b9963cb1ee8e586d32aeb9043e;f9c58d
+cf43987e4f519d629b103375;SL+550:6300680065005c0046006900
+    \end{verbatim}
 
     \subsection{Signatures based on archive metadata}
     Signatures based on metadata inside archive files can provide an effective
@@ -260,7 +336,7 @@ db_name:line_number:signature_name
     HTML exploits. Running \verb+sigtool --html-normalise+ on a HTML file
     should generate the following files:
     \begin{itemize}
-	\item nocomment.html - the file is normalised, lower-case, with all
+	\item nocomment.html - the file is normalized, lower-case, with all
 	comments and superflous white space removed
 	\item notags.html - as above but with all HTML tags removed
     \end{itemize}
@@ -270,10 +346,10 @@ db_name:line_number:signature_name
     be set to 3.
 
     \subsection{Text files}
-    Similarly to HTML all ASCII text files get normalised (converted
+    Similarly to HTML all ASCII text files get normalized (converted
     to lower-case, all superflous white space and control characters removed,
     etc.) before scanning. Use \verb+clamscan --leave-temps+ to obtain
-    a normalised file then create a signature with the target type 7.
+    a normalized file then create a signature with the target type 7.
 
     \subsection{Compressed Portable Executable files}
     If the file is compressed with UPX, FSG, Petite or other PE packer

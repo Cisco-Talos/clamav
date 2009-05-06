@@ -1,3 +1,8 @@
+Wed May  6 15:43:27 CEST 2009 (tk)
+----------------------------------
+ * docs/signatures.pdf: describe logical signatures;
+			other minor improvements (bb#1582)
+
 Wed May  6 14:30:51 EEST 2009 (edwin)
 -------------------------------------
  * configure, configure.in: add -fno-strict-aliasing, so that
