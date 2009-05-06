@@ -14762,7 +14762,10 @@ $as_echo "$as_me: error: gcc 4.1.0 is known to incorrectly compile upx.c. Upgrad
 				{ $as_echo "$as_me:$LINENO: result: ok (${gcc_version})" >&5
 $as_echo "ok (${gcc_version})" >&6; }
 				;;
-	esac
+		esac
+		# bb #1581 - temporarely add -fno-strict-aliasing so gcc 4.4.0
+		# works correctly
+		CFLAGS="$CFLAGS -fno-strict-aliasing"
 	fi
 else
 	CFLAGS="$CFLAGS -O0"

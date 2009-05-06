@@ -1,3 +1,8 @@
+Wed May  6 14:30:51 EEST 2009 (edwin)
+-------------------------------------
+ * configure, configure.in: add -fno-strict-aliasing, so that
+ gcc-4.4.0 works correctly. Code will be fixed for 0.96. (bb #1581).
+
 Wed May  6 10:37:51 CEST 2009 (tk)
 ----------------------------------
  * shared/getopt.[ch]: fix type conflict on Solaris (introduced in r5060)
