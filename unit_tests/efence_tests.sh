@@ -11,6 +11,9 @@ if test -z "$LIBEFENCE"; then
 fi
 test -f "$LIBEFENCE" || { echo "*** electric-fence not found, skipping test"; exit 77;}
 
+# use the default EF_ALIGNMENT only for x86/x86_64, and set it to 8 for other
+# platforms. ia64 needs this for example.
+(../libtool --config | grep host=x86) || { EF_ALIGNMENT=8; export EF_ALIGNMENT; }
 EF_DISABLE_BANNER=1
 EF_FREE_WIPES=1
 LIBPRELOAD="$LIBEFENCE"
