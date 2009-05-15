@@ -34,6 +34,7 @@
 #include "clamav.h"
 #include "dconf.h"
 #include "libclamunrar_iface/unrar_iface.h"
+#include "regex/regex.h"
 
 /*
  * CL_FLEVEL is the signature f-level specific to the current code and
@@ -382,6 +383,7 @@ const char* cli_ctime(const time_t *timep, char *buf, const size_t bufsize);
 int cli_checklimits(const char *, cli_ctx *, unsigned long, unsigned long, unsigned long);
 int cli_updatelimits(cli_ctx *, unsigned long);
 unsigned long cli_getsizelimit(cli_ctx *, unsigned long);
+int cli_regcomp(regex_t *preg, const char *pattern, int cflags);
 int cli_matchregex(const char *str, const char *regex);
 
 /* symlink behaviour */

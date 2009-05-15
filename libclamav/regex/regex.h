@@ -93,7 +93,7 @@ typedef struct {
 #define	REG_LARGE	01000	/* force large representation */
 #define	REG_BACKR	02000	/* force use of backref code */
 
-int	cli_regcomp(regex_t *, const char *, int);
+int	cli_regcomp_real(regex_t *, const char *, int);
 size_t	cli_regerror(int, const regex_t *, char *, size_t);
 int	cli_regexec(const regex_t *, const char *, size_t, regmatch_t [], int);
 void	cli_regfree(regex_t *);

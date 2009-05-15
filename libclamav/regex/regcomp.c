@@ -151,10 +151,10 @@ static int never = 0;		/* for use in asserts; shuts lint up */
 #endif
 
 /*
- - cli_regcomp - interface for parser and compilation
+ - cli_regcomp_real - interface for parser and compilation
  */
 int				/* 0 success, otherwise REG_something */
-cli_regcomp(regex_t *preg, const char *pattern, int cflags)
+cli_regcomp_real(regex_t *preg, const char *pattern, int cflags)
 {
 	struct parse pa;
 	struct re_guts *g;

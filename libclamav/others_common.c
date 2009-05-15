@@ -820,3 +820,12 @@ int cli_gentempfd(const char *dir, char **name, int *fd)
 
     return CL_SUCCESS;
 }
+
+int cli_regcomp(regex_t *preg, const char *pattern, int cflags)
+{
+    if (!strncmp(pattern, "(?i)", 4)) {
+	pattern += 4;
+	cflags |= REG_ICASE;
+    }
+    return cli_regcomp_real(preg, pattern, cflags);
+}

@@ -1,3 +1,11 @@
+Fri May 15 14:29:19 EEST 2009 (edwin)
+-------------------------------------
+ * libclamav/others.h, libclamav/others_common.c,
+ libclamav/regex/regcomp.c, libclamav/regex/regex.h,
+ unit_tests/check_regex.c: add support for (?i). Now regular
+ expressions that begin with (?i) will be case insensitive. (bb
+ #1584).
+
 Wed May  6 15:43:27 CEST 2009 (tk)
 ----------------------------------
  * docs/signatures.pdf: describe logical signatures;

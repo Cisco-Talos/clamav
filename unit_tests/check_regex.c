@@ -464,6 +464,30 @@ START_TEST (test_url_canon)
     fail_unless_fmt(!strcmp(u->path, path), "path incorrect: %s\n", path);
 }
 END_TEST
+
+static struct regex_test {
+    const char *regex;
+    const char *text;
+    int match;
+} rg[] = {
+    {"\\.exe$", "test.exe", 1},
+    {"\\.exe$", "test.eXe", 0},
+    {"(?i)\\.exe$", "test.exe", 1},
+    {"(?i)\\.exe$", "test.eXe", 1}
+};
+
+START_TEST (test_regexes)
+{
+    regex_t reg;
+    struct regex_test *tst = &rg[_i];
+    int match;
+
+    fail_unless(cli_regcomp(&reg, tst->regex, REG_EXTENDED | REG_NOSUB) == 0, "cli_regcomp");
+    match = (cli_regexec(&reg, tst->text, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
+    fail_unless_fmt(match == tst->match, "cli_regexec failed for %s and %s\n", tst->regex, tst->text);
+    cli_regfree(&reg);
+}
+END_TEST
 #endif
 
 START_TEST(phishing_fake_test)
@@ -490,7 +514,7 @@ END_TEST
 Suite *test_regex_suite(void)
 {
 	Suite *s = suite_create("regex");
-	TCase *tc_api, *tc_matching, *tc_phish, *tc_phish2;
+	TCase *tc_api, *tc_matching, *tc_phish, *tc_phish2, *tc_regex;
 
 	tc_api = tcase_create("cli_regex2suffix");
 	suite_add_tcase(s, tc_api);
@@ -525,6 +549,11 @@ Suite *test_regex_suite(void)
 	tcase_add_loop_test(tc_phish, test_url_canon, 0, sizeof(uc)/sizeof(uc[0]));
 #endif
 
+	tc_regex = tcase_create("cli_regcomp/execute");
+	suite_add_tcase(s, tc_regex);
+#ifdef CHECK_HAVE_LOOPS
+	tcase_add_loop_test(tc_regex, test_regexes, 0, sizeof(rg)/sizeof(rg[0]));
+#endif
 	return s;
 }
 
