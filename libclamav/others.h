@@ -383,7 +383,6 @@ const char* cli_ctime(const time_t *timep, char *buf, const size_t bufsize);
 int cli_checklimits(const char *, cli_ctx *, unsigned long, unsigned long, unsigned long);
 int cli_updatelimits(cli_ctx *, unsigned long);
 unsigned long cli_getsizelimit(cli_ctx *, unsigned long);
-int cli_regcomp(regex_t *preg, const char *pattern, int cflags);
 int cli_matchregex(const char *str, const char *regex);
 
 /* symlink behaviour */

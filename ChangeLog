@@ -1,3 +1,7 @@
+Fri May 15 15:10:59 EEST 2009 (edwin)
+-------------------------------------
+ * libclamav/others.h, libclamav/regex/regex.h: fix compiler warning
+
 Fri May 15 14:29:19 EEST 2009 (edwin)
 -------------------------------------
  * libclamav/others.h, libclamav/others_common.c,
