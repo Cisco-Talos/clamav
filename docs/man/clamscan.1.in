@@ -42,6 +42,9 @@ Create temporary files in DIRECTORY. Directory must be writable for the '@CLAMAV
 \fB\-\-leave\-temps\fR
 Do not remove temporary files.
 .TP 
+\fB\-f FILE, \-\-file\-list=FILE\fR
+Scan files listed line by line in FILE.
+.TP 
 \fB\-r, \-\-recursive\fR
 Scan directories recursively. All the subdirectories in the given directory will be scanned.
 .TP 

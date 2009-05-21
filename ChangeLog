@@ -1,3 +1,7 @@
+Thu May 21 15:41:36 CEST 2009 (tk)
+----------------------------------
+ * clamscan, clamdscan: add support for --file-list/-f
+
 Fri May 15 15:10:59 EEST 2009 (edwin)
 -------------------------------------
  * libclamav/others.h, libclamav/regex/regex.h: fix compiler warning

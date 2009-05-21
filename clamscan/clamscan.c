@@ -238,6 +238,7 @@ void help(void)
     mprintf("                                         all supported db files from DIR\n");
     mprintf("    --log=FILE            -l FILE        Save scan report to FILE\n");
     mprintf("    --recursive[=yes/no(*)]  -r          Scan subdirectories recursively\n");
+    mprintf("    --file-list=FILE      -f FILE        Scan files from FILE\n");
     mprintf("    --remove[=yes/no(*)]                 Remove infected files. Be careful!\n");
     mprintf("    --move=DIRECTORY                     Move infected files into DIRECTORY\n");
     mprintf("    --copy=DIRECTORY                     Copy infected files into DIRECTORY\n");

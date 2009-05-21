@@ -215,13 +215,14 @@ int client(const struct optstruct *opts, int *infected)
 	const char *clamd_conf = optget(opts, "config-file")->strarg;
 	struct optstruct *clamdopts;
 	int remote, scantype, session = 0, errors = 0, scandash = 0, maxrec, flags = 0;
+	const char *fname;
 
     if((clamdopts = optparse(clamd_conf, 0, NULL, 1, OPT_CLAMD, 0, NULL)) == NULL) {
 	logg("!Can't parse clamd configuration file %s\n", clamd_conf);
 	return 2;
     }
 
-    scandash = (opts->filename && opts->filename[0] && !strcmp(opts->filename[0], "-") && !opts->filename[1]);
+    scandash = (opts->filename && opts->filename[0] && !strcmp(opts->filename[0], "-") && !optget(opts, "file-list")->enabled && !opts->filename[1]);
     remote = isremote(opts) | optget(opts, "stream")->enabled;
 #ifdef HAVE_FD_PASSING
     if(!remote && optget(clamdopts, "LocalSocket")->enabled && (optget(opts, "fdpass")->enabled || scandash)) {
@@ -261,14 +262,16 @@ int client(const struct optstruct *opts, int *infected)
 	else
 	    errors = 1;
 	if(sockd >= 0) close(sockd);
-    } else if(opts->filename) {
-	unsigned int i;
-	for (i = 0; !errors && opts->filename[i]; i++) {
-	    if(!strcmp(opts->filename[i], "-")) {
+    } else if(opts->filename || optget(opts, "file-list")->enabled) {
+	if(opts->filename && optget(opts, "file-list")->enabled)
+	    logg("^Only scanning files from --file-list (files passed at cmdline are ignored)\n");
+
+	while(!errors && (fname = filelist(opts, NULL))) {
+	    if(!strcmp(fname, "-")) {
 		logg("!Scanning from standard input requires \"-\" to be the only file argument\n");
 		continue;
 	    }
-	    errors = client_scan(opts->filename[i], scantype, infected, maxrec, session, flags);
+	    errors = client_scan(fname, scantype, infected, maxrec, session, flags);
 	}
     } else {
 	errors = client_scan("", scantype, infected, maxrec, session, flags);

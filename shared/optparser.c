@@ -85,6 +85,7 @@ const struct clam_option clam_options[] = {
     { NULL, "recursive", 'r', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
     { NULL, "bell", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN, "", "" },
     { NULL, "no-summary", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN, "", "" },
+    { NULL, "file-list", 'f', TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN, "", "" },
     { NULL, "infected", 'i', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN, "", "" },
     { NULL, "move", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN, "", "" },
     { NULL, "copy", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_CLAMSCAN | OPT_CLAMDSCAN, "", "" },

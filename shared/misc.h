@@ -46,6 +46,7 @@ typedef unsigned        int     in_addr_t;
 
 char *freshdbdir(void);
 void print_version(const char *dbdir);
+const char *filelist(const struct optstruct *opts, int *err);
 int filecopy(const char *src, const char *dest);
 int daemonize(void);
 const char *get_version(void);

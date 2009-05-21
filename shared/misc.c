@@ -159,6 +159,45 @@ void print_version(const char *dbdir)
 }
 #endif
 
+const char *filelist(const struct optstruct *opts, int *err)
+{
+	static char buff[1025];
+	static unsigned int cnt = 0;
+	const struct optstruct *opt;
+	static FILE *fs = NULL;
+	size_t len;
+
+    if(!cnt && (opt = optget(opts, "file-list"))->enabled) {
+	if(!fs) {
+	    fs = fopen(opt->strarg, "r");
+	    if(!fs) {
+		fprintf(stderr, "ERROR: --file-list: Can't open file %s\n", opt->strarg);
+		if(err)
+		    *err = 54;
+		return NULL;
+	    }
+	}
+
+	if(fgets(buff, 1024, fs)) {
+	    buff[1024] = 0;
+	    len = strlen(buff);
+	    if(!len) {
+		fclose(fs);
+		return NULL;
+	    }
+	    len--;
+	    while(len && ((buff[len] == '\n') || (buff[len] == '\r')))
+		buff[len--] = '\0';
+	    return buff;
+	} else {
+	    fclose(fs);
+	    return NULL;
+	}
+    }
+
+    return opts->filename ? opts->filename[cnt++] : NULL;
+}
+
 int filecopy(const char *src, const char *dest)
 {
 #ifdef C_DARWIN

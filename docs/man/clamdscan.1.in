@@ -33,6 +33,9 @@ Read clamd settings from FILE.
 \fB\-l FILE, \-\-log=FILE\fR
 Save the scan report to FILE.
 .TP 
+\fB\-f FILE, \-\-file\-list=FILE\fR
+Scan files listed line by line in FILE.
+.TP 
 \fB\-m, \-\-multiscan\fR
 In multiscan mode several files are scanned in parallel, one for each available scan thread in clamd.
 This is achieved either via MULTISCAN or IDSESSION requests, depending on the configuration and other options.

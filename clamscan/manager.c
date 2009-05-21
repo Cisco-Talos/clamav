@@ -238,7 +238,6 @@ static int scandirs(const char *dirname, struct cl_engine *engine, const struct 
 		    }
 		    free(fname);
 		}
-
 	    }
 	}
     } else {
@@ -328,11 +327,12 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
 int scanmanager(const struct optstruct *opts)
 {
 	mode_t fmode;
-	int ret = 0, fmodeint, i, x;
+	int ret = 0, fmodeint, i;
 	unsigned int options = 0, dboptions = 0;
 	struct cl_engine *engine;
 	struct stat sb;
 	char *file, cwd[1024], *pua_cats = NULL;
+	const char *filename;
 	const struct optstruct *opt;
 #ifndef C_WINDOWS
 	struct rlimit rlim;
@@ -588,7 +588,7 @@ int scanmanager(const struct optstruct *opts)
 #endif
 
     /* check filetype */
-    if(opts->filename == NULL) {
+    if(!opts->filename && !optget(opts, "file-list")->enabled) {
 	/* we need full path for some reasons (eg. archive handling) */
 	if(!getcwd(cwd, sizeof(cwd))) {
 	    logg("!Can't get absolute pathname of current working directory\n");
@@ -596,11 +596,14 @@ int scanmanager(const struct optstruct *opts)
 	} else
 	    ret = scandirs(cwd, engine, opts, options, 1);
 
-    } else if(!strcmp(opts->filename[0], "-")) { /* read data from stdin */
+    } else if(opts->filename && !optget(opts, "file-list")->enabled && !strcmp(opts->filename[0], "-")) { /* read data from stdin */
 	ret = scanstdin(engine, opts, options);
 
     } else {
-	for (x = 0; opts->filename[x] && (file = strdup(opts->filename[x])); x++) {
+	if(opts->filename && optget(opts, "file-list")->enabled)
+	    logg("^Only scanning files from --file-list (files passed at cmdline are ignored)\n");
+
+	while((filename = filelist(opts, &ret)) && (file = strdup(filename))) {
 	    if((fmodeint = fileinfo(file, 2)) == -1) {
 		logg("^Can't access file %s\n", file);
 		perror(file);
