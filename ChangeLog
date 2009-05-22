@@ -1,3 +1,7 @@
+Fri May 22 14:09:23 CEST 2009 (tk)
+----------------------------------
+ * libclamav/readdb.c: add offset checks (bb#1615)
+
 Thu May 21 15:41:36 CEST 2009 (tk)
 ----------------------------------
  * clamscan, clamdscan: add support for --file-list/-f

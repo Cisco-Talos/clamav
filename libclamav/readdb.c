@@ -517,6 +517,27 @@ static int cli_loadpdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     return CL_SUCCESS;
 }
 
+static int cli_checkoffset(const char *offset, unsigned int type)
+{
+	unsigned int foo;
+	const char *pt = offset;
+
+    if(isdigit(*offset)) {
+	while(*pt++)
+	    if(!strchr("0123456789,", *pt))
+		return 1;
+	return 0;
+    }
+
+    if(!strncmp(offset, "EOF-", 4))
+	return 0;
+
+    if((type == 1 || type == 6) && (!strncmp(offset, "EP+", 3) || !strncmp(offset, "EP-", 3) || (sscanf(offset, "SL+%u", &foo) == 1) || (sscanf(offset, "S%u+%u", &foo, &foo) == 2)))
+	return 0;
+
+    return 1;
+}
+
 #define NDB_TOKENS 6
 static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned short sdb, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
@@ -601,6 +622,12 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	offset = tokens[2];
 	if(!strcmp(offset, "*"))
 	    offset = NULL;
+
+	if(offset && cli_checkoffset(offset, target)) {
+	    cli_errmsg("Incorrect offset '%s' for signature type-%u\n", offset, target);
+	    ret = CL_EMALFDB;
+	    break;
+	}
 
 	sig = tokens[3];
 
@@ -935,6 +962,12 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    } else {
 		offset = NULL;
 		sig = tokens[3 + i];
+	    }
+
+	    if(offset && cli_checkoffset(offset, tdb.target[0])) {
+		cli_errmsg("Incorrect offset '%s' in subsignature id %u for signature type-%u\n", offset, i, tdb.target[0]);
+		ret = CL_EMALFDB;
+		break;
 	    }
 
 	    if((ret = cli_parse_add(root, virname, sig, 0, 0, offset, target, lsigid, options))) {
