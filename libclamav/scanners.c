@@ -1637,7 +1637,6 @@ static int cli_scanembpe(int desc, cli_ctx *ctx)
 	char buff[512];
 	char *tmpname;
 
-
     tmpname = cli_gentemp(ctx->engine->tmpdir);
     if(!tmpname)
 	return CL_EMEM;
@@ -1704,6 +1703,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg,
 	uint32_t lastzip, lastrar;
 	struct cli_exe_info peinfo;
 	unsigned int acmode = AC_SCAN_VIR, break_loop = 0;
+	struct stat sb;
 
 
     if(typercg) switch(type) {
@@ -1790,12 +1790,14 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg,
 
 		    case CL_TYPE_MSEXE:
 			if(SCAN_PE && ctx->dconf->pe && fpt->offset) {
-			    cli_dbgmsg("PE signature found at %u\n", (unsigned int) fpt->offset);
+			    fstat(desc, &sb);
+			    if(sb.st_size > 10485760)
+				break;
 			    memset(&peinfo, 0, sizeof(struct cli_exe_info));
 			    peinfo.offset = fpt->offset;
 			    lseek(desc, fpt->offset, SEEK_SET);
 			    if(cli_peheader(desc, &peinfo) == 0) {
-				cli_dbgmsg("*** Detected embedded PE file ***\n");
+				cli_dbgmsg("*** Detected embedded PE file at %u ***\n", (unsigned int) fpt->offset);
 				if(peinfo.section)
 				    free(peinfo.section);
 
