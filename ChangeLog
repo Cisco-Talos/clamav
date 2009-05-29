@@ -1,3 +1,7 @@
+Fri May 29 14:37:08 EEST 2009 (edwin)
+-------------------------------------
+ * clamdtop/clamdtop.c: Add missing #include, fixed bb #1619.
+
 Wed May 27 18:32:33 CEST 2009 (tk)
 ----------------------------------
  * libclamav/scanners.c: don't call cli_scanembpe() for files larger than 10MB
