@@ -110,7 +110,7 @@ int notify(const char *cfgfile)
 	hints.ai_family = AF_INET;
 #endif
 	hints.ai_socktype = SOCK_STREAM;
-	snprintf(port, 5, "%d", (unsigned int) opt->numarg);
+	snprintf(port, 5, "%u", (unsigned int) opt->numarg);
 	port[5] = 0;
 
 	if((opt = optget(opts, "TCPAddr"))->enabled)
