@@ -61,6 +61,7 @@ struct cab_file {
     struct cab_file *next;
     struct cab_archive *cab;
     uint16_t attribs;
+    uint64_t max_size, written_size;
 };
 
 struct cab_folder {

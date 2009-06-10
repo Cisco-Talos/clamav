@@ -4826,7 +4826,8 @@ getline_from_mbox(char *buffer, size_t len, FILE *fin)
 
 		switch(c) {
 			default:
-				*buffer++ = (char)c;
+				*buffer = (char)c;
+				buffer += (c != 0);
 				continue;
 			case '\n':
 				*buffer++ = '\n';

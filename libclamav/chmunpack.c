@@ -49,6 +49,7 @@
 #include "mspack.h"
 #include "cltypes.h"
 #include "chmunpack.h"
+#include "cab.h"
 
 #ifndef HAVE_ATTRIB_PACKED
 #define __attribute__(x)
@@ -682,7 +683,7 @@ static int read_sys_reset_table(int fd, chm_metadata_t *metadata, lzx_reset_tabl
 /* This section interfaces to the mspack files. As such, this is a */
 /* little bit dirty compared to my usual code */
 
-static int chm_decompress_stream(int fd, chm_metadata_t *metadata, const char *dirname)
+static int chm_decompress_stream(int fd, chm_metadata_t *metadata, const char *dirname, cli_ctx *ctx)
 {
 	lzx_content_t lzx_content;
 	lzx_reset_table_t lzx_reset_table;
@@ -690,6 +691,7 @@ static int chm_decompress_stream(int fd, chm_metadata_t *metadata, const char *d
 	int window_bits, length, tmpfd, retval=-1;
 	struct lzx_stream * stream;
 	char filename[1024];
+	struct cab_file file;
 	
 	snprintf(filename, 1024, "%s/clamav-unchm.bin", dirname);
 	tmpfd = open(filename, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
@@ -753,10 +755,12 @@ static int chm_decompress_stream(int fd, chm_metadata_t *metadata, const char *d
 	if ((uint64_t) lseek(fd, lzx_content.offset, SEEK_SET) != lzx_content.offset) {
 		goto abort;
 	}
-	
+
+	memset(&file, 0, sizeof(struct cab_file));
+	file.max_size = ctx->engine->maxfilesize;
 	stream = lzx_init(fd, tmpfd, window_bits,
 			lzx_control.reset_interval / LZX_FRAME_SIZE,
-			4096, length, NULL, NULL);
+			4096, length, &file, NULL);
 	if (!stream) {
 		cli_dbgmsg("lzx_init failed\n");
 		goto abort;
@@ -811,9 +815,10 @@ void cli_chm_close(chm_metadata_t *metadata)
 #endif
 }
 
-int cli_chm_extract_file(int fd, char *dirname, chm_metadata_t *metadata)
+int cli_chm_extract_file(int fd, char *dirname, chm_metadata_t *metadata, cli_ctx *ctx)
 {
 	char filename[1024];
+	uint64_t len;
 
 	cli_dbgmsg("in cli_chm_extract_file\n");
 	
@@ -826,8 +831,9 @@ int cli_chm_extract_file(int fd, char *dirname, chm_metadata_t *metadata)
 	if (metadata->ofd < 0) {
 		return CL_ECREAT;
 	}
-	if (chm_copy_file_data(metadata->ufd, metadata->ofd, metadata->file_length) != metadata->file_length) {
-		cli_dbgmsg("failed to copy %lu bytes\n", (unsigned long int) metadata->file_length);
+	len = ctx->engine->maxfilesize ? (MIN(ctx->engine->maxfilesize, metadata->file_length)) : metadata->file_length;
+	if (chm_copy_file_data(metadata->ufd, metadata->ofd, len) != len) {
+		cli_dbgmsg("failed to copy %lu bytes\n", (unsigned long int) len);
 		close(metadata->ofd);
 		return CL_EFORMAT; /* most likely a corrupted file */
 	}
@@ -857,7 +863,7 @@ int cli_chm_prepare_file(int fd, char *dirname, chm_metadata_t *metadata)
 	return retval;
 }
 
-int cli_chm_open(int fd, const char *dirname, chm_metadata_t *metadata)
+int cli_chm_open(int fd, const char *dirname, chm_metadata_t *metadata, cli_ctx *ctx)
 {
 	struct stat statbuf;
 	int retval;
@@ -926,7 +932,7 @@ int cli_chm_open(int fd, const char *dirname, chm_metadata_t *metadata)
 		goto abort;
 	}
 	
-	metadata->ufd = chm_decompress_stream(fd, metadata, dirname);
+	metadata->ufd = chm_decompress_stream(fd, metadata, dirname, ctx);
 	if (metadata->ufd == -1) {
 		goto abort;
 	}

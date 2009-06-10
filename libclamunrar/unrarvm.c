@@ -352,7 +352,7 @@ static void execute_standard_filter(rarvm_data_t *rarvm_data, rarvm_standard_fil
 		data_size = rarvm_data->R[4];
 		file_offset = rarvm_data->R[6];
 
-		if ((data_size >= VM_GLOBALMEMADDR) || (data_size < 4)) {
+		if (((unsigned int)data_size >= VM_GLOBALMEMADDR) || (data_size < 4)) {
 			break;
 		}
 
@@ -382,7 +382,7 @@ static void execute_standard_filter(rarvm_data_t *rarvm_data, rarvm_standard_fil
 		data_size = rarvm_data->R[4];
 		file_offset = rarvm_data->R[6];
 		
-		if ((data_size >= VM_GLOBALMEMADDR) || (data_size < 21)) {
+		if (((unsigned int)data_size >= VM_GLOBALMEMADDR) || (data_size < 21)) {
 			break;
 		}
 		
@@ -425,7 +425,7 @@ static void execute_standard_filter(rarvm_data_t *rarvm_data, rarvm_standard_fil
 		border = data_size*2;
 		
 		SET_VALUE(FALSE, &rarvm_data->mem[VM_GLOBALMEMADDR+0x20], data_size);
-		if (data_size >= VM_GLOBALMEMADDR/2) {
+		if ((unsigned int)data_size >= VM_GLOBALMEMADDR/2) {
 			break;
 		}
 		for (cur_channel=0 ; cur_channel < channels ; cur_channel++) {
@@ -444,7 +444,7 @@ static void execute_standard_filter(rarvm_data_t *rarvm_data, rarvm_standard_fil
 		dest_data = src_data + data_size;
 		
 		SET_VALUE(FALSE, &rarvm_data->mem[VM_GLOBALMEMADDR+0x20], data_size);
-		if (data_size >= VM_GLOBALMEMADDR/2) {
+		if ((unsigned int)data_size >= VM_GLOBALMEMADDR/2) {
 			break;
 		}
 		for (cur_channel=0 ; cur_channel < channels; cur_channel++) {
@@ -488,7 +488,7 @@ static void execute_standard_filter(rarvm_data_t *rarvm_data, rarvm_standard_fil
 		dest_data = src_data + data_size;
 		
 		SET_VALUE(FALSE, &rarvm_data->mem[VM_GLOBALMEMADDR+0x20], data_size);
-		if (data_size >= VM_GLOBALMEMADDR/2) {
+		if ((unsigned int)data_size >= VM_GLOBALMEMADDR/2) {
 			break;
 		}
 		for (cur_channel=0 ; cur_channel < channels ; cur_channel++) {
@@ -549,7 +549,7 @@ static void execute_standard_filter(rarvm_data_t *rarvm_data, rarvm_standard_fil
 		data_size = rarvm_data->R[4];
 		src_pos = 0;
 		dest_pos = data_size;
-		if (data_size >= VM_GLOBALMEMADDR/2) {
+		if ((unsigned int)data_size >= VM_GLOBALMEMADDR/2) {
 			break;
 		}
 		while (src_pos < data_size) {

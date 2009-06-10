@@ -553,7 +553,7 @@ static int cab_unstore(struct cab_file *file, int bytes)
 	return CL_EFORMAT;
     }
 
-    todo = bytes;
+    todo = MIN((unsigned int) bytes, file->max_size);
 
     while(1) {
 

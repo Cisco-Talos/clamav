@@ -711,19 +711,30 @@ static int cli_scanmscab(int desc, cli_ctx *ctx, off_t sfx_offset)
     for(file = cab.files; file; file = file->next) {
 	files++;
 
-	if(cli_checklimits("CAB", ctx, file->length, 0, 0)!=CL_CLEAN)
-	    continue;
-
 	if(!(tempname = cli_gentemp(ctx->engine->tmpdir))) {
 	    ret = CL_EMEM;
 	    break;
 	}
-	cli_dbgmsg("CAB: Extracting file %s to %s, size %u\n", file->name, tempname, file->length);
-	if((ret = cab_extract(file, tempname)))
-	    cli_dbgmsg("CAB: Failed to extract file: %s\n", cl_strerror(ret));
-	else
-	    ret = cli_scanfile(tempname, ctx);
 
+	if(ctx->engine->maxscansize && ctx->scansize >= ctx->engine->maxscansize) {
+	    ret = CL_CLEAN;
+	    break;
+	}
+	if(ctx->engine->maxscansize && ctx->scansize + ctx->engine->maxfilesize >= ctx->engine->maxscansize)
+	    file->max_size = ctx->engine->maxscansize - ctx->scansize;
+	else
+	    file->max_size = ctx->engine->maxfilesize;
+
+	cli_dbgmsg("CAB: Extracting file %s to %s, size %u, max_size: %u\n", file->name, tempname, file->length, (unsigned int) file->max_size);
+	file->written_size = 0;
+	if((ret = cab_extract(file, tempname))) {
+	    cli_dbgmsg("CAB: Failed to extract file: %s\n", cl_strerror(ret));
+	} else {
+	    if(file->length != file->written_size)
+		cli_dbgmsg("CAB: Length from header %u but wrote %u bytes\n", (unsigned int) file->length, (unsigned int) file->written_size);
+
+	    ret = cli_scanfile(tempname, ctx);
+	}
 	if(!ctx->engine->keeptmp) {
 	    if (cli_unlink(tempname)) {
 	    	free(tempname);
@@ -1268,7 +1279,7 @@ static int cli_scanmschm(int desc, cli_ctx *ctx)
 	return CL_ETMPDIR;
     }
 
-    ret = cli_chm_open(desc, dir, &metadata);
+    ret = cli_chm_open(desc, dir, &metadata, ctx);
     if (ret != CL_SUCCESS) {
 	if(!ctx->engine->keeptmp)
 	    cli_rmdirs(dir);
@@ -1282,7 +1293,7 @@ static int cli_scanmschm(int desc, cli_ctx *ctx)
 	if (ret != CL_SUCCESS) {
 	   break;
 	}
-	ret = cli_chm_extract_file(desc, dir, &metadata);
+	ret = cli_chm_extract_file(desc, dir, &metadata, ctx);
 	if (ret == CL_SUCCESS) {
 	    lseek(metadata.ofd, 0, SEEK_SET);
 	    rc = cli_magic_scandesc(metadata.ofd, ctx);
@@ -1706,15 +1717,11 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg,
 	struct stat sb;
 
 
-    if(typercg) switch(type) {
-	case CL_TYPE_TEXT_ASCII:
-	case CL_TYPE_MSEXE:
-	case CL_TYPE_ZIP:
-	case CL_TYPE_MSOLE2:
-	    acmode |= AC_SCAN_FT;
-	default:
-	    break;
-    }
+    if(ctx->engine->maxreclevel && ctx->recursion >= ctx->engine->maxreclevel)
+        return CL_EMAXREC;
+
+    if(typercg)
+	acmode |= AC_SCAN_FT;
 
     if(lseek(desc, 0, SEEK_SET) < 0) {
 	cli_errmsg("cli_scanraw: lseek() failed\n");
@@ -1724,6 +1731,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg,
     ret = cli_scandesc(desc, ctx, type == CL_TYPE_TEXT_ASCII ? 0 : type, 0, &ftoffset, acmode);
 
     if(ret >= CL_TYPENO) {
+	ctx->recursion++;
 
 /*
 	if(type == CL_TYPE_TEXT_ASCII) {
@@ -1735,33 +1743,34 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg,
 	}
 */
 
-	if(nret != CL_VIRUS && (type == CL_TYPE_MSEXE || type == CL_TYPE_ZIP || type == CL_TYPE_MSOLE2)) {
+	if(nret != CL_VIRUS) {
 	    lastzip = lastrar = 0xdeadbeef;
 	    fpt = ftoffset;
 	    while(fpt) {
-		switch(fpt->type) {
+		if(fpt->offset) switch(fpt->type) {
 		    case CL_TYPE_RARSFX:
-			if(have_rar && SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_RAR)) {
-			    cli_dbgmsg("RAR-SFX signature found at %u\n", (unsigned int) fpt->offset);
+			    cli_dbgmsg("RAR/RAR-SFX signature found at %u\n", (unsigned int) fpt->offset);
+			if(type != CL_TYPE_RAR && have_rar && SCAN_ARCHIVE && fpt->offset < 102400 && (DCONF_ARCH & ARCH_CONF_RAR)) {
+			    cli_dbgmsg("RAR/RAR-SFX signature found at %u\n", (unsigned int) fpt->offset);
 			    nret = cli_scanrar(desc, ctx, fpt->offset, &lastrar);
 			}
 			break;
 
 		    case CL_TYPE_ZIPSFX:
-			if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_ZIP) && fpt->offset) {
-			    cli_dbgmsg("ZIP-SFX signature found at %u\n", (unsigned int) fpt->offset);
+			if(type != CL_TYPE_ZIP && SCAN_ARCHIVE && fpt->offset < 102400 && (DCONF_ARCH & ARCH_CONF_ZIP)) {
+			    cli_dbgmsg("ZIP/ZIP-SFX signature found at %u\n", (unsigned int) fpt->offset);
 			    nret = cli_unzip_single(desc, ctx, fpt->offset);
 			}
 			break;
 
 		    case CL_TYPE_CABSFX:
-			if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_CAB)) {
-			    cli_dbgmsg("CAB-SFX signature found at %u\n", (unsigned int) fpt->offset);
+			if(type != CL_TYPE_MSCAB && SCAN_ARCHIVE && fpt->offset < 102400 && (DCONF_ARCH & ARCH_CONF_CAB)) {
+			    cli_dbgmsg("CAB/CAB-SFX signature found at %u\n", (unsigned int) fpt->offset);
 			    nret = cli_scanmscab(desc, ctx, fpt->offset);
 			}
 			break;
 		    case CL_TYPE_ARJSFX:
-			if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_ARJ)) {
+			if(type != CL_TYPE_ARJ && SCAN_ARCHIVE && fpt->offset < 102400 && (DCONF_ARCH & ARCH_CONF_ARJ)) {
 			    cli_dbgmsg("ARJ-SFX signature found at %u\n", (unsigned int) fpt->offset);
 			    nret = cli_scanarj(desc, ctx, fpt->offset, &lastrar);
 			}
@@ -1782,14 +1791,14 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg,
 			break;
 
 		    case CL_TYPE_PDF:
-			if(SCAN_PDF && (DCONF_DOC & DOC_CONF_PDF)) {
+			if(type != CL_TYPE_PDF && SCAN_PDF && (DCONF_DOC & DOC_CONF_PDF)) {
 			    cli_dbgmsg("PDF signature found at %u\n", (unsigned int) fpt->offset);
 			    nret = cli_scanpdf(desc, ctx, fpt->offset);
 			}
 			break;
 
 		    case CL_TYPE_MSEXE:
-			if(SCAN_PE && ctx->dconf->pe && fpt->offset) {
+ 			if(SCAN_PE && (type == CL_TYPE_MSEXE || type == CL_TYPE_ZIP || type == CL_TYPE_MSOLE2) && ctx->dconf->pe) {
 			    fstat(desc, &sb);
 			    if(sb.st_size > 10485760)
 				break;
@@ -1822,8 +1831,6 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg,
 		fpt = fpt->next;
 	    }
 	}
-
-	ctx->recursion++;
 
 	if(nret != CL_VIRUS) switch(ret) {
 	    case CL_TYPE_HTML:
@@ -1864,6 +1871,10 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	struct stat sb;
 	uint8_t typercg = 1;
 
+    if(ctx->engine->maxreclevel && ctx->recursion > ctx->engine->maxreclevel) {
+        cli_dbgmsg("cli_magic_scandesc: Archive recursion limit exceeded (%u, max: %u)\n", ctx->recursion, ctx->engine->maxreclevel);
+	return CL_CLEAN;
+    }
 
     if(fstat(desc, &sb) == -1) {
 	cli_errmsg("magic_scandesc: Can't fstat descriptor %d\n", desc);
@@ -1885,19 +1896,17 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	return CL_EMALFDB;
     }
 
-    if(!ctx->options) { /* raw mode (stdin, etc.) */
-	cli_dbgmsg("Raw mode: No support for special files\n");
-	if((ret = cli_scandesc(desc, ctx, 0, 0, NULL, AC_SCAN_VIR)) == CL_VIRUS)
-	    cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, desc);
-	return ret;
-    }
-
     if(cli_updatelimits(ctx, sb.st_size)!=CL_CLEAN)
         return CL_CLEAN;
 
-    if((SCAN_MAIL || SCAN_ARCHIVE) && ctx->engine->maxreclevel && ctx->recursion > ctx->engine->maxreclevel) {
-        cli_dbgmsg("Archive recursion limit exceeded (level = %u).\n", ctx->recursion);
-	return CL_CLEAN;
+    if(!ctx->options || (ctx->recursion == ctx->engine->maxreclevel)) { /* raw mode (stdin, etc.) or last level of recursion */
+	if(ctx->recursion == ctx->engine->maxreclevel)
+	    cli_dbgmsg("cli_magic_scandesc: Hit recursion limit, only scanning raw file\n");
+	else
+	    cli_dbgmsg("Raw mode: No support for special files\n");
+	if((ret = cli_scandesc(desc, ctx, 0, 0, NULL, AC_SCAN_VIR)) == CL_VIRUS)
+	    cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, desc);
+	return ret;
     }
 
     lseek(desc, 0, SEEK_SET);

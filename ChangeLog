@@ -1,3 +1,26 @@
+Wed Jun 10 19:01:11 CEST 2009 (tk)
+----------------------------------
+ * V 0.95.2
+
+Wed Jun 10 18:04:53 CEST 2009 (tk)
+----------------------------------
+ * libclamav: detect and handle archives hidden inside other files (eg. images),
+	      which can be unpacked by WinZip, WinRAR and other tools (bb#1554)
+	      Reported by ROGER Mickael and Thierry Zoller
+
+Wed Jun 10 18:02:31 CEST 2009 (tk)
+----------------------------------
+ * libclamav/mspack.c, cab.c: don't rely on file sizes stored in CAB headers (bb#1562)
+			      Reported by Thierry*Zoller <Thierry*Zoller.lu>
+
+Wed Jun 10 17:58:47 CEST 2009 (acab)
+------------------------------------
+ * libclamunrar/unrarvm.c: fix handling of some broken rar files
+
+Wed Jun 10 17:58:30 CEST 2009 (edwin)
+-------------------------------------
+ * libclamav/mbox.c: handle malformed emails with embedded \0s (bb #1573)
+
 Fri May 29 14:37:08 EEST 2009 (edwin)
 -------------------------------------
  * clamdtop/clamdtop.c: Add missing #include, fixed bb #1619.
