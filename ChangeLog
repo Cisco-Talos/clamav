@@ -1,3 +1,7 @@
+Fri Jun 12 12:30:15 CEST 2009 (tk)
+----------------------------------
+ * libclamav/elf.[ch]: add support for 64-bit ELF files (bb#1593)
+
 Wed Jun 10 19:01:11 CEST 2009 (tk)
 ----------------------------------
  * V 0.95.2

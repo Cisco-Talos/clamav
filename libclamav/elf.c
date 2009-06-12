@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -84,6 +84,7 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 	uint16_t shnum, phnum, shentsize, phentsize;
 	uint32_t entry, fentry, shoff, phoff, i;
 	uint8_t conv = 0, err;
+	unsigned int format;
 
 
     cli_dbgmsg("in cli_scanelf\n");
@@ -99,9 +100,35 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 	return CL_CLEAN;
     }
 
-    if(file_hdr.e_ident[4] != 1) {
-	cli_dbgmsg("ELF: 64-bit binaries are not supported (yet)\n");
-	return CL_CLEAN;
+    format = file_hdr.e_ident[4];
+    if(format != 1 && format != 2) {
+	cli_dbgmsg("ELF: Unknown ELF class (%u)\n", file_hdr.e_ident[4]);
+	return CL_EFORMAT;
+    }
+
+    if(format == 2) {
+	    struct elf_file_hdr64 file_hdr64;
+	lseek(desc, 0, SEEK_SET);
+	if(read(desc, &file_hdr64, sizeof(file_hdr64)) != sizeof(file_hdr64)) {
+	    /* Not an ELF file? */
+	    cli_dbgmsg("ELF: Can't read file header\n");
+	    return CL_CLEAN;
+	}
+	/* it's enough for us to handle ELF64 as 32 */
+	file_hdr.e_entry = file_hdr64.e_entry;
+        file_hdr.e_phoff = file_hdr64.e_phoff;
+        file_hdr.e_shoff = file_hdr64.e_shoff;
+	file_hdr.e_flags = file_hdr64.e_flags;
+	file_hdr.e_ehsize = file_hdr64.e_ehsize;
+	file_hdr.e_phentsize = file_hdr64.e_phentsize;
+	if(file_hdr.e_phentsize == sizeof(struct elf_program_hdr64))
+	    file_hdr.e_phentsize = sizeof(struct elf_program_hdr32);
+	file_hdr.e_phnum = file_hdr64.e_phnum;
+	file_hdr.e_shentsize = file_hdr64.e_shentsize;
+	if(file_hdr.e_shentsize == sizeof(struct elf_section_hdr64))
+	    file_hdr.e_shentsize = sizeof(struct elf_section_hdr32);
+	file_hdr.e_shnum = file_hdr64.e_shnum;
+	file_hdr.e_shstrndx = file_hdr64.e_shstrndx;
     }
 
     if(file_hdr.e_ident[5] == 1) {
@@ -142,47 +169,53 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 
     switch(EC16(file_hdr.e_machine, conv)) {
 	/* Due to a huge list, we only include the most popular machines here */
-	case 0x0: /* EM_NONE */
+	case 0: /* EM_NONE */
 	    cli_dbgmsg("ELF: Machine type: None\n");
 	    break;
-	case 0x2: /* EM_SPARC */
+	case 2: /* EM_SPARC */
 	    cli_dbgmsg("ELF: Machine type: SPARC\n");
 	    break;
-	case 0x3: /* EM_386 */
+	case 3: /* EM_386 */
 	    cli_dbgmsg("ELF: Machine type: Intel 80386\n");
 	    break;
-	case 0x4: /* EM_68K */
+	case 4: /* EM_68K */
 	    cli_dbgmsg("ELF: Machine type: Motorola 68000\n");
 	    break;
-	case 0x8: /* EM_MIPS */
+	case 8: /* EM_MIPS */
 	    cli_dbgmsg("ELF: Machine type: MIPS RS3000\n");
 	    break;
-	case 0x15: /* EM_PARISC */
+	case 9: /* EM_S370 */
+	    cli_dbgmsg("ELF: Machine type: IBM System/370\n");
+	    break;
+	case 15: /* EM_PARISC */
 	    cli_dbgmsg("ELF: Machine type: HPPA\n");
 	    break;
-	case 0x20: /* EM_PPC */
+	case 20: /* EM_PPC */
 	    cli_dbgmsg("ELF: Machine type: PowerPC\n");
 	    break;
-	case 0x21: /* EM_PPC64 */
+	case 21: /* EM_PPC64 */
 	    cli_dbgmsg("ELF: Machine type: PowerPC 64-bit\n");
 	    break;
-	case 0x22: /* EM_S390 */
+	case 22: /* EM_S390 */
 	    cli_dbgmsg("ELF: Machine type: IBM S390\n");
 	    break;
-	case 0x40: /* EM_ARM */
+	case 40: /* EM_ARM */
 	    cli_dbgmsg("ELF: Machine type: ARM\n");
 	    break;
-	case 0x41: /* EM_FAKE_ALPHA */
+	case 41: /* EM_FAKE_ALPHA */
 	    cli_dbgmsg("ELF: Machine type: Digital Alpha\n");
 	    break;
-	case 0x43: /* EM_SPARCV9 */
+	case 43: /* EM_SPARCV9 */
 	    cli_dbgmsg("ELF: Machine type: SPARC v9 64-bit\n");
 	    break;
-	case 0x50: /* EM_IA_64 */
+	case 50: /* EM_IA_64 */
 	    cli_dbgmsg("ELF: Machine type: IA64\n");
 	    break;
+	case 62: /* EM_X86_64 */
+	    cli_dbgmsg("ELF: Machine type: AMD x86-64\n");
+	    break;
 	default:
-	    cli_dbgmsg("ELF: Machine type: Unknown (%d)\n", EC16(file_hdr.e_machine, conv));
+	    cli_dbgmsg("ELF: Machine type: Unknown (0x%x)\n", EC16(file_hdr.e_machine, conv));
     }
 
     entry = EC32(file_hdr.e_entry, conv);
@@ -234,8 +267,28 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 	cli_dbgmsg("------------------------------------\n");
 
 	for(i = 0; i < phnum; i++) {
+	    err = 0;
+	    if(format == 1) {
+		if(read(desc, &program_hdr[i], sizeof(struct elf_program_hdr32)) != sizeof(struct elf_program_hdr32))
+		    err = 1;
+	    } else {
+		    struct elf_program_hdr64 program_hdr64;
 
-	    if(read(desc, &program_hdr[i], sizeof(struct elf_program_hdr32)) != sizeof(struct elf_program_hdr32)) {
+		if(read(desc, &program_hdr64, sizeof(program_hdr64)) != sizeof(program_hdr64)) {
+		    err = 1;
+		} else {
+		    program_hdr[i].p_type = program_hdr64.p_type;
+		    program_hdr[i].p_offset = program_hdr64.p_offset;
+		    program_hdr[i].p_vaddr = program_hdr64.p_vaddr;
+		    program_hdr[i].p_paddr = program_hdr64.p_paddr;
+		    program_hdr[i].p_filesz = program_hdr64.p_filesz;
+		    program_hdr[i].p_memsz = program_hdr64.p_memsz;
+		    program_hdr[i].p_flags = program_hdr64.p_flags;
+		    program_hdr[i].p_align = program_hdr64.p_align;
+		}
+	    }
+
+	    if(err) {
 		cli_dbgmsg("ELF: Can't read segment #%d\n", i);
 		cli_dbgmsg("ELF: Possibly broken ELF file\n");
 		free(program_hdr);
@@ -317,8 +370,30 @@ int cli_scanelf(int desc, cli_ctx *ctx)
     cli_dbgmsg("------------------------------------\n");
 
     for(i = 0; i < shnum; i++) {
+	err = 0;
+	if(format == 1) {
+	    if(read(desc, &section_hdr[i], sizeof(struct elf_section_hdr32)) != sizeof(struct elf_section_hdr32))
+		err = 1;
+	} else {
+		struct elf_section_hdr64 section_hdr64;
 
-	if(read(desc, &section_hdr[i], sizeof(struct elf_section_hdr32)) != sizeof(struct elf_section_hdr32)) {
+	    if(read(desc, &section_hdr64, sizeof(section_hdr64)) != sizeof(section_hdr64)) {
+		err = 1;
+	    } else {
+		section_hdr[i].sh_name = section_hdr64.sh_name;
+		section_hdr[i].sh_type = section_hdr64.sh_type;
+		section_hdr[i].sh_flags = section_hdr64.sh_flags;
+		section_hdr[i].sh_addr = section_hdr64.sh_addr;
+		section_hdr[i].sh_offset = section_hdr64.sh_offset;
+		section_hdr[i].sh_size = section_hdr64.sh_size;
+		section_hdr[i].sh_link = section_hdr64.sh_link;
+		section_hdr[i].sh_info = section_hdr64.sh_info;
+		section_hdr[i].sh_addralign = section_hdr64.sh_addralign;
+		section_hdr[i].sh_entsize = section_hdr64.sh_entsize;
+	    }
+	}
+
+	if(err) {
             cli_dbgmsg("ELF: Can't read section header\n");
             cli_dbgmsg("ELF: Possibly broken ELF file\n");
             free(section_hdr);
@@ -414,7 +489,7 @@ int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
 	uint16_t shnum, phnum, shentsize, phentsize, i;
 	uint32_t entry, fentry = 0, shoff, phoff;
 	uint8_t conv = 0, err;
-
+	unsigned int format;
 
     cli_dbgmsg("in cli_elfheader\n");
 
@@ -429,9 +504,35 @@ int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
 	return -1;
     }
 
-    if(file_hdr.e_ident[4] != 1) {
-	cli_dbgmsg("ELF: 64-bit binaries are not supported (yet)\n");
+    format = file_hdr.e_ident[4];
+    if(format != 1 && format != 2) {
+	cli_dbgmsg("ELF: Unknown ELF class (%u)\n", file_hdr.e_ident[4]);
 	return -1;
+    }
+
+    if(format == 2) {
+	    struct elf_file_hdr64 file_hdr64;
+	lseek(desc, 0, SEEK_SET);
+	if(read(desc, &file_hdr64, sizeof(file_hdr64)) != sizeof(file_hdr64)) {
+	    /* Not an ELF file? */
+	    cli_dbgmsg("ELF: Can't read file header\n");
+	    return -1; 
+	}
+	/* it's enough for us to handle ELF64 as 32 */
+	file_hdr.e_entry = file_hdr64.e_entry;
+        file_hdr.e_phoff = file_hdr64.e_phoff;
+        file_hdr.e_shoff = file_hdr64.e_shoff;
+	file_hdr.e_flags = file_hdr64.e_flags;
+	file_hdr.e_ehsize = file_hdr64.e_ehsize;
+	file_hdr.e_phentsize = file_hdr64.e_phentsize;
+	if(file_hdr.e_phentsize == sizeof(struct elf_program_hdr64))
+	    file_hdr.e_phentsize = sizeof(struct elf_program_hdr32);
+	file_hdr.e_phnum = file_hdr64.e_phnum;
+	file_hdr.e_shentsize = file_hdr64.e_shentsize;
+	if(file_hdr.e_shentsize == sizeof(struct elf_section_hdr64))
+	    file_hdr.e_shentsize = sizeof(struct elf_section_hdr32);
+	file_hdr.e_shnum = file_hdr64.e_shnum;
+	file_hdr.e_shstrndx = file_hdr64.e_shstrndx;
     }
 
     if(file_hdr.e_ident[5] == 1) {
@@ -470,7 +571,28 @@ int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
 	}
 
 	for(i = 0; i < phnum; i++) {
-	    if(read(desc, &program_hdr[i], sizeof(struct elf_program_hdr32)) != sizeof(struct elf_program_hdr32)) {
+	    err = 0;
+	    if(format == 1) {
+		if(read(desc, &program_hdr[i], sizeof(struct elf_program_hdr32)) != sizeof(struct elf_program_hdr32))
+		    err = 1;
+	    } else {
+		    struct elf_program_hdr64 program_hdr64;
+
+		if(read(desc, &program_hdr64, sizeof(program_hdr64)) != sizeof(program_hdr64)) {
+		    err = 1;
+		} else {
+		    program_hdr[i].p_type = program_hdr64.p_type;
+		    program_hdr[i].p_offset = program_hdr64.p_offset;
+		    program_hdr[i].p_vaddr = program_hdr64.p_vaddr;
+		    program_hdr[i].p_paddr = program_hdr64.p_paddr;
+		    program_hdr[i].p_filesz = program_hdr64.p_filesz;
+		    program_hdr[i].p_memsz = program_hdr64.p_memsz;
+		    program_hdr[i].p_flags = program_hdr64.p_flags;
+		    program_hdr[i].p_align = program_hdr64.p_align;
+		}
+	    }
+
+	    if(err) {
 		cli_dbgmsg("ELF: Can't read segment #%d\n", i);
 		free(program_hdr);
 		return -1;
@@ -521,14 +643,36 @@ int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
     }
 
     for(i = 0; i < shnum; i++) {
+	err = 0;
+	if(format == 1) {
+	    if(read(desc, &section_hdr[i], sizeof(struct elf_section_hdr32)) != sizeof(struct elf_section_hdr32))
+		err = 1;
+	} else {
+		struct elf_section_hdr64 section_hdr64;
 
-	if(read(desc, &section_hdr[i], sizeof(struct elf_section_hdr32)) != sizeof(struct elf_section_hdr32)) {
+	    if(read(desc, &section_hdr64, sizeof(section_hdr64)) != sizeof(section_hdr64)) {
+		err = 1;
+	    } else {
+		section_hdr[i].sh_name = section_hdr64.sh_name;
+		section_hdr[i].sh_type = section_hdr64.sh_type;
+		section_hdr[i].sh_flags = section_hdr64.sh_flags;
+		section_hdr[i].sh_addr = section_hdr64.sh_addr;
+		section_hdr[i].sh_offset = section_hdr64.sh_offset;
+		section_hdr[i].sh_size = section_hdr64.sh_size;
+		section_hdr[i].sh_link = section_hdr64.sh_link;
+		section_hdr[i].sh_info = section_hdr64.sh_info;
+		section_hdr[i].sh_addralign = section_hdr64.sh_addralign;
+		section_hdr[i].sh_entsize = section_hdr64.sh_entsize;
+	    }
+	}
+
+	if(err) {
+            cli_dbgmsg("ELF: Can't read section header\n");
             free(section_hdr);
 	    free(elfinfo->section);
 	    elfinfo->section = NULL;
             return -1;
         }
-
 	elfinfo->section[i].rva = EC32(section_hdr[i].sh_addr, conv);
 	elfinfo->section[i].raw = EC32(section_hdr[i].sh_offset, conv);
 	elfinfo->section[i].rsz = EC32(section_hdr[i].sh_size, conv);
