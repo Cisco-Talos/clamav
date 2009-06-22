@@ -63,7 +63,7 @@ int whitelist_init(const char *fname) {
     struct WHLST *w;
 
     if(!(f = fopen(fname, "r"))) {
-	logg("!Cannot open whitelist file\n");
+	logg("!Cannot open whitelist file '%s'\n", fname);
 	return 1;
     }
 
