@@ -28,9 +28,6 @@
 ## 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #####
 
-# ClamAV: filter -Werror here
-CFLAGS=`echo "@CFLAGS@" | sed -e 's/-Werror[^=-]//'`
-
 ACLOCAL_AMFLAGS = -I m4
 AUTOMAKE_OPTIONS = foreign
 AM_CPPFLAGS =

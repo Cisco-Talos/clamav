@@ -144,6 +144,11 @@ CLAMAV_PRIVATE {
     messageDestroy;
     base64Flush;
     have_rar;
+    cli_bytecode_load;
+    cli_bytecode_run;
+    cli_bytecode_destroy;
+    cli_bytecode_alloc_context;
+    cli_bytecode_destroy_context;
   local:
     *;
 };

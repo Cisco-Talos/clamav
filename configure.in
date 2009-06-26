@@ -1589,6 +1589,7 @@ etc/Makefile
 test/Makefile
 unit_tests/Makefile
 clamdtop/Makefile
+clambc/Makefile
 Makefile
 clamav-config
 libclamav.pc

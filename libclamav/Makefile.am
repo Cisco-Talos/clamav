@@ -285,7 +285,9 @@ libclamav_la_SOURCES = \
 	default.h\
 	sha256.c\
 	sha256.h\
-	bignum.h
+	bignum.h\
+	bytecode.c\
+	bytecode.h
 
 if !LINK_TOMMATH
 libclamav_la_SOURCES += bignum.c \
