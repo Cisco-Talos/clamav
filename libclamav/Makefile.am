@@ -304,15 +304,15 @@ version.h: version.h.tmp
 version.h.tmp:
 	@test -f version.h || touch version.h;\
 	rm -f $@;\
-	REVISION="$$(LANG=C svnversion "$(top_srcdir)" 2>/dev/null || echo exported)";\
-	if test $$REVISION = "exported"; then\
-		REVISION="$$(LANG=C cd "$(top_srcdir)"; git svn info configure 2>/dev/null| awk '/Revision:/ { print $$2 }' || echo)";\
-		if test -n "$$REVISION"; then\
-			REVISION="$$REVISION-$$(LANG=C cd "$(top_srcdir)"; git describe --always 2>/dev/null)";\
-		fi;\
+	REVISION="$$(LANG=C cd "$(top_srcdir)"; git describe --always 2>/dev/null)";\
+	if test $$? -ne 0; then\
+	   REVISION="r$$(LANG=C svnversion "$(top_srcdir)" 2>/dev/null || echo exported)";\
+	   if test "$$REVISION" = "exported"; then\
+	    REVISION="";\
+	   fi;\
 	fi;\
 	if test -n "$$REVISION"; then\
-		echo "#define REPO_VERSION \"devel-r$$REVISION\"" >> $@;\
+		echo "#define REPO_VERSION \"devel-$$REVISION\"" >> $@;\
 	else\
 		touch version.h.tmp;\
 	fi
