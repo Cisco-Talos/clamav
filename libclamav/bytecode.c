@@ -30,18 +30,29 @@
 #include "readdb.h"
 #include <string.h>
 
+typedef uint32_t operand_t;
+
 struct cli_bc_varop {
     uint8_t numOps;
-    uint16_t* ops;
+    operand_t* ops;
+};
+
+struct branch {
+    operand_t condition;
+    struct cli_bc_bb *br_true;
+    struct cli_bc_bb *br_false;
 };
 
 struct cli_bc_inst {
     enum bc_opcode opcode;
     uint16_t type;
     union {
-	uint16_t unaryop;
-	uint16_t binop[2];
+	operand_t unaryop;
+	operand_t binop[2];
+	operand_t three[3];
 	struct cli_bc_varop ops;
+	struct branch branch;
+	struct cli_bc_bb *jump;
     } u;
 };
 
@@ -148,7 +159,7 @@ static inline unsigned readFixedNumber(const unsigned char *p, unsigned *off,
     return n;
 }
 
-static inline char *readData(const unsigned char *p, unsigned *off, unsigned len, char *ok)
+static inline unsigned char *readData(const unsigned char *p, unsigned *off, unsigned len, char *ok, unsigned *datalen)
 {
     unsigned char *dat, *q;
     unsigned l, newoff, i;
@@ -184,10 +195,22 @@ static inline char *readData(const unsigned char *p, unsigned *off, unsigned len
 	*q++ = v;
     }
     *off = newoff;
+    *datalen = l;
     return dat;
 }
 
-static int parseHeader(struct cli_bc *bc, char *buffer)
+static inline char *readString(const unsigned char *p, unsigned *off, unsigned len, char *ok)
+{
+    unsigned stringlen;
+    char *str = (char*)readData(p, off, len, ok, &stringlen);
+    if (*ok && stringlen && str[stringlen-1] != '\0') {
+	free(str);
+	*ok = 0;
+	return NULL;
+    }
+    return str;
+}
+static int parseHeader(struct cli_bc *bc, unsigned char *buffer)
 {
     uint64_t magic1;
     unsigned magic2;
@@ -198,7 +221,7 @@ static int parseHeader(struct cli_bc *bc, char *buffer)
 	return CL_EMALFDB;
     }
     offset = sizeof(BC_HEADER)-1;
-    len = strlen(buffer);
+    len = strlen((const char*)buffer);
     flevel = readNumber(buffer, &offset, len, &ok);
     if (!ok) {
 	cli_errmsg("Unable to parse functionality level in bytecode header\n");
@@ -210,15 +233,15 @@ static int parseHeader(struct cli_bc *bc, char *buffer)
     }
     // Optimistic parsing, check for error only at the end.
     bc->verifier = readNumber(buffer, &offset, len, &ok);
-    bc->sigmaker = readData(buffer, &offset, len, &ok);
+    bc->sigmaker = readString(buffer, &offset, len, &ok);
     bc->id = readNumber(buffer, &offset, len, &ok);
     bc->metadata.maxStack = readNumber(buffer, &offset, len, &ok);
     bc->metadata.maxMem = readNumber(buffer, &offset, len, &ok);
     bc->metadata.maxTime = readNumber(buffer, &offset, len, &ok);
-    bc->metadata.targetExclude = readData(buffer, &offset, len, &ok);
+    bc->metadata.targetExclude = readString(buffer, &offset, len, &ok);
     bc->num_func = readNumber(buffer, &offset, len, &ok);
     if (!ok) {
-	cli_errmsg("Invalid bytecode header\n", offset);
+	cli_errmsg("Invalid bytecode header at %u\n", offset);
 	return CL_EMALFDB;
     }
     magic1 = readNumber(buffer, &offset, len, &ok);
@@ -243,7 +266,7 @@ static int parseHeader(struct cli_bc *bc, char *buffer)
     return CL_SUCCESS;
 }
 
-static int parseFunctionHeader(struct cli_bc *bc, unsigned fn, char *buffer)
+static int parseFunctionHeader(struct cli_bc *bc, unsigned fn, unsigned char *buffer)
 {
     char ok=1;
     unsigned offset, len, all_locals=0, i;
@@ -255,7 +278,7 @@ static int parseFunctionHeader(struct cli_bc *bc, unsigned fn, char *buffer)
 	return CL_EMALFDB;
     }
     func = &bc->funcs[fn];
-    len = strlen(buffer);
+    len = strlen((const char*)buffer);
 
     if (buffer[0] != 'A') {
 	cli_errmsg("Invalid function arguments header: %c\n", buffer[0]);
@@ -304,20 +327,32 @@ static int parseFunctionHeader(struct cli_bc *bc, unsigned fn, char *buffer)
     return CL_SUCCESS;
 }
 
-static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, char *buffer)
+static struct cli_bc_bb *readBBID(struct cli_bc_func *func, const unsigned char *buffer, unsigned *off, unsigned len, char *ok) {
+    unsigned id = readNumber(buffer, off, len, ok);
+    if (!id || id >= func->numBB) {
+	cli_errmsg("Basic block ID out of range: %u\n", id);
+	*ok = 0;
+    }
+    if (!*ok)
+	return NULL;
+    return &func->BB[id];
+}
+
+static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char *buffer)
 {
     char ok=1;
     unsigned offset, len, last = 0;
     struct cli_bc_bb *BB;
+    struct cli_bc_func *bcfunc = &bc->funcs[func];
     struct cli_bc_inst inst;
 
-    if (bb >= bc->funcs[func].numBB) {
+    if (bb >= bcfunc->numBB) {
 	cli_errmsg("Found too many basic blocks\n");
 	return CL_EMALFDB;
     }
 
-    BB = &bc->funcs[func].BB[bb];
-    len = strlen(buffer);
+    BB = &bcfunc->BB[bb];
+    len = strlen((const char*) buffer);
     if (buffer[0] != 'B') {
 	cli_errmsg("Invalid basic block header: %c\n", buffer[0]);
 	return CL_EMALFDB;
@@ -344,26 +379,42 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, char *buffer)
 	    cli_errmsg("Invalid opcode: %u\n", inst.opcode);
 	    return CL_EMALFDB;
 	}
-	numOp = operand_counts[inst.opcode];
-	switch (numOp) {
-	    case 1:
-		inst.u.unaryop = readOperand(buffer, &offset, len, &ok);
+	switch (inst.opcode) {
+	    case OP_JMP:
+		inst.u.jump = readBBID(bcfunc, buffer, &offset, len, &ok);
 		break;
-	    case 2:
-		inst.u.binop[0] = readOperand(buffer, &offset, len, &ok);
-		inst.u.binop[1] = readOperand(buffer, &offset, len, &ok);
+	    case OP_BRANCH:
+		inst.u.branch.condition = readOperand(buffer, &offset, len, &ok);
+		inst.u.branch.br_true = readBBID(bcfunc, buffer, &offset, len, &ok);
+		inst.u.branch.br_false = readBBID(bcfunc, buffer, &offset, len, &ok);
 		break;
 	    default:
-		inst.u.ops.numOps = numOp;
-		inst.u.ops.ops = cli_calloc(numOp, sizeof(*inst.u.ops.ops));
-		if (!inst.u.ops.ops) {
-		    cli_errmsg("Out of memory allocating operands\n");
-		    return CL_EMALFDB;
+		numOp = operand_counts[inst.opcode];
+		switch (numOp) {
+		    case 1:
+			inst.u.unaryop = readOperand(buffer, &offset, len, &ok);
+			break;
+		    case 2:
+			inst.u.binop[0] = readOperand(buffer, &offset, len, &ok);
+			inst.u.binop[1] = readOperand(buffer, &offset, len, &ok);
+			break;
+		    case 3:
+			inst.u.three[0] = readOperand(buffer, &offset, len, &ok);
+			inst.u.three[1] = readOperand(buffer, &offset, len, &ok);
+			inst.u.three[2] = readOperand(buffer, &offset, len, &ok);
+			break;
+		    default:
+			inst.u.ops.numOps = numOp;
+			inst.u.ops.ops = cli_calloc(numOp, sizeof(*inst.u.ops.ops));
+			if (!inst.u.ops.ops) {
+			    cli_errmsg("Out of memory allocating operands\n");
+			    return CL_EMALFDB;
+			}
+			for (i=0;i<numOp;i++) {
+			    inst.u.ops.ops[i] = readOperand(buffer, &offset, len, &ok);
+			}
+			break;
 		}
-		for (i=0;i<numOp;i++) {
-		    inst.u.ops.ops[i] = readOperand(buffer, &offset, len, &ok);
-		}
-		break;
 	}
 	if (!ok) {
 	    cli_errmsg("Invalid instructions or operands\n");
@@ -415,7 +466,7 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 	cli_chomp(buffer);
 	switch (state) {
 	    case PARSE_BC_HEADER:
-		rc = parseHeader(bc, buffer);
+		rc = parseHeader(bc, (unsigned char*)buffer);
 		if (rc == CL_BREAK) /* skip */
 		    return CL_SUCCESS;
 		if (rc != CL_SUCCESS)
@@ -423,14 +474,14 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 		state = PARSE_FUNC_HEADER;
 		break;
 	    case PARSE_FUNC_HEADER:
-		rc = parseFunctionHeader(bc, current_func, buffer);
+		rc = parseFunctionHeader(bc, current_func, (unsigned char*)buffer);
 		if (rc != CL_SUCCESS)
 		    return rc;
 		bb = 0;
 		state = PARSE_BB;
 		break;
 	    case PARSE_BB:
-		rc = parseBB(bc, current_func, bb++, buffer);
+		rc = parseBB(bc, current_func, bb++, (unsigned char*)buffer);
 		if (rc != CL_SUCCESS)
 		    return rc;
 		if (bb >= bc->funcs[current_func].numBB) {
@@ -462,7 +513,7 @@ void cli_bytecode_destroy(struct cli_bc *bc)
 	    struct cli_bc_bb *BB = &f->BB[j];
 	    for(k=0;k<BB->numInsts;k++) {
 		struct cli_bc_inst *i = &BB->insts[k];
-		if (operand_counts[i->opcode] > 2)
+		if (operand_counts[i->opcode] > 3)
 		    free(i->u.ops.ops);
 	    }
 	    free(BB->insts);

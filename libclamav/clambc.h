@@ -49,6 +49,9 @@ enum bc_opcode {
   OP_TRUNC,
   OP_SEXT,
   OP_ZEXT,
+
+  OP_BRANCH,
+  OP_JMP,
   OP_RET,
 
   OP_ICMP_EQ,
@@ -71,8 +74,8 @@ static const unsigned char operand_counts[] = {
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
   /* TRUNC -> ZEXT */
   2, 2, 2,
-  /* RET */
-  1,
+  /* BRANCH, JMP, RET */
+  3, 1, 1,
   /* ICMP */
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
   /* SELECT */
