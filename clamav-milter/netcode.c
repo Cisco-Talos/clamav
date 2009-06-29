@@ -148,6 +148,11 @@ int nc_send(int s, const void *buff, size_t len) {
 	struct timeval tv;
 	char er[256];
 
+	if(!res) {
+	    logg("!Connection closed while sending data\n");
+	    close(s);
+	    return 1;
+	}
 	if(res!=-1) {
 	    len-=res;
 	    buf+=res;
@@ -245,6 +250,11 @@ char *nc_recv(int s) {
 	}
 
 	res = recv(s, &buf[len], sizeof(buf) - len, 0);
+	if(!res) {
+	    logg("!Connection closed while reading from socket\n");
+	    close(s);
+	    return NULL;
+	}
 	if(res==-1) {
 	    char er[256];
 	    strerror_print("!recv failed after successful select");
