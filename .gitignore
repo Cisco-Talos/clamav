@@ -1,0 +1,15 @@
+*.[oa]
+*.l[oa]
+*~
+*.swp
+TAGS
+Makefile
+.deps
+.libs
+clamav-config*
+libtool
+stamp-h1
+target.h
+config.log
+config.status
+libclamav.pc
