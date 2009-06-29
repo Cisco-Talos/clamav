@@ -1,3 +1,7 @@
+Mon Jun 29 11:25:46 CEST 2009 (acab)
+------------------------------------
+ * clamav-milter/netcode.c: Properly handle clamd disconnection (bb#1643)
+
 Mon Jun 22 17:19:45 CEST 2009 (acab)
 ------------------------------------
  * clamav-milter/whitelist.c: print failed whitelist filename
