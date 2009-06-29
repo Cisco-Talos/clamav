@@ -65,6 +65,7 @@ enum bc_opcode {
   OP_ICMP_SLE,
   OP_ICMP_SLT,
   OP_SELECT,
+  OP_CALL_DIRECT,
   OP_INVALID /* last */
 };
 
@@ -79,6 +80,8 @@ static const unsigned char operand_counts[] = {
   /* ICMP */
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
   /* SELECT */
-  3
+  3,
+  /* CALLs have variable number of operands */
+  0
 };
 #endif

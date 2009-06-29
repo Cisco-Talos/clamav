@@ -388,6 +388,20 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		inst.u.branch.br_true = readBBID(bcfunc, buffer, &offset, len, &ok);
 		inst.u.branch.br_false = readBBID(bcfunc, buffer, &offset, len, &ok);
 		break;
+	    case OP_CALL_DIRECT:
+		numOp = readFixedNumber(buffer, &offset, len, &ok, 1)+1;
+		if (ok) {
+		    inst.u.ops.numOps = numOp;
+		    inst.u.ops.ops = cli_calloc(numOp, sizeof(*inst.u.ops.ops));
+		    if (!inst.u.ops.ops) {
+			cli_errmsg("Out of memory allocating operands\n");
+			return CL_EMALFDB;
+		    }
+		    for (i=0;i<numOp;i++) {
+			inst.u.ops.ops[i] = readOperand(buffer, &offset, len, &ok);
+		    }
+		}
+		break;
 	    default:
 		numOp = operand_counts[inst.opcode];
 		switch (numOp) {
@@ -404,15 +418,8 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 			inst.u.three[2] = readOperand(buffer, &offset, len, &ok);
 			break;
 		    default:
-			inst.u.ops.numOps = numOp;
-			inst.u.ops.ops = cli_calloc(numOp, sizeof(*inst.u.ops.ops));
-			if (!inst.u.ops.ops) {
-			    cli_errmsg("Out of memory allocating operands\n");
-			    return CL_EMALFDB;
-			}
-			for (i=0;i<numOp;i++) {
-			    inst.u.ops.ops[i] = readOperand(buffer, &offset, len, &ok);
-			}
+			cli_errmsg("Opcode with too many operands: %u?\n", numOp);
+			ok = 0;
 			break;
 		}
 	}
