@@ -464,26 +464,33 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
     while (cli_dbgets(buffer, FILEBUFF, f, dbio)) {
 	int rc;
 	cli_chomp(buffer);
+	row++;
 	switch (state) {
 	    case PARSE_BC_HEADER:
 		rc = parseHeader(bc, (unsigned char*)buffer);
 		if (rc == CL_BREAK) /* skip */
 		    return CL_SUCCESS;
-		if (rc != CL_SUCCESS)
+		if (rc != CL_SUCCESS) {
+		    cli_errmsg("Error at bytecode line %u\n", row);
 		    return rc;
+		}
 		state = PARSE_FUNC_HEADER;
 		break;
 	    case PARSE_FUNC_HEADER:
 		rc = parseFunctionHeader(bc, current_func, (unsigned char*)buffer);
-		if (rc != CL_SUCCESS)
+		if (rc != CL_SUCCESS) {
+		    cli_errmsg("Error at bytecode line %u\n", row);
 		    return rc;
+		}
 		bb = 0;
 		state = PARSE_BB;
 		break;
 	    case PARSE_BB:
 		rc = parseBB(bc, current_func, bb++, (unsigned char*)buffer);
-		if (rc != CL_SUCCESS)
+		if (rc != CL_SUCCESS) {
+		    cli_errmsg("Error at bytecode line %u\n", row);
 		    return rc;
+		}
 		if (bb >= bc->funcs[current_func].numBB) {
 		    state = PARSE_FUNC_HEADER;
 		    current_func++;
