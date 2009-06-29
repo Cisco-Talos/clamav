@@ -64,7 +64,6 @@ enum {
 static const char *HDR_UNAVAIL = "UNKNOWN";
 
 struct CLAMFI {
-    char buffer[CLAMFIBUFSZ];
     const char *virusname;
     char *msg_subj;
     char *msg_date;
@@ -78,6 +77,8 @@ struct CLAMFI {
     unsigned int gotbody;
     unsigned int scanned_count;
     unsigned int status_count;
+    uint32_t sendme;
+    char buffer[CLAMFIBUFSZ];
 };
 
 
@@ -175,18 +176,21 @@ static sfsistat sendchunk(struct CLAMFI *cf, unsigned char *bodyp, size_t len, S
 	    cf->bufsz += len;
 	} else if(len < CLAMFIBUFSZ) {
 	    memcpy(&cf->buffer[cf->bufsz], bodyp, CLAMFIBUFSZ - cf->bufsz);
-	    sendfailed = nc_send(cf->alt, cf->buffer, CLAMFIBUFSZ);
+	    cf->sendme = htonl(CLAMFIBUFSZ);
+	    sendfailed = nc_send(cf->main, &cf->sendme, CLAMFIBUFSZ + 4);
 	    len -= (CLAMFIBUFSZ - cf->bufsz);
 	    memcpy(cf->buffer, &bodyp[CLAMFIBUFSZ - cf->bufsz], len);
 	    cf->bufsz = len;
 	} else {
-	    if(nc_send(cf->alt, cf->buffer, cf->bufsz) || nc_send(cf->alt, bodyp, len))
+	    uint32_t sendmetoo = htonl(len);
+	    cf->sendme = htonl(cf->bufsz);
+	    if((cf->bufsz && nc_send(cf->main, &cf->sendme, cf->bufsz + 4)) || nc_send(cf->main, &sendmetoo, 4) || nc_send(cf->main, bodyp, len))
 		sendfailed = 1;
 	    cf->bufsz = 0;
 	}
 	if(sendfailed) {
 	    logg("!Streaming failed\n");
-	    nullify(ctx, cf, CF_MAIN);
+	    nullify(ctx, cf, CF_NONE);
 	    return FailAction;
 	}
     }
@@ -289,12 +293,13 @@ sfsistat clamfi_eom(SMFICTX *ctx) {
 	    return FailAction;
 	}
     } else {
-	if(cf->bufsz && nc_send(cf->alt, cf->buffer, cf->bufsz)) {
+	uint32_t sendmetoo = 0;
+	cf->sendme = htonl(cf->bufsz);
+	if((cf->bufsz && nc_send(cf->main, &cf->sendme, cf->bufsz + 4)) || nc_send(cf->main, &sendmetoo, 4))  {
 	    logg("!Failed to flush STREAM\n");
-	    nullify(ctx, cf, CF_MAIN);
+	    nullify(ctx, cf, CF_NONE);
 	    return FailAction;
 	}
-	close(cf->alt);
     }
 
     reply = nc_recv(cf->main);

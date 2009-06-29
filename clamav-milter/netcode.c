@@ -315,41 +315,8 @@ int nc_connect_rand(int *main, int *alt, int *local) {
 	unlink(unlinkme);
 	free(unlinkme);
     } else {
-	char *reply=NULL, *port;
-	int nport;
-	struct CP_ENTRY new_cpe;
-	union {
-	    struct sockaddr_in sa4;
-	    struct sockaddr_in6 sa6;
-	} sa;
-
-	if(nc_send(*main, "nSTREAM\n", 8) || !(reply = nc_recv(*main)) || !(port = strstr(reply, "PORT"))) {
+	if(nc_send(*main, "nINSTREAM\n", 10)) {
 	    logg("!Failed to communicate with clamd\n");
-	    if(reply) {
-		free(reply);
-		close(*main);
-	    }
-	    return 1;
-	}
-	port+=5;
-	sscanf(port, "%d", &nport);
-	free(reply);
-	if(cpe->server->sa_family == AF_INET && cpe->socklen == sizeof(struct sockaddr_in)) {
-	    memcpy(&sa, cpe->server, sizeof(struct sockaddr_in));
-	    sa.sa4.sin_port = htons(nport);
-	    new_cpe.socklen = sizeof(struct sockaddr_in);
-	} else if(cpe->server->sa_family == AF_INET6 && cpe->socklen == sizeof(struct sockaddr_in6)) {
-	    memcpy(&sa, cpe->server, sizeof(struct sockaddr_in6));
-	    sa.sa6.sin6_port = htons(nport);
-	    new_cpe.socklen = sizeof(struct sockaddr_in6);
-	} else {
-	    logg("!WTF WHY AM I DOING HERE???\n");
-	    close(*main);
-	    return 1;
-	}
-	new_cpe.server = (struct sockaddr *)&sa;
-	if ((*alt = nc_connect_entry(&new_cpe)) == -1) {
-	    logg("!Failed to communicate with clamd for streaming\n");
 	    close(*main);
 	    return 1;
 	}

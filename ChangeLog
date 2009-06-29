@@ -1,3 +1,7 @@
+Mon Jun 29 15:40:42 CEST 2009 (acab)
+------------------------------------
+ * clamav-milter: use s/STREAM/INSTREAM/ (bb#1548)
+
 Mon Jun 29 11:25:46 CEST 2009 (acab)
 ------------------------------------
  * clamav-milter/netcode.c: Properly handle clamd disconnection (bb#1643)
