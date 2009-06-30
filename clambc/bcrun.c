@@ -25,6 +25,7 @@
 #include "bytecode.h"
 #include "clamav.h"
 #include "shared/optparser.h"
+#include "shared/misc.h"
 
 #include <stdlib.h>
 
