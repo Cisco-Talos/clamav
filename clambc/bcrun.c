@@ -32,7 +32,8 @@
 static void help(void)
 {
     printf("\n");
-    printf("           Clam AntiVirus: Bytecode Testing Tool %s\n", get_version());
+    printf("           Clam AntiVirus: Bytecode Testing Tool %s\n",
+	   get_version());
     printf("           By The ClamAV Team: http://www.clamav.net/team\n");
     printf("           (C) 2009 Sourcefire, Inc.\n\n");
     printf("clambc <file>\n\n");
