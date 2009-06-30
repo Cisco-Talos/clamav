@@ -32,7 +32,7 @@
 static void help(void)
 {
     printf("\n");
-    printf("           Clam AntiVirus: Bytecode Test Tool %s\n", get_version());
+    printf("           Clam AntiVirus: Bytecode Testing Tool %s\n", get_version());
     printf("           By The ClamAV Team: http://www.clamav.net/team\n");
     printf("           (C) 2009 Sourcefire, Inc.\n\n");
     printf("clambc <file>\n\n");
@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 	exit(0);
     }
     if(optget(opts, "version")->enabled) {
-	printf("Clam AntiVirus Monitoring Tool %s\n", get_version());
+	printf("Clam AntiVirus Bytecode Testing Tool %s\n", get_version());
 	optfree(opts);
 	exit(0);
     }
