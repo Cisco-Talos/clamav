@@ -69,12 +69,14 @@ int main(int argc, char *argv[])
     f = fopen(argv[1], "r");
     if (!f) {
 	fprintf(stderr, "Unable to load %s\n", argv[1]);
+	optfree(opts);
 	exit(2);
     }
 
     bc = malloc(sizeof(*bc));
     if (!bc) {
 	fprintf(stderr, "Out of memory\n");
+	optfree(opts);
 	exit(3);
     }
 
@@ -82,6 +84,7 @@ int main(int argc, char *argv[])
     rc = cli_bytecode_load(bc, f, NULL);
     if (rc != CL_SUCCESS) {
 	fprintf(stderr,"Unable to load bytecode: %s\n", cl_strerror(rc));
+	optfree(opts);
 	exit(4);
     }
     fclose(f);
@@ -99,5 +102,6 @@ int main(int argc, char *argv[])
     cli_bytecode_destroy_context(ctx);
     cli_bytecode_destroy(bc);
     free(bc);
+    optfree(opts);
     return 0;
 }
