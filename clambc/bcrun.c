@@ -24,8 +24,23 @@
 #endif
 #include "bytecode.h"
 #include "clamav.h"
+#include "shared/optparser.h"
 
 #include <stdlib.h>
+
+static void help(void)
+{
+    printf("\n");
+    printf("           Clam AntiVirus: Bytecode Test Tool %s\n", get_version());
+    printf("           By The ClamAV Team: http://www.clamav.net/team\n");
+    printf("           (C) 2009 Sourcefire, Inc.\n\n");
+    printf("clambc <file>\n\n");
+    printf("    --help                 -h         Show help\n");
+    printf("    --version              -V         Show version\n");
+    printf("    file                              file to test\n");
+    printf("\n");
+    return;
+}
 
 int main(int argc, char *argv[])
 {
@@ -33,12 +48,23 @@ int main(int argc, char *argv[])
     struct cli_bc *bc;
     struct cli_bc_ctx *ctx;
     int rc;
-    /* TODO: use optparser */
-    if (argc != 2) {
-	fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
+    struct optstruct *opts;
+
+    opts = optparse(NULL, argc, argv, 1, OPT_CLAMBC, 0, NULL);
+    if (!opts) {
+	fprintf(stderr, "ERROR: Can't parse command line options\n");
 	exit(1);
     }
-
+    if(optget(opts, "help")->enabled) {
+	optfree(opts);
+	help();
+	exit(0);
+    }
+    if(optget(opts, "version")->enabled) {
+	printf("Clam AntiVirus Monitoring Tool %s\n", get_version());
+	optfree(opts);
+	exit(0);
+    }
     f = fopen(argv[1], "r");
     if (!f) {
 	fprintf(stderr, "Unable to load %s\n", argv[1]);
