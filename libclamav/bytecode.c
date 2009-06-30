@@ -111,7 +111,7 @@ static inline uint64_t readNumber(const unsigned char *p, unsigned *off, unsigne
     for (i=*off+1;i < newoff; i++) {
 	uint64_t v = p[i];
 	if (UNLIKELY((v&0xf0) != 0x60)) {
-	    cli_errmsg("Invalid number part: %c\n", v);
+	    cli_errmsg("Invalid number part: %c\n", (char)v);
 	    *ok = 0;
 	    return 0;
 	}
@@ -247,8 +247,8 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer)
     magic1 = readNumber(buffer, &offset, len, &ok);
     magic2 = readFixedNumber(buffer, &offset, len, &ok, 2);
     if (!ok || magic1 != 0x53e5493e9f3d1c30ull || magic2 != 42) {
-      unsigned m0 = magic1 >> 32;
-      unsigned m1 = magic1;
+      unsigned long m0 = magic1 >> 32;
+      unsigned long m1 = magic1;
       cli_errmsg("Magic numbers don't match: %lx%lx, %u\n", m0, m1, magic2);
       return CL_EMALFDB;
     }
