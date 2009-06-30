@@ -87,6 +87,7 @@ int main(int argc, char *argv[])
 	optfree(opts);
 	exit(4);
     }
+
     fclose(f);
 
     printf("Bytecode loaded\n");
