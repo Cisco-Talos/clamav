@@ -1,0 +1,378 @@
+/*
+ *  Copyright (C) 2009 Sourcefire, Inc.
+ *
+ *  Authors: Tomasz Kojm <tkojm@clamav.net>
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *  MA 02110-1301, USA.
+ */
+
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
+#include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#include "cltypes.h"
+#include "others.h"
+#include "cpio.h"
+#include "scanners.h"
+
+struct cpio_hdr_old {
+    uint16_t magic;
+    uint16_t dev;
+    uint16_t ino;
+    uint16_t mode;
+    uint16_t uid;
+    uint16_t gid;
+    uint16_t nlink;
+    uint16_t rdev;
+    uint16_t mtime[2];
+    uint16_t namesize;
+    uint16_t filesize[2];
+};
+
+struct cpio_hdr_odc {
+    char magic[6];
+    char dev[6];
+    char ino[6];
+    char mode[6];
+    char uid[6];
+    char gid[6];
+    char nlink[6];
+    char rdev[6];
+    char mtime[11];
+    char namesize[6];
+    char filesize[11];
+};
+
+struct cpio_hdr_newc {
+    char magic[6];
+    char ino[8];
+    char mode[8];
+    char uid[8];
+    char gid[8];
+    char nlink[8];
+    char mtime[8];
+    char filesize[8];
+    char devmajor[8];
+    char devminor[8];
+    char rdevmajor[8];
+    char rdevminor[8];
+    char namesize[8];
+    char check[8];
+};
+
+#ifndef O_BINARY
+#define O_BINARY    0
+#endif
+
+static int cpio_scanfile(int fd, uint32_t size, cli_ctx *ctx)
+{
+	int newfd, bread, sum = 0, ret;
+	char buff[FILEBUFF];
+	char *name;
+
+
+    if(!(name = cli_gentemp(ctx->engine->tmpdir)))
+	return CL_EMEM;
+
+    if((newfd = open(name, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
+	cli_errmsg("cpio_scanfile: Can't create file %s\n", name);
+	free(name);
+	return CL_ECREAT;
+    }
+
+    while((bread = cli_readn(fd, buff, FILEBUFF)) > 0) {
+	if((uint32_t) (sum + bread) >= size) {
+	    if(write(newfd, buff, size - sum) == -1) {
+		cli_errmsg("cpio_scanfile: Can't write to %s\n", name);
+		cli_unlink(name);
+		free(name);
+		close(newfd);
+		return CL_EWRITE;
+	    }
+	    break;
+	} else {
+	    if(write(newfd, buff, bread) == -1) {
+		cli_errmsg("cpio_scanfile: Can't write to %s\n", name);
+		cli_unlink(name);
+		free(name);
+		close(newfd);
+		return CL_EWRITE;
+	    }
+	}
+	sum += bread;
+    }
+    cli_dbgmsg("CPIO: Extracted to %s\n", name);
+    lseek(newfd, 0, SEEK_SET);
+    if((ret = cli_magic_scandesc(newfd, ctx)) == CL_VIRUS)
+	cli_dbgmsg("cpio_scanfile: Infected with %s\n", *ctx->virname);
+
+    close(newfd);
+    if(!ctx->engine->keeptmp) {
+	if(cli_unlink(name)) {
+	    free(name);
+	    return CL_EUNLINK;
+	}
+    }
+    free(name);
+    return ret;
+}
+
+static inline uint16_t EC16(uint16_t v, int c)
+{
+    if(!c)
+	return v;
+    else
+	return ((v >> 8) + (v << 8));
+}
+
+static void sanitname(char *name)
+{
+    while(*name) {
+	if(!isascii(*name) || strchr("%\\\t\n\r", *name))
+	    *name = '_';
+	name++;
+    }
+}
+
+int cli_scancpio_old(int fd, cli_ctx *ctx)
+{
+	struct cpio_hdr_old hdr_old;
+	char name[513];
+	unsigned int file = 0, trailer = 0;
+	uint32_t filesize, namesize, hdr_namesize;
+	int ret, conv;
+	off_t pos;
+
+
+    while(read(fd, &hdr_old, sizeof(hdr_old)) == sizeof(hdr_old)) {
+	if(!hdr_old.magic && trailer)
+	    return CL_SUCCESS;
+
+	if(hdr_old.magic == 070707) {
+	    conv = 0;
+	} else if(hdr_old.magic == 0143561) {
+	    conv = 1;
+	} else {
+	    cli_dbgmsg("cli_scancpio_old: Invalid magic number\n");
+	    return CL_EFORMAT;
+	}
+
+	cli_dbgmsg("CPIO: -- File %u --\n", ++file);
+
+	if(hdr_old.namesize) {
+	    hdr_namesize = EC16(hdr_old.namesize, conv);
+	    namesize = MIN(sizeof(name), hdr_namesize);
+	    if(read(fd, name, namesize) != namesize) {
+		cli_dbgmsg("cli_scancpio_old: Can't read file name\n");
+		return CL_EFORMAT;
+	    }
+	    name[namesize - 1] = 0;
+	    sanitname(name);
+	    cli_dbgmsg("CPIO: Name: %s\n", name);
+	    if(!strcmp(name, "TRAILER!!!"))
+		trailer = 1;
+
+	    if(namesize < hdr_namesize) {
+		if(hdr_namesize % 2)
+		    hdr_namesize++;
+		lseek(fd, hdr_namesize - namesize, SEEK_CUR);
+	    } else if(hdr_namesize % 2)
+		lseek(fd, 1, SEEK_CUR);
+	}
+	filesize = (uint32_t) (EC16(hdr_old.filesize[0], conv) << 16 | EC16(hdr_old.filesize[1], conv));
+	cli_dbgmsg("CPIO: Filesize: %u\n", filesize);
+	if(!filesize)
+	    continue;
+
+	pos = lseek(fd, 0, SEEK_CUR);
+
+	if((EC16(hdr_old.mode, conv) & 0170000) != 0100000) {
+	    cli_dbgmsg("CPIO: Not a regular file, skipping\n");
+	} else {
+	    ret = cli_checklimits("cli_scancpio_old", ctx, filesize, 0, 0);
+	    if(ret == CL_EMAXFILES) {
+		return ret;
+	    } else if(ret == CL_SUCCESS) {
+		ret = cpio_scanfile(fd, filesize, ctx);
+		if(ret == CL_VIRUS)
+		    return ret;
+	    }
+	}
+	if(filesize % 2)
+	    filesize++;
+
+	lseek(fd, pos + filesize, SEEK_SET);
+    }
+
+    return CL_CLEAN;
+}
+
+int cli_scancpio_odc(int fd, cli_ctx *ctx)
+{
+	struct cpio_hdr_odc hdr_odc;
+	char name[513], buff[12];
+	unsigned int file = 0, trailer = 0;
+	uint32_t filesize, namesize, hdr_namesize;
+	int ret;
+	off_t pos;
+
+
+    while(read(fd, &hdr_odc, sizeof(hdr_odc)) == sizeof(hdr_odc)) {
+
+	if(!hdr_odc.magic[0] && trailer)
+	    return CL_SUCCESS;
+
+	if(strncmp(hdr_odc.magic, "070707", 6)) {
+	    cli_dbgmsg("cli_scancpio_odc: Invalid magic string\n");
+	    return CL_EFORMAT;
+	}
+
+	cli_dbgmsg("CPIO: -- File %u --\n", ++file);
+
+	strncpy(buff, hdr_odc.namesize, 6);
+	buff[6] = 0;
+	if(sscanf(buff, "%o", &hdr_namesize) != 1) {
+	    cli_dbgmsg("cli_scancpio_odc: Can't convert name size\n");
+	    return CL_EFORMAT;
+	}
+	if(hdr_namesize) {
+	    namesize = MIN(sizeof(name), hdr_namesize);
+	    if(read(fd, name, namesize) != namesize) {
+		cli_dbgmsg("cli_scancpio_odc: Can't read file name\n");
+		return CL_EFORMAT;
+	    }
+	    name[namesize - 1] = 0;
+	    sanitname(name);
+	    cli_dbgmsg("CPIO: Name: %s\n", name);
+	    if(!strcmp(name, "TRAILER!!!"))
+		trailer = 1;
+
+	    if(namesize < hdr_namesize)
+		lseek(fd, hdr_namesize - namesize, SEEK_CUR);
+	}
+
+	strncpy(buff, hdr_odc.filesize, 11);
+	buff[11] = 0;
+	if(sscanf(buff, "%o", &filesize) != 1) {
+	    cli_dbgmsg("cli_scancpio_odc: Can't convert file size\n");
+	    return CL_EFORMAT;
+	}
+	cli_dbgmsg("CPIO: Filesize: %u\n", filesize);
+	if(!filesize)
+	    continue;
+
+	pos = lseek(fd, 0, SEEK_CUR);
+
+	ret = cli_checklimits("cli_scancpio_odc", ctx, filesize, 0, 0);
+	if(ret == CL_EMAXFILES) {
+	    return ret;
+	} else if(ret == CL_SUCCESS) {
+	    ret = cpio_scanfile(fd, filesize, ctx);
+	    if(ret == CL_VIRUS)
+		return ret;
+	}
+
+	lseek(fd, pos + filesize, SEEK_SET);
+    }
+
+    return CL_CLEAN;
+}
+
+int cli_scancpio_newc(int fd, cli_ctx *ctx, int crc)
+{
+	struct cpio_hdr_newc hdr_newc;
+	char name[513], buff[9];
+	unsigned int file = 0, trailer = 0;
+	uint32_t filesize, namesize, hdr_namesize, pad;
+	int ret;
+	off_t pos;
+
+
+    while(read(fd, &hdr_newc, sizeof(hdr_newc)) == sizeof(hdr_newc)) {
+
+	if(!hdr_newc.magic[0] && trailer)
+	    return CL_SUCCESS;
+
+	if((!crc && strncmp(hdr_newc.magic, "070701", 6)) || (crc && strncmp(hdr_newc.magic, "070702", 6))) {
+	    cli_dbgmsg("cli_scancpio_newc: Invalid magic string\n");
+	    return CL_EFORMAT;
+	}
+
+	cli_dbgmsg("CPIO: -- File %u --\n", ++file);
+
+	strncpy(buff, hdr_newc.namesize, 8);
+	buff[8] = 0;
+	if(sscanf(buff, "%x", &hdr_namesize) != 1) {
+	    cli_dbgmsg("cli_scancpio_newc: Can't convert name size\n");
+	    return CL_EFORMAT;
+	}
+	if(hdr_namesize) {
+	    namesize = MIN(sizeof(name), hdr_namesize);
+	    if(read(fd, name, namesize) != namesize) {
+		cli_dbgmsg("cli_scancpio_newc: Can't read file name\n");
+		return CL_EFORMAT;
+	    }
+	    name[namesize - 1] = 0;
+	    sanitname(name);
+	    cli_dbgmsg("CPIO: Name: %s\n", name);
+	    if(!strcmp(name, "TRAILER!!!"))
+		trailer = 1;
+
+	    pad = (4 - (sizeof(hdr_newc) + hdr_namesize) % 4) % 4;
+	    if(namesize < hdr_namesize) {
+		if(pad)
+		    hdr_namesize += pad;
+		lseek(fd, hdr_namesize - namesize, SEEK_CUR);
+	    } else if(pad)
+		lseek(fd, pad, SEEK_CUR);
+	}
+
+	strncpy(buff, hdr_newc.filesize, 8);
+	buff[8] = 0;
+	if(sscanf(buff, "%x", &filesize) != 1) {
+	    cli_dbgmsg("cli_scancpio_newc: Can't convert file size\n");
+	    return CL_EFORMAT;
+	}
+	cli_dbgmsg("CPIO: Filesize: %u\n", filesize);
+	if(!filesize)
+	    continue;
+
+	pos = lseek(fd, 0, SEEK_CUR);
+
+	ret = cli_checklimits("cli_scancpio_newc", ctx, filesize, 0, 0);
+	if(ret == CL_EMAXFILES) {
+	    return ret;
+	} else if(ret == CL_SUCCESS) {
+	    ret = cpio_scanfile(fd, filesize, ctx);
+	    if(ret == CL_VIRUS)
+		return ret;
+	}
+
+	if((pad = filesize % 4))
+	    filesize += (4 - pad);
+
+	lseek(fd, pos + filesize, SEEK_SET);
+    }
+
+    return CL_CLEAN;
+}
