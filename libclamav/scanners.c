@@ -2028,6 +2028,26 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 		ret = cli_scantar(desc, ctx, 0);
 	    break;
 
+	case CL_TYPE_CPIO_OLD:
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO))
+		ret = cli_scancpio_old(desc, ctx);
+	    break;
+
+	case CL_TYPE_CPIO_ODC:
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO))
+		ret = cli_scancpio_odc(desc, ctx);
+	    break;
+
+	case CL_TYPE_CPIO_NEWC:
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO))
+		ret = cli_scancpio_newc(desc, ctx, 0);
+	    break;
+
+	case CL_TYPE_CPIO_CRC:
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CPIO))
+		ret = cli_scancpio_newc(desc, ctx, 1);
+	    break;
+
 	case CL_TYPE_BINHEX:
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_BINHEX))
 		ret = cli_scanbinhex(desc, ctx);

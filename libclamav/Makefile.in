@@ -121,7 +121,8 @@ am__libclamav_la_SOURCES_DIST = clamav.h matcher-ac.c matcher-ac.h \
 	textnorm.h dlp.c dlp.h jsparse/js-norm.c jsparse/js-norm.h \
 	jsparse/lexglobal.h jsparse/textbuf.h uniq.c uniq.h version.c \
 	version.h mpool.c mpool.h default.h sha256.c sha256.h bignum.h \
-	bytecode.c bytecode.h clambc.h bignum.c bignum_class.h
+	bytecode.c bytecode.h clambc.h cpio.c cpio.h bignum.c \
+	bignum_class.h
 @LINK_TOMMATH_FALSE@am__objects_1 = libclamav_la-bignum.lo
 am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-matcher-bm.lo libclamav_la-matcher.lo \
@@ -159,7 +160,7 @@ am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-js-norm.lo libclamav_la-uniq.lo \
 	libclamav_la-version.lo libclamav_la-mpool.lo \
 	libclamav_la-sha256.lo libclamav_la-bytecode.lo \
-	$(am__objects_1)
+	libclamav_la-cpio.lo $(am__objects_1)
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 libclamav_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libclamav_la_CFLAGS) \
@@ -529,7 +530,7 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	explode.h textnorm.c textnorm.h dlp.c dlp.h jsparse/js-norm.c \
 	jsparse/js-norm.h jsparse/lexglobal.h jsparse/textbuf.h uniq.c \
 	uniq.h version.c version.h mpool.c mpool.h default.h sha256.c \
-	sha256.h bignum.h bytecode.c bytecode.h clambc.h \
+	sha256.h bignum.h bytecode.c bytecode.h clambc.h cpio.c cpio.h \
 	$(am__append_7)
 noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la
 COMMON_CLEANFILES = version.h version.h.tmp *.gcda *.gcno lzma/*.gcda lzma/*.gcno
@@ -649,6 +650,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-bzlib.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-cab.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-chmunpack.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-cpio.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-cvd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-dconf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-disasm.Plo@am__quote@
@@ -1247,6 +1249,13 @@ libclamav_la-bytecode.lo: bytecode.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='bytecode.c' object='libclamav_la-bytecode.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-bytecode.lo `test -f 'bytecode.c' || echo '$(srcdir)/'`bytecode.c
+
+libclamav_la-cpio.lo: cpio.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-cpio.lo -MD -MP -MF $(DEPDIR)/libclamav_la-cpio.Tpo -c -o libclamav_la-cpio.lo `test -f 'cpio.c' || echo '$(srcdir)/'`cpio.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libclamav_la-cpio.Tpo $(DEPDIR)/libclamav_la-cpio.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cpio.c' object='libclamav_la-cpio.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-cpio.lo `test -f 'cpio.c' || echo '$(srcdir)/'`cpio.c
 
 libclamav_la-bignum.lo: bignum.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-bignum.lo -MD -MP -MF $(DEPDIR)/libclamav_la-bignum.Tpo -c -o libclamav_la-bignum.lo `test -f 'bignum.c' || echo '$(srcdir)/'`bignum.c

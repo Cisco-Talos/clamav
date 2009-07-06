@@ -288,7 +288,9 @@ libclamav_la_SOURCES = \
 	bignum.h\
 	bytecode.c\
 	bytecode.h\
-	clambc.h
+	clambc.h \
+	cpio.c \
+	cpio.h
 
 if !LINK_TOMMATH
 libclamav_la_SOURCES += bignum.c \
