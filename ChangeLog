@@ -1,3 +1,7 @@
+Mon Jul  6 16:56:06 CEST 2009 (tk)
+----------------------------------
+ * test: add cpio test files
+
 Thu Jul  2 17:05:12 CEST 2009 (tk)
 ----------------------------------
  * libclamav: add support for cpio archives (bb#1649)
