@@ -67,6 +67,11 @@ enum bc_opcode {
   OP_SELECT,
   OP_CALL_DIRECT,
   OP_COPY,
+  OP_GEP1,
+  OP_GEP2,
+  OP_GEPN,
+  OP_STORE,
+  OP_LOAD,
   OP_INVALID /* last */
 };
 
@@ -85,6 +90,8 @@ static const unsigned char operand_counts[] = {
   /* CALLs have variable number of operands */
   0,
   /* OP_COPY */
-  2
+  2,
+  /* OP_GEP1, OP_GEP2, OP_GEPN, OP_STORE, OP_LOAD*/
+  2, 3, 0, 2, 1
 };
 #endif
