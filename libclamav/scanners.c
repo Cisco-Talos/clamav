@@ -92,6 +92,7 @@
 #include "unzip.h"
 #include "dlp.h"
 #include "default.h"
+#include "cpio.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
