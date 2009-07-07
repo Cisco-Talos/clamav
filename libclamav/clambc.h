@@ -80,7 +80,7 @@ static const unsigned char operand_counts[] = {
   /* ADD -> XOR */
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
   /* TRUNC -> ZEXT */
-  2, 2, 2,
+  1, 1, 1,
   /* BRANCH, JMP, RET */
   3, 1, 1,
   /* ICMP */

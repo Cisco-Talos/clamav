@@ -31,16 +31,27 @@
 #include <string.h>
 
 typedef uint32_t operand_t;
+typedef uint16_t bbid_t;
+typedef uint16_t funcid_t;
 
-struct cli_bc_varop {
-    uint8_t numOps;
+struct cli_bc_callop {
     operand_t* ops;
+    uint8_t numOps;
+    funcid_t funcid;
 };
 
 struct branch {
     operand_t condition;
-    struct cli_bc_bb *br_true;
-    struct cli_bc_bb *br_false;
+    bbid_t br_true;
+    bbid_t br_false;
+};
+
+#define MAX_OP (operand_t)(~0u)
+#define CONSTANT_OP (MAX_OP-1)
+#define ARG_OP (MAX_OP-1)
+struct cli_bc_value {
+    uint64_t v;
+    operand_t ref;/* this has CONSTANT_OP value for constants, and ARG_op for arguments */
 };
 
 struct cli_bc_inst {
@@ -50,9 +61,9 @@ struct cli_bc_inst {
 	operand_t unaryop;
 	operand_t binop[2];
 	operand_t three[3];
-	struct cli_bc_varop ops;
+	struct cli_bc_callop ops;
 	struct branch branch;
-	struct cli_bc_bb *jump;
+	bbid_t jump;
     } u;
 };
 
@@ -64,9 +75,14 @@ struct cli_bc_bb {
 struct cli_bc_func {
     uint8_t numArgs;
     uint16_t numLocals;
+    uint32_t numInsts;
+    uint32_t numConstants;
     uint16_t numBB;
     uint16_t *types;
+    uint32_t insn_idx;
     struct cli_bc_bb *BB;
+    struct cli_bc_inst *allinsts;
+    struct cli_bc_value *values;
 };
 
 struct cli_bc_ctx {
@@ -124,15 +140,47 @@ static inline uint64_t readNumber(const unsigned char *p, unsigned *off, unsigne
     return n;
 }
 
-static inline uint64_t readOperand(unsigned char *p, unsigned *off, unsigned len, char *ok)
+static inline funcid_t readFuncID(struct cli_bc *bc, unsigned char *p,
+				  unsigned *off, unsigned len, char *ok)
 {
+    funcid_t id = readNumber(p, off, len, ok);
+    if (id >= bc->num_func) {
+	cli_errmsg("Called function out of range: %u >= %u\n", id, bc->num_func);
+	*ok = 0;
+	return ~0;
+    }
+    return id;
+}
+
+static inline operand_t readOperand(struct cli_bc_func *func, unsigned char *p,
+				    unsigned *off, unsigned len, char *ok)
+{
+    uint64_t v;
+    unsigned numValues = func->numArgs + func->numInsts + func->numConstants;
     if ((p[*off]&0xf0) == 0x40) {
 	p[*off] |= 0x20;
-	/* TODO: constant int operand needs to be added to constant table*/
-	return readNumber(p, off, len, ok);
+	/* TODO: unique constants */
+	func->values = cli_realloc2(func->values, (numValues+1)*sizeof(*func->values));
+	if (!func->values) {
+	    *ok = 0;
+	    return MAX_OP;
+	}
+	func->numConstants++;
+	func->values[numValues].v = readNumber(p, off, len, ok);
+	func->values[numValues].ref = CONSTANT_OP;
+	return numValues;
     }
-    return readNumber(p, off, len, ok);
+    v = readNumber(p, off, len, ok);
+    if (!*ok)
+	return MAX_OP;
+    if (v >= numValues) {
+	cli_errmsg("Operand index exceeds bounds: %u >= %u!\n", v, numValues);
+	*ok = 0;
+	return MAX_OP;
+    }
+    return v;
 }
+
 static inline unsigned readFixedNumber(const unsigned char *p, unsigned *off,
 				       unsigned len, char *ok, unsigned width)
 {
@@ -314,6 +362,31 @@ static int parseFunctionHeader(struct cli_bc *bc, unsigned fn, unsigned char *bu
 	return CL_EMALFDB;
     }
     offset++;
+    func->numInsts = readNumber(buffer, &offset, len, &ok);
+    if (!ok ){
+	cli_errmsg("Invalid instructions count\n");
+	return CL_EMALFDB;
+    }
+    func->insn_idx = 0;
+    func->numConstants=0;
+    func->allinsts = cli_calloc(func->numInsts, sizeof(*func->allinsts));
+    if (!func->allinsts) {
+	cli_errmsg("Out of memory allocating instructions\n");
+	return CL_EMEM;
+    }
+    func->values = cli_calloc(func->numInsts+func->numArgs, sizeof(*func->values));
+    if (!func->values) {
+	cli_errmsg("Out of memory allocating values\n");
+	return CL_EMEM;
+    }
+    for (i=0;i<func->numArgs;i++) {
+	func->values[i].v = 0xdeadbeef;
+	func->values[i].ref = ARG_OP;
+    }
+    for(;i<func->numInsts+func->numArgs;i++) {
+	func->values[i].v = 0xdeadbeef;
+	func->values[i].ref = i-func->numArgs;
+    }
     func->numBB = readNumber(buffer, &offset, len, &ok);
     if (!ok) {
 	cli_errmsg("Invalid basic block count\n");
@@ -327,15 +400,15 @@ static int parseFunctionHeader(struct cli_bc *bc, unsigned fn, unsigned char *bu
     return CL_SUCCESS;
 }
 
-static struct cli_bc_bb *readBBID(struct cli_bc_func *func, const unsigned char *buffer, unsigned *off, unsigned len, char *ok) {
+static bbid_t readBBID(struct cli_bc_func *func, const unsigned char *buffer, unsigned *off, unsigned len, char *ok) {
     unsigned id = readNumber(buffer, off, len, ok);
     if (!id || id >= func->numBB) {
 	cli_errmsg("Basic block ID out of range: %u\n", id);
 	*ok = 0;
     }
     if (!*ok)
-	return NULL;
-    return &func->BB[id];
+	return ~0;
+    return id;
 }
 
 static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char *buffer)
@@ -359,7 +432,7 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
     }
     offset = 1;
     BB->numInsts = 0;
-    BB->insts = NULL;
+    BB->insts = &bcfunc->allinsts[bcfunc->insn_idx];
     while (!last) {
 	unsigned numOp, i;
 	if (buffer[offset] == 'T') {
@@ -384,12 +457,12 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		inst.u.jump = readBBID(bcfunc, buffer, &offset, len, &ok);
 		break;
 	    case OP_BRANCH:
-		inst.u.branch.condition = readOperand(buffer, &offset, len, &ok);
+		inst.u.branch.condition = readOperand(bcfunc, buffer, &offset, len, &ok);
 		inst.u.branch.br_true = readBBID(bcfunc, buffer, &offset, len, &ok);
 		inst.u.branch.br_false = readBBID(bcfunc, buffer, &offset, len, &ok);
 		break;
 	    case OP_CALL_DIRECT:
-		numOp = readFixedNumber(buffer, &offset, len, &ok, 1)+1;
+		numOp = readFixedNumber(buffer, &offset, len, &ok, 1);
 		if (ok) {
 		    inst.u.ops.numOps = numOp;
 		    inst.u.ops.ops = cli_calloc(numOp, sizeof(*inst.u.ops.ops));
@@ -397,8 +470,9 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 			cli_errmsg("Out of memory allocating operands\n");
 			return CL_EMALFDB;
 		    }
+		    inst.u.ops.funcid = readFuncID(bc, buffer, &offset, len, &ok);
 		    for (i=0;i<numOp;i++) {
-			inst.u.ops.ops[i] = readOperand(buffer, &offset, len, &ok);
+			inst.u.ops.ops[i] = readOperand(bcfunc, buffer, &offset, len, &ok);
 		    }
 		}
 		break;
@@ -406,16 +480,16 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		numOp = operand_counts[inst.opcode];
 		switch (numOp) {
 		    case 1:
-			inst.u.unaryop = readOperand(buffer, &offset, len, &ok);
+			inst.u.unaryop = readOperand(bcfunc, buffer, &offset, len, &ok);
 			break;
 		    case 2:
-			inst.u.binop[0] = readOperand(buffer, &offset, len, &ok);
-			inst.u.binop[1] = readOperand(buffer, &offset, len, &ok);
+			inst.u.binop[0] = readOperand(bcfunc, buffer, &offset, len, &ok);
+			inst.u.binop[1] = readOperand(bcfunc, buffer, &offset, len, &ok);
 			break;
 		    case 3:
-			inst.u.three[0] = readOperand(buffer, &offset, len, &ok);
-			inst.u.three[1] = readOperand(buffer, &offset, len, &ok);
-			inst.u.three[2] = readOperand(buffer, &offset, len, &ok);
+			inst.u.three[0] = readOperand(bcfunc, buffer, &offset, len, &ok);
+			inst.u.three[1] = readOperand(bcfunc, buffer, &offset, len, &ok);
+			inst.u.three[2] = readOperand(bcfunc, buffer, &offset, len, &ok);
 			break;
 		    default:
 			cli_errmsg("Opcode with too many operands: %u?\n", numOp);
@@ -427,13 +501,11 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	    cli_errmsg("Invalid instructions or operands\n");
 	    return CL_EMALFDB;
 	}
-	BB->insts = cli_realloc2(BB->insts, (++BB->numInsts)*sizeof(*BB->insts));
-	if (!BB->insts) {
-	    cli_errmsg("Unable to allocate memory for instruction %u\n", 
-		       BB->numInsts);
-	    return CL_EMEM;
+	if (bcfunc->insn_idx + BB->numInsts >= bcfunc->numInsts) {
+	    cli_errmsg("More instructions than declared in total!\n");
+	    return CL_EMALFDB;
 	}
-	BB->insts[BB->numInsts-1] = inst;
+	BB->insts[BB->numInsts++] = inst;
     }
     if (bb == bc->funcs[func].numBB-1) {
 	if (buffer[offset] != 'E') {
@@ -530,9 +602,10 @@ void cli_bytecode_destroy(struct cli_bc *bc)
 		if (operand_counts[i->opcode] > 3)
 		    free(i->u.ops.ops);
 	    }
-	    free(BB->insts);
 	}
 	free(f->BB);
+	free(f->allinsts);
+	free(f->values);
     }
     free(bc->funcs);
 }

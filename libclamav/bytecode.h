@@ -26,6 +26,7 @@
 struct cli_dbio;
 struct cli_bc_ctx;
 struct cli_bc_func;
+struct cli_bc_value;
 
 struct cli_bc {
   unsigned verifier;
