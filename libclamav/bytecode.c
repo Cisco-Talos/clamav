@@ -52,6 +52,7 @@ int cli_bytecode_context_clear(struct cli_bc_ctx *ctx)
     free(ctx->values);
     free(ctx->operands);
     memset(ctx, 0, sizeof(ctx));
+    return CL_SUCCESS;
 }
 
 int cli_bytecode_context_setfuncid(struct cli_bc_ctx *ctx, struct cli_bc *bc, unsigned funcid)
@@ -597,6 +598,11 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 	}
     }
     cli_dbgmsg("Parsed %d functions\n", current_func);
+    if (current_func != bc->num_func) {
+	cli_errmsg("Loaded less functions than declared: %u vs. %u\n",
+		   current_func, bc->num_func);
+	return CL_EMALFDB;
+    }
     return CL_SUCCESS;
 }
 

@@ -42,7 +42,7 @@ static int bcfail(const char *msg, unsigned a, unsigned b,
     bcfail("funcid out of bounds!",funcid, bc->num_func,__FILE__,__LINE__); } while(0)
 #define CHECK_EQ(a, b) do { if (a != b) return \
     bcfail("Values "#a" and "#b" don't match!",a,b,__FILE__,__LINE__); } while(0)
-#define CHECK_GT(a, b) do {if (a < b) return \
+#define CHECK_GT(a, b) do {if (a <= b) return \
     bcfail("Condition failed "#a" > "#b,a,b, __FILE__, __LINE__); } while(0)
 #else
 #define CHECK_FUNCID(x)
