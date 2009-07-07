@@ -62,19 +62,21 @@ int cli_bytecode_context_setfuncid(struct cli_bc_ctx *ctx, struct cli_bc *bc, un
 	cli_errmsg("bytecode: function ID doesn't exist: %u\n", funcid);
 	return CL_EARG;
     }
-    ctx->func = &bc->funcs[funcid];
+    func = ctx->func = &bc->funcs[funcid];
     ctx->bc = bc;
     ctx->numParams = func->numArgs;
     ctx->funcid = funcid;
-    ctx->values = cli_malloc(sizeof(*ctx->values)*func->numArgs);
-    if (!ctx->values) {
-	cli_errmsg("bytecode: error allocating memory for parameters\n");
-	return CL_EMEM;
-    }
-    ctx->operands = cli_malloc(sizeof(*ctx->operands)*func->numArgs);
-    if (!ctx->operands) {
-	cli_errmsg("bytecode: error allocating memory for parameters\n");
-	return CL_EMEM;
+    if (func->numArgs) {
+	ctx->values = cli_malloc(sizeof(*ctx->values)*func->numArgs);
+	if (!ctx->values) {
+	    cli_errmsg("bytecode: error allocating memory for parameters\n");
+	    return CL_EMEM;
+	}
+	ctx->operands = cli_malloc(sizeof(*ctx->operands)*func->numArgs);
+	if (!ctx->operands) {
+	    cli_errmsg("bytecode: error allocating memory for parameters\n");
+	    return CL_EMEM;
+	}
     }
     for (i=0;i<func->numArgs;i++) {
 	ctx->values[i].ref = MAX_OP;
@@ -98,8 +100,8 @@ int cli_bytecode_context_setparam_int(struct cli_bc_ctx *ctx, unsigned i, uint64
 	cli_errmsg("bytecode: parameter type mismatch\n");
 	return CL_EARG;
     }
-    ctx->func->values[i].v = c;
-    ctx->func->values[i].ref = CONSTANT_OP;
+    ctx->values[i].v = c;
+    ctx->values[i].ref = CONSTANT_OP;
     return CL_SUCCESS;
 }
 
@@ -151,8 +153,8 @@ static inline uint64_t readNumber(const unsigned char *p, unsigned *off, unsigne
 static inline funcid_t readFuncID(struct cli_bc *bc, unsigned char *p,
 				  unsigned *off, unsigned len, char *ok)
 {
-    funcid_t id = readNumber(p, off, len, ok);
-    if (id >= bc->num_func) {
+    funcid_t id = readNumber(p, off, len, ok)-1;
+    if (*ok && id >= bc->num_func) {
 	cli_errmsg("Called function out of range: %u >= %u\n", id, bc->num_func);
 	*ok = 0;
 	return ~0;
@@ -484,6 +486,15 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		    }
 		}
 		break;
+	    case OP_ZEXT:
+	    case OP_SEXT:
+	    case OP_TRUNC:
+		inst.u.cast.source = readOperand(bcfunc, buffer, &offset, len, &ok);
+		if (ok) {
+		    /* calculate mask */
+		    inst.u.cast.mask = (1<<bcfunc->allinsts[inst.u.cast.source].type)-1;
+		}
+		break;
 	    default:
 		numOp = operand_counts[inst.opcode];
 		switch (numOp) {
@@ -593,8 +604,11 @@ int cli_bytecode_run(struct cli_bc *bc, struct cli_bc_ctx *ctx)
 {
     struct cli_bc_inst inst;
     struct cli_bc_func func;
+    struct cli_bc_value value;
     unsigned i;
-    if (!ctx || !ctx->bc || !ctx->func || !ctx->values)
+    if (!ctx || !ctx->bc || !ctx->func)
+	return CL_ENULLARG;
+    if (ctx->numParams && (!ctx->values || !ctx->operands))
 	return CL_ENULLARG;
     for (i=0;i<ctx->numParams;i++) {
 	if (ctx->values[i].ref == MAX_OP) {
@@ -610,7 +624,7 @@ int cli_bytecode_run(struct cli_bc *bc, struct cli_bc_ctx *ctx)
     inst.u.ops.numOps = ctx->numParams;
     inst.u.ops.funcid = ctx->funcid;
     inst.u.ops.ops = ctx->operands;
-    return cli_vm_execute_inst(ctx->bc, ctx, &func, &inst);
+    return cli_vm_execute(ctx->bc, ctx, &func, &inst, &value);
 }
 
 void cli_bytecode_destroy(struct cli_bc *bc)

@@ -36,7 +36,7 @@ static void help(void)
 	   get_version());
     printf("           By The ClamAV Team: http://www.clamav.net/team\n");
     printf("           (C) 2009 Sourcefire, Inc.\n\n");
-    printf("clambc <file>\n\n");
+    printf("clambc <file> [function] [param1 ...]\n\n");
     printf("    --help                 -h         Show help\n");
     printf("    --version              -V         Show version\n");
     printf("    file                              file to test\n");
@@ -51,13 +51,14 @@ int main(int argc, char *argv[])
     struct cli_bc_ctx *ctx;
     int rc;
     struct optstruct *opts;
+    unsigned funcid=0, i;
 
     opts = optparse(NULL, argc, argv, 1, OPT_CLAMBC, 0, NULL);
     if (!opts) {
 	fprintf(stderr, "ERROR: Can't parse command line options\n");
 	exit(1);
     }
-    if(optget(opts, "help")->enabled) {
+    if(optget(opts, "help")->enabled || !opts->filename) {
 	optfree(opts);
 	help();
 	exit(0);
@@ -67,7 +68,7 @@ int main(int argc, char *argv[])
 	optfree(opts);
 	exit(0);
     }
-    f = fopen(argv[1], "r");
+    f = fopen(opts->filename[0], "r");
     if (!f) {
 	fprintf(stderr, "Unable to load %s\n", argv[1]);
 	optfree(opts);
@@ -98,9 +99,29 @@ int main(int argc, char *argv[])
 	exit(3);
     }
 
-    printf("Running bytecode\n");
-    cli_bytecode_run(bc, ctx);
-    printf("Bytecode run finished\n");
+    if (opts->filename[1]) {
+	funcid = atoi(opts->filename[1]);
+    }
+    cli_bytecode_context_setfuncid(ctx, bc, funcid);
+    printf("Running bytecode function :%u\n", funcid);
+
+    if (opts->filename[1]) {
+	i=2;
+	while (opts->filename[i]) {
+	    rc = cli_bytecode_context_setparam_int(ctx, i-2, atoi(opts->filename[i]));
+	    if (rc != CL_SUCCESS) {
+		fprintf(stderr,"Unable to set param %u: %s\n", i-2, cl_strerror(rc));
+	    }
+	    i++;
+	}
+    }
+
+    rc = cli_bytecode_run(bc, ctx);
+    if (rc != CL_SUCCESS) {
+	fprintf(stderr,"Unable to run bytecode: %s\n", cl_strerror(rc));
+    } else {
+	printf("Bytecode run finished\n");
+    }
     cli_bytecode_context_destroy(ctx);
     cli_bytecode_destroy(bc);
     free(bc);

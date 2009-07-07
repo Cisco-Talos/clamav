@@ -50,6 +50,4 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio);
 int cli_bytecode_run(struct cli_bc *bc, struct cli_bc_ctx *ctx);
 void cli_bytecode_destroy(struct cli_bc *bc);
 
-int cli_vm_execute_inst(struct cli_bc *bc, struct cli_bc_ctx *ctx, struct cli_bc_func *func, struct cli_bc_inst *inst);
-
 #endif
