@@ -1,5 +1,5 @@
 /*
- *  Load, verify and execute ClamAV bytecode.
+ *  Load, and verify ClamAV bytecode.
  *
  *  Copyright (C) 2009 Sourcefire, Inc.
  *
@@ -27,79 +27,87 @@
 #include "clamav.h"
 #include "others.h"
 #include "bytecode.h"
+#include "bytecode_priv.h"
 #include "readdb.h"
 #include <string.h>
 
-typedef uint32_t operand_t;
-typedef uint16_t bbid_t;
-typedef uint16_t funcid_t;
-
-struct cli_bc_callop {
-    operand_t* ops;
-    uint8_t numOps;
-    funcid_t funcid;
-};
-
-struct branch {
-    operand_t condition;
-    bbid_t br_true;
-    bbid_t br_false;
-};
-
-#define MAX_OP (operand_t)(~0u)
-#define CONSTANT_OP (MAX_OP-1)
-#define ARG_OP (MAX_OP-1)
-struct cli_bc_value {
-    uint64_t v;
-    operand_t ref;/* this has CONSTANT_OP value for constants, and ARG_op for arguments */
-};
-
-struct cli_bc_inst {
-    enum bc_opcode opcode;
-    uint16_t type;
-    union {
-	operand_t unaryop;
-	operand_t binop[2];
-	operand_t three[3];
-	struct cli_bc_callop ops;
-	struct branch branch;
-	bbid_t jump;
-    } u;
-};
-
-struct cli_bc_bb {
-    unsigned numInsts;
-    struct cli_bc_inst *insts;
-};
-
-struct cli_bc_func {
-    uint8_t numArgs;
-    uint16_t numLocals;
-    uint32_t numInsts;
-    uint32_t numConstants;
-    uint16_t numBB;
-    uint16_t *types;
-    uint32_t insn_idx;
-    struct cli_bc_bb *BB;
-    struct cli_bc_inst *allinsts;
-    struct cli_bc_value *values;
-};
-
-struct cli_bc_ctx {
-    unsigned dummy;
-};
-
-struct cli_bc_ctx *cli_bytecode_alloc_context(void)
+struct cli_bc_ctx *cli_bytecode_context_alloc(void)
 {
     struct cli_bc_ctx *ctx = cli_malloc(sizeof(*ctx));
+    ctx->bc = NULL;
+    ctx->func = NULL;
+    ctx->values = NULL;
+    ctx->operands = NULL;
     return ctx;
 }
 
-void cli_bytecode_destroy_context(struct cli_bc_ctx *ctx)
+void cli_bytecode_context_destroy(struct cli_bc_ctx *ctx)
 {
+   cli_bytecode_context_clear(ctx);
    free(ctx);
 }
 
+int cli_bytecode_context_clear(struct cli_bc_ctx *ctx)
+{
+    free(ctx->values);
+    free(ctx->operands);
+    memset(ctx, 0, sizeof(ctx));
+}
+
+int cli_bytecode_context_setfuncid(struct cli_bc_ctx *ctx, struct cli_bc *bc, unsigned funcid)
+{
+    unsigned i;
+    struct cli_bc_func *func;
+    if (funcid >= bc->num_func) {
+	cli_errmsg("bytecode: function ID doesn't exist: %u\n", funcid);
+	return CL_EARG;
+    }
+    ctx->func = &bc->funcs[funcid];
+    ctx->bc = bc;
+    ctx->numParams = func->numArgs;
+    ctx->funcid = funcid;
+    ctx->values = cli_malloc(sizeof(*ctx->values)*func->numArgs);
+    if (!ctx->values) {
+	cli_errmsg("bytecode: error allocating memory for parameters\n");
+	return CL_EMEM;
+    }
+    ctx->operands = cli_malloc(sizeof(*ctx->operands)*func->numArgs);
+    if (!ctx->operands) {
+	cli_errmsg("bytecode: error allocating memory for parameters\n");
+	return CL_EMEM;
+    }
+    for (i=0;i<func->numArgs;i++) {
+	ctx->values[i].ref = MAX_OP;
+	ctx->operands[i] = i;
+    }
+    return CL_SUCCESS;
+}
+
+static inline int type_isint(uint16_t type)
+{
+    return type > 0 && type <= 64;
+}
+
+int cli_bytecode_context_setparam_int(struct cli_bc_ctx *ctx, unsigned i, uint64_t c)
+{
+    if (i >= ctx->numParams) {
+	cli_errmsg("bytecode: param index out of bounds: %u\n", i);
+	return CL_EARG;
+    }
+    if (!type_isint(ctx->func->types[i])) {
+	cli_errmsg("bytecode: parameter type mismatch\n");
+	return CL_EARG;
+    }
+    ctx->func->values[i].v = c;
+    ctx->func->values[i].ref = CONSTANT_OP;
+    return CL_SUCCESS;
+}
+
+int cli_bytecode_context_setparam_ptr(struct cli_bc_ctx *ctx, unsigned i, void *data, unsigned datalen)
+{
+    cli_errmsg("Pointer parameters are not implemented yet!\n");
+    return CL_EARG;
+}
 
 static inline uint64_t readNumber(const unsigned char *p, unsigned *off, unsigned len, char *ok)
 {
@@ -581,8 +589,28 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
     return CL_SUCCESS;
 }
 
-void cli_bytecode_run(struct cli_bc *bc, struct cli_bc_ctx *ctx)
+int cli_bytecode_run(struct cli_bc *bc, struct cli_bc_ctx *ctx)
 {
+    struct cli_bc_inst inst;
+    struct cli_bc_func func;
+    unsigned i;
+    if (!ctx || !ctx->bc || !ctx->func || !ctx->values)
+	return CL_ENULLARG;
+    for (i=0;i<ctx->numParams;i++) {
+	if (ctx->values[i].ref == MAX_OP) {
+	    cli_errmsg("bytecode: parameter %u is uninitialized!\n", i);
+	    return CL_EARG;
+	}
+    }
+    memset(&func, 0, sizeof(func));
+    func.values = ctx->values;
+
+    inst.opcode = OP_CALL_DIRECT;
+    inst.type = 0;/* TODO: support toplevel functions with return values */
+    inst.u.ops.numOps = ctx->numParams;
+    inst.u.ops.funcid = ctx->funcid;
+    inst.u.ops.ops = ctx->operands;
+    return cli_vm_execute_inst(ctx->bc, ctx, &func, &inst);
 }
 
 void cli_bytecode_destroy(struct cli_bc *bc)

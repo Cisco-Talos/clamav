@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
     fclose(f);
 
     printf("Bytecode loaded\n");
-    ctx = cli_bytecode_alloc_context();
+    ctx = cli_bytecode_context_alloc();
     if (!ctx) {
 	fprintf(stderr,"Out of memory\n");
 	exit(3);
@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
     printf("Running bytecode\n");
     cli_bytecode_run(bc, ctx);
     printf("Bytecode run finished\n");
-    cli_bytecode_destroy_context(ctx);
+    cli_bytecode_context_destroy(ctx);
     cli_bytecode_destroy(bc);
     free(bc);
     optfree(opts);

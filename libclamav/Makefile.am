@@ -288,6 +288,8 @@ libclamav_la_SOURCES = \
 	bignum.h\
 	bytecode.c\
 	bytecode.h\
+	bytecode_vm.c\
+	bytecode_priv.h\
 	clambc.h \
 	cpio.c \
 	cpio.h
