@@ -174,7 +174,7 @@ static inline operand_t readOperand(struct cli_bc_func *func, unsigned char *p,
     if (!*ok)
 	return MAX_OP;
     if (v >= numValues) {
-	cli_errmsg("Operand index exceeds bounds: %u >= %u!\n", v, numValues);
+	cli_errmsg("Operand index exceeds bounds: %u >= %u!\n", (unsigned)v, (unsigned)numValues);
 	*ok = 0;
 	return MAX_OP;
     }
@@ -507,7 +507,7 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	}
 	BB->insts[BB->numInsts++] = inst;
     }
-    if (bb == bc->funcs[func].numBB-1) {
+    if (bb+1 == bc->funcs[func].numBB) {
 	if (buffer[offset] != 'E') {
 	    cli_errmsg("Missing basicblock terminator, got: %c\n", buffer[offset]);
 	    return CL_EMALFDB;
@@ -598,9 +598,9 @@ void cli_bytecode_destroy(struct cli_bc *bc)
 	for (j=0;j<f->numBB;j++) {
 	    struct cli_bc_bb *BB = &f->BB[j];
 	    for(k=0;k<BB->numInsts;k++) {
-		struct cli_bc_inst *i = &BB->insts[k];
-		if (operand_counts[i->opcode] > 3)
-		    free(i->u.ops.ops);
+		struct cli_bc_inst *ii = &BB->insts[k];
+		if (operand_counts[ii->opcode] > 3)
+		    free(ii->u.ops.ops);
 	    }
 	}
 	free(f->BB);
