@@ -259,6 +259,8 @@ const char *cl_strerror(int clerror)
 	    return "CL_EMAXFILES";
 	case CL_EFORMAT:
 	    return "CL_EFORMAT: Bad format or broken data";
+	case CL_EBYTECODE:
+	    return "CL_EBYTECODE: error during bytecode execution";
 	default:
 	    return "Unknown error code";
     }

@@ -67,12 +67,12 @@ int cli_bytecode_context_setfuncid(struct cli_bc_ctx *ctx, struct cli_bc *bc, un
     ctx->bc = bc;
     ctx->numParams = func->numArgs;
     ctx->funcid = funcid;
+    ctx->values = cli_malloc(sizeof(*ctx->values)*(func->numArgs+1));
+    if (!ctx->values) {
+	cli_errmsg("bytecode: error allocating memory for parameters\n");
+	return CL_EMEM;
+    }
     if (func->numArgs) {
-	ctx->values = cli_malloc(sizeof(*ctx->values)*func->numArgs);
-	if (!ctx->values) {
-	    cli_errmsg("bytecode: error allocating memory for parameters\n");
-	    return CL_EMEM;
-	}
 	ctx->operands = cli_malloc(sizeof(*ctx->operands)*func->numArgs);
 	if (!ctx->operands) {
 	    cli_errmsg("bytecode: error allocating memory for parameters\n");
@@ -81,7 +81,7 @@ int cli_bytecode_context_setfuncid(struct cli_bc_ctx *ctx, struct cli_bc *bc, un
     }
     for (i=0;i<func->numArgs;i++) {
 	ctx->values[i].ref = MAX_OP;
-	ctx->operands[i] = i;
+	ctx->operands[i+1] = i;
     }
     return CL_SUCCESS;
 }
@@ -168,7 +168,7 @@ static inline operand_t readOperand(struct cli_bc_func *func, unsigned char *p,
 {
     uint64_t v;
     unsigned numValues = func->numArgs + func->numInsts + func->numConstants;
-    if ((p[*off]&0xf0) == 0x40) {
+    if ((p[*off]&0xf0) == 0x40 || p[*off] == 0x50) {
 	p[*off] |= 0x20;
 	/* TODO: unique constants */
 	func->values = cli_realloc2(func->values, (numValues+1)*sizeof(*func->values));
@@ -229,8 +229,10 @@ static inline unsigned char *readData(const unsigned char *p, unsigned *off, uns
     }
     (*off)++;
     l = readNumber(p, off, len, ok);
-    if (!l)
+    if (!l) {
+	*datalen = l;
 	return NULL;
+    }
     newoff = *off + l;
     if (newoff > len) {
 	cli_errmsg("Line ended while reading data\n");
@@ -610,7 +612,6 @@ int cli_bytecode_run(struct cli_bc *bc, struct cli_bc_ctx *ctx)
 {
     struct cli_bc_inst inst;
     struct cli_bc_func func;
-    struct cli_bc_value value;
     unsigned i;
     if (!ctx || !ctx->bc || !ctx->func)
 	return CL_ENULLARG;
@@ -624,13 +625,14 @@ int cli_bytecode_run(struct cli_bc *bc, struct cli_bc_ctx *ctx)
     }
     memset(&func, 0, sizeof(func));
     func.values = ctx->values;
+    func.numInsts = 1;
 
     inst.opcode = OP_CALL_DIRECT;
     inst.type = 0;/* TODO: support toplevel functions with return values */
     inst.u.ops.numOps = ctx->numParams;
     inst.u.ops.funcid = ctx->funcid;
     inst.u.ops.ops = ctx->operands;
-    return cli_vm_execute(ctx->bc, ctx, &func, &inst, &value);
+    return cli_vm_execute(ctx->bc, ctx, &func, &inst, func.values);
 }
 
 void cli_bytecode_destroy(struct cli_bc *bc)

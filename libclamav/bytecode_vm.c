@@ -57,6 +57,35 @@ struct stack_entry {
     unsigned bb_inst;
 };
 
+
+/* Get the operand of a binary operator, upper bits
+ * (beyond the size of the operand) may have random values.
+ * Use this when the active bits of the result of a binop are the same
+ * regardless of the state of the inactive (high) bits of their operands.
+ * For example (a + b)&mask == ((a&mask) + (b&mask))
+ * but (a / b)&mask != ((a&mask) / (b&mask))
+ * */
+#define BINOPNOMOD(i) (values[inst->u.binop[i]].v)
+#define UNOPNOMOD(i) (values[inst->u.binop[i]].v)
+
+/* get the operand of a binary operator, upper bits are cleared */
+#define BINOP(i) (BINOPNOMOD(i)&((1 << inst->type)-1))
+#define UNOP(x) (UNOPNOMOD(i)&((1 << inst->type)-1))
+
+/* get the operand as a signed value */
+#define SIGNEXT(a) CLI_SRS(((int64_t)(a)) << (64-inst->type), (64-inst->type))
+#define BINOPS(i) SIGNEXT(BINOPNOMOD(i))
+
+static void jump(struct cli_bc_func *func, uint16_t bbid, struct cli_bc_bb **bb, struct cli_bc_inst **inst,
+		 struct cli_bc_value **value, unsigned *bb_inst)
+{
+    CHECK_GT(func->numBB, bbid);
+    *bb = &func->BB[bbid];
+    *inst = (*bb)->insts;
+    *value = &func->values[*inst - func->allinsts];
+    *bb_inst = 0;
+}
+
 int cli_vm_execute(struct cli_bc *bc, struct cli_bc_ctx *ctx, struct cli_bc_func *func, struct cli_bc_inst *inst, struct cli_bc_value *value)
 {
     unsigned i, stack_depth=0, bb_inst=0, stop=0;
@@ -68,33 +97,93 @@ int cli_vm_execute(struct cli_bc *bc, struct cli_bc_ctx *ctx, struct cli_bc_func
     do {
 	switch (inst->opcode) {
 	    case OP_ADD:
-		values->v = values[inst->u.binop[0]].v + values[inst->u.binop[1]].v;
+		values->v = BINOPNOMOD(0) + BINOPNOMOD(1);
 		break;
 	    case OP_SUB:
-		values->v = values[inst->u.binop[0]].v - values[inst->u.binop[1]].v;
+		values->v = BINOPNOMOD(0) - BINOPNOMOD(1);
 		break;
 	    case OP_MUL:
-		values->v = values[inst->u.binop[0]].v * values[inst->u.binop[1]].v;
+		values->v = BINOPNOMOD(0) * BINOPNOMOD(1);
 		break;
+	    case OP_UDIV:
+		{
+		    uint64_t d = BINOP(1);
+		    if (UNLIKELY(!d))
+			return CL_EBYTECODE;
+		    values->v = BINOP(0) / d;
+		    break;
+		}
+	    case OP_SDIV:
+		{
+		    int64_t a = BINOPS(0);
+		    int64_t b = BINOPS(1);
+		    if (UNLIKELY(b == 0 || (b == -1 && a == (-9223372036854775807LL-1LL))))
+			return CL_EBYTECODE;
+		    values->v = a / b;
+		    break;
+		}
+	    case OP_UREM:
+		{
+		    uint64_t d = BINOP(1);
+		    if (UNLIKELY(!d))
+			return CL_EBYTECODE;
+		    values->v = BINOP(0) % d;
+		    break;
+		}
+	    case OP_SREM:
+		{
+		    int64_t a = BINOPS(0);
+		    int64_t b = BINOPS(1);
+		    if (UNLIKELY(b == 0 || (b == -1 && (a == -9223372036854775807LL-1LL))))
+			return CL_EBYTECODE;
+		    values->v = a % b;
+		    break;
+		}
+	    case OP_SHL:
+		values->v = BINOPNOMOD(0) << BINOP(1);
+		break;
+	    case OP_LSHR:
+		values->v = BINOP(0) >> BINOP(1);
+		break;
+	    case OP_ASHR:
+		{
+		    int64_t v = BINOPS(0);
+		    values->v = CLI_SRS(v, BINOP(1));
+		    break;
+		}
 	    case OP_AND:
-		values->v = values[inst->u.binop[0]].v & values[inst->u.binop[1]].v;
+		values->v = BINOPNOMOD(0) & BINOPNOMOD(1);
 		break;
 	    case OP_OR:
-		values->v = values[inst->u.binop[0]].v | values[inst->u.binop[1]].v;
+		values->v = BINOPNOMOD(0) | BINOPNOMOD(1);
 		break;
 	    case OP_XOR:
-		values->v = values[inst->u.binop[0]].v ^ values[inst->u.binop[1]].v;
+		values->v = BINOPNOMOD(0) ^ BINOPNOMOD(1);
 		break;
-	    case OP_ZEXT:
+	    case OP_SEXT:
+		values->v = SIGNEXT(values[inst->u.cast.source].v);
+		break;
 	    case OP_TRUNC:
+		/* fall-through */
+	    case OP_ZEXT:
 		values->v = values[inst->u.cast.source].v & values[inst->u.cast.mask].v;
 		break;
+	    case OP_BRANCH:
+		jump(func, (values[inst->u.branch.condition].v&1) ?
+		     inst->u.branch.br_true : inst->u.branch.br_false,
+		     &bb, &inst, &value, &bb_inst);
+		continue;
+	    case OP_JMP:
+		jump(func, inst->u.jump, &bb, &inst, &value, &bb_inst);
+		continue;
 	    case OP_RET:
 		CHECK_GT(stack_depth, 0);
 		stack_depth--;
 		value = stack[stack_depth].ret;
-		value->v = values[inst->u.unaryop].v;
 		func = stack[stack_depth].func;
+		CHECK_GT(func->values + func->numArgs+func->numInsts+func->numConstants, value);
+		CHECK_GT(value, &func->values[-1]);
+		value->v = values[inst->u.unaryop].v;
 		values = func->values;
 		if (!stack[stack_depth].bb) {
 		    stop = CL_BREAK;
@@ -106,10 +195,37 @@ int cli_vm_execute(struct cli_bc *bc, struct cli_bc_ctx *ctx, struct cli_bc_func
 		inst = &bb->insts[bb_inst];
 		break;
 	    case OP_ICMP_EQ:
-		value->v = values[inst->u.binop[0]].v == values[inst->u.binop[1]].v ? 1 : 0;
+		value->v = BINOP(0) == BINOP(1) ? 1 : 0;
+		break;
+	    case OP_ICMP_NE:
+		value->v = BINOP(0) != BINOP(1) ? 1 : 0;
+		break;
+	    case OP_ICMP_UGT:
+		value->v = BINOP(0) > BINOP(1) ? 1 : 0;
+		break;
+	    case OP_ICMP_UGE:
+		value->v = BINOP(0) >= BINOP(1) ? 1 : 0;
+		break;
+	    case OP_ICMP_ULT:
+		value->v = BINOP(0) < BINOP(1) ? 1 : 0;
+		break;
+	    case OP_ICMP_ULE:
+		value->v = BINOP(0) <= BINOP(1) ? 1 : 0;
+		break;
+	    case OP_ICMP_SGT:
+		value->v = BINOPS(0) > BINOPS(1) ? 1 : 0;
+		break;
+	    case OP_ICMP_SGE:
+		value->v = BINOPS(0) >= BINOPS(1) ? 1 : 0;
+		break;
+	    case OP_ICMP_SLE:
+		value->v = BINOPS(0) <= BINOPS(1) ? 1 : 0;
+		break;
+	    case OP_ICMP_SLT:
+		value->v = BINOPS(0) < BINOPS(1) ? 1 : 0;
 		break;
 	    case OP_SELECT:
-		values->v = values[inst->u.three[0]].v ?
+		values->v = (values[inst->u.three[0]].v&1) ?
 		    values[inst->u.three[1]].v : values[inst->u.three[2]].v;
 		break;
 	    case OP_CALL_DIRECT:
@@ -126,13 +242,15 @@ int cli_vm_execute(struct cli_bc *bc, struct cli_bc_ctx *ctx, struct cli_bc_func
 		stack[stack_depth].bb = bb;
 		stack[stack_depth].bb_inst = bb_inst;
 		stack_depth++;
+		cli_dbgmsg("Executing %d\n", inst->u.ops.funcid);
 		func = func2;
 		values = func->values;
 		CHECK_GT(func->numBB, 0);
-		bb = &func->BB[0];
-		inst = &bb->insts[0];
-		bb_inst = 0;
+		jump(func, 0, &bb, &inst, &value, &bb_inst);
 		continue;
+	    case OP_COPY:
+		BINOPNOMOD(1) = BINOPNOMOD(0);
+		break;
 	    default:
 		cli_errmsg("Opcode %u is not implemented yet!\n", inst->opcode);
 		stop = CL_EARG;

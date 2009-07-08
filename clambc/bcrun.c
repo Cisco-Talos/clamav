@@ -126,5 +126,6 @@ int main(int argc, char *argv[])
     cli_bytecode_destroy(bc);
     free(bc);
     optfree(opts);
+    printf("Exiting\n");
     return 0;
 }
