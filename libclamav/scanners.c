@@ -93,6 +93,7 @@
 #include "dlp.h"
 #include "default.h"
 #include "cpio.h"
+#include "macho.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -2082,6 +2083,11 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	case CL_TYPE_ELF:
 	    if(SCAN_ELF && ctx->dconf->elf)
 		ret = cli_scanelf(desc, ctx);
+	    break;
+
+	case CL_TYPE_MACHO:
+	    if(ctx->dconf->macho)
+		ret = cli_scanmacho(desc, ctx);
 	    break;
 
 	case CL_TYPE_SIS:

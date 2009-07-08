@@ -73,6 +73,8 @@ static struct dconf_module modules[] = {
 
     { "ELF",	    NULL,	    0x1,		    1 },
 
+    { "MACHO",	    NULL,	    0x1,		    1 },
+
     { "ARCHIVE",    "RAR",	    ARCH_CONF_RAR,	    1 },
     { "ARCHIVE",    "ZIP",	    ARCH_CONF_ZIP,	    1 },
     { "ARCHIVE",    "GZIP",	    ARCH_CONF_GZ,	    1 },
@@ -135,6 +137,10 @@ struct cli_dconf *cli_dconf_init(void)
 	    if(modules[i].state)
 		dconf->elf |= modules[i].bflag;
 
+	} else if(!strcmp(modules[i].mname, "MACHO")) {
+	    if(modules[i].state)
+		dconf->macho |= modules[i].bflag;
+
 	} else if(!strcmp(modules[i].mname, "ARCHIVE")) {
 	    if(modules[i].state)
 		dconf->archive |= modules[i].bflag;
@@ -161,8 +167,8 @@ struct cli_dconf *cli_dconf_init(void)
 
 void cli_dconf_print(struct cli_dconf *dconf)
 {
-	uint8_t pe = 0, elf = 0, arch = 0, doc = 0, mail = 0, other = 0, phishing=0;
-	unsigned int i;
+	unsigned int pe = 0, elf = 0, macho = 0, arch = 0, doc = 0, mail = 0;
+	unsigned int other = 0, phishing = 0, i;
 
 
     cli_dbgmsg("Dynamic engine configuration settings:\n");
@@ -183,6 +189,12 @@ void cli_dconf_print(struct cli_dconf *dconf)
 	    if(!elf) {
 		cli_dbgmsg("Module ELF: %s\n", dconf->elf ? "On" : "Off");
 		elf = 1;
+	    }
+
+	} else if(!strcmp(modules[i].mname, "MACHO")) {
+	    if(!macho) {
+		cli_dbgmsg("Module MACHO: %s\n", dconf->elf ? "On" : "Off");
+		macho = 1;
 	    }
 
 	} else if(!strcmp(modules[i].mname, "ARCHIVE")) {
@@ -297,6 +309,15 @@ int cli_dconf_load(FILE *fs, struct cl_engine *engine, unsigned int options, str
 	if(!strncmp(buffer, "ELF:", 4) && chkflevel(buffer, 2)) {
 	    if(sscanf(buffer + 4, "0x%x", &val) == 1) {
 		engine->dconf->elf = val;
+	    } else {
+		ret = CL_EMALFDB;
+		break;
+	    }
+	}
+
+	if(!strncmp(buffer, "MACHO:", 4) && chkflevel(buffer, 2)) {
+	    if(sscanf(buffer + 4, "0x%x", &val) == 1) {
+		engine->dconf->macho = val;
 	    } else {
 		ret = CL_EMALFDB;
 		break;

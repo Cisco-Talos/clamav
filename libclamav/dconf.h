@@ -33,6 +33,7 @@
 struct cli_dconf {
     uint32_t pe;
     uint32_t elf;
+    uint32_t macho;
     uint32_t archive;
     uint32_t doc;
     uint32_t mail;

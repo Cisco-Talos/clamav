@@ -1,3 +1,7 @@
+Wed Jul  8 14:59:14 CEST 2009 (tk)
+----------------------------------
+ * libclamav: initial support for Mach-O executables (part of bb#1592)
+
 Mon Jul  6 16:56:06 CEST 2009 (tk)
 ----------------------------------
  * test: add cpio test files
