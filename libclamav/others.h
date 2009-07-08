@@ -306,7 +306,7 @@ static inline void cli_writeint32(char *offset, uint32_t value)
 #ifdef HAVE_SAR
 #define CLI_SRS(n,s) ((n)>>(s))
 #else
-#define CLI_SRS(n,s) (((n)>>(s)) ^ (1<<(sizeof(n)*8-1-s)) - (1<<(sizeof(n)*8-1-s)))
+#define CLI_SRS(n,s) ((((n)>>(s)) ^ (1<<(sizeof(n)*8-1-s))) - (1<<(sizeof(n)*8-1-s)))
 #endif
 #define CLI_SAR(n,s) n = CLI_SRS(n,s)
 
