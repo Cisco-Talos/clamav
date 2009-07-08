@@ -120,7 +120,10 @@ int main(int argc, char *argv[])
     if (rc != CL_SUCCESS) {
 	fprintf(stderr,"Unable to run bytecode: %s\n", cl_strerror(rc));
     } else {
+	uint64_t v;
 	printf("Bytecode run finished\n");
+	v = cli_bytecode_context_getresult_int(ctx);
+	printf("Bytecode returned: %llx\n", (long long)v);
     }
     cli_bytecode_context_destroy(ctx);
     cli_bytecode_destroy(bc);

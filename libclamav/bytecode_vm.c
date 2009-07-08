@@ -72,7 +72,10 @@ struct stack_entry {
 #define BINOP(i) (BINOPNOMOD(i)&((1 << inst->type)-1))
 #define UNOP(x) (UNOPNOMOD(i)&((1 << inst->type)-1))
 
-/* get the operand as a signed value */
+/* get the operand as a signed value.
+ * Warning: this assumes that result type is same as operand type.
+ * This is usually true, except for icmp_* and select.
+ * For icmp_* we fix it up in the loader. */
 #define SIGNEXT(a) CLI_SRS(((int64_t)(a)) << (64-inst->type), (64-inst->type))
 #define BINOPS(i) SIGNEXT(BINOPNOMOD(i))
 
@@ -86,31 +89,34 @@ static void jump(struct cli_bc_func *func, uint16_t bbid, struct cli_bc_bb **bb,
     *bb_inst = 0;
 }
 
-int cli_vm_execute(struct cli_bc *bc, struct cli_bc_ctx *ctx, struct cli_bc_func *func, struct cli_bc_inst *inst, struct cli_bc_value *value)
+int cli_vm_execute(struct cli_bc *bc, struct cli_bc_ctx *ctx, struct cli_bc_func *func, struct cli_bc_inst *inst)
 {
     unsigned i, stack_depth=0, bb_inst=0, stop=0;
     struct cli_bc_func *func2;
     struct stack_entry *stack = NULL;
     struct cli_bc_bb *bb = NULL;
-    struct cli_bc_value *values = NULL;
+    struct cli_bc_value *values = func->values;
+    struct cli_bc_value *value;
 
     do {
+	value = &values[inst->dest];
+	CHECK_GT(func->values + func->numArgs+func->numInsts+func->numConstants, value);
 	switch (inst->opcode) {
 	    case OP_ADD:
-		values->v = BINOPNOMOD(0) + BINOPNOMOD(1);
+		value->v = BINOPNOMOD(0) + BINOPNOMOD(1);
 		break;
 	    case OP_SUB:
-		values->v = BINOPNOMOD(0) - BINOPNOMOD(1);
+		value->v = BINOPNOMOD(0) - BINOPNOMOD(1);
 		break;
 	    case OP_MUL:
-		values->v = BINOPNOMOD(0) * BINOPNOMOD(1);
+		value->v = BINOPNOMOD(0) * BINOPNOMOD(1);
 		break;
 	    case OP_UDIV:
 		{
 		    uint64_t d = BINOP(1);
 		    if (UNLIKELY(!d))
 			return CL_EBYTECODE;
-		    values->v = BINOP(0) / d;
+		    value->v = BINOP(0) / d;
 		    break;
 		}
 	    case OP_SDIV:
@@ -119,7 +125,7 @@ int cli_vm_execute(struct cli_bc *bc, struct cli_bc_ctx *ctx, struct cli_bc_func
 		    int64_t b = BINOPS(1);
 		    if (UNLIKELY(b == 0 || (b == -1 && a == (-9223372036854775807LL-1LL))))
 			return CL_EBYTECODE;
-		    values->v = a / b;
+		    value->v = a / b;
 		    break;
 		}
 	    case OP_UREM:
@@ -127,7 +133,7 @@ int cli_vm_execute(struct cli_bc *bc, struct cli_bc_ctx *ctx, struct cli_bc_func
 		    uint64_t d = BINOP(1);
 		    if (UNLIKELY(!d))
 			return CL_EBYTECODE;
-		    values->v = BINOP(0) % d;
+		    value->v = BINOP(0) % d;
 		    break;
 		}
 	    case OP_SREM:
@@ -136,37 +142,37 @@ int cli_vm_execute(struct cli_bc *bc, struct cli_bc_ctx *ctx, struct cli_bc_func
 		    int64_t b = BINOPS(1);
 		    if (UNLIKELY(b == 0 || (b == -1 && (a == -9223372036854775807LL-1LL))))
 			return CL_EBYTECODE;
-		    values->v = a % b;
+		    value->v = a % b;
 		    break;
 		}
 	    case OP_SHL:
-		values->v = BINOPNOMOD(0) << BINOP(1);
+		value->v = BINOPNOMOD(0) << BINOP(1);
 		break;
 	    case OP_LSHR:
-		values->v = BINOP(0) >> BINOP(1);
+		value->v = BINOP(0) >> BINOP(1);
 		break;
 	    case OP_ASHR:
 		{
 		    int64_t v = BINOPS(0);
-		    values->v = CLI_SRS(v, BINOP(1));
+		    value->v = CLI_SRS(v, BINOP(1));
 		    break;
 		}
 	    case OP_AND:
-		values->v = BINOPNOMOD(0) & BINOPNOMOD(1);
+		value->v = BINOPNOMOD(0) & BINOPNOMOD(1);
 		break;
 	    case OP_OR:
-		values->v = BINOPNOMOD(0) | BINOPNOMOD(1);
+		value->v = BINOPNOMOD(0) | BINOPNOMOD(1);
 		break;
 	    case OP_XOR:
-		values->v = BINOPNOMOD(0) ^ BINOPNOMOD(1);
+		value->v = BINOPNOMOD(0) ^ BINOPNOMOD(1);
 		break;
 	    case OP_SEXT:
-		values->v = SIGNEXT(values[inst->u.cast.source].v);
+		value->v = SIGNEXT(values[inst->u.cast.source].v);
 		break;
 	    case OP_TRUNC:
 		/* fall-through */
 	    case OP_ZEXT:
-		values->v = values[inst->u.cast.source].v & values[inst->u.cast.mask].v;
+		value->v = values[inst->u.cast.source].v & values[inst->u.cast.mask].v;
 		break;
 	    case OP_BRANCH:
 		jump(func, (values[inst->u.branch.condition].v&1) ?
@@ -225,7 +231,7 @@ int cli_vm_execute(struct cli_bc *bc, struct cli_bc_ctx *ctx, struct cli_bc_func
 		value->v = BINOPS(0) < BINOPS(1) ? 1 : 0;
 		break;
 	    case OP_SELECT:
-		values->v = (values[inst->u.three[0]].v&1) ?
+		value->v = (values[inst->u.three[0]].v&1) ?
 		    values[inst->u.three[1]].v : values[inst->u.three[2]].v;
 		break;
 	    case OP_CALL_DIRECT:
@@ -257,7 +263,6 @@ int cli_vm_execute(struct cli_bc *bc, struct cli_bc_ctx *ctx, struct cli_bc_func
 	}
 	bb_inst++;
 	inst++;
-	value++;
 	CHECK_GT(bb->numInsts, bb_inst);
     } while (stop == CL_SUCCESS);
 

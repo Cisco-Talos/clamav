@@ -53,6 +53,7 @@ struct cli_bc_cast {
 struct cli_bc_inst {
     enum bc_opcode opcode;
     uint16_t type;
+    operand_t dest;
     union {
 	operand_t unaryop;
 	struct cli_bc_cast cast;
@@ -92,5 +93,5 @@ struct cli_bc_ctx {
     unsigned numParams;
 };
 
-int cli_vm_execute(struct cli_bc *bc, struct cli_bc_ctx *ctx, struct cli_bc_func *func, struct cli_bc_inst *inst, struct cli_bc_value *value);
+int cli_vm_execute(struct cli_bc *bc, struct cli_bc_ctx *ctx, struct cli_bc_func *func, struct cli_bc_inst *inst);
 #endif

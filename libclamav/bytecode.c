@@ -81,7 +81,7 @@ int cli_bytecode_context_setfuncid(struct cli_bc_ctx *ctx, struct cli_bc *bc, un
     }
     for (i=0;i<func->numArgs;i++) {
 	ctx->values[i].ref = MAX_OP;
-	ctx->operands[i+1] = i;
+	ctx->operands[i] = i;
     }
     return CL_SUCCESS;
 }
@@ -453,8 +453,10 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	    offset++;
 	    /* terminators are void */
 	    inst.type = 0;
+	    inst.dest = 0;
 	} else {
 	    inst.type = readNumber(buffer, &offset, len, &ok);
+	    inst.dest = readNumber(buffer, &offset, len, &ok);
 	}
 	inst.opcode = readFixedNumber(buffer, &offset, len, &ok, 2);
 	if (!ok) {
@@ -527,6 +529,22 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	    cli_errmsg("More instructions than declared in total!\n");
 	    return CL_EMALFDB;
 	}
+	switch (inst.opcode) {
+	    default:
+		break;
+	    case OP_ICMP_EQ:
+	    case OP_ICMP_NE:
+	    case OP_ICMP_UGT:
+	    case OP_ICMP_UGE:
+	    case OP_ICMP_ULT:
+	    case OP_ICMP_ULE:
+	    case OP_ICMP_SGT:
+	    case OP_ICMP_SGE:
+	    case OP_ICMP_SLE:
+	    case OP_ICMP_SLT:
+		inst.type = bcfunc->allinsts[inst.u.binop[0]].type;
+		break;
+	}
 	BB->insts[BB->numInsts++] = inst;
     }
     if (bb+1 == bc->funcs[func].numBB) {
@@ -542,6 +560,7 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		   len-offset);
 	return CL_EMALFDB;
     }
+    bcfunc->insn_idx += BB->numInsts;
     return CL_SUCCESS;
 }
 
@@ -628,11 +647,17 @@ int cli_bytecode_run(struct cli_bc *bc, struct cli_bc_ctx *ctx)
     func.numInsts = 1;
 
     inst.opcode = OP_CALL_DIRECT;
+    inst.dest = func.numArgs;
     inst.type = 0;/* TODO: support toplevel functions with return values */
     inst.u.ops.numOps = ctx->numParams;
     inst.u.ops.funcid = ctx->funcid;
     inst.u.ops.ops = ctx->operands;
-    return cli_vm_execute(ctx->bc, ctx, &func, &inst, func.values);
+    return cli_vm_execute(ctx->bc, ctx, &func, &inst);
+}
+
+uint64_t cli_bytecode_context_getresult_int(struct cli_bc_ctx *ctx)
+{
+    return ctx->values[ctx->numParams].v;
 }
 
 void cli_bytecode_destroy(struct cli_bc *bc)
