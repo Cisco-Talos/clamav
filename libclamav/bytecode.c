@@ -167,25 +167,23 @@ static inline operand_t readOperand(struct cli_bc_func *func, unsigned char *p,
 				    unsigned *off, unsigned len, char *ok)
 {
     uint64_t v;
-    unsigned numValues = func->numArgs + func->numInsts + func->numConstants;
     if ((p[*off]&0xf0) == 0x40 || p[*off] == 0x50) {
 	p[*off] |= 0x20;
 	/* TODO: unique constants */
-	func->values = cli_realloc2(func->values, (numValues+1)*sizeof(*func->values));
-	if (!func->values) {
+	func->constants = cli_realloc2(func->constants, (func->numConstants+1)*sizeof(*func->constants));
+	if (!func->constants) {
 	    *ok = 0;
 	    return MAX_OP;
 	}
-	func->numConstants++;
-	func->values[numValues].v = readNumber(p, off, len, ok);
-	func->values[numValues].ref = CONSTANT_OP;
-	return numValues;
+	func->constants[func->numConstants].v = readNumber(p, off, len, ok);
+	func->constants[func->numConstants].ref = CONSTANT_OP;
+	return func->numValues + func->numConstants++;
     }
     v = readNumber(p, off, len, ok);
     if (!*ok)
 	return MAX_OP;
-    if (v >= numValues) {
-	cli_errmsg("Operand index exceeds bounds: %u >= %u!\n", (unsigned)v, (unsigned)numValues);
+    if (v >= func->numValues) {
+	cli_errmsg("Operand index exceeds bounds: %u >= %u!\n", (unsigned)v, (unsigned)func->numValues);
 	*ok = 0;
 	return MAX_OP;
     }
@@ -380,25 +378,13 @@ static int parseFunctionHeader(struct cli_bc *bc, unsigned fn, unsigned char *bu
 	cli_errmsg("Invalid instructions count\n");
 	return CL_EMALFDB;
     }
+    func->numValues = func->numArgs + func->numLocals;
     func->insn_idx = 0;
     func->numConstants=0;
     func->allinsts = cli_calloc(func->numInsts, sizeof(*func->allinsts));
     if (!func->allinsts) {
 	cli_errmsg("Out of memory allocating instructions\n");
 	return CL_EMEM;
-    }
-    func->values = cli_calloc(func->numInsts+func->numArgs, sizeof(*func->values));
-    if (!func->values) {
-	cli_errmsg("Out of memory allocating values\n");
-	return CL_EMEM;
-    }
-    for (i=0;i<func->numArgs;i++) {
-	func->values[i].v = 0xdeadbeef;
-	func->values[i].ref = ARG_OP;
-    }
-    for(;i<func->numInsts+func->numArgs;i++) {
-	func->values[i].v = 0xdeadbeef;
-	func->values[i].ref = i-func->numArgs;
     }
     func->numBB = readNumber(buffer, &offset, len, &ok);
     if (!ok) {
@@ -643,8 +629,8 @@ int cli_bytecode_run(struct cli_bc *bc, struct cli_bc_ctx *ctx)
 	}
     }
     memset(&func, 0, sizeof(func));
-    func.values = ctx->values;
     func.numInsts = 1;
+    func.numValues = 1;
 
     inst.opcode = OP_CALL_DIRECT;
     inst.dest = func.numArgs;
@@ -680,7 +666,6 @@ void cli_bytecode_destroy(struct cli_bc *bc)
 	}
 	free(f->BB);
 	free(f->allinsts);
-	free(f->values);
     }
     free(bc->funcs);
 }

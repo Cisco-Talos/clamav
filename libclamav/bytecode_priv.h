@@ -74,13 +74,14 @@ struct cli_bc_func {
     uint8_t numArgs;
     uint16_t numLocals;
     uint32_t numInsts;
+    uint32_t numValues;//without constants
     uint32_t numConstants;
     uint16_t numBB;
     uint16_t *types;
     uint32_t insn_idx;
     struct cli_bc_bb *BB;
     struct cli_bc_inst *allinsts;
-    struct cli_bc_value *values;
+    struct cli_bc_value *constants;
 };
 
 struct cli_bc_ctx {
@@ -93,5 +94,5 @@ struct cli_bc_ctx {
     unsigned numParams;
 };
 
-int cli_vm_execute(struct cli_bc *bc, struct cli_bc_ctx *ctx, struct cli_bc_func *func, struct cli_bc_inst *inst);
+int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst);
 #endif

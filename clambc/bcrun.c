@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 	uint64_t v;
 	printf("Bytecode run finished\n");
 	v = cli_bytecode_context_getresult_int(ctx);
-	printf("Bytecode returned: %llx\n", (long long)v);
+	printf("Bytecode returned: 0x%llx\n", (long long)v);
     }
     cli_bytecode_context_destroy(ctx);
     cli_bytecode_destroy(bc);
