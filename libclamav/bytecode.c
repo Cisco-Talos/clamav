@@ -660,12 +660,13 @@ void cli_bytecode_destroy(struct cli_bc *bc)
 	    struct cli_bc_bb *BB = &f->BB[j];
 	    for(k=0;k<BB->numInsts;k++) {
 		struct cli_bc_inst *ii = &BB->insts[k];
-		if (operand_counts[ii->opcode] > 3)
+		if (operand_counts[ii->opcode] > 3 || ii->opcode == OP_CALL_DIRECT)
 		    free(ii->u.ops.ops);
 	    }
 	}
 	free(f->BB);
 	free(f->allinsts);
+	free(f->constants);
     }
     free(bc->funcs);
 }

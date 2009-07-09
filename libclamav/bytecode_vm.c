@@ -93,7 +93,7 @@ static int jump(const struct cli_bc_func *func, uint16_t bbid, struct cli_bc_bb 
 static struct cli_bc_value *allocate_stack(const struct cli_bc_func *func)
 {
     unsigned i;
-    struct cli_bc_value *values = cli_calloc(func->numValues+func->numConstants, sizeof(*values));
+    struct cli_bc_value *values = cli_malloc((func->numValues+func->numConstants)*sizeof(*values));
     if (!values)
 	return NULL;
     for (i=func->numValues;i<func->numValues+func->numConstants;i++)
@@ -103,7 +103,7 @@ static struct cli_bc_value *allocate_stack(const struct cli_bc_func *func)
 
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst)
 {
-    unsigned i, stack_depth=0, bb_inst=0, stop=0;
+    unsigned i, stack_depth=0, bb_inst=0, stop=0, stack_max_depth=0;
     struct cli_bc_func *func2;
     struct stack_entry *stack = NULL;
     struct cli_bc_bb *bb = NULL;
@@ -200,17 +200,31 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		value = stack[stack_depth].ret;
 		func = stack[stack_depth].func;
 		value->v = values[inst->u.unaryop].v;
-		free(values);
+		old_values = values;
 		values = stack[stack_depth].values;
+		stack[stack_depth].values = old_values;
 		CHECK_GT(func->numValues+func->numConstants, value-values);
 		CHECK_GT(value-values, -1);
-		if (!stack[stack_depth].bb) {
-		    stop = CL_BREAK;
-		    bb_inst--;
-		    break;
-		}
 		bb = stack[stack_depth].bb;
 		bb_inst = stack[stack_depth].bb_inst;
+		if ((stack_depth < stack_max_depth*3/4) || !stack_depth) {
+		    for (i=stack_depth;i<stack_max_depth;i++) {
+			free(stack[i].values);
+		    }
+		    if (!stack_depth) {
+			free(stack);
+			stack = 0;
+		    } else {
+			stack = cli_realloc2(stack, sizeof(*stack)*stack_depth);
+			if (!stack)
+			    return CL_EMEM;
+		    }
+		    stack_max_depth = stack_depth;
+		}
+		if (!bb) {
+		    stop = CL_BREAK;
+		    continue;
+		}
 		inst = &bb->insts[bb_inst];
 		break;
 	    case OP_ICMP_EQ:
@@ -251,20 +265,25 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		CHECK_FUNCID(inst->u.ops.funcid);
 		func2 = &bc->funcs[inst->u.ops.funcid];
 		CHECK_EQ(func2->numArgs, inst->u.ops.numOps);
-		stack = cli_realloc2(stack, sizeof(*stack)*(stack_depth+1));
-		if (!stack)
-		    return CL_EMEM;
+		old_values = values;
+		if (stack_depth+1 > stack_max_depth) {
+		    stack = cli_realloc2(stack, sizeof(*stack)*(stack_depth+1));
+		    if (!stack)
+			return CL_EMEM;
+		    stack_max_depth = stack_depth+1;
+		    values = allocate_stack(func2);
+		    if (!values)
+			return CL_EMEM;
+		} else {
+		    values = stack[stack_depth].values;
+		}
 		stack[stack_depth].func = func;
 		stack[stack_depth].ret = value;
 		stack[stack_depth].bb = bb;
 		stack[stack_depth].bb_inst = bb_inst;
-		stack[stack_depth].values = values;
+		stack[stack_depth].values = old_values;
 		stack_depth++;
-		cli_dbgmsg("Executing %d\n", inst->u.ops.funcid);
-		old_values = values;
-		values = allocate_stack(func2);
-		if (!values)
-		    return CL_EMEM;
+//cli_dbgmsg("Executing %d\n", inst->u.ops.funcid);
 		for (i=0;i<func2->numArgs;i++)
 		    values[i] = old_values[inst->u.ops.ops[i]];
 		func = func2;
