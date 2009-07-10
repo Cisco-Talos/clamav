@@ -55,10 +55,10 @@ int cli_bytecode_context_clear(struct cli_bc_ctx *ctx)
     return CL_SUCCESS;
 }
 
-int cli_bytecode_context_setfuncid(struct cli_bc_ctx *ctx, struct cli_bc *bc, unsigned funcid)
+int cli_bytecode_context_setfuncid(struct cli_bc_ctx *ctx, const struct cli_bc *bc, unsigned funcid)
 {
     unsigned i;
-    struct cli_bc_func *func;
+    const struct cli_bc_func *func;
     if (funcid >= bc->num_func) {
 	cli_errmsg("bytecode: function ID doesn't exist: %u\n", funcid);
 	return CL_EARG;
@@ -275,7 +275,7 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer)
     unsigned magic2;
     char ok = 1;
     unsigned offset, len, flevel;
-    if (strncmp(buffer, BC_HEADER, sizeof(BC_HEADER)-1)) {
+    if (strncmp((const char*)buffer, BC_HEADER, sizeof(BC_HEADER)-1)) {
 	cli_errmsg("Missing file magic in bytecode");
 	return CL_EMALFDB;
     }
@@ -613,7 +613,7 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
     return CL_SUCCESS;
 }
 
-int cli_bytecode_run(struct cli_bc *bc, struct cli_bc_ctx *ctx)
+int cli_bytecode_run(const struct cli_bc *bc, struct cli_bc_ctx *ctx)
 {
     struct cli_bc_inst inst;
     struct cli_bc_func func;

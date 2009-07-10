@@ -86,8 +86,8 @@ struct cli_bc_func {
 
 struct cli_bc_ctx {
     /* id and params of toplevel function called */
-    struct cli_bc *bc;
-    struct cli_bc_func *func;
+    const struct cli_bc *bc;
+    const struct cli_bc_func *func;
     struct cli_bc_value *values;
     operand_t *operands;
     uint16_t funcid;

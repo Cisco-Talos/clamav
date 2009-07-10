@@ -40,7 +40,7 @@ struct cli_bc {
 };
 
 struct cli_bc_ctx *cli_bytecode_context_alloc(void);
-int cli_bytecode_context_setfuncid(struct cli_bc_ctx *ctx, struct cli_bc *bc, unsigned funcid);
+int cli_bytecode_context_setfuncid(struct cli_bc_ctx *ctx, const struct cli_bc *bc, unsigned funcid);
 int cli_bytecode_context_setparam_int(struct cli_bc_ctx *ctx, unsigned i, uint64_t c);
 int cli_bytecode_context_setparam_ptr(struct cli_bc_ctx *ctx, unsigned i, void *data, unsigned datalen);
 int cli_bytecode_context_clear(struct cli_bc_ctx *ctx);
@@ -48,7 +48,7 @@ uint64_t cli_bytecode_context_getresult_int(struct cli_bc_ctx *ctx);
 void cli_bytecode_context_destroy(struct cli_bc_ctx *ctx);
 
 int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio);
-int cli_bytecode_run(struct cli_bc *bc, struct cli_bc_ctx *ctx);
+int cli_bytecode_run(const struct cli_bc *bc, struct cli_bc_ctx *ctx);
 void cli_bytecode_destroy(struct cli_bc *bc);
 
 #endif
