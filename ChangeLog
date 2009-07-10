@@ -1,3 +1,7 @@
+Fri Jul 10 10:10:35 CEST 2009 (tk)
+----------------------------------
+ * libclamav/filetypes_int.h: sync with daily.ftm
+
 Wed Jul  8 14:59:14 CEST 2009 (tk)
 ----------------------------------
  * libclamav: initial support for Mach-O executables (part of bb#1592)
