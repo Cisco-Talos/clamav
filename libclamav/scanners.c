@@ -104,6 +104,8 @@
 #include <stddef.h>
 #endif
 
+static int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) { cli_dbgmsg("in ishield-msi\n"); return CL_CLEAN; }
+
 static int cli_scanfile(const char *filename, cli_ctx *ctx);
 
 static int cli_scandir(const char *dirname, cli_ctx *ctx, cli_file_t container)
@@ -1792,6 +1794,13 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg,
 			}
 			break;
 
+		    case CL_TYPE_ISHIELD_MSI:
+		        if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE /* FIXMEISHIELD && (DCONF_ARCH & ARCH_CONF_ISHIELD)*/) {
+			    cli_dbgmsg("ISHIELD-MSI signature found at %u\n", (unsigned int) fpt->offset);
+			    nret = cli_scanishield_msi(desc, ctx, fpt->offset + 14);
+			}
+			break;
+
 		    case CL_TYPE_PDF:
 			if(type != CL_TYPE_PDF && SCAN_PDF && (DCONF_DOC & DOC_CONF_PDF)) {
 			    cli_dbgmsg("PDF signature found at %u\n", (unsigned int) fpt->offset);
@@ -1963,6 +1972,11 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
         case CL_TYPE_AUTOIT:
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_AUTOIT))
 		ret = cli_scanautoit(desc, ctx, 23);
+	    break;
+
+        case CL_TYPE_ISHIELD_MSI:
+	    if(SCAN_ARCHIVE /* FIXMEISHIELD && (DCONF_ARCH & ARCH_CONF_ISHIELD)*/)
+		ret = cli_scanishield_msi(desc, ctx, 14);
 	    break;
 
 	case CL_TYPE_MSSZDD:

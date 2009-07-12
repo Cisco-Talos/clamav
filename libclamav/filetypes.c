@@ -93,6 +93,7 @@ static const struct ftmap_s {
     { "CL_TYPE_ARJSFX",		CL_TYPE_ARJSFX		},
     { "CL_TYPE_NULSFT",		CL_TYPE_NULSFT		},
     { "CL_TYPE_AUTOIT",		CL_TYPE_AUTOIT		},
+    { "CL_TYPE_ISHIELD_MSI",	CL_TYPE_ISHIELD_MSI	},
     { NULL,			CL_TYPE_IGNORED		}
 };
 
