@@ -1794,7 +1794,7 @@ static int cli_scanraw(int desc, cli_ctx *ctx, cli_file_t type, uint8_t typercg,
 			break;
 
 		    case CL_TYPE_ISHIELD_MSI:
-		        if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE /* FIXMEISHIELD && (DCONF_ARCH & ARCH_CONF_ISHIELD)*/) {
+		        if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_ISHIELD)) {
 			    cli_dbgmsg("ISHIELD-MSI signature found at %u\n", (unsigned int) fpt->offset);
 			    nret = cli_scanishield_msi(desc, ctx, fpt->offset + 14);
 			}
@@ -1974,7 +1974,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
 
         case CL_TYPE_ISHIELD_MSI:
-	    if(SCAN_ARCHIVE /* FIXMEISHIELD && (DCONF_ARCH & ARCH_CONF_ISHIELD)*/)
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ISHIELD))
 		ret = cli_scanishield_msi(desc, ctx, 14);
 	    break;
 
