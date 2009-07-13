@@ -1,3 +1,7 @@
+Mon Jul 13 16:06:31 CEST 2009 (tk)
+----------------------------------
+ * libclamav/macho.c: handle LC_THREAD; calculate EP
+
 Fri Jul 10 10:10:35 CEST 2009 (tk)
 ----------------------------------
  * libclamav/filetypes_int.h: sync with daily.ftm
