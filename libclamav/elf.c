@@ -39,21 +39,8 @@
 #include "execs.h"
 #include "matcher.h"
 
-static inline uint16_t EC16(uint16_t v, uint8_t c)
-{
-    if(!c)
-	return v;
-    else
-	return ((v >> 8) + (v << 8));
-}
-
-static inline uint32_t EC32(uint32_t v, uint8_t c)
-{
-    if(!c)
-	return v;
-    else
-	return ((v >> 24) | ((v & 0x00FF0000) >> 8) | ((v & 0x0000FF00) << 8) | (v << 24));
-}
+#define EC16(v, conv)   (conv ? cbswap16(v) : v)
+#define EC32(v, conv)   (conv ? cbswap32(v) : v)
 
 static uint32_t cli_rawaddr(uint32_t vaddr, struct elf_program_hdr32 *ph, uint16_t phnum, uint8_t conv, uint8_t *err)
 {
