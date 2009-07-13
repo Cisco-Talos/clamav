@@ -94,6 +94,7 @@
 #include "default.h"
 #include "cpio.h"
 #include "macho.h"
+#include "ishield.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -103,8 +104,6 @@
 #include <limits.h>
 #include <stddef.h>
 #endif
-
-static int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) { cli_dbgmsg("in ishield-msi\n"); return CL_CLEAN; }
 
 static int cli_scanfile(const char *filename, cli_ctx *ctx);
 
