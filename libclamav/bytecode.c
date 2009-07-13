@@ -481,10 +481,12 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	    case OP_SEXT:
 	    case OP_TRUNC:
 		inst.u.cast.source = readOperand(bcfunc, buffer, &offset, len, &ok);
-		if (ok) {
-		    /* calculate mask */
-		    inst.u.cast.mask = (1<<bcfunc->allinsts[inst.u.cast.source].type)-1;
-		}
+		inst.u.cast.mask = bcfunc->types[inst.u.cast.source];
+		/* calculate mask */
+		if (inst.opcode != OP_SEXT)
+		    inst.u.cast.mask = inst.u.cast.mask != 64 ?
+			(1ull<<inst.u.cast.mask)-1 :
+			~0ull;
 		break;
 	    default:
 		numOp = operand_counts[inst.opcode];
@@ -528,7 +530,7 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	    case OP_ICMP_SGE:
 	    case OP_ICMP_SLE:
 	    case OP_ICMP_SLT:
-		inst.type = bcfunc->allinsts[inst.u.binop[0]].type;
+		inst.type = bcfunc->types[inst.u.binop[0]];
 		break;
 	}
 	BB->insts[BB->numInsts++] = inst;
@@ -540,7 +542,6 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	}
 	offset++;
     }
-    cli_dbgmsg("Parsed %d instructions\n", BB->numInsts);
     if (offset != len) {
 	cli_errmsg("Trailing garbage in basicblock: %d extra bytes\n",
 		   len-offset);
@@ -598,6 +599,8 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 		    return rc;
 		}
 		if (bb >= bc->funcs[current_func].numBB) {
+		    cli_dbgmsg("Parsed %u BBs, %u instructions\n",
+			       bb, bc->funcs[current_func].numInsts);
 		    state = PARSE_FUNC_HEADER;
 		    current_func++;
 		}
