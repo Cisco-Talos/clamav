@@ -1,3 +1,7 @@
+Mon Jul 13 19:34:36 EEST 2009 (edwin)
+-------------------------------------
+ * clambc/, libclamav/, unit_tests/: Initial draft of bytecode interpreter (bb #1243).
+
 Mon Jul 13 16:06:31 CEST 2009 (tk)
 ----------------------------------
  * libclamav/macho.c: handle LC_THREAD; calculate EP

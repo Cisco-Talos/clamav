@@ -9,6 +9,7 @@ Suite *test_disasm_suite(void);
 Suite *test_uniq_suite(void);
 Suite *test_matchers_suite(void);
 Suite *test_htmlnorm_suite(void);
+Suite *test_bytecode_suite(void);
 void errmsg_expected(void);
 int open_testfile(const char *name);
 void diff_files(int fd, int reffd);

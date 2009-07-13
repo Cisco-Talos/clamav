@@ -22,7 +22,7 @@ if HAVE_LIBCHECK
 check_clamav_SOURCES = check_clamav.c checks.h checks_common.h $(top_builddir)/libclamav/clamav.h\
 		       check_jsnorm.c check_str.c check_regex.c\
 		       check_disasm.c check_uniq.c check_matchers.c\
-		       check_htmlnorm.c
+		       check_htmlnorm.c check_bytecode.c
 check_clamav_CPPFLAGS = -I$(top_srcdir) @CHECK_CPPFLAGS@ -DSRCDIR=\"$(abs_srcdir)\"
 check_clamav_LDADD = $(top_builddir)/libclamav/libclamav.la @THREAD_LIBS@ @CHECK_LIBS@
 check_clamd_SOURCES = check_clamd.c checks_common.h
