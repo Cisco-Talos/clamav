@@ -104,7 +104,7 @@ struct cli_mtarget {
     uint8_t ac_only;
 };
 
-#define CLI_MTARGETS 9
+#define CLI_MTARGETS 10
 static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] =  {
     { 0,		    "GENERIC",	    0,	0   },
     { CL_TYPE_MSEXE,	    "PE",	    1,	0   },
@@ -114,7 +114,8 @@ static const struct cli_mtarget cli_mtargets[CLI_MTARGETS] =  {
     { CL_TYPE_GRAPHICS,	    "GRAPHICS",	    5,	1   },
     { CL_TYPE_ELF,	    "ELF",	    6,	1   },
     { CL_TYPE_TEXT_ASCII,   "ASCII",	    7,	1   },
-    { CL_TYPE_PE_DISASM,    "DISASM",	    8,	1   }
+    { CL_TYPE_PE_DISASM,    "DISASM",	    8,	1   },
+    { CL_TYPE_MACHO,	    "MACH-O",	    9,	1   }
 };
 
 struct cli_target_info {
