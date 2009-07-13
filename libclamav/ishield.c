@@ -24,7 +24,7 @@ static const uint8_t skey[] = { 0xec, 0xca, 0x79, 0xf8 }; /* ~0x13, ~0x35, ~0x86
 
 int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
     uint8_t buf[BUFSIZ];
-    unsigned int fcount;
+    unsigned int fcount, scanned = 0;
     int ret;
 
     cli_dbgmsg("in ishield-msi\n");
@@ -33,6 +33,8 @@ int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
 	cli_dbgmsg("ishield-msi: short read for header\n");
 	return CL_CLEAN;
     }
+    if(cli_readint32(buf + 8) | cli_readint32(buf + 0xc) | cli_readint32(buf + 0x10) | cli_readint32(buf + 0x14) | cli_readint32(buf + 0x18) | cli_readint32(buf + 0x1c))
+	return CL_CLEAN;
     if(!(fcount = cli_readint32(buf))) {
 	cli_dbgmsg("ishield-msi: no files?\n");
 	return CL_CLEAN;
@@ -66,8 +68,16 @@ int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
 	}
 	fb.fname[sizeof(fb.fname)-1] = '\0';
 	csize = le64_to_host(fb.csize);
+
+	if(ctx->engine->maxfilesize && csize > ctx->engine->maxfilesize) {
+	    cli_dbgmsg("ishield-msi: skipping stream due to size limits (%lu vs %lu)\n", csize, ctx->engine->maxfilesize);
+	    lseek(desc, csize, SEEK_CUR);
+	    continue;
+	}
+
 	keylen = strlen((const char *)key);
 	if(!keylen) return CL_CLEAN;
+	/* FIXMEISHIELD: cleanup the spam below */
 	cli_dbgmsg("ishield-msi: File %s (csize: %x, unk1:%x unk2:%x unk3:%x unk4:%x unk5:%x unk6:%x unk7:%x unk8:%x unk9:%x unk10:%x unk11:%x)\n", key, csize, fb.unk1, fb.unk2, fb.unk3, fb.unk4, fb.unk5, fb.unk6, fb.unk7, fb.unk8, fb.unk9, fb.unk10, fb.unk11);
 	if(!(tempfile = cli_gentemp(ctx->engine->tmpdir))) return CL_EMEM;
 	if((ofd = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRUSR|S_IWUSR)) < 0) {
@@ -104,9 +114,16 @@ int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
 		if(def != Z_OK && def != Z_STREAM_END && def != Z_BUF_ERROR) {
 		    cli_dbgmsg("ishield-msi: bad stream\n");
 		    csize = 0;
+		    lseek(desc, csize, SEEK_CUR);
 		    break;
 		}
 		write(ofd, obuf, sizeof(obuf) - z.avail_out);
+		if(ctx->engine->maxfilesize && z.total_out > ctx->engine->maxfilesize) {
+		    cli_dbgmsg("ishield-msi: trimming output file due to size limits (%lu vs %lu)\n", z.total_out, ctx->engine->maxfilesize);
+		    lseek(desc, csize, SEEK_CUR);
+		    csize = 0;
+		    break;
+		}
 	    } while (!z.avail_out);
 	}
 
@@ -124,6 +141,12 @@ int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
 
 	if(ret != CL_CLEAN)
 	    return ret;
+
+	scanned++;
+	if (ctx->engine->maxfiles && scanned>=ctx->engine->maxfiles) {
+	    cli_dbgmsg("ishield-msi: File limit reached (max: %u)\n", ctx->engine->maxfiles);
+	    return CL_EMAXFILES;
+	}
     }
     return CL_CLEAN;
 }
