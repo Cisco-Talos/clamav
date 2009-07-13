@@ -166,6 +166,8 @@ MalwareName:TargetType:Offset:HexSignature[:MinEngineFunctionalityLevel:[Max]]
 	\item 5 = Graphics
 	\item 6 = ELF
 	\item 7 = ASCII text file (normalized)
+	\item 8 = Disassembler data
+	\item 9 = Mach-O files
     \end{itemize}
     And	\verb+Offset+ is an asterisk or a decimal number \verb+n+ possibly
     combined with a special modifier:
@@ -174,7 +176,7 @@ MalwareName:TargetType:Offset:HexSignature[:MinEngineFunctionalityLevel:[Max]]
 	\item \verb+n+ = absolute offset
 	\item \verb+EOF-n+ = end of file minus \verb+n+ bytes
     \end{itemize}
-    Signatures for PE and ELF files additionally support:
+    Signatures for PE, ELF and Mach-O files additionally support:
     \begin{itemize}
 	\item \verb#EP+n# = entry point plus n bytes (\verb#EP+0# for \verb+EP+)
 	\item \verb#EP-n# = entry point minus n bytes

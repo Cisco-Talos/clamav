@@ -1,3 +1,7 @@
+Mon Jul 13 21:40:51 CEST 2009 (tk)
+----------------------------------
+ * docs/signatures.pdf: cover Mach-O files
+
 Mon Jul 13 21:24:05 CEST 2009 (tk)
 ----------------------------------
  * libclamav: handle Mach-O files with type-9 signatures; all special offsets are
