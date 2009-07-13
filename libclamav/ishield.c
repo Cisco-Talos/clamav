@@ -1,3 +1,25 @@
+/*
+ *  Copyright (C) 2009 Sourcefire, Inc.
+ *
+ *  Authors: aCaB <acab@clamav.net>
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ *  MA 02110-1301, USA.
+ */
+
+/* common routines to deal with installshield archives and installers */
+
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -20,8 +42,47 @@
 #define O_BINARY 0
 #endif
 
+
+#ifndef HAVE_ATTRIB_PACKED
+#define __attribute__(x)
+#endif
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack(1)
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack 1
+#endif
+
+/* PACKED things go here */
+
+struct IS_FB {
+    char fname[0x104]; /* MAX_PATH */
+    uint32_t unk1; /* 6 */
+    uint32_t unk2;
+    uint64_t csize;
+    uint32_t unk3;
+    uint32_t unk4; /* 1 */
+    uint32_t unk5;
+    uint32_t unk6;
+    uint32_t unk7;
+    uint32_t unk8;
+    uint32_t unk9;
+    uint32_t unk10;
+    uint32_t unk11;
+} __attribute__((packed));
+
+#ifdef HAVE_PRAGMA_PACK
+#pragma pack()
+#endif
+#ifdef HAVE_PRAGMA_PACK_HPPA
+#pragma pack
+#endif
+
 static const uint8_t skey[] = { 0xec, 0xca, 0x79, 0xf8 }; /* ~0x13, ~0x35, ~0x86, ~0x07 */
 
+
+
+/* Extract the content of MSI based IS */
 int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
     uint8_t buf[BUFSIZ];
     unsigned int fcount, scanned = 0;
@@ -40,21 +101,7 @@ int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
 	return CL_CLEAN;
     }
     while(fcount--) {
-	struct {
-	    char fname[0x104]; /* MAX_PATH */
-	    uint32_t unk1; /* 6 */
-	    uint32_t unk2;
-	    uint64_t csize;
-	    uint32_t unk3;
-	    uint32_t unk4; /* 1 */
-	    uint32_t unk5;
-	    uint32_t unk6;
-	    uint32_t unk7;
-	    uint32_t unk8;
-	    uint32_t unk9;
-	    uint32_t unk10;
-	    uint32_t unk11;
-	} __attribute__((packed)) fb;
+	struct IS_FB fb;
 	uint8_t obuf[BUFSIZ], *key = (uint8_t *)&fb.fname;
 	char *tempfile;
 	unsigned int i, lameidx=0, keylen;
