@@ -71,6 +71,7 @@
 #include "ltdl.h"
 #include "matcher-ac.h"
 #include "default.h"
+#include "scanners.h"
 
 #ifndef	O_BINARY
 #define	O_BINARY	0
