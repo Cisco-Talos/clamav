@@ -20,8 +20,6 @@
 
 /* common routines to deal with installshield archives and installers */
 
-/* FIXMEISHIELD: cleanup/shutdown errmsg's  */
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -103,8 +101,8 @@ struct IS_COMPONENT {
     uint32_t unk_str12_off;
     uint32_t unk_str13_off;
     uint32_t unk_str14_off;
-    uint32_t str_next1_off; /* fixme */
-    uint32_t str_next2_off; /* fixme */
+    uint32_t str_next1_off;
+    uint32_t str_next2_off;
 } __attribute__((packed));
 
 struct IS_INSTTYPEHDR {
@@ -347,13 +345,13 @@ int cli_scanishield(int desc, cli_ctx *ctx, off_t off, size_t sz) {
 
 	data++;
 	fsize = strtol(strsz, &eostr, 10);
-	if(fsize < 0 || fsize == LONG_MAX
-	   || !*strsz || !eostr || eostr == strsz || *eostr ||
+	if(fsize < 0 || fsize == LONG_MAX ||
+	   !*strsz || !eostr || eostr == strsz || *eostr ||
 	   (unsigned long)fsize >= sz ||
-	   data - buf >= sz - fsize)
-	    break;
+	   data - buf >= sz - fsize
+	) break;
 
-	cli_errmsg("ishield: @%lx found file %s (%s) - version %s - size %lu\n", coff, fname, path, version, fsize);
+	cli_dbgmsg("ishield: @%lx found file %s (%s) - version %s - size %lu\n", coff, fname, path, version, fsize);
 	sz -= (data - buf) + fsize;
 	coff += (data - buf);
 	if(!strncasecmp(fname, "data", 4)) {
@@ -394,20 +392,20 @@ int cli_scanishield(int desc, cli_ctx *ctx, off_t off, size_t sz) {
     }
 
     if(ret == CL_CLEAN && (c.cabcnt || c.hdr != -1)) {
-	if(is_parse_hdr(desc, ctx, &c) == CL_CLEAN /* FIXMEISHIELD: return something and avoid scanning */) {
+      if((ret = is_parse_hdr(desc, ctx, &c)) == CL_CLEAN) {
 	    unsigned int i;
 	    if(c.hdr != -1) {
-		cli_errmsg("ishield: scanning data1.hdr\n");
+		cli_dbgmsg("ishield: scanning data1.hdr\n");
 		ret = is_dump_and_scan(desc, ctx, c.hdr, c.hdrsz);
 	    }
 	    for(i=0; i<c.cabcnt && ret == CL_CLEAN; i++) {
-		cli_errmsg("ishield: scanning data%u.cab\n", c.cabs[i].cabno);
+		cli_dbgmsg("ishield: scanning data%u.cab\n", c.cabs[i].cabno);
 		ret = is_dump_and_scan(desc, ctx, c.cabs[i].off, c.cabs[i].sz);
 	    }
-	}
+      } else if( ret == CL_BREAK ) ret = CL_CLEAN;
     }
     if(c.cabs) free(c.cabs);
-    return CL_CLEAN;
+    return ret;
 }
 
 
@@ -417,7 +415,7 @@ static int is_dump_and_scan(int desc, cli_ctx *ctx, off_t off, size_t fsize) {
     int ofd, ret = CL_CLEAN;
 
     if(!fsize) {
-	cli_errmsg("ishield: skipping empty file\n");
+	cli_dbgmsg("ishield: skipping empty file\n");
 	return CL_CLEAN;
     }
     if(!(fname = cli_gentemp(ctx->engine->tmpdir)))
@@ -432,12 +430,11 @@ static int is_dump_and_scan(int desc, cli_ctx *ctx, off_t off, size_t fsize) {
 	size_t rd = fsize < sizeof(buf) ? fsize : sizeof(buf);
 	int got = pread(desc, buf, rd, off);
 	if(got <= 0) {
-	    cli_errmsg("ishield: read error\n");
+	    cli_dbgmsg("ishield: read error\n");
 	    ret = CL_EREAD;
 	    break;
 	}
 	if(cli_writen(ofd, buf, got) <= 0) {
-	    cli_errmsg("ishield: write error\n");		
 	    ret = CL_EWRITE;
 	    break;
 	}
@@ -445,7 +442,7 @@ static int is_dump_and_scan(int desc, cli_ctx *ctx, off_t off, size_t fsize) {
 	off += got;
     }
     if(!fsize) {
-	cli_errmsg("ishield: extracted to %s\n", fname);
+	cli_dbgmsg("ishield: extracted to %s\n", fname);
 	lseek(ofd, 0, SEEK_SET);
 	ret = cli_magic_scandesc(ofd, ctx);
     }
@@ -466,16 +463,21 @@ struct IS_HDR {
 };
 
 
-static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) { /* FIXMEISHIELD: tell parent whether we completed the task or not */
+/* Process data1.hdr and extracts all the available files from dataX.cab */
+static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) { 
     uint32_t h1_data_off, objs_files_cnt, objs_dirs_off;
-    unsigned int off, i;
+    unsigned int off, i, scanned = 0;
+    int ret = CL_BREAK;
     char hash[33], *hdr;
 
     struct IS_HDR *h1;
     struct IS_OBJECTS *objs;
     /* struct IS_INSTTYPEHDR *typehdr; -- UNUSED */
 
-    /* FIXMEISHIELD: sanitize c here */
+    if(!c->hdr || !c->hdrsz || !c->cabcnt) {
+	cli_dbgmsg("is_parse_hdr: inconsistent hdr, maybe a false match\n");
+	return CL_CLEAN;
+    }
 
     if(!(hdr = (char *)cli_malloc(c->hdrsz))) /* FIXMEISHIELD: mmap if large */
 	return CL_EMEM;
@@ -483,7 +485,7 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) { /* FIXM
     if(pread(desc, hdr, c->hdrsz, c->hdr) < (ssize_t)c->hdrsz) {
 	cli_errmsg("is_parse_hdr: short read for header\n");
 	free(hdr);
-	return CL_EREAD;
+	return CL_EREAD; /* hdr must be within bounds, it's k to hard fail here */
     }
 
     h1 = (struct IS_HDR *)hdr;
@@ -500,12 +502,12 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) { /* FIXM
 	return CL_CLEAN;
     }
 
-    cli_errmsg("is_parse_hdr: magic %x, unk1 %x, unk2 %x, data_off %x, data_sz %x\n", h1->magic, h1->unk1, h1->unk2, h1_data_off, h1->data_sz);
+    cli_dbgmsg("is_parse_hdr: magic %x, unk1 %x, unk2 %x, data_off %x, data_sz %x\n",
+	       h1->magic, h1->unk1, h1->unk2, h1_data_off, h1->data_sz);
     if(le32_to_host(h1->magic) != 0x28635349) {
-	cli_errmsg("is_parse_hdr: bad magic\n");
+	cli_dbgmsg("is_parse_hdr: bad magic. wrong version?\n");
 	return CL_CLEAN;
     }
-
 
 /*     cli_errmsg("COMPONENTS\n"); */
 /*     off = le32_to_host(objs->comps_off) + h1_data_off; */
@@ -568,39 +570,56 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) { /* FIXM
 	    file_csize = le64_to_host(file->csize);
 	    cabno = le16_to_host(file->datafile_id);
 
-	    switch(file->flags) {
+	    switch(le16_to_host(file->flags)) {
 	    case 0:
 		/* FIXMEISHIELD: for FS scan ? */
-		cli_errmsg("is_parse_hdr: skipped external file:%s\\%s (size: %llu csize: %llu md5:%s)\n",
+		cli_dbgmsg("is_parse_hdr: skipped external file:%s\\%s (size: %llu csize: %llu md5:%s)\n",
 			   dir_name,
 			   file_name,
 			   file_size, file_csize, hash);
 		break;
 	    case 4:
-		cli_errmsg("is_parse_hdr: file %s\\%s (size: %llu csize: %llu md5:%s offset:%llx (data%u.cab) 13:%x 14:%x 15:%x)\n",
+		cli_dbgmsg("is_parse_hdr: file %s\\%s (size: %llu csize: %llu md5:%s offset:%llx (data%u.cab) 13:%x 14:%x 15:%x)\n",
 			   dir_name,
 			   file_name,
 			   file_size, file_csize, hash, file_stream_off,
 			   cabno, file->unk13,  file->unk14,  file->unk15);
 		if(file->flag_has_dup & 1)
-		    cli_errmsg("is_parse_hdr: not scanned (dup)\n");
+		    cli_dbgmsg("is_parse_hdr: not scanned (dup)\n");
 		else {
-		    if(file->size) { /* FIXMEISHIELD: limits */
+		    if(file_size) {
 			unsigned int j;
-			
-			int ret;
+			int cabret = CL_CLEAN;
+
+			if(ctx->engine->maxfilesize && file_csize > ctx->engine->maxfilesize) {
+			    cli_dbgmsg("is_parse_hdr: skipping file due to size limits (%lu vs %lu)\n", file_csize, ctx->engine->maxfilesize);
+			    break;
+			}
+
 			for(j=0; j<c->cabcnt && c->cabs[j].cabno != cabno; j++) {}
 			if(j != c->cabcnt) {
- 			    if(CLI_ISCONTAINED(c->cabs[j].off, c->cabs[j].sz, file_stream_off + c->cabs[j].off, file_csize))
-				ret = is_extract_cab(desc, ctx, file_stream_off + c->cabs[j].off, file_size, file_csize);
- 			    else
+ 			    if(CLI_ISCONTAINED(c->cabs[j].off, c->cabs[j].sz, file_stream_off + c->cabs[j].off, file_csize)) {
+				scanned++;
+				if (ctx->engine->maxfiles && scanned >= ctx->engine->maxfiles) {
+				    cli_dbgmsg("is_parse_hdr: File limit reached (max: %u)\n", ctx->engine->maxfiles);
+				    return CL_EMAXFILES;
+				}
+				cabret = is_extract_cab(desc, ctx, file_stream_off + c->cabs[j].off, file_size, file_csize);
+			    } else {
+				ret = CL_CLEAN;
  				cli_dbgmsg("is_parse_hdr: stream out of file\n");
+			    }
 			} else {
+			    ret = CL_CLEAN;
 			    cli_dbgmsg("is_parse_hdr: data%u.cab not available\n", cabno);
 			}
-			if(ret != CL_CLEAN) {
+			if(cabret == CL_BREAK) {
+			    ret = CL_CLEAN;
+			    cabret = CL_CLEAN;
+			}
+			if(cabret != CL_CLEAN) {
 			    free(hdr);
-			    return ret;
+			    return cabret;
 			}
 		    } else {
 			cli_dbgmsg("is_parse_hdr: skipped empty file\n");
@@ -610,14 +629,15 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) { /* FIXM
 	    default:
 		cli_dbgmsg("is_parse_hdr: skipped unknown file entry %u\n", i);
 	    }
-	} else
-	    cli_errmsg("is_parse_hdr: FILEITEM out of bounds\n");
-	off+=sizeof(*file);
+	} else {
+	    ret = CL_CLEAN;
+	    cli_dbgmsg("is_parse_hdr: FILEITEM out of bounds\n");
+	}
+	off += sizeof(*file);
     }
     free(hdr);
-    return CL_CLEAN;
+    return ret;
 }
-
 
 
 static void md5str(uint8_t *sum) {
@@ -654,7 +674,7 @@ static int is_extract_cab(int desc, cli_ctx *ctx, uint64_t off, uint64_t size, u
 	return CL_EOPEN;
     }
     if(fseeko(in, off, SEEK_SET)) {
-	cli_errmsg("is_extract_cab: fseek failed\n");
+	cli_dbgmsg("is_extract_cab: fseek failed\n");
 	fclose(in);
 	return CL_ESEEK;
     }
@@ -679,7 +699,7 @@ static int is_extract_cab(int desc, cli_ctx *ctx, uint64_t off, uint64_t size, u
 	uint16_t chunksz;
 	success = 0;
 	if(csize<2) {
-	    cli_errmsg("is_extract_cab: no room for chunk size\n");
+	    cli_dbgmsg("is_extract_cab: no room for chunk size\n");
 	    break;
 	}
 	csize -= 2;
@@ -719,6 +739,12 @@ static int is_extract_cab(int desc, cli_ctx *ctx, uint64_t off, uint64_t size, u
 		    success = 1;
 		    break;
 		}
+		if(ctx->engine->maxfilesize && z.total_out > ctx->engine->maxfilesize) {
+		    cli_dbgmsg("ishield_extract_cab: trimming output file due to size limits (%lu vs %lu)\n", z.total_out, ctx->engine->maxfilesize);
+		    success = 1;
+		    outsz = size;
+		    break;
+		}
 		continue;
 	    }
 	    cli_dbgmsg("is_extract_cab: file decompression failed with %d\n", zret);
@@ -741,5 +767,5 @@ static int is_extract_cab(int desc, cli_ctx *ctx, uint64_t off, uint64_t size, u
     if(!ctx->engine->keeptmp)
 	if(cli_unlink(tempfile)) ret = CL_EUNLINK;
     free(tempfile);
-    return success ? ret : CL_CLEAN;
+    return success ? ret : CL_BREAK;
 }

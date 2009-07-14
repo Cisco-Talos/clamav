@@ -1973,11 +1973,6 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 		ret = cli_scanautoit(desc, ctx, 23);
 	    break;
 
-        case CL_TYPE_ISHIELD_MSI:
-	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ISHIELD))
-		ret = cli_scanishield_msi(desc, ctx, 14);
-	    break;
-
 	case CL_TYPE_MSSZDD:
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_SZDD))
 		ret = cli_scanszdd(desc, ctx);
