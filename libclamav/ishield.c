@@ -250,11 +250,11 @@ int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
 	    csize -= z.avail_in;
 	    z.next_in = buf;
 	    do {
-		int def;
+		int inf;
 		z.avail_out = sizeof(obuf);
 		z.next_out = obuf;
-		def = inflate(&z, 0);
-		if(def != Z_OK && def != Z_STREAM_END && def != Z_BUF_ERROR) {
+		inf = inflate(&z, 0);
+		if(inf != Z_OK && inf != Z_STREAM_END && inf != Z_BUF_ERROR) {
 		    cli_dbgmsg("ishield-msi: bad stream\n");
 		    csize = 0;
 		    lseek(desc, csize, SEEK_CUR);
@@ -307,8 +307,8 @@ struct IS_CABSTUFF {
 };
 
 static void md5str(uint8_t *sum);
-static int is_parse_hdr(int desc, struct IS_CABSTUFF *c);
-
+static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c);
+static int is_extract_cab(int desc, cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t csize);
 
 /* Extract the content of older (non-MSI) IS */
 int cli_scanishield(int desc, cli_ctx *ctx, off_t off, size_t sz) {
@@ -392,7 +392,7 @@ int cli_scanishield(int desc, cli_ctx *ctx, off_t off, size_t sz) {
     }
 
     if(ret == CL_CLEAN && (c.cabcnt || c.hdr != -1)) {
-	if(is_parse_hdr(desc, &c) == CL_CLEAN /* FIXMEISHIELD */) {
+	if(is_parse_hdr(desc, ctx, &c) == CL_CLEAN /* FIXMEISHIELD */) {
 	    unsigned int i;
 	    if(c.hdr != -1) ret = is_dump_and_scan(desc, ctx, c.hdr, c.hdrsz);
 	    for(i=0; i<c.cabcnt && ret == CL_CLEAN; i++) {
@@ -461,7 +461,7 @@ struct IS_HDR {
 };
 
 
-static int is_parse_hdr(int desc, struct IS_CABSTUFF *c) { /* FIXMEISHIELD: tell parent whether we completed the task or not */
+static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) { /* FIXMEISHIELD: tell parent whether we completed the task or not */
     uint32_t h1_data_off, objs_files_cnt, objs_dirs_off;
     unsigned int off, i;
     char hash[33], *hdr;
@@ -472,10 +472,10 @@ static int is_parse_hdr(int desc, struct IS_CABSTUFF *c) { /* FIXMEISHIELD: tell
 
     /* FIXMEISHIELD: sanitize c here */
 
-    if(!(hdr = (char *)cli_malloc(c->hdrsz)))
+    if(!(hdr = (char *)cli_malloc(c->hdrsz))) /* FIXMEISHIELD: mmap if large */
 	return CL_EMEM;
 
-    if(pread(desc, hdr, c->hdrsz, c->hdr) < c->hdrsz) {
+    if(pread(desc, hdr, c->hdrsz, c->hdr) < (ssize_t)c->hdrsz) {
 	cli_errmsg("is_parse_hdr: short read for header\n");
 	free(hdr);
 	return CL_EREAD;
@@ -574,7 +574,11 @@ static int is_parse_hdr(int desc, struct IS_CABSTUFF *c) { /* FIXMEISHIELD: tell
 		    cli_errmsg("is_parse_hdr: not scanned (dup)\n");
 		else {
 		    if(file->size) { /* FIXMEISHIELD: limits */
-			//is_extract(inhash, hash, file->stream_off, file->size, file->csize);
+			int ret = is_extract_cab(desc, ctx, le64_to_host(file->stream_off), le64_to_host(file->size), le64_to_host(file->csize));
+			if(ret != CL_CLEAN) {
+			    free(hdr);
+			    return ret;
+			}
 		    }
 		}
 		break;
@@ -585,7 +589,8 @@ static int is_parse_hdr(int desc, struct IS_CABSTUFF *c) { /* FIXMEISHIELD: tell
 	    cli_errmsg("is_parse_hdr: FILEITEM out of bounds\n");
 	off+=sizeof(*file);
     }
-    return 0;
+    free(hdr);
+    return CL_CLEAN;
 }
 
 
@@ -600,4 +605,116 @@ static void md5str(uint8_t *sum) {
 	sum[i*2] = hi;
     }
     sum[32] = '\0';
+}
+
+
+#define IS_CABBUFSZ 65536
+
+static int is_extract_cab(int desc, cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t csize) {
+    uint8_t *inbuf, *outbuf;
+    char *tempfile;
+    FILE *in;
+    int ofd, ret = CL_CLEAN;
+    z_stream z;
+    uint64_t outsz = 0;
+    int success = 0;
+
+    if((ofd=dup(desc)) < 0) {
+	cli_errmsg("is_extract_cab: dup failed\n");
+	return CL_EDUP;
+    }
+    if(!(in = fdopen(ofd, "rb"))) {
+	cli_errmsg("is_extract_cab: fdopen failed\n");
+	close(ofd);
+	return CL_EOPEN;
+    }
+    if(fseeko(in, off, SEEK_SET)) {
+	cli_errmsg("is_extract_cab: fseek failed\n");
+	fclose(in);
+	return CL_ESEEK;
+    }
+    if(!(inbuf = cli_malloc(IS_CABBUFSZ))) {
+	fclose(in);
+	return CL_EMEM;
+    }
+    if(!(outbuf = cli_malloc(IS_CABBUFSZ))) {
+	free(inbuf);
+	fclose(in);
+	return CL_EMEM;
+    }
+    if(!(tempfile = cli_gentemp(ctx->engine->tmpdir))) return CL_EMEM;
+    if((ofd = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRUSR|S_IWUSR)) < 0) {
+	cli_errmsg("is_extract_cab: failed to create file %s\n", tempfile);
+	free(tempfile);
+	fclose(in);
+	return CL_ECREAT;
+    }
+
+    while(csize) {
+	uint16_t chunksz;
+	success = 0;
+	if(csize<2) {
+	    cli_errmsg("is_extract_cab: no room for chunk size\n");
+	    break;
+	}
+	csize -= 2;
+	if(!fread(outbuf, 2, 1, in)) {
+	    cli_dbgmsg("is_extract_cab: short read for chunk size\n");
+	    break;
+	}
+	chunksz = outbuf[0] | (outbuf[1] << 8);
+	if(!chunksz) {
+	    cli_dbgmsg("is_extract_cab: zero sized chunk\n");
+	    continue;
+	}
+	if(csize < chunksz) {
+	    cli_dbgmsg("is_extract_cab: chunk is bigger than csize\n");
+	    break;
+	}
+	csize -= chunksz;
+	if(!fread(inbuf, chunksz, 1, in)) {
+	    cli_dbgmsg("is_extract_cab: short read for chunk\n");
+	    break;
+	}
+	memset(&z, 0, sizeof(z));
+	inflateInit2(&z, -MAX_WBITS);
+	z.next_in = (uint8_t *)inbuf;
+	z.avail_in = chunksz;
+	while(1) {
+	    int zret;
+	    z.next_out = outbuf;
+	    z.avail_out = IS_CABBUFSZ;
+	    zret = inflate(&z, 0);
+	    if(zret == Z_OK || zret == Z_STREAM_END || zret == Z_BUF_ERROR) {
+		unsigned int umpd = IS_CABBUFSZ - z.avail_out;
+		if(cli_writen(ofd, outbuf, umpd) < (ssize_t)umpd)
+		    break;
+		outsz += umpd;
+		if(zret == Z_STREAM_END || z.avail_out == IS_CABBUFSZ /* FIXMEISHIELD: is the latter ok? */) {
+		    success = 1;
+		    break;
+		}
+		continue;
+	    }
+	    cli_dbgmsg("is_extract_cab: file decompression failed with %d\n", zret);
+	    break;
+	}
+	inflateEnd(&z);
+	if(!success) break;
+    }
+    fclose(in);
+    if(success) {
+	if (outsz != size)
+	    cli_dbgmsg("is_extract_cab: extracted %llu bytes to %s, expected %llu, scanning anyway.\n", outsz, tempfile, size);
+	else
+	    cli_dbgmsg("is_extract_cab: extracted to %s\n", tempfile);
+	lseek(ofd, 0, SEEK_SET);
+	ret = cli_magic_scandesc(ofd, ctx);
+    }
+
+    close(ofd);
+    if(!ctx->engine->keeptmp)
+	if(cli_unlink(tempfile)) ret = CL_EUNLINK;
+    free(tempfile);
+    return success ? ret : CL_CLEAN;
 }
