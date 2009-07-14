@@ -545,6 +545,8 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) { /* FIXM
 	    char *dir_name = "", *file_name = "";
 	    uint32_t dir_rel = h1_data_off + objs_dirs_off + 4 * le32_to_host(file->dir_id); /* rel off of dir entry from array of rel ptrs */
 	    uint32_t file_rel = objs_dirs_off + h1_data_off + le32_to_host(file->str_name_off); /* rel off of fname */
+	    uint64_t file_stream_off, file_size, file_csize;
+	    uint16_t cabno;
 
 	    memcpy(hash, file->md5, 16);
 	    md5str((uint8_t *)hash);
@@ -556,25 +558,39 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) { /* FIXM
 	    if(CLI_ISCONTAINED(hdr, c->hdrsz, &hdr[file_rel], 1) && memchr(&hdr[file_rel], 0, c->hdrsz - file_rel))
 		file_name = &hdr[file_rel];
 		
+	    file_stream_off = le64_to_host(file->stream_off);
+	    file_size = le64_to_host(file->size);
+	    file_csize = le64_to_host(file->csize);
+	    cabno = le16_to_host(file->datafile_id);
+
 	    switch(file->flags) {
 	    case 0:
 		/* FIXMEISHIELD: for FS scan ? */
 		cli_errmsg("is_parse_hdr: skipped external file:%s\\%s (size: %llu csize: %llu md5:%s)\n",
 			   dir_name,
 			   file_name,
-			   le64_to_host(file->size), le64_to_host(file->csize), hash);
+			   file_size, file_csize, hash);
 		break;
 	    case 4:
 		cli_errmsg("is_parse_hdr: file %s\\%s (size: %llu csize: %llu md5:%s offset:%llx (data%u.cab) 13:%x 14:%x 15:%x)\n",
 			   dir_name,
 			   file_name,
-			   le64_to_host(file->size), le64_to_host(file->csize), hash, le64_to_host(file->stream_off),
-			   le16_to_host(file->datafile_id), file->unk13,  file->unk14,  file->unk15);
+			   file_size, file_csize, hash, file_stream_off,
+			   cabno, file->unk13,  file->unk14,  file->unk15);
 		if(file->flag_has_dup & 1)
 		    cli_errmsg("is_parse_hdr: not scanned (dup)\n");
 		else {
 		    if(file->size) { /* FIXMEISHIELD: limits */
-			int ret = is_extract_cab(desc, ctx, le64_to_host(file->stream_off), le64_to_host(file->size), le64_to_host(file->csize));
+			unsigned int cab;
+			
+			int ret;
+			for(cab=0; cab<c->cabcnt && c->cabs[cab].cabno != cabno; cab++) {}
+			if(cab != cab<c->cabcnt) {
+/* 			    if(CLI_ISCONTAINED(c->cabs[cab].off, c->cabs[cab].sz, file_stream_off + c->cabs[cab].off, file_csize + c->cabs[cab].off)) */
+				ret = is_extract_cab(desc, ctx, file_stream_off + c->cabs[cab].off, file_size, file_csize);
+/* 			    else */
+/* 				cli_dbgmsg("is_parse_hdr: stream out of file\n"); */
+			}
 			if(ret != CL_CLEAN) {
 			    free(hdr);
 			    return ret;
