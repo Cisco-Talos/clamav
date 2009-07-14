@@ -360,6 +360,7 @@ int cli_scanishield(int desc, cli_ctx *ctx, off_t off, size_t sz) {
 	    long cabno;
 	    if(!strcasecmp(fname + 4, "1.hdr")) {
 		if(c.hdr == -1) {
+		    cli_dbgmsg("ishield: added data1.hdr to array\n");
 		    c.hdr = coff;
 		    c.hdrsz = fsize;
 		    coff += fsize;
@@ -377,6 +378,7 @@ int cli_scanishield(int desc, cli_ctx *ctx, off_t off, size_t sz) {
 			ret = CL_EMEM;
 			break;
 		    }
+		    cli_dbgmsg("ishield: added data%lu.cab to array\n", cabno);
 		    c.cabs[i].cabno = cabno;
 		    c.cabs[i].off = coff;
 		    c.cabs[i].sz = fsize;
@@ -392,9 +394,12 @@ int cli_scanishield(int desc, cli_ctx *ctx, off_t off, size_t sz) {
     }
 
     if(ret == CL_CLEAN && (c.cabcnt || c.hdr != -1)) {
-	if(is_parse_hdr(desc, ctx, &c) == CL_CLEAN /* FIXMEISHIELD */) {
+	if(is_parse_hdr(desc, ctx, &c) == CL_CLEAN /* FIXMEISHIELD: return something and avoid scanning */) {
 	    unsigned int i;
-	    if(c.hdr != -1) ret = is_dump_and_scan(desc, ctx, c.hdr, c.hdrsz);
+	    if(c.hdr != -1) {
+		cli_errmsg("ishield: scanning data1.hdr\n");
+		ret = is_dump_and_scan(desc, ctx, c.hdr, c.hdrsz);
+	    }
 	    for(i=0; i<c.cabcnt && ret == CL_CLEAN; i++) {
 		cli_errmsg("ishield: scanning data%u.cab\n", c.cabs[i].cabno);
 		ret = is_dump_and_scan(desc, ctx, c.cabs[i].off, c.cabs[i].sz);
@@ -581,20 +586,24 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) { /* FIXM
 		    cli_errmsg("is_parse_hdr: not scanned (dup)\n");
 		else {
 		    if(file->size) { /* FIXMEISHIELD: limits */
-			unsigned int cab;
+			unsigned int j;
 			
 			int ret;
-			for(cab=0; cab<c->cabcnt && c->cabs[cab].cabno != cabno; cab++) {}
-			if(cab != cab<c->cabcnt) {
-/* 			    if(CLI_ISCONTAINED(c->cabs[cab].off, c->cabs[cab].sz, file_stream_off + c->cabs[cab].off, file_csize + c->cabs[cab].off)) */
-				ret = is_extract_cab(desc, ctx, file_stream_off + c->cabs[cab].off, file_size, file_csize);
-/* 			    else */
-/* 				cli_dbgmsg("is_parse_hdr: stream out of file\n"); */
+			for(j=0; j<c->cabcnt && c->cabs[j].cabno != cabno; j++) {}
+			if(j != c->cabcnt) {
+ 			    if(CLI_ISCONTAINED(c->cabs[j].off, c->cabs[j].sz, file_stream_off + c->cabs[j].off, file_csize))
+				ret = is_extract_cab(desc, ctx, file_stream_off + c->cabs[j].off, file_size, file_csize);
+ 			    else
+ 				cli_dbgmsg("is_parse_hdr: stream out of file\n");
+			} else {
+			    cli_dbgmsg("is_parse_hdr: data%u.cab not available\n", cabno);
 			}
 			if(ret != CL_CLEAN) {
 			    free(hdr);
 			    return ret;
 			}
+		    } else {
+			cli_dbgmsg("is_parse_hdr: skipped empty file\n");
 		    }
 		}
 		break;
