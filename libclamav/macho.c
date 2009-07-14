@@ -153,6 +153,21 @@ struct macho_thread_state_x86
     uint32_t gs;
 };
 
+struct macho_fat_header
+{
+    uint32_t magic;
+    uint32_t nfats;
+};
+
+struct macho_fat_arch
+{
+    uint32_t cputype;
+    uint32_t cpusubtype;
+    uint32_t offset;
+    uint32_t size;
+    uint32_t align;
+};
+
 #define RETURN_BROKEN					    \
     if(matcher)						    \
 	return -1;					    \
@@ -476,4 +491,58 @@ int cli_scanmacho(int fd, cli_ctx *ctx, struct cli_exe_info *fileinfo)
 int cli_machoheader(int fd, struct cli_exe_info *fileinfo)
 {
     return cli_scanmacho(fd, NULL, fileinfo);
+}
+
+int cli_scanmacho_unibin(int fd, cli_ctx *ctx)
+{
+	struct macho_fat_header fat_header;
+	struct macho_fat_arch fat_arch;
+	unsigned int conv, i, matcher = 0;
+	int ret = CL_CLEAN;
+	struct stat sb;
+	off_t pos;
+
+    if(fstat(fd, &sb) == -1) {
+	cli_dbgmsg("cli_scanmacho_unibin: fstat failed for fd %d\n", fd);
+	return CL_ESTAT;
+    }
+
+    if(read(fd, &fat_header, sizeof(fat_header)) != sizeof(fat_header)) {
+	cli_dbgmsg("cli_scanmacho_unibin: Can't read fat_header\n");
+	return CL_EFORMAT;
+    }
+
+    if(fat_header.magic == 0xcafebabe) {
+	conv = 0;
+    } else if(fat_header.magic == 0xbebafeca) {
+	conv = 1;
+    } else {
+	cli_dbgmsg("cli_scanmacho_unibin: Incorrect magic\n");
+	return CL_EFORMAT;
+    }
+
+    fat_header.nfats = EC32(fat_header.nfats, conv);
+    if(fat_header.nfats > 32) {
+	cli_dbgmsg("cli_scanmacho_unibin: Invalid number of architectures\n");
+	RETURN_BROKEN;
+    }
+    cli_dbgmsg("UNIBIN: Number of architectures: %u\n", (unsigned int) fat_header.nfats);
+    for(i = 0; i < fat_header.nfats; i++) {
+	if(read(fd, &fat_arch, sizeof(fat_arch)) != sizeof(fat_arch)) {
+	    cli_dbgmsg("cli_scanmacho_unibin: Can't read fat_arch\n");
+	    RETURN_BROKEN;
+	}
+	pos = lseek(fd, 0, SEEK_CUR);
+	fat_arch.offset = EC32(fat_arch.offset, conv);
+	fat_arch.size = EC32(fat_arch.size, conv);
+	cli_dbgmsg("UNIBIN: Binary %u of %u\n", i + 1, fat_header.nfats);
+	cli_dbgmsg("UNIBIN: File offset: %u\n", fat_arch.offset);
+	cli_dbgmsg("UNIBIN: File size: %u\n", fat_arch.size);
+	ret = cli_dumpscan(fd, fat_arch.offset, fat_arch.size, ctx);
+	lseek(fd, pos, SEEK_SET);
+	if(ret == CL_VIRUS)
+	    break;
+    }
+
+    return ret; /* result from the last binary */
 }

@@ -1,3 +1,8 @@
+Tue Jul 14 18:17:59 CEST 2009 (tk)
+----------------------------------
+ * libclamav: add support for Universal Binaries (archives with Mach-O files for
+	      different architectures, bb#1592)
+
 Mon Jul 13 21:40:51 CEST 2009 (tk)
 ----------------------------------
  * docs/signatures.pdf: cover Mach-O files

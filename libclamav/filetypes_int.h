@@ -148,6 +148,7 @@ static const char *ftypes_int[] = {
   "0:0:cffaedfe:Mach-O LE 64-bit:CL_TYPE_ANY:CL_TYPE_MACHO:45",
   "0:0:feedface:Mach-O BE:CL_TYPE_ANY:CL_TYPE_MACHO:45",
   "0:0:feedfacf:Mach-O BE 64-bit:CL_TYPE_ANY:CL_TYPE_MACHO:45",
+  "0:0:cafebabe:Universal Binary:CL_TYPE_ANY:CL_TYPE_MACHO_UNIBIN:46",
   NULL
 };
 

@@ -2090,6 +2090,11 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 		ret = cli_scanmacho(desc, ctx, NULL);
 	    break;
 
+	case CL_TYPE_MACHO_UNIBIN:
+	    if(ctx->dconf->macho)
+		ret = cli_scanmacho_unibin(desc, ctx);
+	    break;
+
 	case CL_TYPE_SIS:
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_SIS))
 		ret = cli_scansis(desc, ctx);
