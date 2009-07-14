@@ -33,6 +33,7 @@
 #include <unistd.h>
 #endif
 #include <string.h>
+#include <strings.h>
 #include <zlib.h>
 
 #include "scanners.h"
@@ -43,7 +44,6 @@
 #ifndef O_BINARY
 #define O_BINARY 0
 #endif
-
 
 #ifndef HAVE_ATTRIB_PACKED
 #define __attribute__(x)
@@ -80,9 +80,10 @@ struct IS_FB {
 #pragma pack
 #endif
 
+
+
+static int is_dump_and_scan(int desc, cli_ctx *ctx, off_t off, size_t fsize);
 static const uint8_t skey[] = { 0xec, 0xca, 0x79, 0xf8 }; /* ~0x13, ~0x35, ~0x86, ~0x07 */
-
-
 
 /* Extract the content of MSI based IS */
 int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
@@ -200,15 +201,27 @@ int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
     return CL_CLEAN;
 }
 
+struct CABSTUFF {
+    struct CABARRAY {
+	unsigned int cabno;
+	off_t off;
+	size_t sz;
+    } *cabs;
+    off_t hdr;
+    size_t hdrsz;
+    unsigned int cabcnt;
+};
+
 
 int cli_scanishield(int desc, cli_ctx *ctx, off_t off, size_t sz) {
     char *fname, *path, *version, *strsz, *eostr, *data;
     char buf[2048];
-    int rd;
-    long int fsize;
+    int rd, ret = CL_CLEAN;
+    long fsize;
     off_t coff = off;
+    struct CABSTUFF c = { NULL, -1, 0, 0 };
 
-    while(1) {
+    while(ret == CL_CLEAN) {
 	rd = pread(desc, buf, sizeof(buf), coff);
 	if(rd <= 0)
 	    break;
@@ -236,16 +249,108 @@ int cli_scanishield(int desc, cli_ctx *ctx, off_t off, size_t sz) {
 
 	data++;
 	fsize = strtol(strsz, &eostr, 10);
-	if(fsize == LONG_MIN || fsize == LONG_MAX || !*strsz || !eostr || eostr == strsz || *eostr)
+	if(fsize < 0 || fsize == LONG_MAX
+	   || !*strsz || !eostr || eostr == strsz || *eostr ||
+	   (unsigned long)fsize >= sz ||
+	   data - buf >= sz - fsize)
 	    break;
 
-	if((data - buf) + fsize > sz)
-	    break;
-
-	cli_errmsg("@%x: found file %s (%s) - version %s - size %u\n", coff, fname, path, version, fsize);
+	cli_errmsg("ishield: @%lx found file %s (%s) - version %s - size %lu\n", coff, fname, path, version, fsize);
 	sz -= (data - buf) + fsize;
-	coff += (data - buf) + fsize;
+	coff += (data - buf);
+	if(!strncasecmp(fname, "data", 4)) {
+	    long cabno;
+	    if(!strcasecmp(fname + 4, "1.hdr")) {
+		if(c.hdr == -1) {
+		    c.hdr = coff;
+		    c.hdrsz = fsize;
+		    coff += fsize;
+		    continue;
+		}
+		cli_warnmsg("ishield: got multiple header files\n");
+	    }
+	    cabno = strtol(fname + 4, &eostr, 10);
+	    if(cabno > 0 && cabno < 65536 && fname[4] && eostr && eostr != &fname[4] && !strcasecmp(eostr, ".cab")) {
+		unsigned int i;
+		for(i=0; i<c.cabcnt && i!=c.cabs[i].cabno; i++) { }
+		if(i==c.cabcnt) {
+		    c.cabcnt++;
+		    if(!(c.cabs = cli_realloc2(c.cabs, sizeof(struct CABARRAY) * c.cabcnt))) {
+			ret = CL_EMEM;
+			break;
+		    }
+		    c.cabs[i].cabno = cabno;
+		    c.cabs[i].off = coff;
+		    c.cabs[i].sz = fsize;
+		    coff += fsize;
+		    continue;
+		}
+		cli_warnmsg("ishield: got multiple data%lu.cab files\n", cabno);
+	    }
+	}
 
+	ret = is_dump_and_scan(desc, ctx, coff, fsize);
+	coff += fsize;
     }
+
+    if(ret == CL_CLEAN && (c.cabcnt || c.hdr != -1)) {
+	if(1 /* FIXMEISHIELD */) {
+	    unsigned int i;
+	    if(c.hdr != -1) ret = is_dump_and_scan(desc, ctx, c.hdr, c.hdrsz);
+	    for(i=0; i<c.cabcnt && ret == CL_CLEAN; i++) {
+		cli_errmsg("ishield: scanning data%u.cab\n", c.cabs[i].cabno);
+		ret = is_dump_and_scan(desc, ctx, c.cabs[i].off, c.cabs[i].sz);
+	    }
+	}
+    }
+
+    if(c.cabs) free(c.cabs);
     return CL_CLEAN;
+}
+
+
+
+static int is_dump_and_scan(int desc, cli_ctx *ctx, off_t off, size_t fsize) {
+    char *fname, buf[BUFSIZ];
+    int ofd, ret = CL_CLEAN;
+
+    cli_errmsg("dumping %u bytes @%x\n", fsize, off);
+    if(!fsize) {
+	cli_errmsg("ishield: skipping empty file\n");
+	return CL_CLEAN;
+    }
+    if(!(fname = cli_gentemp(ctx->engine->tmpdir)))
+	return CL_EMEM;
+
+    if((ofd = open(fname, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRUSR|S_IWUSR)) < 0) {
+	cli_errmsg("ishield: failed to create file %s\n", fname);
+	free(fname);
+	return CL_ECREAT;
+    }
+    while(fsize) {
+	size_t rd = fsize < sizeof(buf) ? fsize : sizeof(buf);
+	int got = pread(desc, buf, rd, off);
+	if(got <= 0) {
+	    cli_errmsg("ishield: read error\n");
+	    ret = CL_EREAD;
+	    break;
+	}
+	if(cli_writen(ofd, buf, got) <= 0) {
+	    cli_errmsg("ishield: write error\n");		
+	    ret = CL_EWRITE;
+	    break;
+	}
+	fsize -= got;
+	off += got;
+    }
+    if(!fsize) {
+	cli_errmsg("ishield: extracted to %s\n", fname);
+	lseek(ofd, 0, SEEK_SET);
+	ret = cli_magic_scandesc(ofd, ctx);
+    }
+    close(ofd);
+    if(!ctx->engine->keeptmp)
+	if(cli_unlink(fname)) ret = CL_EUNLINK;
+    free(fname);
+    return ret;
 }
