@@ -44,7 +44,7 @@
 #include "str.h"
 #include "cltypes.h"
 #include "default.h"
-
+#include "macho.h"
 
 int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata)
 {
@@ -131,6 +131,8 @@ off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, cli_f
 		einfo = cli_peheader;
 	    else if(ftype == CL_TYPE_ELF)
 		einfo = cli_elfheader;
+	    else if(ftype == CL_TYPE_MACHO)
+		einfo = cli_machoheader;
 
 	    if(einfo) {
 		if((pos = lseek(fd, 0, SEEK_CUR)) == -1) {

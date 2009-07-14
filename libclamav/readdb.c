@@ -532,7 +532,7 @@ static int cli_checkoffset(const char *offset, unsigned int type)
     if(!strncmp(offset, "EOF-", 4))
 	return 0;
 
-    if((type == 1 || type == 6) && (!strncmp(offset, "EP+", 3) || !strncmp(offset, "EP-", 3) || (sscanf(offset, "SL+%u", &foo) == 1) || (sscanf(offset, "S%u+%u", &foo, &foo) == 2)))
+    if((type == 1 || type == 6 || type == 9) && (!strncmp(offset, "EP+", 3) || !strncmp(offset, "EP-", 3) || (sscanf(offset, "SL+%u", &foo) == 1) || (sscanf(offset, "S%u+%u", &foo, &foo) == 2)))
 	return 0;
 
     return 1;

@@ -80,70 +80,7 @@ struct cpio_hdr_newc {
     char check[8];
 };
 
-#ifndef O_BINARY
-#define O_BINARY    0
-#endif
-
-static int cpio_scanfile(int fd, uint32_t size, cli_ctx *ctx)
-{
-	int newfd, bread, sum = 0, ret;
-	char buff[FILEBUFF];
-	char *name;
-
-
-    if(!(name = cli_gentemp(ctx->engine->tmpdir)))
-	return CL_EMEM;
-
-    if((newfd = open(name, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
-	cli_errmsg("cpio_scanfile: Can't create file %s\n", name);
-	free(name);
-	return CL_ECREAT;
-    }
-
-    while((bread = cli_readn(fd, buff, FILEBUFF)) > 0) {
-	if((uint32_t) (sum + bread) >= size) {
-	    if(write(newfd, buff, size - sum) == -1) {
-		cli_errmsg("cpio_scanfile: Can't write to %s\n", name);
-		cli_unlink(name);
-		free(name);
-		close(newfd);
-		return CL_EWRITE;
-	    }
-	    break;
-	} else {
-	    if(write(newfd, buff, bread) == -1) {
-		cli_errmsg("cpio_scanfile: Can't write to %s\n", name);
-		cli_unlink(name);
-		free(name);
-		close(newfd);
-		return CL_EWRITE;
-	    }
-	}
-	sum += bread;
-    }
-    cli_dbgmsg("CPIO: Extracted to %s\n", name);
-    lseek(newfd, 0, SEEK_SET);
-    if((ret = cli_magic_scandesc(newfd, ctx)) == CL_VIRUS)
-	cli_dbgmsg("cpio_scanfile: Infected with %s\n", *ctx->virname);
-
-    close(newfd);
-    if(!ctx->engine->keeptmp) {
-	if(cli_unlink(name)) {
-	    free(name);
-	    return CL_EUNLINK;
-	}
-    }
-    free(name);
-    return ret;
-}
-
-static inline uint16_t EC16(uint16_t v, int c)
-{
-    if(!c)
-	return v;
-    else
-	return ((v >> 8) + (v << 8));
-}
+#define EC16(v, conv)   (conv ? cbswap16(v) : v)
 
 static void sanitname(char *name)
 {
@@ -213,7 +150,7 @@ int cli_scancpio_old(int fd, cli_ctx *ctx)
 	    if(ret == CL_EMAXFILES) {
 		return ret;
 	    } else if(ret == CL_SUCCESS) {
-		ret = cpio_scanfile(fd, filesize, ctx);
+		ret = cli_dumpscan(fd, 0, filesize, ctx);
 		if(ret == CL_VIRUS)
 		    return ret;
 	    }
@@ -287,7 +224,7 @@ int cli_scancpio_odc(int fd, cli_ctx *ctx)
 	if(ret == CL_EMAXFILES) {
 	    return ret;
 	} else if(ret == CL_SUCCESS) {
-	    ret = cpio_scanfile(fd, filesize, ctx);
+	    ret = cli_dumpscan(fd, 0, filesize, ctx);
 	    if(ret == CL_VIRUS)
 		return ret;
 	}
@@ -363,7 +300,7 @@ int cli_scancpio_newc(int fd, cli_ctx *ctx, int crc)
 	if(ret == CL_EMAXFILES) {
 	    return ret;
 	} else if(ret == CL_SUCCESS) {
-	    ret = cpio_scanfile(fd, filesize, ctx);
+	    ret = cli_dumpscan(fd, 0, filesize, ctx);
 	    if(ret == CL_VIRUS)
 		return ret;
 	}

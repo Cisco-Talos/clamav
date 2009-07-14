@@ -534,6 +534,7 @@ int main(void)
     srunner_add_suite(sr, test_uniq_suite());
     srunner_add_suite(sr, test_matchers_suite());
     srunner_add_suite(sr, test_htmlnorm_suite());
+    srunner_add_suite(sr, test_bytecode_suite());
 
     srunner_set_log(sr, "test.log");
     if(freopen("test-stderr.log","w+",stderr) == NULL) {

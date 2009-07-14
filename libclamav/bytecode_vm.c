@@ -50,15 +50,6 @@ static int bcfail(const char *msg, long a, long b,
 #define CHECK_GT(a,b)
 #endif
 
-struct stack_entry {
-    const struct cli_bc_func *func;
-    struct cli_bc_value *ret;
-    struct cli_bc_value *values;
-    struct cli_bc_bb *bb;
-    unsigned bb_inst;
-};
-
-
 /* Get the operand of a binary operator, upper bits
  * (beyond the size of the operand) may have random values.
  * Use this when the active bits of the result of a binop are the same
@@ -70,17 +61,23 @@ struct stack_entry {
 #define UNOPNOMOD(i) (values[inst->u.binop[i]].v)
 
 /* get the operand of a binary operator, upper bits are cleared */
-#define BINOP(i) (BINOPNOMOD(i)&((1 << inst->type)-1))
-#define UNOP(x) (UNOPNOMOD(i)&((1 << inst->type)-1))
+#define type2mask(t) (inst->type == 64 ? ~0ull : (1ull << inst->type)-1)
+#define BINOP(i) (BINOPNOMOD(i)&type2mask(inst->type))
+#define UNOP(x) (UNOPNOMOD(i)&typemask(inst->type))
 
 /* get the operand as a signed value.
  * Warning: this assumes that result type is same as operand type.
  * This is usually true, except for icmp_* and select.
  * For icmp_* we fix it up in the loader. */
-#define SIGNEXT(a) CLI_SRS(((int64_t)(a)) << (64-inst->type), (64-inst->type))
-#define BINOPS(i) SIGNEXT(BINOPNOMOD(i))
+#define SIGNEXT(a, from) CLI_SRS(((int64_t)(a)) << (64-(from)), (64-(from)))
+#define BINOPS(i) SIGNEXT(BINOPNOMOD(i), inst->type)
 
-static int jump(const struct cli_bc_func *func, uint16_t bbid, struct cli_bc_bb **bb, const struct cli_bc_inst **inst,
+#define CASTOP (values[inst->u.cast.source].v& inst->u.cast.mask)
+
+#undef always_inline
+#define always_inline
+
+static always_inline int jump(const struct cli_bc_func *func, uint16_t bbid, struct cli_bc_bb **bb, const struct cli_bc_inst **inst,
 		unsigned *bb_inst)
 {
     CHECK_GT(func->numBB, bbid);
@@ -90,26 +87,164 @@ static int jump(const struct cli_bc_func *func, uint16_t bbid, struct cli_bc_bb 
     return 0;
 }
 
-static struct cli_bc_value *allocate_stack(const struct cli_bc_func *func)
+#define STACK_CHUNKSIZE 16384
+
+struct stack_chunk {
+    struct stack_chunk *prev;
+    unsigned used;
+    union {
+	void *align;
+	char data[STACK_CHUNKSIZE];
+    } u;
+};
+
+struct stack {
+    struct stack_chunk* chunk;
+    uint16_t last_size;
+};
+
+static always_inline void* cli_stack_alloc(struct stack *stack, unsigned bytes)
+{
+    struct stack_chunk *chunk = stack->chunk;
+    uint16_t last_size_off;
+
+    /* last_size is stored after data */
+    /* align bytes to pointer size */
+    bytes = (bytes + sizeof(uint16_t) + sizeof(void*)) & ~(sizeof(void*)-1);
+    last_size_off = bytes - 2;
+
+    if (chunk && (chunk->used + bytes <= STACK_CHUNKSIZE)) {
+	/* there is still room in this chunk */
+	void *ret;
+
+	*(uint16_t*)&chunk->u.data[chunk->used + last_size_off] = stack->last_size;
+	stack->last_size = bytes/sizeof(void*);
+
+	ret = chunk->u.data + chunk->used;
+	chunk->used += bytes;
+	return ret;
+    }
+
+    if(bytes >= STACK_CHUNKSIZE) {
+	cli_errmsg("cli_stack_alloc: Attempt to allocate more than STACK_CHUNKSIZE bytes!\n");
+	return NULL;
+    }
+    /* not enough room here, allocate new chunk */
+    chunk = cli_malloc(sizeof(*stack->chunk));
+    if (!chunk)
+	return NULL;
+
+    *(uint16_t*)&chunk->u.data[last_size_off] = stack->last_size;
+    stack->last_size = bytes/sizeof(void*);
+
+    chunk->used = bytes;
+    chunk->prev = stack->chunk;
+    stack->chunk = chunk;
+    return chunk->u.data;
+}
+
+static always_inline void cli_stack_free(struct stack *stack, void *data)
+{
+    uint16_t last_size;
+    struct stack_chunk *chunk = stack->chunk;
+    if (!chunk) {
+	cli_errmsg("cli_stack_free: stack empty!\n");
+	return;
+    }
+    if ((chunk->u.data + chunk->used) != ((char*)data + stack->last_size*sizeof(void*))) {
+	cli_errmsg("cli_stack_free: wrong free order: %p, expected %p\n",
+		   data, chunk->u.data + chunk->used - stack->last_size*sizeof(void*));
+	return;
+    }
+    last_size = *(uint16_t*)&chunk->u.data[chunk->used-2];
+    if (chunk->used < stack->last_size*sizeof(void*)) {
+	cli_errmsg("cli_stack_free: last_size is corrupt!\n");
+	return;
+    }
+    chunk->used -= stack->last_size*sizeof(void*);
+    stack->last_size = last_size;
+    if (!chunk->used) {
+	stack->chunk = chunk->prev;
+	free(chunk);
+    }
+}
+
+static void cli_stack_destroy(struct stack *stack)
+{
+    struct stack_chunk *chunk = stack->chunk;
+    while (chunk) {
+	stack->chunk = chunk->prev;
+	free(chunk);
+	chunk = stack->chunk;
+    }
+}
+
+struct stack_entry {
+    struct stack_entry *prev;
+    const struct cli_bc_func *func;
+    struct cli_bc_value *ret;
+    struct cli_bc_bb *bb;
+    unsigned bb_inst;
+    struct cli_bc_value *values;
+};
+
+static always_inline struct stack_entry *allocate_stack(struct stack *stack,
+							struct stack_entry *prev,
+							const struct cli_bc_func *func,
+							const struct cli_bc_func *func_old,
+							struct cli_bc_value *ret,
+							struct cli_bc_bb *bb,
+							unsigned bb_inst)
 {
     unsigned i;
-    struct cli_bc_value *values = cli_malloc((func->numValues+func->numConstants)*sizeof(*values));
-    if (!values)
+    struct cli_bc_value *values;
+    const unsigned numValues = func->numValues + func->numConstants;
+    struct stack_entry *entry = cli_stack_alloc(stack, sizeof(*entry) + sizeof(*values)*numValues);
+    if (!entry)
 	return NULL;
-    for (i=func->numValues;i<func->numValues+func->numConstants;i++)
-	values[i] = func->constants[i-func->numValues];
-    return values;
+    entry->prev = prev;
+    entry->func = func_old;
+    entry->ret = ret;
+    entry->bb = bb;
+    entry->bb_inst = bb_inst;
+    /* we allocated room for values right after stack_entry! */
+    entry->values = values = (struct cli_bc_value*)&entry[1];
+
+    memcpy(&values[func->numValues], func->constants,
+	   sizeof(*values)*func->numConstants);
+    return entry;
+}
+
+static always_inline struct stack_entry *pop_stack(struct stack *stack,
+						   struct stack_entry *stack_entry,
+						   const struct cli_bc_func **func,
+						   struct cli_bc_value **ret,
+						   struct cli_bc_bb **bb,
+						   unsigned *bb_inst)
+{
+    void *data;
+    *func = stack_entry->func;
+    *ret = stack_entry->ret;
+    *bb = stack_entry->bb;
+    *bb_inst = stack_entry->bb_inst;
+    data = stack_entry;
+    stack_entry = stack_entry->prev;
+    cli_stack_free(stack, data);
+    return stack_entry;
 }
 
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst)
 {
-    unsigned i, stack_depth=0, bb_inst=0, stop=0, stack_max_depth=0;
+    uint64_t tmp;
+    unsigned i, stack_depth=0, bb_inst=0, stop=0 ;
     struct cli_bc_func *func2;
-    struct stack_entry *stack = NULL;
+    struct stack stack;
+    struct stack_entry *stack_entry = NULL;
     struct cli_bc_bb *bb = NULL;
     struct cli_bc_value *values = ctx->values;
     struct cli_bc_value *value, *old_values;
 
+    memset(&stack, 0, sizeof(stack));
     do {
 	value = &values[inst->dest];
 	CHECK_GT(func->numValues+func->numConstants, value - values);
@@ -126,8 +261,10 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	    case OP_UDIV:
 		{
 		    uint64_t d = BINOP(1);
-		    if (UNLIKELY(!d))
+		    if (UNLIKELY(!d)) {
+			cli_dbgmsg("bytecode attempted to execute udiv#0\n");
 			return CL_EBYTECODE;
+		    }
 		    value->v = BINOP(0) / d;
 		    break;
 		}
@@ -135,16 +272,20 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		{
 		    int64_t a = BINOPS(0);
 		    int64_t b = BINOPS(1);
-		    if (UNLIKELY(b == 0 || (b == -1 && a == (-9223372036854775807LL-1LL))))
+		    if (UNLIKELY(b == 0 || (b == -1 && a == (-9223372036854775807LL-1LL)))) {
+			cli_dbgmsg("bytecode attempted to execute sdiv#0\n");
 			return CL_EBYTECODE;
+		    }
 		    value->v = a / b;
 		    break;
 		}
 	    case OP_UREM:
 		{
 		    uint64_t d = BINOP(1);
-		    if (UNLIKELY(!d))
+		    if (UNLIKELY(!d)) {
+			cli_dbgmsg("bytecode attempted to execute urem#0\n");
 			return CL_EBYTECODE;
+		    }
 		    value->v = BINOP(0) % d;
 		    break;
 		}
@@ -152,8 +293,10 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		{
 		    int64_t a = BINOPS(0);
 		    int64_t b = BINOPS(1);
-		    if (UNLIKELY(b == 0 || (b == -1 && (a == -9223372036854775807LL-1LL))))
+		    if (UNLIKELY(b == 0 || (b == -1 && (a == -9223372036854775807LL-1LL)))) {
+			cli_dbgmsg("bytecode attempted to execute srem#0\n");
 			return CL_EBYTECODE;
+		    }
 		    value->v = a % b;
 		    break;
 		}
@@ -179,12 +322,13 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		value->v = BINOPNOMOD(0) ^ BINOPNOMOD(1);
 		break;
 	    case OP_SEXT:
-		value->v = SIGNEXT(values[inst->u.cast.source].v);
+		/* mask is number of src bits here, not a mask! */
+		value->v = SIGNEXT(values[inst->u.cast.source].v, inst->u.cast.mask);
 		break;
 	    case OP_TRUNC:
 		/* fall-through */
 	    case OP_ZEXT:
-		value->v = values[inst->u.cast.source].v & values[inst->u.cast.mask].v;
+		value->v = CASTOP;
 		break;
 	    case OP_BRANCH:
 		stop = jump(func, (values[inst->u.branch.condition].v&1) ?
@@ -196,31 +340,13 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		continue;
 	    case OP_RET:
 		CHECK_GT(stack_depth, 0);
-		stack_depth--;
-		value = stack[stack_depth].ret;
-		func = stack[stack_depth].func;
-		value->v = values[inst->u.unaryop].v;
-		old_values = values;
-		values = stack[stack_depth].values;
-		stack[stack_depth].values = old_values;
+		tmp = values[inst->u.unaryop].v;
+		stack_entry = pop_stack(&stack, stack_entry, &func, &value, &bb,
+					&bb_inst);
+		values = stack_entry ? stack_entry->values : ctx->values;
 		CHECK_GT(func->numValues+func->numConstants, value-values);
 		CHECK_GT(value-values, -1);
-		bb = stack[stack_depth].bb;
-		bb_inst = stack[stack_depth].bb_inst;
-		if ((stack_depth < stack_max_depth*3/4) || !stack_depth) {
-		    for (i=stack_depth;i<stack_max_depth;i++) {
-			free(stack[i].values);
-		    }
-		    if (!stack_depth) {
-			free(stack);
-			stack = 0;
-		    } else {
-			stack = cli_realloc2(stack, sizeof(*stack)*stack_depth);
-			if (!stack)
-			    return CL_EMEM;
-		    }
-		    stack_max_depth = stack_depth;
-		}
+		value->v = tmp;
 		if (!bb) {
 		    stop = CL_BREAK;
 		    continue;
@@ -266,29 +392,16 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		func2 = &bc->funcs[inst->u.ops.funcid];
 		CHECK_EQ(func2->numArgs, inst->u.ops.numOps);
 		old_values = values;
-		if (stack_depth+1 > stack_max_depth) {
-		    stack = cli_realloc2(stack, sizeof(*stack)*(stack_depth+1));
-		    if (!stack)
-			return CL_EMEM;
-		    stack_max_depth = stack_depth+1;
-		    values = allocate_stack(func2);
-		    if (!values)
-			return CL_EMEM;
-		} else {
-		    values = stack[stack_depth].values;
-		}
-		stack[stack_depth].func = func;
-		stack[stack_depth].ret = value;
-		stack[stack_depth].bb = bb;
-		stack[stack_depth].bb_inst = bb_inst;
-		stack[stack_depth].values = old_values;
-		stack_depth++;
-//cli_dbgmsg("Executing %d\n", inst->u.ops.funcid);
+		stack_entry = allocate_stack(&stack, stack_entry, func2, func, value,
+					     bb, bb_inst);
+		values = stack_entry->values;
+//		cli_dbgmsg("Executing %d\n", inst->u.ops.funcid);
 		for (i=0;i<func2->numArgs;i++)
 		    values[i] = old_values[inst->u.ops.ops[i]];
 		func = func2;
 		CHECK_GT(func->numBB, 0);
 		stop = jump(func, 0, &bb, &inst, &bb_inst);
+		stack_depth++;
 		continue;
 	    case OP_COPY:
 		BINOPNOMOD(1) = BINOPNOMOD(0);
@@ -303,6 +416,6 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	CHECK_GT(bb->numInsts, bb_inst);
     } while (stop == CL_SUCCESS);
 
-    free(stack);
+    cli_stack_destroy(&stack);
     return stop == CL_BREAK ? CL_SUCCESS : stop;
 }

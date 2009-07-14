@@ -57,6 +57,7 @@ static const struct ftmap_s {
     { "CL_TYPE_MSEXE",		CL_TYPE_MSEXE		},
     { "CL_TYPE_ELF",		CL_TYPE_ELF		},
     { "CL_TYPE_MACHO",		CL_TYPE_MACHO		},
+    { "CL_TYPE_MACHO_UNIBIN",	CL_TYPE_MACHO_UNIBIN	},
     { "CL_TYPE_POSIX_TAR",	CL_TYPE_POSIX_TAR	},
     { "CL_TYPE_OLD_TAR",	CL_TYPE_OLD_TAR		},
     { "CL_TYPE_CPIO_OLD",	CL_TYPE_CPIO_OLD	},

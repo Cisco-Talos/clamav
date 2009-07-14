@@ -45,7 +45,7 @@
  * in re-enabling affected modules.
  */
 
-#define CL_FLEVEL 45
+#define CL_FLEVEL 46
 #define CL_FLEVEL_DCONF	CL_FLEVEL
 
 extern uint8_t cli_debug_flag;
@@ -351,6 +351,12 @@ void cli_errmsg(const char *str, ...);
 #define UNLIKELY(cond) (cond)
 #endif
 
+#ifdef __GNUC__
+#define always_inline inline __attribute__((always_inline))
+#else
+#define always_inline inline
+#endif
+
 #define cli_dbgmsg (!UNLIKELY(cli_debug_flag)) ? (void)0 : cli_dbgmsg_internal
 
 #ifdef __GNUC__
@@ -375,6 +381,7 @@ char *cli_gentemp(const char *dir);
 int cli_gentempfd(const char *dir, char **name, int *fd);
 unsigned int cli_rndnum(unsigned int max);
 int cli_filecopy(const char *src, const char *dest);
+int cli_dumpscan(int fd, off_t offset, size_t size, cli_ctx *ctx);
 bitset_t *cli_bitset_init(void);
 void cli_bitset_free(bitset_t *bs);
 int cli_bitset_set(bitset_t *bs, unsigned long bit_offset);

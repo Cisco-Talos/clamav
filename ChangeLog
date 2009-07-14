@@ -1,3 +1,31 @@
+Tue Jul 14 23:41:37 CEST 2009 (acab)
+------------------------------------
+ * libclamav: add preliminary support for IS executables (IS-cab and IS-msi)
+		part of bb#1571
+
+Tue Jul 14 18:17:59 CEST 2009 (tk)
+----------------------------------
+ * libclamav: add support for Universal Binaries (archives with Mach-O files for
+	      different architectures, bb#1592)
+
+Mon Jul 13 21:40:51 CEST 2009 (tk)
+----------------------------------
+ * docs/signatures.pdf: cover Mach-O files
+
+Mon Jul 13 21:24:05 CEST 2009 (tk)
+----------------------------------
+ * libclamav: handle Mach-O files with type-9 signatures; all special offsets are
+	      supported for PPC32/64 and x86 executables; for ARM and other archs
+	      only section based extensions (Sx[+-]n, SL[+-]n) are supported atm
+
+Mon Jul 13 19:34:36 EEST 2009 (edwin)
+-------------------------------------
+ * clambc/, libclamav/, unit_tests/: Initial draft of bytecode interpreter (bb #1243).
+
+Mon Jul 13 16:06:31 CEST 2009 (tk)
+----------------------------------
+ * libclamav/macho.c: handle LC_THREAD; calculate EP
+
 Fri Jul 10 10:10:35 CEST 2009 (tk)
 ----------------------------------
  * libclamav/filetypes_int.h: sync with daily.ftm
