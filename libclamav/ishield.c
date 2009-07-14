@@ -24,6 +24,8 @@
 #include "clamav-config.h"
 #endif
 
+#define _XOPEN_SOURCE 500
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -194,6 +196,56 @@ int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
 	    cli_dbgmsg("ishield-msi: File limit reached (max: %u)\n", ctx->engine->maxfiles);
 	    return CL_EMAXFILES;
 	}
+    }
+    return CL_CLEAN;
+}
+
+
+int cli_scanishield(int desc, cli_ctx *ctx, off_t off, size_t sz) {
+    char *fname, *path, *version, *strsz, *eostr, *data;
+    char buf[2048];
+    int rd;
+    long int fsize;
+    off_t coff = off;
+
+    while(1) {
+	rd = pread(desc, buf, sizeof(buf), coff);
+	if(rd <= 0)
+	    break;
+
+	fname = buf;
+	if(!*fname) break;
+	path = memchr(fname, 0, rd);
+	if(!path)
+	    break;
+
+	path++;
+	rd -= (path - buf);
+	if(rd<=0 || !(version = memchr(path, 0, rd)))
+	    break;
+
+	version++;
+	rd -= (version - path);
+	if(rd<=0 || !(strsz = memchr(version, 0, rd)))
+	    break;
+
+	strsz++;
+	rd -= (strsz - version);
+	if(rd<=0 || !(data = memchr(strsz, 0, rd)))
+	    break;
+
+	data++;
+	fsize = strtol(strsz, &eostr, 10);
+	if(fsize == LONG_MIN || fsize == LONG_MAX || !*strsz || !eostr || eostr == strsz || *eostr)
+	    break;
+
+	if((data - buf) + fsize > sz)
+	    break;
+
+	cli_errmsg("@%x: found file %s (%s) - version %s - size %u\n", coff, fname, path, version, fsize);
+	sz -= (data - buf) + fsize;
+	coff += (data - buf) + fsize;
+
     }
     return CL_CLEAN;
 }

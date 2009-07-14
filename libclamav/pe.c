@@ -57,6 +57,7 @@
 #include "matcher-bm.h"
 #include "disasm.h"
 #include "special.h"
+#include "ishield.h"
 
 #ifndef	O_BINARY
 #define	O_BINARY	0
@@ -436,7 +437,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	char sname[9], buff[4096], epbuff[4096], *tempfile;
 	uint32_t epsize;
 	ssize_t bytes;
-	unsigned int i, found, upx_success = 0, min = 0, max = 0, err;
+	unsigned int i, found, upx_success = 0, min = 0, max = 0, err, overlays = 0;
 	unsigned int ssize = 0, dsize = 0, dll = 0, pe_plus = 0;
 	int (*upxfn)(char *, uint32_t, char *, uint32_t *, uint32_t, uint32_t, uint32_t) = NULL;
 	char *src = NULL, *dest = NULL;
@@ -976,8 +977,10 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	    if(exe_sections[i].rva < min)
 	        min = exe_sections[i].rva;
 
-	    if(exe_sections[i].rva + exe_sections[i].rsz > max)
+	    if(exe_sections[i].rva + exe_sections[i].rsz > max) {
 	        max = exe_sections[i].rva + exe_sections[i].rsz;
+		overlays = exe_sections[i].raw + exe_sections[i].rsz;
+	    }
 	}
     }
 
@@ -1014,6 +1017,12 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     if(ret == CL_VIRUS) {
 	free(exe_sections);
 	return ret;
+    }
+
+    if(overlays) {
+	int overlays_sz = fsize - overlays;
+	if(overlays_sz > 0)
+	    cli_scanishield(desc, ctx, overlays, overlays_sz);
     }
 
     /* Attempt to detect some popular polymorphic viruses */
