@@ -20,6 +20,8 @@
 
 /* common routines to deal with installshield archives and installers */
 
+/* FIXMEISHIELD: cleanup/shutdown errmsg's  */
+
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -73,6 +75,97 @@ struct IS_FB {
     uint32_t unk11;
 } __attribute__((packed));
 
+struct IS_COMPONENT {
+    uint32_t str_name_off;
+    uint32_t unk_str1_off;
+    uint32_t unk_str2_off;
+    uint16_t unk_flags;
+    uint32_t unk_str3_off;
+    uint32_t unk_str4_off;
+    uint16_t ordinal_id;
+    uint32_t str_shortname_off;
+    uint32_t unk_str6_off;
+    uint32_t unk_str7_off;
+    uint32_t unk_str8_off;
+    char guid1[16];
+    char guid2[16];
+    uint32_t unk_str9_off;
+    char unk1[3];
+    uint16_t unk_flags2;
+    uint32_t unk3[5];
+    uint32_t unk_str10_off;
+    uint32_t unk4[4];
+    uint16_t unk5;
+    uint16_t sub_comp_cnt;
+    uint32_t sub_comp_offs_array;
+    uint32_t next_comp_off;
+    uint32_t unk_str11_off;
+    uint32_t unk_str12_off;
+    uint32_t unk_str13_off;
+    uint32_t unk_str14_off;
+    uint32_t str_next1_off; /* fixme */
+    uint32_t str_next2_off; /* fixme */
+} __attribute__((packed));
+
+struct IS_INSTTYPEHDR {
+    uint32_t unk1;
+    uint32_t cnt;
+    uint32_t off;
+} __attribute__((packed));
+
+struct IS_INSTTYPEITEM {
+    uint32_t str_name1_off;
+    uint32_t str_name2_off;
+    uint32_t str_name3_off;
+    uint32_t cnt;
+    uint32_t off;
+} __attribute__((packed));
+
+
+struct IS_OBJECTS {
+    /* 200 */ uint32_t strings_off;
+    /* 204 */ uint32_t zero1;
+    /* 208 */ uint32_t comps_off;
+    /* 20c */ uint32_t dirs_off;
+    /* 210 */ uint32_t zero2;
+    /* 214 */ uint32_t unk1, unk2; /* 0x4a636 304694 uguali - NOT AN OFFSET! */
+    /* 21c */ uint32_t dirs_cnt;
+    /* 220 */ uint32_t zero3;
+    /* 224 */ uint32_t dirs_sz; /* dirs_cnt * 4 */
+    /* 228 */ uint32_t files_cnt;
+    /* 22c */ uint32_t dir_sz2; /* same as dirs_sz ?? */
+    /* 230 */ uint16_t unk5; /* 1 - comp count ?? */
+    /* 232 */ uint32_t insttype_off;
+    /* 234 */ uint16_t zero4;
+    /* 238 */ uint32_t zero5;
+    /* 23c */ uint32_t unk7; /* 0xd0 - 208 */
+    /* 240 */ uint16_t unk8;
+    /* 242 */ uint32_t unk9;
+    /* 246 */ uint32_t unk10;   
+} __attribute__((packed));
+
+
+struct IS_FILEITEM {
+    uint16_t flags; /* 0 = EXTERNAL | 4 = INTERNAL | 8 = NAME_fuckup_rare | c = name_fuckup_common */
+    uint64_t size;
+    uint64_t csize;
+    uint64_t stream_off;
+    uint8_t md5[16];
+    uint64_t versioninfo_id;
+    uint32_t zero1;
+    uint32_t zero2;
+    uint32_t str_name_off;
+    uint16_t dir_id;
+    uint32_t unk13; /* 0, 20, 21 ??? */
+    uint32_t unk14; /* timestamp ??? */
+    uint32_t unk15; /* begins with 1 then 2 but not the cab# ??? */
+    uint32_t prev_dup_id; /* msvcrt #38(0, 97, 2) #97(38, 1181, 3) ... , 0, 1) */
+    uint32_t next_dup_id;
+    uint8_t flag_has_dup; /* HAS_NEXT = 2 | HAS_BOTH = 3 | HAS_PREV = 1 */
+    uint16_t datafile_id;
+} __attribute__((packed));
+
+
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack()
 #endif
@@ -85,7 +178,7 @@ struct IS_FB {
 static int is_dump_and_scan(int desc, cli_ctx *ctx, off_t off, size_t fsize);
 static const uint8_t skey[] = { 0xec, 0xca, 0x79, 0xf8 }; /* ~0x13, ~0x35, ~0x86, ~0x07 */
 
-/* Extract the content of MSI based IS */
+/* Extracts the content of MSI based IS */
 int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
     uint8_t buf[BUFSIZ];
     unsigned int fcount, scanned = 0;
@@ -201,7 +294,8 @@ int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
     return CL_CLEAN;
 }
 
-struct CABSTUFF {
+
+struct IS_CABSTUFF {
     struct CABARRAY {
 	unsigned int cabno;
 	off_t off;
@@ -212,14 +306,18 @@ struct CABSTUFF {
     unsigned int cabcnt;
 };
 
+static void md5str(uint8_t *sum);
+static int is_parse_hdr(int desc, struct IS_CABSTUFF *c);
 
+
+/* Extract the content of older (non-MSI) IS */
 int cli_scanishield(int desc, cli_ctx *ctx, off_t off, size_t sz) {
     char *fname, *path, *version, *strsz, *eostr, *data;
     char buf[2048];
     int rd, ret = CL_CLEAN;
     long fsize;
     off_t coff = off;
-    struct CABSTUFF c = { NULL, -1, 0, 0 };
+    struct IS_CABSTUFF c = { NULL, -1, 0, 0 };
 
     while(ret == CL_CLEAN) {
 	rd = pread(desc, buf, sizeof(buf), coff);
@@ -294,7 +392,7 @@ int cli_scanishield(int desc, cli_ctx *ctx, off_t off, size_t sz) {
     }
 
     if(ret == CL_CLEAN && (c.cabcnt || c.hdr != -1)) {
-	if(1 /* FIXMEISHIELD */) {
+	if(is_parse_hdr(desc, &c) == CL_CLEAN /* FIXMEISHIELD */) {
 	    unsigned int i;
 	    if(c.hdr != -1) ret = is_dump_and_scan(desc, ctx, c.hdr, c.hdrsz);
 	    for(i=0; i<c.cabcnt && ret == CL_CLEAN; i++) {
@@ -303,18 +401,16 @@ int cli_scanishield(int desc, cli_ctx *ctx, off_t off, size_t sz) {
 	    }
 	}
     }
-
     if(c.cabs) free(c.cabs);
     return CL_CLEAN;
 }
 
 
-
+/* Utility func to scan a fd @ a given offset and size */
 static int is_dump_and_scan(int desc, cli_ctx *ctx, off_t off, size_t fsize) {
     char *fname, buf[BUFSIZ];
     int ofd, ret = CL_CLEAN;
 
-    cli_errmsg("dumping %u bytes @%x\n", fsize, off);
     if(!fsize) {
 	cli_errmsg("ishield: skipping empty file\n");
 	return CL_CLEAN;
@@ -353,4 +449,155 @@ static int is_dump_and_scan(int desc, cli_ctx *ctx, off_t off, size_t fsize) {
 	if(cli_unlink(fname)) ret = CL_EUNLINK;
     free(fname);
     return ret;
+}
+
+
+struct IS_HDR {
+    uint32_t magic; 
+    uint32_t unk1; /* version ??? */
+    uint32_t unk2; /* ??? */
+    uint32_t data_off;
+    uint32_t data_sz; /* ??? */
+};
+
+
+static int is_parse_hdr(int desc, struct IS_CABSTUFF *c) { /* FIXMEISHIELD: tell parent whether we completed the task or not */
+    uint32_t h1_data_off, objs_files_cnt, objs_dirs_off;
+    unsigned int off, i;
+    char hash[33], *hdr;
+
+    struct IS_HDR *h1;
+    struct IS_OBJECTS *objs;
+    /* struct IS_INSTTYPEHDR *typehdr; -- UNUSED */
+
+    /* FIXMEISHIELD: sanitize c here */
+
+    if(!(hdr = (char *)cli_malloc(c->hdrsz)))
+	return CL_EMEM;
+
+    if(pread(desc, hdr, c->hdrsz, c->hdr) < c->hdrsz) {
+	cli_errmsg("is_parse_hdr: short read for header\n");
+	free(hdr);
+	return CL_EREAD;
+    }
+
+    h1 = (struct IS_HDR *)hdr;
+    if(!CLI_ISCONTAINED(hdr, c->hdrsz, ((char *)h1), sizeof(*h1))) {
+	cli_dbgmsg("is_parse_hdr: not enough room for H1\n");
+	free(hdr);
+	return CL_CLEAN;
+    }
+    h1_data_off = le32_to_host(h1->data_off);
+    objs = (struct IS_OBJECTS *)(hdr + h1_data_off);
+    if(!CLI_ISCONTAINED(hdr, c->hdrsz, ((char *)objs), sizeof(*objs))) {
+	cli_dbgmsg("is_parse_hdr: not enough room for OBJECTS\n");
+	free(hdr);
+	return CL_CLEAN;
+    }
+
+    cli_errmsg("is_parse_hdr: magic %x, unk1 %x, unk2 %x, data_off %x, data_sz %x\n", h1->magic, h1->unk1, h1->unk2, h1_data_off, h1->data_sz);
+    if(le32_to_host(h1->magic) != 0x28635349) {
+	cli_errmsg("is_parse_hdr: bad magic\n");
+	return CL_CLEAN;
+    }
+
+
+/*     cli_errmsg("COMPONENTS\n"); */
+/*     off = le32_to_host(objs->comps_off) + h1_data_off; */
+/*     for(i=1;  ; i++) { */
+/* 	struct IS_COMPONENT *cmp = (struct IS_COMPONENT *)(hdr + off); */
+/* 	if(!CLI_ISCONTAINED(hdr, c->hdrsz, ((char *)cmp), sizeof(*cmp))) { */
+/* 	    cli_dbgmsg("is_extract: not enough room for COMPONENT\n"); */
+/* 	    free(hdr); */
+/* 	    return CL_CLEAN; */
+/* 	} */
+/* 	cli_errmsg("%06u\t%s\n", i, &hdr[le32_to_host(cmp->str_name_off) + h1_data_off]); */
+/* 	spam_strarray(hdr, h1_data_off + cmp->sub_comp_offs_array, h1_data_off, cmp->sub_comp_cnt); */
+/* 	if(!cmp->next_comp_off) break; */
+/* 	off = le32_to_host(cmp->next_comp_off) + h1_data_off; */
+/*     } */
+
+/*     cli_errmsg("DIRECTORIES (%u)", le32_to_host(objs->dirs_cnt)); */
+    objs_dirs_off = le32_to_host(objs->dirs_off);
+/*     spam_strarray(hdr, h1_data_off + objs_dirs_off, h1_data_off + objs_dirs_off, objs->dirs_cnt); */
+
+/*     typehdr = (struct INSTTYPEHDR *)&hdr[h1_data_off + le32_to_host(objs->insttype_off)]; */
+/*     printf("INSTTYPES (unk1: %d)\n-----------\n", typehdr->unk1); */
+/*     off = typehdr->off + h1_data_off; */
+/*     for(i=1; i<=typehdr->cnt; i++) { */
+/* 	uint32_t x = *(uint32_t *)(&hdr[off]); */
+/* 	struct INSTTYPEITEM *item = (struct INSTTYPEITEM *)&hdr[x + h1_data_off]; */
+/* 	printf("%06u\t%s\t aka %s\taka %s\n", i, &hdr[item->str_name1_off + h1_data_off], &hdr[item->str_name2_off + h1_data_off], &hdr[item->str_name3_off + h1_data_off]); */
+/* 	printf("components:\n"); */
+/* 	spam_strarray(hdr, h1_data_off + item->off, h1_data_off, item->cnt); */
+/* 	off+=4; */
+/*     } */
+
+
+/* dir = &hdr[*(uint32_t *)(&hdr[h1_data_off + objs_dirs_off + 4 * file->dir_id]) + h1_data_off + objs_dirs_off] */
+
+    objs_files_cnt = le32_to_host(objs->files_cnt);
+    off = h1_data_off + objs_dirs_off + le32_to_host(objs->dir_sz2);
+    for(i=0; i<objs_files_cnt ;i++) {
+	struct IS_FILEITEM *file = (struct IS_FILEITEM *)(&hdr[off]);
+
+	if(CLI_ISCONTAINED(hdr, c->hdrsz, ((char *)file), sizeof(*file))) {
+	    char *dir_name = "", *file_name = "";
+	    uint32_t dir_rel = h1_data_off + objs_dirs_off + 4 * le32_to_host(file->dir_id); /* rel off of dir entry from array of rel ptrs */
+	    uint32_t file_rel = objs_dirs_off + h1_data_off + le32_to_host(file->str_name_off); /* rel off of fname */
+
+	    memcpy(hash, file->md5, 16);
+	    md5str((uint8_t *)hash);
+	    if(CLI_ISCONTAINED(hdr, c->hdrsz, &hdr[dir_rel], 4)) {
+		dir_rel = cli_readint32(&hdr[dir_rel]) + h1_data_off + objs_dirs_off;
+		if(CLI_ISCONTAINED(hdr, c->hdrsz, &hdr[dir_rel], 1) && memchr(&hdr[dir_rel], 0, c->hdrsz - dir_rel))
+		    dir_name = &hdr[dir_rel];
+	    }
+	    if(CLI_ISCONTAINED(hdr, c->hdrsz, &hdr[file_rel], 1) && memchr(&hdr[file_rel], 0, c->hdrsz - file_rel))
+		file_name = &hdr[file_rel];
+		
+	    switch(file->flags) {
+	    case 0:
+		/* FIXMEISHIELD: for FS scan ? */
+		cli_errmsg("is_parse_hdr: skipped external file:%s\\%s (size: %llu csize: %llu md5:%s)\n",
+			   dir_name,
+			   file_name,
+			   le64_to_host(file->size), le64_to_host(file->csize), hash);
+		break;
+	    case 4:
+		cli_errmsg("is_parse_hdr: file %s\\%s (size: %llu csize: %llu md5:%s offset:%llx (data%u.cab) 13:%x 14:%x 15:%x)\n",
+			   dir_name,
+			   file_name,
+			   le64_to_host(file->size), le64_to_host(file->csize), hash, le64_to_host(file->stream_off),
+			   le16_to_host(file->datafile_id), file->unk13,  file->unk14,  file->unk15);
+		if(file->flag_has_dup & 1)
+		    cli_errmsg("is_parse_hdr: not scanned (dup)\n");
+		else {
+		    if(file->size) { /* FIXMEISHIELD: limits */
+			//is_extract(inhash, hash, file->stream_off, file->size, file->csize);
+		    }
+		}
+		break;
+	    default:
+		cli_dbgmsg("is_parse_hdr: skipped unknown file entry %u\n", i);
+	    }
+	} else
+	    cli_errmsg("is_parse_hdr: FILEITEM out of bounds\n");
+	off+=sizeof(*file);
+    }
+    return 0;
+}
+
+
+
+static void md5str(uint8_t *sum) {
+    int i;
+    for(i=15; i>=0; i--) {
+	uint8_t lo = (sum[i] & 0xf), hi = (sum[i] >> 4);
+	lo += '0' + (lo > 9) * '\'';
+	hi += '0' + (hi > 9) * '\'';
+	sum[i*2+1] = lo;
+	sum[i*2] = hi;
+    }
+    sum[32] = '\0';
 }
