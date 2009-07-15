@@ -718,7 +718,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 #endif
 
     /* set up limits */
-    if((opt = optget(opts, "MaxScanSize"))->enabled) {
+    if((opt = optget(opts, "MaxScanSize"))->active) {
 	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANSIZE, opt->numarg))) {
 	    logg("!cl_engine_set_num(CL_ENGINE_MAX_SCANSIZE) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
@@ -731,7 +731,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     else
     	logg("^Limits: Global size limit protection disabled.\n");
 
-    if((opt = optget(opts, "MaxFileSize"))->enabled) {
+    if((opt = optget(opts, "MaxFileSize"))->active) {
 	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_FILESIZE, opt->numarg))) {
 	    logg("!cl_engine_set_num(CL_ENGINE_MAX_FILESIZE) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
@@ -755,7 +755,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     }
 #endif
 
-    if((opt = optget(opts, "MaxRecursion"))->enabled) {
+    if((opt = optget(opts, "MaxRecursion"))->active) {
 	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_RECURSION, opt->numarg))) {
 	    logg("!cl_engine_set_num(CL_ENGINE_MAX_RECURSION) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
@@ -768,7 +768,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     else
     	logg("^Limits: Recursion level limit protection disabled.\n");
 
-    if((opt = optget(opts, "MaxFiles"))->enabled) {
+    if((opt = optget(opts, "MaxFiles"))->active) {
 	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_FILES, opt->numarg))) {
 	    logg("!cl_engine_set_num(CL_ENGINE_MAX_FILES) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);

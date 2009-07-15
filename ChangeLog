@@ -1,3 +1,7 @@
+Wed Jul 15 19:36:35 CEST 2009 (tk)
+----------------------------------
+ * clamd: honour value of 0 in Max* options
+
 Wed Jul 15 19:24:03 CEST 2009 (tk)
 ----------------------------------
  * clamscan: honour value of 0 in --max-* options (bb#1650)
