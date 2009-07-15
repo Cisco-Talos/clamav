@@ -306,7 +306,7 @@ int main(int argc, char **argv) {
 
     if((opt = optget(opts, "PidFile"))->enabled) {
 	FILE *fd;
-	mode_t old_umask = umask(0006);
+	mode_t old_umask = umask(0002);
 
 	if((fd = fopen(opt->strarg, "w")) == NULL) {
 	    logg("!Can't save PID in file %s\n", opt->strarg);

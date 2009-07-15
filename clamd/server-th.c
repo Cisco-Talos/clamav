@@ -927,7 +927,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     mainpid = getpid();
     if((opt = optget(opts, "PidFile"))->enabled) {
 	    FILE *fd;
-	old_umask = umask(0006);
+	old_umask = umask(0002);
 	if((fd = fopen(opt->strarg, "w")) == NULL) {
 	    logg("!Can't save PID in file %s\n", opt->strarg);
 	} else {
