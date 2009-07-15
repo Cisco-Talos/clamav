@@ -452,7 +452,7 @@ int scanmanager(const struct optstruct *opts)
 
     /* set limits */
 
-    if((opt = optget(opts, "max-scansize"))->enabled) {
+    if((opt = optget(opts, "max-scansize"))->active) {
 	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_SCANSIZE, opt->numarg))) {
 	    logg("!cli_engine_set_num(CL_ENGINE_MAX_SCANSIZE) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
@@ -460,7 +460,7 @@ int scanmanager(const struct optstruct *opts)
 	}
     }
 
-    if((opt = optget(opts, "max-filesize"))->enabled) {
+    if((opt = optget(opts, "max-filesize"))->active) {
 	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_FILESIZE, opt->numarg))) {
 	    logg("!cli_engine_set_num(CL_ENGINE_MAX_FILESIZE) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
@@ -479,7 +479,7 @@ int scanmanager(const struct optstruct *opts)
     }
 #endif
 
-    if((opt = optget(opts, "max-files"))->enabled) {
+    if((opt = optget(opts, "max-files"))->active) {
 	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_FILES, opt->numarg))) {
 	    logg("!cli_engine_set_num(CL_ENGINE_MAX_FILES) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
@@ -487,7 +487,7 @@ int scanmanager(const struct optstruct *opts)
 	}
     }
 
-    if((opt = optget(opts, "max-recursion"))->enabled) {
+    if((opt = optget(opts, "max-recursion"))->active) {
 	if((ret = cl_engine_set_num(engine, CL_ENGINE_MAX_RECURSION, opt->numarg))) {
 	    logg("!cli_engine_set_num(CL_ENGINE_MAX_RECURSION) failed: %s\n", cl_strerror(ret));
 	    cl_engine_free(engine);
@@ -561,7 +561,7 @@ int scanmanager(const struct optstruct *opts)
 	    options |= CL_SCAN_STRUCTURED_SSN_NORMAL;
 	}
 
-	if((opt = optget(opts, "structured-ssn-count"))->enabled) {
+	if((opt = optget(opts, "structured-ssn-count"))->active) {
 	    if((ret = cl_engine_set_num(engine, CL_ENGINE_MIN_SSN_COUNT, opt->numarg))) {
 		logg("!cli_engine_set_num(CL_ENGINE_MIN_SSN_COUNT) failed: %s\n", cl_strerror(ret));
 		cl_engine_free(engine);
@@ -569,7 +569,7 @@ int scanmanager(const struct optstruct *opts)
 	    }
 	}
 
-	if((opt = optget(opts, "structured-cc-count"))->enabled) {
+	if((opt = optget(opts, "structured-cc-count"))->active) {
 	    if((ret = cl_engine_set_num(engine, CL_ENGINE_MIN_CC_COUNT, opt->numarg))) {
 		logg("!cli_engine_set_num(CL_ENGINE_MIN_CC_COUNT) failed: %s\n", cl_strerror(ret));
 		cl_engine_free(engine);
