@@ -593,7 +593,7 @@ struct mszip_stream *mszip_init(int fd,
   if (!input_buffer_size) return NULL;
 
   /* allocate decompression state */
-  if (!(zip = cli_malloc(sizeof(struct mszip_stream)))) {
+  if (!(zip = cli_calloc(1, sizeof(struct mszip_stream)))) {
     return NULL;
   }
 
@@ -1738,7 +1738,7 @@ struct qtm_stream *qtm_init(int fd, int ofd,
   if (input_buffer_size < 2) return NULL;
 
   /* allocate decompression state */
-  if (!(qtm = cli_malloc(sizeof(struct qtm_stream)))) {
+  if (!(qtm = cli_calloc(1, sizeof(struct qtm_stream)))) {
     return NULL;
   }
 

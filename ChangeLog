@@ -1,3 +1,8 @@
+Wed Jul 15 08:46:35 CEST 2009 (tk)
+----------------------------------
+ * libclamav/mspack.c: fix valgrind warnings about use of uninitialized
+		       values (bb#1655)
+
 Tue Jul 14 23:41:37 CEST 2009 (acab)
 ------------------------------------
  * libclamav: add preliminary support for IS executables (IS-cab and IS-msi)
