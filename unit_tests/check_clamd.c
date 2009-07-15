@@ -740,6 +740,8 @@ static void test_idsession_commands(int split, int instream)
     /* test all commands that must be accepted inside an IDSESSION */
     for (i=0;i < sizeof(basic_tests)/sizeof(basic_tests[0]); i++) {
 	const struct basic_test *test = &basic_tests[i];
+	if (test->skiproot && isroot)
+	    continue;
 	if (test->ids == IDS_OK) {
 	    fail_unless(p+strlen(test->command)+2 < buf+sizeof(buf), "Buffer too small");
 	    *p++ = 'z';
@@ -792,6 +794,8 @@ static void test_idsession_commands(int split, int instream)
     p = recvdata;
     for (i=0;i < sizeof(basic_tests)/sizeof(basic_tests[0]); i++) {
 	const struct basic_test *test = &basic_tests[i];
+	if (test->skiproot && isroot)
+	    continue;
 	if (test->ids == IDS_OK) {
 	    unsigned id;
 	    char *q = strchr(p, ':');
