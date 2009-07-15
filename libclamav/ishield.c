@@ -231,7 +231,7 @@ int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
 	keylen = strlen((const char *)key);
 	if(!keylen) return CL_CLEAN;
 	/* FIXMEISHIELD: cleanup the spam below */
-	cli_dbgmsg("ishield-msi: File %s (csize: %x, unk1:%x unk2:%x unk3:%x unk4:%x unk5:%x unk6:%x unk7:%x unk8:%x unk9:%x unk10:%x unk11:%x)\n", key, csize, fb.unk1, fb.unk2, fb.unk3, fb.unk4, fb.unk5, fb.unk6, fb.unk7, fb.unk8, fb.unk9, fb.unk10, fb.unk11);
+	cli_dbgmsg("ishield-msi: File %s (csize: %llx, unk1:%x unk2:%x unk3:%x unk4:%x unk5:%x unk6:%x unk7:%x unk8:%x unk9:%x unk10:%x unk11:%x)\n", key, (long long)csize, fb.unk1, fb.unk2, fb.unk3, fb.unk4, fb.unk5, fb.unk6, fb.unk7, fb.unk8, fb.unk9, fb.unk10, fb.unk11);
 	if(!(tempfile = cli_gentemp(ctx->engine->tmpdir))) return CL_EMEM;
 	if((ofd = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRUSR|S_IWUSR)) < 0) {
 	    cli_dbgmsg("ishield-msi: failed to create file %s\n", tempfile);
@@ -243,7 +243,7 @@ int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
 	    key[i] ^= skey[i & 3];
 	memset(&z, 0, sizeof(z));
 	inflateInit(&z);
-	
+	ret = CL_SUCCESS;
 	while(csize) {
 	    unsigned int sz = csize < sizeof(buf) ? csize : sizeof(buf);
 	    z.avail_in = cli_readn(desc, buf, sz);
@@ -270,7 +270,11 @@ int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
 		    lseek(desc, csize, SEEK_CUR);
 		    break;
 		}
-		write(ofd, obuf, sizeof(obuf) - z.avail_out);
+		if (cli_writen(ofd, obuf, sizeof(obuf) - z.avail_out) < 0) {
+		    ret = CL_EWRITE;
+		    csize = 0;
+		    break;
+		}
 		if(ctx->engine->maxfilesize && z.total_out > ctx->engine->maxfilesize) {
 		    cli_dbgmsg("ishield-msi: trimming output file due to size limits (%lu vs %lu)\n", z.total_out, ctx->engine->maxfilesize);
 		    lseek(desc, csize, SEEK_CUR);
@@ -282,10 +286,12 @@ int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
 
 	inflateEnd(&z);
 
-	cli_dbgmsg("ishield-msi: extracted to %s\n", tempfile);
+	if (ret == CL_SUCCESS) {
+	    cli_dbgmsg("ishield-msi: extracted to %s\n", tempfile);
 
-	lseek(ofd, 0, SEEK_SET);
-	ret = cli_magic_scandesc(ofd, ctx);
+	    lseek(ofd, 0, SEEK_SET);
+	    ret = cli_magic_scandesc(ofd, ctx);
+	}
 	close(ofd);
 
 	if(!ctx->engine->keeptmp)
@@ -585,7 +591,7 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 	struct IS_FILEITEM *file = (struct IS_FILEITEM *)(&hdr[off]);
 
 	if(CLI_ISCONTAINED(hdr, c->hdrsz, ((char *)file), sizeof(*file))) {
-	    char *dir_name = "", *file_name = "";
+	    const char *dir_name = "", *file_name = "";
 	    uint32_t dir_rel = h1_data_off + objs_dirs_off + 4 * le32_to_host(file->dir_id); /* rel off of dir entry from array of rel ptrs */
 	    uint32_t file_rel = objs_dirs_off + h1_data_off + le32_to_host(file->str_name_off); /* rel off of fname */
 	    uint64_t file_stream_off, file_size, file_csize;
@@ -612,13 +618,13 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 		cli_dbgmsg("is_parse_hdr: skipped external file:%s\\%s (size: %llu csize: %llu md5:%s)\n",
 			   dir_name,
 			   file_name,
-			   file_size, file_csize, hash);
+			   (long long)file_size, (long long)file_csize, hash);
 		break;
 	    case 4:
 		cli_dbgmsg("is_parse_hdr: file %s\\%s (size: %llu csize: %llu md5:%s offset:%llx (data%u.cab) 13:%x 14:%x 15:%x)\n",
 			   dir_name,
 			   file_name,
-			   file_size, file_csize, hash, file_stream_off,
+			   (long long)file_size, (long long)file_csize, hash, (long long)file_stream_off,
 			   cabno, file->unk13,  file->unk14,  file->unk15);
 		if(file->flag_has_dup & 1)
 		    cli_dbgmsg("is_parse_hdr: not scanned (dup)\n");
@@ -802,7 +808,7 @@ static int is_extract_cab(int desc, cli_ctx *ctx, uint64_t off, uint64_t size, u
     free(outbuf);
     if(success) {
 	if (outsz != size)
-	    cli_dbgmsg("is_extract_cab: extracted %llu bytes to %s, expected %llu, scanning anyway.\n", outsz, tempfile, size);
+	    cli_dbgmsg("is_extract_cab: extracted %llu bytes to %s, expected %llu, scanning anyway.\n", (long long)outsz, tempfile, (long long)size);
 	else
 	    cli_dbgmsg("is_extract_cab: extracted to %s\n", tempfile);
 	lseek(ofd, 0, SEEK_SET);
