@@ -1,3 +1,7 @@
+Wed Jul 15 11:20:56 CEST 2009 (tk)
+----------------------------------
+ * libclamav/filetypes.c: fix off-by-one error (bb#1639)
+
 Wed Jul 15 08:46:35 CEST 2009 (tk)
 ----------------------------------
  * libclamav/mspack.c: fix valgrind warnings about use of uninitialized
