@@ -1,3 +1,8 @@
+Wed Jul 15 08:46:35 CEST 2009 (tk)
+----------------------------------
+ * libclamav/mspack.c: fix valgrind warnings about use of uninitialized
+		       values (bb#1655)
+
 Mon Jun 29 11:25:46 CEST 2009 (acab)
 ------------------------------------
  * clamav-milter/netcode.c: Properly handle clamd disconnection (bb#1643)
