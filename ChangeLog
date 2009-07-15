@@ -1,3 +1,7 @@
+Wed Jul 15 19:24:03 CEST 2009 (tk)
+----------------------------------
+ * clamscan: honour value of 0 in --max-* options (bb#1650)
+
 Wed Jul 15 16:25:00 EEST 2009 (edwin)
 -------------------------------------
  * unit_tests/check_clamd.c: fix unit tests when run as root (bb #1635).
