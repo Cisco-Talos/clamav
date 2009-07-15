@@ -1,3 +1,8 @@
+Wed Jul 15 12:33:22 CEST 2009 (acab)
+------------------------------------
+ * libclamav/ishield.c: use mmap for big files, fix some leaks,
+			 some portability fixes
+
 Wed Jul 15 11:20:56 CEST 2009 (tk)
 ----------------------------------
  * libclamav/filetypes.c: fix off-by-one error (bb#1639)
