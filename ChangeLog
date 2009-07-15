@@ -1,3 +1,7 @@
+Wed Jul 15 23:36:09 EEST 2009 (edwin)
+-------------------------------------
+ * libclamav/pe.c, yc.c: Make yC able to handle more samples and variants.
+
 Wed Jul 15 19:36:35 CEST 2009 (tk)
 ----------------------------------
  * clamd: honour value of 0 in Max* options

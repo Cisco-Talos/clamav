@@ -30,7 +30,6 @@
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
-
 #include "cltypes.h"
 #include "pe.h"
 #include "others.h"
@@ -164,9 +163,8 @@ static int yc_poly_emulator(char* decryptor_offset, char* code, unsigned int ecx
 /* ========================================================================== */
 /* Main routine which calls all others */
 
-int yc_decrypt(char *fbuf, unsigned int filesize, struct cli_exe_section *sections, unsigned int sectcount, uint32_t peoffset, int desc)
-{
-  uint32_t ycsect = sections[sectcount].raw;
+int yc_decrypt(char *fbuf, unsigned int filesize, struct cli_exe_section *sections, unsigned int sectcount, uint32_t peoffset, int desc, uint32_t ecx,int16_t offset) {
+  uint32_t ycsect = sections[sectcount].raw+offset;
   unsigned int i;
   struct pe_image_file_hdr *pe = (struct pe_image_file_hdr*) (fbuf + peoffset);
   char *sname = (char *)pe + EC16(pe->SizeOfOptionalHeader) + 0x18;
@@ -177,11 +175,12 @@ int yc_decrypt(char *fbuf, unsigned int filesize, struct cli_exe_section *sectio
 
   Start offset for analyze: Start of yC Section + 0x93
   End offset for analyze: Start of yC Section + 0xC3
-  Lenght to decrypt - ECX = 0xB97
+  Length to decrypt - ECX = 0xB97
 
   */
-  cli_dbgmsg("yC: decrypting decryptor on sect %d\n", sectcount); 
-  if (yc_poly_emulator(fbuf + ycsect + 0x93, fbuf + ycsect + 0xc6 ,0xB97))
+  cli_dbgmsg("yC: offset: %x, length: %x\n", offset, ecx);
+  cli_dbgmsg("yC: decrypting decryptor on sect %d\n", sectcount);
+  if (yc_poly_emulator(fbuf + ycsect + 0x93, fbuf + ycsect + 0xc6, ecx))
     return 1;
   filesize-=sections[sectcount].ursz;
 
@@ -200,8 +199,8 @@ int yc_decrypt(char *fbuf, unsigned int filesize, struct cli_exe_section *sectio
   for(i=0;i<sectcount;i++)
     {
       uint32_t name = (uint32_t) cli_readint32(sname+i*0x28);
-      if ( !sections[i].raw ||
-	   !sections[i].rsz ||
+      if (!sections[i].raw ||
+	  !sections[i].rsz ||
 	   name == 0x63727372 || /* rsrc */
 	   name == 0x7273722E || /* .rsr */
 	   name == 0x6F6C6572 || /* relo */
@@ -212,9 +211,9 @@ int yc_decrypt(char *fbuf, unsigned int filesize, struct cli_exe_section *sectio
 	   name == 0x736C742E || /* .tls */
 	   (name&0xffff) == 0x4379  /* yC */
 	) continue;
-      cli_dbgmsg("yC: decrypting sect%d\n",i); 
-      if (yc_poly_emulator(fbuf + ycsect + 0x457, fbuf + sections[i].raw, sections[i].ursz))
-	return 1;
+      cli_dbgmsg("yC: decrypting sect%d\n",i);
+      if (yc_poly_emulator(fbuf + ycsect + (offset == -0x18 ? 0x3ea : 0x457), fbuf + sections[i].raw, sections[i].ursz))
+	  return 1;
     }
 
   /* Remove yC section */

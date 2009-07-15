@@ -2015,11 +2015,50 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     }
 
 
-    /* yC 1.3 */
+    /* yC 1.3 & variants */
 
     if((DCONF & PE_CONF_YC) && nsections > 1 &&
-       EC32(optional_hdr32.AddressOfEntryPoint) == exe_sections[nsections - 1].rva + 0x60 &&
-       memcmp(epbuff, "\x55\x8B\xEC\x53\x56\x57\x60\xE8\x00\x00\x00\x00\x5D\x81\xED\x6C\x28\x40\x00\xB9\x5D\x34\x40\x00\x81\xE9\xC6\x28\x40\x00\x8B\xD5\x81\xC2\xC6\x28\x40\x00\x8D\x3A\x8B\xF7\x33\xC0\xEB\x04\x90\xEB\x01\xC2\xAC", 51) == 0 && fsize >= exe_sections[nsections - 1].raw + 0xC6 + 0xb97)  {
+       (EC32(optional_hdr32.AddressOfEntryPoint) == exe_sections[nsections - 1].rva + 0x60)) {
+
+	uint32_t ecx = 0;
+	int16_t offset;
+
+	/* yC 1.3 */
+	if (!memcmp(epbuff, "\x55\x8B\xEC\x53\x56\x57\x60\xE8\x00\x00\x00\x00\x5D\x81\xED", 15) &&
+	    !memcmp(epbuff+0x26, "\x8D\x3A\x8B\xF7\x33\xC0\xEB\x04\x90\xEB\x01\xC2\xAC", 13) &&
+	    ((uint8_t)epbuff[0x13] == 0xB9) &&
+	    ((uint16_t)(cli_readint16(epbuff+0x18)) == 0xE981) &&
+	    !memcmp(epbuff+0x1e,"\x8B\xD5\x81\xC2", 4)) {
+
+	    offset = 0;
+	    if (0x6c - cli_readint32(epbuff+0xf) + cli_readint32(epbuff+0x22) == 0xC6)
+		ecx = cli_readint32(epbuff+0x14) - cli_readint32(epbuff+0x1a);
+	}
+
+	/* yC 1.3 variant */
+	if (!ecx && !memcmp(epbuff, "\x55\x8B\xEC\x83\xEC\x40\x53\x56\x57", 9) &&
+	    !memcmp(epbuff+0x17, "\xe8\x00\x00\x00\x00\x5d\x81\xed", 8) &&
+	    ((uint8_t)epbuff[0x23] == 0xB9)) {
+
+	    offset = 0x10;
+	    if (0x6c - cli_readint32(epbuff+0x1f) + cli_readint32(epbuff+0x32) == 0xC6)
+		ecx = cli_readint32(epbuff+0x24) - cli_readint32(epbuff+0x2a);
+	}
+
+	/* yC 1.x/modified */
+	if (!ecx && !memcmp(epbuff, "\x60\xe8\x00\x00\x00\x00\x5d\x81\xed",9) &&
+	    ((uint8_t)epbuff[0xd] == 0xb9) &&
+	    ((uint16_t)cli_readint16(epbuff + 0x12)== 0xbd8d) &&
+	    !memcmp(epbuff+0x18, "\x8b\xf7\xac", 3)) {
+
+	    offset = -0x18;
+	    if (0x66 - cli_readint32(epbuff+0x9) + cli_readint32(epbuff+0x14) == 0xae)
+		ecx = cli_readint32(epbuff+0xe);
+	}
+
+	if (ecx > 0x800 && ecx < 0x2000 &&
+	    !memcmp(epbuff+0x63+offset, "\xaa\xe2\xcc", 3) &&
+	    (fsize >= exe_sections[nsections-1].raw + 0xC6 + ecx + offset)) {
 
 	char *spinned;
 
@@ -2037,7 +2076,8 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	}
 
 	CLI_UNPTEMP("yC",(spinned,exe_sections,0));
-	CLI_UNPRESULTS("yC",(yc_decrypt(spinned, fsize, exe_sections, nsections-1, e_lfanew, ndesc)),0,(spinned,0));
+	CLI_UNPRESULTS("yC",(yc_decrypt(spinned, fsize, exe_sections, nsections-1, e_lfanew, ndesc, ecx, offset)),0,(spinned,0));
+	}
     }
 
     /* WWPack */
@@ -2051,7 +2091,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
 	ssize = 0;
 	for(i=0 ; ; i++) {
-	    if(exe_sections[i].raw<head) 
+	    if(exe_sections[i].raw<head)
 	        head=exe_sections[i].raw;
 	    if(i+1==nsections) break;
 	    if(ssize<exe_sections[i].rva+exe_sections[i].vsz)
