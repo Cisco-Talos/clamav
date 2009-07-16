@@ -349,7 +349,7 @@ struct MP *mpool_create() {
   struct MP mp, *mpool_p;
   unsigned int sz;
   memset(&mp, 0, sizeof(mp));
-  mp.psize = getpagesize();
+  mp.psize = cli_getpagesize();
   sz = align_to_pagesize(&mp, MIN_FRAGSIZE);
   mp.mpm.usize = align_to_voidptr(sizeof(struct MPMAP));
   mp.mpm.size = sz - align_to_voidptr(sizeof(mp));

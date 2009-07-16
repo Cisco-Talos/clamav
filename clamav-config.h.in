@@ -196,6 +196,9 @@
 /* gethostbyname_r takes 6 arguments */
 #undef HAVE_GETHOSTBYNAME_R_6
 
+/* Define to 1 if getpagesize() is available */
+#undef HAVE_GETPAGESIZE
+
 /* Define to 1 if you have the <grp.h> header file. */
 #undef HAVE_GRP_H
 
@@ -355,6 +358,9 @@
 
 /* Define to 1 if you have the `strlcpy' function. */
 #undef HAVE_STRLCPY
+
+/* Define to 1 if sysconf(_SC_PAGESIZE) is available */
+#undef HAVE_SYSCONF_SC_PAGESIZE
 
 /* link against system-wide libtommath */
 #undef HAVE_SYSTEM_TOMMATH

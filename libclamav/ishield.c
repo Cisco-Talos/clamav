@@ -41,7 +41,9 @@
 #include <string.h>
 #endif
 #include <limits.h>
+#if HAVE_STRINGS_H
 #include <strings.h>
+#endif
 #include <zlib.h>
 
 #include "scanners.h"
@@ -514,8 +516,8 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 	    return CL_EREAD; /* hdr must be within bounds, it's k to hard fail here */
 	}
     } else {
-#if HAVE_MMAP
-	int psz = getpagesize();
+#if HAVE_MMAP && HAVE_CLI_GETPAGESIZE
+	int psz = cli_getpagesize();
 	off_t mp_hdr = (c->hdr / psz) * psz;
 	mp_hdrsz = c->hdrsz + c->hdr - mp_hdr;
 	if((map = mmap(NULL, mp_hdrsz, PROT_READ, MAP_PRIVATE, desc, mp_hdr))==MAP_FAILED) {
@@ -524,7 +526,7 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 	}
 	hdr = map + c->hdr - mp_hdr;
 #else
-	cli_warnmsg("is_parse_hdr: hdr too big and mmap unavailable\n");
+	cli_warnmsg("is_parse_hdr: hdr too big and mmap is not usable\n");
 	return CL_CLEAN
 #endif
     }
@@ -716,7 +718,12 @@ static int is_extract_cab(int desc, cli_ctx *ctx, uint64_t off, uint64_t size, u
 	close(ofd);
 	return CL_EOPEN;
     }
-    if(fseeko(in, off, SEEK_SET)) {
+#if HAVE_FSEEKO
+    if(fseeko(in, (off_t)off, SEEK_SET))
+#else
+    if(fseek(in, (long)off, SEEK_SET))
+#endif
+    {
 	cli_dbgmsg("is_extract_cab: fseek failed\n");
 	fclose(in);
 	return CL_ESEEK;

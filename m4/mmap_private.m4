@@ -100,3 +100,32 @@ AC_DEFUN([AC_C_FUNC_MMAP_ANONYMOUS],
 		AC_DEFINE_UNQUOTED([ANONYMOUS_MAP],[$ac_cv_c_mmap_anonymous],[mmap flag for anonymous maps])
 	fi
 ])
+
+AC_DEFUN([AC_C_FUNC_PAGESIZE],
+[
+ac_cv_c_can_get_pagesize="no"
+AC_CACHE_CHECK([for sysconf(_SC_PAGESIZE)], [ac_cv_c_sysconf_sc_pagesize], [
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+#include <sys/types.h>
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif]], [[int x = sysconf(_SC_PAGESIZE);]])],
+	[ac_cv_c_sysconf_sc_pagesize=yes], [ac_cv_c_sysconf_sc_pagesize=no])
+])
+if test "$ac_cv_c_sysconf_sc_pagesize" = "yes"; then
+	AC_DEFINE([HAVE_SYSCONF_SC_PAGESIZE], 1, [Define to 1 if sysconf(_SC_PAGESIZE) is available])
+	ac_cv_c_can_get_pagesize="yes"
+fi
+AC_CACHE_CHECK([for getpagesize()], [ac_cv_c_getpagesize], [
+	AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif]], [[int x = getpagesize();]])], 
+	[ac_cv_c_getpagesize=yes], [ac_cv_c_getpagesize=no])
+])
+if test "$ac_cv_c_getpagesize" = "yes"; then
+	AC_DEFINE([HAVE_GETPAGESIZE], 1, [Define to 1 if getpagesize() is available])
+	ac_cv_c_can_get_pagesize="yes"
+fi
+])
+
