@@ -1,3 +1,7 @@
+Thu Jul 16 23:01:34 CEST 2009 (tk)
+----------------------------------
+ * libclamav/cab.c: downgrade warning message (bb#1659)
+
 Thu Jul 16 14:20:01 CEST 2009 (acab)
 ------------------------------------
  * libclamav, build system: fix portability issues for fseeko, sysconf(_SC_PAGESIZE),
