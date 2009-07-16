@@ -549,7 +549,7 @@ static int cab_unstore(struct cab_file *file, int bytes)
 
 
     if(bytes < 0) {
-	cli_warnmsg("cab_unstore: bytes < 0\n");
+	cli_dbgmsg("cab_unstore: bytes < 0\n");
 	return CL_EFORMAT;
     }
 
