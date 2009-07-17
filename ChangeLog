@@ -1,3 +1,8 @@
+Fri Jul 17 02:28:50 CEST 2009 (acab)
+------------------------------------
+ * libclamav/others.h, libclamav/ishield.c: fix typo,
+			 workaround crappy preprocessors (bb#1658)
+
 Thu Jul 16 23:01:34 CEST 2009 (tk)
 ----------------------------------
  * libclamav/cab.c: downgrade warning message (bb#1659)

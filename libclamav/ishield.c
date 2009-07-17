@@ -516,7 +516,7 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 	    return CL_EREAD; /* hdr must be within bounds, it's k to hard fail here */
 	}
     } else {
-#if HAVE_MMAP && HAVE_CLI_GETPAGESIZE
+#if defined(HAVE_MMAP) && defined(HAVE_CLI_GETPAGESIZE)
 	int psz = cli_getpagesize();
 	off_t mp_hdr = (c->hdr / psz) * psz;
 	mp_hdrsz = c->hdrsz + c->hdr - mp_hdr;
@@ -527,7 +527,7 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 	hdr = map + c->hdr - mp_hdr;
 #else
 	cli_warnmsg("is_parse_hdr: hdr too big and mmap is not usable\n");
-	return CL_CLEAN
+	return CL_CLEAN;
 #endif
     }
 

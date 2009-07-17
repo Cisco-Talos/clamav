@@ -27,6 +27,10 @@
 #include "clamav-config.h"
 #endif
 
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "cltypes.h"
@@ -373,7 +377,9 @@ static inline int cli_getpagesize() { return sysconf(_SC_PAGESIZE); }
 static inline int cli_getpagesize() { return getpagesize(); }
 #define HAVE_CLI_GETPAGESIZE 1
 #endif
-#define HAVE_CLI_GETPAGESIZE 0
+#ifdef HAVE_CLI_GETPAGESIZE
+#undef HAVE_CLI_GETPAGESIZE
+#endif
 #endif
 
 void *cli_malloc(size_t nmemb);
