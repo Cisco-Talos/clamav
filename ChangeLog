@@ -1,3 +1,7 @@
+Fri Jul 17 12:48:24 EEST 2009 (edwin)
+-------------------------------------
+ * libclamav/regex_list.[ch]: improve safebrowsing.cvd load speed (20s -> 3s)
+
 Fri Jul 17 02:28:50 CEST 2009 (acab)
 ------------------------------------
  * libclamav/others.h, libclamav/ishield.c: fix typo,
