@@ -369,6 +369,10 @@ void cli_dbgmsg_internal(const char *str, ...) __attribute__((format(printf, 1, 
 void cli_dbgmsg_internal(const char *str, ...);
 #endif
 
+#ifdef HAVE_CLI_GETPAGESIZE
+#undef HAVE_CLI_GETPAGESIZE
+#endif
+
 #if HAVE_SYSCONF_SC_PAGESIZE
 static inline int cli_getpagesize() { return sysconf(_SC_PAGESIZE); }
 #define HAVE_CLI_GETPAGESIZE 1
@@ -376,9 +380,6 @@ static inline int cli_getpagesize() { return sysconf(_SC_PAGESIZE); }
 #if HAVE_GETPAGESIZE
 static inline int cli_getpagesize() { return getpagesize(); }
 #define HAVE_CLI_GETPAGESIZE 1
-#endif
-#ifdef HAVE_CLI_GETPAGESIZE
-#undef HAVE_CLI_GETPAGESIZE
 #endif
 #endif
 
