@@ -54,6 +54,7 @@
 #include "jsparse/textbuf.h"
 #include "regex_suffix.h"
 #include "default.h"
+#include "hashtab.h"
 
 #include "mpool.h"
 
@@ -446,7 +447,14 @@ static int add_hash(struct regex_matcher *matcher, char* pattern, const char fl,
 	    bm = &matcher->sha256_hashes;
 	}
 
+	if (!matcher->sha256_pfx_set.keys) {
+	    if((rc = hashset_init(&matcher->sha256_pfx_set, 1048576, 90))) {
+		return rc;
+	    }
+	}
+
 	if (fl != 'W' && pat->length == 32 &&
+	    hashset_contains(&matcher->sha256_pfx_set, cli_readint32(pat->pattern)) &&
 	    cli_bm_scanbuff(pat->pattern, 32, &vname, &matcher->sha256_hashes,0,0,-1) == CL_VIRUS) {
 	    if (*vname == 'W') {
 		/* hash is whitelisted in local.gdb */
@@ -462,7 +470,7 @@ static int add_hash(struct regex_matcher *matcher, char* pattern, const char fl,
 		return CL_EMEM;
 	}
 	*pat->virname = fl;
-
+	hashset_addkey(&matcher->sha256_pfx_set, cli_readint32(pat->pattern));
 	if((rc = cli_bm_addpatt(bm, pat))) {
 		cli_errmsg("add_hash: failed to add BM pattern\n");
 		free(pat->pattern);
@@ -603,6 +611,7 @@ int cli_build_regex_list(struct regex_matcher* matcher)
 	if(( rc = cli_ac_buildtrie(&matcher->suffixes) ))
 		return rc;
 	matcher->list_built=1;
+	hashset_destroy(&matcher->sha256_pfx_set);
 
 	return CL_SUCCESS;
 }
@@ -725,7 +734,6 @@ static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_le
 		/* existing suffix */
 		assert((size_t)el->data < matcher->suffix_cnt);
 		list_add_tail(&matcher->suffix_regexes[el->data], regex);
-		cli_dbgmsg(MODULE "added new regex to existing suffix %s: %s\n", suffix, regex->pattern);
 	} else {
 		/* new suffix */
 		size_t n = matcher->suffix_cnt++;
@@ -738,7 +746,6 @@ static int add_pattern_suffix(void *cbdata, const char *suffix, size_t suffix_le
 		if (suffix[0] == '/' && suffix[1] == '\0')
 		    matcher->root_regex_idx = n;
 		add_newsuffix(matcher, regex, suffix, suffix_len);
-		cli_dbgmsg(MODULE "added new suffix %s, for regex: %s\n", suffix, regex->pattern);
 	}
 	return 0;
 }

@@ -1,3 +1,7 @@
+Fri Jul 17 12:48:24 EEST 2009 (edwin)
+-------------------------------------
+ * libclamav/regex_list.[ch]: improve safebrowsing.cvd load speed (20s -> 3s)
+
 Thu Jul 16 23:01:34 CEST 2009 (tk)
 ----------------------------------
  * libclamav/cab.c: downgrade warning message (bb#1659)
