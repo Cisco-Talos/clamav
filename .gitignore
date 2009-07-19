@@ -13,3 +13,5 @@ target.h
 config.log
 config.status
 libclamav.pc
+unit_tests/*
+autom4te.cache/*
