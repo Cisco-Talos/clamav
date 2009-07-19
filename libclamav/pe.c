@@ -1021,8 +1021,13 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 
     if(overlays) {
 	int overlays_sz = fsize - overlays;
-	if(overlays_sz > 0)
-	    cli_scanishield(desc, ctx, overlays, overlays_sz);
+	if(overlays_sz > 0) {
+	    ret = cli_scanishield(desc, ctx, overlays, overlays_sz);
+	    if(ret != CL_CLEAN) {
+		free(exe_sections);
+		return ret;
+	    }
+	}
     }
 
     /* Attempt to detect some popular polymorphic viruses */
