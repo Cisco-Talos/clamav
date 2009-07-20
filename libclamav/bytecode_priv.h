@@ -47,12 +47,16 @@ struct cli_bc_value {
 };
 
 struct cli_bc_cast {
-    operand_t source;
     uint64_t mask;
+    operand_t source;
+    uint8_t size;/* 0: 1-bit, 1: 8b, 2: 16b, 3: 32b, 4: 64b */
 };
+
+typedef uint8_t interp_op_t;
 struct cli_bc_inst {
     enum bc_opcode opcode;
     uint16_t type;
+    interp_op_t interp_op;/* opcode for interpreter */
     operand_t dest;
     union {
 	operand_t unaryop;

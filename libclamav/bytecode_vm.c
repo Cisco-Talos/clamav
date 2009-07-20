@@ -38,6 +38,8 @@ static int bcfail(const char *msg, long a, long b,
     cli_errmsg("bytecode: check failed %s (%lx and %lx) at %s:%u\n", msg, a, b, file, line);
     return CL_EARG;
 }
+
+#define CHECK_UNREACHABLE do { cli_dbgmsg("bytecode: unreachable executed!\n"); return CL_EBYTECODE; } while(0)
 #define CHECK_FUNCID(funcid) do { if (funcid >= bc->num_func) return \
     bcfail("funcid out of bounds!",funcid, bc->num_func,__FILE__,__LINE__); } while(0)
 #define CHECK_EQ(a, b) do { if ((a) != (b)) return \
@@ -45,37 +47,13 @@ static int bcfail(const char *msg, long a, long b,
 #define CHECK_GT(a, b) do {if ((a) <= (b)) return \
     bcfail("Condition failed "#a" > "#b,(a),(b), __FILE__, __LINE__); } while(0)
 #else
-#define CHECK_FUNCID(x)
+#define CHECK_UNREACHABLE return CL_EBYTECODE
+#define CHECK_FUNCID(x);
 #define CHECK_EQ(a,b)
 #define CHECK_GT(a,b)
 #endif
 
-/* Get the operand of a binary operator, upper bits
- * (beyond the size of the operand) may have random values.
- * Use this when the active bits of the result of a binop are the same
- * regardless of the state of the inactive (high) bits of their operands.
- * For example (a + b)&mask == ((a&mask) + (b&mask))
- * but (a / b)&mask != ((a&mask) / (b&mask))
- * */
-#define BINOPNOMOD(i) (values[inst->u.binop[i]].v)
-#define UNOPNOMOD(i) (values[inst->u.binop[i]].v)
-
-/* get the operand of a binary operator, upper bits are cleared */
-#define type2mask(t) (inst->type == 64 ? ~0ull : (1ull << inst->type)-1)
-#define BINOP(i) (BINOPNOMOD(i)&type2mask(inst->type))
-#define UNOP(x) (UNOPNOMOD(i)&typemask(inst->type))
-
-/* get the operand as a signed value.
- * Warning: this assumes that result type is same as operand type.
- * This is usually true, except for icmp_* and select.
- * For icmp_* we fix it up in the loader. */
 #define SIGNEXT(a, from) CLI_SRS(((int64_t)(a)) << (64-(from)), (64-(from)))
-#define BINOPS(i) SIGNEXT(BINOPNOMOD(i), inst->type)
-
-#define CASTOP (values[inst->u.cast.source].v& inst->u.cast.mask)
-
-#undef always_inline
-#define always_inline
 
 static always_inline int jump(const struct cli_bc_func *func, uint16_t bbid, struct cli_bc_bb **bb, const struct cli_bc_inst **inst,
 		unsigned *bb_inst)
@@ -216,6 +194,7 @@ static always_inline struct stack_entry *allocate_stack(struct stack *stack,
 
     memcpy(&values[func->numValues], func->constants,
 	   sizeof(*values)*func->numConstants);
+    memset(values, 0, sizeof(*values)*func->numValues);//XXX
     return entry;
 }
 
@@ -237,6 +216,153 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
     return stack_entry;
 }
 
+
+/*
+ *
+ * p, p+1, p+2, p+3 <- gt
+    CHECK_EQ((p)&1, 0); 
+    CHECK_EQ((p)&3, 0); 
+    CHECK_EQ((p)&7, 0); 
+*/
+#define WRITE8(p, x) CHECK_GT(func->numValues+func->numConstants, p);\
+    *(uint8_t*)&values[p].v = x
+#define WRITE16(p, x) CHECK_GT(func->numValues+func->numConstants, p);\
+    *(uint16_t*)&values[p].v = x
+#define WRITE32(p, x) CHECK_GT(func->numValues+func->numConstants, p);\
+    *(uint32_t*)&values[p].v = x
+#define WRITE64(p, x) CHECK_GT(func->numValues+func->numConstants, p);\
+    *(uint32_t*)&values[p].v = x
+
+#define READ1(x, p) CHECK_GT(func->numValues+func->numConstants, p);\
+    x = (*(uint8_t*)&values[p].v)&1
+#define READ8(x, p) CHECK_GT(func->numValues+func->numConstants, p);\
+    x = *(uint8_t*)&values[p].v
+#define READ16(x, p) CHECK_GT(func->numValues+func->numConstants, p);\
+    x = *(uint16_t*)&values[p].v
+#define READ32(x, p) CHECK_GT(func->numValues+func->numConstants, p);\
+    x = *(uint32_t*)&values[p].v
+#define READ64(x, p) CHECK_GT(func->numValues+func->numConstants, p);\
+    x = *(uint64_t*)&values[p].v
+
+
+#define BINOP(i) inst->u.binop[i]
+
+#define DEFINE_BINOP_HELPER(opc, OP, W0, W1, W2, W3, W4) \
+    case opc*5: {\
+		    uint8_t op0, op1, res;\
+		    int8_t sop0, sop1;\
+		    READ1(op0, BINOP(0));\
+		    READ1(op1, BINOP(1));\
+		    sop0 = op0; sop1 = op1;\
+		    OP;\
+		    W0(inst->dest, res);\
+		    break;\
+		}\
+    case opc*5+1: {\
+		    uint8_t op0, op1, res;\
+		    int8_t sop0, sop1;\
+		    READ8(op0, BINOP(0));\
+		    READ8(op1, BINOP(1));\
+		    sop0 = op0; sop1 = op1;\
+		    OP;\
+		    W1(inst->dest, res);\
+		    break;\
+		}\
+    case opc*5+2: {\
+		    uint16_t op0, op1, res;\
+		    int16_t sop0, sop1;\
+		    READ16(op0, BINOP(0));\
+		    READ16(op1, BINOP(1));\
+		    sop0 = op0; sop1 = op1;\
+		    OP;\
+		    W2(inst->dest, res);\
+		    break;\
+		}\
+    case opc*5+3: {\
+		    uint32_t op0, op1, res;\
+		    int32_t sop0, sop1;\
+		    READ32(op0, BINOP(0));\
+		    READ32(op1, BINOP(1));\
+		    sop0 = op0; sop1 = op1;\
+		    OP;\
+		    W3(inst->dest, res);\
+		    break;\
+		}\
+    case opc*5+4: {\
+		    uint64_t op0, op1, res;\
+		    int64_t sop0, sop1;\
+		    READ32(op0, BINOP(0));\
+		    READ32(op1, BINOP(1));\
+		    sop0 = op0; sop1 = op1;\
+		    OP;\
+		    W4(inst->dest, res);\
+		    break;\
+		}\
+
+#define DEFINE_BINOP(opc, OP) DEFINE_BINOP_HELPER(opc, OP, WRITE8, WRITE8, WRITE16, WRITE32, WRITE64)
+#define DEFINE_ICMPOP(opc, OP) DEFINE_BINOP_HELPER(opc, OP, WRITE8, WRITE8, WRITE8, WRITE8, WRITE8)
+
+#define CHECK_OP(cond, msg) if((cond)) { cli_dbgmsg(msg); return CL_EBYTECODE;}
+
+#define DEFINE_CASTOP(opc, OP) \
+    case opc*5: {\
+		    uint8_t res;\
+		    int8_t sres;\
+		    OP;\
+		    WRITE8(inst->dest, res);\
+		    break;\
+		}\
+    case opc*5+1: {\
+		    uint8_t res;\
+		    int8_t sres;\
+		    OP;\
+		    WRITE8(inst->dest, res);\
+		    break;\
+		}\
+    case opc*5+2: {\
+		    uint16_t res;\
+		    int16_t sres;\
+		    OP;\
+		    WRITE16(inst->dest, res);\
+		    break;\
+		}\
+    case opc*5+3: {\
+		    uint32_t res;\
+		    int32_t sres;\
+		    OP;\
+		    WRITE32(inst->dest, res);\
+		    break;\
+		}\
+    case opc*5+4: {\
+		    uint64_t res;\
+		    int64_t sres;\
+		    OP;\
+		    WRITE64(inst->dest, res);\
+		    break;\
+		}\
+
+#define DEFINE_OP(opc) \
+    case opc*5: /* fall-through */\
+    case opc*5+1: /* fall-through */\
+    case opc*5+2: /* fall-through */\
+    case opc*5+3: /* fall-through */\
+    case opc*5+4:
+
+#define CHOOSE(OP0, OP1, OP2, OP3, OP4) \
+    switch (inst->u.cast.size) {\
+	case 0: OP0; break;\
+	case 1: OP1; break;\
+	case 2: OP2; break;\
+	case 3: OP3; break;\
+	case 4: OP4; break;\
+	default: CHECK_UNREACHABLE;\
+    }
+
+static always_inline int check_sdivops(int64_t op0, int64_t op1)
+{
+    return op1 == 0 || (op0 == -1 && op1 ==  (-9223372036854775807LL-1LL));
+}
+
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst)
 {
     uint64_t tmp;
@@ -252,97 +378,61 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
     do {
 	value = &values[inst->dest];
 	CHECK_GT(func->numValues+func->numConstants, value - values);
-	switch (inst->opcode) {
-	    case OP_ADD:
-		value->v = BINOPNOMOD(0) + BINOPNOMOD(1);
-		break;
-	    case OP_SUB:
-		value->v = BINOPNOMOD(0) - BINOPNOMOD(1);
-		break;
-	    case OP_MUL:
-		value->v = BINOPNOMOD(0) * BINOPNOMOD(1);
-		break;
-	    case OP_UDIV:
-		{
-		    uint64_t d = BINOP(1);
-		    if (UNLIKELY(!d)) {
-			cli_dbgmsg("bytecode attempted to execute udiv#0\n");
-			return CL_EBYTECODE;
-		    }
-		    value->v = BINOP(0) / d;
-		    break;
-		}
-	    case OP_SDIV:
-		{
-		    int64_t a = BINOPS(0);
-		    int64_t b = BINOPS(1);
-		    if (UNLIKELY(b == 0 || (b == -1 && a == (-9223372036854775807LL-1LL)))) {
-			cli_dbgmsg("bytecode attempted to execute sdiv#0\n");
-			return CL_EBYTECODE;
-		    }
-		    value->v = a / b;
-		    break;
-		}
-	    case OP_UREM:
-		{
-		    uint64_t d = BINOP(1);
-		    if (UNLIKELY(!d)) {
-			cli_dbgmsg("bytecode attempted to execute urem#0\n");
-			return CL_EBYTECODE;
-		    }
-		    value->v = BINOP(0) % d;
-		    break;
-		}
-	    case OP_SREM:
-		{
-		    int64_t a = BINOPS(0);
-		    int64_t b = BINOPS(1);
-		    if (UNLIKELY(b == 0 || (b == -1 && (a == -9223372036854775807LL-1LL)))) {
-			cli_dbgmsg("bytecode attempted to execute srem#0\n");
-			return CL_EBYTECODE;
-		    }
-		    value->v = a % b;
-		    break;
-		}
-	    case OP_SHL:
-		value->v = BINOPNOMOD(0) << BINOP(1);
-		break;
-	    case OP_LSHR:
-		value->v = BINOP(0) >> BINOP(1);
-		break;
-	    case OP_ASHR:
-		{
-		    int64_t v = BINOPS(0);
-		    value->v = CLI_SRS(v, BINOP(1));
-		    break;
-		}
-	    case OP_AND:
-		value->v = BINOPNOMOD(0) & BINOPNOMOD(1);
-		break;
-	    case OP_OR:
-		value->v = BINOPNOMOD(0) | BINOPNOMOD(1);
-		break;
-	    case OP_XOR:
-		value->v = BINOPNOMOD(0) ^ BINOPNOMOD(1);
-		break;
-	    case OP_SEXT:
-		/* mask is number of src bits here, not a mask! */
-		value->v = SIGNEXT(values[inst->u.cast.source].v, inst->u.cast.mask);
-		break;
-	    case OP_TRUNC:
-		/* fall-through */
-	    case OP_ZEXT:
-		value->v = CASTOP;
-		break;
-	    case OP_BRANCH:
+	switch (inst->interp_op) {
+	    DEFINE_BINOP(OP_ADD, res = op0 + op1);
+	    DEFINE_BINOP(OP_SUB, res = op0 - op1);
+	    DEFINE_BINOP(OP_MUL, res = op0 * op1);
+
+	    DEFINE_BINOP(OP_UDIV, CHECK_OP(op1 == 0, "bytecode attempted to execute udiv#0\n");
+			 res=op0/op1);
+	    DEFINE_BINOP(OP_SDIV, CHECK_OP(check_sdivops(sop0, sop1), "bytecode attempted to execute sdiv#0\n");
+			 res=sop0/sop1);
+	    DEFINE_BINOP(OP_UREM, CHECK_OP(op1 == 0, "bytecode attempted to execute urem#0\n");
+			 res=op0 % op1);
+	    DEFINE_BINOP(OP_SREM, CHECK_OP(check_sdivops(sop0,sop1), "bytecode attempted to execute urem#0\n");
+			 res=sop0 % sop1);
+
+	    DEFINE_BINOP(OP_SHL, CHECK_OP(op1 > inst->type, "bytecode attempted to execute shl greater than bitwidth\n");
+			 res = op0 << op1);
+	    DEFINE_BINOP(OP_LSHR, CHECK_OP(op1 > inst->type, "bytecode attempted to execute lshr greater than bitwidth\n");
+			 res = op0 >> op1);
+	    DEFINE_BINOP(OP_ASHR, CHECK_OP(op1 > inst->type, "bytecode attempted to execute ashr greater than bitwidth\n");
+			 res = CLI_SRS(sop0, op1));
+
+	    DEFINE_BINOP(OP_AND, res = op0 & op1);
+	    DEFINE_BINOP(OP_OR, res = op0 | op1);
+	    DEFINE_BINOP(OP_XOR, res = op0 ^ op1);
+
+	    DEFINE_CASTOP(OP_SEXT,
+			  CHOOSE(READ1(sres, inst->u.cast.source); res = sres ? ~0ull : 0,
+				 READ8(sres, inst->u.cast.source); res=sres=SIGNEXT(sres, inst->u.cast.mask),
+				 READ16(sres, inst->u.cast.source); res=sres=SIGNEXT(sres, inst->u.cast.mask),
+				 READ32(sres, inst->u.cast.source); res=sres=SIGNEXT(sres, inst->u.cast.mask),
+				 READ64(sres, inst->u.cast.source); res=sres=SIGNEXT(sres, inst->u.cast.mask)));
+	    DEFINE_CASTOP(OP_ZEXT,
+			  CHOOSE(READ1(res, inst->u.cast.source),
+				 READ8(res, inst->u.cast.source),
+				 READ16(res, inst->u.cast.source),
+				 READ32(res, inst->u.cast.source),
+				 READ64(res, inst->u.cast.source)));
+	    DEFINE_CASTOP(OP_TRUNC,
+			  CHOOSE(READ1(res, inst->u.cast.source),
+				 READ8(res, inst->u.cast.source),
+				 READ16(res, inst->u.cast.source),
+				 READ32(res, inst->u.cast.source),
+				 READ64(res, inst->u.cast.source)));
+
+	    DEFINE_OP(OP_BRANCH)
 		stop = jump(func, (values[inst->u.branch.condition].v&1) ?
 			  inst->u.branch.br_true : inst->u.branch.br_false,
 			  &bb, &inst, &bb_inst);
 		continue;
-	    case OP_JMP:
+
+	    DEFINE_OP(OP_JMP)
 		stop = jump(func, inst->u.jump, &bb, &inst, &bb_inst);
 		continue;
-	    case OP_RET:
+
+	    DEFINE_OP(OP_RET)
 		CHECK_GT(stack_depth, 0);
 		tmp = values[inst->u.unaryop].v;
 		stack_entry = pop_stack(&stack, stack_entry, &func, &value, &bb,
@@ -357,41 +447,68 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		}
 		inst = &bb->insts[bb_inst];
 		break;
-	    case OP_ICMP_EQ:
-		value->v = BINOP(0) == BINOP(1) ? 1 : 0;
+
+	    DEFINE_ICMPOP(OP_ICMP_EQ, res = (op0 == op1));
+	    DEFINE_ICMPOP(OP_ICMP_NE, res = (op0 != op1));
+	    DEFINE_ICMPOP(OP_ICMP_UGT, res = (op0 > op1));
+	    DEFINE_ICMPOP(OP_ICMP_UGE, res = (op0 >= op1));
+	    DEFINE_ICMPOP(OP_ICMP_ULT, res = (op0 < op1));
+	    DEFINE_ICMPOP(OP_ICMP_ULE, res = (op0 <= op1));
+	    DEFINE_ICMPOP(OP_ICMP_SGT, res = (sop0 > sop1));
+	    DEFINE_ICMPOP(OP_ICMP_SGE, res = (sop0 >= sop1));
+	    DEFINE_ICMPOP(OP_ICMP_SLE, res = (sop0 <= sop1));
+	    DEFINE_ICMPOP(OP_ICMP_SLT, res = (sop0 < sop1));
+
+	    case OP_SELECT*5:
+	    {
+		uint8_t t0, t1, t2;
+		READ1(t0, inst->u.three[0]);
+		READ1(t1, inst->u.three[1]);
+		READ1(t2, inst->u.three[2]);
+		WRITE8(inst->dest, t0 ? t1 : t2);
 		break;
-	    case OP_ICMP_NE:
-		value->v = BINOP(0) != BINOP(1) ? 1 : 0;
+	    }
+	    case OP_SELECT*5+1:
+	    {
+	        uint8_t t0, t1, t2;
+		READ1(t0, inst->u.three[0]);
+		READ8(t1, inst->u.three[1]);
+		READ8(t2, inst->u.three[2]);
+		WRITE8(inst->dest, t0 ? t1 : t2);
 		break;
-	    case OP_ICMP_UGT:
-		value->v = BINOP(0) > BINOP(1) ? 1 : 0;
+	    }
+	    case OP_SELECT*5+2:
+	    {
+	        uint8_t t0;
+		uint16_t t1, t2;
+		READ1(t0, inst->u.three[0]);
+		READ16(t1, inst->u.three[1]);
+		READ16(t2, inst->u.three[2]);
+		WRITE16(inst->dest, t0 ? t1 : t2);
 		break;
-	    case OP_ICMP_UGE:
-		value->v = BINOP(0) >= BINOP(1) ? 1 : 0;
+	    }
+	    case OP_SELECT*5+3:
+	    {
+	        uint8_t t0;
+		uint32_t t1, t2;
+		READ1(t0, inst->u.three[0]);
+		READ32(t1, inst->u.three[1]);
+		READ32(t2, inst->u.three[2]);
+		WRITE32(inst->dest, t0 ? t1 : t2);
 		break;
-	    case OP_ICMP_ULT:
-		value->v = BINOP(0) < BINOP(1) ? 1 : 0;
+	    }
+	    case OP_SELECT*5+4:
+	    {
+	        uint8_t t0;
+		uint64_t t1, t2;
+		READ1(t0, inst->u.three[0]);
+		READ64(t1, inst->u.three[1]);
+		READ64(t2, inst->u.three[2]);
+		WRITE64(inst->dest, t0 ? t1 : t2);
 		break;
-	    case OP_ICMP_ULE:
-		value->v = BINOP(0) <= BINOP(1) ? 1 : 0;
-		break;
-	    case OP_ICMP_SGT:
-		value->v = BINOPS(0) > BINOPS(1) ? 1 : 0;
-		break;
-	    case OP_ICMP_SGE:
-		value->v = BINOPS(0) >= BINOPS(1) ? 1 : 0;
-		break;
-	    case OP_ICMP_SLE:
-		value->v = BINOPS(0) <= BINOPS(1) ? 1 : 0;
-		break;
-	    case OP_ICMP_SLT:
-		value->v = BINOPS(0) < BINOPS(1) ? 1 : 0;
-		break;
-	    case OP_SELECT:
-		value->v = (values[inst->u.three[0]].v&1) ?
-		    values[inst->u.three[1]].v : values[inst->u.three[2]].v;
-		break;
-	    case OP_CALL_DIRECT:
+	    }
+
+	    DEFINE_OP(OP_CALL_DIRECT)
 		CHECK_FUNCID(inst->u.ops.funcid);
 		func2 = &bc->funcs[inst->u.ops.funcid];
 		CHECK_EQ(func2->numArgs, inst->u.ops.numOps);
@@ -399,7 +516,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		stack_entry = allocate_stack(&stack, stack_entry, func2, func, value,
 					     bb, bb_inst);
 		values = stack_entry->values;
-//		cli_dbgmsg("Executing %d\n", inst->u.ops.funcid);
+		cli_dbgmsg("Executing %d\n", inst->u.ops.funcid);
 		for (i=0;i<func2->numArgs;i++)
 		    values[i] = old_values[inst->u.ops.ops[i]];
 		func = func2;
@@ -407,13 +524,48 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		stop = jump(func, 0, &bb, &inst, &bb_inst);
 		stack_depth++;
 		continue;
-	    case OP_COPY:
-		BINOPNOMOD(1) = BINOPNOMOD(0);
+
+	    case OP_COPY*5:
+	    {
+		uint8_t op;
+		READ1(op, BINOP(0));
+		WRITE8(BINOP(1), op);
 		break;
+	    }
+	    case OP_COPY*5+1:
+	    {
+		uint8_t op;
+		READ8(op, BINOP(0));
+		WRITE8(BINOP(1), op);
+		break;
+	    }
+	    case OP_COPY*5+2:
+	    {
+		uint16_t op;
+		READ16(op, BINOP(0));
+		WRITE16(BINOP(1), op);
+		break;
+	    }
+	    case OP_COPY*5+3:
+	    {
+		uint32_t op;
+		READ32(op, BINOP(0));
+		WRITE32(BINOP(1), op);
+		break;
+	    }
+	    case OP_COPY*5+4:
+	    {
+		uint64_t op;
+		READ32(op, BINOP(0));
+		WRITE32(BINOP(1), op);
+		break;
+	    }
+
 	    default:
-		cli_errmsg("Opcode %u is not implemented yet!\n", inst->opcode);
+		cli_errmsg("Opcode %u of type %u is not implemented yet!\n",
+			   inst->interp_op/5, inst->interp_op%5);
 		stop = CL_EARG;
-		break;
+		continue;
 	}
 	bb_inst++;
 	inst++;

@@ -482,6 +482,16 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	    case OP_TRUNC:
 		inst.u.cast.source = readOperand(bcfunc, buffer, &offset, len, &ok);
 		inst.u.cast.mask = bcfunc->types[inst.u.cast.source];
+		if (inst.u.cast.mask == 1)
+		    inst.u.cast.size = 0;
+		else if (inst.u.cast.mask <= 8)
+		    inst.u.cast.size = 1;
+		else if (inst.u.cast.mask <= 16)
+		    inst.u.cast.size = 2;
+		else if (inst.u.cast.mask <= 32)
+		    inst.u.cast.size = 3;
+		else if (inst.u.cast.mask <= 64)
+		    inst.u.cast.size = 4;
 		/* calculate mask */
 		if (inst.opcode != OP_SEXT)
 		    inst.u.cast.mask = inst.u.cast.mask != 64 ?
@@ -533,6 +543,15 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		inst.type = bcfunc->types[inst.u.binop[0]];
 		break;
 	}
+	inst.interp_op = inst.opcode*5;
+	if (inst.type > 1 && inst.type <= 8)
+	    inst.interp_op += 1;
+	else if (inst.type <= 16)
+	    inst.interp_op += 2;
+	else if (inst.type <= 32)
+	    inst.interp_op += 3;
+	else if (inst.type <= 64)
+	    inst.interp_op += 4;
 	BB->insts[BB->numInsts++] = inst;
     }
     if (bb+1 == bc->funcs[func].numBB) {
@@ -636,6 +655,7 @@ int cli_bytecode_run(const struct cli_bc *bc, struct cli_bc_ctx *ctx)
     func.numValues = 1;
 
     inst.opcode = OP_CALL_DIRECT;
+    inst.interp_op = OP_CALL_DIRECT*5;
     inst.dest = func.numArgs;
     inst.type = 0;/* TODO: support toplevel functions with return values */
     inst.u.ops.numOps = ctx->numParams;
