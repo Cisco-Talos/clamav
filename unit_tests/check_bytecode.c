@@ -53,6 +53,9 @@ static void runtest(const char *file, uint64_t expected)
     fail_unless(rc == CL_SUCCESS, "cli_bytecode_load failed");
     fclose(f);
 
+    rc = cli_bytecode_prepare(&bc);
+    fail_unless(rc == CL_SUCCESS, "cli_bytecode_prepare failed");
+
     ctx = cli_bytecode_context_alloc();
     fail_unless(!!ctx, "cli_bytecode_context_alloc failed");
 

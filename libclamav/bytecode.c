@@ -38,6 +38,7 @@ struct cli_bc_ctx *cli_bytecode_context_alloc(void)
     ctx->func = NULL;
     ctx->values = NULL;
     ctx->operands = NULL;
+    ctx->opsizes = NULL;
     return ctx;
 }
 
@@ -49,15 +50,37 @@ void cli_bytecode_context_destroy(struct cli_bc_ctx *ctx)
 
 int cli_bytecode_context_clear(struct cli_bc_ctx *ctx)
 {
+    free(ctx->opsizes);
     free(ctx->values);
     free(ctx->operands);
     memset(ctx, 0, sizeof(ctx));
     return CL_SUCCESS;
 }
 
+static unsigned typesize(const struct cli_bc *bc, uint16_t type)
+{
+    if (!type)
+	return 0;
+    if (type <= 8)
+	return 1;
+    if (type <= 16)
+	return 2;
+    if (type <= 32)
+	return 4;
+    if (type <= 64)
+	return 8;
+    return 0;
+}
+
+static unsigned typealign(const struct cli_bc *bc, uint16_t type)
+{
+    unsigned size = typesize(bc, type);
+    return size ? size : 1;
+}
+
 int cli_bytecode_context_setfuncid(struct cli_bc_ctx *ctx, const struct cli_bc *bc, unsigned funcid)
 {
-    unsigned i;
+    unsigned i, s=0;
     const struct cli_bc_func *func;
     if (funcid >= bc->num_func) {
 	cli_errmsg("bytecode: function ID doesn't exist: %u\n", funcid);
@@ -67,21 +90,26 @@ int cli_bytecode_context_setfuncid(struct cli_bc_ctx *ctx, const struct cli_bc *
     ctx->bc = bc;
     ctx->numParams = func->numArgs;
     ctx->funcid = funcid;
-    ctx->values = cli_malloc(sizeof(*ctx->values)*(func->numArgs+1));
-    if (!ctx->values) {
-	cli_errmsg("bytecode: error allocating memory for parameters\n");
-	return CL_EMEM;
-    }
     if (func->numArgs) {
 	ctx->operands = cli_malloc(sizeof(*ctx->operands)*func->numArgs);
 	if (!ctx->operands) {
 	    cli_errmsg("bytecode: error allocating memory for parameters\n");
 	    return CL_EMEM;
 	}
+	ctx->opsizes = cli_malloc(sizeof(*ctx->opsizes)*func->numArgs);
+	for (i=0;i<func->numArgs;i++) {
+	    unsigned al = typealign(bc, func->types[i]);
+	    s = (s+al-1)&~(al-1);
+	    ctx->operands[i] = s;
+	    s += ctx->opsizes[i] = typesize(bc, func->types[i]);
+	}
     }
-    for (i=0;i<func->numArgs;i++) {
-	ctx->values[i].ref = MAX_OP;
-	ctx->operands[i] = i;
+    s += 8;/* return value */
+    ctx->bytes = s;
+    ctx->values = cli_malloc(s);
+    if (!ctx->values) {
+	cli_errmsg("bytecode: error allocating memory for parameters\n");
+	return CL_EMEM;
     }
     return CL_SUCCESS;
 }
@@ -93,6 +121,7 @@ static inline int type_isint(uint16_t type)
 
 int cli_bytecode_context_setparam_int(struct cli_bc_ctx *ctx, unsigned i, uint64_t c)
 {
+    unsigned j, s=0;
     if (i >= ctx->numParams) {
 	cli_errmsg("bytecode: param index out of bounds: %u\n", i);
 	return CL_EARG;
@@ -101,8 +130,20 @@ int cli_bytecode_context_setparam_int(struct cli_bc_ctx *ctx, unsigned i, uint64
 	cli_errmsg("bytecode: parameter type mismatch\n");
 	return CL_EARG;
     }
-    ctx->values[i].v = c;
-    ctx->values[i].ref = CONSTANT_OP;
+    switch (ctx->opsizes[i]) {
+	case 1:
+	    ctx->values[ctx->operands[i]] = c;
+	    break;
+	case 2:
+	    *(uint16_t*)&ctx->values[ctx->operands[i]] = c;
+	    break;
+	case 4:
+	    *(uint32_t*)&ctx->values[ctx->operands[i]] = c;
+	    break;
+	case 8:
+	    *(uint64_t*)&ctx->values[ctx->operands[i]] = c;
+	    break;
+    }
     return CL_SUCCESS;
 }
 
@@ -175,8 +216,8 @@ static inline operand_t readOperand(struct cli_bc_func *func, unsigned char *p,
 	    *ok = 0;
 	    return MAX_OP;
 	}
-	func->constants[func->numConstants].v = readNumber(p, off, len, ok);
-	func->constants[func->numConstants].ref = CONSTANT_OP;
+	v = readNumber(p, off, len, ok);
+	func->constants[func->numConstants] = v;
 	return func->numValues + func->numConstants++;
     }
     v = readNumber(p, off, len, ok);
@@ -299,6 +340,7 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer)
     bc->metadata.maxTime = readNumber(buffer, &offset, len, &ok);
     bc->metadata.targetExclude = readString(buffer, &offset, len, &ok);
     bc->num_func = readNumber(buffer, &offset, len, &ok);
+    bc->state = bc_loaded;
     if (!ok) {
 	cli_errmsg("Invalid bytecode header at %u\n", offset);
 	return CL_EMALFDB;
@@ -410,10 +452,18 @@ static bbid_t readBBID(struct cli_bc_func *func, const unsigned char *buffer, un
     return id;
 }
 
+
+static uint16_t get_type(struct cli_bc_func *func, operand_t op)
+{
+    if (op >= func->numValues)
+	return 64;
+    return func->types[op];
+}
+
 static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char *buffer)
 {
     char ok=1;
-    unsigned offset, len, last = 0;
+    unsigned offset, len, i, last = 0;
     struct cli_bc_bb *BB;
     struct cli_bc_func *bcfunc = &bc->funcs[func];
     struct cli_bc_inst inst;
@@ -457,6 +507,10 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	    case OP_JMP:
 		inst.u.jump = readBBID(bcfunc, buffer, &offset, len, &ok);
 		break;
+	    case OP_RET:
+		inst.u.unaryop = readOperand(bcfunc, buffer, &offset, len, &ok);
+		inst.type = readNumber(buffer, &offset, len, &ok);
+		break;
 	    case OP_BRANCH:
 		inst.u.branch.condition = readOperand(bcfunc, buffer, &offset, len, &ok);
 		inst.u.branch.br_true = readBBID(bcfunc, buffer, &offset, len, &ok);
@@ -466,6 +520,7 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		numOp = readFixedNumber(buffer, &offset, len, &ok, 1);
 		if (ok) {
 		    inst.u.ops.numOps = numOp;
+		    inst.u.ops.opsizes=NULL;
 		    inst.u.ops.ops = cli_calloc(numOp, sizeof(*inst.u.ops.ops));
 		    if (!inst.u.ops.ops) {
 			cli_errmsg("Out of memory allocating operands\n");
@@ -524,7 +579,8 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	    return CL_EMALFDB;
 	}
 	if (bcfunc->insn_idx + BB->numInsts >= bcfunc->numInsts) {
-	    cli_errmsg("More instructions than declared in total!\n");
+	    cli_errmsg("More instructions than declared in total: %u > %u!\n",
+		       bcfunc->insn_idx+BB->numInsts, bcfunc->numInsts);
 	    return CL_EMALFDB;
 	}
 	switch (inst.opcode) {
@@ -540,7 +596,7 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	    case OP_ICMP_SGE:
 	    case OP_ICMP_SLE:
 	    case OP_ICMP_SLT:
-		inst.type = bcfunc->types[inst.u.binop[0]];
+		inst.type = get_type(bcfunc, inst.u.binop[0]);
 		break;
 	}
 	inst.interp_op = inst.opcode*5;
@@ -566,6 +622,7 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		   len-offset);
 	return CL_EMALFDB;
     }
+    bcfunc->numBytes = 0;
     bcfunc->insn_idx += BB->numInsts;
     return CL_SUCCESS;
 }
@@ -586,7 +643,6 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 	cli_errmsg("Unable to load bytecode (null file)\n");
 	return CL_ENULLARG;
     }
-
     while (cli_dbgets(buffer, FILEBUFF, f, dbio)) {
 	int rc;
 	cli_chomp(buffer);
@@ -618,6 +674,11 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 		    return rc;
 		}
 		if (bb >= bc->funcs[current_func].numBB) {
+		    if (bc->funcs[current_func].insn_idx != bc->funcs[current_func].numInsts) {
+			cli_errmsg("Parsed different number of instructions than declared: %u != %u\n",
+				   bc->funcs[current_func].insn_idx, bc->funcs[current_func].numInsts);
+			return CL_EMALFDB;
+		    }
 		    cli_dbgmsg("Parsed %u BBs, %u instructions\n",
 			       bb, bc->funcs[current_func].numInsts);
 		    state = PARSE_FUNC_HEADER;
@@ -644,29 +705,31 @@ int cli_bytecode_run(const struct cli_bc *bc, struct cli_bc_ctx *ctx)
 	return CL_ENULLARG;
     if (ctx->numParams && (!ctx->values || !ctx->operands))
 	return CL_ENULLARG;
-    for (i=0;i<ctx->numParams;i++) {
-	if (ctx->values[i].ref == MAX_OP) {
-	    cli_errmsg("bytecode: parameter %u is uninitialized!\n", i);
-	    return CL_EARG;
-	}
+    if (bc->state == bc_loaded) {
+	cli_errmsg("bytecode has to be prepared either for interpreter or JIT!\n");
+	return CL_EARG;
     }
     memset(&func, 0, sizeof(func));
     func.numInsts = 1;
     func.numValues = 1;
+    func.numBytes = ctx->bytes;
+    memset(ctx->values+ctx->bytes-8, 0, 8);
 
     inst.opcode = OP_CALL_DIRECT;
     inst.interp_op = OP_CALL_DIRECT*5;
     inst.dest = func.numArgs;
-    inst.type = 0;/* TODO: support toplevel functions with return values */
+    inst.type = 0;
     inst.u.ops.numOps = ctx->numParams;
     inst.u.ops.funcid = ctx->funcid;
     inst.u.ops.ops = ctx->operands;
+    inst.u.ops.opsizes = ctx->opsizes;
     return cli_vm_execute(ctx->bc, ctx, &func, &inst);
 }
 
 uint64_t cli_bytecode_context_getresult_int(struct cli_bc_ctx *ctx)
 {
-    return ctx->values[ctx->numParams].v;
+    return *(uint64_t*)ctx->values;/*XXX*/
+//    return ctx->values[ctx->numParams];
 }
 
 void cli_bytecode_destroy(struct cli_bc *bc)
@@ -683,8 +746,10 @@ void cli_bytecode_destroy(struct cli_bc *bc)
 	    struct cli_bc_bb *BB = &f->BB[j];
 	    for(k=0;k<BB->numInsts;k++) {
 		struct cli_bc_inst *ii = &BB->insts[k];
-		if (operand_counts[ii->opcode] > 3 || ii->opcode == OP_CALL_DIRECT)
+		if (operand_counts[ii->opcode] > 3 || ii->opcode == OP_CALL_DIRECT) {
 		    free(ii->u.ops.ops);
+		    free(ii->u.ops.opsizes);
+		}
 	    }
 	}
 	free(f->BB);
@@ -694,3 +759,136 @@ void cli_bytecode_destroy(struct cli_bc *bc)
     free(bc->funcs);
 }
 
+#define MAP(val) do { operand_t o = val; \
+    if (o > totValues) {\
+	cli_errmsg("bytecode: operand out of range: %u > %u, for instruction %u in function %u\n", o, totValues, j, i);\
+	return CL_EBYTECODE;\
+    }\
+    val = map[o]; } while (0)
+
+static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
+{
+    unsigned i, j, k;
+    for (i=0;i<bc->num_func;i++) {
+	struct cli_bc_func *bcfunc = &bc->funcs[i];
+	unsigned totValues = bcfunc->numValues + bcfunc->numConstants;
+	unsigned *map = cli_malloc(sizeof(*map)*totValues);
+	for (j=0;j<bcfunc->numValues;j++) {
+	    uint16_t ty = bcfunc->types[j];
+	    unsigned align;
+	    if (ty > 64) {
+		cli_errmsg("Bytecode: non-integer types not yet implemented\n");
+		return CL_EMALFDB;
+	    }
+	    align = typealign(bc, ty);
+	    bcfunc->numBytes  = (bcfunc->numBytes + align-1)&(~(align-1));
+	    map[j] = bcfunc->numBytes;
+	    bcfunc->numBytes += typesize(bc, ty);
+	}
+	bcfunc->numBytes = (bcfunc->numBytes + 7)&~7;
+	for (j=0;j<bcfunc->numConstants;j++) {
+	    map[bcfunc->numValues+j] = bcfunc->numBytes;
+	    bcfunc->numBytes += 8;
+	}
+	for (j=0;j<bcfunc->numInsts;j++) {
+	    struct cli_bc_inst *inst = &bcfunc->allinsts[j];
+	    inst->dest = map[inst->dest];
+	    switch (inst->opcode) {
+		case OP_ADD:
+		case OP_SUB:
+		case OP_MUL:
+		case OP_UDIV:
+		case OP_SDIV:
+		case OP_UREM:
+		case OP_SREM:
+		case OP_SHL:
+		case OP_LSHR:
+		case OP_ASHR:
+		case OP_AND:
+		case OP_OR:
+		case OP_XOR:
+		case OP_ICMP_EQ:
+		case OP_ICMP_NE:
+		case OP_ICMP_UGT:
+		case OP_ICMP_UGE:
+		case OP_ICMP_ULT:
+		case OP_ICMP_ULE:
+		case OP_ICMP_SGT:
+		case OP_ICMP_SGE:
+		case OP_ICMP_SLT:
+		case OP_ICMP_SLE:
+		case OP_COPY:
+		    MAP(inst->u.binop[0]);
+		    MAP(inst->u.binop[1]);
+		    break;
+		case OP_SEXT:
+		case OP_ZEXT:
+		case OP_TRUNC:
+		    MAP(inst->u.cast.source);
+		    break;
+		case OP_BRANCH:
+		    MAP(inst->u.branch.condition);
+		    break;
+		case OP_JMP:
+		    break;
+		case OP_RET:
+		    MAP(inst->u.unaryop);
+		    break;
+		case OP_SELECT:
+		    MAP(inst->u.three[0]);
+		    MAP(inst->u.three[1]);
+		    MAP(inst->u.three[2]);
+		    break;
+		case OP_CALL_DIRECT:
+		{
+		    struct cli_bc_func *target = &bc->funcs[inst->u.ops.funcid];
+		    if (inst->u.ops.funcid > bc->num_func) {
+			cli_errmsg("bytecode: called function out of range: %u > %u\n", inst->u.ops.funcid, bc->num_func);
+			return CL_EBYTECODE;
+		    }
+		    if (inst->u.ops.numOps != target->numArgs) {
+			cli_errmsg("bytecode: call operands don't match function prototype\n");
+			return CL_EBYTECODE;
+		    }
+		    if (inst->u.ops.numOps) {
+			inst->u.ops.opsizes = cli_malloc(sizeof(*inst->u.ops.opsizes)*inst->u.ops.numOps);
+			if (!inst->u.ops.opsizes) {
+			    cli_errmsg("Out of memory when allocating operand sizes\n");
+			    return CL_EMEM;
+			}
+		    }
+		    for (k=0;k<inst->u.ops.numOps;k++) {
+			MAP(inst->u.ops.ops[k]);
+			inst->u.ops.opsizes[k] = typesize(bc, target->types[k]);
+		    }
+		    break;
+		}
+		default:
+		    cli_dbgmsg("Unhandled opcode: %d\n", inst->opcode);
+		    return CL_EBYTECODE;
+	    }
+	}
+	free(map);
+    }
+    bc->state = bc_interp;
+    return CL_SUCCESS;
+}
+
+static int cli_bytecode_prepare_jit(struct cli_bc *bc)
+{
+    if (bc->state != bc_loaded) {
+	cli_warnmsg("Cannot prepare for JIT, because it has already been converted to interpreter");
+	return CL_EBYTECODE;
+    }
+    cli_warnmsg("JIT not yet implemented\n");
+    return CL_EBYTECODE;
+}
+
+int cli_bytecode_prepare(struct cli_bc *bc)
+{
+    if (bc->state == bc_interp || bc->state == bc_jit)
+	return CL_SUCCESS;
+    if (cli_bytecode_prepare_jit(bc) == CL_SUCCESS)
+	return CL_SUCCESS;
+    return cli_bytecode_prepare_interpreter(bc);
+}

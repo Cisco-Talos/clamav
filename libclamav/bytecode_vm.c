@@ -55,6 +55,11 @@ static int bcfail(const char *msg, long a, long b,
 
 #define SIGNEXT(a, from) CLI_SRS(((int64_t)(a)) << (64-(from)), (64-(from)))
 
+#ifdef CL_DEBUG
+#undef always_inline
+#define always_inline
+#endif
+
 static always_inline int jump(const struct cli_bc_func *func, uint16_t bbid, struct cli_bc_bb **bb, const struct cli_bc_inst **inst,
 		unsigned *bb_inst)
 {
@@ -164,24 +169,24 @@ static void cli_stack_destroy(struct stack *stack)
 struct stack_entry {
     struct stack_entry *prev;
     const struct cli_bc_func *func;
-    struct cli_bc_value *ret;
+    operand_t ret;
     struct cli_bc_bb *bb;
     unsigned bb_inst;
-    struct cli_bc_value *values;
+    char *values;
 };
 
 static always_inline struct stack_entry *allocate_stack(struct stack *stack,
 							struct stack_entry *prev,
 							const struct cli_bc_func *func,
 							const struct cli_bc_func *func_old,
-							struct cli_bc_value *ret,
+							operand_t ret,
 							struct cli_bc_bb *bb,
 							unsigned bb_inst)
 {
     unsigned i;
-    struct cli_bc_value *values;
+    char *values;
     const unsigned numValues = func->numValues + func->numConstants;
-    struct stack_entry *entry = cli_stack_alloc(stack, sizeof(*entry) + sizeof(*values)*numValues);
+    struct stack_entry *entry = cli_stack_alloc(stack, sizeof(*entry) + sizeof(*values)*func->numBytes);
     if (!entry)
 	return NULL;
     entry->prev = prev;
@@ -190,18 +195,17 @@ static always_inline struct stack_entry *allocate_stack(struct stack *stack,
     entry->bb = bb;
     entry->bb_inst = bb_inst;
     /* we allocated room for values right after stack_entry! */
-    entry->values = values = (struct cli_bc_value*)&entry[1];
+    entry->values = values = (char*)&entry[1];
 
-    memcpy(&values[func->numValues], func->constants,
-	   sizeof(*values)*func->numConstants);
-    memset(values, 0, sizeof(*values)*func->numValues);//XXX
+    memcpy(&values[func->numBytes - func->numConstants*8], func->constants,
+	   sizeof(*values)*func->numConstants*8);
     return entry;
 }
 
 static always_inline struct stack_entry *pop_stack(struct stack *stack,
 						   struct stack_entry *stack_entry,
 						   const struct cli_bc_func **func,
-						   struct cli_bc_value **ret,
+						   operand_t *ret,
 						   struct cli_bc_bb **bb,
 						   unsigned *bb_inst)
 {
@@ -224,26 +228,43 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
     CHECK_EQ((p)&3, 0); 
     CHECK_EQ((p)&7, 0); 
 */
-#define WRITE8(p, x) CHECK_GT(func->numValues+func->numConstants, p);\
-    *(uint8_t*)&values[p].v = x
-#define WRITE16(p, x) CHECK_GT(func->numValues+func->numConstants, p);\
-    *(uint16_t*)&values[p].v = x
-#define WRITE32(p, x) CHECK_GT(func->numValues+func->numConstants, p);\
-    *(uint32_t*)&values[p].v = x
-#define WRITE64(p, x) CHECK_GT(func->numValues+func->numConstants, p);\
-    *(uint32_t*)&values[p].v = x
+#define WRITE8(p, x) CHECK_GT(func->numBytes, p);\
+    *(uint8_t*)&values[p] = x
+#define WRITE16(p, x) CHECK_GT(func->numBytes, p+1);\
+    CHECK_EQ((p)&1, 0);\
+    *(uint16_t*)&values[p] = x
+#define WRITE32(p, x) CHECK_GT(func->numBytes, p+3);\
+    CHECK_EQ((p)&3, 0);\
+    *(uint32_t*)&values[p] = x
+#define WRITE64(p, x) CHECK_GT(func->numBytes, p+7);\
+    CHECK_EQ((p)&7, 0);\
+    *(uint32_t*)&values[p] = x
 
-#define READ1(x, p) CHECK_GT(func->numValues+func->numConstants, p);\
-    x = (*(uint8_t*)&values[p].v)&1
-#define READ8(x, p) CHECK_GT(func->numValues+func->numConstants, p);\
-    x = *(uint8_t*)&values[p].v
-#define READ16(x, p) CHECK_GT(func->numValues+func->numConstants, p);\
-    x = *(uint16_t*)&values[p].v
-#define READ32(x, p) CHECK_GT(func->numValues+func->numConstants, p);\
-    x = *(uint32_t*)&values[p].v
-#define READ64(x, p) CHECK_GT(func->numValues+func->numConstants, p);\
-    x = *(uint64_t*)&values[p].v
+#define READ1(x, p) CHECK_GT(func->numBytes, p);\
+    x = (*(uint8_t*)&values[p])&1
+#define READ8(x, p) CHECK_GT(func->numBytes, p);\
+    x = *(uint8_t*)&values[p]
+#define READ16(x, p) CHECK_GT(func->numBytes, p+1);\
+    CHECK_EQ((p)&1, 0);\
+    x = *(uint16_t*)&values[p]
+#define READ32(x, p) CHECK_GT(func->numBytes, p+3);\
+    CHECK_EQ((p)&3, 0);\
+    x = *(uint32_t*)&values[p]
+#define READ64(x, p) CHECK_GT(func->numBytes, p+7);\
+    CHECK_EQ((p)&7, 0);\
+    x = *(uint64_t*)&values[p]
 
+#define READOLD8(x, p) CHECK_GT(func->numBytes, p);\
+    x = *(uint8_t*)&old_values[p]
+#define READOLD16(x, p) CHECK_GT(func->numBytes, p+1);\
+    CHECK_EQ((p)&1, 0);\
+    x = *(uint16_t*)&old_values[p]
+#define READOLD32(x, p) CHECK_GT(func->numBytes, p+3);\
+    CHECK_EQ((p)&3, 0);\
+    x = *(uint32_t*)&old_values[p]
+#define READOLD64(x, p) CHECK_GT(func->numBytes, p+7);\
+    CHECK_EQ((p)&7, 0);\
+    x = *(uint64_t*)&old_values[p]
 
 #define BINOP(i) inst->u.binop[i]
 
@@ -297,7 +318,7 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
 		    OP;\
 		    W4(inst->dest, res);\
 		    break;\
-		}\
+		}
 
 #define DEFINE_BINOP(opc, OP) DEFINE_BINOP_HELPER(opc, OP, WRITE8, WRITE8, WRITE16, WRITE32, WRITE64)
 #define DEFINE_ICMPOP(opc, OP) DEFINE_BINOP_HELPER(opc, OP, WRITE8, WRITE8, WRITE8, WRITE8, WRITE8)
@@ -339,7 +360,7 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
 		    OP;\
 		    WRITE64(inst->dest, res);\
 		    break;\
-		}\
+		}
 
 #define DEFINE_OP(opc) \
     case opc*5: /* fall-through */\
@@ -358,6 +379,25 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
 	default: CHECK_UNREACHABLE;\
     }
 
+#define DEFINE_OP_RET_N(OP, T, R0, W0) \
+    case OP: {\
+		T tmp;\
+		R0(tmp, inst->u.unaryop);\
+		CHECK_GT(stack_depth, 0);\
+		stack_depth--;\
+		stack_entry = pop_stack(&stack, stack_entry, &func, &i, &bb,\
+					&bb_inst);\
+		values = stack_entry ? stack_entry->values : ctx->values;\
+		CHECK_GT(func->numBytes, i);\
+		W0(i, tmp);\
+		if (!bb) {\
+		    stop = CL_BREAK;\
+		    continue;\
+		}\
+		inst = &bb->insts[bb_inst];\
+		break;\
+	    }
+
 static always_inline int check_sdivops(int64_t op0, int64_t op1)
 {
     return op1 == 0 || (op0 == -1 && op1 ==  (-9223372036854775807LL-1LL));
@@ -366,18 +406,16 @@ static always_inline int check_sdivops(int64_t op0, int64_t op1)
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst)
 {
     uint64_t tmp;
-    unsigned i, stack_depth=0, bb_inst=0, stop=0 ;
+    unsigned i, j, stack_depth=0, bb_inst=0, stop=0 ;
     struct cli_bc_func *func2;
     struct stack stack;
     struct stack_entry *stack_entry = NULL;
     struct cli_bc_bb *bb = NULL;
-    struct cli_bc_value *values = ctx->values;
-    struct cli_bc_value *value, *old_values;
+    char *values = ctx->values;
+    char *old_values;
 
     memset(&stack, 0, sizeof(stack));
     do {
-	value = &values[inst->dest];
-	CHECK_GT(func->numValues+func->numConstants, value - values);
 	switch (inst->interp_op) {
 	    DEFINE_BINOP(OP_ADD, res = op0 + op1);
 	    DEFINE_BINOP(OP_SUB, res = op0 - op1);
@@ -423,7 +461,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 				 READ64(res, inst->u.cast.source)));
 
 	    DEFINE_OP(OP_BRANCH)
-		stop = jump(func, (values[inst->u.branch.condition].v&1) ?
+		stop = jump(func, (values[inst->u.branch.condition]&1) ?
 			  inst->u.branch.br_true : inst->u.branch.br_false,
 			  &bb, &inst, &bb_inst);
 		continue;
@@ -432,21 +470,11 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		stop = jump(func, inst->u.jump, &bb, &inst, &bb_inst);
 		continue;
 
-	    DEFINE_OP(OP_RET)
-		CHECK_GT(stack_depth, 0);
-		tmp = values[inst->u.unaryop].v;
-		stack_entry = pop_stack(&stack, stack_entry, &func, &value, &bb,
-					&bb_inst);
-		values = stack_entry ? stack_entry->values : ctx->values;
-		CHECK_GT(func->numValues+func->numConstants, value-values);
-		CHECK_GT(value-values, -1);
-		value->v = tmp;
-		if (!bb) {
-		    stop = CL_BREAK;
-		    continue;
-		}
-		inst = &bb->insts[bb_inst];
-		break;
+	    DEFINE_OP_RET_N(OP_RET*5, uint8_t, READ1, WRITE8);
+	    DEFINE_OP_RET_N(OP_RET*5+1, uint8_t, READ8, WRITE8);
+	    DEFINE_OP_RET_N(OP_RET*5+2, uint16_t, READ16, WRITE16);
+	    DEFINE_OP_RET_N(OP_RET*5+3, uint32_t, READ32, WRITE32);
+	    DEFINE_OP_RET_N(OP_RET*5+4, uint64_t, READ64, WRITE64);
 
 	    DEFINE_ICMPOP(OP_ICMP_EQ, res = (op0 == op1));
 	    DEFINE_ICMPOP(OP_ICMP_NE, res = (op0 != op1));
@@ -513,12 +541,55 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		func2 = &bc->funcs[inst->u.ops.funcid];
 		CHECK_EQ(func2->numArgs, inst->u.ops.numOps);
 		old_values = values;
-		stack_entry = allocate_stack(&stack, stack_entry, func2, func, value,
+		stack_entry = allocate_stack(&stack, stack_entry, func2, func, inst->dest,
 					     bb, bb_inst);
 		values = stack_entry->values;
-		cli_dbgmsg("Executing %d\n", inst->u.ops.funcid);
-		for (i=0;i<func2->numArgs;i++)
-		    values[i] = old_values[inst->u.ops.ops[i]];
+//		cli_dbgmsg("Executing %d, -> %u (%u); %u\n", inst->u.ops.funcid,
+//			   inst->dest, inst->type, stack_depth);
+		if (stack_depth > 10000) {
+		    cli_errmsg("bytecode: stack depth exceeded\n");
+		    stop = CL_EBYTECODE;
+		    break;
+		}
+		j = 0;
+		for (i=0;i<func2->numArgs;i++) {
+		    switch (inst->u.ops.opsizes[i]) {
+			case 1: {
+			    uint8_t v;
+			    READOLD8(v, inst->u.ops.ops[i]);
+			    CHECK_GT(func2->numBytes, j);
+			    values[j++] = v;
+			    break;
+			}
+			case 2: {
+			    uint16_t v;
+			    READOLD16(v, inst->u.ops.ops[i]);
+			    j = (j+1)&~1;
+			    CHECK_GT(func2->numBytes, j);
+			    *(uint16_t*)&values[j] = v;
+			    j += 2;
+			    break;
+			}
+			case 4: {
+			    uint32_t v;
+			    READOLD32(v, inst->u.ops.ops[i]);
+			    j = (j+3)&~3;
+			    CHECK_GT(func2->numBytes, j);
+			    *(uint32_t*)&values[j] = v;
+			    j += 4;
+			    break;
+			}
+			case 8: {
+			    uint64_t v;
+			    READOLD64(v, inst->u.ops.ops[i]);
+			    j = (j+7)&~7;
+			    CHECK_GT(func2->numBytes, j);
+			    *(uint64_t*)&values[j] = v;
+			    j += 8;
+			    break;
+			}
+		    }
+		}
 		func = func2;
 		CHECK_GT(func->numBB, 0);
 		stop = jump(func, 0, &bb, &inst, &bb_inst);

@@ -90,6 +90,12 @@ int main(int argc, char *argv[])
 	exit(4);
     }
 
+    rc = cli_bytecode_prepare(bc);
+    if (rc != CL_SUCCESS) {
+	fprintf(stderr,"Unable to prepare bytecode: %s\n", cl_strerror(rc));
+	optfree(opts);
+	exit(4);
+    }
     fclose(f);
 
     printf("Bytecode loaded\n");
