@@ -26,7 +26,9 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#if HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <fcntl.h>
 #include <utime.h>
 #include <errno.h>

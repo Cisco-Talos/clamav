@@ -1,3 +1,7 @@
+Sun Jul 26 18:55:37 CEST 2009 (acab)
+------------------------------------
+ * shared/actions.c: wrap unistd - reported by njh
+
 Sun Jul 19 16:19:49 CEST 2009 (acab)
 ------------------------------------
  * libclamav/pe.c: check IS-cab scan result
