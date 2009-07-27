@@ -380,7 +380,7 @@ int cli_scanmacho(int fd, cli_ctx *ctx, struct cli_exe_info *fileinfo)
 		    sections[sect].rva = EC64(section64.addr, conv);
 		    sections[sect].vsz = EC64(section64.size, conv);
 		    sections[sect].raw = EC32(section64.offset, conv);
-		    section64.align = EC32(section64.align, conv);
+		    section64.align = 1 << EC32(section64.align, conv);
 		    sections[sect].rsz = sections[sect].vsz + (section64.align - (sections[sect].vsz % section64.align)) % section64.align; /* most likely we can assume it's the same as .vsz */
 		    strncpy(name, section64.sectname, 16);
 		} else {
@@ -392,7 +392,7 @@ int cli_scanmacho(int fd, cli_ctx *ctx, struct cli_exe_info *fileinfo)
 		    sections[sect].rva = EC32(section.addr, conv);
 		    sections[sect].vsz = EC32(section.size, conv);
 		    sections[sect].raw = EC32(section.offset, conv);
-		    section.align = EC32(section.align, conv);
+		    section.align = 1 << EC32(section.align, conv);
 		    sections[sect].rsz = sections[sect].vsz + (section.align - (sections[sect].vsz % section.align)) % section.align;
 		    strncpy(name, section.sectname, 16);
 		}

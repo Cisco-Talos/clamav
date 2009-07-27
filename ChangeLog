@@ -1,3 +1,7 @@
+Mon Jul 27 12:28:08 CEST 2009 (tk)
+----------------------------------
+ * libclamav/macho.c: fix section alignment (bb#1667)
+
 Sun Jul 26 18:55:37 CEST 2009 (acab)
 ------------------------------------
  * shared/actions.c: wrap unistd - reported by njh
