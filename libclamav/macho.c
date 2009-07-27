@@ -522,9 +522,12 @@ int cli_scanmacho_unibin(int fd, cli_ctx *ctx)
     }
 
     fat_header.nfats = EC32(fat_header.nfats, conv);
+    if((fat_header.nfats & 0xffff) >= 39) /* Java Bytecode */
+	return CL_CLEAN;
+
     if(fat_header.nfats > 32) {
 	cli_dbgmsg("cli_scanmacho_unibin: Invalid number of architectures\n");
-	RETURN_BROKEN;
+	return CL_EFORMAT;
     }
     cli_dbgmsg("UNIBIN: Number of architectures: %u\n", (unsigned int) fat_header.nfats);
     for(i = 0; i < fat_header.nfats; i++) {

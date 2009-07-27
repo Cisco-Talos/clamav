@@ -1,3 +1,7 @@
+Mon Jul 27 13:53:15 CEST 2009 (tk)
+----------------------------------
+ * libclamav/macho.c: improve detection of Universal Binaries
+
 Mon Jul 27 12:28:08 CEST 2009 (tk)
 ----------------------------------
  * libclamav/macho.c: fix section alignment (bb#1667)
