@@ -328,7 +328,7 @@ int scanmanager(const struct optstruct *opts)
 {
 	mode_t fmode;
 	int ret = 0, fmodeint, i;
-	unsigned int options = 0, dboptions = 0;
+	unsigned int options = 0, dboptions = CL_DB_CVDNOTMP;
 	struct cl_engine *engine;
 	struct stat sb;
 	char *file, cwd[1024], *pua_cats = NULL;

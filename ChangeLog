@@ -1,3 +1,8 @@
+Tue Jul 28 20:34:13 CEST 2009 (tk)
+----------------------------------
+ * clamscan, clamd, libclamav: load cvd files on-the-fly (without unpacking them
+			       to /tmp) by default
+
 Tue Jul 28 20:19:08 CEST 2009 (tk)
 ----------------------------------
  * libclamav: improve loading speed of compressed databases (bb#1105)

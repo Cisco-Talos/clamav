@@ -81,7 +81,7 @@ typedef enum {
 #define CL_DB_COMPILED	    0x400   /* internal */
 
 /* recommended db settings */
-#define CL_DB_STDOPT	    (CL_DB_PHISHING | CL_DB_PHISHING_URLS)
+#define CL_DB_STDOPT	    (CL_DB_PHISHING | CL_DB_PHISHING_URLS | CL_DB_CVDNOTMP)
 
 /* scan options */
 #define CL_SCAN_RAW			0x0

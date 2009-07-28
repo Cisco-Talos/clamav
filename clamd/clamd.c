@@ -105,7 +105,7 @@ int main(int argc, char **argv)
 	int ret, tcpsock = 0, localsock = 0, i, min_port, max_port;
 	unsigned int sigs = 0;
 	int lsockets[2], nlsockets = 0;
-	unsigned int dboptions = 0;
+	unsigned int dboptions = CL_DB_CVDNOTMP;
 #ifdef C_LINUX
 	struct stat sb;
 #endif
