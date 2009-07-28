@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -340,10 +340,68 @@ static int cli_initroots(struct cl_engine *engine, unsigned int options)
 
 char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
 {
-    if(fs) {
+    if(fs)
 	return fgets(buff, size, fs);
 
-    } else {
+    if(dbio->usebuf) {
+	    int bread;
+	    char *nl;
+
+	while(1) {
+	    if(!dbio->bufpt) {
+		if(!dbio->size)
+		    return NULL;
+
+		if(dbio->gzs) {
+		    bread = gzread(dbio->gzs, dbio->readpt, dbio->readsize);
+		    if(bread == -1) {
+			cli_errmsg("cli_dbgets: gzread() failed\n");
+			return NULL;
+		    }
+		} else {
+		    bread = fread(dbio->readpt, 1, dbio->readsize, dbio->fs);
+		    if(!bread && ferror(dbio->fs)) {
+			cli_errmsg("cli_dbgets: gzread() failed\n");
+			return NULL;
+		    }
+		}
+		if(!bread)
+		    return NULL;
+		dbio->readpt[bread] = 0;
+		dbio->bufpt = dbio->buf;
+		dbio->size -= bread;
+	    }
+	    nl = strchr(dbio->bufpt, '\n');
+	    if(nl) {
+		if(nl - dbio->bufpt >= size) {
+		    cli_errmsg("cli_dbgets: Line too long for provided buffer\n");
+		    return NULL;
+		}
+		strncpy(buff, dbio->bufpt, nl - dbio->bufpt);
+		buff[nl - dbio->bufpt] = 0;
+		if(nl < dbio->buf + dbio->bufsize) {
+		    dbio->bufpt = ++nl;
+		} else {
+		    dbio->bufpt = NULL;
+		    dbio->readpt = dbio->buf;
+		    dbio->readsize = dbio->size < dbio->bufsize ? dbio->size : dbio->bufsize - 1;
+		}
+		return buff;
+	    } else {
+		    unsigned int remain = dbio->buf + dbio->bufsize - 1 - dbio->bufpt;
+
+		if(dbio->bufpt == dbio->buf) {
+		    cli_errmsg("cli_dbgets: Invalid data or internal buffer too small\n");
+		    return NULL;
+		}
+		memmove(dbio->buf, dbio->bufpt, remain);
+		dbio->readpt = dbio->buf + remain;
+		dbio->readsize = dbio->bufsize - remain;
+		dbio->readsize = dbio->size < dbio->bufsize - remain ? dbio->size : dbio->bufsize - remain - 1;
+		dbio->bufpt = NULL;
+	    }
+	}
+    } else { /* use gzgets/fgets */
 	    char *pt;
 	    unsigned int bs;
 

@@ -1,3 +1,7 @@
+Tue Jul 28 20:19:08 CEST 2009 (tk)
+----------------------------------
+ * libclamav: improve loading speed of compressed databases (bb#1105)
+
 Mon Jul 27 13:53:15 CEST 2009 (tk)
 ----------------------------------
  * libclamav/macho.c: improve detection of Universal Binaries

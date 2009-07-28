@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -29,6 +29,9 @@ struct cli_dbio {
     gzFile *gzs;
     FILE *fs;
     unsigned int size;
+    char *buf, *bufpt, *readpt;
+    unsigned int usebuf, bufsize, readsize;
+
 };
 
 int cli_cvdload(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int daily, unsigned int options, unsigned int cld);

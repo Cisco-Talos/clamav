@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -41,6 +41,7 @@
 #include "str.h"
 #include "cvd.h"
 #include "readdb.h"
+#include "default.h"
 
 #define TAR_BLOCKSIZE 512
 
@@ -227,6 +228,17 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 	dbio.gzs = NULL;
     }
 
+    dbio.bufsize = CLI_DEFAULT_DBIO_BUFSIZE;
+    dbio.buf = cli_malloc(dbio.bufsize);
+    if(!dbio.buf) {
+	cli_errmsg("cli_tgzload: Can't allocate memory for dbio.buf\n");
+	CLOSE_DBIO;
+	return CL_EMALFDB;
+    }
+    dbio.bufpt = NULL;
+    dbio.usebuf = 1;
+    dbio.readpt = dbio.buf;
+
     while(1) {
 
 	if(compr)
@@ -239,6 +251,7 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 
 	if(nread != TAR_BLOCKSIZE) {
 	    cli_errmsg("cli_tgzload: Incomplete block read\n");
+	    free(dbio.buf);
 	    CLOSE_DBIO;
 	    return CL_EMALFDB;
 	}
@@ -251,6 +264,7 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 
 	if(strchr(name, '/')) {
 	    cli_errmsg("cli_tgzload: Slash separators are not allowed in CVD\n");
+	    free(dbio.buf);
 	    CLOSE_DBIO;
 	    return CL_EMALFDB;
 	}
@@ -263,10 +277,12 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 		break;
 	    case '5':
 		cli_errmsg("cli_tgzload: Directories are not supported in CVD\n");
+		free(dbio.buf);
 		CLOSE_DBIO;
 		return CL_EMALFDB;
 	    default:
 		cli_errmsg("cli_tgzload: Unknown type flag '%c'\n", type);
+		free(dbio.buf);
 		CLOSE_DBIO;
 		return CL_EMALFDB;
 	}
@@ -276,10 +292,14 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 
 	if((sscanf(osize, "%o", &size)) == 0) {
 	    cli_errmsg("cli_tgzload: Invalid size in header\n");
+	    free(dbio.buf);
 	    CLOSE_DBIO;
 	    return CL_EMALFDB;
 	}
 	dbio.size = size;
+	dbio.readsize = dbio.size < dbio.bufsize ? dbio.size : dbio.bufsize - 1;
+	dbio.bufpt = NULL;
+	dbio.readpt = dbio.buf;
 
 	/* cli_dbgmsg("cli_tgzload: Loading %s, size: %u\n", name, size); */
 	if(compr)
@@ -291,6 +311,7 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 	    ret = cli_load(name, engine, signo, options, &dbio);
 	    if(ret) {
 		cli_errmsg("cli_tgzload: Can't load %s\n", name);
+		free(dbio.buf);
 		CLOSE_DBIO;
 		return CL_EMALFDB;
 	    }
@@ -309,6 +330,7 @@ static int cli_tgzload(int fd, struct cl_engine *engine, unsigned int *signo, un
 	}
     }
 
+    free(dbio.buf);
     CLOSE_DBIO;
     return CL_SUCCESS;
 }
