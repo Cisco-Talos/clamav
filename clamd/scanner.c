@@ -143,20 +143,6 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 	return CL_SUCCESS;
     }
 #endif
-    if((opt = optget(scandata->opts, "ExcludePath"))->enabled) {
-      while (opt) {
-	/* TODO: perhaps multiscan should skip this check? 
-	 * This should work unless the user is doing something stupid like
-	 * MULTISCAN / */
-	if(match_regex(filename, opt->strarg) == 1) {
-	    if (type != TYPE_MULTISCAN)
-		conn_reply_single(scandata->conn, filename, "Excluded");
-	    free(filename);
-	    return CL_SUCCESS;
-	}
-	opt = (const struct optstruct *) opt->nextarg;
-      }
-    }
 
     if(sb && sb->st_size == 0) { /* empty file */
 	if (msg == scandata->toplevel_path)
@@ -245,6 +231,24 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
 
     /* keep scanning always */
     return CL_SUCCESS;
+}
+
+int scan_pathchk(const char *path, struct cli_ftw_cbdata *data)
+{
+	struct scan_cb_data *scandata = data->data;
+	const struct optstruct *opt;
+
+    if((opt = optget(scandata->opts, "ExcludePath"))->enabled) {
+	while(opt) {
+	    if(match_regex(path, opt->strarg) == 1) {
+		if(scandata->type != TYPE_MULTISCAN)
+		    conn_reply_single(scandata->conn, path, "Excluded");
+		    return 1;
+	    }
+	    opt = (const struct optstruct *) opt->nextarg;
+	}
+    }
+    return 0;
 }
 
 int scanfd(const int fd, const client_conn_t *conn, unsigned long int *scanned,

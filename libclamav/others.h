@@ -360,11 +360,11 @@ void cli_dbgmsg_internal(const char *str, ...);
 #endif
 
 #if HAVE_SYSCONF_SC_PAGESIZE
-static inline int cli_getpagesize() { return sysconf(_SC_PAGESIZE); }
+static inline int cli_getpagesize(void) { return sysconf(_SC_PAGESIZE); }
 #define HAVE_CLI_GETPAGESIZE 1
 #else
 #if HAVE_GETPAGESIZE
-static inline int cli_getpagesize() { return getpagesize(); }
+static inline int cli_getpagesize(void) { return getpagesize(); }
 #define HAVE_CLI_GETPAGESIZE 1
 #endif
 #define HAVE_CLI_GETPAGESIZE 0
@@ -434,6 +434,12 @@ struct cli_ftw_cbdata {
 typedef int (*cli_ftw_cb)(struct stat *stat_buf, char *filename, const char *path, enum cli_ftw_reason reason, struct cli_ftw_cbdata *data);
 
 /*
+ * returns 1 if the path should be skipped and 0 otherwise
+ * uses callback data
+ */
+typedef int (*cli_ftw_pathchk)(const char *path, struct cli_ftw_cbdata *data);
+
+/*
  * returns 
  *  CL_SUCCESS if it traversed all files and subdirs
  *  CL_BREAK if traversal has stopped at some point
@@ -447,7 +453,7 @@ typedef int (*cli_ftw_cb)(struct stat *stat_buf, char *filename, const char *pat
  * which one it is.
  * If it is a file, it simply calls the callback once, otherwise recurses.
  */
-int cli_ftw(char *base, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data);
+int cli_ftw(char *base, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk);
 
 const char *cli_strerror(int errnum, char* buf, size_t len);
 #endif
