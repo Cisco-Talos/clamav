@@ -496,26 +496,25 @@ static int handle_filetype(const char *fname, int flags,
     return CL_SUCCESS;
 }
 
-static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data);
-static int handle_entry(struct dirent_data *entry, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
+static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk);
+static int handle_entry(struct dirent_data *entry, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk)
 {
     if (!entry->is_dir) {
 	return callback(entry->statbuf, entry->filename, entry->filename, visit_file, data);
     } else {
-	return cli_ftw_dir(entry->dirname, flags, maxdepth, callback, data);
+	return cli_ftw_dir(entry->dirname, flags, maxdepth, callback, data, pathchk);
     }
 }
 
-int cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
+int cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk)
 {
     struct stat statbuf;
     enum filetype ft = ft_unknown;
     struct dirent_data entry;
     int stated = 0;
-
     int ret;
 
-    if ((flags & CLI_FTW_TRIM_SLASHES) && path[0] && path[1]) {
+    if (((flags & CLI_FTW_TRIM_SLASHES) || pathchk) && path[0] && path[1]) {
 	char *pathend;
 	/* trim slashes so that dir and dir/ behave the same when
 	 * they are symlinks, and we are not following symlinks */
@@ -524,6 +523,8 @@ int cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli
 	while (pathend > path && pathend[-1] == '/') --pathend;
 	*pathend = '\0';
     }
+    if(pathchk && pathchk(path, data) == 1)
+	return CL_SUCCESS;
     ret = handle_filetype(path, flags, &statbuf, &stated, &ft, callback, data);
     if (ret != CL_SUCCESS)
 	return ret;
@@ -538,10 +539,10 @@ int cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli
 	if (ret != CL_SUCCESS)
 	    return ret;
     }
-    return handle_entry(&entry, flags, maxdepth, callback, data);
+    return handle_entry(&entry, flags, maxdepth, callback, data, pathchk);
 }
 
-static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data)
+static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb callback, struct cli_ftw_cbdata *data, cli_ftw_pathchk pathchk)
 {
     DIR *dd;
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
@@ -617,6 +618,11 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 	    else
 		sprintf(fname, "%s/%s", dirname, dent->d_name);
 
+	    if(pathchk && pathchk(fname, data) == 1) {
+		free(fname);
+		continue;
+	    }
+
 	    ret = handle_filetype(fname, flags, &statbuf, &stated, &ft, callback, data);
 	    if (ret != CL_SUCCESS) {
 		free(fname);
@@ -674,7 +680,7 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 	    qsort(entries, entries_cnt, sizeof(*entries), ftw_compare);
 	    for (i = 0; i < entries_cnt; i++) {
 		struct dirent_data *entry = &entries[i];
-		ret = handle_entry(entry, flags, maxdepth-1, callback, data);
+		ret = handle_entry(entry, flags, maxdepth-1, callback, data, pathchk);
 		if (entry->is_dir)
 		    free(entry->filename);
 		if (entry->statbuf)

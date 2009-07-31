@@ -1,3 +1,7 @@
+Fri Jul 31 21:28:18 CEST 2009 (tk)
+----------------------------------
+ * libclamav, clamd: handle file exclusion in cli_ftw() (bb#1656)
+
 Fri Jul 31 15:29:36 EEST 2009 (edwin)
 -------------------------------------
  * unit_tests/check_regex.c: fix unit-test failure on Solaris
