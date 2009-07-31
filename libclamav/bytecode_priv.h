@@ -22,6 +22,8 @@
 
 #ifndef BYTECODE_PRIV_H
 #define BYTECODE_PRIV_H
+
+#include "type_desc.h"
 typedef uint32_t operand_t;
 typedef uint16_t bbid_t;
 typedef uint16_t funcid_t;

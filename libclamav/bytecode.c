@@ -310,6 +310,7 @@ static inline char *readString(const unsigned char *p, unsigned *off, unsigned l
     }
     return str;
 }
+
 static int parseHeader(struct cli_bc *bc, unsigned char *buffer)
 {
     uint64_t magic1;
@@ -339,6 +340,7 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer)
     bc->metadata.maxMem = readNumber(buffer, &offset, len, &ok);
     bc->metadata.maxTime = readNumber(buffer, &offset, len, &ok);
     bc->metadata.targetExclude = readString(buffer, &offset, len, &ok);
+    bc->num_types = readNumber(buffer, &offset, len, &ok);
     bc->num_func = readNumber(buffer, &offset, len, &ok);
     bc->state = bc_loaded;
     if (!ok) {
@@ -364,6 +366,139 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer)
 	cli_errmsg("Out of memory allocating %u functions\n", bc->num_func);
 	return CL_EMEM;
     }
+    bc->types = cli_calloc(bc->num_types, sizeof(*bc->types));
+    if (!bc->types) {
+	cli_errmsg("Out of memory allocating %u types\n", bc->num_types);
+	return CL_EMEM;
+    }
+    return CL_SUCCESS;
+}
+
+static uint16_t readTypeID(struct cli_bc *bc, unsigned char *buffer,
+			   unsigned *offset, unsigned len, char *ok)
+{
+    uint64_t t = readNumber(buffer, offset, len, ok);
+    if (!ok)
+	return ~0u;
+    if (t >= bc->num_types + bc->start_tid) {
+	cli_errmsg("Invalid type id: %u\n", t);
+	*ok = 0;
+	return ~0u;
+    }
+    return t;
+}
+
+static void parseType(struct cli_bc *bc, struct cli_bc_type *ty,
+		      unsigned char *buffer, unsigned *off, unsigned len,
+		      char *ok)
+{
+    unsigned j;
+
+    ty->numElements = readFixedNumber(buffer, off, len, ok, 1);
+    if (!ok) {
+	cli_errmsg("Error parsing type\n");
+	*ok = 0;
+	return;
+    }
+    ty->containedTypes = cli_malloc(sizeof(*ty->containedTypes)*ty->numElements);
+    if (!ty->containedTypes) {
+	cli_errmsg("Out of memory allocating %u types\n", ty->numElements);
+	*ok = 0;
+	return;
+    }
+    for (j=0;j<ty->numElements;j++) {
+	ty->containedTypes[j] = readTypeID(bc, buffer, off, len, ok);
+    }
+}
+
+static uint16_t containedTy[] = {8,16,32,64};
+
+static void add_static_types(struct cli_bc *bc)
+{
+    unsigned i;
+    for (i=0;i<4;i++) {
+	bc->types[i].kind = PointerType;
+	bc->types[i].numElements = 1;
+	bc->types[i].containedTypes = &containedTy[i];
+    }
+}
+
+static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
+{
+    unsigned i, j, offset = 1, ok=1, len = strlen(buffer);
+    if (buffer[0] != 'T') {
+	cli_errmsg("Invalid function types header: %c\n", buffer[0]);
+	return CL_EMALFDB;
+    }
+    bc->start_tid = readFixedNumber(buffer, &offset, len, &ok, 2);
+    if (bc->start_tid != BC_START_TID) {
+	cli_warnmsg("Type start id mismatch: %u != %u\n", bc->start_tid,
+		    BC_START_TID);
+	return CL_BREAK;
+    }
+    add_static_types(bc);
+    for (i=(BC_START_TID - 64);i<bc->num_types;i++) {
+	struct cli_bc_type *ty = &bc->types[i];
+	uint8_t t = readFixedNumber(buffer, &offset, len, &ok, 1);
+	uint16_t tid;
+	if (!ok) {
+	    cli_errmsg("Error reading type kind\n");
+	    return CL_EMALFDB;
+	}
+	switch (t) {
+	    case 1:
+		ty->kind = FunctionType;
+		parseType(bc, ty, buffer, &offset, len, &ok);
+		if (!ok) {
+		    cli_errmsg("Error parsing type %u\n", i);
+		    return CL_EMALFDB;
+		}
+		break;
+	    case 2:
+	    case 3:
+		ty->kind = (t == 2) ? StructType : PackedStructType;
+		parseType(bc, ty, buffer, &offset, len, &ok);
+		if (!ok) {
+		    cli_errmsg("Error parsing type %u\n", i);
+		    return CL_EMALFDB;
+		}
+		break;
+	    case 4:
+		ty->kind = ArrayType;
+		/* number of elements of array, not subtypes! */
+		ty->numElements = readNumber(buffer, &offset, len, &ok);
+		if (!ok) {
+		    cli_errmsg("Error parsing type %u\n", i);
+		    return CL_EMALFDB;
+		}
+		/* fall-through */
+	    case 5:
+		if (t == 5) {
+		    ty->kind = PointerType;
+		    ty->numElements = 1;
+		}
+		ty->containedTypes = cli_malloc(sizeof(*ty->containedTypes));
+		if (!ty->containedTypes) {
+		    cli_errmsg("Out of memory allocating containedType\n");
+		    return CL_EMALFDB;
+		}
+		ty->containedTypes[0] = readTypeID(bc, buffer, &offset, len, &ok);
+		if (!ok) {
+		    cli_errmsg("Error parsing type %u\n", i);
+		    return CL_EMALFDB;
+		}
+		break;
+	    default:
+		cli_errmsg("Invalid type kind: %u\n", t);
+		return CL_EMALFDB;
+	}
+    }
+    return CL_SUCCESS;
+}
+
+static int parseApis(struct cli_bc *bc, unsigned char *buffer)
+{
+    //TODO
     return CL_SUCCESS;
 }
 
@@ -629,6 +764,8 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 
 enum parse_state {
     PARSE_BC_HEADER=0,
+    PARSE_BC_TYPES,
+    PARSE_BC_APIS,
     PARSE_FUNC_HEADER,
     PARSE_BB
 };
@@ -650,6 +787,24 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 	switch (state) {
 	    case PARSE_BC_HEADER:
 		rc = parseHeader(bc, (unsigned char*)buffer);
+		if (rc == CL_BREAK) /* skip */
+		    return CL_SUCCESS;
+		if (rc != CL_SUCCESS) {
+		    cli_errmsg("Error at bytecode line %u\n", row);
+		    return rc;
+		}
+		state = PARSE_BC_TYPES;
+		break;
+	    case PARSE_BC_TYPES:
+		rc = parseTypes(bc, (unsigned char*)buffer);
+		if (rc != CL_SUCCESS) {
+		    cli_errmsg("Error at bytecode line %u\n", row);
+		    return rc;
+		}
+		state = PARSE_BC_APIS;
+		break;
+	    case PARSE_BC_APIS:
+		rc = parseApis(bc, (unsigned char*)buffer);
 		if (rc == CL_BREAK) /* skip */
 		    return CL_SUCCESS;
 		if (rc != CL_SUCCESS) {

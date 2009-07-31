@@ -66,6 +66,7 @@ enum bc_opcode {
   OP_ICMP_SLT,
   OP_SELECT,
   OP_CALL_DIRECT,
+  OP_CALL_API,
   OP_COPY,
   OP_GEP1,
   OP_GEP2,
@@ -88,10 +89,13 @@ static const unsigned char operand_counts[] = {
   /* SELECT */
   3,
   /* CALLs have variable number of operands */
-  0,
+  0, 0,
   /* OP_COPY */
   2,
   /* OP_GEP1, OP_GEP2, OP_GEPN, OP_STORE, OP_LOAD*/
   2, 3, 0, 2, 1
 };
+
+#define BC_START_TID 69
+
 #endif

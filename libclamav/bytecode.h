@@ -29,6 +29,7 @@ struct cli_bc_ctx;
 struct cli_bc_func;
 struct cli_bc_value;
 struct cli_bc_inst;
+struct cli_bc_type;
 
 enum bc_state {
     bc_loaded,
@@ -41,9 +42,12 @@ struct cli_bc {
   char *sigmaker;
   unsigned id;
   struct bytecode_metadata metadata;
+  unsigned num_types;
   unsigned num_func;
   struct cli_bc_func *funcs;
+  struct cli_bc_type *types;
   enum bc_state state;
+  uint16_t start_tid;
 };
 
 struct cli_bc_ctx *cli_bytecode_context_alloc(void);
