@@ -1,3 +1,7 @@
+Fri Jul 31 15:29:36 EEST 2009 (edwin)
+-------------------------------------
+ * unit_tests/check_regex.c: fix unit-test failure on Solaris
+
 Fri Jul 31 12:52:08 CEST 2009 (acab)
 ------------------------------------
  * libclamav/pe.c: fix check for pe32+
