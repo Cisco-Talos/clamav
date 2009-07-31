@@ -1,3 +1,7 @@
+Fri Jul 31 12:52:08 CEST 2009 (acab)
+------------------------------------
+ * libclamav/pe.c: fix check for pe32+
+
 Sun Jul 26 18:55:37 CEST 2009 (acab)
 ------------------------------------
  * shared/actions.c: wrap unistd - reported by njh
