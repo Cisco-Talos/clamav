@@ -645,7 +645,7 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     }
 
     /* This will be a chicken and egg problem until we drop 9x */
-    if(EC32(optional_hdr64.Magic)==PE32P_SIGNATURE) {
+    if(EC16(optional_hdr64.Magic)==PE32P_SIGNATURE) {
         if(EC16(file_hdr.SizeOfOptionalHeader)!=sizeof(struct pe_image_optional_hdr64)) {
 	    /* FIXME: need to play around a bit more with xp64 */
 	    cli_dbgmsg("Incorrect SizeOfOptionalHeader for PE32+\n");
@@ -2341,7 +2341,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	return -1;
     }
 
-    if(EC32(optional_hdr64.Magic)==PE32P_SIGNATURE) { /* PE+ */
+    if(EC16(optional_hdr64.Magic)==PE32P_SIGNATURE) { /* PE+ */
         if(EC16(file_hdr.SizeOfOptionalHeader)!=sizeof(struct pe_image_optional_hdr64)) {
 	    cli_dbgmsg("Incorrect SizeOfOptionalHeader for PE32+\n");
 	    return -1;
