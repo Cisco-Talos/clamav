@@ -39,7 +39,8 @@ static void htmlnorm_setup(void)
 static void htmlnorm_teardown(void)
 {
 	dconf_teardown();
-	fail_unless(cli_rmdirs(dir) == 0, "rmdirs failed");
+	/* can't call fail() functions in teardown, it can cause SEGV */
+	cli_rmdirs(dir);
 	free(dir);
 	dir = NULL;
 }
