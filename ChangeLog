@@ -1,3 +1,7 @@
+Sun Aug  2 14:46:40 EEST 2009 (edwin)
+-------------------------------------
+ * libclamav/bytecode_vm.c: fix SIGBUS on sparc.
+
 Fri Jul 31 21:28:18 CEST 2009 (tk)
 ----------------------------------
  * libclamav, clamd: handle file exclusion in cli_ftw() (bb#1656)

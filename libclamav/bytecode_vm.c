@@ -103,6 +103,10 @@ struct stack {
     uint16_t last_size;
 };
 
+/* type with largest alignment that we use (in general it is a long double, but
+ * thats too big alignment for us) */
+typedef uint64_t align_t;
+
 static always_inline void* cli_stack_alloc(struct stack *stack, unsigned bytes)
 {
     struct stack_chunk *chunk = stack->chunk;
@@ -110,7 +114,7 @@ static always_inline void* cli_stack_alloc(struct stack *stack, unsigned bytes)
 
     /* last_size is stored after data */
     /* align bytes to pointer size */
-    bytes = (bytes + sizeof(uint16_t) + sizeof(void*)) & ~(sizeof(void*)-1);
+    bytes = (bytes + sizeof(uint16_t) + sizeof(align_t)) & ~(sizeof(align_t)-1);
     last_size_off = bytes - 2;
 
     if (chunk && (chunk->used + bytes <= STACK_CHUNKSIZE)) {
@@ -118,7 +122,7 @@ static always_inline void* cli_stack_alloc(struct stack *stack, unsigned bytes)
 	void *ret;
 
 	*(uint16_t*)&chunk->u.data[chunk->used + last_size_off] = stack->last_size;
-	stack->last_size = bytes/sizeof(void*);
+	stack->last_size = bytes/sizeof(align_t);
 
 	ret = chunk->u.data + chunk->used;
 	chunk->used += bytes;
@@ -135,7 +139,7 @@ static always_inline void* cli_stack_alloc(struct stack *stack, unsigned bytes)
 	return NULL;
 
     *(uint16_t*)&chunk->u.data[last_size_off] = stack->last_size;
-    stack->last_size = bytes/sizeof(void*);
+    stack->last_size = bytes/sizeof(align_t);
 
     chunk->used = bytes;
     chunk->prev = stack->chunk;
@@ -151,17 +155,17 @@ static always_inline void cli_stack_free(struct stack *stack, void *data)
 	cli_errmsg("cli_stack_free: stack empty!\n");
 	return;
     }
-    if ((chunk->u.data + chunk->used) != ((char*)data + stack->last_size*sizeof(void*))) {
+    if ((chunk->u.data + chunk->used) != ((char*)data + stack->last_size*sizeof(align_t))) {
 	cli_errmsg("cli_stack_free: wrong free order: %p, expected %p\n",
-		   data, chunk->u.data + chunk->used - stack->last_size*sizeof(void*));
+		   data, chunk->u.data + chunk->used - stack->last_size*sizeof(align_t));
 	return;
     }
     last_size = *(uint16_t*)&chunk->u.data[chunk->used-2];
-    if (chunk->used < stack->last_size*sizeof(void*)) {
+    if (chunk->used < stack->last_size*sizeof(align_t)) {
 	cli_errmsg("cli_stack_free: last_size is corrupt!\n");
 	return;
     }
-    chunk->used -= stack->last_size*sizeof(void*);
+    chunk->used -= stack->last_size*sizeof(align_t);
     stack->last_size = last_size;
     if (!chunk->used) {
 	stack->chunk = chunk->prev;
