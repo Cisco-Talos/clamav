@@ -1,3 +1,8 @@
+Mon Aug  3 14:48:27 CEST 2009 (tk)
+----------------------------------
+ * libclamav/unzip.c: fix detection of encrypted zip files embedded into
+		      other files (bb#1660)
+
 Sun Aug  2 14:46:40 EEST 2009 (edwin)
 -------------------------------------
  * libclamav/bytecode_vm.c: fix SIGBUS on sparc.
