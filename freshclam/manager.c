@@ -1066,7 +1066,7 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
 #else
 	if((i >= sizeof(buffer) - 1) || recv(sd, buffer + i, 1, 0) == -1) {
 #endif
-	    logg("%cgetfile: Error while reading database from %s (IP: %s)\n", logerr ? '!' : '^', hostname, ipaddr);
+	    logg("%cgetfile: Error while reading database from %s (IP: %s): %s\n", logerr ? '!' : '^', hostname, ipaddr, strerror(errno));
 	    mirman_update(mdat->currip, mdat->af, mdat, 1);
 	    closesocket(sd);
 	    return 52;
@@ -1155,6 +1155,12 @@ static int getfile(const char *srcfile, const char *destfile, const char *hostna
     }
     closesocket(sd);
     close(fd);
+
+    if(bread == -1) {
+	logg("%cgetfile: Download interrupted: %s (IP: %s)\n", logerr ? '!' : '^', strerror(errno), ipaddr);
+	mirman_update(mdat->currip, mdat->af, mdat, 1);
+	return 52;
+    }
 
     if(totalsize > 0)
         logg("Downloading %s [%i%%]\n", srcfile, percentage);

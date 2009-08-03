@@ -1,3 +1,7 @@
+Mon Aug  3 15:22:42 CEST 2009 (tk)
+----------------------------------
+ * freshclam/manager.c: fix confusing error message (bb#1648)
+
 Mon Aug  3 14:48:27 CEST 2009 (tk)
 ----------------------------------
  * libclamav/unzip.c: fix detection of encrypted zip files embedded into
