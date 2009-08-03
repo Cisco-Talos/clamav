@@ -379,6 +379,13 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
     return 0;
   }
 
+  if((LH_flags & F_ENCR) && DETECT_ENCRYPTED) {
+    cli_dbgmsg("cli_unzip: Encrypted files found in archive.\n");
+    *ctx->virname = "Encrypted.Zip";
+    *ret = CL_VIRUS;
+    return 0;
+  }
+ 
   if(LH_flags & F_USEDD) {
     cli_dbgmsg("cli_unzip: lh - has data desc\n");
     if(!ch) return 0;
@@ -400,12 +407,6 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
       return 0;
     } 
     if(LH_flags & F_ENCR) {
-      if(DETECT_ENCRYPTED) {
-	cli_dbgmsg("cli_unzip: Encrypted files found in archive.\n");
-	*ctx->virname = "Encrypted.Zip";
-	*ret = CL_VIRUS;
-	return 0;
-      }
       cli_dbgmsg("cli_unzip: lh - skipping encrypted file\n");
     } else *ret = unz(zip, csize, usize, LH_method, LH_flags, fu, ctx, tmpd);
     zip+=csize;
