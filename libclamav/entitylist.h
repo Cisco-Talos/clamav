@@ -19,7 +19,7 @@
  */
 
 #include <hashtab.h>
-static struct element entities_htable_elements[] = {
+static struct cli_element entities_htable_elements[] = {
 	{"rsaquo", 8250, 6},
 	{NULL,0,0},
 	{NULL,0,0},
@@ -2069,6 +2069,6 @@ static struct element entities_htable_elements[] = {
 	{NULL,0,0},
 	{NULL,0,0},
 };
-const struct hashtable entities_htable = {
+const struct cli_hashtable entities_htable = {
 	entities_htable_elements, 2048, 743, 1638
 };

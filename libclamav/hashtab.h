@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include "cltypes.h"
-typedef long element_data;
+typedef long cli_element_data;
 
 /* define this for debugging/profiling purposes only, NOT in production/release code */
 #ifdef PROFILE_HASHTABLE
@@ -58,15 +58,15 @@ typedef struct {
 #define STRUCT_PROFILE
 
 #endif
-struct element
+struct cli_element
 {
 	const char* key;
-	element_data data;
+	cli_element_data data;
 	size_t len;
 };
 
-struct hashtable {
-	struct element* htable;
+struct cli_hashtable {
+	struct cli_element* htable;
 	size_t capacity;
 	size_t used;
 	size_t maxfill;/* 80% */
@@ -76,18 +76,18 @@ struct hashtable {
 
 
 
-int hashtab_generate_c(const struct hashtable *s,const char* name);
-struct element* hashtab_find(const struct hashtable *s, const char* key, const size_t len);
-int hashtab_init(struct hashtable *s,size_t capacity);
-const struct element* hashtab_insert(struct hashtable *s, const char* key, const size_t len, const element_data data);
-void hashtab_delete(struct hashtable *s,const char* key,const size_t len);
-void hashtab_clear(struct hashtable *s);
-void hashtab_free(struct hashtable *s);
-int hashtab_load(FILE* in, struct hashtable *s);
-int hashtab_store(const struct hashtable *s,FILE* out);
+int cli_hashtab_generate_c(const struct cli_hashtable *s,const char* name);
+struct cli_element* cli_hashtab_find(const struct cli_hashtable *s, const char* key, const size_t len);
+int cli_hashtab_init(struct cli_hashtable *s,size_t capacity);
+const struct cli_element* cli_hashtab_insert(struct cli_hashtable *s, const char* key, const size_t len, const cli_element_data data);
+void cli_hashtab_delete(struct cli_hashtable *s,const char* key,const size_t len);
+void cli_hashtab_clear(struct cli_hashtable *s);
+void cli_hashtab_free(struct cli_hashtable *s);
+int cli_hashtab_load(FILE* in, struct cli_hashtable *s);
+int cli_hashtab_store(const struct cli_hashtable *s,FILE* out);
 
 /* A set of unique keys. */
-struct hashset {
+struct cli_hashset {
 	uint32_t* keys;
 	uint32_t* bitmap;
 	uint32_t capacity;
@@ -96,12 +96,12 @@ struct hashset {
 	uint32_t limit;
 };
 
-int hashset_init(struct hashset* hs, size_t initial_capacity, uint8_t load_factor);
-int hashset_addkey(struct hashset* hs, const uint32_t key);
-int hashset_removekey(struct hashset* hs, const uint32_t key);
-int hashset_contains(const struct hashset* hs, const uint32_t key);
-int hashset_clear(struct hashset* hs);
-void hashset_destroy(struct hashset* hs);
-ssize_t hashset_toarray(const struct hashset* hs, uint32_t** array);
+int cli_hashset_init(struct cli_hashset* hs, size_t initial_capacity, uint8_t load_factor);
+int cli_hashset_addkey(struct cli_hashset* hs, const uint32_t key);
+int cli_hashset_removekey(struct cli_hashset* hs, const uint32_t key);
+int cli_hashset_contains(const struct cli_hashset* hs, const uint32_t key);
+int cli_hashset_clear(struct cli_hashset* hs);
+void cli_hashset_destroy(struct cli_hashset* hs);
+ssize_t cli_hashset_toarray(const struct cli_hashset* hs, uint32_t** array);
 #endif
 

@@ -32,7 +32,7 @@
 static uint16_t* map_data = NULL;
 static size_t map_data_n = 0;
 
-static void loadEntities(struct hashtable* s)
+static void loadEntities(struct cli_hashtable* s)
 {
 	char line[MAX_LINE];
 
@@ -40,7 +40,7 @@ static void loadEntities(struct hashtable* s)
 		const char* name = line;
 		char* mapto;
 		size_t val;
-		struct element* elem;
+		struct cli_element* elem;
 		uint16_t converted;
 		int found=0, i;
 
@@ -52,27 +52,27 @@ static void loadEntities(struct hashtable* s)
 		*mapto++ = '\0';
 
 		mapto[strlen(mapto)-1] = '\0';
-		if(elem = hashtab_find(s,name,strlen(name))) {
+		if(elem = cli_hashtab_find(s,name,strlen(name))) {
 			if(strlen(elem->key) == strlen(name)) {
 				fprintf(stderr, "Duplicate entity:%s\n", name);
 			}
 			continue;
 		}
 		converted = atoi(mapto);
-		hashtab_insert(s,name,strlen(name), converted);
+		cli_hashtab_insert(s,name,strlen(name), converted);
 	}
 }
 extern short cli_debug_flag;
 
 int main(int argc, char* argv[])
 {
-	struct hashtable ht;
+	struct cli_hashtable ht;
 	int i;
 	cli_debug_flag=1;
-	hashtab_init(&ht,2048);
+	cli_hashtab_init(&ht,2048);
 
 	loadEntities(&ht);
-	hashtab_generate_c(&ht,"entities_htable");
+	cli_hashtab_generate_c(&ht,"entities_htable");
 	return 0;
 }
 

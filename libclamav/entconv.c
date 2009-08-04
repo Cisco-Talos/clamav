@@ -113,7 +113,7 @@ unsigned char* u16_normalize_tobuffer(uint16_t u16, unsigned char* dst, size_t d
 
 const char* entity_norm(struct entity_conv* conv,const unsigned char* entity)
 {
-	struct element* e = hashtab_find(&entities_htable, (const char*)entity, strlen((const char*)entity));
+	struct cli_element* e = cli_hashtab_find(&entities_htable, (const char*)entity, strlen((const char*)entity));
 	if(e && e->key) {
 		unsigned char* out = u16_normalize(e->data, conv->entity_buff, sizeof(conv->entity_buff)-1);
 		if(out) {
@@ -128,7 +128,7 @@ const char* entity_norm(struct entity_conv* conv,const unsigned char* entity)
 static size_t encoding_bytes(const char* fromcode, enum encodings* encoding)
 {
 	/* special case for these unusual byteorders */
-	struct element * e = hashtab_find(&aliases_htable,fromcode,strlen(fromcode));
+	struct cli_element * e = cli_hashtab_find(&aliases_htable,fromcode,strlen(fromcode));
 	if(e && e->key) {
 		*encoding = e->data;
 	} else {
@@ -534,7 +534,7 @@ struct iconv_cache {
 	iconv_t* tab;
 	size_t     len;
 	size_t   last;
-	struct   hashtable hashtab;
+	struct   cli_hashtable hashtab;
 };
 
 static void iconv_cache_init(struct iconv_cache* cache)
@@ -543,7 +543,7 @@ static void iconv_cache_init(struct iconv_cache* cache)
 	cache->len = 0;
 	cache->used = 0; - already done by memset*/
 	cli_dbgmsg(MODULE_NAME "Initializing iconv pool:%p\n",(void*)cache);
-	hashtab_init(&cache->hashtab, 32);
+	cli_hashtab_init(&cache->hashtab, 32);
 }
 
 static void iconv_cache_destroy(struct iconv_cache* cache)
@@ -554,7 +554,7 @@ static void iconv_cache_destroy(struct iconv_cache* cache)
 		cli_dbgmsg(MODULE_NAME "closing iconv:%p\n",cache->tab[i]);
 		iconv_close(cache->tab[i]);
 	}
-	hashtab_clear(&cache->hashtab);
+	cli_hashtab_clear(&cache->hashtab);
 	free(cache->hashtab.htable);
 	free(cache->tab);
 	free(cache);
@@ -655,7 +655,7 @@ static iconv_t iconv_open_cached(const char* fromcode)
 	struct iconv_cache * cache;
 	size_t idx;
 	const size_t fromcode_len = strlen((const char*)fromcode);
-	struct element * e;
+	struct cli_element * e;
 	iconv_t  iconv_struct;
 
 	init_iconv_pool_ifneeded();
@@ -666,7 +666,7 @@ static iconv_t iconv_open_cached(const char* fromcode)
 		return (iconv_t)-1;
 	}
 
-	e = hashtab_find(&cache->hashtab, fromcode, fromcode_len);
+	e = cli_hashtab_find(&cache->hashtab, fromcode, fromcode_len);
 	if(e && (e->data < 0 || (size_t)e->data > cache->len)) {
 		e = NULL;
 	}
@@ -690,7 +690,7 @@ static iconv_t iconv_open_cached(const char* fromcode)
 			}
 		}
 
-		hashtab_insert(&cache->hashtab, fromcode, fromcode_len, idx);
+		cli_hashtab_insert(&cache->hashtab, fromcode, fromcode_len, idx);
 		cache->tab[idx] = iconv_struct;
 		cli_dbgmsg(MODULE_NAME "iconv_open(),for:%s -> %p\n",fromcode,(void*)cache->tab[idx]);
 		return cache->tab[idx];

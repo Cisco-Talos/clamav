@@ -62,16 +62,16 @@ extern short cli_debug_flag;
 
 int main(int argc, char* argv[])
 {
-	struct hashtable ht;
+	struct cli_hashtable ht;
 	size_t i;
 
 	cli_debug_flag=1;
-	hashtab_init(&ht,aliases_cnt);
+	cli_hashtab_init(&ht,aliases_cnt);
 
 	for(i=0;i < aliases_cnt;i++) {
-		hashtab_insert(&ht,(const unsigned char*)aliases[i].alias,strlen(aliases[i].alias),aliases[i].encoding);
+		cli_hashtab_insert(&ht,(const unsigned char*)aliases[i].alias,strlen(aliases[i].alias),aliases[i].encoding);
 	}
 
-	hashtab_generate_c(&ht,"aliases_htable");
+	cli_hashtab_generate_c(&ht,"aliases_htable");
 	return 0;
 }

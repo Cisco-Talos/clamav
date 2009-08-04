@@ -52,82 +52,82 @@ static unsigned long nearest_power(unsigned long num)
  * and then these functions modify something the compiler assumes is readonly.
  * Please, never use PROFILE_HASHTABLE in production code, and in releases. Use it for development only!*/
 
-static inline void PROFILE_INIT(struct hashtable *s)
+static inline void PROFILE_INIT(struct cli_hashtable *s)
 {
 	memset(&s->PROFILE_STRUCT,0,sizeof(s->PROFILE_STRUCT));
 }
 
-static inline void PROFILE_CALC_HASH(struct hashtable *s)
+static inline void PROFILE_CALC_HASH(struct cli_hashtable *s)
 {
 	s->PROFILE_STRUCT.calc_hash++;
 }
 
-static inline void PROFILE_FIND_ELEMENT(struct hashtable *s)
+static inline void PROFILE_FIND_ELEMENT(struct cli_hashtable *s)
 {
 	s->PROFILE_STRUCT.find_req++;
 }
 
-static inline void PROFILE_FIND_NOTFOUND(struct hashtable *s, size_t tries)
+static inline void PROFILE_FIND_NOTFOUND(struct cli_hashtable *s, size_t tries)
 {
 	s->PROFILE_STRUCT.not_found++;
 	s->PROFILE_STRUCT.not_found_tries += tries;
 }
 
-static inline void PROFILE_FIND_FOUND(struct hashtable *s, size_t tries)
+static inline void PROFILE_FIND_FOUND(struct cli_hashtable *s, size_t tries)
 {
 	s->PROFILE_STRUCT.found++;
 	s->PROFILE_STRUCT.found_tries += tries;
 }
 
-static inline void PROFILE_HASH_EXHAUSTED(struct hashtable *s)
+static inline void PROFILE_HASH_EXHAUSTED(struct cli_hashtable *s)
 {
 	s->PROFILE_STRUCT.hash_exhausted++;
 }
 
-static inline void PROFILE_GROW_START(struct hashtable *s)
+static inline void PROFILE_GROW_START(struct cli_hashtable *s)
 {
 	s->PROFILE_STRUCT.grow++;
 }
 
-static inline void PROFILE_GROW_FOUND(struct hashtable *s, size_t tries)
+static inline void PROFILE_GROW_FOUND(struct cli_hashtable *s, size_t tries)
 {
 	s->PROFILE_STRUCT.grow_found++;
 	s->PROFILE_STRUCT.grow_found_tries += tries;
 }
 
-static inline void PROFILE_GROW_DONE(struct hashtable *s)
+static inline void PROFILE_GROW_DONE(struct cli_hashtable *s)
 {
 }
 
-static inline void PROFILE_DELETED_REUSE(struct hashtable *s, size_t tries)
+static inline void PROFILE_DELETED_REUSE(struct cli_hashtable *s, size_t tries)
 {
 	s->PROFILE_STRUCT.deleted_reuse++;
 	s->PROFILE_STRUCT.deleted_tries += tries;
 }
 
-static inline void PROFILE_INSERT(struct hashtable *s, size_t tries)
+static inline void PROFILE_INSERT(struct cli_hashtable *s, size_t tries)
 {
 	s->PROFILE_STRUCT.inserts++;
 	s->PROFILE_STRUCT.insert_tries += tries;
 }
 
-static inline void PROFILE_DATA_UPDATE(struct hashtable *s, size_t tries)
+static inline void PROFILE_DATA_UPDATE(struct cli_hashtable *s, size_t tries)
 {
 	s->PROFILE_STRUCT.update++;
 	s->PROFILE_STRUCT.update_tries += tries;
 }
 
-static inline void PROFILE_HASH_DELETE(struct hashtable *s)
+static inline void PROFILE_HASH_DELETE(struct cli_hashtable *s)
 {
 	s->PROFILE_STRUCT.deletes++;
 }
 
-static inline void PROFILE_HASH_CLEAR(struct hashtable *s)
+static inline void PROFILE_HASH_CLEAR(struct cli_hashtable *s)
 {
 	s->PROFILE_STRUCT.clear++;
 }
 
-static inline void PROFILE_REPORT(const struct hashtable *s)
+static inline void PROFILE_REPORT(const struct cli_hashtable *s)
 {
 	size_t lookups, queries, insert_tries, inserts;
 	cli_dbgmsg("--------Hashtable usage report for %p--------------\n",(const void*)s);
@@ -168,7 +168,7 @@ static inline void PROFILE_REPORT(const struct hashtable *s)
 #define PROFILE_REPORT(s)
 #endif
 
-int hashtab_init(struct hashtable *s,size_t capacity)
+int cli_hashtab_init(struct cli_hashtable *s,size_t capacity)
 {
 	if(!s)
 		return CL_ENULLARG;
@@ -211,9 +211,9 @@ static inline size_t hash(const unsigned char* k,const size_t len,const size_t S
 }
 
 /* if returned element has key==NULL, then key was not found in table */
-struct element* hashtab_find(const struct hashtable *s,const char* key,const size_t len)
+struct cli_element* cli_hashtab_find(const struct cli_hashtable *s,const char* key,const size_t len)
 {
-	struct element* element;
+	struct cli_element* element;
 	size_t tries = 1;
 	size_t idx;
 
@@ -241,10 +241,10 @@ struct element* hashtab_find(const struct hashtable *s,const char* key,const siz
 	return NULL; /* not found */
 }
 
-static int hashtab_grow(struct hashtable *s)
+static int cli_hashtab_grow(struct cli_hashtable *s)
 {
 	const size_t new_capacity = nearest_power(s->capacity + 1);
-	struct element* htable = cli_calloc(new_capacity, sizeof(*s->htable));
+	struct cli_element* htable = cli_calloc(new_capacity, sizeof(*s->htable));
 	size_t i,idx, used = 0;
 	cli_dbgmsg("hashtab.c: new capacity: %lu\n",new_capacity);
 	if(new_capacity == s->capacity || !htable)
@@ -254,7 +254,7 @@ static int hashtab_grow(struct hashtable *s)
 	cli_dbgmsg("hashtab.c: Warning: growing open-addressing hashtables is slow. Either allocate more storage when initializing, or use other hashtable types!\n");
 	for(i=0; i < s->capacity;i++) {
 		if(s->htable[i].key && s->htable[i].key != DELETED_KEY) {
-			struct element* element;
+			struct cli_element* element;
 			size_t tries = 1;
 
 			PROFILE_CALC_HASH(s);
@@ -287,17 +287,17 @@ static int hashtab_grow(struct hashtable *s)
 	return CL_SUCCESS;
 }
 
-const struct element* hashtab_insert(struct hashtable *s, const char* key, const size_t len, const element_data data)
+const struct cli_element* cli_hashtab_insert(struct cli_hashtable *s, const char* key, const size_t len, const cli_element_data data)
 {
-	struct element* element;
-	struct element* deleted_element = NULL;
+	struct cli_element* element;
+	struct cli_element* deleted_element = NULL;
 	size_t tries = 1;
 	size_t idx;
 	if(!s)
 		return NULL;
 	if(s->used > s->maxfill) {
 		cli_dbgmsg("hashtab.c:Growing hashtable %p, because it has exceeded maxfill, old size:%ld\n",(void*)s,s->capacity);
-		hashtab_grow(s);
+		cli_hashtab_grow(s);
 	}
 	do {
 		PROFILE_CALC_HASH(s);
@@ -343,12 +343,12 @@ const struct element* hashtab_insert(struct hashtable *s, const char* key, const
 		/* no free place found*/
 		PROFILE_HASH_EXHAUSTED(s);
 		cli_dbgmsg("hashtab.c: Growing hashtable %p, because its full, old size:%ld.\n",(void*)s,s->capacity);
-	} while( hashtab_grow(s) >= 0 );
+	} while( cli_hashtab_grow(s) >= 0 );
 	cli_warnmsg("hashtab.c: Unable to grow hashtable\n");
 	return NULL;
 }
 
-void hashtab_clear(struct hashtable *s)
+void cli_hashtab_clear(struct cli_hashtable *s)
 {
 	size_t i;
 	PROFILE_HASH_CLEAR(s);
@@ -361,19 +361,19 @@ void hashtab_clear(struct hashtable *s)
 	s->used = 0;
 }
 
-void hashtab_free(struct hashtable *s)
+void cli_hashtab_free(struct cli_hashtable *s)
 {
-	hashtab_clear(s);
+	cli_hashtab_clear(s);
 	free(s->htable);
 	s->htable = NULL;
 	s->capacity = 0;
 }
 
-int hashtab_store(const struct hashtable *s,FILE* out)
+int cli_hashtab_store(const struct cli_hashtable *s,FILE* out)
 {
 	size_t i;
 	for(i=0; i < s->capacity; i++) {
-		const struct element* e = &s->htable[i];
+		const struct cli_element* e = &s->htable[i];
 		if(e->key && e->key != DELETED_KEY) {
 			fprintf(out,"%ld %s\n",e->data,e->key);
 		}
@@ -381,14 +381,14 @@ int hashtab_store(const struct hashtable *s,FILE* out)
 	return CL_SUCCESS;
 }
 
-int hashtab_generate_c(const struct hashtable *s,const char* name)
+int cli_hashtab_generate_c(const struct cli_hashtable *s,const char* name)
 {
 	size_t i;
 	printf("/* TODO: include GPL headers */\n");
 	printf("#include <hashtab.h>\n");
-	printf("static struct element %s_elements[] = {\n",name);
+	printf("static struct cli_element %s_elements[] = {\n",name);
 	for(i=0; i < s->capacity; i++) {
-		const struct element* e = &s->htable[i];
+		const struct cli_element* e = &s->htable[i];
 		if(!e->key)
 			printf("\t{NULL,0,0},\n");
 		else if(e->key == DELETED_KEY)
@@ -397,7 +397,7 @@ int hashtab_generate_c(const struct hashtable *s,const char* name)
 			printf("\t{\"%s\", %ld, %ld},\n", e->key, e->data, e->len);
 	}
 	printf("};\n");
-	printf("const struct hashtable %s = {\n",name);
+	printf("const struct cli_hashtable %s = {\n",name);
 	printf("\t%s_elements, %ld, %ld, %ld", name, s->capacity, s->used, s->maxfill);
 	printf("\n};\n");
 
@@ -405,21 +405,21 @@ int hashtab_generate_c(const struct hashtable *s,const char* name)
 	return 0;
 }
 
-int hashtab_load(FILE* in, struct hashtable *s)
+int cli_hashtab_load(FILE* in, struct cli_hashtable *s)
 {
 	char line[1024];
 	while (fgets(line, sizeof(line), in)) {
 		char l[1024];
 		int val;
 		sscanf(line,"%d %1023s",&val,l);
-		hashtab_insert(s,l,strlen(l),val);
+		cli_hashtab_insert(s,l,strlen(l),val);
 	}
 	return CL_SUCCESS;
 }
 
 /* Initialize hashset. @initial_capacity is rounded to nearest power of 2.
  * Load factor is between 50 and 99. When capacity*load_factor/100 is reached, the hashset is growed */
-int hashset_init(struct hashset* hs, size_t initial_capacity, uint8_t load_factor)
+int cli_hashset_init(struct cli_hashset* hs, size_t initial_capacity, uint8_t load_factor)
 {
 	if(load_factor < 50 || load_factor > 99) {
 		cli_dbgmsg(MODULE_NAME "Invalid load factor: %u, using default of 80%%\n", load_factor);
@@ -442,7 +442,7 @@ int hashset_init(struct hashset* hs, size_t initial_capacity, uint8_t load_facto
 	return 0;
 }
 
-void hashset_destroy(struct hashset* hs)
+void cli_hashset_destroy(struct cli_hashset* hs)
 {
 	cli_dbgmsg(MODULE_NAME "Freeing hashset, elements: %u, capacity: %u\n", hs->count, hs->capacity);
 	free(hs->keys);
@@ -458,7 +458,7 @@ void hashset_destroy(struct hashset* hs)
  * searches the hashset for the @key.
  * Returns the position the key is at, or a candidate position where it could be inserted.
  */
-static inline size_t hashset_search(const struct hashset* hs, const uint32_t key)
+static inline size_t cli_hashset_search(const struct cli_hashset* hs, const uint32_t key)
 {
 	/* calculate hash value for this key, and map it to our table */
 	size_t idx = hash32shift(key) & (hs->mask);
@@ -476,9 +476,9 @@ static inline size_t hashset_search(const struct hashset* hs, const uint32_t key
 }
 
 
-static void hashset_addkey_internal(struct hashset* hs, const uint32_t key)
+static void cli_hashset_addkey_internal(struct cli_hashset* hs, const uint32_t key)
 {
-	const size_t idx = hashset_search(hs, key);
+	const size_t idx = cli_hashset_search(hs, key);
 	/* we know hashtable is not full, when this method is called */
 
 	if(!BITMAP_CONTAINS(hs->bitmap, idx)) {
@@ -489,9 +489,9 @@ static void hashset_addkey_internal(struct hashset* hs, const uint32_t key)
 	}
 }
 
-static int hashset_grow(struct hashset *hs)
+static int cli_hashset_grow(struct cli_hashset *hs)
 {
-	struct hashset new_hs;
+	struct cli_hashset new_hs;
 	size_t i;
 	int rc;
 
@@ -499,43 +499,43 @@ static int hashset_grow(struct hashset *hs)
 	 * will hash to different locations. */
 	cli_dbgmsg(MODULE_NAME "Growing hashset, used: %u, capacity: %u\n", hs->count, hs->capacity);
 	/* create a bigger hashset */
-	if((rc = hashset_init(&new_hs, hs->capacity << 1, hs->limit*100/hs->capacity)) < 0) {
+	if((rc = cli_hashset_init(&new_hs, hs->capacity << 1, hs->limit*100/hs->capacity)) < 0) {
 		return rc;
 	}
 	/* and copy keys */
 	for(i=0;i < hs->capacity;i++) {
 		if(BITMAP_CONTAINS(hs->bitmap, i)) {
 			const size_t key = hs->keys[i];
-			hashset_addkey_internal(&new_hs, key);
+			cli_hashset_addkey_internal(&new_hs, key);
 		}
 	}
-	hashset_destroy(hs);
+	cli_hashset_destroy(hs);
 	/* replace old hashset with new one */
 	*hs = new_hs;
 	return 0;
 }
 
-int hashset_addkey(struct hashset* hs, const uint32_t key)
+int cli_hashset_addkey(struct cli_hashset* hs, const uint32_t key)
 {
 	/* check that we didn't reach the load factor.
 	 * Even if we don't know yet whether we'd add this key */
 	if(hs->count + 1 > hs->limit) {
-		int rc = hashset_grow(hs);
+		int rc = cli_hashset_grow(hs);
 		if(rc) {
 			return rc;
 		}
 	}
-	hashset_addkey_internal(hs, key);
+	cli_hashset_addkey_internal(hs, key);
 	return 0;
 }
 
-int hashset_contains(const struct hashset* hs, const uint32_t key)
+int cli_hashset_contains(const struct cli_hashset* hs, const uint32_t key)
 {
-	const size_t idx =  hashset_search(hs, key);
+	const size_t idx =  cli_hashset_search(hs, key);
 	return BITMAP_CONTAINS(hs->bitmap, idx);
 }
 
-ssize_t hashset_toarray(const struct hashset* hs, uint32_t** array)
+ssize_t cli_hashset_toarray(const struct cli_hashset* hs, uint32_t** array)
 {
 	size_t i, j;
 	uint32_t* arr;

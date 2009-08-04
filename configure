@@ -20945,6 +20945,7 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
     fi
+    LIBS="$LIBS -lgen"
 
 cat >>confdefs.h <<\_ACEOF
 #define C_IRIX 1
