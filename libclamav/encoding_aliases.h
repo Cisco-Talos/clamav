@@ -21,7 +21,7 @@
  */
 
 #include <hashtab.h>
-static struct element aliases_htable_elements[] = {
+static struct cli_element aliases_htable_elements[] = {
 	{NULL,0,0},
 	{NULL,0,0},
 	{NULL,0,0},
@@ -87,6 +87,6 @@ static struct element aliases_htable_elements[] = {
 	{NULL,0,0},
 	{NULL,0,0},
 };
-const struct hashtable aliases_htable = {
+const struct cli_hashtable aliases_htable = {
 	aliases_htable_elements, 64, 25, 51
 };

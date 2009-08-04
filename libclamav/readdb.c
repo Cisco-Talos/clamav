@@ -83,7 +83,7 @@ struct cli_ignsig {
 };
 
 struct cli_ignored {
-    struct hashset hs;
+    struct cli_hashset hs;
     struct cli_ignsig *list;
 };
 
@@ -371,7 +371,7 @@ static int cli_chkign(const struct cli_ignored *ignored, const char *dbname, uns
     if(!ignored || !dbname || !signame)
 	return 0;
 
-    if(hashset_contains(&ignored->hs, line)) {
+    if(cli_hashset_contains(&ignored->hs, line)) {
 	pt = ignored->list;
 	while(pt) {
 	    if(pt->line == line && !strcmp(pt->dbname, dbname) && !strcmp(pt->signame, signame)) {
@@ -1140,7 +1140,7 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
 
     if(!engine->ignored) {
 	engine->ignored = (struct cli_ignored *) cli_calloc(sizeof(struct cli_ignored), 1);
-	if(!engine->ignored || hashset_init(&engine->ignored->hs, 64, 50))
+	if(!engine->ignored || cli_hashset_init(&engine->ignored->hs, 64, 50))
 	    return CL_EMEM;
     }
 
@@ -1175,7 +1175,7 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
 
 	new->line = atoi(tokens[1]);
 
-	if((ret = hashset_addkey(&engine->ignored->hs, new->line)))
+	if((ret = cli_hashset_addkey(&engine->ignored->hs, new->line)))
 	    break;
 
 	new->signame = cli_mpool_strdup(engine->mempool, tokens[2]);
@@ -1211,7 +1211,7 @@ static void cli_freeign(struct cl_engine *engine)
 	    mpool_free(engine->mempool, pt->signame);
 	    mpool_free(engine->mempool,pt);
 	}
-	hashset_destroy(&ignored->hs);
+	cli_hashset_destroy(&ignored->hs);
 	free(engine->ignored);
 	engine->ignored = NULL;
     }
@@ -1346,9 +1346,9 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
 	if(mode == MD5_MDB) { /* section MD5 */
 	    if(!db->md5_sizes_hs.capacity) {
-		    hashset_init(&db->md5_sizes_hs, 65536, 80);
+		    cli_hashset_init(&db->md5_sizes_hs, 65536, 80);
 	    }
-	    hashset_addkey(&db->md5_sizes_hs, size);
+	    cli_hashset_addkey(&db->md5_sizes_hs, size);
 	}
 
 	sigs++;
@@ -2054,7 +2054,7 @@ int cl_engine_free(struct cl_engine *engine)
 	cli_bm_free(root);
 	mpool_free(engine->mempool, root->soff);
 	if(root->md5_sizes_hs.capacity) {
-		hashset_destroy(&root->md5_sizes_hs);
+		cli_hashset_destroy(&root->md5_sizes_hs);
 	}
 	mpool_free(engine->mempool, root);
     }
@@ -2115,14 +2115,14 @@ static void cli_md5db_build(struct cli_matcher* root)
 		uint32_t *mpoolht;
 		unsigned int mpoolhtsz = root->md5_sizes_hs.count * sizeof(*mpoolht);
 		root->soff = mpool_malloc(root->mempool, mpoolhtsz);
-		root->soff_len = hashset_toarray(&root->md5_sizes_hs, &mpoolht);
+		root->soff_len = cli_hashset_toarray(&root->md5_sizes_hs, &mpoolht);
 		memcpy(root->soff, mpoolht, mpoolhtsz);
 		free(mpoolht);
 		}
 #else
-		root->soff_len = hashset_toarray(&root->md5_sizes_hs, &root->soff);
+		root->soff_len = cli_hashset_toarray(&root->md5_sizes_hs, &root->soff);
 #endif
-		hashset_destroy(&root->md5_sizes_hs);
+		cli_hashset_destroy(&root->md5_sizes_hs);
 		qsort(root->soff, root->soff_len, sizeof(uint32_t), scomp);
 	}
 }

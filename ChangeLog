@@ -1,3 +1,7 @@
+Tue Aug  4 23:15:26 CEST 2009 (tk)
+----------------------------------
+ * configure, libclamav: fix compile issues on IRIX (bb#1532)
+
 Tue Aug  4 20:06:51 CEST 2009 (tk)
 ----------------------------------
  * libclamav/readdb.c: make the parser more sensitive to errors in

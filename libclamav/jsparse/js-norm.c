@@ -89,7 +89,7 @@ enum fsm_state {
 };
 
 struct scope {
-	struct hashtable id_map;
+	struct cli_hashtable id_map;
 	struct scope *parent;/* hierarchy */
 	struct scope *nxt;/* all scopes kept in a list so we can easily free all of them */
 	enum fsm_state fsm_state;
@@ -122,7 +122,7 @@ static struct scope* scope_new(struct parser_state *state)
 	struct scope *s = cli_calloc(1, sizeof(*s));
 	if(!s)
 		return NULL;
-	if(hashtab_init(&s->id_map, 10) < 0) {
+	if(cli_hashtab_init(&s->id_map, 10) < 0) {
 		free(s);
 		return NULL;
 	}
@@ -138,7 +138,7 @@ static struct scope* scope_done(struct scope *s)
 {
 	struct scope* parent = s->parent;
 	/* TODO: have a hashtab_destroy */
-	hashtab_clear(&s->id_map);
+	cli_hashtab_clear(&s->id_map);
 	free(s->id_map.htable);
 	free(s);
 	return parent;
@@ -250,15 +250,15 @@ static struct scope* scope_done(struct scope *s)
 
 static const char* scope_declare(struct scope *s, const char *token, const size_t len, struct parser_state *state)
 {
-	const struct element *el = hashtab_insert(&s->id_map, token, len, state->var_uniq++);
-	/* hashtab_insert either finds an already existing entry, or allocates a
+	const struct cli_element *el = cli_hashtab_insert(&s->id_map, token, len, state->var_uniq++);
+	/* cli_hashtab_insert either finds an already existing entry, or allocates a
 	 * new one, we return the allocated string */
 	return el ? el->key : NULL;
 }
 
 static const char* scope_use(struct scope *s, const char *token, const size_t len)
 {
-	const struct element *el = hashtab_find(&s->id_map, token, len);
+	const struct cli_element *el = cli_hashtab_find(&s->id_map, token, len);
 	if(el) {
 		/* identifier already found in current scope,
 		 * return here to avoid overwriting uniq id */
@@ -268,14 +268,14 @@ static const char* scope_use(struct scope *s, const char *token, const size_t le
 	 * Later if we find a declaration it will automatically assign a uniq ID
 	 * to it. If not, we'll know that we have to push ID == -1 tokens to an
 	 * outer scope.*/
-	el = hashtab_insert(&s->id_map, token, len, -1);
+	el = cli_hashtab_insert(&s->id_map, token, len, -1);
 	return el ? el->key : NULL;
 }
 
 static long scope_lookup(struct scope *s, const char *token, const size_t len)
 {
 	while(s) {
-		const struct element *el = hashtab_find(&s->id_map, token, len);
+		const struct cli_element *el = cli_hashtab_find(&s->id_map, token, len);
 		if(el && el->data != -1) {
 			return el->data;
 		}

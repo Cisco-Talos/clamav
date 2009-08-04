@@ -48,8 +48,6 @@
 #include "others.h"
 #include "ole2_extract.h"
 #include "scanners.h"
-#include "hashtab.h"
-
 #include "mbox.h"
 
 #define ole2_endian_convert_16(v) le16_to_host((uint16_t)(v))
