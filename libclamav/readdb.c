@@ -39,6 +39,7 @@
 #endif
 #include <fcntl.h>
 #include <zlib.h>
+#include <errno.h>
 
 #include "clamav.h"
 #include "cvd.h"
@@ -1467,6 +1468,14 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 
 
     if(!dbio && (fs = fopen(filename, "rb")) == NULL) {
+	if(options & CL_DB_DIRECTORY) { /* bb#1624 */
+	    if(access(filename, R_OK)) {
+		if(errno == ENOENT) {
+		    cli_dbgmsg("Detected race condition, ignoring old file %s\n", filename);
+		    return CL_SUCCESS;
+		}
+	    }
+	}
 	cli_errmsg("cli_load(): Can't open file %s\n", filename);
 	return CL_EOPEN;
     }
@@ -1711,7 +1720,7 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
 	    break;
 
 	case S_IFDIR:
-	    ret = cli_loaddbdir(path, engine, signo, dboptions);
+	    ret = cli_loaddbdir(path, engine, signo, dboptions | CL_DB_DIRECTORY);
 	    break;
 
 	default:
