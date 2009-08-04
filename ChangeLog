@@ -1,3 +1,8 @@
+Tue Aug  4 15:10:12 CEST 2009 (tk)
+----------------------------------
+ * freshclam, libclamav: work around possible race condition during
+			 db updates (bb#1624)
+
 Mon Aug  3 15:22:42 CEST 2009 (tk)
 ----------------------------------
  * freshclam/manager.c: fix confusing error message (bb#1648)
