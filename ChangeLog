@@ -1,3 +1,8 @@
+Tue Aug  4 20:06:51 CEST 2009 (tk)
+----------------------------------
+ * libclamav/readdb.c: make the parser more sensitive to errors in
+		       numerical fields
+
 Tue Aug  4 15:10:12 CEST 2009 (tk)
 ----------------------------------
  * freshclam, libclamav: work around possible race condition during

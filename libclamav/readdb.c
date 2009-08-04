@@ -584,7 +584,8 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
 	if(tokens_count > 4) { /* min version */
 	    pt = tokens[4];
-	    if(!isdigit(*pt)) {
+
+	    if(!cli_isnumber(pt)) {
 		ret = CL_EMALFDB;
 		break;
 	    }
@@ -596,7 +597,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
 	    if(tokens_count == 6) { /* max version */
 		pt = tokens[5];
-		if(!isdigit(*pt)) {
+		if(!cli_isnumber(pt)) {
 		    ret = CL_EMALFDB;
 		    break;
 		}
@@ -607,7 +608,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    }
 	}
 
-	if(!(pt = tokens[1]) || !isdigit(*pt)) {
+	if(!(pt = tokens[1]) || (strcmp(pt, "*") && !cli_isnumber(pt))) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -718,6 +719,10 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 
 	switch(apt->type) {
 	    case CLI_TDB_UINT:
+		if(!cli_isnumber(pt)) {
+		    cli_errmsg("lsigattribs: Invalid argument for %s\n", tokens[i]);
+		    return -1;
+		}
 		off[i] = cnt = tdb->cnt[CLI_TDB_UINT]++;
 		tdb->val = (uint32_t *) mpool_realloc2(tdb->mempool, tdb->val, tdb->cnt[CLI_TDB_UINT] * sizeof(uint32_t));
 		if(!tdb->val) {
@@ -738,6 +743,10 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 		tdb->range = (uint32_t *) mpool_realloc2(tdb->mempool, tdb->range, tdb->cnt[CLI_TDB_RANGE] * sizeof(uint32_t));
 		if(!tdb->range) {
 		    tdb->cnt[CLI_TDB_RANGE] = 0;
+		    return -1;
+		}
+		if(!cli_isnumber(pt) || !cli_isnumber(pt2)) {
+		    cli_errmsg("lsigattribs: Invalid argument for %s\n", tokens[i]);
 		    return -1;
 		}
 		tdb->range[cnt] = atoi(pt);
@@ -1057,11 +1066,22 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 	    break;
 	}
 
+	if(!cli_isnumber(tokens[0])) {
+	    cli_errmsg("cli_loadftm: Invalid value for the first field\n");
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
 	if(atoi(tokens[0]) == 1) { /* A-C */
 	    if((ret = cli_parse_add(engine->root[0], tokens[3], tokens[2], rtype, type, strcmp(tokens[1], "*") ? tokens[1] : NULL, 0, NULL, options)))
 		break;
 
 	} else if(atoi(tokens[0]) == 0) { /* memcmp() */
+	    if(!cli_isnumber(tokens[1])) {
+		cli_errmsg("cli_loadftm: Invalid offset\n");
+		ret = CL_EMALFDB;
+		break;
+	    }
 	    new = (struct cli_ftype *) mpool_malloc(engine->mempool, sizeof(struct cli_ftype));
 	    if(!new) {
 		ret = CL_EMEM;
@@ -1129,6 +1149,12 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
 	cli_chomp(buffer);
 	tokens_count = cli_strtokenize(buffer, ':', IGN_TOKENS + 1, tokens);
 	if(tokens_count != IGN_TOKENS) {
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if(!cli_isnumber(tokens[1])) {
+	    cli_errmsg("cli_loadign: Invalid entry for line number\n");
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -1261,6 +1287,11 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    ret = CL_EMALFDB;
 	    break;
 	}
+	if(!cli_isnumber(tokens[size_field])) {
+	    cli_errmsg("cli_loadmd5: Invalid value for the size field\n");
+	    ret = CL_EMALFDB;
+	    break;
+	}
 
 	pt = tokens[2]; /* virname */
 	if(engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)))
@@ -1357,6 +1388,37 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 	cli_chomp(buffer);
 	tokens_count = cli_strtokenize(buffer, ':', MD_TOKENS + 1, tokens);
 	if(tokens_count != MD_TOKENS) {
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if(strcmp(tokens[1], "*") && !cli_isnumber(tokens[1])) {
+	    cli_errmsg("cli_loadmd: Invalid value for the 'encrypted' field\n");
+	    ret = CL_EMALFDB;
+	    break;
+	}
+	if(strcmp(tokens[3], "*") && !cli_isnumber(tokens[3])) {
+	    cli_errmsg("cli_loadmd: Invalid value for the 'original size' field\n");
+	    ret = CL_EMALFDB;
+	    break;
+	}
+	if(strcmp(tokens[4], "*") && !cli_isnumber(tokens[4])) {
+	    cli_errmsg("cli_loadmd: Invalid value for the 'compressed size' field\n");
+	    ret = CL_EMALFDB;
+	    break;
+	}
+	if(strcmp(tokens[6], "*") && !cli_isnumber(tokens[6])) {
+	    cli_errmsg("cli_loadmd: Invalid value for the 'compression method' field\n");
+	    ret = CL_EMALFDB;
+	    break;
+	}
+	if(strcmp(tokens[7], "*") && !cli_isnumber(tokens[7])) {
+	    cli_errmsg("cli_loadmd: Invalid value for the 'file number' field\n");
+	    ret = CL_EMALFDB;
+	    break;
+	}
+	if(strcmp(tokens[8], "*") && !cli_isnumber(tokens[8])) {
+	    cli_errmsg("cli_loadmd: Invalid value for the 'max depth' field\n");
 	    ret = CL_EMALFDB;
 	    break;
 	}
