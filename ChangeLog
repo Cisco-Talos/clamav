@@ -1,3 +1,7 @@
+Tue Aug  4 20:24:06 CEST 2009 (tk)
+----------------------------------
+ * libclamav/macho.c: wrap unistd.h, reported by Nigel Horne
+
 Tue Aug  4 20:06:51 CEST 2009 (tk)
 ----------------------------------
  * libclamav/readdb.c: make the parser more sensitive to errors in
