@@ -1,3 +1,7 @@
+Wed Aug  5 18:33:11 CEST 2009 (tk)
+----------------------------------
+ * clamd/clamd.c: ignore SIGHUP and SIGUSR2 during initial setup (bb#1671)
+
 Wed Aug  5 16:27:06 CEST 2009 (tk)
 ----------------------------------
  * clamd, clamscan: add support for CrossFilesystems/--cross-fs (bb#1607)
