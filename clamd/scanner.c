@@ -237,17 +237,29 @@ int scan_pathchk(const char *path, struct cli_ftw_cbdata *data)
 {
 	struct scan_cb_data *scandata = data->data;
 	const struct optstruct *opt;
+	struct stat statbuf;
 
     if((opt = optget(scandata->opts, "ExcludePath"))->enabled) {
 	while(opt) {
 	    if(match_regex(path, opt->strarg) == 1) {
 		if(scandata->type != TYPE_MULTISCAN)
 		    conn_reply_single(scandata->conn, path, "Excluded");
-		    return 1;
+		return 1;
 	    }
 	    opt = (const struct optstruct *) opt->nextarg;
 	}
     }
+
+    if(!optget(scandata->opts, "CrossFilesystems")->enabled) {
+	if(stat(path, &statbuf) == 0) {
+	    if(statbuf.st_dev != scandata->dev) {
+		if(scandata->type != TYPE_MULTISCAN)
+		    conn_reply_single(scandata->conn, path, "Excluded (another filesystem)");
+		return 1;
+	    }
+	}
+    }
+
     return 0;
 }
 

@@ -162,6 +162,11 @@ Follow directory symlinks.
 .br 
 Default: no
 .TP 
+\fBCrossFilesystems BOOL\fR
+Scan files and directories on other filesystems.
+.br 
+Default: yes
+.TP 
 \fBFollowFileSymlinks BOOL\fR
 Follow regular file symlinks.
 .br 

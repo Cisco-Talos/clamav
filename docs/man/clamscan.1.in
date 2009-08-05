@@ -48,6 +48,9 @@ Scan files listed line by line in FILE.
 \fB\-r, \-\-recursive\fR
 Scan directories recursively. All the subdirectories in the given directory will be scanned.
 .TP 
+\fB\-\-cross\-fs=[yes(*)/no]\fR
+Scan files and directories on other filesystems.
+.TP 
 \fB\-\-bell\fR
 Sound bell on virus detection.
 .TP 

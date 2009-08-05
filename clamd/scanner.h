@@ -25,6 +25,8 @@
 #define TYPE_CONTSCAN	1
 #define TYPE_MULTISCAN	2
 
+#include <sys/types.h>
+
 #include "libclamav/clamav.h"
 #include "shared/optparser.h"
 #include "thrmgr.h"
@@ -46,6 +48,7 @@ struct scan_cb_data {
     const struct optstruct *opts;
     threadpool_t *thr_pool;
     jobgroup_t *group;
+    dev_t dev;
 };
 
 int scanfd(const int fd, const client_conn_t *conn, unsigned long int *scanned, const struct cl_engine *engine, unsigned int options, const struct optstruct *opts, int odesc, int stream);

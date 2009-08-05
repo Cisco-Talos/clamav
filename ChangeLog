@@ -1,3 +1,7 @@
+Wed Aug  5 16:27:06 CEST 2009 (tk)
+----------------------------------
+ * clamd, clamscan: add support for CrossFilesystems/--cross-fs (bb#1607)
+
 Tue Aug  4 23:15:26 CEST 2009 (tk)
 ----------------------------------
  * configure, libclamav: fix compile issues on IRIX (bb#1532)

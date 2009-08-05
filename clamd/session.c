@@ -192,6 +192,7 @@ int command(client_conn_t *conn, int *virus)
     struct scan_cb_data scandata;
     struct cli_ftw_cbdata data;
     unsigned ok, error, total;
+    struct stat sb;
     jobgroup_t *group = NULL;
 
     if (thrmgr_group_need_terminate(conn->group)) {
@@ -316,6 +317,11 @@ int command(client_conn_t *conn, int *virus)
 	flags |= CLI_FTW_FOLLOW_DIR_SYMLINK;
     if (optget(opts, "FollowFileSymlinks")->enabled)
 	flags |= CLI_FTW_FOLLOW_FILE_SYMLINK;
+
+    if(!optget(opts, "CrossFilesystems")->enabled)
+	if(stat(conn->filename, &sb) == 0)
+	    scandata.dev = sb.st_dev;
+
     ret = cli_ftw(conn->filename, flags,  maxdirrec ? maxdirrec : INT_MAX, scan_callback, &data, scan_pathchk);
     if (ret == CL_EMEM)
 	if(optget(opts, "ExitOnOOM")->enabled)
