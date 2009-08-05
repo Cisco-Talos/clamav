@@ -124,15 +124,3 @@ int cli_LzmaDecode(struct CLI_LZMA *L) {
 	return LZMA_STREAM_END;
     return LZMA_RESULT_OK;
 }
-
-
-int cli_LzmaInitUPX(struct CLI_LZMA *L, uint32_t dsz) {
-    unsigned char fake_hdr[5];
-    unsigned char *next_in = L->next_in;
-    SizeT avail_in = L->avail_in;
-    cli_writeint32(fake_hdr + 1, dsz);
-    *fake_hdr = 9 /* lc */ + 9* ( 5* 2 /* pb */ + 0 /* lp */);
-    L->next_in = fake_hdr;
-    L->avail_in = 5;
-    return cli_LzmaInit(L, dsz);
-}
