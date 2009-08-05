@@ -81,12 +81,10 @@ int cli_LzmaInit(struct CLI_LZMA *L, uint64_t size_override) {
 
     LzmaDec_Construct(&L->state);
     if(LzmaDec_Allocate(&L->state, L->header, LZMA_PROPS_SIZE, &g_Alloc) != SZ_OK)
-	return CL_EMEM;
+	return LZMA_RESULT_DATA_ERROR;
     LzmaDec_Init(&L->state);
 
     L->freeme = 1;
-    if(~L->usize) L->finish = LZMA_FINISH_END;
-    else L->finish = LZMA_FINISH_ANY;
     return LZMA_RESULT_OK;
 }
 	
@@ -102,16 +100,29 @@ int cli_LzmaDecode(struct CLI_LZMA *L) {
     SRes res;
     SizeT outbytes, inbytes;
     ELzmaStatus status;
+    ELzmaFinishMode finish;
 
     if(!L->freeme) return cli_LzmaInit(L, 0);
 
-    outbytes = L->avail_out;
     inbytes = L->avail_in;
-    res = LzmaDec_DecodeToBuf(&L->state, L->next_out, &outbytes, L->next_in, &inbytes, L->finish, &status);
+    if(~L->usize && L->avail_out > L->usize) {
+	outbytes = L->usize;
+	finish = LZMA_FINISH_END;
+    } else {
+	outbytes = L->avail_out;
+	finish = LZMA_FINISH_ANY;
+    }
+    res = LzmaDec_DecodeToBuf(&L->state, L->next_out, &outbytes, L->next_in, &inbytes, finish, &status);
+    L->avail_in -= inbytes;
     L->next_in += inbytes;
+    L->avail_out -= outbytes;
     L->next_out += outbytes;
-    L->usize -= outbytes;
-    return 0; /* FIXMELZMA */
+    if(~L->usize) L->usize -= outbytes;
+    if(res != SZ_OK)
+	return LZMA_RESULT_DATA_ERROR;
+    if(!L->usize || status == LZMA_STATUS_FINISHED_WITH_MARK)
+	return LZMA_STREAM_END;
+    return LZMA_RESULT_OK;
 }
 
 /* int cli_LzmaInitUPX(CLI_LZMA **Lp, uint32_t dictsz) { */

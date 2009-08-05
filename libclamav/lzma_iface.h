@@ -35,7 +35,6 @@ struct CLI_LZMA {
     unsigned int freeme;
     unsigned int init;
     uint64_t usize;
-    ELzmaFinishMode finish;
     unsigned char *next_in;
     unsigned char *next_out;
     SizeT avail_in;

@@ -97,8 +97,9 @@ static int nsis_init(struct nsis_st *n) {
     n->freecomp=1;
     break;
   case COMP_LZMA:
-    memset(&n->bz, 0, sizeof(struct CLI_LZMA));
-    cli_LzmaInit(&n->lz, 0xffffffffffffffffULL);
+    memset(&n->lz, 0, sizeof(struct CLI_LZMA));
+    if(cli_LzmaInit(&n->lz, 0xffffffffffffffffULL)!=LZMA_RESULT_OK)
+      return CL_EUNPACK;
     n->freecomp=1;
     break;
   case COMP_ZLIB:
