@@ -1,7 +1,7 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2009 Sourcefire, Inc.
  *
- *  Authors: Alberto Wu
+ *  Authors: aCaB
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -18,143 +18,109 @@
  *  MA 02110-1301, USA.
  */
 
-/* a cleaner state interface to LZMA */
+/* zlib-alike state interface to LZMA */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
 
 #include "lzma_iface.h"
-#include "LzmaStateDecode.h"
-#include "cltypes.h"
 
-/* we don't need zlib, and zlib defines Byte, that lzma also defines.
- * Enabling prefixes for zlib types avoids problems, and since
- * we don't call any zlib functions here avoids unresolved symbols too */
-#define Z_PREFIX
-#include "others.h"
-
-struct CLI_LZMA_tag {
-  CLzmaDecoderState state;
-  unsigned char *next_in;
-  SizeT avail_in;
-  unsigned char *next_out;
-  SizeT avail_out;
-  int initted;
-  uint64_t usize;
-};
-
-int cli_LzmaInit(CLI_LZMA **Lp, uint64_t size_override) {
-  CLI_LZMA *L = *Lp;
-
-  if(!L) {
-	  *Lp = L = cli_calloc(sizeof(*L), 1);
-	  if(!L) {
-		  return CL_EMEM;
-	  }
-  }
-
-  L->initted = 0;
-  if(size_override) L->usize=size_override;
-
-  if (!L->next_in || L->avail_in < LZMA_PROPERTIES_SIZE + 8) return LZMA_RESULT_OK;
-  if (LzmaDecodeProperties(&L->state.Properties, L->next_in, LZMA_PROPERTIES_SIZE) != LZMA_RESULT_OK)
-    return LZMA_RESULT_DATA_ERROR;
-
-  L->next_in += LZMA_PROPERTIES_SIZE;
-  L->avail_in -= LZMA_PROPERTIES_SIZE;
-
-  if (!L->usize) {
-    L->usize=(uint64_t)cli_readint32(L->next_in) + ((uint64_t)cli_readint32(L->next_in+4)<<32);
-    L->next_in += 8;
-    L->avail_in -= 8;
-  }
-    
-  if (!(L->state.Probs = (CProb *)cli_malloc(LzmaGetNumProbs(&L->state.Properties) * sizeof(CProb))))
-    return LZMA_RESULT_DATA_ERROR;
-
-  if (!(L->state.Dictionary = (unsigned char *)cli_malloc(L->state.Properties.DictionarySize))) {
-    free(L->state.Probs);
-    return LZMA_RESULT_DATA_ERROR;
-  }
-
-  L->initted = 1;
-
-  LzmaDecoderInit(&L->state);
-  return LZMA_RESULT_OK;
+static void *__wrap_alloc(void *unused, size_t size) { 
+    unused = unused;
+    return cli_malloc(size);
 }
-
-void cli_LzmaShutdown(CLI_LZMA **Lp) {
-  CLI_LZMA *L;
-
-  if(!Lp) return;
-  L = *Lp;
-  if(L->initted) {
-    if(L->state.Probs) free(L->state.Probs);
-    if(L->state.Dictionary) free(L->state.Dictionary);
-  }
-  free(L);
-  *Lp = NULL;
-  return;
+static void __wrap_free(void *unused, void *freeme) {
+    unused = unused;
+    free(freeme);
 }
-
-int cli_LzmaDecode(CLI_LZMA **Lp, struct stream_state* state) {
-  int res;
-  SizeT processed_in, processed_out;
-  CLI_LZMA* L = *Lp;
-
-  if(L) {
-	  L->avail_in = state->avail_in;
-	  L->next_in = state->next_in;
-	  L->avail_out = state->avail_out;
-	  L->next_out = state->next_out;
-  }
-
-  if (!L || !L->initted) {
-	  if(cli_LzmaInit(Lp, 0) != LZMA_RESULT_OK)
-		  return LZMA_RESULT_DATA_ERROR;
-	  L = *Lp;
-  }
+static ISzAlloc g_Alloc = { __wrap_alloc, __wrap_free };
 
 
-  res = LzmaDecode(&L->state, L->next_in, L->avail_in, &processed_in, L->next_out, L->avail_out, &processed_out, (L->avail_in==0));
-
-  L->next_in += processed_in;
-  L->avail_in -= processed_in;
-  L->next_out += processed_out;
-  L->avail_out -= processed_out;
-
-  state->avail_in = L->avail_in;
-  state->next_in = L->next_in;
-  state->avail_out = L->avail_out;
-  state->next_out = L->next_out;
-
-  return res;
-}
-
-int cli_LzmaInitUPX(CLI_LZMA **Lp, uint32_t dictsz) {
-  CLI_LZMA *L = *Lp;
-
-  if(!L) {
-    *Lp = L = cli_calloc(sizeof(*L), 1);
-    if(!L) {
-      return LZMA_RESULT_DATA_ERROR;
+static unsigned char lzma_getbyte(struct CLI_LZMA *L, int *fail) {
+    unsigned char c;
+    if(!L->next_in || !L->avail_in) {
+	*fail = 1;
+	return 0;
     }
-  }
+    *fail = 0;
+    c = L->next_in[0];
+    L->next_in++;
+    L->avail_in--;
+    return c;
+}
+    
 
-  L->state.Properties.pb = 2; /* FIXME: these  */
-  L->state.Properties.lp = 0; /* values may    */
-  L->state.Properties.lc = 3; /* not be static */
+int cli_LzmaInit(struct CLI_LZMA *L, uint64_t size_override) {
+    int fail;
 
-  L->state.Properties.DictionarySize = dictsz;
+    if(!L->init) {
+	L->p_cnt = LZMA_PROPS_SIZE;
+	if(size_override)
+	    L->usize = size_override;
+	else
+	    L->s_cnt = 8;
+	L->init = 1;
+    } else if(size_override)
+	cli_warnmsg("cli_LzmaInit: ignoring late size override\n");
 
-  if (!(L->state.Probs = (CProb *)cli_malloc(LzmaGetNumProbs(&L->state.Properties) * sizeof(CProb))))
-    return LZMA_RESULT_DATA_ERROR;
+    if(L->freeme) return LZMA_RESULT_OK;
 
-  if (!(L->state.Dictionary = (unsigned char *)cli_malloc(L->state.Properties.DictionarySize))) {
-    free(L->state.Probs);
-    return LZMA_RESULT_DATA_ERROR;
-  }
+    while(L->p_cnt) {
+	L->header[LZMA_PROPS_SIZE - L->p_cnt] = lzma_getbyte(L, &fail);
+	if(fail) return LZMA_RESULT_OK;
+	L->p_cnt--;
+    }
 
-  L->initted = 1;
+    while(L->s_cnt) {
+	uint64_t c = (uint64_t)lzma_getbyte(L, &fail);
+	if(fail) return LZMA_RESULT_OK;
+	L->usize = c << (8 * (8 - L->s_cnt));
+	L->s_cnt--;
+    }
 
-  LzmaDecoderInit(&L->state);
-  return LZMA_RESULT_OK;
+    LzmaDec_Construct(&L->state);
+    if(LzmaDec_Allocate(&L->state, L->header, LZMA_PROPS_SIZE, &g_Alloc) != SZ_OK)
+	return LZMA_RESULT_DATA_ERROR;
+    LzmaDec_Init(&L->state);
+
+    L->freeme = 1;
+    return LZMA_RESULT_OK;
+}
+	
+
+void cli_LzmaShutdown(struct CLI_LZMA *L) {
+    if(L->freeme)
+	LzmaDec_Free(&L->state, &g_Alloc);
+    return;
+}
+
+
+int cli_LzmaDecode(struct CLI_LZMA *L) {
+    SRes res;
+    SizeT outbytes, inbytes;
+    ELzmaStatus status;
+    ELzmaFinishMode finish;
+
+    if(!L->freeme) return cli_LzmaInit(L, 0);
+
+    inbytes = L->avail_in;
+    if(~L->usize && L->avail_out > L->usize) {
+	outbytes = L->usize;
+	finish = LZMA_FINISH_END;
+    } else {
+	outbytes = L->avail_out;
+	finish = LZMA_FINISH_ANY;
+    }
+    res = LzmaDec_DecodeToBuf(&L->state, L->next_out, &outbytes, L->next_in, &inbytes, finish, &status);
+    L->avail_in -= inbytes;
+    L->next_in += inbytes;
+    L->avail_out -= outbytes;
+    L->next_out += outbytes;
+    if(~L->usize) L->usize -= outbytes;
+    if(res != SZ_OK)
+	return LZMA_RESULT_DATA_ERROR;
+    if(!L->usize || status == LZMA_STATUS_FINISHED_WITH_MARK)
+	return LZMA_STREAM_END;
+    return LZMA_RESULT_OK;
 }

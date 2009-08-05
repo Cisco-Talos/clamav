@@ -23,21 +23,35 @@
 #ifndef __LZMA_IFACE_H
 #define __LZMA_IFACE_H
 
+#include "7z/LzmaDec.h"
 #include "cltypes.h"
+#include "others.h"
 
-typedef struct CLI_LZMA_tag CLI_LZMA;
-
-struct stream_state {
-	uint32_t avail_in;
-	unsigned char *next_in;
-	uint32_t avail_out;
-	unsigned char *next_out;
+struct CLI_LZMA {
+    CLzmaDec state;
+    unsigned char header[LZMA_PROPS_SIZE];
+    unsigned int p_cnt;
+    unsigned int s_cnt;
+    unsigned int freeme;
+    unsigned int init;
+    uint64_t usize;
+    unsigned char *next_in;
+    unsigned char *next_out;
+    SizeT avail_in;
+    SizeT avail_out;
 };
 
-int cli_LzmaInit(CLI_LZMA **, uint64_t);
-void cli_LzmaShutdown(CLI_LZMA **);
-int cli_LzmaDecode(CLI_LZMA **, struct stream_state*);
-int cli_LzmaInitUPX(CLI_LZMA **, uint32_t);
+
+struct stream_state {
+    uint32_t avail_in;
+    unsigned char *next_in;
+    uint32_t avail_out;
+    unsigned char *next_out;
+};
+
+int cli_LzmaInit(struct CLI_LZMA *, uint64_t);
+void cli_LzmaShutdown(struct CLI_LZMA *);
+int cli_LzmaDecode(struct CLI_LZMA *);
 
 #define LZMA_STREAM_END 2
 #define LZMA_RESULT_OK 0

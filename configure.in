@@ -1580,7 +1580,6 @@ AM_CONDITIONAL([HAVE_CURSES],
 
 AC_OUTPUT([
 libclamav/Makefile
-libclamav/lzma/Makefile
 clamscan/Makefile
 database/Makefile
 docs/Makefile

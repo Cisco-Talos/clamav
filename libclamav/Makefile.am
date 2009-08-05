@@ -16,9 +16,7 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-SUBDIRS = lzma .
-
-AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis -I@srcdir@/lzma $(LTDLINCL)
+AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis $(LTDLINCL)
 
 lib_LTLIBRARIES =
 EXTRA_DIST =
@@ -114,7 +112,7 @@ libclamav_internal_utils_nothreads_la_SOURCES=str.c\
 libclamav_internal_utils_nothreads_la_LDFLAGS=-static
 libclamav_internal_utils_nothreads_la_CFLAGS=-DCL_NOTHREADS
 
-libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) lzma/liblzma.la libclamav_internal_utils.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@
+libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) libclamav_internal_utils.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@
 libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) libclamav_internal_utils.la
 libclamav_la_CFLAGS = -DSEARCH_LIBDIR=\"$(libdir)\"
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
@@ -264,6 +262,9 @@ libclamav_la_SOURCES = \
 	hashtab.h \
 	dconf.c \
 	dconf.h \
+	7z/LzmaDec.c \
+	7z/LzmaDec.h \
+	7z/Types.h \
 	lzma_iface.c \
 	lzma_iface.h \
 	explode.c \
@@ -333,7 +334,7 @@ noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothre
 EXTRA_DIST += regex/engine.c libclamav.map \
 	     jsparse/generated/operators.h jsparse/generated/keywords.h jsparse/future_reserved_words.list\
 	     jsparse/keywords.list jsparse/special_keywords.list jsparse/operators.gperf
-COMMON_CLEANFILES=version.h version.h.tmp *.gcda *.gcno lzma/*.gcda lzma/*.gcno
+COMMON_CLEANFILES=version.h version.h.tmp *.gcda *.gcno
 if MAINTAINER_MODE
 BUILT_SOURCES=jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
 
