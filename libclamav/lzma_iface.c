@@ -125,32 +125,14 @@ int cli_LzmaDecode(struct CLI_LZMA *L) {
     return LZMA_RESULT_OK;
 }
 
-/* int cli_LzmaInitUPX(CLI_LZMA **Lp, uint32_t dictsz) { */
-/*   CLI_LZMA *L = *Lp; */
 
-/*   if(!L) { */
-/*     *Lp = L = cli_calloc(sizeof(*L), 1); */
-/*     if(!L) { */
-/*       return LZMA_RESULT_DATA_ERROR; */
-/*     } */
-/*   } */
-
-/*   L->state.Properties.pb = 2; /\* FIXME: these  *\/ */
-/*   L->state.Properties.lp = 0; /\* values may    *\/ */
-/*   L->state.Properties.lc = 3; /\* not be static *\/ */
-
-/*   L->state.Properties.DictionarySize = dictsz; */
-
-/*   if (!(L->state.Probs = (CProb *)cli_malloc(LzmaGetNumProbs(&L->state.Properties) * sizeof(CProb)))) */
-/*     return LZMA_RESULT_DATA_ERROR; */
-
-/*   if (!(L->state.Dictionary = (unsigned char *)cli_malloc(L->state.Properties.DictionarySize))) { */
-/*     free(L->state.Probs); */
-/*     return LZMA_RESULT_DATA_ERROR; */
-/*   } */
-
-/*   L->initted = 1; */
-
-/*   LzmaDecoderInit(&L->state); */
-/*   return LZMA_RESULT_OK; */
-/* } */
+int cli_LzmaInitUPX(struct CLI_LZMA *L, uint32_t dsz) {
+    unsigned char fake_hdr[5];
+    unsigned char *next_in = L->next_in;
+    SizeT avail_in = L->avail_in;
+    cli_writeint32(fake_hdr + 1, dsz);
+    *fake_hdr = 9 /* lc */ + 9* ( 5* 2 /* pb */ + 0 /* lp */);
+    L->next_in = fake_hdr;
+    L->avail_in = 5;
+    return cli_LzmaInit(L, dsz);
+}

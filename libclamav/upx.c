@@ -528,7 +528,7 @@ int upx_inflatelzma(char *src, uint32_t ssize, char *dst, uint32_t *dsize, uint3
   uint32_t magic[]={0xb16,0xb1e,0};
 
   memset(&l, 0, sizeof(l));
-  //cli_LzmaInitUPX(&lz, *dsize); /* FIXMELZMA: make func and check return value */
+  cli_LzmaInitUPX(&l, *dsize); /* FIXMELZMA: check return value */
   s.avail_in = ssize;
   s.avail_out = *dsize;
   s.next_in = (unsigned char*)src+2;
