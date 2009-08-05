@@ -42,6 +42,7 @@
 #else
 #include <pwd.h>
 #include <grp.h>
+#include <signal.h>
 #endif
 
 #if defined(USE_SYSLOG) && !defined(C_AIX)
@@ -98,6 +99,7 @@ int main(int argc, char **argv)
 	const struct optstruct *opt;
 #ifndef	C_WINDOWS
         struct passwd *user = NULL;
+	struct sigaction sa;
 #endif
 	time_t currtime;
 	const char *dbdir, *cfgfile;
@@ -115,6 +117,11 @@ int main(int argc, char **argv)
 	mprintf("!Can't start the win32 pthreads layer\n");
         return 1;
     }
+#else
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = SIG_IGN;
+    sigaction(SIGHUP, &sa, NULL);
+    sigaction(SIGUSR2, &sa, NULL);
 #endif
 
     if((opts = optparse(NULL, argc, argv, 1, OPT_CLAMD, 0, NULL)) == NULL) {
