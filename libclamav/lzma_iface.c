@@ -25,55 +25,42 @@
 #endif
 
 #include "lzma_iface.h"
-#include "7z/LzmaDec.h"
-#include "cltypes.h"
-#include "others.h"
 
 static void *__wrap_alloc(void *unused, size_t size) { 
     unused = unused;
     return cli_malloc(size);
 }
-static void *__wrap_free(void *unused, void *freeme) {
+static void __wrap_free(void *unused, void *freeme) {
     unused = unused;
     free(freeme);
 }
 static ISzAlloc g_Alloc = { __wrap_alloc, __wrap_free };
 
-struct CLI_LZMA {
-    CLzmaDec state;
-    unsigned char header[LZMA_PROPS_SIZE];
-    unsigned int p_cnt;
-    unsigned int s_cnt;
-    unsigned int freeme;
-    uint64_t usize;
-    ELzmaFinishMode finish;
-};
 
-static unsigned char lzma_getbyte(CLI_LZMA *L, int *fail) {
-    unsigned char *c = (unsigned char *)L->next_in;
-    if(!c || !L->avail_in) {
+static unsigned char lzma_getbyte(struct CLI_LZMA *L, int *fail) {
+    unsigned char c;
+    if(!L->next_in || !L->avail_in) {
 	*fail = 1;
 	return 0;
     }
     *fail = 0;
-    L->next_in = &c[1];
+    c = L->next_in[0];
+    L->next_in++;
     L->avail_in--;
-    return *c;
+    return c;
 }
     
 
-int cli_LzmaInit(CLI_LZMA **Lp, uint64_t size_override) {
-    CLI_LZMA *L = *Lp;
+int cli_LzmaInit(struct CLI_LZMA *L, uint64_t size_override) {
     int fail;
 
-    if(!L) {
-	*Lp = L = cli_calloc(sizeof(*L), 1);
-	if(!L) return CL_EMEM;
+    if(!L->init) {
 	L->p_cnt = LZMA_PROPS_SIZE;
 	if(size_override)
 	    L->usize = size_override;
 	else
 	    L->s_cnt = 8;
+	L->init = 1;
     } else if(size_override)
 	cli_warnmsg("cli_LzmaInit: ignoring late size override\n");
 
@@ -95,42 +82,36 @@ int cli_LzmaInit(CLI_LZMA **Lp, uint64_t size_override) {
     LzmaDec_Construct(&L->state);
     if(LzmaDec_Allocate(&L->state, L->header, LZMA_PROPS_SIZE, &g_Alloc) != SZ_OK)
 	return CL_EMEM;
-    LzmaDec_Init(&state);
+    LzmaDec_Init(&L->state);
 
     L->freeme = 1;
-    if(~L-usize) L->finish = LZMA_FINISH_END;
+    if(~L->usize) L->finish = LZMA_FINISH_END;
     else L->finish = LZMA_FINISH_ANY;
     return LZMA_RESULT_OK;
 }
 	
 
-void cli_LzmaShutdown(CLI_LZMA **Lp) {
-    CLI_LZMA *L;
-
-    if(!Lp) return;
-    L = *Lp;
+void cli_LzmaShutdown(struct CLI_LZMA *L) {
     if(L->freeme)
 	LzmaDec_Free(&L->state, &g_Alloc);
-    free(L);
-    *Lp = NULL;
     return;
 }
 
 
-int cli_LzmaDecode(CLI_LZMA **Lp) {
-    CLI_LZMA *L = *Lp;
-
-    if(!L->freeme) return cli_LzmaInit(LP, 0);
-
+int cli_LzmaDecode(struct CLI_LZMA *L) {
     SRes res;
-    SizeT outbytes = L->avail_out;
-    SizeT inbytes = L->avail_in;
+    SizeT outbytes, inbytes;
     ELzmaStatus status;
+
+    if(!L->freeme) return cli_LzmaInit(L, 0);
+
+    outbytes = L->avail_out;
+    inbytes = L->avail_in;
     res = LzmaDec_DecodeToBuf(&L->state, L->next_out, &outbytes, L->next_in, &inbytes, L->finish, &status);
     L->next_in += inbytes;
     L->next_out += outbytes;
     L->usize -= outbytes;
-
+    return 0; /* FIXMELZMA */
 }
 
 /* int cli_LzmaInitUPX(CLI_LZMA **Lp, uint32_t dictsz) { */
