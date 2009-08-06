@@ -832,11 +832,6 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	logg("Mail files support enabled.\n");
 	options |= CL_SCAN_MAIL;
 
-	if(optget(opts, "MailFollowURLs")->enabled) {
-	    logg("Mail: URL scanning enabled.\n");
-	    options |= CL_SCAN_MAILURL;
-	}
-
 	if(optget(opts, "ScanPartialMessages")->enabled) {
 	    logg("Mail: RFC1341 handling enabled.\n");
 	    options |= CL_SCAN_PARTIAL_MESSAGE;

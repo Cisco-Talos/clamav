@@ -247,8 +247,6 @@ const struct clam_option clam_options[] = {
 
     { "ScanMail", "scan-mail", 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "Enable the built in email scanner.", "yes" },
 
-    { "MailFollowURLs", "mail-follow-urls", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "If an email contains URLs ClamAV can download and scan them.\nWARNING: This option may open your system to a DoS attack. Please don't use\nthis feature on highly loaded servers.", "no" },
-
     { "ScanPartialMessages", NULL, 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD, "Scan RFC1341 messages split over many emails. You will need to\nperiodically clean up $TemporaryDirectory/clamav-partial directory.\nWARNING: This option may open your system to a DoS attack. Please don't use\nthis feature on highly loaded servers.", "no" },
 
     { "PhishingSignatures", "phishing-sigs", 0, TYPE_BOOL, MATCH_BOOL, 1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN, "With this option enabled ClamAV will try to detect phishing attempts by using\nsignatures.", "yes" },
@@ -367,6 +365,7 @@ const struct clam_option clam_options[] = {
     { "ArchiveMaxCompressionRatio", NULL, 0, TYPE_NUMBER, NULL, -1, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
     { "ArchiveBlockMax", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
     { "ArchiveLimitMemoryUsage", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD | OPT_DEPRECATED, "", "" },
+    { "MailFollowURLs", "mail-follow-urls", 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD | OPT_CLAMSCAN | OPT_DEPRECATED, "", "" },
 
     /* Milter specific options */
 

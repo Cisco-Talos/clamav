@@ -537,12 +537,8 @@ int scanmanager(const struct optstruct *opts)
     if(optget(opts, "scan-html")->enabled)
 	options |= CL_SCAN_HTML;
 
-    if(optget(opts, "scan-mail")->enabled) {
+    if(optget(opts, "scan-mail")->enabled)
 	options |= CL_SCAN_MAIL;
-
-	if(optget(opts, "mail-follow-urls")->enabled)
-	    options |= CL_SCAN_MAILURL;
-    }
 
     if(optget(opts, "algorithmic-detection")->enabled)
 	options |= CL_SCAN_ALGORITHMIC;
