@@ -26,15 +26,15 @@
 
 #include "lzma_iface.h"
 
-static void *__wrap_alloc(void *unused, size_t size) { 
+void *__lzma_wrap_alloc(void *unused, size_t size) { 
     unused = unused;
     return cli_malloc(size);
 }
-static void __wrap_free(void *unused, void *freeme) {
+void __lzma_wrap_free(void *unused, void *freeme) {
     unused = unused;
     free(freeme);
 }
-static ISzAlloc g_Alloc = { __wrap_alloc, __wrap_free };
+static ISzAlloc g_Alloc = { __lzma_wrap_alloc, __lzma_wrap_free };
 
 
 static unsigned char lzma_getbyte(struct CLI_LZMA *L, int *fail) {

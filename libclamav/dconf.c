@@ -91,6 +91,7 @@ static struct dconf_module modules[] = {
     { "ARCHIVE",    "NSIS",	    ARCH_CONF_NSIS,	    1 },
     { "ARCHIVE",    "AUTOIT",	    ARCH_CONF_AUTOIT,	    1 },
     { "ARCHIVE",    "ISHIELD",	    ARCH_CONF_ISHIELD,	    1 },
+    { "ARCHIVE",    "7zip",	    ARCH_CONF_7Z,	    1 },
 
     { "DOCUMENT",   "HTML",	    DOC_CONF_HTML,	    1 },
     { "DOCUMENT",   "RTF",	    DOC_CONF_RTF,	    1 },

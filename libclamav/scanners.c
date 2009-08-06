@@ -95,6 +95,7 @@
 #include "cpio.h"
 #include "macho.h"
 #include "ishield.h"
+#include "7z.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -2026,6 +2027,11 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	case CL_TYPE_MSOLE2:
 	    if(SCAN_OLE2 && (DCONF_ARCH & ARCH_CONF_OLE2))
 		ret = cli_scanole2(desc, ctx);
+	    break;
+
+	case CL_TYPE_7Z:
+	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_7Z))
+		ret = cli_7unz(desc, ctx);
 	    break;
 
 	case CL_TYPE_POSIX_TAR:

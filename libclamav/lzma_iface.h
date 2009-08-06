@@ -53,6 +53,9 @@ int cli_LzmaInit(struct CLI_LZMA *, uint64_t);
 void cli_LzmaShutdown(struct CLI_LZMA *);
 int cli_LzmaDecode(struct CLI_LZMA *);
 
+void *__lzma_wrap_alloc(void *unused, size_t size);
+void __lzma_wrap_free(void *unused, void *freeme);
+
 #define LZMA_STREAM_END 2
 #define LZMA_RESULT_OK 0
 #define LZMA_RESULT_DATA_ERROR 1
