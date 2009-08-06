@@ -74,9 +74,6 @@ static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
 static	const	char	*cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns);
 
-/*
- * TODO: handle embedded URLs if (options&CL_SCAN_MAILURL)
- */
 int
 cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 {

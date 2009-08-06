@@ -280,11 +280,6 @@ Default: yes
 Enable scanning of mail files.
 .br 
 Default: yes
-.TP 
-\fBMailFollowURLs BOOL\fR
-If an email contains URLs ClamAV can download and scan them. \fBWARNING: This option may open your system to a DoS attack. Never use it on loaded servers.\fR
-.br 
-Default: no
 .TP
 \fBScanPartialMessages BOOL\fR
 Scan RFC1341 messages split over many emails. You will need to periodically clean up $TemporaryDirectory/clamav-partial directory. \fBWARNING: This option may open your system to a DoS attack. Never use it on loaded servers.\fR
