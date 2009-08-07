@@ -10,7 +10,7 @@ Public domain */
 
 #include "Types.h"
 
-extern UInt32 g_CrcTable[];
+extern const UInt32 g_CrcTable[];
 
 void MY_FAST_CALL CrcGenerateTable(void);
 
