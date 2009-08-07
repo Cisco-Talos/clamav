@@ -51,6 +51,7 @@ int cli_7unz (int fd, cli_ctx *ctx) {
     size_t bufsz = 0;
     UInt32 i;
     int dupfd, ret = CL_CLEAN;
+    unsigned int fu=0;
 
     if((dupfd = dup(fd)) == -1) {
 	cli_errmsg("cli_7unz: dup() failed\n");
@@ -65,8 +66,6 @@ int cli_7unz (int fd, cli_ctx *ctx) {
     LookToRead_CreateVTable(&lookStream, False);
     lookStream.realStream = &archiveStream.s;
     LookToRead_Init(&lookStream);
-
-    CrcGenerateTable();
 
     SzArEx_Init(&db);
     if(SzArEx_Open(&db, &lookStream.s, &allocImp, &allocTempImp) != SZ_OK) {
@@ -84,6 +83,11 @@ int cli_7unz (int fd, cli_ctx *ctx) {
 	    cli_dbgmsg("cli_7unz: skipping stream due to size limits (%lu vs %lu)\n", f->Size, ctx->engine->maxfilesize);
 	    continue;
 	}
+	if (ctx->engine->maxfiles && fu>=ctx->engine->maxfiles) {
+	    cli_dbgmsg("cli_7unz: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
+	    ret=CL_EMAXFILES;
+	    break;
+	}
 	cli_dbgmsg("cli_7unz: Extracting file %s\n", f->Name);
 	if(SzAr_Extract(&db, &lookStream.s, i, &blockIndex, &buf, &bufsz, &offset, &usize, &allocImp, &allocTempImp) == SZ_OK) {
 	    char *fname;
@@ -93,6 +97,7 @@ int cli_7unz (int fd, cli_ctx *ctx) {
 		cli_dbgmsg("cli_7unz: stream uncompressed to an empty file\n");
 		continue;
 	    }
+	    fu++;
 	    if(!(fname = cli_gentemp(ctx->engine->tmpdir))) {
 		ret = CL_EMEM;
 		break;
