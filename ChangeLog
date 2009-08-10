@@ -1,3 +1,7 @@
+Mon Aug 10 22:06:23 CEST 2009 (acab)
+------------------------------------
+ * contrib/test: sync test files
+
 Mon Aug 10 15:26:26 CEST 2009 (acab)
 ------------------------------------
  * libclamav: add preliminary 7z support
