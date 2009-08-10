@@ -4,9 +4,11 @@
 #ifndef __7Z_FILE_H
 #define __7Z_FILE_H
 
+/* aCaB -- do not use HANDLE on win32
 #ifdef _WIN32
 #define USE_WINDOWS_FILE
 #endif
+*/
 
 #ifdef USE_WINDOWS_FILE
 #include <windows.h>

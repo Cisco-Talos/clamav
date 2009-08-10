@@ -31,6 +31,7 @@
 
 #include "others.h"
 #include "lzma_iface.h"
+#include "scanners.h"
 #include "7z/7zFile.h"
 #include "7z/7zCrc.h"
 #include "7z/Archive/7z/7zIn.h"
@@ -47,7 +48,7 @@ int cli_7unz (int fd, cli_ctx *ctx) {
     CLookToRead lookStream;
     CSzArEx db;
     UInt32 blockIndex = 0xFFFFFFFF;
-    char *buf = NULL;
+    unsigned char *buf = NULL;
     size_t bufsz = 0;
     UInt32 i;
     int dupfd, ret = CL_CLEAN;
