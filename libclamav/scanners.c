@@ -96,6 +96,7 @@
 #include "macho.h"
 #include "ishield.h"
 #include "7z.h"
+#include "cache.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -1881,6 +1882,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	cli_file_t type, dettype = 0;
 	struct stat sb;
 	uint8_t typercg = 1;
+	unsigned char hash[16];
 
     if(ctx->engine->maxreclevel && ctx->recursion > ctx->engine->maxreclevel) {
         cli_dbgmsg("cli_magic_scandesc: Archive recursion limit exceeded (%u, max: %u)\n", ctx->recursion, ctx->engine->maxreclevel);
@@ -1910,13 +1912,17 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     if(cli_updatelimits(ctx, sb.st_size)!=CL_CLEAN)
         return CL_CLEAN;
 
+    if(cache_chekdesc(desc, sb.st_size, hash, ctx) == CL_CLEAN)
+	return CL_CLEAN;
+    
     if(!ctx->options || (ctx->recursion == ctx->engine->maxreclevel)) { /* raw mode (stdin, etc.) or last level of recursion */
 	if(ctx->recursion == ctx->engine->maxreclevel)
 	    cli_dbgmsg("cli_magic_scandesc: Hit recursion limit, only scanning raw file\n");
 	else
 	    cli_dbgmsg("Raw mode: No support for special files\n");
-	if((ret = cli_scandesc(desc, ctx, 0, 0, NULL, AC_SCAN_VIR)) == CL_VIRUS)
+	if((ret = cli_scandesc_hash(desc, ctx, 0, 0, NULL, AC_SCAN_VIR, hash)) == CL_VIRUS)
 	    cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, desc);
+	else cache_add(hash, ctx);
 	return ret;
     }
 
@@ -2177,8 +2183,10 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	case CL_EMAXSIZE:
 	case CL_EMAXFILES:
 	    cli_dbgmsg("Descriptor[%d]: %s\n", desc, cl_strerror(ret));
+	    cache_add(hash, ctx);
 	    return CL_CLEAN;
 	default:
+	    if(ret == CL_CLEAN) cache_add(hash, ctx);
 	    return ret;
     }
 }

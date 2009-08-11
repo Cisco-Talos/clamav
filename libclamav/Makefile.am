@@ -323,7 +323,9 @@ libclamav_la_SOURCES = \
 	macho.c \
 	macho.h \
 	ishield.c \
-	ishield.h
+	ishield.h \
+	cache.c \
+	cache.h
 
 if !LINK_TOMMATH
 libclamav_la_SOURCES += bignum.c \

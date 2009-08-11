@@ -445,3 +445,173 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 
     return (acmode & AC_SCAN_FT) ? type : CL_CLEAN;
 }
+
+int cli_scandesc_hash(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode, unsigned char *digest)
+{
+ 	unsigned char *buffer, *buff, *endbl, *upt;
+	int ret = CL_CLEAN, type = CL_CLEAN, bytes;
+	unsigned int i, evalcnt;
+	uint32_t buffersize, length, maxpatlen, shift = 0, offset = 0;
+	uint64_t evalids;
+	struct cli_ac_data gdata, tdata;
+	struct cli_matcher *groot = NULL, *troot = NULL;
+
+
+    if(!ctx->engine) {
+	cli_errmsg("cli_scandesc: engine == NULL\n");
+	return CL_ENULLARG;
+    }
+
+    if(!ftonly)
+	groot = ctx->engine->root[0]; /* generic signatures */
+
+    if(ftype) {
+	for(i = 1; i < CLI_MTARGETS; i++) {
+	    if(cli_mtargets[i].target == ftype) {
+		troot = ctx->engine->root[i];
+		break;
+	    }
+	}
+    }
+
+    if(ftonly) {
+	if(!troot)
+	    return CL_CLEAN;
+
+	maxpatlen = troot->maxpatlen;
+    } else {
+	if(troot)
+	    maxpatlen = MAX(troot->maxpatlen, groot->maxpatlen);
+	else
+	    maxpatlen = groot->maxpatlen;
+    }
+
+    /* prepare the buffer */
+    buffersize = maxpatlen + SCANBUFF;
+    if(!(buffer = (unsigned char *) cli_calloc(buffersize, sizeof(unsigned char)))) {
+	cli_dbgmsg("cli_scandesc(): unable to cli_calloc(%u)\n", buffersize);
+	return CL_EMEM;
+    }
+
+    if(!ftonly && (ret = cli_ac_initdata(&gdata, groot->ac_partsigs, groot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN)))
+	return ret;
+
+    if(troot) {
+	if((ret = cli_ac_initdata(&tdata, troot->ac_partsigs, troot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN)))
+	    return ret;
+    }
+
+    buff = buffer;
+    buff += maxpatlen; /* pointer to read data block */
+    endbl = buff + SCANBUFF - maxpatlen; /* pointer to the last block
+					  * length of maxpatlen
+					  */
+
+    upt = buff;
+    while((bytes = cli_readn(desc, buff + shift, SCANBUFF - shift)) > 0) {
+
+	if(ctx->scanned)
+	    *ctx->scanned += bytes / CL_COUNT_PRECISION;
+
+	length = shift + bytes;
+	if(upt == buffer)
+	    length += maxpatlen;
+
+	if(troot) {
+	    if(troot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, troot, offset, ftype, desc)) != CL_VIRUS)
+		ret = cli_ac_scanbuff(upt, length, ctx->virname, NULL, NULL, troot, &tdata, offset, ftype, desc, ftoffset, acmode, NULL);
+
+	    if(ret == CL_VIRUS) {
+		free(buffer);
+		if(!ftonly)
+		    cli_ac_freedata(&gdata);
+		cli_ac_freedata(&tdata);
+
+		if(cli_checkfp(desc, ctx))
+		    return CL_CLEAN;
+		else
+		    return CL_VIRUS;
+	    }
+	}
+
+	if(!ftonly) {
+	    if(groot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, groot, offset, ftype, desc)) != CL_VIRUS)
+		ret = cli_ac_scanbuff(upt, length, ctx->virname, NULL, NULL, groot, &gdata, offset, ftype, desc, ftoffset, acmode, NULL);
+
+	    if(ret == CL_VIRUS) {
+		free(buffer);
+		cli_ac_freedata(&gdata);
+		if(troot)
+		    cli_ac_freedata(&tdata);
+		if(cli_checkfp(desc, ctx))
+		    return CL_CLEAN;
+		else
+		    return CL_VIRUS;
+
+	    } else if((acmode & AC_SCAN_FT) && ret >= CL_TYPENO) {
+		if(ret > type)
+		    type = ret;
+	    }
+	}
+
+	if(bytes + shift == SCANBUFF) {
+	    memmove(buffer, endbl, maxpatlen);
+	    offset += SCANBUFF;
+
+	    if(upt == buff) {
+		upt = buffer;
+		offset -= maxpatlen;
+	    }
+
+	    shift = 0;
+
+	} else {
+	    shift += bytes;
+	}
+    }
+
+    free(buffer);
+
+    if(troot) {
+	for(i = 0; i < troot->ac_lsigs; i++) {
+	    evalcnt = 0;
+	    evalids = 0;
+	    if(cli_ac_chklsig(troot->ac_lsigtable[i]->logic, troot->ac_lsigtable[i]->logic + strlen(troot->ac_lsigtable[i]->logic), tdata.lsigcnt[i], &evalcnt, &evalids, 0) == 1) {
+		if(ctx->virname)
+		    *ctx->virname = troot->ac_lsigtable[i]->virname;
+		ret = CL_VIRUS;
+		break;
+	    }
+	}
+	cli_ac_freedata(&tdata);
+    }
+
+    if(groot) {
+	if(ret != CL_VIRUS) for(i = 0; i < groot->ac_lsigs; i++) {
+	    evalcnt = 0;
+	    evalids = 0;
+	    if(cli_ac_chklsig(groot->ac_lsigtable[i]->logic, groot->ac_lsigtable[i]->logic + strlen(groot->ac_lsigtable[i]->logic), gdata.lsigcnt[i], &evalcnt, &evalids, 0) == 1) {
+		if(ctx->virname)
+		    *ctx->virname = groot->ac_lsigtable[i]->virname;
+		ret = CL_VIRUS;
+		break;
+	    }
+	}
+	cli_ac_freedata(&gdata);
+    }
+
+    if(ret == CL_VIRUS) {
+	lseek(desc, 0, SEEK_SET);
+	if(cli_checkfp(desc, ctx))
+	    return CL_CLEAN;
+	else
+	    return CL_VIRUS;
+    }
+
+    if(!ftonly && ctx->engine->md5_hdb) {
+	if(cli_bm_scanbuff(digest, 16, ctx->virname, ctx->engine->md5_hdb, 0, 0, -1) == CL_VIRUS && (cli_bm_scanbuff(digest, 16, NULL, ctx->engine->md5_fp, 0, 0, -1) != CL_VIRUS))
+	    return CL_VIRUS;
+    }
+
+    return (acmode & AC_SCAN_FT) ? type : CL_CLEAN;
+}

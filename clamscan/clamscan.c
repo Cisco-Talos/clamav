@@ -169,6 +169,8 @@ int main(int argc, char **argv)
     gettimeofday(&t1, &tz);
 #endif
 
+    cache_init(256);
+
     ret = scanmanager(opts);
 
     if(!optget(opts, "no-summary")->enabled) {
