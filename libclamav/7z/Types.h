@@ -10,6 +10,9 @@
 #include <windows.h>
 #endif
 
+/* aCaB -- lame workaround for "Byte" refef */
+#include <zconf.h>
+
 #define SZ_OK 0
 
 #define SZ_ERROR_DATA 1
@@ -40,7 +43,9 @@ typedef int WRes;
 #define RINOK(x) { int __result__ = (x); if (__result__ != 0) return __result__; }
 #endif
 
+/* aCaB -- use Byte defined in zconf.h
 typedef unsigned char Byte;
+*/
 typedef short Int16;
 typedef unsigned short UInt16;
 

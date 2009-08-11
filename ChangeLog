@@ -1,3 +1,7 @@
+Tue Aug 11 02:04:54 CEST 2009 (acab)
+------------------------------------
+ * libclamav/7z/Types.h: workaround "Byte" clash in lzma/7z (bb#805 - regression)
+
 Mon Aug 10 22:36:19 CEST 2009 (acab)
 ------------------------------------
  * libclamav/7z*: cosmetic fixes
