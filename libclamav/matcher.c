@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -76,8 +76,8 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
 	if(!acdata && (ret = cli_ac_initdata(&mdata, troot->ac_partsigs, troot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN)))
 	    return ret;
 
-	if(troot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, troot, offset, ftype, -1)) != CL_VIRUS)
-	    ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, troot, acdata ? (acdata[0]) : (&mdata), offset, ftype, -1, NULL, AC_SCAN_VIR, NULL);
+	if(troot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, troot, offset, -1)) != CL_VIRUS)
+	    ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, troot, acdata ? (acdata[0]) : (&mdata), offset, ftype, NULL, AC_SCAN_VIR, NULL);
 
 	if(!acdata)
 	    cli_ac_freedata(&mdata);
@@ -89,8 +89,8 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
     if(!acdata && (ret = cli_ac_initdata(&mdata, groot->ac_partsigs, groot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN)))
 	return ret;
 
-    if(groot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, groot, offset, ftype, -1)) != CL_VIRUS)
-	ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, groot, acdata ? (acdata[1]) : (&mdata), offset, ftype, -1, NULL, AC_SCAN_VIR, NULL);
+    if(groot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, groot, offset, -1)) != CL_VIRUS)
+	ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, groot, acdata ? (acdata[1]) : (&mdata), offset, ftype, NULL, AC_SCAN_VIR, NULL);
 
     if(!acdata)
 	cli_ac_freedata(&mdata);
@@ -98,112 +98,188 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
     return ret;
 }
 
-off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, cli_file_t ftype, int *ret, unsigned int *maxshift)
+/*
+ * offdata[0]: type
+ * offdata[1]: offset value
+ * offdata[2]: max shift
+ * offdata[3]: section number
+ */
+int cli_caloff(const char *offstr, struct cli_target_info *info, int fd, unsigned int target, uint32_t *offdata, uint32_t *offset_min, uint32_t *offset_max)
 {
 	int (*einfo)(int, struct cli_exe_info *) = NULL;
+	char offcpy[65];
 	unsigned int n, val;
-	const char *pt;
-	off_t pos, offset;
+	char *pt;
+	off_t pos;
+	struct stat sb;
 
 
-    *ret = 0;
+    if(!info) { /* decode offset string */
+	if(!offstr) {
+	    cli_errmsg("cli_caloff: offstr == NULL\n");
+	    return CL_ENULLARG;
+	}
 
-    if((pt = strchr(offstr, ',')))
-	*maxshift = atoi(++pt);
+	if(!strcmp(offstr, "*")) {
+	    offdata[0] = *offset_max = *offset_min = CLI_OFF_ANY;
+	    return CL_SUCCESS;
+	}
 
-    if(isdigit(offstr[0]))
-	return atoi(offstr);
+	if(strlen(offstr) > 64) {
+	    cli_errmsg("cli_caloff: Offset string too long\n");
+	    return CL_EMALFDB;
+	}
+	strcpy(offcpy, offstr);
 
-    if(fd == -1) {
-	*ret = -1;
-	return 0;
-    }
+	if((pt = strchr(offcpy, ','))) {
+	    if(!cli_isnumber(pt + 1)) {
+		cli_errmsg("cli_caloff: Invalid offset shift value\n");
+		return CL_EMALFDB;
+	    }
+	    offdata[2] = atoi(pt + 1);
+	    *pt = 0;
+	} else {
+	    offdata[2] = 0;
+	}
 
-    if(!strncmp(offstr, "EP", 2) || offstr[0] == 'S') {
+	*offset_max = *offset_min = CLI_OFF_NONE;
 
+	if(!strncmp(offcpy, "EP+", 3) || !strncmp(offcpy, "EP-", 3)) {
+	    if(offcpy[2] == '+')
+		offdata[0] = CLI_OFF_EP_PLUS;
+	    else
+		offdata[0] = CLI_OFF_EP_MINUS;
+
+	    if(!cli_isnumber(&offcpy[3])) {
+		cli_errmsg("cli_caloff: Invalid offset value\n");
+		return CL_EMALFDB;
+	    }
+	    offdata[1] = atoi(&offcpy[3]);
+
+	} else if(offcpy[0] == 'S') {
+	    if(!strncmp(offstr, "SL+", 3)) {
+		offdata[0] = CLI_OFF_SL_PLUS;
+		if(!cli_isnumber(&offcpy[3])) {
+		    cli_errmsg("cli_caloff: Invalid offset value\n");
+		    return CL_EMALFDB;
+		}
+		offdata[1] = atoi(&offcpy[3]);
+
+	    } else if(sscanf(offcpy, "S%u+%u", &n, &val) == 2) {
+		offdata[0] = CLI_OFF_SX_PLUS;
+		offdata[1] = val;
+		offdata[3] = n;
+	    } else {
+		cli_errmsg("cli_caloff: Invalid offset string\n");
+		return CL_EMALFDB;
+	    }
+
+	} else if(!strncmp(offcpy, "EOF-", 4)) {
+	    offdata[0] = CLI_OFF_EOF_MINUS;
+	    if(!cli_isnumber(&offcpy[4])) {
+		cli_errmsg("cli_caloff: Invalid offset value\n");
+		return CL_EMALFDB;
+	    }
+	    offdata[1] = atoi(&offcpy[4]);
+	} else {
+	    offdata[0] = CLI_OFF_ABSOLUTE;
+	    if(!cli_isnumber(offcpy)) {
+		cli_errmsg("cli_caloff: Invalid offset value\n");
+		return CL_EMALFDB;
+	    }
+	    *offset_min = offdata[1] = atoi(offcpy);
+	    *offset_max = *offset_min + offdata[2];
+	}
+
+	if(offdata[0] != CLI_OFF_ANY && offdata[0] != CLI_OFF_ABSOLUTE && offdata[0] != CLI_OFF_EOF_MINUS) {
+	    if(target != 1 && target != 6 && target != 9) {
+		cli_errmsg("cli_caloff: Invalid offset type for target %u\n", target);
+		return CL_EMALFDB;
+	    }
+	}
+
+    } else {
+	/* calculate relative offsets */
 	if(info->status == -1) {
-	    *ret = -1;
-	    return 0;
+	    *offset_min = *offset_max = 0;
+	    return CL_SUCCESS;
+	}
+
+	if((offdata[0] == CLI_OFF_EOF_MINUS)) {
+	    if(!info->fsize) {
+		if(fstat(fd, &sb) == -1) {
+		    cli_errmsg("cli_caloff: fstat(%d) failed\n", fd);
+		    return CL_ESTAT;
+		}
+		info->fsize = sb.st_size;
+	    }
 
 	} else if(!info->status) {
-
-	    if(ftype == CL_TYPE_MSEXE)
+	    if(target == 1)
 		einfo = cli_peheader;
-	    else if(ftype == CL_TYPE_ELF)
+	    else if(target == 6)
 		einfo = cli_elfheader;
-	    else if(ftype == CL_TYPE_MACHO)
+	    else if(target == 9)
 		einfo = cli_machoheader;
 
-	    if(einfo) {
-		if((pos = lseek(fd, 0, SEEK_CUR)) == -1) {
-		    cli_dbgmsg("Invalid descriptor\n");
-		    info->status = *ret = -1;
-		    return 0;
-		}
+	    if(!einfo) {
+		cli_errmsg("cli_caloff: Invalid offset/filetype\n");
+		return CL_EMALFDB;
+	    }
 
-		lseek(fd, 0, SEEK_SET);
-		if(einfo(fd, &info->exeinfo)) {
-		    lseek(fd, pos, SEEK_SET);
-		    info->status = *ret = -1;
-		    return 0;
-		}
+	    if((pos = lseek(fd, 0, SEEK_CUR)) == -1) {
+		cli_errmsg("cli_caloff: lseek(%d) failed\n", fd);
+		return CL_ESEEK;
+	    }
+
+	    lseek(fd, 0, SEEK_SET);
+	    if(einfo(fd, &info->exeinfo)) {
+		/* einfo *may* fail */
 		lseek(fd, pos, SEEK_SET);
-		info->status = 1;
+		info->status = -1;
+		*offset_min = *offset_max = 0;
+		return CL_SUCCESS;
 	    }
+	    lseek(fd, pos, SEEK_SET);
+	    info->status = 1;
 	}
-    }
 
-    if(info->status == 1 && (!strncmp(offstr, "EP+", 3) || !strncmp(offstr, "EP-", 3))) {
+	switch(offdata[0]) {
+	    case CLI_OFF_EOF_MINUS:
+		*offset_min = info->fsize - offdata[1];
+		break;
 
-	if(offstr[2] == '+')
-	    return info->exeinfo.ep + atoi(offstr + 3);
+	    case CLI_OFF_EP_PLUS:
+		*offset_min = info->exeinfo.ep + offdata[1];
+		break;
+
+	    case CLI_OFF_EP_MINUS:
+		*offset_min = info->exeinfo.ep - offdata[1];
+		break;
+
+	    case CLI_OFF_SL_PLUS:
+		*offset_min = info->exeinfo.section[info->exeinfo.nsections - 1].raw + offdata[1];
+		break;
+
+	    case CLI_OFF_SX_PLUS:
+		if(offdata[3] >= info->exeinfo.nsections)
+		    *offset_min = 0;
+		else
+		    *offset_min = info->exeinfo.section[offdata[3]].raw + offdata[1];
+		break;
+
+	    default:
+		cli_errmsg("cli_caloff: Not a relative offset (type: %u)\n", offdata[0]);
+		return CL_EARG;
+	}
+
+	if(!*offset_min)
+	    *offset_max = 0;
 	else
-	    return info->exeinfo.ep - atoi(offstr + 3);
-
-    } else if(info->status == 1 && offstr[0] == 'S') {
-
-	if(!strncmp(offstr, "SL", 2) && info->exeinfo.section[info->exeinfo.nsections - 1].rsz) {
-
-	    if(sscanf(offstr, "SL+%u", &val) != 1) {
-		*ret = -1;
-		return 0;
-	    }
-
-	    offset = val + info->exeinfo.section[info->exeinfo.nsections - 1].raw;
-
-	} else {
-
-	    if(sscanf(offstr, "S%u+%u", &n, &val) != 2) {
-		*ret = -1;
-		return 0;
-	    }
-
-	    if(n >= info->exeinfo.nsections || !info->exeinfo.section[n].rsz) {
-		*ret = -1;
-		return 0;
-	    }
-
-	    offset = val + info->exeinfo.section[n].raw;
-	}
-
-	return offset;
-
-    } else if(!strncmp(offstr, "EOF-", 4)) {
-	    struct stat sb;
-
-	if(!info->fsize) {
-	    if(fstat(fd, &sb) == -1) {
-		info->status = *ret = -1;
-		return 0;
-	    }
-	    info->fsize = sb.st_size;
-	}
-
-	return info->fsize - atoi(offstr + 4);
+	    *offset_max = *offset_min + offdata[2];
     }
 
-    *ret = -1;
-    return 0;
+    return CL_SUCCESS;
 }
 
 int cli_checkfp(int fd, cli_ctx *ctx)
@@ -227,7 +303,7 @@ int cli_checkfp(int fd, cli_ctx *ctx)
 	    return 0;
 	}
 
-	if(cli_bm_scanbuff(digest, 16, &virname, ctx->engine->md5_fp, 0, 0, -1) == CL_VIRUS) {
+	if(cli_bm_scanbuff(digest, 16, &virname, ctx->engine->md5_fp, 0, -1) == CL_VIRUS) {
 	    cli_dbgmsg("cli_checkfp(): Found false positive detection (fp sig: %s)\n", virname);
 	    free(digest);
 	    lseek(fd, pos, SEEK_SET);
@@ -238,33 +314,6 @@ int cli_checkfp(int fd, cli_ctx *ctx)
 
     lseek(fd, pos, SEEK_SET);
     return 0;
-}
-
-int cli_validatesig(cli_file_t ftype, const char *offstr, off_t fileoff, struct cli_target_info *info, int desc, const char *virname)
-{
-	off_t offset;
-	int ret;
-	unsigned int maxshift = 0;
-
-
-    if(offstr) {
-	offset = cli_caloff(offstr, info, desc, ftype, &ret, &maxshift);
-
-	if(ret == -1)
-	    return 0;
-
-	if(maxshift) {
-	    if((fileoff < offset) || (fileoff > offset + (off_t) maxshift)) {
-		/* cli_dbgmsg("Signature offset: %lu, expected: [%lu..%lu] (%s)\n", (unsigned long int) fileoff, (unsigned long int) offset, (unsigned long int) (offset + maxshift), virname); */
-		return 0;
-	    }
-	} else if(fileoff != offset) {
-	    /* cli_dbgmsg("Signature offset: %lu, expected: %lu (%s)\n", (unsigned long int) fileoff, (unsigned long int) offset, virname); */
-	    return 0;
-	}
-    }
-
-    return 1;
 }
 
 int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode)
@@ -316,12 +365,16 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 	return CL_EMEM;
     }
 
-    if(!ftonly && (ret = cli_ac_initdata(&gdata, groot->ac_partsigs, groot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN)))
-	return ret;
+    if(!ftonly)
+	if((ret = cli_ac_caloff(groot, desc)) || (ret = cli_ac_initdata(&gdata, groot->ac_partsigs, groot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN)))
+	    return ret;
 
     if(troot) {
-	if((ret = cli_ac_initdata(&tdata, troot->ac_partsigs, troot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN)))
+	if((ret = cli_ac_caloff(troot, desc)) || (ret = cli_ac_initdata(&tdata, troot->ac_partsigs, troot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN))) {
+	    if(!ftonly)
+		cli_ac_freedata(&gdata);
 	    return ret;
+	}
     }
 
     if(!ftonly && ctx->engine->md5_hdb)
@@ -344,8 +397,8 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 	    length += maxpatlen;
 
 	if(troot) {
-	    if(troot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, troot, offset, ftype, desc)) != CL_VIRUS)
-		ret = cli_ac_scanbuff(upt, length, ctx->virname, NULL, NULL, troot, &tdata, offset, ftype, desc, ftoffset, acmode, NULL);
+	    if(troot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, troot, offset, desc)) != CL_VIRUS)
+		ret = cli_ac_scanbuff(upt, length, ctx->virname, NULL, NULL, troot, &tdata, offset, ftype, ftoffset, acmode, NULL);
 
 	    if(ret == CL_VIRUS) {
 		free(buffer);
@@ -361,8 +414,8 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 	}
 
 	if(!ftonly) {
-	    if(groot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, groot, offset, ftype, desc)) != CL_VIRUS)
-		ret = cli_ac_scanbuff(upt, length, ctx->virname, NULL, NULL, groot, &gdata, offset, ftype, desc, ftoffset, acmode, NULL);
+	    if(groot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, groot, offset, desc)) != CL_VIRUS)
+		ret = cli_ac_scanbuff(upt, length, ctx->virname, NULL, NULL, groot, &gdata, offset, ftype, ftoffset, acmode, NULL);
 
 	    if(ret == CL_VIRUS) {
 		free(buffer);
@@ -439,7 +492,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 
     if(!ftonly && ctx->engine->md5_hdb) {
 	cli_md5_final(digest, &md5ctx);
-	if(cli_bm_scanbuff(digest, 16, ctx->virname, ctx->engine->md5_hdb, 0, 0, -1) == CL_VIRUS && (cli_bm_scanbuff(digest, 16, NULL, ctx->engine->md5_fp, 0, 0, -1) != CL_VIRUS))
+	if(cli_bm_scanbuff(digest, 16, ctx->virname, ctx->engine->md5_hdb, 0, -1) == CL_VIRUS && (cli_bm_scanbuff(digest, 16, NULL, ctx->engine->md5_fp, 0, -1) != CL_VIRUS))
 	    return CL_VIRUS;
     }
 

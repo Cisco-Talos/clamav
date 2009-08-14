@@ -305,7 +305,7 @@ int regex_list_match(struct regex_matcher* matcher,char* real_url,const char* di
 			 * negatives */
 			return 0;
 		}
-		rc = cli_ac_scanbuff((const unsigned char*)bufrev,buffer_len, NULL, (void*)&regex, &res, &matcher->suffixes,&mdata,0,0,-1,NULL,AC_SCAN_VIR,NULL);
+		rc = cli_ac_scanbuff((const unsigned char*)bufrev,buffer_len, NULL, (void*)&regex, &res, &matcher->suffixes,&mdata,0,0,NULL,AC_SCAN_VIR,NULL);
 		free(bufrev);
 		cli_ac_freedata(&mdata);
 
@@ -455,7 +455,7 @@ static int add_hash(struct regex_matcher *matcher, char* pattern, const char fl,
 
 	if (fl != 'W' && pat->length == 32 &&
 	    cli_hashset_contains(&matcher->sha256_pfx_set, cli_readint32(pat->pattern)) &&
-	    cli_bm_scanbuff(pat->pattern, 32, &vname, &matcher->sha256_hashes,0,0,-1) == CL_VIRUS) {
+	    cli_bm_scanbuff(pat->pattern, 32, &vname, &matcher->sha256_hashes,0,-1) == CL_VIRUS) {
 	    if (*vname == 'W') {
 		/* hash is whitelisted in local.gdb */
 		cli_dbgmsg("Skipping hash %s\n", pattern);
@@ -471,7 +471,7 @@ static int add_hash(struct regex_matcher *matcher, char* pattern, const char fl,
 	}
 	*pat->virname = fl;
 	cli_hashset_addkey(&matcher->sha256_pfx_set, cli_readint32(pat->pattern));
-	if((rc = cli_bm_addpatt(bm, pat))) {
+	if((rc = cli_bm_addpatt(bm, pat, "*"))) {
 		cli_errmsg("add_hash: failed to add BM pattern\n");
 		free(pat->pattern);
 		free(pat->virname);
@@ -675,7 +675,7 @@ static int add_newsuffix(struct regex_matcher *matcher, struct regex_list *info,
 	new->partno = 0;
 	new->mindist = 0;
 	new->maxdist = 0;
-	new->offset = 0;
+	new->offset_min = CLI_OFF_ANY;
 	new->length = len;
 
 	new->ch[0] = new->ch[1] |= CLI_MATCH_IGNORE;

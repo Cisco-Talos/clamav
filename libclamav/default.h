@@ -25,6 +25,11 @@
 #define CLI_DEFAULT_AC_MAXDEPTH	    3
 #define CLI_DEFAULT_AC_TRACKLEN	    8
 
+#define CLI_DEFAULT_MOVETOAC_LEN    8 /* all static sigs shorter than
+				       * this value will automatically
+				       * go to AC instead of BM
+				       */
+
 #define CLI_DEFAULT_LSIG_BUFSIZE    32768
 #define CLI_DEFAULT_DBIO_BUFSIZE    CLI_DEFAULT_LSIG_BUFSIZE + 1
 

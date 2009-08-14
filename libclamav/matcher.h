@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -69,18 +69,22 @@ struct cli_ac_lsig {
 };
 
 struct cli_matcher {
+    unsigned int type;
+
     /* Extended Boyer-Moore */
     uint8_t *bm_shift;
     struct cli_bm_patt **bm_suffix;
     struct cli_hashset md5_sizes_hs;
     uint32_t *soff, soff_len; /* for PE section sigs */
-    uint32_t bm_patterns;
+    uint32_t bm_patterns, bm_reloff_num;
 
     /* Extended Aho-Corasick */
     uint32_t ac_partsigs, ac_nodes, ac_patterns, ac_lsigs;
     struct cli_ac_lsig **ac_lsigtable;
     struct cli_ac_node *ac_root, **ac_nodetable;
     struct cli_ac_patt **ac_pattable;
+    struct cli_ac_patt **ac_reloff;
+    uint32_t ac_reloff_num;
     uint8_t ac_mindepth, ac_maxdepth;
 
     uint16_t maxpatlen;
@@ -124,13 +128,20 @@ struct cli_target_info {
     int8_t status; /* 0 == not initialised, 1 == initialised OK, -1 == error */
 };
 
+#define CLI_OFF_ANY         0xffffffff
+#define CLI_OFF_NONE	    0xfffffffe
+#define CLI_OFF_ABSOLUTE    1
+#define CLI_OFF_EOF_MINUS   2
+#define CLI_OFF_EP_PLUS     3
+#define CLI_OFF_EP_MINUS    4
+#define CLI_OFF_SL_PLUS     5
+#define CLI_OFF_SX_PLUS     6
+
 int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata);
 
 int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode);
 
-int cli_validatesig(cli_file_t ftype, const char *offstr, off_t fileoff, struct cli_target_info *info, int desc, const char *virname);
-
-off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, cli_file_t ftype, int *ret, unsigned int *maxshift);
+int cli_caloff(const char *offstr, struct cli_target_info *info, int fd, unsigned int target, uint32_t *offdata, uint32_t *offset_min, uint32_t *offset_max);
 
 int cli_checkfp(int fd, cli_ctx *ctx);
 

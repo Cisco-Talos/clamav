@@ -1,3 +1,7 @@
+Fri Aug 14 14:37:21 CEST 2009 (tk)
+----------------------------------
+ * libclamav: improve handling of signature offsets
+
 Tue Aug 11 02:04:54 CEST 2009 (acab)
 ------------------------------------
  * libclamav/7z/Types.h: workaround "Byte" clash in lzma/7z (bb#805 - regression)
