@@ -81,7 +81,7 @@ int cli_7unz (int fd, cli_ctx *ctx) {
 
 	if(f->IsDir || !f->Size) continue;
 	if(ctx->engine->maxfilesize && f->Size > ctx->engine->maxfilesize) {
-	    cli_dbgmsg("cli_7unz: skipping stream due to size limits (%lu vs %lu)\n", f->Size, ctx->engine->maxfilesize);
+	    cli_dbgmsg("cli_7unz: skipping stream due to size limits (%llu vs %llu)\n", (long long)f->Size, (long long)ctx->engine->maxfilesize);
 	    continue;
 	}
 	if (ctx->engine->maxfiles && fu>=ctx->engine->maxfiles) {
