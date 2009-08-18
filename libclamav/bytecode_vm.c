@@ -46,7 +46,13 @@ static int bcfail(const char *msg, long a, long b,
     bcfail("Values "#a" and "#b" don't match!",(a),(b),__FILE__,__LINE__); } while(0)
 #define CHECK_GT(a, b) do {if ((a) <= (b)) return \
     bcfail("Condition failed "#a" > "#b,(a),(b), __FILE__, __LINE__); } while(0)
+#define TRACE_R(x) cli_dbgmsg("bytecode trace: %u, read %llx\n", pc, (long long)x);
+#define TRACE_W(x, w, p) cli_dbgmsg("bytecode trace: %u, write%d @%u %llx\n", pc, p, w, (long long)x);
+#define TRACE_EXEC(id, dest, ty, stack) cli_dbgmsg("bytecode trace: executing %d, -> %u (%u); %u\n", id, dest, ty, stack)
 #else
+#define TRACE_R(x)
+#define TRACE_W(x, w, p)
+#define TRACE_EXEC(id, dest, ty, stack, c)
 #define CHECK_UNREACHABLE return CL_EBYTECODE
 #define CHECK_FUNCID(x);
 #define CHECK_EQ(a,b)
@@ -229,42 +235,55 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
     CHECK_EQ((p)&7, 0); 
 */
 #define WRITE8(p, x) CHECK_GT(func->numBytes, p);\
+    TRACE_W(x, p, 8);\
     *(uint8_t*)&values[p] = x
 #define WRITE16(p, x) CHECK_GT(func->numBytes, p+1);\
     CHECK_EQ((p)&1, 0);\
+    TRACE_W(x, p, 16);\
     *(uint16_t*)&values[p] = x
 #define WRITE32(p, x) CHECK_GT(func->numBytes, p+3);\
     CHECK_EQ((p)&3, 0);\
+    TRACE_W(x, p, 32);\
     *(uint32_t*)&values[p] = x
 #define WRITE64(p, x) CHECK_GT(func->numBytes, p+7);\
     CHECK_EQ((p)&7, 0);\
-    *(uint32_t*)&values[p] = x
+    TRACE_W(x, p, 64);\
+    *(uint64_t*)&values[p] = x
 
 #define READ1(x, p) CHECK_GT(func->numBytes, p);\
-    x = (*(uint8_t*)&values[p])&1
+    x = (*(uint8_t*)&values[p])&1;\
+    TRACE_R(x)
 #define READ8(x, p) CHECK_GT(func->numBytes, p);\
-    x = *(uint8_t*)&values[p]
+    x = *(uint8_t*)&values[p];\
+    TRACE_R(x)
 #define READ16(x, p) CHECK_GT(func->numBytes, p+1);\
     CHECK_EQ((p)&1, 0);\
-    x = *(uint16_t*)&values[p]
+    x = *(uint16_t*)&values[p];\
+    TRACE_R(x)
 #define READ32(x, p) CHECK_GT(func->numBytes, p+3);\
     CHECK_EQ((p)&3, 0);\
-    x = *(uint32_t*)&values[p]
+    x = *(uint32_t*)&values[p];\
+    TRACE_R(x)
 #define READ64(x, p) CHECK_GT(func->numBytes, p+7);\
     CHECK_EQ((p)&7, 0);\
-    x = *(uint64_t*)&values[p]
+    x = *(uint64_t*)&values[p];\
+    TRACE_R(x)
 
 #define READOLD8(x, p) CHECK_GT(func->numBytes, p);\
-    x = *(uint8_t*)&old_values[p]
+    x = *(uint8_t*)&old_values[p];\
+    TRACE_R(x)
 #define READOLD16(x, p) CHECK_GT(func->numBytes, p+1);\
     CHECK_EQ((p)&1, 0);\
-    x = *(uint16_t*)&old_values[p]
+    x = *(uint16_t*)&old_values[p];\
+    TRACE_R(x)
 #define READOLD32(x, p) CHECK_GT(func->numBytes, p+3);\
     CHECK_EQ((p)&3, 0);\
-    x = *(uint32_t*)&old_values[p]
+    x = *(uint32_t*)&old_values[p];\
+    TRACE_R(x)
 #define READOLD64(x, p) CHECK_GT(func->numBytes, p+7);\
     CHECK_EQ((p)&7, 0);\
-    x = *(uint64_t*)&old_values[p]
+    x = *(uint64_t*)&old_values[p];\
+    TRACE_R(x)
 
 #define BINOP(i) inst->u.binop[i]
 
@@ -312,8 +331,8 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
     case opc*5+4: {\
 		    uint64_t op0, op1, res;\
 		    int64_t sop0, sop1;\
-		    READ32(op0, BINOP(0));\
-		    READ32(op1, BINOP(1));\
+		    READ64(op0, BINOP(0));\
+		    READ64(op1, BINOP(1));\
 		    sop0 = op0; sop1 = op1;\
 		    OP;\
 		    W4(inst->dest, res);\
@@ -406,7 +425,7 @@ static always_inline int check_sdivops(int64_t op0, int64_t op1)
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst)
 {
     uint64_t tmp;
-    unsigned i, j, stack_depth=0, bb_inst=0, stop=0 ;
+    unsigned i, j, stack_depth=0, bb_inst=0, stop=0, pc=0;
     struct cli_bc_func *func2;
     struct stack stack;
     struct stack_entry *stack_entry = NULL;
@@ -416,6 +435,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 
     memset(&stack, 0, sizeof(stack));
     do {
+	pc++;
 	switch (inst->interp_op) {
 	    DEFINE_BINOP(OP_ADD, res = op0 + op1);
 	    DEFINE_BINOP(OP_SUB, res = op0 - op1);
@@ -544,8 +564,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		stack_entry = allocate_stack(&stack, stack_entry, func2, func, inst->dest,
 					     bb, bb_inst);
 		values = stack_entry->values;
-//		cli_dbgmsg("Executing %d, -> %u (%u); %u\n", inst->u.ops.funcid,
-//			   inst->dest, inst->type, stack_depth);
+		TRACE_EXEC(inst->u.ops.funcid, inst->dest, inst->type, stack_depth);
 		if (stack_depth > 10000) {
 		    cli_errmsg("bytecode: stack depth exceeded\n");
 		    stop = CL_EBYTECODE;
