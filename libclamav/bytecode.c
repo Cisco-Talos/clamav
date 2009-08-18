@@ -121,7 +121,6 @@ static inline int type_isint(uint16_t type)
 
 int cli_bytecode_context_setparam_int(struct cli_bc_ctx *ctx, unsigned i, uint64_t c)
 {
-    unsigned j, s=0;
     if (i >= ctx->numParams) {
 	cli_errmsg("bytecode: param index out of bounds: %u\n", i);
 	return CL_EARG;
@@ -399,11 +398,11 @@ static uint16_t readTypeID(struct cli_bc *bc, unsigned char *buffer,
 {
     uint64_t t = readNumber(buffer, offset, len, ok);
     if (!ok)
-	return ~0u;
+	return ~0;
     if (t >= bc->num_types + bc->start_tid) {
-	cli_errmsg("Invalid type id: %u\n", t);
+	cli_errmsg("Invalid type id: %llu\n", (unsigned long long)t);
 	*ok = 0;
-	return ~0u;
+	return ~0;
     }
     return t;
 }
@@ -445,7 +444,9 @@ static void add_static_types(struct cli_bc *bc)
 
 static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 {
-    unsigned i, j, offset = 1, ok=1, len = strlen(buffer);
+    unsigned i, offset = 1, len = strlen(buffer);
+    char ok=1;
+
     if (buffer[0] != 'T') {
 	cli_errmsg("Invalid function types header: %c\n", buffer[0]);
 	return CL_EMALFDB;
@@ -460,7 +461,6 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
     for (i=(BC_START_TID - 64);i<bc->num_types;i++) {
 	struct cli_bc_type *ty = &bc->types[i];
 	uint8_t t = readFixedNumber(buffer, &offset, len, &ok, 1);
-	uint16_t tid;
 	if (!ok) {
 	    cli_errmsg("Error reading type kind\n");
 	    return CL_EMALFDB;
@@ -607,13 +607,13 @@ static bbid_t readBBID(struct cli_bc_func *func, const unsigned char *buffer, un
     return id;
 }
 
-
+/*
 static uint16_t get_type(struct cli_bc_func *func, operand_t op)
 {
     if (op >= func->numValues)
 	return 64;
     return func->types[op];
-}
+}*/
 
 static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char *buffer)
 {
@@ -638,7 +638,7 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
     BB->numInsts = 0;
     BB->insts = &bcfunc->allinsts[bcfunc->insn_idx];
     while (!last) {
-	unsigned numOp, i;
+	unsigned numOp;
 	if (buffer[offset] == 'T') {
 	    last = 1;
 	    offset++;
@@ -875,7 +875,6 @@ int cli_bytecode_run(const struct cli_bc *bc, struct cli_bc_ctx *ctx)
 {
     struct cli_bc_inst inst;
     struct cli_bc_func func;
-    unsigned i;
     if (!ctx || !ctx->bc || !ctx->func)
 	return CL_ENULLARG;
     if (ctx->numParams && (!ctx->values || !ctx->operands))

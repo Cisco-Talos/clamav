@@ -52,7 +52,7 @@ static int bcfail(const char *msg, long a, long b,
 #else
 #define TRACE_R(x)
 #define TRACE_W(x, w, p)
-#define TRACE_EXEC(id, dest, ty, stack, c)
+#define TRACE_EXEC(id, dest, ty, stack)
 #define CHECK_UNREACHABLE return CL_EBYTECODE
 #define CHECK_FUNCID(x);
 #define CHECK_EQ(a,b)
@@ -189,9 +189,7 @@ static always_inline struct stack_entry *allocate_stack(struct stack *stack,
 							struct cli_bc_bb *bb,
 							unsigned bb_inst)
 {
-    unsigned i;
     char *values;
-    const unsigned numValues = func->numValues + func->numConstants;
     struct stack_entry *entry = cli_stack_alloc(stack, sizeof(*entry) + sizeof(*values)*func->numBytes);
     if (!entry)
 	return NULL;
@@ -424,7 +422,6 @@ static always_inline int check_sdivops(int64_t op0, int64_t op1)
 
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst)
 {
-    uint64_t tmp;
     unsigned i, j, stack_depth=0, bb_inst=0, stop=0, pc=0;
     struct cli_bc_func *func2;
     struct stack stack;
