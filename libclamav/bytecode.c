@@ -204,33 +204,6 @@ static inline funcid_t readFuncID(struct cli_bc *bc, unsigned char *p,
     return id;
 }
 
-static inline operand_t readOperand(struct cli_bc_func *func, unsigned char *p,
-				    unsigned *off, unsigned len, char *ok)
-{
-    uint64_t v;
-    if ((p[*off]&0xf0) == 0x40 || p[*off] == 0x50) {
-	p[*off] |= 0x20;
-	/* TODO: unique constants */
-	func->constants = cli_realloc2(func->constants, (func->numConstants+1)*sizeof(*func->constants));
-	if (!func->constants) {
-	    *ok = 0;
-	    return MAX_OP;
-	}
-	v = readNumber(p, off, len, ok);
-	func->constants[func->numConstants] = v;
-	return func->numValues + func->numConstants++;
-    }
-    v = readNumber(p, off, len, ok);
-    if (!*ok)
-	return MAX_OP;
-    if (v >= func->numValues) {
-	cli_errmsg("Operand index exceeds bounds: %u >= %u!\n", (unsigned)v, (unsigned)func->numValues);
-	*ok = 0;
-	return MAX_OP;
-    }
-    return v;
-}
-
 static inline unsigned readFixedNumber(const unsigned char *p, unsigned *off,
 				       unsigned len, char *ok, unsigned width)
 {
@@ -255,6 +228,53 @@ static inline unsigned readFixedNumber(const unsigned char *p, unsigned *off,
     }
     *off = newoff;
     return n;
+}
+
+static inline operand_t readOperand(struct cli_bc_func *func, unsigned char *p,
+				    unsigned *off, unsigned len, char *ok)
+{
+    uint64_t v;
+    if ((p[*off]&0xf0) == 0x40 || p[*off] == 0x50) {
+	uint64_t *dest;
+	uint16_t ty;
+	p[*off] |= 0x20;
+	/* TODO: unique constants */
+	func->constants = cli_realloc2(func->constants, (func->numConstants+1)*sizeof(*func->constants));
+	if (!func->constants) {
+	    *ok = 0;
+	    return MAX_OP;
+	}
+	v = readNumber(p, off, len, ok);
+	dest = &func->constants[func->numConstants];
+	/* Write the constant to the correct place according to its type.
+	 * This is needed on big-endian machines, because constants are always
+	 * read as u64, but accesed as one of these types: u8, u16, u32, u64 */
+	*dest= 0;
+	ty = 8*readFixedNumber(p, off, len, ok, 1);
+	if (!ty) {
+	    cli_errmsg("bytecode: void type constant is invalid!\n");
+	    *ok = 0;
+	    return MAX_OP;
+	}
+	if (ty <= 8)
+	    *(uint8_t*)dest = v;
+	else if (ty <= 16)
+	    *(uint16_t*)dest = v;
+	else if (ty <= 32)
+	    *(uint32_t*)dest = v;
+	else
+	    *dest = v;
+	return func->numValues + func->numConstants++;
+    }
+    v = readNumber(p, off, len, ok);
+    if (!*ok)
+	return MAX_OP;
+    if (v >= func->numValues) {
+	cli_errmsg("Operand index exceeds bounds: %u >= %u!\n", (unsigned)v, (unsigned)func->numValues);
+	*ok = 0;
+	return MAX_OP;
+    }
+    return v;
 }
 
 static inline unsigned char *readData(const unsigned char *p, unsigned *off, unsigned len, char *ok, unsigned *datalen)
@@ -638,13 +658,14 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	    cli_errmsg("Invalid opcode: %u\n", inst.opcode);
 	    return CL_EMALFDB;
 	}
+
 	switch (inst.opcode) {
 	    case OP_JMP:
 		inst.u.jump = readBBID(bcfunc, buffer, &offset, len, &ok);
 		break;
 	    case OP_RET:
-		inst.u.unaryop = readOperand(bcfunc, buffer, &offset, len, &ok);
 		inst.type = readNumber(buffer, &offset, len, &ok);
+		inst.u.unaryop = readOperand(bcfunc, buffer, &offset, len, &ok);
 		break;
 	    case OP_BRANCH:
 		inst.u.branch.condition = readOperand(bcfunc, buffer, &offset, len, &ok);
@@ -688,6 +709,19 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 			(1ull<<inst.u.cast.mask)-1 :
 			~0ull;
 		break;
+	    case OP_ICMP_EQ:
+	    case OP_ICMP_NE:
+	    case OP_ICMP_UGT:
+	    case OP_ICMP_UGE:
+	    case OP_ICMP_ULT:
+	    case OP_ICMP_ULE:
+	    case OP_ICMP_SGT:
+	    case OP_ICMP_SGE:
+	    case OP_ICMP_SLE:
+	    case OP_ICMP_SLT:
+		/* instruction type must be correct before readOperand! */
+		inst.type = readNumber(buffer, &offset, len, &ok);
+		/* fall-through */
 	    default:
 		numOp = operand_counts[inst.opcode];
 		switch (numOp) {
@@ -718,31 +752,17 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		       bcfunc->insn_idx+BB->numInsts, bcfunc->numInsts);
 	    return CL_EMALFDB;
 	}
-	switch (inst.opcode) {
-	    default:
-		break;
-	    case OP_ICMP_EQ:
-	    case OP_ICMP_NE:
-	    case OP_ICMP_UGT:
-	    case OP_ICMP_UGE:
-	    case OP_ICMP_ULT:
-	    case OP_ICMP_ULE:
-	    case OP_ICMP_SGT:
-	    case OP_ICMP_SGE:
-	    case OP_ICMP_SLE:
-	    case OP_ICMP_SLT:
-		inst.type = get_type(bcfunc, inst.u.binop[0]);
-		break;
-	}
 	inst.interp_op = inst.opcode*5;
-	if (inst.type > 1 && inst.type <= 8)
-	    inst.interp_op += 1;
-	else if (inst.type <= 16)
-	    inst.interp_op += 2;
-	else if (inst.type <= 32)
-	    inst.interp_op += 3;
-	else if (inst.type <= 64)
-	    inst.interp_op += 4;
+	if (inst.type > 1) {
+	    if (inst.type <= 8)
+		inst.interp_op += 1;
+	    else if (inst.type <= 16)
+		inst.interp_op += 2;
+	    else if (inst.type <= 32)
+		inst.interp_op += 3;
+	    else if (inst.type <= 64)
+		inst.interp_op += 4;
+	}
 	BB->insts[BB->numInsts++] = inst;
     }
     if (bb+1 == bc->funcs[func].numBB) {
@@ -883,7 +903,7 @@ int cli_bytecode_run(const struct cli_bc *bc, struct cli_bc_ctx *ctx)
 
 uint64_t cli_bytecode_context_getresult_int(struct cli_bc_ctx *ctx)
 {
-    return *(uint64_t*)ctx->values;/*XXX*/
+    return *(uint32_t*)ctx->values;/*XXX*/
 //    return ctx->values[ctx->numParams];
 }
 
