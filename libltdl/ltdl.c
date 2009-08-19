@@ -1614,9 +1614,6 @@ lt_dlopenadvise (const char *filename, lt_dladvise advise)
 {
   lt_dlhandle	handle	= 0;
   int		errors	= 0;
-  const char *	saved_error	= 0;
-
-  LT__GETERROR (saved_error);
 
   /* Can't have symbols hidden and visible at the same time!  */
   if (advise && advise->is_symlocal && advise->is_symglobal)
@@ -1653,7 +1650,6 @@ lt_dlopenadvise (const char *filename, lt_dladvise advise)
 
 #if defined(LT_MODULE_EXT)
       /* Try appending SHLIB_EXT.   */
-      LT__SETERRORSTR (saved_error);
       errors = try_dlopen (&handle, filename, shlib_ext, advise);
 
       /* As before, if the file was found but loading failed, return now

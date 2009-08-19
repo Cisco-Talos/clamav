@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2008 Sourcefire, Inc.
+ *  Copyright (C) 2009 Sourcefire, Inc.
  *
  *  Authors: aCaB <acab@clamav.net>
  *
@@ -26,12 +26,15 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <string.h>
+#include <sys/mman.h>
 #include <unistd.h>
 
 #include "others.h"
 #include "cltypes.h"
 
-#define FM_MASK_SCORE 0x0x3FFF
+
+#define FM_MASK_SCORE 0x3fff
 #define FM_MASK_PAGED 0x4000
 #define FM_MASK_SEEN 0x8000
 #define FM_SCORE 8
@@ -44,15 +47,15 @@ struct F_MAP {
     unsigned int pages;
     unsigned int hdrsz;
     unsigned int pgsz;
-    uint16_t bitmap[];
+    uint16_t bitmap[]; /* FIXME: do not use flexible arrays */
 };
 
 
-static unsigned int fmap_align_items(unsigned int sz, unsiggned int al) {
+static unsigned int fmap_align_items(unsigned int sz, unsigned int al) {
     return sz / al + (sz % al != 0);
 }
 
-static unsigned int fmap_align_to(unsigned int sz, unsiggned int al) {
+static unsigned int fmap_align_to(unsigned int sz, unsigned int al) {
     return al * fmap_align_items(sz, al);
 }
 
@@ -70,7 +73,7 @@ static unsigned int fmap_is_seen(struct F_MAP *m, unsigned int page) {
     return ((s & FM_MASK_SEEN) != 0);
 }
 
-static unsigned int fmap_inc_paged(struct F_MAP *m, unsigned int page) {
+static void fmap_inc_page(struct F_MAP *m, unsigned int page) {
     uint16_t s = m->bitmap[page] & FM_MASK_SCORE;
     if(s < FM_MASK_SCORE - FM_SCORE)
 	m->bitmap[page] += FM_SCORE;
@@ -78,9 +81,9 @@ static unsigned int fmap_inc_paged(struct F_MAP *m, unsigned int page) {
 	m->bitmap[page] |= FM_MASK_SCORE;
 }
 
-static unsigned int fmap_dec_paged(struct F_MAP *m, unsigned int page) {
+static void fmap_dec_page(struct F_MAP *m, unsigned int page) {
     uint16_t s = m->bitmap[page] & FM_MASK_SCORE;
-    if(s) s->bitmap[page]--;
+    if(s) m->bitmap[page]--;
 }
 
 struct F_MAP *fmap(int fd, off_t offset, size_t len) {
@@ -93,7 +96,7 @@ struct F_MAP *fmap(int fd, off_t offset, size_t len) {
 	cli_warnmsg("fmap: fstat failed\n");
 	return NULL;
     }
-    if(offset < 0 || offset != fmap_align_to(offset, pgzs)) {
+    if(offset < 0 || offset != fmap_align_to(offset, pgsz)) {
 	cli_warnmsg("fmap: attempted mapping with unaligned offset\n");
 	return NULL;
     }
