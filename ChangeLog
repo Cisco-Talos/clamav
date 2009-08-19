@@ -1,3 +1,7 @@
+Thu Aug 20 00:34:39 CEST 2009 (tk)
+----------------------------------
+ * libclamav/matcher-bm.c: micro-optimization
+
 Tue Aug 18 23:52:20 CEST 2009 (tk)
 ----------------------------------
  * libclamav/cpio.c: wrap unistd.h, reported by Nigel Horne

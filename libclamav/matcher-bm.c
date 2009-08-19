@@ -178,6 +178,10 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	if(shift == 0) {
 	    prefix = buffer[i - BM_MIN_LENGTH + BM_BLOCK_SIZE];
 	    p = root->bm_suffix[idx];
+	    if(p && p->cnt == 1 && p->pattern0 != prefix) {
+		i++;
+		continue;
+	    }
 	    pchain = 0;
 	    while(p) {
 		if(p->pattern0 != prefix) {
