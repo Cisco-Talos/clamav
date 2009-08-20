@@ -448,10 +448,11 @@ static void parseType(struct cli_bc *bc, struct cli_bc_type *ty,
 
 static uint16_t containedTy[] = {8,16,32,64};
 
+#define NUM_STATIC_TYPES 4
 static void add_static_types(struct cli_bc *bc)
 {
     unsigned i;
-    for (i=0;i<4;i++) {
+    for (i=0;i<NUM_STATIC_TYPES;i++) {
 	bc->types[i].kind = PointerType;
 	bc->types[i].numElements = 1;
 	bc->types[i].containedTypes = &containedTy[i];
@@ -1035,7 +1036,8 @@ void cli_bytecode_destroy(struct cli_bc *bc)
 	    struct cli_bc_bb *BB = &f->BB[j];
 	    for(k=0;k<BB->numInsts;k++) {
 		struct cli_bc_inst *ii = &BB->insts[k];
-		if (operand_counts[ii->opcode] > 3 || ii->opcode == OP_CALL_DIRECT) {
+		if (operand_counts[ii->opcode] > 3 ||
+		    ii->opcode == OP_CALL_DIRECT || ii->opcode == OP_CALL_API) {
 		    free(ii->u.ops.ops);
 		    free(ii->u.ops.opsizes);
 		}
@@ -1046,6 +1048,11 @@ void cli_bytecode_destroy(struct cli_bc *bc)
 	free(f->constants);
     }
     free(bc->funcs);
+    for (i=NUM_STATIC_TYPES;i<bc->num_types;i++) {
+	if (bc->types[i].containedTypes)
+	    free(bc->types[i].containedTypes);
+    }
+    free(bc->types);
     if (bc->uses_apis)
 	cli_bitset_free(bc->uses_apis);
 }
@@ -1157,7 +1164,8 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 			    cli_errmsg("Out of memory when allocating operand sizes\n");
 			    return CL_EMEM;
 			}
-		    }
+		    } else
+			inst->u.ops.opsizes = NULL;
 		    for (k=0;k<inst->u.ops.numOps;k++) {
 			MAP(inst->u.ops.ops[k]);
 			if (inst->opcode == OP_CALL_DIRECT)
