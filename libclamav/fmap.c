@@ -137,7 +137,7 @@ struct F_MAP *fmap(int fd, off_t offset, size_t len) {
 }
 
 static int fmap_readpage(struct F_MAP *m, unsigned int page) {
-    size_t readsz;
+    size_t readsz, got;
     char *pptr;
 
     fmap_inc_page(m, page);
@@ -149,8 +149,10 @@ static int fmap_readpage(struct F_MAP *m, unsigned int page) {
 	readsz = m->len % m->pgsz;
     else
 	readsz = m->pgsz;
-    if(pread(m->fd, pptr, m->pgsz, m->offset + page * m->pgsz) != readsz)
+    if((got=pread(m->fd, pptr, readsz, m->offset + page * m->pgsz)) != readsz) {
+	cli_warnmsg("pread fail: page %u pages %u map-offset %u - asked for %u bytes, got %u\n", page, m->pages, m->offset, readsz, got);
 	return 1;
+    }
     fmap_set_paged(m, page, 1);
     return 0;
 }
@@ -170,7 +172,7 @@ void *fmap_need_off(struct F_MAP *m, size_t at, size_t len) {
     }
     
     first_page = fmap_which_page(m, at);
-    last_page = fmap_which_page(m, at + len);    
+    last_page = fmap_which_page(m, at + len - 1);
 
     for(i=first_page; i<=last_page; i++) {
 	if(fmap_readpage(m, i))
@@ -198,7 +200,7 @@ void *fmap_need_str(struct F_MAP *m, void *ptr, size_t len) {
     }
 
     first_page = fmap_which_page(m, at);
-    last_page = fmap_which_page(m, at + len);    
+    last_page = fmap_which_page(m, at + len - 1);
 
     for(i=first_page; i<=last_page; i++) {
 	char *thispage = (char *)m + m->hdrsz;
