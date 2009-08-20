@@ -148,7 +148,7 @@ static int fmap_readpage(struct F_MAP *m, unsigned int page) {
     return 0;
 }
 
-void *fmap_need(struct F_MAP *m, size_t at, size_t len) {
+void *fmap_need_off(struct F_MAP *m, size_t at, size_t len) {
     unsigned int i, first_page, last_page;
     char *ret;
 
@@ -174,6 +174,43 @@ void *fmap_need(struct F_MAP *m, size_t at, size_t len) {
     return (void *)ret;
 }
 
+void *fmap_need_ptr(struct F_MAP *m, void *ptr, size_t len) {
+    return fmap_need_off(m, (char *)ptr - (char *)m - m->hdrsz, len);
+}
+
+void *fmap_need_str(struct F_MAP *m, void *ptr, size_t len) {
+    const size_t at = (char *)ptr - (char *)m - m->hdrsz;
+    unsigned int i, first_page, last_page;
+
+    if(!len)
+	len = m->len - at;
+
+    if(!CLI_ISCONTAINED(0, m->len, at, len)) {
+	cli_warnmsg("fmap: attempted oof need_str\n");
+	return NULL;
+    }
+
+    first_page = fmap_which_page(m, at);
+    last_page = fmap_which_page(m, at + len);    
+
+    for(i=first_page; i<=last_page; i++) {
+	char *thispage = (char *)m + m->hdrsz;
+	unsigned int scanat, scansz;
+	
+	if(fmap_readpage(m, i))
+	    return NULL;
+	if(i == first_page) {
+	    scanat = at % m->pgsz;
+	    scansz = m->pgsz - scanat;
+	} else {
+	    scanat = 0;
+	    scansz = m->pgsz - scanat;
+	}
+	if(memchr(&thispage[scanat], 0, scansz))
+	    return ptr;
+    }
+    return NULL;
+}
 
 void fmunmap(struct F_MAP *m) {
     void *p = (void *)m;

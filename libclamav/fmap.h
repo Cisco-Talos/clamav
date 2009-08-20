@@ -24,6 +24,8 @@
 struct F_MAP;
 
 struct F_MAP *fmap(int fd, off_t offset, size_t len);
-void *fmunmap(struct F_MAP *m, size_t len);
-
+void *fmunmap(struct F_MAP *m);
+void *fmap_need_ptr(struct F_MAP *m, void *ptr, size_t len);
+void *fmap_need_off(struct F_MAP *m, size_t at, size_t len);
+void *fmap_need_str(struct F_MAP *m, void *ptr, size_t len);
 #endif

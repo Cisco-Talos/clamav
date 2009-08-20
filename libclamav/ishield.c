@@ -32,11 +32,6 @@
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#if HAVE_MMAP
-#ifdef HAVE_SYS_MMAN_H
-#include <sys/mman.h>
-#endif
-#endif /* HAVE_MMAP */
 #if HAVE_STRING_H
 #include <string.h>
 #endif
@@ -49,6 +44,7 @@
 #include "scanners.h"
 #include "cltypes.h"
 #include "others.h"
+#include "fmap.h"
 #include "ishield.h"
 
 #ifndef O_BINARY
@@ -483,13 +479,6 @@ struct IS_HDR {
 };
 
 
-#define IS_FREE_HDR if(map) munmap(map, mp_hdrsz); else free(hdr);
-#if HAVE_MMAP
-#define IS_MAX_NOMAP_SZ 0x100000
-#else
-#define IS_MAX_NOMAP_SZ CLI_MAX_ALLOCATION
-#endif
-
 /* Process data1.hdr and extracts all the available files from dataX.cab */
 static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) { 
     uint32_t h1_data_off, objs_files_cnt, objs_dirs_off;
@@ -507,41 +496,29 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 	return CL_CLEAN;
     }
 
-    if(c->hdrsz < IS_MAX_NOMAP_SZ) {
-	if(!(hdr = (char *)cli_malloc(c->hdrsz)))
-	    return CL_EMEM;
-	if(pread(desc, hdr, c->hdrsz, c->hdr) < (ssize_t)c->hdrsz) {
-	    cli_errmsg("is_parse_hdr: short read for header\n");
-	    free(hdr);
-	    return CL_EREAD; /* hdr must be within bounds, it's k to hard fail here */
-	}
-    } else {
-#if defined(HAVE_MMAP) && defined(HAVE_CLI_GETPAGESIZE)
+
+    {
 	int psz = cli_getpagesize();
 	off_t mp_hdr = (c->hdr / psz) * psz;
 	mp_hdrsz = c->hdrsz + c->hdr - mp_hdr;
-	if((map = mmap(NULL, mp_hdrsz, PROT_READ, MAP_PRIVATE, desc, mp_hdr))==MAP_FAILED) {
+	if(!(map = fmap(desc, mp_hdr, mp_hdrsz))) {
 	    cli_errmsg("is_parse_hdr: mmap failed\n");
 	    return CL_EMEM;
 	}
 	hdr = map + c->hdr - mp_hdr;
-#else
-	cli_warnmsg("is_parse_hdr: hdr too big and mmap is not usable\n");
-	return CL_CLEAN;
-#endif
     }
 
-    h1 = (struct IS_HDR *)hdr;
-    if(!CLI_ISCONTAINED(hdr, c->hdrsz, ((char *)h1), sizeof(*h1))) {
+    h1 = (struct IS_HDR *)fmap_need_ptr(map, hdr, sizeof(*h1));
+    if(!h1) {
 	cli_dbgmsg("is_parse_hdr: not enough room for H1\n");
-	IS_FREE_HDR;
+	fmunmap(map);
 	return CL_CLEAN;
     }
     h1_data_off = le32_to_host(h1->data_off);
-    objs = (struct IS_OBJECTS *)(hdr + h1_data_off);
-    if(!CLI_ISCONTAINED(hdr, c->hdrsz, ((char *)objs), sizeof(*objs))) {
+    objs = (struct IS_OBJECTS *)fmap_need_ptr(map, hdr + h1_data_off, sizeof(*objs));
+    if(!objs) {
 	cli_dbgmsg("is_parse_hdr: not enough room for OBJECTS\n");
-	IS_FREE_HDR;
+	fmunmap(map);
 	return CL_CLEAN;
     }
 
@@ -549,7 +526,7 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 	       h1->magic, h1->unk1, h1->unk2, h1_data_off, h1->data_sz);
     if(le32_to_host(h1->magic) != 0x28635349) {
 	cli_dbgmsg("is_parse_hdr: bad magic. wrong version?\n");
-	IS_FREE_HDR;
+	fmunmap(map);
 	return CL_CLEAN;
     }
 
@@ -590,9 +567,9 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
     objs_files_cnt = le32_to_host(objs->files_cnt);
     off = h1_data_off + objs_dirs_off + le32_to_host(objs->dir_sz2);
     for(i=0; i<objs_files_cnt ;i++) {
-	struct IS_FILEITEM *file = (struct IS_FILEITEM *)(&hdr[off]);
+	struct IS_FILEITEM *file = (struct IS_FILEITEM *)fmap_need_ptr(map, &hdr[off], sizeof(*file));
 
-	if(CLI_ISCONTAINED(hdr, c->hdrsz, ((char *)file), sizeof(*file))) {
+	if(file) {
 	    const char *dir_name = "", *file_name = "";
 	    uint32_t dir_rel = h1_data_off + objs_dirs_off + 4 * le32_to_host(file->dir_id); /* rel off of dir entry from array of rel ptrs */
 	    uint32_t file_rel = objs_dirs_off + h1_data_off + le32_to_host(file->str_name_off); /* rel off of fname */
@@ -601,12 +578,12 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 
 	    memcpy(hash, file->md5, 16);
 	    md5str((uint8_t *)hash);
-	    if(CLI_ISCONTAINED(hdr, c->hdrsz, &hdr[dir_rel], 4)) {
+	    if(fmap_need_ptr(map, &hdr[dir_rel], 4)) {
 		dir_rel = cli_readint32(&hdr[dir_rel]) + h1_data_off + objs_dirs_off;
-		if(CLI_ISCONTAINED(hdr, c->hdrsz, &hdr[dir_rel], 1) && memchr(&hdr[dir_rel], 0, c->hdrsz - dir_rel))
+		if(fmap_need_str(map, &hdr[dir_rel], c->hdrsz - dir_rel))
 		    dir_name = &hdr[dir_rel];
 	    }
-	    if(CLI_ISCONTAINED(hdr, c->hdrsz, &hdr[file_rel], 1) && memchr(&hdr[file_rel], 0, c->hdrsz - file_rel))
+	    if(fmap_need_str(map, &hdr[file_rel], c->hdrsz - file_rel))
 		file_name = &hdr[file_rel];
 		
 	    file_stream_off = le64_to_host(file->stream_off);
@@ -646,7 +623,7 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 				scanned++;
 				if (ctx->engine->maxfiles && scanned >= ctx->engine->maxfiles) {
 				    cli_dbgmsg("is_parse_hdr: File limit reached (max: %u)\n", ctx->engine->maxfiles);
-				    IS_FREE_HDR;
+				    fmunmap(map);
 				    return CL_EMAXFILES;
 				}
 				cabret = is_extract_cab(desc, ctx, file_stream_off + c->cabs[j].off, file_size, file_csize);
@@ -680,7 +657,7 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 	}
 	off += sizeof(*file);
     }
-    IS_FREE_HDR;
+    fmunmap(map);
     return ret;
 }
 
