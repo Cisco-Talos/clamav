@@ -131,7 +131,8 @@ am__libclamav_la_SOURCES_DIST = clamav.h matcher-ac.c matcher-ac.h \
 	uniq.h version.c version.h mpool.c mpool.h default.h sha256.c \
 	sha256.h bignum.h bytecode.c bytecode.h bytecode_vm.c \
 	bytecode_priv.h clambc.h cpio.c cpio.h macho.c macho.h \
-	ishield.c ishield.h type_desc.h bignum.c bignum_class.h
+	ishield.c ishield.h type_desc.h bytecode_api.c \
+	bytecode_api_decl.c bytecode_api.h bignum.c bignum_class.h
 @LINK_TOMMATH_FALSE@am__objects_1 = libclamav_la-bignum.lo
 am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-matcher-bm.lo libclamav_la-matcher.lo \
@@ -177,7 +178,9 @@ am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-version.lo libclamav_la-mpool.lo \
 	libclamav_la-sha256.lo libclamav_la-bytecode.lo \
 	libclamav_la-bytecode_vm.lo libclamav_la-cpio.lo \
-	libclamav_la-macho.lo libclamav_la-ishield.lo $(am__objects_1)
+	libclamav_la-macho.lo libclamav_la-ishield.lo \
+	libclamav_la-bytecode_api.lo libclamav_la-bytecode_api_decl.lo \
+	$(am__objects_1)
 libclamav_la_OBJECTS = $(am_libclamav_la_OBJECTS)
 libclamav_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libclamav_la_CFLAGS) \
@@ -547,7 +550,8 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	uniq.h version.c version.h mpool.c mpool.h default.h sha256.c \
 	sha256.h bignum.h bytecode.c bytecode.h bytecode_vm.c \
 	bytecode_priv.h clambc.h cpio.c cpio.h macho.c macho.h \
-	ishield.c ishield.h type_desc.h $(am__append_7)
+	ishield.c ishield.h type_desc.h bytecode_api.c \
+	bytecode_api_decl.c bytecode_api.h $(am__append_7)
 noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la
 COMMON_CLEANFILES = version.h version.h.tmp *.gcda *.gcno
 @MAINTAINER_MODE_TRUE@BUILT_SOURCES = jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf
@@ -678,6 +682,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-binhex.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-blob.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-bytecode.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-bytecode_api.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-bytecode_api_decl.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-bytecode_vm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-bzlib.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-cab.Plo@am__quote@
@@ -1416,6 +1422,20 @@ libclamav_la-ishield.lo: ishield.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='ishield.c' object='libclamav_la-ishield.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-ishield.lo `test -f 'ishield.c' || echo '$(srcdir)/'`ishield.c
+
+libclamav_la-bytecode_api.lo: bytecode_api.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-bytecode_api.lo -MD -MP -MF $(DEPDIR)/libclamav_la-bytecode_api.Tpo -c -o libclamav_la-bytecode_api.lo `test -f 'bytecode_api.c' || echo '$(srcdir)/'`bytecode_api.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libclamav_la-bytecode_api.Tpo $(DEPDIR)/libclamav_la-bytecode_api.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='bytecode_api.c' object='libclamav_la-bytecode_api.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-bytecode_api.lo `test -f 'bytecode_api.c' || echo '$(srcdir)/'`bytecode_api.c
+
+libclamav_la-bytecode_api_decl.lo: bytecode_api_decl.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-bytecode_api_decl.lo -MD -MP -MF $(DEPDIR)/libclamav_la-bytecode_api_decl.Tpo -c -o libclamav_la-bytecode_api_decl.lo `test -f 'bytecode_api_decl.c' || echo '$(srcdir)/'`bytecode_api_decl.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libclamav_la-bytecode_api_decl.Tpo $(DEPDIR)/libclamav_la-bytecode_api_decl.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='bytecode_api_decl.c' object='libclamav_la-bytecode_api_decl.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-bytecode_api_decl.lo `test -f 'bytecode_api_decl.c' || echo '$(srcdir)/'`bytecode_api_decl.c
 
 libclamav_la-bignum.lo: bignum.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-bignum.lo -MD -MP -MF $(DEPDIR)/libclamav_la-bignum.Tpo -c -o libclamav_la-bignum.lo `test -f 'bignum.c' || echo '$(srcdir)/'`bignum.c

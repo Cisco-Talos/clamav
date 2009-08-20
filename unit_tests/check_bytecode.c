@@ -81,6 +81,14 @@ START_TEST (test_arith)
     runtest("input/arith.cbc", 0xd5555555);
 }
 END_TEST
+
+START_TEST (test_apicalls)
+{
+    runtest("input/apicalls.cbc", 0xf00d);
+}
+END_TEST
+
+
 Suite *test_bytecode_suite(void)
 {
     Suite *s = suite_create("bytecode");
@@ -89,5 +97,6 @@ Suite *test_bytecode_suite(void)
 
     tcase_add_test(tc_cli_arith, test_retmagic);
     tcase_add_test(tc_cli_arith, test_arith);
+    tcase_add_test(tc_cli_arith, test_apicalls);
     return s;
 }

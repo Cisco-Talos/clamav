@@ -324,7 +324,10 @@ libclamav_la_SOURCES = \
 	macho.h \
 	ishield.c \
 	ishield.h \
-	type_desc.h
+	type_desc.h \
+	bytecode_api.c \
+	bytecode_api_decl.c \
+	bytecode_api.h
 
 if !LINK_TOMMATH
 libclamav_la_SOURCES += bignum.c \
