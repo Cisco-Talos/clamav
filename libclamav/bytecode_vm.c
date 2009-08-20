@@ -26,6 +26,7 @@
 #include "others.h"
 #include "bytecode.h"
 #include "bytecode_priv.h"
+#include "type_desc.h"
 #include "readdb.h"
 #include <string.h>
 
@@ -42,6 +43,8 @@ static int bcfail(const char *msg, long a, long b,
 #define CHECK_UNREACHABLE do { cli_dbgmsg("bytecode: unreachable executed!\n"); return CL_EBYTECODE; } while(0)
 #define CHECK_FUNCID(funcid) do { if (funcid >= bc->num_func) return \
     bcfail("funcid out of bounds!",funcid, bc->num_func,__FILE__,__LINE__); } while(0)
+#define CHECK_APIID(funcid) do { if (funcid >= cli_apicall_maxapi) return \
+    bcfail("APIid out of bounds!",funcid, cli_apicall_maxapi,__FILE__,__LINE__); } while(0)
 #define CHECK_EQ(a, b) do { if ((a) != (b)) return \
     bcfail("Values "#a" and "#b" don't match!",(a),(b),__FILE__,__LINE__); } while(0)
 #define CHECK_GT(a, b) do {if ((a) <= (b)) return \
@@ -55,6 +58,7 @@ static int bcfail(const char *msg, long a, long b,
 #define TRACE_EXEC(id, dest, ty, stack)
 #define CHECK_UNREACHABLE return CL_EBYTECODE
 #define CHECK_FUNCID(x);
+#define CHECK_APIID(x);
 #define CHECK_EQ(a,b)
 #define CHECK_GT(a,b)
 #endif
@@ -550,6 +554,34 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		READ64(t1, inst->u.three[1]);
 		READ64(t2, inst->u.three[2]);
 		WRITE64(inst->dest, t0 ? t1 : t2);
+		break;
+	    }
+
+	    DEFINE_OP(OP_CALL_API) {
+		const struct cli_apicall *api = &cli_apicalls[inst->u.ops.funcid];
+		int32_t res;
+		CHECK_APIID(inst->u.ops.funcid);
+		TRACE_EXEC(-inst->u.ops.funcid, inst->dest, inst->type, stack_depth);
+	        switch (api->kind) {
+		    case 0: {
+			int32_t a, b, r;
+			READ32(a, inst->u.ops.ops[0]);
+			READ32(b, inst->u.ops.ops[1]);
+			res = cli_apicalls0[api->idx](a, b);
+			break;
+		    }
+		    case 1: {
+			cli_errmsg("bytecode: type 1 apicalls not yet implemented!\n");
+			stop = CL_EBYTECODE;
+		/*	void *p;
+			uint32_t u;
+			p = ...;
+			u = READ32(v, inst->u.ops.ops[1]);
+			res =  cli_apicalls1[api->idx](p, u);
+			break;*/
+		    }
+		}
+		WRITE32(inst->dest, res);
 		break;
 	    }
 

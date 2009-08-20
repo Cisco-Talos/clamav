@@ -24,6 +24,8 @@
 #include <stdio.h>
 #include "clambc.h"
 #include "cltypes.h"
+#include "others.h"
+
 struct cli_dbio;
 struct cli_bc_ctx;
 struct cli_bc_func;
@@ -48,6 +50,7 @@ struct cli_bc {
   struct cli_bc_type *types;
   enum bc_state state;
   uint16_t start_tid;
+  bitset_t *uses_apis;
 };
 
 struct cli_bc_ctx *cli_bytecode_context_alloc(void);

@@ -203,6 +203,18 @@ static inline funcid_t readFuncID(struct cli_bc *bc, unsigned char *p,
     return id;
 }
 
+static inline funcid_t readAPIFuncID(struct cli_bc *bc, unsigned char *p,
+				     unsigned *off, unsigned len, char *ok)
+{
+    funcid_t id = readNumber(p, off, len, ok)-1;
+    if (*ok && !cli_bitset_test(bc->uses_apis, id)) {
+	cli_errmsg("Called undeclared API function: %u\n", id);
+	*ok = 0;
+	return ~0;
+    }
+    return id;
+}
+
 static inline unsigned readFixedNumber(const unsigned char *p, unsigned *off,
 				       unsigned len, char *ok, unsigned width)
 {
@@ -291,7 +303,7 @@ static inline unsigned char *readData(const unsigned char *p, unsigned *off, uns
 	*datalen = l;
 	return NULL;
     }
-    newoff = *off + l;
+    newoff = *off + 2*l;
     if (newoff > len) {
 	cli_errmsg("Line ended while reading data\n");
 	*ok = 0;
@@ -304,14 +316,15 @@ static inline unsigned char *readData(const unsigned char *p, unsigned *off, uns
 	return NULL;
     }
     q = dat;
-    for (i=*off;i<newoff;i++) {
-	const unsigned char v = p[i];
-	if (UNLIKELY((v&0xf0) != 0x60)) {
-	    cli_errmsg("Invalid data part: %c\n", v);
+    for (i=*off;i<newoff;i += 2) {
+	const unsigned char v0 = p[i];
+	const unsigned char v1 = p[i+1];
+	if (UNLIKELY((v0&0xf0) != 0x60 || (v1&0xf0) != 0x60)) {
+	    cli_errmsg("Invalid data part: %c%c\n", v0, v1);
 	    *ok = 0;
 	    return 0;
 	}
-	*q++ = v;
+	*q++ = (v0&0xf) | ((v1&0xf) << 4);
     }
     *off = newoff;
     *datalen = l;
@@ -323,6 +336,8 @@ static inline char *readString(const unsigned char *p, unsigned *off, unsigned l
     unsigned stringlen;
     char *str = (char*)readData(p, off, len, ok, &stringlen);
     if (*ok && stringlen && str[stringlen-1] != '\0') {
+	str[stringlen-1] = '\0';
+	cli_errmsg("bytecode: string missing \\0 terminator: %s\n", str);
 	free(str);
 	*ok = 0;
 	return NULL;
@@ -362,6 +377,7 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer)
     bc->num_types = readNumber(buffer, &offset, len, &ok);
     bc->num_func = readNumber(buffer, &offset, len, &ok);
     bc->state = bc_loaded;
+    bc->uses_apis = NULL;
     if (!ok) {
 	cli_errmsg("Invalid bytecode header at %u\n", offset);
 	return CL_EMALFDB;
@@ -432,10 +448,11 @@ static void parseType(struct cli_bc *bc, struct cli_bc_type *ty,
 
 static uint16_t containedTy[] = {8,16,32,64};
 
+#define NUM_STATIC_TYPES 4
 static void add_static_types(struct cli_bc *bc)
 {
     unsigned i;
-    for (i=0;i<4;i++) {
+    for (i=0;i<NUM_STATIC_TYPES;i++) {
 	bc->types[i].kind = PointerType;
 	bc->types[i].numElements = 1;
 	bc->types[i].containedTypes = &containedTy[i];
@@ -444,7 +461,7 @@ static void add_static_types(struct cli_bc *bc)
 
 static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 {
-    unsigned i, offset = 1, len = strlen(buffer);
+    unsigned i, offset = 1, len = strlen((const char*)buffer);
     char ok=1;
 
     if (buffer[0] != 'T') {
@@ -516,9 +533,104 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
     return CL_SUCCESS;
 }
 
+/* checks whether the type described by tid is the same as the one described by
+ * expectty. */
+static int types_equal(const struct cli_bc *bc, uint16_t *apity2ty, uint16_t tid, uint16_t apitid)
+{
+    unsigned i;
+    const struct cli_bc_type *ty = &bc->types[tid - 63];
+    const struct cli_bc_type *apity = &cli_apicall_types[apitid];
+    /* If we've already verified type equality, return.
+     * Since we need to check equality of recursive types, we assume types are
+     * equal while checking equality of contained types, unless proven
+     * otherwise. */
+     if (apity2ty[apitid] == tid + 1)
+	return 1;
+     apity2ty[apitid] = tid+1;
+
+     if (ty->kind != apity->kind) {
+	 cli_dbgmsg("bytecode: type kind mismatch: %u != %u\n", ty->kind, apity->kind);
+	 return 0;
+     }
+     if (ty->numElements != apity->numElements) {
+	 cli_dbgmsg("bytecode: type numElements mismatch: %u != %u\n", ty->numElements, apity->numElements);
+	 return 0;
+     }
+    for (i=0;i<ty->numElements;i++) {
+	if (apity->containedTypes[i] < BC_START_TID) {
+	    if (ty->containedTypes[i] != apity->containedTypes[i])
+		return 0;
+	} else if (!types_equal(bc, apity2ty, ty->containedTypes[i], apity->containedTypes[i] - BC_START_TID))
+	    return 0;
+    }
+    return 1;
+}
+
 static int parseApis(struct cli_bc *bc, unsigned char *buffer)
 {
-    //TODO
+    unsigned i, offset = 1, len = strlen((const char*)buffer), maxapi, calls;
+    char ok =1;
+    uint16_t *apity2ty;/*map of api type to current bytecode type ID */
+
+    if (buffer[0] != 'E') {
+	cli_errmsg("bytecode: Invalid api header: %c\n", buffer[0]);
+	return CL_EMALFDB;
+    }
+
+    maxapi = readNumber(buffer, &offset, len, &ok);
+    if (!ok)
+	return CL_EMALFDB;
+    if (maxapi > cli_apicall_maxapi) {
+	cli_dbgmsg("bytecode using API %u, but highest API known to libclamav is %u, skipping\n", maxapi, cli_apicall_maxapi);
+	return CL_BREAK;
+    }
+    calls = readNumber(buffer, &offset, len, &ok);
+    if (!ok)
+	return CL_EMALFDB;
+    if (calls > maxapi) {
+	cli_errmsg("bytecode: attempting to describe more APIs than max: %u > %u\n", calls, maxapi);
+	return CL_EMALFDB;
+    }
+    bc->uses_apis = cli_bitset_init();
+    if (!bc->uses_apis) {
+	cli_errmsg("Out of memory allocating apis bitset\n");
+	return CL_EMEM;
+    }
+    apity2ty = cli_calloc(cli_apicall_maxtypes, sizeof(*cli_apicall_types));
+    if (!apity2ty) {
+	cli_errmsg("Out of memory allocating apity2ty\n");
+	return CL_EMEM;
+    }
+    for (i=0;i < calls; i++) {
+	unsigned id = readNumber(buffer, &offset, len, &ok);
+	uint16_t tid = readTypeID(bc, buffer, &offset, len, &ok);
+	char *name = readString(buffer, &offset, len, &ok);
+
+	/* validate APIcall prototype */
+	if (id > maxapi) {
+	    cli_errmsg("bytecode: API id %u out of range, max %u\n", id, maxapi);
+	    ok = 0;
+	}
+	/* API ids start from 1 */
+	id--;
+	if (ok && name && strcmp(cli_apicalls[id].name, name)) {
+	    cli_errmsg("bytecode: API %u name mismatch: %s expected %s\n", id, name, cli_apicalls[id].name);
+	    ok = 0;
+	}
+	if (ok && !types_equal(bc, apity2ty, tid, cli_apicalls[id].type)) {
+	    cli_errmsg("bytecode: API %u prototype doesn't match\n", id);
+	    ok = 0;
+	}
+	/* don't need the name anymore */
+	free(name);
+	if (!ok)
+	    return CL_EMALFDB;
+
+	/* APIcall is valid */
+	cli_bitset_set(bc->uses_apis, id);
+    }
+    free(apity2ty); /* free temporary map */
+    cli_dbgmsg("bytecode: Parsed %u APIcalls, maxapi %u\n", calls, maxapi);
     return CL_SUCCESS;
 }
 
@@ -672,6 +784,7 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		inst.u.branch.br_true = readBBID(bcfunc, buffer, &offset, len, &ok);
 		inst.u.branch.br_false = readBBID(bcfunc, buffer, &offset, len, &ok);
 		break;
+	    case OP_CALL_API:/* fall-through */
 	    case OP_CALL_DIRECT:
 		numOp = readFixedNumber(buffer, &offset, len, &ok, 1);
 		if (ok) {
@@ -682,7 +795,10 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 			cli_errmsg("Out of memory allocating operands\n");
 			return CL_EMALFDB;
 		    }
-		    inst.u.ops.funcid = readFuncID(bc, buffer, &offset, len, &ok);
+		    if (inst.opcode == OP_CALL_DIRECT)
+			inst.u.ops.funcid = readFuncID(bc, buffer, &offset, len, &ok);
+		    else
+			inst.u.ops.funcid = readAPIFuncID(bc, buffer, &offset, len, &ok);
 		    for (i=0;i<numOp;i++) {
 			inst.u.ops.ops[i] = readOperand(bcfunc, buffer, &offset, len, &ok);
 		    }
@@ -920,7 +1036,8 @@ void cli_bytecode_destroy(struct cli_bc *bc)
 	    struct cli_bc_bb *BB = &f->BB[j];
 	    for(k=0;k<BB->numInsts;k++) {
 		struct cli_bc_inst *ii = &BB->insts[k];
-		if (operand_counts[ii->opcode] > 3 || ii->opcode == OP_CALL_DIRECT) {
+		if (operand_counts[ii->opcode] > 3 ||
+		    ii->opcode == OP_CALL_DIRECT || ii->opcode == OP_CALL_API) {
 		    free(ii->u.ops.ops);
 		    free(ii->u.ops.opsizes);
 		}
@@ -931,6 +1048,13 @@ void cli_bytecode_destroy(struct cli_bc *bc)
 	free(f->constants);
     }
     free(bc->funcs);
+    for (i=NUM_STATIC_TYPES;i<bc->num_types;i++) {
+	if (bc->types[i].containedTypes)
+	    free(bc->types[i].containedTypes);
+    }
+    free(bc->types);
+    if (bc->uses_apis)
+	cli_bitset_free(bc->uses_apis);
 }
 
 #define MAP(val) do { operand_t o = val; \
@@ -1013,16 +1137,26 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		    MAP(inst->u.three[1]);
 		    MAP(inst->u.three[2]);
 		    break;
+		case OP_CALL_API:/* fall-through */
 		case OP_CALL_DIRECT:
 		{
-		    struct cli_bc_func *target = &bc->funcs[inst->u.ops.funcid];
-		    if (inst->u.ops.funcid > bc->num_func) {
-			cli_errmsg("bytecode: called function out of range: %u > %u\n", inst->u.ops.funcid, bc->num_func);
-			return CL_EBYTECODE;
-		    }
-		    if (inst->u.ops.numOps != target->numArgs) {
-			cli_errmsg("bytecode: call operands don't match function prototype\n");
-			return CL_EBYTECODE;
+		    struct cli_bc_func *target = NULL;
+		    if (inst->opcode == OP_CALL_DIRECT) {
+			target = &bc->funcs[inst->u.ops.funcid];
+			if (inst->u.ops.funcid > bc->num_func) {
+			    cli_errmsg("bytecode: called function out of range: %u > %u\n", inst->u.ops.funcid, bc->num_func);
+			    return CL_EBYTECODE;
+			}
+			if (inst->u.ops.numOps != target->numArgs) {
+			    cli_errmsg("bytecode: call operands don't match function prototype\n");
+			    return CL_EBYTECODE;
+			}
+		    } else {
+			/* APIs have 2 parameters always */
+			if (inst->u.ops.numOps != 2) {
+			    cli_errmsg("bytecode: call operands don't match function prototype\n");
+			    return CL_EBYTECODE;
+			}
 		    }
 		    if (inst->u.ops.numOps) {
 			inst->u.ops.opsizes = cli_malloc(sizeof(*inst->u.ops.opsizes)*inst->u.ops.numOps);
@@ -1030,10 +1164,14 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 			    cli_errmsg("Out of memory when allocating operand sizes\n");
 			    return CL_EMEM;
 			}
-		    }
+		    } else
+			inst->u.ops.opsizes = NULL;
 		    for (k=0;k<inst->u.ops.numOps;k++) {
 			MAP(inst->u.ops.ops[k]);
-			inst->u.ops.opsizes[k] = typesize(bc, target->types[k]);
+			if (inst->opcode == OP_CALL_DIRECT)
+			    inst->u.ops.opsizes[k] = typesize(bc, target->types[k]);
+			else
+			    inst->u.ops.opsizes[k] = 32; /*XXX*/
 		    }
 		    break;
 		}

@@ -21,14 +21,14 @@ parse_valgrindlog()
 	if test $NRUNS -eq `grep "ERROR SUMMARY: 0 errors" $1 | wc -l` && test `grep "FATAL:" $1|wc -l ` -eq 0; then
 		if test "$1" = "valgrind-race.log" || 
 			test $NRUNS -eq `grep "no leaks are possible" $1 | wc -l` ||
-			test `grep "lost:" $1 | grep -v "0 bytes" | wc -l` -eq 0; then 
+			test `grep "lost:" $1 | grep -v " 0 bytes" | wc -l` -eq 0; then 
 			if test -z "$GENSUPP"; then
 				rm -f $1;
 			fi
 			return
 		else
 			echo "*** Valgrind test FAILED, memory LEAKS detected ***"
-			grep "lost:" $1 | grep -v "0 bytes"
+			grep "lost:" $1 | grep -v " 0 bytes"
 		fi
 	else
 		if test "$1" = "valgrind-race.log" ; then
