@@ -505,10 +505,10 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 	    cli_errmsg("is_parse_hdr: mmap failed\n");
 	    return CL_EMEM;
 	}
-	hdr = map + c->hdr - mp_hdr;
+	h1 = (struct IS_HDR *)fmap_need_off(map, c->hdr - mp_hdr, sizeof(*h1));
+	hdr = (char *)h1;
     }
 
-    h1 = (struct IS_HDR *)fmap_need_ptr(map, hdr, sizeof(*h1));
     if(!h1) {
 	cli_dbgmsg("is_parse_hdr: not enough room for H1\n");
 	fmunmap(map);

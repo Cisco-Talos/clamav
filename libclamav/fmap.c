@@ -113,7 +113,7 @@ struct F_MAP *fmap(int fd, off_t offset, size_t len) {
 	return NULL;
     }
     pages = fmap_align_items(len, pgsz);
-    hdrsz = fmap_align_to(sizeof(struct F_MAP) + pages * sizeof(uint16_t), 16);
+    hdrsz = fmap_align_to(sizeof(struct F_MAP) + pages * sizeof(uint16_t), pgsz);
     mapsz = pages * pgsz + hdrsz;
     if ((m = (struct F_MAP *)mmap(NULL, mapsz, PROT_READ | PROT_WRITE, MAP_PRIVATE|ANONYMOUS_MAP, -1, 0)) == MAP_FAILED) {
 	cli_warnmsg("fmap: mmap() failed\n");
