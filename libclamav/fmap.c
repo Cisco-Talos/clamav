@@ -24,9 +24,8 @@
 #include "clamav-config.h"
 #endif
 
-/* THIS IS FUCKED UP AND BREAKS MMAP
 #define _XOPEN_SOURCE 500
-*/
+#define _BSD_SOURCE
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -69,6 +68,13 @@ static unsigned int fmap_which_page(struct F_MAP *m, size_t at) {
 static unsigned int fmap_is_paged(struct F_MAP *m, unsigned int page) {
     uint16_t s = m->bitmap[page];
     return ((s & FM_MASK_PAGED) != 0);
+}
+
+static void fmap_set_paged(struct F_MAP *m, unsigned int page, unsigned int val) {
+    if(val)
+	m->bitmap[page] |= FM_MASK_PAGED;
+    else
+	m->bitmap[page] &= ~FM_MASK_PAGED;
 }
 
 static unsigned int fmap_is_seen(struct F_MAP *m, unsigned int page) {
@@ -145,6 +151,7 @@ static int fmap_readpage(struct F_MAP *m, unsigned int page) {
 	readsz = m->pgsz;
     if(pread(m->fd, pptr, m->pgsz, m->offset + page * m->pgsz) != readsz)
 	return 1;
+    fmap_set_paged(m, page, 1);
     return 0;
 }
 
