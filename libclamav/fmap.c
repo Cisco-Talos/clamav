@@ -24,15 +24,18 @@
 #include "clamav-config.h"
 #endif
 
+/* THIS IS FUCKED UP AND BREAKS MMAP
+#define _XOPEN_SOURCE 500
+*/
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
-#include <sys/mman.h>
 #include <unistd.h>
+#include <sys/mman.h>
 
 #include "others.h"
 #include "cltypes.h"
-
 
 #define FM_MASK_SCORE 0x3fff
 #define FM_MASK_PAGED 0x4000
@@ -171,3 +174,9 @@ void *fmap_need(struct F_MAP *m, size_t at, size_t len) {
     return (void *)ret;
 }
 
+
+void fmunmap(struct F_MAP *m) {
+    void *p = (void *)m;
+    size_t len = m->pages * m->pgsz + m->hdrsz;
+    munmap(p, len);
+}

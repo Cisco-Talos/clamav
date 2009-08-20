@@ -18,8 +18,12 @@
  *  MA 02110-1301, USA.
  */
 
+#ifndef __FMAP_H
+#define __FMAP_H
 
 struct F_MAP;
 
 struct F_MAP *fmap(int fd, off_t offset, size_t len);
+void *fmunmap(struct F_MAP *m, size_t len);
 
+#endif
