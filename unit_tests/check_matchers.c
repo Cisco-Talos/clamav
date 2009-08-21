@@ -76,7 +76,7 @@ START_TEST (test_ac_scanbuff) {
     ret = cli_ac_buildtrie(root);
     fail_unless(ret == CL_SUCCESS, "cli_ac_buildtrie() failed");
 
-    ret = cli_ac_initdata(&mdata, root->ac_partsigs, 0, CLI_DEFAULT_AC_TRACKLEN);
+    ret = cli_ac_initdata(&mdata, root->ac_partsigs, 0, 0, CLI_DEFAULT_AC_TRACKLEN);
     fail_unless(ret == CL_SUCCESS, "cli_ac_initdata() failed");
 
     for(i = 0; ac_testdata[i].data; i++) {
