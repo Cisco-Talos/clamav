@@ -663,7 +663,7 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 			    cabret = CL_CLEAN;
 			}
 			if(cabret != CL_CLEAN) {
-			    free(hdr);
+			    IS_FREE_HDR;
 			    return cabret;
 			}
 		    } else {

@@ -1,3 +1,7 @@
+Fri Aug 21 02:17:11 CEST 2009 (acab)
+------------------------------------
+ * libclamav/ishield.c: properly free() header
+
 Fri Aug 21 00:56:03 CEST 2009 (acab)
 ------------------------------------
  * build system: upgrade to autoconf 2.64 and automake 1.11 (bb#1528)
