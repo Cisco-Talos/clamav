@@ -215,17 +215,19 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
 				chunk_len = 0;
 				ptr = start;
 			}
+			if(m_area->map)
+			    ptr = (unsigned char *)fmap_need_ptr(m_area->map, ptr, end - ptr); /* FIXME: make this need_once */
 			/* we have unknown number of NULL chars,
 			 * copy char-by-char and skip them */
 			while((ptr < end) && (chunk_len < max_len-1)) {
 				const unsigned char c = *ptr++;
 				/* we can't use chunk_len to determine how many bytes we read, since
 				 * we skipped chars */
-				m_area->offset++;
 				if(c) {
 					chunk[chunk_len++] = c;
 				}
 			}
+			m_area->offset += ptr - start;
 			chunk[chunk_len] = '\0';
 		}
 		if(ptr && ptr < end && !isspace(*ptr)) {
