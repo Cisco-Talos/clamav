@@ -251,6 +251,10 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
     CHECK_EQ((p)&7, 0);\
     TRACE_W(x, p, 64);\
     *(uint64_t*)&values[p] = x
+#define WRITEP(x, p) CHECK_GT(func->numBytes, p+PSIZE-1);\
+    CHECK_EQ((p)&(PSIZE-1), 0);\
+    TRACE_W(x, p, PSIZE*8);\
+    *(void**)&values[p] = x
 
 #define READ1(x, p) CHECK_GT(func->numBytes, p);\
     x = (*(uint8_t*)&values[p])&1;\
@@ -269,6 +273,11 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
 #define READ64(x, p) CHECK_GT(func->numBytes, p+7);\
     CHECK_EQ((p)&7, 0);\
     x = *(uint64_t*)&values[p];\
+    TRACE_R(x)
+#define PSIZE sizeof(void*)
+#define READP(x, p) CHECK_GT(func->numBytes, p+PSIZE-1);\
+    CHECK_EQ((p)&(PSIZE-1), 0);\
+    x = *(void**)&values[p];\
     TRACE_R(x)
 
 #define READOLD8(x, p) CHECK_GT(func->numBytes, p);\
@@ -677,6 +686,82 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		uint64_t op;
 		READ32(op, BINOP(0));
 		WRITE32(BINOP(1), op);
+		break;
+	    }
+
+	    case OP_LOAD*5:
+	    case OP_LOAD*5+1:
+	    {
+		uint8_t *ptr;
+		READP(ptr, inst->u.unaryop);
+		WRITE8(inst->dest, (*ptr));
+		break;
+	    }
+	    case OP_LOAD*5+2:
+	    {
+		const union unaligned_16 *ptr;
+		READP(ptr, inst->u.unaryop);
+		WRITE16(inst->dest, (ptr->una_u16));
+		break;
+	    }
+	    case OP_LOAD*5+3:
+	    {
+		const union unaligned_32 *ptr;
+		READP(ptr, inst->u.unaryop);
+		WRITE32(inst->dest, (ptr->una_u32));
+		break;
+	    }
+	    case OP_LOAD*5+4:
+	    {
+		const union unaligned_64 *ptr;
+		READP(ptr, inst->u.unaryop);
+		WRITE64(inst->dest, (ptr->una_u64));
+		break;
+	    }
+
+	    case OP_STORE*5:
+	    {
+		uint8_t *ptr;
+		uint8_t v;
+		READP(ptr, BINOP(0));
+		READ1(v, BINOP(1));
+		*ptr = v;
+		break;
+	    }
+	    case OP_STORE*5+1:
+	    {
+		uint8_t *ptr;
+		uint8_t v;
+		READP(ptr, BINOP(0));
+		READ8(v, BINOP(1));
+		*ptr = v;
+		break;
+	    }
+	    case OP_STORE*5+2:
+	    {
+		union unaligned_16 *ptr;
+		uint16_t v;
+		READP(ptr, BINOP(0));
+		READ16(v, BINOP(1));
+		ptr->una_s16 = v;
+		break;
+	    }
+	    case OP_STORE*5+3:
+	    {
+		union unaligned_32 *ptr;
+		uint32_t v;
+		READP(ptr, BINOP(0));
+		READ32(v, BINOP(1));
+		ptr->una_u32 = v;
+		break;
+	    }
+	    case OP_STORE*5+4:
+	    {
+		union unaligned_64 *ptr;
+		uint64_t v;
+		READP(ptr, BINOP(0));
+		READ64(v, BINOP(1));
+		ptr->una_u64 = v;
 		break;
 	    }
 

@@ -229,6 +229,20 @@ extern int have_rar;
 		     (((v) & 0xff00000000000000ULL) >> 56))
 
 
+union unaligned_64 {
+	uint64_t una_u64;
+	int64_t una_s64;
+} __attribute__((packed));
+
+union unaligned_32 {
+	uint32_t una_u32;
+	int32_t una_s32;
+} __attribute__((packed));
+
+union unaligned_16 {
+	uint16_t una_u16;
+	int16_t una_s16;
+} __attribute__((packed));
 #if WORDS_BIGENDIAN == 0
 
 #ifndef HAVE_ATTRIB_PACKED 
@@ -241,14 +255,6 @@ extern int have_rar;
 #pragma pack 1
 #endif
 
-union unaligned_32 {
-	uint32_t una_u32;
-	int32_t una_s32;
-} __attribute__((packed));
-
-union unaligned_16 {
-	int16_t una_s16;
-} __attribute__((packed));
 
 #ifdef HAVE_PRAGMA_PACK
 #pragma pack()

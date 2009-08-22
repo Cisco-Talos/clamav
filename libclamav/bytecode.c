@@ -1116,6 +1116,7 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		case OP_ICMP_SLT:
 		case OP_ICMP_SLE:
 		case OP_COPY:
+		case OP_STORE:
 		    MAP(inst->u.binop[0]);
 		    MAP(inst->u.binop[1]);
 		    break;
@@ -1175,6 +1176,9 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		    }
 		    break;
 		}
+		case OP_LOAD:
+		    MAP(inst->u.unaryop);
+		    break;
 		default:
 		    cli_dbgmsg("Unhandled opcode: %d\n", inst->opcode);
 		    return CL_EBYTECODE;
