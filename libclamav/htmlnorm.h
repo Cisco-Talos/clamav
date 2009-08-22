@@ -34,6 +34,7 @@ typedef struct m_area_tag {
 	unsigned char *buffer;
 	off_t length;
 	off_t offset;
+	struct F_MAP *map;
 } m_area_t;
 
 int html_normalise_mem(unsigned char *in_buff, off_t in_size, const char *dirname, tag_arguments_t *hrefs,const struct cli_dconf* dconf);

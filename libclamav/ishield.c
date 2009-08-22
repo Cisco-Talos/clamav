@@ -484,7 +484,8 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
     uint32_t h1_data_off, objs_files_cnt, objs_dirs_off;
     unsigned int off, i, scanned = 0;
     int ret = CL_BREAK;
-    char hash[33], *hdr, *map = NULL;
+    char hash[33], *hdr;
+    struct F_MAP *map = NULL;
     size_t mp_hdrsz;
 
     struct IS_HDR *h1;
