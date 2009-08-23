@@ -32,7 +32,6 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/mman.h>
-#include <stdlib.h>
 
 #include "others.h"
 #include "cltypes.h"
@@ -150,6 +149,7 @@ static void fmap_aging(struct F_MAP *m) {
     if(m->paged * m->pgsz > UNPAGE_THRSHLD_LO) { /* we alloc'd too much */
 	unsigned int i, avail = 0, *freeme;
 	freeme = cli_malloc(sizeof(unsigned int) * m->pages);
+	if(!freeme) return;
 	for(i=0; i<m->pages; i++) {
 	    uint32_t s = m->bitmap[i];
 	    if((s & (FM_MASK_PAGED | FM_MASK_LOCKED)) == FM_MASK_PAGED ) {
@@ -189,15 +189,24 @@ static int fmap_readpage(struct F_MAP *m, unsigned int page, int lock) {
     if(s & FM_MASK_PAGED) {
 	/* page already paged */
 	if(lock) {
+	    /* we want locking */
 	    if(s & FM_MASK_LOCKED) {
 		/* page already locked */
 		s &= FM_MASK_COUNT;
-		if(s == FM_MASK_COUNT) /* lock count already at max: FIXME fail heavilly here */
+		if(s == FM_MASK_COUNT) { /* lock count already at max: fial! */
 		    cli_errmsg("fmap_readpage: lock count exceeded\n");
-		else /* acceptable lock count: inc lock count */
-		    m->bitmap[page]++;
+		    return 1;
+		}
+		/* acceptable lock count: inc lock count */
+		m->bitmap[page]++;
 	    } else /* page not currently locked: set lock count = 1 */
 		m->bitmap[page] = 1 | FM_MASK_LOCKED | FM_MASK_PAGED;
+	} else {
+	    /* we don't want locking */
+	    if(!(s & FM_MASK_LOCKED)) {
+		/* page is not locked: we reset aging to max */
+		m->bitmap[page] = FM_MASK_PAGED | FM_MASK_COUNT;
+	    }
 	}
 	return 0;
     }
@@ -313,7 +322,7 @@ void *fmap_need_str(struct F_MAP *m, void *ptr, size_t len) {
 }
 
 
-void fmap_unneed(struct F_MAP *m, unsigned int page) {
+static void fmap_unneed_page(struct F_MAP *m, unsigned int page) {
     uint32_t s = m->bitmap[page];
     if((s & (FM_MASK_PAGED | FM_MASK_LOCKED)) == (FM_MASK_PAGED | FM_MASK_LOCKED)) {
 	/* page is paged and locked: check lock count */
@@ -328,6 +337,30 @@ void fmap_unneed(struct F_MAP *m, unsigned int page) {
     }
     cli_warnmsg("fmap_unneed: unneed on a unlocked page\n");
     return;
+}
+
+void fmap_unneed_off(struct F_MAP *m, size_t at, size_t len) {
+    unsigned int i, first_page, last_page;
+    if(!len) {
+	cli_warnmsg("fmap_unneed: attempted void unneed\n");
+	return;
+    }
+
+    if(!CLI_ISCONTAINED(0, m->len, at, len)) {
+	cli_warnmsg("fmap: attempted oof need\n");
+	return;
+    }
+    
+    first_page = fmap_which_page(m, at);
+    last_page = fmap_which_page(m, at + len - 1);
+
+    for(i=first_page; i<=last_page; i++) {
+	fmap_unneed_page(m, i);
+    }
+}
+
+void fmap_unneed_ptr(struct F_MAP *m, void *ptr, size_t len) {
+    return fmap_unneed_off(m, (char *)ptr - (char *)m - m->hdrsz, len);
 }
 
 void fmunmap(struct F_MAP *m) {

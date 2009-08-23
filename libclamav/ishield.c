@@ -531,6 +531,8 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 	return CL_CLEAN;
     }
 
+    fmap_unneed_ptr(map, h1, sizeof(*h1));
+
 /*     cli_errmsg("COMPONENTS\n"); */
 /*     off = le32_to_host(objs->comps_off) + h1_data_off; */
 /*     for(i=1;  ; i++) { */
@@ -567,11 +569,12 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 
     objs_files_cnt = le32_to_host(objs->files_cnt);
     off = h1_data_off + objs_dirs_off + le32_to_host(objs->dir_sz2);
+    fmap_unneed_ptr(map, objs, sizeof(*objs));
     for(i=0; i<objs_files_cnt ;i++) {
 	struct IS_FILEITEM *file = (struct IS_FILEITEM *)fmap_need_ptr(map, &hdr[off], sizeof(*file));
 
 	if(file) {
-	    const char *dir_name = "", *file_name = "";
+	    const char *emptyname = "", *dir_name = emptyname, *file_name = emptyname;
 	    uint32_t dir_rel = h1_data_off + objs_dirs_off + 4 * le32_to_host(file->dir_id); /* rel off of dir entry from array of rel ptrs */
 	    uint32_t file_rel = objs_dirs_off + h1_data_off + le32_to_host(file->str_name_off); /* rel off of fname */
 	    uint64_t file_stream_off, file_size, file_csize;
@@ -652,10 +655,15 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 	    default:
 		cli_dbgmsg("is_parse_hdr: skipped unknown file entry %u\n", i);
 	    }
+	    if(file_name != emptyname)
+		fmap_unneed_ptr(map, file_name, strlen(file_name)+1);
+	    if(dir_name != emptyname)
+		fmap_unneed_ptr(map, dir_name, strlen(dir_name)+1);
 	} else {
 	    ret = CL_CLEAN;
 	    cli_dbgmsg("is_parse_hdr: FILEITEM out of bounds\n");
 	}
+	fmap_unneed_ptr(map, file, sizeof(*file));
 	off += sizeof(*file);
     }
     fmunmap(map);

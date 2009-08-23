@@ -24,10 +24,11 @@
 struct F_MAP;
 
 struct F_MAP *fmap(int fd, off_t offset, size_t len);
-void *fmunmap(struct F_MAP *m);
+void fmunmap(struct F_MAP *m);
 void *fmap_need_off(struct F_MAP *m, size_t at, size_t len);
 void *fmap_need_off_once(struct F_MAP *m, size_t at, size_t len);
 void *fmap_need_ptr(struct F_MAP *m, void *ptr, size_t len);
 void *fmap_need_ptr_once(struct F_MAP *m, void *ptr, size_t len);
-void fmap_unneed(struct F_MAP *m, unsigned int page);
+void fmap_unneed_off(struct F_MAP *m, size_t at, size_t len);
+void fmap_unneed_ptr(struct F_MAP *m, void *ptr, size_t len);
 #endif

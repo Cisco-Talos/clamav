@@ -186,7 +186,7 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
 			return NULL;
 		}
 		if(m_area->map)
-		    ptr = (unsigned char *)fmap_need_off(m_area->map, m_area->offset, chunk_len); /* FIXME: make this need_once */
+		    ptr = (unsigned char *)fmap_need_off_once(m_area->map, m_area->offset, chunk_len);
 		else
 		    ptr = m_area->buffer + m_area->offset;
 		start = ptr;
@@ -216,7 +216,7 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
 				ptr = start;
 			}
 			if(m_area->map)
-			    ptr = (unsigned char *)fmap_need_ptr(m_area->map, ptr, end - ptr); /* FIXME: make this need_once */
+			    ptr = (unsigned char *)fmap_need_ptr_once(m_area->map, ptr, end - ptr);
 			/* we have unknown number of NULL chars,
 			 * copy char-by-char and skip them */
 			while((ptr < end) && (chunk_len < max_len-1)) {
