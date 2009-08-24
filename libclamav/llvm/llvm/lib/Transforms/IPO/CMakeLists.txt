@@ -1,0 +1,27 @@
+add_llvm_library(LLVMipo
+  ArgumentPromotion.cpp
+  ConstantMerge.cpp
+  DeadArgumentElimination.cpp
+  DeadTypeElimination.cpp
+  ExtractGV.cpp
+  FunctionAttrs.cpp
+  GlobalDCE.cpp
+  GlobalOpt.cpp
+  IPConstantPropagation.cpp
+  IPO.cpp
+  IndMemRemoval.cpp
+  InlineAlways.cpp
+  InlineSimple.cpp
+  Inliner.cpp
+  Internalize.cpp
+  LoopExtractor.cpp
+  LowerSetJmp.cpp
+  MergeFunctions.cpp
+  PartialInlining.cpp
+  PartialSpecialization.cpp
+  PruneEH.cpp
+  RaiseAllocations.cpp
+  StripDeadPrototypes.cpp
+  StripSymbols.cpp
+  StructRetPromotion.cpp
+  )
