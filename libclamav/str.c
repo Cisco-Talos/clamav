@@ -369,37 +369,33 @@ char *cli_strtokbuf(const char *input, int fieldno, const char *delim, char *out
     return output;
 }
 
-const char *cli_memstr(const char *haystack, int hs, const char *needle, int ns)
+const char *cli_memstr(const char *haystack, unsigned int hs, const char *needle, unsigned int ns)
 {
-	const char *pt, *hay;
-	int n;
+	unsigned int i, s1, s2;
 
-
-    if(hs < ns)
+    if(!hs || !ns || hs < ns)
 	return NULL;
 
-    if(haystack == needle)
+    if(needle == haystack)
 	return haystack;
 
-    if(!memcmp(haystack, needle, ns))
-	return haystack;
+    if(ns == 1)
+	return memchr(haystack, needle[0], hs);
 
-    pt = hay = haystack;
-    n = hs;
-
-    while((pt = memchr(hay, needle[0], n)) != NULL) {
-	n -= (int) (pt - hay);
-	if(n < ns)
-	    break;
-
-	if(!memcmp(pt, needle, ns))
-	    return pt;
-
-	if(hay == pt) {
-	    n--;
-	    hay++;
+    if(needle[0] == needle[1]) {
+	s1 = 2;
+	s2 = 1;
+    } else {
+	s1 = 1;
+	s2 = 2;
+    }
+    for(i = 0; i <= hs - ns; ) {
+	if(needle[1] != haystack[i + 1]) {
+	    i += s1;
 	} else {
-	    hay = pt;
+	    if((needle[0] == haystack[i]) && !memcmp(needle + 2, haystack + i + 2, ns - 2))
+		return &haystack[i];
+	    i += s2;
 	}
     }
 

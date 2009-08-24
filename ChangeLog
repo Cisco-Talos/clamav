@@ -1,3 +1,7 @@
+Mon Aug 24 22:09:12 CEST 2009 (tk)
+----------------------------------
+ * libclamav: improve handling of PDF files (bb#1682)
+
 Fri Aug 21 15:53:35 CEST 2009 (tk)
 ----------------------------------
  * libclamav: handle relative offsets with cli_ac_data; fix offset logic
