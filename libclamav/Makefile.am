@@ -17,10 +17,12 @@
 #  MA 02110-1301, USA.
 
 AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis $(LTDLINCL)
-
 lib_LTLIBRARIES =
 EXTRA_DIST =
 
+if ENABLE_LLVM
+SUBDIRS = llvm
+endif
 
 if ENABLE_UNRAR
 

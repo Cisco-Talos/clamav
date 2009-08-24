@@ -742,6 +742,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
+enable_option_checking=no
 ac_subst_vars='ltdl_LTLIBOBJS
 ltdl_LIBOBJS
 am__EXEEXT_FALSE
@@ -790,6 +791,13 @@ GPERF
 VERSIONSCRIPT_FALSE
 VERSIONSCRIPT_TRUE
 VERSIONSCRIPTFLAG
+GMAKE
+subdirs
+ENABLE_LLVM_FALSE
+ENABLE_LLVM_TRUE
+ifGNUmake
+ac_ct_GXX
+GXX
 DISTCHECK_ENABLE_FLAGS_FALSE
 DISTCHECK_ENABLE_FLAGS_TRUE
 LTDLOPEN
@@ -939,6 +947,7 @@ with_ltdl_lib
 enable_ltdl_install
 with_fpu_words_bigendian
 enable_gcc_vcheck
+enable_llvm
 enable_experimental
 enable_mempool
 enable_check
@@ -986,7 +995,7 @@ LDFLAGS
 LIBS
 CPPFLAGS
 CPP'
-
+ac_subdirs_all='./libclamav/llvm/llvm'
 
 # Initialize some variables set by options.
 ac_init_help=
@@ -1617,6 +1626,7 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --enable-ltdl-install   install libltdl
   --disable-gcc-vcheck	  do not check for buggy gcc version
+  --enable-llvm           Enable 'llvm' JIT/verifier support [default=auto]
   --enable-experimental	enable experimental code
   --disable-mempool       disable memory pools
   --enable-check           Enable 'check' unit tests (default=auto)
@@ -5048,13 +5058,13 @@ if test "${lt_cv_nm_interface+set}" = set; then :
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:5051: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:5061: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5054: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:5064: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5057: output\"" >&5)
+  (eval echo "\"\$as_me:5067: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -5513,7 +5523,7 @@ linux* | k*bsd*-gnu)
   lt_cv_deplibs_check_method=pass_all
   ;;
 
-netbsd*)
+netbsd* | netbsdelf*-gnu)
   if echo __ELF__ | $CC -E - | $GREP __ELF__ > /dev/null; then
     lt_cv_deplibs_check_method='match_pattern /lib[^/]+(\.so\.[0-9]+\.[0-9]+|_pic\.a)$'
   else
@@ -6249,7 +6259,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 6252 "configure"' > conftest.$ac_ext
+  echo '#line 6262 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7778,11 +7788,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7781: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7791: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7785: \$? = $ac_status" >&5
+   echo "$as_me:7795: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8117,11 +8127,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8120: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8130: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8124: \$? = $ac_status" >&5
+   echo "$as_me:8134: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8222,11 +8232,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8225: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8235: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8229: \$? = $ac_status" >&5
+   echo "$as_me:8239: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -8277,11 +8287,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8280: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8290: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8284: \$? = $ac_status" >&5
+   echo "$as_me:8294: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -8395,6 +8405,9 @@ $as_echo_n "checking whether the $compiler linker ($LD) supports shared librarie
     ;;
   openbsd*)
     with_gnu_ld=no
+    ;;
+  linux* | k*bsd*-gnu)
+    link_all_deplibs=no
     ;;
   esac
 
@@ -8578,7 +8591,7 @@ _LT_EOF
       fi
       ;;
 
-    netbsd*)
+    netbsd* | netbsdelf*-gnu)
       if echo __ELF__ | $CC -E - | $GREP __ELF__ >/dev/null; then
 	archive_cmds='$LD -Bshareable $libobjs $deplibs $linker_flags -o $lib'
 	wlarc=
@@ -8753,6 +8766,7 @@ _LT_EOF
 	if test "$aix_use_runtimelinking" = yes; then
 	  shared_flag="$shared_flag "'${wl}-G'
 	fi
+	link_all_deplibs=no
       else
 	# not using gcc
 	if test "$host_cpu" = ia64; then
@@ -9079,7 +9093,7 @@ rm -f core conftest.err conftest.$ac_objext \
       link_all_deplibs=yes
       ;;
 
-    netbsd*)
+    netbsd* | netbsdelf*-gnu)
       if echo __ELF__ | $CC -E - | $GREP __ELF__ >/dev/null; then
 	archive_cmds='$LD -Bshareable -o $lib $libobjs $deplibs $linker_flags'  # a.out
       else
@@ -10024,6 +10038,18 @@ rm -f core conftest.err conftest.$ac_objext \
   dynamic_linker='GNU/Linux ld.so'
   ;;
 
+netbsdelf*-gnu)
+  version_type=linux
+  need_lib_prefix=no
+  need_version=no
+  library_names_spec='${libname}${release}${shared_ext}$versuffix ${libname}${release}${shared_ext}$major ${libname}${shared_ext}'
+  soname_spec='${libname}${release}${shared_ext}$major'
+  shlibpath_var=LD_LIBRARY_PATH
+  shlibpath_overrides_runpath=no
+  hardcode_into_libs=yes
+  dynamic_linker='NetBSD ld.elf_so'
+  ;;
+
 netbsd*)
   version_type=sunos
   need_lib_prefix=no
@@ -10644,7 +10670,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 10647 "configure"
+#line 10673 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10740,7 +10766,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 10743 "configure"
+#line 10769 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11412,7 +11438,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11415 "configure"
+#line 11441 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11558,7 +11584,7 @@ else
     # at 6.2 and later dlopen does load deplibs.
     lt_cv_sys_dlopen_deplibs=yes
     ;;
-  netbsd*)
+  netbsd* | netbsdelf*-gnu)
     lt_cv_sys_dlopen_deplibs=yes
     ;;
   openbsd*)
@@ -12980,6 +13006,222 @@ else
 fi
 rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
   conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+
+
+
+
+# Check whether --enable-llvm was given.
+if test "${enable_llvm+set}" = set; then :
+  enableval=$enable_llvm; enable_llvm=$enableval
+else
+  enable_llvm="auto"
+fi
+
+if test "$enable_llvm" = "auto"; then
+         { $as_echo "$as_me:${as_lineno-$LINENO}: Checking whether we can build LLVM" >&5
+$as_echo "$as_me: Checking whether we can build LLVM" >&6;}
+	 if test -z "$CXX"; then
+	   if test -n "$ac_tool_prefix"; then
+  for ac_prog in g++ c++ cxx
+  do
+    # Extract the first word of "$ac_tool_prefix$ac_prog", so it can be a program name with args.
+set dummy $ac_tool_prefix$ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if test "${ac_cv_prog_GXX+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$GXX"; then
+  ac_cv_prog_GXX="$GXX" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_GXX="$ac_tool_prefix$ac_prog"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+GXX=$ac_cv_prog_GXX
+if test -n "$GXX"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $GXX" >&5
+$as_echo "$GXX" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+    test -n "$GXX" && break
+  done
+fi
+if test -z "$GXX"; then
+  ac_ct_GXX=$GXX
+  for ac_prog in g++ c++ cxx
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if test "${ac_cv_prog_ac_ct_GXX+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_GXX"; then
+  ac_cv_prog_ac_ct_GXX="$ac_ct_GXX" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_ac_ct_GXX="$ac_prog"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_GXX=$ac_cv_prog_ac_ct_GXX
+if test -n "$ac_ct_GXX"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_GXX" >&5
+$as_echo "$ac_ct_GXX" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  test -n "$ac_ct_GXX" && break
+done
+
+  if test "x$ac_ct_GXX" = x; then
+    GXX=""
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    GXX=$ac_ct_GXX
+  fi
+fi
+
+	 else
+	   GXX="$CXX";
+	 fi
+	 gxx_version=`${GXX} -dumpversion`
+	 if test "$?" -ne 0; then
+	    enable_llvm="no";
+	    { $as_echo "$as_me:${as_lineno-$LINENO}: GNU C++ compiler not found, not building LLVM" >&5
+$as_echo "$as_me: GNU C++ compiler not found, not building LLVM" >&6;}
+	 else
+	    case "${gxx_version}" in
+	        012.*|3.0123.*)
+	             enable_llvm="no"
+		     { $as_echo "$as_me:${as_lineno-$LINENO}: C++ compiler too old, not building LLVM" >&5
+$as_echo "$as_me: C++ compiler too old, not building LLVM" >&6;}
+                     ;;
+                3.4.012*|4.0.1*|4.1.12*)
+		    enable_llvm="no"
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: C++ compiler is buggy, not building LLVM" >&5
+$as_echo "$as_me: C++ compiler is buggy, not building LLVM" >&6;}
+                    ;;
+		*)
+		    { $as_echo "$as_me:${as_lineno-$LINENO}: checking for GNU make" >&5
+$as_echo_n "checking for GNU make... " >&6; }
+if test "${llvm_cv_gnu_make_command+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  llvm_cv_gnu_make_command=''
+ for a in "$MAKE" make gmake gnumake ; do
+  if test -z "$a" ; then continue ; fi ;
+  if  ( sh -c "$a --version" 2> /dev/null | grep GNU 2>&1 > /dev/null )
+  then
+   llvm_cv_gnu_make_command=$a ;
+   break;
+  fi
+ done
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $llvm_cv_gnu_make_command" >&5
+$as_echo "$llvm_cv_gnu_make_command" >&6; }
+ if test "x$llvm_cv_gnu_make_command" != "x"  ; then
+   ifGNUmake='' ;
+ else
+   ifGNUmake='#' ;
+   { $as_echo "$as_me:${as_lineno-$LINENO}: result: \"Not found\"" >&5
+$as_echo "\"Not found\"" >&6; };
+ fi
+
+
+		    if test -z "$llvm_cv_gnu_make_command"; then
+		        enable_llvm="no"
+		        { $as_echo "$as_me:${as_lineno-$LINENO}: GNU make not found, not building LLVM" >&5
+$as_echo "$as_me: GNU make not found, not building LLVM" >&6;}
+                    else
+		        case "$target_cpu" in
+			    i?86|amd64|x86_64|powerpc*)
+			       case "$target_os" in
+			          darwin*|freebsd*|openbsd*|netbsd*|dragonfly*|linux*|solaris*|win32*|mingw*)
+				       enable_llvm="yes"
+				       { $as_echo "$as_me:${as_lineno-$LINENO}: Building LLVM" >&5
+$as_echo "$as_me: Building LLVM" >&6;}
+                                       ;;
+				  *)
+				       enable_llvm="no"
+                                       { $as_echo "$as_me:${as_lineno-$LINENO}: OS is not supported, not building LLVM" >&5
+$as_echo "$as_me: OS is not supported, not building LLVM" >&6;}
+                                       ;;
+			       esac
+			       ;;
+			    alpha*|arm*)
+			       enable_llvm="no"
+			       { $as_echo "$as_me:${as_lineno-$LINENO}: CPU support is untested, not building LLVM" >&5
+$as_echo "$as_me: CPU support is untested, not building LLVM" >&6;}
+			       ;;
+			    *)
+			       enable_llvm="no"
+			       { $as_echo "$as_me:${as_lineno-$LINENO}: Unsupported CPU for JIT: $target_cpu, not building LLVM" >&5
+$as_echo "$as_me: Unsupported CPU for JIT: $target_cpu, not building LLVM" >&6;}
+			esac
+		    fi
+	    esac
+	 fi
+	 if test "$enable_llvm" != "yes"; then
+	    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: LLVM is not supported on your platform, JIT not built" >&5
+$as_echo "$as_me: WARNING: LLVM is not supported on your platform, JIT not built" >&2;}
+	 fi
+fi
+ if test "$enable_llvm" = "yes"; then
+  ENABLE_LLVM_TRUE=
+  ENABLE_LLVM_FALSE='#'
+else
+  ENABLE_LLVM_TRUE='#'
+  ENABLE_LLVM_FALSE=
+fi
+
+if test "$enable_llvm" = "yes"; then
+    subdirs="$subdirs ./libclamav/llvm/llvm"
+
+    GMAKE="$llvm_cv_gnu_make_command"
+
+    ac_configure_args="$ac_configure_args --enable-targets=host-only --enable-bindings=none --enable-libffi=no --without-llvmgcc --without-llvmgxx --enable-optimized"
 fi
 
 
@@ -19657,7 +19899,7 @@ else
 fi
 
 
-ac_config_files="$ac_config_files libclamav/Makefile clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile Makefile clamav-config libclamav.pc docs/man/clamav-milter.8 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1"
+ac_config_files="$ac_config_files libclamav/Makefile libclamav/llvm/Makefile libclamav/llvm/GNUmakefile clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile Makefile clamav-config libclamav.pc docs/man/clamav-milter.8 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -19800,6 +20042,10 @@ LT_CONFIG_H=clamav-config.h
 
 if test -z "${DISTCHECK_ENABLE_FLAGS_TRUE}" && test -z "${DISTCHECK_ENABLE_FLAGS_FALSE}"; then
   as_fn_error "conditional \"DISTCHECK_ENABLE_FLAGS\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_LLVM_TRUE}" && test -z "${ENABLE_LLVM_FALSE}"; then
+  as_fn_error "conditional \"ENABLE_LLVM\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${VERSIONSCRIPT_TRUE}" && test -z "${VERSIONSCRIPT_FALSE}"; then
@@ -20692,6 +20938,8 @@ do
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "libltdl/Makefile") CONFIG_FILES="$CONFIG_FILES libltdl/Makefile" ;;
     "libclamav/Makefile") CONFIG_FILES="$CONFIG_FILES libclamav/Makefile" ;;
+    "libclamav/llvm/Makefile") CONFIG_FILES="$CONFIG_FILES libclamav/llvm/Makefile" ;;
+    "libclamav/llvm/GNUmakefile") CONFIG_FILES="$CONFIG_FILES libclamav/llvm/GNUmakefile" ;;
     "clamscan/Makefile") CONFIG_FILES="$CONFIG_FILES clamscan/Makefile" ;;
     "database/Makefile") CONFIG_FILES="$CONFIG_FILES database/Makefile" ;;
     "docs/Makefile") CONFIG_FILES="$CONFIG_FILES docs/Makefile" ;;
@@ -22065,6 +22313,151 @@ if test "$no_create" != yes; then
   # Use ||, not &&, to avoid exiting from the if with $? = 1, which
   # would make configure fail if this is the last instruction.
   $ac_cs_success || as_fn_exit $?
+fi
+
+#
+# CONFIG_SUBDIRS section.
+#
+if test "$no_recursion" != yes; then
+
+  # Remove --cache-file, --srcdir, and --disable-option-checking arguments
+  # so they do not pile up.
+  ac_sub_configure_args=
+  ac_prev=
+  eval "set x $ac_configure_args"
+  shift
+  for ac_arg
+  do
+    if test -n "$ac_prev"; then
+      ac_prev=
+      continue
+    fi
+    case $ac_arg in
+    -cache-file | --cache-file | --cache-fil | --cache-fi \
+    | --cache-f | --cache- | --cache | --cach | --cac | --ca | --c)
+      ac_prev=cache_file ;;
+    -cache-file=* | --cache-file=* | --cache-fil=* | --cache-fi=* \
+    | --cache-f=* | --cache-=* | --cache=* | --cach=* | --cac=* | --ca=* \
+    | --c=*)
+      ;;
+    --config-cache | -C)
+      ;;
+    -srcdir | --srcdir | --srcdi | --srcd | --src | --sr)
+      ac_prev=srcdir ;;
+    -srcdir=* | --srcdir=* | --srcdi=* | --srcd=* | --src=* | --sr=*)
+      ;;
+    -prefix | --prefix | --prefi | --pref | --pre | --pr | --p)
+      ac_prev=prefix ;;
+    -prefix=* | --prefix=* | --prefi=* | --pref=* | --pre=* | --pr=* | --p=*)
+      ;;
+    --disable-option-checking)
+      ;;
+    *)
+      case $ac_arg in
+      *\'*) ac_arg=`$as_echo "$ac_arg" | sed "s/'/'\\\\\\\\''/g"` ;;
+      esac
+      as_fn_append ac_sub_configure_args " '$ac_arg'" ;;
+    esac
+  done
+
+  # Always prepend --prefix to ensure using the same prefix
+  # in subdir configurations.
+  ac_arg="--prefix=$prefix"
+  case $ac_arg in
+  *\'*) ac_arg=`$as_echo "$ac_arg" | sed "s/'/'\\\\\\\\''/g"` ;;
+  esac
+  ac_sub_configure_args="'$ac_arg' $ac_sub_configure_args"
+
+  # Pass --silent
+  if test "$silent" = yes; then
+    ac_sub_configure_args="--silent $ac_sub_configure_args"
+  fi
+
+  # Always prepend --disable-option-checking to silence warnings, since
+  # different subdirs can have different --enable and --with options.
+  ac_sub_configure_args="--disable-option-checking $ac_sub_configure_args"
+
+  ac_popdir=`pwd`
+  for ac_dir in : $subdirs; do test "x$ac_dir" = x: && continue
+
+    # Do not complain, so a configure script can configure whichever
+    # parts of a large source tree are present.
+    test -d "$srcdir/$ac_dir" || continue
+
+    ac_msg="=== configuring in $ac_dir (`pwd`/$ac_dir)"
+    $as_echo "$as_me:${as_lineno-$LINENO}: $ac_msg" >&5
+    $as_echo "$ac_msg" >&6
+    as_dir="$ac_dir"; as_fn_mkdir_p
+    ac_builddir=.
+
+case "$ac_dir" in
+.) ac_dir_suffix= ac_top_builddir_sub=. ac_top_build_prefix= ;;
+*)
+  ac_dir_suffix=/`$as_echo "$ac_dir" | sed 's|^\.[\\/]||'`
+  # A ".." for each directory in $ac_dir_suffix.
+  ac_top_builddir_sub=`$as_echo "$ac_dir_suffix" | sed 's|/[^\\/]*|/..|g;s|/||'`
+  case $ac_top_builddir_sub in
+  "") ac_top_builddir_sub=. ac_top_build_prefix= ;;
+  *)  ac_top_build_prefix=$ac_top_builddir_sub/ ;;
+  esac ;;
+esac
+ac_abs_top_builddir=$ac_pwd
+ac_abs_builddir=$ac_pwd$ac_dir_suffix
+# for backward compatibility:
+ac_top_builddir=$ac_top_build_prefix
+
+case $srcdir in
+  .)  # We are building in place.
+    ac_srcdir=.
+    ac_top_srcdir=$ac_top_builddir_sub
+    ac_abs_top_srcdir=$ac_pwd ;;
+  [\\/]* | ?:[\\/]* )  # Absolute name.
+    ac_srcdir=$srcdir$ac_dir_suffix;
+    ac_top_srcdir=$srcdir
+    ac_abs_top_srcdir=$srcdir ;;
+  *) # Relative name.
+    ac_srcdir=$ac_top_build_prefix$srcdir$ac_dir_suffix
+    ac_top_srcdir=$ac_top_build_prefix$srcdir
+    ac_abs_top_srcdir=$ac_pwd/$srcdir ;;
+esac
+ac_abs_srcdir=$ac_abs_top_srcdir$ac_dir_suffix
+
+
+    cd "$ac_dir"
+
+    # Check for guested configure; otherwise get Cygnus style configure.
+    if test -f "$ac_srcdir/configure.gnu"; then
+      ac_sub_configure=$ac_srcdir/configure.gnu
+    elif test -f "$ac_srcdir/configure"; then
+      ac_sub_configure=$ac_srcdir/configure
+    elif test -f "$ac_srcdir/configure.in"; then
+      # This should be Cygnus configure.
+      ac_sub_configure=$ac_aux_dir/configure
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: no configuration information is in $ac_dir" >&5
+$as_echo "$as_me: WARNING: no configuration information is in $ac_dir" >&2;}
+      ac_sub_configure=
+    fi
+
+    # The recursion is here.
+    if test -n "$ac_sub_configure"; then
+      # Make the cache file name correct relative to the subdirectory.
+      case $cache_file in
+      [\\/]* | ?:[\\/]* ) ac_sub_cache_file=$cache_file ;;
+      *) # Relative name.
+	ac_sub_cache_file=$ac_top_build_prefix$cache_file ;;
+      esac
+
+      { $as_echo "$as_me:${as_lineno-$LINENO}: running $SHELL $ac_sub_configure $ac_sub_configure_args --cache-file=$ac_sub_cache_file --srcdir=$ac_srcdir" >&5
+$as_echo "$as_me: running $SHELL $ac_sub_configure $ac_sub_configure_args --cache-file=$ac_sub_cache_file --srcdir=$ac_srcdir" >&6;}
+      # The eval makes quoting arguments work.
+      eval "\$SHELL \"\$ac_sub_configure\" $ac_sub_configure_args \
+	   --cache-file=\"\$ac_sub_cache_file\" --srcdir=\"\$ac_srcdir\"" ||
+	as_fn_error "$ac_sub_configure failed for $ac_dir" "$LINENO" 5
+    fi
+
+    cd "$ac_popdir"
+  done
 fi
 if test -n "$ac_unrecognized_opts" && test "$enable_option_checking" != no; then
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unrecognized options: $ac_unrecognized_opts" >&5
