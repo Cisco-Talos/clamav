@@ -57,6 +57,7 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #include "mbox.h"
 #include "pdf.h"
 #include "scanners.h"
+#include "str.h"
 
 #ifndef	O_BINARY
 #define	O_BINARY	0
@@ -72,7 +73,6 @@ static	int	flatedecode(unsigned char *buf, off_t len, int fout, cli_ctx *ctx);
 static	int	ascii85decode(const char *buf, off_t len, unsigned char *output);
 static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
-static	const	char	*cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns);
 
 /*
  * TODO: handle embedded URLs if (options&CL_SCAN_MAILURL)
@@ -90,6 +90,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 	int printed_predictor_message, printed_embedded_font_message, rc;
 	unsigned int files;
 	struct stat statb;
+	int opt_failed = 0;
 
 	cli_dbgmsg("in cli_pdf(%s)\n", dir);
 
@@ -148,7 +149,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 	 * q points to the end of the trailer section
 	 */
 	trailerlength = (long)(q - trailerstart);
-	if(cli_pmemstr(trailerstart, trailerlength, "Encrypt", 7)) {
+	if(cli_memstr(trailerstart, trailerlength, "Encrypt", 7)) {
 		/*
 		 * This tends to mean that the file is, in effect, read-only
 		 * http://www.cs.cmu.edu/~dst/Adobe/Gallery/anon21jul01-pdf-encryption.txt
@@ -241,7 +242,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 
 		bytesleft -= (off_t)((q - p) + 3);
 		objstart = p = &q[3];
-		objend = cli_pmemstr(p, bytesleft, "endobj", 6);
+		objend = cli_memstr(p, bytesleft, "endobj", 6);
 		if(objend == NULL) {
 			cli_dbgmsg("cli_pdf: No matching endobj\n");
 			break;
@@ -251,7 +252,7 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 		objlen = (unsigned long)(objend - objstart);
 
 		/* Is this object a stream? */
-		streamstart = cli_pmemstr(objstart, objlen, "stream", 6);
+		streamstart = cli_memstr(objstart, objlen, "stream", 6);
 		if(streamstart == NULL)
 			continue;
 
@@ -277,7 +278,6 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 					 */
 					if((bytesleft > 11) && strncmp(q, " 0 R", 4) == 0) {
 						const char *r, *nq;
-						int opt_failed = 0;
 						size_t len;
 						char b[14];
 
@@ -289,10 +289,15 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 						length = (unsigned long)strlen(b);
 						/* optimization: assume objects
 						 * are sequential */
-						nq = q;
-						len = buf + size - q;
+						if(!opt_failed) {
+						    nq = q;
+						    len = buf + size - q;
+						} else {
+						    nq = buf;
+						    len = q - buf;
+						}
 						do {
-							r = cli_pmemstr(nq, len, b, length);
+							r = cli_memstr(nq, len, b, length);
 							if (r > nq) {
 								const char x = *(r-1);
 								if (x == '\n' || x=='\r') {
@@ -301,8 +306,8 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 								}
 							}
 							if (r) {
-								len -= r+1-nq;
-								nq = r + 1;
+								len -= r + length - nq;
+								nq = r + length;
 							} else if (!opt_failed) {
 								/* we failed optimized match,
 								 * try matching from the beginning
@@ -384,9 +389,9 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 			break;
 		len -= (int)(q - streamstart);
 		streamstart = q;
-		streamend = cli_pmemstr(streamstart, len, "endstream\n", 10);
+		streamend = cli_memstr(streamstart, len, "endstream\n", 10);
 		if(streamend == NULL) {
-			streamend = cli_pmemstr(streamstart, len, "endstream\r", 10);
+			streamend = cli_memstr(streamstart, len, "endstream\r", 10);
 			if(streamend == NULL) {
 				cli_dbgmsg("cli_pdf: No endstream\n");
 				break;
@@ -532,6 +537,10 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 					close(fout);
 					if (cli_unlink(fullname)) {
 						rc = CL_EUNLINK;
+						break;
+					}
+					if(cli_updatelimits(ctx, real_streamlen) != CL_SUCCESS) {
+						rc = CL_CLEAN;
 						break;
 					}
 					continue;
@@ -716,7 +725,7 @@ ascii85decode(const char *buf, off_t len, unsigned char *output)
 	int quintet = 0;
 	int ret = 0;
 
-	if(cli_pmemstr(buf, len, "~>", 2) == NULL)
+	if(cli_memstr(buf, len, "~>", 2) == NULL)
 		cli_dbgmsg("cli_pdf: ascii85decode: no EOF marker found\n");
 
 	ptr = buf;
@@ -845,45 +854,6 @@ pdf_nextobject(const char *ptr, size_t len)
 	return NULL;
 }
 
-/*
- * like cli_memstr - but returns the location of the match
- * FIXME: need a case insensitive version
- */
-static const char *
-cli_pmemstr(const char *haystack, size_t hs, const char *needle, size_t ns)
-{
-	const char *pt, *hay;
-	size_t n;
-
-	if(haystack == needle)
-		return haystack;
-
-	if(hs < ns)
-		return NULL;
-
-	if(memcmp(haystack, needle, ns) == 0)
-		return haystack;
-
-	pt = hay = haystack;
-	n = hs;
-
-	while((pt = memchr(hay, needle[0], n)) != NULL) {
-		n -= (size_t)(pt - hay);
-		if(n < ns)
-			break;
-
-		if(memcmp(pt, needle, ns) == 0)
-			return pt;
-
-		if(hay == pt) {
-			n--;
-			hay++;
-		} else
-			hay = pt;
-	}
-
-	return NULL;
-}
 #else	/*!HAVE_MMAP*/
 
 #include "clamav.h"
