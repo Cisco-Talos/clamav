@@ -69,13 +69,16 @@ static unsigned typesize(const struct cli_bc *bc, uint16_t type)
 	return 4;
     if (type <= 64)
 	return 8;
-    return 0;
+    return bc->types[type-65].size;
 }
 
 static unsigned typealign(const struct cli_bc *bc, uint16_t type)
 {
-    unsigned size = typesize(bc, type);
-    return size ? size : 1;
+    if (type <= 64) {
+	unsigned size = typesize(bc, type);
+	return size ? size : 1;
+    }
+    return bc->types[type-65].align;
 }
 
 int cli_bytecode_context_setfuncid(struct cli_bc_ctx *ctx, const struct cli_bc *bc, unsigned funcid)
@@ -456,6 +459,7 @@ static void add_static_types(struct cli_bc *bc)
 	bc->types[i].kind = PointerType;
 	bc->types[i].numElements = 1;
 	bc->types[i].containedTypes = &containedTy[i];
+	bc->types[i].size = bc->types[i].align = sizeof(void*);
     }
 }
 
@@ -485,6 +489,7 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 	switch (t) {
 	    case 1:
 		ty->kind = FunctionType;
+		ty->size = ty->align = sizeof(void*);
 		parseType(bc, ty, buffer, &offset, len, &ok);
 		if (!ok) {
 		    cli_errmsg("Error parsing type %u\n", i);
@@ -494,6 +499,7 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 	    case 2:
 	    case 3:
 		ty->kind = (t == 2) ? StructType : PackedStructType;
+		ty->size = ty->align = 0;/* TODO:calculate size/align of structs */
 		parseType(bc, ty, buffer, &offset, len, &ok);
 		if (!ok) {
 		    cli_errmsg("Error parsing type %u\n", i);
@@ -523,6 +529,12 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 		if (!ok) {
 		    cli_errmsg("Error parsing type %u\n", i);
 		    return CL_EMALFDB;
+		}
+		if (t == 5) {
+		    ty->size = ty->align = sizeof(void);
+		} else {
+		    ty->size = ty->numElements*typesize(bc, ty->containedTypes[0]);
+		    ty->align = typealign(bc, ty->containedTypes[0]);
 		}
 		break;
 	    default:
@@ -1074,10 +1086,6 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 	for (j=0;j<bcfunc->numValues;j++) {
 	    uint16_t ty = bcfunc->types[j];
 	    unsigned align;
-	    if (ty > 64) {
-		cli_errmsg("Bytecode: non-integer types not yet implemented\n");
-		return CL_EMALFDB;
-	    }
 	    align = typealign(bc, ty);
 	    bcfunc->numBytes  = (bcfunc->numBytes + align-1)&(~(align-1));
 	    map[j] = bcfunc->numBytes;
@@ -1178,6 +1186,15 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 		}
 		case OP_LOAD:
 		    MAP(inst->u.unaryop);
+		    break;
+		case OP_GEP1:
+		    MAP(inst->u.binop[0]);
+		    MAP(inst->u.binop[1]);
+		    break;
+		case OP_GEP2:
+		    MAP(inst->u.three[0]);
+		    MAP(inst->u.three[1]);
+		    MAP(inst->u.three[2]);
 		    break;
 		default:
 		    cli_dbgmsg("Unhandled opcode: %d\n", inst->opcode);

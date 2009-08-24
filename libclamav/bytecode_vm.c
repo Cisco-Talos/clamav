@@ -601,6 +601,10 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		old_values = values;
 		stack_entry = allocate_stack(&stack, stack_entry, func2, func, inst->dest,
 					     bb, bb_inst);
+		if (!stack_entry) {
+		    stop = CL_EMEM;
+		    break;
+		}
 		values = stack_entry->values;
 		TRACE_EXEC(inst->u.ops.funcid, inst->dest, inst->type, stack_depth);
 		if (stack_depth > 10000) {
@@ -764,7 +768,7 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 		ptr->una_u64 = v;
 		break;
 	    }
-
+	    /* TODO: implement OP_GEP1, OP_GEP2, OP_GEPN */
 	    default:
 		cli_errmsg("Opcode %u of type %u is not implemented yet!\n",
 			   inst->interp_op/5, inst->interp_op%5);
@@ -773,7 +777,8 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	}
 	bb_inst++;
 	inst++;
-	CHECK_GT(bb->numInsts, bb_inst);
+	if (bb)
+	    CHECK_GT(bb->numInsts, bb_inst);
     } while (stop == CL_SUCCESS);
 
     cli_stack_destroy(&stack);
