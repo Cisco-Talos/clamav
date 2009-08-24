@@ -1,0 +1,5 @@
+# Run LLVM build with GNU make
+GMAKE = @GMAKE@
+
+.DEFAULT:
+	$(GMAKE) $@

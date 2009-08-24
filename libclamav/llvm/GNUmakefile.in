@@ -1,0 +1,11 @@
+all: build-llvm
+
+build-llvm:
+	$(MAKE) -C llvm ENABLE_OPTIMIZED=1 OPTIMIZE_OPTION=-O2 libs-only
+
+build-llvm-for-check:
+	$(MAKE) -C llvm ENABLE_OPTIMIZED=1 OPTIMIZE_OPTION=-O2 tools-only
+
+check: build-llvm-for-check
+	$(MAKE) -C llvm check
+	$(MAKE) -C llvm unittests
