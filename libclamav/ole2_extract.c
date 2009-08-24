@@ -36,19 +36,11 @@
 #include <stdlib.h>
 #include "clamav.h"
 
-#if HAVE_MMAP
-#if HAVE_SYS_MMAN_H
-#include <sys/mman.h>
-#else /* HAVE_SYS_MMAN_H */
-#undef HAVE_MMAP
-#endif
-#endif
-
 #include "cltypes.h"
 #include "others.h"
 #include "ole2_extract.h"
 #include "scanners.h"
-#include "mbox.h"
+#include "fmap.h"
 
 #define ole2_endian_convert_16(v) le16_to_host((uint16_t)(v))
 #define ole2_endian_convert_32(v) le32_to_host((uint32_t)(v))
@@ -99,10 +91,10 @@ typedef struct ole2_header_tag
 	   reading the header */
 	int32_t sbat_root_start __attribute__ ((packed));
 	uint32_t max_block_no;
-	unsigned char *m_area;
 	off_t m_length;
 	bitset_t *bitset;
 	struct uniq *U;
+	struct F_MAP *map;
 	int has_vba;
 } ole2_header_t;
 
@@ -297,7 +289,7 @@ static int ole2_read_block(int fd, ole2_header_t *hdr, void *buff, unsigned int 
 	/* other methods: (blockno+1) * 512 or (blockno * block_size) + 512; */
 	offset = (blockno << hdr->log2_big_block_size) + MAX(512, 1 << hdr->log2_big_block_size); /* 512 is header size */
 	
-	if (hdr->m_area == NULL) {
+	if (hdr->map == NULL) {
 		if (lseek(fd, offset, SEEK_SET) != offset) {
 			return FALSE;
 		}
@@ -305,11 +297,15 @@ static int ole2_read_block(int fd, ole2_header_t *hdr, void *buff, unsigned int 
 			return FALSE;
 		}
 	} else {
+		void *pblock;
 		offend = offset + size;
 		if ((offend <= 0) || (offend > hdr->m_length)) {
 			return FALSE;
 		}
-		memcpy(buff, hdr->m_area+offset, size);
+		if(!(pblock = fmap_need_off_once(hdr->map, offset, size))) {
+			return FALSE;
+		}
+		memcpy(buff, pblock, size);
 	}
 	return TRUE;
 }
@@ -905,28 +901,30 @@ int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx, struct uniq **vb
 	
 	/* size of header - size of other values in struct */
 	hdr_size = sizeof(struct ole2_header_tag) - sizeof(int32_t) - sizeof(uint32_t) -
-			sizeof(unsigned char *) - sizeof(off_t) - sizeof(bitset_t *) -
-			sizeof(struct uniq *) - sizeof(int);
+			sizeof(off_t) - sizeof(bitset_t *) -
+			sizeof(struct uniq *) - sizeof(int) - sizeof(struct F_MAP *);
 
-	hdr.m_area = NULL;
+	hdr.map = NULL;
 
 	if (fstat(fd, &statbuf) == 0) {
 		if (statbuf.st_size < hdr_size) {
 			return CL_CLEAN;
 		}
-#ifdef HAVE_MMAP
 		hdr.m_length = statbuf.st_size;
-		hdr.m_area = (unsigned char *) mmap(NULL, hdr.m_length, PROT_READ, MAP_PRIVATE, fd, 0);
-		if (hdr.m_area == MAP_FAILED) {
-			hdr.m_area = NULL;
-		} else {
-			cli_dbgmsg("mmap'ed file\n");
-			memcpy(&hdr, hdr.m_area, hdr_size);
+		hdr.map = fmap(fd, 0, hdr.m_length);
+		if (hdr.map) {
+			void *phdr = fmap_need_off(hdr.map, 0, hdr_size);
+			if(phdr) {
+				cli_dbgmsg("mmap'ed file\n");
+				memcpy(&hdr, phdr, hdr_size);
+			} else {
+				fmunmap(hdr.map);
+				hdr.map = NULL;
+			}
 		}
-#endif
 	}
 
-	if (hdr.m_area == NULL) {
+	if (hdr.map == NULL) {
 		hdr.bitset = NULL;
 #if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
 		if (cli_readn(fd, &hdr, hdr_size) != hdr_size) {
@@ -1015,11 +1013,9 @@ int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx, struct uniq **vb
 	}
 
 abort:
-#ifdef HAVE_MMAP
-	if (hdr.m_area != NULL) {
-		munmap(hdr.m_area, hdr.m_length);
+	if (hdr.map != NULL) {
+		fmunmap(hdr.map);
 	}
-#endif
 	if(hdr.bitset)
 	    cli_bitset_free(hdr.bitset);
 
