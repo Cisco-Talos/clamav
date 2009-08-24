@@ -582,7 +582,7 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 
 	    memcpy(hash, file->md5, 16);
 	    md5str((uint8_t *)hash);
-	    if(fmap_need_ptr(map, &hdr[dir_rel], 4)) {
+	    if(fmap_need_ptr_once(map, &hdr[dir_rel], 4)) {
 		dir_rel = cli_readint32(&hdr[dir_rel]) + h1_data_off + objs_dirs_off;
 		if(fmap_need_str(map, &hdr[dir_rel], c->hdrsz - dir_rel))
 		    dir_name = &hdr[dir_rel];
@@ -659,11 +659,11 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 		fmap_unneed_ptr(map, file_name, strlen(file_name)+1);
 	    if(dir_name != emptyname)
 		fmap_unneed_ptr(map, dir_name, strlen(dir_name)+1);
+	    fmap_unneed_ptr(map, file, sizeof(*file));
 	} else {
 	    ret = CL_CLEAN;
 	    cli_dbgmsg("is_parse_hdr: FILEITEM out of bounds\n");
 	}
-	fmap_unneed_ptr(map, file, sizeof(*file));
 	off += sizeof(*file);
     }
     fmunmap(map);
