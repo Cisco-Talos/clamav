@@ -305,6 +305,8 @@ void *fmap_need_str(struct F_MAP *m, void *ptr, size_t len) {
 	return NULL;
     }
 
+    fmap_aging(m);
+
     cli_errmsg("FMAPDBG: need_str map %p at %p len %u\n", m, ptr, len);
     first_page = fmap_which_page(m, at);
     last_page = fmap_which_page(m, at + len - 1);
