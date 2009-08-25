@@ -100,14 +100,6 @@ static	char	const	rcsid[] = "$Id: binhex.c,v 1.23 2007/02/12 20:46:08 njh Exp $"
 #endif
 #endif
 
-#ifdef	HAVE_MMAP
-#if HAVE_SYS_MMAN_H
-#include <sys/mman.h>
-#else /* HAVE_SYS_MMAN_H */
-#undef HAVE_MMAP
-#endif
-#endif
-
 #include <stdio.h>
 #include <memory.h>
 #include <sys/stat.h>
@@ -115,20 +107,18 @@ static	char	const	rcsid[] = "$Id: binhex.c,v 1.23 2007/02/12 20:46:08 njh Exp $"
 
 #include "mbox.h"
 #include "binhex.h"
+#include "fmap.h"
 
 int
 cli_binhex(const char *dir, int desc)
 {
-#ifndef HAVE_MMAP
-	cli_warnmsg("File not decoded - binhex decoding needs mmap() (for now)\n");
-	return CL_CLEAN;
-#else
 	struct stat statb;
 	char *buf, *start, *line;
 	size_t size;
 	long bytesleft;
 	message *m;
 	fileblob *fb;
+	struct F_MAP *map;
 
 	if(fstat(desc, &statb) < 0)
 		return CL_EOPEN;
@@ -141,9 +131,13 @@ cli_binhex(const char *dir, int desc)
 	m = messageCreate();
 	if(m == NULL)
 		return CL_EMEM;
+	if(!(map = fmap(desc, 0, size))) {
+		messageDestroy(m);
+		return CL_EMAP;
+	}
 
-	start = buf = mmap(NULL, size, PROT_READ, MAP_PRIVATE, desc, 0);
-	if(buf == MAP_FAILED) {
+	start = buf = fmap_need_off_once(map, 0, size);
+	if(!buf) {
 		messageDestroy(m);
 		return CL_EMAP;
 	}
@@ -154,16 +148,16 @@ cli_binhex(const char *dir, int desc)
 	line = NULL;
 
 	while(bytesleft > 0) {
-		int length = 0;
+		int length = bytesleft;
 		char *ptr, *newline;
 
 		/*printf("%d: ", bytesleft);*/
 
 		for(ptr = buf; bytesleft && (*ptr != '\n') && (*ptr != '\r'); ptr++) {
-			length++;
 			--bytesleft;
 		}
 
+		length -= bytesleft;
 		/*printf("%d: ", length);*/
 
 		newline = cli_realloc(line, (size_t)(length + 1));
@@ -187,7 +181,7 @@ cli_binhex(const char *dir, int desc)
 		buf = ++ptr;
 		bytesleft--;
 	}
-	munmap(start, size);
+	fmunmap(map);
 
 	if(line)
 		free(line);
@@ -213,5 +207,4 @@ cli_binhex(const char *dir, int desc)
 		return CL_CLEAN;	/* a lie - but it gets things going */
 	/* return CL_EIO; */	/* probably CL_EMEM, but we can't tell at this layer */
 	return CL_EMEM;
-#endif
 }
