@@ -269,10 +269,14 @@ const char *cl_strerror(int clerror)
 
 int cl_init(unsigned int initoptions)
 {
+    int rc;
     /* put dlopen() stuff here, etc. */
     if (lt_init() == 0) {
 	cli_rarload();
     }
+    rc = bytecode_init();
+    if (rc)
+	return rc;
     return CL_SUCCESS;
 }
 

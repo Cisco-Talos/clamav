@@ -1,4 +1,5 @@
 AC_DEFUN([AC_CONFIG_LLVM],[
+AC_REQUIRE([AC_PROG_CXX])
 dnl automatically enable LLVM if host environment is supported, and automatically
 dnl disable it if not, unless the user explicitly enables or disables LLVM.
 AC_ARG_ENABLE([llvm],AC_HELP_STRING([--enable-llvm],
@@ -6,15 +7,15 @@ AC_ARG_ENABLE([llvm],AC_HELP_STRING([--enable-llvm],
 				    [enable_llvm=$enableval], [enable_llvm="auto"])
 if test "$enable_llvm" = "auto"; then
          AC_MSG_NOTICE([Checking whether we can build LLVM])
-	 if test -z "$CXX"; then
-	   AC_CHECK_TOOLS(GXX,[g++ c++ cxx])
-	 else
-	   GXX="$CXX";
-	 fi
-	 gxx_version=`${GXX} -dumpversion`
-	 if test "$?" -ne 0; then
+	 AC_PROG_CXX([g++])
+	 if test "$GXX" != "yes"; then
 	    enable_llvm="no";
 	    AC_MSG_NOTICE([GNU C++ compiler not found, not building LLVM])
+	 fi
+	 gxx_version=`${CXX} -dumpversion`
+	 if test "$?" -ne 0; then
+	    enable_llvm="no";
+	    AC_MSG_NOTICE([Unable to get GNU C++ compiler version, not building LLVM])
 	 else
 	    case "${gxx_version}" in
 	        [012].*|3.[0123].*)

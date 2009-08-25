@@ -41,6 +41,7 @@ static void runtest(const char *file, uint64_t expected)
     FILE *f;
     struct cli_bc bc;
     struct cli_bc_ctx *ctx;
+    struct cli_all_bc bcs;
     uint64_t v;
 
     fail_unless(fd >= 0, "retmagic open failed");
@@ -49,11 +50,17 @@ static void runtest(const char *file, uint64_t expected)
 
     cl_debug();
 
+    rc = cli_bytecode_init(&bcs);
+    fail_unless(rc == CL_SUCCESS, "cli_bytecode_init failed");
+
+    bcs.all_bcs = &bc;
+    bcs.count = 1;
+
     rc = cli_bytecode_load(&bc, f, NULL);
     fail_unless(rc == CL_SUCCESS, "cli_bytecode_load failed");
     fclose(f);
 
-    rc = cli_bytecode_prepare(&bc);
+    rc = cli_bytecode_prepare(&bcs);
     fail_unless(rc == CL_SUCCESS, "cli_bytecode_prepare failed");
 
     ctx = cli_bytecode_context_alloc();
@@ -68,6 +75,7 @@ static void runtest(const char *file, uint64_t expected)
 		    expected, v);
     cli_bytecode_context_destroy(ctx);
     cli_bytecode_destroy(&bc);
+    cli_bytecode_done(&bcs);
 }
 
 START_TEST (test_retmagic)

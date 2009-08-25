@@ -1025,7 +1025,10 @@ int cli_bytecode_run(const struct cli_bc *bc, struct cli_bc_ctx *ctx)
     inst.u.ops.funcid = ctx->funcid;
     inst.u.ops.ops = ctx->operands;
     inst.u.ops.opsizes = ctx->opsizes;
-    return cli_vm_execute(ctx->bc, ctx, &func, &inst);
+    if (bc->state == bc_interp)
+	return cli_vm_execute(ctx->bc, ctx, &func, &inst);
+    else
+	return cli_vm_execute_jit(ctx->bc, ctx, &func, &inst);
 }
 
 uint64_t cli_bytecode_context_getresult_int(struct cli_bc_ctx *ctx)
@@ -1207,21 +1210,30 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
     return CL_SUCCESS;
 }
 
-static int cli_bytecode_prepare_jit(struct cli_bc *bc)
+int cli_bytecode_prepare(struct cli_all_bc *bcs)
 {
-    if (bc->state != bc_loaded) {
-	cli_warnmsg("Cannot prepare for JIT, because it has already been converted to interpreter");
-	return CL_EBYTECODE;
+    unsigned i;
+    int rc;
+    if (cli_bytecode_prepare_jit(bcs) == CL_SUCCESS)
+	return CL_SUCCESS;
+    for (i=0;i<bcs->count;i++) {
+	struct cli_bc *bc = &bcs->all_bcs[i];
+	if (bc->state == bc_interp || bc->state == bc_jit)
+	    continue;
+	rc = cli_bytecode_prepare_interpreter(bc);
+	if (rc != CL_SUCCESS)
+	    return rc;
     }
-    cli_warnmsg("JIT not yet implemented\n");
-    return CL_EBYTECODE;
+    return CL_SUCCESS;
 }
 
-int cli_bytecode_prepare(struct cli_bc *bc)
+int cli_bytecode_init(struct cli_all_bc *allbc)
 {
-    if (bc->state == bc_interp || bc->state == bc_jit)
-	return CL_SUCCESS;
-    if (cli_bytecode_prepare_jit(bc) == CL_SUCCESS)
-	return CL_SUCCESS;
-    return cli_bytecode_prepare_interpreter(bc);
+    memset(allbc, 0, sizeof(*allbc));
+    return cli_bytecode_init_jit(allbc);
+}
+
+int cli_bytecode_done(struct cli_all_bc *allbc)
+{
+    return cli_bytecode_done_jit(allbc);
 }

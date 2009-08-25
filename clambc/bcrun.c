@@ -22,6 +22,7 @@
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
+#include "cltypes.h"
 #include "bytecode.h"
 #include "clamav.h"
 #include "shared/optparser.h"
@@ -52,6 +53,7 @@ int main(int argc, char *argv[])
     int rc;
     struct optstruct *opts;
     unsigned funcid=0, i;
+    struct cli_all_bc bcs;
 
     opts = optparse(NULL, argc, argv, 1, OPT_CLAMBC, 0, NULL);
     if (!opts) {
@@ -83,6 +85,23 @@ int main(int argc, char *argv[])
     }
 
     cl_debug();
+    rc = cl_init(CL_INIT_DEFAULT);
+    if (rc != CL_SUCCESS) {
+	fprintf(stderr,"Unable to init libclamav: %s\n", cl_strerror(rc));
+	optfree(opts);
+	exit(4);
+    }
+
+    rc = cli_bytecode_init(&bcs);
+    if (rc != CL_SUCCESS) {
+	fprintf(stderr,"Unable to init bytecode engine: %s\n", cl_strerror(rc));
+	optfree(opts);
+	exit(4);
+    }
+
+    bcs.all_bcs = bc;
+    bcs.count = 1;
+
     rc = cli_bytecode_load(bc, f, NULL);
     if (rc != CL_SUCCESS) {
 	fprintf(stderr,"Unable to load bytecode: %s\n", cl_strerror(rc));
@@ -90,7 +109,7 @@ int main(int argc, char *argv[])
 	exit(4);
     }
 
-    rc = cli_bytecode_prepare(bc);
+    rc = cli_bytecode_prepare(&bcs);
     if (rc != CL_SUCCESS) {
 	fprintf(stderr,"Unable to prepare bytecode: %s\n", cl_strerror(rc));
 	optfree(opts);
@@ -133,6 +152,7 @@ int main(int argc, char *argv[])
     }
     cli_bytecode_context_destroy(ctx);
     cli_bytecode_destroy(bc);
+    cli_bytecode_done(&bcs);
     free(bc);
     optfree(opts);
     printf("Exiting\n");

@@ -20,10 +20,6 @@ AM_CPPFLAGS = -I$(top_srcdir) -I@srcdir@/nsis $(LTDLINCL)
 lib_LTLIBRARIES =
 EXTRA_DIST =
 
-if ENABLE_LLVM
-SUBDIRS = llvm
-endif
-
 if ENABLE_UNRAR
 
 AM_CPPFLAGS += -DWARN_DLOPEN_FAIL
@@ -115,7 +111,7 @@ libclamav_internal_utils_nothreads_la_LDFLAGS=-static
 libclamav_internal_utils_nothreads_la_CFLAGS=-DCL_NOTHREADS
 
 libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) libclamav_internal_utils.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@
-libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) libclamav_internal_utils.la
+libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) libclamav_internal_utils.la 
 libclamav_la_CFLAGS = -DSEARCH_LIBDIR=\"$(libdir)\"
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 
@@ -334,6 +330,24 @@ libclamav_la_SOURCES = \
 if !LINK_TOMMATH
 libclamav_la_SOURCES += bignum.c \
 		     bignum_class.h
+endif
+
+if ENABLE_LLVM
+
+SUBDIRS = llvm
+if DEBUG_BUILD
+LLVM_CONFIG=llvm/llvm/Debug/bin/llvm-config
+else
+LLVM_CONFIG=llvm/llvm/Release/bin/llvm-config
+endif
+libclamav_la_CPPFLAGS = $(AM_CPPFLAGS) `$(LLVM_CONFIG) --cppflags`
+libclamav_la_LDFLAGS += `$(LLVM_CONFIG) --ldflags --libs jit nativecodegen`
+libclamav_la_SOURCES += bytecode2llvm.cpp
+
+else
+
+libclamav_la_SOURCES += bytecode_nojit.c
+
 endif
 
 .PHONY: version.h.tmp
