@@ -48,8 +48,8 @@
 */
 
 /* FIXME: tune this stuff */
-#define UNPAGE_THRSHLD_HI 1*1024*1024
-#define UNPAGE_THRSHLD_LO 4*1024*1024
+#define UNPAGE_THRSHLD_LO 1*1024*1024
+#define UNPAGE_THRSHLD_HI 4*1024*1024
 
 struct F_MAP {
     int fd;
@@ -165,7 +165,7 @@ static void fmap_aging(struct F_MAP *m) {
 	    if(avail * m->pgsz > UNPAGE_THRSHLD_HI ) {
 		/* if we've got more unpageable pages than we need, we pick the oldest */
 		fmap_qsel(m, freeme, 0, avail - 1);
-		avail = UNPAGE_THRSHLD_HI % m->pgsz;
+		avail = UNPAGE_THRSHLD_HI / m->pgsz;
 	    }
 	    for(i=0; i<avail; i++) {
 		char *pptr = (char *)m + i * m->pgsz + m->hdrsz;
@@ -214,7 +214,7 @@ static int fmap_readpage(struct F_MAP *m, unsigned int page, int lock) {
 
     /* page is not already paged */
     pptr = (char *)m + page * m->pgsz + m->hdrsz;
-    if(page == m->pages - 1)
+    if((page == m->pages - 1) && (m->len % m->pgsz))
 	readsz = m->len % m->pgsz;
     else
 	readsz = m->pgsz;

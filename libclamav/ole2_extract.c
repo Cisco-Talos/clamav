@@ -913,7 +913,7 @@ int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx, struct uniq **vb
 		hdr.m_length = statbuf.st_size;
 		hdr.map = fmap(fd, 0, hdr.m_length);
 		if (hdr.map) {
-			void *phdr = fmap_need_off(hdr.map, 0, hdr_size);
+			void *phdr = fmap_need_off_once(hdr.map, 0, hdr_size);
 			if(phdr) {
 				cli_dbgmsg("mmap'ed file\n");
 				memcpy(&hdr, phdr, hdr_size);
@@ -936,7 +936,7 @@ int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx, struct uniq **vb
 		}
 #endif
 	}
-	
+
 	hdr.minor_version = ole2_endian_convert_16(hdr.minor_version);
 	hdr.dll_version = ole2_endian_convert_16(hdr.dll_version);
 	hdr.byte_order = ole2_endian_convert_16(hdr.byte_order);
