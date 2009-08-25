@@ -1293,11 +1293,11 @@ static int cli_scanmschm(int desc, cli_ctx *ctx)
     }
 
    do {
-	ret = cli_chm_prepare_file(desc, dir, &metadata);
+	ret = cli_chm_prepare_file(&metadata);
 	if (ret != CL_SUCCESS) {
 	   break;
 	}
-	ret = cli_chm_extract_file(desc, dir, &metadata, ctx);
+	ret = cli_chm_extract_file(dir, &metadata, ctx);
 	if (ret == CL_SUCCESS) {
 	    lseek(metadata.ofd, 0, SEEK_SET);
 	    rc = cli_magic_scandesc(metadata.ofd, ctx);
