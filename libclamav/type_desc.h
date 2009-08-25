@@ -33,8 +33,8 @@ enum derived_t {
 struct cli_bc_type {
     enum derived_t kind;
     uint16_t *containedTypes;
-    uint32_t size;
     unsigned numElements;
+    uint32_t size;
     unsigned align;
 };
 
