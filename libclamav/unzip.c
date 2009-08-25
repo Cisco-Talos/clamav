@@ -588,7 +588,7 @@ int cli_unzip_single(int f, cli_ctx *ctx, off_t lhoffl) {
     return CL_CLEAN;
   }
 
-  if (!(map = fmap(f, 0, fsize))) {
+  if (!(map = fmap(f, 0, st.st_size))) {
       cli_dbgmsg("cli_unzip: mmap failed\n");
       return CL_EMAP;
   }
