@@ -73,7 +73,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
 
     if(troot) {
 
-	if(!acdata && (ret = cli_ac_initdata(&mdata, troot->ac_partsigs, troot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN)))
+	if(!acdata && (ret = cli_ac_initdata(&mdata, troot->ac_partsigs, troot->ac_lsigs, troot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)))
 	    return ret;
 
 	if(troot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, troot, offset, -1)) != CL_VIRUS)
@@ -86,7 +86,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
 	    return ret;
     }
 
-    if(!acdata && (ret = cli_ac_initdata(&mdata, groot->ac_partsigs, groot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN)))
+    if(!acdata && (ret = cli_ac_initdata(&mdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)))
 	return ret;
 
     if(groot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, groot, offset, -1)) != CL_VIRUS)
@@ -366,11 +366,11 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
     }
 
     if(!ftonly)
-	if((ret = cli_ac_caloff(groot, desc)) || (ret = cli_ac_initdata(&gdata, groot->ac_partsigs, groot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN)))
+	if((ret = cli_ac_initdata(&gdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) || (ret = cli_ac_caloff(groot, &gdata, desc)))
 	    return ret;
 
     if(troot) {
-	if((ret = cli_ac_caloff(troot, desc)) || (ret = cli_ac_initdata(&tdata, troot->ac_partsigs, troot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN))) {
+	if((ret = cli_ac_initdata(&tdata, troot->ac_partsigs, troot->ac_lsigs, troot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) || (ret = cli_ac_caloff(troot, &tdata, desc))) {
 	    if(!ftonly)
 		cli_ac_freedata(&gdata);
 	    return ret;

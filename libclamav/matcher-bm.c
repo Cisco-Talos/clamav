@@ -55,8 +55,12 @@ int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern, const 
 	cli_errmsg("cli_bm_addpatt: Can't calculate offset for signature %s\n", pattern->virname);
 	return ret;
     }
-    if(pattern->offdata[0] != CLI_OFF_ANY && pattern->offdata[0] != CLI_OFF_ABSOLUTE)
-	root->bm_reloff_num++;
+    if(pattern->offdata[0] != CLI_OFF_ANY) {
+	if(pattern->offdata[0] == CLI_OFF_ABSOLUTE)
+	    root->bm_absoff_num++;
+	else
+	    root->bm_reloff_num++;
+    }
 
 #if BM_MIN_LENGTH == BM_BLOCK_SIZE
     /* try to load balance bm_suffix (at the cost of bm_shift) */
@@ -154,7 +158,7 @@ void cli_bm_free(struct cli_matcher *root)
 
 int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, uint32_t offset, int fd)
 {
-	uint32_t i, j, off;
+	uint32_t i, j, off, off_min, off_max;
 	uint8_t found, pchain, shift;
 	uint16_t idx, idxchk;
 	struct cli_bm_patt *p;
@@ -162,7 +166,6 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	unsigned char prefix;
         struct cli_target_info info;
         int ret;
-
 
     if(!root || !root->bm_shift)
 	return CL_CLEAN;
@@ -226,16 +229,19 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 		if(found && p->length + p->prefix_length == j) {
 		    if(p->offset_min != CLI_OFF_ANY) {
 			if(p->offdata[0] != CLI_OFF_ABSOLUTE) {
-			    ret = cli_caloff(NULL, &info, fd, root->type, p->offdata, &p->offset_min, &p->offset_max);
+			    ret = cli_caloff(NULL, &info, fd, root->type, p->offdata, &off_min, &off_max);
 			    if(ret != CL_SUCCESS) {
 				cli_errmsg("cli_bm_scanbuff: Can't calculate relative offset in signature for %s\n", p->virname);
 				if(info.exeinfo.section)
 				    free(info.exeinfo.section);
 				return ret;
 			    }
+			} else {
+			    off_min = p->offset_min;
+			    off_max = p->offset_max;
 			}
 			off = offset + i - p->prefix_length - BM_MIN_LENGTH + BM_BLOCK_SIZE;
-			if(p->offset_max > off || p->offset_min < off) {
+			if(off_max < off || off_min > off) {
 			    p = p->next;
 			    continue;
 			}

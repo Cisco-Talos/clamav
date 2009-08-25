@@ -769,7 +769,7 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
     return 1;
 }
 
-int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs, uint8_t tracklen)
+int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs, uint32_t reloffsigs, uint8_t tracklen)
 {
 	unsigned int i;
 
@@ -779,12 +779,24 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs,
 	return CL_ENULLARG;
     }
 
-    data->partsigs = partsigs;
+    data->reloffsigs = reloffsigs;
+    if(reloffsigs) {
+	data->offset = (uint32_t *) cli_malloc(reloffsigs * 2 * sizeof(uint32_t));
+	if(!data->offset) {
+	    cli_errmsg("cli_ac_init: Can't allocate memory for data->offset\n");
+	    return CL_EMEM;
+	}
+	for(i = 0; i < reloffsigs * 2; i += 2)
+	    data->offset[i] = CLI_OFF_NONE;
+    }
 
+    data->partsigs = partsigs;
     if(partsigs) {
 	data->offmatrix = (int32_t ***) cli_calloc(partsigs, sizeof(int32_t **));
 	if(!data->offmatrix) {
 	    cli_errmsg("cli_ac_init: Can't allocate memory for data->offmatrix\n");
+	    if(reloffsigs)
+		free(data->offset);
 	    return CL_EMEM;
 	}
     }
@@ -795,6 +807,8 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs,
 	if(!data->lsigcnt) {
 	    if(partsigs)
 		free(data->offmatrix);
+	    if(reloffsigs)
+		free(data->offset);
 	    cli_errmsg("cli_ac_init: Can't allocate memory for data->lsigcnt\n");
 	    return CL_EMEM;
 	}
@@ -803,17 +817,19 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs,
 	    free(data->lsigcnt);
 	    if(partsigs)
 		free(data->offmatrix);
+	    if(reloffsigs)
+		free(data->offset);
 	    cli_errmsg("cli_ac_init: Can't allocate memory for data->lsigcnt[0]\n");
 	    return CL_EMEM;
 	}
 	for(i = 1; i < lsigs; i++)
 	    data->lsigcnt[i] = data->lsigcnt[0] + 64 * i;
-     }
- 
+    }
+
     return CL_SUCCESS;
 }
 
-int cli_ac_caloff(struct cli_matcher *root, int fd)
+int cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, int fd)
 {
 	int ret;
 	unsigned int i;
@@ -824,8 +840,8 @@ int cli_ac_caloff(struct cli_matcher *root, int fd)
     for(i = 0; i < root->ac_reloff_num; i++) {
 	patt = root->ac_reloff[i];
 	if(fd == -1) {
-	    patt->offset_min = CLI_OFF_NONE;
-	} else if((ret = cli_caloff(NULL, &info, fd, root->type, patt->offdata, &patt->offset_min, &patt->offset_max))) {
+	    data->offset[patt->offset_min] = CLI_OFF_NONE;
+	} else if((ret = cli_caloff(NULL, &info, fd, root->type, patt->offdata, &data->offset[patt->offset_min], &data->offset[patt->offset_max]))) {
 	    cli_errmsg("cli_ac_caloff: Can't calculate relative offset in signature for %s\n", patt->virname);
 	    if(info.exeinfo.section)
 		free(info.exeinfo.section);
@@ -858,6 +874,11 @@ void cli_ac_freedata(struct cli_ac_data *data)
 	free(data->lsigcnt[0]);
 	free(data->lsigcnt);
 	data->lsigs = 0;
+    }
+
+    if(data && data->reloffsigs) {
+	free(data->offset);
+	data->reloffsigs = 0;
     }
 }
 
@@ -926,7 +947,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	    while(patt) {
 		bp = i + 1 - patt->depth;
 		pt = patt;
-		/*
+	 	/*
 		while(pt) {
 		    if((pt->type && !(mode & AC_SCAN_FT)) || (!pt->type && !(mode & AC_SCAN_VIR))) {
 			pt = pt->next_same;
@@ -958,9 +979,16 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 			}
 			realoff = offset + bp - pt->prefix_length;
 			if(pt->offset_min != CLI_OFF_ANY && (!pt->sigid || pt->partno == 1)) {
-			    if(pt->offset_max > realoff || pt->offset_min < realoff) {
-				pt = pt->next_same;
-				continue;
+			    if(pt->offdata[0] == CLI_OFF_ABSOLUTE) {
+				if(pt->offset_max < realoff || pt->offset_min > realoff) {
+				    pt = pt->next_same;
+				    continue;
+				}
+			    } else {
+				if(mdata->offset[pt->offset_min] == CLI_OFF_NONE || mdata->offset[pt->offset_max] < realoff || mdata->offset[pt->offset_min] > realoff) {
+				    pt = pt->next_same;
+				    continue;
+				}
 			    }
 			}
 			if(pt->sigid) { /* it's a partial signature */
@@ -1477,6 +1505,8 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	    return CL_EMEM;
 	}
 	root->ac_reloff[root->ac_reloff_num] = new;
+	new->offset_min = root->ac_reloff_num * 2;
+	new->offset_max = new->offset_min + 1;
 	root->ac_reloff_num++;
     }
 

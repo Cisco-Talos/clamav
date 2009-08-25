@@ -76,7 +76,7 @@ struct cli_matcher {
     struct cli_bm_patt **bm_suffix;
     struct cli_hashset md5_sizes_hs;
     uint32_t *soff, soff_len; /* for PE section sigs */
-    uint32_t bm_patterns, bm_reloff_num;
+    uint32_t bm_patterns, bm_reloff_num, bm_absoff_num;
 
     /* Extended Aho-Corasick */
     uint32_t ac_partsigs, ac_nodes, ac_patterns, ac_lsigs;
@@ -84,7 +84,7 @@ struct cli_matcher {
     struct cli_ac_node *ac_root, **ac_nodetable;
     struct cli_ac_patt **ac_pattable;
     struct cli_ac_patt **ac_reloff;
-    uint32_t ac_reloff_num;
+    uint32_t ac_reloff_num, ac_absoff_num;
     uint8_t ac_mindepth, ac_maxdepth;
 
     uint16_t maxpatlen;
