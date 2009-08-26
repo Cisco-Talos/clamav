@@ -26,6 +26,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <sys/stat.h>
 
 #include <assert.h>
 #ifdef	HAVE_UNISTD_H
@@ -835,8 +836,15 @@ int cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, int 
 	unsigned int i;
 	struct cli_ac_patt *patt;
 	struct cli_target_info info;
+	struct stat sb;
 
     memset(&info, 0, sizeof(info));
+    if(fstat(fd, &sb) == -1) {
+	cli_errmsg("cli_ac_caloff: fstat(%d) failed\n", fd);
+	return CL_ESTAT;
+    }
+    info.fsize = sb.st_size;
+
     for(i = 0; i < root->ac_reloff_num; i++) {
 	patt = root->ac_reloff[i];
 	if(fd == -1) {
@@ -846,6 +854,8 @@ int cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, int 
 	    if(info.exeinfo.section)
 		free(info.exeinfo.section);
 	    return ret;
+	} else if(data->offset[patt->offset_min] + patt->length > info.fsize) {
+	    data->offset[patt->offset_min] = CLI_OFF_NONE;
 	}
     }
     if(info.exeinfo.section)
@@ -946,39 +956,37 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	    patt = current->list;
 	    while(patt) {
 		bp = i + 1 - patt->depth;
-		pt = patt;
-	 	/*
-		while(pt) {
-		    if((pt->type && !(mode & AC_SCAN_FT)) || (!pt->type && !(mode & AC_SCAN_VIR))) {
-			pt = pt->next_same;
+		if(!patt->next_same && (patt->offset_min != CLI_OFF_ANY) && (!patt->sigid || patt->partno == 1)) {
+		    if(patt->offset_min == CLI_OFF_NONE) {
+			patt = patt->next;
 			continue;
 		    }
-		    if(pt->offset_min == CLI_OFF_NONE) {
-			pt = pt->next_same;
-			continue;
-		    }
-		    realoff = offset + bp - pt->prefix_length;
-		    if(pt->offset_min != CLI_OFF_ANY && (!pt->sigid || pt->partno == 1)) {
-			if(pt->offset_max > realoff || pt->offset_min < realoff) {
-			    pt = pt->next_same;
+		    realoff = offset + bp - patt->prefix_length;
+		    if(patt->offdata[0] == CLI_OFF_ABSOLUTE) {
+			if(patt->offset_max < realoff || patt->offset_min > realoff) {
+			    patt = patt->next;
+			    continue;
+			}
+		    } else {
+			if(mdata->offset[patt->offset_min] == CLI_OFF_NONE || mdata->offset[patt->offset_max] < realoff || mdata->offset[patt->offset_min] > realoff) {
+			    patt = patt->next;
 			    continue;
 			}
 		    }
-		    break;
 		}
-		*/
-		if(pt && ac_findmatch(buffer, bp, length, patt, &matchend)) {
+		pt = patt;
+		if(ac_findmatch(buffer, bp, length, patt, &matchend)) {
 		    while(pt) {
 			if((pt->type && !(mode & AC_SCAN_FT)) || (!pt->type && !(mode & AC_SCAN_VIR))) {
 			    pt = pt->next_same;
 			    continue;
 			}
-			if(pt->offset_min == CLI_OFF_NONE) {
-			    pt = pt->next_same;
-			    continue;
-			}
 			realoff = offset + bp - pt->prefix_length;
 			if(pt->offset_min != CLI_OFF_ANY && (!pt->sigid || pt->partno == 1)) {
+			    if(pt->offset_min == CLI_OFF_NONE) {
+				pt = pt->next_same;
+				continue;
+			    }
 			    if(pt->offdata[0] == CLI_OFF_ABSOLUTE) {
 				if(pt->offset_max < realoff || pt->offset_min > realoff) {
 				    pt = pt->next_same;

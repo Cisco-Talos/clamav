@@ -1,3 +1,7 @@
+Wed Aug 26 23:37:04 CEST 2009 (tk)
+----------------------------------
+ * libclamav/matcher-ac.c: improve handling of signature offsets
+
 Mon Aug 24 22:09:12 CEST 2009 (tk)
 ----------------------------------
  * libclamav: improve handling of PDF files (bb#1682)
