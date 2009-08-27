@@ -48,10 +48,10 @@
 */
 
 /* FIXME: tune this stuff */
-#define UNPAGE_THRSHLD_LO 4*1024
-#define UNPAGE_THRSHLD_HI 8*1024
+#define UNPAGE_THRSHLD_LO 4*1024*1024
+#define UNPAGE_THRSHLD_HI 8*1024*1024
 
-//#define READAHEAD_PAGES 4
+#define READAHEAD_PAGES 4
 
 struct F_MAP {
     int fd;
@@ -184,71 +184,99 @@ static void fmap_aging(struct F_MAP *m) {
 }
 
 
-static int fmap_readpage(struct F_MAP *m, unsigned int page, int lock) {
-    size_t readsz, got;
-    char *pptr;
-    uint32_t s = m->bitmap[page];
+static int fmap_readpage(struct F_MAP *m, unsigned int first_page, unsigned int count, unsigned int lock_count) {
+    size_t readsz = 0, got;
+    char *pptr = NULL;
+    uint32_t s;
+    unsigned int i, page = first_page, force_read = 0;
 
-    if(s & FM_MASK_PAGED) {
-	/* page already paged */
-	if(lock) {
-	    /* we want locking */
-	    if(s & FM_MASK_LOCKED) {
-		/* page already locked */
-		s &= FM_MASK_COUNT;
-		if(s == FM_MASK_COUNT) { /* lock count already at max: fial! */
-		    cli_errmsg("fmap_readpage: lock count exceeded\n");
-		    return 1;
+    for(i=0; i<=count; i++, page++) {
+	int lock;
+	if(lock_count) {
+	    lock_count--;
+	    lock = 1;
+	} else lock = 0;
+	if(i == count) {
+	    /* we count one page too much to flush pending reads */
+	    if(!pptr) return 0; /* if we have any */
+	    force_read = 1;
+	} else if((s=m->bitmap[page]) & FM_MASK_PAGED) {
+	    /* page already paged */
+	    if(lock) {
+		/* we want locking */
+		if(s & FM_MASK_LOCKED) {
+		    /* page already locked */
+		    s &= FM_MASK_COUNT;
+		    if(s == FM_MASK_COUNT) { /* lock count already at max: fial! */
+			cli_errmsg("fmap_readpage: lock count exceeded\n");
+			return 1;
+		    }
+		    /* acceptable lock count: inc lock count */
+		    m->bitmap[page]++;
+		} else /* page not currently locked: set lock count = 1 */
+		    m->bitmap[page] = 1 | FM_MASK_LOCKED | FM_MASK_PAGED;
+	    } else {
+		/* we don't want locking */
+		if(!(s & FM_MASK_LOCKED)) {
+		    /* page is not locked: we reset aging to max */
+		    m->bitmap[page] = FM_MASK_PAGED | FM_MASK_COUNT;
 		}
-		/* acceptable lock count: inc lock count */
-		m->bitmap[page]++;
-	    } else /* page not currently locked: set lock count = 1 */
-		m->bitmap[page] = 1 | FM_MASK_LOCKED | FM_MASK_PAGED;
-	} else {
-	    /* we don't want locking */
-	    if(!(s & FM_MASK_LOCKED)) {
-		/* page is not locked: we reset aging to max */
-		m->bitmap[page] = FM_MASK_PAGED | FM_MASK_COUNT;
 	    }
+	    if(!pptr) continue;
+	    force_read = 1;
 	}
-	return 0;
-    }
 
-    /* page is not already paged */
-    pptr = (char *)m + page * m->pgsz + m->hdrsz;
-    if((page == m->pages - 1) && (m->len % m->pgsz))
-	readsz = m->len % m->pgsz;
-    else
-	readsz = m->pgsz;
-    if(s & FM_MASK_SEEN) {
-	/* page we've seen before: check mtime */
-	struct stat st;
+	if(force_read) {
+	    /* we have some pending reads to perform */
+	    unsigned int j;
+	    for(j=first_page; j<page; j++) {
+		if(m->bitmap[j] & FM_MASK_SEEN) {
+		    /* page we've seen before: check mtime */
+		    struct stat st;
+		    if(fstat(m->fd, &st)) {
+			cli_warnmsg("fmap_readpage: fstat failed\n");
+			return 1;
+		    }
+		    if(m->mtime != st.st_mtime) {
+			cli_warnmsg("fmap_readpage: file changed as we read it\n");
+			return 1;
+		    }
+		    break;
+		}
+	    }
 
-	if(fstat(m->fd, &st)) {
-	    cli_warnmsg("fmap_readpage: fstat failed\n");
-	    return 1;
+	    if((got=pread(m->fd, pptr, readsz, m->offset + first_page * m->pgsz)) != readsz) {
+		cli_warnmsg("pread fail: page %u pages %u map-offset %lu - asked for %lu bytes, got %lu\n", first_page, m->pages, (long unsigned int)m->offset, (long unsigned int)readsz, (long unsigned int)got);
+		return 1;
+	    }
+	    pptr = NULL;
+	    force_read = 0;
+	    readsz = 0;
+	    continue;
 	}
-	if(m->mtime != st.st_mtime) {
-	    cli_warnmsg("fmap_readpage: file changed as we read it\n");
-	    return 1;
-	}
-    }
-    if((got=pread(m->fd, pptr, readsz, m->offset + page * m->pgsz)) != readsz) {
-	cli_warnmsg("pread fail: page %u pages %u map-offset %lu - asked for %lu bytes, got %lu\n", page, m->pages, (long unsigned int)m->offset, (long unsigned int)readsz, (long unsigned int)got);
-	return 1;
-    }
 
-    if(lock) /* lock requested: set paged, lock page and set lock count to 1 */
-	m->bitmap[page] = FM_MASK_PAGED | FM_MASK_LOCKED | 1;
-    else /* no locking: set paged and set aging to max */
-	m->bitmap[page] = FM_MASK_PAGED | FM_MASK_COUNT;
-    m->paged++;
+	/* page is not already paged */
+	if(!pptr) {
+	    /* set a new start for pending reads if we don't have one */
+	    pptr = (char *)m + page * m->pgsz + m->hdrsz;
+	    first_page = page;
+	}
+	if((page == m->pages - 1) && (m->len % m->pgsz))
+	    readsz += m->len % m->pgsz;
+	else
+	    readsz += m->pgsz;
+	if(lock) /* lock requested: set paged, lock page and set lock count to 1 */
+	    m->bitmap[page] = FM_MASK_PAGED | FM_MASK_LOCKED | 1;
+	else /* no locking: set paged and set aging to max */
+	    m->bitmap[page] = FM_MASK_PAGED | FM_MASK_COUNT;
+	m->paged++;
+    }
     return 0;
 }
 
 
 static void *fmap_need(struct F_MAP *m, size_t at, size_t len, int lock) {
-    unsigned int i, first_page, last_page, rahead_page;
+    unsigned int i, first_page, last_page, lock_count;
     char *ret;
 
     if(!len) {
@@ -265,21 +293,16 @@ static void *fmap_need(struct F_MAP *m, size_t at, size_t len, int lock) {
 
     first_page = fmap_which_page(m, at);
     last_page = fmap_which_page(m, at + len - 1);
+    lock_count = (lock!=0) * (last_page-first_page+1);
 #ifdef READAHED_PAGES
-    rahead_page = last_page;
     last_page += READAHED_PAGES;
     if(last_page >= m->pages) last_page = m->pages - 1;
 #endif
 
 //    cli_errmsg("FMAPDBG: +++ map %p - len %u lock: %d (page %u to %u)\n", m, len, lock, first_page, last_page);
 
-    for(i=first_page; i<=last_page; i++) {
-	if(fmap_readpage(m, i, lock))
-	    return NULL;
-#ifdef READAHED_PAGES
-	if(i==rahead_page) lock = 0;
-#endif
-    }
+    if(fmap_readpage(m, first_page, last_page-first_page+1, lock_count))
+	return NULL;
 
     ret = (char *)m;
     ret += at + m->hdrsz;
@@ -327,7 +350,7 @@ void *fmap_need_str(struct F_MAP *m, void *ptr, size_t len) {
 
 //	cli_errmsg("FMAPDBG: +s+ map %p - (page %u)\n", m, i);
 
-	if(fmap_readpage(m, i, 1))
+	if(fmap_readpage(m, i, 1, 1))
 	    return NULL;
 	if(i == first_page) {
 	    scanat = at % m->pgsz;
