@@ -418,8 +418,14 @@ public:
 };
 }
 
-int cli_vm_execute_jit(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst)
+int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
+		       const struct cli_bc_func *func)
 {
+    void *code = bcs->engine->compiledFunctions[func];
+    assert(code);
+    // execute;
+    uint32_t result = ((uint32_t (*)(void))code)();
+    *(uint32_t*)ctx->values = result;
     return 0;
 }
 
@@ -467,6 +473,9 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	    }
 	}
 
+	for (unsigned i=0;i<bcs->count;i++) {
+	    bcs->all_bcs[i].state = bc_jit;
+	}
 	// compile all functions now, not lazily!
 	for (Module::iterator I = M->begin(), E = M->end(); I != E; ++I) {
 	    Function *Fn = &*I;

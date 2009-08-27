@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
 	}
     }
 
-    rc = cli_bytecode_run(bc, ctx);
+    rc = cli_bytecode_run(&bcs, bc, ctx);
     if (rc != CL_SUCCESS) {
 	fprintf(stderr,"Unable to run bytecode: %s\n", cl_strerror(rc));
     } else {

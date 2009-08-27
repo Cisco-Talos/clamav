@@ -1000,7 +1000,7 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
     return CL_SUCCESS;
 }
 
-int cli_bytecode_run(const struct cli_bc *bc, struct cli_bc_ctx *ctx)
+int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, struct cli_bc_ctx *ctx)
 {
     struct cli_bc_inst inst;
     struct cli_bc_func func;
@@ -1012,24 +1012,24 @@ int cli_bytecode_run(const struct cli_bc *bc, struct cli_bc_ctx *ctx)
 	cli_errmsg("bytecode has to be prepared either for interpreter or JIT!\n");
 	return CL_EARG;
     }
-    memset(&func, 0, sizeof(func));
-    func.numInsts = 1;
-    func.numValues = 1;
-    func.numBytes = ctx->bytes;
-    memset(ctx->values+ctx->bytes-8, 0, 8);
+    if (bc->state == bc_interp) {
+	memset(&func, 0, sizeof(func));
+	func.numInsts = 1;
+	func.numValues = 1;
+	func.numBytes = ctx->bytes;
+	memset(ctx->values+ctx->bytes-8, 0, 8);
 
-    inst.opcode = OP_CALL_DIRECT;
-    inst.interp_op = OP_CALL_DIRECT*5;
-    inst.dest = func.numArgs;
-    inst.type = 0;
-    inst.u.ops.numOps = ctx->numParams;
-    inst.u.ops.funcid = ctx->funcid;
-    inst.u.ops.ops = ctx->operands;
-    inst.u.ops.opsizes = ctx->opsizes;
-    if (bc->state == bc_interp)
+	inst.opcode = OP_CALL_DIRECT;
+	inst.interp_op = OP_CALL_DIRECT*5;
+	inst.dest = func.numArgs;
+	inst.type = 0;
+	inst.u.ops.numOps = ctx->numParams;
+	inst.u.ops.funcid = ctx->funcid;
+	inst.u.ops.ops = ctx->operands;
+	inst.u.ops.opsizes = ctx->opsizes;
 	return cli_vm_execute(ctx->bc, ctx, &func, &inst);
-    else
-	return cli_vm_execute_jit(ctx->bc, ctx, &func, &inst);
+    }
+    return cli_vm_execute_jit(bcs, ctx, &bc->funcs[ctx->funcid]);
 }
 
 uint64_t cli_bytecode_context_getresult_int(struct cli_bc_ctx *ctx)

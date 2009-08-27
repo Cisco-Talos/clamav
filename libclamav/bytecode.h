@@ -70,7 +70,7 @@ void cli_bytecode_context_destroy(struct cli_bc_ctx *ctx);
 int cli_bytecode_init(struct cli_all_bc *allbc);
 int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio);
 int cli_bytecode_prepare(struct cli_all_bc *allbc);
-int cli_bytecode_run(const struct cli_bc *bc, struct cli_bc_ctx *ctx);
+int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, struct cli_bc_ctx *ctx);
 void cli_bytecode_destroy(struct cli_bc *bc);
 int cli_bytecode_done(struct cli_all_bc *allbc);
 

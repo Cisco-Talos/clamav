@@ -67,7 +67,7 @@ static void runtest(const char *file, uint64_t expected)
     fail_unless(!!ctx, "cli_bytecode_context_alloc failed");
 
     cli_bytecode_context_setfuncid(ctx, &bc, 0);
-    rc = cli_bytecode_run(&bc, ctx);
+    rc = cli_bytecode_run(&bcs, &bc, ctx);
     fail_unless(rc == CL_SUCCESS, "cli_bytecode_run failed");
 
     v = cli_bytecode_context_getresult_int(ctx);
