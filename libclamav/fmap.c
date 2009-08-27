@@ -48,8 +48,10 @@
 */
 
 /* FIXME: tune this stuff */
-#define UNPAGE_THRSHLD_LO 1*1024*1024
-#define UNPAGE_THRSHLD_HI 4*1024*1024
+#define UNPAGE_THRSHLD_LO 4*1024
+#define UNPAGE_THRSHLD_HI 8*1024
+
+//#define READAHEAD_PAGES 4
 
 struct F_MAP {
     int fd;
@@ -116,7 +118,7 @@ struct F_MAP *fmap(int fd, off_t offset, size_t len) {
     m->pgsz = pgsz;
     m->paged = 0;
     memset(m->bitmap, 0, sizeof(uint32_t) * pages);
-    cli_errmsg("FMAPDBG: created %p - len %u pages %u hdrsz %u\n", m, len, pages, hdrsz);
+//    cli_errmsg("FMAPDBG: created %p - len %u pages %u hdrsz %u\n", m, len, pages, hdrsz);
     return m;
 }
 
@@ -246,7 +248,7 @@ static int fmap_readpage(struct F_MAP *m, unsigned int page, int lock) {
 
 
 static void *fmap_need(struct F_MAP *m, size_t at, size_t len, int lock) {
-    unsigned int i, first_page, last_page;
+    unsigned int i, first_page, last_page, rahead_page;
     char *ret;
 
     if(!len) {
@@ -263,12 +265,20 @@ static void *fmap_need(struct F_MAP *m, size_t at, size_t len, int lock) {
 
     first_page = fmap_which_page(m, at);
     last_page = fmap_which_page(m, at + len - 1);
+#ifdef READAHED_PAGES
+    rahead_page = last_page;
+    last_page += READAHED_PAGES;
+    if(last_page >= m->pages) last_page = m->pages - 1;
+#endif
 
-    cli_errmsg("FMAPDBG: +++ map %p - len %u lock: %d (page %u to %u)\n", m, len, lock, first_page, last_page);
+//    cli_errmsg("FMAPDBG: +++ map %p - len %u lock: %d (page %u to %u)\n", m, len, lock, first_page, last_page);
 
     for(i=first_page; i<=last_page; i++) {
 	if(fmap_readpage(m, i, lock))
 	    return NULL;
+#ifdef READAHED_PAGES
+	if(i==rahead_page) lock = 0;
+#endif
     }
 
     ret = (char *)m;
@@ -277,19 +287,19 @@ static void *fmap_need(struct F_MAP *m, size_t at, size_t len, int lock) {
 }
 
 void *fmap_need_off(struct F_MAP *m, size_t at, size_t len) {
-    cli_errmsg("FMAPDBG: need_off map %p at %u len %u\n", m, at, len);
+//    cli_errmsg("FMAPDBG: need_off map %p at %u len %u\n", m, at, len);
     return fmap_need(m, at, len, 1);
 }
 void *fmap_need_off_once(struct F_MAP *m, size_t at, size_t len) {
-    cli_errmsg("FMAPDBG: need_off_once map %p at %u len %u\n", m, at, len);
+//    cli_errmsg("FMAPDBG: need_off_once map %p at %u len %u\n", m, at, len);
     return fmap_need(m, at, len, 0);
 }
 void *fmap_need_ptr(struct F_MAP *m, void *ptr, size_t len) {
-    cli_errmsg("FMAPDBG: need_ptr map %p at %p len %u\n", m, ptr, len);
+//    cli_errmsg("FMAPDBG: need_ptr map %p at %p len %u\n", m, ptr, len);
     return fmap_need_off(m, (char *)ptr - (char *)m - m->hdrsz, len);
 }
 void *fmap_need_ptr_once(struct F_MAP *m, void *ptr, size_t len) {
-    cli_errmsg("FMAPDBG: need_ptr_once map %p at %p len %u\n", m, ptr, len);
+//    cli_errmsg("FMAPDBG: need_ptr_once map %p at %p len %u\n", m, ptr, len);
     return fmap_need_off_once(m, (char *)ptr - (char *)m - m->hdrsz, len);
 }
 
@@ -307,7 +317,7 @@ void *fmap_need_str(struct F_MAP *m, void *ptr, size_t len) {
 
     fmap_aging(m);
 
-    cli_errmsg("FMAPDBG: need_str map %p at %p len %u\n", m, ptr, len);
+//    cli_errmsg("FMAPDBG: need_str map %p at %p len %u\n", m, ptr, len);
     first_page = fmap_which_page(m, at);
     last_page = fmap_which_page(m, at + len - 1);
 
@@ -315,7 +325,7 @@ void *fmap_need_str(struct F_MAP *m, void *ptr, size_t len) {
 	char *thispage = (char *)m + m->hdrsz + i * m->pgsz;
 	unsigned int scanat, scansz;
 
-	cli_errmsg("FMAPDBG: +s+ map %p - (page %u)\n", m, i);
+//	cli_errmsg("FMAPDBG: +s+ map %p - (page %u)\n", m, i);
 
 	if(fmap_readpage(m, i, 1))
 	    return NULL;
@@ -336,7 +346,7 @@ void *fmap_need_str(struct F_MAP *m, void *ptr, size_t len) {
 static void fmap_unneed_page(struct F_MAP *m, unsigned int page) {
     uint32_t s = m->bitmap[page];
 
-    cli_errmsg("FMAPDBG: --- map %p - page %u status %u count %u\n", m, page, s>>30, s & FM_MASK_COUNT);
+//    cli_errmsg("FMAPDBG: --- map %p - page %u status %u count %u\n", m, page, s>>30, s & FM_MASK_COUNT);
 
     if((s & (FM_MASK_PAGED | FM_MASK_LOCKED)) == (FM_MASK_PAGED | FM_MASK_LOCKED)) {
 	/* page is paged and locked: check lock count */
@@ -365,7 +375,7 @@ void fmap_unneed_off(struct F_MAP *m, size_t at, size_t len) {
 	return;
     }
 
-    cli_errmsg("FMAPDBG: unneed_off map %p at %u len %u\n", m, at, len);
+//    cli_errmsg("FMAPDBG: unneed_off map %p at %u len %u\n", m, at, len);
 
     first_page = fmap_which_page(m, at);
     last_page = fmap_which_page(m, at + len - 1);
@@ -376,7 +386,7 @@ void fmap_unneed_off(struct F_MAP *m, size_t at, size_t len) {
 }
 
 void fmap_unneed_ptr(struct F_MAP *m, void *ptr, size_t len) {
-    cli_errmsg("FMAPDBG: unneed_ptr map %p at %p len %u\n", m, ptr, len);
+//    cli_errmsg("FMAPDBG: unneed_ptr map %p at %p len %u\n", m, ptr, len);
     return fmap_unneed_off(m, (char *)ptr - (char *)m - m->hdrsz, len);
 }
 
