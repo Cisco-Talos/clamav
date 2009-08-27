@@ -46,3 +46,7 @@ int cli_bytecode_done_jit(struct cli_all_bc *allbc)
 {
     return CL_SUCCESS;
 }
+
+void cli_bytecode_debug(int argc, char **argv) {
+  // Empty
+}

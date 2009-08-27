@@ -666,6 +666,7 @@ static int parseFunctionHeader(struct cli_bc *bc, unsigned fn, unsigned char *bu
     }
     offset = 1;
     func->numArgs = readFixedNumber(buffer, &offset, len, &ok, 1);
+    func->returnType = readTypeID(bc, buffer, &offset, len, &ok);
     if (buffer[offset] != 'L') {
 	cli_errmsg("Invalid function locals header: %c\n", buffer[offset]);
 	return CL_EMALFDB;
@@ -1237,3 +1238,4 @@ int cli_bytecode_done(struct cli_all_bc *allbc)
 {
     return cli_bytecode_done_jit(allbc);
 }
+

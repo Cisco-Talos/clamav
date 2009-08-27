@@ -270,8 +270,9 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	    return CL_EMEM;
 	}
 
-	if(bm_new->length > root->maxpatlen)
+	if(bm_new->length > root->maxpatlen) {
 	    root->maxpatlen = bm_new->length;
+	}
 
 	if((ret = cli_bm_addpatt(root, bm_new, offset))) {
 	    cli_errmsg("cli_parse_add(): Problem adding signature (4).\n");
@@ -2152,7 +2153,7 @@ int cl_engine_compile(struct cl_engine *engine)
 	if((root = engine->root[i])) {
 	    if((ret = cli_ac_buildtrie(root)))
 		return ret;
-	    cli_dbgmsg("matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->ac_only ? "(ac_only mode)" : "");
+	    cli_dbgmsg("matcher[%u]: %s: AC sigs: %u (reloff: %u, absoff: %u) BM sigs: %u (reloff: %u, absoff: %u) maxpatlen %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->ac_absoff_num, root->bm_patterns, root->bm_reloff_num, root->bm_absoff_num, root->maxpatlen, root->ac_only ? "(ac_only mode)" : "");
 	}
     }
 

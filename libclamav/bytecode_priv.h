@@ -77,6 +77,7 @@ struct cli_bc_func {
     uint32_t numConstants;
     uint32_t numBytes;/* stack size */
     uint16_t numBB;
+    uint16_t returnType;
     uint16_t *types;
     uint32_t insn_idx;
     struct cli_bc_bb *BB;
@@ -107,6 +108,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bc);
 int cli_bytecode_init_jit(struct cli_all_bc *bc);
 int cli_bytecode_done_jit(struct cli_all_bc *bc);
 int bytecode_init(void);
+void cli_bytecode_debug(int argc, char **argv);
 
 #ifdef __cplusplus
 }

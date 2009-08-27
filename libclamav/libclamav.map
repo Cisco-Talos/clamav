@@ -157,6 +157,7 @@ CLAMAV_PRIVATE {
     cli_bytecode_context_clear;
     cli_bytecode_init;
     cli_bytecode_done;
+    cli_bytecode_debug;
   local:
     *;
 };

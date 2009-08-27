@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
     FILE *f;
     struct cli_bc *bc;
     struct cli_bc_ctx *ctx;
-    int rc;
+    int rc, dbgargc;
     struct optstruct *opts;
     unsigned funcid=0, i;
     struct cli_all_bc bcs;
@@ -92,6 +92,11 @@ int main(int argc, char *argv[])
 	exit(4);
     }
 
+    dbgargc=1;
+    while (opts->filename[dbgargc]) dbgargc++;
+
+    if (dbgargc > 1)
+	cli_bytecode_debug(dbgargc, opts->filename);
     rc = cli_bytecode_init(&bcs);
     if (rc != CL_SUCCESS) {
 	fprintf(stderr,"Unable to init bytecode engine: %s\n", cl_strerror(rc));
