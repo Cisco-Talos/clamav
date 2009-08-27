@@ -20,6 +20,7 @@
  *  MA 02110-1301, USA.
  */
 
+#include "llvm/ADT/DenseMap.h"
 #include "llvm/Support/DataTypes.h"
 #include "llvm/System/Threading.h"
 #include "llvm/Support/ErrorHandling.h"
@@ -43,10 +44,11 @@
 #define MODULE "libclamav JIT: "
 
 using namespace llvm;
+typedef DenseMap<const struct cli_bc_func*, void*> FunctionMapTy;
 struct cli_bcengine {
     ExecutionEngine *EE;
     LLVMContext Context;
-     
+    FunctionMapTy compiledFunctions; 
 };
 
 namespace {
@@ -56,13 +58,35 @@ namespace {
     }
     void llvm_error_handler(void *user_data, const std::string &reason)
     {
+    
     }
+
+    void generateLLVM(const struct cli_bc *bc, Module *M, 
+		      FunctionMapTy &compiledFunctions) {
+
+	Type *TypeMap = new Type*[bc->num_types];
+
+	for (unsigned j=0;j<bc->num_types;j++) {
+
+	}
+
+	for (unsigned j=0;j<bc->num_func;j++) {
+	    const struct cli_bc_func *func = &bc->funcs[j];
+	    std::vector<const Type*> argTypes;
+	    for (unsigned a=0;a<func->numArgs;a++) {
+		argTypes.push_back(mapType(func->types[a], TypeMap));
+	    }
+	}
+	delete TypeMap;
+    }
+
 }
 
 int cli_vm_execute_jit(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst)
 {
     return 0;
 }
+
 
 int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 {
@@ -84,7 +108,14 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 		errs() << MODULE << "JIT not registered?\n";
 	    return CL_EBYTECODE;
 	}
+
+	EE->RegisterJITEventListener(createOProfileJITEventListener());
 	EE->DisableLazyCompilation();
+
+	for (unsigned i=0;i<bcs->count;i++) {
+	    const struct cli_bc *bc = bcs->all_bcs[i];
+	    generateLLVM(bc, M);
+	}
 
 	// compile all functions now, not lazily!
 	for (Module::iterator I = M->begin(), E = M->end(); I != E; ++I) {
