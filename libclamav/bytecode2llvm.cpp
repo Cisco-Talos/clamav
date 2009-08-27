@@ -28,6 +28,7 @@
 #include "llvm/ExecutionEngine/JITEventListener.h"
 #include "llvm/LLVMContext.h"
 #include "llvm/Module.h"
+#include "llvm/PassManager.h"
 #include "llvm/ModuleProvider.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/CommandLine.h"
@@ -40,7 +41,10 @@
 #include "llvm/System/Signals.h"
 #include "llvm/System/Threading.h"
 #include "llvm/Target/TargetSelect.h"
+#include "llvm/Target/TargetData.h"
 #include "llvm/Support/TargetFolder.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Analysis/Verifier.h"
 #include <cstdlib>
 #include <new>
 
@@ -81,12 +85,18 @@ private:
     const Type **TypeMap;
     Twine BytecodeID;
     ExecutionEngine *EE;
+    TargetFolder Folder;
+    IRBuilder<false, TargetFolder> Builder;
+    Value **Values;
+    FunctionPassManager &PM;
+    unsigned numLocals;
+    unsigned numArgs;
 
     const Type *mapType(uint16_t ty)
     {
 	if (!ty)
 	    return Type::getVoidTy(Context);
-	if (ty < 64)
+	if (ty <= 64)
 	    return IntegerType::get(Context, ty);
 	switch (ty) {
 	    case 65:
@@ -110,56 +120,80 @@ private:
 	}
     }
 
-    Value *convertOperand(const struct cli_bc_func *func, 
+    Value *convertOperand(const struct cli_bc_func *func, const Type *Ty, operand_t operand)
+    {
+	unsigned map[] = {0, 1, 2, 3, 3, 4, 4, 4, 4};
+	if (operand < func->numArgs)
+	    return Values[operand];
+	if (operand < func->numValues)
+	    return Builder.CreateLoad(Values[operand]);
+	unsigned w = (Ty->getPrimitiveSizeInBits()+7)/8;
+	return convertOperand(func, map[w], operand);
+    }
+
+    Value *convertOperand(const struct cli_bc_func *func,
 			  const struct cli_bc_inst *inst,  operand_t operand)
     {
-	if (operand >= func->numValues) {
-	    // Constant
-	    operand -= func->numValues;
-	    // This was already validated by libclamav.
-	    assert(operand < func->numConstants && "Constant out of range");
-	    uint64_t *c = &func->constants[operand-func->numValues];
-	    uint64_t v;
-	    const Type *Ty;
-	    switch (inst->interp_op%5) {
-		case 0:
-		case 1:
-		    Ty = (inst->interp_op%5) ? Type::getInt8Ty(Context) : 
-			Type::getInt1Ty(Context);
-		    v = *(uint8_t*)c;
-		    break;
-		case 2:
-		    Ty = Type::getInt16Ty(Context);
-		    v = *(uint16_t*)c;
-		    break;
-		case 3:
-		    Ty = Type::getInt32Ty(Context);
-		    v = *(uint32_t*)c;
-		    break;
-		case 4:
-		    Ty = Type::getInt64Ty(Context);
-		    v = *(uint64_t*)c;
-		    break;
-	    }
-	    return ConstantInt::get(Ty, v);
+	return convertOperand(func, inst->interp_op%5, operand);
+    }
+
+    Value *convertOperand(const struct cli_bc_func *func,
+			  unsigned w, operand_t operand) {
+	if (operand < func->numArgs)
+	    return Values[operand];
+	if (operand < func->numValues)
+	    return Builder.CreateLoad(Values[operand]);
+
+	// Constant
+	operand -= func->numValues;
+	// This was already validated by libclamav.
+       	assert(operand < func->numConstants && "Constant out of range");
+	uint64_t *c = &func->constants[operand];
+	uint64_t v;
+	const Type *Ty;
+	switch (w) {
+	    case 0:
+	    case 1:
+		Ty = w ? Type::getInt8Ty(Context) : 
+		    Type::getInt1Ty(Context);
+		v = *(uint8_t*)c;
+		break;
+	    case 2:
+		Ty = Type::getInt16Ty(Context);
+		v = *(uint16_t*)c;
+		break;
+	    case 3:
+		Ty = Type::getInt32Ty(Context);
+		v = *(uint32_t*)c;
+		break;
+	    case 4:
+		Ty = Type::getInt64Ty(Context);
+		v = *(uint64_t*)c;
+		break;
 	}
-	assert(0 && "Not implemented yet");
+	return ConstantInt::get(Ty, v);
+    }
+
+    void Store(uint16_t dest, Value *V)
+    {
+	assert(dest >= numArgs && dest < numLocals+numArgs && "Instruction destination out of range");
+	Builder.CreateStore(V, Values[dest]);
     }
 public:
     LLVMCodegen(const struct cli_bc *bc, Module *M, FunctionMapTy &cFuncs,
-		ExecutionEngine *EE)
+		ExecutionEngine *EE, FunctionPassManager &PM)
 	: bc(bc), M(M), Context(M->getContext()), compiledFunctions(cFuncs), 
-	BytecodeID("bc"+Twine(bc->id)), EE(EE) {
+	BytecodeID("bc"+Twine(bc->id)), EE(EE), 
+	Folder(EE->getTargetData(), Context), Builder(Context, Folder), PM(PM) {
 	    TypeMap = new const Type*[bc->num_types];
     }
 
-    void generate() {
+    bool generate() {
 	PrettyStackTraceString Trace(BytecodeID.str().c_str());
 	convertTypes();
-	TargetFolder Folder(EE->getTargetData(), Context);
-	IRBuilder<false, TargetFolder> Builder(Context, Folder);
+	Function **Functions = new Function*[bc->num_func];
 	for (unsigned j=0;j<bc->num_func;j++) {
-	    PrettyStackTraceString CrashInfo("Generate LLVM IR");
+	    PrettyStackTraceString CrashInfo("Generate LLVM IR functions");
 	    // Create LLVM IR Function
 	    const struct cli_bc_func *func = &bc->funcs[j];
 	    std::vector<const Type*> argTypes;
@@ -169,36 +203,217 @@ public:
 	    const Type *RetTy = mapType(func->returnType);
 	    llvm::FunctionType *FTy =  FunctionType::get(RetTy, argTypes,
 							 false);
-	    Function *F = Function::Create(FTy, Function::InternalLinkage, 
+	    Functions[j] = Function::Create(FTy, Function::InternalLinkage, 
 					   BytecodeID+"f"+Twine(j), M);
-
+	}
+	for (unsigned j=0;j<bc->num_func;j++) {
+	    PrettyStackTraceString CrashInfo("Generate LLVM IR");
+	    const struct cli_bc_func *func = &bc->funcs[j];
 	    // Create all BasicBlocks
+	    Function *F = Functions[j];
 	    BasicBlock **BB = new BasicBlock*[func->numBB];
 	    for (unsigned i=0;i<func->numBB;i++) {
 		BB[i] = BasicBlock::Create(Context, "", F);
 	    }
 
+	    Values = new Value*[func->numValues];
+	    Builder.SetInsertPoint(BB[0]);
+	    Function::arg_iterator I = F->arg_begin();
+	    for (unsigned i=0;i<func->numArgs; i++) {
+		assert(I != F->arg_end());
+		Values[i] = &*I;
+		++I;
+	    }
+	    for (unsigned i=func->numArgs;i<func->numValues;i++) {
+		Values[i] = Builder.CreateAlloca(mapType(func->types[i]));
+	    }
+	    numLocals = func->numLocals;
+	    numArgs = func->numArgs;
 	    // Generate LLVM IR for each BB
 	    for (unsigned i=0;i<func->numBB;i++) {
 		const struct cli_bc_bb *bb = &func->BB[i];
 		Builder.SetInsertPoint(BB[i]);
 		for (unsigned j=0;j<bb->numInsts;j++) {
-		    const struct cli_bc_inst *inst = &bb->insts[i];
+		    const struct cli_bc_inst *inst = &bb->insts[j];
+		    Value *Op0, *Op1, *Op2;
+		    // libclamav has already validated this.
+		    assert(inst->opcode < OP_INVALID && "Invalid opcode");
+		    switch (inst->opcode) {
+			case OP_JMP:
+			case OP_BRANCH:
+			case OP_CALL_API:
+			case OP_CALL_DIRECT:
+			case OP_ZEXT:
+			case OP_SEXT:
+			case OP_TRUNC:
+			    // these instructions represents operands differently
+			    break;
+			default:
+			    switch (operand_counts[inst->opcode]) {
+				case 1:
+				    Op0 = convertOperand(func, inst, inst->u.unaryop);
+				    break;
+				case 2:
+				    Op0 = convertOperand(func, inst, inst->u.binop[0]);
+				    Op1 = convertOperand(func, inst, inst->u.binop[1]);
+				    break;
+				case 3:
+				    Op0 = convertOperand(func, inst, inst->u.three[0]);
+				    Op1 = convertOperand(func, inst, inst->u.three[1]);
+				    Op2 = convertOperand(func, inst, inst->u.three[2]);
+				    break;
+			    }
+		    }
 
 		    switch (inst->opcode) {
-			case OP_RET:
-			    Value *V = convertOperand(func, inst, inst->u.unaryop);
-			    Builder.CreateRet(V);
+			case OP_ADD:
+			    Store(inst->dest, Builder.CreateAdd(Op0, Op1));
 			    break;
+			case OP_SUB:
+			    Store(inst->dest, Builder.CreateSub(Op0, Op1));
+			    break;
+			case OP_MUL:
+			    Store(inst->dest, Builder.CreateMul(Op0, Op1));
+			    break;
+			case OP_UDIV:
+			    Store(inst->dest, Builder.CreateUDiv(Op0, Op1));
+			    break;
+			case OP_SDIV:
+			    Store(inst->dest, Builder.CreateSDiv(Op0, Op1));
+			    break;
+			case OP_UREM:
+			    Store(inst->dest, Builder.CreateURem(Op0, Op1));
+			    break;
+			case OP_SREM:
+			    Store(inst->dest, Builder.CreateSRem(Op0, Op1));
+			    break;
+			case OP_SHL:
+			    Store(inst->dest, Builder.CreateShl(Op0, Op1));
+			    break;
+			case OP_LSHR:
+			    Store(inst->dest, Builder.CreateLShr(Op0, Op1));
+			    break;
+			case OP_ASHR:
+			    Store(inst->dest, Builder.CreateAShr(Op0, Op1));
+			    break;
+			case OP_AND:
+			    Store(inst->dest, Builder.CreateAnd(Op0, Op1));
+			    break;
+			case OP_OR:
+			    Store(inst->dest, Builder.CreateOr(Op0, Op1));
+			    break;
+			case OP_XOR:
+			    Store(inst->dest, Builder.CreateXor(Op0, Op1));
+			    break;
+			case OP_TRUNC:
+			{
+			    Value *Src = convertOperand(func, inst, inst->u.cast.source);
+			    const Type *Ty = mapType(func->types[inst->dest]);
+			    Store(inst->dest, Builder.CreateTrunc(Src,  Ty));
+			    break;
+			}
+			case OP_ZEXT:
+			{
+			    Value *Src = convertOperand(func, inst, inst->u.cast.source);
+			    const Type *Ty = mapType(func->types[inst->dest]);
+			    Store(inst->dest, Builder.CreateZExt(Src,  Ty));
+			    break;
+			}
+			case OP_SEXT:
+			{
+			    Value *Src = convertOperand(func, inst, inst->u.cast.source);
+			    const Type *Ty = mapType(func->types[inst->dest]);
+			    Store(inst->dest, Builder.CreateSExt(Src,  Ty));
+			    break;
+			}
+			case OP_BRANCH:
+			{
+			    Value *Cond = convertOperand(func, inst, inst->u.branch.condition);
+			    BasicBlock *True = BB[inst->u.branch.br_true];
+			    BasicBlock *False = BB[inst->u.branch.br_false];
+			    if (Cond->getType() != Type::getInt1Ty(Context)) {
+				errs() << MODULE << "type mismatch in condition\n";
+				return false;
+			    }
+			    Builder.CreateCondBr(Cond, True, False);
+			    break;
+			}
+			case OP_JMP:
+			{
+			    BasicBlock *Jmp = BB[inst->u.jump];
+			    Builder.CreateBr(Jmp);
+			    break;
+			}
+			case OP_RET:
+			    Builder.CreateRet(Op0);
+			    break;
+			case OP_ICMP_EQ:
+			    Store(inst->dest, Builder.CreateICmpEQ(Op0, Op1));
+			    break;
+			case OP_ICMP_NE:
+			    Store(inst->dest, Builder.CreateICmpNE(Op0, Op1));
+			    break;
+			case OP_ICMP_UGT:
+			    Store(inst->dest, Builder.CreateICmpNE(Op0, Op1));
+			    break;
+			case OP_ICMP_UGE:
+			    Store(inst->dest, Builder.CreateICmpNE(Op0, Op1));
+			    break;
+			case OP_ICMP_ULT:
+			    Store(inst->dest, Builder.CreateICmpNE(Op0, Op1));
+			    break;
+			case OP_ICMP_ULE:
+			    Store(inst->dest, Builder.CreateICmpNE(Op0, Op1));
+			    break;
+			case OP_ICMP_SGT:
+			    Store(inst->dest, Builder.CreateICmpNE(Op0, Op1));
+			    break;
+			case OP_ICMP_SGE:
+			    Store(inst->dest, Builder.CreateICmpNE(Op0, Op1));
+			    break;
+			case OP_ICMP_SLT:
+			    Store(inst->dest, Builder.CreateICmpNE(Op0, Op1));
+			    break;
+			case OP_SELECT:
+			    Store(inst->dest, Builder.CreateSelect(Op0, Op1, Op2));
+			    break;
+			case OP_COPY:
+			    Builder.CreateStore(Op0, Op1);
+			    break;
+			case OP_CALL_DIRECT:
+			{
+			    Function *DestF = Functions[inst->u.ops.funcid];
+			    SmallVector<Value*, 2> args;
+			    for (unsigned a=0;a<inst->u.ops.numOps;a++) {
+				operand_t op = inst->u.ops.ops[a];
+				args.push_back(convertOperand(func, DestF->getFunctionType()->getParamType(a), op));
+			    }
+			    Store(inst->dest, Builder.CreateCall(DestF, args.begin(), args.end()));
+			    break;
+			}
+			default:
+			    assert(0 && "Not implemented yet");
 		    }
 		}
 	    }
 
+	    if (verifyFunction(*F, PrintMessageAction)) {
+		errs() << MODULE << "Verification failed\n";
+		// verification failed
+		return false;
+	    }
+	    PM.run(*F);
+	    delete [] Values;
+	}
+
+	for (unsigned j=0;j<bc->num_func;j++) {
+	    const struct cli_bc_func *func = &bc->funcs[j];
 	    PrettyStackTraceString CrashInfo2("Native machine codegen");
 	    // Codegen current function as executable machine code.
-	    compiledFunctions[func] = EE->getPointerToFunction(F);
+	    compiledFunctions[func] = EE->getPointerToFunction(Functions[j]);
 	}
-	delete TypeMap;
+	delete [] TypeMap;
+	return true;
     }
 };
 }
@@ -214,10 +429,11 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
   // LLVM itself never throws exceptions, but operator new may throw bad_alloc
   try {
     Module *M = new Module("ClamAV jit module", bcs->engine->Context);
+    ExistingModuleProvider *MP = new ExistingModuleProvider(M);
     {
 	// Create the JIT.
 	std::string ErrorMsg;
-	EngineBuilder builder(M);
+	EngineBuilder builder(MP);
 	builder.setErrorStr(&ErrorMsg);
 	builder.setEngineKind(EngineKind::JIT);
 	builder.setOptLevel(CodeGenOpt::Aggressive);
@@ -233,10 +449,22 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	EE->RegisterJITEventListener(createOProfileJITEventListener());
 	EE->DisableLazyCompilation();
 
+	FunctionPassManager OurFPM(MP);
+	// Set up the optimizer pipeline.  Start with registering info about how
+	// the target lays out data structures.
+	OurFPM.add(new TargetData(*EE->getTargetData()));
+	// Promote allocas to registers.
+	OurFPM.add(createPromoteMemoryToRegisterPass());
+	// Do simple "peephole" optimizations and bit-twiddling optzns.
+	OurFPM.add(createInstructionCombiningPass());
+	OurFPM.doInitialization();
 	for (unsigned i=0;i<bcs->count;i++) {
 	    const struct cli_bc *bc = &bcs->all_bcs[i];
-	    LLVMCodegen Codegen(bc, M, bcs->engine->compiledFunctions, EE);
-	    Codegen.generate();
+	    LLVMCodegen Codegen(bc, M, bcs->engine->compiledFunctions, EE, OurFPM);
+	    if (!Codegen.generate()) {
+		errs() << MODULE << "JIT codegen failed\n";
+		return CL_EBYTECODE;
+	    }
 	}
 
 	// compile all functions now, not lazily!
@@ -283,7 +511,7 @@ int cli_bytecode_done_jit(struct cli_all_bc *bcs)
 {
     if (bcs->engine->EE)
 	delete bcs->engine->EE;
-    free(bcs->engine);
+    delete bcs->engine;
     bcs->engine = 0;
     return 0;
 }
