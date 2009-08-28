@@ -19,7 +19,7 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-
+#define DEBUG_TYPE "clamavjit"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/DerivedTypes.h"
 #include "llvm/Function.h"
@@ -31,6 +31,7 @@
 #include "llvm/PassManager.h"
 #include "llvm/ModuleProvider.h"
 #include "llvm/Support/Compiler.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/DataTypes.h"
 #include "llvm/Support/ErrorHandling.h"
@@ -43,9 +44,11 @@
 #include "llvm/Target/TargetSelect.h"
 #include "llvm/Target/TargetData.h"
 #include "llvm/Support/TargetFolder.h"
-#include "llvm/Transforms/Scalar.h"
 #include "llvm/Analysis/Verifier.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/System/ThreadLocal.h"
 #include <cstdlib>
+#include <csetjmp>
 #include <new>
 
 #include "clamav.h"
@@ -65,15 +68,21 @@ struct cli_bcengine {
 
 namespace {
 
+static sys::ThreadLocal<const jmp_buf> ExceptionReturn;
+
 void do_shutdown() {
     llvm_shutdown();
+}
+
+static void NORETURN jit_exception_handler(void)
+{
+    longjmp(*const_cast<jmp_buf*>(ExceptionReturn.get()), 1);
 }
 
 void llvm_error_handler(void *user_data, const std::string &reason)
 {
     errs() << reason;
-    //TODO: better error handling, don't exit here
-    exit(1);
+    jit_exception_handler();
 }
 
 class VISIBILITY_HIDDEN LLVMCodegen {
@@ -147,7 +156,7 @@ private:
 	// Constant
 	operand -= func->numValues;
 	// This was already validated by libclamav.
-       	assert(operand < func->numConstants && "Constant out of range");
+	assert(operand < func->numConstants && "Constant out of range");
 	uint64_t *c = &func->constants[operand];
 	uint64_t v;
 	const Type *Ty;
@@ -179,6 +188,19 @@ private:
 	assert(dest >= numArgs && dest < numLocals+numArgs && "Instruction destination out of range");
 	Builder.CreateStore(V, Values[dest]);
     }
+
+    // Insert code that calls \arg FHandler if \arg FailCond is true.
+    void InsertVerify(Value *FailCond, BasicBlock *&Fail, Function *FHandler, 
+		      Function *F) {
+	if (!Fail) {
+	    Fail = BasicBlock::Create(Context, "fail", F);
+	    CallInst::Create(FHandler,"",Fail);
+	    new UnreachableInst(Context, Fail);
+	}
+	BasicBlock *OkBB = BasicBlock::Create(Context, "", F);
+	Builder.CreateCondBr(FailCond, Fail, OkBB);
+	Builder.SetInsertPoint(OkBB);
+    }
 public:
     LLVMCodegen(const struct cli_bc *bc, Module *M, FunctionMapTy &cFuncs,
 		ExecutionEngine *EE, FunctionPassManager &PM)
@@ -191,6 +213,16 @@ public:
     bool generate() {
 	PrettyStackTraceString Trace(BytecodeID.str().c_str());
 	convertTypes();
+
+	llvm::FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context),
+						    false);
+	Function *FHandler = Function::Create(FTy, Function::InternalLinkage,
+					      "clamjit.fail", M);
+	FHandler->setDoesNotReturn();
+	FHandler->setDoesNotThrow();
+	FHandler->addFnAttr(Attribute::NoInline);
+	EE->addGlobalMapping(FHandler, (void*)jit_exception_handler); 
+
 	Function **Functions = new Function*[bc->num_func];
 	for (unsigned j=0;j<bc->num_func;j++) {
 	    PrettyStackTraceString CrashInfo("Generate LLVM IR functions");
@@ -205,6 +237,7 @@ public:
 							 false);
 	    Functions[j] = Function::Create(FTy, Function::InternalLinkage, 
 					   BytecodeID+"f"+Twine(j), M);
+	    Functions[j]->setDoesNotThrow();
 	}
 	for (unsigned j=0;j<bc->num_func;j++) {
 	    PrettyStackTraceString CrashInfo("Generate LLVM IR");
@@ -216,6 +249,7 @@ public:
 		BB[i] = BasicBlock::Create(Context, "", F);
 	    }
 
+	    BasicBlock *Fail = 0;
 	    Values = new Value*[func->numValues];
 	    Builder.SetInsertPoint(BB[0]);
 	    Function::arg_iterator I = F->arg_begin();
@@ -276,17 +310,35 @@ public:
 			    Store(inst->dest, Builder.CreateMul(Op0, Op1));
 			    break;
 			case OP_UDIV:
+			{
+			    Value *Bad = Builder.CreateICmpEQ(Op1, ConstantInt::get(Op1->getType(), 0));
+			    InsertVerify(Bad, Fail, FHandler, F);
 			    Store(inst->dest, Builder.CreateUDiv(Op0, Op1));
 			    break;
+			}
 			case OP_SDIV:
+			{
+			    //TODO: also verify Op0 == -1 && Op1 = INT_MIN
+			    Value *Bad = Builder.CreateICmpEQ(Op1, ConstantInt::get(Op1->getType(), 0));
+			    InsertVerify(Bad, Fail, FHandler, F);
 			    Store(inst->dest, Builder.CreateSDiv(Op0, Op1));
 			    break;
+			}
 			case OP_UREM:
+			{
+			    Value *Bad = Builder.CreateICmpEQ(Op1, ConstantInt::get(Op1->getType(), 0));
+			    InsertVerify(Bad, Fail, FHandler, F);
 			    Store(inst->dest, Builder.CreateURem(Op0, Op1));
 			    break;
+			}
 			case OP_SREM:
+			{
+			    //TODO: also verify Op0 == -1 && Op1 = INT_MIN
+			    Value *Bad = Builder.CreateICmpEQ(Op1, ConstantInt::get(Op1->getType(), 0));
+			    InsertVerify(Bad, Fail, FHandler, F);
 			    Store(inst->dest, Builder.CreateSRem(Op0, Op1));
 			    break;
+			}
 			case OP_SHL:
 			    Store(inst->dest, Builder.CreateShl(Op0, Op1));
 			    break;
@@ -354,25 +406,25 @@ public:
 			    Store(inst->dest, Builder.CreateICmpNE(Op0, Op1));
 			    break;
 			case OP_ICMP_UGT:
-			    Store(inst->dest, Builder.CreateICmpNE(Op0, Op1));
+			    Store(inst->dest, Builder.CreateICmpUGT(Op0, Op1));
 			    break;
 			case OP_ICMP_UGE:
-			    Store(inst->dest, Builder.CreateICmpNE(Op0, Op1));
+			    Store(inst->dest, Builder.CreateICmpUGE(Op0, Op1));
 			    break;
 			case OP_ICMP_ULT:
-			    Store(inst->dest, Builder.CreateICmpNE(Op0, Op1));
+			    Store(inst->dest, Builder.CreateICmpULT(Op0, Op1));
 			    break;
 			case OP_ICMP_ULE:
-			    Store(inst->dest, Builder.CreateICmpNE(Op0, Op1));
+			    Store(inst->dest, Builder.CreateICmpULE(Op0, Op1));
 			    break;
 			case OP_ICMP_SGT:
-			    Store(inst->dest, Builder.CreateICmpNE(Op0, Op1));
+			    Store(inst->dest, Builder.CreateICmpSGT(Op0, Op1));
 			    break;
 			case OP_ICMP_SGE:
-			    Store(inst->dest, Builder.CreateICmpNE(Op0, Op1));
+			    Store(inst->dest, Builder.CreateICmpSGE(Op0, Op1));
 			    break;
 			case OP_ICMP_SLT:
-			    Store(inst->dest, Builder.CreateICmpNE(Op0, Op1));
+			    Store(inst->dest, Builder.CreateICmpSLT(Op0, Op1));
 			    break;
 			case OP_SELECT:
 			    Store(inst->dest, Builder.CreateSelect(Op0, Op1, Op2));
@@ -404,15 +456,23 @@ public:
 	    }
 	    PM.run(*F);
 	    delete [] Values;
+	    delete [] BB;
 	}
 
+	DEBUG(M->dump());
+	delete [] TypeMap;
+	llvm::FunctionType *Callable = FunctionType::get(Type::getInt32Ty(Context),false);
 	for (unsigned j=0;j<bc->num_func;j++) {
 	    const struct cli_bc_func *func = &bc->funcs[j];
 	    PrettyStackTraceString CrashInfo2("Native machine codegen");
 	    // Codegen current function as executable machine code.
-	    compiledFunctions[func] = EE->getPointerToFunction(Functions[j]);
+	    void *code = EE->getPointerToFunction(Functions[j]);
+
+	    // If prototype matches, add to callable functions
+	    if (Functions[j]->getFunctionType() == Callable)
+		compiledFunctions[func] = code;
 	}
-	delete [] TypeMap;
+	delete [] Functions;
 	return true;
     }
 };
@@ -421,17 +481,40 @@ public:
 int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
 		       const struct cli_bc_func *func)
 {
+    jmp_buf env;
     void *code = bcs->engine->compiledFunctions[func];
-    assert(code);
+    if (!code) {
+	errs() << MODULE << "Unable to find compiled function\n";
+	return CL_EBYTECODE;
+    }
     // execute;
-    uint32_t result = ((uint32_t (*)(void))code)();
-    *(uint32_t*)ctx->values = result;
-    return 0;
+    if (setjmp(env) == 0) {
+	// setup exception handler to longjmp back here
+	ExceptionReturn.set(&env);
+	uint32_t result = ((uint32_t (*)(void))code)();
+	*(uint32_t*)ctx->values = result;
+	return 0;
+    }
+    errs() << "\n";
+    errs().changeColor(raw_ostream::RED, true) << MODULE 
+	<< "*** JITed code intercepted runtime error!\n";
+    errs().resetColor();
+    return CL_EBYTECODE;
 }
 
 
 int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 {
+  jmp_buf env;
+  // setup exception handler to longjmp back here
+  ExceptionReturn.set(&env);  
+  if (setjmp(env) != 0) {
+      errs() << "\n";
+      errs().changeColor(raw_ostream::RED, true) << MODULE 
+      << "*** FATAL error encountered during bytecode generation\n";
+      errs().resetColor();
+      return CL_EBYTECODE;
+  }
   // LLVM itself never throws exceptions, but operator new may throw bad_alloc
   try {
     Module *M = new Module("ClamAV jit module", bcs->engine->Context);
@@ -454,6 +537,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 
 	EE->RegisterJITEventListener(createOProfileJITEventListener());
 	EE->DisableLazyCompilation();
+	EE->DisableSymbolSearching();
 
 	FunctionPassManager OurFPM(MP);
 	// Set up the optimizer pipeline.  Start with registering info about how
@@ -461,8 +545,6 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	OurFPM.add(new TargetData(*EE->getTargetData()));
 	// Promote allocas to registers.
 	OurFPM.add(createPromoteMemoryToRegisterPass());
-	// Do simple "peephole" optimizations and bit-twiddling optzns.
-	OurFPM.add(createInstructionCombiningPass());
 	OurFPM.doInitialization();
 	for (unsigned i=0;i<bcs->count;i++) {
 	    const struct cli_bc *bc = &bcs->all_bcs[i];

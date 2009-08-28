@@ -34,7 +34,7 @@
 #include "../libclamav/bytecode.h"
 #include "checks.h"
 
-static void runtest(const char *file, uint64_t expected)
+static void runtest(const char *file, uint64_t expected, int fail)
 {
     int rc;
     int fd = open_testfile(file);
@@ -68,11 +68,13 @@ static void runtest(const char *file, uint64_t expected)
 
     cli_bytecode_context_setfuncid(ctx, &bc, 0);
     rc = cli_bytecode_run(&bcs, &bc, ctx);
-    fail_unless(rc == CL_SUCCESS, "cli_bytecode_run failed");
+    fail_unless(rc == fail, "cli_bytecode_run failed");
 
-    v = cli_bytecode_context_getresult_int(ctx);
-    fail_unless_fmt(v == expected, "Invalid return value from bytecode run, expected: %llx, have: %llx\n",
-		    expected, v);
+    if (rc == CL_SUCCESS) {
+	v = cli_bytecode_context_getresult_int(ctx);
+	fail_unless_fmt(v == expected, "Invalid return value from bytecode run, expected: %llx, have: %llx\n",
+			expected, v);
+    }
     cli_bytecode_context_destroy(ctx);
     cli_bytecode_destroy(&bc);
     cli_bytecode_done(&bcs);
@@ -80,22 +82,28 @@ static void runtest(const char *file, uint64_t expected)
 
 START_TEST (test_retmagic)
 {
-    runtest("input/retmagic.cbc", 0x1234f00d);
+    runtest("input/retmagic.cbc", 0x1234f00d, CL_SUCCESS);
 }
 END_TEST
 
 START_TEST (test_arith)
 {
-    runtest("input/arith.cbc", 0xd5555555);
+    runtest("input/arith.cbc", 0xd5555555, CL_SUCCESS);
 }
 END_TEST
 
 START_TEST (test_apicalls)
 {
-    runtest("input/apicalls.cbc", 0xf00d);
+    runtest("input/apicalls.cbc", 0xf00d, CL_SUCCESS);
 }
 END_TEST
 
+START_TEST (test_div0)
+{
+    /* must not crash on div#0 but catch it */
+    runtest("input/div0.cbc", 0, CL_EBYTECODE);
+}
+END_TEST
 
 Suite *test_bytecode_suite(void)
 {
@@ -106,5 +114,6 @@ Suite *test_bytecode_suite(void)
     tcase_add_test(tc_cli_arith, test_retmagic);
     tcase_add_test(tc_cli_arith, test_arith);
     tcase_add_test(tc_cli_arith, test_apicalls);
+    tcase_add_test(tc_cli_arith, test_div0);
     return s;
 }
