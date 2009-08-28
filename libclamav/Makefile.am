@@ -346,6 +346,7 @@ libclamav_la_SOURCES += bytecode2llvm.cpp
 
 else
 
+libclamav_la_CPPFLAGS = $(AM_CPPFLAGS)
 libclamav_la_SOURCES += bytecode_nojit.c
 
 endif

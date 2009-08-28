@@ -20,7 +20,9 @@
  *  MA 02110-1301, USA.
  */
 
+#include "cltypes.h"
 #include "bytecode.h"
+#include "clamav.h"
 
 int cli_bytecode_prepare_jit(struct cli_bc *bc)
 {
@@ -49,4 +51,9 @@ int cli_bytecode_done_jit(struct cli_all_bc *allbc)
 
 void cli_bytecode_debug(int argc, char **argv) {
   // Empty
+}
+
+int bytecode_init(void)
+{
+    return 0;
 }

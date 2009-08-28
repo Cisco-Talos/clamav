@@ -661,6 +661,7 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 @ENABLE_LLVM_TRUE@SUBDIRS = llvm
 @DEBUG_BUILD_FALSE@@ENABLE_LLVM_TRUE@LLVM_CONFIG = llvm/llvm/Release/bin/llvm-config
 @DEBUG_BUILD_TRUE@@ENABLE_LLVM_TRUE@LLVM_CONFIG = llvm/llvm/Debug/bin/llvm-config
+@ENABLE_LLVM_FALSE@libclamav_la_CPPFLAGS = $(AM_CPPFLAGS)
 @ENABLE_LLVM_TRUE@libclamav_la_CPPFLAGS = $(AM_CPPFLAGS) `$(LLVM_CONFIG) --cppflags`
 noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la
 COMMON_CLEANFILES = version.h version.h.tmp *.gcda *.gcno
