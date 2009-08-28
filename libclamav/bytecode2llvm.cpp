@@ -444,7 +444,9 @@ public:
 			    break;
 			}
 			default:
-			    assert(0 && "Not implemented yet");
+			    errs() << "JIT doesn't implement opcode " <<
+				inst->opcode << " yet!\n";
+			    return false;
 		    }
 		}
 	    }
@@ -505,6 +507,8 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
 
 int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 {
+  if (!bcs->engine)
+      return CL_EBYTECODE;
   jmp_buf env;
   // setup exception handler to longjmp back here
   ExceptionReturn.set(&env);  
@@ -536,7 +540,9 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	}
 
 	EE->RegisterJITEventListener(createOProfileJITEventListener());
-	EE->DisableLazyCompilation();
+	// Due to LLVM PR4816 only X86 supports non-lazy compilation, disable
+	// for now.
+	// EE->DisableLazyCompilation();
 	EE->DisableSymbolSearching();
 
 	FunctionPassManager OurFPM(MP);
@@ -600,10 +606,12 @@ int cli_bytecode_init_jit(struct cli_all_bc *bcs)
 
 int cli_bytecode_done_jit(struct cli_all_bc *bcs)
 {
-    if (bcs->engine->EE)
-	delete bcs->engine->EE;
-    delete bcs->engine;
-    bcs->engine = 0;
+    if (bcs->engine) {
+	if (bcs->engine->EE)
+	    delete bcs->engine->EE;
+	delete bcs->engine;
+	bcs->engine = 0;
+    }
     return 0;
 }
 
@@ -611,3 +619,5 @@ void cli_bytecode_debug(int argc, char **argv)
 {
   cl::ParseCommandLineOptions(argc, argv);
 }
+
+int have_clamjit=1;

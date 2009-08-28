@@ -34,6 +34,7 @@
 #include "libclamav/str.h"
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
+#include "libclamav/bytecode.h"
 
 static struct _cfgfile {
     const char *name;
@@ -288,7 +289,9 @@ int main(int argc, char **argv)
 	printf("BZIP2 ");
 #endif
     if(have_rar)
-	printf("RAR");
+	printf("RAR ");
+    if (have_clamjit)
+	printf("JIT");
     printf("\n");
 
     if(!strlen(dbdir)) {

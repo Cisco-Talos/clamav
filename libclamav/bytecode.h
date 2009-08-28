@@ -67,6 +67,7 @@ int cli_bytecode_context_clear(struct cli_bc_ctx *ctx);
 uint64_t cli_bytecode_context_getresult_int(struct cli_bc_ctx *ctx);
 void cli_bytecode_context_destroy(struct cli_bc_ctx *ctx);
 
+extern int have_clamjit;
 int cli_bytecode_init(struct cli_all_bc *allbc);
 int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio);
 int cli_bytecode_prepare(struct cli_all_bc *allbc);

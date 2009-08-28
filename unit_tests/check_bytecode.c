@@ -34,7 +34,7 @@
 #include "../libclamav/bytecode.h"
 #include "checks.h"
 
-static void runtest(const char *file, uint64_t expected, int fail)
+static void runtest(const char *file, uint64_t expected, int fail, int nojit)
 {
     int rc;
     int fd = open_testfile(file);
@@ -50,8 +50,12 @@ static void runtest(const char *file, uint64_t expected, int fail)
 
     cl_debug();
 
-    rc = cli_bytecode_init(&bcs);
-    fail_unless(rc == CL_SUCCESS, "cli_bytecode_init failed");
+    if (!nojit) {
+	rc = cli_bytecode_init(&bcs);
+	fail_unless(rc == CL_SUCCESS, "cli_bytecode_init failed");
+    } else {
+	bcs.engine = NULL;
+    }
 
     bcs.all_bcs = &bc;
     bcs.count = 1;
@@ -62,6 +66,10 @@ static void runtest(const char *file, uint64_t expected, int fail)
 
     rc = cli_bytecode_prepare(&bcs);
     fail_unless(rc == CL_SUCCESS, "cli_bytecode_prepare failed");
+
+    if (have_clamjit && !nojit && nojit != -1) {
+	fail_unless(bc.state == bc_jit, "preparing for JIT failed");
+    }
 
     ctx = cli_bytecode_context_alloc();
     fail_unless(!!ctx, "cli_bytecode_context_alloc failed");
@@ -82,26 +90,35 @@ static void runtest(const char *file, uint64_t expected, int fail)
 
 START_TEST (test_retmagic)
 {
-    runtest("input/retmagic.cbc", 0x1234f00d, CL_SUCCESS);
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/retmagic.cbc", 0x1234f00d, CL_SUCCESS, 0);
+    runtest("input/retmagic.cbc", 0x1234f00d, CL_SUCCESS, 1);
 }
 END_TEST
 
 START_TEST (test_arith)
 {
-    runtest("input/arith.cbc", 0xd5555555, CL_SUCCESS);
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/arith.cbc", 0xd5555555, CL_SUCCESS, 0);
+    runtest("input/arith.cbc", 0xd5555555, CL_SUCCESS, 1);
 }
 END_TEST
 
 START_TEST (test_apicalls)
 {
-    runtest("input/apicalls.cbc", 0xf00d, CL_SUCCESS);
+    cl_init(CL_INIT_DEFAULT);
+    /* Not yet implemented for JIT, expect to return error */
+    runtest("input/apicalls.cbc", 0xf00d, CL_SUCCESS, -1);
+    runtest("input/apicalls.cbc", 0xf00d, CL_SUCCESS, 1);
 }
 END_TEST
 
 START_TEST (test_div0)
 {
+    cl_init(CL_INIT_DEFAULT);
     /* must not crash on div#0 but catch it */
-    runtest("input/div0.cbc", 0, CL_EBYTECODE);
+    runtest("input/div0.cbc", 0, CL_EBYTECODE, 0);
+    runtest("input/div0.cbc", 0, CL_EBYTECODE, 1);
 }
 END_TEST
 

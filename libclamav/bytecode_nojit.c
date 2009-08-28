@@ -57,3 +57,5 @@ int bytecode_init(void)
 {
     return 0;
 }
+
+int have_clamjit=0;
