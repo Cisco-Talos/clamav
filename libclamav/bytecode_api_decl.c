@@ -29,10 +29,10 @@ static uint16_t cli_tmp2[]={70};
 static uint16_t cli_tmp3[]={32, 32, 32};
 
 const struct cli_bc_type cli_apicall_types[]={
-	{FunctionType, cli_tmp0, 3},
-	{PointerType, cli_tmp1, 1},
-	{StructType, cli_tmp2, 1},
-	{FunctionType, cli_tmp3, 3}
+	{DFunctionType, cli_tmp0, 3},
+	{DPointerType, cli_tmp1, 1},
+	{DStructType, cli_tmp2, 1},
+	{DFunctionType, cli_tmp3, 3}
 };
 
 const unsigned cli_apicall_maxtypes=sizeof(cli_apicall_types)/sizeof(cli_apicall_types[0]);

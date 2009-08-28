@@ -456,7 +456,7 @@ static void add_static_types(struct cli_bc *bc)
 {
     unsigned i;
     for (i=0;i<NUM_STATIC_TYPES;i++) {
-	bc->types[i].kind = PointerType;
+	bc->types[i].kind = DPointerType;
 	bc->types[i].numElements = 1;
 	bc->types[i].containedTypes = &containedTy[i];
 	bc->types[i].size = bc->types[i].align = sizeof(void*);
@@ -488,7 +488,7 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 	}
 	switch (t) {
 	    case 1:
-		ty->kind = FunctionType;
+		ty->kind = DFunctionType;
 		ty->size = ty->align = sizeof(void*);
 		parseType(bc, ty, buffer, &offset, len, &ok);
 		if (!ok) {
@@ -498,7 +498,7 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 		break;
 	    case 2:
 	    case 3:
-		ty->kind = (t == 2) ? StructType : PackedStructType;
+		ty->kind = (t == 2) ? DStructType : DPackedStructType;
 		ty->size = ty->align = 0;/* TODO:calculate size/align of structs */
 		parseType(bc, ty, buffer, &offset, len, &ok);
 		if (!ok) {
@@ -507,7 +507,7 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 		}
 		break;
 	    case 4:
-		ty->kind = ArrayType;
+		ty->kind = DArrayType;
 		/* number of elements of array, not subtypes! */
 		ty->numElements = readNumber(buffer, &offset, len, &ok);
 		if (!ok) {
@@ -517,7 +517,7 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 		/* fall-through */
 	    case 5:
 		if (t == 5) {
-		    ty->kind = PointerType;
+		    ty->kind = DPointerType;
 		    ty->numElements = 1;
 		}
 		ty->containedTypes = cli_malloc(sizeof(*ty->containedTypes));

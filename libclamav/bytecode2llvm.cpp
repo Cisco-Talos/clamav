@@ -214,7 +214,7 @@ public:
 	PrettyStackTraceString Trace(BytecodeID.str().c_str());
 	convertTypes();
 
-	llvm::FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context),
+	FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context),
 						    false);
 	Function *FHandler = Function::Create(FTy, Function::InternalLinkage,
 					      "clamjit.fail", M);
@@ -233,7 +233,7 @@ public:
 		argTypes.push_back(mapType(func->types[a]));
 	    }
 	    const Type *RetTy = mapType(func->returnType);
-	    llvm::FunctionType *FTy =  FunctionType::get(RetTy, argTypes,
+	    FunctionType *FTy =  FunctionType::get(RetTy, argTypes,
 							 false);
 	    Functions[j] = Function::Create(FTy, Function::InternalLinkage, 
 					   BytecodeID+"f"+Twine(j), M);
@@ -461,7 +461,7 @@ public:
 
 	DEBUG(M->dump());
 	delete [] TypeMap;
-	llvm::FunctionType *Callable = FunctionType::get(Type::getInt32Ty(Context),false);
+	FunctionType *Callable = FunctionType::get(Type::getInt32Ty(Context),false);
 	for (unsigned j=0;j<bc->num_func;j++) {
 	    const struct cli_bc_func *func = &bc->funcs[j];
 	    PrettyStackTraceString CrashInfo2("Native machine codegen");

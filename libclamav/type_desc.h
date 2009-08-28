@@ -23,11 +23,11 @@
 #define TYPE_DESC_H
 
 enum derived_t {
-  FunctionType,
-  PointerType,
-  StructType,
-  PackedStructType,
-  ArrayType
+  DFunctionType,
+  DPointerType,
+  DStructType,
+  DPackedStructType,
+  DArrayType
 };
 
 struct cli_bc_type {
