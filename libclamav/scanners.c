@@ -40,14 +40,6 @@
 #include <netinet/in.h>
 #endif
 
-#if HAVE_MMAP
-#if HAVE_SYS_MMAN_H
-#include <sys/mman.h>
-#else /* HAVE_SYS_MMAN_H */
-#undef HAVE_MMAP
-#endif
-#endif
-
 #ifndef	O_BINARY
 #define	O_BINARY	0
 #endif
@@ -96,6 +88,7 @@
 #include "macho.h"
 #include "ishield.h"
 #include "7z.h"
+#include "fmap.h"
 
 #ifdef HAVE_BZLIB_H
 #include <bzlib.h>
@@ -1890,6 +1883,12 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     if(cli_updatelimits(ctx, sb.st_size)!=CL_CLEAN)
         return CL_CLEAN;
 
+    ctx->fmap++;
+    if(!(*ctx->fmap = fmap(desc, 0, sb.st_size))) {
+	cli_errmsg("CRITICAL: fmap() failed\n");
+	return CL_EMEM;
+    }
+
     if(!ctx->options || (ctx->recursion == ctx->engine->maxreclevel)) { /* raw mode (stdin, etc.) or last level of recursion */
 	if(ctx->recursion == ctx->engine->maxreclevel)
 	    cli_dbgmsg("cli_magic_scandesc: Hit recursion limit, only scanning raw file\n");
@@ -1897,21 +1896,28 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    cli_dbgmsg("Raw mode: No support for special files\n");
 	if((ret = cli_scandesc(desc, ctx, 0, 0, NULL, AC_SCAN_VIR)) == CL_VIRUS)
 	    cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, desc);
+	fmunmap(*ctx->fmap);
+	ctx->fmap--; 
 	return ret;
     }
 
-    lseek(desc, 0, SEEK_SET);
-    type = cli_filetype2(desc, ctx->engine);
+    lseek(desc, 0, SEEK_SET); /* FIXMEFMAP: remove ? */
+    type = cli_filetype2(desc, ctx->engine); /* FIXMEFMAP: port to fmap */
     if(type == CL_TYPE_ERROR) {
 	cli_dbgmsg("cli_magic_scandesc: cli_filetype2 returned CL_TYPE_ERROR\n");
+	fmunmap(*ctx->fmap);
+	ctx->fmap--; 
 	return CL_EREAD;
     }
-    lseek(desc, 0, SEEK_SET);
+    lseek(desc, 0, SEEK_SET); /* FIXMEFMAP: remove ? */
 
     if(type != CL_TYPE_IGNORED && ctx->engine->sdb) {
-	if((ret = cli_scanraw(desc, ctx, type, 0, &dettype)) == CL_VIRUS)
+	if((ret = cli_scanraw(desc, ctx, type, 0, &dettype)) == CL_VIRUS) {
+	    fmunmap(*ctx->fmap);
+	    ctx->fmap--; 
 	    return CL_VIRUS;
-	lseek(desc, 0, SEEK_SET);
+	}
+	lseek(desc, 0, SEEK_SET); /* FIXMEFMAP: remove ? */
     }
 
     ctx->container_type = 0;
@@ -2113,8 +2119,11 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     ctx->recursion--;
     ctx->container_type = current_container;
 
-    if(ret == CL_VIRUS)
+    if(ret == CL_VIRUS) {
+	fmunmap(*ctx->fmap);
+	ctx->fmap--; 
 	return CL_VIRUS;
+    }
 
     if(type == CL_TYPE_ZIP && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP)) {
 	if(sb.st_size > 1048576) {
@@ -2125,8 +2134,11 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
     /* CL_TYPE_HTML: raw HTML files are not scanned, unless safety measure activated via DCONF */
     if(type != CL_TYPE_IGNORED && (type != CL_TYPE_HTML || !(DCONF_DOC & DOC_CONF_HTML_SKIPRAW)) && !ctx->engine->sdb) {
-	if(cli_scanraw(desc, ctx, type, typercg, &dettype) == CL_VIRUS)
+	if(cli_scanraw(desc, ctx, type, typercg, &dettype) == CL_VIRUS) {
+	    fmunmap(*ctx->fmap);
+	    ctx->fmap--; 
 	    return CL_VIRUS;
+	}
     }
 
     ctx->recursion++;
@@ -2153,6 +2165,8 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
     }
     ctx->recursion--;
+    fmunmap(*ctx->fmap);
+    ctx->fmap--;
 
     switch(ret) {
 	case CL_EFORMAT:
@@ -2179,8 +2193,15 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     ctx.found_possibly_unwanted = 0;
     ctx.container_type = 0;
     ctx.dconf = (struct cli_dconf *) engine->dconf;
+    ctx.fmap = cli_calloc(sizeof(struct F_MAP *), ctx.engine->maxreclevel + 1);
+    if(!ctx.fmap)
+	return CL_EMEM;
+    ctx.fmap--;
 
     rc = cli_magic_scandesc(desc, &ctx);
+
+    ctx.fmap++;
+    free(ctx.fmap);
     if(rc == CL_CLEAN && ctx.found_possibly_unwanted)
     	rc = CL_VIRUS;
     return rc;
