@@ -648,16 +648,10 @@ fileblobScan(const fileblob *fb)
 
 	fflush(fb->fp);
 	lseek(fb->fd, 0, SEEK_SET);
-	rc = cli_magic_scandesc(fb->fd, fb->ctx);
 
-	if(rc == CL_CLEAN) {
-		lseek(fb->fd, 0, SEEK_SET);
-		ftype = cli_filetype2(fb->fd, fb->ctx->engine);
-		if(ftype >= CL_TYPE_TEXT_ASCII && ftype <= CL_TYPE_TEXT_UTF16BE) {
-			lseek(fb->fd, 0, SEEK_SET);
-			rc = cli_scandesc(fb->fd, fb->ctx, CL_TYPE_MAIL, 0, NULL, AC_SCAN_VIR);
-		}
-	}
+	fb->ctx->container_type = CL_TYPE_MAIL;
+	rc = cli_magic_scandesc(fb->fd, fb->ctx);
+	fb->ctx->container_type = 0;
 
 	if(rc == CL_VIRUS) {
 		cli_dbgmsg("%s is infected\n", fb->fullname);

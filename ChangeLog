@@ -1,3 +1,7 @@
+Sun Aug 30 23:56:49 CEST 2009 (acab)
+------------------------------------
+ * libclamav: unify CL_TYPE_MAIL scanning
+
 Wed Aug 26 23:37:04 CEST 2009 (tk)
 ----------------------------------
  * libclamav/matcher-ac.c: improve handling of signature offsets

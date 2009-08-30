@@ -37,6 +37,7 @@
 
 #include "clamav.h"
 #include "dconf.h"
+#include "filetypes.h"
 #include "libclamunrar_iface/unrar_iface.h"
 #include "regex/regex.h"
 
@@ -106,6 +107,7 @@ typedef struct {
     unsigned int recursion;
     unsigned int scannedfiles;
     unsigned int found_possibly_unwanted;
+    cli_file_t container_type; /* FIXME: to be made into a stack or array - see bb#1579 & bb#1293 */
     struct cli_dconf *dconf;
 } cli_ctx;
 
