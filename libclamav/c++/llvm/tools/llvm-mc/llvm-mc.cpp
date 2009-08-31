@@ -13,6 +13,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/MC/MCContext.h"
+#include "llvm/MC/MCCodeEmitter.h"
 #include "llvm/MC/MCSectionMachO.h"
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/ADT/OwningPtr.h"
@@ -38,6 +39,9 @@ static cl::opt<std::string>
 OutputFilename("o", cl::desc("Output filename"),
                cl::value_desc("filename"));
 
+static cl::opt<bool>
+ShowEncoding("show-encoding", cl::desc("Show instruction encodings"));
+
 enum OutputFileType {
   OFT_AssemblyFile,
   OFT_ObjectFile
@@ -53,7 +57,7 @@ FileType("filetype", cl::init(OFT_AssemblyFile),
        clEnumValEnd));
 
 static cl::opt<bool>
-Force("f", cl::desc("Overwrite output files"));
+Force("f", cl::desc("Enable binary output on terminals"));
 
 static cl::list<std::string>
 IncludeDirs("I", cl::desc("Directory of include files"),
@@ -184,12 +188,9 @@ static formatted_raw_ostream *GetOutputStream() {
 
   std::string Err;
   raw_fd_ostream *Out = new raw_fd_ostream(OutputFilename.c_str(), Err,
-                                           raw_fd_ostream::F_Binary |
-                                         (Force ? raw_fd_ostream::F_Force : 0));
+                                           raw_fd_ostream::F_Binary);
   if (!Err.empty()) {
     errs() << Err << '\n';
-    if (!Force)
-      errs() << "Use -f command line argument to force output\n";
     delete Out;
     return 0;
   }
@@ -238,6 +239,7 @@ static int AssembleInput(const char *ProgName) {
   }
 
   OwningPtr<AsmPrinter> AP;
+  OwningPtr<MCCodeEmitter> CE;
   OwningPtr<MCStreamer> Str;
 
   if (FileType == OFT_AssemblyFile) {
@@ -245,17 +247,14 @@ static int AssembleInput(const char *ProgName) {
     assert(TAI && "Unable to create target asm info!");
 
     AP.reset(TheTarget->createAsmPrinter(*Out, *TM, TAI, true));
-    Str.reset(createAsmStreamer(Ctx, *Out, *TAI, AP.get()));
+    if (ShowEncoding)
+      CE.reset(TheTarget->createCodeEmitter(*TM));
+    Str.reset(createAsmStreamer(Ctx, *Out, *TAI, AP.get(), CE.get()));
   } else {
     assert(FileType == OFT_ObjectFile && "Invalid file type!");
-    Str.reset(createMachOStreamer(Ctx, *Out));
+    CE.reset(TheTarget->createCodeEmitter(*TM));
+    Str.reset(createMachOStreamer(Ctx, *Out, CE.get()));
   }
-
-  // FIXME: Target hook & command line option for initial section.
-  Str.get()->SwitchSection(MCSectionMachO::Create("__TEXT","__text",
-                                       MCSectionMachO::S_ATTR_PURE_INSTRUCTIONS,
-                                                  0, SectionKind::getText(),
-                                                  Ctx));
 
   AsmParser Parser(SrcMgr, Ctx, *Str.get());
   OwningPtr<TargetAsmParser> TAP(TheTarget->createAsmParser(Parser));

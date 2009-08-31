@@ -1279,10 +1279,13 @@ SDValue SelectionDAGLegalize::LegalizeOp(SDValue Op) {
           break;
         case TargetLowering::Expand:
           // f64 = EXTLOAD f32 should expand to LOAD, FP_EXTEND
-          if (SrcVT == MVT::f32 && Node->getValueType(0) == MVT::f64) {
+          // f128 = EXTLOAD {f32,f64} too
+          if ((SrcVT == MVT::f32 && (Node->getValueType(0) == MVT::f64 ||
+                                     Node->getValueType(0) == MVT::f128)) ||
+              (SrcVT == MVT::f64 && Node->getValueType(0) == MVT::f128)) {
             SDValue Load = DAG.getLoad(SrcVT, dl, Tmp1, Tmp2, LD->getSrcValue(),
-                                         LD->getSrcValueOffset(),
-                                         LD->isVolatile(), LD->getAlignment());
+                                       LD->getSrcValueOffset(),
+                                       LD->isVolatile(), LD->getAlignment());
             Result = DAG.getNode(ISD::FP_EXTEND, dl,
                                  Node->getValueType(0), Load);
             Tmp1 = LegalizeOp(Result);  // Relegalize new nodes.
@@ -1593,9 +1596,9 @@ SDValue SelectionDAGLegalize::ExpandDBG_STOPPOINT(SDNode* Node) {
   bool useLABEL = TLI.isOperationLegalOrCustom(ISD::DBG_LABEL, MVT::Other);
 
   const DbgStopPointSDNode *DSP = cast<DbgStopPointSDNode>(Node);
-  GlobalVariable *CU_GV = cast<GlobalVariable>(DSP->getCompileUnit());
-  if (DW && (useDEBUG_LOC || useLABEL) && !CU_GV->isDeclaration()) {
-    DICompileUnit CU(cast<GlobalVariable>(DSP->getCompileUnit()));
+  MDNode *CU_Node = DSP->getCompileUnit();
+  if (DW && (useDEBUG_LOC || useLABEL)) {
+    DICompileUnit CU(CU_Node);
 
     unsigned Line = DSP->getLine();
     unsigned Col = DSP->getColumn();
@@ -1607,7 +1610,7 @@ SDValue SelectionDAGLegalize::ExpandDBG_STOPPOINT(SDNode* Node) {
         return DAG.getNode(ISD::DEBUG_LOC, dl, MVT::Other, Node->getOperand(0),
                            DAG.getConstant(Line, MVT::i32),
                            DAG.getConstant(Col, MVT::i32),
-                           DAG.getSrcValue(CU.getGV()));
+                           DAG.getSrcValue(CU.getNode()));
       } else {
         unsigned ID = DW->RecordSourceLine(Line, Col, CU);
         return DAG.getLabel(ISD::DBG_LABEL, dl, Node->getOperand(0), ID);

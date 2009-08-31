@@ -38,7 +38,7 @@ class TargetRegisterClass;
 template <>
 struct ilist_traits<MachineBasicBlock>
     : public ilist_default_traits<MachineBasicBlock> {
-  mutable ilist_node<MachineBasicBlock> Sentinel;
+  mutable ilist_half_node<MachineBasicBlock> Sentinel;
 public:
   MachineBasicBlock *createSentinel() const {
     return static_cast<MachineBasicBlock*>(&Sentinel);
@@ -327,7 +327,7 @@ public:
   /// getOrCreateDebugLocID - Look up the DebugLocTuple index with the given
   /// source file, line, and column. If none currently exists, create a new
   /// DebugLocTuple, and insert it into the DebugIdMap.
-  unsigned getOrCreateDebugLocID(GlobalVariable *CompileUnit,
+  unsigned getOrCreateDebugLocID(MDNode *CompileUnit,
                                  unsigned Line, unsigned Col);
 
   /// getDebugLocTuple - Get the DebugLocTuple for a given DebugLoc object.

@@ -53,7 +53,7 @@ protected:
   virtual void setSuccessorV(unsigned idx, BasicBlock *B) = 0;
 public:
 
-  virtual Instruction *clone(LLVMContext &Context) const = 0;
+  virtual TerminatorInst *clone(LLVMContext &Context) const = 0;
 
   /// getNumSuccessors - Return the number of successors that this terminator
   /// has.
@@ -90,7 +90,6 @@ public:
 
 class UnaryInstruction : public Instruction {
   void *operator new(size_t, unsigned);      // Do not implement
-  UnaryInstruction(const UnaryInstruction&); // Do not implement
 
 protected:
   UnaryInstruction(const Type *Ty, unsigned iType, Value *V,
@@ -315,12 +314,6 @@ DEFINE_TRANSPARENT_OPERAND_ACCESSORS(BinaryOperator, Value)
 /// if (isa<CastInst>(Instr)) { ... }
 /// @brief Base class of casting instructions.
 class CastInst : public UnaryInstruction {
-  /// @brief Copy constructor
-  CastInst(const CastInst &CI)
-    : UnaryInstruction(CI.getType(), CI.getOpcode(), CI.getOperand(0)) {
-  }
-  /// @brief Do not allow default construction
-  CastInst();
 protected:
   /// @brief Constructor with insert-before-instruction semantics for subclasses
   CastInst(const Type *Ty, unsigned iType, Value *S,
@@ -613,7 +606,7 @@ public:
   /// instruction into a BasicBlock right before the specified instruction.
   /// The specified Instruction is allowed to be a dereferenced end iterator.
   /// @brief Create a CmpInst
-  static CmpInst *Create(LLVMContext &Context, OtherOps Op,
+  static CmpInst *Create(OtherOps Op,
                          unsigned short predicate, Value *S1,
                          Value *S2, const Twine &Name = "",
                          Instruction *InsertBefore = 0);

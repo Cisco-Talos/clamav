@@ -81,7 +81,11 @@ endif()
 include(CheckAtomic)
 
 include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag("-fPIC" SUPPORTS_FPIC_FLAG)
+# On windows all code is position-independent and mingw warns if -fPIC
+# is in the command-line.
+if( NOT WIN32 )
+  check_cxx_compiler_flag("-fPIC" SUPPORTS_FPIC_FLAG)
+endif()
 
 include(GetTargetTriple)
 get_target_triple(LLVM_HOSTTRIPLE)
@@ -174,11 +178,6 @@ endif()
 configure_file(
   ${LLVM_MAIN_INCLUDE_DIR}/llvm/Config/config.h.cmake
   ${LLVM_BINARY_DIR}/include/llvm/Config/config.h
-  )
-
-configure_file(
-  ${LLVM_MAIN_INCLUDE_DIR}/llvm/ADT/iterator.cmake
-  ${LLVM_BINARY_DIR}/include/llvm/ADT/iterator.h
   )
 
 configure_file(

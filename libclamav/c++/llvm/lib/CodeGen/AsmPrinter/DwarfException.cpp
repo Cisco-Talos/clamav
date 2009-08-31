@@ -40,7 +40,7 @@ DwarfException::DwarfException(raw_ostream &OS, AsmPrinter *A,
   : Dwarf(OS, A, T, "eh"), shouldEmitTable(false), shouldEmitMoves(false),
     shouldEmitTableModule(false), shouldEmitMovesModule(false),
     ExceptionTimer(0) {
-  if (TimePassesIsEnabled) 
+  if (TimePassesIsEnabled)
     ExceptionTimer = new Timer("Dwarf Exception Writer",
                                getDwarfTimerGroup());
 }
@@ -49,8 +49,10 @@ DwarfException::~DwarfException() {
   delete ExceptionTimer;
 }
 
-void DwarfException::EmitCommonEHFrame(const Function *Personality,
-                                       unsigned Index) {
+/// EmitCIE - Emit a Common Information Entry (CIE). This holds information that
+/// is shared among many Frame Description Entries.  There is at least one CIE
+/// in every non-empty .debug_frame section.
+void DwarfException::EmitCIE(const Function *Personality, unsigned Index) {
   // Size and sign of stack growth.
   int stackGrowth =
     Asm->TM.getFrameInfo()->getStackGrowthDirection() ==
@@ -94,7 +96,7 @@ void DwarfException::EmitCommonEHFrame(const Function *Personality,
   Asm->EmitInt8(RI->getDwarfRegNum(RI->getRARegister(), true));
   Asm->EOL("CIE Return Address Column");
 
-  // If there is a personality, we need to indicate the functions location.
+  // If there is a personality, we need to indicate the function's location.
   if (Personality) {
     Asm->EmitULEB128Bytes(7);
     Asm->EOL("Augmentation Size");
@@ -144,16 +146,15 @@ void DwarfException::EmitCommonEHFrame(const Function *Personality,
   Asm->EOL();
 }
 
-/// EmitEHFrame - Emit function exception frame information.
-///
-void DwarfException::EmitEHFrame(const FunctionEHFrameInfo &EHFrameInfo) {
-  assert(!EHFrameInfo.function->hasAvailableExternallyLinkage() && 
+/// EmitFDE - Emit the Frame Description Entry (FDE) for the function.
+void DwarfException::EmitFDE(const FunctionEHFrameInfo &EHFrameInfo) {
+  assert(!EHFrameInfo.function->hasAvailableExternallyLinkage() &&
          "Should not emit 'available externally' functions at all");
 
   const Function *TheFunc = EHFrameInfo.function;
-  
+
   Asm->OutStreamer.SwitchSection(Asm->getObjFileLowering().getEHFrameSection());
-  
+
   // Externally visible entry into the functions eh frame info. If the
   // corresponding function is static, this should not be externally visible.
   if (!TheFunc->hasLocalLinkage())
@@ -202,14 +203,20 @@ void DwarfException::EmitEHFrame(const FunctionEHFrameInfo &EHFrameInfo) {
 
     // If there is a personality and landing pads then point to the language
     // specific data area in the exception table.
-    if (EHFrameInfo.PersonalityIndex) {
-      Asm->EmitULEB128Bytes(4);
+    if (MMI->getPersonalities()[0] != NULL) {
+      bool is4Byte = TD->getPointerSize() == sizeof(int32_t);
+
+      Asm->EmitULEB128Bytes(is4Byte ? 4 : 8);
       Asm->EOL("Augmentation size");
 
       if (EHFrameInfo.hasLandingPads)
-        EmitReference("exception", EHFrameInfo.Number, true, true);
-      else
-        Asm->EmitInt32((int)0);
+        EmitReference("exception", EHFrameInfo.Number, true, false);
+      else {
+	if (is4Byte)
+	  Asm->EmitInt32((int)0);
+	else
+	  Asm->EmitInt64((int)0);
+      }
       Asm->EOL("Language Specific Data Area");
     } else {
       Asm->EmitULEB128Bytes(0);
@@ -217,7 +224,7 @@ void DwarfException::EmitEHFrame(const FunctionEHFrameInfo &EHFrameInfo) {
     }
 
     // Indicate locations of function specific callee saved registers in frame.
-    EmitFrameMoves("eh_func_begin", EHFrameInfo.Number, EHFrameInfo.Moves, 
+    EmitFrameMoves("eh_func_begin", EHFrameInfo.Number, EHFrameInfo.Moves,
                    true);
 
     // On Darwin the linker honors the alignment of eh_frame, which means it
@@ -236,6 +243,8 @@ void DwarfException::EmitEHFrame(const FunctionEHFrameInfo &EHFrameInfo) {
       if (const char *UsedDirective = MAI->getUsedDirective())
         O << UsedDirective << EHFrameInfo.FnName << "\n\n";
   }
+
+  Asm->EOL();
 }
 
 /// SharedTypeIds - How many leading type ids two landing pads have in common.
@@ -448,8 +457,9 @@ ComputeCallSiteTable(SmallVectorImpl<CallSiteEntry> &CallSites,
           FirstActions[P.PadIndex]
         };
 
-        // Try to merge with the previous call-site.
-        if (PreviousIsInvoke) {
+        // Try to merge with the previous call-site. SJLJ doesn't do this
+        if (PreviousIsInvoke &&
+          MAI->getExceptionHandlingType() == ExceptionHandling::Dwarf) {
           CallSiteEntry &Prev = CallSites.back();
           if (Site.PadLabel == Prev.PadLabel && Site.Action == Prev.Action) {
             // Extend the range of the previous entry.
@@ -483,7 +493,7 @@ ComputeCallSiteTable(SmallVectorImpl<CallSiteEntry> &CallSites,
 /// The general organization of the table is complex, but the basic concepts are
 /// easy.  First there is a header which describes the location and organization
 /// of the three components that follow.
-/// 
+///
 ///  1. The landing pad site information describes the range of code covered by
 ///     the try.  In our case it's an accumulation of the ranges covered by the
 ///     invokes in the try.  There is also a reference to the landing pad that
@@ -791,7 +801,7 @@ void DwarfException::EmitExceptionTable() {
   // associated switch value.
   //
   //  Action Record Fields:
-  //  
+  //
   //   * Filter Value
   //     Positive value, starting at 1. Index in the types table of the
   //     __typeinfo for the catch-clause type. 1 is the first word preceding
@@ -816,7 +826,7 @@ void DwarfException::EmitExceptionTable() {
       std::string GLN;
       O << Asm->getGlobalLinkName(GV, GLN);
     } else {
-      O << "0";
+      O << "0x0";
     }
 
     Asm->EOL("TypeInfo");
@@ -844,11 +854,11 @@ void DwarfException::EndModule() {
   if (shouldEmitMovesModule || shouldEmitTableModule) {
     const std::vector<Function *> Personalities = MMI->getPersonalities();
     for (unsigned i = 0; i < Personalities.size(); ++i)
-      EmitCommonEHFrame(Personalities[i], i);
+      EmitCIE(Personalities[i], i);
 
     for (std::vector<FunctionEHFrameInfo>::iterator I = EHFrames.begin(),
            E = EHFrames.end(); I != E; ++I)
-      EmitEHFrame(*I);
+      EmitFDE(*I);
   }
 
   if (TimePassesIsEnabled)
@@ -891,7 +901,7 @@ void DwarfException::BeginFunction(MachineFunction *MF) {
 /// EndFunction - Gather and emit post-function exception information.
 ///
 void DwarfException::EndFunction() {
-  if (TimePassesIsEnabled) 
+  if (TimePassesIsEnabled)
     ExceptionTimer->startTimer();
 
   if (shouldEmitMoves || shouldEmitTable) {
@@ -909,6 +919,6 @@ void DwarfException::EndFunction() {
                             MF->getFunction()));
   }
 
-  if (TimePassesIsEnabled) 
+  if (TimePassesIsEnabled)
     ExceptionTimer->stopTimer();
 }

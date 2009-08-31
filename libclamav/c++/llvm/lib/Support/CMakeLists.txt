@@ -30,7 +30,14 @@ add_llvm_library(LLVMSupport
   Timer.cpp
   Triple.cpp
   Twine.cpp
+  raw_os_ostream.cpp
   raw_ostream.cpp
+  Regex.cpp
+  regcomp.c
+  regerror.c
+  regexec.c
+  regfree.c
+  regstrlcpy.c
   )
 
 target_link_libraries (LLVMSupport LLVMSystem)

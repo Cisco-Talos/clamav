@@ -22,7 +22,6 @@
 #include "llvm/Constants.h"
 #include "llvm/ADT/FoldingSet.h"
 #include "llvm/ADT/GraphTraits.h"
-#include "llvm/ADT/iterator.h"
 #include "llvm/ADT/ilist_node.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/STLExtras.h"
@@ -292,7 +291,7 @@ namespace ISD {
     EXTRACT_SUBVECTOR,
 
     /// VECTOR_SHUFFLE(VEC1, VEC2) - Returns a vector, of the same type as 
-    /// VEC1/VEC2.  A VECTOR_SHUFFLE node also contains an array of constant int 
+    /// VEC1/VEC2.  A VECTOR_SHUFFLE node also contains an array of constant int
     /// values that indicate which value (or undef) each result element will
     /// get.  These constant ints are accessible through the 
     /// ShuffleVectorSDNode class.  This is quite similar to the Altivec 
@@ -1129,14 +1128,16 @@ public:
   /// use_iterator - This class provides iterator support for SDUse
   /// operands that use a specific SDNode.
   class use_iterator
-    : public forward_iterator<SDUse, ptrdiff_t> {
+    : public std::iterator<std::forward_iterator_tag, SDUse, ptrdiff_t> {
     SDUse *Op;
     explicit use_iterator(SDUse *op) : Op(op) {
     }
     friend class SDNode;
   public:
-    typedef forward_iterator<SDUse, ptrdiff_t>::reference reference;
-    typedef forward_iterator<SDUse, ptrdiff_t>::pointer pointer;
+    typedef std::iterator<std::forward_iterator_tag,
+                          SDUse, ptrdiff_t>::reference reference;
+    typedef std::iterator<std::forward_iterator_tag,
+                          SDUse, ptrdiff_t>::pointer pointer;
 
     use_iterator(const use_iterator &I) : Op(I.Op) {}
     use_iterator() : Op(0) {}
@@ -2015,10 +2016,10 @@ class DbgStopPointSDNode : public SDNode {
   SDUse Chain;
   unsigned Line;
   unsigned Column;
-  Value *CU;
+  MDNode *CU;
   friend class SelectionDAG;
   DbgStopPointSDNode(SDValue ch, unsigned l, unsigned c,
-                     Value *cu)
+                     MDNode *cu)
     : SDNode(ISD::DBG_STOPPOINT, DebugLoc::getUnknownLoc(),
       getSDVTList(MVT::Other)), Line(l), Column(c), CU(cu) {
     InitOperands(&Chain, ch);
@@ -2026,7 +2027,7 @@ class DbgStopPointSDNode : public SDNode {
 public:
   unsigned getLine() const { return Line; }
   unsigned getColumn() const { return Column; }
-  Value *getCompileUnit() const { return CU; }
+  MDNode *getCompileUnit() const { return CU; }
 
   static bool classof(const DbgStopPointSDNode *) { return true; }
   static bool classof(const SDNode *N) {
@@ -2354,7 +2355,8 @@ public:
 };
 
 
-class SDNodeIterator : public forward_iterator<SDNode, ptrdiff_t> {
+class SDNodeIterator : public std::iterator<std::forward_iterator_tag,
+                                            SDNode, ptrdiff_t> {
   SDNode *Node;
   unsigned Operand;
 

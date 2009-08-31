@@ -183,8 +183,24 @@ void CodeExtractor::severSplitPHINodes(BasicBlock *&Header) {
 void CodeExtractor::splitReturnBlocks() {
   for (std::set<BasicBlock*>::iterator I = BlocksToExtract.begin(),
          E = BlocksToExtract.end(); I != E; ++I)
-    if (ReturnInst *RI = dyn_cast<ReturnInst>((*I)->getTerminator()))
-      (*I)->splitBasicBlock(RI, (*I)->getName()+".ret");
+    if (ReturnInst *RI = dyn_cast<ReturnInst>((*I)->getTerminator())) {
+      BasicBlock *New = (*I)->splitBasicBlock(RI, (*I)->getName()+".ret");
+      if (DT) {
+        // Old dominates New. New node domiantes all other nodes dominated
+        //by Old.
+        DomTreeNode *OldNode = DT->getNode(*I);
+        SmallVector<DomTreeNode*, 8> Children;
+        for (DomTreeNode::iterator DI = OldNode->begin(), DE = OldNode->end();
+             DI != DE; ++DI) 
+          Children.push_back(*DI);
+
+        DomTreeNode *NewNode = DT->addNewBlock(New, *I);
+
+        for (SmallVector<DomTreeNode*, 8>::iterator I = Children.begin(),
+               E = Children.end(); I != E; ++I) 
+          DT->changeImmediateDominator(*I, NewNode);
+      }
+    }
 }
 
 // findInputsOutputs - Find inputs to, outputs from the code region.
@@ -345,6 +361,20 @@ Function *CodeExtractor::constructFunction(const Values &inputs,
   return newFunction;
 }
 
+/// FindPhiPredForUseInBlock - Given a value and a basic block, find a PHI
+/// that uses the value within the basic block, and return the predecessor
+/// block associated with that use, or return 0 if none is found.
+static BasicBlock* FindPhiPredForUseInBlock(Value* Used, BasicBlock* BB) {
+  for (Value::use_iterator UI = Used->use_begin(),
+       UE = Used->use_end(); UI != UE; ++UI) {
+     PHINode *P = dyn_cast<PHINode>(*UI);
+     if (P && P->getParent() == BB)
+       return P->getIncomingBlock(UI);
+  }
+  
+  return 0;
+}
+
 /// emitCallAndSwitchStatement - This method sets up the caller side by adding
 /// the call instruction, splitting any PHI nodes in the header block as
 /// necessary.
@@ -353,7 +383,7 @@ emitCallAndSwitchStatement(Function *newFunction, BasicBlock *codeReplacer,
                            Values &inputs, Values &outputs) {
   // Emit a call to the new function, passing in: *pointer to struct (if
   // aggregating parameters), or plan inputs and allocated memory for outputs
-  std::vector<Value*> params, StructValues, ReloadOutputs;
+  std::vector<Value*> params, StructValues, ReloadOutputs, Reloads;
   
   LLVMContext &Context = newFunction->getContext();
 
@@ -430,6 +460,7 @@ emitCallAndSwitchStatement(Function *newFunction, BasicBlock *codeReplacer,
       Output = ReloadOutputs[i];
     }
     LoadInst *load = new LoadInst(Output, outputs[i]->getName()+".reload");
+    Reloads.push_back(load);
     codeReplacer->getInstList().push_back(load);
     std::vector<User*> Users(outputs[i]->use_begin(), outputs[i]->use_end());
     for (unsigned u = 0, e = Users.size(); u != e; ++u) {
@@ -516,8 +547,18 @@ emitCallAndSwitchStatement(Function *newFunction, BasicBlock *codeReplacer,
                 DominatesDef = false;
             }
 
-            if (DT)
+            if (DT) {
               DominatesDef = DT->dominates(DefBlock, OldTarget);
+              
+              // If the output value is used by a phi in the target block,
+              // then we need to test for dominance of the phi's predecessor
+              // instead.  Unfortunately, this a little complicated since we
+              // have already rewritten uses of the value to uses of the reload.
+              BasicBlock* pred = FindPhiPredForUseInBlock(Reloads[out], 
+                                                          OldTarget);
+              if (pred && DT && DT->dominates(DefBlock, pred))
+                DominatesDef = true;
+            }
 
             if (DominatesDef) {
               if (AggregateArgs) {

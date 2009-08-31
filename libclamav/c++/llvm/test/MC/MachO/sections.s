@@ -1,5 +1,8 @@
 // RUN: llvm-mc -triple i386-apple-darwin9 %s -filetype=obj -o - | macho-dump | FileCheck %s
 
+        .text
+	.section	__TEXT,__text,regular,pure_instructions
+        
         .const
         .static_const
         .cstring
@@ -42,13 +45,14 @@
         
         .objc_selector_strs
 
-
+        .subsections_via_symbols
+        
 // CHECK: ('cputype', 7)
 // CHECK: ('cpusubtype', 3)
 // CHECK: ('filetype', 1)
 // CHECK: ('num_load_commands', 1)
 // CHECK: ('load_commands_size', 2436)
-// CHECK: ('flag', 0)
+// CHECK: ('flag', 8192)
 // CHECK: ('load_commands', [
 // CHECK:   # Load Command 0
 // CHECK:  (('command', 1)

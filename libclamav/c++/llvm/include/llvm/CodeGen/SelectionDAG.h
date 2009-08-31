@@ -37,7 +37,7 @@ class FunctionLoweringInfo;
 
 template<> struct ilist_traits<SDNode> : public ilist_default_traits<SDNode> {
 private:
-  mutable ilist_node<SDNode> Sentinel;
+  mutable ilist_half_node<SDNode> Sentinel;
 public:
   SDNode *createSentinel() const {
     return static_cast<SDNode*>(&Sentinel);
@@ -322,7 +322,7 @@ public:
   SDValue getValueType(EVT);
   SDValue getRegister(unsigned Reg, EVT VT);
   SDValue getDbgStopPoint(DebugLoc DL, SDValue Root, 
-                          unsigned Line, unsigned Col, Value *CU);
+                          unsigned Line, unsigned Col, MDNode *CU);
   SDValue getLabel(unsigned Opcode, DebugLoc dl, SDValue Root,
                    unsigned LabelID);
 

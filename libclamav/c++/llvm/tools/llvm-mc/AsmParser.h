@@ -18,12 +18,13 @@
 #include "AsmLexer.h"
 #include "AsmCond.h"
 #include "llvm/MC/MCAsmParser.h"
+#include "llvm/MC/MCSectionMachO.h"
 #include "llvm/MC/MCStreamer.h"
 
 namespace llvm {
-class AsmExpr;
 class AsmCond;
 class MCContext;
+class MCExpr;
 class MCInst;
 class MCStreamer;
 class MCValue;
@@ -40,10 +41,15 @@ private:
   AsmCond TheCondState;
   std::vector<AsmCond> TheCondStack;
 
+  // FIXME: Figure out where this should leave, the code is a copy of that which
+  // is also used by TargetLoweringObjectFile.
+  mutable void *SectionUniquingMap;
+
 public:
   AsmParser(SourceMgr &_SM, MCContext &_Ctx, MCStreamer &_Out)
-    : Lexer(_SM), Ctx(_Ctx), Out(_Out), TargetParser(0) {}
-  ~AsmParser() {}
+    : Lexer(_SM), Ctx(_Ctx), Out(_Out), TargetParser(0),
+      SectionUniquingMap(0) {}
+  ~AsmParser();
 
   bool Run();
   
@@ -56,19 +62,30 @@ public:
 
   virtual MCAsmLexer &getLexer() { return Lexer; }
 
+  virtual MCContext &getContext() { return Ctx; }
+
   virtual void Warning(SMLoc L, const Twine &Meg);
 
   virtual bool Error(SMLoc L, const Twine &Msg);
 
-  virtual bool ParseExpression(AsmExpr *&Res);
+  virtual bool ParseExpression(const MCExpr *&Res);
+
+  virtual bool ParseParenExpression(const MCExpr *&Res);
 
   virtual bool ParseAbsoluteExpression(int64_t &Res);
-
-  virtual bool ParseRelocatableExpression(MCValue &Res);
 
   /// }
 
 private:
+  MCSymbol *CreateSymbol(StringRef Name);
+
+  // FIXME: See comment on SectionUniquingMap.
+  const MCSection *getMachOSection(const StringRef &Segment,
+                                   const StringRef &Section,
+                                   unsigned TypeAndAttributes,
+                                   unsigned Reserved2,
+                                   SectionKind Kind) const;
+
   bool ParseStatement();
 
   bool TokError(const char *Msg);
@@ -77,21 +94,11 @@ private:
                                           SMLoc DirectiveLoc);
   void EatToEndOfStatement();
   
-  bool ParseAssignment(const StringRef &Name, bool IsDotSet);
+  bool ParseAssignment(const StringRef &Name);
 
-  /// ParseParenRelocatableExpression - Parse an expression which must be
-  /// relocatable, assuming that an initial '(' has already been consumed.
-  ///
-  /// @param Res - The relocatable expression value. The result is undefined on
-  /// error.  
-  /// @result - False on success.
-  ///
-  /// @see ParseRelocatableExpression, ParseParenExpr.
-  bool ParseParenRelocatableExpression(MCValue &Res);
-
-  bool ParsePrimaryExpr(AsmExpr *&Res);
-  bool ParseBinOpRHS(unsigned Precedence, AsmExpr *&Res);
-  bool ParseParenExpr(AsmExpr *&Res);
+  bool ParsePrimaryExpr(const MCExpr *&Res);
+  bool ParseBinOpRHS(unsigned Precedence, const MCExpr *&Res);
+  bool ParseParenExpr(const MCExpr *&Res);
 
   /// ParseIdentifier - Parse an identifier or string (as a quoted identifier)
   /// and set \arg Res to the identifier contents.

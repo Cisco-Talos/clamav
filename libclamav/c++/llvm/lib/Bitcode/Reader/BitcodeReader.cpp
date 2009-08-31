@@ -16,7 +16,7 @@
 #include "llvm/Constants.h"
 #include "llvm/DerivedTypes.h"
 #include "llvm/InlineAsm.h"
-#include "llvm/Instructions.h"
+#include "llvm/IntrinsicInst.h"
 #include "llvm/LLVMContext.h"
 #include "llvm/Metadata.h"
 #include "llvm/Module.h"
@@ -1781,9 +1781,9 @@ bool BitcodeReader::ParseFunctionBody(Function *F) {
         return Error("Invalid CMP record");
       
       if (LHS->getType()->isFPOrFPVector())
-        I = new FCmpInst(Context, (FCmpInst::Predicate)Record[OpNum], LHS, RHS);
+        I = new FCmpInst((FCmpInst::Predicate)Record[OpNum], LHS, RHS);
       else
-        I = new ICmpInst(Context, (ICmpInst::Predicate)Record[OpNum], LHS, RHS);
+        I = new ICmpInst((ICmpInst::Predicate)Record[OpNum], LHS, RHS);
       break;
     }
 
@@ -2192,7 +2192,10 @@ Module *BitcodeReader::materializeModule(std::string *ErrInfo) {
     }
   }
   std::vector<std::pair<Function*, Function*> >().swap(UpgradedIntrinsics);
-  
+
+  // Check debug info intrinsics.
+  CheckDebugInfoIntrinsics(TheModule);
+
   return TheModule;
 }
 

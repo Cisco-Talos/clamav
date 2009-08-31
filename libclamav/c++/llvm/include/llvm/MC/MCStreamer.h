@@ -18,19 +18,20 @@
 
 namespace llvm {
   class AsmPrinter;
+  class MCAsmInfo;
+  class MCCodeEmitter;
   class MCContext;
-  class MCValue;
+  class MCExpr;
   class MCInst;
   class MCSection;
   class MCSymbol;
   class StringRef;
   class raw_ostream;
-  class MCAsmInfo;
 
   /// MCStreamer - Streaming machine code generation interface.  This interface
   /// is intended to provide a programatic interface that is very similar to the
   /// level that an assembler .s file provides.  It has callbacks to emit bytes,
-  /// "emit directives", etc.  The implementation of this interface retains
+  /// handle directives, etc.  The implementation of this interface retains
   /// state to know what the current section is etc.
   ///
   /// There are multiple implementations of this interface: one for writing out
@@ -72,6 +73,7 @@ namespace llvm {
     /// CurSection - This is the current section code is being emitted to, it is
     /// kept up to date by SwitchSection.
     const MCSection *CurSection;
+
   public:
     virtual ~MCStreamer();
 
@@ -79,17 +81,16 @@ namespace llvm {
 
     /// @name Symbol & Section Management
     /// @{
+    
+    /// getCurrentSection - Return the current seciton that the streamer is
+    /// emitting code to.
+    const MCSection *getCurrentSection() const { return CurSection; }
 
     /// SwitchSection - Set the current section where code is being emitted to
     /// @param Section.  This is required to update CurSection.
     ///
     /// This corresponds to assembler directives like .section, .text, etc.
     virtual void SwitchSection(const MCSection *Section) = 0;
-
-    
-    /// getCurrentSection - Return the current seciton that the streamer is
-    /// emitting code to.
-    const MCSection *getCurrentSection() const { return CurSection; }
     
     /// EmitLabel - Emit a label for @param Symbol into the current section.
     ///
@@ -99,9 +100,6 @@ namespace llvm {
     /// @param Symbol - The symbol to emit. A given symbol should only be
     /// emitted as a label once, and symbols emitted as a label should never be
     /// used in an assignment.
-    //
-    // FIXME: What to do about the current section? Should we get rid of the
-    // symbol section in the constructor and initialize it here?
     virtual void EmitLabel(MCSymbol *Symbol) = 0;
 
     /// EmitAssemblerFlag - Note in the output the specified @param Flag
@@ -118,18 +116,9 @@ namespace llvm {
     ///
     /// @param Symbol - The symbol being assigned to.
     /// @param Value - The value for the symbol.
-    /// @param MakeAbsolute - If true, then the symbol should be given the
-    /// absolute value of @param Value, even if @param Value would be
-    /// relocatable expression. This corresponds to the ".set" directive.
-    virtual void EmitAssignment(MCSymbol *Symbol, const MCValue &Value,
-                                bool MakeAbsolute = false) = 0;
+    virtual void EmitAssignment(MCSymbol *Symbol, const MCExpr *Value) = 0;
 
     /// EmitSymbolAttribute - Add the given @param Attribute to @param Symbol.
-    //
-    // FIXME: This doesn't make much sense, could we just have attributes be on
-    // the symbol and make the printer smart enough to add the right symbols?
-    // This should work as long as the order of attributes in the file doesn't
-    // matter.
     virtual void EmitSymbolAttribute(MCSymbol *Symbol,
                                      SymbolAttr Attribute) = 0;
 
@@ -139,38 +128,30 @@ namespace llvm {
     /// @param DescValue - The value to set into the n_desc field.
     virtual void EmitSymbolDesc(MCSymbol *Symbol, unsigned DescValue) = 0;
 
-    /// EmitLocalSymbol - Emit a local symbol of @param Value to @param Symbol.
-    ///
-    /// @param Symbol - The local symbol being created.
-    /// @param Value - The value for the symbol.
-    virtual void EmitLocalSymbol(MCSymbol *Symbol, const MCValue &Value) = 0;
-
-    /// EmitCommonSymbol - Emit a common or local common symbol of @param Size
-    /// with the @param Pow2Alignment if non-zero.
+    /// EmitCommonSymbol - Emit a common or local common symbol.
     ///
     /// @param Symbol - The common symbol to emit.
     /// @param Size - The size of the common symbol.
-    /// @param Pow2Alignment - The alignment of the common symbol if non-zero.
-    /// @param IsLocal - If true, then the symbol is to be a local common
+    /// @param ByteAlignment - The alignment of the symbol if
+    /// non-zero. This must be a power of 2 on some targets.
     virtual void EmitCommonSymbol(MCSymbol *Symbol, unsigned Size,
-                                  unsigned Pow2Alignment, bool IsLocal) = 0;
+                                  unsigned ByteAlignment) = 0;
 
-    /// EmitZerofill - Emit a the zerofill section and possiblity a symbol, if
-    /// @param Symbol is non-NULL, for @param Size and with the @param
-    /// Pow2Alignment if non-zero.
+    /// EmitZerofill - Emit a the zerofill section and an option symbol.
     ///
     /// @param Section - The zerofill section to create and or to put the symbol
     /// @param Symbol - The zerofill symbol to emit, if non-NULL.
     /// @param Size - The size of the zerofill symbol.
-    /// @param Pow2Alignment - The alignment of the zerofill symbol if non-zero.
-    virtual void EmitZerofill(MCSection *Section, MCSymbol *Symbol = 0,
-                              unsigned Size = 0,unsigned Pow2Alignment = 0) = 0;
+    /// @param ByteAlignment - The alignment of the zerofill symbol if
+    /// non-zero. This must be a power of 2 on some targets.
+    virtual void EmitZerofill(const MCSection *Section, MCSymbol *Symbol = 0,
+                              unsigned Size = 0,unsigned ByteAlignment = 0) = 0;
 
     /// @}
     /// @name Generating Data
     /// @{
 
-    /// EmitBytes - Emit the bytes in @param Data into the output.
+    /// EmitBytes - Emit the bytes in \arg Data into the output.
     ///
     /// This is used to implement assembler directives such as .byte, .ascii,
     /// etc.
@@ -185,7 +166,7 @@ namespace llvm {
     /// @param Value - The value to emit.
     /// @param Size - The size of the integer (in bytes) to emit. This must
     /// match a native machine width.
-    virtual void EmitValue(const MCValue &Value, unsigned Size) = 0;
+    virtual void EmitValue(const MCExpr *Value, unsigned Size) = 0;
 
     /// EmitValueToAlignment - Emit some number of copies of @param Value until
     /// the byte alignment @param ByteAlignment is reached.
@@ -213,12 +194,10 @@ namespace llvm {
     ///
     /// This is used to implement assembler directives such as .org.
     ///
-    /// @param Offset - The offset to reach.This may be an expression, but the
+    /// @param Offset - The offset to reach. This may be an expression, but the
     /// expression must be associated with the current section.
     /// @param Value - The value to use when filling bytes.
-    // 
-    // FIXME: How are we going to signal failures out of this?
-    virtual void EmitValueToOffset(const MCValue &Offset, 
+    virtual void EmitValueToOffset(const MCExpr *Offset,
                                    unsigned char Value = 0) = 0;
     
     /// @}
@@ -241,7 +220,8 @@ namespace llvm {
   ///
   /// \arg AP - If given, an AsmPrinter to use for printing instructions.
   MCStreamer *createAsmStreamer(MCContext &Ctx, raw_ostream &OS,
-                                const MCAsmInfo &MAI, AsmPrinter *AP = 0);
+                                const MCAsmInfo &MAI, AsmPrinter *AP = 0,
+                                MCCodeEmitter *CE = 0);
 
   // FIXME: These two may end up getting rolled into a single
   // createObjectStreamer interface, which implements the assembler backend, and
@@ -249,7 +229,8 @@ namespace llvm {
 
   /// createMachOStream - Create a machine code streamer which will generative
   /// Mach-O format object files.
-  MCStreamer *createMachOStreamer(MCContext &Ctx, raw_ostream &OS);
+  MCStreamer *createMachOStreamer(MCContext &Ctx, raw_ostream &OS,
+                                  MCCodeEmitter *CE = 0);
 
   /// createELFStreamer - Create a machine code streamer which will generative
   /// ELF format object files.

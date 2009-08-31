@@ -36,7 +36,7 @@ namespace llvm {
     /// SymbolValues - Bindings of symbols to values.
     //
     // FIXME: Is there a good reason to not just put this in the MCSymbol?
-    DenseMap<MCSymbol*, MCValue> SymbolValues;
+    DenseMap<const MCSymbol*, MCValue> SymbolValues;
 
     /// Allocator - Allocator object used for creating machine code objects.
     ///
@@ -46,7 +46,10 @@ namespace llvm {
   public:
     MCContext();
     ~MCContext();
-    
+
+    /// @name Symbol Managment
+    /// @{
+
     /// CreateSymbol - Create a new symbol with the specified @param Name.
     ///
     /// @param Name - The symbol name, which must be unique across all symbols.
@@ -57,6 +60,8 @@ namespace llvm {
     /// reference and return it.
     ///
     /// @param Name - The symbol name, which must be unique across all symbols.
+    /// @param IsTemporary - Whether this symbol is an assembler temporary,
+    /// which should not survive into the symbol table for the translation unit.
     MCSymbol *GetOrCreateSymbol(const StringRef &Name);
     
     /// CreateTemporarySymbol - Create a new temporary symbol with the specified
@@ -70,17 +75,21 @@ namespace llvm {
     /// LookupSymbol - Get the symbol for @param Name, or null.
     MCSymbol *LookupSymbol(const StringRef &Name) const;
 
-    /// ClearSymbolValue - Erase a value binding for @param Symbol, if one
-    /// exists.
-    void ClearSymbolValue(MCSymbol *Symbol);
+    /// @}
+    /// @name Symbol Value Table
+    /// @{
 
-    /// SetSymbolValue - Set the value binding for @param Symbol to @param
-    /// Value.
-    void SetSymbolValue(MCSymbol *Symbol, const MCValue &Value);
+    /// ClearSymbolValue - Erase a value binding for @arg Symbol, if one exists.
+    void ClearSymbolValue(const MCSymbol *Symbol);
 
-    /// GetSymbolValue - Return the current value for @param Symbol, or null if
+    /// SetSymbolValue - Set the value binding for @arg Symbol to @arg Value.
+    void SetSymbolValue(const MCSymbol *Symbol, const MCValue &Value);
+
+    /// GetSymbolValue - Return the current value for @arg Symbol, or null if
     /// none exists.
-    const MCValue *GetSymbolValue(MCSymbol *Symbol) const;
+    const MCValue *GetSymbolValue(const MCSymbol *Symbol) const;
+
+    /// @}
 
     void *Allocate(unsigned Size, unsigned Align = 8) {
       return Allocator.Allocate(Size, Align);

@@ -95,6 +95,8 @@ MSP430TargetLowering::MSP430TargetLowering(MSP430TargetMachine &tm) :
   setOperationAction(ISD::SELECT_CC,        MVT::i8,    Custom);
   setOperationAction(ISD::SELECT_CC,        MVT::i16,   Custom);
   setOperationAction(ISD::SIGN_EXTEND,      MVT::i16,   Custom);
+  setOperationAction(ISD::DYNAMIC_STACKALLOC, MVT::i8, Expand);
+  setOperationAction(ISD::DYNAMIC_STACKALLOC, MVT::i16, Expand);
 
   setOperationAction(ISD::CTTZ,             MVT::i8,    Expand);
   setOperationAction(ISD::CTTZ,             MVT::i16,   Expand);
@@ -146,6 +148,44 @@ SDValue MSP430TargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) {
 /// getFunctionAlignment - Return the Log2 alignment of this function.
 unsigned MSP430TargetLowering::getFunctionAlignment(const Function *F) const {
   return F->hasFnAttr(Attribute::OptimizeForSize) ? 1 : 4;
+}
+
+//===----------------------------------------------------------------------===//
+//                       MSP430 Inline Assembly Support
+//===----------------------------------------------------------------------===//
+
+/// getConstraintType - Given a constraint letter, return the type of
+/// constraint it is for this target.
+TargetLowering::ConstraintType
+MSP430TargetLowering::getConstraintType(const std::string &Constraint) const {
+  if (Constraint.size() == 1) {
+    switch (Constraint[0]) {
+    case 'r':
+      return C_RegisterClass;
+    default:
+      break;
+    }
+  }
+  return TargetLowering::getConstraintType(Constraint);
+}
+
+std::pair<unsigned, const TargetRegisterClass*>
+MSP430TargetLowering::
+getRegForInlineAsmConstraint(const std::string &Constraint,
+                             EVT VT) const {
+  if (Constraint.size() == 1) {
+    // GCC Constraint Letters
+    switch (Constraint[0]) {
+    default: break;
+    case 'r':   // GENERAL_REGS
+      if (VT == MVT::i8)
+        return std::make_pair(0U, MSP430::GR8RegisterClass);
+
+      return std::make_pair(0U, MSP430::GR16RegisterClass);
+    }
+  }
+
+  return TargetLowering::getRegForInlineAsmConstraint(Constraint, VT);
 }
 
 //===----------------------------------------------------------------------===//

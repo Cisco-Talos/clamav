@@ -8,15 +8,18 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/MC/MCStreamer.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/CodeGen/AsmPrinter.h"
+#include "llvm/MC/MCAsmInfo.h"
+#include "llvm/MC/MCCodeEmitter.h"
 #include "llvm/MC/MCContext.h"
+#include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCSectionMachO.h"
 #include "llvm/MC/MCSymbol.h"
-#include "llvm/MC/MCValue.h"
-#include "llvm/MC/MCAsmInfo.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MathExtras.h"
+#include "llvm/Support/Format.h"
 #include "llvm/Support/raw_ostream.h"
 using namespace llvm;
 
@@ -26,10 +29,12 @@ class MCAsmStreamer : public MCStreamer {
   raw_ostream &OS;
   const MCAsmInfo &MAI;
   AsmPrinter *Printer;
+  MCCodeEmitter *Emitter;
 public:
   MCAsmStreamer(MCContext &Context, raw_ostream &_OS, const MCAsmInfo &tai,
-                AsmPrinter *_AsmPrinter)
-    : MCStreamer(Context), OS(_OS), MAI(tai), Printer(_AsmPrinter) {}
+                AsmPrinter *_Printer, MCCodeEmitter *_Emitter)
+    : MCStreamer(Context), OS(_OS), MAI(tai), Printer(_Printer),
+      Emitter(_Emitter) {}
   ~MCAsmStreamer() {}
 
   /// @name MCStreamer Interface
@@ -41,30 +46,27 @@ public:
 
   virtual void EmitAssemblerFlag(AssemblerFlag Flag);
 
-  virtual void EmitAssignment(MCSymbol *Symbol, const MCValue &Value,
-                              bool MakeAbsolute = false);
+  virtual void EmitAssignment(MCSymbol *Symbol, const MCExpr *Value);
 
   virtual void EmitSymbolAttribute(MCSymbol *Symbol, SymbolAttr Attribute);
 
   virtual void EmitSymbolDesc(MCSymbol *Symbol, unsigned DescValue);
 
-  virtual void EmitLocalSymbol(MCSymbol *Symbol, const MCValue &Value);
-
   virtual void EmitCommonSymbol(MCSymbol *Symbol, unsigned Size,
-                                unsigned Pow2Alignment, bool IsLocal);
+                                unsigned ByteAlignment);
 
-  virtual void EmitZerofill(MCSection *Section, MCSymbol *Symbol = NULL,
-                            unsigned Size = 0, unsigned Pow2Alignment = 0);
+  virtual void EmitZerofill(const MCSection *Section, MCSymbol *Symbol = 0,
+                            unsigned Size = 0, unsigned ByteAlignment = 0);
 
   virtual void EmitBytes(const StringRef &Data);
 
-  virtual void EmitValue(const MCValue &Value, unsigned Size);
+  virtual void EmitValue(const MCExpr *Value, unsigned Size);
 
   virtual void EmitValueToAlignment(unsigned ByteAlignment, int64_t Value = 0,
                                     unsigned ValueSize = 1,
                                     unsigned MaxBytesToEmit = 0);
 
-  virtual void EmitValueToOffset(const MCValue &Offset, 
+  virtual void EmitValueToOffset(const MCExpr *Offset,
                                  unsigned char Value = 0);
   
   virtual void EmitInstruction(const MCInst &Inst);
@@ -83,7 +85,7 @@ static inline raw_ostream &operator<<(raw_ostream &os, const MCSymbol *S) {
 }
 
 /// Allow printing values directly to a raw_ostream.
-static inline raw_ostream &operator<<(raw_ostream &os, const MCValue &Value) {
+static inline raw_ostream &operator<<(raw_ostream &os, const MCExpr &Value) {
   Value.print(os);
   return os;
 }
@@ -93,9 +95,10 @@ static inline int64_t truncateToSize(int64_t Value, unsigned Bytes) {
   return Value & ((uint64_t) (int64_t) -1 >> (64 - Bytes * 8));
 }
 
-static inline MCValue truncateToSize(const MCValue &Value, unsigned Bytes) {
-  return MCValue::get(Value.getSymA(), Value.getSymB(), 
-                      truncateToSize(Value.getConstant(), Bytes));
+static inline const MCExpr *truncateToSize(const MCExpr *Value,
+                                           unsigned Bytes) {
+  // FIXME: Do we really need this routine?
+  return Value;
 }
 
 void MCAsmStreamer::SwitchSection(const MCSection *Section) {
@@ -122,26 +125,12 @@ void MCAsmStreamer::EmitAssemblerFlag(AssemblerFlag Flag) {
   OS << '\n';
 }
 
-void MCAsmStreamer::EmitAssignment(MCSymbol *Symbol, const MCValue &Value,
-                                   bool MakeAbsolute) {
+void MCAsmStreamer::EmitAssignment(MCSymbol *Symbol, const MCExpr *Value) {
   // Only absolute symbols can be redefined.
   assert((Symbol->isUndefined() || Symbol->isAbsolute()) &&
          "Cannot define a symbol twice!");
 
-  if (MakeAbsolute) {
-    OS << ".set " << Symbol << ", " << Value << '\n';
-
-    // HACK: If the value isn't already absolute, set the symbol value to
-    // itself, we want to use the .set absolute value, not the actual
-    // expression.
-    if (!Value.isAbsolute())
-      getContext().SetSymbolValue(Symbol, MCValue::get(Symbol));
-    else
-      getContext().SetSymbolValue(Symbol, Value);
-  } else {
-    OS << Symbol << " = " << Value << '\n';
-    getContext().SetSymbolValue(Symbol, Value);
-  }
+  OS << Symbol << " = " << *Value << '\n';
 }
 
 void MCAsmStreamer::EmitSymbolAttribute(MCSymbol *Symbol, 
@@ -168,24 +157,17 @@ void MCAsmStreamer::EmitSymbolDesc(MCSymbol *Symbol, unsigned DescValue) {
   OS << ".desc" << ' ' << Symbol << ',' << DescValue << '\n';
 }
 
-void MCAsmStreamer::EmitLocalSymbol(MCSymbol *Symbol, const MCValue &Value) {
-  OS << ".lsym" << ' ' << Symbol << ',' << Value << '\n';
-}
-
 void MCAsmStreamer::EmitCommonSymbol(MCSymbol *Symbol, unsigned Size,
-                                     unsigned Pow2Alignment, bool IsLocal) {
-  if (IsLocal)
-    OS << ".lcomm";
-  else
-    OS << ".comm";
+                                     unsigned ByteAlignment) {
+  OS << ".comm";
   OS << ' ' << Symbol << ',' << Size;
-  if (Pow2Alignment != 0)
-    OS << ',' << Pow2Alignment;
+  if (ByteAlignment != 0)
+    OS << ',' << Log2_32(ByteAlignment);
   OS << '\n';
 }
 
-void MCAsmStreamer::EmitZerofill(MCSection *Section, MCSymbol *Symbol,
-                                 unsigned Size, unsigned Pow2Alignment) {
+void MCAsmStreamer::EmitZerofill(const MCSection *Section, MCSymbol *Symbol,
+                                 unsigned Size, unsigned ByteAlignment) {
   // Note: a .zerofill directive does not switch sections.
   OS << ".zerofill ";
   
@@ -195,8 +177,8 @@ void MCAsmStreamer::EmitZerofill(MCSection *Section, MCSymbol *Symbol,
   
   if (Symbol != NULL) {
     OS << ',' << Symbol << ',' << Size;
-    if (Pow2Alignment != 0)
-      OS << ',' << Pow2Alignment;
+    if (ByteAlignment != 0)
+      OS << ',' << Log2_32(ByteAlignment);
   }
   OS << '\n';
 }
@@ -207,7 +189,7 @@ void MCAsmStreamer::EmitBytes(const StringRef &Data) {
     OS << ".byte " << (unsigned) (unsigned char) Data[i] << '\n';
 }
 
-void MCAsmStreamer::EmitValue(const MCValue &Value, unsigned Size) {
+void MCAsmStreamer::EmitValue(const MCExpr *Value, unsigned Size) {
   assert(CurSection && "Cannot emit contents before setting section!");
   // Need target hooks to know how to print this.
   switch (Size) {
@@ -219,7 +201,7 @@ void MCAsmStreamer::EmitValue(const MCValue &Value, unsigned Size) {
   case 8: OS << ".quad"; break;
   }
 
-  OS << ' ' << truncateToSize(Value, Size) << '\n';
+  OS << ' ' << *truncateToSize(Value, Size) << '\n';
 }
 
 void MCAsmStreamer::EmitValueToAlignment(unsigned ByteAlignment, int64_t Value,
@@ -269,22 +251,10 @@ void MCAsmStreamer::EmitValueToAlignment(unsigned ByteAlignment, int64_t Value,
   OS << '\n';
 }
 
-void MCAsmStreamer::EmitValueToOffset(const MCValue &Offset, 
+void MCAsmStreamer::EmitValueToOffset(const MCExpr *Offset,
                                       unsigned char Value) {
   // FIXME: Verify that Offset is associated with the current section.
-  OS << ".org " << Offset << ", " << (unsigned) Value << '\n';
-}
-
-static raw_ostream &operator<<(raw_ostream &OS, const MCOperand &Op) {
-  if (Op.isReg())
-    return OS << "reg:" << Op.getReg();
-  if (Op.isImm())
-    return OS << "imm:" << Op.getImm();
-  if (Op.isMBBLabel())
-    return OS << "mbblabel:(" 
-              << Op.getMBBLabelFunction() << ", " << Op.getMBBLabelBlock();
-  assert(Op.isMCValue() && "Invalid operand!");
-  return OS << "val:" << Op.getMCValue();
+  OS << ".org " << *Offset << ", " << (unsigned) Value << '\n';
 }
 
 void MCAsmStreamer::EmitInstruction(const MCInst &Inst) {
@@ -293,20 +263,31 @@ void MCAsmStreamer::EmitInstruction(const MCInst &Inst) {
   // If we have an AsmPrinter, use that to print.
   if (Printer) {
     Printer->printMCInst(&Inst);
+
+    // Show the encoding if we have a code emitter.
+    if (Emitter) {
+      SmallString<256> Code;
+      raw_svector_ostream VecOS(Code);
+      Emitter->EncodeInstruction(Inst, VecOS);
+      VecOS.flush();
+  
+      OS.indent(20);
+      OS << " # encoding: [";
+      for (unsigned i = 0, e = Code.size(); i != e; ++i) {
+        if (i)
+          OS << ',';
+        OS << format("%#04x", uint8_t(Code[i]));
+      }
+      OS << "]\n";
+    }
+
     return;
   }
 
   // Otherwise fall back to a structural printing for now. Eventually we should
   // always have access to the target specific printer.
-  OS << "MCInst("
-     << "opcode=" << Inst.getOpcode() << ", "
-     << "operands=[";
-  for (unsigned i = 0, e = Inst.getNumOperands(); i != e; ++i) {
-    if (i)
-      OS << ", ";
-    OS << Inst.getOperand(i);
-  }
-  OS << "])\n";
+  Inst.print(OS);
+  OS << '\n';
 }
 
 void MCAsmStreamer::Finish() {
@@ -314,6 +295,7 @@ void MCAsmStreamer::Finish() {
 }
     
 MCStreamer *llvm::createAsmStreamer(MCContext &Context, raw_ostream &OS,
-                                    const MCAsmInfo &MAI, AsmPrinter *AP) {
-  return new MCAsmStreamer(Context, OS, MAI, AP);
+                                    const MCAsmInfo &MAI, AsmPrinter *AP,
+                                    MCCodeEmitter *CE) {
+  return new MCAsmStreamer(Context, OS, MAI, AP, CE);
 }

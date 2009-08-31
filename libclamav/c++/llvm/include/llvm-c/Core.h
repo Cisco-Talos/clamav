@@ -109,7 +109,8 @@ typedef enum {
     LLVMNoCaptureAttribute  = 1<<21,
     LLVMNoRedZoneAttribute  = 1<<22,
     LLVMNoImplicitFloatAttribute = 1<<23,
-    LLVMNakedAttribute      = 1<<24
+    LLVMNakedAttribute      = 1<<24,
+    LLVMInlineHintAttribute = 1<<25
 } LLVMAttribute;
 
 typedef enum {
@@ -207,8 +208,8 @@ void LLVMDisposeMessage(char *Message);
 /*===-- Modules -----------------------------------------------------------===*/
 
 /* Create and destroy contexts. */
-LLVMContextRef LLVMContextCreate();
-LLVMContextRef LLVMGetGlobalContext();
+LLVMContextRef LLVMContextCreate(void);
+LLVMContextRef LLVMGetGlobalContext(void);
 void LLVMContextDispose(LLVMContextRef C);
 
 /* Create and destroy modules. */ 

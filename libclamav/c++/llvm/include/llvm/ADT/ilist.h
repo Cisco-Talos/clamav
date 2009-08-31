@@ -38,8 +38,8 @@
 #ifndef LLVM_ADT_ILIST_H
 #define LLVM_ADT_ILIST_H
 
-#include "llvm/ADT/iterator.h"
 #include <cassert>
+#include <iterator>
 
 namespace llvm {
 
@@ -140,11 +140,12 @@ struct ilist_traits<const Ty> : public ilist_traits<Ty> {};
 //
 template<typename NodeTy>
 class ilist_iterator
-  : public bidirectional_iterator<NodeTy, ptrdiff_t> {
+  : public std::iterator<std::bidirectional_iterator_tag, NodeTy, ptrdiff_t> {
 
 public:
   typedef ilist_traits<NodeTy> Traits;
-  typedef bidirectional_iterator<NodeTy, ptrdiff_t> super;
+  typedef std::iterator<std::bidirectional_iterator_tag,
+                        NodeTy, ptrdiff_t> super;
 
   typedef typename super::value_type value_type;
   typedef typename super::difference_type difference_type;
@@ -189,12 +190,10 @@ public:
 
   // Accessors...
   operator pointer() const {
-    assert(Traits::getNext(NodePtr) != 0 && "Dereferencing end()!");
     return NodePtr;
   }
 
   reference operator*() const {
-    assert(Traits::getNext(NodePtr) != 0 && "Dereferencing end()!");
     return *NodePtr;
   }
   pointer operator->() const { return &operator*(); }
@@ -215,7 +214,6 @@ public:
   }
   ilist_iterator &operator++() {      // preincrement - Advance
     NodePtr = Traits::getNext(NodePtr);
-    assert(NodePtr && "++'d off the end of an ilist!");
     return *this;
   }
   ilist_iterator operator--(int) {    // postdecrement operators...

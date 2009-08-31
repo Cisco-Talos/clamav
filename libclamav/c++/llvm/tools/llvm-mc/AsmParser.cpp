@@ -13,9 +13,10 @@
 
 #include "AsmParser.h"
 
-#include "AsmExpr.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/Twine.h"
 #include "llvm/MC/MCContext.h"
+#include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCSectionMachO.h"
 #include "llvm/MC/MCStreamer.h"
@@ -24,6 +25,48 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetAsmParser.h"
 using namespace llvm;
+
+// Mach-O section uniquing.
+//
+// FIXME: Figure out where this should live, it should be shared by
+// TargetLoweringObjectFile.
+typedef StringMap<const MCSectionMachO*> MachOUniqueMapTy;
+
+AsmParser::~AsmParser() {
+  // If we have the MachO uniquing map, free it.
+  delete (MachOUniqueMapTy*)SectionUniquingMap;
+}
+
+const MCSection *AsmParser::getMachOSection(const StringRef &Segment,
+                                            const StringRef &Section,
+                                            unsigned TypeAndAttributes,
+                                            unsigned Reserved2,
+                                            SectionKind Kind) const {
+  // We unique sections by their segment/section pair.  The returned section
+  // may not have the same flags as the requested section, if so this should be
+  // diagnosed by the client as an error.
+  
+  // Create the map if it doesn't already exist.
+  if (SectionUniquingMap == 0)
+    SectionUniquingMap = new MachOUniqueMapTy();
+  MachOUniqueMapTy &Map = *(MachOUniqueMapTy*)SectionUniquingMap;
+  
+  // Form the name to look up.
+  SmallString<64> Name;
+  Name += Segment;
+  Name.push_back(',');
+  Name += Section;
+
+  // Do the lookup, if we have a hit, return it.
+  const MCSectionMachO *&Entry = Map[Name.str()];
+
+  // FIXME: This should validate the type and attributes.
+  if (Entry) return Entry;
+
+  // Otherwise, return a new section.
+  return Entry = MCSectionMachO::Create(Segment, Section, TypeAndAttributes,
+                                        Reserved2, Kind, Ctx);
+}
 
 void AsmParser::Warning(SMLoc L, const Twine &Msg) {
   Lexer.PrintMessage(L, Msg.str(), "warning");
@@ -40,6 +83,15 @@ bool AsmParser::TokError(const char *Msg) {
 }
 
 bool AsmParser::Run() {
+  // Create the initial section.
+  //
+  // FIXME: Support -n.
+  // FIXME: Target hook & command line option for initial section.
+  Out.SwitchSection(getMachOSection("__TEXT", "__text",
+                                    MCSectionMachO::S_ATTR_PURE_INSTRUCTIONS,
+                                    0, SectionKind()));
+
+
   // Prime the lexer.
   Lexer.Lex();
   
@@ -121,7 +173,7 @@ void AsmParser::EatToEndOfStatement() {
 ///
 /// parenexpr ::= expr)
 ///
-bool AsmParser::ParseParenExpr(AsmExpr *&Res) {
+bool AsmParser::ParseParenExpr(const MCExpr *&Res) {
   if (ParseExpression(Res)) return true;
   if (Lexer.isNot(AsmToken::RParen))
     return TokError("expected ')' in parentheses expression");
@@ -129,12 +181,23 @@ bool AsmParser::ParseParenExpr(AsmExpr *&Res) {
   return false;
 }
 
+MCSymbol *AsmParser::CreateSymbol(StringRef Name) {
+  if (MCSymbol *S = Ctx.LookupSymbol(Name))
+    return S;
+
+  // If the label starts with L it is an assembler temporary label.
+  if (Name.startswith("L"))
+    return Ctx.CreateTemporarySymbol(Name);
+
+  return Ctx.CreateSymbol(Name);
+}
+
 /// ParsePrimaryExpr - Parse a primary expression and return it.
 ///  primaryexpr ::= (parenexpr
 ///  primaryexpr ::= symbol
 ///  primaryexpr ::= number
 ///  primaryexpr ::= ~,+,- primaryexpr
-bool AsmParser::ParsePrimaryExpr(AsmExpr *&Res) {
+bool AsmParser::ParsePrimaryExpr(const MCExpr *&Res) {
   switch (Lexer.getKind()) {
   default:
     return TokError("unknown token in expression");
@@ -142,20 +205,20 @@ bool AsmParser::ParsePrimaryExpr(AsmExpr *&Res) {
     Lexer.Lex(); // Eat the operator.
     if (ParsePrimaryExpr(Res))
       return true;
-    Res = new AsmUnaryExpr(AsmUnaryExpr::LNot, Res);
+    Res = MCUnaryExpr::CreateLNot(Res, getContext());
     return false;
   case AsmToken::String:
   case AsmToken::Identifier: {
     // This is a label, this should be parsed as part of an expression, to
     // handle things like LFOO+4.
-    MCSymbol *Sym = Ctx.GetOrCreateSymbol(Lexer.getTok().getIdentifier());
+    MCSymbol *Sym = CreateSymbol(Lexer.getTok().getIdentifier());
     
-    Res = new AsmSymbolRefExpr(Sym);
+    Res = MCSymbolRefExpr::Create(Sym, getContext());
     Lexer.Lex(); // Eat identifier.
     return false;
   }
   case AsmToken::Integer:
-    Res = new AsmConstantExpr(Lexer.getTok().getIntVal());
+    Res = MCConstantExpr::Create(Lexer.getTok().getIntVal(), getContext());
     Lexer.Lex(); // Eat token.
     return false;
   case AsmToken::LParen:
@@ -165,19 +228,19 @@ bool AsmParser::ParsePrimaryExpr(AsmExpr *&Res) {
     Lexer.Lex(); // Eat the operator.
     if (ParsePrimaryExpr(Res))
       return true;
-    Res = new AsmUnaryExpr(AsmUnaryExpr::Minus, Res);
+    Res = MCUnaryExpr::CreateMinus(Res, getContext());
     return false;
   case AsmToken::Plus:
     Lexer.Lex(); // Eat the operator.
     if (ParsePrimaryExpr(Res))
       return true;
-    Res = new AsmUnaryExpr(AsmUnaryExpr::Plus, Res);
+    Res = MCUnaryExpr::CreatePlus(Res, getContext());
     return false;
   case AsmToken::Tilde:
     Lexer.Lex(); // Eat the operator.
     if (ParsePrimaryExpr(Res))
       return true;
-    Res = new AsmUnaryExpr(AsmUnaryExpr::Not, Res);
+    Res = MCUnaryExpr::CreateNot(Res, getContext());
     return false;
   }
 }
@@ -189,14 +252,21 @@ bool AsmParser::ParsePrimaryExpr(AsmExpr *&Res) {
 ///  expr ::= expr *,/,%,<<,>> expr  -> highest.
 ///  expr ::= primaryexpr
 ///
-bool AsmParser::ParseExpression(AsmExpr *&Res) {
+bool AsmParser::ParseExpression(const MCExpr *&Res) {
   Res = 0;
   return ParsePrimaryExpr(Res) ||
          ParseBinOpRHS(1, Res);
 }
 
+bool AsmParser::ParseParenExpression(const MCExpr *&Res) {
+  if (ParseParenExpr(Res))
+    return true;
+
+  return false;
+}
+
 bool AsmParser::ParseAbsoluteExpression(int64_t &Res) {
-  AsmExpr *Expr;
+  const MCExpr *Expr;
   
   SMLoc StartLoc = Lexer.getLoc();
   if (ParseExpression(Expr))
@@ -208,100 +278,75 @@ bool AsmParser::ParseAbsoluteExpression(int64_t &Res) {
   return false;
 }
 
-bool AsmParser::ParseRelocatableExpression(MCValue &Res) {
-  AsmExpr *Expr;
-  
-  SMLoc StartLoc = Lexer.getLoc();
-  if (ParseExpression(Expr))
-    return true;
-
-  if (!Expr->EvaluateAsRelocatable(Ctx, Res))
-    return Error(StartLoc, "expected relocatable expression");
-
-  return false;
-}
-
-bool AsmParser::ParseParenRelocatableExpression(MCValue &Res) {
-  AsmExpr *Expr;
-  
-  SMLoc StartLoc = Lexer.getLoc();
-  if (ParseParenExpr(Expr))
-    return true;
-
-  if (!Expr->EvaluateAsRelocatable(Ctx, Res))
-    return Error(StartLoc, "expected relocatable expression");
-
-  return false;
-}
-
 static unsigned getBinOpPrecedence(AsmToken::TokenKind K, 
-                                   AsmBinaryExpr::Opcode &Kind) {
+                                   MCBinaryExpr::Opcode &Kind) {
   switch (K) {
-  default: return 0;    // not a binop.
+  default:
+    return 0;    // not a binop.
 
     // Lowest Precedence: &&, ||
   case AsmToken::AmpAmp:
-    Kind = AsmBinaryExpr::LAnd;
+    Kind = MCBinaryExpr::LAnd;
     return 1;
   case AsmToken::PipePipe:
-    Kind = AsmBinaryExpr::LOr;
+    Kind = MCBinaryExpr::LOr;
     return 1;
 
     // Low Precedence: +, -, ==, !=, <>, <, <=, >, >=
   case AsmToken::Plus:
-    Kind = AsmBinaryExpr::Add;
+    Kind = MCBinaryExpr::Add;
     return 2;
   case AsmToken::Minus:
-    Kind = AsmBinaryExpr::Sub;
+    Kind = MCBinaryExpr::Sub;
     return 2;
   case AsmToken::EqualEqual:
-    Kind = AsmBinaryExpr::EQ;
+    Kind = MCBinaryExpr::EQ;
     return 2;
   case AsmToken::ExclaimEqual:
   case AsmToken::LessGreater:
-    Kind = AsmBinaryExpr::NE;
+    Kind = MCBinaryExpr::NE;
     return 2;
   case AsmToken::Less:
-    Kind = AsmBinaryExpr::LT;
+    Kind = MCBinaryExpr::LT;
     return 2;
   case AsmToken::LessEqual:
-    Kind = AsmBinaryExpr::LTE;
+    Kind = MCBinaryExpr::LTE;
     return 2;
   case AsmToken::Greater:
-    Kind = AsmBinaryExpr::GT;
+    Kind = MCBinaryExpr::GT;
     return 2;
   case AsmToken::GreaterEqual:
-    Kind = AsmBinaryExpr::GTE;
+    Kind = MCBinaryExpr::GTE;
     return 2;
 
     // Intermediate Precedence: |, &, ^
     //
     // FIXME: gas seems to support '!' as an infix operator?
   case AsmToken::Pipe:
-    Kind = AsmBinaryExpr::Or;
+    Kind = MCBinaryExpr::Or;
     return 3;
   case AsmToken::Caret:
-    Kind = AsmBinaryExpr::Xor;
+    Kind = MCBinaryExpr::Xor;
     return 3;
   case AsmToken::Amp:
-    Kind = AsmBinaryExpr::And;
+    Kind = MCBinaryExpr::And;
     return 3;
 
     // Highest Precedence: *, /, %, <<, >>
   case AsmToken::Star:
-    Kind = AsmBinaryExpr::Mul;
+    Kind = MCBinaryExpr::Mul;
     return 4;
   case AsmToken::Slash:
-    Kind = AsmBinaryExpr::Div;
+    Kind = MCBinaryExpr::Div;
     return 4;
   case AsmToken::Percent:
-    Kind = AsmBinaryExpr::Mod;
+    Kind = MCBinaryExpr::Mod;
     return 4;
   case AsmToken::LessLess:
-    Kind = AsmBinaryExpr::Shl;
+    Kind = MCBinaryExpr::Shl;
     return 4;
   case AsmToken::GreaterGreater:
-    Kind = AsmBinaryExpr::Shr;
+    Kind = MCBinaryExpr::Shr;
     return 4;
   }
 }
@@ -309,9 +354,9 @@ static unsigned getBinOpPrecedence(AsmToken::TokenKind K,
 
 /// ParseBinOpRHS - Parse all binary operators with precedence >= 'Precedence'.
 /// Res contains the LHS of the expression on input.
-bool AsmParser::ParseBinOpRHS(unsigned Precedence, AsmExpr *&Res) {
+bool AsmParser::ParseBinOpRHS(unsigned Precedence, const MCExpr *&Res) {
   while (1) {
-    AsmBinaryExpr::Opcode Kind = AsmBinaryExpr::Add;
+    MCBinaryExpr::Opcode Kind = MCBinaryExpr::Add;
     unsigned TokPrec = getBinOpPrecedence(Lexer.getKind(), Kind);
     
     // If the next token is lower precedence than we are allowed to eat, return
@@ -322,19 +367,19 @@ bool AsmParser::ParseBinOpRHS(unsigned Precedence, AsmExpr *&Res) {
     Lexer.Lex();
     
     // Eat the next primary expression.
-    AsmExpr *RHS;
+    const MCExpr *RHS;
     if (ParsePrimaryExpr(RHS)) return true;
     
     // If BinOp binds less tightly with RHS than the operator after RHS, let
     // the pending operator take RHS as its LHS.
-    AsmBinaryExpr::Opcode Dummy;
+    MCBinaryExpr::Opcode Dummy;
     unsigned NextTokPrec = getBinOpPrecedence(Lexer.getKind(), Dummy);
     if (TokPrec < NextTokPrec) {
       if (ParseBinOpRHS(Precedence+1, RHS)) return true;
     }
 
     // Merge LHS and RHS according to operator.
-    Res = new AsmBinaryExpr(Kind, Res, RHS);
+    Res = MCBinaryExpr::Create(Kind, Res, RHS, getContext());
   }
 }
 
@@ -371,13 +416,11 @@ bool AsmParser::ParseStatement() {
     // FIXME: Diagnostics. Note the location of the definition as a label.
     // FIXME: This doesn't diagnose assignment to a symbol which has been
     // implicitly marked as external.
-    MCSymbol *Sym = Ctx.GetOrCreateSymbol(IDVal);
+    MCSymbol *Sym = CreateSymbol(IDVal);
     if (!Sym->isUndefined())
       return Error(IDLoc, "invalid symbol redefinition");
     
-    // Since we saw a label, create a symbol and emit it.
-    // FIXME: If the label starts with L it is an assembler temporary label.
-    // Why does the client of this api need to know this?
+    // Emit the label.
     Out.EmitLabel(Sym);
    
     return ParseStatement();
@@ -387,7 +430,7 @@ bool AsmParser::ParseStatement() {
     // identifier '=' ... -> assignment statement
     Lexer.Lex();
 
-    return ParseAssignment(IDVal, false);
+    return ParseAssignment(IDVal);
 
   default: // Normal instruction or directive.
     break;
@@ -664,12 +707,13 @@ bool AsmParser::ParseStatement() {
   return false;
 }
 
-bool AsmParser::ParseAssignment(const StringRef &Name, bool IsDotSet) {
+bool AsmParser::ParseAssignment(const StringRef &Name) {
   // FIXME: Use better location, we should use proper tokens.
   SMLoc EqualLoc = Lexer.getLoc();
 
-  MCValue Value;
-  if (ParseRelocatableExpression(Value))
+  const MCExpr *Value;
+  SMLoc StartLoc = Lexer.getLoc();
+  if (ParseExpression(Value))
     return true;
   
   if (Lexer.isNot(AsmToken::EndOfStatement))
@@ -683,12 +727,12 @@ bool AsmParser::ParseAssignment(const StringRef &Name, bool IsDotSet) {
   // FIXME: Diagnostics. Note the location of the definition as a label.
   // FIXME: Handle '.'.
   // FIXME: Diagnose assignment to protected identifier (e.g., register name).
-  MCSymbol *Sym = Ctx.GetOrCreateSymbol(Name);
+  MCSymbol *Sym = CreateSymbol(Name);
   if (!Sym->isUndefined() && !Sym->isAbsolute())
     return Error(EqualLoc, "symbol has already been defined");
 
   // Do the assignment.
-  Out.EmitAssignment(Sym, Value, IsDotSet);
+  Out.EmitAssignment(Sym, Value);
 
   return false;
 }
@@ -720,7 +764,7 @@ bool AsmParser::ParseDirectiveSet() {
     return TokError("unexpected token in '.set'");
   Lexer.Lex();
 
-  return ParseAssignment(Name, true);
+  return ParseAssignment(Name);
 }
 
 /// ParseDirectiveSection:
@@ -761,15 +805,9 @@ bool AsmParser::ParseDirectiveDarwinSection() {
   if (!ErrorStr.empty())
     return Error(Loc, ErrorStr.c_str());
   
-  // FIXME: CACHE THESE.
-  
   // FIXME: Arch specific.
-  MCSection *S = 0; //Ctx.GetSection(Section);
-  if (S == 0)
-    S = MCSectionMachO::Create(Segment, Section, TAA, StubSize,
-                               SectionKind(), Ctx);
-  
-  Out.SwitchSection(S);
+  Out.SwitchSection(getMachOSection(Segment, Section, TAA, StubSize,
+                                    SectionKind()));
   return false;
 }
 
@@ -783,13 +821,8 @@ bool AsmParser::ParseDirectiveSectionSwitch(const char *Segment,
   Lexer.Lex();
   
   // FIXME: Arch specific.
-  // FIXME: Cache this!
-  MCSection *S = 0; // Ctx.GetSection(Section);
-  if (S == 0)
-    S = MCSectionMachO::Create(Segment, Section, TAA, StubSize,
-                               SectionKind(), Ctx);
-  
-  Out.SwitchSection(S);
+  Out.SwitchSection(getMachOSection(Segment, Section, TAA, StubSize,
+                                    SectionKind()));
 
   // Set the implicit alignment, if any.
   //
@@ -899,11 +932,12 @@ bool AsmParser::ParseDirectiveAscii(bool ZeroTerminated) {
 bool AsmParser::ParseDirectiveValue(unsigned Size) {
   if (Lexer.isNot(AsmToken::EndOfStatement)) {
     for (;;) {
-      MCValue Expr;
-      if (ParseRelocatableExpression(Expr))
+      const MCExpr *Value;
+      SMLoc StartLoc = Lexer.getLoc();
+      if (ParseExpression(Value))
         return true;
 
-      Out.EmitValue(Expr, Size);
+      Out.EmitValue(Value, Size);
 
       if (Lexer.is(AsmToken::EndOfStatement))
         break;
@@ -949,7 +983,7 @@ bool AsmParser::ParseDirectiveSpace() {
 
   // FIXME: Sometimes the fill expr is 'nop' if it isn't supplied, instead of 0.
   for (uint64_t i = 0, e = NumBytes; i != e; ++i)
-    Out.EmitValue(MCValue::get(FillExpr), 1);
+    Out.EmitValue(MCConstantExpr::Create(FillExpr, getContext()), 1);
 
   return false;
 }
@@ -986,7 +1020,7 @@ bool AsmParser::ParseDirectiveFill() {
     return TokError("invalid '.fill' size, expected 1, 2, 4, or 8");
 
   for (uint64_t i = 0, e = NumValues; i != e; ++i)
-    Out.EmitValue(MCValue::get(FillExpr), FillSize);
+    Out.EmitValue(MCConstantExpr::Create(FillExpr, getContext()), FillSize);
 
   return false;
 }
@@ -994,8 +1028,9 @@ bool AsmParser::ParseDirectiveFill() {
 /// ParseDirectiveOrg
 ///  ::= .org expression [ , expression ]
 bool AsmParser::ParseDirectiveOrg() {
-  MCValue Offset;
-  if (ParseRelocatableExpression(Offset))
+  const MCExpr *Offset;
+  SMLoc StartLoc = Lexer.getLoc();
+  if (ParseExpression(Offset))
     return true;
 
   // Parse optional fill expression.
@@ -1024,6 +1059,7 @@ bool AsmParser::ParseDirectiveOrg() {
 /// ParseDirectiveAlign
 ///  ::= {.align, ...} expression [ , expression [ , expression ]]
 bool AsmParser::ParseDirectiveAlign(bool IsPow2, unsigned ValueSize) {
+  SMLoc AlignmentLoc = Lexer.getLoc();
   int64_t Alignment;
   if (ParseAbsoluteExpression(Alignment))
     return true;
@@ -1070,15 +1106,19 @@ bool AsmParser::ParseDirectiveAlign(bool IsPow2, unsigned ValueSize) {
   // Compute alignment in bytes.
   if (IsPow2) {
     // FIXME: Diagnose overflow.
-    Alignment = 1LL << Alignment;
+    if (Alignment >= 32) {
+      Error(AlignmentLoc, "invalid alignment value");
+      Alignment = 31;
+    }
+
+    Alignment = 1 << Alignment;
   }
 
-  // Diagnose non-sensical max bytes to fill, which are treated as missing (this
-  // matches 'as').
+  // Diagnose non-sensical max bytes to align.
   if (MaxBytesLoc.isValid()) {
     if (MaxBytesToFill < 1) {
-      Warning(MaxBytesLoc, "alignment directive can never be satisfied in this "
-              "many bytes, ignoring maximum bytes expression");
+      Error(MaxBytesLoc, "alignment directive can never be satisfied in this "
+            "many bytes, ignoring maximum bytes expression");
       MaxBytesToFill = 0;
     }
 
@@ -1105,7 +1145,7 @@ bool AsmParser::ParseDirectiveSymbolAttribute(MCStreamer::SymbolAttr Attr) {
       if (ParseIdentifier(Name))
         return TokError("expected identifier in directive");
       
-      MCSymbol *Sym = Ctx.GetOrCreateSymbol(Name);
+      MCSymbol *Sym = CreateSymbol(Name);
 
       Out.EmitSymbolAttribute(Sym, Attr);
 
@@ -1130,7 +1170,7 @@ bool AsmParser::ParseDirectiveDarwinSymbolDesc() {
     return TokError("expected identifier in directive");
   
   // Handle the identifier as the key symbol.
-  MCSymbol *Sym = Ctx.GetOrCreateSymbol(Name);
+  MCSymbol *Sym = CreateSymbol(Name);
 
   if (Lexer.isNot(AsmToken::Comma))
     return TokError("unexpected token in '.desc' directive");
@@ -1161,7 +1201,7 @@ bool AsmParser::ParseDirectiveComm(bool IsLocal) {
     return TokError("expected identifier in directive");
   
   // Handle the identifier as the key symbol.
-  MCSymbol *Sym = Ctx.GetOrCreateSymbol(Name);
+  MCSymbol *Sym = CreateSymbol(Name);
 
   if (Lexer.isNot(AsmToken::Comma))
     return TokError("unexpected token in directive");
@@ -1202,9 +1242,17 @@ bool AsmParser::ParseDirectiveComm(bool IsLocal) {
   if (!Sym->isUndefined())
     return Error(IDLoc, "invalid symbol redefinition");
 
+  // '.lcomm' is equivalent to '.zerofill'.
   // Create the Symbol as a common or local common with Size and Pow2Alignment
-  Out.EmitCommonSymbol(Sym, Size, Pow2Alignment, IsLocal);
+  if (IsLocal) {
+    Out.EmitZerofill(getMachOSection("__DATA", "__bss",
+                                     MCSectionMachO::S_ZEROFILL, 0,
+                                     SectionKind()),
+                     Sym, Size, 1 << Pow2Alignment);
+    return false;
+  }
 
+  Out.EmitCommonSymbol(Sym, Size, 1 << Pow2Alignment);
   return false;
 }
 
@@ -1232,15 +1280,10 @@ bool AsmParser::ParseDirectiveDarwinZerofill() {
   // If this is the end of the line all that was wanted was to create the
   // the section but with no symbol.
   if (Lexer.is(AsmToken::EndOfStatement)) {
-    // FIXME: CACHE THIS.
-    MCSection *S = 0; //Ctx.GetSection(Section);
-    if (S == 0)
-      S = MCSectionMachO::Create(Segment, Section,
-                                 MCSectionMachO::S_ZEROFILL, 0,
-                                 SectionKind(), Ctx);
-    
     // Create the zerofill section but no symbol
-    Out.EmitZerofill(S);
+    Out.EmitZerofill(getMachOSection(Segment, Section,
+                                     MCSectionMachO::S_ZEROFILL, 0,
+                                     SectionKind()));
     return false;
   }
 
@@ -1253,7 +1296,7 @@ bool AsmParser::ParseDirectiveDarwinZerofill() {
   
   // handle the identifier as the key symbol.
   SMLoc IDLoc = Lexer.getLoc();
-  MCSymbol *Sym = Ctx.GetOrCreateSymbol(Lexer.getTok().getString());
+  MCSymbol *Sym = CreateSymbol(Lexer.getTok().getString());
   Lexer.Lex();
 
   if (Lexer.isNot(AsmToken::Comma))
@@ -1293,16 +1336,13 @@ bool AsmParser::ParseDirectiveDarwinZerofill() {
   if (!Sym->isUndefined())
     return Error(IDLoc, "invalid symbol redefinition");
 
-  // FIXME: Arch specific.
-  // FIXME: CACHE.
-  MCSection *S = 0; //Ctx.GetSection(Section);
-  if (S == 0)
-    S = MCSectionMachO::Create(Segment, Section,
-                               MCSectionMachO::S_ZEROFILL, 0,
-                               SectionKind(), Ctx);
-  
   // Create the zerofill Symbol with Size and Pow2Alignment
-  Out.EmitZerofill(S, Sym, Size, Pow2Alignment);
+  //
+  // FIXME: Arch specific.
+  Out.EmitZerofill(getMachOSection(Segment, Section,
+                                 MCSectionMachO::S_ZEROFILL, 0,
+                                 SectionKind()),
+                   Sym, Size, 1 << Pow2Alignment);
 
   return false;
 }
@@ -1358,14 +1398,15 @@ bool AsmParser::ParseDirectiveDarwinLsym() {
     return TokError("expected identifier in directive");
   
   // Handle the identifier as the key symbol.
-  MCSymbol *Sym = Ctx.GetOrCreateSymbol(Name);
+  MCSymbol *Sym = CreateSymbol(Name);
 
   if (Lexer.isNot(AsmToken::Comma))
     return TokError("unexpected token in '.lsym' directive");
   Lexer.Lex();
 
-  MCValue Expr;
-  if (ParseRelocatableExpression(Expr))
+  const MCExpr *Value;
+  SMLoc StartLoc = Lexer.getLoc();
+  if (ParseExpression(Value))
     return true;
 
   if (Lexer.isNot(AsmToken::EndOfStatement))
@@ -1373,10 +1414,11 @@ bool AsmParser::ParseDirectiveDarwinLsym() {
   
   Lexer.Lex();
 
-  // Create the Sym with the value of the Expr
-  Out.EmitLocalSymbol(Sym, Expr);
-
-  return false;
+  // We don't currently support this directive.
+  //
+  // FIXME: Diagnostic location!
+  (void) Sym;
+  return TokError("directive '.lsym' is unsupported");
 }
 
 /// ParseDirectiveInclude

@@ -55,7 +55,7 @@ OutputFilename("o", cl::desc("Override output filename"),
                cl::value_desc("filename"), cl::init("-"));
 
 static cl::opt<bool>
-Force("f", cl::desc("Overwrite output files"));
+Force("f", cl::desc("Enable binary output on terminals"));
 
 static cl::opt<bool>
 PrintEachXForm("p", cl::desc("Print module after each transformation"));
@@ -132,7 +132,7 @@ struct CallGraphSCCPassPrinter : public CallGraphSCCPass {
   CallGraphSCCPassPrinter(const PassInfo *PI) :
     CallGraphSCCPass(&ID), PassToPrint(PI) {}
 
-  virtual bool runOnSCC(const std::vector<CallGraphNode *>&SCC) {
+  virtual bool runOnSCC(std::vector<CallGraphNode *>&SCC) {
     if (!Quiet) {
       outs() << "Printing analysis '" << PassToPrint->getPassName() << "':\n";
 
@@ -367,12 +367,9 @@ int main(int argc, char **argv) {
     if (OutputFilename != "-") {
       std::string ErrorInfo;
       Out = new raw_fd_ostream(OutputFilename.c_str(), ErrorInfo,
-                               raw_fd_ostream::F_Binary |
-                               (Force ? raw_fd_ostream::F_Force : 0));
+                               raw_fd_ostream::F_Binary);
       if (!ErrorInfo.empty()) {
         errs() << ErrorInfo << '\n';
-        if (!Force)
-          errs() << "Use -f command line argument to force output\n";
         delete Out;
         return 1;
       }

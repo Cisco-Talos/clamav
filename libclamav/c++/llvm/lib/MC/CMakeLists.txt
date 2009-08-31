@@ -6,7 +6,10 @@ add_llvm_library(LLVMMC
   MCAsmParser.cpp
   MCAsmStreamer.cpp
   MCAssembler.cpp
+  MCCodeEmitter.cpp
   MCContext.cpp
+  MCExpr.cpp
+  MCInst.cpp
   MCMachOStreamer.cpp
   MCNullStreamer.cpp
   MCSection.cpp

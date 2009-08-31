@@ -14,6 +14,8 @@
 
 namespace llvm {
 class MCAsmLexer;
+class MCContext;
+class MCExpr;
 class MCValue;
 class SMLoc;
 class Twine;
@@ -31,6 +33,8 @@ public:
 
   virtual MCAsmLexer &getLexer() = 0;
 
+  virtual MCContext &getContext() = 0;
+
   /// Warning - Emit a warning at the location \arg L, with the message \arg
   /// Msg.
   virtual void Warning(SMLoc L, const Twine &Msg) = 0;
@@ -42,6 +46,21 @@ public:
   /// clients.
   virtual bool Error(SMLoc L, const Twine &Msg) = 0;
 
+  /// ParseExpression - Parse an arbitrary expression.
+  ///
+  /// @param Res - The value of the expression. The result is undefined
+  /// on error.
+  /// @result - False on success.
+  virtual bool ParseExpression(const MCExpr *&Res) = 0;
+
+  /// ParseParenExpression - Parse an arbitrary expression, assuming that an
+  /// initial '(' has already been consumed.
+  ///
+  /// @param Res - The value of the expression. The result is undefined
+  /// on error.
+  /// @result - False on success.
+  virtual bool ParseParenExpression(const MCExpr *&Res) = 0;
+
   /// ParseAbsoluteExpression - Parse an expression which must evaluate to an
   /// absolute value.
   ///
@@ -49,24 +68,6 @@ public:
   /// on error.
   /// @result - False on success.
   virtual bool ParseAbsoluteExpression(int64_t &Res) = 0;
-
-  /// ParseRelocatableExpression - Parse an expression which must be
-  /// relocatable.
-  ///
-  /// @param Res - The relocatable expression value. The result is undefined on
-  /// error.  
-  /// @result - False on success.
-  virtual bool ParseRelocatableExpression(MCValue &Res) = 0;
-
-  /// ParseParenRelocatableExpression - Parse an expression which must be
-  /// relocatable, assuming that an initial '(' has already been consumed.
-  ///
-  /// @param Res - The relocatable expression value. The result is undefined on
-  /// error.  
-  /// @result - False on success.
-  ///
-  /// @see ParseRelocatableExpression, ParseParenExpr.
-  virtual bool ParseParenRelocatableExpression(MCValue &Res) = 0;
 };
 
 } // End llvm namespace

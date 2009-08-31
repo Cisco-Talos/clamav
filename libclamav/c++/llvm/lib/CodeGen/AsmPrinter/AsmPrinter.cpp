@@ -604,6 +604,48 @@ void AsmPrinter::EOL(const char* Comment) const {
   O << '\n';
 }
 
+static const char *DecodeDWARFEncoding(unsigned Encoding) {
+  switch (Encoding) {
+  case dwarf::DW_EH_PE_absptr:
+    return "absptr";
+  case dwarf::DW_EH_PE_omit:
+    return "omit";
+  case dwarf::DW_EH_PE_pcrel:
+    return "pcrel";
+  case dwarf::DW_EH_PE_pcrel | dwarf::DW_EH_PE_udata4:
+    return "pcrel udata4";
+  case dwarf::DW_EH_PE_pcrel | dwarf::DW_EH_PE_sdata4:
+    return "pcrel sdata4";
+  case dwarf::DW_EH_PE_pcrel | dwarf::DW_EH_PE_udata8:
+    return "pcrel udata8";
+  case dwarf::DW_EH_PE_pcrel | dwarf::DW_EH_PE_sdata8:
+    return "pcrel sdata8";
+  case dwarf::DW_EH_PE_indirect | dwarf::DW_EH_PE_pcrel |dwarf::DW_EH_PE_udata4:
+    return "indirect pcrel udata4";
+  case dwarf::DW_EH_PE_indirect | dwarf::DW_EH_PE_pcrel |dwarf::DW_EH_PE_sdata4:
+    return "indirect pcrel sdata4";
+  case dwarf::DW_EH_PE_indirect | dwarf::DW_EH_PE_pcrel |dwarf::DW_EH_PE_udata8:
+    return "indirect pcrel udata8";
+  case dwarf::DW_EH_PE_indirect | dwarf::DW_EH_PE_pcrel |dwarf::DW_EH_PE_sdata8:
+    return "indirect pcrel sdata8";
+  }
+
+  return 0;
+}
+
+void AsmPrinter::EOL(const char *Comment, unsigned Encoding) const {
+  if (VerboseAsm && *Comment) {
+    O.PadToColumn(MAI->getCommentColumn());
+    O << MAI->getCommentString()
+      << ' '
+      << Comment;
+
+    if (const char *EncStr = DecodeDWARFEncoding(Encoding))
+      O << " (" << EncStr << ')';
+  }
+  O << '\n';
+}
+
 /// EmitULEB128Bytes - Emit an assembler byte data directive to compose an
 /// unsigned leb128 value.
 void AsmPrinter::EmitULEB128Bytes(unsigned Value) const {
@@ -1739,11 +1781,10 @@ void AsmPrinter::EmitComments(const MachineInstr &MI) const {
   // Print source line info.
   O.PadToColumn(MAI->getCommentColumn());
   O << MAI->getCommentString() << " SrcLine ";
-  if (DLT.CompileUnit->hasInitializer()) {
-    Constant *Name = DLT.CompileUnit->getInitializer();
-    if (ConstantArray *NameString = dyn_cast<ConstantArray>(Name))
-      if (NameString->isString())
-        O << NameString->getAsString() << " ";
+  if (DLT.CompileUnit) {
+    std::string Str;
+    DICompileUnit CU(DLT.CompileUnit);
+    O << CU.getFilename(Str) << " ";
   }
   O << DLT.Line;
   if (DLT.Col != 0) 
@@ -1761,11 +1802,10 @@ void AsmPrinter::EmitComments(const MCInst &MI) const {
   // Print source line info
   O.PadToColumn(MAI->getCommentColumn());
   O << MAI->getCommentString() << " SrcLine ";
-  if (DLT.CompileUnit->hasInitializer()) {
-    Constant *Name = DLT.CompileUnit->getInitializer();
-    if (ConstantArray *NameString = dyn_cast<ConstantArray>(Name))
-      if (NameString->isString())
-        O << NameString->getAsString() << " ";
+  if (DLT.CompileUnit) {
+    std::string Str;
+    DICompileUnit CU(DLT.CompileUnit);
+    O << CU.getFilename(Str) << " ";
   }
   O << DLT.Line;
   if (DLT.Col != 0) 

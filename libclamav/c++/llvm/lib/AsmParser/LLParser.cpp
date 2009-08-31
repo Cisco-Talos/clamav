@@ -98,6 +98,8 @@ bool LLParser::ValidateEndOfModule() {
   for (Module::iterator FI = M->begin(), FE = M->end(); FI != FE; )
     UpgradeCallsToIntrinsic(FI++); // must be post-increment, as we remove
   
+  // Check debug info intrinsics.
+  CheckDebugInfoIntrinsics(M);
   return false;
 }
 
@@ -905,6 +907,7 @@ bool LLParser::ParseOptionalAttrs(unsigned &Attrs, unsigned AttrKind) {
     case lltok::kw_noinline:        Attrs |= Attribute::NoInline; break;
     case lltok::kw_readnone:        Attrs |= Attribute::ReadNone; break;
     case lltok::kw_readonly:        Attrs |= Attribute::ReadOnly; break;
+    case lltok::kw_inlinehint:      Attrs |= Attribute::InlineHint; break;
     case lltok::kw_alwaysinline:    Attrs |= Attribute::AlwaysInline; break;
     case lltok::kw_optsize:         Attrs |= Attribute::OptimizeForSize; break;
     case lltok::kw_ssp:             Attrs |= Attribute::StackProtect; break;
@@ -2498,7 +2501,7 @@ bool LLParser::ParseFunctionHeader(Function *&Fn, bool isDefine) {
       }
     }
     
-  } else if (FunctionName.empty()) {
+  } else {
     // If this is a definition of a forward referenced function, make sure the
     // types agree.
     std::map<unsigned, std::pair<GlobalValue*, LocTy> >::iterator I
@@ -3087,13 +3090,13 @@ bool LLParser::ParseCompare(Instruction *&Inst, PerFunctionState &PFS,
   if (Opc == Instruction::FCmp) {
     if (!LHS->getType()->isFPOrFPVector())
       return Error(Loc, "fcmp requires floating point operands");
-    Inst = new FCmpInst(Context, CmpInst::Predicate(Pred), LHS, RHS);
+    Inst = new FCmpInst(CmpInst::Predicate(Pred), LHS, RHS);
   } else {
     assert(Opc == Instruction::ICmp && "Unknown opcode for CmpInst!");
     if (!LHS->getType()->isIntOrIntVector() &&
         !isa<PointerType>(LHS->getType()))
       return Error(Loc, "icmp requires integer operands");
-    Inst = new ICmpInst(Context, CmpInst::Predicate(Pred), LHS, RHS);
+    Inst = new ICmpInst(CmpInst::Predicate(Pred), LHS, RHS);
   }
   return false;
 }

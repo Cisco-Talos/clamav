@@ -73,33 +73,6 @@ def NEONvduplane  : SDNode<"ARMISD::VDUPLANE",
                            SDTypeProfile<1, 2, [SDTCisVec<0>, SDTCisVec<1>,
                                                 SDTCisVT<2, i32>]>>;
 
-def SDTARMVLD2    : SDTypeProfile<2, 1, [SDTCisSameAs<0, 1>, SDTCisPtrTy<2>]>;
-def SDTARMVLD3    : SDTypeProfile<3, 1, [SDTCisSameAs<0, 1>,
-                                         SDTCisSameAs<0, 2>, SDTCisPtrTy<3>]>;
-def SDTARMVLD4    : SDTypeProfile<4, 1, [SDTCisSameAs<0, 1>,
-                                         SDTCisSameAs<0, 2>,
-                                         SDTCisSameAs<0, 3>, SDTCisPtrTy<4>]>;
-def NEONvld2d     : SDNode<"ARMISD::VLD2D", SDTARMVLD2,
-                           [SDNPHasChain, SDNPMayLoad]>;
-def NEONvld3d     : SDNode<"ARMISD::VLD3D", SDTARMVLD3,
-                           [SDNPHasChain, SDNPMayLoad]>;
-def NEONvld4d     : SDNode<"ARMISD::VLD4D", SDTARMVLD4,
-                           [SDNPHasChain, SDNPMayLoad]>;
-
-def SDTARMVST2    : SDTypeProfile<0, 3, [SDTCisPtrTy<0>, SDTCisSameAs<1, 2>]>;
-def SDTARMVST3    : SDTypeProfile<0, 4, [SDTCisPtrTy<0>, SDTCisSameAs<1, 2>,
-                                         SDTCisSameAs<1, 3>]>;
-def SDTARMVST4    : SDTypeProfile<0, 5, [SDTCisPtrTy<0>, SDTCisSameAs<1, 2>,
-                                         SDTCisSameAs<1, 3>,
-                                         SDTCisSameAs<1, 4>]>;
-
-def NEONvst2d     : SDNode<"ARMISD::VST2D", SDTARMVST2,
-                           [SDNPHasChain, SDNPMayStore]>;
-def NEONvst3d     : SDNode<"ARMISD::VST3D", SDTARMVST3,
-                           [SDNPHasChain, SDNPMayStore]>;
-def NEONvst4d     : SDNode<"ARMISD::VST4D", SDTARMVST4,
-                           [SDNPHasChain, SDNPMayStore]>;
-
 def SDTARMVEXT    : SDTypeProfile<1, 3, [SDTCisVec<0>, SDTCisSameAs<0, 1>,
                                          SDTCisSameAs<0, 2>, SDTCisVT<3, i32>]>;
 def NEONvext      : SDNode<"ARMISD::VEXT", SDTARMVEXT>;
@@ -183,14 +156,12 @@ def VSTRQ : NI4<(outs), (ins QPR:$src, addrmode4:$addr),
 
 //   VLD1     : Vector Load (multiple single elements)
 class VLD1D<string OpcodeStr, ValueType Ty, Intrinsic IntOp>
-  : NLdSt<(outs DPR:$dst), (ins addrmode6:$addr),
-          NoItinerary,
-          !strconcat(OpcodeStr, "\t\\{$dst\\}, $addr"),
+  : NLdSt<(outs DPR:$dst), (ins addrmode6:$addr), NoItinerary,
+          !strconcat(OpcodeStr, "\t\\{$dst\\}, $addr"), "",
           [(set DPR:$dst, (Ty (IntOp addrmode6:$addr)))]>;
 class VLD1Q<string OpcodeStr, ValueType Ty, Intrinsic IntOp>
-  : NLdSt<(outs QPR:$dst), (ins addrmode6:$addr),
-          NoItinerary,
-          !strconcat(OpcodeStr, "\t${dst:dregpair}, $addr"),
+  : NLdSt<(outs QPR:$dst), (ins addrmode6:$addr), NoItinerary,
+          !strconcat(OpcodeStr, "\t${dst:dregpair}, $addr"), "",
           [(set QPR:$dst, (Ty (IntOp addrmode6:$addr)))]>;
 
 def  VLD1d8   : VLD1D<"vld1.8",  v8i8,  int_arm_neon_vld1>;
@@ -209,9 +180,8 @@ let mayLoad = 1 in {
 
 //   VLD2     : Vector Load (multiple 2-element structures)
 class VLD2D<string OpcodeStr>
-  : NLdSt<(outs DPR:$dst1, DPR:$dst2), (ins addrmode6:$addr),
-          NoItinerary,
-          !strconcat(OpcodeStr, "\t\\{$dst1,$dst2\\}, $addr"), []>;
+  : NLdSt<(outs DPR:$dst1, DPR:$dst2), (ins addrmode6:$addr), NoItinerary,
+          !strconcat(OpcodeStr, "\t\\{$dst1,$dst2\\}, $addr"), "", []>;
 
 def  VLD2d8   : VLD2D<"vld2.8">;
 def  VLD2d16  : VLD2D<"vld2.16">;
@@ -221,7 +191,7 @@ def  VLD2d32  : VLD2D<"vld2.32">;
 class VLD3D<string OpcodeStr>
   : NLdSt<(outs DPR:$dst1, DPR:$dst2, DPR:$dst3), (ins addrmode6:$addr),
           NoItinerary,
-          !strconcat(OpcodeStr, "\t\\{$dst1,$dst2,$dst3\\}, $addr"), []>;
+          !strconcat(OpcodeStr, "\t\\{$dst1,$dst2,$dst3\\}, $addr"), "", []>;
 
 def  VLD3d8   : VLD3D<"vld3.8">;
 def  VLD3d16  : VLD3D<"vld3.16">;
@@ -230,9 +200,9 @@ def  VLD3d32  : VLD3D<"vld3.32">;
 //   VLD4     : Vector Load (multiple 4-element structures)
 class VLD4D<string OpcodeStr>
   : NLdSt<(outs DPR:$dst1, DPR:$dst2, DPR:$dst3, DPR:$dst4),
-          (ins addrmode6:$addr),
-          NoItinerary,
-          !strconcat(OpcodeStr, "\t\\{$dst1,$dst2,$dst3,$dst4\\}, $addr"), []>;
+          (ins addrmode6:$addr), NoItinerary,
+          !strconcat(OpcodeStr, "\t\\{$dst1,$dst2,$dst3,$dst4\\}, $addr"),
+          "", []>;
 
 def  VLD4d8   : VLD4D<"vld4.8">;
 def  VLD4d16  : VLD4D<"vld4.16">;
@@ -241,14 +211,12 @@ def  VLD4d32  : VLD4D<"vld4.32">;
 
 //   VST1     : Vector Store (multiple single elements)
 class VST1D<string OpcodeStr, ValueType Ty, Intrinsic IntOp>
-  : NLdSt<(outs), (ins addrmode6:$addr, DPR:$src),
-          NoItinerary,
-          !strconcat(OpcodeStr, "\t\\{$src\\}, $addr"),
+  : NLdSt<(outs), (ins addrmode6:$addr, DPR:$src), NoItinerary,
+          !strconcat(OpcodeStr, "\t\\{$src\\}, $addr"), "",
           [(IntOp addrmode6:$addr, (Ty DPR:$src))]>;
 class VST1Q<string OpcodeStr, ValueType Ty, Intrinsic IntOp>
-  : NLdSt<(outs), (ins addrmode6:$addr, QPR:$src),
-          NoItinerary,
-          !strconcat(OpcodeStr, "\t${src:dregpair}, $addr"),
+  : NLdSt<(outs), (ins addrmode6:$addr, QPR:$src), NoItinerary,
+          !strconcat(OpcodeStr, "\t${src:dregpair}, $addr"), "",
           [(IntOp addrmode6:$addr, (Ty QPR:$src))]>;
 
 def  VST1d8   : VST1D<"vst1.8",  v8i8,  int_arm_neon_vst1>;
@@ -268,7 +236,7 @@ let mayStore = 1 in {
 //   VST2     : Vector Store (multiple 2-element structures)
 class VST2D<string OpcodeStr>
   : NLdSt<(outs), (ins addrmode6:$addr, DPR:$src1, DPR:$src2), NoItinerary,
-          !strconcat(OpcodeStr, "\t\\{$src1,$src2\\}, $addr"), []>;
+          !strconcat(OpcodeStr, "\t\\{$src1,$src2\\}, $addr"), "", []>;
 
 def  VST2d8   : VST2D<"vst2.8">;
 def  VST2d16  : VST2D<"vst2.16">;
@@ -278,7 +246,7 @@ def  VST2d32  : VST2D<"vst2.32">;
 class VST3D<string OpcodeStr>
   : NLdSt<(outs), (ins addrmode6:$addr, DPR:$src1, DPR:$src2, DPR:$src3),
           NoItinerary,
-          !strconcat(OpcodeStr, "\t\\{$src1,$src2,$src3\\}, $addr"), []>;
+          !strconcat(OpcodeStr, "\t\\{$src1,$src2,$src3\\}, $addr"), "", []>;
 
 def  VST3d8   : VST3D<"vst3.8">;
 def  VST3d16  : VST3D<"vst3.16">;
@@ -288,7 +256,8 @@ def  VST3d32  : VST3D<"vst3.32">;
 class VST4D<string OpcodeStr>
   : NLdSt<(outs), (ins addrmode6:$addr,
                    DPR:$src1, DPR:$src2, DPR:$src3, DPR:$src4), NoItinerary,
-          !strconcat(OpcodeStr, "\t\\{$src1,$src2,$src3,$src4\\}, $addr"), []>;
+          !strconcat(OpcodeStr, "\t\\{$src1,$src2,$src3,$src4\\}, $addr"),
+          "", []>;
 
 def  VST4d8   : VST4D<"vst4.8">;
 def  VST4d16  : VST4D<"vst4.16">;
@@ -315,7 +284,7 @@ def DSubReg_f64_reg : SDNodeXForm<imm, [{
   return CurDAG->getTargetConstant(5 + N->getZExtValue(), MVT::i32);
 }]>;
 
-// Extract S sub-registers of Q registers.
+// Extract S sub-registers of Q/D registers.
 // (arm_ssubreg_0 is 1; arm_ssubreg_1 is 2; etc.)
 def SSubReg_f32_reg : SDNodeXForm<imm, [{
   return CurDAG->getTargetConstant(1 + N->getZExtValue(), MVT::i32);
@@ -1703,6 +1672,8 @@ def : Pat<(extractelt (v4i32 QPR:$src), imm:$lane),
           (VGETLNi32 (v2i32 (EXTRACT_SUBREG QPR:$src,
                              (DSubReg_i32_reg imm:$lane))),
                      (SubReg_i32_lane imm:$lane))>;
+def : Pat<(extractelt (v2f32 DPR:$src1), imm:$src2),
+          (EXTRACT_SUBREG DPR:$src1, (SSubReg_f32_reg imm:$src2))>;
 def : Pat<(extractelt (v4f32 QPR:$src1), imm:$src2),
           (EXTRACT_SUBREG QPR:$src1, (SSubReg_f32_reg imm:$src2))>;
 //def : Pat<(extractelt (v2i64 QPR:$src1), imm:$src2),
@@ -1749,6 +1720,8 @@ def : Pat<(insertelt (v4i32 QPR:$src1), GPR:$src2, imm:$lane),
                              GPR:$src2, (SubReg_i32_lane imm:$lane)),
                   (DSubReg_i32_reg imm:$lane)))>;
 
+def : Pat<(v2f32 (insertelt DPR:$src1, SPR:$src2, imm:$src3)),
+          (INSERT_SUBREG DPR:$src1, SPR:$src2, (SSubReg_f32_reg imm:$src3))>;
 def : Pat<(v4f32 (insertelt QPR:$src1, SPR:$src2, imm:$src3)),
           (INSERT_SUBREG QPR:$src1, SPR:$src2, (SSubReg_f32_reg imm:$src3))>;
 
@@ -1756,6 +1729,33 @@ def : Pat<(v4f32 (insertelt QPR:$src1, SPR:$src2, imm:$src3)),
 //          (INSERT_SUBREG QPR:$src1, DPR:$src2, (DSubReg_f64_reg imm:$src3))>;
 def : Pat<(v2f64 (insertelt QPR:$src1, DPR:$src2, imm:$src3)),
           (INSERT_SUBREG QPR:$src1, DPR:$src2, (DSubReg_f64_reg imm:$src3))>;
+
+def : Pat<(v2f32 (scalar_to_vector SPR:$src)),
+          (INSERT_SUBREG (v2f32 (IMPLICIT_DEF)), SPR:$src, arm_ssubreg_0)>;
+def : Pat<(v2f64 (scalar_to_vector DPR:$src)),
+          (INSERT_SUBREG (v2f64 (IMPLICIT_DEF)), DPR:$src, arm_dsubreg_0)>;
+def : Pat<(v4f32 (scalar_to_vector SPR:$src)),
+          (INSERT_SUBREG (v4f32 (IMPLICIT_DEF)), SPR:$src, arm_ssubreg_0)>;
+
+def : Pat<(v8i8 (scalar_to_vector GPR:$src)),
+          (VSETLNi8  (v8i8  (IMPLICIT_DEF)), GPR:$src, (i32 0))>;
+def : Pat<(v4i16 (scalar_to_vector GPR:$src)),
+          (VSETLNi16 (v4i16 (IMPLICIT_DEF)), GPR:$src, (i32 0))>;
+def : Pat<(v2i32 (scalar_to_vector GPR:$src)),
+          (VSETLNi32 (v2i32 (IMPLICIT_DEF)), GPR:$src, (i32 0))>;
+
+def : Pat<(v16i8 (scalar_to_vector GPR:$src)),
+          (INSERT_SUBREG (v16i8 (IMPLICIT_DEF)),
+                         (VSETLNi8 (v8i8 (IMPLICIT_DEF)), GPR:$src, (i32 0)),
+                         arm_dsubreg_0)>;
+def : Pat<(v8i16 (scalar_to_vector GPR:$src)),
+          (INSERT_SUBREG (v8i16 (IMPLICIT_DEF)),
+                         (VSETLNi16 (v4i16 (IMPLICIT_DEF)), GPR:$src, (i32 0)),
+                         arm_dsubreg_0)>;
+def : Pat<(v4i32 (scalar_to_vector GPR:$src)),
+          (INSERT_SUBREG (v4i32 (IMPLICIT_DEF)),
+                         (VSETLNi32 (v2i32 (IMPLICIT_DEF)), GPR:$src, (i32 0)),
+                         arm_dsubreg_0)>;
 
 //   VDUP     : Vector Duplicate (from ARM core register to all elements)
 

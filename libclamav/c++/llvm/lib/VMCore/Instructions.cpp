@@ -154,6 +154,7 @@ PHINode::PHINode(const PHINode &PN)
     OL[i] = PN.getOperand(i);
     OL[i+1] = PN.getOperand(i+1);
   }
+  SubclassOptionalData = PN.SubclassOptionalData;
 }
 
 PHINode::~PHINode() {
@@ -403,6 +404,7 @@ CallInst::CallInst(const CallInst &CI)
   Use *InOL = CI.OperandList;
   for (unsigned i = 0, e = CI.getNumOperands(); i != e; ++i)
     OL[i] = InOL[i];
+  SubclassOptionalData = CI.SubclassOptionalData;
 }
 
 void CallInst::addAttribute(unsigned i, Attributes attr) {
@@ -464,6 +466,7 @@ InvokeInst::InvokeInst(const InvokeInst &II)
   Use *OL = OperandList, *InOL = II.OperandList;
   for (unsigned i = 0, e = II.getNumOperands(); i != e; ++i)
     OL[i] = InOL[i];
+  SubclassOptionalData = II.SubclassOptionalData;
 }
 
 BasicBlock *InvokeInst::getSuccessorV(unsigned idx) const {
@@ -508,6 +511,7 @@ ReturnInst::ReturnInst(const ReturnInst &RI)
                    RI.getNumOperands()) {
   if (RI.getNumOperands())
     Op<0>() = RI.Op<0>();
+  SubclassOptionalData = RI.SubclassOptionalData;
 }
 
 ReturnInst::ReturnInst(LLVMContext &C, Value *retVal, Instruction *InsertBefore)
@@ -663,6 +667,7 @@ BranchInst::BranchInst(const BranchInst &BI) :
     Op<-3>() = BI.Op<-3>();
     Op<-2>() = BI.Op<-2>();
   }
+  SubclassOptionalData = BI.SubclassOptionalData;
 }
 
 
@@ -757,12 +762,6 @@ const Type *AllocationInst::getAllocatedType() const {
   return getType()->getElementType();
 }
 
-AllocaInst::AllocaInst(const AllocaInst &AI)
-  : AllocationInst(AI.getType()->getElementType(),    
-                   (Value*)AI.getOperand(0), Instruction::Alloca,
-                   AI.getAlignment()) {
-}
-
 /// isStaticAlloca - Return true if this alloca is in the entry block of the
 /// function and is a constant size.  If so, the code generator will fold it
 /// into the prolog/epilog code, so it is basically free.
@@ -773,12 +772,6 @@ bool AllocaInst::isStaticAlloca() const {
   // Must be in the entry block.
   const BasicBlock *Parent = getParent();
   return Parent == &Parent->getParent()->front();
-}
-
-MallocInst::MallocInst(const MallocInst &MI)
-  : AllocationInst(MI.getType()->getElementType(), 
-                   (Value*)MI.getOperand(0), Instruction::Malloc,
-                   MI.getAlignment()) {
 }
 
 //===----------------------------------------------------------------------===//
@@ -1048,6 +1041,7 @@ GetElementPtrInst::GetElementPtrInst(const GetElementPtrInst &GEPI)
   Use *GEPIOL = GEPI.OperandList;
   for (unsigned i = 0, E = NumOperands; i != E; ++i)
     OL[i] = GEPIOL[i];
+  SubclassOptionalData = GEPI.SubclassOptionalData;
 }
 
 GetElementPtrInst::GetElementPtrInst(Value *Ptr, Value *Idx,
@@ -1211,13 +1205,6 @@ bool ExtractElementInst::isValidOperands(const Value *Val, const Value *Index) {
 //                           InsertElementInst Implementation
 //===----------------------------------------------------------------------===//
 
-InsertElementInst::InsertElementInst(const InsertElementInst &IE)
-    : Instruction(IE.getType(), InsertElement,
-                  OperandTraits<InsertElementInst>::op_begin(this), 3) {
-  Op<0>() = IE.Op<0>();
-  Op<1>() = IE.Op<1>();
-  Op<2>() = IE.Op<2>();
-}
 InsertElementInst::InsertElementInst(Value *Vec, Value *Elt, Value *Index,
                                      const Twine &Name,
                                      Instruction *InsertBef)
@@ -1265,15 +1252,6 @@ bool InsertElementInst::isValidOperands(const Value *Vec, const Value *Elt,
 //                      ShuffleVectorInst Implementation
 //===----------------------------------------------------------------------===//
 
-ShuffleVectorInst::ShuffleVectorInst(const ShuffleVectorInst &SV) 
-  : Instruction(SV.getType(), ShuffleVector,
-                OperandTraits<ShuffleVectorInst>::op_begin(this),
-                OperandTraits<ShuffleVectorInst>::operands(this)) {
-  Op<0>() = SV.Op<0>();
-  Op<1>() = SV.Op<1>();
-  Op<2>() = SV.Op<2>();
-}
-
 ShuffleVectorInst::ShuffleVectorInst(Value *V1, Value *V2, Value *Mask,
                                      const Twine &Name,
                                      Instruction *InsertBefore)
@@ -1294,10 +1272,12 @@ ShuffleVectorInst::ShuffleVectorInst(Value *V1, Value *V2, Value *Mask,
 ShuffleVectorInst::ShuffleVectorInst(Value *V1, Value *V2, Value *Mask,
                                      const Twine &Name,
                                      BasicBlock *InsertAtEnd)
-  : Instruction(V1->getType(), ShuffleVector,
-                OperandTraits<ShuffleVectorInst>::op_begin(this),
-                OperandTraits<ShuffleVectorInst>::operands(this),
-                InsertAtEnd) {
+: Instruction(VectorType::get(cast<VectorType>(V1->getType())->getElementType(),
+                cast<VectorType>(Mask->getType())->getNumElements()),
+              ShuffleVector,
+              OperandTraits<ShuffleVectorInst>::op_begin(this),
+              OperandTraits<ShuffleVectorInst>::operands(this),
+              InsertAtEnd) {
   assert(isValidOperands(V1, V2, Mask) &&
          "Invalid shuffle vector instruction operands!");
 
@@ -1364,6 +1344,7 @@ InsertValueInst::InsertValueInst(const InsertValueInst &IVI)
     Indices(IVI.Indices) {
   Op<0>() = IVI.getOperand(0);
   Op<1>() = IVI.getOperand(1);
+  SubclassOptionalData = IVI.SubclassOptionalData;
 }
 
 InsertValueInst::InsertValueInst(Value *Agg,
@@ -1410,6 +1391,7 @@ void ExtractValueInst::init(unsigned Idx, const Twine &Name) {
 ExtractValueInst::ExtractValueInst(const ExtractValueInst &EVI)
   : UnaryInstruction(EVI.getType(), ExtractValue, EVI.getOperand(0)),
     Indices(EVI.Indices) {
+  SubclassOptionalData = EVI.SubclassOptionalData;
 }
 
 // getIndexedType - Returns the type of the element that would be extracted
@@ -2526,7 +2508,7 @@ CmpInst::CmpInst(const Type *ty, OtherOps op, unsigned short predicate,
 }
 
 CmpInst *
-CmpInst::Create(LLVMContext &Context, OtherOps Op, unsigned short predicate,
+CmpInst::Create(OtherOps Op, unsigned short predicate,
                 Value *S1, Value *S2, 
                 const Twine &Name, Instruction *InsertBefore) {
   if (Op == Instruction::ICmp) {
@@ -2534,7 +2516,7 @@ CmpInst::Create(LLVMContext &Context, OtherOps Op, unsigned short predicate,
       return new ICmpInst(InsertBefore, CmpInst::Predicate(predicate),
                           S1, S2, Name);
     else
-      return new ICmpInst(Context, CmpInst::Predicate(predicate),
+      return new ICmpInst(CmpInst::Predicate(predicate),
                           S1, S2, Name);
   }
   
@@ -2542,7 +2524,7 @@ CmpInst::Create(LLVMContext &Context, OtherOps Op, unsigned short predicate,
     return new FCmpInst(InsertBefore, CmpInst::Predicate(predicate),
                         S1, S2, Name);
   else
-    return new FCmpInst(Context, CmpInst::Predicate(predicate),
+    return new FCmpInst(CmpInst::Predicate(predicate),
                         S1, S2, Name);
 }
 
@@ -2790,6 +2772,7 @@ SwitchInst::SwitchInst(const SwitchInst &SI)
     OL[i] = InOL[i];
     OL[i+1] = InOL[i+1];
   }
+  SubclassOptionalData = SI.SubclassOptionalData;
 }
 
 SwitchInst::~SwitchInst() {
@@ -2882,144 +2865,230 @@ void SwitchInst::setSuccessorV(unsigned idx, BasicBlock *B) {
 // unit that uses these classes.
 
 GetElementPtrInst *GetElementPtrInst::clone(LLVMContext&) const {
-  return new(getNumOperands()) GetElementPtrInst(*this);
+  GetElementPtrInst *New = new(getNumOperands()) GetElementPtrInst(*this);
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
 BinaryOperator *BinaryOperator::clone(LLVMContext&) const {
-  return Create(getOpcode(), Op<0>(), Op<1>());
+  BinaryOperator *New = Create(getOpcode(), Op<0>(), Op<1>());
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
 FCmpInst* FCmpInst::clone(LLVMContext &Context) const {
-  return new FCmpInst(Context, getPredicate(), Op<0>(), Op<1>());
+  FCmpInst *New = new FCmpInst(getPredicate(), Op<0>(), Op<1>());
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 ICmpInst* ICmpInst::clone(LLVMContext &Context) const {
-  return new ICmpInst(Context, getPredicate(), Op<0>(), Op<1>());
+  ICmpInst *New = new ICmpInst(getPredicate(), Op<0>(), Op<1>());
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
 ExtractValueInst *ExtractValueInst::clone(LLVMContext&) const {
-  return new ExtractValueInst(*this);
+  ExtractValueInst *New = new ExtractValueInst(*this);
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 InsertValueInst *InsertValueInst::clone(LLVMContext&) const {
-  return new InsertValueInst(*this);
+  InsertValueInst *New = new InsertValueInst(*this);
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
 MallocInst *MallocInst::clone(LLVMContext&) const {
-  return new MallocInst(*this);
+  MallocInst *New = new MallocInst(getAllocatedType(),
+                                   (Value*)getOperand(0),
+                                   getAlignment());
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
 AllocaInst *AllocaInst::clone(LLVMContext&) const {
-  return new AllocaInst(*this);
+  AllocaInst *New = new AllocaInst(getAllocatedType(),
+                                   (Value*)getOperand(0),
+                                   getAlignment());
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
 FreeInst *FreeInst::clone(LLVMContext&) const {
-  return new FreeInst(getOperand(0));
+  FreeInst *New = new FreeInst(getOperand(0));
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
 LoadInst *LoadInst::clone(LLVMContext&) const {
-  return new LoadInst(*this);
+  LoadInst *New = new LoadInst(getOperand(0),
+                               Twine(), isVolatile(),
+                               getAlignment());
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
 StoreInst *StoreInst::clone(LLVMContext&) const {
-  return new StoreInst(*this);
+  StoreInst *New = new StoreInst(getOperand(0), getOperand(1),
+                                 isVolatile(), getAlignment());
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
-CastInst *TruncInst::clone(LLVMContext&) const {
-  return new TruncInst(*this);
+TruncInst *TruncInst::clone(LLVMContext&) const {
+  TruncInst *New = new TruncInst(getOperand(0), getType());
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
-CastInst *ZExtInst::clone(LLVMContext&) const {
-  return new ZExtInst(*this);
+ZExtInst *ZExtInst::clone(LLVMContext&) const {
+  ZExtInst *New = new ZExtInst(getOperand(0), getType());
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
-CastInst *SExtInst::clone(LLVMContext&) const {
-  return new SExtInst(*this);
+SExtInst *SExtInst::clone(LLVMContext&) const {
+  SExtInst *New = new SExtInst(getOperand(0), getType());
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
-CastInst *FPTruncInst::clone(LLVMContext&) const {
-  return new FPTruncInst(*this);
+FPTruncInst *FPTruncInst::clone(LLVMContext&) const {
+  FPTruncInst *New = new FPTruncInst(getOperand(0), getType());
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
-CastInst *FPExtInst::clone(LLVMContext&) const {
-  return new FPExtInst(*this);
+FPExtInst *FPExtInst::clone(LLVMContext&) const {
+  FPExtInst *New = new FPExtInst(getOperand(0), getType());
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
-CastInst *UIToFPInst::clone(LLVMContext&) const {
-  return new UIToFPInst(*this);
+UIToFPInst *UIToFPInst::clone(LLVMContext&) const {
+  UIToFPInst *New = new UIToFPInst(getOperand(0), getType());
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
-CastInst *SIToFPInst::clone(LLVMContext&) const {
-  return new SIToFPInst(*this);
+SIToFPInst *SIToFPInst::clone(LLVMContext&) const {
+  SIToFPInst *New = new SIToFPInst(getOperand(0), getType());
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
-CastInst *FPToUIInst::clone(LLVMContext&) const {
-  return new FPToUIInst(*this);
+FPToUIInst *FPToUIInst::clone(LLVMContext&) const {
+  FPToUIInst *New = new FPToUIInst(getOperand(0), getType());
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
-CastInst *FPToSIInst::clone(LLVMContext&) const {
-  return new FPToSIInst(*this);
+FPToSIInst *FPToSIInst::clone(LLVMContext&) const {
+  FPToSIInst *New = new FPToSIInst(getOperand(0), getType());
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
-CastInst *PtrToIntInst::clone(LLVMContext&) const {
-  return new PtrToIntInst(*this);
+PtrToIntInst *PtrToIntInst::clone(LLVMContext&) const {
+  PtrToIntInst *New = new PtrToIntInst(getOperand(0), getType());
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
-CastInst *IntToPtrInst::clone(LLVMContext&) const {
-  return new IntToPtrInst(*this);
+IntToPtrInst *IntToPtrInst::clone(LLVMContext&) const {
+  IntToPtrInst *New = new IntToPtrInst(getOperand(0), getType());
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
-CastInst *BitCastInst::clone(LLVMContext&) const {
-  return new BitCastInst(*this);
+BitCastInst *BitCastInst::clone(LLVMContext&) const {
+  BitCastInst *New = new BitCastInst(getOperand(0), getType());
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
 CallInst *CallInst::clone(LLVMContext&) const {
-  return new(getNumOperands()) CallInst(*this);
+  CallInst *New = new(getNumOperands()) CallInst(*this);
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
-SelectInst *SelectInst::clone(LLVMContext&)   const {
-  return new(getNumOperands()) SelectInst(*this);
+SelectInst *SelectInst::clone(LLVMContext&) const {
+  SelectInst *New = SelectInst::Create(getOperand(0),
+                                       getOperand(1),
+                                       getOperand(2));
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
 VAArgInst *VAArgInst::clone(LLVMContext&) const {
-  return new VAArgInst(*this);
+  VAArgInst *New = new VAArgInst(getOperand(0), getType());
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
 ExtractElementInst *ExtractElementInst::clone(LLVMContext&) const {
-  return ExtractElementInst::Create(*this);
+  ExtractElementInst *New = ExtractElementInst::Create(getOperand(0),
+                                                       getOperand(1));
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
 InsertElementInst *InsertElementInst::clone(LLVMContext&) const {
-  return InsertElementInst::Create(*this);
+  InsertElementInst *New = InsertElementInst::Create(getOperand(0),
+                                                     getOperand(1),
+                                                     getOperand(2));
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
 ShuffleVectorInst *ShuffleVectorInst::clone(LLVMContext&) const {
-  return new ShuffleVectorInst(*this);
+  ShuffleVectorInst *New = new ShuffleVectorInst(getOperand(0),
+                                                 getOperand(1),
+                                                 getOperand(2));
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
 PHINode *PHINode::clone(LLVMContext&) const {
-  return new PHINode(*this);
+  PHINode *New = new PHINode(*this);
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
 ReturnInst *ReturnInst::clone(LLVMContext&) const {
-  return new(getNumOperands()) ReturnInst(*this);
+  ReturnInst *New = new(getNumOperands()) ReturnInst(*this);
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
 BranchInst *BranchInst::clone(LLVMContext&) const {
   unsigned Ops(getNumOperands());
-  return new(Ops, Ops == 1) BranchInst(*this);
+  BranchInst *New = new(Ops, Ops == 1) BranchInst(*this);
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
 SwitchInst *SwitchInst::clone(LLVMContext&) const {
-  return new SwitchInst(*this);
+  SwitchInst *New = new SwitchInst(*this);
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
 InvokeInst *InvokeInst::clone(LLVMContext&) const {
-  return new(getNumOperands()) InvokeInst(*this);
+  InvokeInst *New = new(getNumOperands()) InvokeInst(*this);
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
 UnwindInst *UnwindInst::clone(LLVMContext &C) const {
-  return new UnwindInst(C);
+  UnwindInst *New = new UnwindInst(C);
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }
 
 UnreachableInst *UnreachableInst::clone(LLVMContext &C) const {
-  return new UnreachableInst(C);
+  UnreachableInst *New = new UnreachableInst(C);
+  New->SubclassOptionalData = SubclassOptionalData;
+  return New;
 }

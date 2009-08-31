@@ -1034,6 +1034,20 @@ let isTwoAddress = 1 in {
 
 // Conditional moves
 let Uses = [EFLAGS] in {
+
+// X86 doesn't have 8-bit conditional moves. Use a customDAGSchedInserter to
+// emit control flow. An alternative to this is to mark i8 SELECT as Promote,
+// however that requires promoting the operands, and can induce additional
+// i8 register pressure. Note that CMOV_GR8 is conservatively considered to
+// clobber EFLAGS, because if one of the operands is zero, the expansion
+// could involve an xor.
+let usesCustomDAGSchedInserter = 1, isTwoAddress = 0, Defs = [EFLAGS] in
+def CMOV_GR8 : I<0, Pseudo,
+                 (outs GR8:$dst), (ins GR8:$src1, GR8:$src2, i8imm:$cond),
+                 "#CMOV_GR8 PSEUDO!",
+                 [(set GR8:$dst, (X86cmov GR8:$src1, GR8:$src2,
+                                          imm:$cond, EFLAGS))]>;
+
 let isCommutable = 1 in {
 def CMOVB16rr : I<0x42, MRMSrcReg,       // if <u, GR16 = GR16
                   (outs GR16:$dst), (ins GR16:$src1, GR16:$src2),
@@ -3244,7 +3258,7 @@ def DWARF_LOC   : I<0, Pseudo, (outs),
 // EH Pseudo Instructions
 //
 let isTerminator = 1, isReturn = 1, isBarrier = 1,
-    hasCtrlDep = 1 in {
+    hasCtrlDep = 1, isCodeGenOnly = 1 in {
 def EH_RETURN   : I<0xC3, RawFrm, (outs), (ins GR32:$addr),
                     "ret\t#eh_return, addr: $addr",
                     [(X86ehret GR32:$addr)]>;
@@ -3630,21 +3644,17 @@ def : Pat<(zextloadi32i1 addr:$src), (MOVZX32rm8 addr:$src)>;
 
 // extload bool -> extload byte
 def : Pat<(extloadi8i1 addr:$src),   (MOV8rm      addr:$src)>;
-def : Pat<(extloadi16i1 addr:$src),  (MOVZX16rm8  addr:$src)>,
-         Requires<[In32BitMode]>;
+def : Pat<(extloadi16i1 addr:$src),  (MOVZX16rm8  addr:$src)>;
 def : Pat<(extloadi32i1 addr:$src),  (MOVZX32rm8  addr:$src)>;
-def : Pat<(extloadi16i8 addr:$src),  (MOVZX16rm8  addr:$src)>,
-         Requires<[In32BitMode]>;
+def : Pat<(extloadi16i8 addr:$src),  (MOVZX16rm8  addr:$src)>;
 def : Pat<(extloadi32i8 addr:$src),  (MOVZX32rm8  addr:$src)>;
 def : Pat<(extloadi32i16 addr:$src), (MOVZX32rm16 addr:$src)>;
 
-// anyext
-def : Pat<(i16 (anyext GR8 :$src)), (MOVZX16rr8  GR8 :$src)>,
-         Requires<[In32BitMode]>;
-def : Pat<(i32 (anyext GR8 :$src)), (MOVZX32rr8  GR8 :$src)>,
-         Requires<[In32BitMode]>;
-def : Pat<(i32 (anyext GR16:$src)),
-          (INSERT_SUBREG (i32 (IMPLICIT_DEF)), GR16:$src, x86_subreg_16bit)>;
+// anyext. Define these to do an explicit zero-extend to
+// avoid partial-register updates.
+def : Pat<(i16 (anyext GR8 :$src)), (MOVZX16rr8  GR8 :$src)>;
+def : Pat<(i32 (anyext GR8 :$src)), (MOVZX32rr8  GR8 :$src)>;
+def : Pat<(i32 (anyext GR16:$src)), (MOVZX32rr16 GR16:$src)>;
 
 // (and (i32 load), 255) -> (zextload i8)
 def : Pat<(i32 (and (nvloadi32 addr:$src), (i32 255))),
@@ -3722,6 +3732,10 @@ def : Pat<(srl_su GR16:$src, (i8 8)),
             x86_subreg_16bit)>,
       Requires<[In32BitMode]>;
 def : Pat<(i32 (zext (srl_su GR16:$src, (i8 8)))),
+          (MOVZX32rr8 (EXTRACT_SUBREG (COPY_TO_REGCLASS GR16:$src, GR16_ABCD),
+                                      x86_subreg_8bit_hi))>,
+      Requires<[In32BitMode]>;
+def : Pat<(i32 (anyext (srl_su GR16:$src, (i8 8)))),
           (MOVZX32rr8 (EXTRACT_SUBREG (COPY_TO_REGCLASS GR16:$src, GR16_ABCD),
                                       x86_subreg_8bit_hi))>,
       Requires<[In32BitMode]>;

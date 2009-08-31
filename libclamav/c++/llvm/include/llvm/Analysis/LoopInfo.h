@@ -213,7 +213,6 @@ public:
   }
 
   /// getExitEdges - Return all pairs of (_inside_block_,_outside_block_).
-  /// (Modelled after getExitingBlocks().)
   typedef std::pair<const BlockT*,const BlockT*> Edge;
   void getExitEdges(SmallVectorImpl<Edge> &ExitEdges) const {
     // Sort the blocks vector so that we can use binary search to do quick
@@ -782,11 +781,8 @@ public:
     // loop can be found for them.
     //
     for (typename std::vector<BlockT*>::iterator I = L->Blocks.begin(),
-           E = L->Blocks.end(); I != E; ++I) {
-      typename std::map<BlockT*, LoopT *>::iterator BBMI = BBMap.find(*I);
-      if (BBMI == BBMap.end())                       // Not in map yet...
-        BBMap.insert(BBMI, std::make_pair(*I, L));   // Must be at this level
-    }
+           E = L->Blocks.end(); I != E; ++I)
+      BBMap.insert(std::make_pair(*I, L));
 
     // Now that we have a list of all of the child loops of this loop, check to
     // see if any of them should actually be nested inside of each other.  We

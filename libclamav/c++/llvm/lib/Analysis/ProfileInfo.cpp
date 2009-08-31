@@ -17,6 +17,7 @@
 #include "llvm/Pass.h"
 #include "llvm/Support/CFG.h"
 #include "llvm/Support/Compiler.h"
+#include "llvm/Support/raw_ostream.h"
 #include <set>
 using namespace llvm;
 
@@ -25,6 +26,8 @@ static RegisterAnalysisGroup<ProfileInfo> Z("Profile Information");
 char ProfileInfo::ID = 0;
 
 ProfileInfo::~ProfileInfo() {}
+
+const double ProfileInfo::MissingValue = -1;
 
 double ProfileInfo::getExecutionCount(const BasicBlock *BB) {
   std::map<const Function*, BlockCounts>::iterator J =
@@ -60,22 +63,32 @@ double ProfileInfo::getExecutionCount(const BasicBlock *BB) {
       Count += w;
     }
 
-  BlockInformation[BB->getParent()][BB] = Count;
+  if (Count != MissingValue) BlockInformation[BB->getParent()][BB] = Count;
   return Count;
 }
 
 double ProfileInfo::getExecutionCount(const Function *F) {
-  if (F->isDeclaration()) return MissingValue;
   std::map<const Function*, double>::iterator J =
     FunctionInformation.find(F);
   if (J != FunctionInformation.end())
     return J->second;
 
+  // isDeclaration() is checked here and not at start of function to allow
+  // functions without a body still to have a execution count.
+  if (F->isDeclaration()) return MissingValue;
+
   double Count = getExecutionCount(&F->getEntryBlock());
-  FunctionInformation[F] = Count;
+  if (Count != MissingValue) FunctionInformation[F] = Count;
   return Count;
 }
 
+raw_ostream& llvm::operator<<(raw_ostream &O, ProfileInfo::Edge E) {
+  O << "(";
+  O << (E.first ? E.first->getNameStr() : "0");
+  O << ",";
+  O << (E.second ? E.second->getNameStr() : "0");
+  return O << ")";
+}
 
 //===----------------------------------------------------------------------===//
 //  NoProfile ProfileInfo implementation

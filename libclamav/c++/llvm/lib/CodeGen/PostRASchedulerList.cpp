@@ -40,6 +40,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/ADT/Statistic.h"
 #include <map>
+#include <set>
 using namespace llvm;
 
 STATISTIC(NumNoops, "Number of noops inserted");
@@ -140,6 +141,11 @@ namespace {
     /// Schedule - Schedule the instruction range using list scheduling.
     ///
     void Schedule();
+    
+    /// FixupKills - Fix register kill flags that have been made
+    /// invalid due to scheduling
+    ///
+    void FixupKills(MachineBasicBlock *MBB);
 
     /// Observe - Update liveness information to account for the current
     /// instruction, which will not be scheduled.
@@ -149,6 +155,11 @@ namespace {
     /// FinishBlock - Clean up register live-range state.
     ///
     void FinishBlock();
+
+    /// GenerateLivenessForKills - If true then generate Def/Kill
+    /// information for use in updating register kill. If false then
+    /// generate Def/Kill information for anti-dependence breaking.
+    bool GenerateLivenessForKills;
 
   private:
     void PrescanInstruction(MachineInstr *MI);
@@ -202,6 +213,7 @@ bool PostRAScheduler::runOnMachineFunction(MachineFunction &Fn) {
   for (MachineFunction::iterator MBB = Fn.begin(), MBBe = Fn.end();
        MBB != MBBe; ++MBB) {
     // Initialize register live-range state for scheduling in this block.
+    Scheduler.GenerateLivenessForKills = false;
     Scheduler.StartBlock(MBB);
 
     // Schedule each sequence of instructions not interrupted by a label
@@ -227,6 +239,12 @@ bool PostRAScheduler::runOnMachineFunction(MachineFunction &Fn) {
     Scheduler.EmitSchedule();
 
     // Clean up register live-range state.
+    Scheduler.FinishBlock();
+
+    // Initialize register live-range state again and update register kills
+    Scheduler.GenerateLivenessForKills = true;
+    Scheduler.StartBlock(MBB);
+    Scheduler.FixupKills(MBB);
     Scheduler.FinishBlock();
   }
 
@@ -287,26 +305,28 @@ void SchedulePostRATDList::StartBlock(MachineBasicBlock *BB) {
         }
       }
 
-  // Consider callee-saved registers as live-out, since we're running after
-  // prologue/epilogue insertion so there's no way to add additional
-  // saved registers.
-  //
-  // TODO: If the callee saves and restores these, then we can potentially
-  // use them between the save and the restore. To do that, we could scan
-  // the exit blocks to see which of these registers are defined.
-  // Alternatively, callee-saved registers that aren't saved and restored
-  // could be marked live-in in every block.
-  for (const unsigned *I = TRI->getCalleeSavedRegs(); *I; ++I) {
-    unsigned Reg = *I;
-    Classes[Reg] = reinterpret_cast<TargetRegisterClass *>(-1);
-    KillIndices[Reg] = BB->size();
-    DefIndices[Reg] = ~0u;
-    // Repeat, for all aliases.
-    for (const unsigned *Alias = TRI->getAliasSet(Reg); *Alias; ++Alias) {
-      unsigned AliasReg = *Alias;
-      Classes[AliasReg] = reinterpret_cast<TargetRegisterClass *>(-1);
-      KillIndices[AliasReg] = BB->size();
-      DefIndices[AliasReg] = ~0u;
+  if (!GenerateLivenessForKills) {
+    // Consider callee-saved registers as live-out, since we're running after
+    // prologue/epilogue insertion so there's no way to add additional
+    // saved registers.
+    //
+    // TODO: If the callee saves and restores these, then we can potentially
+    // use them between the save and the restore. To do that, we could scan
+    // the exit blocks to see which of these registers are defined.
+    // Alternatively, callee-saved registers that aren't saved and restored
+    // could be marked live-in in every block.
+    for (const unsigned *I = TRI->getCalleeSavedRegs(); *I; ++I) {
+      unsigned Reg = *I;
+      Classes[Reg] = reinterpret_cast<TargetRegisterClass *>(-1);
+      KillIndices[Reg] = BB->size();
+      DefIndices[Reg] = ~0u;
+      // Repeat, for all aliases.
+      for (const unsigned *Alias = TRI->getAliasSet(Reg); *Alias; ++Alias) {
+        unsigned AliasReg = *Alias;
+        Classes[AliasReg] = reinterpret_cast<TargetRegisterClass *>(-1);
+        KillIndices[AliasReg] = BB->size();
+        DefIndices[AliasReg] = ~0u;
+      }
     }
   }
 }
@@ -751,6 +771,102 @@ bool SchedulePostRATDList::BreakAntiDependencies() {
   }
 
   return Changed;
+}
+
+/// FixupKills - Fix the register kill flags, they may have been made
+/// incorrect by instruction reordering.
+///
+void SchedulePostRATDList::FixupKills(MachineBasicBlock *MBB) {
+  DEBUG(errs() << "Fixup kills for BB ID#" << MBB->getNumber() << '\n');
+
+  std::set<unsigned> killedRegs;
+  BitVector ReservedRegs = TRI->getReservedRegs(MF);
+  
+  // Examine block from end to start...
+  unsigned Count = MBB->size();
+  for (MachineBasicBlock::iterator I = MBB->end(), E = MBB->begin();
+       I != E; --Count) {
+    MachineInstr *MI = --I;
+
+    DEBUG(MI->dump());
+    // Update liveness.  Registers that are defed but not used in this
+    // instruction are now dead. Mark register and all subregs as they
+    // are completely defined.
+    for (unsigned i = 0, e = MI->getNumOperands(); i != e; ++i) {
+      MachineOperand &MO = MI->getOperand(i);
+      if (!MO.isReg()) continue;
+      unsigned Reg = MO.getReg();
+      if (Reg == 0) continue;
+      if (!MO.isDef()) continue;
+      // Ignore two-addr defs.
+      if (MI->isRegTiedToUseOperand(i)) continue;
+      
+      DEBUG(errs() << "*** Handling Defs " << TM.getRegisterInfo()->get(Reg).Name << '\n');
+      
+      KillIndices[Reg] = ~0u;
+      
+      // Repeat for all subregs.
+      for (const unsigned *Subreg = TRI->getSubRegisters(Reg);
+           *Subreg; ++Subreg) {
+        KillIndices[*Subreg] = ~0u;
+      }
+    }
+
+    // Examine all used registers and set kill flag. When a register
+    // is used multiple times we only set the kill flag on the first
+    // use.
+    killedRegs.clear();
+    for (unsigned i = 0, e = MI->getNumOperands(); i != e; ++i) {
+      MachineOperand &MO = MI->getOperand(i);
+      if (!MO.isReg() || !MO.isUse()) continue;
+      unsigned Reg = MO.getReg();
+      if ((Reg == 0) || ReservedRegs.test(Reg)) continue;
+
+      DEBUG(errs() << "*** Handling Uses " << TM.getRegisterInfo()->get(Reg).Name << '\n');
+
+      bool kill = false;
+      if (killedRegs.find(Reg) == killedRegs.end()) {
+        kill = true;
+        // A register is not killed if any subregs are live...
+        for (const unsigned *Subreg = TRI->getSubRegisters(Reg);
+             *Subreg; ++Subreg) {
+          if (KillIndices[*Subreg] != ~0u) {
+            kill = false;
+            break;
+          }
+        }
+
+        // If subreg is not live, then register is killed if it became
+        // live in this instruction
+        if (kill)
+          kill = (KillIndices[Reg] == ~0u);
+      }
+      
+      if (MO.isKill() != kill) {
+        MO.setIsKill(kill);
+        DEBUG(errs() << "Fixed " << MO << " in ");
+        DEBUG(MI->dump());
+      }
+      
+      killedRegs.insert(Reg);
+    }
+    
+    // Mark any used register and subregs as now live...
+    for (unsigned i = 0, e = MI->getNumOperands(); i != e; ++i) {
+      MachineOperand &MO = MI->getOperand(i);
+      if (!MO.isReg() || !MO.isUse()) continue;
+      unsigned Reg = MO.getReg();
+      if ((Reg == 0) || ReservedRegs.test(Reg)) continue;
+
+      DEBUG(errs() << "Killing " << TM.getRegisterInfo()->get(Reg).Name << '\n');
+      KillIndices[Reg] = Count;
+      
+      for (const unsigned *Subreg = TRI->getSubRegisters(Reg);
+           *Subreg; ++Subreg) {
+        KillIndices[*Subreg] = Count;
+      }
+    }
+  }
 }
 
 //===----------------------------------------------------------------------===//

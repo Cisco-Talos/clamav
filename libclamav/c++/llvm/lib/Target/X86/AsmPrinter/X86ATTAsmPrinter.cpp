@@ -28,6 +28,7 @@
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Assembly/Writer.h"
 #include "llvm/MC/MCContext.h"
+#include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCSectionMachO.h"
 #include "llvm/MC/MCStreamer.h"
@@ -625,6 +626,10 @@ bool X86ATTAsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
         O << MO.getImm();
         return false;
       } 
+      if (MO.isGlobal() || MO.isCPI() || MO.isJTI() || MO.isSymbol()) {
+        printSymbolOperand(MO);
+        return false;
+      }
       if (MO.isReg()) {
         O << '(';
         printOperand(MI, OpNo);
@@ -790,8 +795,17 @@ MCOperand X86ATTAsmPrinter::LowerGlobalAddressOperand(const MachineOperand &MO){
   
   // Create a symbol for the name.
   MCSymbol *Sym = OutContext.GetOrCreateSymbol(Name);
-  return MCOperand::CreateMCValue(MCValue::get(Sym, NegatedSymbol,
-                                               MO.getOffset()));
+  // FIXME: We would like an efficient form for this, so we don't have to do a
+  // lot of extra uniquing.
+  const MCExpr *Expr = MCSymbolRefExpr::Create(Sym, OutContext);
+  if (NegatedSymbol)
+    Expr = MCBinaryExpr::CreateSub(Expr, MCSymbolRefExpr::Create(NegatedSymbol,
+                                                                 OutContext),
+                                   OutContext);
+  Expr = MCBinaryExpr::CreateAdd(Expr, MCConstantExpr::Create(MO.getOffset(),
+                                                              OutContext),
+                                 OutContext);
+  return MCOperand::CreateExpr(Expr);
 }
 
 MCOperand X86ATTAsmPrinter::
@@ -803,7 +817,13 @@ LowerExternalSymbolOperand(const MachineOperand &MO){
   }
 
   MCSymbol *Sym = OutContext.GetOrCreateSymbol(Name);
-  return MCOperand::CreateMCValue(MCValue::get(Sym, 0, MO.getOffset()));
+  // FIXME: We would like an efficient form for this, so we don't have to do a
+  // lot of extra uniquing.
+  const MCExpr *Expr =
+    MCBinaryExpr::CreateAdd(MCSymbolRefExpr::Create(Sym, OutContext),
+                            MCConstantExpr::Create(MO.getOffset(),OutContext),
+                            OutContext);
+  return MCOperand::CreateExpr(Expr);
 }
 
 
@@ -844,7 +864,10 @@ void X86ATTAsmPrinter::printMachineInstruction(const MachineInstr *MI) {
     // Emit the call.
     MCSymbol *PICBase = GetPICBaseSymbol();
     TmpInst.setOpcode(X86::CALLpcrel32);
-    TmpInst.addOperand(MCOperand::CreateMCValue(MCValue::get(PICBase)));
+    // FIXME: We would like an efficient form for this, so we don't have to do a
+    // lot of extra uniquing.
+    TmpInst.addOperand(MCOperand::CreateExpr(MCSymbolRefExpr::Create(PICBase,
+                                                                  OutContext)));
     printInstruction(&TmpInst);
 
     // Emit the label.
