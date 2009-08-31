@@ -910,24 +910,19 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
     return ret;
 }
 
-static int cli_scanhtml(int desc, cli_ctx *ctx)
+static int cli_scanhtml(cli_ctx *ctx)
 {
 	char *tempname, fullname[1024];
 	int ret=CL_CLEAN, fd;
-	struct stat sb;
+	struct F_MAP *map = *ctx->fmap;
 
     cli_dbgmsg("in cli_scanhtml()\n");
-
-    if(fstat(desc, &sb) == -1) {
-        cli_errmsg("cli_scanhtml: fstat() failed for descriptor %d\n", desc);
-	return CL_ESTAT;
-    }
 
     /* Because HTML detection is FP-prone and html_normalise_fd() needs to
      * mmap the file don't normalise files larger than 10 MB.
      */
 
-    if(sb.st_size > 10485760) {
+    if(map->len > 10485760) {
 	cli_dbgmsg("cli_scanhtml: exiting (file larger than 10 MB)\n");
 	return CL_CLEAN;
     }
@@ -943,7 +938,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
 
     cli_dbgmsg("cli_scanhtml: using tempdir %s\n", tempname);
 
-    html_normalise_fd(desc, tempname, NULL, ctx->dconf);
+    html_normalise_map(map, tempname, NULL, ctx->dconf);
     snprintf(fullname, 1024, "%s/nocomment.html", tempname);
     fd = open(fullname, O_RDONLY|O_BINARY);
     if (fd >= 0) {
@@ -951,7 +946,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
 	    close(fd);
     }
 
-    if(ret == CL_CLEAN && sb.st_size < 2097152) {
+    if(ret == CL_CLEAN && map->len < 2097152) {
 	    /* limit to 2 MB, we're not interesting in scanning large files in notags form */
 	    /* TODO: don't even create notags if file is over 2 MB */
 	    snprintf(fullname, 1024, "%s/notags.html", tempname);
@@ -1084,11 +1079,12 @@ static int cli_scanscript(int desc, cli_ctx *ctx)
 	return ret;
 }
 
-static int cli_scanhtml_utf16(int desc, cli_ctx *ctx)
+static int cli_scanhtml_utf16(cli_ctx *ctx)
 {
-	char *tempname, buff[512], *decoded;
+	char *tempname, *decoded, *buff;
 	int ret = CL_CLEAN, fd, bytes;
-
+	size_t at = 0;
+	struct F_MAP *map = *ctx->fmap;
 
     cli_dbgmsg("in cli_scanhtml_utf16()\n");
 
@@ -1103,23 +1099,36 @@ static int cli_scanhtml_utf16(int desc, cli_ctx *ctx)
 
     cli_dbgmsg("cli_scanhtml_utf16: using tempfile %s\n", tempname);
 
-    while((bytes = read(desc, buff, sizeof(buff))) > 0) {
+    while(at < map->len) {
+	bytes = map->len - at > map->pgsz * 16 ? map->pgsz * 16 : map->len - at;
+	if(!(buff = fmap_need_off_once(map, at, bytes))) {
+	    close(fd);
+	    cli_unlink(tempname);
+	    free(tempname);
+	    return CL_EREAD;
+	}
 	decoded = cli_utf16toascii(buff, bytes);
 	if(decoded) {
 	    if(write(fd, decoded, strlen(decoded)) == -1) {
 		cli_errmsg("cli_scanhtml_utf16: Can't write to file %s\n", tempname);
 		free(decoded);
+		close(fd);
 		cli_unlink(tempname);
 		free(tempname);
-		close(fd);
 		return CL_EWRITE;
 	    }
 	    free(decoded);
 	}
     }
 
-    lseek(fd, 0, SEEK_SET);
-    ret = cli_scanhtml(fd, ctx);
+    *ctx->fmap = fmap(fd, 0, 0);
+    if(*ctx->fmap) {
+	ret = cli_scanhtml(ctx);
+	fmunmap(*ctx->fmap);
+    } else
+	cli_errmsg("cli_scanhtml_utf16: fmap of %s failed\n", tempname);
+
+    *ctx->fmap = map;
     close(fd);
 
     if(!ctx->engine->keeptmp) {
@@ -1813,7 +1822,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 	    case CL_TYPE_HTML:
 		if(SCAN_HTML && type == CL_TYPE_TEXT_ASCII && (DCONF_DOC & DOC_CONF_HTML)) {
 		    *dettype = CL_TYPE_HTML;
-		    nret = cli_scanhtml(map->fd, ctx);
+		    nret = cli_scanhtml(ctx);
 		}
 		break;
 
@@ -1966,12 +1975,12 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 	case CL_TYPE_HTML:
 	    if(SCAN_HTML && (DCONF_DOC & DOC_CONF_HTML))
-		ret = cli_scanhtml(desc, ctx);
+		ret = cli_scanhtml(ctx);
 	    break;
 
 	case CL_TYPE_HTML_UTF16:
 	    if(SCAN_HTML && (DCONF_DOC & DOC_CONF_HTML))
-		ret = cli_scanhtml_utf16(desc, ctx);
+		ret = cli_scanhtml_utf16(ctx);
 	    break;
 
 	case CL_TYPE_SCRIPT:

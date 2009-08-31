@@ -61,6 +61,7 @@
 #include "libclamav/ole2_extract.h"
 #include "libclamav/htmlnorm.h"
 #include "libclamav/default.h"
+#include "libclamav/fmap.h"
 
 #define MAX_DEL_LOOKAHEAD   200
 
@@ -182,14 +183,19 @@ static int md5sig(const struct optstruct *opts, unsigned int mdb)
 static int htmlnorm(const struct optstruct *opts)
 {
 	int fd;
-
+	struct F_MAP *map;
 
     if((fd = open(optget(opts, "html-normalise")->strarg, O_RDONLY)) == -1) {
 	mprintf("!htmlnorm: Can't open file %s\n", optget(opts, "html-normalise")->strarg);
 	return -1;
     }
 
-    html_normalise_fd(fd, ".", NULL, NULL);
+    if((map = fmap(fd, 0, 0))) {
+	html_normalise_map(map, ".", NULL, NULL);
+	fmunmap(map);
+    } else
+	mprintf("!fmap failed\n");
+	
     close(fd);
 
     return 0;

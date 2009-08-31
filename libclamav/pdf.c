@@ -91,7 +91,7 @@ cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	if(size <= 7)	/* doesn't even include the file header */
 		return CL_CLEAN;
 
-	p = buf = fmap_need_off(map, 0, size); /* FIXME: really port to fmap */
+	p = buf = fmap_need_off_once(map, 0, size); /* FIXME: really port to fmap */
 	if(!buf) {
 		cli_errmsg("cli_pdf: mmap() failed\n");
 		return CL_EMAP;

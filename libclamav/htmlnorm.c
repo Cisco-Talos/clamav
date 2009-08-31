@@ -1710,28 +1710,15 @@ int html_normalise_mem(unsigned char *in_buff, off_t in_size, const char *dirnam
 	return cli_html_normalise(-1, &m_area, dirname, hrefs, dconf);
 }
 
-int html_normalise_fd(int fd, const char *dirname, tag_arguments_t *hrefs,const struct cli_dconf* dconf)
+int html_normalise_map(struct F_MAP *map, const char *dirname, tag_arguments_t *hrefs,const struct cli_dconf* dconf)
 {
 	int retval=FALSE;
 	m_area_t m_area;
-	struct stat statbuf;
 
-	if (fstat(fd, &statbuf) == 0) {
-		m_area.length = statbuf.st_size;
-		m_area.offset = 0;
-		m_area.map = fmap(fd, m_area.offset, m_area.length);
-		if (!m_area.map) {
-			cli_dbgmsg("fmmap HTML failed\n");
-			retval = cli_html_normalise(fd, NULL, dirname, hrefs, dconf);
-		} else {
-			cli_dbgmsg("fmap'ed HTML file\n");
-			retval = cli_html_normalise(-1, &m_area, dirname, hrefs, dconf);
-			fmunmap(m_area.map);
-		}
-	} else {
-		cli_dbgmsg("fstat HTML failed\n");
-		retval = cli_html_normalise(fd, NULL, dirname, hrefs, dconf);
-	}
+	m_area.length = map->len;
+	m_area.offset = 0;
+	m_area.map = map;
+	retval = cli_html_normalise(-1, &m_area, dirname, hrefs, dconf);
 	return retval;
 }
 

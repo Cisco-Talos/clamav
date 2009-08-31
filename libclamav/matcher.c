@@ -557,7 +557,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
     if(!ftonly && ctx->engine->md5_hdb)
 	cli_md5_init(&md5ctx);
 
-    while(1) {
+    while(offset < map->len) {
 	bytes = map->len - offset > SCANBUFF ? SCANBUFF : map->len - offset;
 	if(!(buff = fmap_need_off_once(map, offset, bytes))) {
 	    /* FIXME: FAIL HERE */
