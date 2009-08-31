@@ -1140,7 +1140,7 @@ static int cli_scanhtml_utf16(cli_ctx *ctx)
     return ret;
 }
 
-static int cli_scanole2(int desc, cli_ctx *ctx)
+static int cli_scanole2(cli_ctx *ctx)
 {
 	char *dir;
 	int ret = CL_CLEAN;
@@ -1161,7 +1161,7 @@ static int cli_scanole2(int desc, cli_ctx *ctx)
 	return CL_ETMPDIR;
     }
 
-    ret = cli_ole2_extract(desc, dir, ctx, &vba);
+    ret = cli_ole2_extract(dir, ctx, &vba);
     if(ret!=CL_CLEAN && ret!=CL_VIRUS) {
 	cli_dbgmsg("OLE2: %s\n", cl_strerror(ret));
 	if(!ctx->engine->keeptmp)
@@ -2015,7 +2015,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 	case CL_TYPE_MSOLE2:
 	    if(SCAN_OLE2 && (DCONF_ARCH & ARCH_CONF_OLE2))
-		ret = cli_scanole2(desc, ctx);
+		ret = cli_scanole2(ctx);
 	    break;
 
 	case CL_TYPE_7Z:

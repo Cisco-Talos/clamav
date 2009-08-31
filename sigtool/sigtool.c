@@ -1215,6 +1215,7 @@ static int vbadump(const struct optstruct *opts)
 	char *dir;
 	const char *pt;
 	struct uniq *vba = NULL;
+	cli_ctx ctx;
 
 
     if(optget(opts, "vba-hex")->enabled) {
@@ -1244,7 +1245,18 @@ static int vbadump(const struct optstruct *opts)
         return -1;
     }
 
-    if(cli_ole2_extract(fd, dir, NULL, &vba)) {
+    ctx.fmap = cli_malloc(sizeof(struct F_MAP *));
+    if(!ctx.fmap) {
+	printf("malloc failed\n");
+	return 1;
+    }
+    *ctx.fmap = fmap(fd, 0, 0);
+    if(*ctx.fmap) {
+	printf("fmap failed\n");
+	return 1;
+    }
+    
+    if(cli_ole2_extract(dir, NULL, &vba)) {
 	cli_rmdirs(dir);
         free(dir);
 	close(fd);
