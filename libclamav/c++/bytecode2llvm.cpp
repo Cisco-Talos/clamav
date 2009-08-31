@@ -587,6 +587,9 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 
 int bytecode_init(void)
 {
+    // If already initialized return
+    if (llvm_is_multithreaded())
+	return 0;
     llvm_install_error_handler(llvm_error_handler);
     sys::PrintStackTraceOnErrorSignal();
     atexit(do_shutdown);
