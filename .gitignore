@@ -17,3 +17,4 @@ config.status
 libclamav.pc
 unit_tests/*
 autom4te.cache/*
+libclamav/c++/autom4te.cache/*
