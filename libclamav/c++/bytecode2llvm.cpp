@@ -51,6 +51,10 @@
 #include <csetjmp>
 #include <new>
 
+#include "llvm/Config/config.h"
+#ifndef LLVM_MULTITHREADED
+#error "Multithreading support must be available to LLVM!"
+#endif
 #include "clamav.h"
 #include "clambc.h"
 #include "bytecode_priv.h"

@@ -1,0 +1,90 @@
+dnl   This program is free software; you can redistribute it and/or modify
+dnl   it under the terms of the GNU General Public License as published by
+dnl   the Free Software Foundation; either version 2 of the License, or
+dnl   (at your option) any later version.
+dnl
+dnl   This program is distributed in the hope that it will be useful,
+dnl   but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl   GNU General Public License for more details.
+dnl
+dnl   You should have received a copy of the GNU General Public License
+dnl   along with this program; if not, write to the Free Software
+dnl   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+dnl   MA 02110-1301, USA.
+
+AC_PREREQ([2.59])
+AC_INIT([libclamavc++],[devel],[http://bugs.clamav.net])
+AC_CONFIG_AUX_DIR([config])
+AC_CONFIG_SRCDIR([llvm/configure])
+AC_CONFIG_MACRO_DIR([m4])
+AC_CONFIG_HEADER([clamavcxx-config.h])
+AC_CANONICAL_TARGET
+AM_INIT_AUTOMAKE([-Wall -Wportability -Werror foreign no-define])
+AM_SILENT_RULES([yes])
+
+AC_PROG_CXX
+LT_INIT
+if test "$GXX" != "yes"; then
+    AC_MSG_ERROR([GNU C++ compiler not found, not building LLVM])
+fi
+
+AC_CHECK_GNU_MAKE
+if test -z "$llvm_cv_gnu_make_command"; then
+    AC_MSG_ERROR([GNU make not found])
+fi
+GMAKE="$llvm_cv_gnu_make_command"
+AC_SUBST([GMAKE])
+AC_CONFIG_SUBDIRS([llvm])
+AC_ARG_ENABLE([llvm],AC_HELP_STRING([-enable-llvm],
+				    [Enable 'llvm' JIT/verifier support @<:@default=auto@:>@]),
+				    [enable_llvm=$enableval], [enable_llvm="auto"])
+
+AC_ARG_ENABLE(optimized, AC_HELP_STRING([-enable-optimized],
+	      [Compile with optimizations enabled (default is YES)]),
+	      enable_optimized=$enableval, enable_optimized=default)
+AM_CONDITIONAL(DEBUG_BUILD,[test "x$enable_optimized" == "xno"])
+
+dnl Set configure args for subdir
+if test "$enable_optimized" = "default"; then
+    ac_configure_args="$ac_configure_args --enable-optimized"
+fi
+ac_configure_args="$ac_configure_args --enable-targets=host-only --enable-bindings=none --enable-libffi=no --without-llvmgcc --without-llvmgxx"
+
+if test "$enable_llvm" = "auto"; then
+    dnl Do some sanity checks, and don't automatically build on platforms
+    dnl that are not supported or have broken compilers.
+    dnl The user can override this by specifying --enable-llvm=yes.
+    gxx_version=`${CXX} -dumpversion` ||
+    AC_MSG_ERROR([Unable to get GNU C++ compiler version])
+    case "${gxx_version}" in
+     [012].*|3.[0123].*)
+	AC_MSG_ERROR([C++ compiler too old (${gxx_version})])
+        ;;
+     3.4.[012]*|4.0.1*|4.1.[12]*)
+        AC_MSG_ERROR([C++ compiler is buggy])
+        ;;
+    esac
+
+    case "$target_cpu" in
+	i?86|amd64|x86_64|powerpc*)
+	    case "$target_os" in
+		darwin*|freebsd*|openbsd*|netbsd*|dragonfly*|linux*|solaris*|win32*|mingw*)
+		    ;;
+		*)
+                    AC_MSG_ERROR([OS is not supported, not building LLVM])
+                    ;;
+	    esac
+	    ;;
+	alpha*|arm*)
+	    AC_MSG_ERROR([CPU support is untested, not building LLVM])
+	    ;;
+	*)
+	    AC_MSG_ERROR([Unsupported CPU for JIT: $target_cpu, not building LLVM])
+	    ;;
+    esac
+fi
+
+AC_OUTPUT([
+    Makefile
+])
