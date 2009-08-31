@@ -110,20 +110,15 @@ static	char	const	rcsid[] = "$Id: binhex.c,v 1.23 2007/02/12 20:46:08 njh Exp $"
 #include "fmap.h"
 
 int
-cli_binhex(const char *dir, int desc)
+cli_binhex(const char *dir, struct F_MAP *map)
 {
-	struct stat statb;
 	char *buf, *start, *line;
 	size_t size;
 	long bytesleft;
 	message *m;
 	fileblob *fb;
-	struct F_MAP *map;
 
-	if(fstat(desc, &statb) < 0)
-		return CL_EOPEN;
-
-	size = (size_t)statb.st_size;
+	size = (size_t)map->len;
 
 	if(size == 0)
 		return CL_CLEAN;
@@ -131,10 +126,6 @@ cli_binhex(const char *dir, int desc)
 	m = messageCreate();
 	if(m == NULL)
 		return CL_EMEM;
-	if(!(map = fmap(desc, 0, size))) {
-		messageDestroy(m);
-		return CL_EMAP;
-	}
 
 	start = buf = fmap_need_off_once(map, 0, size);
 	if(!buf) {
@@ -181,7 +172,6 @@ cli_binhex(const char *dir, int desc)
 		buf = ++ptr;
 		bytesleft--;
 	}
-	fmunmap(map);
 
 	if(line)
 		free(line);

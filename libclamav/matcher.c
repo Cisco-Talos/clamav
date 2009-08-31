@@ -600,7 +600,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	    }
 
 	    if(ctx->engine->md5_hdb)
-		cli_md5_update(&md5ctx, buff + maxpatlen * (offset!=0), bytes);
+		cli_md5_update(&md5ctx, buff + maxpatlen * (offset!=0), bytes - maxpatlen * (offset!=0));
 	}
 
 	if(bytes < SCANBUFF) break;

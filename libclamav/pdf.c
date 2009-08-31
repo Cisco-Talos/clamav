@@ -70,7 +70,7 @@ static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
 
 int
-cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
+cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 {
 	off_t size;	/* total number of bytes in the file */
 	off_t bytesleft, trailerlength;
@@ -81,27 +81,16 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 	table_t *md5table;
 	int printed_predictor_message, printed_embedded_font_message, rc;
 	unsigned int files;
-	struct stat statb;
-	struct F_MAP *map;
+	struct F_MAP *map = *ctx->fmap;
 	int opt_failed = 0;
 
 	cli_dbgmsg("in cli_pdf(%s)\n", dir);
 
-	if(fstat(desc, &statb) < 0) {
-		cli_errmsg("cli_pdf: fstat() failed\n");
-		return CL_EOPEN;
-	}
-
-	size = statb.st_size - offset;
+	size = map->len - offset;
 
 	if(size <= 7)	/* doesn't even include the file header */
 		return CL_CLEAN;
 
-	if(!(map = fmap(desc, offset, size))) {
-	    cli_errmsg("cli_pdf: mmap() failed\n");
-	    return CL_EMAP;
-	}
-	
 	p = buf = fmap_need_off(map, 0, size); /* FIXME: really port to fmap */
 	if(!buf) {
 		cli_errmsg("cli_pdf: mmap() failed\n");
@@ -123,7 +112,6 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 	}
 
 	if(!bytesleft) {
-	    fmunmap(map);
 	    cli_dbgmsg("cli_pdf: file header not found\n");
 	    return CL_CLEAN;
 	}
@@ -134,7 +122,6 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 			break;
 
 	if(q <= p) {
-		fmunmap(map);
 		cli_dbgmsg("cli_pdf: trailer not found\n");
 		return CL_CLEAN;
 	}
@@ -153,7 +140,6 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 		 * http://www.cs.cmu.edu/~dst/Adobe/Gallery/anon21jul01-pdf-encryption.txt
 		 * http://www.adobe.com/devnet/pdf/
 		 */
-		fmunmap(map);
 		cli_dbgmsg("cli_pdf: Encrypted PDF files not yet supported\n");
 		return CL_CLEAN;
 	}
@@ -176,7 +162,6 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 				break;
 
 	if(xrefstart == p) {
-		fmunmap(map);
 		cli_dbgmsg("cli_pdf: xref not found\n");
 		return CL_CLEAN;
 	}
@@ -555,7 +540,6 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 		if(rc != CL_CLEAN) break;
 	}
 
-	fmunmap(map);
 
 	tableDestroy(md5table);
 

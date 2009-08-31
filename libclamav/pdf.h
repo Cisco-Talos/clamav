@@ -22,6 +22,6 @@
 
 #include "others.h"
 
-int cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset);
+int cli_pdf(const char *dir, cli_ctx *ctx, off_t offset);
 
 #endif

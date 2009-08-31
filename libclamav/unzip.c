@@ -552,20 +552,15 @@ int cli_unzip(cli_ctx *ctx) {
   return ret;
 }
 
-int cli_unzip_single(int f, cli_ctx *ctx, off_t lhoffl) {
+int cli_unzip_single(cli_ctx *ctx, off_t lhoffl) {
   int ret=CL_CLEAN;
   unsigned int fu=0;
-  struct stat st;
   uint32_t fsize;
-  struct F_MAP *map;
+  struct F_MAP *map = *ctx->fmap;
 
   cli_dbgmsg("in cli_unzip_single\n");
-  if (fstat(f, &st)==-1) {
-    cli_warnmsg("cli_unzip: fstat() failed\n");
-    return CL_ESTAT;
-  }
-  fsize = (uint32_t)(st.st_size - lhoffl);
-  if (lhoffl<0 || lhoffl>st.st_size || (sizeof(off_t)!=sizeof(uint32_t) && (off_t)fsize!=st.st_size - lhoffl)) {
+  fsize = (uint32_t)(map->len - lhoffl);
+  if (lhoffl<0 || lhoffl>map->len || (sizeof(off_t)!=sizeof(uint32_t) && (off_t)fsize!=map->len - lhoffl)) {
     cli_dbgmsg("cli_unzip: bad offset\n");
     return CL_CLEAN;
   }
@@ -574,13 +569,7 @@ int cli_unzip_single(int f, cli_ctx *ctx, off_t lhoffl) {
     return CL_CLEAN;
   }
 
-  if (!(map = fmap(f, 0, st.st_size))) {
-      cli_dbgmsg("cli_unzip: mmap failed\n");
-      return CL_EMAP;
-  }
-
   lhdr(map, lhoffl, fsize, &fu, 0, NULL, &ret, ctx, NULL);
 
-  fmunmap(map);
   return ret;
 }
