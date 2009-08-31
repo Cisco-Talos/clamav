@@ -303,7 +303,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
   return ret;
 }
 
-static unsigned int lhdr(struct F_MAP *map, uint32_t loff,uint32_t zsize, unsigned int *fu, unsigned int fc, uint8_t *ch, int *ret, cli_ctx *ctx, char *tmpd, int fd) {
+static unsigned int lhdr(struct F_MAP *map, uint32_t loff,uint32_t zsize, unsigned int *fu, unsigned int fc, uint8_t *ch, int *ret, cli_ctx *ctx, char *tmpd) {
   uint8_t *lh, *zip;
   char name[256];
   uint32_t csize, usize;
@@ -356,7 +356,7 @@ static unsigned int lhdr(struct F_MAP *map, uint32_t loff,uint32_t zsize, unsign
 	 )
 	) meta = meta->next;
   if(meta) {
-    if(!cli_checkfp(fd, ctx)) {
+    if(!cli_checkfp(map->fd, ctx)) {
       *ctx->virname = meta->virname;
       *ret = CL_VIRUS;
     } else
@@ -438,7 +438,7 @@ static unsigned int lhdr(struct F_MAP *map, uint32_t loff,uint32_t zsize, unsign
 }
 
 
-static unsigned int chdr(struct F_MAP *map, uint32_t coff, uint32_t zsize, unsigned int *fu, unsigned int fc, int *ret, cli_ctx *ctx, char *tmpd, int fd) {
+static unsigned int chdr(struct F_MAP *map, uint32_t coff, uint32_t zsize, unsigned int *fu, unsigned int fc, int *ret, cli_ctx *ctx, char *tmpd) {
   char name[256];
   int last = 0;
   int8_t *ch;
@@ -480,28 +480,23 @@ static unsigned int chdr(struct F_MAP *map, uint32_t coff, uint32_t zsize, unsig
   coff+=CH_clen;
 
   if(CH_off<zsize-SIZEOF_LH) {
-      lhdr(map, CH_off, zsize-CH_off, fu, fc, ch, ret, ctx, tmpd, fd);
+      lhdr(map, CH_off, zsize-CH_off, fu, fc, ch, ret, ctx, tmpd);
   } else cli_dbgmsg("cli_unzip: ch - local hdr out of file\n");
   fmap_unneed_ptr(map, ch, SIZEOF_CH);
   return last?0:coff;
 }
 
 
-int cli_unzip(int f, cli_ctx *ctx) {
+int cli_unzip(cli_ctx *ctx) {
   unsigned int fc=0, fu=0;
   int ret=CL_CLEAN;
   uint32_t fsize, lhoff = 0, coff = 0;
-  struct stat st;
-  struct F_MAP *map;
+  struct F_MAP *map = *ctx->fmap;
   char *tmpd, *ptr;
 
   cli_dbgmsg("in cli_unzip\n");
-  if (fstat(f, &st)==-1) {
-    cli_warnmsg("cli_unzip: fstat() failed\n");
-    return CL_ESTAT;
-  }
-  fsize = (uint32_t)st.st_size;
-  if(sizeof(off_t)!=sizeof(uint32_t) && (off_t)fsize!=st.st_size) {
+  fsize = (uint32_t)map->len;
+  if(sizeof(off_t)!=sizeof(uint32_t) && (off_t)fsize!=map->len) {
     cli_dbgmsg("cli_unzip: file too big\n");
     return CL_CLEAN;
   }
@@ -509,19 +504,11 @@ int cli_unzip(int f, cli_ctx *ctx) {
     cli_dbgmsg("cli_unzip: file too short\n");
     return CL_CLEAN;
   }
-
-  if (!(map = fmap(f, 0, fsize))) {
-      cli_dbgmsg("cli_unzip: mmap failed\n");
-      return CL_EMAP;
-  }
-
   if (!(tmpd = cli_gentemp(ctx->engine->tmpdir))) {
-    fmunmap(map);
     return CL_ETMPDIR;
   }
   if (mkdir(tmpd, 0700)) {
     cli_dbgmsg("cli_unzip: Can't create temporary directory %s\n", tmpd);
-    fmunmap(map);
     free(tmpd);
     return CL_ETMPDIR;
   }
@@ -539,7 +526,7 @@ int cli_unzip(int f, cli_ctx *ctx) {
 
   if(coff) {
       cli_dbgmsg("cli_unzip: central @%x\n", coff);
-      while(ret==CL_CLEAN && (coff=chdr(map, coff, fsize, &fu, fc+1, &ret, ctx, tmpd, f))) {
+      while(ret==CL_CLEAN && (coff=chdr(map, coff, fsize, &fu, fc+1, &ret, ctx, tmpd))) {
 	  fc++;
 	  if (ctx->engine->maxfiles && fu>=ctx->engine->maxfiles) {
 	      cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
@@ -549,7 +536,7 @@ int cli_unzip(int f, cli_ctx *ctx) {
   } else cli_dbgmsg("cli_unzip: central not found, using localhdrs\n");
   if(fu<=(fc/4)) { /* FIXME: make up a sane ratio or remove the whole logic */
     fc = 0;
-    while (ret==CL_CLEAN && lhoff<fsize && (coff=lhdr(map, lhoff, fsize-lhoff, &fu, fc+1, NULL, &ret, ctx, tmpd, f))) {
+    while (ret==CL_CLEAN && lhoff<fsize && (coff=lhdr(map, lhoff, fsize-lhoff, &fu, fc+1, NULL, &ret, ctx, tmpd))) {
       fc++;
       lhoff+=coff;
       if (ctx->engine->maxfiles && fu>=ctx->engine->maxfiles) {
@@ -559,7 +546,6 @@ int cli_unzip(int f, cli_ctx *ctx) {
     }
   }
 
-  fmunmap(map);
   if (!ctx->engine->keeptmp) cli_rmdirs(tmpd);
   free(tmpd);
 
@@ -593,7 +579,7 @@ int cli_unzip_single(int f, cli_ctx *ctx, off_t lhoffl) {
       return CL_EMAP;
   }
 
-  lhdr(map, lhoffl, fsize, &fu, 0, NULL, &ret, ctx, NULL, f);
+  lhdr(map, lhoffl, fsize, &fu, 0, NULL, &ret, ctx, NULL);
 
   fmunmap(map);
   return ret;

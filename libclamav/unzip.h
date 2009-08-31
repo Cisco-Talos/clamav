@@ -26,7 +26,7 @@
 #endif
 
 #include "others.h"
-int cli_unzip(int, cli_ctx *);
+int cli_unzip(cli_ctx *);
 int cli_unzip_single(int, cli_ctx *, off_t);
 
 #ifdef UNZIP_PRIVATE

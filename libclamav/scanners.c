@@ -1933,7 +1933,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 	case CL_TYPE_ZIP:
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP))
-		ret = cli_unzip(desc, ctx);
+		ret = cli_unzip(ctx);
 	    break;
 
 	case CL_TYPE_GZ:
