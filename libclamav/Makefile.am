@@ -334,7 +334,7 @@ endif
 
 if ENABLE_LLVM
 
-SUBDIRS = llvm
+SUBDIRS = c++
 if DEBUG_BUILD
 LLVM_CONFIG=llvm/llvm/Debug/bin/llvm-config
 else

@@ -1006,7 +1006,7 @@ CC
 CFLAGS
 CPP
 CXXCPP'
-ac_subdirs_all='./libclamav/llvm/llvm'
+ac_subdirs_all='./libclamav/c++/llvm'
 
 # Initialize some variables set by options.
 ac_init_help=
@@ -4787,7 +4787,7 @@ else
 fi
 
 if test "$enable_llvm" = "yes"; then
-    subdirs="$subdirs ./libclamav/llvm/llvm"
+    subdirs="$subdirs ./libclamav/c++/llvm"
 
     GMAKE="$llvm_cv_gnu_make_command"
 
@@ -24088,7 +24088,7 @@ else
 fi
 
 
-ac_config_files="$ac_config_files libclamav/Makefile libclamav/llvm/Makefile libclamav/llvm/GNUmakefile clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile Makefile clamav-config libclamav.pc docs/man/clamav-milter.8 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1"
+ac_config_files="$ac_config_files libclamav/Makefile libclamav/c++/Makefile libclamav/c++/GNUmakefile clamscan/Makefile database/Makefile docs/Makefile clamd/Makefile clamdscan/Makefile clamav-milter/Makefile freshclam/Makefile sigtool/Makefile clamconf/Makefile etc/Makefile test/Makefile unit_tests/Makefile clamdtop/Makefile clambc/Makefile Makefile clamav-config libclamav.pc docs/man/clamav-milter.8 docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 docs/man/freshclam.conf.5 docs/man/sigtool.1 docs/man/clamdtop.1"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -25239,8 +25239,8 @@ do
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "libltdl/Makefile") CONFIG_FILES="$CONFIG_FILES libltdl/Makefile" ;;
     "libclamav/Makefile") CONFIG_FILES="$CONFIG_FILES libclamav/Makefile" ;;
-    "libclamav/llvm/Makefile") CONFIG_FILES="$CONFIG_FILES libclamav/llvm/Makefile" ;;
-    "libclamav/llvm/GNUmakefile") CONFIG_FILES="$CONFIG_FILES libclamav/llvm/GNUmakefile" ;;
+    "libclamav/c++/Makefile") CONFIG_FILES="$CONFIG_FILES libclamav/c++/Makefile" ;;
+    "libclamav/c++/GNUmakefile") CONFIG_FILES="$CONFIG_FILES libclamav/c++/GNUmakefile" ;;
     "clamscan/Makefile") CONFIG_FILES="$CONFIG_FILES clamscan/Makefile" ;;
     "database/Makefile") CONFIG_FILES="$CONFIG_FILES database/Makefile" ;;
     "docs/Makefile") CONFIG_FILES="$CONFIG_FILES docs/Makefile" ;;

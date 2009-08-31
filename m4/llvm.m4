@@ -62,7 +62,7 @@ if test "$enable_llvm" = "auto"; then
 fi
 AM_CONDITIONAL([ENABLE_LLVM],[test "$enable_llvm" = "yes"])
 if test "$enable_llvm" = "yes"; then
-    AC_CONFIG_SUBDIRS([./libclamav/llvm/llvm])
+    AC_CONFIG_SUBDIRS([./libclamav/c++/llvm])
     GMAKE="$llvm_cv_gnu_make_command"
     AC_SUBST([GMAKE])
     ac_configure_args="$ac_configure_args --enable-targets=host-only --enable-bindings=none --enable-libffi=no --without-llvmgcc --without-llvmgxx --enable-optimized"

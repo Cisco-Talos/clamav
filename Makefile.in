@@ -69,8 +69,8 @@ DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(top_srcdir)/docs/man/freshclam.1.in \
 	$(top_srcdir)/docs/man/freshclam.conf.5.in \
 	$(top_srcdir)/docs/man/sigtool.1.in \
-	$(top_srcdir)/libclamav/llvm/GNUmakefile.in \
-	$(top_srcdir)/libclamav/llvm/Makefile.in AUTHORS COPYING \
+	$(top_srcdir)/libclamav/c++/GNUmakefile.in \
+	$(top_srcdir)/libclamav/c++/Makefile.in AUTHORS COPYING \
 	ChangeLog INSTALL NEWS config/config.guess config/config.rpath \
 	config/config.sub config/depcomp config/install-sh \
 	config/ltmain.sh config/missing
@@ -91,12 +91,12 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = clamav-config.h
-CONFIG_CLEAN_FILES = libclamav/llvm/Makefile \
-	libclamav/llvm/GNUmakefile clamav-config libclamav.pc \
-	docs/man/clamav-milter.8 docs/man/clamconf.1 docs/man/clamd.8 \
-	docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 \
-	docs/man/freshclam.1 docs/man/freshclam.conf.5 \
-	docs/man/sigtool.1 docs/man/clamdtop.1
+CONFIG_CLEAN_FILES = libclamav/c++/Makefile libclamav/c++/GNUmakefile \
+	clamav-config libclamav.pc docs/man/clamav-milter.8 \
+	docs/man/clamconf.1 docs/man/clamd.8 docs/man/clamd.conf.5 \
+	docs/man/clamdscan.1 docs/man/clamscan.1 docs/man/freshclam.1 \
+	docs/man/freshclam.conf.5 docs/man/sigtool.1 \
+	docs/man/clamdtop.1
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -452,9 +452,9 @@ $(srcdir)/clamav-config.h.in: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 
 distclean-hdr:
 	-rm -f clamav-config.h stamp-h1
-libclamav/llvm/Makefile: $(top_builddir)/config.status $(top_srcdir)/libclamav/llvm/Makefile.in
+libclamav/c++/Makefile: $(top_builddir)/config.status $(top_srcdir)/libclamav/c++/Makefile.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-libclamav/llvm/GNUmakefile: $(top_builddir)/config.status $(top_srcdir)/libclamav/llvm/GNUmakefile.in
+libclamav/c++/GNUmakefile: $(top_builddir)/config.status $(top_srcdir)/libclamav/c++/GNUmakefile.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 clamav-config: $(top_builddir)/config.status $(srcdir)/clamav-config.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@

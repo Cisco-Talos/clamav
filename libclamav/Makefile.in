@@ -342,7 +342,7 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 	distdir
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = llvm
+DIST_SUBDIRS = c++
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -658,7 +658,7 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	ishield.c ishield.h type_desc.h bytecode_api.c \
 	bytecode_api_decl.c bytecode_api.h $(am__append_7) \
 	$(am__append_9) $(am__append_10)
-@ENABLE_LLVM_TRUE@SUBDIRS = llvm
+@ENABLE_LLVM_TRUE@SUBDIRS = c++
 @DEBUG_BUILD_FALSE@@ENABLE_LLVM_TRUE@LLVM_CONFIG = llvm/llvm/Release/bin/llvm-config
 @DEBUG_BUILD_TRUE@@ENABLE_LLVM_TRUE@LLVM_CONFIG = llvm/llvm/Debug/bin/llvm-config
 @ENABLE_LLVM_FALSE@libclamav_la_CPPFLAGS = $(AM_CPPFLAGS)
