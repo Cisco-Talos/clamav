@@ -1620,7 +1620,7 @@ docs/man/clamdtop.1
 ])
 
 AM_CONDITIONAL([ENABLE_LLVM],
-	       [test "$subdirfailed" != "yes" && test "$enable_llvm" != "noi"])
+	       [test "$subdirfailed" != "yes" && test "$enable_llvm" != "no"])
 no_recursion="yes";
 AC_OUTPUT([libclamav/Makefile])
 
