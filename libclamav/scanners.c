@@ -1116,9 +1116,9 @@ static int cli_scanhtml_utf16(int desc, cli_ctx *ctx)
 	    if(write(fd, decoded, strlen(decoded)) == -1) {
 		cli_errmsg("cli_scanhtml_utf16: Can't write to file %s\n", tempname);
 		free(decoded);
+		close(fd);
 		cli_unlink(tempname);
 		free(tempname);
-		close(fd);
 		return CL_EWRITE;
 	    }
 	    free(decoded);
