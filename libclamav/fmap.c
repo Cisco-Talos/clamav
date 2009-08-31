@@ -400,6 +400,20 @@ void fmap_unneed_ptr(struct F_MAP *m, void *ptr, size_t len) {
     return fmap_unneed_off(m, (char *)ptr - (char *)m - m->hdrsz, len);
 }
 
+int fmap_readn(struct F_MAP *m, void *dst, size_t at, size_t len) {
+    char *src;
+
+    if(at > m->len)
+	return -1;
+    if(len > m->len - at)
+	len = m->len - at;
+    src = fmap_need_off_once(m, at, len);
+    if(!src)
+	return -1;
+    memcpy(dst, src, len);
+    return len;
+}
+
 void fmunmap(struct F_MAP *m) {
     void *p = (void *)m;
     size_t len = m->pages * m->pgsz + m->hdrsz;
