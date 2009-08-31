@@ -353,7 +353,7 @@ static always_inline struct stack_entry *pop_stack(struct stack *stack,
 #define DEFINE_BINOP(opc, OP) DEFINE_BINOP_HELPER(opc, OP, WRITE8, WRITE8, WRITE16, WRITE32, WRITE64)
 #define DEFINE_ICMPOP(opc, OP) DEFINE_BINOP_HELPER(opc, OP, WRITE8, WRITE8, WRITE8, WRITE8, WRITE8)
 
-#define CHECK_OP(cond, msg) if((cond)) { cli_dbgmsg(msg); return CL_EBYTECODE;}
+#define CHECK_OP(cond, msg) if((cond)) { cli_dbgmsg(msg); stop = CL_EBYTECODE; break;}
 
 #define DEFINE_CASTOP(opc, OP) \
     case opc*5: {\
