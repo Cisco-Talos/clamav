@@ -498,3 +498,156 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 
     return (acmode & AC_SCAN_FT) ? type : CL_CLEAN;
 }
+
+
+int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode)
+{
+ 	unsigned char *buff;
+	int ret = CL_CLEAN, type = CL_CLEAN, bytes;
+	unsigned int i, evalcnt;
+	uint32_t maxpatlen, offset = 0;
+	uint64_t evalids;
+	struct cli_ac_data gdata, tdata;
+	cli_md5_ctx md5ctx;
+	unsigned char digest[16];
+	struct cli_matcher *groot = NULL, *troot = NULL;
+	struct F_MAP *map = *ctx->fmap;
+
+    if(!ctx->engine) {
+	cli_errmsg("cli_scandesc: engine == NULL\n");
+	return CL_ENULLARG;
+    }
+
+    if(!ftonly)
+	groot = ctx->engine->root[0]; /* generic signatures */
+
+    if(ftype) {
+	for(i = 1; i < CLI_MTARGETS; i++) {
+	    if(cli_mtargets[i].target == ftype) {
+		troot = ctx->engine->root[i];
+		break;
+	    }
+	}
+    }
+
+    if(ftonly) {
+	if(!troot)
+	    return CL_CLEAN;
+
+	maxpatlen = troot->maxpatlen;
+    } else {
+	if(troot)
+	    maxpatlen = MAX(troot->maxpatlen, groot->maxpatlen);
+	else
+	    maxpatlen = groot->maxpatlen;
+    }
+
+    if(!ftonly)
+	if((ret = cli_ac_initdata(&gdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) || (ret = cli_ac_caloff(groot, &gdata, map->fd)))
+	    return ret;
+
+    if(troot) {
+	if((ret = cli_ac_initdata(&tdata, troot->ac_partsigs, troot->ac_lsigs, troot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)) || (ret = cli_ac_caloff(troot, &tdata, map->fd))) {
+	    if(!ftonly)
+		cli_ac_freedata(&gdata);
+	    return ret;
+	}
+    }
+
+    if(!ftonly && ctx->engine->md5_hdb)
+	cli_md5_init(&md5ctx);
+
+    while(1) {
+	bytes = map->len - offset > SCANBUFF ? SCANBUFF : map->len - offset;
+	if(!(buff = fmap_need_off_once(map, offset, bytes))) {
+	    /* FIXME: FAIL HERE */
+	}
+	if(ctx->scanned)
+	    *ctx->scanned += bytes / CL_COUNT_PRECISION;
+
+	if(troot) {
+	    if(troot->ac_only || (ret = cli_bm_scanbuff(buff, bytes, ctx->virname, troot, offset, map->fd)) != CL_VIRUS)
+		ret = cli_ac_scanbuff(buff, bytes, ctx->virname, NULL, NULL, troot, &tdata, offset, ftype, ftoffset, acmode, NULL);
+
+	    if(ret == CL_VIRUS) {
+		if(!ftonly)
+		    cli_ac_freedata(&gdata);
+		cli_ac_freedata(&tdata);
+
+		if(cli_checkfp(map->fd, ctx))
+		    return CL_CLEAN;
+		else
+		    return CL_VIRUS;
+	    }
+	}
+
+	if(!ftonly) {
+	    if(groot->ac_only || (ret = cli_bm_scanbuff(buff, bytes, ctx->virname, groot, offset, map->fd)) != CL_VIRUS)
+		ret = cli_ac_scanbuff(buff, bytes, ctx->virname, NULL, NULL, groot, &gdata, offset, ftype, ftoffset, acmode, NULL);
+
+	    if(ret == CL_VIRUS) {
+		cli_ac_freedata(&gdata);
+		if(troot)
+		    cli_ac_freedata(&tdata);
+		if(cli_checkfp(map->fd, ctx))
+		    return CL_CLEAN;
+		else
+		    return CL_VIRUS;
+
+	    } else if((acmode & AC_SCAN_FT) && ret >= CL_TYPENO) {
+		if(ret > type)
+		    type = ret;
+	    }
+
+	    if(ctx->engine->md5_hdb)
+		cli_md5_update(&md5ctx, buff + maxpatlen * (offset!=0), bytes);
+	}
+
+	if(bytes < SCANBUFF) break;
+	offset += SCANBUFF - maxpatlen;
+    }
+
+    if(troot) {
+	for(i = 0; i < troot->ac_lsigs; i++) {
+	    evalcnt = 0;
+	    evalids = 0;
+	    if(cli_ac_chklsig(troot->ac_lsigtable[i]->logic, troot->ac_lsigtable[i]->logic + strlen(troot->ac_lsigtable[i]->logic), tdata.lsigcnt[i], &evalcnt, &evalids, 0) == 1) {
+		if(ctx->virname)
+		    *ctx->virname = troot->ac_lsigtable[i]->virname;
+		ret = CL_VIRUS;
+		break;
+	    }
+	}
+	cli_ac_freedata(&tdata);
+    }
+
+    if(groot) {
+	if(ret != CL_VIRUS) for(i = 0; i < groot->ac_lsigs; i++) {
+	    evalcnt = 0;
+	    evalids = 0;
+	    if(cli_ac_chklsig(groot->ac_lsigtable[i]->logic, groot->ac_lsigtable[i]->logic + strlen(groot->ac_lsigtable[i]->logic), gdata.lsigcnt[i], &evalcnt, &evalids, 0) == 1) {
+		if(ctx->virname)
+		    *ctx->virname = groot->ac_lsigtable[i]->virname;
+		ret = CL_VIRUS;
+		break;
+	    }
+	}
+	cli_ac_freedata(&gdata);
+    }
+
+    if(ret == CL_VIRUS) {
+	lseek(map->fd, 0, SEEK_SET);
+	if(cli_checkfp(map->fd, ctx))
+	    return CL_CLEAN;
+	else
+	    return CL_VIRUS;
+    }
+
+    if(!ftonly && ctx->engine->md5_hdb) {
+	cli_md5_final(digest, &md5ctx);
+	if(cli_bm_scanbuff(digest, 16, ctx->virname, ctx->engine->md5_hdb, 0, -1) == CL_VIRUS && (cli_bm_scanbuff(digest, 16, NULL, ctx->engine->md5_fp, 0, -1) != CL_VIRUS))
+	    return CL_VIRUS;
+    }
+
+    return (acmode & AC_SCAN_FT) ? type : CL_CLEAN;
+}

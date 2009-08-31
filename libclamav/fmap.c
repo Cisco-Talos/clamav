@@ -53,19 +53,6 @@
 
 #define READAHEAD_PAGES 4
 
-struct F_MAP {
-    int fd;
-    time_t mtime;
-    size_t offset;
-    size_t len;
-    unsigned int pages;
-    unsigned int hdrsz;
-    unsigned int pgsz;
-    unsigned int paged;
-    uint32_t bitmap[]; /* FIXME: do not use flexible arrays */
-};
-
-
 static unsigned int fmap_align_items(unsigned int sz, unsigned int al) {
     return sz / al + (sz % al != 0);
 }

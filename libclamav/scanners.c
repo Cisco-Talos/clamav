@@ -1894,7 +1894,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    cli_dbgmsg("cli_magic_scandesc: Hit recursion limit, only scanning raw file\n");
 	else
 	    cli_dbgmsg("Raw mode: No support for special files\n");
-	if((ret = cli_scandesc(desc, ctx, 0, 0, NULL, AC_SCAN_VIR)) == CL_VIRUS)
+	if((ret = cli_fmap_scandesc(ctx, 0, 0, NULL, AC_SCAN_VIR)) == CL_VIRUS)
 	    cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, desc);
 	fmunmap(*ctx->fmap);
 	ctx->fmap--; 

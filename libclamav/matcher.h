@@ -140,6 +140,7 @@ struct cli_target_info {
 int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, cli_ctx *ctx, cli_file_t ftype, struct cli_ac_data **acdata);
 
 int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode);
+int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode);
 
 int cli_caloff(const char *offstr, struct cli_target_info *info, int fd, unsigned int target, uint32_t *offdata, uint32_t *offset_min, uint32_t *offset_max);
 

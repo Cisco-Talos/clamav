@@ -21,7 +21,19 @@
 #ifndef __FMAP_H
 #define __FMAP_H
 
-struct F_MAP;
+#include "cltypes.h"
+
+struct F_MAP {
+    int fd;
+    time_t mtime;
+    size_t offset;
+    size_t len;
+    unsigned int pages;
+    unsigned int hdrsz;
+    unsigned int pgsz;
+    unsigned int paged;
+    uint32_t bitmap[]; /* FIXME: do not use flexible arrays */
+};
 
 struct F_MAP *fmap(int fd, off_t offset, size_t len);
 void fmunmap(struct F_MAP *m);
