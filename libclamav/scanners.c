@@ -1791,7 +1791,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 			    memset(&peinfo, 0, sizeof(struct cli_exe_info));
 			    peinfo.offset = fpt->offset;
 			    lseek(map->fd, fpt->offset, SEEK_SET);
-			    if(cli_peheader(map->fd, &peinfo) == 0) {
+			    if(cli_peheader(map, &peinfo) == 0) {
 				cli_dbgmsg("*** Detected embedded PE file at %u ***\n", (unsigned int) fpt->offset);
 				if(peinfo.section)
 				    free(peinfo.section);
@@ -1904,8 +1904,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	return ret;
     }
 
-    lseek(desc, 0, SEEK_SET); /* FIXMEFMAP: remove ? */
-    type = cli_filetype2(desc, ctx->engine); /* FIXMEFMAP: port to fmap */
+    type = cli_filetype2(*ctx->fmap, ctx->engine); /* FIXMEFMAP: port to fmap */
     if(type == CL_TYPE_ERROR) {
 	cli_dbgmsg("cli_magic_scandesc: cli_filetype2 returned CL_TYPE_ERROR\n");
 	fmunmap(*ctx->fmap);

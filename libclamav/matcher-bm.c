@@ -51,7 +51,7 @@ int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern, const 
 	return CL_EMALFDB;
     }
 
-    if((ret = cli_caloff(offset, NULL, -1, root->type, pattern->offdata, &pattern->offset_min, &pattern->offset_max))) {
+    if((ret = cli_caloff(offset, NULL, NULL, root->type, pattern->offdata, &pattern->offset_min, &pattern->offset_max))) {
 	cli_errmsg("cli_bm_addpatt: Can't calculate offset for signature %s\n", pattern->virname);
 	return ret;
     }
@@ -156,7 +156,7 @@ void cli_bm_free(struct cli_matcher *root)
     }
 }
 
-int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, uint32_t offset, int fd)
+int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, uint32_t offset, struct F_MAP *map)
 {
 	uint32_t i, j, off, off_min, off_max;
 	uint8_t found, pchain, shift;
@@ -229,7 +229,7 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 		if(found && p->length + p->prefix_length == j) {
 		    if(p->offset_min != CLI_OFF_ANY) {
 			if(p->offdata[0] != CLI_OFF_ABSOLUTE) {
-			    ret = cli_caloff(NULL, &info, fd, root->type, p->offdata, &off_min, &off_max);
+			    ret = cli_caloff(NULL, &info, map, root->type, p->offdata, &off_min, &off_max);
 			    if(ret != CL_SUCCESS) {
 				cli_errmsg("cli_bm_scanbuff: Can't calculate relative offset in signature for %s\n", p->virname);
 				if(info.exeinfo.section)

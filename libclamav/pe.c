@@ -38,7 +38,6 @@
 #include "cltypes.h"
 #include "clamav.h"
 #include "others.h"
-#include "fmap.h"
 #include "pe.h"
 #include "petite.h"
 #include "fsg.h"
@@ -985,7 +984,6 @@ int cli_scanpe(cli_ctx *ctx)
 
     CLI_UNPTEMP("DISASM",(exe_sections,0));
     disasmbuf((unsigned char*)epbuff, epsize, ndesc);
-    lseek(ndesc, 0, SEEK_SET);
     ret = cli_scandesc(ndesc, ctx, CL_TYPE_PE_DISASM, 1, NULL, AC_SCAN_VIR);
     close(ndesc);
     CLI_TMPUNLK();
@@ -2153,7 +2151,7 @@ int cli_scanpe(cli_ctx *ctx)
     return CL_CLEAN;
 }
 
-int cli_peheader(int desc, struct cli_exe_info *peinfo)
+int cli_peheader(struct F_MAP *map, struct cli_exe_info *peinfo)
 {
 	uint16_t e_magic; /* DOS signature ("MZ") */
 	uint32_t e_lfanew; /* address of new exe header */
@@ -2171,19 +2169,14 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	unsigned int err, pe_plus = 0;
 	uint32_t valign, falign, hdr_size;
 	size_t fsize;
+	ssize_t at;
 
     cli_dbgmsg("in cli_peheader\n");
 
-    if(fstat(desc, &sb) == -1) {
-	cli_dbgmsg("fstat failed\n");
-	return -1;
-    }
-
-    fsize = sb.st_size - peinfo->offset;
-
-    if(cli_readn(desc, &e_magic, sizeof(e_magic)) != sizeof(e_magic)) {
+    fsize = map->len - peinfo->offset;
+    if(fmap_readn(map, &e_magic, peinfo->offset, sizeof(e_magic)) != sizeof(e_magic)) {
 	cli_dbgmsg("Can't read DOS signature\n");
-	return -1;
+	return CL_CLEAN;
     }
 
     if(EC16(e_magic) != IMAGE_DOS_SIGNATURE && EC16(e_magic) != IMAGE_DOS_SIGNATURE_OLD) {
@@ -2191,10 +2184,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	return -1;
     }
 
-    lseek(desc, 58, SEEK_CUR); /* skip to the end of the DOS header */
-
-    if(cli_readn(desc, &e_lfanew, sizeof(e_lfanew)) != sizeof(e_lfanew)) {
-	cli_dbgmsg("Can't read new header address\n");
+    if(fmap_readn(map, &e_lfanew, peinfo->offset + 58 + sizeof(e_magic), sizeof(e_lfanew)) != sizeof(e_lfanew)) {
 	/* truncated header? */
 	return -1;
     }
@@ -2205,13 +2195,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	return -1;
     }
 
-    if(lseek(desc, peinfo->offset + e_lfanew, SEEK_SET) < 0) {
-	/* probably not a PE file */
-	cli_dbgmsg("Can't lseek to e_lfanew\n");
-	return -1;
-    }
-
-    if(cli_readn(desc, &file_hdr, sizeof(struct pe_image_file_hdr)) != sizeof(struct pe_image_file_hdr)) {
+    if(fmap_readn(map, &file_hdr, peinfo->offset + e_lfanew, sizeof(struct pe_image_file_hdr)) != sizeof(struct pe_image_file_hdr)) {
 	/* bad information in e_lfanew - probably not a PE file */
 	cli_dbgmsg("Can't read file header\n");
 	return -1;
@@ -2229,26 +2213,29 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	return -1;
     }
 
-    if(cli_readn(desc, &optional_hdr32, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32)) {
+    at = peinfo->offset + e_lfanew + sizeof(struct pe_image_file_hdr);
+    if(fmap_readn(map, &optional_hdr32, at, sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr32)) {
         cli_dbgmsg("Can't read optional file header\n");
 	return -1;
     }
+    at += sizeof(struct pe_image_optional_hdr32);
 
     if(EC16(optional_hdr64.Magic)==PE32P_SIGNATURE) { /* PE+ */
         if(EC16(file_hdr.SizeOfOptionalHeader)!=sizeof(struct pe_image_optional_hdr64)) {
 	    cli_dbgmsg("Incorrect SizeOfOptionalHeader for PE32+\n");
 	    return -1;
 	}
-        if(cli_readn(desc, &optional_hdr32 + 1, sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32)) {
+	if(fmap_readn(map, &optional_hdr32 + 1, at, sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32)) != sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32)) {
 	    cli_dbgmsg("Can't read optional file header\n");
 	    return -1;
 	}
+	at += sizeof(struct pe_image_optional_hdr64) - sizeof(struct pe_image_optional_hdr32);
 	hdr_size = EC32(optional_hdr64.SizeOfHeaders);
 	pe_plus=1;
     } else { /* PE */
 	if (EC16(file_hdr.SizeOfOptionalHeader)!=sizeof(struct pe_image_optional_hdr32)) {
 	    /* Seek to the end of the long header */
-	    lseek(desc, (EC16(file_hdr.SizeOfOptionalHeader)-sizeof(struct pe_image_optional_hdr32)), SEEK_CUR);
+	    at += EC16(file_hdr.SizeOfOptionalHeader)-sizeof(struct pe_image_optional_hdr32);
 	}
 	hdr_size = EC32(optional_hdr32.SizeOfHeaders);
     }
@@ -2274,7 +2261,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	return -1;
     }
 
-    if(cli_readn(desc, section_hdr, peinfo->nsections * sizeof(struct pe_image_section_hdr)) != peinfo->nsections * sizeof(struct pe_image_section_hdr)) {
+    if(fmap_readn(map, section_hdr, at, peinfo->nsections * sizeof(struct pe_image_section_hdr)) != peinfo->nsections * sizeof(struct pe_image_section_hdr)) {
         cli_dbgmsg("Can't read section header\n");
 	cli_dbgmsg("Possibly broken PE file\n");
 	free(section_hdr);
@@ -2282,6 +2269,7 @@ int cli_peheader(int desc, struct cli_exe_info *peinfo)
 	peinfo->section = NULL;
 	return -1;
     }
+    at += sizeof(struct pe_image_section_hdr)*peinfo->nsections;
 
     for(i = 0; falign!=0x200 && i<peinfo->nsections; i++) {
 	/* file alignment fallback mode - blah */

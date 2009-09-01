@@ -24,6 +24,7 @@
 #include "matcher.h"
 #include "filetypes.h"
 #include "cltypes.h"
+#include "fmap.h"
 
 struct cli_bm_patt {
     unsigned char *pattern, *prefix;
@@ -37,7 +38,7 @@ struct cli_bm_patt {
 
 int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern, const char *offset);
 int cli_bm_init(struct cli_matcher *root);
-int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, uint32_t offset, int fd);
+int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, uint32_t offset, struct F_MAP *map);
 void cli_bm_free(struct cli_matcher *root);
 
 #endif

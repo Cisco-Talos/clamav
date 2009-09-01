@@ -143,10 +143,10 @@ cli_file_t cli_filetype(const unsigned char *buf, size_t buflen, const struct cl
 
 int is_tar(unsigned char *buf, unsigned int nbytes);
 
-cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
+cli_file_t cli_filetype2(struct F_MAP *map, const struct cl_engine *engine)
 {
-	unsigned char buff[MAGIC_BUFFER_SIZE + 1], *decoded;
-	int bread, sret;
+	unsigned char *buff, *decoded;
+	int bread = MIN(map->len, MAGIC_BUFFER_SIZE), sret;
 	cli_file_t ret = CL_TYPE_BINARY_DATA;
 	struct cli_matcher *root;
 	struct cli_ac_data mdata;
@@ -157,11 +157,9 @@ cli_file_t cli_filetype2(int desc, const struct cl_engine *engine)
 	return CL_TYPE_ERROR;
     }
 
-    memset(buff, 0, sizeof(buff));
-    bread = cli_readn(desc, buff, MAGIC_BUFFER_SIZE);
-    if(bread == -1)
+    buff = fmap_need_off_once(map, 0, bread);
+    if(!buff)
 	return CL_TYPE_ERROR;
-    buff[bread] = 0;
 
     ret = cli_filetype(buff, bread, engine);
 
