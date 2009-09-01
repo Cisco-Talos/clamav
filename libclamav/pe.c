@@ -331,10 +331,6 @@ static void cli_parseres_special(uint32_t base, uint32_t rva, struct F_MAP *map,
 	    return;
     rawaddr += named*8; /* skip named */
     /* this is just used in a heuristic detection, so don't give error on failure */
-    if (!entry) {
-	    cli_dbgmsg("cli_parseres_special: failed to allocate memory for resource directory:%lu\n", (unsigned long)entries);
-	    return;
-    }
     if(!(entry = fmap_need_off(map, rawaddr+16, entries*8))) {
 	    cli_dbgmsg("cli_parseres_special: failed to read resource directory at:%lu\n", (unsigned long)rawaddr+16);
 	    return;
@@ -1722,15 +1718,9 @@ int cli_scanpe(cli_ctx *ctx)
 	    return CL_CLEAN;
 	}
 
-	if((src = (char *) cli_malloc(ssize)) == NULL) {
-	    free(exe_sections);
-	    return CL_EMEM;
-	}
-
 	if(!exe_sections[i + 1].raw || !(src = fmap_need_off_once(map, exe_sections[i + 1].raw, ssize))) {
 	    cli_dbgmsg("UPX: Can't read raw data of section %d\n", i+1);
 	    free(exe_sections);
-	    free(dest);
 	    return CL_EREAD;
 	}
 
@@ -1738,7 +1728,6 @@ int cli_scanpe(cli_ctx *ctx)
 	    free(exe_sections);
 	    return CL_EMEM;
 	}
-
 
 	/* try to detect UPX code */
 	if(cli_memstr(UPX_NRV2B, 24, epbuff + 0x69, 13) || cli_memstr(UPX_NRV2B, 24, epbuff + 0x69 + 8, 13)) {
