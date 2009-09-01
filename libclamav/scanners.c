@@ -431,77 +431,67 @@ static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
     return ret;
 }
 
-static int cli_scangzip(int desc, cli_ctx *ctx)
+static int cli_scangzip(cli_ctx *ctx)
 {
-	int fd, bytes, ret = CL_CLEAN;
-	unsigned long int size = 0;
-	char *buff;
+	int fd, ret = CL_CLEAN;
+	unsigned char buff[FILEBUFF];
 	char *tmpname;
-	gzFile gd;
-
-
+	z_stream z;
+	size_t at = 0;
+	struct F_MAP *map = *ctx->fmap;
+ 	
     cli_dbgmsg("in cli_scangzip()\n");
 
-    if((gd = gzdopen(dup(desc), "rb")) == NULL) {
-	cli_dbgmsg("GZip: Can't open descriptor %d\n", desc);
-	return CL_EOPEN;
+    memset(&z, 0, sizeof(z));
+    if(inflateInit2(&z, MAX_WBITS + 16) != Z_OK) {
+	cli_dbgmsg("GZip: InflateInit failed\n");
+	return CL_CLEAN;
     }
 
-    if((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd))) {
+    if((ret = cli_gentempfd(ctx->engine->tmpdir, &tmpname, &fd)) != CL_SUCCESS) {
 	cli_dbgmsg("GZip: Can't generate temporary file.\n");
-	gzclose(gd);
+	inflateEnd(&z);
 	return ret;
     }
 
-    if(!(buff = (char *) cli_malloc(FILEBUFF))) {
-	cli_dbgmsg("GZip: Unable to malloc %u bytes.\n", FILEBUFF);
-	gzclose(gd);
-	close(fd);
-	if(!ctx->engine->keeptmp) {
-	    if(cli_unlink(tmpname)) {
-	    	free(tmpname);
+    while (at < map->len) {
+	unsigned int bytes = MIN(map->len - at, map->pgsz);
+	if(!(z.next_in = fmap_need_off_once(map, at, bytes))) {
+	    cli_dbgmsg("GZip: Can't read %u bytes @ %lu.\n", bytes, (long unsigned)at);
+	    inflateEnd(&z);
+	    close(fd);
+	    if (cli_unlink(tmpname)) {
+		free(tmpname);
 		return CL_EUNLINK;
 	    }
+	    free(tmpname);
+	    return CL_EREAD;
 	}
-	return CL_EMEM;
-    }
-
-    while((bytes = gzread(gd, buff, FILEBUFF)) > 0) {
-	size += bytes;
-
-	if(cli_checklimits("GZip", ctx, size + FILEBUFF, 0, 0)!=CL_CLEAN)
-	    break;
-
-	if(cli_writen(fd, buff, bytes) != bytes) {
-	    cli_dbgmsg("GZip: Can't write to file.\n");
-	    close(fd);
-	    if(!ctx->engine->keeptmp) {
-	    	if (cli_unlink(tmpname)) {
+	at += bytes;
+	z.avail_in = bytes;
+	do {
+	    int inf;
+	    z.avail_out = sizeof(buff);
+            z.next_out = buff;
+	    inf = inflate(&z, Z_NO_FLUSH);
+	    if(inf != Z_OK && inf != Z_STREAM_END && inf != Z_BUF_ERROR) {
+		cli_dbgmsg("GZip: Bad stream.\n");
+		at = map->len;
+		break;
+	    }
+	    if(cli_writen(fd, buff, sizeof(buff) - z.avail_out) < 0) {
+		inflateEnd(&z);	    
+		close(fd);
+		if (cli_unlink(tmpname)) {
 		    free(tmpname);
-		    gzclose(gd);
-		    free(buff);
 		    return CL_EUNLINK;
 		}
 	    }
-	    free(tmpname);	
-	    gzclose(gd);
-	    free(buff);
-	    return CL_EWRITE;
-	}
+	} while (z.avail_out == 0);
     }
 
-    free(buff);
-    gzclose(gd);
+    inflateEnd(&z);	    
 
-    if(ret == CL_VIRUS) {
-	close(fd);
-	if(!ctx->engine->keeptmp)
-	    if (cli_unlink(tmpname)) ret = CL_EUNLINK;
-	free(tmpname);	
-	return ret;
-    }
-
-    lseek(fd, 0, SEEK_SET);
     if((ret = cli_magic_scandesc(fd, ctx)) == CL_VIRUS ) {
 	cli_dbgmsg("GZip: Infected with %s\n", *ctx->virname);
 	close(fd);
@@ -511,14 +501,13 @@ static int cli_scangzip(int desc, cli_ctx *ctx)
 		return CL_EUNLINK;
 	    }
 	}
-	free(tmpname);	
+	free(tmpname);
 	return CL_VIRUS;
     }
     close(fd);
     if(!ctx->engine->keeptmp)
 	if (cli_unlink(tmpname)) ret = CL_EUNLINK;
-    free(tmpname);	
-
+    free(tmpname);
     return ret;
 }
 
@@ -1940,7 +1929,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 	case CL_TYPE_GZ:
 	    if(SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_GZ))
-		ret = cli_scangzip(desc, ctx);
+		ret = cli_scangzip(ctx);
 	    break;
 
 	case CL_TYPE_BZ:
