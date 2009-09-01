@@ -904,8 +904,8 @@ int cli_scanpe(cli_ctx *ctx)
 		for(j = 0; j < md5_sect->soff_len && md5_sect->soff[j] <= exe_sections[i].rsz; j++) {
 		    if(md5_sect->soff[j] == exe_sections[i].rsz) {
 			unsigned char md5_dig[16];
-			if(cli_md5sect(map, &exe_sections[i], md5_dig) && cli_bm_scanbuff(md5_dig, 16, ctx->virname, ctx->engine->md5_mdb, 0, -1) == CL_VIRUS) {
-			    if(cli_bm_scanbuff(md5_dig, 16, NULL, ctx->engine->md5_fp, 0, -1) != CL_VIRUS) {
+			if(cli_md5sect(map, &exe_sections[i], md5_dig) && cli_bm_scanbuff(md5_dig, 16, ctx->virname, ctx->engine->md5_mdb, 0, NULL) == CL_VIRUS) {
+			    if(cli_bm_scanbuff(md5_dig, 16, NULL, ctx->engine->md5_fp, 0, NULL) != CL_VIRUS) {
 
 				free(section_hdr);
 				free(exe_sections);
@@ -2164,7 +2164,6 @@ int cli_peheader(struct F_MAP *map, struct cli_exe_info *peinfo)
 	    struct pe_image_optional_hdr32 opt32;
 	} pe_opt;
 	struct pe_image_section_hdr *section_hdr;
-	struct stat sb;
 	int i;
 	unsigned int err, pe_plus = 0;
 	uint32_t valign, falign, hdr_size;

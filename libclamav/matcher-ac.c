@@ -836,7 +836,6 @@ int cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, stru
 	unsigned int i;
 	struct cli_ac_patt *patt;
 	struct cli_target_info info;
-	struct stat sb;
 
     if(map) {
 	memset(&info, 0, sizeof(info));
@@ -1487,7 +1486,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     if(new->lsigid[0])
 	root->ac_lsigtable[new->lsigid[1]]->virname = new->virname;
 
-    ret = cli_caloff(offset, NULL, -1, root->type, new->offdata, &new->offset_min, &new->offset_max);
+    ret = cli_caloff(offset, NULL, NULL, root->type, new->offdata, &new->offset_min, &new->offset_max);
     if(ret != CL_SUCCESS) {
 	mpool_free(root->mempool, new->prefix ? new->prefix : new->pattern);
 	mpool_ac_free_alt(root->mempool, new);

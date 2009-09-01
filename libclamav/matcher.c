@@ -111,9 +111,6 @@ int cli_caloff(const char *offstr, struct cli_target_info *info, struct F_MAP *m
 	char offcpy[65];
 	unsigned int n, val;
 	char *pt;
-	off_t pos;
-	struct stat sb;
-
 
     if(!info) { /* decode offset string */
 	if(!offstr) {
