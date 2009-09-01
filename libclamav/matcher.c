@@ -305,9 +305,9 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
     int ret = CL_EMEM;
     struct F_MAP *map = *ctx->fmap;
 
-    if(!(*ctx->fmap = fmap(desc, 0, 0))) {
+    if((*ctx->fmap = fmap(desc, 0, 0))) {
 	ret = cli_fmap_scandesc(ctx, ftype, ftonly, ftoffset, acmode);
-	fmunmap(map);
+	fmunmap(*ctx->fmap);
     }
     *ctx->fmap = map;
     return ret;
