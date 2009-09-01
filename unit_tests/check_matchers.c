@@ -116,7 +116,7 @@ START_TEST (test_bm_scanbuff) {
     ret = cli_parse_add(root, "Sig3", "babedead", 0, 0, "*", 0, NULL, 0);
     fail_unless(ret == CL_SUCCESS, "cli_parse_add() failed");
 
-    ret = cli_bm_scanbuff("blah\xde\xad\xbe\xef", 12, &virname, root, 0, -1);
+    ret = cli_bm_scanbuff("blah\xde\xad\xbe\xef", 12, &virname, root, 0, -1,NULL);
     fail_unless(ret == CL_VIRUS, "cli_bm_scanbuff() failed");
     fail_unless(!strncmp(virname, "Sig2", 4), "Incorrect signature matched in cli_bm_scanbuff()\n");
     cli_bm_free(root);
