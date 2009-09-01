@@ -2084,7 +2084,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 	case CL_TYPE_ELF:
 	    if(SCAN_ELF && ctx->dconf->elf)
-		ret = cli_scanelf(desc, ctx);
+		ret = cli_scanelf(ctx);
 	    break;
 
 	case CL_TYPE_MACHO:
