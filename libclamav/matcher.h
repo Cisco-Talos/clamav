@@ -73,10 +73,10 @@ struct cli_matcher {
 
     /* Extended Boyer-Moore */
     uint8_t *bm_shift;
-    struct cli_bm_patt **bm_suffix;
+    struct cli_bm_patt **bm_suffix, **bm_pattab;
     struct cli_hashset md5_sizes_hs;
     uint32_t *soff, soff_len; /* for PE section sigs */
-    uint32_t bm_patterns, bm_reloff_num, bm_absoff_num;
+    uint32_t bm_offmode, bm_patterns, bm_reloff_num, bm_absoff_num;
 
     /* Extended Aho-Corasick */
     uint32_t ac_partsigs, ac_nodes, ac_patterns, ac_lsigs;

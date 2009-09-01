@@ -36,9 +36,15 @@ struct cli_bm_patt {
     unsigned char pattern0;
 };
 
+struct cli_bm_off {
+    uint32_t *offset, *offtab, cnt, pos;
+};
+
 int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern, const char *offset);
 int cli_bm_init(struct cli_matcher *root);
-int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, uint32_t offset, struct F_MAP *map);
+int cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *data, struct F_MAP *map);
+void cli_bm_freeoff(struct cli_bm_off *data);
+int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, uint32_t offset, struct F_MAP *map, struct cli_bm_off *offdata);
 void cli_bm_free(struct cli_matcher *root);
 
 #endif

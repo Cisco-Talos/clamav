@@ -900,9 +900,8 @@ int cli_scanpe(cli_ctx *ctx)
 		for(j = 0; j < md5_sect->soff_len && md5_sect->soff[j] <= exe_sections[i].rsz; j++) {
 		    if(md5_sect->soff[j] == exe_sections[i].rsz) {
 			unsigned char md5_dig[16];
-			if(cli_md5sect(map, &exe_sections[i], md5_dig) && cli_bm_scanbuff(md5_dig, 16, ctx->virname, ctx->engine->md5_mdb, 0, NULL) == CL_VIRUS) {
-			    if(cli_bm_scanbuff(md5_dig, 16, NULL, ctx->engine->md5_fp, 0, NULL) != CL_VIRUS) {
-
+			if(cli_md5sect(map, &exe_sections[i], md5_dig) && cli_bm_scanbuff(md5_dig, 16, ctx->virname, ctx->engine->md5_mdb, 0, NULL, NULL) == CL_VIRUS) {
+			    if(cli_bm_scanbuff(md5_dig, 16, NULL, ctx->engine->md5_fp, 0, NULL, NULL) != CL_VIRUS) {
 				free(section_hdr);
 				free(exe_sections);
 				return cli_checkfp(map->fd, ctx) ? CL_CLEAN : CL_VIRUS;

@@ -1,3 +1,15 @@
+Tue Sep  1 20:50:12 CEST 2009 (tk)
+----------------------------------
+ * libclamav: use BM matcher in offset mode for PE files larger than 256kB
+	      (10% speedup on average; 30-40% for large executables)
+
+Tue Sep  1 11:11:43 CEST 2009 (tk)
+----------------------------------
+ * libclamav: in bm_offmode only load sigs with non-floating absolute and
+	      relative offsets into BM matcher (load other ones into AC)
+	      and use per-file computed offset table to pick up best shifts
+	      (not enabled by default, bb#1300)
+
 Sun Aug 30 23:56:49 CEST 2009 (acab)
 ------------------------------------
  * libclamav: unify CL_TYPE_MAIL scanning
