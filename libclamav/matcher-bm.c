@@ -264,7 +264,7 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
     if(offdata) {
 	if(offdata->pos == offdata->cnt)
 	    return CL_CLEAN;
-	i += offdata->offtab[offdata->pos];
+	i += offdata->offtab[offdata->pos] - offset;
     }
     for(; i < length - BM_BLOCK_SIZE + 1; ) {
 	idx = HASH(buffer[i], buffer[i + 1], buffer[i + 2]);
