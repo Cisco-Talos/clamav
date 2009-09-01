@@ -261,7 +261,7 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
     memset(&info, 0, sizeof(info));
     i = BM_MIN_LENGTH - BM_BLOCK_SIZE;
-    if(root->bm_offmode) {
+    if(offdata) {
 	if(offdata->pos == offdata->cnt)
 	    return CL_CLEAN;
 	i += offdata->offtab[offdata->pos];
@@ -274,7 +274,7 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	    prefix = buffer[i - BM_MIN_LENGTH + BM_BLOCK_SIZE];
 	    p = root->bm_suffix[idx];
 	    if(p && p->cnt == 1 && p->pattern0 != prefix) {
-		if(root->bm_offmode) {
+		if(offdata) {
 		    off = offset + i - BM_MIN_LENGTH + BM_BLOCK_SIZE;
 		    for(; off >= offdata->offtab[offdata->pos] && offdata->pos < offdata->cnt; offdata->pos++);
 		    if(offdata->pos == offdata->cnt || off >= offdata->offtab[offdata->pos])
@@ -302,7 +302,7 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 		    continue;
 		}
 
-		if(root->bm_offmode) {
+		if(offdata) {
 		    if(p->offdata[0] == CLI_OFF_ABSOLUTE) {
 			if(p->offset_min != offset + off - p->prefix_length) {
 			    p = p->next;
@@ -339,36 +339,33 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 		}
 
 		if(found && p->length + p->prefix_length == j) {
-		    if(!root->bm_offmode) {
-			if(p->offset_min != CLI_OFF_ANY) {
-			    if(p->offdata[0] != CLI_OFF_ABSOLUTE) {
-				ret = cli_caloff(NULL, &info, fd, root->type, p->offdata, &off_min, &off_max);
-				if(ret != CL_SUCCESS) {
-				    cli_errmsg("cli_bm_scanbuff: Can't calculate relative offset in signature for %s\n", p->virname);
-				    if(info.exeinfo.section)
-					free(info.exeinfo.section);
-				    return ret;
-				}
-			    } else {
-				off_min = p->offset_min;
-				off_max = p->offset_max;
+		    if(!offdata && (p->offset_min != CLI_OFF_ANY)) {
+			if(p->offdata[0] != CLI_OFF_ABSOLUTE) {
+			    ret = cli_caloff(NULL, &info, fd, root->type, p->offdata, &off_min, &off_max);
+			    if(ret != CL_SUCCESS) {
+				cli_errmsg("cli_bm_scanbuff: Can't calculate relative offset in signature for %s\n", p->virname);
+				if(info.exeinfo.section)
+				    free(info.exeinfo.section);
+				return ret;
 			    }
-			    off = offset + i - p->prefix_length - BM_MIN_LENGTH + BM_BLOCK_SIZE;
-			    if(off_max < off || off_min > off) {
-				p = p->next;
-				continue;
-			    }
+			} else {
+			    off_min = p->offset_min;
+			    off_max = p->offset_max;
 			}
-			if(virname)
-			    *virname = p->virname;
-			if(info.exeinfo.section)
-			    free(info.exeinfo.section);
-			return CL_VIRUS;
+			off = offset + i - p->prefix_length - BM_MIN_LENGTH + BM_BLOCK_SIZE;
+			if(off_max < off || off_min > off) {
+			    p = p->next;
+			    continue;
+			}
 		    }
+		    if(virname)
+			*virname = p->virname;
+		    if(info.exeinfo.section)
+			free(info.exeinfo.section);
+		    return CL_VIRUS;
 		}
 		p = p->next;
 	    }
-
 	    shift = 1;
 	}
 
