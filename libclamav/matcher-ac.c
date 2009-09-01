@@ -856,7 +856,7 @@ int cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, int 
 	    if(info.exeinfo.section)
 		free(info.exeinfo.section);
 	    return ret;
-	} else if(data->offset[patt->offset_min] + patt->length > info.fsize) {
+	} else if((data->offset[patt->offset_min] != CLI_OFF_NONE) && (data->offset[patt->offset_min] + patt->length > info.fsize)) {
 	    data->offset[patt->offset_min] = CLI_OFF_NONE;
 	}
     }

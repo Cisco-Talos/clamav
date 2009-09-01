@@ -76,7 +76,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
 	if(!acdata && (ret = cli_ac_initdata(&mdata, troot->ac_partsigs, troot->ac_lsigs, troot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)))
 	    return ret;
 
-	if(troot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, troot, offset, -1)) != CL_VIRUS)
+	if(troot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, troot, offset, -1, NULL)) != CL_VIRUS)
 	    ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, troot, acdata ? (acdata[0]) : (&mdata), offset, ftype, NULL, AC_SCAN_VIR, NULL);
 
 	if(!acdata)
@@ -89,7 +89,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
     if(!acdata && (ret = cli_ac_initdata(&mdata, groot->ac_partsigs, groot->ac_lsigs, groot->ac_reloff_num, CLI_DEFAULT_AC_TRACKLEN)))
 	return ret;
 
-    if(groot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, groot, offset, -1)) != CL_VIRUS)
+    if(groot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, groot, offset, -1, NULL)) != CL_VIRUS)
 	ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, groot, acdata ? (acdata[1]) : (&mdata), offset, ftype, NULL, AC_SCAN_VIR, NULL);
 
     if(!acdata)
@@ -201,7 +201,9 @@ int cli_caloff(const char *offstr, struct cli_target_info *info, int fd, unsigne
     } else {
 	/* calculate relative offsets */
 	if(info->status == -1) {
-	    *offset_min = *offset_max = 0;
+	    *offset_min = CLI_OFF_NONE;
+	    if(offset_max)
+		*offset_max = CLI_OFF_NONE;
 	    return CL_SUCCESS;
 	}
 
@@ -237,7 +239,9 @@ int cli_caloff(const char *offstr, struct cli_target_info *info, int fd, unsigne
 		/* einfo *may* fail */
 		lseek(fd, pos, SEEK_SET);
 		info->status = -1;
-		*offset_min = *offset_max = 0;
+		*offset_min = CLI_OFF_NONE;
+		if(offset_max)
+		    *offset_max = CLI_OFF_NONE;
 		return CL_SUCCESS;
 	    }
 	    lseek(fd, pos, SEEK_SET);
@@ -263,7 +267,7 @@ int cli_caloff(const char *offstr, struct cli_target_info *info, int fd, unsigne
 
 	    case CLI_OFF_SX_PLUS:
 		if(offdata[3] >= info->exeinfo.nsections)
-		    *offset_min = 0;
+		    *offset_min = CLI_OFF_NONE;
 		else
 		    *offset_min = info->exeinfo.section[offdata[3]].raw + offdata[1];
 		break;
@@ -273,9 +277,7 @@ int cli_caloff(const char *offstr, struct cli_target_info *info, int fd, unsigne
 		return CL_EARG;
 	}
 
-	if(!*offset_min)
-	    *offset_max = 0;
-	else
+	if(offset_max && *offset_min != CLI_OFF_NONE)
 	    *offset_max = *offset_min + offdata[2];
     }
 
@@ -303,7 +305,7 @@ int cli_checkfp(int fd, cli_ctx *ctx)
 	    return 0;
 	}
 
-	if(cli_bm_scanbuff(digest, 16, &virname, ctx->engine->md5_fp, 0, -1) == CL_VIRUS) {
+	if(cli_bm_scanbuff(digest, 16, &virname, ctx->engine->md5_fp, 0, -1, NULL) == CL_VIRUS) {
 	    cli_dbgmsg("cli_checkfp(): Found false positive detection (fp sig: %s)\n", virname);
 	    free(digest);
 	    lseek(fd, pos, SEEK_SET);
@@ -324,6 +326,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 	uint32_t buffersize, length, maxpatlen, shift = 0, offset = 0;
 	uint64_t evalids;
 	struct cli_ac_data gdata, tdata;
+	struct cli_bm_off toff;
 	cli_md5_ctx md5ctx;
 	unsigned char digest[16];
 	struct cli_matcher *groot = NULL, *troot = NULL;
@@ -375,6 +378,12 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 		cli_ac_freedata(&gdata);
 	    return ret;
 	}
+	if(troot->bm_offmode && (ret = cli_bm_initoff(troot, &toff, desc))) {
+	    if(!ftonly)
+		cli_ac_freedata(&gdata);
+	    cli_ac_freedata(&tdata);
+	    return ret;
+	}
     }
 
     if(!ftonly && ctx->engine->md5_hdb)
@@ -397,7 +406,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 	    length += maxpatlen;
 
 	if(troot) {
-	    if(troot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, troot, offset, desc)) != CL_VIRUS)
+	    if(troot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, troot, offset, desc, &toff)) != CL_VIRUS)
 		ret = cli_ac_scanbuff(upt, length, ctx->virname, NULL, NULL, troot, &tdata, offset, ftype, ftoffset, acmode, NULL);
 
 	    if(ret == CL_VIRUS) {
@@ -405,6 +414,8 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 		if(!ftonly)
 		    cli_ac_freedata(&gdata);
 		cli_ac_freedata(&tdata);
+		if(troot->bm_offmode)
+		    cli_bm_freeoff(&toff);
 
 		if(cli_checkfp(desc, ctx))
 		    return CL_CLEAN;
@@ -414,14 +425,17 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 	}
 
 	if(!ftonly) {
-	    if(groot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, groot, offset, desc)) != CL_VIRUS)
+	    if(groot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, groot, offset, desc, NULL)) != CL_VIRUS)
 		ret = cli_ac_scanbuff(upt, length, ctx->virname, NULL, NULL, groot, &gdata, offset, ftype, ftoffset, acmode, NULL);
 
 	    if(ret == CL_VIRUS) {
 		free(buffer);
 		cli_ac_freedata(&gdata);
-		if(troot)
+		if(troot) {
 		    cli_ac_freedata(&tdata);
+		    if(troot->bm_offmode)
+			cli_bm_freeoff(&toff);
+		}
 		if(cli_checkfp(desc, ctx))
 		    return CL_CLEAN;
 		else
@@ -466,6 +480,8 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 	    }
 	}
 	cli_ac_freedata(&tdata);
+	if(troot->bm_offmode)
+	    cli_bm_freeoff(&toff);
     }
 
     if(groot) {
@@ -492,7 +508,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 
     if(!ftonly && ctx->engine->md5_hdb) {
 	cli_md5_final(digest, &md5ctx);
-	if(cli_bm_scanbuff(digest, 16, ctx->virname, ctx->engine->md5_hdb, 0, -1) == CL_VIRUS && (cli_bm_scanbuff(digest, 16, NULL, ctx->engine->md5_fp, 0, -1) != CL_VIRUS))
+	if(cli_bm_scanbuff(digest, 16, ctx->virname, ctx->engine->md5_hdb, 0, -1, NULL) == CL_VIRUS && (cli_bm_scanbuff(digest, 16, NULL, ctx->engine->md5_fp, 0, -1, NULL) != CL_VIRUS))
 	    return CL_VIRUS;
     }
 
