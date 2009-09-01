@@ -157,6 +157,7 @@ int cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *data, int 
     if(!root->bm_patterns) {
 	data->offtab = data->offset = 0;
 	data->cnt = data->pos = 0;
+	return CL_SUCCESS;
     }
     memset(&info, 0, sizeof(info));
     if(fstat(fd, &sb) == -1) {
