@@ -369,7 +369,7 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	    shift = 1;
 	}
 
-	if(root->bm_offmode) {
+	if(offdata) {
 	    off = offset + i - BM_MIN_LENGTH + BM_BLOCK_SIZE;
 	    for(; off >= offdata->offtab[offdata->pos] && offdata->pos < offdata->cnt; offdata->pos++);
 	    if(offdata->pos == offdata->cnt || off >= offdata->offtab[offdata->pos])

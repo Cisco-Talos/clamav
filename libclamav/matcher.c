@@ -322,7 +322,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 {
  	unsigned char *buffer, *buff, *endbl, *upt;
 	int ret = CL_CLEAN, type = CL_CLEAN, bytes;
-	unsigned int i, evalcnt;
+	unsigned int i, evalcnt, bm_offmode = 0;
 	uint32_t buffersize, length, maxpatlen, shift = 0, offset = 0;
 	uint64_t evalids;
 	struct cli_ac_data gdata, tdata;
@@ -330,6 +330,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 	cli_md5_ctx md5ctx;
 	unsigned char digest[16];
 	struct cli_matcher *groot = NULL, *troot = NULL;
+	struct stat sb;
 
 
     if(!ctx->engine) {
@@ -378,11 +379,18 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 		cli_ac_freedata(&gdata);
 	    return ret;
 	}
-	if(troot->bm_offmode && (ret = cli_bm_initoff(troot, &toff, desc))) {
-	    if(!ftonly)
-		cli_ac_freedata(&gdata);
-	    cli_ac_freedata(&tdata);
-	    return ret;
+	if(troot->bm_offmode) {
+	    if(fstat(desc, &sb) != -1) {
+		if(sb.st_size >= CLI_DEFAULT_BM_OFFMODE_FSIZE) {
+		    if((ret = cli_bm_initoff(troot, &toff, desc))) {
+			if(!ftonly)
+			    cli_ac_freedata(&gdata);
+			cli_ac_freedata(&tdata);
+			return ret;
+		    }
+		    bm_offmode = 1;
+		}
+	    }
 	}
     }
 
@@ -406,7 +414,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 	    length += maxpatlen;
 
 	if(troot) {
-	    if(troot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, troot, offset, desc, &toff)) != CL_VIRUS)
+	    if(troot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, troot, offset, desc, bm_offmode ? &toff : NULL)) != CL_VIRUS)
 		ret = cli_ac_scanbuff(upt, length, ctx->virname, NULL, NULL, troot, &tdata, offset, ftype, ftoffset, acmode, NULL);
 
 	    if(ret == CL_VIRUS) {
@@ -414,7 +422,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 		if(!ftonly)
 		    cli_ac_freedata(&gdata);
 		cli_ac_freedata(&tdata);
-		if(troot->bm_offmode)
+		if(bm_offmode)
 		    cli_bm_freeoff(&toff);
 
 		if(cli_checkfp(desc, ctx))
@@ -433,7 +441,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 		cli_ac_freedata(&gdata);
 		if(troot) {
 		    cli_ac_freedata(&tdata);
-		    if(troot->bm_offmode)
+		    if(bm_offmode)
 			cli_bm_freeoff(&toff);
 		}
 		if(cli_checkfp(desc, ctx))
@@ -480,7 +488,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 	    }
 	}
 	cli_ac_freedata(&tdata);
-	if(troot->bm_offmode)
+	if(bm_offmode)
 	    cli_bm_freeoff(&toff);
     }
 
