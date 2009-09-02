@@ -502,7 +502,7 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 		break;
 	    case 2:
 	    case 3:
-		ty->kind = (t == 2) ? DStructType : DPackedStructType;
+		ty->kind = (t == 2) ? DPackedStructType : DStructType;
 		ty->size = ty->align = 0;/* TODO:calculate size/align of structs */
 		parseType(bc, ty, buffer, &offset, len, &ok);
 		if (!ok) {
@@ -554,7 +554,7 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 static int types_equal(const struct cli_bc *bc, uint16_t *apity2ty, uint16_t tid, uint16_t apitid)
 {
     unsigned i;
-    const struct cli_bc_type *ty = &bc->types[tid - 64];
+    const struct cli_bc_type *ty = &bc->types[tid - 65];
     const struct cli_bc_type *apity = &cli_apicall_types[apitid];
     /* If we've already verified type equality, return.
      * Since we need to check equality of recursive types, we assume types are

@@ -324,6 +324,11 @@ public:
 		++I;
 	    }
 	    for (unsigned i=func->numArgs;i<func->numValues;i++) {
+		if (!func->types[i]) {
+		    //instructions without return value, like store
+		    Values[i] = 0;
+		    continue;
+		}
 		Values[i] = Builder.CreateAlloca(mapType(func->types[i]));
 	    }
 	    numLocals = func->numLocals;
