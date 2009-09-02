@@ -111,15 +111,17 @@ libclamav_internal_utils_nothreads_la_CFLAGS=-DCL_NOTHREADS
 
 if ENABLE_LLVM
 LLVMLIBADD=c++/libclamavcxx.la -lstdc++ -lm
+LLVMDEP=c++/libclamavcxx.la
 SUBDIRS=c++
 else
 LLVMLIBADD=libclamav_nocxx.la
+LLVMDEP=libclamav_nocxx.la
 endif
 
 libclamav_nocxx_la_SOURCES = bytecode_nojit.c
 
 libclamav_la_LIBADD = @LIBLTDL@ $(IFACELIBADD) $(LLVMLIBADD) libclamav_internal_utils.la @LIBCLAMAV_LIBS@ @THREAD_LIBS@
-libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) libclamav_internal_utils.la
+libclamav_la_DEPENDENCIES =  @LTDLDEPS@ $(IFACEDEP) $(LLVMDEP) libclamav_internal_utils.la
 libclamav_la_CFLAGS = -DSEARCH_LIBDIR=\"$(libdir)\"
 libclamav_la_LDFLAGS = @TH_SAFE@ -version-info @LIBCLAMAV_VERSION@ -no-undefined
 

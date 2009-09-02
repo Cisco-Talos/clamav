@@ -23,7 +23,11 @@ endif
 
 $(LLVM_CONFIG): build-llvm
 
+# we know this will be built with GNU make, so its safe to use GNU make specific
+# $(shell ...)
+LLVM_DEPS=$(shell $(LLVM_CONFIG) --libfiles jit nativecodegen)
 libclamavcxx_la_CPPFLAGS = $(AM_CPPFLAGS) `$(LLVM_CONFIG) --cppflags`
+libclamavcxx_la_DEPENDENCIES = $(LLVM_DEPS)
 libclamavcxx_la_LDFLAGS = `$(LLVM_CONFIG) --ldflags --libs jit nativecodegen`
 libclamavcxx_la_SOURCES = bytecode2llvm.cpp dummy.h
 noinst_LTLIBRARIES = libclamavcxx.la
