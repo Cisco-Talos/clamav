@@ -112,6 +112,14 @@ START_TEST (test_apicalls)
 }
 END_TEST
 
+START_TEST (test_apicalls2)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/apicalls2.cbc", 0xf00d, CL_SUCCESS, 0);
+//    runtest("input/apicalls2.cbc", 0xf00d, CL_SUCCESS, 1);
+}
+END_TEST
+
 START_TEST (test_div0)
 {
     cl_init(CL_INIT_DEFAULT);
@@ -130,6 +138,7 @@ Suite *test_bytecode_suite(void)
     tcase_add_test(tc_cli_arith, test_retmagic);
     tcase_add_test(tc_cli_arith, test_arith);
     tcase_add_test(tc_cli_arith, test_apicalls);
+    tcase_add_test(tc_cli_arith, test_apicalls2);
     tcase_add_test(tc_cli_arith, test_div0);
     return s;
 }

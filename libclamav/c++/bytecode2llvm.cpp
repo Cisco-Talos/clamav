@@ -188,13 +188,26 @@ private:
     unsigned numLocals;
     unsigned numArgs;
 
+    Value *getOperand(const struct cli_bc_func *func, const Type *Ty, operand_t operand)
+    {
+	unsigned map[] = {0, 1, 2, 3, 3, 4, 4, 4, 4};
+	if (operand < func->numValues)
+	    return Values[operand];
+	unsigned w = (Ty->getPrimitiveSizeInBits()+7)/8;
+	return convertOperand(func, map[w], operand);
+    }
+
     Value *convertOperand(const struct cli_bc_func *func, const Type *Ty, operand_t operand)
     {
 	unsigned map[] = {0, 1, 2, 3, 3, 4, 4, 4, 4};
 	if (operand < func->numArgs)
 	    return Values[operand];
-	if (operand < func->numValues)
-	    return Builder.CreateLoad(Values[operand]);
+	if (operand < func->numValues) {
+	    Value *V = Values[operand];
+	    if (V->getType() == Ty)
+		return V;
+	    return Builder.CreateLoad(V);
+	}
 	unsigned w = (Ty->getPrimitiveSizeInBits()+7)/8;
 	return convertOperand(func, map[w], operand);
     }
@@ -303,6 +316,7 @@ public:
 					   BytecodeID+"f"+Twine(j), M);
 	    Functions[j]->setDoesNotThrow();
 	}
+	const Type *I32Ty = Type::getInt32Ty(Context);
 	for (unsigned j=0;j<bc->num_func;j++) {
 	    PrettyStackTraceString CrashInfo("Generate LLVM IR");
 	    const struct cli_bc_func *func = &bc->funcs[j];
@@ -350,6 +364,10 @@ public:
 			case OP_ZEXT:
 			case OP_SEXT:
 			case OP_TRUNC:
+			case OP_GEP1:
+			case OP_GEP2:
+			case OP_GEPN:
+			case OP_STORE:
 			    // these instructions represents operands differently
 			    break;
 			default:
@@ -526,6 +544,43 @@ public:
 			    Store(inst->dest, Builder.CreateCall(DestF, args.begin(), args.end()));
 			    break;
 			}
+			case OP_GEP1:
+			{
+			    Value *V = Values[inst->u.binop[0]];
+			    Value *Op = convertOperand(func, I32Ty, inst->u.binop[1]);
+			    Store(inst->dest, Builder.CreateGEP(V, Op));
+			    break;
+			}
+			case OP_GEP2:
+			{
+			    std::vector<Value*> Idxs;
+			    Value *V = Values[inst->u.three[0]];
+			    Idxs.push_back(convertOperand(func, I32Ty, inst->u.three[1]));
+			    Idxs.push_back(convertOperand(func, I32Ty, inst->u.three[2]));
+			    Store(inst->dest, Builder.CreateGEP(V, Idxs.begin(), Idxs.end()));
+			    break;
+			}
+			case OP_GEPN:
+			{
+			    std::vector<Value*> Idxs;
+			    assert(inst->u.ops.numOps > 1);
+			    Value *V = Values[inst->u.ops.ops[0]];
+			    for (unsigned a=1;a<inst->u.ops.numOps;a++)
+				Idxs.push_back(convertOperand(func, I32Ty, inst->u.ops.ops[a]));
+			    Store(inst->dest, Builder.CreateGEP(V, Idxs.begin(), Idxs.end()));
+			    break;
+			}
+			case OP_STORE:
+			{
+			    Value *Dest = convertOperand(func, inst, inst->u.binop[1]);
+			    const Type *ETy = cast<PointerType>(Dest->getType())->getElementType();
+			    Builder.CreateStore(getOperand(func, ETy, inst->u.binop[0]),
+						Dest);
+			    break;
+			}
+			case OP_LOAD:
+			    Store(inst->dest, Op0);
+			    break;
 			default:
 			    errs() << "JIT doesn't implement opcode " <<
 				inst->opcode << " yet!\n";
@@ -634,6 +689,8 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	OurFPM.add(new TargetData(*EE->getTargetData()));
 	// Promote allocas to registers.
 	OurFPM.add(createPromoteMemoryToRegisterPass());
+	// Delete dead instructions
+	OurFPM.add(createDeadCodeEliminationPass());
 	OurFPM.doInitialization();
 
 	LLVMTypeMapper apiMap(bcs->engine->Context, cli_apicall_types, cli_apicall_maxtypes);
