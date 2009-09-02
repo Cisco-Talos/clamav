@@ -107,8 +107,7 @@ END_TEST
 START_TEST (test_apicalls)
 {
     cl_init(CL_INIT_DEFAULT);
-    /* Not yet implemented for JIT, expect to return error */
-    runtest("input/apicalls.cbc", 0xf00d, CL_SUCCESS, -1);
+    runtest("input/apicalls.cbc", 0xf00d, CL_SUCCESS, 0);
     runtest("input/apicalls.cbc", 0xf00d, CL_SUCCESS, 1);
 }
 END_TEST
