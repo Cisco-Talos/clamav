@@ -1,5 +1,5 @@
 /*
- *  Load, and verify ClamAV bytecode.
+ *  JIT compile ClamAV bytecode.
  *
  *  Copyright (C) 2009 Sourcefire, Inc.
  *
@@ -89,23 +89,12 @@ void llvm_error_handler(void *user_data, const std::string &reason)
     jit_exception_handler();
 }
 
-class VISIBILITY_HIDDEN LLVMCodegen {
+class LLVMTypeMapper {
 private:
-    const struct cli_bc *bc;
-    Module *M;
+    std::vector<PATypeHolder> TypeMap;
     LLVMContext &Context;
-    FunctionMapTy &compiledFunctions;
-    const Type **TypeMap;
-    Twine BytecodeID;
-    ExecutionEngine *EE;
-    TargetFolder Folder;
-    IRBuilder<false, TargetFolder> Builder;
-    Value **Values;
-    FunctionPassManager &PM;
-    unsigned numLocals;
-    unsigned numArgs;
-
-    const Type *mapType(uint16_t ty)
+    unsigned numTypes;
+    const Type *getStatic(uint16_t ty)
     {
 	if (!ty)
 	    return Type::getVoidTy(Context);
@@ -121,17 +110,83 @@ private:
 	    case 68:
 		return PointerType::getUnqual(Type::getInt64Ty(Context));
 	}
-	ty -= 69;
-	// This was validated by libclamav already.
-	assert(ty < bc->num_types && "Out of range type ID");
-	return TypeMap[ty];
+	llvm_unreachable("getStatic");
     }
-
-    void convertTypes() {
-	for (unsigned j=0;j<bc->num_types;j++) {
-
+public:
+    LLVMTypeMapper(LLVMContext &Context, const struct cli_bc_type *types,
+		   unsigned count) : Context(Context), numTypes(count)
+    {
+	TypeMap.reserve(count);
+	// During recursive type construction pointers to Type* may be
+	// invalidated, so we must use a TypeHolder to an Opaque type as a
+	// start.
+	for (unsigned i=0;i<count;i++) {
+	    TypeMap.push_back(OpaqueType::get(Context));
+	}
+	std::vector<const Type*> Elts;
+	for (unsigned i=0;i<count;i++) {
+	    const struct cli_bc_type *type = &types[i];
+	    Elts.clear();
+	    unsigned n = type->kind == DArrayType ? 1 : type->numElements;
+	    for (unsigned j=0;j<n;j++) {
+		Elts.push_back(get(type->containedTypes[j]));
+	    }
+	    const Type *Ty;
+	    switch (type->kind) {
+		case DFunctionType:
+		{
+		    assert(Elts.size() > 0 && "Function with no return type?");
+		    const Type *RetTy = Elts[0];
+		    Elts.erase(Elts.begin());
+		    Ty = FunctionType::get(RetTy, Elts, false);
+		    break;
+		}
+		case DPointerType:
+		    Ty = PointerType::getUnqual(Elts[0]);
+		    break;
+		case DStructType:
+		    Ty = StructType::get(Context, Elts);
+		    break;
+		case DPackedStructType:
+		    Ty = StructType::get(Context, Elts, true);
+		    break;
+		case DArrayType:
+		    Ty = ArrayType::get(Elts[0], type->numElements);
+		    break;
+	    }
+	    // Make the opaque type a concrete type, doing recursive type
+	    // unification if needed.
+	    cast<OpaqueType>(TypeMap[i].get())->refineAbstractTypeTo(Ty);
 	}
     }
+
+    const Type *get(uint16_t ty)
+    {
+	if (ty < 69)
+	    return getStatic(ty);
+	ty -= 69;
+	assert(ty < numTypes && "TypeID out of range");
+	return TypeMap[ty].get();
+    }
+};
+
+
+class VISIBILITY_HIDDEN LLVMCodegen {
+private:
+    const struct cli_bc *bc;
+    Module *M;
+    LLVMContext &Context;
+    LLVMTypeMapper *TypeMap;
+    Function **apiFuncs;
+    FunctionMapTy &compiledFunctions;
+    Twine BytecodeID;
+    ExecutionEngine *EE;
+    TargetFolder Folder;
+    IRBuilder<false, TargetFolder> Builder;
+    Value **Values;
+    FunctionPassManager &PM;
+    unsigned numLocals;
+    unsigned numArgs;
 
     Value *convertOperand(const struct cli_bc_func *func, const Type *Ty, operand_t operand)
     {
@@ -167,7 +222,7 @@ private:
 	switch (w) {
 	    case 0:
 	    case 1:
-		Ty = w ? Type::getInt8Ty(Context) : 
+		Ty = w ? Type::getInt8Ty(Context) :
 		    Type::getInt1Ty(Context);
 		v = *(uint8_t*)c;
 		break;
@@ -205,18 +260,23 @@ private:
 	Builder.CreateCondBr(FailCond, Fail, OkBB);
 	Builder.SetInsertPoint(OkBB);
     }
+
+    const Type* mapType(uint16_t typeID)
+    {
+	return TypeMap->get(typeID);
+    }
 public:
     LLVMCodegen(const struct cli_bc *bc, Module *M, FunctionMapTy &cFuncs,
-		ExecutionEngine *EE, FunctionPassManager &PM)
+		ExecutionEngine *EE, FunctionPassManager &PM, Function **apiFuncs)
 	: bc(bc), M(M), Context(M->getContext()), compiledFunctions(cFuncs), 
 	BytecodeID("bc"+Twine(bc->id)), EE(EE), 
-	Folder(EE->getTargetData(), Context), Builder(Context, Folder), PM(PM) {
-	    TypeMap = new const Type*[bc->num_types];
-    }
+	Folder(EE->getTargetData(), Context), Builder(Context, Folder), PM(PM), 
+	apiFuncs(apiFuncs) 
+    {}
 
     bool generate() {
 	PrettyStackTraceString Trace(BytecodeID.str().c_str());
-	convertTypes();
+	TypeMap = new LLVMTypeMapper(Context, bc->types + 4, bc->num_types - 5);
 
 	FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context),
 						    false);
@@ -246,6 +306,7 @@ public:
 	for (unsigned j=0;j<bc->num_func;j++) {
 	    PrettyStackTraceString CrashInfo("Generate LLVM IR");
 	    const struct cli_bc_func *func = &bc->funcs[j];
+
 	    // Create all BasicBlocks
 	    Function *F = Functions[j];
 	    BasicBlock **BB = new BasicBlock*[func->numBB];
@@ -447,6 +508,19 @@ public:
 			    Store(inst->dest, Builder.CreateCall(DestF, args.begin(), args.end()));
 			    break;
 			}
+			case OP_CALL_API:
+			{
+			    assert(inst->u.ops.funcid < cli_apicall_maxapi && "APICall out of range");
+			    const struct cli_apicall *api = &cli_apicalls[inst->u.ops.funcid];
+			    std::vector<Value*> args;
+			    Function *DestF = apiFuncs[inst->u.ops.funcid];
+			    for (unsigned a=0;a<inst->u.ops.numOps;a++) {
+				operand_t op = inst->u.ops.ops[a];
+				args.push_back(convertOperand(func, DestF->getFunctionType()->getParamType(a), op));
+			    }
+			    Store(inst->dest, Builder.CreateCall(DestF, args.begin(), args.end()));
+			    break;
+			}
 			default:
 			    errs() << "JIT doesn't implement opcode " <<
 				inst->opcode << " yet!\n";
@@ -466,7 +540,7 @@ public:
 	}
 
 	DEBUG(M->dump());
-	delete [] TypeMap;
+	delete TypeMap;
 	FunctionType *Callable = FunctionType::get(Type::getInt32Ty(Context),false);
 	for (unsigned j=0;j<bc->num_func;j++) {
 	    const struct cli_bc_func *func = &bc->funcs[j];
@@ -556,9 +630,31 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	// Promote allocas to registers.
 	OurFPM.add(createPromoteMemoryToRegisterPass());
 	OurFPM.doInitialization();
+
+	LLVMTypeMapper apiMap(bcs->engine->Context, cli_apicall_types, cli_apicall_maxtypes);
+	Function **apiFuncs = new Function *[cli_apicall_maxapi];
+	for (unsigned i=0;i<cli_apicall_maxapi;i++) {
+	    const struct cli_apicall *api = &cli_apicalls[i];
+	    const FunctionType *FTy = cast<FunctionType>(apiMap.get(69+api->type));
+	    Function *F = Function::Create(FTy, Function::ExternalLinkage,
+					   api->name, M);
+	    void *dest;
+	    switch (api->kind) {
+		case 0:
+		    dest = (void*)cli_apicalls0[api->idx];
+		    break;
+		case 1:
+		    dest = (void*)cli_apicalls1[api->idx];
+		    break;
+	    }
+	    EE->addGlobalMapping(F, dest);
+	    apiFuncs[i] = F;
+	}
+
 	for (unsigned i=0;i<bcs->count;i++) {
 	    const struct cli_bc *bc = &bcs->all_bcs[i];
-	    LLVMCodegen Codegen(bc, M, bcs->engine->compiledFunctions, EE, OurFPM);
+	    LLVMCodegen Codegen(bc, M, bcs->engine->compiledFunctions, EE, 
+				OurFPM, apiFuncs);
 	    if (!Codegen.generate()) {
 		errs() << MODULE << "JIT codegen failed\n";
 		return CL_EBYTECODE;
@@ -574,6 +670,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	    if (!Fn->isDeclaration())
 		EE->getPointerToFunction(Fn);
 	}
+	delete [] apiFuncs;
     }
     return -1;
   } catch (std::bad_alloc &badalloc) {

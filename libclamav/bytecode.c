@@ -479,7 +479,7 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 	return CL_BREAK;
     }
     add_static_types(bc);
-    for (i=(BC_START_TID - 64);i<bc->num_types;i++) {
+    for (i=(BC_START_TID - 65);i<bc->num_types-1;i++) {
 	struct cli_bc_type *ty = &bc->types[i];
 	uint8_t t = readFixedNumber(buffer, &offset, len, &ok, 1);
 	if (!ok) {
@@ -493,6 +493,10 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 		parseType(bc, ty, buffer, &offset, len, &ok);
 		if (!ok) {
 		    cli_errmsg("Error parsing type %u\n", i);
+		    return CL_EMALFDB;
+		}
+		if (!ty->numElements) {
+		    cli_errmsg("Function with no return type? %u\n", i);
 		    return CL_EMALFDB;
 		}
 		break;
@@ -550,7 +554,7 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 static int types_equal(const struct cli_bc *bc, uint16_t *apity2ty, uint16_t tid, uint16_t apitid)
 {
     unsigned i;
-    const struct cli_bc_type *ty = &bc->types[tid - 63];
+    const struct cli_bc_type *ty = &bc->types[tid - 64];
     const struct cli_bc_type *apity = &cli_apicall_types[apitid];
     /* If we've already verified type equality, return.
      * Since we need to check equality of recursive types, we assume types are
