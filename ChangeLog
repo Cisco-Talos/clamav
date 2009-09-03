@@ -1,3 +1,7 @@
+Thu Sep  3 15:09:57 CEST 2009 (tk)
+----------------------------------
+ * freshclam/mirman.c: make backoff time proportional to FLEVEL (bb#1687)
+
 Mon Aug 24 22:09:12 CEST 2009 (tk)
 ----------------------------------
  * libclamav: improve handling of PDF files (bb#1682)
