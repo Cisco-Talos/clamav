@@ -764,6 +764,7 @@ int bytecode_init(void)
 // Called once when loading a new set of BC files
 int cli_bytecode_init_jit(struct cli_all_bc *bcs)
 {
+    //TODO: if !llvm_is_multi...
     bcs->engine = new(std::nothrow) struct cli_bcengine;
     if (!bcs->engine)
 	return CL_EMEM;
