@@ -30,5 +30,5 @@ struct foo {
     struct foo *nxt;
 };
 
-int32_t test0(struct foo*, uint32_t);
-int32_t test1(int32_t, int32_t);
+uint32_t test0(struct foo*, uint32_t);
+uint32_t test1(uint32_t, uint32_t);

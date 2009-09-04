@@ -335,7 +335,8 @@ libclamav_la_SOURCES = \
 	type_desc.h \
 	bytecode_api.c \
 	bytecode_api_decl.c \
-	bytecode_api.h
+	bytecode_api.h \
+	bytecode_api_impl.h
 
 if !LINK_TOMMATH
 libclamav_la_SOURCES += bignum.c \

@@ -22,6 +22,7 @@
 #include "cltypes.h"
 #include "type_desc.h"
 #include "bytecode_api.h"
+#include "bytecode_api_impl.h"
 
 uint32_t cli_bcapi_test0(struct cli_bc_ctx *ctx, struct foo*, uint32_t);
 uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx, uint32_t, uint32_t);

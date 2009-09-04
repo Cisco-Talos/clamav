@@ -21,6 +21,7 @@
  */
 #define DEBUG_TYPE "clamavjit"
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/CallingConv.h"
 #include "llvm/DerivedTypes.h"
 #include "llvm/Function.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
@@ -114,7 +115,7 @@ private:
     }
 public:
     LLVMTypeMapper(LLVMContext &Context, const struct cli_bc_type *types,
-		   unsigned count) : Context(Context), numTypes(count)
+		   unsigned count, const Type *Hidden=0) : Context(Context), numTypes(count)
     {
 	TypeMap.reserve(count);
 	// During recursive type construction pointers to Type* may be
@@ -137,7 +138,10 @@ public:
 		{
 		    assert(Elts.size() > 0 && "Function with no return type?");
 		    const Type *RetTy = Elts[0];
-		    Elts.erase(Elts.begin());
+		    if (Hidden)
+			Elts[0] = Hidden;
+		    else
+			Elts.erase(Elts.begin());
 		    Ty = FunctionType::get(RetTy, Elts, false);
 		    break;
 		}
@@ -281,10 +285,10 @@ private:
 public:
     LLVMCodegen(const struct cli_bc *bc, Module *M, FunctionMapTy &cFuncs,
 		ExecutionEngine *EE, FunctionPassManager &PM, Function **apiFuncs)
-	: bc(bc), M(M), Context(M->getContext()), compiledFunctions(cFuncs), 
-	BytecodeID("bc"+Twine(bc->id)), EE(EE), 
-	Folder(EE->getTargetData(), Context), Builder(Context, Folder), PM(PM), 
-	apiFuncs(apiFuncs) 
+	: bc(bc), M(M), Context(M->getContext()), compiledFunctions(cFuncs),
+	BytecodeID("bc"+Twine(bc->id)), EE(EE),
+	Folder(EE->getTargetData(), Context), Builder(Context, Folder), PM(PM),
+	apiFuncs(apiFuncs)
     {}
 
     bool generate() {
@@ -300,21 +304,26 @@ public:
 	FHandler->addFnAttr(Attribute::NoInline);
 	EE->addGlobalMapping(FHandler, (void*)jit_exception_handler); 
 
+	// The hidden ctx param to all functions
+	const Type *HiddenCtx = PointerType::getUnqual(Type::getInt8Ty(Context));
+
 	Function **Functions = new Function*[bc->num_func];
 	for (unsigned j=0;j<bc->num_func;j++) {
 	    PrettyStackTraceString CrashInfo("Generate LLVM IR functions");
 	    // Create LLVM IR Function
 	    const struct cli_bc_func *func = &bc->funcs[j];
 	    std::vector<const Type*> argTypes;
+	    argTypes.push_back(HiddenCtx);
 	    for (unsigned a=0;a<func->numArgs;a++) {
 		argTypes.push_back(mapType(func->types[a]));
 	    }
 	    const Type *RetTy = mapType(func->returnType);
 	    FunctionType *FTy =  FunctionType::get(RetTy, argTypes,
 							 false);
-	    Functions[j] = Function::Create(FTy, Function::InternalLinkage, 
+	    Functions[j] = Function::Create(FTy, Function::InternalLinkage,
 					   BytecodeID+"f"+Twine(j), M);
 	    Functions[j]->setDoesNotThrow();
+	    Functions[j]->setCallingConv(CallingConv::Fast);
 	}
 	const Type *I32Ty = Type::getInt32Ty(Context);
 	for (unsigned j=0;j<bc->num_func;j++) {
@@ -332,6 +341,8 @@ public:
 	    Values = new Value*[func->numValues];
 	    Builder.SetInsertPoint(BB[0]);
 	    Function::arg_iterator I = F->arg_begin();
+	    assert(F->arg_size() == func->numArgs + 1 && "Mismatched args");
+	    ++I;
 	    for (unsigned i=0;i<func->numArgs; i++) {
 		assert(I != F->arg_end());
 		Values[i] = &*I;
@@ -524,11 +535,14 @@ public:
 			{
 			    Function *DestF = Functions[inst->u.ops.funcid];
 			    SmallVector<Value*, 2> args;
+			    args.push_back(&*F->arg_begin()); // pass hidden arg
 			    for (unsigned a=0;a<inst->u.ops.numOps;a++) {
 				operand_t op = inst->u.ops.ops[a];
-				args.push_back(convertOperand(func, DestF->getFunctionType()->getParamType(a), op));
+				args.push_back(convertOperand(func, DestF->getFunctionType()->getParamType(a+1), op));
 			    }
-			    Store(inst->dest, Builder.CreateCall(DestF, args.begin(), args.end()));
+			    CallInst *CI = Builder.CreateCall(DestF, args.begin(), args.end());
+			    CI->setCallingConv(CallingConv::Fast);
+			    Store(inst->dest, CI);
 			    break;
 			}
 			case OP_CALL_API:
@@ -537,9 +551,10 @@ public:
 			    const struct cli_apicall *api = &cli_apicalls[inst->u.ops.funcid];
 			    std::vector<Value*> args;
 			    Function *DestF = apiFuncs[inst->u.ops.funcid];
+			    args.push_back(&*F->arg_begin()); // pass hidden arg
 			    for (unsigned a=0;a<inst->u.ops.numOps;a++) {
 				operand_t op = inst->u.ops.ops[a];
-				args.push_back(convertOperand(func, DestF->getFunctionType()->getParamType(a), op));
+				args.push_back(convertOperand(func, DestF->getFunctionType()->getParamType(a+1), op));
 			    }
 			    Store(inst->dest, Builder.CreateCall(DestF, args.begin(), args.end()));
 			    break;
@@ -601,16 +616,38 @@ public:
 
 	DEBUG(M->dump());
 	delete TypeMap;
-	FunctionType *Callable = FunctionType::get(Type::getInt32Ty(Context),false);
+	std::vector<const Type*> args;
+	args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
+	FunctionType *Callable = FunctionType::get(Type::getInt32Ty(Context),
+						   args, false);
 	for (unsigned j=0;j<bc->num_func;j++) {
 	    const struct cli_bc_func *func = &bc->funcs[j];
 	    PrettyStackTraceString CrashInfo2("Native machine codegen");
-	    // Codegen current function as executable machine code.
-	    void *code = EE->getPointerToFunction(Functions[j]);
 
 	    // If prototype matches, add to callable functions
-	    if (Functions[j]->getFunctionType() == Callable)
+	    if (Functions[j]->getFunctionType() == Callable) {
+		// All functions have the Fast calling convention, however
+		// entrypoint can only be C, emit wrapper
+		Function *F = Function::Create(Functions[j]->getFunctionType(),
+					       Function::ExternalLinkage,
+					       Functions[j]->getName()+"_wrap", M);
+		F->setDoesNotThrow();
+		BasicBlock *BB = BasicBlock::Create(Context, "", F);
+		std::vector<Value*> args;
+		for (Function::arg_iterator J=F->arg_begin(),
+		     JE=F->arg_end(); J != JE; ++JE) {
+		    args.push_back(&*J);
+		}
+		CallInst *CI = CallInst::Create(Functions[j], args.begin(), args.end(), "", BB);
+		CI->setCallingConv(CallingConv::Fast);
+		ReturnInst::Create(Context, CI, BB);
+
+		if (verifyFunction(*F, PrintMessageAction));
+		// Codegen current function as executable machine code.
+		void *code = EE->getPointerToFunction(F);
+
 		compiledFunctions[func] = code;
+	    }
 	}
 	delete [] Functions;
 	return true;
@@ -631,7 +668,7 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx,
     if (setjmp(env) == 0) {
 	// setup exception handler to longjmp back here
 	ExceptionReturn.set(&env);
-	uint32_t result = ((uint32_t (*)(void))code)();
+	uint32_t result = ((uint32_t (*)(struct cli_bc_ctx *))code)(ctx);
 	*(uint32_t*)ctx->values = result;
 	return 0;
     }
@@ -693,7 +730,10 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	OurFPM.add(createDeadCodeEliminationPass());
 	OurFPM.doInitialization();
 
-	LLVMTypeMapper apiMap(bcs->engine->Context, cli_apicall_types, cli_apicall_maxtypes);
+	//TODO: create a wrapper that calls pthread_getspecific
+	const Type *HiddenCtx = PointerType::getUnqual(Type::getInt8Ty(bcs->engine->Context));
+
+	LLVMTypeMapper apiMap(bcs->engine->Context, cli_apicall_types, cli_apicall_maxtypes, HiddenCtx);
 	Function **apiFuncs = new Function *[cli_apicall_maxapi];
 	for (unsigned i=0;i<cli_apicall_maxapi;i++) {
 	    const struct cli_apicall *api = &cli_apicalls[i];

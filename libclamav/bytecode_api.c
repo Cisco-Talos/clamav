@@ -3,6 +3,8 @@
  *
  *  Copyright (C) 2009 Sourcefire, Inc.
  *
+ *  Authors: Török Edvin
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
  *  published by the Free Software Foundation.
@@ -21,13 +23,14 @@
 #include "cltypes.h"
 #include "type_desc.h"
 #include "bytecode_api.h"
+#include "bytecode_api_impl.h"
 
-int32_t cli_bcapi_test0(struct foo* s, uint32_t u)
+uint32_t cli_bcapi_test0(struct cli_bc_ctx *ctx, struct foo* s, uint32_t u)
 {
     return (s && s->nxt == s && u == 0xdeadbeef) ? 0x12345678 : 0x55;
 }
 
-int32_t cli_bcapi_test1(int32_t a, int32_t b)
+uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
 {
     return (a==0xf00dbeef && b==0xbeeff00d) ? 0x12345678 : 0x55;
 }
