@@ -23,6 +23,9 @@
 #include "type_desc.h"
 #include "bytecode_api.h"
 
+uint32_t cli_bcapi_test0(struct cli_bc_ctx *ctx, struct foo*, uint32_t);
+uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx, uint32_t, uint32_t);
+
 static uint16_t cli_tmp0[]={32, 70, 32};
 static uint16_t cli_tmp1[]={71};
 static uint16_t cli_tmp2[]={70};
@@ -38,8 +41,8 @@ const struct cli_bc_type cli_apicall_types[]={
 const unsigned cli_apicall_maxtypes=sizeof(cli_apicall_types)/sizeof(cli_apicall_types[0]);
 const struct cli_apicall cli_apicalls[]={
 /* Bytecode APIcalls BEGIN */
-	{"cli_bcapi_test0", 0, 0, 1},
-	{"cli_bcapi_test1", 3, 0, 0}
+	{"test0", 0, 0, 1},
+	{"test1", 3, 0, 0}
 /* Bytecode APIcalls END */
 };
 const cli_apicall_int2 cli_apicalls0[] = {

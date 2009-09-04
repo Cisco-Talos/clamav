@@ -60,14 +60,14 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "ERROR: Can't parse command line options\n");
 	exit(1);
     }
-    if(optget(opts, "help")->enabled || !opts->filename) {
-	optfree(opts);
-	help();
-	exit(0);
-    }
     if(optget(opts, "version")->enabled) {
 	printf("Clam AntiVirus Bytecode Testing Tool %s\n", get_version());
 	optfree(opts);
+	exit(0);
+    }
+    if(optget(opts, "help")->enabled || !opts->filename) {
+	optfree(opts);
+	help();
 	exit(0);
     }
     f = fopen(opts->filename[0], "r");
@@ -97,11 +97,16 @@ int main(int argc, char *argv[])
 
     if (dbgargc > 1)
 	cli_bytecode_debug(dbgargc, opts->filename);
-    rc = cli_bytecode_init(&bcs);
-    if (rc != CL_SUCCESS) {
-	fprintf(stderr,"Unable to init bytecode engine: %s\n", cl_strerror(rc));
-	optfree(opts);
-	exit(4);
+
+    if (optget(opts, "force-interpreter")->enabled) {
+	bcs.engine = NULL;
+    } else {
+	rc = cli_bytecode_init(&bcs);
+	if (rc != CL_SUCCESS) {
+	    fprintf(stderr,"Unable to init bytecode engine: %s\n", cl_strerror(rc));
+	    optfree(opts);
+	    exit(4);
+	}
     }
 
     bcs.all_bcs = bc;

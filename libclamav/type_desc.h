@@ -22,6 +22,8 @@
 #ifndef TYPE_DESC_H
 #define TYPE_DESC_H
 
+struct cli_bc_ctx;
+
 enum derived_t {
   DFunctionType,
   DPointerType,
@@ -38,8 +40,8 @@ struct cli_bc_type {
     unsigned align;
 };
 
-typedef int32_t (*cli_apicall_int2)(int32_t, int32_t);
-typedef int32_t (*cli_apicall_pointer)(void*, uint32_t);
+typedef int32_t (*cli_apicall_int2)(struct cli_bc_ctx *, int32_t, int32_t);
+typedef int32_t (*cli_apicall_pointer)(struct cli_bc_ctx *, void*, uint32_t);
 
 struct cli_apicall {
     const char *name;
