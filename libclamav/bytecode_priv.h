@@ -95,6 +95,9 @@ struct cli_bc_ctx {
     operand_t *operands;
     uint16_t funcid;
     unsigned numParams;
+    size_t file_size;
+    off_t off;
+    int fd;
 };
 struct cli_all_bc;
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst);

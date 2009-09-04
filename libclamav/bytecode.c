@@ -39,6 +39,8 @@ struct cli_bc_ctx *cli_bytecode_context_alloc(void)
     ctx->values = NULL;
     ctx->operands = NULL;
     ctx->opsizes = NULL;
+    ctx->fd = -1;
+    ctx->off = 0;
     return ctx;
 }
 
@@ -940,8 +942,10 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 	switch (state) {
 	    case PARSE_BC_HEADER:
 		rc = parseHeader(bc, (unsigned char*)buffer);
-		if (rc == CL_BREAK) /* skip */
+		if (rc == CL_BREAK) /* skip */ {
+		    bc->state = bc_skip;
 		    return CL_SUCCESS;
+		}
 		if (rc != CL_SUCCESS) {
 		    cli_errmsg("Error at bytecode line %u\n", row);
 		    return rc;
@@ -958,8 +962,10 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 		break;
 	    case PARSE_BC_APIS:
 		rc = parseApis(bc, (unsigned char*)buffer);
-		if (rc == CL_BREAK) /* skip */
+		if (rc == CL_BREAK) /* skip */ {
+		    bc->state = bc_skip;
 		    return CL_SUCCESS;
+		}
 		if (rc != CL_SUCCESS) {
 		    cli_errmsg("Error at bytecode line %u\n", row);
 		    return rc;

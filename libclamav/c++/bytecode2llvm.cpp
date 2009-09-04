@@ -755,6 +755,8 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 
 	for (unsigned i=0;i<bcs->count;i++) {
 	    const struct cli_bc *bc = &bcs->all_bcs[i];
+	    if (bc->state == bc_skip)
+		continue;
 	    LLVMCodegen Codegen(bc, M, bcs->engine->compiledFunctions, EE, 
 				OurFPM, apiFuncs);
 	    if (!Codegen.generate()) {

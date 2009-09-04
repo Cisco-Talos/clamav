@@ -34,6 +34,7 @@ struct cli_bc_engine;
 struct bitset_tag;
 
 enum bc_state {
+    bc_skip,
     bc_loaded,
     bc_jit,
     bc_interp

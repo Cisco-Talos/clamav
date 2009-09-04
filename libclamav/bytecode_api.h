@@ -30,5 +30,22 @@ struct foo {
     struct foo *nxt;
 };
 
+#ifdef __CLAMBC__
+
 uint32_t test0(struct foo*, uint32_t);
 uint32_t test1(uint32_t, uint32_t);
+
+/* reads @size bytes from current file (if any) to @data, returns amount read */
+int32_t read(uint8_t *data, int32_t size);
+
+enum {
+    SEEK_SET=0,
+    SEEK_CUR,
+    SEEK_END
+};
+
+/* seeks current position to @pos, from @whence, returns current position from
+ * start of file */
+int32_t seek(int32_t pos, uint32_t whence);
+
+#endif
