@@ -1,3 +1,7 @@
+Thu Sep  3 15:09:57 CEST 2009 (tk)
+----------------------------------
+ * freshclam/mirman.c: make backoff time proportional to FLEVEL (bb#1687)
+
 Tue Sep  1 20:50:12 CEST 2009 (tk)
 ----------------------------------
  * libclamav: use BM matcher in offset mode for PE files larger than 256kB
