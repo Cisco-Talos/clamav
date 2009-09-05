@@ -492,6 +492,7 @@ int cli_scanmacho(int fd, cli_ctx *ctx, struct cli_exe_info *fileinfo)
 
 int cli_machoheader(int fd, struct cli_exe_info *fileinfo)
 {
+return CL_EFORMAT; /* FIXMEFMAP: avoids crashing on machoes for now */
     return cli_scanmacho(fd, NULL, fileinfo);
 }
 

@@ -1089,13 +1089,14 @@ static int cli_scanhtml_utf16(cli_ctx *ctx)
     cli_dbgmsg("cli_scanhtml_utf16: using tempfile %s\n", tempname);
 
     while(at < map->len) {
-	bytes = map->len - at > map->pgsz * 16 ? map->pgsz * 16 : map->len - at;
+	bytes = MIN(map->len - at, map->pgsz * 16);
 	if(!(buff = fmap_need_off_once(map, at, bytes))) {
 	    close(fd);
 	    cli_unlink(tempname);
 	    free(tempname);
 	    return CL_EREAD;
 	}
+	at += bytes;
 	decoded = cli_utf16toascii(buff, bytes);
 	if(decoded) {
 	    if(write(fd, decoded, strlen(decoded)) == -1) {
