@@ -24,8 +24,6 @@
 #include "clamav-config.h"
 #endif
 
-#define _XOPEN_SOURCE 500
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -322,7 +320,7 @@ struct IS_CABSTUFF {
 
 static void md5str(uint8_t *sum);
 static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c);
-static int is_extract_cab(int desc, cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t csize);
+static int is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t csize);
 
 /* Extract the content of older (non-MSI) IS */
 int cli_scanishield(int desc, cli_ctx *ctx, off_t off, size_t sz) {
@@ -630,7 +628,7 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 				    fmunmap(map);
 				    return CL_EMAXFILES;
 				}
-				cabret = is_extract_cab(desc, ctx, file_stream_off + c->cabs[j].off, file_size, file_csize);
+				cabret = is_extract_cab(ctx, file_stream_off + c->cabs[j].off, file_size, file_csize);
 			    } else {
 				ret = CL_CLEAN;
  				cli_dbgmsg("is_parse_hdr: stream out of file\n");
@@ -686,55 +684,25 @@ static void md5str(uint8_t *sum) {
 
 #define IS_CABBUFSZ 65536
 
-static int is_extract_cab(int desc, cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t csize) {
+static int is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t csize) {
     uint8_t *inbuf, *outbuf;
     char *tempfile;
-    FILE *in;
     int ofd, ret = CL_CLEAN;
     z_stream z;
     uint64_t outsz = 0;
     int success = 0;
+    struct F_MAP *map = *ctx->fmap;
 
-    if((ofd=dup(desc)) < 0) {
-	cli_errmsg("is_extract_cab: dup failed\n");
-	return CL_EDUP;
-    }
-    if(!(in = fdopen(ofd, "rb"))) {
-	cli_errmsg("is_extract_cab: fdopen failed\n");
-	close(ofd);
-	return CL_EOPEN;
-    }
-#if HAVE_FSEEKO
-    if(fseeko(in, (off_t)off, SEEK_SET))
-#else
-    if(fseek(in, (long)off, SEEK_SET))
-#endif
-    {
-	cli_dbgmsg("is_extract_cab: fseek failed\n");
-	fclose(in);
-	return CL_ESEEK;
-    }
-    if(!(inbuf = cli_malloc(IS_CABBUFSZ))) {
-	fclose(in);
+    if(!(outbuf = cli_malloc(IS_CABBUFSZ)))
 	return CL_EMEM;
-    }
-    if(!(outbuf = cli_malloc(IS_CABBUFSZ))) {
-	free(inbuf);
-	fclose(in);
-	return CL_EMEM;
-    }
+
     if(!(tempfile = cli_gentemp(ctx->engine->tmpdir))) {
-	free(inbuf);
 	free(outbuf);
-	fclose(in);
-	return CL_EMEM;
     }
     if((ofd = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRUSR|S_IWUSR)) < 0) {
 	cli_errmsg("is_extract_cab: failed to create file %s\n", tempfile);
 	free(tempfile);
-	free(inbuf);
 	free(outbuf);
-	fclose(in);
 	return CL_ECREAT;
     }
 
@@ -746,11 +714,12 @@ static int is_extract_cab(int desc, cli_ctx *ctx, uint64_t off, uint64_t size, u
 	    break;
 	}
 	csize -= 2;
-	if(!fread(outbuf, 2, 1, in)) {
+	if(!(inbuf = fmap_need_off_once(map, off, 2))) {
 	    cli_dbgmsg("is_extract_cab: short read for chunk size\n");
 	    break;
 	}
-	chunksz = outbuf[0] | (outbuf[1] << 8);
+	off += 2;
+	chunksz = inbuf[0] | (inbuf[1] << 8);
 	if(!chunksz) {
 	    cli_dbgmsg("is_extract_cab: zero sized chunk\n");
 	    continue;
@@ -760,10 +729,11 @@ static int is_extract_cab(int desc, cli_ctx *ctx, uint64_t off, uint64_t size, u
 	    break;
 	}
 	csize -= chunksz;
-	if(!fread(inbuf, chunksz, 1, in)) {
+	if(!(inbuf = fmap_need_off_once(map, off, chunksz))) {
 	    cli_dbgmsg("is_extract_cab: short read for chunk\n");
 	    break;
 	}
+	off += chunksz;
 	memset(&z, 0, sizeof(z));
 	inflateInit2(&z, -MAX_WBITS);
 	z.next_in = (uint8_t *)inbuf;
@@ -796,8 +766,6 @@ static int is_extract_cab(int desc, cli_ctx *ctx, uint64_t off, uint64_t size, u
 	inflateEnd(&z);
 	if(!success) break;
     }
-    fclose(in);
-    free(inbuf);
     free(outbuf);
     if(success) {
 	if (outsz != size)

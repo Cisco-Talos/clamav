@@ -44,4 +44,5 @@ void *fmap_need_ptr_once(struct F_MAP *m, void *ptr, size_t len);
 void fmap_unneed_off(struct F_MAP *m, size_t at, size_t len);
 void fmap_unneed_ptr(struct F_MAP *m, void *ptr, size_t len);
 int fmap_readn(struct F_MAP *m, void *dst, size_t at, size_t len);
+void *fmap_need_str(struct F_MAP *m, void *ptr, size_t len);
 #endif
