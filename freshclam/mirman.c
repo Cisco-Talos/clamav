@@ -133,7 +133,7 @@ int mirman_check(uint32_t *ip, int af, struct mirdat *mdat, struct mirdat_ip **m
 	    }
 
 	    if(mdat->dbflevel && (mdat->dbflevel > flevel) && (mdat->dbflevel - flevel > 3))
-		if(time(NULL) - mdat->mirtab[i].atime < 4 * 3600)
+		if(time(NULL) - mdat->mirtab[i].atime < (mdat->dbflevel - flevel) * 3600)
 		    return 2;
 
 	    if(mdat->mirtab[i].ignore) {
