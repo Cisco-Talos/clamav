@@ -23,7 +23,7 @@
 
 #include "others.h"
 
-int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off);
-int cli_scanishield(int desc, cli_ctx *ctx, off_t off, size_t sz);
+int cli_scanishield_msi(cli_ctx *ctx, off_t off);
+int cli_scanishield(cli_ctx *ctx, off_t off, size_t sz);
 
 #endif

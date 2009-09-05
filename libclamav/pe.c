@@ -991,7 +991,7 @@ int cli_scanpe(cli_ctx *ctx)
     if(overlays) {
 	int overlays_sz = fsize - overlays;
 	if(overlays_sz > 0) {
-	    ret = cli_scanishield(map->fd, ctx, overlays, overlays_sz);
+	    ret = cli_scanishield(ctx, overlays, overlays_sz);
 	    if(ret != CL_CLEAN) {
 		free(exe_sections);
 		return ret;

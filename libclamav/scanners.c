@@ -1763,7 +1763,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 		    case CL_TYPE_ISHIELD_MSI:
 		        if(SCAN_ARCHIVE && type == CL_TYPE_MSEXE && (DCONF_ARCH & ARCH_CONF_ISHIELD)) {
 			    cli_dbgmsg("ISHIELD-MSI signature found at %u\n", (unsigned int) fpt->offset);
-			    nret = cli_scanishield_msi(map->fd, ctx, fpt->offset + 14);
+			    nret = cli_scanishield_msi(ctx, fpt->offset + 14);
 			}
 			break;
 
