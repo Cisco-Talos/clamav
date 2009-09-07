@@ -1,3 +1,7 @@
+Mon Sep  7 15:03:11 CEST 2009 (tk)
+----------------------------------
+ * libclamav/matcher-bm.c: fix uninitialized value warning
+
 Mon Sep  7 03:45:18 CEST 2009 (acab)
 ------------------------------------
  * libclamav/scanners.c: properly scan text files with a mail container

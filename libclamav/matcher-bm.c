@@ -277,7 +277,7 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	    if(p && p->cnt == 1 && p->pattern0 != prefix) {
 		if(offdata) {
 		    off = offset + i - BM_MIN_LENGTH + BM_BLOCK_SIZE;
-		    for(; off >= offdata->offtab[offdata->pos] && offdata->pos < offdata->cnt; offdata->pos++);
+		    for(; offdata->pos < offdata->cnt && off >= offdata->offtab[offdata->pos]; offdata->pos++);
 		    if(offdata->pos == offdata->cnt || off >= offdata->offtab[offdata->pos])
 			return CL_CLEAN;
 		    i += offdata->offtab[offdata->pos] - off;
@@ -372,7 +372,7 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
 	if(offdata) {
 	    off = offset + i - BM_MIN_LENGTH + BM_BLOCK_SIZE;
-	    for(; off >= offdata->offtab[offdata->pos] && offdata->pos < offdata->cnt; offdata->pos++);
+	    for(; offdata->pos < offdata->cnt && off >= offdata->offtab[offdata->pos]; offdata->pos++);
 	    if(offdata->pos == offdata->cnt || off >= offdata->offtab[offdata->pos])
 		return CL_CLEAN;
 	    i += offdata->offtab[offdata->pos] - off;
