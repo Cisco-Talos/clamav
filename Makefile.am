@@ -39,3 +39,6 @@ lcov:
 	($(MAKE); cd unit_tests; $(MAKE) lcov)
 quick-check:
 	($(MAKE); cd unit_tests; $(MAKE) quick-check)
+
+dist-hook:
+	make -C libclamav/c++ dist-hook
