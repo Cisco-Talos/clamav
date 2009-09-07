@@ -33,7 +33,7 @@ libclamavcxx_la_CPPFLAGS = $(AM_CPPFLAGS) $(LLVM_INCLUDES) $(LLVM_DEFS)
 libclamavcxx_la_LIBADD=libllvmexecutionengine.la
 libclamavcxx_la_LDFLAGS=-no-undefined
 #libclamavcxx_la_LDFLAGS = `$(LLVM_CONFIG) --ldflags --libs jit nativecodegen`
-libclamavcxx_la_SOURCES = bytecode2llvm.cpp dummy.h
+libclamavcxx_la_SOURCES = bytecode2llvm.cpp
 
 LLVM_INCLUDES=-I$(top_srcdir)/llvm/include -I$(top_builddir)/llvm/include
 # TODO: _DEBUG should be defined for --enable-debug, and NDEBUG otherwise, but
@@ -42,7 +42,8 @@ LLVM_INCLUDES=-I$(top_srcdir)/llvm/include -I$(top_builddir)/llvm/include
 LLVM_DEFS=-D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -DNDEBUG -D_GNU_SOURCE
 LLVM_CXXFLAGS=-Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings
 
-EXTRA_DIST=llvm/lib/System/README.txt
+EXTRA_DIST=llvm
+
 libllvmsystem_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
 libllvmsystem_la_CXXFLAGS=$(LLVM_CXXFLAGS) -fno-exceptions
 libllvmsystem_la_LDFLAGS=-pthread
