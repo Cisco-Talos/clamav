@@ -223,7 +223,10 @@ TBLGEN=$(top_builddir)/tblgen
 TBLGEN_V=$(AM_V_GEN)$(TBLGEN)
 TBLGEN_FLAGS=-I$(top_srcdir)/llvm/include -I$(top_srcdir)/llvm/lib/Target
 
-BUILT_SOURCES=
+BUILT_SOURCES=llvm/include/llvm/Intrinsics.gen
+llvm/include/llvm/Intrinsics.gen: llvm/include/llvm/Intrinsics.td $(TBLGEN)
+	$(TBLGEN_V) $(TBLGEN_FLAGS) -gen-intrinsic -o $@ $<
+
 # X86 Target
 if BUILD_X86
 TBLGEN_FLAGS_X86= $(TBLGEN_FLAGS) -I$(top_srcdir)/llvm/lib/Target/X86

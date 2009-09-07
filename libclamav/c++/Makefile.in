@@ -1122,7 +1122,9 @@ libllvmcore_la_SOURCES = \
 TBLGEN = $(top_builddir)/tblgen
 TBLGEN_V = $(AM_V_GEN)$(TBLGEN)
 TBLGEN_FLAGS = -I$(top_srcdir)/llvm/include -I$(top_srcdir)/llvm/lib/Target
-BUILT_SOURCES = $(am__append_7) $(am__append_8) $(am__append_9)
+BUILT_SOURCES = llvm/include/llvm/Intrinsics.gen $(am__append_7) \
+	$(am__append_8) $(am__append_9)
+
 # X86 Target
 @BUILD_X86_TRUE@TBLGEN_FLAGS_X86 = $(TBLGEN_FLAGS) -I$(top_srcdir)/llvm/lib/Target/X86
 @BUILD_X86_TRUE@libllvmtargetx86_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_builddir) -I$(top_srcdir)/llvm/lib/Target/X86
@@ -6092,6 +6094,8 @@ uninstall-am:
 	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
 	uninstall-am
 
+llvm/include/llvm/Intrinsics.gen: llvm/include/llvm/Intrinsics.td $(TBLGEN)
+	$(TBLGEN_V) $(TBLGEN_FLAGS) -gen-intrinsic -o $@ $<
 @BUILD_X86_TRUE@X86GenRegisterInfo.h.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
 @BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-register-desc-header -o $@ $<
 
