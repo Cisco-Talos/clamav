@@ -772,4 +772,6 @@ check-llvm: build-llvm-for-check
 
 # rm configure generated files
 dist-hook:
+	rm -f llvm/Release/bin/* llvm/Debug/bin/*
 	rm -f llvm/include/llvm/Config/*.h llvm/include/llvm/Config/*.def llvm/Makefile.config llvm/llvm.spec llvm/docs/doxygen.cfg llvm/tools/llvmc/plugins/Base/Base.td tools/llvm-config/llvm-config.in
+
