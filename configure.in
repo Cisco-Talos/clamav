@@ -57,7 +57,7 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
 LT_CONFIG_LTDL_DIR([libltdl])
-LT_INIT([dlopen])
+LT_INIT([dlopen disable-static])
 LTDL_INIT([recursive])
 AC_CONFIG_FILES([libltdl/Makefile])
 

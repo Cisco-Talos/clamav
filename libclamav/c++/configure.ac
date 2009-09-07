@@ -23,8 +23,16 @@ AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([-Wall -Wportability -Werror foreign no-define])
 AM_SILENT_RULES([yes])
 
+cxxset = ${CXXFLAGS+set}
 AC_PROG_CXX
-LT_INIT
+
+if test "$cxxset" != set; then
+# don't use the default -O2 -g because -g bloats the C++ binaries too much
+  CXXFLAGS="-O2"
+fi
+
+AM_MAINTAINER_MODE
+LT_INIT([disable-static])
 if test "$GXX" != "yes"; then
     AC_MSG_ERROR([GNU C++ compiler not found, not building LLVM])
 fi
