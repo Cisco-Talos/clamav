@@ -1,4 +1,4 @@
-Convert to clamav's build system.
+Convert to clamav's build system -> impl. cross-compilation support (tblgen)
 
 Right now static linking of libclamav doesn't work with llvm parts for a number
 of reasons:

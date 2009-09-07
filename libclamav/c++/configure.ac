@@ -20,7 +20,7 @@ AC_CONFIG_SRCDIR([llvm/configure])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADER([clamavcxx-config.h])
 AC_CANONICAL_TARGET
-AM_INIT_AUTOMAKE([-Wall -Wportability -Werror foreign no-define])
+AM_INIT_AUTOMAKE([1.9 -Wall -Wportability -Werror foreign no-define color-tests tar-pax])
 AM_SILENT_RULES([yes])
 
 cxxset=${CXXFLAGS+set}
@@ -38,9 +38,6 @@ if test "$GXX" != "yes"; then
 fi
 
 AC_CHECK_GNU_MAKE
-if test -z "$llvm_cv_gnu_make_command"; then
-    AC_MSG_ERROR([GNU make not found])
-fi
 GMAKE="$llvm_cv_gnu_make_command"
 AC_SUBST([GMAKE])
 AC_CONFIG_SUBDIRS([llvm])
@@ -57,6 +54,10 @@ dnl Set configure args for subdir
 if test "$enable_optimized" = "default"; then
     ac_configure_args="$ac_configure_args --enable-optimized"
 fi
+
+dnl Pretend that GNU make is available for LLVM, we don't use LLVM's buildsystem
+dnl anyway (except for make check)
+ac_configure_args="$ac_configure_args llvm_cv_gnu_make_command=make"
 AC_ARG_ENABLE(all-jit-targets, AC_HELP_STRING([-enable-all-jit-targets],
 	      [Build all the targets that support JIT for testing (default NO)]),
 	      enable_alltargets=$enableval, enable_alltargets=no)

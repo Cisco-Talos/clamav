@@ -30,14 +30,12 @@ endif
 #libclamavcxx_la_LDFLAGS = `$(LLVM_CONFIG) --ldflags --libs jit nativecodegen`
 libclamavcxx_la_CPPFLAGS = $(AM_CPPFLAGS) $(LLVM_INCLUDES) $(LLVM_DEFS)
 #libclamavcxx_la_DEPENDENCIES = $(LLVM_DEPS)
-libclamavcxx_la_LIBADD=libllvmsystem.la libllvmsupport.la libllvmcore.la libllvmtarget.la\
-		       libllvmipa.la libllvmtransformutils.la libllvmscalar.la\
-		       libllvmsdag.la libllvmmc.la libllvmcodegen.la libllvmexecutionengine.la
 
 noinst_LTLIBRARIES = libclamavcxx.la libllvmsupport.la libllvmsystem.la\
 		     libllvmcore.la libllvmtarget.la libllvmsdag.la libllvmcodegen.la libllvmexecutionengine.la\
 		     libllvmscalar.la libllvmipa.la libllvmtransformutils.la\
 		     libllvmmc.la
+libclamavcxx_la_LIBADD=
 if BUILD_X86
 libclamavcxx_la_LIBADD+=libllvmtargetx86.la
 noinst_LTLIBRARIES+=libllvmtargetx86.la
@@ -50,6 +48,11 @@ if BUILD_ARM
 libclamavcxx_la_LIBADD+=libllvmtargetarm.la
 noinst_LTLIBRARIES+=libllvmtargetarm.la
 endif
+
+libclamavcxx_la_LIBADD+=libllvmsdag.la libllvmexecutionengine.la\
+		       libllvmcodegen.la libllvmscalar.la\
+		       libllvmtransformutils.la libllvmipa.la libllvmtarget.la libllvmmc.la\
+		       libllvmcore.la libllvmsupport.la libllvmsystem.la
 
 libclamavcxx_la_LDFLAGS=-no-undefined
 #libclamavcxx_la_LDFLAGS = `$(LLVM_CONFIG) --ldflags --libs jit nativecodegen`
@@ -494,7 +497,8 @@ libllvmipa_la_SOURCES=\
  llvm/lib/Analysis/MemoryDependenceAnalysis.cpp\
  llvm/lib/Analysis/ScalarEvolution.cpp\
  llvm/lib/Analysis/ScalarEvolutionExpander.cpp\
- llvm/lib/Analysis/ValueTracking.cpp
+ llvm/lib/Analysis/ValueTracking.cpp\
+ llvm/lib/Analysis/IPA/CallGraph.cpp
 
 libllvmcodegen_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
 libllvmcodegen_la_CXXFLAGS=$(LLVM_CXXFLAGS) -fno-exceptions
@@ -596,9 +600,159 @@ libllvmexecutionengine_la_SOURCES=\
  llvm/lib/ExecutionEngine/JIT/JITDwarfEmitter.cpp\
  llvm/lib/ExecutionEngine/JIT/JITEmitter.cpp\
  llvm/lib/ExecutionEngine/JIT/JITMemoryManager.cpp\
+ llvm/lib/ExecutionEngine/JIT/MacOSJITEventListener.cpp\
  llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp\
  llvm/lib/ExecutionEngine/JIT/TargetSelect.cpp
 
+# Used only by make check
+
+libllvmbitreader_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
+libllvmbitreader_la_CXXFLAGS=$(LLVM_CXXFLAGS) -fno-exceptions
+libllvmbitreader_la_SOURCES=\
+ llvm/lib/Bitcode/Reader/BitReader.cpp\
+ llvm/lib/Bitcode/Reader/BitcodeReader.cpp\
+ llvm/lib/Bitcode/Reader/Deserialize.cpp\
+ llvm/lib/Bitcode/Reader/DeserializeAPFloat.cpp\
+ llvm/lib/Bitcode/Reader/DeserializeAPInt.cpp
+
+libllvmbitwriter_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
+libllvmbitwriter_la_CXXFLAGS=$(LLVM_CXXFLAGS) -fno-exceptions
+libllvmbitwriter_la_SOURCES=\
+ llvm/lib/Bitcode/Writer/BitWriter.cpp\
+ llvm/lib/Bitcode/Writer/BitcodeWriter.cpp\
+ llvm/lib/Bitcode/Writer/BitcodeWriterPass.cpp\
+ llvm/lib/Bitcode/Writer/Serialize.cpp\
+ llvm/lib/Bitcode/Writer/SerializeAPFloat.cpp\
+ llvm/lib/Bitcode/Writer/SerializeAPInt.cpp\
+ llvm/lib/Bitcode/Writer/ValueEnumerator.cpp
+
+libllvmasmparser_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
+libllvmasmparser_la_CXXFLAGS=$(LLVM_CXXFLAGS) -fno-exceptions
+libllvmasmparser_la_SOURCES=\
+ llvm/lib/AsmParser/LLLexer.cpp\
+ llvm/lib/AsmParser/LLParser.cpp\
+ llvm/lib/AsmParser/Parser.cpp
+
+libllvminterpreter_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
+libllvminterpreter_la_CXXFLAGS=$(LLVM_CXXFLAGS) -fno-exceptions -Wno-missing-field-initializers -Wno-variadic-macros
+libllvminterpreter_la_SOURCES=\
+    llvm/lib/ExecutionEngine/Interpreter/Execution.cpp\
+    llvm/lib/ExecutionEngine/Interpreter/ExternalFunctions.cpp\
+    llvm/lib/ExecutionEngine/Interpreter/Interpreter.cpp
+
+libgoogletest_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
+libgoogletest_la_CXXFLAGS=$(LLVM_CXXFLAGS) -fno-exceptions -Wno-missing-field-initializers -Wno-variadic-macros
+libgoogletest_la_SOURCES=\
+    llvm/utils/unittest/googletest/gtest-death-test.cc\
+    llvm/utils/unittest/googletest/gtest-filepath.cc\
+    llvm/utils/unittest/googletest/gtest-port.cc\
+    llvm/utils/unittest/googletest/gtest-test-part.cc\
+    llvm/utils/unittest/googletest/gtest-typed-test.cc\
+    llvm/utils/unittest/googletest/gtest.cc\
+    llvm/unittests/TestMain.cpp
+
+llvmunittest_ADT_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
+llvmunittest_ADT_CXXFLAGS=$(LLVM_CXXFLAGS) -fno-exceptions -Wno-variadic-macros
+llvmunittest_ADT_LDADD=libgoogletest.la libllvmcore.la libllvmsupport.la libllvmsystem.la
+llvmunittest_ADT_SOURCES=\
+    llvm/unittests/ADT/APFloatTest.cpp\
+    llvm/unittests/ADT/APIntTest.cpp\
+    llvm/unittests/ADT/DenseMapTest.cpp\
+    llvm/unittests/ADT/DenseSetTest.cpp\
+    llvm/unittests/ADT/ImmutableSetTest.cpp\
+    llvm/unittests/ADT/SmallStringTest.cpp\
+    llvm/unittests/ADT/SmallVectorTest.cpp\
+    llvm/unittests/ADT/SparseBitVectorTest.cpp\
+    llvm/unittests/ADT/StringMapTest.cpp\
+    llvm/unittests/ADT/StringRefTest.cpp\
+    llvm/unittests/ADT/TripleTest.cpp\
+    llvm/unittests/ADT/TwineTest.cpp
+
+llvmunittest_Support_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
+llvmunittest_Support_CXXFLAGS=$(LLVM_CXXFLAGS) -fno-exceptions -Wno-variadic-macros
+llvmunittest_Support_LDADD=libgoogletest.la libllvmcore.la libllvmsupport.la libllvmsystem.la
+llvmunittest_Support_SOURCES=\
+    llvm/unittests/Support/AllocatorTest.cpp\
+    llvm/unittests/Support/ConstantRangeTest.cpp\
+    llvm/unittests/Support/MathExtrasTest.cpp\
+    llvm/unittests/Support/RegexTest.cpp\
+    llvm/unittests/Support/TypeBuilderTest.cpp\
+    llvm/unittests/Support/ValueHandleTest.cpp\
+    llvm/unittests/Support/raw_ostream_test.cpp
+
+llvmunittest_VMCore_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
+llvmunittest_VMCore_CXXFLAGS=$(LLVM_CXXFLAGS) -fno-exceptions -Wno-variadic-macros
+llvmunittest_VMCore_LDADD=libgoogletest.la libllvmtarget.la libllvmipa.la libllvmcore.la libllvmsupport.la libllvmsystem.la
+llvmunittest_VMCore_SOURCES=\
+    llvm/lib/Analysis/IPA/CallGraphSCCPass.cpp\
+    llvm/unittests/VMCore/ConstantsTest.cpp\
+    llvm/unittests/VMCore/MetadataTest.cpp\
+    llvm/unittests/VMCore/PassManagerTest.cpp
+
+llvmunittest_JIT_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
+llvmunittest_JIT_CXXFLAGS=$(LLVM_CXXFLAGS) -fno-exceptions -Wno-variadic-macros
+llvmunittest_JIT_LDADD=libgoogletest.la $(libclamavcxx_la_LIBADD)
+llvmunittest_JIT_SOURCES=\
+    llvm/unittests/ExecutionEngine/JIT/JITEventListenerTest.cpp\
+    llvm/unittests/ExecutionEngine/JIT/JITMemoryManagerTest.cpp\
+    llvm/unittests/ExecutionEngine/JIT/JITTest.cpp
+
+llvmunittest_ExecutionEngine_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/utils/unittest/googletest/include
+llvmunittest_ExecutionEngine_CXXFLAGS=$(LLVM_CXXFLAGS) -fno-exceptions -Wno-variadic-macros
+llvmunittest_ExecutionEngine_LDADD=libgoogletest.la libllvminterpreter.la $(libclamavcxx_la_LIBADD)
+llvmunittest_ExecutionEngine_SOURCES=\
+    llvm/unittests/ExecutionEngine/ExecutionEngineTest.cpp
+
+check_LTLIBRARIES=libllvmbitreader.la libllvmasmprinter.la libllvmbitwriter.la libllvmasmparser.la libgoogletest.la libllvminterpreter.la
+check_PROGRAMS=lli llc llvm-as llvmunittest_ADT llvmunittest_Support llvmunittest_VMCore llvmunittest_ExecutionEngine llvmunittest_JIT
+check_SCRIPTS=llvmdejagnu.sh
+
+TESTS_ENVIRONMENT=export GMAKE=@GMAKE@;
+TESTS=llvmunittest_ADT llvmunittest_Support llvmunittest_VMCore llvmunittest_ExecutionEngine llvmunittest_JIT
+@ifGNUmake@ TESTS+=llvmdejagnu.sh
+
+libllvmasmprinter_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_srcdir)/llvm/lib/Target/X86 \
+			      -I$(top_srcdir)/llvm/lib/Target/PowerPC -I$(top_srcdir)/llvm/lib/Target/ARM
+libllvmasmprinter_la_CXXFLAGS=$(LLVM_CXXFLAGS) -fno-exceptions
+libllvmasmprinter_la_SOURCES=\
+    llvm/lib/CodeGen/AsmPrinter/OcamlGCPrinter.cpp\
+    llvm/lib/CodeGen/ELFCodeEmitter.cpp\
+    llvm/lib/CodeGen/ELFWriter.cpp\
+    llvm/lib/CodeGen/MachOCodeEmitter.cpp\
+    llvm/lib/CodeGen/MachOWriter.cpp
+
+if BUILD_X86
+libllvmasmprinter_la_SOURCES+=llvm/lib/Target/X86/AsmPrinter/X86AsmPrinter.cpp\
+    llvm/lib/Target/X86/AsmPrinter/X86ATTAsmPrinter.cpp\
+    llvm/lib/Target/X86/AsmPrinter/X86ATTInstPrinter.cpp\
+    llvm/lib/Target/X86/AsmPrinter/X86IntelAsmPrinter.cpp
+endif
+
+if BUILD_PPC
+libllvmasmprinter_la_SOURCES+= llvm/lib/Target/PowerPC/AsmPrinter/PPCAsmPrinter.cpp
+endif
+
+if BUILD_ARM
+libllvmasmprinter_la_SOURCES+= llvm/lib/Target/ARM/AsmPrinter/ARMAsmPrinter.cpp
+endif
+
+lli_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
+lli_CXXFLAGS=$(LLVM_CXXFLAGS)
+lli_LDADD=libllvmbitreader.la libllvminterpreter.la $(libclamavcxx_la_LIBADD)
+lli_SOURCES=\
+    llvm/tools/lli/lli.cpp
+
+llc_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
+llc_CXXFLAGS=$(LLVM_CXXFLAGS)
+llc_LDADD=libllvmbitreader.la libllvmasmprinter.la $(libclamavcxx_la_LIBADD)
+llc_SOURCES=\
+    llvm/tools/llc/llc.cpp
+
+llvm_as_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
+llvm_as_CXXFLAGS=$(LLVM_CXXFLAGS)
+llvm_as_LDADD=libllvmasmparser.la libllvmbitwriter.la libllvmcore.la libllvmsupport.la libllvmsystem.la
+llvm_as_SOURCES=\
+    llvm/tools/llvm-as/llvm-as.cpp
 
 noinst_PROGRAMS = tblgen
 #bytecode2llvm.cpp: build-llvm
