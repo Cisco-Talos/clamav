@@ -23,7 +23,7 @@ AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([-Wall -Wportability -Werror foreign no-define])
 AM_SILENT_RULES([yes])
 
-cxxset = ${CXXFLAGS+set}
+cxxset=${CXXFLAGS+set}
 AC_PROG_CXX
 
 if test "$cxxset" != set; then
@@ -57,7 +57,10 @@ dnl Set configure args for subdir
 if test "$enable_optimized" = "default"; then
     ac_configure_args="$ac_configure_args --enable-optimized"
 fi
-ac_configure_args="$ac_configure_args --enable-targets=host-only --enable-bindings=none --enable-libffi=no --without-llvmgcc --without-llvmgxx"
+new_args="$ac_configure_args --enable-targets=host-only --enable-bindings=none --enable-libffi=no --without-llvmgcc --without-llvmgxx"
+echo "$new_args"
+ac_configure_args=`echo $new_args | sed -e 's/-Werror //g'`
+echo "$ac_configure_args"
 
 if test "$enable_llvm" = "auto"; then
     dnl Do some sanity checks, and don't automatically build on platforms

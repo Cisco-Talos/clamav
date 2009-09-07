@@ -39,7 +39,7 @@ LLVM_INCLUDES=-I$(top_srcdir)/llvm/include -I$(top_builddir)/llvm/include
 # TODO: _DEBUG should be defined for --enable-debug, and NDEBUG otherwise, but
 # keep it like this while I'm testing LLVM
 # TODO: HP-UX should have -D_REENTRANT -D_HPUX_SOURCE
-LLVM_DEFS=-D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -DNDEBUG -D_GNU_SOURCE
+LLVM_DEFS=-D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D_DEBUG -D_GNU_SOURCE
 LLVM_CXXFLAGS=-Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings
 
 EXTRA_DIST=llvm
