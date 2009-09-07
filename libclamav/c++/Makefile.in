@@ -51,6 +51,22 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+@BUILD_X86_TRUE@am__append_1 = libllvmtargetx86.la
+@BUILD_X86_TRUE@am__append_2 = libllvmtargetx86.la
+@BUILD_PPC_TRUE@am__append_3 = libllvmtargetppc.la
+@BUILD_PPC_TRUE@am__append_4 = libllvmtargetppc.la
+@BUILD_ARM_TRUE@am__append_5 = libllvmtargetarm.la
+@BUILD_ARM_TRUE@am__append_6 = libllvmtargetarm.la
+@BUILD_X86_TRUE@am__append_7 = X86GenRegisterInfo.h.inc X86GenRegisterNames.inc X86GenRegisterInfo.inc X86GenInstrNames.inc X86GenInstrInfo.inc\
+@BUILD_X86_TRUE@	      X86GenAsmWriter.inc X86GenAsmWriter1.inc X86GenAsmMatcher.inc X86GenDAGISel.inc X86GenFastISel.inc X86GenCallingConv.inc\
+@BUILD_X86_TRUE@	      X86GenSubtarget.inc
+
+@BUILD_PPC_TRUE@am__append_8 = PPCGenInstrNames.inc PPCGenRegisterNames.inc PPCGenAsmWriter.inc PPCGenCodeEmitter.inc PPCGenRegisterInfo.h.inc PPCGenRegisterInfo.inc\
+@BUILD_PPC_TRUE@    PPCGenInstrInfo.inc PPCGenDAGISel.inc PPCGenCallingConv.inc PPCGenSubtarget.inc
+
+@BUILD_ARM_TRUE@am__append_9 = ARMGenRegisterInfo.h.inc ARMGenRegisterNames.inc ARMGenRegisterInfo.inc ARMGenInstrNames.inc ARMGenInstrInfo.inc ARMGenCodeEmitter.inc\
+@BUILD_ARM_TRUE@    ARMGenAsmWriter.inc ARMGenDAGISel.inc ARMGenCallingConv.inc ARMGenSubtarget.inc
+
 noinst_PROGRAMS = tblgen$(EXEEXT)
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(srcdir)/Makefile.am \
@@ -72,7 +88,11 @@ CONFIG_HEADER = clamavcxx-config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
-libclamavcxx_la_DEPENDENCIES = libllvmexecutionengine.la
+libclamavcxx_la_DEPENDENCIES = libllvmsystem.la libllvmsupport.la \
+	libllvmcore.la libllvmtarget.la libllvmipa.la \
+	libllvmtransformutils.la libllvmscalar.la libllvmsdag.la \
+	libllvmmc.la libllvmcodegen.la libllvmexecutionengine.la \
+	$(am__append_1) $(am__append_3) $(am__append_5)
 am_libclamavcxx_la_OBJECTS = libclamavcxx_la-bytecode2llvm.lo
 libclamavcxx_la_OBJECTS = $(am_libclamavcxx_la_OBJECTS)
 AM_V_lt = $(am__v_lt_$(V))
@@ -82,8 +102,7 @@ libclamavcxx_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(AM_CXXFLAGS) $(CXXFLAGS) $(libclamavcxx_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
-libllvmcodegen_la_DEPENDENCIES = libllvmscalar.la libllvmipa.la \
-	libllvmtransformutils.la
+libllvmcodegen_la_LIBADD =
 am_libllvmcodegen_la_OBJECTS = libllvmcodegen_la-BranchFolding.lo \
 	libllvmcodegen_la-CodePlacementOpt.lo \
 	libllvmcodegen_la-DeadMachineInstructionElim.lo \
@@ -151,7 +170,7 @@ libllvmcodegen_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(libllvmcodegen_la_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-libllvmcore_la_DEPENDENCIES = libllvmsupport.la
+libllvmcore_la_LIBADD =
 am_libllvmcore_la_OBJECTS = libllvmcore_la-AsmWriter.lo \
 	libllvmcore_la-Attributes.lo libllvmcore_la-AutoUpgrade.lo \
 	libllvmcore_la-BasicBlock.lo libllvmcore_la-ConstantFold.lo \
@@ -173,8 +192,7 @@ libllvmcore_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(libllvmcore_la_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-libllvmexecutionengine_la_DEPENDENCIES = libllvmtarget.la \
-	libllvmsdag.la
+libllvmexecutionengine_la_LIBADD =
 am_libllvmexecutionengine_la_OBJECTS =  \
 	libllvmexecutionengine_la-ExecutionEngine.lo \
 	libllvmexecutionengine_la-Intercept.lo \
@@ -232,7 +250,7 @@ libllvmscalar_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(libllvmscalar_la_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-libllvmsdag_la_DEPENDENCIES = libllvmcodegen.la
+libllvmsdag_la_LIBADD =
 am_libllvmsdag_la_OBJECTS = libllvmsdag_la-CallingConvLower.lo \
 	libllvmsdag_la-DAGCombiner.lo libllvmsdag_la-FastISel.lo \
 	libllvmsdag_la-LegalizeDAG.lo \
@@ -260,7 +278,7 @@ libllvmsdag_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(libllvmsdag_la_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-libllvmsupport_la_DEPENDENCIES = libllvmsystem.la
+libllvmsupport_la_LIBADD =
 am_libllvmsupport_la_OBJECTS = libllvmsupport_la-APFloat.lo \
 	libllvmsupport_la-APInt.lo libllvmsupport_la-APSInt.lo \
 	libllvmsupport_la-Allocator.lo \
@@ -308,8 +326,7 @@ libllvmsystem_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(libllvmsystem_la_CXXFLAGS) $(CXXFLAGS) \
 	$(libllvmsystem_la_LDFLAGS) $(LDFLAGS) -o $@
-libllvmtarget_la_DEPENDENCIES = libllvmtargetx86.la libllvmcore.la \
-	libllvmmc.la
+libllvmtarget_la_LIBADD =
 am_libllvmtarget_la_OBJECTS = libllvmtarget_la-SubtargetFeature.lo \
 	libllvmtarget_la-Target.lo libllvmtarget_la-TargetData.lo \
 	libllvmtarget_la-TargetELFWriterInfo.lo \
@@ -326,27 +343,133 @@ libllvmtarget_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(libllvmtarget_la_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+libllvmtargetarm_la_LIBADD =
+am__libllvmtargetarm_la_SOURCES_DIST =  \
+	llvm/lib/Target/ARM/ARMBaseInstrInfo.cpp \
+	llvm/lib/Target/ARM/ARMBaseRegisterInfo.cpp \
+	llvm/lib/Target/ARM/ARMCodeEmitter.cpp \
+	llvm/lib/Target/ARM/ARMConstantIslandPass.cpp \
+	llvm/lib/Target/ARM/ARMConstantPoolValue.cpp \
+	llvm/lib/Target/ARM/ARMInstrInfo.cpp \
+	llvm/lib/Target/ARM/ARMISelDAGToDAG.cpp \
+	llvm/lib/Target/ARM/ARMISelLowering.cpp \
+	llvm/lib/Target/ARM/ARMJITInfo.cpp \
+	llvm/lib/Target/ARM/ARMLoadStoreOptimizer.cpp \
+	llvm/lib/Target/ARM/ARMMCAsmInfo.cpp \
+	llvm/lib/Target/ARM/ARMRegisterInfo.cpp \
+	llvm/lib/Target/ARM/ARMSubtarget.cpp \
+	llvm/lib/Target/ARM/ARMTargetMachine.cpp \
+	llvm/lib/Target/ARM/NEONPreAllocPass.cpp \
+	llvm/lib/Target/ARM/Thumb1InstrInfo.cpp \
+	llvm/lib/Target/ARM/Thumb1RegisterInfo.cpp \
+	llvm/lib/Target/ARM/Thumb2ITBlockPass.cpp \
+	llvm/lib/Target/ARM/Thumb2InstrInfo.cpp \
+	llvm/lib/Target/ARM/Thumb2RegisterInfo.cpp \
+	llvm/lib/Target/ARM/Thumb2SizeReduction.cpp \
+	llvm/lib/Target/ARM/TargetInfo/ARMTargetInfo.cpp
+@BUILD_ARM_TRUE@am_libllvmtargetarm_la_OBJECTS =  \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMBaseInstrInfo.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMBaseRegisterInfo.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMCodeEmitter.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMConstantIslandPass.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMConstantPoolValue.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMInstrInfo.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMISelDAGToDAG.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMISelLowering.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMJITInfo.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMLoadStoreOptimizer.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMMCAsmInfo.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMRegisterInfo.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMSubtarget.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMTargetMachine.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-NEONPreAllocPass.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-Thumb1InstrInfo.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-Thumb1RegisterInfo.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-Thumb2ITBlockPass.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-Thumb2InstrInfo.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-Thumb2RegisterInfo.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-Thumb2SizeReduction.lo \
+@BUILD_ARM_TRUE@	libllvmtargetarm_la-ARMTargetInfo.lo
+libllvmtargetarm_la_OBJECTS = $(am_libllvmtargetarm_la_OBJECTS)
+libllvmtargetarm_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+@BUILD_ARM_TRUE@am_libllvmtargetarm_la_rpath =
+libllvmtargetppc_la_LIBADD =
+am__libllvmtargetppc_la_SOURCES_DIST =  \
+	llvm/lib/Target/PowerPC/PPCBranchSelector.cpp \
+	llvm/lib/Target/PowerPC/PPCCodeEmitter.cpp \
+	llvm/lib/Target/PowerPC/PPCHazardRecognizers.cpp \
+	llvm/lib/Target/PowerPC/PPCInstrInfo.cpp \
+	llvm/lib/Target/PowerPC/PPCISelDAGToDAG.cpp \
+	llvm/lib/Target/PowerPC/PPCISelLowering.cpp \
+	llvm/lib/Target/PowerPC/PPCJITInfo.cpp \
+	llvm/lib/Target/PowerPC/PPCMachOWriterInfo.cpp \
+	llvm/lib/Target/PowerPC/PPCMCAsmInfo.cpp \
+	llvm/lib/Target/PowerPC/PPCPredicates.cpp \
+	llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp \
+	llvm/lib/Target/PowerPC/PPCSubtarget.cpp \
+	llvm/lib/Target/PowerPC/PPCTargetMachine.cpp \
+	llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp
+@BUILD_PPC_TRUE@am_libllvmtargetppc_la_OBJECTS =  \
+@BUILD_PPC_TRUE@	libllvmtargetppc_la-PPCBranchSelector.lo \
+@BUILD_PPC_TRUE@	libllvmtargetppc_la-PPCCodeEmitter.lo \
+@BUILD_PPC_TRUE@	libllvmtargetppc_la-PPCHazardRecognizers.lo \
+@BUILD_PPC_TRUE@	libllvmtargetppc_la-PPCInstrInfo.lo \
+@BUILD_PPC_TRUE@	libllvmtargetppc_la-PPCISelDAGToDAG.lo \
+@BUILD_PPC_TRUE@	libllvmtargetppc_la-PPCISelLowering.lo \
+@BUILD_PPC_TRUE@	libllvmtargetppc_la-PPCJITInfo.lo \
+@BUILD_PPC_TRUE@	libllvmtargetppc_la-PPCMachOWriterInfo.lo \
+@BUILD_PPC_TRUE@	libllvmtargetppc_la-PPCMCAsmInfo.lo \
+@BUILD_PPC_TRUE@	libllvmtargetppc_la-PPCPredicates.lo \
+@BUILD_PPC_TRUE@	libllvmtargetppc_la-PPCRegisterInfo.lo \
+@BUILD_PPC_TRUE@	libllvmtargetppc_la-PPCSubtarget.lo \
+@BUILD_PPC_TRUE@	libllvmtargetppc_la-PPCTargetMachine.lo \
+@BUILD_PPC_TRUE@	libllvmtargetppc_la-PowerPCTargetInfo.lo
+libllvmtargetppc_la_OBJECTS = $(am_libllvmtargetppc_la_OBJECTS)
+libllvmtargetppc_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
+@BUILD_PPC_TRUE@am_libllvmtargetppc_la_rpath =
 libllvmtargetx86_la_LIBADD =
-am_libllvmtargetx86_la_OBJECTS =  \
-	libllvmtargetx86_la-X86CodeEmitter.lo \
-	libllvmtargetx86_la-X86ELFWriterInfo.lo \
-	libllvmtargetx86_la-X86FloatingPoint.lo \
-	libllvmtargetx86_la-X86FloatingPointRegKill.lo \
-	libllvmtargetx86_la-X86ISelDAGToDAG.lo \
-	libllvmtargetx86_la-X86ISelLowering.lo \
-	libllvmtargetx86_la-X86InstrInfo.lo \
-	libllvmtargetx86_la-X86JITInfo.lo \
-	libllvmtargetx86_la-X86MCAsmInfo.lo \
-	libllvmtargetx86_la-X86RegisterInfo.lo \
-	libllvmtargetx86_la-X86Subtarget.lo \
-	libllvmtargetx86_la-X86TargetMachine.lo \
-	libllvmtargetx86_la-X86FastISel.lo \
-	libllvmtargetx86_la-X86TargetInfo.lo
+am__libllvmtargetx86_la_SOURCES_DIST =  \
+	llvm/lib/Target/X86/X86CodeEmitter.cpp \
+	llvm/lib/Target/X86/X86ELFWriterInfo.cpp \
+	llvm/lib/Target/X86/X86FloatingPoint.cpp \
+	llvm/lib/Target/X86/X86FloatingPointRegKill.cpp \
+	llvm/lib/Target/X86/X86ISelDAGToDAG.cpp \
+	llvm/lib/Target/X86/X86ISelLowering.cpp \
+	llvm/lib/Target/X86/X86InstrInfo.cpp \
+	llvm/lib/Target/X86/X86JITInfo.cpp \
+	llvm/lib/Target/X86/X86MCAsmInfo.cpp \
+	llvm/lib/Target/X86/X86RegisterInfo.cpp \
+	llvm/lib/Target/X86/X86Subtarget.cpp \
+	llvm/lib/Target/X86/X86TargetMachine.cpp \
+	llvm/lib/Target/X86/X86FastISel.cpp \
+	llvm/lib/Target/X86/TargetInfo/X86TargetInfo.cpp
+@BUILD_X86_TRUE@am_libllvmtargetx86_la_OBJECTS =  \
+@BUILD_X86_TRUE@	libllvmtargetx86_la-X86CodeEmitter.lo \
+@BUILD_X86_TRUE@	libllvmtargetx86_la-X86ELFWriterInfo.lo \
+@BUILD_X86_TRUE@	libllvmtargetx86_la-X86FloatingPoint.lo \
+@BUILD_X86_TRUE@	libllvmtargetx86_la-X86FloatingPointRegKill.lo \
+@BUILD_X86_TRUE@	libllvmtargetx86_la-X86ISelDAGToDAG.lo \
+@BUILD_X86_TRUE@	libllvmtargetx86_la-X86ISelLowering.lo \
+@BUILD_X86_TRUE@	libllvmtargetx86_la-X86InstrInfo.lo \
+@BUILD_X86_TRUE@	libllvmtargetx86_la-X86JITInfo.lo \
+@BUILD_X86_TRUE@	libllvmtargetx86_la-X86MCAsmInfo.lo \
+@BUILD_X86_TRUE@	libllvmtargetx86_la-X86RegisterInfo.lo \
+@BUILD_X86_TRUE@	libllvmtargetx86_la-X86Subtarget.lo \
+@BUILD_X86_TRUE@	libllvmtargetx86_la-X86TargetMachine.lo \
+@BUILD_X86_TRUE@	libllvmtargetx86_la-X86FastISel.lo \
+@BUILD_X86_TRUE@	libllvmtargetx86_la-X86TargetInfo.lo
 libllvmtargetx86_la_OBJECTS = $(am_libllvmtargetx86_la_OBJECTS)
 libllvmtargetx86_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(libllvmtargetx86_la_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+@BUILD_X86_TRUE@am_libllvmtargetx86_la_rpath =
 libllvmtransformutils_la_LIBADD =
 am_libllvmtransformutils_la_OBJECTS =  \
 	libllvmtransformutils_la-AddrModeMatcher.lo \
@@ -387,7 +510,7 @@ am_tblgen_OBJECTS = tblgen-AsmMatcherEmitter.$(OBJEXT) \
 	tblgen-TGParser.$(OBJEXT) tblgen-TGValueTypes.$(OBJEXT) \
 	tblgen-TableGen.$(OBJEXT) tblgen-TableGenBackend.$(OBJEXT)
 tblgen_OBJECTS = $(am_tblgen_OBJECTS)
-tblgen_DEPENDENCIES = libllvmsystem.la libllvmsupport.la
+tblgen_DEPENDENCIES = libllvmsupport.la libllvmsystem.la
 tblgen_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(tblgen_CXXFLAGS) \
 	$(CXXFLAGS) $(tblgen_LDFLAGS) $(LDFLAGS) -o $@
@@ -438,14 +561,18 @@ SOURCES = $(libclamavcxx_la_SOURCES) $(libllvmcodegen_la_SOURCES) \
 	$(libllvmipa_la_SOURCES) $(libllvmmc_la_SOURCES) \
 	$(libllvmscalar_la_SOURCES) $(libllvmsdag_la_SOURCES) \
 	$(libllvmsupport_la_SOURCES) $(libllvmsystem_la_SOURCES) \
-	$(libllvmtarget_la_SOURCES) $(libllvmtargetx86_la_SOURCES) \
+	$(libllvmtarget_la_SOURCES) $(libllvmtargetarm_la_SOURCES) \
+	$(libllvmtargetppc_la_SOURCES) $(libllvmtargetx86_la_SOURCES) \
 	$(libllvmtransformutils_la_SOURCES) $(tblgen_SOURCES)
 DIST_SOURCES = $(libclamavcxx_la_SOURCES) $(libllvmcodegen_la_SOURCES) \
 	$(libllvmcore_la_SOURCES) $(libllvmexecutionengine_la_SOURCES) \
 	$(libllvmipa_la_SOURCES) $(libllvmmc_la_SOURCES) \
 	$(libllvmscalar_la_SOURCES) $(libllvmsdag_la_SOURCES) \
 	$(libllvmsupport_la_SOURCES) $(libllvmsystem_la_SOURCES) \
-	$(libllvmtarget_la_SOURCES) $(libllvmtargetx86_la_SOURCES) \
+	$(libllvmtarget_la_SOURCES) \
+	$(am__libllvmtargetarm_la_SOURCES_DIST) \
+	$(am__libllvmtargetppc_la_SOURCES_DIST) \
+	$(am__libllvmtargetx86_la_SOURCES_DIST) \
 	$(libllvmtransformutils_la_SOURCES) $(tblgen_SOURCES)
 ETAGS = etags
 CTAGS = ctags
@@ -599,7 +726,16 @@ ACLOCAL_AMFLAGS = -I m4
 #libclamavcxx_la_LDFLAGS = `$(LLVM_CONFIG) --ldflags --libs jit nativecodegen`
 libclamavcxx_la_CPPFLAGS = $(AM_CPPFLAGS) $(LLVM_INCLUDES) $(LLVM_DEFS)
 #libclamavcxx_la_DEPENDENCIES = $(LLVM_DEPS)
-libclamavcxx_la_LIBADD = libllvmexecutionengine.la
+libclamavcxx_la_LIBADD = libllvmsystem.la libllvmsupport.la \
+	libllvmcore.la libllvmtarget.la libllvmipa.la \
+	libllvmtransformutils.la libllvmscalar.la libllvmsdag.la \
+	libllvmmc.la libllvmcodegen.la libllvmexecutionengine.la \
+	$(am__append_1) $(am__append_3) $(am__append_5)
+noinst_LTLIBRARIES = libclamavcxx.la libllvmsupport.la \
+	libllvmsystem.la libllvmcore.la libllvmtarget.la \
+	libllvmsdag.la libllvmcodegen.la libllvmexecutionengine.la \
+	libllvmscalar.la libllvmipa.la libllvmtransformutils.la \
+	libllvmmc.la $(am__append_2) $(am__append_4) $(am__append_6)
 libclamavcxx_la_LDFLAGS = -no-undefined
 #libclamavcxx_la_LDFLAGS = `$(LLVM_CONFIG) --ldflags --libs jit nativecodegen`
 libclamavcxx_la_SOURCES = bytecode2llvm.cpp
@@ -658,7 +794,6 @@ libllvmsystem_la_SOURCES = \
 
 libllvmsupport_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
 libllvmsupport_la_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
-libllvmsupport_la_LIBADD = libllvmsystem.la
 libllvmsupport_la_SOURCES = \
     llvm/lib/Support/APFloat.cpp\
     llvm/lib/Support/APInt.cpp\
@@ -702,7 +837,7 @@ libllvmsupport_la_SOURCES = \
 
 tblgen_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
 tblgen_CXXFLAGS = $(LLVM_CXXFLAGS)
-tblgen_LDADD = libllvmsystem.la libllvmsupport.la
+tblgen_LDADD = libllvmsupport.la libllvmsystem.la
 #TODO: if VERSIONSCRIPT
 tblgen_LDFLAGS = -Wl,--version-script,@top_srcdir@/llvm/autoconf/ExportMap.map
 tblgen_SOURCES = \
@@ -729,11 +864,8 @@ tblgen_SOURCES = \
   llvm/utils/TableGen/TableGen.cpp\
   llvm/utils/TableGen/TableGenBackend.cpp
 
-TBLGEN_FLAGS = -I$(top_srcdir)/llvm/include -I$(top_srcdir)/llvm/lib/Target -I$(top_srcdir)/llvm/lib/Target/X86
-TBLGEN = $(top_builddir)/tblgen
 libllvmcore_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
 libllvmcore_la_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
-libllvmcore_la_LIBADD = libllvmsupport.la
 libllvmcore_la_SOURCES = \
  llvm/lib/VMCore/AsmWriter.cpp\
  llvm/lib/VMCore/Attributes.cpp\
@@ -766,28 +898,84 @@ libllvmcore_la_SOURCES = \
  llvm/lib/VMCore/ValueTypes.cpp\
  llvm/lib/VMCore/Verifier.cpp
 
-libllvmtargetx86_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_builddir) -I$(top_srcdir)/llvm/lib/Target/X86
-BUILT_SOURCES = X86GenRegisterInfo.h.inc X86GenRegisterNames.inc X86GenRegisterInfo.inc X86GenInstrNames.inc X86GenInstrInfo.inc X86GenAsmWriter.inc X86GenAsmWriter1.inc X86GenAsmMatcher.inc X86GenDAGISel.inc X86GenFastISel.inc X86GenCallingConv.inc X86GenSubtarget.inc
-libllvmtargetx86_la_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
-libllvmtargetx86_la_SOURCES = \
-    llvm/lib/Target/X86/X86CodeEmitter.cpp\
-    llvm/lib/Target/X86/X86ELFWriterInfo.cpp\
-    llvm/lib/Target/X86/X86FloatingPoint.cpp\
-    llvm/lib/Target/X86/X86FloatingPointRegKill.cpp\
-    llvm/lib/Target/X86/X86ISelDAGToDAG.cpp\
-    llvm/lib/Target/X86/X86ISelLowering.cpp\
-    llvm/lib/Target/X86/X86InstrInfo.cpp\
-    llvm/lib/Target/X86/X86JITInfo.cpp\
-    llvm/lib/Target/X86/X86MCAsmInfo.cpp\
-    llvm/lib/Target/X86/X86RegisterInfo.cpp\
-    llvm/lib/Target/X86/X86Subtarget.cpp\
-    llvm/lib/Target/X86/X86TargetMachine.cpp\
-    llvm/lib/Target/X86/X86FastISel.cpp\
-    llvm/lib/Target/X86/TargetInfo/X86TargetInfo.cpp
+TBLGEN = $(top_builddir)/tblgen
+TBLGEN_V = $(AM_V_GEN)$(TBLGEN)
+TBLGEN_FLAGS = -I$(top_srcdir)/llvm/include -I$(top_srcdir)/llvm/lib/Target
+BUILT_SOURCES = $(am__append_7) $(am__append_8) $(am__append_9)
+# X86 Target
+@BUILD_X86_TRUE@TBLGEN_FLAGS_X86 = $(TBLGEN_FLAGS) -I$(top_srcdir)/llvm/lib/Target/X86
+@BUILD_X86_TRUE@libllvmtargetx86_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_builddir) -I$(top_srcdir)/llvm/lib/Target/X86
+@BUILD_X86_TRUE@libllvmtargetx86_la_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
+@BUILD_X86_TRUE@libllvmtargetx86_la_SOURCES = \
+@BUILD_X86_TRUE@    llvm/lib/Target/X86/X86CodeEmitter.cpp\
+@BUILD_X86_TRUE@    llvm/lib/Target/X86/X86ELFWriterInfo.cpp\
+@BUILD_X86_TRUE@    llvm/lib/Target/X86/X86FloatingPoint.cpp\
+@BUILD_X86_TRUE@    llvm/lib/Target/X86/X86FloatingPointRegKill.cpp\
+@BUILD_X86_TRUE@    llvm/lib/Target/X86/X86ISelDAGToDAG.cpp\
+@BUILD_X86_TRUE@    llvm/lib/Target/X86/X86ISelLowering.cpp\
+@BUILD_X86_TRUE@    llvm/lib/Target/X86/X86InstrInfo.cpp\
+@BUILD_X86_TRUE@    llvm/lib/Target/X86/X86JITInfo.cpp\
+@BUILD_X86_TRUE@    llvm/lib/Target/X86/X86MCAsmInfo.cpp\
+@BUILD_X86_TRUE@    llvm/lib/Target/X86/X86RegisterInfo.cpp\
+@BUILD_X86_TRUE@    llvm/lib/Target/X86/X86Subtarget.cpp\
+@BUILD_X86_TRUE@    llvm/lib/Target/X86/X86TargetMachine.cpp\
+@BUILD_X86_TRUE@    llvm/lib/Target/X86/X86FastISel.cpp\
+@BUILD_X86_TRUE@    llvm/lib/Target/X86/TargetInfo/X86TargetInfo.cpp
 
+
+# PPC Target
+@BUILD_PPC_TRUE@TBLGEN_FLAGS_PPC = $(TBLGEN_FLAGS) -I$(top_srcdir)/llvm/lib/Target/PowerPC
+@BUILD_PPC_TRUE@libllvmtargetppc_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_builddir) -I$(top_srcdir)/llvm/lib/Target/PowerPC
+@BUILD_PPC_TRUE@libllvmtargetppc_la_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
+@BUILD_PPC_TRUE@libllvmtargetppc_la_SOURCES = \
+@BUILD_PPC_TRUE@  llvm/lib/Target/PowerPC/PPCBranchSelector.cpp\
+@BUILD_PPC_TRUE@  llvm/lib/Target/PowerPC/PPCCodeEmitter.cpp\
+@BUILD_PPC_TRUE@ llvm/lib/Target/PowerPC/PPCHazardRecognizers.cpp\
+@BUILD_PPC_TRUE@ llvm/lib/Target/PowerPC/PPCInstrInfo.cpp\
+@BUILD_PPC_TRUE@ llvm/lib/Target/PowerPC/PPCISelDAGToDAG.cpp\
+@BUILD_PPC_TRUE@ llvm/lib/Target/PowerPC/PPCISelLowering.cpp\
+@BUILD_PPC_TRUE@ llvm/lib/Target/PowerPC/PPCJITInfo.cpp\
+@BUILD_PPC_TRUE@ llvm/lib/Target/PowerPC/PPCMachOWriterInfo.cpp\
+@BUILD_PPC_TRUE@ llvm/lib/Target/PowerPC/PPCMCAsmInfo.cpp\
+@BUILD_PPC_TRUE@ llvm/lib/Target/PowerPC/PPCPredicates.cpp\
+@BUILD_PPC_TRUE@ llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp\
+@BUILD_PPC_TRUE@ llvm/lib/Target/PowerPC/PPCSubtarget.cpp\
+@BUILD_PPC_TRUE@ llvm/lib/Target/PowerPC/PPCTargetMachine.cpp\
+@BUILD_PPC_TRUE@ llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp
+
+
+# ARM Target
+@BUILD_ARM_TRUE@TBLGEN_FLAGS_ARM = $(TBLGEN_FLAGS) -I$(top_srcdir)/llvm/lib/Target/ARM
+@BUILD_ARM_TRUE@libllvmtargetarm_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS) -I$(top_builddir) -I$(top_srcdir)/llvm/lib/Target/ARM
+@BUILD_ARM_TRUE@libllvmtargetarm_la_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
+@BUILD_ARM_TRUE@libllvmtargetarm_la_SOURCES = \
+@BUILD_ARM_TRUE@  llvm/lib/Target/ARM/ARMBaseInstrInfo.cpp\
+@BUILD_ARM_TRUE@  llvm/lib/Target/ARM/ARMBaseRegisterInfo.cpp\
+@BUILD_ARM_TRUE@  llvm/lib/Target/ARM/ARMCodeEmitter.cpp\
+@BUILD_ARM_TRUE@ llvm/lib/Target/ARM/ARMConstantIslandPass.cpp\
+@BUILD_ARM_TRUE@ llvm/lib/Target/ARM/ARMConstantPoolValue.cpp\
+@BUILD_ARM_TRUE@ llvm/lib/Target/ARM/ARMInstrInfo.cpp\
+@BUILD_ARM_TRUE@ llvm/lib/Target/ARM/ARMISelDAGToDAG.cpp\
+@BUILD_ARM_TRUE@ llvm/lib/Target/ARM/ARMISelLowering.cpp\
+@BUILD_ARM_TRUE@ llvm/lib/Target/ARM/ARMJITInfo.cpp\
+@BUILD_ARM_TRUE@ llvm/lib/Target/ARM/ARMLoadStoreOptimizer.cpp\
+@BUILD_ARM_TRUE@ llvm/lib/Target/ARM/ARMMCAsmInfo.cpp\
+@BUILD_ARM_TRUE@ llvm/lib/Target/ARM/ARMRegisterInfo.cpp\
+@BUILD_ARM_TRUE@ llvm/lib/Target/ARM/ARMSubtarget.cpp\
+@BUILD_ARM_TRUE@ llvm/lib/Target/ARM/ARMTargetMachine.cpp\
+@BUILD_ARM_TRUE@ llvm/lib/Target/ARM/NEONPreAllocPass.cpp\
+@BUILD_ARM_TRUE@ llvm/lib/Target/ARM/Thumb1InstrInfo.cpp\
+@BUILD_ARM_TRUE@ llvm/lib/Target/ARM/Thumb1RegisterInfo.cpp\
+@BUILD_ARM_TRUE@ llvm/lib/Target/ARM/Thumb2ITBlockPass.cpp\
+@BUILD_ARM_TRUE@ llvm/lib/Target/ARM/Thumb2InstrInfo.cpp\
+@BUILD_ARM_TRUE@ llvm/lib/Target/ARM/Thumb2RegisterInfo.cpp\
+@BUILD_ARM_TRUE@ llvm/lib/Target/ARM/Thumb2SizeReduction.cpp\
+@BUILD_ARM_TRUE@ llvm/lib/Target/ARM/TargetInfo/ARMTargetInfo.cpp
+
+
+# End of Targets
 libllvmtarget_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
 libllvmtarget_la_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
-libllvmtarget_la_LIBADD = libllvmtargetx86.la libllvmcore.la libllvmmc.la
 libllvmtarget_la_SOURCES = \
   llvm/lib/Target/SubtargetFeature.cpp\
   llvm/lib/Target/Target.cpp\
@@ -828,7 +1016,6 @@ libllvmmc_la_SOURCES = \
 
 libllvmsdag_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
 libllvmsdag_la_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
-libllvmsdag_la_LIBADD = libllvmcodegen.la
 libllvmsdag_la_SOURCES = \
   llvm/lib/CodeGen/SelectionDAG/CallingConvLower.cpp\
   llvm/lib/CodeGen/SelectionDAG/DAGCombiner.cpp\
@@ -879,7 +1066,6 @@ libllvmipa_la_SOURCES = \
 
 libllvmcodegen_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
 libllvmcodegen_la_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
-libllvmcodegen_la_LIBADD = libllvmscalar.la libllvmipa.la libllvmtransformutils.la
 libllvmcodegen_la_SOURCES = \
   llvm/lib/CodeGen/BranchFolding.cpp\
   llvm/lib/CodeGen/CodePlacementOpt.cpp\
@@ -970,7 +1156,6 @@ libllvmtransformutils_la_SOURCES = \
 
 libllvmexecutionengine_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
 libllvmexecutionengine_la_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
-libllvmexecutionengine_la_LIBADD = libllvmtarget.la libllvmsdag.la
 libllvmexecutionengine_la_SOURCES = \
  llvm/lib/ExecutionEngine/ExecutionEngine.cpp\
  llvm/lib/ExecutionEngine/JIT/Intercept.cpp\
@@ -980,12 +1165,6 @@ libllvmexecutionengine_la_SOURCES = \
  llvm/lib/ExecutionEngine/JIT/JITMemoryManager.cpp\
  llvm/lib/ExecutionEngine/JIT/OProfileJITEventListener.cpp\
  llvm/lib/ExecutionEngine/JIT/TargetSelect.cpp
-
-noinst_LTLIBRARIES = libclamavcxx.la libllvmsupport.la libllvmsystem.la\
-		     libllvmcore.la libllvmtargetx86.la libllvmtarget.la\
-		     libllvmsdag.la libllvmcodegen.la libllvmexecutionengine.la\
-		     libllvmscalar.la libllvmipa.la libllvmtransformutils.la\
-		     libllvmmc.la
 
 all: $(BUILT_SOURCES) clamavcxx-config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -1074,8 +1253,12 @@ libllvmsystem.la: $(libllvmsystem_la_OBJECTS) $(libllvmsystem_la_DEPENDENCIES)
 	$(AM_V_CXXLD)$(libllvmsystem_la_LINK)  $(libllvmsystem_la_OBJECTS) $(libllvmsystem_la_LIBADD) $(LIBS)
 libllvmtarget.la: $(libllvmtarget_la_OBJECTS) $(libllvmtarget_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libllvmtarget_la_LINK)  $(libllvmtarget_la_OBJECTS) $(libllvmtarget_la_LIBADD) $(LIBS)
+libllvmtargetarm.la: $(libllvmtargetarm_la_OBJECTS) $(libllvmtargetarm_la_DEPENDENCIES) 
+	$(AM_V_CXXLD)$(libllvmtargetarm_la_LINK) $(am_libllvmtargetarm_la_rpath) $(libllvmtargetarm_la_OBJECTS) $(libllvmtargetarm_la_LIBADD) $(LIBS)
+libllvmtargetppc.la: $(libllvmtargetppc_la_OBJECTS) $(libllvmtargetppc_la_DEPENDENCIES) 
+	$(AM_V_CXXLD)$(libllvmtargetppc_la_LINK) $(am_libllvmtargetppc_la_rpath) $(libllvmtargetppc_la_OBJECTS) $(libllvmtargetppc_la_LIBADD) $(LIBS)
 libllvmtargetx86.la: $(libllvmtargetx86_la_OBJECTS) $(libllvmtargetx86_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(libllvmtargetx86_la_LINK)  $(libllvmtargetx86_la_OBJECTS) $(libllvmtargetx86_la_LIBADD) $(LIBS)
+	$(AM_V_CXXLD)$(libllvmtargetx86_la_LINK) $(am_libllvmtargetx86_la_rpath) $(libllvmtargetx86_la_OBJECTS) $(libllvmtargetx86_la_LIBADD) $(LIBS)
 libllvmtransformutils.la: $(libllvmtransformutils_la_OBJECTS) $(libllvmtransformutils_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libllvmtransformutils_la_LINK)  $(libllvmtransformutils_la_OBJECTS) $(libllvmtransformutils_la_LIBADD) $(LIBS)
 
@@ -1331,6 +1514,42 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtarget_la-TargetMachine.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtarget_la-TargetRegisterInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtarget_la-TargetSubtarget.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMBaseInstrInfo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMBaseRegisterInfo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMCodeEmitter.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMConstantIslandPass.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMConstantPoolValue.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMISelDAGToDAG.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMISelLowering.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMInstrInfo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMJITInfo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMLoadStoreOptimizer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMMCAsmInfo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMRegisterInfo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMSubtarget.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMTargetInfo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-ARMTargetMachine.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-NEONPreAllocPass.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-Thumb1InstrInfo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-Thumb1RegisterInfo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-Thumb2ITBlockPass.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-Thumb2InstrInfo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-Thumb2RegisterInfo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetarm_la-Thumb2SizeReduction.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetppc_la-PPCBranchSelector.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetppc_la-PPCCodeEmitter.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetppc_la-PPCHazardRecognizers.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetppc_la-PPCISelDAGToDAG.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetppc_la-PPCISelLowering.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetppc_la-PPCInstrInfo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetppc_la-PPCJITInfo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetppc_la-PPCMCAsmInfo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetppc_la-PPCMachOWriterInfo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetppc_la-PPCPredicates.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetppc_la-PPCRegisterInfo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetppc_la-PPCSubtarget.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetppc_la-PPCTargetMachine.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetppc_la-PowerPCTargetInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetx86_la-X86CodeEmitter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetx86_la-X86ELFWriterInfo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmtargetx86_la-X86FastISel.Plo@am__quote@
@@ -3301,6 +3520,294 @@ libllvmtarget_la-TargetSubtarget.lo: llvm/lib/Target/TargetSubtarget.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtarget_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtarget_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtarget_la-TargetSubtarget.lo `test -f 'llvm/lib/Target/TargetSubtarget.cpp' || echo '$(srcdir)/'`llvm/lib/Target/TargetSubtarget.cpp
 
+libllvmtargetarm_la-ARMBaseInstrInfo.lo: llvm/lib/Target/ARM/ARMBaseInstrInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-ARMBaseInstrInfo.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-ARMBaseInstrInfo.Tpo -c -o libllvmtargetarm_la-ARMBaseInstrInfo.lo `test -f 'llvm/lib/Target/ARM/ARMBaseInstrInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMBaseInstrInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-ARMBaseInstrInfo.Tpo $(DEPDIR)/libllvmtargetarm_la-ARMBaseInstrInfo.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/ARMBaseInstrInfo.cpp' object='libllvmtargetarm_la-ARMBaseInstrInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-ARMBaseInstrInfo.lo `test -f 'llvm/lib/Target/ARM/ARMBaseInstrInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMBaseInstrInfo.cpp
+
+libllvmtargetarm_la-ARMBaseRegisterInfo.lo: llvm/lib/Target/ARM/ARMBaseRegisterInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-ARMBaseRegisterInfo.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-ARMBaseRegisterInfo.Tpo -c -o libllvmtargetarm_la-ARMBaseRegisterInfo.lo `test -f 'llvm/lib/Target/ARM/ARMBaseRegisterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMBaseRegisterInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-ARMBaseRegisterInfo.Tpo $(DEPDIR)/libllvmtargetarm_la-ARMBaseRegisterInfo.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/ARMBaseRegisterInfo.cpp' object='libllvmtargetarm_la-ARMBaseRegisterInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-ARMBaseRegisterInfo.lo `test -f 'llvm/lib/Target/ARM/ARMBaseRegisterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMBaseRegisterInfo.cpp
+
+libllvmtargetarm_la-ARMCodeEmitter.lo: llvm/lib/Target/ARM/ARMCodeEmitter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-ARMCodeEmitter.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-ARMCodeEmitter.Tpo -c -o libllvmtargetarm_la-ARMCodeEmitter.lo `test -f 'llvm/lib/Target/ARM/ARMCodeEmitter.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMCodeEmitter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-ARMCodeEmitter.Tpo $(DEPDIR)/libllvmtargetarm_la-ARMCodeEmitter.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/ARMCodeEmitter.cpp' object='libllvmtargetarm_la-ARMCodeEmitter.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-ARMCodeEmitter.lo `test -f 'llvm/lib/Target/ARM/ARMCodeEmitter.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMCodeEmitter.cpp
+
+libllvmtargetarm_la-ARMConstantIslandPass.lo: llvm/lib/Target/ARM/ARMConstantIslandPass.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-ARMConstantIslandPass.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-ARMConstantIslandPass.Tpo -c -o libllvmtargetarm_la-ARMConstantIslandPass.lo `test -f 'llvm/lib/Target/ARM/ARMConstantIslandPass.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMConstantIslandPass.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-ARMConstantIslandPass.Tpo $(DEPDIR)/libllvmtargetarm_la-ARMConstantIslandPass.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/ARMConstantIslandPass.cpp' object='libllvmtargetarm_la-ARMConstantIslandPass.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-ARMConstantIslandPass.lo `test -f 'llvm/lib/Target/ARM/ARMConstantIslandPass.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMConstantIslandPass.cpp
+
+libllvmtargetarm_la-ARMConstantPoolValue.lo: llvm/lib/Target/ARM/ARMConstantPoolValue.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-ARMConstantPoolValue.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-ARMConstantPoolValue.Tpo -c -o libllvmtargetarm_la-ARMConstantPoolValue.lo `test -f 'llvm/lib/Target/ARM/ARMConstantPoolValue.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMConstantPoolValue.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-ARMConstantPoolValue.Tpo $(DEPDIR)/libllvmtargetarm_la-ARMConstantPoolValue.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/ARMConstantPoolValue.cpp' object='libllvmtargetarm_la-ARMConstantPoolValue.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-ARMConstantPoolValue.lo `test -f 'llvm/lib/Target/ARM/ARMConstantPoolValue.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMConstantPoolValue.cpp
+
+libllvmtargetarm_la-ARMInstrInfo.lo: llvm/lib/Target/ARM/ARMInstrInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-ARMInstrInfo.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-ARMInstrInfo.Tpo -c -o libllvmtargetarm_la-ARMInstrInfo.lo `test -f 'llvm/lib/Target/ARM/ARMInstrInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMInstrInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-ARMInstrInfo.Tpo $(DEPDIR)/libllvmtargetarm_la-ARMInstrInfo.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/ARMInstrInfo.cpp' object='libllvmtargetarm_la-ARMInstrInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-ARMInstrInfo.lo `test -f 'llvm/lib/Target/ARM/ARMInstrInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMInstrInfo.cpp
+
+libllvmtargetarm_la-ARMISelDAGToDAG.lo: llvm/lib/Target/ARM/ARMISelDAGToDAG.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-ARMISelDAGToDAG.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-ARMISelDAGToDAG.Tpo -c -o libllvmtargetarm_la-ARMISelDAGToDAG.lo `test -f 'llvm/lib/Target/ARM/ARMISelDAGToDAG.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMISelDAGToDAG.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-ARMISelDAGToDAG.Tpo $(DEPDIR)/libllvmtargetarm_la-ARMISelDAGToDAG.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/ARMISelDAGToDAG.cpp' object='libllvmtargetarm_la-ARMISelDAGToDAG.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-ARMISelDAGToDAG.lo `test -f 'llvm/lib/Target/ARM/ARMISelDAGToDAG.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMISelDAGToDAG.cpp
+
+libllvmtargetarm_la-ARMISelLowering.lo: llvm/lib/Target/ARM/ARMISelLowering.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-ARMISelLowering.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-ARMISelLowering.Tpo -c -o libllvmtargetarm_la-ARMISelLowering.lo `test -f 'llvm/lib/Target/ARM/ARMISelLowering.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMISelLowering.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-ARMISelLowering.Tpo $(DEPDIR)/libllvmtargetarm_la-ARMISelLowering.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/ARMISelLowering.cpp' object='libllvmtargetarm_la-ARMISelLowering.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-ARMISelLowering.lo `test -f 'llvm/lib/Target/ARM/ARMISelLowering.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMISelLowering.cpp
+
+libllvmtargetarm_la-ARMJITInfo.lo: llvm/lib/Target/ARM/ARMJITInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-ARMJITInfo.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-ARMJITInfo.Tpo -c -o libllvmtargetarm_la-ARMJITInfo.lo `test -f 'llvm/lib/Target/ARM/ARMJITInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMJITInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-ARMJITInfo.Tpo $(DEPDIR)/libllvmtargetarm_la-ARMJITInfo.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/ARMJITInfo.cpp' object='libllvmtargetarm_la-ARMJITInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-ARMJITInfo.lo `test -f 'llvm/lib/Target/ARM/ARMJITInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMJITInfo.cpp
+
+libllvmtargetarm_la-ARMLoadStoreOptimizer.lo: llvm/lib/Target/ARM/ARMLoadStoreOptimizer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-ARMLoadStoreOptimizer.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-ARMLoadStoreOptimizer.Tpo -c -o libllvmtargetarm_la-ARMLoadStoreOptimizer.lo `test -f 'llvm/lib/Target/ARM/ARMLoadStoreOptimizer.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMLoadStoreOptimizer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-ARMLoadStoreOptimizer.Tpo $(DEPDIR)/libllvmtargetarm_la-ARMLoadStoreOptimizer.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/ARMLoadStoreOptimizer.cpp' object='libllvmtargetarm_la-ARMLoadStoreOptimizer.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-ARMLoadStoreOptimizer.lo `test -f 'llvm/lib/Target/ARM/ARMLoadStoreOptimizer.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMLoadStoreOptimizer.cpp
+
+libllvmtargetarm_la-ARMMCAsmInfo.lo: llvm/lib/Target/ARM/ARMMCAsmInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-ARMMCAsmInfo.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-ARMMCAsmInfo.Tpo -c -o libllvmtargetarm_la-ARMMCAsmInfo.lo `test -f 'llvm/lib/Target/ARM/ARMMCAsmInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMMCAsmInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-ARMMCAsmInfo.Tpo $(DEPDIR)/libllvmtargetarm_la-ARMMCAsmInfo.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/ARMMCAsmInfo.cpp' object='libllvmtargetarm_la-ARMMCAsmInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-ARMMCAsmInfo.lo `test -f 'llvm/lib/Target/ARM/ARMMCAsmInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMMCAsmInfo.cpp
+
+libllvmtargetarm_la-ARMRegisterInfo.lo: llvm/lib/Target/ARM/ARMRegisterInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-ARMRegisterInfo.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-ARMRegisterInfo.Tpo -c -o libllvmtargetarm_la-ARMRegisterInfo.lo `test -f 'llvm/lib/Target/ARM/ARMRegisterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMRegisterInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-ARMRegisterInfo.Tpo $(DEPDIR)/libllvmtargetarm_la-ARMRegisterInfo.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/ARMRegisterInfo.cpp' object='libllvmtargetarm_la-ARMRegisterInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-ARMRegisterInfo.lo `test -f 'llvm/lib/Target/ARM/ARMRegisterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMRegisterInfo.cpp
+
+libllvmtargetarm_la-ARMSubtarget.lo: llvm/lib/Target/ARM/ARMSubtarget.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-ARMSubtarget.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-ARMSubtarget.Tpo -c -o libllvmtargetarm_la-ARMSubtarget.lo `test -f 'llvm/lib/Target/ARM/ARMSubtarget.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMSubtarget.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-ARMSubtarget.Tpo $(DEPDIR)/libllvmtargetarm_la-ARMSubtarget.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/ARMSubtarget.cpp' object='libllvmtargetarm_la-ARMSubtarget.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-ARMSubtarget.lo `test -f 'llvm/lib/Target/ARM/ARMSubtarget.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMSubtarget.cpp
+
+libllvmtargetarm_la-ARMTargetMachine.lo: llvm/lib/Target/ARM/ARMTargetMachine.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-ARMTargetMachine.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-ARMTargetMachine.Tpo -c -o libllvmtargetarm_la-ARMTargetMachine.lo `test -f 'llvm/lib/Target/ARM/ARMTargetMachine.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMTargetMachine.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-ARMTargetMachine.Tpo $(DEPDIR)/libllvmtargetarm_la-ARMTargetMachine.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/ARMTargetMachine.cpp' object='libllvmtargetarm_la-ARMTargetMachine.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-ARMTargetMachine.lo `test -f 'llvm/lib/Target/ARM/ARMTargetMachine.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/ARMTargetMachine.cpp
+
+libllvmtargetarm_la-NEONPreAllocPass.lo: llvm/lib/Target/ARM/NEONPreAllocPass.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-NEONPreAllocPass.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-NEONPreAllocPass.Tpo -c -o libllvmtargetarm_la-NEONPreAllocPass.lo `test -f 'llvm/lib/Target/ARM/NEONPreAllocPass.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/NEONPreAllocPass.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-NEONPreAllocPass.Tpo $(DEPDIR)/libllvmtargetarm_la-NEONPreAllocPass.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/NEONPreAllocPass.cpp' object='libllvmtargetarm_la-NEONPreAllocPass.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-NEONPreAllocPass.lo `test -f 'llvm/lib/Target/ARM/NEONPreAllocPass.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/NEONPreAllocPass.cpp
+
+libllvmtargetarm_la-Thumb1InstrInfo.lo: llvm/lib/Target/ARM/Thumb1InstrInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-Thumb1InstrInfo.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-Thumb1InstrInfo.Tpo -c -o libllvmtargetarm_la-Thumb1InstrInfo.lo `test -f 'llvm/lib/Target/ARM/Thumb1InstrInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/Thumb1InstrInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-Thumb1InstrInfo.Tpo $(DEPDIR)/libllvmtargetarm_la-Thumb1InstrInfo.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/Thumb1InstrInfo.cpp' object='libllvmtargetarm_la-Thumb1InstrInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-Thumb1InstrInfo.lo `test -f 'llvm/lib/Target/ARM/Thumb1InstrInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/Thumb1InstrInfo.cpp
+
+libllvmtargetarm_la-Thumb1RegisterInfo.lo: llvm/lib/Target/ARM/Thumb1RegisterInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-Thumb1RegisterInfo.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-Thumb1RegisterInfo.Tpo -c -o libllvmtargetarm_la-Thumb1RegisterInfo.lo `test -f 'llvm/lib/Target/ARM/Thumb1RegisterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/Thumb1RegisterInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-Thumb1RegisterInfo.Tpo $(DEPDIR)/libllvmtargetarm_la-Thumb1RegisterInfo.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/Thumb1RegisterInfo.cpp' object='libllvmtargetarm_la-Thumb1RegisterInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-Thumb1RegisterInfo.lo `test -f 'llvm/lib/Target/ARM/Thumb1RegisterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/Thumb1RegisterInfo.cpp
+
+libllvmtargetarm_la-Thumb2ITBlockPass.lo: llvm/lib/Target/ARM/Thumb2ITBlockPass.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-Thumb2ITBlockPass.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-Thumb2ITBlockPass.Tpo -c -o libllvmtargetarm_la-Thumb2ITBlockPass.lo `test -f 'llvm/lib/Target/ARM/Thumb2ITBlockPass.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/Thumb2ITBlockPass.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-Thumb2ITBlockPass.Tpo $(DEPDIR)/libllvmtargetarm_la-Thumb2ITBlockPass.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/Thumb2ITBlockPass.cpp' object='libllvmtargetarm_la-Thumb2ITBlockPass.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-Thumb2ITBlockPass.lo `test -f 'llvm/lib/Target/ARM/Thumb2ITBlockPass.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/Thumb2ITBlockPass.cpp
+
+libllvmtargetarm_la-Thumb2InstrInfo.lo: llvm/lib/Target/ARM/Thumb2InstrInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-Thumb2InstrInfo.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-Thumb2InstrInfo.Tpo -c -o libllvmtargetarm_la-Thumb2InstrInfo.lo `test -f 'llvm/lib/Target/ARM/Thumb2InstrInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/Thumb2InstrInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-Thumb2InstrInfo.Tpo $(DEPDIR)/libllvmtargetarm_la-Thumb2InstrInfo.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/Thumb2InstrInfo.cpp' object='libllvmtargetarm_la-Thumb2InstrInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-Thumb2InstrInfo.lo `test -f 'llvm/lib/Target/ARM/Thumb2InstrInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/Thumb2InstrInfo.cpp
+
+libllvmtargetarm_la-Thumb2RegisterInfo.lo: llvm/lib/Target/ARM/Thumb2RegisterInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-Thumb2RegisterInfo.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-Thumb2RegisterInfo.Tpo -c -o libllvmtargetarm_la-Thumb2RegisterInfo.lo `test -f 'llvm/lib/Target/ARM/Thumb2RegisterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/Thumb2RegisterInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-Thumb2RegisterInfo.Tpo $(DEPDIR)/libllvmtargetarm_la-Thumb2RegisterInfo.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/Thumb2RegisterInfo.cpp' object='libllvmtargetarm_la-Thumb2RegisterInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-Thumb2RegisterInfo.lo `test -f 'llvm/lib/Target/ARM/Thumb2RegisterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/Thumb2RegisterInfo.cpp
+
+libllvmtargetarm_la-Thumb2SizeReduction.lo: llvm/lib/Target/ARM/Thumb2SizeReduction.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-Thumb2SizeReduction.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-Thumb2SizeReduction.Tpo -c -o libllvmtargetarm_la-Thumb2SizeReduction.lo `test -f 'llvm/lib/Target/ARM/Thumb2SizeReduction.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/Thumb2SizeReduction.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-Thumb2SizeReduction.Tpo $(DEPDIR)/libllvmtargetarm_la-Thumb2SizeReduction.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/Thumb2SizeReduction.cpp' object='libllvmtargetarm_la-Thumb2SizeReduction.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-Thumb2SizeReduction.lo `test -f 'llvm/lib/Target/ARM/Thumb2SizeReduction.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/Thumb2SizeReduction.cpp
+
+libllvmtargetarm_la-ARMTargetInfo.lo: llvm/lib/Target/ARM/TargetInfo/ARMTargetInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetarm_la-ARMTargetInfo.lo -MD -MP -MF $(DEPDIR)/libllvmtargetarm_la-ARMTargetInfo.Tpo -c -o libllvmtargetarm_la-ARMTargetInfo.lo `test -f 'llvm/lib/Target/ARM/TargetInfo/ARMTargetInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/TargetInfo/ARMTargetInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetarm_la-ARMTargetInfo.Tpo $(DEPDIR)/libllvmtargetarm_la-ARMTargetInfo.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/ARM/TargetInfo/ARMTargetInfo.cpp' object='libllvmtargetarm_la-ARMTargetInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetarm_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetarm_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetarm_la-ARMTargetInfo.lo `test -f 'llvm/lib/Target/ARM/TargetInfo/ARMTargetInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/ARM/TargetInfo/ARMTargetInfo.cpp
+
+libllvmtargetppc_la-PPCBranchSelector.lo: llvm/lib/Target/PowerPC/PPCBranchSelector.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetppc_la-PPCBranchSelector.lo -MD -MP -MF $(DEPDIR)/libllvmtargetppc_la-PPCBranchSelector.Tpo -c -o libllvmtargetppc_la-PPCBranchSelector.lo `test -f 'llvm/lib/Target/PowerPC/PPCBranchSelector.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCBranchSelector.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetppc_la-PPCBranchSelector.Tpo $(DEPDIR)/libllvmtargetppc_la-PPCBranchSelector.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/PowerPC/PPCBranchSelector.cpp' object='libllvmtargetppc_la-PPCBranchSelector.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetppc_la-PPCBranchSelector.lo `test -f 'llvm/lib/Target/PowerPC/PPCBranchSelector.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCBranchSelector.cpp
+
+libllvmtargetppc_la-PPCCodeEmitter.lo: llvm/lib/Target/PowerPC/PPCCodeEmitter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetppc_la-PPCCodeEmitter.lo -MD -MP -MF $(DEPDIR)/libllvmtargetppc_la-PPCCodeEmitter.Tpo -c -o libllvmtargetppc_la-PPCCodeEmitter.lo `test -f 'llvm/lib/Target/PowerPC/PPCCodeEmitter.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCCodeEmitter.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetppc_la-PPCCodeEmitter.Tpo $(DEPDIR)/libllvmtargetppc_la-PPCCodeEmitter.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/PowerPC/PPCCodeEmitter.cpp' object='libllvmtargetppc_la-PPCCodeEmitter.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetppc_la-PPCCodeEmitter.lo `test -f 'llvm/lib/Target/PowerPC/PPCCodeEmitter.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCCodeEmitter.cpp
+
+libllvmtargetppc_la-PPCHazardRecognizers.lo: llvm/lib/Target/PowerPC/PPCHazardRecognizers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetppc_la-PPCHazardRecognizers.lo -MD -MP -MF $(DEPDIR)/libllvmtargetppc_la-PPCHazardRecognizers.Tpo -c -o libllvmtargetppc_la-PPCHazardRecognizers.lo `test -f 'llvm/lib/Target/PowerPC/PPCHazardRecognizers.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCHazardRecognizers.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetppc_la-PPCHazardRecognizers.Tpo $(DEPDIR)/libllvmtargetppc_la-PPCHazardRecognizers.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/PowerPC/PPCHazardRecognizers.cpp' object='libllvmtargetppc_la-PPCHazardRecognizers.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetppc_la-PPCHazardRecognizers.lo `test -f 'llvm/lib/Target/PowerPC/PPCHazardRecognizers.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCHazardRecognizers.cpp
+
+libllvmtargetppc_la-PPCInstrInfo.lo: llvm/lib/Target/PowerPC/PPCInstrInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetppc_la-PPCInstrInfo.lo -MD -MP -MF $(DEPDIR)/libllvmtargetppc_la-PPCInstrInfo.Tpo -c -o libllvmtargetppc_la-PPCInstrInfo.lo `test -f 'llvm/lib/Target/PowerPC/PPCInstrInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCInstrInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetppc_la-PPCInstrInfo.Tpo $(DEPDIR)/libllvmtargetppc_la-PPCInstrInfo.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/PowerPC/PPCInstrInfo.cpp' object='libllvmtargetppc_la-PPCInstrInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetppc_la-PPCInstrInfo.lo `test -f 'llvm/lib/Target/PowerPC/PPCInstrInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCInstrInfo.cpp
+
+libllvmtargetppc_la-PPCISelDAGToDAG.lo: llvm/lib/Target/PowerPC/PPCISelDAGToDAG.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetppc_la-PPCISelDAGToDAG.lo -MD -MP -MF $(DEPDIR)/libllvmtargetppc_la-PPCISelDAGToDAG.Tpo -c -o libllvmtargetppc_la-PPCISelDAGToDAG.lo `test -f 'llvm/lib/Target/PowerPC/PPCISelDAGToDAG.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCISelDAGToDAG.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetppc_la-PPCISelDAGToDAG.Tpo $(DEPDIR)/libllvmtargetppc_la-PPCISelDAGToDAG.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/PowerPC/PPCISelDAGToDAG.cpp' object='libllvmtargetppc_la-PPCISelDAGToDAG.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetppc_la-PPCISelDAGToDAG.lo `test -f 'llvm/lib/Target/PowerPC/PPCISelDAGToDAG.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCISelDAGToDAG.cpp
+
+libllvmtargetppc_la-PPCISelLowering.lo: llvm/lib/Target/PowerPC/PPCISelLowering.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetppc_la-PPCISelLowering.lo -MD -MP -MF $(DEPDIR)/libllvmtargetppc_la-PPCISelLowering.Tpo -c -o libllvmtargetppc_la-PPCISelLowering.lo `test -f 'llvm/lib/Target/PowerPC/PPCISelLowering.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCISelLowering.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetppc_la-PPCISelLowering.Tpo $(DEPDIR)/libllvmtargetppc_la-PPCISelLowering.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/PowerPC/PPCISelLowering.cpp' object='libllvmtargetppc_la-PPCISelLowering.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetppc_la-PPCISelLowering.lo `test -f 'llvm/lib/Target/PowerPC/PPCISelLowering.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCISelLowering.cpp
+
+libllvmtargetppc_la-PPCJITInfo.lo: llvm/lib/Target/PowerPC/PPCJITInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetppc_la-PPCJITInfo.lo -MD -MP -MF $(DEPDIR)/libllvmtargetppc_la-PPCJITInfo.Tpo -c -o libllvmtargetppc_la-PPCJITInfo.lo `test -f 'llvm/lib/Target/PowerPC/PPCJITInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCJITInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetppc_la-PPCJITInfo.Tpo $(DEPDIR)/libllvmtargetppc_la-PPCJITInfo.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/PowerPC/PPCJITInfo.cpp' object='libllvmtargetppc_la-PPCJITInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetppc_la-PPCJITInfo.lo `test -f 'llvm/lib/Target/PowerPC/PPCJITInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCJITInfo.cpp
+
+libllvmtargetppc_la-PPCMachOWriterInfo.lo: llvm/lib/Target/PowerPC/PPCMachOWriterInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetppc_la-PPCMachOWriterInfo.lo -MD -MP -MF $(DEPDIR)/libllvmtargetppc_la-PPCMachOWriterInfo.Tpo -c -o libllvmtargetppc_la-PPCMachOWriterInfo.lo `test -f 'llvm/lib/Target/PowerPC/PPCMachOWriterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCMachOWriterInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetppc_la-PPCMachOWriterInfo.Tpo $(DEPDIR)/libllvmtargetppc_la-PPCMachOWriterInfo.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/PowerPC/PPCMachOWriterInfo.cpp' object='libllvmtargetppc_la-PPCMachOWriterInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetppc_la-PPCMachOWriterInfo.lo `test -f 'llvm/lib/Target/PowerPC/PPCMachOWriterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCMachOWriterInfo.cpp
+
+libllvmtargetppc_la-PPCMCAsmInfo.lo: llvm/lib/Target/PowerPC/PPCMCAsmInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetppc_la-PPCMCAsmInfo.lo -MD -MP -MF $(DEPDIR)/libllvmtargetppc_la-PPCMCAsmInfo.Tpo -c -o libllvmtargetppc_la-PPCMCAsmInfo.lo `test -f 'llvm/lib/Target/PowerPC/PPCMCAsmInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCMCAsmInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetppc_la-PPCMCAsmInfo.Tpo $(DEPDIR)/libllvmtargetppc_la-PPCMCAsmInfo.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/PowerPC/PPCMCAsmInfo.cpp' object='libllvmtargetppc_la-PPCMCAsmInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetppc_la-PPCMCAsmInfo.lo `test -f 'llvm/lib/Target/PowerPC/PPCMCAsmInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCMCAsmInfo.cpp
+
+libllvmtargetppc_la-PPCPredicates.lo: llvm/lib/Target/PowerPC/PPCPredicates.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetppc_la-PPCPredicates.lo -MD -MP -MF $(DEPDIR)/libllvmtargetppc_la-PPCPredicates.Tpo -c -o libllvmtargetppc_la-PPCPredicates.lo `test -f 'llvm/lib/Target/PowerPC/PPCPredicates.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCPredicates.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetppc_la-PPCPredicates.Tpo $(DEPDIR)/libllvmtargetppc_la-PPCPredicates.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/PowerPC/PPCPredicates.cpp' object='libllvmtargetppc_la-PPCPredicates.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetppc_la-PPCPredicates.lo `test -f 'llvm/lib/Target/PowerPC/PPCPredicates.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCPredicates.cpp
+
+libllvmtargetppc_la-PPCRegisterInfo.lo: llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetppc_la-PPCRegisterInfo.lo -MD -MP -MF $(DEPDIR)/libllvmtargetppc_la-PPCRegisterInfo.Tpo -c -o libllvmtargetppc_la-PPCRegisterInfo.lo `test -f 'llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetppc_la-PPCRegisterInfo.Tpo $(DEPDIR)/libllvmtargetppc_la-PPCRegisterInfo.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' object='libllvmtargetppc_la-PPCRegisterInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetppc_la-PPCRegisterInfo.lo `test -f 'llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCRegisterInfo.cpp
+
+libllvmtargetppc_la-PPCSubtarget.lo: llvm/lib/Target/PowerPC/PPCSubtarget.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetppc_la-PPCSubtarget.lo -MD -MP -MF $(DEPDIR)/libllvmtargetppc_la-PPCSubtarget.Tpo -c -o libllvmtargetppc_la-PPCSubtarget.lo `test -f 'llvm/lib/Target/PowerPC/PPCSubtarget.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCSubtarget.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetppc_la-PPCSubtarget.Tpo $(DEPDIR)/libllvmtargetppc_la-PPCSubtarget.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/PowerPC/PPCSubtarget.cpp' object='libllvmtargetppc_la-PPCSubtarget.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetppc_la-PPCSubtarget.lo `test -f 'llvm/lib/Target/PowerPC/PPCSubtarget.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCSubtarget.cpp
+
+libllvmtargetppc_la-PPCTargetMachine.lo: llvm/lib/Target/PowerPC/PPCTargetMachine.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetppc_la-PPCTargetMachine.lo -MD -MP -MF $(DEPDIR)/libllvmtargetppc_la-PPCTargetMachine.Tpo -c -o libllvmtargetppc_la-PPCTargetMachine.lo `test -f 'llvm/lib/Target/PowerPC/PPCTargetMachine.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCTargetMachine.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetppc_la-PPCTargetMachine.Tpo $(DEPDIR)/libllvmtargetppc_la-PPCTargetMachine.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/PowerPC/PPCTargetMachine.cpp' object='libllvmtargetppc_la-PPCTargetMachine.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetppc_la-PPCTargetMachine.lo `test -f 'llvm/lib/Target/PowerPC/PPCTargetMachine.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/PPCTargetMachine.cpp
+
+libllvmtargetppc_la-PowerPCTargetInfo.lo: llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetppc_la-PowerPCTargetInfo.lo -MD -MP -MF $(DEPDIR)/libllvmtargetppc_la-PowerPCTargetInfo.Tpo -c -o libllvmtargetppc_la-PowerPCTargetInfo.lo `test -f 'llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetppc_la-PowerPCTargetInfo.Tpo $(DEPDIR)/libllvmtargetppc_la-PowerPCTargetInfo.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp' object='libllvmtargetppc_la-PowerPCTargetInfo.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetppc_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetppc_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmtargetppc_la-PowerPCTargetInfo.lo `test -f 'llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp' || echo '$(srcdir)/'`llvm/lib/Target/PowerPC/TargetInfo/PowerPCTargetInfo.cpp
+
 libllvmtargetx86_la-X86CodeEmitter.lo: llvm/lib/Target/X86/X86CodeEmitter.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmtargetx86_la_CPPFLAGS) $(CPPFLAGS) $(libllvmtargetx86_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmtargetx86_la-X86CodeEmitter.lo -MD -MP -MF $(DEPDIR)/libllvmtargetx86_la-X86CodeEmitter.Tpo -c -o libllvmtargetx86_la-X86CodeEmitter.lo `test -f 'llvm/lib/Target/X86/X86CodeEmitter.cpp' || echo '$(srcdir)/'`llvm/lib/Target/X86/X86CodeEmitter.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmtargetx86_la-X86CodeEmitter.Tpo $(DEPDIR)/libllvmtargetx86_la-X86CodeEmitter.Plo
@@ -3962,6 +4469,9 @@ distdir: $(DISTFILES)
 	    || exit 1; \
 	  fi; \
 	done
+	$(MAKE) $(AM_MAKEFLAGS) \
+	  top_distdir="$(top_distdir)" distdir="$(distdir)" \
+	  dist-hook
 	-test -n "$(am__skip_mode_fix)" \
 	|| find "$(distdir)" -type d ! -perm -777 -exec chmod a+rwx {} \; -o \
 	  ! -type d ! -perm -444 -links 1 -exec chmod a+r {} \; -o \
@@ -4187,55 +4697,116 @@ uninstall-am:
 .PHONY: CTAGS GTAGS all all-am am--refresh check check-am clean \
 	clean-generic clean-libtool clean-local \
 	clean-noinstLTLIBRARIES clean-noinstPROGRAMS ctags dist \
-	dist-all dist-bzip2 dist-gzip dist-lzma dist-shar dist-tarZ \
-	dist-xz dist-zip distcheck distclean distclean-compile \
-	distclean-generic distclean-hdr distclean-libtool \
-	distclean-tags distcleancheck distdir distuninstallcheck dvi \
-	dvi-am html html-am info info-am install install-am \
-	install-data install-data-am install-dvi install-dvi-am \
-	install-exec install-exec-am install-html install-html-am \
-	install-info install-info-am install-man install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am
+	dist-all dist-bzip2 dist-gzip dist-hook dist-lzma dist-shar \
+	dist-tarZ dist-xz dist-zip distcheck distclean \
+	distclean-compile distclean-generic distclean-hdr \
+	distclean-libtool distclean-tags distcleancheck distdir \
+	distuninstallcheck dvi dvi-am html html-am info info-am \
+	install install-am install-data install-data-am install-dvi \
+	install-dvi-am install-exec install-exec-am install-html \
+	install-html-am install-info install-info-am install-man \
+	install-pdf install-pdf-am install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags uninstall uninstall-am
 
-X86GenRegisterInfo.h.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-	$(TBLGEN) $(TBLGEN_FLAGS) -gen-register-desc-header -o $@ $<
+@BUILD_X86_TRUE@X86GenRegisterInfo.h.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-register-desc-header -o $@ $<
 
-X86GenRegisterNames.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-	$(TBLGEN) $(TBLGEN_FLAGS) -gen-register-enums -o $@ $<
+@BUILD_X86_TRUE@X86GenRegisterNames.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-register-enums -o $@ $<
 
-X86GenRegisterInfo.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-	$(TBLGEN) $(TBLGEN_FLAGS) -gen-register-desc -o $@ $<
+@BUILD_X86_TRUE@X86GenRegisterInfo.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-register-desc -o $@ $<
 
-X86GenInstrNames.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-	$(TBLGEN) $(TBLGEN_FLAGS) -gen-instr-enums -o $@ $<
+@BUILD_X86_TRUE@X86GenInstrNames.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-instr-enums -o $@ $<
 
-X86GenInstrInfo.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-	$(TBLGEN) $(TBLGEN_FLAGS) -gen-instr-desc -o $@ $<
+@BUILD_X86_TRUE@X86GenInstrInfo.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-instr-desc -o $@ $<
 
-X86GenAsmWriter.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-	$(TBLGEN) $(TBLGEN_FLAGS) -gen-asm-writer -o $@ $<
+@BUILD_X86_TRUE@X86GenAsmWriter.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-asm-writer -o $@ $<
 
-X86GenAsmWriter1.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-	$(TBLGEN) $(TBLGEN_FLAGS) -gen-asm-writer -asmwriternum=1 -o $@ $<
+@BUILD_X86_TRUE@X86GenAsmWriter1.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-asm-writer -asmwriternum=1 -o $@ $<
 
-X86GenAsmMatcher.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-	$(TBLGEN) $(TBLGEN_FLAGS) -gen-asm-matcher -o $@ $<
+@BUILD_X86_TRUE@X86GenAsmMatcher.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-asm-matcher -o $@ $<
 
-X86GenDAGISel.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-	$(TBLGEN) $(TBLGEN_FLAGS) -gen-dag-isel -o $@ $<
+@BUILD_X86_TRUE@X86GenDAGISel.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-dag-isel -o $@ $<
 
-X86GenFastISel.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-	$(TBLGEN) $(TBLGEN_FLAGS) -gen-fast-isel -o $@ $<
+@BUILD_X86_TRUE@X86GenFastISel.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-fast-isel -o $@ $<
 
-X86GenCallingConv.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-	$(TBLGEN) $(TBLGEN_FLAGS) -gen-callingconv -o $@ $<
+@BUILD_X86_TRUE@X86GenCallingConv.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-callingconv -o $@ $<
 
-X86GenSubtarget.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
-	$(TBLGEN) $(TBLGEN_FLAGS) -gen-subtarget -o $@ $<
+@BUILD_X86_TRUE@X86GenSubtarget.inc: llvm/lib/Target/X86/X86.td $(TBLGEN)
+@BUILD_X86_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_X86) -gen-subtarget -o $@ $<
+@BUILD_PPC_TRUE@PPCGenInstrNames.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-instr-enums -o $@ $<
+
+@BUILD_PPC_TRUE@PPCGenRegisterNames.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-register-enums -o $@ $<
+
+@BUILD_PPC_TRUE@PPCGenAsmWriter.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-asm-writer -o $@ $<
+
+@BUILD_PPC_TRUE@PPCGenCodeEmitter.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-emitter -o $@ $<
+
+@BUILD_PPC_TRUE@PPCRegisterInfo.h.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-register-desc-header -o $@ $<
+
+@BUILD_PPC_TRUE@PPCGenRegisterInfo.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-register-desc -o $@ $<
+
+@BUILD_PPC_TRUE@PPCGenRegisterInfo.h.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-register-desc-header -o $@ $<
+
+@BUILD_PPC_TRUE@PPCGenInstrInfo.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-instr-desc -o $@ $<
+
+@BUILD_PPC_TRUE@PPCGenDAGISel.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-dag-isel -o $@ $<
+
+@BUILD_PPC_TRUE@PPCGenCallingConv.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-callingconv -o $@ $<
+
+@BUILD_PPC_TRUE@PPCGenSubtarget.inc: llvm/lib/Target/PowerPC/PPC.td $(TBLGEN)
+@BUILD_PPC_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_PPC) -gen-subtarget -o $@ $<
+@BUILD_ARM_TRUE@ARMGenRegisterInfo.h.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@BUILD_ARM_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-register-desc-header -o $@ $<
+
+@BUILD_ARM_TRUE@ARMGenRegisterNames.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@BUILD_ARM_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-register-enums -o $@ $<
+
+@BUILD_ARM_TRUE@ARMGenRegisterInfo.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@BUILD_ARM_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-register-desc -o $@ $<
+
+@BUILD_ARM_TRUE@ARMGenInstrNames.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@BUILD_ARM_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-instr-enums -o $@ $<
+
+@BUILD_ARM_TRUE@ARMGenInstrInfo.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@BUILD_ARM_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-instr-desc -o $@ $<
+
+@BUILD_ARM_TRUE@ARMGenCodeEmitter.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@BUILD_ARM_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-emitter -o $@ $<
+
+@BUILD_ARM_TRUE@ARMGenAsmWriter.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@BUILD_ARM_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-asm-writer -o $@ $<
+
+@BUILD_ARM_TRUE@ARMGenDAGISel.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@BUILD_ARM_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-dag-isel -o $@ $<
+
+@BUILD_ARM_TRUE@ARMGenCallingConv.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@BUILD_ARM_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-callingconv -o $@ $<
+
+@BUILD_ARM_TRUE@ARMGenSubtarget.inc: llvm/lib/Target/ARM/ARM.td $(TBLGEN)
+@BUILD_ARM_TRUE@	$(TBLGEN_V) $(TBLGEN_FLAGS_ARM) -gen-subtarget -o $@ $<
 #bytecode2llvm.cpp: build-llvm
 
 build-llvm:
@@ -4250,6 +4821,10 @@ clean-local:
 check-llvm: build-llvm-for-check
 	+$(GMAKE) -C llvm check
 	+$(GMAKE) -C llvm unittests
+
+# rm configure generated files
+dist-hook:
+	rm -f llvm/include/llvm/Config/*.h llvm/include/llvm/Config/*.def llvm/Makefile.config llvm/llvm.spec llvm/docs/doxygen.cfg llvm/tools/llvmc/plugins/Base/Base.td tools/llvm-config/llvm-config.in
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

@@ -344,9 +344,10 @@ pkgconfig_DATA = libclamav.pc
 # don't complain that configuration files and databases are not removed, this is intended
 distuninstallcheck_listfiles = find . -type f ! -name clamd.conf ! -name freshclam.conf ! -name daily.cvd ! -name main.cvd -print
 DISTCLEANFILES = target.h
-@DISTCHECK_ENABLE_FLAGS_FALSE@DISTCHECK_CONFIGURE_FLAGS = --enable-milter --enable-llvm=yes --disable-clamav
+@DISTCHECK_ENABLE_FLAGS_FALSE@DISTCHECK_CONFIGURE_FLAGS = --enable-milter --enable-llvm=yes --enable-all-jit-targets --disable-clamav
 @DISTCHECK_ENABLE_FLAGS_TRUE@DISTCHECK_CONFIGURE_FLAGS =  \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	--enable-milter --enable-llvm=yes \
+@DISTCHECK_ENABLE_FLAGS_TRUE@	--enable-all-jit-targets \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	--disable-clamav \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	CFLAGS="-Wno-pointer-sign \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Werror-implicit-function-declaration \

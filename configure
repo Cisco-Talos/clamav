@@ -22344,6 +22344,9 @@ $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
 
+if test "$enable_llvm" = "yes" && test "$subdirfailed" != "no"; then
+    as_fn_error "Failed to configure LLVM, and LLVM was explicitly requested" "$LINENO" 5
+fi
  if test "$subdirfailed" != "yes" && test "$enable_llvm" != "no"; then
   ENABLE_LLVM_TRUE=
   ENABLE_LLVM_FALSE='#'

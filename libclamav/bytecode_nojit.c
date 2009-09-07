@@ -20,21 +20,29 @@
  *  MA 02110-1301, USA.
  */
 
+#include <stdlib.h>
 #include "cltypes.h"
 #include "bytecode.h"
+#include "bytecode_priv.h"
 #include "clamav.h"
+#include "others.h"
 
-int cli_bytecode_prepare_jit(struct cli_bc *bc)
+int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 {
-    if (bc->state != bc_loaded) {
-	cli_warnmsg("Cannot prepare for JIT, because it has already been converted to interpreter");
-	return CL_EBYTECODE;
+    unsigned i;
+    for (i=0;i<bcs->count;i++) {
+	if (bcs->all_bcs[i].state == bc_skip)
+	    continue;
+	if (bcs->all_bcs[i].state != bc_loaded) {
+	    cli_warnmsg("Cannot prepare for JIT, because it has already been converted to interpreter");
+	    return CL_EBYTECODE;
+	}
     }
-    cli_warnmsg("JIT not yet implemented\n");
+    cli_warnmsg("JIT not compiled in\n");
     return CL_EBYTECODE;
 }
 
-int cli_vm_execute_jit(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst)
+int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx, const struct cli_bc_func *func)
 {
     return CL_EBYTECODE;
 }

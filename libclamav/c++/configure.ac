@@ -57,7 +57,14 @@ dnl Set configure args for subdir
 if test "$enable_optimized" = "default"; then
     ac_configure_args="$ac_configure_args --enable-optimized"
 fi
-new_args="$ac_configure_args --enable-targets=host-only --enable-bindings=none --enable-libffi=no --without-llvmgcc --without-llvmgxx"
+AC_ARG_ENABLE(all-jit-targets, AC_HELP_STRING([-enable-all-jit-targets],
+	      [Build all the targets that support JIT for testing (default NO)]),
+	      enable_alltargets=$enableval, enable_alltargets=no)
+if test "$enable_alltargets" = "yes"; then
+    new_args="$ac_configure_args --enable-targets=x86,powerpc,arm --enable-bindings=none --enable-libffi=no --without-llvmgcc --without-llvmgxx"
+else
+    new_args="$ac_configure_args --enable-targets=host-only --enable-bindings=none --enable-libffi=no --without-llvmgcc --without-llvmgxx"
+fi
 echo "$new_args"
 ac_configure_args=`echo $new_args | sed -e 's/-Werror //g'`
 echo "$ac_configure_args"
@@ -95,6 +102,29 @@ if test "$enable_llvm" = "auto"; then
 	    ;;
     esac
 fi
+
+build_x86=no
+build_ppc=no
+build_arm=no
+case "$target_cpu" in
+    i?86|amd64|x86_64)
+	    build_x86=yes
+	    ;;
+    powerpc*)
+	    build_ppc=yes
+	    ;;
+    arm*)
+	    build_arm=yes
+	    ;;
+esac
+if test "$enable_alltargets" = "yes"; then
+	build_x86=yes
+	build_ppc=yes
+	build_arm=yes
+fi
+AM_CONDITIONAL(BUILD_X86, [test "$build_x86" = "yes"])
+AM_CONDITIONAL(BUILD_PPC, [test "$build_ppc" = "yes"])
+AM_CONDITIONAL(BUILD_ARM, [test "$build_arm" = "yes"])
 
 AC_OUTPUT([
     Makefile

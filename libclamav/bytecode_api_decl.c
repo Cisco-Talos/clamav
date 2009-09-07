@@ -36,11 +36,11 @@ static uint16_t cli_tmp3[]={32, 32, 32};
 static uint16_t cli_tmp4[]={32, 65, 32};
 
 const struct cli_bc_type cli_apicall_types[]={
-	{DFunctionType, cli_tmp0, 3},
-	{DPointerType, cli_tmp1, 1},
-	{DStructType, cli_tmp2, 1},
-	{DFunctionType, cli_tmp3, 3},
-	{DFunctionType, cli_tmp4, 3}
+	{DFunctionType, cli_tmp0, 3, 0, 0},
+	{DPointerType, cli_tmp1, 1, 0, 0},
+	{DStructType, cli_tmp2, 1, 0, 0},
+	{DFunctionType, cli_tmp3, 3, 0, 0},
+	{DFunctionType, cli_tmp4, 3, 0, 0}
 };
 
 const unsigned cli_apicall_maxtypes=sizeof(cli_apicall_types)/sizeof(cli_apicall_types[0]);
@@ -53,11 +53,11 @@ const struct cli_apicall cli_apicalls[]={
 /* Bytecode APIcalls END */
 };
 const cli_apicall_int2 cli_apicalls0[] = {
-	cli_bcapi_test1,
-	cli_bcapi_seek
+	(cli_apicall_int2)cli_bcapi_test1,
+	(cli_apicall_int2)cli_bcapi_seek
 };
 const cli_apicall_pointer cli_apicalls1[] = {
 	(cli_apicall_pointer)cli_bcapi_test0,
-	cli_bcapi_read
+	(cli_apicall_pointer)cli_bcapi_read
 };
 const unsigned cli_apicall_maxapi = sizeof(cli_apicalls)/sizeof(cli_apicalls[0]);

@@ -110,8 +110,6 @@ int cli_vm_execute_jit(const struct cli_all_bc *bcs, struct cli_bc_ctx *ctx, con
 int cli_bytecode_prepare_jit(struct cli_all_bc *bc);
 int cli_bytecode_init_jit(struct cli_all_bc *bc);
 int cli_bytecode_done_jit(struct cli_all_bc *bc);
-int bytecode_init(void);
-void cli_bytecode_debug(int argc, char **argv);
 
 #ifdef __cplusplus
 }

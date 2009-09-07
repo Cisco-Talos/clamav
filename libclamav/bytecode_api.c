@@ -20,6 +20,8 @@
  *  MA 02110-1301, USA.
  */
 
+#define _XOPEN_SOURCE 600
+#include <unistd.h>
 #include <stdlib.h>
 #include "cltypes.h"
 #include "clambc.h"

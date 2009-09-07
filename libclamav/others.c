@@ -72,6 +72,7 @@
 #include "matcher-ac.h"
 #include "default.h"
 #include "scanners.h"
+#include "bytecode.h"
 
 #ifndef	O_BINARY
 #define	O_BINARY	0

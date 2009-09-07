@@ -76,5 +76,15 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 void cli_bytecode_destroy(struct cli_bc *bc);
 int cli_bytecode_done(struct cli_all_bc *allbc);
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void cli_bytecode_debug(int argc, char **argv);
+int bytecode_init(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

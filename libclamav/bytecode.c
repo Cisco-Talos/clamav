@@ -537,7 +537,7 @@ static int parseTypes(struct cli_bc *bc, unsigned char *buffer)
 		    return CL_EMALFDB;
 		}
 		if (t == 5) {
-		    ty->size = ty->align = sizeof(void);
+		    ty->size = ty->align = sizeof(void*);
 		} else {
 		    ty->size = ty->numElements*typesize(bc, ty->containedTypes[0]);
 		    ty->align = typealign(bc, ty->containedTypes[0]);

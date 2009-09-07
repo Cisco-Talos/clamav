@@ -1619,6 +1619,9 @@ docs/man/sigtool.1
 docs/man/clamdtop.1
 ])
 
+if test "$enable_llvm" = "yes" && test "$subdirfailed" != "no"; then
+    AC_MSG_ERROR([Failed to configure LLVM, and LLVM was explicitly requested])
+fi
 AM_CONDITIONAL([ENABLE_LLVM],
 	       [test "$subdirfailed" != "yes" && test "$enable_llvm" != "no"])
 no_recursion="yes";

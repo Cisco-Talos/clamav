@@ -777,8 +777,9 @@ int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct
 	}
 	bb_inst++;
 	inst++;
-	if (bb)
+	if (bb) {
 	    CHECK_GT(bb->numInsts, bb_inst);
+	}
     } while (stop == CL_SUCCESS);
 
     cli_stack_destroy(&stack);
