@@ -2138,8 +2138,10 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	case CL_TYPE_TEXT_UTF8:
 	    if((DCONF_DOC & DOC_CONF_SCRIPT) && dettype != CL_TYPE_HTML)
 	        ret = cli_scanscript(desc, ctx);
-	    if(ret != CL_VIRUS && ctx->container_type == CL_TYPE_MAIL)
+	    if(ret != CL_VIRUS && ctx->container_type == CL_TYPE_MAIL) {
+		lseek(desc, 0, SEEK_SET);
 		ret = cli_scandesc(desc, ctx, CL_TYPE_MAIL, 0, NULL, AC_SCAN_VIR);
+	    }
 	    break;
 	/* Due to performance reasons all executables were first scanned
 	 * in raw mode. Now we will try to unpack them
