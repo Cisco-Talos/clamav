@@ -31,7 +31,11 @@
 #include <sys/stat.h>
 #include <string.h>
 #include <unistd.h>
+#if HAVE_MMAP
+#ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
+#endif
+#endif
 
 #include "others.h"
 #include "cltypes.h"
@@ -50,6 +54,7 @@
 /* FIXME: tune this stuff */
 #define UNPAGE_THRSHLD_LO 4*1024*1024
 #define UNPAGE_THRSHLD_HI 8*1024*1024
+#define DUMB_SIZE 1*1024*1024
 
 #define READAHEAD_PAGES 4
 
@@ -67,7 +72,7 @@ static unsigned int fmap_which_page(struct F_MAP *m, size_t at) {
 
 
 struct F_MAP *fmap(int fd, off_t offset, size_t len) {
-    unsigned int pages, mapsz, hdrsz;
+    unsigned int pages, mapsz, hdrsz, dumb = 1;
     int pgsz = cli_getpagesize();
     struct stat st;
     struct F_MAP *m;
@@ -92,11 +97,21 @@ struct F_MAP *fmap(int fd, off_t offset, size_t len) {
     pages = fmap_align_items(len, pgsz);
     hdrsz = fmap_align_to(sizeof(struct F_MAP) + pages * sizeof(uint32_t), pgsz);
     mapsz = pages * pgsz + hdrsz;
-    if ((m = (struct F_MAP *)mmap(NULL, mapsz, PROT_READ | PROT_WRITE, MAP_PRIVATE|ANONYMOUS_MAP, -1, 0)) == MAP_FAILED) {
-	cli_warnmsg("fmap: mmap() failed\n");
+#if HAVE_MMAP
+    if(mapsz >= DUMB_SIZE) {
+	if ((m = (struct F_MAP *)mmap(NULL, mapsz, PROT_READ | PROT_WRITE, MAP_PRIVATE|ANONYMOUS_MAP, -1, 0)) == MAP_FAILED)
+	    m = NULL;
+	else
+	    dumb = 0;
+    } else
+#endif
+	m = (struct F_MAP *)cli_malloc(mapsz);
+    if(!m) {
+	cli_warnmsg("fmap: map allocation failed\n");
 	return NULL;
     }
     m->fd = fd;
+    m->dumb = dumb;
     m->mtime = st.st_mtime;
     m->offset = offset;
     m->len = len;
@@ -136,6 +151,8 @@ static void fmap_qsel(struct F_MAP *m, unsigned int *freeme, unsigned int left, 
 
 
 static void fmap_aging(struct F_MAP *m) {
+#if HAVE_MMAP
+    if(m->dumb) return;
     if(m->paged * m->pgsz > UNPAGE_THRSHLD_LO) { /* we alloc'd too much */
 	unsigned int i, avail = 0, *freeme;
 	freeme = cli_malloc(sizeof(unsigned int) * m->pages);
@@ -168,6 +185,7 @@ static void fmap_aging(struct F_MAP *m) {
 	}
 	free(freeme);
     }
+#endif
 }
 
 
@@ -262,7 +280,7 @@ static int fmap_readpage(struct F_MAP *m, unsigned int first_page, unsigned int 
 }
 
 
-static const void *fmap_need(struct F_MAP *m, size_t at, size_t len, int lock) {
+static void *fmap_need(struct F_MAP *m, size_t at, size_t len, int lock) {
     unsigned int first_page, last_page, lock_count;
     char *ret;
 
@@ -293,27 +311,27 @@ static const void *fmap_need(struct F_MAP *m, size_t at, size_t len, int lock) {
 
     ret = (char *)m;
     ret += at + m->hdrsz;
-    return (const void *)ret;
+    return (void *)ret;
 }
 
-const void *fmap_need_off(struct F_MAP *m, size_t at, size_t len) {
+void *fmap_need_off(struct F_MAP *m, size_t at, size_t len) {
 //    cli_errmsg("FMAPDBG: need_off map %p at %u len %u\n", m, at, len);
     return fmap_need(m, at, len, 1);
 }
-const void *fmap_need_off_once(struct F_MAP *m, size_t at, size_t len) {
+void *fmap_need_off_once(struct F_MAP *m, size_t at, size_t len) {
 //    cli_errmsg("FMAPDBG: need_off_once map %p at %u len %u\n", m, at, len);
     return fmap_need(m, at, len, 0);
 }
-const void *fmap_need_ptr(struct F_MAP *m, const void *ptr, size_t len) {
+void *fmap_need_ptr(struct F_MAP *m, void *ptr, size_t len) {
 //    cli_errmsg("FMAPDBG: need_ptr map %p at %p len %u\n", m, ptr, len);
     return fmap_need_off(m, (char *)ptr - (char *)m - m->hdrsz, len);
 }
-const void *fmap_need_ptr_once(struct F_MAP *m, const void *ptr, size_t len) {
+void *fmap_need_ptr_once(struct F_MAP *m, void *ptr, size_t len) {
 //    cli_errmsg("FMAPDBG: need_ptr_once map %p at %p len %u\n", m, ptr, len);
     return fmap_need_off_once(m, (char *)ptr - (char *)m - m->hdrsz, len);
 }
 
-const void *fmap_need_str(struct F_MAP *m, const void *ptr, size_t len_hint) {
+void *fmap_need_str(struct F_MAP *m, void *ptr, size_t len_hint) {
     size_t at = (char *)ptr - (char *)m - m->hdrsz;
     return fmap_need_offstr(m, at, len_hint);
 }
@@ -340,6 +358,7 @@ static void fmap_unneed_page(struct F_MAP *m, unsigned int page) {
 
 void fmap_unneed_off(struct F_MAP *m, size_t at, size_t len) {
     unsigned int i, first_page, last_page;
+    if(m->dumb) return;
     if(!len) {
 	cli_warnmsg("fmap_unneed: attempted void unneed\n");
 	return;
@@ -360,7 +379,7 @@ void fmap_unneed_off(struct F_MAP *m, size_t at, size_t len) {
     }
 }
 
-void fmap_unneed_ptr(struct F_MAP *m, const void *ptr, size_t len) {
+void fmap_unneed_ptr(struct F_MAP *m, void *ptr, size_t len) {
 //    cli_errmsg("FMAPDBG: unneed_ptr map %p at %p len %u\n", m, ptr, len);
     fmap_unneed_off(m, (char *)ptr - (char *)m - m->hdrsz, len);
 }
@@ -380,14 +399,18 @@ int fmap_readn(struct F_MAP *m, void *dst, size_t at, size_t len) {
 }
 
 void fmunmap(struct F_MAP *m) {
-    void *p = (void *)m;
-    size_t len = m->pages * m->pgsz + m->hdrsz;
-    munmap(p, len);
+#if HAVE_MMAP
+    if(!m->dumb) {
+	size_t len = m->pages * m->pgsz + m->hdrsz;
+	munmap((void *)m, len);
+    } else
+#endif
+	free((void *)m);
 }
 
-const void *fmap_need_offstr(struct F_MAP *m, size_t at, size_t len_hint) {
+void *fmap_need_offstr(struct F_MAP *m, size_t at, size_t len_hint) {
     unsigned int i, first_page, last_page;
-    const void *ptr = (const void *)((char *)m + m->hdrsz + at);
+    void *ptr = (void *)((char *)m + m->hdrsz + at);
 
     if(!len_hint || len_hint > m->len - at)
 	len_hint = m->len - at;

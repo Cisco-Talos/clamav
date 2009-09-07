@@ -25,6 +25,7 @@
 
 struct F_MAP {
     int fd;
+    unsigned int dumb;
     time_t mtime;
     size_t offset;
     size_t len;
@@ -37,13 +38,13 @@ struct F_MAP {
 
 struct F_MAP *fmap(int fd, off_t offset, size_t len);
 void fmunmap(struct F_MAP *m);
-const void *fmap_need_off(struct F_MAP *m, size_t at, size_t len);
-const void *fmap_need_off_once(struct F_MAP *m, size_t at, size_t len);
-const void *fmap_need_ptr(struct F_MAP *m, const void *ptr, size_t len);
-const void *fmap_need_ptr_once(struct F_MAP *m, const void *ptr, size_t len);
+void *fmap_need_off(struct F_MAP *m, size_t at, size_t len);
+void *fmap_need_off_once(struct F_MAP *m, size_t at, size_t len);
+void *fmap_need_ptr(struct F_MAP *m, void *ptr, size_t len);
+void *fmap_need_ptr_once(struct F_MAP *m, void *ptr, size_t len);
 void fmap_unneed_off(struct F_MAP *m, size_t at, size_t len);
-void fmap_unneed_ptr(struct F_MAP *m, const void *ptr, size_t len);
+void fmap_unneed_ptr(struct F_MAP *m, void *ptr, size_t len);
 int fmap_readn(struct F_MAP *m, void *dst, size_t at, size_t len);
-const void *fmap_need_str(struct F_MAP *m, const void *ptr, size_t len_hint);
-const void *fmap_need_offstr(struct F_MAP *m, size_t at, size_t len_hint);
+void *fmap_need_str(struct F_MAP *m, void *ptr, size_t len_hint);
+void *fmap_need_offstr(struct F_MAP *m, size_t at, size_t len_hint);
 #endif
