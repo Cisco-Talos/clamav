@@ -966,7 +966,7 @@ LLVM_INCLUDES = -I$(top_srcdir)/llvm/include -I$(top_builddir)/llvm/include
 # TODO: HP-UX should have -D_REENTRANT -D_HPUX_SOURCE
 LLVM_DEFS = -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS -D_DEBUG -D_GNU_SOURCE
 LLVM_CXXFLAGS = -Woverloaded-virtual -pedantic -Wno-long-long -Wall -W -Wno-unused-parameter -Wwrite-strings
-EXTRA_DIST = llvm
+EXTRA_DIST = $(top_srcdir)/llvm llvmdejagnu.sh
 libllvmsystem_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
 libllvmsystem_la_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
 libllvmsystem_la_LDFLAGS = -pthread
@@ -6202,7 +6202,11 @@ build-llvm-for-check:
 	+$(GMAKE) -C llvm OPTIMIZE_OPTION=-O2 tools-only
 
 clean-local:
-	+$(GMAKE) -C llvm clean
+	+$(GMAKE) -C llvm/test clean
+	rm -rf llvm/Release llvm/Debug
+	rm -f *.inc
+	rm -f llvm/include/llvm/Intrinsics.gen
+	rm -f llvm/test/site.exp llvm/test/site.bak llvm/test/*.out llvm/test/*.sum llvm/test/*.log
 
 check-llvm: build-llvm-for-check
 	+$(GMAKE) -C llvm check
@@ -6210,8 +6214,11 @@ check-llvm: build-llvm-for-check
 
 # rm configure generated files
 dist-hook:
-	rm -f llvm/Release/bin/* llvm/Debug/bin/*
-	rm -f llvm/include/llvm/Config/*.h llvm/include/llvm/Config/*.def llvm/Makefile.config llvm/llvm.spec llvm/docs/doxygen.cfg llvm/tools/llvmc/plugins/Base/Base.td tools/llvm-config/llvm-config.in
+	make -C llvm dist-hook
+	rm -f $(distdir)/llvm/include/llvm/Config/*.h $(distdir)/llvm/include/llvm/Config/*.def $(distdir)/llvm/Makefile.config $(distdir)/llvm/llvm.spec
+	rm -f $(distdir)/llvm/docs/doxygen.cfg $(distdir)/llvm/tools/llvmc/plugins/Base/Base.td $(distdir)/llvm/tools/llvm-config/llvm-config.in
+	rm -f $(distdir)/llvm/include/llvm/Intrinsics.gen
+	rm -f $(distdir)/llvm/include/llvm/Support/DataTypes.h $(distdir)/llvm/config.log $(distdir)/llvm/config.status
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
