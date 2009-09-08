@@ -28,7 +28,9 @@
 #include "shared/optparser.h"
 #include "shared/misc.h"
 
+#include <fcntl.h>
 #include <stdlib.h>
+#include <errno.h>
 
 static void help(void)
 {
@@ -52,8 +54,10 @@ int main(int argc, char *argv[])
     struct cli_bc_ctx *ctx;
     int rc, dbgargc;
     struct optstruct *opts;
+    const struct optstruct *opt;
     unsigned funcid=0, i;
     struct cli_all_bc bcs;
+    unsigned int fd = -1;
 
     opts = optparse(NULL, argc, argv, 1, OPT_CLAMBC, 0, NULL);
     if (!opts) {
@@ -151,6 +155,22 @@ int main(int argc, char *argv[])
 	}
     }
 
+    if ((opt = optget(opts,"input"))->enabled) {
+	fd = open(opt->strarg, O_RDONLY);
+	if (fd == -1) {
+	    fprintf(stderr, "Unable to open input file %s: %s\n", opt->strarg, strerror(errno));
+	    optfree(opts);
+	    exit(5);
+	}
+	rc = cli_bytecode_context_setfile(ctx, fd);
+	if (rc != CL_SUCCESS) {
+	    fprintf(stderr, "Unable to set file %s: %s\n", opt->strarg, cl_strerror(rc));
+	    optfree(opts);
+	    exit(5);
+	}
+    }
+
+
     rc = cli_bytecode_run(&bcs, bc, ctx);
     if (rc != CL_SUCCESS) {
 	fprintf(stderr,"Unable to run bytecode: %s\n", cl_strerror(rc));
@@ -165,6 +185,8 @@ int main(int argc, char *argv[])
     cli_bytecode_done(&bcs);
     free(bc);
     optfree(opts);
+    if (fd != -1)
+	close(fd);
     printf("Exiting\n");
     return 0;
 }

@@ -50,6 +50,8 @@ int32_t cli_bcapi_read(struct cli_bc_ctx* ctx, uint8_t *data, int32_t size)
 int32_t cli_bcapi_seek(struct cli_bc_ctx* ctx, int32_t pos, uint32_t whence)
 {
     off_t off;
+    if (ctx->fd == -1)
+	return -1;
     switch (whence) {
 	case 0:
 	    off = pos;

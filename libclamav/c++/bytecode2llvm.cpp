@@ -379,6 +379,7 @@ public:
 			case OP_GEP2:
 			case OP_GEPN:
 			case OP_STORE:
+			case OP_COPY:
 			    // these instructions represents operands differently
 			    break;
 			default:
@@ -529,8 +530,13 @@ public:
 			    Store(inst->dest, Builder.CreateSelect(Op0, Op1, Op2));
 			    break;
 			case OP_COPY:
-			    Builder.CreateStore(Op0, Op1);
+			{
+			    Value *Dest = Values[inst->u.binop[1]];
+			    const PointerType *PTy = cast<PointerType>(Dest->getType());
+			    Op0 = convertOperand(func, PTy->getElementType(), inst->u.binop[0]);
+			    Builder.CreateStore(Op0, Dest);
 			    break;
+			}
 			case OP_CALL_DIRECT:
 			{
 			    Function *DestF = Functions[inst->u.ops.funcid];
@@ -594,6 +600,7 @@ public:
 			    break;
 			}
 			case OP_LOAD:
+			    Op0 = Builder.CreateLoad(Op0);
 			    Store(inst->dest, Op0);
 			    break;
 			default:

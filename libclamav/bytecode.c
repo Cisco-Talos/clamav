@@ -1249,3 +1249,13 @@ int cli_bytecode_done(struct cli_all_bc *allbc)
     return cli_bytecode_done_jit(allbc);
 }
 
+int cli_bytecode_context_setfile(struct cli_bc_ctx *ctx, int fd)
+{
+    struct stat buf;
+    ctx->fd = fd;
+    if (fstat(fd, &buf) == -1)
+	return CL_ESTAT;
+    ctx->file_size = buf.st_size;
+    return 0;
+}
+
