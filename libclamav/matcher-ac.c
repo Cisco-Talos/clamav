@@ -1159,7 +1159,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
 static int qcompare(const void *a, const void *b)
 {
-    return *(const uint32_t *)a - *(const uint32_t *)b;
+    return *(unsigned char *)a - *(unsigned char *)b;
 }
 
 /* FIXME: clean up the code */
