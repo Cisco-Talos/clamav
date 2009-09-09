@@ -668,7 +668,8 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
 		    if(alt->str[j] == b) {				\
 			match = 1;					\
 			break;						\
-		    }							\
+		    } else if(alt->str[j] > b)				\
+			break;						\
 		}							\
 	    } else {							\
 		while(alt) {						\
@@ -1156,6 +1157,11 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
     return (mode & AC_SCAN_FT) ? type : CL_CLEAN;
 }
 
+static int qcompare(const void *a, const void *b)
+{
+    return *(const uint32_t *)a - *(const uint32_t *)b;
+}
+
 /* FIXME: clean up the code */
 int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, const uint32_t *lsigid, unsigned int options)
 {
@@ -1388,6 +1394,8 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
 		free(h);
 	    }
+	    if(newalt->chmode)
+		cli_qsort(newalt->str, newalt->num, sizeof(unsigned char), qcompare);
 
 	    if(error)
 		break;
