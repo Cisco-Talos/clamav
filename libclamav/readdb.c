@@ -2130,7 +2130,7 @@ static void cli_md5db_build(struct cli_matcher* root)
 		root->soff_len = cli_hashset_toarray(&root->md5_sizes_hs, &root->soff);
 #endif
 		cli_hashset_destroy(&root->md5_sizes_hs);
-		qsort(root->soff, root->soff_len, sizeof(uint32_t), scomp);
+		cli_qsort(root->soff, root->soff_len, sizeof(uint32_t), scomp);
 	}
 }
 

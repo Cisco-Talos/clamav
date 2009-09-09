@@ -200,7 +200,7 @@ int cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *data, int 
     if(info.exeinfo.section)
 	free(info.exeinfo.section);
 
-    qsort(data->offtab, data->cnt, sizeof(uint32_t), qcompare);
+    cli_qsort(data->offtab, data->cnt, sizeof(uint32_t), qcompare);
     return CL_SUCCESS;
 }
 

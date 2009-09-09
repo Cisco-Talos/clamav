@@ -986,4 +986,3 @@ int cli_bitset_test(bitset_t *bs, unsigned long bit_offset)
 	}
 	return (bs->bitset[char_offset] & ((unsigned char)1 << bit_offset));
 }
-
