@@ -42,7 +42,7 @@ struct cli_ac_alt {
     unsigned char *str;
     struct cli_ac_alt *next;
     uint16_t len, num;
-    uint8_t chmode;
+    uint8_t chmode, negative;
 };
 
 struct cli_ac_patt {

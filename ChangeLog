@@ -1,3 +1,7 @@
+Thu Sep 10 20:16:45 CEST 2009 (tk)
+----------------------------------
+ * libclamav/matcher-ac.c: alternatives can now be negated: !(aa|bb|cc)
+
 Mon Sep  7 15:03:11 CEST 2009 (tk)
 ----------------------------------
  * libclamav/matcher-bm.c: fix uninitialized value warning
