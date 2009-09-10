@@ -268,9 +268,8 @@ static inline operand_t readOperand(struct cli_bc_func *func, unsigned char *p,
 	*dest= 0;
 	ty = 8*readFixedNumber(p, off, len, ok, 1);
 	if (!ty) {
-	    cli_errmsg("bytecode: void type constant is invalid!\n");
-	    *ok = 0;
-	    return MAX_OP;
+	    /* This is a global variable */
+	    return 0x80000000 | v;
 	}
 	if (ty <= 8)
 	    *(uint8_t*)dest = v;
@@ -652,6 +651,99 @@ static int parseApis(struct cli_bc *bc, unsigned char *buffer)
     return CL_SUCCESS;
 }
 
+static uint16_t type_components(struct cli_bc *bc, uint16_t id, char *ok)
+{
+    unsigned i, sum=0;
+    const struct cli_bc_type *ty;
+    if (id <= 64)
+	return 1;
+    ty = &bc->types[id-65];
+    /* TODO: protect against recursive types */
+    switch (ty->kind) {
+	case DFunctionType:
+	    cli_errmsg("bytecode: function type not accepted for constant: %u\n", id);
+	    /* don't accept functions as constant initializers */
+	    *ok = 0;
+	    return 0;
+	case DPointerType:
+	    cli_errmsg("bytecode: pointer type not accepted for constant: %u\n", id);
+	    /* don't accept pointer initializers */
+	    *ok = 0;
+	    return 0;
+	case DStructType:
+	case DPackedStructType:
+	    for (i=0;i<ty->numElements;i++) {
+		sum += type_components(bc, ty->containedTypes[i], ok);
+	    }
+	    return sum;
+	case DArrayType:
+	    return type_components(bc, ty->containedTypes[0], ok)*ty->numElements;
+	default:
+	    *ok = 0;
+	    return 0;
+    }
+}
+
+static void readConstant(struct cli_bc *bc, unsigned i, unsigned comp,
+			 unsigned char *buffer, unsigned *offset,
+			 unsigned len, char *ok)
+{
+    unsigned j=0;
+    while (*ok && buffer[*offset] != 0x60) {
+	if (j > comp) {
+	    cli_errmsg("bytecode: constant has too many subcomponents, expected %u\n", comp);
+	    *ok = 0;
+	    return;
+	}
+	buffer[*offset] |= 0x20;
+	bc->globals[i][j++] = readNumber(buffer, offset, len, ok);
+    }
+    if (*ok && j != comp) {
+	cli_errmsg("bytecode: constant has too few subcomponents: %u < %u\n", j, comp);
+    }
+    *offset++;
+}
+
+/* parse constant globals with constant initializers */
+static int parseGlobals(struct cli_bc *bc, unsigned char *buffer)
+{
+    unsigned i, offset = 1, len = strlen((const char*)buffer), numglobals;
+    char ok=1;
+
+    if (buffer[0] != 'G') {
+	cli_errmsg("bytecode: Invalid globals header: %c\n", buffer[0]);
+	return CL_EMALFDB;
+    }
+    numglobals = readNumber(buffer, &offset, len, &ok);
+    bc->globals = cli_calloc(numglobals, sizeof(*bc->globals));
+    if (!bc->globals) {
+	cli_errmsg("bytecode: OOM allocating memory for %u globals\n", numglobals);
+	return CL_EMEM;
+    }
+    bc->globaltys = cli_calloc(numglobals, sizeof(*bc->globaltys));
+    if (!bc->globaltys) {
+	cli_errmsg("bytecode: OOM allocating memory for %u global types\n", numglobals);
+	return CL_EMEM;
+    }
+    bc->num_globals = numglobals;
+    if (!ok)
+	return CL_EMALFDB;
+    for (i=0;i<numglobals;i++) {
+	unsigned comp;
+	bc->globaltys[i] = readTypeID(bc, buffer, &offset, len, &ok);
+	comp = type_components(bc, bc->globaltys[i], &ok);
+	if (!ok)
+	    return CL_EMALFDB;
+	bc->globals[i] = cli_malloc(sizeof(bc->globals[0])*comp);
+	if (!bc->globals[i])
+	    return CL_EMEM;
+	readConstant(bc, i, comp, buffer, &offset, len, &ok);
+    }
+    if (!ok)
+	return CL_EMALFDB;
+    return CL_SUCCESS;
+}
+
 static int parseFunctionHeader(struct cli_bc *bc, unsigned fn, unsigned char *buffer)
 {
     char ok=1;
@@ -921,6 +1013,7 @@ enum parse_state {
     PARSE_BC_HEADER=0,
     PARSE_BC_TYPES,
     PARSE_BC_APIS,
+    PARSE_BC_GLOBALS,
     PARSE_FUNC_HEADER,
     PARSE_BB
 };
@@ -962,6 +1055,18 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 		break;
 	    case PARSE_BC_APIS:
 		rc = parseApis(bc, (unsigned char*)buffer);
+		if (rc == CL_BREAK) /* skip */ {
+		    bc->state = bc_skip;
+		    return CL_SUCCESS;
+		}
+		if (rc != CL_SUCCESS) {
+		    cli_errmsg("Error at bytecode line %u\n", row);
+		    return rc;
+		}
+		state = PARSE_BC_GLOBALS;
+		break;
+	    case PARSE_BC_GLOBALS:
+		rc = parseGlobals(bc, (unsigned char*)buffer);
 		if (rc == CL_BREAK) /* skip */ {
 		    bc->state = bc_skip;
 		    return CL_SUCCESS;
@@ -1079,6 +1184,11 @@ void cli_bytecode_destroy(struct cli_bc *bc)
 	    free(bc->types[i].containedTypes);
     }
     free(bc->types);
+    for (i=0;i<bc->num_globals;i++) {
+	free(bc->globals[i]);
+    }
+    free(bc->globals);
+    free(bc->globaltys);
     if (bc->uses_apis)
 	cli_bitset_free(bc->uses_apis);
 }

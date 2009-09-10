@@ -187,6 +187,7 @@ private:
     ExecutionEngine *EE;
     TargetFolder Folder;
     IRBuilder<false, TargetFolder> Builder;
+    std::vector<GlobalVariable*> globals;
     Value **Values;
     FunctionPassManager &PM;
     unsigned numLocals;
@@ -229,6 +230,12 @@ private:
 	if (operand < func->numValues)
 	    return Builder.CreateLoad(Values[operand]);
 
+	if (operand & 0x80000000) {
+	    operand &= 0x7fffffff;
+	    assert(operand < globals.size() && "Global index out of range");
+	    // Global
+	    return globals[operand];
+	}
 	// Constant
 	operand -= func->numValues;
 	// This was already validated by libclamav.
@@ -282,6 +289,33 @@ private:
     {
 	return TypeMap->get(typeID);
     }
+
+    Constant *buildConstant(const Type *Ty, uint64_t *components, unsigned &c)
+    {
+	if (isa<IntegerType>(Ty)) {
+	    return ConstantInt::get(Ty, components[c++]);
+	}
+	if (const ArrayType *ATy = dyn_cast<ArrayType>(Ty)) {
+	   std::vector<Constant*> elements;
+	   elements.reserve(ATy->getNumElements());
+	   for (unsigned i=0;i<ATy->getNumElements();i++) {
+	       elements.push_back(buildConstant(ATy->getElementType(), components, c));
+	   }
+	   return ConstantArray::get(ATy, elements);
+	}
+	if (const StructType *STy = dyn_cast<StructType>(Ty)) {
+	   std::vector<Constant*> elements;
+	   elements.reserve(STy->getNumElements());
+	   for (unsigned i=0;i<STy->getNumElements();i++) {
+	       elements.push_back(buildConstant(STy->getElementType(i), components, c));
+	   }
+	   return ConstantStruct::get(STy, elements);
+	}
+	Ty->dump();
+	assert(0 && "Not reached");
+	return 0;
+    }
+
 public:
     LLVMCodegen(const struct cli_bc *bc, Module *M, FunctionMapTy &cFuncs,
 		ExecutionEngine *EE, FunctionPassManager &PM, Function **apiFuncs)
@@ -302,10 +336,21 @@ public:
 	FHandler->setDoesNotReturn();
 	FHandler->setDoesNotThrow();
 	FHandler->addFnAttr(Attribute::NoInline);
-	EE->addGlobalMapping(FHandler, (void*)jit_exception_handler); 
+	EE->addGlobalMapping(FHandler, (void*)jit_exception_handler);
 
 	// The hidden ctx param to all functions
 	const Type *HiddenCtx = PointerType::getUnqual(Type::getInt8Ty(Context));
+
+	globals.reserve(bc->num_globals);
+	for (unsigned i=0;i<bc->num_globals;i++) {
+	    const Type *Ty = mapType(bc->globaltys[i]);
+	    GlobalVariable *GV = cast<GlobalVariable>(M->getOrInsertGlobal("glob"+i,
+									   Ty));
+	    // TODO: validate number of components against type_components
+	    unsigned c = 0;
+	    GV->setInitializer(buildConstant(Ty, bc->globals[i], c));
+	    globals.push_back(GV);
+	}
 
 	Function **Functions = new Function*[bc->num_func];
 	for (unsigned j=0;j<bc->num_func;j++) {

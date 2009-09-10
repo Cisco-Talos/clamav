@@ -49,6 +49,9 @@ struct cli_bc {
   unsigned num_func;
   struct cli_bc_func *funcs;
   struct cli_bc_type *types;
+  uint64_t **globals;
+  uint16_t *globaltys;
+  size_t num_globals;
   enum bc_state state;
   uint16_t start_tid;
   struct bitset_tag *uses_apis;
