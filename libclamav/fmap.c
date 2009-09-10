@@ -37,6 +37,9 @@
 #endif
 #endif
 
+#include <pthread.h>
+
+
 #include "others.h"
 #include "cltypes.h"
 
@@ -54,9 +57,14 @@
 /* FIXME: tune this stuff */
 #define UNPAGE_THRSHLD_LO 4*1024*1024
 #define UNPAGE_THRSHLD_HI 8*1024*1024
-#define DUMB_SIZE 1*1024*1024
+#define READAHEAD_PAGES 8
 
-#define READAHEAD_PAGES 4
+/* FIXME: remove the malloc fallback, it only makes thing slower */
+#define DUMB_SIZE 0
+
+/* DON'T ASK ME */
+pthread_mutex_t fmap_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 
 static unsigned int fmap_align_items(unsigned int sz, unsigned int al) {
     return sz / al + (sz % al != 0);
@@ -99,10 +107,15 @@ struct F_MAP *fmap(int fd, off_t offset, size_t len) {
     mapsz = pages * pgsz + hdrsz;
 #if HAVE_MMAP
     if(mapsz >= DUMB_SIZE) {
-	if ((m = (struct F_MAP *)mmap(NULL, mapsz, PROT_READ | PROT_WRITE, MAP_PRIVATE|ANONYMOUS_MAP, -1, 0)) == MAP_FAILED)
+	pthread_mutex_lock(&fmap_mutex);
+	if ((m = (struct F_MAP *)mmap(NULL, mapsz, PROT_READ | PROT_WRITE, MAP_PRIVATE|/*FIXME: MAP_POPULATE is ~8% faster but more memory intensive */ANONYMOUS_MAP, -1, 0)) == MAP_FAILED)
 	    m = NULL;
-	else
+	else {
 	    dumb = 0;
+	    madvise(m, mapsz, MADV_RANDOM|MADV_DONTFORK);
+	    madvise(m, hdrsz, MADV_WILLNEED);
+	}
+	pthread_mutex_unlock(&fmap_mutex);
     } else
 #endif
 	m = (struct F_MAP *)cli_malloc(mapsz);
@@ -120,7 +133,13 @@ struct F_MAP *fmap(int fd, off_t offset, size_t len) {
     m->pgsz = pgsz;
     m->paged = 0;
     memset(m->bitmap, 0, sizeof(uint32_t) * pages);
-//    cli_errmsg("FMAPDBG: created %p - len %u pages %u hdrsz %u\n", m, len, pages, hdrsz);
+#ifdef FMAPDEBUG
+    m->page_needs = 0;
+    m->page_reads = 0;
+    m->page_locks = 0;
+    m->page_unlocks = 0;
+    m->page_unmaps = 0;
+#endif
     return m;
 }
 
@@ -179,8 +198,13 @@ static void fmap_aging(struct F_MAP *m) {
 		m->bitmap[freeme[i]] = FM_MASK_SEEN;
 		m->paged--;
 		/* and we mmap the page over so the kernel knows there's nothing good in there */
+		pthread_mutex_lock(&fmap_mutex);
 		if(mmap(pptr, m->pgsz, PROT_READ | PROT_WRITE, MAP_FIXED|MAP_PRIVATE|ANONYMOUS_MAP, -1, 0) == MAP_FAILED)
 		    cli_warnmsg("fmap_aging: kernel hates you\n");
+		pthread_mutex_unlock(&fmap_mutex);
+#ifdef FMAPDEBUG
+		m->page_unmaps++;
+#endif
 	    }
 	}
 	free(freeme);
@@ -192,9 +216,16 @@ static void fmap_aging(struct F_MAP *m) {
 static int fmap_readpage(struct F_MAP *m, unsigned int first_page, unsigned int count, unsigned int lock_count) {
     size_t readsz = 0, got;
     char *pptr = NULL;
-    uint32_t s;
+    volatile uint32_t s;
     unsigned int i, page = first_page, force_read = 0;
 
+    for(i=0; i<count; i++) { /* REAL MEN DON'T MADVISE: seriously, it sucks! */
+	volatile char faultme = ((char *)m)[(first_page+i) * m->pgsz + m->hdrsz];
+    }
+#ifdef FMAPDEBUG
+    m->page_needs += count;
+    m->page_locks += lock_count;
+#endif
     for(i=0; i<=count; i++, page++) {
 	int lock;
 	if(lock_count) {
@@ -254,6 +285,9 @@ static int fmap_readpage(struct F_MAP *m, unsigned int first_page, unsigned int 
 		cli_warnmsg("pread fail: page %u pages %u map-offset %lu - asked for %lu bytes, got %lu\n", first_page, m->pages, (long unsigned int)m->offset, (long unsigned int)readsz, (long unsigned int)got);
 		return 1;
 	    }
+#ifdef FMAPDEBUG
+	    m->page_reads += count;
+#endif
 	    pptr = NULL;
 	    force_read = 0;
 	    readsz = 0;
@@ -285,12 +319,12 @@ static void *fmap_need(struct F_MAP *m, size_t at, size_t len, int lock) {
     char *ret;
 
     if(!len) {
-	cli_warnmsg("fmap: attempted void need\n");
+//	cli_warnmsg("fmap: attempted void need\n");
 	return NULL;
     }
 
     if(!CLI_ISCONTAINED(0, m->len, at, len)) {
-	cli_warnmsg("fmap: attempted oof need\n");
+      //	cli_warnmsg("fmap: attempted oof need\n");
 	return NULL;
     }
 
@@ -304,8 +338,6 @@ static void *fmap_need(struct F_MAP *m, size_t at, size_t len, int lock) {
     if(last_page >= m->pages) last_page = m->pages - 1;
 #endif
 
-//    cli_errmsg("FMAPDBG: +++ map %p - len %u lock: %d (page %u to %u)\n", m, len, lock, first_page, last_page);
-
     if(fmap_readpage(m, first_page, last_page-first_page+1, lock_count))
 	return NULL;
 
@@ -315,19 +347,15 @@ static void *fmap_need(struct F_MAP *m, size_t at, size_t len, int lock) {
 }
 
 void *fmap_need_off(struct F_MAP *m, size_t at, size_t len) {
-//    cli_errmsg("FMAPDBG: need_off map %p at %u len %u\n", m, at, len);
     return fmap_need(m, at, len, 1);
 }
 void *fmap_need_off_once(struct F_MAP *m, size_t at, size_t len) {
-//    cli_errmsg("FMAPDBG: need_off_once map %p at %u len %u\n", m, at, len);
     return fmap_need(m, at, len, 0);
 }
 void *fmap_need_ptr(struct F_MAP *m, void *ptr, size_t len) {
-//    cli_errmsg("FMAPDBG: need_ptr map %p at %p len %u\n", m, ptr, len);
     return fmap_need_off(m, (char *)ptr - (char *)m - m->hdrsz, len);
 }
 void *fmap_need_ptr_once(struct F_MAP *m, void *ptr, size_t len) {
-//    cli_errmsg("FMAPDBG: need_ptr_once map %p at %p len %u\n", m, ptr, len);
     return fmap_need_off_once(m, (char *)ptr - (char *)m - m->hdrsz, len);
 }
 
@@ -339,11 +367,12 @@ void *fmap_need_str(struct F_MAP *m, void *ptr, size_t len_hint) {
 static void fmap_unneed_page(struct F_MAP *m, unsigned int page) {
     uint32_t s = m->bitmap[page];
 
-//    cli_errmsg("FMAPDBG: --- map %p - page %u status %u count %u\n", m, page, s>>30, s & FM_MASK_COUNT);
-
     if((s & (FM_MASK_PAGED | FM_MASK_LOCKED)) == (FM_MASK_PAGED | FM_MASK_LOCKED)) {
 	/* page is paged and locked: check lock count */
 	s &= FM_MASK_COUNT;
+#ifdef FMAPDEBUG
+	m->page_unlocks ++;
+#endif
 	if(s > 1) /* locked more than once: dec lock count */
 	    m->bitmap[page]--;
 	else if (s == 1) /* only one lock left: unlock and begin aging */
@@ -399,10 +428,16 @@ int fmap_readn(struct F_MAP *m, void *dst, size_t at, size_t len) {
 }
 
 void fmunmap(struct F_MAP *m) {
+#ifdef FMAPDEBUG
+  cli_errmsg("FMAPDEBUG: Needs:%u reads:%u locks:%u unlocks:%u unmaps:%u\n", m->page_needs, m->page_reads, m->page_locks, m->page_unlocks, m->page_unmaps);
+#endif
+
 #if HAVE_MMAP
     if(!m->dumb) {
 	size_t len = m->pages * m->pgsz + m->hdrsz;
+	pthread_mutex_lock(&fmap_mutex);
 	munmap((void *)m, len);
+	pthread_mutex_unlock(&fmap_mutex);
     } else
 #endif
 	free((void *)m);
@@ -416,7 +451,7 @@ void *fmap_need_offstr(struct F_MAP *m, size_t at, size_t len_hint) {
 	len_hint = m->len - at;
 
     if(!CLI_ISCONTAINED(0, m->len, at, len_hint)) {
-	cli_warnmsg("fmap: attempted oof need_str\n");
+      //	cli_warnmsg("fmap: attempted oof need_str\n");
 	return NULL;
     }
 
@@ -435,15 +470,65 @@ void *fmap_need_offstr(struct F_MAP *m, size_t at, size_t len_hint) {
 	}
 	if(i == first_page) {
 	    scanat = at % m->pgsz;
-	    scansz = m->pgsz - scanat;
+	    scansz = MIN(len_hint, m->pgsz - scanat);
 	} else {
 	    scanat = 0;
-	    scansz = m->pgsz;
+	    scansz = MIN(len_hint, m->pgsz);
 	}
+	len_hint -= scansz;
 	if(memchr(&thispage[scanat], 0, scansz))
 	    return ptr;
     }
     for(i=first_page; i<=last_page; i++)
 	fmap_unneed_page(m, i);
     return NULL;
+}
+
+
+void *fmap_gets(struct F_MAP *m, char *dst, size_t *at, size_t max_len) {
+    unsigned int i, first_page, last_page;
+    char *src = (void *)((char *)m + m->hdrsz + *at), *endptr = NULL;
+    size_t len = MIN(max_len-1, m->len - *at), fullen = len;
+
+    if(!len || !CLI_ISCONTAINED(0, m->len, *at, len)) {
+        //cli_warnmsg("fmap: attempted oof need_str\n");
+	return NULL;
+    }
+
+    fmap_aging(m);
+
+    first_page = fmap_which_page(m, *at);
+    last_page = fmap_which_page(m, *at + len - 1);
+
+    for(i=first_page; i<=last_page; i++) {
+	char *thispage = (char *)m + m->hdrsz + i * m->pgsz;
+	unsigned int scanat, scansz;
+
+	if(fmap_readpage(m, i, 1, 0))
+	    return NULL;
+
+	if(i == first_page) {
+	    scanat = *at % m->pgsz;
+	    scansz = MIN(len, m->pgsz - scanat);
+	} else {
+	    scanat = 0;
+	    scansz = MIN(len, m->pgsz);
+	}
+	len -= scansz;
+
+	if((endptr = memchr(&thispage[scanat], '\n', scansz))) {
+	    endptr++;
+	    break;
+	}
+    }
+    if(endptr) {
+	memcpy(dst, src, endptr - src);
+	dst[endptr - src] = '\0';
+	*at += endptr - src;
+    } else {
+	memcpy(dst, src, fullen);
+	dst[fullen] = '\0';
+	*at += fullen;
+    }
+    return dst;
 }
