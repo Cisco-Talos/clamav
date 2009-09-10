@@ -22,6 +22,7 @@
 #include "clamav-config.h"
 #endif
 
+#include <sys/time.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -971,30 +972,25 @@ static int cli_scanhtml(cli_ctx *ctx)
     return ret;
 }
 
-static int cli_scanscript(int desc, cli_ctx *ctx)
+static int cli_scanscript(cli_ctx *ctx)
 {
-	unsigned char buff[FILEBUFF];
+	unsigned char *buff;
 	unsigned char* normalized;
 	struct text_norm_state state;
 	struct stat sb;
 	char *tmpname = NULL;
 	int ofd = -1, ret;
-	ssize_t nread;
 	const struct cli_matcher *troot = ctx->engine->root[7];
 	uint32_t maxpatlen = troot ? troot->maxpatlen : 0, offset = 0;
 	struct cli_matcher *groot = ctx->engine->root[0];
 	struct cli_ac_data gmdata, tmdata;
 	struct cli_ac_data *mdata[2];
+	struct F_MAP *map = *ctx->fmap;
+	size_t at = 0;
 
 	cli_dbgmsg("in cli_scanscript()\n");
 
-	if(fstat(desc, &sb) == -1) {
-		cli_errmsg("cli_scanscript: fstat() failed for descriptor %d\n", desc);
-		return CL_ESTAT;
-	}
-
-	/* don't normalize files that are too large */
-	if(sb.st_size > 5242880) {
+	if(map->len > 5242880) {
 		cli_dbgmsg("cli_scanscript: exiting (file larger than 5 MB)\n");
 		return CL_CLEAN;
 	}
@@ -1026,37 +1022,37 @@ static int cli_scanscript(int desc, cli_ctx *ctx)
 	mdata[0] = &tmdata;
 	mdata[1] = &gmdata;
 
-	do {
-		nread = cli_readn(desc, buff, sizeof(buff));
-		if(nread <= 0 || state.out_pos + nread > state.out_len) {
-			/* flush if error/EOF, or too little buffer space left */
-			if((ofd != -1) && (write(ofd, state.out, state.out_pos) == -1)) {
-				cli_errmsg("cli_scanscript: can't write to file %s\n",tmpname);
-				close(ofd);
-				ofd = -1;
-				/* we can continue to scan in memory */
-			}
-			/* when we flush the buffer also scan */
-			if(cli_scanbuff(state.out, state.out_pos, offset, ctx, CL_TYPE_TEXT_ASCII, mdata) == CL_VIRUS) {
-				ret = CL_VIRUS;
-				break;
-			}
-			if(ctx->scanned)
-			    *ctx->scanned += state.out_pos / CL_COUNT_PRECISION;
-			offset += state.out_pos;
-			/* carry over maxpatlen from previous buffer */
-			if (state.out_pos > maxpatlen)
-				memmove(state.out, state.out + state.out_pos - maxpatlen, maxpatlen); 
-			text_normalize_reset(&state);
-			state.out_pos = maxpatlen;
+	while(1) {
+	    size_t len = MIN(map->pgsz, map->len - at);
+	    buff = fmap_need_off_once(map, at, len);
+	    at += len;
+	    if(!buff || !len || state.out_pos + len > state.out_len) {
+		/* flush if error/EOF, or too little buffer space left */
+		if((ofd != -1) && (write(ofd, state.out, state.out_pos) == -1)) {
+		    cli_errmsg("cli_scanscript: can't write to file %s\n",tmpname);
+		    close(ofd);
+		    ofd = -1;
+		    /* we can continue to scan in memory */
 		}
-		if(nread > 0 && (text_normalize_buffer(&state, buff, nread) != nread)) {
-			cli_dbgmsg("cli_scanscript: short read during normalizing\n");
+		/* when we flush the buffer also scan */
+		if(cli_scanbuff(state.out, state.out_pos, offset, ctx, CL_TYPE_TEXT_ASCII, mdata) == CL_VIRUS) {
+		    ret = CL_VIRUS;
+		    break;
 		}
-		/* used a do {}while() here, since we need to flush our buffers at the end,
-		 * and using while(){} loop would mean code duplication */
-	} while (nread > 0);
-
+		if(ctx->scanned)
+		    *ctx->scanned += state.out_pos / CL_COUNT_PRECISION;
+		offset += state.out_pos;
+		/* carry over maxpatlen from previous buffer */
+		if (state.out_pos > maxpatlen)
+		    memmove(state.out, state.out + state.out_pos - maxpatlen, maxpatlen); 
+		text_normalize_reset(&state);
+		state.out_pos = maxpatlen;
+	    }
+	    if(!len) break;
+	    if(text_normalize_buffer(&state, buff, len) != len) {
+		cli_dbgmsg("cli_scanscript: short read during normalizing\n");
+	    }
+	}
 	cli_ac_freedata(&tmdata);
 	cli_ac_freedata(&gmdata);
 	if(ctx->engine->keeptmp) {
@@ -1482,7 +1478,7 @@ static int cli_scantnef(int desc, cli_ctx *ctx)
     return ret;
 }
 
-static int cli_scanuuencoded(int desc, cli_ctx *ctx)
+static int cli_scanuuencoded(cli_ctx *ctx)
 {
 	int ret;
 	char *dir = cli_gentemp(ctx->engine->tmpdir);
@@ -1496,7 +1492,7 @@ static int cli_scanuuencoded(int desc, cli_ctx *ctx)
 	return CL_ETMPDIR;
     }
 
-    ret = cli_uuencode(dir, desc);
+    ret = cli_uuencode(dir, *ctx->fmap);
 
     if(ret == CL_CLEAN)
 	ret = cli_scandir(dir, ctx);
@@ -1974,7 +1970,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 	case CL_TYPE_SCRIPT:
 	    if((DCONF_DOC & DOC_CONF_SCRIPT) && dettype != CL_TYPE_HTML)
-	        ret = cli_scanscript(desc, ctx);
+	        ret = cli_scanscript(ctx);
 	    break;
 
 	case CL_TYPE_RTF:
@@ -1994,7 +1990,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 	case CL_TYPE_UUENCODED:
 	    if(DCONF_OTHER & OTHER_CONF_UUENC)
-		ret = cli_scanuuencoded(desc, ctx);
+		ret = cli_scanuuencoded(ctx);
 	    break;
 
 	case CL_TYPE_MSCHM:
@@ -2141,7 +2137,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	case CL_TYPE_TEXT_UTF16LE:
 	case CL_TYPE_TEXT_UTF8:
 	    if((DCONF_DOC & DOC_CONF_SCRIPT) && dettype != CL_TYPE_HTML)
-	        ret = cli_scanscript(desc, ctx);
+	        ret = cli_scanscript(ctx);
 	    if(ret != CL_VIRUS && ctx->container_type == CL_TYPE_MAIL)
 		ret = cli_scandesc(desc, ctx, CL_TYPE_MAIL, 0, NULL, AC_SCAN_VIR);
 	    break;
@@ -2237,7 +2233,6 @@ static int cli_scanfile(const char *filename, cli_ctx *ctx)
 int cl_scanfile(const char *filename, const char **virname, unsigned long int *scanned, const struct cl_engine *engine, unsigned int scanoptions)
 {
 	int fd, ret;
-
 
     if((fd = open(filename, O_RDONLY|O_BINARY)) == -1)
 	return CL_EOPEN;
