@@ -92,7 +92,7 @@ int cli_realhex2ui(const char *hex, uint16_t *ptr, unsigned int len) {
 	    val |= CLI_MATCH_NIBBLE_LOW;
 
 	} else if(hex[i] == '(') {
-	    val |= CLI_MATCH_ALTERNATIVE;
+	    val |= CLI_MATCH_SPECIAL;
 
 	} else {
 	    if((c = cli_hex2int(hex[i])) >= 0) {

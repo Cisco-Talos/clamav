@@ -45,12 +45,18 @@
 
 #include "mpool.h"
 
+#define AC_SPECIAL_ALT_CHAR	1
+#define AC_SPECIAL_ALT_STR	2
+#define AC_SPECIAL_LINE_START	3
+#define AC_SPECIAL_LINE_END	4
+#define AC_SPECIAL_BOUNDARY	5
+
 int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 {
 	struct cli_ac_node *pt, *next;
 	struct cli_ac_patt *ph;
 	void *newtable;
-	struct cli_ac_alt *a1, *a2;
+	struct cli_ac_special *a1, *a2;
 	uint8_t i, match;
 	uint16_t len = MIN(root->ac_maxdepth, pattern->length);
 
@@ -131,27 +137,31 @@ int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
     while(ph) {
 	if((ph->length == pattern->length) && (ph->prefix_length == pattern->prefix_length) && (ph->ch[0] == pattern->ch[0]) && (ph->ch[1] == pattern->ch[1])) {
 	    if(!memcmp(ph->pattern, pattern->pattern, ph->length * sizeof(uint16_t)) && !memcmp(ph->prefix, pattern->prefix, ph->prefix_length * sizeof(uint16_t))) {
-		if(!ph->alt && !pattern->alt) {
+		if(!ph->special && !pattern->special) {
 		    match = 1;
-		} else if(ph->alt == pattern->alt) {
+		} else if(ph->special == pattern->special) {
 		    match = 1;
-		    for(i = 0; i < ph->alt; i++) {
-			a1 = ph->alttable[i];
-			a2 = pattern->alttable[i];
+		    for(i = 0; i < ph->special; i++) {
+			a1 = ph->special_table[i];
+			a2 = pattern->special_table[i];
 
 			if(a1->num != a2->num) {
 			    match = 0;
 			    break;
 			}
-			if(a1->chmode != a2->chmode) {
+			if(a1->negative != a2->negative) {
 			    match = 0;
 			    break;
-			} else if(a1->chmode) {
+			}
+			if(a1->type != a2->type) {
+			    match = 0;
+			    break;
+			} else if(a1->type == AC_SPECIAL_ALT_CHAR) {
 			    if(memcmp(a1->str, a2->str, a1->num)) {
 				match = 0;
 				break;
 			    }
-			} else {
+			} else if(a1->type == AC_SPECIAL_ALT_STR) {
 			    while(a1 && a2) {
 				if((a1->len != a2->len) || memcmp(a1->str, a2->str, a1->len))
 				    break;
@@ -350,22 +360,22 @@ int cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth)
 }
 
 #ifdef USE_MPOOL
-#define mpool_ac_free_alt(a, b) ac_free_alt(a, b)
-static void ac_free_alt(mpool_t *mempool, struct cli_ac_patt *p)
+#define mpool_ac_free_special(a, b) ac_free_special(a, b)
+static void ac_free_special(mpool_t *mempool, struct cli_ac_patt *p)
 #else
-#define mpool_ac_free_alt(a, b) ac_free_alt(b)
-static void ac_free_alt(struct cli_ac_patt *p)
+#define mpool_ac_free_special(a, b) ac_free_special(b)
+static void ac_free_special(struct cli_ac_patt *p)
 #endif
 {
-	uint16_t i;
-	struct cli_ac_alt *a1, *a2;
+	unsigned int i;
+	struct cli_ac_special *a1, *a2;
 
 
-    if(!p->alt)
+    if(!p->special)
 	return;
 
-    for(i = 0; i < p->alt; i++) {
-	a1 = p->alttable[i];
+    for(i = 0; i < p->special; i++) {
+	a1 = p->special_table[i];
 	while(a1) {
 	    a2 = a1;
 	    a1 = a1->next;
@@ -374,7 +384,7 @@ static void ac_free_alt(struct cli_ac_patt *p)
 	    mpool_free(mempool, a2);
 	}
     }
-    mpool_free(mempool, p->alttable);
+    mpool_free(mempool, p->special_table);
 }
 
 void cli_ac_free(struct cli_matcher *root)
@@ -387,8 +397,8 @@ void cli_ac_free(struct cli_matcher *root)
 	patt = root->ac_pattable[i];
 	mpool_free(root->mempool, patt->prefix ? patt->prefix : patt->pattern);
 	mpool_free(root->mempool, patt->virname);
-	if(patt->alt)
-	    mpool_ac_free_alt(root->mempool, patt);
+	if(patt->special)
+	    mpool_ac_free_special(root->mempool, patt);
 	mpool_free(root->mempool, patt);
     }
     if(root->ac_pattable)
@@ -650,62 +660,75 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
  *        more than one of them can match at the current position.
  */
 
-#define AC_MATCH_CHAR(p,b)						\
-    switch(wc = p & CLI_MATCH_WILDCARD) {				\
-	case CLI_MATCH_CHAR:						\
-	    if((unsigned char) p != b)					\
-		match = 0;						\
-	    break;							\
-									\
-	case CLI_MATCH_IGNORE:						\
-	    break;							\
-									\
-	case CLI_MATCH_ALTERNATIVE:					\
-	    alt = pattern->alttable[altcnt];				\
-	    match = alt->negative;					\
-	    if(alt->chmode) {						\
-		for(j = 0; j < alt->num; j++) {				\
-		    if(alt->str[j] == b) {				\
-			match = !alt->negative;				\
-			break;						\
-		    } else if(alt->str[j] > b)				\
-			break;						\
-		}							\
-	    } else {							\
-		while(alt) {						\
-		    if(bp + alt->len <= length) {			\
-			if(!memcmp(&buffer[bp], alt->str, alt->len)) {	\
-			    match = !alt->negative;			\
-			    bp += alt->len - 1;				\
-			    break;					\
-			}						\
-		    }							\
-		    alt = alt->next;					\
-		}							\
-	    }								\
-	    altcnt++;							\
-	    break;							\
-									\
-	case CLI_MATCH_NIBBLE_HIGH:					\
-	    if((unsigned char) (p & 0x00f0) != (b & 0xf0))		\
-		match = 0;						\
-	    break;							\
-									\
-	case CLI_MATCH_NIBBLE_LOW:					\
-	    if((unsigned char) (p & 0x000f) != (b & 0x0f))		\
-		match = 0;						\
-	    break;							\
-									\
-	default:							\
-	    cli_errmsg("ac_findmatch: Unknown wildcard 0x%x\n", wc);	\
-	    match = 0;							\
+#define AC_MATCH_CHAR(p,b)								\
+    switch(wc = p & CLI_MATCH_WILDCARD) {						\
+	case CLI_MATCH_CHAR:								\
+	    if((unsigned char) p != b)							\
+		match = 0;								\
+	    break;									\
+											\
+	case CLI_MATCH_IGNORE:								\
+	    break;									\
+											\
+	case CLI_MATCH_SPECIAL:								\
+	    special = pattern->special_table[specialcnt];				\
+	    match = special->negative;							\
+	    switch(special->type) {							\
+		case AC_SPECIAL_ALT_CHAR:						\
+		    for(j = 0; j < special->num; j++) {					\
+			if(special->str[j] == b) {					\
+			    match = !special->negative;					\
+			    break;							\
+			} else if(special->str[j] > b)					\
+			    break;							\
+		    }									\
+		    break;								\
+											\
+		case AC_SPECIAL_ALT_STR:						\
+		    while(special) {							\
+			if(bp + special->len <= length) {				\
+			    if(!memcmp(&buffer[bp], special->str, special->len)) {	\
+				match = !special->negative;				\
+				bp += special->len - 1;					\
+				break;							\
+			    }								\
+			}								\
+			special = special->next;					\
+		    }									\
+		    break;								\
+											\
+		case AC_SPECIAL_BOUNDARY:						\
+		    if(memchr("\x22\x27\x20\x2f\x3d\x2d\x5f\x3e\x0a\x0d", b, 10))	\
+			match = !special->negative;					\
+		    break;								\
+											\
+		default:								\
+		    cli_errmsg("ac_findmatch: Unknown special\n");			\
+		    match = 0;								\
+	    }										\
+	    specialcnt++;								\
+	    break;									\
+											\
+	case CLI_MATCH_NIBBLE_HIGH:							\
+	    if((unsigned char) (p & 0x00f0) != (b & 0xf0))				\
+		match = 0;								\
+	    break;									\
+											\
+	case CLI_MATCH_NIBBLE_LOW:							\
+	    if((unsigned char) (p & 0x000f) != (b & 0x0f))				\
+		match = 0;								\
+	    break;									\
+											\
+	default:									\
+	    cli_errmsg("ac_findmatch: Unknown wildcard 0x%x\n", wc);			\
+	    match = 0;									\
     }
 
 inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t *end)
 {
 	uint32_t bp, match;
-	uint16_t wc, i, j, altcnt = pattern->alt_pattern;
-	struct cli_ac_alt *alt;
+	uint16_t wc, i, j, specialcnt = pattern->special_pattern;
+	struct cli_ac_special *special;
 
 
     if((offset + pattern->length > length) || (pattern->prefix_length > offset))
@@ -738,7 +761,7 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
     }
 
     if(pattern->prefix) {
-	altcnt = 0;
+	specialcnt = 0;
 	bp = offset - pattern->prefix_length;
 	match = 1;
 	for(i = 0; i < pattern->prefix_length; i++) {
@@ -1169,7 +1192,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	char *pt, *pt2, *hex = NULL, *hexcpy = NULL;
 	uint16_t i, j, ppos = 0, pend, *dec, nzpos = 0;
 	uint8_t wprefix = 0, zprefix = 1, plen = 0, nzplen = 0;
-	struct cli_ac_alt *newalt, *altpt, **newtable;
+	struct cli_ac_special *newspecial, *specialpt, **newtable;
 	int ret, error = CL_SUCCESS;
 
 
@@ -1304,15 +1327,15 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 		error = CL_EMALFDB;
 		break;
 	    }
-	    newalt = (struct cli_ac_alt *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_alt));
-	    if(!newalt) {
-		cli_errmsg("cli_ac_addsig: Can't allocate newalt\n");
+	    newspecial = (struct cli_ac_special *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_special));
+	    if(!newspecial) {
+		cli_errmsg("cli_ac_addsig: Can't allocate newspecial\n");
 		error = CL_EMEM;
 		break;
 	    }
 	    if(pt >= hexcpy + 2) {
 		if(pt[-2] == '!') {
-		    newalt->negative = 1;
+		    newspecial->negative = 1;
 		    pt[-2] = 0;
 		}
 	    }
@@ -1320,89 +1343,105 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	    strcat(hexnew, "()");
 
 	    if(!(start = strchr(pt, ')'))) {
-		mpool_free(root->mempool, newalt);
+		mpool_free(root->mempool, newspecial);
 		error = CL_EMALFDB;
 		break;
 	    }
 	    *start++ = 0;
-
-	    new->alt++;
-	    newtable = (struct cli_ac_alt **) mpool_realloc(root->mempool, new->alttable, new->alt * sizeof(struct cli_ac_alt *));
+	    if(!strlen(pt)) {
+		cli_errmsg("cli_ac_addsig: Empty block\n");
+		error = CL_EMALFDB;
+		break;
+	    }
+	    new->special++;
+	    newtable = (struct cli_ac_special **) mpool_realloc(root->mempool, new->special_table, new->special * sizeof(struct cli_ac_special *));
 	    if(!newtable) {
-		new->alt--;
-		mpool_free(root->mempool, newalt);
-		cli_errmsg("cli_ac_addsig: Can't realloc new->alttable\n");
+		new->special--;
+		mpool_free(root->mempool, newspecial);
+		cli_errmsg("cli_ac_addsig: Can't realloc new->special_table\n");
 		error = CL_EMEM;
 		break;
 	    }
-	    newtable[new->alt - 1] = newalt;
-	    new->alttable = newtable;
+	    newtable[new->special - 1] = newspecial;
+	    new->special_table = newtable;
 
-	    for(i = 0; i < strlen(pt); i++)
-		if(pt[i] == '|')
-		    newalt->num++;
+	    if(!strcmp(pt, "B")) {
+		newspecial->type = AC_SPECIAL_BOUNDARY;
+	    /* TODO
+	    } else if(strcmp(pt, "S")) {
+		newspecial->type = AC_SPECIAL_LINE_START;
+	    } else if(strcmp(pt, "E")) {
+		newspecial->type = AC_SPECIAL_LINE_END;
+	    } else if(strcmp(pt, "W")) {
+		newspecial->type = AC_SPECIAL_WHITE;
+	    */
+	    } else {
+		for(i = 0; i < strlen(pt); i++)
+		    if(pt[i] == '|')
+			newspecial->num++;
 
-            if(!newalt->num) {
-                error = CL_EMALFDB;
-                break;
-            } else
-                newalt->num++;
-
-	    if(3 * newalt->num - 1 == (uint16_t) strlen(pt)) {
-		newalt->chmode = 1;
-		newalt->str = (unsigned char *) mpool_malloc(root->mempool, newalt->num);
-		if(!newalt->str) {
-		    cli_errmsg("cli_ac_addsig: Can't allocate newalt->str\n");
-		    error = CL_EMEM;
-		    break;
-		}
-	    }
-
-	    for(i = 0; i < newalt->num; i++) {
-		if(!(h = cli_strtok(pt, i, "|"))) {
+		if(!newspecial->num) {
 		    error = CL_EMALFDB;
 		    break;
-		}
+		} else
+		    newspecial->num++;
 
-		if(!(c = cli_mpool_hex2str(root->mempool, h))) {
-		    free(h);
-		    error = CL_EMALFDB;
-		    break;
-		}
-
-		if(newalt->chmode) {
-		    newalt->str[i] = *c;
-		    mpool_free(root->mempool, c);
-		} else {
-		    if(i) {
-			altpt = newalt;
-			while(altpt->next)
-			    altpt = altpt->next;
-
-			altpt->next = (struct cli_ac_alt *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_alt));
-			if(!altpt->next) {
-			    cli_errmsg("cli_ac_addsig: Can't allocate altpt->next\n");
-			    error = CL_EMEM;
-			    free(c);
-			    free(h);
-			    break;
-			}
-
-			altpt->next->str = (unsigned char *) c;
-			altpt->next->len = strlen(h) / 2;
-		    } else {
-			newalt->str = (unsigned char *) c;
-			newalt->len = strlen(h) / 2;
+		if(3 * newspecial->num - 1 == (uint16_t) strlen(pt)) {
+		    newspecial->type = AC_SPECIAL_ALT_CHAR;
+		    newspecial->str = (unsigned char *) mpool_malloc(root->mempool, newspecial->num);
+		    if(!newspecial->str) {
+			cli_errmsg("cli_ac_addsig: Can't allocate newspecial->str\n");
+			error = CL_EMEM;
+			break;
 		    }
+		} else {
+		    newspecial->type = AC_SPECIAL_ALT_STR;
 		}
 
-		free(h);
-	    }
-	    if(newalt->chmode)
-		cli_qsort(newalt->str, newalt->num, sizeof(unsigned char), qcompare);
+		for(i = 0; i < newspecial->num; i++) {
+		    if(!(h = cli_strtok(pt, i, "|"))) {
+			error = CL_EMALFDB;
+			break;
+		    }
 
-	    if(error)
-		break;
+		    if(!(c = cli_mpool_hex2str(root->mempool, h))) {
+			free(h);
+			error = CL_EMALFDB;
+			break;
+		    }
+
+		    if(newspecial->type == AC_SPECIAL_ALT_CHAR) {
+			newspecial->str[i] = *c;
+			mpool_free(root->mempool, c);
+		    } else {
+			if(i) {
+			    specialpt = newspecial;
+			    while(specialpt->next)
+				specialpt = specialpt->next;
+
+			    specialpt->next = (struct cli_ac_special *) mpool_calloc(root->mempool, 1, sizeof(struct cli_ac_special));
+			    if(!specialpt->next) {
+				cli_errmsg("cli_ac_addsig: Can't allocate specialpt->next\n");
+				error = CL_EMEM;
+				free(c);
+				free(h);
+				break;
+			    }
+			    specialpt->next->str = (unsigned char *) c;
+			    specialpt->next->len = strlen(h) / 2;
+			} else {
+			    newspecial->str = (unsigned char *) c;
+			    newspecial->len = strlen(h) / 2;
+			}
+		    }
+		    free(h);
+		}
+		if(newspecial->type == AC_SPECIAL_ALT_CHAR)
+		    cli_qsort(newspecial->str, newspecial->num, sizeof(unsigned char), qcompare);
+
+		if(error)
+		    break;
+	    }
 	}
 
 	if(start)
@@ -1412,9 +1451,9 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	free(hexcpy);
 
 	if(error) {
-	    if(new->alt) {
+	    if(new->special) {
 		free(hex);
-		mpool_ac_free_alt(root->mempool, new);
+		mpool_ac_free_special(root->mempool, new);
 	    }
 	    mpool_free(root->mempool, new);
 	    return error;
@@ -1423,8 +1462,8 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
     new->pattern = cli_mpool_hex2ui(root->mempool, hex ? hex : hexsig);
     if(new->pattern == NULL) {
-	if(new->alt)
-	    mpool_ac_free_alt(root->mempool, new);
+	if(new->special)
+	    mpool_ac_free_special(root->mempool, new);
 	mpool_free(root->mempool, new);
 	free(hex);
 	return CL_EMALFDB;
@@ -1473,7 +1512,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
 	if(plen < root->ac_mindepth) {
 	    cli_errmsg("cli_ac_addsig: Can't find a static subpattern of length %u\n", root->ac_mindepth);
-	    mpool_ac_free_alt(root->mempool, new);
+	    mpool_ac_free_special(root->mempool, new);
 	    mpool_free(root->mempool, new->pattern);
 	    mpool_free(root->mempool, new);
 	    return CL_EMALFDB;
@@ -1485,8 +1524,8 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 	new->length -= ppos;
 
 	for(i = 0; i < new->prefix_length; i++)
-	    if((new->prefix[i] & CLI_MATCH_WILDCARD) == CLI_MATCH_ALTERNATIVE)
-		new->alt_pattern++;
+	    if((new->prefix[i] & CLI_MATCH_WILDCARD) == CLI_MATCH_SPECIAL)
+		new->special_pattern++;
     }
 
     if(new->length > root->maxpatlen)
@@ -1495,7 +1534,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     new->virname = cli_mpool_virname(root->mempool, (char *) virname, options & CL_DB_OFFICIAL);
     if(!new->virname) {
 	mpool_free(root->mempool, new->prefix ? new->prefix : new->pattern);
-	mpool_ac_free_alt(root->mempool, new);
+	mpool_ac_free_special(root->mempool, new);
 	mpool_free(root->mempool, new);
 	return CL_EMEM;
     }
@@ -1506,7 +1545,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     ret = cli_caloff(offset, NULL, -1, root->type, new->offdata, &new->offset_min, &new->offset_max);
     if(ret != CL_SUCCESS) {
 	mpool_free(root->mempool, new->prefix ? new->prefix : new->pattern);
-	mpool_ac_free_alt(root->mempool, new);
+	mpool_ac_free_special(root->mempool, new);
 	mpool_free(root->mempool, new->virname);
 	mpool_free(root->mempool, new);
 	return ret;
@@ -1515,7 +1554,7 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
     if((ret = cli_ac_addpatt(root, new))) {
 	mpool_free(root->mempool, new->prefix ? new->prefix : new->pattern);
 	mpool_free(root->mempool, new->virname);
-	mpool_ac_free_alt(root->mempool, new);
+	mpool_ac_free_special(root->mempool, new);
 	mpool_free(root->mempool, new);
 	return ret;
     }
