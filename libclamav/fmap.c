@@ -59,9 +59,6 @@
 #define UNPAGE_THRSHLD_HI 8*1024*1024
 #define READAHEAD_PAGES 8
 
-/* FIXME: remove the malloc fallback, it only makes thing slower */
-#define DUMB_SIZE 0
-
 /* DON'T ASK ME */
 pthread_mutex_t fmap_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -105,24 +102,25 @@ struct F_MAP *fmap(int fd, off_t offset, size_t len) {
     pages = fmap_align_items(len, pgsz);
     hdrsz = fmap_align_to(sizeof(struct F_MAP) + pages * sizeof(uint32_t), pgsz);
     mapsz = pages * pgsz + hdrsz;
+    pthread_mutex_lock(&fmap_mutex);
 #if HAVE_MMAP
-    if(mapsz >= DUMB_SIZE) {
-	pthread_mutex_lock(&fmap_mutex);
-	if ((m = (struct F_MAP *)mmap(NULL, mapsz, PROT_READ | PROT_WRITE, MAP_PRIVATE|/*FIXME: MAP_POPULATE is ~8% faster but more memory intensive */ANONYMOUS_MAP, -1, 0)) == MAP_FAILED)
-	    m = NULL;
-	else {
-	    dumb = 0;
-	    madvise(m, mapsz, MADV_RANDOM|MADV_DONTFORK);
-	    madvise(m, hdrsz, MADV_WILLNEED);
-	}
-	pthread_mutex_unlock(&fmap_mutex);
-    } else
+    if ((m = (struct F_MAP *)mmap(NULL, mapsz, PROT_READ | PROT_WRITE, MAP_PRIVATE|/*FIXME: MAP_POPULATE is ~8% faster but more memory intensive */ANONYMOUS_MAP, -1, 0)) == MAP_FAILED) {
+	m = NULL;
+    } else {
+	dumb = 0;
+	madvise(m, mapsz, MADV_RANDOM|MADV_DONTFORK);
+    }
+#else
+    m = (struct F_MAP *)cli_malloc(mapsz);
 #endif
-	m = (struct F_MAP *)cli_malloc(mapsz);
     if(!m) {
 	cli_warnmsg("fmap: map allocation failed\n");
+	pthread_mutex_unlock(&fmap_mutex);
 	return NULL;
     }
+    /* fault the header while we still have the lock - we DO context switch here a lot here :@ */
+    memset(m->bitmap, 0, sizeof(uint32_t) * pages);
+    pthread_mutex_unlock(&fmap_mutex);
     m->fd = fd;
     m->dumb = dumb;
     m->mtime = st.st_mtime;
@@ -132,7 +130,6 @@ struct F_MAP *fmap(int fd, off_t offset, size_t len) {
     m->hdrsz = hdrsz;
     m->pgsz = pgsz;
     m->paged = 0;
-    memset(m->bitmap, 0, sizeof(uint32_t) * pages);
 #ifdef FMAPDEBUG
     m->page_needs = 0;
     m->page_reads = 0;
@@ -216,12 +213,16 @@ static void fmap_aging(struct F_MAP *m) {
 static int fmap_readpage(struct F_MAP *m, unsigned int first_page, unsigned int count, unsigned int lock_count) {
     size_t readsz = 0, got;
     char *pptr = NULL;
-    volatile uint32_t s;
+    uint32_t s;
     unsigned int i, page = first_page, force_read = 0;
 
-    for(i=0; i<count; i++) { /* REAL MEN DON'T MADVISE: seriously, it sucks! */
-	volatile char faultme = ((char *)m)[(first_page+i) * m->pgsz + m->hdrsz];
+    pthread_mutex_lock(&fmap_mutex);
+    for(i=0; i<count; i++) { /* prefault */
+    	/* Not worth checking if the page is already paged, just ping each */
+	/* Also not worth reusing the loop below */
+    	volatile char faultme = ((char *)m)[(first_page+i) * m->pgsz + m->hdrsz];
     }
+    pthread_mutex_unlock(&fmap_mutex);
 #ifdef FMAPDEBUG
     m->page_needs += count;
     m->page_locks += lock_count;
