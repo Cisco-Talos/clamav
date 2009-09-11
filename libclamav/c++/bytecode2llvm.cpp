@@ -356,11 +356,13 @@ public:
 	globals.reserve(bc->num_globals);
 	for (unsigned i=0;i<bc->num_globals;i++) {
 	    const Type *Ty = mapType(bc->globaltys[i]);
-	    GlobalVariable *GV = cast<GlobalVariable>(M->getOrInsertGlobal("glob"+i,
-									   Ty));
+
 	    // TODO: validate number of components against type_components
 	    unsigned c = 0;
-	    GV->setInitializer(buildConstant(Ty, bc->globals[i], c));
+	    Constant *C = buildConstant(Ty, bc->globals[i], c);
+	    GlobalVariable *GV = new GlobalVariable(*M, Ty, true,
+						    GlobalValue::InternalLinkage,
+						    C, "glob"+Twine(i));
 	    globals.push_back(GV);
 	}
 
