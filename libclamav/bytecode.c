@@ -666,10 +666,7 @@ static uint16_t type_components(struct cli_bc *bc, uint16_t id, char *ok)
 	    *ok = 0;
 	    return 0;
 	case DPointerType:
-	    cli_errmsg("bytecode: pointer type not accepted for constant: %u\n", id);
-	    /* don't accept pointer initializers */
-	    *ok = 0;
-	    return 0;
+	    return 2;
 	case DStructType:
 	case DPackedStructType:
 	    for (i=0;i<ty->numElements;i++) {
@@ -690,7 +687,7 @@ static void readConstant(struct cli_bc *bc, unsigned i, unsigned comp,
 {
     unsigned j=0;
     while (*ok && buffer[*offset] != 0x60) {
-	if (j > comp) {
+	if (j >= comp) {
 	    cli_errmsg("bytecode: constant has too many subcomponents, expected %u\n", comp);
 	    *ok = 0;
 	    return;
@@ -701,7 +698,7 @@ static void readConstant(struct cli_bc *bc, unsigned i, unsigned comp,
     if (*ok && j != comp) {
 	cli_errmsg("bytecode: constant has too few subcomponents: %u < %u\n", j, comp);
     }
-    *offset++;
+    (*offset)++;
 }
 
 /* parse constant globals with constant initializers */
@@ -741,6 +738,11 @@ static int parseGlobals(struct cli_bc *bc, unsigned char *buffer)
     }
     if (!ok)
 	return CL_EMALFDB;
+    if (offset != len) {
+	cli_errmsg("Trailing garbage in globals: %d extra bytes\n",
+		   len-offset);
+	return CL_EMALFDB;
+    }
     return CL_SUCCESS;
 }
 

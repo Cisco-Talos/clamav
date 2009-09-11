@@ -234,7 +234,11 @@ private:
 	    operand &= 0x7fffffff;
 	    assert(operand < globals.size() && "Global index out of range");
 	    // Global
-	    return globals[operand];
+	    GlobalVariable *GV = globals[operand];
+	    if (ConstantExpr *CE = dyn_cast<ConstantExpr>(GV->getInitializer())) {
+		return CE;
+	    }
+	    return GV;
 	}
 	// Constant
 	operand -= func->numValues;
@@ -292,6 +296,14 @@ private:
 
     Constant *buildConstant(const Type *Ty, uint64_t *components, unsigned &c)
     {
+        if (isa<PointerType>(Ty)) {
+          Constant *idxs[2] = {
+	      ConstantInt::get(Type::getInt32Ty(Context), 0), 
+	      ConstantInt::get(Type::getInt32Ty(Context), components[c++])
+	  };
+          GlobalVariable *GV = globals[components[c++]];
+          return ConstantExpr::getInBoundsGetElementPtr(GV, idxs, 2);
+        }
 	if (isa<IntegerType>(Ty)) {
 	    return ConstantInt::get(Ty, components[c++]);
 	}

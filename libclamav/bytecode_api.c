@@ -29,6 +29,7 @@
 #include "type_desc.h"
 #include "bytecode_api.h"
 #include "bytecode_api_impl.h"
+#include "others.h"
 
 uint32_t cli_bcapi_test0(struct cli_bc_ctx *ctx, struct foo* s, uint32_t u)
 {
@@ -67,4 +68,15 @@ int32_t cli_bcapi_seek(struct cli_bc_ctx* ctx, int32_t pos, uint32_t whence)
 	return -1;
     ctx->off = off;
     return off;
+}
+
+uint32_t cli_bcapi_debug_print_str(struct cli_bc_ctx *ctx, uint8_t *str, uint32_t len)
+{
+    cli_dbgmsg("bytecode debug: %s\n", str);
+    return 0;
+}
+
+uint32_t cli_bcapi_debug_print_uint(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
+{
+    cli_dbgmsg("bytecode debug: %u\n", a);
 }

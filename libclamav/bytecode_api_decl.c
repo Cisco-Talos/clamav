@@ -28,6 +28,8 @@ uint32_t cli_bcapi_test0(struct cli_bc_ctx *ctx, struct foo*, uint32_t);
 uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx, uint32_t, uint32_t);
 int32_t cli_bcapi_read(struct cli_bc_ctx *ctx, uint8_t*, int32_t);
 int32_t cli_bcapi_seek(struct cli_bc_ctx *ctx, int32_t, uint32_t);
+uint32_t cli_bcapi_debug_print_str(struct cli_bc_ctx *ctx, uint8_t*, uint32_t);
+uint32_t cli_bcapi_debug_print_uint(struct cli_bc_ctx *ctx, uint32_t, uint32_t);
 
 static uint16_t cli_tmp0[]={32, 70, 32};
 static uint16_t cli_tmp1[]={71};
@@ -49,15 +51,19 @@ const struct cli_apicall cli_apicalls[]={
 	{"test0", 0, 0, 1},
 	{"test1", 3, 0, 0},
 	{"read", 4, 1, 1},
-	{"seek", 3, 1, 0}
+	{"seek", 3, 1, 0},
+	{"debug_print_str", 4, 2, 1},
+	{"debug_print_uint", 3, 2, 0}
 /* Bytecode APIcalls END */
 };
 const cli_apicall_int2 cli_apicalls0[] = {
 	(cli_apicall_int2)cli_bcapi_test1,
-	(cli_apicall_int2)cli_bcapi_seek
+	(cli_apicall_int2)cli_bcapi_seek,
+	(cli_apicall_int2)cli_bcapi_debug_print_uint
 };
 const cli_apicall_pointer cli_apicalls1[] = {
 	(cli_apicall_pointer)cli_bcapi_test0,
-	(cli_apicall_pointer)cli_bcapi_read
+	(cli_apicall_pointer)cli_bcapi_read,
+	(cli_apicall_pointer)cli_bcapi_debug_print_str
 };
 const unsigned cli_apicall_maxapi = sizeof(cli_apicalls)/sizeof(cli_apicalls[0]);

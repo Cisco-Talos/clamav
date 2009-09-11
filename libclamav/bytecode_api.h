@@ -36,7 +36,7 @@ uint32_t test0(struct foo*, uint32_t);
 uint32_t test1(uint32_t, uint32_t);
 
 /* reads @size bytes from current file (if any) to @data, returns amount read */
-int32_t read(uint8_t *data, int32_t size);
+uint32_t read(uint8_t *data, uint32_t size);
 
 enum {
     SEEK_SET=0,
@@ -47,5 +47,8 @@ enum {
 /* seeks current position to @pos, from @whence, returns current position from
  * start of file */
 int32_t seek(int32_t pos, uint32_t whence);
+
+uint32_t debug_print_str(uint8_t *str, uint32_t len);
+uint32_t debug_print_uint(uint32_t a, uint32_t b);
 
 #endif
