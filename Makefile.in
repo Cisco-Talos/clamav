@@ -384,7 +384,8 @@ DISTCLEANFILES = target.h
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-D_FORTIFY_SOURCE=2 \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-fstack-protector-all \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Wstack-protector \
-@DISTCHECK_ENABLE_FLAGS_TRUE@	-Wno-error=aggregate-return"
+@DISTCHECK_ENABLE_FLAGS_TRUE@	-Wno-error=aggregate-return" \
+@DISTCHECK_ENABLE_FLAGS_TRUE@	VERBOSE=1
 all: clamav-config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
