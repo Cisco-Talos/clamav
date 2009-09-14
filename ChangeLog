@@ -1,3 +1,8 @@
+Mon Sep 14 13:56:42 CEST 2009 (tk)
+----------------------------------
+ * clamd/server-th.c: fix possible race condition when restarting clamuko
+		      (bb#1692), patch from John Ogness
+
 Thu Sep  3 15:09:57 CEST 2009 (tk)
 ----------------------------------
  * freshclam/mirman.c: make backoff time proportional to FLEVEL (bb#1687)

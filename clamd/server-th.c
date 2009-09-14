@@ -1258,6 +1258,13 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	pthread_mutex_lock(&reload_mutex);
 	if(reload) {
 	    pthread_mutex_unlock(&reload_mutex);
+#ifdef CLAMUKO
+	    if(optget(opts, "ClamukoScanOnAccess")->enabled && tharg) {
+		logg("Stopping and restarting Clamuko.\n");
+		pthread_kill(clamuko_pid, SIGUSR1);
+		pthread_join(clamuko_pid, NULL);
+	    }
+#endif
 	    engine = reload_db(engine, dboptions, opts, FALSE, &ret);
 	    if(ret) {
 		logg("Terminating because of a fatal error.\n");
@@ -1272,9 +1279,6 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    pthread_mutex_unlock(&reload_mutex);
 #ifdef CLAMUKO
 	    if(optget(opts, "ClamukoScanOnAccess")->enabled && tharg) {
-		logg("Stopping and restarting Clamuko.\n");
-		pthread_kill(clamuko_pid, SIGUSR1);
-		pthread_join(clamuko_pid, NULL);
 		tharg->engine = engine;
 		pthread_create(&clamuko_pid, &clamuko_attr, clamukoth, tharg);
 	    }
