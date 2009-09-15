@@ -1061,7 +1061,7 @@ int cli_unarj_extract_file(int fd, const char *dirname, arj_metadata_t *metadata
 	if (metadata->encrypted) {
 		cli_dbgmsg("PASSWORDed file (skipping)\n");
 		offset = lseek(fd, 0, SEEK_CUR) + metadata->comp_size;
-		cli_dbgmsg("Target offset: %ld\n", offset);
+		cli_dbgmsg("Target offset: %lu\n", (unsigned long int) offset);
 		if (lseek(fd, offset, SEEK_SET) != offset) {
 			return CL_ESEEK;
 		}

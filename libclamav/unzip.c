@@ -106,7 +106,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
     }
     if(res==1) {
       if(ctx->engine->maxfilesize && csize > ctx->engine->maxfilesize) {
-	cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->engine->maxfilesize);
+	cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", (long unsigned int) ctx->engine->maxfilesize);
 	csize = ctx->engine->maxfilesize;
       }
       if(cli_writen(of, src, csize)!=(int)csize) ret = CL_EWRITE;
@@ -167,7 +167,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
       if(*avail_out!=sizeof(obuf)) {
 	written+=sizeof(obuf)-(*avail_out);
 	if(ctx->engine->maxfilesize && written > ctx->engine->maxfilesize) {
-	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->engine->maxfilesize);
+	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", (long unsigned int) ctx->engine->maxfilesize);
 	  res = Z_STREAM_END;
 	  break;
 	}
@@ -211,7 +211,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
       if(strm.avail_out!=sizeof(obuf)) {
 	written+=sizeof(obuf)-strm.avail_out;
 	if(ctx->engine->maxfilesize && written > ctx->engine->maxfilesize) {
-	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->engine->maxfilesize);
+	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", (unsigned long int) ctx->engine->maxfilesize);
 	  res = BZ_STREAM_END;
 	  break;
 	}
@@ -248,7 +248,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
       if(strm.avail_out!=sizeof(obuf)) {
 	written+=sizeof(obuf)-strm.avail_out;
 	if(ctx->engine->maxfilesize && written > ctx->engine->maxfilesize) {
-	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->engine->maxfilesize);
+	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", (unsigned long int) ctx->engine->maxfilesize);
 	  res = 0;
 	  break;
 	}
