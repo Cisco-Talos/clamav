@@ -455,7 +455,7 @@ threadpool_t *thrmgr_new(int max_threads, int idle_timeout, int max_queue, void 
 	pthread_attr_getstacksize(&(threadpool->pool_attr), &stacksize);
 	stacksize = stacksize + 64 * 1024;
 	if (stacksize < 1048576) stacksize = 1048576; /* at least 1MB please */
-	logg("Set stacksize to %u\n", stacksize);
+	logg("Set stacksize to %lu\n", (unsigned long int) stacksize);
 	pthread_attr_setstacksize(&(threadpool->pool_attr), stacksize);
 #endif
 	threadpool->state = POOL_VALID;
