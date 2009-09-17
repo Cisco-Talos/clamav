@@ -1,3 +1,7 @@
+Thu Sep 17 22:36:30 CEST 2009 (tk)
+----------------------------------
+ * libclamav/matcher-ac.c: implement word delimiter (B) as requested in bb#1631
+
 Mon Sep 14 19:52:01 CEST 2009 (tk)
 ----------------------------------
  * freshclam: return 0 instead of 1 when database is up-to-date (bb#1312)

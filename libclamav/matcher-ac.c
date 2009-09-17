@@ -51,6 +51,30 @@
 #define AC_SPECIAL_LINE_END	4
 #define AC_SPECIAL_BOUNDARY	5
 
+#define AC_BOUNDARY_LEFT	    1
+#define AC_BOUNDARY_LEFT_NEGATIVE   2
+#define AC_BOUNDARY_RIGHT	    4
+#define AC_BOUNDARY_RIGHT_NEGATIVE  8
+
+static char boundary[256] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 2, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    3, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 3, 1, 3, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 2, 0, 
+    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+
 int cli_ac_addpatt(struct cli_matcher *root, struct cli_ac_patt *pattern)
 {
 	struct cli_ac_node *pt, *next;
@@ -698,7 +722,7 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
 		    break;								\
 											\
 		case AC_SPECIAL_BOUNDARY:						\
-		    if(memchr("\x22\x27\x20\x2f\x3d\x2d\x5f\x3e\x0a\x0d", b, 10))	\
+		    if(boundary[b])							\
 			match = !special->negative;					\
 		    break;								\
 											\
@@ -724,7 +748,7 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
 	    match = 0;									\
     }
 
-inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t *end)
+inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uint32_t fileoffset, uint32_t length, const struct cli_ac_patt *pattern, uint32_t *end)
 {
 	uint32_t bp, match;
 	uint16_t wc, i, j, specialcnt = pattern->special_pattern;
@@ -744,6 +768,22 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
 	bp++;
     }
     *end = bp;
+
+    if(pattern->boundary & AC_BOUNDARY_LEFT) {
+	match = !!(pattern->boundary & AC_BOUNDARY_LEFT_NEGATIVE);
+	if(!fileoffset || (offset && (boundary[buffer[offset - 1]] == 1 || boundary[buffer[offset - 1]] == 3)))
+	    match = !match;
+	if(!match)
+	    return 0;
+    }
+
+    if(pattern->boundary & AC_BOUNDARY_RIGHT) {
+	match = !!(pattern->boundary & AC_BOUNDARY_RIGHT_NEGATIVE);
+	if((length <= SCANBUFF) && (bp == length || boundary[buffer[bp]] >= 2))
+	    match = !match;
+	if(!match)
+	    return 0;
+    }
 
     if(!(pattern->ch[1] & CLI_MATCH_IGNORE)) {
 	bp += pattern->ch_mindist[1];
@@ -1001,7 +1041,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 		    }
 		}
 		pt = patt;
-		if(ac_findmatch(buffer, bp, length, patt, &matchend)) {
+		if(ac_findmatch(buffer, bp, offset + bp - patt->prefix_length, length, patt, &matchend)) {
 		    while(pt) {
 			if((pt->type && !(mode & AC_SCAN_FT)) || (!pt->type && !(mode & AC_SCAN_VIR))) {
 			    pt = pt->next_same;
@@ -1340,7 +1380,6 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 		}
 	    }
 	    strcat(hexnew, start);
-	    strcat(hexnew, "()");
 
 	    if(!(start = strchr(pt, ')'))) {
 		mpool_free(root->mempool, newspecial);
@@ -1353,6 +1392,24 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 		error = CL_EMALFDB;
 		break;
 	    }
+
+	    if(!strcmp(pt, "B")) {
+		if(!*start) {
+		    new->boundary |= AC_BOUNDARY_RIGHT;
+		    if(newspecial->negative)
+			new->boundary |= AC_BOUNDARY_RIGHT_NEGATIVE;
+		    mpool_free(root->mempool, newspecial);
+		    continue;
+		} else if(pt - 1 == hexcpy) {
+		    new->boundary |= AC_BOUNDARY_LEFT;
+		    if(newspecial->negative)
+			new->boundary |= AC_BOUNDARY_LEFT_NEGATIVE;
+		    mpool_free(root->mempool, newspecial);
+		    continue;
+		}
+	    }
+
+	    strcat(hexnew, "()");
 	    new->special++;
 	    newtable = (struct cli_ac_special **) mpool_realloc(root->mempool, new->special_table, new->special * sizeof(struct cli_ac_special *));
 	    if(!newtable) {
