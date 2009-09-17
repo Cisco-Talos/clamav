@@ -212,7 +212,7 @@ int main(int argc, char **argv)
 
     if((opts = optparse(NULL, argc, argv, 1, OPT_FRESHCLAM, 0, NULL)) == NULL) {
 	mprintf("!Can't parse command line options\n");
-	return 1;
+	return 40;
     }
 
     if(optget(opts, "help")->enabled) {
@@ -227,7 +227,7 @@ int main(int argc, char **argv)
     if((opts = optparse(cfgfile, 0, NULL, 1, OPT_FRESHCLAM, 0, opts)) == NULL) {
 	fprintf(stderr, "ERROR: Can't open/parse the config file %s\n", pt);
 	free(pt);
-	return 1;
+	return 40;
     }
     free(pt);
 

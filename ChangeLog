@@ -1,3 +1,28 @@
+Mon Sep 14 19:52:01 CEST 2009 (tk)
+----------------------------------
+ * freshclam: return 0 instead of 1 when database is up-to-date (bb#1312)
+
+Mon Sep 14 13:56:42 CEST 2009 (tk)
+----------------------------------
+ * clamd/server-th.c: fix possible race condition when restarting clamuko
+		      (bb#1692), patch from John Ogness
+
+Fri Sep 11 16:05:00 CEST 2009 (tk)
+----------------------------------
+ * libclamav/matcher-ac.c: initial limited support for word boundary (bb#1631)
+
+Thu Sep 10 20:16:45 CEST 2009 (tk)
+----------------------------------
+ * libclamav/matcher-ac.c: alternatives can now be negated: !(aa|bb|cc)
+
+Mon Sep  7 15:03:11 CEST 2009 (tk)
+----------------------------------
+ * libclamav/matcher-bm.c: fix uninitialized value warning
+
+Mon Sep  7 03:45:18 CEST 2009 (acab)
+------------------------------------
+ * libclamav/scanners.c: properly scan text files with a mail container
+
 Thu Sep  3 15:09:57 CEST 2009 (tk)
 ----------------------------------
  * freshclam/mirman.c: make backoff time proportional to FLEVEL (bb#1687)

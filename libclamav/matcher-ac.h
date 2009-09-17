@@ -39,11 +39,11 @@ struct cli_ac_data {
     uint32_t *offset;
 };
 
-struct cli_ac_alt {
+struct cli_ac_special {
     unsigned char *str;
-    struct cli_ac_alt *next;
+    struct cli_ac_special *next;
     uint16_t len, num;
-    uint8_t chmode;
+    uint8_t type, negative;
 };
 
 struct cli_ac_patt {
@@ -56,8 +56,8 @@ struct cli_ac_patt {
     void *customdata;
     uint16_t ch_mindist[2];
     uint16_t ch_maxdist[2];
-    uint16_t parts, partno, alt, alt_pattern;
-    struct cli_ac_alt **alttable;
+    uint16_t parts, partno, special, special_pattern;
+    struct cli_ac_special **special_table;
     struct cli_ac_patt *next, *next_same;
     uint8_t depth;
     uint16_t rtype, type;

@@ -413,6 +413,7 @@ int cli_checklimits(const char *, cli_ctx *, unsigned long, unsigned long, unsig
 int cli_updatelimits(cli_ctx *, unsigned long);
 unsigned long cli_getsizelimit(cli_ctx *, unsigned long);
 int cli_matchregex(const char *str, const char *regex);
+void cli_qsort(void *basep, size_t nelems, size_t size, int (*comp)(const void *, const void *));
 
 /* symlink behaviour */
 #define CLI_FTW_FOLLOW_FILE_SYMLINK 0x01

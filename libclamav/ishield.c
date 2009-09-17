@@ -232,7 +232,7 @@ int cli_scanishield_msi(cli_ctx *ctx, off_t off) {
 	    return CL_CLEAN;
 	}
 	if(ctx->engine->maxfilesize && csize > ctx->engine->maxfilesize) {
-	    cli_dbgmsg("ishield-msi: skipping stream due to size limits (%lu vs %lu)\n", csize, ctx->engine->maxfilesize);
+	    cli_dbgmsg("ishield-msi: skipping stream due to size limits (%lu vs %lu)\n", (unsigned long int) csize, (unsigned long int) ctx->engine->maxfilesize);
 	    off += csize;
 	    continue;
 	}
@@ -286,7 +286,7 @@ int cli_scanishield_msi(cli_ctx *ctx, off_t off) {
 		    break;
 		}
 		if(ctx->engine->maxfilesize && z.total_out > ctx->engine->maxfilesize) {
-		    cli_dbgmsg("ishield-msi: trimming output file due to size limits (%lu vs %lu)\n", z.total_out, ctx->engine->maxfilesize);
+		    cli_dbgmsg("ishield-msi: trimming output file due to size limits (%lu vs %lu)\n", z.total_out, (unsigned long int) ctx->engine->maxfilesize);
 		    off += csize;
 		    csize = 0;
 		    break;
@@ -371,7 +371,7 @@ int cli_scanishield(cli_ctx *ctx, off_t off, size_t sz) {
 	   data - fname >= sz - fsize
 	) break;
 
-	cli_dbgmsg("ishield: @%lx found file %s (%s) - version %s - size %lu\n", coff, fname, path, version, fsize);
+	cli_dbgmsg("ishield: @%lx found file %s (%s) - version %s - size %lu\n", (unsigned long int) coff, fname, path, version, (unsigned long int) fsize);
 	sz -= (data - fname) + fsize;
 
 	if(!strncasecmp(fname, "data", 4)) {
@@ -599,7 +599,7 @@ static int is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c) {
 			int cabret = CL_CLEAN;
 
 			if(ctx->engine->maxfilesize && file_csize > ctx->engine->maxfilesize) {
-			    cli_dbgmsg("is_parse_hdr: skipping file due to size limits (%lu vs %lu)\n", file_csize, ctx->engine->maxfilesize);
+			    cli_dbgmsg("is_parse_hdr: skipping file due to size limits (%lu vs %lu)\n", (unsigned long int) file_csize, (unsigned long int) ctx->engine->maxfilesize);
 			    break;
 			}
 
@@ -742,7 +742,7 @@ static int is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t cs
 		    break;
 		}
 		if(ctx->engine->maxfilesize && z.total_out > ctx->engine->maxfilesize) {
-		    cli_dbgmsg("ishield_extract_cab: trimming output file due to size limits (%lu vs %lu)\n", z.total_out, ctx->engine->maxfilesize);
+		    cli_dbgmsg("ishield_extract_cab: trimming output file due to size limits (%lu vs %lu)\n", z.total_out, (unsigned long int) ctx->engine->maxfilesize);
 		    success = 1;
 		    outsz = size;
 		    break;

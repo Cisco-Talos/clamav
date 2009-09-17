@@ -704,7 +704,7 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
 	    val = (uint64_t)cli_readint32((char *)&UNP.outputbuf[UNP.cur_input+4]);
 	    val <<=32;
 	    val += (uint64_t)cli_readint32((char *)&UNP.outputbuf[UNP.cur_input]);
-	    snprintf((char *)&buf[UNP.cur_output], 20, "0x%016lx ", val);
+	    snprintf((char *)&buf[UNP.cur_output], 20, "0x%016lx ", (unsigned long int) val);
 	    UNP.cur_output += 19;
 	    UNP.cur_input += 8;
 	    break;

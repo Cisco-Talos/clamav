@@ -121,6 +121,8 @@ How do I look in hex?
 	Match between $n$ and $m$ bytes ($m > n$).
 	\item \verb+(aa|bb|cc|..)+\\
 	Match aa or bb or cc..
+	\item \verb+!(aa|bb|cc|..)+\\
+	Match any byte except aa and bb and cc..
 	\item \verb+HEXSIG[x-y]aa+ or \verb+aa[x-y]HEXSIG+\\
 	Match aa anchored to a hex-signature, see
 	\url{https://wwws.clamav.net/bugzilla/show_bug.cgi?id=776} for
