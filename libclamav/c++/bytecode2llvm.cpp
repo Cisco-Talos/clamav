@@ -425,20 +425,20 @@ public:
 		    const struct cli_bc_inst *inst = &bb->insts[j];
 		    Value *Op0, *Op1, *Op2;
 		    // libclamav has already validated this.
-		    assert(inst->opcode < OP_INVALID && "Invalid opcode");
+		    assert(inst->opcode < OP_BC_INVALID && "Invalid opcode");
 		    switch (inst->opcode) {
-			case OP_JMP:
-			case OP_BRANCH:
-			case OP_CALL_API:
-			case OP_CALL_DIRECT:
-			case OP_ZEXT:
-			case OP_SEXT:
-			case OP_TRUNC:
-			case OP_GEP1:
-			case OP_GEP2:
-			case OP_GEPN:
-			case OP_STORE:
-			case OP_COPY:
+			case OP_BC_JMP:
+			case OP_BC_BRANCH:
+			case OP_BC_CALL_API:
+			case OP_BC_CALL_DIRECT:
+			case OP_BC_ZEXT:
+			case OP_BC_SEXT:
+			case OP_BC_TRUNC:
+			case OP_BC_GEP1:
+			case OP_BC_GEP2:
+			case OP_BC_GEPN:
+			case OP_BC_STORE:
+			case OP_BC_COPY:
 			    // these instructions represents operands differently
 			    break;
 			default:
@@ -459,23 +459,23 @@ public:
 		    }
 
 		    switch (inst->opcode) {
-			case OP_ADD:
+			case OP_BC_ADD:
 			    Store(inst->dest, Builder.CreateAdd(Op0, Op1));
 			    break;
-			case OP_SUB:
+			case OP_BC_SUB:
 			    Store(inst->dest, Builder.CreateSub(Op0, Op1));
 			    break;
-			case OP_MUL:
+			case OP_BC_MUL:
 			    Store(inst->dest, Builder.CreateMul(Op0, Op1));
 			    break;
-			case OP_UDIV:
+			case OP_BC_UDIV:
 			{
 			    Value *Bad = Builder.CreateICmpEQ(Op1, ConstantInt::get(Op1->getType(), 0));
 			    InsertVerify(Bad, Fail, FHandler, F);
 			    Store(inst->dest, Builder.CreateUDiv(Op0, Op1));
 			    break;
 			}
-			case OP_SDIV:
+			case OP_BC_SDIV:
 			{
 			    //TODO: also verify Op0 == -1 && Op1 = INT_MIN
 			    Value *Bad = Builder.CreateICmpEQ(Op1, ConstantInt::get(Op1->getType(), 0));
@@ -483,14 +483,14 @@ public:
 			    Store(inst->dest, Builder.CreateSDiv(Op0, Op1));
 			    break;
 			}
-			case OP_UREM:
+			case OP_BC_UREM:
 			{
 			    Value *Bad = Builder.CreateICmpEQ(Op1, ConstantInt::get(Op1->getType(), 0));
 			    InsertVerify(Bad, Fail, FHandler, F);
 			    Store(inst->dest, Builder.CreateURem(Op0, Op1));
 			    break;
 			}
-			case OP_SREM:
+			case OP_BC_SREM:
 			{
 			    //TODO: also verify Op0 == -1 && Op1 = INT_MIN
 			    Value *Bad = Builder.CreateICmpEQ(Op1, ConstantInt::get(Op1->getType(), 0));
@@ -498,46 +498,46 @@ public:
 			    Store(inst->dest, Builder.CreateSRem(Op0, Op1));
 			    break;
 			}
-			case OP_SHL:
+			case OP_BC_SHL:
 			    Store(inst->dest, Builder.CreateShl(Op0, Op1));
 			    break;
-			case OP_LSHR:
+			case OP_BC_LSHR:
 			    Store(inst->dest, Builder.CreateLShr(Op0, Op1));
 			    break;
-			case OP_ASHR:
+			case OP_BC_ASHR:
 			    Store(inst->dest, Builder.CreateAShr(Op0, Op1));
 			    break;
-			case OP_AND:
+			case OP_BC_AND:
 			    Store(inst->dest, Builder.CreateAnd(Op0, Op1));
 			    break;
-			case OP_OR:
+			case OP_BC_OR:
 			    Store(inst->dest, Builder.CreateOr(Op0, Op1));
 			    break;
-			case OP_XOR:
+			case OP_BC_XOR:
 			    Store(inst->dest, Builder.CreateXor(Op0, Op1));
 			    break;
-			case OP_TRUNC:
+			case OP_BC_TRUNC:
 			{
 			    Value *Src = convertOperand(func, inst, inst->u.cast.source);
 			    const Type *Ty = mapType(func->types[inst->dest]);
 			    Store(inst->dest, Builder.CreateTrunc(Src,  Ty));
 			    break;
 			}
-			case OP_ZEXT:
+			case OP_BC_ZEXT:
 			{
 			    Value *Src = convertOperand(func, inst, inst->u.cast.source);
 			    const Type *Ty = mapType(func->types[inst->dest]);
 			    Store(inst->dest, Builder.CreateZExt(Src,  Ty));
 			    break;
 			}
-			case OP_SEXT:
+			case OP_BC_SEXT:
 			{
 			    Value *Src = convertOperand(func, inst, inst->u.cast.source);
 			    const Type *Ty = mapType(func->types[inst->dest]);
 			    Store(inst->dest, Builder.CreateSExt(Src,  Ty));
 			    break;
 			}
-			case OP_BRANCH:
+			case OP_BC_BRANCH:
 			{
 			    Value *Cond = convertOperand(func, inst, inst->u.branch.condition);
 			    BasicBlock *True = BB[inst->u.branch.br_true];
@@ -549,46 +549,46 @@ public:
 			    Builder.CreateCondBr(Cond, True, False);
 			    break;
 			}
-			case OP_JMP:
+			case OP_BC_JMP:
 			{
 			    BasicBlock *Jmp = BB[inst->u.jump];
 			    Builder.CreateBr(Jmp);
 			    break;
 			}
-			case OP_RET:
+			case OP_BC_RET:
 			    Builder.CreateRet(Op0);
 			    break;
-			case OP_ICMP_EQ:
+			case OP_BC_ICMP_EQ:
 			    Store(inst->dest, Builder.CreateICmpEQ(Op0, Op1));
 			    break;
-			case OP_ICMP_NE:
+			case OP_BC_ICMP_NE:
 			    Store(inst->dest, Builder.CreateICmpNE(Op0, Op1));
 			    break;
-			case OP_ICMP_UGT:
+			case OP_BC_ICMP_UGT:
 			    Store(inst->dest, Builder.CreateICmpUGT(Op0, Op1));
 			    break;
-			case OP_ICMP_UGE:
+			case OP_BC_ICMP_UGE:
 			    Store(inst->dest, Builder.CreateICmpUGE(Op0, Op1));
 			    break;
-			case OP_ICMP_ULT:
+			case OP_BC_ICMP_ULT:
 			    Store(inst->dest, Builder.CreateICmpULT(Op0, Op1));
 			    break;
-			case OP_ICMP_ULE:
+			case OP_BC_ICMP_ULE:
 			    Store(inst->dest, Builder.CreateICmpULE(Op0, Op1));
 			    break;
-			case OP_ICMP_SGT:
+			case OP_BC_ICMP_SGT:
 			    Store(inst->dest, Builder.CreateICmpSGT(Op0, Op1));
 			    break;
-			case OP_ICMP_SGE:
+			case OP_BC_ICMP_SGE:
 			    Store(inst->dest, Builder.CreateICmpSGE(Op0, Op1));
 			    break;
-			case OP_ICMP_SLT:
+			case OP_BC_ICMP_SLT:
 			    Store(inst->dest, Builder.CreateICmpSLT(Op0, Op1));
 			    break;
-			case OP_SELECT:
+			case OP_BC_SELECT:
 			    Store(inst->dest, Builder.CreateSelect(Op0, Op1, Op2));
 			    break;
-			case OP_COPY:
+			case OP_BC_COPY:
 			{
 			    Value *Dest = Values[inst->u.binop[1]];
 			    const PointerType *PTy = cast<PointerType>(Dest->getType());
@@ -596,7 +596,7 @@ public:
 			    Builder.CreateStore(Op0, Dest);
 			    break;
 			}
-			case OP_CALL_DIRECT:
+			case OP_BC_CALL_DIRECT:
 			{
 			    Function *DestF = Functions[inst->u.ops.funcid];
 			    SmallVector<Value*, 2> args;
@@ -610,7 +610,7 @@ public:
 			    Store(inst->dest, CI);
 			    break;
 			}
-			case OP_CALL_API:
+			case OP_BC_CALL_API:
 			{
 			    assert(inst->u.ops.funcid < cli_apicall_maxapi && "APICall out of range");
 			    const struct cli_apicall *api = &cli_apicalls[inst->u.ops.funcid];
@@ -624,14 +624,14 @@ public:
 			    Store(inst->dest, Builder.CreateCall(DestF, args.begin(), args.end()));
 			    break;
 			}
-			case OP_GEP1:
+			case OP_BC_GEP1:
 			{
 			    Value *V = Values[inst->u.binop[0]];
 			    Value *Op = convertOperand(func, I32Ty, inst->u.binop[1]);
 			    Store(inst->dest, Builder.CreateGEP(V, Op));
 			    break;
 			}
-			case OP_GEP2:
+			case OP_BC_GEP2:
 			{
 			    std::vector<Value*> Idxs;
 			    Value *V = Values[inst->u.three[0]];
@@ -640,7 +640,7 @@ public:
 			    Store(inst->dest, Builder.CreateGEP(V, Idxs.begin(), Idxs.end()));
 			    break;
 			}
-			case OP_GEPN:
+			case OP_BC_GEPN:
 			{
 			    std::vector<Value*> Idxs;
 			    assert(inst->u.ops.numOps > 1);
@@ -650,7 +650,7 @@ public:
 			    Store(inst->dest, Builder.CreateGEP(V, Idxs.begin(), Idxs.end()));
 			    break;
 			}
-			case OP_STORE:
+			case OP_BC_STORE:
 			{
 			    Value *Dest = convertOperand(func, inst, inst->u.binop[1]);
 			    const Type *ETy = cast<PointerType>(Dest->getType())->getElementType();
@@ -658,7 +658,7 @@ public:
 						Dest);
 			    break;
 			}
-			case OP_LOAD:
+			case OP_BC_LOAD:
 			    Op0 = Builder.CreateLoad(Op0);
 			    Store(inst->dest, Op0);
 			    break;
@@ -858,7 +858,9 @@ int bytecode_init(void)
     if (llvm_is_multithreaded())
 	return 0;
     llvm_install_error_handler(llvm_error_handler);
+#ifdef CL_DEBUG
     sys::PrintStackTraceOnErrorSignal();
+#endif
     atexit(do_shutdown);
 
     llvm_start_multithreaded();
@@ -876,6 +878,7 @@ int cli_bytecode_init_jit(struct cli_all_bc *bcs)
     bcs->engine = new(std::nothrow) struct cli_bcengine;
     if (!bcs->engine)
 	return CL_EMEM;
+    bcs->engine->EE = 0;
     return 0;
 }
 

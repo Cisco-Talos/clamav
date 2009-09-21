@@ -420,7 +420,7 @@ static int parseLSig(struct cli_bc *bc, unsigned char *buffer)
 	return CL_EMALFDB;
     }
     bc->lsig = NULL;
-    bc->lsig = cli_strdup(buffer[1]);
+    bc->lsig = cli_strdup(buffer + 1);
     return CL_SUCCESS;
 }
 
@@ -890,26 +890,26 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	    cli_errmsg("Invalid type or operand\n");
 	    return CL_EMALFDB;
 	}
-	if (inst.opcode >= OP_INVALID) {
+	if (inst.opcode >= OP_BC_INVALID) {
 	    cli_errmsg("Invalid opcode: %u\n", inst.opcode);
 	    return CL_EMALFDB;
 	}
 
 	switch (inst.opcode) {
-	    case OP_JMP:
+	    case OP_BC_JMP:
 		inst.u.jump = readBBID(bcfunc, buffer, &offset, len, &ok);
 		break;
-	    case OP_RET:
+	    case OP_BC_RET:
 		inst.type = readNumber(buffer, &offset, len, &ok);
 		inst.u.unaryop = readOperand(bcfunc, buffer, &offset, len, &ok);
 		break;
-	    case OP_BRANCH:
+	    case OP_BC_BRANCH:
 		inst.u.branch.condition = readOperand(bcfunc, buffer, &offset, len, &ok);
 		inst.u.branch.br_true = readBBID(bcfunc, buffer, &offset, len, &ok);
 		inst.u.branch.br_false = readBBID(bcfunc, buffer, &offset, len, &ok);
 		break;
-	    case OP_CALL_API:/* fall-through */
-	    case OP_CALL_DIRECT:
+	    case OP_BC_CALL_API:/* fall-through */
+	    case OP_BC_CALL_DIRECT:
 		numOp = readFixedNumber(buffer, &offset, len, &ok, 1);
 		if (ok) {
 		    inst.u.ops.numOps = numOp;
@@ -919,7 +919,7 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 			cli_errmsg("Out of memory allocating operands\n");
 			return CL_EMALFDB;
 		    }
-		    if (inst.opcode == OP_CALL_DIRECT)
+		    if (inst.opcode == OP_BC_CALL_DIRECT)
 			inst.u.ops.funcid = readFuncID(bc, buffer, &offset, len, &ok);
 		    else
 			inst.u.ops.funcid = readAPIFuncID(bc, buffer, &offset, len, &ok);
@@ -928,9 +928,9 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		    }
 		}
 		break;
-	    case OP_ZEXT:
-	    case OP_SEXT:
-	    case OP_TRUNC:
+	    case OP_BC_ZEXT:
+	    case OP_BC_SEXT:
+	    case OP_BC_TRUNC:
 		inst.u.cast.source = readOperand(bcfunc, buffer, &offset, len, &ok);
 		inst.u.cast.mask = bcfunc->types[inst.u.cast.source];
 		if (inst.u.cast.mask == 1)
@@ -944,21 +944,21 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 		else if (inst.u.cast.mask <= 64)
 		    inst.u.cast.size = 4;
 		/* calculate mask */
-		if (inst.opcode != OP_SEXT)
+		if (inst.opcode != OP_BC_SEXT)
 		    inst.u.cast.mask = inst.u.cast.mask != 64 ?
 			(1ull<<inst.u.cast.mask)-1 :
 			~0ull;
 		break;
-	    case OP_ICMP_EQ:
-	    case OP_ICMP_NE:
-	    case OP_ICMP_UGT:
-	    case OP_ICMP_UGE:
-	    case OP_ICMP_ULT:
-	    case OP_ICMP_ULE:
-	    case OP_ICMP_SGT:
-	    case OP_ICMP_SGE:
-	    case OP_ICMP_SLE:
-	    case OP_ICMP_SLT:
+	    case OP_BC_ICMP_EQ:
+	    case OP_BC_ICMP_NE:
+	    case OP_BC_ICMP_UGT:
+	    case OP_BC_ICMP_UGE:
+	    case OP_BC_ICMP_ULT:
+	    case OP_BC_ICMP_ULE:
+	    case OP_BC_ICMP_SGT:
+	    case OP_BC_ICMP_SGE:
+	    case OP_BC_ICMP_SLE:
+	    case OP_BC_ICMP_SLT:
 		/* instruction type must be correct before readOperand! */
 		inst.type = readNumber(buffer, &offset, len, &ok);
 		/* fall-through */
@@ -1160,8 +1160,8 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 	func.numBytes = ctx->bytes;
 	memset(ctx->values+ctx->bytes-8, 0, 8);
 
-	inst.opcode = OP_CALL_DIRECT;
-	inst.interp_op = OP_CALL_DIRECT*5;
+	inst.opcode = OP_BC_CALL_DIRECT;
+	inst.interp_op = OP_BC_CALL_DIRECT*5;
 	inst.dest = func.numArgs;
 	inst.type = 0;
 	inst.u.ops.numOps = ctx->numParams;
@@ -1194,7 +1194,7 @@ void cli_bytecode_destroy(struct cli_bc *bc)
 	    for(k=0;k<BB->numInsts;k++) {
 		struct cli_bc_inst *ii = &BB->insts[k];
 		if (operand_counts[ii->opcode] > 3 ||
-		    ii->opcode == OP_CALL_DIRECT || ii->opcode == OP_CALL_API) {
+		    ii->opcode == OP_BC_CALL_DIRECT || ii->opcode == OP_BC_CALL_API) {
 		    free(ii->u.ops.ops);
 		    free(ii->u.ops.opsizes);
 		}
@@ -1251,57 +1251,57 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 	    struct cli_bc_inst *inst = &bcfunc->allinsts[j];
 	    inst->dest = map[inst->dest];
 	    switch (inst->opcode) {
-		case OP_ADD:
-		case OP_SUB:
-		case OP_MUL:
-		case OP_UDIV:
-		case OP_SDIV:
-		case OP_UREM:
-		case OP_SREM:
-		case OP_SHL:
-		case OP_LSHR:
-		case OP_ASHR:
-		case OP_AND:
-		case OP_OR:
-		case OP_XOR:
-		case OP_ICMP_EQ:
-		case OP_ICMP_NE:
-		case OP_ICMP_UGT:
-		case OP_ICMP_UGE:
-		case OP_ICMP_ULT:
-		case OP_ICMP_ULE:
-		case OP_ICMP_SGT:
-		case OP_ICMP_SGE:
-		case OP_ICMP_SLT:
-		case OP_ICMP_SLE:
-		case OP_COPY:
-		case OP_STORE:
+		case OP_BC_ADD:
+		case OP_BC_SUB:
+		case OP_BC_MUL:
+		case OP_BC_UDIV:
+		case OP_BC_SDIV:
+		case OP_BC_UREM:
+		case OP_BC_SREM:
+		case OP_BC_SHL:
+		case OP_BC_LSHR:
+		case OP_BC_ASHR:
+		case OP_BC_AND:
+		case OP_BC_OR:
+		case OP_BC_XOR:
+		case OP_BC_ICMP_EQ:
+		case OP_BC_ICMP_NE:
+		case OP_BC_ICMP_UGT:
+		case OP_BC_ICMP_UGE:
+		case OP_BC_ICMP_ULT:
+		case OP_BC_ICMP_ULE:
+		case OP_BC_ICMP_SGT:
+		case OP_BC_ICMP_SGE:
+		case OP_BC_ICMP_SLT:
+		case OP_BC_ICMP_SLE:
+		case OP_BC_COPY:
+		case OP_BC_STORE:
 		    MAP(inst->u.binop[0]);
 		    MAP(inst->u.binop[1]);
 		    break;
-		case OP_SEXT:
-		case OP_ZEXT:
-		case OP_TRUNC:
+		case OP_BC_SEXT:
+		case OP_BC_ZEXT:
+		case OP_BC_TRUNC:
 		    MAP(inst->u.cast.source);
 		    break;
-		case OP_BRANCH:
+		case OP_BC_BRANCH:
 		    MAP(inst->u.branch.condition);
 		    break;
-		case OP_JMP:
+		case OP_BC_JMP:
 		    break;
-		case OP_RET:
+		case OP_BC_RET:
 		    MAP(inst->u.unaryop);
 		    break;
-		case OP_SELECT:
+		case OP_BC_SELECT:
 		    MAP(inst->u.three[0]);
 		    MAP(inst->u.three[1]);
 		    MAP(inst->u.three[2]);
 		    break;
-		case OP_CALL_API:/* fall-through */
-		case OP_CALL_DIRECT:
+		case OP_BC_CALL_API:/* fall-through */
+		case OP_BC_CALL_DIRECT:
 		{
 		    struct cli_bc_func *target = NULL;
-		    if (inst->opcode == OP_CALL_DIRECT) {
+		    if (inst->opcode == OP_BC_CALL_DIRECT) {
 			target = &bc->funcs[inst->u.ops.funcid];
 			if (inst->u.ops.funcid > bc->num_func) {
 			    cli_errmsg("bytecode: called function out of range: %u > %u\n", inst->u.ops.funcid, bc->num_func);
@@ -1328,21 +1328,21 @@ static int cli_bytecode_prepare_interpreter(struct cli_bc *bc)
 			inst->u.ops.opsizes = NULL;
 		    for (k=0;k<inst->u.ops.numOps;k++) {
 			MAP(inst->u.ops.ops[k]);
-			if (inst->opcode == OP_CALL_DIRECT)
+			if (inst->opcode == OP_BC_CALL_DIRECT)
 			    inst->u.ops.opsizes[k] = typesize(bc, target->types[k]);
 			else
 			    inst->u.ops.opsizes[k] = 32; /*XXX*/
 		    }
 		    break;
 		}
-		case OP_LOAD:
+		case OP_BC_LOAD:
 		    MAP(inst->u.unaryop);
 		    break;
-		case OP_GEP1:
+		case OP_BC_GEP1:
 		    MAP(inst->u.binop[0]);
 		    MAP(inst->u.binop[1]);
 		    break;
-		case OP_GEP2:
+		case OP_BC_GEP2:
 		    MAP(inst->u.three[0]);
 		    MAP(inst->u.three[1]);
 		    MAP(inst->u.three[2]);

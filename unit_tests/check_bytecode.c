@@ -129,6 +129,14 @@ START_TEST (test_div0)
 }
 END_TEST
 
+START_TEST (test_lsig)
+{
+    cl_init(CL_INIT_DEFAULT);
+    runtest("input/lsig.cbc", 0, CL_EBYTECODE, 0);
+//  runtest("input/lsig.cbc", 0, CL_EBYTECODE, 1);
+}
+END_TEST
+
 Suite *test_bytecode_suite(void)
 {
     Suite *s = suite_create("bytecode");

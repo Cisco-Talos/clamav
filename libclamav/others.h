@@ -39,6 +39,7 @@
 #include "dconf.h"
 #include "libclamunrar_iface/unrar_iface.h"
 #include "regex/regex.h"
+#include "bytecode.h"
 
 /*
  * CL_FLEVEL is the signature f-level specific to the current code and
@@ -175,6 +176,9 @@ struct cl_engine {
 
     /* Used for memory pools */
     mpool_t *mempool;
+
+    /* Used for bytecode */
+    struct cli_all_bc bcs;
 };
 
 struct cl_settings {

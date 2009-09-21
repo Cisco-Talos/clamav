@@ -70,7 +70,8 @@
 #endif
 
 #include "mpool.h"
-
+#include "bytecode.h"
+#include "bytecode_priv.h"
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
 static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -1013,6 +1014,29 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     return CL_SUCCESS;
 }
 
+static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
+{
+    int rc;
+    struct cli_all_bc *bcs = &engine->bcs;
+    struct cli_bc *bc;
+    if(!(engine->dconf->bytecode & BYTECODE_ENGINE_MASK)) {
+	return CL_SUCCESS;
+    }
+    bcs->all_bcs = cli_realloc2(bcs->all_bcs, sizeof(*bcs->all_bcs)*(bcs->count+1));
+    if (!bcs->all_bcs) {
+	cli_errmsg("cli_loadcbc: Can't allocate memory for bytecode entry\n");
+	return CL_EMEM;
+    }
+    bcs->count++;
+    bc = &bcs->all_bcs[bcs->count-1];
+    rc = cli_bytecode_load(bc, fs, dbio);
+    if (rc != CL_SUCCESS) {
+	fprintf(stderr,"Unable to load %s bytecode: %s\n", dbname, cl_strerror(rc));
+	return rc;
+    }
+    return CL_SUCCESS;
+}
+
 #define FTM_TOKENS 8
 static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options, unsigned int internal, struct cli_dbio *dbio)
 {
@@ -1608,7 +1632,11 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 	    ret = cli_loadldb(fs, engine, signo, options | CL_DB_PUA_MODE, dbio, dbname);
 	else
 	    skipped = 1;
-
+    } else if(cli_strbcasestr(filename, ".cbc")) {
+	if(options & CL_DB_BYTECODE)
+	    ret = cli_loadcbc(fs, engine, signo, options, dbio, dbname);
+	else
+	    skipped = 1;
     } else if(cli_strbcasestr(dbname, ".sdb")) {
 	ret = cli_loadndb(fs, engine, signo, 1, options, dbio, dbname);
 
@@ -1782,10 +1810,17 @@ int cl_load(const char *path, struct cl_engine *engine, unsigned int *signo, uns
 	if((ret = phishing_init(engine)))
 	    return ret;
 
+    if((dboptions & CL_DB_BYTECODE) && !engine->bcs.engine && (engine->dconf->bytecode & BYTECODE_ENGINE_MASK)) {
+	if((ret = cli_bytecode_init(&engine->bcs)))
+	    return ret;
+    } else {
+	cli_dbgmsg("Bytecode engine disabled\n");
+    }
+
     engine->dboptions |= dboptions;
 
     switch(sb.st_mode & S_IFMT) {
-	case S_IFREG: 
+	case S_IFREG:
 	    ret = cli_load(path, engine, signo, dboptions, NULL);
 	    break;
 
@@ -2092,6 +2127,14 @@ int cl_engine_free(struct cl_engine *engine)
 	mpool_free(engine->mempool, metah);
     }
 
+    if(engine->dconf->bytecode & BYTECODE_ENGINE_MASK) {
+	unsigned i;
+	if (engine->bcs.all_bcs)
+	    for(i=0;i<engine->bcs.count;i++)
+		cli_bytecode_destroy(&engine->bcs.all_bcs[i]);
+	cli_bytecode_done(&engine->bcs);
+	free(engine->bcs.all_bcs);
+    }
     if(engine->dconf->phishing & PHISHING_CONF_ENGINE)
 	phishing_done(engine);
     if(engine->dconf)
@@ -2167,6 +2210,12 @@ int cl_engine_compile(struct cl_engine *engine)
     cli_freeign(engine);
     cli_dconf_print(engine->dconf);
     mpool_flush(engine->mempool);
+
+    /* Compile bytecode */
+    if((ret = cli_bytecode_prepare(&engine->bcs))) {
+	fprintf(stderr,"Unable to compile/load bytecode: %s\n", cl_strerror(ret));
+	return ret;
+    }
 
     engine->dboptions |= CL_DB_COMPILED;
     return CL_SUCCESS;
