@@ -1,3 +1,8 @@
+Mon Sep 21 22:05:38 CEST 2009 (tk)
+----------------------------------
+ * clamd: add support for DazukoFS (bb#1691)
+	  Patch from John Ogness <dazukocode*ogness.net>
+
 Fri Sep 18 20:02:06 CEST 2009 (tk)
 ----------------------------------
  * libclamav/matcher-bm.c: use mpool in BM's offset mode

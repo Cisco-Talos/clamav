@@ -82,9 +82,9 @@ am__clamd_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 	$(top_srcdir)/shared/network.h clamd.c tcpserver.c tcpserver.h \
 	localserver.c localserver.h session.c session.h thrmgr.c \
 	thrmgr.h server-th.c server.h scanner.c scanner.h others.c \
-	others.h clamuko.c clamuko.h dazukoio_compat12.c \
-	dazukoio_compat12.h dazukoio.c dazukoio.h dazuko_xp.h \
-	dazukoio_xp.h shared.h
+	others.h clamuko.c clamuko.h clamukofs.c clamukofs.h \
+	dazukoio_compat12.c dazukoio_compat12.h dazukoio.c dazukoio.h \
+	dazuko_xp.h dazukoio_xp.h dazukofs.c dazukofs.h shared.h
 @BUILD_CLAMD_TRUE@am_clamd_OBJECTS = output.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	optparser.$(OBJEXT) getopt.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	misc.$(OBJEXT) network.$(OBJEXT) \
@@ -93,7 +93,9 @@ am__clamd_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 @BUILD_CLAMD_TRUE@	thrmgr.$(OBJEXT) server-th.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	scanner.$(OBJEXT) others.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	clamuko.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	clamukofs.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	dazukoio_compat12.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	dazukofs.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	dazukoio.$(OBJEXT)
 clamd_OBJECTS = $(am_clamd_OBJECTS)
 clamd_LDADD = $(LDADD)
@@ -316,12 +318,16 @@ top_srcdir = @top_srcdir@
 @BUILD_CLAMD_TRUE@    others.h \
 @BUILD_CLAMD_TRUE@    clamuko.c \
 @BUILD_CLAMD_TRUE@    clamuko.h \
+@BUILD_CLAMD_TRUE@    clamukofs.c \
+@BUILD_CLAMD_TRUE@    clamukofs.h \
 @BUILD_CLAMD_TRUE@    dazukoio_compat12.c \
 @BUILD_CLAMD_TRUE@    dazukoio_compat12.h \
 @BUILD_CLAMD_TRUE@    dazukoio.c \
 @BUILD_CLAMD_TRUE@    dazukoio.h \
 @BUILD_CLAMD_TRUE@    dazuko_xp.h \
 @BUILD_CLAMD_TRUE@    dazukoio_xp.h \
+@BUILD_CLAMD_TRUE@    dazukofs.c \
+@BUILD_CLAMD_TRUE@    dazukofs.h \
 @BUILD_CLAMD_TRUE@    shared.h
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/shared -I$(top_srcdir)/libclamav
@@ -435,8 +441,10 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamuko.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clamukofs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dazukoio.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dazukoio_compat12.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dazukofs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/localserver.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@

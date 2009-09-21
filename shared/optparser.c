@@ -289,6 +289,8 @@ const struct clam_option clam_options[] = {
 
     { "ClamukoScanOnAccess", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "This option enables Clamuko. Dazuko needs to be already configured and\nrunning.", "no" },
 
+    { "ClamukoScannerCount", NULL, 0, TYPE_NUMBER, MATCH_NUMBER, 3, NULL, 0, OPT_CLAMD, "The number of scanner threads that will be started (DazukoFS only).\nHaving multiple scanner threads allows Clamuko to serve multiple\nprocesses simultaneously. This is particularly beneficial on SMP machines.", "3" },
+
     { "ClamukoScanOnOpen", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "Scan files when they get opened by the system.", "yes" },
 
     { "ClamukoScanOnClose", NULL, 0, TYPE_BOOL, MATCH_BOOL, -1, NULL, 0, OPT_CLAMD, "Scan files when they get closed by the system.", "yes" },

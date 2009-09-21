@@ -39,6 +39,7 @@
 #include "server.h"
 #include "others.h"
 #include "dazukoio.h"
+#include "clamukofs.h"
 #include "clamuko.h"
 
 struct dazuko_access *acc;
@@ -62,7 +63,7 @@ static void clamuko_exit(int sig)
     pthread_exit(NULL);
 }
 
-void *clamukoth(void *arg)
+static void *clamukolegacyth(void *arg)
 {
 	struct thrarg *tharg = (struct thrarg *) arg;
 	sigset_t sigset;
@@ -198,6 +199,17 @@ void *clamukoth(void *arg)
 
     /* can't be ;) */
     return NULL;
+}
+
+void *clamukoth(void *arg)
+{
+	struct stat s;
+
+    /* we use DazukoFS if /dev/dazukofs.ctrl exists and it is a
+     * character device, otherwise we use Dazuko */
+    if(stat("/dev/dazukofs.ctrl", &s) != 0) return clamukolegacyth(arg);
+    if(!S_ISCHR(s.st_mode)) return clamukolegacyth(arg);
+    return clamukofsth(arg);
 }
 
 #endif
