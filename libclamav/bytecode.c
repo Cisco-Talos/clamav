@@ -420,7 +420,9 @@ static int parseLSig(struct cli_bc *bc, unsigned char *buffer)
 	return CL_EMALFDB;
     }
     bc->lsig = NULL;
-    bc->lsig = cli_strdup(buffer + 1);
+    if (!buffer[1])
+	return CL_SUCCESS;
+    bc->lsig = cli_strdup(buffer);
     return CL_SUCCESS;
 }
 
