@@ -28,7 +28,7 @@ uint32_t cli_bcapi_test0(struct cli_bc_ctx *ctx, struct foo*, uint32_t);
 uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx, uint32_t, uint32_t);
 int32_t cli_bcapi_read(struct cli_bc_ctx *ctx, uint8_t*, int32_t);
 int32_t cli_bcapi_seek(struct cli_bc_ctx *ctx, int32_t, uint32_t);
-uint32_t cli_bcapi_debug_print_str(struct cli_bc_ctx *ctx, uint8_t*, uint32_t);
+uint32_t cli_bcapi_debug_print_str(struct cli_bc_ctx *ctx, const uint8_t*, uint32_t);
 uint32_t cli_bcapi_debug_print_uint(struct cli_bc_ctx *ctx, uint32_t, uint32_t);
 
 static uint16_t cli_tmp0[]={32, 70, 32};

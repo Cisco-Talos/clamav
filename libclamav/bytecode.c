@@ -413,6 +413,17 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer)
     return CL_SUCCESS;
 }
 
+static int parseLSig(struct cli_bc *bc, unsigned char *buffer)
+{
+    if (buffer[0] != 'L') {
+	cli_errmsg("Invalid logical signature header: %c\n", buffer[0]);
+	return CL_EMALFDB;
+    }
+    bc->lsig = NULL;
+    bc->lsig = cli_strdup(buffer[1]);
+    return CL_SUCCESS;
+}
+
 static uint16_t readTypeID(struct cli_bc *bc, unsigned char *buffer,
 			   unsigned *offset, unsigned len, char *ok)
 {
@@ -1016,6 +1027,7 @@ enum parse_state {
     PARSE_BC_TYPES,
     PARSE_BC_APIS,
     PARSE_BC_GLOBALS,
+    PARSE_BC_LSIG,
     PARSE_FUNC_HEADER,
     PARSE_BB
 };
@@ -1037,6 +1049,18 @@ int cli_bytecode_load(struct cli_bc *bc, FILE *f, struct cli_dbio *dbio)
 	switch (state) {
 	    case PARSE_BC_HEADER:
 		rc = parseHeader(bc, (unsigned char*)buffer);
+		if (rc == CL_BREAK) /* skip */ {
+		    bc->state = bc_skip;
+		    return CL_SUCCESS;
+		}
+		if (rc != CL_SUCCESS) {
+		    cli_errmsg("Error at bytecode line %u\n", row);
+		    return rc;
+		}
+		state = PARSE_BC_LSIG;
+		break;
+	    case PARSE_BC_LSIG:
+		rc = parseLSig(bc, (unsigned char*)buffer);
 		if (rc == CL_BREAK) /* skip */ {
 		    bc->state = bc_skip;
 		    return CL_SUCCESS;
@@ -1193,6 +1217,7 @@ void cli_bytecode_destroy(struct cli_bc *bc)
     free(bc->globaltys);
     if (bc->uses_apis)
 	cli_bitset_free(bc->uses_apis);
+    free(bc->lsig);
 }
 
 #define MAP(val) do { operand_t o = val; \

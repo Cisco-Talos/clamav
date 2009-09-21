@@ -55,6 +55,7 @@ struct cli_bc {
   enum bc_state state;
   uint16_t start_tid;
   struct bitset_tag *uses_apis;
+  char *lsig;
 };
 
 struct cli_all_bc {

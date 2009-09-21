@@ -53,6 +53,7 @@ enum bc_opcode {
   OP_BRANCH,
   OP_JMP,
   OP_RET,
+  OP_RET_VOID,
 
   OP_ICMP_EQ,
   OP_ICMP_NE,
@@ -83,7 +84,7 @@ static const unsigned char operand_counts[] = {
   /* TRUNC -> ZEXT */
   1, 1, 1,
   /* BRANCH, JMP, RET */
-  3, 1, 1,
+  3, 1, 1, 0,
   /* ICMP */
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
   /* SELECT */
@@ -96,6 +97,9 @@ static const unsigned char operand_counts[] = {
   2, 3, 0, 2, 1
 };
 
-#define BC_START_TID 69
+enum {
+  GLOBAL_MATCH_COUNTS = 0x8000
+};
 
+#define BC_START_TID 69
 #endif

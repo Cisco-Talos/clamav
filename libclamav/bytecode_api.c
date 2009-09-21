@@ -70,7 +70,7 @@ int32_t cli_bcapi_seek(struct cli_bc_ctx* ctx, int32_t pos, uint32_t whence)
     return off;
 }
 
-uint32_t cli_bcapi_debug_print_str(struct cli_bc_ctx *ctx, uint8_t *str, uint32_t len)
+uint32_t cli_bcapi_debug_print_str(struct cli_bc_ctx *ctx, const uint8_t *str, uint32_t len)
 {
     cli_dbgmsg("bytecode debug: %s\n", str);
     return 0;
