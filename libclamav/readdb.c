@@ -848,7 +848,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
   } while(0);
 
 #define LDB_TOKENS 67
-static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *engine, unsigned int options, const char *dbname, unsigned line, unsigned *sigs)
+static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *engine, unsigned int options, const char *dbname, unsigned line, unsigned *sigs, struct cli_bc *bc)
 {
     const char *sig, *virname, *offset, *logic;
     struct cli_ac_lsig **newtable, *lsig;
@@ -932,6 +932,7 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
 	mpool_free(engine->mempool, lsig);
 	return CL_EMEM;
     }
+    lsig->bc = bc;
     newtable[root->ac_lsigs - 1] = lsig;
     root->ac_lsigtable = newtable;
 
@@ -990,7 +991,7 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	ret = load_oneldb(buffer,
 			  engine->pua_cats && (options & CL_DB_PUA_MODE) && (options & (CL_DB_PUA_INCLUDE | CL_DB_PUA_EXCLUDE)),
 			  !!engine->ignored,
-			  engine, options, dbname, line, &sigs);
+			  engine, options, dbname, line, &sigs, NULL);
 	if (ret)
 	    break;
     }
@@ -1016,6 +1017,11 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     int rc;
     struct cli_all_bc *bcs = &engine->bcs;
     struct cli_bc *bc;
+    unsigned sigs = 0;
+
+    if((rc = cli_initroots(engine, options)))
+	return rc;
+
     if(!(engine->dconf->bytecode & BYTECODE_ENGINE_MASK)) {
 	return CL_SUCCESS;
     }
@@ -1031,10 +1037,18 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	fprintf(stderr,"Unable to load %s bytecode: %s\n", dbname, cl_strerror(rc));
 	return rc;
     }
+    sigs += 2;/* the bytecode itself and the logical sig */
     if (bc->lsig) {
 	cli_dbgmsg("Bytecode %s has logical signature: %s\n", dbname, bc->lsig);
-      	
+	rc = load_oneldb(bc->lsig, 0, 0, engine, options, dbname, 0, &sigs, bc);
+	if (rc != CL_SUCCESS) {
+	    fprintf(stderr,"Problem parsing logical signature %s for bytecode %s: %s\n",
+		    bc->lsig, dbname, cl_strerror(rc));
+	    return rc;
+	}
     }
+    if (signo)
+	*signo += sigs;
     return CL_SUCCESS;
 }
 

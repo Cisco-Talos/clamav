@@ -21,6 +21,7 @@
  */
 #define DEBUG_TYPE "clamavjit"
 #include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/BitVector.h"
 #include "llvm/CallingConv.h"
 #include "llvm/DerivedTypes.h"
 #include "llvm/Function.h"
@@ -74,6 +75,7 @@ struct cli_bcengine {
 namespace {
 
 static sys::ThreadLocal<const jmp_buf> ExceptionReturn;
+static sys::ThreadLocal<const jmp_buf> MatchCounts;
 
 void do_shutdown() {
     llvm_shutdown();
@@ -187,7 +189,7 @@ private:
     ExecutionEngine *EE;
     TargetFolder Folder;
     IRBuilder<false, TargetFolder> Builder;
-    std::vector<GlobalVariable*> globals;
+    std::vector<Value*> globals;
     Value **Values;
     FunctionPassManager &PM;
     unsigned numLocals;
@@ -234,11 +236,13 @@ private:
 	    operand &= 0x7fffffff;
 	    assert(operand < globals.size() && "Global index out of range");
 	    // Global
-	    GlobalVariable *GV = globals[operand];
-	    if (ConstantExpr *CE = dyn_cast<ConstantExpr>(GV->getInitializer())) {
-		return CE;
+	    if (GlobalVariable *GV = dyn_cast<GlobalVariable>(globals[operand])) {
+		if (ConstantExpr *CE = dyn_cast<ConstantExpr>(GV->getInitializer())) {
+		    return CE;
+		}
+		return GV;
 	    }
-	    return GV;
+	    return globals[operand];
 	}
 	// Constant
 	operand -= func->numValues;
@@ -298,11 +302,13 @@ private:
     {
         if (isa<PointerType>(Ty)) {
           Constant *idxs[2] = {
-	      ConstantInt::get(Type::getInt32Ty(Context), 0), 
+	      ConstantInt::get(Type::getInt32Ty(Context), 0),
 	      ConstantInt::get(Type::getInt32Ty(Context), components[c++])
 	  };
-          GlobalVariable *GV = globals[components[c++]];
-          return ConstantExpr::getInBoundsGetElementPtr(GV, idxs, 2);
+	  unsigned idx = components[c++];
+	  assert(idx < globals.size());
+	  GlobalVariable *GV = cast<GlobalVariable>(globals[idx]);
+	  return ConstantExpr::getInBoundsGetElementPtr(GV, idxs, 2);
         }
 	if (isa<IntegerType>(Ty)) {
 	    return ConstantInt::get(Ty, components[c++]);
@@ -354,15 +360,31 @@ public:
 	const Type *HiddenCtx = PointerType::getUnqual(Type::getInt8Ty(Context));
 
 	globals.reserve(bc->num_globals);
+	// Fake GV for __match_counts, we'll replace this with loads from ctx!
+	const Type *MatchesTy = PointerType::getUnqual(Type::getInt32Ty(Context));//uint32*
+	BitVector FakeGVs;
+	FakeGVs.resize(bc->num_globals);
+
 	for (unsigned i=0;i<bc->num_globals;i++) {
 	    const Type *Ty = mapType(bc->globaltys[i]);
 
 	    // TODO: validate number of components against type_components
 	    unsigned c = 0;
+	    GlobalVariable *GV;
+	    if (isa<PointerType>(Ty)) {
+		switch (bc->globals[i][1]) {
+		default: break;
+		case GLOBAL_MATCH_COUNTS:
+		    assert(Ty == MatchesTy);
+		    FakeGVs.set(i);
+		    globals.push_back(0);
+		    continue;
+		}
+	    }
 	    Constant *C = buildConstant(Ty, bc->globals[i], c);
-	    GlobalVariable *GV = new GlobalVariable(*M, Ty, true,
-						    GlobalValue::InternalLinkage,
-						    C, "glob"+Twine(i));
+	    GV = new GlobalVariable(*M, Ty, true,
+				    GlobalValue::InternalLinkage,
+				    C, "glob"+Twine(i));
 	    globals.push_back(GV);
 	}
 
@@ -417,6 +439,28 @@ public:
 	    }
 	    numLocals = func->numLocals;
 	    numArgs = func->numArgs;
+
+	    if (FakeGVs.any()) {
+		Argument *Ctx = F->arg_begin();
+		struct cli_bc_ctx *N = 0;
+		unsigned offset = (char*)&((struct cli_bc_ctx*)0)->lsigcnt - (char*)NULL;
+		Constant *Idx = ConstantInt::get(Type::getInt32Ty(Context), offset);
+		Value *GEP = Builder.CreateInBoundsGEP(Ctx, Idx);
+		Value *Cast = Builder.CreateBitCast(GEP, PointerType::getUnqual(MatchesTy));
+		Value *__MatchesCount = Builder.CreateLoad(Cast);
+
+		for (unsigned i=0;i<bc->num_globals;i++) {
+		    if (!FakeGVs[i])
+			continue;
+		    switch (bc->globals[i][1]) {
+			case GLOBAL_MATCH_COUNTS:
+			    Constant *C = ConstantInt::get(Type::getInt32Ty(Context), bc->globals[i][0]);
+			    globals[i] = Builder.CreateInBoundsGEP(__MatchesCount, C);
+			    break;
+		    }
+		}
+	    }
+
 	    // Generate LLVM IR for each BB
 	    for (unsigned i=0;i<func->numBB;i++) {
 		const struct cli_bc_bb *bb = &func->BB[i];
@@ -823,7 +867,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	    const struct cli_bc *bc = &bcs->all_bcs[i];
 	    if (bc->state == bc_skip)
 		continue;
-	    LLVMCodegen Codegen(bc, M, bcs->engine->compiledFunctions, EE, 
+	    LLVMCodegen Codegen(bc, M, bcs->engine->compiledFunctions, EE,
 				OurFPM, apiFuncs);
 	    if (!Codegen.generate()) {
 		errs() << MODULE << "JIT codegen failed\n";
