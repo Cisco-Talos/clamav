@@ -80,3 +80,11 @@ uint32_t cli_bcapi_debug_print_uint(struct cli_bc_ctx *ctx, uint32_t a, uint32_t
 {
     cli_dbgmsg("bytecode debug: %u\n", a);
 }
+
+/*TODO: compiler should make sure that only constants are passed here, and not
+ * pointers to arbitrary locations that may not be valid when bytecode finishes
+ * executing */
+uint32_t cli_bcapi_setvirusname(struct cli_bc_ctx* ctx, const uint8_t *name, uint32_t len)
+{
+    ctx->virname = name;
+}

@@ -318,7 +318,7 @@ int cli_checkfp(int fd, cli_ctx *ctx)
 
 int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode)
 {
- 	unsigned char *buffer, *buff, *endbl, *upt;
+        unsigned char *buffer, *buff, *endbl, *upt;
 	int ret = CL_CLEAN, type = CL_CLEAN, bytes;
 	unsigned int i, evalcnt;
 	uint32_t buffersize, length, maxpatlen, shift = 0, offset = 0;
@@ -459,10 +459,16 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 	    evalcnt = 0;
 	    evalids = 0;
 	    if(cli_ac_chklsig(troot->ac_lsigtable[i]->logic, troot->ac_lsigtable[i]->logic + strlen(troot->ac_lsigtable[i]->logic), tdata.lsigcnt[i], &evalcnt, &evalids, 0) == 1) {
-		if(ctx->virname)
-		    *ctx->virname = troot->ac_lsigtable[i]->virname;
-		ret = CL_VIRUS;
-		break;
+		if (!troot->ac_lsigtable[i]->bc) {
+		    if(ctx->virname)
+			*ctx->virname = troot->ac_lsigtable[i]->virname;
+		    ret = CL_VIRUS;
+		    break;
+		}
+		if (cli_bytecode_runlsig(&ctx->engine->bcs, troot->ac_lsigtable[i]->bc, ctx->virname, tdata.lsigcnt[i], desc) == CL_VIRUS) {
+		    ret = CL_VIRUS;
+		    break;
+		}
 	    }
 	}
 	cli_ac_freedata(&tdata);
@@ -473,10 +479,16 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 	    evalcnt = 0;
 	    evalids = 0;
 	    if(cli_ac_chklsig(groot->ac_lsigtable[i]->logic, groot->ac_lsigtable[i]->logic + strlen(groot->ac_lsigtable[i]->logic), gdata.lsigcnt[i], &evalcnt, &evalids, 0) == 1) {
-		if(ctx->virname)
-		    *ctx->virname = groot->ac_lsigtable[i]->virname;
-		ret = CL_VIRUS;
-		break;
+		if (!groot->ac_lsigtable[i]->bc) {
+		    if(ctx->virname)
+			*ctx->virname = groot->ac_lsigtable[i]->virname;
+		    ret = CL_VIRUS;
+		    break;
+		}
+		if (cli_bytecode_runlsig(&ctx->engine->bcs, groot->ac_lsigtable[i]->bc, ctx->virname, gdata.lsigcnt[i], desc) == CL_VIRUS) {
+		    ret = CL_VIRUS;
+		    break;
+		}
 	    }
 	}
 	cli_ac_freedata(&gdata);

@@ -57,6 +57,15 @@
 #ifndef LLVM_MULTITHREADED
 #error "Multithreading support must be available to LLVM!"
 #endif
+
+#ifdef HAVE_CONFIG_H
+#undef PACKAGE_BUGREPORT
+#undef PACKAGE_NAME
+#undef PACKAGE_STRING
+#undef PACKAGE_TARNAME
+#undef PACKAGE_VERSION
+#include "clamav-config.h"
+#endif
 #include "clamav.h"
 #include "clambc.h"
 #include "bytecode_priv.h"
@@ -344,7 +353,6 @@ public:
     {}
 
     bool generate() {
-	PrettyStackTraceString Trace(BytecodeID.str().c_str());
 	TypeMap = new LLVMTypeMapper(Context, bc->types + 4, bc->num_types - 5);
 
 	FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context),
@@ -602,6 +610,9 @@ public:
 			case OP_BC_RET:
 			    Builder.CreateRet(Op0);
 			    break;
+			case OP_BC_RET_VOID:
+			    Builder.CreateRetVoid();
+			    break;
 			case OP_BC_ICMP_EQ:
 			    Store(inst->dest, Builder.CreateICmpEQ(Op0, Op1));
 			    break;
@@ -651,7 +662,8 @@ public:
 			    }
 			    CallInst *CI = Builder.CreateCall(DestF, args.begin(), args.end());
 			    CI->setCallingConv(CallingConv::Fast);
-			    Store(inst->dest, CI);
+			    if (CI->getType()->getTypeID() != Type::VoidTyID)
+				Store(inst->dest, CI);
 			    break;
 			}
 			case OP_BC_CALL_API:
@@ -904,6 +916,8 @@ int bytecode_init(void)
     llvm_install_error_handler(llvm_error_handler);
 #ifdef CL_DEBUG
     sys::PrintStackTraceOnErrorSignal();
+#else
+    llvm::DisablePrettyStackTrace = true;
 #endif
     atexit(do_shutdown);
 

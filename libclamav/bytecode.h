@@ -81,6 +81,9 @@ int cli_bytecode_run(const struct cli_all_bc *bcs, const struct cli_bc *bc, stru
 void cli_bytecode_destroy(struct cli_bc *bc);
 int cli_bytecode_done(struct cli_all_bc *allbc);
 
+/* Hooks */
+int cli_bytecode_runlsig(const struct cli_all_bc *bcs, const struct cli_bc* bc, const char **virname, const uint32_t* lsigcnt, int fd);
+
 #ifdef __cplusplus
 extern "C" {
 #endif

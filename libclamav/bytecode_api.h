@@ -48,6 +48,9 @@ enum {
  * start of file */
 int32_t seek(int32_t pos, uint32_t whence);
 
+/* Set the name of the virus we have found */
+uint32_t setvirusname(const uint8_t *name, uint32_t len);
+
 uint32_t debug_print_str(const uint8_t *str, uint32_t len);
 uint32_t debug_print_uint(uint32_t a, uint32_t b);
 //const char *LogicalSignature;

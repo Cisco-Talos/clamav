@@ -882,6 +882,16 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
 	cli_errmsg("cli_loadldb: Broken logical expression or too many subsignatures\n");
 	return CL_EMALFDB;
     }
+    if (!line) {
+	/* This is a logical signature from the bytecode, we need all
+	 * subsignatures, even if not referenced from the logical expression */
+	if (subsigs > tokens_count-3) {
+	    cli_errmsg("load_oneldb: Too many subsignatures: %u (max %u)\n",
+		       subsigs, tokens_count-3);
+	    return CL_EMALFDB;
+	}
+	subsigs = tokens_count-3;
+    }
 
     /* TDB */
     memset(&tdb, 0, sizeof(tdb));
@@ -937,7 +947,7 @@ static int load_oneldb(char *buffer, int chkpua, int chkign, struct cl_engine *e
     root->ac_lsigtable = newtable;
 
     for(i = 0; i < subsigs; i++) {
-	if(i >= tokens_count) {
+	if(i+3 >= tokens_count) {
 	    cli_errmsg("cli_loadldb: Missing subsignature id %u\n", i);
 	    return CL_EMALFDB;
 	}

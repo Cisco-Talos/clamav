@@ -13,7 +13,7 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-AM_CPPFLAGS = -I$(top_srcdir)/../.. -I$(top_srcdir)/..
+AM_CPPFLAGS = -I$(top_srcdir)/../.. -I$(top_srcdir)/.. -I$(top_builddir)/../../
 ACLOCAL_AMFLAGS=-I m4
 if DEBUG_BUILD
 LLVM_CONFIG=llvm/Debug/bin/llvm-config

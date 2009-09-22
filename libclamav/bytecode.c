@@ -31,6 +31,9 @@
 #include "readdb.h"
 #include <string.h>
 
+/* TODO: we should make sure lsigcnt is never NULL, and has at least as many
+ * elements as the bytecode needs */
+static const uint32_t nomatch[64];
 struct cli_bc_ctx *cli_bytecode_context_alloc(void)
 {
     struct cli_bc_ctx *ctx = cli_malloc(sizeof(*ctx));
@@ -41,6 +44,8 @@ struct cli_bc_ctx *cli_bytecode_context_alloc(void)
     ctx->opsizes = NULL;
     ctx->fd = -1;
     ctx->off = 0;
+    ctx->lsigcnt = nomatch;
+    ctx->virname = NULL;
     return ctx;
 }
 
@@ -967,6 +972,8 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 	    default:
 		numOp = operand_counts[inst.opcode];
 		switch (numOp) {
+		    case 0:
+			break;
 		    case 1:
 			inst.u.unaryop = readOperand(bcfunc, buffer, &offset, len, &ok);
 			break;
@@ -980,7 +987,7 @@ static int parseBB(struct cli_bc *bc, unsigned func, unsigned bb, unsigned char 
 			inst.u.three[2] = readOperand(bcfunc, buffer, &offset, len, &ok);
 			break;
 		    default:
-			cli_errmsg("Opcode with too many operands: %u?\n", numOp);
+			cli_errmsg("Opcode %u with too many operands: %u?\n", inst.opcode, numOp);
 			ok = 0;
 			break;
 		}
@@ -1398,3 +1405,30 @@ int cli_bytecode_context_setfile(struct cli_bc_ctx *ctx, int fd)
     return 0;
 }
 
+int cli_bytecode_runlsig(const struct cli_all_bc *bcs, const struct cli_bc *bc, const char **virname, const uint32_t* lsigcnt, int fd)
+{
+    int ret;
+    struct cli_bc_ctx ctx;
+    memset(&ctx, 0, sizeof(ctx));
+    cli_bytecode_context_setfuncid(&ctx, bc, 0);
+    ctx.lsigcnt = lsigcnt;
+    cli_bytecode_context_setfile(&ctx, fd);
+
+    cli_dbgmsg("Running bytecode for logical signature match\n");
+    ret = cli_bytecode_run(bcs, bc, &ctx);
+    if (ret != CL_SUCCESS) {
+	cli_warnmsg("Bytcode failed to run: %s\n", cl_strerror(ret));
+	return CL_SUCCESS;
+    }
+    if (ctx.virname) {
+	cli_dbgmsg("Bytecode found virus: %s\n", ctx.virname);
+	if (virname)
+	    *virname = ctx.virname;
+	cli_bytecode_context_clear(&ctx);
+	return CL_VIRUS;
+    }
+    ret = cli_bytecode_context_getresult_int(&ctx);
+    cli_dbgmsg("Bytecode returned code: %u\n", ret);
+    cli_bytecode_context_clear(&ctx);
+    return CL_SUCCESS;
+}
