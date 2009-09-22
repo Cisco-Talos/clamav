@@ -49,7 +49,8 @@
 #define FREEPOISON 0xde
 #endif
 
-/* #define DEBUGMPOOL /\* DO NOT define *\/ */
+/* #define DEBUGMPOOL */
+/* #define EXIT_ON_FLUSH */
 #ifdef DEBUGMPOOL
 #define spam(...) cli_warnmsg( __VA_ARGS__)
 #else
@@ -58,247 +59,127 @@ static inline void spam(const char *fmt, ...) { fmt = fmt; } /* gcc STFU */
 
 #include "mpool.h"
 
-/* #define MIN_FRAGSIZE 4096	/\* 1m2.282s *\/ */
-/* #define MIN_FRAGSIZE 8192	/\* 0m46.652s *\/ */
-/* #define MIN_FRAGSIZE 16384	/\* 0m8.365s *\/ */
-/* #define MIN_FRAGSIZE 32768	/\* 0m3.788s *\/ */
-/* #define MIN_FRAGSIZE 65536	/\* 0m2.759s *\/ */
-/* #define MIN_FRAGSIZE 131072	/\* 0m2.445s *\/ */
-#define MIN_FRAGSIZE 262144	/* 0m2.343s */
-/* #define MIN_FRAGSIZE 524288	/\* 0m2.387s *\/ */
-/* #define MIN_FRAGSIZE 1048576	/\* 0m2.392s *\/ */
-/* #define MIN_FRAGSIZE 2097152	/\* 0m2.402s *\/ */
-/* #define MIN_FRAGSIZE 99688128 */
+#define MIN_FRAGSIZE 262144
 
 #if SIZEOF_VOID_P==8
 static const unsigned int fragsz[] = {
-16, /* 34660 */
-24, /* 99132 */
-32, /* 935424 */
-40, /* 20825 */
-48, /* 7338 */
-56, /* 536414 */
-64, /* 2853 */
-72, /* 2355 */
-80, /* 3701 */
-88, /* 2665 */
-96, /* 3719 */
-104, /* 3739 */
-112, /* 4104 */
-120, /* 5151 */
-128, /* 25576 */
-136, /* 4340 */
-144, /* 4308 */
-152, /* 12219 */
-160, /* 18013 */
-168, /* 329 */
-176, /* 343 */
-184, /* 207 */
-192, /* 227 */
-200, /* 169 */
-208, /* 188 */
-216, /* 231 */
-224, /* 175 */
-232, /* 154 */
-240, /* 179 */
-248, /* 140 */
-256, /* 141 */
-264, /* 142 */
-272, /* 163 */
-280, /* 125 */
-288, /* 142 */
-296, /* 102 */
-304, /* 96 */
-312, /* 67 */
-320, /* 15 */
-328, /* 21 */
-336, /* 21 */
-344, /* 12 */
-352, /* 11 */
-360, /* 6 */
-368, /* 15 */
-376, /* 5 */
-384, /* 5 */
-392, /* 4 */
-400, /* 3 */
-408, /* 8 */
-416, /* 5 */
-424, /* 4 */
-432, /* 4 */
-440, /* 3 */
-456, /* 1 */
-464, /* 8 */
-472, /* 3 */
-488, /* 1 */
-496, /* 4 */
-504, /* 3 */
-512, /* 1 */
-520, /* 1 */
-528, /* 6 */
-536, /* 2 */
-544, /* 1 */
-560, /* 4 */
-576, /* 2 */
-592, /* 10 */
-616, /* 2 */
-624, /* 6 */
-656, /* 1 */
-680, /* 1 */
-704, /* 1 */
-720, /* 1 */
-776, /* 1 */
-2056, /* 8545 */
-63504, /* 9 */
-144760, /* 1 */
-507976, /* 9 */
-525800, /* 1 */
-1051032, /* (0) */
-2097152
-/* ^^ This shouldn't be reached but it's a good fall back
- * MAX_ALLOCATION is 184549376 but that's really not need here */
+/* SIZE        PERM    TEMP    ACT! */
+     16, /*    7631    7189 USE/POW2 */
+     24, /*   81785     114      USE */
+     32, /* 1099428      78 USE/POW2 */
+     40, /*   22466      69      USE */
+     48, /*    7438      37      USE */
+     56, /*    5567      32      USE */
+     64, /*    2801      31 USE/POW2 */
+     72, /*  610137      29      USE */
+     80, /*    3579      28      USE */
+     88, /*    2603      28      USE */
+     96, /*    3535      27      USE */
+    104, /*    3669      24      USE */
+    112, /*    3897      23      USE */
+    120, /*    5105      22      USE */
+    128, /*    3097      22 USE/POW2 */
+    136, /*    3977      21      USE */
+    144, /*   32225      21      USE */
+    152, /*   12384      20      USE */
+    160, /*   17258      20      USE */
+    176, /*     504      20      USE */
+    192, /*     324      20      USE */
+    216, /*     363      20      USE */
+    240, /*     478      19      USE */
+    256, /*     516      19 USE/POW2 */
+    288, /*     249      19      USE */
+    312, /*     741      18      USE */
+    336, /*      47      18      USE */
+    512, /*       1      18     POW2 */
+   1024, /*       0      17     POW2 */
+   2048, /*       0      16     POW2 */
+   2056, /*   11408      16      USE */
+   4096, /*       0      16     POW2 */
+   8192, /*       0      14     POW2 */
+   8736, /*       1      12      USE */
+  10240, /*       1      11      USE */
+  16384, /*       0       8     POW2 */
+  20536, /*       1       7      USE */
+  33704, /*       1       6      USE */
+  37312, /*       1       5      USE */
+  43800, /*       1       3      USE */
+  63504, /*       9       3      USE */
+  65536, /*       0       3     POW2 */
+  89800, /*       1       2      USE */
+ 102624, /*       1       1      USE */
+ 131072, /*       0       1     POW2 */
+ 147296, /*       1       1      USE */
+ 262144, /*       0       1     POW2 */
+ 369280, /*       1       0      USE */
+ 507976, /*       9       0      USE */
+ 525976, /*       1       0      USE */
+1048576, /*       0       0 USE/POW2 */
+ /* MAX_ALLOCATION is 184549376 but that's really not need here */
 };
 
 #else
 
 static const unsigned int fragsz[] = {
-8, /* 2268 */
-12, /* 32386 */
-16, /* 59865 */
-20, /* 58019 */
-24, /* 789268 */
-28, /* 127523 */
-32, /* 539890 */
-36, /* 11729 */
-40, /* 1840 */
-44, /* 5492 */
-48, /* 1662 */
-52, /* 3855 */
-56, /* 1781 */
-60, /* 990 */
-64, /* 984 */
-68, /* 1370 */
-72, /* 1923 */
-76, /* 1778 */
-80, /* 1076 */
-84, /* 1591 */
-88, /* 2084 */
-92, /* 23812 */
-96, /* 1873 */
-100, /* 1863 */
-104, /* 1923 */
-108, /* 2177 */
-112, /* 1724 */
-116, /* 3424 */
-120, /* 2098 */
-124, /* 1308 */
-128, /* 2291 */
-132, /* 2032 */
-136, /* 2825 */
-140, /* 1477 */
-144, /* 1594 */
-148, /* 10617 */
-152, /* 2696 */
-156, /* 15313 */
-160, /* 182 */
-164, /* 144 */
-168, /* 197 */
-172, /* 144 */
-176, /* 118 */
-180, /* 85 */
-184, /* 121 */
-188, /* 105 */
-192, /* 84 */
-196, /* 85 */
-200, /* 97 */
-204, /* 90 */
-208, /* 149 */
-212, /* 83 */
-216, /* 75 */
-220, /* 98 */
-224, /* 83 */
-228, /* 73 */
-232, /* 114 */
-236, /* 63 */
-240, /* 75 */
-244, /* 65 */
-248, /* 72 */
-252, /* 67 */
-256, /* 69 */
-260, /* 73 */
-264, /* 93 */
-268, /* 69 */
-272, /* 56 */
-276, /* 68 */
-280, /* 71 */
-284, /* 72 */
-288, /* 61 */
-292, /* 41 */
-296, /* 53 */
-300, /* 42 */
-304, /* 37 */
-308, /* 30 */
-312, /* 9 */
-316, /* 5 */
-320, /* 6 */
-324, /* 13 */
-328, /* 13 */
-332, /* 8 */
-336, /* 5 */
-340, /* 5 */
-344, /* 3 */
-348, /* 7 */
-352, /* 1 */
-356, /* 4 */
-360, /* 14 */
-364, /* 2 */
-368, /* 3 */
-372, /* 2 */
-376, /* 4 */
-388, /* 4 */
-392, /* 3 */
-400, /* 3 */
-404, /* 3 */
-408, /* 3 */
-412, /* 2 */
-416, /* 3 */
-420, /* 1 */
-428, /* 4 */
-432, /* 1 */
-436, /* 2 */
-452, /* 2 */
-456, /* 8 */
-464, /* 1 */
-468, /* 2 */
-480, /* 1 */
-488, /* 4 */
-496, /* 1 */
-500, /* 1 */
-504, /* 1 */
-512, /* 1 */
-520, /* 6 */
-532, /* 1 */
-536, /* 1 */
-552, /* 4 */
-572, /* 3 */
-584, /* 9 */
-588, /* 1 */
-608, /* 1 */
-612, /* 1 */
-616, /* 6 */
-644, /* 1 */
-648, /* 1 */
-676, /* 1 */
-700, /* 1 */
-712, /* 1 */
-768, /* 1 */
-772, /* 1 */
-1028, /* 8545 */
-63500, /* 9 */
-144752, /* 1 */
-253988, /* 9 */
-525628, /* 1 */
-1051032, /* (0) */
-2097152
+/* SIZE        PERM    TEMP    ACT! */
+      8, /*    1992    7188 USE/POW2 */
+     16, /*   49976     172 USE/POW2 */
+     24, /*  995096     121      USE */
+     32, /*  151077      68 USE/POW2 */
+     40, /*   15175      58      USE */
+     48, /*    7231      55      USE */
+     56, /*  613432      47      USE */
+     64, /*    1925      44 USE/POW2 */
+     72, /*    3192      42      USE */
+     80, /*    2782      40      USE */
+     88, /*    3524      40      USE */
+     96, /*    3395      40      USE */
+    104, /*    3593      40      USE */
+    112, /*   31850      40      USE */
+    120, /*    5260      38      USE */
+    128, /*    3231      38 USE/POW2 */
+    136, /*    4785      38      USE */
+    144, /*    3000      38      USE */
+    152, /*   13384      38      USE */
+    160, /*   14915      36      USE */
+    168, /*     485      36      USE */
+    176, /*     379      36      USE */
+    184, /*     322      36      USE */
+    192, /*     260      36      USE */
+    200, /*     410      36      USE */
+    208, /*     388      36      USE */
+    216, /*     262      36      USE */
+    224, /*     256      36      USE */
+    232, /*     475      36      USE */
+    248, /*     544      36      USE */
+    256, /*     206      36     POW2 */
+    264, /*     352      36      USE */
+    280, /*     258      36      USE */
+    296, /*     283      36      USE */
+    304, /*     308      36      USE */
+    312, /*     566      36      USE */
+    328, /*      53      36      USE */
+    376, /*      18      36      USE */
+    616, /*       7      34      USE */
+   1032, /*   11408      32      USE */
+   2048, /*       0      32     POW2 */
+   4096, /*       0      28     POW2 */
+   5456, /*       1      20      USE */
+   8192, /*       0      16     POW2 */
+  10272, /*       1      14      USE */
+  18656, /*       1      11      USE */
+  21904, /*       1       6      USE */
+  32768, /*       0       6     POW2 */
+  44864, /*       1       4      USE */
+  51240, /*       1       2      USE */
+  65536, /*       0       2     POW2 */
+ 131072, /*       0       2     POW2 */
+ 147288, /*       1       2      USE */
+ 184624, /*       1       0      USE */
+ 253992, /*       9       0      USE */
+ 262144, /*       0       0     POW2 */
+ 525752, /*       1       0      USE */
+1048576, /*       0       0 USE/POW2 */
 };
 #endif
 #define FRAGSBITS (sizeof(fragsz)/sizeof(fragsz[0]))
@@ -327,7 +208,7 @@ struct FRAG {
 };
 #define FRAG_OVERHEAD (offsetof(struct FRAG, fake))
 
-#define align_to_voidptr(size) (((size) / sizeof(void *) + ((size) % sizeof(void *) != 0)) * sizeof(void *))
+#define align_to_voidptr(size) (((size) / MAX(sizeof(void *), 8) + ((size) % MAX(sizeof(void *), 8) != 0)) * MAX(sizeof(void *), 8))
 #define mpool_roundup(size) (FRAG_OVERHEAD + align_to_voidptr(size))
 
 static unsigned int align_to_pagesize(struct MP *mp, unsigned int size) {
@@ -359,7 +240,7 @@ struct MP *mpool_create() {
   memset(mpool_p, ALLOCPOISON, sz);
 #endif
   memcpy(mpool_p, &mp, sizeof(mp));
-  spam("Map created @ %p->%p - size %u out of %u\n", mpool_p, (char *)mpool_p + mp.mpm.size, mp.mpm.usize, mp.mpm.size);
+  spam("Map created @%p->%p - size %u out of %u - voidptr=%u\n", mpool_p, (char *)mpool_p + mp.mpm.size, mp.mpm.usize, mp.mpm.size, SIZEOF_VOID_P);
   return mpool_p;
 }
 
@@ -380,32 +261,40 @@ void mpool_destroy(struct MP *mp) {
   memset(mp, FREEPOISON, mpmsize + align_to_voidptr(sizeof(*mp)));
 #endif
   munmap((void *)mp, mpmsize + align_to_voidptr(sizeof(*mp)));
-  spam("Map destroyed @ %p\n", mp);
+  spam("Map destroyed @%p\n", mp);
 }
 
 void mpool_flush(struct MP *mp) {
-  size_t used = 0, mused;
-  struct MPMAP *mpm_next = mp->mpm.next, *mpm;
+    size_t used = 0, mused;
+    struct MPMAP *mpm_next = mp->mpm.next, *mpm;
 
-  while((mpm = mpm_next)) {
-    mpm_next = mpm->next;
-#ifdef CL_DEBUG
-    memset((char *)mpm + align_to_pagesize(mp, mpm->usize), FREEPOISON, mpm->size - align_to_pagesize(mp, mpm->usize));
+#ifdef EXIT_ON_FLUSH
+    exit(0);
 #endif
-    munmap((char *)mpm + align_to_pagesize(mp, mpm->usize), mpm->size - align_to_pagesize(mp, mpm->usize));
-    mpm->size = align_to_pagesize(mp, mpm->usize);
-    used += mpm->size;
-  }
-  mused = align_to_pagesize(mp, mp->mpm.usize + align_to_voidptr(sizeof(*mp)));
-  if (mused < mp->mpm.size) {
+
+    while((mpm = mpm_next)) {
+	mpm_next = mpm->next;
+	mused = align_to_pagesize(mp, mpm->usize);
+	if(mused < mpm->size) {
 #ifdef CL_DEBUG
-    memset((char *)&mp->mpm + mused, FREEPOISON, mp->mpm.size - mused);
+	    memset((char *)mpm + mused, FREEPOISON, mpm->size - mused);
 #endif
-    munmap((char *)&mp->mpm + mused, mp->mpm.size - mused);
-    mp->mpm.size = mused;
-  }
-  used += mp->mpm.size;
-  spam("Map flushed @ %p, in use: %lu\n", mp, used);
+	    munmap((char *)mpm + mused, mpm->size - mused);
+	    mpm->size = mused;
+	}
+	used += mpm->size;
+    }
+
+    mused = align_to_pagesize(mp, mp->mpm.usize + align_to_voidptr(sizeof(*mp)));
+    if (mused < mp->mpm.size + align_to_voidptr(sizeof(*mp))) {
+#ifdef CL_DEBUG
+	memset((char *)mp + mused, FREEPOISON, mp->mpm.size + align_to_voidptr(sizeof(*mp)) - mused);
+#endif
+	munmap((char *)mp + mused, mp->mpm.size + align_to_voidptr(sizeof(*mp)) - mused);
+	mp->mpm.size = mused - align_to_voidptr(sizeof(*mp));
+    }
+    used += mp->mpm.size;
+    spam("Map flushed @%p, in use: %lu\n", mp, used);
 }
 
 int mpool_getstats(const struct cl_engine *eng, size_t *used, size_t *total)
@@ -443,7 +332,7 @@ void *mpool_malloc(struct MP *mp, size_t size) {
 
   /* Case 1: We have a free'd frag */
   if((f = mp->avail[sbits])) {
-    spam("malloc %p size %u (freed)\n", f, mpool_roundup(size));
+    spam("malloc @%p size %u (freed)\n", f, align_to_voidptr(size + FRAG_OVERHEAD));
     mp->avail[sbits] = f->u.next;
     f->u.sbits = sbits;
 #ifdef CL_DEBUG
@@ -462,7 +351,7 @@ void *mpool_malloc(struct MP *mp, size_t size) {
   while(mpm) {
     if(mpm->size - mpm->usize >= needed) {
       f = (struct FRAG *)((char *)mpm + mpm->usize);
-      spam("malloc %p size %u (hole)\n", f, mpool_roundup(size));
+      spam("malloc @%p size %u (hole)\n", f, align_to_voidptr(size + FRAG_OVERHEAD));
       mpm->usize += needed;
       f->u.sbits = sbits;
 #ifdef CL_DEBUG
@@ -493,7 +382,7 @@ void *mpool_malloc(struct MP *mp, size_t size) {
   mpm->next = mp->mpm.next;
   mp->mpm.next = mpm;
   f = (struct FRAG *)((char *)mpm + align_to_voidptr(sizeof(*mpm)));
-  spam("malloc %p size %u (new map)\n", f, mpool_roundup(size));
+  spam("malloc @%p size %u (new map)\n", f, align_to_voidptr(size + FRAG_OVERHEAD));
   f->u.sbits = sbits;
 #ifdef CL_DEBUG
   f->magic = MPOOLMAGIC;
@@ -514,7 +403,7 @@ void mpool_free(struct MP *mp, void *ptr) {
   sbits = f->u.sbits;
   f->u.next = mp->avail[sbits];
   mp->avail[sbits] = f;
-  spam("free @ %p\n", f);
+  spam("free @%p\n", f);
 }
 
 void *mpool_calloc(struct MP *mp, size_t nmemb, size_t size) {
@@ -533,14 +422,16 @@ void *mpool_realloc(struct MP *mp, void *ptr, size_t size) {
   void *new_ptr;
   if (!ptr) return mpool_malloc(mp, size);
 
-  spam("realloc @ %p (size %u -> %u))\n", f, from_bits(f->u.sbits), size);
   if(!size || !(csize = from_bits(f->u.sbits))) {
     cli_errmsg("mpool_realloc(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
     return NULL;
   }
   csize -= FRAG_OVERHEAD;
-  if (csize >= size && (!f->u.sbits || from_bits(f->u.sbits-1)-FRAG_OVERHEAD < size))
+  if (csize >= size && (!f->u.sbits || from_bits(f->u.sbits-1)-FRAG_OVERHEAD < size)) {
+    spam("free @%p\n", f);
+    spam("malloc @%p size %u (self)\n", f, align_to_voidptr(size + FRAG_OVERHEAD));
     return ptr;
+  }
   if (!(new_ptr = mpool_malloc(mp, size)))
     return NULL;
   memcpy(new_ptr, ptr, csize <= size ? csize : size);
@@ -549,25 +440,11 @@ void *mpool_realloc(struct MP *mp, void *ptr, size_t size) {
 }
 
 void *mpool_realloc2(struct MP *mp, void *ptr, size_t size) {
-  struct FRAG *f = (struct FRAG *)((char *)ptr - FRAG_OVERHEAD);
-  unsigned int csize;
-  void *new_ptr;
-
-  if (!ptr) return mpool_malloc(mp, size);
-
-  spam("realloc @ %p (size %u -> %u))\n", f, from_bits(f->u.sbits), size);
-  if(!size || !(csize = from_bits(f->u.sbits))) {
-    cli_errmsg("mpool_realloc2(): Attempt to allocate %lu bytes. Please report to http://bugs.clamav.net\n", (unsigned long int) size);
+    void *new_ptr = mpool_realloc(mp, ptr, size);
+    if(new_ptr)
+	return new_ptr;
     mpool_free(mp, ptr);
     return NULL;
-  }
-  csize -= FRAG_OVERHEAD;
-  if (csize >= size && (!f->u.sbits || from_bits(f->u.sbits-1)-FRAG_OVERHEAD < size))
-    return ptr;
-  if ((new_ptr = mpool_malloc(mp, size)))
-    memcpy(new_ptr, ptr, csize);
-  mpool_free(mp, ptr);
-  return new_ptr;
 }
 
 unsigned char *cli_mpool_hex2str(mpool_t *mp, const unsigned char *hex) {
