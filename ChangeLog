@@ -1,3 +1,7 @@
+Wed Sep 23 03:19:53 CEST 2009 (acab)
+------------------------------------
+ * libclamav/mpool.c: update frag sizes, small cleanup
+
 Mon Sep 21 22:05:38 CEST 2009 (tk)
 ----------------------------------
  * clamd: add support for DazukoFS (bb#1691)
