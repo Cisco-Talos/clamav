@@ -223,14 +223,14 @@ int main(int argc, char **argv) {
     if(strcasecmp(pt, "No")) {
 	char myname[255];
 
-	if(!gethostname(myname, sizeof(myname))) {
+	if(((opt = optget(opts, "ReportHostname"))->enabled && strncpy(myname, opt->strarg, sizeof(myname))) || !gethostname(myname, sizeof(myname))) {
 	    myname[sizeof(myname)-1] = '\0';
 	    snprintf(xvirushdr, sizeof(xvirushdr), "clamav-milter %s at %s", get_version(), myname);
-	    xvirushdr[sizeof(xvirushdr)-1] = '\0';
-	} else {
+	} else
 	    snprintf(xvirushdr, sizeof(xvirushdr), "clamav-milter %s", get_version());
-	    xvirushdr[sizeof(xvirushdr)-1] = '\0';
-	}
+	xvirushdr[sizeof(xvirushdr)-1] = '\0';
+
+	printf("\n%s\n", xvirushdr);
 
 	descr.xxfi_flags |= SMFIF_ADDHDRS;
 

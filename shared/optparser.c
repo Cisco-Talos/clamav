@@ -387,6 +387,8 @@ const struct clam_option clam_options[] = {
 
     { "AddHeader", NULL, 0, TYPE_STRING, "^(No|Replace|Yes|Add)$", -1, "no", 0, OPT_MILTER, "If this option is set to \"Replace\" (or \"Yes\"), an \"X-Virus-Scanned\" and an\n\"X-Virus-Status\" headers will be attached to each processed message, possibly\nreplacing existing headers.\nIf it is set to Add, the X-Virus headers are added possibly on top of the\nexisting ones.\nNote that while \"Replace\" can potentially break DKIM signatures, \"Add\" may\nconfuse procmail and similar filters.", "Replace" },
 
+    { "ReportHostname", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "When AddHeader is in use, this option allows to arbitrary set the reported\nhostname. This may be desirable in order to avoid leaking internal names.\nIf unset the real machine name is used.", "my.mail.server.name" },
+
     { "Chroot", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "Chroot to the specified directory.\nChrooting is performed just after reading the config file and before\ndropping privileges.", "/newroot" },
 
     { "Whitelist", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_MILTER, "This option specifies a file which contains a list of basic POSIX regular\nexpressions. Addresses (sent to or from - see below) matching these regexes\nwill not be scanned.  Optionally each line can start with the string \"From:\"\nor \"To:\" (note: no whitespace after the colon) indicating if it is,\nrespectively, the sender or recipient that is to be whitelisted.\nIf the field is missing, \"To:\" is assumed.\nLines starting with #, : or ! are ignored.", "/etc/whitelisted_addresses" },
