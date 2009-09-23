@@ -61,6 +61,7 @@ struct cli_ac_patt {
     uint8_t depth;
     uint16_t rtype, type;
     uint32_t offdata[4], offset_min, offset_max;
+    uint32_t boundary;
 };
 
 struct cli_ac_node {
