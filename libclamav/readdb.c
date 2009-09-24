@@ -1843,7 +1843,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 		    return CL_EMEM;
 		}
 
-#if defined(C_INTERIX) || defined(C_OS2) || defined(_WIN32)
+#if defined(C_OS2) || defined(_WIN32)
 		dbstat->statdname = (char **) cli_realloc2(dbstat->statdname, dbstat->entries * sizeof(char *));
 		if(!dbstat->statdname) {
 		    cl_statfree(dbstat);
@@ -1859,7 +1859,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 		    return CL_EMEM;
 		}
 		sprintf(fname, "%s"PATHSEP"%s", dirname, dent->d_name);
-#if defined(C_INTERIX) || defined(C_OS2) || defined(_WIN32)
+#if defined(C_OS2) || defined(_WIN32)
 		dbstat->statdname[dbstat->entries - 1] = (char *) cli_malloc(strlen(dent->d_name) + 1);
 		if(!dbstat->statdname[dbstat->entries - 1]) {
 		    cl_statfree(dbstat);
@@ -1928,7 +1928,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 
 		found = 0;
 		for(i = 0; i < dbstat->entries; i++)
-#if defined(C_INTERIX) || defined(C_OS2) || defined(_WIN32)
+#if defined(C_OS2) || defined(_WIN32)
 		    if(!strcmp(dbstat->statdname[i], dent->d_name)) {
 #else
 		    if(dbstat->stattab[i].st_ino == sb.st_ino) {
@@ -1957,7 +1957,7 @@ int cl_statfree(struct cl_stat *dbstat)
 
     if(dbstat) {
 
-#if defined(C_INTERIX) || defined(C_OS2) || defined(_WIN32)
+#if defined(C_OS2) || defined(_WIN32)
 	    int i;
 
 	if(dbstat->statdname) {
