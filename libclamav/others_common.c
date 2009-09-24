@@ -364,12 +364,25 @@ int cli_filecopy(const char *src, const char *dest)
 #endif
 }
 
-#ifndef _WIN32
-static const char tmpdir[] = "/tmp";
+#ifndef P_tmpdir
+#ifdef _WIN32
+#define P_tmpdir "C:\\"
+#else
+#define P_tmpdir "/tmp"
+#endif /* _WIN32 */
+#endif /* P_tmpdir */
+
 const char *cli_gettmpdir(void) {
+	const char *tmpdir;
+    if(
+#ifdef _WIN32
+	!(tmpdir = getenv("TEMP")) && !(tmpdir = getenv("TMP"))
+#else
+	!(tmpdir = getenv("TMPDIR"))
+#endif
+    ) tmpdir = P_tmpdir;
     return tmpdir;
 }
-#endif /* _WIN32 */
 
 struct dirent_data {
     char *filename;
@@ -511,9 +524,9 @@ int cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli
 	char *pathend;
 	/* trim slashes so that dir and dir/ behave the same when
 	 * they are symlinks, and we are not following symlinks */
-	while (path[0] == '/' && path[1] == '/') path++;
+	while (path[0] == *PATHSEP && path[1] == *PATHSEP) path++;
 	pathend = path + strlen(path);
-	while (pathend > path && pathend[-1] == '/') --pathend;
+	while (pathend > path && pathend[-1] == *PATHSEP) --pathend;
 	*pathend = '\0';
     }
     if(pathchk && pathchk(path, data) == 1)
@@ -606,10 +619,10 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 		if (ret != CL_SUCCESS)
 		    break;
 	    }
-            if(!strcmp(dirname, "/"))
-		sprintf(fname, "/%s", dent->d_name);
+            if(!strcmp(dirname, PATHSEP))
+		sprintf(fname, PATHSEP"%s", dent->d_name);
 	    else
-		sprintf(fname, "%s/%s", dirname, dent->d_name);
+		sprintf(fname, "%s"PATHSEP"%s", dirname, dent->d_name);
 
 	    if(pathchk && pathchk(fname, data) == 1) {
 		free(fname);
@@ -897,3 +910,13 @@ void cli_qsort(void *basep, size_t nelems, size_t size, int (*comp)(const void *
 	}
     }
 }
+
+int cli_is_abspath(const char *path) {
+#ifdef _WIN32
+    int len = strlen(path);
+    return (len > 2 && path[0] == '\\' && path[1] == '\\') || (len > 3 && path[1] == ':' && path[2] == '\\');
+#else
+    return strlen(path) > 1 && *path == '/';
+#endif
+}
+

@@ -105,7 +105,7 @@ static int cli_untgz(int fd, const char *destdir)
 		return -1;
 	    }
 
-	    snprintf(path, pathlen, "%s/%s", destdir, name);
+	    snprintf(path, pathlen, "%s"PATHSEP"%s", destdir, name);
 	    cli_dbgmsg("cli_untgz: Unpacking %s\n", path);
 	    type = block[156];
 

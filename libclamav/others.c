@@ -778,7 +778,7 @@ int cli_rmdirs(const char *dirname)
 			    return -1;
 			}
 
-			sprintf(path, "%s/%s", dirname, dent->d_name);
+			sprintf(path, "%s"PATHSEP"%s", dirname, dent->d_name);
 
 			/* stat the file */
 			if(lstat(path, &statbuf) != -1) {

@@ -76,14 +76,14 @@ char *freshdbdir(void)
 	if((opt = optget(opts, "DatabaseDirectory"))->enabled) {
 	    if(strcmp(dbdir, opt->strarg)) {
 		    char *daily = (char *) malloc(strlen(opt->strarg) + strlen(dbdir) + 30);
-		sprintf(daily, "%s/daily.cvd", opt->strarg);
+		sprintf(daily, "%s"PATHSEP"daily.cvd", opt->strarg);
 		if(access(daily, R_OK))
-		    sprintf(daily, "%s/daily.cld", opt->strarg);
+		    sprintf(daily, "%s"PATHSEP"daily.cld", opt->strarg);
 
 		if(!access(daily, R_OK) && (d1 = cl_cvdhead(daily))) {
-		    sprintf(daily, "%s/daily.cvd", dbdir);
+		    sprintf(daily, "%s"PATHSEP"daily.cvd", dbdir);
 		    if(access(daily, R_OK))
-			sprintf(daily, "%s/daily.cld", dbdir);
+			sprintf(daily, "%s"PATHSEP"daily.cld", dbdir);
 
 		    if(!access(daily, R_OK) && (d2 = cl_cvdhead(daily))) {
 			free(daily);
@@ -133,9 +133,9 @@ void print_version(const char *dbdir)
 	return;
     }
 
-    sprintf(path, "%s/daily.cvd", pt);
+    sprintf(path, "%s"PATHSEP"daily.cvd", pt);
     if(access(path, R_OK))
-	sprintf(path, "%s/daily.cld", pt);
+	sprintf(path, "%s"PATHSEP"daily.cld", pt);
 
     if(!dbdir)
 	free(fdbdir);
@@ -281,20 +281,9 @@ int match_regex(const char *filename, const char *pattern)
 	if(cli_regcomp(&reg, pattern, flags) != 0)
 	    return 2;
 
-#if !defined(C_OS2) && !defined(C_WINDOWS)
-	if(pattern[strlen(pattern) - 1] == '/') {
-	    snprintf(fname, 511, "%s/", filename);
+	if(pattern[strlen(pattern) - 1] == *PATHSEP) {
+	    snprintf(fname, 511, "%s"PATHSEP, filename);
 	    fname[512] = 0;
-#else
-	if(pattern[strlen(pattern) - 1] == '\\') {
-	    strncpy(fname, filename, 510);
-	    fname[509]='\0';
-	    len = strlen(fname);
-	    if(fname[len - 1] != '\\') {
-		fname[len] = '\\';
-		fname[len + 1] = 0;
-	    }
-#endif
 	} else {
 	    strncpy(fname, filename, 513);
 	    fname[512]='\0';

@@ -897,7 +897,7 @@ void cli_js_output(struct parser_state *state, const char *tempdir)
 	char lastchar = '\0';
 	char filename[1024];
 
-	snprintf(filename, 1024, "%s/javascript", tempdir);
+	snprintf(filename, 1024, "%s"PATHSEP"javascript", tempdir);
 
 	buf.pos = 0;
 	buf.outfd = open(filename, O_CREAT | O_WRONLY, 0600);

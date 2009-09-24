@@ -1060,7 +1060,7 @@ int cli_unarj_extract_file(int fd, const char *dirname, arj_metadata_t *metadata
 		return CL_SUCCESS;
 	}
 	
-	snprintf(filename, 1024, "%s/file.uar", dirname);
+	snprintf(filename, 1024, "%s"PATHSEP"file.uar", dirname);
 	cli_dbgmsg("Filename: %s\n", filename);
 	metadata->ofd = open(filename, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, 0600);
 	if (metadata->ofd < 0) {

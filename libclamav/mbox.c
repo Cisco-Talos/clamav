@@ -3653,7 +3653,7 @@ rfc1341(message *m, const char *dir)
 
 	tmpdir = cli_gettmpdir();
 
-	snprintf(pdir, sizeof(pdir) - 1, "%s/clamav-partial", tmpdir);
+	snprintf(pdir, sizeof(pdir) - 1, "%s"PATHSEP"clamav-partial", tmpdir);
 
 	if((mkdir(pdir, S_IRWXU) < 0) && (errno != EEXIST)) {
 		cli_errmsg("Can't create the directory '%s'\n", pdir);
@@ -3737,7 +3737,7 @@ rfc1341(message *m, const char *dir)
 
 			sanitiseName(id);
 
-			snprintf(outname, sizeof(outname) - 1, "%s/%s", dir, id);
+			snprintf(outname, sizeof(outname) - 1, "%s"PATHSEP"%s", dir, id);
 
 			cli_dbgmsg("outname: %s\n", outname);
 
@@ -3784,7 +3784,7 @@ rfc1341(message *m, const char *dir)
 							!strcmp("..", dent->d_name))
 						continue;
 					snprintf(fullname, sizeof(fullname) - 1,
-						"%s/%s", pdir, dent->d_name);
+						"%s"PATHSEP"%s", pdir, dent->d_name);
 					dentry_idpart = strchr(dent->d_name, '_');
 
 					if(!dentry_idpart ||

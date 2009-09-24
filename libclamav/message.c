@@ -1711,7 +1711,7 @@ int messageSavePartial(message *m, const char *dir, const char *md5id, unsigned 
 
 	cli_dbgmsg("messageSavePartial\n");
 	time_val  = time(NULL);
-	snprintf(fullname, 1024, "%s/clamav-partial-%lu_%s-%u", dir, time_val, md5id, part);
+	snprintf(fullname, 1024, "%s"PATHSEP"clamav-partial-%lu_%s-%u", dir, time_val, md5id, part);
 
 	fb = messageExport(m, fullname,
 		(void *(*)(void))fileblobCreate,

@@ -180,7 +180,7 @@ cli_untar(const char *dir, int desc, unsigned int posix, cli_ctx *ctx)
 
 			strncpy(name, block, 100);
 			name[100] = '\0';
-			snprintf(fullname, sizeof(fullname)-1, "%s/tar%02u", dir, files);
+			snprintf(fullname, sizeof(fullname)-1, "%s"PATHSEP"tar%02u", dir, files);
 			fullname[sizeof(fullname)-1] = '\0';
 			fout = open(fullname, O_RDWR|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
 

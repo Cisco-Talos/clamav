@@ -78,7 +78,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
   unsigned int res=1, written=0;
 
   if(tmpd) {
-    snprintf(name, sizeof(name), "%s/zip.%03u", tmpd, *fu);
+    snprintf(name, sizeof(name), "%s"PATHSEP"zip.%03u", tmpd, *fu);
     name[sizeof(name)-1]='\0';
   } else {
     if(!(tempfile = cli_gentemp(ctx->engine->tmpdir))) return CL_EMEM;

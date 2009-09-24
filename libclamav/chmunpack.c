@@ -689,7 +689,7 @@ static int chm_decompress_stream(int fd, chm_metadata_t *metadata, const char *d
 	char filename[1024];
 	struct cab_file file;
 	
-	snprintf(filename, 1024, "%s/clamav-unchm.bin", dirname);
+	snprintf(filename, 1024, "%s"PATHSEP"clamav-unchm.bin", dirname);
 	tmpfd = open(filename, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
 	if (tmpfd<0) {
 		cli_dbgmsg("open failed for %s\n", filename);
@@ -822,7 +822,7 @@ int cli_chm_extract_file(int fd, char *dirname, chm_metadata_t *metadata, cli_ct
 		cli_dbgmsg("seek in uncompressed stream failed\n");
 		return CL_EFORMAT;
 	}
-	snprintf(filename, 1024, "%s/%lu.chm", dirname, (unsigned long int) metadata->file_offset);
+	snprintf(filename, 1024, "%s"PATHSEP"%lu.chm", dirname, (unsigned long int) metadata->file_offset);
 	metadata->ofd = open(filename, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
 	if (metadata->ofd < 0) {
 		return CL_ECREAT;

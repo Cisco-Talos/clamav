@@ -136,7 +136,7 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx)
 			return CL_EMEM;
 		    }
 
-		    sprintf(fname, "%s/%s", dirname, dent->d_name);
+		    sprintf(fname, "%s"PATHSEP"%s", dirname, dent->d_name);
 
 		    /* stat the file */
 		    if(lstat(fname, &statbuf) != -1) {
@@ -752,7 +752,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 
 	for(i = 0; i < vba_project->count; i++) {
 	    for(j = 0; (unsigned int)j < vba_project->colls[i]; j++) {
-		snprintf(vbaname, 1024, "%s/%s_%u", vba_project->dir, vba_project->name[i], j);
+		snprintf(vbaname, 1024, "%s"PATHSEP"%s_%u", vba_project->dir, vba_project->name[i], j);
 		vbaname[sizeof(vbaname)-1] = '\0';
 		fd = open(vbaname, O_RDONLY|O_BINARY);
 		if(fd == -1) continue;
@@ -786,7 +786,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 
     if(ret == CL_CLEAN && (hashcnt = uniq_get(U, "powerpoint document", 19, &hash))) {
 	while(hashcnt--) {
-	    snprintf(vbaname, 1024, "%s/%s_%u", dirname, hash, hashcnt);
+	    snprintf(vbaname, 1024, "%s"PATHSEP"%s_%u", dirname, hash, hashcnt);
 	    vbaname[sizeof(vbaname)-1] = '\0';
 	    fd = open(vbaname, O_RDONLY|O_BINARY);
 	    if (fd == -1) continue;
@@ -804,7 +804,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 
     if (ret == CL_CLEAN && (hashcnt = uniq_get(U, "worddocument", 12, &hash))) {
 	while(hashcnt--) {
-	    snprintf(vbaname, sizeof(vbaname), "%s/%s_%u", dirname, hash, hashcnt);
+	    snprintf(vbaname, sizeof(vbaname), "%s"PATHSEP"%s_%u", dirname, hash, hashcnt);
 	    vbaname[sizeof(vbaname)-1] = '\0';
 	    fd = open(vbaname, O_RDONLY|O_BINARY);
 	    if (fd == -1) continue;
@@ -851,7 +851,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
     /* Check directory for embedded OLE objects */
     hashcnt = uniq_get(U, "_1_ole10native", 14, &hash);
     while(hashcnt--) {
-	snprintf(vbaname, sizeof(vbaname), "%s/%s_%u", dirname, hash, hashcnt);
+	snprintf(vbaname, sizeof(vbaname), "%s"PATHSEP"%s_%u", dirname, hash, hashcnt);
 	vbaname[sizeof(vbaname)-1] = '\0';
 
 	fd = open(vbaname, O_RDONLY|O_BINARY);
@@ -885,7 +885,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 			ret = CL_EMEM;
 			break;
 		    }
-		    sprintf(fullname, "%s/%s", dirname, dent->d_name);
+		    sprintf(fullname, "%s"PATHSEP"%s", dirname, dent->d_name);
 
 		    /* stat the file */
 		    if(lstat(fullname, &statbuf) != -1) {
@@ -943,7 +943,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
     cli_dbgmsg("cli_scanhtml: using tempdir %s\n", tempname);
 
     html_normalise_fd(desc, tempname, NULL, ctx->dconf);
-    snprintf(fullname, 1024, "%s/nocomment.html", tempname);
+    snprintf(fullname, 1024, "%s"PATHSEP"nocomment.html", tempname);
     fd = open(fullname, O_RDONLY|O_BINARY);
     if (fd >= 0) {
 	    ret = cli_scandesc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR);
@@ -953,7 +953,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
     if(ret == CL_CLEAN && sb.st_size < 2097152) {
 	    /* limit to 2 MB, we're not interesting in scanning large files in notags form */
 	    /* TODO: don't even create notags if file is over 2 MB */
-	    snprintf(fullname, 1024, "%s/notags.html", tempname);
+	    snprintf(fullname, 1024, "%s"PATHSEP"notags.html", tempname);
 	    fd = open(fullname, O_RDONLY|O_BINARY);
 	    if(fd >= 0) {
 		    ret = cli_scandesc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR);
@@ -962,7 +962,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
     }
 
     if(ret == CL_CLEAN) {
-	    snprintf(fullname, 1024, "%s/javascript", tempname);
+	    snprintf(fullname, 1024, "%s"PATHSEP"javascript", tempname);
 	    fd = open(fullname, O_RDONLY|O_BINARY);
 	    if(fd >= 0) {
 		    ret = cli_scandesc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR);
@@ -975,7 +975,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
     }
 
     if (ret == CL_CLEAN) {
-	snprintf(fullname, 1024, "%s/rfc2397", tempname);
+	snprintf(fullname, 1024, "%s"PATHSEP"rfc2397", tempname);
 	ret = cli_scandir(fullname, ctx);
     }
 

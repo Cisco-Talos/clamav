@@ -201,9 +201,9 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
     return ret;
 
   if (n->fno)
-    snprintf(n->ofn, 1023, "%s/content.%.3u", n->dir, n->fno);
+    snprintf(n->ofn, 1023, "%s"PATHSEP"content.%.3u", n->dir, n->fno);
   else
-    snprintf(n->ofn, 1023, "%s/headers", n->dir);
+    snprintf(n->ofn, 1023, "%s"PATHSEP"headers", n->dir);
 
   n->fno++;
 

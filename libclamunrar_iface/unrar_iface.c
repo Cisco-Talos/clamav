@@ -274,7 +274,7 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
 	return UNRAR_PASSWD;
     }
 
-    snprintf(filename,1024,"%s/comments", dirname);
+    snprintf(filename,1024,"%s"PATHSEP"comments", dirname);
     if(mkdir(filename,0700)) {
 	unrar_dbgmsg("UNRAR: Unable to create comment temporary directory\n");
 	free(main_hdr);
@@ -320,7 +320,7 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
 	    unrar_dbgmsg("UNRAR: UnPack Size: 0x%.4x\n", comment_header->unpack_size);
 	    unrar_dbgmsg("UNRAR: UnPack Version: 0x%.2x\n", comment_header->unpack_ver);
 	    unrar_dbgmsg("UNRAR: Pack Method: 0x%.2x\n", comment_header->method);
-	    snprintf(filename, 1024, "%s/main.cmt", state->comment_dir);
+	    snprintf(filename, 1024, "%s"PATHSEP"main.cmt", state->comment_dir);
 	    ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, 0600);
 	    if(ofd < 0) {
 		unrar_dbgmsg("UNRAR: ERROR: Failed to open output file\n");
@@ -418,7 +418,7 @@ int unrar_extract_next_prepare(unrar_state_t *state, const char *dirname)
 	    if((comment_header->unpack_ver < 15) || (comment_header->unpack_ver > 29) || (comment_header->method > 0x30)) {
 		unrar_dbgmsg("UNRAR: Can't process file comment - skipping\n");
 	    } else {
-		snprintf(filename, 1024, "%s/%lu.cmt", state->comment_dir, state->file_count);
+		snprintf(filename, 1024, "%s"PATHSEP"%lu.cmt", state->comment_dir, state->file_count);
 		ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, 0600);
 		if(ofd < 0) {
 		    free(comment_header);
@@ -460,7 +460,7 @@ int unrar_extract_next(unrar_state_t *state, const char *dirname)
 	unrar_dbgmsg("UNRAR: Skipping file inside multi-volume solid archive\n");
 
     } else {
-	snprintf(state->filename, 1024, "%s/%lu.ura", dirname, state->file_count);
+	snprintf(state->filename, 1024, "%s"PATHSEP"%lu.ura", dirname, state->file_count);
 	ofd = open(state->filename, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, 0600);
 	if(ofd < 0) {
 	    free(state->file_header->filename);

@@ -162,7 +162,7 @@ int main(int argc, char **argv) {
 
     if((opt = optget(opts, "LogFile"))->enabled) {
 	logg_file = opt->strarg;
-	if(strlen(logg_file) < 2 || logg_file[0] != '/') {
+	if(!cli_is_abspath(logg_file)) {
 	    fprintf(stderr, "ERROR: LogFile requires full path.\n");
 	    logg_close();
 	    optfree(opts);

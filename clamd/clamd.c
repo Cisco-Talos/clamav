@@ -210,7 +210,7 @@ int main(int argc, char **argv)
     if((opt = optget(opts, "LogFile"))->enabled) {
 	char timestr[32];
 	logg_file = opt->strarg;
-	if(strlen(logg_file) < 2 || (logg_file[0] != '/' && logg_file[0] != '\\' && logg_file[1] != ':')) {
+	if(!cli_is_abspath(logg_file)) {
 	    fprintf(stderr, "ERROR: LogFile requires full path.\n");
 	    ret = 1;
 	    break;

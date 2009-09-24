@@ -666,21 +666,9 @@ fileblobInfected(const fileblob *fb)
 void
 sanitiseName(char *name)
 {
-	while(*name) {
-#ifdef	C_DARWIN
-		*name &= '\177';
-#endif
-#if	defined(MSDOS) || defined(C_OS2)
-		/*
-		 * Don't take it from this that ClamAV supports DOS, it doesn't
-		 * I don't know if spaces are legal in OS/2.
-		 */
-		if(strchr("%/*?<>|\\\"+=,;:\t ~", *name))
-#elif defined(_WIN32)
-		if(strchr("%/*?<>|\\\"+=,;:\t~", *name))
-#else
-		if(*name == '/')
-#endif
+	char c;
+	while((c = *name)) {
+		if(c!='.' && c!='_' && (c>'z' || c<'0' || (c>'9' && c<'A') || (c>'Z' && c<'a')))
 			*name = '_';
 		name++;
 	}

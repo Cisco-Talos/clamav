@@ -210,10 +210,10 @@ static int scandirs(const char *dirname, struct cl_engine *engine, const struct 
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
 		    fname = malloc(strlen(dirname) + strlen(dent->d_name) + 2);
-		    if(!strcmp(dirname, "/"))
-			sprintf(fname, "/%s", dent->d_name);
+		    if(!strcmp(dirname, PATHSEP))
+			sprintf(fname, PATHSEP"%s", dent->d_name);
 		    else
-			sprintf(fname, "%s/%s", dirname, dent->d_name);
+			sprintf(fname, "%s"PATHSEP"%s", dirname, dent->d_name);
 
 		    /* stat the file */
 		    if(lstat(fname, &statbuf) != -1) {
@@ -597,7 +597,7 @@ int scanmanager(const struct optstruct *opts)
 		ret = 56;
 	    } else {
 		for(i = strlen(file) - 1; i > 0; i--) {
-		    if(file[i] == '/')
+		    if(file[i] == *PATHSEP)
 			file[i] = 0;
 		    else
 			break;

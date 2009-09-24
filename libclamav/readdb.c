@@ -1547,7 +1547,7 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 	return CL_EOPEN;
     }
 
-    if((dbname = strrchr(filename, '/')))
+    if((dbname = strrchr(filename, *PATHSEP)))
 	dbname++;
     else
 	dbname = filename;
@@ -1668,35 +1668,35 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 	return CL_EMEM;
 
     /* try to load local.ign and daily.cvd/daily.ign first */
-    sprintf(dbfile, "%s/local.ign", dirname);
+    sprintf(dbfile, "%s"PATHSEP"local.ign", dirname);
     if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL))) {
 	free(dbfile);
 	return ret;
     }
 
-    sprintf(dbfile, "%s/daily.cld", dirname);
+    sprintf(dbfile, "%s"PATHSEP"daily.cld", dirname);
     if(access(dbfile, R_OK))
-	sprintf(dbfile, "%s/daily.cvd", dirname);
+	sprintf(dbfile, "%s"PATHSEP"daily.cvd", dirname);
     if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL))) {
 	free(dbfile);
 	return ret;
     }
 
-    sprintf(dbfile, "%s/daily.ign", dirname);
+    sprintf(dbfile, "%s"PATHSEP"daily.ign", dirname);
     if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL))) {
 	free(dbfile);
 	return ret;
     }
 
     /* try to load local.gdb next */
-    sprintf(dbfile, "%s/local.gdb", dirname);
+    sprintf(dbfile, "%s"PATHSEP"local.gdb", dirname);
     if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL))) {
 	free(dbfile);
 	return ret;
     }
 
     /* check for and load daily.cfg */
-    sprintf(dbfile, "%s/daily.cfg", dirname);
+    sprintf(dbfile, "%s"PATHSEP"daily.cfg", dirname);
     if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL))) {
 	free(dbfile);
 	return ret;
@@ -1726,7 +1726,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 		    closedir(dd);
 		    return CL_EMEM;
 		}
-		sprintf(dbfile, "%s/%s", dirname, dent->d_name);
+		sprintf(dbfile, "%s"PATHSEP"%s", dirname, dent->d_name);
 		ret = cli_load(dbfile, engine, signo, options, NULL);
 
 		if(ret) {
@@ -1858,7 +1858,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 		    closedir(dd);
 		    return CL_EMEM;
 		}
-		sprintf(fname, "%s/%s", dirname, dent->d_name);
+		sprintf(fname, "%s"PATHSEP"%s", dirname, dent->d_name);
 #if defined(C_INTERIX) || defined(C_OS2) || defined(_WIN32)
 		dbstat->statdname[dbstat->entries - 1] = (char *) cli_malloc(strlen(dent->d_name) + 1);
 		if(!dbstat->statdname[dbstat->entries - 1]) {
@@ -1922,7 +1922,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 		    return CL_EMEM;
 		}
 
-		sprintf(fname, "%s/%s", dbstat->dir, dent->d_name);
+		sprintf(fname, "%s"PATHSEP"%s", dbstat->dir, dent->d_name);
 		stat(fname, &sb);
 		free(fname);
 

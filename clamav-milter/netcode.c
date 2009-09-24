@@ -486,7 +486,7 @@ int localnets_init(struct optstruct *opts) {
 	while(opt) {
 	    char *lnetname = opt->strarg;
 	    struct LOCALNET *l;
-	    char *mask = strrchr(lnetname, '/');
+	    char *mask = strrchr(lnetname, *PATHSEP);
 
 	    if(mask) {
 		*mask='\0';

@@ -130,14 +130,14 @@ static char *makeabs(const char *basepath) {
 	logg("^Can't make room for fullpath.\n");
 	return NULL;
     }
-    if(*basepath != '/') { /* FIXME: to be unified */
+    if(!cli_is_abspath(basepath)) {
 	if(!getcwd(ret, PATH_MAX)) {
 	    logg("^Can't get absolute pathname of current working directory.\n");
 	    free(ret);
 	    return NULL;
 	}
 	namelen = strlen(ret);
-	snprintf(&ret[namelen], PATH_MAX - namelen, "/%s", basepath);
+	snprintf(&ret[namelen], PATH_MAX - namelen, PATHSEP"%s", basepath);
     } else {
 	strncpy(ret, basepath, PATH_MAX);
     }

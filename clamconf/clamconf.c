@@ -237,7 +237,7 @@ int main(int argc, char **argv)
     dir = optget(opts, "config-dir")->strarg;
     printf("Checking configuration files in %s\n", dir);
     for(i = 0; cfgfile[i].name; i++) {
-	snprintf(path, sizeof(path), "%s/%s", dir, cfgfile[i].name);
+	snprintf(path, sizeof(path), "%s"PATHSEP"%s", dir, cfgfile[i].name);
 	path[511] = 0;
 	if(access(path, R_OK)) {
 	    printf("\n%s not found\n", cfgfile[i].name);
@@ -304,7 +304,7 @@ int main(int argc, char **argv)
     printf("Database directory: %s\n", dbdir);
     flevel = cl_retflevel();
     for(i = 0; dbnames[i]; i++) {
-	snprintf(path, sizeof(path), "%s/%s", dbdir, dbnames[i]);
+	snprintf(path, sizeof(path), "%s"PATHSEP"%s", dbdir, dbnames[i]);
 	path[511] = 0;
 	if(!access(path, R_OK)) {
 	    cvd = cl_cvdhead(path);
