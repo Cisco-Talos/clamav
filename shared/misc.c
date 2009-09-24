@@ -221,7 +221,7 @@ int filecopy(const char *src, const char *dest)
 
 int daemonize(void)
 {
-#if defined(C_OS2) || defined(_WIN32)
+#ifdef _WIN32
     fputs("Background mode is not supported on your operating system\n", stderr);
     return -1;
 #else
@@ -273,9 +273,7 @@ int match_regex(const char *filename, const char *pattern)
 	regex_t reg;
 	int match, flags = REG_EXTENDED | REG_NOSUB;
 	char fname[513];
-#if defined(C_OS2) || defined(C_WINDOWS)
-	size_t len;
-
+#ifdef _WIN32
 	flags |= REG_ICASE; /* case insensitive on Windows */
 #endif
 	if(cli_regcomp(&reg, pattern, flags) != 0)

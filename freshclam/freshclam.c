@@ -203,7 +203,7 @@ int main(int argc, char **argv)
 	struct sigaction sigact;
 	struct sigaction oldact;
 #endif
-#if !defined(C_OS2) && !defined(C_WINDOWS)
+#ifndef C_WINDOWS
 	const char *dbowner;
 	struct passwd *user;
 #endif
@@ -256,7 +256,7 @@ int main(int argc, char **argv)
 #endif
     }
 
-#if !defined(C_OS2) && !defined(_WIN32)
+#ifndef _WIN32
     /* freshclam shouldn't work with root privileges */
     dbowner = optget(opts, "DatabaseOwner")->strarg;
 
@@ -398,7 +398,7 @@ int main(int argc, char **argv)
 
 	bigsleep = 24 * 3600 / checks;
 
-#if !defined(C_OS2) && !defined(_WIN32)
+#ifndef _WIN32
 	if(!optget(opts, "Foreground")->enabled) {
 	    if(daemonize() == -1) {
 		logg("!daemonize() failed\n");

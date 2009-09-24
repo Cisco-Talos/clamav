@@ -153,7 +153,7 @@ int main(int argc, char **argv)
     umask(0);
 
     /* drop privileges */
-#if (!defined(C_OS2)) && (!defined(_WIN32))
+#ifndef _WIN32
     if(geteuid() == 0 && (opt = optget(opts, "User"))->enabled) {
 	if((user = getpwnam(opt->strarg)) == NULL) {
 	    fprintf(stderr, "ERROR: Can't get information about user %s.\n", opt->strarg);
@@ -467,7 +467,7 @@ int main(int argc, char **argv)
 	closesocket(lsockets[i]);
     }
 
-#if !defined(C_OS2) && !defined(_WIN32)
+#ifndef _WIN32
     if(nlsockets && localsock) {
 	opt = optget(opts, "LocalSocket");
 	if(unlink(opt->strarg) == -1)
