@@ -39,6 +39,9 @@
 #include <errno.h>
 #include <stdio.h>
 #include <ctype.h>
+#if defined(HAVE_MMAP) && defined(HAVE_SYS_MMAN_H)
+#include <sys/mman.h>
+#endif
 
 #include "others.h"
 #include "htmlnorm.h"

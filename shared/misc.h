@@ -54,4 +54,6 @@ int daemonize(void);
 const char *get_version(void);
 int match_regex(const char *filename, const char *pattern);
 int cfg_tcpsock(const struct optstruct *opts, struct sockaddr_in *server, in_addr_t defaultbind);
+int cli_is_abspath(const char *path);
+
 #endif

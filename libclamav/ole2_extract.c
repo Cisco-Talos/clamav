@@ -34,6 +34,9 @@
 #endif
 #include <ctype.h>
 #include <stdlib.h>
+#if defined(HAVE_MMAP) && defined(HAVE_SYS_MMAN_H)
+#include <sys/mman.h>
+#endif
 #include "clamav.h"
 
 #include "cltypes.h"

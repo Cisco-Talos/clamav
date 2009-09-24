@@ -33,7 +33,6 @@ CLAMAV_PUBLIC {
 CLAMAV_PRIVATE {
   global:
     cli_gettmpdir;
-    cli_is_abspath;
     cli_strtok;
     cli_strtokenize;
     cli_cvdunpack;

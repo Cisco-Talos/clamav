@@ -37,6 +37,7 @@
 
 #include "shared/optparser.h"
 #include "shared/output.h"
+#include "shared/misc.h"
 
 #include "connpool.h"
 #include "netcode.h"

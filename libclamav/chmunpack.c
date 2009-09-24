@@ -31,6 +31,9 @@
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#if defined(HAVE_MMAP) && defined(HAVE_SYS_MMAN_H)
+#include <sys/mman.h>
+#endif
 #include <string.h>
 
 #include "others.h"

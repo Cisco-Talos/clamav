@@ -103,8 +103,11 @@ static	char	const	rcsid[] = "$Id: binhex.c,v 1.23 2007/02/12 20:46:08 njh Exp $"
 #include <stdio.h>
 #include <memory.h>
 #include <sys/stat.h>
-#include "others.h"
+#if defined(HAVE_MMAP) && defined(HAVE_SYS_MMAN_H)
+#include <sys/mman.h>
+#endif
 
+#include "others.h"
 #include "mbox.h"
 #include "binhex.h"
 

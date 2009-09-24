@@ -30,6 +30,7 @@
 #endif
 #include <string.h>
 #include <ctype.h>
+#include <netinet/in.h>
 #include "clamav.h"
 #include "others.h"
 #include "cltypes.h"

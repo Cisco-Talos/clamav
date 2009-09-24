@@ -35,6 +35,9 @@
 #if HAVE_STRING_H
 #include <string.h>
 #endif
+#if defined(HAVE_MMAP) && defined(HAVE_SYS_MMAN_H)
+#include <sys/mman.h>
+#endif
 #include <stddef.h>
 
 #include "others.h"

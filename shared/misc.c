@@ -316,3 +316,11 @@ int cfg_tcpsock(const struct optstruct *opts, struct sockaddr_in *tcpsock, in_ad
     return 0;
 }
 
+int cli_is_abspath(const char *path) {
+#ifdef _WIN32
+    int len = strlen(path);
+    return (len > 2 && path[0] == '\\' && path[1] == '\\') || (len > 3 && path[1] == ':' && path[2] == '\\');
+#else
+    return *path == '/';
+#endif
+}

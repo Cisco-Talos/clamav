@@ -39,6 +39,9 @@
 #if HAVE_STRINGS_H
 #include <strings.h>
 #endif
+#if defined(HAVE_MMAP) && defined(HAVE_SYS_MMAN_H)
+#include <sys/mman.h>
+#endif
 #include <zlib.h>
 
 #include "scanners.h"

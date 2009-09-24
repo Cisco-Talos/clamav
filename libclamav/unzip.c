@@ -35,6 +35,9 @@
 #endif
 #include <stdlib.h>
 #include <stdio.h>
+#if defined(HAVE_MMAP) && defined(HAVE_SYS_MMAN_H)
+#include <sys/mman.h>
+#endif
 
 #include <zlib.h>
 #include "inflate64.h"

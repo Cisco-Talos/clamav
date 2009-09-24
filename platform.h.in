@@ -33,7 +33,3 @@ typedef	unsigned	int	in_addr_t;
 #else
 #define PATHSEP "/"
 #endif
-
-#if defined(HAVE_MMAP) && defined(HAVE_SYS_MMAN_H)
-#include <sys/mman.h>
-#endif
