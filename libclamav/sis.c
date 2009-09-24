@@ -170,7 +170,7 @@ enum {
 #define SKIP(N) \
   if (sleft>=(N)) sleft-=(N); \
   else { \
-    if ((ssize_t)((N)-sleft)<0) { \
+    if ((N) < sleft) { \
       cli_dbgmsg("SIS: Refusing to seek back\n"); \
       free(alangs); \
       return CL_CLEAN; \

@@ -1,3 +1,7 @@
+Fri Sep 25 00:35:56 CEST 2009 (acab)
+------------------------------------
+ * libclamav/sis.c: size check fix, thanks Tomasz
+
 Fri Sep 25 00:31:29 CEST 2009 (acab)
 ------------------------------------
  * fix several problems introduced by the win32 commits
