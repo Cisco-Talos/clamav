@@ -28,9 +28,6 @@
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifndef	C_WINDOWS
-#include <netinet/in.h>
-#endif
 #include <string.h>
 #include <ctype.h>
 #include "clamav.h"

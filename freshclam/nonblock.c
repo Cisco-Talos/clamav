@@ -29,15 +29,13 @@
 #endif
 #include <string.h>
 #include <ctype.h>
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
 #include <netinet/in.h>
 #include <netdb.h>
-#endif
-#include <sys/types.h>
-#ifndef	C_WINDOWS
 #include <sys/socket.h>
 #include <sys/time.h>
 #endif
+#include <sys/types.h>
 #include <time.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -45,16 +43,6 @@
 
 #include "shared/output.h"
 #include "libclamav/clamav.h"
-
-#if	(!defined(EALREADY)) && (defined(WSAEALREADY))
-#define EALREADY	WSAEALREADY
-#endif
-#if	(!defined(EINPROGRESS)) && (defined(WSAEINPROGRESS))
-#define EINPROGRESS	WSAEINPROGRESS
-#endif
-#if	(!defined(EISCONN)) && (defined(WSAEISCONN))
-#define EISCONN	WSAEISCONN
-#endif
 
 #ifdef SO_ERROR
 

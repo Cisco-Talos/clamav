@@ -33,18 +33,6 @@
 #endif
 #include <string.h>
 
-#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
-#if HAVE_MMAP
-#if HAVE_SYS_MMAN_H
-#include <sys/mman.h>
-#else /* HAVE_SYS_MMAN_H */
-#undef HAVE_MMAP
-#endif /* HAVE_SYS_MMAN_H */
-#endif /* HAVE_MMAP */
-#else/* PACKED */
-#undef HAVE_MMAP
-#endif
-
 #include "others.h"
 #include "mspack.h"
 #include "cltypes.h"

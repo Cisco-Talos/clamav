@@ -30,18 +30,20 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/socket.h>
 #ifdef HAVE_SYS_LIMITS_H
 #include <sys/limits.h>
 #endif
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
+#ifndef _WIN32
+#include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <utime.h>
+#endif
 #include <errno.h>
 #include <dirent.h>
 #include <fcntl.h>
@@ -67,7 +69,9 @@
 struct sockaddr *mainsa = NULL;
 int mainsasz;
 unsigned long int maxstream;
+#ifndef _WIN32
 static struct sockaddr_un nixsock;
+#endif
 static struct sockaddr_in tcpsock;
 
 

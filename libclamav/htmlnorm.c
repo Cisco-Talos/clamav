@@ -40,14 +40,6 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#if HAVE_MMAP
-#if HAVE_SYS_MMAN_H
-#include <sys/mman.h>
-#else /* HAVE_SYS_MMAN_H */
-#undef HAVE_MMAP
-#endif
-#endif
-
 #include "others.h"
 #include "htmlnorm.h"
 

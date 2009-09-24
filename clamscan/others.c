@@ -36,7 +36,7 @@
 #endif
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifndef C_WINDOWS
+#ifndef _WIN32
 #include <sys/wait.h>
 #include <sys/time.h>
 #endif

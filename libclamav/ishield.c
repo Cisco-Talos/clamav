@@ -32,11 +32,6 @@
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#if HAVE_MMAP
-#ifdef HAVE_SYS_MMAN_H
-#include <sys/mman.h>
-#endif
-#endif /* HAVE_MMAP */
 #if HAVE_STRING_H
 #include <string.h>
 #endif

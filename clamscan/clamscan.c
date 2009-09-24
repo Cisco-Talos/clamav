@@ -30,9 +30,7 @@
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifdef	C_WINDOWS
-#include <fcntl.h>
-#else
+#ifndef _WIN32
 #include <sys/time.h>
 #endif
 #include <time.h>
@@ -62,14 +60,14 @@ int main(int argc, char **argv)
 	int ds, dms, ret;
 	double mb, rmb;
 	struct timeval t1, t2;
-#ifndef C_WINDOWS
 	struct timezone tz;
+#ifndef _WIN32
 	sigset_t sigset;
 #endif
 	struct optstruct *opts;
 	const struct optstruct *opt;
 
-#if !defined(C_WINDOWS) && !defined(C_BEOS)
+#if !defined(_WIN32) && !defined(C_BEOS)
     sigemptyset(&sigset);
     sigaddset(&sigset, SIGXFSZ);
     sigprocmask(SIG_SETMASK, &sigset, NULL);

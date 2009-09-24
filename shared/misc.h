@@ -20,8 +20,10 @@
 
 #ifndef __MISC_H
 #define __MISC_H
+#ifndef _WIN32
 #include <netdb.h>
 #include <netinet/in.h>
+#endif
 #include "optparser.h"
 /* Maximum filenames under various systems - njh */
 #ifndef	NAME_MAX	/* e.g. Linux */

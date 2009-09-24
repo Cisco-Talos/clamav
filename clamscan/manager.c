@@ -29,14 +29,10 @@
 #include <ctype.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#ifdef C_WINDOWS
-#include <sys/utime.h>
-#else
+#include <dirent.h>
+#ifndef _WIN32
 #include <sys/wait.h>
 #include <utime.h>
-#endif
-#ifndef C_WINDOWS
-#include <dirent.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #endif
@@ -323,7 +319,7 @@ int scanmanager(const struct optstruct *opts)
 	char *file, cwd[1024], *pua_cats = NULL;
 	const char *filename;
 	const struct optstruct *opt;
-#ifndef C_WINDOWS
+#ifndef _WIN32
 	struct rlimit rlim;
 #endif
 
@@ -457,7 +453,7 @@ int scanmanager(const struct optstruct *opts)
 	}
     }
 
-#ifndef C_WINDOWS
+#ifndef _WIN32
     if(getrlimit(RLIMIT_FSIZE, &rlim) == 0) {
 	if(rlim.rlim_cur < (rlim_t) cl_engine_get_num(engine, CL_ENGINE_MAX_FILESIZE, NULL))
 	    logg("^System limit for file size is lower than engine->maxfilesize\n");

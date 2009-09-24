@@ -301,20 +301,8 @@ static	pthread_mutex_t	tables_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 #ifdef	NEW_WORLD
-
 #include "matcher.h"
-
 #undef	PARTIAL_DIR
-
-#if HAVE_MMAP
-#if HAVE_SYS_MMAN_H
-#include <sys/mman.h>
-#else /* HAVE_SYS_MMAN_H */
-#undef HAVE_MMAP
-#endif
-#else	/*HAVE_MMAP*/
-#undef	NEW_WORLD
-#endif
 #endif
 
 #ifdef	NEW_WORLD

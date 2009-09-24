@@ -36,14 +36,6 @@
 #include <stdlib.h>
 #include "clamav.h"
 
-#if HAVE_MMAP
-#if HAVE_SYS_MMAN_H
-#include <sys/mman.h>
-#else /* HAVE_SYS_MMAN_H */
-#undef HAVE_MMAP
-#endif
-#endif
-
 #include "cltypes.h"
 #include "others.h"
 #include "ole2_extract.h"

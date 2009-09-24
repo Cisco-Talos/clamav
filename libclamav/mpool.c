@@ -35,7 +35,6 @@
 #if HAVE_STRING_H
 #include <string.h>
 #endif
-#include <sys/mman.h>
 #include <stddef.h>
 
 #include "others.h"

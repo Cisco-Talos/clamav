@@ -30,7 +30,7 @@
 #include <signal.h>
 #include <time.h>
 #include <sys/types.h>
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
 #include <sys/wait.h>
 #endif
 #include <sys/stat.h>
@@ -203,7 +203,7 @@ int main(int argc, char **argv)
 	struct sigaction sigact;
 	struct sigaction oldact;
 #endif
-#ifndef C_WINDOWS
+#ifdef HAVE_PWD_H
 	const char *dbowner;
 	struct passwd *user;
 #endif
@@ -256,7 +256,7 @@ int main(int argc, char **argv)
 #endif
     }
 
-#ifndef _WIN32
+#ifdef HAVE_PWD_H
     /* freshclam shouldn't work with root privileges */
     dbowner = optget(opts, "DatabaseOwner")->strarg;
 
@@ -419,7 +419,7 @@ int main(int argc, char **argv)
 
 	logg("#freshclam daemon %s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n", get_version());
 
-#ifdef	C_WINDOWS
+#ifdef _WIN32
 	signal(SIGINT, daemon_sighandler);
 	terminate = 0;
 #else

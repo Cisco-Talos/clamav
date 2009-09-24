@@ -43,7 +43,7 @@
 int notify(const char *cfgfile)
 {
 	char buff[20];
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
 	struct sockaddr_un server;
 #endif
 #ifdef HAVE_GETADDRINFO
@@ -66,7 +66,7 @@ int notify(const char *cfgfile)
 	return 1;
     }
 
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
     if((opt = optget(opts, "LocalSocket"))->enabled) {
 	socktype = "UNIX";
 	server.sun_family = AF_UNIX;

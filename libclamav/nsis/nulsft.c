@@ -31,12 +31,6 @@
 #include <unistd.h>
 #endif
 
-#if HAVE_MMAP
-#ifdef HAVE_SYS_MMAN_H
-#include <sys/mman.h>
-#endif
-#endif
-
 #include "others.h"
 #include "cltypes.h"
 #include "nsis_bzlib.h"

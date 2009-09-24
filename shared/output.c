@@ -34,7 +34,7 @@
 #include <time.h>
 #include <sys/stat.h>
 #include <errno.h>
-#ifndef C_WINDOWS
+#ifndef _WIN32
 #include <sys/time.h>
 #include <sys/socket.h>
 #endif

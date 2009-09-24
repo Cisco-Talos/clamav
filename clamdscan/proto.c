@@ -25,7 +25,9 @@
 /* must be first because it may define _XOPEN_SOURCE */
 #include "shared/fdpassing.h"
 #include <stdio.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -33,11 +35,13 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/types.h>
-#include <sys/socket.h>
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
+#ifndef _WIN32
 #include <arpa/inet.h>
+#include <sys/socket.h>
+#endif
 
 #include "libclamav/others.h"
 #include "shared/actions.h"

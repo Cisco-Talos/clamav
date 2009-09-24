@@ -20,10 +20,6 @@
 #include "clamav-config.h"
 #endif
 
-#ifdef	C_WINDOWS
-#define	_USE_32BIT_TIME_T	/* FIXME: mirdat.atime assumes 32bit time_t */
-#endif
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -35,7 +31,7 @@
 #include <fcntl.h>
 #include <time.h>
 
-#ifndef C_WINDOWS
+#ifndef _WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

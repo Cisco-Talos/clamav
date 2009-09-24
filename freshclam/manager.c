@@ -43,16 +43,14 @@
 #include <strings.h>
 #endif
 #include <ctype.h>
-#ifndef C_WINDOWS
+#ifndef _WIN32
 #include <netinet/in.h>
 #include <netdb.h>
 #include <arpa/inet.h>
-#endif
-#include <sys/types.h>
-#ifndef C_WINDOWS
 #include <sys/socket.h>
 #include <sys/time.h>
 #endif
+#include <sys/types.h>
 #include <time.h>
 #include <fcntl.h>
 #include <sys/stat.h>

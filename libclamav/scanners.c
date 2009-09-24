@@ -35,18 +35,7 @@
 #include <sys/param.h>
 #endif
 #include <fcntl.h>
-#ifndef	C_WINDOWS
 #include <dirent.h>
-#include <netinet/in.h>
-#endif
-
-#if HAVE_MMAP
-#if HAVE_SYS_MMAN_H
-#include <sys/mman.h>
-#else /* HAVE_SYS_MMAN_H */
-#undef HAVE_MMAP
-#endif
-#endif
 
 #define DCONF_ARCH  ctx->dconf->archive
 #define DCONF_DOC   ctx->dconf->doc
