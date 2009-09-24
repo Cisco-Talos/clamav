@@ -182,11 +182,7 @@ cli_tnef(const char *dir, int desc, cli_ctx *ctx)
 					char buffer[BUFSIZ];
 
 					if(filename)
-#ifdef	O_BINARY
 						fout = open(filename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC|O_BINARY, 0600);
-#else
-						fout = open(filename, O_WRONLY|O_CREAT|O_EXCL|O_TRUNC, 0600);
-#endif
 
 					if(fout >= 0) {
 						int count;

@@ -58,11 +58,6 @@
 #define UNZIP_PRIVATE
 #include "unzip.h"
 
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
-
-
 static int wrap_inflateinit2(void *a, int b) {
   return inflateInit2(a, b);
 }

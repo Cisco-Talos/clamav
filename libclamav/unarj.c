@@ -81,10 +81,6 @@
 #define NPT NP
 #endif
 
-#ifndef MIN
-#define MIN(a,b) ((a < b) ? a : b)
-#endif
-
 #define GARBLE_FLAG     0x01
 
 #ifndef HAVE_ATTRIB_PACKED
@@ -97,10 +93,6 @@
 
 #ifdef HAVE_PRAGMA_PACK_HPPA
 #pragma pack 1
-#endif
-
-#ifndef O_BINARY
-#define O_BINARY        0
 #endif
 
 typedef struct arj_main_hdr_tag {

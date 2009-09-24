@@ -35,8 +35,10 @@
 #endif
 #include <sys/stat.h>
 #include <fcntl.h>
-#ifndef	C_WINDOWS
+#ifdef	HAVE_PWD_H
 #include <pwd.h>
+#endif
+#ifdef HAVE_GRP_H
 #include <grp.h>
 #endif
 

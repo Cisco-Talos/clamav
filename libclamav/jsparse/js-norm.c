@@ -495,11 +495,6 @@ static int match_parameters(const yystype *tokens, const char ** param_names, si
 static const char *de_packer_3[] = {"p","a","c","k","e","r"};
 static const char *de_packer_2[] = {"p","a","c","k","e","d"};
 
-
-#ifndef MAX
-#define MAX(a, b) ((a)>(b) ? (a) : (b))
-#endif
-
 static inline char *textbuffer_done(yyscan_t scanner)
 {
 	/* free unusued memory */
@@ -1389,10 +1384,6 @@ static inline int parseId(YYSTYPE *lvalp, yyscan_t scanner)
 	scanner->state = Identifier;
 	return 0;
 }
-
-#ifndef MIN
-#define MIN(a,b) ((a)<(b) ? (a):(b))
-#endif
 
 static int parseOperator(YYSTYPE *lvalp, yyscan_t scanner)
 {

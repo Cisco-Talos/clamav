@@ -19,3 +19,18 @@
 #ifndef MAX
 #define MAX(a,b)	(((a) > (b)) ? (a) : (b))
 #endif
+
+#ifndef HAVE_IN_PORT_T
+typedef	unsigned	short	in_port_t;
+#endif
+
+#ifndef HAVE_IN_ADDR_T
+typedef	unsigned	int	in_addr_t;
+#endif
+
+#ifdef _WIN32
+#define PATHSEP "\\"
+#else
+#define PATHSEP "/"
+#endif
+

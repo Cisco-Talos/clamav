@@ -382,6 +382,7 @@ char *cli_md5file(const char *filename);
 int cli_unlink(const char *pathname);
 int cli_readn(int fd, void *buff, unsigned int count);
 int cli_writen(int fd, const void *buff, unsigned int count);
+const char *cli_gettmpdir(void);
 char *cli_gentemp(const char *dir);
 int cli_gentempfd(const char *dir, char **name, int *fd);
 unsigned int cli_rndnum(unsigned int max);

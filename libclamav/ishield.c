@@ -51,10 +51,6 @@
 #include "others.h"
 #include "ishield.h"
 
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
-
 #ifndef LONG_MAX
 #define LONG_MAX ((-1UL)>>1)
 #endif

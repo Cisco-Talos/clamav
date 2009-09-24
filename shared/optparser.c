@@ -47,7 +47,6 @@
 #include "getopt.h"
 
 #define MAXCMDOPTS  100
-#define MAX(a,b) (a > b ? a : b)
 
 #define MATCH_NUMBER "^[0-9]+$"
 #define MATCH_SIZE "^[0-9]+[KM]?$"
@@ -696,7 +695,7 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
     }
 
     if(cfgfile) {
-	if((fs = fopen(cfgfile, "rb")) == NULL) {
+	if((fs = fopen(cfgfile, "r")) == NULL) {
 	    /* don't print error messages here! */
 	    optfree(opts);
 	    return NULL;

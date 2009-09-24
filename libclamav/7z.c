@@ -37,10 +37,6 @@
 #include "7z/Archive/7z/7zIn.h"
 #include "7z/Archive/7z/7zExtract.h"
 
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
-
 static ISzAlloc allocImp = { __lzma_wrap_alloc, __lzma_wrap_free}, allocTempImp = { __lzma_wrap_alloc, __lzma_wrap_free};
 
 int cli_7unz (int fd, cli_ctx *ctx) {

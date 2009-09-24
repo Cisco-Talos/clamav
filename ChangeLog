@@ -1,3 +1,7 @@
+Thu Sep 24 16:22:25 CEST 2009 (acab)
+------------------------------------
+ * merge initial set of win32 patches from Gianluigi Tiesi <sherpya*netfarm.it>
+
 Thu Sep 24 01:14:50 CEST 2009 (acab)
 ------------------------------------
  * clamav-milter: Add option ReportHostname to mangle the host name in X headers

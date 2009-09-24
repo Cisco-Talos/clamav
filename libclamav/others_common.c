@@ -33,21 +33,18 @@
 #endif
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifndef	C_WINDOWS
+#include <dirent.h>
+#ifndef	_WIN32
 #include <sys/wait.h>
 #include <sys/time.h>
-#include <dirent.h>
 #endif
 #include <time.h>
 #include <fcntl.h>
-#ifndef	C_WINDOWS
+#ifdef	HAVE_PWD_H
 #include <pwd.h>
 #endif
 #include <errno.h>
 #include "target.h"
-#ifndef	C_WINDOWS
-#include <sys/time.h>
-#endif
 #ifdef	HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
@@ -63,10 +60,6 @@
 #include "ltdl.h"
 #include "matcher-ac.h"
 #include "md5.h"
-
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
 
 static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
 
@@ -115,9 +108,11 @@ void cli_dbgmsg_internal(const char *str, ...)
 int cli_matchregex(const char *str, const char *regex)
 {
 	regex_t reg;
-	int match;
-
-    if(cli_regcomp(&reg, regex, REG_EXTENDED | REG_NOSUB) == 0) {
+	int match, flags = REG_EXTENDED | REG_NOSUB;
+#ifdef _WIN32
+    flags |= REG_ICASE;
+#endif
+    if(cli_regcomp(&reg, regex, flags) == 0) {
 	match = (cli_regexec(&reg, str, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
 	cli_regfree(&reg);
 	return match;
@@ -337,6 +332,10 @@ int cli_writen(int fd, const void *buff, unsigned int count)
 
 int cli_filecopy(const char *src, const char *dest)
 {
+
+#ifdef _WIN32
+    return (!CopyFileA(src, dest, 0));
+#else
 	char *buffer;
 	int s, d, bytes;
 
@@ -362,7 +361,16 @@ int cli_filecopy(const char *src, const char *dest)
     close(s);
 
     return close(d);
+#endif
 }
+
+#ifndef _WIN32
+static const char tmpdir[] = "/tmp";
+const char *cli_gettmpdir(void) {
+    return tmpdir;
+}
+#endif /* _WIN32 */
+
 struct dirent_data {
     char *filename;
     const char *dirname;
@@ -742,18 +750,12 @@ char *cli_gentemp(const char *dir)
         const char *mdir;
 	unsigned char salt[16 + 32];
 	int i;
+    size_t len;
 
-    if(!dir) {
-	if((mdir = getenv("TMPDIR")) == NULL)
-#ifdef P_tmpdir
-	    mdir = P_tmpdir;
-#else
-	    mdir = "/tmp";
-#endif
-    } else
-	mdir = dir;
+    mdir = dir ? dir : cli_gettmpdir();
 
-    name = (char *) cli_calloc(strlen(mdir) + 1 + 32 + 1 + 7, sizeof(char));
+    len = strlen(mdir) + 42;
+    name = (char *) cli_calloc(len, sizeof(char));
     if(!name) {
 	cli_dbgmsg("cli_gentemp('%s'): out of memory\n", mdir);
 	return NULL;
@@ -780,12 +782,7 @@ char *cli_gentemp(const char *dir)
 	return NULL;
     }
 
-#ifdef	C_WINDOWS
-	sprintf(name, "%s\\clamav-", mdir);
-#else
-	sprintf(name, "%s/clamav-", mdir);
-#endif
-    strncat(name, tmp, 32);
+	snprintf(name, len, "%s"PATHSEP"clamav-%s", mdir, tmp);
     free(tmp);
 
     return(name);

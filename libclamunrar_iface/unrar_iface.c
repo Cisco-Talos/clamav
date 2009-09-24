@@ -50,10 +50,6 @@ static uint32_t unrar_endian_convert_32(uint32_t v)
 }
 #endif
 
-#ifndef O_BINARY
-#define O_BINARY    0
-#endif
-
 /* FIXME: allow this to be controlled from unrar_open or so */
 #ifdef RAR_DEBUG_MODE
 #define unrar_dbgmsg printf

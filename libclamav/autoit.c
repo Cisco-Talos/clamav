@@ -35,10 +35,6 @@
 #include <unistd.h>
 #endif
 
-#ifndef O_BINARY
-#define O_BINARY        0
-#endif
-
 #include "others.h"
 #include "scanners.h"
 #include "autoit.h"

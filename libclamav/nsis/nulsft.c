@@ -47,10 +47,6 @@
 #include "scanners.h"
 #include "nulsft.h" /* SHUT UP GCC -Wextra */
 
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
-
 #define EC32(x) le32_to_host(x)
 
 enum {

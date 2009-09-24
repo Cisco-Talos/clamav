@@ -63,10 +63,6 @@
 #pragma pack 1
 #endif
 
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
-
 #define CHM_CHUNK_HDR_LEN (0x14)
 
 #define CHM_CONTROL_LEN (0x18)

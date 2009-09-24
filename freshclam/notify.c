@@ -27,7 +27,7 @@
 #include <unistd.h>
 #endif
 #include <sys/types.h>
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>

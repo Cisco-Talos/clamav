@@ -47,10 +47,6 @@
 #include "libclamav/version.h"
 #include "shared/misc.h"
 
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
-
 #ifndef REPO_VERSION
 #define REPO_VERSION "exported"
 #endif
@@ -198,7 +194,9 @@ const char *filelist(const struct optstruct *opts, int *err)
 
 int filecopy(const char *src, const char *dest)
 {
-#ifdef C_DARWIN
+#ifdef _WIN32
+    return (!CopyFileA(src, dest, 0));
+#elif defined(C_DARWIN)
 	pid_t pid;
 
     /* On Mac OS X use ditto and copy resource fork, too. */

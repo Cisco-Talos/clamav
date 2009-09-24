@@ -65,11 +65,6 @@
 #pragma pack 1
 #endif
 
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
-
-
 typedef struct ole2_header_tag
 {
 	unsigned char magic[8];		/* should be: 0xd0cf11e0a1b11ae1 */

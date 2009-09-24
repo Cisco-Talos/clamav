@@ -33,21 +33,18 @@
 #endif
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifndef	C_WINDOWS
+#include <dirent.h>
+#ifndef	_WIN32
 #include <sys/wait.h>
 #include <sys/time.h>
-#include <dirent.h>
 #endif
 #include <time.h>
 #include <fcntl.h>
-#ifndef	C_WINDOWS
+#ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
 #include <errno.h>
 #include "target.h"
-#ifndef	C_WINDOWS
-#include <sys/time.h>
-#endif
 #ifdef	HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
@@ -69,15 +66,6 @@
 #include "matcher-ac.h"
 #include "default.h"
 #include "scanners.h"
-
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
-
-#ifdef        C_WINDOWS
-#undef        P_tmpdir
-#define       P_tmpdir        "C:\\WINDOWS\\TEMP"
-#endif
 
 int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
 int (*cli_unrar_extract_next_prepare)(unrar_state_t *state, const char *dirname);

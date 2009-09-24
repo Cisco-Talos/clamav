@@ -68,15 +68,6 @@
 dev_t procdev;
 #endif
 
-#ifdef C_WINDOWS
-#undef P_tmpdir
-#define P_tmpdir    "C:\\WINDOWS\\TEMP"
-#endif
-
-#ifndef	O_BINARY
-#define	O_BINARY    0
-#endif
-
 static int scanfile(const char *filename, struct cl_engine *engine, const struct optstruct *opts, unsigned int options)
 {
   int ret = 0, fd, included, printclean = 1, fsize;
@@ -272,17 +263,9 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
 
     if(optget(opts, "tempdir")->enabled) {
 	tmpdir = optget(opts, "tempdir")->strarg;
-    } else {
+    } else
 	/* check write access */
-	tmpdir = getenv("TMPDIR");
-
-	if(tmpdir == NULL)
-#ifdef P_tmpdir
-	    tmpdir = P_tmpdir;
-#else
-	    tmpdir = "/tmp";
-#endif
-    }
+	tmpdir = cli_gettmpdir();
 
     if(checkaccess(tmpdir, CLAMAVUSER, W_OK) != 1) {
 	logg("!Can't write to temporary directory\n");

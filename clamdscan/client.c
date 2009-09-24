@@ -114,7 +114,7 @@ static int isremote(const struct optstruct *opts) {
     testsock.sin_port = htons(INADDR_ANY);
     if(!(s = socket(testsock.sin_family, SOCK_STREAM, 0))) return 0;
     ret = (bind(s, (struct sockaddr *)&testsock, sizeof(testsock)) != 0);
-    close(s);
+    closesocket(s);
     return ret;
 }
 
@@ -173,7 +173,7 @@ int get_clamd_version(const struct optstruct *opts)
     recvlninit(&rcv, sockd);
 
     if(sendln(sockd, "zVERSION", 9)) {
-	close(sockd);
+	closesocket(sockd);
 	return 2;
     }
 
@@ -185,7 +185,7 @@ int get_clamd_version(const struct optstruct *opts)
 	printf("%s\n", buff);
     }
 
-    close(sockd);
+    closesocket(sockd);
     return 0;
 }
 
@@ -201,16 +201,16 @@ int reload_clamd_database(const struct optstruct *opts)
     recvlninit(&rcv, sockd);
 
     if(sendln(sockd, "zRELOAD", 8)) {
-	close(sockd);
+	closesocket(sockd);
 	return 2;
     }
 
     if(!(len = recvln(&rcv, &buff, NULL)) || len < 10 || memcmp(buff, "RELOADING", 9)) {
 	logg("!Clamd did not reload the database\n");
-	close(sockd);
+	closesocket(sockd);
 	return 2;
     }
-    close(sockd);
+    closesocket(sockd);
     return 0;
 }
 
@@ -265,7 +265,7 @@ int client(const struct optstruct *opts, int *infected)
 	    *infected = ret;
 	else
 	    errors = 1;
-	if(sockd >= 0) close(sockd);
+	if(sockd >= 0) closesocket(sockd);
     } else if(opts->filename || optget(opts, "file-list")->enabled) {
 	if(opts->filename && optget(opts, "file-list")->enabled)
 	    logg("^Only scanning files from --file-list (files passed at cmdline are ignored)\n");

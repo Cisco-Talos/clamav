@@ -48,10 +48,6 @@
 #endif
 #endif
 
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
-
 #define DCONF_ARCH  ctx->dconf->archive
 #define DCONF_DOC   ctx->dconf->doc
 #define DCONF_MAIL  ctx->dconf->mail

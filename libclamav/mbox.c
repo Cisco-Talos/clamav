@@ -136,6 +136,7 @@ typedef	enum {
 #include "phishcheck.h"
 
 #ifndef	_WIN32
+#include <sys/time.h>
 #include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -145,19 +146,7 @@ typedef	enum {
 #endif
 #endif
 
-
 #include <fcntl.h>
-#ifndef	C_WINDOWS
-#include <sys/time.h>
-#endif
-
-#ifndef HAVE_IN_PORT_T
-typedef	unsigned	short	in_port_t;
-#endif
-
-#ifndef HAVE_IN_ADDR_T
-typedef	unsigned	int	in_addr_t;
-#endif
 
 /*
  * Use CL_SCAN_PARTIAL_MESSAGE to handle messages covered by section 7.3.2 of RFC1341.
@@ -309,10 +298,6 @@ static	const	struct tableinit {
 
 #ifdef	CL_THREAD_SAFE
 static	pthread_mutex_t	tables_mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
-
-#ifndef	O_BINARY
-#define	O_BINARY	0
 #endif
 
 #ifdef	NEW_WORLD
@@ -3666,22 +3651,7 @@ rfc1341(message *m, const char *dir)
 	if(id == NULL)
 		return -1;
 
-/* do we need this for C_WINDOWS?
-#ifdef  C_CYGWIN
-	if((tmpdir = getenv("TEMP")) == (char *)NULL)
-		if((tmpdir = getenv("TMP")) == (char *)NULL)
-			if((tmpdir = getenv("TMPDIR")) == (char *)NULL)
-				tmpdir = "C:\\";
-#else
-*/
-	if((tmpdir = getenv("TMPDIR")) == (char *)NULL)
-		if((tmpdir = getenv("TMP")) == (char *)NULL)
-			if((tmpdir = getenv("TEMP")) == (char *)NULL)
-#ifdef	P_tmpdir
-				tmpdir = P_tmpdir;
-#else
-				tmpdir = "/tmp";
-#endif
+	tmpdir = cli_gettmpdir();
 
 	snprintf(pdir, sizeof(pdir) - 1, "%s/clamav-partial", tmpdir);
 

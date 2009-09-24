@@ -37,10 +37,6 @@
 #include "libclamav/cltypes.h"
 #include "libclamav/ole2_extract.h"
 
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
-
 typedef struct mac_token_tag
 {
     unsigned char token;
@@ -991,14 +987,7 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 			} else {
 			    if (S_ISREG (statbuf.st_mode)) {
 			        struct uniq *vba = NULL;
-				tmpdir = getenv ("TMPDIR");
-
-				if (tmpdir == NULL)
-#ifdef P_tmpdir
-				    tmpdir = P_tmpdir;
-#else
-				    tmpdir = "/tmp";
-#endif
+				tmpdir = cli_gettmpdir();
 
 				/* generate the temporary directory */
 				dir = cli_gentemp (tmpdir);
@@ -1007,7 +996,7 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 				    return CL_ETMPDIR;
 				}
 
-				if ((desc = open (fname, O_RDONLY)) == -1) {
+				if ((desc = open (fname, O_RDONLY|O_BINARY)) == -1) {
 				    printf ("Can't open file %s\n", fname);
 				    return 1;
 				}

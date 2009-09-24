@@ -33,10 +33,6 @@
 
 #include "tar.h"
 
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
-
 struct tar_header {
     char name[100];	/* File name */
     char mode[8];	/* File mode */

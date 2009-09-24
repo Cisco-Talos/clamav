@@ -13,6 +13,10 @@
  * Tom St Denis, tomstdenis@gmail.com, http://math.libtomcrypt.com
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 /* Start: bn_error.c */
 #include <bignum.h>
 #include "others.h"

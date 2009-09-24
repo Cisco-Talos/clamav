@@ -44,10 +44,6 @@
 #endif
 #include "blob.h"
 
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
-
 #define PPT_LZW_BUFFSIZE 8192
 #define VBA_COMPRESSION_WINDOW 4096
 #define	MIDDLE_SIZE	20

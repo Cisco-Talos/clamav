@@ -59,10 +59,6 @@
 #include "special.h"
 #include "ishield.h"
 
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
-
 #define DCONF ctx->dconf->pe
 
 #define IMAGE_DOS_SIGNATURE	    0x5a4d	    /* MZ */

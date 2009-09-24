@@ -675,11 +675,7 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 	*pt2 = 0;
 	pt2 += 2;
 
-#ifdef C_WINDOWS
-	if((pt = strrchr(pt, '\\')))
-#else
-	if((pt = strrchr(pt, '/')))
-#endif
+	if((pt = strrchr(pt, *PATHSEP)))
 	    *pt++ = 0;
 	if(!pt)
 	    pt = (char*) "NOFNAME";

@@ -45,10 +45,6 @@ static	char	const	rcsid[] = "$Id: untar.c,v 1.35 2007/02/12 20:46:09 njh Exp $";
 
 #define BLOCKSIZE 512
 
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
-
 static int
 octal(const char *str)
 {

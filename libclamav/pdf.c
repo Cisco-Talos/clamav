@@ -59,10 +59,6 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #include "scanners.h"
 #include "str.h"
 
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
-
 #ifdef	CL_DEBUG
 /*#define	SAVE_TMP	
  *Save the file being worked on in tmp */

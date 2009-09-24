@@ -48,10 +48,6 @@
 
 #include "shared/output.h"
 
-#ifndef O_BINARY
-#define O_BINARY    0
-#endif
-
 #ifndef HAVE_GETADDRINFO
 #ifndef AF_INET6
 #define AF_INET6    0xbeef  /* foo */

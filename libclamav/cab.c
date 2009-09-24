@@ -40,10 +40,6 @@
 #define EC32(x) le32_to_host(x) /* Convert little endian to host */
 #define EC16(x) le16_to_host(x)
 
-#ifndef O_BINARY
-#define O_BINARY        0
-#endif
-
 /* hard limits */
 #define CAB_FOLDER_LIMIT    5000
 #define CAB_FILE_LIMIT	    5000
