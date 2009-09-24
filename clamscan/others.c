@@ -73,7 +73,7 @@ int fileinfo(const char *filename, short i)
     }
 }
 
-#ifdef C_WINDOWS
+#ifdef _WIN32
 /* FIXME: Handle users correctly */
 int checkaccess(const char *path, const char *username, int mode)
 {

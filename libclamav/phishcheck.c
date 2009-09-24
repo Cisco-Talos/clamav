@@ -322,9 +322,6 @@ static int build_regex(regex_t* preg,const char* regex,int nosub)
 	rc = cli_regcomp(preg,regex,REG_EXTENDED|REG_ICASE|(nosub ? REG_NOSUB :0));
 	if(rc) {
 
-#ifdef	C_WINDOWS
-		cli_errmsg("Phishcheck: Error in compiling regex, disabling phishing checks\n");
-#else
 		size_t buflen =	cli_regerror(rc,preg,NULL,0);
 		char *errbuf = cli_malloc(buflen);
 
@@ -334,7 +331,6 @@ static int build_regex(regex_t* preg,const char* regex,int nosub)
 			free(errbuf);
 		} else
 			cli_errmsg("Phishcheck: Error in compiling regex, disabling phishing checks. Additionally an Out-of-memory error was encountered while generating a detailed error message\n");
-#endif
 		return 1;
 	}
 	return CL_SUCCESS;

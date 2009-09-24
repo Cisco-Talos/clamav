@@ -15,9 +15,6 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-#ifdef	_MSC_VER
-#include <winsock.h>
-#endif
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -131,9 +128,11 @@ static void help(void)
     mprintf("\n");
     mprintf("    --config-file=FILE                   read configuration from FILE.\n");
     mprintf("    --log=FILE           -l FILE         log into FILE\n");
+#ifndef _WIN32
     mprintf("    --daemon             -d              run in daemon mode\n");
     mprintf("    --pid=FILE           -p FILE         save daemon's pid in FILE\n");
     mprintf("    --user=USER          -u USER         run as USER\n");
+#endif
     mprintf("    --no-dns                             force old non-DNS verification method\n");
     mprintf("    --checks=#n          -c #n           number of checks per day, 1 <= n <= 50\n");
     mprintf("    --datadir=DIRECTORY                  download new databases into DIRECTORY\n");
@@ -239,14 +238,6 @@ int main(int argc, char **argv)
 	return 0;
     }
 
-#ifdef C_WINDOWS
-    if(!pthread_win32_process_attach_np()) {
-	mprintf("!Can't start the win32 pthreads layer\n");
-	optfree(opts);
-	return 63;
-    }
-#endif
-
     if(optget(opts, "HTTPProxyPassword")->enabled) {
 	if(stat(cfgfile, &statbuf) == -1) {
 	    logg("^Can't stat %s (critical error)\n", cfgfile);
@@ -254,7 +245,7 @@ int main(int argc, char **argv)
 	    return 56;
 	}
 
-#ifndef C_WINDOWS
+#ifndef _WIN32
 	if(statbuf.st_mode & (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH)) {
 	    logg("^Insecure permissions (for HTTPProxyPassword): %s must have no more than 0700 permissions.\n", cfgfile);
 	    optfree(opts);
@@ -263,7 +254,7 @@ int main(int argc, char **argv)
 #endif
     }
 
-#if !defined(C_OS2) && !defined(C_WINDOWS)
+#if !defined(C_OS2) && !defined(_WIN32)
     /* freshclam shouldn't work with root privileges */
     dbowner = optget(opts, "DatabaseOwner")->strarg;
 
@@ -378,18 +369,6 @@ int main(int argc, char **argv)
 	return 0;
     }
 
-#ifdef	C_WINDOWS
-    {
-	    WSADATA wsaData;
-
-	if(WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR) {
-	    logg("!Error at WSAStartup(): %d\n", WSAGetLastError());
-	    optfree(opts);
-	    return 1;
-	}
-    }
-#endif
-
     if(optget(opts, "daemon")->enabled) {
 	    int bigsleep, checks;
 #ifndef	C_WINDOWS
@@ -417,7 +396,7 @@ int main(int argc, char **argv)
 
 	bigsleep = 24 * 3600 / checks;
 
-#if !defined(C_OS2) && !defined(C_WINDOWS)
+#if !defined(C_OS2) && !defined(_WIN32)
 	if(!optget(opts, "Foreground")->enabled) {
 	    if(daemonize() == -1) {
 		logg("!daemonize() failed\n");
@@ -472,7 +451,7 @@ int main(int argc, char **argv)
 	    sigaction(SIGUSR1, &sigact, &oldact);
 #endif
 
-#ifdef	C_WINDOWS
+#ifdef	_WIN32
 	    sleep(bigsleep);
 #else   
 	    time(&wakeup);
@@ -524,15 +503,6 @@ int main(int argc, char **argv)
     }
 
     optfree(opts);
-
-#ifdef C_WINDOWS
-    WSACleanup();
-
-    if(!pthread_win32_process_detach_np()) {
-	mprintf("!Can't stop the win32 pthreads layer\n");
-	return 63;
-    }
-#endif
 
     return(ret);
 }

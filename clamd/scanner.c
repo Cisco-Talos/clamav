@@ -18,10 +18,6 @@
  *  MA 02110-1301, USA.
  */
 
-#ifdef	_MSC_VER
-#include <winsock.h>
-#endif
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -69,10 +65,6 @@
 
 #ifdef C_LINUX
 dev_t procdev; /* /proc device */
-#endif
-
-#ifndef	C_WINDOWS
-#define	closesocket(s)	close(s)
 #endif
 
 extern int progexit;

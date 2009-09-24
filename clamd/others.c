@@ -18,10 +18,6 @@
  *  MA 02110-1301, USA.
  */
 
-#ifdef	_MSC_VER
-#include <winsock.h>
-#endif
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -87,7 +83,7 @@
 #include "others.h"
 #include "misc.h"
 
-#ifdef	C_WINDOWS
+#ifdef	_WIN32
 void virusaction(const char *filename, const char *virname, const struct optstruct *opts)
 {
     if(optget(opts, "VirusEvent")->enabled)
@@ -166,7 +162,7 @@ void virusaction(const char *filename, const char *virname, const struct optstru
 	free(buffer_file);
 	free(buffer_vir);
 }
-#endif /* C_WINDOWS */
+#endif /* _WIN32 */
 
 /* Function: writen
 	Try hard to write the specified number of bytes
@@ -421,9 +417,6 @@ void fds_remove(struct fd_data *data, int fd)
     fds_unlock(data);
 }
 
-#ifndef	C_WINDOWS
-#define	closesocket(s)	close(s)
-#endif
 #define BUFFSIZE 1024
 /* Wait till data is available to be read on any of the fds,
  * read available data on all fds, and mark them as appropriate.

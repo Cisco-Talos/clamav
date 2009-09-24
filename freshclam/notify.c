@@ -15,11 +15,6 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-#ifdef        _MSC_VER
-#include <windows.h>
-#include <winsock.h>
-#endif
-
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -44,10 +39,6 @@
 #include "shared/optparser.h"
 #include "shared/output.h"
 #include "notify.h"
-
-#ifndef	C_WINDOWS
-#define	closesocket(s)	close(s)
-#endif
 
 int notify(const char *cfgfile)
 {

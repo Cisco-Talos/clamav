@@ -34,7 +34,9 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
+#endif
 #include <arpa/inet.h>
 
 #include "libclamav/others.h"

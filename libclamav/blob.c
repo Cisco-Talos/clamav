@@ -24,11 +24,6 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.64 2007/02/12 22:25:14 njh Exp $";
 #include "clamav-config.h"
 #endif
 
-#ifdef	C_WINDOWS
-#include "stdafx.h"
-#include <io.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -58,10 +53,6 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.64 2007/02/12 22:25:14 njh Exp $";
 #endif
 
 #include <assert.h>
-
-#if	defined(C_MINGW) || defined(C_WINDOWS)
-#include <windows.h>
-#endif
 
 /* Scehduled for rewite in 0.94 (bb#804). Disabling for now */
 /* #define	MAX_SCAN_SIZE	20*1024	/\* */
@@ -689,7 +680,7 @@ sanitiseName(char *name)
 		 * I don't know if spaces are legal in OS/2.
 		 */
 		if(strchr("%/*?<>|\\\"+=,;:\t ~", *name))
-#elif defined(C_WINDOWS)
+#elif defined(_WIN32)
 		if(strchr("%/*?<>|\\\"+=,;:\t~", *name))
 #else
 		if(*name == '/')

@@ -19,10 +19,6 @@
  *  MA 02110-1301, USA.
  */
 
-#ifdef	_MSC_VER
-#include <winsock.h>
-#endif
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -60,17 +56,7 @@
 #include "libclamav/readdb.h"
 #include "libclamav/cltypes.h"
 
-#ifndef	C_WINDOWS
-#define	closesocket(s)	close(s)
-#endif
-
 #define BUFFSIZE 1024
-#ifndef	FALSE
-#define FALSE (0)
-#endif
-#ifndef	TRUE
-#define TRUE (1)
-#endif
 
 int progexit = 0;
 pthread_mutex_t exit_mutex = PTHREAD_MUTEX_INITIALIZER;

@@ -130,9 +130,7 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx)
 #else
 	while((dent = readdir(dd))) {
 #endif
-#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS))
 	    if(dent->d_ino)
-#endif
 	    {
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
@@ -882,9 +880,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 #else
 	while((dent = readdir(dd))) {
 #endif
-#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS))
 	    if(dent->d_ino)
-#endif
 	    {
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */

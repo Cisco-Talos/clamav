@@ -769,7 +769,7 @@ static int chm_decompress_stream(int fd, chm_metadata_t *metadata, const char *d
 	lzx_decompress(stream, length);
 	lzx_free(stream);
 	
-#ifndef C_WINDOWS
+#ifndef _WIN32
 	/* Delete the file */
 	if(cli_unlink(filename))
 		retval = -1;

@@ -34,7 +34,9 @@
 #ifdef HAVE_SYS_LIMITS_H
 #include <sys/limits.h>
 #endif
+#ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
+#endif
 #include <sys/un.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -82,6 +84,7 @@ static int isremote(const struct optstruct *opts) {
 	logg("!Can't parse clamd configuration file %s\n", clamd_conf);
 	return 0;
     }
+#ifndef _WIN32
     if((opt = optget(clamdopts, "LocalSocket"))->enabled) {
 	memset((void *)&nixsock, 0, sizeof(nixsock));
 	nixsock.sun_family = AF_UNIX;
@@ -92,6 +95,7 @@ static int isremote(const struct optstruct *opts) {
 	optfree(clamdopts);
 	return 0;
     }
+#endif
     if(!(opt = optget(clamdopts, "TCPSocket"))->enabled) {
 	optfree(clamdopts);
 	return 0;

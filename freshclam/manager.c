@@ -22,9 +22,6 @@
  *  MA 02110-1301, USA.
  */
  
-#ifdef	_MSC_VER
-#include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
-#endif
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -59,9 +56,7 @@
 #include <time.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#ifndef C_WINDOWS
 #include <dirent.h>
-#endif
 #include <errno.h>
 #include <zlib.h>
 
@@ -84,14 +79,6 @@
 #include "libclamav/others.h"
 #include "libclamav/str.h"
 #include "libclamav/cvd.h"
-
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
-
-#ifndef C_WINDOWS
-#define	closesocket(s)	close(s)
-#endif
 
 #define CHDIR_ERR(x)				\
 	if(chdir(x) == -1)			\
@@ -1419,9 +1406,7 @@ static int buildcld(const char *tmpdir, const char *dbname, const char *newfile,
     }
 
     while((dent = readdir(dir))) {
-#if !defined(C_INTERIX) && !defined(C_WINDOWS)
 	if(dent->d_ino)
-#endif
 	{
 	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..") || !strcmp(dent->d_name, "COPYING") || !strcmp(dent->d_name, "daily.cfg"))
 		continue;
@@ -1683,7 +1668,7 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	return 55; /* FIXME */
     }
 
-#ifdef C_WINDOWS
+#ifdef _WIN32
     if(!access(newdb, R_OK) && unlink(newdb)) {
 	logg("!Can't unlink %s. Please fix the problem manually and try again.\n", newdb);
 	unlink(newfile);

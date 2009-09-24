@@ -32,9 +32,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
-#ifndef	C_WINDOWS
 #include <dirent.h>
-#endif
 #include <fcntl.h>
 #include <ctype.h>
 #include <errno.h>
@@ -225,7 +223,7 @@ int filecopy(const char *src, const char *dest)
 
 int daemonize(void)
 {
-#if defined(C_OS2) || defined(C_WINDOWS)
+#if defined(C_OS2) || defined(_WIN32)
     fputs("Background mode is not supported on your operating system\n", stderr);
     return -1;
 #else

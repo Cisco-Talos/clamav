@@ -316,21 +316,6 @@ static inline void cli_writeint32(char *offset, uint32_t value)
 #endif
 #define CLI_SAR(n,s) n = CLI_SRS(n,s)
 
-#ifndef	FALSE
-#define FALSE (0)
-#endif
-
-#ifndef	TRUE
-#define TRUE (1)
-#endif
-
-#ifndef MIN
-#define MIN(a, b)	(((a) < (b)) ? (a) : (b))
-#endif
-#ifndef MAX
-#define MAX(a,b)	(((a) > (b)) ? (a) : (b))
-#endif
-
 typedef struct bitset_tag
 {
         unsigned char *bitset;

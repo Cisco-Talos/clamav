@@ -987,9 +987,7 @@ static int listdir(const char *dirname)
     }
 
     while((dent = readdir(dd))) {
-#ifndef C_INTERIX
 	if(dent->d_ino)
-#endif
 	{
 	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") &&
 	    (cli_strbcasestr(dent->d_name, ".db")  ||
@@ -1469,9 +1467,7 @@ static int dircopy(const char *src, const char *dest)
     }
 
     while((dent = readdir(dd))) {
-#if (!defined(C_INTERIX)) && (!defined(C_WINDOWS))
 	if(dent->d_ino)
-#endif
 	{
 	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, ".."))
 		continue;
@@ -1617,9 +1613,7 @@ static int diffdirs(const char *old, const char *new, const char *patch)
     }
 
     while((dent = readdir(dd))) {
-#ifndef C_INTERIX
 	if(dent->d_ino)
-#endif
 	{
 	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, ".."))
 		continue;
@@ -1645,9 +1639,7 @@ static int diffdirs(const char *old, const char *new, const char *patch)
     }
 
     while((dent = readdir(dd))) {
-#ifndef C_INTERIX
 	if(dent->d_ino)
-#endif
 	{
 	    if(!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, ".."))
 		continue;

@@ -54,9 +54,6 @@
 #ifdef	HAVE_MALLOC_H
 #include <malloc.h>
 #endif
-#if	defined(_MSC_VER) && defined(_DEBUG)
-#include <crtdbg.h>
-#endif
 
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
 #include <limits.h>
@@ -784,9 +781,7 @@ int cli_rmdirs(const char *dirname)
 #else
 	    while((dent = readdir(dd))) {
 #endif
-#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS))
 		if(dent->d_ino)
-#endif
 		{
 		    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 			path = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
@@ -901,8 +896,6 @@ int cli_dumpscan(int fd, off_t offset, size_t size, cli_ctx *ctx)
 
 #define BITS_PER_CHAR (8)
 #define BITSET_DEFAULT_SIZE (1024)
-#define FALSE (0)
-#define TRUE (1)
 
 static unsigned long nearest_power(unsigned long num)
 {

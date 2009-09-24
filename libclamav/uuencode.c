@@ -39,10 +39,6 @@ static	char	const	rcsid[] = "$Id: uuencode.c,v 1.8 2006/12/11 11:55:11 njh Exp $
 #include "others.h"
 #include "str.h"
 
-#ifdef	C_WINDOWS
-#include <io.h>
-#endif
-
 #include "mbox.h"
 #include "uuencode.h"
 

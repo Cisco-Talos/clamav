@@ -40,9 +40,6 @@
 #include <malloc.h>
 #endif
 
-#define FALSE (0)
-#define TRUE (1)
-
 /* BSD and HP-UX need a bigger stacksize than the system default */
 #if defined (C_BSD) || defined (C_HPUX) || defined(C_AIX)
 #define C_BIGSTACK 1

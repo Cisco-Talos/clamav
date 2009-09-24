@@ -20,10 +20,6 @@
 
 static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
 
-#ifdef	_MSC_VER
-#include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
-#endif
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -54,9 +50,7 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
 #include <sys/param.h>
 #endif
 #include "clamav.h"
-#ifndef	C_WINDOWS
 #include <dirent.h>
-#endif
 #include <limits.h>
 #include <signal.h>
 
@@ -141,7 +135,7 @@ typedef	enum {
 
 #include "phishcheck.h"
 
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
 #include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -151,10 +145,6 @@ typedef	enum {
 #endif
 #endif
 
-#ifndef	C_WINDOWS
-#define	closesocket(s)	close(s)
-#define	SOCKET	int
-#endif
 
 #include <fcntl.h>
 #ifndef	C_WINDOWS
@@ -167,16 +157,6 @@ typedef	unsigned	short	in_port_t;
 
 #ifndef HAVE_IN_ADDR_T
 typedef	unsigned	int	in_addr_t;
-#endif
-
-#if	(!defined(EALREADY)) && (defined(WSAEALREADY))
-#define EALREADY	WSAEALREADY
-#endif
-#if	(!defined(EINPROGRESS)) && (defined(WSAEINPROGRESS))
-#define EINPROGRESS	WSAEINPROGRESS
-#endif
-#if	(!defined(EISCONN)) && (defined(WSAEISCONN))
-#define EISCONN	WSAEISCONN
 #endif
 
 /*
@@ -3826,10 +3806,9 @@ rfc1341(message *m, const char *dir)
 					int nblanks;
 					struct stat statb;
 					const char *dentry_idpart;
-#ifndef C_WINDOWS
+
 					if(dent->d_ino == 0)
 						continue;
-#endif
 
 					if(!strcmp(".",dent->d_name) ||
 							!strcmp("..", dent->d_name))

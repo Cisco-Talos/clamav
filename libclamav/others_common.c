@@ -54,9 +54,6 @@
 #ifdef	HAVE_MALLOC_H
 #include <malloc.h>
 #endif
-#if	defined(_MSC_VER) && defined(_DEBUG)
-#include <crtdbg.h>
-#endif
 
 #include "clamav.h"
 #include "others.h"
@@ -138,11 +135,7 @@ void *cli_malloc(size_t size)
 	return NULL;
     }
 
-#if defined(_MSC_VER) && defined(_DEBUG)
-    alloc = _malloc_dbg(size, _NORMAL_BLOCK, __FILE__, __LINE__);
-#else
     alloc = malloc(size);
-#endif
 
     if(!alloc) {
 	cli_errmsg("cli_malloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int) size);
@@ -161,11 +154,7 @@ void *cli_calloc(size_t nmemb, size_t size)
 	return NULL;
     }
 
-#if defined(_MSC_VER) && defined(_DEBUG)
-    alloc = _calloc_dbg(nmemb, size, _NORMAL_BLOCK, __FILE__, __LINE__);
-#else
     alloc = calloc(nmemb, size);
-#endif
 
     if(!alloc) {
 	cli_errmsg("cli_calloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int) (nmemb * size));
@@ -224,11 +213,7 @@ char *cli_strdup(const char *s)
         return NULL;
     }
 
-#if defined(_MSC_VER) && defined(_DEBUG)
-    alloc = _strdup_dbg(s, _NORMAL_BLOCK, __FILE__, __LINE__);
-#else
     alloc = strdup(s);
-#endif
 
     if(!alloc) {
         cli_errmsg("cli_strdup(): Can't allocate memory (%u bytes).\n", (unsigned int) strlen(s));

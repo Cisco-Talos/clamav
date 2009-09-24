@@ -29,9 +29,7 @@
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifndef C_WINDOWS
 #include <dirent.h>
-#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #ifdef	HAVE_SYS_PARAM_H
@@ -1549,13 +1547,7 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
 	return CL_EOPEN;
     }
 
-/*
-#ifdef C_WINDOWS
-    if((dbname = strrchr(filename, '\\')))
-#else
-*/
     if((dbname = strrchr(filename, '/')))
-/*#endif */
 	dbname++;
     else
 	dbname = filename;
@@ -1723,9 +1715,7 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 #else
     while((dent = readdir(dd))) {
 #endif
-#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS))
 	if(dent->d_ino)
-#endif
 	{
 	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && strcmp(dent->d_name, "daily.cvd") && strcmp(dent->d_name, "daily.cld") && strcmp(dent->d_name, "daily.ign") && strcmp(dent->d_name, "daily.cfg") && strcmp(dent->d_name, "local.ign") && CLI_DBEXT(dent->d_name)) {
 
@@ -1842,9 +1832,7 @@ int cl_statinidir(const char *dirname, struct cl_stat *dbstat)
 #else
     while((dent = readdir(dd))) {
 #endif
-#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS))
 	if(dent->d_ino)
-#endif
 	{
 	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && CLI_DBEXT(dent->d_name)) {
 		dbstat->entries++;
@@ -1925,9 +1913,7 @@ int cl_statchkdir(const struct cl_stat *dbstat)
 #else
     while((dent = readdir(dd))) {
 #endif
-#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS))
 	if(dent->d_ino)
-#endif
 	{
 	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && CLI_DBEXT(dent->d_name)) {
                 fname = cli_malloc(strlen(dbstat->dir) + strlen(dent->d_name) + 32);

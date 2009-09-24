@@ -129,7 +129,7 @@ static int scanfile(const char *filename, struct cl_engine *engine, const struct
 	return 0;
     }
     info.rblocks += fsize / CL_COUNT_PRECISION;
-#ifndef C_WINDOWS
+#ifndef _WIN32
     if(geteuid())
 	if(checkaccess(filename, NULL, R_OK) != 1) {
 	    if(!printinfected)
@@ -141,7 +141,7 @@ static int scanfile(const char *filename, struct cl_engine *engine, const struct
     logg("*Scanning %s\n", filename);
 
     if((fd = open(filename, O_RDONLY|O_BINARY)) == -1) {
-	logg("^Can't open file %s\n", filename);
+	logg("^Can't open file %s: %s\n", filename, strerror(errno));
 	return 54;
     }
 
@@ -214,9 +214,7 @@ static int scandirs(const char *dirname, struct cl_engine *engine, const struct 
 
     if((dd = opendir(dirname)) != NULL) {
 	while((dent = readdir(dd))) {
-#if !defined(C_INTERIX) && !defined(C_WINDOWS)
 	    if(dent->d_ino)
-#endif
 	    {
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
