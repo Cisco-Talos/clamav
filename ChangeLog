@@ -1,3 +1,7 @@
+Fri Sep 25 00:35:56 CEST 2009 (acab)
+------------------------------------
+ * libclamav/sis.c: size check fix, thanks Tomasz
+
 Mon Sep 14 13:56:42 CEST 2009 (tk)
 ----------------------------------
  * clamd/server-th.c: fix possible race condition when restarting clamuko
