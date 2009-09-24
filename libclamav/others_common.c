@@ -916,7 +916,7 @@ int cli_is_abspath(const char *path) {
     int len = strlen(path);
     return (len > 2 && path[0] == '\\' && path[1] == '\\') || (len > 3 && path[1] == ':' && path[2] == '\\');
 #else
-    return strlen(path) > 1 && *path == '/';
+    return *path == '/';
 #endif
 }
 

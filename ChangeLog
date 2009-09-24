@@ -1,3 +1,7 @@
+Thu Sep 24 19:43:50 CEST 2009 (acab)
+------------------------------------
+ * libclamav/others_common.c: Accept "/" as an absolute path
+
 Thu Sep 24 19:22:24 CEST 2009 (acab)
 ------------------------------------
  * merge a set of win32 patches from Gianluigi Tiesi <sherpya*netfarm.it>
