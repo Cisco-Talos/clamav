@@ -47,14 +47,17 @@
 
 #define AC_SPECIAL_ALT_CHAR	1
 #define AC_SPECIAL_ALT_STR	2
-#define AC_SPECIAL_LINE_START	3
-#define AC_SPECIAL_LINE_END	4
-#define AC_SPECIAL_BOUNDARY	5
+#define AC_SPECIAL_LINE_MARKER	3
+#define AC_SPECIAL_BOUNDARY	4
 
-#define AC_BOUNDARY_LEFT	    1
-#define AC_BOUNDARY_LEFT_NEGATIVE   2
-#define AC_BOUNDARY_RIGHT	    4
-#define AC_BOUNDARY_RIGHT_NEGATIVE  8
+#define AC_BOUNDARY_LEFT		1
+#define AC_BOUNDARY_LEFT_NEGATIVE	2
+#define AC_BOUNDARY_RIGHT		4
+#define AC_BOUNDARY_RIGHT_NEGATIVE	8
+#define AC_LINE_MARKER_LEFT		16
+#define AC_LINE_MARKER_LEFT_NEGATIVE	32
+#define AC_LINE_MARKER_RIGHT		64
+#define AC_LINE_MARKER_RIGHT_NEGATIVE	128
 
 static char boundary[256] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 2, 0, 0, 
@@ -721,6 +724,15 @@ int cli_ac_chklsig(const char *expr, const char *end, uint32_t *lsigcnt, unsigne
 		    }									\
 		    break;								\
 											\
+		case AC_SPECIAL_LINE_MARKER:						\
+		    if(b == '\n') {							\
+			match = !special->negative;					\
+		    } else if(b == '\r' && (bp + 1 < length && buffer[bp + 1] == '\n')) {   \
+			bp++;								\
+			match = !special->negative;					\
+		    }									\
+		    break;								\
+											\
 		case AC_SPECIAL_BOUNDARY:						\
 		    if(boundary[b])							\
 			match = !special->negative;					\
@@ -780,6 +792,22 @@ inline static int ac_findmatch(const unsigned char *buffer, uint32_t offset, uin
     if(pattern->boundary & AC_BOUNDARY_RIGHT) {
 	match = !!(pattern->boundary & AC_BOUNDARY_RIGHT_NEGATIVE);
 	if((length <= SCANBUFF) && (bp == length || boundary[buffer[bp]] >= 2))
+	    match = !match;
+	if(!match)
+	    return 0;
+    }
+
+    if(pattern->boundary & AC_LINE_MARKER_LEFT) {
+	match = !!(pattern->boundary & AC_LINE_MARKER_LEFT_NEGATIVE);
+	if(!fileoffset || (offset && (buffer[offset - 1] == '\n')))
+	    match = !match;
+	if(!match)
+	    return 0;
+    }
+
+    if(pattern->boundary & AC_LINE_MARKER_RIGHT) {
+	match = !!(pattern->boundary & AC_LINE_MARKER_RIGHT_NEGATIVE);
+	if((length <= SCANBUFF) && (bp == length || buffer[bp] == '\n' || (buffer[bp] == '\r' && bp + 1 < length && buffer[bp + 1] == '\n')))
 	    match = !match;
 	if(!match)
 	    return 0;
@@ -1407,8 +1435,21 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 		    mpool_free(root->mempool, newspecial);
 		    continue;
 		}
+	    } else if(!strcmp(pt, "L")) {
+		if(!*start) {
+		    new->boundary |= AC_LINE_MARKER_RIGHT;
+		    if(newspecial->negative)
+			new->boundary |= AC_LINE_MARKER_RIGHT_NEGATIVE;
+		    mpool_free(root->mempool, newspecial);
+		    continue;
+		} else if(pt - 1 == hexcpy) {
+		    new->boundary |= AC_LINE_MARKER_LEFT;
+		    if(newspecial->negative)
+			new->boundary |= AC_LINE_MARKER_LEFT_NEGATIVE;
+		    mpool_free(root->mempool, newspecial);
+		    continue;
+		}
 	    }
-
 	    strcat(hexnew, "()");
 	    new->special++;
 	    newtable = (struct cli_ac_special **) mpool_realloc(root->mempool, new->special_table, new->special * sizeof(struct cli_ac_special *));
@@ -1424,11 +1465,9 @@ int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hex
 
 	    if(!strcmp(pt, "B")) {
 		newspecial->type = AC_SPECIAL_BOUNDARY;
-	    /* TODO
-	    } else if(strcmp(pt, "S")) {
-		newspecial->type = AC_SPECIAL_LINE_START;
-	    } else if(strcmp(pt, "E")) {
-		newspecial->type = AC_SPECIAL_LINE_END;
+	    } else if(!strcmp(pt, "L")) {
+		newspecial->type = AC_SPECIAL_LINE_MARKER;
+	    /*
 	    } else if(strcmp(pt, "W")) {
 		newspecial->type = AC_SPECIAL_WHITE;
 	    */
