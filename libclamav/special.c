@@ -30,7 +30,9 @@
 #endif
 #include <string.h>
 #include <ctype.h>
+#ifndef _WIN32
 #include <netinet/in.h>
+#endif
 #include "clamav.h"
 #include "others.h"
 #include "cltypes.h"

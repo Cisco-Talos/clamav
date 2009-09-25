@@ -1,3 +1,10 @@
+Fri Sep 25 15:13:25 CEST 2009 (acab)
+------------------------------------
+ * sigtool/vba.c: s/cli_errmsg/logg/
+ * shared/misc.h: in_addr_t is now already declared
+ * libclamav/special.c: do not include netinet/in.h on win32
+ All the patches from Gianluigi Tiesi <sherpya*netfarm.it>
+
 Fri Sep 25 15:09:02 CEST 2009 (acab)
 ------------------------------------
  * clamav-milter/clamav.milter.c: remove debug printf

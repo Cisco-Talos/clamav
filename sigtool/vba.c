@@ -36,6 +36,7 @@
 #include "libclamav/others.h"
 #include "libclamav/cltypes.h"
 #include "libclamav/ole2_extract.h"
+#include "shared/output.h"
 
 typedef struct mac_token_tag
 {
@@ -1022,7 +1023,7 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 	    }
 	}
     } else {
-	cli_errmsg ("Can't open directory %s.\n", dirname);
+	logg("!Can't open directory %s.\n", dirname);
 	return CL_EOPEN;
     }
 
@@ -1139,7 +1140,7 @@ int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
 	    }
 	}
     } else {
-	cli_errmsg ("ScanDir -> Can't open directory %s.\n", dirname);
+	logg("!ScanDir -> Can't open directory %s.\n", dirname);
 	return CL_EOPEN;
     }
 

@@ -36,10 +36,6 @@
 # endif
 #endif
 
-#ifndef HAVE_IN_ADDR_T
-typedef unsigned        int     in_addr_t;
-#endif
-
 #include <limits.h>
 
 #ifndef PATH_MAX
