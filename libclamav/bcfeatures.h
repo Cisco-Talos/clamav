@@ -1,7 +1,7 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2009 Sourcefire, Inc.
  *
- *  Authors: Tomasz Kojm
+ *  Authors: Török Edvin
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -17,31 +17,18 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
+#ifndef BC_FEATURES_H
+#define BC_FEATURES_H
 
-#ifndef __EXECS_H
-#define __EXECS_H
+/* Compatibility for non-clang compilers */
+#ifndef __has_feature
+#define __has_feature(x) 0
+#endif
 
-#include "cltypes.h"
-#include "bcfeatures.h"
-#include <sys/types.h>
-
-struct cli_exe_section {
-    uint32_t rva;
-    uint32_t vsz;
-    uint32_t raw;
-    uint32_t rsz;
-    uint32_t chr;
-    uint32_t urva; /* PE - unaligned VirtualAddress */
-    uint32_t uvsz; /* PE - unaligned VirtualSize */
-    uint32_t uraw; /* PE - unaligned PointerToRawData */
-    uint32_t ursz; /* PE - unaligned SizeOfRawData */
-};
-
-struct cli_exe_info {
-    struct cli_exe_section *section EBOUNDS(nsections);
-    off_t offset;
-    uint32_t ep;
-    uint16_t nsections;
-};
+#ifdef __has_feature(attribute_bounds)
+#define EBOUNDS(fieldname) __attribute__((bounds(fieldname)))
+#else
+#define EBOUNDS(x)
+#endif
 
 #endif
