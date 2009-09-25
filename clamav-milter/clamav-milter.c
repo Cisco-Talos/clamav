@@ -230,8 +230,6 @@ int main(int argc, char **argv) {
 	    snprintf(xvirushdr, sizeof(xvirushdr), "clamav-milter %s", get_version());
 	xvirushdr[sizeof(xvirushdr)-1] = '\0';
 
-	printf("\n%s\n", xvirushdr);
-
 	descr.xxfi_flags |= SMFIF_ADDHDRS;
 
 	if(strcasecmp(pt, "Add")) { /* Replace or Yes */
