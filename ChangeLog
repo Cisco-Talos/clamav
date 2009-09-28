@@ -1,3 +1,8 @@
+Mon Sep 28 21:41:47 CEST 2009 (tk)
+----------------------------------
+ * libclamav/readdb.c: fix handling of broken .ldb sigs (bb#1701)
+		       Thanks Luca&Edwin
+
 Fri Sep 25 00:35:56 CEST 2009 (acab)
 ------------------------------------
  * libclamav/sis.c: size check fix, thanks Tomasz
