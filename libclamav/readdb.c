@@ -984,7 +984,7 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	root->ac_lsigtable = newtable;
 
 	for(i = 0; i < subsigs; i++) {
-	    if(i >= tokens_count) {
+	    if(i + 3 >= tokens_count) {
 		cli_errmsg("cli_loadldb: Missing subsignature id %u\n", i);
 		ret = CL_EMALFDB;
 		break;

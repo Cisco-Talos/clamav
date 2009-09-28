@@ -1,3 +1,8 @@
+Mon Sep 28 21:41:47 CEST 2009 (tk)
+----------------------------------
+ * libclamav/readdb.c: fix handling of broken .ldb sigs (bb#1701)
+		       Thanks Luca&Edwin
+
 Mon Sep 28 19:29:32 CEST 2009 (tk)
 ----------------------------------
  * libclamav: new signature blacklisting format (bb#1625)
