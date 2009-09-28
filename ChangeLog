@@ -1,3 +1,8 @@
+Mon Sep 28 19:29:32 CEST 2009 (tk)
+----------------------------------
+ * libclamav: new signature blacklisting format (bb#1625)
+ * libclamav: allow arbitrary names for .ign/.ign2 files (bb#1683)
+
 Fri Sep 25 15:13:25 CEST 2009 (acab)
 ------------------------------------
  * sigtool/vba.c: s/cli_errmsg/logg/

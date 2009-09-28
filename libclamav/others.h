@@ -170,7 +170,7 @@ struct cl_engine {
     struct cli_ftype *ftypes;
 
     /* Ignored signatures */
-    struct cli_ignored *ignored;
+    struct cli_matcher *ignored;
 
     /* PUA categories (to be included or excluded) */
     char *pua_cats;

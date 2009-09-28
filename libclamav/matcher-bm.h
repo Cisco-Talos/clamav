@@ -25,6 +25,8 @@
 #include "filetypes.h"
 #include "cltypes.h"
 
+#define BM_BOUNDARY_EOL	1
+
 struct cli_bm_patt {
     unsigned char *pattern, *prefix;
     char *virname;
@@ -33,6 +35,7 @@ struct cli_bm_patt {
     uint16_t length, prefix_length;
     uint16_t cnt;
     unsigned char pattern0;
+    uint32_t boundary;
 };
 
 struct cli_bm_off {

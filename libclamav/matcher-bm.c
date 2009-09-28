@@ -339,6 +339,13 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 		    }
 		}
 
+		if(found && (p->boundary & BM_BOUNDARY_EOL)) {
+		    if(off != length) {
+			p = p->next;
+			continue;
+		    }
+		}
+
 		if(found && p->length + p->prefix_length == j) {
 		    if(!offdata && (p->offset_min != CLI_OFF_ANY)) {
 			if(p->offdata[0] != CLI_OFF_ABSOLUTE) {

@@ -48,7 +48,6 @@
 	cli_strbcasestr(ext, ".gdb")   ||	\
 	cli_strbcasestr(ext, ".wdb")   ||	\
 	cli_strbcasestr(ext, ".ftm")   ||	\
-	cli_strbcasestr(ext, ".ign")   ||	\
 	cli_strbcasestr(ext, ".cfg")   ||	\
 	cli_strbcasestr(ext, ".cvd")   ||	\
 	cli_strbcasestr(ext, ".cld")		\

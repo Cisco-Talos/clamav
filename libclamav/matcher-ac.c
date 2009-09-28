@@ -1032,7 +1032,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
     if(!root->ac_root)
 	return CL_CLEAN;
 
-    if(!mdata) {
+    if(!mdata && (root->ac_partsigs || root->ac_lsigs || root->ac_reloff_num)) {
 	cli_errmsg("cli_ac_scanbuff: mdata == NULL\n");
 	return CL_ENULLARG;
     }

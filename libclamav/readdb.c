@@ -55,6 +55,7 @@
 #include "readdb.h"
 #include "cltypes.h"
 #include "default.h"
+#include "md5.h"
 
 #include "phishcheck.h"
 #include "phish_whitelist.h"
@@ -73,17 +74,6 @@
 #  include <pthread.h>
 static pthread_mutex_t cli_ref_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
-
-struct cli_ignsig {
-    char *dbname, *signame;
-    unsigned int line;
-    struct cli_ignsig *next;
-};
-
-struct cli_ignored {
-    struct cli_hashset hs;
-    struct cli_ignsig *list;
-};
 
 char *cli_virname(char *virname, unsigned int official)
 {
@@ -407,22 +397,25 @@ char *cli_dbgets(char *buff, unsigned int size, FILE *fs, struct cli_dbio *dbio)
     }
 }
 
-static int cli_chkign(const struct cli_ignored *ignored, const char *dbname, unsigned int line, const char *signame)
+static int cli_chkign(const struct cli_matcher *ignored, const char *signame, const char *entry)
 {
-	struct cli_ignsig *pt;
+	const char *md5_expected = NULL;
+        cli_md5_ctx md5ctx;
+        unsigned char digest[16];
 
-    if(!ignored || !dbname || !signame)
+    if(!ignored || !signame || !entry)
 	return 0;
 
-    if(cli_hashset_contains(&ignored->hs, line)) {
-	pt = ignored->list;
-	while(pt) {
-	    if(pt->line == line && !strcmp(pt->dbname, dbname) && !strcmp(pt->signame, signame)) {
-		cli_dbgmsg("Skipping signature %s @ %s:%u\n", signame, dbname, line);
-		return 1;
-	    }
-	    pt = pt->next;
+    if(cli_bm_scanbuff(signame, strlen(signame), &md5_expected, ignored, 0, -1, NULL) == CL_VIRUS) {
+	if(md5_expected) {
+	    cli_md5_init(&md5ctx);
+            cli_md5_update(&md5ctx, entry, strlen(entry));
+	    cli_md5_final(digest, &md5ctx);
+	    if(memcmp(digest, (const unsigned char *) md5_expected, 16))
+		return 0;
 	}
+	cli_dbgmsg("Ignoring signature %s\n", signame);
+	return 1;
     }
 
     return 0;
@@ -466,7 +459,7 @@ static int cli_chkpua(const char *signame, const char *pua_cats, unsigned int op
 
 static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
-	char buffer[FILEBUFF], *pt, *start;
+	char buffer[FILEBUFF], *buffer_cpy, *pt, *start;
 	unsigned int line = 0, sigs = 0;
 	int ret = 0;
 	struct cli_matcher *root;
@@ -477,9 +470,15 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
 
     root = engine->root[0];
 
+    if(engine->ignored)
+	if(!(buffer_cpy = cli_malloc(FILEBUFF)))
+	    return CL_EMEM;
+
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
 	cli_chomp(buffer);
+	if(engine->ignored)
+	    strcpy(buffer_cpy, buffer);
 
 	pt = strchr(buffer, '=');
 	if(!pt) {
@@ -491,7 +490,7 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
 	start = buffer;
 	*pt++ = 0;
 
-	if(engine->ignored && cli_chkign(engine->ignored, dbname, line, start))
+	if(engine->ignored && cli_chkign(engine->ignored, start, buffer_cpy))
 	    continue;
 
 	if(*pt == '=') continue;
@@ -502,6 +501,9 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
 	}
 	sigs++;
     }
+
+    if(engine->ignored)
+	free(buffer_cpy);
 
     if(!line) {
 	cli_errmsg("Empty database file\n");
@@ -565,7 +567,7 @@ static int cli_loadpdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned short sdb, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
 	const char *tokens[NDB_TOKENS + 1];
-	char buffer[FILEBUFF];
+	char buffer[FILEBUFF], *buffer_cpy;
 	const char *sig, *virname, *offset, *pt;
 	struct cli_matcher *root;
 	int line = 0, sigs = 0, ret = 0, tokens_count;
@@ -575,6 +577,10 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
     if((ret = cli_initroots(engine, options)))
 	return ret;
+
+    if(engine->ignored)
+	if(!(buffer_cpy = cli_malloc(FILEBUFF)))
+	    return CL_EMEM;
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
@@ -587,6 +593,8 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 		continue;
 
 	cli_chomp(buffer);
+	if(engine->ignored)
+	    strcpy(buffer_cpy, buffer);
 
 	tokens_count = cli_strtokenize(buffer, ':', NDB_TOKENS + 1, tokens);
 	/* FIXME: re-enable after fixing invalid sig @ main.ndb:53467 */
@@ -601,7 +609,7 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    if(cli_chkpua(virname, engine->pua_cats, options))
 		continue;
 
-	if(engine->ignored && cli_chkign(engine->ignored, dbname, line, virname))
+	if(engine->ignored && cli_chkign(engine->ignored, virname, buffer_cpy))
 	    continue;
 
 	if(tokens_count > 4) { /* min version */
@@ -652,6 +660,8 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	}
 	sigs++;
     }
+    if(engine->ignored)
+	free(buffer_cpy);
 
     if(!line) {
 	cli_errmsg("Empty database file\n");
@@ -847,7 +857,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
 	char *tokens[LDB_TOKENS];
-	char buffer[CLI_DEFAULT_LSIG_BUFSIZE + 1], *pt;
+	char buffer[CLI_DEFAULT_LSIG_BUFSIZE + 1], *buffer_cpy, *pt;
 	const char *sig, *virname, *offset, *logic;
 	struct cli_matcher *root;
 	unsigned int line = 0, sigs = 0;
@@ -861,10 +871,16 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     if((ret = cli_initroots(engine, options)))
 	return ret;
 
+    if(engine->ignored)
+	if(!(buffer_cpy = cli_malloc(sizeof(buffer))))
+	    return CL_EMEM;
+
     while(cli_dbgets(buffer, sizeof(buffer), fs, dbio)) {
 	line++;
 	sigs++;
 	cli_chomp(buffer);
+	if(engine->ignored)
+	    strcpy(buffer_cpy, buffer);
 
 	tokens_count = cli_strtokenize(buffer, ';', LDB_TOKENS, (const char **) tokens);
 	if(tokens_count < 4) {
@@ -879,7 +895,7 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    if(cli_chkpua(virname, engine->pua_cats, options))
 		continue;
 
-	if(engine->ignored && cli_chkign(engine->ignored, dbname, line, virname))
+	if(engine->ignored && cli_chkign(engine->ignored, virname, buffer_cpy))
 	    continue;
 
 	subsigs = cli_ac_chklsig(logic, logic + strlen(logic), NULL, NULL, NULL, 1);
@@ -993,6 +1009,8 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	if(ret)
 	    break;
     }
+    if(engine->ignored)
+	free(buffer_cpy);
 
     if(!line) {
 	cli_errmsg("Empty database file\n");
@@ -1133,66 +1151,82 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
     return CL_SUCCESS;
 }
 
-#define IGN_TOKENS 3
+#define IGN_MAX_TOKENS   3
 static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options, struct cli_dbio *dbio)
 {
-	const char *tokens[IGN_TOKENS + 1];
+	const char *tokens[IGN_MAX_TOKENS + 1], *signame, *hash = NULL;
 	char buffer[FILEBUFF];
-	unsigned int line = 0, tokens_count;
-	struct cli_ignsig *new;
+	unsigned int line = 0, tokens_count, i, len;
+        struct cli_bm_patt *new;
 	int ret = CL_SUCCESS;
 
-
     if(!engine->ignored) {
-	engine->ignored = (struct cli_ignored *) cli_calloc(sizeof(struct cli_ignored), 1);
-	if(!engine->ignored || cli_hashset_init(&engine->ignored->hs, 64, 50))
+	engine->ignored = (struct cli_matcher *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_matcher));
+	if(!engine->ignored)
 	    return CL_EMEM;
+#ifdef USE_MPOOL
+	engine->ignored->mempool = engine->mempool;
+#endif
+	if((ret = cli_bm_init(engine->ignored))) {
+	    cli_errmsg("cli_loadign: Can't initialise AC pattern matcher\n");
+	    return ret;
+	}
     }
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
 	cli_chomp(buffer);
-	tokens_count = cli_strtokenize(buffer, ':', IGN_TOKENS + 1, tokens);
-	if(tokens_count != IGN_TOKENS) {
+
+	tokens_count = cli_strtokenize(buffer, ':', IGN_MAX_TOKENS + 1, tokens);
+	if(tokens_count > IGN_MAX_TOKENS) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
 
-	if(!cli_isnumber(tokens[1])) {
-	    cli_errmsg("cli_loadign: Invalid entry for line number\n");
+	if(tokens_count == 1) {
+	    signame = buffer;
+	} else if(tokens_count == 2) {
+	    signame = tokens[0];
+	    hash = tokens[1];
+	} else { /* old mode */
+	    signame = tokens[2];
+	}
+	if(!(len = strlen(signame))) {
+	    cli_errmsg("cli_loadign: No signature name provided\n");
 	    ret = CL_EMALFDB;
 	    break;
 	}
 
-	new = (struct cli_ignsig *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_ignsig));
+        new = (struct cli_bm_patt *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_bm_patt));
 	if(!new) {
 	    ret = CL_EMEM;
 	    break;
 	}
-
-	new->dbname = cli_mpool_strdup(engine->mempool, tokens[0]);
-
-	if(!new->dbname) {
+	new->pattern = cli_mpool_strdup(engine->mempool, signame);
+	if(!new->pattern) {
 	    mpool_free(engine->mempool, new);
-	    ret = CL_EMALFDB;
+	    ret = CL_EMEM;
 	    break;
 	}
+	if(hash) {
+	    if(strlen(hash) != 32 || !(new->virname = (unsigned char *) cli_mpool_hex2str(engine->mempool, hash))) {
+		cli_errmsg("cli_loadign: Malformed MD5 string at line %u\n", line);
+		mpool_free(engine->mempool, new->pattern);
+		mpool_free(engine->mempool, new);
+		ret = CL_EMALFDB;
+		break;
+	    }
+	}
+	new->length = len;
+	new->boundary |= BM_BOUNDARY_EOL;
 
-	new->line = atoi(tokens[1]);
-
-	if((ret = cli_hashset_addkey(&engine->ignored->hs, new->line)))
-	    break;
-
-	new->signame = cli_mpool_strdup(engine->mempool, tokens[2]);
-	if(!new->signame) {
-	    mpool_free(engine->mempool, new->dbname);
+        if((ret = cli_bm_addpatt(engine->ignored, new, "0"))) {
+	    if(hash)
+		mpool_free(engine->mempool, new->virname);
+	    mpool_free(engine->mempool, new->pattern);
 	    mpool_free(engine->mempool, new);
-	    ret = CL_EMALFDB;
 	    break;
 	}
-
-	new->next = engine->ignored->list;
-	engine->ignored->list = new;
     }
 
     if(ret) {
@@ -1201,25 +1235,6 @@ static int cli_loadign(FILE *fs, struct cl_engine *engine, unsigned int options,
     }
 
     return CL_SUCCESS;
-}
-
-static void cli_freeign(struct cl_engine *engine)
-{
-	struct cli_ignsig *pt;
-	struct cli_ignored *ignored;
-
-    if((ignored = engine->ignored)) {
-	while(ignored->list) {
-	    pt = ignored->list;
-	    ignored->list = ignored->list->next;
-	    mpool_free(engine->mempool, pt->dbname);
-	    mpool_free(engine->mempool, pt->signame);
-	    mpool_free(engine->mempool,pt);
-	}
-	cli_hashset_destroy(&ignored->hs);
-	free(engine->ignored);
-	engine->ignored = NULL;
-    }
 }
 
 static int scomp(const void *a, const void *b)
@@ -1270,7 +1285,7 @@ static int cli_md5db_init(struct cl_engine *engine, unsigned int mode)
 static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int mode, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
 	const char *tokens[MD5_TOKENS + 1];
-	char buffer[FILEBUFF];
+	char buffer[FILEBUFF], *buffer_cpy;
 	const char *pt;
 	int ret = CL_SUCCESS;
 	unsigned int size_field = 1, md5_field = 0, line = 0, sigs = 0, tokens_count;
@@ -1284,9 +1299,16 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	md5_field = 1;
     }
 
+    if(engine->ignored)
+	if(!(buffer_cpy = cli_malloc(FILEBUFF)))
+	    return CL_EMEM;
+
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
 	cli_chomp(buffer);
+	if(engine->ignored)
+	    strcpy(buffer_cpy, buffer);
+
 	tokens_count = cli_strtokenize(buffer, ':', MD5_TOKENS + 1, tokens);
 	if(tokens_count != MD5_TOKENS) {
 	    ret = CL_EMALFDB;
@@ -1303,7 +1325,7 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    if(cli_chkpua(pt, engine->pua_cats, options))
 		continue;
 
-	if(engine->ignored && cli_chkign(engine->ignored, dbname, line, pt))
+	if(engine->ignored && cli_chkign(engine->ignored, pt, buffer_cpy))
 	    continue;
 
 	new = (struct cli_bm_patt *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_bm_patt));
@@ -1358,6 +1380,8 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
 	sigs++;
     }
+    if(engine->ignored)
+	free(buffer_cpy);
 
     if(!line) {
 	cli_errmsg("cli_loadmd5: Empty database file\n");
@@ -1379,11 +1403,15 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, int type, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
 	const char *tokens[MD_TOKENS + 1];
-	char buffer[FILEBUFF];
+	char buffer[FILEBUFF], *buffer_cpy;
 	unsigned int line = 0, sigs = 0, tokens_count;
 	int ret = CL_SUCCESS, crc;
 	struct cli_meta_node *new;
 
+
+    if(engine->ignored)
+	if(!(buffer_cpy = cli_malloc(FILEBUFF)))
+	    return CL_EMEM;
 
     while(cli_dbgets(buffer, FILEBUFF, fs, dbio)) {
 	line++;
@@ -1391,6 +1419,9 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 	    continue;
 
 	cli_chomp(buffer);
+	if(engine->ignored)
+	    strcpy(buffer_cpy, buffer);
+
 	tokens_count = cli_strtokenize(buffer, ':', MD_TOKENS + 1, tokens);
 	if(tokens_count != MD_TOKENS) {
 	    ret = CL_EMALFDB;
@@ -1441,7 +1472,7 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 	    break;
 	}
 
-	if(engine->ignored && cli_chkign(engine->ignored, dbname, line, new->virname)) {
+	if(engine->ignored && cli_chkign(engine->ignored, new->virname, buffer/*_cpy*/)) {
 	    mpool_free(engine->mempool, new->virname);
 	    mpool_free(engine->mempool, new);
 	    continue;
@@ -1507,6 +1538,8 @@ static int cli_loadmd(FILE *fs, struct cl_engine *engine, unsigned int *signo, i
 
 	sigs++;
     }
+    if(engine->ignored)
+	free(buffer_cpy);
 
     if(!line) {
 	cli_errmsg("Empty database file\n");
@@ -1625,7 +1658,7 @@ int cli_load(const char *filename, struct cl_engine *engine, unsigned int *signo
     } else if(cli_strbcasestr(dbname, ".ftm")) {
 	ret = cli_loadftm(fs, engine, options, 0, dbio);
 
-    } else if(cli_strbcasestr(dbname, ".ign")) {
+    } else if(cli_strbcasestr(dbname, ".ign") || cli_strbcasestr(dbname, ".ign2")) {
 	ret = cli_loadign(fs, engine, options, dbio);
 
     } else {
@@ -1663,51 +1696,13 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 
 
     cli_dbgmsg("Loading databases from %s\n", dirname);
-    dbfile = (char *) cli_malloc(strlen(dirname) + 20);
-    if(!dbfile)
-	return CL_EMEM;
-
-    /* try to load local.ign and daily.cvd/daily.ign first */
-    sprintf(dbfile, "%s"PATHSEP"local.ign", dirname);
-    if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL))) {
-	free(dbfile);
-	return ret;
-    }
-
-    sprintf(dbfile, "%s"PATHSEP"daily.cld", dirname);
-    if(access(dbfile, R_OK))
-	sprintf(dbfile, "%s"PATHSEP"daily.cvd", dirname);
-    if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL))) {
-	free(dbfile);
-	return ret;
-    }
-
-    sprintf(dbfile, "%s"PATHSEP"daily.ign", dirname);
-    if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL))) {
-	free(dbfile);
-	return ret;
-    }
-
-    /* try to load local.gdb next */
-    sprintf(dbfile, "%s"PATHSEP"local.gdb", dirname);
-    if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL))) {
-	free(dbfile);
-	return ret;
-    }
-
-    /* check for and load daily.cfg */
-    sprintf(dbfile, "%s"PATHSEP"daily.cfg", dirname);
-    if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL))) {
-	free(dbfile);
-	return ret;
-    }
-    free(dbfile);
 
     if((dd = opendir(dirname)) == NULL) {
         cli_errmsg("cli_loaddbdir(): Can't open directory %s\n", dirname);
         return CL_EOPEN;
     }
 
+    /* first round - load .ign and .ign2 files */
 #ifdef HAVE_READDIR_R_3
     while(!readdir_r(dd, &result.d, &dent) && dent) {
 #elif defined(HAVE_READDIR_R_2)
@@ -1717,10 +1712,8 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 #endif
 	if(dent->d_ino)
 	{
-	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && strcmp(dent->d_name, "daily.cvd") && strcmp(dent->d_name, "daily.cld") && strcmp(dent->d_name, "daily.ign") && strcmp(dent->d_name, "daily.cfg") && strcmp(dent->d_name, "local.ign") && CLI_DBEXT(dent->d_name)) {
-
+	    if(cli_strbcasestr(dent->d_name, ".ign") || cli_strbcasestr(dent->d_name, ".ign2")) {
 		dbfile = (char *) cli_malloc(strlen(dent->d_name) + strlen(dirname) + 2);
-
 		if(!dbfile) {
 		    cli_dbgmsg("cli_loaddbdir(): dbfile == NULL\n");
 		    closedir(dd);
@@ -1728,7 +1721,6 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 		}
 		sprintf(dbfile, "%s"PATHSEP"%s", dirname, dent->d_name);
 		ret = cli_load(dbfile, engine, signo, options, NULL);
-
 		if(ret) {
 		    cli_dbgmsg("cli_loaddbdir(): error loading database %s\n", dbfile);
 		    free(dbfile);
@@ -1740,6 +1732,69 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 	}
     }
 
+    /* the daily db must be loaded before main */
+    dbfile = (char *) cli_malloc(strlen(dirname) + 20);
+    if(!dbfile) {
+	closedir(dd);
+	return CL_EMEM;
+    }
+
+    sprintf(dbfile, "%s"PATHSEP"daily.cld", dirname);
+    if(access(dbfile, R_OK))
+	sprintf(dbfile, "%s"PATHSEP"daily.cvd", dirname);
+    if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL))) {
+	free(dbfile);
+	closedir(dd);
+	return ret;
+    }
+
+    /* try to load local.gdb next */
+    sprintf(dbfile, "%s"PATHSEP"local.gdb", dirname);
+    if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL))) {
+	free(dbfile);
+	closedir(dd);
+	return ret;
+    }
+
+    /* check for and load daily.cfg */
+    sprintf(dbfile, "%s"PATHSEP"daily.cfg", dirname);
+    if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL))) {
+	free(dbfile);
+	closedir(dd);
+	return ret;
+    }
+    free(dbfile);
+
+    /* second round - load everything else */
+    rewinddir(dd);
+#ifdef HAVE_READDIR_R_3
+    while(!readdir_r(dd, &result.d, &dent) && dent) {
+#elif defined(HAVE_READDIR_R_2)
+    while((dent = (struct dirent *) readdir_r(dd, &result.d))) {
+#else
+    while((dent = readdir(dd))) {
+#endif
+	if(dent->d_ino)
+	{
+	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && strcmp(dent->d_name, "daily.cvd") && strcmp(dent->d_name, "daily.cld") && strcmp(dent->d_name, "daily.cfg") && CLI_DBEXT(dent->d_name)) {
+		dbfile = (char *) cli_malloc(strlen(dent->d_name) + strlen(dirname) + 2);
+		if(!dbfile) {
+		    cli_dbgmsg("cli_loaddbdir(): dbfile == NULL\n");
+		    closedir(dd);
+		    return CL_EMEM;
+		}
+		sprintf(dbfile, "%s"PATHSEP"%s", dirname, dent->d_name);
+		ret = cli_load(dbfile, engine, signo, options, NULL);
+		if(ret) {
+		    cli_dbgmsg("cli_loaddbdir(): error loading database %s\n", dbfile);
+		    free(dbfile);
+		    closedir(dd);
+		    return ret;
+		}
+		free(dbfile);
+	    }
+	}
+    }
     closedir(dd);
     if(ret == CL_EOPEN)
 	cli_errmsg("cli_loaddb(): No supported database files found in %s\n", dirname);
@@ -2089,7 +2144,11 @@ int cl_engine_free(struct cl_engine *engine)
 	mpool_free(engine->mempool, engine->tmpdir);
 
     cli_ftfree(engine);
-    cli_freeign(engine);
+    if(engine->ignored) {
+	cli_bm_free(engine->ignored);
+	mpool_free(engine->mempool, engine->ignored);
+    }
+
 #ifdef USE_MPOOL
     if(engine->mempool) mpool_destroy(engine->mempool);
 #endif
@@ -2149,7 +2208,11 @@ int cl_engine_compile(struct cl_engine *engine)
 	    return ret;
     }
     cli_md5db_build(engine->md5_mdb);
-    cli_freeign(engine);
+    if(engine->ignored) {
+	cli_bm_free(engine->ignored);
+	mpool_free(engine->mempool, engine->ignored);
+	engine->ignored = NULL;
+    }
     cli_dconf_print(engine->dconf);
     mpool_flush(engine->mempool);
 
