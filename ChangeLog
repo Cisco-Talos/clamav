@@ -1,3 +1,8 @@
+Tue Sep 29 21:40:29 CEST 2009 (tk)
+----------------------------------
+ * libclamav/matcher-ac.c: fix matching of logical sigs (bb#1707)
+			   Reported by Thiyaga <mthiyaga*corp.untd.com>
+
 Mon Sep 28 21:41:47 CEST 2009 (tk)
 ----------------------------------
  * libclamav/readdb.c: fix handling of broken .ldb sigs (bb#1701)
