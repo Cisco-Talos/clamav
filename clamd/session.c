@@ -29,12 +29,12 @@
 #include <unistd.h>
 #endif
 #include <sys/types.h>
-#ifndef	C_WINDOWS
 #include <dirent.h>
+#ifndef	_WIN32
+#include <sys/socket.h>
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
-#include <sys/socket.h>
 #ifdef HAVE_FD_PASSING
 #ifdef HAVE_SYS_UIO_H
 #include <sys/uio.h>

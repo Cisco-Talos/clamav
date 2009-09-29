@@ -28,15 +28,13 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#endif
-#include <errno.h>
-#ifndef	C_WINDOWS
 #include <netdb.h>
 #endif
+#include <errno.h>
 
 #include "libclamav/clamav.h"
 

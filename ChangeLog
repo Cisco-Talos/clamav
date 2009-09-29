@@ -1,3 +1,8 @@
+Wed Sep 30 00:51:19 CEST 2009 (acab)
+------------------------------------
+ * clamd, shared: merge a set of win32 patches from
+		Gianluigi Tiesi <sherpya*netfarm.it>
+
 Tue Sep 29 21:40:29 CEST 2009 (tk)
 ----------------------------------
  * libclamav/matcher-ac.c: fix matching of logical sigs (bb#1707)

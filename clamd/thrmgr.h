@@ -24,7 +24,7 @@
 
 #include <pthread.h>
 
-#ifndef C_WINDOWS
+#ifndef _WIN32
 #include <sys/time.h>
 #endif
 

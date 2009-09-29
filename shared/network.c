@@ -34,7 +34,7 @@
 #include <sys/types.h>
 #endif
 
-#ifndef C_WINDOWS
+#ifndef _WIN32
 #include <netdb.h>
 #endif
 

@@ -31,12 +31,12 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#ifndef	C_WINDOWS
+#include <dirent.h>
+#ifndef	_WIN32
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <sys/param.h>
 #include <signal.h>
-#include <dirent.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

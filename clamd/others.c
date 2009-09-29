@@ -35,18 +35,15 @@
 #include <time.h>
 #include <sys/stat.h>
 #include <errno.h>
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
 #include <sys/time.h>
 #include <sys/wait.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
 #endif
 
 #if HAVE_SYS_PARAM_H
 #include <sys/param.h>
-#endif
-
-#ifndef	C_WINDOWS
-#include <sys/socket.h>
-#include <sys/ioctl.h>
 #endif
 
 #ifdef HAVE_SYS_TYPES_H

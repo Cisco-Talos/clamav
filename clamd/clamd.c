@@ -27,6 +27,8 @@
 #include <string.h>
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifndef _WIN32
 #include <sys/time.h>
 #endif
 #include <sys/types.h>
