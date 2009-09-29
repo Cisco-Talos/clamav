@@ -1051,7 +1051,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				} else { /* !pt->type */
 				    if(pt->lsigid[0]) {
 					mdata->lsigcnt[pt->lsigid[1]][pt->lsigid[2]]++;
-					pt = pt->next;
+					pt = pt->next_same;
 					continue;
 				    }
 
@@ -1064,7 +1064,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 					newres->next = *res;
 					*res = newres;
 
-					pt = pt->next;
+					pt = pt->next_same;
 					continue;
 				    } else {
 					if(virname)
@@ -1093,7 +1093,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 			    } else {
 				if(pt->lsigid[0]) {
 				    mdata->lsigcnt[pt->lsigid[1]][pt->lsigid[2]]++;
-				    pt = pt->next;
+				    pt = pt->next_same;
 				    continue;
 				}
 
@@ -1106,7 +1106,7 @@ int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 				    newres->next = *res;
 				    *res = newres;
 
-				    pt = pt->next;
+				    pt = pt->next_same;
 				    continue;
 				} else {
 				    if(virname)
