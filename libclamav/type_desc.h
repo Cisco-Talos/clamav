@@ -50,11 +50,20 @@ struct cli_apicall {
     uint8_t kind;
 };
 
+struct cli_apiglobal {
+    const char *name;
+    enum bc_global globalid;
+    uint16_t type;
+};
+
 extern const struct cli_bc_type cli_apicall_types[];
 extern const unsigned cli_apicall_maxtypes;
+
+extern const struct cli_apiglobal cli_globals[];
 
 extern const struct cli_apicall cli_apicalls[];
 extern const cli_apicall_int2 cli_apicalls0[];
 extern const cli_apicall_pointer cli_apicalls1[];
 extern const unsigned cli_apicall_maxapi;
+extern const unsigned cli_apicall_maxglobal;
 #endif
