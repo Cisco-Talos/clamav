@@ -155,7 +155,7 @@ int cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *data, int 
 
 
     if(!root->bm_patterns) {
-	data->offtab = data->offset = 0;
+	data->offtab = data->offset = NULL;
 	data->cnt = data->pos = 0;
 	return CL_SUCCESS;
     }
@@ -206,10 +206,12 @@ int cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *data, int 
 
 void cli_bm_freeoff(struct cli_bm_off *data, const struct cli_matcher *root)
 {
-    mpool_free(root->mempool, data->offset);
-    data->offset = NULL;
-    mpool_free(root->mempool, data->offtab);
-    data->offtab = NULL;
+    if(data->offset) {
+	mpool_free(root->mempool, data->offset);
+	data->offset = NULL;
+	mpool_free(root->mempool, data->offtab);
+	data->offtab = NULL;
+    }
 }
 
 void cli_bm_free(struct cli_matcher *root)

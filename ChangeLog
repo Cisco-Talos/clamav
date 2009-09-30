@@ -1,3 +1,7 @@
+Wed Sep 30 17:15:05 CEST 2009 (tk)
+----------------------------------
+ * libclamav/matcher-bm.c: fix cli_bm_freeoff() (bb#1710)
+
 Wed Sep 30 12:40:50 CEST 2009 (acab)
 ------------------------------------
  * clamdscan/clamdscan.c: properly init variable (bb#1708)
