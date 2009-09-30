@@ -152,7 +152,7 @@ am__libclamav_la_SOURCES_DIST = clamav.h matcher-ac.c matcher-ac.h \
 	bytecode_priv.h clambc.h cpio.c cpio.h macho.c macho.h \
 	ishield.c ishield.h type_desc.h bytecode_api.c \
 	bytecode_api_decl.c bytecode_api.h bytecode_api_impl.h \
-	bignum.c bignum_class.h
+	bytecode_hooks.h bignum.c bignum_class.h
 @LINK_TOMMATH_FALSE@am__objects_1 = libclamav_la-bignum.lo
 am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-matcher-bm.lo libclamav_la-matcher.lo \
@@ -641,7 +641,7 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	bytecode_priv.h clambc.h cpio.c cpio.h macho.c macho.h \
 	ishield.c ishield.h type_desc.h bytecode_api.c \
 	bytecode_api_decl.c bytecode_api.h bytecode_api_impl.h \
-	$(am__append_7)
+	bytecode_hooks.h $(am__append_7)
 noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la libclamav_nocxx.la
 COMMON_CLEANFILES = version.h version.h.tmp *.gcda *.gcno
 @MAINTAINER_MODE_TRUE@BUILT_SOURCES = jsparse/generated/operators.h jsparse/generated/keywords.h jsparse-keywords.gperf

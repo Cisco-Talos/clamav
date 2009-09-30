@@ -20,17 +20,29 @@
  *  MA 02110-1301, USA.
  */
 
-struct lsig_match {
-    uint32_t evalcnt;
-    uint64_t evalids;
-    uint16_t filetype;
-};
+#ifdef __CLAMBC__
+#include "bytecode_execs.h"
+#endif
+
+#ifndef __CLAMBC__
+#include "execs.h"
+#endif
 
 struct foo {
     struct foo *nxt;
 };
 
 #ifdef __CLAMBC__
+
+extern const uint32_t __clambc_match_counts[64];
+extern const struct cli_exe_info __clambc_exeinfo;
+
+enum BytecodeKind {
+    BC_GENERIC=0,/* generic bytecode, not tied to a specific hook */
+    BC_LOGICAL,/* triggered by a logical signature */
+    BC_PE_UNPACKER,/* a PE unpacker */
+};
+const uint8_t __clambc_kind;
 
 uint32_t test0(struct foo*, uint32_t);
 uint32_t test1(uint32_t, uint32_t);

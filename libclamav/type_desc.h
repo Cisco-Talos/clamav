@@ -22,6 +22,7 @@
 #ifndef TYPE_DESC_H
 #define TYPE_DESC_H
 
+#include "clambc.h"
 struct cli_bc_ctx;
 
 enum derived_t {
@@ -54,6 +55,7 @@ struct cli_apiglobal {
     const char *name;
     enum bc_global globalid;
     uint16_t type;
+    unsigned offset;
 };
 
 extern const struct cli_bc_type cli_apicall_types[];

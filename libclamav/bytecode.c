@@ -44,7 +44,7 @@ struct cli_bc_ctx *cli_bytecode_context_alloc(void)
     ctx->opsizes = NULL;
     ctx->fd = -1;
     ctx->off = 0;
-    ctx->lsigcnt = nomatch;
+    ctx->hooks.match_counts = nomatch;
     ctx->virname = NULL;
     return ctx;
 }
@@ -1411,7 +1411,7 @@ int cli_bytecode_runlsig(const struct cli_all_bc *bcs, const struct cli_bc *bc, 
     struct cli_bc_ctx ctx;
     memset(&ctx, 0, sizeof(ctx));
     cli_bytecode_context_setfuncid(&ctx, bc, 0);
-    ctx.lsigcnt = lsigcnt;
+    ctx.hooks.match_counts = lsigcnt;
     cli_bytecode_context_setfile(&ctx, fd);
 
     cli_dbgmsg("Running bytecode for logical signature match\n");

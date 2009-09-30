@@ -39,7 +39,7 @@ struct cli_exe_section {
 
 struct cli_exe_info {
     struct cli_exe_section *section EBOUNDS(nsections);
-    off_t offset;
+    uint32_t offset;
     uint32_t ep;
     uint16_t nsections;
 };

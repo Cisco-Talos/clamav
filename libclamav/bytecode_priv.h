@@ -24,6 +24,8 @@
 #define BYTECODE_PRIV_H
 
 #include "type_desc.h"
+#include "execs.h"
+#include "bytecode_hooks.h"
 typedef uint32_t operand_t;
 typedef uint16_t bbid_t;
 typedef uint16_t funcid_t;
@@ -98,8 +100,8 @@ struct cli_bc_ctx {
     size_t file_size;
     off_t off;
     int fd;
-    const uint32_t *lsigcnt;
     const char *virname;
+    struct cli_bc_hooks hooks;
 };
 struct cli_all_bc;
 int cli_vm_execute(const struct cli_bc *bc, struct cli_bc_ctx *ctx, const struct cli_bc_func *func, const struct cli_bc_inst *inst);

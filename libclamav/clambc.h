@@ -97,8 +97,12 @@ static const unsigned char operand_counts[] = {
   2, 3, 0, 2, 1
 };
 
-enum {
-  GLOBAL_MATCH_COUNTS = 0x8000
+enum bc_global {
+  _FIRST_GLOBAL = 0x8000,
+  GLOBAL_MATCH_COUNTS = 0x8000,
+  GLOBAL_KIND,
+  GLOBAL_EXEINFO,
+  _LAST_GLOBAL
 };
 
 #define BC_START_TID 69

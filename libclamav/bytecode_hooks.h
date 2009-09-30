@@ -1,7 +1,8 @@
 /*
- *  Copyright (C) 2009 Sourcefire, Inc.
+ *  ClamAV bytecode internal API
+ *  This is an automatically generated file!
  *
- *  Authors: Török Edvin
+ *  Copyright (C) 2009 Sourcefire, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 2 as
@@ -17,18 +18,13 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-#ifndef BC_FEATURES_H
-#define BC_FEATURES_H
 
-/* Compatibility for non-clang compilers */
-#ifndef __has_feature
-#define __has_feature(x) 0
-#endif
+#ifndef BYTECODE_HOOKS_H
+#define BYTECODE_HOOKS_H
 
-#if __has_feature(attribute_bounds)
-#define EBOUNDS(fieldname) __attribute__((bounds(fieldname)))
-#else
-#define EBOUNDS(x)
-#endif
-
+struct cli_bc_hooks {
+	 const uint32_t* match_counts;
+	 const struct cli_exe_info exeinfo;
+	 const uint8_t kind;
+};
 #endif

@@ -451,7 +451,7 @@ public:
 	    if (FakeGVs.any()) {
 		Argument *Ctx = F->arg_begin();
 		struct cli_bc_ctx *N = 0;
-		unsigned offset = (char*)&((struct cli_bc_ctx*)0)->lsigcnt - (char*)NULL;
+		unsigned offset = (char*)&((struct cli_bc_ctx*)0)->hooks.match_counts - (char*)NULL;
 		Constant *Idx = ConstantInt::get(Type::getInt32Ty(Context), offset);
 		Value *GEP = Builder.CreateInBoundsGEP(Ctx, Idx);
 		Value *Cast = Builder.CreateBitCast(GEP, PointerType::getUnqual(MatchesTy));
