@@ -1,3 +1,7 @@
+Wed Sep 30 12:40:50 CEST 2009 (acab)
+------------------------------------
+ * clamdscan/clamdscan.c: properly init variable (bb#1708)
+
 Wed Sep 30 00:51:19 CEST 2009 (acab)
 ------------------------------------
  * clamd, shared: merge a set of win32 patches from

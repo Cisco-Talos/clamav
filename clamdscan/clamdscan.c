@@ -53,7 +53,7 @@ static void print_server_version(const struct optstruct *opt)
 
 int main(int argc, char **argv)
 {
-	int ds, dms, ret, infected;
+	int ds, dms, ret, infected = 0;
 	struct timeval t1, t2;
 	struct timezone tz;
 	time_t starttime;
