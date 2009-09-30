@@ -70,6 +70,7 @@
 #include "clambc.h"
 #include "bytecode_priv.h"
 #include "bytecode.h"
+#include "type_desc.h"
 
 #define MODULE "libclamav JIT: "
 
@@ -97,6 +98,7 @@ static void NORETURN jit_exception_handler(void)
 
 void llvm_error_handler(void *user_data, const std::string &reason)
 {
+    // Output it to stderr, it might exceed the 1k/4k limit of cli_errmsg
     errs() << reason;
     jit_exception_handler();
 }
@@ -203,6 +205,8 @@ private:
     FunctionPassManager &PM;
     unsigned numLocals;
     unsigned numArgs;
+    DenseMap<unsigned, unsigned> GVoffsetMap;
+    DenseMap<unsigned, const Type*> GVtypeMap;
 
     Value *getOperand(const struct cli_bc_func *func, const Type *Ty, operand_t operand)
     {
@@ -343,6 +347,7 @@ private:
 	return 0;
     }
 
+
 public:
     LLVMCodegen(const struct cli_bc *bc, Module *M, FunctionMapTy &cFuncs,
 		ExecutionEngine *EE, FunctionPassManager &PM, Function **apiFuncs)
@@ -350,11 +355,20 @@ public:
 	BytecodeID("bc"+Twine(bc->id)), EE(EE),
 	Folder(EE->getTargetData(), Context), Builder(Context, Folder), PM(PM),
 	apiFuncs(apiFuncs)
-    {}
+    {
+	for (unsigned i=0;i<cli_apicall_maxglobal;i++) {
+	    unsigned id = cli_globals[i].globalid;
+	    GVoffsetMap[id] = cli_globals[i].offset;
+	}
+    }
 
     bool generate() {
 	TypeMap = new LLVMTypeMapper(Context, bc->types + 4, bc->num_types - 5);
 
+	for (unsigned i=0;i<cli_apicall_maxglobal;i++) {
+	    unsigned id = cli_globals[i].globalid;
+	    GVtypeMap[id] = TypeMap->get(cli_globals[i].type);
+	}
 	FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context),
 						    false);
 	Function *FHandler = Function::Create(FTy, Function::InternalLinkage,
@@ -368,8 +382,6 @@ public:
 	const Type *HiddenCtx = PointerType::getUnqual(Type::getInt8Ty(Context));
 
 	globals.reserve(bc->num_globals);
-	// Fake GV for __match_counts, we'll replace this with loads from ctx!
-	const Type *MatchesTy = PointerType::getUnqual(Type::getInt32Ty(Context));//uint32*
 	BitVector FakeGVs;
 	FakeGVs.resize(bc->num_globals);
 
@@ -380,10 +392,10 @@ public:
 	    unsigned c = 0;
 	    GlobalVariable *GV;
 	    if (isa<PointerType>(Ty)) {
-		switch (bc->globals[i][1]) {
-		default: break;
-		case GLOBAL_MATCH_COUNTS:
-		    assert(Ty == MatchesTy);
+		unsigned g = bc->globals[i][1];
+		if (GVoffsetMap.count(g)) {
+		    const Type *MTy = GVtypeMap[g];
+		    assert(Ty == MTy);
 		    FakeGVs.set(i);
 		    globals.push_back(0);
 		    continue;
@@ -451,21 +463,20 @@ public:
 	    if (FakeGVs.any()) {
 		Argument *Ctx = F->arg_begin();
 		struct cli_bc_ctx *N = 0;
-		unsigned offset = (char*)&((struct cli_bc_ctx*)0)->hooks.match_counts - (char*)NULL;
-		Constant *Idx = ConstantInt::get(Type::getInt32Ty(Context), offset);
-		Value *GEP = Builder.CreateInBoundsGEP(Ctx, Idx);
-		Value *Cast = Builder.CreateBitCast(GEP, PointerType::getUnqual(MatchesTy));
-		Value *__MatchesCount = Builder.CreateLoad(Cast);
-
 		for (unsigned i=0;i<bc->num_globals;i++) {
 		    if (!FakeGVs[i])
 			continue;
-		    switch (bc->globals[i][1]) {
-			case GLOBAL_MATCH_COUNTS:
-			    Constant *C = ConstantInt::get(Type::getInt32Ty(Context), bc->globals[i][0]);
-			    globals[i] = Builder.CreateInBoundsGEP(__MatchesCount, C);
-			    break;
-		    }
+		    unsigned g = bc->globals[i][1];
+		    unsigned offset = GVoffsetMap[g];
+		    Constant *Idx = ConstantInt::get(Type::getInt32Ty(Context),
+						     offset);
+		    Value *GEP = Builder.CreateInBoundsGEP(Ctx, Idx);
+		    const Type *Ty = GVtypeMap[g];
+		    Value *Cast = Builder.CreateBitCast(GEP,
+							PointerType::getUnqual(Ty));
+		    Value *SpecialGV = Builder.CreateLoad(Cast);
+		    Constant *C = ConstantInt::get(Type::getInt32Ty(Context), bc->globals[i][0]);
+		    globals[i] = Builder.CreateInBoundsGEP(SpecialGV, C);
 		}
 	    }
 
