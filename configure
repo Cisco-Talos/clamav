@@ -12757,9 +12757,15 @@ $as_echo "no (${gcc_version})" >&6; }
 $as_echo "ok (${gcc_version})" >&6; }
 				;;
 		esac
-		# bb #1581 - temporarely add -fno-strict-aliasing so gcc 4.4.0
-		# works correctly
-		CFLAGS="$CFLAGS -fno-strict-aliasing"
+		case "${gcc_version}" in
+		    [56789].* | 4.[3456789].*)
+			# bb #1581 - temporarely add -fno-strict-aliasing so gcc 4.4.0
+			# works correctly
+			CFLAGS="$CFLAGS -fno-strict-aliasing"
+			;;
+		    *)
+			;;
+		esac
 	fi
 else
 	CFLAGS="$CFLAGS -O0"
