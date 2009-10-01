@@ -2028,8 +2028,8 @@ version.h: version.h.tmp
 version.h.tmp:
 	@test -f version.h || touch version.h;\
 	rm -f $@;\
-	REVISION="$$(LANG=C cd "$(top_srcdir)"; git describe --always 2>/dev/null)";\
-	if test $$? -ne 0; then\
+	REVISION="$$(LANG=C cd "$(top_srcdir)"; git describe --always 2>/dev/null || echo "exported")";\
+	if test "$$REVISION" = "exported"; then\
 	   REVISION="r$$(LANG=C svnversion "$(top_srcdir)" 2>/dev/null || echo exported)";\
 	   if test "$$REVISION" = "rexported"; then\
 	    REVISION="";\
