@@ -1670,9 +1670,10 @@ static uint8_t *disasm_x86(uint8_t *command, unsigned int len, struct DISASMED *
 }
 
 
-void disasmbuf(uint8_t *buff, unsigned int len, int fd) {
+int disasmbuf(uint8_t *buff, unsigned int len, int fd) {
   uint8_t *next = buff;
   unsigned int counter=0;
+  int gotsome=0;
   struct DISASMED s;
   struct MARIO {
     uint16_t real_op;
@@ -1691,7 +1692,7 @@ void disasmbuf(uint8_t *buff, unsigned int len, int fd) {
     int i;
     if(!(next = disasm_x86(next, len, &s))) {
       /* TODO: invd opcode or buff over */
-      return;
+      return gotsome;
     }
     if(cli_debug_flag) {
       char hr[128];
@@ -1726,6 +1727,8 @@ void disasmbuf(uint8_t *buff, unsigned int len, int fd) {
       }
     }
     cli_writen(fd, &w, sizeof(w));
+    gotsome = 1;
   }
+  return gotsome;
 }
 

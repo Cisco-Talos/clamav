@@ -978,8 +978,8 @@ int cli_scanpe(cli_ctx *ctx)
     epsize = fmap_readn(map, epbuff, ep, 4096);
 
     CLI_UNPTEMP("DISASM",(exe_sections,0));
-    disasmbuf((unsigned char*)epbuff, epsize, ndesc);
-    ret = cli_scandesc(ndesc, ctx, CL_TYPE_PE_DISASM, 1, NULL, AC_SCAN_VIR);
+    if(disasmbuf((unsigned char*)epbuff, epsize, ndesc))
+	ret = cli_scandesc(ndesc, ctx, CL_TYPE_PE_DISASM, 1, NULL, AC_SCAN_VIR);
     close(ndesc);
     CLI_TMPUNLK();
     free(tempfile);
@@ -1428,11 +1428,6 @@ int cli_scanpe(cli_ctx *ctx)
 	    break;
 	}
 	
-	if((src = (char *) cli_malloc(ssize)) == NULL) {
-	    free(exe_sections);
-	    return CL_EMEM;
-	}
-
 	if(!exe_sections[i + 1].rsz || !(src = fmap_need_off_once(map, exe_sections[i + 1].raw, ssize))) {
 	    cli_dbgmsg("Can't read raw data of section %d\n", i + 1);
 	    free(exe_sections);
@@ -1670,12 +1665,6 @@ int cli_scanpe(cli_ctx *ctx)
 	sections[0].rva = newedi;
 	for(t = 0; t <= (uint32_t)sectcnt - 1; t++) {
 	    sections[t+1].rva = (((support[t*2]|(support[t*2+1]<<8))-2)<<12)-EC32(optional_hdr32.ImageBase);
-	}
-
-	if((src = (char *) cli_malloc(ssize)) == NULL) {
-	    free(exe_sections);
-	    free(sections);
-	    return CL_EMEM;
 	}
 
 	if(!exe_sections[i + 1].rsz || !(src = fmap_need_off_once(map, exe_sections[i + 1].raw, ssize))) {

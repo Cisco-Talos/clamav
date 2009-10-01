@@ -537,6 +537,7 @@ int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
 	ret = CL_CLEAN;
 
     nsis_shutdown(&nsist);
+    fmunmap(nsist.map);
 
     if(!ctx->engine->keeptmp)
         cli_rmdirs(nsist.dir);
