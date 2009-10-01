@@ -490,10 +490,9 @@ int cli_scanmacho(int fd, cli_ctx *ctx, struct cli_exe_info *fileinfo)
     }
 }
 
-int cli_machoheader(int fd, struct cli_exe_info *fileinfo)
+int cli_machoheader(struct F_MAP *map, struct cli_exe_info *fileinfo)
 {
-return CL_EFORMAT; /* FIXMEFMAP: avoids crashing on machoes for now */
-    return cli_scanmacho(fd, NULL, fileinfo);
+    return cli_scanmacho(map->fd, NULL, fileinfo);
 }
 
 int cli_scanmacho_unibin(int fd, cli_ctx *ctx)
