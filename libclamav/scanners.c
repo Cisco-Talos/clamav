@@ -2075,12 +2075,12 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
 	case CL_TYPE_MACHO:
 	    if(ctx->dconf->macho)
-		ret = cli_scanmacho(desc, ctx, NULL);
+		ret = cli_scanmacho(ctx, NULL);
 	    break;
 
 	case CL_TYPE_MACHO_UNIBIN:
 	    if(ctx->dconf->macho)
-		ret = cli_scanmacho_unibin(desc, ctx);
+		ret = cli_scanmacho_unibin(ctx);
 	    break;
 
 	case CL_TYPE_SIS:
