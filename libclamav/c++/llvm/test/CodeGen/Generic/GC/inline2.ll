@@ -1,5 +1,6 @@
 ; RUN: opt < %s -inline -S | grep sample
 ; RUN: opt < %s -inline -S | grep example
+; XFAIL: *
 
 	%IntArray = type { i32, [0 x i32*] }
 

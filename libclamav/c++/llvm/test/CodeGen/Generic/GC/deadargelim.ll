@@ -1,4 +1,5 @@
 ; RUN: opt < %s -deadargelim
+; XFAIL: *
 
 declare void @llvm.gcroot(i8**, i8*)
 
