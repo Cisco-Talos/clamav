@@ -170,7 +170,6 @@ prepare_clamd()
 	cat <<EOF >test-db/test.hdb
 aa15bcf478d165efd2065190eb473bcb:544:ClamAV-Test-File
 EOF
-	cp $abs_srcdir/input/daily.ftm test-db/
 	cp $abs_srcdir/input/daily.pdb test-db/
 	$AWK "{ sub(/X/,\"$1\"); sub(/CWD/,\"`pwd`\"); print }" $abs_srcdir/test-clamd.conf >test-clamd.conf
 }
