@@ -1,3 +1,7 @@
+Fri Aug 21 00:56:03 CEST 2009 (acab)
+------------------------------------
+ * build system: upgrade to autoconf 2.64 and automake 1.11 (bb#1528)
+
 Fri Aug 14 14:37:21 CEST 2009 (tk)
 ----------------------------------
  * libclamav: improve handling of signature offsets
