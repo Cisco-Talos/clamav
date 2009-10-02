@@ -30,3 +30,4 @@ done
 mkdir -p llvm/lib/Target/PIC16/AsmPrinter llvm/lib/Target/MSP430/AsmPrinter
 touch llvm/lib/Target/PIC16/AsmPrinter/Makefile llvm/lib/Target/MSP430/AsmPrinter/Makefile
 git add -f llvm/lib/Target/PIC16/AsmPrinter/Makefile llvm/lib/Target/MSP430/AsmPrinter/Makefile
+mv ../../.git/SQUASH_MSG ../../.git/MERGE_MSG
