@@ -91,11 +91,24 @@ static void help(void)
 }
 
 static struct optstruct *opts;
-/* needs to be global, so that valgrind reports it as reachable, and not
- * as definetely/indirectly lost when daemonizing clamd */
-static struct cl_engine *engine = NULL;
+
+/* When running under valgrind and daemonizing, valgrind incorrectly reports
+ * leaks from the engine, because it can't see that all the memory is still
+ * reachable (some pointers are stored mangled in the JIT). 
+ * So free the engine on exit from the parent too (during daemonize)
+ */
+static struct cl_engine *gengine = NULL;
+static void free_engine(void)
+{
+    if (gengine) {
+	cl_engine_free(gengine);
+	gengine = NULL;
+    }
+}
+
 int main(int argc, char **argv)
 {
+        static struct cl_engine *engine = NULL;
 	const struct optstruct *opt;
 #ifndef	C_WINDOWS
         struct passwd *user = NULL;
@@ -461,11 +474,14 @@ int main(int argc, char **argv)
 		fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) | O_NONBLOCK);
 	}
 #endif
+	gengine = engine;
+	atexit(free_engine);
 	if(daemonize() == -1) {
 	    logg("!daemonize() failed\n");
 	    ret = 1;
 	    break;
 	}
+	gengine = NULL;
 #ifdef C_BSD
 	for(ret=0;ret<nlsockets;ret++) {
 		fcntl(lsockets[ret], F_SETFL, fcntl(lsockets[ret], F_GETFL) & ~O_NONBLOCK);
