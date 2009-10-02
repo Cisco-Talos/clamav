@@ -26,6 +26,7 @@
 
 #include "clamav.h"
 #include "others.h"
+#include "pe.h"
 #include "bytecode.h"
 #include "bytecode_priv.h"
 #include "readdb.h"
@@ -45,6 +46,7 @@ struct cli_bc_ctx *cli_bytecode_context_alloc(void)
     ctx->fd = -1;
     ctx->off = 0;
     ctx->hooks.match_counts = nomatch;
+    /* TODO: init all hooks with safe values */
     ctx->virname = NULL;
     return ctx;
 }
@@ -55,11 +57,18 @@ void cli_bytecode_context_destroy(struct cli_bc_ctx *ctx)
    free(ctx);
 }
 
-int cli_bytecode_context_clear(struct cli_bc_ctx *ctx)
+/* resets bytecode state, so you can run another bytecode with same ctx */
+int cli_bytecode_context_reset(struct cli_bc_ctx *ctx)
 {
     free(ctx->opsizes);
     free(ctx->values);
     free(ctx->operands);
+    return CL_SUCCESS;
+}
+
+int cli_bytecode_context_clear(struct cli_bc_ctx *ctx)
+{
+    cli_bytecode_context_reset(ctx);
     memset(ctx, 0, sizeof(ctx));
     return CL_SUCCESS;
 }
@@ -1435,7 +1444,46 @@ int cli_bytecode_runlsig(const struct cli_all_bc *bcs, const struct cli_bc *bc, 
 	return CL_VIRUS;
     }
     ret = cli_bytecode_context_getresult_int(&ctx);
-    cli_dbgmsg("Bytecode returned code: %u\n", ret);
+    cli_dbgmsg("Bytecode %u returned code: %u\n", bc->id, ret);
     cli_bytecode_context_clear(&ctx);
     return CL_SUCCESS;
+}
+
+int cli_bytecode_runhook(const struct cl_engine *engine, struct cli_bc_ctx *ctx,
+			 unsigned id, int fd, const char **virname)
+{
+    const unsigned *hooks = engine->hooks[id - _BC_START_HOOKS];
+    unsigned i, hooks_cnt = engine->hooks_cnt[id - _BC_START_HOOKS];
+    int ret;
+
+    cli_bytecode_context_setfile(ctx, fd);
+    cli_dbgmsg("Bytecode executing hook id %u (%u hooks)\n", id, hooks_cnt);
+    for (i=0;i < hooks_cnt;i++) {
+	const struct cli_bc *bc = &engine->bcs.all_bcs[hooks[i]];
+	cli_bytecode_context_setfuncid(ctx, bc, 0);
+	ret = cli_bytecode_run(&engine->bcs, bc, ctx);
+	if (ret != CL_SUCCESS) {
+	    cli_warnmsg("Bytecode failed to run: %s\n", cl_strerror(ret));
+	    return CL_SUCCESS;
+	}
+	if (ctx->virname) {
+	    cli_dbgmsg("Bytecode found virus: %s\n", ctx->virname);
+	    if (virname)
+		*virname = ctx->virname;
+	    cli_bytecode_context_clear(ctx);
+	    return CL_VIRUS;
+	}
+	ret = cli_bytecode_context_getresult_int(ctx);
+	/* TODO: use prefix here */
+	cli_dbgmsg("Bytecode %u returned %u\n", bc->id, ret);
+	cli_bytecode_context_reset(ctx);
+    }
+    return CL_CLEAN;
+}
+
+int cli_bytecode_context_setpe(struct cli_bc_ctx *ctx, const struct cli_pe_hook_data *data)
+{
+    ctx->hooks.exeinfo = &data->exe_info;
+    ctx->hooks.pedata = data;
+    return 0;
 }

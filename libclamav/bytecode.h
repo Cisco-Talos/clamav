@@ -32,6 +32,7 @@ struct cli_bc_inst;
 struct cli_bc_type;
 struct cli_bc_engine;
 struct bitset_tag;
+struct cl_engine;
 
 enum bc_state {
     bc_skip,
@@ -65,11 +66,13 @@ struct cli_all_bc {
     struct cli_bcengine *engine;
 };
 
+struct cli_pe_hook_data;
 struct cli_bc_ctx *cli_bytecode_context_alloc(void);
 int cli_bytecode_context_setfuncid(struct cli_bc_ctx *ctx, const struct cli_bc *bc, unsigned funcid);
 int cli_bytecode_context_setparam_int(struct cli_bc_ctx *ctx, unsigned i, uint64_t c);
 int cli_bytecode_context_setparam_ptr(struct cli_bc_ctx *ctx, unsigned i, void *data, unsigned datalen);
 int cli_bytecode_context_setfile(struct cli_bc_ctx *ctx, int fd);
+int cli_bytecode_context_setpe(struct cli_bc_ctx *ctx, const struct cli_pe_hook_data *data);
 int cli_bytecode_context_clear(struct cli_bc_ctx *ctx);
 uint64_t cli_bytecode_context_getresult_int(struct cli_bc_ctx *ctx);
 void cli_bytecode_context_destroy(struct cli_bc_ctx *ctx);
@@ -83,7 +86,9 @@ void cli_bytecode_destroy(struct cli_bc *bc);
 int cli_bytecode_done(struct cli_all_bc *allbc);
 
 /* Hooks */
+struct cli_exe_info;
 int cli_bytecode_runlsig(const struct cli_all_bc *bcs, const struct cli_bc* bc, const char **virname, const uint32_t* lsigcnt, int fd);
+int cli_bytecode_runhook(const struct cl_engine *engine, struct cli_bc_ctx *ctx, unsigned id, int fd, const char **virname);
 
 #ifdef __cplusplus
 extern "C" {

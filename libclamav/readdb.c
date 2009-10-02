@@ -70,6 +70,7 @@
 
 #include "mpool.h"
 #include "bytecode.h"
+#include "bytecode_api.h"
 #include "bytecode_priv.h"
 #ifdef CL_THREAD_SAFE
 #  include <pthread.h>
@@ -1044,6 +1045,7 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     struct cli_bc *bc;
     unsigned sigs = 0;
 
+    /* TODO: virusname have a common prefix, and whitelist by that */
     if((rc = cli_initroots(engine, options)))
 	return rc;
 
@@ -1059,17 +1061,41 @@ static int cli_loadcbc(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     bc = &bcs->all_bcs[bcs->count-1];
     rc = cli_bytecode_load(bc, fs, dbio);
     if (rc != CL_SUCCESS) {
-	fprintf(stderr,"Unable to load %s bytecode: %s\n", dbname, cl_strerror(rc));
+	cli_errmsg("Unable to load %s bytecode: %s\n", dbname, cl_strerror(rc));
 	return rc;
     }
     sigs += 2;/* the bytecode itself and the logical sig */
-    if (bc->lsig) {
+    if (bc->kind == BC_LOGICAL) {
+	if (!bc->lsig) {
+	    cli_errmsg("Bytecode %s has logical kind, but missing logical signature!\n", dbname);
+	    return CL_EMALFDB;
+	}
 	cli_dbgmsg("Bytecode %s has logical signature: %s\n", dbname, bc->lsig);
 	rc = load_oneldb(bc->lsig, 0, 0, engine, options, dbname, 0, &sigs, bc, NULL);
 	if (rc != CL_SUCCESS) {
-	    fprintf(stderr,"Problem parsing logical signature %s for bytecode %s: %s\n",
-		    bc->lsig, dbname, cl_strerror(rc));
+	    cli_errmsg("Problem parsing logical signature %s for bytecode %s: %s\n",
+		       bc->lsig, dbname, cl_strerror(rc));
 	    return rc;
+	}
+    } else {
+	if (bc->lsig) {
+	    cli_errmsg("Bytecode %s has logical signature but is not logical kind!\n", dbname);
+	    return CL_EMALFDB;
+	}
+	if (bc->kind >= _BC_START_HOOKS && bc->kind < _BC_LAST_HOOK) {
+	    unsigned hook = bc->kind - _BC_START_HOOKS;
+	    unsigned cnt = ++engine->hooks_cnt[hook];
+	    engine->hooks[hook] = cli_realloc2(engine->hooks[hook],
+					       sizeof(*engine->hooks[0])*cnt);
+	    if (!engine->hooks[hook]) {
+		cli_errmsg("Out of memory allocating memory for hook %u", hook);
+		return CL_EMEM;
+	    }
+	    engine->hooks[hook][cnt-1] = bcs->count-1;
+	} else switch (bc->kind) {
+	    default:
+		cli_errmsg("Bytecode: unhandled bytecode kind %u\n", bc->kind);
+		return CL_EMALFDB;
 	}
     }
     if (signo)
@@ -2199,6 +2225,9 @@ int cl_engine_free(struct cl_engine *engine)
 		cli_bytecode_destroy(&engine->bcs.all_bcs[i]);
 	cli_bytecode_done(&engine->bcs);
 	free(engine->bcs.all_bcs);
+	for (i=0;i<_BC_LAST_HOOK - _BC_START_HOOKS;i++) {
+	    free (engine->hooks[i]);
+	}
     }
     if(engine->dconf->phishing & PHISHING_CONF_ENGINE)
 	phishing_done(engine);
@@ -2286,7 +2315,7 @@ int cl_engine_compile(struct cl_engine *engine)
 
     /* Compile bytecode */
     if((ret = cli_bytecode_prepare(&engine->bcs))) {
-	fprintf(stderr,"Unable to compile/load bytecode: %s\n", cl_strerror(ret));
+	cli_errmsg("Unable to compile/load bytecode: %s\n", cl_strerror(ret));
 	return ret;
     }
 

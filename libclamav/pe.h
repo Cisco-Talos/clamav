@@ -128,6 +128,16 @@ struct pe_image_section_hdr {
     uint32_t Characteristics;
 };
 
+struct cli_pe_hook_data {
+    struct cli_exe_info exe_info;
+    struct pe_image_file_hdr *file_hdr;
+    struct pe_image_optional_hdr32 *opt32;
+    struct pe_image_optional_hdr64 *opt64;
+    struct pe_image_data_dir *dirs;
+    uint32_t overlays;
+    int32_t overlays_sz;
+};
+
 int cli_scanpe(int desc, cli_ctx *ctx);
 
 int cli_peheader(int desc, struct cli_exe_info *peinfo);

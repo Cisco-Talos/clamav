@@ -439,18 +439,20 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 	char *src = NULL, *dest = NULL;
 	int ndesc, ret = CL_CLEAN, upack = 0, native=0;
 	size_t fsize;
-	uint32_t valign, falign, hdr_size, j;
+	uint32_t valign, falign, hdr_size, j, offset;
 	struct cli_exe_section *exe_sections;
 	struct cli_matcher *md5_sect;
 	char timestr[32];
 	struct pe_image_data_dir *dirs;
+	struct cli_bc_ctx *bc_ctx;
+	struct cli_pe_hook_data pedata;
 
 
     if(!ctx) {
 	cli_errmsg("cli_scanpe: ctx == NULL\n");
 	return CL_ENULLARG;
     }
-
+    offset = lseek(desc, 0, SEEK_CUR);
     if(cli_readn(desc, &e_magic, sizeof(e_magic)) != sizeof(e_magic)) {
 	cli_dbgmsg("Can't read DOS signature\n");
 	return CL_CLEAN;
@@ -2251,6 +2253,27 @@ int cli_scanpe(int desc, cli_ctx *ctx)
     }
 
     /* to be continued ... */
+
+    /* Bytecode */
+    bc_ctx = cli_bytecode_context_alloc();
+    if (!bc_ctx) {
+	cli_errmsg("cli_scanpe: can't allocate memory for bc_ctx\n");
+	return CL_EMEM;
+    }
+    pedata.exe_info.section = exe_sections;
+    pedata.exe_info.nsections = nsections;
+    pedata.exe_info.ep = ep;
+    pedata.exe_info.offset = offset;
+    pedata.file_hdr = &file_hdr;
+    pedata.opt32 = &pe_opt.opt32;
+    pedata.opt64 = &pe_opt.opt64;
+    pedata.dirs = dirs;
+    pedata.overlays = overlays;
+    pedata.overlays_sz = fsize - overlays;
+    cli_bytecode_context_setpe(bc_ctx, &pedata);
+    if (cli_bytecode_runhook(ctx->engine, bc_ctx, BC_PE_UNPACKER, desc, ctx->virname) == CL_VIRUS)
+	return CL_VIRUS;
+    cli_bytecode_context_destroy(bc_ctx);
 
     free(exe_sections);
     return CL_CLEAN;

@@ -41,6 +41,7 @@
 #include "libclamunrar_iface/unrar_iface.h"
 #include "regex/regex.h"
 #include "bytecode.h"
+#include "bytecode_api.h"
 
 /*
  * CL_FLEVEL is the signature f-level specific to the current code and
@@ -181,6 +182,8 @@ struct cl_engine {
 
     /* Used for bytecode */
     struct cli_all_bc bcs;
+    unsigned *hooks[_BC_LAST_HOOK - _BC_START_HOOKS];
+    unsigned hooks_cnt[_BC_LAST_HOOK - _BC_START_HOOKS];
 };
 
 struct cl_settings {

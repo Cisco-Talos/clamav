@@ -19,6 +19,8 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
+#ifndef BYTECODE_API_H
+#define BYTECODE_API_H
 
 #ifdef __CLAMBC__
 #include "bytecode_execs.h"
@@ -32,16 +34,19 @@ struct foo {
     struct foo *nxt;
 };
 
+enum BytecodeKind {
+    BC_GENERIC=0,/* generic bytecode, not tied to a specific hook */
+    _BC_START_HOOKS=256,
+    BC_LOGICAL=256,/* triggered by a logical signature */
+    BC_PE_UNPACKER,/* a PE unpacker */
+    _BC_LAST_HOOK
+};
+
 #ifdef __CLAMBC__
 
 extern const uint32_t __clambc_match_counts[64];
 extern const struct cli_exe_info __clambc_exeinfo;
 
-enum BytecodeKind {
-    BC_GENERIC=0,/* generic bytecode, not tied to a specific hook */
-    BC_LOGICAL,/* triggered by a logical signature */
-    BC_PE_UNPACKER,/* a PE unpacker */
-};
 const uint8_t __clambc_kind;
 
 uint32_t test0(struct foo*, uint32_t);
@@ -67,4 +72,5 @@ uint32_t debug_print_str(const uint8_t *str, uint32_t len);
 uint32_t debug_print_uint(uint32_t a, uint32_t b);
 //const char *LogicalSignature;
 
+#endif
 #endif

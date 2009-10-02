@@ -24,7 +24,8 @@
 
 struct cli_bc_hooks {
 	 const uint32_t* match_counts;
-	 const struct cli_exe_info exeinfo;
+	 const struct cli_exe_info *exeinfo;
+	 const struct cli_pe_hook_data *pedata;
 	 const uint8_t kind;
 };
 #endif
