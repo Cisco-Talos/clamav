@@ -44,6 +44,7 @@ struct cli_bc {
   unsigned verifier;
   char *sigmaker;
   unsigned id;
+  unsigned kind;
   struct bytecode_metadata metadata;
   unsigned num_types;
   unsigned num_func;

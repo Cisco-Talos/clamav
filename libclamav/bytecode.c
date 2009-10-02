@@ -379,6 +379,7 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer)
     bc->verifier = readNumber(buffer, &offset, len, &ok);
     bc->sigmaker = readString(buffer, &offset, len, &ok);
     bc->id = readNumber(buffer, &offset, len, &ok);
+    bc->kind = readNumber(buffer, &offset, len, &ok);
     bc->metadata.maxStack = readNumber(buffer, &offset, len, &ok);
     bc->metadata.maxMem = readNumber(buffer, &offset, len, &ok);
     bc->metadata.maxTime = readNumber(buffer, &offset, len, &ok);
@@ -723,11 +724,17 @@ static void readConstant(struct cli_bc *bc, unsigned i, unsigned comp,
 static int parseGlobals(struct cli_bc *bc, unsigned char *buffer)
 {
     unsigned i, offset = 1, len = strlen((const char*)buffer), numglobals;
+    unsigned maxglobal;
     char ok=1;
 
     if (buffer[0] != 'G') {
 	cli_errmsg("bytecode: Invalid globals header: %c\n", buffer[0]);
 	return CL_EMALFDB;
+    }
+    maxglobal = readNumber(buffer, &offset, len, &ok);
+    if (maxglobal > cli_apicall_maxglobal) {
+	cli_dbgmsg("bytecode using global %u, but highest global known to libclamav is %u, skipping\n", maxglobal, cli_apicall_maxglobal);
+	return CL_BREAK;
     }
     numglobals = readNumber(buffer, &offset, len, &ok);
     bc->globals = cli_calloc(numglobals, sizeof(*bc->globals));

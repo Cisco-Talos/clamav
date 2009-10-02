@@ -196,6 +196,7 @@ private:
     LLVMTypeMapper *TypeMap;
     Function **apiFuncs;
     FunctionMapTy &compiledFunctions;
+    LLVMTypeMapper &apiMap;
     Twine BytecodeID;
     ExecutionEngine *EE;
     TargetFolder Folder;
@@ -350,13 +351,14 @@ private:
 
 public:
     LLVMCodegen(const struct cli_bc *bc, Module *M, FunctionMapTy &cFuncs,
-		ExecutionEngine *EE, FunctionPassManager &PM, Function **apiFuncs)
+		ExecutionEngine *EE, FunctionPassManager &PM,
+		Function **apiFuncs, LLVMTypeMapper &apiMap)
 	: bc(bc), M(M), Context(M->getContext()), compiledFunctions(cFuncs),
 	BytecodeID("bc"+Twine(bc->id)), EE(EE),
 	Folder(EE->getTargetData(), Context), Builder(Context, Folder), PM(PM),
-	apiFuncs(apiFuncs)
+	apiFuncs(apiFuncs), apiMap(apiMap)
     {
-	for (unsigned i=0;i<cli_apicall_maxglobal;i++) {
+	for (unsigned i=0;i<cli_apicall_maxglobal - _FIRST_GLOBAL;i++) {
 	    unsigned id = cli_globals[i].globalid;
 	    GVoffsetMap[id] = cli_globals[i].offset;
 	}
@@ -365,9 +367,9 @@ public:
     bool generate() {
 	TypeMap = new LLVMTypeMapper(Context, bc->types + 4, bc->num_types - 5);
 
-	for (unsigned i=0;i<cli_apicall_maxglobal;i++) {
+	for (unsigned i=0;i<cli_apicall_maxglobal - _FIRST_GLOBAL;i++) {
 	    unsigned id = cli_globals[i].globalid;
-	    GVtypeMap[id] = TypeMap->get(cli_globals[i].type);
+	    GVtypeMap[id] = apiMap.get(cli_globals[i].type);
 	}
 	FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context),
 						    false);
@@ -891,7 +893,7 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	    if (bc->state == bc_skip)
 		continue;
 	    LLVMCodegen Codegen(bc, M, bcs->engine->compiledFunctions, EE,
-				OurFPM, apiFuncs);
+				OurFPM, apiFuncs, apiMap);
 	    if (!Codegen.generate()) {
 		errs() << MODULE << "JIT codegen failed\n";
 		return CL_EBYTECODE;
