@@ -35,7 +35,7 @@ struct cli_bm_patt {
     uint16_t length, prefix_length;
     uint16_t cnt;
     unsigned char pattern0;
-    uint32_t boundary;
+    uint32_t boundary, filesize;
 };
 
 struct cli_bm_off {
@@ -46,7 +46,7 @@ int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern, const 
 int cli_bm_init(struct cli_matcher *root);
 int cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *data, int fd);
 void cli_bm_freeoff(struct cli_bm_off *data, const struct cli_matcher *root);
-int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, uint32_t offset, int fd, struct cli_bm_off *offdata);
+int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_bm_patt **patt, const struct cli_matcher *root, uint32_t offset, int fd, struct cli_bm_off *offdata);
 void cli_bm_free(struct cli_matcher *root);
 
 #endif

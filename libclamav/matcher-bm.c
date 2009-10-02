@@ -245,7 +245,7 @@ void cli_bm_free(struct cli_matcher *root)
     }
 }
 
-int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, uint32_t offset, int fd, struct cli_bm_off *offdata)
+int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_bm_patt **patt, const struct cli_matcher *root, uint32_t offset, int fd, struct cli_bm_off *offdata)
 {
 	uint32_t i, j, off, off_min, off_max;
 	uint8_t found, pchain, shift;
@@ -370,6 +370,8 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 		    }
 		    if(virname)
 			*virname = p->virname;
+		    if(patt)
+			*patt = p;
 		    if(info.exeinfo.section)
 			free(info.exeinfo.section);
 		    return CL_VIRUS;

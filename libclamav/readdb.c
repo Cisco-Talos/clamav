@@ -406,7 +406,7 @@ static int cli_chkign(const struct cli_matcher *ignored, const char *signame, co
     if(!ignored || !signame || !entry)
 	return 0;
 
-    if(cli_bm_scanbuff(signame, strlen(signame), &md5_expected, ignored, 0, -1, NULL) == CL_VIRUS) {
+    if(cli_bm_scanbuff(signame, strlen(signame), &md5_expected, NULL, ignored, 0, -1, NULL) == CL_VIRUS) {
 	if(md5_expected) {
 	    cli_md5_init(&md5ctx);
             cli_md5_update(&md5ctx, entry, strlen(entry));
@@ -1289,7 +1289,6 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	const char *pt;
 	int ret = CL_SUCCESS;
 	unsigned int size_field = 1, md5_field = 0, line = 0, sigs = 0, tokens_count;
-	uint32_t size;
 	struct cli_bm_patt *new;
 	struct cli_matcher *db = NULL;
 
@@ -1343,7 +1342,7 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	}
 	new->length = 16;
 
-	size = atoi(tokens[size_field]);
+	new->filesize = atoi(tokens[size_field]);
 
 	new->virname = cli_mpool_virname(engine->mempool, (char *) tokens[2], options & CL_DB_OFFICIAL);
 	if(!new->virname) {
@@ -1375,7 +1374,7 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    if(!db->md5_sizes_hs.capacity) {
 		    cli_hashset_init(&db->md5_sizes_hs, 65536, 80);
 	    }
-	    cli_hashset_addkey(&db->md5_sizes_hs, size);
+	    cli_hashset_addkey(&db->md5_sizes_hs, new->filesize);
 	}
 
 	sigs++;
