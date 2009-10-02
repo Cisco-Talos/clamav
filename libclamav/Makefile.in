@@ -150,7 +150,7 @@ am__libclamav_la_SOURCES_DIST = clamav.h matcher-ac.c matcher-ac.h \
 	uniq.h version.c version.h mpool.c mpool.h default.h sha256.c \
 	sha256.h bignum.h bytecode.c bytecode.h bytecode_vm.c \
 	bytecode_priv.h clambc.h cpio.c cpio.h macho.c macho.h \
-	ishield.c ishield.h type_desc.h bytecode_api.c \
+	ishield.c ishield.h type_desc.h bcfeatures.h bytecode_api.c \
 	bytecode_api_decl.c bytecode_api.h bytecode_api_impl.h \
 	bytecode_hooks.h bignum.c bignum_class.h
 @LINK_TOMMATH_FALSE@am__objects_1 = libclamav_la-bignum.lo
@@ -639,7 +639,7 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	uniq.h version.c version.h mpool.c mpool.h default.h sha256.c \
 	sha256.h bignum.h bytecode.c bytecode.h bytecode_vm.c \
 	bytecode_priv.h clambc.h cpio.c cpio.h macho.c macho.h \
-	ishield.c ishield.h type_desc.h bytecode_api.c \
+	ishield.c ishield.h type_desc.h bcfeatures.h bytecode_api.c \
 	bytecode_api_decl.c bytecode_api.h bytecode_api_impl.h \
 	bytecode_hooks.h $(am__append_7)
 noinst_LTLIBRARIES = libclamav_internal_utils.la libclamav_internal_utils_nothreads.la libclamav_nocxx.la

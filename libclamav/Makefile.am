@@ -333,6 +333,7 @@ libclamav_la_SOURCES = \
 	ishield.c \
 	ishield.h \
 	type_desc.h \
+	bcfeatures.h \
 	bytecode_api.c \
 	bytecode_api_decl.c \
 	bytecode_api.h \

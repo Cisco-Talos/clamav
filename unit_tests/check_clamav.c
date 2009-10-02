@@ -522,6 +522,7 @@ int main(void)
     int nf;
     Suite *s = test_cl_suite();
     SRunner *sr = srunner_create(s);
+    /*
 #ifdef CHECK_HAVE_LOOPS
     srunner_add_suite(sr, test_cli_suite());
 #else
@@ -533,7 +534,7 @@ int main(void)
     srunner_add_suite(sr, test_disasm_suite());
     srunner_add_suite(sr, test_uniq_suite());
     srunner_add_suite(sr, test_matchers_suite());
-    srunner_add_suite(sr, test_htmlnorm_suite());
+    srunner_add_suite(sr, test_htmlnorm_suite());*/
     srunner_add_suite(sr, test_bytecode_suite());
 
     srunner_set_log(sr, "test.log");

@@ -369,7 +369,10 @@ public:
 
 	for (unsigned i=0;i<cli_apicall_maxglobal - _FIRST_GLOBAL;i++) {
 	    unsigned id = cli_globals[i].globalid;
-	    GVtypeMap[id] = apiMap.get(cli_globals[i].type);
+	    const Type *Ty = apiMap.get(cli_globals[i].type);
+	    if (const ArrayType *ATy = dyn_cast<ArrayType>(Ty))
+		Ty = PointerType::getUnqual(ATy->getElementType());
+	    GVtypeMap[id] = Ty;
 	}
 	FunctionType *FTy = FunctionType::get(Type::getVoidTy(Context),
 						    false);

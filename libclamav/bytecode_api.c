@@ -79,6 +79,7 @@ uint32_t cli_bcapi_debug_print_str(struct cli_bc_ctx *ctx, const uint8_t *str, u
 uint32_t cli_bcapi_debug_print_uint(struct cli_bc_ctx *ctx, uint32_t a, uint32_t b)
 {
     cli_dbgmsg("bytecode debug: %u\n", a);
+    return 0;
 }
 
 /*TODO: compiler should make sure that only constants are passed here, and not
@@ -87,4 +88,5 @@ uint32_t cli_bcapi_debug_print_uint(struct cli_bc_ctx *ctx, uint32_t a, uint32_t
 uint32_t cli_bcapi_setvirusname(struct cli_bc_ctx* ctx, const uint8_t *name, uint32_t len)
 {
     ctx->virname = name;
+    return 0;
 }
