@@ -26,6 +26,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <sys/stat.h>
 
 #include <assert.h>
 #ifdef	HAVE_UNISTD_H
@@ -819,8 +820,17 @@ int cli_ac_caloff(struct cli_matcher *root, int fd)
 	unsigned int i;
 	struct cli_ac_patt *patt;
 	struct cli_target_info info;
+	struct stat sb;
 
-    memset(&info, 0, sizeof(info));
+    if(fd != -1) {
+	memset(&info, 0, sizeof(info));
+	if(fstat(fd, &sb) == -1) {
+	    cli_errmsg("cli_ac_caloff: fstat(%d) failed\n", fd);
+	    return CL_ESTAT;
+	}
+	info.fsize = sb.st_size;
+    }
+
     for(i = 0; i < root->ac_reloff_num; i++) {
 	patt = root->ac_reloff[i];
 	if(fd == -1) {
@@ -832,7 +842,7 @@ int cli_ac_caloff(struct cli_matcher *root, int fd)
 	    return ret;
 	}
     }
-    if(info.exeinfo.section)
+    if(fd != -1 && info.exeinfo.section)
 	free(info.exeinfo.section);
 
     return CL_SUCCESS;
