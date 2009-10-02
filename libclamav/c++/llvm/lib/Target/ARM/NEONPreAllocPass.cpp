@@ -45,6 +45,9 @@ static bool isNEONMultiRegOp(int Opcode, unsigned &FirstOpnd,
   case ARM::VLD2d8:
   case ARM::VLD2d16:
   case ARM::VLD2d32:
+  case ARM::VLD2LNd8:
+  case ARM::VLD2LNd16:
+  case ARM::VLD2LNd32:
     FirstOpnd = 0;
     NumRegs = 2;
     return true;
@@ -52,6 +55,9 @@ static bool isNEONMultiRegOp(int Opcode, unsigned &FirstOpnd,
   case ARM::VLD3d8:
   case ARM::VLD3d16:
   case ARM::VLD3d32:
+  case ARM::VLD3LNd8:
+  case ARM::VLD3LNd16:
+  case ARM::VLD3LNd32:
     FirstOpnd = 0;
     NumRegs = 3;
     return true;
@@ -59,6 +65,9 @@ static bool isNEONMultiRegOp(int Opcode, unsigned &FirstOpnd,
   case ARM::VLD4d8:
   case ARM::VLD4d16:
   case ARM::VLD4d32:
+  case ARM::VLD4LNd8:
+  case ARM::VLD4LNd16:
+  case ARM::VLD4LNd32:
     FirstOpnd = 0;
     NumRegs = 4;
     return true;
@@ -66,6 +75,9 @@ static bool isNEONMultiRegOp(int Opcode, unsigned &FirstOpnd,
   case ARM::VST2d8:
   case ARM::VST2d16:
   case ARM::VST2d32:
+  case ARM::VST2LNd8:
+  case ARM::VST2LNd16:
+  case ARM::VST2LNd32:
     FirstOpnd = 3;
     NumRegs = 2;
     return true;
@@ -73,6 +85,9 @@ static bool isNEONMultiRegOp(int Opcode, unsigned &FirstOpnd,
   case ARM::VST3d8:
   case ARM::VST3d16:
   case ARM::VST3d32:
+  case ARM::VST3LNd8:
+  case ARM::VST3LNd16:
+  case ARM::VST3LNd32:
     FirstOpnd = 3;
     NumRegs = 3;
     return true;
@@ -80,6 +95,9 @@ static bool isNEONMultiRegOp(int Opcode, unsigned &FirstOpnd,
   case ARM::VST4d8:
   case ARM::VST4d16:
   case ARM::VST4d32:
+  case ARM::VST4LNd8:
+  case ARM::VST4LNd16:
+  case ARM::VST4LNd32:
     FirstOpnd = 3;
     NumRegs = 4;
     return true;

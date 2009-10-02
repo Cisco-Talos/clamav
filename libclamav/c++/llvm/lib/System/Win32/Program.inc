@@ -22,17 +22,30 @@
 //===          and must not be UNIX code
 //===----------------------------------------------------------------------===//
 
+namespace {
+  struct Win32ProcessInfo {
+    HANDLE hProcess;
+    DWORD  dwProcessId;
+  };
+}
+
 namespace llvm {
 using namespace sys;
 
-Program::Program() : Pid_(0), Data(0) {}
+Program::Program() : Data_(0) {}
 
 Program::~Program() {
-	if (Data) {
-		HANDLE hProcess = (HANDLE) Data;
-		CloseHandle(hProcess);
-		Data = 0;
-	}
+  if (Data_) {
+    Win32ProcessInfo* wpi = reinterpret_cast<Win32ProcessInfo*>(Data_);
+    CloseHandle(wpi->hProcess);
+    delete wpi;
+    Data_ = 0;
+  }
+}
+
+unsigned Program::GetPid() const {
+  Win32ProcessInfo* wpi = reinterpret_cast<Win32ProcessInfo*>(Data_);
+  return wpi->dwProcessId;
 }
 
 // This function just uses the PATH environment variable to find the program.
@@ -121,7 +134,7 @@ static HANDLE RedirectIO(const Path *path, int fd, std::string* ErrMsg) {
 
 /// ArgNeedsQuotes - Check whether argument needs to be quoted when calling
 /// CreateProcess.
-static bool ArgNeedsQuotes(const char *Str) {  
+static bool ArgNeedsQuotes(const char *Str) {
   return Str[0] == '\0' || strchr(Str, ' ') != 0;
 }
 
@@ -132,12 +145,13 @@ Program::Execute(const Path& path,
                  const Path** redirects,
                  unsigned memoryLimit,
                  std::string* ErrMsg) {
-  if (Data) {
-    HANDLE hProcess = (HANDLE) Data;
-    CloseHandle(Data);
-    Data = 0;
+  if (Data_) {
+    Win32ProcessInfo* wpi = reinterpret_cast<Win32ProcessInfo*>(Data_);
+    CloseHandle(wpi->hProcess);
+    delete wpi;
+    Data_ = 0;
   }
-  
+
   if (!path.canExecute()) {
     if (ErrMsg)
       *ErrMsg = "program not executable";
@@ -264,9 +278,11 @@ Program::Execute(const Path& path,
                path.str() + "'");
     return false;
   }
-  Pid_ = pi.dwProcessId;
-  Data = pi.hProcess;
-  
+  Win32ProcessInfo* wpi = new Win32ProcessInfo;
+  wpi->hProcess = pi.hProcess;
+  wpi->dwProcessId = pi.dwProcessId;
+  Data_ = wpi;
+
   // Make sure these get closed no matter what.
   AutoHandle hThread(pi.hThread);
 
@@ -301,13 +317,14 @@ Program::Execute(const Path& path,
 int
 Program::Wait(unsigned secondsToWait,
               std::string* ErrMsg) {
-  if (Data == 0) {
+  if (Data_ == 0) {
     MakeErrMsg(ErrMsg, "Process not started!");
     return -1;
   }
 
-  HANDLE hProcess = (HANDLE) Data;
-  
+  Win32ProcessInfo* wpi = reinterpret_cast<Win32ProcessInfo*>(Data_);
+  HANDLE hProcess = wpi->hProcess;
+
   // Wait for the process to terminate.
   DWORD millisecondsToWait = INFINITE;
   if (secondsToWait > 0)
@@ -333,6 +350,23 @@ Program::Wait(unsigned secondsToWait,
   }
 
   return status;
+}
+
+bool
+Program::Kill(std::string* ErrMsg) {
+  if (Data_ == 0) {
+    MakeErrMsg(ErrMsg, "Process not started!");
+    return true;
+  }
+
+  Win32ProcessInfo* wpi = reinterpret_cast<Win32ProcessInfo*>(Data_);
+  HANDLE hProcess = wpi->hProcess;
+  if (TerminateProcess(hProcess, 1) == 0) {
+    MakeErrMsg(ErrMsg, "The process couldn't be killed!");
+    return true;
+  }
+
+  return false;
 }
 
 bool Program::ChangeStdinToBinary(){

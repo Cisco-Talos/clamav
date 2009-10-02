@@ -26,6 +26,7 @@
 #include "llvm/Analysis/AliasAnalysis.h"
 #include "llvm/Analysis/CallGraph.h"
 #include "llvm/Analysis/CaptureTracking.h"
+#include "llvm/Analysis/MallocHelper.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/ADT/UniqueVector.h"
@@ -153,7 +154,7 @@ bool FunctionAttrs::AddReadAttrs(const std::vector<CallGraphNode *> &SCC) {
         return false;
 
       if (isa<MallocInst>(I))
-        // MallocInst claims not to write memory!  PR3754.
+        // malloc claims not to write memory!  PR3754.
         return false;
 
       // If this instruction may read memory, remember that.
@@ -247,26 +248,30 @@ bool FunctionAttrs::IsFunctionMallocLike(Function *F,
     if (Instruction *RVI = dyn_cast<Instruction>(RetVal))
       switch (RVI->getOpcode()) {
         // Extend the analysis by looking upwards.
-        case Instruction::GetElementPtr:
         case Instruction::BitCast:
+        case Instruction::GetElementPtr:
           FlowsToReturn.insert(RVI->getOperand(0));
           continue;
         case Instruction::Select: {
           SelectInst *SI = cast<SelectInst>(RVI);
           FlowsToReturn.insert(SI->getTrueValue());
           FlowsToReturn.insert(SI->getFalseValue());
-        } continue;
+          continue;
+        }
         case Instruction::PHI: {
           PHINode *PN = cast<PHINode>(RVI);
           for (int i = 0, e = PN->getNumIncomingValues(); i != e; ++i)
             FlowsToReturn.insert(PN->getIncomingValue(i));
-        } continue;
+          continue;
+        }
 
         // Check whether the pointer came from an allocation.
         case Instruction::Alloca:
         case Instruction::Malloc:
           break;
         case Instruction::Call:
+          if (isMalloc(RVI))
+            break;
         case Instruction::Invoke: {
           CallSite CS(RVI);
           if (CS.paramHasAttr(0, Attribute::NoAlias))

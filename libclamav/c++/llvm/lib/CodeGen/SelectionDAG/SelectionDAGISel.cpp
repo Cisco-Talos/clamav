@@ -16,6 +16,7 @@
 #include "SelectionDAGBuild.h"
 #include "llvm/CodeGen/SelectionDAGISel.h"
 #include "llvm/Analysis/AliasAnalysis.h"
+#include "llvm/Analysis/DebugInfo.h"
 #include "llvm/Constants.h"
 #include "llvm/CallingConv.h"
 #include "llvm/DerivedTypes.h"
@@ -153,14 +154,15 @@ namespace llvm {
 // insert.  The specified MachineInstr is created but not inserted into any
 // basic blocks, and the scheduler passes ownership of it to this method.
 MachineBasicBlock *TargetLowering::EmitInstrWithCustomInserter(MachineInstr *MI,
-                                                 MachineBasicBlock *MBB) const {
+                                                         MachineBasicBlock *MBB,
+                   DenseMap<MachineBasicBlock*, MachineBasicBlock*> *EM) const {
 #ifndef NDEBUG
   errs() << "If a target marks an instruction with "
           "'usesCustomDAGSchedInserter', it must implement "
           "TargetLowering::EmitInstrWithCustomInserter!";
 #endif
   llvm_unreachable(0);
-  return 0;  
+  return 0;
 }
 
 /// EmitLiveInCopy - Emit a copy for a live in physical register. If the
@@ -223,7 +225,7 @@ static void EmitLiveInCopy(MachineBasicBlock *MBB,
   bool Emitted = TII.copyRegToReg(*MBB, Pos, VirtReg, PhysReg, RC, RC);
   assert(Emitted && "Unable to issue a live-in copy instruction!\n");
   (void) Emitted;
-  
+
 CopyRegMap.insert(std::make_pair(prior(Pos), VirtReg));
   if (Coalesced) {
     if (&*InsertPos == UseMI) ++InsertPos;
@@ -370,12 +372,24 @@ void SelectionDAGISel::SelectBasicBlock(BasicBlock *LLVMBB,
                                         BasicBlock::iterator Begin,
                                         BasicBlock::iterator End) {
   SDL->setCurrentBasicBlock(BB);
+  MetadataContext &TheMetadata = LLVMBB->getParent()->getContext().getMetadata();
+  unsigned MDDbgKind = TheMetadata.getMDKind("dbg");
 
   // Lower all of the non-terminator instructions. If a call is emitted
   // as a tail call, cease emitting nodes for this block.
-  for (BasicBlock::iterator I = Begin; I != End && !SDL->HasTailCall; ++I)
+  for (BasicBlock::iterator I = Begin; I != End && !SDL->HasTailCall; ++I) {
+    if (MDDbgKind) {
+      // Update DebugLoc if debug information is attached with this
+      // instruction.
+      if (MDNode *Dbg = TheMetadata.getMD(MDDbgKind, I)) {
+        DILocation DILoc(Dbg);
+        DebugLoc Loc = ExtractDebugLocation(DILoc, MF->getDebugLocInfo());
+        SDL->setCurDebugLoc(Loc);
+      }
+    }
     if (!isa<TerminatorInst>(I))
       SDL->visit(*I);
+  }
 
   if (!SDL->HasTailCall) {
     // Ensure that all instructions which are used outside of their defining
@@ -392,7 +406,7 @@ void SelectionDAGISel::SelectBasicBlock(BasicBlock *LLVMBB,
       SDL->visit(*LLVMBB->getTerminator());
     }
   }
-    
+
   // Make sure the root of the DAG is up-to-date.
   CurDAG->setRoot(SDL->getControlRoot());
 
@@ -404,44 +418,44 @@ void SelectionDAGISel::SelectBasicBlock(BasicBlock *LLVMBB,
 void SelectionDAGISel::ComputeLiveOutVRegInfo() {
   SmallPtrSet<SDNode*, 128> VisitedNodes;
   SmallVector<SDNode*, 128> Worklist;
-  
+
   Worklist.push_back(CurDAG->getRoot().getNode());
-  
+
   APInt Mask;
   APInt KnownZero;
   APInt KnownOne;
-  
+
   while (!Worklist.empty()) {
     SDNode *N = Worklist.back();
     Worklist.pop_back();
-    
+
     // If we've already seen this node, ignore it.
     if (!VisitedNodes.insert(N))
       continue;
-    
+
     // Otherwise, add all chain operands to the worklist.
     for (unsigned i = 0, e = N->getNumOperands(); i != e; ++i)
       if (N->getOperand(i).getValueType() == MVT::Other)
         Worklist.push_back(N->getOperand(i).getNode());
-    
+
     // If this is a CopyToReg with a vreg dest, process it.
     if (N->getOpcode() != ISD::CopyToReg)
       continue;
-    
+
     unsigned DestReg = cast<RegisterSDNode>(N->getOperand(1))->getReg();
     if (!TargetRegisterInfo::isVirtualRegister(DestReg))
       continue;
-    
+
     // Ignore non-scalar or non-integer values.
     SDValue Src = N->getOperand(2);
     EVT SrcVT = Src.getValueType();
     if (!SrcVT.isInteger() || SrcVT.isVector())
       continue;
-    
+
     unsigned NumSignBits = CurDAG->ComputeNumSignBits(Src);
     Mask = APInt::getAllOnesValue(SrcVT.getSizeInBits());
     CurDAG->ComputeMaskedBits(Src, Mask, KnownZero, KnownOne);
-    
+
     // Only install this information if it tells us something.
     if (NumSignBits != 1 || KnownZero != 0 || KnownOne != 0) {
       DestReg -= TargetRegisterInfo::FirstVirtualRegister;
@@ -479,10 +493,10 @@ void SelectionDAGISel::CodeGenAndEmitDAG() {
   } else {
     CurDAG->Combine(Unrestricted, *AA, OptLevel);
   }
-  
+
   DEBUG(errs() << "Optimized lowered selection DAG:\n");
   DEBUG(CurDAG->dump());
-  
+
   // Second step, hack on the DAG until it only uses operations and types that
   // the target supports.
   if (!DisableLegalizeTypes) {
@@ -546,7 +560,7 @@ void SelectionDAGISel::CodeGenAndEmitDAG() {
       DEBUG(CurDAG->dump());
     }
   }
-  
+
   if (ViewLegalizeDAGs) CurDAG->viewGraph("legalize input for " + BlockName);
 
   if (TimePassesIsEnabled) {
@@ -555,10 +569,10 @@ void SelectionDAGISel::CodeGenAndEmitDAG() {
   } else {
     CurDAG->Legalize(DisableLegalizeTypes, OptLevel);
   }
-  
+
   DEBUG(errs() << "Legalized selection DAG:\n");
   DEBUG(CurDAG->dump());
-  
+
   if (ViewDAGCombine2) CurDAG->viewGraph("dag-combine2 input for " + BlockName);
 
   // Run the DAG combiner in post-legalize mode.
@@ -568,12 +582,12 @@ void SelectionDAGISel::CodeGenAndEmitDAG() {
   } else {
     CurDAG->Combine(NoIllegalOperations, *AA, OptLevel);
   }
-  
+
   DEBUG(errs() << "Optimized legalized selection DAG:\n");
   DEBUG(CurDAG->dump());
 
   if (ViewISelDAGs) CurDAG->viewGraph("isel input for " + BlockName);
-  
+
   if (OptLevel != CodeGenOpt::None)
     ComputeLiveOutVRegInfo();
 
@@ -602,13 +616,13 @@ void SelectionDAGISel::CodeGenAndEmitDAG() {
 
   if (ViewSUnitDAGs) Scheduler->viewGraph();
 
-  // Emit machine code to BB.  This can change 'BB' to the last block being 
+  // Emit machine code to BB.  This can change 'BB' to the last block being
   // inserted into.
   if (TimePassesIsEnabled) {
     NamedRegionTimer T("Instruction Creation", GroupName);
-    BB = Scheduler->EmitSchedule();
+    BB = Scheduler->EmitSchedule(&SDL->EdgeMapping);
   } else {
-    BB = Scheduler->EmitSchedule();
+    BB = Scheduler->EmitSchedule(&SDL->EdgeMapping);
   }
 
   // Free the scheduler state.
@@ -621,7 +635,7 @@ void SelectionDAGISel::CodeGenAndEmitDAG() {
 
   DEBUG(errs() << "Selected machine code:\n");
   DEBUG(BB->dump());
-}  
+}
 
 void SelectionDAGISel::SelectAllBasicBlocks(Function &Fn,
                                             MachineFunction &MF,
@@ -639,6 +653,9 @@ void SelectionDAGISel::SelectAllBasicBlocks(Function &Fn,
                                 , FuncInfo->CatchInfoLost
 #endif
                                 );
+
+  MetadataContext &TheMetadata = Fn.getContext().getMetadata();
+  unsigned MDDbgKind = TheMetadata.getMDKind("dbg");
 
   // Iterate over all basic blocks in the function.
   for (Function::iterator I = Fn.begin(), E = Fn.end(); I != E; ++I) {
@@ -722,6 +739,17 @@ void SelectionDAGISel::SelectAllBasicBlocks(Function &Fn,
       FastIS->startNewBlock(BB);
       // Do FastISel on as many instructions as possible.
       for (; BI != End; ++BI) {
+        if (MDDbgKind) {
+          // Update DebugLoc if debug information is attached with this
+          // instruction.
+          if (MDNode *Dbg = TheMetadata.getMD(MDDbgKind, BI)) {
+            DILocation DILoc(Dbg);
+            DebugLoc Loc = ExtractDebugLocation(DILoc,
+                                                MF.getDebugLocInfo());
+            FastIS->setCurDebugLoc(Loc);
+          }
+        }
+
         // Just before the terminator instruction, insert instructions to
         // feed PHI nodes in successor blocks.
         if (isa<TerminatorInst>(BI))
@@ -730,7 +758,7 @@ void SelectionDAGISel::SelectAllBasicBlocks(Function &Fn,
               errs() << "FastISel miss: ";
               BI->dump();
             }
-            assert(!EnableFastISelAbort && 
+            assert(!EnableFastISelAbort &&
                    "FastISel didn't handle a PHI in a successor");
             break;
           }
@@ -808,7 +836,7 @@ SelectionDAGISel::FinishBasicBlock() {
           errs() << "Node " << i << " : ("
                  << SDL->PHINodesToUpdate[i].first
                  << ", " << SDL->PHINodesToUpdate[i].second << ")\n");
-  
+
   // Next, now that we know what the last MBB the LLVM BB expanded is, update
   // PHI nodes in successors.
   if (SDL->SwitchCases.empty() &&
@@ -837,7 +865,7 @@ SelectionDAGISel::FinishBasicBlock() {
       CurDAG->setRoot(SDL->getRoot());
       CodeGenAndEmitDAG();
       SDL->clear();
-    }    
+    }
 
     for (unsigned j = 0, ej = SDL->BitTestCases[i].Cases.size(); j != ej; ++j) {
       // Set the current basic block to the mbb we wish to insert the code into
@@ -852,8 +880,8 @@ SelectionDAGISel::FinishBasicBlock() {
         SDL->visitBitTestCase(SDL->BitTestCases[i].Default,
                               SDL->BitTestCases[i].Reg,
                               SDL->BitTestCases[i].Cases[j]);
-        
-        
+
+
       CurDAG->setRoot(SDL->getRoot());
       CodeGenAndEmitDAG();
       SDL->clear();
@@ -906,7 +934,7 @@ SelectionDAGISel::FinishBasicBlock() {
       CodeGenAndEmitDAG();
       SDL->clear();
     }
-    
+
     // Set the current basic block to the mbb we wish to insert the code into
     BB = SDL->JTCases[i].second.MBB;
     SDL->setCurrentBasicBlock(BB);
@@ -915,7 +943,7 @@ SelectionDAGISel::FinishBasicBlock() {
     CurDAG->setRoot(SDL->getRoot());
     CodeGenAndEmitDAG();
     SDL->clear();
-    
+
     // Update PHI Nodes
     for (unsigned pi = 0, pe = SDL->PHINodesToUpdate.size(); pi != pe; ++pi) {
       MachineInstr *PHI = SDL->PHINodesToUpdate[pi].first;
@@ -924,20 +952,21 @@ SelectionDAGISel::FinishBasicBlock() {
              "This is not a machine PHI node that we are updating!");
       // "default" BB. We can go there only from header BB.
       if (PHIBB == SDL->JTCases[i].second.Default) {
-        PHI->addOperand(MachineOperand::CreateReg(SDL->PHINodesToUpdate[pi].second,
-                                                  false));
-        PHI->addOperand(MachineOperand::CreateMBB(SDL->JTCases[i].first.HeaderBB));
+        PHI->addOperand
+          (MachineOperand::CreateReg(SDL->PHINodesToUpdate[pi].second, false));
+        PHI->addOperand
+          (MachineOperand::CreateMBB(SDL->JTCases[i].first.HeaderBB));
       }
       // JT BB. Just iterate over successors here
       if (BB->succ_end() != std::find(BB->succ_begin(),BB->succ_end(), PHIBB)) {
-        PHI->addOperand(MachineOperand::CreateReg(SDL->PHINodesToUpdate[pi].second,
-                                                  false));
+        PHI->addOperand
+          (MachineOperand::CreateReg(SDL->PHINodesToUpdate[pi].second, false));
         PHI->addOperand(MachineOperand::CreateMBB(BB));
       }
     }
   }
   SDL->JTCases.clear();
-  
+
   // If the switch block involved a branch to one of the actual successors, we
   // need to update PHI nodes in that block.
   for (unsigned i = 0, e = SDL->PHINodesToUpdate.size(); i != e; ++i) {
@@ -950,25 +979,31 @@ SelectionDAGISel::FinishBasicBlock() {
       PHI->addOperand(MachineOperand::CreateMBB(BB));
     }
   }
-  
+
   // If we generated any switch lowering information, build and codegen any
   // additional DAGs necessary.
   for (unsigned i = 0, e = SDL->SwitchCases.size(); i != e; ++i) {
     // Set the current basic block to the mbb we wish to insert the code into
-    BB = SDL->SwitchCases[i].ThisBB;
+    MachineBasicBlock *ThisBB = BB = SDL->SwitchCases[i].ThisBB;
     SDL->setCurrentBasicBlock(BB);
-    
+
     // Emit the code
     SDL->visitSwitchCase(SDL->SwitchCases[i]);
     CurDAG->setRoot(SDL->getRoot());
     CodeGenAndEmitDAG();
-    SDL->clear();
-    
+
     // Handle any PHI nodes in successors of this chunk, as if we were coming
     // from the original BB before switch expansion.  Note that PHI nodes can
     // occur multiple times in PHINodesToUpdate.  We have to be very careful to
     // handle them the right number of times.
     while ((BB = SDL->SwitchCases[i].TrueBB)) {  // Handle LHS and RHS.
+      // If new BB's are created during scheduling, the edges may have been
+      // updated. That is, the edge from ThisBB to BB may have been split and
+      // BB's predecessor is now another block.
+      DenseMap<MachineBasicBlock*, MachineBasicBlock*>::iterator EI =
+        SDL->EdgeMapping.find(BB);
+      if (EI != SDL->EdgeMapping.end())
+        ThisBB = EI->second;
       for (MachineBasicBlock::iterator Phi = BB->begin();
            Phi != BB->end() && Phi->getOpcode() == TargetInstrInfo::PHI; ++Phi){
         // This value for this PHI node is recorded in PHINodesToUpdate, get it.
@@ -978,21 +1013,22 @@ SelectionDAGISel::FinishBasicBlock() {
           if (SDL->PHINodesToUpdate[pn].first == Phi) {
             Phi->addOperand(MachineOperand::CreateReg(SDL->PHINodesToUpdate[pn].
                                                       second, false));
-            Phi->addOperand(MachineOperand::CreateMBB(SDL->SwitchCases[i].ThisBB));
+            Phi->addOperand(MachineOperand::CreateMBB(ThisBB));
             break;
           }
         }
       }
-      
+
       // Don't process RHS if same block as LHS.
       if (BB == SDL->SwitchCases[i].FalseBB)
         SDL->SwitchCases[i].FalseBB = 0;
-      
+
       // If we haven't handled the RHS, do so now.  Otherwise, we're done.
       SDL->SwitchCases[i].TrueBB = SDL->SwitchCases[i].FalseBB;
       SDL->SwitchCases[i].FalseBB = 0;
     }
     assert(SDL->SwitchCases[i].TrueBB == 0 && SDL->SwitchCases[i].FalseBB == 0);
+    SDL->clear();
   }
   SDL->SwitchCases.clear();
 
@@ -1006,12 +1042,12 @@ SelectionDAGISel::FinishBasicBlock() {
 ///
 ScheduleDAGSDNodes *SelectionDAGISel::CreateScheduler() {
   RegisterScheduler::FunctionPassCtor Ctor = RegisterScheduler::getDefault();
-  
+
   if (!Ctor) {
     Ctor = ISHeuristic;
     RegisterScheduler::setDefault(Ctor);
   }
-  
+
   return Ctor(this, OptLevel);
 }
 
@@ -1028,25 +1064,25 @@ ScheduleHazardRecognizer *SelectionDAGISel::CreateTargetHazardRecognizer() {
 /// the dag combiner simplified the 255, we still want to match.  RHS is the
 /// actual value in the DAG on the RHS of an AND, and DesiredMaskS is the value
 /// specified in the .td file (e.g. 255).
-bool SelectionDAGISel::CheckAndMask(SDValue LHS, ConstantSDNode *RHS, 
+bool SelectionDAGISel::CheckAndMask(SDValue LHS, ConstantSDNode *RHS,
                                     int64_t DesiredMaskS) const {
   const APInt &ActualMask = RHS->getAPIntValue();
   const APInt &DesiredMask = APInt(LHS.getValueSizeInBits(), DesiredMaskS);
-  
+
   // If the actual mask exactly matches, success!
   if (ActualMask == DesiredMask)
     return true;
-  
+
   // If the actual AND mask is allowing unallowed bits, this doesn't match.
   if (ActualMask.intersects(~DesiredMask))
     return false;
-  
+
   // Otherwise, the DAG Combiner may have proven that the value coming in is
   // either already zero or is not demanded.  Check for known zero input bits.
   APInt NeededMask = DesiredMask & ~ActualMask;
   if (CurDAG->MaskedValueIsZero(LHS, NeededMask))
     return true;
-  
+
   // TODO: check to see if missing bits are just not demanded.
 
   // Otherwise, this pattern doesn't match.
@@ -1057,32 +1093,32 @@ bool SelectionDAGISel::CheckAndMask(SDValue LHS, ConstantSDNode *RHS,
 /// the dag combiner simplified the 255, we still want to match.  RHS is the
 /// actual value in the DAG on the RHS of an OR, and DesiredMaskS is the value
 /// specified in the .td file (e.g. 255).
-bool SelectionDAGISel::CheckOrMask(SDValue LHS, ConstantSDNode *RHS, 
+bool SelectionDAGISel::CheckOrMask(SDValue LHS, ConstantSDNode *RHS,
                                    int64_t DesiredMaskS) const {
   const APInt &ActualMask = RHS->getAPIntValue();
   const APInt &DesiredMask = APInt(LHS.getValueSizeInBits(), DesiredMaskS);
-  
+
   // If the actual mask exactly matches, success!
   if (ActualMask == DesiredMask)
     return true;
-  
+
   // If the actual AND mask is allowing unallowed bits, this doesn't match.
   if (ActualMask.intersects(~DesiredMask))
     return false;
-  
+
   // Otherwise, the DAG Combiner may have proven that the value coming in is
   // either already zero or is not demanded.  Check for known zero input bits.
   APInt NeededMask = DesiredMask & ~ActualMask;
-  
+
   APInt KnownZero, KnownOne;
   CurDAG->ComputeMaskedBits(LHS, NeededMask, KnownZero, KnownOne);
-  
+
   // If all the missing bits in the or are already known to be set, match!
   if ((NeededMask & KnownOne) == NeededMask)
     return true;
-  
+
   // TODO: check to see if missing bits are just not demanded.
-  
+
   // Otherwise, this pattern doesn't match.
   return false;
 }
@@ -1101,7 +1137,7 @@ SelectInlineAsmMemoryOperands(std::vector<SDValue> &Ops) {
   unsigned i = 2, e = InOps.size();
   if (InOps[e-1].getValueType() == MVT::Flag)
     --e;  // Don't process a flag operand if it is here.
-  
+
   while (i != e) {
     unsigned Flags = cast<ConstantSDNode>(InOps[i])->getZExtValue();
     if ((Flags & 7) != 4 /*MEM*/) {
@@ -1118,7 +1154,7 @@ SelectInlineAsmMemoryOperands(std::vector<SDValue> &Ops) {
         llvm_report_error("Could not match memory address.  Inline asm"
                           " failure!");
       }
-      
+
       // Add this to the output node.
       EVT IntPtrTy = TLI.getPointerTy();
       Ops.push_back(CurDAG->getTargetConstant(4/*MEM*/ | (SelOps.size()<< 3),
@@ -1127,7 +1163,7 @@ SelectInlineAsmMemoryOperands(std::vector<SDValue> &Ops) {
       i += 2;
     }
   }
-  
+
   // Add the flag input back if present.
   if (e != InOps.size())
     Ops.push_back(InOps.back());

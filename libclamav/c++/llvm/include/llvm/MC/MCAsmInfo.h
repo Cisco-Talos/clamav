@@ -84,33 +84,6 @@ namespace llvm {
     /// is "l" on Darwin, currently used for some ObjC metadata.
     const char *LinkerPrivateGlobalPrefix;   // Defaults to ""
     
-    /// JumpTableSpecialLabelPrefix - If not null, a extra (dead) label is
-    /// emitted before jump tables with the specified prefix.
-    const char *JumpTableSpecialLabelPrefix; // Default to null.
-    
-    /// GlobalVarAddrPrefix/Suffix - If these are nonempty, these strings
-    /// will enclose any GlobalVariable (that isn't a function)
-    ///
-    const char *GlobalVarAddrPrefix;         // Defaults to ""
-    const char *GlobalVarAddrSuffix;         // Defaults to ""
-
-    /// FunctionAddrPrefix/Suffix - If these are nonempty, these strings
-    /// will enclose any GlobalVariable that points to a function.
-    ///
-    const char *FunctionAddrPrefix;          // Defaults to ""
-    const char *FunctionAddrSuffix;          // Defaults to ""
-
-    /// PersonalityPrefix/Suffix - If these are nonempty, these strings will
-    /// enclose any personality function in the common frame section.
-    /// 
-    const char *PersonalityPrefix;           // Defaults to ""
-    const char *PersonalitySuffix;           // Defaults to ""
-
-    /// NeedsIndirectEncoding - If set, we need to set the indirect encoding bit
-    /// for EH in Dwarf.
-    /// 
-    bool NeedsIndirectEncoding;              // Defaults to false
-
     /// InlineAsmStart/End - If these are nonempty, they contain a directive to
     /// emit before and after an inline assembly statement.
     const char *InlineAsmStart;              // Defaults to "#APP\n"
@@ -122,6 +95,10 @@ namespace llvm {
     /// AllowQuotesInName - This is true if the assembler allows for complex
     /// symbol names to be surrounded in quotes.  This defaults to false.
     bool AllowQuotesInName;
+
+    /// AllowNameToStartWithDigit - This is true if the assembler allows symbol
+    /// names to start with a digit (e.g., "0x0021").  This defaults to false.
+    bool AllowNameToStartWithDigit;
     
     //===--- Data Emission Directives -------------------------------------===//
 
@@ -369,30 +346,6 @@ namespace llvm {
     const char *getLinkerPrivateGlobalPrefix() const {
       return LinkerPrivateGlobalPrefix;
     }
-    const char *getJumpTableSpecialLabelPrefix() const {
-      return JumpTableSpecialLabelPrefix;
-    }
-    const char *getGlobalVarAddrPrefix() const {
-      return GlobalVarAddrPrefix;
-    }
-    const char *getGlobalVarAddrSuffix() const {
-      return GlobalVarAddrSuffix;
-    }
-    const char *getFunctionAddrPrefix() const {
-      return FunctionAddrPrefix;
-    }
-    const char *getFunctionAddrSuffix() const {
-      return FunctionAddrSuffix;
-    }
-    const char *getPersonalityPrefix() const {
-      return PersonalityPrefix;
-    }
-    const char *getPersonalitySuffix() const {
-      return PersonalitySuffix;
-    }
-    bool getNeedsIndirectEncoding() const {
-      return NeedsIndirectEncoding;
-    }
     const char *getInlineAsmStart() const {
       return InlineAsmStart;
     }
@@ -404,6 +357,9 @@ namespace llvm {
     }
     bool doesAllowQuotesInName() const {
       return AllowQuotesInName;
+    }
+    bool doesAllowNameToStartWithDigit() const {
+      return AllowNameToStartWithDigit;
     }
     const char *getZeroDirective() const {
       return ZeroDirective;

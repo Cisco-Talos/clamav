@@ -1118,7 +1118,8 @@ unsigned LLVMGetFunctionCallConv(LLVMValueRef Fn) {
 }
 
 void LLVMSetFunctionCallConv(LLVMValueRef Fn, unsigned CC) {
-  return unwrap<Function>(Fn)->setCallingConv(CC);
+  return unwrap<Function>(Fn)->setCallingConv(
+    static_cast<CallingConv::ID>(CC));
 }
 
 const char *LLVMGetGC(LLVMValueRef Fn) {
@@ -1362,9 +1363,9 @@ unsigned LLVMGetInstructionCallConv(LLVMValueRef Instr) {
 void LLVMSetInstructionCallConv(LLVMValueRef Instr, unsigned CC) {
   Value *V = unwrap(Instr);
   if (CallInst *CI = dyn_cast<CallInst>(V))
-    return CI->setCallingConv(CC);
+    return CI->setCallingConv(static_cast<CallingConv::ID>(CC));
   else if (InvokeInst *II = dyn_cast<InvokeInst>(V))
-    return II->setCallingConv(CC);
+    return II->setCallingConv(static_cast<CallingConv::ID>(CC));
   llvm_unreachable("LLVMSetInstructionCallConv applies only to call and invoke!");
 }
 
@@ -1625,6 +1626,10 @@ LLVMValueRef LLVMBuildXor(LLVMBuilderRef B, LLVMValueRef LHS, LLVMValueRef RHS,
 
 LLVMValueRef LLVMBuildNeg(LLVMBuilderRef B, LLVMValueRef V, const char *Name) {
   return wrap(unwrap(B)->CreateNeg(unwrap(V), Name));
+}
+
+LLVMValueRef LLVMBuildFNeg(LLVMBuilderRef B, LLVMValueRef V, const char *Name) {
+  return wrap(unwrap(B)->CreateFNeg(unwrap(V), Name));
 }
 
 LLVMValueRef LLVMBuildNot(LLVMBuilderRef B, LLVMValueRef V, const char *Name) {

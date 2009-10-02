@@ -29,9 +29,12 @@ namespace llvm {
   class MCCodeEmitter;
   class Module;
   class MCAsmInfo;
+  class MCDisassembler;
+  class MCInstPrinter;
   class TargetAsmParser;
   class TargetMachine;
   class formatted_raw_ostream;
+  class raw_ostream;
 
   /// Target - Wrapper for Target specific information.
   ///
@@ -58,6 +61,11 @@ namespace llvm {
                                             bool VerboseAsm);
     typedef TargetAsmParser *(*AsmParserCtorTy)(const Target &T,
                                                 MCAsmParser &P);
+    typedef const MCDisassembler *(*MCDisassemblerCtorTy)(const Target &T);
+    typedef MCInstPrinter *(*MCInstPrinterCtorTy)(const Target &T,
+                                                  unsigned SyntaxVariant,
+                                                  const MCAsmInfo &MAI,
+                                                  raw_ostream &O);
     typedef MCCodeEmitter *(*CodeEmitterCtorTy)(const Target &T,
                                                 TargetMachine &TM);
 
@@ -92,7 +100,16 @@ namespace llvm {
     /// AsmParserCtorFn - Construction function for this target's AsmParser,
     /// if registered.
     AsmParserCtorTy AsmParserCtorFn;
+    
+    /// MCDisassemblerCtorFn - Construction function for this target's
+    /// MCDisassembler, if registered.
+    MCDisassemblerCtorTy MCDisassemblerCtorFn;
 
+    
+    /// MCInstPrinterCtorFn - Construction function for this target's 
+    /// MCInstPrinter, if registered.
+    MCInstPrinterCtorTy MCInstPrinterCtorFn;
+    
     /// CodeEmitterCtorFn - Construction function for this target's CodeEmitter,
     /// if registered.
     CodeEmitterCtorTy CodeEmitterCtorFn;
@@ -125,6 +142,12 @@ namespace llvm {
 
     /// hasAsmParser - Check if this target supports .s parsing.
     bool hasAsmParser() const { return AsmParserCtorFn != 0; }
+    
+    /// hasMCDisassembler - Check if this target has a disassembler.
+    bool hasMCDisassembler() const { return MCDisassemblerCtorFn != 0; }
+
+    /// hasMCInstPrinter - Check if this target has an instruction printer.
+    bool hasMCInstPrinter() const { return MCInstPrinterCtorFn != 0; }
 
     /// hasCodeEmitter - Check if this target supports instruction encoding.
     bool hasCodeEmitter() const { return CodeEmitterCtorFn != 0; }
@@ -177,7 +200,22 @@ namespace llvm {
         return 0;
       return AsmParserCtorFn(*this, Parser);
     }
+    
+    const MCDisassembler *createMCDisassembler() const {
+      if (!MCDisassemblerCtorFn)
+        return 0;
+      return MCDisassemblerCtorFn(*this);
+    }
 
+    MCInstPrinter *createMCInstPrinter(unsigned SyntaxVariant,
+                                       const MCAsmInfo &MAI,
+                                       raw_ostream &O) const {
+      if (!MCInstPrinterCtorFn)
+        return 0;
+      return MCInstPrinterCtorFn(*this, SyntaxVariant, MAI, O);
+    }
+    
+    
     /// createCodeEmitter - Create a target specific code emitter.
     MCCodeEmitter *createCodeEmitter(TargetMachine &TM) const {
       if (!CodeEmitterCtorFn)
@@ -333,7 +371,28 @@ namespace llvm {
       if (!T.AsmParserCtorFn)
         T.AsmParserCtorFn = Fn;
     }
+    
+    /// RegisterMCDisassembler - Register a MCDisassembler implementation for
+    /// the given target.
+    /// 
+    /// Clients are responsible for ensuring that registration doesn't occur
+    /// while another thread is attempting to access the registry. Typically
+    /// this is done by initializing all targets at program startup.
+    ///
+    /// @param T - The target being registered.
+    /// @param Fn - A function to construct an MCDisassembler for the target.
+    static void RegisterMCDisassembler(Target &T, 
+                                       Target::MCDisassemblerCtorTy Fn) {
+      if (!T.MCDisassemblerCtorFn)
+        T.MCDisassemblerCtorFn = Fn;
+    }
 
+    static void RegisterMCInstPrinter(Target &T,
+                                      Target::MCInstPrinterCtorTy Fn) {
+      if (!T.MCInstPrinterCtorFn)
+        T.MCInstPrinterCtorFn = Fn;
+    }
+    
     /// RegisterCodeEmitter - Register a MCCodeEmitter implementation for the
     /// given target.
     /// 
@@ -373,7 +432,7 @@ namespace llvm {
     }
 
     static unsigned getTripleMatchQuality(const std::string &TT) {
-      if (Triple(TT.c_str()).getArch() == TargetArchType)
+      if (Triple(TT).getArch() == TargetArchType)
         return 20;
       return 0;
     }

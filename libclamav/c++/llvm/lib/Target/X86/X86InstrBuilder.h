@@ -26,6 +26,7 @@
 
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
+#include "llvm/CodeGen/MachineMemOperand.h"
 #include "llvm/CodeGen/PseudoSourceValue.h"
 
 namespace llvm {
@@ -47,7 +48,7 @@ struct X86AddressMode {
 
   unsigned Scale;
   unsigned IndexReg;
-  unsigned Disp;
+  int Disp;
   GlobalValue *GV;
   unsigned GVOpFlags;
 
@@ -142,11 +143,11 @@ addFrameReference(const MachineInstrBuilder &MIB, int FI, int Offset = 0) {
     Flags |= MachineMemOperand::MOLoad;
   if (TID.mayStore())
     Flags |= MachineMemOperand::MOStore;
-  MachineMemOperand MMO(PseudoSourceValue::getFixedStack(FI),
-                        Flags,
-                        MFI.getObjectOffset(FI) + Offset,
-                        MFI.getObjectSize(FI),
-                        MFI.getObjectAlignment(FI));
+  MachineMemOperand *MMO =
+    MF.getMachineMemOperand(PseudoSourceValue::getFixedStack(FI),
+                            Flags, Offset,
+                            MFI.getObjectSize(FI),
+                            MFI.getObjectAlignment(FI));
   return addOffset(MIB.addFrameIndex(FI), Offset)
             .addMemOperand(MMO);
 }

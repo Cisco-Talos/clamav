@@ -51,7 +51,6 @@
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/LoopPass.h"
 #include "llvm/Support/CFG.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
@@ -68,7 +67,7 @@ STATISTIC(NumReplaced, "Number of exit values replaced");
 STATISTIC(NumLFTR    , "Number of loop exit tests replaced");
 
 namespace {
-  class VISIBILITY_HIDDEN IndVarSimplify : public LoopPass {
+  class IndVarSimplify : public LoopPass {
     IVUsers         *IU;
     LoopInfo        *LI;
     ScalarEvolution *SE;
@@ -293,7 +292,7 @@ void IndVarSimplify::RewriteLoopExitValues(Loop *L,
       if (NumPreds != 1) {
         // Clone the PHI and delete the original one. This lets IVUsers and
         // any other maps purge the original user from their records.
-        PHINode *NewPN = PN->clone(PN->getContext());
+        PHINode *NewPN = PN->clone();
         NewPN->takeName(PN);
         NewPN->insertBefore(PN);
         PN->replaceAllUsesWith(NewPN);

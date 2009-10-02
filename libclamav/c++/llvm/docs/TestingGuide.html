@@ -595,6 +595,109 @@ directive in a file.</p>
 </div>
 
 <!-- _______________________________________________________________________ -->
+<div class="doc_subsubsection"><a 
+name="FileCheck-CHECK-NOT">The "CHECK-NOT:" directive</a></div>
+
+<div class="doc_text">
+
+<p>The CHECK-NOT: directive is used to verify that a string doesn't occur
+between two matches (or the first match and the beginning of the file).  For
+example, to verify that a load is removed by a transformation, a test like this
+can be used:</p>
+
+<div class="doc_code">
+<pre>
+define i8 @coerce_offset0(i32 %V, i32* %P) {
+  store i32 %V, i32* %P
+   
+  %P2 = bitcast i32* %P to i8*
+  %P3 = getelementptr i8* %P2, i32 2
+
+  %A = load i8* %P3
+  ret i8 %A
+; <b>CHECK:</b> @coerce_offset0
+; <b>CHECK-NOT:</b> load
+; <b>CHECK:</b> ret i8
+}
+</pre>
+</div>
+
+</div>
+
+<!-- _______________________________________________________________________ -->
+<div class="doc_subsubsection"><a 
+name="FileCheck-Matching">FileCheck Pattern Matching Syntax</a></div>
+
+<div class="doc_text">
+
+<p>The CHECK: and CHECK-NOT: directives both take a pattern to match.  For most
+uses of FileCheck, fixed string matching is perfectly sufficient.  For some
+things, a more flexible form of matching is desired.  To support this, FileCheck
+allows you to specify regular expressions in matching strings, surrounded by
+double braces: <b>{{yourregex}}</b>.  Because we want to use fixed string
+matching for a majority of what we do, FileCheck has been designed to support
+mixing and matching fixed string matching with regular expressions.  This allows
+you to write things like this:</p>
+
+<div class="doc_code">
+<pre>
+; CHECK: movhpd	<b>{{[0-9]+}}</b>(%esp), <b>{{%xmm[0-7]}}</b>
+</pre>
+</div>
+
+<p>In this case, any offset from the ESP register will be allowed, and any xmm
+register will be allowed.</p>
+
+<p>Because regular expressions are enclosed with double braces, they are
+visually distinct, and you don't need to use escape characters within the double
+braces like you would in C.  In the rare case that you want to match double
+braces explicitly from the input, you can use something ugly like
+<b>{{[{][{]}}</b> as your pattern.</p>
+
+</div>
+
+<!-- _______________________________________________________________________ -->
+<div class="doc_subsubsection"><a 
+name="FileCheck-Variables">FileCheck Variables</a></div>
+
+<div class="doc_text">
+
+<p>It is often useful to match a pattern and then verify that it occurs again
+later in the file.  For codegen tests, this can be useful to allow any register,
+but verify that that register is used consistently later.  To do this, FileCheck
+allows named variables to be defined and substituted into patterns.  Here is a
+simple example:</p>
+
+<div class="doc_code">
+<pre>
+; CHECK: test5:
+; CHECK:    notw	<b>[[REGISTER:%[a-z]+]]</b>
+; CHECK:    andw	{{.*}}<b>[[REGISTER]]</b>
+</pre>
+</div>
+
+<p>The first check line matches a regex (<tt>%[a-z]+</tt>) and captures it into
+the variables "REGISTER".  The second line verifies that whatever is in REGISTER
+occurs later in the file after an "andw".  FileCheck variable references are
+always contained in <tt>[[ ]]</tt> pairs, are named, and their names can be
+formed with the regex "<tt>[a-zA-Z][a-zA-Z0-9]*</tt>".  If a colon follows the
+name, then it is a definition of the variable, if not, it is a use.</p>
+
+<p>FileCheck variables can be defined multiple times, and uses always get the
+latest value.  Note that variables are all read at the start of a "CHECK" line
+and are all defined at the end.  This means that if you have something like
+"<tt>CHECK: [[XYZ:.*]]x[[XYZ]]</tt>" that the check line will read the previous
+value of the XYZ variable and define a new one after the match is performed.  If
+you need to do something like this you can probably take advantage of the fact
+that FileCheck is not actually line-oriented when it matches, this allows you to
+define two separate CHECK lines that match on the same line.
+</p>
+
+
+
+</div>
+
+<!-- _______________________________________________________________________ -->
 <div class="doc_subsection"><a name="dgvars">Variables and
 substitutions</a></div>
 <!-- _______________________________________________________________________ -->
@@ -649,14 +752,6 @@ substitutions</a></div>
     <dt><b>target_triplet</b> (%target_triplet)</dt>
     <dd>The target triplet that corresponds to the current host machine (the one
     running the test cases). This should probably be called "host".<dd>
-
-    <dt><b>prcontext</b> (%prcontext)</dt>
-    <dd>Path to the prcontext tcl script that prints some context around a 
-    line that matches a pattern. This isn't strictly necessary as the test suite
-    is run with its PATH altered to include the test/Scripts directory where
-    the prcontext script is located. Note that this script is similar to 
-    <tt>grep -C</tt> but you should use the <tt>prcontext</tt> script because
-    not all platforms support <tt>grep -C</tt>.</dd>
 
     <dt><b>llvmgcc</b> (%llvmgcc)</dt>
     <dd>The full path to the <tt>llvm-gcc</tt> executable as specified in the

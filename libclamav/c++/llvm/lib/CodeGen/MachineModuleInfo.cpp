@@ -32,23 +32,23 @@ static RegisterPass<MachineModuleInfo>
 X("machinemoduleinfo", "Module Information");
 char MachineModuleInfo::ID = 0;
 
+// Out of line virtual method.
+MachineModuleInfoImpl::~MachineModuleInfoImpl() {}
+
 //===----------------------------------------------------------------------===//
 
 MachineModuleInfo::MachineModuleInfo()
 : ImmutablePass(&ID)
-, LabelIDList()
-, FrameMoves()
-, LandingPads()
-, Personalities()
+, ObjFileMMI(0)
 , CallsEHReturn(0)
 , CallsUnwindInit(0)
-, DbgInfoAvailable(false)
-{
+, DbgInfoAvailable(false) {
   // Always emit some info, by default "no personality" info.
   Personalities.push_back(NULL);
 }
-MachineModuleInfo::~MachineModuleInfo() {
 
+MachineModuleInfo::~MachineModuleInfo() {
+  delete ObjFileMMI;
 }
 
 /// doInitialization - Initialize the state for a new module.
@@ -61,12 +61,6 @@ bool MachineModuleInfo::doInitialization() {
 ///
 bool MachineModuleInfo::doFinalization() {
   return false;
-}
-
-/// BeginFunction - Begin gathering function meta information.
-///
-void MachineModuleInfo::BeginFunction(MachineFunction *MF) {
-  // Coming soon.
 }
 
 /// EndFunction - Discard function meta information.

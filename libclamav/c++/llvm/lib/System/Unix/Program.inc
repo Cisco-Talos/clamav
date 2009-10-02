@@ -34,9 +34,14 @@
 namespace llvm {
 using namespace sys;
 
-Program::Program() : Pid_(0) {}
+Program::Program() : Data_(0) {}
 
 Program::~Program() {}
+
+unsigned Program::GetPid() const {
+  uint64_t pid = reinterpret_cast<uint64_t>(Data_);
+  return static_cast<unsigned>(pid);
+}
 
 // This function just uses the PATH environment variable to find the program.
 Path
@@ -114,11 +119,6 @@ static bool RedirectIO(const Path *Path, int FD, std::string* ErrMsg) {
   }
   close(InFD);      // Close the original FD
   return false;
-}
-
-static bool Timeout = false;
-static void TimeOutHandler(int Sig) {
-  Timeout = true;
 }
 
 static void SetMemoryLimits (unsigned size)
@@ -214,7 +214,7 @@ Program::Execute(const Path& path,
       break;
   }
 
-  Pid_ = child;
+  Data_ = reinterpret_cast<void*>(child);
 
   return true;
 }
@@ -226,25 +226,24 @@ Program::Wait(unsigned secondsToWait,
 #ifdef HAVE_SYS_WAIT_H
   struct sigaction Act, Old;
 
-  if (Pid_ == 0) {
+  if (Data_ == 0) {
     MakeErrMsg(ErrMsg, "Process not started!");
     return -1;
   }
 
   // Install a timeout handler.
   if (secondsToWait) {
-    Timeout = false;
-    Act.sa_sigaction = 0;
-    Act.sa_handler = TimeOutHandler;
+    memset(&Act, 0, sizeof(Act));
+    Act.sa_handler = SIG_IGN;
     sigemptyset(&Act.sa_mask);
-    Act.sa_flags = 0;
     sigaction(SIGALRM, &Act, &Old);
     alarm(secondsToWait);
   }
 
   // Parent process: Wait for the child process to terminate.
   int status;
-  int child = this->Pid_;
+  uint64_t pid = reinterpret_cast<uint64_t>(Data_);
+  pid_t child = static_cast<pid_t>(pid);
   while (wait(&status) != child)
     if (secondsToWait && errno == EINTR) {
       // Kill the child.
@@ -288,6 +287,24 @@ Program::Wait(unsigned secondsToWait,
   return -99;
 #endif
 
+}
+
+bool
+Program::Kill(std::string* ErrMsg) {
+  if (Data_ == 0) {
+    MakeErrMsg(ErrMsg, "Process not started!");
+    return true;
+  }
+
+  uint64_t pid64 = reinterpret_cast<uint64_t>(Data_);
+  pid_t pid = static_cast<pid_t>(pid64);
+
+  if (kill(pid, SIGKILL) != 0) {
+    MakeErrMsg(ErrMsg, "The process couldn't be killed!");
+    return true;
+  }
+
+  return false;
 }
 
 bool Program::ChangeStdinToBinary(){

@@ -1,4 +1,4 @@
-; RUN: llvm-as < %s | llc -mtriple=thumbv7-apple-darwin | FileCheck %s
+; RUN: llc < %s -mtriple=thumbv7-apple-darwin | FileCheck %s
 
 ; 0x000000bb = 187
 define i32 @f1(i32 %a) {
@@ -19,7 +19,7 @@ define i32 @f2(i32 %a) {
 ; 0xcc00cc00 = 3422604288
 define i32 @f3(i32 %a) {
 ; CHECK: f3:
-; CHECK: mvn r0, #3422604288
+; CHECK: mvn r0, #-872363008
     %tmp = xor i32 4294967295, 3422604288
     ret i32 %tmp
 }

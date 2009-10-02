@@ -26,6 +26,7 @@
 #include "llvm/CodeGen/LatencyPriorityQueue.h"
 #include "llvm/CodeGen/SchedulerRegistry.h"
 #include "llvm/CodeGen/MachineDominators.h"
+#include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineLoopInfo.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
@@ -34,6 +35,7 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetInstrInfo.h"
 #include "llvm/Target/TargetRegisterInfo.h"
+#include "llvm/Target/TargetSubtarget.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
@@ -46,15 +48,31 @@ using namespace llvm;
 STATISTIC(NumNoops, "Number of noops inserted");
 STATISTIC(NumStalls, "Number of pipeline stalls");
 
+// Post-RA scheduling is enabled with
+// TargetSubtarget.enablePostRAScheduler(). This flag can be used to
+// override the target.
+static cl::opt<bool>
+EnablePostRAScheduler("post-RA-scheduler",
+                       cl::desc("Enable scheduling after register allocation"),
+                       cl::init(false), cl::Hidden);
 static cl::opt<bool>
 EnableAntiDepBreaking("break-anti-dependencies",
                       cl::desc("Break post-RA scheduling anti-dependencies"),
                       cl::init(true), cl::Hidden);
-
 static cl::opt<bool>
 EnablePostRAHazardAvoidance("avoid-hazards",
                       cl::desc("Enable exact hazard avoidance"),
-                      cl::init(false), cl::Hidden);
+                      cl::init(true), cl::Hidden);
+
+// If DebugDiv > 0 then only schedule MBB with (ID % DebugDiv) == DebugMod
+static cl::opt<int>
+DebugDiv("postra-sched-debugdiv",
+                      cl::desc("Debug control MBBs that are scheduled"),
+                      cl::init(0), cl::Hidden);
+static cl::opt<int>
+DebugMod("postra-sched-debugmod",
+                      cl::desc("Debug control MBBs that are scheduled"),
+                      cl::init(0), cl::Hidden);
 
 namespace {
   class VISIBILITY_HIDDEN PostRAScheduler : public MachineFunctionPass {
@@ -112,13 +130,17 @@ namespace {
     /// RegRegs - Map registers to all their references within a live range.
     std::multimap<unsigned, MachineOperand *> RegRefs;
 
-    /// The index of the most recent kill (proceding bottom-up), or ~0u if
-    /// the register is not live.
+    /// KillIndices - The index of the most recent kill (proceding bottom-up),
+    /// or ~0u if the register is not live.
     unsigned KillIndices[TargetRegisterInfo::FirstVirtualRegister];
 
-    /// The index of the most recent complete def (proceding bottom up), or ~0u
-    /// if the register is live.
+    /// DefIndices - The index of the most recent complete def (proceding bottom
+    /// up), or ~0u if the register is live.
     unsigned DefIndices[TargetRegisterInfo::FirstVirtualRegister];
+
+    /// KeepRegs - A set of registers which are live and cannot be changed to
+    /// break anti-dependencies.
+    SmallSet<unsigned, 4> KeepRegs;
 
   public:
     SchedulePostRATDList(MachineFunction &MF,
@@ -156,11 +178,6 @@ namespace {
     ///
     void FinishBlock();
 
-    /// GenerateLivenessForKills - If true then generate Def/Kill
-    /// information for use in updating register kill. If false then
-    /// generate Def/Kill information for anti-dependence breaking.
-    bool GenerateLivenessForKills;
-
   private:
     void PrescanInstruction(MachineInstr *MI);
     void ScanInstruction(MachineInstr *MI, unsigned Count);
@@ -172,6 +189,12 @@ namespace {
     unsigned findSuitableFreeRegister(unsigned AntiDepReg,
                                       unsigned LastNewReg,
                                       const TargetRegisterClass *);
+    void StartBlockForKills(MachineBasicBlock *BB);
+    
+    // ToggleKillFlag - Toggle a register operand kill flag. Other
+    // adjustments may be made to the instruction if necessary. Return
+    // true if the operand has been deleted, false if not.
+    bool ToggleKillFlag(MachineInstr *MI, MachineOperand &MO);
   };
 }
 
@@ -198,6 +221,17 @@ static bool isSchedulingBoundary(const MachineInstr *MI,
 }
 
 bool PostRAScheduler::runOnMachineFunction(MachineFunction &Fn) {
+  // Check for explicit enable/disable of post-ra scheduling.
+  if (EnablePostRAScheduler.getPosition() > 0) {
+    if (!EnablePostRAScheduler)
+      return true;
+  } else {
+    // Check that post-RA scheduling is enabled for this function
+    const TargetSubtarget &ST = Fn.getTarget().getSubtarget<TargetSubtarget>();
+    if (!ST.enablePostRAScheduler())
+      return true;
+  }
+
   DEBUG(errs() << "PostRAScheduler\n");
 
   const MachineLoopInfo &MLI = getAnalysis<MachineLoopInfo>();
@@ -212,8 +246,18 @@ bool PostRAScheduler::runOnMachineFunction(MachineFunction &Fn) {
   // Loop over all of the basic blocks
   for (MachineFunction::iterator MBB = Fn.begin(), MBBe = Fn.end();
        MBB != MBBe; ++MBB) {
+#ifndef NDEBUG
+    // If DebugDiv > 0 then only schedule MBB with (ID % DebugDiv) == DebugMod
+    if (DebugDiv > 0) {
+      static int bbcnt = 0;
+      if (bbcnt++ % DebugDiv != DebugMod)
+        continue;
+      errs() << "*** DEBUG scheduling " << Fn.getFunction()->getNameStr() <<
+        ":MBB ID#" << MBB->getNumber() << " ***\n";
+    }
+#endif
+
     // Initialize register live-range state for scheduling in this block.
-    Scheduler.GenerateLivenessForKills = false;
     Scheduler.StartBlock(MBB);
 
     // Schedule each sequence of instructions not interrupted by a label
@@ -224,7 +268,7 @@ bool PostRAScheduler::runOnMachineFunction(MachineFunction &Fn) {
       MachineInstr *MI = prior(I);
       if (isSchedulingBoundary(MI, Fn)) {
         Scheduler.Run(MBB, I, Current, CurrentCount);
-        Scheduler.EmitSchedule();
+        Scheduler.EmitSchedule(0);
         Current = MI;
         CurrentCount = Count - 1;
         Scheduler.Observe(MI, CurrentCount);
@@ -236,16 +280,13 @@ bool PostRAScheduler::runOnMachineFunction(MachineFunction &Fn) {
     assert((MBB->begin() == Current || CurrentCount != 0) &&
            "Instruction count mismatch!");
     Scheduler.Run(MBB, MBB->begin(), Current, CurrentCount);
-    Scheduler.EmitSchedule();
+    Scheduler.EmitSchedule(0);
 
     // Clean up register live-range state.
     Scheduler.FinishBlock();
 
-    // Initialize register live-range state again and update register kills
-    Scheduler.GenerateLivenessForKills = true;
-    Scheduler.StartBlock(MBB);
+    // Update register kills
     Scheduler.FixupKills(MBB);
-    Scheduler.FinishBlock();
   }
 
   return true;
@@ -269,8 +310,13 @@ void SchedulePostRATDList::StartBlock(MachineBasicBlock *BB) {
   std::fill(KillIndices, array_endof(KillIndices), ~0u);
   std::fill(DefIndices, array_endof(DefIndices), BB->size());
 
+  // Clear "do not change" set.
+  KeepRegs.clear();
+
+  bool IsReturnBlock = (!BB->empty() && BB->back().getDesc().isReturn());
+
   // Determine the live-out physregs for this block.
-  if (!BB->empty() && BB->back().getDesc().isReturn())
+  if (IsReturnBlock) {
     // In a return block, examine the function live-out regs.
     for (MachineRegisterInfo::liveout_iterator I = MRI.liveout_begin(),
          E = MRI.liveout_end(); I != E; ++I) {
@@ -286,7 +332,7 @@ void SchedulePostRATDList::StartBlock(MachineBasicBlock *BB) {
         DefIndices[AliasReg] = ~0u;
       }
     }
-  else
+  } else {
     // In a non-return block, examine the live-in regs of all successors.
     for (MachineBasicBlock::succ_iterator SI = BB->succ_begin(),
          SE = BB->succ_end(); SI != SE; ++SI)
@@ -304,29 +350,25 @@ void SchedulePostRATDList::StartBlock(MachineBasicBlock *BB) {
           DefIndices[AliasReg] = ~0u;
         }
       }
+  }
 
-  if (!GenerateLivenessForKills) {
-    // Consider callee-saved registers as live-out, since we're running after
-    // prologue/epilogue insertion so there's no way to add additional
-    // saved registers.
-    //
-    // TODO: If the callee saves and restores these, then we can potentially
-    // use them between the save and the restore. To do that, we could scan
-    // the exit blocks to see which of these registers are defined.
-    // Alternatively, callee-saved registers that aren't saved and restored
-    // could be marked live-in in every block.
-    for (const unsigned *I = TRI->getCalleeSavedRegs(); *I; ++I) {
-      unsigned Reg = *I;
-      Classes[Reg] = reinterpret_cast<TargetRegisterClass *>(-1);
-      KillIndices[Reg] = BB->size();
-      DefIndices[Reg] = ~0u;
-      // Repeat, for all aliases.
-      for (const unsigned *Alias = TRI->getAliasSet(Reg); *Alias; ++Alias) {
-        unsigned AliasReg = *Alias;
-        Classes[AliasReg] = reinterpret_cast<TargetRegisterClass *>(-1);
-        KillIndices[AliasReg] = BB->size();
-        DefIndices[AliasReg] = ~0u;
-      }
+  // Mark live-out callee-saved registers. In a return block this is
+  // all callee-saved registers. In non-return this is any
+  // callee-saved register that is not saved in the prolog.
+  const MachineFrameInfo *MFI = MF.getFrameInfo();
+  BitVector Pristine = MFI->getPristineRegs(BB);
+  for (const unsigned *I = TRI->getCalleeSavedRegs(); *I; ++I) {
+    unsigned Reg = *I;
+    if (!IsReturnBlock && !Pristine.test(Reg)) continue;
+    Classes[Reg] = reinterpret_cast<TargetRegisterClass *>(-1);
+    KillIndices[Reg] = BB->size();
+    DefIndices[Reg] = ~0u;
+    // Repeat, for all aliases.
+    for (const unsigned *Alias = TRI->getAliasSet(Reg); *Alias; ++Alias) {
+      unsigned AliasReg = *Alias;
+      Classes[AliasReg] = reinterpret_cast<TargetRegisterClass *>(-1);
+      KillIndices[AliasReg] = BB->size();
+      DefIndices[AliasReg] = ~0u;
     }
   }
 }
@@ -454,6 +496,16 @@ void SchedulePostRATDList::PrescanInstruction(MachineInstr *MI) {
     // If we're still willing to consider this register, note the reference.
     if (Classes[Reg] != reinterpret_cast<TargetRegisterClass *>(-1))
       RegRefs.insert(std::make_pair(Reg, &MO));
+
+    // It's not safe to change register allocation for source operands of
+    // that have special allocation requirements.
+    if (MO.isUse() && MI->getDesc().hasExtraSrcRegAllocReq()) {
+      if (KeepRegs.insert(Reg)) {
+        for (const unsigned *Subreg = TRI->getSubRegisters(Reg);
+             *Subreg; ++Subreg)
+          KeepRegs.insert(*Subreg);
+      }
+    }
   }
 }
 
@@ -473,9 +525,10 @@ void SchedulePostRATDList::ScanInstruction(MachineInstr *MI,
 
     DefIndices[Reg] = Count;
     KillIndices[Reg] = ~0u;
-          assert(((KillIndices[Reg] == ~0u) !=
-                  (DefIndices[Reg] == ~0u)) &&
-               "Kill and Def maps aren't consistent for Reg!");
+    assert(((KillIndices[Reg] == ~0u) !=
+            (DefIndices[Reg] == ~0u)) &&
+           "Kill and Def maps aren't consistent for Reg!");
+    KeepRegs.erase(Reg);
     Classes[Reg] = 0;
     RegRefs.erase(Reg);
     // Repeat, for all subregs.
@@ -484,6 +537,7 @@ void SchedulePostRATDList::ScanInstruction(MachineInstr *MI,
       unsigned SubregReg = *Subreg;
       DefIndices[SubregReg] = Count;
       KillIndices[SubregReg] = ~0u;
+      KeepRegs.erase(SubregReg);
       Classes[SubregReg] = 0;
       RegRefs.erase(SubregReg);
     }
@@ -639,13 +693,6 @@ bool SchedulePostRATDList::BreakAntiDependencies() {
        I != E; --Count) {
     MachineInstr *MI = --I;
 
-    // After regalloc, IMPLICIT_DEF instructions aren't safe to treat as
-    // dependence-breaking. In the case of an INSERT_SUBREG, the IMPLICIT_DEF
-    // is left behind appearing to clobber the super-register, while the
-    // subregister needs to remain live. So we just ignore them.
-    if (MI->getOpcode() == TargetInstrInfo::IMPLICIT_DEF)
-      continue;
-
     // Check if this instruction has a dependence on the critical path that
     // is an anti-dependence that we may be able to break. If it is, set
     // AntiDepReg to the non-zero register associated with the anti-dependence.
@@ -668,8 +715,12 @@ bool SchedulePostRATDList::BreakAntiDependencies() {
         if (Edge->getKind() == SDep::Anti) {
           AntiDepReg = Edge->getReg();
           assert(AntiDepReg != 0 && "Anti-dependence on reg0?");
-          // Don't break anti-dependencies on non-allocatable registers.
           if (!AllocatableSet.test(AntiDepReg))
+            // Don't break anti-dependencies on non-allocatable registers.
+            AntiDepReg = 0;
+          else if (KeepRegs.count(AntiDepReg))
+            // Don't break anti-dependencies if an use down below requires
+            // this exact register.
             AntiDepReg = 0;
           else {
             // If the SUnit has other dependencies on the SUnit that it
@@ -701,16 +752,22 @@ bool SchedulePostRATDList::BreakAntiDependencies() {
 
     PrescanInstruction(MI);
 
-    // If this instruction has a use of AntiDepReg, breaking it
-    // is invalid.
-    for (unsigned i = 0, e = MI->getNumOperands(); i != e; ++i) {
-      MachineOperand &MO = MI->getOperand(i);
-      if (!MO.isReg()) continue;
-      unsigned Reg = MO.getReg();
-      if (Reg == 0) continue;
-      if (MO.isUse() && AntiDepReg == Reg) {
-        AntiDepReg = 0;
-        break;
+    if (MI->getDesc().hasExtraDefRegAllocReq())
+      // If this instruction's defs have special allocation requirement, don't
+      // break this anti-dependency.
+      AntiDepReg = 0;
+    else if (AntiDepReg) {
+      // If this instruction has a use of AntiDepReg, breaking it
+      // is invalid.
+      for (unsigned i = 0, e = MI->getNumOperands(); i != e; ++i) {
+        MachineOperand &MO = MI->getOperand(i);
+        if (!MO.isReg()) continue;
+        unsigned Reg = MO.getReg();
+        if (Reg == 0) continue;
+        if (MO.isUse() && AntiDepReg == Reg) {
+          AntiDepReg = 0;
+          break;
+        }
       }
     }
 
@@ -773,6 +830,78 @@ bool SchedulePostRATDList::BreakAntiDependencies() {
   return Changed;
 }
 
+/// StartBlockForKills - Initialize register live-range state for updating kills
+///
+void SchedulePostRATDList::StartBlockForKills(MachineBasicBlock *BB) {
+  // Initialize the indices to indicate that no registers are live.
+  std::fill(KillIndices, array_endof(KillIndices), ~0u);
+
+  // Determine the live-out physregs for this block.
+  if (!BB->empty() && BB->back().getDesc().isReturn()) {
+    // In a return block, examine the function live-out regs.
+    for (MachineRegisterInfo::liveout_iterator I = MRI.liveout_begin(),
+           E = MRI.liveout_end(); I != E; ++I) {
+      unsigned Reg = *I;
+      KillIndices[Reg] = BB->size();
+      // Repeat, for all subregs.
+      for (const unsigned *Subreg = TRI->getSubRegisters(Reg);
+           *Subreg; ++Subreg) {
+        KillIndices[*Subreg] = BB->size();
+      }
+    }
+  }
+  else {
+    // In a non-return block, examine the live-in regs of all successors.
+    for (MachineBasicBlock::succ_iterator SI = BB->succ_begin(),
+           SE = BB->succ_end(); SI != SE; ++SI) {
+      for (MachineBasicBlock::livein_iterator I = (*SI)->livein_begin(),
+             E = (*SI)->livein_end(); I != E; ++I) {
+        unsigned Reg = *I;
+        KillIndices[Reg] = BB->size();
+        // Repeat, for all subregs.
+        for (const unsigned *Subreg = TRI->getSubRegisters(Reg);
+             *Subreg; ++Subreg) {
+          KillIndices[*Subreg] = BB->size();
+        }
+      }
+    }
+  }
+}
+
+bool SchedulePostRATDList::ToggleKillFlag(MachineInstr *MI,
+                                          MachineOperand &MO) {
+  // Setting kill flag...
+  if (!MO.isKill()) {
+    MO.setIsKill(true);
+    return false;
+  }
+  
+  // If MO itself is live, clear the kill flag...
+  if (KillIndices[MO.getReg()] != ~0u) {
+    MO.setIsKill(false);
+    return false;
+  }
+
+  // If any subreg of MO is live, then create an imp-def for that
+  // subreg and keep MO marked as killed.
+  bool AllDead = true;
+  const unsigned SuperReg = MO.getReg();
+  for (const unsigned *Subreg = TRI->getSubRegisters(SuperReg);
+       *Subreg; ++Subreg) {
+    if (KillIndices[*Subreg] != ~0u) {
+      MI->addOperand(MachineOperand::CreateReg(*Subreg,
+                                               true  /*IsDef*/,
+                                               true  /*IsImp*/,
+                                               false /*IsKill*/,
+                                               false /*IsDead*/));
+      AllDead = false;
+    }
+  }
+
+  MO.setIsKill(AllDead);
+  return false;
+}
+
 /// FixupKills - Fix the register kill flags, they may have been made
 /// incorrect by instruction reordering.
 ///
@@ -781,6 +910,8 @@ void SchedulePostRATDList::FixupKills(MachineBasicBlock *MBB) {
 
   std::set<unsigned> killedRegs;
   BitVector ReservedRegs = TRI->getReservedRegs(MF);
+
+  StartBlockForKills(MBB);
   
   // Examine block from end to start...
   unsigned Count = MBB->size();
@@ -788,7 +919,6 @@ void SchedulePostRATDList::FixupKills(MachineBasicBlock *MBB) {
        I != E; --Count) {
     MachineInstr *MI = --I;
 
-    DEBUG(MI->dump());
     // Update liveness.  Registers that are defed but not used in this
     // instruction are now dead. Mark register and all subregs as they
     // are completely defined.
@@ -801,8 +931,6 @@ void SchedulePostRATDList::FixupKills(MachineBasicBlock *MBB) {
       // Ignore two-addr defs.
       if (MI->isRegTiedToUseOperand(i)) continue;
       
-      DEBUG(errs() << "*** Handling Defs " << TM.getRegisterInfo()->get(Reg).Name << '\n');
-      
       KillIndices[Reg] = ~0u;
       
       // Repeat for all subregs.
@@ -812,17 +940,15 @@ void SchedulePostRATDList::FixupKills(MachineBasicBlock *MBB) {
       }
     }
 
-    // Examine all used registers and set kill flag. When a register
-    // is used multiple times we only set the kill flag on the first
-    // use.
+    // Examine all used registers and set/clear kill flag. When a
+    // register is used multiple times we only set the kill flag on
+    // the first use.
     killedRegs.clear();
     for (unsigned i = 0, e = MI->getNumOperands(); i != e; ++i) {
       MachineOperand &MO = MI->getOperand(i);
       if (!MO.isReg() || !MO.isUse()) continue;
       unsigned Reg = MO.getReg();
       if ((Reg == 0) || ReservedRegs.test(Reg)) continue;
-
-      DEBUG(errs() << "*** Handling Uses " << TM.getRegisterInfo()->get(Reg).Name << '\n');
 
       bool kill = false;
       if (killedRegs.find(Reg) == killedRegs.end()) {
@@ -843,22 +969,26 @@ void SchedulePostRATDList::FixupKills(MachineBasicBlock *MBB) {
       }
       
       if (MO.isKill() != kill) {
-        MO.setIsKill(kill);
-        DEBUG(errs() << "Fixed " << MO << " in ");
+        bool removed = ToggleKillFlag(MI, MO);
+        if (removed) {
+          DEBUG(errs() << "Fixed <removed> in ");
+        } else {
+          DEBUG(errs() << "Fixed " << MO << " in ");
+        }
         DEBUG(MI->dump());
       }
       
       killedRegs.insert(Reg);
     }
     
-    // Mark any used register and subregs as now live...
+    // Mark any used register (that is not using undef) and subregs as
+    // now live...
     for (unsigned i = 0, e = MI->getNumOperands(); i != e; ++i) {
       MachineOperand &MO = MI->getOperand(i);
-      if (!MO.isReg() || !MO.isUse()) continue;
+      if (!MO.isReg() || !MO.isUse() || MO.isUndef()) continue;
       unsigned Reg = MO.getReg();
       if ((Reg == 0) || ReservedRegs.test(Reg)) continue;
 
-      DEBUG(errs() << "Killing " << TM.getRegisterInfo()->get(Reg).Name << '\n');
       KillIndices[Reg] = Count;
       
       for (const unsigned *Subreg = TRI->getSubRegisters(Reg);
@@ -877,17 +1007,17 @@ void SchedulePostRATDList::FixupKills(MachineBasicBlock *MBB) {
 /// the PendingQueue if the count reaches zero. Also update its cycle bound.
 void SchedulePostRATDList::ReleaseSucc(SUnit *SU, SDep *SuccEdge) {
   SUnit *SuccSU = SuccEdge->getSUnit();
-  --SuccSU->NumPredsLeft;
-  
+
 #ifndef NDEBUG
-  if (SuccSU->NumPredsLeft < 0) {
+  if (SuccSU->NumPredsLeft == 0) {
     errs() << "*** Scheduling failed! ***\n";
     SuccSU->dump(this);
     errs() << " has been released too many times!\n";
     llvm_unreachable(0);
   }
 #endif
-  
+  --SuccSU->NumPredsLeft;
+
   // Compute how many cycles it will be before this actually becomes
   // available.  This is the max of the start time of all predecessors plus
   // their latencies.
@@ -941,7 +1071,7 @@ void SchedulePostRATDList::ListScheduleTopDown() {
 
   // In any cycle where we can't schedule any instructions, we must
   // stall or emit a noop, depending on the target.
-  bool CycleInstCnt = 0;
+  bool CycleHasInsts = false;
 
   // While Available queue is not empty, grab the node with the highest
   // priority. If it is not ready put it back.  Schedule the node.
@@ -999,7 +1129,7 @@ void SchedulePostRATDList::ListScheduleTopDown() {
     if (FoundSUnit) {
       ScheduleNodeTopDown(FoundSUnit, CurCycle);
       HazardRec->EmitInstruction(FoundSUnit);
-      CycleInstCnt++;
+      CycleHasInsts = true;
 
       // If we are using the target-specific hazards, then don't
       // advance the cycle time just because we schedule a node. If
@@ -1010,7 +1140,7 @@ void SchedulePostRATDList::ListScheduleTopDown() {
           ++CurCycle;
       }
     } else {
-      if (CycleInstCnt > 0) {
+      if (CycleHasInsts) {
         DEBUG(errs() << "*** Finished cycle " << CurCycle << '\n');
         HazardRec->AdvanceCycle();
       } else if (!HasNoopHazards) {
@@ -1030,7 +1160,7 @@ void SchedulePostRATDList::ListScheduleTopDown() {
       }
 
       ++CurCycle;
-      CycleInstCnt = 0;
+      CycleHasInsts = false;
     }
   }
 

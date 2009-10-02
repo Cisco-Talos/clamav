@@ -33,7 +33,6 @@
 #include "llvm/Analysis/ValueTracking.h"
 #include "llvm/Transforms/Utils/Local.h"
 #include "llvm/Support/CallSite.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/InstVisitor.h"
@@ -60,7 +59,7 @@ namespace {
 /// LatticeVal class - This class represents the different lattice values that
 /// an LLVM value may occupy.  It is a simple class with value semantics.
 ///
-class VISIBILITY_HIDDEN LatticeVal {
+class LatticeVal {
   enum {
     /// undefined - This LLVM Value has no known value yet.
     undefined,
@@ -401,7 +400,9 @@ private:
   void visitStoreInst     (Instruction &I);
   void visitLoadInst      (LoadInst &I);
   void visitGetElementPtrInst(GetElementPtrInst &I);
-  void visitCallInst      (CallInst &I) { visitCallSite(CallSite::get(&I)); }
+  void visitCallInst      (CallInst &I) { 
+    visitCallSite(CallSite::get(&I));
+  }
   void visitInvokeInst    (InvokeInst &II) {
     visitCallSite(CallSite::get(&II));
     visitTerminatorInst(II);
@@ -1262,6 +1263,10 @@ CallOverdefined:
   for (Function::arg_iterator AI = F->arg_begin(), E = F->arg_end();
        AI != E; ++AI, ++CAI) {
     LatticeVal &IV = ValueState[AI];
+    if (AI->hasByValAttr() && !F->onlyReadsMemory()) {
+      IV.markOverdefined();
+      continue;
+    }
     if (!IV.isOverdefined())
       mergeInValue(IV, AI, getValueState(*CAI));
   }
@@ -1506,7 +1511,7 @@ namespace {
   /// SCCP Class - This class uses the SCCPSolver to implement a per-function
   /// Sparse Conditional Constant Propagator.
   ///
-  struct VISIBILITY_HIDDEN SCCP : public FunctionPass {
+  struct SCCP : public FunctionPass {
     static char ID; // Pass identification, replacement for typeid
     SCCP() : FunctionPass(&ID) {}
 
@@ -1621,7 +1626,7 @@ namespace {
   /// IPSCCP Class - This class implements interprocedural Sparse Conditional
   /// Constant Propagation.
   ///
-  struct VISIBILITY_HIDDEN IPSCCP : public ModulePass {
+  struct IPSCCP : public ModulePass {
     static char ID;
     IPSCCP() : ModulePass(&ID) {}
     bool runOnModule(Module &M);

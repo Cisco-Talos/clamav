@@ -39,15 +39,11 @@ static cl::opt<bool> PrintEmittedAsm("print-emitted-asm", cl::Hidden,
     cl::desc("Dump emitter generated instructions as assembly"));
 static cl::opt<bool> PrintGCInfo("print-gc", cl::Hidden,
     cl::desc("Dump garbage collector data"));
+static cl::opt<bool> HoistConstants("hoist-constants", cl::Hidden,
+    cl::desc("Hoist constants out of loops"));
 static cl::opt<bool> VerifyMachineCode("verify-machineinstrs", cl::Hidden,
     cl::desc("Verify generated machine code"),
     cl::init(getenv("LLVM_VERIFY_MACHINEINSTRS")!=NULL));
-
-// When this works it will be on by default.
-static cl::opt<bool>
-DisablePostRAScheduler("disable-post-RA-scheduler",
-                       cl::desc("Disable scheduling after register allocation"),
-                       cl::init(true));
 
 // Enable or disable FastISel. Both options are needed, because
 // FastISel is enabled by default with -fast, and we wish to be
@@ -259,8 +255,11 @@ bool LLVMTargetMachine::addCommonCodeGenPasses(PassManagerBase &PM,
   // Make sure that no unreachable blocks are instruction selected.
   PM.add(createUnreachableBlockEliminationPass());
 
-  if (OptLevel != CodeGenOpt::None)
+  if (OptLevel != CodeGenOpt::None) {
+    if (HoistConstants)
+      PM.add(createCodeGenLICMPass());
     PM.add(createCodeGenPreparePass(getTargetLowering()));
+  }
 
   PM.add(createStackProtectorPass(getTargetLowering()));
 
@@ -318,8 +317,12 @@ bool LLVMTargetMachine::addCommonCodeGenPasses(PassManagerBase &PM,
   PM.add(createPrologEpilogCodeInserter());
   printAndVerify(PM);
 
+  // Run pre-sched2 passes.
+  if (addPreSched2(PM, OptLevel))
+    printAndVerify(PM);
+
   // Second pass scheduler.
-  if (OptLevel != CodeGenOpt::None && !DisablePostRAScheduler) {
+  if (OptLevel != CodeGenOpt::None) {
     PM.add(createPostRAScheduler());
     printAndVerify(PM);
   }

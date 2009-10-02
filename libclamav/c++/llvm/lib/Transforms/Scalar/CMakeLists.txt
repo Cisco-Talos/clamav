@@ -1,13 +1,13 @@
 add_llvm_library(LLVMScalarOpts
   ADCE.cpp
   BasicBlockPlacement.cpp
+  CodeGenLICM.cpp
   CodeGenPrepare.cpp
   CondPropagate.cpp
   ConstantProp.cpp
   DCE.cpp
   DeadStoreElimination.cpp
   GVN.cpp
-  GVNPRE.cpp
   IndVarSimplify.cpp
   InstructionCombining.cpp
   JumpThreading.cpp

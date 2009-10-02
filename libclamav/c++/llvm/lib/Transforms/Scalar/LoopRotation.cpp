@@ -32,7 +32,7 @@ using namespace llvm;
 STATISTIC(NumRotated, "Number of loops rotated");
 namespace {
 
-  class VISIBILITY_HIDDEN RenameData {
+  class RenameData {
   public:
     RenameData(Instruction *O, Value *P, Instruction *H) 
       : Original(O), PreHeader(P), Header(H) { }
@@ -42,8 +42,7 @@ namespace {
     Instruction *Header; // New header replacement
   };
   
-  class VISIBILITY_HIDDEN LoopRotate : public LoopPass {
-
+  class LoopRotate : public LoopPass {
   public:
     static char ID; // Pass ID, replacement for typeid
     LoopRotate() : LoopPass(&ID) {}
@@ -178,6 +177,11 @@ bool LoopRotate::rotateLoop(Loop *Lp, LPPassManager &LPM) {
 
   // Now, this loop is suitable for rotation.
 
+  // Anything ScalarEvolution may know about this loop or the PHI nodes
+  // in its header will soon be invalidated.
+  if (ScalarEvolution *SE = getAnalysisIfAvailable<ScalarEvolution>())
+    SE->forgetLoopBackedgeTakenCount(L);
+
   // Find new Loop header. NewHeader is a Header's one and only successor
   // that is inside loop.  Header's other successor is outside the
   // loop.  Otherwise loop is not suitable for rotation.
@@ -238,7 +242,7 @@ bool LoopRotate::rotateLoop(Loop *Lp, LPPassManager &LPM) {
     // This is not a PHI instruction. Insert its clone into original pre-header.
     // If this instruction is using a value from same basic block then
     // update it to use value from cloned instruction.
-    Instruction *C = In->clone(In->getContext());
+    Instruction *C = In->clone();
     C->setName(In->getName());
     OrigPreHeader->getInstList().push_back(C);
 
@@ -543,22 +547,7 @@ void LoopRotate::preserveCanonicalLoopForm(LPPassManager &LPM) {
 
   // Preserve canonical loop form, which means Exit block should
   // have only one predecessor.
-  BasicBlock *NExit = SplitEdge(L->getLoopLatch(), Exit, this);
-
-  // Preserve LCSSA.
-  for (BasicBlock::iterator I = Exit->begin();
-       (PN = dyn_cast<PHINode>(I)); ++I) {
-    unsigned N = PN->getNumIncomingValues();
-    for (unsigned index = 0; index != N; ++index)
-      if (PN->getIncomingBlock(index) == NExit) {
-        PHINode *NewPN = PHINode::Create(PN->getType(), PN->getName(),
-                                         NExit->begin());
-        NewPN->addIncoming(PN->getIncomingValue(index), L->getLoopLatch());
-        PN->setIncomingValue(index, NewPN);
-        PN->setIncomingBlock(index, NExit);
-        break;
-      }
-  }
+  SplitEdge(L->getLoopLatch(), Exit, this);
 
   assert(NewHeader && L->getHeader() == NewHeader &&
          "Invalid loop header after loop rotation");

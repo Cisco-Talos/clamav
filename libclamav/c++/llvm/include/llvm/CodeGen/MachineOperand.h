@@ -110,7 +110,7 @@ private:
         GlobalValue *GV;          // For MO_GlobalAddress.
         MDNode *Node;             // For MO_Metadata.
       } Val;
-      int64_t Offset;   // An offset from the object.
+      int64_t Offset;             // An offset from the object.
     } OffsetedInfo;
   } Contents;
   
@@ -298,6 +298,8 @@ public:
     return Contents.OffsetedInfo.Val.Node;
   }
   
+  /// getOffset - Return the offset from the symbol in this operand. This always
+  /// returns 0 for ExternalSymbol operands.
   int64_t getOffset() const {
     assert((isGlobal() || isSymbol() || isCPI()) &&
            "Wrong MachineOperand accessor");
@@ -432,11 +434,11 @@ public:
     Op.setTargetFlags(TargetFlags);
     return Op;
   }
-  static MachineOperand CreateES(const char *SymName, int64_t Offset = 0,
+  static MachineOperand CreateES(const char *SymName,
                                  unsigned char TargetFlags = 0) {
     MachineOperand Op(MachineOperand::MO_ExternalSymbol);
     Op.Contents.OffsetedInfo.Val.SymbolName = SymName;
-    Op.setOffset(Offset);
+    Op.setOffset(0); // Offset is always 0.
     Op.setTargetFlags(TargetFlags);
     return Op;
   }

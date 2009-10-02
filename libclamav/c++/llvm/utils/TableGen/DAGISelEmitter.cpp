@@ -784,7 +784,7 @@ public:
   EmitResultCode(TreePatternNode *N, std::vector<Record*> DstRegs,
                  bool InFlagDecled, bool ResNodeDecled,
                  bool LikeLeaf = false, bool isRoot = false) {
-    // List of arguments of getTargetNode() or SelectNodeTo().
+    // List of arguments of getMachineNode() or SelectNodeTo().
     std::vector<std::string> NodeOps;
     // This is something selected from the pattern we matched.
     if (!N->getName().empty()) {
@@ -1089,7 +1089,7 @@ public:
       std::string Code = "Opc" + utostr(OpcNo);
 
       if (!isRoot || (InputHasChain && !NodeHasChain))
-        // For call to "getTargetNode()".
+        // For call to "getMachineNode()".
         Code += ", N.getDebugLoc()";
 
       emitOpcode(II.Namespace + "::" + II.TheDef->getName());
@@ -1135,24 +1135,18 @@ public:
         emitCode("}");
       }
 
-      // Generate MemOperandSDNodes nodes for each memory accesses covered by 
+      // Populate MemRefs with entries for each memory accesses covered by 
       // this pattern.
-      if (II.mayLoad | II.mayStore) {
-        std::vector<std::string>::const_iterator mi, mie;
-        for (mi = LSI.begin(), mie = LSI.end(); mi != mie; ++mi) {
-          std::string LSIName = "LSI_" + *mi;
-          emitCode("SDValue " + LSIName + " = "
-                   "CurDAG->getMemOperand(cast<MemSDNode>(" +
-                   *mi + ")->getMemOperand());");
-          if (GenDebug) {
-            emitCode("CurDAG->setSubgraphColor(" + LSIName +".getNode(), \"yellow\");");
-            emitCode("CurDAG->setSubgraphColor(" + LSIName +".getNode(), \"black\");");
-          }
-          if (IsVariadic)
-            emitCode("Ops" + utostr(OpsNo) + ".push_back(" + LSIName + ");");
-          else
-            AllOps.push_back(LSIName);
-        }
+      if (isRoot && !LSI.empty()) {
+        std::string MemRefs = "MemRefs" + utostr(OpsNo);
+        emitCode("MachineSDNode::mmo_iterator " + MemRefs + " = "
+                 "MF->allocateMemRefsArray(" + utostr(LSI.size()) + ");");
+        for (unsigned i = 0, e = LSI.size(); i != e; ++i)
+          emitCode(MemRefs + "[" + utostr(i) + "] = "
+                   "cast<MemSDNode>(" + LSI[i] + ")->getMemOperand();");
+        After.push_back("cast<MachineSDNode>(ResNode)->setMemRefs(" +
+                        MemRefs + ", " + MemRefs + " + " + utostr(LSI.size()) +
+                        ");");
       }
 
       if (NodeHasChain) {
@@ -1303,7 +1297,7 @@ public:
       // would leave users of the chain dangling.
       //
       if (!isRoot || (InputHasChain && !NodeHasChain)) {
-        Code = "CurDAG->getTargetNode(" + Code;
+        Code = "CurDAG->getMachineNode(" + Code;
       } else {
         Code = "CurDAG->SelectNodeTo(N.getNode(), " + Code;
       }
@@ -1776,7 +1770,7 @@ void DAGISelEmitter::EmitInstructionSelector(raw_ostream &OS) {
           CallerCode += ", " + TargetOpcodes[j];
         }
         for (unsigned j = 0, e = TargetVTs.size(); j != e; ++j) {
-          CalleeCode += ", EVT VT" + utostr(j);
+          CalleeCode += ", MVT::SimpleValueType VT" + utostr(j);
           CallerCode += ", " + TargetVTs[j];
         }
         for (std::set<std::string>::iterator
@@ -1965,7 +1959,6 @@ void DAGISelEmitter::EmitInstructionSelector(raw_ostream &OS) {
      << "    assert(!N.isMachineOpcode() && \"Node already selected!\");\n"
      << "    break;\n"
      << "  case ISD::EntryToken:       // These nodes remain the same.\n"
-     << "  case ISD::MEMOPERAND:\n"
      << "  case ISD::BasicBlock:\n"
      << "  case ISD::Register:\n"
      << "  case ISD::HANDLENODE:\n"

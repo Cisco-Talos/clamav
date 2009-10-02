@@ -15,6 +15,7 @@
 #define ARMSUBTARGET_H
 
 #include "llvm/Target/TargetInstrItineraries.h"
+#include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetSubtarget.h"
 #include <string>
 
@@ -53,6 +54,9 @@ protected:
 
   /// ThumbMode - Indicates supported Thumb version.
   ThumbTypeEnum ThumbMode;
+
+  /// PostRAScheduler - True if using post-register-allocation scheduler.
+  bool PostRAScheduler;
 
   /// IsR9Reserved - True if R9 is a not available as general purpose register.
   bool IsR9Reserved;
@@ -121,6 +125,10 @@ protected:
   bool isR9Reserved() const { return IsR9Reserved; }
 
   const std::string & getCPUString() const { return CPUString; }
+  
+  /// enablePostRAScheduler - From TargetSubtarget, return true to
+  /// enable post-RA scheduler.
+  bool enablePostRAScheduler() const { return PostRAScheduler; }
 
   /// getInstrItins - Return the instruction itineraies based on subtarget
   /// selection.
@@ -133,7 +141,7 @@ protected:
 
   /// GVIsIndirectSymbol - true if the GV will be accessed via an indirect
   /// symbol.
-  bool GVIsIndirectSymbol(GlobalValue *GV, bool isStatic) const;
+  bool GVIsIndirectSymbol(GlobalValue *GV, Reloc::Model RelocM) const;
 };
 } // End llvm namespace
 

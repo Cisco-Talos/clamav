@@ -24,7 +24,6 @@
 #include "llvm/Constants.h"
 #include "llvm/Instructions.h"
 #include "llvm/IntrinsicInst.h"
-#include "llvm/LLVMContext.h"
 #include "llvm/Type.h"
 #include "llvm/DerivedTypes.h"
 #include "llvm/Analysis/Dominators.h"
@@ -38,7 +37,6 @@
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Support/CFG.h"
 #include "llvm/Support/Debug.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ValueHandle.h"
 #include "llvm/Support/raw_ostream.h"
@@ -65,7 +63,7 @@ namespace {
   /// IVInfo - This structure keeps track of one IV expression inserted during
   /// StrengthReduceStridedIVUsers. It contains the stride, the common base, as
   /// well as the PHI node and increment value created for rewrite.
-  struct VISIBILITY_HIDDEN IVExpr {
+  struct IVExpr {
     const SCEV *Stride;
     const SCEV *Base;
     PHINode    *PHI;
@@ -76,7 +74,7 @@ namespace {
 
   /// IVsOfOneStride - This structure keeps track of all IV expression inserted
   /// during StrengthReduceStridedIVUsers for a particular stride of the IV.
-  struct VISIBILITY_HIDDEN IVsOfOneStride {
+  struct IVsOfOneStride {
     std::vector<IVExpr> IVs;
 
     void addIV(const SCEV *const Stride, const SCEV *const Base, PHINode *PHI) {
@@ -84,7 +82,7 @@ namespace {
     }
   };
 
-  class VISIBILITY_HIDDEN LoopStrengthReduce : public LoopPass {
+  class LoopStrengthReduce : public LoopPass {
     IVUsers *IU;
     LoopInfo *LI;
     DominatorTree *DT;
@@ -485,36 +483,37 @@ void BasedUser::RewriteInstructionToUseNewBase(const SCEV *const &NewBase,
       // loop because multiple copies sometimes do useful sinking of code in
       // that case(?).
       Instruction *OldLoc = dyn_cast<Instruction>(OperandValToReplace);
+      BasicBlock *PHIPred = PN->getIncomingBlock(i);
       if (L->contains(OldLoc->getParent())) {
         // If this is a critical edge, split the edge so that we do not insert
         // the code on all predecessor/successor paths.  We do this unless this
         // is the canonical backedge for this loop, as this can make some
         // inserted code be in an illegal position.
-        BasicBlock *PHIPred = PN->getIncomingBlock(i);
         if (e != 1 && PHIPred->getTerminator()->getNumSuccessors() > 1 &&
             (PN->getParent() != L->getHeader() || !L->contains(PHIPred))) {
 
           // First step, split the critical edge.
-          SplitCriticalEdge(PHIPred, PN->getParent(), P, false);
+          BasicBlock *NewBB = SplitCriticalEdge(PHIPred, PN->getParent(),
+                                                P, false);
 
           // Next step: move the basic block.  In particular, if the PHI node
           // is outside of the loop, and PredTI is in the loop, we want to
           // move the block to be immediately before the PHI block, not
           // immediately after PredTI.
-          if (L->contains(PHIPred) && !L->contains(PN->getParent())) {
-            BasicBlock *NewBB = PN->getIncomingBlock(i);
+          if (L->contains(PHIPred) && !L->contains(PN->getParent()))
             NewBB->moveBefore(PN->getParent());
-          }
 
           // Splitting the edge can reduce the number of PHI entries we have.
           e = PN->getNumIncomingValues();
+          PHIPred = NewBB;
+          i = PN->getBasicBlockIndex(PHIPred);
         }
       }
-      Value *&Code = InsertedCode[PN->getIncomingBlock(i)];
+      Value *&Code = InsertedCode[PHIPred];
       if (!Code) {
         // Insert the code into the end of the predecessor block.
         Instruction *InsertPt = (L->contains(OldLoc->getParent())) ?
-                                PN->getIncomingBlock(i)->getTerminator() :
+                                PHIPred->getTerminator() :
                                 OldLoc->getParent()->getTerminator();
         Code = InsertCodeForBaseAtPosition(NewBase, PN->getType(),
                                            Rewriter, InsertPt, L, LI);
@@ -2303,7 +2302,6 @@ void LoopStrengthReduce::OptimizeLoopTermCond(Loop *L) {
   // one register value.
   BasicBlock *LatchBlock = L->getLoopLatch();
   BasicBlock *ExitingBlock = L->getExitingBlock();
-  LLVMContext &Context = LatchBlock->getContext();
   
   if (!ExitingBlock)
     // Multiple exits, just look at the exit in the latch block if there is one.
@@ -2394,7 +2392,7 @@ void LoopStrengthReduce::OptimizeLoopTermCond(Loop *L) {
       Cond->moveBefore(TermBr);
     } else {
       // Otherwise, clone the terminating condition and insert into the loopend.
-      Cond = cast<ICmpInst>(Cond->clone(Context));
+      Cond = cast<ICmpInst>(Cond->clone());
       Cond->setName(L->getHeader()->getName() + ".termcond");
       LatchBlock->getInstList().insert(TermBr, Cond);
       

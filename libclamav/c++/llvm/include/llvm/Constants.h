@@ -38,7 +38,7 @@ class VectorType;
 template<class ConstantClass, class TypeClass, class ValType>
 struct ConstantCreator;
 template<class ConstantClass, class TypeClass>
-struct ConvertConstant;
+struct ConvertConstantType;
 
 //===----------------------------------------------------------------------===//
 /// This is the shared class of boolean and integer constants. This class 
@@ -258,6 +258,7 @@ public:
   static Constant* get(const Type* Ty, const StringRef& Str);
   static ConstantFP* get(LLVMContext &Context, const APFloat& V);
   static ConstantFP* getNegativeZero(const Type* Ty);
+  static ConstantFP* getInfinity(const Type* Ty, bool negative = false);
   
   /// isValueValidForType - return true if Ty is big enough to represent V.
   static bool isValueValidForType(const Type *Ty, const APFloat& V);
@@ -397,7 +398,7 @@ public:
 };
 
 template <>
-struct OperandTraits<ConstantArray> : VariadicOperandTraits<> {
+struct OperandTraits<ConstantArray> : public VariadicOperandTraits<> {
 };
 
 DEFINE_TRANSPARENT_CASTED_OPERAND_ACCESSORS(ConstantArray, Constant)
@@ -415,11 +416,11 @@ public:
   // ConstantStruct accessors
   static Constant* get(const StructType* T, const std::vector<Constant*>& V);
   static Constant* get(LLVMContext &Context, 
-                       const std::vector<Constant*>& V, bool Packed = false);
+                       const std::vector<Constant*>& V, bool Packed);
   static Constant* get(LLVMContext &Context,
                        Constant* const *Vals, unsigned NumVals,
-                       bool Packed = false);
-  
+                       bool Packed);
+
   /// Transparently provide more efficient getOperand methods.
   DECLARE_TRANSPARENT_OPERAND_ACCESSORS(Constant);
 
@@ -447,7 +448,7 @@ public:
 };
 
 template <>
-struct OperandTraits<ConstantStruct> : VariadicOperandTraits<> {
+struct OperandTraits<ConstantStruct> : public VariadicOperandTraits<> {
 };
 
 DEFINE_TRANSPARENT_CASTED_OPERAND_ACCESSORS(ConstantStruct, Constant)
@@ -503,7 +504,7 @@ public:
 };
 
 template <>
-struct OperandTraits<ConstantVector> : VariadicOperandTraits<> {
+struct OperandTraits<ConstantVector> : public VariadicOperandTraits<> {
 };
 
 DEFINE_TRANSPARENT_CASTED_OPERAND_ACCESSORS(ConstantVector, Constant)
@@ -559,7 +560,7 @@ public:
 class ConstantExpr : public Constant {
   friend struct ConstantCreator<ConstantExpr,Type,
                             std::pair<unsigned, std::vector<Constant*> > >;
-  friend struct ConvertConstant<ConstantExpr, Type>;
+  friend struct ConvertConstantType<ConstantExpr, Type>;
 
 protected:
   ConstantExpr(const Type *ty, unsigned Opcode, Use *Ops, unsigned NumOps)
@@ -571,13 +572,17 @@ protected:
   // These private methods are used by the type resolution code to create
   // ConstantExprs in intermediate forms.
   static Constant *getTy(const Type *Ty, unsigned Opcode,
-                         Constant *C1, Constant *C2);
+                         Constant *C1, Constant *C2,
+                         unsigned Flags = 0);
   static Constant *getCompareTy(unsigned short pred, Constant *C1,
                                 Constant *C2);
   static Constant *getSelectTy(const Type *Ty,
                                Constant *C1, Constant *C2, Constant *C3);
   static Constant *getGetElementPtrTy(const Type *Ty, Constant *C,
                                       Value* const *Idxs, unsigned NumIdxs);
+  static Constant *getInBoundsGetElementPtrTy(const Type *Ty, Constant *C,
+                                              Value* const *Idxs,
+                                              unsigned NumIdxs);
   static Constant *getExtractElementTy(const Type *Ty, Constant *Val,
                                        Constant *Idx);
   static Constant *getInsertElementTy(const Type *Ty, Constant *Val,
@@ -649,6 +654,7 @@ public:
   static Constant *getBitCast (Constant *C, const Type *Ty);
 
   static Constant* getNSWAdd(Constant* C1, Constant* C2);
+  static Constant* getNSWSub(Constant* C1, Constant* C2);
   static Constant* getExactSDiv(Constant* C1, Constant* C2);
 
   /// Transparently provide more efficient getOperand methods.
@@ -709,6 +715,13 @@ public:
   /// and the getIndices() method may be used.
   bool hasIndices() const;
 
+  /// @brief Return true if this is a getelementptr expression and all
+  /// the index operands are compile-time known integers within the
+  /// corresponding notional static array extents. Note that this is
+  /// not equivalant to, a subset of, or a superset of the "inbounds"
+  /// property.
+  bool isGEPWithNoNotionalOverIndexing() const;
+
   /// Select constant expr
   ///
   static Constant *getSelect(Constant *C, Constant *V1, Constant *V2) {
@@ -718,7 +731,8 @@ public:
   /// get - Return a binary or shift operator constant expression,
   /// folding if possible.
   ///
-  static Constant *get(unsigned Opcode, Constant *C1, Constant *C2);
+  static Constant *get(unsigned Opcode, Constant *C1, Constant *C2,
+                       unsigned Flags = 0);
 
   /// @brief Return an ICmp or FCmp comparison operator constant expression.
   static Constant *getCompare(unsigned short pred, Constant *C1, Constant *C2);
@@ -795,7 +809,7 @@ public:
 };
 
 template <>
-struct OperandTraits<ConstantExpr> : VariadicOperandTraits<1> {
+struct OperandTraits<ConstantExpr> : public VariadicOperandTraits<1> {
 };
 
 DEFINE_TRANSPARENT_CASTED_OPERAND_ACCESSORS(ConstantExpr, Constant)

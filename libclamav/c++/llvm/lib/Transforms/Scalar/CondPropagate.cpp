@@ -22,14 +22,13 @@
 #include "llvm/Transforms/Utils/Local.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/ADT/SmallVector.h"
-#include "llvm/Support/Compiler.h"
 using namespace llvm;
 
 STATISTIC(NumBrThread, "Number of CFG edges threaded through branches");
 STATISTIC(NumSwThread, "Number of CFG edges threaded through switches");
 
 namespace {
-  struct VISIBILITY_HIDDEN CondProp : public FunctionPass {
+  struct CondProp : public FunctionPass {
     static char ID; // Pass identification, replacement for typeid
     CondProp() : FunctionPass(&ID) {}
 
@@ -192,8 +191,6 @@ void CondProp::SimplifyPredecessors(SwitchInst *SI) {
   if (&*BBI != SI)
     return;
 
-  bool RemovedPreds = false;
-
   // Ok, we have this really simple case, walk the PHI operands, looking for
   // constants.  Walk from the end to remove operands from the end when
   // possible, and to avoid invalidating "i".
@@ -205,7 +202,6 @@ void CondProp::SimplifyPredecessors(SwitchInst *SI) {
       RevectorBlockTo(PN->getIncomingBlock(i-1),
                       SI->getSuccessor(DestCase));
       ++NumSwThread;
-      RemovedPreds = true;
 
       // If there were two predecessors before this simplification, or if the
       // PHI node contained all the same value except for the one we just

@@ -36,7 +36,6 @@
 #include "llvm/Constants.h"
 #include "llvm/DerivedTypes.h"
 #include "llvm/Instructions.h"
-#include "llvm/LLVMContext.h"
 #include "llvm/Target/TargetData.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/LoopPass.h"
@@ -46,7 +45,6 @@
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Transforms/Utils/PromoteMemToReg.h"
 #include "llvm/Support/CFG.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Debug.h"
@@ -74,7 +72,7 @@ EnableLICMConstantMotion("enable-licm-constant-variables", cl::Hidden,
                                   "global variables"));
 
 namespace {
-  struct VISIBILITY_HIDDEN LICM : public LoopPass {
+  struct LICM : public LoopPass {
     static char ID; // Pass identification, replacement for typeid
     LICM() : LoopPass(&ID) {}
 
@@ -92,6 +90,7 @@ namespace {
       AU.addRequired<AliasAnalysis>();
       AU.addPreserved<ScalarEvolution>();
       AU.addPreserved<DominanceFrontier>();
+      AU.addPreservedID(LoopSimplifyID);
     }
 
     bool doFinalization() {
@@ -476,8 +475,6 @@ void LICM::sink(Instruction &I) {
   ++NumSunk;
   Changed = true;
 
-  LLVMContext &Context = I.getContext();
-
   // The case where there is only a single exit node of this loop is common
   // enough that we handle it as a special (more efficient) case.  It is more
   // efficient to handle because there are no PHI nodes that need to be placed.
@@ -573,7 +570,7 @@ void LICM::sink(Instruction &I) {
             ExitBlock->getInstList().insert(InsertPt, &I);
             New = &I;
           } else {
-            New = I.clone(Context);
+            New = I.clone();
             CurAST->copyValue(&I, New);
             if (!I.getName().empty())
               New->setName(I.getName()+".le");
@@ -596,7 +593,7 @@ void LICM::sink(Instruction &I) {
     if (AI) {
       std::vector<AllocaInst*> Allocas;
       Allocas.push_back(AI);
-      PromoteMemToReg(Allocas, *DT, *DF, Context, CurAST);
+      PromoteMemToReg(Allocas, *DT, *DF, AI->getContext(), CurAST);
     }
   }
 }

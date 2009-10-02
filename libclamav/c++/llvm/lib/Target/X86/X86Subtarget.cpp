@@ -108,14 +108,7 @@ ClassifyGlobalReference(const GlobalValue *GV, const TargetMachine &TM) const {
     // normal $non_lazy_ptr stub because this symbol might be resolved late.
     if (!GV->hasHiddenVisibility())  // Non-hidden $non_lazy_ptr reference.
       return X86II::MO_DARWIN_NONLAZY;
-    
-    // If symbol visibility is hidden, we have a stub for common symbol
-    // references and external declarations.
-    if (isDecl || GV->hasCommonLinkage()) {
-      // Hidden $non_lazy_ptr reference.
-      return X86II::MO_DARWIN_HIDDEN_NONLAZY;
-    }
-    
+
     // Otherwise, no stub.
     return X86II::MO_NO_FLAG;
   }
@@ -158,8 +151,8 @@ unsigned X86Subtarget::getSpecialAddressLatency() const {
 
 /// GetCpuIDAndInfo - Execute the specified cpuid and return the 4 values in the
 /// specified arguments.  If we can't run cpuid on the host, return true.
-bool X86::GetCpuIDAndInfo(unsigned value, unsigned *rEAX, unsigned *rEBX,
-                          unsigned *rECX, unsigned *rEDX) {
+static bool GetCpuIDAndInfo(unsigned value, unsigned *rEAX,
+                            unsigned *rEBX, unsigned *rECX, unsigned *rEDX) {
 #if defined(__x86_64__) || defined(_M_AMD64) || defined (_M_X64)
   #if defined(__GNUC__)
     // gcc doesn't know cpuid would clobber ebx/rbx. Preseve it manually.
@@ -230,18 +223,19 @@ void X86Subtarget::AutoDetectSubtargetFeatures() {
     char     c[12];
   } text;
   
-  if (X86::GetCpuIDAndInfo(0, &EAX, text.u+0, text.u+2, text.u+1))
+  if (GetCpuIDAndInfo(0, &EAX, text.u+0, text.u+2, text.u+1))
     return;
 
-  X86::GetCpuIDAndInfo(0x1, &EAX, &EBX, &ECX, &EDX);
+  GetCpuIDAndInfo(0x1, &EAX, &EBX, &ECX, &EDX);
   
-  if ((EDX >> 23) & 0x1) X86SSELevel = MMX;
-  if ((EDX >> 25) & 0x1) X86SSELevel = SSE1;
-  if ((EDX >> 26) & 0x1) X86SSELevel = SSE2;
-  if (ECX & 0x1)         X86SSELevel = SSE3;
-  if ((ECX >> 9)  & 0x1) X86SSELevel = SSSE3;
-  if ((ECX >> 19) & 0x1) X86SSELevel = SSE41;
-  if ((ECX >> 20) & 0x1) X86SSELevel = SSE42;
+  if ((EDX >> 15) & 1) HasCMov = true;
+  if ((EDX >> 23) & 1) X86SSELevel = MMX;
+  if ((EDX >> 25) & 1) X86SSELevel = SSE1;
+  if ((EDX >> 26) & 1) X86SSELevel = SSE2;
+  if (ECX & 0x1)       X86SSELevel = SSE3;
+  if ((ECX >> 9)  & 1) X86SSELevel = SSSE3;
+  if ((ECX >> 19) & 1) X86SSELevel = SSE41;
+  if ((ECX >> 20) & 1) X86SSELevel = SSE42;
 
   bool IsIntel = memcmp(text.c, "GenuineIntel", 12) == 0;
   bool IsAMD   = !IsIntel && memcmp(text.c, "AuthenticAMD", 12) == 0;
@@ -256,7 +250,7 @@ void X86Subtarget::AutoDetectSubtargetFeatures() {
     DetectFamilyModel(EAX, Family, Model);
     IsBTMemSlow = IsAMD || (Family == 6 && Model >= 13);
 
-    X86::GetCpuIDAndInfo(0x80000001, &EAX, &EBX, &ECX, &EDX);
+    GetCpuIDAndInfo(0x80000001, &EAX, &EBX, &ECX, &EDX);
     HasX86_64 = (EDX >> 29) & 0x1;
     HasSSE4A = IsAMD && ((ECX >> 6) & 0x1);
     HasFMA4 = IsAMD && ((ECX >> 16) & 0x1);
@@ -265,13 +259,13 @@ void X86Subtarget::AutoDetectSubtargetFeatures() {
 
 static const char *GetCurrentX86CPU() {
   unsigned EAX = 0, EBX = 0, ECX = 0, EDX = 0;
-  if (X86::GetCpuIDAndInfo(0x1, &EAX, &EBX, &ECX, &EDX))
+  if (GetCpuIDAndInfo(0x1, &EAX, &EBX, &ECX, &EDX))
     return "generic";
   unsigned Family = 0;
   unsigned Model  = 0;
   DetectFamilyModel(EAX, Family, Model);
 
-  X86::GetCpuIDAndInfo(0x80000001, &EAX, &EBX, &ECX, &EDX);
+  GetCpuIDAndInfo(0x80000001, &EAX, &EBX, &ECX, &EDX);
   bool Em64T = (EDX >> 29) & 0x1;
   bool HasSSE3 = (ECX & 0x1);
 
@@ -280,7 +274,7 @@ static const char *GetCurrentX86CPU() {
     char     c[12];
   } text;
 
-  X86::GetCpuIDAndInfo(0, &EAX, text.u+0, text.u+2, text.u+1);
+  GetCpuIDAndInfo(0, &EAX, text.u+0, text.u+2, text.u+1);
   if (memcmp(text.c, "GenuineIntel", 12) == 0) {
     switch (Family) {
       case 3:
@@ -380,6 +374,7 @@ X86Subtarget::X86Subtarget(const std::string &TT, const std::string &FS,
   : PICStyle(PICStyles::None)
   , X86SSELevel(NoMMXSSE)
   , X863DNowLevel(NoThreeDNow)
+  , HasCMov(false)
   , HasX86_64(false)
   , HasSSE4A(false)
   , HasAVX(false)

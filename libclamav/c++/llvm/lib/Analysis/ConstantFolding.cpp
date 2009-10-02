@@ -1,4 +1,4 @@
-//===-- ConstantFolding.cpp - Analyze constant folding possibilities ------===//
+//===-- ConstantFolding.cpp - Fold instructions into constants ------------===//
 //
 //                     The LLVM Compiler Infrastructure
 //
@@ -7,8 +7,12 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// This family of functions determines the possibility of performing constant
-// folding.
+// This file defines routines for folding instructions into constants.
+//
+// Also, to supplement the basic VMCore ConstantExpr simplifications,
+// this file defines some additional folding routines that can make use of
+// TargetData information. These functions cannot go in VMCore due to library
+// dependency issues.
 //
 //===----------------------------------------------------------------------===//
 
@@ -172,7 +176,7 @@ static Constant *SymbolicallyEvaluateGEP(Constant* const* Ops, unsigned NumOps,
   do {
     if (const SequentialType *ATy = dyn_cast<SequentialType>(Ty)) {
       // The only pointer indexing we'll do is on the first index of the GEP.
-      if (isa<PointerType>(ATy) && ATy != Ptr->getType())
+      if (isa<PointerType>(ATy) && !NewIdxs.empty())
         break;
       // Determine which element of the array the offset points into.
       APInt ElemSize(BitWidth, TD->getTypeAllocSize(ATy->getElementType()));
@@ -203,12 +207,8 @@ static Constant *SymbolicallyEvaluateGEP(Constant* const* Ops, unsigned NumOps,
   if (Offset != 0)
     return 0;
 
-  // If the base is the start of a GlobalVariable and all the array indices
-  // remain in their static bounds, the GEP is inbounds. We can check that
-  // all indices are in bounds by just checking the first index only
-  // because we've just normalized all the indices.
-  Constant *C = isa<GlobalVariable>(Ptr) && NewIdxs[0]->isNullValue() ?
-    ConstantExpr::getInBoundsGetElementPtr(Ptr, &NewIdxs[0], NewIdxs.size()) :
+  // Create a GEP.
+  Constant *C =
     ConstantExpr::getGetElementPtr(Ptr, &NewIdxs[0], NewIdxs.size());
   assert(cast<PointerType>(C->getType())->getElementType() == Ty &&
          "Computed GetElementPtr has unexpected type!");
@@ -379,9 +379,9 @@ Constant *llvm::ConstantFoldInstruction(Instruction *I, LLVMContext &Context,
     return ConstantFoldCompareInstOperands(CI->getPredicate(),
                                            Ops.data(), Ops.size(), 
                                            Context, TD);
-  else
-    return ConstantFoldInstOperands(I->getOpcode(), I->getType(),
-                                    Ops.data(), Ops.size(), Context, TD);
+  
+  return ConstantFoldInstOperands(I->getOpcode(), I->getType(),
+                                  Ops.data(), Ops.size(), Context, TD);
 }
 
 /// ConstantFoldConstantExpression - Attempt to fold the constant expression
@@ -398,9 +398,8 @@ Constant *llvm::ConstantFoldConstantExpression(ConstantExpr *CE,
     return ConstantFoldCompareInstOperands(CE->getPredicate(),
                                            Ops.data(), Ops.size(), 
                                            Context, TD);
-  else 
-    return ConstantFoldInstOperands(CE->getOpcode(), CE->getType(),
-                                    Ops.data(), Ops.size(), Context, TD);
+  return ConstantFoldInstOperands(CE->getOpcode(), CE->getType(),
+                                  Ops.data(), Ops.size(), Context, TD);
 }
 
 /// ConstantFoldInstOperands - Attempt to constant fold an instruction with the

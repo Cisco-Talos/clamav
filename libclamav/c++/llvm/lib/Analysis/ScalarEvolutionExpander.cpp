@@ -508,20 +508,37 @@ Value *SCEVExpander::expandAddToGEP(const SCEV *const *op_begin,
 }
 
 Value *SCEVExpander::visitAddExpr(const SCEVAddExpr *S) {
+  int NumOperands = S->getNumOperands();
   const Type *Ty = SE.getEffectiveSCEVType(S->getType());
-  Value *V = expand(S->getOperand(S->getNumOperands()-1));
+
+  // Find the index of an operand to start with. Choose the operand with
+  // pointer type, if there is one, or the last operand otherwise.
+  int PIdx = 0;
+  for (; PIdx != NumOperands - 1; ++PIdx)
+    if (isa<PointerType>(S->getOperand(PIdx)->getType())) break;
+
+  // Expand code for the operand that we chose.
+  Value *V = expand(S->getOperand(PIdx));
 
   // Turn things like ptrtoint+arithmetic+inttoptr into GEP. See the
   // comments on expandAddToGEP for details.
   if (const PointerType *PTy = dyn_cast<PointerType>(V->getType())) {
+    // Take the operand at PIdx out of the list.
     const SmallVectorImpl<const SCEV *> &Ops = S->getOperands();
-    return expandAddToGEP(&Ops[0], &Ops[Ops.size() - 1], PTy, Ty, V);
+    SmallVector<const SCEV *, 8> NewOps;
+    NewOps.insert(NewOps.end(), Ops.begin(), Ops.begin() + PIdx);
+    NewOps.insert(NewOps.end(), Ops.begin() + PIdx + 1, Ops.end());
+    // Make a GEP.
+    return expandAddToGEP(NewOps.begin(), NewOps.end(), PTy, Ty, V);
   }
 
+  // Otherwise, we'll expand the rest of the SCEVAddExpr as plain integer
+  // arithmetic.
   V = InsertNoopCastOfTo(V, Ty);
 
   // Emit a bunch of add instructions
-  for (int i = S->getNumOperands()-2; i >= 0; --i) {
+  for (int i = NumOperands-1; i >= 0; --i) {
+    if (i == PIdx) continue;
     Value *W = expandCodeFor(S->getOperand(i), Ty);
     V = InsertBinop(Instruction::Add, V, W);
   }
@@ -603,11 +620,11 @@ Value *SCEVExpander::visitAddRecExpr(const SCEVAddRecExpr *S) {
   if (CanonicalIV &&
       SE.getTypeSizeInBits(CanonicalIV->getType()) >
       SE.getTypeSizeInBits(Ty)) {
-    const SCEV *Start = SE.getAnyExtendExpr(S->getStart(),
-                                            CanonicalIV->getType());
-    const SCEV *Step = SE.getAnyExtendExpr(S->getStepRecurrence(SE),
-                                           CanonicalIV->getType());
-    Value *V = expand(SE.getAddRecExpr(Start, Step, S->getLoop()));
+    const SmallVectorImpl<const SCEV *> &Ops = S->getOperands();
+    SmallVector<const SCEV *, 4> NewOps(Ops.size());
+    for (unsigned i = 0, e = Ops.size(); i != e; ++i)
+      NewOps[i] = SE.getAnyExtendExpr(Ops[i], CanonicalIV->getType());
+    Value *V = expand(SE.getAddRecExpr(NewOps, S->getLoop()));
     BasicBlock *SaveInsertBB = Builder.GetInsertBlock();
     BasicBlock::iterator SaveInsertPt = Builder.GetInsertPoint();
     BasicBlock::iterator NewInsertPt =
@@ -663,29 +680,22 @@ Value *SCEVExpander::visitAddRecExpr(const SCEVAddRecExpr *S) {
     // Create and insert the PHI node for the induction variable in the
     // specified loop.
     BasicBlock *Header = L->getHeader();
-    BasicBlock *Preheader = L->getLoopPreheader();
     PHINode *PN = PHINode::Create(Ty, "indvar", Header->begin());
     InsertedValues.insert(PN);
-    PN->addIncoming(Constant::getNullValue(Ty), Preheader);
 
-    pred_iterator HPI = pred_begin(Header);
-    assert(HPI != pred_end(Header) && "Loop with zero preds???");
-    if (!L->contains(*HPI)) ++HPI;
-    assert(HPI != pred_end(Header) && L->contains(*HPI) &&
-           "No backedge in loop?");
-
-    // Insert a unit add instruction right before the terminator corresponding
-    // to the back-edge.
     Constant *One = ConstantInt::get(Ty, 1);
-    Instruction *Add = BinaryOperator::CreateAdd(PN, One, "indvar.next",
-                                                 (*HPI)->getTerminator());
-    InsertedValues.insert(Add);
-
-    pred_iterator PI = pred_begin(Header);
-    if (*PI == Preheader)
-      ++PI;
-    PN->addIncoming(Add, *PI);
-    return PN;
+    for (pred_iterator HPI = pred_begin(Header), HPE = pred_end(Header);
+         HPI != HPE; ++HPI)
+      if (L->contains(*HPI)) {
+        // Insert a unit add instruction right before the terminator corresponding
+        // to the back-edge.
+        Instruction *Add = BinaryOperator::CreateAdd(PN, One, "indvar.next",
+                                                     (*HPI)->getTerminator());
+        InsertedValues.insert(Add);
+        PN->addIncoming(Add, *HPI);
+      } else {
+        PN->addIncoming(Constant::getNullValue(Ty), *HPI);
+      }
   }
 
   // {0,+,F} --> {0,+,1} * F

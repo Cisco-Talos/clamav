@@ -407,7 +407,6 @@ bool FastISel::SelectCall(User *I) {
         || !DW->ShouldEmitDwarfDebug())
       return true;
 
-    Value *Variable = DI->getVariable();
     Value *Address = DI->getAddress();
     if (BitCastInst *BCI = dyn_cast<BitCastInst>(Address))
       Address = BCI->getOperand(0);
@@ -418,8 +417,15 @@ bool FastISel::SelectCall(User *I) {
       StaticAllocaMap.find(AI);
     if (SI == StaticAllocaMap.end()) break; // VLAs.
     int FI = SI->second;
-    
-    DW->RecordVariable(cast<MDNode>(Variable), FI);
+    if (MMI) {
+      MetadataContext &TheMetadata = AI->getContext().getMetadata();
+      unsigned MDDbgKind = TheMetadata.getMDKind("dbg");
+      MDNode *AllocaLocation =
+        dyn_cast_or_null<MDNode>(TheMetadata.getMD(MDDbgKind, AI));
+      if (AllocaLocation)
+        MMI->setVariableDbgInfo(DI->getVariable(), AllocaLocation, FI);
+    }
+    DW->RecordVariable(DI->getVariable(), FI);
     return true;
   }
   case Intrinsic::eh_exception: {
@@ -608,6 +614,49 @@ FastISel::FastEmitBranch(MachineBasicBlock *MSucc) {
   MBB->addSuccessor(MSucc);
 }
 
+/// SelectFNeg - Emit an FNeg operation.
+///
+bool
+FastISel::SelectFNeg(User *I) {
+  unsigned OpReg = getRegForValue(BinaryOperator::getFNegArgument(I));
+  if (OpReg == 0) return false;
+
+  // If the target has ISD::FNEG, use it.
+  EVT VT = TLI.getValueType(I->getType());
+  unsigned ResultReg = FastEmit_r(VT.getSimpleVT(), VT.getSimpleVT(),
+                                  ISD::FNEG, OpReg);
+  if (ResultReg != 0) {
+    UpdateValueMap(I, ResultReg);
+    return true;
+  }
+
+  // Bitcast the value to integer, twiddle the sign bit with xor,
+  // and then bitcast it back to floating-point.
+  if (VT.getSizeInBits() > 64) return false;
+  EVT IntVT = EVT::getIntegerVT(I->getContext(), VT.getSizeInBits());
+  if (!TLI.isTypeLegal(IntVT))
+    return false;
+
+  unsigned IntReg = FastEmit_r(VT.getSimpleVT(), IntVT.getSimpleVT(),
+                               ISD::BIT_CONVERT, OpReg);
+  if (IntReg == 0)
+    return false;
+
+  unsigned IntResultReg = FastEmit_ri_(IntVT.getSimpleVT(), ISD::XOR, IntReg,
+                                       UINT64_C(1) << (VT.getSizeInBits()-1),
+                                       IntVT.getSimpleVT());
+  if (IntResultReg == 0)
+    return false;
+
+  ResultReg = FastEmit_r(IntVT.getSimpleVT(), VT.getSimpleVT(),
+                         ISD::BIT_CONVERT, IntResultReg);
+  if (ResultReg == 0)
+    return false;
+
+  UpdateValueMap(I, ResultReg);
+  return true;
+}
+
 bool
 FastISel::SelectOperator(User *I, unsigned Opcode) {
   switch (Opcode) {
@@ -618,6 +667,9 @@ FastISel::SelectOperator(User *I, unsigned Opcode) {
   case Instruction::Sub:
     return SelectBinaryOp(I, ISD::SUB);
   case Instruction::FSub:
+    // FNeg is currently represented in LLVM IR as a special case of FSub.
+    if (BinaryOperator::isFNeg(I))
+      return SelectFNeg(I);
     return SelectBinaryOp(I, ISD::FSUB);
   case Instruction::Mul:
     return SelectBinaryOp(I, ISD::MUL);

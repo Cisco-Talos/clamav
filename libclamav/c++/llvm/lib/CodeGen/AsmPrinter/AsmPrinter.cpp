@@ -28,6 +28,7 @@
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCSection.h"
 #include "llvm/MC/MCStreamer.h"
+#include "llvm/MC/MCSymbol.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/FormattedStream.h"
@@ -55,10 +56,11 @@ AsmPrinter::AsmPrinter(formatted_raw_ostream &o, TargetMachine &tm,
     TM(tm), MAI(T), TRI(tm.getRegisterInfo()),
 
     OutContext(*new MCContext()),
-    OutStreamer(*createAsmStreamer(OutContext, O, *T, this)),
+    // FIXME: Pass instprinter to streamer.
+    OutStreamer(*createAsmStreamer(OutContext, O, *T, 0)),
 
     LastMI(0), LastFn(0), Counter(~0U),
-    PrevDLT(0, ~0U, ~0U) {
+    PrevDLT(0, 0, ~0U, ~0U) {
   DW = 0; MMI = 0;
   switch (AsmVerbose) {
   case cl::BOU_UNSET: VerboseAsm = VDef;  break;
@@ -104,17 +106,22 @@ bool AsmPrinter::doInitialization(Module &M) {
   
   if (MAI->doesAllowQuotesInName())
     Mang->setUseQuotes(true);
+
+  if (MAI->doesAllowNameToStartWithDigit())
+    Mang->setSymbolsCanStartWithDigit(true);
   
-  GCModuleInfo *MI = getAnalysisIfAvailable<GCModuleInfo>();
-  assert(MI && "AsmPrinter didn't require GCModuleInfo?");
+  // Allow the target to emit any magic that it wants at the start of the file.
+  EmitStartOfAsmFile(M);
 
   if (MAI->hasSingleParameterDotFile()) {
     /* Very minimal debug info. It is ignored if we emit actual
-       debug info. If we don't, this at helps the user find where
+       debug info. If we don't, this at least helps the user find where
        a function came from. */
     O << "\t.file\t\"" << M.getModuleIdentifier() << "\"\n";
   }
 
+  GCModuleInfo *MI = getAnalysisIfAvailable<GCModuleInfo>();
+  assert(MI && "AsmPrinter didn't require GCModuleInfo?");
   for (GCModuleInfo::iterator I = MI->begin(), E = MI->end(); I != E; ++I)
     if (GCMetadataPrinter *MP = GetOrCreateGCPrinter(*I))
       MP->beginAssembly(O, *this, *MAI);
@@ -125,15 +132,12 @@ bool AsmPrinter::doInitialization(Module &M) {
       << '\n' << MAI->getCommentString()
       << " End of file scope inline assembly\n";
 
-  if (MAI->doesSupportDebugInformation() ||
-      MAI->doesSupportExceptionHandling()) {
-    MMI = getAnalysisIfAvailable<MachineModuleInfo>();
-    if (MMI)
-      MMI->AnalyzeModule(M);
-    DW = getAnalysisIfAvailable<DwarfWriter>();
-    if (DW)
-      DW->BeginModule(&M, MMI, O, this, MAI);
-  }
+  MMI = getAnalysisIfAvailable<MachineModuleInfo>();
+  if (MMI)
+    MMI->AnalyzeModule(M);
+  DW = getAnalysisIfAvailable<DwarfWriter>();
+  if (DW)
+    DW->BeginModule(&M, MMI, O, this, MAI);
 
   return false;
 }
@@ -203,6 +207,11 @@ bool AsmPrinter::doFinalization(Module &M) {
     if (MAI->getNonexecutableStackDirective())
       O << MAI->getNonexecutableStackDirective() << '\n';
 
+  
+  // Allow the target to emit any magic that it wants at the end of the file,
+  // after everything else has gone out.
+  EmitEndOfAsmFile(M);
+  
   delete Mang; Mang = 0;
   DW = 0; MMI = 0;
   
@@ -210,21 +219,13 @@ bool AsmPrinter::doFinalization(Module &M) {
   return false;
 }
 
-std::string 
-AsmPrinter::getCurrentFunctionEHName(const MachineFunction *MF) const {
-  assert(MF && "No machine function?");
-  return Mang->getMangledName(MF->getFunction(), ".eh",
-                              MAI->is_EHSymbolPrivate());
-}
-
 void AsmPrinter::SetupMachineFunction(MachineFunction &MF) {
   // What's my mangled name?
   CurrentFnName = Mang->getMangledName(MF.getFunction());
   IncrementFunctionNumber();
 
-  if (VerboseAsm) {
+  if (VerboseAsm)
     LI = &getAnalysis<MachineLoopInfo>();
-  }
 }
 
 namespace {
@@ -374,13 +375,13 @@ void AsmPrinter::EmitJumpTableInfo(MachineJumpTableInfo *MJTI,
         if (EmittedSets.insert(JTBBs[ii]))
           printPICJumpTableSetLabel(i, JTBBs[ii]);
     
-    // On some targets (e.g. darwin) we want to emit two consequtive labels
+    // On some targets (e.g. Darwin) we want to emit two consequtive labels
     // before each jump table.  The first label is never referenced, but tells
     // the assembler and linker the extents of the jump table object.  The
     // second label is actually referenced by the code.
-    if (JTInDiffSection) {
-      if (const char *JTLabelPrefix = MAI->getJumpTableSpecialLabelPrefix())
-        O << JTLabelPrefix << "JTI" << getFunctionNumber() << '_' << i << ":\n";
+    if (JTInDiffSection && MAI->getLinkerPrivateGlobalPrefix()[0]) {
+      O << MAI->getLinkerPrivateGlobalPrefix()
+        << "JTI" << getFunctionNumber() << '_' << i << ":\n";
     }
     
     O << MAI->getPrivateGlobalPrefix() << "JTI" << getFunctionNumber() 
@@ -415,12 +416,12 @@ void AsmPrinter::printPICJumpTableEntry(const MachineJumpTableInfo *MJTI,
   // If we're emitting non-PIC code, then emit the entries as direct
   // references to the target basic blocks.
   if (!isPIC) {
-    printBasicBlockLabel(MBB, false, false, false);
+    GetMBBSymbol(MBB->getNumber())->print(O, MAI);
   } else if (MAI->getSetDirective()) {
     O << MAI->getPrivateGlobalPrefix() << getFunctionNumber()
       << '_' << uid << "_set_" << MBB->getNumber();
   } else {
-    printBasicBlockLabel(MBB, false, false, false);
+    GetMBBSymbol(MBB->getNumber())->print(O, MAI);
     // If the arch uses custom Jump Table directives, don't calc relative to
     // JT
     if (!HadJTEntryDirective) 
@@ -507,32 +508,6 @@ void AsmPrinter::EmitXXStructorList(Constant *List) {
     }
 }
 
-/// getGlobalLinkName - Returns the asm/link name of of the specified
-/// global variable.  Should be overridden by each target asm printer to
-/// generate the appropriate value.
-const std::string &AsmPrinter::getGlobalLinkName(const GlobalVariable *GV,
-                                                 std::string &LinkName) const {
-  if (isa<Function>(GV)) {
-    LinkName += MAI->getFunctionAddrPrefix();
-    LinkName += Mang->getMangledName(GV);
-    LinkName += MAI->getFunctionAddrSuffix();
-  } else {
-    LinkName += MAI->getGlobalVarAddrPrefix();
-    LinkName += Mang->getMangledName(GV);
-    LinkName += MAI->getGlobalVarAddrSuffix();
-  }  
-  
-  return LinkName;
-}
-
-/// EmitExternalGlobal - Emit the external reference to a global variable.
-/// Should be overridden if an indirect reference should be used.
-void AsmPrinter::EmitExternalGlobal(const GlobalVariable *GV) {
-  std::string GLN;
-  O << getGlobalLinkName(GV, GLN);
-}
-
-
 
 //===----------------------------------------------------------------------===//
 /// LEB 128 number encoding.
@@ -612,6 +587,14 @@ static const char *DecodeDWARFEncoding(unsigned Encoding) {
     return "omit";
   case dwarf::DW_EH_PE_pcrel:
     return "pcrel";
+  case dwarf::DW_EH_PE_udata4:
+    return "udata4";
+  case dwarf::DW_EH_PE_udata8:
+    return "udata8";
+  case dwarf::DW_EH_PE_sdata4:
+    return "sdata4";
+  case dwarf::DW_EH_PE_sdata8:
+    return "sdata8";
   case dwarf::DW_EH_PE_pcrel | dwarf::DW_EH_PE_udata4:
     return "pcrel udata4";
   case dwarf::DW_EH_PE_pcrel | dwarf::DW_EH_PE_sdata4:
@@ -828,18 +811,8 @@ void AsmPrinter::EmitConstantValueOnly(const Constant *CV) {
     O << CI->getZExtValue();
   } else if (const GlobalValue *GV = dyn_cast<GlobalValue>(CV)) {
     // This is a constant address for a global variable or function. Use the
-    // name of the variable or function as the address value, possibly
-    // decorating it with GlobalVarAddrPrefix/Suffix or
-    // FunctionAddrPrefix/Suffix (these all default to "" )
-    if (isa<Function>(GV)) {
-      O << MAI->getFunctionAddrPrefix()
-        << Mang->getMangledName(GV)
-        << MAI->getFunctionAddrSuffix();
-    } else {
-      O << MAI->getGlobalVarAddrPrefix()
-        << Mang->getMangledName(GV)
-        << MAI->getGlobalVarAddrSuffix();
-    }
+    // name of the variable or function as the address value.
+    O << Mang->getMangledName(GV);
   } else if (const ConstantExpr *CE = dyn_cast<ConstantExpr>(CV)) {
     const TargetData *TD = TM.getTargetData();
     unsigned Opcode = CE->getOpcode();    
@@ -1374,17 +1347,19 @@ void AsmPrinter::PrintSpecial(const MachineInstr *MI, const char *Code) const {
 
 /// processDebugLoc - Processes the debug information of each machine
 /// instruction's DebugLoc.
-void AsmPrinter::processDebugLoc(DebugLoc DL) {
+void AsmPrinter::processDebugLoc(const MachineInstr *MI) {
   if (!MAI || !DW)
     return;
-  
+  DebugLoc DL = MI->getDebugLoc();
   if (MAI->doesSupportDebugInformation() && DW->ShouldEmitDwarfDebug()) {
     if (!DL.isUnknown()) {
       DebugLocTuple CurDLT = MF->getDebugLocTuple(DL);
 
-      if (CurDLT.CompileUnit != 0 && PrevDLT != CurDLT)
-        printLabel(DW->RecordSourceLine(CurDLT.Line, CurDLT.Col,
-                                        DICompileUnit(CurDLT.CompileUnit)));
+      if (CurDLT.CompileUnit != 0 && PrevDLT != CurDLT) {
+        printLabel(DW->RecordSourceLine(CurDLT.Line, CurDLT.Col, 
+                                        CurDLT.CompileUnit));
+        O << '\n';
+      }
 
       PrevDLT = CurDLT;
     }
@@ -1560,8 +1535,8 @@ void AsmPrinter::printInlineAsm(const MachineInstr *MI) const {
           ++OpNo;  // Skip over the ID number.
 
           if (Modifier[0]=='l')  // labels are target independent
-            printBasicBlockLabel(MI->getOperand(OpNo).getMBB(), 
-                                 false, false, false);
+            GetMBBSymbol(MI->getOperand(OpNo).getMBB()
+                           ->getNumber())->print(O, MAI);
           else {
             AsmPrinter *AP = const_cast<AsmPrinter*>(this);
             if ((OpFlags & 7) == 4) {
@@ -1586,17 +1561,16 @@ void AsmPrinter::printInlineAsm(const MachineInstr *MI) const {
     }
     }
   }
-  O << "\n\t" << MAI->getCommentString() << MAI->getInlineAsmEnd() << '\n';
+  O << "\n\t" << MAI->getCommentString() << MAI->getInlineAsmEnd();
 }
 
 /// printImplicitDef - This method prints the specified machine instruction
 /// that is an implicit def.
 void AsmPrinter::printImplicitDef(const MachineInstr *MI) const {
-  if (VerboseAsm) {
-    O.PadToColumn(MAI->getCommentColumn());
-    O << MAI->getCommentString() << " implicit-def: "
-      << TRI->getAsmName(MI->getOperand(0).getReg()) << '\n';
-  }
+  if (!VerboseAsm) return;
+  O.PadToColumn(MAI->getCommentColumn());
+  O << MAI->getCommentString() << " implicit-def: "
+    << TRI->getName(MI->getOperand(0).getReg());
 }
 
 /// printLabel - This method prints a local label used by debug and
@@ -1606,7 +1580,7 @@ void AsmPrinter::printLabel(const MachineInstr *MI) const {
 }
 
 void AsmPrinter::printLabel(unsigned Id) const {
-  O << MAI->getPrivateGlobalPrefix() << "label" << Id << ":\n";
+  O << MAI->getPrivateGlobalPrefix() << "label" << Id << ':';
 }
 
 /// PrintAsmOperand - Print the specified operand of MI, an INLINEASM
@@ -1625,23 +1599,26 @@ bool AsmPrinter::PrintAsmMemoryOperand(const MachineInstr *MI, unsigned OpNo,
   return true;
 }
 
-/// printBasicBlockLabel - This method prints the label for the specified
-/// MachineBasicBlock
-void AsmPrinter::printBasicBlockLabel(const MachineBasicBlock *MBB,
-                                      bool printAlign, 
-                                      bool printColon,
-                                      bool printComment) const {
-  if (printAlign) {
-    unsigned Align = MBB->getAlignment();
-    if (Align)
-      EmitAlignment(Log2_32(Align));
-  }
+MCSymbol *AsmPrinter::GetMBBSymbol(unsigned MBBID) const {
+  SmallString<60> Name;
+  raw_svector_ostream(Name) << MAI->getPrivateGlobalPrefix() << "BB"
+    << getFunctionNumber() << '_' << MBBID;
+  
+  return OutContext.GetOrCreateSymbol(Name.str());
+}
 
-  O << MAI->getPrivateGlobalPrefix() << "BB" << getFunctionNumber() << '_'
-    << MBB->getNumber();
-  if (printColon)
-    O << ':';
-  if (printComment) {
+
+/// EmitBasicBlockStart - This method prints the label for the specified
+/// MachineBasicBlock, an alignment (if present) and a comment describing
+/// it if appropriate.
+void AsmPrinter::EmitBasicBlockStart(const MachineBasicBlock *MBB) const {
+  if (unsigned Align = MBB->getAlignment())
+    EmitAlignment(Log2_32(Align));
+
+  GetMBBSymbol(MBB->getNumber())->print(O, MAI);
+  O << ':';
+  
+  if (VerboseAsm) {
     if (const BasicBlock *BB = MBB->getBasicBlock())
       if (BB->hasName()) {
         O.PadToColumn(MAI->getCommentColumn());
@@ -1649,8 +1626,7 @@ void AsmPrinter::printBasicBlockLabel(const MachineBasicBlock *MBB,
         WriteAsOperand(O, BB, /*PrintType=*/false);
       }
 
-    if (printColon)
-      EmitComments(*MBB);
+    EmitComments(*MBB);
   }
 }
 
@@ -1663,7 +1639,7 @@ void AsmPrinter::printPICJumpTableSetLabel(unsigned uid,
   
   O << MAI->getSetDirective() << ' ' << MAI->getPrivateGlobalPrefix()
     << getFunctionNumber() << '_' << uid << "_set_" << MBB->getNumber() << ',';
-  printBasicBlockLabel(MBB, false, false, false);
+  GetMBBSymbol(MBB->getNumber())->print(O, MAI);
   O << '-' << MAI->getPrivateGlobalPrefix() << "JTI" << getFunctionNumber() 
     << '_' << uid << '\n';
 }
@@ -1676,7 +1652,7 @@ void AsmPrinter::printPICJumpTableSetLabel(unsigned uid, unsigned uid2,
   O << MAI->getSetDirective() << ' ' << MAI->getPrivateGlobalPrefix()
     << getFunctionNumber() << '_' << uid << '_' << uid2
     << "_set_" << MBB->getNumber() << ',';
-  printBasicBlockLabel(MBB, false, false, false);
+  GetMBBSymbol(MBB->getNumber())->print(O, MAI);
   O << '-' << MAI->getPrivateGlobalPrefix() << "JTI" << getFunctionNumber() 
     << '_' << uid << '_' << uid2 << '\n';
 }
@@ -1742,10 +1718,6 @@ void AsmPrinter::printOffset(int64_t Offset) const {
     O << Offset;
 }
 
-void AsmPrinter::printMCInst(const MCInst *MI) {
-  llvm_unreachable("MCInst printing unavailable on this target!");
-}
-
 GCMetadataPrinter *AsmPrinter::GetOrCreateGCPrinter(GCStrategy *S) {
   if (!S->usesMetadata())
     return 0;
@@ -1772,9 +1744,7 @@ GCMetadataPrinter *AsmPrinter::GetOrCreateGCPrinter(GCStrategy *S) {
 
 /// EmitComments - Pretty-print comments for instructions
 void AsmPrinter::EmitComments(const MachineInstr &MI) const {
-  if (!VerboseAsm ||
-      MI.getDebugLoc().isUnknown())
-    return;
+  assert(VerboseAsm && !MI.getDebugLoc().isUnknown());
   
   DebugLocTuple DLT = MF->getDebugLocTuple(MI.getDebugLoc());
 
@@ -1782,30 +1752,8 @@ void AsmPrinter::EmitComments(const MachineInstr &MI) const {
   O.PadToColumn(MAI->getCommentColumn());
   O << MAI->getCommentString() << " SrcLine ";
   if (DLT.CompileUnit) {
-    std::string Str;
     DICompileUnit CU(DLT.CompileUnit);
-    O << CU.getFilename(Str) << " ";
-  }
-  O << DLT.Line;
-  if (DLT.Col != 0) 
-    O << ":" << DLT.Col;
-}
-
-/// EmitComments - Pretty-print comments for instructions
-void AsmPrinter::EmitComments(const MCInst &MI) const {
-  if (!VerboseAsm ||
-      MI.getDebugLoc().isUnknown())
-    return;
-  
-  DebugLocTuple DLT = MF->getDebugLocTuple(MI.getDebugLoc());
-
-  // Print source line info
-  O.PadToColumn(MAI->getCommentColumn());
-  O << MAI->getCommentString() << " SrcLine ";
-  if (DLT.CompileUnit) {
-    std::string Str;
-    DICompileUnit CU(DLT.CompileUnit);
-    O << CU.getFilename(Str) << " ";
+    O << CU.getFilename() << " ";
   }
   O << DLT.Line;
   if (DLT.Col != 0) 

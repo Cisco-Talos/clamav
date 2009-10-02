@@ -79,6 +79,7 @@ namespace {
     { ARM::t2LSRri, ARM::tLSRri,  0,             5,   0,    1,   0,  0,0, 0 },
     { ARM::t2LSRrr, 0,            ARM::tLSRrr,   0,   0,    0,   1,  0,0, 0 },
     { ARM::t2MOVi,  ARM::tMOVi8,  0,             8,   0,    1,   0,  0,0, 0 },
+    { ARM::t2MOVi16,ARM::tMOVi8,  0,             8,   0,    1,   0,  0,0, 0 },
     // FIXME: Do we need the 16-bit 'S' variant?
     { ARM::t2MOVr,ARM::tMOVgpr2gpr,0,            0,   0,    0,   0,  1,0, 0 },
     { ARM::t2MOVCCr,0,            ARM::tMOVCCr,  0,   0,    0,   0,  0,1, 0 },
@@ -262,7 +263,6 @@ Thumb2SizeReduce::ReduceLoadStore(MachineBasicBlock &MBB, MachineInstr *MI,
   bool HasImmOffset = false;
   bool HasShift = false;
   bool isLdStMul = false;
-  bool isPopPush = false;
   unsigned Opc = Entry.NarrowOpc1;
   unsigned OpNum = 3; // First 'rest' of operands.
   switch (Entry.WideOpc) {
@@ -301,7 +301,6 @@ Thumb2SizeReduce::ReduceLoadStore(MachineBasicBlock &MBB, MachineInstr *MI,
     unsigned Mode = MI->getOperand(1).getImm();
     if (BaseReg == ARM::SP && ARM_AM::getAM4WBFlag(Mode)) {
       Opc = Entry.NarrowOpc2;
-      isPopPush = true;
       OpNum = 2;
     } else if (Entry.WideOpc == ARM::t2LDM_RET ||
                !isARMLowRegister(BaseReg) ||
@@ -506,7 +505,7 @@ Thumb2SizeReduce::ReduceToNarrow(MachineBasicBlock &MBB, MachineInstr *MI,
         return false;
     } else if (MO.isImm() &&
                !TID.OpInfo[i].isPredicate()) {
-      if (MO.getImm() > Limit || (MO.getImm() & (Scale-1)) != 0)
+      if (((unsigned)MO.getImm()) > Limit || (MO.getImm() & (Scale-1)) != 0)
         return false;
     }
   }

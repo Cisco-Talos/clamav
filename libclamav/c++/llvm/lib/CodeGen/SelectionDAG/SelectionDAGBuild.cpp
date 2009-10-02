@@ -751,6 +751,7 @@ void SelectionDAGLowering::clear() {
   NodeMap.clear();
   PendingLoads.clear();
   PendingExports.clear();
+  EdgeMapping.clear();
   DAG.clear();
   CurDebugLoc = DebugLoc::getUnknownLoc();
   HasTailCall = false;
@@ -861,6 +862,10 @@ SDValue SelectionDAGLowering::getValue(const Value *V) {
       for (User::const_op_iterator OI = C->op_begin(), OE = C->op_end();
            OI != OE; ++OI) {
         SDNode *Val = getValue(*OI).getNode();
+        // If the operand is an empty aggregate, there are no values.
+        if (!Val) continue;
+        // Add each leaf value from the operand to the Constants list
+        // to form a flattened list of all the values.
         for (unsigned i = 0, e = Val->getNumValues(); i != e; ++i)
           Constants.push_back(SDValue(Val, i));
       }
@@ -989,7 +994,8 @@ void SelectionDAGLowering::visitRet(ReturnInst &I) {
   }
 
   bool isVarArg = DAG.getMachineFunction().getFunction()->isVarArg();
-  unsigned CallConv = DAG.getMachineFunction().getFunction()->getCallingConv();
+  CallingConv::ID CallConv =
+    DAG.getMachineFunction().getFunction()->getCallingConv();
   Chain = TLI.LowerReturn(Chain, CallConv, isVarArg,
                           Outs, getCurDebugLoc(), DAG);
 
@@ -1713,11 +1719,8 @@ bool SelectionDAGLowering::handleJTSwitchCase(CaseRec& CR,
   MachineFunction *CurMF = FuncInfo.MF;
 
   // Figure out which block is immediately after the current one.
-  MachineBasicBlock *NextBlock = 0;
   MachineFunction::iterator BBI = CR.CaseBB;
-
-  if (++BBI != FuncInfo.MF->end())
-    NextBlock = BBI;
+  ++BBI;
 
   const BasicBlock *LLVMBB = CR.CaseBB->getBasicBlock();
 
@@ -1786,11 +1789,8 @@ bool SelectionDAGLowering::handleBTSplitSwitchCase(CaseRec& CR,
   MachineFunction *CurMF = FuncInfo.MF;
 
   // Figure out which block is immediately after the current one.
-  MachineBasicBlock *NextBlock = 0;
   MachineFunction::iterator BBI = CR.CaseBB;
-
-  if (++BBI != FuncInfo.MF->end())
-    NextBlock = BBI;
+  ++BBI;
 
   Case& FrontCase = *CR.Range.first;
   Case& BackCase  = *(CR.Range.second-1);
@@ -2813,11 +2813,10 @@ void SelectionDAGLowering::visitLoad(LoadInst &I) {
   EVT PtrVT = Ptr.getValueType();
   for (unsigned i = 0; i != NumValues; ++i) {
     SDValue L = DAG.getLoad(ValueVTs[i], getCurDebugLoc(), Root,
-                              DAG.getNode(ISD::ADD, getCurDebugLoc(),
-                                          PtrVT, Ptr,
-                                          DAG.getConstant(Offsets[i], PtrVT)),
-                              SV, Offsets[i],
-                              isVolatile, Alignment);
+                            DAG.getNode(ISD::ADD, getCurDebugLoc(),
+                                        PtrVT, Ptr,
+                                        DAG.getConstant(Offsets[i], PtrVT)),
+                            SV, Offsets[i], isVolatile, Alignment);
     Values[i] = L;
     Chains[i] = L.getValue(1);
   }
@@ -2866,8 +2865,7 @@ void SelectionDAGLowering::visitStore(StoreInst &I) {
                              DAG.getNode(ISD::ADD, getCurDebugLoc(),
                                          PtrVT, Ptr,
                                          DAG.getConstant(Offsets[i], PtrVT)),
-                             PtrV, Offsets[i],
-                             isVolatile, Alignment);
+                             PtrV, Offsets[i], isVolatile, Alignment);
 
   DAG.setRoot(DAG.getNode(ISD::TokenFactor, getCurDebugLoc(),
                           MVT::Other, &Chains[0], NumValues));
@@ -3980,7 +3978,11 @@ SelectionDAGLowering::visitIntrinsicCall(CallInst &I, unsigned Intrinsic) {
     // Don't handle byval struct arguments or VLAs, for example.
     if (!AI)
       return 0;
-    int FI = FuncInfo.StaticAllocaMap[AI];
+    DenseMap<const AllocaInst*, int>::iterator SI =
+      FuncInfo.StaticAllocaMap.find(AI);
+    if (SI == FuncInfo.StaticAllocaMap.end()) 
+      return 0; // VLAs.
+    int FI = SI->second;
     DW->RecordVariable(cast<MDNode>(Variable), FI);
     return 0;
   }
@@ -3999,32 +4001,35 @@ SelectionDAGLowering::visitIntrinsicCall(CallInst &I, unsigned Intrinsic) {
   case Intrinsic::eh_selector_i32:
   case Intrinsic::eh_selector_i64: {
     MachineModuleInfo *MMI = DAG.getMachineModuleInfo();
-    EVT VT = (Intrinsic == Intrinsic::eh_selector_i32 ? MVT::i32 : MVT::i64);
 
-    if (MMI) {
-      if (CurMBB->isLandingPad())
-        AddCatchInfo(I, MMI, CurMBB);
-      else {
+    if (CurMBB->isLandingPad())
+      AddCatchInfo(I, MMI, CurMBB);
+    else {
 #ifndef NDEBUG
-        FuncInfo.CatchInfoLost.insert(&I);
+      FuncInfo.CatchInfoLost.insert(&I);
 #endif
-        // FIXME: Mark exception selector register as live in.  Hack for PR1508.
-        unsigned Reg = TLI.getExceptionSelectorRegister();
-        if (Reg) CurMBB->addLiveIn(Reg);
-      }
-
-      // Insert the EHSELECTION instruction.
-      SDVTList VTs = DAG.getVTList(VT, MVT::Other);
-      SDValue Ops[2];
-      Ops[0] = getValue(I.getOperand(1));
-      Ops[1] = getRoot();
-      SDValue Op = DAG.getNode(ISD::EHSELECTION, dl, VTs, Ops, 2);
-      setValue(&I, Op);
-      DAG.setRoot(Op.getValue(1));
-    } else {
-      setValue(&I, DAG.getConstant(0, VT));
+      // FIXME: Mark exception selector register as live in.  Hack for PR1508.
+      unsigned Reg = TLI.getExceptionSelectorRegister();
+      if (Reg) CurMBB->addLiveIn(Reg);
     }
 
+    // Insert the EHSELECTION instruction.
+    SDVTList VTs = DAG.getVTList(TLI.getPointerTy(), MVT::Other);
+    SDValue Ops[2];
+    Ops[0] = getValue(I.getOperand(1));
+    Ops[1] = getRoot();
+    SDValue Op = DAG.getNode(ISD::EHSELECTION, dl, VTs, Ops, 2);
+
+    DAG.setRoot(Op.getValue(1));
+
+    MVT::SimpleValueType VT =
+      (Intrinsic == Intrinsic::eh_selector_i32 ? MVT::i32 : MVT::i64);
+    if (Op.getValueType().getSimpleVT() < VT)
+      Op = DAG.getNode(ISD::SIGN_EXTEND, dl, VT, Op);
+    else if (Op.getValueType().getSimpleVT() < VT)
+      Op = DAG.getNode(ISD::TRUNCATE, dl, VT, Op);
+    
+    setValue(&I, Op);
     return 0;
   }
 
@@ -4556,7 +4561,8 @@ void SelectionDAGLowering::visitCall(CallInst &I) {
       } else if (Name == "sin" || Name == "sinf" || Name == "sinl") {
         if (I.getNumOperands() == 2 &&   // Basic sanity checks.
             I.getOperand(1)->getType()->isFloatingPoint() &&
-            I.getType() == I.getOperand(1)->getType()) {
+            I.getType() == I.getOperand(1)->getType() &&
+            I.onlyReadsMemory()) {
           SDValue Tmp = getValue(I.getOperand(1));
           setValue(&I, DAG.getNode(ISD::FSIN, getCurDebugLoc(),
                                    Tmp.getValueType(), Tmp));
@@ -4565,9 +4571,20 @@ void SelectionDAGLowering::visitCall(CallInst &I) {
       } else if (Name == "cos" || Name == "cosf" || Name == "cosl") {
         if (I.getNumOperands() == 2 &&   // Basic sanity checks.
             I.getOperand(1)->getType()->isFloatingPoint() &&
-            I.getType() == I.getOperand(1)->getType()) {
+            I.getType() == I.getOperand(1)->getType() &&
+            I.onlyReadsMemory()) {
           SDValue Tmp = getValue(I.getOperand(1));
           setValue(&I, DAG.getNode(ISD::FCOS, getCurDebugLoc(),
+                                   Tmp.getValueType(), Tmp));
+          return;
+        }
+      } else if (Name == "sqrt" || Name == "sqrtf" || Name == "sqrtl") {
+        if (I.getNumOperands() == 2 &&   // Basic sanity checks.
+            I.getOperand(1)->getType()->isFloatingPoint() &&
+            I.getType() == I.getOperand(1)->getType() &&
+            I.onlyReadsMemory()) {
+          SDValue Tmp = getValue(I.getOperand(1));
+          setValue(&I, DAG.getNode(ISD::FSQRT, getCurDebugLoc(),
                                    Tmp.getValueType(), Tmp));
           return;
         }
@@ -5613,7 +5630,7 @@ std::pair<SDValue, SDValue>
 TargetLowering::LowerCallTo(SDValue Chain, const Type *RetTy,
                             bool RetSExt, bool RetZExt, bool isVarArg,
                             bool isInreg, unsigned NumFixedArgs,
-                            unsigned CallConv, bool isTailCall,
+                            CallingConv::ID CallConv, bool isTailCall,
                             bool isReturnValueUsed,
                             SDValue Callee,
                             ArgListTy &Args, SelectionDAG &DAG, DebugLoc dl) {

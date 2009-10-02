@@ -1,4 +1,4 @@
-; RUN: llvm-as < %s | llc -mtriple=thumbv7-apple-darwin | FileCheck %s
+; RUN: llc < %s -mtriple=thumbv7-apple-darwin | FileCheck %s
 
 define void @foo(i32 %X, i32 %Y) {
 entry:
@@ -31,7 +31,7 @@ entry:
 ; CHECK: CountTree:
 ; CHECK: it eq
 ; CHECK: cmpeq
-; CHECK: beq.n
+; CHECK: bne
 ; CHECK: itt eq
 ; CHECK: moveq
 ; CHECK: popeq
@@ -82,7 +82,7 @@ define fastcc void @t2() nounwind {
 entry:
 ; CHECK: t2:
 ; CHECK: cmp r0, #0
-; CHECK: beq.n
+; CHECK: beq
 	br i1 undef, label %bb.i.i3, label %growMapping.exit
 
 bb.i.i3:		; preds = %entry

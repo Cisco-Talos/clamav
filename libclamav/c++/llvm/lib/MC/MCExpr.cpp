@@ -14,15 +14,26 @@
 #include "llvm/Support/raw_ostream.h"
 using namespace llvm;
 
-void MCExpr::print(raw_ostream &OS) const {
+void MCExpr::print(raw_ostream &OS, const MCAsmInfo *MAI) const {
   switch (getKind()) {
   case MCExpr::Constant:
     OS << cast<MCConstantExpr>(*this).getValue();
     return;
 
-  case MCExpr::SymbolRef:
-    cast<MCSymbolRefExpr>(*this).getSymbol().print(OS);
+  case MCExpr::SymbolRef: {
+    const MCSymbol &Sym = cast<MCSymbolRefExpr>(*this).getSymbol();
+    
+    // Parenthesize names that start with $ so that they don't look like
+    // absolute names.
+    if (Sym.getName()[0] == '$') {
+      OS << '(';
+      Sym.print(OS, MAI);
+      OS << ')';
+    } else {
+      Sym.print(OS, MAI);
+    }
     return;
+  }
 
   case MCExpr::Unary: {
     const MCUnaryExpr &UE = cast<MCUnaryExpr>(*this);
@@ -33,18 +44,35 @@ void MCExpr::print(raw_ostream &OS) const {
     case MCUnaryExpr::Not:   OS << '~'; break;
     case MCUnaryExpr::Plus:  OS << '+'; break;
     }
-    UE.getSubExpr()->print(OS);
+    UE.getSubExpr()->print(OS, MAI);
     return;
   }
 
   case MCExpr::Binary: {
     const MCBinaryExpr &BE = cast<MCBinaryExpr>(*this);
-    OS << '(';
-    BE.getLHS()->print(OS);
-    OS << ' ';
+    
+    // Only print parens around the LHS if it is non-trivial.
+    if (isa<MCConstantExpr>(BE.getLHS()) || isa<MCSymbolRefExpr>(BE.getLHS())) {
+      BE.getLHS()->print(OS, MAI);
+    } else {
+      OS << '(';
+      BE.getLHS()->print(OS, MAI);
+      OS << ')';
+    }
+    
     switch (BE.getOpcode()) {
     default: assert(0 && "Invalid opcode!");
-    case MCBinaryExpr::Add:  OS <<  '+'; break;
+    case MCBinaryExpr::Add:
+      // Print "X-42" instead of "X+-42".
+      if (const MCConstantExpr *RHSC = dyn_cast<MCConstantExpr>(BE.getRHS())) {
+        if (RHSC->getValue() < 0) {
+          OS << RHSC->getValue();
+          return;
+        }
+      }
+        
+      OS <<  '+';
+      break;
     case MCBinaryExpr::And:  OS <<  '&'; break;
     case MCBinaryExpr::Div:  OS <<  '/'; break;
     case MCBinaryExpr::EQ:   OS << "=="; break;
@@ -63,9 +91,15 @@ void MCExpr::print(raw_ostream &OS) const {
     case MCBinaryExpr::Sub:  OS <<  '-'; break;
     case MCBinaryExpr::Xor:  OS <<  '^'; break;
     }
-    OS << ' ';
-    BE.getRHS()->print(OS);
-    OS << ')';
+    
+    // Only print parens around the LHS if it is non-trivial.
+    if (isa<MCConstantExpr>(BE.getRHS()) || isa<MCSymbolRefExpr>(BE.getRHS())) {
+      BE.getRHS()->print(OS, MAI);
+    } else {
+      OS << '(';
+      BE.getRHS()->print(OS, MAI);
+      OS << ')';
+    }
     return;
   }
   }
@@ -74,22 +108,19 @@ void MCExpr::print(raw_ostream &OS) const {
 }
 
 void MCExpr::dump() const {
-  print(errs());
+  print(errs(), 0);
   errs() << '\n';
 }
 
 /* *** */
 
-const MCBinaryExpr * MCBinaryExpr::Create(Opcode Opc,
-                                          const MCExpr *LHS,
-                                          const MCExpr *RHS,
-                                          MCContext &Ctx) {
+const MCBinaryExpr *MCBinaryExpr::Create(Opcode Opc, const MCExpr *LHS,
+                                         const MCExpr *RHS, MCContext &Ctx) {
   return new (Ctx) MCBinaryExpr(Opc, LHS, RHS);
 }
 
-const MCUnaryExpr * MCUnaryExpr::Create(Opcode Opc,
-                                        const MCExpr *Expr,
-                                        MCContext &Ctx) {
+const MCUnaryExpr *MCUnaryExpr::Create(Opcode Opc, const MCExpr *Expr,
+                                       MCContext &Ctx) {
   return new (Ctx) MCUnaryExpr(Opc, Expr);
 }
 
@@ -101,6 +132,12 @@ const MCSymbolRefExpr *MCSymbolRefExpr::Create(const MCSymbol *Sym,
                                                MCContext &Ctx) {
   return new (Ctx) MCSymbolRefExpr(Sym);
 }
+
+const MCSymbolRefExpr *MCSymbolRefExpr::Create(const StringRef &Name,
+                                               MCContext &Ctx) {
+  return Create(Ctx.GetOrCreateSymbol(Name), Ctx);
+}
+
 
 /* *** */
 

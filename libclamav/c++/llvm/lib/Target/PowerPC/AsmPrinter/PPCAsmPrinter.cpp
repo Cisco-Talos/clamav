@@ -31,9 +31,10 @@
 #include "llvm/CodeGen/MachineFunctionPass.h"
 #include "llvm/CodeGen/MachineInstr.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
+#include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCSectionMachO.h"
 #include "llvm/MC/MCStreamer.h"
-#include "llvm/MC/MCAsmInfo.h"
+#include "llvm/MC/MCSymbol.h"
 #include "llvm/Target/TargetLoweringObjectFile.h"
 #include "llvm/Target/TargetRegisterInfo.h"
 #include "llvm/Target/TargetInstrInfo.h"
@@ -119,6 +120,8 @@ namespace {
     /// machine instruction was sufficiently described to print it, otherwise it
     /// returns false.
     void printInstruction(const MachineInstr *MI);
+    static const char *getRegisterName(unsigned RegNo);
+
 
     void printMachineInstruction(const MachineInstr *MI);
     void printOp(const MachineOperand &MO);
@@ -148,7 +151,7 @@ namespace {
         return;
       }
 
-      const char *RegName = TM.getRegisterInfo()->get(RegNo).AsmName;
+      const char *RegName = getRegisterName(RegNo);
       // Linux assembler (Others?) does not take register mnemonics.
       // FIXME - What about special registers used in mfspr/mtspr?
       if (!Subtarget.isDarwin()) RegName = stripRegisterPrefix(RegName);
@@ -338,8 +341,6 @@ namespace {
                                const char *Modifier);
 
     virtual bool runOnMachineFunction(MachineFunction &F) = 0;
-
-    virtual void EmitExternalGlobal(const GlobalVariable *GV);
   };
 
   /// PPCLinuxAsmPrinter - PowerPC assembly printer, customized for Linux
@@ -380,8 +381,8 @@ namespace {
     }
 
     bool runOnMachineFunction(MachineFunction &F);
-    bool doInitialization(Module &M);
     bool doFinalization(Module &M);
+    void EmitStartOfAsmFile(Module &M);
 
     void getAnalysisUsage(AnalysisUsage &AU) const {
       AU.setPreservesAll();
@@ -403,7 +404,7 @@ void PPCAsmPrinter::printOp(const MachineOperand &MO) {
     llvm_unreachable("printOp() does not handle immediate values");
 
   case MachineOperand::MO_MachineBasicBlock:
-    printBasicBlockLabel(MO.getMBB());
+    GetMBBSymbol(MO.getMBB()->getNumber())->print(O, MAI);
     return;
   case MachineOperand::MO_JumpTableIndex:
     O << MAI->getPrivateGlobalPrefix() << "JTI" << getFunctionNumber()
@@ -457,19 +458,6 @@ void PPCAsmPrinter::printOp(const MachineOperand &MO) {
     O << "<unknown operand type: " << MO.getType() << ">";
     return;
   }
-}
-
-/// EmitExternalGlobal - In this case we need to use the indirect symbol.
-///
-void PPCAsmPrinter::EmitExternalGlobal(const GlobalVariable *GV) {
-  std::string Name;
-  
-  if (TM.getRelocationModel() != Reloc::Static) {
-    Name = Mang->getMangledName(GV, "$non_lazy_ptr", true);
-  } else {
-    Name = Mang->getMangledName(GV);
-  }
-  O << Name;
 }
 
 /// PrintAsmOperand - Print out an operand for an inline asm expression.
@@ -556,6 +544,8 @@ void PPCAsmPrinter::printPredicateOperand(const MachineInstr *MI, unsigned OpNo,
 ///
 void PPCAsmPrinter::printMachineInstruction(const MachineInstr *MI) {
   ++EmittedInsts;
+  
+  processDebugLoc(MI);
 
   // Check for slwi/srwi mnemonics.
   if (MI->getOpcode() == PPC::RLWINM) {
@@ -601,6 +591,10 @@ void PPCAsmPrinter::printMachineInstruction(const MachineInstr *MI) {
   }
 
   printInstruction(MI);
+  
+  if (VerboseAsm && !MI->getDebugLoc().isUnknown())
+    EmitComments(*MI);
+  O << '\n';
 }
 
 /// runOnMachineFunction - This uses the printMachineInstruction()
@@ -663,7 +657,7 @@ bool PPCLinuxAsmPrinter::runOnMachineFunction(MachineFunction &MF) {
        I != E; ++I) {
     // Print a label for the basic block.
     if (I != MF.begin()) {
-      printBasicBlockLabel(I, true, true);
+      EmitBasicBlockStart(I);
       O << '\n';
     }
     for (MachineBasicBlock::const_iterator II = I->begin(), E = I->end();
@@ -847,7 +841,7 @@ bool PPCDarwinAsmPrinter::runOnMachineFunction(MachineFunction &MF) {
        I != E; ++I) {
     // Print a label for the basic block.
     if (I != MF.begin()) {
-      printBasicBlockLabel(I, true, true, VerboseAsm);
+      EmitBasicBlockStart(I);
       O << '\n';
     }
     for (MachineBasicBlock::const_iterator II = I->begin(), IE = I->end();
@@ -868,7 +862,7 @@ bool PPCDarwinAsmPrinter::runOnMachineFunction(MachineFunction &MF) {
 }
 
 
-bool PPCDarwinAsmPrinter::doInitialization(Module &M) {
+void PPCDarwinAsmPrinter::EmitStartOfAsmFile(Module &M) {
   static const char *const CPUDirectives[] = {
     "",
     "ppc",
@@ -891,9 +885,6 @@ bool PPCDarwinAsmPrinter::doInitialization(Module &M) {
   assert(Directive <= PPC::DIR_64 && "Directive out of range.");
   O << "\t.machine " << CPUDirectives[Directive] << '\n';
 
-  bool Result = AsmPrinter::doInitialization(M);
-  assert(MMI);
-
   // Prime text sections so they are adjacent.  This reduces the likelihood a
   // large data or debug section causes a branch to exceed 16M limit.
   TargetLoweringObjectFileMachO &TLOFMacho = 
@@ -913,8 +904,6 @@ bool PPCDarwinAsmPrinter::doInitialization(Module &M) {
                                       16, SectionKind::getText()));
   }
   OutStreamer.SwitchSection(getObjFileLowering().getTextSection());
-
-  return Result;
 }
 
 void PPCDarwinAsmPrinter::PrintGlobalVariable(const GlobalVariable *GVar) {

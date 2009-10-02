@@ -8,7 +8,6 @@
 //===----------------------------------------------------------------------===//
 
 #include <ostream>
-#include "llvm/Support/raw_os_ostream.h"
 #include "gtest/gtest.h"
 #include "llvm/ADT/APInt.h"
 #include "llvm/ADT/SmallString.h"
@@ -16,13 +15,6 @@
 using namespace llvm;
 
 namespace {
-
-// Support APInt output to an std::ostream.
-inline std::ostream &operator<<(std::ostream &OS, const APInt &Value) {
-  raw_os_ostream RawOS(OS);
-  RawOS << Value;
-  return OS;
-}
 
 // Test that APInt shift left works when bitwidth > 64 and shiftamt == 0
 TEST(APIntTest, ShiftLeftByZero) {
@@ -183,11 +175,11 @@ TEST(APIntTest, fromString) {
   EXPECT_EQ(APInt(32, 3), APInt(32,  "+11", 2));
   EXPECT_EQ(APInt(32, 4), APInt(32, "+100", 2));
 
-  EXPECT_EQ(APInt(32, -0), APInt(32,   "-0", 2));
-  EXPECT_EQ(APInt(32, -1), APInt(32,   "-1", 2));
-  EXPECT_EQ(APInt(32, -2), APInt(32,  "-10", 2));
-  EXPECT_EQ(APInt(32, -3), APInt(32,  "-11", 2));
-  EXPECT_EQ(APInt(32, -4), APInt(32, "-100", 2));
+  EXPECT_EQ(APInt(32, uint64_t(-0LL)), APInt(32,   "-0", 2));
+  EXPECT_EQ(APInt(32, uint64_t(-1LL)), APInt(32,   "-1", 2));
+  EXPECT_EQ(APInt(32, uint64_t(-2LL)), APInt(32,  "-10", 2));
+  EXPECT_EQ(APInt(32, uint64_t(-3LL)), APInt(32,  "-11", 2));
+  EXPECT_EQ(APInt(32, uint64_t(-4LL)), APInt(32, "-100", 2));
 
 
   EXPECT_EQ(APInt(32,  0), APInt(32,  "0",  8));
@@ -204,12 +196,12 @@ TEST(APIntTest, fromString) {
   EXPECT_EQ(APInt(32, +15), APInt(32,  "+17", 8));
   EXPECT_EQ(APInt(32, +16), APInt(32,  "+20", 8));
 
-  EXPECT_EQ(APInt(32,  -0), APInt(32,  "-0",  8));
-  EXPECT_EQ(APInt(32,  -1), APInt(32,  "-1",  8));
-  EXPECT_EQ(APInt(32,  -7), APInt(32,  "-7",  8));
-  EXPECT_EQ(APInt(32,  -8), APInt(32,  "-10", 8));
-  EXPECT_EQ(APInt(32, -15), APInt(32,  "-17", 8));
-  EXPECT_EQ(APInt(32, -16), APInt(32,  "-20", 8));
+  EXPECT_EQ(APInt(32,  uint64_t(-0LL)), APInt(32,  "-0",  8));
+  EXPECT_EQ(APInt(32,  uint64_t(-1LL)), APInt(32,  "-1",  8));
+  EXPECT_EQ(APInt(32,  uint64_t(-7LL)), APInt(32,  "-7",  8));
+  EXPECT_EQ(APInt(32,  uint64_t(-8LL)), APInt(32,  "-10", 8));
+  EXPECT_EQ(APInt(32, uint64_t(-15LL)), APInt(32,  "-17", 8));
+  EXPECT_EQ(APInt(32, uint64_t(-16LL)), APInt(32,  "-20", 8));
 
 
   EXPECT_EQ(APInt(32,  0), APInt(32,  "0", 10));
@@ -219,12 +211,12 @@ TEST(APIntTest, fromString) {
   EXPECT_EQ(APInt(32, 19), APInt(32, "19", 10));
   EXPECT_EQ(APInt(32, 20), APInt(32, "20", 10));
 
-  EXPECT_EQ(APInt(32,  -0), APInt(32,  "-0", 10));
-  EXPECT_EQ(APInt(32,  -1), APInt(32,  "-1", 10));
-  EXPECT_EQ(APInt(32,  -9), APInt(32,  "-9", 10));
-  EXPECT_EQ(APInt(32, -10), APInt(32, "-10", 10));
-  EXPECT_EQ(APInt(32, -19), APInt(32, "-19", 10));
-  EXPECT_EQ(APInt(32, -20), APInt(32, "-20", 10));
+  EXPECT_EQ(APInt(32,  uint64_t(-0LL)), APInt(32,  "-0", 10));
+  EXPECT_EQ(APInt(32,  uint64_t(-1LL)), APInt(32,  "-1", 10));
+  EXPECT_EQ(APInt(32,  uint64_t(-9LL)), APInt(32,  "-9", 10));
+  EXPECT_EQ(APInt(32, uint64_t(-10LL)), APInt(32, "-10", 10));
+  EXPECT_EQ(APInt(32, uint64_t(-19LL)), APInt(32, "-19", 10));
+  EXPECT_EQ(APInt(32, uint64_t(-20LL)), APInt(32, "-20", 10));
 
 
   EXPECT_EQ(APInt(32,  0), APInt(32,  "0", 16));
@@ -234,12 +226,12 @@ TEST(APIntTest, fromString) {
   EXPECT_EQ(APInt(32, 31), APInt(32, "1F", 16));
   EXPECT_EQ(APInt(32, 32), APInt(32, "20", 16));
 
-  EXPECT_EQ(APInt(32,  -0), APInt(32,  "-0", 16));
-  EXPECT_EQ(APInt(32,  -1), APInt(32,  "-1", 16));
-  EXPECT_EQ(APInt(32, -15), APInt(32,  "-F", 16));
-  EXPECT_EQ(APInt(32, -16), APInt(32, "-10", 16));
-  EXPECT_EQ(APInt(32, -31), APInt(32, "-1F", 16));
-  EXPECT_EQ(APInt(32, -32), APInt(32, "-20", 16));
+  EXPECT_EQ(APInt(32,  uint64_t(-0LL)), APInt(32,  "-0", 16));
+  EXPECT_EQ(APInt(32,  uint64_t(-1LL)), APInt(32,  "-1", 16));
+  EXPECT_EQ(APInt(32, uint64_t(-15LL)), APInt(32,  "-F", 16));
+  EXPECT_EQ(APInt(32, uint64_t(-16LL)), APInt(32, "-10", 16));
+  EXPECT_EQ(APInt(32, uint64_t(-31LL)), APInt(32, "-1F", 16));
+  EXPECT_EQ(APInt(32, uint64_t(-32LL)), APInt(32, "-20", 16));
 }
 
 TEST(APIntTest, StringBitsNeeded2) {

@@ -70,6 +70,9 @@ else( MSVC )
     CACHE STRING "Semicolon-separated list of targets to build, or \"all\".")
 endif( MSVC )
 
+set(LLVM_TARGET_ARCH "host"
+  CACHE STRING "Set target to use for LLVM JIT or use \"host\" for automatic detection.")
+
 option(LLVM_ENABLE_THREADS "Use threads if available." ON)
 
 if( uppercase_CMAKE_BUILD_TYPE STREQUAL "RELEASE" )
@@ -142,7 +145,11 @@ else(WIN32)
   if(UNIX)
     set(LLVM_ON_WIN32 0)
     set(LLVM_ON_UNIX 1)
-    set(LTDL_SHLIB_EXT ".so")
+    if(APPLE)
+      set(LTDL_SHLIB_EXT ".dylib")
+    else(APPLE)
+      set(LTDL_SHLIB_EXT ".so")
+    endif(APPLE)
     set(EXEEXT "")
     # FIXME: Maximum path length is currently set to 'safe' fixed value
     set(MAXPATHLEN 2024)
@@ -252,8 +259,11 @@ add_subdirectory(lib/Linker)
 add_subdirectory(lib/Analysis)
 add_subdirectory(lib/Analysis/IPA)
 add_subdirectory(lib/MC)
+add_subdirectory(test)
 
 add_subdirectory(utils/FileCheck)
+add_subdirectory(utils/count)
+add_subdirectory(utils/not)
 
 set(LLVM_ENUM_ASM_PRINTERS "")
 set(LLVM_ENUM_ASM_PARSERS "")

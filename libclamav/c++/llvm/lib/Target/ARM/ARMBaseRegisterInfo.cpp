@@ -245,7 +245,7 @@ bool ARMBaseRegisterInfo::isReservedReg(const MachineFunction &MF,
 
 const TargetRegisterClass *
 ARMBaseRegisterInfo::getPointerRegClass(unsigned Kind) const {
-  return &ARM::GPRRegClass;
+  return ARM::GPRRegisterClass;
 }
 
 /// getAllocationOrder - Returns the register allocation order for a specified
@@ -536,7 +536,8 @@ ARMBaseRegisterInfo::processFunctionBeforeCalleeSavedScan(MachineFunction &MF,
       }
     }
 
-    if (CSRegClasses[i] == &ARM::GPRRegClass) {
+    if (CSRegClasses[i] == ARM::GPRRegisterClass ||
+        CSRegClasses[i] == ARM::tGPRRegisterClass) {
       if (Spilled) {
         NumGPRSpills++;
 
@@ -649,10 +650,18 @@ ARMBaseRegisterInfo::processFunctionBeforeCalleeSavedScan(MachineFunction &MF,
     // Estimate if we might need to scavenge a register at some point in order
     // to materialize a stack offset. If so, either spill one additional
     // callee-saved register or reserve a special spill slot to facilitate
-    // register scavenging.
-    if (RS && !ExtraCSSpill && !AFI->isThumb1OnlyFunction()) {
+    // register scavenging. Thumb1 needs a spill slot for stack pointer
+    // adjustments also, even when the frame itself is small.
+    if (RS && !ExtraCSSpill) {
       MachineFrameInfo  *MFI = MF.getFrameInfo();
-      if (estimateStackSize(MF, MFI) >= estimateRSStackSizeLimit(MF)) {
+      // If any of the stack slot references may be out of range of an
+      // immediate offset, make sure a register (or a spill slot) is
+      // available for the register scavenger. Note that if we're indexing
+      // off the frame pointer, the effective stack size is 4 bytes larger
+      // since the FP points to the stack slot of the previous FP.
+      if (estimateStackSize(MF, MFI) + (hasFP(MF) ? 4 : 0)
+          >= estimateRSStackSizeLimit(MF)
+          || AFI->isThumb1OnlyFunction()) {
         // If any non-reserved CS register isn't spilled, just spill one or two
         // extra. That should take care of it!
         unsigned NumExtras = TargetAlign / 4;
@@ -665,12 +674,15 @@ ARMBaseRegisterInfo::processFunctionBeforeCalleeSavedScan(MachineFunction &MF,
             NumExtras--;
           }
         }
-        while (NumExtras && !UnspilledCS2GPRs.empty()) {
-          unsigned Reg = UnspilledCS2GPRs.back();
-          UnspilledCS2GPRs.pop_back();
-          if (!isReservedReg(MF, Reg)) {
-            Extras.push_back(Reg);
-            NumExtras--;
+        // For non-Thumb1 functions, also check for hi-reg CS registers
+        if (!AFI->isThumb1OnlyFunction()) {
+          while (NumExtras && !UnspilledCS2GPRs.empty()) {
+            unsigned Reg = UnspilledCS2GPRs.back();
+            UnspilledCS2GPRs.pop_back();
+            if (!isReservedReg(MF, Reg)) {
+              Extras.push_back(Reg);
+              NumExtras--;
+            }
           }
         }
         if (Extras.size() && NumExtras == 0) {
@@ -680,7 +692,7 @@ ARMBaseRegisterInfo::processFunctionBeforeCalleeSavedScan(MachineFunction &MF,
           }
         } else {
           // Reserve a slot closest to SP or frame pointer.
-          const TargetRegisterClass *RC = &ARM::GPRRegClass;
+          const TargetRegisterClass *RC = ARM::GPRRegisterClass;
           RS->setScavengingFrameIndex(MFI->CreateStackObject(RC->getSize(),
                                                            RC->getAlignment()));
         }
@@ -1021,7 +1033,7 @@ ARMBaseRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   const MachineFrameInfo *MFI = MF.getFrameInfo();
   ARMFunctionInfo *AFI = MF.getInfo<ARMFunctionInfo>();
   assert(!AFI->isThumb1OnlyFunction() &&
-         "This eliminateFrameIndex does not suppor Thumb1!");
+         "This eliminateFrameIndex does not support Thumb1!");
 
   while (!MI.getOperand(i).isFI()) {
     ++i;
@@ -1068,10 +1080,10 @@ ARMBaseRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   // If the offset we have is too large to fit into the instruction, we need
   // to form it with a series of ADDri's.  Do this by taking 8-bit chunks
   // out of 'Offset'.
-  unsigned ScratchReg = findScratchRegister(RS, &ARM::GPRRegClass, AFI);
+  unsigned ScratchReg = findScratchRegister(RS, ARM::GPRRegisterClass, AFI);
   if (ScratchReg == 0)
     // No register is "free". Scavenge a register.
-    ScratchReg = RS->scavengeRegister(&ARM::GPRRegClass, II, SPAdj);
+    ScratchReg = RS->scavengeRegister(ARM::GPRRegisterClass, II, SPAdj);
   int PIdx = MI.findFirstPredOperandIdx();
   ARMCC::CondCodes Pred = (PIdx == -1)
     ? ARMCC::AL : (ARMCC::CondCodes)MI.getOperand(PIdx).getImm();
@@ -1149,6 +1161,7 @@ emitPrologue(MachineFunction &MF) const {
   unsigned GPRCS1Size = 0, GPRCS2Size = 0, DPRCSSize = 0;
   int FramePtrSpillFI = 0;
 
+  // Allocate the vararg register save area. This is not counted in NumBytes.
   if (VARegSaveSize)
     emitSPUpdate(isARM, MBB, MBBI, dl, TII, -VARegSaveSize);
 
@@ -1196,8 +1209,11 @@ emitPrologue(MachineFunction &MF) const {
   emitSPUpdate(isARM, MBB, MBBI, dl, TII, -GPRCS1Size);
   movePastCSLoadStoreOps(MBB, MBBI, ARM::STR, ARM::t2STRi12, 1, STI);
 
-  // Darwin ABI requires FP to point to the stack slot that contains the
-  // previous FP.
+  // Set FP to point to the stack slot that contains the previous FP.
+  // For Darwin, FP is R7, which has now been stored in spill area 1.
+  // Otherwise, if this is not Darwin, all the callee-saved registers go
+  // into spill area 1, including the FP in R11.  In either case, it is
+  // now safe to emit this assignment.
   if (STI.isTargetDarwin() || hasFP(MF)) {
     unsigned ADDriOpc = !AFI->isThumbFunction() ? ARM::ADDri : ARM::t2ADDri;
     MachineInstrBuilder MIB =

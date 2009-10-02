@@ -9,12 +9,12 @@
 
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/ADT/SmallString.h"
-#include "llvm/CodeGen/AsmPrinter.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCCodeEmitter.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInst.h"
+#include "llvm/MC/MCInstPrinter.h"
 #include "llvm/MC/MCSectionMachO.h"
 #include "llvm/MC/MCSymbol.h"
 #include "llvm/Support/ErrorHandling.h"
@@ -28,12 +28,12 @@ namespace {
 class MCAsmStreamer : public MCStreamer {
   raw_ostream &OS;
   const MCAsmInfo &MAI;
-  AsmPrinter *Printer;
+  MCInstPrinter *InstPrinter;
   MCCodeEmitter *Emitter;
 public:
   MCAsmStreamer(MCContext &Context, raw_ostream &_OS, const MCAsmInfo &tai,
-                AsmPrinter *_Printer, MCCodeEmitter *_Emitter)
-    : MCStreamer(Context), OS(_OS), MAI(tai), Printer(_Printer),
+                MCInstPrinter *_Printer, MCCodeEmitter *_Emitter)
+    : MCStreamer(Context), OS(_OS), MAI(tai), InstPrinter(_Printer),
       Emitter(_Emitter) {}
   ~MCAsmStreamer() {}
 
@@ -78,18 +78,6 @@ public:
 
 } // end anonymous namespace.
 
-/// Allow printing symbols directly to a raw_ostream with proper quoting.
-static inline raw_ostream &operator<<(raw_ostream &os, const MCSymbol *S) {
-  S->print(os);
-  return os;
-}
-
-/// Allow printing values directly to a raw_ostream.
-static inline raw_ostream &operator<<(raw_ostream &os, const MCExpr &Value) {
-  Value.print(os);
-  return os;
-}
-
 static inline int64_t truncateToSize(int64_t Value, unsigned Bytes) {
   assert(Bytes && "Invalid size!");
   return Value & ((uint64_t) (int64_t) -1 >> (64 - Bytes * 8));
@@ -113,7 +101,8 @@ void MCAsmStreamer::EmitLabel(MCSymbol *Symbol) {
   assert(Symbol->isUndefined() && "Cannot define a symbol twice!");
   assert(CurSection && "Cannot emit before setting section!");
 
-  OS << Symbol << ":\n";
+  Symbol->print(OS, &MAI);
+  OS << ":\n";
   Symbol->setSection(*CurSection);
 }
 
@@ -130,7 +119,10 @@ void MCAsmStreamer::EmitAssignment(MCSymbol *Symbol, const MCExpr *Value) {
   assert((Symbol->isUndefined() || Symbol->isAbsolute()) &&
          "Cannot define a symbol twice!");
 
-  OS << Symbol << " = " << *Value << '\n';
+  Symbol->print(OS, &MAI);
+  OS << " = ";
+  Value->print(OS, &MAI);
+  OS << '\n';
 }
 
 void MCAsmStreamer::EmitSymbolAttribute(MCSymbol *Symbol, 
@@ -150,17 +142,22 @@ void MCAsmStreamer::EmitSymbolAttribute(MCSymbol *Symbol,
   case WeakReference: OS << ".weak_reference"; break;
   }
 
-  OS << ' ' << Symbol << '\n';
+  OS << ' ';
+  Symbol->print(OS, &MAI);
+  OS << '\n';
 }
 
 void MCAsmStreamer::EmitSymbolDesc(MCSymbol *Symbol, unsigned DescValue) {
-  OS << ".desc" << ' ' << Symbol << ',' << DescValue << '\n';
+  OS << ".desc" << ' ';
+  Symbol->print(OS, &MAI);
+  OS << ',' << DescValue << '\n';
 }
 
 void MCAsmStreamer::EmitCommonSymbol(MCSymbol *Symbol, unsigned Size,
                                      unsigned ByteAlignment) {
-  OS << ".comm";
-  OS << ' ' << Symbol << ',' << Size;
+  OS << ".comm ";
+  Symbol->print(OS, &MAI);
+  OS << ',' << Size;
   if (ByteAlignment != 0)
     OS << ',' << Log2_32(ByteAlignment);
   OS << '\n';
@@ -176,7 +173,9 @@ void MCAsmStreamer::EmitZerofill(const MCSection *Section, MCSymbol *Symbol,
   OS << MOSection->getSegmentName() << "," << MOSection->getSectionName();
   
   if (Symbol != NULL) {
-    OS << ',' << Symbol << ',' << Size;
+    OS << ',';
+    Symbol->print(OS, &MAI);
+    OS << ',' << Size;
     if (ByteAlignment != 0)
       OS << ',' << Log2_32(ByteAlignment);
   }
@@ -201,7 +200,9 @@ void MCAsmStreamer::EmitValue(const MCExpr *Value, unsigned Size) {
   case 8: OS << ".quad"; break;
   }
 
-  OS << ' ' << *truncateToSize(Value, Size) << '\n';
+  OS << ' ';
+  truncateToSize(Value, Size)->print(OS, &MAI);
+  OS << '\n';
 }
 
 void MCAsmStreamer::EmitValueToAlignment(unsigned ByteAlignment, int64_t Value,
@@ -225,7 +226,8 @@ void MCAsmStreamer::EmitValueToAlignment(unsigned ByteAlignment, int64_t Value,
       OS << Log2_32(ByteAlignment);
 
     if (Value || MaxBytesToEmit) {
-      OS << ", " << truncateToSize(Value, ValueSize);
+      OS << ", 0x";
+      OS.write_hex(truncateToSize(Value, ValueSize));
 
       if (MaxBytesToEmit) 
         OS << ", " << MaxBytesToEmit;
@@ -254,15 +256,18 @@ void MCAsmStreamer::EmitValueToAlignment(unsigned ByteAlignment, int64_t Value,
 void MCAsmStreamer::EmitValueToOffset(const MCExpr *Offset,
                                       unsigned char Value) {
   // FIXME: Verify that Offset is associated with the current section.
-  OS << ".org " << *Offset << ", " << (unsigned) Value << '\n';
+  OS << ".org ";
+  Offset->print(OS, &MAI);
+  OS << ", " << (unsigned) Value << '\n';
 }
 
 void MCAsmStreamer::EmitInstruction(const MCInst &Inst) {
   assert(CurSection && "Cannot emit contents before setting section!");
 
   // If we have an AsmPrinter, use that to print.
-  if (Printer) {
-    Printer->printMCInst(&Inst);
+  if (InstPrinter) {
+    InstPrinter->printInst(&Inst);
+    OS << '\n';
 
     // Show the encoding if we have a code emitter.
     if (Emitter) {
@@ -286,7 +291,7 @@ void MCAsmStreamer::EmitInstruction(const MCInst &Inst) {
 
   // Otherwise fall back to a structural printing for now. Eventually we should
   // always have access to the target specific printer.
-  Inst.print(OS);
+  Inst.print(OS, &MAI);
   OS << '\n';
 }
 
@@ -295,7 +300,7 @@ void MCAsmStreamer::Finish() {
 }
     
 MCStreamer *llvm::createAsmStreamer(MCContext &Context, raw_ostream &OS,
-                                    const MCAsmInfo &MAI, AsmPrinter *AP,
+                                    const MCAsmInfo &MAI, MCInstPrinter *IP,
                                     MCCodeEmitter *CE) {
-  return new MCAsmStreamer(Context, OS, MAI, AP, CE);
+  return new MCAsmStreamer(Context, OS, MAI, IP, CE);
 }

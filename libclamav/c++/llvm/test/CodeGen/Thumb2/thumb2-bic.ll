@@ -1,4 +1,4 @@
-; RUN: llvm-as < %s | llc -march=thumb -mattr=+thumb2 | FileCheck %s
+; RUN: llc < %s -march=thumb -mattr=+thumb2 | FileCheck %s
 
 define i32 @f1(i32 %a, i32 %b) {
 ; CHECK: f1:
@@ -68,4 +68,38 @@ define i32 @f8(i32 %a, i32 %b) {
     %tmp1 = xor i32 4294967295, %tmp
     %tmp2 = and i32 %tmp1, %a
     ret i32 %tmp2
+}
+
+; ~0x000000bb = 4294967108
+define i32 @f9(i32 %a) {
+    %tmp = and i32 %a, 4294967108
+    ret i32 %tmp
+    
+; CHECK: f9:
+; CHECK: bic r0, r0, #187
+}
+
+; ~0x00aa00aa = 4283826005
+define i32 @f10(i32 %a) {
+    %tmp = and i32 %a, 4283826005
+    ret i32 %tmp
+    
+; CHECK: f10:
+; CHECK: bic r0, r0, #11141290
+}
+
+; ~0xcc00cc00 = 872363007
+define i32 @f11(i32 %a) {
+    %tmp = and i32 %a, 872363007
+    ret i32 %tmp
+; CHECK: f11:
+; CHECK: bic r0, r0, #-872363008
+}
+
+; ~0x00110000 = 4293853183
+define i32 @f12(i32 %a) {
+    %tmp = and i32 %a, 4293853183
+    ret i32 %tmp
+; CHECK: f12:
+; CHECK: bic r0, r0, #1114112
 }

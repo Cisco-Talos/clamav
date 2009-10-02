@@ -45,11 +45,12 @@ protected:
   /// fully general Callback version does have a vtable.
   enum HandleBaseKind {
     Assert,
-    Weak,
-    Callback
+    Callback,
+    Tracking,
+    Weak
   };
 private:
-  
+
   PointerIntPair<ValueHandleBase**, 2, HandleBaseKind> PrevPair;
   ValueHandleBase *Next;
   Value *VP;
@@ -68,9 +69,9 @@ public:
   }
   ~ValueHandleBase() {
     if (isValid(VP))
-      RemoveFromUseList();   
+      RemoveFromUseList();
   }
-  
+
   Value *operator=(Value *RHS) {
     if (VP == RHS) return RHS;
     if (isValid(VP)) RemoveFromUseList();
@@ -86,38 +87,38 @@ public:
     if (isValid(VP)) AddToExistingUseList(RHS.getPrevPtr());
     return VP;
   }
-  
+
   Value *operator->() const { return getValPtr(); }
   Value &operator*() const { return *getValPtr(); }
 
 protected:
   Value *getValPtr() const { return VP; }
-private:
   static bool isValid(Value *V) {
     return V &&
            V != DenseMapInfo<Value *>::getEmptyKey() &&
            V != DenseMapInfo<Value *>::getTombstoneKey();
   }
 
+private:
   // Callbacks made from Value.
   static void ValueIsDeleted(Value *V);
   static void ValueIsRAUWd(Value *Old, Value *New);
-  
+
   // Internal implementation details.
   ValueHandleBase **getPrevPtr() const { return PrevPair.getPointer(); }
   HandleBaseKind getKind() const { return PrevPair.getInt(); }
   void setPrevPtr(ValueHandleBase **Ptr) { PrevPair.setPointer(Ptr); }
-  
+
   /// AddToExistingUseList - Add this ValueHandle to the use list for VP,
   /// where List is known to point into the existing use list.
   void AddToExistingUseList(ValueHandleBase **List);
-  
+
   /// AddToUseList - Add this ValueHandle to the use list for VP.
   void AddToUseList();
   /// RemoveFromUseList - Remove this ValueHandle from its current use list.
   void RemoveFromUseList();
 };
-  
+
 /// WeakVH - This is a value handle that tries hard to point to a Value, even
 /// across RAUW operations, but will null itself out if the value is destroyed.
 /// this is useful for advisory sorts of information, but should not be used as
@@ -160,7 +161,7 @@ template<> struct simplify_type<WeakVH> : public simplify_type<const WeakVH> {};
 /// AssertingVH's as it moves.  This is required because in non-assert mode this
 /// class turns into a trivial wrapper around a pointer.
 template <typename ValueTy>
-class AssertingVH 
+class AssertingVH
 #ifndef NDEBUG
   : public ValueHandleBase
 #endif
@@ -202,7 +203,7 @@ public:
     setValPtr(RHS);
     return getValPtr();
   }
-  ValueTy *operator=(AssertingVH<ValueTy> &RHS) {
+  ValueTy *operator=(const AssertingVH<ValueTy> &RHS) {
     setValPtr(RHS.getValPtr());
     return getValPtr();
   }
@@ -222,6 +223,88 @@ template<> struct simplify_type<const AssertingVH<Value> > {
 };
 template<> struct simplify_type<AssertingVH<Value> >
   : public simplify_type<const AssertingVH<Value> > {};
+
+/// TrackingVH - This is a value handle that tracks a Value (or Value subclass),
+/// even across RAUW operations.
+///
+/// TrackingVH is designed for situations where a client needs to hold a handle
+/// to a Value (or subclass) across some operations which may move that value,
+/// but should never destroy it or replace it with some unacceptable type.
+///
+/// It is an error to do anything with a TrackingVH whose value has been
+/// destroyed, except to destruct it.
+///
+/// It is an error to attempt to replace a value with one of a type which is
+/// incompatible with any of its outstanding TrackingVHs.
+template<typename ValueTy>
+class TrackingVH : public ValueHandleBase {
+  void CheckValidity() const {
+    Value *VP = ValueHandleBase::getValPtr();
+
+    // Null is always ok.
+    if (!VP)
+        return;
+
+    // Check that this value is valid (i.e., it hasn't been deleted). We
+    // explicitly delay this check until access to avoid requiring clients to be
+    // unnecessarily careful w.r.t. destruction.
+    assert(ValueHandleBase::isValid(VP) && "Tracked Value was deleted!");
+
+    // Check that the value is a member of the correct subclass. We would like
+    // to check this property on assignment for better debugging, but we don't
+    // want to require a virtual interface on this VH. Instead we allow RAUW to
+    // replace this value with a value of an invalid type, and check it here.
+    assert(isa<ValueTy>(VP) &&
+           "Tracked Value was replaced by one with an invalid type!");
+  }
+
+  ValueTy *getValPtr() const {
+    CheckValidity();
+    return static_cast<ValueTy*>(ValueHandleBase::getValPtr());
+  }
+  void setValPtr(ValueTy *P) {
+    CheckValidity();
+    ValueHandleBase::operator=(GetAsValue(P));
+  }
+
+  // Convert a ValueTy*, which may be const, to the type the base
+  // class expects.
+  static Value *GetAsValue(Value *V) { return V; }
+  static Value *GetAsValue(const Value *V) { return const_cast<Value*>(V); }
+
+public:
+  TrackingVH() : ValueHandleBase(Tracking) {}
+  TrackingVH(ValueTy *P) : ValueHandleBase(Tracking, P) {}
+  TrackingVH(const TrackingVH &RHS) : ValueHandleBase(Tracking, RHS) {}
+
+  operator ValueTy*() const {
+    return getValPtr();
+  }
+
+  ValueTy *operator=(ValueTy *RHS) {
+    setValPtr(RHS);
+    return getValPtr();
+  }
+  ValueTy *operator=(const TrackingVH<ValueTy> &RHS) {
+    setValPtr(RHS.getValPtr());
+    return getValPtr();
+  }
+
+  ValueTy *operator->() const { return getValPtr(); }
+  ValueTy &operator*() const { return *getValPtr(); }
+};
+
+// Specialize simplify_type to allow TrackingVH to participate in
+// dyn_cast, isa, etc.
+template<typename From> struct simplify_type;
+template<> struct simplify_type<const TrackingVH<Value> > {
+  typedef Value* SimpleType;
+  static SimpleType getSimplifiedValue(const TrackingVH<Value> &AVH) {
+    return static_cast<Value *>(AVH);
+  }
+};
+template<> struct simplify_type<TrackingVH<Value> >
+  : public simplify_type<const TrackingVH<Value> > {};
 
 /// CallbackVH - This is a value handle that allows subclasses to define
 /// callbacks that run when the underlying Value has RAUW called on it or is

@@ -13,9 +13,11 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/LLVMContext.h"
+#include "llvm/Metadata.h"
 #include "llvm/Constants.h"
 #include "llvm/Instruction.h"
 #include "llvm/Support/ManagedStatic.h"
+#include "llvm/Support/ValueHandle.h"
 #include "LLVMContextImpl.h"
 #include <set>
 
@@ -44,25 +46,31 @@ GetElementPtrConstantExpr::GetElementPtrConstantExpr
 }
 
 bool LLVMContext::RemoveDeadMetadata() {
-  std::vector<const MDNode *> DeadMDNodes;
+  std::vector<WeakVH> DeadMDNodes;
   bool Changed = false;
   while (1) {
 
-    for (LLVMContextImpl::MDNodeMapTy::MapTy::iterator
-           I = pImpl->MDNodes.map_begin(),
-           E = pImpl->MDNodes.map_end(); I != E; ++I) {
-      const MDNode *N = cast<MDNode>(I->second);
+    for (FoldingSet<MDNode>::iterator 
+           I = pImpl->MDNodeSet.begin(),
+           E = pImpl->MDNodeSet.end(); I != E; ++I) {
+      MDNode *N = &(*I);
       if (N->use_empty()) 
-        DeadMDNodes.push_back(N);
+        DeadMDNodes.push_back(WeakVH(N));
     }
     
     if (DeadMDNodes.empty())
       return Changed;
 
     while (!DeadMDNodes.empty()) {
-      const MDNode *N = DeadMDNodes.back(); DeadMDNodes.pop_back();
-      delete N;
+      Value *V = DeadMDNodes.back(); DeadMDNodes.pop_back();
+      if (const MDNode *N = dyn_cast_or_null<MDNode>(V))
+        if (N->use_empty())
+          delete N;
     }
   }
   return Changed;
+}
+
+MetadataContext &LLVMContext::getMetadata() {
+  return pImpl->TheMetadata;
 }

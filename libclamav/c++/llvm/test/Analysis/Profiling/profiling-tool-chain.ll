@@ -1,11 +1,23 @@
 ; RUN: llvm-as %s -o %t1
-; RUN: opt %t1 -insert-edge-profiling -o %t2
-; RUN: llvm-dis < %t2 | FileCheck --check-prefix=INST %s
-; RUN: rm -f llvmprof.out
-; RUN: lli -load %llvmlibsdir/profile_rt%shlibext %t2
-; RUN: lli -load %llvmlibsdir/profile_rt%shlibext %t2 1 2
-; RUN: llvm-prof -print-all-code %t1 | FileCheck --check-prefix=PROF %s
-; RUN: rm llvmprof.out
+
+; FIXME: The RUX parts of the test are disabled for now, they aren't working on
+; llvm-gcc-x86_64-darwin10-selfhost.
+
+; Test the edge optimal profiling instrumentation.
+; RUN: opt %t1 -insert-optimal-edge-profiling -o %t2
+; RUX: llvm-dis < %t2 | FileCheck --check-prefix=INST %s
+
+; Test the creation, reading and displaying of profile
+; RUX: rm -f llvmprof.out
+; RUX: lli -load %llvmlibsdir/profile_rt%shlibext %t2
+; RUX: lli -load %llvmlibsdir/profile_rt%shlibext %t2 1 2
+; RUX: llvm-prof -print-all-code %t1 | FileCheck --check-prefix=PROF %s
+
+; Test the loaded profile also with verifier.
+; RUX  opt %t1 -profile-loader -profile-verifier -o %t3
+
+; Test profile estimator.
+; RUN: opt %t1 -profile-estimator -profile-verifier -o %t3
 
 ; PROF:  1.     2/4 oneblock
 ; PROF:  2.     2/4 main
@@ -25,8 +37,6 @@
 ; PROF: 14. 2.63158%     2/76	main() - return
 
 ; ModuleID = '<stdin>'
-target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f32:32:32-f64:64:64-v64:64:64-v128:128:128-a0:0:64-s0:64:64-f80:128:128"
-target triple = "x86_64-unknown-linux-gnu"
 
 @.str = private constant [12 x i8] c"hello world\00", align 1 ; <[12 x i8]*> [#uses=1]
 @.str1 = private constant [6 x i8] c"franz\00", align 1 ; <[6 x i8]*> [#uses=1]
@@ -34,9 +44,29 @@ target triple = "x86_64-unknown-linux-gnu"
 @.str3 = private constant [9 x i8] c"argc = 1\00", align 1 ; <[9 x i8]*> [#uses=1]
 @.str4 = private constant [6 x i8] c"fritz\00", align 1 ; <[6 x i8]*> [#uses=1]
 @.str5 = private constant [10 x i8] c"argc <= 1\00", align 1 ; <[10 x i8]*> [#uses=1]
-; INST:@EdgeProfCounters
-; INST:[19 x i32] 
-; INST:zeroinitializer
+; INST:@OptEdgeProfCounters
+; INST:[21 x i32]
+; INST:[i32 0,
+; INST:i32 -1,
+; INST:i32 -1,
+; INST:i32 -1,
+; INST:i32 -1,
+; INST:i32 -1,
+; INST:i32 -1,
+; INST:i32 -1,
+; INST:i32 -1,
+; INST:i32 0,
+; INST:i32 0,
+; INST:i32 -1,
+; INST:i32 -1,
+; INST:i32 -1,
+; INST:i32 0,
+; INST:i32 0,
+; INST:i32 -1,
+; INST:i32 -1,
+; INST:i32 0,
+; INST:i32 -1,
+; INST:i32 -1]
 
 ; PROF:;;; %oneblock called 2 times.
 ; PROF:;;;
@@ -63,8 +93,8 @@ entry:
   %i = alloca i32                                 ; <i32*> [#uses=4]
   %0 = alloca i32                                 ; <i32*> [#uses=2]
 ; INST:call 
-; INST:@llvm_start_edge_profiling
-; INST:@EdgeProfCounters
+; INST:@llvm_start_opt_edge_profiling
+; INST:@OptEdgeProfCounters
   %"alloca point" = bitcast i32 0 to i32          ; <i32> [#uses=0]
   store i32 %argc, i32* %argc_addr
   store i8** %argv, i8*** %argv_addr

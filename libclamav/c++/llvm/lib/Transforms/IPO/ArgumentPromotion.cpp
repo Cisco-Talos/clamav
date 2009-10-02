@@ -589,7 +589,7 @@ CallGraphNode *ArgPromotion::DoPromotion(Function *F,
   // Construct the new function type using the new arguments.
   FunctionType *NFTy = FunctionType::get(RetTy, Params, FTy->isVarArg());
 
-  // Create the new function body and insert it into the module...
+  // Create the new function body and insert it into the module.
   Function *NF = Function::Create(NFTy, F->getLinkage(), F->getName());
   NF->copyAttributesFrom(F);
 
@@ -599,7 +599,8 @@ CallGraphNode *ArgPromotion::DoPromotion(Function *F,
   
   // Recompute the parameter attributes list based on the new arguments for
   // the function.
-  NF->setAttributes(AttrListPtr::get(AttributesVec.begin(), AttributesVec.end()));
+  NF->setAttributes(AttrListPtr::get(AttributesVec.begin(),
+                                     AttributesVec.end()));
   AttributesVec.clear();
 
   F->getParent()->getFunctionList().insert(F, NF);
@@ -728,7 +729,8 @@ CallGraphNode *ArgPromotion::DoPromotion(Function *F,
     AA.replaceWithNewValue(Call, New);
 
     // Update the callgraph to know that the callsite has been transformed.
-    CG[Call->getParent()->getParent()]->replaceCallSite(Call, New, NF_CGN);
+    CallGraphNode *CalleeNode = CG[Call->getParent()->getParent()];
+    CalleeNode->replaceCallEdge(Call, New, NF_CGN);
 
     if (!Call->use_empty()) {
       Call->replaceAllUsesWith(New);

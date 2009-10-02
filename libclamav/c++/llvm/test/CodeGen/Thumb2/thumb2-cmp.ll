@@ -1,4 +1,4 @@
-; RUN: llvm-as < %s | llc -march=thumb -mattr=+thumb2 | FileCheck %s
+; RUN: llc < %s -march=thumb -mattr=+thumb2 | FileCheck %s
 
 ; 0x000000bb = 187
 define i1 @f1(i32 %a) {
@@ -19,7 +19,7 @@ define i1 @f2(i32 %a) {
 ; 0xcc00cc00 = 3422604288
 define i1 @f3(i32 %a) {
 ; CHECK: f3:
-; CHECK: cmp.w r0, #3422604288
+; CHECK: cmp.w r0, #-872363008
     %tmp = icmp ne i32 %a, 3422604288
     ret i1 %tmp
 }
@@ -27,7 +27,7 @@ define i1 @f3(i32 %a) {
 ; 0xdddddddd = 3722304989
 define i1 @f4(i32 %a) {
 ; CHECK: f4:
-; CHECK: cmp.w r0, #3722304989
+; CHECK: cmp.w r0, #-572662307
     %tmp = icmp ne i32 %a, 3722304989
     ret i1 %tmp
 }

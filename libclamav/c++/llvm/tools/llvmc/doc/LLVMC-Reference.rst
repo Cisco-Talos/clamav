@@ -458,17 +458,27 @@ use TableGen inheritance instead.
   - ``empty`` - The opposite of ``not_empty``. Equivalent to ``(not (not_empty
     X))``. Provided for convenience.
 
+  - ``single_input_file`` - Returns true if there was only one input file
+    provided on the command-line. Used without arguments:
+    ``(single_input_file)``.
+
+  - ``multiple_input_files`` - Equivalent to ``(not (single_input_file))`` (the
+    case of zero input files is considered an error).
+
   - ``default`` - Always evaluates to true. Should always be the last
     test in the ``case`` expression.
 
-  - ``and`` - A standard logical combinator that returns true iff all
-    of its arguments return true. Used like this: ``(and (test1),
-    (test2), ... (testN))``. Nesting of ``and`` and ``or`` is allowed,
-    but not encouraged.
+  - ``and`` - A standard binary logical combinator that returns true iff all of
+    its arguments return true. Used like this: ``(and (test1), (test2),
+    ... (testN))``. Nesting of ``and`` and ``or`` is allowed, but not
+    encouraged.
 
-  - ``or`` - Another logical combinator that returns true only if any
-    one of its arguments returns true. Example: ``(or (test1),
-    (test2), ... (testN))``.
+  - ``or`` - A binary logical combinator that returns true iff any of its
+    arguments returns true. Example: ``(or (test1), (test2), ... (testN))``.
+
+  - ``not`` - Standard unary logical combinator that negates its
+    argument. Example: ``(not (or (test1), (test2), ... (testN)))``.
+
 
 
 Writing a tool description

@@ -243,10 +243,10 @@ namespace llvm {
     unsigned NodeNum;                   // Entry # of node in the node vector.
     unsigned NodeQueueId;               // Queue id of node.
     unsigned short Latency;             // Node latency.
-    short NumPreds;                     // # of SDep::Data preds.
-    short NumSuccs;                     // # of SDep::Data sucss.
-    short NumPredsLeft;                 // # of preds not scheduled.
-    short NumSuccsLeft;                 // # of succs not scheduled.
+    unsigned NumPreds;                  // # of SDep::Data preds.
+    unsigned NumSuccs;                  // # of SDep::Data sucss.
+    unsigned NumPredsLeft;              // # of preds not scheduled.
+    unsigned NumSuccsLeft;              // # of succs not scheduled.
     bool isTwoAddress     : 1;          // Is a two-address instruction.
     bool isCommutable     : 1;          // Is a commutable instruction.
     bool hasPhysRegDefs   : 1;          // Has physreg defs that are being used.
@@ -461,7 +461,8 @@ namespace llvm {
     /// EmitSchedule - Insert MachineInstrs into the MachineBasicBlock
     /// according to the order specified in Sequence.
     ///
-    virtual MachineBasicBlock *EmitSchedule() = 0;
+    virtual MachineBasicBlock*
+    EmitSchedule(DenseMap<MachineBasicBlock*, MachineBasicBlock*>*) = 0;
 
     void dumpSchedule() const;
 
@@ -514,8 +515,6 @@ namespace llvm {
     /// EmitNoop - Emit a noop instruction.
     ///
     void EmitNoop();
-
-    void AddMemOperand(MachineInstr *MI, const MachineMemOperand &MO);
 
     void EmitPhysRegCopy(SUnit *SU, DenseMap<SUnit*, unsigned> &VRBaseMap);
 

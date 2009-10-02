@@ -31,13 +31,11 @@ ExactHazardRecognizer::ExactHazardRecognizer(const InstrItineraryData &LItinData
   ScoreboardDepth = 1;
   if (!ItinData.isEmpty()) {
     for (unsigned idx = 0; ; ++idx) {
-      // If the begin stage of an itinerary has 0 cycles and units,
-      // then we have reached the end of the itineraries.
-      const InstrStage *IS = ItinData.beginStage(idx);
-      const InstrStage *E = ItinData.endStage(idx);
-      if ((IS->getCycles() == 0) && (IS->getUnits() == 0))
+      if (ItinData.isEndMarker(idx))
         break;
 
+      const InstrStage *IS = ItinData.beginStage(idx);
+      const InstrStage *E = ItinData.endStage(idx);
       unsigned ItinDepth = 0;
       for (; IS != E; ++IS)
         ItinDepth += IS->getCycles();
@@ -54,7 +52,7 @@ ExactHazardRecognizer::ExactHazardRecognizer(const InstrItineraryData &LItinData
 }
 
 ExactHazardRecognizer::~ExactHazardRecognizer() {
-  delete Scoreboard;
+  delete [] Scoreboard;
 }
 
 void ExactHazardRecognizer::Reset() {
@@ -83,6 +81,9 @@ void ExactHazardRecognizer::dumpScoreboard() {
 }
 
 ExactHazardRecognizer::HazardType ExactHazardRecognizer::getHazardType(SUnit *SU) {
+  if (ItinData.isEmpty())
+    return NoHazard;
+
   unsigned cycle = 0;
 
   // Use the itinerary for the underlying instruction to check for
@@ -96,7 +97,7 @@ ExactHazardRecognizer::HazardType ExactHazardRecognizer::getHazardType(SUnit *SU
     for (unsigned int i = 0; i < IS->getCycles(); ++i) {
       assert(((cycle + i) < ScoreboardDepth) && 
              "Scoreboard depth exceeded!");
-
+      
       unsigned index = getFutureIndex(cycle + i);
       unsigned freeUnits = IS->getUnits() & ~Scoreboard[index];
       if (!freeUnits) {
@@ -106,7 +107,7 @@ ExactHazardRecognizer::HazardType ExactHazardRecognizer::getHazardType(SUnit *SU
         return Hazard;
       }
     }
-
+    
     // Advance the cycle to the next stage.
     cycle += IS->getNextCycles();
   }
@@ -115,6 +116,9 @@ ExactHazardRecognizer::HazardType ExactHazardRecognizer::getHazardType(SUnit *SU
 }
     
 void ExactHazardRecognizer::EmitInstruction(SUnit *SU) {
+  if (ItinData.isEmpty())
+    return;
+
   unsigned cycle = 0;
 
   // Use the itinerary for the underlying instruction to reserve FU's
@@ -128,7 +132,7 @@ void ExactHazardRecognizer::EmitInstruction(SUnit *SU) {
     for (unsigned int i = 0; i < IS->getCycles(); ++i) {
       assert(((cycle + i) < ScoreboardDepth) &&
              "Scoreboard depth exceeded!");
-
+      
       unsigned index = getFutureIndex(cycle + i);
       unsigned freeUnits = IS->getUnits() & ~Scoreboard[index];
       
@@ -138,15 +142,15 @@ void ExactHazardRecognizer::EmitInstruction(SUnit *SU) {
         freeUnit = freeUnits;
         freeUnits = freeUnit & (freeUnit - 1);
       } while (freeUnits);
-
+      
       assert(freeUnit && "No function unit available!");
       Scoreboard[index] |= freeUnit;
     }
-
+    
     // Advance the cycle to the next stage.
     cycle += IS->getNextCycles();
   }
-
+  
   DEBUG(dumpScoreboard());
 }
     

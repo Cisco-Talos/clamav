@@ -56,6 +56,7 @@
       <li><a href="#t_classifications">Type Classifications</a></li>
       <li><a href="#t_primitive">Primitive Types</a>    
         <ol>
+          <li><a href="#t_integer">Integer Type</a></li>
           <li><a href="#t_floating">Floating Point Types</a></li>
           <li><a href="#t_void">Void Type</a></li>
           <li><a href="#t_label">Label Type</a></li>
@@ -64,7 +65,6 @@
       </li>
       <li><a href="#t_derived">Derived Types</a>
         <ol>
-          <li><a href="#t_integer">Integer Type</a></li>
           <li><a href="#t_array">Array Type</a></li>
           <li><a href="#t_function">Function Type</a></li>
           <li><a href="#t_pointer">Pointer Type</a></li>
@@ -1380,7 +1380,7 @@ Classifications</a> </div>
 
 <p>The <a href="#t_firstclass">first class</a> types are perhaps the most
    important.  Values of these types are the only ones which can be produced by
-   instructions, passed as arguments, or used as operands to instructions.</p>
+   instructions.</p>
 
 </div>
 
@@ -1391,6 +1391,47 @@ Classifications</a> </div>
 
 <p>The primitive types are the fundamental building blocks of the LLVM
    system.</p>
+
+</div>
+
+<!-- _______________________________________________________________________ -->
+<div class="doc_subsubsection"> <a name="t_integer">Integer Type</a> </div>
+
+<div class="doc_text">
+
+<h5>Overview:</h5>
+<p>The integer type is a very simple type that simply specifies an arbitrary
+   bit width for the integer type desired. Any bit width from 1 bit to
+   2<sup>23</sup>-1 (about 8 million) can be specified.</p>
+
+<h5>Syntax:</h5>
+<pre>
+  iN
+</pre>
+
+<p>The number of bits the integer will occupy is specified by the <tt>N</tt>
+   value.</p>
+
+<h5>Examples:</h5>
+<table class="layout">
+  <tr class="layout">
+    <td class="left"><tt>i1</tt></td>
+    <td class="left">a single-bit integer.</td>
+  </tr>
+  <tr class="layout">
+    <td class="left"><tt>i32</tt></td>
+    <td class="left">a 32-bit integer.</td>
+  </tr>
+  <tr class="layout">
+    <td class="left"><tt>i1942652</tt></td>
+    <td class="left">a really big integer of over 1 million bits.</td>
+  </tr>
+</table>
+
+<p>Note that the code generator does not yet support large integer types to be
+   used as function return types. The specific limit on how large a return type
+   the code generator can currently handle is target-dependent; currently it's
+   often 64 bits for 32-bit targets and 128 bits for 64-bit targets.</p>
 
 </div>
 
@@ -1448,9 +1489,9 @@ Classifications</a> </div>
 <div class="doc_text">
 
 <h5>Overview:</h5>
-<p>The metadata type represents embedded metadata. The only derived type that
-   may contain metadata is <tt>metadata*</tt> or a function type that returns or
-   takes metadata typed parameters, but not pointer to metadata types.</p>
+<p>The metadata type represents embedded metadata. No derived types may be
+   created from metadata except for <a href="#t_function">function</a>
+   arguments.
 
 <h5>Syntax:</h5>
 <pre>
@@ -1467,49 +1508,10 @@ Classifications</a> </div>
 
 <p>The real power in LLVM comes from the derived types in the system.  This is
    what allows a programmer to represent arrays, functions, pointers, and other
-   useful types.  Note that these derived types may be recursive: For example,
-   it is possible to have a two dimensional array.</p>
-
-</div>
-
-<!-- _______________________________________________________________________ -->
-<div class="doc_subsubsection"> <a name="t_integer">Integer Type</a> </div>
-
-<div class="doc_text">
-
-<h5>Overview:</h5>
-<p>The integer type is a very simple derived type that simply specifies an
-   arbitrary bit width for the integer type desired. Any bit width from 1 bit to
-   2^23-1 (about 8 million) can be specified.</p>
-
-<h5>Syntax:</h5>
-<pre>
-  iN
-</pre>
-
-<p>The number of bits the integer will occupy is specified by the <tt>N</tt>
-   value.</p>
-
-<h5>Examples:</h5>
-<table class="layout">
-  <tr class="layout">
-    <td class="left"><tt>i1</tt></td>
-    <td class="left">a single-bit integer.</td>
-  </tr>
-  <tr class="layout">
-    <td class="left"><tt>i32</tt></td>
-    <td class="left">a 32-bit integer.</td>
-  </tr>
-  <tr class="layout">
-    <td class="left"><tt>i1942652</tt></td>
-    <td class="left">a really big integer of over 1 million bits.</td>
-  </tr>
-</table>
-
-<p>Note that the code generator does not yet support large integer types to be
-   used as function return types. The specific limit on how large a return type
-   the code generator can currently handle is target-dependent; currently it's
-   often 64 bits for 32-bit targets and 128 bits for 64-bit targets.</p>
+   useful types.  Each of these types contain one or more element types which
+   may be a primitive type, or another derived type.  For example, it is
+   possible to have a two dimensional array, using an array as the element type
+   of another array.</p>
 
 </div>
 
@@ -1590,7 +1592,7 @@ Classifications</a> </div>
 
 <h5>Syntax:</h5>
 <pre>
-  &lt;returntype list&gt; (&lt;parameter list&gt;)
+  &lt;returntype&gt; (&lt;parameter list&gt;)
 </pre>
 
 <p>...where '<tt>&lt;parameter list&gt;</tt>' is a comma-separated list of type
@@ -1598,8 +1600,8 @@ Classifications</a> </div>
    which indicates that the function takes a variable number of arguments.
    Variable argument functions can access their arguments with
    the <a href="#int_varargs">variable argument handling intrinsic</a>
-   functions.  '<tt>&lt;returntype list&gt;</tt>' is a comma-separated list of
-   <a href="#t_firstclass">first class</a> type specifiers.</p>
+   functions.  '<tt>&lt;returntype&gt;</tt>' is a any type except
+   <a href="#t_label">label</a>.</p>
 
 <h5>Examples:</h5>
 <table class="layout">
@@ -1624,8 +1626,8 @@ Classifications</a> </div>
     </td>
   </tr><tr class="layout">
     <td class="left"><tt>{i32, i32} (i32)</tt></td>
-    <td class="left">A function taking an <tt>i32</tt>, returning two 
-        <tt>i32</tt> values as an aggregate of type <tt>{ i32, i32 }</tt>
+    <td class="left">A function taking an <tt>i32</tt>, returning a
+        <a href="#t_struct">structure</a> containing two <tt>i32</tt> values
     </td>
   </tr>
 </table>
@@ -1888,7 +1890,7 @@ Classifications</a> </div>
 <dl>
   <dt><b>Boolean constants</b></dt>
   <dd>The two strings '<tt>true</tt>' and '<tt>false</tt>' are both valid
-      constants of the <tt><a href="#t_primitive">i1</a></tt> type.</dd>
+      constants of the <tt><a href="#t_integer">i1</a></tt> type.</dd>
 
   <dt><b>Integer constants</b></dt>
   <dd>Standard integers (such as '4') are constants of
@@ -2016,12 +2018,148 @@ Classifications</a> </div>
 <div class="doc_subsection"><a name="undefvalues">Undefined Values</a></div>
 <div class="doc_text">
 
-<p>The string '<tt>undef</tt>' is recognized as a type-less constant that has no
-   specific value.  Undefined values may be of any type and be used anywhere a
-   constant is permitted.</p>
+<p>The string '<tt>undef</tt>' can be used anywhere a constant is expected, and
+   indicates that the user of the value may recieve an unspecified bit-pattern.
+   Undefined values may be of any type (other than label or void) and be used
+   anywhere a constant is permitted.</p>
 
-<p>Undefined values indicate to the compiler that the program is well defined no
-   matter what value is used, giving the compiler more freedom to optimize.</p>
+<p>Undefined values are useful because they indicate to the compiler that the
+   program is well defined no matter what value is used.  This gives the
+   compiler more freedom to optimize.  Here are some examples of (potentially
+   surprising) transformations that are valid (in pseudo IR):</p>
+
+
+<div class="doc_code">
+<pre>
+  %A = add %X, undef
+  %B = sub %X, undef
+  %C = xor %X, undef
+Safe:
+  %A = undef
+  %B = undef
+  %C = undef
+</pre>
+</div>
+
+<p>This is safe because all of the output bits are affected by the undef bits.
+Any output bit can have a zero or one depending on the input bits.</p>
+
+<div class="doc_code">
+<pre>
+  %A = or %X, undef
+  %B = and %X, undef
+Safe:
+  %A = -1
+  %B = 0
+Unsafe:
+  %A = undef
+  %B = undef
+</pre>
+</div>
+
+<p>These logical operations have bits that are not always affected by the input.
+For example, if "%X" has a zero bit, then the output of the 'and' operation will
+always be a zero, no matter what the corresponding bit from the undef is.  As
+such, it is unsafe to optimize or assume that the result of the and is undef.
+However, it is safe to assume that all bits of the undef could be 0, and 
+optimize the and to 0.  Likewise, it is safe to assume that all the bits of 
+the undef operand to the or could be set, allowing the or to be folded to 
+-1.</p>
+
+<div class="doc_code">
+<pre>
+  %A = select undef, %X, %Y
+  %B = select undef, 42, %Y
+  %C = select %X, %Y, undef
+Safe:
+  %A = %X     (or %Y)
+  %B = 42     (or %Y)
+  %C = %Y
+Unsafe:
+  %A = undef
+  %B = undef
+  %C = undef
+</pre>
+</div>
+
+<p>This set of examples show that undefined select (and conditional branch)
+conditions can go "either way" but they have to come from one of the two
+operands.  In the %A example, if %X and %Y were both known to have a clear low
+bit, then %A would have to have a cleared low bit.  However, in the %C example,
+the optimizer is allowed to assume that the undef operand could be the same as
+%Y, allowing the whole select to be eliminated.</p>
+
+
+<div class="doc_code">
+<pre>
+  %A = xor undef, undef
+  
+  %B = undef
+  %C = xor %B, %B
+
+  %D = undef
+  %E = icmp lt %D, 4
+  %F = icmp gte %D, 4
+
+Safe:
+  %A = undef
+  %B = undef
+  %C = undef
+  %D = undef
+  %E = undef
+  %F = undef
+</pre>
+</div>
+
+<p>This example points out that two undef operands are not necessarily the same.
+This can be surprising to people (and also matches C semantics) where they
+assume that "X^X" is always zero, even if X is undef.  This isn't true for a
+number of reasons, but the short answer is that an undef "variable" can
+arbitrarily change its value over its "live range".  This is true because the
+"variable" doesn't actually <em>have a live range</em>.  Instead, the value is
+logically read from arbitrary registers that happen to be around when needed,
+so the value is not neccesarily consistent over time.  In fact, %A and %C need
+to have the same semantics or the core LLVM "replace all uses with" concept
+would not hold.</p>
+
+<div class="doc_code">
+<pre>
+  %A = fdiv undef, %X
+  %B = fdiv %X, undef
+Safe:
+  %A = undef
+b: unreachable
+</pre>
+</div>
+
+<p>These examples show the crucial difference between an <em>undefined
+value</em> and <em>undefined behavior</em>.  An undefined value (like undef) is
+allowed to have an arbitrary bit-pattern.  This means that the %A operation
+can be constant folded to undef because the undef could be an SNaN, and fdiv is
+not (currently) defined on SNaN's.  However, in the second example, we can make
+a more aggressive assumption: because the undef is allowed to be an arbitrary
+value, we are allowed to assume that it could be zero.  Since a divide by zero
+has <em>undefined behavior</em>, we are allowed to assume that the operation
+does not execute at all.  This allows us to delete the divide and all code after
+it: since the undefined operation "can't happen", the optimizer can assume that
+it occurs in dead code.
+</p>
+ 
+<div class="doc_code">
+<pre>
+a:  store undef -> %X
+b:  store %X -> undef
+Safe:
+a: &lt;deleted&gt;
+b: unreachable
+</pre>
+</div>
+
+<p>These examples reiterate the fdiv example: a store "of" an undefined value
+can be assumed to not have any effect: we can assume that the value is 
+overwritten with bits that happen to match what was already there.  However, a
+store "to" an undefined location could clobber arbitrary memory, therefore, it
+has undefined behavior.</p>
 
 </div>
 
@@ -2668,9 +2806,9 @@ Instruction</a> </div>
 <h5>Syntax:</h5>
 <pre>
   &lt;result&gt; = add &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;          <i>; yields {ty}:result</i>
-  &lt;result&gt; = nuw add &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;      <i>; yields {ty}:result</i>
-  &lt;result&gt; = nsw add &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;      <i>; yields {ty}:result</i>
-  &lt;result&gt; = nuw nsw add &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;  <i>; yields {ty}:result</i>
+  &lt;result&gt; = add nuw &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;      <i>; yields {ty}:result</i>
+  &lt;result&gt; = add nsw &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;      <i>; yields {ty}:result</i>
+  &lt;result&gt; = add nuw nsw &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;  <i>; yields {ty}:result</i>
 </pre>
 
 <h5>Overview:</h5>
@@ -2742,9 +2880,9 @@ Instruction</a> </div>
 <h5>Syntax:</h5>
 <pre>
   &lt;result&gt; = sub &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;          <i>; yields {ty}:result</i>
-  &lt;result&gt; = nuw sub &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;      <i>; yields {ty}:result</i>
-  &lt;result&gt; = nsw sub &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;      <i>; yields {ty}:result</i>
-  &lt;result&gt; = nuw nsw sub &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;  <i>; yields {ty}:result</i>
+  &lt;result&gt; = sub nuw &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;      <i>; yields {ty}:result</i>
+  &lt;result&gt; = sub nsw &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;      <i>; yields {ty}:result</i>
+  &lt;result&gt; = sub nuw nsw &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;  <i>; yields {ty}:result</i>
 </pre>
 
 <h5>Overview:</h5>
@@ -2829,9 +2967,9 @@ Instruction</a> </div>
 <h5>Syntax:</h5>
 <pre>
   &lt;result&gt; = mul &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;          <i>; yields {ty}:result</i>
-  &lt;result&gt; = nuw mul &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;      <i>; yields {ty}:result</i>
-  &lt;result&gt; = nsw mul &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;      <i>; yields {ty}:result</i>
-  &lt;result&gt; = nuw nsw mul &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;  <i>; yields {ty}:result</i>
+  &lt;result&gt; = mul nuw &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;      <i>; yields {ty}:result</i>
+  &lt;result&gt; = mul nsw &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;      <i>; yields {ty}:result</i>
+  &lt;result&gt; = mul nuw nsw &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;  <i>; yields {ty}:result</i>
 </pre>
 
 <h5>Overview:</h5>
@@ -2941,7 +3079,7 @@ Instruction</a> </div>
 <h5>Syntax:</h5>
 <pre>
   &lt;result&gt; = sdiv &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;         <i>; yields {ty}:result</i>
-  &lt;result&gt; = exact sdiv &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;   <i>; yields {ty}:result</i>
+  &lt;result&gt; = sdiv exact &lt;ty&gt; &lt;op1&gt;, &lt;op2&gt;   <i>; yields {ty}:result</i>
 </pre>
 
 <h5>Overview:</h5>
@@ -4555,7 +4693,7 @@ entry:
 <h5>Semantics:</h5>
 <p>The '<tt>icmp</tt>' compares <tt>op1</tt> and <tt>op2</tt> according to the
    condition code given as <tt>cond</tt>. The comparison performed always yields
-   either an <a href="#t_primitive"><tt>i1</tt></a> or vector of <tt>i1</tt>
+   either an <a href="#t_integer"><tt>i1</tt></a> or vector of <tt>i1</tt>
    result, as follows:</p>
 
 <ol>
@@ -4632,7 +4770,7 @@ entry:
    values based on comparison of its operands.</p>
 
 <p>If the operands are floating point scalars, then the result type is a boolean
-(<a href="#t_primitive"><tt>i1</tt></a>).</p>
+(<a href="#t_integer"><tt>i1</tt></a>).</p>
 
 <p>If the operands are floating point vectors, then the result type is a vector
    of boolean with the same number of elements as the operands being
@@ -4674,7 +4812,7 @@ entry:
 <p>The '<tt>fcmp</tt>' instruction compares <tt>op1</tt> and <tt>op2</tt>
    according to the condition code given as <tt>cond</tt>.  If the operands are
    vectors, then the vectors are compared element by element.  Each comparison
-   performed always yields an <a href="#t_primitive">i1</a> result, as
+   performed always yields an <a href="#t_integer">i1</a> result, as
    follows:</p>
 
 <ol>
@@ -4908,6 +5046,12 @@ Loop:       ; Infinite loop that counts from 0 on up...
   %Z = call void @foo() noreturn                    <i>; indicates that %foo never returns normally</i>
   %ZZ = call zeroext i32 @bar()                     <i>; Return value is %zero extended</i>
 </pre>
+
+<p>llvm treats calls to some functions with names and arguments that match the
+standard C99 library as being the C99 library functions, and may perform
+optimizations or generate code for them under that assumption.  This is
+something we'd like to change in the future to provide better support for
+freestanding environments and non-C-based langauges.</p>
 
 </div>
 

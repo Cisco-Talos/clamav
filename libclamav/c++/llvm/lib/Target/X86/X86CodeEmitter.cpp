@@ -324,32 +324,27 @@ void Emitter<CodeEmitter>::emitDisplacementField(const MachineOperand *RelocOp,
 
   // Otherwise, this is something that requires a relocation.  Emit it as such
   // now.
+  unsigned RelocType = Is64BitMode ?
+    (IsPCRel ? X86::reloc_pcrel_word : X86::reloc_absolute_word_sext)
+    : (IsPIC ? X86::reloc_picrel_word : X86::reloc_absolute_word);
   if (RelocOp->isGlobal()) {
     // In 64-bit static small code model, we could potentially emit absolute.
     // But it's probably not beneficial. If the MCE supports using RIP directly
     // do it, otherwise fallback to absolute (this is determined by IsPCRel). 
     //  89 05 00 00 00 00     mov    %eax,0(%rip)  # PC-relative
     //  89 04 25 00 00 00 00  mov    %eax,0x0      # Absolute
-    unsigned rt = Is64BitMode ?
-      (IsPCRel ? X86::reloc_pcrel_word : X86::reloc_absolute_word_sext)
-      : (IsPIC ? X86::reloc_picrel_word : X86::reloc_absolute_word);
     bool NeedStub = isa<Function>(RelocOp->getGlobal());
     bool Indirect = gvNeedsNonLazyPtr(*RelocOp, TM);
-    emitGlobalAddress(RelocOp->getGlobal(), rt, RelocOp->getOffset(),
+    emitGlobalAddress(RelocOp->getGlobal(), RelocType, RelocOp->getOffset(),
                       Adj, NeedStub, Indirect);
+  } else if (RelocOp->isSymbol()) {
+    emitExternalSymbolAddress(RelocOp->getSymbolName(), RelocType);
   } else if (RelocOp->isCPI()) {
-    unsigned rt = Is64BitMode ?
-      (IsPCRel ? X86::reloc_pcrel_word : X86::reloc_absolute_word_sext)
-      : (IsPCRel ? X86::reloc_picrel_word : X86::reloc_absolute_word);
-    emitConstPoolAddress(RelocOp->getIndex(), rt,
+    emitConstPoolAddress(RelocOp->getIndex(), RelocType,
                          RelocOp->getOffset(), Adj);
-  } else if (RelocOp->isJTI()) {
-    unsigned rt = Is64BitMode ?
-      (IsPCRel ? X86::reloc_pcrel_word : X86::reloc_absolute_word_sext)
-      : (IsPCRel ? X86::reloc_picrel_word : X86::reloc_absolute_word);
-    emitJumpTableAddress(RelocOp->getIndex(), rt, Adj);
   } else {
-    llvm_unreachable("Unknown value to relocate!");
+    assert(RelocOp->isJTI() && "Unexpected machine operand!");
+    emitJumpTableAddress(RelocOp->getIndex(), RelocType, Adj);
   }
 }
 
@@ -363,6 +358,8 @@ void Emitter<CodeEmitter>::emitMemModRMByte(const MachineInstr &MI,
   
   // Figure out what sort of displacement we have to handle here.
   if (Op3.isGlobal()) {
+    DispForReloc = &Op3;
+  } else if (Op3.isSymbol()) {
     DispForReloc = &Op3;
   } else if (Op3.isCPI()) {
     if (!MCE.earlyResolveAddresses() || Is64BitMode || IsPIC) {
@@ -595,9 +592,11 @@ void Emitter<CodeEmitter>::emitInstruction(const MachineInstr &MI,
       break;
     case TargetInstrInfo::DBG_LABEL:
     case TargetInstrInfo::EH_LABEL:
+    case TargetInstrInfo::GC_LABEL:
       MCE.emitLabel(MI.getOperand(0).getImm());
       break;
     case TargetInstrInfo::IMPLICIT_DEF:
+    case TargetInstrInfo::KILL:
     case X86::DWARF_LOC:
     case X86::FP_REG_KILL:
       break;
@@ -1094,7 +1093,7 @@ public:
 
     if (!OK) {
       errs() << "couldn't convert inst '";
-      MI.print(errs());
+      MI.dump();
       errs() << "' to machine instr:\n";
       Instr->dump();
     }

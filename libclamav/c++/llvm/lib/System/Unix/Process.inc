@@ -179,27 +179,24 @@ void Process::PreventCoreFiles() {
 }
 
 bool Process::StandardInIsUserInput() {
-#if HAVE_ISATTY
-  return isatty(0);
-#endif
-  // If we don't have isatty, just return false.
-  return false;
+  return FileDescriptorIsDisplayed(STDIN_FILENO);
 }
 
 bool Process::StandardOutIsDisplayed() {
-#if HAVE_ISATTY
-  return isatty(1);
-#endif
-  // If we don't have isatty, just return false.
-  return false;
+  return FileDescriptorIsDisplayed(STDOUT_FILENO);
 }
 
 bool Process::StandardErrIsDisplayed() {
+  return FileDescriptorIsDisplayed(STDERR_FILENO);
+}
+
+bool Process::FileDescriptorIsDisplayed(int fd) {
 #if HAVE_ISATTY
-  return isatty(2);
-#endif
+  return isatty(fd);
+#else
   // If we don't have isatty, just return false.
   return false;
+#endif
 }
 
 static unsigned getColumns(int FileID) {

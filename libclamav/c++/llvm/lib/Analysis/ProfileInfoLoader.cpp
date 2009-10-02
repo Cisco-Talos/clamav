@@ -26,10 +26,17 @@ using namespace llvm;
 //
 static inline unsigned ByteSwap(unsigned Var, bool Really) {
   if (!Really) return Var;
-  return ((Var & (255<< 0)) << 24) |
-         ((Var & (255<< 8)) <<  8) |
-         ((Var & (255<<16)) >>  8) |
-         ((Var & (255<<24)) >> 24);
+  return ((Var & (255U<< 0U)) << 24U) |
+         ((Var & (255U<< 8U)) <<  8U) |
+         ((Var & (255U<<16U)) >>  8U) |
+         ((Var & (255U<<24U)) >> 24U);
+}
+
+static unsigned AddCounts(unsigned A, unsigned B) {
+  // If either value is undefined, use the other.
+  if (A == ProfileInfoLoader::Uncounted) return B;
+  if (B == ProfileInfoLoader::Uncounted) return A;
+  return A + B;
 }
 
 static void ReadProfilingBlock(const char *ToolName, FILE *F,
@@ -54,19 +61,24 @@ static void ReadProfilingBlock(const char *ToolName, FILE *F,
     exit(1);
   }
 
-  // Make sure we have enough space...
+  // Make sure we have enough space... The space is initialised to -1 to
+  // facitiltate the loading of missing values for OptimalEdgeProfiling.
   if (Data.size() < NumEntries)
-    Data.resize(NumEntries);
+    Data.resize(NumEntries, ProfileInfoLoader::Uncounted);
 
   // Accumulate the data we just read into the data.
   if (!ShouldByteSwap) {
-    for (unsigned i = 0; i != NumEntries; ++i)
-      Data[i] += TempSpace[i];
+    for (unsigned i = 0; i != NumEntries; ++i) {
+      Data[i] = AddCounts(TempSpace[i], Data[i]);
+    }
   } else {
-    for (unsigned i = 0; i != NumEntries; ++i)
-      Data[i] += ByteSwap(TempSpace[i], true);
+    for (unsigned i = 0; i != NumEntries; ++i) {
+      Data[i] = AddCounts(ByteSwap(TempSpace[i], true), Data[i]);
+    }
   }
 }
+
+const unsigned ProfileInfoLoader::Uncounted = ~0U;
 
 // ProfileInfoLoader ctor - Read the specified profiling data file, exiting the
 // program if the file is invalid or broken.
@@ -125,6 +137,10 @@ ProfileInfoLoader::ProfileInfoLoader(const char *ToolName,
 
     case EdgeInfo:
       ReadProfilingBlock(ToolName, F, ShouldByteSwap, EdgeCounts);
+      break;
+
+    case OptEdgeInfo:
+      ReadProfilingBlock(ToolName, F, ShouldByteSwap, OptimalEdgeCounts);
       break;
 
     case BBTraceInfo:

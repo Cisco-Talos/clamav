@@ -63,6 +63,7 @@ namespace lltok {
     kw_asm,
     kw_sideeffect,
     kw_gc,
+    kw_dbg,
     kw_c,
 
     kw_cc, kw_ccc, kw_fastcc, kw_coldcc,
@@ -126,7 +127,7 @@ namespace lltok {
     GlobalVar,         // @foo @"foo"
     LocalVar,          // %foo %"foo"
     StringConstant,    // "foo"
-    NamedMD,           // !foo
+    NamedOrCustomMD,   // !foo
 
     // Metadata valued tokens.
     Metadata,          // !"foo" !{i8 42}

@@ -28,7 +28,8 @@ namespace llvm {
   public:
     typedef const char *iterator;
     static const size_t npos = ~size_t(0);
-
+    typedef size_t size_type;
+    
   private:
     /// The start of the string, in an external buffer.
     const char *Data;
@@ -45,11 +46,11 @@ namespace llvm {
 
     /// Construct a string ref from a cstring.
     /*implicit*/ StringRef(const char *Str) 
-      : Data(Str), Length(::strlen(Str)) {}
+      : Data(Str) { if (Str) Length = ::strlen(Str); else Length = 0; }
  
     /// Construct a string ref from a pointer and length.
-    /*implicit*/ StringRef(const char *_Data, unsigned _Length)
-      : Data(_Data), Length(_Length) {}
+    /*implicit*/ StringRef(const char *data, unsigned length)
+      : Data(data), Length(length) {}
 
     /// Construct a string ref from an std::string.
     /*implicit*/ StringRef(const std::string &Str) 
@@ -147,7 +148,7 @@ namespace llvm {
     /// @name String Searching
     /// @{
 
-    /// find - Search for the character \arg C in the string.
+    /// find - Search for the first character \arg C in the string.
     ///
     /// \return - The index of the first occurence of \arg C, or npos if not
     /// found.
@@ -158,20 +159,49 @@ namespace llvm {
       return npos;
     }
 
-    /// find - Search for the string \arg Str in the string.
+    /// find - Search for the first string \arg Str in the string.
     ///
     /// \return - The index of the first occurence of \arg Str, or npos if not
     /// found.
-    size_t find(const StringRef &Str) const {
-      size_t N = Str.size();
-      if (N > Length)
-        return npos;
-      for (size_t i = 0, e = Length - N + 1; i != e; ++i)
-        if (substr(i, N).equals(Str))
+    size_t find(const StringRef &Str) const;
+    
+    /// rfind - Search for the last character \arg C in the string.
+    ///
+    /// \return - The index of the last occurence of \arg C, or npos if not
+    /// found.
+    size_t rfind(char C, size_t From = npos) const {
+      From = std::min(From, Length);
+      size_t i = From;
+      while (i != 0) {
+        --i;
+        if (Data[i] == C)
           return i;
+      }
       return npos;
     }
-
+    
+    /// rfind - Search for the last string \arg Str in the string.
+    ///
+    /// \return - The index of the last occurence of \arg Str, or npos if not
+    /// found.
+    size_t rfind(const StringRef &Str) const;
+    
+    /// find_first_of - Find the first instance of the specified character or
+    /// return npos if not in string.  Same as find.
+    size_type find_first_of(char C) const { return find(C); }
+    
+    /// find_first_of - Find the first character from the string 'Chars' in the
+    /// current string or return npos if not in string.
+    size_type find_first_of(StringRef Chars) const;
+    
+    /// find_first_not_of - Find the first character in the string that is not
+    /// in the string 'Chars' or return npos if all are in string. Same as find.
+    size_type find_first_not_of(StringRef Chars) const;
+    
+    /// @}
+    /// @name Helpful Algorithms
+    /// @{
+    
     /// count - Return the number of occurrences of \arg C in the string.
     size_t count(char C) const {
       size_t Count = 0;
@@ -180,20 +210,26 @@ namespace llvm {
           ++Count;
       return Count;
     }
-
+    
     /// count - Return the number of non-overlapped occurrences of \arg Str in
     /// the string.
-    size_t count(const StringRef &Str) const {
-      size_t Count = 0;
-      size_t N = Str.size();
-      if (N > Length)
-        return 0;
-      for (size_t i = 0, e = Length - N + 1; i != e; ++i)
-        if (substr(i, N).equals(Str))
-          ++Count;
-      return Count;
-    }
+    size_t count(const StringRef &Str) const;
+    
+    /// getAsInteger - Parse the current string as an integer of the specified
+    /// radix.  If Radix is specified as zero, this does radix autosensing using
+    /// extended C rules: 0 is octal, 0x is hex, 0b is binary.
+    ///
+    /// If the string is invalid or if only a subset of the string is valid,
+    /// this returns true to signify the error.  The string is considered
+    /// erroneous if empty.
+    ///
+    bool getAsInteger(unsigned Radix, long long &Result) const;
+    bool getAsInteger(unsigned Radix, unsigned long long &Result) const;
+    bool getAsInteger(unsigned Radix, int &Result) const;
+    bool getAsInteger(unsigned Radix, unsigned &Result) const;
 
+    // TODO: Provide overloads for int/unsigned that check for overflow.
+    
     /// @}
     /// @name Substring Operations
     /// @{
@@ -240,6 +276,23 @@ namespace llvm {
     /// \return - The split substrings.
     std::pair<StringRef, StringRef> split(char Separator) const {
       size_t Idx = find(Separator);
+      if (Idx == npos)
+        return std::make_pair(*this, StringRef());
+      return std::make_pair(slice(0, Idx), slice(Idx+1, npos));
+    }
+
+    /// rsplit - Split into two substrings around the last occurence of a
+    /// separator character.
+    ///
+    /// If \arg Separator is in the string, then the result is a pair (LHS, RHS)
+    /// such that (*this == LHS + Separator + RHS) is true and RHS is
+    /// minimal. If \arg Separator is not in the string, then the result is a
+    /// pair (LHS, RHS) where (*this == LHS) and (RHS == "").
+    ///
+    /// \param Separator - The character to split on.
+    /// \return - The split substrings.
+    std::pair<StringRef, StringRef> rsplit(char Separator) const {
+      size_t Idx = rfind(Separator);
       if (Idx == npos)
         return std::make_pair(*this, StringRef());
       return std::make_pair(slice(0, Idx), slice(Idx+1, npos));

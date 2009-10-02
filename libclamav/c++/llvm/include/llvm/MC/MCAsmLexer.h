@@ -27,7 +27,6 @@ struct AsmToken {
 
     // String values.
     Identifier,
-    Register,
     String,
     
     // Integer values.
@@ -38,11 +37,11 @@ struct AsmToken {
     Colon,
     Plus, Minus, Tilde,
     Slash,    // '/'
-    LParen, RParen,
+    LParen, RParen, LBrac, RBrac, LCurly, RCurly,
     Star, Comma, Dollar, Equal, EqualEqual,
     
     Pipe, PipePipe, Caret, 
-    Amp, AmpAmp, Exclaim, ExclaimEqual, Percent, 
+    Amp, AmpAmp, Exclaim, ExclaimEqual, Percent, Hash,
     Less, LessEqual, LessLess, LessGreater,
     Greater, GreaterEqual, GreaterGreater
   };

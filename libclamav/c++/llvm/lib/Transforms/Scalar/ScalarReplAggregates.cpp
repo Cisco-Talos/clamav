@@ -38,7 +38,6 @@
 #include "llvm/Support/GetElementPtrTypeIterator.h"
 #include "llvm/Support/IRBuilder.h"
 #include "llvm/Support/MathExtras.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/Statistic.h"
@@ -50,7 +49,7 @@ STATISTIC(NumConverted, "Number of aggregates converted to scalar");
 STATISTIC(NumGlobals,   "Number of allocas copied from constant global");
 
 namespace {
-  struct VISIBILITY_HIDDEN SROA : public FunctionPass {
+  struct SROA : public FunctionPass {
     static char ID; // Pass identification, replacement for typeid
     explicit SROA(signed T = -1) : FunctionPass(&ID) {
       if (T == -1)
@@ -245,8 +244,8 @@ bool SROA::performScalarRepl(Function &F) {
     // constructs like "void foo() { int A[] = {1,2,3,4,5,6,7,8,9...}; }" if 'A'
     // is only subsequently read.
     if (Instruction *TheCopy = isOnlyCopiedFromConstantGlobal(AI)) {
-      DEBUG(errs() << "Found alloca equal to global: " << *AI);
-      DEBUG(errs() << "  memcpy = " << *TheCopy);
+      DEBUG(errs() << "Found alloca equal to global: " << *AI << '\n');
+      DEBUG(errs() << "  memcpy = " << *TheCopy << '\n');
       Constant *TheSrc = cast<Constant>(TheCopy->getOperand(2));
       AI->replaceAllUsesWith(ConstantExpr::getBitCast(TheSrc, AI->getType()));
       TheCopy->eraseFromParent();  // Don't mutate the global.
@@ -307,7 +306,7 @@ bool SROA::performScalarRepl(Function &F) {
       // we just get a lot of insert/extracts.  If at least one vector is
       // involved, then we probably really do have a union of vector/array.
       if (VectorTy && isa<VectorType>(VectorTy) && HadAVector) {
-        DEBUG(errs() << "CONVERT TO VECTOR: " << *AI << "  TYPE = "
+        DEBUG(errs() << "CONVERT TO VECTOR: " << *AI << "\n  TYPE = "
                      << *VectorTy << '\n');
         
         // Create and insert the vector alloca.
@@ -338,7 +337,7 @@ bool SROA::performScalarRepl(Function &F) {
 /// predicate, do SROA now.
 void SROA::DoScalarReplacement(AllocationInst *AI, 
                                std::vector<AllocationInst*> &WorkList) {
-  DEBUG(errs() << "Found inst to SROA: " << *AI);
+  DEBUG(errs() << "Found inst to SROA: " << *AI << '\n');
   SmallVector<AllocaInst*, 32> ElementAllocas;
   if (const StructType *ST = dyn_cast<StructType>(AI->getAllocatedType())) {
     ElementAllocas.reserve(ST->getNumContainedTypes());
@@ -489,7 +488,7 @@ void SROA::isSafeElementUse(Value *Ptr, bool isFirstElt, AllocationInst *AI,
         if (Info.isUnsafe) return;
         break;
       }
-      DEBUG(errs() << "  Transformation preventing inst: " << *User);
+      DEBUG(errs() << "  Transformation preventing inst: " << *User << '\n');
       return MarkUnsafe(Info);
     case Instruction::Call:
       if (MemIntrinsic *MI = dyn_cast<MemIntrinsic>(User)) {
@@ -499,10 +498,10 @@ void SROA::isSafeElementUse(Value *Ptr, bool isFirstElt, AllocationInst *AI,
           break;
         }
       }
-      DEBUG(errs() << "  Transformation preventing inst: " << *User);
+      DEBUG(errs() << "  Transformation preventing inst: " << *User << '\n');
       return MarkUnsafe(Info);
     default:
-      DEBUG(errs() << "  Transformation preventing inst: " << *User);
+      DEBUG(errs() << "  Transformation preventing inst: " << *User << '\n');
       return MarkUnsafe(Info);
     }
   }
@@ -927,7 +926,8 @@ void SROA::RewriteStoreUserOfWholeAlloca(StoreInst *SI,
                           IntegerType::get(SI->getContext(), AllocaSizeBits), 
                           "", SI);
 
-  DEBUG(errs() << "PROMOTING STORE TO WHOLE ALLOCA: " << *AI << *SI);
+  DEBUG(errs() << "PROMOTING STORE TO WHOLE ALLOCA: " << *AI << '\n' << *SI
+               << '\n');
 
   // There are two forms here: AI could be an array or struct.  Both cases
   // have different ways to compute the element offset.
@@ -1043,7 +1043,8 @@ void SROA::RewriteLoadUserOfWholeAlloca(LoadInst *LI, AllocationInst *AI,
       TD->getTypeAllocSizeInBits(LI->getType()) != AllocaSizeBits)
     return;
   
-  DEBUG(errs() << "PROMOTING LOAD OF WHOLE ALLOCA: " << *AI << *LI);
+  DEBUG(errs() << "PROMOTING LOAD OF WHOLE ALLOCA: " << *AI << '\n' << *LI
+               << '\n');
   
   // There are two forms here: AI could be an array or struct.  Both cases
   // have different ways to compute the element offset.
@@ -1170,7 +1171,8 @@ int SROA::isSafeAllocaToScalarRepl(AllocationInst *AI) {
        I != E; ++I) {
     isSafeUseOfAllocation(cast<Instruction>(*I), AI, Info);
     if (Info.isUnsafe) {
-      DEBUG(errs() << "Cannot transform: " << *AI << "  due to user: " << **I);
+      DEBUG(errs() << "Cannot transform: " << *AI << "\n  due to user: "
+                   << **I << '\n');
       return 0;
     }
   }

@@ -797,7 +797,7 @@ unsigned ReuseInfo::GetRegForReload(const TargetRegisterClass *RC,
       // value aliases the new register. If so, codegen the previous reload
       // and use this one.          
       unsigned PRRU = Op.PhysRegReused;
-      if (TRI->areAliases(PRRU, PhysReg)) {
+      if (TRI->regsOverlap(PRRU, PhysReg)) {
         // Okay, we found out that an alias of a reused register
         // was used.  This isn't good because it means we have
         // to undo a previous reuse.
@@ -1128,8 +1128,7 @@ private:
       return false;
 
     // Back-schedule reloads and remats.
-    MachineBasicBlock::iterator InsertLoc =
-      ComputeReloadLoc(MII, MBB.begin(), PhysReg, TRI, false, SS, TII, MF);
+    ComputeReloadLoc(MII, MBB.begin(), PhysReg, TRI, false, SS, TII, MF);
 
     // Load from SS to the spare physical register.
     TII->loadRegFromStackSlot(MBB, MII, PhysReg, SS, RC);

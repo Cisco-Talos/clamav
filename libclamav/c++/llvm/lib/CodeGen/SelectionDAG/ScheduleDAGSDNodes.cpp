@@ -243,10 +243,8 @@ void ScheduleDAGSDNodes::ComputeLatency(SUnit *SU) {
   // Compute the latency for the node.  We use the sum of the latencies for
   // all nodes flagged together into this SUnit.
   SU->Latency = 0;
-  bool SawMachineOpcode = false;
   for (SDNode *N = SU->getNode(); N; N = N->getFlaggedNode())
     if (N->isMachineOpcode()) {
-      SawMachineOpcode = true;
       SU->Latency += InstrItins.
         getStageLatency(TII->get(N->getMachineOpcode()).getSchedClass());
     }
@@ -265,19 +263,10 @@ unsigned ScheduleDAGSDNodes::CountResults(SDNode *Node) {
 }
 
 /// CountOperands - The inputs to target nodes have any actual inputs first,
-/// followed by special operands that describe memory references, then an
-/// optional chain operand, then an optional flag operand.  Compute the number
-/// of actual operands that will go into the resulting MachineInstr.
+/// followed by an optional chain operand, then an optional flag operand.
+/// Compute the number of actual operands that will go into the resulting
+/// MachineInstr.
 unsigned ScheduleDAGSDNodes::CountOperands(SDNode *Node) {
-  unsigned N = ComputeMemOperandsEnd(Node);
-  while (N && isa<MemOperandSDNode>(Node->getOperand(N - 1).getNode()))
-    --N; // Ignore MEMOPERAND nodes
-  return N;
-}
-
-/// ComputeMemOperandsEnd - Find the index one past the last MemOperandSDNode
-/// operand
-unsigned ScheduleDAGSDNodes::ComputeMemOperandsEnd(SDNode *Node) {
   unsigned N = Node->getNumOperands();
   while (N && Node->getOperand(N - 1).getValueType() == MVT::Flag)
     --N;
@@ -285,7 +274,6 @@ unsigned ScheduleDAGSDNodes::ComputeMemOperandsEnd(SDNode *Node) {
     --N; // Ignore chain if it exists.
   return N;
 }
-
 
 void ScheduleDAGSDNodes::dumpNode(const SUnit *SU) const {
   if (!SU->getNode()) {

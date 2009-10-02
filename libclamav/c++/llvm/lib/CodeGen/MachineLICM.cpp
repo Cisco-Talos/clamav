@@ -43,6 +43,8 @@ namespace {
   class VISIBILITY_HIDDEN MachineLICM : public MachineFunctionPass {
     const TargetMachine   *TM;
     const TargetInstrInfo *TII;
+    const TargetRegisterInfo *TRI;
+    BitVector AllocatableSet;
 
     // Various analyses that we use...
     MachineLoopInfo      *LI;      // Current MachineLoopInfo
@@ -135,7 +137,9 @@ bool MachineLICM::runOnMachineFunction(MachineFunction &MF) {
   Changed = false;
   TM = &MF.getTarget();
   TII = TM->getInstrInfo();
+  TRI = TM->getRegisterInfo();
   RegInfo = &MF.getRegInfo();
+  AllocatableSet = TRI->getAllocatableSet(MF);
 
   // Get our Loop information...
   LI = &getAnalysis<MachineLoopInfo>();
@@ -254,8 +258,32 @@ bool MachineLICM::IsLoopInvariantInst(MachineInstr &I) {
     if (Reg == 0) continue;
 
     // Don't hoist an instruction that uses or defines a physical register.
-    if (TargetRegisterInfo::isPhysicalRegister(Reg))
-      return false;
+    if (TargetRegisterInfo::isPhysicalRegister(Reg)) {
+      // If this is a physical register use, we can't move it.  If it is a def,
+      // we can move it, but only if the def is dead.
+      if (MO.isUse()) {
+        // If the physreg has no defs anywhere, it's just an ambient register
+        // and we can freely move its uses. Alternatively, if it's allocatable,
+        // it could get allocated to something with a def during allocation.
+        if (!RegInfo->def_empty(Reg))
+          return false;
+        if (AllocatableSet.test(Reg))
+          return false;
+        // Check for a def among the register's aliases too.
+        for (const unsigned *Alias = TRI->getAliasSet(Reg); *Alias; ++Alias) {
+          unsigned AliasReg = *Alias;
+          if (!RegInfo->def_empty(AliasReg))
+            return false;
+          if (AllocatableSet.test(AliasReg))
+            return false;
+        }
+        // Otherwise it's safe to move.
+        continue;
+      } else if (!MO.isDead()) {
+        // A def that isn't dead. We can't move it.
+        return false;
+      }
+    }
 
     if (!MO.isUse())
       continue;

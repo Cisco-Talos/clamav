@@ -19,10 +19,11 @@
 #--------------------------------------------------------------------
 # Define the various target sets
 #--------------------------------------------------------------------
-RecursiveTargets := all clean clean-all install uninstall install-bytecode
+RecursiveTargets := all clean clean-all install uninstall install-bytecode \
+                    unitcheck
 LocalTargets     := all-local clean-local clean-all-local check-local \
                     install-local printvars uninstall-local \
-		    install-bytecode-local unittests
+		    install-bytecode-local
 TopLevelTargets  := check dist dist-check dist-clean dist-gzip dist-bzip2 \
                     dist-zip unittests
 UserTargets      := $(RecursiveTargets) $(LocalTargets) $(TopLevelTargets)
@@ -312,6 +313,13 @@ ifeq ($(ENABLE_OPTIMIZED),1)
   CXX.Flags += $(OPTIMIZE_OPTION) $(OmitFramePointer)
   C.Flags   += $(OPTIMIZE_OPTION) $(OmitFramePointer)
   LD.Flags  += $(OPTIMIZE_OPTION)
+  ifdef DEBUG_SYMBOLS
+    BuildMode := $(BuildMode)+Debug
+    CXX.Flags += -g
+    C.Flags   += -g
+    LD.Flags  += -g
+    KEEP_SYMBOLS := 1
+  endif
 else
   BuildMode := Debug
   CXX.Flags += -g
@@ -343,9 +351,10 @@ ifdef REQUIRES_FRAME_POINTER
   LD.Flags  := $(filter-out -fomit-frame-pointer,$(LD.Flags))
 endif
 
-# IF REQUIRES_RTTI=1 is specified then don't disable run-time type id
-ifndef REQUIRES_RTTI
-#  CXX.Flags += -fno-rtti
+# If REQUIRES_RTTI=1 is specified then don't disable run-time type id.
+ifeq ($(REQUIRES_RTTI), 1)
+  CXX.Flags := $(filter-out -fno-rtti,$(CXX.Flags))
+  CXXFLAGS := $(filter-out -fno-rtti,$(CXXFLAGS))
 endif
 
 ifdef ENABLE_COVERAGE
@@ -436,6 +445,7 @@ ifdef ENABLE_EXPENSIVE_CHECKS
   # GNU libstdc++ uses RTTI if you define _GLIBCXX_DEBUG, which we did above.
   # See http://gcc.gnu.org/bugzilla/show_bug.cgi?id=40160
   CXX.Flags := $(filter-out -fno-rtti,$(CXX.Flags))
+  CXXFLAGS := $(filter-out -fno-rtti,$(CXXFLAGS))
 endif
 
 #--------------------------------------------------------------------
@@ -513,7 +523,10 @@ ifeq ($(HOST_OS),Darwin)
   DARWIN_MAJVERS := $(shell echo $(DARWIN_VERSION)| sed -E 's/10.([0-9]).*/\1/')
 
   SharedLinkOptions=-Wl,-flat_namespace -Wl,-undefined -Wl,suppress \
-                    -dynamiclib -mmacosx-version-min=$(DARWIN_VERSION)
+                    -dynamiclib
+  ifneq ($(ARCH),ARM)
+    SharedLinkOptions += -mmacosx-version-min=$(DARWIN_VERSION)
+  endif
 else
   ifeq ($(HOST_OS),Cygwin)
     SharedLinkOptions=-shared -nostdlib -Wl,--export-all-symbols \
@@ -524,7 +537,9 @@ else
 endif
 
 ifeq ($(TARGET_OS),Darwin)
-  TargetCommonOpts += -mmacosx-version-min=$(DARWIN_VERSION)
+  ifneq ($(ARCH),ARM)
+    TargetCommonOpts += -mmacosx-version-min=$(DARWIN_VERSION)
+  endif
 endif
 
 # Adjust LD.Flags depending on the kind of library that is to be built. Note
@@ -793,6 +808,7 @@ clean-all:: $(addsuffix /.makeclean-all,$(PARALLEL_DIRS))
 install  :: $(addsuffix /.makeinstall  ,$(PARALLEL_DIRS))
 uninstall:: $(addsuffix /.makeuninstall,$(PARALLEL_DIRS))
 install-bytecode  :: $(addsuffix /.makeinstall-bytecode,$(PARALLEL_DIRS))
+unitcheck:: $(addsuffix /.makeunitcheck,$(PARALLEL_DIRS))
 
 ParallelTargets := $(foreach T,$(RecursiveTargets),%/.make$(T))
 
@@ -1367,14 +1383,13 @@ $(ObjDir)/%.s: %.c $(ObjDir)/.dir $(BUILT_SOURCES)
 
 # make the C and C++ compilers strip debug info out of bytecode libraries.
 ifdef DEBUG_RUNTIME
-$(ObjectsBC): $(ObjDir)/%.bc: $(ObjDir)/%.ll $(LLVMAS) $(LOPT)
+$(ObjectsBC): $(ObjDir)/%.bc: $(ObjDir)/%.ll $(LOPT)
 	$(Echo) "Compiling $*.ll to $*.bc for $(BuildMode) build (bytecode)"
-	$(Verb) $(LLVMAS) $< -o - | $(LOPT) -std-compile-opts -o $@ -f
+	$(Verb) $(LOPT) $< -std-compile-opts -o $@
 else
-$(ObjectsBC): $(ObjDir)/%.bc: $(ObjDir)/%.ll $(LLVMAS) $(LOPT)
+$(ObjectsBC): $(ObjDir)/%.bc: $(ObjDir)/%.ll $(LOPT)
 	$(Echo) "Compiling $*.ll to $*.bc for $(BuildMode) build (bytecode)"
-	$(Verb) $(LLVMAS) $< -o - | \
-	   $(LOPT) -std-compile-opts -strip-debug -o $@ -f
+	$(Verb) $(LOPT) $< -std-compile-opts -strip-debug -o $@
 endif
 
 
@@ -1593,6 +1608,30 @@ check::
 	  $(EchoCmd) No test directory ; \
 	fi
 
+check-lit::
+	$(Verb) if test -d "$(PROJ_OBJ_ROOT)/test" ; then \
+	  if test -f "$(PROJ_OBJ_ROOT)/test/Makefile" ; then \
+	    $(EchoCmd) Running test suite ; \
+	    $(MAKE) -C $(PROJ_OBJ_ROOT)/test check-local-lit ; \
+	  else \
+	    $(EchoCmd) No Makefile in test directory ; \
+	  fi ; \
+	else \
+	  $(EchoCmd) No test directory ; \
+	fi
+
+check-all::
+	$(Verb) if test -d "$(PROJ_OBJ_ROOT)/test" ; then \
+	  if test -f "$(PROJ_OBJ_ROOT)/test/Makefile" ; then \
+	    $(EchoCmd) Running test suite ; \
+	    $(MAKE) -C $(PROJ_OBJ_ROOT)/test check-local-all ; \
+	  else \
+	    $(EchoCmd) No Makefile in test directory ; \
+	  fi ; \
+	else \
+	  $(EchoCmd) No test directory ; \
+	fi
+
 ###############################################################################
 # UNITTESTS: Running the unittests test suite
 ###############################################################################
@@ -1601,7 +1640,7 @@ unittests::
 	$(Verb) if test -d "$(PROJ_OBJ_ROOT)/unittests" ; then \
 	  if test -f "$(PROJ_OBJ_ROOT)/unittests/Makefile" ; then \
 	    $(EchoCmd) Running unittests test suite ; \
-	    $(MAKE) -C $(PROJ_OBJ_ROOT)/unittests ; \
+	    $(MAKE) -C $(PROJ_OBJ_ROOT)/unittests unitcheck; \
 	  else \
 	    $(EchoCmd) No Makefile in unittests directory ; \
 	  fi ; \

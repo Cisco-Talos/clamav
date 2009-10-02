@@ -20,7 +20,7 @@
 #include "llvm/Pass.h"
 #include "llvm/ADT/Triple.h"
 #include "llvm/Analysis/Verifier.h"
-#include "llvm/Bitcode/ReaderWriter.h"
+#include "llvm/Support/IRReader.h"
 #include "llvm/CodeGen/FileWriters.h"
 #include "llvm/CodeGen/LinkAllAsmWriterComponents.h"
 #include "llvm/CodeGen/LinkAllCodegenComponents.h"
@@ -119,7 +119,9 @@ GetFileNameRoot(const std::string &InputFilename) {
   std::string outputFilename;
   int Len = IFN.length();
   if ((Len > 2) &&
-      IFN[Len-3] == '.' && IFN[Len-2] == 'b' && IFN[Len-1] == 'c') {
+      IFN[Len-3] == '.' &&
+      ((IFN[Len-2] == 'b' && IFN[Len-1] == 'c') ||
+       (IFN[Len-2] == 'l' && IFN[Len-1] == 'l'))) {
     outputFilename = std::string(IFN.begin(), IFN.end()-3); // s/.bc/.s/
   } else {
     outputFilename = IFN;
@@ -211,23 +213,19 @@ int main(int argc, char **argv) {
   LLVMContext &Context = getGlobalContext();
   llvm_shutdown_obj Y;  // Call llvm_shutdown() on exit.
 
-  // Initialize targets first.
+  // Initialize targets first, so that --version shows registered targets.
   InitializeAllTargets();
   InitializeAllAsmPrinters();
 
   cl::ParseCommandLineOptions(argc, argv, "llvm system compiler\n");
   
   // Load the module to be compiled...
-  std::string ErrorMessage;
+  SMDiagnostic Err;
   std::auto_ptr<Module> M;
 
-  std::auto_ptr<MemoryBuffer> Buffer(
-                   MemoryBuffer::getFileOrSTDIN(InputFilename, &ErrorMessage));
-  if (Buffer.get())
-    M.reset(ParseBitcodeFile(Buffer.get(), Context, &ErrorMessage));
+  M.reset(ParseIRFile(InputFilename, Err, Context));
   if (M.get() == 0) {
-    errs() << argv[0] << ": bitcode didn't read correctly.\n";
-    errs() << "Reason: " << ErrorMessage << "\n";
+    Err.Print(argv[0], errs());
     return 1;
   }
   Module &mod = *M.get();

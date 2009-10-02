@@ -26,7 +26,6 @@
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ValueHandle.h"
 #include "llvm/Support/raw_ostream.h"
@@ -57,7 +56,7 @@ namespace {
   /// In this case, the unconditional branch at the end of the first if can be
   /// revectored to the false side of the second if.
   ///
-  class VISIBILITY_HIDDEN JumpThreading : public FunctionPass {
+  class JumpThreading : public FunctionPass {
     TargetData *TD;
 #ifdef NDEBUG
     SmallPtrSet<BasicBlock*, 16> LoopHeaders;
@@ -935,7 +934,7 @@ bool JumpThreading::ThreadEdge(BasicBlock *BB, BasicBlock *PredBB,
   // Clone the non-phi instructions of BB into NewBB, keeping track of the
   // mapping and using it to remap operands in the cloned instructions.
   for (; !isa<TerminatorInst>(BI); ++BI) {
-    Instruction *New = BI->clone(BI->getContext());
+    Instruction *New = BI->clone();
     New->setName(BI->getName());
     NewBB->getInstList().push_back(New);
     ValueMapping[BI] = New;

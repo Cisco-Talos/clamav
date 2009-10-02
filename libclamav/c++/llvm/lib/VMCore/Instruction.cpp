@@ -11,11 +11,13 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "LLVMContextImpl.h"
 #include "llvm/Type.h"
 #include "llvm/Instructions.h"
 #include "llvm/Function.h"
 #include "llvm/Constants.h"
 #include "llvm/GlobalVariable.h"
+#include "llvm/Module.h"
 #include "llvm/Support/CallSite.h"
 #include "llvm/Support/LeakDetector.h"
 using namespace llvm;
@@ -49,6 +51,10 @@ Instruction::Instruction(const Type *ty, unsigned it, Use *Ops, unsigned NumOps,
 // Out of line virtual method, so the vtable, etc has a home.
 Instruction::~Instruction() {
   assert(Parent == 0 && "Instruction still linked in the program!");
+  if (hasMetadata()) {
+    LLVMContext &Context = getContext();
+    Context.pImpl->TheMetadata.ValueIsDeleted(this);
+  }
 }
 
 
@@ -291,11 +297,11 @@ bool Instruction::isUsedOutsideOfBlock(const BasicBlock *BB) const {
         return true;
       continue;
     }
-    
+
     if (PN->getIncomingBlock(UI) != BB)
       return true;
   }
-  return false;    
+  return false;
 }
 
 /// mayReadFromMemory - Return true if this instruction may read memory.
@@ -375,6 +381,27 @@ bool Instruction::isCommutative(unsigned op) {
   }
 }
 
+// Code here matches isMalloc from MallocHelper, which is not in VMCore.
+static bool isMalloc(const Value* I) {
+  const CallInst *CI = dyn_cast<CallInst>(I);
+  if (!CI) {
+    const BitCastInst *BCI = dyn_cast<BitCastInst>(I);
+    if (!BCI) return false;
+
+    CI = dyn_cast<CallInst>(BCI->getOperand(0));
+  }
+
+  if (!CI) return false;
+
+  const Module* M = CI->getParent()->getParent()->getParent();
+  Constant *MallocFunc = M->getFunction("malloc");
+
+  if (CI->getOperand(0) != MallocFunc)
+    return false;
+
+  return true;
+}
+
 bool Instruction::isSafeToSpeculativelyExecute() const {
   for (unsigned i = 0, e = getNumOperands(); i != e; ++i)
     if (Constant *C = dyn_cast<Constant>(getOperand(i)))
@@ -400,7 +427,7 @@ bool Instruction::isSafeToSpeculativelyExecute() const {
   case Load: {
     if (cast<LoadInst>(this)->isVolatile())
       return false;
-    if (isa<AllocationInst>(getOperand(0)))
+    if (isa<AllocationInst>(getOperand(0)) || isMalloc(getOperand(0)))
       return true;
     if (GlobalVariable *GV = dyn_cast<GlobalVariable>(getOperand(0)))
       return !GV->hasExternalWeakLinkage();

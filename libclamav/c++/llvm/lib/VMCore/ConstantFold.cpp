@@ -12,9 +12,8 @@
 // ConstantExpr::get* methods to automatically fold constants when possible.
 //
 // The current constant folding implementation is implemented in two pieces: the
-// template-based folder for simple primitive constants like ConstantInt, and
-// the special case hackery that we use to symbolically evaluate expressions
-// that use ConstantExprs.
+// pieces that don't need TargetData, and the pieces that do. This is to avoid
+// a dependence in VMCore on Target.
 //
 //===----------------------------------------------------------------------===//
 
@@ -24,6 +23,7 @@
 #include "llvm/DerivedTypes.h"
 #include "llvm/Function.h"
 #include "llvm/GlobalAlias.h"
+#include "llvm/GlobalVariable.h"
 #include "llvm/LLVMContext.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Support/Compiler.h"
@@ -73,7 +73,7 @@ static Constant *BitCastConstantVector(LLVMContext &Context, ConstantVector *CV,
 static unsigned
 foldConstantCastPair(
   unsigned opc,          ///< opcode of the second cast constant expression
-  const ConstantExpr*Op, ///< the first cast constant expression
+  ConstantExpr *Op,      ///< the first cast constant expression
   const Type *DstTy      ///< desintation type of the first cast
 ) {
   assert(Op && Op->isCast() && "Can't fold cast of cast without a cast!");
@@ -156,7 +156,7 @@ static Constant *FoldBitCast(LLVMContext &Context,
     return ConstantPointerNull::get(cast<PointerType>(DestTy));
 
   // Handle integral constant input.
-  if (const ConstantInt *CI = dyn_cast<ConstantInt>(V)) {
+  if (ConstantInt *CI = dyn_cast<ConstantInt>(V)) {
     if (DestTy->isInteger())
       // Integral -> Integral. This is a no-op because the bit widths must
       // be the same. Consequently, we just fold to V.
@@ -171,7 +171,7 @@ static Constant *FoldBitCast(LLVMContext &Context,
   }
 
   // Handle ConstantFP input.
-  if (const ConstantFP *FP = dyn_cast<ConstantFP>(V))
+  if (ConstantFP *FP = dyn_cast<ConstantFP>(V))
     // FP -> Integral.
     return ConstantInt::get(Context, FP->getValueAPF().bitcastToAPInt());
 
@@ -180,7 +180,7 @@ static Constant *FoldBitCast(LLVMContext &Context,
 
 
 Constant *llvm::ConstantFoldCastInstruction(LLVMContext &Context, 
-                                            unsigned opc, const Constant *V,
+                                            unsigned opc, Constant *V,
                                             const Type *DestTy) {
   if (isa<UndefValue>(V)) {
     // zext(undef) = 0, because the top bits will be zero.
@@ -197,7 +197,7 @@ Constant *llvm::ConstantFoldCastInstruction(LLVMContext &Context,
 
   // If the cast operand is a constant expression, there's a few things we can
   // do to try to simplify it.
-  if (const ConstantExpr *CE = dyn_cast<ConstantExpr>(V)) {
+  if (ConstantExpr *CE = dyn_cast<ConstantExpr>(V)) {
     if (CE->isCast()) {
       // Try hard to fold cast of cast because they are often eliminable.
       if (unsigned newOpc = foldConstantCastPair(opc, CE, DestTy))
@@ -220,7 +220,7 @@ Constant *llvm::ConstantFoldCastInstruction(LLVMContext &Context,
   // If the cast operand is a constant vector, perform the cast by
   // operating on each element. In the cast of bitcasts, the element
   // count may be mismatched; don't attempt to handle that here.
-  if (const ConstantVector *CV = dyn_cast<ConstantVector>(V))
+  if (ConstantVector *CV = dyn_cast<ConstantVector>(V))
     if (isa<VectorType>(DestTy) &&
         cast<VectorType>(DestTy)->getNumElements() ==
         CV->getType()->getNumElements()) {
@@ -238,7 +238,7 @@ Constant *llvm::ConstantFoldCastInstruction(LLVMContext &Context,
   switch (opc) {
   case Instruction::FPTrunc:
   case Instruction::FPExt:
-    if (const ConstantFP *FPC = dyn_cast<ConstantFP>(V)) {
+    if (ConstantFP *FPC = dyn_cast<ConstantFP>(V)) {
       bool ignored;
       APFloat Val = FPC->getValueAPF();
       Val.convert(DestTy == Type::getFloatTy(Context) ? APFloat::IEEEsingle :
@@ -252,7 +252,7 @@ Constant *llvm::ConstantFoldCastInstruction(LLVMContext &Context,
     return 0; // Can't fold.
   case Instruction::FPToUI: 
   case Instruction::FPToSI:
-    if (const ConstantFP *FPC = dyn_cast<ConstantFP>(V)) {
+    if (ConstantFP *FPC = dyn_cast<ConstantFP>(V)) {
       const APFloat &V = FPC->getValueAPF();
       bool ignored;
       uint64_t x[2]; 
@@ -273,7 +273,7 @@ Constant *llvm::ConstantFoldCastInstruction(LLVMContext &Context,
     return 0;                   // Other pointer types cannot be casted
   case Instruction::UIToFP:
   case Instruction::SIToFP:
-    if (const ConstantInt *CI = dyn_cast<ConstantInt>(V)) {
+    if (ConstantInt *CI = dyn_cast<ConstantInt>(V)) {
       APInt api = CI->getValue();
       const uint64_t zero[] = {0, 0};
       APFloat apf = APFloat(APInt(DestTy->getPrimitiveSizeInBits(),
@@ -285,7 +285,7 @@ Constant *llvm::ConstantFoldCastInstruction(LLVMContext &Context,
     }
     return 0;
   case Instruction::ZExt:
-    if (const ConstantInt *CI = dyn_cast<ConstantInt>(V)) {
+    if (ConstantInt *CI = dyn_cast<ConstantInt>(V)) {
       uint32_t BitWidth = cast<IntegerType>(DestTy)->getBitWidth();
       APInt Result(CI->getValue());
       Result.zext(BitWidth);
@@ -293,7 +293,7 @@ Constant *llvm::ConstantFoldCastInstruction(LLVMContext &Context,
     }
     return 0;
   case Instruction::SExt:
-    if (const ConstantInt *CI = dyn_cast<ConstantInt>(V)) {
+    if (ConstantInt *CI = dyn_cast<ConstantInt>(V)) {
       uint32_t BitWidth = cast<IntegerType>(DestTy)->getBitWidth();
       APInt Result(CI->getValue());
       Result.sext(BitWidth);
@@ -301,7 +301,7 @@ Constant *llvm::ConstantFoldCastInstruction(LLVMContext &Context,
     }
     return 0;
   case Instruction::Trunc:
-    if (const ConstantInt *CI = dyn_cast<ConstantInt>(V)) {
+    if (ConstantInt *CI = dyn_cast<ConstantInt>(V)) {
       uint32_t BitWidth = cast<IntegerType>(DestTy)->getBitWidth();
       APInt Result(CI->getValue());
       Result.trunc(BitWidth);
@@ -309,7 +309,7 @@ Constant *llvm::ConstantFoldCastInstruction(LLVMContext &Context,
     }
     return 0;
   case Instruction::BitCast:
-    return FoldBitCast(Context, const_cast<Constant*>(V), DestTy);
+    return FoldBitCast(Context, V, DestTy);
   default:
     assert(!"Invalid CE CastInst opcode");
     break;
@@ -320,30 +320,29 @@ Constant *llvm::ConstantFoldCastInstruction(LLVMContext &Context,
 }
 
 Constant *llvm::ConstantFoldSelectInstruction(LLVMContext&,
-                                              const Constant *Cond,
-                                              const Constant *V1,
-                                              const Constant *V2) {
-  if (const ConstantInt *CB = dyn_cast<ConstantInt>(Cond))
-    return const_cast<Constant*>(CB->getZExtValue() ? V1 : V2);
+                                              Constant *Cond,
+                                              Constant *V1, Constant *V2) {
+  if (ConstantInt *CB = dyn_cast<ConstantInt>(Cond))
+    return CB->getZExtValue() ? V1 : V2;
 
-  if (isa<UndefValue>(V1)) return const_cast<Constant*>(V2);
-  if (isa<UndefValue>(V2)) return const_cast<Constant*>(V1);
-  if (isa<UndefValue>(Cond)) return const_cast<Constant*>(V1);
-  if (V1 == V2) return const_cast<Constant*>(V1);
+  if (isa<UndefValue>(V1)) return V2;
+  if (isa<UndefValue>(V2)) return V1;
+  if (isa<UndefValue>(Cond)) return V1;
+  if (V1 == V2) return V1;
   return 0;
 }
 
 Constant *llvm::ConstantFoldExtractElementInstruction(LLVMContext &Context,
-                                                      const Constant *Val,
-                                                      const Constant *Idx) {
+                                                      Constant *Val,
+                                                      Constant *Idx) {
   if (isa<UndefValue>(Val))  // ee(undef, x) -> undef
     return UndefValue::get(cast<VectorType>(Val->getType())->getElementType());
   if (Val->isNullValue())  // ee(zero, x) -> zero
     return Constant::getNullValue(
                           cast<VectorType>(Val->getType())->getElementType());
 
-  if (const ConstantVector *CVal = dyn_cast<ConstantVector>(Val)) {
-    if (const ConstantInt *CIdx = dyn_cast<ConstantInt>(Idx)) {
+  if (ConstantVector *CVal = dyn_cast<ConstantVector>(Val)) {
+    if (ConstantInt *CIdx = dyn_cast<ConstantInt>(Idx)) {
       return CVal->getOperand(CIdx->getZExtValue());
     } else if (isa<UndefValue>(Idx)) {
       // ee({w,x,y,z}, undef) -> w (an arbitrary value).
@@ -354,17 +353,17 @@ Constant *llvm::ConstantFoldExtractElementInstruction(LLVMContext &Context,
 }
 
 Constant *llvm::ConstantFoldInsertElementInstruction(LLVMContext &Context,
-                                                     const Constant *Val,
-                                                     const Constant *Elt,
-                                                     const Constant *Idx) {
-  const ConstantInt *CIdx = dyn_cast<ConstantInt>(Idx);
+                                                     Constant *Val,
+                                                     Constant *Elt,
+                                                     Constant *Idx) {
+  ConstantInt *CIdx = dyn_cast<ConstantInt>(Idx);
   if (!CIdx) return 0;
   APInt idxVal = CIdx->getValue();
   if (isa<UndefValue>(Val)) { 
     // Insertion of scalar constant into vector undef
     // Optimize away insertion of undef
     if (isa<UndefValue>(Elt))
-      return const_cast<Constant*>(Val);
+      return Val;
     // Otherwise break the aggregate undef into multiple undefs and do
     // the insertion
     unsigned numOps = 
@@ -372,9 +371,9 @@ Constant *llvm::ConstantFoldInsertElementInstruction(LLVMContext &Context,
     std::vector<Constant*> Ops; 
     Ops.reserve(numOps);
     for (unsigned i = 0; i < numOps; ++i) {
-      const Constant *Op =
+      Constant *Op =
         (idxVal == i) ? Elt : UndefValue::get(Elt->getType());
-      Ops.push_back(const_cast<Constant*>(Op));
+      Ops.push_back(Op);
     }
     return ConstantVector::get(Ops);
   }
@@ -382,7 +381,7 @@ Constant *llvm::ConstantFoldInsertElementInstruction(LLVMContext &Context,
     // Insertion of scalar constant into vector aggregate zero
     // Optimize away insertion of zero
     if (Elt->isNullValue())
-      return const_cast<Constant*>(Val);
+      return Val;
     // Otherwise break the aggregate zero into multiple zeros and do
     // the insertion
     unsigned numOps = 
@@ -390,20 +389,20 @@ Constant *llvm::ConstantFoldInsertElementInstruction(LLVMContext &Context,
     std::vector<Constant*> Ops; 
     Ops.reserve(numOps);
     for (unsigned i = 0; i < numOps; ++i) {
-      const Constant *Op =
+      Constant *Op =
         (idxVal == i) ? Elt : Constant::getNullValue(Elt->getType());
-      Ops.push_back(const_cast<Constant*>(Op));
+      Ops.push_back(Op);
     }
     return ConstantVector::get(Ops);
   }
-  if (const ConstantVector *CVal = dyn_cast<ConstantVector>(Val)) {
+  if (ConstantVector *CVal = dyn_cast<ConstantVector>(Val)) {
     // Insertion of scalar constant into vector constant
     std::vector<Constant*> Ops; 
     Ops.reserve(CVal->getNumOperands());
     for (unsigned i = 0; i < CVal->getNumOperands(); ++i) {
-      const Constant *Op =
+      Constant *Op =
         (idxVal == i) ? Elt : cast<Constant>(CVal->getOperand(i));
-      Ops.push_back(const_cast<Constant*>(Op));
+      Ops.push_back(Op);
     }
     return ConstantVector::get(Ops);
   }
@@ -413,9 +412,9 @@ Constant *llvm::ConstantFoldInsertElementInstruction(LLVMContext &Context,
 
 /// GetVectorElement - If C is a ConstantVector, ConstantAggregateZero or Undef
 /// return the specified element value.  Otherwise return null.
-static Constant *GetVectorElement(LLVMContext &Context, const Constant *C,
+static Constant *GetVectorElement(LLVMContext &Context, Constant *C,
                                   unsigned EltNo) {
-  if (const ConstantVector *CV = dyn_cast<ConstantVector>(C))
+  if (ConstantVector *CV = dyn_cast<ConstantVector>(C))
     return CV->getOperand(EltNo);
 
   const Type *EltTy = cast<VectorType>(C->getType())->getElementType();
@@ -427,9 +426,9 @@ static Constant *GetVectorElement(LLVMContext &Context, const Constant *C,
 }
 
 Constant *llvm::ConstantFoldShuffleVectorInstruction(LLVMContext &Context,
-                                                     const Constant *V1,
-                                                     const Constant *V2,
-                                                     const Constant *Mask) {
+                                                     Constant *V1,
+                                                     Constant *V2,
+                                                     Constant *Mask) {
   // Undefined shuffle mask -> undefined value.
   if (isa<UndefValue>(Mask)) return UndefValue::get(V1->getType());
 
@@ -465,12 +464,12 @@ Constant *llvm::ConstantFoldShuffleVectorInstruction(LLVMContext &Context,
 }
 
 Constant *llvm::ConstantFoldExtractValueInstruction(LLVMContext &Context,
-                                                    const Constant *Agg,
+                                                    Constant *Agg,
                                                     const unsigned *Idxs,
                                                     unsigned NumIdx) {
   // Base case: no indices, so return the entire value.
   if (NumIdx == 0)
-    return const_cast<Constant *>(Agg);
+    return Agg;
 
   if (isa<UndefValue>(Agg))  // ev(undef, x) -> undef
     return UndefValue::get(ExtractValueInst::getIndexedType(Agg->getType(),
@@ -489,88 +488,92 @@ Constant *llvm::ConstantFoldExtractValueInstruction(LLVMContext &Context,
 }
 
 Constant *llvm::ConstantFoldInsertValueInstruction(LLVMContext &Context,
-                                                   const Constant *Agg,
-                                                   const Constant *Val,
+                                                   Constant *Agg,
+                                                   Constant *Val,
                                                    const unsigned *Idxs,
                                                    unsigned NumIdx) {
   // Base case: no indices, so replace the entire value.
   if (NumIdx == 0)
-    return const_cast<Constant *>(Val);
+    return Val;
 
   if (isa<UndefValue>(Agg)) {
     // Insertion of constant into aggregate undef
-    // Optimize away insertion of undef
+    // Optimize away insertion of undef.
     if (isa<UndefValue>(Val))
-      return const_cast<Constant*>(Agg);
+      return Agg;
+    
     // Otherwise break the aggregate undef into multiple undefs and do
-    // the insertion
+    // the insertion.
     const CompositeType *AggTy = cast<CompositeType>(Agg->getType());
     unsigned numOps;
     if (const ArrayType *AR = dyn_cast<ArrayType>(AggTy))
       numOps = AR->getNumElements();
     else
       numOps = cast<StructType>(AggTy)->getNumElements();
+    
     std::vector<Constant*> Ops(numOps); 
     for (unsigned i = 0; i < numOps; ++i) {
       const Type *MemberTy = AggTy->getTypeAtIndex(i);
-      const Constant *Op =
+      Constant *Op =
         (*Idxs == i) ?
         ConstantFoldInsertValueInstruction(Context, UndefValue::get(MemberTy),
                                            Val, Idxs+1, NumIdx-1) :
         UndefValue::get(MemberTy);
-      Ops[i] = const_cast<Constant*>(Op);
+      Ops[i] = Op;
     }
-    if (isa<StructType>(AggTy))
-      return ConstantStruct::get(Context, Ops);
-    else
-      return ConstantArray::get(cast<ArrayType>(AggTy), Ops);
+    
+    if (const StructType* ST = dyn_cast<StructType>(AggTy))
+      return ConstantStruct::get(Context, Ops, ST->isPacked());
+    return ConstantArray::get(cast<ArrayType>(AggTy), Ops);
   }
+  
   if (isa<ConstantAggregateZero>(Agg)) {
     // Insertion of constant into aggregate zero
-    // Optimize away insertion of zero
+    // Optimize away insertion of zero.
     if (Val->isNullValue())
-      return const_cast<Constant*>(Agg);
+      return Agg;
+    
     // Otherwise break the aggregate zero into multiple zeros and do
-    // the insertion
+    // the insertion.
     const CompositeType *AggTy = cast<CompositeType>(Agg->getType());
     unsigned numOps;
     if (const ArrayType *AR = dyn_cast<ArrayType>(AggTy))
       numOps = AR->getNumElements();
     else
       numOps = cast<StructType>(AggTy)->getNumElements();
+    
     std::vector<Constant*> Ops(numOps);
     for (unsigned i = 0; i < numOps; ++i) {
       const Type *MemberTy = AggTy->getTypeAtIndex(i);
-      const Constant *Op =
+      Constant *Op =
         (*Idxs == i) ?
         ConstantFoldInsertValueInstruction(Context, 
                                            Constant::getNullValue(MemberTy),
                                            Val, Idxs+1, NumIdx-1) :
         Constant::getNullValue(MemberTy);
-      Ops[i] = const_cast<Constant*>(Op);
+      Ops[i] = Op;
     }
-    if (isa<StructType>(AggTy))
-      return ConstantStruct::get(Context, Ops);
-    else
-      return ConstantArray::get(cast<ArrayType>(AggTy), Ops);
+    
+    if (const StructType* ST = dyn_cast<StructType>(AggTy))
+      return ConstantStruct::get(Context, Ops, ST->isPacked());
+    return ConstantArray::get(cast<ArrayType>(AggTy), Ops);
   }
+  
   if (isa<ConstantStruct>(Agg) || isa<ConstantArray>(Agg)) {
-    // Insertion of constant into aggregate constant
+    // Insertion of constant into aggregate constant.
     std::vector<Constant*> Ops(Agg->getNumOperands());
     for (unsigned i = 0; i < Agg->getNumOperands(); ++i) {
-      const Constant *Op =
+      Constant *Op =
         (*Idxs == i) ?
         ConstantFoldInsertValueInstruction(Context, Agg->getOperand(i),
                                            Val, Idxs+1, NumIdx-1) :
         Agg->getOperand(i);
-      Ops[i] = const_cast<Constant*>(Op);
+      Ops[i] = Op;
     }
-    Constant *C;
-    if (isa<StructType>(Agg->getType()))
-      C = ConstantStruct::get(Context, Ops);
-    else
-      C = ConstantArray::get(cast<ArrayType>(Agg->getType()), Ops);
-    return C;
+    
+    if (const StructType* ST = dyn_cast<StructType>(Agg->getType()))
+      return ConstantStruct::get(Context, Ops, ST->isPacked());
+    return ConstantArray::get(cast<ArrayType>(Agg->getType()), Ops);
   }
 
   return 0;
@@ -579,13 +582,12 @@ Constant *llvm::ConstantFoldInsertValueInstruction(LLVMContext &Context,
 
 Constant *llvm::ConstantFoldBinaryInstruction(LLVMContext &Context,
                                               unsigned Opcode,
-                                              const Constant *C1,
-                                              const Constant *C2) {
+                                              Constant *C1, Constant *C2) {
   // No compile-time operations on this type yet.
   if (C1->getType() == Type::getPPC_FP128Ty(Context))
     return 0;
 
-  // Handle UndefValue up front
+  // Handle UndefValue up front.
   if (isa<UndefValue>(C1) || isa<UndefValue>(C2)) {
     switch (Opcode) {
     case Instruction::Xor:
@@ -606,23 +608,23 @@ Constant *llvm::ConstantFoldBinaryInstruction(LLVMContext &Context,
     case Instruction::SRem:
       if (!isa<UndefValue>(C2))                    // undef / X -> 0
         return Constant::getNullValue(C1->getType());
-      return const_cast<Constant*>(C2);            // X / undef -> undef
+      return C2;                                   // X / undef -> undef
     case Instruction::Or:                          // X | undef -> -1
       if (const VectorType *PTy = dyn_cast<VectorType>(C1->getType()))
         return Constant::getAllOnesValue(PTy);
       return Constant::getAllOnesValue(C1->getType());
     case Instruction::LShr:
       if (isa<UndefValue>(C2) && isa<UndefValue>(C1))
-        return const_cast<Constant*>(C1);           // undef lshr undef -> undef
+        return C1;                                  // undef lshr undef -> undef
       return Constant::getNullValue(C1->getType()); // X lshr undef -> 0
                                                     // undef lshr X -> 0
     case Instruction::AShr:
       if (!isa<UndefValue>(C2))
-        return const_cast<Constant*>(C1);           // undef ashr X --> undef
+        return C1;                                  // undef ashr X --> undef
       else if (isa<UndefValue>(C1)) 
-        return const_cast<Constant*>(C1);           // undef ashr undef -> undef
+        return C1;                                  // undef ashr undef -> undef
       else
-        return const_cast<Constant*>(C1);           // X ashr undef --> X
+        return C1;                                  // X ashr undef --> X
     case Instruction::Shl:
       // undef << X -> 0   or   X << undef -> 0
       return Constant::getNullValue(C1->getType());
@@ -630,23 +632,23 @@ Constant *llvm::ConstantFoldBinaryInstruction(LLVMContext &Context,
   }
 
   // Handle simplifications when the RHS is a constant int.
-  if (const ConstantInt *CI2 = dyn_cast<ConstantInt>(C2)) {
+  if (ConstantInt *CI2 = dyn_cast<ConstantInt>(C2)) {
     switch (Opcode) {
     case Instruction::Add:
-      if (CI2->equalsInt(0)) return const_cast<Constant*>(C1);  // X + 0 == X
+      if (CI2->equalsInt(0)) return C1;                         // X + 0 == X
       break;
     case Instruction::Sub:
-      if (CI2->equalsInt(0)) return const_cast<Constant*>(C1);  // X - 0 == X
+      if (CI2->equalsInt(0)) return C1;                         // X - 0 == X
       break;
     case Instruction::Mul:
-      if (CI2->equalsInt(0)) return const_cast<Constant*>(C2);  // X * 0 == 0
+      if (CI2->equalsInt(0)) return C2;                         // X * 0 == 0
       if (CI2->equalsInt(1))
-        return const_cast<Constant*>(C1);                       // X * 1 == X
+        return C1;                                              // X * 1 == X
       break;
     case Instruction::UDiv:
     case Instruction::SDiv:
       if (CI2->equalsInt(1))
-        return const_cast<Constant*>(C1);                     // X / 1 == X
+        return C1;                                            // X / 1 == X
       if (CI2->equalsInt(0))
         return UndefValue::get(CI2->getType());               // X / 0 == undef
       break;
@@ -658,11 +660,11 @@ Constant *llvm::ConstantFoldBinaryInstruction(LLVMContext &Context,
         return UndefValue::get(CI2->getType());               // X % 0 == undef
       break;
     case Instruction::And:
-      if (CI2->isZero()) return const_cast<Constant*>(C2);    // X & 0 == 0
+      if (CI2->isZero()) return C2;                           // X & 0 == 0
       if (CI2->isAllOnesValue())
-        return const_cast<Constant*>(C1);                     // X & -1 == X
+        return C1;                                            // X & -1 == X
 
-      if (const ConstantExpr *CE1 = dyn_cast<ConstantExpr>(C1)) {
+      if (ConstantExpr *CE1 = dyn_cast<ConstantExpr>(C1)) {
         // (zext i32 to i64) & 4294967295 -> (zext i32 to i64)
         if (CE1->getOpcode() == Instruction::ZExt) {
           unsigned DstWidth = CI2->getType()->getBitWidth();
@@ -670,7 +672,7 @@ Constant *llvm::ConstantFoldBinaryInstruction(LLVMContext &Context,
             CE1->getOperand(0)->getType()->getPrimitiveSizeInBits();
           APInt PossiblySetBits(APInt::getLowBitsSet(DstWidth, SrcWidth));
           if ((PossiblySetBits & CI2->getValue()) == PossiblySetBits)
-            return const_cast<Constant*>(C1);
+            return C1;
         }
 
         // If and'ing the address of a global with a constant, fold it.
@@ -696,26 +698,39 @@ Constant *llvm::ConstantFoldBinaryInstruction(LLVMContext &Context,
       }
       break;
     case Instruction::Or:
-      if (CI2->equalsInt(0)) return const_cast<Constant*>(C1);  // X | 0 == X
+      if (CI2->equalsInt(0)) return C1;    // X | 0 == X
       if (CI2->isAllOnesValue())
-        return const_cast<Constant*>(C2);  // X | -1 == -1
+        return C2;                         // X | -1 == -1
       break;
     case Instruction::Xor:
-      if (CI2->equalsInt(0)) return const_cast<Constant*>(C1);  // X ^ 0 == X
+      if (CI2->equalsInt(0)) return C1;    // X ^ 0 == X
+
+      if (ConstantExpr *CE1 = dyn_cast<ConstantExpr>(C1)) {
+        switch (CE1->getOpcode()) {
+        default: break;
+        case Instruction::ICmp:
+        case Instruction::FCmp:
+          // cmp pred ^ true -> cmp !pred
+          assert(CI2->equalsInt(1));
+          CmpInst::Predicate pred = (CmpInst::Predicate)CE1->getPredicate();
+          pred = CmpInst::getInversePredicate(pred);
+          return ConstantExpr::getCompare(pred, CE1->getOperand(0),
+                                          CE1->getOperand(1));
+        }
+      }
       break;
     case Instruction::AShr:
       // ashr (zext C to Ty), C2 -> lshr (zext C, CSA), C2
-      if (const ConstantExpr *CE1 = dyn_cast<ConstantExpr>(C1))
+      if (ConstantExpr *CE1 = dyn_cast<ConstantExpr>(C1))
         if (CE1->getOpcode() == Instruction::ZExt)  // Top bits known zero.
-          return ConstantExpr::getLShr(const_cast<Constant*>(C1),
-                                             const_cast<Constant*>(C2));
+          return ConstantExpr::getLShr(C1, C2);
       break;
     }
   }
 
   // At this point we know neither constant is an UndefValue.
-  if (const ConstantInt *CI1 = dyn_cast<ConstantInt>(C1)) {
-    if (const ConstantInt *CI2 = dyn_cast<ConstantInt>(C2)) {
+  if (ConstantInt *CI1 = dyn_cast<ConstantInt>(C1)) {
+    if (ConstantInt *CI2 = dyn_cast<ConstantInt>(C2)) {
       using namespace APIntOps;
       const APInt &C1V = CI1->getValue();
       const APInt &C2V = CI2->getValue();
@@ -782,13 +797,13 @@ Constant *llvm::ConstantFoldBinaryInstruction(LLVMContext &Context,
     case Instruction::LShr:
     case Instruction::AShr:
     case Instruction::Shl:
-      if (CI1->equalsInt(0)) return const_cast<Constant*>(C1);
+      if (CI1->equalsInt(0)) return C1;
       break;
     default:
       break;
     }
-  } else if (const ConstantFP *CFP1 = dyn_cast<ConstantFP>(C1)) {
-    if (const ConstantFP *CFP2 = dyn_cast<ConstantFP>(C2)) {
+  } else if (ConstantFP *CFP1 = dyn_cast<ConstantFP>(C1)) {
+    if (ConstantFP *CFP2 = dyn_cast<ConstantFP>(C2)) {
       APFloat C1V = CFP1->getValueAPF();
       APFloat C2V = CFP2->getValueAPF();
       APFloat C3V = C1V;  // copy for modification
@@ -813,14 +828,14 @@ Constant *llvm::ConstantFoldBinaryInstruction(LLVMContext &Context,
       }
     }
   } else if (const VectorType *VTy = dyn_cast<VectorType>(C1->getType())) {
-    const ConstantVector *CP1 = dyn_cast<ConstantVector>(C1);
-    const ConstantVector *CP2 = dyn_cast<ConstantVector>(C2);
+    ConstantVector *CP1 = dyn_cast<ConstantVector>(C1);
+    ConstantVector *CP2 = dyn_cast<ConstantVector>(C2);
     if ((CP1 != NULL || isa<ConstantAggregateZero>(C1)) &&
         (CP2 != NULL || isa<ConstantAggregateZero>(C2))) {
       std::vector<Constant*> Res;
       const Type* EltTy = VTy->getElementType();  
-      const Constant *C1 = 0;
-      const Constant *C2 = 0;
+      Constant *C1 = 0;
+      Constant *C2 = 0;
       switch (Opcode) {
       default:
         break;
@@ -828,144 +843,126 @@ Constant *llvm::ConstantFoldBinaryInstruction(LLVMContext &Context,
         for (unsigned i = 0, e = VTy->getNumElements(); i != e; ++i) {
           C1 = CP1 ? CP1->getOperand(i) : Constant::getNullValue(EltTy);
           C2 = CP2 ? CP2->getOperand(i) : Constant::getNullValue(EltTy);
-          Res.push_back(ConstantExpr::getAdd(const_cast<Constant*>(C1),
-                                                   const_cast<Constant*>(C2)));
+          Res.push_back(ConstantExpr::getAdd(C1, C2));
         }
         return ConstantVector::get(Res);
       case Instruction::FAdd:
         for (unsigned i = 0, e = VTy->getNumElements(); i != e; ++i) {
           C1 = CP1 ? CP1->getOperand(i) : Constant::getNullValue(EltTy);
           C2 = CP2 ? CP2->getOperand(i) : Constant::getNullValue(EltTy);
-          Res.push_back(ConstantExpr::getFAdd(const_cast<Constant*>(C1),
-                                                    const_cast<Constant*>(C2)));
+          Res.push_back(ConstantExpr::getFAdd(C1, C2));
         }
         return ConstantVector::get(Res);
       case Instruction::Sub:
         for (unsigned i = 0, e = VTy->getNumElements(); i != e; ++i) {
           C1 = CP1 ? CP1->getOperand(i) : Constant::getNullValue(EltTy);
           C2 = CP2 ? CP2->getOperand(i) : Constant::getNullValue(EltTy);
-          Res.push_back(ConstantExpr::getSub(const_cast<Constant*>(C1),
-                                                   const_cast<Constant*>(C2)));
+          Res.push_back(ConstantExpr::getSub(C1, C2));
         }
         return ConstantVector::get(Res);
       case Instruction::FSub:
         for (unsigned i = 0, e = VTy->getNumElements(); i != e; ++i) {
           C1 = CP1 ? CP1->getOperand(i) : Constant::getNullValue(EltTy);
           C2 = CP2 ? CP2->getOperand(i) : Constant::getNullValue(EltTy);
-          Res.push_back(ConstantExpr::getFSub(const_cast<Constant*>(C1),
-                                                    const_cast<Constant*>(C2)));
+          Res.push_back(ConstantExpr::getFSub(C1, C2));
         }
         return ConstantVector::get(Res);
       case Instruction::Mul:
         for (unsigned i = 0, e = VTy->getNumElements(); i != e; ++i) {
           C1 = CP1 ? CP1->getOperand(i) : Constant::getNullValue(EltTy);
           C2 = CP2 ? CP2->getOperand(i) : Constant::getNullValue(EltTy);
-          Res.push_back(ConstantExpr::getMul(const_cast<Constant*>(C1),
-                                                   const_cast<Constant*>(C2)));
+          Res.push_back(ConstantExpr::getMul(C1, C2));
         }
         return ConstantVector::get(Res);
       case Instruction::FMul:
         for (unsigned i = 0, e = VTy->getNumElements(); i != e; ++i) {
           C1 = CP1 ? CP1->getOperand(i) : Constant::getNullValue(EltTy);
           C2 = CP2 ? CP2->getOperand(i) : Constant::getNullValue(EltTy);
-          Res.push_back(ConstantExpr::getFMul(const_cast<Constant*>(C1),
-                                                    const_cast<Constant*>(C2)));
+          Res.push_back(ConstantExpr::getFMul(C1, C2));
         }
         return ConstantVector::get(Res);
       case Instruction::UDiv:
         for (unsigned i = 0, e = VTy->getNumElements(); i != e; ++i) {
           C1 = CP1 ? CP1->getOperand(i) : Constant::getNullValue(EltTy);
           C2 = CP2 ? CP2->getOperand(i) : Constant::getNullValue(EltTy);
-          Res.push_back(ConstantExpr::getUDiv(const_cast<Constant*>(C1),
-                                                    const_cast<Constant*>(C2)));
+          Res.push_back(ConstantExpr::getUDiv(C1, C2));
         }
         return ConstantVector::get(Res);
       case Instruction::SDiv:
         for (unsigned i = 0, e = VTy->getNumElements(); i != e; ++i) {
           C1 = CP1 ? CP1->getOperand(i) : Constant::getNullValue(EltTy);
           C2 = CP2 ? CP2->getOperand(i) : Constant::getNullValue(EltTy);
-          Res.push_back(ConstantExpr::getSDiv(const_cast<Constant*>(C1),
-                                                    const_cast<Constant*>(C2)));
+          Res.push_back(ConstantExpr::getSDiv(C1, C2));
         }
         return ConstantVector::get(Res);
       case Instruction::FDiv:
         for (unsigned i = 0, e = VTy->getNumElements(); i != e; ++i) {
           C1 = CP1 ? CP1->getOperand(i) : Constant::getNullValue(EltTy);
           C2 = CP2 ? CP2->getOperand(i) : Constant::getNullValue(EltTy);
-          Res.push_back(ConstantExpr::getFDiv(const_cast<Constant*>(C1),
-                                                    const_cast<Constant*>(C2)));
+          Res.push_back(ConstantExpr::getFDiv(C1, C2));
         }
         return ConstantVector::get(Res);
       case Instruction::URem:
         for (unsigned i = 0, e = VTy->getNumElements(); i != e; ++i) {
           C1 = CP1 ? CP1->getOperand(i) : Constant::getNullValue(EltTy);
           C2 = CP2 ? CP2->getOperand(i) : Constant::getNullValue(EltTy);
-          Res.push_back(ConstantExpr::getURem(const_cast<Constant*>(C1),
-                                                    const_cast<Constant*>(C2)));
+          Res.push_back(ConstantExpr::getURem(C1, C2));
         }
         return ConstantVector::get(Res);
       case Instruction::SRem:
         for (unsigned i = 0, e = VTy->getNumElements(); i != e; ++i) {
           C1 = CP1 ? CP1->getOperand(i) : Constant::getNullValue(EltTy);
           C2 = CP2 ? CP2->getOperand(i) : Constant::getNullValue(EltTy);
-          Res.push_back(ConstantExpr::getSRem(const_cast<Constant*>(C1),
-                                                    const_cast<Constant*>(C2)));
+          Res.push_back(ConstantExpr::getSRem(C1, C2));
         }
         return ConstantVector::get(Res);
       case Instruction::FRem:
         for (unsigned i = 0, e = VTy->getNumElements(); i != e; ++i) {
           C1 = CP1 ? CP1->getOperand(i) : Constant::getNullValue(EltTy);
           C2 = CP2 ? CP2->getOperand(i) : Constant::getNullValue(EltTy);
-          Res.push_back(ConstantExpr::getFRem(const_cast<Constant*>(C1),
-                                                    const_cast<Constant*>(C2)));
+          Res.push_back(ConstantExpr::getFRem(C1, C2));
         }
         return ConstantVector::get(Res);
       case Instruction::And: 
         for (unsigned i = 0, e = VTy->getNumElements(); i != e; ++i) {
           C1 = CP1 ? CP1->getOperand(i) : Constant::getNullValue(EltTy);
           C2 = CP2 ? CP2->getOperand(i) : Constant::getNullValue(EltTy);
-          Res.push_back(ConstantExpr::getAnd(const_cast<Constant*>(C1),
-                                                   const_cast<Constant*>(C2)));
+          Res.push_back(ConstantExpr::getAnd(C1, C2));
         }
         return ConstantVector::get(Res);
       case Instruction::Or:
         for (unsigned i = 0, e = VTy->getNumElements(); i != e; ++i) {
           C1 = CP1 ? CP1->getOperand(i) : Constant::getNullValue(EltTy);
           C2 = CP2 ? CP2->getOperand(i) : Constant::getNullValue(EltTy);
-          Res.push_back(ConstantExpr::getOr(const_cast<Constant*>(C1),
-                                                  const_cast<Constant*>(C2)));
+          Res.push_back(ConstantExpr::getOr(C1, C2));
         }
         return ConstantVector::get(Res);
       case Instruction::Xor:
         for (unsigned i = 0, e = VTy->getNumElements(); i != e; ++i) {
           C1 = CP1 ? CP1->getOperand(i) : Constant::getNullValue(EltTy);
           C2 = CP2 ? CP2->getOperand(i) : Constant::getNullValue(EltTy);
-          Res.push_back(ConstantExpr::getXor(const_cast<Constant*>(C1),
-                                                   const_cast<Constant*>(C2)));
+          Res.push_back(ConstantExpr::getXor(C1, C2));
         }
         return ConstantVector::get(Res);
       case Instruction::LShr:
         for (unsigned i = 0, e = VTy->getNumElements(); i != e; ++i) {
           C1 = CP1 ? CP1->getOperand(i) : Constant::getNullValue(EltTy);
           C2 = CP2 ? CP2->getOperand(i) : Constant::getNullValue(EltTy);
-          Res.push_back(ConstantExpr::getLShr(const_cast<Constant*>(C1),
-                                                    const_cast<Constant*>(C2)));
+          Res.push_back(ConstantExpr::getLShr(C1, C2));
         }
         return ConstantVector::get(Res);
       case Instruction::AShr:
         for (unsigned i = 0, e = VTy->getNumElements(); i != e; ++i) {
           C1 = CP1 ? CP1->getOperand(i) : Constant::getNullValue(EltTy);
           C2 = CP2 ? CP2->getOperand(i) : Constant::getNullValue(EltTy);
-          Res.push_back(ConstantExpr::getAShr(const_cast<Constant*>(C1),
-                                                    const_cast<Constant*>(C2)));
+          Res.push_back(ConstantExpr::getAShr(C1, C2));
         }
         return ConstantVector::get(Res);
       case Instruction::Shl:
         for (unsigned i = 0, e = VTy->getNumElements(); i != e; ++i) {
           C1 = CP1 ? CP1->getOperand(i) : Constant::getNullValue(EltTy);
           C2 = CP2 ? CP2->getOperand(i) : Constant::getNullValue(EltTy);
-          Res.push_back(ConstantExpr::getShl(const_cast<Constant*>(C1),
-                                                   const_cast<Constant*>(C2)));
+          Res.push_back(ConstantExpr::getShl(C1, C2));
         }
         return ConstantVector::get(Res);
       }
@@ -1002,6 +999,35 @@ Constant *llvm::ConstantFoldBinaryInstruction(LLVMContext &Context,
     case Instruction::SRem:
     case Instruction::FRem:
     default:  // These instructions cannot be flopped around.
+      break;
+    }
+  }
+
+  // i1 can be simplified in many cases.
+  if (C1->getType() == Type::getInt1Ty(Context)) {
+    switch (Opcode) {
+    case Instruction::Add:
+    case Instruction::Sub:
+      return ConstantExpr::getXor(C1, C2);
+    case Instruction::Mul:
+      return ConstantExpr::getAnd(C1, C2);
+    case Instruction::Shl:
+    case Instruction::LShr:
+    case Instruction::AShr:
+      // We can assume that C2 == 0.  If it were one the result would be
+      // undefined because the shift value is as large as the bitwidth.
+      return C1;
+    case Instruction::SDiv:
+    case Instruction::UDiv:
+      // We can assume that C2 == 1.  If it were zero the result would be
+      // undefined through division by zero.
+      return C1;
+    case Instruction::URem:
+    case Instruction::SRem:
+      // We can assume that C2 == 1.  If it were zero the result would be
+      // undefined through division by zero.
+      return ConstantInt::getFalse(Context);
+    default:
       break;
     }
   }
@@ -1079,8 +1105,7 @@ static int IdxCompare(LLVMContext &Context, Constant *C1, Constant *C2,
 /// operand is always the most "complex" of the two.  We consider ConstantFP
 /// to be the simplest, and ConstantExprs to be the most complex.
 static FCmpInst::Predicate evaluateFCmpRelation(LLVMContext &Context,
-                                                const Constant *V1, 
-                                                const Constant *V2) {
+                                                Constant *V1, Constant *V2) {
   assert(V1->getType() == V2->getType() &&
          "Cannot compare values of different types!");
 
@@ -1095,18 +1120,16 @@ static FCmpInst::Predicate evaluateFCmpRelation(LLVMContext &Context,
     if (!isa<ConstantExpr>(V2)) {
       // We distilled thisUse the standard constant folder for a few cases
       ConstantInt *R = 0;
-      Constant *C1 = const_cast<Constant*>(V1);
-      Constant *C2 = const_cast<Constant*>(V2);
       R = dyn_cast<ConstantInt>(
-                      ConstantExpr::getFCmp(FCmpInst::FCMP_OEQ, C1, C2));
+                      ConstantExpr::getFCmp(FCmpInst::FCMP_OEQ, V1, V2));
       if (R && !R->isZero()) 
         return FCmpInst::FCMP_OEQ;
       R = dyn_cast<ConstantInt>(
-                      ConstantExpr::getFCmp(FCmpInst::FCMP_OLT, C1, C2));
+                      ConstantExpr::getFCmp(FCmpInst::FCMP_OLT, V1, V2));
       if (R && !R->isZero()) 
         return FCmpInst::FCMP_OLT;
       R = dyn_cast<ConstantInt>(
-                      ConstantExpr::getFCmp(FCmpInst::FCMP_OGT, C1, C2));
+                      ConstantExpr::getFCmp(FCmpInst::FCMP_OGT, V1, V2));
       if (R && !R->isZero()) 
         return FCmpInst::FCMP_OGT;
 
@@ -1121,7 +1144,7 @@ static FCmpInst::Predicate evaluateFCmpRelation(LLVMContext &Context,
   } else {
     // Ok, the LHS is known to be a constantexpr.  The RHS can be any of a
     // constantexpr or a simple constant.
-    const ConstantExpr *CE1 = cast<ConstantExpr>(V1);
+    ConstantExpr *CE1 = cast<ConstantExpr>(V1);
     switch (CE1->getOpcode()) {
     case Instruction::FPTrunc:
     case Instruction::FPExt:
@@ -1151,8 +1174,8 @@ static FCmpInst::Predicate evaluateFCmpRelation(LLVMContext &Context,
 /// GlobalValues, followed by ConstantExpr's (the most complex).
 ///
 static ICmpInst::Predicate evaluateICmpRelation(LLVMContext &Context,
-                                                const Constant *V1, 
-                                                const Constant *V2,
+                                                Constant *V1, 
+                                                Constant *V2,
                                                 bool isSigned) {
   assert(V1->getType() == V2->getType() &&
          "Cannot compare different types of values!");
@@ -1163,18 +1186,16 @@ static ICmpInst::Predicate evaluateICmpRelation(LLVMContext &Context,
       // We distilled this down to a simple case, use the standard constant
       // folder.
       ConstantInt *R = 0;
-      Constant *C1 = const_cast<Constant*>(V1);
-      Constant *C2 = const_cast<Constant*>(V2);
       ICmpInst::Predicate pred = ICmpInst::ICMP_EQ;
-      R = dyn_cast<ConstantInt>(ConstantExpr::getICmp(pred, C1, C2));
+      R = dyn_cast<ConstantInt>(ConstantExpr::getICmp(pred, V1, V2));
       if (R && !R->isZero()) 
         return pred;
       pred = isSigned ? ICmpInst::ICMP_SLT : ICmpInst::ICMP_ULT;
-      R = dyn_cast<ConstantInt>(ConstantExpr::getICmp(pred, C1, C2));
+      R = dyn_cast<ConstantInt>(ConstantExpr::getICmp(pred, V1, V2));
       if (R && !R->isZero())
         return pred;
       pred = isSigned ? ICmpInst::ICMP_SGT : ICmpInst::ICMP_UGT;
-      R = dyn_cast<ConstantInt>(ConstantExpr::getICmp(pred, C1, C2));
+      R = dyn_cast<ConstantInt>(ConstantExpr::getICmp(pred, V1, V2));
       if (R && !R->isZero())
         return pred;
 
@@ -1214,8 +1235,8 @@ static ICmpInst::Predicate evaluateICmpRelation(LLVMContext &Context,
   } else {
     // Ok, the LHS is known to be a constantexpr.  The RHS can be any of a
     // constantexpr, a CPR, or a simple constant.
-    const ConstantExpr *CE1 = cast<ConstantExpr>(V1);
-    const Constant *CE1Op0 = CE1->getOperand(0);
+    ConstantExpr *CE1 = cast<ConstantExpr>(V1);
+    Constant *CE1Op0 = CE1->getOperand(0);
 
     switch (CE1->getOpcode()) {
     case Instruction::Trunc:
@@ -1234,28 +1255,12 @@ static ICmpInst::Predicate evaluateICmpRelation(LLVMContext &Context,
       // null pointer, do the comparison with the pre-casted value.
       if (V2->isNullValue() &&
           (isa<PointerType>(CE1->getType()) || CE1->getType()->isInteger())) {
-        bool sgnd = isSigned;
         if (CE1->getOpcode() == Instruction::ZExt) isSigned = false;
         if (CE1->getOpcode() == Instruction::SExt) isSigned = true;
         return evaluateICmpRelation(Context, CE1Op0,
                                     Constant::getNullValue(CE1Op0->getType()), 
-                                    sgnd);
+                                    isSigned);
       }
-
-      // If the dest type is a pointer type, and the RHS is a constantexpr cast
-      // from the same type as the src of the LHS, evaluate the inputs.  This is
-      // important for things like "icmp eq (cast 4 to int*), (cast 5 to int*)",
-      // which happens a lot in compilers with tagged integers.
-      if (const ConstantExpr *CE2 = dyn_cast<ConstantExpr>(V2))
-        if (CE2->isCast() && isa<PointerType>(CE1->getType()) &&
-            CE1->getOperand(0)->getType() == CE2->getOperand(0)->getType() &&
-            CE1->getOperand(0)->getType()->isInteger()) {
-          bool sgnd = isSigned;
-          if (CE1->getOpcode() == Instruction::ZExt) isSigned = false;
-          if (CE1->getOpcode() == Instruction::SExt) isSigned = true;
-          return evaluateICmpRelation(Context, CE1->getOperand(0), 
-                                      CE2->getOperand(0), sgnd);
-        }
       break;
 
     case Instruction::GetElementPtr:
@@ -1272,7 +1277,7 @@ static ICmpInst::Predicate evaluateICmpRelation(LLVMContext &Context,
           else 
             // If its not weak linkage, the GVal must have a non-zero address
             // so the result is greater-than
-            return isSigned ? ICmpInst::ICMP_SGT :  ICmpInst::ICMP_UGT;
+            return isSigned ? ICmpInst::ICMP_SGT : ICmpInst::ICMP_UGT;
         } else if (isa<ConstantPointerNull>(CE1Op0)) {
           // If we are indexing from a null pointer, check to see if we have any
           // non-zero indices.
@@ -1311,8 +1316,8 @@ static ICmpInst::Predicate evaluateICmpRelation(LLVMContext &Context,
           }
         }
       } else {
-        const ConstantExpr *CE2 = cast<ConstantExpr>(V2);
-        const Constant *CE2Op0 = CE2->getOperand(0);
+        ConstantExpr *CE2 = cast<ConstantExpr>(V2);
+        Constant *CE2Op0 = CE2->getOperand(0);
 
         // There are MANY other foldings that we could perform here.  They will
         // probably be added on demand, as they seem needed.
@@ -1328,6 +1333,14 @@ static ICmpInst::Predicate evaluateICmpRelation(LLVMContext &Context,
             // same global.  From this, we can precisely determine the relative
             // ordering of the resultant pointers.
             unsigned i = 1;
+
+            // The logic below assumes that the result of the comparison
+            // can be determined by finding the first index that differs.
+            // This doesn't work if there is over-indexing in any
+            // subsequent indices, so check for that case first.
+            if (!CE1->isGEPWithNoNotionalOverIndexing() ||
+                !CE2->isGEPWithNoNotionalOverIndexing())
+               return ICmpInst::BAD_ICMP_PREDICATE; // Might be equal.
 
             // Compare all of the operands the GEP's have in common.
             gep_type_iterator GTI = gep_type_begin(CE1);
@@ -1371,8 +1384,7 @@ static ICmpInst::Predicate evaluateICmpRelation(LLVMContext &Context,
 
 Constant *llvm::ConstantFoldCompareInstruction(LLVMContext &Context,
                                                unsigned short pred, 
-                                               const Constant *C1, 
-                                               const Constant *C2) {
+                                               Constant *C1, Constant *C2) {
   const Type *ResultTy;
   if (const VectorType *VT = dyn_cast<VectorType>(C1->getType()))
     ResultTy = VectorType::get(Type::getInt1Ty(Context), VT->getNumElements());
@@ -1414,6 +1426,20 @@ Constant *llvm::ConstantFoldCompareInstruction(LLVMContext &Context,
         else if (pred == ICmpInst::ICMP_NE)
           return ConstantInt::getTrue(Context);
       }
+  }
+
+  // If the comparison is a comparison between two i1's, simplify it.
+  if (C1->getType() == Type::getInt1Ty(Context)) {
+    switch(pred) {
+    case ICmpInst::ICMP_EQ:
+      if (isa<ConstantInt>(C2))
+        return ConstantExpr::getXor(C1, ConstantExpr::getNot(C2));
+      return ConstantExpr::getXor(ConstantExpr::getNot(C1), C2);
+    case ICmpInst::ICMP_NE:
+      return ConstantExpr::getXor(C1, C2);
+    default:
+      break;
+    }
   }
 
   if (isa<ConstantInt>(C1) && isa<ConstantInt>(C2)) {
@@ -1569,64 +1595,57 @@ Constant *llvm::ConstantFoldCompareInstruction(LLVMContext &Context,
     case ICmpInst::ICMP_EQ:   // We know the constants are equal!
       // If we know the constants are equal, we can decide the result of this
       // computation precisely.
-      Result = (pred == ICmpInst::ICMP_EQ  ||
-                pred == ICmpInst::ICMP_ULE ||
-                pred == ICmpInst::ICMP_SLE ||
-                pred == ICmpInst::ICMP_UGE ||
-                pred == ICmpInst::ICMP_SGE);
+      Result = ICmpInst::isTrueWhenEqual((ICmpInst::Predicate)pred);
       break;
     case ICmpInst::ICMP_ULT:
-      // If we know that C1 < C2, we can decide the result of this computation
-      // precisely.
-      Result = (pred == ICmpInst::ICMP_ULT ||
-                pred == ICmpInst::ICMP_NE  ||
-                pred == ICmpInst::ICMP_ULE);
+      switch (pred) {
+      case ICmpInst::ICMP_ULT: case ICmpInst::ICMP_NE: case ICmpInst::ICMP_ULE:
+        Result = 1; break;
+      case ICmpInst::ICMP_UGT: case ICmpInst::ICMP_EQ: case ICmpInst::ICMP_UGE:
+        Result = 0; break;
+      }
       break;
     case ICmpInst::ICMP_SLT:
-      // If we know that C1 < C2, we can decide the result of this computation
-      // precisely.
-      Result = (pred == ICmpInst::ICMP_SLT ||
-                pred == ICmpInst::ICMP_NE  ||
-                pred == ICmpInst::ICMP_SLE);
+      switch (pred) {
+      case ICmpInst::ICMP_SLT: case ICmpInst::ICMP_NE: case ICmpInst::ICMP_SLE:
+        Result = 1; break;
+      case ICmpInst::ICMP_SGT: case ICmpInst::ICMP_EQ: case ICmpInst::ICMP_SGE:
+        Result = 0; break;
+      }
       break;
     case ICmpInst::ICMP_UGT:
-      // If we know that C1 > C2, we can decide the result of this computation
-      // precisely.
-      Result = (pred == ICmpInst::ICMP_UGT ||
-                pred == ICmpInst::ICMP_NE  ||
-                pred == ICmpInst::ICMP_UGE);
+      switch (pred) {
+      case ICmpInst::ICMP_UGT: case ICmpInst::ICMP_NE: case ICmpInst::ICMP_UGE:
+        Result = 1; break;
+      case ICmpInst::ICMP_ULT: case ICmpInst::ICMP_EQ: case ICmpInst::ICMP_ULE:
+        Result = 0; break;
+      }
       break;
     case ICmpInst::ICMP_SGT:
-      // If we know that C1 > C2, we can decide the result of this computation
-      // precisely.
-      Result = (pred == ICmpInst::ICMP_SGT ||
-                pred == ICmpInst::ICMP_NE  ||
-                pred == ICmpInst::ICMP_SGE);
+      switch (pred) {
+      case ICmpInst::ICMP_SGT: case ICmpInst::ICMP_NE: case ICmpInst::ICMP_SGE:
+        Result = 1; break;
+      case ICmpInst::ICMP_SLT: case ICmpInst::ICMP_EQ: case ICmpInst::ICMP_SLE:
+        Result = 0; break;
+      }
       break;
     case ICmpInst::ICMP_ULE:
-      // If we know that C1 <= C2, we can only partially decide this relation.
       if (pred == ICmpInst::ICMP_UGT) Result = 0;
-      if (pred == ICmpInst::ICMP_ULT) Result = 1;
+      if (pred == ICmpInst::ICMP_ULT || pred == ICmpInst::ICMP_ULE) Result = 1;
       break;
     case ICmpInst::ICMP_SLE:
-      // If we know that C1 <= C2, we can only partially decide this relation.
       if (pred == ICmpInst::ICMP_SGT) Result = 0;
-      if (pred == ICmpInst::ICMP_SLT) Result = 1;
+      if (pred == ICmpInst::ICMP_SLT || pred == ICmpInst::ICMP_SLE) Result = 1;
       break;
-
     case ICmpInst::ICMP_UGE:
-      // If we know that C1 >= C2, we can only partially decide this relation.
       if (pred == ICmpInst::ICMP_ULT) Result = 0;
-      if (pred == ICmpInst::ICMP_UGT) Result = 1;
+      if (pred == ICmpInst::ICMP_UGT || pred == ICmpInst::ICMP_UGE) Result = 1;
       break;
     case ICmpInst::ICMP_SGE:
-      // If we know that C1 >= C2, we can only partially decide this relation.
       if (pred == ICmpInst::ICMP_SLT) Result = 0;
-      if (pred == ICmpInst::ICMP_SGT) Result = 1;
+      if (pred == ICmpInst::ICMP_SGT || pred == ICmpInst::ICMP_SGE) Result = 1;
       break;
-
     case ICmpInst::ICMP_NE:
-      // If we know that C1 != C2, we can only partially decide this relation.
       if (pred == ICmpInst::ICMP_EQ) Result = 0;
       if (pred == ICmpInst::ICMP_NE) Result = 1;
       break;
@@ -1635,6 +1654,32 @@ Constant *llvm::ConstantFoldCompareInstruction(LLVMContext &Context,
     // If we evaluated the result, return it now.
     if (Result != -1)
       return ConstantInt::get(Type::getInt1Ty(Context), Result);
+
+    // If the right hand side is a bitcast, try using its inverse to simplify
+    // it by moving it to the left hand side.
+    if (ConstantExpr *CE2 = dyn_cast<ConstantExpr>(C2)) {
+      if (CE2->getOpcode() == Instruction::BitCast) {
+        Constant *CE2Op0 = CE2->getOperand(0);
+        Constant *Inverse = ConstantExpr::getBitCast(C1, CE2Op0->getType());
+        return ConstantExpr::getICmp(pred, Inverse, CE2Op0);
+      }
+    }
+
+    // If the left hand side is an extension, try eliminating it.
+    if (ConstantExpr *CE1 = dyn_cast<ConstantExpr>(C1)) {
+      if (CE1->getOpcode() == Instruction::SExt ||
+          CE1->getOpcode() == Instruction::ZExt) {
+        Constant *CE1Op0 = CE1->getOperand(0);
+        Constant *CE1Inverse = ConstantExpr::getTrunc(CE1, CE1Op0->getType());
+        if (CE1Inverse == CE1Op0) {
+          // Check whether we can safely truncate the right hand side.
+          Constant *C2Inverse = ConstantExpr::getTrunc(C2, CE1Op0->getType());
+          if (ConstantExpr::getZExt(C2Inverse, C2->getType()) == C2) {
+            return ConstantExpr::getICmp(pred, CE1Inverse, C2Inverse);
+          }
+        }
+      }
+    }
 
     if (!isa<ConstantExpr>(C1) && isa<ConstantExpr>(C2)) {
       // If C2 is a constant expr and C1 isn't, flip them around and fold the
@@ -1665,13 +1710,33 @@ Constant *llvm::ConstantFoldCompareInstruction(LLVMContext &Context,
   return 0;
 }
 
+/// isInBoundsIndices - Test whether the given sequence of *normalized* indices
+/// is "inbounds".
+static bool isInBoundsIndices(Constant *const *Idxs, size_t NumIdx) {
+  // No indices means nothing that could be out of bounds.
+  if (NumIdx == 0) return true;
+
+  // If the first index is zero, it's in bounds.
+  if (Idxs[0]->isNullValue()) return true;
+
+  // If the first index is one and all the rest are zero, it's in bounds,
+  // by the one-past-the-end rule.
+  if (!cast<ConstantInt>(Idxs[0])->isOne())
+    return false;
+  for (unsigned i = 1, e = NumIdx; i != e; ++i)
+    if (!Idxs[i]->isNullValue())
+      return false;
+  return true;
+}
+
 Constant *llvm::ConstantFoldGetElementPtr(LLVMContext &Context, 
-                                          const Constant *C,
+                                          Constant *C,
+                                          bool inBounds,
                                           Constant* const *Idxs,
                                           unsigned NumIdx) {
   if (NumIdx == 0 ||
       (NumIdx == 1 && Idxs[0]->isNullValue()))
-    return const_cast<Constant*>(C);
+    return C;
 
   if (isa<UndefValue>(C)) {
     const PointerType *Ptr = cast<PointerType>(C->getType());
@@ -1701,7 +1766,7 @@ Constant *llvm::ConstantFoldGetElementPtr(LLVMContext &Context,
     }
   }
 
-  if (ConstantExpr *CE = dyn_cast<ConstantExpr>(const_cast<Constant*>(C))) {
+  if (ConstantExpr *CE = dyn_cast<ConstantExpr>(C)) {
     // Combine Indices - If the source pointer to this getelementptr instruction
     // is a getelementptr instruction, combine the indices of the two
     // getelementptr instructions into a single instruction.
@@ -1738,9 +1803,13 @@ Constant *llvm::ConstantFoldGetElementPtr(LLVMContext &Context,
 
         NewIndices.push_back(Combined);
         NewIndices.insert(NewIndices.end(), Idxs+1, Idxs+NumIdx);
-        return ConstantExpr::getGetElementPtr(CE->getOperand(0),
-                                              &NewIndices[0],
-                                              NewIndices.size());
+        return (inBounds && cast<GEPOperator>(CE)->isInBounds()) ?
+          ConstantExpr::getInBoundsGetElementPtr(CE->getOperand(0),
+                                                 &NewIndices[0],
+                                                 NewIndices.size()) :
+          ConstantExpr::getGetElementPtr(CE->getOperand(0),
+                                         &NewIndices[0],
+                                         NewIndices.size());
       }
     }
 
@@ -1756,7 +1825,10 @@ Constant *llvm::ConstantFoldGetElementPtr(LLVMContext &Context,
           if (const ArrayType *CAT =
         dyn_cast<ArrayType>(cast<PointerType>(C->getType())->getElementType()))
             if (CAT->getElementType() == SAT->getElementType())
-              return ConstantExpr::getGetElementPtr(
+              return inBounds ?
+                ConstantExpr::getInBoundsGetElementPtr(
+                      (Constant*)CE->getOperand(0), Idxs, NumIdx) :
+                ConstantExpr::getGetElementPtr(
                       (Constant*)CE->getOperand(0), Idxs, NumIdx);
     }
 
@@ -1781,5 +1853,69 @@ Constant *llvm::ConstantFoldGetElementPtr(LLVMContext &Context,
       return ConstantExpr::getIntToPtr(Base, CE->getType());
     }
   }
+
+  // Check to see if any array indices are not within the corresponding
+  // notional array bounds. If so, try to determine if they can be factored
+  // out into preceding dimensions.
+  bool Unknown = false;
+  SmallVector<Constant *, 8> NewIdxs;
+  const Type *Ty = C->getType();
+  const Type *Prev = 0;
+  for (unsigned i = 0; i != NumIdx;
+       Prev = Ty, Ty = cast<CompositeType>(Ty)->getTypeAtIndex(Idxs[i]), ++i) {
+    if (ConstantInt *CI = dyn_cast<ConstantInt>(Idxs[i])) {
+      if (const ArrayType *ATy = dyn_cast<ArrayType>(Ty))
+        if (ATy->getNumElements() <= INT64_MAX &&
+            ATy->getNumElements() != 0 &&
+            CI->getSExtValue() >= (int64_t)ATy->getNumElements()) {
+          if (isa<SequentialType>(Prev)) {
+            // It's out of range, but we can factor it into the prior
+            // dimension.
+            NewIdxs.resize(NumIdx);
+            ConstantInt *Factor = ConstantInt::get(CI->getType(),
+                                                   ATy->getNumElements());
+            NewIdxs[i] = ConstantExpr::getSRem(CI, Factor);
+
+            Constant *PrevIdx = Idxs[i-1];
+            Constant *Div = ConstantExpr::getSDiv(CI, Factor);
+
+            // Before adding, extend both operands to i64 to avoid
+            // overflow trouble.
+            if (PrevIdx->getType() != Type::getInt64Ty(Context))
+              PrevIdx = ConstantExpr::getSExt(PrevIdx,
+                                              Type::getInt64Ty(Context));
+            if (Div->getType() != Type::getInt64Ty(Context))
+              Div = ConstantExpr::getSExt(Div,
+                                          Type::getInt64Ty(Context));
+
+            NewIdxs[i-1] = ConstantExpr::getAdd(PrevIdx, Div);
+          } else {
+            // It's out of range, but the prior dimension is a struct
+            // so we can't do anything about it.
+            Unknown = true;
+          }
+        }
+    } else {
+      // We don't know if it's in range or not.
+      Unknown = true;
+    }
+  }
+
+  // If we did any factoring, start over with the adjusted indices.
+  if (!NewIdxs.empty()) {
+    for (unsigned i = 0; i != NumIdx; ++i)
+      if (!NewIdxs[i]) NewIdxs[i] = Idxs[i];
+    return inBounds ?
+      ConstantExpr::getInBoundsGetElementPtr(C, NewIdxs.data(),
+                                             NewIdxs.size()) :
+      ConstantExpr::getGetElementPtr(C, NewIdxs.data(), NewIdxs.size());
+  }
+
+  // If all indices are known integers and normalized, we can do a simple
+  // check for the "inbounds" property.
+  if (!Unknown && !inBounds &&
+      isa<GlobalVariable>(C) && isInBoundsIndices(Idxs, NumIdx))
+    return ConstantExpr::getInBoundsGetElementPtr(C, Idxs, NumIdx);
+
   return 0;
 }

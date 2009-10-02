@@ -142,6 +142,7 @@ static char nuls[10];		/* place to point scanner in event of error */
 #else
 #define	DUPMAX	255
 #endif
+#define	INFINITY	(DUPMAX + 1)
 
 #ifndef NDEBUG
 static int never = 0;		/* for use in asserts; shuts lint up */
@@ -256,8 +257,8 @@ static void
 p_ere(struct parse *p, int stop)	/* character this ERE should end at */
 {
 	char c;
-	sopno prevback = prevback;
-	sopno prevfwd = prevfwd;
+	sopno prevback = 0;
+	sopno prevfwd = 0;
 	sopno conc;
 	int first = 1;		/* is this the first alternative? */
 

@@ -1481,9 +1481,7 @@ APInt::ms APInt::magic() const {
   const APInt& d = *this;
   unsigned p;
   APInt ad, anc, delta, q1, r1, q2, r2, t;
-  APInt allOnes = APInt::getAllOnesValue(d.getBitWidth());
   APInt signedMin = APInt::getSignedMinValue(d.getBitWidth());
-  APInt signedMax = APInt::getSignedMaxValue(d.getBitWidth());
   struct ms mag;
 
   ad = d.abs();
@@ -2056,7 +2054,7 @@ void APInt::fromString(unsigned numbits, const StringRef& str, uint8_t radix) {
   assert(((slen-1)*3 <= numbits || radix != 8) && "Insufficient bit width");
   assert(((slen-1)*4 <= numbits || radix != 16) && "Insufficient bit width");
   assert((((slen-1)*64)/22 <= numbits || radix != 10)
-	 && "Insufficient bit width");
+         && "Insufficient bit width");
 
   // Allocate memory
   if (!isSingleWord())

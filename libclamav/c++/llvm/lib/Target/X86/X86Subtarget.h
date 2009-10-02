@@ -55,6 +55,10 @@ protected:
   ///
   X863DNowEnum X863DNowLevel;
 
+  /// HasCMov - True if this processor has conditional move instructions
+  /// (generally pentium pro+).
+  bool HasCMov;
+  
   /// HasX86_64 - True if the processor supports X86-64 instructions.
   ///
   bool HasX86_64;
@@ -144,12 +148,20 @@ public:
 
   bool isTargetDarwin() const { return TargetType == isDarwin; }
   bool isTargetELF() const { return TargetType == isELF; }
+  
   bool isTargetWindows() const { return TargetType == isWindows; }
   bool isTargetMingw() const { return TargetType == isMingw; }
+  bool isTargetCygwin() const { return TargetType == isCygwin; }
   bool isTargetCygMing() const {
     return TargetType == isMingw || TargetType == isCygwin;
   }
-  bool isTargetCygwin() const { return TargetType == isCygwin; }
+  
+  /// isTargetCOFF - Return true if this is any COFF/Windows target variant.
+  bool isTargetCOFF() const {
+    return TargetType == isMingw || TargetType == isCygwin ||
+           TargetType == isWindows;
+  }
+  
   bool isTargetWin64() const {
     return Is64Bit && (TargetType == isMingw || TargetType == isWindows);
   }
@@ -211,13 +223,6 @@ public:
   /// should be attempted.
   unsigned getSpecialAddressLatency() const;
 };
-
-namespace X86 {
-  /// GetCpuIDAndInfo - Execute the specified cpuid and return the 4 values in
-  /// the specified arguments.  If we can't run cpuid on the host, return true.
-  bool GetCpuIDAndInfo(unsigned value, unsigned *rEAX, unsigned *rEBX,
-                       unsigned *rECX, unsigned *rEDX);
-}
 
 } // End llvm namespace
 

@@ -423,6 +423,7 @@ unsigned ARMBaseInstrInfo::GetInstSizeInBytes(const MachineInstr *MI) const {
     default:
       llvm_unreachable("Unknown or unset size field for instr!");
     case TargetInstrInfo::IMPLICIT_DEF:
+    case TargetInstrInfo::KILL:
     case TargetInstrInfo::DBG_LABEL:
     case TargetInstrInfo::EH_LABEL:
       return 0;
@@ -612,14 +613,29 @@ ARMBaseInstrInfo::copyRegToReg(MachineBasicBlock &MBB,
   if (I != MBB.end()) DL = I->getDebugLoc();
 
   if (DestRC != SrcRC) {
-    if (((DestRC == ARM::DPRRegisterClass) &&
-         (SrcRC == ARM::DPR_VFP2RegisterClass)) ||
-        ((SrcRC == ARM::DPRRegisterClass) &&
-         (DestRC == ARM::DPR_VFP2RegisterClass))) {
-      // Allow copy between DPR and DPR_VFP2.
-    } else {
+    // Allow DPR / DPR_VFP2 / DPR_8 cross-class copies
+    // Allow QPR / QPR_VFP2 cross-class copies
+    if (DestRC == ARM::DPRRegisterClass) {
+      if (SrcRC == ARM::DPR_VFP2RegisterClass ||
+          SrcRC == ARM::DPR_8RegisterClass) {
+      } else
+        return false;
+    } else if (DestRC == ARM::DPR_VFP2RegisterClass) {
+      if (SrcRC == ARM::DPRRegisterClass ||
+          SrcRC == ARM::DPR_8RegisterClass) {
+      } else
+        return false;
+    } else if (DestRC == ARM::DPR_8RegisterClass) {
+      if (SrcRC == ARM::DPRRegisterClass ||
+          SrcRC == ARM::DPR_VFP2RegisterClass) {
+      } else
+        return false;
+    } else if ((DestRC == ARM::QPRRegisterClass &&
+                SrcRC == ARM::QPR_VFP2RegisterClass) ||
+               (DestRC == ARM::QPR_VFP2RegisterClass &&
+                SrcRC == ARM::QPRRegisterClass)) {
+    } else
       return false;
-    }
   }
 
   if (DestRC == ARM::GPRRegisterClass) {
@@ -629,10 +645,12 @@ ARMBaseInstrInfo::copyRegToReg(MachineBasicBlock &MBB,
     AddDefaultPred(BuildMI(MBB, I, DL, get(ARM::FCPYS), DestReg)
                    .addReg(SrcReg));
   } else if ((DestRC == ARM::DPRRegisterClass) ||
-             (DestRC == ARM::DPR_VFP2RegisterClass)) {
+             (DestRC == ARM::DPR_VFP2RegisterClass) ||
+             (DestRC == ARM::DPR_8RegisterClass)) {
     AddDefaultPred(BuildMI(MBB, I, DL, get(ARM::FCPYD), DestReg)
                    .addReg(SrcReg));
-  } else if (DestRC == ARM::QPRRegisterClass) {
+  } else if (DestRC == ARM::QPRRegisterClass ||
+             DestRC == ARM::QPR_VFP2RegisterClass) {
     BuildMI(MBB, I, DL, get(ARM::VMOVQ), DestReg).addReg(SrcReg);
   } else {
     return false;
@@ -652,7 +670,9 @@ storeRegToStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
     AddDefaultPred(BuildMI(MBB, I, DL, get(ARM::STR))
                    .addReg(SrcReg, getKillRegState(isKill))
                    .addFrameIndex(FI).addReg(0).addImm(0));
-  } else if (RC == ARM::DPRRegisterClass || RC == ARM::DPR_VFP2RegisterClass) {
+  } else if (RC == ARM::DPRRegisterClass ||
+             RC == ARM::DPR_VFP2RegisterClass ||
+             RC == ARM::DPR_8RegisterClass) {
     AddDefaultPred(BuildMI(MBB, I, DL, get(ARM::FSTD))
                    .addReg(SrcReg, getKillRegState(isKill))
                    .addFrameIndex(FI).addImm(0));
@@ -661,7 +681,8 @@ storeRegToStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
                    .addReg(SrcReg, getKillRegState(isKill))
                    .addFrameIndex(FI).addImm(0));
   } else {
-    assert(RC == ARM::QPRRegisterClass && "Unknown regclass!");
+    assert((RC == ARM::QPRRegisterClass ||
+            RC == ARM::QPR_VFP2RegisterClass) && "Unknown regclass!");
     // FIXME: Neon instructions should support predicates
     BuildMI(MBB, I, DL, get(ARM::VSTRQ)).addReg(SrcReg, getKillRegState(isKill))
       .addFrameIndex(FI).addImm(0);
@@ -678,14 +699,17 @@ loadRegFromStackSlot(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
   if (RC == ARM::GPRRegisterClass) {
     AddDefaultPred(BuildMI(MBB, I, DL, get(ARM::LDR), DestReg)
                    .addFrameIndex(FI).addReg(0).addImm(0));
-  } else if (RC == ARM::DPRRegisterClass || RC == ARM::DPR_VFP2RegisterClass) {
+  } else if (RC == ARM::DPRRegisterClass ||
+             RC == ARM::DPR_VFP2RegisterClass ||
+             RC == ARM::DPR_8RegisterClass) {
     AddDefaultPred(BuildMI(MBB, I, DL, get(ARM::FLDD), DestReg)
                    .addFrameIndex(FI).addImm(0));
   } else if (RC == ARM::SPRRegisterClass) {
     AddDefaultPred(BuildMI(MBB, I, DL, get(ARM::FLDS), DestReg)
                    .addFrameIndex(FI).addImm(0));
   } else {
-    assert(RC == ARM::QPRRegisterClass && "Unknown regclass!");
+    assert((RC == ARM::QPRRegisterClass ||
+            RC == ARM::QPR_VFP2RegisterClass) && "Unknown regclass!");
     // FIXME: Neon instructions should support predicates
     BuildMI(MBB, I, DL, get(ARM::VLDRQ), DestReg).addFrameIndex(FI).addImm(0);
   }
@@ -841,7 +865,8 @@ ARMBaseInstrInfo::canFoldMemoryOperand(const MachineInstr *MI,
 /// getInstrPredicate - If instruction is predicated, returns its predicate
 /// condition, otherwise returns AL. It also returns the condition code
 /// register by reference.
-ARMCC::CondCodes llvm::getInstrPredicate(MachineInstr *MI, unsigned &PredReg) {
+ARMCC::CondCodes
+llvm::getInstrPredicate(const MachineInstr *MI, unsigned &PredReg) {
   int PIdx = MI->findFirstPredOperandIdx();
   if (PIdx == -1) {
     PredReg = 0;

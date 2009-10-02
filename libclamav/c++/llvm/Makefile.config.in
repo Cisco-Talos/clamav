@@ -110,6 +110,9 @@ BUILD_EXEEXT=@BUILD_EXEEXT@
 BUILD_CC=@BUILD_CC@
 BUILD_CXX=@BUILD_CXX@
 
+# Triple for configuring build tools when cross-compiling
+BUILD_TRIPLE=@build@
+
 # Target triple (cpu-vendor-os) for which we should generate code
 TARGET_TRIPLE=@target@
 
@@ -241,6 +244,11 @@ RDYNAMIC := @RDYNAMIC@
 # symbols.
 #DEBUG_RUNTIME = 1
 @DEBUG_RUNTIME@
+
+# When DEBUG_SYMBOLS is enabled, the compiler libraries will retain debug
+# symbols.
+#DEBUG_SYMBOLS = 1
+@DEBUG_SYMBOLS@
 
 # When ENABLE_PROFILING is enabled, the llvm source base is built with profile
 # information to allow gprof to be used to get execution frequencies.

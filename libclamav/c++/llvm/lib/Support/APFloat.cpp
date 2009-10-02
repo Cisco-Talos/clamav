@@ -692,6 +692,14 @@ APFloat::APFloat(const fltSemantics &ourSemantics, integerPart value)
   normalize(rmNearestTiesToEven, lfExactlyZero);
 }
 
+APFloat::APFloat(const fltSemantics &ourSemantics) {
+  assertArithmeticOK(ourSemantics);
+  initialize(&ourSemantics);
+  category = fcZero;
+  sign = false;
+}
+
+
 APFloat::APFloat(const fltSemantics &ourSemantics,
                  fltCategory ourCategory, bool negative, unsigned type)
 {
@@ -2831,7 +2839,8 @@ APFloat::bitcastToAPInt() const
 float
 APFloat::convertToFloat() const
 {
-  assert(semantics == (const llvm::fltSemantics*)&IEEEsingle && "Float semantics are not IEEEsingle");
+  assert(semantics == (const llvm::fltSemantics*)&IEEEsingle &&
+         "Float semantics are not IEEEsingle");
   APInt api = bitcastToAPInt();
   return api.bitsToFloat();
 }
@@ -2839,7 +2848,8 @@ APFloat::convertToFloat() const
 double
 APFloat::convertToDouble() const
 {
-  assert(semantics == (const llvm::fltSemantics*)&IEEEdouble && "Float semantics are not IEEEdouble");
+  assert(semantics == (const llvm::fltSemantics*)&IEEEdouble &&
+         "Float semantics are not IEEEdouble");
   APInt api = bitcastToAPInt();
   return api.bitsToDouble();
 }

@@ -8,7 +8,8 @@
 //===----------------------------------------------------------------------===//
 //
 // This file defines the LoopInfo class that is used to identify natural loops
-// and determine the loop depth of various nodes of the CFG.  Note that natural
+// and determine the loop depth of various nodes of the CFG.  A natural loop
+// has exactly one entry-point, which is called the header. Note that natural
 // loops may actually be several loops that share the same header node.
 //
 // This analysis calculates the nesting structure of loops in a function.  For
@@ -230,74 +231,6 @@ public:
           ExitEdges.push_back(std::make_pair(*BI, *I));
   }
 
-  /// getUniqueExitBlocks - Return all unique successor blocks of this loop. 
-  /// These are the blocks _outside of the current loop_ which are branched to.
-  /// This assumes that loop is in canonical form.
-  ///
-  void getUniqueExitBlocks(SmallVectorImpl<BlockT*> &ExitBlocks) const {
-    // Sort the blocks vector so that we can use binary search to do quick
-    // lookups.
-    SmallVector<BlockT*, 128> LoopBBs(block_begin(), block_end());
-    std::sort(LoopBBs.begin(), LoopBBs.end());
-
-    std::vector<BlockT*> switchExitBlocks;  
-
-    for (block_iterator BI = block_begin(), BE = block_end(); BI != BE; ++BI) {
-
-      BlockT *current = *BI;
-      switchExitBlocks.clear();
-
-      typedef GraphTraits<BlockT*> BlockTraits;
-      typedef GraphTraits<Inverse<BlockT*> > InvBlockTraits;
-      for (typename BlockTraits::ChildIteratorType I =
-           BlockTraits::child_begin(*BI), E = BlockTraits::child_end(*BI);
-           I != E; ++I) {
-        if (std::binary_search(LoopBBs.begin(), LoopBBs.end(), *I))
-      // If block is inside the loop then it is not a exit block.
-          continue;
-      
-        typename InvBlockTraits::ChildIteratorType PI =
-                                                InvBlockTraits::child_begin(*I);
-        BlockT *firstPred = *PI;
-
-        // If current basic block is this exit block's first predecessor
-        // then only insert exit block in to the output ExitBlocks vector.
-        // This ensures that same exit block is not inserted twice into
-        // ExitBlocks vector.
-        if (current != firstPred) 
-          continue;
-
-        // If a terminator has more then two successors, for example SwitchInst,
-        // then it is possible that there are multiple edges from current block 
-        // to one exit block. 
-        if (std::distance(BlockTraits::child_begin(current),
-                          BlockTraits::child_end(current)) <= 2) {
-          ExitBlocks.push_back(*I);
-          continue;
-        }
-
-        // In case of multiple edges from current block to exit block, collect
-        // only one edge in ExitBlocks. Use switchExitBlocks to keep track of
-        // duplicate edges.
-        if (std::find(switchExitBlocks.begin(), switchExitBlocks.end(), *I) 
-            == switchExitBlocks.end()) {
-          switchExitBlocks.push_back(*I);
-          ExitBlocks.push_back(*I);
-        }
-      }
-    }
-  }
-
-  /// getUniqueExitBlock - If getUniqueExitBlocks would return exactly one
-  /// block, return that block. Otherwise return null.
-  BlockT *getUniqueExitBlock() const {
-    SmallVector<BlockT*, 8> UniqueExitBlocks;
-    getUniqueExitBlocks(UniqueExitBlocks);
-    if (UniqueExitBlocks.size() == 1)
-      return UniqueExitBlocks[0];
-    return 0;
-  }
-
   /// getLoopPreheader - If there is a preheader for this loop, return it.  A
   /// loop has a preheader if there is only one edge to the header of the loop
   /// from outside of the loop.  If this is the case, the block branching to the
@@ -444,12 +377,82 @@ public:
   /// verifyLoop - Verify loop structure
   void verifyLoop() const {
 #ifndef NDEBUG
-    assert (getHeader() && "Loop header is missing");
-    assert (getLoopPreheader() && "Loop preheader is missing");
-    assert (getLoopLatch() && "Loop latch is missing");
-    for (iterator I = SubLoops.begin(), E = SubLoops.end(); I != E; ++I)
-      (*I)->verifyLoop();
+    assert(!Blocks.empty() && "Loop header is missing");
+
+    // Sort the blocks vector so that we can use binary search to do quick
+    // lookups.
+    SmallVector<BlockT*, 128> LoopBBs(block_begin(), block_end());
+    std::sort(LoopBBs.begin(), LoopBBs.end());
+
+    // Check the individual blocks.
+    for (block_iterator I = block_begin(), E = block_end(); I != E; ++I) {
+      BlockT *BB = *I;
+      bool HasInsideLoopSuccs = false;
+      bool HasInsideLoopPreds = false;
+      SmallVector<BlockT *, 2> OutsideLoopPreds;
+
+      typedef GraphTraits<BlockT*> BlockTraits;
+      for (typename BlockTraits::ChildIteratorType SI =
+           BlockTraits::child_begin(BB), SE = BlockTraits::child_end(BB);
+           SI != SE; ++SI)
+        if (std::binary_search(LoopBBs.begin(), LoopBBs.end(), *SI)) {
+          HasInsideLoopSuccs = true;
+          break;
+        }
+      typedef GraphTraits<Inverse<BlockT*> > InvBlockTraits;
+      for (typename InvBlockTraits::ChildIteratorType PI =
+           InvBlockTraits::child_begin(BB), PE = InvBlockTraits::child_end(BB);
+           PI != PE; ++PI) {
+        if (std::binary_search(LoopBBs.begin(), LoopBBs.end(), *PI))
+          HasInsideLoopPreds = true;
+        else
+          OutsideLoopPreds.push_back(*PI);
+      }
+
+      if (BB == getHeader()) {
+        assert(!OutsideLoopPreds.empty() && "Loop is unreachable!");
+      } else if (!OutsideLoopPreds.empty()) {
+        // A non-header loop shouldn't be reachable from outside the loop,
+        // though it is permitted if the predecessor is not itself actually
+        // reachable.
+        BlockT *EntryBB = BB->getParent()->begin();
+        for (df_iterator<BlockT *> NI = df_begin(EntryBB),
+             NE = df_end(EntryBB); NI != NE; ++NI)
+          for (unsigned i = 0, e = OutsideLoopPreds.size(); i != e; ++i)
+            assert(*NI != OutsideLoopPreds[i] &&
+                   "Loop has multiple entry points!");
+      }
+      assert(HasInsideLoopPreds && "Loop block has no in-loop predecessors!");
+      assert(HasInsideLoopSuccs && "Loop block has no in-loop successors!");
+      assert(BB != getHeader()->getParent()->begin() &&
+             "Loop contains function entry block!");
+    }
+
+    // Check the subloops.
+    for (iterator I = begin(), E = end(); I != E; ++I)
+      // Each block in each subloop should be contained within this loop.
+      for (block_iterator BI = (*I)->block_begin(), BE = (*I)->block_end();
+           BI != BE; ++BI) {
+        assert(std::binary_search(LoopBBs.begin(), LoopBBs.end(), *BI) &&
+               "Loop does not contain all the blocks of a subloop!");
+      }
+
+    // Check the parent loop pointer.
+    if (ParentLoop) {
+      assert(std::find(ParentLoop->begin(), ParentLoop->end(), this) !=
+               ParentLoop->end() &&
+             "Loop is not a subloop of its parent!");
+    }
 #endif
+  }
+
+  /// verifyLoop - Verify loop structure of this loop and all nested loops.
+  void verifyLoopNest() const {
+    // Verify this loop.
+    verifyLoop();
+    // Verify the subloops.
+    for (iterator I = begin(), E = end(); I != E; ++I)
+      (*I)->verifyLoopNest();
   }
 
   void print(raw_ostream &OS, unsigned Depth = 0) const {
@@ -568,6 +571,16 @@ public:
   /// the LoopSimplify form transforms loops to, which is sometimes called
   /// normal form.
   bool isLoopSimplifyForm() const;
+
+  /// getUniqueExitBlocks - Return all unique successor blocks of this loop. 
+  /// These are the blocks _outside of the current loop_ which are branched to.
+  /// This assumes that loop is in canonical form.
+  ///
+  void getUniqueExitBlocks(SmallVectorImpl<BasicBlock *> &ExitBlocks) const;
+
+  /// getUniqueExitBlock - If getUniqueExitBlocks would return exactly one
+  /// block, return that block. Otherwise return null.
+  BasicBlock *getUniqueExitBlock() const;
 
 private:
   friend class LoopInfoBase<BasicBlock, Loop>;
@@ -719,7 +732,7 @@ public:
     for (typename InvBlockTraits::ChildIteratorType I =
          InvBlockTraits::child_begin(BB), E = InvBlockTraits::child_end(BB);
          I != E; ++I)
-      if (DT.dominates(BB, *I))   // If BB dominates it's predecessor...
+      if (DT.dominates(BB, *I))   // If BB dominates its predecessor...
         TodoStack.push_back(*I);
 
     if (TodoStack.empty()) return 0;  // No backedges to this block...
@@ -745,7 +758,7 @@ public:
         if (LoopT *SubLoop =
             const_cast<LoopT *>(getLoopFor(X)))
           if (SubLoop->getHeader() == X && isNotAlreadyContainedIn(SubLoop, L)){
-            // Remove the subloop from it's current parent...
+            // Remove the subloop from its current parent...
             assert(SubLoop->ParentLoop && SubLoop->ParentLoop != L);
             LoopT *SLP = SubLoop->ParentLoop;  // SubLoopParent
             typename std::vector<LoopT *>::iterator I =
@@ -930,6 +943,8 @@ public:
   /// runOnFunction - Calculate the natural loop information.
   ///
   virtual bool runOnFunction(Function &F);
+
+  virtual void verifyAnalysis() const;
 
   virtual void releaseMemory() { LI.releaseMemory(); }
 

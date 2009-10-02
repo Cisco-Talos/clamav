@@ -35,9 +35,11 @@ namespace {
   class VISIBILITY_HIDDEN MachineSinking : public MachineFunctionPass {
     const TargetMachine   *TM;
     const TargetInstrInfo *TII;
+    const TargetRegisterInfo *TRI;
     MachineFunction       *CurMF; // Current MachineFunction
     MachineRegisterInfo  *RegInfo; // Machine register information
     MachineDominatorTree *DT;   // Machine dominator tree
+    BitVector AllocatableSet;   // Which physregs are allocatable?
 
   public:
     static char ID; // Pass identification
@@ -70,10 +72,8 @@ bool MachineSinking::AllUsesDominatedByBlock(unsigned Reg,
                                              MachineBasicBlock *MBB) const {
   assert(TargetRegisterInfo::isVirtualRegister(Reg) &&
          "Only makes sense for vregs");
-  for (MachineRegisterInfo::reg_iterator I = RegInfo->reg_begin(Reg),
-       E = RegInfo->reg_end(); I != E; ++I) {
-    if (I.getOperand().isDef()) continue;  // ignore def.
-    
+  for (MachineRegisterInfo::use_iterator I = RegInfo->use_begin(Reg),
+       E = RegInfo->use_end(); I != E; ++I) {
     // Determine the block of the use.
     MachineInstr *UseInst = &*I;
     MachineBasicBlock *UseBlock = UseInst->getParent();
@@ -97,8 +97,10 @@ bool MachineSinking::runOnMachineFunction(MachineFunction &MF) {
   CurMF = &MF;
   TM = &CurMF->getTarget();
   TII = TM->getInstrInfo();
+  TRI = TM->getRegisterInfo();
   RegInfo = &CurMF->getRegInfo();
   DT = &getAnalysis<MachineDominatorTree>();
+  AllocatableSet = TRI->getAllocatableSet(*CurMF);
 
   bool EverMadeChange = false;
   
@@ -178,8 +180,26 @@ bool MachineSinking::SinkInstruction(MachineInstr *MI, bool &SawStore) {
     if (TargetRegisterInfo::isPhysicalRegister(Reg)) {
       // If this is a physical register use, we can't move it.  If it is a def,
       // we can move it, but only if the def is dead.
-      if (MO.isUse() || !MO.isDead())
+      if (MO.isUse()) {
+        // If the physreg has no defs anywhere, it's just an ambient register
+        // and we can freely move its uses. Alternatively, if it's allocatable,
+        // it could get allocated to something with a def during allocation.
+        if (!RegInfo->def_empty(Reg))
+          return false;
+        if (AllocatableSet.test(Reg))
+          return false;
+        // Check for a def among the register's aliases too.
+        for (const unsigned *Alias = TRI->getAliasSet(Reg); *Alias; ++Alias) {
+          unsigned AliasReg = *Alias;
+          if (!RegInfo->def_empty(AliasReg))
+            return false;
+          if (AllocatableSet.test(AliasReg))
+            return false;
+        }
+      } else if (!MO.isDead()) {
+        // A def that isn't dead. We can't move it.
         return false;
+      }
     } else {
       // Virtual register uses are always safe to sink.
       if (MO.isUse()) continue;

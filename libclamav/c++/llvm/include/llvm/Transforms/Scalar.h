@@ -220,7 +220,7 @@ extern const PassInfo *const BreakCriticalEdgesID;
 //
 //   AU.addRequiredID(LoopSimplifyID);
 //
-FunctionPass *createLoopSimplifyPass();
+Pass *createLoopSimplifyPass();
 extern const PassInfo *const LoopSimplifyID;
 
 //===----------------------------------------------------------------------===//
@@ -285,13 +285,6 @@ FunctionPass *createPredicateSimplifierPass();
 
 //===----------------------------------------------------------------------===//
 //
-// GVN-PRE - This pass performs global value numbering and partial redundancy
-// elimination.
-//
-FunctionPass *createGVNPREPass();
-
-//===----------------------------------------------------------------------===//
-//
 // GVN - This pass performs global value numbering and redundant load 
 // elimination cotemporaneously.
 //
@@ -329,6 +322,11 @@ FunctionPass *createSimplifyHalfPowrLibCallsPass();
 //
 FunctionPass *createCodeGenPreparePass(const TargetLowering *TLI = 0);
 
+//===----------------------------------------------------------------------===//
+//
+// CodeGenLICM - This pass performs late LICM; hoisting constants out of loops.
+//
+Pass *createCodeGenLICMPass();
   
 //===----------------------------------------------------------------------===//
 //

@@ -74,7 +74,7 @@ namespace {
   public:
 
     static char ID;
-    
+
     /// Construct a PBQP register allocator.
     PBQPRegAlloc() : MachineFunctionPass(&ID) {}
 
@@ -269,7 +269,7 @@ PBQP::Matrix* PBQPRegAlloc::buildInterferenceMatrix(
       unsigned reg2 = *a2Itr;
 
       // If the row/column regs are identical or alias insert an infinity.
-      if ((reg1 == reg2) || tri->areAliases(reg1, reg2)) {
+      if (tri->regsOverlap(reg1, reg2)) {
         (*m)[ri][ci] = std::numeric_limits<PBQP::PBQPNum>::infinity();
         isZeroMatrix = false;
       }
@@ -683,23 +683,20 @@ void PBQPRegAlloc::addStackInterval(const LiveInterval *spilled,
   if (stackInterval.getNumValNums() != 0)
     vni = stackInterval.getValNumInfo(0);
   else
-    vni = stackInterval.getNextValue(0, 0, false, lss->getVNInfoAllocator());
+    vni = stackInterval.getNextValue(
+      MachineInstrIndex(), 0, false, lss->getVNInfoAllocator());
 
   LiveInterval &rhsInterval = lis->getInterval(spilled->reg);
   stackInterval.MergeRangesInAsValue(rhsInterval, vni);
 }
 
 bool PBQPRegAlloc::mapPBQPToRegAlloc(const PBQP::Solution &solution) {
-
-  static unsigned round = 0;
-  (void) round;
-
   // Set to true if we have any spills
   bool anotherRoundNeeded = false;
 
   // Clear the existing allocation.
   vrm->clearAllVirt();
-  
+
   // Iterate over the nodes mapping the PBQP solution to a register assignment.
   for (unsigned node = 0; node < node2LI.size(); ++node) {
     unsigned virtReg = node2LI[node]->reg,
@@ -767,7 +764,7 @@ void PBQPRegAlloc::finalizeAlloc() const {
 
   // First allocate registers for the empty intervals.
   for (LiveIntervalSet::const_iterator
-	 itr = emptyVRegIntervals.begin(), end = emptyVRegIntervals.end();
+         itr = emptyVRegIntervals.begin(), end = emptyVRegIntervals.end();
          itr != end; ++itr) {
     LiveInterval *li = *itr;
 

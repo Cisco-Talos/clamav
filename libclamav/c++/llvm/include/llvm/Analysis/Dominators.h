@@ -404,11 +404,15 @@ public:
     return dominatedBySlowTreeWalk(A, B);
   }
 
-  inline bool dominates(NodeT *A, NodeT *B) {
+  inline bool dominates(const NodeT *A, const NodeT *B) {
     if (A == B) 
       return true;
 
-    return dominates(getNode(A), getNode(B));
+    // Cast away the const qualifiers here. This is ok since
+    // this function doesn't actually return the values returned
+    // from getNode.
+    return dominates(getNode(const_cast<NodeT *>(A)),
+                     getNode(const_cast<NodeT *>(B)));
   }
 
   NodeT *getRoot() const {
@@ -544,7 +548,9 @@ public:
       o << "DFSNumbers invalid: " << SlowQueries << " slow queries.";
     o << "\n";
 
-    PrintDomTree<NodeT>(getRootNode(), o, 1);
+    // The postdom tree can have a null root if there are no returns.
+    if (getRootNode())
+      PrintDomTree<NodeT>(getRootNode(), o, 1);
   }
 
 protected:
@@ -728,6 +734,8 @@ public:
 
   virtual bool runOnFunction(Function &F);
 
+  virtual void verifyAnalysis() const;
+
   virtual void getAnalysisUsage(AnalysisUsage &AU) const {
     AU.setPreservesAll();
   }
@@ -736,40 +744,19 @@ public:
     return DT->dominates(A, B);
   }
 
-  inline bool dominates(BasicBlock* A, BasicBlock* B) const {
+  inline bool dominates(const BasicBlock* A, const BasicBlock* B) const {
     return DT->dominates(A, B);
   }
 
   // dominates - Return true if A dominates B. This performs the
   // special checks necessary if A and B are in the same basic block.
-  bool dominates(Instruction *A, Instruction *B) const {
-    BasicBlock *BBA = A->getParent(), *BBB = B->getParent();
-    if (BBA != BBB) return DT->dominates(BBA, BBB);
+  bool dominates(const Instruction *A, const Instruction *B) const;
 
-    // It is not possible to determine dominance between two PHI nodes 
-    // based on their ordering.
-    if (isa<PHINode>(A) && isa<PHINode>(B)) 
-      return false;
-
-    // Loop through the basic block until we find A or B.
-    BasicBlock::iterator I = BBA->begin();
-    for (; &*I != A && &*I != B; ++I) /*empty*/;
-
-    //if(!DT.IsPostDominators) {
-      // A dominates B if it is found first in the basic block.
-      return &*I == A;
-    //} else {
-    //  // A post-dominates B if B is found first in the basic block.
-    //  return &*I == B;
-    //}
-  }
-
-  inline bool properlyDominates(const DomTreeNode* A,
-                                const DomTreeNode* B) const {
+  bool properlyDominates(const DomTreeNode *A, const DomTreeNode *B) const {
     return DT->properlyDominates(A, B);
   }
 
-  inline bool properlyDominates(BasicBlock* A, BasicBlock* B) const {
+  bool properlyDominates(BasicBlock *A, BasicBlock *B) const {
     return DT->properlyDominates(A, B);
   }
 
@@ -1005,6 +992,8 @@ public:
     calculate(DT, DT[Roots[0]]);
     return false;
   }
+
+  virtual void verifyAnalysis() const;
 
   virtual void getAnalysisUsage(AnalysisUsage &AU) const {
     AU.setPreservesAll();

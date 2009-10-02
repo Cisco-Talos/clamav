@@ -8,8 +8,10 @@ add_llvm_library(LLVMMC
   MCAssembler.cpp
   MCCodeEmitter.cpp
   MCContext.cpp
+  MCDisassembler.cpp
   MCExpr.cpp
   MCInst.cpp
+  MCInstPrinter.cpp
   MCMachOStreamer.cpp
   MCNullStreamer.cpp
   MCSection.cpp

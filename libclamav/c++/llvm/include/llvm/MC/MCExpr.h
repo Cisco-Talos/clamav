@@ -14,10 +14,12 @@
 #include "llvm/Support/DataTypes.h"
 
 namespace llvm {
+class MCAsmInfo;
 class MCContext;
 class MCSymbol;
 class MCValue;
 class raw_ostream;
+class StringRef;
 
 /// MCExpr - Base class for the full range of assembler expressions which are
 /// needed for parsing.
@@ -49,7 +51,7 @@ public:
   /// @name Utility Methods
   /// @{
 
-  void print(raw_ostream &OS) const;
+  void print(raw_ostream &OS, const MCAsmInfo *MAI) const;
   void dump() const;
 
   /// @}
@@ -118,7 +120,10 @@ public:
   /// @{
 
   static const MCSymbolRefExpr *Create(const MCSymbol *Symbol, MCContext &Ctx);
-
+  static const MCSymbolRefExpr *Create(const StringRef &Name, MCContext &Ctx);
+  
+  
+  
   /// @}
   /// @name Accessors
   /// @{

@@ -241,7 +241,7 @@ void CallGraphNode::dump() const { print(errs()); }
 void CallGraphNode::removeCallEdgeFor(CallSite CS) {
   for (CalledFunctionsVector::iterator I = CalledFunctions.begin(); ; ++I) {
     assert(I != CalledFunctions.end() && "Cannot find callsite to remove!");
-    if (I->first == CS) {
+    if (I->first == CS.getInstruction()) {
       I->second->DropRef();
       *I = CalledFunctions.back();
       CalledFunctions.pop_back();
@@ -249,21 +249,6 @@ void CallGraphNode::removeCallEdgeFor(CallSite CS) {
     }
   }
 }
-
-// FIXME: REMOVE THIS WHEN HACK IS REMOVED FROM CGSCCPASSMGR.
-void CallGraphNode::removeCallEdgeFor(Instruction *CS) {
-  for (CalledFunctionsVector::iterator I = CalledFunctions.begin(); ; ++I) {
-    assert(I != CalledFunctions.end() && "Cannot find callsite to remove!");
-    if (I->first.getInstruction() == CS) {
-      I->second->DropRef();
-      *I = CalledFunctions.back();
-      CalledFunctions.pop_back();
-      return;
-    }
-  }
-  
-}
-
 
 
 // removeAnyCallEdgeTo - This method removes any call edges from this node to
@@ -285,7 +270,7 @@ void CallGraphNode::removeOneAbstractEdgeTo(CallGraphNode *Callee) {
   for (CalledFunctionsVector::iterator I = CalledFunctions.begin(); ; ++I) {
     assert(I != CalledFunctions.end() && "Cannot find callee to remove!");
     CallRecord &CR = *I;
-    if (CR.second == Callee && CR.first.getInstruction() == 0) {
+    if (CR.second == Callee && CR.first == 0) {
       Callee->DropRef();
       *I = CalledFunctions.back();
       CalledFunctions.pop_back();
@@ -294,25 +279,20 @@ void CallGraphNode::removeOneAbstractEdgeTo(CallGraphNode *Callee) {
   }
 }
 
-/// replaceCallSite - Make the edge in the node for Old CallSite be for
-/// New CallSite instead.  Note that this method takes linear time, so it
-/// should be used sparingly.
-void CallGraphNode::replaceCallSite(CallSite Old, CallSite New,
-                                    CallGraphNode *NewCallee) {
+/// replaceCallEdge - This method replaces the edge in the node for the
+/// specified call site with a new one.  Note that this method takes linear
+/// time, so it should be used sparingly.
+void CallGraphNode::replaceCallEdge(CallSite CS,
+                                    CallSite NewCS, CallGraphNode *NewNode){
   for (CalledFunctionsVector::iterator I = CalledFunctions.begin(); ; ++I) {
-    assert(I != CalledFunctions.end() && "Cannot find callsite to replace!");
-    if (I->first != Old) continue;
-    
-    I->first = New;
-    
-    // If the callee is changing, not just the callsite, then update it as
-    // well.
-    if (NewCallee) {
+    assert(I != CalledFunctions.end() && "Cannot find callsite to remove!");
+    if (I->first == CS.getInstruction()) {
       I->second->DropRef();
-      I->second = NewCallee;
-      I->second->AddRef();
+      I->first = NewCS.getInstruction();
+      I->second = NewNode;
+      NewNode->AddRef();
+      return;
     }
-    return;
   }
 }
 

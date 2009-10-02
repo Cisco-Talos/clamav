@@ -41,7 +41,7 @@ private:
   ///  1. Unbuffered (BufferMode == Unbuffered)
   ///  1. Uninitialized (BufferMode != Unbuffered && OutBufStart == 0).
   ///  2. Buffered (BufferMode != Unbuffered && OutBufStart != 0 &&
-  ///               OutBufEnd - OutBufStart >= 64).
+  ///               OutBufEnd - OutBufStart >= 1).
   ///
   /// If buffered, then the raw_ostream owns the buffer if (BufferMode ==
   /// InternalBuffer); otherwise the buffer has been set via SetBuffer and is
@@ -240,6 +240,11 @@ public:
   /// outputting colored text, or before program exit.
   virtual raw_ostream &resetColor() { return *this; }
 
+  /// This function determines if this stream is connected to a "tty" or
+  /// "console" window. That is, the output would be displayed to the user
+  /// rather than being put on a pipe or stored in a file.
+  virtual bool is_displayed() const { return false; }
+
   //===--------------------------------------------------------------------===//
   // Subclass Interface
   //===--------------------------------------------------------------------===//
@@ -370,6 +375,8 @@ public:
   virtual raw_ostream &changeColor(enum Colors colors, bool bold=false,
                                    bool bg=false);
   virtual raw_ostream &resetColor();
+
+  virtual bool is_displayed() const;
 };
 
 /// raw_stdout_ostream - This is a stream that always prints to stdout.

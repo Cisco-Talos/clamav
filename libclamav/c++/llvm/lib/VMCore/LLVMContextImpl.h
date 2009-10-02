@@ -19,6 +19,7 @@
 #include "LeaksContext.h"
 #include "TypesContext.h"
 #include "llvm/LLVMContext.h"
+#include "llvm/Metadata.h"
 #include "llvm/Constants.h"
 #include "llvm/DerivedTypes.h"
 #include "llvm/System/Mutex.h"
@@ -106,13 +107,10 @@ public:
   
   StringMap<MDString*> MDStringCache;
   
+  FoldingSet<MDNode> MDNodeSet;
+  
   ValueMap<char, Type, ConstantAggregateZero> AggZeroConstants;
 
-  typedef ValueMap<std::vector<Value*>, Type, MDNode, true /*largekey*/> 
-  MDNodeMapTy;
-
-  MDNodeMapTy MDNodes;
-  
   typedef ValueMap<std::vector<Constant*>, ArrayType, 
     ConstantArray, true /*largekey*/> ArrayConstantsTy;
   ArrayConstantsTy ArrayConstants;
@@ -181,6 +179,7 @@ public:
   typedef DenseMap<Value*, ValueHandleBase*> ValueHandlesTy;
   ValueHandlesTy ValueHandles;
   
+  MetadataContext TheMetadata;
   LLVMContextImpl(LLVMContext &C) : TheTrueVal(0), TheFalseVal(0),
     VoidTy(C, Type::VoidTyID),
     LabelTy(C, Type::LabelTyID),
@@ -202,16 +201,18 @@ public:
     ArrayConstants.freeConstants();
     StructConstants.freeConstants();
     VectorConstants.freeConstants();
-
     AggZeroConstants.freeConstants();
     NullPtrConstants.freeConstants();
     UndefValueConstants.freeConstants();
-    for (IntMapTy::iterator I=IntConstants.begin(), E=IntConstants.end(); 
+    for (FoldingSet<MDNode>::iterator I = MDNodeSet.begin(), 
+           E = MDNodeSet.end(); I != E; ++I)
+      I->dropAllReferences();
+    for (IntMapTy::iterator I = IntConstants.begin(), E = IntConstants.end(); 
          I != E; ++I) {
       if (I->second->use_empty())
         delete I->second;
     }
-    for (FPMapTy::iterator I=FPConstants.begin(), E=FPConstants.end(); 
+    for (FPMapTy::iterator I = FPConstants.begin(), E = FPConstants.end(); 
          I != E; ++I) {
       if (I->second->use_empty())
         delete I->second;

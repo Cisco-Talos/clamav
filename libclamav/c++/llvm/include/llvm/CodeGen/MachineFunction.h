@@ -27,6 +27,7 @@
 
 namespace llvm {
 
+class Value;
 class Function;
 class MachineRegisterInfo;
 class MachineFrameInfo;
@@ -63,7 +64,7 @@ private:
 /// of type are accessed/created with MF::getInfo and destroyed when the
 /// MachineFunction is destroyed.
 struct MachineFunctionInfo {
-  virtual ~MachineFunctionInfo() {}
+  virtual ~MachineFunctionInfo();
 };
 
 class MachineFunction {
@@ -159,8 +160,8 @@ public:
   ///
   void setAlignment(unsigned A) { Alignment = A; }
 
-  /// MachineFunctionInfo - Keep track of various per-function pieces of
-  /// information for backends that would like to do so.
+  /// getInfo - Keep track of various per-function pieces of information for
+  /// backends that would like to do so.
   ///
   template<typename Ty>
   Ty *getInfo() {
@@ -320,15 +321,27 @@ public:
   ///
   void DeleteMachineBasicBlock(MachineBasicBlock *MBB);
 
+  /// getMachineMemOperand - Allocate a new MachineMemOperand.
+  /// MachineMemOperands are owned by the MachineFunction and need not be
+  /// explicitly deallocated.
+  MachineMemOperand *getMachineMemOperand(const Value *v, unsigned f,
+                                          int64_t o, uint64_t s,
+                                          unsigned base_alignment);
+
+  /// getMachineMemOperand - Allocate a new MachineMemOperand by copying
+  /// an existing one, adjusting by an offset and using the given EVT.
+  /// MachineMemOperands are owned by the MachineFunction and need not be
+  /// explicitly deallocated.
+  MachineMemOperand *getMachineMemOperand(const MachineMemOperand *MMO,
+                                          int64_t Offset, uint64_t Size);
+
+  /// allocateMemRefsArray - Allocate an array to hold MachineMemOperand
+  /// pointers.  This array is owned by the MachineFunction.
+  MachineInstr::mmo_iterator allocateMemRefsArray(unsigned long Num);
+
   //===--------------------------------------------------------------------===//
   // Debug location.
   //
-
-  /// getOrCreateDebugLocID - Look up the DebugLocTuple index with the given
-  /// source file, line, and column. If none currently exists, create a new
-  /// DebugLocTuple, and insert it into the DebugIdMap.
-  unsigned getOrCreateDebugLocID(MDNode *CompileUnit,
-                                 unsigned Line, unsigned Col);
 
   /// getDebugLocTuple - Get the DebugLocTuple for a given DebugLoc object.
   DebugLocTuple getDebugLocTuple(DebugLoc DL) const;

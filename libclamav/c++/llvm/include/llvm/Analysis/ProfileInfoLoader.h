@@ -33,6 +33,7 @@ class ProfileInfoLoader {
   std::vector<unsigned>    FunctionCounts;
   std::vector<unsigned>    BlockCounts;
   std::vector<unsigned>    EdgeCounts;
+  std::vector<unsigned>    OptimalEdgeCounts;
   std::vector<unsigned>    BBTrace;
   bool Warned;
 public:
@@ -40,6 +41,8 @@ public:
   // the program if the file is invalid or broken.
   ProfileInfoLoader(const char *ToolName, const std::string &Filename,
                     Module &M);
+
+  static const unsigned Uncounted;
 
   unsigned getNumExecutions() const { return CommandLines.size(); }
   const std::string &getExecution(unsigned i) const { return CommandLines[i]; }
@@ -66,6 +69,14 @@ public:
   const std::vector<unsigned> &getRawEdgeCounts() const {
     return EdgeCounts;
   }
+
+  // getEdgeOptimalCounts - This method is used by consumers of optimal edge 
+  // counting information.
+  //
+  const std::vector<unsigned> &getRawOptimalEdgeCounts() const {
+    return OptimalEdgeCounts;
+  }
+
 };
 
 } // End llvm namespace

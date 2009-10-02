@@ -23,6 +23,7 @@
 #include "llvm/IntrinsicInst.h"
 #include "llvm/LLVMContext.h"
 #include "llvm/Pass.h"
+#include "llvm/Analysis/ProfileInfo.h"
 #include "llvm/Target/TargetData.h"
 #include "llvm/Target/TargetLowering.h"
 #include "llvm/Transforms/Utils/AddrModeMatcher.h"
@@ -33,7 +34,6 @@
 #include "llvm/Assembly/Writer.h"
 #include "llvm/Support/CallSite.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/GetElementPtrTypeIterator.h"
 #include "llvm/Support/PatternMatch.h"
@@ -45,10 +45,11 @@ static cl::opt<bool> FactorCommonPreds("split-critical-paths-tweak",
                                        cl::init(false), cl::Hidden);
 
 namespace {
-  class VISIBILITY_HIDDEN CodeGenPrepare : public FunctionPass {
+  class CodeGenPrepare : public FunctionPass {
     /// TLI - Keep a pointer of a TargetLowering to consult for determining
     /// transformation profitability.
     const TargetLowering *TLI;
+    ProfileInfo *PI;
 
     /// BackEdges - Keep a set of all the loop back edges.
     ///
@@ -58,6 +59,10 @@ namespace {
     explicit CodeGenPrepare(const TargetLowering *tli = 0)
       : FunctionPass(&ID), TLI(tli) {}
     bool runOnFunction(Function &F);
+
+    virtual void getAnalysisUsage(AnalysisUsage &AU) const {
+      AU.addPreserved<ProfileInfo>();
+    }
 
   private:
     bool EliminateMostlyEmptyBlocks(Function &F);
@@ -94,6 +99,7 @@ void CodeGenPrepare::findLoopBackEdges(const Function &F) {
 bool CodeGenPrepare::runOnFunction(Function &F) {
   bool EverMadeChange = false;
 
+  PI = getAnalysisIfAvailable<ProfileInfo>();
   // First pass, eliminate blocks that contain only PHI nodes and an
   // unconditional branch.
   EverMadeChange |= EliminateMostlyEmptyBlocks(F);
@@ -240,7 +246,7 @@ void CodeGenPrepare::EliminateMostlyEmptyBlock(BasicBlock *BB) {
       // Remember if SinglePred was the entry block of the function.  If so, we
       // will need to move BB back to the entry position.
       bool isEntry = SinglePred == &SinglePred->getParent()->getEntryBlock();
-      MergeBasicBlockIntoOnlyPred(DestBB);
+      MergeBasicBlockIntoOnlyPred(DestBB, this);
 
       if (isEntry && BB != &BB->getParent()->getEntryBlock())
         BB->moveBefore(&BB->getParent()->getEntryBlock());
@@ -282,6 +288,10 @@ void CodeGenPrepare::EliminateMostlyEmptyBlock(BasicBlock *BB) {
   // The PHIs are now updated, change everything that refers to BB to use
   // DestBB and remove BB.
   BB->replaceAllUsesWith(DestBB);
+  if (PI) {
+    PI->replaceAllUses(BB, DestBB);
+    PI->removeEdge(ProfileInfo::getEdge(BB, DestBB));
+  }
   BB->eraseFromParent();
 
   DEBUG(errs() << "AFTER:\n" << *DestBB << "\n\n\n");
@@ -357,6 +367,9 @@ static void SplitEdgeNicely(TerminatorInst *TI, unsigned SuccNum,
 
       // If we found a workable predecessor, change TI to branch to Succ.
       if (FoundMatch) {
+        ProfileInfo *PI = P->getAnalysisIfAvailable<ProfileInfo>();
+        if (PI)
+          PI->splitEdge(TIBB, Dest, Pred);
         Dest->removePredecessor(TIBB);
         TI->setSuccessor(SuccNum, Pred);
         return;

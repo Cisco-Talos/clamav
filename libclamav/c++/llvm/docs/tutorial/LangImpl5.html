@@ -472,7 +472,8 @@ are emitted, we can finish up with the merge code:</p>
   // Emit merge block.
   TheFunction->getBasicBlockList().push_back(MergeBB);
   Builder.SetInsertPoint(MergeBB);
-  PHINode *PN = Builder.CreatePHI(Type::getDoubleTy(getGlobalContext()), "iftmp");
+  PHINode *PN = Builder.CreatePHI(Type::getDoubleTy(getGlobalContext()),
+                                  "iftmp");
   
   PN->addIncoming(ThenV, ThenBB);
   PN->addIncoming(ElseV, ElseBB);
@@ -901,12 +902,15 @@ if/then/else and for expressions..  To build this example, use:
 <pre>
 #include "llvm/DerivedTypes.h"
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
+#include "llvm/ExecutionEngine/Interpreter.h"
+#include "llvm/ExecutionEngine/JIT.h"
 #include "llvm/LLVMContext.h"
 #include "llvm/Module.h"
 #include "llvm/ModuleProvider.h"
 #include "llvm/PassManager.h"
 #include "llvm/Analysis/Verifier.h"
 #include "llvm/Target/TargetData.h"
+#include "llvm/Target/TargetSelect.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Support/IRBuilder.h"
 #include &lt;cstdio&gt;
@@ -1059,7 +1063,8 @@ public:
 };
 
 /// PrototypeAST - This class represents the "prototype" for a function,
-/// which captures its argument names as well as if it is an operator.
+/// which captures its name, and its argument names (thus implicitly the number
+/// of arguments the function takes).
 class PrototypeAST {
   std::string Name;
   std::vector&lt;std::string&gt; Args;
@@ -1086,7 +1091,7 @@ public:
 //===----------------------------------------------------------------------===//
 
 /// CurTok/getNextToken - Provide a simple token buffer.  CurTok is the current
-/// token the parser it looking at.  getNextToken reads another token from the
+/// token the parser is looking at.  getNextToken reads another token from the
 /// lexer and updates CurTok with its results.
 static int CurTok;
 static int getNextToken() {
@@ -1134,9 +1139,9 @@ static ExprAST *ParseIdentifierExpr() {
       ExprAST *Arg = ParseExpression();
       if (!Arg) return 0;
       Args.push_back(Arg);
-      
+
       if (CurTok == ')') break;
-      
+
       if (CurTok != ',')
         return Error("Expected ')' or ',' in argument list");
       getNextToken();
@@ -1235,7 +1240,6 @@ static ExprAST *ParseForExpr() {
 
   return new ForExprAST(IdName, Start, End, Step, Body);
 }
-
 
 /// primary
 ///   ::= identifierexpr
@@ -1381,7 +1385,8 @@ Value *BinaryExprAST::Codegen() {
   case '&lt;':
     L = Builder.CreateFCmpULT(L, R, "cmptmp");
     // Convert bool 0/1 to double 0.0 or 1.0
-    return Builder.CreateUIToFP(L, Type::getDoubleTy(getGlobalContext()), "booltmp");
+    return Builder.CreateUIToFP(L, Type::getDoubleTy(getGlobalContext()),
+                                "booltmp");
   default: return ErrorV("invalid binary operator");
   }
 }
@@ -1448,7 +1453,8 @@ Value *IfExprAST::Codegen() {
   // Emit merge block.
   TheFunction-&gt;getBasicBlockList().push_back(MergeBB);
   Builder.SetInsertPoint(MergeBB);
-  PHINode *PN = Builder.CreatePHI(Type::getDoubleTy(getGlobalContext()), "iftmp");
+  PHINode *PN = Builder.CreatePHI(Type::getDoubleTy(getGlobalContext()),
+                                  "iftmp");
   
   PN-&gt;addIncoming(ThenV, ThenBB);
   PN-&gt;addIncoming(ElseV, ElseBB);
@@ -1545,13 +1551,15 @@ Value *ForExprAST::Codegen() {
 
   
   // for expr always returns 0.0.
-  return getGlobalContext().getNullValue(Type::getDoubleTy(getGlobalContext()));
+  return Constant::getNullValue(Type::getDoubleTy(getGlobalContext()));
 }
 
 Function *PrototypeAST::Codegen() {
   // Make the function type:  double(double,double) etc.
-  std::vector&lt;const Type*&gt; Doubles(Args.size(), Type::getDoubleTy(getGlobalContext()));
-  FunctionType *FT = FunctionType::get(Type::getDoubleTy(getGlobalContext()), Doubles, false);
+  std::vector&lt;const Type*&gt; Doubles(Args.size(),
+                                   Type::getDoubleTy(getGlobalContext()));
+  FunctionType *FT = FunctionType::get(Type::getDoubleTy(getGlobalContext()),
+                                       Doubles, false);
   
   Function *F = Function::Create(FT, Function::ExternalLinkage, Name, TheModule);
   
@@ -1648,7 +1656,7 @@ static void HandleExtern() {
 }
 
 static void HandleTopLevelExpression() {
-  // Evaluate a top level expression into an anonymous function.
+  // Evaluate a top-level expression into an anonymous function.
   if (FunctionAST *F = ParseTopLevelExpr()) {
     if (Function *LF = F-&gt;Codegen()) {
       // JIT the function, returning a function pointer.
@@ -1656,7 +1664,7 @@ static void HandleTopLevelExpression() {
       
       // Cast it to the right type (takes no arguments, returns a double) so we
       // can call it as a native function.
-      double (*FP)() = (double (*)())FPtr;
+      double (*FP)() = (double (*)())(intptr_t)FPtr;
       fprintf(stderr, "Evaluated to %f\n", FP());
     }
   } else {
@@ -1671,15 +1679,13 @@ static void MainLoop() {
     fprintf(stderr, "ready&gt; ");
     switch (CurTok) {
     case tok_eof:    return;
-    case ';':        getNextToken(); break;  // ignore top level semicolons.
+    case ';':        getNextToken(); break;  // ignore top-level semicolons.
     case tok_def:    HandleDefinition(); break;
     case tok_extern: HandleExtern(); break;
     default:         HandleTopLevelExpression(); break;
     }
   }
 }
-
-
 
 //===----------------------------------------------------------------------===//
 // "Library" functions that can be "extern'd" from user code.
@@ -1697,6 +1703,9 @@ double putchard(double X) {
 //===----------------------------------------------------------------------===//
 
 int main() {
+  InitializeNativeTarget();
+  LLVMContext &amp;Context = getGlobalContext();
+
   // Install standard binary operators.
   // 1 is lowest precedence.
   BinopPrecedence['&lt;'] = 10;
@@ -1709,7 +1718,7 @@ int main() {
   getNextToken();
 
   // Make the module, which holds all the code.
-  TheModule = new Module("my cool jit", getGlobalContext());
+  TheModule = new Module("my cool jit", Context);
 
   ExistingModuleProvider *OurModuleProvider =
       new ExistingModuleProvider(TheModule);
@@ -1730,6 +1739,8 @@ int main() {
   OurFPM.add(createGVNPass());
   // Simplify the control flow graph (deleting unreachable blocks, etc).
   OurFPM.add(createCFGSimplificationPass());
+
+  OurFPM.doInitialization();
 
   // Set the global so the code gen can use this.
   TheFPM = &amp;OurFPM;

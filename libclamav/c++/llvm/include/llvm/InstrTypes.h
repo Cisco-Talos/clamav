@@ -53,7 +53,7 @@ protected:
   virtual void setSuccessorV(unsigned idx, BasicBlock *B) = 0;
 public:
 
-  virtual TerminatorInst *clone(LLVMContext &Context) const = 0;
+  virtual TerminatorInst *clone() const = 0;
 
   /// getNumSuccessors - Return the number of successors that this terminator
   /// has.
@@ -130,7 +130,7 @@ public:
 };
 
 template <>
-struct OperandTraits<UnaryInstruction> : FixedNumOperandTraits<1> {
+struct OperandTraits<UnaryInstruction> : public FixedNumOperandTraits<1> {
 };
 
 DEFINE_TRANSPARENT_OPERAND_ACCESSORS(UnaryInstruction, Value)
@@ -200,19 +200,40 @@ public:
   static BinaryOperator *CreateNSWAdd(Value *V1, Value *V2,
                                       const Twine &Name = "") {
     BinaryOperator *BO = CreateAdd(V1, V2, Name);
-    cast<AddOperator>(BO)->setHasNoSignedWrap(true);
+    BO->setHasNoSignedWrap(true);
     return BO;
   }
   static BinaryOperator *CreateNSWAdd(Value *V1, Value *V2,
                                       const Twine &Name, BasicBlock *BB) {
     BinaryOperator *BO = CreateAdd(V1, V2, Name, BB);
-    cast<AddOperator>(BO)->setHasNoSignedWrap(true);
+    BO->setHasNoSignedWrap(true);
     return BO;
   }
   static BinaryOperator *CreateNSWAdd(Value *V1, Value *V2,
                                       const Twine &Name, Instruction *I) {
     BinaryOperator *BO = CreateAdd(V1, V2, Name, I);
-    cast<AddOperator>(BO)->setHasNoSignedWrap(true);
+    BO->setHasNoSignedWrap(true);
+    return BO;
+  }
+
+  /// CreateNSWSub - Create an Sub operator with the NSW flag set.
+  ///
+  static BinaryOperator *CreateNSWSub(Value *V1, Value *V2,
+                                      const Twine &Name = "") {
+    BinaryOperator *BO = CreateSub(V1, V2, Name);
+    BO->setHasNoSignedWrap(true);
+    return BO;
+  }
+  static BinaryOperator *CreateNSWSub(Value *V1, Value *V2,
+                                      const Twine &Name, BasicBlock *BB) {
+    BinaryOperator *BO = CreateSub(V1, V2, Name, BB);
+    BO->setHasNoSignedWrap(true);
+    return BO;
+  }
+  static BinaryOperator *CreateNSWSub(Value *V1, Value *V2,
+                                      const Twine &Name, Instruction *I) {
+    BinaryOperator *BO = CreateSub(V1, V2, Name, I);
+    BO->setHasNoSignedWrap(true);
     return BO;
   }
 
@@ -221,19 +242,19 @@ public:
   static BinaryOperator *CreateExactSDiv(Value *V1, Value *V2,
                                          const Twine &Name = "") {
     BinaryOperator *BO = CreateSDiv(V1, V2, Name);
-    cast<SDivOperator>(BO)->setIsExact(true);
+    BO->setIsExact(true);
     return BO;
   }
   static BinaryOperator *CreateExactSDiv(Value *V1, Value *V2,
                                          const Twine &Name, BasicBlock *BB) {
     BinaryOperator *BO = CreateSDiv(V1, V2, Name, BB);
-    cast<SDivOperator>(BO)->setIsExact(true);
+    BO->setIsExact(true);
     return BO;
   }
   static BinaryOperator *CreateExactSDiv(Value *V1, Value *V2,
                                          const Twine &Name, Instruction *I) {
     BinaryOperator *BO = CreateSDiv(V1, V2, Name, I);
-    cast<SDivOperator>(BO)->setIsExact(true);
+    BO->setIsExact(true);
     return BO;
   }
 
@@ -278,7 +299,7 @@ public:
     return static_cast<BinaryOps>(Instruction::getOpcode());
   }
 
-  virtual BinaryOperator *clone(LLVMContext &Context) const;
+  virtual BinaryOperator *clone() const;
 
   /// swapOperands - Exchange the two operands to this instruction.
   /// This instruction is safe to use on any binary instruction and
@@ -286,6 +307,30 @@ public:
   /// cannot be reversed (ie, it's a Div), then return true.
   ///
   bool swapOperands();
+
+  /// setHasNoUnsignedWrap - Set or clear the nsw flag on this instruction,
+  /// which must be an operator which supports this flag. See LangRef.html
+  /// for the meaning of this flag.
+  void setHasNoUnsignedWrap(bool b = true);
+
+  /// setHasNoSignedWrap - Set or clear the nsw flag on this instruction,
+  /// which must be an operator which supports this flag. See LangRef.html
+  /// for the meaning of this flag.
+  void setHasNoSignedWrap(bool b = true);
+
+  /// setIsExact - Set or clear the exact flag on this instruction,
+  /// which must be an operator which supports this flag. See LangRef.html
+  /// for the meaning of this flag.
+  void setIsExact(bool b = true);
+
+  /// hasNoUnsignedWrap - Determine whether the no unsigned wrap flag is set.
+  bool hasNoUnsignedWrap() const;
+
+  /// hasNoSignedWrap - Determine whether the no signed wrap flag is set.
+  bool hasNoSignedWrap() const;
+
+  /// isExact - Determine whether the exact flag is set.
+  bool isExact() const;
 
   // Methods for support type inquiry through isa, cast, and dyn_cast:
   static inline bool classof(const BinaryOperator *) { return true; }
@@ -298,7 +343,7 @@ public:
 };
 
 template <>
-struct OperandTraits<BinaryOperator> : FixedNumOperandTraits<2> {
+struct OperandTraits<BinaryOperator> : public FixedNumOperandTraits<2> {
 };
 
 DEFINE_TRANSPARENT_OPERAND_ACCESSORS(BinaryOperator, Value)
@@ -711,7 +756,7 @@ public:
 
 // FIXME: these are redundant if CmpInst < BinaryOperator
 template <>
-struct OperandTraits<CmpInst> : FixedNumOperandTraits<2> {
+struct OperandTraits<CmpInst> : public FixedNumOperandTraits<2> {
 };
 
 DEFINE_TRANSPARENT_OPERAND_ACCESSORS(CmpInst, Value)

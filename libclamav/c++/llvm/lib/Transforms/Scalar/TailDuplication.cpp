@@ -30,7 +30,6 @@
 #include "llvm/Analysis/ConstantFolding.h"
 #include "llvm/Transforms/Utils/Local.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/ADT/Statistic.h"
@@ -46,7 +45,7 @@ TailDupThreshold("taildup-threshold",
                  cl::init(1), cl::Hidden);
 
 namespace {
-  class VISIBILITY_HIDDEN TailDup : public FunctionPass {
+  class TailDup : public FunctionPass {
     bool runOnFunction(Function &F);
   public:
     static char ID; // Pass identification, replacement for typeid
@@ -129,7 +128,7 @@ bool TailDup::shouldEliminateUnconditionalBranch(TerminatorInst *TI,
     // other instructions.
     if (isa<CallInst>(I) || isa<InvokeInst>(I)) return false;
 
-    // Allso alloca and malloc.
+    // Also alloca and malloc.
     if (isa<AllocationInst>(I)) return false;
 
     // Some vector instructions can expand into a number of instructions.
@@ -306,7 +305,7 @@ void TailDup::eliminateUnconditionalBranch(BranchInst *Branch) {
   // keeping track of the mapping...
   //
   for (; BI != DestBlock->end(); ++BI) {
-    Instruction *New = BI->clone(BI->getContext());
+    Instruction *New = BI->clone();
     New->setName(BI->getName());
     SourceBlock->getInstList().push_back(New);
     ValueMapping[BI] = New;
