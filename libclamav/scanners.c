@@ -1043,6 +1043,8 @@ static int cli_scanscript(int desc, cli_ctx *ctx)
 			/* when we flush the buffer also scan */
 			if(cli_scanbuff(state.out, state.out_pos, offset, ctx, CL_TYPE_TEXT_ASCII, mdata) == CL_VIRUS) {
 				ret = CL_VIRUS;
+				if(ofd != -1)
+				    ret = cli_checkfp(ofd, ctx) ? CL_CLEAN : CL_VIRUS;
 				break;
 			}
 			if(ctx->scanned)
