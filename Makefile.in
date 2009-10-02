@@ -117,12 +117,6 @@ am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pkgconfigdir)"
 SCRIPTS = $(bin_SCRIPTS)
-AM_V_GEN = $(am__v_GEN_$(V))
-am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
-am__v_GEN_0 = @echo "  GEN   " $@;
-AM_V_at = $(am__v_at_$(V))
-am__v_at_ = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
-am__v_at_0 = @
 SOURCES =
 DIST_SOURCES =
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
@@ -178,7 +172,6 @@ GZIP_ENV = --best
 distcleancheck_listfiles = find . -type f -print
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
-AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AR = @AR@
 ARGZ_H = @ARGZ_H@
 AUTOCONF = @AUTOCONF@
@@ -384,8 +377,7 @@ DISTCLEANFILES = target.h
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-D_FORTIFY_SOURCE=2 \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-fstack-protector-all \
 @DISTCHECK_ENABLE_FLAGS_TRUE@	-Wstack-protector \
-@DISTCHECK_ENABLE_FLAGS_TRUE@	-Wno-error=aggregate-return" \
-@DISTCHECK_ENABLE_FLAGS_TRUE@	VERBOSE=1
+@DISTCHECK_ENABLE_FLAGS_TRUE@	-Wno-error=aggregate-return"
 all: clamav-config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 

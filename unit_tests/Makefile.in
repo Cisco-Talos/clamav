@@ -74,9 +74,6 @@ am__check_clamav_SOURCES_DIST = check_clamav_skip.c check_clamav.c \
 check_clamav_OBJECTS = $(am_check_clamav_OBJECTS)
 @HAVE_LIBCHECK_TRUE@check_clamav_DEPENDENCIES =  \
 @HAVE_LIBCHECK_TRUE@	$(top_builddir)/libclamav/libclamav.la
-AM_V_lt = $(am__v_lt_$(V))
-am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
-am__v_lt_0 = --silent
 am__check_clamd_SOURCES_DIST = check_clamav_skip.c check_clamd.c \
 	checks_common.h
 @HAVE_LIBCHECK_FALSE@am_check_clamd_OBJECTS =  \
@@ -91,120 +88,23 @@ am__depfiles_maybe = depfiles
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) \
-	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
-	$(AM_CFLAGS) $(CFLAGS)
-AM_V_CC = $(am__v_CC_$(V))
-am__v_CC_ = $(am__v_CC_$(AM_DEFAULT_VERBOSITY))
-am__v_CC_0 = @echo "  CC    " $@;
-AM_V_at = $(am__v_at_$(V))
-am__v_at_ = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
-am__v_at_0 = @
+LTCOMPILE = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
-LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-AM_V_CCLD = $(am__v_CCLD_$(V))
-am__v_CCLD_ = $(am__v_CCLD_$(AM_DEFAULT_VERBOSITY))
-am__v_CCLD_0 = @echo "  CCLD  " $@;
-AM_V_GEN = $(am__v_GEN_$(V))
-am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
-am__v_GEN_0 = @echo "  GEN   " $@;
+LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
+	$(LDFLAGS) -o $@
 SOURCES = $(check_clamav_SOURCES) $(check_clamd_SOURCES)
 DIST_SOURCES = $(am__check_clamav_SOURCES_DIST) \
 	$(am__check_clamd_SOURCES_DIST)
 ETAGS = etags
 CTAGS = ctags
-# If stdout is a non-dumb tty, use colors.  If test -t is not supported,
-# then this fails; a conservative approach.  Of course do not redirect
-# stdout here, just stderr.
 am__tty_colors = \
-red=; grn=; lgn=; blu=; std=; \
-test "X$(AM_COLOR_TESTS)" != Xno \
-&& test "X$$TERM" != Xdumb \
-&& { test "X$(AM_COLOR_TESTS)" = Xalways || test -t 1 2>/dev/null; } \
-&& { \
-  red='[0;31m'; \
-  grn='[0;32m'; \
-  lgn='[1;32m'; \
-  blu='[1;34m'; \
-  std='[m'; \
-}
-am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
-am__vpath_adj = case $$p in \
-    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
-    *) f=$$p;; \
-  esac;
-am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
-am__install_max = 40
-am__nobase_strip_setup = \
-  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
-am__nobase_strip = \
-  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
-am__nobase_list = $(am__nobase_strip_setup); \
-  for p in $$list; do echo "$$p $$p"; done | \
-  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
-  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
-    if (++n[$$2] == $(am__install_max)) \
-      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
-    END { for (dir in files) print dir, files[dir] }'
-am__base_list = \
-  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
-  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
-# Restructured Text title and section.
-am__rst_title = sed 's/.*/   &   /;h;s/./=/g;p;x;p;g;p;s/.*//'
-am__rst_section = sed 'p;s/./=/g;p;g'
-# Put stdin (possibly several lines separated by ".  ") in a box.
-am__text_box = $(AWK) '{				\
-  n = split($$0, lines, "\\.  "); max = 0;		\
-  for (i = 1; i <= n; ++i)				\
-    if (max < length(lines[i]))				\
-      max = length(lines[i]);				\
-  for (i = 0; i < max; ++i) line = line "=";		\
-  print line;						\
-  for (i = 1; i <= n; ++i) if (lines[i]) print lines[i];\
-  print line;						\
-}'
-# Solaris 10 'make', and several other traditional 'make' implementations,
-# pass "-e" to $(SHELL).  This contradicts POSIX.  Work around the problem
-# by disabling -e (using the XSI extension "set +e") if it's set.
-am__sh_e_setup = case $$- in *e*) set +e;; esac
-# To be inserted before the command running the test.  Creates the
-# directory for the log if needed.  Stores in $dir the directory
-# containing $f, in $tst the test, in $log the log, and passes
-# TESTS_ENVIRONMENT.  Save and restore TERM around use of
-# TESTS_ENVIRONMENT, in case that unsets it.
-am__check_pre = \
-$(am__sh_e_setup);					\
-$(am__vpath_adj_setup) $(am__vpath_adj)			\
-srcdir=$(srcdir); export srcdir;			\
-rm -f $@-t;						\
-trap 'st=$$?; rm -f '\''$(abs_builddir)/$@-t'\''; (exit $$st); exit $$st' \
-  1 2 13 15;						\
-am__odir=`echo "./$@" | sed 's|/[^/]*$$||'`;		\
-test "x$$am__odir" = x. || $(MKDIR_P) "$$am__odir" || exit $$?;	\
-if test -f "./$$f"; then dir=./;			\
-elif test -f "$$f"; then dir=;				\
-else dir="$(srcdir)/"; fi;				\
-tst=$$dir$$f; log='$@'; __SAVED_TERM=$$TERM;		\
-$(TESTS_ENVIRONMENT)
-RECHECK_LOGS = $(TEST_LOGS)
-AM_RECURSIVE_TARGETS = check check-html recheck recheck-html
-TEST_SUITE_LOG = test-suite.log
-TEST_SUITE_HTML = $(TEST_SUITE_LOG:.log=.html)
-TEST_EXTENSIONS = @EXEEXT@ .test
-LOG_COMPILE = $(LOG_COMPILER) $(AM_LOG_FLAGS) $(LOG_FLAGS)
-am__test_logs1 = $(TESTS:=.log)
-am__test_logs2 = $(am__test_logs1:@EXEEXT@.log=.log)
-TEST_LOGS = $(am__test_logs2:.test.log=.log)
-TEST_LOG_COMPILE = $(TEST_LOG_COMPILER) $(AM_TEST_LOG_FLAGS) \
-	$(TEST_LOG_FLAGS)
-TEST_LOGS_TMP = $(TEST_LOGS:.log=.log-t)
+red=; grn=; lgn=; blu=; std=
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
-AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AR = @AR@
 ARGZ_H = @ARGZ_H@
 AUTOCONF = @AUTOCONF@
@@ -391,7 +291,7 @@ EXTRA_DIST = .split $(srcdir)/*.ref input test-freshclam.conf valgrind.supp viru
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .html .lo .log .o .obj .test .test$(EXEEXT)
+.SUFFIXES: .c .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -433,10 +333,10 @@ clean-checkPROGRAMS:
 	rm -f $$list
 check_clamav$(EXEEXT): $(check_clamav_OBJECTS) $(check_clamav_DEPENDENCIES) 
 	@rm -f check_clamav$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(check_clamav_OBJECTS) $(check_clamav_LDADD) $(LIBS)
+	$(LINK) $(check_clamav_OBJECTS) $(check_clamav_LDADD) $(LIBS)
 check_clamd$(EXEEXT): $(check_clamd_OBJECTS) $(check_clamd_DEPENDENCIES) 
 	@rm -f check_clamd$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(check_clamd_OBJECTS) $(check_clamd_LDADD) $(LIBS)
+	$(LINK) $(check_clamd_OBJECTS) $(check_clamd_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -457,201 +357,176 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_clamd-check_clamd.Po@am__quote@
 
 .c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c $<
 
 .c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
 
 .c.lo:
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
 
 check_clamav-check_clamav_skip.o: check_clamav_skip.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_clamav_skip.o -MD -MP -MF $(DEPDIR)/check_clamav-check_clamav_skip.Tpo -c -o check_clamav-check_clamav_skip.o `test -f 'check_clamav_skip.c' || echo '$(srcdir)/'`check_clamav_skip.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamav-check_clamav_skip.Tpo $(DEPDIR)/check_clamav-check_clamav_skip.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_clamav_skip.o -MD -MP -MF $(DEPDIR)/check_clamav-check_clamav_skip.Tpo -c -o check_clamav-check_clamav_skip.o `test -f 'check_clamav_skip.c' || echo '$(srcdir)/'`check_clamav_skip.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamav-check_clamav_skip.Tpo $(DEPDIR)/check_clamav-check_clamav_skip.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_clamav_skip.c' object='check_clamav-check_clamav_skip.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamav-check_clamav_skip.o `test -f 'check_clamav_skip.c' || echo '$(srcdir)/'`check_clamav_skip.c
 
 check_clamav-check_clamav_skip.obj: check_clamav_skip.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_clamav_skip.obj -MD -MP -MF $(DEPDIR)/check_clamav-check_clamav_skip.Tpo -c -o check_clamav-check_clamav_skip.obj `if test -f 'check_clamav_skip.c'; then $(CYGPATH_W) 'check_clamav_skip.c'; else $(CYGPATH_W) '$(srcdir)/check_clamav_skip.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamav-check_clamav_skip.Tpo $(DEPDIR)/check_clamav-check_clamav_skip.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_clamav_skip.obj -MD -MP -MF $(DEPDIR)/check_clamav-check_clamav_skip.Tpo -c -o check_clamav-check_clamav_skip.obj `if test -f 'check_clamav_skip.c'; then $(CYGPATH_W) 'check_clamav_skip.c'; else $(CYGPATH_W) '$(srcdir)/check_clamav_skip.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamav-check_clamav_skip.Tpo $(DEPDIR)/check_clamav-check_clamav_skip.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_clamav_skip.c' object='check_clamav-check_clamav_skip.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamav-check_clamav_skip.obj `if test -f 'check_clamav_skip.c'; then $(CYGPATH_W) 'check_clamav_skip.c'; else $(CYGPATH_W) '$(srcdir)/check_clamav_skip.c'; fi`
 
 check_clamav-check_clamav.o: check_clamav.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_clamav.o -MD -MP -MF $(DEPDIR)/check_clamav-check_clamav.Tpo -c -o check_clamav-check_clamav.o `test -f 'check_clamav.c' || echo '$(srcdir)/'`check_clamav.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamav-check_clamav.Tpo $(DEPDIR)/check_clamav-check_clamav.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_clamav.o -MD -MP -MF $(DEPDIR)/check_clamav-check_clamav.Tpo -c -o check_clamav-check_clamav.o `test -f 'check_clamav.c' || echo '$(srcdir)/'`check_clamav.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamav-check_clamav.Tpo $(DEPDIR)/check_clamav-check_clamav.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_clamav.c' object='check_clamav-check_clamav.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamav-check_clamav.o `test -f 'check_clamav.c' || echo '$(srcdir)/'`check_clamav.c
 
 check_clamav-check_clamav.obj: check_clamav.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_clamav.obj -MD -MP -MF $(DEPDIR)/check_clamav-check_clamav.Tpo -c -o check_clamav-check_clamav.obj `if test -f 'check_clamav.c'; then $(CYGPATH_W) 'check_clamav.c'; else $(CYGPATH_W) '$(srcdir)/check_clamav.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamav-check_clamav.Tpo $(DEPDIR)/check_clamav-check_clamav.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_clamav.obj -MD -MP -MF $(DEPDIR)/check_clamav-check_clamav.Tpo -c -o check_clamav-check_clamav.obj `if test -f 'check_clamav.c'; then $(CYGPATH_W) 'check_clamav.c'; else $(CYGPATH_W) '$(srcdir)/check_clamav.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamav-check_clamav.Tpo $(DEPDIR)/check_clamav-check_clamav.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_clamav.c' object='check_clamav-check_clamav.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamav-check_clamav.obj `if test -f 'check_clamav.c'; then $(CYGPATH_W) 'check_clamav.c'; else $(CYGPATH_W) '$(srcdir)/check_clamav.c'; fi`
 
 check_clamav-check_jsnorm.o: check_jsnorm.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_jsnorm.o -MD -MP -MF $(DEPDIR)/check_clamav-check_jsnorm.Tpo -c -o check_clamav-check_jsnorm.o `test -f 'check_jsnorm.c' || echo '$(srcdir)/'`check_jsnorm.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamav-check_jsnorm.Tpo $(DEPDIR)/check_clamav-check_jsnorm.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_jsnorm.o -MD -MP -MF $(DEPDIR)/check_clamav-check_jsnorm.Tpo -c -o check_clamav-check_jsnorm.o `test -f 'check_jsnorm.c' || echo '$(srcdir)/'`check_jsnorm.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamav-check_jsnorm.Tpo $(DEPDIR)/check_clamav-check_jsnorm.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_jsnorm.c' object='check_clamav-check_jsnorm.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamav-check_jsnorm.o `test -f 'check_jsnorm.c' || echo '$(srcdir)/'`check_jsnorm.c
 
 check_clamav-check_jsnorm.obj: check_jsnorm.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_jsnorm.obj -MD -MP -MF $(DEPDIR)/check_clamav-check_jsnorm.Tpo -c -o check_clamav-check_jsnorm.obj `if test -f 'check_jsnorm.c'; then $(CYGPATH_W) 'check_jsnorm.c'; else $(CYGPATH_W) '$(srcdir)/check_jsnorm.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamav-check_jsnorm.Tpo $(DEPDIR)/check_clamav-check_jsnorm.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_jsnorm.obj -MD -MP -MF $(DEPDIR)/check_clamav-check_jsnorm.Tpo -c -o check_clamav-check_jsnorm.obj `if test -f 'check_jsnorm.c'; then $(CYGPATH_W) 'check_jsnorm.c'; else $(CYGPATH_W) '$(srcdir)/check_jsnorm.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamav-check_jsnorm.Tpo $(DEPDIR)/check_clamav-check_jsnorm.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_jsnorm.c' object='check_clamav-check_jsnorm.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamav-check_jsnorm.obj `if test -f 'check_jsnorm.c'; then $(CYGPATH_W) 'check_jsnorm.c'; else $(CYGPATH_W) '$(srcdir)/check_jsnorm.c'; fi`
 
 check_clamav-check_str.o: check_str.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_str.o -MD -MP -MF $(DEPDIR)/check_clamav-check_str.Tpo -c -o check_clamav-check_str.o `test -f 'check_str.c' || echo '$(srcdir)/'`check_str.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamav-check_str.Tpo $(DEPDIR)/check_clamav-check_str.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_str.o -MD -MP -MF $(DEPDIR)/check_clamav-check_str.Tpo -c -o check_clamav-check_str.o `test -f 'check_str.c' || echo '$(srcdir)/'`check_str.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamav-check_str.Tpo $(DEPDIR)/check_clamav-check_str.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_str.c' object='check_clamav-check_str.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamav-check_str.o `test -f 'check_str.c' || echo '$(srcdir)/'`check_str.c
 
 check_clamav-check_str.obj: check_str.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_str.obj -MD -MP -MF $(DEPDIR)/check_clamav-check_str.Tpo -c -o check_clamav-check_str.obj `if test -f 'check_str.c'; then $(CYGPATH_W) 'check_str.c'; else $(CYGPATH_W) '$(srcdir)/check_str.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamav-check_str.Tpo $(DEPDIR)/check_clamav-check_str.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_str.obj -MD -MP -MF $(DEPDIR)/check_clamav-check_str.Tpo -c -o check_clamav-check_str.obj `if test -f 'check_str.c'; then $(CYGPATH_W) 'check_str.c'; else $(CYGPATH_W) '$(srcdir)/check_str.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamav-check_str.Tpo $(DEPDIR)/check_clamav-check_str.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_str.c' object='check_clamav-check_str.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamav-check_str.obj `if test -f 'check_str.c'; then $(CYGPATH_W) 'check_str.c'; else $(CYGPATH_W) '$(srcdir)/check_str.c'; fi`
 
 check_clamav-check_regex.o: check_regex.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_regex.o -MD -MP -MF $(DEPDIR)/check_clamav-check_regex.Tpo -c -o check_clamav-check_regex.o `test -f 'check_regex.c' || echo '$(srcdir)/'`check_regex.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamav-check_regex.Tpo $(DEPDIR)/check_clamav-check_regex.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_regex.o -MD -MP -MF $(DEPDIR)/check_clamav-check_regex.Tpo -c -o check_clamav-check_regex.o `test -f 'check_regex.c' || echo '$(srcdir)/'`check_regex.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamav-check_regex.Tpo $(DEPDIR)/check_clamav-check_regex.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_regex.c' object='check_clamav-check_regex.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamav-check_regex.o `test -f 'check_regex.c' || echo '$(srcdir)/'`check_regex.c
 
 check_clamav-check_regex.obj: check_regex.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_regex.obj -MD -MP -MF $(DEPDIR)/check_clamav-check_regex.Tpo -c -o check_clamav-check_regex.obj `if test -f 'check_regex.c'; then $(CYGPATH_W) 'check_regex.c'; else $(CYGPATH_W) '$(srcdir)/check_regex.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamav-check_regex.Tpo $(DEPDIR)/check_clamav-check_regex.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_regex.obj -MD -MP -MF $(DEPDIR)/check_clamav-check_regex.Tpo -c -o check_clamav-check_regex.obj `if test -f 'check_regex.c'; then $(CYGPATH_W) 'check_regex.c'; else $(CYGPATH_W) '$(srcdir)/check_regex.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamav-check_regex.Tpo $(DEPDIR)/check_clamav-check_regex.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_regex.c' object='check_clamav-check_regex.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamav-check_regex.obj `if test -f 'check_regex.c'; then $(CYGPATH_W) 'check_regex.c'; else $(CYGPATH_W) '$(srcdir)/check_regex.c'; fi`
 
 check_clamav-check_disasm.o: check_disasm.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_disasm.o -MD -MP -MF $(DEPDIR)/check_clamav-check_disasm.Tpo -c -o check_clamav-check_disasm.o `test -f 'check_disasm.c' || echo '$(srcdir)/'`check_disasm.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamav-check_disasm.Tpo $(DEPDIR)/check_clamav-check_disasm.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_disasm.o -MD -MP -MF $(DEPDIR)/check_clamav-check_disasm.Tpo -c -o check_clamav-check_disasm.o `test -f 'check_disasm.c' || echo '$(srcdir)/'`check_disasm.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamav-check_disasm.Tpo $(DEPDIR)/check_clamav-check_disasm.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_disasm.c' object='check_clamav-check_disasm.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamav-check_disasm.o `test -f 'check_disasm.c' || echo '$(srcdir)/'`check_disasm.c
 
 check_clamav-check_disasm.obj: check_disasm.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_disasm.obj -MD -MP -MF $(DEPDIR)/check_clamav-check_disasm.Tpo -c -o check_clamav-check_disasm.obj `if test -f 'check_disasm.c'; then $(CYGPATH_W) 'check_disasm.c'; else $(CYGPATH_W) '$(srcdir)/check_disasm.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamav-check_disasm.Tpo $(DEPDIR)/check_clamav-check_disasm.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_disasm.obj -MD -MP -MF $(DEPDIR)/check_clamav-check_disasm.Tpo -c -o check_clamav-check_disasm.obj `if test -f 'check_disasm.c'; then $(CYGPATH_W) 'check_disasm.c'; else $(CYGPATH_W) '$(srcdir)/check_disasm.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamav-check_disasm.Tpo $(DEPDIR)/check_clamav-check_disasm.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_disasm.c' object='check_clamav-check_disasm.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamav-check_disasm.obj `if test -f 'check_disasm.c'; then $(CYGPATH_W) 'check_disasm.c'; else $(CYGPATH_W) '$(srcdir)/check_disasm.c'; fi`
 
 check_clamav-check_uniq.o: check_uniq.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_uniq.o -MD -MP -MF $(DEPDIR)/check_clamav-check_uniq.Tpo -c -o check_clamav-check_uniq.o `test -f 'check_uniq.c' || echo '$(srcdir)/'`check_uniq.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamav-check_uniq.Tpo $(DEPDIR)/check_clamav-check_uniq.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_uniq.o -MD -MP -MF $(DEPDIR)/check_clamav-check_uniq.Tpo -c -o check_clamav-check_uniq.o `test -f 'check_uniq.c' || echo '$(srcdir)/'`check_uniq.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamav-check_uniq.Tpo $(DEPDIR)/check_clamav-check_uniq.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_uniq.c' object='check_clamav-check_uniq.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamav-check_uniq.o `test -f 'check_uniq.c' || echo '$(srcdir)/'`check_uniq.c
 
 check_clamav-check_uniq.obj: check_uniq.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_uniq.obj -MD -MP -MF $(DEPDIR)/check_clamav-check_uniq.Tpo -c -o check_clamav-check_uniq.obj `if test -f 'check_uniq.c'; then $(CYGPATH_W) 'check_uniq.c'; else $(CYGPATH_W) '$(srcdir)/check_uniq.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamav-check_uniq.Tpo $(DEPDIR)/check_clamav-check_uniq.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_uniq.obj -MD -MP -MF $(DEPDIR)/check_clamav-check_uniq.Tpo -c -o check_clamav-check_uniq.obj `if test -f 'check_uniq.c'; then $(CYGPATH_W) 'check_uniq.c'; else $(CYGPATH_W) '$(srcdir)/check_uniq.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamav-check_uniq.Tpo $(DEPDIR)/check_clamav-check_uniq.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_uniq.c' object='check_clamav-check_uniq.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamav-check_uniq.obj `if test -f 'check_uniq.c'; then $(CYGPATH_W) 'check_uniq.c'; else $(CYGPATH_W) '$(srcdir)/check_uniq.c'; fi`
 
 check_clamav-check_matchers.o: check_matchers.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_matchers.o -MD -MP -MF $(DEPDIR)/check_clamav-check_matchers.Tpo -c -o check_clamav-check_matchers.o `test -f 'check_matchers.c' || echo '$(srcdir)/'`check_matchers.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamav-check_matchers.Tpo $(DEPDIR)/check_clamav-check_matchers.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_matchers.o -MD -MP -MF $(DEPDIR)/check_clamav-check_matchers.Tpo -c -o check_clamav-check_matchers.o `test -f 'check_matchers.c' || echo '$(srcdir)/'`check_matchers.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamav-check_matchers.Tpo $(DEPDIR)/check_clamav-check_matchers.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_matchers.c' object='check_clamav-check_matchers.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamav-check_matchers.o `test -f 'check_matchers.c' || echo '$(srcdir)/'`check_matchers.c
 
 check_clamav-check_matchers.obj: check_matchers.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_matchers.obj -MD -MP -MF $(DEPDIR)/check_clamav-check_matchers.Tpo -c -o check_clamav-check_matchers.obj `if test -f 'check_matchers.c'; then $(CYGPATH_W) 'check_matchers.c'; else $(CYGPATH_W) '$(srcdir)/check_matchers.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamav-check_matchers.Tpo $(DEPDIR)/check_clamav-check_matchers.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_matchers.obj -MD -MP -MF $(DEPDIR)/check_clamav-check_matchers.Tpo -c -o check_clamav-check_matchers.obj `if test -f 'check_matchers.c'; then $(CYGPATH_W) 'check_matchers.c'; else $(CYGPATH_W) '$(srcdir)/check_matchers.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamav-check_matchers.Tpo $(DEPDIR)/check_clamav-check_matchers.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_matchers.c' object='check_clamav-check_matchers.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamav-check_matchers.obj `if test -f 'check_matchers.c'; then $(CYGPATH_W) 'check_matchers.c'; else $(CYGPATH_W) '$(srcdir)/check_matchers.c'; fi`
 
 check_clamav-check_htmlnorm.o: check_htmlnorm.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_htmlnorm.o -MD -MP -MF $(DEPDIR)/check_clamav-check_htmlnorm.Tpo -c -o check_clamav-check_htmlnorm.o `test -f 'check_htmlnorm.c' || echo '$(srcdir)/'`check_htmlnorm.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamav-check_htmlnorm.Tpo $(DEPDIR)/check_clamav-check_htmlnorm.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_htmlnorm.o -MD -MP -MF $(DEPDIR)/check_clamav-check_htmlnorm.Tpo -c -o check_clamav-check_htmlnorm.o `test -f 'check_htmlnorm.c' || echo '$(srcdir)/'`check_htmlnorm.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamav-check_htmlnorm.Tpo $(DEPDIR)/check_clamav-check_htmlnorm.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_htmlnorm.c' object='check_clamav-check_htmlnorm.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamav-check_htmlnorm.o `test -f 'check_htmlnorm.c' || echo '$(srcdir)/'`check_htmlnorm.c
 
 check_clamav-check_htmlnorm.obj: check_htmlnorm.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_htmlnorm.obj -MD -MP -MF $(DEPDIR)/check_clamav-check_htmlnorm.Tpo -c -o check_clamav-check_htmlnorm.obj `if test -f 'check_htmlnorm.c'; then $(CYGPATH_W) 'check_htmlnorm.c'; else $(CYGPATH_W) '$(srcdir)/check_htmlnorm.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamav-check_htmlnorm.Tpo $(DEPDIR)/check_clamav-check_htmlnorm.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamav-check_htmlnorm.obj -MD -MP -MF $(DEPDIR)/check_clamav-check_htmlnorm.Tpo -c -o check_clamav-check_htmlnorm.obj `if test -f 'check_htmlnorm.c'; then $(CYGPATH_W) 'check_htmlnorm.c'; else $(CYGPATH_W) '$(srcdir)/check_htmlnorm.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamav-check_htmlnorm.Tpo $(DEPDIR)/check_clamav-check_htmlnorm.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_htmlnorm.c' object='check_clamav-check_htmlnorm.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamav_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamav-check_htmlnorm.obj `if test -f 'check_htmlnorm.c'; then $(CYGPATH_W) 'check_htmlnorm.c'; else $(CYGPATH_W) '$(srcdir)/check_htmlnorm.c'; fi`
 
 check_clamd-check_clamav_skip.o: check_clamav_skip.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamd-check_clamav_skip.o -MD -MP -MF $(DEPDIR)/check_clamd-check_clamav_skip.Tpo -c -o check_clamd-check_clamav_skip.o `test -f 'check_clamav_skip.c' || echo '$(srcdir)/'`check_clamav_skip.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamd-check_clamav_skip.Tpo $(DEPDIR)/check_clamd-check_clamav_skip.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamd-check_clamav_skip.o -MD -MP -MF $(DEPDIR)/check_clamd-check_clamav_skip.Tpo -c -o check_clamd-check_clamav_skip.o `test -f 'check_clamav_skip.c' || echo '$(srcdir)/'`check_clamav_skip.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamd-check_clamav_skip.Tpo $(DEPDIR)/check_clamd-check_clamav_skip.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_clamav_skip.c' object='check_clamd-check_clamav_skip.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamd-check_clamav_skip.o `test -f 'check_clamav_skip.c' || echo '$(srcdir)/'`check_clamav_skip.c
 
 check_clamd-check_clamav_skip.obj: check_clamav_skip.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamd-check_clamav_skip.obj -MD -MP -MF $(DEPDIR)/check_clamd-check_clamav_skip.Tpo -c -o check_clamd-check_clamav_skip.obj `if test -f 'check_clamav_skip.c'; then $(CYGPATH_W) 'check_clamav_skip.c'; else $(CYGPATH_W) '$(srcdir)/check_clamav_skip.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamd-check_clamav_skip.Tpo $(DEPDIR)/check_clamd-check_clamav_skip.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamd-check_clamav_skip.obj -MD -MP -MF $(DEPDIR)/check_clamd-check_clamav_skip.Tpo -c -o check_clamd-check_clamav_skip.obj `if test -f 'check_clamav_skip.c'; then $(CYGPATH_W) 'check_clamav_skip.c'; else $(CYGPATH_W) '$(srcdir)/check_clamav_skip.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamd-check_clamav_skip.Tpo $(DEPDIR)/check_clamd-check_clamav_skip.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_clamav_skip.c' object='check_clamd-check_clamav_skip.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamd-check_clamav_skip.obj `if test -f 'check_clamav_skip.c'; then $(CYGPATH_W) 'check_clamav_skip.c'; else $(CYGPATH_W) '$(srcdir)/check_clamav_skip.c'; fi`
 
 check_clamd-check_clamd.o: check_clamd.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamd-check_clamd.o -MD -MP -MF $(DEPDIR)/check_clamd-check_clamd.Tpo -c -o check_clamd-check_clamd.o `test -f 'check_clamd.c' || echo '$(srcdir)/'`check_clamd.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamd-check_clamd.Tpo $(DEPDIR)/check_clamd-check_clamd.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamd-check_clamd.o -MD -MP -MF $(DEPDIR)/check_clamd-check_clamd.Tpo -c -o check_clamd-check_clamd.o `test -f 'check_clamd.c' || echo '$(srcdir)/'`check_clamd.c
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamd-check_clamd.Tpo $(DEPDIR)/check_clamd-check_clamd.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_clamd.c' object='check_clamd-check_clamd.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamd-check_clamd.o `test -f 'check_clamd.c' || echo '$(srcdir)/'`check_clamd.c
 
 check_clamd-check_clamd.obj: check_clamd.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamd-check_clamd.obj -MD -MP -MF $(DEPDIR)/check_clamd-check_clamd.Tpo -c -o check_clamd-check_clamd.obj `if test -f 'check_clamd.c'; then $(CYGPATH_W) 'check_clamd.c'; else $(CYGPATH_W) '$(srcdir)/check_clamd.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/check_clamd-check_clamd.Tpo $(DEPDIR)/check_clamd-check_clamd.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT check_clamd-check_clamd.obj -MD -MP -MF $(DEPDIR)/check_clamd-check_clamd.Tpo -c -o check_clamd-check_clamd.obj `if test -f 'check_clamd.c'; then $(CYGPATH_W) 'check_clamd.c'; else $(CYGPATH_W) '$(srcdir)/check_clamd.c'; fi`
+@am__fastdepCC_TRUE@	$(am__mv) $(DEPDIR)/check_clamd-check_clamd.Tpo $(DEPDIR)/check_clamd-check_clamd.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='check_clamd.c' object='check_clamd-check_clamd.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(check_clamd_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o check_clamd-check_clamd.obj `if test -f 'check_clamd.c'; then $(CYGPATH_W) 'check_clamd.c'; else $(CYGPATH_W) '$(srcdir)/check_clamd.c'; fi`
@@ -714,183 +589,97 @@ GTAGS:
 distclean-tags:
 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
 
-# To be appended to the command running the test.  Handle the stdout
-# and stderr redirection, and catch the exit status.
-am__check_post =					\
->$@-t 2>&1;						\
-estatus=$$?;						\
-if test -n '$(DISABLE_HARD_ERRORS)'			\
-   && test $$estatus -eq 99; then			\
-  estatus=1;						\
-fi;							\
-TERM=$$__SAVED_TERM; export TERM;			\
-$(am__tty_colors);					\
-xfailed=PASS;						\
-case " $(XFAIL_TESTS) " in				\
-  *[\ \	]$$f[\ \	]* | *[\ \	]$$dir$$f[\ \	]*) \
-    xfailed=XFAIL;;					\
-esac;							\
-case $$estatus:$$xfailed in				\
-    0:XFAIL) col=$$red; res=XPASS;;			\
-    0:*)     col=$$grn; res=PASS ;;			\
-    77:*)    col=$$blu; res=SKIP ;;			\
-    99:*)    col=$$red; res=FAIL ;;			\
-    *:XFAIL) col=$$lgn; res=XFAIL;;			\
-    *:*)     col=$$red; res=FAIL ;;			\
-esac;							\
-echo "$${col}$$res$${std}: $$f";			\
-echo "$$res: $$f (exit: $$estatus)" |			\
-  $(am__rst_section) >$@;				\
-cat $@-t >>$@;						\
-rm -f $@-t
-
-$(TEST_SUITE_LOG): $(TEST_LOGS)
-	@$(am__sh_e_setup);						\
-	list='$(TEST_LOGS)';						\
-	results=`for f in $$list; do					\
-		   read line < $$f && echo "$$line" || echo FAIL;	\
-		 done`;							\
-	all=`echo "$$results" | sed '/^$$/d' | wc -l | sed -e 's/^[	 ]*//'`; \
-	fail=`echo "$$results" | grep -c '^FAIL'`;			\
-	pass=`echo "$$results" | grep -c '^PASS'`;			\
-	skip=`echo "$$results" | grep -c '^SKIP'`;			\
-	xfail=`echo "$$results" | grep -c '^XFAIL'`;			\
-	xpass=`echo "$$results" | grep -c '^XPASS'`;			\
-	failures=`expr $$fail + $$xpass`;				\
-	all=`expr $$all - $$skip`;					\
-	if test "$$all" -eq 1; then tests=test; All=;			\
-	else tests=tests; All="All "; fi;				\
-	case fail=$$fail:xpass=$$xpass:xfail=$$xfail in			\
-	  fail=0:xpass=0:xfail=0)					\
-	    msg="$$All$$all $$tests passed.  ";				\
-	    exit=true;;							\
-	  fail=0:xpass=0:xfail=*)					\
-	    msg="$$All$$all $$tests behaved as expected";		\
-	    if test "$$xfail" -eq 1; then xfailures=failure;		\
-	    else xfailures=failures; fi;				\
-	    msg="$$msg ($$xfail expected $$xfailures).  ";		\
-	    exit=true;;							\
-	  fail=*:xpass=0:xfail=*)					\
-	    msg="$$fail of $$all $$tests failed.  ";			\
-	    exit=false;;						\
-	  fail=*:xpass=*:xfail=*)					\
-	    msg="$$failures of $$all $$tests did not behave as expected"; \
-	    if test "$$xpass" -eq 1; then xpasses=pass;			\
-	    else xpasses=passes; fi;					\
-	    msg="$$msg ($$xpass unexpected $$xpasses).  ";		\
-	    exit=false;;						\
-	  *)								\
-	    echo >&2 "incorrect case"; exit 4;;				\
-	esac;								\
-	if test "$$skip" -ne 0; then					\
-	  if test "$$skip" -eq 1; then					\
-	    msg="$$msg($$skip test was not run).  ";			\
-	  else								\
-	    msg="$$msg($$skip tests were not run).  ";			\
-	  fi;								\
-	fi;								\
-	{								\
-	  echo "$(PACKAGE_STRING): $(subdir)/$(TEST_SUITE_LOG)" |	\
-	    $(am__rst_title);						\
-	  echo "$$msg";							\
-	  echo;								\
-	  echo ".. contents:: :depth: 2";				\
-	  echo;								\
-	  for f in $$list; do						\
-	    read line < $$f;						\
-	    case $$line in						\
-	      PASS:*|XFAIL:*);;						\
-	      *) echo; cat $$f;;					\
-	    esac;							\
-	  done;								\
-	} >$(TEST_SUITE_LOG).tmp;					\
-	mv $(TEST_SUITE_LOG).tmp $(TEST_SUITE_LOG);			\
-	if test "$$failures" -ne 0; then				\
-	  msg="$${msg}See $(subdir)/$(TEST_SUITE_LOG).  ";		\
-	  if test -n "$(PACKAGE_BUGREPORT)"; then			\
-	    msg="$${msg}Please report to $(PACKAGE_BUGREPORT).  ";	\
-	  fi;								\
-	fi;								\
-	test x"$$VERBOSE" = x || $$exit || cat $(TEST_SUITE_LOG);	\
-	$(am__tty_colors);						\
-	if $$exit; then							\
-	  echo $(ECHO_N) "$$grn$(ECHO_C)";				\
-	 else								\
-	  echo $(ECHO_N) "$$red$(ECHO_C)";				\
-	fi;								\
-	echo "$$msg" | $(am__text_box);					\
-	echo $(ECHO_N) "$$std$(ECHO_C)";				\
-	$$exit
-
-# Run all the tests.
-check-TESTS:
-	@list='$(RECHECK_LOGS)'; test -z "$$list" || rm -f $$list
-	@test -z "$(TEST_SUITE_LOG)" || rm -f $(TEST_SUITE_LOG)
-	@set_logs=; if test "X$(TEST_LOGS)" = X.log; then		\
-	  set_logs=TEST_LOGS=;						\
-	fi;								\
-	$(MAKE) $(AM_MAKEFLAGS) $(TEST_SUITE_LOG) $$set_logs
-
-.log.html:
-	@list='$(RST2HTML) $$RST2HTML rst2html rst2html.py';		\
-	for r2h in $$list; do						\
-	  if ($$r2h --version) >/dev/null 2>&1; then			\
-	    R2H=$$r2h;							\
-	  fi;								\
-	done;								\
-	if test -z "$$R2H"; then					\
-	  echo >&2 "cannot find rst2html, cannot create $@";		\
-	  exit 2;							\
-	fi;								\
-	$$R2H $< >$@.tmp
-	@mv $@.tmp $@
-
-# Be sure to run check first, and then to convert the result.
-# Beware of concurrent executions.  Run "check" not "check-TESTS", as
-# check-SCRIPTS and other dependencies are rebuilt by the former only.
-# And expect check to fail.
-check-html:
-	@if $(MAKE) $(AM_MAKEFLAGS) check; then			\
-	  rv=0; else rv=$$?;					\
-	fi;							\
-	$(MAKE) $(AM_MAKEFLAGS) $(TEST_SUITE_HTML) || exit 4;	\
-	exit $$rv
-recheck recheck-html:
-	@target=`echo $@ | sed 's,^re,,'`;				\
-	list='$(TEST_LOGS)';						\
-	list=`for f in $$list; do					\
-	        test -f $$f || continue;				\
-	        if read line < $$f; then				\
-	          case $$line in FAIL*|XPASS*) echo $$f;; esac;		\
-	        else echo $$f; fi;					\
-	      done | tr '\012\015' '  '`;				\
-	$(MAKE) $(AM_MAKEFLAGS) $$target AM_MAKEFLAGS='$(AM_MAKEFLAGS) TEST_LOGS="'"$$list"'"'
-check_clamav.log: check_clamav$(EXEEXT)
-	@p='check_clamav$(EXEEXT)'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
-check_freshclam.sh.log: check_freshclam.sh
-	@p='check_freshclam.sh'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
-check_sigtool.sh.log: check_sigtool.sh
-	@p='check_sigtool.sh'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
-check1_clamscan.sh.log: check1_clamscan.sh
-	@p='check1_clamscan.sh'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
-check2_clamd.sh.log: check2_clamd.sh
-	@p='check2_clamd.sh'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
-check3_clamd.sh.log: check3_clamd.sh
-	@p='check3_clamd.sh'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
-check4_clamd.sh.log: check4_clamd.sh
-	@p='check4_clamd.sh'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
-check5_clamd_vg.sh.log: check5_clamd_vg.sh
-	@p='check5_clamd_vg.sh'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
-check6_clamd_vg.sh.log: check6_clamd_vg.sh
-	@p='check6_clamd_vg.sh'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
-check7_clamd_hg.sh.log: check7_clamd_hg.sh
-	@p='check7_clamd_hg.sh'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
-check8_clamd_hg.sh.log: check8_clamd_hg.sh
-	@p='check8_clamd_hg.sh'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
-.test.log:
-	@p='$<'; $(am__check_pre) $(TEST_LOG_COMPILE) "$$tst" $(am__check_post)
-@am__EXEEXT_TRUE@.test$(EXEEXT).log:
-@am__EXEEXT_TRUE@	@p='$<'; $(am__check_pre) $(TEST_LOG_COMPILE) "$$tst" $(am__check_post)
+check-TESTS: $(TESTS)
+	@failed=0; all=0; xfail=0; xpass=0; skip=0; \
+	srcdir=$(srcdir); export srcdir; \
+	list=' $(TESTS) '; \
+	$(am__tty_colors); \
+	if test -n "$$list"; then \
+	  for tst in $$list; do \
+	    if test -f ./$$tst; then dir=./; \
+	    elif test -f $$tst; then dir=; \
+	    else dir="$(srcdir)/"; fi; \
+	    if $(TESTS_ENVIRONMENT) $${dir}$$tst; then \
+	      all=`expr $$all + 1`; \
+	      case " $(XFAIL_TESTS) " in \
+	      *[\ \	]$$tst[\ \	]*) \
+		xpass=`expr $$xpass + 1`; \
+		failed=`expr $$failed + 1`; \
+		col=$$red; res=XPASS; \
+	      ;; \
+	      *) \
+		col=$$grn; res=PASS; \
+	      ;; \
+	      esac; \
+	    elif test $$? -ne 77; then \
+	      all=`expr $$all + 1`; \
+	      case " $(XFAIL_TESTS) " in \
+	      *[\ \	]$$tst[\ \	]*) \
+		xfail=`expr $$xfail + 1`; \
+		col=$$lgn; res=XFAIL; \
+	      ;; \
+	      *) \
+		failed=`expr $$failed + 1`; \
+		col=$$red; res=FAIL; \
+	      ;; \
+	      esac; \
+	    else \
+	      skip=`expr $$skip + 1`; \
+	      col=$$blu; res=SKIP; \
+	    fi; \
+	    echo "$${col}$$res$${std}: $$tst"; \
+	  done; \
+	  if test "$$all" -eq 1; then \
+	    tests="test"; \
+	    All=""; \
+	  else \
+	    tests="tests"; \
+	    All="All "; \
+	  fi; \
+	  if test "$$failed" -eq 0; then \
+	    if test "$$xfail" -eq 0; then \
+	      banner="$$All$$all $$tests passed"; \
+	    else \
+	      if test "$$xfail" -eq 1; then failures=failure; else failures=failures; fi; \
+	      banner="$$All$$all $$tests behaved as expected ($$xfail expected $$failures)"; \
+	    fi; \
+	  else \
+	    if test "$$xpass" -eq 0; then \
+	      banner="$$failed of $$all $$tests failed"; \
+	    else \
+	      if test "$$xpass" -eq 1; then passes=pass; else passes=passes; fi; \
+	      banner="$$failed of $$all $$tests did not behave as expected ($$xpass unexpected $$passes)"; \
+	    fi; \
+	  fi; \
+	  dashes="$$banner"; \
+	  skipped=""; \
+	  if test "$$skip" -ne 0; then \
+	    if test "$$skip" -eq 1; then \
+	      skipped="($$skip test was not run)"; \
+	    else \
+	      skipped="($$skip tests were not run)"; \
+	    fi; \
+	    test `echo "$$skipped" | wc -c` -le `echo "$$banner" | wc -c` || \
+	      dashes="$$skipped"; \
+	  fi; \
+	  report=""; \
+	  if test "$$failed" -ne 0 && test -n "$(PACKAGE_BUGREPORT)"; then \
+	    report="Please report to $(PACKAGE_BUGREPORT)"; \
+	    test `echo "$$report" | wc -c` -le `echo "$$banner" | wc -c` || \
+	      dashes="$$report"; \
+	  fi; \
+	  dashes=`echo "$$dashes" | sed s/./=/g`; \
+	  if test "$$failed" -eq 0; then \
+	    echo "$$grn$$dashes"; \
+	  else \
+	    echo "$$red$$dashes"; \
+	  fi; \
+	  echo "$$banner"; \
+	  test -z "$$skipped" || echo "$$skipped"; \
+	  test -z "$$report" || echo "$$report"; \
+	  echo "$$dashes$$std"; \
+	  test "$$failed" -eq 0; \
+	else :; fi
 
 distdir: $(DISTFILES)
 	@srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*]/\\\\&/g'`; \
@@ -943,10 +732,6 @@ install-strip:
 	  `test -z '$(STRIP)' || \
 	    echo "INSTALL_PROGRAM_ENV=STRIPPROG='$(STRIP)'"` install
 mostlyclean-generic:
-	-test -z "$(TEST_LOGS)" || rm -f $(TEST_LOGS)
-	-test -z "$(TEST_LOGS_TMP)" || rm -f $(TEST_LOGS_TMP)
-	-test -z "$(TEST_SUITE_HTML)" || rm -f $(TEST_SUITE_HTML)
-	-test -z "$(TEST_SUITE_LOG)" || rm -f $(TEST_SUITE_LOG)
 
 clean-generic:
 	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
@@ -1030,22 +815,21 @@ ps-am:
 
 uninstall-am:
 
-.MAKE: check-am check-html install-am install-strip recheck \
-	recheck-html
+.MAKE: check-am install-am install-strip
 
-.PHONY: CTAGS GTAGS all all-am check check-TESTS check-am check-html \
-	clean clean-checkPROGRAMS clean-generic clean-libtool \
-	clean-local ctags distclean distclean-compile \
-	distclean-generic distclean-libtool distclean-tags distdir dvi \
-	dvi-am html html-am info info-am install install-am \
-	install-data install-data-am install-dvi install-dvi-am \
-	install-exec install-exec-am install-html install-html-am \
-	install-info install-info-am install-man install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
+.PHONY: CTAGS GTAGS all all-am check check-TESTS check-am clean \
+	clean-checkPROGRAMS clean-generic clean-libtool clean-local \
+	ctags distclean distclean-compile distclean-generic \
+	distclean-libtool distclean-tags distdir dvi dvi-am html \
+	html-am info info-am install install-am install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-pdf install-pdf-am \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	recheck recheck-html tags uninstall uninstall-am
+	tags uninstall uninstall-am
 
 
 check2_clamd.sh: $(FILES)
