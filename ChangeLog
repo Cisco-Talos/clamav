@@ -1,3 +1,7 @@
+Fri Oct  2 14:33:09 CEST 2009 (tk)
+----------------------------------
+ * libclamav/scanners.c: fix whitelisting of scripts (bb#1706)
+
 Wed Sep 30 19:41:43 EEST 2009 (edwin)
 -------------------------------------
  * configure{.in,}: Only use -fno-strict-aliasing for gcc-4.3+ to avoid bugs
