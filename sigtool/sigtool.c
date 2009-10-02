@@ -183,7 +183,7 @@ static int md5sig(const struct optstruct *opts, unsigned int mdb)
 static int htmlnorm(const struct optstruct *opts)
 {
 	int fd;
-	struct F_MAP *map;
+	fmap_t *map;
 
     if((fd = open(optget(opts, "html-normalise")->strarg, O_RDONLY)) == -1) {
 	mprintf("!htmlnorm: Can't open file %s\n", optget(opts, "html-normalise")->strarg);
@@ -192,7 +192,7 @@ static int htmlnorm(const struct optstruct *opts)
 
     if((map = fmap(fd, 0, 0))) {
 	html_normalise_map(map, ".", NULL, NULL);
-	fmunmap(map);
+	funmap(map);
     } else
 	mprintf("!fmap failed\n");
 	

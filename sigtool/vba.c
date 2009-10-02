@@ -1030,7 +1030,7 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 				    sigtool_vba_scandir (dir, hex_output, vba);
 				cli_rmdirs (dir);
 				free (dir);
-				fmunmap(*ctx.fmap);
+				funmap(*ctx.fmap);
 				free(ctx.fmap);
 				close(desc);
 			    }

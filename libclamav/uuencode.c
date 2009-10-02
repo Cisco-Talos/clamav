@@ -50,7 +50,7 @@ static	char	const	rcsid[] = "$Id: uuencode.c,v 1.8 2006/12/11 11:55:11 njh Exp $
 #define	RFC2821LENGTH	1000
 
 int
-cli_uuencode(const char *dir, struct F_MAP *map)
+cli_uuencode(const char *dir, fmap_t *map)
 {
 	int i;
 	message *m;
@@ -89,7 +89,7 @@ cli_uuencode(const char *dir, struct F_MAP *map)
  * Return < 0 for failure
  */
 int
-uudecodeFile(message *m, const char *firstline, const char *dir, struct F_MAP *map, size_t *at)
+uudecodeFile(message *m, const char *firstline, const char *dir, fmap_t *map, size_t *at)
 {
 	fileblob *fb;
 	char buffer[RFC2821LENGTH + 1];

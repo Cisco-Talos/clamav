@@ -81,7 +81,7 @@ cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 	table_t *md5table;
 	int printed_predictor_message, printed_embedded_font_message, rc;
 	unsigned int files;
-	struct F_MAP *map = *ctx->fmap;
+	fmap_t *map = *ctx->fmap;
 	int opt_failed = 0;
 
 	cli_dbgmsg("in cli_pdf(%s)\n", dir);

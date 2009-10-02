@@ -23,7 +23,7 @@
 
 #include "fmap.h"
 
-int	cli_uuencode(const char *dir, struct F_MAP *map);
-int	uudecodeFile(message *m, const char *firstline, const char *dir, struct F_MAP *map, size_t *at);
+int	cli_uuencode(const char *dir, fmap_t *map);
+int	uudecodeFile(message *m, const char *firstline, const char *dir, fmap_t *map, size_t *at);
 
 #endif

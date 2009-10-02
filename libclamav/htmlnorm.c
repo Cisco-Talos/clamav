@@ -1710,7 +1710,7 @@ int html_normalise_mem(unsigned char *in_buff, off_t in_size, const char *dirnam
 	return cli_html_normalise(-1, &m_area, dirname, hrefs, dconf);
 }
 
-int html_normalise_map(struct F_MAP *map, const char *dirname, tag_arguments_t *hrefs,const struct cli_dconf* dconf)
+int html_normalise_map(fmap_t *map, const char *dirname, tag_arguments_t *hrefs,const struct cli_dconf* dconf)
 {
 	int retval=FALSE;
 	m_area_t m_area;

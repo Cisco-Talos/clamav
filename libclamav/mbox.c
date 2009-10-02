@@ -218,7 +218,7 @@ typedef	struct	mbox_ctx {
 #endif
 
 static	int	cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx);
-static	message	*parseEmailFile(struct F_MAP *map, size_t *at, const table_t *rfc821Table, const char *firstLine, const char *dir);
+static	message	*parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821Table, const char *firstLine, const char *dir);
 static	message	*parseEmailHeaders(message *m, const table_t *rfc821Table);
 static	int	parseEmailHeader(message *m, const char *line, const table_t *rfc821Table);
 static	mbox_status	parseEmailBody(message *messageIn, text *textIn, mbox_ctx *mctx, unsigned int recursion_level);
@@ -233,7 +233,7 @@ static	char	*rfc2047(const char *in);
 static	char	*rfc822comments(const char *in, char *out);
 static	int	rfc1341(message *m, const char *dir);
 static	bool	usefulHeader(int commandNumber, const char *cmd);
-static	char	*getline_from_mbox(char *buffer, size_t len, struct F_MAP *map, size_t *at);
+static	char	*getline_from_mbox(char *buffer, size_t len, fmap_t *map, size_t *at);
 static	bool	isBounceStart(mbox_ctx *mctx, const char *line);
 static	bool	exportBinhexMessage(mbox_ctx *mctx, message *m);
 static	int	exportBounceMessage(mbox_ctx *ctx, text *start);
@@ -370,7 +370,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
 	mbox_ctx mctx;
 	static table_t *rfc821, *subtype;
 	size_t at = 0;
-	struct F_MAP *map = *ctx->fmap;
+	fmap_t *map = *ctx->fmap;
 
 	cli_dbgmsg("in mbox()\n");
 
@@ -597,7 +597,7 @@ cli_parse_mbox(const char *dir, int desc, cli_ctx *ctx)
  * handled ungracefully...
  */
 static message *
-parseEmailFile(struct F_MAP *map, size_t *at, const table_t *rfc821, const char *firstLine, const char *dir)
+parseEmailFile(fmap_t *map, size_t *at, const table_t *rfc821, const char *firstLine, const char *dir)
 {
 	bool inHeader = TRUE;
 	bool bodyIsEmpty = TRUE;
@@ -3261,7 +3261,7 @@ usefulHeader(int commandNumber, const char *cmd)
  * Like fgets but cope with end of line by "\n", "\r\n", "\n\r", "\r"
  */
 static char *
-getline_from_mbox(char *buffer, size_t len, struct F_MAP *map, size_t *at)
+getline_from_mbox(char *buffer, size_t len, fmap_t *map, size_t *at)
 {
     char *src, *cursrc, *curbuf;
     size_t i;

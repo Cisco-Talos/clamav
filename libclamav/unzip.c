@@ -303,7 +303,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
   return ret;
 }
 
-static unsigned int lhdr(struct F_MAP *map, uint32_t loff,uint32_t zsize, unsigned int *fu, unsigned int fc, uint8_t *ch, int *ret, cli_ctx *ctx, char *tmpd) {
+static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int *fu, unsigned int fc, uint8_t *ch, int *ret, cli_ctx *ctx, char *tmpd) {
   uint8_t *lh, *zip;
   char name[256];
   uint32_t csize, usize;
@@ -438,7 +438,7 @@ static unsigned int lhdr(struct F_MAP *map, uint32_t loff,uint32_t zsize, unsign
 }
 
 
-static unsigned int chdr(struct F_MAP *map, uint32_t coff, uint32_t zsize, unsigned int *fu, unsigned int fc, int *ret, cli_ctx *ctx, char *tmpd) {
+static unsigned int chdr(fmap_t *map, uint32_t coff, uint32_t zsize, unsigned int *fu, unsigned int fc, int *ret, cli_ctx *ctx, char *tmpd) {
   char name[256];
   int last = 0;
   int8_t *ch;
@@ -491,7 +491,7 @@ int cli_unzip(cli_ctx *ctx) {
   unsigned int fc=0, fu=0;
   int ret=CL_CLEAN;
   uint32_t fsize, lhoff = 0, coff = 0;
-  struct F_MAP *map = *ctx->fmap;
+  fmap_t *map = *ctx->fmap;
   char *tmpd, *ptr;
 
   cli_dbgmsg("in cli_unzip\n");
@@ -556,7 +556,7 @@ int cli_unzip_single(cli_ctx *ctx, off_t lhoffl) {
   int ret=CL_CLEAN;
   unsigned int fu=0;
   uint32_t fsize;
-  struct F_MAP *map = *ctx->fmap;
+  fmap_t *map = *ctx->fmap;
 
   cli_dbgmsg("in cli_unzip_single\n");
   fsize = (uint32_t)(map->len - lhoffl);

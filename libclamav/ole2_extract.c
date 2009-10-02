@@ -94,7 +94,7 @@ typedef struct ole2_header_tag
 	off_t m_length;
 	bitset_t *bitset;
 	struct uniq *U;
-	struct F_MAP *map;
+	fmap_t *map;
 	int has_vba;
 } ole2_header_t;
 
@@ -893,7 +893,7 @@ int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **vba)
 	/* size of header - size of other values in struct */
 	hdr_size = sizeof(struct ole2_header_tag) - sizeof(int32_t) - sizeof(uint32_t) -
 			sizeof(off_t) - sizeof(bitset_t *) -
-			sizeof(struct uniq *) - sizeof(int) - sizeof(struct F_MAP *);
+			sizeof(struct uniq *) - sizeof(int) - sizeof(fmap_t *);
 
 	if((*ctx->fmap)->len < hdr_size) {
 	    return CL_CLEAN;

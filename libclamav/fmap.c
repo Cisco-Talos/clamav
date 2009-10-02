@@ -71,16 +71,16 @@ static unsigned int fmap_align_to(unsigned int sz, unsigned int al) {
     return al * fmap_align_items(sz, al);
 }
 
-static unsigned int fmap_which_page(struct F_MAP *m, size_t at) {
+static unsigned int fmap_which_page(fmap_t *m, size_t at) {
     return at / m->pgsz;
 }
 
 
-struct F_MAP *fmap(int fd, off_t offset, size_t len) {
+fmap_t *fmap(int fd, off_t offset, size_t len) {
     unsigned int pages, mapsz, hdrsz, dumb = 1;
     int pgsz = cli_getpagesize();
     struct stat st;
-    struct F_MAP *m;
+    fmap_t *m;
 
     if(fstat(fd, &st)) {
 	cli_warnmsg("fmap: fstat failed\n");
@@ -100,18 +100,18 @@ struct F_MAP *fmap(int fd, off_t offset, size_t len) {
 	return NULL;
     }
     pages = fmap_align_items(len, pgsz);
-    hdrsz = fmap_align_to(sizeof(struct F_MAP) + pages * sizeof(uint32_t), pgsz);
+    hdrsz = fmap_align_to(sizeof(fmap_t) + pages * sizeof(uint32_t), pgsz);
     mapsz = pages * pgsz + hdrsz;
     pthread_mutex_lock(&fmap_mutex);
 #if HAVE_MMAP
-    if ((m = (struct F_MAP *)mmap(NULL, mapsz, PROT_READ | PROT_WRITE, MAP_PRIVATE|/*FIXME: MAP_POPULATE is ~8% faster but more memory intensive */ANONYMOUS_MAP, -1, 0)) == MAP_FAILED) {
+    if ((m = (fmap_t *)mmap(NULL, mapsz, PROT_READ | PROT_WRITE, MAP_PRIVATE|/*FIXME: MAP_POPULATE is ~8% faster but more memory intensive */ANONYMOUS_MAP, -1, 0)) == MAP_FAILED) {
 	m = NULL;
     } else {
 	dumb = 0;
 	madvise(m, mapsz, MADV_RANDOM|MADV_DONTFORK);
     }
 #else
-    m = (struct F_MAP *)cli_malloc(mapsz);
+    m = (fmap_t *)cli_malloc(mapsz);
 #endif
     if(!m) {
 	cli_warnmsg("fmap: map allocation failed\n");
@@ -141,7 +141,7 @@ struct F_MAP *fmap(int fd, off_t offset, size_t len) {
 }
 
 
-static void fmap_qsel(struct F_MAP *m, unsigned int *freeme, unsigned int left, unsigned int right) {
+static void fmap_qsel(fmap_t *m, unsigned int *freeme, unsigned int left, unsigned int right) {
     unsigned int i = left, j = right;
     unsigned int pivot = m->bitmap[freeme[(left + right) / 2]] & FM_MASK_COUNT;
 
@@ -166,7 +166,7 @@ static void fmap_qsel(struct F_MAP *m, unsigned int *freeme, unsigned int left, 
 }
 
 
-static void fmap_aging(struct F_MAP *m) {
+static void fmap_aging(fmap_t *m) {
 #if HAVE_MMAP
     if(m->dumb) return;
     if(m->paged * m->pgsz > UNPAGE_THRSHLD_LO) { /* we alloc'd too much */
@@ -210,7 +210,7 @@ static void fmap_aging(struct F_MAP *m) {
 }
 
 
-static int fmap_readpage(struct F_MAP *m, unsigned int first_page, unsigned int count, unsigned int lock_count) {
+static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count, unsigned int lock_count) {
     size_t readsz = 0, got;
     char *pptr = NULL;
     uint32_t s;
@@ -315,7 +315,7 @@ static int fmap_readpage(struct F_MAP *m, unsigned int first_page, unsigned int 
 }
 
 
-static void *fmap_need(struct F_MAP *m, size_t at, size_t len, int lock) {
+static void *fmap_need(fmap_t *m, size_t at, size_t len, int lock) {
     unsigned int first_page, last_page, lock_count;
     char *ret;
 
@@ -347,25 +347,25 @@ static void *fmap_need(struct F_MAP *m, size_t at, size_t len, int lock) {
     return (void *)ret;
 }
 
-void *fmap_need_off(struct F_MAP *m, size_t at, size_t len) {
+void *fmap_need_off(fmap_t *m, size_t at, size_t len) {
     return fmap_need(m, at, len, 1);
 }
-void *fmap_need_off_once(struct F_MAP *m, size_t at, size_t len) {
+void *fmap_need_off_once(fmap_t *m, size_t at, size_t len) {
     return fmap_need(m, at, len, 0);
 }
-void *fmap_need_ptr(struct F_MAP *m, void *ptr, size_t len) {
+void *fmap_need_ptr(fmap_t *m, void *ptr, size_t len) {
     return fmap_need_off(m, (char *)ptr - (char *)m - m->hdrsz, len);
 }
-void *fmap_need_ptr_once(struct F_MAP *m, void *ptr, size_t len) {
+void *fmap_need_ptr_once(fmap_t *m, void *ptr, size_t len) {
     return fmap_need_off_once(m, (char *)ptr - (char *)m - m->hdrsz, len);
 }
 
-void *fmap_need_str(struct F_MAP *m, void *ptr, size_t len_hint) {
+void *fmap_need_str(fmap_t *m, void *ptr, size_t len_hint) {
     size_t at = (char *)ptr - (char *)m - m->hdrsz;
     return fmap_need_offstr(m, at, len_hint);
 }
 
-static void fmap_unneed_page(struct F_MAP *m, unsigned int page) {
+static void fmap_unneed_page(fmap_t *m, unsigned int page) {
     uint32_t s = m->bitmap[page];
 
     if((s & (FM_MASK_PAGED | FM_MASK_LOCKED)) == (FM_MASK_PAGED | FM_MASK_LOCKED)) {
@@ -386,7 +386,7 @@ static void fmap_unneed_page(struct F_MAP *m, unsigned int page) {
     return;
 }
 
-void fmap_unneed_off(struct F_MAP *m, size_t at, size_t len) {
+void fmap_unneed_off(fmap_t *m, size_t at, size_t len) {
     unsigned int i, first_page, last_page;
     if(m->dumb) return;
     if(!len) {
@@ -409,12 +409,12 @@ void fmap_unneed_off(struct F_MAP *m, size_t at, size_t len) {
     }
 }
 
-void fmap_unneed_ptr(struct F_MAP *m, void *ptr, size_t len) {
+void fmap_unneed_ptr(fmap_t *m, void *ptr, size_t len) {
 //    cli_errmsg("FMAPDBG: unneed_ptr map %p at %p len %u\n", m, ptr, len);
     fmap_unneed_off(m, (char *)ptr - (char *)m - m->hdrsz, len);
 }
 
-int fmap_readn(struct F_MAP *m, void *dst, size_t at, size_t len) {
+int fmap_readn(fmap_t *m, void *dst, size_t at, size_t len) {
     char *src;
 
     if(at > m->len)
@@ -428,7 +428,7 @@ int fmap_readn(struct F_MAP *m, void *dst, size_t at, size_t len) {
     return len;
 }
 
-void fmunmap(struct F_MAP *m) {
+void funmap(fmap_t *m) {
 #ifdef FMAPDEBUG
   cli_errmsg("FMAPDEBUG: Needs:%u reads:%u locks:%u unlocks:%u unmaps:%u\n", m->page_needs, m->page_reads, m->page_locks, m->page_unlocks, m->page_unmaps);
 #endif
@@ -444,7 +444,7 @@ void fmunmap(struct F_MAP *m) {
 	free((void *)m);
 }
 
-void *fmap_need_offstr(struct F_MAP *m, size_t at, size_t len_hint) {
+void *fmap_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
     unsigned int i, first_page, last_page;
     void *ptr = (void *)((char *)m + m->hdrsz + at);
 
@@ -486,7 +486,7 @@ void *fmap_need_offstr(struct F_MAP *m, size_t at, size_t len_hint) {
 }
 
 
-void *fmap_gets(struct F_MAP *m, char *dst, size_t *at, size_t max_len) {
+void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) {
     unsigned int i, first_page, last_page;
     char *src = (void *)((char *)m + m->hdrsz + *at), *endptr = NULL;
     size_t len = MIN(max_len-1, m->len - *at), fullen = len;

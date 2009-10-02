@@ -143,7 +143,7 @@ cli_file_t cli_filetype(const unsigned char *buf, size_t buflen, const struct cl
 
 int is_tar(unsigned char *buf, unsigned int nbytes);
 
-cli_file_t cli_filetype2(struct F_MAP *map, const struct cl_engine *engine)
+cli_file_t cli_filetype2(fmap_t *map, const struct cl_engine *engine)
 {
 	unsigned char *buff, *decoded;
 	int bread = MIN(map->len, MAGIC_BUFFER_SIZE), sret;

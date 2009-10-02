@@ -197,7 +197,7 @@ int cli_scanishield_msi(cli_ctx *ctx, off_t off) {
     uint8_t *buf;
     unsigned int fcount, scanned = 0;
     int ret;
-    struct F_MAP *map = *ctx->fmap;
+    fmap_t *map = *ctx->fmap;
 
     cli_dbgmsg("in ishield-msi\n");
     if(!(buf = fmap_need_off_once(map, off, 0x20))) {
@@ -343,7 +343,7 @@ int cli_scanishield(cli_ctx *ctx, off_t off, size_t sz) {
     long fsize;
     off_t coff = off;
     struct IS_CABSTUFF c = { NULL, -1, 0, 0 };
-    struct F_MAP *map = *ctx->fmap;
+    fmap_t *map = *ctx->fmap;
 
     while(ret == CL_CLEAN) {
 	fname = fmap_need_offstr(map, coff, 2048);
@@ -434,7 +434,7 @@ int cli_scanishield(cli_ctx *ctx, off_t off, size_t sz) {
 static int is_dump_and_scan(cli_ctx *ctx, off_t off, size_t fsize) {
     char *fname, *buf;
     int ofd, ret = CL_CLEAN;
-    struct F_MAP *map = *ctx->fmap;
+    fmap_t *map = *ctx->fmap;
 
     if(!fsize) {
 	cli_dbgmsg("ishield: skipping empty file\n");
@@ -480,7 +480,7 @@ static int is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c) {
     unsigned int off, i, scanned = 0;
     int ret = CL_BREAK;
     char hash[33], *hdr;
-    struct F_MAP *map = *ctx->fmap;
+    fmap_t *map = *ctx->fmap;
     size_t mp_hdrsz;
 
     struct IS_HDR *h1;
@@ -501,7 +501,7 @@ static int is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c) {
     objs = (struct IS_OBJECTS *)fmap_need_ptr(map, hdr + h1_data_off, sizeof(*objs));
     if(!objs) {
         cli_dbgmsg("is_parse_hdr: not enough room for OBJECTS\n");
-        fmunmap(map);
+        funmap(map);
         return CL_CLEAN;
     }
 
@@ -509,7 +509,7 @@ static int is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c) {
                h1->magic, h1->unk1, h1->unk2, h1_data_off, h1->data_sz);
     if(le32_to_host(h1->magic) != 0x28635349) {
         cli_dbgmsg("is_parse_hdr: bad magic. wrong version?\n");
-        fmunmap(map);
+        funmap(map);
         return CL_CLEAN;
     }
 
@@ -680,7 +680,7 @@ static int is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t cs
     z_stream z;
     uint64_t outsz = 0;
     int success = 0;
-    struct F_MAP *map = *ctx->fmap;
+    fmap_t *map = *ctx->fmap;
 
     if(!(outbuf = cli_malloc(IS_CABBUFSZ)))
 	return CL_EMEM;

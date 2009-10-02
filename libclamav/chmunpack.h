@@ -111,7 +111,7 @@ typedef struct chm_metadata_tag {
 	char *chunk_data;
 	char *chunk_current;
 	char *chunk_end;
-	struct F_MAP *map;
+	fmap_t *map;
 	uint16_t chunk_entries;
 } chm_metadata_t;
 

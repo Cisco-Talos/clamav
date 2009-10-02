@@ -72,7 +72,7 @@ int cli_scanelf(cli_ctx *ctx)
 	uint32_t entry, fentry, shoff, phoff, i;
 	uint8_t conv = 0, err;
 	unsigned int format;
-	struct F_MAP *map = *ctx->fmap;
+	fmap_t *map = *ctx->fmap;
 
 
     cli_dbgmsg("in cli_scanelf\n");
@@ -455,7 +455,7 @@ int cli_scanelf(cli_ctx *ctx)
     return CL_CLEAN;
 }
 
-int cli_elfheader(struct F_MAP *map, struct cli_exe_info *elfinfo)
+int cli_elfheader(fmap_t *map, struct cli_exe_info *elfinfo)
 {
 	struct elf_file_hdr32 file_hdr;
 	struct elf_section_hdr32 *section_hdr;

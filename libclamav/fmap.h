@@ -23,9 +23,9 @@
 
 #include "cltypes.h"
 
-//#define FMAPDEBUG
+/* #define FMAPDEBUG */
 
-struct F_MAP {
+typedef struct {
     int fd;
     unsigned int dumb;
     time_t mtime;
@@ -36,25 +36,25 @@ struct F_MAP {
     unsigned int pgsz;
     unsigned int paged;
 #ifdef FMAPDEBUG
-  unsigned int page_needs;
-  unsigned int page_reads;
-  unsigned int page_locks;
-  unsigned int page_unlocks;
-  unsigned int page_unmaps;
+    unsigned int page_needs;
+    unsigned int page_reads;
+    unsigned int page_locks;
+    unsigned int page_unlocks;
+    unsigned int page_unmaps;
 #endif
     uint32_t bitmap[]; /* FIXME: do not use flexible arrays */
-};
+} fmap_t;
 
-struct F_MAP *fmap(int fd, off_t offset, size_t len);
-void fmunmap(struct F_MAP *m);
-void *fmap_need_off(struct F_MAP *m, size_t at, size_t len);
-void *fmap_need_off_once(struct F_MAP *m, size_t at, size_t len);
-void *fmap_need_ptr(struct F_MAP *m, void *ptr, size_t len);
-void *fmap_need_ptr_once(struct F_MAP *m, void *ptr, size_t len);
-void fmap_unneed_off(struct F_MAP *m, size_t at, size_t len);
-void fmap_unneed_ptr(struct F_MAP *m, void *ptr, size_t len);
-int fmap_readn(struct F_MAP *m, void *dst, size_t at, size_t len);
-void *fmap_need_str(struct F_MAP *m, void *ptr, size_t len_hint);
-void *fmap_need_offstr(struct F_MAP *m, size_t at, size_t len_hint);
-void *fmap_gets(struct F_MAP *m, char *dst, size_t *at, size_t max_len);
+fmap_t *fmap(int fd, off_t offset, size_t len);
+void funmap(fmap_t *m);
+void *fmap_need_off(fmap_t *m, size_t at, size_t len);
+void *fmap_need_off_once(fmap_t *m, size_t at, size_t len);
+void *fmap_need_ptr(fmap_t *m, void *ptr, size_t len);
+void *fmap_need_ptr_once(fmap_t *m, void *ptr, size_t len);
+void fmap_unneed_off(fmap_t *m, size_t at, size_t len);
+void fmap_unneed_ptr(fmap_t *m, void *ptr, size_t len);
+int fmap_readn(fmap_t *m, void *dst, size_t at, size_t len);
+void *fmap_need_str(fmap_t *m, void *ptr, size_t len_hint);
+void *fmap_need_offstr(fmap_t *m, size_t at, size_t len_hint);
+void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len);
 #endif

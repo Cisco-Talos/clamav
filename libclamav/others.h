@@ -110,7 +110,7 @@ typedef struct {
     unsigned int found_possibly_unwanted;
     cli_file_t container_type; /* FIXME: to be made into a stack or array - see bb#1579 & bb#1293 */
     struct cli_dconf *dconf;
-    struct F_MAP **fmap;
+    fmap_t **fmap;
 } cli_ctx;
 
 struct cl_engine {

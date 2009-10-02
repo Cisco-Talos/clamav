@@ -105,9 +105,9 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
  * offdata[2]: max shift
  * offdata[3]: section number
  */
-int cli_caloff(const char *offstr, struct cli_target_info *info, struct F_MAP *map, unsigned int target, uint32_t *offdata, uint32_t *offset_min, uint32_t *offset_max)
+int cli_caloff(const char *offstr, struct cli_target_info *info, fmap_t *map, unsigned int target, uint32_t *offdata, uint32_t *offset_min, uint32_t *offset_max)
 {
-	int (*einfo)(struct F_MAP *, struct cli_exe_info *) = NULL;
+	int (*einfo)(fmap_t *, struct cli_exe_info *) = NULL;
 	char offcpy[65];
 	unsigned int n, val;
 	char *pt;
@@ -305,11 +305,11 @@ int cli_checkfp(int fd, cli_ctx *ctx)
 int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli_matched_type **ftoffset, unsigned int acmode)
 {
     int ret = CL_EMEM;
-    struct F_MAP *map = *ctx->fmap;
+    fmap_t *map = *ctx->fmap;
 
     if((*ctx->fmap = fmap(desc, 0, 0))) {
 	ret = cli_fmap_scandesc(ctx, ftype, ftonly, ftoffset, acmode);
-	fmunmap(*ctx->fmap);
+	funmap(*ctx->fmap);
     }
     *ctx->fmap = map;
     return ret;
@@ -328,7 +328,7 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	cli_md5_ctx md5ctx;
 	unsigned char digest[16];
 	struct cli_matcher *groot = NULL, *troot = NULL;
-	struct F_MAP *map = *ctx->fmap;
+	fmap_t *map = *ctx->fmap;
 
     if(!ctx->engine) {
 	cli_errmsg("cli_scandesc: engine == NULL\n");

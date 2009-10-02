@@ -131,6 +131,6 @@ struct pe_image_section_hdr {
 
 int cli_scanpe(cli_ctx *ctx);
 
-int cli_peheader(struct F_MAP *map, struct cli_exe_info *peinfo);
+int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo);
 
 #endif

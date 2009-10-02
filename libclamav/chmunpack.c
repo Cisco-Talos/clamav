@@ -106,7 +106,7 @@ typedef struct lzx_content_tag {
 #define chm_endian_convert_64(x) le64_to_host(x)
 
 /* Read in a block of data from either the mmap area or the given fd */
-static int chm_read_data(struct F_MAP *map, char *dest, off_t offset, off_t len)
+static int chm_read_data(fmap_t *map, char *dest, off_t offset, off_t len)
 {
     void *src = fmap_need_off_once(map, offset, len);
     if(!src) return FALSE;
@@ -611,7 +611,7 @@ void cli_chm_close(chm_metadata_t *metadata)
 	if (metadata->ufd >= 0) {
 		close(metadata->ufd);
 	}
-	fmunmap(metadata->map);
+	funmap(metadata->map);
 }
 
 int cli_chm_extract_file(char *dirname, chm_metadata_t *metadata, cli_ctx *ctx)
@@ -742,6 +742,6 @@ int cli_chm_open(int fd, const char *dirname, chm_metadata_t *metadata, cli_ctx 
 	return CL_SUCCESS;
 
 abort:
-	fmunmap(metadata->map);
+	funmap(metadata->map);
 	return CL_EFORMAT;
 }

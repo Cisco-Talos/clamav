@@ -137,7 +137,7 @@ START_TEST (test_htmlnorm_api)
 	fail_unless(cli_rmdirs(dir) == 0, "rmdirs failed");
 	html_tag_arg_free(&hrefs);
 
-	fmunmap(map);
+	funmap(map);
 
 	close(fd);
 }

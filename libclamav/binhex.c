@@ -110,7 +110,7 @@ static	char	const	rcsid[] = "$Id: binhex.c,v 1.23 2007/02/12 20:46:08 njh Exp $"
 #include "fmap.h"
 
 int
-cli_binhex(const char *dir, struct F_MAP *map)
+cli_binhex(const char *dir, fmap_t *map)
 {
 	char *buf, *start, *line;
 	size_t size;

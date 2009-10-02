@@ -854,7 +854,7 @@ int cli_ac_initdata(struct cli_ac_data *data, uint32_t partsigs, uint32_t lsigs,
     return CL_SUCCESS;
 }
 
-int cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, struct F_MAP *map)
+int cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, fmap_t *map)
 {
 	int ret;
 	unsigned int i;

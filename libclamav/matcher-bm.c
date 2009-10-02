@@ -145,7 +145,7 @@ static int qcompare(const void *a, const void *b)
     return *(const uint32_t *)a - *(const uint32_t *)b;
 }
 
-int cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *data, struct F_MAP *map)
+int cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *data, fmap_t *map)
 {
 	int ret;
 	unsigned int i;
@@ -238,7 +238,7 @@ void cli_bm_free(struct cli_matcher *root)
     }
 }
 
-int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, uint32_t offset, struct F_MAP *map, struct cli_bm_off *offdata)
+int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, uint32_t offset, fmap_t *map, struct cli_bm_off *offdata)
 {
 	uint32_t i, j, off, off_min, off_max;
 	uint8_t found, pchain, shift;

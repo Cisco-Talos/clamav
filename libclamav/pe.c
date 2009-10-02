@@ -290,7 +290,7 @@ static off_t cli_seeksect(int fd, struct cli_exe_section *s) {
     return ret+1;
 }
 
-static unsigned int cli_md5sect(struct F_MAP *map, struct cli_exe_section *s, unsigned char *digest) {
+static unsigned int cli_md5sect(fmap_t *map, struct cli_exe_section *s, unsigned char *digest) {
     void *hashme;
     cli_md5_ctx md5;
 
@@ -311,7 +311,7 @@ static unsigned int cli_md5sect(struct F_MAP *map, struct cli_exe_section *s, un
     return 1;
 }
 
-static void cli_parseres_special(uint32_t base, uint32_t rva, struct F_MAP *map, struct cli_exe_section *exe_sections, uint16_t nsections, size_t fsize, uint32_t hdr_size, unsigned int level, uint32_t type, unsigned int *maxres, struct swizz_stats *stats) {
+static void cli_parseres_special(uint32_t base, uint32_t rva, fmap_t *map, struct cli_exe_section *exe_sections, uint16_t nsections, size_t fsize, uint32_t hdr_size, unsigned int level, uint32_t type, unsigned int *maxres, struct swizz_stats *stats) {
     unsigned int err = 0, i;
     uint8_t *resdir;
     uint8_t *entry, *oentry;
@@ -428,7 +428,7 @@ int cli_scanpe(cli_ctx *ctx)
 	struct cli_matcher *md5_sect;
 	char timestr[32];
 	struct pe_image_data_dir *dirs;
-	struct F_MAP *map;
+	fmap_t *map;
 
 
     if(!ctx) {
@@ -2128,7 +2128,7 @@ int cli_scanpe(cli_ctx *ctx)
     return CL_CLEAN;
 }
 
-int cli_peheader(struct F_MAP *map, struct cli_exe_info *peinfo)
+int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 {
 	uint16_t e_magic; /* DOS signature ("MZ") */
 	uint32_t e_lfanew; /* address of new exe header */

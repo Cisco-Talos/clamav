@@ -213,7 +213,7 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
 	unsigned int arch = 0, ep = 0, err;
 	struct cli_exe_section *sections = NULL;
 	char name[16];
-	struct F_MAP *map = *ctx->fmap;
+	fmap_t *map = *ctx->fmap;
 	ssize_t at;
 
     if(fileinfo)
@@ -501,7 +501,7 @@ int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
     }
 }
 
-int cli_machoheader(struct F_MAP *map, struct cli_exe_info *fileinfo)
+int cli_machoheader(fmap_t *map, struct cli_exe_info *fileinfo)
 {
     cli_ctx ctx;
     ctx.fmap = &map;
@@ -516,7 +516,7 @@ int cli_scanmacho_unibin(cli_ctx *ctx)
 	int ret = CL_CLEAN;
 	struct stat sb;
 	off_t pos;
-	struct F_MAP *map = *ctx->fmap;
+	fmap_t *map = *ctx->fmap;
 	ssize_t at;
 
     if(fmap_readn(map, &fat_header, 0, sizeof(fat_header)) != sizeof(fat_header)) {

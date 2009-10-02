@@ -33,6 +33,6 @@
 #ifndef __BINHEX_H
 #define __BINHEX_H
 
-int cli_binhex(const char *dir, struct F_MAP *map);
+int cli_binhex(const char *dir, fmap_t *map);
 
 #endif

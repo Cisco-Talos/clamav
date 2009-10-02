@@ -439,7 +439,7 @@ static int cli_scangzip(cli_ctx *ctx)
 	char *tmpname;
 	z_stream z;
 	size_t at = 0;
-	struct F_MAP *map = *ctx->fmap;
+	fmap_t *map = *ctx->fmap;
  	
     cli_dbgmsg("in cli_scangzip()\n");
 
@@ -904,7 +904,7 @@ static int cli_scanhtml(cli_ctx *ctx)
 {
 	char *tempname, fullname[1024];
 	int ret=CL_CLEAN, fd;
-	struct F_MAP *map = *ctx->fmap;
+	fmap_t *map = *ctx->fmap;
 
     cli_dbgmsg("in cli_scanhtml()\n");
 
@@ -985,7 +985,7 @@ static int cli_scanscript(cli_ctx *ctx)
 	struct cli_matcher *groot = ctx->engine->root[0];
 	struct cli_ac_data gmdata, tmdata;
 	struct cli_ac_data *mdata[2];
-	struct F_MAP *map = *ctx->fmap;
+	fmap_t *map = *ctx->fmap;
 	size_t at = 0;
 
 	cli_dbgmsg("in cli_scanscript()\n");
@@ -1069,7 +1069,7 @@ static int cli_scanhtml_utf16(cli_ctx *ctx)
 	char *tempname, *decoded, *buff;
 	int ret = CL_CLEAN, fd, bytes;
 	size_t at = 0;
-	struct F_MAP *map = *ctx->fmap;
+	fmap_t *map = *ctx->fmap;
 
     cli_dbgmsg("in cli_scanhtml_utf16()\n");
 
@@ -1110,7 +1110,7 @@ static int cli_scanhtml_utf16(cli_ctx *ctx)
     *ctx->fmap = fmap(fd, 0, 0);
     if(*ctx->fmap) {
 	ret = cli_scanhtml(ctx);
-	fmunmap(*ctx->fmap);
+	funmap(*ctx->fmap);
     } else
 	cli_errmsg("cli_scanhtml_utf16: fmap of %s failed\n", tempname);
 
@@ -1685,7 +1685,7 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 	uint32_t lastzip, lastrar;
 	struct cli_exe_info peinfo;
 	unsigned int acmode = AC_SCAN_VIR, break_loop = 0;
-	struct F_MAP *map = *ctx->fmap;
+	fmap_t *map = *ctx->fmap;
 
 
     if(ctx->engine->maxreclevel && ctx->recursion >= ctx->engine->maxreclevel)
@@ -1885,7 +1885,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    cli_dbgmsg("Raw mode: No support for special files\n");
 	if((ret = cli_fmap_scandesc(ctx, 0, 0, NULL, AC_SCAN_VIR)) == CL_VIRUS)
 	    cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, desc);
-	fmunmap(*ctx->fmap);
+	funmap(*ctx->fmap);
 	ctx->fmap--; 
 	return ret;
     }
@@ -1893,7 +1893,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     type = cli_filetype2(*ctx->fmap, ctx->engine); /* FIXMEFMAP: port to fmap */
     if(type == CL_TYPE_ERROR) {
 	cli_dbgmsg("cli_magic_scandesc: cli_filetype2 returned CL_TYPE_ERROR\n");
-	fmunmap(*ctx->fmap);
+	funmap(*ctx->fmap);
 	ctx->fmap--; 
 	return CL_EREAD;
     }
@@ -1901,7 +1901,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
     if(type != CL_TYPE_IGNORED && ctx->engine->sdb) {
 	if((ret = cli_scanraw(ctx, type, 0, &dettype)) == CL_VIRUS) {
-	    fmunmap(*ctx->fmap);
+	    funmap(*ctx->fmap);
 	    ctx->fmap--; 
 	    return CL_VIRUS;
 	}
@@ -2108,7 +2108,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     ctx->container_type = current_container;
 
     if(ret == CL_VIRUS) {
-	fmunmap(*ctx->fmap);
+	funmap(*ctx->fmap);
 	ctx->fmap--; 
 	return CL_VIRUS;
     }
@@ -2123,7 +2123,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     /* CL_TYPE_HTML: raw HTML files are not scanned, unless safety measure activated via DCONF */
     if(type != CL_TYPE_IGNORED && (type != CL_TYPE_HTML || !(DCONF_DOC & DOC_CONF_HTML_SKIPRAW)) && !ctx->engine->sdb) {
 	if(cli_scanraw(ctx, type, typercg, &dettype) == CL_VIRUS) {
-	    fmunmap(*ctx->fmap);
+	    funmap(*ctx->fmap);
 	    ctx->fmap--; 
 	    return CL_VIRUS;
 	}
@@ -2155,7 +2155,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
     }
     ctx->recursion--;
-    fmunmap(*ctx->fmap);
+    funmap(*ctx->fmap);
     ctx->fmap--;
 
     switch(ret) {
@@ -2183,7 +2183,7 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     ctx.found_possibly_unwanted = 0;
     ctx.container_type = 0;
     ctx.dconf = (struct cli_dconf *) engine->dconf;
-    ctx.fmap = cli_calloc(sizeof(struct F_MAP *), ctx.engine->maxreclevel + 1);
+    ctx.fmap = cli_calloc(sizeof(fmap_t *), ctx.engine->maxreclevel + 1);
     if(!ctx.fmap)
 	return CL_EMEM;
     ctx.fmap--;
