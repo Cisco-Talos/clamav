@@ -1891,7 +1891,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 
     if(type != CL_TYPE_IGNORED && ctx->engine->sdb) {
 	if((ret = cli_scanraw(desc, ctx, type, 0, &dettype)) == CL_VIRUS)
-	    return CL_VIRUS;
+	    return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 	lseek(desc, 0, SEEK_SET);
     }
 
