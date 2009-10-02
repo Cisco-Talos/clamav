@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -38,17 +38,25 @@
 #define BM_BLOCK_SIZE	3
 #define HASH(a,b,c) (211 * a + 37 * b + c)
 
-int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern)
+int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern, const char *offset)
 {
 	uint16_t idx, i;
 	const unsigned char *pt = pattern->pattern;
 	struct cli_bm_patt *prev, *next = NULL;
+	int ret;
 
 
     if(pattern->length < BM_MIN_LENGTH) {
 	cli_errmsg("cli_bm_addpatt: Signature for %s is too short\n", pattern->virname);
 	return CL_EMALFDB;
     }
+
+    if((ret = cli_caloff(offset, NULL, -1, root->type, pattern->offdata, &pattern->offset_min, &pattern->offset_max))) {
+	cli_errmsg("cli_bm_addpatt: Can't calculate offset for signature %s\n", pattern->virname);
+	return ret;
+    }
+    if(pattern->offdata[0] != CLI_OFF_ANY && pattern->offdata[0] != CLI_OFF_ABSOLUTE)
+	root->bm_reloff_num++;
 
 #if BM_MIN_LENGTH == BM_BLOCK_SIZE
     /* try to load balance bm_suffix (at the cost of bm_shift) */
@@ -137,8 +145,6 @@ void cli_bm_free(struct cli_matcher *root)
 		    mpool_free(root->mempool, prev->pattern);
 		if(prev->virname)
 		    mpool_free(root->mempool, prev->virname);
-		if(prev->offset)
-		    mpool_free(root->mempool, prev->offset);
 		mpool_free(root->mempool, prev);
 	    }
 	}
@@ -146,7 +152,7 @@ void cli_bm_free(struct cli_matcher *root)
     }
 }
 
-int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, uint32_t offset, cli_file_t ftype, int fd)
+int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, uint32_t offset, int fd)
 {
 	uint32_t i, j, off;
 	uint8_t found, pchain, shift;
@@ -154,7 +160,8 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	struct cli_bm_patt *p;
 	const unsigned char *bp, *pt;
 	unsigned char prefix;
-	struct cli_target_info info;
+        struct cli_target_info info;
+        int ret;
 
 
     if(!root || !root->bm_shift)
@@ -164,7 +171,6 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 	return CL_CLEAN;
 
     memset(&info, 0, sizeof(info));
-
     for(i = BM_MIN_LENGTH - BM_BLOCK_SIZE; i < length - BM_BLOCK_SIZE + 1; ) {
 	idx = HASH(buffer[i], buffer[i + 1], buffer[i + 2]);
 	shift = root->bm_shift[idx];
@@ -214,21 +220,26 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 		}
 
 		if(found && p->length + p->prefix_length == j) {
-
-		    if(p->offset) {
+		    if(p->offset_min != CLI_OFF_ANY) {
+			if(p->offdata[0] != CLI_OFF_ABSOLUTE) {
+			    ret = cli_caloff(NULL, &info, fd, root->type, p->offdata, &p->offset_min, &p->offset_max);
+			    if(ret != CL_SUCCESS) {
+				cli_errmsg("cli_bm_scanbuff: Can't calculate relative offset in signature for %s\n", p->virname);
+				if(info.exeinfo.section)
+				    free(info.exeinfo.section);
+				return ret;
+			    }
+			}
 			off = offset + i - p->prefix_length - BM_MIN_LENGTH + BM_BLOCK_SIZE;
-			if(!cli_validatesig(ftype, p->offset, off, &info, fd, p->virname)) {
+			if(p->offset_max > off || p->offset_min < off) {
 			    p = p->next;
 			    continue;
 			}
 		    }
-
 		    if(virname)
 			*virname = p->virname;
-
 		    if(info.exeinfo.section)
 			free(info.exeinfo.section);
-
 		    return CL_VIRUS;
 		}
 
@@ -243,6 +254,5 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 
     if(info.exeinfo.section)
 	free(info.exeinfo.section);
-
     return CL_CLEAN;
 }

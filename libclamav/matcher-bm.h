@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2007-2008 Sourcefire, Inc.
+ *  Copyright (C) 2007-2009 Sourcefire, Inc.
  *
  *  Authors: Tomasz Kojm
  *
@@ -27,17 +27,17 @@
 
 struct cli_bm_patt {
     unsigned char *pattern, *prefix;
-    char *virname, *offset;
+    char *virname;
+    uint32_t offdata[4], offset_min, offset_max;
     struct cli_bm_patt *next;
     uint16_t length, prefix_length;
     uint16_t cnt;
     unsigned char pattern0;
-    uint8_t target;
 };
 
-int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern);
+int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern, const char *offset);
 int cli_bm_init(struct cli_matcher *root);
-int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, uint32_t offset, cli_file_t ftype, int fd);
+int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, uint32_t offset, int fd);
 void cli_bm_free(struct cli_matcher *root);
 
 #endif
