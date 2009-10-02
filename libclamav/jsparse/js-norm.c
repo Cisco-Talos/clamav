@@ -495,11 +495,6 @@ static int match_parameters(const yystype *tokens, const char ** param_names, si
 static const char *de_packer_3[] = {"p","a","c","k","e","r"};
 static const char *de_packer_2[] = {"p","a","c","k","e","d"};
 
-
-#ifndef MAX
-#define MAX(a, b) ((a)>(b) ? (a) : (b))
-#endif
-
 static inline char *textbuffer_done(yyscan_t scanner)
 {
 	/* free unusued memory */
@@ -902,7 +897,7 @@ void cli_js_output(struct parser_state *state, const char *tempdir)
 	char lastchar = '\0';
 	char filename[1024];
 
-	snprintf(filename, 1024, "%s/javascript", tempdir);
+	snprintf(filename, 1024, "%s"PATHSEP"javascript", tempdir);
 
 	buf.pos = 0;
 	buf.outfd = open(filename, O_CREAT | O_WRONLY, 0600);
@@ -1389,10 +1384,6 @@ static inline int parseId(YYSTYPE *lvalp, yyscan_t scanner)
 	scanner->state = Identifier;
 	return 0;
 }
-
-#ifndef MIN
-#define MIN(a,b) ((a)<(b) ? (a):(b))
-#endif
 
 static int parseOperator(YYSTYPE *lvalp, yyscan_t scanner)
 {

@@ -35,10 +35,6 @@
 #include <unistd.h>
 #endif
 
-#ifndef O_BINARY
-#define O_BINARY        0
-#endif
-
 #include "others.h"
 #include "scanners.h"
 #include "autoit.h"
@@ -353,7 +349,7 @@ static int ea05(int desc, cli_ctx *ctx, char *tmpd) {
     /* FIXME: REGRESSION NEEDED! */
     /* UNP.usize = u2a(UNP.outputbuf, UNP.usize); */
 
-    snprintf(tempfile, 1023, "%s/autoit.%.3u", tmpd, files);
+    snprintf(tempfile, 1023, "%s"PATHSEP"autoit.%.3u", tmpd, files);
     tempfile[1023]='\0';
     if((i = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
       cli_dbgmsg("autoit: Can't create file %s\n", tempfile);
@@ -704,7 +700,7 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
 	    val = (uint64_t)cli_readint32((char *)&UNP.outputbuf[UNP.cur_input+4]);
 	    val <<=32;
 	    val += (uint64_t)cli_readint32((char *)&UNP.outputbuf[UNP.cur_input]);
-	    snprintf((char *)&buf[UNP.cur_output], 20, "0x%016lx ", val);
+	    snprintf((char *)&buf[UNP.cur_output], 20, "0x%016lx ", (unsigned long int) val);
 	    UNP.cur_output += 19;
 	    UNP.cur_input += 8;
 	    break;
@@ -863,7 +859,7 @@ static int ea06(int desc, cli_ctx *ctx, char *tmpd) {
       UNP.cur_output = UNP.usize ;
     }
 
-    snprintf(tempfile, 1023, "%s/autoit.%.3u", tmpd, files);
+    snprintf(tempfile, 1023, "%s"PATHSEP"autoit.%.3u", tmpd, files);
     tempfile[1023]='\0';
     if((i = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU)) < 0) {
       cli_dbgmsg("autoit: Can't create file %s\n", tempfile);

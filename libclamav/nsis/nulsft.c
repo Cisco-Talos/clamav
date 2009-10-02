@@ -30,11 +30,8 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
-#if HAVE_MMAP
-#ifdef HAVE_SYS_MMAN_H
+#if defined(HAVE_MMAP) && defined(HAVE_SYS_MMAN_H)
 #include <sys/mman.h>
-#endif
 #endif
 
 #include "others.h"
@@ -46,10 +43,6 @@
 #include "matcher.h"
 #include "scanners.h"
 #include "nulsft.h" /* SHUT UP GCC -Wextra */
-
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
 
 #define EC32(x) le32_to_host(x)
 
@@ -205,9 +198,9 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
     return ret;
 
   if (n->fno)
-    snprintf(n->ofn, 1023, "%s/content.%.3u", n->dir, n->fno);
+    snprintf(n->ofn, 1023, "%s"PATHSEP"content.%.3u", n->dir, n->fno);
   else
-    snprintf(n->ofn, 1023, "%s/headers", n->dir);
+    snprintf(n->ofn, 1023, "%s"PATHSEP"headers", n->dir);
 
   n->fno++;
 

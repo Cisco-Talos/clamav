@@ -36,7 +36,7 @@
 #endif
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifndef C_WINDOWS
+#ifndef _WIN32
 #include <sys/wait.h>
 #include <sys/time.h>
 #endif
@@ -73,7 +73,7 @@ int fileinfo(const char *filename, short i)
     }
 }
 
-#ifdef C_WINDOWS
+#ifdef _WIN32
 /* FIXME: Handle users correctly */
 int checkaccess(const char *path, const char *username, int mode)
 {

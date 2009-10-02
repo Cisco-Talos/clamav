@@ -58,7 +58,7 @@ subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/clamav-config.h.in \
 	$(srcdir)/clamav-config.in $(srcdir)/libclamav.pc.in \
-	$(top_srcdir)/configure \
+	$(srcdir)/platform.h.in $(top_srcdir)/configure \
 	$(top_srcdir)/docs/man/clamav-milter.8.in \
 	$(top_srcdir)/docs/man/clamconf.1.in \
 	$(top_srcdir)/docs/man/clamd.8.in \
@@ -88,7 +88,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = clamav-config.h
-CONFIG_CLEAN_FILES = clamav-config libclamav.pc \
+CONFIG_CLEAN_FILES = clamav-config libclamav.pc platform.h \
 	docs/man/clamav-milter.8 docs/man/clamconf.1 docs/man/clamd.8 \
 	docs/man/clamd.conf.5 docs/man/clamdscan.1 docs/man/clamscan.1 \
 	docs/man/freshclam.1 docs/man/freshclam.conf.5 \
@@ -336,7 +336,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = libltdl libclamav clamscan clamd clamdscan freshclam sigtool clamconf database docs etc clamav-milter test unit_tests clamdtop clambc
-EXTRA_DIST = FAQ examples BUGS shared libclamav.pc.in libclamunrar_iface/Makefile.am libclamunrar_iface/Makefile.in UPGRADE COPYING.bzip2 COPYING.lzma COPYING.unrar COPYING.LGPL COPYING.file COPYING.zlib COPYING.getopt COPYING.regex COPYING.sha256
+EXTRA_DIST = FAQ examples BUGS shared libclamav.pc.in libclamunrar_iface/Makefile.am libclamunrar_iface/Makefile.in UPGRADE COPYING.bzip2 COPYING.lzma COPYING.unrar COPYING.LGPL COPYING.file COPYING.zlib COPYING.getopt COPYING.regex COPYING.sha256 platform.h.in
 bin_SCRIPTS = clamav-config
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libclamav.pc
@@ -446,6 +446,8 @@ distclean-hdr:
 clamav-config: $(top_builddir)/config.status $(srcdir)/clamav-config.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 libclamav.pc: $(top_builddir)/config.status $(srcdir)/libclamav.pc.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+platform.h: $(top_builddir)/config.status $(srcdir)/platform.h.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 docs/man/clamav-milter.8: $(top_builddir)/config.status $(top_srcdir)/docs/man/clamav-milter.8.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@

@@ -33,29 +33,23 @@
 #endif
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifndef	C_WINDOWS
+#include <dirent.h>
+#ifndef	_WIN32
 #include <sys/wait.h>
 #include <sys/time.h>
-#include <dirent.h>
 #endif
 #include <time.h>
 #include <fcntl.h>
-#ifndef	C_WINDOWS
+#ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
 #include <errno.h>
 #include "target.h"
-#ifndef	C_WINDOWS
-#include <sys/time.h>
-#endif
 #ifdef	HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
 #ifdef	HAVE_MALLOC_H
 #include <malloc.h>
-#endif
-#if	defined(_MSC_VER) && defined(_DEBUG)
-#include <crtdbg.h>
 #endif
 
 #if defined(HAVE_READDIR_R_3) || defined(HAVE_READDIR_R_2)
@@ -73,15 +67,6 @@
 #include "default.h"
 #include "scanners.h"
 #include "bytecode.h"
-
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
-
-#ifdef        C_WINDOWS
-#undef        P_tmpdir
-#define       P_tmpdir        "C:\\WINDOWS\\TEMP"
-#endif
 
 int (*cli_unrar_open)(int fd, const char *dirname, unrar_state_t *state);
 int (*cli_unrar_extract_next_prepare)(unrar_state_t *state, const char *dirname);
@@ -572,7 +557,7 @@ int cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned
         /* if the remaining scansize is too small... */
         if(ctx->engine->maxscansize-ctx->scansize<needed) {
 	    /* ... we tell the caller to skip this file */
-	    cli_dbgmsg("%s: scansize exceeded (initial: %lu, remaining: %lu, needed: %lu)\n", who, ctx->engine->maxscansize, ctx->scansize, needed);
+	    cli_dbgmsg("%s: scansize exceeded (initial: %lu, remaining: %lu, needed: %lu)\n", who, (unsigned long int) ctx->engine->maxscansize, (unsigned long int) ctx->scansize, needed);
 	    ret = CL_EMAXSIZE;
 	}
     }
@@ -580,7 +565,7 @@ int cli_checklimits(const char *who, cli_ctx *ctx, unsigned long need1, unsigned
     /* if we have per-file size limits, and we are overlimit... */
     if(needed && ctx->engine->maxfilesize && ctx->engine->maxfilesize<needed) {
 	/* ... we tell the caller to skip this file */
-        cli_dbgmsg("%s: filesize exceeded (allowed: %lu, needed: %lu)\n", who, ctx->engine->maxfilesize, needed);
+        cli_dbgmsg("%s: filesize exceeded (allowed: %lu, needed: %lu)\n", who, (unsigned long int) ctx->engine->maxfilesize, needed);
 	ret = CL_EMAXSIZE;
     }
 
@@ -789,9 +774,7 @@ int cli_rmdirs(const char *dirname)
 #else
 	    while((dent = readdir(dd))) {
 #endif
-#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS))
 		if(dent->d_ino)
-#endif
 		{
 		    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 			path = cli_malloc(strlen(dirname) + strlen(dent->d_name) + 2);
@@ -800,7 +783,7 @@ int cli_rmdirs(const char *dirname)
 			    return -1;
 			}
 
-			sprintf(path, "%s/%s", dirname, dent->d_name);
+			sprintf(path, "%s"PATHSEP"%s", dirname, dent->d_name);
 
 			/* stat the file */
 			if(lstat(path, &statbuf) != -1) {
@@ -906,8 +889,6 @@ int cli_dumpscan(int fd, off_t offset, size_t size, cli_ctx *ctx)
 
 #define BITS_PER_CHAR (8)
 #define BITSET_DEFAULT_SIZE (1024)
-#define FALSE (0)
-#define TRUE (1)
 
 static unsigned long nearest_power(unsigned long num)
 {
@@ -991,4 +972,3 @@ int cli_bitset_test(bitset_t *bs, unsigned long bit_offset)
 	}
 	return (bs->bitset[char_offset] & ((unsigned char)1 << bit_offset));
 }
-

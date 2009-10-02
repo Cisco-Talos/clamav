@@ -18,10 +18,6 @@
  *  MA 02110-1301, USA.
  */
 
-#ifdef	_MSC_VER
-#include <winsock.h>
-#endif
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -39,18 +35,15 @@
 #include <time.h>
 #include <sys/stat.h>
 #include <errno.h>
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
 #include <sys/time.h>
 #include <sys/wait.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
 #endif
 
 #if HAVE_SYS_PARAM_H
 #include <sys/param.h>
-#endif
-
-#ifndef	C_WINDOWS
-#include <sys/socket.h>
-#include <sys/ioctl.h>
 #endif
 
 #ifdef HAVE_SYS_TYPES_H
@@ -61,11 +54,6 @@
 #endif
 
 #include <pthread.h>
-/* submitted by breiter@wolfereiter.com: do not use poll(2) on Interix */
-#ifdef C_INTERIX
-#undef HAVE_POLL
-#undef HAVE_POLL_H
-#endif
 
 #if HAVE_POLL
 #if HAVE_POLL_H
@@ -87,7 +75,7 @@
 #include "others.h"
 #include "misc.h"
 
-#ifdef	C_WINDOWS
+#ifdef	_WIN32
 void virusaction(const char *filename, const char *virname, const struct optstruct *opts)
 {
     if(optget(opts, "VirusEvent")->enabled)
@@ -166,7 +154,7 @@ void virusaction(const char *filename, const char *virname, const struct optstru
 	free(buffer_file);
 	free(buffer_vir);
 }
-#endif /* C_WINDOWS */
+#endif /* _WIN32 */
 
 /* Function: writen
 	Try hard to write the specified number of bytes
@@ -421,9 +409,6 @@ void fds_remove(struct fd_data *data, int fd)
     fds_unlock(data);
 }
 
-#ifndef	C_WINDOWS
-#define	closesocket(s)	close(s)
-#endif
 #define BUFFSIZE 1024
 /* Wait till data is available to be read on any of the fds,
  * read available data on all fds, and mark them as appropriate.

@@ -22,6 +22,7 @@ dnl For a release change [devel] to the real version [0.xy]
 dnl also change VERSION below
 AC_INIT([ClamAV], [devel], [http://bugs.clamav.net/], [clamav], [http://www.clamav.net/])
 
+AH_BOTTOM([#include "platform.h"])
 dnl put configure auxiliary into config
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_HEADER([clamav-config.h])
@@ -33,7 +34,7 @@ AC_CREATE_TARGET_H([target.h])
 
 dnl -Wall and -Werror here are NOT CFLAGS, they refer to automake warnings
 dnl enable stealth builds and psychedelic tests
-AM_INIT_AUTOMAKE([1.9 -Wall -Wportability -Wno-override -Werror std-options foreign dist-bzip2 no-define color-tests tar-pax])
+AM_INIT_AUTOMAKE([1.11 -Wall -Wportability -Wno-override -Werror std-options foreign dist-bzip2 no-define color-tests parallel-tests tar-ustar])
 AM_SILENT_RULES([yes])
 
 dnl we told automake to not define these, since we want to include
@@ -101,9 +102,15 @@ if test "$gcc_check" = "yes"; then
 				AC_MSG_RESULT([ok (${gcc_version})])
 				;;
 		esac
-		# bb #1581 - temporarely add -fno-strict-aliasing so gcc 4.4.0
-		# works correctly
-		CFLAGS="$CFLAGS -fno-strict-aliasing"
+		case "${gcc_version}" in
+		    [[56789]].* | 4.[[3456789]].*)
+			# bb #1581 - temporarely add -fno-strict-aliasing so gcc 4.4.0
+			# works correctly
+			CFLAGS="$CFLAGS -fno-strict-aliasing"
+			;;
+		    *)
+			;;
+		esac
 	fi
 else
 	CFLAGS="$CFLAGS -O0"
@@ -1607,6 +1614,7 @@ clambc/Makefile
 Makefile
 clamav-config
 libclamav.pc
+platform.h
 docs/man/clamav-milter.8
 docs/man/clamconf.1
 docs/man/clamd.8

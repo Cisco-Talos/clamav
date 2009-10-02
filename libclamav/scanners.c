@@ -35,22 +35,7 @@
 #include <sys/param.h>
 #endif
 #include <fcntl.h>
-#ifndef	C_WINDOWS
 #include <dirent.h>
-#include <netinet/in.h>
-#endif
-
-#if HAVE_MMAP
-#if HAVE_SYS_MMAN_H
-#include <sys/mman.h>
-#else /* HAVE_SYS_MMAN_H */
-#undef HAVE_MMAP
-#endif
-#endif
-
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
 
 #define DCONF_ARCH  ctx->dconf->archive
 #define DCONF_DOC   ctx->dconf->doc
@@ -108,7 +93,7 @@
 
 static int cli_scanfile(const char *filename, cli_ctx *ctx);
 
-static int cli_scandir(const char *dirname, cli_ctx *ctx, cli_file_t container)
+static int cli_scandir(const char *dirname, cli_ctx *ctx)
 {
 	DIR *dd;
 	struct dirent *dent;
@@ -120,8 +105,6 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx, cli_file_t container)
 #endif
 	struct stat statbuf;
 	char *fname;
-	int fd, ret = CL_CLEAN;
-	cli_file_t ftype;
 
 
     if((dd = opendir(dirname)) != NULL) {
@@ -132,9 +115,7 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx, cli_file_t container)
 #else
 	while((dent = readdir(dd))) {
 #endif
-#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS))
 	    if(dent->d_ino)
-#endif
 	    {
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
@@ -144,12 +125,12 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx, cli_file_t container)
 			return CL_EMEM;
 		    }
 
-		    sprintf(fname, "%s/%s", dirname, dent->d_name);
+		    sprintf(fname, "%s"PATHSEP"%s", dirname, dent->d_name);
 
 		    /* stat the file */
 		    if(lstat(fname, &statbuf) != -1) {
 			if(S_ISDIR(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) {
-			    if(cli_scandir(fname, ctx, container) == CL_VIRUS) {
+			    if(cli_scandir(fname, ctx) == CL_VIRUS) {
 				free(fname);
 				closedir(dd);
 				return CL_VIRUS;
@@ -160,27 +141,6 @@ static int cli_scandir(const char *dirname, cli_ctx *ctx, cli_file_t container)
 				    free(fname);
 				    closedir(dd);
 				    return CL_VIRUS;
-				}
-
-				if(container == CL_TYPE_MAIL) {
-				    fd = open(fname, O_RDONLY|O_BINARY);
-				    if(fd == -1) {
-					    char err[128];
-					    cli_warnmsg("Cannot open file %s: %s, mode: %x\n", fname, cli_strerror(errno, err, sizeof(err)), statbuf.st_mode);
-					    free(fname);
-					    continue;
-				    }
-				    ftype = cli_filetype2(fd, ctx->engine);
-				    if(ftype >= CL_TYPE_TEXT_ASCII && ftype <= CL_TYPE_TEXT_UTF16BE) {
-					lseek(fd, 0, SEEK_SET);
-					ret = cli_scandesc(fd, ctx, CL_TYPE_MAIL, 0, NULL, AC_SCAN_VIR);
-				    }
-				    close(fd);
-				    if(ret == CL_VIRUS) {
-					free(fname);
-					closedir(dd);
-					return CL_VIRUS;
-				    }
 				}
 			    }
 			}
@@ -365,7 +325,7 @@ static int cli_scanrar(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 
     metadata = metadata_tmp = rar_state.metadata; 
 
-    if(cli_scandir(rar_state.comment_dir, ctx, 0) == CL_VIRUS)
+    if(cli_scandir(rar_state.comment_dir, ctx) == CL_VIRUS)
 	ret = CL_VIRUS;
 
     cli_unrar_close(&rar_state);
@@ -781,7 +741,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 
 	for(i = 0; i < vba_project->count; i++) {
 	    for(j = 0; (unsigned int)j < vba_project->colls[i]; j++) {
-		snprintf(vbaname, 1024, "%s/%s_%u", vba_project->dir, vba_project->name[i], j);
+		snprintf(vbaname, 1024, "%s"PATHSEP"%s_%u", vba_project->dir, vba_project->name[i], j);
 		vbaname[sizeof(vbaname)-1] = '\0';
 		fd = open(vbaname, O_RDONLY|O_BINARY);
 		if(fd == -1) continue;
@@ -815,12 +775,12 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 
     if(ret == CL_CLEAN && (hashcnt = uniq_get(U, "powerpoint document", 19, &hash))) {
 	while(hashcnt--) {
-	    snprintf(vbaname, 1024, "%s/%s_%u", dirname, hash, hashcnt);
+	    snprintf(vbaname, 1024, "%s"PATHSEP"%s_%u", dirname, hash, hashcnt);
 	    vbaname[sizeof(vbaname)-1] = '\0';
 	    fd = open(vbaname, O_RDONLY|O_BINARY);
 	    if (fd == -1) continue;
 	    if ((fullname = cli_ppt_vba_read(fd, ctx))) {
-		if(cli_scandir(fullname, ctx, 0) == CL_VIRUS) {
+		if(cli_scandir(fullname, ctx) == CL_VIRUS) {
 		    ret = CL_VIRUS;
 		}
 		if(!ctx->engine->keeptmp)
@@ -833,7 +793,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 
     if (ret == CL_CLEAN && (hashcnt = uniq_get(U, "worddocument", 12, &hash))) {
 	while(hashcnt--) {
-	    snprintf(vbaname, sizeof(vbaname), "%s/%s_%u", dirname, hash, hashcnt);
+	    snprintf(vbaname, sizeof(vbaname), "%s"PATHSEP"%s_%u", dirname, hash, hashcnt);
 	    vbaname[sizeof(vbaname)-1] = '\0';
 	    fd = open(vbaname, O_RDONLY|O_BINARY);
 	    if (fd == -1) continue;
@@ -880,7 +840,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
     /* Check directory for embedded OLE objects */
     hashcnt = uniq_get(U, "_1_ole10native", 14, &hash);
     while(hashcnt--) {
-	snprintf(vbaname, sizeof(vbaname), "%s/%s_%u", dirname, hash, hashcnt);
+	snprintf(vbaname, sizeof(vbaname), "%s"PATHSEP"%s_%u", dirname, hash, hashcnt);
 	vbaname[sizeof(vbaname)-1] = '\0';
 
 	fd = open(vbaname, O_RDONLY|O_BINARY);
@@ -905,9 +865,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 #else
 	while((dent = readdir(dd))) {
 #endif
-#if	(!defined(C_INTERIX)) && (!defined(C_WINDOWS))
 	    if(dent->d_ino)
-#endif
 	    {
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
@@ -916,7 +874,7 @@ static int cli_vba_scandir(const char *dirname, cli_ctx *ctx, struct uniq *U)
 			ret = CL_EMEM;
 			break;
 		    }
-		    sprintf(fullname, "%s/%s", dirname, dent->d_name);
+		    sprintf(fullname, "%s"PATHSEP"%s", dirname, dent->d_name);
 
 		    /* stat the file */
 		    if(lstat(fullname, &statbuf) != -1) {
@@ -974,7 +932,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
     cli_dbgmsg("cli_scanhtml: using tempdir %s\n", tempname);
 
     html_normalise_fd(desc, tempname, NULL, ctx->dconf);
-    snprintf(fullname, 1024, "%s/nocomment.html", tempname);
+    snprintf(fullname, 1024, "%s"PATHSEP"nocomment.html", tempname);
     fd = open(fullname, O_RDONLY|O_BINARY);
     if (fd >= 0) {
 	    ret = cli_scandesc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR);
@@ -984,7 +942,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
     if(ret == CL_CLEAN && sb.st_size < 2097152) {
 	    /* limit to 2 MB, we're not interesting in scanning large files in notags form */
 	    /* TODO: don't even create notags if file is over 2 MB */
-	    snprintf(fullname, 1024, "%s/notags.html", tempname);
+	    snprintf(fullname, 1024, "%s"PATHSEP"notags.html", tempname);
 	    fd = open(fullname, O_RDONLY|O_BINARY);
 	    if(fd >= 0) {
 		    ret = cli_scandesc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR);
@@ -993,7 +951,7 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
     }
 
     if(ret == CL_CLEAN) {
-	    snprintf(fullname, 1024, "%s/javascript", tempname);
+	    snprintf(fullname, 1024, "%s"PATHSEP"javascript", tempname);
 	    fd = open(fullname, O_RDONLY|O_BINARY);
 	    if(fd >= 0) {
 		    ret = cli_scandesc(fd, ctx, CL_TYPE_HTML, 0, NULL, AC_SCAN_VIR);
@@ -1006,8 +964,8 @@ static int cli_scanhtml(int desc, cli_ctx *ctx)
     }
 
     if (ret == CL_CLEAN) {
-	snprintf(fullname, 1024, "%s/rfc2397", tempname);
-	ret = cli_scandir(fullname, ctx, 0);
+	snprintf(fullname, 1024, "%s"PATHSEP"rfc2397", tempname);
+	ret = cli_scandir(fullname, ctx);
     }
 
     if(!ctx->engine->keeptmp)
@@ -1139,9 +1097,9 @@ static int cli_scanhtml_utf16(int desc, cli_ctx *ctx)
 	    if(write(fd, decoded, strlen(decoded)) == -1) {
 		cli_errmsg("cli_scanhtml_utf16: Can't write to file %s\n", tempname);
 		free(decoded);
+		close(fd);
 		cli_unlink(tempname);
 		free(tempname);
-		close(fd);
 		return CL_EWRITE;
 	    }
 	    free(decoded);
@@ -1197,7 +1155,7 @@ static int cli_scanole2(int desc, cli_ctx *ctx)
 	ret = cli_vba_scandir(dir, ctx, vba);
 	uniq_free(vba);
 	if(ret != CL_VIRUS)
-	    if(cli_scandir(dir, ctx, 0) == CL_VIRUS)
+	    if(cli_scandir(dir, ctx) == CL_VIRUS)
 	        ret = CL_VIRUS;
 	ctx->recursion--;
     }
@@ -1256,7 +1214,7 @@ static int cli_scanbinhex(int desc, cli_ctx *ctx)
     if((ret = cli_binhex(dir, desc)))
 	cli_dbgmsg("Binhex: %s\n", cl_strerror(ret));
     else
-	ret = cli_scandir(dir, ctx, 0);
+	ret = cli_scandir(dir, ctx);
 
     if(!ctx->engine->keeptmp)
 	cli_rmdirs(dir);
@@ -1342,7 +1300,7 @@ static int cli_scanscrenc(int desc, cli_ctx *ctx)
     }
 
     if (html_screnc_decode(desc, tempname))
-	ret = cli_scandir(tempname, ctx, 0);
+	ret = cli_scandir(tempname, ctx);
 
     if(!ctx->engine->keeptmp)
 	cli_rmdirs(tempname);
@@ -1504,7 +1462,7 @@ static int cli_scantnef(int desc, cli_ctx *ctx)
     ret = cli_tnef(dir, desc, ctx);
 
     if(ret == CL_CLEAN)
-	ret = cli_scandir(dir, ctx, 0);
+	ret = cli_scandir(dir, ctx);
 
     if(!ctx->engine->keeptmp)
 	cli_rmdirs(dir);
@@ -1530,7 +1488,7 @@ static int cli_scanuuencoded(int desc, cli_ctx *ctx)
     ret = cli_uuencode(dir, desc);
 
     if(ret == CL_CLEAN)
-	ret = cli_scandir(dir, ctx, 0);
+	ret = cli_scandir(dir, ctx);
 
     if(!ctx->engine->keeptmp)
 	cli_rmdirs(dir);
@@ -1567,7 +1525,9 @@ static int cli_scanmail(int desc, cli_ctx *ctx)
 	return ret;
     }
 
-    ret = cli_scandir(dir, ctx, CL_TYPE_MAIL);
+    ctx->container_type = CL_TYPE_MAIL;
+    ret = cli_scandir(dir, ctx);
+    ctx->container_type = 0;
 
     if(!ctx->engine->keeptmp)
 	cli_rmdirs(dir);
@@ -1881,6 +1841,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	cli_file_t type, dettype = 0;
 	struct stat sb;
 	uint8_t typercg = 1;
+	cli_file_t current_container = ctx->container_type; /* TODO: container tracking code TBD - bb#1293 */
 
     if(ctx->engine->maxreclevel && ctx->recursion > ctx->engine->maxreclevel) {
         cli_dbgmsg("cli_magic_scandesc: Archive recursion limit exceeded (%u, max: %u)\n", ctx->recursion, ctx->engine->maxreclevel);
@@ -1934,8 +1895,8 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	lseek(desc, 0, SEEK_SET);
     }
 
+    ctx->container_type = 0;
     ctx->recursion++;
-
     switch(type) {
 	case CL_TYPE_IGNORED:
 	    break;
@@ -2131,6 +2092,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
     }
     ctx->recursion--;
+    ctx->container_type = current_container;
 
     if(ret == CL_VIRUS)
 	return CL_VIRUS;
@@ -2157,6 +2119,10 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	case CL_TYPE_TEXT_UTF8:
 	    if((DCONF_DOC & DOC_CONF_SCRIPT) && dettype != CL_TYPE_HTML)
 	        ret = cli_scanscript(desc, ctx);
+	    if(ret != CL_VIRUS && ctx->container_type == CL_TYPE_MAIL) {
+		lseek(desc, 0, SEEK_SET);
+		ret = cli_scandesc(desc, ctx, CL_TYPE_MAIL, 0, NULL, AC_SCAN_VIR);
+	    }
 	    break;
 	/* Due to performance reasons all executables were first scanned
 	 * in raw mode. Now we will try to unpack them
@@ -2194,6 +2160,7 @@ int cl_scandesc(int desc, const char **virname, unsigned long int *scanned, cons
     ctx.scanned = scanned;
     ctx.options = scanoptions;
     ctx.found_possibly_unwanted = 0;
+    ctx.container_type = 0;
     ctx.dconf = (struct cli_dconf *) engine->dconf;
 
     rc = cli_magic_scandesc(desc, &ctx);

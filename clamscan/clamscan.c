@@ -30,9 +30,7 @@
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifdef	C_WINDOWS
-#include <fcntl.h>
-#else
+#ifndef _WIN32
 #include <sys/time.h>
 #endif
 #include <time.h>
@@ -54,10 +52,6 @@
 
 void help(void);
 
-#if defined(C_WINDOWS) && defined(CL_DEBUG)
-#include <crtdbg.h>
-#endif
-
 struct s_info info;
 short recursion = 0, printinfected = 0, bell = 0;
 
@@ -66,21 +60,14 @@ int main(int argc, char **argv)
 	int ds, dms, ret;
 	double mb, rmb;
 	struct timeval t1, t2;
-#ifndef C_WINDOWS
 	struct timezone tz;
+#ifndef _WIN32
 	sigset_t sigset;
 #endif
 	struct optstruct *opts;
 	const struct optstruct *opt;
 
-#if defined(C_WINDOWS) && defined(CL_THREAD_SAFE)
-    if(!pthread_win32_process_attach_np()) {
-	mprintf("!Can't start the win32 pthreads layer\n");
-	return 72;
-    }
-#endif
-
-#if !defined(C_WINDOWS) && !defined(C_BEOS)
+#if !defined(_WIN32) && !defined(C_BEOS)
     sigemptyset(&sigset);
     sigaddset(&sigset, SIGXFSZ);
     sigprocmask(SIG_SETMASK, &sigset, NULL);
@@ -156,28 +143,14 @@ int main(int argc, char **argv)
 
     memset(&info, 0, sizeof(struct s_info));
 
-#ifdef C_WINDOWS
-    _set_fmode(_O_BINARY);
-#ifdef CL_DEBUG
-    {
-	_CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_FILE);
-	_CrtSetReportFile(_CRT_ERROR, _CRTDBG_FILE_STDERR);
-    }
-#endif	
-    gettimeofday(&t1, NULL);
-#else
     gettimeofday(&t1, &tz);
-#endif
 
     ret = scanmanager(opts);
 
     if(!optget(opts, "no-summary")->enabled) {
-#ifdef C_WINDOWS
-	gettimeofday(&t2, NULL);
-#else
 	gettimeofday(&t2, &tz);
-#endif
-	ds = t2.tv_sec - t1.tv_sec;
+
+    ds = t2.tv_sec - t1.tv_sec;
 	dms = t2.tv_usec - t1.tv_usec;
 	ds -= (dms < 0) ? (1):(0);
 	dms += (dms < 0) ? (1000000):(0);
@@ -201,13 +174,6 @@ int main(int argc, char **argv)
     }
 
     optfree(opts);
-
-#if defined(C_WINDOWS) && defined(CL_THREAD_SAFE)
-    if(!pthread_win32_process_detach_np()) {
-	logg("!Can't stop the win32 pthreads layer\n");
-	return 72;
-    }
-#endif
 
     return ret;
 }

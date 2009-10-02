@@ -44,10 +44,6 @@
 #endif
 #include "blob.h"
 
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
-
 #define PPT_LZW_BUFFSIZE 8192
 #define VBA_COMPRESSION_WINDOW 4096
 #define	MIDDLE_SIZE	20
@@ -269,7 +265,7 @@ cli_vba_readdir(const char *dir, struct uniq *U, uint32_t which)
 	
 	if (!uniq_get(U, "_vba_project", 12, &hash))
 		return NULL;
-	snprintf(fullname, sizeof(fullname), "%s/%s_%u", dir, hash, which);
+	snprintf(fullname, sizeof(fullname), "%s"PATHSEP"%s_%u", dir, hash, which);
 	fullname[sizeof(fullname)-1] = '\0';
 	fd = open(fullname, O_RDONLY|O_BINARY);
 
@@ -657,7 +653,7 @@ ppt_unlzw(const char *dir, int fd, uint32_t length)
 	unsigned char inbuff[PPT_LZW_BUFFSIZE], outbuff[PPT_LZW_BUFFSIZE];
 	char fullname[NAME_MAX + 1];
 
-	snprintf(fullname, sizeof(fullname) - 1, "%s/ppt%.8lx.doc",
+	snprintf(fullname, sizeof(fullname) - 1, "%s"PATHSEP"ppt%.8lx.doc",
 		dir, (long)lseek(fd, 0L, SEEK_CUR));
 
 	ofd = open(fullname, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY|O_EXCL,

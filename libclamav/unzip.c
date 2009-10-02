@@ -34,14 +34,10 @@
 #include <string.h>
 #endif
 #include <stdlib.h>
-
-#if HAVE_MMAP
-#ifdef HAVE_SYS_MMAN_H
+#include <stdio.h>
+#if defined(HAVE_MMAP) && defined(HAVE_SYS_MMAN_H)
 #include <sys/mman.h>
 #endif
-#endif /* HAVE_MMAP */
-
-#include <stdio.h>
 
 #include <zlib.h>
 #include "inflate64.h"
@@ -57,11 +53,6 @@
 
 #define UNZIP_PRIVATE
 #include "unzip.h"
-
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
-
 
 static int wrap_inflateinit2(void *a, int b) {
   return inflateInit2(a, b);
@@ -83,7 +74,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
   unsigned int res=1, written=0;
 
   if(tmpd) {
-    snprintf(name, sizeof(name), "%s/zip.%03u", tmpd, *fu);
+    snprintf(name, sizeof(name), "%s"PATHSEP"zip.%03u", tmpd, *fu);
     name[sizeof(name)-1]='\0';
   } else {
     if(!(tempfile = cli_gentemp(ctx->engine->tmpdir))) return CL_EMEM;
@@ -106,7 +97,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
     }
     if(res==1) {
       if(ctx->engine->maxfilesize && csize > ctx->engine->maxfilesize) {
-	cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->engine->maxfilesize);
+	cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", (long unsigned int) ctx->engine->maxfilesize);
 	csize = ctx->engine->maxfilesize;
       }
       if(cli_writen(of, src, csize)!=(int)csize) ret = CL_EWRITE;
@@ -167,7 +158,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
       if(*avail_out!=sizeof(obuf)) {
 	written+=sizeof(obuf)-(*avail_out);
 	if(ctx->engine->maxfilesize && written > ctx->engine->maxfilesize) {
-	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->engine->maxfilesize);
+	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", (long unsigned int) ctx->engine->maxfilesize);
 	  res = Z_STREAM_END;
 	  break;
 	}
@@ -211,7 +202,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
       if(strm.avail_out!=sizeof(obuf)) {
 	written+=sizeof(obuf)-strm.avail_out;
 	if(ctx->engine->maxfilesize && written > ctx->engine->maxfilesize) {
-	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->engine->maxfilesize);
+	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", (unsigned long int) ctx->engine->maxfilesize);
 	  res = BZ_STREAM_END;
 	  break;
 	}
@@ -248,7 +239,7 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
       if(strm.avail_out!=sizeof(obuf)) {
 	written+=sizeof(obuf)-strm.avail_out;
 	if(ctx->engine->maxfilesize && written > ctx->engine->maxfilesize) {
-	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", ctx->engine->maxfilesize);
+	  cli_dbgmsg("cli_unzip: trimming output size to maxfilesize (%lu)\n", (unsigned long int) ctx->engine->maxfilesize);
 	  res = 0;
 	  break;
 	}

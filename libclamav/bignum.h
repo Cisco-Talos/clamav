@@ -44,14 +44,6 @@
 #define LTM_ALL /* FIXME: tk: limit to the above class */
 #include "bignum_class.h"
 
-#ifndef MIN
-   #define MIN(x,y) ((x)<(y)?(x):(y))
-#endif
-
-#ifndef MAX
-   #define MAX(x,y) ((x)>(y)?(x):(y))
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 

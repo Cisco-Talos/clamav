@@ -33,29 +33,23 @@
 #endif
 #include <sys/types.h>
 #include <sys/stat.h>
-#ifndef	C_WINDOWS
+#include <dirent.h>
+#ifndef	_WIN32
 #include <sys/wait.h>
 #include <sys/time.h>
-#include <dirent.h>
 #endif
 #include <time.h>
 #include <fcntl.h>
-#ifndef	C_WINDOWS
+#ifdef	HAVE_PWD_H
 #include <pwd.h>
 #endif
 #include <errno.h>
 #include "target.h"
-#ifndef	C_WINDOWS
-#include <sys/time.h>
-#endif
 #ifdef	HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
 #ifdef	HAVE_MALLOC_H
 #include <malloc.h>
-#endif
-#if	defined(_MSC_VER) && defined(_DEBUG)
-#include <crtdbg.h>
 #endif
 
 #include "clamav.h"
@@ -66,10 +60,6 @@
 #include "ltdl.h"
 #include "matcher-ac.h"
 #include "md5.h"
-
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
 
 static unsigned char name_salt[16] = { 16, 38, 97, 12, 8, 4, 72, 196, 217, 144, 33, 124, 18, 11, 17, 253 };
 
@@ -118,9 +108,11 @@ void cli_dbgmsg_internal(const char *str, ...)
 int cli_matchregex(const char *str, const char *regex)
 {
 	regex_t reg;
-	int match;
-
-    if(cli_regcomp(&reg, regex, REG_EXTENDED | REG_NOSUB) == 0) {
+	int match, flags = REG_EXTENDED | REG_NOSUB;
+#ifdef _WIN32
+    flags |= REG_ICASE;
+#endif
+    if(cli_regcomp(&reg, regex, flags) == 0) {
 	match = (cli_regexec(&reg, str, 0, NULL, 0) == REG_NOMATCH) ? 0 : 1;
 	cli_regfree(&reg);
 	return match;
@@ -138,11 +130,7 @@ void *cli_malloc(size_t size)
 	return NULL;
     }
 
-#if defined(_MSC_VER) && defined(_DEBUG)
-    alloc = _malloc_dbg(size, _NORMAL_BLOCK, __FILE__, __LINE__);
-#else
     alloc = malloc(size);
-#endif
 
     if(!alloc) {
 	cli_errmsg("cli_malloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int) size);
@@ -161,11 +149,7 @@ void *cli_calloc(size_t nmemb, size_t size)
 	return NULL;
     }
 
-#if defined(_MSC_VER) && defined(_DEBUG)
-    alloc = _calloc_dbg(nmemb, size, _NORMAL_BLOCK, __FILE__, __LINE__);
-#else
     alloc = calloc(nmemb, size);
-#endif
 
     if(!alloc) {
 	cli_errmsg("cli_calloc(): Can't allocate memory (%lu bytes).\n", (unsigned long int) (nmemb * size));
@@ -224,11 +208,7 @@ char *cli_strdup(const char *s)
         return NULL;
     }
 
-#if defined(_MSC_VER) && defined(_DEBUG)
-    alloc = _strdup_dbg(s, _NORMAL_BLOCK, __FILE__, __LINE__);
-#else
     alloc = strdup(s);
-#endif
 
     if(!alloc) {
         cli_errmsg("cli_strdup(): Can't allocate memory (%u bytes).\n", (unsigned int) strlen(s));
@@ -352,6 +332,10 @@ int cli_writen(int fd, const void *buff, unsigned int count)
 
 int cli_filecopy(const char *src, const char *dest)
 {
+
+#ifdef _WIN32
+    return (!CopyFileA(src, dest, 0));
+#else
 	char *buffer;
 	int s, d, bytes;
 
@@ -377,7 +361,29 @@ int cli_filecopy(const char *src, const char *dest)
     close(s);
 
     return close(d);
+#endif
 }
+
+#ifndef P_tmpdir
+#ifdef _WIN32
+#define P_tmpdir "C:\\"
+#else
+#define P_tmpdir "/tmp"
+#endif /* _WIN32 */
+#endif /* P_tmpdir */
+
+const char *cli_gettmpdir(void) {
+	const char *tmpdir;
+    if(
+#ifdef _WIN32
+	!(tmpdir = getenv("TEMP")) && !(tmpdir = getenv("TMP"))
+#else
+	!(tmpdir = getenv("TMPDIR"))
+#endif
+    ) tmpdir = P_tmpdir;
+    return tmpdir;
+}
+
 struct dirent_data {
     char *filename;
     const char *dirname;
@@ -518,9 +524,9 @@ int cli_ftw(char *path, int flags, int maxdepth, cli_ftw_cb callback, struct cli
 	char *pathend;
 	/* trim slashes so that dir and dir/ behave the same when
 	 * they are symlinks, and we are not following symlinks */
-	while (path[0] == '/' && path[1] == '/') path++;
+	while (path[0] == *PATHSEP && path[1] == *PATHSEP) path++;
 	pathend = path + strlen(path);
-	while (pathend > path && pathend[-1] == '/') --pathend;
+	while (pathend > path && pathend[-1] == *PATHSEP) --pathend;
 	*pathend = '\0';
     }
     if(pathchk && pathchk(path, data) == 1)
@@ -613,10 +619,10 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 		if (ret != CL_SUCCESS)
 		    break;
 	    }
-            if(!strcmp(dirname, "/"))
-		sprintf(fname, "/%s", dent->d_name);
+            if(!strcmp(dirname, PATHSEP))
+		sprintf(fname, PATHSEP"%s", dent->d_name);
 	    else
-		sprintf(fname, "%s/%s", dirname, dent->d_name);
+		sprintf(fname, "%s"PATHSEP"%s", dirname, dent->d_name);
 
 	    if(pathchk && pathchk(fname, data) == 1) {
 		free(fname);
@@ -677,7 +683,7 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 	closedir(dd);
 
 	if (entries) {
-	    qsort(entries, entries_cnt, sizeof(*entries), ftw_compare);
+	    cli_qsort(entries, entries_cnt, sizeof(*entries), ftw_compare);
 	    for (i = 0; i < entries_cnt; i++) {
 		struct dirent_data *entry = &entries[i];
 		ret = handle_entry(entry, flags, maxdepth-1, callback, data, pathchk);
@@ -757,18 +763,12 @@ char *cli_gentemp(const char *dir)
         const char *mdir;
 	unsigned char salt[16 + 32];
 	int i;
+    size_t len;
 
-    if(!dir) {
-	if((mdir = getenv("TMPDIR")) == NULL)
-#ifdef P_tmpdir
-	    mdir = P_tmpdir;
-#else
-	    mdir = "/tmp";
-#endif
-    } else
-	mdir = dir;
+    mdir = dir ? dir : cli_gettmpdir();
 
-    name = (char *) cli_calloc(strlen(mdir) + 1 + 32 + 1 + 7, sizeof(char));
+    len = strlen(mdir) + 42;
+    name = (char *) cli_calloc(len, sizeof(char));
     if(!name) {
 	cli_dbgmsg("cli_gentemp('%s'): out of memory\n", mdir);
 	return NULL;
@@ -795,12 +795,7 @@ char *cli_gentemp(const char *dir)
 	return NULL;
     }
 
-#ifdef	C_WINDOWS
-	sprintf(name, "%s\\clamav-", mdir);
-#else
-	sprintf(name, "%s/clamav-", mdir);
-#endif
-    strncat(name, tmp, 32);
+	snprintf(name, len, "%s"PATHSEP"clamav-%s", mdir, tmp);
     free(tmp);
 
     return(name);
@@ -834,4 +829,84 @@ int cli_regcomp(regex_t *preg, const char *pattern, int cflags)
 	cflags |= REG_ICASE;
     }
     return cli_regcomp_real(preg, pattern, cflags);
+}
+
+/* Public domain qsort implementation by Raymond Gardner and Paul Edwards */
+#define  SWAP(a, b)  (qsort_swap((char *)(a), (char *)(b), size))
+#define  COMP(a, b)  ((*comp)((void *)(a), (void *)(b)))
+#define  T           7 /* subfiles of T or fewer elements will
+			* be sorted by a simple insertion sort
+			* T must be at least 3
+			*/
+
+static void qsort_swap(char *a, char *b, size_t nbytes)
+{
+	char tmp;
+
+   do {
+      tmp = *a;
+      *a++ = *b;
+      *b++ = tmp;
+   } while(--nbytes);
+}
+
+void cli_qsort(void *basep, size_t nelems, size_t size, int (*comp)(const void *, const void *))
+{
+	char *stack[40], **sp;
+	char *i, *j, *limit;
+	size_t thresh;
+	char *base;
+
+    base = (char *) basep;
+    thresh = T * size;
+    sp = stack;
+    limit = base + nelems * size;
+    while(1) {
+	if(limit - base > thresh) {
+	    SWAP(((((size_t) (limit - base)) / size) / 2) * size + base, base);
+	    i = base + size;
+	    j = limit - size;
+	    if(COMP(i, j) > 0)
+		SWAP(i, j);
+	    if(COMP(base, j) > 0)
+		SWAP(base, j);
+	    if(COMP(i, base) > 0)
+		SWAP(i, base);
+	    while(1) {
+		do
+		    i += size;
+		while(COMP(i, base) < 0);
+		do
+		    j -= size;
+		while(COMP(j, base) > 0);
+		if(i > j)
+		    break;
+		SWAP(i, j);
+	    }
+	    SWAP(base, j);
+	    if(j - base > limit - i) {
+		sp[0] = base;
+		sp[1] = j;
+		base = i;
+	    } else {
+		sp[0] = i;
+		sp[1] = limit;
+		limit = j;
+	    }
+	    sp += 2;
+	} else {
+	    for(j = base, i = j + size; i < limit; j = i, i += size)
+		for(; COMP(j, j + size) > 0; j -= size) {
+		    SWAP(j, j+size);
+		    if(j == base)
+			break;
+		}
+	    if(sp != stack) {
+		sp -= 2;
+		base = sp[0];
+		limit = sp[1];
+	    } else
+		break;
+	}
+    }
 }

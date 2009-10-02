@@ -39,13 +39,8 @@
 #include <errno.h>
 #include <stdio.h>
 #include <ctype.h>
-
-#if HAVE_MMAP
-#if HAVE_SYS_MMAN_H
+#if defined(HAVE_MMAP) && defined(HAVE_SYS_MMAN_H)
 #include <sys/mman.h>
-#else /* HAVE_SYS_MMAN_H */
-#undef HAVE_MMAP
-#endif
 #endif
 
 #include "others.h"
@@ -653,7 +648,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 	tag_args.value = NULL;
 	tag_args.contents = NULL;
 	if (dirname) {
-		snprintf(filename, 1024, "%s/rfc2397", dirname);
+		snprintf(filename, 1024, "%s"PATHSEP"rfc2397", dirname);
 		if (mkdir(filename, 0700) && errno != EEXIST) {
 			file_buff_o2 = file_buff_text = NULL;
 			goto abort;
@@ -666,7 +661,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 		}
 
 		/* this will still contains scripts that are inside comments */
-		snprintf(filename, 1024, "%s/nocomment.html", dirname);
+		snprintf(filename, 1024, "%s"PATHSEP"nocomment.html", dirname);
 		file_buff_o2->fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
 		if (file_buff_o2->fd == -1) {
 			cli_dbgmsg("open failed: %s\n", filename);
@@ -683,7 +678,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 			goto abort;
 		}
 
-		snprintf(filename, 1024, "%s/notags.html", dirname);
+		snprintf(filename, 1024, "%s"PATHSEP"notags.html", dirname);
 		file_buff_text->fd = open(filename, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
 		if(file_buff_text->fd == -1) {
 			cli_dbgmsg("open failed: %s\n", filename);
@@ -1482,7 +1477,7 @@ static int cli_html_normalise(int fd, m_area_t *m_area, const char *dirname, tag
 					if (!file_tmp_o1) {
 						goto abort;
 					}
-					snprintf(filename, 1024, "%s/rfc2397", dirname);
+					snprintf(filename, 1024, "%s"PATHSEP"rfc2397", dirname);
 					tmp_file = cli_gentemp(filename);
 					if(!tmp_file) {
 						goto abort;
@@ -1755,7 +1750,7 @@ int html_screnc_decode(int fd, const char *dirname)
 		return FALSE;
 	}
 
-	snprintf((char*)filename, 1024, "%s/screnc.html", dirname);
+	snprintf((char*)filename, 1024, "%s"PATHSEP"screnc.html", dirname);
 	ofd = open((const char*)filename, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR|S_IRUSR);
 
 	if (ofd < 0) {

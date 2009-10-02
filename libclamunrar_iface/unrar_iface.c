@@ -50,10 +50,6 @@ static uint32_t unrar_endian_convert_32(uint32_t v)
 }
 #endif
 
-#ifndef O_BINARY
-#define O_BINARY    0
-#endif
-
 /* FIXME: allow this to be controlled from unrar_open or so */
 #ifdef RAR_DEBUG_MODE
 #define unrar_dbgmsg printf
@@ -278,7 +274,7 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
 	return UNRAR_PASSWD;
     }
 
-    snprintf(filename,1024,"%s/comments", dirname);
+    snprintf(filename,1024,"%s"PATHSEP"comments", dirname);
     if(mkdir(filename,0700)) {
 	unrar_dbgmsg("UNRAR: Unable to create comment temporary directory\n");
 	free(main_hdr);
@@ -324,7 +320,7 @@ int unrar_open(int fd, const char *dirname, unrar_state_t *state)
 	    unrar_dbgmsg("UNRAR: UnPack Size: 0x%.4x\n", comment_header->unpack_size);
 	    unrar_dbgmsg("UNRAR: UnPack Version: 0x%.2x\n", comment_header->unpack_ver);
 	    unrar_dbgmsg("UNRAR: Pack Method: 0x%.2x\n", comment_header->method);
-	    snprintf(filename, 1024, "%s/main.cmt", state->comment_dir);
+	    snprintf(filename, 1024, "%s"PATHSEP"main.cmt", state->comment_dir);
 	    ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, 0600);
 	    if(ofd < 0) {
 		unrar_dbgmsg("UNRAR: ERROR: Failed to open output file\n");
@@ -422,7 +418,7 @@ int unrar_extract_next_prepare(unrar_state_t *state, const char *dirname)
 	    if((comment_header->unpack_ver < 15) || (comment_header->unpack_ver > 29) || (comment_header->method > 0x30)) {
 		unrar_dbgmsg("UNRAR: Can't process file comment - skipping\n");
 	    } else {
-		snprintf(filename, 1024, "%s/%lu.cmt", state->comment_dir, state->file_count);
+		snprintf(filename, 1024, "%s"PATHSEP"%lu.cmt", state->comment_dir, state->file_count);
 		ofd = open(filename, O_WRONLY|O_CREAT|O_TRUNC|O_BINARY, 0600);
 		if(ofd < 0) {
 		    free(comment_header);
@@ -464,7 +460,7 @@ int unrar_extract_next(unrar_state_t *state, const char *dirname)
 	unrar_dbgmsg("UNRAR: Skipping file inside multi-volume solid archive\n");
 
     } else {
-	snprintf(state->filename, 1024, "%s/%lu.ura", dirname, state->file_count);
+	snprintf(state->filename, 1024, "%s"PATHSEP"%lu.ura", dirname, state->file_count);
 	ofd = open(state->filename, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, 0600);
 	if(ofd < 0) {
 	    free(state->file_header->filename);
@@ -535,23 +531,3 @@ void unrar_close(unrar_state_t *state)
     free(state->unpack_data);
     free(state->comment_dir);
 }
-
-#ifdef	C_WINDOWS
-/*
- * A copy is needed here to avoid a cyclic dependancy libclamunrar_iface<->libclamav
- * e.g. see the comment in bug 775 about dropping the old internal snprintf
- * which didn't have this problem and bug 785
- */
-#include <stdarg.h>
-static int
-snprintf(char *str, size_t size, const char *format, ...)
-{
-	int ret;
-
-	va_list args;
-	va_start(args, format);
-	ret = _vsnprintf_s(str, size, _TRUNCATE, format, args);
-	va_end(args);
-	return ret;
-}
-#endif

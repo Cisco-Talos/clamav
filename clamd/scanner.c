@@ -18,10 +18,6 @@
  *  MA 02110-1301, USA.
  */
 
-#ifdef	_MSC_VER
-#include <winsock.h>
-#endif
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -35,12 +31,12 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#ifndef	C_WINDOWS
+#include <dirent.h>
+#ifndef	_WIN32
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <sys/param.h>
 #include <signal.h>
-#include <dirent.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -69,10 +65,6 @@
 
 #ifdef C_LINUX
 dev_t procdev; /* /proc device */
-#endif
-
-#ifndef	C_WINDOWS
-#define	closesocket(s)	close(s)
 #endif
 
 extern int progexit;

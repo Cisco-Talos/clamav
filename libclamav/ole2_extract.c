@@ -34,15 +34,10 @@
 #endif
 #include <ctype.h>
 #include <stdlib.h>
-#include "clamav.h"
-
-#if HAVE_MMAP
-#if HAVE_SYS_MMAN_H
+#if defined(HAVE_MMAP) && defined(HAVE_SYS_MMAN_H)
 #include <sys/mman.h>
-#else /* HAVE_SYS_MMAN_H */
-#undef HAVE_MMAP
 #endif
-#endif
+#include "clamav.h"
 
 #include "cltypes.h"
 #include "others.h"
@@ -64,11 +59,6 @@
 #ifdef HAVE_PRAGMA_PACK_HPPA
 #pragma pack 1
 #endif
-
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
-
 
 typedef struct ole2_header_tag
 {
@@ -539,7 +529,7 @@ static int ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir, 
 			if (dir) {
 				dirname = (char *) cli_malloc(strlen(dir)+8);
 				if (!dirname) return CL_BREAK;
-				snprintf(dirname, strlen(dir)+8, "%s/%.6d", dir, prop_index);
+				snprintf(dirname, strlen(dir)+8, "%s"PATHSEP"%.6d", dir, prop_index);
 				if (mkdir(dirname, 0700) != 0) {
 					free(dirname);
 					return CL_BREAK;
@@ -585,7 +575,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 	name = get_property_name2(prop->name, prop->name_size);
 	if (name) cnt = uniq_add(hdr->U, name, strlen(name), &hash);
 	else cnt = uniq_add(hdr->U, NULL, 0, &hash);
-	snprintf(newname, sizeof(newname), "%s/%s_%u", dir, hash, cnt);
+	snprintf(newname, sizeof(newname), "%s"PATHSEP"%s_%u", dir, hash, cnt);
 	newname[sizeof(newname)-1]='\0';
 	cli_dbgmsg("OLE2 [handler_writefile]: Dumping '%s' to '%s'\n", name ? name : "<empty>", newname);
 	if (name) free(name);

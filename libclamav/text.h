@@ -41,6 +41,9 @@
  *
  */
 
+#ifndef __TEXT_H
+#define __TEXT_H
+
 /* The contents could change, ONLY access in text.c */
 typedef struct text {
 	line_t	*t_line;	/* NULL if the line is empty */
@@ -54,3 +57,5 @@ text	*textAddMessage(text *aText, message *aMessage);
 text	*textMove(text *t_head, text *t);
 blob	*textToBlob(text *t, blob *b, int destroy);
 fileblob	*textToFileblob(text *t, fileblob *fb, int destroy);
+
+#endif /* __TEXT_H */

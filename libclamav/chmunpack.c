@@ -31,19 +31,10 @@
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <string.h>
-
-#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
-#if HAVE_MMAP
-#if HAVE_SYS_MMAN_H
+#if defined(HAVE_MMAP) && defined(HAVE_SYS_MMAN_H)
 #include <sys/mman.h>
-#else /* HAVE_SYS_MMAN_H */
-#undef HAVE_MMAP
-#endif /* HAVE_SYS_MMAN_H */
-#endif /* HAVE_MMAP */
-#else/* PACKED */
-#undef HAVE_MMAP
 #endif
+#include <string.h>
 
 #include "others.h"
 #include "mspack.h"
@@ -61,10 +52,6 @@
 
 #ifdef HAVE_PRAGMA_PACK_HPPA
 #pragma pack 1
-#endif
-
-#ifndef	O_BINARY
-#define	O_BINARY	0
 #endif
 
 #define CHM_CHUNK_HDR_LEN (0x14)
@@ -693,7 +680,7 @@ static int chm_decompress_stream(int fd, chm_metadata_t *metadata, const char *d
 	char filename[1024];
 	struct cab_file file;
 	
-	snprintf(filename, 1024, "%s/clamav-unchm.bin", dirname);
+	snprintf(filename, 1024, "%s"PATHSEP"clamav-unchm.bin", dirname);
 	tmpfd = open(filename, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
 	if (tmpfd<0) {
 		cli_dbgmsg("open failed for %s\n", filename);
@@ -769,7 +756,7 @@ static int chm_decompress_stream(int fd, chm_metadata_t *metadata, const char *d
 	lzx_decompress(stream, length);
 	lzx_free(stream);
 	
-#ifndef C_WINDOWS
+#ifndef _WIN32
 	/* Delete the file */
 	if(cli_unlink(filename))
 		retval = -1;
@@ -826,7 +813,7 @@ int cli_chm_extract_file(int fd, char *dirname, chm_metadata_t *metadata, cli_ct
 		cli_dbgmsg("seek in uncompressed stream failed\n");
 		return CL_EFORMAT;
 	}
-	snprintf(filename, 1024, "%s/%lu.chm", dirname, (unsigned long int) metadata->file_offset);
+	snprintf(filename, 1024, "%s"PATHSEP"%lu.chm", dirname, (unsigned long int) metadata->file_offset);
 	metadata->ofd = open(filename, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRWXU);
 	if (metadata->ofd < 0) {
 		return CL_ECREAT;

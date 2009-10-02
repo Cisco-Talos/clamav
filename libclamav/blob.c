@@ -24,11 +24,6 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.64 2007/02/12 22:25:14 njh Exp $";
 #include "clamav-config.h"
 #endif
 
-#ifdef	C_WINDOWS
-#include "stdafx.h"
-#include <io.h>
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -53,15 +48,7 @@ static	char	const	rcsid[] = "$Id: blob.c,v 1.64 2007/02/12 22:25:14 njh Exp $";
 #include "scanners.h"
 #include "filetypes.h"
 
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
-
 #include <assert.h>
-
-#if	defined(C_MINGW) || defined(C_WINDOWS)
-#include <windows.h>
-#endif
 
 /* Scehduled for rewite in 0.94 (bb#804). Disabling for now */
 /* #define	MAX_SCAN_SIZE	20*1024	/\* */
@@ -648,16 +635,10 @@ fileblobScan(const fileblob *fb)
 
 	fflush(fb->fp);
 	lseek(fb->fd, 0, SEEK_SET);
-	rc = cli_magic_scandesc(fb->fd, fb->ctx);
 
-	if(rc == CL_CLEAN) {
-		lseek(fb->fd, 0, SEEK_SET);
-		ftype = cli_filetype2(fb->fd, fb->ctx->engine);
-		if(ftype >= CL_TYPE_TEXT_ASCII && ftype <= CL_TYPE_TEXT_UTF16BE) {
-			lseek(fb->fd, 0, SEEK_SET);
-			rc = cli_scandesc(fb->fd, fb->ctx, CL_TYPE_MAIL, 0, NULL, AC_SCAN_VIR);
-		}
-	}
+	fb->ctx->container_type = CL_TYPE_MAIL;
+	rc = cli_magic_scandesc(fb->fd, fb->ctx);
+	fb->ctx->container_type = 0;
 
 	if(rc == CL_VIRUS) {
 		cli_dbgmsg("%s is infected\n", fb->fullname);
@@ -685,21 +666,9 @@ fileblobInfected(const fileblob *fb)
 void
 sanitiseName(char *name)
 {
-	while(*name) {
-#ifdef	C_DARWIN
-		*name &= '\177';
-#endif
-#if	defined(MSDOS) || defined(C_OS2)
-		/*
-		 * Don't take it from this that ClamAV supports DOS, it doesn't
-		 * I don't know if spaces are legal in OS/2.
-		 */
-		if(strchr("%/*?<>|\\\"+=,;:\t ~", *name))
-#elif defined(C_WINDOWS)
-		if(strchr("%/*?<>|\\\"+=,;:\t~", *name))
-#else
-		if(*name == '/')
-#endif
+	char c;
+	while((c = *name)) {
+		if(c!='.' && c!='_' && (c>'z' || c<'0' || (c>'9' && c<'A') || (c>'Z' && c<'a')))
 			*name = '_';
 		name++;
 	}

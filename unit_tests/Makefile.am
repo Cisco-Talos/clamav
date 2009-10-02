@@ -1,14 +1,22 @@
 SPLIT_DIR=$(top_srcdir)/unit_tests/.split
 FILES = clam-phish-exe
 
-check_clamd.sh: $(FILES)
+check2_clamd.sh: $(FILES)
+check3_clamd.sh: $(FILES)
+check4_clamd.sh: $(FILES)
+check5_clamd_vg.sh: $(FILES)
+check6_clamd_vg.sh: $(FILES)
+check7_clamd_vg.sh: $(FILES)
+check8_clamd_hg.sh: $(FILES)
+check9_clamd_hg.sh: $(FILES)
+check10_clamd_hg.sh: $(FILES)
 
 $(FILES) :
 	cat $(SPLIT_DIR)/split.$@aa $(SPLIT_DIR)/split.$@ab > $@
 
 programs = check_clamav
-scripts = check_clamd.sh check_freshclam.sh check_sigtool.sh check_clamscan.sh\
-	 valgrind_tests.sh efence_tests.sh duma_tests.sh
+scripts = check_freshclam.sh check_sigtool.sh check1_clamscan.sh check2_clamd.sh check3_clamd.sh check4_clamd.sh\
+	  check5_clamd_vg.sh check6_clamd_vg.sh check7_clamd_hg.sh check8_clamd_hg.sh
 TESTS_ENVIRONMENT=export abs_srcdir=$(abs_srcdir) AWK=$(AWK);
 if ENABLE_UNRAR
 else
@@ -42,8 +50,8 @@ $(top_builddir)/test/clam.exe:
 quick-check:
 	VALGRIND=no LIBEFENCE=no LIBDUMA=no $(MAKE) check
 
-CLEANFILES=lcov.out *.gcno *.gcda *.log $(FILES) test-stderr.log clamscan.log valgrind-*.log duma.log duma2.log clamscan2.log
-EXTRA_DIST=.split $(srcdir)/*.ref input test-clamd.conf test-freshclam.conf valgrind.supp virusaction-test.sh $(scripts) preload_run.sh
+CLEANFILES=lcov.out *.gcno *.gcda *.log $(FILES) test-stderr.log clamscan.log accdenied
+EXTRA_DIST=.split $(srcdir)/*.ref input test-freshclam.conf valgrind.supp virusaction-test.sh $(scripts) preload_run.sh check_common.sh
 if ENABLE_COVERAGE
 LCOV_OUTPUT = lcov.out
 LCOV_HTML = lcov_html

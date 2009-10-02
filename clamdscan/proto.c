@@ -25,7 +25,9 @@
 /* must be first because it may define _XOPEN_SOURCE */
 #include "shared/fdpassing.h"
 #include <stdio.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -33,9 +35,13 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/types.h>
-#include <sys/socket.h>
+#ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
+#endif
+#ifndef _WIN32
 #include <arpa/inet.h>
+#include <sys/socket.h>
+#endif
 
 #include "libclamav/others.h"
 #include "shared/actions.h"
@@ -62,7 +68,7 @@ int dconnect() {
     }
 
     if(connect(sockd, (struct sockaddr *)mainsa, mainsasz) < 0) {
-	close(sockd);
+	closesocket(sockd);
 	logg("!Can't connect to clamd: %s\n", strerror(errno));
 	return -1;
     }
@@ -160,7 +166,7 @@ static int send_stream(int sockd, const char *filename) {
     unsigned long int todo = maxstream;
 
     if(filename) {
-	if((fd = open(filename, O_RDONLY))<0) {
+	if((fd = open(filename, O_RDONLY | O_BINARY))<0) {
 	    logg("~%s: Access denied. ERROR\n", filename);
 	    return 0;
 	}
@@ -359,7 +365,7 @@ static int serial_callback(struct stat *sb, char *filename, const char *path, en
     }
     ret = dsresult(sockd, c->scantype, f, &c->printok);
     if(filename) free(filename);
-    close(sockd);
+    closesocket(sockd);
     if(ret < 0) return CL_EOPEN;
     c->infected += ret;
     if(reason == visit_directory_toplev)
@@ -551,7 +557,7 @@ int parallel_client_scan(char *file, int scantype, int *infected, int maxlevel, 
 	return 1;
 
     if(sendln(cdata.sockd, "zIDSESSION", 11)) {
-	close(cdata.sockd);
+	closesocket(cdata.sockd);
 	return 1;
     }
 
@@ -566,13 +572,13 @@ int parallel_client_scan(char *file, int scantype, int *infected, int maxlevel, 
 
     if(ftw != CL_SUCCESS) {
 	*infected += cdata.infected;
-	close(cdata.sockd);
+	closesocket(cdata.sockd);
 	return 1;
     }
 
     sendln(cdata.sockd, "zEND", 5);
     while(cdata.ids && !dspresult(&cdata));
-    close(cdata.sockd);
+    closesocket(cdata.sockd);
 
     *infected += cdata.infected;
 

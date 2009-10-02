@@ -29,14 +29,10 @@
 #include <ctype.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#ifdef C_WINDOWS
-#include <sys/utime.h>
-#else
+#include <dirent.h>
+#ifndef _WIN32
 #include <sys/wait.h>
 #include <utime.h>
-#endif
-#ifndef C_WINDOWS
-#include <dirent.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #endif
@@ -66,15 +62,6 @@
 
 #ifdef C_LINUX
 dev_t procdev;
-#endif
-
-#ifdef C_WINDOWS
-#undef P_tmpdir
-#define P_tmpdir    "C:\\WINDOWS\\TEMP"
-#endif
-
-#ifndef	O_BINARY
-#define	O_BINARY    0
 #endif
 
 static int scanfile(const char *filename, struct cl_engine *engine, const struct optstruct *opts, unsigned int options)
@@ -129,7 +116,7 @@ static int scanfile(const char *filename, struct cl_engine *engine, const struct
 	return 0;
     }
     info.rblocks += fsize / CL_COUNT_PRECISION;
-#ifndef C_WINDOWS
+#ifndef _WIN32
     if(geteuid())
 	if(checkaccess(filename, NULL, R_OK) != 1) {
 	    if(!printinfected)
@@ -141,7 +128,7 @@ static int scanfile(const char *filename, struct cl_engine *engine, const struct
     logg("*Scanning %s\n", filename);
 
     if((fd = open(filename, O_RDONLY|O_BINARY)) == -1) {
-	logg("^Can't open file %s\n", filename);
+	logg("^Can't open file %s: %s\n", filename, strerror(errno));
 	return 54;
     }
 
@@ -214,17 +201,15 @@ static int scandirs(const char *dirname, struct cl_engine *engine, const struct 
 
     if((dd = opendir(dirname)) != NULL) {
 	while((dent = readdir(dd))) {
-#if !defined(C_INTERIX) && !defined(C_WINDOWS)
 	    if(dent->d_ino)
-#endif
 	    {
 		if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..")) {
 		    /* build the full name */
 		    fname = malloc(strlen(dirname) + strlen(dent->d_name) + 2);
-		    if(!strcmp(dirname, "/"))
-			sprintf(fname, "/%s", dent->d_name);
+		    if(!strcmp(dirname, PATHSEP))
+			sprintf(fname, PATHSEP"%s", dent->d_name);
 		    else
-			sprintf(fname, "%s/%s", dirname, dent->d_name);
+			sprintf(fname, "%s"PATHSEP"%s", dirname, dent->d_name);
 
 		    /* stat the file */
 		    if(lstat(fname, &statbuf) != -1) {
@@ -274,17 +259,9 @@ static int scanstdin(const struct cl_engine *engine, const struct optstruct *opt
 
     if(optget(opts, "tempdir")->enabled) {
 	tmpdir = optget(opts, "tempdir")->strarg;
-    } else {
+    } else
 	/* check write access */
-	tmpdir = getenv("TMPDIR");
-
-	if(tmpdir == NULL)
-#ifdef P_tmpdir
-	    tmpdir = P_tmpdir;
-#else
-	    tmpdir = "/tmp";
-#endif
-    }
+	tmpdir = cli_gettmpdir();
 
     if(checkaccess(tmpdir, CLAMAVUSER, W_OK) != 1) {
 	logg("!Can't write to temporary directory\n");
@@ -342,7 +319,7 @@ int scanmanager(const struct optstruct *opts)
 	char *file, cwd[1024], *pua_cats = NULL;
 	const char *filename;
 	const struct optstruct *opt;
-#ifndef C_WINDOWS
+#ifndef _WIN32
 	struct rlimit rlim;
 #endif
 
@@ -479,7 +456,7 @@ int scanmanager(const struct optstruct *opts)
 	}
     }
 
-#ifndef C_WINDOWS
+#ifndef _WIN32
     if(getrlimit(RLIMIT_FSIZE, &rlim) == 0) {
 	if(rlim.rlim_cur < (rlim_t) cl_engine_get_num(engine, CL_ENGINE_MAX_FILESIZE, NULL))
 	    logg("^System limit for file size is lower than engine->maxfilesize\n");
@@ -619,7 +596,7 @@ int scanmanager(const struct optstruct *opts)
 		ret = 56;
 	    } else {
 		for(i = strlen(file) - 1; i > 0; i--) {
-		    if(file[i] == '/')
+		    if(file[i] == *PATHSEP)
 			file[i] = 0;
 		    else
 			break;

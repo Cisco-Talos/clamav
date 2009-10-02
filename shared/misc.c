@@ -31,10 +31,10 @@
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifndef _WIN32
 #include <sys/socket.h>
-#ifndef	C_WINDOWS
-#include <dirent.h>
 #endif
+#include <dirent.h>
 #include <fcntl.h>
 #include <ctype.h>
 #include <errno.h>
@@ -48,10 +48,6 @@
 #include "libclamav/regex/regex.h"
 #include "libclamav/version.h"
 #include "shared/misc.h"
-
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
 
 #ifndef REPO_VERSION
 #define REPO_VERSION "exported"
@@ -82,14 +78,14 @@ char *freshdbdir(void)
 	if((opt = optget(opts, "DatabaseDirectory"))->enabled) {
 	    if(strcmp(dbdir, opt->strarg)) {
 		    char *daily = (char *) malloc(strlen(opt->strarg) + strlen(dbdir) + 30);
-		sprintf(daily, "%s/daily.cvd", opt->strarg);
+		sprintf(daily, "%s"PATHSEP"daily.cvd", opt->strarg);
 		if(access(daily, R_OK))
-		    sprintf(daily, "%s/daily.cld", opt->strarg);
+		    sprintf(daily, "%s"PATHSEP"daily.cld", opt->strarg);
 
 		if(!access(daily, R_OK) && (d1 = cl_cvdhead(daily))) {
-		    sprintf(daily, "%s/daily.cvd", dbdir);
+		    sprintf(daily, "%s"PATHSEP"daily.cvd", dbdir);
 		    if(access(daily, R_OK))
-			sprintf(daily, "%s/daily.cld", dbdir);
+			sprintf(daily, "%s"PATHSEP"daily.cld", dbdir);
 
 		    if(!access(daily, R_OK) && (d2 = cl_cvdhead(daily))) {
 			free(daily);
@@ -139,9 +135,9 @@ void print_version(const char *dbdir)
 	return;
     }
 
-    sprintf(path, "%s/daily.cvd", pt);
+    sprintf(path, "%s"PATHSEP"daily.cvd", pt);
     if(access(path, R_OK))
-	sprintf(path, "%s/daily.cld", pt);
+	sprintf(path, "%s"PATHSEP"daily.cld", pt);
 
     if(!dbdir)
 	free(fdbdir);
@@ -200,7 +196,9 @@ const char *filelist(const struct optstruct *opts, int *err)
 
 int filecopy(const char *src, const char *dest)
 {
-#ifdef C_DARWIN
+#ifdef _WIN32
+    return (!CopyFileA(src, dest, 0));
+#elif defined(C_DARWIN)
 	pid_t pid;
 
     /* On Mac OS X use ditto and copy resource fork, too. */
@@ -225,7 +223,7 @@ int filecopy(const char *src, const char *dest)
 
 int daemonize(void)
 {
-#if defined(C_OS2) || defined(C_WINDOWS)
+#ifdef _WIN32
     fputs("Background mode is not supported on your operating system\n", stderr);
     return -1;
 #else
@@ -277,28 +275,15 @@ int match_regex(const char *filename, const char *pattern)
 	regex_t reg;
 	int match, flags = REG_EXTENDED | REG_NOSUB;
 	char fname[513];
-#if defined(C_OS2) || defined(C_WINDOWS)
-	size_t len;
-
+#ifdef _WIN32
 	flags |= REG_ICASE; /* case insensitive on Windows */
 #endif
 	if(cli_regcomp(&reg, pattern, flags) != 0)
 	    return 2;
 
-#if !defined(C_OS2) && !defined(C_WINDOWS)
-	if(pattern[strlen(pattern) - 1] == '/') {
-	    snprintf(fname, 511, "%s/", filename);
+	if(pattern[strlen(pattern) - 1] == *PATHSEP) {
+	    snprintf(fname, 511, "%s"PATHSEP, filename);
 	    fname[512] = 0;
-#else
-	if(pattern[strlen(pattern) - 1] == '\\') {
-	    strncpy(fname, filename, 510);
-	    fname[509]='\0';
-	    len = strlen(fname);
-	    if(fname[len - 1] != '\\') {
-		fname[len] = '\\';
-		fname[len + 1] = 0;
-	    }
-#endif
 	} else {
 	    strncpy(fname, filename, 513);
 	    fname[512]='\0';
@@ -331,3 +316,11 @@ int cfg_tcpsock(const struct optstruct *opts, struct sockaddr_in *tcpsock, in_ad
     return 0;
 }
 
+int cli_is_abspath(const char *path) {
+#ifdef _WIN32
+    int len = strlen(path);
+    return (len > 2 && path[0] == '\\' && path[1] == '\\') || (len > 3 && path[1] == ':' && path[2] == '\\');
+#else
+    return *path == '/';
+#endif
+}

@@ -87,9 +87,7 @@ Upload detection statistics to the ClamAV Project (see freshclam.conf(5):SubmitD
 .SH "RETURN CODES"
 Some return codes of freshclam can be overwritten with a built-in command EXIT_n which can be passed to \-\-on\-*\-execute, eg. \-\-on\-update\-execute=EXIT_1 will force freshclam to always return 1 after successful database update.
 .TP
-0 : Database successfully updated.
-.TP 
-1 : Database is up\-to\-date.
+0 : Database is up\-to\-date or successfully updated.
 .TP 
 40: Unknown option passed.
 .TP 

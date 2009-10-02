@@ -18,6 +18,9 @@
  *  MA 02110-1301, USA.
  */
 
+#ifndef __MBOX_H
+#define __MBOX_H
+
 /* See RFC1521 */
 typedef	enum {
 	NOMIME, APPLICATION, AUDIO, IMAGE, MESSAGE, MULTIPART, TEXT, VIDEO, MEXTENSION
@@ -48,3 +51,5 @@ typedef enum {
 
 size_t	strstrip(char *s);	/* remove trailing white space */
 int	cli_mbox(const char *dir, int desc, cli_ctx *ctx);
+
+#endif /* __MBOX_H */

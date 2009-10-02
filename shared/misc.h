@@ -20,8 +20,10 @@
 
 #ifndef __MISC_H
 #define __MISC_H
+#ifndef _WIN32
 #include <netdb.h>
 #include <netinet/in.h>
+#endif
 #include "optparser.h"
 /* Maximum filenames under various systems - njh */
 #ifndef	NAME_MAX	/* e.g. Linux */
@@ -32,10 +34,6 @@
 #     define	NAME_MAX	FILENAME_MAX
 #   endif
 # endif
-#endif
-
-#ifndef HAVE_IN_ADDR_T
-typedef unsigned        int     in_addr_t;
 #endif
 
 #include <limits.h>
@@ -52,4 +50,6 @@ int daemonize(void);
 const char *get_version(void);
 int match_regex(const char *filename, const char *pattern);
 int cfg_tcpsock(const struct optstruct *opts, struct sockaddr_in *server, in_addr_t defaultbind);
+int cli_is_abspath(const char *path);
+
 #endif

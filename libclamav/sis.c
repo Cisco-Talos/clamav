@@ -46,11 +46,6 @@
 #define EC32(x) le32_to_host(x)
 #define EC16(x) le16_to_host(x)
 
-#ifndef O_BINARY
-#define O_BINARY 0
-#endif
-
-
 static int real_scansis(FILE *, cli_ctx *, const char *);
 static int real_scansis9x(FILE *, cli_ctx *, const char *);
 
@@ -175,7 +170,7 @@ enum {
 #define SKIP(N) \
   if (sleft>=(N)) sleft-=(N); \
   else { \
-    if ((ssize_t)((N)-sleft)<0) { \
+    if ((N) < sleft) { \
       cli_dbgmsg("SIS: Refusing to seek back\n"); \
       free(alangs); \
       return CL_CLEAN; \
@@ -497,7 +492,7 @@ static int real_scansis(FILE *f, cli_ctx *ctx, const char *tmpd) {
 	    olen = lens[j];
 	    decomp = comp;
 	  }
-	  snprintf(ofn, 1024, "%s/sis%02d", tmpd, umped);
+	  snprintf(ofn, 1024, "%s"PATHSEP"sis%02d", tmpd, umped);
 	  ofn[1023]='\0';
 	  if ((fd=open(ofn, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, 0600))==-1) {
 	    cli_errmsg("SIS: unable to create output file %s - aborting.", ofn);
@@ -714,7 +709,7 @@ static int real_scansis9x(FILE *f, cli_ctx *ctx, const char *tmpd) {
 	      if(getfield(s, &field) || field!=T_COMPRESSED || getd(s, &field) || getd(s, &usize) || getd(s, &usizeh) || usizeh) break;
 	      s->fsize[s->level]-=12;
 	      cli_dbgmsg("SIS: File is%s compressed - size %x -> %x\n", (field)?"":" not", s->fsize[s->level], usize);
-	      snprintf(tempf, 1024, "%s/sis9x%02d", tmpd, i++);
+	      snprintf(tempf, 1024, "%s"PATHSEP"sis9x%02d", tmpd, i++);
 	      tempf[1023]='\0';
 	      fseek(s->f, -(long)s->sleft, SEEK_CUR);
 	      s->sleft = s->smax = 0;

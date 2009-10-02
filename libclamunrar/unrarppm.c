@@ -14,6 +14,10 @@
  *  not be used to develop a RAR (WinRAR) compatible archiver.
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <stdio.h>
 #include <string.h>
 
@@ -26,7 +30,6 @@
 static void rar_dbgmsg(const char* fmt,...){}
 #endif
 
-#define MAX(a,b)    (((a) > (b)) ? (a) : (b))
 #define MAX_O 64
 
 const unsigned int UNIT_SIZE=MAX(sizeof(struct ppm_context), sizeof(struct rar_mem_blk_tag));

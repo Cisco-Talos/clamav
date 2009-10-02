@@ -510,7 +510,7 @@ static int make_connection_real(const char *soname, conn_t *conn)
 #ifdef _WIN32
     {
 #else
-	if(soname[0] == '/' || (access(soname, F_OK) == 0)) {
+	if(cli_is_abspath(soname) || (access(soname, F_OK) == 0)) {
 		struct sockaddr_un addr;
 		s = socket(AF_UNIX, SOCK_STREAM, 0);
 		if(s < 0) {

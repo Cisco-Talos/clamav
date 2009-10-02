@@ -19,10 +19,6 @@
  *  MA 02110-1301, USA.
  */
 
-#ifdef	_MSC_VER
-#include <winsock.h>
-#endif
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -34,17 +30,17 @@
 #include <string.h>
 #include <time.h>
 #include <sys/types.h>
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <arpa/inet.h>
 #endif
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
 #endif
 
 #include <fcntl.h>
-#include <arpa/inet.h>
 #include "libclamav/clamav.h"
 
 #include "shared/output.h"
@@ -60,17 +56,7 @@
 #include "libclamav/readdb.h"
 #include "libclamav/cltypes.h"
 
-#ifndef	C_WINDOWS
-#define	closesocket(s)	close(s)
-#endif
-
 #define BUFFSIZE 1024
-#ifndef	FALSE
-#define FALSE (0)
-#endif
-#ifndef	TRUE
-#define TRUE (1)
-#endif
 
 int progexit = 0;
 pthread_mutex_t exit_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -83,13 +69,13 @@ static struct cl_stat dbstat;
 static void scanner_thread(void *arg)
 {
 	client_conn_t *conn = (client_conn_t *) arg;
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
 	sigset_t sigset;
 #endif
 	int ret;
 	unsigned virus=0, errors = 0;
 
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
     /* ignore all signals */
     sigfillset(&sigset);
     /* The behavior of a process is undefined after it ignores a 
@@ -686,7 +672,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	int max_threads, max_queue, readtimeout, ret = 0;
 	unsigned int options = 0;
 	char timestr[32];
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
 	struct sigaction sigact;
 	sigset_t sigset;
 	struct rlimit rlim;
@@ -713,7 +699,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	struct thrarg *tharg = NULL; /* shut up gcc */
 #endif
 
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
 	memset(&sigact, 0, sizeof(struct sigaction));
 #endif
 
@@ -744,7 +730,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     else
     	logg("^Limits: File size limit protection disabled.\n");
 
-#ifndef C_WINDOWS
+#ifndef _WIN32
     if(getrlimit(RLIMIT_FSIZE, &rlim) == 0) {
 	if(rlim.rlim_cur < (rlim_t) cl_engine_get_num(engine, CL_ENGINE_MAX_FILESIZE, NULL))
 	    logg("^System limit for file size is lower than engine->maxfilesize\n");
@@ -781,7 +767,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     else
     	logg("^Limits: Files limit protection disabled.\n");
 
-#if !defined(C_WINDOWS)
+#ifndef _WIN32
     if (getrlimit(RLIMIT_CORE, &rlim) == 0) {
 	logg("*Limits: Core-dump limit is %lu.\n", (unsigned long)rlim.rlim_cur);
     }
@@ -940,7 +926,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
     acceptdata.commandtimeout = optget(opts, "CommandReadTimeout")->numarg;
     readtimeout = optget(opts, "ReadTimeout")->numarg;
 
-#if !defined(C_WINDOWS) && defined(RLIMIT_NOFILE)
+#if !defined(_WIN32) && defined(RLIMIT_NOFILE)
     if (getrlimit(RLIMIT_NOFILE, &rlim) == 0) {
 	/* don't warn if default value is too high, silently fix it */
 	unsigned maxrec;
@@ -1000,7 +986,7 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	logg("Clamuko is not available.\n");
 #endif
 
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
     /* set up signal handling */
     sigfillset(&sigset);
     sigdelset(&sigset, SIGINT);
@@ -1253,6 +1239,13 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	pthread_mutex_lock(&reload_mutex);
 	if(reload) {
 	    pthread_mutex_unlock(&reload_mutex);
+#ifdef CLAMUKO
+	    if(optget(opts, "ClamukoScanOnAccess")->enabled && tharg) {
+		logg("Stopping and restarting Clamuko.\n");
+		pthread_kill(clamuko_pid, SIGUSR1);
+		pthread_join(clamuko_pid, NULL);
+	    }
+#endif
 	    engine = reload_db(engine, dboptions, opts, FALSE, &ret);
 	    if(ret) {
 		logg("Terminating because of a fatal error.\n");
@@ -1267,9 +1260,6 @@ int recvloop_th(int *socketds, unsigned nsockets, struct cl_engine *engine, unsi
 	    pthread_mutex_unlock(&reload_mutex);
 #ifdef CLAMUKO
 	    if(optget(opts, "ClamukoScanOnAccess")->enabled && tharg) {
-		logg("Stopping and restarting Clamuko.\n");
-		pthread_kill(clamuko_pid, SIGUSR1);
-		pthread_join(clamuko_pid, NULL);
 		tharg->engine = engine;
 		pthread_create(&clamuko_pid, &clamuko_attr, clamukoth, tharg);
 	    }

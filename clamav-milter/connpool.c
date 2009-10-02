@@ -37,6 +37,7 @@
 
 #include "shared/optparser.h"
 #include "shared/output.h"
+#include "shared/misc.h"
 
 #include "connpool.h"
 #include "netcode.h"
@@ -59,7 +60,7 @@ static int cpool_addunix(char *path) {
     struct sockaddr_un *srv;
     struct CP_ENTRY *cpe = &cp->pool[cp->entries-1];
 
-    if(strlen(path)<2 || *path!='/') {
+    if(!cli_is_abspath(path)) {
 	logg("!Unix clamd socket must be an absolute path\n");
 	return 1;
     }

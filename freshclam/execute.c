@@ -28,9 +28,6 @@
 #endif
 #include <string.h>
 #include <errno.h>
-#ifdef	C_WINDOWS
-#include <process.h>
-#endif
 
 #include "shared/output.h"
 #include "shared/optparser.h"
@@ -43,9 +40,6 @@ int active_children;
 void execute( const char *type, const char *text, const struct optstruct *opts )
 {
 	int ret;
-#ifndef C_WINDOWS
-	pid_t pid;
-#endif
 
     if(!optget(opts, "daemon")->enabled) {
 	if(sscanf(text, "EXIT_%d", &ret) == 1) {
@@ -58,7 +52,7 @@ void execute( const char *type, const char *text, const struct optstruct *opts )
 	return;
     }
 
-#ifdef        C_WINDOWS
+#ifdef _WIN32
 	if(active_children < MAX_CHILDREN) {
 		if(spawnlp(P_DETACH, text, text, NULL) == -1) {
 			logg("^%s: couldn't execute \"%s\".\n", type, text);
@@ -68,7 +62,8 @@ void execute( const char *type, const char *text, const struct optstruct *opts )
 	} else
 		logg("^%s: already %d processes active.\n", type, active_children);
 #else
-	if ( active_children<MAX_CHILDREN )
+    if ( active_children<MAX_CHILDREN ) {
+	pid_t pid;
 	switch( pid=fork() ) {
 	case 0:
 		if ( -1==system(text) )
@@ -82,9 +77,8 @@ void execute( const char *type, const char *text, const struct optstruct *opts )
 	default:
 		active_children++;
 	}
-	else
-	{
+    } else {
 		logg("^%s: already %d processes active.\n", type, active_children);
-	}
+    }
 #endif
 }

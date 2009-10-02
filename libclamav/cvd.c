@@ -45,10 +45,6 @@
 
 #define TAR_BLOCKSIZE 512
 
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
-
 static int cli_untgz(int fd, const char *destdir)
 {
 	char *path, osize[13], name[101], type;
@@ -109,7 +105,7 @@ static int cli_untgz(int fd, const char *destdir)
 		return -1;
 	    }
 
-	    snprintf(path, pathlen, "%s/%s", destdir, name);
+	    snprintf(path, pathlen, "%s"PATHSEP"%s", destdir, name);
 	    cli_dbgmsg("cli_untgz: Unpacking %s\n", path);
 	    type = block[156];
 

@@ -24,7 +24,7 @@
 #endif
 
 #include <sys/types.h>
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
 #include <sys/socket.h>
 #endif
 

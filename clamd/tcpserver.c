@@ -18,10 +18,6 @@
  *  MA 02110-1301, USA.
  */
 
-#ifdef	_MSC_VER
-#include <winsock.h>
-#endif
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -32,15 +28,13 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#endif
-#include <errno.h>
-#ifndef	C_WINDOWS
 #include <netdb.h>
 #endif
+#include <errno.h>
 
 #include "libclamav/clamav.h"
 
@@ -52,9 +46,6 @@
 #include "server.h"
 #include "tcpserver.h"
 #include "misc.h"
-#ifndef	C_WINDOWS
-#define	closesocket(s)	close(s)
-#endif
 
 int tcpserver(const struct optstruct *opts)
 {

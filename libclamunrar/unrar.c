@@ -15,6 +15,10 @@
  *
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>

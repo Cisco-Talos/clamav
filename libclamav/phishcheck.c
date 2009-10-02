@@ -322,9 +322,6 @@ static int build_regex(regex_t* preg,const char* regex,int nosub)
 	rc = cli_regcomp(preg,regex,REG_EXTENDED|REG_ICASE|(nosub ? REG_NOSUB :0));
 	if(rc) {
 
-#ifdef	C_WINDOWS
-		cli_errmsg("Phishcheck: Error in compiling regex, disabling phishing checks\n");
-#else
 		size_t buflen =	cli_regerror(rc,preg,NULL,0);
 		char *errbuf = cli_malloc(buflen);
 
@@ -334,7 +331,6 @@ static int build_regex(regex_t* preg,const char* regex,int nosub)
 			free(errbuf);
 		} else
 			cli_errmsg("Phishcheck: Error in compiling regex, disabling phishing checks. Additionally an Out-of-memory error was encountered while generating a detailed error message\n");
-#endif
 		return 1;
 	}
 	return CL_SUCCESS;
@@ -1198,13 +1194,13 @@ static int hash_match(const struct regex_matcher *rlist, const char *host, size_
 	    h[64]='\0';
 	    cli_dbgmsg("Looking up hash %s for %s(%u)%s(%u)\n", h, host, (unsigned)hlen, path, (unsigned)plen);
 	    if (prefix_matched) {
-		if (cli_bm_scanbuff(sha256_dig, 4, &virname, &rlist->hostkey_prefix,0,-1) == CL_VIRUS) {
+		if (cli_bm_scanbuff(sha256_dig, 4, &virname, &rlist->hostkey_prefix,0,-1,NULL) == CL_VIRUS) {
 		    cli_dbgmsg("prefix matched\n");
 		    *prefix_matched = 1;
 		} else
 		    return CL_SUCCESS;
 	    }
-	    if (cli_bm_scanbuff(sha256_dig, 32, &virname, &rlist->sha256_hashes,0,-1) == CL_VIRUS) {
+	    if (cli_bm_scanbuff(sha256_dig, 32, &virname, &rlist->sha256_hashes,0,-1,NULL) == CL_VIRUS) {
 		cli_dbgmsg("This hash matched: %s\n", h);
 		switch(*virname) {
 		    case 'W':

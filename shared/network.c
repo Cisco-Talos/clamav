@@ -20,11 +20,6 @@
  *
  */
 
-#ifdef	_MSC_VER
-#include <windows.h>
-#include <winsock.h>
-#endif
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -39,7 +34,7 @@
 #include <sys/types.h>
 #endif
 
-#ifndef C_WINDOWS
+#ifndef _WIN32
 #include <netdb.h>
 #endif
 

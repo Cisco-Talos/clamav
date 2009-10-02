@@ -59,10 +59,6 @@
 #include "special.h"
 #include "ishield.h"
 
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
-
 #define DCONF ctx->dconf->pe
 
 #define IMAGE_DOS_SIGNATURE	    0x5a4d	    /* MZ */
@@ -928,8 +924,8 @@ int cli_scanpe(int desc, cli_ctx *ctx)
 		for(j = 0; j < md5_sect->soff_len && md5_sect->soff[j] <= exe_sections[i].rsz; j++) {
 		    if(md5_sect->soff[j] == exe_sections[i].rsz) {
 			unsigned char md5_dig[16];
-			if(cli_md5sect(desc, &exe_sections[i], md5_dig) && cli_bm_scanbuff(md5_dig, 16, ctx->virname, ctx->engine->md5_mdb, 0, -1) == CL_VIRUS) {
-			    if(cli_bm_scanbuff(md5_dig, 16, NULL, ctx->engine->md5_fp, 0, -1) != CL_VIRUS) {
+			if(cli_md5sect(desc, &exe_sections[i], md5_dig) && cli_bm_scanbuff(md5_dig, 16, ctx->virname, ctx->engine->md5_mdb, 0, -1, NULL) == CL_VIRUS) {
+			    if(cli_bm_scanbuff(md5_dig, 16, NULL, ctx->engine->md5_fp, 0, -1, NULL) != CL_VIRUS) {
 
 				free(section_hdr);
 				free(exe_sections);

@@ -15,9 +15,6 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-#ifdef	_MSC_VER
-#include <winsock.h>
-#endif
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -33,13 +30,15 @@
 #include <signal.h>
 #include <time.h>
 #include <sys/types.h>
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
 #include <sys/wait.h>
 #endif
 #include <sys/stat.h>
 #include <fcntl.h>
-#ifndef	C_WINDOWS
+#ifdef	HAVE_PWD_H
 #include <pwd.h>
+#endif
+#ifdef HAVE_GRP_H
 #include <grp.h>
 #endif
 
@@ -131,9 +130,11 @@ static void help(void)
     mprintf("\n");
     mprintf("    --config-file=FILE                   read configuration from FILE.\n");
     mprintf("    --log=FILE           -l FILE         log into FILE\n");
+#ifndef _WIN32
     mprintf("    --daemon             -d              run in daemon mode\n");
     mprintf("    --pid=FILE           -p FILE         save daemon's pid in FILE\n");
     mprintf("    --user=USER          -u USER         run as USER\n");
+#endif
     mprintf("    --no-dns                             force old non-DNS verification method\n");
     mprintf("    --checks=#n          -c #n           number of checks per day, 1 <= n <= 50\n");
     mprintf("    --datadir=DIRECTORY                  download new databases into DIRECTORY\n");
@@ -202,7 +203,7 @@ int main(int argc, char **argv)
 	struct sigaction sigact;
 	struct sigaction oldact;
 #endif
-#if !defined(C_OS2) && !defined(C_WINDOWS)
+#ifdef HAVE_PWD_H
 	const char *dbowner;
 	struct passwd *user;
 #endif
@@ -212,7 +213,7 @@ int main(int argc, char **argv)
 
     if((opts = optparse(NULL, argc, argv, 1, OPT_FRESHCLAM, 0, NULL)) == NULL) {
 	mprintf("!Can't parse command line options\n");
-	return 1;
+	return 40;
     }
 
     if(optget(opts, "help")->enabled) {
@@ -227,7 +228,7 @@ int main(int argc, char **argv)
     if((opts = optparse(cfgfile, 0, NULL, 1, OPT_FRESHCLAM, 0, opts)) == NULL) {
 	fprintf(stderr, "ERROR: Can't open/parse the config file %s\n", pt);
 	free(pt);
-	return 1;
+	return 40;
     }
     free(pt);
 
@@ -239,14 +240,6 @@ int main(int argc, char **argv)
 	return 0;
     }
 
-#ifdef C_WINDOWS
-    if(!pthread_win32_process_attach_np()) {
-	mprintf("!Can't start the win32 pthreads layer\n");
-	optfree(opts);
-	return 63;
-    }
-#endif
-
     if(optget(opts, "HTTPProxyPassword")->enabled) {
 	if(stat(cfgfile, &statbuf) == -1) {
 	    logg("^Can't stat %s (critical error)\n", cfgfile);
@@ -254,7 +247,7 @@ int main(int argc, char **argv)
 	    return 56;
 	}
 
-#ifndef C_WINDOWS
+#ifndef _WIN32
 	if(statbuf.st_mode & (S_IRGRP | S_IWGRP | S_IXGRP | S_IROTH | S_IWOTH | S_IXOTH)) {
 	    logg("^Insecure permissions (for HTTPProxyPassword): %s must have no more than 0700 permissions.\n", cfgfile);
 	    optfree(opts);
@@ -263,7 +256,7 @@ int main(int argc, char **argv)
 #endif
     }
 
-#if !defined(C_OS2) && !defined(C_WINDOWS)
+#ifdef HAVE_PWD_H
     /* freshclam shouldn't work with root privileges */
     dbowner = optget(opts, "DatabaseOwner")->strarg;
 
@@ -378,18 +371,6 @@ int main(int argc, char **argv)
 	return 0;
     }
 
-#ifdef	C_WINDOWS
-    {
-	    WSADATA wsaData;
-
-	if(WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR) {
-	    logg("!Error at WSAStartup(): %d\n", WSAGetLastError());
-	    optfree(opts);
-	    return 1;
-	}
-    }
-#endif
-
     if(optget(opts, "daemon")->enabled) {
 	    int bigsleep, checks;
 #ifndef	C_WINDOWS
@@ -417,7 +398,7 @@ int main(int argc, char **argv)
 
 	bigsleep = 24 * 3600 / checks;
 
-#if !defined(C_OS2) && !defined(C_WINDOWS)
+#ifndef _WIN32
 	if(!optget(opts, "Foreground")->enabled) {
 	    if(daemonize() == -1) {
 		logg("!daemonize() failed\n");
@@ -438,7 +419,7 @@ int main(int argc, char **argv)
 
 	logg("#freshclam daemon %s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")\n", get_version());
 
-#ifdef	C_WINDOWS
+#ifdef _WIN32
 	signal(SIGINT, daemon_sighandler);
 	terminate = 0;
 #else
@@ -472,7 +453,7 @@ int main(int argc, char **argv)
 	    sigaction(SIGUSR1, &sigact, &oldact);
 #endif
 
-#ifdef	C_WINDOWS
+#ifdef	_WIN32
 	    sleep(bigsleep);
 #else   
 	    time(&wakeup);
@@ -524,15 +505,6 @@ int main(int argc, char **argv)
     }
 
     optfree(opts);
-
-#ifdef C_WINDOWS
-    WSACleanup();
-
-    if(!pthread_win32_process_detach_np()) {
-	mprintf("!Can't stop the win32 pthreads layer\n");
-	return 63;
-    }
-#endif
 
     return(ret);
 }

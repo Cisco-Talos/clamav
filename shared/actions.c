@@ -30,7 +30,6 @@
 #include <unistd.h>
 #endif
 #include <fcntl.h>
-#include <utime.h>
 #include <errno.h>
 #include <libgen.h>
 
@@ -62,7 +61,7 @@ static int getdest(const char *fullpath, char **newname) {
 	free(tmps);
 	return -1;
     }
-    sprintf(*newname, "%s/%s", actarget, filename);
+    sprintf(*newname, "%s"PATHSEP"%s", actarget, filename);
     for(i=1; i<1000; i++) {
 	fd = open(*newname, O_WRONLY | O_CREAT | O_EXCL, 0600);
 	if(fd >= 0) {
@@ -70,7 +69,7 @@ static int getdest(const char *fullpath, char **newname) {
 	    return fd;
 	}
 	if(errno != EEXIST) break;
-	sprintf(*newname, "%s/%s.%03u", actarget, filename, i);
+	sprintf(*newname, "%s"PATHSEP"%s.%03u", actarget, filename, i);
     }
     free(tmps);
     free(*newname);

@@ -17,6 +17,10 @@
  *  MA 02110-1301, USA.
  */
 
+#if HAVE_CONFIG_H
+#include "clamav-config.h"
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -32,10 +36,7 @@
 #include "libclamav/others.h"
 #include "libclamav/cltypes.h"
 #include "libclamav/ole2_extract.h"
-
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
+#include "shared/output.h"
 
 typedef struct mac_token_tag
 {
@@ -974,7 +975,7 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 		if (strcmp (dent->d_name, ".") && strcmp (dent->d_name, "..")) {
 		    /* build the full name */
 		    fname = (char *) cli_calloc (strlen (dirname) + strlen (dent->d_name) + 2, sizeof (char));
-		    sprintf (fname, "%s/%s", dirname, dent->d_name);
+		    sprintf (fname, "%s"PATHSEP"%s", dirname, dent->d_name);
 
 		    /* stat the file */
 		    if (lstat (fname, &statbuf) != -1) {
@@ -987,14 +988,7 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 			} else {
 			    if (S_ISREG (statbuf.st_mode)) {
 			        struct uniq *vba = NULL;
-				tmpdir = getenv ("TMPDIR");
-
-				if (tmpdir == NULL)
-#ifdef P_tmpdir
-				    tmpdir = P_tmpdir;
-#else
-				    tmpdir = "/tmp";
-#endif
+				tmpdir = cli_gettmpdir();
 
 				/* generate the temporary directory */
 				dir = cli_gentemp (tmpdir);
@@ -1003,7 +997,7 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 				    return CL_ETMPDIR;
 				}
 
-				if ((desc = open (fname, O_RDONLY)) == -1) {
+				if ((desc = open (fname, O_RDONLY|O_BINARY)) == -1) {
 				    printf ("Can't open file %s\n", fname);
 				    return 1;
 				}
@@ -1029,7 +1023,7 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 	    }
 	}
     } else {
-	cli_errmsg ("Can't open directory %s.\n", dirname);
+	logg("!Can't open directory %s.\n", dirname);
 	return CL_EOPEN;
     }
 
@@ -1054,7 +1048,7 @@ int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
 
 	for(i = 0; i < vba_project->count; i++) {
 	    for(j = 0; j < vba_project->colls[i]; j++) {
-		snprintf(vbaname, 1024, "%s/%s_%u", vba_project->dir, vba_project->name[i], j);
+		snprintf(vbaname, 1024, "%s"PATHSEP"%s_%u", vba_project->dir, vba_project->name[i], j);
 		vbaname[sizeof(vbaname)-1] = '\0';
 		fd = open(vbaname, O_RDONLY|O_BINARY);
 		if(fd == -1) continue;
@@ -1080,7 +1074,7 @@ int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
 
     if((hashcnt = uniq_get(U, "powerpoint document", 19, &hash))) {
 	while(hashcnt--) {
-	    snprintf(vbaname, 1024, "%s/%s_%u", dirname, hash, hashcnt);
+	    snprintf(vbaname, 1024, "%s"PATHSEP"%s_%u", dirname, hash, hashcnt);
 	    vbaname[sizeof(vbaname)-1] = '\0';
 	    fd = open(vbaname, O_RDONLY|O_BINARY);
 	    if (fd == -1) continue;
@@ -1096,7 +1090,7 @@ int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
 
     if ((hashcnt = uniq_get(U, "worddocument", 12, &hash))) {
 	while(hashcnt--) {
-	    snprintf(vbaname, sizeof(vbaname), "%s/%s_%u", dirname, hash, hashcnt);
+	    snprintf(vbaname, sizeof(vbaname), "%s"PATHSEP"%s_%u", dirname, hash, hashcnt);
 	    vbaname[sizeof(vbaname)-1] = '\0';
 	    fd = open(vbaname, O_RDONLY|O_BINARY);
 	    if (fd == -1) continue;
@@ -1134,7 +1128,7 @@ int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
 		if (strcmp (dent->d_name, ".") && strcmp (dent->d_name, "..")) {
 		    /* build the full name */
 		    fullname = calloc (strlen (dirname) + strlen (dent->d_name) + 2, sizeof (char));
-		    sprintf (fullname, "%s/%s", dirname, dent->d_name);
+		    sprintf (fullname, "%s"PATHSEP"%s", dirname, dent->d_name);
 
 		    /* stat the file */
 		    if (lstat (fullname, &statbuf) != -1) {
@@ -1146,7 +1140,7 @@ int sigtool_vba_scandir (const char *dirname, int hex_output, struct uniq *U)
 	    }
 	}
     } else {
-	cli_errmsg ("ScanDir -> Can't open directory %s.\n", dirname);
+	logg("!ScanDir -> Can't open directory %s.\n", dirname);
 	return CL_EOPEN;
     }
 

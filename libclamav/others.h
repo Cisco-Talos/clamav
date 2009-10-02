@@ -37,6 +37,7 @@
 
 #include "clamav.h"
 #include "dconf.h"
+#include "filetypes.h"
 #include "libclamunrar_iface/unrar_iface.h"
 #include "regex/regex.h"
 #include "bytecode.h"
@@ -50,7 +51,7 @@
  * in re-enabling affected modules.
  */
 
-#define CL_FLEVEL 47
+#define CL_FLEVEL 49
 #define CL_FLEVEL_DCONF	CL_FLEVEL
 
 extern uint8_t cli_debug_flag;
@@ -107,6 +108,7 @@ typedef struct {
     unsigned int recursion;
     unsigned int scannedfiles;
     unsigned int found_possibly_unwanted;
+    cli_file_t container_type; /* FIXME: to be made into a stack or array - see bb#1579 & bb#1293 */
     struct cli_dconf *dconf;
 } cli_ctx;
 
@@ -169,7 +171,7 @@ struct cl_engine {
     struct cli_ftype *ftypes;
 
     /* Ignored signatures */
-    struct cli_ignored *ignored;
+    struct cli_matcher *ignored;
 
     /* PUA categories (to be included or excluded) */
     char *pua_cats;
@@ -324,21 +326,6 @@ static inline void cli_writeint32(char *offset, uint32_t value)
 #endif
 #define CLI_SAR(n,s) n = CLI_SRS(n,s)
 
-#ifndef	FALSE
-#define FALSE (0)
-#endif
-
-#ifndef	TRUE
-#define TRUE (1)
-#endif
-
-#ifndef MIN
-#define MIN(a, b)	(((a) < (b)) ? (a) : (b))
-#endif
-#ifndef MAX
-#define MAX(a,b)	(((a) > (b)) ? (a) : (b))
-#endif
-
 typedef struct bitset_tag
 {
         unsigned char *bitset;
@@ -405,6 +392,7 @@ char *cli_md5file(const char *filename);
 int cli_unlink(const char *pathname);
 int cli_readn(int fd, void *buff, unsigned int count);
 int cli_writen(int fd, const void *buff, unsigned int count);
+const char *cli_gettmpdir(void);
 char *cli_gentemp(const char *dir);
 int cli_gentempfd(const char *dir, char **name, int *fd);
 unsigned int cli_rndnum(unsigned int max);
@@ -419,6 +407,7 @@ int cli_checklimits(const char *, cli_ctx *, unsigned long, unsigned long, unsig
 int cli_updatelimits(cli_ctx *, unsigned long);
 unsigned long cli_getsizelimit(cli_ctx *, unsigned long);
 int cli_matchregex(const char *str, const char *regex);
+void cli_qsort(void *basep, size_t nelems, size_t size, int (*comp)(const void *, const void *));
 
 /* symlink behaviour */
 #define CLI_FTW_FOLLOW_FILE_SYMLINK 0x01

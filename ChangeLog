@@ -1,3 +1,159 @@
+Wed Sep 30 19:41:43 EEST 2009 (edwin)
+-------------------------------------
+ * configure{.in,}: Only use -fno-strict-aliasing for gcc-4.3+ to avoid bugs
+    with older compilers (bb #1581)
+
+Wed Sep 30 17:15:05 CEST 2009 (tk)
+----------------------------------
+ * libclamav/matcher-bm.c: fix cli_bm_freeoff() (bb#1710)
+
+Wed Sep 30 12:40:50 CEST 2009 (acab)
+------------------------------------
+ * clamdscan/clamdscan.c: properly init variable (bb#1708)
+
+Wed Sep 30 00:51:19 CEST 2009 (acab)
+------------------------------------
+ * clamd, shared: merge a set of win32 patches from
+		Gianluigi Tiesi <sherpya*netfarm.it>
+
+Tue Sep 29 21:40:29 CEST 2009 (tk)
+----------------------------------
+ * libclamav/matcher-ac.c: fix matching of logical sigs (bb#1707)
+			   Reported by Thiyaga <mthiyaga*corp.untd.com>
+
+Mon Sep 28 21:41:47 CEST 2009 (tk)
+----------------------------------
+ * libclamav/readdb.c: fix handling of broken .ldb sigs (bb#1701)
+		       Thanks Luca&Edwin
+
+Mon Sep 28 19:29:32 CEST 2009 (tk)
+----------------------------------
+ * libclamav: new signature blacklisting format (bb#1625)
+ * libclamav: allow arbitrary names for .ign/.ign2 files (bb#1683)
+
+Fri Sep 25 15:13:25 CEST 2009 (acab)
+------------------------------------
+ * sigtool/vba.c: s/cli_errmsg/logg/
+ * shared/misc.h: in_addr_t is now already declared
+ * libclamav/special.c: do not include netinet/in.h on win32
+ All the patches from Gianluigi Tiesi <sherpya*netfarm.it>
+
+Fri Sep 25 15:09:02 CEST 2009 (acab)
+------------------------------------
+ * clamav-milter/clamav.milter.c: remove debug printf
+
+Fri Sep 25 10:36:48 CEST 2009 (tk)
+----------------------------------
+ * libclamav/matcher-ac.c: add support for line marker (L) (matches CR,
+			   CRLF and boundaries)
+
+Fri Sep 25 00:35:56 CEST 2009 (acab)
+------------------------------------
+ * libclamav/sis.c: size check fix, thanks Tomasz
+
+Fri Sep 25 00:31:29 CEST 2009 (acab)
+------------------------------------
+ * fix several problems introduced by the win32 commits
+   many thanks edwin and sherpya
+
+Thu Sep 24 19:43:50 CEST 2009 (acab)
+------------------------------------
+ * libclamav/others_common.c: Accept "/" as an absolute path
+
+Thu Sep 24 19:22:24 CEST 2009 (acab)
+------------------------------------
+ * merge a set of win32 patches from Gianluigi Tiesi <sherpya*netfarm.it>
+
+Thu Sep 24 19:09:38 CEST 2009 (acab)
+------------------------------------
+ * drop OS/2 "support"
+
+Thu Sep 24 19:07:59 CEST 2009 (acab)
+------------------------------------
+ * clamd, libclamav: drop INTERIX "support"
+
+Thu Sep 24 19:05:06 CEST 2009 (acab)
+------------------------------------
+ * win32 paths handling
+
+Thu Sep 24 16:22:25 CEST 2009 (acab)
+------------------------------------
+ * merge initial set of win32 patches from Gianluigi Tiesi <sherpya*netfarm.it>
+
+Thu Sep 24 01:14:50 CEST 2009 (acab)
+------------------------------------
+ * clamav-milter: Add option ReportHostname to mangle the host name in X headers
+
+Wed Sep 23 03:19:53 CEST 2009 (acab)
+------------------------------------
+ * libclamav/mpool.c: update frag sizes, small cleanup
+
+Mon Sep 21 22:05:38 CEST 2009 (tk)
+----------------------------------
+ * clamd: add support for DazukoFS (bb#1691)
+	  Patch from John Ogness <dazukocode*ogness.net>
+
+Fri Sep 18 20:02:06 CEST 2009 (tk)
+----------------------------------
+ * libclamav/matcher-bm.c: use mpool in BM's offset mode
+
+Thu Sep 17 22:36:30 CEST 2009 (tk)
+----------------------------------
+ * libclamav/matcher-ac.c: implement word delimiter (B) as requested in bb#1631
+
+Mon Sep 14 19:52:01 CEST 2009 (tk)
+----------------------------------
+ * freshclam: return 0 instead of 1 when database is up-to-date (bb#1312)
+
+Mon Sep 14 13:56:42 CEST 2009 (tk)
+----------------------------------
+ * clamd/server-th.c: fix possible race condition when restarting clamuko
+		      (bb#1692), patch from John Ogness
+
+Fri Sep 11 16:05:00 CEST 2009 (tk)
+----------------------------------
+ * libclamav/matcher-ac.c: initial limited support for word boundary (bb#1631)
+
+Thu Sep 10 20:16:45 CEST 2009 (tk)
+----------------------------------
+ * libclamav/matcher-ac.c: alternatives can now be negated: !(aa|bb|cc)
+
+Mon Sep  7 15:03:11 CEST 2009 (tk)
+----------------------------------
+ * libclamav/matcher-bm.c: fix uninitialized value warning
+
+Mon Sep  7 03:45:18 CEST 2009 (acab)
+------------------------------------
+ * libclamav/scanners.c: properly scan text files with a mail container
+
+Thu Sep  3 15:09:57 CEST 2009 (tk)
+----------------------------------
+ * freshclam/mirman.c: make backoff time proportional to FLEVEL (bb#1687)
+
+Tue Sep  1 20:50:12 CEST 2009 (tk)
+----------------------------------
+ * libclamav: use BM matcher in offset mode for PE files larger than 256kB
+	      (10% speedup on average; 30-40% for large executables)
+
+Tue Sep  1 11:11:43 CEST 2009 (tk)
+----------------------------------
+ * libclamav: in bm_offmode only load sigs with non-floating absolute and
+	      relative offsets into BM matcher (load other ones into AC)
+	      and use per-file computed offset table to pick up best shifts
+	      (not enabled by default, bb#1300)
+
+Sun Aug 30 23:56:49 CEST 2009 (acab)
+------------------------------------
+ * libclamav: unify CL_TYPE_MAIL scanning
+
+Wed Aug 26 23:37:04 CEST 2009 (tk)
+----------------------------------
+ * libclamav/matcher-ac.c: improve handling of signature offsets
+
+Mon Aug 24 22:09:12 CEST 2009 (tk)
+----------------------------------
+ * libclamav: improve handling of PDF files (bb#1682)
+
 Fri Aug 21 15:53:35 CEST 2009 (tk)
 ----------------------------------
  * libclamav: handle relative offsets with cli_ac_data; fix offset logic

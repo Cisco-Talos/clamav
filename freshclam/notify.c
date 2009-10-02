@@ -15,11 +15,6 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-#ifdef        _MSC_VER
-#include <windows.h>
-#include <winsock.h>
-#endif
-
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -32,7 +27,7 @@
 #include <unistd.h>
 #endif
 #include <sys/types.h>
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
@@ -45,14 +40,10 @@
 #include "shared/output.h"
 #include "notify.h"
 
-#ifndef	C_WINDOWS
-#define	closesocket(s)	close(s)
-#endif
-
 int notify(const char *cfgfile)
 {
 	char buff[20];
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
 	struct sockaddr_un server;
 #endif
 #ifdef HAVE_GETADDRINFO
@@ -75,7 +66,7 @@ int notify(const char *cfgfile)
 	return 1;
     }
 
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
     if((opt = optget(opts, "LocalSocket"))->enabled) {
 	socktype = "UNIX";
 	server.sun_family = AF_UNIX;

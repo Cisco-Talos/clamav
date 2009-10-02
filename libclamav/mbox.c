@@ -20,10 +20,6 @@
 
 static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
 
-#ifdef	_MSC_VER
-#include <winsock.h>	/* only needed in CL_EXPERIMENTAL */
-#endif
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
 #endif
@@ -54,9 +50,7 @@ static	char	const	rcsid[] = "$Id: mbox.c,v 1.381 2007/02/15 12:26:44 njh Exp $";
 #include <sys/param.h>
 #endif
 #include "clamav.h"
-#ifndef	C_WINDOWS
 #include <dirent.h>
-#endif
 #include <limits.h>
 #include <signal.h>
 
@@ -141,7 +135,8 @@ typedef	enum {
 
 #include "phishcheck.h"
 
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
+#include <sys/time.h>
 #include <netdb.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -151,33 +146,7 @@ typedef	enum {
 #endif
 #endif
 
-#ifndef	C_WINDOWS
-#define	closesocket(s)	close(s)
-#define	SOCKET	int
-#endif
-
 #include <fcntl.h>
-#ifndef	C_WINDOWS
-#include <sys/time.h>
-#endif
-
-#ifndef HAVE_IN_PORT_T
-typedef	unsigned	short	in_port_t;
-#endif
-
-#ifndef HAVE_IN_ADDR_T
-typedef	unsigned	int	in_addr_t;
-#endif
-
-#if	(!defined(EALREADY)) && (defined(WSAEALREADY))
-#define EALREADY	WSAEALREADY
-#endif
-#if	(!defined(EINPROGRESS)) && (defined(WSAEINPROGRESS))
-#define EINPROGRESS	WSAEINPROGRESS
-#endif
-#if	(!defined(EISCONN)) && (defined(WSAEISCONN))
-#define EISCONN	WSAEISCONN
-#endif
 
 /*
  * Use CL_SCAN_PARTIAL_MESSAGE to handle messages covered by section 7.3.2 of RFC1341.
@@ -331,25 +300,9 @@ static	const	struct tableinit {
 static	pthread_mutex_t	tables_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
-#ifndef	O_BINARY
-#define	O_BINARY	0
-#endif
-
 #ifdef	NEW_WORLD
-
 #include "matcher.h"
-
 #undef	PARTIAL_DIR
-
-#if HAVE_MMAP
-#if HAVE_SYS_MMAN_H
-#include <sys/mman.h>
-#else /* HAVE_SYS_MMAN_H */
-#undef HAVE_MMAP
-#endif
-#else	/*HAVE_MMAP*/
-#undef	NEW_WORLD
-#endif
 #endif
 
 #ifdef	NEW_WORLD
@@ -3686,24 +3639,9 @@ rfc1341(message *m, const char *dir)
 	if(id == NULL)
 		return -1;
 
-/* do we need this for C_WINDOWS?
-#ifdef  C_CYGWIN
-	if((tmpdir = getenv("TEMP")) == (char *)NULL)
-		if((tmpdir = getenv("TMP")) == (char *)NULL)
-			if((tmpdir = getenv("TMPDIR")) == (char *)NULL)
-				tmpdir = "C:\\";
-#else
-*/
-	if((tmpdir = getenv("TMPDIR")) == (char *)NULL)
-		if((tmpdir = getenv("TMP")) == (char *)NULL)
-			if((tmpdir = getenv("TEMP")) == (char *)NULL)
-#ifdef	P_tmpdir
-				tmpdir = P_tmpdir;
-#else
-				tmpdir = "/tmp";
-#endif
+	tmpdir = cli_gettmpdir();
 
-	snprintf(pdir, sizeof(pdir) - 1, "%s/clamav-partial", tmpdir);
+	snprintf(pdir, sizeof(pdir) - 1, "%s"PATHSEP"clamav-partial", tmpdir);
 
 	if((mkdir(pdir, S_IRWXU) < 0) && (errno != EEXIST)) {
 		cli_errmsg("Can't create the directory '%s'\n", pdir);
@@ -3787,7 +3725,7 @@ rfc1341(message *m, const char *dir)
 
 			sanitiseName(id);
 
-			snprintf(outname, sizeof(outname) - 1, "%s/%s", dir, id);
+			snprintf(outname, sizeof(outname) - 1, "%s"PATHSEP"%s", dir, id);
 
 			cli_dbgmsg("outname: %s\n", outname);
 
@@ -3826,16 +3764,15 @@ rfc1341(message *m, const char *dir)
 					int nblanks;
 					struct stat statb;
 					const char *dentry_idpart;
-#ifndef C_WINDOWS
+
 					if(dent->d_ino == 0)
 						continue;
-#endif
 
 					if(!strcmp(".",dent->d_name) ||
 							!strcmp("..", dent->d_name))
 						continue;
 					snprintf(fullname, sizeof(fullname) - 1,
-						"%s/%s", pdir, dent->d_name);
+						"%s"PATHSEP"%s", pdir, dent->d_name);
 					dentry_idpart = strchr(dent->d_name, '_');
 
 					if(!dentry_idpart ||

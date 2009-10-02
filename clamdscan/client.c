@@ -30,16 +30,20 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/socket.h>
 #ifdef HAVE_SYS_LIMITS_H
 #include <sys/limits.h>
 #endif
+#ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
+#endif
+#ifndef _WIN32
+#include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <utime.h>
+#endif
 #include <errno.h>
 #include <dirent.h>
 #include <fcntl.h>
@@ -65,7 +69,9 @@
 struct sockaddr *mainsa = NULL;
 int mainsasz;
 unsigned long int maxstream;
+#ifndef _WIN32
 static struct sockaddr_un nixsock;
+#endif
 static struct sockaddr_in tcpsock;
 
 
@@ -82,6 +88,7 @@ static int isremote(const struct optstruct *opts) {
 	logg("!Can't parse clamd configuration file %s\n", clamd_conf);
 	return 0;
     }
+#ifndef _WIN32
     if((opt = optget(clamdopts, "LocalSocket"))->enabled) {
 	memset((void *)&nixsock, 0, sizeof(nixsock));
 	nixsock.sun_family = AF_UNIX;
@@ -92,6 +99,7 @@ static int isremote(const struct optstruct *opts) {
 	optfree(clamdopts);
 	return 0;
     }
+#endif
     if(!(opt = optget(clamdopts, "TCPSocket"))->enabled) {
 	optfree(clamdopts);
 	return 0;
@@ -110,7 +118,7 @@ static int isremote(const struct optstruct *opts) {
     testsock.sin_port = htons(INADDR_ANY);
     if(!(s = socket(testsock.sin_family, SOCK_STREAM, 0))) return 0;
     ret = (bind(s, (struct sockaddr *)&testsock, sizeof(testsock)) != 0);
-    close(s);
+    closesocket(s);
     return ret;
 }
 
@@ -126,14 +134,14 @@ static char *makeabs(const char *basepath) {
 	logg("^Can't make room for fullpath.\n");
 	return NULL;
     }
-    if(*basepath != '/') { /* FIXME: to be unified */
+    if(!cli_is_abspath(basepath)) {
 	if(!getcwd(ret, PATH_MAX)) {
 	    logg("^Can't get absolute pathname of current working directory.\n");
 	    free(ret);
 	    return NULL;
 	}
 	namelen = strlen(ret);
-	snprintf(&ret[namelen], PATH_MAX - namelen, "/%s", basepath);
+	snprintf(&ret[namelen], PATH_MAX - namelen, PATHSEP"%s", basepath);
     } else {
 	strncpy(ret, basepath, PATH_MAX);
     }
@@ -169,7 +177,7 @@ int get_clamd_version(const struct optstruct *opts)
     recvlninit(&rcv, sockd);
 
     if(sendln(sockd, "zVERSION", 9)) {
-	close(sockd);
+	closesocket(sockd);
 	return 2;
     }
 
@@ -181,7 +189,7 @@ int get_clamd_version(const struct optstruct *opts)
 	printf("%s\n", buff);
     }
 
-    close(sockd);
+    closesocket(sockd);
     return 0;
 }
 
@@ -197,16 +205,16 @@ int reload_clamd_database(const struct optstruct *opts)
     recvlninit(&rcv, sockd);
 
     if(sendln(sockd, "zRELOAD", 8)) {
-	close(sockd);
+	closesocket(sockd);
 	return 2;
     }
 
     if(!(len = recvln(&rcv, &buff, NULL)) || len < 10 || memcmp(buff, "RELOADING", 9)) {
 	logg("!Clamd did not reload the database\n");
-	close(sockd);
+	closesocket(sockd);
 	return 2;
     }
-    close(sockd);
+    closesocket(sockd);
     return 0;
 }
 
@@ -261,7 +269,7 @@ int client(const struct optstruct *opts, int *infected)
 	    *infected = ret;
 	else
 	    errors = 1;
-	if(sockd >= 0) close(sockd);
+	if(sockd >= 0) closesocket(sockd);
     } else if(opts->filename || optget(opts, "file-list")->enabled) {
 	if(opts->filename && optget(opts, "file-list")->enabled)
 	    logg("^Only scanning files from --file-list (files passed at cmdline are ignored)\n");

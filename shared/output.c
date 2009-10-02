@@ -17,11 +17,6 @@
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
  */
-#ifdef _MSC_VER
-#include <windows.h>
-#include <winsock.h>
-#endif
-
 
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
@@ -39,7 +34,7 @@
 #include <time.h>
 #include <sys/stat.h>
 #include <errno.h>
-#ifndef C_WINDOWS
+#ifndef _WIN32
 #include <sys/time.h>
 #include <sys/socket.h>
 #endif

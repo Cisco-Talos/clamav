@@ -16,16 +16,8 @@
  *  MA 02110-1301, USA.
  */
 
-#ifdef	_MSC_VER
-#include <winsock.h>
-#endif
-
 #if HAVE_CONFIG_H
 #include "clamav-config.h"
-#endif
-
-#ifdef	C_WINDOWS
-#define	_USE_32BIT_TIME_T	/* FIXME: mirdat.atime assumes 32bit time_t */
 #endif
 
 #include <stdio.h>
@@ -39,7 +31,7 @@
 #include <fcntl.h>
 #include <time.h>
 
-#ifndef C_WINDOWS
+#ifndef _WIN32
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -51,10 +43,6 @@
 #include "libclamav/clamav.h"
 
 #include "shared/output.h"
-
-#ifndef O_BINARY
-#define O_BINARY    0
-#endif
 
 #ifndef HAVE_GETADDRINFO
 #ifndef AF_INET6
@@ -133,7 +121,7 @@ int mirman_check(uint32_t *ip, int af, struct mirdat *mdat, struct mirdat_ip **m
 	    }
 
 	    if(mdat->dbflevel && (mdat->dbflevel > flevel) && (mdat->dbflevel - flevel > 3))
-		if(time(NULL) - mdat->mirtab[i].atime < 4 * 3600)
+		if(time(NULL) - mdat->mirtab[i].atime < (mdat->dbflevel - flevel) * 3600)
 		    return 2;
 
 	    if(mdat->mirtab[i].ignore) {
