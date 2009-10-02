@@ -790,12 +790,24 @@ build-llvm:
 build-llvm-for-check:
 	+$(GMAKE) -C llvm OPTIMIZE_OPTION=-O2 tools-only
 
+# Don't use make -C here, otherwise there's a racecondition between distclean
+# and clean (distclean removes all Makefiles in llvm/)
 clean-local:
-	+$(GMAKE) -C llvm/test clean
+	rm -rf `find llvm/test -name Output -type d -print`
 	rm -rf llvm/Release llvm/Debug
 	rm -f *.inc
 	rm -f llvm/include/llvm/Intrinsics.gen
 	rm -f llvm/test/site.exp llvm/test/site.bak llvm/test/*.out llvm/test/*.sum llvm/test/*.log
+
+distclean-local:
+	rm -f llvm/lib/Makefile llvm/docs/doxygen.cfg llvm/test/Unit/.dir llvm/test/Unit/lit.site.cfg
+	rm -f llvm/test/Makefile llvm/test/lit.site.cfg llvm/test/Makefile.tests llvm/Makefile llvm/config.status
+	rm -f llvm/mklib llvm/tools/Makefile llvm/tools/llvmc/llvm-config.in llvm/utils/Makefile
+	rm -f llvm/Makefile.common llvm/Makefile.config llvm/config.log llvm/unittests/Makefile
+	rm -f llvm/llvm.spec llvm/include/llvm/Config/AsmPrinters.def llvm/include/llvm/Config/config.h
+	rm -f llvm/include/llvm/Support/DataTypes.h llvm/include/llvm/Config/Targets.def
+	rm -f llvm/tools/llvmc/plugins/Base/Base.td llvm/tools/llvm-config/llvm-config.in
+	rm -f llvm/include/llvm/Config/AsmParsers.def
 
 check-llvm: build-llvm-for-check
 	+$(GMAKE) -C llvm check

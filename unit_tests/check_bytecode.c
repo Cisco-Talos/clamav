@@ -144,11 +144,11 @@ Suite *test_bytecode_suite(void)
     TCase *tc_cli_arith = tcase_create("arithmetic");
     suite_add_tcase(s, tc_cli_arith);
 
-/*    tcase_add_test(tc_cli_arith, test_retmagic);
+    tcase_add_test(tc_cli_arith, test_retmagic);
     tcase_add_test(tc_cli_arith, test_arith);
     tcase_add_test(tc_cli_arith, test_apicalls);
     tcase_add_test(tc_cli_arith, test_apicalls2);
-    tcase_add_test(tc_cli_arith, test_div0);*/
+    tcase_add_test(tc_cli_arith, test_div0);
     tcase_add_test(tc_cli_arith, test_lsig);
     return s;
 }
