@@ -16381,130 +16381,6 @@ _ACEOF
 fi
 done
 
-
-	{ $as_echo "$as_me:$LINENO: checking for working mmap" >&5
-$as_echo_n "checking for working mmap... " >&6; }
-if test "${ac_cv_c_mmap_private+set}" = set; then
-  $as_echo_n "(cached) " >&6
-else
-
-		if test "$cross_compiling" = yes; then
-  ac_cv_c_mmap_private=no
-else
-  cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/mman.h>
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_STAT_H
-#include <sys/stat.h>
-#endif
-#include <fcntl.h>
-int main(void)
-{
-	char *data, *data2, *data3;
-	unsigned i, datasize = 1024;
-	int fd;
-
-  	/* First, make a file with some known garbage in it. */
-	data = (char*) malloc(datasize);
-	if(!data)
-		return 1;
-	for(i=0;i<datasize;i++)
-		*(data + i) = rand();
-	umask(0);
-	fd = creat("conftest.mmap", 0600);
-	if(fd < 0)
-		return 1;
-	if(write (fd, data, datasize) != datasize)
-		return 1;
-	close(fd);
-	fd = open("conftest.mmap", O_RDWR);
-	if (fd < 0)
-		return 1;
-	/* Next, try to mmap the file at a fixed address which already has
-	   something else allocated at it.  If we can, also make sure that
-	   we see the same garbage.  */
-	data2 = mmap(NULL, sizeof(data), PROT_READ | PROT_WRITE,
-		MAP_PRIVATE, fd, 0L);
-	if(data2 == MAP_FAILED)
-		return 2;
-	for(i=0;i<sizeof(data);i++)
-		if(*(data + i) != *(data2+ i))
-			return 3;
-	  /* Finally, make sure that changes to the mapped area do not
-     	     percolate back to the file as seen by read().  (This is a bug on
-             some variants of i386 svr4.0.)  */
-	  for (i = 0; i < datasize; ++i)
-	    *(data2 + i) = *(data2 + i) + 1;
-	data3 = (char*) malloc(datasize);
-	if(!data3)
-		return 1;
-	if(read (fd, data3, datasize) != datasize)
-		return 1;
-	for(i=0;i<sizeof(data);i++)
-		if(*(data + i) != *(data3 + i))
-			return 3;
-	close(fd);
-	return 0;
-}
-_ACEOF
-rm -f conftest$ac_exeext
-if { (ac_try="$ac_link"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval ac_try_echo="\"\$as_me:$LINENO: $ac_try_echo\""
-$as_echo "$ac_try_echo") >&5
-  (eval "$ac_link") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
-  { (case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval ac_try_echo="\"\$as_me:$LINENO: $ac_try_echo\""
-$as_echo "$ac_try_echo") >&5
-  (eval "$ac_try") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); }; }; then
-  ac_cv_c_mmap_private=yes
-else
-  $as_echo "$as_me: program exited with status $ac_status" >&5
-$as_echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-( exit $ac_status )
-ac_cv_c_mmap_private=no
-fi
-rm -rf conftest.dSYM
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
-fi
-
-
-fi
-{ $as_echo "$as_me:$LINENO: result: $ac_cv_c_mmap_private" >&5
-$as_echo "$ac_cv_c_mmap_private" >&6; }
-if test $ac_cv_c_mmap_private = yes; then
-
-cat >>confdefs.h <<\_ACEOF
-#define HAVE_MMAP 1
-_ACEOF
-
-fi
-rm -f conftest.mmap
-
 { $as_echo "$as_me:$LINENO: checking for _LARGEFILE_SOURCE value needed for large files" >&5
 $as_echo_n "checking for _LARGEFILE_SOURCE value needed for large files... " >&6; }
 if test "${ac_cv_sys_largefile_source+set}" = set; then
@@ -16638,22 +16514,15 @@ _ACEOF
 fi
 
 
-# Check whether --enable-mempool was given.
-if test "${enable_mempool+set}" = set; then
-  enableval=$enable_mempool; enable_mempool=$enableval
-else
-  enable_mempool="yes"
-fi
 
-if test "$enable_mempool" = "yes"; then
-	if test "$ac_cv_c_mmap_private" != "yes"; then
-		{ $as_echo "$as_me:$LINENO: ****** mempool support disabled (mmap not available or not usable)" >&5
-$as_echo "$as_me: ****** mempool support disabled (mmap not available or not usable)" >&6;}
-	else
-		{ $as_echo "$as_me:$LINENO: checking for getpagesize" >&5
-$as_echo_n "checking for getpagesize... " >&6; }
-if test "${ac_cv_func_getpagesize+set}" = set; then
+	{ $as_echo "$as_me:$LINENO: checking for working mmap" >&5
+$as_echo_n "checking for working mmap... " >&6; }
+if test "${ac_cv_c_mmap_private+set}" = set; then
   $as_echo_n "(cached) " >&6
+else
+
+		if test "$cross_compiling" = yes; then
+  ac_cv_c_mmap_private=no
 else
   cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
@@ -16661,41 +16530,137 @@ _ACEOF
 cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
-/* Define getpagesize to an innocuous variant, in case <limits.h> declares getpagesize.
-   For example, HP-UX 11i <limits.h> declares gettimeofday.  */
-#define getpagesize innocuous_getpagesize
 
-/* System header to define __stub macros and hopefully few prototypes,
-    which can conflict with char getpagesize (); below.
-    Prefer <limits.h> to <assert.h> if __STDC__ is defined, since
-    <limits.h> exists even on freestanding compilers.  */
-
-#ifdef __STDC__
-# include <limits.h>
-#else
-# include <assert.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/mman.h>
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
 #endif
-
-#undef getpagesize
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
 #endif
-char getpagesize ();
-/* The GNU C library defines this for functions which it implements
-    to always fail with ENOSYS.  Some functions are actually named
-    something starting with __ and the normal name is an alias.  */
-#if defined __stub_getpagesize || defined __stub___getpagesize
-choke me
-#endif
+#include <fcntl.h>
+int main(void)
+{
+	char *data, *data2, *data3;
+	unsigned i, datasize = 1024;
+	int fd;
 
+  	/* First, make a file with some known garbage in it. */
+	data = (char*) malloc(datasize);
+	if(!data)
+		return 1;
+	for(i=0;i<datasize;i++)
+		*(data + i) = rand();
+	umask(0);
+	fd = creat("conftest.mmap", 0600);
+	if(fd < 0)
+		return 1;
+	if(write (fd, data, datasize) != datasize)
+		return 1;
+	close(fd);
+	fd = open("conftest.mmap", O_RDWR);
+	if (fd < 0)
+		return 1;
+	/* Next, try to mmap the file at a fixed address which already has
+	   something else allocated at it.  If we can, also make sure that
+	   we see the same garbage.  */
+	data2 = mmap(NULL, sizeof(data), PROT_READ | PROT_WRITE,
+		MAP_PRIVATE, fd, 0L);
+	if(data2 == MAP_FAILED)
+		return 2;
+	for(i=0;i<sizeof(data);i++)
+		if(*(data + i) != *(data2+ i))
+			return 3;
+	  /* Finally, make sure that changes to the mapped area do not
+     	     percolate back to the file as seen by read().  (This is a bug on
+             some variants of i386 svr4.0.)  */
+	  for (i = 0; i < datasize; ++i)
+	    *(data2 + i) = *(data2 + i) + 1;
+	data3 = (char*) malloc(datasize);
+	if(!data3)
+		return 1;
+	if(read (fd, data3, datasize) != datasize)
+		return 1;
+	for(i=0;i<sizeof(data);i++)
+		if(*(data + i) != *(data3 + i))
+			return 3;
+	close(fd);
+	return 0;
+}
+_ACEOF
+rm -f conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:$LINENO: $ac_try_echo\""
+$as_echo "$ac_try_echo") >&5
+  (eval "$ac_link") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && { ac_try='./conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:$LINENO: $ac_try_echo\""
+$as_echo "$ac_try_echo") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_c_mmap_private=yes
+else
+  $as_echo "$as_me: program exited with status $ac_status" >&5
+$as_echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+( exit $ac_status )
+ac_cv_c_mmap_private=no
+fi
+rm -rf conftest.dSYM
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext conftest.$ac_objext conftest.$ac_ext
+fi
+
+
+fi
+{ $as_echo "$as_me:$LINENO: result: $ac_cv_c_mmap_private" >&5
+$as_echo "$ac_cv_c_mmap_private" >&6; }
+if test $ac_cv_c_mmap_private = yes; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_MMAP 1
+_ACEOF
+
+fi
+rm -f conftest.mmap
+
+
+ac_cv_c_can_get_pagesize="no"
+{ $as_echo "$as_me:$LINENO: checking for sysconf(_SC_PAGESIZE)" >&5
+$as_echo_n "checking for sysconf(_SC_PAGESIZE)... " >&6; }
+if test "${ac_cv_c_sysconf_sc_pagesize+set}" = set; then
+  $as_echo_n "(cached) " >&6
+else
+
+	cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+#include <sys/types.h>
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 int
 main ()
 {
-return getpagesize ();
+int x = sysconf(_SC_PAGESIZE);
   ;
   return 0;
 }
@@ -16721,22 +16686,114 @@ $as_echo "$ac_try_echo") >&5
 	 test "$cross_compiling" = yes ||
 	 $as_test_x conftest$ac_exeext
        }; then
-  ac_cv_func_getpagesize=yes
+  ac_cv_c_sysconf_sc_pagesize=yes
 else
   $as_echo "$as_me: failed program was:" >&5
 sed 's/^/| /' conftest.$ac_ext >&5
 
-	ac_cv_func_getpagesize=no
+	ac_cv_c_sysconf_sc_pagesize=no
 fi
 
 rm -rf conftest.dSYM
 rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
       conftest$ac_exeext conftest.$ac_ext
-fi
-{ $as_echo "$as_me:$LINENO: result: $ac_cv_func_getpagesize" >&5
-$as_echo "$ac_cv_func_getpagesize" >&6; }
-if test "x$ac_cv_func_getpagesize" = x""yes; then
 
+fi
+{ $as_echo "$as_me:$LINENO: result: $ac_cv_c_sysconf_sc_pagesize" >&5
+$as_echo "$ac_cv_c_sysconf_sc_pagesize" >&6; }
+if test "$ac_cv_c_sysconf_sc_pagesize" = "yes"; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_SYSCONF_SC_PAGESIZE 1
+_ACEOF
+
+	ac_cv_c_can_get_pagesize="yes"
+fi
+{ $as_echo "$as_me:$LINENO: checking for getpagesize()" >&5
+$as_echo_n "checking for getpagesize()... " >&6; }
+if test "${ac_cv_c_getpagesize+set}" = set; then
+  $as_echo_n "(cached) " >&6
+else
+
+	cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+#if HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+int
+main ()
+{
+int x = getpagesize();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval ac_try_echo="\"\$as_me:$LINENO: $ac_try_echo\""
+$as_echo "$ac_try_echo") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  $as_echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_c_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest$ac_exeext && {
+	 test "$cross_compiling" = yes ||
+	 $as_test_x conftest$ac_exeext
+       }; then
+  ac_cv_c_getpagesize=yes
+else
+  $as_echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_c_getpagesize=no
+fi
+
+rm -rf conftest.dSYM
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
+
+fi
+{ $as_echo "$as_me:$LINENO: result: $ac_cv_c_getpagesize" >&5
+$as_echo "$ac_cv_c_getpagesize" >&6; }
+if test "$ac_cv_c_getpagesize" = "yes"; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_GETPAGESIZE 1
+_ACEOF
+
+	ac_cv_c_can_get_pagesize="yes"
+fi
+
+# Check whether --enable-mempool was given.
+if test "${enable_mempool+set}" = set; then
+  enableval=$enable_mempool; enable_mempool=$enableval
+else
+  enable_mempool="yes"
+fi
+
+if test "$enable_mempool" = "yes"; then
+	if test "$ac_cv_c_mmap_private" != "yes"; then
+		{ $as_echo "$as_me:$LINENO: ****** mempool support disabled (mmap not available or not usable)" >&5
+$as_echo "$as_me: ****** mempool support disabled (mmap not available or not usable)" >&6;}
+	else
+		if test "$ac_cv_c_can_get_pagesize" != "yes"; then
+			{ $as_echo "$as_me:$LINENO: ****** mempool support disabled (pagesize cannot be determined)" >&5
+$as_echo "$as_me: ****** mempool support disabled (pagesize cannot be determined)" >&6;}
+		else
 
 	{ $as_echo "$as_me:$LINENO: checking for MAP_ANON(YMOUS)" >&5
 $as_echo_n "checking for MAP_ANON(YMOUS)... " >&6; }
@@ -16864,12 +16921,7 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 			fi
-
-else
-  { $as_echo "$as_me:$LINENO: ****** mempool support disabled (getpagesize not available)" >&5
-$as_echo "$as_me: ****** mempool support disabled (getpagesize not available)" >&6;}
-fi
-
+		fi
 	fi
 fi
 

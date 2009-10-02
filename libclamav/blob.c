@@ -181,7 +181,7 @@ blobGetFilename(const blob *b)
 int
 blobAddData(blob *b, const unsigned char *data, size_t len)
 {
-#ifdef	HAVE_GETPAGESIZE
+#if	HAVE_CLI_GETPAGESIZE
 	static int pagesize;
 	int growth;
 #endif
@@ -210,9 +210,9 @@ blobAddData(blob *b, const unsigned char *data, size_t len)
 	 * size of a blob before you start adding data, use blobGrow() that's
 	 * the most optimum
 	 */
-#ifdef	HAVE_GETPAGESIZE
+#if	HAVE_CLI_GETPAGESIZE
 	if(pagesize == 0) {
-		pagesize = getpagesize();
+		pagesize = cli_getpagesize();
 		if(pagesize == 0)
 			pagesize = 4096;
 	}

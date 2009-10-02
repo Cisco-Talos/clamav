@@ -1,3 +1,8 @@
+Thu Jul 16 14:20:01 CEST 2009 (acab)
+------------------------------------
+ * libclamav, build system: fix portability issues for fseeko, sysconf(_SC_PAGESIZE),
+			    getpagesize() (bb#1658)
+
 Wed Jul 15 19:36:35 CEST 2009 (tk)
 ----------------------------------
  * clamd: honour value of 0 in Max* options
