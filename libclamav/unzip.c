@@ -355,12 +355,8 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
 	 )
 	) meta = meta->next;
   if(meta) {
-    if(!cli_checkfp(fd, ctx)) {
-      *ctx->virname = meta->virname;
-      *ret = CL_VIRUS;
-    } else
-      *ret = CL_CLEAN;
-
+    *ctx->virname = meta->virname;
+    *ret = CL_VIRUS;
     return 0;
   }
 

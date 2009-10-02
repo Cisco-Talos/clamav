@@ -209,7 +209,7 @@ static int cli_unrar_scanmetadata(int desc, unrar_metadata_t *metadata, cli_ctx 
 
     if(mdata) {
 	*ctx->virname = mdata->virname;
-	return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
+	return CL_VIRUS;
     }
 
     if(DETECT_ENCRYPTED && metadata->encrypted) {
@@ -1316,10 +1316,8 @@ static int cli_scanriff(int desc, cli_ctx *ctx)
 	int ret = CL_CLEAN;
 
     if(cli_check_riff_exploit(desc) == 2) {
-	if(!cli_checkfp(desc, ctx)) {
-	    ret = CL_VIRUS;
-	    *ctx->virname = "Exploit.W32.MS05-002";
-	}
+	ret = CL_VIRUS;
+	*ctx->virname = "Exploit.W32.MS05-002";
     }
 
     return ret;
@@ -1330,10 +1328,8 @@ static int cli_scanjpeg(int desc, cli_ctx *ctx)
 	int ret = CL_CLEAN;
 
     if(cli_check_jpeg_exploit(desc, ctx) == 1) {
-	if(!cli_checkfp(desc, ctx)) {
-	    ret = CL_VIRUS;
-	    *ctx->virname = "Exploit.W32.MS04-028";
-	}
+	ret = CL_VIRUS;
+	*ctx->virname = "Exploit.W32.MS04-028";
     }
 
     return ret;
@@ -1595,13 +1591,13 @@ static int cli_scan_structured(int desc, cli_ctx *ctx)
     if(cc_count != 0 && cc_count >= ctx->engine->min_cc_count) {
 	cli_dbgmsg("cli_scan_structured: %u credit card numbers detected\n", cc_count);
 	*ctx->virname = "Structured.CreditCardNumber";
-	return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
+	return CL_VIRUS;
     }
 
     if(ssn_count != 0 && ssn_count >= ctx->engine->min_ssn_count) {
 	cli_dbgmsg("cli_scan_structured: %u social security numbers detected\n", ssn_count);
 	*ctx->virname = "Structured.SSN";
-	return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
+	return CL_VIRUS;
     }
 
     return CL_CLEAN;
@@ -1878,8 +1874,10 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    cli_dbgmsg("cli_magic_scandesc: Hit recursion limit, only scanning raw file\n");
 	else
 	    cli_dbgmsg("Raw mode: No support for special files\n");
-	if((ret = cli_scandesc(desc, ctx, 0, 0, NULL, AC_SCAN_VIR)) == CL_VIRUS)
+	if((ret = cli_scandesc(desc, ctx, 0, 0, NULL, AC_SCAN_VIR)) == CL_VIRUS) {
 	    cli_dbgmsg("%s found in descriptor %d\n", *ctx->virname, desc);
+	    return CL_VIRUS;
+	}
 	return ret;
     }
 
@@ -2097,7 +2095,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     ctx->container_type = current_container;
 
     if(ret == CL_VIRUS)
-	return CL_VIRUS;
+	return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 
     if(type == CL_TYPE_ZIP && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP)) {
 	if(sb.st_size > 1048576) {
@@ -2109,7 +2107,7 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
     /* CL_TYPE_HTML: raw HTML files are not scanned, unless safety measure activated via DCONF */
     if(type != CL_TYPE_IGNORED && (type != CL_TYPE_HTML || !(DCONF_DOC & DOC_CONF_HTML_SKIPRAW)) && !ctx->engine->sdb) {
 	if(cli_scanraw(desc, ctx, type, typercg, &dettype) == CL_VIRUS)
-	    return CL_VIRUS;
+	    return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
     }
 
     ctx->recursion++;
@@ -2138,6 +2136,9 @@ int cli_magic_scandesc(int desc, cli_ctx *ctx)
 	    break;
     }
     ctx->recursion--;
+
+    if(ret == CL_VIRUS)
+	return cli_checkfp(desc, ctx) ? CL_CLEAN : CL_VIRUS;
 
     switch(ret) {
 	case CL_EFORMAT:

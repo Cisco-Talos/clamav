@@ -287,8 +287,11 @@ int cli_caloff(const char *offstr, struct cli_target_info *info, int fd, unsigne
 int cli_checkfp(int fd, cli_ctx *ctx)
 {
 	unsigned char *digest;
+	char md5[33];
+	unsigned int i;
 	const char *virname;
 	off_t pos;
+	struct stat sb;
 
 
     if((pos = lseek(fd, 0, SEEK_CUR)) == -1) {
@@ -311,6 +314,14 @@ int cli_checkfp(int fd, cli_ctx *ctx)
 	    lseek(fd, pos, SEEK_SET);
 	    return 1;
 	}
+
+	if(fstat(fd, &sb) != -1) {
+	    for(i = 0; i < 16; i++)
+		sprintf(md5 + i * 2, "%02x", digest[i]);
+	    md5[32] = 0;
+	    cli_dbgmsg("FP SIGNATURE: %s:%u:%s\n", md5, (unsigned int) sb.st_size, *ctx->virname ? *ctx->virname : "Name");
+	}
+
 	free(digest);
     }
 
@@ -424,11 +435,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 		cli_ac_freedata(&tdata);
 		if(bm_offmode)
 		    cli_bm_freeoff(&toff, troot);
-
-		if(cli_checkfp(desc, ctx))
-		    return CL_CLEAN;
-		else
-		    return CL_VIRUS;
+		return CL_VIRUS;
 	    }
 	}
 
@@ -444,10 +451,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 		    if(bm_offmode)
 			cli_bm_freeoff(&toff, troot);
 		}
-		if(cli_checkfp(desc, ctx))
-		    return CL_CLEAN;
-		else
-		    return CL_VIRUS;
+		return CL_VIRUS;
 
 	    } else if((acmode & AC_SCAN_FT) && ret >= CL_TYPENO) {
 		if(ret > type)
@@ -506,13 +510,8 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 	cli_ac_freedata(&gdata);
     }
 
-    if(ret == CL_VIRUS) {
-	lseek(desc, 0, SEEK_SET);
-	if(cli_checkfp(desc, ctx))
-	    return CL_CLEAN;
-	else
-	    return CL_VIRUS;
-    }
+    if(ret == CL_VIRUS)
+	return CL_VIRUS;
 
     if(!ftonly && ctx->engine->md5_hdb) {
 	cli_md5_final(digest, &md5ctx);

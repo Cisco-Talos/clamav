@@ -77,8 +77,6 @@ int cli_check_mydoom_log(int desc, cli_ctx *ctx)
     if (j < 2) {
 	retval = CL_CLEAN;
     } else if (retval==CL_VIRUS) {
-	if(cli_checkfp(desc, ctx))
-	    return CL_CLEAN;
 	*ctx->virname = "Worm.Mydoom.M.log";
     }
 

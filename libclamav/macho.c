@@ -176,7 +176,7 @@ struct macho_fat_arch
     if(DETECT_BROKEN) {					    \
 	if(ctx->virname)				    \
 	    *ctx->virname = "Broken.Executable";	    \
-	return cli_checkfp(fd, ctx) ? CL_CLEAN : CL_VIRUS;  \
+	return CL_VIRUS;				    \
     }							    \
     return CL_EFORMAT
 
