@@ -141,9 +141,13 @@ fmap_t *fmap(int fd, off_t offset, size_t len) {
 }
 
 
-static void fmap_qsel(fmap_t *m, unsigned int *freeme, unsigned int left, unsigned int right) {
-    unsigned int i = left, j = right;
-    unsigned int pivot = m->bitmap[freeme[(left + right) / 2]] & FM_MASK_COUNT;
+static void fmap_qsel(fmap_t *m, unsigned int *freeme, int left, int right) {
+    int i = left, j = right;
+    int pivot;
+
+    if (i > j) return;
+
+    pivot = m->bitmap[freeme[(left + right) / 2]] & FM_MASK_COUNT;
 
     while(i <= j) {
 	while((m->bitmap[freeme[i]] & FM_MASK_COUNT) > pivot)
