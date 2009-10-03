@@ -120,11 +120,10 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	struct cli_bm_patt *bm_new;
 	char *pt, *hexcpy, *start, *n;
 	int ret, asterisk = 0;
-	unsigned int i, j, hexlen, parts = 0;
+	unsigned int i, j, len, parts = 0;
 	int mindist = 0, maxdist = 0, error = 0;
 
 
-    hexlen = strlen(hexsig);
     if(strchr(hexsig, '{')) {
 
 	root->ac_partsigs++;
@@ -132,7 +131,8 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	if(!(hexcpy = cli_strdup(hexsig)))
 	    return CL_EMEM;
 
-	for(i = 0; i < hexlen; i++)
+	len = strlen(hexsig);
+	for(i = 0; i < len; i++)
 	    if(hexsig[i] == '{' || hexsig[i] == '*')
 		parts++;
 
@@ -224,7 +224,8 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
     } else if(strchr(hexsig, '*')) {
 	root->ac_partsigs++;
 
-	for(i = 0; i < hexlen; i++)
+	len = strlen(hexsig);
+	for(i = 0; i < len; i++)
 	    if(hexsig[i] == '*')
 		parts++;
 
@@ -246,7 +247,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	    free(pt);
 	}
 
-    } else if(root->ac_only || type || lsigid /* || (hexlen / 2 < CLI_DEFAULT_MOVETOAC_LEN) FIXME: unit tests */ ||  strpbrk(hexsig, "?(")) {
+    } else if(root->ac_only || strpbrk(hexsig, "?(") || type || lsigid) {
 	if((ret = cli_ac_addsig(root, virname, hexsig, 0, 0, 0, rtype, type, 0, 0, offset, lsigid, options))) {
 	    cli_errmsg("cli_parse_add(): Problem adding signature (3).\n");
 	    return ret;
@@ -261,7 +262,7 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	    mpool_free(root->mempool, bm_new);
 	    return CL_EMALFDB;
 	}
-	bm_new->length = hexlen / 2;
+	bm_new->length = strlen(hexsig) / 2;
 
 	bm_new->virname = cli_mpool_virname(root->mempool, (char *) virname, options & CL_DB_OFFICIAL);
 	if(!bm_new->virname) {
@@ -270,10 +271,22 @@ int cli_parse_add(struct cli_matcher *root, const char *virname, const char *hex
 	    return CL_EMEM;
 	}
 
+	if(offset) {
+	    bm_new->offset = cli_mpool_strdup(root->mempool, offset);
+	    if(!bm_new->offset) {
+	        mpool_free(root->mempool, bm_new->pattern);
+		mpool_free(root->mempool, bm_new->virname);
+		mpool_free(root->mempool, bm_new);
+		return CL_EMEM;
+	    }
+	}
+
+	bm_new->target = target;
+
 	if(bm_new->length > root->maxpatlen)
 	    root->maxpatlen = bm_new->length;
 
-	if((ret = cli_bm_addpatt(root, bm_new, offset))) {
+	if((ret = cli_bm_addpatt(root, bm_new))) {
 	    cli_errmsg("cli_parse_add(): Problem adding signature (4).\n");
 	    mpool_free(root->mempool, bm_new->pattern);
 	    mpool_free(root->mempool, bm_new->virname);
@@ -295,14 +308,14 @@ static int cli_initroots(struct cl_engine *engine, unsigned int options)
 	if(!engine->root[i]) {
 	    cli_dbgmsg("Initializing engine->root[%d]\n", i);
 	    root = engine->root[i] = (struct cli_matcher *) mpool_calloc(engine->mempool, 1, sizeof(struct cli_matcher));
+#ifdef USE_MPOOL
+	    root->mempool = engine->mempool;
+#endif
 	    if(!root) {
 		cli_errmsg("cli_initroots: Can't allocate memory for cli_matcher\n");
 		return CL_EMEM;
 	    }
-#ifdef USE_MPOOL
-	    root->mempool = engine->mempool;
-#endif
-	    root->type = i;
+
 	    if(cli_mtargets[i].ac_only || engine->ac_only)
 		root->ac_only = 1;
 
@@ -440,7 +453,7 @@ static int cli_loaddb(FILE *fs, struct cl_engine *engine, unsigned int *signo, u
 
 	if(*pt == '=') continue;
 
-	if((ret = cli_parse_add(root, start, pt, 0, 0, "*", 0, NULL, options))) {
+	if((ret = cli_parse_add(root, start, pt, 0, 0, NULL, 0, NULL, options))) {
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -503,6 +516,27 @@ static int cli_loadpdb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
     }
 
     return CL_SUCCESS;
+}
+
+static int cli_checkoffset(const char *offset, unsigned int type)
+{
+	unsigned int foo;
+	const char *pt = offset;
+
+    if(isdigit(*offset)) {
+	while(*pt++)
+	    if(!strchr("0123456789,", *pt))
+		return 1;
+	return 0;
+    }
+
+    if(!strncmp(offset, "EOF-", 4))
+	return 0;
+
+    if((type == 1 || type == 6) && (!strncmp(offset, "EP+", 3) || !strncmp(offset, "EP-", 3) || (sscanf(offset, "SL+%u", &foo) == 1) || (sscanf(offset, "S%u+%u", &foo, &foo) == 2)))
+	return 0;
+
+    return 1;
 }
 
 #define NDB_TOKENS 6
@@ -588,6 +622,15 @@ static int cli_loadndb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	root = engine->root[target];
 
 	offset = tokens[2];
+	if(!strcmp(offset, "*"))
+	    offset = NULL;
+
+	if(offset && cli_checkoffset(offset, target)) {
+	    cli_errmsg("Incorrect offset '%s' for signature type-%u\n", offset, target);
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
 	sig = tokens[3];
 
 	if((ret = cli_parse_add(root, virname, sig, 0, 0, offset, target, NULL, options))) {
@@ -924,9 +967,17 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 		*pt = 0;
 		sig = ++pt;
 		offset = tokens[3 + i];
+		if(!strcmp(offset, "*"))
+		    offset = NULL;
 	    } else {
-		offset = "*";
+		offset = NULL;
 		sig = tokens[3 + i];
+	    }
+
+	    if(offset && cli_checkoffset(offset, tdb.target[0])) {
+		cli_errmsg("Incorrect offset '%s' in subsignature id %u for signature type-%u\n", offset, i, tdb.target[0]);
+		ret = CL_EMALFDB;
+		break;
 	    }
 
 	    if((ret = cli_parse_add(root, virname, sig, 0, 0, offset, target, lsigid, options))) {
@@ -1022,7 +1073,7 @@ static int cli_loadftm(FILE *fs, struct cl_engine *engine, unsigned int options,
 	}
 
 	if(atoi(tokens[0]) == 1) { /* A-C */
-	    if((ret = cli_parse_add(engine->root[0], tokens[3], tokens[2], rtype, type, tokens[1], 0, NULL, options)))
+	    if((ret = cli_parse_add(engine->root[0], tokens[3], tokens[2], rtype, type, strcmp(tokens[1], "*") ? tokens[1] : NULL, 0, NULL, options)))
 		break;
 
 	} else if(atoi(tokens[0]) == 0) { /* memcmp() */
@@ -1285,7 +1336,7 @@ static int cli_loadmd5(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	    MD5_DB;
 	}
 
-	if((ret = cli_bm_addpatt(db, new, "0"))) {
+	if((ret = cli_bm_addpatt(db, new))) {
 	    cli_errmsg("cli_loadmd5: Error adding BM pattern\n");
 	    mpool_free(engine->mempool, new->pattern);
 	    mpool_free(engine->mempool, new->virname);
@@ -2094,7 +2145,7 @@ int cl_engine_compile(struct cl_engine *engine)
 	if((root = engine->root[i])) {
 	    if((ret = cli_ac_buildtrie(root)))
 		return ret;
-	    cli_dbgmsg("matcher[%u]: %s: AC sigs: %u (reloff: %u) BM sigs: %u (reloff: %u) %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->ac_reloff_num, root->bm_patterns, root->bm_reloff_num, root->ac_only ? "(ac_only mode)" : "");
+	    cli_dbgmsg("matcher[%u]: %s: AC sigs: %u BM sigs: %u %s\n", i, cli_mtargets[i].name, root->ac_patterns, root->bm_patterns, root->ac_only ? "(ac_only mode)" : "");
 	}
     }
 
