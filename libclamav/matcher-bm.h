@@ -33,11 +33,12 @@ struct cli_bm_patt {
     uint16_t cnt;
     unsigned char pattern0;
     uint8_t target;
+    uint32_t filesize;
 };
 
 int cli_bm_addpatt(struct cli_matcher *root, struct cli_bm_patt *pattern);
 int cli_bm_init(struct cli_matcher *root);
-int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_matcher *root, uint32_t offset, cli_file_t ftype, int fd);
+int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, const struct cli_bm_patt **patt, const struct cli_matcher *root, uint32_t offset, cli_file_t ftype, int fd);
 void cli_bm_free(struct cli_matcher *root);
 
 #endif

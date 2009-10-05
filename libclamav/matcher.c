@@ -76,7 +76,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
 	if(!acdata && (ret = cli_ac_initdata(&mdata, troot->ac_partsigs, troot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN)))
 	    return ret;
 
-	if(troot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, troot, offset, ftype, -1)) != CL_VIRUS)
+	if(troot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, NULL, troot, offset, ftype, -1)) != CL_VIRUS)
 	    ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, troot, acdata ? (acdata[0]) : (&mdata), offset, ftype, -1, NULL, AC_SCAN_VIR, NULL);
 
 	if(!acdata)
@@ -89,7 +89,7 @@ int cli_scanbuff(const unsigned char *buffer, uint32_t length, uint32_t offset, 
     if(!acdata && (ret = cli_ac_initdata(&mdata, groot->ac_partsigs, groot->ac_lsigs, CLI_DEFAULT_AC_TRACKLEN)))
 	return ret;
 
-    if(groot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, groot, offset, ftype, -1)) != CL_VIRUS)
+    if(groot->ac_only || (ret = cli_bm_scanbuff(buffer, length, virname, NULL, groot, offset, ftype, -1)) != CL_VIRUS)
 	ret = cli_ac_scanbuff(buffer, length, virname, NULL, NULL, groot, acdata ? (acdata[1]) : (&mdata), offset, ftype, -1, NULL, AC_SCAN_VIR, NULL);
 
     if(!acdata)
@@ -207,8 +207,12 @@ off_t cli_caloff(const char *offstr, struct cli_target_info *info, int fd, cli_f
 int cli_checkfp(int fd, cli_ctx *ctx)
 {
 	unsigned char *digest;
+	char md5[33];
+	unsigned int i;
 	const char *virname;
 	off_t pos;
+	struct stat sb;
+	const struct cli_bm_patt *patt = NULL;
 
 
     if((pos = lseek(fd, 0, SEEK_CUR)) == -1) {
@@ -219,18 +223,28 @@ int cli_checkfp(int fd, cli_ctx *ctx)
     lseek(fd, 0, SEEK_SET);
 
     if(ctx->engine->md5_fp) {
+	if(fstat(fd, &sb) == -1) {
+	    cli_errmsg("cli_checkfp(): fstat(%d) failed\n", fd);
+	    lseek(fd, pos, SEEK_SET);
+	    return 0;
+	}
+
 	if(!(digest = cli_md5digest(fd))) {
 	    cli_errmsg("cli_checkfp(): Can't generate MD5 checksum\n");
 	    lseek(fd, pos, SEEK_SET);
 	    return 0;
 	}
 
-	if(cli_bm_scanbuff(digest, 16, &virname, ctx->engine->md5_fp, 0, 0, -1) == CL_VIRUS) {
+	if(cli_bm_scanbuff(digest, 16, &virname, &patt, ctx->engine->md5_fp, 0, 0, -1) == CL_VIRUS && patt->filesize == sb.st_size) {
 	    cli_dbgmsg("cli_checkfp(): Found false positive detection (fp sig: %s)\n", virname);
 	    free(digest);
 	    lseek(fd, pos, SEEK_SET);
 	    return 1;
 	}
+	for(i = 0; i < 16; i++)
+	    sprintf(md5 + i * 2, "%02x", digest[i]);
+	md5[32] = 0;
+	cli_dbgmsg("FP SIGNATURE: %s:%u:%s\n", md5, (unsigned int) sb.st_size, *ctx->virname ? *ctx->virname : "Name");
 	free(digest);
     }
 
@@ -342,7 +356,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 	    length += maxpatlen;
 
 	if(troot) {
-	    if(troot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, troot, offset, ftype, desc)) != CL_VIRUS)
+	    if(troot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, NULL, troot, offset, ftype, desc)) != CL_VIRUS)
 		ret = cli_ac_scanbuff(upt, length, ctx->virname, NULL, NULL, troot, &tdata, offset, ftype, desc, ftoffset, acmode, NULL);
 
 	    if(ret == CL_VIRUS) {
@@ -359,7 +373,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 	}
 
 	if(!ftonly) {
-	    if(groot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, groot, offset, ftype, desc)) != CL_VIRUS)
+	    if(groot->ac_only || (ret = cli_bm_scanbuff(upt, length, ctx->virname, NULL, groot, offset, ftype, desc)) != CL_VIRUS)
 		ret = cli_ac_scanbuff(upt, length, ctx->virname, NULL, NULL, groot, &gdata, offset, ftype, desc, ftoffset, acmode, NULL);
 
 	    if(ret == CL_VIRUS) {
@@ -436,8 +450,11 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
     }
 
     if(!ftonly && ctx->engine->md5_hdb) {
+	    const struct cli_bm_patt *patt;
+	    struct stat sb;
 	cli_md5_final(digest, &md5ctx);
-	if(cli_bm_scanbuff(digest, 16, ctx->virname, ctx->engine->md5_hdb, 0, 0, -1) == CL_VIRUS && (cli_bm_scanbuff(digest, 16, NULL, ctx->engine->md5_fp, 0, 0, -1) != CL_VIRUS))
+	fstat(desc, &sb);
+	if(cli_bm_scanbuff(digest, 16, ctx->virname, &patt, ctx->engine->md5_hdb, 0, 0, -1) == CL_VIRUS && patt->filesize == sb.st_size && (cli_bm_scanbuff(digest, 16, NULL, &patt, ctx->engine->md5_fp, 0, 0, -1) != CL_VIRUS || patt->filesize != sb.st_size))
 	    return CL_VIRUS;
     }
 

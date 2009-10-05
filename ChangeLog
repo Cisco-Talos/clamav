@@ -1,3 +1,8 @@
+Fri Oct  2 21:01:51 CEST 2009 (tk)
+----------------------------------
+ * libclamav: check file sizes for MD5 sigs in all cases
+	      Reported by Edwin
+
 Fri Oct  2 14:33:09 CEST 2009 (tk)
 ----------------------------------
  * libclamav/scanners.c: fix whitelisting of scripts (bb#1706)
