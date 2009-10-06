@@ -24,10 +24,12 @@
 
 #ifdef __CLAMBC__
 #include "bytecode_execs.h"
+//#include "bytecode_pe.h"
 #endif
 
 #ifndef __CLAMBC__
 #include "execs.h"
+#include "pe.h"
 #endif
 
 struct foo {
@@ -46,8 +48,9 @@ enum BytecodeKind {
 
 extern const uint32_t __clambc_match_counts[64];
 extern const struct cli_exe_info __clambc_exeinfo;
+extern const struct cli_pe_hook_data __clambc_pedata;
 
-const uint8_t __clambc_kind;
+const uint16_t __clambc_kind;
 
 uint32_t test0(struct foo*, uint32_t);
 uint32_t test1(uint32_t, uint32_t);

@@ -430,14 +430,18 @@ static int parseHeader(struct cli_bc *bc, unsigned char *buffer)
 
 static int parseLSig(struct cli_bc *bc, unsigned char *buffer)
 {
-    if (buffer[0] != 'L') {
-	cli_errmsg("Invalid logical signature header: %c\n", buffer[0]);
-	return CL_EMALFDB;
+    const char *prefix;
+    char *vnames, *vend = strchr(buffer, ';');
+    if (vend) {
+	bc->lsig = cli_strdup(buffer);
+    } else {
+	/* Not a logical signature, but we still have a virusname */
+	bc->lsig = NULL;
     }
-    bc->lsig = NULL;
-    if (!buffer[1])
-	return CL_SUCCESS;
-    bc->lsig = cli_strdup(buffer);
+    *vend++ = '\0';
+    prefix = buffer;
+    vnames = strchr(vend, '{');
+
     return CL_SUCCESS;
 }
 

@@ -58,6 +58,9 @@ struct cli_bc {
   uint16_t start_tid;
   struct bitset_tag *uses_apis;
   char *lsig;
+  char *vnameprefix;
+  char **vnames;
+  unsigned vnames_cnt;
 };
 
 struct cli_all_bc {
