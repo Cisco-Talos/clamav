@@ -22,7 +22,6 @@
 #ifndef CLAMBC_H
 #define CLAMBC_H
 
-
 struct bytecode_metadata {
   unsigned long maxStack, maxMem;
   unsigned long maxTime;
