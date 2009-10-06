@@ -1,3 +1,7 @@
+Tue Oct  6 22:51:00 CEST 2009 (tk)
+----------------------------------
+ * shared/misc.h: #include <sys/types.h>
+
 Fri Oct  2 21:01:51 CEST 2009 (tk)
 ----------------------------------
  * libclamav: check file sizes for MD5 sigs in all cases

@@ -21,6 +21,7 @@
 #ifndef __MISC_H
 #define __MISC_H
 #ifndef _WIN32
+#include <sys/types.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #endif
