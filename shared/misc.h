@@ -20,6 +20,7 @@
 
 #ifndef __MISC_H
 #define __MISC_H
+#include <sys/types.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include "optparser.h"
