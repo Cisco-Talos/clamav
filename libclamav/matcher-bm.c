@@ -363,7 +363,7 @@ int cli_bm_scanbuff(const unsigned char *buffer, uint32_t length, const char **v
 			    off_max = p->offset_max;
 			}
 			off = offset + i - p->prefix_length - BM_MIN_LENGTH + BM_BLOCK_SIZE;
-			if(off_max < off || off_min > off) {
+			if(off_min == CLI_OFF_NONE || off_max < off || off_min > off) {
 			    p = p->next;
 			    continue;
 			}
