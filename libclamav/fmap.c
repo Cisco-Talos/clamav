@@ -141,74 +141,52 @@ fmap_t *fmap(int fd, off_t offset, size_t len) {
 }
 
 
-static void fmap_qsel(fmap_t *m, unsigned int *freeme, int left, int right) {
-    int i = left, j = right;
-    int pivot;
-
-    if (i > j) return;
-
-    pivot = m->bitmap[freeme[(left + right) / 2]] & FM_MASK_COUNT;
-
-    while(i <= j) {
-	while((m->bitmap[freeme[i]] & FM_MASK_COUNT) > pivot)
-	    i++;
-	while((m->bitmap[freeme[j]] & FM_MASK_COUNT) < pivot)
-	    j--;
-	if(i <= j) {
-	    unsigned int temp = freeme[i];
-	    freeme[i] = freeme[j];
-	    freeme[j] = temp;
-	    i++;
-	    j--;
-	}
-    }
-
-    if(left < j)
-	fmap_qsel(m, freeme, left, j);
-    if(i < right)
-	fmap_qsel(m, freeme, i, right);
-}
-
-
 static void fmap_aging(fmap_t *m) {
 #if HAVE_MMAP
     if(m->dumb) return;
-    if(m->paged * m->pgsz > UNPAGE_THRSHLD_LO) { /* we alloc'd too much */
-	unsigned int i, avail = 0, *freeme;
-	freeme = cli_malloc(sizeof(unsigned int) * m->pages);
-	if(!freeme) return;
+    if(m->paged * m->pgsz > UNPAGE_THRSHLD_HI) { /* we alloc'd too much */
+	unsigned int i, avail = 0, freeme[2048], maxavail = MIN(sizeof(freeme)/sizeof(*freeme), m->paged - UNPAGE_THRSHLD_LO / m->pgsz) - 1;
+
 	for(i=0; i<m->pages; i++) {
 	    uint32_t s = m->bitmap[i];
 	    if((s & (FM_MASK_PAGED | FM_MASK_LOCKED)) == FM_MASK_PAGED ) {
 		/* page is paged and not locked: dec age */
 		if(s & FM_MASK_COUNT) m->bitmap[i]--;
 		/* and make it available for unpaging */
-		freeme[avail] = i;
-		avail++;
+
+		if(!avail) {
+		    freeme[0] = i;
+		    avail++;
+		} else {
+		    /* Insert sort onto a stack'd array - same performance as quickselect */
+		    unsigned int insert_to = MIN(maxavail, avail) - 1, age = m->bitmap[i] & FM_MASK_COUNT;
+		    if(avail <= maxavail || m->bitmap[freeme[maxavail]] & FM_MASK_COUNT > age) {
+			while(m->bitmap[freeme[insert_to]] & FM_MASK_COUNT > age) {
+			    freeme[insert_to + 1] = freeme[insert_to];
+			    if(!insert_to--) break;
+			}
+			freeme[insert_to + 1] = i;
+			if(avail <= maxavail) avail++;
+		    }
+		}
 	    }
 	}
 	if(avail) { /* at least one page is paged and not locked */
-	    if(avail * m->pgsz > UNPAGE_THRSHLD_HI ) {
-		/* if we've got more unpageable pages than we need, we pick the oldest */
-		fmap_qsel(m, freeme, 0, avail - 1);
-		avail = UNPAGE_THRSHLD_HI / m->pgsz;
-	    }
 	    for(i=0; i<avail; i++) {
 		char *pptr = (char *)m + i * m->pgsz + m->hdrsz;
 		/* we mark the page as seen */
 		m->bitmap[freeme[i]] = FM_MASK_SEEN;
-		m->paged--;
 		/* and we mmap the page over so the kernel knows there's nothing good in there */
 		pthread_mutex_lock(&fmap_mutex);
 		if(mmap(pptr, m->pgsz, PROT_READ | PROT_WRITE, MAP_FIXED|MAP_PRIVATE|ANONYMOUS_MAP, -1, 0) == MAP_FAILED)
 		    cli_warnmsg("fmap_aging: kernel hates you\n");
 		pthread_mutex_unlock(&fmap_mutex);
-#ifdef FMAPDEBUG
-		m->page_unmaps++;
-#endif
 	    }
+	    m->paged -= avail;
+#ifdef FMAPDEBUG
+	    m->page_unmaps += avail;
+#endif
 	}
-	free(freeme);
     }
 #endif
 }
