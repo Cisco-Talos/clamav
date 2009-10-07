@@ -277,8 +277,12 @@ int cli_caloff(const char *offstr, struct cli_target_info *info, int fd, unsigne
 		return CL_EARG;
 	}
 
-	if(offset_max && *offset_min != CLI_OFF_NONE)
-	    *offset_max = *offset_min + offdata[2];
+	if(offset_max) {
+	    if(*offset_min != CLI_OFF_NONE)
+		*offset_max = *offset_min + offdata[2];
+	    else
+		*offset_max = CLI_OFF_NONE;
+	}
     }
 
     return CL_SUCCESS;
