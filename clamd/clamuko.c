@@ -30,6 +30,7 @@
 #include <sys/stat.h>
 #include <signal.h>
 #include <pthread.h>
+#include <string.h>
 
 #include "libclamav/clamav.h"
 
