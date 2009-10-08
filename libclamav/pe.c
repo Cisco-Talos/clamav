@@ -1176,7 +1176,7 @@ int cli_scanpe(cli_ctx *ctx)
 	cli_dbgmsg("Polipos: Checking %d xsect jump(s)\n", xsjs);
 	for(i=0;i<xsjs;i++) {
 	    if(!(code = fmap_need_off_once(map, jumps[i], 9))) continue;
-	    if((jump=cli_readint32(code))==0x60ec8b55 || (code[4]=='\xec' && ((jump==0x83ec8b55 && code[6]=='\x60') || (jump==0x81ec8b55 && !code[7] && !code[8])))) {
+	    if((jump=cli_readint32(code))==0x60ec8b55 || (code[4]==0x0ec && ((jump==0x83ec8b55 && code[6]==0x60) || (jump==0x81ec8b55 && !code[7] && !code[8])))) {
 		*ctx->virname = "W32.Polipos.A";
 		free(jumps);
 		free(exe_sections);
