@@ -52,12 +52,11 @@ static	char	const	rcsid[] = "$Id: uuencode.c,v 1.8 2006/12/11 11:55:11 njh Exp $
 int
 cli_uuencode(const char *dir, fmap_t *map)
 {
-	int i;
 	message *m;
 	char buffer[RFC2821LENGTH + 1];
 	size_t at = 0;
 
-	if(fmap_gets(map, buffer, &at, sizeof(buffer) - 1)) {
+	if(!fmap_gets(map, buffer, &at, sizeof(buffer) - 1)) {
 		/* empty message */
 		return CL_CLEAN;
 	}
