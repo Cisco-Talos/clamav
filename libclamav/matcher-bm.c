@@ -167,15 +167,15 @@ int cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *data, int 
     info.fsize = sb.st_size;
 
     data->cnt = data->pos = 0;
-    data->offtab = (uint32_t *) mpool_malloc(root->mempool, root->bm_patterns * sizeof(uint32_t));
+    data->offtab = (uint32_t *) cli_malloc(root->bm_patterns * sizeof(uint32_t));
     if(!data->offtab) {
 	cli_errmsg("cli_bm_initoff: Can't allocate memory for data->offtab\n");
 	return CL_EMEM;
     }
-    data->offset = (uint32_t *) mpool_malloc(root->mempool, root->bm_patterns * sizeof(uint32_t));
+    data->offset = (uint32_t *) cli_malloc(root->bm_patterns * sizeof(uint32_t));
     if(!data->offset) {
 	cli_errmsg("cli_bm_initoff: Can't allocate memory for data->offset\n");
-	mpool_free(root->mempool, data->offtab);
+	free(data->offtab);
 	return CL_EMEM;
     }
     for(i = 0; i < root->bm_patterns; i++) {
@@ -187,8 +187,8 @@ int cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *data, int 
 	    cli_errmsg("cli_bm_initoff: Can't calculate relative offset in signature for %s\n", patt->virname);
 	    if(info.exeinfo.section)
 		free(info.exeinfo.section);
-	    mpool_free(root->mempool, data->offtab);
-	    mpool_free(root->mempool, data->offset);
+	    free(data->offtab);
+	    free(data->offset);
 	    return ret;
 	} else if((data->offset[patt->offset_min] != CLI_OFF_NONE) && (data->offset[patt->offset_min] + patt->length <= info.fsize)) {
 	    if(!data->cnt || (data->offset[patt->offset_min] != data->offtab[data->cnt - 1])) {
@@ -204,14 +204,12 @@ int cli_bm_initoff(const struct cli_matcher *root, struct cli_bm_off *data, int 
     return CL_SUCCESS;
 }
 
-void cli_bm_freeoff(struct cli_bm_off *data, const struct cli_matcher *root)
+void cli_bm_freeoff(struct cli_bm_off *data)
 {
-    if(data->offset) {
-	mpool_free(root->mempool, data->offset);
-	data->offset = NULL;
-	mpool_free(root->mempool, data->offtab);
-	data->offtab = NULL;
-    }
+    free(data->offset);
+    data->offset = NULL;
+    free(data->offtab);
+    data->offtab = NULL;
 }
 
 void cli_bm_free(struct cli_matcher *root)

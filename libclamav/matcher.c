@@ -443,7 +443,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 		    cli_ac_freedata(&gdata);
 		cli_ac_freedata(&tdata);
 		if(bm_offmode)
-		    cli_bm_freeoff(&toff, troot);
+		    cli_bm_freeoff(&toff);
 		return CL_VIRUS;
 	    }
 	}
@@ -458,7 +458,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 		if(troot) {
 		    cli_ac_freedata(&tdata);
 		    if(bm_offmode)
-			cli_bm_freeoff(&toff, troot);
+			cli_bm_freeoff(&toff);
 		}
 		return CL_VIRUS;
 
@@ -502,7 +502,7 @@ int cli_scandesc(int desc, cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struc
 	}
 	cli_ac_freedata(&tdata);
 	if(bm_offmode)
-	    cli_bm_freeoff(&toff, troot);
+	    cli_bm_freeoff(&toff);
     }
 
     if(groot) {

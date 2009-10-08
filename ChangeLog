@@ -1,3 +1,7 @@
+Thu Oct  8 19:03:57 CEST 2009 (tk)
+----------------------------------
+ * libclamav/matcher-bm.c: don't use mpool (bb#1710, #1715)
+
 Tue Oct  6 22:51:00 CEST 2009 (tk)
 ----------------------------------
  * shared/misc.h: #include <sys/types.h>
