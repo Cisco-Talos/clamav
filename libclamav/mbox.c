@@ -3261,12 +3261,12 @@ usefulHeader(int commandNumber, const char *cmd)
  * Like fgets but cope with end of line by "\n", "\r\n", "\n\r", "\r"
  */
 static char *
-getline_from_mbox(char *buffer, size_t len, fmap_t *map, size_t *at)
+getline_from_mbox(char *buffer, size_t buffer_len, fmap_t *map, size_t *at)
 {
     char *src, *cursrc, *curbuf;
     size_t i;
-    len = MIN(map->len - *at, len);
-    src = cursrc = fmap_need_off_once(map, *at, len);
+    size_t input_len = MIN(map->len - *at, buffer_len + 1);
+    src = cursrc = fmap_need_off_once(map, *at, input_len);
 
 /*	we check for eof from the result of GETC()
  *	if(feof(fin)) 
@@ -3275,27 +3275,37 @@ getline_from_mbox(char *buffer, size_t len, fmap_t *map, size_t *at)
 	cli_dbgmsg("getline_from_mbox: fmap need failed\n");
 	return NULL;
     }
-    if((len == 0) || (buffer == NULL)) {
+    if((buffer_len == 0) || (buffer == NULL)) {
 	cli_errmsg("Invalid call to getline_from_mbox(). Refer to http://www.clamav.net/bugs\n");
 	return NULL;
     }
+
     curbuf = buffer;
 	
-    for(i=0; i<len; i++) {
-	char c = *cursrc++;
-	switch(c) {
+    for(i=0; i<buffer_len-1; i++) {
+	char c;
+
+	if(!input_len--) {
+	    if(curbuf == buffer) {
+		/* EOF on first char */
+		return NULL;
+	    }
+	    break;
+	}
+
+	switch((c = *cursrc++)) {
 	case '\0':
 	    continue;
 	case '\n':
 	    *curbuf++ = '\n';
-	    if(i != len-1 && *cursrc == '\r') {
+	    if(input_len && *cursrc == '\r') {
 		i++;
 		cursrc++;
 	    }
 	    break;
 	case '\r':
 	    *curbuf++ = '\r';
-	    if(i != len-1 && *cursrc == '\n') {
+	    if(input_len && *cursrc == '\n') {
 		i++;
 		cursrc++;
 	    }
@@ -3307,11 +3317,6 @@ getline_from_mbox(char *buffer, size_t len, fmap_t *map, size_t *at)
 	break;
     }
     *at += cursrc - src;
-    if(i == len) {
-	/* the email probably breaks RFC821 */
-	cli_dbgmsg("getline_from_mbox: buffer overflow stopped, line lost\n");
-	return NULL;
-    }
     *curbuf = '\0';
     
     return buffer;
