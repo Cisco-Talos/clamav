@@ -488,6 +488,11 @@ static int cli_scangzip(cli_ctx *ctx)
 		    return CL_EUNLINK;
 		}
 	    }
+	    if(inf == Z_STREAM_END) {
+		at -= z.avail_in;
+		inflateReset(&z);
+		break;
+	    }
 	} while (z.avail_out == 0);
     }
 
