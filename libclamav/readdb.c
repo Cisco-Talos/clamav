@@ -406,7 +406,7 @@ static int cli_chkign(const struct cli_matcher *ignored, const char *signame, co
     if(!ignored || !signame || !entry)
 	return 0;
 
-    if(cli_bm_scanbuff(signame, strlen(signame), &md5_expected, NULL, ignored, 0, -1, NULL) == CL_VIRUS) {
+    if(cli_bm_scanbuff(signame, strlen(signame), &md5_expected, NULL, ignored, 0, NULL, NULL) == CL_VIRUS) {
 	if(md5_expected) {
 	    cli_md5_init(&md5ctx);
             cli_md5_update(&md5ctx, entry, strlen(entry));
