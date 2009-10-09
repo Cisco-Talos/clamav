@@ -386,10 +386,20 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 	cli_md5_init(&md5ctx);
 
     while(offset < map->len) {
-	bytes = map->len - offset > SCANBUFF ? SCANBUFF : map->len - offset;
-	if(!(buff = fmap_need_off_once(map, offset, bytes))) {
-	    /* FIXME: FAIL HERE */
-	}
+	/* TO TOMASZ:
+	   by swapping comments on the following 2 lines and in the other 2 lines below you
+	   can mimic the bahaviour of master in terms of which offsets we break the blocks at
+	   Offsets in master are:   0, 130680, 261752, 392824, 523896, 654968, 786040, 917112
+	   Offsets in the fmap are: 0, 130680, 261360, 392040, 522720, 653400, 784080, 914760
+
+	   I think maxpatlen is a bit too short. In practice, due to the SCANBUFF/maxpatlen ratio
+	   this is not a huge problem: during the regression it only affected 3 samples out of 3.5M
+	*/
+	/* UNCOMMENT ME */ //bytes = MIN(map->len - offset, SCANBUFF + maxpatlen * (offset != 0));
+	/* COMMENT ME */ bytes = MIN(map->len - offset, SCANBUFF);
+	cli_errmsg("off: %u\n", offset);
+	if(!(buff = fmap_need_off_once(map, offset, bytes)))
+	    break;
 	if(ctx->scanned)
 	    *ctx->scanned += bytes / CL_COUNT_PRECISION;
 
@@ -434,8 +444,18 @@ int cli_fmap_scandesc(cli_ctx *ctx, cli_file_t ftype, uint8_t ftonly, struct cli
 		cli_md5_update(&md5ctx, buff + maxpatlen * (offset!=0), bytes - maxpatlen * (offset!=0));
 	}
 
-	if(bytes < SCANBUFF) break;
-	offset += SCANBUFF - maxpatlen;
+	/* TO TOMASZ:
+	   That's the second block you need to swap in order to to match the swap above
+	*/
+	/* UNCOMMENT ME */ //if(bytes < SCANBUFF + maxpatlen * (offset != 0)) break;
+	/* COMMENT ME */ if(bytes < SCANBUFF) break;
+	offset += bytes - maxpatlen;
+	/* TO TOMASZ: 
+	   as an additional check you can leave the above code untouched and replace the previous line with:
+	offset += bytes - (maxpatlen + 63);
+
+	  Note that I'm not sure maxpatlen is only 63 bytes short, but with *this* specific sample case it's enough.
+	*/
     }
 
     if(troot) {
