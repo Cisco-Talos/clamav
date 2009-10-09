@@ -325,7 +325,7 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
 
   if(zsize<=LH_flen) {
     cli_dbgmsg("cli_unzip: lh - fname out of file\n");
-    fmap_need_off(map, loff, SIZEOF_LH);
+    fmap_unneed_off(map, loff, SIZEOF_LH);
     return 0;
   }
   if(meta || cli_debug_flag) {
@@ -362,14 +362,14 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
     } else
       *ret = CL_CLEAN;
 
-    fmap_need_off(map, loff, SIZEOF_LH);
+    fmap_unneed_off(map, loff, SIZEOF_LH);
     return 0;
   }
 
   if(LH_flags & F_MSKED) {
     cli_dbgmsg("cli_unzip: lh - header has got unusable masked data\n");
     /* FIXME: need to find/craft a sample */
-    fmap_need_off(map, loff, SIZEOF_LH);
+    fmap_unneed_off(map, loff, SIZEOF_LH);
     return 0;
   }
 
@@ -377,14 +377,14 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
     cli_dbgmsg("cli_unzip: Encrypted files found in archive.\n");
     *ctx->virname = "Encrypted.Zip";
     *ret = CL_VIRUS;
-    fmap_need_off(map, loff, SIZEOF_LH);
+    fmap_unneed_off(map, loff, SIZEOF_LH);
     return 0;
   }
  
   if(LH_flags & F_USEDD) {
     cli_dbgmsg("cli_unzip: lh - has data desc\n");
     if(!ch) {
-	fmap_need_off(map, loff, SIZEOF_LH);
+	fmap_unneed_off(map, loff, SIZEOF_LH);
 	return 0;
     }
     else { usize = CH_usize; csize = CH_csize; }
@@ -392,7 +392,7 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
 
   if(zsize<=LH_elen) {
     cli_dbgmsg("cli_unzip: lh - extra out of file\n");
-    fmap_need_off(map, loff, SIZEOF_LH);
+    fmap_unneed_off(map, loff, SIZEOF_LH);
     return 0;
   }
   zip+=LH_elen;
@@ -403,7 +403,7 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
   } else {
       if(zsize<csize) {
 	  cli_dbgmsg("cli_unzip: lh - stream out of file\n");
-	  fmap_need_off(map, loff, SIZEOF_LH);
+	  fmap_unneed_off(map, loff, SIZEOF_LH);
 	  return 0;
       }
       if(LH_flags & F_ENCR) {
@@ -416,7 +416,7 @@ static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int
       zsize-=csize;
   }
 
-  fmap_need_off(map, loff, SIZEOF_LH); /* unneed now. block is guaranteed to exists till the next need */
+  fmap_unneed_off(map, loff, SIZEOF_LH); /* unneed now. block is guaranteed to exists till the next need */
   if(LH_flags & F_USEDD) {
       if(zsize<12) {
 	  cli_dbgmsg("cli_unzip: lh - data desc out of file\n");
