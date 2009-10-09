@@ -13759,22 +13759,6 @@ $as_echo "#define HAVE_GETPAGESIZE 1" >>confdefs.h
 	ac_cv_c_can_get_pagesize="yes"
 fi
 
-# Check whether --enable-mempool was given.
-if test "${enable_mempool+set}" = set; then :
-  enableval=$enable_mempool; enable_mempool=$enableval
-else
-  enable_mempool="yes"
-fi
-
-if test "$enable_mempool" = "yes"; then
-	if test "$ac_cv_c_mmap_private" != "yes"; then
-		{ $as_echo "$as_me:${as_lineno-$LINENO}: ****** mempool support disabled (mmap not available or not usable)" >&5
-$as_echo "$as_me: ****** mempool support disabled (mmap not available or not usable)" >&6;}
-	else
-		if test "$ac_cv_c_can_get_pagesize" != "yes"; then
-			{ $as_echo "$as_me:${as_lineno-$LINENO}: ****** mempool support disabled (pagesize cannot be determined)" >&5
-$as_echo "$as_me: ****** mempool support disabled (pagesize cannot be determined)" >&6;}
-		else
 
 	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for MAP_ANON(YMOUS)" >&5
 $as_echo_n "checking for MAP_ANON(YMOUS)... " >&6; }
@@ -13836,6 +13820,22 @@ _ACEOF
 
 	fi
 
+# Check whether --enable-mempool was given.
+if test "${enable_mempool+set}" = set; then :
+  enableval=$enable_mempool; enable_mempool=$enableval
+else
+  enable_mempool="yes"
+fi
+
+if test "$enable_mempool" = "yes"; then
+	if test "$ac_cv_c_mmap_private" != "yes"; then
+		{ $as_echo "$as_me:${as_lineno-$LINENO}: ****** mempool support disabled (mmap not available or not usable)" >&5
+$as_echo "$as_me: ****** mempool support disabled (mmap not available or not usable)" >&6;}
+	else
+		if test "$ac_cv_c_can_get_pagesize" != "yes"; then
+			{ $as_echo "$as_me:${as_lineno-$LINENO}: ****** mempool support disabled (pagesize cannot be determined)" >&5
+$as_echo "$as_me: ****** mempool support disabled (pagesize cannot be determined)" >&6;}
+		else
 			if test "$ac_cv_c_mmap_anonymous" = "no"; then
 				{ $as_echo "$as_me:${as_lineno-$LINENO}: ****** mempool support disabled (anonymous mmap not available)" >&5
 $as_echo "$as_me: ****** mempool support disabled (anonymous mmap not available)" >&6;}

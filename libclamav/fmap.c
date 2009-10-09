@@ -160,8 +160,8 @@ static void fmap_aging(fmap_t *m) {
 		} else {
 		    /* Insert sort onto a stack'd array - same performance as quickselect */
 		    unsigned int insert_to = MIN(maxavail, avail) - 1, age = m->bitmap[i] & FM_MASK_COUNT;
-		    if(avail <= maxavail || m->bitmap[freeme[maxavail]] & FM_MASK_COUNT > age) {
-			while(m->bitmap[freeme[insert_to]] & FM_MASK_COUNT > age) {
+		    if(avail <= maxavail || (m->bitmap[freeme[maxavail]] & FM_MASK_COUNT) > age) {
+			while((m->bitmap[freeme[insert_to]] & FM_MASK_COUNT) > age) {
 			    freeme[insert_to + 1] = freeme[insert_to];
 			    if(!insert_to--) break;
 			}

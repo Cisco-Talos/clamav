@@ -277,15 +277,6 @@ static int cli_ddump(int desc, int offset, int size, const char *file) {
 }
 */
 
-static off_t cli_seeksect(int fd, struct cli_exe_section *s) {
-    off_t ret;
-
-    if(!s->rsz) return 0;
-    if((ret=lseek(fd, s->raw, SEEK_SET)) == -1)
-	cli_dbgmsg("cli_seeksect: lseek() failed\n");
-    return ret+1;
-}
-
 static unsigned int cli_md5sect(fmap_t *map, struct cli_exe_section *s, unsigned char *digest) {
     void *hashme;
     cli_md5_ctx md5;
