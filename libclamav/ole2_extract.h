@@ -26,6 +26,6 @@
 #include "others.h"
 #include "uniq.h"
 
-int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx, struct uniq **);
+int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **);
 
 #endif

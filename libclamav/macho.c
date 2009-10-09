@@ -201,7 +201,7 @@ static uint32_t cli_rawaddr(uint32_t vaddr, struct cli_exe_section *sects, uint1
     return vaddr - sects[i].rva + sects[i].raw;
 }
 
-int cli_scanmacho(int fd, cli_ctx *ctx, struct cli_exe_info *fileinfo)
+int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo)
 {
 	struct macho_hdr hdr;
 	struct macho_load_cmd load_cmd;
@@ -213,14 +213,17 @@ int cli_scanmacho(int fd, cli_ctx *ctx, struct cli_exe_info *fileinfo)
 	unsigned int arch = 0, ep = 0, err;
 	struct cli_exe_section *sections = NULL;
 	char name[16];
+	fmap_t *map = *ctx->fmap;
+	ssize_t at;
 
     if(fileinfo)
 	matcher = 1;
 
-    if(read(fd, &hdr, sizeof(hdr)) != sizeof(hdr)) {
+    if(fmap_readn(map, &hdr, 0, sizeof(hdr)) != sizeof(hdr)) {
 	cli_dbgmsg("cli_scanmacho: Can't read header\n");
 	return matcher ? -1 : CL_EFORMAT;
     }
+    at = sizeof(hdr);
 
     if(hdr.magic == 0xfeedface) {
 	conv = 0;
@@ -311,7 +314,7 @@ int cli_scanmacho(int fd, cli_ctx *ctx, struct cli_exe_info *fileinfo)
     }
 
     if(m64)
-	lseek(fd, 4, SEEK_CUR);
+	at += 4;
 
     hdr.ncmds = EC32(hdr.ncmds, conv);
     if(!hdr.ncmds || hdr.ncmds > 1024) {
@@ -320,11 +323,12 @@ int cli_scanmacho(int fd, cli_ctx *ctx, struct cli_exe_info *fileinfo)
     }
 
     for(i = 0; i < hdr.ncmds; i++) {
-	if(read(fd, &load_cmd, sizeof(load_cmd)) != sizeof(load_cmd)) {
+	if(fmap_readn(map, &load_cmd, at, sizeof(load_cmd)) != sizeof(load_cmd)) {
 	    cli_dbgmsg("cli_scanmacho: Can't read load command\n");
 	    free(sections);
 	    RETURN_BROKEN;
 	}
+	at += sizeof(load_cmd);
 	/*
 	if((m64 && EC32(load_cmd.cmdsize, conv) % 8) || (!m64 && EC32(load_cmd.cmdsize, conv) % 4)) {
 	    cli_dbgmsg("cli_scanmacho: Invalid command size (%u)\n", EC32(load_cmd.cmdsize, conv));
@@ -335,19 +339,21 @@ int cli_scanmacho(int fd, cli_ctx *ctx, struct cli_exe_info *fileinfo)
 	load_cmd.cmd = EC32(load_cmd.cmd, conv);
 	if((m64 && load_cmd.cmd == 0x19) || (!m64 && load_cmd.cmd == 0x01)) { /* LC_SEGMENT */
 	    if(m64) {
-		if(read(fd, &segment_cmd64, sizeof(segment_cmd64)) != sizeof(segment_cmd64)) {
+		if(fmap_readn(map, &segment_cmd64, at, sizeof(segment_cmd64)) != sizeof(segment_cmd64)) {
 		    cli_dbgmsg("cli_scanmacho: Can't read segment command\n");
 		    free(sections);
 		    RETURN_BROKEN;
 		}
+		at += sizeof(segment_cmd64);
 		nsects = EC32(segment_cmd64.nsects, conv);
 		strncpy(name, segment_cmd64.segname, 16);
 	    } else {
-		if(read(fd, &segment_cmd, sizeof(segment_cmd)) != sizeof(segment_cmd)) {
+		if(fmap_readn(map, &segment_cmd, at, sizeof(segment_cmd)) != sizeof(segment_cmd)) {
 		    cli_dbgmsg("cli_scanmacho: Can't read segment command\n");
 		    free(sections);
 		    RETURN_BROKEN;
 		}
+		at += sizeof(segment_cmd);
 		nsects = EC32(segment_cmd.nsects, conv);
 		strncpy(name, segment_cmd.segname, 16);
 	    }
@@ -374,11 +380,12 @@ int cli_scanmacho(int fd, cli_ctx *ctx, struct cli_exe_info *fileinfo)
 
 	    for(j = 0; j < nsects; j++) {
 		if(m64) {
-		    if(read(fd, &section64, sizeof(section64)) != sizeof(section64)) {
+		    if(fmap_readn(map, &section64, at, sizeof(section64)) != sizeof(section64)) {
 			cli_dbgmsg("cli_scanmacho: Can't read section\n");
 			free(sections);
 			RETURN_BROKEN;
 		    }
+		    at += sizeof(section64);
 		    sections[sect].rva = EC64(section64.addr, conv);
 		    sections[sect].vsz = EC64(section64.size, conv);
 		    sections[sect].raw = EC32(section64.offset, conv);
@@ -386,11 +393,12 @@ int cli_scanmacho(int fd, cli_ctx *ctx, struct cli_exe_info *fileinfo)
 		    sections[sect].rsz = sections[sect].vsz + (section64.align - (sections[sect].vsz % section64.align)) % section64.align; /* most likely we can assume it's the same as .vsz */
 		    strncpy(name, section64.sectname, 16);
 		} else {
-		    if(read(fd, &section, sizeof(section)) != sizeof(section)) {
+		    if(fmap_readn(map, &section, at, sizeof(section)) != sizeof(section)) {
 			cli_dbgmsg("cli_scanmacho: Can't read section\n");
 			free(sections);
 			RETURN_BROKEN;
 		    }
+		    at += sizeof(section);
 		    sections[sect].rva = EC32(section.addr, conv);
 		    sections[sect].vsz = EC32(section.size, conv);
 		    sections[sect].raw = EC32(section.offset, conv);
@@ -414,17 +422,18 @@ int cli_scanmacho(int fd, cli_ctx *ctx, struct cli_exe_info *fileinfo)
 		cli_dbgmsg("MACHO: ------------------\n");
 
 	} else if(arch && (load_cmd.cmd == 0x4 || load_cmd.cmd == 0x5)) { /* LC_(UNIX)THREAD */
-	    lseek(fd, 8, SEEK_CUR);
+	    at += 8;
 	    switch(arch) {
 		case 1: /* x86 */
 		{
 			struct macho_thread_state_x86 thread_state_x86;
 
-		    if(read(fd, &thread_state_x86, sizeof(thread_state_x86)) != sizeof(thread_state_x86)) {
+		    if(fmap_readn(map, &thread_state_x86, at, sizeof(thread_state_x86)) != sizeof(thread_state_x86)) {
 			cli_dbgmsg("cli_scanmacho: Can't read thread_state_x86\n");
 			free(sections);
 			RETURN_BROKEN;
 		    }
+		    at += sizeof(thread_state_x86);
 		    break;
 		}
 
@@ -432,11 +441,12 @@ int cli_scanmacho(int fd, cli_ctx *ctx, struct cli_exe_info *fileinfo)
 		{
 			struct macho_thread_state_ppc thread_state_ppc;
 
-		    if(read(fd, &thread_state_ppc, sizeof(thread_state_ppc)) != sizeof(thread_state_ppc)) {
+		    if(fmap_readn(map, &thread_state_ppc, at, sizeof(thread_state_ppc)) != sizeof(thread_state_ppc)) {
 			cli_dbgmsg("cli_scanmacho: Can't read thread_state_ppc\n");
 			free(sections);
 			RETURN_BROKEN;
 		    }
+		    at += sizeof(thread_state_ppc);
 		    ep = EC32(thread_state_ppc.srr0, conv);
 		    break;
 		}
@@ -445,11 +455,12 @@ int cli_scanmacho(int fd, cli_ctx *ctx, struct cli_exe_info *fileinfo)
 		{
 			struct macho_thread_state_ppc64 thread_state_ppc64;
 
-		    if(read(fd, &thread_state_ppc64, sizeof(thread_state_ppc64)) != sizeof(thread_state_ppc64)) {
+		    if(fmap_readn(map, &thread_state_ppc64, at, sizeof(thread_state_ppc64)) != sizeof(thread_state_ppc64)) {
 			cli_dbgmsg("cli_scanmacho: Can't read thread_state_ppc64\n");
 			free(sections);
 			RETURN_BROKEN;
 		    }
+		    at += sizeof(thread_state_ppc64);
 		    ep = EC64(thread_state_ppc64.srr0, conv);
 		    break;
 		}
@@ -460,7 +471,7 @@ int cli_scanmacho(int fd, cli_ctx *ctx, struct cli_exe_info *fileinfo)
 	    }
 	} else {
 	    if(EC32(load_cmd.cmdsize, conv) > sizeof(load_cmd))
-		lseek(fd, EC32(load_cmd.cmdsize, conv) - sizeof(load_cmd), SEEK_CUR);
+		at += EC32(load_cmd.cmdsize, conv) - sizeof(load_cmd);
 	}
     }
 
@@ -490,12 +501,14 @@ int cli_scanmacho(int fd, cli_ctx *ctx, struct cli_exe_info *fileinfo)
     }
 }
 
-int cli_machoheader(int fd, struct cli_exe_info *fileinfo)
+int cli_machoheader(fmap_t *map, struct cli_exe_info *fileinfo)
 {
-    return cli_scanmacho(fd, NULL, fileinfo);
+    cli_ctx ctx;
+    ctx.fmap = &map;
+    return cli_scanmacho(&ctx, fileinfo);
 }
 
-int cli_scanmacho_unibin(int fd, cli_ctx *ctx)
+int cli_scanmacho_unibin(cli_ctx *ctx)
 {
 	struct macho_fat_header fat_header;
 	struct macho_fat_arch fat_arch;
@@ -503,16 +516,14 @@ int cli_scanmacho_unibin(int fd, cli_ctx *ctx)
 	int ret = CL_CLEAN;
 	struct stat sb;
 	off_t pos;
+	fmap_t *map = *ctx->fmap;
+	ssize_t at;
 
-    if(fstat(fd, &sb) == -1) {
-	cli_dbgmsg("cli_scanmacho_unibin: fstat failed for fd %d\n", fd);
-	return CL_ESTAT;
-    }
-
-    if(read(fd, &fat_header, sizeof(fat_header)) != sizeof(fat_header)) {
+    if(fmap_readn(map, &fat_header, 0, sizeof(fat_header)) != sizeof(fat_header)) {
 	cli_dbgmsg("cli_scanmacho_unibin: Can't read fat_header\n");
 	return CL_EFORMAT;
     }
+    at = sizeof(fat_header);
 
     if(fat_header.magic == 0xcafebabe) {
 	conv = 0;
@@ -533,18 +544,17 @@ int cli_scanmacho_unibin(int fd, cli_ctx *ctx)
     }
     cli_dbgmsg("UNIBIN: Number of architectures: %u\n", (unsigned int) fat_header.nfats);
     for(i = 0; i < fat_header.nfats; i++) {
-	if(read(fd, &fat_arch, sizeof(fat_arch)) != sizeof(fat_arch)) {
+	if(fmap_readn(map, &fat_arch, at, sizeof(fat_arch)) != sizeof(fat_arch)) {
 	    cli_dbgmsg("cli_scanmacho_unibin: Can't read fat_arch\n");
 	    RETURN_BROKEN;
 	}
-	pos = lseek(fd, 0, SEEK_CUR);
+	at += sizeof(fat_arch);
 	fat_arch.offset = EC32(fat_arch.offset, conv);
 	fat_arch.size = EC32(fat_arch.size, conv);
 	cli_dbgmsg("UNIBIN: Binary %u of %u\n", i + 1, fat_header.nfats);
 	cli_dbgmsg("UNIBIN: File offset: %u\n", fat_arch.offset);
 	cli_dbgmsg("UNIBIN: File size: %u\n", fat_arch.size);
-	ret = cli_dumpscan(fd, fat_arch.offset, fat_arch.size, ctx);
-	lseek(fd, pos, SEEK_SET);
+	ret = cli_dumpscan(map->fd, fat_arch.offset, fat_arch.size, ctx);
 	if(ret == CL_VIRUS)
 	    break;
     }

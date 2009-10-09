@@ -21,7 +21,9 @@
 #ifndef __UUENCODE_H
 #define __UUENCODE_H
 
-int	cli_uuencode(const char *dir, int desc);
-int	uudecodeFile(message *m, const char *firstline, const char *dir, FILE *fin);
+#include "fmap.h"
+
+int	cli_uuencode(const char *dir, fmap_t *map);
+int	uudecodeFile(message *m, const char *firstline, const char *dir, fmap_t *map, size_t *at);
 
 #endif

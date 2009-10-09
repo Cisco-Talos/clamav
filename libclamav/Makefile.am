@@ -309,6 +309,8 @@ libclamav_la_SOURCES = \
 	version.h\
 	mpool.c\
 	mpool.h \
+	fmap.c \
+	fmap.h \
 	default.h\
 	sha256.c\
 	sha256.h\

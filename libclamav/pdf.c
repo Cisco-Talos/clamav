@@ -26,7 +26,6 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #include "clamav-config.h"
 #endif
 
-#ifdef	HAVE_MMAP
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -41,9 +40,6 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #ifdef	HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#if defined(HAVE_MMAP) && defined(HAVE_SYS_MMAN_H)
-#include <sys/mman.h>
-#endif
 #include <zlib.h>
 
 #include "clamav.h"
@@ -51,6 +47,7 @@ static	char	const	rcsid[] = "$Id: pdf.c,v 1.61 2007/02/12 20:46:09 njh Exp $";
 #include "mbox.h"
 #include "pdf.h"
 #include "scanners.h"
+#include "fmap.h"
 #include "str.h"
 
 #ifdef	CL_DEBUG
@@ -65,7 +62,7 @@ static	const	char	*pdf_nextlinestart(const char *ptr, size_t len);
 static	const	char	*pdf_nextobject(const char *ptr, size_t len);
 
 int
-cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
+cli_pdf(const char *dir, cli_ctx *ctx, off_t offset)
 {
 	off_t size;	/* total number of bytes in the file */
 	off_t bytesleft, trailerlength;
@@ -76,23 +73,18 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 	table_t *md5table;
 	int printed_predictor_message, printed_embedded_font_message, rc;
 	unsigned int files;
-	struct stat statb;
+	fmap_t *map = *ctx->fmap;
 	int opt_failed = 0;
 
 	cli_dbgmsg("in cli_pdf(%s)\n", dir);
 
-	if(fstat(desc, &statb) < 0) {
-		cli_errmsg("cli_pdf: fstat() failed\n");
-		return CL_EOPEN;
-	}
-
-	size = statb.st_size - offset;
+	size = map->len - offset;
 
 	if(size <= 7)	/* doesn't even include the file header */
 		return CL_CLEAN;
 
-	p = buf = mmap(NULL, size, PROT_READ, MAP_PRIVATE, desc, offset);
-	if(buf == MAP_FAILED) {
+	p = buf = fmap_need_off_once(map, 0, size); /* FIXME: really port to fmap */
+	if(!buf) {
 		cli_errmsg("cli_pdf: mmap() failed\n");
 		return CL_EMAP;
 	}
@@ -112,7 +104,6 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 	}
 
 	if(!bytesleft) {
-	    munmap(buf, size);
 	    cli_dbgmsg("cli_pdf: file header not found\n");
 	    return CL_CLEAN;
 	}
@@ -123,7 +114,6 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 			break;
 
 	if(q <= p) {
-		munmap(buf, size);
 		cli_dbgmsg("cli_pdf: trailer not found\n");
 		return CL_CLEAN;
 	}
@@ -142,7 +132,6 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 		 * http://www.cs.cmu.edu/~dst/Adobe/Gallery/anon21jul01-pdf-encryption.txt
 		 * http://www.adobe.com/devnet/pdf/
 		 */
-		munmap(buf, size);
 		cli_dbgmsg("cli_pdf: Encrypted PDF files not yet supported\n");
 		return CL_CLEAN;
 	}
@@ -165,7 +154,6 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 				break;
 
 	if(xrefstart == p) {
-		munmap(buf, size);
 		cli_dbgmsg("cli_pdf: xref not found\n");
 		return CL_CLEAN;
 	}
@@ -544,7 +532,6 @@ cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
 		if(rc != CL_CLEAN) break;
 	}
 
-	munmap(buf, size);
 
 	tableDestroy(md5table);
 
@@ -840,17 +827,3 @@ pdf_nextobject(const char *ptr, size_t len)
 	}
 	return NULL;
 }
-
-#else	/*!HAVE_MMAP*/
-
-#include "clamav.h"
-#include "others.h"
-#include "pdf.h"
-
-int
-cli_pdf(const char *dir, int desc, cli_ctx *ctx, off_t offset)
-{
-	cli_dbgmsg("File not decoded - PDF decoding needs mmap() (for now)\n");
-	return CL_CLEAN;
-}
-#endif

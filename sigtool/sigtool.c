@@ -63,6 +63,7 @@
 #include "libclamav/ole2_extract.h"
 #include "libclamav/htmlnorm.h"
 #include "libclamav/default.h"
+#include "libclamav/fmap.h"
 
 #define MAX_DEL_LOOKAHEAD   200
 
@@ -184,14 +185,19 @@ static int md5sig(const struct optstruct *opts, unsigned int mdb)
 static int htmlnorm(const struct optstruct *opts)
 {
 	int fd;
-
+	fmap_t *map;
 
     if((fd = open(optget(opts, "html-normalise")->strarg, O_RDONLY)) == -1) {
 	mprintf("!htmlnorm: Can't open file %s\n", optget(opts, "html-normalise")->strarg);
 	return -1;
     }
 
-    html_normalise_fd(fd, ".", NULL, NULL);
+    if((map = fmap(fd, 0, 0))) {
+	html_normalise_map(map, ".", NULL, NULL);
+	funmap(map);
+    } else
+	mprintf("!fmap failed\n");
+	
     close(fd);
 
     return 0;
@@ -1201,6 +1207,7 @@ static int vbadump(const struct optstruct *opts)
 	char *dir;
 	const char *pt;
 	struct uniq *vba = NULL;
+	cli_ctx ctx;
 
 
     if(optget(opts, "vba-hex")->enabled) {
@@ -1230,7 +1237,18 @@ static int vbadump(const struct optstruct *opts)
         return -1;
     }
 
-    if(cli_ole2_extract(fd, dir, NULL, &vba)) {
+    ctx.fmap = cli_malloc(sizeof(struct F_MAP *));
+    if(!ctx.fmap) {
+	printf("malloc failed\n");
+	return 1;
+    }
+    *ctx.fmap = fmap(fd, 0, 0);
+    if(*ctx.fmap) {
+	printf("fmap failed\n");
+	return 1;
+    }
+    
+    if(cli_ole2_extract(dir, NULL, &vba)) {
 	cli_rmdirs(dir);
         free(dir);
 	close(fd);

@@ -26,6 +26,7 @@
 #include "../libclamav/dconf.h"
 #include "../libclamav/htmlnorm.h"
 #include "../libclamav/others.h"
+#include "../libclamav/fmap.h"
 
 static char *dir;
 
@@ -105,33 +106,38 @@ START_TEST (test_htmlnorm_api)
 {
 	int fd;
 	tag_arguments_t hrefs;
+	struct F_MAP *map;
 
 	memset(&hrefs, 0, sizeof(hrefs));
 
 	fd = open_testfile(tests[_i].input);
 	fail_unless(fd > 0,"open_testfile failed");
 
+	map = fmap(fd, 0, 0);
+	fail_unless(!!map, "fmap failed");
 
 	fail_unless(mkdir(dir, 0700) == 0,"mkdir failed");
-	fail_unless(html_normalise_fd(fd, dir, NULL, dconf) == 1, "html_normalise_fd failed");
+	fail_unless(html_normalise_map(map, dir, NULL, dconf) == 1, "html_normalise_map failed");
 	check_dir(dir, &tests[_i]);
 	fail_unless(cli_rmdirs(dir) == 0, "rmdirs failed");
 
 	fail_unless(mkdir(dir, 0700) == 0,"mkdir failed");
-	fail_unless(html_normalise_fd(fd, dir, NULL, NULL) == 1, "html_normalise_fd failed");
+	fail_unless(html_normalise_map(map, dir, NULL, NULL) == 1, "html_normalise_map failed");
 	fail_unless(cli_rmdirs(dir) == 0, "rmdirs failed");
 
 	fail_unless(mkdir(dir, 0700) == 0,"mkdir failed");
-	fail_unless(html_normalise_fd(fd, dir, &hrefs, dconf) == 1, "html_normalise_fd failed");
+	fail_unless(html_normalise_map(map, dir, &hrefs, dconf) == 1, "html_normalise_map failed");
 	fail_unless(cli_rmdirs(dir) == 0, "rmdirs failed");
 	html_tag_arg_free(&hrefs);
 
 	memset(&hrefs, 0, sizeof(hrefs));
 	hrefs.scanContents = 1;
 	fail_unless(mkdir(dir, 0700) == 0,"mkdir failed");
-	fail_unless(html_normalise_fd(fd, dir, &hrefs, dconf) == 1, "html_normalise_fd failed");
+	fail_unless(html_normalise_map(map, dir, &hrefs, dconf) == 1, "html_normalise_map failed");
 	fail_unless(cli_rmdirs(dir) == 0, "rmdirs failed");
 	html_tag_arg_free(&hrefs);
+
+	funmap(map);
 
 	close(fd);
 }

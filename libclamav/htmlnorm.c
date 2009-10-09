@@ -39,10 +39,8 @@
 #include <errno.h>
 #include <stdio.h>
 #include <ctype.h>
-#if defined(HAVE_MMAP) && defined(HAVE_SYS_MMAN_H)
-#include <sys/mman.h>
-#endif
 
+#include "fmap.h"
 #include "others.h"
 #include "htmlnorm.h"
 
@@ -180,15 +178,23 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
 
 	/* Try and use the memory buffer first */
 	if (m_area) {
-		start = ptr = m_area->buffer + m_area->offset;
-		end = m_area->buffer + m_area->length;
+		/* maximum we can copy into the buffer,
+		 * we could have less than max_len bytes available */
+		chunk_len = MIN(m_area->length-m_area->offset, max_len-1);
+		if(!chunk_len) {
+			free(chunk);
+			return NULL;
+		}
+		if(m_area->map)
+		    ptr = (unsigned char *)fmap_need_off_once(m_area->map, m_area->offset, chunk_len);
+		else
+		    ptr = m_area->buffer + m_area->offset;
+		start = ptr;
+		end = ptr - m_area->offset + m_area->length;
 		if (start >= end) {
 			free(chunk);
 			return NULL;
 		}
-		/* maximum we can copy into the buffer,
-		 * we could have less than max_len bytes available */
-		chunk_len = MIN(end-start, max_len-1);
 
 		/* look for NULL chars */
 		ptr = memchr(start, 0, chunk_len);
@@ -209,18 +215,20 @@ static unsigned char *cli_readchunk(FILE *stream, m_area_t *m_area, unsigned int
 				chunk_len = 0;
 				ptr = start;
 			}
+			if(m_area->map)
+			    ptr = (unsigned char *)fmap_need_ptr_once(m_area->map, ptr, end - ptr);
 			/* we have unknown number of NULL chars,
 			 * copy char-by-char and skip them */
 			while((ptr < end) && (chunk_len < max_len-1)) {
 				const unsigned char c = *ptr++;
+				/* we can't use chunk_len to determine how many bytes we read, since
+				 * we skipped chars */
 				if(c) {
 					chunk[chunk_len++] = c;
 				}
 			}
+			m_area->offset += ptr - start;
 			chunk[chunk_len] = '\0';
-			/* we can't use chunk_len to determine how many bytes we read, since
-			 * we skipped chars */
-			m_area->offset = ptr - m_area->buffer;
 		}
 		if(ptr && ptr < end && !isspace(*ptr)) {
 			/* we hit max_len, rewind to a space */
@@ -1697,37 +1705,21 @@ int html_normalise_mem(unsigned char *in_buff, off_t in_size, const char *dirnam
 	m_area.buffer = in_buff;
 	m_area.length = in_size;
 	m_area.offset = 0;
+	m_area.map = NULL;
 
 	return cli_html_normalise(-1, &m_area, dirname, hrefs, dconf);
 }
 
-int html_normalise_fd(int fd, const char *dirname, tag_arguments_t *hrefs,const struct cli_dconf* dconf)
+int html_normalise_map(fmap_t *map, const char *dirname, tag_arguments_t *hrefs,const struct cli_dconf* dconf)
 {
-#if HAVE_MMAP
 	int retval=FALSE;
 	m_area_t m_area;
-	struct stat statbuf;
 
-	if (fstat(fd, &statbuf) == 0) {
-		m_area.length = statbuf.st_size;
-		m_area.buffer = (unsigned char *) mmap(NULL, m_area.length, PROT_READ, MAP_PRIVATE, fd, 0);
-		m_area.offset = 0;
-		if (m_area.buffer == MAP_FAILED) {
-			cli_dbgmsg("mmap HTML failed\n");
-			retval = cli_html_normalise(fd, NULL, dirname, hrefs, dconf);
-		} else {
-			cli_dbgmsg("mmap'ed file\n");
-			retval = cli_html_normalise(-1, &m_area, dirname, hrefs, dconf);
-			munmap(m_area.buffer, m_area.length);
-		}
-	} else {
-		cli_dbgmsg("fstat HTML failed\n");
-		retval = cli_html_normalise(fd, NULL, dirname, hrefs, dconf);
-	}
+	m_area.length = map->len;
+	m_area.offset = 0;
+	m_area.map = map;
+	retval = cli_html_normalise(-1, &m_area, dirname, hrefs, dconf);
 	return retval;
-#else
-	return cli_html_normalise(fd, NULL, dirname, hrefs, dconf);
-#endif
 }
 
 int html_screnc_decode(int fd, const char *dirname)

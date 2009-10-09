@@ -23,9 +23,10 @@
 
 #include "others.h"
 #include "execs.h"
+#include "fmap.h"
 
-int cli_scanmacho(int fd, cli_ctx *ctx, struct cli_exe_info *fileinfo);
-int cli_machoheader(int fd, struct cli_exe_info *fileinfo);
-int cli_scanmacho_unibin(int fd, cli_ctx *ctx);
+int cli_scanmacho(cli_ctx *ctx, struct cli_exe_info *fileinfo);
+int cli_machoheader(fmap_t *map, struct cli_exe_info *fileinfo);
+int cli_scanmacho_unibin(cli_ctx *ctx);
 
 #endif

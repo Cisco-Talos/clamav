@@ -25,6 +25,7 @@
 
 #include "filetypes.h"
 #include "cltypes.h"
+#include "fmap.h"
 
 #define AC_CH_MAXDIST 32
 
@@ -87,7 +88,7 @@ void cli_ac_freedata(struct cli_ac_data *data);
 int cli_ac_scanbuff(const unsigned char *buffer, uint32_t length, const char **virname, void **customdata, struct cli_ac_result **res, const struct cli_matcher *root, struct cli_ac_data *mdata, uint32_t offset, cli_file_t ftype, struct cli_matched_type **ftoffset, unsigned int mode, const cli_ctx *ctx);
 int cli_ac_buildtrie(struct cli_matcher *root);
 int cli_ac_init(struct cli_matcher *root, uint8_t mindepth, uint8_t maxdepth);
-int cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, int fd);
+int cli_ac_caloff(const struct cli_matcher *root, struct cli_ac_data *data, fmap_t *map);
 void cli_ac_free(struct cli_matcher *root);
 int cli_ac_addsig(struct cli_matcher *root, const char *virname, const char *hexsig, uint32_t sigid, uint16_t parts, uint16_t partno, uint16_t rtype, uint16_t type, uint32_t mindist, uint32_t maxdist, const char *offset, const uint32_t *lsigid, unsigned int options);
 

@@ -35,9 +35,6 @@
 #endif
 #include <stdlib.h>
 #include <stdio.h>
-#if defined(HAVE_MMAP) && defined(HAVE_SYS_MMAN_H)
-#include <sys/mman.h>
-#endif
 
 #include <zlib.h>
 #include "inflate64.h"
@@ -50,6 +47,7 @@
 #include "clamav.h"
 #include "scanners.h"
 #include "matcher.h"
+#include "fmap.h"
 
 #define UNZIP_PRIVATE
 #include "unzip.h"
@@ -57,15 +55,6 @@
 static int wrap_inflateinit2(void *a, int b) {
   return inflateInit2(a, b);
 }
-
-static inline void destroy_map(void *map, size_t fsize) {
-#if HAVE_MMAP
-  munmap(map, fsize);
-#else
-  free(map);
-#endif
-}
-
 
 static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, uint16_t flags, unsigned int *fu, cli_ctx *ctx, char *tmpd) {
   char name[1024], obuf[BUFSIZ];
@@ -308,33 +297,39 @@ static int unz(uint8_t *src, uint32_t csize, uint32_t usize, uint16_t method, ui
   return ret;
 }
 
-static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigned int fc, uint8_t *ch, int *ret, cli_ctx *ctx, char *tmpd, int fd) {
-  uint8_t *lh = zip;
+static unsigned int lhdr(fmap_t *map, uint32_t loff,uint32_t zsize, unsigned int *fu, unsigned int fc, uint8_t *ch, int *ret, cli_ctx *ctx, char *tmpd) {
+  uint8_t *lh, *zip;
   char name[256];
   uint32_t csize, usize;
   struct cli_meta_node *meta = ctx->engine->zip_mlist;
 
-  if(zsize<=SIZEOF_LH) {
-    cli_dbgmsg("cli_unzip: lh - out of file\n");
-    return 0;
+  if(!(lh = fmap_need_off(map, loff, SIZEOF_LH))) {
+      cli_dbgmsg("cli_unzip: lh - out of file\n");
+      return 0;
   }
   if(LH_magic != 0x04034b50) {
     if (!ch) cli_dbgmsg("cli_unzip: lh - wrkcomplete\n");
     else cli_dbgmsg("cli_unzip: lh - bad magic\n");
+    fmap_unneed_off(map, loff, SIZEOF_LH);
     return 0;
   }
 
-  zip+=SIZEOF_LH;
+  zip = lh + SIZEOF_LH;
   zsize-=SIZEOF_LH;
 
   if(zsize<=LH_flen) {
     cli_dbgmsg("cli_unzip: lh - fname out of file\n");
+    fmap_unneed_off(map, loff, SIZEOF_LH);
     return 0;
   }
   if(meta || cli_debug_flag) {
-    uint32_t nsize = (LH_flen>=sizeof(name))?sizeof(name)-1:LH_flen;
-    memcpy(name, zip, nsize);
-    name[nsize]='\0';
+      uint32_t nsize = (LH_flen>=sizeof(name))?sizeof(name)-1:LH_flen;
+      char *src;
+      if(nsize && (src = fmap_need_ptr_once(map, zip, nsize))) {
+	  memcpy(name, zip, nsize);
+	  name[nsize]='\0';
+      } else
+	  name[0] = '\0';
   }
   zip+=LH_flen;
   zsize-=LH_flen;
@@ -363,6 +358,7 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
   if(LH_flags & F_MSKED) {
     cli_dbgmsg("cli_unzip: lh - header has got unusable masked data\n");
     /* FIXME: need to find/craft a sample */
+    fmap_unneed_off(map, loff, SIZEOF_LH);
     return 0;
   }
 
@@ -370,63 +366,76 @@ static unsigned int lhdr(uint8_t *zip, uint32_t zsize, unsigned int *fu, unsigne
     cli_dbgmsg("cli_unzip: Encrypted files found in archive.\n");
     *ctx->virname = "Encrypted.Zip";
     *ret = CL_VIRUS;
+    fmap_unneed_off(map, loff, SIZEOF_LH);
     return 0;
   }
  
   if(LH_flags & F_USEDD) {
     cli_dbgmsg("cli_unzip: lh - has data desc\n");
-    if(!ch) return 0;
+    if(!ch) {
+	fmap_unneed_off(map, loff, SIZEOF_LH);
+	return 0;
+    }
     else { usize = CH_usize; csize = CH_csize; }
   } else { usize = LH_usize; csize = LH_csize; }
 
   if(zsize<=LH_elen) {
     cli_dbgmsg("cli_unzip: lh - extra out of file\n");
+    fmap_unneed_off(map, loff, SIZEOF_LH);
     return 0;
   }
   zip+=LH_elen;
   zsize-=LH_elen;
 
   if (!csize) { /* FIXME: what's used for method0 files? csize or usize? Nothing in the specs, needs testing */
-    cli_dbgmsg("cli_unzip: lh - skipping empty file\n");
+      cli_dbgmsg("cli_unzip: lh - skipping empty file\n");
   } else {
-    if(zsize<csize) {
-      cli_dbgmsg("cli_unzip: lh - stream out of file\n");
-      return 0;
-    } 
-    if(LH_flags & F_ENCR) {
-      cli_dbgmsg("cli_unzip: lh - skipping encrypted file\n");
-    } else *ret = unz(zip, csize, usize, LH_method, LH_flags, fu, ctx, tmpd);
-    zip+=csize;
-    zsize-=csize;
+      if(zsize<csize) {
+	  cli_dbgmsg("cli_unzip: lh - stream out of file\n");
+	  fmap_unneed_off(map, loff, SIZEOF_LH);
+	  return 0;
+      }
+      if(LH_flags & F_ENCR) {
+	  cli_dbgmsg("cli_unzip: lh - skipping encrypted file\n");
+      } else {
+	  if(fmap_need_ptr_once(map, zip, csize))
+	      *ret = unz(zip, csize, usize, LH_method, LH_flags, fu, ctx, tmpd);
+      }
+      zip+=csize;
+      zsize-=csize;
   }
 
+  fmap_unneed_off(map, loff, SIZEOF_LH); /* unneed now. block is guaranteed to exists till the next need */
   if(LH_flags & F_USEDD) {
-    if(zsize<12) {
-      cli_dbgmsg("cli_unzip: lh - data desc out of file\n");
-      return 0;
-    }
-    zsize-=12;
-    if(cli_readint32(zip)==0x08074b50) {
-      if(zsize<4) {
-	cli_dbgmsg("cli_unzip: lh - data desc out of file\n");
-	return 0;
+      if(zsize<12) {
+	  cli_dbgmsg("cli_unzip: lh - data desc out of file\n");
+	  return 0;
       }
-      zip+=4;
-    }
-    zip+=12;
+      zsize-=12;
+      if(fmap_need_ptr_once(map, zip, 4)) {
+	  if(cli_readint32(zip)==0x08074b50) {
+	      if(zsize<4) {
+		  cli_dbgmsg("cli_unzip: lh - data desc out of file\n");
+		  return 0;
+	      }
+	      zip+=4;
+	  }
+      }
+      zip+=12;
   }
   return zip-lh;
 }
 
 
-static unsigned int chdr(uint8_t *zip, uint32_t coff, uint32_t zsize, unsigned int *fu, unsigned int fc, int *ret, cli_ctx *ctx, char *tmpd, int fd) {
-  uint8_t *ch = &zip[coff];
+static unsigned int chdr(fmap_t *map, uint32_t coff, uint32_t zsize, unsigned int *fu, unsigned int fc, int *ret, cli_ctx *ctx, char *tmpd) {
   char name[256];
   int last = 0;
+  int8_t *ch;
 
-  if(zsize-coff<=SIZEOF_CH || CH_magic != 0x02014b50) {
-    cli_dbgmsg("cli_unzip: ch - wrkcomplete\n");
-    return 0;
+  if(!(ch = fmap_need_off(map, coff, SIZEOF_CH)) || CH_magic != 0x02014b50) {
+      if(ch) fmap_unneed_ptr(map, ch, SIZEOF_CH);
+      cli_dbgmsg("cli_unzip: ch - wrkcomplete\n");
+      return 0;
   }
   coff+=SIZEOF_CH;
 
@@ -437,10 +446,13 @@ static unsigned int chdr(uint8_t *zip, uint32_t coff, uint32_t zsize, unsigned i
     last=1;
   }
   if(cli_debug_flag && !last) {
-    unsigned int size = (CH_flen>=sizeof(name))?sizeof(name)-1:CH_flen;
-    memcpy(name, &zip[coff], size);
-    name[size]='\0';
-    cli_dbgmsg("cli_unzip: ch - fname: %s\n", name);
+      unsigned int size = (CH_flen>=sizeof(name))?sizeof(name)-1:CH_flen;
+      char *src = fmap_need_off_once(map, coff, size);
+      if(src) {
+	  memcpy(name, src, size);
+	  name[size]='\0';
+	  cli_dbgmsg("cli_unzip: ch - fname: %s\n", name);
+      }
   }
   coff+=CH_flen;
 
@@ -457,27 +469,23 @@ static unsigned int chdr(uint8_t *zip, uint32_t coff, uint32_t zsize, unsigned i
   coff+=CH_clen;
 
   if(CH_off<zsize-SIZEOF_LH) {
-    lhdr(&zip[CH_off], zsize-CH_off, fu, fc, ch, ret, ctx, tmpd, fd);
+      lhdr(map, CH_off, zsize-CH_off, fu, fc, ch, ret, ctx, tmpd);
   } else cli_dbgmsg("cli_unzip: ch - local hdr out of file\n");
+  fmap_unneed_ptr(map, ch, SIZEOF_CH);
   return last?0:coff;
 }
 
 
-int cli_unzip(int f, cli_ctx *ctx) {
+int cli_unzip(cli_ctx *ctx) {
   unsigned int fc=0, fu=0;
   int ret=CL_CLEAN;
   uint32_t fsize, lhoff = 0, coff = 0;
-  struct stat st;
-  uint8_t *map;
-  char *tmpd;
+  fmap_t *map = *ctx->fmap;
+  char *tmpd, *ptr;
 
   cli_dbgmsg("in cli_unzip\n");
-  if (fstat(f, &st)==-1) {
-    cli_warnmsg("cli_unzip: fstat() failed\n");
-    return CL_ESTAT;
-  }
-  fsize = (uint32_t)st.st_size;
-  if(sizeof(off_t)!=sizeof(uint32_t) && (off_t)fsize!=st.st_size) {
+  fsize = (uint32_t)map->len;
+  if(sizeof(off_t)!=sizeof(uint32_t) && (off_t)fsize!=map->len) {
     cli_dbgmsg("cli_unzip: file too big\n");
     return CL_CLEAN;
   }
@@ -485,59 +493,39 @@ int cli_unzip(int f, cli_ctx *ctx) {
     cli_dbgmsg("cli_unzip: file too short\n");
     return CL_CLEAN;
   }
-
-#if HAVE_MMAP
-  if ((map = mmap(NULL, fsize, PROT_READ, MAP_PRIVATE, f, 0))==MAP_FAILED) {
-    cli_dbgmsg("cli_unzip: mmap failed\n");
-    return CL_EMAP;
-  }
-#else
-  if(fsize > CLI_MAX_ALLOCATION) {
-    cli_warnmsg("cli_unzip: mmap not available and file is too big\n");
-    return CL_CLEAN;
-  }
-  lseek(f, 0, SEEK_SET);
-  if(!(map = cli_malloc(fsize)))
-    return CL_EMEM;
-  if(cli_readn(f, map, fsize)!=fsize) {
-    free(map);
-    return CL_EREAD;
-  }
-#endif
-
   if (!(tmpd = cli_gentemp(ctx->engine->tmpdir))) {
-    destroy_map(map, fsize);
     return CL_ETMPDIR;
   }
   if (mkdir(tmpd, 0700)) {
     cli_dbgmsg("cli_unzip: Can't create temporary directory %s\n", tmpd);
-    destroy_map(map, fsize);
     free(tmpd);
     return CL_ETMPDIR;
   }
 
   for(coff=fsize-22 ; coff>0 ; coff--) { /* sizeof(EOC)==22 */
-    if(cli_readint32(&map[coff])==0x06054b50) {
-      uint32_t chptr = cli_readint32(&map[coff+16]);
-      if(!CLI_ISCONTAINED(map, fsize, map+chptr, SIZEOF_CH)) continue;
-      coff=chptr;
-      break;
-    }
+      if(!(ptr = fmap_need_off_once(map, coff, 20)))
+	  continue;
+      if(cli_readint32(ptr)==0x06054b50) {
+	  uint32_t chptr = cli_readint32(&ptr[16]);
+	  if(!CLI_ISCONTAINED(0, fsize, chptr, SIZEOF_CH)) continue;
+	  coff=chptr;
+	  break;
+      }
   }
 
   if(coff) {
-    cli_dbgmsg("cli_unzip: central @%x\n", coff);
-    while(ret==CL_CLEAN && (coff=chdr(map, coff, fsize, &fu, fc+1, &ret, ctx, tmpd, f))) {
-      fc++;
-      if (ctx->engine->maxfiles && fu>=ctx->engine->maxfiles) {
-	cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
-	ret=CL_EMAXFILES;
+      cli_dbgmsg("cli_unzip: central @%x\n", coff);
+      while(ret==CL_CLEAN && (coff=chdr(map, coff, fsize, &fu, fc+1, &ret, ctx, tmpd))) {
+	  fc++;
+	  if (ctx->engine->maxfiles && fu>=ctx->engine->maxfiles) {
+	      cli_dbgmsg("cli_unzip: Files limit reached (max: %u)\n", ctx->engine->maxfiles);
+	      ret=CL_EMAXFILES;
+	  }
       }
-    }
   } else cli_dbgmsg("cli_unzip: central not found, using localhdrs\n");
   if(fu<=(fc/4)) { /* FIXME: make up a sane ratio or remove the whole logic */
     fc = 0;
-    while (ret==CL_CLEAN && lhoff<fsize && (coff=lhdr(&map[lhoff], fsize-lhoff, &fu, fc+1, NULL, &ret, ctx, tmpd, f))) {
+    while (ret==CL_CLEAN && lhoff<fsize && (coff=lhdr(map, lhoff, fsize-lhoff, &fu, fc+1, NULL, &ret, ctx, tmpd))) {
       fc++;
       lhoff+=coff;
       if (ctx->engine->maxfiles && fu>=ctx->engine->maxfiles) {
@@ -547,27 +535,21 @@ int cli_unzip(int f, cli_ctx *ctx) {
     }
   }
 
-  destroy_map(map, fsize);
   if (!ctx->engine->keeptmp) cli_rmdirs(tmpd);
   free(tmpd);
 
   return ret;
 }
 
-int cli_unzip_single(int f, cli_ctx *ctx, off_t lhoffl) {
+int cli_unzip_single(cli_ctx *ctx, off_t lhoffl) {
   int ret=CL_CLEAN;
   unsigned int fu=0;
-  struct stat st;
   uint32_t fsize;
-  uint8_t *map;
+  fmap_t *map = *ctx->fmap;
 
   cli_dbgmsg("in cli_unzip_single\n");
-  if (fstat(f, &st)==-1) {
-    cli_warnmsg("cli_unzip: fstat() failed\n");
-    return CL_ESTAT;
-  }
-  fsize = (uint32_t)(st.st_size - lhoffl);
-  if (lhoffl<0 || lhoffl>st.st_size || (sizeof(off_t)!=sizeof(uint32_t) && (off_t)fsize!=st.st_size - lhoffl)) {
+  fsize = (uint32_t)(map->len - lhoffl);
+  if (lhoffl<0 || lhoffl>map->len || (sizeof(off_t)!=sizeof(uint32_t) && (off_t)fsize!=map->len - lhoffl)) {
     cli_dbgmsg("cli_unzip: bad offset\n");
     return CL_CLEAN;
   }
@@ -576,26 +558,7 @@ int cli_unzip_single(int f, cli_ctx *ctx, off_t lhoffl) {
     return CL_CLEAN;
   }
 
-#if HAVE_MMAP
-  if ((map = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, f, 0))==MAP_FAILED) {
-    cli_dbgmsg("cli_unzip: mmap() failed\n");
-    return CL_EMAP;
-  }
-#else
-  if(st.st_size > CLI_MAX_ALLOCATION) {
-    cli_warnmsg("cli_unzip: mmap not available and file is too big\n");
-    return CL_CLEAN;
-  }
-  lseek(f, 0, SEEK_SET);
-  if(!(map = cli_malloc(st.st_size)))
-    return CL_EMEM;
-  if(cli_readn(f, map, st.st_size)!=st.st_size) {
-    free(map);
-    return CL_EREAD;
-  }
-#endif
-  lhdr(&map[lhoffl], fsize, &fu, 0, NULL, &ret, ctx, NULL, f);
+  lhdr(map, lhoffl, fsize, &fu, 0, NULL, &ret, ctx, NULL);
 
-  destroy_map(map, st.st_size);
   return ret;
 }

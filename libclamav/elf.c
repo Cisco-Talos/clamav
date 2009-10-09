@@ -63,7 +63,7 @@ static uint32_t cli_rawaddr(uint32_t vaddr, struct elf_program_hdr32 *ph, uint16
     return vaddr - EC32(ph[i].p_vaddr, conv) + EC32(ph[i].p_offset, conv);
 }
 
-int cli_scanelf(int desc, cli_ctx *ctx)
+int cli_scanelf(cli_ctx *ctx)
 {
 	struct elf_file_hdr32 file_hdr;
 	struct elf_section_hdr32 *section_hdr;
@@ -72,11 +72,12 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 	uint32_t entry, fentry, shoff, phoff, i;
 	uint8_t conv = 0, err;
 	unsigned int format;
+	fmap_t *map = *ctx->fmap;
 
 
     cli_dbgmsg("in cli_scanelf\n");
 
-    if(read(desc, &file_hdr, sizeof(file_hdr)) != sizeof(file_hdr)) {
+    if(fmap_readn(map, &file_hdr, 0, sizeof(file_hdr)) != sizeof(file_hdr)) {
 	/* Not an ELF file? */
 	cli_dbgmsg("ELF: Can't read file header\n");
 	return CL_CLEAN;
@@ -95,8 +96,7 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 
     if(format == 2) {
 	    struct elf_file_hdr64 file_hdr64;
-	lseek(desc, 0, SEEK_SET);
-	if(read(desc, &file_hdr64, sizeof(file_hdr64)) != sizeof(file_hdr64)) {
+	if(fmap_readn(map, &file_hdr64, 0, sizeof(file_hdr64)) != sizeof(file_hdr64)) {
 	    /* Not an ELF file? */
 	    cli_dbgmsg("ELF: Can't read file header\n");
 	    return CL_CLEAN;
@@ -236,14 +236,6 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 
 	phoff = EC32(file_hdr.e_phoff, conv);
 	cli_dbgmsg("ELF: Program header table offset: %d\n", phoff);
-	if((uint32_t) lseek(desc, phoff, SEEK_SET) != phoff) {
-	    if(DETECT_BROKEN) {
-		if(ctx->virname)
-		    *ctx->virname = "Broken.Executable";
-		return CL_VIRUS;
-	    }
-	    return CL_CLEAN;
-	}
 
 	program_hdr = (struct elf_program_hdr32 *) cli_calloc(phnum, phentsize);
 	if(!program_hdr) {
@@ -256,12 +248,13 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 	for(i = 0; i < phnum; i++) {
 	    err = 0;
 	    if(format == 1) {
-		if(read(desc, &program_hdr[i], sizeof(struct elf_program_hdr32)) != sizeof(struct elf_program_hdr32))
+		if(fmap_readn(map, &program_hdr[i], phoff, sizeof(struct elf_program_hdr32)) != sizeof(struct elf_program_hdr32))
 		    err = 1;
+		phoff += sizeof(struct elf_program_hdr32);
 	    } else {
 		    struct elf_program_hdr64 program_hdr64;
 
-		if(read(desc, &program_hdr64, sizeof(program_hdr64)) != sizeof(program_hdr64)) {
+		if(fmap_readn(map, &program_hdr64, phoff, sizeof(program_hdr64)) != sizeof(program_hdr64)) {
 		    err = 1;
 		} else {
 		    program_hdr[i].p_type = program_hdr64.p_type;
@@ -273,6 +266,7 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 		    program_hdr[i].p_flags = program_hdr64.p_flags;
 		    program_hdr[i].p_align = program_hdr64.p_align;
 		}
+		phoff += sizeof(program_hdr64);
 	    }
 
 	    if(err) {
@@ -338,15 +332,6 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 
     shoff = EC32(file_hdr.e_shoff, conv);
     cli_dbgmsg("ELF: Section header table offset: %d\n", shoff);
-    if((uint32_t) lseek(desc, shoff, SEEK_SET) != shoff) {
-	/* Possibly broken end of file */
-        if(DETECT_BROKEN) {
-	    if(ctx->virname)
-		*ctx->virname = "Broken.Executable";
-	    return CL_VIRUS;
-        }
-	return CL_CLEAN;
-    }
 
     section_hdr = (struct elf_section_hdr32 *) cli_calloc(shnum, shentsize);
     if(!section_hdr) {
@@ -359,12 +344,13 @@ int cli_scanelf(int desc, cli_ctx *ctx)
     for(i = 0; i < shnum; i++) {
 	err = 0;
 	if(format == 1) {
-	    if(read(desc, &section_hdr[i], sizeof(struct elf_section_hdr32)) != sizeof(struct elf_section_hdr32))
+	    if(fmap_readn(map, &section_hdr[i], shoff, sizeof(struct elf_section_hdr32)) != sizeof(struct elf_section_hdr32))
 		err = 1;
+	    shoff += sizeof(struct elf_section_hdr32);
 	} else {
 		struct elf_section_hdr64 section_hdr64;
 
-	    if(read(desc, &section_hdr64, sizeof(section_hdr64)) != sizeof(section_hdr64)) {
+	    if(fmap_readn(map, &section_hdr64, shoff, sizeof(section_hdr64)) != sizeof(section_hdr64)) {
 		err = 1;
 	    } else {
 		section_hdr[i].sh_name = section_hdr64.sh_name;
@@ -378,6 +364,7 @@ int cli_scanelf(int desc, cli_ctx *ctx)
 		section_hdr[i].sh_addralign = section_hdr64.sh_addralign;
 		section_hdr[i].sh_entsize = section_hdr64.sh_entsize;
 	    }
+	    shoff += sizeof(section_hdr64);
 	}
 
 	if(err) {
@@ -468,7 +455,7 @@ int cli_scanelf(int desc, cli_ctx *ctx)
     return CL_CLEAN;
 }
 
-int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
+int cli_elfheader(fmap_t *map, struct cli_exe_info *elfinfo)
 {
 	struct elf_file_hdr32 file_hdr;
 	struct elf_section_hdr32 *section_hdr;
@@ -480,7 +467,7 @@ int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
 
     cli_dbgmsg("in cli_elfheader\n");
 
-    if(read(desc, &file_hdr, sizeof(file_hdr)) != sizeof(file_hdr)) {
+    if(fmap_readn(map, &file_hdr, 0, sizeof(file_hdr)) != sizeof(file_hdr)) {
 	/* Not an ELF file? */
 	cli_dbgmsg("ELF: Can't read file header\n");
 	return -1;
@@ -499,8 +486,7 @@ int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
 
     if(format == 2) {
 	    struct elf_file_hdr64 file_hdr64;
-	lseek(desc, 0, SEEK_SET);
-	if(read(desc, &file_hdr64, sizeof(file_hdr64)) != sizeof(file_hdr64)) {
+	if(!fmap_readn(map, &file_hdr64, 0, sizeof(file_hdr64)) != sizeof(file_hdr64)) {
 	    /* Not an ELF file? */
 	    cli_dbgmsg("ELF: Can't read file header\n");
 	    return -1; 
@@ -547,9 +533,6 @@ int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
 	}
 
 	phoff = EC32(file_hdr.e_phoff, conv);
-	if((uint32_t) lseek(desc, phoff, SEEK_SET) != phoff) {
-	    return -1;
-	}
 
 	program_hdr = (struct elf_program_hdr32 *) cli_calloc(phnum, phentsize);
 	if(!program_hdr) {
@@ -560,12 +543,13 @@ int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
 	for(i = 0; i < phnum; i++) {
 	    err = 0;
 	    if(format == 1) {
-		if(read(desc, &program_hdr[i], sizeof(struct elf_program_hdr32)) != sizeof(struct elf_program_hdr32))
+		if(fmap_readn(map, &program_hdr[i], phoff, sizeof(struct elf_program_hdr32)) != sizeof(struct elf_program_hdr32))
 		    err = 1;
+		phoff += sizeof(struct elf_program_hdr32);
 	    } else {
 		    struct elf_program_hdr64 program_hdr64;
 
-		if(read(desc, &program_hdr64, sizeof(program_hdr64)) != sizeof(program_hdr64)) {
+		if(fmap_readn(map, &program_hdr64, phoff, sizeof(program_hdr64)) != sizeof(program_hdr64)) {
 		    err = 1;
 		} else {
 		    program_hdr[i].p_type = program_hdr64.p_type;
@@ -577,6 +561,7 @@ int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
 		    program_hdr[i].p_flags = program_hdr64.p_flags;
 		    program_hdr[i].p_align = program_hdr64.p_align;
 		}
+		phoff += sizeof(program_hdr64);
 	    }
 
 	    if(err) {
@@ -610,10 +595,6 @@ int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
     }
 
     shoff = EC32(file_hdr.e_shoff, conv);
-    if((uint32_t) lseek(desc, shoff, SEEK_SET) != shoff) {
-	/* Possibly broken end of file */
-	return -1;
-    }
 
     elfinfo->section = (struct cli_exe_section *) cli_calloc(elfinfo->nsections, sizeof(struct cli_exe_section));
     if(!elfinfo->section) {
@@ -632,12 +613,13 @@ int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
     for(i = 0; i < shnum; i++) {
 	err = 0;
 	if(format == 1) {
-	    if(read(desc, &section_hdr[i], sizeof(struct elf_section_hdr32)) != sizeof(struct elf_section_hdr32))
+	    if(fmap_readn(map, &section_hdr[i], shoff, sizeof(struct elf_section_hdr32)) != sizeof(struct elf_section_hdr32))
 		err = 1;
+	    shoff += sizeof(struct elf_section_hdr32);
 	} else {
 		struct elf_section_hdr64 section_hdr64;
 
-	    if(read(desc, &section_hdr64, sizeof(section_hdr64)) != sizeof(section_hdr64)) {
+	    if(fmap_readn(map, &section_hdr64, shoff, sizeof(section_hdr64)) != sizeof(section_hdr64)) {
 		err = 1;
 	    } else {
 		section_hdr[i].sh_name = section_hdr64.sh_name;
@@ -651,6 +633,7 @@ int cli_elfheader(int desc, struct cli_exe_info *elfinfo)
 		section_hdr[i].sh_addralign = section_hdr64.sh_addralign;
 		section_hdr[i].sh_entsize = section_hdr64.sh_entsize;
 	    }
+	    shoff += sizeof(section_hdr64);
 	}
 
 	if(err) {

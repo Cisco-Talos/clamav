@@ -25,6 +25,7 @@
 #include "execs.h"
 #include "others.h"
 #include "cltypes.h"
+#include "fmap.h"
 
 struct pe_image_file_hdr {
     uint32_t Magic;
@@ -128,8 +129,8 @@ struct pe_image_section_hdr {
     uint32_t Characteristics;
 };
 
-int cli_scanpe(int desc, cli_ctx *ctx);
+int cli_scanpe(cli_ctx *ctx);
 
-int cli_peheader(int desc, struct cli_exe_info *peinfo);
+int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo);
 
 #endif

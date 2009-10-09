@@ -30,9 +30,6 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#if defined(HAVE_MMAP) && defined(HAVE_SYS_MMAN_H)
-#include <sys/mman.h>
-#endif
 
 #include "others.h"
 #include "cltypes.h"
@@ -43,6 +40,7 @@
 #include "matcher.h"
 #include "scanners.h"
 #include "nulsft.h" /* SHUT UP GCC -Wextra */
+#include "fmap.h"
 
 #define EC32(x) le32_to_host(x)
 
@@ -55,7 +53,7 @@ enum {
 };
 
 struct nsis_st {
-  int ifd;
+  size_t curpos;
   int ofd;
   off_t off;
   off_t fullsz;
@@ -73,6 +71,7 @@ struct nsis_st {
 /*   z_stream z; */
   nsis_z_stream z;
   unsigned char *freeme;
+  fmap_t *map;
   char ofn[1024];
 };
 
@@ -210,11 +209,12 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
   }
 
   if (!n->solid) {
-    if (cli_readn(n->ifd, &size, 4)!=4) {
+    if (fmap_readn(n->map, &size, n->curpos, 4)!=4) {
       cli_dbgmsg("NSIS: reached EOF - extraction complete\n");
       close(n->ofd);
       return CL_BREAK;
     }
+    n->curpos += 4;
     if (n->asz==4) {
       cli_dbgmsg("NSIS: reached CRC - extraction complete\n");
       close(n->ofd);
@@ -235,31 +235,24 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 
     if ((ret=cli_checklimits("NSIS", ctx, size, 0, 0))!=CL_CLEAN) {
       close(n->ofd);
-      if (lseek(n->ifd, size, SEEK_CUR)==-1) return CL_ESEEK;
+      n->curpos += size;
       return ret;
     }
-    if (!(ibuf= (unsigned char *) cli_malloc(size))) {
-      	cli_dbgmsg("NSIS: out of memory"__AT__"\n");
-      close(n->ofd);
-      return CL_EMEM;
-    }
-    if (cli_readn(n->ifd, ibuf, size) != (ssize_t) size) {
+    if (!(ibuf = fmap_need_off_once(n->map, n->curpos, size))) {
       cli_dbgmsg("NSIS: cannot read %u bytes"__AT__"\n", size);
-      free(ibuf);
       close(n->ofd);
       return CL_EREAD;
     }
+    n->curpos += size;
     if (loops==size) {
       if (cli_writen(n->ofd, ibuf, size) != (ssize_t) size) {
 	cli_dbgmsg("NSIS: cannot write output file"__AT__"\n");
-	free(ibuf);
 	close(n->ofd);
 	return CL_EWRITE;
       }
     } else {
       if ((ret=nsis_init(n))!=CL_SUCCESS) {
 	cli_dbgmsg("NSIS: decompressor init failed"__AT__"\n");
-	free(ibuf);
 	close(n->ofd);
 	return ret;
       }
@@ -275,7 +268,6 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 	  gotsome=1;
 	  if (cli_writen(n->ofd, obuf, size) != (ssize_t) size) {
 	    cli_dbgmsg("NSIS: cannot write output file"__AT__"\n");
-	    free(ibuf);
 	    close(n->ofd);
 	    nsis_shutdown(n);
 	    return CL_EWRITE;
@@ -284,7 +276,6 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 	  n->nsis.avail_out = BUFSIZ;
 	  loops=0;
 	  if ((ret=cli_checklimits("NSIS", ctx, size, 0, 0))!=CL_CLEAN) {
-	    free(ibuf);
 	    close(n->ofd);
 	    nsis_shutdown(n);
 	    return ret;
@@ -302,7 +293,6 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 	gotsome=1;
 	if (cli_writen(n->ofd, obuf, n->nsis.next_out - obuf) != n->nsis.next_out - obuf) {
 	  cli_dbgmsg("NSIS: cannot write output file"__AT__"\n");
-	  free(ibuf);
 	  close(n->ofd);
 	  return CL_EWRITE;
 	}
@@ -316,13 +306,11 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 	  ret = CL_EMAXSIZE;
 	  close(n->ofd);
 	}
-	free(ibuf);
 	return ret;
       }
 
     }
 
-    free(ibuf);
     return CL_SUCCESS;
 
   } else {
@@ -332,31 +320,12 @@ static int nsis_unpack_next(struct nsis_st *n, cli_ctx *ctx) {
 	close(n->ofd);
 	return ret;
       }
-#if HAVE_MMAP
-      if((n->freeme= (unsigned char *)mmap(NULL, n->fullsz, PROT_READ, MAP_PRIVATE, n->ifd, 0))==MAP_FAILED) {
-	cli_dbgmsg("NSIS: mmap() failed"__AT__"\n");
-	close(n->ofd);
-	return CL_EMAP;
-      }
-      n->nsis.next_in = n->freeme+n->off+0x1c;
-#else /* HAVE_MMAP */
-      if(!size || size > CLI_MAX_ALLOCATION) {
-	cli_dbgmsg("NSIS: mmap() support not compiled in and input file too big\n");
-	close(n->ofd);
-	return CL_EMEM;
-      }
-      if (!(n->freeme= (unsigned char *) cli_malloc(n->asz))) {
-	cli_dbgmsg("NSIS: out of memory"__AT__"\n");
-	close(n->ofd);
-	return CL_EMEM;
-      }
-      if (cli_readn(n->ifd, n->freeme, n->asz) != (ssize_t) n->asz) {
+      if(!(n->freeme = fmap_need_off_once(n->map, n->curpos, n->asz))) {
 	cli_dbgmsg("NSIS: cannot read %u bytes"__AT__"\n", n->asz);
 	close(n->ofd);
 	return CL_EREAD;
       }
       n->nsis.next_in = n->freeme;
-#endif /* HAVE_MMAP */
       n->nsis.avail_in = n->asz;
     }
 
@@ -450,52 +419,52 @@ static uint8_t nsis_detcomp(const char *b) {
 }
 
 static int nsis_headers(struct nsis_st *n, cli_ctx *ctx) {
-  char buf[28];
-  struct stat st;
+  const char *buf;
   uint32_t pos;
   int i;
   uint8_t comps[] = {0, 0, 0, 0}, trunc = 0;
   
-  if (fstat(n->ifd, &st)==-1 ||
-      lseek(n->ifd, n->off, SEEK_SET)==-1 ||
-      cli_readn(n->ifd, buf, 28) != 28)
+  if (!(buf = fmap_need_off_once(n->map, n->off, 0x1c)))
     return CL_EREAD;
 
   n->hsz = (uint32_t)cli_readint32(buf+0x14);
   n->asz = (uint32_t)cli_readint32(buf+0x18);
-  n->fullsz = st.st_size;
+  n->fullsz = n->map->len;
 
   cli_dbgmsg("NSIS: Header info - Flags=%x, Header size=%x, Archive size=%x\n", cli_readint32(buf), n->hsz, n->asz);
 
-  if (st.st_size - n->off < (off_t) n->asz) {
+  if (n->fullsz - n->off < (off_t) n->asz) {
     cli_dbgmsg("NSIS: Possibly truncated file\n");
-    n->asz = st.st_size - n->off;
+    n->asz = n->fullsz - n->off;
     trunc++;
-  } else if (st.st_size - n->off != (off_t) n->asz) {
+  } else if (n->fullsz - n->off != (off_t) n->asz) {
     cli_dbgmsg("NSIS: Overlays found\n");
   }
 
   n->asz -= 0x1c;
+  buf += 0x1c;
 
   /* Guess if solid */
   for (i=0, pos=0;pos < n->asz-4;i++) {
     int32_t nextsz;
-    if (cli_readn(n->ifd, buf+4, 4)!=4) return CL_EREAD;
-    nextsz=cli_readint32(buf+4);
-    if (!i) n->comp = nsis_detcomp(buf+4);
+    if (!(buf = fmap_need_ptr_once(n->map, (void *)buf, 4))) return CL_EREAD;
+    nextsz=cli_readint32(buf);
+    if (!i) n->comp = nsis_detcomp(buf);
+    buf += 4;
     if (nextsz&0x80000000) {
       nextsz&=~0x80000000;
-      if (cli_readn(n->ifd, buf+4, 4)!=4) return CL_EREAD;
-      comps[nsis_detcomp(buf+4)]++;
+      if (!(buf = fmap_need_ptr_once(n->map, (void *)buf, 4))) return CL_EREAD;
+      comps[nsis_detcomp(buf)]++;
       nextsz-=4;
       pos+=4;
+      buf+=4;
     }
     if ((pos+=4+nextsz) > n->asz) {
       n->solid = 1;
       break;
     }
 
-    if (lseek(n->ifd, nextsz, SEEK_CUR)==-1) return CL_ESEEK;
+    buf += nextsz;
   }
   
   if (trunc && i>=2) n->solid=0;
@@ -508,8 +477,7 @@ static int nsis_headers(struct nsis_st *n, cli_ctx *ctx) {
     n->comp = (comps[1]<comps[2]) ? (comps[2]<comps[3] ? COMP_ZLIB : COMP_LZMA) : (comps[1]<comps[3] ? COMP_ZLIB : COMP_BZIP2);
   }
 
-  if (lseek(n->ifd, n->off+0x1c, SEEK_SET)==-1) return CL_ESEEK;
-
+  n->curpos = n->off+0x1c;
   return nsis_unpack_next(n, ctx);
 }
 
@@ -519,16 +487,6 @@ static int cli_nsis_unpack(struct nsis_st *n, cli_ctx *ctx) {
   return (n->fno) ? nsis_unpack_next(n, ctx) : nsis_headers(n, ctx);
 }
 
-static void cli_nsis_free(struct nsis_st *n) {
-  nsis_shutdown(n);
-  if (n->solid && n->freeme) {
-#if HAVE_MMAP
-    munmap(n->freeme, n->fullsz);
-#else
-    free(n->freeme);
-#endif
-  }
-}
 
 int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
         int ret;
@@ -538,7 +496,6 @@ int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
 
     memset(&nsist, 0, sizeof(struct nsis_st));
 
-    nsist.ifd = desc;
     nsist.off = offset;
     if (!(nsist.dir = cli_gentemp(ctx->engine->tmpdir)))
         return CL_ETMPDIR;
@@ -546,6 +503,11 @@ int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
 	cli_dbgmsg("NSIS: Can't create temporary directory %s\n", nsist.dir);
 	free(nsist.dir);
 	return CL_ETMPDIR;
+    }
+    
+    if(!(nsist.map = fmap(desc, 0, 0))) {
+	cli_errmsg("scannulsft: fmap failed\n");
+	return CL_EMEM;
     }
 
     if(ctx->engine->keeptmp) cli_dbgmsg("NSIS: Extracting files to %s\n", nsist.dir);
@@ -570,7 +532,8 @@ int cli_scannulsft(int desc, cli_ctx *ctx, off_t offset) {
     if(ret == CL_BREAK || ret == CL_EMAXFILES)
 	ret = CL_CLEAN;
 
-    cli_nsis_free(&nsist);
+    nsis_shutdown(&nsist);
+    funmap(nsist.map);
 
     if(!ctx->engine->keeptmp)
         cli_rmdirs(nsist.dir);

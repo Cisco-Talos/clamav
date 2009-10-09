@@ -34,16 +34,13 @@
 #endif
 #include <ctype.h>
 #include <stdlib.h>
-#if defined(HAVE_MMAP) && defined(HAVE_SYS_MMAN_H)
-#include <sys/mman.h>
-#endif
 #include "clamav.h"
 
 #include "cltypes.h"
 #include "others.h"
 #include "ole2_extract.h"
 #include "scanners.h"
-#include "mbox.h"
+#include "fmap.h"
 
 #define ole2_endian_convert_16(v) le16_to_host((uint16_t)(v))
 #define ole2_endian_convert_32(v) le32_to_host((uint32_t)(v))
@@ -89,10 +86,10 @@ typedef struct ole2_header_tag
 	   reading the header */
 	int32_t sbat_root_start __attribute__ ((packed));
 	uint32_t max_block_no;
-	unsigned char *m_area;
 	off_t m_length;
 	bitset_t *bitset;
 	struct uniq *U;
+	fmap_t *map;
 	int has_vba;
 } ole2_header_t;
 
@@ -276,9 +273,10 @@ static void print_ole2_header(ole2_header_t *hdr)
 	return;
 }
 
-static int ole2_read_block(int fd, ole2_header_t *hdr, void *buff, unsigned int size, int32_t blockno)
+static int ole2_read_block(ole2_header_t *hdr, void *buff, unsigned int size, int32_t blockno)
 {
 	off_t offset, offend;
+	void *pblock;
 
 	if (blockno < 0) {
 		return FALSE;
@@ -287,24 +285,18 @@ static int ole2_read_block(int fd, ole2_header_t *hdr, void *buff, unsigned int 
 	/* other methods: (blockno+1) * 512 or (blockno * block_size) + 512; */
 	offset = (blockno << hdr->log2_big_block_size) + MAX(512, 1 << hdr->log2_big_block_size); /* 512 is header size */
 	
-	if (hdr->m_area == NULL) {
-		if (lseek(fd, offset, SEEK_SET) != offset) {
-			return FALSE;
-		}
-		if (cli_readn(fd, buff, size) != size) {
-			return FALSE;
-		}
-	} else {
-		offend = offset + size;
-		if ((offend <= 0) || (offend > hdr->m_length)) {
-			return FALSE;
-		}
-		memcpy(buff, hdr->m_area+offset, size);
+	offend = offset + size;
+	if ((offend <= 0) || (offend > hdr->m_length)) {
+	    return FALSE;
 	}
+	if(!(pblock = fmap_need_off_once(hdr->map, offset, size))) {
+	    return FALSE;
+	}
+	memcpy(buff, pblock, size);
 	return TRUE;
 }
 
-static int32_t ole2_get_next_bat_block(int fd, ole2_header_t *hdr, int32_t current_block)
+static int32_t ole2_get_next_bat_block(ole2_header_t *hdr, int32_t current_block)
 {
 	int32_t bat_array_index;
 	uint32_t bat[128];
@@ -318,14 +310,14 @@ static int32_t ole2_get_next_bat_block(int fd, ole2_header_t *hdr, int32_t curre
 		cli_dbgmsg("bat_array index error\n");
 		return -10;
 	}
-	if (!ole2_read_block(fd, hdr, &bat, 512,
+	if (!ole2_read_block(hdr, &bat, 512,
 			ole2_endian_convert_32(hdr->bat_array[bat_array_index]))) {
 		return -1;
 	}
 	return ole2_endian_convert_32(bat[current_block-(bat_array_index * 128)]);
 }
 
-static int32_t ole2_get_next_xbat_block(int fd, ole2_header_t *hdr, int32_t current_block)
+static int32_t ole2_get_next_xbat_block(ole2_header_t *hdr, int32_t current_block)
 {
 	int32_t xbat_index, xbat_block_index, bat_index, bat_blockno;
 	uint32_t xbat[128], bat[128];
@@ -344,40 +336,40 @@ static int32_t ole2_get_next_xbat_block(int fd, ole2_header_t *hdr, int32_t curr
 
 	bat_index = current_block % 128;
 
-	if (!ole2_read_block(fd, hdr, &xbat, 512, hdr->xbat_start)) {
+	if (!ole2_read_block(hdr, &xbat, 512, hdr->xbat_start)) {
 		return -1;
 	}
 
 	/* Follow the chain of XBAT blocks */
 	while (xbat_block_index > 0) {
-		if (!ole2_read_block(fd, hdr, &xbat, 512,
+		if (!ole2_read_block(hdr, &xbat, 512,
 				ole2_endian_convert_32(xbat[127]))) {
 			return -1;
 		}
 		xbat_block_index--;
 	}
 
-	if (!ole2_read_block(fd, hdr, &bat, 512, ole2_endian_convert_32(xbat[bat_blockno]))) {
+	if (!ole2_read_block(hdr, &bat, 512, ole2_endian_convert_32(xbat[bat_blockno]))) {
 		return -1;
 	}
 
 	return ole2_endian_convert_32(bat[bat_index]);
 }
 
-static int32_t ole2_get_next_block_number(int fd, ole2_header_t *hdr, int32_t current_block)
+static int32_t ole2_get_next_block_number(ole2_header_t *hdr, int32_t current_block)
 {
 	if (current_block < 0) {
 		return -1;
 	}
 
 	if ((current_block / 128) > 108) {
-		return ole2_get_next_xbat_block(fd, hdr, current_block);
+		return ole2_get_next_xbat_block(hdr, current_block);
 	} else {
-		return ole2_get_next_bat_block(fd, hdr, current_block);
+		return ole2_get_next_bat_block(hdr, current_block);
 	}
 }
 
-static int32_t ole2_get_next_sbat_block(int fd, ole2_header_t *hdr, int32_t current_block)
+static int32_t ole2_get_next_sbat_block(ole2_header_t *hdr, int32_t current_block)
 {
 	int32_t iter, current_bat_block;
 	uint32_t sbat[128];
@@ -389,17 +381,17 @@ static int32_t ole2_get_next_sbat_block(int fd, ole2_header_t *hdr, int32_t curr
 	current_bat_block = hdr->sbat_start;
 	iter = current_block / 128;
 	while (iter > 0) {
-		current_bat_block = ole2_get_next_block_number(fd, hdr, current_bat_block);
+		current_bat_block = ole2_get_next_block_number(hdr, current_bat_block);
 		iter--;
 	}
-	if (!ole2_read_block(fd, hdr, &sbat, 512, current_bat_block)) {
+	if (!ole2_read_block(hdr, &sbat, 512, current_bat_block)) {
 		return -1;
 	}
 	return ole2_endian_convert_32(sbat[current_block % 128]);
 }
 
 /* Retrieve the block containing the data for the given sbat index */
-static int32_t ole2_get_sbat_data_block(int fd, ole2_header_t *hdr, void *buff, int32_t sbat_index)
+static int32_t ole2_get_sbat_data_block(ole2_header_t *hdr, void *buff, int32_t sbat_index)
 {
 	int32_t block_count, current_block;
 
@@ -415,17 +407,17 @@ static int32_t ole2_get_sbat_data_block(int fd, ole2_header_t *hdr, void *buff, 
 	block_count = sbat_index / (1 << (hdr->log2_big_block_size - hdr->log2_small_block_size));
 	current_block = hdr->sbat_root_start;
 	while (block_count > 0) {
-		current_block = ole2_get_next_block_number(fd, hdr, current_block);
+		current_block = ole2_get_next_block_number(hdr, current_block);
 		block_count--;
 	}
 	/* current_block now contains the block number of the sbat array
 	   containing the entry for the required small block */
 
-	return(ole2_read_block(fd, hdr, buff, 1 << hdr->log2_big_block_size, current_block));
+	return(ole2_read_block(hdr, buff, 1 << hdr->log2_big_block_size, current_block));
 }
 
-static int ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir, int32_t prop_index,
-				   int (*handler)(int fd, ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx),
+static int ole2_walk_property_tree(ole2_header_t *hdr, const char *dir, int32_t prop_index,
+				   int (*handler)(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx),
 				   unsigned int rec_level, unsigned int *file_count, cli_ctx *ctx, unsigned long *scansize)
 {
 	property_t prop_block[4];
@@ -450,13 +442,13 @@ static int ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir, 
 
 	idx = prop_index / 4;
 	for (i=0 ; i < idx ; i++) {
-		current_block = ole2_get_next_block_number(fd, hdr, current_block);
+		current_block = ole2_get_next_block_number(hdr, current_block);
 		if (current_block < 0) {
 			return CL_SUCCESS;
 		}
 	}
 	idx = prop_index % 4;
-	if (!ole2_read_block(fd, hdr, prop_block, 512,
+	if (!ole2_read_block(hdr, prop_block, 512,
 			current_block)) {
 		return CL_SUCCESS;
 	}	
@@ -497,11 +489,11 @@ static int ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir, 
 			}
 			hdr->sbat_root_start = prop_block[idx].start_block;
 			if (
-				(ret=ole2_walk_property_tree(fd, hdr, dir, prop_block[idx].prev, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS
+				(ret=ole2_walk_property_tree(hdr, dir, prop_block[idx].prev, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS
 				||
-				(ret=ole2_walk_property_tree(fd, hdr, dir, prop_block[idx].next, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS
+				(ret=ole2_walk_property_tree(hdr, dir, prop_block[idx].next, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS
 				||
-				(ret=ole2_walk_property_tree(fd, hdr, dir,prop_block[idx].child, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS
+				(ret=ole2_walk_property_tree(hdr, dir,prop_block[idx].child, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS
 			) return ret;
 			break;
 		case 2: /* File */
@@ -512,17 +504,17 @@ static int ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir, 
 			if (!ctx || !ctx->engine->maxfilesize || prop_block[idx].size <= ctx->engine->maxfilesize || prop_block[idx].size <= *scansize) {
 				(*file_count)++;
 				*scansize-=prop_block[idx].size;
-				if ((ret=handler(fd, hdr, &prop_block[idx], dir, ctx)) != CL_SUCCESS)
+				if ((ret=handler(hdr, &prop_block[idx], dir, ctx)) != CL_SUCCESS)
 					return ret;
 			} else {
 				cli_dbgmsg("OLE2: filesize exceeded\n");
 			}
 			if (
-				(ret=ole2_walk_property_tree(fd, hdr, dir, prop_block[idx].prev, handler, rec_level, file_count, ctx, scansize))!=CL_SUCCESS
+				(ret=ole2_walk_property_tree(hdr, dir, prop_block[idx].prev, handler, rec_level, file_count, ctx, scansize))!=CL_SUCCESS
 				||
-				(ret=ole2_walk_property_tree(fd, hdr, dir, prop_block[idx].next, handler, rec_level, file_count, ctx, scansize))!=CL_SUCCESS
+				(ret=ole2_walk_property_tree(hdr, dir, prop_block[idx].next, handler, rec_level, file_count, ctx, scansize))!=CL_SUCCESS
 				||
-				(ret=ole2_walk_property_tree(fd, hdr, dir, prop_block[idx].child, handler, rec_level, file_count, ctx, scansize))!=CL_SUCCESS
+				(ret=ole2_walk_property_tree(hdr, dir, prop_block[idx].child, handler, rec_level, file_count, ctx, scansize))!=CL_SUCCESS
 			) return ret;
 			break;
 		case 1: /* Directory */
@@ -537,11 +529,11 @@ static int ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir, 
 				cli_dbgmsg("OLE2 dir entry: %s\n",dirname);
 			} else dirname = NULL;
 			if (
-				(ret=ole2_walk_property_tree(fd, hdr, dir, prop_block[idx].prev, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS
+				(ret=ole2_walk_property_tree(hdr, dir, prop_block[idx].prev, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS
 				||
-				(ret=ole2_walk_property_tree(fd, hdr, dir,prop_block[idx].next, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS
+				(ret=ole2_walk_property_tree(hdr, dir,prop_block[idx].next, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS
 				||
-				(ret=ole2_walk_property_tree(fd, hdr, dirname, prop_block[idx].child, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS
+				(ret=ole2_walk_property_tree(hdr, dirname, prop_block[idx].child, handler, rec_level+1, file_count, ctx, scansize))!=CL_SUCCESS
 			) {} 
 			if (dirname) free(dirname);
 			return ret;
@@ -553,7 +545,7 @@ static int ole2_walk_property_tree(int fd, ole2_header_t *hdr, const char *dir, 
 	return CL_SUCCESS;
 }
 /* Write file Handler - write the contents of the entry to a file */
-static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
+static int handler_writefile(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
 {
 	unsigned char *buff;
 	int32_t current_block, ofd, len, offset;
@@ -626,7 +618,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 		}			
 		if (prop->size < (int64_t)hdr->sbat_cutoff) {
 			/* Small block file */
-			if (!ole2_get_sbat_data_block(fd, hdr, buff, current_block)) {
+			if (!ole2_get_sbat_data_block(hdr, buff, current_block)) {
 				cli_dbgmsg("OLE2 [handler_writefile]: ole2_get_sbat_data_block failed\n");
 				close(ofd);
 				free(buff);
@@ -644,10 +636,10 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 			}
 
 			len -= MIN(len,1 << hdr->log2_small_block_size);
-			current_block = ole2_get_next_sbat_block(fd, hdr, current_block);
+			current_block = ole2_get_next_sbat_block(hdr, current_block);
 		} else {
 			/* Big block file */
-			if (!ole2_read_block(fd, hdr, buff, 1 << hdr->log2_big_block_size, current_block)) {
+			if (!ole2_read_block(hdr, buff, 1 << hdr->log2_big_block_size, current_block)) {
 				close(ofd);
 				free(buff);
 				cli_bitset_free(blk_bitset);
@@ -661,7 +653,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 				return CL_BREAK;
 			}
 
-			current_block = ole2_get_next_block_number(fd, hdr, current_block);
+			current_block = ole2_get_next_block_number(hdr, current_block);
 			len -= MIN(len,(1 << hdr->log2_big_block_size));
 		}
 	}
@@ -672,7 +664,7 @@ static int handler_writefile(int fd, ole2_header_t *hdr, property_t *prop, const
 }
 
 /* enum file Handler - checks for VBA presence */
-static int handler_enum(int fd, ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
+static int handler_enum(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
 {
   char *name;
   
@@ -688,7 +680,7 @@ static int handler_enum(int fd, ole2_header_t *hdr, property_t *prop, const char
 }
 
 
-static int handler_otf(int fd, ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
+static int handler_otf(ole2_header_t *hdr, property_t *prop, const char *dir, cli_ctx *ctx)
 {
   char *tempfile;
   unsigned char *buff;
@@ -753,7 +745,7 @@ static int handler_otf(int fd, ole2_header_t *hdr, property_t *prop, const char 
     }			
     if (prop->size < (int64_t)hdr->sbat_cutoff) {
       /* Small block file */
-      if (!ole2_get_sbat_data_block(fd, hdr, buff, current_block)) {
+      if (!ole2_get_sbat_data_block(hdr, buff, current_block)) {
 	cli_dbgmsg("ole2_get_sbat_data_block failed\n");
 	break;
       }
@@ -772,10 +764,10 @@ static int handler_otf(int fd, ole2_header_t *hdr, property_t *prop, const char 
       }
 
       len -= MIN(len,1 << hdr->log2_small_block_size);
-      current_block = ole2_get_next_sbat_block(fd, hdr, current_block);
+      current_block = ole2_get_next_sbat_block(hdr, current_block);
     } else {
       /* Big block file */
-      if (!ole2_read_block(fd, hdr, buff, 1 << hdr->log2_big_block_size, current_block)) {
+      if (!ole2_read_block(hdr, buff, 1 << hdr->log2_big_block_size, current_block)) {
 	break;
       }
       if (cli_writen(ofd, buff, MIN(len,(1 << hdr->log2_big_block_size))) !=
@@ -791,7 +783,7 @@ static int handler_otf(int fd, ole2_header_t *hdr, property_t *prop, const char 
 	return CL_EWRITE;
       }
 
-      current_block = ole2_get_next_block_number(fd, hdr, current_block);
+      current_block = ole2_get_next_block_number(hdr, current_block);
       len -= MIN(len,(1 << hdr->log2_big_block_size));
     }
   }
@@ -874,13 +866,13 @@ static int ole2_read_header(int fd, ole2_header_t *hdr)
 }
 #endif
 
-int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx, struct uniq **vba)
+int cli_ole2_extract(const char *dirname, cli_ctx *ctx, struct uniq **vba)
 {
 	ole2_header_t hdr;
 	int hdr_size, ret=CL_CLEAN;
-	struct stat statbuf;
 	unsigned int file_count=0;
 	unsigned long scansize, scansize2;
+	void *phdr;
 
 	cli_dbgmsg("in cli_ole2_extract()\n");
 
@@ -895,40 +887,22 @@ int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx, struct uniq **vb
 	
 	/* size of header - size of other values in struct */
 	hdr_size = sizeof(struct ole2_header_tag) - sizeof(int32_t) - sizeof(uint32_t) -
-			sizeof(unsigned char *) - sizeof(off_t) - sizeof(bitset_t *) -
-			sizeof(struct uniq *) - sizeof(int);
+			sizeof(off_t) - sizeof(bitset_t *) -
+			sizeof(struct uniq *) - sizeof(int) - sizeof(fmap_t *);
 
-	hdr.m_area = NULL;
-
-	if (fstat(fd, &statbuf) == 0) {
-		if (statbuf.st_size < hdr_size) {
-			return CL_CLEAN;
-		}
-#ifdef HAVE_MMAP
-		hdr.m_length = statbuf.st_size;
-		hdr.m_area = (unsigned char *) mmap(NULL, hdr.m_length, PROT_READ, MAP_PRIVATE, fd, 0);
-		if (hdr.m_area == MAP_FAILED) {
-			hdr.m_area = NULL;
-		} else {
-			cli_dbgmsg("mmap'ed file\n");
-			memcpy(&hdr, hdr.m_area, hdr_size);
-		}
-#endif
+	if((*ctx->fmap)->len < hdr_size) {
+	    return CL_CLEAN;
+	}
+	hdr.map = *ctx->fmap;
+	hdr.m_length = hdr.map->len;
+	phdr = fmap_need_off_once(hdr.map, 0, hdr_size);
+	if(phdr) {
+	    memcpy(&hdr, phdr, hdr_size);
+	} else {
+	    cli_dbgmsg("cli_ole2_extract: failed to read header\n");
+	    goto abort;
 	}
 
-	if (hdr.m_area == NULL) {
-		hdr.bitset = NULL;
-#if defined(HAVE_ATTRIB_PACKED) || defined(HAVE_PRAGMA_PACK) || defined(HAVE_PRAGMA_PACK_HPPA)
-		if (cli_readn(fd, &hdr, hdr_size) != hdr_size) {
-			goto abort;
-		}
-#else
-		if (!ole2_read_header(fd, &hdr)) {
-			goto abort;
-		}
-#endif
-	}
-	
 	hdr.minor_version = ole2_endian_convert_16(hdr.minor_version);
 	hdr.dll_version = ole2_endian_convert_16(hdr.dll_version);
 	hdr.byte_order = ole2_endian_convert_16(hdr.byte_order);
@@ -970,14 +944,14 @@ int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx, struct uniq **vb
 	}
 
 	/* 8 SBAT blocks per file block */
-	hdr.max_block_no = (statbuf.st_size - MAX(512, 1 << hdr.log2_big_block_size)) / (1 << hdr.log2_small_block_size);
+	hdr.max_block_no = (hdr.map->len - MAX(512, 1 << hdr.log2_big_block_size)) / (1 << hdr.log2_small_block_size);
 
 	print_ole2_header(&hdr);
 	cli_dbgmsg("Max block number: %lu\n", (unsigned long int) hdr.max_block_no);
 
 	/* PASS 1 : Count files and check for VBA */
 	hdr.has_vba = 0;
-	ret = ole2_walk_property_tree(fd, &hdr, NULL, 0, handler_enum, 0, &file_count, ctx, &scansize);
+	ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_enum, 0, &file_count, ctx, &scansize);
 	cli_bitset_free(hdr.bitset);
 	hdr.bitset = NULL;
 	if (!file_count || !(hdr.bitset = cli_bitset_init()))
@@ -993,7 +967,7 @@ int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx, struct uniq **vb
 	    goto abort;
 	  }
 	  file_count = 0;
-	  ole2_walk_property_tree(fd, &hdr, dirname, 0, handler_writefile, 0, &file_count, ctx, &scansize2);
+	  ole2_walk_property_tree(&hdr, dirname, 0, handler_writefile, 0, &file_count, ctx, &scansize2);
 	  ret = CL_CLEAN;
 	  *vba = hdr.U;
 	} else {
@@ -1001,15 +975,10 @@ int cli_ole2_extract(int fd, const char *dirname, cli_ctx *ctx, struct uniq **vb
 	  /* PASS 2/B : OTF scan */
 	  file_count = 0;
 	  if(ctx)
-	    ret = ole2_walk_property_tree(fd, &hdr, NULL, 0, handler_otf, 0, &file_count, ctx, &scansize2);
+	    ret = ole2_walk_property_tree(&hdr, NULL, 0, handler_otf, 0, &file_count, ctx, &scansize2);
 	}
 
 abort:
-#ifdef HAVE_MMAP
-	if (hdr.m_area != NULL) {
-		munmap(hdr.m_area, hdr.m_length);
-	}
-#endif
 	if(hdr.bitset)
 	    cli_bitset_free(hdr.bitset);
 

@@ -967,6 +967,7 @@ static int sigtool_scandir (const char *dirname, int hex_output)
     const char *tmpdir;
     char *dir;
     int ret = CL_CLEAN, desc;
+    cli_ctx ctx;
 
 
     if ((dd = opendir (dirname)) != NULL) {
@@ -1002,7 +1003,17 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 				    return 1;
 				}
 
-				if ((ret = cli_ole2_extract (desc, dir, NULL, &vba))) {
+				ctx.fmap = cli_malloc(sizeof(struct F_MAP *));
+				if(!ctx.fmap) {
+				    printf("malloc failed\n");
+				    return 1;
+				}
+				*ctx.fmap = fmap(desc, 0, 0);
+				if(*ctx.fmap) {
+				    printf("fmap failed\n");
+				    return 1;
+				}
+				if ((ret = cli_ole2_extract (dir, &ctx, &vba))) {
 				    printf ("ERROR %s\n", cl_strerror (ret));
 				    cli_rmdirs (dir);
 				    free (dir);
@@ -1011,9 +1022,11 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 
 				if(vba)
 				    sigtool_vba_scandir (dir, hex_output, vba);
-
 				cli_rmdirs (dir);
 				free (dir);
+				funmap(*ctx.fmap);
+				free(ctx.fmap);
+				close(desc);
 			    }
 			}
 

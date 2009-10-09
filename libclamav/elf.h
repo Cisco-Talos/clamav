@@ -25,6 +25,7 @@
 #include "clamav.h"
 #include "execs.h"
 #include "others.h"
+#include "fmap.h"
 
 struct elf_file_hdr32 {
     unsigned char e_ident[16];
@@ -108,8 +109,8 @@ struct elf_section_hdr64 {
     uint64_t sh_entsize;
 };
 
-int cli_scanelf(int desc, cli_ctx *ctx);
+int cli_scanelf(cli_ctx *ctx);
 
-int cli_elfheader(int desc, struct cli_exe_info *elfinfo);
+int cli_elfheader(fmap_t *map, struct cli_exe_info *elfinfo);
 
 #endif

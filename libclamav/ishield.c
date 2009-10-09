@@ -24,8 +24,6 @@
 #include "clamav-config.h"
 #endif
 
-#define _XOPEN_SOURCE 500
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -47,6 +45,7 @@
 #include "scanners.h"
 #include "cltypes.h"
 #include "others.h"
+#include "fmap.h"
 #include "ishield.h"
 
 #ifndef LONG_MAX
@@ -64,6 +63,14 @@
 #endif
 
 /* PACKED things go here */
+
+struct IS_HDR {
+    uint32_t magic; 
+    uint32_t unk1; /* version ??? */
+    uint32_t unk2; /* ??? */
+    uint32_t data_off;
+    uint32_t data_sz; /* ??? */
+} __attribute__((packed));
 
 struct IS_FB {
     char fname[0x104]; /* MAX_PATH */
@@ -181,21 +188,22 @@ struct IS_FILEITEM {
 
 
 
-static int is_dump_and_scan(int desc, cli_ctx *ctx, off_t off, size_t fsize);
+static int is_dump_and_scan(cli_ctx *ctx, off_t off, size_t fsize);
 static const uint8_t skey[] = { 0xec, 0xca, 0x79, 0xf8 }; /* ~0x13, ~0x35, ~0x86, ~0x07 */
 
 /* Extracts the content of MSI based IS */
-int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
-    uint8_t buf[BUFSIZ];
+int cli_scanishield_msi(cli_ctx *ctx, off_t off) {
+    uint8_t *buf;
     unsigned int fcount, scanned = 0;
     int ret;
+    fmap_t *map = *ctx->fmap;
 
     cli_dbgmsg("in ishield-msi\n");
-    lseek(desc, off, SEEK_SET);
-    if(cli_readn(desc, buf, 0x20) != 0x20) {
+    if(!(buf = fmap_need_off_once(map, off, 0x20))) {
 	cli_dbgmsg("ishield-msi: short read for header\n");
 	return CL_CLEAN;
     }
+    off += 0x20;
     if(cli_readint32(buf + 8) | cli_readint32(buf + 0xc) | cli_readint32(buf + 0x10) | cli_readint32(buf + 0x14) | cli_readint32(buf + 0x18) | cli_readint32(buf + 0x1c))
 	return CL_CLEAN;
     if(!(fcount = cli_readint32(buf))) {
@@ -211,16 +219,20 @@ int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
 	uint64_t csize;
 	z_stream z;
 
-	if(cli_readn(desc, &fb, sizeof(fb)) != sizeof(fb)) {
+	if(fmap_readn(map, &fb, off, sizeof(fb)) != sizeof(fb)) {
 	    cli_dbgmsg("ishield-msi: short read for fileblock\n");
 	    return CL_CLEAN;
 	}
+	off += sizeof(fb);
 	fb.fname[sizeof(fb.fname)-1] = '\0';
 	csize = le64_to_host(fb.csize);
-
+	if(!CLI_ISCONTAINED(0, map->len, off, csize)) {
+	    cli_dbgmsg("ishield-msi: next stream is out of file, giving up\n");
+	    return CL_CLEAN;
+	}
 	if(ctx->engine->maxfilesize && csize > ctx->engine->maxfilesize) {
 	    cli_dbgmsg("ishield-msi: skipping stream due to size limits (%lu vs %lu)\n", (unsigned long int) csize, (unsigned long int) ctx->engine->maxfilesize);
-	    lseek(desc, csize, SEEK_CUR);
+	    off += csize;
 	    continue;
 	}
 
@@ -241,20 +253,21 @@ int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
 	inflateInit(&z);
 	ret = CL_SUCCESS;
 	while(csize) {
-	    unsigned int sz = csize < sizeof(buf) ? csize : sizeof(buf);
-	    z.avail_in = cli_readn(desc, buf, sz);
-	    if(z.avail_in <= 0) {
+	    uint8_t buf2[BUFSIZ];
+	    z.avail_in = MIN(csize, sizeof(buf2));
+	    if(fmap_readn(map, buf2, off, z.avail_in) != z.avail_in) {
 		cli_dbgmsg("ishield-msi: premature EOS or read fail\n");
-		break;    
+		break;
 	    }
+	    off += z.avail_in;
 	    for(i=0; i<z.avail_in; i++, lameidx++) {
-		uint8_t c = buf[i];
+		uint8_t c = buf2[i];
 		c = (c>>4) | (c<<4);
 		c ^= key[(lameidx & 0x3ff) % keylen];
-		buf[i] = c;
+		buf2[i] = c;
 	    }
 	    csize -= z.avail_in;
-	    z.next_in = buf;
+	    z.next_in = buf2;
 	    do {
 		int inf;
 		z.avail_out = sizeof(obuf);
@@ -263,7 +276,7 @@ int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
 		if(inf != Z_OK && inf != Z_STREAM_END && inf != Z_BUF_ERROR) {
 		    cli_dbgmsg("ishield-msi: bad stream\n");
 		    csize = 0;
-		    lseek(desc, csize, SEEK_CUR);
+		    off += csize;
 		    break;
 		}
 		if (cli_writen(ofd, obuf, sizeof(obuf) - z.avail_out) < 0) {
@@ -273,7 +286,7 @@ int cli_scanishield_msi(int desc, cli_ctx *ctx, off_t off) {
 		}
 		if(ctx->engine->maxfilesize && z.total_out > ctx->engine->maxfilesize) {
 		    cli_dbgmsg("ishield-msi: trimming output file due to size limits (%lu vs %lu)\n", z.total_out, (unsigned long int) ctx->engine->maxfilesize);
-		    lseek(desc, csize, SEEK_CUR);
+		    off += csize;
 		    csize = 0;
 		    break;
 		}
@@ -319,55 +332,47 @@ struct IS_CABSTUFF {
 };
 
 static void md5str(uint8_t *sum);
-static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c);
-static int is_extract_cab(int desc, cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t csize);
+static int is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c);
+static int is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t csize);
 
 /* Extract the content of older (non-MSI) IS */
-int cli_scanishield(int desc, cli_ctx *ctx, off_t off, size_t sz) {
+int cli_scanishield(cli_ctx *ctx, off_t off, size_t sz) {
     char *fname, *path, *version, *strsz, *eostr, *data;
-    char buf[2048];
-    int rd, ret = CL_CLEAN;
+    int ret = CL_CLEAN;
     long fsize;
     off_t coff = off;
     struct IS_CABSTUFF c = { NULL, -1, 0, 0 };
+    fmap_t *map = *ctx->fmap;
 
     while(ret == CL_CLEAN) {
-	rd = pread(desc, buf, sizeof(buf), coff);
-	if(rd <= 0)
-	    break;
+	fname = fmap_need_offstr(map, coff, 2048);
+	if(!fname) break;
+	coff += strlen(fname) + 1;
 
-	fname = buf;
-	if(!*fname) break;
-	path = memchr(fname, 0, rd);
-	if(!path)
-	    break;
+	path = fmap_need_offstr(map, coff, 2048);
+	if(!path) break;
+	coff += strlen(path) + 1;
 
-	path++;
-	rd -= (path - buf);
-	if(rd<=0 || !(version = memchr(path, 0, rd)))
-	    break;
+	version = fmap_need_offstr(map, coff, 2048);
+	if(!version) break;
+	coff += strlen(version) + 1;
 
-	version++;
-	rd -= (version - path);
-	if(rd<=0 || !(strsz = memchr(version, 0, rd)))
-	    break;
+	strsz = fmap_need_offstr(map, coff, 2048);
+	if(!strsz) break;
+	coff += strlen(strsz) + 1;
 
-	strsz++;
-	rd -= (strsz - version);
-	if(rd<=0 || !(data = memchr(strsz, 0, rd)))
-	    break;
+	data = &strsz[strlen(strsz) + 1];
 
-	data++;
 	fsize = strtol(strsz, &eostr, 10);
 	if(fsize < 0 || fsize == LONG_MAX ||
 	   !*strsz || !eostr || eostr == strsz || *eostr ||
 	   (unsigned long)fsize >= sz ||
-	   data - buf >= sz - fsize
+	   data - fname >= sz - fsize
 	) break;
 
 	cli_dbgmsg("ishield: @%lx found file %s (%s) - version %s - size %lu\n", (unsigned long int) coff, fname, path, version, (unsigned long int) fsize);
-	sz -= (data - buf) + fsize;
-	coff += (data - buf);
+	sz -= (data - fname) + fsize;
+
 	if(!strncasecmp(fname, "data", 4)) {
 	    long cabno;
 	    if(!strcasecmp(fname + 4, "1.hdr")) {
@@ -401,20 +406,21 @@ int cli_scanishield(int desc, cli_ctx *ctx, off_t off, size_t sz) {
 	    }
 	}
 
-	ret = is_dump_and_scan(desc, ctx, coff, fsize);
+	fmap_unneed_ptr(map, fname, data-fname);
+	ret = is_dump_and_scan(ctx, coff, fsize);
 	coff += fsize;
     }
 
     if(ret == CL_CLEAN && (c.cabcnt || c.hdr != -1)) {
-      if((ret = is_parse_hdr(desc, ctx, &c)) == CL_CLEAN) {
+      if((ret = is_parse_hdr(ctx, &c)) == CL_CLEAN) {
 	    unsigned int i;
 	    if(c.hdr != -1) {
 		cli_dbgmsg("ishield: scanning data1.hdr\n");
-		ret = is_dump_and_scan(desc, ctx, c.hdr, c.hdrsz);
+		ret = is_dump_and_scan(ctx, c.hdr, c.hdrsz);
 	    }
 	    for(i=0; i<c.cabcnt && ret == CL_CLEAN; i++) {
 		cli_dbgmsg("ishield: scanning data%u.cab\n", c.cabs[i].cabno);
-		ret = is_dump_and_scan(desc, ctx, c.cabs[i].off, c.cabs[i].sz);
+		ret = is_dump_and_scan(ctx, c.cabs[i].off, c.cabs[i].sz);
 	    }
       } else if( ret == CL_BREAK ) ret = CL_CLEAN;
     }
@@ -424,9 +430,10 @@ int cli_scanishield(int desc, cli_ctx *ctx, off_t off, size_t sz) {
 
 
 /* Utility func to scan a fd @ a given offset and size */
-static int is_dump_and_scan(int desc, cli_ctx *ctx, off_t off, size_t fsize) {
-    char *fname, buf[BUFSIZ];
+static int is_dump_and_scan(cli_ctx *ctx, off_t off, size_t fsize) {
+    char *fname, *buf;
     int ofd, ret = CL_CLEAN;
+    fmap_t *map = *ctx->fmap;
 
     if(!fsize) {
 	cli_dbgmsg("ishield: skipping empty file\n");
@@ -441,19 +448,18 @@ static int is_dump_and_scan(int desc, cli_ctx *ctx, off_t off, size_t fsize) {
 	return CL_ECREAT;
     }
     while(fsize) {
-	size_t rd = fsize < sizeof(buf) ? fsize : sizeof(buf);
-	int got = pread(desc, buf, rd, off);
-	if(got <= 0) {
+	size_t rd = MIN(fsize, map->pgsz);
+	if(!(buf = fmap_need_off_once(map, off, rd))) {
 	    cli_dbgmsg("ishield: read error\n");
 	    ret = CL_EREAD;
 	    break;
 	}
-	if(cli_writen(ofd, buf, got) <= 0) {
+	if(cli_writen(ofd, buf, rd) <= 0) {
 	    ret = CL_EWRITE;
 	    break;
 	}
-	fsize -= got;
-	off += got;
+	fsize -= rd;
+	off += rd;
     }
     if(!fsize) {
 	cli_dbgmsg("ishield: extracted to %s\n", fname);
@@ -467,29 +473,13 @@ static int is_dump_and_scan(int desc, cli_ctx *ctx, off_t off, size_t fsize) {
     return ret;
 }
 
-
-struct IS_HDR {
-    uint32_t magic; 
-    uint32_t unk1; /* version ??? */
-    uint32_t unk2; /* ??? */
-    uint32_t data_off;
-    uint32_t data_sz; /* ??? */
-};
-
-
-#define IS_FREE_HDR if(map) munmap(map, mp_hdrsz); else free(hdr);
-#if HAVE_MMAP
-#define IS_MAX_NOMAP_SZ 0x100000
-#else
-#define IS_MAX_NOMAP_SZ CLI_MAX_ALLOCATION
-#endif
-
 /* Process data1.hdr and extracts all the available files from dataX.cab */
-static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) { 
+static int is_parse_hdr(cli_ctx *ctx, struct IS_CABSTUFF *c) { 
     uint32_t h1_data_off, objs_files_cnt, objs_dirs_off;
     unsigned int off, i, scanned = 0;
     int ret = CL_BREAK;
-    char hash[33], *hdr, *map = NULL;
+    char hash[33], *hdr;
+    fmap_t *map = *ctx->fmap;
     size_t mp_hdrsz;
 
     struct IS_HDR *h1;
@@ -501,51 +491,28 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 	return CL_CLEAN;
     }
 
-    if(c->hdrsz < IS_MAX_NOMAP_SZ) {
-	if(!(hdr = (char *)cli_malloc(c->hdrsz)))
-	    return CL_EMEM;
-	if(pread(desc, hdr, c->hdrsz, c->hdr) < (ssize_t)c->hdrsz) {
-	    cli_errmsg("is_parse_hdr: short read for header\n");
-	    free(hdr);
-	    return CL_EREAD; /* hdr must be within bounds, it's k to hard fail here */
-	}
-    } else {
-#if defined(HAVE_MMAP) && defined(HAVE_CLI_GETPAGESIZE)
-	int psz = cli_getpagesize();
-	off_t mp_hdr = (c->hdr / psz) * psz;
-	mp_hdrsz = c->hdrsz + c->hdr - mp_hdr;
-	if((map = mmap(NULL, mp_hdrsz, PROT_READ, MAP_PRIVATE, desc, mp_hdr))==MAP_FAILED) {
-	    cli_errmsg("is_parse_hdr: mmap failed\n");
-	    return CL_EMEM;
-	}
-	hdr = map + c->hdr - mp_hdr;
-#else
-	cli_warnmsg("is_parse_hdr: hdr too big and mmap is not usable\n");
-	return CL_CLEAN;
-#endif
-    }
-
-    h1 = (struct IS_HDR *)hdr;
-    if(!CLI_ISCONTAINED(hdr, c->hdrsz, ((char *)h1), sizeof(*h1))) {
+    if(!(h1 = fmap_need_off(map, c->hdr, c->hdrsz))) {
 	cli_dbgmsg("is_parse_hdr: not enough room for H1\n");
-	IS_FREE_HDR;
 	return CL_CLEAN;
     }
+    hdr = (char *)h1;
     h1_data_off = le32_to_host(h1->data_off);
-    objs = (struct IS_OBJECTS *)(hdr + h1_data_off);
-    if(!CLI_ISCONTAINED(hdr, c->hdrsz, ((char *)objs), sizeof(*objs))) {
-	cli_dbgmsg("is_parse_hdr: not enough room for OBJECTS\n");
-	IS_FREE_HDR;
-	return CL_CLEAN;
+    objs = (struct IS_OBJECTS *)fmap_need_ptr(map, hdr + h1_data_off, sizeof(*objs));
+    if(!objs) {
+        cli_dbgmsg("is_parse_hdr: not enough room for OBJECTS\n");
+        funmap(map);
+        return CL_CLEAN;
     }
 
     cli_dbgmsg("is_parse_hdr: magic %x, unk1 %x, unk2 %x, data_off %x, data_sz %x\n",
-	       h1->magic, h1->unk1, h1->unk2, h1_data_off, h1->data_sz);
+               h1->magic, h1->unk1, h1->unk2, h1_data_off, h1->data_sz);
     if(le32_to_host(h1->magic) != 0x28635349) {
-	cli_dbgmsg("is_parse_hdr: bad magic. wrong version?\n");
-	IS_FREE_HDR;
-	return CL_CLEAN;
+        cli_dbgmsg("is_parse_hdr: bad magic. wrong version?\n");
+        funmap(map);
+        return CL_CLEAN;
     }
+
+    fmap_unneed_ptr(map, h1, sizeof(*h1));
 
 /*     cli_errmsg("COMPONENTS\n"); */
 /*     off = le32_to_host(objs->comps_off) + h1_data_off; */
@@ -583,11 +550,12 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 
     objs_files_cnt = le32_to_host(objs->files_cnt);
     off = h1_data_off + objs_dirs_off + le32_to_host(objs->dir_sz2);
+    fmap_unneed_ptr(map, objs, sizeof(*objs));
     for(i=0; i<objs_files_cnt ;i++) {
-	struct IS_FILEITEM *file = (struct IS_FILEITEM *)(&hdr[off]);
+	struct IS_FILEITEM *file = (struct IS_FILEITEM *)fmap_need_off(map, c->hdr + off, sizeof(*file));
 
-	if(CLI_ISCONTAINED(hdr, c->hdrsz, ((char *)file), sizeof(*file))) {
-	    const char *dir_name = "", *file_name = "";
+	if(file) {
+	    const char *emptyname = "", *dir_name = emptyname, *file_name = emptyname;
 	    uint32_t dir_rel = h1_data_off + objs_dirs_off + 4 * le32_to_host(file->dir_id); /* rel off of dir entry from array of rel ptrs */
 	    uint32_t file_rel = objs_dirs_off + h1_data_off + le32_to_host(file->str_name_off); /* rel off of fname */
 	    uint64_t file_stream_off, file_size, file_csize;
@@ -595,12 +563,12 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 
 	    memcpy(hash, file->md5, 16);
 	    md5str((uint8_t *)hash);
-	    if(CLI_ISCONTAINED(hdr, c->hdrsz, &hdr[dir_rel], 4)) {
+	    if(fmap_need_ptr_once(map, &hdr[dir_rel], 4)) {
 		dir_rel = cli_readint32(&hdr[dir_rel]) + h1_data_off + objs_dirs_off;
-		if(CLI_ISCONTAINED(hdr, c->hdrsz, &hdr[dir_rel], 1) && memchr(&hdr[dir_rel], 0, c->hdrsz - dir_rel))
+		if(fmap_need_str(map, &hdr[dir_rel], c->hdrsz - dir_rel))
 		    dir_name = &hdr[dir_rel];
 	    }
-	    if(CLI_ISCONTAINED(hdr, c->hdrsz, &hdr[file_rel], 1) && memchr(&hdr[file_rel], 0, c->hdrsz - file_rel))
+	    if(fmap_need_str(map, &hdr[file_rel], c->hdrsz - file_rel))
 		file_name = &hdr[file_rel];
 		
 	    file_stream_off = le64_to_host(file->stream_off);
@@ -640,10 +608,13 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 				scanned++;
 				if (ctx->engine->maxfiles && scanned >= ctx->engine->maxfiles) {
 				    cli_dbgmsg("is_parse_hdr: File limit reached (max: %u)\n", ctx->engine->maxfiles);
-				    IS_FREE_HDR;
+				    if(file_name != emptyname)
+					fmap_unneed_ptr(map, (void *)file_name, strlen(file_name)+1);
+				    if(dir_name != emptyname)
+					fmap_unneed_ptr(map, (void *)dir_name, strlen(dir_name)+1);
 				    return CL_EMAXFILES;
 				}
-				cabret = is_extract_cab(desc, ctx, file_stream_off + c->cabs[j].off, file_size, file_csize);
+				cabret = is_extract_cab(ctx, file_stream_off + c->cabs[j].off, file_size, file_csize);
 			    } else {
 				ret = CL_CLEAN;
  				cli_dbgmsg("is_parse_hdr: stream out of file\n");
@@ -657,7 +628,10 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 			    cabret = CL_CLEAN;
 			}
 			if(cabret != CL_CLEAN) {
-			    IS_FREE_HDR;
+			    if(file_name != emptyname)
+				fmap_unneed_ptr(map, (void *)file_name, strlen(file_name)+1);
+			    if(dir_name != emptyname)
+				fmap_unneed_ptr(map, (void *)dir_name, strlen(dir_name)+1);
 			    return cabret;
 			}
 		    } else {
@@ -668,13 +642,17 @@ static int is_parse_hdr(int desc, cli_ctx *ctx, struct IS_CABSTUFF *c) {
 	    default:
 		cli_dbgmsg("is_parse_hdr: skipped unknown file entry %u\n", i);
 	    }
+	    if(file_name != emptyname)
+		fmap_unneed_ptr(map, (void *)file_name, strlen(file_name)+1);
+	    if(dir_name != emptyname)
+		fmap_unneed_ptr(map, (void *)dir_name, strlen(dir_name)+1);
+	    fmap_unneed_ptr(map, file, sizeof(*file));
 	} else {
 	    ret = CL_CLEAN;
 	    cli_dbgmsg("is_parse_hdr: FILEITEM out of bounds\n");
 	}
 	off += sizeof(*file);
     }
-    IS_FREE_HDR;
     return ret;
 }
 
@@ -694,55 +672,25 @@ static void md5str(uint8_t *sum) {
 
 #define IS_CABBUFSZ 65536
 
-static int is_extract_cab(int desc, cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t csize) {
+static int is_extract_cab(cli_ctx *ctx, uint64_t off, uint64_t size, uint64_t csize) {
     uint8_t *inbuf, *outbuf;
     char *tempfile;
-    FILE *in;
     int ofd, ret = CL_CLEAN;
     z_stream z;
     uint64_t outsz = 0;
     int success = 0;
+    fmap_t *map = *ctx->fmap;
 
-    if((ofd=dup(desc)) < 0) {
-	cli_errmsg("is_extract_cab: dup failed\n");
-	return CL_EDUP;
-    }
-    if(!(in = fdopen(ofd, "rb"))) {
-	cli_errmsg("is_extract_cab: fdopen failed\n");
-	close(ofd);
-	return CL_EOPEN;
-    }
-#if HAVE_FSEEKO
-    if(fseeko(in, (off_t)off, SEEK_SET))
-#else
-    if(fseek(in, (long)off, SEEK_SET))
-#endif
-    {
-	cli_dbgmsg("is_extract_cab: fseek failed\n");
-	fclose(in);
-	return CL_ESEEK;
-    }
-    if(!(inbuf = cli_malloc(IS_CABBUFSZ))) {
-	fclose(in);
+    if(!(outbuf = cli_malloc(IS_CABBUFSZ)))
 	return CL_EMEM;
-    }
-    if(!(outbuf = cli_malloc(IS_CABBUFSZ))) {
-	free(inbuf);
-	fclose(in);
-	return CL_EMEM;
-    }
+
     if(!(tempfile = cli_gentemp(ctx->engine->tmpdir))) {
-	free(inbuf);
 	free(outbuf);
-	fclose(in);
-	return CL_EMEM;
     }
     if((ofd = open(tempfile, O_RDWR|O_CREAT|O_TRUNC|O_BINARY, S_IRUSR|S_IWUSR)) < 0) {
 	cli_errmsg("is_extract_cab: failed to create file %s\n", tempfile);
 	free(tempfile);
-	free(inbuf);
 	free(outbuf);
-	fclose(in);
 	return CL_ECREAT;
     }
 
@@ -754,11 +702,12 @@ static int is_extract_cab(int desc, cli_ctx *ctx, uint64_t off, uint64_t size, u
 	    break;
 	}
 	csize -= 2;
-	if(!fread(outbuf, 2, 1, in)) {
+	if(!(inbuf = fmap_need_off_once(map, off, 2))) {
 	    cli_dbgmsg("is_extract_cab: short read for chunk size\n");
 	    break;
 	}
-	chunksz = outbuf[0] | (outbuf[1] << 8);
+	off += 2;
+	chunksz = inbuf[0] | (inbuf[1] << 8);
 	if(!chunksz) {
 	    cli_dbgmsg("is_extract_cab: zero sized chunk\n");
 	    continue;
@@ -768,10 +717,11 @@ static int is_extract_cab(int desc, cli_ctx *ctx, uint64_t off, uint64_t size, u
 	    break;
 	}
 	csize -= chunksz;
-	if(!fread(inbuf, chunksz, 1, in)) {
+	if(!(inbuf = fmap_need_off_once(map, off, chunksz))) {
 	    cli_dbgmsg("is_extract_cab: short read for chunk\n");
 	    break;
 	}
+	off += chunksz;
 	memset(&z, 0, sizeof(z));
 	inflateInit2(&z, -MAX_WBITS);
 	z.next_in = (uint8_t *)inbuf;
@@ -804,8 +754,6 @@ static int is_extract_cab(int desc, cli_ctx *ctx, uint64_t off, uint64_t size, u
 	inflateEnd(&z);
 	if(!success) break;
     }
-    fclose(in);
-    free(inbuf);
     free(outbuf);
     if(success) {
 	if (outsz != size)

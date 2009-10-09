@@ -63,7 +63,7 @@ CLAMAV_PRIVATE {
     cli_str2hex;
     cli_md5file;
     cli_md5stream;
-    html_normalise_fd;
+    html_normalise_map;
     cli_utf16toascii;
 
     cli_malloc;
@@ -156,6 +156,8 @@ CLAMAV_PRIVATE {
     cli_bytecode_context_setparam_ptr;
     cli_bytecode_context_getresult_int;
     cli_bytecode_context_clear;
+    fmap;
+    funmap;
   local:
     *;
 };
