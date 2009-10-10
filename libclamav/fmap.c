@@ -57,7 +57,7 @@
 #define UNPAGE_THRSHLD_HI 8*1024*1024
 #define READAHEAD_PAGES 8
 
-#ifdef C_LINUX
+#if defined(HAVE_MMAP) && defined(C_LINUX)
 /*
    WORKAROUND
    Relieve some stress on mmap_sem.
@@ -70,6 +70,10 @@ pthread_mutex_t fmap_mutex = PTHREAD_MUTEX_INITIALIZER;
 #else
 #define fmap_lock
 #define fmap_unlock
+#endif
+
+#ifndef MADV_DONTFORK
+#define MADV_DONTFORK 0
 #endif
 
 #define fmap_bitmap (&m->placeholder_for_bitmap)
@@ -123,11 +127,13 @@ fmap_t *fmap(int fd, off_t offset, size_t len) {
 	m = NULL;
     } else {
 	dumb = 0;
+#if HAVE_MADVISE
 	madvise(m, mapsz, MADV_RANDOM|MADV_DONTFORK);
+#endif /* madvise */
     }
-#else
+#else /* ! HAVE_MMAP */
     m = (fmap_t *)cli_malloc(mapsz);
-#endif
+#endif /* HAVE_MMAP */
     if(!m) {
 	cli_warnmsg("fmap: map allocation failed\n");
 	fmap_unlock;

@@ -250,6 +250,9 @@
 /* Define to 1 if you have the <mach-o/dyld.h> header file. */
 #undef HAVE_MACH_O_DYLD_H
 
+/* Define to 1 if you have the `madvise' function. */
+#undef HAVE_MADVISE
+
 /* Define to 1 if you have the `mallinfo' function. */
 #undef HAVE_MALLINFO
 
