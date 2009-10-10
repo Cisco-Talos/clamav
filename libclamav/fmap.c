@@ -24,9 +24,6 @@
 #include "clamav-config.h"
 #endif
 
-#define _XOPEN_SOURCE 500
-#define _BSD_SOURCE
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
@@ -37,8 +34,9 @@
 #endif
 #endif
 
+#ifdef C_LINUX
 #include <pthread.h>
-
+#endif
 
 #include "others.h"
 #include "cltypes.h"
@@ -59,9 +57,25 @@
 #define UNPAGE_THRSHLD_HI 8*1024*1024
 #define READAHEAD_PAGES 8
 
-/* DON'T ASK ME */
+#ifdef C_LINUX
+/*
+   WORKAROUND
+   Relieve some stress on mmap_sem.
+   When mmap_sem is heavily hammered, the scheduler
+   tends to fail to wake us up properly.
+*/
 pthread_mutex_t fmap_mutex = PTHREAD_MUTEX_INITIALIZER;
+#define fmap_lock pthread_mutex_lock(&fmap_mutex)
+#define fmap_unlock pthread_mutex_unlock(&fmap_mutex);
+#else
+#define fmap_lock
+#define fmap_unlock
+#endif
 
+
+/* pread proto here in order to avoid the use of XOPEN and BSD_SOURCE
+   which may in turn prevent some mmap constants to be defined */
+ssize_t pread(int fd, void *buf, size_t count, off_t offset);
 
 static unsigned int fmap_align_items(unsigned int sz, unsigned int al) {
     return sz / al + (sz % al != 0);
@@ -102,7 +116,7 @@ fmap_t *fmap(int fd, off_t offset, size_t len) {
     pages = fmap_align_items(len, pgsz);
     hdrsz = fmap_align_to(sizeof(fmap_t) + pages * sizeof(uint32_t), pgsz);
     mapsz = pages * pgsz + hdrsz;
-    pthread_mutex_lock(&fmap_mutex);
+    fmap_lock;
 #if HAVE_MMAP
     if ((m = (fmap_t *)mmap(NULL, mapsz, PROT_READ | PROT_WRITE, MAP_PRIVATE|/*FIXME: MAP_POPULATE is ~8% faster but more memory intensive */ANONYMOUS_MAP, -1, 0)) == MAP_FAILED) {
 	m = NULL;
@@ -115,12 +129,12 @@ fmap_t *fmap(int fd, off_t offset, size_t len) {
 #endif
     if(!m) {
 	cli_warnmsg("fmap: map allocation failed\n");
-	pthread_mutex_unlock(&fmap_mutex);
+	fmap_unlock;
 	return NULL;
     }
     /* fault the header while we still have the lock - we DO context switch here a lot here :@ */
     memset(m->bitmap, 0, sizeof(uint32_t) * pages);
-    pthread_mutex_unlock(&fmap_mutex);
+    fmap_unlock;
     m->fd = fd;
     m->dumb = dumb;
     m->mtime = st.st_mtime;
@@ -177,10 +191,10 @@ static void fmap_aging(fmap_t *m) {
 		/* we mark the page as seen */
 		m->bitmap[freeme[i]] = FM_MASK_SEEN;
 		/* and we mmap the page over so the kernel knows there's nothing good in there */
-		pthread_mutex_lock(&fmap_mutex);
+		fmap_lock;
 		if(mmap(pptr, m->pgsz, PROT_READ | PROT_WRITE, MAP_FIXED|MAP_PRIVATE|ANONYMOUS_MAP, -1, 0) == MAP_FAILED)
 		    cli_warnmsg("fmap_aging: kernel hates you\n");
-		pthread_mutex_unlock(&fmap_mutex);
+		fmap_unlock;
 	    }
 	    m->paged -= avail;
 #ifdef FMAPDEBUG
@@ -198,13 +212,14 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
     uint32_t s;
     unsigned int i, page = first_page, force_read = 0;
 
-    pthread_mutex_lock(&fmap_mutex);
+    fmap_lock;
     for(i=0; i<count; i++) { /* prefault */
     	/* Not worth checking if the page is already paged, just ping each */
 	/* Also not worth reusing the loop below */
-    	volatile char faultme = ((char *)m)[(first_page+i) * m->pgsz + m->hdrsz];
+	volatile char faultme;
+	faultme = ((char *)m)[(first_page+i) * m->pgsz + m->hdrsz];
     }
-    pthread_mutex_unlock(&fmap_mutex);
+    fmap_unlock;
 #ifdef FMAPDEBUG
     m->page_needs += count;
     m->page_locks += lock_count;
@@ -301,13 +316,11 @@ static void *fmap_need(fmap_t *m, size_t at, size_t len, int lock) {
     unsigned int first_page, last_page, lock_count;
     char *ret;
 
-    if(!len) {
-//	cli_warnmsg("fmap: attempted void need\n");
+    if(!len)
 	return NULL;
-    }
 
     if(!CLI_ISCONTAINED(0, m->len, at, len)) {
-      //	cli_warnmsg("fmap: attempted oof need\n");
+	cli_warnmsg("fmap: attempted oof need\n");
 	return NULL;
     }
 
@@ -381,8 +394,6 @@ void fmap_unneed_off(fmap_t *m, size_t at, size_t len) {
 	return;
     }
 
-//    cli_errmsg("FMAPDBG: unneed_off map %p at %u len %u\n", m, at, len);
-
     first_page = fmap_which_page(m, at);
     last_page = fmap_which_page(m, at + len - 1);
 
@@ -392,7 +403,6 @@ void fmap_unneed_off(fmap_t *m, size_t at, size_t len) {
 }
 
 void fmap_unneed_ptr(fmap_t *m, void *ptr, size_t len) {
-//    cli_errmsg("FMAPDBG: unneed_ptr map %p at %p len %u\n", m, ptr, len);
     fmap_unneed_off(m, (char *)ptr - (char *)m - m->hdrsz, len);
 }
 
@@ -418,9 +428,9 @@ void funmap(fmap_t *m) {
 #if HAVE_MMAP
     if(!m->dumb) {
 	size_t len = m->pages * m->pgsz + m->hdrsz;
-	pthread_mutex_lock(&fmap_mutex);
+	fmap_lock;
 	munmap((void *)m, len);
-	pthread_mutex_unlock(&fmap_mutex);
+	fmap_unlock;
     } else
 #endif
 	free((void *)m);
@@ -434,7 +444,7 @@ void *fmap_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
 	len_hint = m->len - at;
 
     if(!CLI_ISCONTAINED(0, m->len, at, len_hint)) {
-      //	cli_warnmsg("fmap: attempted oof need_str\n");
+	cli_warnmsg("fmap: attempted oof need_str\n");
 	return NULL;
     }
 
@@ -474,7 +484,7 @@ void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) {
     size_t len = MIN(max_len-1, m->len - *at), fullen = len;
 
     if(!len || !CLI_ISCONTAINED(0, m->len, *at, len)) {
-        //cli_warnmsg("fmap: attempted oof need_str\n");
+        cli_warnmsg("fmap: attempted oof need_str\n");
 	return NULL;
     }
 
