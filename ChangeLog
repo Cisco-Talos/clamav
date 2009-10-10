@@ -1,3 +1,7 @@
+Sat Oct 10 20:22:10 CEST 2009 (acab)
+------------------------------------
+ * libclamav: completed merge of fmap4all
+
 Thu Oct  8 19:03:57 CEST 2009 (tk)
 ----------------------------------
  * libclamav/matcher-bm.c: don't use mpool (bb#1710, #1715)

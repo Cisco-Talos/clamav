@@ -33,7 +33,7 @@ typedef struct {
     unsigned int hdrsz;
     unsigned int pgsz;
     unsigned int paged;
-#ifdef __WIN32
+#ifdef _WIN32
     HANDLE fh;
     HANDLE mh;
     void *data;

@@ -362,13 +362,13 @@ void cli_dbgmsg_internal(const char *str, ...);
 #undef HAVE_CLI_GETPAGESIZE
 #endif
 
-#ifdef __WIN32
-int cli_getpagesize(void) {
+#ifdef _WIN32
+static inline int cli_getpagesize(void) {
     SYSTEM_INFO si;
     GetSystemInfo(&si);
     return si.dwPageSize;
 }
-#else /* ! __WIN32 */
+#else /* ! _WIN32 */
 #if HAVE_SYSCONF_SC_PAGESIZE
 static inline int cli_getpagesize(void) { return sysconf(_SC_PAGESIZE); }
 #define HAVE_CLI_GETPAGESIZE 1
@@ -378,7 +378,7 @@ static inline int cli_getpagesize(void) { return getpagesize(); }
 #define HAVE_CLI_GETPAGESIZE 1
 #endif /* HAVE_GETPAGESIZE */
 #endif /* HAVE_SYSCONF_SC_PAGESIZE */
-#endif /* __WIN32 */
+#endif /* _WIN32 */
 
 void *cli_malloc(size_t nmemb);
 void *cli_calloc(size_t nmemb, size_t size);

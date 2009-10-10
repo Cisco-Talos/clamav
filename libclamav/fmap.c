@@ -41,8 +41,11 @@
 #include "others.h"
 #include "cltypes.h"
 
+static inline unsigned int fmap_align_items(unsigned int sz, unsigned int al);
+static inline unsigned int fmap_align_to(unsigned int sz, unsigned int al);
+static inline unsigned int fmap_which_page(fmap_t *m, size_t at);
 
-#ifndef __WIN32
+#ifndef _WIN32
 /* vvvvv POSIX STUFF BELOW vvvvv */
 
 #define FM_MASK_COUNT 0x3fffffff
@@ -85,19 +88,6 @@ pthread_mutex_t fmap_mutex = PTHREAD_MUTEX_INITIALIZER;
 /* pread proto here in order to avoid the use of XOPEN and BSD_SOURCE
    which may in turn prevent some mmap constants to be defined */
 ssize_t pread(int fd, void *buf, size_t count, off_t offset);
-
-static inline unsigned int fmap_align_items(unsigned int sz, unsigned int al) {
-    return sz / al + (sz % al != 0);
-}
-
-static inline unsigned int fmap_align_to(unsigned int sz, unsigned int al) {
-    return al * fmap_align_items(sz, al);
-}
-
-static inline unsigned int fmap_which_page(fmap_t *m, size_t at) {
-    return at / m->pgsz;
-}
-
 
 fmap_t *fmap(int fd, off_t offset, size_t len) {
     unsigned int pages, mapsz, hdrsz, dumb = 1;
@@ -501,7 +491,7 @@ void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) {
 
 /* ^^^^^ POSIX STUFF AVOVE ^^^^^ */
 
-#else /* __WIN32 */
+#else /* _WIN32 */
 
 /* vvvvv WIN32 STUFF BELOW vvvvv */
 
@@ -528,11 +518,15 @@ fmap_t *fmap(int fd, off_t offset, size_t len) { /* WIN32 */
 	cli_warnmsg("fmap: attempted oof mapping\n");
 	return NULL;
     }
+
+    pages = fmap_align_items(len, pgsz);
+    hdrsz = fmap_align_to(sizeof(fmap_t);
+
     if(!(m = (fmap_t *)cli_malloc(sizeof(fmap_t)))) {
 	cli_errmsg("fmap: canot allocate fmap_t\n", fd);
 	return NULL;
     }
-    if((m->fh = _get_osfhandle(fd)) == INVALID_HANDLE_VALUE) {
+    if((m->fh = (HANDLE)_get_osfhandle(fd)) == INVALID_HANDLE_VALUE) {
 	cli_errmsg("fmap: cannot get a valid handle for descriptor %d\n", fd);
 	free(m);
 	return NULL;
@@ -623,7 +617,7 @@ void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) { /* WIN32 */
 	return NULL;
     }
 
-    if((endptr = memchr(*src, '\n', len))) {
+    if((endptr = memchr(src, '\n', len))) {
 	endptr++;
 	memcpy(dst, src, endptr - src);
 	dst[endptr - src] = '\0';
@@ -636,7 +630,7 @@ void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) { /* WIN32 */
     return dst;
 }
 
-#endif /* __WIN32 */
+#endif /* _WIN32 */
 
 
 /* vvvvv SHARED STUFF BELOW vvvvv */
@@ -655,3 +649,14 @@ int fmap_readn(fmap_t *m, void *dst, size_t at, size_t len) {
     return len;
 }
 
+static inline unsigned int fmap_align_items(unsigned int sz, unsigned int al) {
+    return sz / al + (sz % al != 0);
+}
+
+static inline unsigned int fmap_align_to(unsigned int sz, unsigned int al) {
+    return al * fmap_align_items(sz, al);
+}
+
+static inline unsigned int fmap_which_page(fmap_t *m, size_t at) {
+    return at / m->pgsz;
+}
