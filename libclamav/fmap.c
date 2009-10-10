@@ -72,20 +72,21 @@ pthread_mutex_t fmap_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define fmap_unlock
 #endif
 
+#define fmap_bitmap (&m->placeholder_for_bitmap)
 
 /* pread proto here in order to avoid the use of XOPEN and BSD_SOURCE
    which may in turn prevent some mmap constants to be defined */
 ssize_t pread(int fd, void *buf, size_t count, off_t offset);
 
-static unsigned int fmap_align_items(unsigned int sz, unsigned int al) {
+static inline unsigned int fmap_align_items(unsigned int sz, unsigned int al) {
     return sz / al + (sz % al != 0);
 }
 
-static unsigned int fmap_align_to(unsigned int sz, unsigned int al) {
+static inline unsigned int fmap_align_to(unsigned int sz, unsigned int al) {
     return al * fmap_align_items(sz, al);
 }
 
-static unsigned int fmap_which_page(fmap_t *m, size_t at) {
+static inline unsigned int fmap_which_page(fmap_t *m, size_t at) {
     return at / m->pgsz;
 }
 
@@ -114,7 +115,7 @@ fmap_t *fmap(int fd, off_t offset, size_t len) {
 	return NULL;
     }
     pages = fmap_align_items(len, pgsz);
-    hdrsz = fmap_align_to(sizeof(fmap_t) + pages * sizeof(uint32_t), pgsz);
+    hdrsz = fmap_align_to(sizeof(fmap_t) + (pages-1) * sizeof(uint32_t), pgsz); /* fmap_t includes 1 bitmap slot, hence (pages-1) */
     mapsz = pages * pgsz + hdrsz;
     fmap_lock;
 #if HAVE_MMAP
@@ -133,7 +134,7 @@ fmap_t *fmap(int fd, off_t offset, size_t len) {
 	return NULL;
     }
     /* fault the header while we still have the lock - we DO context switch here a lot here :@ */
-    memset(m->bitmap, 0, sizeof(uint32_t) * pages);
+    memset(fmap_bitmap, 0, sizeof(uint32_t) * pages);
     fmap_unlock;
     m->fd = fd;
     m->dumb = dumb;
@@ -162,10 +163,10 @@ static void fmap_aging(fmap_t *m) {
 	unsigned int i, avail = 0, freeme[2048], maxavail = MIN(sizeof(freeme)/sizeof(*freeme), m->paged - UNPAGE_THRSHLD_LO / m->pgsz) - 1;
 
 	for(i=0; i<m->pages; i++) {
-	    uint32_t s = m->bitmap[i];
+	    uint32_t s = fmap_bitmap[i];
 	    if((s & (FM_MASK_PAGED | FM_MASK_LOCKED)) == FM_MASK_PAGED ) {
 		/* page is paged and not locked: dec age */
-		if(s & FM_MASK_COUNT) m->bitmap[i]--;
+		if(s & FM_MASK_COUNT) fmap_bitmap[i]--;
 		/* and make it available for unpaging */
 
 		if(!avail) {
@@ -173,9 +174,9 @@ static void fmap_aging(fmap_t *m) {
 		    avail++;
 		} else {
 		    /* Insert sort onto a stack'd array - same performance as quickselect */
-		    unsigned int insert_to = MIN(maxavail, avail) - 1, age = m->bitmap[i] & FM_MASK_COUNT;
-		    if(avail <= maxavail || (m->bitmap[freeme[maxavail]] & FM_MASK_COUNT) > age) {
-			while((m->bitmap[freeme[insert_to]] & FM_MASK_COUNT) > age) {
+		    unsigned int insert_to = MIN(maxavail, avail) - 1, age = fmap_bitmap[i] & FM_MASK_COUNT;
+		    if(avail <= maxavail || (fmap_bitmap[freeme[maxavail]] & FM_MASK_COUNT) > age) {
+			while((fmap_bitmap[freeme[insert_to]] & FM_MASK_COUNT) > age) {
 			    freeme[insert_to + 1] = freeme[insert_to];
 			    if(!insert_to--) break;
 			}
@@ -189,7 +190,7 @@ static void fmap_aging(fmap_t *m) {
 	    for(i=0; i<avail; i++) {
 		char *pptr = (char *)m + i * m->pgsz + m->hdrsz;
 		/* we mark the page as seen */
-		m->bitmap[freeme[i]] = FM_MASK_SEEN;
+		fmap_bitmap[freeme[i]] = FM_MASK_SEEN;
 		/* and we mmap the page over so the kernel knows there's nothing good in there */
 		fmap_lock;
 		if(mmap(pptr, m->pgsz, PROT_READ | PROT_WRITE, MAP_FIXED|MAP_PRIVATE|ANONYMOUS_MAP, -1, 0) == MAP_FAILED)
@@ -234,7 +235,7 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 	    /* we count one page too much to flush pending reads */
 	    if(!pptr) return 0; /* if we have any */
 	    force_read = 1;
-	} else if((s=m->bitmap[page]) & FM_MASK_PAGED) {
+	} else if((s=fmap_bitmap[page]) & FM_MASK_PAGED) {
 	    /* page already paged */
 	    if(lock) {
 		/* we want locking */
@@ -246,14 +247,14 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 			return 1;
 		    }
 		    /* acceptable lock count: inc lock count */
-		    m->bitmap[page]++;
+		    fmap_bitmap[page]++;
 		} else /* page not currently locked: set lock count = 1 */
-		    m->bitmap[page] = 1 | FM_MASK_LOCKED | FM_MASK_PAGED;
+		    fmap_bitmap[page] = 1 | FM_MASK_LOCKED | FM_MASK_PAGED;
 	    } else {
 		/* we don't want locking */
 		if(!(s & FM_MASK_LOCKED)) {
 		    /* page is not locked: we reset aging to max */
-		    m->bitmap[page] = FM_MASK_PAGED | FM_MASK_COUNT;
+		    fmap_bitmap[page] = FM_MASK_PAGED | FM_MASK_COUNT;
 		}
 	    }
 	    if(!pptr) continue;
@@ -264,7 +265,7 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 	    /* we have some pending reads to perform */
 	    unsigned int j;
 	    for(j=first_page; j<page; j++) {
-		if(m->bitmap[j] & FM_MASK_SEEN) {
+		if(fmap_bitmap[j] & FM_MASK_SEEN) {
 		    /* page we've seen before: check mtime */
 		    struct stat st;
 		    if(fstat(m->fd, &st)) {
@@ -303,9 +304,9 @@ static int fmap_readpage(fmap_t *m, unsigned int first_page, unsigned int count,
 	else
 	    readsz += m->pgsz;
 	if(lock) /* lock requested: set paged, lock page and set lock count to 1 */
-	    m->bitmap[page] = FM_MASK_PAGED | FM_MASK_LOCKED | 1;
+	    fmap_bitmap[page] = FM_MASK_PAGED | FM_MASK_LOCKED | 1;
 	else /* no locking: set paged and set aging to max */
-	    m->bitmap[page] = FM_MASK_PAGED | FM_MASK_COUNT;
+	    fmap_bitmap[page] = FM_MASK_PAGED | FM_MASK_COUNT;
 	m->paged++;
     }
     return 0;
@@ -361,7 +362,7 @@ void *fmap_need_str(fmap_t *m, void *ptr, size_t len_hint) {
 }
 
 static void fmap_unneed_page(fmap_t *m, unsigned int page) {
-    uint32_t s = m->bitmap[page];
+    uint32_t s = fmap_bitmap[page];
 
     if((s & (FM_MASK_PAGED | FM_MASK_LOCKED)) == (FM_MASK_PAGED | FM_MASK_LOCKED)) {
 	/* page is paged and locked: check lock count */
@@ -370,9 +371,9 @@ static void fmap_unneed_page(fmap_t *m, unsigned int page) {
 	m->page_unlocks ++;
 #endif
 	if(s > 1) /* locked more than once: dec lock count */
-	    m->bitmap[page]--;
+	    fmap_bitmap[page]--;
 	else if (s == 1) /* only one lock left: unlock and begin aging */
-	    m->bitmap[page] = FM_MASK_COUNT | FM_MASK_PAGED;
+	    fmap_bitmap[page] = FM_MASK_COUNT | FM_MASK_PAGED;
 	else 
 	    cli_errmsg("fmap_unneed: inconsistent map state\n");
 	return;
