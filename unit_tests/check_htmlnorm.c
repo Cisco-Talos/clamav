@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include "checks.h"
+#include "../libclamav/fmap.h"
 #include "../libclamav/dconf.h"
 #include "../libclamav/htmlnorm.h"
 #include "../libclamav/others.h"
@@ -106,7 +107,7 @@ START_TEST (test_htmlnorm_api)
 {
 	int fd;
 	tag_arguments_t hrefs;
-	struct F_MAP *map;
+	fmap_t *map;
 
 	memset(&hrefs, 0, sizeof(hrefs));
 
