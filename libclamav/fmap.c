@@ -305,7 +305,7 @@ static void *fmap_need(fmap_t *m, size_t at, size_t len, int lock) {
 	return NULL;
 
     if(!CLI_ISCONTAINED(0, m->len, at, len)) {
-	cli_warnmsg("fmap: attempted oof need\n");
+	cli_dbgmsg("fmap: attempted oof need\n");
 	return NULL;
     }
 
@@ -406,10 +406,8 @@ void *fmap_need_offstr(fmap_t *m, size_t at, size_t len_hint) {
     if(!len_hint || len_hint > m->len - at)
 	len_hint = m->len - at;
 
-    if(!CLI_ISCONTAINED(0, m->len, at, len_hint)) {
-	cli_warnmsg("fmap: attempted oof need_str\n");
+    if(!CLI_ISCONTAINED(0, m->len, at, len_hint))
 	return NULL;
-    }
 
     fmap_aging(m);
 
@@ -446,10 +444,8 @@ void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) {
     char *src = (void *)((char *)m + m->hdrsz + *at), *endptr = NULL;
     size_t len = MIN(max_len-1, m->len - *at), fullen = len;
 
-    if(!len || !CLI_ISCONTAINED(0, m->len, *at, len)) {
-        cli_warnmsg("fmap: attempted oof need_str\n");
+    if(!len || !CLI_ISCONTAINED(0, m->len, *at, len))
 	return NULL;
-    }
 
     fmap_aging(m);
 
@@ -520,7 +516,7 @@ fmap_t *fmap(int fd, off_t offset, size_t len) { /* WIN32 */
     }
 
     pages = fmap_align_items(len, pgsz);
-    hdrsz = fmap_align_to(sizeof(fmap_t);
+    hdrsz = fmap_align_to(sizeof(fmap_t), pgsz);
 
     if(!(m = (fmap_t *)cli_malloc(sizeof(fmap_t)))) {
 	cli_errmsg("fmap: canot allocate fmap_t\n", fd);
@@ -531,12 +527,12 @@ fmap_t *fmap(int fd, off_t offset, size_t len) { /* WIN32 */
 	free(m);
 	return NULL;
     }
-    if(!(m->mh = CreateFileMapping(m->fh, NULL, PAGE_READONLY, (DWORD)(len>>32), (DWORD)len, NULL))) {
+    if(!(m->mh = CreateFileMapping(m->fh, NULL, PAGE_READONLY, (DWORD)((len>>31)>>1), (DWORD)len, NULL))) {
 	cli_errmsg("fmap: cannot create a map of descriptor %d\n", fd);
 	free(m);
 	return NULL;
     }
-    if(!(m->data = MapViewOfFile(m->mh, FILE_MAP_READ, (DWORD)(offset>>32), (DWORD)(offset), len))) {
+    if(!(m->data = MapViewOfFile(m->mh, FILE_MAP_READ, (DWORD)((offset>>31)>>1), (DWORD)(offset), len))) {
 	cli_errmsg("fmap: cannot map file descriptor %d\n", fd);
 	CloseHandle(m->mh);
 	free(m);
@@ -562,7 +558,7 @@ void funmap(fmap_t *m) { /* WIN32 */
 
 static void *fmap_need(fmap_t *m, size_t at, size_t len) { /* WIN32 */
     if(!CLI_ISCONTAINED(0, m->len, at, len)) {
-	cli_warnmsg("fmap: attempted oof need\n");
+	cli_dbgmsg("fmap: attempted oof need\n");
 	return NULL;
     }
     if(!len)
@@ -593,10 +589,8 @@ void *fmap_need_offstr(fmap_t *m, size_t at, size_t len_hint) { /* WIN32 */
     if(!len_hint || len_hint > m->len - at)
 	len_hint = m->len - at;
 
-    if(!CLI_ISCONTAINED(0, m->len, at, len_hint)) {
-	cli_warnmsg("fmap: attempted oof need_str\n");
+    if(!CLI_ISCONTAINED(0, m->len, at, len_hint))
 	return NULL;
-    }
 
     if(memchr(ptr, 0, len_hint))
 	return (void *)ptr;
@@ -612,10 +606,8 @@ void *fmap_gets(fmap_t *m, char *dst, size_t *at, size_t max_len) { /* WIN32 */
     char *src = (char *)m->data + *at, *endptr = NULL;
     size_t len = MIN(max_len-1, m->len - *at);
 
-    if(!len || !CLI_ISCONTAINED(0, m->len, *at, len)) {
-        cli_warnmsg("fmap: attempted oof need_str\n");
+    if(!len || !CLI_ISCONTAINED(0, m->len, *at, len))
 	return NULL;
-    }
 
     if((endptr = memchr(src, '\n', len))) {
 	endptr++;
