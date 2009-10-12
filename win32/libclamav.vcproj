@@ -186,51 +186,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libclamav\7z\7zBuf.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\7zCrc.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\Archive\7z\7zDecode.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\Archive\7z\7zExtract.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\7zFile.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\Archive\7z\7zHeader.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\Archive\7z\7zIn.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\Archive\7z\7zItem.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\7zStream.c"
-				>
-			</File>
-			<File
 				RelativePath="..\libclamav\aspack.c"
 				>
 			</File>
 			<File
 				RelativePath="..\libclamav\autoit.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\Bcj2.c"
 				>
 			</File>
 			<File
@@ -243,18 +203,6 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\blob.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\Bra.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\Bra86.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\BraIA64.c"
 				>
 			</File>
 			<File
@@ -271,10 +219,6 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\bytecode_vm.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\nsis\bzlib.c"
 				>
 			</File>
 			<File
@@ -346,10 +290,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libclamav\nsis\infblock.c"
-				>
-			</File>
-			<File
 				RelativePath="..\libclamav\inflate64.c"
 				>
 			</File>
@@ -362,10 +302,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libclamav\jsparse\js-norm.c"
-				>
-			</File>
-			<File
 				RelativePath="..\libclamav\line.c"
 				>
 			</File>
@@ -375,10 +311,6 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\lzma_iface.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\LzmaDec.c"
 				>
 			</File>
 			<File
@@ -427,10 +359,6 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\mspack.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\nsis\nulsft.c"
 				>
 			</File>
 			<File
@@ -486,27 +414,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\libclamav\regex\regcomp.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\regex\regerror.c"
-				>
-			</File>
-			<File
 				RelativePath="..\libclamav\regex_list.c"
 				>
 			</File>
 			<File
 				RelativePath="..\libclamav\regex_suffix.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\regex\regexec.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\regex\regfree.c"
 				>
 			</File>
 			<File
@@ -535,10 +447,6 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\str.c"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\regex\strlcpy.c"
 				>
 			</File>
 			<File
@@ -609,6 +517,258 @@
 				RelativePath="..\libclamav\yc.c"
 				>
 			</File>
+			<Filter
+				Name="nsis"
+				>
+				<File
+					RelativePath="..\libclamav\nsis\bzlib.c"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\nsis_bzlib"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\nsis_bzlib"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\libclamav\nsis\infblock.c"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\nsis_infblock"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\nsis_infblock"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\libclamav\nsis\nulsft.c"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="jsparse"
+				>
+				<File
+					RelativePath="..\libclamav\jsparse\js-norm.c"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="7z"
+				>
+				<File
+					RelativePath="..\libclamav\7z\7zBuf.c"
+					>
+				</File>
+				<File
+					RelativePath="..\libclamav\7z\7zCrc.c"
+					>
+				</File>
+				<File
+					RelativePath="..\libclamav\7z\Archive\7z\7zDecode.c"
+					>
+				</File>
+				<File
+					RelativePath="..\libclamav\7z\Archive\7z\7zExtract.c"
+					>
+				</File>
+				<File
+					RelativePath="..\libclamav\7z\7zFile.c"
+					>
+				</File>
+				<File
+					RelativePath="..\libclamav\7z\Archive\7z\7zHeader.c"
+					>
+				</File>
+				<File
+					RelativePath="..\libclamav\7z\Archive\7z\7zIn.c"
+					>
+				</File>
+				<File
+					RelativePath="..\libclamav\7z\Archive\7z\7zItem.c"
+					>
+				</File>
+				<File
+					RelativePath="..\libclamav\7z\7zStream.c"
+					>
+				</File>
+				<File
+					RelativePath="..\libclamav\7z\Bcj2.c"
+					>
+				</File>
+				<File
+					RelativePath="..\libclamav\7z\Bra.c"
+					>
+				</File>
+				<File
+					RelativePath="..\libclamav\7z\Bra86.c"
+					>
+				</File>
+				<File
+					RelativePath="..\libclamav\7z\LzmaDec.c"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="regex"
+				>
+				<File
+					RelativePath="..\libclamav\regex\regcomp.c"
+					>
+				</File>
+				<File
+					RelativePath="..\libclamav\regex\regerror.c"
+					>
+				</File>
+				<File
+					RelativePath="..\libclamav\regex\regexec.c"
+					>
+				</File>
+				<File
+					RelativePath="..\libclamav\regex\regfree.c"
+					>
+				</File>
+				<File
+					RelativePath="..\libclamav\regex\strlcpy.c"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="bzip2"
+				>
+				<File
+					RelativePath=".\3rdparty\bzip2\blocksort.c"
+					>
+				</File>
+				<File
+					RelativePath=".\3rdparty\bzip2\bzlib.c"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\3rdparty\bzip2\compress.c"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\compress_bzip2"
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							ObjectFile="$(IntDir)\compress_bzip2"
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath=".\3rdparty\bzip2\crctable.c"
+					>
+				</File>
+				<File
+					RelativePath=".\3rdparty\bzip2\decompress.c"
+					>
+				</File>
+				<File
+					RelativePath=".\3rdparty\bzip2\huffman.c"
+					>
+				</File>
+				<File
+					RelativePath=".\3rdparty\bzip2\randtable.c"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="zib"
+				>
+				<File
+					RelativePath=".\3rdparty\zlib\adler32.c"
+					>
+				</File>
+				<File
+					RelativePath=".\3rdparty\zlib\compress.c"
+					>
+				</File>
+				<File
+					RelativePath=".\3rdparty\zlib\crc32.c"
+					>
+				</File>
+				<File
+					RelativePath=".\3rdparty\zlib\deflate.c"
+					>
+				</File>
+				<File
+					RelativePath=".\3rdparty\zlib\gzio.c"
+					>
+				</File>
+				<File
+					RelativePath=".\3rdparty\zlib\inffast.c"
+					>
+				</File>
+				<File
+					RelativePath=".\3rdparty\zlib\inflate.c"
+					>
+				</File>
+				<File
+					RelativePath=".\3rdparty\zlib\inftrees.c"
+					>
+				</File>
+				<File
+					RelativePath=".\3rdparty\zlib\trees.c"
+					>
+				</File>
+				<File
+					RelativePath=".\3rdparty\zlib\uncompr.c"
+					>
+				</File>
+				<File
+					RelativePath=".\3rdparty\zlib\zutil.c"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="shared"
+				>
+				<File
+					RelativePath="..\shared\getopt.c"
+					>
+				</File>
+				<File
+					RelativePath="..\shared\optparser.c"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"

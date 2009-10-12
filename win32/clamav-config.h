@@ -444,7 +444,7 @@
 /* #undef NEED_USCORE */
 
 /* bzip funtions do not have bz2 prefix */
-/* #undef NOBZ2PREFIX */
+/* #define NOBZ2PREFIX */
 
 /* "no fd_set" */
 /* #undef NO_FD_SET */
