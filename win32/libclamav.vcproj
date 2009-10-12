@@ -242,10 +242,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\compat\dirent.c"
-				>
-			</File>
-			<File
 				RelativePath="..\libclamav\disasm.c"
 				>
 			</File>
@@ -303,10 +299,6 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\line.c"
-				>
-			</File>
-			<File
-				RelativePath=".\compat\ltdl.c"
 				>
 			</File>
 			<File
@@ -766,6 +758,22 @@
 				</File>
 				<File
 					RelativePath="..\shared\optparser.c"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="compat"
+				>
+				<File
+					RelativePath=".\compat\dirent.c"
+					>
+				</File>
+				<File
+					RelativePath=".\compat\gettimeofday.c"
+					>
+				</File>
+				<File
+					RelativePath=".\compat\ltdl.c"
 					>
 				</File>
 			</Filter>

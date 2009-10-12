@@ -1,3 +1,7 @@
+Mon Oct 12 23:39:30 CEST 2009 (acab)
+------------------------------------
+ * win32: libclamav compiles
+
 Mon Oct 12 23:33:32 CEST 2009 (acab)
 ------------------------------------
  * /win32: VC project file and 3rd party stuff
