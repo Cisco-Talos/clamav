@@ -60,7 +60,6 @@ int main(int argc, char **argv)
 	int ds, dms, ret;
 	double mb, rmb;
 	struct timeval t1, t2;
-	struct timezone tz;
 #ifndef _WIN32
 	sigset_t sigset;
 #endif
@@ -143,12 +142,12 @@ int main(int argc, char **argv)
 
     memset(&info, 0, sizeof(struct s_info));
 
-    gettimeofday(&t1, &tz);
+    gettimeofday(&t1, NULL);
 
     ret = scanmanager(opts);
 
     if(!optget(opts, "no-summary")->enabled) {
-	gettimeofday(&t2, &tz);
+	gettimeofday(&t2, NULL);
 
     ds = t2.tv_sec - t1.tv_sec;
 	dms = t2.tv_usec - t1.tv_usec;
