@@ -11,7 +11,11 @@
 typedef int ssize_t;
 #define strcasecmp lstrcmpi
 #define strncasecmp strnicmp
+
+/* FIXME: this one is b0rked */
 #define snprintf _snprintf
+
+#define PATH_MAX 32767
 
 #define S_IRUSR S_IREAD
 #define S_IWUSR S_IWRITE
@@ -22,6 +26,8 @@ typedef int ssize_t;
 #define W_OK 2
 #define R_OK 4
 #define X_OK R_OK
+
+#define SEARCH_LIBDIR "."
 
 #ifndef MIN
 #define MIN(a, b)	(((a) < (b)) ? (a) : (b))

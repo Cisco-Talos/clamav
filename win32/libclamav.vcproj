@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav&quot;;&quot;$(SolutionDir)\3rdparty\zlib&quot;;&quot;$(SolutionDir)\3rdparty\pthreads&quot;;&quot;$(SolutionDir)\3rdparty\bzip2&quot;;&quot;$(SolutionDir)..&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav&quot;;&quot;$(SolutionDir)\compat&quot;;&quot;$(SolutionDir)\3rdparty\zlib&quot;;&quot;$(SolutionDir)\3rdparty\pthreads&quot;;&quot;$(SolutionDir)\3rdparty\bzip2&quot;;&quot;$(SolutionDir)..\libltdl&quot;;&quot;$(SolutionDir)..&quot;"
 				PreprocessorDefinitions="WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -117,7 +117,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav&quot;;&quot;$(SolutionDir)\3rdparty\zlib&quot;;&quot;$(SolutionDir)\3rdparty\pthreads&quot;;&quot;$(SolutionDir)\3rdparty\bzip2&quot;;&quot;$(SolutionDir)..&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav&quot;;&quot;$(SolutionDir)\compat&quot;;&quot;$(SolutionDir)\3rdparty\zlib&quot;;&quot;$(SolutionDir)\3rdparty\pthreads&quot;;&quot;$(SolutionDir)\3rdparty\bzip2&quot;;&quot;$(SolutionDir)..\libltdl&quot;;&quot;$(SolutionDir)..&quot;"
 				PreprocessorDefinitions="WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -181,11 +181,51 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libclamav\7z\7zBuf.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\7zCrc.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\Archive\7z\7zDecode.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\Archive\7z\7zExtract.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\7zFile.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\Archive\7z\7zHeader.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\Archive\7z\7zIn.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\Archive\7z\7zItem.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\7zStream.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\aspack.c"
 				>
 			</File>
 			<File
 				RelativePath="..\libclamav\autoit.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\Bcj2.c"
 				>
 			</File>
 			<File
@@ -198,6 +238,18 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\blob.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\Bra.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\Bra86.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\BraIA64.c"
 				>
 			</File>
 			<File
@@ -234,6 +286,10 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\dconf.c"
+				>
+			</File>
+			<File
+				RelativePath=".\compat\dirent.c"
 				>
 			</File>
 			<File
@@ -301,6 +357,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libclamav\7z\LzmaDec.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\macho.c"
 				>
 			</File>
@@ -330,6 +390,10 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\mew.c"
+				>
+			</File>
+			<File
+				RelativePath="..\shared\misc.c"
 				>
 			</File>
 			<File
@@ -507,11 +571,47 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libclamav\7z\7zBuf.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\7zCrc.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\Archive\7z\7zDecode.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\Archive\7z\7zExtract.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\7zFile.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\Archive\7z\7zHeader.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\Archive\7z\7zIn.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\Archive\7z\7zItem.h"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\aspack.h"
 				>
 			</File>
 			<File
 				RelativePath="..\libclamav\autoit.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\Bcj2.h"
 				>
 			</File>
 			<File
@@ -528,6 +628,10 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\blob.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\Bra.h"
 				>
 			</File>
 			<File
@@ -564,6 +668,10 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\cpio.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\CpuArch.h"
 				>
 			</File>
 			<File
@@ -679,6 +787,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libclamav\7z\LzmaDec.h"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\macho.h"
 				>
 			</File>
@@ -708,6 +820,10 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\mew.h"
+				>
+			</File>
+			<File
+				RelativePath="..\shared\misc.h"
 				>
 			</File>
 			<File
@@ -824,6 +940,10 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\type_desc.h"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\7z\Types.h"
 				>
 			</File>
 			<File

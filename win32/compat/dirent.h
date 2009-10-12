@@ -25,19 +25,21 @@
 #include "clamav-config.h"
 #endif
 
-#define _DIRENT_HAVE_D_TYPE
+//#define _DIRENT_HAVE_D_TYPE
+
+typedef unsigned long ino_t;
 
 typedef struct {
 	HANDLE dh;
 	WIN32_FIND_DATAW wfd;
-	char entry[MAX_PATH];
+	struct dirent {
+		ino_t d_ino;	/* inode number */
+		unsigned char d_type;	/* type of file */
+		char d_name[MAX_PATH];	/* filename */
+	} ent;
+	wchar_t entry[PATH_MAX];
 } DIR;
 
-struct dirent {
-	char d_ino;			/* inode number */
-	unsigned char d_type;	/* type of file */
-	char d_name[MAX_PATH];	/* filename */
-};
 
 enum {
 	DT_BLOCK,

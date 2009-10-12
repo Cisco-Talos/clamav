@@ -216,7 +216,7 @@
 /* #undef HAVE_INTTYPES_H */
 
 /* in_addr_t is defined */
-#define HAVE_IN_ADDR_T 1
+/* #define HAVE_IN_ADDR_T */
 
 /* in_port_t is defined */
 #define HAVE_IN_PORT_T 1
@@ -346,7 +346,7 @@
 #define HAVE_STDLIB_H 1
 
 /* Define to 1 if you have the `strcasestr' function. */
-#define HAVE_STRCASESTR 1
+/* #define HAVE_STRCASESTR */
 
 /* Define to 1 if you have the `strerror_r' function. */
 #define HAVE_STRERROR_R 1
