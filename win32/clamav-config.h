@@ -424,10 +424,10 @@
 #define LT_DLSEARCH_PATH "/lib:/usr/lib:/usr/local/lib:/usr/lib/atlas:/usr/local/lib:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu"
 
 /* The archive extension */
-#define LT_LIBEXT "a"
+#define LT_LIBEXT "dll"
 
 /* Define to the extension used for runtime loadable modules, say, ".so". */
-#define LT_MODULE_EXT ".so"
+#define LT_MODULE_EXT ".dll"
 
 /* Define to the name of the environment variable that determines the run-time
    module search path. */

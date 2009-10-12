@@ -25,9 +25,8 @@
 #include "clamav-config.h"
 #endif
 
-//#define _DIRENT_HAVE_D_TYPE
-
-typedef unsigned long ino_t;
+#define _DIRENT_HAVE_D_TYPE
+typedef unsigned short ino_t; /* WTF?!? */
 
 typedef struct {
 	HANDLE dh;

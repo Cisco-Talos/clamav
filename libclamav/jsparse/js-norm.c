@@ -35,7 +35,7 @@
 #include <assert.h>
 
 #include "cltypes.h"
-#include "lexglobal.h"
+#include "jsparse/lexglobal.h"
 #include "hashtab.h"
 #include "others.h"
 #include "str.h"

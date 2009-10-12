@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav&quot;;&quot;$(SolutionDir)\compat&quot;;&quot;$(SolutionDir)\3rdparty\zlib&quot;;&quot;$(SolutionDir)\3rdparty\pthreads&quot;;&quot;$(SolutionDir)\3rdparty\bzip2&quot;;&quot;$(SolutionDir)..\libltdl&quot;;&quot;$(SolutionDir)..&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav&quot;;&quot;$(SolutionDir)\compat&quot;;&quot;$(SolutionDir)\3rdparty\zlib&quot;;&quot;$(SolutionDir)\3rdparty\pthreads&quot;;&quot;$(SolutionDir)\3rdparty\bzip2&quot;;&quot;$(SolutionDir)..&quot;"
 				PreprocessorDefinitions="WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -63,7 +63,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="ws2_32.lib"
 				LinkIncremental="2"
+				IgnoreAllDefaultLibraries="false"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -117,7 +119,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav&quot;;&quot;$(SolutionDir)\compat&quot;;&quot;$(SolutionDir)\3rdparty\zlib&quot;;&quot;$(SolutionDir)\3rdparty\pthreads&quot;;&quot;$(SolutionDir)\3rdparty\bzip2&quot;;&quot;$(SolutionDir)..\libltdl&quot;;&quot;$(SolutionDir)..&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav&quot;;&quot;$(SolutionDir)\compat&quot;;&quot;$(SolutionDir)\3rdparty\zlib&quot;;&quot;$(SolutionDir)\3rdparty\pthreads&quot;;&quot;$(SolutionDir)\3rdparty\bzip2&quot;;&quot;$(SolutionDir)..&quot;"
 				PreprocessorDefinitions="WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
@@ -138,7 +140,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				UseLibraryDependencyInputs="true"
+				AdditionalDependencies="ws2_32.lib"
 				LinkIncremental="1"
+				IgnoreAllDefaultLibraries="false"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"
@@ -269,6 +274,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libclamav\nsis\bzlib.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\cab.c"
 				>
 			</File>
@@ -337,6 +346,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libclamav\nsis\infblock.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\inflate64.c"
 				>
 			</File>
@@ -349,7 +362,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libclamav\jsparse\js-norm.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\line.c"
+				>
+			</File>
+			<File
+				RelativePath=".\compat\ltdl.c"
 				>
 			</File>
 			<File
@@ -409,6 +430,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libclamav\nsis\nulsft.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\ole2_extract.c"
 				>
 			</File>
@@ -449,6 +474,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\3rdparty\pthreads\pthread.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\readdb.c"
 				>
 			</File>
@@ -457,11 +486,27 @@
 				>
 			</File>
 			<File
+				RelativePath="..\libclamav\regex\regcomp.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\regex\regerror.c"
+				>
+			</File>
+			<File
 				RelativePath="..\libclamav\regex_list.c"
 				>
 			</File>
 			<File
 				RelativePath="..\libclamav\regex_suffix.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\regex\regexec.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\regex\regfree.c"
 				>
 			</File>
 			<File
@@ -490,6 +535,10 @@
 			</File>
 			<File
 				RelativePath="..\libclamav\str.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamav\regex\strlcpy.c"
 				>
 			</File>
 			<File
@@ -566,434 +615,6 @@
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
-			<File
-				RelativePath="..\libclamav\7z.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\7zBuf.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\7zCrc.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\Archive\7z\7zDecode.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\Archive\7z\7zExtract.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\7zFile.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\Archive\7z\7zHeader.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\Archive\7z\7zIn.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\Archive\7z\7zItem.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\aspack.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\autoit.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\Bcj2.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\bignum.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\bignum_class.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\binhex.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\blob.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\Bra.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\bytecode.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\bytecode_api.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\bytecode_priv.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\cab.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\chmunpack.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\clamav.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\clambc.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\cltypes.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\cpio.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\CpuArch.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\cvd.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\dconf.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\default.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\disasm.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\disasmpriv.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\dlp.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\dsig.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\elf.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\encoding_aliases.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\entconv.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\entitylist.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\execs.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\explode.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\filetypes.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\filetypes_int.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\fmap.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\fsg.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\hashtab.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\htmlnorm.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\iana_cctld.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\iana_tld.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\inffixed64.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\inflate64.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\inflate64_priv.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\is_tar.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\ishield.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\line.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\lzma_iface.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\LzmaDec.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\macho.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\matcher-ac.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\matcher-bm.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\matcher.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\mbox.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\md5.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\message.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\mew.h"
-				>
-			</File>
-			<File
-				RelativePath="..\shared\misc.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\mpool.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\msexpand.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\mspack.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\ole2_extract.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\others.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\packlibs.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\pdf.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\pe.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\petite.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\phish_domaincheck_db.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\phish_whitelist.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\phishcheck.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\readdb.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\rebuildpe.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\regex_list.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\regex_suffix.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\rtf.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\scanners.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\sha256.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\sis.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\special.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\spin.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\str.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\table.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\text.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\textdet.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\textnorm.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\tnef.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\type_desc.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\7z\Types.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\unarj.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\uniq.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\unsp.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\untar.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\unzip.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\upack.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\upx.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\uuencode.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\vba_extract.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\version.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\wwunpack.h"
-				>
-			</File>
-			<File
-				RelativePath="..\libclamav\yc.h"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"

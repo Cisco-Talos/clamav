@@ -11,6 +11,8 @@
 typedef int ssize_t;
 #define strcasecmp lstrcmpi
 #define strncasecmp strnicmp
+#define mkdir(path, mode) mkdir(path)
+#define lstat stat
 
 /* FIXME: this one is b0rked */
 #define snprintf _snprintf
@@ -20,14 +22,15 @@ typedef int ssize_t;
 #define S_IRUSR S_IREAD
 #define S_IWUSR S_IWRITE
 #define S_IRWXU (S_IRUSR|S_IWUSR)
-#define mkdir(path, mode) mkdir(path)
-#define lstat stat
+#define S_ISDIR(mode) ((_S_IFDIR & mode)!=0)
+#define S_ISREG(mode) ((_S_IFREG & mode)!=0)
+#define S_ISLNK(mode) (0)
 #define F_OK 0
 #define W_OK 2
 #define R_OK 4
 #define X_OK R_OK
 
-#define SEARCH_LIBDIR "."
+#define SEARCH_LIBDIR ""
 
 #ifndef MIN
 #define MIN(a, b)	(((a) < (b)) ? (a) : (b))
