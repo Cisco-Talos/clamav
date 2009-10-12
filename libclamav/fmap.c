@@ -27,7 +27,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #if HAVE_MMAP
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
@@ -123,7 +125,7 @@ fmap_t *fmap(int fd, off_t offset, size_t len) {
     } else {
 	dumb = 0;
 #if HAVE_MADVISE
-	madvise(m, mapsz, MADV_RANDOM|MADV_DONTFORK);
+	madvise((void *)m, mapsz, MADV_RANDOM|MADV_DONTFORK);
 #endif /* madvise */
     }
 #else /* ! HAVE_MMAP */

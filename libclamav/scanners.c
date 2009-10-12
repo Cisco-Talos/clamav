@@ -22,7 +22,9 @@
 #include "clamav-config.h"
 #endif
 
+#ifndef _WIN32
 #include <sys/time.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -71,7 +73,7 @@
 #include "cab.h"
 #include "rtf.h"
 #include "unarj.h"
-#include "nulsft.h"
+#include "nsis/nulsft.h"
 #include "autoit.h"
 #include "textnorm.h"
 #include <zlib.h>
