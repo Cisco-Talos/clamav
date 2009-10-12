@@ -8,14 +8,13 @@
 #include <io.h>
 #include <direct.h>
 
+#include "snprintf.h"
+
 typedef int ssize_t;
 #define strcasecmp lstrcmpi
 #define strncasecmp strnicmp
 #define mkdir(path, mode) mkdir(path)
 #define lstat stat
-
-/* FIXME: this one is b0rked */
-#define snprintf _snprintf
 
 #define PATH_MAX 32767
 

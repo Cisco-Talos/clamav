@@ -776,6 +776,10 @@
 					RelativePath=".\compat\ltdl.c"
 					>
 				</File>
+				<File
+					RelativePath=".\compat\snprintf.c"
+					>
+				</File>
 			</Filter>
 		</Filter>
 		<Filter

@@ -1,3 +1,7 @@
+Tue Oct 13 00:54:05 CEST 2009 (acab)
+------------------------------------
+ * win32/compat: add POSIX compatible snprintf
+
 Mon Oct 12 23:39:30 CEST 2009 (acab)
 ------------------------------------
  * win32: libclamav compiles
