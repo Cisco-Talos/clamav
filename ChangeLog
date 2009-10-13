@@ -1,3 +1,7 @@
+Tue Oct 13 20:13:53 CEST 2009 (acab)
+------------------------------------
+ * win32: clamscan builds (and will scan soon...)
+
 Tue Oct 13 00:54:05 CEST 2009 (acab)
 ------------------------------------
  * win32/compat: add POSIX compatible snprintf

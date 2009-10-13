@@ -8,13 +8,19 @@
 #include <io.h>
 #include <direct.h>
 
+#include "gettimeofday.h"
 #include "snprintf.h"
 
 typedef int ssize_t;
+typedef unsigned short mode_t;
 #define strcasecmp lstrcmpi
 #define strncasecmp strnicmp
 #define mkdir(path, mode) mkdir(path)
 #define lstat stat
+
+/* FIXME: need to wrap all win32 and winsock functions and map
+    (WSA)GetLastError to errno */
+#define EWOULDBLOCK         31337
 
 #define PATH_MAX 32767
 
