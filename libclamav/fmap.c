@@ -66,7 +66,7 @@ static inline unsigned int fmap_which_page(fmap_t *m, size_t at);
 #define UNPAGE_THRSHLD_HI 8*1024*1024
 #define READAHEAD_PAGES 8
 
-#if defined(HAVE_MMAP) && defined(C_LINUX)
+#if defined(HAVE_MMAP) && defined(C_LINUX) && defined(CL_THREAD_SAFE)
 /*
    WORKAROUND
    Relieve some stress on mmap_sem.
