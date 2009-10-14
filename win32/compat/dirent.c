@@ -24,71 +24,73 @@
 #include "shared/misc.h"
 
 DIR *opendir(const char *name) {
-	DIR *d;
-	DWORD attrs;
+    DIR *d;
+    DWORD attrs;
+    int len;
 
-	if(!(d = cli_malloc(sizeof(*d)))) {
-		errno = ENOMEM;
-		return NULL;
-	}
-	if(!(MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, name, -1, d->entry, sizeof(d->entry) / sizeof(d->entry[0])))) {
-		free(d);
-		errno = (GetLastError() == ERROR_INSUFFICIENT_BUFFER) ? ENAMETOOLONG : ENOENT;
-		return NULL;
-	}
-	/* FIXME: this should be UNC'd */
-	if((attrs = GetFileAttributesW(d->entry)) == INVALID_FILE_ATTRIBUTES) {
-		free(d);
-		errno = ENOENT;
-		return NULL;
-	}
-	if(!(attrs & FILE_ATTRIBUTE_DIRECTORY)) {
-		free(d);
-		errno = ENOTDIR;
-		return NULL;
-	}
-	d->dh = INVALID_HANDLE_VALUE;
-	return d;
+    if(!(d = cli_malloc(sizeof(*d)))) {
+	errno = ENOMEM;
+	return NULL;
+    }
+    len = MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, name, -1, d->entry, sizeof(d->entry) / sizeof(d->entry[0]));
+    if(!len || len >= PATH_MAX - 4) {
+	free(d);
+	errno = (len || (GetLastError() == ERROR_INSUFFICIENT_BUFFER)) ? ENAMETOOLONG : ENOENT;
+	return NULL;
+    }
+    /* FIXME: this should be UNC'd */
+    if((attrs = GetFileAttributesW(d->entry)) == INVALID_FILE_ATTRIBUTES) {
+	free(d);
+	errno = ENOENT;
+	return NULL;
+    }
+    if(!(attrs & FILE_ATTRIBUTE_DIRECTORY)) {
+	free(d);
+	errno = ENOTDIR;
+	return NULL;
+    }
+    wcsncat(d->entry, L"\\*.*", 4);
+    d->dh = INVALID_HANDLE_VALUE;
+    return d;
 }
 
 struct dirent *readdir(DIR *dirp) {
-	while(1) {
-		BOOL cant_convert;
-		if(dirp->dh == INVALID_HANDLE_VALUE) {
-			if((dirp->dh = FindFirstFileW(dirp->entry, &dirp->wfd)) == INVALID_HANDLE_VALUE) {
-				errno = ENOENT;
-				return NULL;
-			}
-		} else {
-			if(!(FindNextFileW(dirp->dh, &dirp->wfd))) {
-				errno = (GetLastError() == ERROR_NO_MORE_FILES) ? 0 : ENOENT;
-				return NULL;
-			}
-		}
-		if(!WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, dirp->wfd.cFileName, -1, dirp->ent.d_name, sizeof(dirp->ent.d_name), NULL, &cant_convert) ||
-			cant_convert || 
-			!WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, dirp->wfd.cAlternateFileName, -1, dirp->ent.d_name, sizeof(dirp->ent.d_name), NULL, &cant_convert) ||
-			cant_convert ||
-			!dirp->ent.d_name[0]) {
-			/* FIXME: WARN HERE ! */
-			continue;
-		}
-		dirp->ent.d_ino = dirp->wfd.ftCreationTime.dwLowDateTime ^ dirp->wfd.nFileSizeLow;
-		if(!dirp->ent.d_ino) dirp->ent.d_ino = 0x1337;
-		dirp->ent.d_type = (dirp->wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? DT_DIR : DT_REG;
-		break;
+    while(1) {
+	BOOL cant_convert;
+	if(dirp->dh == INVALID_HANDLE_VALUE) {
+	    if((dirp->dh = FindFirstFileW(dirp->entry, &dirp->wfd)) == INVALID_HANDLE_VALUE) {
+		errno = ENOENT;
+		return NULL;
+	    }
+	} else {
+	    if(!(FindNextFileW(dirp->dh, &dirp->wfd))) {
+		errno = (GetLastError() == ERROR_NO_MORE_FILES) ? 0 : ENOENT;
+		return NULL;
+	    }
 	}
-	return &dirp->ent;
+	if(
+	    (!WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, dirp->wfd.cFileName, -1, dirp->ent.d_name, sizeof(dirp->ent.d_name), NULL, &cant_convert) || cant_convert) &&
+	    (!WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, dirp->wfd.cAlternateFileName, -1, dirp->ent.d_name, sizeof(dirp->ent.d_name), NULL, &cant_convert) || cant_convert)
+	    ) {
+		/* FIXME: WARN HERE ! */
+		continue;
+	}
+	dirp->ent.d_ino = dirp->wfd.ftCreationTime.dwLowDateTime ^ dirp->wfd.nFileSizeLow;
+	if(!dirp->ent.d_ino) dirp->ent.d_ino = 0x1337;
+	dirp->ent.d_type = (dirp->wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? DT_DIR : DT_REG;
+	break;
+    }
+    return &dirp->ent;
 }
 
 void rewinddir(DIR *dirp) {
-	if(dirp->dh != INVALID_HANDLE_VALUE)
-		FindClose(dirp->dh);
-	dirp->dh = INVALID_HANDLE_VALUE;
+    if(dirp->dh != INVALID_HANDLE_VALUE)
+	FindClose(dirp->dh);
+    dirp->dh = INVALID_HANDLE_VALUE;
 }
 
 int closedir(DIR *dirp) {
-	rewinddir(dirp);
-	free(dirp);
-	return 0;
+    rewinddir(dirp);
+    free(dirp);
+    return 0;
 }

@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="clamscan"
-	ProjectGUID="{F79E7CA7-E49D-479E-8D68-0EA9CB585575}"
-	RootNamespace="clamscan"
+	Name="libclamunrar"
+	ProjectGUID="{41B2E193-92E3-429C-8DAC-9B287E3D7182}"
+	RootNamespace="libclamunrar"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -20,7 +20,7 @@
 			Name="Debug|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(SolutionDir)build\$(ProjectName)\$(ConfigurationName)"
-			ConfigurationType="1"
+			ConfigurationType="2"
 			CharacterSet="2"
 			>
 			<Tool
@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav&quot;;&quot;$(SolutionDir)compat&quot;;&quot;$(SolutionDir)3rdparty\zlib&quot;;&quot;$(SolutionDir)3rdparty\pthreads&quot;;&quot;$(SolutionDir)3rdparty\bzip2&quot;;&quot;$(SolutionDir)..&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)compat&quot;;&quot;$(SolutionDir)..&quot;"
 				PreprocessorDefinitions="WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -50,7 +50,7 @@
 				WarningLevel="3"
 				DebugInformationFormat="3"
 				CompileAs="1"
-				DisableSpecificWarnings="4996;4244;4018;4090;4333;4101;4146"
+				DisableSpecificWarnings="4996;4244;4018;4146"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -64,8 +64,9 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkIncremental="1"
+				ModuleDefinitionFile="$(SolutionDir)libclamunrar.def"
 				GenerateDebugInformation="true"
-				SubSystem="1"
+				SubSystem="2"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -94,7 +95,7 @@
 			Name="Release|Win32"
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(SolutionDir)build\$(ProjectName)\$(ConfigurationName)"
-			ConfigurationType="1"
+			ConfigurationType="2"
 			CharacterSet="2"
 			WholeProgramOptimization="1"
 			>
@@ -117,7 +118,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav&quot;;&quot;$(SolutionDir)compat&quot;;&quot;$(SolutionDir)3rdparty\zlib&quot;;&quot;$(SolutionDir)3rdparty\pthreads&quot;;&quot;$(SolutionDir)3rdparty\bzip2&quot;;&quot;$(SolutionDir)..&quot;"
+				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)compat&quot;;&quot;$(SolutionDir)..&quot;"
 				PreprocessorDefinitions="WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
@@ -126,7 +127,7 @@
 				WarningLevel="3"
 				DebugInformationFormat="3"
 				CompileAs="1"
-				DisableSpecificWarnings="4996;4244;4018;4090;4333;4101;4146"
+				DisableSpecificWarnings="4996;4244;4018;4146"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -140,8 +141,9 @@
 			<Tool
 				Name="VCLinkerTool"
 				LinkIncremental="1"
+				ModuleDefinitionFile="$(SolutionDir)libclamunrar.def"
 				GenerateDebugInformation="true"
-				SubSystem="1"
+				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				TargetMachine="1"
@@ -178,49 +180,37 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\clamscan\clamscan.c"
+				RelativePath="..\libclamunrar\unrar.c"
 				>
 			</File>
 			<File
-				RelativePath="..\clamscan\manager.c"
+				RelativePath="..\libclamunrar\unrar15.c"
 				>
 			</File>
 			<File
-				RelativePath="..\clamscan\others.c"
+				RelativePath="..\libclamunrar\unrar20.c"
 				>
 			</File>
-			<Filter
-				Name="compat"
+			<File
+				RelativePath="..\libclamunrar\unrarcmd.c"
 				>
-				<File
-					RelativePath=".\compat\libgen.c"
-					>
-				</File>
-			</Filter>
-			<Filter
-				Name="shared"
+			</File>
+			<File
+				RelativePath="..\libclamunrar\unrarfilter.c"
 				>
-				<File
-					RelativePath="..\shared\actions.c"
-					>
-				</File>
-				<File
-					RelativePath="..\shared\getopt.c"
-					>
-				</File>
-				<File
-					RelativePath="..\shared\misc.c"
-					>
-				</File>
-				<File
-					RelativePath="..\shared\optparser.c"
-					>
-				</File>
-				<File
-					RelativePath="..\shared\output.c"
-					>
-				</File>
-			</Filter>
+			</File>
+			<File
+				RelativePath="..\libclamunrar\unrarhlp.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamunrar\unrarppm.c"
+				>
+			</File>
+			<File
+				RelativePath="..\libclamunrar\unrarvm.c"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -233,6 +223,10 @@
 			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
 			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
 			>
+			<File
+				RelativePath=".\libclamunrar.def"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

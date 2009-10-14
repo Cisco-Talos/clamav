@@ -1,12 +1,11 @@
 /*
- *  Copyright (C) 2007-2009 Sourcefire, Inc.
+ *  Copyright (C) 2009 Sourcefire, Inc.
  *
- *  Authors: Nigel Horne
+ *  Authors: aCaB <acab@clamav.net>
  *
  *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+ *  it under the terms of the GNU General Public License version 2 as
+ *  published by the Free Software Foundation.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -17,20 +16,11 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *  MA 02110-1301, USA.
- *
  */
 
-#ifndef __NETWORK_H
-#define __NETWORK_H
+#ifndef __NET_H
+#define __NET_H
 
-#ifdef	HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-
-#ifndef	_WIN32
-#include <netdb.h>
-#endif
-
-int r_gethostbyname(const char *hostname, struct hostent *hp, char *buf, size_t len);
+int w32_send(int sockfd, const void *buf, size_t len, int flags);
 
 #endif

@@ -40,7 +40,6 @@
 
 #include "shared/optparser.h"
 #include "shared/output.h"
-#include "shared/network.h"
 
 #include "others.h"
 #include "server.h"

@@ -1,3 +1,15 @@
+Wed Oct 14 19:03:47 CEST 2009 (acab)
+------------------------------------
+ * win32: remove stale netcode
+
+Wed Oct 14 18:59:13 CEST 2009 (acab)
+------------------------------------
+ * win32: preliminary winsock support files
+
+Wed Oct 14 01:26:47 CEST 2009 (acab)
+------------------------------------
+ * win32: unrar support
+
 Tue Oct 13 20:13:53 CEST 2009 (acab)
 ------------------------------------
  * win32: clamscan builds (and will scan soon...)

@@ -21,8 +21,6 @@
 #include "clamav-config.h"
 #endif
 
-/* TODO: Add support for dlopen()&Co. */
-
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>

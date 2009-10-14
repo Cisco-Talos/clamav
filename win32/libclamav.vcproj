@@ -48,7 +48,7 @@
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
-				DebugInformationFormat="4"
+				DebugInformationFormat="3"
 				CompileAs="1"
 				DisableSpecificWarnings="4996;4244;4018;4090;4333;4101;4146"
 			/>
@@ -64,7 +64,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="ws2_32.lib"
-				LinkIncremental="2"
+				LinkIncremental="1"
 				IgnoreAllDefaultLibraries="false"
 				ModuleDefinitionFile="$(SolutionDir)libclamav.def"
 				GenerateDebugInformation="true"
@@ -123,6 +123,7 @@
 				AdditionalIncludeDirectories="&quot;$(SolutionDir)&quot;;&quot;$(SolutionDir)..\libclamav&quot;;&quot;$(SolutionDir)compat&quot;;&quot;$(SolutionDir)3rdparty\zlib&quot;;&quot;$(SolutionDir)3rdparty\pthreads&quot;;&quot;$(SolutionDir)3rdparty\bzip2&quot;;&quot;$(SolutionDir)..&quot;"
 				PreprocessorDefinitions="WIN32_LEAN_AND_MEAN;HAVE_CONFIG_H"
 				RuntimeLibrary="2"
+				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -779,7 +780,23 @@
 					>
 				</File>
 				<File
+					RelativePath=".\compat\net.c"
+					>
+				</File>
+				<File
+					RelativePath=".\compat\net.h"
+					>
+				</File>
+				<File
 					RelativePath=".\compat\snprintf.c"
+					>
+				</File>
+				<File
+					RelativePath=".\compat\w32_errno.c"
+					>
+				</File>
+				<File
+					RelativePath=".\compat\w32_errno.h"
 					>
 				</File>
 			</Filter>
