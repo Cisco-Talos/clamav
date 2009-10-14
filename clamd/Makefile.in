@@ -78,8 +78,7 @@ am__clamd_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 	$(top_srcdir)/shared/output.h $(top_srcdir)/shared/optparser.c \
 	$(top_srcdir)/shared/optparser.h $(top_srcdir)/shared/getopt.c \
 	$(top_srcdir)/shared/getopt.h $(top_srcdir)/shared/misc.c \
-	$(top_srcdir)/shared/misc.h $(top_srcdir)/shared/network.c \
-	$(top_srcdir)/shared/network.h clamd.c tcpserver.c tcpserver.h \
+	$(top_srcdir)/shared/misc.h clamd.c tcpserver.c tcpserver.h \
 	localserver.c localserver.h session.c session.h thrmgr.c \
 	thrmgr.h server-th.c server.h scanner.c scanner.h others.c \
 	others.h clamuko.c clamuko.h clamukofs.c clamukofs.h \
@@ -87,12 +86,12 @@ am__clamd_SOURCES_DIST = $(top_srcdir)/shared/output.c \
 	dazuko_xp.h dazukoio_xp.h dazukofs.c dazukofs.h shared.h
 @BUILD_CLAMD_TRUE@am_clamd_OBJECTS = output.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	optparser.$(OBJEXT) getopt.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	misc.$(OBJEXT) network.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	clamd.$(OBJEXT) tcpserver.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	localserver.$(OBJEXT) session.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	thrmgr.$(OBJEXT) server-th.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	scanner.$(OBJEXT) others.$(OBJEXT) \
-@BUILD_CLAMD_TRUE@	clamuko.$(OBJEXT) clamukofs.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	misc.$(OBJEXT) clamd.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	tcpserver.$(OBJEXT) localserver.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	session.$(OBJEXT) thrmgr.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	server-th.$(OBJEXT) scanner.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	others.$(OBJEXT) clamuko.$(OBJEXT) \
+@BUILD_CLAMD_TRUE@	clamukofs.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	dazukoio_compat12.$(OBJEXT) \
 @BUILD_CLAMD_TRUE@	dazukoio.$(OBJEXT) dazukofs.$(OBJEXT)
 clamd_OBJECTS = $(am_clamd_OBJECTS)
@@ -297,8 +296,6 @@ top_srcdir = @top_srcdir@
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/getopt.h \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/misc.c \
 @BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/misc.h \
-@BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/network.c \
-@BUILD_CLAMD_TRUE@    $(top_srcdir)/shared/network.h \
 @BUILD_CLAMD_TRUE@    clamd.c \
 @BUILD_CLAMD_TRUE@    tcpserver.c \
 @BUILD_CLAMD_TRUE@    tcpserver.h \
@@ -446,7 +443,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/localserver.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/misc.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/network.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optparser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/others.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/output.Po@am__quote@
@@ -543,22 +539,6 @@ misc.obj: $(top_srcdir)/shared/misc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/misc.c' object='misc.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o misc.obj `if test -f '$(top_srcdir)/shared/misc.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/misc.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/misc.c'; fi`
-
-network.o: $(top_srcdir)/shared/network.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT network.o -MD -MP -MF $(DEPDIR)/network.Tpo -c -o network.o `test -f '$(top_srcdir)/shared/network.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/network.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/network.Tpo $(DEPDIR)/network.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/network.c' object='network.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o network.o `test -f '$(top_srcdir)/shared/network.c' || echo '$(srcdir)/'`$(top_srcdir)/shared/network.c
-
-network.obj: $(top_srcdir)/shared/network.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT network.obj -MD -MP -MF $(DEPDIR)/network.Tpo -c -o network.obj `if test -f '$(top_srcdir)/shared/network.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/network.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/network.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/network.Tpo $(DEPDIR)/network.Po
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_srcdir)/shared/network.c' object='network.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o network.obj `if test -f '$(top_srcdir)/shared/network.c'; then $(CYGPATH_W) '$(top_srcdir)/shared/network.c'; else $(CYGPATH_W) '$(srcdir)/$(top_srcdir)/shared/network.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

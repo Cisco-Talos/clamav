@@ -1,3 +1,7 @@
+Wed Oct 14 19:03:47 CEST 2009 (acab)
+------------------------------------
+ * win32: remove stale netcode
+
 Wed Oct 14 18:59:13 CEST 2009 (acab)
 ------------------------------------
  * win32: preliminary winsock support files

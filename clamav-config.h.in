@@ -187,15 +187,6 @@
 /* have getaddrinfo() */
 #undef HAVE_GETADDRINFO
 
-/* gethostbyname_r takes 3 arguments */
-#undef HAVE_GETHOSTBYNAME_R_3
-
-/* gethostbyname_r takes 5 arguments */
-#undef HAVE_GETHOSTBYNAME_R_5
-
-/* gethostbyname_r takes 6 arguments */
-#undef HAVE_GETHOSTBYNAME_R_6
-
 /* Define to 1 if getpagesize() is available */
 #undef HAVE_GETPAGESIZE
 

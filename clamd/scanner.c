@@ -59,7 +59,6 @@
 #include "others.h"
 #include "scanner.h"
 #include "shared.h"
-#include "network.h"
 #include "thrmgr.h"
 #include "server.h"
 

@@ -1,5 +1,5 @@
 dnl   Copyright (C) 2002 - 2006 Tomasz Kojm <tkojm@clamav.net>
-dnl   gethostbyname_r and readdir_r checks (c) COPYRIGHT MIT 1995
+dnl   readdir_r checks (c) COPYRIGHT MIT 1995
 dnl   socklen_t check (c) Alexander V. Lukyanov <lav@yars.free.net>
 dnl
 dnl   This program is free software; you can redistribute it and/or modify
@@ -953,7 +953,6 @@ freebsd[[45]]*)
 	fi
     fi
     AC_DEFINE([C_BSD],1,[os is freebsd 4 or 5])
-    use_gethostbyname_r="no"
     ;;
 freebsd*)
     if test "$have_pthreads" = "yes"; then
@@ -966,7 +965,6 @@ freebsd*)
 	fi
     fi
     AC_DEFINE([C_BSD],1,[os is freebsd 6])
-    use_gethostbyname_r="no"
     ;;
 dragonfly*)
     if test "$have_pthreads" = "yes"; then
@@ -979,7 +977,6 @@ dragonfly*)
 	fi
     fi
     AC_DEFINE([C_BSD],1,[os is dragonfly])
-    use_gethostbyname_r="no"
     ;;
 openbsd*)
     if test "$have_pthreads" = "yes"; then
@@ -991,7 +988,6 @@ openbsd*)
 	AC_DEFINE([_REENTRANT],1,[thread safe])
     fi
     AC_DEFINE([C_BSD],1,[os is OpenBSD])
-    use_gethostbyname_r="no"
     ;;
 bsdi*)
     if test "$have_pthreads" = "yes"; then
@@ -1001,7 +997,6 @@ bsdi*)
 	AC_DEFINE([_REENTRANT],1,[thread safe])
     fi
     AC_DEFINE([C_BSD],1,[os is BSDI BSD/OS])
-    use_gethostbyname_r="no"
     ;;
 netbsd*)
      if test "$have_pthreads" = "yes"; then
@@ -1010,26 +1005,22 @@ netbsd*)
 	AC_DEFINE([_REENTRANT],1,[thread safe])
      fi
     AC_DEFINE([C_BSD],1,[os is NetBSD])
-    use_gethostbyname_r="no"
     ;;
 bsd*)
     AC_MSG_RESULT([Unknown BSD detected. Disabling thread support.])
     have_pthreads="no"
     AC_DEFINE([C_BSD],1,[os is bsd flavor])
-    use_gethostbyname_r="no"
     ;;
 beos*)
     AC_MSG_RESULT([BeOS detected. Disabling thread support.])
     have_pthreads="no"
     AC_DEFINE([C_BEOS],1,[os is beos])
-    use_gethostbyname_r="no"
     ;;
 darwin*)
     AC_DEFINE([C_BSD],1,[os is bsd flavor])
     AC_DEFINE([C_DARWIN],1,[os is darwin])
     AC_DEFINE([BIND_8_COMPAT],1,[enable bind8 compatibility])
     use_netinfo="yes"
-    use_gethostbyname_r="no"
     ;;
 os2*)
     FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsyslog"
@@ -1057,7 +1048,6 @@ hpux*)
 	AC_DEFINE([_REENTRANT],1,[thread safe])
     fi
     AC_DEFINE([C_HPUX],1,[os is hpux])
-    use_gethostbyname_r="no"
     ;;
 aix*)
     if test "$have_pthreads" = "yes"; then
@@ -1167,72 +1157,6 @@ then
     AC_CHECK_FUNCS([sched_yield pthread_yield])
     LIBS="$save_LIBS"
     AC_DEFINE([BUILD_CLAMD], 1, "build clamd")
-fi
-
-dnl Check for gethostbyname_r and number of its arguments
-dnl Code from libwww/configure.in
-AC_MSG_CHECKING([for gethostbyname_r])
-if test -z "$ac_cv_gethostbyname_args"; then
-AC_TRY_COMPILE(
-[
-#include <sys/types.h>
-#include <netdb.h>
-],[
-struct hostent *hp;
-struct hostent h;
-char *name;
-char buffer[10];
-int  h_errno;
-hp = gethostbyname_r(name, &h, buffer, 10, &h_errno);
-], ac_cv_gethostbyname_args=5)
-fi
-if test -z "$ac_cv_gethostbyname_args"; then
-AC_TRY_COMPILE(
-[
-#include <sys/types.h>
-#include <netdb.h>
-],[
-struct hostent h;
-struct hostent_data hdata;
-char *name;
-int  rc;
-rc = gethostbyname_r(name, &h, &hdata);
-], ac_cv_gethostbyname_args=3)
-fi
-if test -z "$ac_cv_gethostbyname_args"; then
-AC_TRY_COMPILE(
-[
-#include <sys/types.h>
-#include <netdb.h>
-], [
-struct hostent h;
-struct hostent *hp;
-char *name;
-char buf[10];
-int rc;
-int h_errno;
-
-rc = gethostbyname_r(name, &h, buf, 10, &hp, &h_errno);
-], ac_cv_gethostbyname_args=6)
-fi
-
-AC_ARG_ENABLE([gethostbyname_r],
-[  --disable-gethostbyname_r	  disable support for gethostbyname_r],
-use_gethostbyname_r=$enableval,)
-
-if test "$use_gethostbyname_r" = "no"; then
-    AC_MSG_RESULT([support disabled])
-elif test -z "$ac_cv_gethostbyname_args"; then
-    AC_MSG_RESULT(no)
-else
-    if test "$ac_cv_gethostbyname_args" = 3; then
-	AC_DEFINE([HAVE_GETHOSTBYNAME_R_3],1,[gethostbyname_r takes 3 arguments])
-    elif test "$ac_cv_gethostbyname_args" = 5; then
-	AC_DEFINE([HAVE_GETHOSTBYNAME_R_5],1,[gethostbyname_r takes 5 arguments])
-    elif test "$ac_cv_gethostbyname_args" = 6; then
-	AC_DEFINE([HAVE_GETHOSTBYNAME_R_6],1,[gethostbyname_r takes 6 arguments])
-    fi
-    AC_MSG_RESULT([yes, and it takes $ac_cv_gethostbyname_args arguments])
 fi
 
 dnl Check for readdir_r and number of its arguments

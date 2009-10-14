@@ -970,7 +970,6 @@ enable_no_cache
 enable_dns_fix
 enable_bigstack
 with_dbdir
-enable_gethostbyname_r
 enable_readdir_r
 enable_fdpassing
 enable_clamdtop
@@ -1642,7 +1641,6 @@ Optional Features:
   --enable-no-cache	  use "Cache-Control: no-cache" in freshclam
   --enable-dns-fix	  enable workaround for broken DNS servers (as in SpeedTouch 510)
   --enable-bigstack	  increase thread stack size
-  --disable-gethostbyname_r	  disable support for gethostbyname_r
   --enable-readdir_r		    enable support for readdir_r
   --disable-fdpassing        don't build file descriptor passing support
   --enable-clamdtop       Enable 'clamdtop' tool [default=auto]
@@ -5130,13 +5128,13 @@ if test "${lt_cv_nm_interface+set}" = set; then :
 else
   lt_cv_nm_interface="BSD nm"
   echo "int some_variable = 0;" > conftest.$ac_ext
-  (eval echo "\"\$as_me:5133: $ac_compile\"" >&5)
+  (eval echo "\"\$as_me:5131: $ac_compile\"" >&5)
   (eval "$ac_compile" 2>conftest.err)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5136: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
+  (eval echo "\"\$as_me:5134: $NM \\\"conftest.$ac_objext\\\"\"" >&5)
   (eval "$NM \"conftest.$ac_objext\"" 2>conftest.err > conftest.out)
   cat conftest.err >&5
-  (eval echo "\"\$as_me:5139: output\"" >&5)
+  (eval echo "\"\$as_me:5137: output\"" >&5)
   cat conftest.out >&5
   if $GREP 'External.*some_variable' conftest.out > /dev/null; then
     lt_cv_nm_interface="MS dumpbin"
@@ -6331,7 +6329,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 6334 "configure"' > conftest.$ac_ext
+  echo '#line 6332 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -7860,11 +7858,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:7863: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:7861: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:7867: \$? = $ac_status" >&5
+   echo "$as_me:7865: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8199,11 +8197,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8202: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8200: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8206: \$? = $ac_status" >&5
+   echo "$as_me:8204: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8304,11 +8302,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8307: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8305: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8311: \$? = $ac_status" >&5
+   echo "$as_me:8309: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -8359,11 +8357,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8362: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8360: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8366: \$? = $ac_status" >&5
+   echo "$as_me:8364: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10742,7 +10740,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 10745 "configure"
+#line 10743 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10838,7 +10836,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 10841 "configure"
+#line 10839 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11510,7 +11508,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<_LT_EOF
-#line 11513 "configure"
+#line 11511 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -16516,7 +16514,6 @@ $as_echo "#define CLAMUKO 1" >>confdefs.h
 
 $as_echo "#define C_BSD 1" >>confdefs.h
 
-    use_gethostbyname_r="no"
     ;;
 freebsd*)
     if test "$have_pthreads" = "yes"; then
@@ -16537,7 +16534,6 @@ $as_echo "#define CLAMUKO 1" >>confdefs.h
 
 $as_echo "#define C_BSD 1" >>confdefs.h
 
-    use_gethostbyname_r="no"
     ;;
 dragonfly*)
     if test "$have_pthreads" = "yes"; then
@@ -16558,7 +16554,6 @@ $as_echo "#define CLAMUKO 1" >>confdefs.h
 
 $as_echo "#define C_BSD 1" >>confdefs.h
 
-    use_gethostbyname_r="no"
     ;;
 openbsd*)
     if test "$have_pthreads" = "yes"; then
@@ -16576,7 +16571,6 @@ $as_echo "#define _REENTRANT 1" >>confdefs.h
 
 $as_echo "#define C_BSD 1" >>confdefs.h
 
-    use_gethostbyname_r="no"
     ;;
 bsdi*)
     if test "$have_pthreads" = "yes"; then
@@ -16592,7 +16586,6 @@ $as_echo "#define _REENTRANT 1" >>confdefs.h
 
 $as_echo "#define C_BSD 1" >>confdefs.h
 
-    use_gethostbyname_r="no"
     ;;
 netbsd*)
      if test "$have_pthreads" = "yes"; then
@@ -16607,7 +16600,6 @@ $as_echo "#define _REENTRANT 1" >>confdefs.h
 
 $as_echo "#define C_BSD 1" >>confdefs.h
 
-    use_gethostbyname_r="no"
     ;;
 bsd*)
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: Unknown BSD detected. Disabling thread support." >&5
@@ -16616,7 +16608,6 @@ $as_echo "Unknown BSD detected. Disabling thread support." >&6; }
 
 $as_echo "#define C_BSD 1" >>confdefs.h
 
-    use_gethostbyname_r="no"
     ;;
 beos*)
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: BeOS detected. Disabling thread support." >&5
@@ -16625,7 +16616,6 @@ $as_echo "BeOS detected. Disabling thread support." >&6; }
 
 $as_echo "#define C_BEOS 1" >>confdefs.h
 
-    use_gethostbyname_r="no"
     ;;
 darwin*)
 
@@ -16638,7 +16628,6 @@ $as_echo "#define C_DARWIN 1" >>confdefs.h
 $as_echo "#define BIND_8_COMPAT 1" >>confdefs.h
 
     use_netinfo="yes"
-    use_gethostbyname_r="no"
     ;;
 os2*)
     FRESHCLAM_LIBS="$FRESHCLAM_LIBS -lsyslog"
@@ -16674,7 +16663,6 @@ $as_echo "#define _REENTRANT 1" >>confdefs.h
 
 $as_echo "#define C_HPUX 1" >>confdefs.h
 
-    use_gethostbyname_r="no"
     ;;
 aix*)
     if test "$have_pthreads" = "yes"; then
@@ -16997,121 +16985,6 @@ done
 
 $as_echo "#define BUILD_CLAMD 1" >>confdefs.h
 
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for gethostbyname_r" >&5
-$as_echo_n "checking for gethostbyname_r... " >&6; }
-if test -z "$ac_cv_gethostbyname_args"; then
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <sys/types.h>
-#include <netdb.h>
-
-int
-main ()
-{
-
-struct hostent *hp;
-struct hostent h;
-char *name;
-char buffer[10];
-int  h_errno;
-hp = gethostbyname_r(name, &h, buffer, 10, &h_errno);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv_gethostbyname_args=5
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-if test -z "$ac_cv_gethostbyname_args"; then
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <sys/types.h>
-#include <netdb.h>
-
-int
-main ()
-{
-
-struct hostent h;
-struct hostent_data hdata;
-char *name;
-int  rc;
-rc = gethostbyname_r(name, &h, &hdata);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv_gethostbyname_args=3
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-if test -z "$ac_cv_gethostbyname_args"; then
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-#include <sys/types.h>
-#include <netdb.h>
-
-int
-main ()
-{
-
-struct hostent h;
-struct hostent *hp;
-char *name;
-char buf[10];
-int rc;
-int h_errno;
-
-rc = gethostbyname_r(name, &h, buf, 10, &hp, &h_errno);
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ac_cv_gethostbyname_args=6
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-fi
-
-# Check whether --enable-gethostbyname_r was given.
-if test "${enable_gethostbyname_r+set}" = set; then :
-  enableval=$enable_gethostbyname_r; use_gethostbyname_r=$enableval
-fi
-
-
-if test "$use_gethostbyname_r" = "no"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: support disabled" >&5
-$as_echo "support disabled" >&6; }
-elif test -z "$ac_cv_gethostbyname_args"; then
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-else
-    if test "$ac_cv_gethostbyname_args" = 3; then
-
-$as_echo "#define HAVE_GETHOSTBYNAME_R_3 1" >>confdefs.h
-
-    elif test "$ac_cv_gethostbyname_args" = 5; then
-
-$as_echo "#define HAVE_GETHOSTBYNAME_R_5 1" >>confdefs.h
-
-    elif test "$ac_cv_gethostbyname_args" = 6; then
-
-$as_echo "#define HAVE_GETHOSTBYNAME_R_6 1" >>confdefs.h
-
-    fi
-    { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes, and it takes $ac_cv_gethostbyname_args arguments" >&5
-$as_echo "yes, and it takes $ac_cv_gethostbyname_args arguments" >&6; }
 fi
 
 
