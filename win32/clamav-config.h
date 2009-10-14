@@ -83,7 +83,7 @@
 /* #undef C_SOLARIS */
 
 /* Path to virus database directory. */
-#define DATADIR "/usr/local/share/clamav"
+#define DATADIR "c:\\db"
 
 /* "default FD_SETSIZE value" */
 #define DEFAULT_FD_SETSIZE 1024

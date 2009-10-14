@@ -7,9 +7,11 @@
 #include <stdlib.h>
 #include <io.h>
 #include <direct.h>
+#include <Ws2tcpip.h>
 
 #include "gettimeofday.h"
 #include "snprintf.h"
+#include "net.h"
 
 typedef int ssize_t;
 typedef unsigned short mode_t;
@@ -18,9 +20,14 @@ typedef unsigned short mode_t;
 #define mkdir(path, mode) mkdir(path)
 #define lstat stat
 
+#define socket w32_socket
+#define connect w32_connect
+#define send w32_send
+//#define getsockopt(sock, lvl, name, val, len) getsockopt(sock, lvl, name, (char *)(val), len)
+
 /* FIXME: need to wrap all win32 and winsock functions and map
     (WSA)GetLastError to errno */
-#define EWOULDBLOCK         31337
+#define EWOULDBLOCK EAGAIN
 
 #define PATH_MAX 32767
 

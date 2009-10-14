@@ -33,6 +33,6 @@ EXPORTS snprintf
 ; winsock - bridging for now
 EXPORTS htonl
 EXPORTS htons
-EXPORTS send
+EXPORTS w32_send
 EXPORTS select
 EXPORTS gethostbyname

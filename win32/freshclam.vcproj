@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="clamscan"
-	ProjectGUID="{F79E7CA7-E49D-479E-8D68-0EA9CB585575}"
-	RootNamespace="clamscan"
+	Name="freshclam"
+	ProjectGUID="{CEA52DD8-0418-42AD-B640-F33CC7C600CE}"
+	RootNamespace="freshclam"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="196613"
 	>
@@ -178,49 +178,33 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\clamscan\clamscan.c"
+				RelativePath="..\freshclam\dns.c"
 				>
 			</File>
 			<File
-				RelativePath="..\clamscan\manager.c"
+				RelativePath="..\freshclam\execute.c"
 				>
 			</File>
 			<File
-				RelativePath="..\clamscan\others.c"
+				RelativePath="..\freshclam\freshclam.c"
 				>
 			</File>
-			<Filter
-				Name="compat"
+			<File
+				RelativePath="..\freshclam\manager.c"
 				>
-				<File
-					RelativePath=".\compat\libgen.c"
-					>
-				</File>
-			</Filter>
-			<Filter
-				Name="shared"
+			</File>
+			<File
+				RelativePath="..\freshclam\mirman.c"
 				>
-				<File
-					RelativePath="..\shared\actions.c"
-					>
-				</File>
-				<File
-					RelativePath="..\shared\getopt.c"
-					>
-				</File>
-				<File
-					RelativePath="..\shared\misc.c"
-					>
-				</File>
-				<File
-					RelativePath="..\shared\optparser.c"
-					>
-				</File>
-				<File
-					RelativePath="..\shared\output.c"
-					>
-				</File>
-			</Filter>
+			</File>
+			<File
+				RelativePath="..\freshclam\nonblock.c"
+				>
+			</File>
+			<File
+				RelativePath="..\freshclam\notify.c"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
