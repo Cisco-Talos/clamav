@@ -32,7 +32,7 @@
 #define CL_THREAD_SAFE 1
 
 /* where to look for the config file */
-#define CONFDIR "/usr/local/etc"
+#define CONFDIR "C:\\ClamAV"
 
 /* curses header location */
 /* #define CURSES_INCLUDE <ncurses.h>
@@ -83,7 +83,7 @@
 /* #undef C_SOLARIS */
 
 /* Path to virus database directory. */
-#define DATADIR "c:\\db"
+#define DATADIR "c:\\ClamAV\\db"
 
 /* "default FD_SETSIZE value" */
 #define DEFAULT_FD_SETSIZE 1024
@@ -304,7 +304,7 @@
 #define HAVE_RECVMSG 1
 
 /* have resolv.h */
-/* #undef HAVE_RESOLV_H */
+#define HAVE_RESOLV_H 1
 
 /* Define signed right shift implementation */
 #define HAVE_SAR 1

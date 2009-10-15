@@ -788,10 +788,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\compat\net.h"
-					>
-				</File>
-				<File
 					RelativePath=".\compat\snprintf.c"
 					>
 				</File>

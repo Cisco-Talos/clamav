@@ -33,6 +33,7 @@ ssize_t w32_send(int sockfd, const void *buf, size_t len, int flags);
 ssize_t w32_recv(int sockfd, void *buf, size_t len, int flags);
 int w32_closesocket(int sockfd);
 struct servent *w32_getservbyname(const char *name, const char *proto);
+#define endservent()
 int w32_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res);
 void w32_freeaddrinfo(struct addrinfo *res);
 const char *w32_inet_ntop(int af, const void *src, char *dst, socklen_t size);
