@@ -3,7 +3,7 @@
 # Solaris's /bin/sh is not a POSIX shell, and
 # it quits when cd fails, even if it is followed by a ||
 # So enable -e only on POSIX shells
-(cd /nonexistentdir || true) && set -e
+(cd /nonexistentdir 2>/dev/null || true) && set -e
 
 WRAPPER=${WRAPPER-}
 TOP=`pwd`/..
