@@ -211,7 +211,7 @@ static int wwwconnect(const char *server, const char *proxy, int pport, char *ip
 		else
 			port = 8080;
 
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
 		endservent();
 #endif
 	}

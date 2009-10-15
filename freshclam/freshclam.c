@@ -166,8 +166,9 @@ static int download(const struct optstruct *opts, const char *datadir, const cha
     } else {
 	while(opt) {
 	    ret = downloadmanager(opts, opt->strarg, datadir, try == maxattempts - 1);
+#ifndef _WIN32
 	    alarm(0);
-
+#endif
 	    if(ret == 52 || ret == 54 || ret == 58 || ret == 59) {
 		if(try < maxattempts - 1) {
 		    logg("Trying again in 5 secs...\n");
@@ -199,7 +200,7 @@ int main(int argc, char **argv)
 	char *pt;
 	struct optstruct *opts;
 	const struct optstruct *opt;
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
 	struct sigaction sigact;
 	struct sigaction oldact;
 #endif
@@ -297,7 +298,7 @@ int main(int argc, char **argv)
 	    return 61;
 	}
     }
-#endif
+#endif /* HAVE_PWD_H */
 
     /* initialize some important variables */
 
@@ -373,7 +374,7 @@ int main(int argc, char **argv)
 
     if(optget(opts, "daemon")->enabled) {
 	    int bigsleep, checks;
-#ifndef	C_WINDOWS
+#ifndef	_WIN32
 	    time_t now, wakeup;
 
 	memset(&sigact, 0, sizeof(struct sigaction));

@@ -205,6 +205,42 @@
 				RelativePath="..\freshclam\notify.c"
 				>
 			</File>
+			<Filter
+				Name="shared"
+				>
+				<File
+					RelativePath="..\shared\cdiff.c"
+					>
+				</File>
+				<File
+					RelativePath="..\shared\getopt.c"
+					>
+				</File>
+				<File
+					RelativePath="..\shared\misc.c"
+					>
+				</File>
+				<File
+					RelativePath="..\shared\optparser.c"
+					>
+				</File>
+				<File
+					RelativePath="..\shared\output.c"
+					>
+				</File>
+				<File
+					RelativePath="..\shared\tar.c"
+					>
+				</File>
+			</Filter>
+			<Filter
+				Name="compat"
+				>
+				<File
+					RelativePath=".\compat\strptime.c"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Header Files"

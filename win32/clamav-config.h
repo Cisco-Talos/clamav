@@ -188,20 +188,11 @@
 /* have getaddrinfo() */
 #define HAVE_GETADDRINFO 1
 
-/* gethostbyname_r takes 3 arguments */
-/* #undef HAVE_GETHOSTBYNAME_R_3 */
-
-/* gethostbyname_r takes 5 arguments */
-/* #undef HAVE_GETHOSTBYNAME_R_5 */
-
-/* gethostbyname_r takes 6 arguments */
-#define HAVE_GETHOSTBYNAME_R_6 1
-
 /* Define to 1 if getpagesize() is available */
 #define HAVE_GETPAGESIZE 1
 
 /* Define to 1 if you have the <grp.h> header file. */
-#define HAVE_GRP_H 1
+/* #undef HAVE_GRP_H */
 
 /* iconv() available */
 /* #undef HAVE_ICONV 1 */
@@ -313,7 +304,7 @@
 #define HAVE_RECVMSG 1
 
 /* have resolv.h */
-#define HAVE_RESOLV_H 1
+/* #undef HAVE_RESOLV_H */
 
 /* Define signed right shift implementation */
 #define HAVE_SAR 1

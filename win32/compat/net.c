@@ -1,4 +1,6 @@
 #include <winsock2.h>
+#include <Ws2tcpip.h>
+#include "net.h"
 #include "w32_errno.h"
 
 static void wsock2errno() {
@@ -187,36 +189,100 @@ static void wsock2errno() {
     }
 }
 
-int w32_send(int sockfd, const void *buf, size_t len, int flags) {
-    int ret;
-    if(WSASend((SOCKET)sockfd, (LPWSABUF)buf, (DWORD)len, (LPDWORD)&ret, (DWORD)flags, NULL, NULL)) {
+int w32_socket(int domain, int type, int protocol) {
+    SOCKET s = socket(domain, type, protocol);
+    if(s == INVALID_SOCKET) {
+	wsock2errno();
+	return -1;
+    }
+    return (int)s;
+}
+
+int w32_getsockopt(int sockfd, int level, int optname, void *optval, socklen_t *optlen) {
+    if(getsockopt((SOCKET)sockfd, level, optname, (char *)optval, optlen) == SOCKET_ERROR) {
+	wsock2errno();
+	return -1;
+    }
+    return 0;
+}
+
+int w32_setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen) {
+    if(setsockopt((SOCKET)sockfd, level, optname, (const char*)optval, optlen) == SOCKET_ERROR) {
+	wsock2errno();
+	return -1;
+    }
+    return 0;
+}
+
+int w32_bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
+    if(bind((SOCKET)sockfd, addr, addrlen) == SOCKET_ERROR) {
+	wsock2errno();
+	return -1;
+    }
+    return 0;
+}
+
+int w32_connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
+    if(connect((SOCKET)sockfd, addr, addrlen)) {
+	wsock2errno();
+	return -1;
+    }
+    return 0;
+}
+
+ssize_t w32_send(int sockfd, const void *buf, size_t len, int flags) {
+    int ret = recv((SOCKET)sockfd, (const char *)buf, (int)len, flags);
+    if(ret == SOCKET_ERROR) {
+	wsock2errno();
+	return -1;
+    }
+    return (ssize_t)ret;
+}
+
+ssize_t w32_recv(int sockfd, void *buf, size_t len, int flags) {
+    int ret = recv((SOCKET)sockfd, (char *)buf, len, flags);
+    if(ret == SOCKET_ERROR) {
+	wsock2errno();
+	return -1;
+    }
+    return (ssize_t)ret;
+}
+
+int w32_closesocket(int sockfd) {
+    if(closesocket((SOCKET)sockfd) == SOCKET_ERROR) {
+	wsock2errno();
+	return -1;
+    }
+    return 0;
+}
+
+struct servent *w32_getservbyname(const char *name, const char *proto) {
+    return getservbyname(name, proto);
+}
+
+int w32_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res) {
+    return getaddrinfo(node, service, hints, res);
+}
+
+void w32_freeaddrinfo(struct addrinfo *res) {
+    freeaddrinfo(res);
+}
+
+const char *w32_inet_ntop(int af, const void *src, char *dst, socklen_t size) {
+    const char *ret = inet_ntoa(*(struct in_addr *)src);
+    if(!ret) wsock2errno();
+    return ret;
+}
+
+struct hostent *w32_gethostbyname(const char *name) {
+    return gethostbyname(name);
+}
+
+int w32_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout) {
+    int ret = select(nfds, readfds, writefds, exceptfds, timeout);
+    if(ret == SOCKET_ERROR) {
 	wsock2errno();
 	return -1;
     }
     return ret;
 }
-
-/*
-int w32_gethostbyname(const char *name) {
-    struct hostent *h = gethostbyname(name);
-    h_errno = 0;
-    if(!h) {
-	switch(WSAGetLastError()) {
-	    case WSAHOST_NOT_FOUND:
-		*h_errno = HOST_NOT_FOUND;
-		break;
-	    case WSATRY_AGAIN:
-		*h_errno = TRY_AGAIN;
-		break;
-	    case WSANO_RECOVERY:
-		*h_errno = NO_RECOVERY;
-		break;
-	    case WSANO_DATA:
-		*h_errno = NO_DATA;
-		break;
-	}
-    }
-    return h;
-}
-
-*/

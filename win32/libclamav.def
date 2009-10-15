@@ -14,6 +14,9 @@ EXPORTS cl_scandesc
 EXPORTS cl_scanfile
 EXPORTS cl_cvdfree
 EXPORTS cl_cvdhead
+EXPORTS cl_retflevel
+EXPORTS cl_cvdparse
+EXPORTS cl_cvdverify
 
 ; cli_stuff - should be mangled or exported by ordinal only
 EXPORTS cli_gentemp
@@ -22,17 +25,49 @@ EXPORTS cli_regcomp
 EXPORTS cli_regexec
 EXPORTS cli_regfree
 EXPORTS cli_ctime
+EXPORTS cli_rmdirs
+EXPORTS cli_isnumber
+EXPORTS cli_strtok
+EXPORTS cli_cvdunpack
+EXPORTS cli_decodesig
+EXPORTS cli_chomp
 
 ; shared stuff - to be either double compiled into the tools or treated like cli_xxx
-EXPORTS gettimeofday
 EXPORTS opendir
 EXPORTS readdir
 EXPORTS closedir
 EXPORTS snprintf
+EXPORTS mp_init
+EXPORTS mp_read_radix
+EXPORTS mp_clear
+EXPORTS sha256_init
+EXPORTS sha256_update
+EXPORTS sha256_final
+EXPORTS gzopen
+EXPORTS gzgets
+EXPORTS gzdopen
+EXPORTS gzclose
+EXPORTS gzwrite
 
 ; winsock - bridging for now
 EXPORTS htonl
 EXPORTS htons
+EXPORTS ntohs
+EXPORTS gettimeofday
+EXPORTS pthread_mutex_lock
+EXPORTS pthread_mutex_unlock
+
+EXPORTS w32_socket
+EXPORTS w32_getsockopt
+EXPORTS w32_setsockopt
+EXPORTS w32_bind
+EXPORTS w32_connect
 EXPORTS w32_send
-EXPORTS select
-EXPORTS gethostbyname
+EXPORTS w32_recv
+EXPORTS w32_closesocket
+EXPORTS w32_getservbyname
+EXPORTS w32_getaddrinfo
+EXPORTS w32_freeaddrinfo
+EXPORTS w32_inet_ntop
+EXPORTS w32_gethostbyname
+EXPORTS w32_select

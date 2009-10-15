@@ -8,26 +8,41 @@
 #include <io.h>
 #include <direct.h>
 #include <Ws2tcpip.h>
+#include <process.h>
 
 #include "gettimeofday.h"
 #include "snprintf.h"
 #include "net.h"
+#include "w32_errno.h"
 
-typedef int ssize_t;
 typedef unsigned short mode_t;
+
 #define strcasecmp lstrcmpi
 #define strncasecmp strnicmp
 #define mkdir(path, mode) mkdir(path)
 #define lstat stat
+#define sleep(sex) Sleep(sex)
+#define getuid() 0
+#define getgid() 0
+
+char *strptime(const char *s, const char *format, struct tm *tm);
 
 #define socket w32_socket
+#define getsockopt w32_getsockopt
+#define setsockopt w32_setsockopt
+#define bind w32_bind
 #define connect w32_connect
 #define send w32_send
-//#define getsockopt(sock, lvl, name, val, len) getsockopt(sock, lvl, name, (char *)(val), len)
+#define recv w32_recv
+#define closesocket w32_closesocket
+#define getservbyname w32_getservbyname
+#define getaddrinfo w32_getaddrinfo
+#define freeaddrinfo w32_freeaddrinfo
+#define inet_ntop w32_inet_ntop
+#define gethostbyname w32_gethostbyname
+#define select w32_select
 
-/* FIXME: need to wrap all win32 and winsock functions and map
-    (WSA)GetLastError to errno */
-#define EWOULDBLOCK EAGAIN
+#define getpid GetCurrentProcessId
 
 #define PATH_MAX 32767
 

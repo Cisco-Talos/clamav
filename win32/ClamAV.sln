@@ -16,6 +16,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libclamunrar", "libclamunrar.vcproj", "{41B2E193-92E3-429C-8DAC-9B287E3D7182}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "freshclam", "freshclam.vcproj", "{CEA52DD8-0418-42AD-B640-F33CC7C600CE}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3AD5B16C-340A-40AC-96AD-6017B941A316} = {3AD5B16C-340A-40AC-96AD-6017B941A316}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -40,6 +43,7 @@ Global
 		{41B2E193-92E3-429C-8DAC-9B287E3D7182}.Release|Win32.ActiveCfg = Release|Win32
 		{41B2E193-92E3-429C-8DAC-9B287E3D7182}.Release|Win32.Build.0 = Release|Win32
 		{CEA52DD8-0418-42AD-B640-F33CC7C600CE}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CEA52DD8-0418-42AD-B640-F33CC7C600CE}.Debug|Win32.Build.0 = Debug|Win32
 		{CEA52DD8-0418-42AD-B640-F33CC7C600CE}.Release|Win32.ActiveCfg = Release|Win32
 		{CEA52DD8-0418-42AD-B640-F33CC7C600CE}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
