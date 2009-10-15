@@ -53,14 +53,10 @@ void execute( const char *type, const char *text, const struct optstruct *opts )
     }
 
 #ifdef _WIN32
-	if(active_children < MAX_CHILDREN) {
-		if(spawnlp(P_DETACH, text, text, NULL) == -1) {
-			logg("^%s: couldn't execute \"%s\".\n", type, text);
-			return;
-		}
-		active_children++;	/* FIXME: this is never reduced */
-	} else
-		logg("^%s: already %d processes active.\n", type, active_children);
+    if(spawnlp(_P_NOWAIT, text, text, NULL) == -1) {
+	logg("^%s: couldn't execute \"%s\".\n", type, text);
+	return;
+    }
 #else
     if ( active_children<MAX_CHILDREN ) {
 	pid_t pid;
