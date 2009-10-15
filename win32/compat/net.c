@@ -231,7 +231,7 @@ int w32_connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
 }
 
 ssize_t w32_send(int sockfd, const void *buf, size_t len, int flags) {
-    int ret = recv((SOCKET)sockfd, (const char *)buf, (int)len, flags);
+    int ret = send((SOCKET)sockfd, (const char *)buf, (int)len, flags);
     if(ret == SOCKET_ERROR) {
 	wsock2errno();
 	return -1;
@@ -269,8 +269,22 @@ void w32_freeaddrinfo(struct addrinfo *res) {
 }
 
 const char *w32_inet_ntop(int af, const void *src, char *dst, socklen_t size) {
-    const char *ret = inet_ntoa(*(struct in_addr *)src);
-    if(!ret) wsock2errno();
+    const char *ret;
+
+    if(af != AF_INET) {
+	errno = EAFNOSUPPORT;
+	return NULL;
+    }
+    ret = inet_ntoa(*(struct in_addr *)src);
+    if(!ret) {
+	wsock2errno();
+	return NULL;
+    }
+    if(strlen(ret) >= size) {
+	errno = ENOSPC;
+	return NULL;
+    }
+    strcpy(dst, ret);
     return ret;
 }
 
