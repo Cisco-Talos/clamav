@@ -1,3 +1,7 @@
+Fri Oct 16 14:56:10 CEST 2009 (tk)
+----------------------------------
+ * clamdscan: fix some output msgs (bb#1716)
+
 Tue Oct  6 22:51:00 CEST 2009 (tk)
 ----------------------------------
  * shared/misc.h: #include <sys/types.h>
