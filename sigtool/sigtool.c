@@ -980,14 +980,13 @@ static int cvdinfo(const struct optstruct *opts)
     return 0;
 }
 
-static int listdb(const char *filename);
+static int listdb(const char *filename, const regex_t *regex);
 
-static int listdir(const char *dirname)
+static int listdir(const char *dirname, const regex_t *regex)
 {
 	DIR *dd;
 	struct dirent *dent;
 	char *dbfile;
-
 
     if((dd = opendir(dirname)) == NULL) {
         mprintf("!listdir: Can't open directory %s\n", dirname);
@@ -1021,7 +1020,7 @@ static int listdir(const char *dirname)
 		}
 		sprintf(dbfile, "%s"PATHSEP"%s", dirname, dent->d_name);
 
-		if(listdb(dbfile) == -1) {
+		if(listdb(dbfile, regex) == -1) {
 		    mprintf("!listdb: Error listing database %s\n", dbfile);
 		    free(dbfile);
 		    closedir(dd);
@@ -1036,7 +1035,7 @@ static int listdir(const char *dirname)
     return 0;
 }
 
-static int listdb(const char *filename)
+static int listdb(const char *filename, const regex_t *regex)
 {
 	FILE *fh;
 	char *buffer, *pt, *start, *dir;
@@ -1086,7 +1085,7 @@ static int listdb(const char *filename)
 	}
 
 	/* list extracted directory */
-	if(listdir(dir) == -1) {
+	if(listdir(dir, regex) == -1) {
 	    mprintf("!listdb: Can't list directory %s\n", filename);
 	    cli_rmdirs(dir);
 	    free(dir);
@@ -1102,6 +1101,11 @@ static int listdb(const char *filename)
     if(cli_strbcasestr(filename, ".db")) { /* old style database */
 
 	while(fgets(buffer, FILEBUFF, fh)) {
+	    if(regex) {
+		if(!cli_regexec(regex, buffer, 0, NULL, 0))
+		    mprintf("%s", buffer);
+		continue;
+	    }
 	    line++;
 	    pt = strchr(buffer, '=');
 	    if(!pt) {
@@ -1123,6 +1127,11 @@ static int listdb(const char *filename)
     } else if(cli_strbcasestr(filename, ".hdb") || cli_strbcasestr(filename, ".hdu") || cli_strbcasestr(filename, ".mdb") || cli_strbcasestr(filename, ".mdu")) { /* hash database */
 
 	while(fgets(buffer, FILEBUFF, fh)) {
+	    if(regex) {
+		if(!cli_regexec(regex, buffer, 0, NULL, 0))
+		    mprintf("%s", buffer);
+		continue;
+	    }
 	    line++;
 	    cli_chomp(buffer);
 	    start = cli_strtok(buffer, 2, ":");
@@ -1144,6 +1153,11 @@ static int listdb(const char *filename)
     } else if(cli_strbcasestr(filename, ".ndb") || cli_strbcasestr(filename, ".ndu") || cli_strbcasestr(filename, ".ldb") || cli_strbcasestr(filename, ".ldu") || cli_strbcasestr(filename, ".sdb") || cli_strbcasestr(filename, ".zmd") || cli_strbcasestr(filename, ".rmd")) {
 
 	while(fgets(buffer, FILEBUFF, fh)) {
+	    if(regex) {
+		if(!cli_regexec(regex, buffer, 0, NULL, 0))
+		    mprintf("%s", buffer);
+		continue;
+	    }
 	    line++;
 	    cli_chomp(buffer);
 
@@ -1171,31 +1185,45 @@ static int listdb(const char *filename)
     return 0;
 }
 
-static int listsigs(const struct optstruct *opts)
+static int listsigs(const struct optstruct *opts, int mode)
 {
 	int ret;
 	const char *name;
 	char *dbdir;
 	struct stat sb;
+	regex_t reg;
 
 
-    name = optget(opts, "list-sigs")->strarg;
-    if(stat(name, &sb) == -1) {
-	mprintf("--list-sigs: Can't get status of %s\n", name);
-	return -1;
-    }
-
-    mprintf_stdout = 1;
-    if(S_ISDIR(sb.st_mode)) {
-	if(!strcmp(name, DATADIR)) {
-	    dbdir = freshdbdir();
-	    ret = listdir(dbdir);
-	    free(dbdir);
-	} else {
-	    ret = listdir(name);
+    if(mode == 0) {
+	name = optget(opts, "list-sigs")->strarg;
+	if(stat(name, &sb) == -1) {
+	    mprintf("--list-sigs: Can't get status of %s\n", name);
+	    return -1;
 	}
+
+	mprintf_stdout = 1;
+	if(S_ISDIR(sb.st_mode)) {
+	    if(!strcmp(name, DATADIR)) {
+		dbdir = freshdbdir();
+		ret = listdir(dbdir, NULL);
+		free(dbdir);
+	    } else {
+		ret = listdir(name, NULL);
+	    }
+	} else {
+	    ret = listdb(name, NULL);
+	}
+
     } else {
-	ret = listdb(name);
+	if(cli_regcomp(&reg, optget(opts, "find-sigs")->strarg, REG_EXTENDED | REG_NOSUB) != 0) {
+	    mprintf("--find-sigs: Can't compile regex\n");
+	    return -1;
+	}
+	mprintf_stdout = 1;
+	dbdir = freshdbdir();
+	ret = listdir(dbdir, &reg);
+	free(dbdir);
+	cli_regfree(&reg);
     }
 
     return ret;
@@ -1798,6 +1826,7 @@ static void help(void)
     mprintf("    --unpack=FILE          -u FILE         Unpack a CVD/CLD file\n");
     mprintf("    --unpack-current=SHORTNAME             Unpack local CVD/CLD into cwd\n");
     mprintf("    --list-sigs[=FILE]     -l[FILE]        List signature names\n");
+    mprintf("    --find-sigs=REGEX      -fREGEX         Find signatures matching REGEX\n");
     mprintf("    --vba=FILE                             Extract VBA/Word6 macro code\n");
     mprintf("    --vba-hex=FILE                         Extract Word6 macro code with hex values\n");
     mprintf("    --diff=OLD NEW         -d OLD NEW      Create diff for OLD and NEW CVDs\n");
@@ -1860,7 +1889,9 @@ int main(int argc, char **argv)
     else if(optget(opts, "info")->enabled)
 	ret = cvdinfo(opts);
     else if(optget(opts, "list-sigs")->active)
-	ret = listsigs(opts);
+	ret = listsigs(opts, 0);
+    else if(optget(opts, "find-sigs")->active)
+	ret = listsigs(opts, 1);
     else if(optget(opts, "vba")->enabled || optget(opts, "vba-hex")->enabled)
 	ret = vbadump(opts);
     else if(optget(opts, "diff")->enabled)

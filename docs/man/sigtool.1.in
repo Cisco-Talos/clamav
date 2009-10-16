@@ -69,8 +69,11 @@ Execute update script FILE in current directory.
 \fB\-\-verify\-cdiff=FILE, \-r FILE\fR
 Verify DIFF against CVD/INCDIR.
 .TP 
-\fB\-l, \-\-list\-sigs\fR
-List signature names.
+\fB\-l[FILE], \-\-list\-sigs[=FILE]\fR
+List all signature names from the local database directory (default) or from FILE.
+.TP 
+\fB\-fREGEX, \-\-find\-sigs=REGEX\fR
+Find and display signatures from the local database directory which match the given REGEX. The whole signature body (name, hex string, etc.) is checked.
 .SH "EXAMPLES"
 .LP 
 .TP 
