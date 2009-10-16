@@ -71,3 +71,5 @@ EXPORTS w32_freeaddrinfo
 EXPORTS w32_inet_ntop
 EXPORTS w32_gethostbyname
 EXPORTS w32_select
+
+EXPORTS w32_stat

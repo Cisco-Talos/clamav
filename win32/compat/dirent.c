@@ -27,7 +27,16 @@ DIR *opendir(const char *name) {
     DIR *d;
     DWORD attrs;
     int len;
+    struct stat sb;
 
+    if(stat(name, &sb) < 0) {
+	errno = ENOENT; /* FIXME: should be set by stat() */
+	return NULL;
+    }
+    if(!S_ISDIR(sb.st_mode)) {
+	errno = ENOTDIR;
+	return NULL;
+    }
     if(!(d = cli_malloc(sizeof(*d)))) {
 	errno = ENOMEM;
 	return NULL;
@@ -38,17 +47,13 @@ DIR *opendir(const char *name) {
 	errno = (len || (GetLastError() == ERROR_INSUFFICIENT_BUFFER)) ? ENAMETOOLONG : ENOENT;
 	return NULL;
     }
+    while(len) {
+	if(d->entry[len] == L'\\')
+	    d->entry[len] = L'\0';
+	else
+	    break;
+    }
     /* FIXME: this should be UNC'd */
-    if((attrs = GetFileAttributesW(d->entry)) == INVALID_FILE_ATTRIBUTES) {
-	free(d);
-	errno = ENOENT;
-	return NULL;
-    }
-    if(!(attrs & FILE_ATTRIBUTE_DIRECTORY)) {
-	free(d);
-	errno = ENOTDIR;
-	return NULL;
-    }
     wcsncat(d->entry, L"\\*.*", 4);
     d->dh = INVALID_HANDLE_VALUE;
     return d;

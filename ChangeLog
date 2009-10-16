@@ -1,3 +1,7 @@
+Fri Oct 16 20:08:51 CEST 2009 (acab)
+------------------------------------
+ * win32: stat added, dirent updated
+
 Fri Oct 16 14:56:10 CEST 2009 (tk)
 ----------------------------------
  * clamdscan: fix some output msgs (bb#1716)
