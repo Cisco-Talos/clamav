@@ -1,3 +1,7 @@
+Sun Oct 18 02:30:14 CEST 2009 (acab)
+------------------------------------
+ * win32: glob() before main (WIP)
+
 Fri Oct 16 20:08:51 CEST 2009 (acab)
 ------------------------------------
  * win32: stat added, dirent updated

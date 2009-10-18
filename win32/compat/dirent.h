@@ -28,17 +28,18 @@
 #define _DIRENT_HAVE_D_TYPE
 typedef unsigned short ino_t; /* WTF?!? */
 
+struct dirent {
+    ino_t d_ino;	/* inode number */
+    unsigned char d_type;	/* type of file */
+    char d_name[MAX_PATH];	/* filename */
+};
+
 typedef struct {
 	HANDLE dh;
 	WIN32_FIND_DATAW wfd;
-	struct dirent {
-		ino_t d_ino;	/* inode number */
-		unsigned char d_type;	/* type of file */
-		char d_name[MAX_PATH];	/* filename */
-	} ent;
+	struct dirent ent;
 	wchar_t entry[PATH_MAX];
 } DIR;
-
 
 enum {
 	DT_BLOCK,
