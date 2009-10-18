@@ -41,12 +41,12 @@
 extern char ** __p__acmdln(void);
 #endif
 
-void glob_add(const char *path, int *argc, char ***argv);
+int glob_add(const char *path, int *argc, char ***argv);
 
 int _setargv() {
     char *cur = GetCommandLineA(), *begparm = NULL, *endparm = NULL;
     char **argv = NULL, c;
-    int argc = 0, i, in_sq = 0, in_dq = 0, need_glob = 0;
+    int argc = 0, i, in_sq = 0, in_dq = 0, need_glob = 0, allarglen = 0;
     int *g_argc = __p___argc();
     char ***g_argv = __p___argv();
 
@@ -75,7 +75,7 @@ int _setargv() {
 		}
 		break;
 	    case '*':
-//	    case '?':
+	    case '?':
 		if(!in_sq)
 		    need_glob = 1;
 	    default:
@@ -87,16 +87,17 @@ int _setargv() {
 	if (begparm && endparm) {
 	    if(begparm < endparm) {
 		char *path = malloc(endparm - begparm + 1);
+		int arglen = 0;
 
 		memcpy(path, begparm, endparm - begparm);
 		path[endparm - begparm] = '\0';
-		if(argc || need_glob)
-		    glob_add(path, &argc, &argv);
-		else {
+		if(!argc || !need_glob || !(arglen = glob_add(path, &argc, &argv))) {
 		    argv = realloc(argv, sizeof(*argv) * (argc + 1));
 		    argv[argc] = path;
 		    argc++;
+		    arglen = endparm - begparm;
 		}
+		allarglen += arglen;
 	    }
 	    need_glob = 0;
 	    in_sq = 0;
@@ -109,13 +110,11 @@ int _setargv() {
 
     if(argc) {
 	int i, argvlen = sizeof(*argv) * (argc + 1), argclen = 0;
-	argv = realloc(argv, argvlen);
+	argv = realloc(argv, argvlen + allarglen + argc);
 	argv[argc] = NULL;
 	for(i=0; i<argc; i++) {
 	    int curlen = strlen(argv[i]) + 1;
-	    char *curarg;
-	    argv = realloc(argv, argvlen + argclen + curlen);
-	    curarg = (char *)argv + argvlen + argclen;
+	    char *curarg = (char *)argv + argvlen + argclen;
 	    memcpy(curarg, argv[i], curlen);
 	    argclen += curlen;
 	    free(argv[i]);
@@ -139,27 +138,45 @@ int _setargv() {
     return 0;
 }
 
-void glob_add(const char *path, int *argc, char ***argv) {
-    char *tail = strchr(path, '*');
+int glob_add(const char *path, int *argc, char ***argv) {
+    char *tail = strchr(path, '*'), *tailqmark;
     char *dup1, *dup2, *dir, *base, *taildirsep, *tailwldsep;
     struct dirent *de;
-    int baselen, taillen, dirlen, mergedir = 0;
+    int baselen, taillen, dirlen, mergedir = 0, outlen = 0;
+    int qmarklen = 0;
     DIR *d;
 
+    if(strlen(path) > 4 && !memcmp(path, "\\\\?\\", 4))
+	tailqmark = strchr(&path[4], '?');
+    else
+	tailqmark = strchr(path, '?');
+
+    if(tailqmark && (!tail || tailqmark < tail))
+	tail = tailqmark;
+
     if(!tail) {
-	MessageBox(0, path, 0, MB_ICONINFORMATION);
 	*argv = realloc(*argv, sizeof(**argv) * (*argc + 1));
 	(*argv)[*argc] = path;
 	(*argc)++;
-	return;
+	return strlen(path);
     }
 
     if(tail!=path && tail[-1] == '\\') {
 	tail[-1] = '\0';
 	mergedir = 1;
     }
-    *tail = '\0';
-    tail++;
+    while(*tail) {
+	if(*tail == '?') {
+	    if(tail == tailqmark || qmarklen) 
+		qmarklen++;
+	    *tail = 0;
+	} else if(*tail == '*') {
+	    *tail = '\0';
+	    qmarklen = 0;
+	} else 
+	    break;
+	tail++;
+    }
     taillen = strlen(tail);
     taildirsep = strchr(tail, '\\');
     if(taildirsep && taildirsep - tail == taillen - 1) {
@@ -169,7 +186,12 @@ void glob_add(const char *path, int *argc, char ***argv) {
     }
     if(!taildirsep)
 	taildirsep = tail + taillen;
-    if(!(tailwldsep = strchr(tail, '*')))
+
+    tailwldsep = strchr(tail, '*');
+    tailqmark = strchr(tail, '?');
+    if(tailqmark && (!tailwldsep || tailqmark < tailwldsep))
+	tailwldsep = tailqmark;
+    if(!tailwldsep)
 	tailwldsep = tail + taillen;
 
     dup1 = strdup(path);
@@ -192,22 +214,28 @@ void glob_add(const char *path, int *argc, char ***argv) {
 	int namelen = strlen(de->d_name);
 	char *newpath;
 
+	if(!strcmp(de->d_name, ".") || !strcmp(de->d_name, "..")) continue;
 	if(namelen < baselen) continue;
 	if(strncasecmp(base, de->d_name, baselen)) continue;
-	if(de->d_type == DT_DIR && taildirsep <= tailwldsep) {
+	if(de->d_type == DT_DIR && taildirsep < tailwldsep) {
 	    int d_taillen = taildirsep - tail;
 	    if(namelen < baselen + d_taillen) continue;
 	    if(strncasecmp(tail, &de->d_name[namelen - d_taillen], d_taillen)) continue;
 	    newpath = malloc(dirlen + namelen + taillen - d_taillen + 3);
 	    sprintf(newpath, "%s\\%s\\%s", dir, de->d_name, &tail[d_taillen+1]);
-	    glob_add(newpath, argc, argv);
+	    outlen += glob_add(newpath, argc, argv);
 	} else {
 	    int d_taillen = tailwldsep - tail;
 	    char *start;
 	    if(namelen < baselen + d_taillen) continue;
-	    
-	    start = &de->d_name[baselen];
-	    namelen -= baselen;
+	    if(qmarklen && baselen + qmarklen + d_taillen != namelen)	continue;
+	    if(d_taillen == taillen) {
+		start = &de->d_name[namelen - d_taillen];
+		namelen = d_taillen;
+	    } else {
+		start = &de->d_name[baselen];
+		namelen -= baselen;
+	    }
 
 	    for(; namelen >= d_taillen; start++, namelen--) {
 		if(strncasecmp(start, tail, d_taillen)) continue;
@@ -215,7 +243,7 @@ void glob_add(const char *path, int *argc, char ***argv) {
 		sprintf(newpath, "%s\\", dir);
 		memcpy(&newpath[dirlen + 1], de->d_name, start - de->d_name);
 		strcpy(&newpath[dirlen + 1 + start - de->d_name], tail);
-		glob_add(newpath, argc, argv);
+		outlen += glob_add(newpath, argc, argv);
 	    }
 	}
     }
@@ -223,4 +251,5 @@ void glob_add(const char *path, int *argc, char ***argv) {
     free(dup1);
     free(dup2);
     free(path);
+    return outlen;
 }
