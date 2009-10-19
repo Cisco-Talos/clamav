@@ -20,6 +20,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "freshclam", "freshclam.vcpr
 		{3AD5B16C-340A-40AC-96AD-6017B941A316} = {3AD5B16C-340A-40AC-96AD-6017B941A316}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "clamconf", "clamconf.vcproj", "{DEABE3C7-6F4D-4221-8EEE-AD19C8261273}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3AD5B16C-340A-40AC-96AD-6017B941A316} = {3AD5B16C-340A-40AC-96AD-6017B941A316}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -46,6 +51,10 @@ Global
 		{CEA52DD8-0418-42AD-B640-F33CC7C600CE}.Debug|Win32.Build.0 = Debug|Win32
 		{CEA52DD8-0418-42AD-B640-F33CC7C600CE}.Release|Win32.ActiveCfg = Release|Win32
 		{CEA52DD8-0418-42AD-B640-F33CC7C600CE}.Release|Win32.Build.0 = Release|Win32
+		{DEABE3C7-6F4D-4221-8EEE-AD19C8261273}.Debug|Win32.ActiveCfg = Debug|Win32
+		{DEABE3C7-6F4D-4221-8EEE-AD19C8261273}.Debug|Win32.Build.0 = Debug|Win32
+		{DEABE3C7-6F4D-4221-8EEE-AD19C8261273}.Release|Win32.ActiveCfg = Release|Win32
+		{DEABE3C7-6F4D-4221-8EEE-AD19C8261273}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

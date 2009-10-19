@@ -17,6 +17,7 @@ EXPORTS cl_cvdhead
 EXPORTS cl_retflevel
 EXPORTS cl_cvdparse
 EXPORTS cl_cvdverify
+EXPORTS cl_retver
 
 ; cli_stuff - should be mangled or exported by ordinal only
 EXPORTS cli_gentemp
@@ -31,6 +32,8 @@ EXPORTS cli_strtok
 EXPORTS cli_cvdunpack
 EXPORTS cli_decodesig
 EXPORTS cli_chomp
+EXPORTS cli_strtokenize
+EXPORTS have_rar
 
 ; shared stuff - to be either double compiled into the tools or treated like cli_xxx
 EXPORTS opendir

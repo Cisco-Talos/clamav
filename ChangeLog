@@ -1,3 +1,7 @@
+Mon Oct 19 14:13:27 CEST 2009 (acab)
+------------------------------------
+ * win32: add clamconf
+
 Sun Oct 18 16:52:41 CEST 2009 (acab)
 ------------------------------------
  * win32: glob() complete

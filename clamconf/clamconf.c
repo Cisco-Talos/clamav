@@ -311,7 +311,8 @@ int main(int argc, char **argv)
 	    if(!cvd) {
 		printf("%s: Can't get information about the database\n", dbnames[i]);
 	    } else {
-		printf("%s: version %u, sigs: %u, built on %s", dbnames[i], cvd->version, cvd->sigs, ctime((const time_t *) &cvd->stime));
+		const time_t t = cvd->stime;
+		printf("%s: version %u, sigs: %u, built on %s", dbnames[i], cvd->version, cvd->sigs, ctime(&t));
 		if(cvd->fl > flevel)
 		    printf("%s: WARNING: This database requires f-level %u (current f-level: %u)\n", dbnames[i], cvd->fl, flevel);
 		cl_cvdfree(cvd);

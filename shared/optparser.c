@@ -62,9 +62,9 @@ const struct clam_option clam_options[] = {
 
     /* cmdline only */
     { NULL, "help", 'h', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_MILTER | OPT_CLAMCONF | OPT_CLAMDTOP | OPT_CLAMBC, "", "" },
-    { NULL, "config-file", 'c', TYPE_STRING, NULL, 0, CONFDIR"/clamd.conf", FLAG_REQUIRED, OPT_CLAMD | OPT_CLAMDSCAN | OPT_CLAMDTOP, "", "" },
-    { NULL, "config-file", 0, TYPE_STRING, NULL, 0, CONFDIR"/freshclam.conf", FLAG_REQUIRED, OPT_FRESHCLAM, "", "" },
-    { NULL, "config-file", 'c', TYPE_STRING, NULL, 0, CONFDIR"/clamav-milter.conf", FLAG_REQUIRED, OPT_MILTER, "", "" },
+    { NULL, "config-file", 'c', TYPE_STRING, NULL, 0, CONFDIR PATHSEP "clamd.conf", FLAG_REQUIRED, OPT_CLAMD | OPT_CLAMDSCAN | OPT_CLAMDTOP, "", "" },
+    { NULL, "config-file", 0, TYPE_STRING, NULL, 0, CONFDIR PATHSEP "freshclam.conf", FLAG_REQUIRED, OPT_FRESHCLAM, "", "" },
+    { NULL, "config-file", 'c', TYPE_STRING, NULL, 0, CONFDIR PATHSEP "clamav-milter.conf", FLAG_REQUIRED, OPT_MILTER, "", "" },
     { NULL, "version", 'V', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL | OPT_MILTER | OPT_CLAMCONF | OPT_CLAMDTOP | OPT_CLAMBC, "", "" },
     { NULL, "debug", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMD | OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_SIGTOOL, "", "" },
     { NULL, "verbose", 'v', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM | OPT_CLAMSCAN | OPT_CLAMDSCAN | OPT_SIGTOOL, "", "" },
@@ -75,7 +75,7 @@ const struct clam_option clam_options[] = {
     { NULL, "daemon", 'd', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
     { NULL, "no-dns", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
     { NULL, "list-mirrors", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_FRESHCLAM, "", "" },
-    { NULL, "submit-stats", 0, TYPE_STRING, NULL, 0, CONFDIR"/clamd.conf", 0, OPT_FRESHCLAM, "", "" }, /* Don't merge this one with SubmitDetectionStats */
+    { NULL, "submit-stats", 0, TYPE_STRING, NULL, 0, CONFDIR PATHSEP "clamd.conf", 0, OPT_FRESHCLAM, "", "" }, /* Don't merge this one with SubmitDetectionStats */
     { NULL, "reload", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMDSCAN, "", "" },
     { NULL, "multiscan", 'm', TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMDSCAN, "", "" },
     { NULL, "fdpass", 0, TYPE_BOOL, MATCH_BOOL, 0, NULL, 0, OPT_CLAMDSCAN, "", "" },
@@ -337,7 +337,7 @@ const struct clam_option clam_options[] = {
 
     { "HTTPUserAgent", NULL, 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "If your servers are behind a firewall/proxy which does a User-Agent\nfiltering you can use this option to force the use of a different\nUser-Agent header.", "default" },
 
-    { "NotifyClamd", "daemon-notify", 0, TYPE_STRING, NULL, -1, CONFDIR"/clamd.conf", 0, OPT_FRESHCLAM, "Send the RELOAD command to clamd after a successful update.", "yes" },
+    { "NotifyClamd", "daemon-notify", 0, TYPE_STRING, NULL, -1, CONFDIR PATHSEP "clamd.conf", 0, OPT_FRESHCLAM, "Send the RELOAD command to clamd after a successful update.", "yes" },
 
     { "OnUpdateExecute", "on-update-execute", 0, TYPE_STRING, NULL, -1, NULL, 0, OPT_FRESHCLAM, "Run a command after a successful database update.", "command" },
 
