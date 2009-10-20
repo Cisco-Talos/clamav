@@ -65,4 +65,13 @@ typedef	unsigned	int	in_addr_t;
 
 #define PATHSEP "\\"
 
+#undef DATADIR
+#undef CONFDIR
+__declspec(dllimport) extern const char *DATADIR;
+__declspec(dllimport) extern const char *CONFDIR;
+__declspec(dllimport) extern const char *CONFDIR_CLAMD;
+__declspec(dllimport) extern const char *CONFDIR_FRESHCLAM;
+__declspec(dllimport) extern const char *CONFDIR_MILTER;
+#undef HAVE_CONFIG_H
+
 #endif /* __PLATFORM_H */

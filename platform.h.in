@@ -33,3 +33,8 @@ typedef	unsigned	int	in_addr_t;
 #else
 #define PATHSEP "/"
 #endif
+
+#define CONFDIR_CLAMD CONFDIR"\\clamd.conf"
+#define CONFDIR_FRESHCLAM CONFDIR"\\freshclam.conf"
+#define CONFDIR_MILTER CONFDIR"\\clamav-milter.conf"
+

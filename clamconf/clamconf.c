@@ -35,6 +35,12 @@
 #include "libclamav/clamav.h"
 #include "libclamav/others.h"
 
+#ifndef _WIN32
+extern const struct clam_option *clam_options;
+#else
+__declspec(dllimport) extern const struct clam_option *clam_options;
+#endif
+
 static struct _cfgfile {
     const char *name;
     int tool;

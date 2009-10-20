@@ -341,10 +341,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\shared\misc.c"
-				>
-			</File>
-			<File
 				RelativePath="..\libclamav\mpool.c"
 				>
 			</File>
@@ -759,10 +755,6 @@
 					RelativePath="..\shared\getopt.c"
 					>
 				</File>
-				<File
-					RelativePath="..\shared\optparser.c"
-					>
-				</File>
 			</Filter>
 			<Filter
 				Name="compat"
@@ -777,6 +769,10 @@
 				</File>
 				<File
 					RelativePath=".\compat\libclamav_main.c"
+					>
+				</File>
+				<File
+					RelativePath=".\compat\libgen.c"
 					>
 				</File>
 				<File

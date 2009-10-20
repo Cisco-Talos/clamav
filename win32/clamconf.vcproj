@@ -191,10 +191,6 @@
 					RelativePath="..\shared\misc.c"
 					>
 				</File>
-				<File
-					RelativePath="..\shared\optparser.c"
-					>
-				</File>
 			</Filter>
 		</Filter>
 		<Filter

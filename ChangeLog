@@ -1,3 +1,7 @@
+Tue Oct 20 17:48:59 CEST 2009 (acab)
+------------------------------------
+ * shared, win32: make hardcoded paths relocable in win32 builds
+
 Mon Oct 19 14:13:27 CEST 2009 (acab)
 ------------------------------------
  * win32: add clamconf

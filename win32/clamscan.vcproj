@@ -217,10 +217,6 @@
 					>
 				</File>
 				<File
-					RelativePath="..\shared\optparser.c"
-					>
-				</File>
-				<File
 					RelativePath="..\shared\output.c"
 					>
 				</File>

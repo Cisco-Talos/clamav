@@ -67,8 +67,6 @@ struct clam_option {
     const char *suggested;
 };
 
-extern const struct clam_option clam_options[];
-
 const struct optstruct *optget(const struct optstruct *opts, const char *name);
 
 void optfree(struct optstruct *opts);
