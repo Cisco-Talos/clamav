@@ -100,7 +100,7 @@ void fix_paths(void) {
 	if(!have_ddir)
 	    snprintf(_DATADIR, sizeof(_DATADIR), "%s\\database", dir);
 	if(!have_cdir) {
-	    strncpy(_CONFDIR, dir, sizeof(_DATADIR));
+	    strncpy(_CONFDIR, dir, sizeof(_CONFDIR));
 	    have_cdir = 1;
 	}
     }

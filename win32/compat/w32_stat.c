@@ -18,36 +18,73 @@
  *  MA 02110-1301, USA.
  */
 
+#include <errno.h>
+
 #include "others.h"
+#include "shared/misc.h"
+
+
+wchar_t *uncpath(const char *path) {
+    DWORD len = 0;
+    wchar_t *dest = cli_malloc((PATH_MAX + 1) * sizeof(wchar_t));
+
+    if(!dest)
+	return NULL;
+
+    if(strncmp(path, "\\\\", 2)) {
+	/* NOT already UNC */
+	memcpy(dest, L"\\\\?\\", 8);
+
+	if(!cli_is_abspath(path)) {
+	    /* Relative path */
+	    len = GetCurrentDirectoryW(PATH_MAX - 5, &dest[4]);
+	    if(!len || len > PATH_MAX - 5) {
+		free(dest);
+		errno = (len || (GetLastError() == ERROR_INSUFFICIENT_BUFFER)) ? ENAMETOOLONG : ENOENT;
+		return NULL;
+	    }
+	    len += 4;
+	    dest[len] = L'\\';
+	    len++;
+	} else {
+	    /* C:\ and friends */
+	    len = 4;
+	}
+    } else {
+	/* UNC already */
+	len = 0;
+    }
+    if(!(len = MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, path, -1, &dest[len], PATH_MAX - len)) || len > PATH_MAX - len) {
+        free(dest);
+	errno = (len || (GetLastError() == ERROR_INSUFFICIENT_BUFFER)) ? ENAMETOOLONG : ENOENT;
+        return NULL;
+    }
+
+    len = wcslen(dest);
+    if(len == 6 && !wcsncmp(dest, L"\\\\?\\", 4) && (dest[5] == L':') && ((dest[4] >= L'A' && dest[4] <= L'Z') || (dest[4] >= L'a' && dest[4] <= L'z'))) {
+	dest[6] = L'\\';
+	dest[7] = L'\0';
+    }
+
+    return dest;
+}
+
 
 w32_stat(const char *path, struct stat *buf) {
-    int len = strlen(path) + 2;
-    wchar_t *wpath;
+    int len;
+    wchar_t *wpath = uncpath(path);
     WIN32_FILE_ATTRIBUTE_DATA attrs;
 
-    if(len > PATH_MAX) {
-	errno = ENAMETOOLONG;
+    if(!wpath)
 	return -1;
-    }
-    if(!(wpath = cli_malloc(len * 2))) {
-	errno = ENOMEM;
-	return -1;
-    }
-    /* FIXME: make it UNC */
-    if(!(len = MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, path, -1, wpath, len))) {
-	errno = ENOENT;	
-	free(wpath);
-	return -1;
-    }
-    if((len == 3 || (len == 7 && !wcsncmp(wpath, L"\\\\?\\", 4))) && (wpath[len-2] == L':') &&
-	((wpath[len-3] >= L'A' && wpath[len-3] <= L'Z') || (wpath[len-3] >= L'a' && wpath[len-2] <= L'z')) ) {
-	/* stat drives as dirs */
-	wpath[len-1] = L'\\';
-	wpath[len] = L'\0';
-    }
+
+    len = wcslen(wpath);
+    if(len > 2 && wpath[len-1] == L'.' && wpath[len-2] == L'\\')
+	wpath[len-2] = L'\0'; /* windoze can't stat '.' ... */
     len = GetFileAttributesExW(wpath, GetFileExInfoStandard, &attrs);
     free(wpath);
     if(!len) {
+	len = GetLastError();
 	errno = ENOENT;
 	return -1;
     }

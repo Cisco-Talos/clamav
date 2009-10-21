@@ -755,6 +755,10 @@
 					RelativePath="..\shared\getopt.c"
 					>
 				</File>
+				<File
+					RelativePath="..\shared\misc.c"
+					>
+				</File>
 			</Filter>
 			<Filter
 				Name="compat"
