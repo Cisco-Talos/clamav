@@ -19,10 +19,13 @@
  */
 
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <io.h>
 
 #include "others.h"
 #include "shared/misc.h"
-
 
 wchar_t *uncpath(const char *path) {
     DWORD len = 0;
@@ -67,6 +70,26 @@ wchar_t *uncpath(const char *path) {
     }
 
     return dest;
+}
+
+int safe_open(const char *path, int flags, ... ) {
+    wchar_t *wpath = uncpath(path);
+    int ret;
+
+    if(!wpath)
+	return -1;
+
+    if(flags & O_CREAT) {
+	int mode;
+	va_list ap;
+	va_start(ap, flags);
+	mode = va_arg(ap, int);
+	va_end(ap);
+	ret = _wopen(wpath, flags, mode);
+    } else
+	ret = _wopen(wpath, flags);
+    free(wpath);
+    return ret;
 }
 
 

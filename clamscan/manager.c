@@ -127,7 +127,7 @@ static int scanfile(const char *filename, struct cl_engine *engine, const struct
 
     logg("*Scanning %s\n", filename);
 
-    if((fd = open(filename, O_RDONLY|O_BINARY)) == -1) {
+    if((fd = safe_open(filename, O_RDONLY|O_BINARY)) == -1) {
 	logg("^Can't open file %s: %s\n", filename, strerror(errno));
 	return 54;
     }

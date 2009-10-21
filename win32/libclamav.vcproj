@@ -799,10 +799,6 @@
 					RelativePath=".\compat\w32_stat.c"
 					>
 				</File>
-				<File
-					RelativePath=".\compat\w32_stat.h"
-					>
-				</File>
 			</Filter>
 		</Filter>
 		<Filter

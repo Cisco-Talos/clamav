@@ -239,10 +239,6 @@
 					>
 				</File>
 				<File
-					RelativePath=".\compat\resolv.h"
-					>
-				</File>
-				<File
 					RelativePath=".\compat\strptime.c"
 					>
 				</File>

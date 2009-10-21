@@ -39,6 +39,7 @@ EXPORTS have_rar
 EXPORTS opendir
 EXPORTS readdir
 EXPORTS closedir
+EXPORTS safe_open
 EXPORTS snprintf
 EXPORTS mp_init
 EXPORTS mp_read_radix

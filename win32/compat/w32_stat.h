@@ -40,6 +40,7 @@ int w32_stat(const char *path, struct stat *buf);
 #define stat(path, buf) w32_stat(path, buf)
 
 wchar_t *uncpath(const char *path);
+int safe_open(const char *path, int flags, ... );
 
 #endif
 

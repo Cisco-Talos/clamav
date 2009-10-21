@@ -1,3 +1,7 @@
+Wed Oct 21 17:50:05 CEST 2009 (acab)
+------------------------------------
+ * win32: introduce safe_open() (sic!)
+
 Tue Oct 20 17:48:59 CEST 2009 (acab)
 ------------------------------------
  * shared, win32: make hardcoded paths relocable in win32 builds

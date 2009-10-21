@@ -2221,7 +2221,7 @@ static int cli_scanfile(const char *filename, cli_ctx *ctx)
 	int fd, ret;
 
     /* internal version of cl_scanfile with arec/mrec preserved */
-    if((fd = open(filename, O_RDONLY|O_BINARY)) == -1)
+    if((fd = safe_open(filename, O_RDONLY|O_BINARY)) == -1)
 	return CL_EOPEN;
 
     ret = cli_magic_scandesc(fd, ctx);
