@@ -416,7 +416,7 @@ static int read_c_len(arj_decode_t *decode_data)
 				mask = 1 << 7;
 				do {
 					if (c >= (2 * NC - 1)) {
-						cli_warnmsg("ERROR: bounds exceeded\n");
+						cli_dbgmsg("ERROR: bounds exceeded\n");
 						decode_data->status = CL_EFORMAT;
 						return CL_EFORMAT;
 					}
@@ -450,7 +450,7 @@ static int read_c_len(arj_decode_t *decode_data)
 				}		
 				while (--c >= 0) {
 					if (i >= NC) {
-						cli_warnmsg("ERROR: bounds exceeded\n");
+						cli_dbgmsg("ERROR: bounds exceeded\n");
 						decode_data->status = CL_EFORMAT;
 						return CL_EFORMAT;
 					}
@@ -458,7 +458,7 @@ static int read_c_len(arj_decode_t *decode_data)
 				}
 			} else {
 				if (i >= NC) {
-					cli_warnmsg("ERROR: bounds exceeded\n");
+					cli_dbgmsg("ERROR: bounds exceeded\n");
 					decode_data->status = CL_EFORMAT;
 					return CL_EFORMAT;
 				}
@@ -492,7 +492,7 @@ static uint16_t decode_c(arj_decode_t *decode_data)
 		mask = 1 << 3;
 		do {
 			if (j >= (2 * NC - 1)) {
-				cli_warnmsg("ERROR: bounds exceeded\n");
+				cli_dbgmsg("ERROR: bounds exceeded\n");
 				decode_data->status = CL_EUNPACK;
 				return 0;
 			}
@@ -517,7 +517,7 @@ static uint16_t decode_p(arj_decode_t *decode_data)
 		mask = 1 << 7;
 		do {
 			if (j >= (2 * NC - 1)) {
-				cli_warnmsg("ERROR: bounds exceeded\n");
+				cli_dbgmsg("ERROR: bounds exceeded\n");
 				decode_data->status = CL_EUNPACK;
 				return 0;
 			}
@@ -545,7 +545,8 @@ static int decode(int fd, arj_metadata_t *metadata)
 	uint32_t count=0, out_ptr=0;
 	int16_t chr, i, j;
 
-	decode_data.text = (unsigned char *) cli_malloc(DDICSIZ);
+	memset(&decode_data, 0, sizeof(decode_data));
+	decode_data.text = (unsigned char *) cli_calloc(DDICSIZ, 1);
 	if (!decode_data.text) {
 		return CL_EMEM;
 	}
@@ -577,7 +578,7 @@ static int decode(int fd, arj_metadata_t *metadata)
 				i += DDICSIZ;
 			}
 			if ((i >= DDICSIZ) || (i < 0)) {
-				cli_warnmsg("UNARJ: bounds exceeded - probably a corrupted file.\n");
+				cli_dbgmsg("UNARJ: bounds exceeded - probably a corrupted file.\n");
 				break;
 			}
 			if (out_ptr > i && out_ptr < DDICSIZ - MAXMATCH - 1) {
@@ -669,7 +670,8 @@ static int decode_f(int fd, arj_metadata_t *metadata)
 	int16_t chr, i, j, pos;
 
 	dd = &decode_data;
-	decode_data.text = (unsigned char *) cli_malloc(DDICSIZ);
+	memset(&decode_data, 0, sizeof(decode_data));
+	decode_data.text = (unsigned char *) cli_calloc(DDICSIZ, 1);
 	if (!decode_data.text) {
 		return CL_EMEM;
 	}
@@ -715,7 +717,7 @@ static int decode_f(int fd, arj_metadata_t *metadata)
 				i += DDICSIZ;
 			}
 			if ((i >= DDICSIZ) || (i < 0)) {
-				cli_warnmsg("UNARJ: bounds exceeded - probably a corrupted file.\n");
+				cli_dbgmsg("UNARJ: bounds exceeded - probably a corrupted file.\n");
 				break;
 			}
 			while (j-- > 0) {
@@ -987,12 +989,18 @@ static int arj_read_file_header(int fd, arj_metadata_t *metadata)
 
 	/* Skip CRC */
 	if (lseek(fd, (off_t) 4, SEEK_CUR) == -1) {
+		if(metadata->filename)
+		    free(metadata->filename);
+		metadata->filename = NULL;
 		return CL_EFORMAT;
 	}
 	
 	/* Skip past any extended header data */
 	for (;;) {
 		if (cli_readn(fd, &count, 2) != 2) {
+			if(metadata->filename)
+			    free(metadata->filename);
+			metadata->filename = NULL;
 			return CL_EFORMAT;
 		}
 		count = le16_to_host(count);
@@ -1002,6 +1010,9 @@ static int arj_read_file_header(int fd, arj_metadata_t *metadata)
 		}
 		/* Skip extended header + 4byte CRC */
 		if (lseek(fd, (off_t) (count + 4), SEEK_CUR) == -1) {
+			if(metadata->filename)
+			    free(metadata->filename);
+			metadata->filename = NULL;
 			return CL_EFORMAT;
 		}
 	}

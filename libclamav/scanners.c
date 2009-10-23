@@ -413,15 +413,16 @@ static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	return ret;
     }
     
-   metadata.filename = NULL;
-
    do {
+        metadata.filename = NULL;
 	ret = cli_unarj_prepare_file(desc, dir, &metadata);
 	if (ret != CL_SUCCESS) {
 	   break;
 	}
 	if ((ret = cli_checklimits("ARJ", ctx, metadata.orig_size, metadata.comp_size, 0))!=CL_CLEAN) {
 	    ret = CL_SUCCESS;
+	    if (metadata.filename)
+		free(metadata.filename);
 	    continue;
 	}
 	ret = cli_unarj_extract_file(desc, dir, &metadata);
@@ -432,6 +433,10 @@ static int cli_scanarj(int desc, cli_ctx *ctx, off_t sfx_offset, uint32_t *sfx_c
 	    if (rc == CL_VIRUS) {
 		cli_dbgmsg("ARJ: infected with %s\n",*ctx->virname);
 		ret = CL_VIRUS;
+		if (metadata.filename) {
+		    free(metadata.filename);
+		    metadata.filename = NULL;
+		}
 		break;
 	    }
 	}
