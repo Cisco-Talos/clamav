@@ -694,6 +694,10 @@ static int cli_ftw_dir(const char *dirname, int flags, int maxdepth, cli_ftw_cb 
 		if (ret != CL_SUCCESS)
 		    break;
 	    }
+	    for (i++;i<entries_cnt;i++) {
+		struct dirent_data *entry = &entries[i];
+		free(entry->filename);
+	    }
 	    free(entries);
 	}
     } else {
