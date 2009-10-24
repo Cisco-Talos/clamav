@@ -93,6 +93,8 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     if (send(scandata->conn->sd, &ret, 0, 0) == -1 && errno != EINTR) {
 	logg("$Client disconnected while command was active!\n");
 	thrmgr_group_terminate(scandata->conn->group);
+	if (reason == visit_file)
+	    free(filename);
 	return CL_BREAK;
     }
 
@@ -187,8 +189,10 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     }
 
     if (access(filename, R_OK)) {
-	if (conn_reply(scandata->conn, filename, "Access denied.", "ERROR") == -1)
+	if (conn_reply(scandata->conn, filename, "Access denied.", "ERROR") == -1) {
+	    free(filename);
 	    return CL_ETIMEOUT;
+	}
 	logg("*Access denied: %s\n", filename);
 	scandata->errors++;
 	free(filename);
@@ -201,20 +205,25 @@ int scan_callback(struct stat *sb, char *filename, const char *msg, enum cli_ftw
     thrmgr_setactivetask(NULL, NULL);
 
     if (thrmgr_group_need_terminate(scandata->conn->group)) {
+	free(filename);
 	logg("*Client disconnected while scanjob was active\n");
 	return ret == CL_ETIMEOUT ? ret : CL_BREAK;
     }
 
     if (ret == CL_VIRUS) {
 	scandata->infected++;
-	if (conn_reply(scandata->conn, filename, virname, "FOUND") == -1)
+	if (conn_reply(scandata->conn, filename, virname, "FOUND") == -1) {
+	    free(filename);
 	    return CL_ETIMEOUT;
+	}
 	logg("~%s: %s FOUND\n", filename, virname);
 	virusaction(filename, virname, scandata->opts);
     } else if (ret != CL_CLEAN) {
 	scandata->errors++;
-	if (conn_reply(scandata->conn, filename, cl_strerror(ret), "ERROR") == -1)
+	if (conn_reply(scandata->conn, filename, cl_strerror(ret), "ERROR") == -1) {
+	    free(filename);
 	    return CL_ETIMEOUT;
+	}
 	logg("~%s: %s ERROR\n", filename, cl_strerror(ret));
     } else if (logok) {
 	logg("~%s: OK\n", filename);
