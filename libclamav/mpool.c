@@ -117,6 +117,9 @@ static const unsigned int fragsz[] = {
  507976, /*       9       0      USE */
  525976, /*       1       0      USE */
 1048576, /*       0       0 USE/POW2 */
+2097152,
+4194304,
+8388608,
  /* MAX_ALLOCATION is 184549376 but that's really not need here */
 };
 
@@ -182,6 +185,9 @@ static const unsigned int fragsz[] = {
  262144, /*       0       0     POW2 */
  525752, /*       1       0      USE */
 1048576, /*       0       0 USE/POW2 */
+2097152,
+4194304,
+8388608,
 };
 #endif
 #define FRAGSBITS (sizeof(fragsz)/sizeof(fragsz[0]))

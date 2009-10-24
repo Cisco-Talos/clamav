@@ -1,3 +1,7 @@
+Sat Oct 24 15:06:50 CEST 2009 (acab)
+------------------------------------
+ * libclamav/mpool.c: increase max pool to 8M to allow loading huge custom dbs
+
 Sat Oct 24 14:27:10 EEST 2009 (edwin)
 ------------------------------------
  * clamd/scanner.c, libclamav/others_common.c: fix error path leak (bb #1711)
