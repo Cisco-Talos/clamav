@@ -118,7 +118,8 @@ static int lt_init(void) {
     return 0;
 }
 
-#define PASTE(a,b) a#b
+#define PASTE2(a,b) a#b
+#define PASTE(a,b) PASTE2(a,b)
 
 static lt_dlhandle lt_dlfind(const char *name, const char *featurename)
 {
