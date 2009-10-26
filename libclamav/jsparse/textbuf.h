@@ -10,10 +10,11 @@ static inline int textbuffer_ensure_capacity(struct text_buffer *txtbuf, size_t 
 {
 	if (txtbuf->pos + len > txtbuf->capacity) {
 		char *d;
-		txtbuf->capacity = MAX(txtbuf->pos + len, txtbuf->capacity + 4096);
-		d = cli_realloc(txtbuf->data, txtbuf->capacity);
+		unsigned capacity = MAX(txtbuf->pos + len, txtbuf->capacity + 4096);
+		d = cli_realloc(txtbuf->data, capacity);
 		if(!d)
 			return -1;
+		txtbuf->capacity = capacity;
 		txtbuf->data = d;
 	}
 	return 0;
