@@ -212,7 +212,7 @@ static void jstest_setup(void)
 	fail_unless(!!state, "js init");
 	tmpdir = cli_gentemp(NULL);
 	fail_unless(!!tmpdir,"js tmp dir");
-	fail_unless(mkdir(tmpdir, 0700) == 0, "tempdir mkdir");
+	fail_unless_fmt(mkdir(tmpdir, 0700) == 0, "tempdir mkdir failed: %s", strerror(errno));
 }
 
 static void jstest_teardown(void)
