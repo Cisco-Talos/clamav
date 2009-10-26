@@ -420,7 +420,7 @@ struct client_parallel_data {
 
 /* Sends a proper scan request to clamd and parses its replies
  * This is used only in IDSESSION mode
- * Returns 0 on success, 1 on hard failures */
+ * Returns 0 on success, 1 on hard failures, 2 on len == 0 (bb#1717) */
 static int dspresult(struct client_parallel_data *c) {
     const char *filename;
     char *bol, *eol;
@@ -433,7 +433,7 @@ static int dspresult(struct client_parallel_data *c) {
     do {
 	len = recvln(&rcv, &bol, &eol);
 	if(len < 0) return 1;
-	if(!len) return 0;
+	if(!len) return 2;
 	if((rid = atoi(bol))) {
 	    id = &c->ids;
 	    while(*id) {

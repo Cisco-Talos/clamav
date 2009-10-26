@@ -1,3 +1,7 @@
+Mon Oct 26 13:08:41 CET 2009 (tk)
+---------------------------------
+ * clamdscan/proto.c: handle recv() == 0 (bb#1717)
+
 Sat Oct 24 15:06:50 CEST 2009 (acab)
 ------------------------------------
  * libclamav/mpool.c: increase max pool to 8M to allow loading huge custom dbs
