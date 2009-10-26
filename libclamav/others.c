@@ -267,10 +267,15 @@ const char *cl_strerror(int clerror)
 
 int cl_init(unsigned int initoptions)
 {
+	struct timeval tv;
+	unsigned int pid = (unsigned int) getpid();
+
     /* put dlopen() stuff here, etc. */
     if (lt_init() == 0) {
 	cli_rarload();
     }
+    gettimeofday(&tv, (struct timezone *) 0);
+    srand(pid + tv.tv_usec*++pid + clock());
     return CL_SUCCESS;
 }
 
