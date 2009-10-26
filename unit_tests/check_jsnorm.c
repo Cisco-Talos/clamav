@@ -207,6 +207,7 @@ static char *tmpdir = NULL;
 
 static void jstest_setup(void)
 {
+        cl_init(CL_INIT_DEFAULT);
 	state = cli_js_init();
 	fail_unless(!!state, "js init");
 	tmpdir = cli_gentemp(NULL);
