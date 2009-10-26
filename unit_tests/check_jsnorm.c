@@ -31,6 +31,7 @@
 #include <check.h>
 #include <fcntl.h>
 #include <ctype.h>
+#include <errno.h>
 #include "../libclamav/clamav.h"
 #include "../libclamav/others.h"
 #include "../libclamav/dconf.h"
@@ -212,7 +213,7 @@ static void jstest_setup(void)
 	fail_unless(!!state, "js init");
 	tmpdir = cli_gentemp(NULL);
 	fail_unless(!!tmpdir,"js tmp dir");
-	fail_unless_fmt(mkdir(tmpdir, 0700) == 0, "tempdir mkdir failed: %s", strerror(errno));
+	fail_unless_fmt(mkdir(tmpdir, 0700) == 0, "tempdir mkdir of %s failed: %s", tmpdir, strerror(errno));
 }
 
 static void jstest_teardown(void)
