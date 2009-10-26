@@ -275,7 +275,7 @@ int cl_init(unsigned int initoptions)
 	cli_rarload();
     }
     gettimeofday(&tv, (struct timezone *) 0);
-    srand(pid + tv.tv_usec*++pid + clock());
+    srand(pid + tv.tv_usec*(pid+1) + clock());
     return CL_SUCCESS;
 }
 
