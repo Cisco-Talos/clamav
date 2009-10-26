@@ -288,10 +288,13 @@ static long scope_lookup(struct scope *s, const char *token, const size_t len)
 static int tokens_ensure_capacity(struct tokens *tokens, size_t cap)
 {
 	if(tokens->capacity < cap) {
+	        yystype *data;
 		cap += 1024;
-		tokens->data = cli_realloc(tokens->data, cap * sizeof(*tokens->data));
-		if(!tokens->data)
+		/* Keep old data if OOM */
+		data = cli_realloc(tokens->data, cap * sizeof(*tokens->data));
+		if(!data)
 			return CL_EMEM;
+		tokens->data = data;
 		tokens->capacity = cap;
 	}
 	return CL_SUCCESS;
@@ -299,7 +302,7 @@ static int tokens_ensure_capacity(struct tokens *tokens, size_t cap)
 
 static int add_token(struct parser_state *state, const yystype *token)
 {
-	if(tokens_ensure_capacity(&state->tokens, state->tokens.cnt + 1) < 0)
+	if(tokens_ensure_capacity(&state->tokens, state->tokens.cnt + 1))
 		return -1;
 	state->tokens.data[state->tokens.cnt++] = *token;
 	return 0;
@@ -497,14 +500,16 @@ static const char *de_packer_2[] = {"p","a","c","k","e","d"};
 
 static inline char *textbuffer_done(yyscan_t scanner)
 {
+        char *str = 0;
 	/* free unusued memory */
-	char *str = cli_realloc(scanner->buf.data, scanner->buf.pos);
-	if(!str) {
-		str = scanner->buf.data;
-	}
+        if (!scanner->buf.pos)
+	    scanner->buf.pos++;
+	str = cli_realloc(scanner->buf.data, scanner->buf.pos);
+	if(!str)
+	    str = scanner->buf.data;
+/*	memset(&scanner->buf, 0, sizeof(scanner->buf));
 	scanner->yytext = str;
-	scanner->yylen = scanner->buf.pos - 1;
-	memset(&scanner->buf, 0, sizeof(scanner->buf));
+	scanner->yylen = scanner->buf.pos ? scanner->buf.pos - 1 : 0;*/
 	return str;
 }
 
@@ -1122,6 +1127,8 @@ void cli_js_process_buffer(struct parser_state *state, const char *buf, size_t n
 						free_token(&state->tokens.data[--state->tokens.cnt]);
 
 						str = cli_realloc(str, str_len + leng + 1);
+						if (!str)
+						    break;
 						strncpy(str+str_len, text, leng);
 						str[str_len + leng] = '\0';
 						TOKEN_SET(prev_string, string, str);
@@ -1249,7 +1256,9 @@ static const enum char_class id_ctype[256] = {
 static void textbuf_clean(struct text_buffer *buf)
 {
 	if(buf->capacity > BUF_KEEP_SIZE) {
-		buf->data = cli_realloc(buf->data, BUF_KEEP_SIZE);
+	        yystype *data= cli_realloc(buf->data, BUF_KEEP_SIZE);
+		if (data)
+		    buf->data = data;
 		buf->capacity = BUF_KEEP_SIZE;
 	}
 	buf->pos = 0;
@@ -1276,10 +1285,16 @@ static inline int parseString(YYSTYPE *lvalp, yyscan_t scanner, const char q,
 		len = scanner->insize - scanner->pos;
 	cli_textbuffer_append_normalize(&scanner->buf, start, len);
 	if(end) {
+	        char *str;
 		/* skip over end quote */
 		scanner->pos += len + 1;
 		textbuffer_putc(&scanner->buf, '\0');
-		TOKEN_SET(lvalp, string, textbuffer_done(scanner));
+		str = textbuffer_done(scanner);
+		if (str) {
+		    TOKEN_SET(lvalp, string, str);
+		} else {
+		    TOKEN_SET(lvalp, cstring, "");
+		}
 		scanner->state = Initial;
 		assert(lvalp->val.string);
 		return TOK_StringLiteral;
@@ -1429,8 +1444,8 @@ static int yy_scan_bytes(const char *p, size_t len, yyscan_t scanner)
 
 static const char *yyget_text(yyscan_t scanner)
 {
-	assert(scanner->buf.data || scanner->yytext);
-	return scanner->yytext ? scanner->yytext : scanner->buf.data;
+    assert(scanner->yytext || scanner->buf.data);
+    return scanner->yytext ? scanner->yytext : scanner->buf.data;
 }
 
 static int yyget_leng(yyscan_t scanner)
