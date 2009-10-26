@@ -31,6 +31,7 @@ static char *dir;
 
 static void htmlnorm_setup(void)
 {
+        cl_init(CL_INIT_DEFAULT);
 	dconf_setup();
 	dir = cli_gentemp(NULL);
 	fail_unless(!!dir, "cli_gentemp failed");
