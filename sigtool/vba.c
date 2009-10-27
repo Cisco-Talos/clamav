@@ -993,15 +993,23 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 
 				/* generate the temporary directory */
 				dir = cli_gentemp (tmpdir);
+				if(!dir) {
+				    printf("cli_gentemp() failed\n");
+				    closedir (dd);
+				    return -1;
+				}
+
 				if (mkdir (dir, 0700)) {
 				    printf ("Can't create temporary directory %s\n", dir);
 				    closedir (dd);
+				    free(dir);
 				    return CL_ETMPDIR;
 				}
 
 				if ((desc = open (fname, O_RDONLY|O_BINARY)) == -1) {
 				    printf ("Can't open file %s\n", fname);
 				    closedir (dd);
+				    free(dir);
 				    return 1;
 				}
 
@@ -1010,6 +1018,7 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 				    printf("malloc failed\n");
 				    closedir (dd);
 				    close(desc);
+				    free(dir);
 				    return 1;
 				}
 				*ctx.fmap = fmap(desc, 0, 0);
@@ -1017,6 +1026,7 @@ static int sigtool_scandir (const char *dirname, int hex_output)
 				    printf("fmap failed\n");
 				    closedir (dd);
 				    close(desc);
+				    free(dir);
 				    return 1;
 				}
 				if ((ret = cli_ole2_extract (dir, &ctx, &vba))) {
