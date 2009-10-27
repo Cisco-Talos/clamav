@@ -247,7 +247,7 @@ static int send_fdpass(int sockd, const char *filename) {
 /* Sends a proper scan request to clamd and parses its replies
  * This is used only in non IDSESSION mode
  * Returns the number of infected files or -1 on error */
-int dsresult(int sockd, int scantype, const char *filename, int *printok) {
+int dsresult(int sockd, int scantype, const char *filename, int *printok, int *files, int *errors) {
     int infected = 0, len, beenthere = 0;
     char *bol, *eol;
     struct RCVLN rcv;
@@ -280,12 +280,16 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok) {
 
     if(len <=0) {
 	*printok = 0;
+	if(errors)
+	    (*errors)++;
 	return len;
     }
 
     while((len = recvln(&rcv, &bol, &eol))) {
 	if(len == -1) return -1;
 	beenthere = 1;
+	if(files)
+	    (*files)++;
 	if(!filename) logg("~%s\n", bol);
 	if(len > 7) {
 	    char *colon = strrchr(bol, ':');
@@ -307,6 +311,8 @@ int dsresult(int sockd, int scantype, const char *filename, int *printok) {
 		    }
 		}
 	    } else if(!memcmp(eol-7, " ERROR", 6)) {
+		if(errors)
+		    (*errors)++;
 		*printok = 0;
 		if(filename) {
 		    if(scantype >= STREAM)
@@ -375,12 +381,11 @@ static int serial_callback(struct stat *sb, char *filename, const char *path, en
 	if(filename) free(filename);
 	return CL_EOPEN;
     }
-    ret = dsresult(sockd, c->scantype, f, &c->printok);
+    ret = dsresult(sockd, c->scantype, f, &c->printok, &c->files, &c->errors);
     if(filename) free(filename);
     closesocket(sockd);
     if(ret < 0) return CL_EOPEN;
     c->infected += ret;
-    c->files++;
     if(reason == visit_directory_toplev)
 	return CL_BREAK;
     return CL_SUCCESS;
@@ -407,6 +412,8 @@ int serial_client_scan(char *file, int scantype, int *infected, int maxlevel, in
 	if(cdata.printok)
 	    logg("~%s: OK\n", file);
 	return 0;
+    } else if(!cdata.files) {
+	logg("~%s: No files scanned\n", file);
     }
     return 1;
 }
@@ -468,6 +475,7 @@ static int dspresult(struct client_parallel_data *c) {
 		logg("~%s%s\n", filename, colon);
 		if(action) action(filename);
 	    } else if(!memcmp(eol-7, " ERROR", 6)) {
+		c->errors++;
 		c->printok = 0;
 		logg("~%s%s\n", filename, colon);
 	    }
@@ -558,6 +566,7 @@ static int parallel_callback(struct stat *sb, char *filename, const char *path, 
     }
     if(res <= 0) {
 	c->printok = 0;
+	c->errors++;
 	c->ids = cid->next;
 	c->lastid--;
 	free(cid);
