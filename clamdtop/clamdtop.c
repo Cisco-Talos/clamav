@@ -1191,6 +1191,7 @@ static void setup_connections(int argc, char *argv[])
 		}
 	}
 	optfree(opts);
+	free(conn);
 #ifndef _WIN32
 	signal(SIGPIPE, SIG_IGN);
 	signal(SIGINT, sigint);
