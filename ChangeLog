@@ -1,3 +1,7 @@
+Tue Oct 27 11:59:32 CET 2009 (tk)
+---------------------------------
+ * libclamav/scanners.c: drop hardcoded offset limits for embedded objs (bb#1664)
+
 Mon Oct 26 16:09:29 CET 2009 (tk)
 ---------------------------------
  * libclamav/others.c: call srand() already in cli_init() (bb#1728)

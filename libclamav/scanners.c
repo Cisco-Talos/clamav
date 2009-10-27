@@ -1713,27 +1713,27 @@ static int cli_scanraw(cli_ctx *ctx, cli_file_t type, uint8_t typercg, cli_file_
 		if(fpt->offset) switch(fpt->type) {
 		    case CL_TYPE_RARSFX:
 			    cli_dbgmsg("RAR/RAR-SFX signature found at %u\n", (unsigned int) fpt->offset);
-			if(type != CL_TYPE_RAR && have_rar && SCAN_ARCHIVE && fpt->offset < 102400 && (DCONF_ARCH & ARCH_CONF_RAR)) {
+			if(type != CL_TYPE_RAR && have_rar && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_RAR)) {
 			    cli_dbgmsg("RAR/RAR-SFX signature found at %u\n", (unsigned int) fpt->offset);
 			    nret = cli_scanrar(map->fd, ctx, fpt->offset, &lastrar);
 			}
 			break;
 
 		    case CL_TYPE_ZIPSFX:
-			if(type != CL_TYPE_ZIP && SCAN_ARCHIVE && fpt->offset < 102400 && (DCONF_ARCH & ARCH_CONF_ZIP)) {
+			if(type != CL_TYPE_ZIP && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ZIP)) {
 			    cli_dbgmsg("ZIP/ZIP-SFX signature found at %u\n", (unsigned int) fpt->offset);
 			    nret = cli_unzip_single(ctx, fpt->offset);
 			}
 			break;
 
 		    case CL_TYPE_CABSFX:
-			if(type != CL_TYPE_MSCAB && SCAN_ARCHIVE && fpt->offset < 102400 && (DCONF_ARCH & ARCH_CONF_CAB)) {
+			if(type != CL_TYPE_MSCAB && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_CAB)) {
 			    cli_dbgmsg("CAB/CAB-SFX signature found at %u\n", (unsigned int) fpt->offset);
 			    nret = cli_scanmscab(map->fd, ctx, fpt->offset);
 			}
 			break;
 		    case CL_TYPE_ARJSFX:
-			if(type != CL_TYPE_ARJ && SCAN_ARCHIVE && fpt->offset < 102400 && (DCONF_ARCH & ARCH_CONF_ARJ)) {
+			if(type != CL_TYPE_ARJ && SCAN_ARCHIVE && (DCONF_ARCH & ARCH_CONF_ARJ)) {
 			    cli_dbgmsg("ARJ-SFX signature found at %u\n", (unsigned int) fpt->offset);
 			    nret = cli_scanarj(map->fd, ctx, fpt->offset, &lastrar);
 			}
