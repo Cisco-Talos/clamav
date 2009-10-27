@@ -219,6 +219,7 @@ static int utf16decode(const struct optstruct *opts)
     newname = malloc(strlen(fname) + 7);
     if(!newname) {
 	mprintf("!utf16decode: Can't allocate memory\n");
+	close(fd1);
 	return -1;
     }
     sprintf(newname, "%s.ascii", fname);
@@ -1057,6 +1058,7 @@ static int listdb(const char *filename, const regex_t *regex)
     /* check for CVD file */
     if(!fgets(buffer, 12, fh)) {
 	mprintf("!listdb: fgets failed\n");
+	free(buffer);
 	fclose(fh);
 	return -1;
     }
@@ -1376,11 +1378,6 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 	long opos;
 
 
-    if(!(new = fopen(newpath, "r"))) {
-	mprintf("!compare: Can't open file %s for reading\n", newpath);
-	return -1;
-    }
-
     if((omd5 = cli_md5file(oldpath))) {
 	if(!(nmd5 = cli_md5file(newpath))) {
 	    mprintf("!compare: Can't get MD5 checksum of %s\n", newpath);
@@ -1398,6 +1395,10 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 
     fprintf(diff, "OPEN %s\n", newpath);
 
+    if(!(new = fopen(newpath, "r"))) {
+	mprintf("!compare: Can't open file %s for reading\n", newpath);
+	return -1;
+    }
     old = fopen(oldpath, "r");
 
     while(fgets(nbuff, sizeof(nbuff), new)) {
@@ -1406,6 +1407,7 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
 	    mprintf("!compare: New %s file contains lines terminated with CRLF or CR\n", newpath);
 	    if(old)
 		fclose(old);
+	    fclose(new);
 	    return -1;
 	}
 	cli_chomp(nbuff);
@@ -1466,10 +1468,12 @@ static int compare(const char *oldpath, const char *newpath, FILE *diff)
            mprintf("!compare: COMPATIBILITY_LIMIT: Found too long line in new %s\n", newpath);
            if(old)
                fclose(old);
+	   fclose(new);
            return -1;
        }
 #endif
     }
+    fclose(new);
 
     if(old) {
 	while(fgets(obuff, sizeof(obuff), old)) {
@@ -1572,15 +1576,15 @@ static int verifydiff(const char *diff, const char *cvd, const char *incdir)
 	}
     }
 
-    if((fd = open(diff, O_RDONLY)) == -1) {
-	mprintf("!verifydiff: Can't open diff file %s\n", diff);
+    if(!getcwd(cwd, sizeof(cwd))) {
+	mprintf("!verifydiff: getcwd() failed\n");
 	cli_rmdirs(tempdir);
 	free(tempdir);
 	return -1;
     }
 
-    if(!getcwd(cwd, sizeof(cwd))) {
-	mprintf("!verifydiff: getcwd() failed\n");
+    if((fd = open(diff, O_RDONLY)) == -1) {
+	mprintf("!verifydiff: Can't open diff file %s\n", diff);
 	cli_rmdirs(tempdir);
 	free(tempdir);
 	return -1;

@@ -1,3 +1,8 @@
+Tue Oct 27 20:31:36 CET 2009 (tk)
+---------------------------------
+ * clamdscan, libclamav, clamdtop, freshclam, sigtool: fix some error path
+   leaks (bb#1730)
+
 Tue Oct 27 11:59:32 CET 2009 (tk)
 ---------------------------------
  * libclamav/scanners.c: drop hardcoded offset limits for embedded objs (bb#1664)

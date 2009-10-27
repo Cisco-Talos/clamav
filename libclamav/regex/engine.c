@@ -206,6 +206,7 @@ matcher(struct re_guts *g, char *string, size_t nmatch, regmatch_t pmatch[],
 			m->pmatch = (regmatch_t *)cli_malloc((m->g->nsub + 1) *
 							sizeof(regmatch_t));
 		if (m->pmatch == NULL) {
+			free(m->lastpos);
 			STATETEARDOWN(m);
 			return(REG_ESPACE);
 		}
