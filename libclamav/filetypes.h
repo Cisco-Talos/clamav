@@ -65,6 +65,12 @@ typedef enum {
     CL_TYPE_HTML_UTF16,
     CL_TYPE_RTF,
 
+    /* for compatibility with daily.cvd < 9954 */
+    CL_TYPE_CPIO_NEWC,
+    CL_TYPE_CPIO_CRC,
+    CL_TYPE_CPIO_ODC,
+    CL_TYPE_CPIO_OLD,
+
     /* bigger numbers have higher priority (in o-t-f detection) */
     CL_TYPE_HTML, /* on the fly */
     CL_TYPE_MAIL,  /* magic + on the fly */

@@ -89,6 +89,12 @@ static const struct ftmap_s {
     { "CL_TYPE_NULSFT",		CL_TYPE_NULSFT		},
     { "CL_TYPE_AUTOIT",		CL_TYPE_AUTOIT		},
 
+    /* for compatibility with daily.cvd < 9954 */
+    { "CL_TYPE_CPIO_NEWC",	CL_TYPE_CPIO_NEWC	},
+    { "CL_TYPE_CPIO_CRC",	CL_TYPE_CPIO_CRC	},
+    { "CL_TYPE_CPIO_ODC",	CL_TYPE_CPIO_ODC	},
+    { "CL_TYPE_CPIO_OLD",	CL_TYPE_CPIO_OLD	},
+
     { NULL,			CL_TYPE_IGNORED		}
 };
 
