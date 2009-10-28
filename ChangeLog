@@ -1,3 +1,7 @@
+Wed Oct 28 15:15:05 EET 2009 (edwin)
+------------------------------------
+ * clamd/thrmgr.c: use a double instead of integer to avoid negative time (bb #1731).
+
 Wed Oct 28 12:42:45 CET 2009 (tk)
 ---------------------------------
  * libclamav/filetypes_int.h: sync with daily.ftm
