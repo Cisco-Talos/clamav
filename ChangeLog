@@ -1,3 +1,7 @@
+Wed Oct 28 12:41:34 CET 2009 (tk)
+---------------------------------
+ * libclamav/filetypes_int.h: sync with daily.ftm
+
 Tue Oct 27 23:29:09 CET 2009 (tk)
 ---------------------------------
  * clamdscan: improve error handling (bb#1729)
