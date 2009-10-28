@@ -1,9 +1,9 @@
-0.95.2
+0.95.3
 ------
 
-This version improves handling of archives, adds support for --file-list
-in clamscan and clamdscan, and fixes various issues found in previous
-releases.
+ClamAV 0.95.3 is a bugfix release recommended for all users.
+Please refer to the ChangeLog included in the source distribution
+for the list of changes.
 
 --
 The ClamAV team (http://www.clamav.net/team)
