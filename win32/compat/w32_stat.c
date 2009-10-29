@@ -95,6 +95,11 @@ wchar_t *uncpath(const char *path) {
 	    copy_from++;
 	}
     }
+
+    if(wcslen(dest) == 6 && !wcsncmp(dest, L"\\\\?\\", 4) && (dest[5] == L':') && ((dest[4] >= L'A' && dest[4] <= L'Z') || (dest[4] >= L'a' && dest[4] <= L'z'))) {
+	dest[6] = L'\\';
+	dest[7] = L'\0';
+    }
     return dest;
 }
 
