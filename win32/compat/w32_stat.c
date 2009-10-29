@@ -147,8 +147,8 @@ w32_stat(const char *path, struct stat *buf) {
     buf->st_atime = ((time_t)attrs.ftLastAccessTime.dwHighDateTime<<32) | attrs.ftLastAccessTime.dwLowDateTime;
     buf->st_ctime = ((time_t)attrs.ftCreationTime.dwHighDateTime<<32) | attrs.ftCreationTime.dwLowDateTime;
     buf->st_mtime = ((time_t)attrs.ftLastWriteTime.dwHighDateTime<<32) | attrs.ftLastWriteTime.dwLowDateTime;
-    buf->st_mode = (attrs.dwFileAttributes == FILE_ATTRIBUTE_READONLY) ? S_IRUSR: S_IWUSR;
-    buf->st_mode |= (attrs.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY) ? _S_IFDIR :  _S_IFREG;
+    buf->st_mode = (attrs.dwFileAttributes & FILE_ATTRIBUTE_READONLY) ? S_IRUSR: S_IRWXU;
+    buf->st_mode |= (attrs.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ? _S_IFDIR :  _S_IFREG;
     buf->st_nlink = 1;
     buf->st_size = ((uint64_t)attrs.nFileSizeHigh << (sizeof(attrs.nFileSizeLow)*8)) | attrs.nFileSizeLow;
     return 0;
