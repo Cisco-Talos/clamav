@@ -313,6 +313,7 @@ test_clamd3() {
 	echo "*** No file descriptor passing support, skipping test"
     fi
 
+    rm test-clamd.log
     # Test VirusEvent feature
     run_clamdscan_fileonly $TOP/test/clam.exe
     test -f test-clamd.log || sleep 1
