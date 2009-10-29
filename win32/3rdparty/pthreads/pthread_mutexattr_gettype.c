@@ -39,7 +39,7 @@
 
 
 int
-pthread_mutexattr_gettype (pthread_mutexattr_t * attr, int *kind)
+pthread_mutexattr_gettype (const pthread_mutexattr_t * attr, int *kind)
 {
   int result = 0;
 

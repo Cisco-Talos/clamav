@@ -1,3 +1,8 @@
+2007-01-04  Ross Johnson <Ross dot Johnson at homemail dot com dot au>
+
+        * context1.c: Include context.h from library sources and remove
+        x86 dependence in main().
+
 2005-06-12  Ross Johnson  <rpj@callisto.canberra.edu.au>
 
 	* stress1.c (millisecondsFromNow): Remove limit 0 <= millisecs < 1000;

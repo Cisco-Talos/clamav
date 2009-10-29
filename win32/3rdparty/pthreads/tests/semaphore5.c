@@ -1,8 +1,6 @@
 /*
- * mutex.c
+ * File: semaphore5.c
  *
- * Description:
- * This translation unit implements mutual exclusion (mutex) primitives.
  *
  * --------------------------------------------------------------------------
  *
@@ -32,28 +30,74 @@
  *      License along with this library in the file COPYING.LIB;
  *      if not, write to the Free Software Foundation, Inc.,
  *      59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
+ *
+ * --------------------------------------------------------------------------
+ *
+ * Test Synopsis: Verify sem_destroy EBUSY race avoidance
+ * - 
+ *
+ * Test Method (Validation or Falsification):
+ * - Validation
+ *
+ * Requirements Tested:
+ * - 
+ *
+ * Features Tested:
+ * - 
+ *
+ * Cases Tested:
+ * - 
+ *
+ * Description:
+ * - 
+ *
+ * Environment:
+ * - 
+ *
+ * Input:
+ * - None.
+ *
+ * Output:
+ * - File name, Line number, and failed expression on failure.
+ * - No output on success.
+ *
+ * Assumptions:
+ * - 
+ *
+ * Pass Criteria:
+ * - Process returns zero exit status.
+ *
+ * Fail Criteria:
+ * - Process returns non-zero exit status.
  */
 
-#if ! defined(_UWIN) && ! defined(WINCE)
-#   include <process.h>
-#endif
-#ifndef NEED_FTIME
-#include <sys/timeb.h>
-#endif
-#include "pthread.h"
-#include "implement.h"
+// #define ASSERT_TRACE
+
+#include "test.h"
+
+void *
+thr(void * arg)
+{
+  assert(sem_post((sem_t *)arg) == 0);
+
+  return 0;
+}
 
 
-#include "ptw32_mutex_check_need_init.c"
-#include "pthread_mutex_init.c"
-#include "pthread_mutex_destroy.c"
-#include "pthread_mutexattr_init.c"
-#include "pthread_mutexattr_destroy.c"
-#include "pthread_mutexattr_getpshared.c"
-#include "pthread_mutexattr_setpshared.c"
-#include "pthread_mutexattr_settype.c"
-#include "pthread_mutexattr_gettype.c"
-#include "pthread_mutex_lock.c"
-#include "pthread_mutex_timedlock.c"
-#include "pthread_mutex_unlock.c"
-#include "pthread_mutex_trylock.c"
+int
+main()
+{
+  pthread_t t;
+  sem_t s;
+
+  assert(sem_init(&s, PTHREAD_PROCESS_PRIVATE, 0) == 0);
+  assert(pthread_create(&t, NULL, thr, (void *)&s) == 0);
+
+  assert(sem_wait(&s) == 0);
+  assert(sem_destroy(&s) == 0);
+
+  assert(pthread_join(t, NULL) == 0);
+
+  return 0;
+}
+

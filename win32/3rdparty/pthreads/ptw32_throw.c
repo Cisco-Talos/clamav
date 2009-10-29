@@ -73,6 +73,7 @@ ptw32_throw (DWORD exception)
        * explicit thread exit here after cleaning up POSIX
        * residue (i.e. cleanup handlers, POSIX thread handle etc).
        */
+#if ! defined (__MINGW32__) || defined (__MSVCRT__) || defined (__DMC__)
       unsigned exitCode = 0;
 
       switch (exception)
@@ -81,9 +82,13 @@ ptw32_throw (DWORD exception)
 	  exitCode = (unsigned) PTHREAD_CANCELED;
 	  break;
 	case PTW32_EPS_EXIT:
-	  exitCode = (unsigned) sp->exitStatus;;
+	  if (NULL != sp)
+	    {
+	      exitCode = (unsigned) sp->exitStatus;
+	    }
 	  break;
 	}
+#endif
 
 #if defined(PTW32_STATIC_LIB)
 

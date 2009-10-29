@@ -37,7 +37,7 @@
 
 #include "pthread.h"
 #include "implement.h"
-#ifndef _UWIN
+#if ! defined(_UWIN) && ! defined(WINCE)
 #   include <process.h>
 #endif
 

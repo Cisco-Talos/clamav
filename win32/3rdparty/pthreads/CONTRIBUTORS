@@ -114,6 +114,7 @@ Piet van Bruggen	pietvb at newbridges dot nl
 Makoto Kato		raven at oldskool dot jp
 					AMD64 port.
 Panagiotis E. Hadjidoukas	peh at hpclab dot ceid dot upatras dot gr
+                                phadjido at cs dot uoi dot gr
 					Contributed the QueueUserAPCEx package which
 					makes preemptive async cancelation possible.
 Will Bryant		will dot bryant at ecosm dot com

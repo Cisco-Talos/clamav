@@ -35,7 +35,7 @@
  */
 
 #ifndef _UWIN
-//#   include <process.h>
+/*#   include <process.h> */
 #endif
 #include "pthread.h"
 #include "implement.h"

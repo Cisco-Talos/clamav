@@ -1,8 +1,8 @@
 /*
- * mutex.c
+ * context.h
  *
  * Description:
- * This translation unit implements mutual exclusion (mutex) primitives.
+ * POSIX thread macros related to thread cancellation.
  *
  * --------------------------------------------------------------------------
  *
@@ -34,26 +34,41 @@
  *      59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
-#if ! defined(_UWIN) && ! defined(WINCE)
-#   include <process.h>
-#endif
-#ifndef NEED_FTIME
-#include <sys/timeb.h>
-#endif
-#include "pthread.h"
-#include "implement.h"
+#ifndef PTW32_CONTEXT_H
+#define PTW32_CONTEXT_H
 
+#undef PTW32_PROGCTR
 
-#include "ptw32_mutex_check_need_init.c"
-#include "pthread_mutex_init.c"
-#include "pthread_mutex_destroy.c"
-#include "pthread_mutexattr_init.c"
-#include "pthread_mutexattr_destroy.c"
-#include "pthread_mutexattr_getpshared.c"
-#include "pthread_mutexattr_setpshared.c"
-#include "pthread_mutexattr_settype.c"
-#include "pthread_mutexattr_gettype.c"
-#include "pthread_mutex_lock.c"
-#include "pthread_mutex_timedlock.c"
-#include "pthread_mutex_unlock.c"
-#include "pthread_mutex_trylock.c"
+#if defined(_M_IX86) || defined(_X86_)
+#define PTW32_PROGCTR(Context)  ((Context).Eip)
+#endif
+
+#if defined (_M_IA64) || defined(_IA64)
+#define PTW32_PROGCTR(Context)  ((Context).StIIP)
+#endif
+
+#if defined(_MIPS_) || defined(MIPS)
+#define PTW32_PROGCTR(Context)  ((Context).Fir)
+#endif
+
+#if defined(_ALPHA_)
+#define PTW32_PROGCTR(Context)  ((Context).Fir)
+#endif
+
+#if defined(_PPC_)
+#define PTW32_PROGCTR(Context)  ((Context).Iar)
+#endif
+
+#if defined(_AMD64_) || defined(__amd64__)
+#define PTW32_PROGCTR(Context)  ((Context).Rip)
+#endif
+
+#if defined(_ARM_) || defined(ARM)
+#define PTW32_PROGCTR(Context)  ((Context).Pc)
+#endif
+
+#if !defined(PTW32_PROGCTR)
+#error Module contains CPU-specific code; modify and recompile.
+#endif
+
+#endif

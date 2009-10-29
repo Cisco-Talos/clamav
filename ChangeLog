@@ -1,3 +1,7 @@
+Thu Oct 29 23:42:57 CET 2009 (acab)
+-----------------------------------
+ * win32/3rdparty/pthreads: upgrade to CVS HEAD
+
 Thu Oct 29 17:27:40 CET 2009 (acab)
 -----------------------------------
  * win32: don't use . or .. in UNC names

@@ -1,3 +1,7 @@
+2008-06-30  Ross Johnson  <ross at callisto.canberra.edu.au>
+
+	pthread_setschedparam.html: Fix "see also" links.
+
 2005-05-06  Ross Johnson  <ross at callisto.canberra.edu.au>
 
 	* PortabilityIssues.html: Was nonPortableIssues.html.

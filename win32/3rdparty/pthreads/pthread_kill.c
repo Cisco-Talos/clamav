@@ -41,7 +41,9 @@
  * Not needed yet, but defining it should indicate clashes with build target
  * environment that should be fixed.
  */
-#include <signal.h>
+#ifndef WINCE
+#  include <signal.h>
+#endif
 
 int
 pthread_kill (pthread_t thread, int sig)

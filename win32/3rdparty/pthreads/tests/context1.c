@@ -75,6 +75,7 @@
 
 #include "test.h"
 #include "../implement.h"
+#include "../context.h"
 
 static int washere = 0;
 
@@ -122,10 +123,7 @@ main()
       context.ContextFlags = CONTEXT_CONTROL;
 
       GetThreadContext(hThread, &context);
-      /*
-       *_x86 only!!!
-       */
-      context.Eip = (DWORD) anotherEnding;
+      PTW32_PROGCTR (context) = (DWORD_PTR) anotherEnding;
       SetThreadContext(hThread, &context);
       ResumeThread(hThread);
     }

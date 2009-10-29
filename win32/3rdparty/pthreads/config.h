@@ -100,7 +100,7 @@
 #define NEED_ERRNO
 #define NEED_CALLOC
 #define NEED_FTIME
-//#define NEED_SEM
+/* #define NEED_SEM */
 #define NEED_UNICODE_CONSTS
 #define NEED_PROCESS_AFFINITY_MASK
 #endif

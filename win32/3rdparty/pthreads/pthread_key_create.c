@@ -93,7 +93,7 @@ pthread_key_create (pthread_key_t * key, void (*destructor) (void *))
     {
       /*
        * Have to manage associations between thread and key;
-       * Therefore, need a lock that allows multiple threads
+       * Therefore, need a lock that allows competing threads
        * to gain exclusive access to the key->threads list.
        *
        * The mutex will only be created when it is first locked.
