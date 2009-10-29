@@ -75,15 +75,15 @@ wchar_t *uncpath(const char *path) {
     }
     while((stripme = wcsstr(strip_from, L"\\."))) {
 	wchar_t *copy_from, *copy_to;
-	if(stripme[2] == L'\\') {
+	if(!stripme[2] || stripme[2] == L'\\') {
 	    copy_from = &stripme[2];
 	    copy_to = stripme;
-	} else if (stripme[2] == L'.' && stripme[3] == L'\\') {
+	} else if (stripme[2] == L'.' && (!stripme[3] || stripme[3] == L'\\')) {
 	    *stripme = L'\0';
 	    copy_from = &stripme[3];
 	    copy_to = wcsrchr(strip_from, L'\\');
 	    if(!copy_to)
-		copy_to = strip_from;
+		copy_to = stripme;
 	} else {
 	    strip_from = &stripme[1];
 	    continue;
