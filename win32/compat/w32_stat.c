@@ -29,7 +29,7 @@
 
 wchar_t *uncpath(const char *path) {
     DWORD len = 0;
-    wchar_t *dest = cli_malloc((PATH_MAX + 1) * sizeof(wchar_t));
+    wchar_t *stripme, *strip_from, *dest = cli_malloc((PATH_MAX + 1) * sizeof(wchar_t));
 
     if(!dest)
 	return NULL;
@@ -64,11 +64,37 @@ wchar_t *uncpath(const char *path) {
     }
 
     len = wcslen(dest);
-    if(len == 6 && !wcsncmp(dest, L"\\\\?\\", 4) && (dest[5] == L':') && ((dest[4] >= L'A' && dest[4] <= L'Z') || (dest[4] >= L'a' && dest[4] <= L'z'))) {
-	dest[6] = L'\\';
-	dest[7] = L'\0';
+    strip_from = &dest[3];
+    /* append a backslash to naked drives and get rid of . and .. */
+    if(!wcsncmp(dest, L"\\\\?\\", 4) && (dest[5] == L':') && ((dest[4] >= L'A' && dest[4] <= L'Z') || (dest[4] >= L'a' && dest[4] <= L'z'))) {
+	if(len == 6) {
+	    dest[6] = L'\\';
+	    dest[7] = L'\0';
+	}
+	strip_from = &dest[6];
     }
-
+    while((stripme = wcsstr(strip_from, L"\\."))) {
+	wchar_t *copy_from, *copy_to;
+	if(stripme[2] == L'\\') {
+	    copy_from = &stripme[2];
+	    copy_to = stripme;
+	} else if (stripme[2] == L'.' && stripme[3] == L'\\') {
+	    *stripme = L'\0';
+	    copy_from = &stripme[3];
+	    copy_to = wcsrchr(strip_from, L'\\');
+	    if(!copy_to)
+		copy_to = strip_from;
+	} else {
+	    strip_from = &stripme[1];
+	    continue;
+	}
+	while(1) {
+	    *copy_to = *copy_from;
+	    if(!*copy_from) break;
+	    copy_to++;
+	    copy_from++;
+	}
+    }
     return dest;
 }
 
@@ -101,9 +127,6 @@ w32_stat(const char *path, struct stat *buf) {
     if(!wpath)
 	return -1;
 
-    len = wcslen(wpath);
-    if(len > 2 && wpath[len-1] == L'.' && wpath[len-2] == L'\\')
-	wpath[len-2] = L'\0'; /* windoze can't stat '.' ... */
     len = GetFileAttributesExW(wpath, GetFileExInfoStandard, &attrs);
     free(wpath);
     if(!len) {

@@ -1,3 +1,7 @@
+Thu Oct 29 17:27:40 CET 2009 (acab)
+-----------------------------------
+ * win32: don't use . or .. in UNC names
+
 Wed Oct 28 15:15:05 EET 2009 (edwin)
 ------------------------------------
  * clamd/thrmgr.c: use a double instead of integer to avoid negative time (bb #1731).
