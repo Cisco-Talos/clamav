@@ -91,7 +91,15 @@ int _setargv() {
 
 		memcpy(path, begparm, endparm - begparm);
 		path[endparm - begparm] = '\0';
-		if(!argc || !need_glob || !(arglen = glob_add(path, &argc, &argv))) {
+		if(argc && need_glob) {
+		    arglen = glob_add(path, &argc, &argv);
+		    if(!arglen) {
+			*path = malloc(endparm - begparm + 1);
+			memcpy(path, begparm, endparm - begparm);
+			path[endparm - begparm] = '\0';
+		    }
+		}
+		if(!arglen) {
 		    argv = realloc(argv, sizeof(*argv) * (argc + 1));
 		    argv[argc] = path;
 		    argc++;
