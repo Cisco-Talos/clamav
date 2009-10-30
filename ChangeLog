@@ -1,3 +1,7 @@
+Fri Oct 30 14:04:43 EET 2009 (edwin)
+------------------------------------
+ * configure, m4/acinclude.m4: Avoid trailing slash in libdir for old gcc (#1738).
+
 Thu Oct 29 23:42:57 CET 2009 (acab)
 -----------------------------------
  * win32/3rdparty/pthreads: upgrade to CVS HEAD
