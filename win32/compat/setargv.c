@@ -94,7 +94,7 @@ int _setargv() {
 		if(argc && need_glob) {
 		    arglen = glob_add(path, &argc, &argv);
 		    if(!arglen) {
-			*path = malloc(endparm - begparm + 1);
+			path = malloc(endparm - begparm + 1);
 			memcpy(path, begparm, endparm - begparm);
 			path[endparm - begparm] = '\0';
 		    }
