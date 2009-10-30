@@ -755,7 +755,7 @@ AC_DEFUN([AC_LIB_MULTILIB_GUESS],
 		AC_MSG_CHECKING([for multiarch libdir])
 		# Based on http://lists.gnu.org/archive/html/autoconf/2008-09/msg00072.html
 		if test "$GCC" = yes; then
-			ac_multilibdir=`$CC -print-multi-os-directory $CFLAGS $CPPFLAGS $LDFLAGS`
+			ac_multilibdir=`$CC -print-multi-os-directory $CFLAGS $CPPFLAGS $LDFLAGS` || ac_multilibdir=.
 		else
 			ac_multilibdir=.
 		fi
@@ -778,7 +778,7 @@ AC_DEFUN([AC_LIB_MULTILIB_GUESS],
 					*/lib64 ) acl_libdirstem=lib64 ;;
 				   esac
 			esac
-		fi	
+		fi
 	fi
 ])
 
