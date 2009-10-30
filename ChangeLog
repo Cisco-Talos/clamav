@@ -1,3 +1,7 @@
+Fri Oct 30 14:04:43 EET 2009 (edwin)
+------------------------------------
+ * configure, m4/acinclude.m4: Avoid trailing slash in libdir for old gcc (#1738).
+
 Wed Sep 30 19:41:43 EEST 2009 (edwin)
 -------------------------------------
  * configure{.in,}: Only use -fno-strict-aliasing for gcc-4.3+ to avoid bugs
