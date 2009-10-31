@@ -67,11 +67,16 @@ typedef	unsigned	int	in_addr_t;
 
 #undef DATADIR
 #undef CONFDIR
-__declspec(dllimport) extern const char *DATADIR;
-__declspec(dllimport) extern const char *CONFDIR;
-__declspec(dllimport) extern const char *CONFDIR_CLAMD;
-__declspec(dllimport) extern const char *CONFDIR_FRESHCLAM;
-__declspec(dllimport) extern const char *CONFDIR_MILTER;
+#if !defined(THIS_IS_LIBCLAMAV) && defined(_MSC_VER)
+#define LIBCLAMAV_EXPORT __declspec(dllimport)
+#else
+#define LIBCLAMAV_EXPORT
+#endif
+LIBCLAMAV_EXPORT extern const char *DATADIR;
+LIBCLAMAV_EXPORT extern const char *CONFDIR;
+LIBCLAMAV_EXPORT extern const char *CONFDIR_CLAMD;
+LIBCLAMAV_EXPORT extern const char *CONFDIR_FRESHCLAM;
+LIBCLAMAV_EXPORT extern const char *CONFDIR_MILTER;
 #undef HAVE_CONFIG_H
 
 #endif /* __PLATFORM_H */

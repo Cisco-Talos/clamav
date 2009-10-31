@@ -1,3 +1,7 @@
+Sat Oct 31 19:12:22 CET 2009 (acab)
+-----------------------------------
+ * win32: fix warnings
+
 Fri Oct 30 14:04:43 EET 2009 (edwin)
 ------------------------------------
  * configure, m4/acinclude.m4: Avoid trailing slash in libdir for old gcc (#1738).

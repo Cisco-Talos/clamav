@@ -943,10 +943,6 @@ struct optstruct *optparse(const char *cfgfile, int argc, char **argv, int verbo
 
 		arg = NULL;
 		if(err) break;
-
-		if(sizeof(lnumarg) > sizeof(numarg) && (lnumarg >> (sizeof(numarg)<<3)) )
-		    errno = ERANGE;
-
 		if(errno == ERANGE) {
 		    if(cfgfile) {
 			fprintf(stderr, "WARNING: Numerical value for option %s too high, resetting to 4G\n", name);

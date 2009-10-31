@@ -61,9 +61,9 @@
 
 #define DCONF ctx->dconf->pe
 
-#define IMAGE_DOS_SIGNATURE	    0x5a4d	    /* MZ */
-#define IMAGE_DOS_SIGNATURE_OLD	    0x4d5a          /* ZM */
-#define IMAGE_NT_SIGNATURE	    0x00004550
+#define PE_IMAGE_DOS_SIGNATURE	    0x5a4d	    /* MZ */
+#define PE_IMAGE_DOS_SIGNATURE_OLD  0x4d5a          /* ZM */
+#define PE_IMAGE_NT_SIGNATURE	    0x00004550
 #define PE32_SIGNATURE		    0x010b
 #define PE32P_SIGNATURE		    0x020b
 
@@ -429,7 +429,7 @@ int cli_scanpe(cli_ctx *ctx)
 	return CL_CLEAN;
     }
 
-    if(EC16(e_magic) != IMAGE_DOS_SIGNATURE && EC16(e_magic) != IMAGE_DOS_SIGNATURE_OLD) {
+    if(EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE && EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE_OLD) {
 	cli_dbgmsg("Invalid DOS signature\n");
 	return CL_CLEAN;
     }
@@ -2141,7 +2141,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 	return CL_CLEAN;
     }
 
-    if(EC16(e_magic) != IMAGE_DOS_SIGNATURE && EC16(e_magic) != IMAGE_DOS_SIGNATURE_OLD) {
+    if(EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE && EC16(e_magic) != PE_IMAGE_DOS_SIGNATURE_OLD) {
 	cli_dbgmsg("Invalid DOS signature\n");
 	return -1;
     }
