@@ -458,7 +458,7 @@ int cli_scanpe(cli_ctx *ctx)
 	return CL_CLEAN;
     }
 
-    if(EC32(file_hdr.Magic) != IMAGE_NT_SIGNATURE) {
+    if(EC32(file_hdr.Magic) != PE_IMAGE_NT_SIGNATURE) {
 	cli_dbgmsg("Invalid PE signature (probably NE file)\n");
 	return CL_CLEAN;
     }
@@ -2163,7 +2163,7 @@ int cli_peheader(fmap_t *map, struct cli_exe_info *peinfo)
 	return -1;
     }
 
-    if(EC32(file_hdr.Magic) != IMAGE_NT_SIGNATURE) {
+    if(EC32(file_hdr.Magic) != PE_IMAGE_NT_SIGNATURE) {
 	cli_dbgmsg("Invalid PE signature (probably NE file)\n");
 	return -1;
     }
