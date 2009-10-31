@@ -816,6 +816,10 @@
 				RelativePath=".\libclamav.def"
 				>
 			</File>
+			<File
+				RelativePath=".\res\libclamav.rc"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

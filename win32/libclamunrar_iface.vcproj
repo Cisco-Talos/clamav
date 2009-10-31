@@ -207,6 +207,10 @@
 				RelativePath=".\libclamunrar_iface.def"
 				>
 			</File>
+			<File
+				RelativePath=".\res\libclamunrar_iface.rc"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>

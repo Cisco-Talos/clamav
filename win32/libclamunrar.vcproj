@@ -227,6 +227,10 @@
 				RelativePath=".\libclamunrar.def"
 				>
 			</File>
+			<File
+				RelativePath=".\res\libclamunrar.rc"
+				>
+			</File>
 		</Filter>
 	</Files>
 	<Globals>
