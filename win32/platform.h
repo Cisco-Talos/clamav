@@ -79,4 +79,9 @@ LIBCLAMAV_EXPORT extern const char *CONFDIR_FRESHCLAM;
 LIBCLAMAV_EXPORT extern const char *CONFDIR_MILTER;
 #undef HAVE_CONFIG_H
 
+#ifdef OUT
+#undef OUT
+#endif
+
 #endif /* __PLATFORM_H */
+

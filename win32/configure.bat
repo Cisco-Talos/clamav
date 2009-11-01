@@ -1,0 +1,1 @@
+cscript //NoLogo configure.js
