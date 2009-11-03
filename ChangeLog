@@ -1,3 +1,9 @@
+Tue Nov  3 22:50:30 CET 2009 (tk)
+---------------------------------
+ * libclamav, freshclam: fix handling of dbs when both daily.cvd and daily.cld
+			 are present in the db directory and ScriptedUpdates
+			 are turned off (bb#1739)
+
 Tue Nov  3 15:18:14 CET 2009 )tk)
 ---------------------------------
  * libclamav/readdb.c: return error if lsig contains redundant subsigs

@@ -1684,6 +1684,13 @@ static int updatedb(const char *dbname, const char *hostname, char *ip, int *sig
 	if(unlink(localname))
 	    logg("^Can't unlink the old database file %s. Please remove it manually.\n", localname);
 
+    if(!optget(opts, "ScriptedUpdates")->enabled) {
+	snprintf(localname, sizeof(localname), "%s.cld", dbname);
+	if(!access(localname, R_OK))
+	    if(unlink(localname))
+		logg("^Can't unlink the old database file %s. Please remove it manually.\n", localname);
+    }
+
     logg("%s updated (version: %d, sigs: %d, f-level: %d, builder: %s)\n", newdb, current->version, current->sigs, current->fl, current->builder);
 
     if(flevel < current->fl) {

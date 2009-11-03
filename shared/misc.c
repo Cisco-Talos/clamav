@@ -117,6 +117,8 @@ void print_version(const char *dbdir)
 	char *fdbdir = NULL, *path;
 	const char *pt;
 	struct cl_cvd *daily;
+	time_t db_time;
+	unsigned int db_version = 0;
 
 
     if(dbdir)
@@ -136,17 +138,32 @@ void print_version(const char *dbdir)
     }
 
     sprintf(path, "%s"PATHSEP"daily.cvd", pt);
-    if(access(path, R_OK))
-	sprintf(path, "%s"PATHSEP"daily.cld", pt);
+    if(!access(path, R_OK)) {
+	daily = cl_cvdhead(path);
+	if(daily) {
+	    db_version = daily->version;
+	    db_time = daily->stime;
+	    cl_cvdfree(daily);
+	}
+    }
+
+    sprintf(path, "%s"PATHSEP"daily.cld", pt);
+    if(!access(path, R_OK)) {
+	daily = cl_cvdhead(path);
+	if(daily) {
+	    if(daily->version > db_version) {
+		db_version = daily->version;
+		db_time = daily->stime;
+	    }
+	    cl_cvdfree(daily);
+	}
+    }
 
     if(!dbdir)
 	free(fdbdir);
 
-    if(!access(path, R_OK) && (daily = cl_cvdhead(path))) {
-	    time_t t = (time_t) daily->stime;
-
-	printf("ClamAV %s/%d/%s", get_version(), daily->version, ctime(&t));
-	cl_cvdfree(daily);
+    if(db_version) {
+	printf("ClamAV %s/%u/%s", get_version(), db_version, ctime(&db_time));
     } else {
 	printf("ClamAV %s\n",get_version());
     }

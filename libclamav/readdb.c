@@ -1692,7 +1692,8 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 	} result;
 #endif
 	char *dbfile;
-	int ret = CL_EOPEN;
+	int ret = CL_EOPEN, have_cld;
+	struct cl_cvd *daily_cld, *daily_cvd;
 
 
     cli_dbgmsg("Loading databases from %s\n", dirname);
@@ -1740,8 +1741,38 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
     }
 
     sprintf(dbfile, "%s"PATHSEP"daily.cld", dirname);
-    if(access(dbfile, R_OK))
-	sprintf(dbfile, "%s"PATHSEP"daily.cvd", dirname);
+    have_cld = !access(dbfile, R_OK);
+    if(have_cld) {
+	daily_cld = cl_cvdhead(dbfile);
+	if(!daily_cld) {
+	    cli_errmsg("cli_loaddbdir(): error parsing header of %s\n", dbfile);
+	    free(dbfile);
+	    closedir(dd);
+	    return CL_EMALFDB;
+	}
+    }
+    sprintf(dbfile, "%s"PATHSEP"daily.cvd", dirname); 
+    if(!access(dbfile, R_OK)) {
+	if(have_cld) {
+	    daily_cvd = cl_cvdhead(dbfile);
+	    if(!daily_cvd) {
+		cli_errmsg("cli_loaddbdir(): error parsing header of %s\n", dbfile);
+		free(dbfile);
+		if(have_cld)
+		    cl_cvdfree(daily_cld);
+		closedir(dd);
+		return CL_EMALFDB;
+	    }
+	    if(daily_cld->version > daily_cvd->version)
+		sprintf(dbfile, "%s"PATHSEP"daily.cld", dirname);
+	    cl_cvdfree(daily_cvd);
+	}
+    } else {
+	sprintf(dbfile, "%s"PATHSEP"daily.cld", dirname);
+    }
+    if(have_cld)
+	cl_cvdfree(daily_cld);
+
     if(!access(dbfile, R_OK) && (ret = cli_load(dbfile, engine, signo, options, NULL))) {
 	free(dbfile);
 	closedir(dd);
