@@ -1,3 +1,7 @@
+Tue Nov  3 15:18:14 CET 2009 )tk)
+---------------------------------
+ * libclamav/readdb.c: return error if lsig contains redundant subsigs
+
 Sun Nov  1 21:26:10 CET 2009 (acab)
 -----------------------------------
  * win32: improve build system

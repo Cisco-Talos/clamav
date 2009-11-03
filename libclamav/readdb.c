@@ -856,7 +856,7 @@ static int lsigattribs(char *attribs, struct cli_lsig_tdb *tdb)
 #define LDB_TOKENS 67
 static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, unsigned int options, struct cli_dbio *dbio, const char *dbname)
 {
-	char *tokens[LDB_TOKENS];
+	char *tokens[LDB_TOKENS + 1];
 	char buffer[CLI_DEFAULT_LSIG_BUFSIZE + 1], *buffer_cpy, *pt;
 	const char *sig, *virname, *offset, *logic;
 	struct cli_matcher *root;
@@ -882,7 +882,7 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	if(engine->ignored)
 	    strcpy(buffer_cpy, buffer);
 
-	tokens_count = cli_strtokenize(buffer, ';', LDB_TOKENS, (const char **) tokens);
+	tokens_count = cli_strtokenize(buffer, ';', LDB_TOKENS + 1, (const char **) tokens);
 	if(tokens_count < 4) {
 	    ret = CL_EMALFDB;
 	    break;
@@ -907,6 +907,12 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 
 	if(subsigs > 64) {
 	    cli_errmsg("cli_loadldb: Broken logical expression or too many subsignatures\n");
+	    ret = CL_EMALFDB;
+	    break;
+	}
+
+	if(subsigs != tokens_count - 3) {
+	    cli_errmsg("cli_loadldb: The number of subsignatures (== %u) doesn't match the IDs in the logical expression (== %u)\n", tokens_count - 3, subsigs);
 	    ret = CL_EMALFDB;
 	    break;
 	}
@@ -984,11 +990,6 @@ static int cli_loadldb(FILE *fs, struct cl_engine *engine, unsigned int *signo, 
 	root->ac_lsigtable = newtable;
 
 	for(i = 0; i < subsigs; i++) {
-	    if(i + 3 >= tokens_count) {
-		cli_errmsg("cli_loadldb: Missing subsignature id %u\n", i);
-		ret = CL_EMALFDB;
-		break;
-	    }
 	    lsigid[1] = i;
 	    sig = tokens[3 + i];
 
