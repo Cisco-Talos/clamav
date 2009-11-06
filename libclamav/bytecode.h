@@ -21,8 +21,9 @@
  */
 #ifndef BYTECODE_H
 #define BYTECODE_H
-#include <stdio.h>
+#include <stdint.h>
 #include "clambc.h"
+#include <stdio.h>
 
 struct cli_dbio;
 struct cli_bc_ctx;

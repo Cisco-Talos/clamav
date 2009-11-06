@@ -22,7 +22,6 @@
 #ifndef CLAMBC_H
 #define CLAMBC_H
 
-
 struct bytecode_metadata {
   unsigned long maxStack, maxMem;
   unsigned long maxTime;
@@ -75,6 +74,12 @@ enum bc_opcode {
   OP_BC_GEPN,
   OP_BC_STORE,
   OP_BC_LOAD,
+  OP_BC_MEMSET,
+  OP_BC_MEMCPY,
+  OP_BC_MEMMOVE,
+  OP_BC_MEMCMP,
+  OP_BC_ISBIGENDIAN,
+  OP_BC_ABORT,
   OP_BC_INVALID /* last */
 };
 
@@ -95,7 +100,13 @@ static const unsigned char operand_counts[] = {
   /* OP_BC_COPY */
   2,
   /* OP_BC_GEP1, OP_BC_GEP2, OP_BC_GEPN, OP_BC_STORE, OP_BC_LOAD*/
-  2, 3, 0, 2, 1
+  2, 3, 0, 2, 1,
+  /* OP_MEM* */
+  3, 3, 3, 3,
+  /* OP_BC_ISBIGENDIAN */
+  0,
+  /* OP_BC_ABORT */
+  0
 };
 
 enum bc_global {
@@ -104,6 +115,7 @@ enum bc_global {
   GLOBAL_KIND,
   GLOBAL_VIRUSNAMES,
   GLOBAL_EXEINFO,
+  GLOBAL_PEDATA,
   _LAST_GLOBAL
 };
 

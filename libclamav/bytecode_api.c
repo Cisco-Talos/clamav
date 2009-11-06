@@ -90,3 +90,16 @@ uint32_t cli_bcapi_setvirusname(struct cli_bc_ctx* ctx, const uint8_t *name, uin
     ctx->virname = name;
     return 0;
 }
+
+uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT *res, uint32_t len)
+{
+    //TODO: call disasm_x86_wrap, which outputs a MARIO struct
+}
+
+int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t*data, int32_t len)
+{
+    //TODO: write to tempfile (checking maxsize), and later scan it via
+    //magicscandesc
+}
+
+

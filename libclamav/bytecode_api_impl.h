@@ -26,9 +26,11 @@ struct cli_bc_bctx;
 uint32_t cli_bcapi_test0(struct cli_bc_ctx *ctx, struct foo*, uint32_t);
 uint32_t cli_bcapi_test1(struct cli_bc_ctx *ctx, uint32_t, uint32_t);
 int32_t cli_bcapi_read(struct cli_bc_ctx *ctx, uint8_t*, int32_t);
+int32_t cli_bcapi_write(struct cli_bc_ctx *ctx, uint8_t*, int32_t);
 int32_t cli_bcapi_seek(struct cli_bc_ctx *ctx, int32_t, uint32_t);
 uint32_t cli_bcapi_setvirusname(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
 uint32_t cli_bcapi_debug_print_str(struct cli_bc_ctx *ctx, const const uint8_t*, uint32_t);
 uint32_t cli_bcapi_debug_print_uint(struct cli_bc_ctx *ctx, uint32_t, uint32_t);
+uint32_t cli_bcapi_disasm_x86(struct cli_bc_ctx *ctx, struct DISASM_RESULT*, uint32_t);
 
 #endif

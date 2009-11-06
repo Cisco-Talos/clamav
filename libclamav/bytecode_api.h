@@ -24,12 +24,13 @@
 
 #ifdef __CLAMBC__
 #include "bytecode_execs.h"
-//#include "bytecode_pe.h"
+#include "bytecode_pe.h"
+#include "bytecode_disasm.h"
 #endif
 
 #ifndef __CLAMBC__
 #include "execs.h"
-#include "pe.h"
+struct DISASM_RESULT;
 #endif
 
 struct foo {
@@ -64,6 +65,7 @@ enum {
     SEEK_END
 };
 
+int32_t write(uint8_t *data, int32_t size);
 /* seeks current position to @pos, from @whence, returns current position from
  * start of file */
 int32_t seek(int32_t pos, uint32_t whence);
@@ -73,7 +75,8 @@ uint32_t setvirusname(const uint8_t *name, uint32_t len);
 
 uint32_t debug_print_str(const uint8_t *str, uint32_t len);
 uint32_t debug_print_uint(uint32_t a, uint32_t b);
-//const char *LogicalSignature;
 
+// disassembles at current file position, use lseek to disasm someplace else
+uint32_t disasm_x86(struct DISASM_RESULT*, uint32_t len);
 #endif
 #endif
