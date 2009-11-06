@@ -337,22 +337,13 @@ tnef_attachment(FILE *fp, uint16_t type, uint16_t tag, int32_t length, const cha
 				if(*fbref == NULL)
 					return -1;
 			}
-			for(todo = length; todo; todo--) {
-#if WORDS_BIGENDIAN == 1
-				int c;
-				unsigned char c2;
+			todo = length;
+			while(todo && !feof(fp) && !ferror(fp)) {
+			    unsigned char buf[BUFSIZ];
+			    uint32_t got = fread(buf, 1, MIN(sizeof(buf), todo), fp);
 
-				if((c = fgetc(fp)) == EOF)
-					break;
-				c2 = (unsigned char)c;
-				fileblobAddData(*fbref, (const unsigned char *)&c2, 1);
-#else
-				int c;
-
-				if((c = fgetc(fp)) == EOF)
-					break;
-				fileblobAddData(*fbref, (const unsigned char *)&c, 1);
-#endif
+			    fileblobAddData(*fbref, buf, got);
+			    todo -= got;
 			}
 			break;
 		default:
