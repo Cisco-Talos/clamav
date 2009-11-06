@@ -525,7 +525,7 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 	char buff[512], statsdat[512], newstatsdat[512], uastr[128];
 	char logfile[256], fbuff[FILEBUFF];
 	char *pt, *pt2, *auth = NULL;
-	const char *line, *country = NULL, *user, *proxy = NULL;
+	const char *line, *country = NULL, *user, *proxy = NULL, *hostid = NULL;
 	struct optstruct *clamdopt;
 	const struct optstruct *opt;
 	struct stat sb;
@@ -534,12 +534,25 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 	unsigned int qcnt, entries, submitted = 0, permfail = 0, port = 0;
 
 
+    if(optget(opts, "HTTPUserAgent")->enabled) {
+	logg("!SubmitDetectionStats: HTTPUserAgent must be disabled for SubmitDetectionStats to work\n");
+	return 56;
+    }
+
     if((opt = optget(opts, "DetectionStatsCountry"))->enabled) {
 	if(strlen(opt->strarg) != 2 || !isalpha(opt->strarg[0]) || !isalpha(opt->strarg[1])) {
 	    logg("!SubmitDetectionStats: DetectionStatsCountry requires a two-letter country code\n");
 	    return 56;
 	}
 	country = opt->strarg;
+    }
+
+    if((opt = optget(opts, "DetectionStatsHostID"))->enabled) {
+	if(strlen(opt->strarg) != 32) {
+	    logg("!SubmitDetectionStats: The unique ID must be 32 characters long\n");
+	    return 56;
+	}
+	hostid = opt->strarg;
     }
 
     if(!(clamdopt = optparse(clamdcfg, 0, NULL, 1, OPT_CLAMD, 0, NULL))) {
@@ -602,10 +615,7 @@ int submitstats(const char *clamdcfg, const struct optstruct *opts)
 	strncpy(newstatsdat, line, sizeof(newstatsdat));
     }
 
-    if((opt = optget(opts, "HTTPUserAgent"))->enabled)
-	strncpy(uastr, opt->strarg, sizeof(uastr));
-    else
-	snprintf(uastr, sizeof(uastr), PACKAGE"/%s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE")%s%s", get_version(), country ? ":" : "", country ? country : "");
+    snprintf(uastr, sizeof(uastr), PACKAGE"/%s (OS: "TARGET_OS_TYPE", ARCH: "TARGET_ARCH_TYPE", CPU: "TARGET_CPU_TYPE"):%s:%s", get_version(), country ? country : "", hostid ? hostid : "");
     uastr[sizeof(uastr) - 1] = 0;
 
     if((opt = optget(opts, "HTTPProxyServer"))->enabled) {
