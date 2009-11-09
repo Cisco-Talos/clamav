@@ -146,7 +146,7 @@ end_valgrind() {
 # ----------- clamscan tests --------------------------------------------------------
 test_clamscan() {
     test_start $1
-    if test_run 1 $CLAMSCAN --quiet -dtest-db/test.hdb $TESTFILES --log=clamscan.log; then
+    if test_run 1 $CLAMSCAN --debug --quiet -dtest-db/test.hdb $TESTFILES --log=clamscan.log; then
 	scan_failed clamscan.log "clamscan didn't detect all testfiles correctly"
     fi
     NINFECTED=`grep "Infected files" clamscan.log | cut -f2 -d: | sed -e 's/ //g'`
