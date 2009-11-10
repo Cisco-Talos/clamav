@@ -1,3 +1,8 @@
+Tue Nov 10 12:52:43 CET 2009 (acab)
+-----------------------------------
+ * doc/man/clamav-milter.8.in: fix typo
+   reported by Thomas Harold <thomas * betasearch.com>
+
 Fri Nov  6 16:14:09 CET 2009 (acab)
 -----------------------------------
  * libclamav/tnef.c: don't use fgetc (bb#1695)

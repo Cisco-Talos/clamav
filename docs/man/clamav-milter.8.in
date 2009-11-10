@@ -27,7 +27,7 @@ Print the version number and exit.
 Read configuration from FILE.
 .SH "FILES"
 .LP 
-@CFGDIR@/clamd.conf
+@CFGDIR@/clamav-milter.conf
 .SH "AUTHOR"
 .LP 
 aCaB <acab@clamav.net>
