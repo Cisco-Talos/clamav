@@ -1808,6 +1808,11 @@ static int cli_loaddbdir(const char *dirname, struct cl_engine *engine, unsigned
 	if(dent->d_ino)
 	{
 	    if(strcmp(dent->d_name, ".") && strcmp(dent->d_name, "..") && strcmp(dent->d_name, "daily.cvd") && strcmp(dent->d_name, "daily.cld") && strcmp(dent->d_name, "daily.cfg") && CLI_DBEXT(dent->d_name)) {
+		if((options & CL_DB_OFFICIAL_ONLY) && !strstr(dirname, "clamav-") && !cli_strbcasestr(dent->d_name, ".cld") && !cli_strbcasestr(dent->d_name, ".cvd")) {
+		    cli_dbgmsg("Skipping unofficial database %s\n", dent->d_name);
+		    continue;
+		}
+
 		dbfile = (char *) cli_malloc(strlen(dent->d_name) + strlen(dirname) + 2);
 		if(!dbfile) {
 		    cli_dbgmsg("cli_loaddbdir(): dbfile == NULL\n");

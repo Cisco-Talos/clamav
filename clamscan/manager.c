@@ -326,6 +326,9 @@ int scanmanager(const struct optstruct *opts)
     if(optget(opts, "phishing-sigs")->enabled)
 	dboptions |= CL_DB_PHISHING;
 
+    if(optget(opts, "official-db-only")->enabled)
+	dboptions |= CL_DB_OFFICIAL_ONLY;
+
     if(optget(opts,"phishing-scan-urls")->enabled)
 	dboptions |= CL_DB_PHISHING_URLS;
 

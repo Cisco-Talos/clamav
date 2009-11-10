@@ -385,6 +385,11 @@ int main(int argc, char **argv)
 	logg("#Not loading PUA signatures.\n");
     }
 
+    if(optget(opts, "OfficialDatabaseOnly")->enabled) {
+	dboptions |= CL_DB_OFFICIAL_ONLY;
+	logg("#Only loading official signatures.\n");
+    }
+
     /* set the temporary dir */
     if((opt = optget(opts, "TemporaryDirectory"))->enabled) {
 	if((ret = cl_engine_set_str(engine, CL_ENGINE_TMPDIR, opt->strarg))) {

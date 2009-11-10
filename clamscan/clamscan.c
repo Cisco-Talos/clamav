@@ -201,6 +201,7 @@ void help(void)
     mprintf("    --leave-temps[=yes/no(*)]            Do not remove temporary files\n");
     mprintf("    --database=FILE/DIR   -d FILE/DIR    Load virus database from FILE or load\n");
     mprintf("                                         all supported db files from DIR\n");
+    mprintf("    --official-db-only[=yes/no(*)]       Only load official signatures\n");
     mprintf("    --log=FILE            -l FILE        Save scan report to FILE\n");
     mprintf("    --recursive[=yes/no(*)]  -r          Scan subdirectories recursively\n");
     mprintf("    --cross-fs[=yes(*)/no]               Scan files and directories on other filesystems\n");
