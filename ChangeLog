@@ -1,3 +1,7 @@
+Tue Nov 10 16:50:56 CET 2009 (tk)
+---------------------------------
+ * freshclam/notify.c: fix clamd notification in TCP mode (bb#1756)
+
 Tue Nov 10 12:52:43 CET 2009 (acab)
 -----------------------------------
  * doc/man/clamav-milter.8.in: fix typo
