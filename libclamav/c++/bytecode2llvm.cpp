@@ -99,7 +99,7 @@ static void NORETURN jit_exception_handler(void)
 void llvm_error_handler(void *user_data, const std::string &reason)
 {
     // Output it to stderr, it might exceed the 1k/4k limit of cli_errmsg
-    errs() << reason;
+    errs() << MODULE << reason;
     jit_exception_handler();
 }
 
@@ -179,6 +179,7 @@ public:
 
     const Type *get(uint16_t ty)
     {
+	ty &= 0x7fff;
 	if (ty < 69)
 	    return getStatic(ty);
 	ty -= 69;
@@ -225,9 +226,12 @@ private:
 	    return Values[operand];
 	if (operand < func->numValues) {
 	    Value *V = Values[operand];
-	    if (V->getType() == Ty)
+	    if (func->types[operand]&0x8000 && V->getType() == Ty) {
 		return V;
-	    return Builder.CreateLoad(V);
+	    }
+	    V = Builder.CreateLoad(V);
+	    assert(V->getType() == Ty);
+	    return V;
 	}
 	unsigned w = (Ty->getPrimitiveSizeInBits()+7)/8;
 	return convertOperand(func, map[w], operand);
@@ -243,8 +247,11 @@ private:
 			  unsigned w, operand_t operand) {
 	if (operand < func->numArgs)
 	    return Values[operand];
-	if (operand < func->numValues)
+	if (operand < func->numValues) {
+	    if (func->types[operand]&0x8000)
+		return Values[operand];
 	    return Builder.CreateLoad(Values[operand]);
+	}
 
 	if (operand & 0x80000000) {
 	    operand &= 0x7fffffff;
@@ -309,7 +316,7 @@ private:
 
     const Type* mapType(uint16_t typeID)
     {
-	return TypeMap->get(typeID);
+	return TypeMap->get(typeID&0x7fffffff);
     }
 
     Constant *buildConstant(const Type *Ty, uint64_t *components, unsigned &c)
@@ -364,6 +371,31 @@ public:
 	}
     }
 
+    template <typename InputIterator>
+    bool createGEP(unsigned dest, Value *Base, InputIterator Start, InputIterator End) {
+	assert(dest >= numArgs && dest < numLocals+numArgs && "Instruction destination out of range");
+	const Type *Ty = GetElementPtrInst::getIndexedType(Base->getType(), Start, End);
+	const Type *ETy = cast<PointerType>(cast<PointerType>(Values[dest]->getType())->getElementType())->getElementType();
+	if (!Ty || (Ty != ETy && (!isa<IntegerType>(Ty) || !isa<IntegerType>(ETy)))) {
+	    errs() << MODULE << "Wrong indices for GEP opcode: "
+		<< " expected type: " << *ETy;
+	    if (Ty)
+		errs() << " actual type: " << *Ty;
+	    errs() << " base: " << *Base << " indices: ";
+	    for (InputIterator I=Start; I != End; I++) {
+		errs() << **I << ", ";
+	    }
+	    errs() << "\n";
+	    return false;
+	}
+	Value *V = Builder.CreateGEP(Base, Start, End);
+	if (Ty != ETy) {
+	    V = Builder.CreateBitCast(V, PointerType::getUnqual(ETy));
+	}
+	Store(dest, V);
+	return true;
+    }
+
     bool generate() {
 	TypeMap = new LLVMTypeMapper(Context, bc->types + 4, bc->num_types - 5);
 
@@ -383,6 +415,55 @@ public:
 	FHandler->addFnAttr(Attribute::NoInline);
 	EE->addGlobalMapping(FHandler, (void*)jit_exception_handler);
 
+	std::vector<const Type*> args;
+	args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
+	args.push_back(Type::getInt8Ty(Context));
+	args.push_back(Type::getInt32Ty(Context));
+	args.push_back(Type::getInt32Ty(Context));
+	FunctionType* FuncTy_3 = FunctionType::get(Type::getVoidTy(Context),
+						   args, false);
+	Function *FMemset = Function::Create(FuncTy_3, GlobalValue::ExternalLinkage,
+					     "llvm.memset.i32", M);
+	FMemset->setDoesNotThrow();
+	FMemset->setDoesNotCapture(1, true);
+
+	args.clear();
+	args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
+	args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
+	args.push_back(Type::getInt32Ty(Context));
+	args.push_back(Type::getInt32Ty(Context));
+	FunctionType* FuncTy_4 = FunctionType::get(Type::getVoidTy(Context),
+						   args, false);
+	Function *FMemmove = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
+					     "llvm.memmove.i32", M);
+	FMemmove->setDoesNotThrow();
+	FMemmove->setDoesNotCapture(1, true);
+
+	Function *FMemcpy = Function::Create(FuncTy_4, GlobalValue::ExternalLinkage,
+					     "llvm.memcpy.i32", M);
+	FMemcpy->setDoesNotThrow();
+	FMemcpy->setDoesNotCapture(1, true);
+
+	FunctionType* DummyTy = FunctionType::get(Type::getVoidTy(Context), false);
+	Function *FRealMemset = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
+						 "memset", M);
+	EE->addGlobalMapping(FRealMemset, (void*)memset);
+	Function *FRealMemmove = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
+						 "memmove", M);
+	EE->addGlobalMapping(FRealMemmove, (void*)memmove);
+	Function *FRealMemcpy = Function::Create(DummyTy, GlobalValue::ExternalLinkage,
+						 "memcpy", M);
+	EE->addGlobalMapping(FRealMemcpy, (void*)memcpy);
+
+	args.clear();
+	args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
+	args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
+	args.push_back(EE->getTargetData()->getIntPtrType(Context));
+	FunctionType* FuncTy_5 = FunctionType::get(Type::getInt32Ty(Context),
+						   args, false);
+	Function* FRealMemcmp = Function::Create(FuncTy_5, GlobalValue::ExternalLinkage, "memcmp", M);
+	EE->addGlobalMapping(FRealMemcmp, (void*)memcmp);
+
 	// The hidden ctx param to all functions
 	const Type *HiddenCtx = PointerType::getUnqual(Type::getInt8Ty(Context));
 
@@ -399,8 +480,6 @@ public:
 	    if (isa<PointerType>(Ty)) {
 		unsigned g = bc->globals[i][1];
 		if (GVoffsetMap.count(g)) {
-		    const Type *MTy = GVtypeMap[g];
-		    assert(Ty == MTy);
 		    FakeGVs.set(i);
 		    globals.push_back(0);
 		    continue;
@@ -477,16 +556,21 @@ public:
 						     offset);
 		    Value *GEP = Builder.CreateInBoundsGEP(Ctx, Idx);
 		    const Type *Ty = GVtypeMap[g];
-		    Value *Cast = Builder.CreateBitCast(GEP,
-							PointerType::getUnqual(Ty));
+		    Ty = PointerType::getUnqual(PointerType::getUnqual(Ty));
+		    Value *Cast = Builder.CreateBitCast(GEP, Ty);
 		    Value *SpecialGV = Builder.CreateLoad(Cast);
-		    Constant *C = ConstantInt::get(Type::getInt32Ty(Context), bc->globals[i][0]);
-		    globals[i] = Builder.CreateInBoundsGEP(SpecialGV, C);
+		    Value *C[] = {
+			ConstantInt::get(Type::getInt32Ty(Context), 0),
+			ConstantInt::get(Type::getInt32Ty(Context), bc->globals[i][0])
+		    };
+		    globals[i] = Builder.CreateInBoundsGEP(SpecialGV, C,
+							   C+2);
 		}
 	    }
 
 	    // Generate LLVM IR for each BB
 	    for (unsigned i=0;i<func->numBB;i++) {
+		bool unreachable = false;
 		const struct cli_bc_bb *bb = &func->BB[i];
 		Builder.SetInsertPoint(BB[i]);
 		for (unsigned j=0;j<bb->numInsts;j++) {
@@ -507,6 +591,7 @@ public:
 			case OP_BC_GEPN:
 			case OP_BC_STORE:
 			case OP_BC_COPY:
+			case OP_BC_RET:
 			    // these instructions represents operands differently
 			    break;
 			default:
@@ -624,8 +709,11 @@ public:
 			    break;
 			}
 			case OP_BC_RET:
+			{
+			    Op0 = convertOperand(func, F->getReturnType(), inst->u.unaryop);
 			    Builder.CreateRet(Op0);
 			    break;
+			}
 			case OP_BC_RET_VOID:
 			    Builder.CreateRetVoid();
 			    break;
@@ -698,44 +786,110 @@ public:
 			}
 			case OP_BC_GEP1:
 			{
-			    Value *V = Values[inst->u.binop[0]];
+			    Value *V = convertOperand(func, inst, inst->u.binop[0]);
 			    Value *Op = convertOperand(func, I32Ty, inst->u.binop[1]);
-			    Store(inst->dest, Builder.CreateGEP(V, Op));
+			    if (!createGEP(inst->dest, V, &Op, &Op+1))
+				return false;
 			    break;
 			}
 			case OP_BC_GEP2:
 			{
 			    std::vector<Value*> Idxs;
-			    Value *V = Values[inst->u.three[0]];
+			    Value *V = convertOperand(func, inst, inst->u.three[0]);
 			    Idxs.push_back(convertOperand(func, I32Ty, inst->u.three[1]));
 			    Idxs.push_back(convertOperand(func, I32Ty, inst->u.three[2]));
-			    Store(inst->dest, Builder.CreateGEP(V, Idxs.begin(), Idxs.end()));
+			    if (!createGEP(inst->dest, V, Idxs.begin(), Idxs.end()))
+				return false;
 			    break;
 			}
 			case OP_BC_GEPN:
 			{
 			    std::vector<Value*> Idxs;
 			    assert(inst->u.ops.numOps > 1);
-			    Value *V = Values[inst->u.ops.ops[0]];
+			    Value *V = convertOperand(func, inst, inst->u.binop[0]);
 			    for (unsigned a=1;a<inst->u.ops.numOps;a++)
 				Idxs.push_back(convertOperand(func, I32Ty, inst->u.ops.ops[a]));
-			    Store(inst->dest, Builder.CreateGEP(V, Idxs.begin(), Idxs.end()));
+			    if (!createGEP(inst->dest, V, Idxs.begin(), Idxs.end()))
+				return false;
 			    break;
 			}
 			case OP_BC_STORE:
 			{
 			    Value *Dest = convertOperand(func, inst, inst->u.binop[1]);
 			    const Type *ETy = cast<PointerType>(Dest->getType())->getElementType();
-			    Builder.CreateStore(getOperand(func, ETy, inst->u.binop[0]),
+			    Builder.CreateStore(convertOperand(func, ETy, inst->u.binop[0]),
 						Dest);
 			    break;
 			}
 			case OP_BC_LOAD:
+			{
+			    Op0 = Builder.CreateBitCast(Op0,
+							Values[inst->dest]->getType());
 			    Op0 = Builder.CreateLoad(Op0);
 			    Store(inst->dest, Op0);
 			    break;
+			}
+			case OP_BC_MEMSET:
+			{
+			    Value *Dst = convertOperand(func, inst, inst->u.three[0]);
+			    Value *Val = convertOperand(func, Type::getInt8Ty(Context), inst->u.three[1]);
+			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
+			    CallInst *c = Builder.CreateCall4(FMemset, Dst, Val, Len,
+								ConstantInt::get(Type::getInt32Ty(Context), 1));
+			    c->setTailCall(true);
+			    c->setDoesNotThrow();
+			    break;
+			}
+			case OP_BC_MEMCPY:
+			{
+			    Value *Dst = convertOperand(func, inst, inst->u.three[0]);
+			    Value *Src = convertOperand(func, inst, inst->u.three[1]);
+			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
+			    CallInst *c = Builder.CreateCall4(FMemcpy, Dst, Src, Len,
+								ConstantInt::get(Type::getInt32Ty(Context), 1));
+			    c->setTailCall(true);
+			    c->setDoesNotThrow();
+			    break;
+			}
+			case OP_BC_MEMMOVE:
+			{
+			    Value *Dst = convertOperand(func, inst, inst->u.three[0]);
+			    Value *Src = convertOperand(func, inst, inst->u.three[1]);
+			    Value *Len = convertOperand(func, Type::getInt32Ty(Context), inst->u.three[2]);
+			    CallInst *c = Builder.CreateCall4(FMemmove, Dst, Src, Len,
+								ConstantInt::get(Type::getInt32Ty(Context), 1));
+			    c->setTailCall(true);
+			    c->setDoesNotThrow();
+			    break;
+			}
+			case OP_BC_MEMCMP:
+			{
+			    Value *Dst = convertOperand(func, inst, inst->u.three[0]);
+			    Value *Src = convertOperand(func, inst, inst->u.three[1]);
+			    Value *Len = convertOperand(func, EE->getTargetData()->getIntPtrType(Context), inst->u.three[2]);
+			    CallInst *c = Builder.CreateCall4(FRealMemcmp, Dst, Src, Len,
+								ConstantInt::get(Type::getInt32Ty(Context), 1));
+			    c->setTailCall(true);
+			    c->setDoesNotThrow();
+			    Store(inst->dest, c);
+			    break;
+			}
+			case OP_BC_ISBIGENDIAN:
+			    Store(inst->dest, WORDS_BIGENDIAN ?
+				  ConstantInt::getTrue(Context) :
+				  ConstantInt::getFalse(Context));
+			    break;
+			case OP_BC_ABORT:
+			    if (!unreachable) {
+				CallInst *CI = Builder.CreateCall(FHandler);
+				CI->setDoesNotReturn();
+				CI->setDoesNotThrow();
+				Builder.CreateUnreachable();
+				unreachable = true;
+			    }
+			    break;
 			default:
-			    errs() << "JIT doesn't implement opcode " <<
+			    errs() << MODULE << "JIT doesn't implement opcode " <<
 				inst->opcode << " yet!\n";
 			    return false;
 		    }
@@ -744,6 +898,7 @@ public:
 
 	    if (verifyFunction(*F, PrintMessageAction)) {
 		errs() << MODULE << "Verification failed\n";
+		F->dump();
 		// verification failed
 		return false;
 	    }
@@ -754,7 +909,7 @@ public:
 
 	DEBUG(M->dump());
 	delete TypeMap;
-	std::vector<const Type*> args;
+	args.clear();
 	args.push_back(PointerType::getUnqual(Type::getInt8Ty(Context)));
 	FunctionType *Callable = FunctionType::get(Type::getInt32Ty(Context),
 						   args, false);
@@ -866,6 +1021,10 @@ int cli_bytecode_prepare_jit(struct cli_all_bc *bcs)
 	OurFPM.add(createPromoteMemoryToRegisterPass());
 	// Delete dead instructions
 	OurFPM.add(createDeadCodeEliminationPass());
+	// Fold constants
+	OurFPM.add(createConstantPropagationPass());
+	// SimplifyCFG
+	OurFPM.add(createCFGSimplificationPass());
 	OurFPM.doInitialization();
 
 	//TODO: create a wrapper that calls pthread_getspecific

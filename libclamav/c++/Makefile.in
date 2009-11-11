@@ -355,7 +355,9 @@ libllvmmc_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 libllvmscalar_la_LIBADD =
 am_libllvmscalar_la_OBJECTS = libllvmscalar_la-CodeGenPrepare.lo \
 	libllvmscalar_la-CodeGenLICM.lo libllvmscalar_la-DCE.lo \
-	libllvmscalar_la-LoopStrengthReduce.lo
+	libllvmscalar_la-LoopStrengthReduce.lo \
+	libllvmscalar_la-ConstantProp.lo \
+	libllvmscalar_la-SimplifyCFGPass.lo
 libllvmscalar_la_OBJECTS = $(am_libllvmscalar_la_OBJECTS)
 libllvmscalar_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
@@ -1399,7 +1401,9 @@ libllvmscalar_la_SOURCES = \
  llvm/lib/Transforms/Scalar/CodeGenPrepare.cpp\
  llvm/lib/Transforms/Scalar/CodeGenLICM.cpp\
  llvm/lib/Transforms/Scalar/DCE.cpp\
- llvm/lib/Transforms/Scalar/LoopStrengthReduce.cpp
+ llvm/lib/Transforms/Scalar/LoopStrengthReduce.cpp\
+ llvm/lib/Transforms/Scalar/ConstantProp.cpp\
+ llvm/lib/Transforms/Scalar/SimplifyCFGPass.cpp
 
 libllvmtransformutils_la_CPPFLAGS = $(LLVM_INCLUDES) $(LLVM_DEFS)
 libllvmtransformutils_la_CXXFLAGS = $(LLVM_CXXFLAGS) -fno-exceptions
@@ -1937,8 +1941,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmmc_la-TargetAsmParser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmscalar_la-CodeGenLICM.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmscalar_la-CodeGenPrepare.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmscalar_la-ConstantProp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmscalar_la-DCE.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmscalar_la-LoopStrengthReduce.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmscalar_la-SimplifyCFGPass.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-AsmPrinter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-CallingConvLower.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libllvmsdag_la-DAGCombiner.Plo@am__quote@
@@ -3730,6 +3736,22 @@ libllvmscalar_la-LoopStrengthReduce.lo: llvm/lib/Transforms/Scalar/LoopStrengthR
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Transforms/Scalar/LoopStrengthReduce.cpp' object='libllvmscalar_la-LoopStrengthReduce.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmscalar_la_CPPFLAGS) $(CPPFLAGS) $(libllvmscalar_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmscalar_la-LoopStrengthReduce.lo `test -f 'llvm/lib/Transforms/Scalar/LoopStrengthReduce.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/LoopStrengthReduce.cpp
+
+libllvmscalar_la-ConstantProp.lo: llvm/lib/Transforms/Scalar/ConstantProp.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmscalar_la_CPPFLAGS) $(CPPFLAGS) $(libllvmscalar_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmscalar_la-ConstantProp.lo -MD -MP -MF $(DEPDIR)/libllvmscalar_la-ConstantProp.Tpo -c -o libllvmscalar_la-ConstantProp.lo `test -f 'llvm/lib/Transforms/Scalar/ConstantProp.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/ConstantProp.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmscalar_la-ConstantProp.Tpo $(DEPDIR)/libllvmscalar_la-ConstantProp.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Transforms/Scalar/ConstantProp.cpp' object='libllvmscalar_la-ConstantProp.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmscalar_la_CPPFLAGS) $(CPPFLAGS) $(libllvmscalar_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmscalar_la-ConstantProp.lo `test -f 'llvm/lib/Transforms/Scalar/ConstantProp.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/ConstantProp.cpp
+
+libllvmscalar_la-SimplifyCFGPass.lo: llvm/lib/Transforms/Scalar/SimplifyCFGPass.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmscalar_la_CPPFLAGS) $(CPPFLAGS) $(libllvmscalar_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmscalar_la-SimplifyCFGPass.lo -MD -MP -MF $(DEPDIR)/libllvmscalar_la-SimplifyCFGPass.Tpo -c -o libllvmscalar_la-SimplifyCFGPass.lo `test -f 'llvm/lib/Transforms/Scalar/SimplifyCFGPass.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/SimplifyCFGPass.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libllvmscalar_la-SimplifyCFGPass.Tpo $(DEPDIR)/libllvmscalar_la-SimplifyCFGPass.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='llvm/lib/Transforms/Scalar/SimplifyCFGPass.cpp' object='libllvmscalar_la-SimplifyCFGPass.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmscalar_la_CPPFLAGS) $(CPPFLAGS) $(libllvmscalar_la_CXXFLAGS) $(CXXFLAGS) -c -o libllvmscalar_la-SimplifyCFGPass.lo `test -f 'llvm/lib/Transforms/Scalar/SimplifyCFGPass.cpp' || echo '$(srcdir)/'`llvm/lib/Transforms/Scalar/SimplifyCFGPass.cpp
 
 libllvmsdag_la-CallingConvLower.lo: llvm/lib/CodeGen/SelectionDAG/CallingConvLower.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libllvmsdag_la_CPPFLAGS) $(CPPFLAGS) $(libllvmsdag_la_CXXFLAGS) $(CXXFLAGS) -MT libllvmsdag_la-CallingConvLower.lo -MD -MP -MF $(DEPDIR)/libllvmsdag_la-CallingConvLower.Tpo -c -o libllvmsdag_la-CallingConvLower.lo `test -f 'llvm/lib/CodeGen/SelectionDAG/CallingConvLower.cpp' || echo '$(srcdir)/'`llvm/lib/CodeGen/SelectionDAG/CallingConvLower.cpp

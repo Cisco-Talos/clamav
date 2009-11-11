@@ -75,6 +75,7 @@ int cli_bytecode_context_clear(struct cli_bc_ctx *ctx)
 
 static unsigned typesize(const struct cli_bc *bc, uint16_t type)
 {
+    type &= 0x7fff;
     if (!type)
 	return 0;
     if (type <= 8)
@@ -90,6 +91,7 @@ static unsigned typesize(const struct cli_bc *bc, uint16_t type)
 
 static unsigned typealign(const struct cli_bc *bc, uint16_t type)
 {
+    type &= 0x7fff;
     if (type <= 64) {
 	unsigned size = typesize(bc, type);
 	return size ? size : 1;
@@ -434,13 +436,13 @@ static int parseLSig(struct cli_bc *bc, unsigned char *buffer)
     char *vnames, *vend = strchr(buffer, ';');
     if (vend) {
 	bc->lsig = cli_strdup(buffer);
+	*vend++ = '\0';
+	prefix = buffer;
+	vnames = strchr(vend, '{');
     } else {
 	/* Not a logical signature, but we still have a virusname */
 	bc->lsig = NULL;
     }
-    *vend++ = '\0';
-    prefix = buffer;
-    vnames = strchr(vend, '{');
 
     return CL_SUCCESS;
 }
@@ -823,6 +825,8 @@ static int parseFunctionHeader(struct cli_bc *bc, unsigned fn, unsigned char *bu
     }
     for (i=0;i<all_locals;i++) {
 	func->types[i] = readNumber(buffer, &offset, len, &ok);
+	if (readFixedNumber(buffer, &offset, len, &ok, 1))
+	    func->types[i] |= 0x8000;
     }
     if (!ok) {
 	cli_errmsg("Invalid local types\n");

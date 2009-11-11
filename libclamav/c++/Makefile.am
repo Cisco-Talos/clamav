@@ -582,7 +582,9 @@ libllvmscalar_la_SOURCES=\
  llvm/lib/Transforms/Scalar/CodeGenPrepare.cpp\
  llvm/lib/Transforms/Scalar/CodeGenLICM.cpp\
  llvm/lib/Transforms/Scalar/DCE.cpp\
- llvm/lib/Transforms/Scalar/LoopStrengthReduce.cpp
+ llvm/lib/Transforms/Scalar/LoopStrengthReduce.cpp\
+ llvm/lib/Transforms/Scalar/ConstantProp.cpp\
+ llvm/lib/Transforms/Scalar/SimplifyCFGPass.cpp
 
 libllvmtransformutils_la_CPPFLAGS=$(LLVM_INCLUDES) $(LLVM_DEFS)
 libllvmtransformutils_la_CXXFLAGS=$(LLVM_CXXFLAGS) -fno-exceptions
