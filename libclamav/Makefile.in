@@ -116,29 +116,29 @@ am__libclamav_la_SOURCES_DIST = clamav.h matcher-ac.c matcher-ac.h \
 	filetypes.h filetypes_int.h rtf.c rtf.h blob.c blob.h mbox.c \
 	mbox.h message.c message.h table.c table.h text.c text.h \
 	ole2_extract.c ole2_extract.h vba_extract.c vba_extract.h \
-	cltypes.h msexpand.c msexpand.h pe.c pe.h disasm.c disasm.h \
-	disasmpriv.h upx.c upx.h htmlnorm.c htmlnorm.h chmunpack.c \
-	chmunpack.h rebuildpe.c rebuildpe.h petite.c petite.h \
-	wwunpack.c wwunpack.h unsp.c unsp.h aspack.c aspack.h \
-	packlibs.c packlibs.h fsg.c fsg.h mew.c mew.h upack.c upack.h \
-	line.c line.h untar.c untar.h unzip.c unzip.h inflate64.c \
-	inflate64.h inffixed64.h inflate64_priv.h special.c special.h \
-	binhex.c binhex.h is_tar.c is_tar.h tnef.c tnef.h autoit.c \
-	autoit.h unarj.c unarj.h nsis/bzlib.c nsis/bzlib_private.h \
-	nsis/nsis_bzlib.h nsis/nulsft.c nsis/nulsft.h nsis/infblock.c \
-	nsis/nsis_zconf.h nsis/nsis_zlib.h nsis/nsis_zutil.h pdf.c \
-	pdf.h spin.c spin.h yc.c yc.h elf.c elf.h execs.h sis.c sis.h \
-	uuencode.c uuencode.h phishcheck.c phishcheck.h \
-	phish_domaincheck_db.c phish_domaincheck_db.h \
-	phish_whitelist.c phish_whitelist.h iana_cctld.h iana_tld.h \
-	regex_list.c regex_list.h regex_suffix.c regex_suffix.h \
-	mspack.c mspack.h cab.c cab.h entconv.c entconv.h entitylist.h \
-	encoding_aliases.h hashtab.c hashtab.h dconf.c dconf.h \
-	7z/LzmaDec.c 7z/LzmaDec.h 7z/Types.h lzma_iface.c lzma_iface.h \
-	7z.c 7z.h 7z/7zFile.c 7z/7zFile.h 7z/7zStream.c 7z/CpuArch.h \
-	7z/7zCrc.c 7z/7zCrc.h 7z/7zBuf.c 7z/7zBuf.h 7z/Bcj2.c \
-	7z/Bcj2.h 7z/Bra.c 7z/Bra.h 7z/Bra86.c 7z/BraIA64.c \
-	7z/Archive/7z/7zIn.c 7z/Archive/7z/7zIn.h \
+	cltypes.h msexpand.c msexpand.h pe.c pe.h pe_icons.c \
+	pe_icons.h disasm.c disasm.h disasmpriv.h upx.c upx.h \
+	htmlnorm.c htmlnorm.h chmunpack.c chmunpack.h rebuildpe.c \
+	rebuildpe.h petite.c petite.h wwunpack.c wwunpack.h unsp.c \
+	unsp.h aspack.c aspack.h packlibs.c packlibs.h fsg.c fsg.h \
+	mew.c mew.h upack.c upack.h line.c line.h untar.c untar.h \
+	unzip.c unzip.h inflate64.c inflate64.h inffixed64.h \
+	inflate64_priv.h special.c special.h binhex.c binhex.h \
+	is_tar.c is_tar.h tnef.c tnef.h autoit.c autoit.h unarj.c \
+	unarj.h nsis/bzlib.c nsis/bzlib_private.h nsis/nsis_bzlib.h \
+	nsis/nulsft.c nsis/nulsft.h nsis/infblock.c nsis/nsis_zconf.h \
+	nsis/nsis_zlib.h nsis/nsis_zutil.h pdf.c pdf.h spin.c spin.h \
+	yc.c yc.h elf.c elf.h execs.h sis.c sis.h uuencode.c \
+	uuencode.h phishcheck.c phishcheck.h phish_domaincheck_db.c \
+	phish_domaincheck_db.h phish_whitelist.c phish_whitelist.h \
+	iana_cctld.h iana_tld.h regex_list.c regex_list.h \
+	regex_suffix.c regex_suffix.h mspack.c mspack.h cab.c cab.h \
+	entconv.c entconv.h entitylist.h encoding_aliases.h hashtab.c \
+	hashtab.h dconf.c dconf.h 7z/LzmaDec.c 7z/LzmaDec.h 7z/Types.h \
+	lzma_iface.c lzma_iface.h 7z.c 7z.h 7z/7zFile.c 7z/7zFile.h \
+	7z/7zStream.c 7z/CpuArch.h 7z/7zCrc.c 7z/7zCrc.h 7z/7zBuf.c \
+	7z/7zBuf.h 7z/Bcj2.c 7z/Bcj2.h 7z/Bra.c 7z/Bra.h 7z/Bra86.c \
+	7z/BraIA64.c 7z/Archive/7z/7zIn.c 7z/Archive/7z/7zIn.h \
 	7z/Archive/7z/7zDecode.c 7z/Archive/7z/7zDecode.h \
 	7z/Archive/7z/7zItem.c 7z/Archive/7z/7zItem.h \
 	7z/Archive/7z/7zHeader.c 7z/Archive/7z/7zHeader.h \
@@ -161,7 +161,8 @@ am_libclamav_la_OBJECTS = libclamav_la-matcher-ac.lo \
 	libclamav_la-message.lo libclamav_la-table.lo \
 	libclamav_la-text.lo libclamav_la-ole2_extract.lo \
 	libclamav_la-vba_extract.lo libclamav_la-msexpand.lo \
-	libclamav_la-pe.lo libclamav_la-disasm.lo libclamav_la-upx.lo \
+	libclamav_la-pe.lo libclamav_la-pe_icons.lo \
+	libclamav_la-disasm.lo libclamav_la-upx.lo \
 	libclamav_la-htmlnorm.lo libclamav_la-chmunpack.lo \
 	libclamav_la-rebuildpe.lo libclamav_la-petite.lo \
 	libclamav_la-wwunpack.lo libclamav_la-unsp.lo \
@@ -559,28 +560,29 @@ libclamav_la_SOURCES = clamav.h matcher-ac.c matcher-ac.h matcher-bm.c \
 	rtf.c rtf.h blob.c blob.h mbox.c mbox.h message.c message.h \
 	table.c table.h text.c text.h ole2_extract.c ole2_extract.h \
 	vba_extract.c vba_extract.h cltypes.h msexpand.c msexpand.h \
-	pe.c pe.h disasm.c disasm.h disasmpriv.h upx.c upx.h \
-	htmlnorm.c htmlnorm.h chmunpack.c chmunpack.h rebuildpe.c \
-	rebuildpe.h petite.c petite.h wwunpack.c wwunpack.h unsp.c \
-	unsp.h aspack.c aspack.h packlibs.c packlibs.h fsg.c fsg.h \
-	mew.c mew.h upack.c upack.h line.c line.h untar.c untar.h \
-	unzip.c unzip.h inflate64.c inflate64.h inffixed64.h \
-	inflate64_priv.h special.c special.h binhex.c binhex.h \
-	is_tar.c is_tar.h tnef.c tnef.h autoit.c autoit.h unarj.c \
-	unarj.h nsis/bzlib.c nsis/bzlib_private.h nsis/nsis_bzlib.h \
-	nsis/nulsft.c nsis/nulsft.h nsis/infblock.c nsis/nsis_zconf.h \
-	nsis/nsis_zlib.h nsis/nsis_zutil.h pdf.c pdf.h spin.c spin.h \
-	yc.c yc.h elf.c elf.h execs.h sis.c sis.h uuencode.c \
-	uuencode.h phishcheck.c phishcheck.h phish_domaincheck_db.c \
-	phish_domaincheck_db.h phish_whitelist.c phish_whitelist.h \
-	iana_cctld.h iana_tld.h regex_list.c regex_list.h \
-	regex_suffix.c regex_suffix.h mspack.c mspack.h cab.c cab.h \
-	entconv.c entconv.h entitylist.h encoding_aliases.h hashtab.c \
-	hashtab.h dconf.c dconf.h 7z/LzmaDec.c 7z/LzmaDec.h 7z/Types.h \
-	lzma_iface.c lzma_iface.h 7z.c 7z.h 7z/7zFile.c 7z/7zFile.h \
-	7z/7zStream.c 7z/CpuArch.h 7z/7zCrc.c 7z/7zCrc.h 7z/7zBuf.c \
-	7z/7zBuf.h 7z/Bcj2.c 7z/Bcj2.h 7z/Bra.c 7z/Bra.h 7z/Bra86.c \
-	7z/BraIA64.c 7z/Archive/7z/7zIn.c 7z/Archive/7z/7zIn.h \
+	pe.c pe.h pe_icons.c pe_icons.h disasm.c disasm.h disasmpriv.h \
+	upx.c upx.h htmlnorm.c htmlnorm.h chmunpack.c chmunpack.h \
+	rebuildpe.c rebuildpe.h petite.c petite.h wwunpack.c \
+	wwunpack.h unsp.c unsp.h aspack.c aspack.h packlibs.c \
+	packlibs.h fsg.c fsg.h mew.c mew.h upack.c upack.h line.c \
+	line.h untar.c untar.h unzip.c unzip.h inflate64.c inflate64.h \
+	inffixed64.h inflate64_priv.h special.c special.h binhex.c \
+	binhex.h is_tar.c is_tar.h tnef.c tnef.h autoit.c autoit.h \
+	unarj.c unarj.h nsis/bzlib.c nsis/bzlib_private.h \
+	nsis/nsis_bzlib.h nsis/nulsft.c nsis/nulsft.h nsis/infblock.c \
+	nsis/nsis_zconf.h nsis/nsis_zlib.h nsis/nsis_zutil.h pdf.c \
+	pdf.h spin.c spin.h yc.c yc.h elf.c elf.h execs.h sis.c sis.h \
+	uuencode.c uuencode.h phishcheck.c phishcheck.h \
+	phish_domaincheck_db.c phish_domaincheck_db.h \
+	phish_whitelist.c phish_whitelist.h iana_cctld.h iana_tld.h \
+	regex_list.c regex_list.h regex_suffix.c regex_suffix.h \
+	mspack.c mspack.h cab.c cab.h entconv.c entconv.h entitylist.h \
+	encoding_aliases.h hashtab.c hashtab.h dconf.c dconf.h \
+	7z/LzmaDec.c 7z/LzmaDec.h 7z/Types.h lzma_iface.c lzma_iface.h \
+	7z.c 7z.h 7z/7zFile.c 7z/7zFile.h 7z/7zStream.c 7z/CpuArch.h \
+	7z/7zCrc.c 7z/7zCrc.h 7z/7zBuf.c 7z/7zBuf.h 7z/Bcj2.c \
+	7z/Bcj2.h 7z/Bra.c 7z/Bra.h 7z/Bra86.c 7z/BraIA64.c \
+	7z/Archive/7z/7zIn.c 7z/Archive/7z/7zIn.h \
 	7z/Archive/7z/7zDecode.c 7z/Archive/7z/7zDecode.h \
 	7z/Archive/7z/7zItem.c 7z/Archive/7z/7zItem.h \
 	7z/Archive/7z/7zHeader.c 7z/Archive/7z/7zHeader.h \
@@ -772,6 +774,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-packlibs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-pdf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-pe.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-pe_icons.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-petite.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-phish_domaincheck_db.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libclamav_la-phish_whitelist.Plo@am__quote@
@@ -996,6 +999,14 @@ libclamav_la-pe.lo: pe.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pe.c' object='libclamav_la-pe.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-pe.lo `test -f 'pe.c' || echo '$(srcdir)/'`pe.c
+
+libclamav_la-pe_icons.lo: pe_icons.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-pe_icons.lo -MD -MP -MF $(DEPDIR)/libclamav_la-pe_icons.Tpo -c -o libclamav_la-pe_icons.lo `test -f 'pe_icons.c' || echo '$(srcdir)/'`pe_icons.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libclamav_la-pe_icons.Tpo $(DEPDIR)/libclamav_la-pe_icons.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pe_icons.c' object='libclamav_la-pe_icons.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -c -o libclamav_la-pe_icons.lo `test -f 'pe_icons.c' || echo '$(srcdir)/'`pe_icons.c
 
 libclamav_la-disasm.lo: disasm.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libclamav_la_CFLAGS) $(CFLAGS) -MT libclamav_la-disasm.lo -MD -MP -MF $(DEPDIR)/libclamav_la-disasm.Tpo -c -o libclamav_la-disasm.lo `test -f 'disasm.c' || echo '$(srcdir)/'`disasm.c

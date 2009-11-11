@@ -169,6 +169,8 @@ libclamav_la_SOURCES = \
 	msexpand.h \
 	pe.c \
 	pe.h \
+	pe_icons.c \
+	pe_icons.h \
 	disasm.c \
 	disasm.h \
 	disasmpriv.h \

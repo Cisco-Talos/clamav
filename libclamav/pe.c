@@ -58,6 +58,7 @@
 #include "disasm.h"
 #include "special.h"
 #include "ishield.h"
+#include "pe_icons.h"
 
 #define DCONF ctx->dconf->pe
 
@@ -192,7 +193,7 @@ static void cli_multifree(void *f, ...) {
     va_end(ap);
 }
 
-static uint32_t cli_rawaddr(uint32_t rva, struct cli_exe_section *shp, uint16_t nos, unsigned int *err,	size_t fsize, uint32_t hdr_size)
+uint32_t cli_rawaddr(uint32_t rva, struct cli_exe_section *shp, uint16_t nos, unsigned int *err, size_t fsize, uint32_t hdr_size)
 {
     int i, found = 0;
     uint32_t ret;
@@ -276,6 +277,89 @@ static int cli_ddump(int desc, int offset, int size, const char *file) {
     return 0;
 }
 */
+
+
+/* 
+   void findres(uint32_t by_type, uint32_t by_name, uint32_t res_rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size, int (*cb)(void *, uint32_t, uint32_t, uint32_t, uint32_t), void *opaque)
+   callback based res lookup
+
+   by_type: lookup type
+   by_name: lookup name or (unsigned)-1 to look for any name
+   res_rva: base resource rva (i.e. dirs[2].VirtualAddress)
+   ctx, exe_sections, nsections, hdr_size: same as in scanpe
+   cb: the callback function executed on each successful match
+   opaque: an opaque pointer passed to the callback
+
+   the callback proto is
+   int pe_res_cballback (void *opaque, uint32_t type, uint32_t name, uint32_t lang, uint32_t rva);
+   the callback shall return 0 to continue the lookup or 1 to abort
+*/
+void findres(uint32_t by_type, uint32_t by_name, uint32_t res_rva, cli_ctx *ctx, struct cli_exe_section *exe_sections, uint16_t nsections, uint32_t hdr_size, int (*cb)(void *, uint32_t, uint32_t, uint32_t, uint32_t), void *opaque) {
+    unsigned int err = 0;
+    uint32_t type, type_offs, name, name_offs, lang, lang_offs;
+    uint8_t *resdir, *type_entry, *name_entry, *lang_entry ;
+    uint16_t type_cnt, name_cnt, lang_cnt;
+    fmap_t *map = *ctx->fmap;
+
+    if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva, exe_sections, nsections, &err, map->len, hdr_size), 16)) || err)
+	return;
+
+    type_cnt = (uint16_t)cli_readint16(resdir+12);
+    type_entry = resdir+16;
+    if(!(by_type>>31)) {
+	type_entry += type_cnt * 8;
+	type_cnt = (uint16_t)cli_readint16(resdir+14);
+    }
+
+    while(type_cnt--) {
+	if(!fmap_need_ptr_once(map, type_entry, 8))
+	    return;
+	type = cli_readint32(type_entry);
+	type_offs = cli_readint32(type_entry+4);
+	if(type == by_type && (type_offs>>31)) {
+	    type_offs &= 0x7fffffff;
+	    if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva + type_offs, exe_sections, nsections, &err, map->len, hdr_size), 16)) || err)
+		return;
+
+	    name_cnt = (uint16_t)cli_readint16(resdir+12);
+	    name_entry = resdir+16;
+	    if(by_name == 0xffffffff)
+		name_cnt += (uint16_t)cli_readint16(resdir+14);
+	    else if(!(by_name>>31)) {
+		name_entry += name_cnt * 8;
+		name_cnt = (uint16_t)cli_readint16(resdir+14);
+	    }
+	    while(name_cnt--) {
+		if(!fmap_need_ptr_once(map, name_entry, 8))
+		    return;
+		name = cli_readint32(name_entry);
+		name_offs = cli_readint32(name_entry+4);
+		if((by_name == 0xffffffff || name == by_name) && (name_offs>>31)) {
+		    name_offs &= 0x7fffffff;
+		    if (!(resdir = fmap_need_off_once(map, cli_rawaddr(res_rva + name_offs, exe_sections, nsections, &err, map->len, hdr_size), 16)) || err)
+			return;
+		    
+		    lang_cnt = (uint16_t)cli_readint16(resdir+12) + (uint16_t)cli_readint16(resdir+14);
+		    lang_entry = resdir+16;
+		    while(lang_cnt--) {
+			if(!fmap_need_ptr_once(map, lang_entry, 8))
+			    return;
+			lang = cli_readint32(lang_entry);
+			lang_offs = cli_readint32(lang_entry+4);
+			if(!(lang_offs >>31)) {
+			    if(cb(opaque, type, name, lang, res_rva + lang_offs))
+				return;
+			}
+			lang_entry += 8;
+		    }
+		}
+		name_entry += 8;
+	    }
+	    return; /* FIXME: unless we want to find ALL types */
+	}
+	type_entry += 8;
+    }
+}
 
 static unsigned int cli_md5sect(fmap_t *map, struct cli_exe_section *s, unsigned char *digest) {
     void *hashme;
@@ -957,6 +1041,10 @@ int cli_scanpe(cli_ctx *ctx)
     }
 
     cli_dbgmsg("EntryPoint offset: 0x%x (%d)\n", ep, ep);
+
+    if(!dll && dirs[2].Size) { /* RES */
+	scanicon(EC32(dirs[2].VirtualAddress), ctx, exe_sections, nsections, hdr_size);
+    }
 
     if(pe_plus) { /* Do not continue for PE32+ files */
 	free(exe_sections);
