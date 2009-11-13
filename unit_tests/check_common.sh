@@ -122,10 +122,11 @@ scan_failed() {
 # ----------- valgrind wrapper 
 init_valgrind() {
     test "x$VG" = "x1" || { echo "*** valgrind tests skipped by default, use 'make check VG=1' to activate"; exit 77; }
-    export VALGRIND=`which ${VALGRIND-valgrind}`
-    export VALGRIND_COMMON_FLAGS="-v --trace-children=yes --suppressions=$abs_srcdir/valgrind.supp --log-file=valgrind.log --error-exitcode=123 $GENSUPP"
-    export VALGRIND_FLAGS="$VALGRIND_COMMON_FLAGS --track-fds=yes --leak-check=full"
-    export VALGRIND_FLAGS_RACE="$VALGRIND_COMMON_FLAGS --tool=helgrind"
+    VALGRIND=`which ${VALGRIND-valgrind}`
+    VALGRIND_COMMON_FLAGS="-v --trace-children=yes --suppressions=$abs_srcdir/valgrind.supp --log-file=valgrind.log --error-exitcode=123 $GENSUPP"
+    VALGRIND_FLAGS="$VALGRIND_COMMON_FLAGS --track-fds=yes --leak-check=full"
+    VALGRIND_FLAGS_RACE="$VALGRIND_COMMON_FLAGS --tool=helgrind"
+    export VALGRIND VALGRIND_COMMON_FLAGS VALGRIND_FLAGS VALGRIND_FLAGS_RACE
     test -n "$VALGRIND" || { echo "*** valgrind not found, skipping test"; exit 77; }
     test -x "$VALGRIND" || { echo "*** valgrind not executable, skipping test"; exit 77; }
 }
