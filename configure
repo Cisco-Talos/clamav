@@ -15508,7 +15508,8 @@ $as_echo "$ac_cv_libbz2_libs" >&6; }
 
 
     save_LDFLAGS="$LDFLAGS"
-    LDFLAGS="$LDFLAGS -L$LIBBZ2_PREFIX/$acl_libdirstem";
+    # Only add -L if prefix is not empty
+    test -z "$LIBBZ2_PREFIX" || LDFLAGS="$LDFLAGS -L$LIBBZ2_PREFIX/$acl_libdirstem";
 
     have_bzprefix="no"
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for BZ2_bzReadOpen in -lbz2" >&5
