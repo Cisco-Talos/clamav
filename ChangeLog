@@ -1,3 +1,7 @@
+Mon Nov 16 23:15:37 CET 2009 (acab)
+-----------------------------------
+ * libclamav: add qsort to the win32 build
+
 Mon Nov 16 19:26:53 CET 2009 (tk)
 ---------------------------------
  * libclamav: replace qsort implementation and optimize its common
